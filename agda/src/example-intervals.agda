@@ -174,7 +174,6 @@ module forward where
   fwd-add⁎ = Galois.add-interval 0ℚ 1ℚ .galois._⇒g_.right .preorder._=>_.fun
     (< intv0 > , < intv1 >)
 
-  -- q₂-shifted intv0 = [1/2, 1]; q₁-shifted intv1 = [4/5, 3/2]. addᵀ takes the intersection.
   test-addᵀ : extract-interval fwd-addᵀ ≡ just (+ 4 / 5 , + 1 / 1)
   test-addᵀ = ≡-refl
 
