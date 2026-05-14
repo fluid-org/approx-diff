@@ -125,8 +125,8 @@ module forward where
   open Conjugate.interp Sig BaseInterp
   open import Data.Rational
   open import Data.Rational.Properties using (≤-refl)
-  open import preorder using (bottom; <_>; LCarrier)
-  open import approx-numbers using (Intv)
+  open import preorder using (bottom; <_>; LCarrier; Preorder; L)
+  open import approx-numbers using (Intv; IntvPreorder)
   open import prop using (liftS)
   open import Data.Nat hiding (_/_)
   open import Data.Integer hiding (_/_; show; -_)
@@ -180,3 +180,7 @@ module forward where
   -- And add⁎ takes the union.
   test-add⁎ : extract-interval fwd-add⁎ ≡ just (+ 1 / 2 , + 3 / 2)
   test-add⁎ = ≡-refl
+
+  -- addᵀ here produces a result higher in the information order (tighter bounds) than the adjoint add⁎.
+  addᵀ-tighter : Preorder._≤_ (L (IntvPreorder 1ℚ)) fwd-add⁎ fwd-addᵀ
+  addᵀ-tighter = prop._,_ (liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s (s≤s z≤n)))))))) (intv1 .q≤u)
