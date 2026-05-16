@@ -11,7 +11,7 @@ open import prop-setoid
   using (IsEquivalence; Setoid; 𝟙; +-setoid; ⊗-setoid; idS; _∘S_; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence)
 open import categories
-  using (Category; HasTerminal; IsTerminal; HasCoproducts; HasProducts; HasStrongCoproducts; HasLists; setoid→category)
+  using (Category; HasTerminal; IsTerminal; HasCoproducts; HasProducts; HasStrongCoproducts; HasLists; Poly; HasMu; poly-obj; setoid→category)
 open import setoid-cat using (Setoid-products)
 open import indexed-family
   using (Fam; _⇒f_; idf; _∘f_; ∘f-cong; _≃f_; ≃f-isEquivalence; ≃f-id-left; ≃f-assoc;
@@ -850,3 +850,97 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     lists .HasLists.nil = nil
     lists .HasLists.cons = cons
     lists .HasLists.fold = foldr
+
+    ----------------------------------------------------------------------
+    -- Generic μ-types in Fam(𝒞), one per polynomial Q : Poly cat. The
+    -- idx side is prop-setoid.WSetoid of poly-idx Q (projecting param
+    -- slots from Fam-objs to their idx setoids); the fibre side is
+    -- built recursively over Q using 𝒞's products.
+    module W-types (Q : Poly cat) where
+      open import Data.Sum using (inj₁; inj₂)
+      open import Data.Product using (_,_)
+
+      poly-idx-of : Poly cat → prop-setoid.IdxPoly
+      poly-idx-of Poly.one        = prop-setoid.one
+      poly-idx-of (Poly.param A)  = prop-setoid.param (A .idx)
+      poly-idx-of Poly.var        = prop-setoid.var
+      poly-idx-of (P₁ Poly.⊕ P₂)  = poly-idx-of P₁ prop-setoid.⊕ poly-idx-of P₂
+      poly-idx-of (P₁ Poly.⊗ P₂)  = poly-idx-of P₁ prop-setoid.⊗ poly-idx-of P₂
+
+      poly-idx : prop-setoid.IdxPoly
+      poly-idx = poly-idx-of Q
+
+      -- Fibre as a single recursive function on (P : Poly cat) and the
+      -- corresponding WIdx-of value. At the var case, the W argument is
+      -- destructed via sup, exposing a structurally smaller WIdx-of value
+      -- (passed back at the outer Q). This is well-founded on the
+      -- WIdx-of/W structure (decreases at var via sup destruction);
+      -- Agda's termination checker should accept it.
+      WFam-of-fm : (P : Poly cat) →
+                   prop-setoid.WIdx-of poly-idx (poly-idx-of P) → obj
+      WFam-of-fm Poly.one        _                    = T .witness
+      WFam-of-fm (Poly.param A)  a                    = A .fam .fm a
+      WFam-of-fm Poly.var        (prop-setoid.sup i)  = WFam-of-fm Q i
+      WFam-of-fm (P₁ Poly.⊕ P₂)  (inj₁ x)             = WFam-of-fm P₁ x
+      WFam-of-fm (P₁ Poly.⊕ P₂)  (inj₂ y)             = WFam-of-fm P₂ y
+      WFam-of-fm (P₁ Poly.⊗ P₂)  (x , y)              = prod (WFam-of-fm P₁ x) (WFam-of-fm P₂ y)
+
+      WFam-of-subst : (P : Poly cat) → ∀ {x y} →
+                      prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) x y →
+                      WFam-of-fm P x ⇒ WFam-of-fm P y
+      WFam-of-subst Poly.one         _ = id _
+      WFam-of-subst (Poly.param A) {x} {y} eq = A .fam .subst eq
+      WFam-of-subst Poly.var {prop-setoid.sup i₁} {prop-setoid.sup i₂} eq = WFam-of-subst Q eq
+      WFam-of-subst (P₁ Poly.⊕ P₂) {inj₁ _} {inj₁ _} eq = WFam-of-subst P₁ eq
+      WFam-of-subst (P₁ Poly.⊕ P₂) {inj₂ _} {inj₂ _} eq = WFam-of-subst P₂ eq
+      WFam-of-subst (P₁ Poly.⊕ P₂) {inj₁ _} {inj₂ _} ()
+      WFam-of-subst (P₁ Poly.⊕ P₂) {inj₂ _} {inj₁ _} ()
+      WFam-of-subst (P₁ Poly.⊗ P₂) {_ , _} {_ , _} (e₁ , e₂) =
+        prod-m (WFam-of-subst P₁ e₁) (WFam-of-subst P₂ e₂)
+
+      WFam-of-refl* : (P : Poly cat) → ∀ {x} →
+                      WFam-of-subst P (prop-setoid.WIdx-≈-of-refl poly-idx (poly-idx-of P) {x}) ≈ id _
+      WFam-of-refl* Poly.one         = isEquiv .refl
+      WFam-of-refl* (Poly.param A) {x} = A .fam .refl*
+      WFam-of-refl* Poly.var {prop-setoid.sup i} = WFam-of-refl* Q {i}
+      WFam-of-refl* (P₁ Poly.⊕ P₂) {inj₁ x} = WFam-of-refl* P₁ {x}
+      WFam-of-refl* (P₁ Poly.⊕ P₂) {inj₂ y} = WFam-of-refl* P₂ {y}
+      WFam-of-refl* (P₁ Poly.⊗ P₂) {x , y}  =
+        begin
+          prod-m (WFam-of-subst P₁ _) (WFam-of-subst P₂ _)
+        ≈⟨ prod-m-cong (WFam-of-refl* P₁ {x}) (WFam-of-refl* P₂ {y}) ⟩
+          prod-m (id _) (id _)
+        ≈⟨ prod-m-id ⟩
+          id _
+        ∎ where open ≈-Reasoning isEquiv
+
+      WFam-of-trans* : (P : Poly cat) → ∀ {x y z}
+                       (e₁ : prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) y z)
+                       (e₂ : prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) x y) →
+                       WFam-of-subst P (prop-setoid.WIdx-≈-of-trans poly-idx (poly-idx-of P) e₂ e₁) ≈
+                       (WFam-of-subst P e₁ ∘ WFam-of-subst P e₂)
+      WFam-of-trans* Poly.one _ _ = isEquiv .sym id-left
+      WFam-of-trans* (Poly.param A) e₁ e₂ = A .fam .trans* e₁ e₂
+      WFam-of-trans* Poly.var {prop-setoid.sup _} {prop-setoid.sup _} {prop-setoid.sup _} e₁ e₂ =
+        WFam-of-trans* Q e₁ e₂
+      WFam-of-trans* (P₁ Poly.⊕ P₂) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WFam-of-trans* P₁ e₁ e₂
+      WFam-of-trans* (P₁ Poly.⊕ P₂) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WFam-of-trans* P₂ e₁ e₂
+      WFam-of-trans* (P₁ Poly.⊗ P₂) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
+        begin
+          prod-m (WFam-of-subst P₁ _) (WFam-of-subst P₂ _)
+        ≈⟨ prod-m-cong (WFam-of-trans* P₁ e₁ e₂) (WFam-of-trans* P₂ f₁ f₂) ⟩
+          prod-m (WFam-of-subst P₁ e₁ ∘ WFam-of-subst P₁ e₂) (WFam-of-subst P₂ f₁ ∘ WFam-of-subst P₂ f₂)
+        ≈⟨ pair-functorial _ _ _ _ ⟩
+          prod-m (WFam-of-subst P₁ e₁) (WFam-of-subst P₂ f₁) ∘ prod-m (WFam-of-subst P₁ e₂) (WFam-of-subst P₂ f₂)
+        ∎ where open ≈-Reasoning isEquiv
+
+      WFam : Fam (prop-setoid.WSetoid poly-idx) 𝒞
+      WFam .fm (prop-setoid.sup i)                              = WFam-of-fm Q i
+      WFam .subst {prop-setoid.sup _} {prop-setoid.sup _} eq    = WFam-of-subst Q eq
+      WFam .refl* {prop-setoid.sup _}                           = WFam-of-refl* Q
+      WFam .trans* {prop-setoid.sup _} {prop-setoid.sup _} {prop-setoid.sup _} e₁ e₂ =
+        WFam-of-trans* Q e₁ e₂
+
+      WObj : Obj
+      WObj .idx = prop-setoid.WSetoid poly-idx
+      WObj .fam = WFam

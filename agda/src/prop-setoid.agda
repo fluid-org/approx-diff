@@ -313,23 +313,23 @@ module _ {o e} where
     _⊗_  : IdxPoly → IdxPoly → IdxPoly
 
   mutual
-    data W (P : IdxPoly) : Set (o ⊔ e) where
+    data W (P : IdxPoly) : Set o where
       sup : WIdx-of P P → W P
 
-    WIdx-of : IdxPoly → IdxPoly → Set (o ⊔ e)
-    WIdx-of P one         = Lift (o ⊔ e) 𝟙S
-    WIdx-of P (param A)    = Lift e (A .Carrier)
+    WIdx-of : IdxPoly → IdxPoly → Set o
+    WIdx-of P one         = Lift o 𝟙S
+    WIdx-of P (param A)   = A .Carrier
     WIdx-of P var         = W P
     WIdx-of P (Q₁ ⊕ Q₂)   = WIdx-of P Q₁ ⊎ WIdx-of P Q₂
     WIdx-of P (Q₁ ⊗ Q₂)   = WIdx-of P Q₁ × WIdx-of P Q₂
 
   mutual
-    W-≈ : (P : IdxPoly) → W P → W P → Prop (o ⊔ e)
+    W-≈ : (P : IdxPoly) → W P → W P → Prop e
     W-≈ P (sup i₁) (sup i₂) = WIdx-≈-of P P i₁ i₂
 
-    WIdx-≈-of : (P Q : IdxPoly) → WIdx-of P Q → WIdx-of P Q → Prop (o ⊔ e)
+    WIdx-≈-of : (P Q : IdxPoly) → WIdx-of P Q → WIdx-of P Q → Prop e
     WIdx-≈-of P one         _          _          = ⊤
-    WIdx-≈-of P (param A)    (lift x)   (lift y)   = LiftP o (A ._≈_ x y)
+    WIdx-≈-of P (param A)   x          y          = A ._≈_ x y
     WIdx-≈-of P var         w₁         w₂         = W-≈ P w₁ w₂
     WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₁ x₁)  (inj₁ x₂)  = WIdx-≈-of P Q₁ x₁ x₂
     WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₁ _)   (inj₂ _)   = ⊥
@@ -343,7 +343,7 @@ module _ {o e} where
 
     WIdx-≈-of-refl : ∀ P Q {x} → WIdx-≈-of P Q x x
     WIdx-≈-of-refl P one          = tt
-    WIdx-≈-of-refl P (param A) {lift x} = lift (A .refl {x})
+    WIdx-≈-of-refl P (param A) {x} = A .refl {x}
     WIdx-≈-of-refl P var      {w}  = W-≈-refl P {w}
     WIdx-≈-of-refl P (Q₁ ⊕ Q₂) {inj₁ x} = WIdx-≈-of-refl P Q₁ {x}
     WIdx-≈-of-refl P (Q₁ ⊕ Q₂) {inj₂ y} = WIdx-≈-of-refl P Q₂ {y}
@@ -355,7 +355,7 @@ module _ {o e} where
 
     WIdx-≈-of-sym : ∀ P Q {x y} → WIdx-≈-of P Q x y → WIdx-≈-of P Q y x
     WIdx-≈-of-sym P one         _  = tt
-    WIdx-≈-of-sym P (param A) {lift x} {lift y} (lift eq) = lift (A .sym eq)
+    WIdx-≈-of-sym P (param A) {x} {y} eq = A .sym eq
     WIdx-≈-of-sym P var       {w₁} {w₂} eq = W-≈-sym P {w₁} {w₂} eq
     WIdx-≈-of-sym P (Q₁ ⊕ Q₂) {inj₁ x₁} {inj₁ x₂} eq = WIdx-≈-of-sym P Q₁ eq
     WIdx-≈-of-sym P (Q₁ ⊕ Q₂) {inj₂ y₁} {inj₂ y₂} eq = WIdx-≈-of-sym P Q₂ eq
@@ -368,14 +368,14 @@ module _ {o e} where
     WIdx-≈-of-trans : ∀ P Q {x y z} →
                       WIdx-≈-of P Q x y → WIdx-≈-of P Q y z → WIdx-≈-of P Q x z
     WIdx-≈-of-trans P one        _  _  = tt
-    WIdx-≈-of-trans P (param A) {lift x} {lift y} {lift z} (lift e₁) (lift e₂) = lift (A .trans e₁ e₂)
+    WIdx-≈-of-trans P (param A) {x} {y} {z} e₁ e₂ = A .trans e₁ e₂
     WIdx-≈-of-trans P var       {x} {y} {z} e₁ e₂ = W-≈-trans P {x} {y} {z} e₁ e₂
     WIdx-≈-of-trans P (Q₁ ⊕ Q₂) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WIdx-≈-of-trans P Q₁ e₁ e₂
     WIdx-≈-of-trans P (Q₁ ⊕ Q₂) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WIdx-≈-of-trans P Q₂ e₁ e₂
     WIdx-≈-of-trans P (Q₁ ⊗ Q₂) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
       WIdx-≈-of-trans P Q₁ e₁ e₂ , WIdx-≈-of-trans P Q₂ f₁ f₂
 
-  WSetoid : IdxPoly → Setoid (o ⊔ e) (o ⊔ e)
+  WSetoid : IdxPoly → Setoid o e
   WSetoid P .Carrier = W P
   WSetoid P ._≈_     = W-≈ P
   WSetoid P .isEquivalence .refl {w}              = W-≈-refl P {w}
