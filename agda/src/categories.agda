@@ -2,7 +2,7 @@
 
 module categories where
 
-open import Level using (suc; _⊔_; Lift; lift)
+open import Level using (suc; _⊔_; 0ℓ; Lift; lift)
 open import Data.Nat using (ℕ) renaming (zero to nzero; suc to nsuc)
 open import Data.Product using (_,_)
 open import Relation.Binary.PropositionalEquality as ≡ using (_≡_)
@@ -740,15 +740,15 @@ record HasLists {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasP
 
 ------------------------------------------------------------------------------
 -- Wellfounded (W-) types: initial algebras of polynomial functors given
--- by a container (Shape, Position). Position is a natural number giving
--- the arity of recursive children at each shape — i.e. the fibre at a
--- shape s is an n-fold product of the recursive carrier.
---
--- This naive first pass has no parameter object (cf. the A in List A);
--- parameterised containers come in the next step.
-record Container : Set₁ where
+-- by a container. At each shape, Data carries the "parameter" content
+-- (the A in List A; T when there is none) and Position is the arity of
+-- recursive children. The fibre at shape s is therefore
+-- Data s × (W × W × ... × T) (with Position s copies of W).
+record Container {o m e} (𝒞 : Category o m e) : Set (suc 0ℓ ⊔ o) where
+  open Category 𝒞
   field
     Shape    : Set
+    Data     : Shape → obj
     Position : Shape → ℕ
 
 -- n-fold product, with the empty product being the terminal object.
@@ -762,11 +762,12 @@ module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasProducts
   power (nsuc n) x = prod x (power n x)
 
 record HasW {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞)
-            (C : Container) : Set (o ⊔ m ⊔ e) where
+            (C : Container 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
+  open HasProducts P
   open Container C
   field
     W    : obj
-    sup  : (s : Shape) → power T P (Position s) W ⇒ W
-    fold : ∀ {y} → ((s : Shape) → power T P (Position s) y ⇒ y) → W ⇒ y
+    sup  : (s : Shape) → prod (Data s) (power T P (Position s) W) ⇒ W
+    fold : ∀ {y} → ((s : Shape) → prod (Data s) (power T P (Position s) y) ⇒ y) → W ⇒ y
   -- FIXME: equations (β/η for sup/fold)
