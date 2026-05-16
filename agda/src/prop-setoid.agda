@@ -294,71 +294,93 @@ module _ {o e} where
 
   -- FIXME: the equations...
 
--- Generic W-types (idx-side of an inductive type interpretation).
--- An IdxContainer describes a polynomial functor on Set (carrier-and-equality
--- level), via shapes, per-shape data carriers (with their own setoid
--- equivalence), and per-shape arities for recursive children.
+-- Structural polynomial functors on Setoid (idx-side description). An
+-- IdxPoly is the idx-side projection of a Poly: parameter slots (base)
+-- hold setoids rather than full Fam-objects. The interpretation
+-- WIdx-of P P' "applies P' to the carrier W P" and so embeds the
+-- recursive position (var) as W P. Equality is defined by structural
+-- recursion on the polynomial, matching the List-≈ idiom and avoiding
+-- any opaque shape comparison.
 module _ {o e} where
-  open import Data.Nat using (ℕ)
-  open import Data.Vec using (Vec; []; _∷_)
+  open import Data.Sum using (_⊎_; inj₁; inj₂)
+  open import Data.Product using (_×_; _,_; proj₁; proj₂)
 
-  record IdxContainer : Set (suc (o ⊔ e)) where
-    field
-      Shape    : Set o
-      DataIdx  : Shape → Setoid o e
-      Position : Shape → ℕ
-
-  open IdxContainer
-
-  data W (C : IdxContainer) : Set o where
-    sup : (s : Shape C) → DataIdx C s .Carrier → Vec (W C) (Position C s) → W C
+  data IdxPoly : Set (suc (o ⊔ e)) where
+    one  : IdxPoly
+    param : Setoid o e → IdxPoly
+    var  : IdxPoly
+    _⊕_  : IdxPoly → IdxPoly → IdxPoly
+    _⊗_  : IdxPoly → IdxPoly → IdxPoly
 
   mutual
-    data W-≈ (C : IdxContainer) : W C → W C → Prop (o ⊔ e) where
-      sup-≈ : (s : Shape C) {d₁ d₂ : DataIdx C s .Carrier}
-              {ks₁ ks₂ : Vec (W C) (Position C s)} →
-              DataIdx C s ._≈_ d₁ d₂ →
-              VecW-≈ C ks₁ ks₂ →
-              W-≈ C (sup s d₁ ks₁) (sup s d₂ ks₂)
+    data W (P : IdxPoly) : Set (o ⊔ e) where
+      sup : WIdx-of P P → W P
 
-    data VecW-≈ (C : IdxContainer) : ∀ {n} → Vec (W C) n → Vec (W C) n → Prop (o ⊔ e) where
-      []  : VecW-≈ C [] []
-      _∷_ : ∀ {n} {x y : W C} {xs ys : Vec (W C) n} →
-            W-≈ C x y → VecW-≈ C xs ys → VecW-≈ C (x ∷ xs) (y ∷ ys)
+    WIdx-of : IdxPoly → IdxPoly → Set (o ⊔ e)
+    WIdx-of P one         = Lift (o ⊔ e) 𝟙S
+    WIdx-of P (param A)    = Lift e (A .Carrier)
+    WIdx-of P var         = W P
+    WIdx-of P (Q₁ ⊕ Q₂)   = WIdx-of P Q₁ ⊎ WIdx-of P Q₂
+    WIdx-of P (Q₁ ⊗ Q₂)   = WIdx-of P Q₁ × WIdx-of P Q₂
 
   mutual
-    W-≈-refl : ∀ C {w} → W-≈ C w w
-    W-≈-refl C {sup s d ks} = sup-≈ s (DataIdx C s .refl) (VecW-≈-refl C)
+    W-≈ : (P : IdxPoly) → W P → W P → Prop (o ⊔ e)
+    W-≈ P (sup i₁) (sup i₂) = WIdx-≈-of P P i₁ i₂
 
-    VecW-≈-refl : ∀ C {n} {xs : Vec (W C) n} → VecW-≈ C xs xs
-    VecW-≈-refl C {xs = []}     = []
-    VecW-≈-refl C {xs = x ∷ xs} = W-≈-refl C ∷ VecW-≈-refl C
-
-  mutual
-    W-≈-sym : ∀ C {w₁ w₂} → W-≈ C w₁ w₂ → W-≈ C w₂ w₁
-    W-≈-sym C (sup-≈ s d≈ ks≈) = sup-≈ s (DataIdx C s .sym d≈) (VecW-≈-sym C ks≈)
-
-    VecW-≈-sym : ∀ C {n} {xs ys : Vec (W C) n} → VecW-≈ C xs ys → VecW-≈ C ys xs
-    VecW-≈-sym C []        = []
-    VecW-≈-sym C (e ∷ es)  = W-≈-sym C e ∷ VecW-≈-sym C es
+    WIdx-≈-of : (P Q : IdxPoly) → WIdx-of P Q → WIdx-of P Q → Prop (o ⊔ e)
+    WIdx-≈-of P one         _          _          = ⊤
+    WIdx-≈-of P (param A)    (lift x)   (lift y)   = LiftP o (A ._≈_ x y)
+    WIdx-≈-of P var         w₁         w₂         = W-≈ P w₁ w₂
+    WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₁ x₁)  (inj₁ x₂)  = WIdx-≈-of P Q₁ x₁ x₂
+    WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₁ _)   (inj₂ _)   = ⊥
+    WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₂ _)   (inj₁ _)   = ⊥
+    WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₂ y₁)  (inj₂ y₂)  = WIdx-≈-of P Q₂ y₁ y₂
+    WIdx-≈-of P (Q₁ ⊗ Q₂)   (x₁ , y₁)  (x₂ , y₂)  = WIdx-≈-of P Q₁ x₁ x₂ ∧ WIdx-≈-of P Q₂ y₁ y₂
 
   mutual
-    W-≈-trans : ∀ C {w₁ w₂ w₃} → W-≈ C w₁ w₂ → W-≈ C w₂ w₃ → W-≈ C w₁ w₃
-    W-≈-trans C (sup-≈ s d₁≈ ks₁≈) (sup-≈ .s d₂≈ ks₂≈) =
-      sup-≈ s (DataIdx C s .trans d₁≈ d₂≈) (VecW-≈-trans C ks₁≈ ks₂≈)
+    W-≈-refl : ∀ P {w} → W-≈ P w w
+    W-≈-refl P {sup i} = WIdx-≈-of-refl P P {i}
 
-    VecW-≈-trans : ∀ C {n} {xs ys zs : Vec (W C) n} →
-                   VecW-≈ C xs ys → VecW-≈ C ys zs → VecW-≈ C xs zs
-    VecW-≈-trans C []         []         = []
-    VecW-≈-trans C (e₁ ∷ es₁) (e₂ ∷ es₂) =
-      W-≈-trans C e₁ e₂ ∷ VecW-≈-trans C es₁ es₂
+    WIdx-≈-of-refl : ∀ P Q {x} → WIdx-≈-of P Q x x
+    WIdx-≈-of-refl P one          = tt
+    WIdx-≈-of-refl P (param A) {lift x} = lift (A .refl {x})
+    WIdx-≈-of-refl P var      {w}  = W-≈-refl P {w}
+    WIdx-≈-of-refl P (Q₁ ⊕ Q₂) {inj₁ x} = WIdx-≈-of-refl P Q₁ {x}
+    WIdx-≈-of-refl P (Q₁ ⊕ Q₂) {inj₂ y} = WIdx-≈-of-refl P Q₂ {y}
+    WIdx-≈-of-refl P (Q₁ ⊗ Q₂) {x , y}  = WIdx-≈-of-refl P Q₁ {x} , WIdx-≈-of-refl P Q₂ {y}
 
-  WSetoid : IdxContainer → Setoid o (o ⊔ e)
-  WSetoid C .Carrier = W C
-  WSetoid C ._≈_     = W-≈ C
-  WSetoid C .isEquivalence .refl  = W-≈-refl C
-  WSetoid C .isEquivalence .sym   = W-≈-sym C
-  WSetoid C .isEquivalence .trans = W-≈-trans C
+  mutual
+    W-≈-sym : ∀ P {w₁ w₂} → W-≈ P w₁ w₂ → W-≈ P w₂ w₁
+    W-≈-sym P {sup i₁} {sup i₂} eq = WIdx-≈-of-sym P P {i₁} {i₂} eq
+
+    WIdx-≈-of-sym : ∀ P Q {x y} → WIdx-≈-of P Q x y → WIdx-≈-of P Q y x
+    WIdx-≈-of-sym P one         _  = tt
+    WIdx-≈-of-sym P (param A) {lift x} {lift y} (lift eq) = lift (A .sym eq)
+    WIdx-≈-of-sym P var       {w₁} {w₂} eq = W-≈-sym P {w₁} {w₂} eq
+    WIdx-≈-of-sym P (Q₁ ⊕ Q₂) {inj₁ x₁} {inj₁ x₂} eq = WIdx-≈-of-sym P Q₁ eq
+    WIdx-≈-of-sym P (Q₁ ⊕ Q₂) {inj₂ y₁} {inj₂ y₂} eq = WIdx-≈-of-sym P Q₂ eq
+    WIdx-≈-of-sym P (Q₁ ⊗ Q₂) {x₁ , y₁} {x₂ , y₂} (e₁ , e₂) = WIdx-≈-of-sym P Q₁ e₁ , WIdx-≈-of-sym P Q₂ e₂
+
+  mutual
+    W-≈-trans : ∀ P {w₁ w₂ w₃} → W-≈ P w₁ w₂ → W-≈ P w₂ w₃ → W-≈ P w₁ w₃
+    W-≈-trans P {sup _} {sup _} {sup _} e₁ e₂ = WIdx-≈-of-trans P P e₁ e₂
+
+    WIdx-≈-of-trans : ∀ P Q {x y z} →
+                      WIdx-≈-of P Q x y → WIdx-≈-of P Q y z → WIdx-≈-of P Q x z
+    WIdx-≈-of-trans P one        _  _  = tt
+    WIdx-≈-of-trans P (param A) {lift x} {lift y} {lift z} (lift e₁) (lift e₂) = lift (A .trans e₁ e₂)
+    WIdx-≈-of-trans P var       {x} {y} {z} e₁ e₂ = W-≈-trans P {x} {y} {z} e₁ e₂
+    WIdx-≈-of-trans P (Q₁ ⊕ Q₂) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WIdx-≈-of-trans P Q₁ e₁ e₂
+    WIdx-≈-of-trans P (Q₁ ⊕ Q₂) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WIdx-≈-of-trans P Q₂ e₁ e₂
+    WIdx-≈-of-trans P (Q₁ ⊗ Q₂) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
+      WIdx-≈-of-trans P Q₁ e₁ e₂ , WIdx-≈-of-trans P Q₂ f₁ f₂
+
+  WSetoid : IdxPoly → Setoid (o ⊔ e) (o ⊔ e)
+  WSetoid P .Carrier = W P
+  WSetoid P ._≈_     = W-≈ P
+  WSetoid P .isEquivalence .refl {w}              = W-≈-refl P {w}
+  WSetoid P .isEquivalence .sym {w₁} {w₂}         = W-≈-sym P {w₁} {w₂}
+  WSetoid P .isEquivalence .trans {w₁} {w₂} {w₃}  = W-≈-trans P {w₁} {w₂} {w₃}
 
 -- Equivalence relations from relations
 module _ {o e} (A : Set o) (R : A → A → Prop e) where

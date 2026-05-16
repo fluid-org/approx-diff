@@ -2,7 +2,7 @@
 
 module categories where
 
-open import Level using (suc; _⊔_; 0ℓ; Lift; lift)
+open import Level using (Level; suc; _⊔_; 0ℓ; Lift; lift)
 open import Data.Nat using (ℕ) renaming (zero to nzero; suc to nsuc)
 open import Data.Product using (_,_)
 open import Relation.Binary.PropositionalEquality as ≡ using (_≡_)
@@ -739,35 +739,37 @@ record HasLists {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasP
   -- FIXME: equations
 
 ------------------------------------------------------------------------------
--- Wellfounded (W-) types: initial algebras of polynomial functors given
--- by a container. At each shape, Data carries the "parameter" content
--- (the A in List A; T when there is none) and Position is the arity of
--- recursive children. The fibre at shape s is therefore
--- Data s × (W × W × ... × T) (with Position s copies of W).
-record Container {o m e} (𝒞 : Category o m e) : Set (suc 0ℓ ⊔ o) where
-  open Category 𝒞
-  field
-    Shape    : Set
-    Data     : Shape → obj
-    Position : Shape → ℕ
+-- Polynomial functors (syntactic) and the inductive types they generate.
+-- A Poly 𝒞 is a syntactic polynomial expression in one variable, with
+-- constants drawn from obj 𝒞. The semantic functor it denotes is
+-- poly-obj P : obj 𝒞 → obj 𝒞.
+data Poly {o m e} (𝒞 : Category o m e) : Set o where
+  one  : Poly 𝒞                              -- constant terminal
+  param : Category.obj 𝒞 → Poly 𝒞            -- constant object (parameter slot)
+  var  : Poly 𝒞                              -- recursive slot
+  _⊕_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- sum
+  _⊗_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- product
 
--- n-fold product, with the empty product being the terminal object.
-module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+module _ {o m e} {𝒞 : Category o m e}
+         (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
   open Category 𝒞
   open HasTerminal T renaming (witness to terminal)
   open HasProducts P
+  open HasCoproducts CP
 
-  power : ℕ → obj → obj
-  power nzero    _ = terminal
-  power (nsuc n) x = prod x (power n x)
+  poly-obj : Poly 𝒞 → obj → obj
+  poly-obj one         _ = terminal
+  poly-obj (param A)   _ = A
+  poly-obj var         x = x
+  poly-obj (P₁ ⊕ P₂)   x = coprod (poly-obj P₁ x) (poly-obj P₂ x)
+  poly-obj (P₁ ⊗ P₂)   x = prod  (poly-obj P₁ x) (poly-obj P₂ x)
 
-record HasW {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞)
-            (C : Container 𝒞) : Set (o ⊔ m ⊔ e) where
+record HasMu {o m e} (𝒞 : Category o m e)
+             (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞)
+             (Q : Poly 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
-  open HasProducts P
-  open Container C
   field
-    W    : obj
-    sup  : (s : Shape) → prod (Data s) (power T P (Position s) W) ⇒ W
-    fold : ∀ {y} → ((s : Shape) → prod (Data s) (power T P (Position s) y) ⇒ y) → W ⇒ y
+    μ    : obj
+    sup  : poly-obj T P CP Q μ ⇒ μ
+    fold : ∀ {y} → (poly-obj T P CP Q y ⇒ y) → μ ⇒ y
   -- FIXME: equations (β/η for sup/fold)
