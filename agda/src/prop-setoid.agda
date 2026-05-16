@@ -294,6 +294,72 @@ module _ {o e} where
 
   -- FIXME: the equations...
 
+-- Generic W-types (idx-side of an inductive type interpretation).
+-- An IdxContainer describes a polynomial functor on Set (carrier-and-equality
+-- level), via shapes, per-shape data carriers (with their own setoid
+-- equivalence), and per-shape arities for recursive children.
+module _ {o e} where
+  open import Data.Nat using (ℕ)
+  open import Data.Vec using (Vec; []; _∷_)
+
+  record IdxContainer : Set (suc (o ⊔ e)) where
+    field
+      Shape    : Set o
+      DataIdx  : Shape → Setoid o e
+      Position : Shape → ℕ
+
+  open IdxContainer
+
+  data W (C : IdxContainer) : Set o where
+    sup : (s : Shape C) → DataIdx C s .Carrier → Vec (W C) (Position C s) → W C
+
+  mutual
+    data W-≈ (C : IdxContainer) : W C → W C → Prop (o ⊔ e) where
+      sup-≈ : (s : Shape C) {d₁ d₂ : DataIdx C s .Carrier}
+              {ks₁ ks₂ : Vec (W C) (Position C s)} →
+              DataIdx C s ._≈_ d₁ d₂ →
+              VecW-≈ C ks₁ ks₂ →
+              W-≈ C (sup s d₁ ks₁) (sup s d₂ ks₂)
+
+    data VecW-≈ (C : IdxContainer) : ∀ {n} → Vec (W C) n → Vec (W C) n → Prop (o ⊔ e) where
+      []  : VecW-≈ C [] []
+      _∷_ : ∀ {n} {x y : W C} {xs ys : Vec (W C) n} →
+            W-≈ C x y → VecW-≈ C xs ys → VecW-≈ C (x ∷ xs) (y ∷ ys)
+
+  mutual
+    W-≈-refl : ∀ C {w} → W-≈ C w w
+    W-≈-refl C {sup s d ks} = sup-≈ s (DataIdx C s .refl) (VecW-≈-refl C)
+
+    VecW-≈-refl : ∀ C {n} {xs : Vec (W C) n} → VecW-≈ C xs xs
+    VecW-≈-refl C {xs = []}     = []
+    VecW-≈-refl C {xs = x ∷ xs} = W-≈-refl C ∷ VecW-≈-refl C
+
+  mutual
+    W-≈-sym : ∀ C {w₁ w₂} → W-≈ C w₁ w₂ → W-≈ C w₂ w₁
+    W-≈-sym C (sup-≈ s d≈ ks≈) = sup-≈ s (DataIdx C s .sym d≈) (VecW-≈-sym C ks≈)
+
+    VecW-≈-sym : ∀ C {n} {xs ys : Vec (W C) n} → VecW-≈ C xs ys → VecW-≈ C ys xs
+    VecW-≈-sym C []        = []
+    VecW-≈-sym C (e ∷ es)  = W-≈-sym C e ∷ VecW-≈-sym C es
+
+  mutual
+    W-≈-trans : ∀ C {w₁ w₂ w₃} → W-≈ C w₁ w₂ → W-≈ C w₂ w₃ → W-≈ C w₁ w₃
+    W-≈-trans C (sup-≈ s d₁≈ ks₁≈) (sup-≈ .s d₂≈ ks₂≈) =
+      sup-≈ s (DataIdx C s .trans d₁≈ d₂≈) (VecW-≈-trans C ks₁≈ ks₂≈)
+
+    VecW-≈-trans : ∀ C {n} {xs ys zs : Vec (W C) n} →
+                   VecW-≈ C xs ys → VecW-≈ C ys zs → VecW-≈ C xs zs
+    VecW-≈-trans C []         []         = []
+    VecW-≈-trans C (e₁ ∷ es₁) (e₂ ∷ es₂) =
+      W-≈-trans C e₁ e₂ ∷ VecW-≈-trans C es₁ es₂
+
+  WSetoid : IdxContainer → Setoid o (o ⊔ e)
+  WSetoid C .Carrier = W C
+  WSetoid C ._≈_     = W-≈ C
+  WSetoid C .isEquivalence .refl  = W-≈-refl C
+  WSetoid C .isEquivalence .sym   = W-≈-sym C
+  WSetoid C .isEquivalence .trans = W-≈-trans C
+
 -- Equivalence relations from relations
 module _ {o e} (A : Set o) (R : A → A → Prop e) where
   data EquivOfS : A → A → Set (o ⊔ e) where
