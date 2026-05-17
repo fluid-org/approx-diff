@@ -43,14 +43,14 @@ module backward where
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
   open Galois.interp Sig BaseInterp1
 
-  input : ⟦ ListM (base label [×] base number) ⟧ty .idx .Carrier
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = sup (inj₂ ((label.a , 0) ,
           sup (inj₂ ((label.b , 1) ,
           sup (inj₂ ((label.a , 1) ,
           sup (inj₁ (lift ·))))))))
 
   bwd-slice : label.label → _
-  bwd-slice l = ⟦ example.ex.queryM l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun ⊤ .proj₂
+  bwd-slice l = ⟦ example.ex.query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun ⊤ .proj₂
     where
       open indexed-family._⇒f_
       open join-semilattice-category._⇒_
@@ -70,9 +70,9 @@ module backward-cbn where
   open import ho-model
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
   open Galois.interp Sig BaseInterp0
-  open example.ex using (Tag; cbn-queryM)
+  open example.ex using (Tag; cbn-query)
 
-  input : ⟦ Tag (ListM (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
+  input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
   input = _ ,
           sup (inj₂ ((_ , (_ , label.a) , (_ , 0)) ,
           sup (inj₂ ((_ , (_ , label.b) , (_ , 1)) ,
@@ -80,7 +80,7 @@ module backward-cbn where
           sup (inj₁ (lift ·))))))))
 
   bwd-slice : label.label → _
-  bwd-slice l = ⟦ example.ex.cbn-queryM l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun (⊤ , ·) .proj₂
+  bwd-slice l = ⟦ example.ex.cbn-query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun (⊤ , ·) .proj₂
     where
       open indexed-family._⇒f_
       open join-semilattice-category._⇒_
@@ -101,7 +101,7 @@ module forward where
   open import example-signature-interpretation conjugate.cat conjugate.products conjugate.terminal conjugate.TWO conjugate.unit conjugate.conjunct
   open Conjugate.interp Sig BaseInterp1
 
-  input : ⟦ ListM (base label [×] base number) ⟧ty .idx .Carrier
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = sup (inj₂ ((label.a , 0) ,
           sup (inj₂ ((label.b , 1) ,
           sup (inj₂ ((label.a , 1) ,
@@ -109,7 +109,7 @@ module forward where
 
   -- bwd-slice behaves the same as in the Galois examples, but fwd-slice does not
   fwd-slice : _ → _
-  fwd-slice supply = ⟦ example.ex.queryM label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun (· , supply)
+  fwd-slice supply = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun (· , supply)
     where
       open indexed-family._⇒f_
       open join-semilattice-category._⇒_
@@ -155,7 +155,7 @@ module forward-matrix where
   open import example-signature-interpretation cat products terminal 1 unitm conjunctm
   open ho-model.Matrix.interp Sig BaseInterp1
 
-  input : ⟦ ListM (base label [×] base number) ⟧ty .idx .Carrier
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = sup (inj₂ ((label.a , 0) ,
           sup (inj₂ ((label.b , 1) ,
           sup (inj₂ ((label.a , 1) ,
@@ -168,7 +168,7 @@ module forward-matrix where
 
   -- Reproduce the conjugate example (fwd direction only) via the matrix model.
   fwd-slice : _ → _
-  fwd-slice n = ⟦ example.ex.queryM label.a ⟧tm .famf .transf (_ , input) .*→* .func .fun n
+  fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .*→* .func .fun n
 
   -- Output depends on 1st label (would be ⊥ in the Galois example)
   test-1 : fwd-slice (· , (· , ⊤ , ·) , (· , ⊥ , ·) , (· , ⊥ , ·) , _) ≡ (⊤ , ·)

@@ -66,7 +66,7 @@ module backward where
   open import prop using (liftS)
   open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
 
-  input : ⟦ ListM (base label [×] base number) ⟧ty .idx .Carrier
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = sup (inj₂ ((label.a , 0ℚ) ,
           sup (inj₂ ((label.b , 1ℚ) ,
           sup (inj₂ ((label.a , 1ℚ) ,
@@ -87,7 +87,7 @@ module backward where
   extract-interval < x > = just (x .lower , x .upper)
 
   bwd-slice : _
-  bwd-slice = ⟦ example.ex.queryM label.a ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun < interval > .proj₂
+  bwd-slice = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun < interval > .proj₂
     where
       open indexed-family._⇒f_
       open join-semilattice-category._⇒_
@@ -136,7 +136,7 @@ module forward where
   open import Data.Nat hiding (_/_)
   open import Data.Integer hiding (_/_; show; -_)
 
-  input : ⟦ ListM (base label [×] base number) ⟧ty .idx .Carrier
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = sup (inj₂ ((label.a , 0ℚ) ,
           sup (inj₂ ((label.b , 1ℚ) ,
           sup (inj₂ ((label.a , 1ℚ) ,
@@ -166,7 +166,7 @@ module forward where
   -- Unfortunately this is a bit slow to normalise, so not using at the moment; instead have simpler isolated
   -- tests using the 'add' conjugate pair and Galois connection directly.
   fwd-slice : _
-  fwd-slice = ⟦ example.ex.queryM label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun
+  fwd-slice = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun
     (_ , (_ , < intv0 >) , (_ , bottom) , (_ , < intv1 >) , _)
     where
       open indexed-family._⇒f_

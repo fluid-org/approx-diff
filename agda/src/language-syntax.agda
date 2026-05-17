@@ -153,24 +153,24 @@ mutual
 
 -- Lists as a μ-type: List τ = μα. 1 + (τ × α). The macros wrap roll/fold-μ
 -- to mimic the primitive list interface.
-ListM : type → type
-ListM τ = μ (poly-one [⊞] (poly-param τ [⊠] poly-var))
+list : type → type
+list τ = μ (poly-one [⊞] (poly-param τ [⊠] poly-var))
 
-nilM : ∀ {Γ τ} → Γ ⊢ ListM τ
-nilM = roll (inl unit)
+nil : ∀ {Γ τ} → Γ ⊢ list τ
+nil = roll (inl unit)
 
-consM : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ ListM τ → Γ ⊢ ListM τ
-consM h t = roll (inr (pair h t))
+cons : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ → Γ ⊢ list τ
+cons h t = roll (inr (pair h t))
 
--- foldM mirrors the existing list `fold` macro: the nil case is Γ-open,
+-- fold mirrors the existing list `fold` macro: the nil case is Γ-open,
 -- the cons case is Γ , head , acc-open. The body uses the closed-form
 -- fold-μ together with a lambda that captures Γ.
-foldM : ∀ {Γ σ τ} →
+fold : ∀ {Γ σ τ} →
         Γ ⊢ τ →
         Γ , σ , τ ⊢ τ →
-        Γ ⊢ ListM σ →
+        Γ ⊢ list σ →
         Γ ⊢ τ
-foldM {σ = σ} {τ = τ} nilCase consCase M =
+fold {σ = σ} {τ = τ} nilCase consCase M =
   fold-μ {P = poly-one [⊞] (poly-param σ [⊠] poly-var)} (lam alg-body) M
   where
     alg-body : _
@@ -180,21 +180,21 @@ foldM {σ = σ} {τ = τ} nilCase consCase M =
         (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero)))
 
 -- Derived list-monad sugar, mirroring append/return/from-collect/when on the
--- ListM type.
-appendM : ∀ {Γ τ} → Γ ⊢ ListM τ → Γ ⊢ ListM τ → Γ ⊢ ListM τ
-appendM xs ys = foldM ys (consM (var (succ zero)) (var zero)) xs
+-- list type.
+append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
+append xs ys = fold ys (cons (var (succ zero)) (var zero)) xs
 
-returnM : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ ListM τ
-returnM x = consM x nilM
+return : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ
+return x = cons x nil
 
-fromM_collectM_ : ∀ {Γ τ₁ τ₂} → Γ ⊢ ListM τ₁ → Γ , τ₁ ⊢ ListM τ₂ → Γ ⊢ ListM τ₂
-fromM M collectM N = foldM nilM (appendM (weaken * N) (var zero)) M
+from_collect_ : ∀ {Γ τ₁ τ₂} → Γ ⊢ list τ₁ → Γ , τ₁ ⊢ list τ₂ → Γ ⊢ list τ₂
+from M collect N = fold nil (append (weaken * N) (var zero)) M
 
-whenM_；M_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ ListM τ → Γ ⊢ ListM τ
-whenM M ；M N = if M then N else nilM
+when_；_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ list τ → Γ ⊢ list τ
+when M ； N = if M then N else nil
 
-appendM-f : ∀ {Γ τ} → Γ ⊢ ListM τ [→] ListM τ [→] ListM τ
-appendM-f = lam (lam (foldM (var zero) (consM (var (succ zero)) (var zero)) (var (succ zero))))
+append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
+append-f = lam (lam (fold (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
 
 
 -- The list monad
