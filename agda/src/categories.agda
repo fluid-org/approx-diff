@@ -747,8 +747,8 @@ data Poly {o m e} (𝒞 : Category o m e) : Set o where
   one  : Poly 𝒞                              -- constant terminal
   param : Category.obj 𝒞 → Poly 𝒞            -- constant object (parameter slot)
   var  : Poly 𝒞                              -- recursive slot
-  _⊕_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- sum
-  _⊗_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- product
+  _⊞_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- sum
+  _⊠_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- product
 
 module _ {o m e} {𝒞 : Category o m e}
          (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
@@ -761,8 +761,8 @@ module _ {o m e} {𝒞 : Category o m e}
   poly-obj one         _ = terminal
   poly-obj (param A)   _ = A
   poly-obj var         x = x
-  poly-obj (P₁ ⊕ P₂)   x = coprod (poly-obj P₁ x) (poly-obj P₂ x)
-  poly-obj (P₁ ⊗ P₂)   x = prod  (poly-obj P₁ x) (poly-obj P₂ x)
+  poly-obj (P₁ ⊞ P₂)   x = coprod (poly-obj P₁ x) (poly-obj P₂ x)
+  poly-obj (P₁ ⊠ P₂)   x = prod  (poly-obj P₁ x) (poly-obj P₂ x)
 
 record HasMu {o m e} (𝒞 : Category o m e)
              (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞)
@@ -772,4 +772,39 @@ record HasMu {o m e} (𝒞 : Category o m e)
     μ    : obj
     sup  : poly-obj T P CP Q μ ⇒ μ
     fold : ∀ {y} → (poly-obj T P CP Q y ⇒ y) → μ ⇒ y
+  -- FIXME: equations (β/η for sup/fold)
+
+------------------------------------------------------------------------------
+-- Derive HasLists from a per-parameter HasMu instance at the list polynomial
+-- (one ⊕ (param A ⊗ var)), plus exponentials. The parametric fold is built
+-- by lambda-wrapping the algebra: HasMu.fold produces μ ⇒ (x ⇒ z), which we
+-- uncurry to prod x μ ⇒ z. This is the standard CCC trick that makes the
+-- closed-form initial-algebra fold support context threading.
+module _ {o m e} {𝒞 : Category o m e}
+         (T : HasTerminal 𝒞) (P : HasProducts 𝒞)
+         (CP : HasCoproducts 𝒞) (E : HasExponentials 𝒞 P) where
+  open Category 𝒞
+  open HasTerminal T renaming (witness to terminal)
+  open HasProducts P
+  open HasCoproducts CP
+  open HasExponentials E
+
+  list-poly : obj → Poly 𝒞
+  list-poly A = one ⊞ (param A ⊠ var)
+
+  hasMu→hasLists : (∀ A → HasMu 𝒞 T P CP (list-poly A)) → HasLists 𝒞 T P
+  hasMu→hasLists has-mu .HasLists.list A         = HasMu.μ (has-mu A)
+  hasMu→hasLists has-mu .HasLists.nil  {A}       = HasMu.sup (has-mu A) ∘ in₁
+  hasMu→hasLists has-mu .HasLists.cons {A}       = HasMu.sup (has-mu A) ∘ in₂
+  hasMu→hasLists has-mu .HasLists.fold {x} {y} {z} nilCase consCase =
+    eval ∘ pair (folded ∘ p₂) p₁
+    where
+      alg-nil  : terminal ⇒ exp x z
+      alg-nil  = lambda (nilCase ∘ p₂)
+      alg-cons : prod y (exp x z) ⇒ exp x z
+      alg-cons = lambda (consCase ∘ pair (pair p₂ (p₁ ∘ p₁)) (eval ∘ pair (p₂ ∘ p₁) p₂))
+      alg : poly-obj T P CP (list-poly y) (exp x z) ⇒ exp x z
+      alg = copair alg-nil alg-cons
+      folded : HasMu.μ (has-mu y) ⇒ exp x z
+      folded = HasMu.fold (has-mu y) alg
   -- FIXME: equations (β/η for sup/fold)

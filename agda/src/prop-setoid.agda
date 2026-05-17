@@ -309,8 +309,8 @@ module _ {o e} where
     one  : IdxPoly
     param : Setoid o e → IdxPoly
     var  : IdxPoly
-    _⊕_  : IdxPoly → IdxPoly → IdxPoly
-    _⊗_  : IdxPoly → IdxPoly → IdxPoly
+    _⊞_  : IdxPoly → IdxPoly → IdxPoly
+    _⊠_  : IdxPoly → IdxPoly → IdxPoly
 
   mutual
     data W (P : IdxPoly) : Set o where
@@ -320,8 +320,8 @@ module _ {o e} where
     WIdx-of P one         = Lift o 𝟙S
     WIdx-of P (param A)   = A .Carrier
     WIdx-of P var         = W P
-    WIdx-of P (Q₁ ⊕ Q₂)   = WIdx-of P Q₁ ⊎ WIdx-of P Q₂
-    WIdx-of P (Q₁ ⊗ Q₂)   = WIdx-of P Q₁ × WIdx-of P Q₂
+    WIdx-of P (Q₁ ⊞ Q₂)   = WIdx-of P Q₁ ⊎ WIdx-of P Q₂
+    WIdx-of P (Q₁ ⊠ Q₂)   = WIdx-of P Q₁ × WIdx-of P Q₂
 
   mutual
     W-≈ : (P : IdxPoly) → W P → W P → Prop e
@@ -331,11 +331,11 @@ module _ {o e} where
     WIdx-≈-of P one         _          _          = ⊤
     WIdx-≈-of P (param A)   x          y          = A ._≈_ x y
     WIdx-≈-of P var         w₁         w₂         = W-≈ P w₁ w₂
-    WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₁ x₁)  (inj₁ x₂)  = WIdx-≈-of P Q₁ x₁ x₂
-    WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₁ _)   (inj₂ _)   = ⊥
-    WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₂ _)   (inj₁ _)   = ⊥
-    WIdx-≈-of P (Q₁ ⊕ Q₂)   (inj₂ y₁)  (inj₂ y₂)  = WIdx-≈-of P Q₂ y₁ y₂
-    WIdx-≈-of P (Q₁ ⊗ Q₂)   (x₁ , y₁)  (x₂ , y₂)  = WIdx-≈-of P Q₁ x₁ x₂ ∧ WIdx-≈-of P Q₂ y₁ y₂
+    WIdx-≈-of P (Q₁ ⊞ Q₂)   (inj₁ x₁)  (inj₁ x₂)  = WIdx-≈-of P Q₁ x₁ x₂
+    WIdx-≈-of P (Q₁ ⊞ Q₂)   (inj₁ _)   (inj₂ _)   = ⊥
+    WIdx-≈-of P (Q₁ ⊞ Q₂)   (inj₂ _)   (inj₁ _)   = ⊥
+    WIdx-≈-of P (Q₁ ⊞ Q₂)   (inj₂ y₁)  (inj₂ y₂)  = WIdx-≈-of P Q₂ y₁ y₂
+    WIdx-≈-of P (Q₁ ⊠ Q₂)   (x₁ , y₁)  (x₂ , y₂)  = WIdx-≈-of P Q₁ x₁ x₂ ∧ WIdx-≈-of P Q₂ y₁ y₂
 
   mutual
     W-≈-refl : ∀ P {w} → W-≈ P w w
@@ -345,9 +345,9 @@ module _ {o e} where
     WIdx-≈-of-refl P one          = tt
     WIdx-≈-of-refl P (param A) {x} = A .refl {x}
     WIdx-≈-of-refl P var      {w}  = W-≈-refl P {w}
-    WIdx-≈-of-refl P (Q₁ ⊕ Q₂) {inj₁ x} = WIdx-≈-of-refl P Q₁ {x}
-    WIdx-≈-of-refl P (Q₁ ⊕ Q₂) {inj₂ y} = WIdx-≈-of-refl P Q₂ {y}
-    WIdx-≈-of-refl P (Q₁ ⊗ Q₂) {x , y}  = WIdx-≈-of-refl P Q₁ {x} , WIdx-≈-of-refl P Q₂ {y}
+    WIdx-≈-of-refl P (Q₁ ⊞ Q₂) {inj₁ x} = WIdx-≈-of-refl P Q₁ {x}
+    WIdx-≈-of-refl P (Q₁ ⊞ Q₂) {inj₂ y} = WIdx-≈-of-refl P Q₂ {y}
+    WIdx-≈-of-refl P (Q₁ ⊠ Q₂) {x , y}  = WIdx-≈-of-refl P Q₁ {x} , WIdx-≈-of-refl P Q₂ {y}
 
   mutual
     W-≈-sym : ∀ P {w₁ w₂} → W-≈ P w₁ w₂ → W-≈ P w₂ w₁
@@ -357,9 +357,9 @@ module _ {o e} where
     WIdx-≈-of-sym P one         _  = tt
     WIdx-≈-of-sym P (param A) {x} {y} eq = A .sym eq
     WIdx-≈-of-sym P var       {w₁} {w₂} eq = W-≈-sym P {w₁} {w₂} eq
-    WIdx-≈-of-sym P (Q₁ ⊕ Q₂) {inj₁ x₁} {inj₁ x₂} eq = WIdx-≈-of-sym P Q₁ eq
-    WIdx-≈-of-sym P (Q₁ ⊕ Q₂) {inj₂ y₁} {inj₂ y₂} eq = WIdx-≈-of-sym P Q₂ eq
-    WIdx-≈-of-sym P (Q₁ ⊗ Q₂) {x₁ , y₁} {x₂ , y₂} (e₁ , e₂) = WIdx-≈-of-sym P Q₁ e₁ , WIdx-≈-of-sym P Q₂ e₂
+    WIdx-≈-of-sym P (Q₁ ⊞ Q₂) {inj₁ x₁} {inj₁ x₂} eq = WIdx-≈-of-sym P Q₁ eq
+    WIdx-≈-of-sym P (Q₁ ⊞ Q₂) {inj₂ y₁} {inj₂ y₂} eq = WIdx-≈-of-sym P Q₂ eq
+    WIdx-≈-of-sym P (Q₁ ⊠ Q₂) {x₁ , y₁} {x₂ , y₂} (e₁ , e₂) = WIdx-≈-of-sym P Q₁ e₁ , WIdx-≈-of-sym P Q₂ e₂
 
   mutual
     W-≈-trans : ∀ P {w₁ w₂ w₃} → W-≈ P w₁ w₂ → W-≈ P w₂ w₃ → W-≈ P w₁ w₃
@@ -370,9 +370,9 @@ module _ {o e} where
     WIdx-≈-of-trans P one        _  _  = tt
     WIdx-≈-of-trans P (param A) {x} {y} {z} e₁ e₂ = A .trans e₁ e₂
     WIdx-≈-of-trans P var       {x} {y} {z} e₁ e₂ = W-≈-trans P {x} {y} {z} e₁ e₂
-    WIdx-≈-of-trans P (Q₁ ⊕ Q₂) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WIdx-≈-of-trans P Q₁ e₁ e₂
-    WIdx-≈-of-trans P (Q₁ ⊕ Q₂) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WIdx-≈-of-trans P Q₂ e₁ e₂
-    WIdx-≈-of-trans P (Q₁ ⊗ Q₂) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
+    WIdx-≈-of-trans P (Q₁ ⊞ Q₂) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WIdx-≈-of-trans P Q₁ e₁ e₂
+    WIdx-≈-of-trans P (Q₁ ⊞ Q₂) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WIdx-≈-of-trans P Q₂ e₁ e₂
+    WIdx-≈-of-trans P (Q₁ ⊠ Q₂) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
       WIdx-≈-of-trans P Q₁ e₁ e₂ , WIdx-≈-of-trans P Q₂ f₁ f₂
 
   WSetoid : IdxPoly → Setoid o e
