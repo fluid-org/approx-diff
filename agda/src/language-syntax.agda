@@ -162,6 +162,35 @@ mutual
   ρ ** (M ∷ Ms) = (ρ * M) ∷ (ρ ** Ms)
 
 -- “macros”
+
+-- Lists as a μ-type: List τ = μα. 1 + (τ × α). The macros wrap roll/fold-μ
+-- to mimic the primitive list interface.
+ListM : type → type
+ListM τ = μ (poly-one [⊞] (poly-param τ [⊠] poly-var))
+
+nilM : ∀ {Γ τ} → Γ ⊢ ListM τ
+nilM = roll (inl unit)
+
+consM : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ ListM τ → Γ ⊢ ListM τ
+consM h t = roll (inr (pair h t))
+
+-- foldM mirrors the existing list `fold` macro: the nil case is Γ-open,
+-- the cons case is Γ , head , acc-open. The body uses the closed-form
+-- fold-μ together with a lambda that captures Γ.
+foldM : ∀ {Γ σ τ} →
+        Γ ⊢ τ →
+        Γ , σ , τ ⊢ τ →
+        Γ ⊢ ListM σ →
+        Γ ⊢ τ
+foldM {σ = σ} {τ = τ} nilCase consCase M =
+  fold-μ {P = poly-one [⊞] (poly-param σ [⊠] poly-var)} (lam alg-body) M
+  where
+    alg-body : _
+    alg-body =
+      case (var zero)
+        (weaken * (weaken * nilCase))
+        (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero)))
+
 append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
 append xs ys = fold ys (cons (var (succ zero)) (var zero)) xs
 
