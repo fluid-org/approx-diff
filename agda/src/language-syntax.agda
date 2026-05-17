@@ -191,6 +191,20 @@ foldM {σ = σ} {τ = τ} nilCase consCase M =
         (weaken * (weaken * nilCase))
         (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero)))
 
+-- Derived list-monad sugar, mirroring append/return/from-collect/when on the
+-- ListM type.
+appendM : ∀ {Γ τ} → Γ ⊢ ListM τ → Γ ⊢ ListM τ → Γ ⊢ ListM τ
+appendM xs ys = foldM ys (consM (var (succ zero)) (var zero)) xs
+
+returnM : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ ListM τ
+returnM x = consM x nilM
+
+fromM_collectM_ : ∀ {Γ τ₁ τ₂} → Γ ⊢ ListM τ₁ → Γ , τ₁ ⊢ ListM τ₂ → Γ ⊢ ListM τ₂
+fromM M collectM N = foldM nilM (appendM (weaken * N) (var zero)) M
+
+whenM_；M_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ ListM τ → Γ ⊢ ListM τ
+whenM M ；M N = if M then N else nilM
+
 append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
 append xs ys = fold ys (cons (var (succ zero)) (var zero)) xs
 

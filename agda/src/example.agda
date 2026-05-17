@@ -57,7 +57,21 @@ module ex where
                  when fst (var zero) ≟ (` l) ；
                  return (snd (var zero)))
 
+  -- Parallel μ-types version of sum/query, using ListM instead of the
+  -- primitive list. Will replace sum/query once primitive list is removed.
+  sumM : ∀ {Γ} → Γ ⊢ ListM (base number) [→] base number
+  sumM = lam (foldM (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
+
+  queryM : label.label → emp , ListM (base label [×] base number) ⊢ base number
+  queryM l = app sumM
+                 (fromM var zero collectM
+                  whenM fst (var zero) ≟ (` l) ；M
+                  returnM (snd (var zero)))
+
   open import cbn-translation Sig Tag-monad
 
   cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
   cbn-query l = ⟪ query l ⟫tm
+
+  cbn-queryM : label.label → emp , Tag (ListM (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
+  cbn-queryM l = ⟪ queryM l ⟫tm
