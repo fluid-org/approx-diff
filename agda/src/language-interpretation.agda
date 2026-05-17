@@ -4,7 +4,7 @@ open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
-         HasBooleans; coproducts+exp→booleans; HasLists)
+         HasBooleans; coproducts+exp→booleans; HasLists; Poly; HasMu; poly-obj)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
@@ -18,6 +18,7 @@ module language-interpretation
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
   (L  : HasLists 𝒞 T P)
+  (HM : ∀ Q → HasMu 𝒞 T P C Q)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
 
@@ -33,14 +34,23 @@ open HasLists L renaming (list to ⟦list⟧; nil to ⟦nil⟧; cons to ⟦cons�
 open language-syntax Sig
 open Model Int
 
-⟦_⟧ty : type → obj
-⟦ unit ⟧ty = 𝟙
-⟦ bool ⟧ty = Bool
-⟦ base σ ⟧ty = ⟦sort⟧ σ
-⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty × ⟦ τ₂ ⟧ty
-⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
-⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty + ⟦ τ₂ ⟧ty
-⟦ list τ ⟧ty = ⟦list⟧ ⟦ τ ⟧ty
+mutual
+  ⟦_⟧ty : type → obj
+  ⟦ unit ⟧ty = 𝟙
+  ⟦ bool ⟧ty = Bool
+  ⟦ base σ ⟧ty = ⟦sort⟧ σ
+  ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty × ⟦ τ₂ ⟧ty
+  ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
+  ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty + ⟦ τ₂ ⟧ty
+  ⟦ list τ ⟧ty = ⟦list⟧ ⟦ τ ⟧ty
+  ⟦ μ P ⟧ty = HasMu.μ (HM (⟦ P ⟧poly))
+
+  ⟦_⟧poly : polytype → Poly 𝒞
+  ⟦ poly-one ⟧poly       = Poly.one
+  ⟦ poly-param σ ⟧poly   = Poly.param ⟦ σ ⟧ty
+  ⟦ poly-var ⟧poly       = Poly.var
+  ⟦ P₁ [⊞] P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.⊞ ⟦ P₂ ⟧poly
+  ⟦ P₁ [⊠] P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.⊠ ⟦ P₂ ⟧poly
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙

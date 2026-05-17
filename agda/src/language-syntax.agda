@@ -9,13 +9,36 @@ module language-syntax {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig
 
-data type : Set ℓ where
-  unit bool : type
-  base : sort → type
-  _[×]_ _[→]_ _[+]_ : type → type → type
-  list : type → type
+mutual
+  data type : Set ℓ where
+    unit bool : type
+    base : sort → type
+    _[×]_ _[→]_ _[+]_ : type → type → type
+    list : type → type
+    μ : polytype → type
+
+  -- Polynomial-functor bodies. Closed under (constant) unit, (constant) types,
+  -- a recursive position, sums, and products. No function arrows here — that
+  -- matches the standard "no function types under μ" restriction for inductive
+  -- type bodies (Chad §3.6).
+  data polytype : Set ℓ where
+    poly-one : polytype
+    poly-param : type → polytype
+    poly-var : polytype
+    _[⊞]_ : polytype → polytype → polytype
+    _[⊠]_ : polytype → polytype → polytype
+
+-- polyApply P τ "applies" the polynomial body P at the recursive variable τ,
+-- producing an ordinary type.
+polyApply : polytype → type → type
+polyApply poly-one        _ = unit
+polyApply (poly-param σ)  _ = σ
+polyApply poly-var        τ = τ
+polyApply (P₁ [⊞] P₂)     τ = polyApply P₁ τ [+] polyApply P₂ τ
+polyApply (P₁ [⊠] P₂)     τ = polyApply P₁ τ [×] polyApply P₂ τ
 
 infixr 35 _[→]_
+infixl 40 _[⊞]_ _[⊠]_
 
 data first-order : type → Set ℓ where
   unit  : first-order unit

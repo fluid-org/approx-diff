@@ -11,14 +11,23 @@ open Signature Sig using (sort)
 open language-syntax Sig
 open SynMonad M
 
-⟪_⟫ty : type → type
-⟪ unit ⟫ty = unit
-⟪ bool ⟫ty = bool
-⟪ base s ⟫ty = base s
-⟪ τ₁ [×] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [×] Mon ⟪ τ₂ ⟫ty
-⟪ τ₁ [+] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [+] Mon ⟪ τ₂ ⟫ty
-⟪ τ₁ [→] τ₂ ⟫ty = (Mon ⟪ τ₁ ⟫ty) [→] (Mon ⟪ τ₂ ⟫ty)
-⟪ list τ ⟫ty = list (Mon ⟪ τ ⟫ty)
+mutual
+  ⟪_⟫ty : type → type
+  ⟪ unit ⟫ty = unit
+  ⟪ bool ⟫ty = bool
+  ⟪ base s ⟫ty = base s
+  ⟪ τ₁ [×] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [×] Mon ⟪ τ₂ ⟫ty
+  ⟪ τ₁ [+] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [+] Mon ⟪ τ₂ ⟫ty
+  ⟪ τ₁ [→] τ₂ ⟫ty = (Mon ⟪ τ₁ ⟫ty) [→] (Mon ⟪ τ₂ ⟫ty)
+  ⟪ list τ ⟫ty = list (Mon ⟪ τ ⟫ty)
+  ⟪ μ P ⟫ty = μ ⟪ P ⟫poly
+
+  ⟪_⟫poly : polytype → polytype
+  ⟪ poly-one ⟫poly       = poly-one
+  ⟪ poly-param σ ⟫poly   = poly-param (Mon ⟪ σ ⟫ty)
+  ⟪ poly-var ⟫poly       = poly-var
+  ⟪ P₁ [⊞] P₂ ⟫poly      = ⟪ P₁ ⟫poly [⊞] ⟪ P₂ ⟫poly
+  ⟪ P₁ [⊠] P₂ ⟫poly      = ⟪ P₁ ⟫poly [⊠] ⟪ P₂ ⟫poly
 
 ⟪_⟫ctxt : ctxt → ctxt
 ⟪ emp ⟫ctxt = emp

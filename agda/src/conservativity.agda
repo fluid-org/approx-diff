@@ -445,13 +445,14 @@ definability {X} {Y} f with f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))
 
 module syntactic {ℓ}
    (Sig : Signature ℓ)
+   (Gl-HasMu : ∀ Q → categories.HasMu Gl.cat GlPE.terminal GlPE.products GlCP.coproducts Q)
    (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig) where
 
   open import language-syntax Sig
 
   open import language-fo-interpretation Sig
          𝒞 𝒞T 𝒞P 𝒞CP
-         Gl.cat GlPE.terminal GlPE.products GlCP.coproducts GlPE.exponentials Gl-lists
+         Gl.cat GlPE.terminal GlPE.products GlCP.coproducts GlPE.exponentials Gl-lists Gl-HasMu
          GF GF-preserve-terminal GF-preserve-products GF-preserve-coproducts
          𝒞-Sig-Model
     renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)

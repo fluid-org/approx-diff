@@ -190,6 +190,7 @@ module Interpretation
        Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
        Fam⟨𝒟⟩-lists
+       (Fam⟨𝒟⟩.hasMu 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
