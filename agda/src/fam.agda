@@ -727,7 +727,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
 
     ----------------------------------------------------------------------
     -- Generic μ-types in Fam(𝒞), one per polynomial Q : Poly cat. The
-    -- idx side is prop-setoid.WSetoid of poly-idx Q (projecting param
+    -- idx side is prop-setoid.WSetoid of poly Q (projecting param
     -- slots from Fam-objs to their idx setoids); the fibre side is
     -- built recursively over Q using 𝒞's products.
     module W-types (Q : Poly cat) where
@@ -736,15 +736,15 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       open _⇒s_
       open _⇒f_
 
-      poly-idx-of : Poly cat → prop-setoid.IdxPoly
-      poly-idx-of Poly.one        = prop-setoid.one
-      poly-idx-of (Poly.param A)  = prop-setoid.param (A .idx)
-      poly-idx-of Poly.var        = prop-setoid.var
-      poly-idx-of (P₁ Poly.⊞ P₂)  = poly-idx-of P₁ prop-setoid.⊞ poly-idx-of P₂
-      poly-idx-of (P₁ Poly.⊠ P₂)  = poly-idx-of P₁ prop-setoid.⊠ poly-idx-of P₂
+      idx-of : Poly cat → prop-setoid.IdxPoly
+      idx-of Poly.one        = prop-setoid.one
+      idx-of (Poly.param A)  = prop-setoid.param (A .idx)
+      idx-of Poly.var        = prop-setoid.var
+      idx-of (P₁ Poly.+ᵖ P₂)  = idx-of P₁ prop-setoid.+ᵖ idx-of P₂
+      idx-of (P₁ Poly.×ᵖ P₂)  = idx-of P₁ prop-setoid.×ᵖ idx-of P₂
 
-      poly-idx : prop-setoid.IdxPoly
-      poly-idx = poly-idx-of Q
+      poly : prop-setoid.IdxPoly
+      poly = idx-of Q
 
       -- Fibre as a single recursive function on (P : Poly cat) and the
       -- corresponding WIdx-of value. At the var case, the W argument is
@@ -753,35 +753,35 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       -- WIdx-of/W structure (decreases at var via sup destruction);
       -- Agda's termination checker should accept it.
       WFam-of-fm : (P : Poly cat) →
-                   prop-setoid.WIdx-of poly-idx (poly-idx-of P) → obj
+                   prop-setoid.WIdx-of poly (idx-of P) → obj
       WFam-of-fm Poly.one        _                    = T .witness
       WFam-of-fm (Poly.param A)  a                    = A .fam .fm a
       WFam-of-fm Poly.var        (prop-setoid.sup i)  = WFam-of-fm Q i
-      WFam-of-fm (P₁ Poly.⊞ P₂)  (inj₁ x)             = WFam-of-fm P₁ x
-      WFam-of-fm (P₁ Poly.⊞ P₂)  (inj₂ y)             = WFam-of-fm P₂ y
-      WFam-of-fm (P₁ Poly.⊠ P₂)  (x , y)              = prod (WFam-of-fm P₁ x) (WFam-of-fm P₂ y)
+      WFam-of-fm (P₁ Poly.+ᵖ P₂)  (inj₁ x)             = WFam-of-fm P₁ x
+      WFam-of-fm (P₁ Poly.+ᵖ P₂)  (inj₂ y)             = WFam-of-fm P₂ y
+      WFam-of-fm (P₁ Poly.×ᵖ P₂)  (x , y)              = prod (WFam-of-fm P₁ x) (WFam-of-fm P₂ y)
 
       WFam-of-subst : (P : Poly cat) → ∀ {x y} →
-                      prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) x y →
+                      prop-setoid.WIdx-≈-of poly (idx-of P) x y →
                       WFam-of-fm P x ⇒ WFam-of-fm P y
       WFam-of-subst Poly.one         _ = id _
       WFam-of-subst (Poly.param A) {x} {y} eq = A .fam .subst eq
       WFam-of-subst Poly.var {prop-setoid.sup i₁} {prop-setoid.sup i₂} eq = WFam-of-subst Q eq
-      WFam-of-subst (P₁ Poly.⊞ P₂) {inj₁ _} {inj₁ _} eq = WFam-of-subst P₁ eq
-      WFam-of-subst (P₁ Poly.⊞ P₂) {inj₂ _} {inj₂ _} eq = WFam-of-subst P₂ eq
-      WFam-of-subst (P₁ Poly.⊞ P₂) {inj₁ _} {inj₂ _} ()
-      WFam-of-subst (P₁ Poly.⊞ P₂) {inj₂ _} {inj₁ _} ()
-      WFam-of-subst (P₁ Poly.⊠ P₂) {_ , _} {_ , _} (e₁ , e₂) =
+      WFam-of-subst (P₁ Poly.+ᵖ P₂) {inj₁ _} {inj₁ _} eq = WFam-of-subst P₁ eq
+      WFam-of-subst (P₁ Poly.+ᵖ P₂) {inj₂ _} {inj₂ _} eq = WFam-of-subst P₂ eq
+      WFam-of-subst (P₁ Poly.+ᵖ P₂) {inj₁ _} {inj₂ _} ()
+      WFam-of-subst (P₁ Poly.+ᵖ P₂) {inj₂ _} {inj₁ _} ()
+      WFam-of-subst (P₁ Poly.×ᵖ P₂) {_ , _} {_ , _} (e₁ , e₂) =
         prod-m (WFam-of-subst P₁ e₁) (WFam-of-subst P₂ e₂)
 
       WFam-of-refl* : (P : Poly cat) → ∀ {x} →
-                      WFam-of-subst P (prop-setoid.WIdx-≈-of-refl poly-idx (poly-idx-of P) {x}) ≈ id _
+                      WFam-of-subst P (prop-setoid.WIdx-≈-of-refl poly (idx-of P) {x}) ≈ id _
       WFam-of-refl* Poly.one         = isEquiv .refl
       WFam-of-refl* (Poly.param A) {x} = A .fam .refl*
       WFam-of-refl* Poly.var {prop-setoid.sup i} = WFam-of-refl* Q {i}
-      WFam-of-refl* (P₁ Poly.⊞ P₂) {inj₁ x} = WFam-of-refl* P₁ {x}
-      WFam-of-refl* (P₁ Poly.⊞ P₂) {inj₂ y} = WFam-of-refl* P₂ {y}
-      WFam-of-refl* (P₁ Poly.⊠ P₂) {x , y}  =
+      WFam-of-refl* (P₁ Poly.+ᵖ P₂) {inj₁ x} = WFam-of-refl* P₁ {x}
+      WFam-of-refl* (P₁ Poly.+ᵖ P₂) {inj₂ y} = WFam-of-refl* P₂ {y}
+      WFam-of-refl* (P₁ Poly.×ᵖ P₂) {x , y}  =
         begin
           prod-m (WFam-of-subst P₁ _) (WFam-of-subst P₂ _)
         ≈⟨ prod-m-cong (WFam-of-refl* P₁ {x}) (WFam-of-refl* P₂ {y}) ⟩
@@ -791,17 +791,17 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         ∎ where open ≈-Reasoning isEquiv
 
       WFam-of-trans* : (P : Poly cat) → ∀ {x y z}
-                       (e₁ : prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) y z)
-                       (e₂ : prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) x y) →
-                       WFam-of-subst P (prop-setoid.WIdx-≈-of-trans poly-idx (poly-idx-of P) e₂ e₁) ≈
+                       (e₁ : prop-setoid.WIdx-≈-of poly (idx-of P) y z)
+                       (e₂ : prop-setoid.WIdx-≈-of poly (idx-of P) x y) →
+                       WFam-of-subst P (prop-setoid.WIdx-≈-of-trans poly (idx-of P) e₂ e₁) ≈
                        (WFam-of-subst P e₁ ∘ WFam-of-subst P e₂)
       WFam-of-trans* Poly.one _ _ = isEquiv .sym id-left
       WFam-of-trans* (Poly.param A) e₁ e₂ = A .fam .trans* e₁ e₂
       WFam-of-trans* Poly.var {prop-setoid.sup _} {prop-setoid.sup _} {prop-setoid.sup _} e₁ e₂ =
         WFam-of-trans* Q e₁ e₂
-      WFam-of-trans* (P₁ Poly.⊞ P₂) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WFam-of-trans* P₁ e₁ e₂
-      WFam-of-trans* (P₁ Poly.⊞ P₂) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WFam-of-trans* P₂ e₁ e₂
-      WFam-of-trans* (P₁ Poly.⊠ P₂) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
+      WFam-of-trans* (P₁ Poly.+ᵖ P₂) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WFam-of-trans* P₁ e₁ e₂
+      WFam-of-trans* (P₁ Poly.+ᵖ P₂) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WFam-of-trans* P₂ e₁ e₂
+      WFam-of-trans* (P₁ Poly.×ᵖ P₂) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
         begin
           prod-m (WFam-of-subst P₁ _) (WFam-of-subst P₂ _)
         ≈⟨ prod-m-cong (WFam-of-trans* P₁ e₁ e₂) (WFam-of-trans* P₂ f₁ f₂) ⟩
@@ -810,7 +810,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
           prod-m (WFam-of-subst P₁ e₁) (WFam-of-subst P₂ f₁) ∘ prod-m (WFam-of-subst P₁ e₂) (WFam-of-subst P₂ f₂)
         ∎ where open ≈-Reasoning isEquiv
 
-      WFam : Fam (prop-setoid.WSetoid poly-idx) 𝒞
+      WFam : Fam (prop-setoid.WSetoid poly) 𝒞
       WFam .fm (prop-setoid.sup i)                              = WFam-of-fm Q i
       WFam .subst {prop-setoid.sup _} {prop-setoid.sup _} eq    = WFam-of-subst Q eq
       WFam .refl* {prop-setoid.sup _}                           = WFam-of-refl* Q
@@ -818,7 +818,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         WFam-of-trans* Q e₁ e₂
 
       WObj : Obj
-      WObj .idx = prop-setoid.WSetoid poly-idx
+      WObj .idx = prop-setoid.WSetoid poly
       WObj .fam = WFam
 
       -- The sup morphism: poly-obj (terminal T) products coproducts Q WObj ⇒ WObj.
@@ -829,26 +829,26 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
 
       embed-idx : (P : Poly cat) →
                   poly-obj (terminal T) products coproducts P WObj .idx .Setoid.Carrier →
-                  prop-setoid.WIdx-of poly-idx (poly-idx-of P)
+                  prop-setoid.WIdx-of poly (idx-of P)
       embed-idx Poly.one         (lift tt)  = lift tt
       embed-idx (Poly.param A)   a          = a
       embed-idx Poly.var         w          = w
-      embed-idx (P₁ Poly.⊞ P₂)   (inj₁ x)   = inj₁ (embed-idx P₁ x)
-      embed-idx (P₁ Poly.⊞ P₂)   (inj₂ y)   = inj₂ (embed-idx P₂ y)
-      embed-idx (P₁ Poly.⊠ P₂)   (x , y)    = (embed-idx P₁ x , embed-idx P₂ y)
+      embed-idx (P₁ Poly.+ᵖ P₂)   (inj₁ x)   = inj₁ (embed-idx P₁ x)
+      embed-idx (P₁ Poly.+ᵖ P₂)   (inj₂ y)   = inj₂ (embed-idx P₂ y)
+      embed-idx (P₁ Poly.×ᵖ P₂)   (x , y)    = (embed-idx P₁ x , embed-idx P₂ y)
 
       embed-≈ : (P : Poly cat) → ∀ {x y} →
                 poly-obj (terminal T) products coproducts P WObj .idx .Setoid._≈_ x y →
-                prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) (embed-idx P x) (embed-idx P y)
+                prop-setoid.WIdx-≈-of poly (idx-of P) (embed-idx P x) (embed-idx P y)
       embed-≈ Poly.one         _   = tt
       embed-≈ (Poly.param A)   eq  = eq
       embed-≈ Poly.var         eq  = eq
-      embed-≈ (P₁ Poly.⊞ P₂) {inj₁ _} {inj₁ _} eq        = embed-≈ P₁ eq
-      embed-≈ (P₁ Poly.⊞ P₂) {inj₂ _} {inj₂ _} eq        = embed-≈ P₂ eq
-      embed-≈ (P₁ Poly.⊠ P₂) {_ , _} {_ , _} (e₁ , e₂)   = (embed-≈ P₁ e₁ , embed-≈ P₂ e₂)
+      embed-≈ (P₁ Poly.+ᵖ P₂) {inj₁ _} {inj₁ _} eq        = embed-≈ P₁ eq
+      embed-≈ (P₁ Poly.+ᵖ P₂) {inj₂ _} {inj₂ _} eq        = embed-≈ P₂ eq
+      embed-≈ (P₁ Poly.×ᵖ P₂) {_ , _} {_ , _} (e₁ , e₂)   = (embed-≈ P₁ e₁ , embed-≈ P₂ e₂)
 
       -- Fibre-level structural identity. Definitionally,
-      -- (poly-obj _ _ _ P WObj).fam.fm i = WFam-of-fm P (embed-idx P i)
+      -- (apply _ _ _ P WObj).fam.fm i = WFam-of-fm P (embed-idx P i)
       -- at each Poly case (after destructing W's sup at the var case).
       embed-fam : (P : Poly cat) (i : poly-obj (terminal T) products coproducts P WObj .idx .Setoid.Carrier) →
                   poly-obj (terminal T) products coproducts P WObj .fam .fm i ⇒
@@ -856,9 +856,9 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       embed-fam Poly.one       (lift tt)             = id _
       embed-fam (Poly.param A) a                     = id _
       embed-fam Poly.var       (prop-setoid.sup _)   = id _
-      embed-fam (P₁ Poly.⊞ P₂) (inj₁ x)              = embed-fam P₁ x
-      embed-fam (P₁ Poly.⊞ P₂) (inj₂ y)              = embed-fam P₂ y
-      embed-fam (P₁ Poly.⊠ P₂) (x , y)               = prod-m (embed-fam P₁ x) (embed-fam P₂ y)
+      embed-fam (P₁ Poly.+ᵖ P₂) (inj₁ x)              = embed-fam P₁ x
+      embed-fam (P₁ Poly.+ᵖ P₂) (inj₂ y)              = embed-fam P₂ y
+      embed-fam (P₁ Poly.×ᵖ P₂) (x , y)               = prod-m (embed-fam P₁ x) (embed-fam P₂ y)
 
       embed-fam-natural : (P : Poly cat) → ∀ {x₁ x₂}
                           (e : poly-obj (terminal T) products coproducts P WObj .idx .Setoid._≈_ x₁ x₂) →
@@ -870,9 +870,9 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         isEquiv .trans id-left (≈-sym id-right)
       embed-fam-natural Poly.var {prop-setoid.sup _} {prop-setoid.sup _} _ =
         isEquiv .trans id-left (≈-sym id-right)
-      embed-fam-natural (P₁ Poly.⊞ P₂) {inj₁ _} {inj₁ _} e = embed-fam-natural P₁ e
-      embed-fam-natural (P₁ Poly.⊞ P₂) {inj₂ _} {inj₂ _} e = embed-fam-natural P₂ e
-      embed-fam-natural (P₁ Poly.⊠ P₂) {x₁ , y₁} {x₂ , y₂} (e , f) =
+      embed-fam-natural (P₁ Poly.+ᵖ P₂) {inj₁ _} {inj₁ _} e = embed-fam-natural P₁ e
+      embed-fam-natural (P₁ Poly.+ᵖ P₂) {inj₂ _} {inj₂ _} e = embed-fam-natural P₂ e
+      embed-fam-natural (P₁ Poly.×ᵖ P₂) {x₁ , y₁} {x₂ , y₂} (e , f) =
         begin
           prod-m (embed-fam P₁ x₂) (embed-fam P₂ y₂) ∘ prod-m _ _
         ≈⟨ ≈-sym (pair-functorial _ _ _ _) ⟩
@@ -889,45 +889,45 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       sup .famf .transf i                   = embed-fam Q i
       sup .famf .natural e                  = embed-fam-natural Q e
 
-      -- Fold. Given an algebra alg : poly-obj Q y ⇒ y, the recursion descends
+      -- Fold. Given an algebra alg : apply Q y ⇒ y, the recursion descends
       -- the W structure at each var slot, applying alg's idx/fam components.
       module _ {y : Obj} (alg : Mor (poly-obj (terminal T) products coproducts Q y) y) where
 
-        project-idx : (P : Poly cat) → prop-setoid.WIdx-of poly-idx (poly-idx-of P) →
+        project-idx : (P : Poly cat) → prop-setoid.WIdx-of poly (idx-of P) →
                       poly-obj (terminal T) products coproducts P y .idx .Setoid.Carrier
         project-idx Poly.one _                       = lift tt
         project-idx (Poly.param A) a                 = a
         project-idx Poly.var (prop-setoid.sup i)     = alg .idxf .func (project-idx Q i)
-        project-idx (P₁ Poly.⊞ P₂) (inj₁ x)          = inj₁ (project-idx P₁ x)
-        project-idx (P₁ Poly.⊞ P₂) (inj₂ z)          = inj₂ (project-idx P₂ z)
-        project-idx (P₁ Poly.⊠ P₂) (x , z)           = (project-idx P₁ x , project-idx P₂ z)
+        project-idx (P₁ Poly.+ᵖ P₂) (inj₁ x)          = inj₁ (project-idx P₁ x)
+        project-idx (P₁ Poly.+ᵖ P₂) (inj₂ z)          = inj₂ (project-idx P₂ z)
+        project-idx (P₁ Poly.×ᵖ P₂) (x , z)           = (project-idx P₁ x , project-idx P₂ z)
 
         project-≈ : (P : Poly cat) → ∀ {x z} →
-                    prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) x z →
+                    prop-setoid.WIdx-≈-of poly (idx-of P) x z →
                     poly-obj (terminal T) products coproducts P y .idx .Setoid._≈_
                       (project-idx P x) (project-idx P z)
         project-≈ Poly.one _ = tt
         project-≈ (Poly.param A) eq = eq
         project-≈ Poly.var {prop-setoid.sup _} {prop-setoid.sup _} eq =
           alg .idxf .func-resp-≈ (project-≈ Q eq)
-        project-≈ (P₁ Poly.⊞ P₂) {inj₁ _} {inj₁ _} eq = project-≈ P₁ eq
-        project-≈ (P₁ Poly.⊞ P₂) {inj₂ _} {inj₂ _} eq = project-≈ P₂ eq
-        project-≈ (P₁ Poly.⊠ P₂) {_ , _} {_ , _} (e , f) = (project-≈ P₁ e , project-≈ P₂ f)
+        project-≈ (P₁ Poly.+ᵖ P₂) {inj₁ _} {inj₁ _} eq = project-≈ P₁ eq
+        project-≈ (P₁ Poly.+ᵖ P₂) {inj₂ _} {inj₂ _} eq = project-≈ P₂ eq
+        project-≈ (P₁ Poly.×ᵖ P₂) {_ , _} {_ , _} (e , f) = (project-≈ P₁ e , project-≈ P₂ f)
 
-        project-fam : (P : Poly cat) (i : prop-setoid.WIdx-of poly-idx (poly-idx-of P)) →
+        project-fam : (P : Poly cat) (i : prop-setoid.WIdx-of poly (idx-of P)) →
                       WFam-of-fm P i ⇒
                       poly-obj (terminal T) products coproducts P y .fam .fm (project-idx P i)
         project-fam Poly.one _                       = id _
         project-fam (Poly.param A) a                 = id _
         project-fam Poly.var (prop-setoid.sup i)     =
           alg .famf .transf (project-idx Q i) ∘ project-fam Q i
-        project-fam (P₁ Poly.⊞ P₂) (inj₁ x)          = project-fam P₁ x
-        project-fam (P₁ Poly.⊞ P₂) (inj₂ z)          = project-fam P₂ z
-        project-fam (P₁ Poly.⊠ P₂) (x , z)           =
+        project-fam (P₁ Poly.+ᵖ P₂) (inj₁ x)          = project-fam P₁ x
+        project-fam (P₁ Poly.+ᵖ P₂) (inj₂ z)          = project-fam P₂ z
+        project-fam (P₁ Poly.×ᵖ P₂) (x , z)           =
           prod-m (project-fam P₁ x) (project-fam P₂ z)
 
         project-fam-natural : (P : Poly cat) → ∀ {x z}
-                              (e : prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) x z) →
+                              (e : prop-setoid.WIdx-≈-of poly (idx-of P) x z) →
                               (project-fam P z ∘ WFam-of-subst P e) ≈
                               (poly-obj (terminal T) products coproducts P y .fam .subst (project-≈ P e) ∘ project-fam P x)
         project-fam-natural Poly.one _ =
@@ -951,9 +951,9 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
             y .fam .subst (alg .idxf .func-resp-≈ (project-≈ Q eq)) ∘
               (alg .famf .transf (project-idx Q i₁) ∘ project-fam Q i₁)
           ∎ where open ≈-Reasoning isEquiv
-        project-fam-natural (P₁ Poly.⊞ P₂) {inj₁ _} {inj₁ _} e = project-fam-natural P₁ e
-        project-fam-natural (P₁ Poly.⊞ P₂) {inj₂ _} {inj₂ _} e = project-fam-natural P₂ e
-        project-fam-natural (P₁ Poly.⊠ P₂) {x₁ , z₁} {x₂ , z₂} (e , f) =
+        project-fam-natural (P₁ Poly.+ᵖ P₂) {inj₁ _} {inj₁ _} e = project-fam-natural P₁ e
+        project-fam-natural (P₁ Poly.+ᵖ P₂) {inj₂ _} {inj₂ _} e = project-fam-natural P₂ e
+        project-fam-natural (P₁ Poly.×ᵖ P₂) {x₁ , z₁} {x₂ , z₂} (e , f) =
           begin
             prod-m (project-fam P₁ x₂) (project-fam P₂ z₂) ∘ prod-m _ _
           ≈⟨ ≈-sym (pair-functorial _ _ _ _) ⟩

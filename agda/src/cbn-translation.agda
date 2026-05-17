@@ -21,12 +21,12 @@ mutual
   ⟪ τ₁ [→] τ₂ ⟫ty = (Mon ⟪ τ₁ ⟫ty) [→] (Mon ⟪ τ₂ ⟫ty)
   ⟪ μ P ⟫ty = μ ⟪ P ⟫poly
 
-  ⟪_⟫poly : polytype → polytype
-  ⟪ poly-one ⟫poly       = poly-one
-  ⟪ poly-param σ ⟫poly   = poly-param (Mon ⟪ σ ⟫ty)
-  ⟪ poly-var ⟫poly       = poly-var
-  ⟪ P₁ [⊞] P₂ ⟫poly      = ⟪ P₁ ⟫poly [⊞] ⟪ P₂ ⟫poly
-  ⟪ P₁ [⊠] P₂ ⟫poly      = ⟪ P₁ ⟫poly [⊠] ⟪ P₂ ⟫poly
+  ⟪_⟫poly : polynomial → polynomial
+  ⟪ one ⟫poly       = one
+  ⟪ const σ ⟫poly   = const (Mon ⟪ σ ⟫ty)
+  ⟪ var ⟫poly       = var
+  ⟪ P₁ +ᵖ P₂ ⟫poly      = ⟪ P₁ ⟫poly +ᵖ ⟪ P₂ ⟫poly
+  ⟪ P₁ ×ᵖ P₂ ⟫poly      = ⟪ P₁ ⟫poly ×ᵖ ⟪ P₂ ⟫poly
 
 ⟪_⟫ctxt : ctxt → ctxt
 ⟪ emp ⟫ctxt = emp
@@ -41,44 +41,44 @@ _$_ = app
 
 infixl 10 _$_
 
--- The type translation Mon-wraps at every sum/product, but polyApply (a
+-- The type translation Mon-wraps at every sum/product, but apply (a
 -- meta-level operation on syntactic types) doesn't see the wraps when
--- applied at the polytype level. So ⟪polyApply P τ⟫ has extra Mon-wraps
--- compared to polyApply ⟪P⟫poly ⟪τ⟫. cbn-coerce builds a target-language
+-- applied at the polynomial level. So ⟪apply P τ⟫ has extra Mon-wraps
+-- compared to apply ⟪P⟫poly ⟪τ⟫. cbn-coerce builds a target-language
 -- term that unwraps the Mon at each sum/product layer and rewraps once
 -- around the result.
-cbn-coerce : (P : polytype) → ∀ {Γ τ} →
-             Γ ⊢ ⟪ polyApply P τ ⟫ty →
-             Γ ⊢ Mon (polyApply ⟪ P ⟫poly ⟪ τ ⟫ty)
-cbn-coerce poly-one         M = pure $ unit
-cbn-coerce (poly-param σ)   M = pure $ (pure $ M)
-cbn-coerce poly-var         M = pure $ M
-cbn-coerce (P₁ [⊞] P₂) M =
+cbn-coerce : (P : polynomial) → ∀ {Γ τ} →
+             Γ ⊢ ⟪ apply P τ ⟫ty →
+             Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty)
+cbn-coerce one         M = pure $ unit
+cbn-coerce (const σ)   M = pure $ (pure $ M)
+cbn-coerce var         M = pure $ M
+cbn-coerce (P₁ +ᵖ P₂) M =
   case M
     (bind $ var zero $ lam (bind $ cbn-coerce P₁ (var zero) $ lam (pure $ inl (var zero))))
     (bind $ var zero $ lam (bind $ cbn-coerce P₂ (var zero) $ lam (pure $ inr (var zero))))
-cbn-coerce (P₁ [⊠] P₂) M =
+cbn-coerce (P₁ ×ᵖ P₂) M =
   bind $ fst M $ lam (
     bind $ cbn-coerce P₁ (var zero) $ lam (
       bind $ snd (weaken * (weaken * M)) $ lam (
         bind $ cbn-coerce P₂ (var zero) $ lam (
           pure $ pair (var (succ (succ zero))) (var zero)))))
 
--- The other direction (used by fold-μ): from polyApply ⟪P⟫poly (Mon ⟪τ⟫ty)
+-- The other direction (used by fold-μ): from apply ⟪P⟫poly (Mon ⟪τ⟫ty)
 -- (target-side, with Mon at var positions but no Mon at sum/product
--- nodes) to Mon ⟪polyApply P τ⟫ty (source-translation-side, with Mon at
+-- nodes) to Mon ⟪apply P τ⟫ty (source-translation-side, with Mon at
 -- sum/product nodes). Aligns the algebra-argument type for fold-μ.
-cbn-coerce' : (P : polytype) → ∀ {Γ τ} →
-              Γ ⊢ polyApply ⟪ P ⟫poly (Mon ⟪ τ ⟫ty) →
-              Γ ⊢ Mon ⟪ polyApply P τ ⟫ty
-cbn-coerce' poly-one       M = pure $ M
-cbn-coerce' (poly-param σ) M = M
-cbn-coerce' poly-var       M = M
-cbn-coerce' (P₁ [⊞] P₂) M =
+cbn-coerce' : (P : polynomial) → ∀ {Γ τ} →
+              Γ ⊢ apply ⟪ P ⟫poly (Mon ⟪ τ ⟫ty) →
+              Γ ⊢ Mon ⟪ apply P τ ⟫ty
+cbn-coerce' one       M = pure $ M
+cbn-coerce' (const σ) M = M
+cbn-coerce' var       M = M
+cbn-coerce' (P₁ +ᵖ P₂) M =
   case M
     (pure $ inl (cbn-coerce' P₁ (var zero)))
     (pure $ inr (cbn-coerce' P₂ (var zero)))
-cbn-coerce' (P₁ [⊠] P₂) M =
+cbn-coerce' (P₁ ×ᵖ P₂) M =
   pure $ pair (cbn-coerce' P₁ (fst M)) (cbn-coerce' P₂ (snd M))
 
 mutual

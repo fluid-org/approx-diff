@@ -731,8 +731,8 @@ data Poly {o m e} (𝒞 : Category o m e) : Set o where
   one  : Poly 𝒞                              -- constant terminal
   param : Category.obj 𝒞 → Poly 𝒞            -- constant object (parameter slot)
   var  : Poly 𝒞                              -- recursive slot
-  _⊞_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- sum
-  _⊠_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- product
+  _+ᵖ_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- sum
+  _×ᵖ_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- product
 
 module _ {o m e} {𝒞 : Category o m e}
          (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
@@ -745,8 +745,8 @@ module _ {o m e} {𝒞 : Category o m e}
   poly-obj one         _ = terminal
   poly-obj (param A)   _ = A
   poly-obj var         x = x
-  poly-obj (P₁ ⊞ P₂)   x = coprod (poly-obj P₁ x) (poly-obj P₂ x)
-  poly-obj (P₁ ⊠ P₂)   x = prod  (poly-obj P₁ x) (poly-obj P₂ x)
+  poly-obj (P₁ +ᵖ P₂)   x = coprod (poly-obj P₁ x) (poly-obj P₂ x)
+  poly-obj (P₁ ×ᵖ P₂)   x = prod  (poly-obj P₁ x) (poly-obj P₂ x)
 
 record HasMu {o m e} (𝒞 : Category o m e)
              (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞)

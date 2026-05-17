@@ -42,28 +42,28 @@ mutual
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty + ⟦ τ₂ ⟧ty
   ⟦ μ P ⟧ty = HasMu.μ (HM (⟦ P ⟧poly))
 
-  ⟦_⟧poly : polytype → Poly 𝒞
-  ⟦ poly-one ⟧poly       = Poly.one
-  ⟦ poly-param σ ⟧poly   = Poly.param ⟦ σ ⟧ty
-  ⟦ poly-var ⟧poly       = Poly.var
-  ⟦ P₁ [⊞] P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.⊞ ⟦ P₂ ⟧poly
-  ⟦ P₁ [⊠] P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.⊠ ⟦ P₂ ⟧poly
+  ⟦_⟧poly : polynomial → Poly 𝒞
+  ⟦ one ⟧poly       = Poly.one
+  ⟦ const σ ⟧poly   = Poly.param ⟦ σ ⟧ty
+  ⟦ var ⟧poly       = Poly.var
+  ⟦ P₁ +ᵖ P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.+ᵖ ⟦ P₂ ⟧poly
+  ⟦ P₁ ×ᵖ P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.×ᵖ ⟦ P₂ ⟧poly
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt × ⟦ τ ⟧ty
 
--- Equation showing that the meta-level polyApply on types agrees with the
--- categorical poly-obj on objects, modulo the polytype interpretation.
--- Needed because polyApply unfolds at the syntax level while poly-obj
+-- Equation showing that the meta-level apply on types agrees with the
+-- categorical apply on objects, modulo the polynomial interpretation.
+-- Needed because apply unfolds at the syntax level while apply
 -- unfolds at the categorical level — both reduce identically by structure,
 -- but Agda doesn't see this without an explicit lemma.
-polyApply-coincides : ∀ Q τ → ⟦ polyApply Q τ ⟧ty ≡ poly-obj T P C ⟦ Q ⟧poly ⟦ τ ⟧ty
-polyApply-coincides poly-one       τ = refl
-polyApply-coincides (poly-param σ) τ = refl
-polyApply-coincides poly-var       τ = refl
-polyApply-coincides (Q₁ [⊞] Q₂)    τ = cong₂ _+_ (polyApply-coincides Q₁ τ) (polyApply-coincides Q₂ τ)
-polyApply-coincides (Q₁ [⊠] Q₂)    τ = cong₂ _×_ (polyApply-coincides Q₁ τ) (polyApply-coincides Q₂ τ)
+apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj T P C ⟦ Q ⟧poly ⟦ τ ⟧ty
+apply-coincides one       τ = refl
+apply-coincides (const σ) τ = refl
+apply-coincides var       τ = refl
+apply-coincides (Q₁ +ᵖ Q₂)    τ = cong₂ _+_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
+apply-coincides (Q₁ ×ᵖ Q₂)    τ = cong₂ _×_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
 
 -- F-apply: for a polynomial Q and result types ctx, t, take a polynomial
 -- value whose recursive positions hold (ctx ⇒ t)-shaped function values
@@ -74,9 +74,9 @@ F-apply : (Q : Poly 𝒞) {ctx t : obj} →
 F-apply Poly.one       = to-terminal
 F-apply (Poly.param _) = p₁
 F-apply Poly.var       = eval
-F-apply (Q₁ Poly.⊞ Q₂) =
+F-apply (Q₁ Poly.+ᵖ Q₂) =
   eval ∘ ⟨ copair (lambda (in₁ ∘ F-apply Q₁)) (lambda (in₂ ∘ F-apply Q₂)) ∘ p₁ , p₂ ⟩
-F-apply (Q₁ Poly.⊠ Q₂) =
+F-apply (Q₁ Poly.×ᵖ Q₂) =
   ⟨ F-apply Q₁ ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , F-apply Q₂ ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
@@ -104,13 +104,13 @@ mutual
   ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    HasMu.sup (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (polyApply-coincides P (μ P)) ⟦ M ⟧tm
+    HasMu.sup (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
     eval ∘ ⟨ HasMu.fold (HM ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
     where
-      coerced : (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) × ⟦ Γ ⟧ctxt) ⇒ ⟦ polyApply Q τ ⟧ty
+      coerced : (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) × ⟦ Γ ⟧ctxt) ⇒ ⟦ apply Q τ ⟧ty
       coerced = subst (λ X → (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) × ⟦ Γ ⟧ctxt) ⇒ X)
-                      (sym (polyApply-coincides Q τ)) (F-apply ⟦ Q ⟧poly)
+                      (sym (apply-coincides Q τ)) (F-apply ⟦ Q ⟧poly)
       closed-alg : poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
       closed-alg = lambda (eval ∘ ⟨ ⟦ alg ⟧tm ∘ p₂ , coerced ⟩)
 

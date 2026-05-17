@@ -14,30 +14,30 @@ mutual
     unit bool : type
     base : sort → type
     _[×]_ _[→]_ _[+]_ : type → type → type
-    μ : polytype → type
+    μ : polynomial → type
 
   -- Polynomial-functor bodies. Closed under (constant) unit, (constant) types,
   -- a recursive position, sums, and products. No function arrows here — that
   -- matches the standard "no function types under μ" restriction for inductive
   -- type bodies (Chad §3.6).
-  data polytype : Set ℓ where
-    poly-one : polytype
-    poly-param : type → polytype
-    poly-var : polytype
-    _[⊞]_ : polytype → polytype → polytype
-    _[⊠]_ : polytype → polytype → polytype
+  data polynomial : Set ℓ where
+    one : polynomial
+    const : type → polynomial
+    var : polynomial
+    _+ᵖ_ : polynomial → polynomial → polynomial
+    _×ᵖ_ : polynomial → polynomial → polynomial
 
--- polyApply P τ "applies" the polynomial body P at the recursive variable τ,
+-- apply P τ "applies" the polynomial body P at the recursive variable τ,
 -- producing an ordinary type.
-polyApply : polytype → type → type
-polyApply poly-one        _ = unit
-polyApply (poly-param σ)  _ = σ
-polyApply poly-var        τ = τ
-polyApply (P₁ [⊞] P₂)     τ = polyApply P₁ τ [+] polyApply P₂ τ
-polyApply (P₁ [⊠] P₂)     τ = polyApply P₁ τ [×] polyApply P₂ τ
+apply : polynomial → type → type
+apply one        _ = unit
+apply (const σ)  _ = σ
+apply var        τ = τ
+apply (P₁ +ᵖ P₂)     τ = apply P₁ τ [+] apply P₂ τ
+apply (P₁ ×ᵖ P₂)     τ = apply P₁ τ [×] apply P₂ τ
 
 infixr 35 _[→]_
-infixl 40 _[⊞]_ _[⊠]_
+infixl 40 _+ᵖ_ _×ᵖ_
 
 data first-order : type → Set ℓ where
   unit  : first-order unit
@@ -116,13 +116,13 @@ data _⊢_ : ctxt → type → Set ℓ where
 
   -- μ-type constructor (initial-algebra introduction). Takes an unrolled
   -- value of polynomial-applied type and packs it into a μ value.
-  roll : ∀ {Γ P} → Γ ⊢ polyApply P (μ P) → Γ ⊢ μ P
+  roll : ∀ {Γ P} → Γ ⊢ apply P (μ P) → Γ ⊢ μ P
 
   -- μ-type eliminator (closed-form initial-algebra fold). Takes a (possibly
   -- context-dependent) algebra value and a μ value, produces the folded
   -- result. The algebra is a function value; context-dependent algebras are
   -- expressed by building the function via lam (closure captures Γ).
-  fold-μ : ∀ {Γ P τ} → Γ ⊢ polyApply P τ [→] τ → Γ ⊢ μ P → Γ ⊢ τ
+  fold-μ : ∀ {Γ P τ} → Γ ⊢ apply P τ [→] τ → Γ ⊢ μ P → Γ ⊢ τ
 
 -- Applying renamings to terms
 mutual
@@ -154,7 +154,7 @@ mutual
 -- Lists as a μ-type: List τ = μα. 1 + (τ × α). The macros wrap roll/fold-μ
 -- to mimic the primitive list interface.
 list : type → type
-list τ = μ (poly-one [⊞] (poly-param τ [⊠] poly-var))
+list τ = μ (one +ᵖ (const τ ×ᵖ var))
 
 nil : ∀ {Γ τ} → Γ ⊢ list τ
 nil = roll (inl unit)
@@ -171,7 +171,7 @@ fold : ∀ {Γ σ τ} →
         Γ ⊢ list σ →
         Γ ⊢ τ
 fold {σ = σ} {τ = τ} nilCase consCase M =
-  fold-μ {P = poly-one [⊞] (poly-param σ [⊠] poly-var)} (lam alg-body) M
+  fold-μ {P = one +ᵖ (const σ ×ᵖ var)} (lam alg-body) M
   where
     alg-body : _
     alg-body =
