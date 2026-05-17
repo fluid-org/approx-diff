@@ -14,7 +14,6 @@ mutual
     unit bool : type
     base : sort → type
     _[×]_ _[→]_ _[+]_ : type → type → type
-    list : type → type
     μ : polytype → type
 
   -- Polynomial-functor bodies. Closed under (constant) unit, (constant) types,
@@ -115,14 +114,6 @@ data _⊢_ : ctxt → type → Set ℓ where
          Every (λ σ → Γ ⊢ base σ) in-sorts →
          Γ ⊢ bool
 
-  nil  : ∀ {Γ τ} → Γ ⊢ list τ
-  cons : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ → Γ ⊢ list τ
-  fold : ∀ {Γ τ₁ τ₂} →
-         Γ ⊢ τ₂ →
-         Γ , τ₁ , τ₂ ⊢ τ₂ →
-         Γ ⊢ list τ₁ →
-         Γ ⊢ τ₂
-
   -- μ-type constructor (initial-algebra introduction). Takes an unrolled
   -- value of polynomial-applied type and packs it into a μ value.
   roll : ∀ {Γ P} → Γ ⊢ polyApply P (μ P) → Γ ⊢ μ P
@@ -151,9 +142,6 @@ mutual
   ρ * brel ω Ms = brel ω (ρ ** Ms)
   ρ * lam M = lam (ext ρ * M)
   ρ * app M N = app (ρ * M) (ρ * N)
-  ρ * nil = nil
-  ρ * cons M N = cons (ρ * M) (ρ * N)
-  ρ * fold M₁ M₂ M = fold (ρ * M₁) (ext (ext ρ) * M₂) (ρ * M)
   ρ * roll M = roll (ρ * M)
   ρ * fold-μ alg M = fold-μ (ρ * alg) (ρ * M)
 

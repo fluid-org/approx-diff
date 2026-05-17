@@ -103,7 +103,6 @@ open Functor
 
 open import fam-functor using (FamF)
 open import signature
-import lists
 
 module Interpretation
   {o : Level}
@@ -137,7 +136,6 @@ module Interpretation
     using ()
     public
 
-  Fam⟨𝒟⟩-lists = lists.lists Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
 
   Fam⟨𝒟⟩-bool =
     Fam⟨𝒟⟩-coproducts .HasCoproducts.coprod
@@ -189,7 +187,6 @@ module Interpretation
        Fam⟨𝒟⟩-products
        Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
-       Fam⟨𝒟⟩-lists
        (Fam⟨𝒟⟩.hasMu 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public

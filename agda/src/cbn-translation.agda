@@ -19,7 +19,6 @@ mutual
   ⟪ τ₁ [×] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [×] Mon ⟪ τ₂ ⟫ty
   ⟪ τ₁ [+] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [+] Mon ⟪ τ₂ ⟫ty
   ⟪ τ₁ [→] τ₂ ⟫ty = (Mon ⟪ τ₁ ⟫ty) [→] (Mon ⟪ τ₂ ⟫ty)
-  ⟪ list τ ⟫ty = list (Mon ⟪ τ ⟫ty)
   ⟪ μ P ⟫ty = μ ⟪ P ⟫poly
 
   ⟪_⟫poly : polytype → polytype
@@ -100,10 +99,6 @@ mutual
   ⟪ app M₁ M₂ ⟫tm = bind $ ⟪ M₁ ⟫tm $ lam ((var zero) $ (weaken * ⟪ M₂ ⟫tm))
   ⟪ bop ω Ms ⟫tm = bindAll Ms (id-ren _) λ ρ Ms' → pure $ bop ω Ms'
   ⟪ brel r Ms ⟫tm = bindAll Ms (id-ren _) λ ρ Ms' → pure $ brel r Ms'
-  ⟪ nil ⟫tm = pure $ nil
-  ⟪ cons M N ⟫tm = bind $ ⟪ N ⟫tm $ lam (pure $ cons (weaken * ⟪ M ⟫tm) (var zero))
-  ⟪ fold M N L ⟫tm =
-    bind $ ⟪ L ⟫tm $ lam (fold (weaken * ⟪ M ⟫tm) (ext (ext weaken) * ⟪ N ⟫tm) (var zero))
   ⟪ roll {P = P} M ⟫tm =
     bind $ ⟪ M ⟫tm $ lam (bind $ cbn-coerce P (var zero) $ lam (pure $ roll (var zero)))
   ⟪ fold-μ {P = Q} {τ = τ} alg M ⟫tm =

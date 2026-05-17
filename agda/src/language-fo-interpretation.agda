@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; HasBooleans; coproducts+exp→booleans; HasLists; Poly; HasMu)
+open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; HasBooleans; coproducts+exp→booleans; Poly; HasMu)
 open import functor using (Functor)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
@@ -15,7 +15,7 @@ open Functor
 module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o₁ m₁ e₁ o₂ m₂ e₂}
   (𝒞 : Category o₁ m₁ e₁) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞)
-  (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟L : HasLists 𝒟 𝒟T 𝒟P) (𝒟HM : ∀ Q → HasMu 𝒟 𝒟T 𝒟P 𝒟CP Q)
+  (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟HM : ∀ Q → HasMu 𝒟 𝒟T 𝒟P 𝒟CP Q)
   (F : Functor 𝒞 𝒟)
   (FT : Category.IsIso 𝒟 (HasTerminal.to-terminal 𝒟T {F .fobj (𝒞T .HasTerminal.witness)}))
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
@@ -59,7 +59,7 @@ Bool-iso =
 𝒟-Sig-model : Model PFPC[ 𝒟 , 𝒟T , 𝒟P , 𝒟Bool ] Sig
 𝒟-Sig-model = transport-model Sig F FT FP (Bool-iso .𝒟.Iso.fwd) 𝒞-Sig-model
 
-open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟CP 𝒟E 𝒟L 𝒟HM 𝒟-Sig-model
+open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟CP 𝒟E 𝒟HM 𝒟-Sig-model
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm) using ()
   public
 

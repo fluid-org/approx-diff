@@ -5,7 +5,7 @@ open import Data.List using (List; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong₂; sym; subst)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
-         HasBooleans; coproducts+exp→booleans; HasLists; Poly; HasMu; poly-obj)
+         HasBooleans; coproducts+exp→booleans; Poly; HasMu; poly-obj)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
@@ -18,7 +18,6 @@ module language-interpretation
   (P  : HasProducts 𝒞)
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
-  (L  : HasLists 𝒞 T P)
   (HM : ∀ Q → HasMu 𝒞 T P C Q)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
@@ -30,8 +29,6 @@ open HasExponentials E renaming (exp to _⟦→⟧_)
 open PointedFPCat PFPC[ 𝒞 , T , P , HasBooleans.Bool B ]
 open HasCoproducts C renaming (coprod to _+_)
 open HasBooleans B
-open HasLists L renaming (list to ⟦list⟧; nil to ⟦nil⟧; cons to ⟦cons⟧; fold to ⟦fold⟧)
-
 open language-syntax Sig
 open Model Int
 
@@ -43,7 +40,6 @@ mutual
   ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty × ⟦ τ₂ ⟧ty
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty + ⟦ τ₂ ⟧ty
-  ⟦ list τ ⟧ty = ⟦list⟧ ⟦ τ ⟧ty
   ⟦ μ P ⟧ty = HasMu.μ (HM (⟦ P ⟧poly))
 
   ⟦_⟧poly : polytype → Poly 𝒞
@@ -107,9 +103,6 @@ mutual
   ⟦ app M  N ⟧tm = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
-  ⟦ nil ⟧tm = ⟦nil⟧ ∘ to-terminal
-  ⟦ cons M N ⟧tm = ⟦cons⟧ ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ fold M₁ M₂ M ⟧tm = ⟦fold⟧ ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     HasMu.sup (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (polyApply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =

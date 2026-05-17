@@ -306,10 +306,6 @@ module GlT = HasTerminal GlPE.terminal
 GDC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) Gl.cat
 GDC A = colimits where open Gl.colimits (setoid→category A) (𝒟DC A)
 
-open import lists Gl.cat GlPE.terminal GlPE.products GlPE.exponentials GDC
-  using ()
-  renaming (lists to Gl-lists)
-
 module Glued = Category Gl.cat
 open Gl.Obj
 open Gl._=>_
@@ -452,7 +448,7 @@ module syntactic {ℓ}
 
   open import language-fo-interpretation Sig
          𝒞 𝒞T 𝒞P 𝒞CP
-         Gl.cat GlPE.terminal GlPE.products GlCP.coproducts GlPE.exponentials Gl-lists Gl-HasMu
+         Gl.cat GlPE.terminal GlPE.products GlCP.coproducts GlPE.exponentials Gl-HasMu
          GF GF-preserve-terminal GF-preserve-products GF-preserve-coproducts
          𝒞-Sig-Model
     renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
