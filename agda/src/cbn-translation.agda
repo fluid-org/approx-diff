@@ -42,6 +42,29 @@ _$_ = app
 
 infixl 10 _$_
 
+-- The type translation Mon-wraps at every sum/product, but polyApply (a
+-- meta-level operation on syntactic types) doesn't see the wraps when
+-- applied at the polytype level. So ⟪polyApply P τ⟫ has extra Mon-wraps
+-- compared to polyApply ⟪P⟫poly ⟪τ⟫. cbn-coerce builds a target-language
+-- term that unwraps the Mon at each sum/product layer and rewraps once
+-- around the result.
+cbn-coerce : (P : polytype) → ∀ {Γ τ} →
+             Γ ⊢ ⟪ polyApply P τ ⟫ty →
+             Γ ⊢ Mon (polyApply ⟪ P ⟫poly ⟪ τ ⟫ty)
+cbn-coerce poly-one         M = pure $ unit
+cbn-coerce (poly-param σ)   M = pure $ (pure $ M)
+cbn-coerce poly-var         M = pure $ M
+cbn-coerce (P₁ [⊞] P₂) M =
+  case M
+    (bind $ var zero $ lam (bind $ cbn-coerce P₁ (var zero) $ lam (pure $ inl (var zero))))
+    (bind $ var zero $ lam (bind $ cbn-coerce P₂ (var zero) $ lam (pure $ inr (var zero))))
+cbn-coerce (P₁ [⊠] P₂) M =
+  bind $ fst M $ lam (
+    bind $ cbn-coerce P₁ (var zero) $ lam (
+      bind $ snd (weaken * (weaken * M)) $ lam (
+        bind $ cbn-coerce P₂ (var zero) $ lam (
+          pure $ pair (var (succ (succ zero))) (var zero)))))
+
 mutual
   ⟪_⟫tm : ∀ {Γ τ} → Γ ⊢ τ → ⟪ Γ ⟫ctxt ⊢ Mon ⟪ τ ⟫ty
   ⟪ var x ⟫tm = var ⟪ x ⟫var
@@ -64,6 +87,8 @@ mutual
   ⟪ cons M N ⟫tm = bind $ ⟪ N ⟫tm $ lam (pure $ cons (weaken * ⟪ M ⟫tm) (var zero))
   ⟪ fold M N L ⟫tm =
     bind $ ⟪ L ⟫tm $ lam (fold (weaken * ⟪ M ⟫tm) (ext (ext weaken) * ⟪ N ⟫tm) (var zero))
+  ⟪ roll {P = P} M ⟫tm =
+    bind $ ⟪ M ⟫tm $ lam (bind $ cbn-coerce P (var zero) $ lam (pure $ roll (var zero)))
 
   bindAll : ∀ {Γ Γ' σs τ} →
             Every (λ σ → Γ ⊢ base σ) σs →

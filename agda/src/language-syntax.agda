@@ -123,6 +123,10 @@ data _⊢_ : ctxt → type → Set ℓ where
          Γ ⊢ list τ₁ →
          Γ ⊢ τ₂
 
+  -- μ-type constructor (initial-algebra introduction). Takes an unrolled
+  -- value of polynomial-applied type and packs it into a μ value.
+  roll : ∀ {Γ P} → Γ ⊢ polyApply P (μ P) → Γ ⊢ μ P
+
 -- Applying renamings to terms
 mutual
   _*_ : ∀ {Γ Γ' τ} → Ren Γ Γ' → Γ ⊢ τ → Γ' ⊢ τ
@@ -144,6 +148,7 @@ mutual
   ρ * nil = nil
   ρ * cons M N = cons (ρ * M) (ρ * N)
   ρ * fold M₁ M₂ M = fold (ρ * M₁) (ext (ext ρ) * M₂) (ρ * M)
+  ρ * roll M = roll (ρ * M)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
   ρ ** [] = []

@@ -2,6 +2,7 @@
 
 open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong₂; sym; subst)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans; HasLists; Poly; HasMu; poly-obj)
@@ -56,6 +57,18 @@ mutual
 ⟦ emp ⟧ctxt = 𝟙
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt × ⟦ τ ⟧ty
 
+-- Equation showing that the meta-level polyApply on types agrees with the
+-- categorical poly-obj on objects, modulo the polytype interpretation.
+-- Needed because polyApply unfolds at the syntax level while poly-obj
+-- unfolds at the categorical level — both reduce identically by structure,
+-- but Agda doesn't see this without an explicit lemma.
+polyApply-coincides : ∀ Q τ → ⟦ polyApply Q τ ⟧ty ≡ poly-obj T P C ⟦ Q ⟧poly ⟦ τ ⟧ty
+polyApply-coincides poly-one       τ = refl
+polyApply-coincides (poly-param σ) τ = refl
+polyApply-coincides poly-var       τ = refl
+polyApply-coincides (Q₁ [⊞] Q₂)    τ = cong₂ _+_ (polyApply-coincides Q₁ τ) (polyApply-coincides Q₂ τ)
+polyApply-coincides (Q₁ [⊠] Q₂)    τ = cong₂ _×_ (polyApply-coincides Q₁ τ) (polyApply-coincides Q₂ τ)
+
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
@@ -83,6 +96,8 @@ mutual
   ⟦ nil ⟧tm = ⟦nil⟧ ∘ to-terminal
   ⟦ cons M N ⟧tm = ⟦cons⟧ ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
   ⟦ fold M₁ M₂ M ⟧tm = ⟦fold⟧ ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
+    HasMu.sup (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (polyApply-coincides P (μ P)) ⟦ M ⟧tm
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms = to-terminal
