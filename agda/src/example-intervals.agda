@@ -25,7 +25,9 @@ import prop-setoid
 
 open import two renaming (I to ⊤; O to ⊥)
 open import Data.Unit renaming (tt to ·; ⊤ to Unit) using ()
+open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
+open prop-setoid using (sup)
 
 open prop-setoid.Setoid
 
@@ -64,8 +66,11 @@ module backward where
   open import prop using (liftS)
   open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
 
-  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = 3 , (label.a , 0ℚ) , (label.b , 1ℚ) , (label.a , 1ℚ) , _
+  input : ⟦ ListM (base label [×] base number) ⟧ty .idx .Carrier
+  input = sup (inj₂ ((label.a , 0ℚ) ,
+          sup (inj₂ ((label.b , 1ℚ) ,
+          sup (inj₂ ((label.a , 1ℚ) ,
+          sup (inj₁ (lift ·))))))))
 
   open Intv
 
@@ -82,7 +87,7 @@ module backward where
   extract-interval < x > = just (x .lower , x .upper)
 
   bwd-slice : _
-  bwd-slice = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun < interval > .proj₂
+  bwd-slice = ⟦ example.ex.queryM label.a ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun < interval > .proj₂
     where
       open indexed-family._⇒f_
       open join-semilattice-category._⇒_
@@ -131,8 +136,11 @@ module forward where
   open import Data.Nat hiding (_/_)
   open import Data.Integer hiding (_/_; show; -_)
 
-  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = 3 , (label.a , 0ℚ) , (label.b , 1ℚ) , (label.a , 1ℚ) , _
+  input : ⟦ ListM (base label [×] base number) ⟧ty .idx .Carrier
+  input = sup (inj₂ ((label.a , 0ℚ) ,
+          sup (inj₂ ((label.b , 1ℚ) ,
+          sup (inj₂ ((label.a , 1ℚ) ,
+          sup (inj₁ (lift ·))))))))
 
   open Intv
 
@@ -158,7 +166,7 @@ module forward where
   -- Unfortunately this is a bit slow to normalise, so not using at the moment; instead have simpler isolated
   -- tests using the 'add' conjugate pair and Galois connection directly.
   fwd-slice : _
-  fwd-slice = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun
+  fwd-slice = ⟦ example.ex.queryM label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun
     (_ , (_ , < intv0 >) , (_ , bottom) , (_ , < intv1 >) , _)
     where
       open indexed-family._⇒f_

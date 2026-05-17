@@ -41,24 +41,13 @@ module ex where
   Tag-monad .SynMonad.pure = Tag-pure
   Tag-monad .SynMonad.bind = Tag-bind
 
-  -- Summation function
-  sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
-  sum = lam (fold (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
-
   `_ : ∀ {Γ} → label.label → Γ ⊢ base label
   ` l = bop (lbl l) []
 
   _≟_ : ∀ {Γ} → Γ ⊢ base label → Γ ⊢ base label → Γ ⊢ bool
   M ≟ N = brel equal-label (M ∷ N ∷ [])
 
-  query : label.label → emp , list (base label [×] base number) ⊢ base number
-  query l = app sum
-                (from var zero collect
-                 when fst (var zero) ≟ (` l) ；
-                 return (snd (var zero)))
-
-  -- Parallel μ-types version of sum/query, using ListM instead of the
-  -- primitive list. Will replace sum/query once primitive list is removed.
+  -- Summation function, μ-types version (uses ListM).
   sumM : ∀ {Γ} → Γ ⊢ ListM (base number) [→] base number
   sumM = lam (foldM (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
 
@@ -69,9 +58,6 @@ module ex where
                   returnM (snd (var zero)))
 
   open import cbn-translation Sig Tag-monad
-
-  cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
-  cbn-query l = ⟪ query l ⟫tm
 
   cbn-queryM : label.label → emp , Tag (ListM (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
   cbn-queryM l = ⟪ queryM l ⟫tm
