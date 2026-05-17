@@ -127,6 +127,12 @@ data _⊢_ : ctxt → type → Set ℓ where
   -- value of polynomial-applied type and packs it into a μ value.
   roll : ∀ {Γ P} → Γ ⊢ polyApply P (μ P) → Γ ⊢ μ P
 
+  -- μ-type eliminator (closed-form initial-algebra fold). Takes a (possibly
+  -- context-dependent) algebra value and a μ value, produces the folded
+  -- result. The algebra is a function value; context-dependent algebras are
+  -- expressed by building the function via lam (closure captures Γ).
+  fold-μ : ∀ {Γ P τ} → Γ ⊢ polyApply P τ [→] τ → Γ ⊢ μ P → Γ ⊢ τ
+
 -- Applying renamings to terms
 mutual
   _*_ : ∀ {Γ Γ' τ} → Ren Γ Γ' → Γ ⊢ τ → Γ' ⊢ τ
@@ -149,6 +155,7 @@ mutual
   ρ * cons M N = cons (ρ * M) (ρ * N)
   ρ * fold M₁ M₂ M = fold (ρ * M₁) (ext (ext ρ) * M₂) (ρ * M)
   ρ * roll M = roll (ρ * M)
+  ρ * fold-μ alg M = fold-μ (ρ * alg) (ρ * M)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
   ρ ** [] = []

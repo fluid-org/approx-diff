@@ -69,6 +69,20 @@ polyApply-coincides poly-var       τ = refl
 polyApply-coincides (Q₁ [⊞] Q₂)    τ = cong₂ _+_ (polyApply-coincides Q₁ τ) (polyApply-coincides Q₂ τ)
 polyApply-coincides (Q₁ [⊠] Q₂)    τ = cong₂ _×_ (polyApply-coincides Q₁ τ) (polyApply-coincides Q₂ τ)
 
+-- F-apply: for a polynomial Q and result types ctx, t, take a polynomial
+-- value whose recursive positions hold (ctx ⇒ t)-shaped function values
+-- together with a ctx argument, and apply each function. Used by fold-μ
+-- to thread the typing context Γ through the polynomial's algebra slots.
+F-apply : (Q : Poly 𝒞) {ctx t : obj} →
+          ((poly-obj T P C Q (ctx ⟦→⟧ t)) × ctx) ⇒ poly-obj T P C Q t
+F-apply Poly.one       = to-terminal
+F-apply (Poly.param _) = p₁
+F-apply Poly.var       = eval
+F-apply (Q₁ Poly.⊞ Q₂) =
+  eval ∘ ⟨ copair (lambda (in₁ ∘ F-apply Q₁)) (lambda (in₂ ∘ F-apply Q₂)) ∘ p₁ , p₂ ⟩
+F-apply (Q₁ Poly.⊠ Q₂) =
+  ⟨ F-apply Q₁ ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , F-apply Q₂ ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
@@ -98,6 +112,14 @@ mutual
   ⟦ fold M₁ M₂ M ⟧tm = ⟦fold⟧ ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     HasMu.sup (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (polyApply-coincides P (μ P)) ⟦ M ⟧tm
+  ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
+    eval ∘ ⟨ HasMu.fold (HM ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
+    where
+      coerced : (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) × ⟦ Γ ⟧ctxt) ⇒ ⟦ polyApply Q τ ⟧ty
+      coerced = subst (λ X → (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) × ⟦ Γ ⟧ctxt) ⇒ X)
+                      (sym (polyApply-coincides Q τ)) (F-apply ⟦ Q ⟧poly)
+      closed-alg : poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
+      closed-alg = lambda (eval ∘ ⟨ ⟦ alg ⟧tm ∘ p₂ , coerced ⟩)
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms = to-terminal

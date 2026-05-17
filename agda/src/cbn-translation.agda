@@ -65,6 +65,23 @@ cbn-coerce (P₁ [⊠] P₂) M =
         bind $ cbn-coerce P₂ (var zero) $ lam (
           pure $ pair (var (succ (succ zero))) (var zero)))))
 
+-- The other direction (used by fold-μ): from polyApply ⟪P⟫poly (Mon ⟪τ⟫ty)
+-- (target-side, with Mon at var positions but no Mon at sum/product
+-- nodes) to Mon ⟪polyApply P τ⟫ty (source-translation-side, with Mon at
+-- sum/product nodes). Aligns the algebra-argument type for fold-μ.
+cbn-coerce' : (P : polytype) → ∀ {Γ τ} →
+              Γ ⊢ polyApply ⟪ P ⟫poly (Mon ⟪ τ ⟫ty) →
+              Γ ⊢ Mon ⟪ polyApply P τ ⟫ty
+cbn-coerce' poly-one       M = pure $ M
+cbn-coerce' (poly-param σ) M = M
+cbn-coerce' poly-var       M = M
+cbn-coerce' (P₁ [⊞] P₂) M =
+  case M
+    (pure $ inl (cbn-coerce' P₁ (var zero)))
+    (pure $ inr (cbn-coerce' P₂ (var zero)))
+cbn-coerce' (P₁ [⊠] P₂) M =
+  pure $ pair (cbn-coerce' P₁ (fst M)) (cbn-coerce' P₂ (snd M))
+
 mutual
   ⟪_⟫tm : ∀ {Γ τ} → Γ ⊢ τ → ⟪ Γ ⟫ctxt ⊢ Mon ⟪ τ ⟫ty
   ⟪ var x ⟫tm = var ⟪ x ⟫var
@@ -89,6 +106,12 @@ mutual
     bind $ ⟪ L ⟫tm $ lam (fold (weaken * ⟪ M ⟫tm) (ext (ext weaken) * ⟪ N ⟫tm) (var zero))
   ⟪ roll {P = P} M ⟫tm =
     bind $ ⟪ M ⟫tm $ lam (bind $ cbn-coerce P (var zero) $ lam (pure $ roll (var zero)))
+  ⟪ fold-μ {P = Q} {τ = τ} alg M ⟫tm =
+    bind $ ⟪ alg ⟫tm $ lam (
+      bind $ (weaken * ⟪ M ⟫tm) $ lam (
+        fold-μ
+          (lam (app (var (succ (succ zero))) (cbn-coerce' Q (var zero))))
+          (var zero)))
 
   bindAll : ∀ {Γ Γ' σs τ} →
             Every (λ σ → Γ ⊢ base σ) σs →
