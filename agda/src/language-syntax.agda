@@ -205,21 +205,9 @@ fromM M collectM N = foldM nilM (appendM (weaken * N) (var zero)) M
 whenM_；M_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ ListM τ → Γ ⊢ ListM τ
 whenM M ；M N = if M then N else nilM
 
-append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
-append xs ys = fold ys (cons (var (succ zero)) (var zero)) xs
+appendM-f : ∀ {Γ τ} → Γ ⊢ ListM τ [→] ListM τ [→] ListM τ
+appendM-f = lam (lam (foldM (var zero) (consM (var (succ zero)) (var zero)) (var (succ zero))))
 
-return : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ
-return x = cons x nil
-
-from_collect_ : ∀ {Γ τ₁ τ₂} → Γ ⊢ list τ₁ → Γ , τ₁ ⊢ list τ₂ → Γ ⊢ list τ₂
-from M collect N = fold nil (append (weaken * N) (var zero)) M
-
-when_；_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ list τ → Γ ⊢ list τ
-when M ； N = if M then N else nil
-
--- Some useful functions:
-append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
-append-f = lam (lam (fold (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
 
 -- The list monad
 {-
