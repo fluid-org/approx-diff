@@ -321,7 +321,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     open Mor
 
     bigCoproducts : ∀ (S : Setoid os es) → HasColimits (setoid→category S) cat
-    bigCoproducts S D .apex .idx .Carrier = Σ[ s ∈ S .Carrier ] D .fobj s .idx .Carrier
+    bigCoproducts S D .apex .idx .Setoid.Carrier = Σ[ s ∈ S .Carrier ] D .fobj s .idx .Setoid.Carrier
     bigCoproducts S D .apex .idx ._≈_ (s₁ , x₁) (s₂ , x₂) =
       ∃ₚ (S ._≈_ s₁ s₂) λ s₁≈s₂ → D .fobj s₂ .idx ._≈_ (D .fmor ⟪ s₁≈s₂ ⟫ .idxf .func x₁) x₂
     bigCoproducts S D .apex .idx .isEquivalence .refl {s , x} =
@@ -859,6 +859,8 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     module W-types (Q : Poly cat) where
       open import Data.Sum using (inj₁; inj₂)
       open import Data.Product using (_,_)
+      open _⇒s_
+      open _⇒f_
 
       poly-idx-of : Poly cat → prop-setoid.IdxPoly
       poly-idx-of Poly.one        = prop-setoid.one
@@ -944,3 +946,160 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       WObj : Obj
       WObj .idx = prop-setoid.WSetoid poly-idx
       WObj .fam = WFam
+
+      -- The sup morphism: poly-obj (terminal T) products coproducts Q WObj ⇒ WObj.
+      -- At the idx side, embed the structurally-built Fam-idx into WIdx-of and
+      -- wrap with prop-setoid.sup. At the fam side, the fibres are
+      -- definitionally equal at each Poly case, so the transf is the identity.
+      open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
+
+      embed-idx : (P : Poly cat) →
+                  poly-obj (terminal T) products coproducts P WObj .idx .Setoid.Carrier →
+                  prop-setoid.WIdx-of poly-idx (poly-idx-of P)
+      embed-idx Poly.one         (lift tt)  = lift tt
+      embed-idx (Poly.param A)   a          = a
+      embed-idx Poly.var         w          = w
+      embed-idx (P₁ Poly.⊕ P₂)   (inj₁ x)   = inj₁ (embed-idx P₁ x)
+      embed-idx (P₁ Poly.⊕ P₂)   (inj₂ y)   = inj₂ (embed-idx P₂ y)
+      embed-idx (P₁ Poly.⊗ P₂)   (x , y)    = (embed-idx P₁ x , embed-idx P₂ y)
+
+      embed-≈ : (P : Poly cat) → ∀ {x y} →
+                poly-obj (terminal T) products coproducts P WObj .idx .Setoid._≈_ x y →
+                prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) (embed-idx P x) (embed-idx P y)
+      embed-≈ Poly.one         _   = tt
+      embed-≈ (Poly.param A)   eq  = eq
+      embed-≈ Poly.var         eq  = eq
+      embed-≈ (P₁ Poly.⊕ P₂) {inj₁ _} {inj₁ _} eq        = embed-≈ P₁ eq
+      embed-≈ (P₁ Poly.⊕ P₂) {inj₂ _} {inj₂ _} eq        = embed-≈ P₂ eq
+      embed-≈ (P₁ Poly.⊗ P₂) {_ , _} {_ , _} (e₁ , e₂)   = (embed-≈ P₁ e₁ , embed-≈ P₂ e₂)
+
+      -- Fibre-level structural identity. Definitionally,
+      -- (poly-obj _ _ _ P WObj).fam.fm i = WFam-of-fm P (embed-idx P i)
+      -- at each Poly case (after destructing W's sup at the var case).
+      embed-fam : (P : Poly cat) (i : poly-obj (terminal T) products coproducts P WObj .idx .Setoid.Carrier) →
+                  poly-obj (terminal T) products coproducts P WObj .fam .fm i ⇒
+                  WFam-of-fm P (embed-idx P i)
+      embed-fam Poly.one       (lift tt)             = id _
+      embed-fam (Poly.param A) a                     = id _
+      embed-fam Poly.var       (prop-setoid.sup _)   = id _
+      embed-fam (P₁ Poly.⊕ P₂) (inj₁ x)              = embed-fam P₁ x
+      embed-fam (P₁ Poly.⊕ P₂) (inj₂ y)              = embed-fam P₂ y
+      embed-fam (P₁ Poly.⊗ P₂) (x , y)               = prod-m (embed-fam P₁ x) (embed-fam P₂ y)
+
+      embed-fam-natural : (P : Poly cat) → ∀ {x₁ x₂}
+                          (e : poly-obj (terminal T) products coproducts P WObj .idx .Setoid._≈_ x₁ x₂) →
+                          (embed-fam P x₂ ∘ poly-obj (terminal T) products coproducts P WObj .fam .subst e)
+                          ≈ (WFam-of-subst P (embed-≈ P e) ∘ embed-fam P x₁)
+      embed-fam-natural Poly.one _ =
+        isEquiv .trans id-left (≈-sym id-right)
+      embed-fam-natural (Poly.param A) _ =
+        isEquiv .trans id-left (≈-sym id-right)
+      embed-fam-natural Poly.var {prop-setoid.sup _} {prop-setoid.sup _} _ =
+        isEquiv .trans id-left (≈-sym id-right)
+      embed-fam-natural (P₁ Poly.⊕ P₂) {inj₁ _} {inj₁ _} e = embed-fam-natural P₁ e
+      embed-fam-natural (P₁ Poly.⊕ P₂) {inj₂ _} {inj₂ _} e = embed-fam-natural P₂ e
+      embed-fam-natural (P₁ Poly.⊗ P₂) {x₁ , y₁} {x₂ , y₂} (e , f) =
+        begin
+          prod-m (embed-fam P₁ x₂) (embed-fam P₂ y₂) ∘ prod-m _ _
+        ≈⟨ ≈-sym (pair-functorial _ _ _ _) ⟩
+          prod-m (embed-fam P₁ x₂ ∘ _) (embed-fam P₂ y₂ ∘ _)
+        ≈⟨ prod-m-cong (embed-fam-natural P₁ e) (embed-fam-natural P₂ f) ⟩
+          prod-m (WFam-of-subst P₁ (embed-≈ P₁ e) ∘ embed-fam P₁ x₁) (WFam-of-subst P₂ (embed-≈ P₂ f) ∘ embed-fam P₂ y₁)
+        ≈⟨ pair-functorial _ _ _ _ ⟩
+          prod-m (WFam-of-subst P₁ (embed-≈ P₁ e)) (WFam-of-subst P₂ (embed-≈ P₂ f)) ∘ prod-m (embed-fam P₁ x₁) (embed-fam P₂ y₁)
+        ∎ where open ≈-Reasoning isEquiv
+
+      sup : Mor (poly-obj (terminal T) products coproducts Q WObj) WObj
+      sup .idxf .func i                     = prop-setoid.sup (embed-idx Q i)
+      sup .idxf .func-resp-≈ eq             = embed-≈ Q eq
+      sup .famf .transf i                   = embed-fam Q i
+      sup .famf .natural e                  = embed-fam-natural Q e
+
+      -- Fold. Given an algebra alg : poly-obj Q y ⇒ y, the recursion descends
+      -- the W structure at each var slot, applying alg's idx/fam components.
+      module _ {y : Obj} (alg : Mor (poly-obj (terminal T) products coproducts Q y) y) where
+
+        project-idx : (P : Poly cat) → prop-setoid.WIdx-of poly-idx (poly-idx-of P) →
+                      poly-obj (terminal T) products coproducts P y .idx .Setoid.Carrier
+        project-idx Poly.one _                       = lift tt
+        project-idx (Poly.param A) a                 = a
+        project-idx Poly.var (prop-setoid.sup i)     = alg .idxf .func (project-idx Q i)
+        project-idx (P₁ Poly.⊕ P₂) (inj₁ x)          = inj₁ (project-idx P₁ x)
+        project-idx (P₁ Poly.⊕ P₂) (inj₂ z)          = inj₂ (project-idx P₂ z)
+        project-idx (P₁ Poly.⊗ P₂) (x , z)           = (project-idx P₁ x , project-idx P₂ z)
+
+        project-≈ : (P : Poly cat) → ∀ {x z} →
+                    prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) x z →
+                    poly-obj (terminal T) products coproducts P y .idx .Setoid._≈_
+                      (project-idx P x) (project-idx P z)
+        project-≈ Poly.one _ = tt
+        project-≈ (Poly.param A) eq = eq
+        project-≈ Poly.var {prop-setoid.sup _} {prop-setoid.sup _} eq =
+          alg .idxf .func-resp-≈ (project-≈ Q eq)
+        project-≈ (P₁ Poly.⊕ P₂) {inj₁ _} {inj₁ _} eq = project-≈ P₁ eq
+        project-≈ (P₁ Poly.⊕ P₂) {inj₂ _} {inj₂ _} eq = project-≈ P₂ eq
+        project-≈ (P₁ Poly.⊗ P₂) {_ , _} {_ , _} (e , f) = (project-≈ P₁ e , project-≈ P₂ f)
+
+        project-fam : (P : Poly cat) (i : prop-setoid.WIdx-of poly-idx (poly-idx-of P)) →
+                      WFam-of-fm P i ⇒
+                      poly-obj (terminal T) products coproducts P y .fam .fm (project-idx P i)
+        project-fam Poly.one _                       = id _
+        project-fam (Poly.param A) a                 = id _
+        project-fam Poly.var (prop-setoid.sup i)     =
+          alg .famf .transf (project-idx Q i) ∘ project-fam Q i
+        project-fam (P₁ Poly.⊕ P₂) (inj₁ x)          = project-fam P₁ x
+        project-fam (P₁ Poly.⊕ P₂) (inj₂ z)          = project-fam P₂ z
+        project-fam (P₁ Poly.⊗ P₂) (x , z)           =
+          prod-m (project-fam P₁ x) (project-fam P₂ z)
+
+        project-fam-natural : (P : Poly cat) → ∀ {x z}
+                              (e : prop-setoid.WIdx-≈-of poly-idx (poly-idx-of P) x z) →
+                              (project-fam P z ∘ WFam-of-subst P e) ≈
+                              (poly-obj (terminal T) products coproducts P y .fam .subst (project-≈ P e) ∘ project-fam P x)
+        project-fam-natural Poly.one _ =
+          isEquiv .trans id-left (≈-sym id-right)
+        project-fam-natural (Poly.param A) _ =
+          isEquiv .trans id-left (≈-sym id-right)
+        project-fam-natural Poly.var {prop-setoid.sup i₁} {prop-setoid.sup i₂} eq =
+          begin
+            (alg .famf .transf (project-idx Q i₂) ∘ project-fam Q i₂) ∘ WFam-of-subst Q eq
+          ≈⟨ assoc _ _ _ ⟩
+            alg .famf .transf (project-idx Q i₂) ∘ (project-fam Q i₂ ∘ WFam-of-subst Q eq)
+          ≈⟨ ∘-cong (isEquiv .refl) (project-fam-natural Q eq) ⟩
+            alg .famf .transf (project-idx Q i₂) ∘
+              (poly-obj (terminal T) products coproducts Q y .fam .subst (project-≈ Q eq) ∘ project-fam Q i₁)
+          ≈⟨ ≈-sym (assoc _ _ _) ⟩
+            (alg .famf .transf (project-idx Q i₂) ∘
+              poly-obj (terminal T) products coproducts Q y .fam .subst (project-≈ Q eq)) ∘ project-fam Q i₁
+          ≈⟨ ∘-cong (alg .famf .natural (project-≈ Q eq)) (isEquiv .refl) ⟩
+            (y .fam .subst (alg .idxf .func-resp-≈ (project-≈ Q eq)) ∘ alg .famf .transf (project-idx Q i₁)) ∘ project-fam Q i₁
+          ≈⟨ assoc _ _ _ ⟩
+            y .fam .subst (alg .idxf .func-resp-≈ (project-≈ Q eq)) ∘
+              (alg .famf .transf (project-idx Q i₁) ∘ project-fam Q i₁)
+          ∎ where open ≈-Reasoning isEquiv
+        project-fam-natural (P₁ Poly.⊕ P₂) {inj₁ _} {inj₁ _} e = project-fam-natural P₁ e
+        project-fam-natural (P₁ Poly.⊕ P₂) {inj₂ _} {inj₂ _} e = project-fam-natural P₂ e
+        project-fam-natural (P₁ Poly.⊗ P₂) {x₁ , z₁} {x₂ , z₂} (e , f) =
+          begin
+            prod-m (project-fam P₁ x₂) (project-fam P₂ z₂) ∘ prod-m _ _
+          ≈⟨ ≈-sym (pair-functorial _ _ _ _) ⟩
+            prod-m (project-fam P₁ x₂ ∘ _) (project-fam P₂ z₂ ∘ _)
+          ≈⟨ prod-m-cong (project-fam-natural P₁ e) (project-fam-natural P₂ f) ⟩
+            prod-m (_ ∘ project-fam P₁ x₁) (_ ∘ project-fam P₂ z₁)
+          ≈⟨ pair-functorial _ _ _ _ ⟩
+            prod-m _ _ ∘ prod-m (project-fam P₁ x₁) (project-fam P₂ z₁)
+          ∎ where open ≈-Reasoning isEquiv
+
+        fold-mor : Mor WObj y
+        fold-mor .idxf .func (prop-setoid.sup i)                                = alg .idxf .func (project-idx Q i)
+        fold-mor .idxf .func-resp-≈ {prop-setoid.sup _} {prop-setoid.sup _} eq  = alg .idxf .func-resp-≈ (project-≈ Q eq)
+        fold-mor .famf .transf (prop-setoid.sup i)                              = alg .famf .transf (project-idx Q i) ∘ project-fam Q i
+        fold-mor .famf .natural {prop-setoid.sup _} {prop-setoid.sup _} eq      = project-fam-natural Poly.var eq
+
+      fold : ∀ {y : Obj} → Mor (poly-obj (terminal T) products coproducts Q y) y → Mor WObj y
+      fold alg = fold-mor alg
+
+    hasMu : (Q : Poly cat) → HasMu cat (terminal T) products coproducts Q
+    hasMu Q .HasMu.μ     = W-types.WObj Q
+    hasMu Q .HasMu.sup   = W-types.sup Q
+    hasMu Q .HasMu.fold  = W-types.fold Q
