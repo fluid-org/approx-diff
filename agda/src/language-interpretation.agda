@@ -43,6 +43,7 @@ mutual
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
   ⟦ μ P ⟧ty = HasMu.μ (Mu (⟦ P ⟧poly))
+  ⟦ approx τ ⟧ty = ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
   ⟦ one ⟧poly       = Poly.one

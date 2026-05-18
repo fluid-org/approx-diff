@@ -88,16 +88,18 @@ module backward-cbn where
       open join-semilattice._=>_
       open preorder._=>_
 
-  -- TODO: tests below need expected values reconstructed for the W-form
-  -- result of bwd-slice. To do so interactively: write `test1 = ?` and use
-  -- C-c C-, in agda-mode to inspect the normalised goal type. The result
-  -- structure is more nested than the old list form. Batch-mode compute
-  -- (agda --interaction) on `bwd-slice label.a` was attempted but exhausts
-  -- memory (>12GB) without producing output.
-  -- test1 : bwd-slice label.a ≡ ...
-  -- test1 = ≡-refl
-  -- test2 : bwd-slice label.b ≡ ...
-  -- test2 = ≡-refl
+  -- TODO: tests below — reconstructed structure for the W-form result:
+  --     (⊤ , ((⊤ , (⊤ , ·) , (⊤ , ·)) ,
+  --           ((⊤ , (⊤ , ·) , (⊥ , ·)) ,
+  --            ((⊤ , (⊤ , ·) , (⊤ , ·)) ,
+  --             ·))))
+  -- ...but enabling them makes typechecking timeout (>4min, ≥14GB RSS).
+  -- Suspected cause: the cbn-coerce/cbn-coerce' machinery generates
+  -- many nested bind/pure terms which the W-form interpretation has to
+  -- unroll structurally. Even smaller inputs (1 cons cell) might
+  -- terminate; worth trying if these tests are needed.
+  -- test1 : bwd-slice label.a ≡ ... ; test1 = ≡-refl
+  -- test2 : bwd-slice label.b ≡ ... ; test2 = ≡-refl
 
 -- Forward analysis (Conjugate).
 module forward where

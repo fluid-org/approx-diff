@@ -26,6 +26,7 @@ mutual
   ⟪ τ₁ [+] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [+] Mon ⟪ τ₂ ⟫ty
   ⟪ τ₁ [→] τ₂ ⟫ty = (Mon ⟪ τ₁ ⟫ty) [→] (Mon ⟪ τ₂ ⟫ty)
   ⟪ μ P ⟫ty = μ ⟪ P ⟫poly
+  ⟪ approx τ ⟫ty = approx ⟪ τ ⟫ty
 
   ⟪_⟫poly : polynomial → polynomial
   ⟪ one ⟫poly       = one

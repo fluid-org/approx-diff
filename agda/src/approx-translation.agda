@@ -29,6 +29,7 @@ mutual
   ⟪ τ₁ [+] τ₂ ⟫ty-inner  = ⟪ τ₁ ⟫ty [+] ⟪ τ₂ ⟫ty
   ⟪ τ₁ [→] τ₂ ⟫ty-inner  = ⟪ τ₁ ⟫ty [→] ⟪ τ₂ ⟫ty
   ⟪ μ P ⟫ty-inner        = μ ⟪ P ⟫poly
+  ⟪ approx τ ⟫ty-inner   = approx ⟪ τ ⟫ty
 
   ⟪_⟫poly : polynomial → polynomial
   ⟪ one ⟫poly      = one
