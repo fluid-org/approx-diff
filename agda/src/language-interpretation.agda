@@ -68,9 +68,7 @@ apply-coincides (Q₁ + Q₂)    τ = cong₂ _⊕_ (apply-coincides Q₁ τ) (a
 apply-coincides (Q₁ × Q₂)    τ = cong₂ _⊗_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
 apply-coincides (approx Q)   τ = cong (𝟙 ⊕_) (apply-coincides Q τ)
 
--- Take a polynomial value whose recursive positions hold (ctx ⇒ t)-shaped function values together with a ctx
--- argument, and apply each function. Used by fold-μ to thread the typing context Γ through the polynomial's
--- algebra slots.
+-- Take a polynomial container of (ctx ⇒ t) morphisms and a ctx, and reduce using eval.
 map-eval : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ poly-obj Q t
 map-eval Poly.one       = to-terminal
 map-eval (Poly.const _) = p₁
