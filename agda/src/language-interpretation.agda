@@ -19,7 +19,7 @@ module language-interpretation
   (P  : HasProducts 𝒞)
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
-  (HM : ∀ Q → Sem.HasMu T P C Q)
+  (Mu : ∀ Q → Sem.HasMu T P C Q)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
 
@@ -44,7 +44,7 @@ mutual
   ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
-  ⟦ μ P ⟧ty = HasMu.μ (HM (⟦ P ⟧poly))
+  ⟦ μ P ⟧ty = HasMu.μ (Mu (⟦ P ⟧poly))
   ⟦ approx τ ⟧ty  = 𝟙 ⊕ ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
@@ -104,12 +104,12 @@ mutual
   ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    HasMu.inF (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
+    HasMu.inF (Mu ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ pure M ⟧tm   = in₂ ∘ ⟦ M ⟧tm
   ⟦ bind {σ = σ} M N ⟧tm =
     eval ∘ ⟨ copair (lambda (in₁ ∘ to-terminal)) (lambda (⟦ N ⟧tm ∘ swap)) ∘ ⟦ M ⟧tm , id _ ⟩
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    eval ∘ ⟨ HasMu.⦅_⦆ (HM ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
+    eval ∘ ⟨ HasMu.⦅_⦆ (Mu ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
     where
       closed-alg : poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
       closed-alg = lambda (eval ∘ ⟨
