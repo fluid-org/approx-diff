@@ -72,14 +72,12 @@ apply-coincides (approx Q)   τ = cong (𝟙 ⊕_) (apply-coincides Q τ)
 -- value whose recursive positions hold (ctx ⇒ t)-shaped function values
 -- together with a ctx argument, and apply each function. Used by fold-μ
 -- to thread the typing context Γ through the polynomial's algebra slots.
-F-apply : (Q : Poly 𝒞) {ctx t : obj} → ((poly-obj Q (ctx ⟦→⟧ t)) ⊗ ctx) ⇒ poly-obj Q t
+F-apply : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ poly-obj Q t
 F-apply Poly.one       = to-terminal
 F-apply (Poly.const _) = p₁
 F-apply Poly.var       = eval
-F-apply (Q₁ Poly.+ Q₂) =
-  eval ∘ ⟨ copair (lambda (in₁ ∘ F-apply Q₁)) (lambda (in₂ ∘ F-apply Q₂)) ∘ p₁ , p₂ ⟩
-F-apply (Q₁ Poly.× Q₂) =
-  ⟨ F-apply Q₁ ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , F-apply Q₂ ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+F-apply (Q₁ Poly.+ Q₂) = eval ∘ ⟨ copair (lambda (in₁ ∘ F-apply Q₁)) (lambda (in₂ ∘ F-apply Q₂)) ∘ p₁ , p₂ ⟩
+F-apply (Q₁ Poly.× Q₂) = ⟨ F-apply Q₁ ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , F-apply Q₂ ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
