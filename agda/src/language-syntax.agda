@@ -22,20 +22,19 @@ mutual
     one : polynomial
     const : type → polynomial
     var : polynomial
-    _+_ : polynomial → polynomial → polynomial
-    _×_ : polynomial → polynomial → polynomial
+    _[+]_ : polynomial → polynomial → polynomial
+    _[×]_ : polynomial → polynomial → polynomial
     approx : polynomial → polynomial
 
 apply : polynomial → type → type
 apply one _         = unit
 apply (const σ) _   = σ
 apply var τ         = τ
-apply (P₁ + P₂) τ   = apply P₁ τ [+] apply P₂ τ
-apply (P₁ × P₂) τ   = apply P₁ τ [×] apply P₂ τ
+apply (P [+] Q) τ   = apply P τ [+] apply Q τ
+apply (P [×] Q) τ   = apply P τ [×] apply Q τ
 apply (approx P) τ  = approx (apply P τ)
 
 infixr 35 _[→]_
-infixl 40 _+_ _×_
 
 data first-order : type → Set ℓ where
   unit  : first-order unit
@@ -155,7 +154,7 @@ mutual
 
 -- “macros” for lists
 list : type → type
-list τ = μ (one + (const τ × var))
+list τ = μ (one [+] (const τ [×] var))
 
 nil : ∀ {Γ τ} → Γ ⊢ list τ
 nil = roll (inl unit)
@@ -165,7 +164,7 @@ cons h t = roll (inr (pair h t))
 
 fold : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
 fold {σ = σ} {τ = τ} nilCase consCase M =
-  fold-μ {P = one + (const σ × var)} (lam alg-body) M
+  fold-μ {P = one [+] (const σ [×] var)} (lam alg-body) M
   where
     alg-body : _
     alg-body =

@@ -4,7 +4,7 @@
 -- Moggi-style CBN translation, using the language's built-in approx
 -- modality (formerly parameterised on an external SynMonad). This puts
 -- approximation slots on every component of every compound type former
--- (per-component approxes) — distinct from lifting-translation's
+-- (per-component approxes) — distinct from approx-translation's
 -- per-root design.
 ------------------------------------------------------------------------------
 
@@ -33,8 +33,8 @@ mutual
   ⟪ one ⟫poly       = one
   ⟪ const σ ⟫poly   = const (approx ⟪ σ ⟫ty)
   ⟪ var ⟫poly       = var
-  ⟪ P₁ + P₂ ⟫poly      = ⟪ P₁ ⟫poly + ⟪ P₂ ⟫poly
-  ⟪ P₁ × P₂ ⟫poly      = ⟪ P₁ ⟫poly × ⟪ P₂ ⟫poly
+  ⟪ P [+] Q ⟫poly        = ⟪ P ⟫poly [+] ⟪ Q ⟫poly
+  ⟪ P [×] Q ⟫poly        = ⟪ P ⟫poly [×] ⟪ Q ⟫poly
   ⟪ approx P ⟫poly  = approx ⟪ P ⟫poly
 
 ⟪_⟫ctxt : ctxt → ctxt
@@ -57,15 +57,15 @@ cbn-coerce : (P : polynomial) → ∀ {Γ τ} →
 cbn-coerce one         M = pure unit
 cbn-coerce (const σ)   M = pure (pure M)
 cbn-coerce var         M = pure M
-cbn-coerce (P₁ + P₂) M =
+cbn-coerce (P [+] Q) M =
   case M
-    (bind (var zero) (bind (cbn-coerce P₁ (var zero)) (pure (inl (var zero)))))
-    (bind (var zero) (bind (cbn-coerce P₂ (var zero)) (pure (inr (var zero)))))
-cbn-coerce (P₁ × P₂) M =
+    (bind (var zero) (bind (cbn-coerce P (var zero)) (pure (inl (var zero)))))
+    (bind (var zero) (bind (cbn-coerce Q (var zero)) (pure (inr (var zero)))))
+cbn-coerce (P [×] Q) M =
   bind (fst M) (
-    bind (cbn-coerce P₁ (var zero)) (
+    bind (cbn-coerce P (var zero)) (
       bind (snd (weaken * (weaken * M))) (
-        bind (cbn-coerce P₂ (var zero)) (
+        bind (cbn-coerce Q (var zero)) (
           pure (pair (var (succ (succ zero))) (var zero))))))
 cbn-coerce (approx P) M = pure (bind M (cbn-coerce P (var zero)))
 
@@ -79,12 +79,12 @@ cbn-coerce' : (P : polynomial) → ∀ {Γ τ} →
 cbn-coerce' one       M = pure M
 cbn-coerce' (const σ) M = M
 cbn-coerce' var       M = M
-cbn-coerce' (P₁ + P₂) M =
+cbn-coerce' (P [+] Q) M =
   case M
-    (pure (inl (cbn-coerce' P₁ (var zero))))
-    (pure (inr (cbn-coerce' P₂ (var zero))))
-cbn-coerce' (P₁ × P₂) M =
-  pure (pair (cbn-coerce' P₁ (fst M)) (cbn-coerce' P₂ (snd M)))
+    (pure (inl (cbn-coerce' P (var zero))))
+    (pure (inr (cbn-coerce' Q (var zero))))
+cbn-coerce' (P [×] Q) M =
+  pure (pair (cbn-coerce' P (fst M)) (cbn-coerce' Q (snd M)))
 cbn-coerce' (approx P) M = pure (bind M (cbn-coerce' P (var zero)))
 
 mutual

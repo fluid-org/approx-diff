@@ -13,8 +13,8 @@ data Poly {o m e} (𝒞 : Category o m e) : Set o where
   one  : Poly 𝒞                              -- constant terminal
   const : Category.obj 𝒞 → Poly 𝒞            -- constant object
   var  : Poly 𝒞                              -- recursive slot
-  _+_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- sum
-  _×_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- product
+  _[+]_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞          -- sum
+  _[×]_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞          -- product
 
 module Sem {o m e} {𝒞 : Category o m e}
            (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
@@ -27,8 +27,8 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-obj one         _ = terminal
   poly-obj (const A)   _ = A
   poly-obj var         x = x
-  poly-obj (P₁ + P₂)   x = coprod (poly-obj P₁ x) (poly-obj P₂ x)
-  poly-obj (P₁ × P₂)   x = prod  (poly-obj P₁ x) (poly-obj P₂ x)
+  poly-obj (P [+] Q)   x = coprod (poly-obj P x) (poly-obj Q x)
+  poly-obj (P [×] Q)   x = prod   (poly-obj P x) (poly-obj Q x)
 
   record HasMu (Q : Poly 𝒞) : Set (o ⊔ m ⊔ e) where
     field

@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Lifting translation.
+-- Approx translation.
 --
 -- A translation that inserts the syntactic `approx` modality at the root
 -- of every compound type former (sum, product, function, μ) and at labels.
@@ -34,7 +34,7 @@ open import signature using (Signature)
 open import every
 import language-syntax
 
-module lifting-translation {ℓ} (Sig : Signature ℓ) where
+module approx-translation {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig using (sort)
 open language-syntax Sig
@@ -65,8 +65,8 @@ mutual
   ⟪ one ⟫poly      = approx one
   ⟪ const σ ⟫poly  = const ⟪ σ ⟫ty
   ⟪ var ⟫poly      = var
-  ⟪ P₁ + P₂ ⟫poly  = approx (⟪ P₁ ⟫poly + ⟪ P₂ ⟫poly)
-  ⟪ P₁ × P₂ ⟫poly  = approx (⟪ P₁ ⟫poly × ⟪ P₂ ⟫poly)
+  ⟪ P [+] Q ⟫poly    = approx (⟪ P ⟫poly [+] ⟪ Q ⟫poly)
+  ⟪ P [×] Q ⟫poly    = approx (⟪ P ⟫poly [×] ⟪ Q ⟫poly)
   ⟪ approx P ⟫poly = approx ⟪ P ⟫poly
 
 ⟪_⟫ctxt : ctxt → ctxt
@@ -83,26 +83,26 @@ apply-coincides : ∀ Q τ → ⟪ apply Q τ ⟫ty ≡ apply ⟪ Q ⟫poly ⟪ 
 apply-coincides one       τ = refl
 apply-coincides (const σ) τ = refl
 apply-coincides var       τ = refl
-apply-coincides (Q₁ + Q₂)  τ = cong approx (cong₂ _[+]_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ))
-apply-coincides (Q₁ × Q₂)  τ = cong approx (cong₂ _[×]_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ))
+apply-coincides (P [+] Q)   τ = cong approx (cong₂ _[+]_ (apply-coincides P τ) (apply-coincides Q τ))
+apply-coincides (P [×] Q)   τ = cong approx (cong₂ _[×]_ (apply-coincides P τ) (apply-coincides Q τ))
 apply-coincides (approx Q) τ = cong approx (apply-coincides Q τ)
 
 ------------------------------------------------------------------------------
 -- Term translation.
 
--- Distributive law to lift the approx to the outer level.
+-- Distributive law to lift inner approx to the outer level.
 sequence-poly : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ apply ⟪ P ⟫poly (approx τ) → Γ ⊢ approx (apply ⟪ P ⟫poly τ)
 sequence-poly one         M = pure M
 sequence-poly (const σ)   M = pure M
 sequence-poly var         M = M
-sequence-poly (P₁ + P₂)   M =
+sequence-poly (P [+] Q)     M =
   pure (bind M (case (var zero)
-    (bind (sequence-poly P₁ (var zero)) (pure (inl (var zero))))
-    (bind (sequence-poly P₂ (var zero)) (pure (inr (var zero))))))
-sequence-poly (P₁ × P₂)   M =
+    (bind (sequence-poly P (var zero)) (pure (inl (var zero))))
+    (bind (sequence-poly Q (var zero)) (pure (inr (var zero))))))
+sequence-poly (P [×] Q)     M =
   pure (bind M
-    (bind (sequence-poly P₁ (fst (var zero)))
-      (bind (sequence-poly P₂ (snd (var (succ zero))))
+    (bind (sequence-poly P (fst (var zero)))
+      (bind (sequence-poly Q (snd (var (succ zero))))
         (pure (pair (var (succ zero)) (var zero))))))
 sequence-poly (approx P)  M = pure (bind M (sequence-poly P (var zero)))
 
