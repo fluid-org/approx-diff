@@ -33,6 +33,8 @@ open HasBooleans B
 open language-syntax Sig
 open Model Int
 
+-- Interpret as lifting L X = 𝟙 + X. Future refactor could parameterise on a "polynomial monad" record,
+-- replacing the literal 𝟙 ⊕ _ here and `const 𝟙 +` in ⟦approx⟧poly below.
 mutual
   ⟦_⟧ty : type → obj
   ⟦ unit ⟧ty = 𝟙
@@ -42,11 +44,6 @@ mutual
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
   ⟦ μ P ⟧ty = HasMu.μ (HM (⟦ P ⟧poly))
-  -- The approximation modality is interpreted as the lifting monad
-  -- L X = 𝟙 + X. This is a fixed choice for now; a future refactor could
-  -- parameterise the interpretation on a `PolyMonad` record bundling
-  -- a polynomial-representable monad + unit/extend, replacing the literal
-  -- 𝟙 ⊕ _ here and the literal `const 𝟙 +` in ⟦approx⟧poly below.
   ⟦ approx τ ⟧ty  = 𝟙 ⊕ ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
@@ -55,22 +52,17 @@ mutual
   ⟦ var ⟧poly       = Poly.var
   ⟦ P₁ + P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.+ ⟦ P₂ ⟧poly
   ⟦ P₁ × P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.× ⟦ P₂ ⟧poly
-  -- L ∘ P encoded directly: (𝟙 + var) ∘ P = const 𝟙 + P.
   ⟦ approx P ⟧poly  = Poly.const 𝟙 Poly.+ ⟦ P ⟧poly
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ ⟦ τ ⟧ty
 
--- Equation showing that the meta-level apply on types agrees with the
--- categorical apply on objects, modulo the polynomial interpretation.
--- Needed because apply unfolds at the syntax level while apply
--- unfolds at the categorical level — both reduce identically by structure,
--- but Agda doesn't see this without an explicit lemma.
+-- Syntactic application of a polynomial agrees with action of corresponding functor on objects.
 apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj T P C ⟦ Q ⟧poly ⟦ τ ⟧ty
-apply-coincides one       τ = refl
-apply-coincides (const σ) τ = refl
-apply-coincides var       τ = refl
+apply-coincides one          τ = refl
+apply-coincides (const σ)    τ = refl
+apply-coincides var          τ = refl
 apply-coincides (Q₁ + Q₂)    τ = cong₂ _⊕_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
 apply-coincides (Q₁ × Q₂)    τ = cong₂ _⊗_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
 apply-coincides (approx Q)   τ = cong (𝟙 ⊕_) (apply-coincides Q τ)
