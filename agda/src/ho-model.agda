@@ -11,6 +11,7 @@ open import functor using (HasLimits; op-colimit; limits→limits')
 import meet-semilattice-category
 import join-semilattice-category
 import fam
+import polynomial-functor
 import indexed-family
 open Category using (opposite)
 
@@ -187,7 +188,7 @@ module Interpretation
        Fam⟨𝒟⟩-products
        Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
-       (Fam⟨𝒟⟩.hasMu 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
+       (polynomial-functor.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 

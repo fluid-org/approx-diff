@@ -27,7 +27,7 @@ open import two renaming (I to ⊤; O to ⊥)
 open import Data.Unit renaming (tt to ·; ⊤ to Unit) using ()
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
-open prop-setoid using (sup)
+open import polynomial-functor using (inF)
 
 open prop-setoid.Setoid
 
@@ -44,10 +44,10 @@ module backward where
   open Galois.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = sup (inj₂ ((label.a , 0) ,
-          sup (inj₂ ((label.b , 1) ,
-          sup (inj₂ ((label.a , 1) ,
-          sup (inj₁ (lift ·))))))))
+  input = inF (inj₂ ((label.a , 0) ,
+          inF (inj₂ ((label.b , 1) ,
+          inF (inj₂ ((label.a , 1) ,
+          inF (inj₁ (lift ·))))))))
 
   bwd-slice : label.label → _
   bwd-slice l = ⟦ example.ex.query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun ⊤ .proj₂
@@ -75,10 +75,10 @@ module backward-cbn where
 
   input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
   input = _ ,
-          sup (inj₂ ((_ , (_ , label.a) , (_ , 0)) ,
-          sup (inj₂ ((_ , (_ , label.b) , (_ , 1)) ,
-          sup (inj₂ ((_ , (_ , label.a) , (_ , 1)) ,
-          sup (inj₁ (lift ·))))))))
+          inF (inj₂ ((_ , (_ , label.a) , (_ , 0)) ,
+          inF (inj₂ ((_ , (_ , label.b) , (_ , 1)) ,
+          inF (inj₂ ((_ , (_ , label.a) , (_ , 1)) ,
+          inF (inj₁ (lift ·))))))))
 
   bwd-slice : label.label → _
   bwd-slice l = ⟦ cbn-query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun (⊤ , ·) .proj₂
@@ -88,10 +88,16 @@ module backward-cbn where
       open join-semilattice._=>_
       open preorder._=>_
 
-  test1 : bwd-slice label.a ≡ ?
-  test1 = ≡-refl
-  test2 : bwd-slice label.b ≡ ?
-  test2 = ≡-refl
+  -- TODO: tests below need expected values reconstructed for the W-form
+  -- result of bwd-slice. To do so interactively: write `test1 = ?` and use
+  -- C-c C-, in agda-mode to inspect the normalised goal type. The result
+  -- structure is more nested than the old list form. Batch-mode compute
+  -- (agda --interaction) on `bwd-slice label.a` was attempted but exhausts
+  -- memory (>12GB) without producing output.
+  -- test1 : bwd-slice label.a ≡ ...
+  -- test1 = ≡-refl
+  -- test2 : bwd-slice label.b ≡ ...
+  -- test2 = ≡-refl
 
 -- Forward analysis (Conjugate).
 module forward where
@@ -100,10 +106,10 @@ module forward where
   open Conjugate.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = sup (inj₂ ((label.a , 0) ,
-          sup (inj₂ ((label.b , 1) ,
-          sup (inj₂ ((label.a , 1) ,
-          sup (inj₁ (lift ·))))))))
+  input = inF (inj₂ ((label.a , 0) ,
+          inF (inj₂ ((label.b , 1) ,
+          inF (inj₂ ((label.a , 1) ,
+          inF (inj₁ (lift ·))))))))
 
   -- bwd-slice behaves the same as in the Galois examples, but fwd-slice does not
   fwd-slice : _ → _
@@ -154,10 +160,10 @@ module forward-matrix where
   open ho-model.Matrix.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = sup (inj₂ ((label.a , 0) ,
-          sup (inj₂ ((label.b , 1) ,
-          sup (inj₂ ((label.a , 1) ,
-          sup (inj₁ (lift ·))))))))
+  input = inF (inj₂ ((label.a , 0) ,
+          inF (inj₂ ((label.b , 1) ,
+          inF (inj₂ ((label.a , 1) ,
+          inF (inj₁ (lift ·))))))))
 
   open indexed-family._⇒f_
   open SemiLat._⇒_

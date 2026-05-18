@@ -27,7 +27,7 @@ open import two renaming (I to ⊤; O to ⊥)
 open import Data.Unit renaming (tt to ·; ⊤ to Unit) using ()
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
-open prop-setoid using (sup)
+open import polynomial-functor using (inF)
 
 open prop-setoid.Setoid
 
@@ -67,10 +67,10 @@ module backward where
   open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = sup (inj₂ ((label.a , 0ℚ) ,
-          sup (inj₂ ((label.b , 1ℚ) ,
-          sup (inj₂ ((label.a , 1ℚ) ,
-          sup (inj₁ (lift ·))))))))
+  input = inF (inj₂ ((label.a , 0ℚ) ,
+          inF (inj₂ ((label.b , 1ℚ) ,
+          inF (inj₂ ((label.a , 1ℚ) ,
+          inF (inj₁ (lift ·))))))))
 
   open Intv
 
@@ -137,10 +137,10 @@ module forward where
   open import Data.Integer hiding (_/_; show; -_)
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = sup (inj₂ ((label.a , 0ℚ) ,
-          sup (inj₂ ((label.b , 1ℚ) ,
-          sup (inj₂ ((label.a , 1ℚ) ,
-          sup (inj₁ (lift ·))))))))
+  input = inF (inj₂ ((label.a , 0ℚ) ,
+          inF (inj₂ ((label.b , 1ℚ) ,
+          inF (inj₂ ((label.a , 1ℚ) ,
+          inF (inj₁ (lift ·))))))))
 
   open Intv
 
