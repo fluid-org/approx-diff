@@ -27,12 +27,12 @@ mutual
     approx : polynomial → polynomial
 
 apply : polynomial → type → type
-apply one        _ = unit
-apply (const σ)  _ = σ
-apply var        τ = τ
-apply (P₁ + P₂)     τ = apply P₁ τ [+] apply P₂ τ
-apply (P₁ × P₂)     τ = apply P₁ τ [×] apply P₂ τ
-apply (approx P) τ = approx (apply P τ)
+apply one _         = unit
+apply (const σ) _   = σ
+apply var τ         = τ
+apply (P₁ + P₂) τ   = apply P₁ τ [+] apply P₂ τ
+apply (P₁ × P₂) τ   = apply P₁ τ [×] apply P₂ τ
+apply (approx P) τ  = approx (apply P τ)
 
 infixr 35 _[→]_
 infixl 40 _+_ _×_

@@ -23,12 +23,6 @@
 --     ⟪apply P τ⟫ty ≡ apply ⟪P⟫poly ⟪τ⟫ty
 -- holds by structural induction (apply-coincides below).
 --
--- For ⟪roll⟫tm we need to bridge from the source-translation form (where
--- the carrier at var positions is approx (μ ⟪P⟫poly)) to the target's
--- `roll` form (which requires bare μ ⟪P⟫poly at var positions). That's
--- what `strip-var-approx` does. The bridging is local to var positions —
--- the outer approx structure already matches.
---
 -- For ⟪fold-μ⟫tm no bridge is needed: the algebra's argument type already
 -- matches what target `fold-μ` expects (carrier substituted is the bare
 -- result-type interpretation, which is what ⟪τ⟫ty already is).
@@ -96,26 +90,21 @@ apply-coincides (approx Q) τ = cong approx (apply-coincides Q τ)
 ------------------------------------------------------------------------------
 -- Term translation.
 
--- Bridge for ⟪roll⟫tm: input has approx-wrapped carrier at var positions
--- (because the source-translation substitutes ⟪μ P⟫ty = approx (μ ⟪P⟫poly)
--- for var); output has bare carrier, which is what target `roll` expects.
--- Operates per polynomial layer (one bind for the outer-approx of
--- ⟪+⟫poly/⟪×⟫poly), recursing on subterms; var positions get the approx
--- stripped via bind, non-var leaves are identity or pure-wrap.
-strip-var-approx : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ apply ⟪ P ⟫poly (approx τ) → Γ ⊢ approx (apply ⟪ P ⟫poly τ)
-strip-var-approx one         M = pure M
-strip-var-approx (const σ)   M = pure M
-strip-var-approx var         M = M
-strip-var-approx (P₁ + P₂)   M =
+-- Distributive law to lift the approx to the outer level.
+sequence-poly : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ apply ⟪ P ⟫poly (approx τ) → Γ ⊢ approx (apply ⟪ P ⟫poly τ)
+sequence-poly one         M = pure M
+sequence-poly (const σ)   M = pure M
+sequence-poly var         M = M
+sequence-poly (P₁ + P₂)   M =
   pure (bind M (case (var zero)
-    (bind (strip-var-approx P₁ (var zero)) (pure (inl (var zero))))
-    (bind (strip-var-approx P₂ (var zero)) (pure (inr (var zero))))))
-strip-var-approx (P₁ × P₂)   M =
+    (bind (sequence-poly P₁ (var zero)) (pure (inl (var zero))))
+    (bind (sequence-poly P₂ (var zero)) (pure (inr (var zero))))))
+sequence-poly (P₁ × P₂)   M =
   pure (bind M
-    (bind (strip-var-approx P₁ (fst (var zero)))
-      (bind (strip-var-approx P₂ (snd (var (succ zero))))
+    (bind (sequence-poly P₁ (fst (var zero)))
+      (bind (sequence-poly P₂ (snd (var (succ zero))))
         (pure (pair (var (succ zero)) (var zero))))))
-strip-var-approx (approx P)  M = pure (bind M (strip-var-approx P (var zero)))
+sequence-poly (approx P)  M = pure (bind M (sequence-poly P (var zero)))
 
 mutual
   ⟪_⟫tm : ∀ {Γ τ} → Γ ⊢ τ → ⟪ Γ ⟫ctxt ⊢ ⟪ τ ⟫ty
@@ -137,7 +126,7 @@ mutual
   ⟪ bop ω Ms ⟫tm = bindAll Ms (id-ren _) (λ ρ Ms' → pure (bop ω Ms'))
   ⟪ brel ω Ms ⟫tm = bindAll Ms (id-ren _) (λ ρ Ms' → pure (brel ω Ms'))
   ⟪ roll {Γ = Γ} {P = P} M ⟫tm =
-    bind (strip-var-approx P (subst (λ A → ⟪ Γ ⟫ctxt ⊢ A) (apply-coincides P (μ P)) ⟪ M ⟫tm))
+    bind (sequence-poly P (subst (λ A → ⟪ Γ ⟫ctxt ⊢ A) (apply-coincides P (μ P)) ⟪ M ⟫tm))
          (pure (roll (var zero)))
   ⟪ fold-μ {P = Q} {τ = τ} alg M ⟫tm =
     bind ⟪ alg ⟫tm
