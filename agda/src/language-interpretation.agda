@@ -68,16 +68,15 @@ apply-coincides (Q₁ + Q₂)    τ = cong₂ _⊕_ (apply-coincides Q₁ τ) (a
 apply-coincides (Q₁ × Q₂)    τ = cong₂ _⊗_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
 apply-coincides (approx Q)   τ = cong (𝟙 ⊕_) (apply-coincides Q τ)
 
--- F-apply: for a polynomial Q and result types ctx, t, take a polynomial
--- value whose recursive positions hold (ctx ⇒ t)-shaped function values
--- together with a ctx argument, and apply each function. Used by fold-μ
--- to thread the typing context Γ through the polynomial's algebra slots.
-F-apply : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ poly-obj Q t
-F-apply Poly.one       = to-terminal
-F-apply (Poly.const _) = p₁
-F-apply Poly.var       = eval
-F-apply (Q₁ Poly.+ Q₂) = eval ∘ ⟨ copair (lambda (in₁ ∘ F-apply Q₁)) (lambda (in₂ ∘ F-apply Q₂)) ∘ p₁ , p₂ ⟩
-F-apply (Q₁ Poly.× Q₂) = ⟨ F-apply Q₁ ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , F-apply Q₂ ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+-- Take a polynomial value whose recursive positions hold (ctx ⇒ t)-shaped function values together with a ctx
+-- argument, and apply each function. Used by fold-μ to thread the typing context Γ through the polynomial's
+-- algebra slots.
+map-eval : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ poly-obj Q t
+map-eval Poly.one       = to-terminal
+map-eval (Poly.const _) = p₁
+map-eval Poly.var       = eval
+map-eval (Q₁ Poly.+ Q₂) = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval Q₁)) (lambda (in₂ ∘ map-eval Q₂)) ∘ p₁ , p₂ ⟩
+map-eval (Q₁ Poly.× Q₂) = ⟨ map-eval Q₁ ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q₂ ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
@@ -109,13 +108,13 @@ mutual
   ⟦ bind {σ = σ} M N ⟧tm =
     eval ∘ ⟨ copair (lambda (in₁ ∘ to-terminal)) (lambda (⟦ N ⟧tm ∘ swap)) ∘ ⟦ M ⟧tm , id _ ⟩
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    eval ∘ ⟨ HasMu.⦅_⦆ (Mu ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
+    eval ∘ ⟨ HasMu.⦅_⦆ (Mu ⟦ Q ⟧poly) closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
     where
-      closed-alg : poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
-      closed-alg = lambda (eval ∘ ⟨
+      closure-converted : poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
+      closure-converted = lambda (eval ∘ ⟨
         ⟦ alg ⟧tm ∘ p₂ ,
           subst (λ X → (poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
-                (sym (apply-coincides Q τ)) (F-apply ⟦ Q ⟧poly)
+                (sym (apply-coincides Q τ)) (map-eval ⟦ Q ⟧poly)
         ⟩)
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
