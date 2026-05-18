@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Inserts Mon at the root of every type former , distinct from cbn-translation's one slot per component.
+-- Insert Mon at the root of every type former (per-root); cf. cbn-translation (per-component).
 ------------------------------------------------------------------------------
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)
@@ -49,14 +49,9 @@ _$_ : ∀ {Γ σ τ} → Γ ⊢ σ [→] τ → Γ ⊢ σ → Γ ⊢ τ
 _$_ = app
 infixl 10 _$_
 
--- Distributive law (sequence direction): F̂(M X) ⇒ M (F X). Input is
--- the Mon-saturated polynomial — F with Mon inserted at every internal
--- sum/product root — applied to the Mon-wrapped carrier ⟪τ⟫ty. Output
--- collects all the internal Mons (and the carrier Mon) into a single
--- outer Mon wrapping the bare polynomial applied to the bare carrier
--- ⟪τ⟫ty-inner. Used by ⟪roll⟫tm.
-approx-coerce : (P : polynomial) → ∀ {Γ τ} →
-                Γ ⊢ ⟪ apply P τ ⟫ty → Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty-inner)
+-- Collapse Mon at every internal node of ⟪apply P τ⟫ty (and at the carrier) into a single outer Mon, via bind.
+-- Used by ⟪roll⟫tm.
+approx-coerce : (P : polynomial) → ∀ {Γ τ} →  Γ ⊢ ⟪ apply P τ ⟫ty → Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty-inner)
 approx-coerce one        N = N
 approx-coerce (const σ)  N = pure $ N
 approx-coerce var        N = N
@@ -70,10 +65,7 @@ approx-coerce (P [×] Q)  N =
       bind $ approx-coerce Q (snd (var (succ zero))) $ lam (
         pure $ pair (var (succ zero)) (var zero))))
 
--- Distributive law (distribute direction): F(M X) ⇒ F̂(X). Used by
--- ⟪fold-μ⟫tm to convert the algebra argument from target form (bare
--- polynomial, Mon-wrapped carrier) to source-translation form
--- (Mon-saturated polynomial).
+-- Insert Mon at every internal node, via pure. Used by ⟪fold-μ⟫tm.
 approx-coerce' : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ apply ⟪ P ⟫poly ⟪ τ ⟫ty → Γ ⊢ ⟪ apply P τ ⟫ty
 approx-coerce' one        N = pure $ N
 approx-coerce' (const σ)  N = N

@@ -88,16 +88,10 @@ module backward-cbn where
       open join-semilattice._=>_
       open preorder._=>_
 
-  -- TODO: tests below need expected values reconstructed for the W-form
-  -- result of bwd-slice. To do so interactively: write `test1 = ?`,
-  -- C-c C-, in agda-mode to see the goal, then refine. The result
-  -- structure is more nested than the old list form (W-types compose
-  -- per-component, not as flat tuples), and the precise shape depends
-  -- on how categorical sigma-types unfold in the slicing model.
-  -- test1 : bwd-slice label.a ≡ ...
-  -- test1 = ≡-refl
-  -- test2 : bwd-slice label.b ≡ ...
-  -- test2 = ≡-refl
+  test1 : bwd-slice label.a ≡ ?
+  test1 = ≡-refl
+  test2 : bwd-slice label.b ≡ ?
+  test2 = ≡-refl
 
 -- Forward analysis (Conjugate).
 module forward where
