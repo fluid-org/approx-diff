@@ -25,22 +25,6 @@ module L = language-syntax Sig
 module ex where
   open L
 
-  -- writer monad over the approximation object
-  Tag : type → type
-  Tag τ = base approx [×] τ
-
-  Tag-pure : ∀ {Γ τ} → Γ ⊢ τ [→] Tag τ
-  Tag-pure = lam (pair (bop approx-unit []) (var zero))
-
-  Tag-bind : ∀ {Γ σ τ} → Γ ⊢ Tag σ [→] (σ [→] Tag τ) [→] Tag τ
-  Tag-bind = lam (lam (pair (bop approx-mult (fst (var (succ zero)) ∷ fst (app (var zero) (snd (var (succ zero)))) ∷ []))
-                          (snd (app (var zero) (snd (var (succ zero)))))))
-
-  Tag-monad : SynMonad
-  Tag-monad .SynMonad.Mon = Tag
-  Tag-monad .SynMonad.pure = Tag-pure
-  Tag-monad .SynMonad.bind = Tag-bind
-
   `_ : ∀ {Γ} → label.label → Γ ⊢ base label
   ` l = bop (lbl l) []
 
@@ -57,7 +41,8 @@ module ex where
                   when fst (var zero) ≟ (` l) ；
                   return (snd (var zero)))
 
-  open import cbn-translation Sig Tag-monad
+  open import cbn-translation Sig
 
-  cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
+  cbn-query : label.label →
+              ⟪ emp , list (base label [×] base number) ⟫ctxt ⊢ approx ⟪ base number ⟫ty
   cbn-query l = ⟪ query l ⟫tm
