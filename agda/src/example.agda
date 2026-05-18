@@ -24,6 +24,7 @@ module L = language-syntax Sig
 
 module ex where
   open L
+  open SynMonad
 
   -- Writer monad over the approximation sort: pairs values with an
   -- accuracy tag. Tag-bind multiplies the two tags via approx-mult.
@@ -38,12 +39,11 @@ module ex where
                           (snd (app (var zero) (snd (var (succ zero)))))))
 
   Tag-monad : SynMonad
-  Tag-monad .SynMonad.Mon = Tag
-  Tag-monad .SynMonad.pure = Tag-pure
-  Tag-monad .SynMonad.bind = Tag-bind
+  Tag-monad .Mon = Tag
+  Tag-monad .pure = Tag-pure
+  Tag-monad .bind = Tag-bind
 
-  -- Lifting monad: L τ = unit + τ. ⊥ is `inl unit`; values are `inr x`.
-  -- L-bind propagates ⊥ on the left branch.
+  -- Lifting monad.
   L : type → type
   L τ = unit [+] τ
 
@@ -54,9 +54,9 @@ module ex where
   L-bind = lam (lam (case (var (succ zero)) (inl unit) (app (var (succ zero)) (var zero))))
 
   L-monad : SynMonad
-  L-monad .SynMonad.Mon = L
-  L-monad .SynMonad.pure = L-pure
-  L-monad .SynMonad.bind = L-bind
+  L-monad .Mon = L
+  L-monad .pure = L-pure
+  L-monad .bind = L-bind
 
   `_ : ∀ {Γ} → label.label → Γ ⊢ base label
   ` l = bop (lbl l) []
@@ -74,34 +74,27 @@ module ex where
                   when fst (var zero) ≟ (` l) ；
                   return (snd (var zero)))
 
-  -- Tag-decorated CBN translation: each component of every type former
-  -- gets its own (approx-tag, value) pair.
+  -- Instantiate our two translations with our two example approximation monads.
   module cbn-Tag where
     open import cbn-translation Sig Tag-monad
 
     cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
     cbn-query l = ⟪ query l ⟫tm
 
-  -- L-decorated CBN translation: each component gets its own (unit + τ) wrap.
   module cbn-L where
     open import cbn-translation Sig L-monad
 
     cbn-query : label.label → emp , L (list (L (L (base label) [×] L (base number)))) ⊢ L (base number)
     cbn-query l = ⟪ query l ⟫tm
 
-  -- Tag-decorated approx translation: a single tag per type former
-  -- root (rather than per-component).
   module approx-Tag where
     open import approx-translation Sig Tag-monad
 
-    approx-query : label.label →
-                   ⟪ emp , list (base label [×] base number) ⟫ctxt ⊢ ⟪ base number ⟫ty
+    approx-query : label.label → ⟪ emp , list (base label [×] base number) ⟫ctxt ⊢ ⟪ base number ⟫ty
     approx-query l = ⟪ query l ⟫tm
 
-  -- L-decorated approx translation.
   module approx-L where
     open import approx-translation Sig L-monad
 
-    approx-query : label.label →
-                   ⟪ emp , list (base label [×] base number) ⟫ctxt ⊢ ⟪ base number ⟫ty
+    approx-query : label.label → ⟪ emp , list (base label [×] base number) ⟫ctxt ⊢ ⟪ base number ⟫ty
     approx-query l = ⟪ query l ⟫tm
