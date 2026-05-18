@@ -1,55 +1,39 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Approx translation.
+-- Approx (per-root) translation.
 --
--- A translation that inserts the syntactic `approx` modality at the root
--- of every compound type former (sum, product, function, μ) and at labels.
--- Each type former gets one approximation slot at its root.
+-- Parameterised on a SynMonad. Inserts Mon at the root of every type
+-- former (one slot per type former), distinct from cbn-translation's
+-- per-component design (one slot per component).
 --
--- The design rationale comes from a Galois-slicing operational reading:
--- every value can be ⊥ at the top, and every eliminator has a bind-like
--- rule "eliminator ⊥ = ⊥". So the root `approx` is the "did this type
--- former commit?" slot — including for μ, where `unroll ⊥ = ⊥`.
+-- ⟪_⟫ty is defined via an inner decomposition: ⟪τ⟫ty = Mon ⟪τ⟫ty-inner.
+-- This lets Agda see the outer Mon wrapper definitionally, so bind's
+-- Mon-shaped body typechecks against ⟪τ⟫ty results without per-call
+-- subst. The decomposition includes μ — μ-types are uniformly Mon-wrapped
+-- at the root, like every other type former.
 --
--- Unlike Moggi's CBN translation (cbn-translation), which wraps every
--- component of every type former, this wraps once at the root: a pair
--- becomes approx (σ × τ) (one slot) rather than approx σ × approx τ
--- (per-component slots).
---
--- The polynomial body translation ⟪P⟫poly mirrors the type translation:
--- approx at sum/product/one roots, transparent at var/const. With this,
--- the equation
---     ⟪apply P τ⟫ty ≡ apply ⟪P⟫poly ⟪τ⟫ty
--- holds by structural induction (apply-coincides below).
---
--- For ⟪fold-μ⟫tm no bridge is needed: the algebra's argument type already
--- matches what target `fold-μ` expects (carrier substituted is the bare
--- result-type interpretation, which is what ⟪τ⟫ty already is).
+-- The polynomial body translation ⟪_⟫poly is structural. Mon-at-root
+-- comes from ⟪_⟫ty on the unrolled type, not from the polynomial body.
+-- This creates path-1/path-2 mismatch at sum/product roots — bridged by
+-- approx-coerce/approx-coerce' (analogous to cbn-coerce/cbn-coerce').
 ------------------------------------------------------------------------------
 
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)
 open import Data.List using (List; []; _∷_)
 open import signature using (Signature)
 open import every
 import language-syntax
 
-module approx-translation {ℓ} (Sig : Signature ℓ) where
+module approx-translation {ℓ} (Sig : Signature ℓ) (M : language-syntax.SynMonad Sig) where
 
 open Signature Sig using (sort)
 open language-syntax Sig
+open SynMonad M
 
-------------------------------------------------------------------------------
--- Type translation.
-
--- ⟪_⟫ty is the outer (approx-wrapped) form; ⟪_⟫ty-inner is what's under
--- the approx. The two-stage definition is *definitional* — Agda unfolds
--- ⟪τ⟫ty to approx ⟪τ⟫ty-inner unconditionally — which lets bind's
--- approx-shaped body typecheck against ⟪τ⟫ty results without needing
--- a per-call subst.
 mutual
   ⟪_⟫ty : type → type
-  ⟪ τ ⟫ty = approx ⟪ τ ⟫ty-inner
+  ⟪ τ ⟫ty = Mon ⟪ τ ⟫ty-inner
 
   ⟪_⟫ty-inner : type → type
   ⟪ unit ⟫ty-inner       = unit
@@ -59,15 +43,13 @@ mutual
   ⟪ τ₁ [+] τ₂ ⟫ty-inner  = ⟪ τ₁ ⟫ty [+] ⟪ τ₂ ⟫ty
   ⟪ τ₁ [→] τ₂ ⟫ty-inner  = ⟪ τ₁ ⟫ty [→] ⟪ τ₂ ⟫ty
   ⟪ μ P ⟫ty-inner        = μ ⟪ P ⟫poly
-  ⟪ approx τ ⟫ty-inner   = ⟪ τ ⟫ty
 
   ⟪_⟫poly : polynomial → polynomial
-  ⟪ one ⟫poly      = approx one
+  ⟪ one ⟫poly      = one
   ⟪ const σ ⟫poly  = const ⟪ σ ⟫ty
   ⟪ var ⟫poly      = var
-  ⟪ P [+] Q ⟫poly    = approx (⟪ P ⟫poly [+] ⟪ Q ⟫poly)
-  ⟪ P [×] Q ⟫poly    = approx (⟪ P ⟫poly [×] ⟪ Q ⟫poly)
-  ⟪ approx P ⟫poly = approx ⟪ P ⟫poly
+  ⟪ P [+] Q ⟫poly  = ⟪ P ⟫poly [+] ⟪ Q ⟫poly
+  ⟪ P [×] Q ⟫poly  = ⟪ P ⟫poly [×] ⟪ Q ⟫poly
 
 ⟪_⟫ctxt : ctxt → ctxt
 ⟪ emp ⟫ctxt = emp
@@ -77,69 +59,95 @@ mutual
 ⟪ zero ⟫var = zero
 ⟪ succ x ⟫var = succ ⟪ x ⟫var
 
--- Syntactic application of a translated polynomial agrees with the
--- type translation of the source-level application.
-apply-coincides : ∀ Q τ → ⟪ apply Q τ ⟫ty ≡ apply ⟪ Q ⟫poly ⟪ τ ⟫ty
-apply-coincides one       τ = refl
-apply-coincides (const σ) τ = refl
-apply-coincides var       τ = refl
-apply-coincides (P [+] Q)   τ = cong approx (cong₂ _[+]_ (apply-coincides P τ) (apply-coincides Q τ))
-apply-coincides (P [×] Q)   τ = cong approx (cong₂ _[×]_ (apply-coincides P τ) (apply-coincides Q τ))
-apply-coincides (approx Q) τ = cong approx (apply-coincides Q τ)
+_$_ : ∀ {Γ σ τ} → Γ ⊢ σ [→] τ → Γ ⊢ σ → Γ ⊢ τ
+_$_ = app
+infixl 10 _$_
 
-------------------------------------------------------------------------------
--- Term translation.
+-- Coerce for ⟪roll⟫tm. ⟪apply P τ⟫ty has Mon at every sum/product root
+-- (per-root design); apply ⟪P⟫poly ⟪τ⟫ty has bare sum/product. Walk the
+-- polynomial: extract from outer Mons, recurse, rebuild bare, repackage.
+approx-coerce : (P : polynomial) → ∀ {Γ τ} →
+                Γ ⊢ ⟪ apply P τ ⟫ty →
+                Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty)
+approx-coerce one        N = N
+approx-coerce (const σ)  N = pure $ N
+approx-coerce var        N = pure $ N
+approx-coerce (P [+] Q)  N =
+  bind $ N $ lam (case (var zero)
+    (bind $ approx-coerce P (var zero) $ lam (pure $ inl (var zero)))
+    (bind $ approx-coerce Q (var zero) $ lam (pure $ inr (var zero))))
+approx-coerce (P [×] Q)  N =
+  bind $ N $ lam (
+    bind $ approx-coerce P (fst (var zero)) $ lam (
+      bind $ approx-coerce Q (snd (var (succ zero))) $ lam (
+        pure $ pair (var (succ zero)) (var zero))))
 
--- Distributive law to lift inner approx to the outer level.
-sequence-poly : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ apply ⟪ P ⟫poly (approx τ) → Γ ⊢ approx (apply ⟪ P ⟫poly τ)
-sequence-poly one         M = pure M
-sequence-poly (const σ)   M = pure M
-sequence-poly var         M = M
-sequence-poly (P [+] Q)     M =
-  pure (bind M (case (var zero)
-    (bind (sequence-poly P (var zero)) (pure (inl (var zero))))
-    (bind (sequence-poly Q (var zero)) (pure (inr (var zero))))))
-sequence-poly (P [×] Q)     M =
-  pure (bind M
-    (bind (sequence-poly P (fst (var zero)))
-      (bind (sequence-poly Q (snd (var (succ zero))))
-        (pure (pair (var (succ zero)) (var zero))))))
-sequence-poly (approx P)  M = pure (bind M (sequence-poly P (var zero)))
+-- Strip Mon wrappers at var positions of the polynomial. Needed for
+-- ⟪roll⟫tm: after approx-coerce strips sum/product-root Mons, var
+-- positions still hold Mon-wrapped carriers (because ⟪μ P⟫ty has outer
+-- Mon). Target roll wants bare carriers at var positions.
+strip-var-Mon : (P : polynomial) → ∀ {Γ τ} →
+                Γ ⊢ apply ⟪ P ⟫poly (Mon τ) →
+                Γ ⊢ Mon (apply ⟪ P ⟫poly τ)
+strip-var-Mon one        N = pure $ N
+strip-var-Mon (const σ)  N = pure $ N
+strip-var-Mon var        N = N
+strip-var-Mon (P [+] Q)  N =
+  case N
+    (bind $ strip-var-Mon P (var zero) $ lam (pure $ inl (var zero)))
+    (bind $ strip-var-Mon Q (var zero) $ lam (pure $ inr (var zero)))
+strip-var-Mon (P [×] Q)  N =
+  bind $ strip-var-Mon P (fst N) $ lam (
+    bind $ strip-var-Mon Q (snd (weaken * N)) $ lam (
+      pure $ pair (var (succ zero)) (var zero)))
+
+-- The other direction (used by fold-μ for the algebra argument).
+approx-coerce' : (P : polynomial) → ∀ {Γ τ} →
+                 Γ ⊢ apply ⟪ P ⟫poly ⟪ τ ⟫ty →
+                 Γ ⊢ ⟪ apply P τ ⟫ty
+approx-coerce' one        N = pure $ N
+approx-coerce' (const σ)  N = N
+approx-coerce' var        N = N
+approx-coerce' (P [+] Q)  N =
+  pure $ case N
+    (inl (approx-coerce' P (var zero)))
+    (inr (approx-coerce' Q (var zero)))
+approx-coerce' (P [×] Q)  N =
+  pure $ pair (approx-coerce' P (fst N)) (approx-coerce' Q (snd N))
 
 mutual
   ⟪_⟫tm : ∀ {Γ τ} → Γ ⊢ τ → ⟪ Γ ⟫ctxt ⊢ ⟪ τ ⟫ty
   ⟪ var x ⟫tm = var ⟪ x ⟫var
-  ⟪ unit ⟫tm = pure unit
-  ⟪ true ⟫tm = pure true
-  ⟪ false ⟫tm = pure false
+  ⟪ unit ⟫tm = pure $ unit
+  ⟪ true ⟫tm = pure $ true
+  ⟪ false ⟫tm = pure $ false
   ⟪ if M then M₁ else M₂ ⟫tm =
-    bind ⟪ M ⟫tm (if (var zero) then (weaken * ⟪ M₁ ⟫tm) else (weaken * ⟪ M₂ ⟫tm))
-  ⟪ inl M ⟫tm = pure (inl ⟪ M ⟫tm)
-  ⟪ inr M ⟫tm = pure (inr ⟪ M ⟫tm)
+    bind $ ⟪ M ⟫tm $ lam (if (var zero) then (weaken * ⟪ M₁ ⟫tm) else (weaken * ⟪ M₂ ⟫tm))
+  ⟪ inl M ⟫tm = pure $ inl ⟪ M ⟫tm
+  ⟪ inr M ⟫tm = pure $ inr ⟪ M ⟫tm
   ⟪ case M N₁ N₂ ⟫tm =
-    bind ⟪ M ⟫tm (case (var zero) (ext weaken * ⟪ N₁ ⟫tm) (ext weaken * ⟪ N₂ ⟫tm))
-  ⟪ pair M N ⟫tm = pure (pair ⟪ M ⟫tm ⟪ N ⟫tm)
-  ⟪ fst M ⟫tm = bind ⟪ M ⟫tm (fst (var zero))
-  ⟪ snd M ⟫tm = bind ⟪ M ⟫tm (snd (var zero))
-  ⟪ lam M ⟫tm = pure (lam ⟪ M ⟫tm)
-  ⟪ app M N ⟫tm = bind ⟪ M ⟫tm (app (var zero) (weaken * ⟪ N ⟫tm))
-  ⟪ bop ω Ms ⟫tm = bindAll Ms (id-ren _) (λ ρ Ms' → pure (bop ω Ms'))
-  ⟪ brel ω Ms ⟫tm = bindAll Ms (id-ren _) (λ ρ Ms' → pure (brel ω Ms'))
-  ⟪ roll {Γ = Γ} {P = P} M ⟫tm =
-    bind (sequence-poly P (subst (λ A → ⟪ Γ ⟫ctxt ⊢ A) (apply-coincides P (μ P)) ⟪ M ⟫tm))
-         (pure (roll (var zero)))
+    bind $ ⟪ M ⟫tm $ lam (case (var zero) (ext weaken * ⟪ N₁ ⟫tm) (ext weaken * ⟪ N₂ ⟫tm))
+  ⟪ pair M N ⟫tm = pure $ pair ⟪ M ⟫tm ⟪ N ⟫tm
+  ⟪ fst M ⟫tm = bind $ ⟪ M ⟫tm $ lam (fst (var zero))
+  ⟪ snd M ⟫tm = bind $ ⟪ M ⟫tm $ lam (snd (var zero))
+  ⟪ lam M ⟫tm = pure $ lam ⟪ M ⟫tm
+  ⟪ app M N ⟫tm = bind $ ⟪ M ⟫tm $ lam ((var zero) $ (weaken * ⟪ N ⟫tm))
+  ⟪ bop ω Ms ⟫tm = bindAll Ms (id-ren _) (λ ρ Ms' → pure $ bop ω Ms')
+  ⟪ brel ω Ms ⟫tm = bindAll Ms (id-ren _) (λ ρ Ms' → pure $ brel ω Ms')
+  ⟪ roll {P = P} M ⟫tm =
+    bind $ approx-coerce P ⟪ M ⟫tm $ lam (
+      bind $ strip-var-Mon P (var zero) $ lam (
+        pure $ roll (var zero)))
   ⟪ fold-μ {P = Q} {τ = τ} alg M ⟫tm =
-    bind ⟪ alg ⟫tm
-         (bind (weaken * ⟪ M ⟫tm) (fold-μ {P = ⟪ Q ⟫poly} (cast-alg Q τ (var (succ zero))) (var zero)))
-    where
-      cast-alg : ∀ Q τ {Γ'} → Γ' ⊢ ⟪ apply Q τ ⟫ty [→] ⟪ τ ⟫ty → Γ' ⊢ apply ⟪ Q ⟫poly ⟪ τ ⟫ty [→] ⟪ τ ⟫ty
-      cast-alg Q τ {Γ'} f = subst (λ A → Γ' ⊢ A [→] ⟪ τ ⟫ty) (apply-coincides Q τ) f
-  ⟪ pure M ⟫tm = pure ⟪ M ⟫tm
-  ⟪ bind M N ⟫tm = bind ⟪ M ⟫tm ⟪ N ⟫tm
+    bind $ ⟪ alg ⟫tm $ lam (
+      bind $ (weaken * ⟪ M ⟫tm) $ lam (
+        fold-μ
+          (lam (app (var (succ (succ zero))) (approx-coerce' Q (var zero))))
+          (var zero)))
 
   bindAll : ∀ {Γ Γ' σs τ} → Every (λ σ → Γ ⊢ base σ) σs → Ren ⟪ Γ ⟫ctxt Γ' →
-            (∀ {Γ''} → Ren Γ' Γ'' → Every (λ σ → Γ'' ⊢ base σ) σs → Γ'' ⊢ approx τ) → Γ' ⊢ approx τ
+            (∀ {Γ''} → Ren Γ' Γ'' → Every (λ σ → Γ'' ⊢ base σ) σs → Γ'' ⊢ Mon τ) → Γ' ⊢ Mon τ
   bindAll [] ρ κ = κ (id-ren _) []
   bindAll (M ∷ Ms) ρ κ =
-    bind (ρ * ⟪ M ⟫tm)
-         (bindAll Ms (weaken ∘ren ρ) (λ ρ' Ms' → κ (λ x → ρ' (succ x)) (var (ρ' zero) ∷ Ms')))
+    bind $ (ρ * ⟪ M ⟫tm) $ lam (
+      bindAll Ms (weaken ∘ren ρ) (λ ρ' Ms' → κ (λ x → ρ' (succ x)) (var (ρ' zero) ∷ Ms')))

@@ -34,8 +34,6 @@ open language-syntax Sig
 open Model Int
 open Sem T P C
 
--- Interpret as lifting L X = 𝟙 + X. Future refactor could parameterise on a "polynomial monad" record,
--- replacing the literal 𝟙 ⊕ _ here and `const 𝟙 +` in ⟦approx⟧poly below.
 mutual
   ⟦_⟧ty : type → obj
   ⟦ unit ⟧ty = 𝟙
@@ -45,15 +43,13 @@ mutual
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
   ⟦ μ P ⟧ty = HasMu.μ (Mu (⟦ P ⟧poly))
-  ⟦ approx τ ⟧ty  = 𝟙 ⊕ ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
   ⟦ one ⟧poly       = Poly.one
   ⟦ const σ ⟧poly   = Poly.const ⟦ σ ⟧ty
   ⟦ var ⟧poly       = Poly.var
-  ⟦ P₁ + P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.+ ⟦ P₂ ⟧poly
-  ⟦ P₁ × P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.× ⟦ P₂ ⟧poly
-  ⟦ approx P ⟧poly  = Poly.const 𝟙 Poly.+ ⟦ P ⟧poly
+  ⟦ P [+] Q ⟧poly   = ⟦ P ⟧poly Poly.[+] ⟦ Q ⟧poly
+  ⟦ P [×] Q ⟧poly   = ⟦ P ⟧poly Poly.[×] ⟦ Q ⟧poly
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
@@ -64,17 +60,16 @@ apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj ⟦ Q ⟧poly �
 apply-coincides one          τ = refl
 apply-coincides (const σ)    τ = refl
 apply-coincides var          τ = refl
-apply-coincides (Q₁ + Q₂)    τ = cong₂ _⊕_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
-apply-coincides (Q₁ × Q₂)    τ = cong₂ _⊗_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
-apply-coincides (approx Q)   τ = cong (𝟙 ⊕_) (apply-coincides Q τ)
+apply-coincides (P [+] Q)    τ = cong₂ _⊕_ (apply-coincides P τ) (apply-coincides Q τ)
+apply-coincides (P [×] Q)    τ = cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ)
 
 -- Take a polynomial container of (ctx ⇒ t) morphisms and a ctx, and reduce using eval.
 map-eval : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ poly-obj Q t
 map-eval Poly.one       = to-terminal
 map-eval (Poly.const _) = p₁
 map-eval Poly.var       = eval
-map-eval (Q₁ Poly.+ Q₂) = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval Q₁)) (lambda (in₂ ∘ map-eval Q₂)) ∘ p₁ , p₂ ⟩
-map-eval (Q₁ Poly.× Q₂) = ⟨ map-eval Q₁ ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q₂ ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+map-eval (P Poly.[+] Q) = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
+map-eval (P Poly.[×] Q) = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
@@ -102,9 +97,6 @@ mutual
   ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     HasMu.inF (Mu ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
-  ⟦ pure M ⟧tm   = in₂ ∘ ⟦ M ⟧tm
-  ⟦ bind {σ = σ} M N ⟧tm =
-    eval ∘ ⟨ copair (lambda (in₁ ∘ to-terminal)) (lambda (⟦ N ⟧tm ∘ swap)) ∘ ⟦ M ⟧tm , id _ ⟩
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
     eval ∘ ⟨ HasMu.⦅_⦆ (Mu ⟦ Q ⟧poly) closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
     where

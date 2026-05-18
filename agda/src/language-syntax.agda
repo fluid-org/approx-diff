@@ -15,7 +15,6 @@ mutual
     base : sort → type
     _[×]_ _[→]_ _[+]_ : type → type → type
     μ : polynomial → type
-    approx : type → type
 
   -- Polynomial functors syntactically (cf. Chad §3.6).
   data polynomial : Set ℓ where
@@ -24,7 +23,6 @@ mutual
     var : polynomial
     _[+]_ : polynomial → polynomial → polynomial
     _[×]_ : polynomial → polynomial → polynomial
-    approx : polynomial → polynomial
 
 apply : polynomial → type → type
 apply one _         = unit
@@ -32,7 +30,6 @@ apply (const σ) _   = σ
 apply var τ         = τ
 apply (P [+] Q) τ   = apply P τ [+] apply Q τ
 apply (P [×] Q) τ   = apply P τ [×] apply Q τ
-apply (approx P) τ  = approx (apply P τ)
 
 infixr 35 _[→]_
 
@@ -111,19 +108,9 @@ data _⊢_ : ctxt → type → Set ℓ where
          Every (λ σ → Γ ⊢ base σ) in-sorts →
          Γ ⊢ bool
 
-  -- μ-type constructor (initial-algebra introduction). Takes an unrolled
-  -- value of polynomial-applied type and packs it into a μ value.
+  -- inductive types
   roll : ∀ {Γ P} → Γ ⊢ apply P (μ P) → Γ ⊢ μ P
-
-  -- μ-type eliminator (closed-form initial-algebra fold). Takes a (possibly
-  -- context-dependent) algebra value and a μ value, produces the folded
-  -- result. The algebra is a function value; context-dependent algebras are
-  -- expressed by building the function via lam (closure captures Γ).
   fold-μ : ∀ {Γ P τ} → Γ ⊢ apply P τ [→] τ → Γ ⊢ μ P → Γ ⊢ τ
-
-  -- bind is Kleisli composition packaged as a term.
-  pure : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ approx τ
-  bind : ∀ {Γ σ τ} → Γ ⊢ approx σ → Γ , σ ⊢ approx τ → Γ ⊢ approx τ
 
 -- Applying renamings to terms
 mutual
@@ -145,8 +132,6 @@ mutual
   ρ * app M N = app (ρ * M) (ρ * N)
   ρ * roll M = roll (ρ * M)
   ρ * fold-μ alg M = fold-μ (ρ * alg) (ρ * M)
-  ρ * pure M = pure (ρ * M)
-  ρ * bind M N = bind (ρ * M) (ext ρ * N)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
   ρ ** [] = []
@@ -164,13 +149,11 @@ cons h t = roll (inr (pair h t))
 
 fold : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
 fold {σ = σ} {τ = τ} nilCase consCase M =
-  fold-μ {P = one [+] (const σ [×] var)} (lam alg-body) M
-  where
-    alg-body : _
-    alg-body =
-      case (var zero)
-        (weaken * (weaken * nilCase))
-        (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero)))
+  fold-μ {P = one [+] (const σ [×] var)}
+    (lam (case (var zero)
+               (weaken * (weaken * nilCase))
+               (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero)))))
+    M
 
 append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
 append xs ys = fold ys (cons (var (succ zero)) (var zero)) xs
@@ -186,3 +169,10 @@ when M ； N = if M then N else nil
 
 append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
 append-f = lam (lam (fold (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
+
+-- Syntactic definition of a monad.
+record SynMonad : Set ℓ where
+  field
+    Mon  : type → type
+    pure : ∀ {Γ τ} → Γ ⊢ τ [→] Mon τ
+    bind : ∀ {Γ σ τ} → Γ ⊢ Mon σ [→] (σ [→] Mon τ) [→] Mon τ

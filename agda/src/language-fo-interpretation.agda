@@ -24,7 +24,7 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (𝒞-Sig-model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
   where
 
-open language-syntax Sig hiding (_+_; _×_)
+open language-syntax Sig
 
 module _ where
   open Category 𝒞
