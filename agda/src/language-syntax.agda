@@ -17,11 +17,7 @@ mutual
     μ : polynomial → type
     approx : type → type
 
-  -- Polynomial-functor bodies. Closed under (constant) unit, (constant) types,
-  -- a recursive position, sums, and products. No function arrows here — that
-  -- matches the standard "no function types under μ" restriction for inductive
-  -- type bodies (Chad §3.6). The `approx` constructor wraps a polynomial body
-  -- with the approximation modality at its root after application.
+  -- Polynomial functors syntactically (cf. Chad §3.6).
   data polynomial : Set ℓ where
     one : polynomial
     const : type → polynomial
@@ -30,8 +26,6 @@ mutual
     _×_ : polynomial → polynomial → polynomial
     approx : polynomial → polynomial
 
--- apply P τ "applies" the polynomial body P at the recursive variable τ,
--- producing an ordinary type.
 apply : polynomial → type → type
 apply one        _ = unit
 apply (const σ)  _ = σ
@@ -128,8 +122,7 @@ data _⊢_ : ctxt → type → Set ℓ where
   -- expressed by building the function via lam (closure captures Γ).
   fold-μ : ∀ {Γ P τ} → Γ ⊢ apply P τ [→] τ → Γ ⊢ μ P → Γ ⊢ τ
 
-  -- Approximation-modality intro and elim. pure η of the monad; bind is
-  -- Kleisli composition packaged as a term.
+  -- bind is Kleisli composition packaged as a term.
   pure : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ approx τ
   bind : ∀ {Γ σ τ} → Γ ⊢ approx σ → Γ , σ ⊢ approx τ → Γ ⊢ approx τ
 
@@ -160,10 +153,7 @@ mutual
   ρ ** [] = []
   ρ ** (M ∷ Ms) = (ρ * M) ∷ (ρ ** Ms)
 
--- “macros”
-
--- Lists as a μ-type: List τ = μα. 1 + (τ × α). The macros wrap roll/fold-μ
--- to mimic the primitive list interface.
+-- “macros” for lists
 list : type → type
 list τ = μ (one + (const τ × var))
 
@@ -173,14 +163,7 @@ nil = roll (inl unit)
 cons : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ → Γ ⊢ list τ
 cons h t = roll (inr (pair h t))
 
--- fold mirrors the existing list `fold` macro: the nil case is Γ-open,
--- the cons case is Γ , head , acc-open. The body uses the closed-form
--- fold-μ together with a lambda that captures Γ.
-fold : ∀ {Γ σ τ} →
-        Γ ⊢ τ →
-        Γ , σ , τ ⊢ τ →
-        Γ ⊢ list σ →
-        Γ ⊢ τ
+fold : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
 fold {σ = σ} {τ = τ} nilCase consCase M =
   fold-μ {P = one + (const σ × var)} (lam alg-body) M
   where
@@ -190,8 +173,6 @@ fold {σ = σ} {τ = τ} nilCase consCase M =
         (weaken * (weaken * nilCase))
         (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero)))
 
--- Derived list-monad sugar, mirroring append/return/from-collect/when on the
--- list type.
 append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
 append xs ys = fold ys (cons (var (succ zero)) (var zero)) xs
 
@@ -206,17 +187,3 @@ when M ； N = if M then N else nil
 
 append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
 append-f = lam (lam (fold (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
-
-
--- The list monad
-{-
-ret : ∀ {Γ τ} → Γ ⊢ τ [→] list τ
-ret = lam (return (var zero))
-
-bind : ∀ {Γ τ₁ τ₂} → Γ ⊢ list τ₁ [→] (τ₁ [→] list τ₂) [→] list τ₂
-bind = lam (lam (from (var (succ zero)) collect (app (var (succ zero)) (var zero))))
-
-guard : ∀ {Γ} → Γ ⊢ bool [→] list unit
-guard = lam (if (var zero) then (cons unit nil) else nil)
--}
-

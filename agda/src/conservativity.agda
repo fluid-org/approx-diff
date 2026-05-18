@@ -442,7 +442,7 @@ definability {X} {Y} f with f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))
 
 module syntactic {ℓ}
    (Sig : Signature ℓ)
-   (Gl-HasMu : ∀ Q → polynomial-functor.HasMu GlPE.terminal GlPE.products GlCP.coproducts Q)
+   (Gl-HasMu : ∀ Q → polynomial-functor.Sem.HasMu GlPE.terminal GlPE.products GlCP.coproducts Q)
    (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig) where
 
   open import language-syntax Sig

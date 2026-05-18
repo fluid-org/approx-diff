@@ -16,8 +16,8 @@ data Poly {o m e} (𝒞 : Category o m e) : Set o where
   _+_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- sum
   _×_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- product
 
-module _ {o m e} {𝒞 : Category o m e}
-         (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
+module Sem {o m e} {𝒞 : Category o m e}
+           (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
   open Category 𝒞
   open HasTerminal T renaming (witness to terminal)
   open HasProducts P

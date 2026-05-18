@@ -6,7 +6,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans)
-open import polynomial-functor using (Poly; HasMu; poly-obj)
+open import polynomial-functor using (Poly; module Sem)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
@@ -19,7 +19,7 @@ module language-interpretation
   (P  : HasProducts 𝒞)
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
-  (HM : ∀ Q → HasMu T P C Q)
+  (HM : ∀ Q → Sem.HasMu T P C Q)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
 
@@ -32,6 +32,7 @@ open HasCoproducts C renaming (coprod to _⊕_)
 open HasBooleans B
 open language-syntax Sig
 open Model Int
+open Sem T P C
 
 -- Interpret as lifting L X = 𝟙 + X. Future refactor could parameterise on a "polynomial monad" record,
 -- replacing the literal 𝟙 ⊕ _ here and `const 𝟙 +` in ⟦approx⟧poly below.
@@ -59,7 +60,7 @@ mutual
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ ⟦ τ ⟧ty
 
 -- Syntactic application of a polynomial agrees with action of corresponding functor on objects.
-apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj T P C ⟦ Q ⟧poly ⟦ τ ⟧ty
+apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
 apply-coincides one          τ = refl
 apply-coincides (const σ)    τ = refl
 apply-coincides var          τ = refl
@@ -71,8 +72,7 @@ apply-coincides (approx Q)   τ = cong (𝟙 ⊕_) (apply-coincides Q τ)
 -- value whose recursive positions hold (ctx ⇒ t)-shaped function values
 -- together with a ctx argument, and apply each function. Used by fold-μ
 -- to thread the typing context Γ through the polynomial's algebra slots.
-F-apply : (Q : Poly 𝒞) {ctx t : obj} →
-          ((poly-obj T P C Q (ctx ⟦→⟧ t)) ⊗ ctx) ⇒ poly-obj T P C Q t
+F-apply : (Q : Poly 𝒞) {ctx t : obj} → ((poly-obj Q (ctx ⟦→⟧ t)) ⊗ ctx) ⇒ poly-obj Q t
 F-apply Poly.one       = to-terminal
 F-apply (Poly.const _) = p₁
 F-apply Poly.var       = eval
@@ -113,11 +113,12 @@ mutual
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
     eval ∘ ⟨ HasMu.⦅_⦆ (HM ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
     where
-      coerced : (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ ⟦ apply Q τ ⟧ty
-      coerced = subst (λ X → (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
-                      (sym (apply-coincides Q τ)) (F-apply ⟦ Q ⟧poly)
-      closed-alg : poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
-      closed-alg = lambda (eval ∘ ⟨ ⟦ alg ⟧tm ∘ p₂ , coerced ⟩)
+      closed-alg : poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
+      closed-alg = lambda (eval ∘ ⟨
+        ⟦ alg ⟧tm ∘ p₂ ,
+          subst (λ X → (poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
+                (sym (apply-coincides Q τ)) (F-apply ⟦ Q ⟧poly)
+        ⟩)
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms = to-terminal
