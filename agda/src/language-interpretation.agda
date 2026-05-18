@@ -46,8 +46,8 @@ mutual
   ⟦ one ⟧poly       = Poly.one
   ⟦ const σ ⟧poly   = Poly.param ⟦ σ ⟧ty
   ⟦ var ⟧poly       = Poly.var
-  ⟦ P₁ +ᵖ P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.+ᵖ ⟦ P₂ ⟧poly
-  ⟦ P₁ ×ᵖ P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.×ᵖ ⟦ P₂ ⟧poly
+  ⟦ P₁ + P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.+ ⟦ P₂ ⟧poly
+  ⟦ P₁ × P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.× ⟦ P₂ ⟧poly
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
@@ -62,8 +62,8 @@ apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj T P C ⟦ Q ⟧
 apply-coincides one       τ = refl
 apply-coincides (const σ) τ = refl
 apply-coincides var       τ = refl
-apply-coincides (Q₁ +ᵖ Q₂)    τ = cong₂ _+_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
-apply-coincides (Q₁ ×ᵖ Q₂)    τ = cong₂ _×_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
+apply-coincides (Q₁ + Q₂)    τ = cong₂ _+_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
+apply-coincides (Q₁ × Q₂)    τ = cong₂ _×_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
 
 -- F-apply: for a polynomial Q and result types ctx, t, take a polynomial
 -- value whose recursive positions hold (ctx ⇒ t)-shaped function values
@@ -74,9 +74,9 @@ F-apply : (Q : Poly 𝒞) {ctx t : obj} →
 F-apply Poly.one       = to-terminal
 F-apply (Poly.param _) = p₁
 F-apply Poly.var       = eval
-F-apply (Q₁ Poly.+ᵖ Q₂) =
+F-apply (Q₁ Poly.+ Q₂) =
   eval ∘ ⟨ copair (lambda (in₁ ∘ F-apply Q₁)) (lambda (in₂ ∘ F-apply Q₂)) ∘ p₁ , p₂ ⟩
-F-apply (Q₁ Poly.×ᵖ Q₂) =
+F-apply (Q₁ Poly.× Q₂) =
   ⟨ F-apply Q₁ ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , F-apply Q₂ ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty

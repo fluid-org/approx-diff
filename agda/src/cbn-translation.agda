@@ -25,8 +25,8 @@ mutual
   ⟪ one ⟫poly       = one
   ⟪ const σ ⟫poly   = const (Mon ⟪ σ ⟫ty)
   ⟪ var ⟫poly       = var
-  ⟪ P₁ +ᵖ P₂ ⟫poly      = ⟪ P₁ ⟫poly +ᵖ ⟪ P₂ ⟫poly
-  ⟪ P₁ ×ᵖ P₂ ⟫poly      = ⟪ P₁ ⟫poly ×ᵖ ⟪ P₂ ⟫poly
+  ⟪ P₁ + P₂ ⟫poly      = ⟪ P₁ ⟫poly + ⟪ P₂ ⟫poly
+  ⟪ P₁ × P₂ ⟫poly      = ⟪ P₁ ⟫poly × ⟪ P₂ ⟫poly
 
 ⟪_⟫ctxt : ctxt → ctxt
 ⟪ emp ⟫ctxt = emp
@@ -53,11 +53,11 @@ cbn-coerce : (P : polynomial) → ∀ {Γ τ} →
 cbn-coerce one         M = pure $ unit
 cbn-coerce (const σ)   M = pure $ (pure $ M)
 cbn-coerce var         M = pure $ M
-cbn-coerce (P₁ +ᵖ P₂) M =
+cbn-coerce (P₁ + P₂) M =
   case M
     (bind $ var zero $ lam (bind $ cbn-coerce P₁ (var zero) $ lam (pure $ inl (var zero))))
     (bind $ var zero $ lam (bind $ cbn-coerce P₂ (var zero) $ lam (pure $ inr (var zero))))
-cbn-coerce (P₁ ×ᵖ P₂) M =
+cbn-coerce (P₁ × P₂) M =
   bind $ fst M $ lam (
     bind $ cbn-coerce P₁ (var zero) $ lam (
       bind $ snd (weaken * (weaken * M)) $ lam (
@@ -74,11 +74,11 @@ cbn-coerce' : (P : polynomial) → ∀ {Γ τ} →
 cbn-coerce' one       M = pure $ M
 cbn-coerce' (const σ) M = M
 cbn-coerce' var       M = M
-cbn-coerce' (P₁ +ᵖ P₂) M =
+cbn-coerce' (P₁ + P₂) M =
   case M
     (pure $ inl (cbn-coerce' P₁ (var zero)))
     (pure $ inr (cbn-coerce' P₂ (var zero)))
-cbn-coerce' (P₁ ×ᵖ P₂) M =
+cbn-coerce' (P₁ × P₂) M =
   pure $ pair (cbn-coerce' P₁ (fst M)) (cbn-coerce' P₂ (snd M))
 
 mutual

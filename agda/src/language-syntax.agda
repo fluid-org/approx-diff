@@ -15,17 +15,20 @@ mutual
     base : sort → type
     _[×]_ _[→]_ _[+]_ : type → type → type
     μ : polynomial → type
+    approx : type → type
 
   -- Polynomial-functor bodies. Closed under (constant) unit, (constant) types,
   -- a recursive position, sums, and products. No function arrows here — that
   -- matches the standard "no function types under μ" restriction for inductive
-  -- type bodies (Chad §3.6).
+  -- type bodies (Chad §3.6). The `approx` constructor wraps a polynomial body
+  -- with the approximation modality at its root after application.
   data polynomial : Set ℓ where
     one : polynomial
     const : type → polynomial
     var : polynomial
-    _+ᵖ_ : polynomial → polynomial → polynomial
-    _×ᵖ_ : polynomial → polynomial → polynomial
+    _+_ : polynomial → polynomial → polynomial
+    _×_ : polynomial → polynomial → polynomial
+    approx : polynomial → polynomial
 
 -- apply P τ "applies" the polynomial body P at the recursive variable τ,
 -- producing an ordinary type.
@@ -33,11 +36,12 @@ apply : polynomial → type → type
 apply one        _ = unit
 apply (const σ)  _ = σ
 apply var        τ = τ
-apply (P₁ +ᵖ P₂)     τ = apply P₁ τ [+] apply P₂ τ
-apply (P₁ ×ᵖ P₂)     τ = apply P₁ τ [×] apply P₂ τ
+apply (P₁ + P₂)     τ = apply P₁ τ [+] apply P₂ τ
+apply (P₁ × P₂)     τ = apply P₁ τ [×] apply P₂ τ
+apply (approx P) τ = approx (apply P τ)
 
 infixr 35 _[→]_
-infixl 40 _+ᵖ_ _×ᵖ_
+infixl 40 _+_ _×_
 
 data first-order : type → Set ℓ where
   unit  : first-order unit
@@ -124,6 +128,11 @@ data _⊢_ : ctxt → type → Set ℓ where
   -- expressed by building the function via lam (closure captures Γ).
   fold-μ : ∀ {Γ P τ} → Γ ⊢ apply P τ [→] τ → Γ ⊢ μ P → Γ ⊢ τ
 
+  -- Approximation-modality intro and elim. pure η of the monad; bind is
+  -- Kleisli composition packaged as a term.
+  pure : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ approx τ
+  bind : ∀ {Γ σ τ} → Γ ⊢ approx σ → Γ , σ ⊢ approx τ → Γ ⊢ approx τ
+
 -- Applying renamings to terms
 mutual
   _*_ : ∀ {Γ Γ' τ} → Ren Γ Γ' → Γ ⊢ τ → Γ' ⊢ τ
@@ -144,6 +153,8 @@ mutual
   ρ * app M N = app (ρ * M) (ρ * N)
   ρ * roll M = roll (ρ * M)
   ρ * fold-μ alg M = fold-μ (ρ * alg) (ρ * M)
+  ρ * pure M = pure (ρ * M)
+  ρ * bind M N = bind (ρ * M) (ext ρ * N)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
   ρ ** [] = []
@@ -154,7 +165,7 @@ mutual
 -- Lists as a μ-type: List τ = μα. 1 + (τ × α). The macros wrap roll/fold-μ
 -- to mimic the primitive list interface.
 list : type → type
-list τ = μ (one +ᵖ (const τ ×ᵖ var))
+list τ = μ (one + (const τ × var))
 
 nil : ∀ {Γ τ} → Γ ⊢ list τ
 nil = roll (inl unit)
@@ -171,7 +182,7 @@ fold : ∀ {Γ σ τ} →
         Γ ⊢ list σ →
         Γ ⊢ τ
 fold {σ = σ} {τ = τ} nilCase consCase M =
-  fold-μ {P = one +ᵖ (const σ ×ᵖ var)} (lam alg-body) M
+  fold-μ {P = one + (const σ × var)} (lam alg-body) M
   where
     alg-body : _
     alg-body =
@@ -209,9 +220,3 @@ guard : ∀ {Γ} → Γ ⊢ bool [→] list unit
 guard = lam (if (var zero) then (cons unit nil) else nil)
 -}
 
--- Definition of a syntactically defined monad
-record SynMonad : Set ℓ where
-  field
-    Mon  : type → type
-    pure : ∀ {Γ τ} → Γ ⊢ τ [→] Mon τ
-    bind : ∀ {Γ σ τ} → Γ ⊢ Mon σ [→] (σ [→] Mon τ) [→] Mon τ
