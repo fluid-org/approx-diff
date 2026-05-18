@@ -2,7 +2,7 @@
 
 open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong₂; sym; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans)
@@ -42,6 +42,12 @@ mutual
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
   ⟦ μ P ⟧ty = HasMu.μ (HM (⟦ P ⟧poly))
+  -- The approximation modality is interpreted as the lifting monad
+  -- L X = 𝟙 + X. This is a fixed choice for now; a future refactor could
+  -- parameterise the interpretation on a `PolyMonad` record bundling
+  -- a polynomial-representable monad + unit/extend, replacing the literal
+  -- 𝟙 ⊕ _ here and the literal `const 𝟙 +` in ⟦approx⟧poly below.
+  ⟦ approx τ ⟧ty  = 𝟙 ⊕ ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
   ⟦ one ⟧poly       = Poly.one
@@ -49,6 +55,8 @@ mutual
   ⟦ var ⟧poly       = Poly.var
   ⟦ P₁ + P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.+ ⟦ P₂ ⟧poly
   ⟦ P₁ × P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.× ⟦ P₂ ⟧poly
+  -- L ∘ P encoded directly: (𝟙 + var) ∘ P = const 𝟙 + P.
+  ⟦ approx P ⟧poly  = Poly.const 𝟙 Poly.+ ⟦ P ⟧poly
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
@@ -65,6 +73,7 @@ apply-coincides (const σ) τ = refl
 apply-coincides var       τ = refl
 apply-coincides (Q₁ + Q₂)    τ = cong₂ _⊕_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
 apply-coincides (Q₁ × Q₂)    τ = cong₂ _⊗_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
+apply-coincides (approx Q)   τ = cong (𝟙 ⊕_) (apply-coincides Q τ)
 
 -- F-apply: for a polynomial Q and result types ctx, t, take a polynomial
 -- value whose recursive positions hold (ctx ⇒ t)-shaped function values
@@ -106,6 +115,9 @@ mutual
   ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     HasMu.inF (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
+  ⟦ pure M ⟧tm   = in₂ ∘ ⟦ M ⟧tm
+  ⟦ bind {σ = σ} M N ⟧tm =
+    eval ∘ ⟨ copair (lambda (in₁ ∘ to-terminal)) (lambda (⟦ N ⟧tm ∘ swap)) ∘ ⟦ M ⟧tm , id _ ⟩
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
     eval ∘ ⟨ HasMu.⦅_⦆ (HM ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
     where
