@@ -721,39 +721,3 @@ module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) {P : HasProducts
   coproducts+exp→booleans .False = in₂
   coproducts+exp→booleans .cond f g =
     eval ∘ (prod-m (copair (lambda (f ∘ p₂)) (lambda (g ∘ p₂))) (id _) ∘ pair p₂ p₁)
-
-------------------------------------------------------------------------------
--- Polynomial functors (syntactic) and the inductive types they generate.
--- A Poly 𝒞 is a syntactic polynomial expression in one variable, with
--- constants drawn from obj 𝒞. The semantic functor it denotes is
--- poly-obj P : obj 𝒞 → obj 𝒞.
-data Poly {o m e} (𝒞 : Category o m e) : Set o where
-  one  : Poly 𝒞                              -- constant terminal
-  param : Category.obj 𝒞 → Poly 𝒞            -- constant object (parameter slot)
-  var  : Poly 𝒞                              -- recursive slot
-  _+_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- sum
-  _×_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞            -- product
-
-module _ {o m e} {𝒞 : Category o m e}
-         (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
-  open Category 𝒞
-  open HasTerminal T renaming (witness to terminal)
-  open HasProducts P
-  open HasCoproducts CP
-
-  poly-obj : Poly 𝒞 → obj → obj
-  poly-obj one         _ = terminal
-  poly-obj (param A)   _ = A
-  poly-obj var         x = x
-  poly-obj (P₁ + P₂)   x = coprod (poly-obj P₁ x) (poly-obj P₂ x)
-  poly-obj (P₁ × P₂)   x = prod  (poly-obj P₁ x) (poly-obj P₂ x)
-
-record HasMu {o m e} (𝒞 : Category o m e)
-             (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞)
-             (Q : Poly 𝒞) : Set (o ⊔ m ⊔ e) where
-  open Category 𝒞
-  field
-    μ    : obj
-    sup  : poly-obj T P CP Q μ ⇒ μ
-    fold : ∀ {y} → (poly-obj T P CP Q y ⇒ y) → μ ⇒ y
-  -- FIXME: equations (β/η for sup/fold)

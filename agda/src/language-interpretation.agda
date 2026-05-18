@@ -5,7 +5,8 @@ open import Data.List using (List; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong₂; sym; subst)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
-         HasBooleans; coproducts+exp→booleans; Poly; HasMu; poly-obj)
+         HasBooleans; coproducts+exp→booleans)
+open import polynomial-functor using (Poly; HasMu; poly-obj)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
@@ -18,7 +19,7 @@ module language-interpretation
   (P  : HasProducts 𝒞)
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
-  (HM : ∀ Q → HasMu 𝒞 T P C Q)
+  (HM : ∀ Q → HasMu T P C Q)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
 
@@ -26,8 +27,8 @@ B : HasBooleans 𝒞 T P
 B = coproducts+exp→booleans T C E
 
 open HasExponentials E renaming (exp to _⟦→⟧_)
-open PointedFPCat PFPC[ 𝒞 , T , P , HasBooleans.Bool B ]
-open HasCoproducts C renaming (coprod to _+_)
+open PointedFPCat PFPC[ 𝒞 , T , P , HasBooleans.Bool B ] renaming (_×_ to _⊗_)
+open HasCoproducts C renaming (coprod to _⊕_)
 open HasBooleans B
 open language-syntax Sig
 open Model Int
@@ -37,21 +38,21 @@ mutual
   ⟦ unit ⟧ty = 𝟙
   ⟦ bool ⟧ty = Bool
   ⟦ base σ ⟧ty = ⟦sort⟧ σ
-  ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty × ⟦ τ₂ ⟧ty
+  ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
-  ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty + ⟦ τ₂ ⟧ty
+  ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
   ⟦ μ P ⟧ty = HasMu.μ (HM (⟦ P ⟧poly))
 
   ⟦_⟧poly : polynomial → Poly 𝒞
   ⟦ one ⟧poly       = Poly.one
-  ⟦ const σ ⟧poly   = Poly.param ⟦ σ ⟧ty
+  ⟦ const σ ⟧poly   = Poly.const ⟦ σ ⟧ty
   ⟦ var ⟧poly       = Poly.var
   ⟦ P₁ + P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.+ ⟦ P₂ ⟧poly
   ⟦ P₁ × P₂ ⟧poly      = ⟦ P₁ ⟧poly Poly.× ⟦ P₂ ⟧poly
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
-⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt × ⟦ τ ⟧ty
+⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ ⟦ τ ⟧ty
 
 -- Equation showing that the meta-level apply on types agrees with the
 -- categorical apply on objects, modulo the polynomial interpretation.
@@ -62,17 +63,17 @@ apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj T P C ⟦ Q ⟧
 apply-coincides one       τ = refl
 apply-coincides (const σ) τ = refl
 apply-coincides var       τ = refl
-apply-coincides (Q₁ + Q₂)    τ = cong₂ _+_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
-apply-coincides (Q₁ × Q₂)    τ = cong₂ _×_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
+apply-coincides (Q₁ + Q₂)    τ = cong₂ _⊕_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
+apply-coincides (Q₁ × Q₂)    τ = cong₂ _⊗_ (apply-coincides Q₁ τ) (apply-coincides Q₂ τ)
 
 -- F-apply: for a polynomial Q and result types ctx, t, take a polynomial
 -- value whose recursive positions hold (ctx ⇒ t)-shaped function values
 -- together with a ctx argument, and apply each function. Used by fold-μ
 -- to thread the typing context Γ through the polynomial's algebra slots.
 F-apply : (Q : Poly 𝒞) {ctx t : obj} →
-          ((poly-obj T P C Q (ctx ⟦→⟧ t)) × ctx) ⇒ poly-obj T P C Q t
+          ((poly-obj T P C Q (ctx ⟦→⟧ t)) ⊗ ctx) ⇒ poly-obj T P C Q t
 F-apply Poly.one       = to-terminal
-F-apply (Poly.param _) = p₁
+F-apply (Poly.const _) = p₁
 F-apply Poly.var       = eval
 F-apply (Q₁ Poly.+ Q₂) =
   eval ∘ ⟨ copair (lambda (in₁ ∘ F-apply Q₁)) (lambda (in₂ ∘ F-apply Q₂)) ∘ p₁ , p₂ ⟩
@@ -83,7 +84,7 @@ F-apply (Q₁ Poly.× Q₂) =
 ⟦ zero ⟧var = p₂
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
 
-swap : ∀ {x y} → (x × y) ⇒ (y × x)
+swap : ∀ {x y} → (x ⊗ y) ⇒ (y ⊗ x)
 swap = ⟨ p₂ , p₁ ⟩
 
 mutual
@@ -104,12 +105,12 @@ mutual
   ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    HasMu.sup (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
+    HasMu.inF (HM ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    eval ∘ ⟨ HasMu.fold (HM ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
+    eval ∘ ⟨ HasMu.⦅_⦆ (HM ⟦ Q ⟧poly) closed-alg ∘ ⟦ M ⟧tm , id _ ⟩
     where
-      coerced : (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) × ⟦ Γ ⟧ctxt) ⇒ ⟦ apply Q τ ⟧ty
-      coerced = subst (λ X → (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) × ⟦ Γ ⟧ctxt) ⇒ X)
+      coerced : (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ ⟦ apply Q τ ⟧ty
+      coerced = subst (λ X → (poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
                       (sym (apply-coincides Q τ)) (F-apply ⟦ Q ⟧poly)
       closed-alg : poly-obj T P C ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
       closed-alg = lambda (eval ∘ ⟨ ⟦ alg ⟧tm ∘ p₂ , coerced ⟩)

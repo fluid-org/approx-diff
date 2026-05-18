@@ -7,6 +7,7 @@ open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet)
 open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
          HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans; setoid→category)
+import polynomial-functor
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
          interchange; H-id; NT-id-left;
@@ -441,7 +442,7 @@ definability {X} {Y} f with f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))
 
 module syntactic {ℓ}
    (Sig : Signature ℓ)
-   (Gl-HasMu : ∀ Q → categories.HasMu Gl.cat GlPE.terminal GlPE.products GlCP.coproducts Q)
+   (Gl-HasMu : ∀ Q → polynomial-functor.HasMu GlPE.terminal GlPE.products GlCP.coproducts Q)
    (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig) where
 
   open import language-syntax Sig

@@ -1,6 +1,7 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; HasBooleans; coproducts+exp→booleans; Poly; HasMu)
+open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; HasBooleans; coproducts+exp→booleans)
+open import polynomial-functor using (Poly; HasMu)
 open import functor using (Functor)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
@@ -15,7 +16,7 @@ open Functor
 module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o₁ m₁ e₁ o₂ m₂ e₂}
   (𝒞 : Category o₁ m₁ e₁) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞)
-  (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟HM : ∀ Q → HasMu 𝒟 𝒟T 𝒟P 𝒟CP Q)
+  (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟HM : ∀ Q → HasMu 𝒟T 𝒟P 𝒟CP Q)
   (F : Functor 𝒞 𝒟)
   (FT : Category.IsIso 𝒟 (HasTerminal.to-terminal 𝒟T {F .fobj (𝒞T .HasTerminal.witness)}))
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
@@ -23,7 +24,7 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (𝒞-Sig-model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
   where
 
-open language-syntax Sig
+open language-syntax Sig hiding (_+_; _×_)
 
 module _ where
   open Category 𝒞
