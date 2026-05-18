@@ -48,8 +48,8 @@ mutual
   ⟦ one ⟧poly       = Poly.one
   ⟦ const σ ⟧poly   = Poly.const ⟦ σ ⟧ty
   ⟦ var ⟧poly       = Poly.var
-  ⟦ P [+] Q ⟧poly   = ⟦ P ⟧poly Poly.[+] ⟦ Q ⟧poly
-  ⟦ P [×] Q ⟧poly   = ⟦ P ⟧poly Poly.[×] ⟦ Q ⟧poly
+  ⟦ P [+] Q ⟧poly   = ⟦ P ⟧poly Poly.+ ⟦ Q ⟧poly
+  ⟦ P [×] Q ⟧poly   = ⟦ P ⟧poly Poly.× ⟦ Q ⟧poly
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
@@ -68,8 +68,8 @@ map-eval : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ c
 map-eval Poly.one       = to-terminal
 map-eval (Poly.const _) = p₁
 map-eval Poly.var       = eval
-map-eval (P Poly.[+] Q) = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
-map-eval (P Poly.[×] Q) = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+map-eval (P Poly.+ Q) = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
+map-eval (P Poly.× Q) = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
