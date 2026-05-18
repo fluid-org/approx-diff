@@ -69,10 +69,11 @@ module ex where
   sum = lam (fold (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
 
   query : label.label → emp , list (base label [×] base number) ⊢ base number
-  query l = app sum
-                 (from var zero collect
-                  when fst (var zero) ≟ (` l) ；
-                  return (snd (var zero)))
+  query l =
+    app sum
+      (from var zero collect
+      when fst (var zero) ≟ (` l) ；
+      return (snd (var zero)))
 
   -- Instantiate our two translations with our two example approximation monads.
   module cbn-Tag where
