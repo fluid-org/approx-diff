@@ -53,9 +53,7 @@ infixl 10 _$_
 -- compared to apply ⟪P⟫poly ⟪τ⟫. cbn-coerce builds a target-language
 -- term that unwraps the Mon at each sum/product layer and rewraps once
 -- around the result.
-cbn-coerce : (P : polynomial) → ∀ {Γ τ} →
-             Γ ⊢ ⟪ apply P τ ⟫ty →
-             Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty)
+cbn-coerce : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ ⟪ apply P τ ⟫ty → Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty)
 cbn-coerce one         M = pure $ unit
 cbn-coerce (const σ)   M = pure $ (pure $ M)
 cbn-coerce var         M = pure $ M

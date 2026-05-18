@@ -1,22 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Approx (per-root) translation.
---
--- Parameterised on a SynMonad. Inserts Mon at the root of every type
--- former (one slot per type former), distinct from cbn-translation's
--- per-component design (one slot per component).
---
--- ⟪_⟫ty is defined via an inner decomposition: ⟪τ⟫ty = Mon ⟪τ⟫ty-inner.
--- This lets Agda see the outer Mon wrapper definitionally, so bind's
--- Mon-shaped body typechecks against ⟪τ⟫ty results without per-call
--- subst. The decomposition includes μ — μ-types are uniformly Mon-wrapped
--- at the root, like every other type former.
---
--- The polynomial body translation ⟪_⟫poly is structural. Mon-at-root
--- comes from ⟪_⟫ty on the unrolled type, not from the polynomial body.
--- This creates path-1/path-2 mismatch at sum/product roots — bridged by
--- approx-coerce/approx-coerce' (analogous to cbn-coerce/cbn-coerce').
+-- Inserts Mon at the root of every type former , distinct from cbn-translation's one slot per component.
 ------------------------------------------------------------------------------
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)
@@ -35,6 +20,7 @@ mutual
   ⟪_⟫ty : type → type
   ⟪ τ ⟫ty = Mon ⟪ τ ⟫ty-inner
 
+  -- Helps Agda see outer Mon wrapper definitionally
   ⟪_⟫ty-inner : type → type
   ⟪ unit ⟫ty-inner       = unit
   ⟪ bool ⟫ty-inner       = bool
@@ -63,15 +49,17 @@ _$_ : ∀ {Γ σ τ} → Γ ⊢ σ [→] τ → Γ ⊢ σ → Γ ⊢ τ
 _$_ = app
 infixl 10 _$_
 
--- Coerce for ⟪roll⟫tm. ⟪apply P τ⟫ty has Mon at every sum/product root
--- (per-root design); apply ⟪P⟫poly ⟪τ⟫ty has bare sum/product. Walk the
--- polynomial: extract from outer Mons, recurse, rebuild bare, repackage.
+-- Distributive law (sequence direction): F̂(M X) ⇒ M (F X). Input is
+-- the Mon-saturated polynomial — F with Mon inserted at every internal
+-- sum/product root — applied to the Mon-wrapped carrier ⟪τ⟫ty. Output
+-- collects all the internal Mons (and the carrier Mon) into a single
+-- outer Mon wrapping the bare polynomial applied to the bare carrier
+-- ⟪τ⟫ty-inner. Used by ⟪roll⟫tm.
 approx-coerce : (P : polynomial) → ∀ {Γ τ} →
-                Γ ⊢ ⟪ apply P τ ⟫ty →
-                Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty)
+                Γ ⊢ ⟪ apply P τ ⟫ty → Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty-inner)
 approx-coerce one        N = N
 approx-coerce (const σ)  N = pure $ N
-approx-coerce var        N = pure $ N
+approx-coerce var        N = N
 approx-coerce (P [+] Q)  N =
   bind $ N $ lam (case (var zero)
     (bind $ approx-coerce P (var zero) $ lam (pure $ inl (var zero)))
@@ -82,38 +70,16 @@ approx-coerce (P [×] Q)  N =
       bind $ approx-coerce Q (snd (var (succ zero))) $ lam (
         pure $ pair (var (succ zero)) (var zero))))
 
--- Strip Mon wrappers at var positions of the polynomial. Needed for
--- ⟪roll⟫tm: after approx-coerce strips sum/product-root Mons, var
--- positions still hold Mon-wrapped carriers (because ⟪μ P⟫ty has outer
--- Mon). Target roll wants bare carriers at var positions.
-strip-var-Mon : (P : polynomial) → ∀ {Γ τ} →
-                Γ ⊢ apply ⟪ P ⟫poly (Mon τ) →
-                Γ ⊢ Mon (apply ⟪ P ⟫poly τ)
-strip-var-Mon one        N = pure $ N
-strip-var-Mon (const σ)  N = pure $ N
-strip-var-Mon var        N = N
-strip-var-Mon (P [+] Q)  N =
-  case N
-    (bind $ strip-var-Mon P (var zero) $ lam (pure $ inl (var zero)))
-    (bind $ strip-var-Mon Q (var zero) $ lam (pure $ inr (var zero)))
-strip-var-Mon (P [×] Q)  N =
-  bind $ strip-var-Mon P (fst N) $ lam (
-    bind $ strip-var-Mon Q (snd (weaken * N)) $ lam (
-      pure $ pair (var (succ zero)) (var zero)))
-
--- The other direction (used by fold-μ for the algebra argument).
-approx-coerce' : (P : polynomial) → ∀ {Γ τ} →
-                 Γ ⊢ apply ⟪ P ⟫poly ⟪ τ ⟫ty →
-                 Γ ⊢ ⟪ apply P τ ⟫ty
+-- Distributive law (distribute direction): F(M X) ⇒ F̂(X). Used by
+-- ⟪fold-μ⟫tm to convert the algebra argument from target form (bare
+-- polynomial, Mon-wrapped carrier) to source-translation form
+-- (Mon-saturated polynomial).
+approx-coerce' : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ apply ⟪ P ⟫poly ⟪ τ ⟫ty → Γ ⊢ ⟪ apply P τ ⟫ty
 approx-coerce' one        N = pure $ N
 approx-coerce' (const σ)  N = N
 approx-coerce' var        N = N
-approx-coerce' (P [+] Q)  N =
-  pure $ case N
-    (inl (approx-coerce' P (var zero)))
-    (inr (approx-coerce' Q (var zero)))
-approx-coerce' (P [×] Q)  N =
-  pure $ pair (approx-coerce' P (fst N)) (approx-coerce' Q (snd N))
+approx-coerce' (P [+] Q)  N = pure $ case N (inl (approx-coerce' P (var zero))) (inr (approx-coerce' Q (var zero)))
+approx-coerce' (P [×] Q)  N = pure $ pair (approx-coerce' P (fst N)) (approx-coerce' Q (snd N))
 
 mutual
   ⟪_⟫tm : ∀ {Γ τ} → Γ ⊢ τ → ⟪ Γ ⟫ctxt ⊢ ⟪ τ ⟫ty
@@ -135,9 +101,7 @@ mutual
   ⟪ bop ω Ms ⟫tm = bindAll Ms (id-ren _) (λ ρ Ms' → pure $ bop ω Ms')
   ⟪ brel ω Ms ⟫tm = bindAll Ms (id-ren _) (λ ρ Ms' → pure $ brel ω Ms')
   ⟪ roll {P = P} M ⟫tm =
-    bind $ approx-coerce P ⟪ M ⟫tm $ lam (
-      bind $ strip-var-Mon P (var zero) $ lam (
-        pure $ roll (var zero)))
+    bind $ approx-coerce P ⟪ M ⟫tm $ lam (pure $ roll (var zero))
   ⟪ fold-μ {P = Q} {τ = τ} alg M ⟫tm =
     bind $ ⟪ alg ⟫tm $ lam (
       bind $ (weaken * ⟪ M ⟫tm) $ lam (

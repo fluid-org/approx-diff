@@ -70,7 +70,8 @@ module backward-cbn where
   open import ho-model
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
   open Galois.interp Sig BaseInterp0
-  open example.ex using (Tag; cbn-query)
+  open example.ex using (Tag)
+  open example.ex.cbn-Tag using (cbn-query)
 
   input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
   input = _ ,
@@ -80,20 +81,23 @@ module backward-cbn where
           sup (inj₁ (lift ·))))))))
 
   bwd-slice : label.label → _
-  bwd-slice l = ⟦ example.ex.cbn-query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun (⊤ , ·) .proj₂
+  bwd-slice l = ⟦ cbn-query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun (⊤ , ·) .proj₂
     where
       open indexed-family._⇒f_
       open join-semilattice-category._⇒_
       open join-semilattice._=>_
       open preorder._=>_
 
-  -- FIXME: tests below need expected values reconstructed for the W-form
-  -- result of bwd-slice. The result structure changes because the fibre at
-  -- a W-shaped index is built by structural recursion on sup/inj/pair, which
-  -- gives a different (but structurally analogous) nested tuple than the old
-  -- list representation.
+  -- TODO: tests below need expected values reconstructed for the W-form
+  -- result of bwd-slice. To do so interactively: write `test1 = ?`,
+  -- C-c C-, in agda-mode to see the goal, then refine. The result
+  -- structure is more nested than the old list form (W-types compose
+  -- per-component, not as flat tuples), and the precise shape depends
+  -- on how categorical sigma-types unfold in the slicing model.
   -- test1 : bwd-slice label.a ≡ ...
+  -- test1 = ≡-refl
   -- test2 : bwd-slice label.b ≡ ...
+  -- test2 = ≡-refl
 
 -- Forward analysis (Conjugate).
 module forward where

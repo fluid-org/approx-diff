@@ -35,8 +35,9 @@ module ex where
   Tag-pure = lam (pair (bop approx-unit []) (var zero))
 
   Tag-bind : ∀ {Γ σ τ} → Γ ⊢ Tag σ [→] (σ [→] Tag τ) [→] Tag τ
-  Tag-bind = lam (lam (pair (bop approx-mult (fst (var (succ zero)) ∷ fst (app (var zero) (snd (var (succ zero)))) ∷ []))
-                          (snd (app (var zero) (snd (var (succ zero)))))))
+  Tag-bind =
+    lam (lam (pair (bop approx-mult (fst (var (succ zero)) ∷ fst (app (var zero) (snd (var (succ zero)))) ∷ []))
+                   (snd (app (var zero) (snd (var (succ zero)))))))
 
   Tag-monad : SynMonad
   Tag-monad .Mon = Tag
