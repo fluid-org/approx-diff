@@ -412,3 +412,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.μ Q       = W-types.WObj Q
   hasMu .HasMu.inF Q     = W-types.inF-mor Q
   hasMu .HasMu.⦅_⦆ {Q}   = W-types.fold Q
+
+  ----------------------------------------------------------------------
+  -- Fibred μ: base (idx) and fibre polynomials supplied separately, matching
+  -- Vákár's Theorem D shape for initial algebras in Σ-categories.
+  record HasMu-fibred : Set (suc (os ⊔ es) ⊔ o ⊔ m ⊔ e) where
+    field
+      -- Σ-application: base shape on idx, fibre shape on fibre.
+      polyΣ-obj : (Q-base : IdxPoly {os} {es}) (Q-fibre : Poly cat) → Obj → Obj
+      μ    : (Q-base : IdxPoly {os} {es}) (Q-fibre : Poly cat) → Obj
+      inμ  : ∀ Q-base Q-fibre → Mor (polyΣ-obj Q-base Q-fibre (μ Q-base Q-fibre)) (μ Q-base Q-fibre)
+      ⦅_⦆  : ∀ {Q-base Q-fibre y} → Mor (polyΣ-obj Q-base Q-fibre y) y → Mor (μ Q-base Q-fibre) y
+      -- TODO: reindexing coherence between Q-base and Q-fibre.
