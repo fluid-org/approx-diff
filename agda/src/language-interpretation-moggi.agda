@@ -85,6 +85,20 @@ map-eval (P Poly.× Q)   = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map
 bind : ∀ {Γ x y} → Γ ⇒ Mon x → (Γ ⊗ x) ⇒ Mon y → Γ ⇒ Mon y
 bind f k = extend k ∘ ⟨ id _ , f ⟩
 
+-- Functorial action of Mon on morphisms, derived from extend + unit.
+Mon-map : ∀ {x y} → (x ⇒ y) → Mon x ⇒ Mon y
+Mon-map f = extend (η ∘ f ∘ p₂) ∘ ⟨ to-terminal , id _ ⟩
+
+-- Monadic traversal (sequence) for polynomials: poly-obj Q (Mon X) ⇒ Mon (poly-obj Q X).
+-- For Q built from sums/products/var, this threads Mon outward through the structure.
+seq-poly : (Q : Poly 𝒞) → ∀ {X} → poly-obj Q (Mon X) ⇒ Mon (poly-obj Q X)
+seq-poly Poly.one       = η
+seq-poly (Poly.const _) = η
+seq-poly Poly.var       = id _
+seq-poly (P Poly.+ Q)   = copair (Mon-map in₁ ∘ seq-poly P) (Mon-map in₂ ∘ seq-poly Q)
+seq-poly (P Poly.× Q)   =
+  bind (seq-poly P ∘ p₁) (bind (seq-poly Q ∘ p₂ ∘ p₁) (η ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩))
+
 mutual
   ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ Mon ⟦ τ ⟧ty
   ⟦ var x ⟧tm = η ∘ ⟦ x ⟧var
@@ -109,13 +123,8 @@ mutual
     η ∘ HasMu.inF Mu (P-Mon ∘ₚ ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) eq ⟦ M ⟧tm
     where
       eq : poly-obj P-Mon ⟦ apply P (μ P) ⟧ty ≡ poly-obj (P-Mon ∘ₚ ⟦ P ⟧poly) (HasMu.μ Mu (P-Mon ∘ₚ ⟦ P ⟧poly))
-      eq = trans (cong (poly-obj P-Mon) (apply-coincides P (μ P)))
-                 (sym (poly-obj-comp P-Mon ⟦ P ⟧poly _))
-  -- TODO: fold-μ requires Mon-aware initial algebras (HasMu-Mon, step 3).
-  -- The var-carrier mismatch in the algebra body (poly applied at Mon ⟦τ⟧ty
-  -- vs. ⟦apply Q τ⟧ty with bare τ at vars) can't be bridged without either
-  -- (a) Howard's pointed retraction, or (b) initial algebras of Mon ∘ F.
-  ⟦ fold-μ alg M ⟧tm = {!   !}
+      eq = trans (cong (poly-obj P-Mon) (apply-coincides P (μ P))) (sym (poly-obj-comp P-Mon ⟦ P ⟧poly _))
+  ⟦ fold-μ alg M ⟧tm = {!!}
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ Mon (list→product ⟦sort⟧ σs)
   ⟦ [] ⟧tms = η ∘ to-terminal
