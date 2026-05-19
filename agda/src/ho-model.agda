@@ -174,7 +174,7 @@ module Interpretation
     Fam⟨𝒟⟩.Mor-∘ (HasCoproducts.coprod-m Fam⟨𝒟⟩-coproducts (Fam⟨𝒟⟩-terminal .HasTerminal.to-terminal) (Fam⟨𝒟⟩-terminal .HasTerminal.to-terminal))
                   (Fam⟨F⟩-preserves-coproducts .Category.IsIso.inverse)
 
-  -- Interpretation
+  -- Direct interpretation
   module interp (Sig : Signature 0ℓ)
                 (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
      where
@@ -189,6 +189,27 @@ module Interpretation
        Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
        (polynomial-functor.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
+       (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
+       public
+
+  -- Approx (per-root Mon-decorated) interpretation. Caller supplies the PointedMonad.
+  module interp-approx (Sig : Signature 0ℓ)
+                       (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
+                       (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
+                       (PM : PointedMonad)
+     where
+
+     open Fam⟨𝒟⟩.Mor public
+     open Fam⟨𝒟⟩.Obj public
+
+     open import language-interpretation-approx Sig
+       Fam⟨𝒟⟩.cat
+       Fam⟨𝒟⟩-terminal
+       Fam⟨𝒟⟩-products
+       Fam⟨𝒟⟩-coproducts
+       Fam⟨𝒟⟩-exponentials
+       (polynomial-functor.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
+       PM
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 

@@ -42,20 +42,16 @@ module backward where
   open import ho-model
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
   open Galois.interp Sig BaseInterp1
+  open indexed-family._⇒f_
+  open join-semilattice-category._⇒_
+  open join-semilattice._=>_
+  open preorder._=>_
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = inF (inj₂ ((label.a , 0) ,
-          inF (inj₂ ((label.b , 1) ,
-          inF (inj₂ ((label.a , 1) ,
-          inF (inj₁ (lift ·))))))))
+  input = inF (inj₂ ((label.a , 0) , inF (inj₂ ((label.b , 1) , inF (inj₂ ((label.a , 1) , inF (inj₁ (lift ·))))))))
 
   bwd-slice : label.label → _
   bwd-slice l = ⟦ example.ex.query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun ⊤ .proj₂
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
 
   -- Querying for the 'a' label uses the 1st and 3rd numbers
   test1 : bwd-slice label.a ≡ ((· , ⊤) , (· , ⊥) , (· , ⊤) , _)
@@ -65,8 +61,6 @@ module backward where
   test2 : bwd-slice label.b ≡ ((· , ⊥) , (· , ⊤) , (· , ⊥) , _)
   test2 = ≡-refl
 
--- Backward analysis using CBN lifting: see example-cbn-translation.
-
 -- Forward analysis (Conjugate).
 module forward where
   open import ho-model
@@ -74,10 +68,7 @@ module forward where
   open Conjugate.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = inF (inj₂ ((label.a , 0) ,
-          inF (inj₂ ((label.b , 1) ,
-          inF (inj₂ ((label.a , 1) ,
-          inF (inj₁ (lift ·))))))))
+  input = inF (inj₂ ((label.a , 0) , inF (inj₂ ((label.b , 1) , inF (inj₂ ((label.a , 1) , inF (inj₁ (lift ·))))))))
 
   -- bwd-slice behaves the same as in the Galois examples, but fwd-slice does not
   fwd-slice : _ → _

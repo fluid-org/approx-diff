@@ -69,9 +69,15 @@ module ex where
   sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
   sum = lam (fold (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
 
-  -- Length: only touches the spine, never the elements.
-  length : ∀ {Γ τ} → Γ ⊢ list τ [→] base number
-  length = lam (fold (bop zero []) (bop add (bop one [] ∷ var zero ∷ [])) (var zero))
+  -- Whther some element of the list equals the given label. CBV semantics evaluates the predicate at every
+  -- element, but backward demand "short- circuits": at the first matching element, the remaining list becomes
+  -- ⊥-demanded.
+  some-eq : ∀ {Γ} → Γ ⊢ base label [→] list (base label) [→] bool
+  some-eq = lam (lam
+    (fold false
+      (if (brel equal-label (var (succ zero) ∷ var (succ (succ (succ zero))) ∷ []))
+       then true else (var zero))
+      (var zero)))
 
   query : label.label → emp , list (base label [×] base number) ⊢ base number
   query l =
