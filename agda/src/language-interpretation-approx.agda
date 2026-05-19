@@ -25,7 +25,7 @@ module language-interpretation-approx
   (let open Sem T P C)
   (let open HasBooleans (coproducts+exp→booleans T C E))
   (Mu : HasMu)
-  (PM : PolyMonad)
+  (PM : PointedMonad)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where
 
@@ -34,7 +34,7 @@ open PointedFPCat PFPC[ 𝒞 , T , P , Bool ] renaming (_×_ to _⊗_)
 open HasCoproducts C renaming (coprod to _⊕_)
 open language-syntax Sig
 open Model Int
-open PolyMonad PM renaming (unit to η)
+open PointedMonad PM renaming (unit to η)
 
 Mon : obj → obj
 Mon X = poly-obj P-Mon X

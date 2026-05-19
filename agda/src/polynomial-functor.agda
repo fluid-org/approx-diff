@@ -77,6 +77,18 @@ module Sem {o m e} {𝒞 : Category o m e}
   PolyMonad-Id .PolyMonad.isStrongMon .IsStrongMonad.unit {x}   = id x
   PolyMonad-Id .PolyMonad.isStrongMon .IsStrongMonad.extend f   = f
 
+  -- Strong monad augmented with a force (retraction of unit), giving every object a Mon-algebra.
+  record PointedMonad : Set (o ⊔ m ⊔ e) where
+    field
+      polyMonad : PolyMonad
+      force     : ∀ {x} → poly-obj (polyMonad .PolyMonad.P-Mon) x ⇒ x
+    open PolyMonad polyMonad public
+    -- FIXME: force ∘ unit ≈ id; force ∘ mul ≈ force ∘ map force
+
+  PointedMonad-Id : PointedMonad
+  PointedMonad-Id .PointedMonad.polyMonad = PolyMonad-Id
+  PointedMonad-Id .PointedMonad.force {x} = id x
+
 ------------------------------------------------------------------------------
 -- Like Poly above but constant slots hold a setoid rather than a category
 -- object. Used to build the W-type carrier of HasMu in the Fam category.
