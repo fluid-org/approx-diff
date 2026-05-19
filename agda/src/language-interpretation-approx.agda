@@ -82,27 +82,6 @@ map-eval (P Poly.× Q)   = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map
 ⟦ zero ⟧var = p₂
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
 
--- Kleisli bind in Γ × X context: bind a Γ ⇒ Mon X with a Γ × X ⇒ Mon Y body.
-bind : ∀ {Γ x y} → Γ ⇒ Mon x → (Γ ⊗ x) ⇒ Mon y → Γ ⇒ Mon y
-bind f k = extend k ∘ ⟨ id _ , f ⟩
-
--- Functorial action of Mon on morphisms, derived from extend + unit.
-Mon-map : ∀ {x y} → (x ⇒ y) → Mon x ⇒ Mon y
-Mon-map f = extend (η ∘ f ∘ p₂) ∘ ⟨ to-terminal , id _ ⟩
-
--- Monadic traversal (sequence) for polynomials: poly-obj Q (Mon X) ⇒ Mon (poly-obj Q X).
--- For Q built from sums/products/var, this threads Mon outward through the structure.
-seq-poly : (Q : Poly 𝒞) → ∀ {X} → poly-obj Q (Mon X) ⇒ Mon (poly-obj Q X)
-seq-poly Poly.one       = η
-seq-poly (Poly.const _) = η
-seq-poly Poly.var       = id _
-seq-poly (P Poly.+ Q)   = copair (Mon-map in₁ ∘ seq-poly P) (Mon-map in₂ ∘ seq-poly Q)
-seq-poly (P Poly.× Q)   =
-  bind (seq-poly P ∘ p₁) (bind (seq-poly Q ∘ p₂ ∘ p₁) (η ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩))
-
-eval-and-seq : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ Mon t) ⊗ ctx) ⇒ Mon (poly-obj Q t)
-eval-and-seq Q = seq-poly Q ∘ map-eval Q
-
 mutual
   ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
   ⟦ var x ⟧tm = ⟦ x ⟧var
@@ -123,7 +102,15 @@ mutual
   ⟦ brel ω Ms ⟧tm = η ∘ ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     Mu .HasMu.inF ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
-  ⟦ fold-μ alg M ⟧tm = {!!}
+  ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
+    eval ∘ ⟨ Mu .HasMu.⦅_⦆ closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
+    where
+      closure-converted : poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
+      closure-converted = lambda (eval ∘ ⟨
+        force ∘ ⟦ alg ⟧tm ∘ p₂ ,
+          subst (λ X → (poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
+                (sym (apply-coincides Q τ)) (map-eval ⟦ Q ⟧poly)
+        ⟩)
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms = to-terminal
