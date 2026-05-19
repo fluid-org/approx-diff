@@ -69,6 +69,10 @@ module ex where
   sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
   sum = lam (fold (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
 
+  -- Length: only touches the spine, never the elements.
+  length : ∀ {Γ τ} → Γ ⊢ list τ [→] base number
+  length = lam (fold (bop zero []) (bop add (bop one [] ∷ var zero ∷ [])) (var zero))
+
   query : label.label → emp , list (base label [×] base number) ⊢ base number
   query l =
     app sum
