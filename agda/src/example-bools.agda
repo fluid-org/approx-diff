@@ -65,41 +65,7 @@ module backward where
   test2 : bwd-slice label.b ≡ ((· , ⊥) , (· , ⊤) , (· , ⊥) , _)
   test2 = ≡-refl
 
--- Backward analysis using CBN lifting.
-module backward-cbn where
-  open import ho-model
-  open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open Galois.interp Sig BaseInterp0
-  open example.ex using (Tag)
-  open example.ex.cbn-Tag using (cbn-query)
-
-  input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
-  input = _ ,
-          inF (inj₂ ((_ , (_ , label.a) , (_ , 0)) ,
-          inF (inj₂ ((_ , (_ , label.b) , (_ , 1)) ,
-          inF (inj₂ ((_ , (_ , label.a) , (_ , 1)) ,
-          inF (inj₁ (lift ·))))))))
-
-  bwd-slice : label.label → _
-  bwd-slice l = ⟦ cbn-query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun (⊤ , ·) .proj₂
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
-
-  -- TODO: tests below — reconstructed structure for the W-form result:
-  --     (⊤ , ((⊤ , (⊤ , ·) , (⊤ , ·)) ,
-  --           ((⊤ , (⊤ , ·) , (⊥ , ·)) ,
-  --            ((⊤ , (⊤ , ·) , (⊤ , ·)) ,
-  --             ·))))
-  -- ...but enabling them makes typechecking timeout (>4min, ≥14GB RSS).
-  -- Suspected cause: the cbn-coerce/cbn-coerce' machinery generates
-  -- many nested bind/pure terms which the W-form interpretation has to
-  -- unroll structurally. Even smaller inputs (1 cons cell) might
-  -- terminate; worth trying if these tests are needed.
-  -- test1 : bwd-slice label.a ≡ ... ; test1 = ≡-refl
-  -- test2 : bwd-slice label.b ≡ ... ; test2 = ≡-refl
+-- Backward analysis using CBN lifting: see example-cbn-translation.
 
 -- Forward analysis (Conjugate).
 module forward where
