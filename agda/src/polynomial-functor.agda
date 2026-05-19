@@ -17,8 +17,7 @@ import fam
 module polynomial-functor where
 
 ------------------------------------------------------------------------------
--- Syntactic polynomial expressions in one variable, with constants drawn from obj 𝒞,
--- and corresponding functors.
+-- Syntactic polynomial expressions in one variable, with constants drawn from obj 𝒞; they form a category.
 data Poly {o m e} (𝒞 : Category o m e) : Set o where
   one  : Poly 𝒞                              -- constant terminal
   const : Category.obj 𝒞 → Poly 𝒞            -- constant object
@@ -26,14 +25,12 @@ data Poly {o m e} (𝒞 : Category o m e) : Set o where
   _+_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞          -- sum
   _×_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞          -- product
 
--- Substitute Q at every var position of P.  poly-obj of the composition
--- equals composition of poly-objs (see Sem.poly-obj-compose).
-compose-Poly : ∀ {o m e} {𝒞 : Category o m e} → Poly 𝒞 → Poly 𝒞 → Poly 𝒞
-compose-Poly one        Q = one
-compose-Poly (const A)  Q = const A
-compose-Poly var        Q = Q
-compose-Poly (P₁ + P₂)  Q = compose-Poly P₁ Q + compose-Poly P₂ Q
-compose-Poly (P₁ × P₂)  Q = compose-Poly P₁ Q × compose-Poly P₂ Q
+_∘ₚ_ : ∀ {o m e} {𝒞 : Category o m e} → Poly 𝒞 → Poly 𝒞 → Poly 𝒞
+one        ∘ₚ Q = one
+const A    ∘ₚ Q = const A
+var        ∘ₚ Q = Q
+(P₁ + P₂)  ∘ₚ Q = (P₁ ∘ₚ Q) + (P₂ ∘ₚ Q)
+(P₁ × P₂)  ∘ₚ Q = (P₁ ∘ₚ Q) × (P₂ ∘ₚ Q)
 
 module Sem {o m e} {𝒞 : Category o m e}
            (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
@@ -46,16 +43,16 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-obj one         _ = terminal
   poly-obj (const A)   _ = A
   poly-obj var         x = x
-  poly-obj (P + Q)   x = coprod (poly-obj P x) (poly-obj Q x)
-  poly-obj (P × Q)   x = prod   (poly-obj P x) (poly-obj Q x)
+  poly-obj (P + Q)     x = coprod (poly-obj P x) (poly-obj Q x)
+  poly-obj (P × Q)     x = prod   (poly-obj P x) (poly-obj Q x)
 
   -- Polynomial composition agrees with composition of functor actions.
-  poly-obj-compose : ∀ P Q X → poly-obj (compose-Poly P Q) X ≡ poly-obj P (poly-obj Q X)
-  poly-obj-compose one        Q X = ≡.refl
-  poly-obj-compose (const A)  Q X = ≡.refl
-  poly-obj-compose var        Q X = ≡.refl
-  poly-obj-compose (P₁ + P₂)  Q X = cong₂ coprod (poly-obj-compose P₁ Q X) (poly-obj-compose P₂ Q X)
-  poly-obj-compose (P₁ × P₂)  Q X = cong₂ prod   (poly-obj-compose P₁ Q X) (poly-obj-compose P₂ Q X)
+  poly-obj-comp : ∀ P Q X → poly-obj (P ∘ₚ Q) X ≡ poly-obj P (poly-obj Q X)
+  poly-obj-comp one        Q X = ≡.refl
+  poly-obj-comp (const A)  Q X = ≡.refl
+  poly-obj-comp var        Q X = ≡.refl
+  poly-obj-comp (P₁ + P₂)  Q X = cong₂ coprod (poly-obj-comp P₁ Q X) (poly-obj-comp P₂ Q X)
+  poly-obj-comp (P₁ × P₂)  Q X = cong₂ prod   (poly-obj-comp P₁ Q X) (poly-obj-comp P₂ Q X)
 
   record HasMu (Q : Poly 𝒞) : Set (o ⊔ m ⊔ e) where
     field
