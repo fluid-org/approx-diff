@@ -194,6 +194,30 @@ module _ {o e} where
   WSetoid P .Setoid.isEquivalence .IsEquivalence.trans {w₁} {w₂} {w₃} = W-≈-trans P {w₁} {w₂} {w₃}
 
 ------------------------------------------------------------------------------
+-- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). The biproduct ⊕
+-- carries a coherence proof that operands' idx-projections agree.
+module Mu {o m e os es} {𝒟 : Category o m e} where
+  open fam.CategoryOfFamilies os es 𝒟 using (Obj)
+  open Obj
+
+  mutual
+    data μPoly : Set (suc (os ⊔ es) ⊔ o ⊔ m ⊔ e) where
+      one    : μPoly
+      const  : Obj → μPoly
+      var    : μPoly
+      _+_    : μPoly → μPoly → μPoly
+      _×_    : μPoly → μPoly → μPoly
+      ⊕      : (P Q : μPoly) → idx-of P ≡ idx-of Q → μPoly
+
+    idx-of : μPoly → IdxPoly {os} {es}
+    idx-of one          = IdxPoly.one
+    idx-of (const A)    = IdxPoly.param (A .idx)
+    idx-of var          = IdxPoly.var
+    idx-of (P + Q)      = idx-of P IdxPoly.+ idx-of Q
+    idx-of (P × Q)      = idx-of P IdxPoly.× idx-of Q
+    idx-of (⊕ P Q _)    = idx-of P
+
+------------------------------------------------------------------------------
 -- HasMu instance for the Fam construction.
 module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
   open Category 𝒞
@@ -412,15 +436,3 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.μ Q       = W-types.WObj Q
   hasMu .HasMu.inF Q     = W-types.inF-mor Q
   hasMu .HasMu.⦅_⦆ {Q}   = W-types.fold Q
-
-  ----------------------------------------------------------------------
-  -- Fibred μ: base (idx) and fibre polynomials supplied separately, matching
-  -- Vákár's Theorem D shape for initial algebras in Σ-categories.
-  record HasMu-fibred : Set (suc (os ⊔ es) ⊔ o ⊔ m ⊔ e) where
-    field
-      -- Σ-application: base shape on idx, fibre shape on fibre.
-      polyΣ-obj : (Q-base : IdxPoly {os} {es}) (Q-fibre : Poly cat) → Obj → Obj
-      μ    : (Q-base : IdxPoly {os} {es}) (Q-fibre : Poly cat) → Obj
-      inμ  : ∀ Q-base Q-fibre → Mor (polyΣ-obj Q-base Q-fibre (μ Q-base Q-fibre)) (μ Q-base Q-fibre)
-      ⦅_⦆  : ∀ {Q-base Q-fibre y} → Mor (polyΣ-obj Q-base Q-fibre y) y → Mor (μ Q-base Q-fibre) y
-      -- TODO: reindexing coherence between Q-base and Q-fibre.
