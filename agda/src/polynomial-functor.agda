@@ -61,6 +61,19 @@ module Sem {o m e} {𝒞 : Category o m e}
       ⦅_⦆  : ∀ {y} → (poly-obj Q y ⇒ y) → μ ⇒ y
     -- FIXME: equations (β/η for inF / ⦅_⦆)
 
+  -- Strong monad whose endofunctor is polynomial.
+  record PolyMonad : Set (o ⊔ m ⊔ e) where
+    field
+      P-Mon  : Poly 𝒞
+      unit   : ∀ {x} → x ⇒ poly-obj P-Mon x
+      extend : ∀ {x y z} → prod x y ⇒ poly-obj P-Mon z → prod x (poly-obj P-Mon y) ⇒ poly-obj P-Mon z
+    -- FIXME: monad and strength laws
+
+  PolyMonad-Id : PolyMonad
+  PolyMonad-Id .PolyMonad.P-Mon       = var
+  PolyMonad-Id .PolyMonad.unit {x}    = id x
+  PolyMonad-Id .PolyMonad.extend f    = f
+
 ------------------------------------------------------------------------------
 -- Like Poly above but constant slots hold a setoid rather than a category
 -- object. Used to build the W-type carrier of HasMu in the Fam category.
