@@ -128,10 +128,7 @@ module forward-matrix where
   open ho-model.Matrix.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = inF (inj₂ ((label.a , 0) ,
-          inF (inj₂ ((label.b , 1) ,
-          inF (inj₂ ((label.a , 1) ,
-          inF (inj₁ (lift ·))))))))
+  input = inF (inj₂ ((label.a , 0) , inF (inj₂ ((label.b , 1) , inF (inj₂ ((label.a , 1) , inF (inj₁ (lift ·))))))))
 
   open indexed-family._⇒f_
   open SemiLat._⇒_
