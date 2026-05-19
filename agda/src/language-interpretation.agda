@@ -5,7 +5,7 @@ open import Data.List using (List; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
-         HasBooleans; coproducts+exp→booleans)
+         HasBooleans; coproducts+exp→booleans; StrongMonad)
 open import polynomial-functor using (Poly; module Sem)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
@@ -20,6 +20,7 @@ module language-interpretation
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
   (Mu : ∀ Q → Sem.HasMu T P C Q)
+  (SM : StrongMonad 𝒞 P)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
 

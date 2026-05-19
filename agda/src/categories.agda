@@ -680,6 +680,11 @@ record StrongMonad {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : Set 
     extend : ∀ {x y z} → prod x y ⇒ M z → prod x (M y) ⇒ M z
   -- FIXME: equations
 
+id-strong-monad : ∀ {o m e} {𝒞 : Category o m e} (P : HasProducts 𝒞) → StrongMonad 𝒞 P
+id-strong-monad {𝒞 = 𝒞} P .StrongMonad.M x = x
+id-strong-monad {𝒞 = 𝒞} P .StrongMonad.unit {x} = Category.id 𝒞 x
+id-strong-monad {𝒞 = 𝒞} P .StrongMonad.extend f = f
+
 record HasBooleans {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasTerminal T renaming (witness to terminal)

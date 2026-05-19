@@ -3,7 +3,7 @@
 module ho-model where
 
 open import Level using (Level; 0ℓ; suc)
-open import categories using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial; op-coproducts→products; op-initial→terminal; HasCoproducts)
+open import categories using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial; op-coproducts→products; op-initial→terminal; HasCoproducts; id-strong-monad)
 open import product-category using (product; product-limit; product-products; product-terminal)
 open import cmon-enriched
   using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
@@ -189,6 +189,7 @@ module Interpretation
        Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
        (polynomial-functor.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
+       (id-strong-monad Fam⟨𝒟⟩-products)
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
