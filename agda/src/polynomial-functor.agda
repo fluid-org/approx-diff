@@ -5,6 +5,8 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import prop using (_,_; tt)
 open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
+import Relation.Binary.PropositionalEquality as ≡
+open ≡ using (_≡_; cong₂)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts)
 open import prop-setoid as PS
@@ -24,6 +26,15 @@ data Poly {o m e} (𝒞 : Category o m e) : Set o where
   _+_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞          -- sum
   _×_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞          -- product
 
+-- Substitute Q at every var position of P.  poly-obj of the composition
+-- equals composition of poly-objs (see Sem.poly-obj-compose).
+compose-Poly : ∀ {o m e} {𝒞 : Category o m e} → Poly 𝒞 → Poly 𝒞 → Poly 𝒞
+compose-Poly one        Q = one
+compose-Poly (const A)  Q = const A
+compose-Poly var        Q = Q
+compose-Poly (P₁ + P₂)  Q = compose-Poly P₁ Q + compose-Poly P₂ Q
+compose-Poly (P₁ × P₂)  Q = compose-Poly P₁ Q × compose-Poly P₂ Q
+
 module Sem {o m e} {𝒞 : Category o m e}
            (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
   open Category 𝒞
@@ -37,6 +48,14 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-obj var         x = x
   poly-obj (P + Q)   x = coprod (poly-obj P x) (poly-obj Q x)
   poly-obj (P × Q)   x = prod   (poly-obj P x) (poly-obj Q x)
+
+  -- Polynomial composition agrees with composition of functor actions.
+  poly-obj-compose : ∀ P Q X → poly-obj (compose-Poly P Q) X ≡ poly-obj P (poly-obj Q X)
+  poly-obj-compose one        Q X = ≡.refl
+  poly-obj-compose (const A)  Q X = ≡.refl
+  poly-obj-compose var        Q X = ≡.refl
+  poly-obj-compose (P₁ + P₂)  Q X = cong₂ coprod (poly-obj-compose P₁ Q X) (poly-obj-compose P₂ Q X)
+  poly-obj-compose (P₁ × P₂)  Q X = cong₂ prod   (poly-obj-compose P₁ Q X) (poly-obj-compose P₂ Q X)
 
   record HasMu (Q : Poly 𝒞) : Set (o ⊔ m ⊔ e) where
     field
