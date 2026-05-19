@@ -25,7 +25,7 @@ module language-interpretation-approx
   (let open Sem T P C)
   (let open HasBooleans (coproducts+exp→booleans T C E))
   (Mu : HasMu)
-  (PM : PointedMonad)
+  (PM : PointedMonad) -- if force is lossy then so is this semantics
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where
 
@@ -43,7 +43,7 @@ mutual
   ⟦_⟧ty : type → obj
   ⟦ unit ⟧ty       = Mon 𝟙
   ⟦ bool ⟧ty       = Mon Bool
-  ⟦ base σ ⟧ty     = ⟦sort⟧ σ
+  ⟦ base σ ⟧ty     = ⟦sort⟧ σ  -- comes with its own approximation structure
   ⟦ τ₁ [×] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty)
   ⟦ τ₁ [+] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty)
   ⟦ τ₁ [→] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty)
