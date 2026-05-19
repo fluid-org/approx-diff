@@ -8,7 +8,7 @@ open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
 import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts)
+  using (Category; HasTerminal; HasProducts; HasCoproducts; IsStrongMonad; StrongMonad)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_)
@@ -64,15 +64,18 @@ module Sem {o m e} {𝒞 : Category o m e}
   -- Strong monad whose endofunctor is polynomial.
   record PolyMonad : Set (o ⊔ m ⊔ e) where
     field
-      P-Mon  : Poly 𝒞
-      unit   : ∀ {x} → x ⇒ poly-obj P-Mon x
-      extend : ∀ {x y z} → prod x y ⇒ poly-obj P-Mon z → prod x (poly-obj P-Mon y) ⇒ poly-obj P-Mon z
-    -- FIXME: monad and strength laws
+      P-Mon       : Poly 𝒞
+      isStrongMon : IsStrongMonad P (poly-obj P-Mon)
+    open IsStrongMonad isStrongMon public
+
+    asStrongMonad : StrongMonad 𝒞 P
+    asStrongMonad .StrongMonad.M           = poly-obj P-Mon
+    asStrongMonad .StrongMonad.isStrongMon = isStrongMon
 
   PolyMonad-Id : PolyMonad
-  PolyMonad-Id .PolyMonad.P-Mon       = var
-  PolyMonad-Id .PolyMonad.unit {x}    = id x
-  PolyMonad-Id .PolyMonad.extend f    = f
+  PolyMonad-Id .PolyMonad.P-Mon                                 = var
+  PolyMonad-Id .PolyMonad.isStrongMon .IsStrongMonad.unit {x}   = id x
+  PolyMonad-Id .PolyMonad.isStrongMon .IsStrongMonad.extend f   = f
 
 ------------------------------------------------------------------------------
 -- Like Poly above but constant slots hold a setoid rather than a category

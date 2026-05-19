@@ -2,9 +2,9 @@
 
 -- Moggi-style monadic interpretation, parameterised on a strong monad SM.
 -- Term interpretation lands in Γ ⇒ M ⟦τ⟧ty; type interpretation puts M at
--- function results. With SM = id-strong-monad, M reduces to the identity
--- functor so the interpretation should agree (extensionally) with the
--- direct interpretation in language-interpretation.agda.
+-- function results. With SM derived from PolyMonad-Id, M reduces to the
+-- identity functor so the interpretation should agree (extensionally)
+-- with the direct interpretation in language-interpretation.agda.
 
 open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
