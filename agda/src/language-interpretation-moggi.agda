@@ -108,8 +108,7 @@ mutual
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     η ∘ HasMu.inF Mu (P-Mon ∘ₚ ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) eq ⟦ M ⟧tm
     where
-      eq : poly-obj P-Mon ⟦ apply P (μ P) ⟧ty ≡
-           poly-obj (P-Mon ∘ₚ ⟦ P ⟧poly) (HasMu.μ Mu (P-Mon ∘ₚ ⟦ P ⟧poly))
+      eq : poly-obj P-Mon ⟦ apply P (μ P) ⟧ty ≡ poly-obj (P-Mon ∘ₚ ⟦ P ⟧poly) (HasMu.μ Mu (P-Mon ∘ₚ ⟦ P ⟧poly))
       eq = trans (cong (poly-obj P-Mon) (apply-coincides P (μ P)))
                  (sym (poly-obj-comp P-Mon ⟦ P ⟧poly _))
   -- TODO: fold-μ requires Mon-aware initial algebras (HasMu-Mon, step 3).
