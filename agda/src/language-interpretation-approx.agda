@@ -41,31 +41,35 @@ Mon X = poly-obj P-Mon X
 
 mutual
   ⟦_⟧ty : type → obj
-  ⟦ unit ⟧ty = 𝟙
-  ⟦ bool ⟧ty = Bool
-  ⟦ base σ ⟧ty = ⟦sort⟧ σ
-  ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty
-  ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ Mon ⟦ τ₂ ⟧ty
-  ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
-  ⟦ μ P ⟧ty = HasMu.μ Mu (P-Mon ∘ₚ ⟦ P ⟧poly)
+  ⟦ unit ⟧ty       = Mon 𝟙
+  ⟦ bool ⟧ty       = Mon Bool
+  ⟦ base σ ⟧ty     = ⟦sort⟧ σ
+  ⟦ τ₁ [×] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty)
+  ⟦ τ₁ [+] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty)
+  ⟦ τ₁ [→] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty)
+  ⟦ μ P ⟧ty        = Mu .HasMu.μ ⟦ P ⟧poly
 
   ⟦_⟧poly : polynomial → Poly 𝒞
-  ⟦ one ⟧poly       = Poly.one
+  ⟦ one ⟧poly       = P-Mon ∘ₚ Poly.one
   ⟦ const σ ⟧poly   = Poly.const ⟦ σ ⟧ty
   ⟦ var ⟧poly       = Poly.var
-  ⟦ P [+] Q ⟧poly   = ⟦ P ⟧poly Poly.+ ⟦ Q ⟧poly
-  ⟦ P [×] Q ⟧poly   = ⟦ P ⟧poly Poly.× ⟦ Q ⟧poly
+  ⟦ P [+] Q ⟧poly   = P-Mon ∘ₚ (⟦ P ⟧poly Poly.+ ⟦ Q ⟧poly)
+  ⟦ P [×] Q ⟧poly   = P-Mon ∘ₚ (⟦ P ⟧poly Poly.× ⟦ Q ⟧poly)
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ ⟦ τ ⟧ty
 
 apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
-apply-coincides one          τ = refl
+apply-coincides one          τ = sym (poly-obj-comp P-Mon Poly.one ⟦ τ ⟧ty)
 apply-coincides (const σ)    τ = refl
 apply-coincides var          τ = refl
-apply-coincides (P [+] Q)    τ = cong₂ _⊕_ (apply-coincides P τ) (apply-coincides Q τ)
-apply-coincides (P [×] Q)    τ = cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ)
+apply-coincides (P [+] Q)    τ =
+  trans (cong Mon (cong₂ _⊕_ (apply-coincides P τ) (apply-coincides Q τ)))
+        (sym (poly-obj-comp P-Mon (⟦ P ⟧poly Poly.+ ⟦ Q ⟧poly) ⟦ τ ⟧ty))
+apply-coincides (P [×] Q)    τ =
+  trans (cong Mon (cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ)))
+        (sym (poly-obj-comp P-Mon (⟦ P ⟧poly Poly.× ⟦ Q ⟧poly) ⟦ τ ⟧ty))
 
 map-eval : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ poly-obj Q t
 map-eval Poly.one       = to-terminal
@@ -100,33 +104,27 @@ eval-and-seq : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ Mon 
 eval-and-seq Q = seq-poly Q ∘ map-eval Q
 
 mutual
-  ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ Mon ⟦ τ ⟧ty
-  ⟦ var x ⟧tm = η ∘ ⟦ x ⟧var
+  ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
+  ⟦ var x ⟧tm = ⟦ x ⟧var
   ⟦ unit ⟧tm = η ∘ to-terminal
   ⟦ true ⟧tm = η ∘ True ∘ to-terminal
   ⟦ false ⟧tm = η ∘ False ∘ to-terminal
-  ⟦ if M then M₁ else M₂ ⟧tm = bind ⟦ M ⟧tm (cond ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm)
-  ⟦ inl M ⟧tm = bind ⟦ M ⟧tm (η ∘ in₁ ∘ p₂)
-  ⟦ inr M ⟧tm = bind ⟦ M ⟧tm (η ∘ in₂ ∘ p₂)
+  ⟦ if M then M₁ else M₂ ⟧tm = cond ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , force ∘ ⟦ M ⟧tm ⟩
+  ⟦ inl M ⟧tm = η ∘ in₁ ∘ ⟦ M ⟧tm
+  ⟦ inr M ⟧tm = η ∘ in₂ ∘ ⟦ M ⟧tm
   ⟦ case M M₁ M₂ ⟧tm =
-    bind ⟦ M ⟧tm (eval ∘ ⟨ copair (lambda (⟦ M₁ ⟧tm ∘ ⟨ p₂ , p₁ ⟩)) (lambda (⟦ M₂ ⟧tm ∘ ⟨ p₂ , p₁ ⟩)) ∘ p₂ , p₁ ⟩)
-  ⟦ pair M N ⟧tm =
-    bind ⟦ M ⟧tm (bind (⟦ N ⟧tm ∘ p₁) (η ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩))
-  ⟦ fst M ⟧tm = bind ⟦ M ⟧tm (η ∘ p₁ ∘ p₂)
-  ⟦ snd M ⟧tm = bind ⟦ M ⟧tm (η ∘ p₂ ∘ p₂)
+    eval ∘ ⟨ copair (lambda (⟦ M₁ ⟧tm ∘ ⟨ p₂ , p₁ ⟩)) (lambda (⟦ M₂ ⟧tm ∘ ⟨ p₂ , p₁ ⟩)) ∘ force ∘ ⟦ M ⟧tm , id _ ⟩
+  ⟦ pair M N ⟧tm = η ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ fst M ⟧tm = p₁ ∘ force ∘ ⟦ M ⟧tm
+  ⟦ snd M ⟧tm = p₂ ∘ force ∘ ⟦ M ⟧tm
   ⟦ lam M ⟧tm = η ∘ lambda ⟦ M ⟧tm
-  ⟦ app M N ⟧tm =
-    bind ⟦ M ⟧tm (bind (⟦ N ⟧tm ∘ p₁) (eval ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩))
-  ⟦ bop ω Ms ⟧tm = bind ⟦ Ms ⟧tms (η ∘ ⟦op⟧ ω ∘ p₂)
-  ⟦ brel ω Ms ⟧tm = bind ⟦ Ms ⟧tms (η ∘ ⟦rel⟧ ω ∘ p₂)
+  ⟦ app M N ⟧tm = eval ∘ ⟨ force ∘ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
+  ⟦ brel ω Ms ⟧tm = η ∘ ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    η ∘ HasMu.inF Mu (P-Mon ∘ₚ ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) eq ⟦ M ⟧tm
-    where
-      eq : poly-obj P-Mon ⟦ apply P (μ P) ⟧ty ≡ poly-obj (P-Mon ∘ₚ ⟦ P ⟧poly) (HasMu.μ Mu (P-Mon ∘ₚ ⟦ P ⟧poly))
-      eq = trans (cong (poly-obj P-Mon) (apply-coincides P (μ P))) (sym (poly-obj-comp P-Mon ⟦ P ⟧poly _))
+    Mu .HasMu.inF ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ alg M ⟧tm = {!!}
 
-  ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ Mon (list→product ⟦sort⟧ σs)
-  ⟦ [] ⟧tms = η ∘ to-terminal
-  ⟦ M ∷ Ms ⟧tms =
-    bind ⟦ M ⟧tm (bind (⟦ Ms ⟧tms ∘ p₁) (η ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩))
+  ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
+  ⟦ [] ⟧tms = to-terminal
+  ⟦ M ∷ Ms ⟧tms = ⟨ ⟦ M ⟧tm , ⟦ Ms ⟧tms ⟩
