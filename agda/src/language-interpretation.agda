@@ -19,7 +19,8 @@ module language-interpretation
   (P  : HasProducts 𝒞)
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
-  (Mu : Sem.HasMu T P C)
+  (let open Sem T P C)
+  (Mu : HasMu)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
 
@@ -32,7 +33,6 @@ open HasCoproducts C renaming (coprod to _⊕_)
 open HasBooleans B
 open language-syntax Sig
 open Model Int
-open Sem T P C
 
 mutual
   ⟦_⟧ty : type → obj

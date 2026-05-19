@@ -1,18 +1,14 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Moggi-style monadic interpretation, parameterised on a strong monad SM.
--- Term interpretation lands in Γ ⇒ M ⟦τ⟧ty; type interpretation puts M at
--- function results. With SM derived from PolyMonad-Id, M reduces to the
--- identity functor so the interpretation should agree (extensionally)
--- with the direct interpretation in language-interpretation.agda.
 
 open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst; trans)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
-         HasBooleans; coproducts+exp→booleans; StrongMonad)
-open import polynomial-functor using (Poly; module Sem)
+         HasBooleans; coproducts+exp→booleans)
+open import polynomial-functor using (Poly; _∘ₚ_; module Sem)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
@@ -25,8 +21,9 @@ module language-interpretation-moggi
   (P  : HasProducts 𝒞)
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
-  (Mu : Sem.HasMu T P C)
-  (SM : StrongMonad 𝒞 P)
+  (let open Sem T P C)
+  (Mu : HasMu)
+  (PM : PolyMonad)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
 
@@ -39,8 +36,10 @@ open HasCoproducts C renaming (coprod to _⊕_)
 open HasBooleans B
 open language-syntax Sig
 open Model Int
-open Sem T P C
-open StrongMonad SM renaming (unit to η; M to Mon)
+open PolyMonad PM renaming (unit to η)
+
+Mon : obj → obj
+Mon X = poly-obj P-Mon X
 
 mutual
   ⟦_⟧ty : type → obj
@@ -50,7 +49,7 @@ mutual
   ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ Mon ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
-  ⟦ μ P ⟧ty = HasMu.μ Mu ⟦ P ⟧poly
+  ⟦ μ P ⟧ty = HasMu.μ Mu (P-Mon ∘ₚ ⟦ P ⟧poly)
   ⟦ approx τ ⟧ty = Mon ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
@@ -110,10 +109,12 @@ mutual
   ⟦ bop ω Ms ⟧tm = bind ⟦ Ms ⟧tms (η ∘ ⟦op⟧ ω ∘ p₂)
   ⟦ brel ω Ms ⟧tm = bind ⟦ Ms ⟧tms (η ∘ ⟦rel⟧ ω ∘ p₂)
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    bind ⟦ M ⟧tm
-         (η ∘ HasMu.inF Mu ⟦ P ⟧poly
-            ∘ subst (λ X → (⟦ Γ ⟧ctxt ⊗ ⟦ apply P (μ P) ⟧ty) ⇒ X)
-                    (apply-coincides P (μ P)) p₂)
+    η ∘ HasMu.inF Mu (P-Mon ∘ₚ ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) eq ⟦ M ⟧tm
+    where
+      eq : poly-obj P-Mon ⟦ apply P (μ P) ⟧ty ≡
+           poly-obj (P-Mon ∘ₚ ⟦ P ⟧poly) (HasMu.μ Mu (P-Mon ∘ₚ ⟦ P ⟧poly))
+      eq = trans (cong (poly-obj P-Mon) (apply-coincides P (μ P)))
+                 (sym (poly-obj-comp P-Mon ⟦ P ⟧poly _))
   -- TODO: fold-μ requires Mon-aware initial algebras (HasMu-Mon, step 3).
   -- The var-carrier mismatch in the algebra body (poly applied at Mon ⟦τ⟧ty
   -- vs. ⟦apply Q τ⟧ty with bare τ at vars) can't be bridged without either
