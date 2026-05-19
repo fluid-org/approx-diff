@@ -8,7 +8,8 @@ open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
 import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; IsStrongMonad; StrongMonad)
+  using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; IsStrongMonad; StrongMonad)
+open import cmon-enriched using (CMonEnriched)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_)
@@ -38,6 +39,7 @@ module Sem {o m e} {𝒞 : Category o m e}
   open HasTerminal T renaming (witness to terminal)
   open HasProducts P
   open HasCoproducts CP
+  open IsStrongMonad public
 
   poly-obj : Poly 𝒞 → obj → obj
   poly-obj one         _ = terminal
@@ -67,33 +69,47 @@ module Sem {o m e} {𝒞 : Category o m e}
       P-Mon       : Poly 𝒞
       isStrongMon : IsStrongMonad P (poly-obj P-Mon)
     open IsStrongMonad isStrongMon public
+  open PolyMonad
 
-    asStrongMonad : StrongMonad 𝒞 P
-    asStrongMonad .StrongMonad.M           = poly-obj P-Mon
-    asStrongMonad .StrongMonad.isStrongMon = isStrongMon
+  asStrongMonad : PolyMonad → StrongMonad 𝒞 P
+  asStrongMonad pm .StrongMonad.M           = poly-obj (pm .P-Mon)
+  asStrongMonad pm .StrongMonad.isStrongMon = pm .isStrongMon
 
   PolyMonad-Id : PolyMonad
-  PolyMonad-Id .PolyMonad.P-Mon                                 = var
-  PolyMonad-Id .PolyMonad.isStrongMon .IsStrongMonad.unit {x}   = id x
-  PolyMonad-Id .PolyMonad.isStrongMon .IsStrongMonad.extend f   = f
+  PolyMonad-Id .P-Mon                  = var
+  PolyMonad-Id .isStrongMon .unit {x}  = id x
+  PolyMonad-Id .isStrongMon .extend f  = f
 
   -- Strong monad augmented with a force (retraction of unit), giving every object a Mon-algebra.
   record PointedMonad : Set (o ⊔ m ⊔ e) where
     field
       polyMonad : PolyMonad
-      force     : ∀ {x} → poly-obj (polyMonad .PolyMonad.P-Mon) x ⇒ x
+      force     : ∀ {x} → poly-obj (polyMonad .P-Mon) x ⇒ x
     open PolyMonad polyMonad public
     -- FIXME: force ∘ unit ≈ id; force ∘ mul ≈ force ∘ map force
+  open PointedMonad
 
   PointedMonad-Id : PointedMonad
-  PointedMonad-Id .PointedMonad.polyMonad = PolyMonad-Id
-  PointedMonad-Id .PointedMonad.force {x} = id x
+  PointedMonad-Id .polyMonad = PolyMonad-Id
+  PointedMonad-Id .force {x} = id x
+
+  -- Lifting monad L X = terminal + X, with force propagating "bottom" via the zero morphism available in a
+  -- CMon-enriched category.
+  module _ (E : HasExponentials 𝒞 P) (CME : CMonEnriched 𝒞) where
+    open HasExponentials E
+    open CMonEnriched CME using (εm)
+
+    PointedMonad-L : PointedMonad
+    PointedMonad-L .polyMonad .P-Mon                    = one + var
+    PointedMonad-L .polyMonad .isStrongMon .unit        = in₂
+    PointedMonad-L .polyMonad .isStrongMon .extend f    =
+      eval ∘ pair (copair (lambda (in₁ ∘ p₁)) (lambda (f ∘ pair p₂ p₁)) ∘ p₂) p₁
+    PointedMonad-L .force                               = copair εm (id _)
 
 ------------------------------------------------------------------------------
--- Like Poly above but constant slots hold a setoid rather than a category
--- object. Used to build the W-type carrier of HasMu in the Fam category.
--- W P is the set of trees with shape determined by P; W-≈ is equality of
--- trees by structural recursion on the polynomial.
+-- Like Poly above but constant slots hold a setoid rather than a category object. Used to build the W-type
+-- carrier of HasMu in the Fam category. W P is the set of P-shaped trees; W-≈ is tree equality by structural
+-- recursion on the polynomial.
 module _ {o e} where
   open import Data.Sum using (_⊎_)
   open import Data.Product using () renaming (_×_ to _×T_)
