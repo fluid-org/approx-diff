@@ -1,6 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Moggi-style monadic interpretation, parameterised on a strong monad SM.
+-- Per-root approx interpretation: every type former carries an outer Mon, except
+-- base types (whose primitive interpretation already includes approximation).
 
 open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
@@ -13,7 +14,7 @@ import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
 
-module language-interpretation-moggi
+module language-interpretation-approx
   {ℓ} (Sig : Signature ℓ)
   {o m e}
   (𝒞 : Category o m e)
@@ -22,18 +23,15 @@ module language-interpretation-moggi
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
   (let open Sem T P C)
+  (let open HasBooleans (coproducts+exp→booleans T C E))
   (Mu : HasMu)
   (PM : PolyMonad)
-  (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
+  (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where
 
-B : HasBooleans 𝒞 T P
-B = coproducts+exp→booleans T C E
-
 open HasExponentials E renaming (exp to _⟦→⟧_)
-open PointedFPCat PFPC[ 𝒞 , T , P , HasBooleans.Bool B ] renaming (_×_ to _⊗_)
+open PointedFPCat PFPC[ 𝒞 , T , P , Bool ] renaming (_×_ to _⊗_)
 open HasCoproducts C renaming (coprod to _⊕_)
-open HasBooleans B
 open language-syntax Sig
 open Model Int
 open PolyMonad PM renaming (unit to η)

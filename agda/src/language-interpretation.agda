@@ -20,17 +20,14 @@ module language-interpretation
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
   (let open Sem T P C)
+  (let open HasBooleans (coproducts+exp→booleans T C E))
   (Mu : HasMu)
-  (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
+  (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where
 
-B : HasBooleans 𝒞 T P
-B = coproducts+exp→booleans T C E
-
 open HasExponentials E renaming (exp to _⟦→⟧_)
-open PointedFPCat PFPC[ 𝒞 , T , P , HasBooleans.Bool B ] renaming (_×_ to _⊗_)
+open PointedFPCat PFPC[ 𝒞 , T , P , Bool ] renaming (_×_ to _⊗_)
 open HasCoproducts C renaming (coprod to _⊕_)
-open HasBooleans B
 open language-syntax Sig
 open Model Int
 
