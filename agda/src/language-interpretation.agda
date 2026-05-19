@@ -19,7 +19,7 @@ module language-interpretation
   (P  : HasProducts 𝒞)
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
-  (Mu : ∀ Q → Sem.HasMu T P C Q)
+  (Mu : Sem.HasMu T P C)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
 
@@ -42,7 +42,7 @@ mutual
   ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
-  ⟦ μ P ⟧ty = HasMu.μ (Mu (⟦ P ⟧poly))
+  ⟦ μ P ⟧ty = HasMu.μ Mu ⟦ P ⟧poly
   ⟦ approx τ ⟧ty = ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
@@ -97,9 +97,9 @@ mutual
   ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    HasMu.inF (Mu ⟦ P ⟧poly) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
+    HasMu.inF Mu ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    eval ∘ ⟨ HasMu.⦅_⦆ (Mu ⟦ Q ⟧poly) closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
+    eval ∘ ⟨ HasMu.⦅_⦆ Mu closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
     where
       closure-converted : poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
       closure-converted = lambda (eval ∘ ⟨

@@ -54,11 +54,11 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-obj-comp (P₁ + P₂)  Q X = cong₂ coprod (poly-obj-comp P₁ Q X) (poly-obj-comp P₂ Q X)
   poly-obj-comp (P₁ × P₂)  Q X = cong₂ prod   (poly-obj-comp P₁ Q X) (poly-obj-comp P₂ Q X)
 
-  record HasMu (Q : Poly 𝒞) : Set (o ⊔ m ⊔ e) where
+  record HasMu : Set (o ⊔ m ⊔ e) where
     field
-      μ    : obj
-      inF  : poly-obj Q μ ⇒ μ
-      ⦅_⦆  : ∀ {y} → (poly-obj Q y ⇒ y) → μ ⇒ y
+      μ    : Poly 𝒞 → obj
+      inF  : ∀ Q → poly-obj Q (μ Q) ⇒ μ Q
+      ⦅_⦆  : ∀ {Q y} → (poly-obj Q y ⇒ y) → μ Q ⇒ y
     -- FIXME: equations (β/η for inF / ⦅_⦆)
 
   -- Strong monad whose endofunctor is polynomial.
@@ -377,7 +377,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       fold .famf .transf (inF i)                        = alg .famf .transf (project-idx Q i) ∘ project-fam Q i
       fold .famf .natural {inF _} {inF _} eq            = project-fam-natural Poly.var eq
 
-  hasMu : (Q : Poly cat) → HasMu Q
-  hasMu Q .HasMu.μ = W-types.WObj Q
-  hasMu Q .HasMu.inF = W-types.inF-mor Q
-  hasMu Q .HasMu.⦅_⦆ = W-types.fold Q
+  hasMu : HasMu
+  hasMu .HasMu.μ Q       = W-types.WObj Q
+  hasMu .HasMu.inF Q     = W-types.inF-mor Q
+  hasMu .HasMu.⦅_⦆ {Q}   = W-types.fold Q

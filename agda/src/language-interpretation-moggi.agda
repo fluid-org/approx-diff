@@ -25,7 +25,7 @@ module language-interpretation-moggi
   (P  : HasProducts 𝒞)
   (C  : HasCoproducts 𝒞)
   (E  : HasExponentials 𝒞 P)
-  (Mu : ∀ Q → Sem.HasMu T P C Q)
+  (Mu : Sem.HasMu T P C)
   (SM : StrongMonad 𝒞 P)
   (Int : Model PFPC[ 𝒞 , T , P , HasBooleans.Bool (coproducts+exp→booleans T C E) ] Sig)
   where
@@ -50,7 +50,7 @@ mutual
   ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ Mon ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
-  ⟦ μ P ⟧ty = HasMu.μ (Mu (⟦ P ⟧poly))
+  ⟦ μ P ⟧ty = HasMu.μ Mu ⟦ P ⟧poly
   ⟦ approx τ ⟧ty = Mon ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
@@ -111,7 +111,7 @@ mutual
   ⟦ brel ω Ms ⟧tm = bind ⟦ Ms ⟧tms (η ∘ ⟦rel⟧ ω ∘ p₂)
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     bind ⟦ M ⟧tm
-         (η ∘ HasMu.inF (Mu ⟦ P ⟧poly)
+         (η ∘ HasMu.inF Mu ⟦ P ⟧poly
             ∘ subst (λ X → (⟦ Γ ⟧ctxt ⊗ ⟦ apply P (μ P) ⟧ty) ⇒ X)
                     (apply-coincides P (μ P)) p₂)
   -- TODO: fold-μ requires Mon-aware initial algebras (HasMu-Mon, step 3).
