@@ -15,7 +15,6 @@ mutual
     base : sort → type
     _[×]_ _[→]_ _[+]_ : type → type → type
     μ : polynomial → type
-    approx : type → type
 
   -- Polynomial functors syntactically (cf. Chad §3.6).
   data polynomial : Set ℓ where

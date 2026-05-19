@@ -50,7 +50,6 @@ mutual
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ Mon ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
   ⟦ μ P ⟧ty = HasMu.μ Mu (P-Mon ∘ₚ ⟦ P ⟧poly)
-  ⟦ approx τ ⟧ty = Mon ⟦ τ ⟧ty
 
   ⟦_⟧poly : polynomial → Poly 𝒞
   ⟦ one ⟧poly       = Poly.one
@@ -98,6 +97,9 @@ seq-poly Poly.var       = id _
 seq-poly (P Poly.+ Q)   = copair (Mon-map in₁ ∘ seq-poly P) (Mon-map in₂ ∘ seq-poly Q)
 seq-poly (P Poly.× Q)   =
   bind (seq-poly P ∘ p₁) (bind (seq-poly Q ∘ p₂ ∘ p₁) (η ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩))
+
+eval-and-seq : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ Mon t) ⊗ ctx) ⇒ Mon (poly-obj Q t)
+eval-and-seq Q = seq-poly Q ∘ map-eval Q
 
 mutual
   ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ Mon ⟦ τ ⟧ty
