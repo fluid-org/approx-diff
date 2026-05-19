@@ -74,15 +74,12 @@ map-eval : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ c
 map-eval Poly.one       = to-terminal
 map-eval (Poly.const _) = p₁
 map-eval Poly.var       = eval
-map-eval (P Poly.+ Q) = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
-map-eval (P Poly.× Q) = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+map-eval (P Poly.+ Q)   = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
+map-eval (P Poly.× Q)   = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
-
-swap : ∀ {x y} → (x ⊗ y) ⇒ (y ⊗ x)
-swap = ⟨ p₂ , p₁ ⟩
 
 -- Kleisli bind in Γ × X context: bind a Γ ⇒ Mon X with a Γ × X ⇒ Mon Y body.
 bind : ∀ {Γ x y} → Γ ⇒ Mon x → (Γ ⊗ x) ⇒ Mon y → Γ ⇒ Mon y
@@ -98,7 +95,7 @@ mutual
   ⟦ inl M ⟧tm = bind ⟦ M ⟧tm (η ∘ in₁ ∘ p₂)
   ⟦ inr M ⟧tm = bind ⟦ M ⟧tm (η ∘ in₂ ∘ p₂)
   ⟦ case M M₁ M₂ ⟧tm =
-    bind ⟦ M ⟧tm (eval ∘ ⟨ copair (lambda (⟦ M₁ ⟧tm ∘ swap)) (lambda (⟦ M₂ ⟧tm ∘ swap)) ∘ p₂ , p₁ ⟩)
+    bind ⟦ M ⟧tm (eval ∘ ⟨ copair (lambda (⟦ M₁ ⟧tm ∘ ⟨ p₂ , p₁ ⟩)) (lambda (⟦ M₂ ⟧tm ∘ ⟨ p₂ , p₁ ⟩)) ∘ p₂ , p₁ ⟩)
   ⟦ pair M N ⟧tm =
     bind ⟦ M ⟧tm (bind (⟦ N ⟧tm ∘ p₁) (η ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩))
   ⟦ fst M ⟧tm = bind ⟦ M ⟧tm (η ∘ p₁ ∘ p₂)
@@ -119,7 +116,7 @@ mutual
   -- The var-carrier mismatch in the algebra body (poly applied at Mon ⟦τ⟧ty
   -- vs. ⟦apply Q τ⟧ty with bare τ at vars) can't be bridged without either
   -- (a) Howard's pointed retraction, or (b) initial algebras of Mon ∘ F.
-  ⟦ fold-μ alg M ⟧tm = ?
+  ⟦ fold-μ alg M ⟧tm = {!   !}
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ Mon (list→product ⟦sort⟧ σs)
   ⟦ [] ⟧tms = η ∘ to-terminal
