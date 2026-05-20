@@ -705,11 +705,71 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
     module Open {Γ y : Obj} (alg : Mor (Γ ⊗ μPoly-obj Q y) y) where
       open Obj
       open Mor
+      open PointedFunctor L using (right-strength)
 
-      -- (proof obligation deferred — placeholder using closed fold with discarded Γ
-      -- to typecheck the interface; not semantically correct for general Γ. FIXME.)
+      -- idx-level: descend the W-tree, applying alg at var positions with γ fixed.
+      project-idx-open : (P : μPoly cat) → Γ .idx .Setoid.Carrier → WIdx poly (idx-of-μ P) →
+                         μPoly-obj P y .idx .Setoid.Carrier
+      project-idx-open μPoly.one       _ _         = lift tt
+      project-idx-open (μPoly.const A) _ a         = a
+      project-idx-open μPoly.var       γ (inF i)   =
+        alg .idxf .PS._⇒_.func (γ , project-idx-open Q γ i)
+      project-idx-open (P μPoly.+ R)   γ (inj₁ x)  = inj₁ (project-idx-open P γ x)
+      project-idx-open (P μPoly.+ R)   γ (inj₂ z)  = inj₂ (project-idx-open R γ z)
+      project-idx-open (P μPoly.× R)   γ (x , z)   = (project-idx-open P γ x , project-idx-open R γ z)
+      project-idx-open (μPoly.Mon P)   γ i         = project-idx-open P γ i
+
+      project-≈-open : (P : μPoly cat) → ∀ {γ₁ γ₂ : Γ .idx .Setoid.Carrier} {x z}
+                       (eγ : Γ .idx .Setoid._≈_ γ₁ γ₂) (ei : WIdx-≈ poly (idx-of-μ P) x z) →
+                       μPoly-obj P y .idx .Setoid._≈_
+                         (project-idx-open P γ₁ x) (project-idx-open P γ₂ z)
+      project-≈-open μPoly.one _ _ = tt
+      project-≈-open (μPoly.const A) _ eq = eq
+      project-≈-open μPoly.var {γ₁} {γ₂} {inF _} {inF _} eγ eq =
+        alg .idxf .PS._⇒_.func-resp-≈ (eγ , project-≈-open Q eγ eq)
+      project-≈-open (P μPoly.+ R) {x = inj₁ _} {inj₁ _} eγ eq = project-≈-open P eγ eq
+      project-≈-open (P μPoly.+ R) {x = inj₂ _} {inj₂ _} eγ eq = project-≈-open R eγ eq
+      project-≈-open (P μPoly.× R) {x = _ , _} {_ , _} eγ (e , f) =
+        project-≈-open P eγ e , project-≈-open R eγ f
+      project-≈-open (μPoly.Mon P) eγ eq = project-≈-open P eγ eq
+
+      -- fam-level: input is Γ-fibre ⊗ W-fibre; output is the corresponding μPoly-obj y-fibre.
+      project-fam-open : (P : μPoly cat) (γ : Γ .idx .Setoid.Carrier)
+                         (i : WIdx poly (idx-of-μ P)) →
+                         prod (Γ .fam .fm γ) (WFam-fm P i) ⇒
+                         μPoly-obj P y .fam .fm (project-idx-open P γ i)
+      project-fam-open μPoly.one         _ _         = HasTerminal.to-terminal T
+      project-fam-open (μPoly.const A)   _ _         = p₂
+      project-fam-open μPoly.var         γ (inF i)   =
+        alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i)
+      project-fam-open (P μPoly.+ R)     γ (inj₁ x)  = project-fam-open P γ x
+      project-fam-open (P μPoly.+ R)     γ (inj₂ z)  = project-fam-open R γ z
+      project-fam-open (P μPoly.× R)     γ (x , z)   =
+        pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂))
+             (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
+      project-fam-open (μPoly.Mon P)     γ i         =
+        fmor (project-fam-open P γ i) ∘ right-strength
+
+      -- Naturality of project-fam-open w.r.t. γ and W-tree equivalences. FIXME: prove.
+      project-fam-natural-open :
+        (P : μPoly cat) → ∀ {γ₁ γ₂ : Γ .idx .Setoid.Carrier} {x z}
+        (eγ : Γ .idx .Setoid._≈_ γ₁ γ₂)
+        (ei : WIdx-≈ poly (idx-of-μ P) x z) →
+        (project-fam-open P γ₂ z ∘
+          prod-m (Γ .fam .subst eγ) (WFam-subst P ei)) ≈
+        (μPoly-obj P y .fam .subst (project-≈-open P eγ ei) ∘ project-fam-open P γ₁ x)
+      project-fam-natural-open = {!!}
+
       fold-open : Mor (Γ ⊗ WObj) y
-      fold-open = {!!}
+      fold-open .idxf .PS._⇒_.func (γ , inF i) =
+        alg .idxf .PS._⇒_.func (γ , project-idx-open Q γ i)
+      fold-open .idxf .PS._⇒_.func-resp-≈ {γ₁ , inF _} {γ₂ , inF _} (eγ , ei) =
+        alg .idxf .PS._⇒_.func-resp-≈ (eγ , project-≈-open Q eγ ei)
+      fold-open .famf .transf (γ , inF i) =
+        alg .famf .transf (γ , project-idx-open Q γ i) ∘
+          pair p₁ (project-fam-open Q γ i)
+      fold-open .famf .natural {γ₁ , inF _} {γ₂ , inF _} (eγ , ei) =
+        project-fam-natural-open μPoly.var eγ ei
 
   hasMu-μPoly : HasMu-μPoly
   hasMu-μPoly .HasMu-μPoly.μ Q              = W-types-μ.WObj Q
