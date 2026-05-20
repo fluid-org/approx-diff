@@ -33,6 +33,17 @@ var        ∘ₚ Q = Q
 (P₁ + P₂)  ∘ₚ Q = (P₁ ∘ₚ Q) + (P₂ ∘ₚ Q)
 (P₁ × P₂)  ∘ₚ Q = (P₁ ∘ₚ Q) × (P₂ ∘ₚ Q)
 
+------------------------------------------------------------------------------
+-- Polynomial signature extended with a Mon constructor (fibre-only decoration relative to whatever LiftMon
+-- the interpretation supplies).
+data μPoly {o m e} (𝒞 : Category o m e) : Set o where
+  one    : μPoly 𝒞
+  const  : Category.obj 𝒞 → μPoly 𝒞
+  var    : μPoly 𝒞
+  _+_    : μPoly 𝒞 → μPoly 𝒞 → μPoly 𝒞
+  _×_    : μPoly 𝒞 → μPoly 𝒞 → μPoly 𝒞
+  Mon    : μPoly 𝒞 → μPoly 𝒞
+
 module Sem {o m e} {𝒞 : Category o m e}
            (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
   open Category 𝒞
@@ -48,6 +59,7 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-obj (P + Q)     x = coprod (poly-obj P x) (poly-obj Q x)
   poly-obj (P × Q)     x = prod   (poly-obj P x) (poly-obj Q x)
 
+
   -- Polynomial composition agrees with composition of functor actions.
   poly-obj-comp : ∀ P Q X → poly-obj (P ∘ₚ Q) X ≡ poly-obj P (poly-obj Q X)
   poly-obj-comp one        Q X = ≡.refl
@@ -62,6 +74,23 @@ module Sem {o m e} {𝒞 : Category o m e}
       inF  : ∀ Q → poly-obj Q (μ Q) ⇒ μ Q
       ⦅_⦆  : ∀ {Q y} → (poly-obj Q y ⇒ y) → μ Q ⇒ y
     -- FIXME: equations (β/η for inF / ⦅_⦆)
+
+  -- Interpretation of μPoly as a functor in 𝒞, plus the corresponding HasMu interface.
+  module _ (F : Functor 𝒞 𝒞) where
+    μPoly-obj : μPoly 𝒞 → obj → obj
+    μPoly-obj one        _ = terminal
+    μPoly-obj (const A)  _ = A
+    μPoly-obj var        x = x
+    μPoly-obj (P + Q)    x = coprod (μPoly-obj P x) (μPoly-obj Q x)
+    μPoly-obj (P × Q)    x = prod   (μPoly-obj P x) (μPoly-obj Q x)
+    μPoly-obj (Mon P)    x = Functor.fobj F (μPoly-obj P x)
+
+    record HasMu-μPoly : Set (o ⊔ m ⊔ e) where
+      field
+        μ    : μPoly 𝒞 → obj
+        inμ  : ∀ Q → μPoly-obj Q (μ Q) ⇒ μ Q
+        ⦅_⦆  : ∀ {Q y} → (μPoly-obj Q y ⇒ y) → μ Q ⇒ y
+      -- FIXME: equations (β/η for inμ / ⦅_⦆)
 
 
 ------------------------------------------------------------------------------
@@ -161,15 +190,7 @@ module Mu {o m e os es} {𝒟 : Category o m e}
   open products PP
   open PointedMonad L using (F)   -- L's underlying Functor 𝒟 𝒟
 
-  data μPoly : Set (suc (os ⊔ es) ⊔ o ⊔ m ⊔ e) where
-    one    : μPoly
-    const  : Obj → μPoly
-    var    : μPoly
-    _+_    : μPoly → μPoly → μPoly
-    _×_    : μPoly → μPoly → μPoly
-    Mon    : μPoly → μPoly   -- fibre-only: apply L's endofunctor at each fibre
-
-  idx-of : μPoly → IdxPoly {os} {es}
+  idx-of : μPoly cat → IdxPoly {os} {es}
   idx-of one          = IdxPoly.one
   idx-of (const A)    = IdxPoly.param (A .idx)
   idx-of var          = IdxPoly.var
@@ -185,7 +206,7 @@ module Mu {o m e os es} {𝒟 : Category o m e}
   Mon-Fam Y .idx = Y .idx
   Mon-Fam Y .fam = changeCat F (Y .fam)
 
-  μPoly-obj : μPoly → Obj → Obj
+  μPoly-obj : μPoly cat → Obj → Obj
   μPoly-obj one        X = Fam-terminal
   μPoly-obj (const A)  X = A
   μPoly-obj var        X = X
