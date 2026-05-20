@@ -194,28 +194,40 @@ module _ {o e} where
   WSetoid P .Setoid.isEquivalence .IsEquivalence.trans {w₁} {w₂} {w₃} = W-≈-trans P {w₁} {w₂} {w₃}
 
 ------------------------------------------------------------------------------
--- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). The biproduct ⊕
--- carries a coherence proof that operands' idx-projections agree.
-module Mu {o m e os es} {𝒟 : Category o m e} where
-  open fam.CategoryOfFamilies os es 𝒟 using (Obj)
+-- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). `Mon` decorates a
+-- sub-polynomial with the ambient fibre-level lifting monad, fibre-only.
+module Mu {o m e os es} {𝒟 : Category o m e}
+          (T : HasTerminal 𝒟) (P : HasProducts 𝒟) where
+  open fam.CategoryOfFamilies os es 𝒟
   open Obj
+  open products P
 
-  mutual
-    data μPoly : Set (suc (os ⊔ es) ⊔ o ⊔ m ⊔ e) where
-      one    : μPoly
-      const  : Obj → μPoly
-      var    : μPoly
-      _+_    : μPoly → μPoly → μPoly
-      _×_    : μPoly → μPoly → μPoly
-      ⊕      : (P Q : μPoly) → idx-of P ≡ idx-of Q → μPoly
+  data μPoly : Set (suc (os ⊔ es) ⊔ o ⊔ m ⊔ e) where
+    one    : μPoly
+    const  : Obj → μPoly
+    var    : μPoly
+    _+_    : μPoly → μPoly → μPoly
+    _×_    : μPoly → μPoly → μPoly
+    Mon    : μPoly → μPoly   -- fibre-only: apply the ambient lifting monad
 
-    idx-of : μPoly → IdxPoly {os} {es}
-    idx-of one          = IdxPoly.one
-    idx-of (const A)    = IdxPoly.param (A .idx)
-    idx-of var          = IdxPoly.var
-    idx-of (P + Q)      = idx-of P IdxPoly.+ idx-of Q
-    idx-of (P × Q)      = idx-of P IdxPoly.× idx-of Q
-    idx-of (⊕ P Q _)    = idx-of P
+  idx-of : μPoly → IdxPoly {os} {es}
+  idx-of one          = IdxPoly.one
+  idx-of (const A)    = IdxPoly.param (A .idx)
+  idx-of var          = IdxPoly.var
+  idx-of (F + G)      = idx-of F IdxPoly.+ idx-of G
+  idx-of (F × G)      = idx-of F IdxPoly.× idx-of G
+  idx-of (Mon F)      = idx-of F
+
+  open HasTerminal (terminal T) using () renaming (witness to Fam-terminal)
+  open HasCoproducts coproducts using () renaming (coprod to Fam-coprod)
+
+  μPoly-obj : μPoly → Obj → Obj
+  μPoly-obj one        X = Fam-terminal
+  μPoly-obj (const A)  X = A
+  μPoly-obj var        X = X
+  μPoly-obj (F + G)    X = Fam-coprod (μPoly-obj F X) (μPoly-obj G X)
+  μPoly-obj (F × G)    X = (μPoly-obj F X) ⊗ (μPoly-obj G X)
+  μPoly-obj (Mon F)    X = {!!}   -- needs a fibre-wise lifting monad parameter
 
 ------------------------------------------------------------------------------
 -- HasMu instance for the Fam construction.
