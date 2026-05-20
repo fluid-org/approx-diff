@@ -8,7 +8,7 @@
 
 open import Level using (suc; 0ℓ)
 open import basics using (IsBottom)
-open import prop using (Dec; yes; no; tt) renaming (⊥ to ⊥p)
+open import prop using (Dec; yes; no; tt; _,_; proj₁; proj₂) renaming (⊥ to ⊥p)
 open import preorder using (Preorder; bottom; <_>)
 open import join-semilattice using (JoinSemilattice)
 open import galois using (Obj; _⇒g_; 𝕃)
@@ -36,20 +36,24 @@ module _ (X : Obj-dec) where
   open preorder._=>_
 
   force : 𝕃 obj ⇒g obj
-  -- right: 𝕃 obj.carrier preorder.=> obj.carrier
   force ._⇒g_.right .fun bottom  = Xj.⊥
   force ._⇒g_.right .fun < x >   = x
   force ._⇒g_.right .mono {bottom}  {bottom}  _    = X≤.≤-refl
   force ._⇒g_.right .mono {bottom}  {< _ >}   _    = Xj.⊥-isBottom .IsBottom.≤-bottom
   force ._⇒g_.right .mono {< _ >}   {< _ >}   x≤y  = x≤y
-  -- (no clause for {< _ >} {bottom} since < _ > ≤ bottom is absurd in L)
 
-  -- left: obj.carrier preorder.=> 𝕃 obj.carrier
-  -- Decide bottom: if y ≃ X.⊥ then bottom, else < y >.
   force ._⇒g_.left .fun y with ⊥-decidable y
   ... | yes _ = bottom
   ... | no _  = < y >
-  force ._⇒g_.left .mono = {!!}   -- monotonicity using ⊥-decidable's correctness
+  force ._⇒g_.left .mono {a} {b} a≤b with ⊥-decidable a | ⊥-decidable b
+  ... | yes _    | yes _    = tt
+  ... | yes _    | no _     = tt
+  ... | no a≇⊥   | yes b≃⊥  = a≇⊥ (X≤.≤-trans a≤b (b≃⊥ .proj₁) , Xj.⊥-isBottom .IsBottom.≤-bottom)
+  ... | no _     | no _     = a≤b
 
-  -- adjoint: y X.≤ right(x') ⇔ left(y) 𝕃X.≤ x'
-  force ._⇒g_.left⊣right = {!!}
+  force ._⇒g_.left⊣right {bottom}  {y} with ⊥-decidable y
+  ... | yes y≃⊥ = (λ _ → tt) , (λ _ → y≃⊥ .proj₁)
+  ... | no y≇⊥  = (λ y≤⊥ → y≇⊥ (y≤⊥ , Xj.⊥-isBottom .IsBottom.≤-bottom)) , λ ()
+  force ._⇒g_.left⊣right {< x >}   {y} with ⊥-decidable y
+  ... | yes y≃⊥ = (λ _ → tt) , λ _ → X≤.≤-trans (y≃⊥ .proj₁) (Xj.⊥-isBottom .IsBottom.≤-bottom)
+  ... | no _    = (λ y≤x → y≤x) , λ p → p
