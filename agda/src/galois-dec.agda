@@ -13,7 +13,8 @@ open import preorder using (Preorder; bottom; <_>)
 open import join-semilattice using (JoinSemilattice)
 open import Data.Product using () renaming (_,_ to _,p_)
 open import categories using (Category; HasProducts)
-open import galois using (Obj; _⇒g_; 𝕃; idg; _∘g_; _≃g_; ∘g-cong; ≃g-isEquivalence)
+open import functor using (Functor)
+open import galois using (Obj; _⇒g_; 𝕃; 𝕃-map; idg; _∘g_; _≃g_; ∘g-cong; ≃g-isEquivalence)
 import galois
 
 module galois-dec where
@@ -94,7 +95,19 @@ products .HasProducts.pair-p₂           = galois.products .HasProducts.pair-p�
 products .HasProducts.pair-ext          = galois.products .HasProducts.pair-ext
 
 ------------------------------------------------------------------------------
+-- Lift 𝕃 to a Functor on cat. fobj derives decidability for 𝕃 X structurally
+-- (bottom and <x> are distinguishable as data constructors); fmor and laws
+-- come from galois.𝕃-Functor.
+𝕃-Functor : Functor cat cat
+𝕃-Functor .Functor.fobj X .Obj-dec.obj                   = 𝕃 (Obj-dec.obj X)
+𝕃-Functor .Functor.fobj X .Obj-dec.⊥-decidable bottom    = yes (tt , tt)
+𝕃-Functor .Functor.fobj X .Obj-dec.⊥-decidable < x >     = no (λ p → p .proj₁)
+𝕃-Functor .Functor.fmor                                  = 𝕃-map
+𝕃-Functor .Functor.fmor-cong                             = galois.𝕃-Functor .Functor.fmor-cong
+𝕃-Functor .Functor.fmor-id                               = galois.𝕃-Functor .Functor.fmor-id
+𝕃-Functor .Functor.fmor-comp                             = galois.𝕃-Functor .Functor.fmor-comp
+
+------------------------------------------------------------------------------
 -- Pending:
---   * 𝕃 lifted to a Functor cat cat.
 --   * IsStrongMonad on this functor.
 --   * PointedMonad packaging (with force above).
