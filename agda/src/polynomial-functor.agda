@@ -9,10 +9,10 @@ import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts)
-open import functor using (Functor; Id; IsStrongMonad; StrongMonad)
+open import functor using (Functor; Id; IsStrongMonad; StrongMonad; PointedMonad; PointedMonad-Id)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
-open import indexed-family using (Fam; _⇒f_)
+open import indexed-family using (Fam; _⇒f_; changeCat)
 import fam
 
 module polynomial-functor where
@@ -63,20 +63,6 @@ module Sem {o m e} {𝒞 : Category o m e}
       ⦅_⦆  : ∀ {Q y} → (poly-obj Q y ⇒ y) → μ Q ⇒ y
     -- FIXME: equations (β/η for inF / ⦅_⦆)
 
-  -- Strong monad augmented with a force (retraction of unit), giving every object a Mon-algebra.
-  record PointedMonad : Set (o ⊔ m ⊔ e) where
-    field
-      strongMonad : StrongMonad P
-      force       : ∀ {x} → StrongMonad.fobj strongMonad x ⇒ x
-    open StrongMonad strongMonad public
-    -- FIXME: force ∘ unit ≈ id; force ∘ mul ≈ force ∘ map force
-  open PointedMonad
-
-  PointedMonad-Id : PointedMonad
-  PointedMonad-Id .strongMonad .StrongMonad.F                       = Id
-  PointedMonad-Id .strongMonad .StrongMonad.isStrongMon .unit {x}   = id x
-  PointedMonad-Id .strongMonad .StrongMonad.isStrongMon .extend f   = f
-  PointedMonad-Id .force {x}                                        = id x
 
 ------------------------------------------------------------------------------
 -- Like Poly above but constant slots hold a setoid rather than a category object. Used to build the W-type
@@ -169,12 +155,11 @@ module _ {o e} where
 -- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). `Mon` decorates a
 -- sub-polynomial with the ambient fibre-level lifting monad, fibre-only.
 module Mu {o m e os es} {𝒟 : Category o m e}
-          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (CP : HasCoproducts 𝒟)
-          (let open Sem T PP CP)
-          (L : PointedMonad) where
+          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (L : PointedMonad PP) where
   open fam.CategoryOfFamilies os es 𝒟
   open Obj
   open products PP
+  open PointedMonad L using (F)   -- L's underlying Functor 𝒟 𝒟
 
   data μPoly : Set (suc (os ⊔ es) ⊔ o ⊔ m ⊔ e) where
     one    : μPoly
@@ -182,7 +167,7 @@ module Mu {o m e os es} {𝒟 : Category o m e}
     var    : μPoly
     _+_    : μPoly → μPoly → μPoly
     _×_    : μPoly → μPoly → μPoly
---    Mon    : μPoly → μPoly   -- pending: needs functoriality laws on PointedMonad
+    Mon    : μPoly → μPoly   -- fibre-only: apply L's endofunctor at each fibre
 
   idx-of : μPoly → IdxPoly {os} {es}
   idx-of one          = IdxPoly.one
@@ -190,10 +175,15 @@ module Mu {o m e os es} {𝒟 : Category o m e}
   idx-of var          = IdxPoly.var
   idx-of (F + G)      = idx-of F IdxPoly.+ idx-of G
   idx-of (F × G)      = idx-of F IdxPoly.× idx-of G
---  idx-of (Mon F)      = idx-of F
+  idx-of (Mon F)      = idx-of F
 
   open HasTerminal (terminal T) using () renaming (witness to Fam-terminal)
   open HasCoproducts coproducts using () renaming (coprod to Fam-coprod)
+
+  -- Fibre-wise lift of L's endofunctor to Fam(𝒟). Idx preserved; each fibre wrapped.
+  Mon-Fam : Obj → Obj
+  Mon-Fam Y .idx = Y .idx
+  Mon-Fam Y .fam = changeCat F (Y .fam)
 
   μPoly-obj : μPoly → Obj → Obj
   μPoly-obj one        X = Fam-terminal
@@ -201,7 +191,7 @@ module Mu {o m e os es} {𝒟 : Category o m e}
   μPoly-obj var        X = X
   μPoly-obj (F + G)    X = Fam-coprod (μPoly-obj F X) (μPoly-obj G X)
   μPoly-obj (F × G)    X = (μPoly-obj F X) ⊗ (μPoly-obj G X)
---  μPoly-obj (Mon F)    X = Mon-Fam (μPoly-obj F X)   -- pending Mon-Fam
+  μPoly-obj (Mon F)    X = Mon-Fam (μPoly-obj F X)
 
 ------------------------------------------------------------------------------
 -- HasMu instance for the Fam construction.
