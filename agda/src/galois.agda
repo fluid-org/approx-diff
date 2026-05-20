@@ -23,6 +23,7 @@ open import join-semilattice
             _⊕_ to _⊕J_;
             ≃m-isEquivalence to ≃J-isEquivalence)
 open import cmon-enriched
+open import functor using (Functor)
 
 -- Category LatGal of bounded lattices and Galois connections between them.
 record Obj : Set (suc 0ℓ) where
@@ -321,6 +322,24 @@ module _ where
   𝕃-strength .left⊣right {x , bottom} {bottom} .proj₂ e = tt
   𝕃-strength .left⊣right {x , < x₁ >} {bottom} .proj₂ e = tt
   𝕃-strength .left⊣right {x , < x₁ >} {< x₂ >} .proj₂ e = e
+
+  open preorder._≃m_ using (eqfun)
+
+  𝕃-Functor : Functor cat cat
+  𝕃-Functor .Functor.fobj      = 𝕃
+  𝕃-Functor .Functor.fmor      = 𝕃-map
+  𝕃-Functor .Functor.fmor-cong eq .right-eq .eqfun bottom = tt , tt
+  𝕃-Functor .Functor.fmor-cong eq .right-eq .eqfun < x > = eq .right-eq .eqfun x
+  𝕃-Functor .Functor.fmor-cong eq .left-eq .eqfun bottom = tt , tt
+  𝕃-Functor .Functor.fmor-cong eq .left-eq .eqfun < y > = eq .left-eq .eqfun y
+  𝕃-Functor .Functor.fmor-id .right-eq .eqfun bottom = tt , tt
+  𝕃-Functor .Functor.fmor-id {X} .right-eq .eqfun < x > = X .carrier .Preorder.≃-refl
+  𝕃-Functor .Functor.fmor-id .left-eq .eqfun bottom = tt , tt
+  𝕃-Functor .Functor.fmor-id {X} .left-eq .eqfun < y > = X .carrier .Preorder.≃-refl
+  𝕃-Functor .Functor.fmor-comp f g .right-eq .eqfun bottom = tt , tt
+  𝕃-Functor .Functor.fmor-comp {X} {Y} {Z} f g .right-eq .eqfun < x > = Z .carrier .Preorder.≃-refl
+  𝕃-Functor .Functor.fmor-comp f g .left-eq .eqfun bottom = tt , tt
+  𝕃-Functor .Functor.fmor-comp {X} {Y} {Z} f g .left-eq .eqfun < z > = X .carrier .Preorder.≃-refl
 
 module _ where
 
