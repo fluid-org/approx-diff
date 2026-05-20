@@ -62,35 +62,20 @@ module Sem {o m e} {𝒞 : Category o m e}
       ⦅_⦆  : ∀ {Q y} → (poly-obj Q y ⇒ y) → μ Q ⇒ y
     -- FIXME: equations (β/η for inF / ⦅_⦆)
 
-  -- Strong monad whose endofunctor is polynomial.
-  record PolyMonad : Set (o ⊔ m ⊔ e) where
-    field
-      P-Mon       : Poly 𝒞
-      isStrongMon : IsStrongMonad P (poly-obj P-Mon)
-    open IsStrongMonad isStrongMon public
-  open PolyMonad
-
-  asStrongMonad : PolyMonad → StrongMonad 𝒞 P
-  asStrongMonad pm .StrongMonad.M           = poly-obj (pm .P-Mon)
-  asStrongMonad pm .StrongMonad.isStrongMon = pm .isStrongMon
-
-  PolyMonad-Id : PolyMonad
-  PolyMonad-Id .P-Mon                  = var
-  PolyMonad-Id .isStrongMon .unit {x}  = id x
-  PolyMonad-Id .isStrongMon .extend f  = f
-
   -- Strong monad augmented with a force (retraction of unit), giving every object a Mon-algebra.
   record PointedMonad : Set (o ⊔ m ⊔ e) where
     field
-      polyMonad : PolyMonad
-      force     : ∀ {x} → poly-obj (polyMonad .P-Mon) x ⇒ x
-    open PolyMonad polyMonad public
+      strongMonad : StrongMonad 𝒞 P
+      force       : ∀ {x} → StrongMonad.M strongMonad x ⇒ x
+    open StrongMonad strongMonad public
     -- FIXME: force ∘ unit ≈ id; force ∘ mul ≈ force ∘ map force
   open PointedMonad
 
   PointedMonad-Id : PointedMonad
-  PointedMonad-Id .polyMonad = PolyMonad-Id
-  PointedMonad-Id .force {x} = id x
+  PointedMonad-Id .strongMonad .StrongMonad.M                       = λ x → x
+  PointedMonad-Id .strongMonad .StrongMonad.isStrongMon .unit {x}   = id x
+  PointedMonad-Id .strongMonad .StrongMonad.isStrongMon .extend f   = f
+  PointedMonad-Id .force {x}                                        = id x
 
 ------------------------------------------------------------------------------
 -- Like Poly above but constant slots hold a setoid rather than a category object. Used to build the W-type

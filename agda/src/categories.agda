@@ -668,9 +668,6 @@ record Monad {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     join-natural : ∀ {x y} (f : x ⇒ y) → (join ∘ map (map f)) ≈ (map f ∘ join)
     -- FIXME: actual monad equations
 
-
-
-
 record IsStrongMonad {o m e} {𝒞 : Category o m e} (P : HasProducts 𝒞) (M : Category.obj 𝒞 → Category.obj 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasProducts P
