@@ -50,7 +50,6 @@ module Sem {o m e} {𝒞 : Category o m e}
   open HasTerminal T renaming (witness to terminal)
   open HasProducts P
   open HasCoproducts CP
-  open IsStrongMonad public
 
   poly-obj : Poly 𝒞 → obj → obj
   poly-obj one         _ = terminal
@@ -76,7 +75,7 @@ module Sem {o m e} {𝒞 : Category o m e}
     -- FIXME: equations (β/η for inF / ⦅_⦆)
 
   -- Interpretation of μPoly as a functor in 𝒞, plus the corresponding HasMu interface, where F interprets Mon.
-  module _ (F : Functor 𝒞 𝒞) where
+  module μPoly-Sem (F : Functor 𝒞 𝒞) where
     μPoly-obj : μPoly 𝒞 → obj → obj
     μPoly-obj one        _ = terminal
     μPoly-obj (const A)  _ = A

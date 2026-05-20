@@ -9,7 +9,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans)
-open import polynomial-functor using (Poly; _∘ₚ_; module Sem)
+open import functor using (Functor; PointedMonad)
+open import polynomial-functor using (μPoly; module Sem)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
@@ -24,8 +25,9 @@ module language-interpretation-approx
   (E  : HasExponentials 𝒞 P)
   (let open Sem T P C)
   (let open HasBooleans (coproducts+exp→booleans T C E))
-  (Mu : HasMu)
-  (PM : PointedMonad) -- if force is lossy then so is this semantics
+  (PM : PointedMonad P)
+  (let open μPoly-Sem (PointedMonad.F PM))
+  (Mu : HasMu-μPoly)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where
 
@@ -36,47 +38,49 @@ open language-syntax Sig
 open Model Int
 open PointedMonad PM renaming (unit to η)
 
-Mon : obj → obj
-Mon X = poly-obj P-Mon X
+M : obj → obj
+M X = fobj X
 
 mutual
   ⟦_⟧ty : type → obj
-  ⟦ unit ⟧ty       = Mon 𝟙
-  ⟦ bool ⟧ty       = Mon Bool
+  ⟦ unit ⟧ty       = M 𝟙
+  ⟦ bool ⟧ty       = M Bool
   ⟦ base σ ⟧ty     = ⟦sort⟧ σ  -- comes with its own approximation structure
-  ⟦ τ₁ [×] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty)
-  ⟦ τ₁ [+] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty)
-  ⟦ τ₁ [→] τ₂ ⟧ty  = Mon (⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty)
-  ⟦ μ P ⟧ty        = Mu .HasMu.μ ⟦ P ⟧poly
+  ⟦ τ₁ [×] τ₂ ⟧ty  = M (⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty)
+  ⟦ τ₁ [+] τ₂ ⟧ty  = M (⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty)
+  ⟦ τ₁ [→] τ₂ ⟧ty  = M (⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty)
+  ⟦ μ P ⟧ty        = HasMu-μPoly.μ Mu ⟦ P ⟧poly
 
-  ⟦_⟧poly : polynomial → Poly 𝒞
-  ⟦ one ⟧poly       = P-Mon ∘ₚ Poly.one
-  ⟦ const σ ⟧poly   = Poly.const ⟦ σ ⟧ty
-  ⟦ var ⟧poly       = Poly.var
-  ⟦ P [+] Q ⟧poly   = P-Mon ∘ₚ (⟦ P ⟧poly Poly.+ ⟦ Q ⟧poly)
-  ⟦ P [×] Q ⟧poly   = P-Mon ∘ₚ (⟦ P ⟧poly Poly.× ⟦ Q ⟧poly)
+  ⟦_⟧poly : polynomial → μPoly 𝒞
+  ⟦ one ⟧poly       = μPoly.Mon μPoly.one
+  ⟦ const σ ⟧poly   = μPoly.const ⟦ σ ⟧ty
+  ⟦ var ⟧poly       = μPoly.var
+  ⟦ P [+] Q ⟧poly   = μPoly.Mon (⟦ P ⟧poly μPoly.+ ⟦ Q ⟧poly)
+  ⟦ P [×] Q ⟧poly   = μPoly.Mon (⟦ P ⟧poly μPoly.× ⟦ Q ⟧poly)
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt = 𝟙
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ ⟦ τ ⟧ty
 
-apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
-apply-coincides one          τ = sym (poly-obj-comp P-Mon Poly.one ⟦ τ ⟧ty)
+apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ μPoly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
+apply-coincides one          τ = refl
 apply-coincides (const σ)    τ = refl
 apply-coincides var          τ = refl
 apply-coincides (P [+] Q)    τ =
-  trans (cong Mon (cong₂ _⊕_ (apply-coincides P τ) (apply-coincides Q τ)))
-        (sym (poly-obj-comp P-Mon (⟦ P ⟧poly Poly.+ ⟦ Q ⟧poly) ⟦ τ ⟧ty))
+  cong M (cong₂ _⊕_ (apply-coincides P τ) (apply-coincides Q τ))
 apply-coincides (P [×] Q)    τ =
-  trans (cong Mon (cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ)))
-        (sym (poly-obj-comp P-Mon (⟦ P ⟧poly Poly.× ⟦ Q ⟧poly) ⟦ τ ⟧ty))
+  cong M (cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ))
 
-map-eval : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ poly-obj Q t
-map-eval Poly.one       = to-terminal
-map-eval (Poly.const _) = p₁
-map-eval Poly.var       = eval
-map-eval (P Poly.+ Q)   = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
-map-eval (P Poly.× Q)   = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+swap : ∀ {x y} → (x ⊗ y) ⇒ (y ⊗ x)
+swap = ⟨ p₂ , p₁ ⟩
+
+map-eval : (Q : μPoly 𝒞) {ctx t : obj} → (μPoly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ μPoly-obj Q t
+map-eval μPoly.one         = to-terminal
+map-eval (μPoly.const _)   = p₁
+map-eval μPoly.var         = eval
+map-eval (P μPoly.+ Q)     = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
+map-eval (P μPoly.× Q)     = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+map-eval (μPoly.Mon P)     = extend (η ∘ map-eval P ∘ swap) ∘ swap
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
@@ -101,14 +105,14 @@ mutual
   ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = η ∘ ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    Mu .HasMu.inF ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
+    HasMu-μPoly.inμ Mu ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    eval ∘ ⟨ Mu .HasMu.⦅_⦆ closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
+    eval ∘ ⟨ HasMu-μPoly.⦅_⦆ Mu closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
     where
-      closure-converted : poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
+      closure-converted : μPoly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
       closure-converted = lambda (eval ∘ ⟨
         force ∘ ⟦ alg ⟧tm ∘ p₂ ,
-          subst (λ X → (poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
+          subst (λ X → (μPoly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
                 (sym (apply-coincides Q τ)) (map-eval ⟦ Q ⟧poly)
         ⟩)
 
