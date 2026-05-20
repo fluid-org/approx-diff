@@ -11,7 +11,10 @@ open import basics using (IsBottom)
 open import prop using (Dec; yes; no; tt; _,_; proj₁; proj₂) renaming (⊥ to ⊥p)
 open import preorder using (Preorder; bottom; <_>)
 open import join-semilattice using (JoinSemilattice)
-open import galois using (Obj; _⇒g_; 𝕃)
+open import categories using (Category; HasProducts)
+open import galois using (Obj; _⇒g_; 𝕃; idg; _∘g_; _≃g_; ∘g-cong; ≃g-isEquivalence;
+                            _⊕_; products)
+import galois
 
 module galois-dec where
 
@@ -56,3 +59,24 @@ module _ (X : Obj-dec) where
   force ._⇒g_.left⊣right {< x >}   {y} with ⊥-decidable y
   ... | yes y≃⊥ = (λ y≤x → tt) , λ _ → X≤.≤-trans (y≃⊥ .proj₁) (Xj.⊥-isBottom .IsBottom.≤-bottom)
   ... | no _    = (λ y≤x → y≤x) , λ y≤x → y≤x
+
+------------------------------------------------------------------------------
+-- Full subcategory of LatGal.
+cat : Category (suc 0ℓ) 0ℓ 0ℓ
+cat .Category.obj                   = Obj-dec
+cat .Category._⇒_   X Y             = Obj-dec.obj X ⇒g Obj-dec.obj Y
+cat .Category._≈_                   = _≃g_
+cat .Category.isEquiv               = ≃g-isEquivalence
+cat .Category.id    X               = idg (Obj-dec.obj X)
+cat .Category._∘_                   = _∘g_
+cat .Category.∘-cong                = ∘g-cong
+cat .Category.id-left {X} {Y} {f}   = galois.cat .Category.id-left {Obj-dec.obj X} {Obj-dec.obj Y} {f}
+cat .Category.id-right {X} {Y} {f}  = galois.cat .Category.id-right {Obj-dec.obj X} {Obj-dec.obj Y} {f}
+cat .Category.assoc                 = galois.cat .Category.assoc
+
+------------------------------------------------------------------------------
+-- Pending:
+--   * products on cat (derive ⊥-decidable from component decidabilities).
+--   * 𝕃 lifted to a Functor cat cat.
+--   * IsStrongMonad on this functor.
+--   * PointedMonad packaging (with force above).
