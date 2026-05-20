@@ -273,6 +273,8 @@ module _ {o₁ m₁ e₁}
   PointedFunctor-Id P .PointedFunctor.unit {x}       = 𝒞.id x
   PointedFunctor-Id P .PointedFunctor.force {x}      = 𝒞.id x
   PointedFunctor-Id P .PointedFunctor.right-strength = 𝒞.id _
+  PointedFunctor-Id P .PointedFunctor.right-strength-natural f g =
+    𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}

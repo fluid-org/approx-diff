@@ -44,6 +44,8 @@ module Tag
   Tag-PointedFunctor .PointedFunctor.force {x}      = p₂
   -- Right-strength: x × (A × y) ⇒ A × (x × y). Tag (in second slot) moves to outside.
   Tag-PointedFunctor .PointedFunctor.right-strength = pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂))
+  -- FIXME: naturality proof.
+  Tag-PointedFunctor .PointedFunctor.right-strength-natural f g = {!!}
 
 ------------------------------------------------------------------------------
 -- Tag PointedFunctor on galois.cat, using galois.TWO as the approximation object.

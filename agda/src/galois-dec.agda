@@ -107,7 +107,9 @@ module _ (X : Obj-dec) where
   ... | no _    = (λ y≤x → y≤x) , λ y≤x → y≤x
 
 pointedFunctor : PointedFunctor products
-pointedFunctor .PointedFunctor.F              = 𝕃-functor
-pointedFunctor .PointedFunctor.unit           = 𝕃-unit
-pointedFunctor .PointedFunctor.force {X}      = force X
-pointedFunctor .PointedFunctor.right-strength = 𝕃-strength
+pointedFunctor .PointedFunctor.F                          = 𝕃-functor
+pointedFunctor .PointedFunctor.unit                       = 𝕃-unit
+pointedFunctor .PointedFunctor.force {X}                  = force X
+pointedFunctor .PointedFunctor.right-strength             = 𝕃-strength
+-- FIXME: naturality of 𝕃-strength.
+pointedFunctor .PointedFunctor.right-strength-natural f g = {!!}

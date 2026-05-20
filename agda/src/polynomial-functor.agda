@@ -819,16 +819,14 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
                    (≈-trans (assoc _ _ _)
                      (≈-trans (∘-cong (isEquiv .refl) (pair-p₂ _ _))
                        (≈-trans (≈-sym (assoc _ _ _))
-                         (≈-trans (∘-cong (pair-p₁ _ _) (isEquiv .refl))
-                                  (assoc _ _ _))))))))
+                         (≈-trans (∘-cong (pair-p₁ _ _) (isEquiv .refl)) (assoc _ _ _))))))))
              (∘-cong (isEquiv .refl)
                (≈-trans (pair-natural _ _ _)
                  (pair-cong (pair-p₁ _ _)
                    (≈-trans (assoc _ _ _)
                      (≈-trans (∘-cong (isEquiv .refl) (pair-p₂ _ _))
                        (≈-trans (≈-sym (assoc _ _ _))
-                         (≈-trans (∘-cong (pair-p₂ _ _) (isEquiv .refl))
-                                  (assoc _ _ _)))))))) ⟩
+                         (≈-trans (∘-cong (pair-p₂ _ _) (isEquiv .refl)) (assoc _ _ _)))))))) ⟩
           pair (project-fam-open P γ₂ x₂ ∘ pair (Γ .fam .subst eγ ∘ p₁) (WFam-subst P eP ∘ (p₁ ∘ p₂)))
                (project-fam-open R γ₂ z₂ ∘ pair (Γ .fam .subst eγ ∘ p₁) (WFam-subst R eR ∘ (p₂ ∘ p₂)))
         ≈⟨ pair-cong (∘-cong (isEquiv .refl) (≈-sym (pair-compose _ _ _ _)))
@@ -857,9 +855,33 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
             ∘ pair (project-fam-open P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂))
                    (project-fam-open R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂))
         ∎ where open ≈-Reasoning isEquiv
-      -- Mon case requires naturality of right-strength, which isn't yet a field
-      -- of PointedFunctor. Leave as a hole until we add it as a law.
-      project-fam-natural-open (μPoly.Mon P) eγ ei = {!!}
+      project-fam-natural-open (μPoly.Mon P) {γ₁} {γ₂} {x} {z} eγ ei =
+        begin
+          (fmor (project-fam-open P γ₂ z) ∘ right-strength) ∘
+            prod-m (Γ .fam .subst eγ) (fmor (WFam-subst P ei))
+        ≈⟨ assoc _ _ _ ⟩
+          fmor (project-fam-open P γ₂ z) ∘
+            (right-strength ∘ prod-m (Γ .fam .subst eγ) (fmor (WFam-subst P ei)))
+        ≈⟨ ∘-cong (isEquiv .refl)
+             (isEquiv .sym (PointedFunctor.right-strength-natural L _ _)) ⟩
+          fmor (project-fam-open P γ₂ z) ∘
+            (fmor (prod-m (Γ .fam .subst eγ) (WFam-subst P ei)) ∘ right-strength)
+        ≈⟨ isEquiv .sym (assoc _ _ _) ⟩
+          (fmor (project-fam-open P γ₂ z) ∘
+            fmor (prod-m (Γ .fam .subst eγ) (WFam-subst P ei))) ∘ right-strength
+        ≈⟨ ∘-cong (isEquiv .sym (fmor-comp _ _)) (isEquiv .refl) ⟩
+          fmor (project-fam-open P γ₂ z ∘
+            prod-m (Γ .fam .subst eγ) (WFam-subst P ei)) ∘ right-strength
+        ≈⟨ ∘-cong (fmor-cong (project-fam-natural-open P eγ ei)) (isEquiv .refl) ⟩
+          fmor (μPoly-obj P y .fam .subst (project-≈-open P eγ ei) ∘
+                project-fam-open P γ₁ x) ∘ right-strength
+        ≈⟨ ∘-cong (fmor-comp _ _) (isEquiv .refl) ⟩
+          (fmor (μPoly-obj P y .fam .subst (project-≈-open P eγ ei)) ∘
+            fmor (project-fam-open P γ₁ x)) ∘ right-strength
+        ≈⟨ assoc _ _ _ ⟩
+          fmor (μPoly-obj P y .fam .subst (project-≈-open P eγ ei)) ∘
+            (fmor (project-fam-open P γ₁ x) ∘ right-strength)
+        ∎ where open ≈-Reasoning isEquiv
 
       fold-open : Mor (Γ ⊗ WObj) y
       fold-open .idxf .PS._⇒_.func (γ , inF i) =
