@@ -7,10 +7,11 @@
 -- between "this value is ⊥" (map to `bottom` in 𝕃 X) and "not ⊥" (map to <·>).
 
 open import Level using (suc; 0ℓ)
-open import prop using (Dec)
-open import preorder using (Preorder)
+open import basics using (IsBottom)
+open import prop using (Dec; yes; no; tt) renaming (⊥ to ⊥p)
+open import preorder using (Preorder; bottom; <_>)
 open import join-semilattice using (JoinSemilattice)
-open import galois using (Obj)
+open import galois using (Obj; _⇒g_; 𝕃)
 
 module galois-dec where
 
@@ -23,15 +24,32 @@ record Obj-dec : Set (suc 0ℓ) where
                 → Dec (Preorder._≃_ (Obj.carrier obj) x (JoinSemilattice.⊥ (Obj.joins obj)))
 
 ------------------------------------------------------------------------------
--- Pending: a `force : 𝕃 X ⇒g X` construction using ⊥-decidable.
---
---   force.right : 𝕃X.meets → X.meets
---     bottom ↦ X.joins.⊥
---     <x>    ↦ x
---   force.left : X.joins → 𝕃X.joins
---     y ↦ bottom    if ⊥-decidable y returns "y ≃ ⊥"
---     y ↦ <y>       otherwise
---   left⊣right: case-analysis on ⊥-decidable.
---
--- Once force is defined, we can package as `PointedMonad (galois.products)`
--- (after lifting all the existing 𝕃 structure to this wrapper).
+-- Force: extract from 𝕃 X, mapping bottom to X's join-bottom (using decidable ⊥
+-- on the left side to dispatch).
+module _ (X : Obj-dec) where
+  open Obj-dec X
+  open Obj obj using (carrier; meets; joins)
+  private
+    module X≤ = Preorder carrier
+    module Xj = JoinSemilattice joins
+
+  open preorder._=>_
+
+  force : 𝕃 obj ⇒g obj
+  -- right: 𝕃 obj.carrier preorder.=> obj.carrier
+  force ._⇒g_.right .fun bottom  = Xj.⊥
+  force ._⇒g_.right .fun < x >   = x
+  force ._⇒g_.right .mono {bottom}  {bottom}  _    = X≤.≤-refl
+  force ._⇒g_.right .mono {bottom}  {< _ >}   _    = Xj.⊥-isBottom .IsBottom.≤-bottom
+  force ._⇒g_.right .mono {< _ >}   {< _ >}   x≤y  = x≤y
+  -- (no clause for {< _ >} {bottom} since < _ > ≤ bottom is absurd in L)
+
+  -- left: obj.carrier preorder.=> 𝕃 obj.carrier
+  -- Decide bottom: if y ≃ X.⊥ then bottom, else < y >.
+  force ._⇒g_.left .fun y with ⊥-decidable y
+  ... | yes _ = bottom
+  ... | no _  = < y >
+  force ._⇒g_.left .mono = {!!}   -- monotonicity using ⊥-decidable's correctness
+
+  -- adjoint: y X.≤ right(x') ⇔ left(y) 𝕃X.≤ x'
+  force ._⇒g_.left⊣right = {!!}
