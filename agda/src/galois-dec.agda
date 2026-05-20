@@ -11,9 +11,9 @@ open import basics using (IsBottom)
 open import prop using (Dec; yes; no; tt; _,_; proj₁; proj₂) renaming (⊥ to ⊥p)
 open import preorder using (Preorder; bottom; <_>)
 open import join-semilattice using (JoinSemilattice)
+open import Data.Product using () renaming (_,_ to _,p_)
 open import categories using (Category; HasProducts)
-open import galois using (Obj; _⇒g_; 𝕃; idg; _∘g_; _≃g_; ∘g-cong; ≃g-isEquivalence;
-                            _⊕_; products)
+open import galois using (Obj; _⇒g_; 𝕃; idg; _∘g_; _≃g_; ∘g-cong; ≃g-isEquivalence)
 import galois
 
 module galois-dec where
@@ -75,8 +75,26 @@ cat .Category.id-right {X} {Y} {f}  = galois.cat .Category.id-right {Obj-dec.obj
 cat .Category.assoc                 = galois.cat .Category.assoc
 
 ------------------------------------------------------------------------------
+-- Binary products.
+_⊕_ : Obj-dec → Obj-dec → Obj-dec
+(X ⊕ Y) .Obj-dec.obj = Obj-dec.obj X galois.⊕ Obj-dec.obj Y
+(X ⊕ Y) .Obj-dec.⊥-decidable (a ,p b) with Obj-dec.⊥-decidable X a | Obj-dec.⊥-decidable Y b
+... | yes a≃⊥ | yes b≃⊥ = yes (preorder.×-≃ {X = Obj.carrier (Obj-dec.obj X)} {Y = Obj.carrier (Obj-dec.obj Y)} a≃⊥ b≃⊥)
+... | yes _   | no b≇⊥  = no (λ p → b≇⊥ (p .proj₁ .proj₂ , p .proj₂ .proj₂))
+... | no a≇⊥  | _       = no (λ p → a≇⊥ (p .proj₁ .proj₁ , p .proj₂ .proj₁))
+
+products : HasProducts cat
+products .HasProducts.prod              = _⊕_
+products .HasProducts.p₁                = galois.products .HasProducts.p₁
+products .HasProducts.p₂                = galois.products .HasProducts.p₂
+products .HasProducts.pair              = galois.products .HasProducts.pair
+products .HasProducts.pair-cong         = galois.products .HasProducts.pair-cong
+products .HasProducts.pair-p₁           = galois.products .HasProducts.pair-p₁
+products .HasProducts.pair-p₂           = galois.products .HasProducts.pair-p₂
+products .HasProducts.pair-ext          = galois.products .HasProducts.pair-ext
+
+------------------------------------------------------------------------------
 -- Pending:
---   * products on cat (derive ⊥-decidable from component decidabilities).
 --   * 𝕃 lifted to a Functor cat cat.
 --   * IsStrongMonad on this functor.
 --   * PointedMonad packaging (with force above).
