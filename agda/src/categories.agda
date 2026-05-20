@@ -668,21 +668,6 @@ record Monad {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     join-natural : ∀ {x y} (f : x ⇒ y) → (join ∘ map (map f)) ≈ (map f ∘ join)
     -- FIXME: actual monad equations
 
-record IsStrongMonad {o m e} {𝒞 : Category o m e} (P : HasProducts 𝒞) (M : Category.obj 𝒞 → Category.obj 𝒞) : Set (o ⊔ m ⊔ e) where
-  open Category 𝒞
-  open HasProducts P
-  field
-    unit   : ∀ {x} → x ⇒ M x
-    extend : ∀ {x y z} → prod x y ⇒ M z → prod x (M y) ⇒ M z
-  -- FIXME: equations
-
-record StrongMonad {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
-  open Category 𝒞
-  field
-    M           : obj → obj
-    isStrongMon : IsStrongMonad P M
-  open IsStrongMonad isStrongMon public
-
 record HasBooleans {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasTerminal T renaming (witness to terminal)

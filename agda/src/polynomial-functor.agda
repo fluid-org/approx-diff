@@ -8,7 +8,8 @@ open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
 import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; IsStrongMonad; StrongMonad)
+  using (Category; HasTerminal; HasProducts; HasCoproducts)
+open import functor using (Functor; Id; IsStrongMonad; StrongMonad)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_)
@@ -65,14 +66,14 @@ module Sem {o m e} {𝒞 : Category o m e}
   -- Strong monad augmented with a force (retraction of unit), giving every object a Mon-algebra.
   record PointedMonad : Set (o ⊔ m ⊔ e) where
     field
-      strongMonad : StrongMonad 𝒞 P
-      force       : ∀ {x} → StrongMonad.M strongMonad x ⇒ x
+      strongMonad : StrongMonad P
+      force       : ∀ {x} → StrongMonad.fobj strongMonad x ⇒ x
     open StrongMonad strongMonad public
     -- FIXME: force ∘ unit ≈ id; force ∘ mul ≈ force ∘ map force
   open PointedMonad
 
   PointedMonad-Id : PointedMonad
-  PointedMonad-Id .strongMonad .StrongMonad.M                       = λ x → x
+  PointedMonad-Id .strongMonad .StrongMonad.F                       = Id
   PointedMonad-Id .strongMonad .StrongMonad.isStrongMon .unit {x}   = id x
   PointedMonad-Id .strongMonad .StrongMonad.isStrongMon .extend f   = f
   PointedMonad-Id .force {x}                                        = id x

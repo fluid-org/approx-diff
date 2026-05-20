@@ -4,7 +4,7 @@ module functor where
 
 open import Level using (_⊔_)
 open import prop using (tt; ⟪_⟫) -- only needed for setoid-functor
-open import categories using (Category; setoid→category)
+open import categories using (Category; setoid→category; HasProducts)
 open import prop-setoid using (Setoid; IsEquivalence; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_)
 
@@ -230,6 +230,22 @@ module _ {o₁ m₁ e₁}
   Id .fmor-cong eq = eq
   Id .fmor-id = 𝒞.≈-refl
   Id .fmor-comp f g = 𝒞.≈-refl
+
+  -- Strong monad: a functor equipped with a unit and strength-aware Kleisli extension.
+  record IsStrongMonad (P : HasProducts 𝒞) (M : Category.obj 𝒞 → Category.obj 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+    open Category 𝒞
+    open HasProducts P
+    field
+      unit   : ∀ {x} → x ⇒ M x
+      extend : ∀ {x y z} → prod x y ⇒ M z → prod x (M y) ⇒ M z
+    -- FIXME: equations
+
+  record StrongMonad (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+    field
+      F           : Functor 𝒞 𝒞
+      isStrongMon : IsStrongMonad P (F .fobj)
+    open Functor F public
+    open IsStrongMonad isStrongMon public
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}
