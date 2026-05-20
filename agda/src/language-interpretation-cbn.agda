@@ -1,7 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Per-root approx interpretation: every type former carries an outer Mon, except
--- base types (whose primitive interpretation already includes approximation).
+-- Per-leaf CBN interpretation: every component of a compound type former
+-- carries an explicit Mon-wrap; the outer type is not Mon-wrapped. Each
+-- term produces an M-wrapped value (since values in CBN are suspended).
+-- Contrast with language-interpretation-approx's per-root scheme.
 
 open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
@@ -15,7 +17,7 @@ import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
 
-module language-interpretation-approx
+module language-interpretation-cbn
   {ℓ} (Sig : Signature ℓ)
   {o m e}
   (𝒞 : Category o m e)
@@ -42,33 +44,41 @@ M : obj → obj
 M X = fobj X
 
 mutual
+  -- Per-leaf: components are Mon-wrapped, the compound type-former itself is not.
   ⟦_⟧ty : type → obj
-  ⟦ unit ⟧ty       = M 𝟙
-  ⟦ bool ⟧ty       = M Bool
-  ⟦ base σ ⟧ty     = ⟦sort⟧ σ  -- comes with its own approximation structure
-  ⟦ τ₁ [×] τ₂ ⟧ty  = M (⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty)
-  ⟦ τ₁ [+] τ₂ ⟧ty  = M (⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty)
-  ⟦ τ₁ [→] τ₂ ⟧ty  = M (⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty)
+  ⟦ unit ⟧ty       = 𝟙
+  ⟦ bool ⟧ty       = Bool
+  ⟦ base σ ⟧ty     = ⟦sort⟧ σ
+  ⟦ τ₁ [×] τ₂ ⟧ty  = M ⟦ τ₁ ⟧ty ⊗ M ⟦ τ₂ ⟧ty
+  ⟦ τ₁ [+] τ₂ ⟧ty  = M ⟦ τ₁ ⟧ty ⊕ M ⟦ τ₂ ⟧ty
+  ⟦ τ₁ [→] τ₂ ⟧ty  = M ⟦ τ₁ ⟧ty ⟦→⟧ M ⟦ τ₂ ⟧ty
   ⟦ μ P ⟧ty        = HasMu-μPoly.μ Mu ⟦ P ⟧poly
 
+  -- Mon inside each side of sum/product; const/var unwrapped. Matches per-leaf
+  -- type translation so apply-coincides holds at ⟦τ⟧ty without coercion.
   ⟦_⟧poly : polynomial → μPoly 𝒞
-  ⟦ one ⟧poly       = μPoly.Mon μPoly.one
+  ⟦ one ⟧poly       = μPoly.one
   ⟦ const σ ⟧poly   = μPoly.const ⟦ σ ⟧ty
   ⟦ var ⟧poly       = μPoly.var
-  ⟦ P [+] Q ⟧poly   = μPoly.Mon (⟦ P ⟧poly μPoly.+ ⟦ Q ⟧poly)
-  ⟦ P [×] Q ⟧poly   = μPoly.Mon (⟦ P ⟧poly μPoly.× ⟦ Q ⟧poly)
+  ⟦ P [+] Q ⟧poly   = (μPoly.Mon ⟦ P ⟧poly) μPoly.+ (μPoly.Mon ⟦ Q ⟧poly)
+  ⟦ P [×] Q ⟧poly   = (μPoly.Mon ⟦ P ⟧poly) μPoly.× (μPoly.Mon ⟦ Q ⟧poly)
 
+-- Every binding in the context stores an M-wrapped value.
 ⟦_⟧ctxt : ctxt → obj
-⟦ emp ⟧ctxt = 𝟙
-⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ ⟦ τ ⟧ty
+⟦ emp ⟧ctxt   = 𝟙
+⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ M ⟦ τ ⟧ty
 
 apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ μPoly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
 apply-coincides one          τ = refl
 apply-coincides (const σ)    τ = refl
 apply-coincides var          τ = refl
-apply-coincides (P [+] Q)    τ = cong M (cong₂ _⊕_ (apply-coincides P τ) (apply-coincides Q τ))
-apply-coincides (P [×] Q)    τ = cong M (cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ))
+apply-coincides (P [+] Q)    τ =
+  cong₂ _⊕_ (cong M (apply-coincides P τ)) (cong M (apply-coincides Q τ))
+apply-coincides (P [×] Q)    τ =
+  cong₂ _⊗_ (cong M (apply-coincides P τ)) (cong M (apply-coincides Q τ))
 
+-- map-eval evaluates a polynomial-of-closures over an input context to produce
+-- a polynomial of values. Defined per μPoly constructor.
 map-eval : (Q : μPoly 𝒞) {ctx t : obj} → (μPoly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ μPoly-obj Q t
 map-eval μPoly.one         = to-terminal
 map-eval (μPoly.const _)   = p₁
@@ -77,12 +87,14 @@ map-eval (P μPoly.+ Q)     = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)
 map-eval (P μPoly.× Q)     = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
 map-eval (μPoly.Mon P)     = η ∘ map-eval P ∘ ⟨ force ∘ p₁ , p₂ ⟩
 
-⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
+-- Variable lookup gives back an M-wrapped value (stored that way in the context).
+⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ M ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
 
 mutual
-  ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
+  -- All terms produce an M-wrapped value.
+  ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ M ⟦ τ ⟧ty
   ⟦ var x ⟧tm = ⟦ x ⟧var
   ⟦ unit ⟧tm = η ∘ to-terminal
   ⟦ true ⟧tm = η ∘ True ∘ to-terminal
@@ -97,20 +109,25 @@ mutual
   ⟦ snd M ⟧tm = p₂ ∘ force ∘ ⟦ M ⟧tm
   ⟦ lam M ⟧tm = η ∘ lambda ⟦ M ⟧tm
   ⟦ app M N ⟧tm = eval ∘ ⟨ force ∘ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
+  ⟦ bop ω Ms ⟧tm = η ∘ ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = η ∘ ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
-  ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    HasMu-μPoly.inμ Mu ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
+  ⟦ roll {Γ = Γ} {P = P} t ⟧tm =
+    η ∘ HasMu-μPoly.inμ Mu ⟦ P ⟧poly ∘ force ∘
+      subst (⟦ Γ ⟧ctxt ⇒_) (cong M (apply-coincides P (μ P))) ⟦ t ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    eval ∘ ⟨ HasMu-μPoly.⦅_⦆ Mu closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
+    η ∘ eval ∘ ⟨ HasMu-μPoly.⦅_⦆ Mu closure-converted ∘ force ∘ ⟦ M ⟧tm , id _ ⟩
     where
+      -- y = ⟦Γ⟧ ⟦→⟧ ⟦τ⟧ty (no outer Mon). The closure's body forces the alg's
+      -- M-wrapped result, matching the way cbn-translation binds it out.
       closure-converted : μPoly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
-      closure-converted = lambda (eval ∘ ⟨
+      closure-converted = lambda (force ∘ eval ∘ ⟨
         force ∘ ⟦ alg ⟧tm ∘ p₂ ,
-          subst (λ X → (μPoly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
-                (sym (apply-coincides Q τ)) (map-eval ⟦ Q ⟧poly)
+          η ∘ subst (λ X → (μPoly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
+                    (sym (apply-coincides Q τ)) (map-eval ⟦ Q ⟧poly)
         ⟩)
 
+  -- Base-typed args need to be unwrapped before being passed to the operation;
+  -- ⟦op⟧ / ⟦rel⟧ live at the underlying sort level.
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms = to-terminal
-  ⟦ M ∷ Ms ⟧tms = ⟨ ⟦ M ⟧tm , ⟦ Ms ⟧tms ⟩
+  ⟦ M ∷ Ms ⟧tms = ⟨ force ∘ ⟦ M ⟧tm , ⟦ Ms ⟧tms ⟩
