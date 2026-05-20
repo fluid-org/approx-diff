@@ -8,8 +8,7 @@ open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
 import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; IsStrongMonad; StrongMonad)
-open import cmon-enriched using (CMonEnriched)
+  using (Category; HasTerminal; HasProducts; HasCoproducts; IsStrongMonad; StrongMonad)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_)
@@ -92,19 +91,6 @@ module Sem {o m e} {𝒞 : Category o m e}
   PointedMonad-Id : PointedMonad
   PointedMonad-Id .polyMonad = PolyMonad-Id
   PointedMonad-Id .force {x} = id x
-
-  -- Lifting monad L X = terminal + X, with force propagating "bottom" via the zero morphism available in a
-  -- CMon-enriched category.
-  module _ (E : HasExponentials 𝒞 P) (CME : CMonEnriched 𝒞) where
-    open HasExponentials E
-    open CMonEnriched CME using (εm)
-
-    PointedMonad-L : PointedMonad
-    PointedMonad-L .polyMonad .P-Mon                    = one + var
-    PointedMonad-L .polyMonad .isStrongMon .unit        = in₂
-    PointedMonad-L .polyMonad .isStrongMon .extend f    =
-      eval ∘ pair (copair (lambda (in₁ ∘ p₁)) (lambda (f ∘ pair p₂ p₁)) ∘ p₂) p₁
-    PointedMonad-L .force                               = copair εm (id _)
 
 ------------------------------------------------------------------------------
 -- Like Poly above but constant slots hold a setoid rather than a category object. Used to build the W-type
@@ -197,10 +183,12 @@ module _ {o e} where
 -- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). `Mon` decorates a
 -- sub-polynomial with the ambient fibre-level lifting monad, fibre-only.
 module Mu {o m e os es} {𝒟 : Category o m e}
-          (T : HasTerminal 𝒟) (P : HasProducts 𝒟) where
+          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (CP : HasCoproducts 𝒟)
+          (let open Sem T PP CP)
+          (L : PointedMonad) where
   open fam.CategoryOfFamilies os es 𝒟
   open Obj
-  open products P
+  open products PP
 
   data μPoly : Set (suc (os ⊔ es) ⊔ o ⊔ m ⊔ e) where
     one    : μPoly
@@ -208,7 +196,7 @@ module Mu {o m e os es} {𝒟 : Category o m e}
     var    : μPoly
     _+_    : μPoly → μPoly → μPoly
     _×_    : μPoly → μPoly → μPoly
-    Mon    : μPoly → μPoly   -- fibre-only: apply the ambient lifting monad
+--    Mon    : μPoly → μPoly   -- pending: needs functoriality laws on PointedMonad
 
   idx-of : μPoly → IdxPoly {os} {es}
   idx-of one          = IdxPoly.one
@@ -216,7 +204,7 @@ module Mu {o m e os es} {𝒟 : Category o m e}
   idx-of var          = IdxPoly.var
   idx-of (F + G)      = idx-of F IdxPoly.+ idx-of G
   idx-of (F × G)      = idx-of F IdxPoly.× idx-of G
-  idx-of (Mon F)      = idx-of F
+--  idx-of (Mon F)      = idx-of F
 
   open HasTerminal (terminal T) using () renaming (witness to Fam-terminal)
   open HasCoproducts coproducts using () renaming (coprod to Fam-coprod)
@@ -227,7 +215,7 @@ module Mu {o m e os es} {𝒟 : Category o m e}
   μPoly-obj var        X = X
   μPoly-obj (F + G)    X = Fam-coprod (μPoly-obj F X) (μPoly-obj G X)
   μPoly-obj (F × G)    X = (μPoly-obj F X) ⊗ (μPoly-obj G X)
-  μPoly-obj (Mon F)    X = {!!}   -- needs a fibre-wise lifting monad parameter
+--  μPoly-obj (Mon F)    X = Mon-Fam (μPoly-obj F X)   -- pending Mon-Fam
 
 ------------------------------------------------------------------------------
 -- HasMu instance for the Fam construction.
