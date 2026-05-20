@@ -13,7 +13,9 @@ open import preorder using (Preorder; bottom; <_>)
 open import join-semilattice using (JoinSemilattice)
 open import Data.Product using () renaming (_,_ to _,p_)
 open import categories using (Category; HasProducts)
-open import functor using (Functor; IsStrongMonad)
+open import functor using (Functor; IsStrongMonad; StrongMonad; PointedStrongMonad)
+open Functor
+open StrongMonad
 open import galois using (Obj; _⇒g_; 𝕃; 𝕃-map; 𝕃-unit; 𝕃-join; 𝕃-strength;
                             idg; _∘g_; _≃g_; ∘g-cong; ≃g-isEquivalence)
 import galois
@@ -27,40 +29,6 @@ record Obj-dec : Set (suc 0ℓ) where
     obj         : Obj
     ⊥-decidable : (x : Obj.carrier obj .Preorder.Carrier)
                 → Dec (Preorder._≃_ (Obj.carrier obj) x (JoinSemilattice.⊥ (Obj.joins obj)))
-
-------------------------------------------------------------------------------
--- 𝕃 is pointed.
-module _ (X : Obj-dec) where
-  open Obj-dec X
-  open Obj obj using (carrier; meets; joins)
-  private
-    module X≤ = Preorder carrier
-    module Xj = JoinSemilattice joins
-
-  open preorder._=>_
-
-  force : 𝕃 obj ⇒g obj
-  force ._⇒g_.right .fun bottom  = Xj.⊥
-  force ._⇒g_.right .fun < x >   = x
-  force ._⇒g_.right .mono {bottom}  {bottom}  _    = X≤.≤-refl
-  force ._⇒g_.right .mono {bottom}  {< _ >}   _    = Xj.⊥-isBottom .IsBottom.≤-bottom
-  force ._⇒g_.right .mono {< _ >}   {< _ >}   x≤y  = x≤y
-
-  force ._⇒g_.left .fun y with ⊥-decidable y
-  ... | yes _ = bottom
-  ... | no _  = < y >
-  force ._⇒g_.left .mono {y₁} {y₂} y₁≤y₂ with ⊥-decidable y₁ | ⊥-decidable y₂
-  ... | yes _    | yes _    = tt
-  ... | yes _    | no _     = tt
-  ... | no y₁≇⊥  | yes y₂≃⊥ = y₁≇⊥ (X≤.≤-trans y₁≤y₂ (y₂≃⊥ .proj₁) , Xj.⊥-isBottom .IsBottom.≤-bottom)
-  ... | no _     | no _     = y₁≤y₂
-
-  force ._⇒g_.left⊣right {bottom}  {y} with ⊥-decidable y
-  ... | yes y≃⊥ = (λ y≤⊥ → tt) , (λ _ → y≃⊥ .proj₁)
-  ... | no y≇⊥  = (λ y≤⊥ → y≇⊥ (y≤⊥ , Xj.⊥-isBottom .IsBottom.≤-bottom)) , λ ()
-  force ._⇒g_.left⊣right {< x >}   {y} with ⊥-decidable y
-  ... | yes y≃⊥ = (λ y≤x → tt) , λ _ → X≤.≤-trans (y≃⊥ .proj₁) (Xj.⊥-isBottom .IsBottom.≤-bottom)
-  ... | no _    = (λ y≤x → y≤x) , λ y≤x → y≤x
 
 ------------------------------------------------------------------------------
 -- Full subcategory of LatGal.
@@ -96,19 +64,55 @@ products .HasProducts.pair-p₂           = galois.products .HasProducts.pair-p�
 products .HasProducts.pair-ext          = galois.products .HasProducts.pair-ext
 
 ------------------------------------------------------------------------------
--- Lift 𝕃 to a functor here.
-𝕃-Functor : Functor cat cat
-𝕃-Functor .Functor.fobj X .Obj-dec.obj                   = 𝕃 (Obj-dec.obj X)
-𝕃-Functor .Functor.fobj X .Obj-dec.⊥-decidable bottom    = yes (tt , tt)
-𝕃-Functor .Functor.fobj X .Obj-dec.⊥-decidable < x >     = no (λ p → p .proj₁)
-𝕃-Functor .Functor.fmor                                  = 𝕃-map
-𝕃-Functor .Functor.fmor-cong                             = galois.𝕃-Functor .Functor.fmor-cong
-𝕃-Functor .Functor.fmor-id                               = galois.𝕃-Functor .Functor.fmor-id
-𝕃-Functor .Functor.fmor-comp                             = galois.𝕃-Functor .Functor.fmor-comp
+-- 𝕃 is pointed (per object, with the ⊥-decidable on its carrier).
 
-𝕃-strong : IsStrongMonad products (Functor.fobj 𝕃-Functor)
+𝕃-functor : Functor cat cat
+𝕃-functor .fobj X .Obj-dec.obj                   = 𝕃 (Obj-dec.obj X)
+𝕃-functor .fobj X .Obj-dec.⊥-decidable bottom    = yes (tt , tt)
+𝕃-functor .fobj X .Obj-dec.⊥-decidable < x >     = no (λ p → p .proj₁)
+𝕃-functor .fmor                                  = 𝕃-map
+𝕃-functor .fmor-cong                             = galois.𝕃-functor .fmor-cong
+𝕃-functor .fmor-id                               = galois.𝕃-functor .fmor-id
+𝕃-functor .fmor-comp                             = galois.𝕃-functor .fmor-comp
+
+𝕃-strong : IsStrongMonad products (fobj 𝕃-functor)
 𝕃-strong .IsStrongMonad.unit     = 𝕃-unit
 𝕃-strong .IsStrongMonad.extend f = 𝕃-join ∘g (𝕃-map f ∘g 𝕃-strength)
 
-------------------------------------------------------------------------------
--- Pending: PointedStrongMonad packaging (with force above).
+
+module _ (X : Obj-dec) where
+  open Obj-dec X
+  open Obj obj using (carrier; meets; joins)
+  private
+    module X≤ = Preorder carrier
+    module Xj = JoinSemilattice joins
+
+  open preorder._=>_
+
+  force : 𝕃 obj ⇒g obj
+  force ._⇒g_.right .fun bottom  = Xj.⊥
+  force ._⇒g_.right .fun < x >   = x
+  force ._⇒g_.right .mono {bottom}  {bottom}  _    = X≤.≤-refl
+  force ._⇒g_.right .mono {bottom}  {< _ >}   _    = Xj.⊥-isBottom .IsBottom.≤-bottom
+  force ._⇒g_.right .mono {< _ >}   {< _ >}   x≤y  = x≤y
+
+  force ._⇒g_.left .fun y with ⊥-decidable y
+  ... | yes _ = bottom
+  ... | no _  = < y >
+  force ._⇒g_.left .mono {y₁} {y₂} y₁≤y₂ with ⊥-decidable y₁ | ⊥-decidable y₂
+  ... | yes _    | yes _    = tt
+  ... | yes _    | no _     = tt
+  ... | no y₁≇⊥  | yes y₂≃⊥ = y₁≇⊥ (X≤.≤-trans y₁≤y₂ (y₂≃⊥ .proj₁) , Xj.⊥-isBottom .IsBottom.≤-bottom)
+  ... | no _     | no _     = y₁≤y₂
+
+  force ._⇒g_.left⊣right {bottom}  {y} with ⊥-decidable y
+  ... | yes y≃⊥ = (λ y≤⊥ → tt) , (λ _ → y≃⊥ .proj₁)
+  ... | no y≇⊥  = (λ y≤⊥ → y≇⊥ (y≤⊥ , Xj.⊥-isBottom .IsBottom.≤-bottom)) , λ ()
+  force ._⇒g_.left⊣right {< x >}   {y} with ⊥-decidable y
+  ... | yes y≃⊥ = (λ y≤x → tt) , λ _ → X≤.≤-trans (y≃⊥ .proj₁) (Xj.⊥-isBottom .IsBottom.≤-bottom)
+  ... | no _    = (λ y≤x → y≤x) , λ y≤x → y≤x
+
+pointedStrongMonad : PointedStrongMonad products
+pointedStrongMonad .PointedStrongMonad.strongMonad .F           = 𝕃-functor
+pointedStrongMonad .PointedStrongMonad.strongMonad .isStrongMon = 𝕃-strong
+pointedStrongMonad .PointedStrongMonad.force {X}                = force X
