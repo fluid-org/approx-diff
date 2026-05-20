@@ -24,8 +24,7 @@ record Obj-dec : Set (suc 0ℓ) where
                 → Dec (Preorder._≃_ (Obj.carrier obj) x (JoinSemilattice.⊥ (Obj.joins obj)))
 
 ------------------------------------------------------------------------------
--- Force: extract from 𝕃 X, mapping bottom to X's join-bottom (using decidable ⊥
--- on the left side to dispatch).
+-- 𝕃 is pointed.
 module _ (X : Obj-dec) where
   open Obj-dec X
   open Obj obj using (carrier; meets; joins)
@@ -45,11 +44,11 @@ module _ (X : Obj-dec) where
   force ._⇒g_.left .fun y with ⊥-decidable y
   ... | yes _ = bottom
   ... | no _  = < y >
-  force ._⇒g_.left .mono {a} {b} a≤b with ⊥-decidable a | ⊥-decidable b
+  force ._⇒g_.left .mono {y₁} {y₂} y₁≤y₂ with ⊥-decidable y₁ | ⊥-decidable y₂
   ... | yes _    | yes _    = tt
   ... | yes _    | no _     = tt
-  ... | no a≇⊥   | yes b≃⊥  = a≇⊥ (X≤.≤-trans a≤b (b≃⊥ .proj₁) , Xj.⊥-isBottom .IsBottom.≤-bottom)
-  ... | no _     | no _     = a≤b
+  ... | no y₁≇⊥  | yes y₂≃⊥ = y₁≇⊥ (X≤.≤-trans y₁≤y₂ (y₂≃⊥ .proj₁) , Xj.⊥-isBottom .IsBottom.≤-bottom)
+  ... | no _     | no _     = y₁≤y₂
 
   force ._⇒g_.left⊣right {bottom}  {y} with ⊥-decidable y
   ... | yes y≃⊥ = (λ y≤⊥ → tt) , (λ _ → y≃⊥ .proj₁)
