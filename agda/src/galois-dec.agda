@@ -26,17 +26,11 @@ record Is-⊥ (X : Obj) (x : Obj.carrier X .Preorder.Carrier) : Set where
     eq : x ≃ ⊥J
 
 ------------------------------------------------------------------------------
--- Decision procedure on an object, using stdlib `Dec`.
-record Decide-⊥ (X : Obj) : Set where
-  field
-    decide : (x : Obj.carrier X .Preorder.Carrier) → Dec (Is-⊥ X x)
-
-------------------------------------------------------------------------------
 -- A Galois object with decidable bottom on its underlying carrier.
 record Obj-dec : Set (suc 0ℓ) where
   field
     obj         : Obj
-    ⊥-decidable : Decide-⊥ obj
+    ⊥-decidable : (x : Obj.carrier obj .Preorder.Carrier) → Dec (Is-⊥ obj x)
   open Obj obj public
 
 ------------------------------------------------------------------------------
