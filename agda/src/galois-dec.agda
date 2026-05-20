@@ -7,7 +7,7 @@
 -- between "this value is ⊥" (map to `bottom` in 𝕃 X) and "not ⊥" (map to <·>).
 
 open import Level using (suc; 0ℓ)
-open import Relation.Nullary using (Dec)
+open import prop using (Dec)
 open import preorder using (Preorder)
 open import join-semilattice using (JoinSemilattice)
 open import galois using (Obj)
@@ -15,28 +15,12 @@ open import galois using (Obj)
 module galois-dec where
 
 ------------------------------------------------------------------------------
--- Set-level wrapper around the Prop-valued `_≃_ ⊥J`, so we can use the
--- standard `Dec` (which operates on Set-level predicates).
-record Is-⊥ (X : Obj) (x : Obj.carrier X .Preorder.Carrier) : Set where
-  constructor witness
-  open Obj X using (carrier; joins)
-  open Preorder carrier using (_≃_)
-  open JoinSemilattice joins renaming (⊥ to ⊥J)
-  field
-    eq : x ≃ ⊥J
-
-------------------------------------------------------------------------------
 -- A Galois object with decidable bottom on its underlying carrier.
 record Obj-dec : Set (suc 0ℓ) where
   field
     obj         : Obj
-    ⊥-decidable : (x : Obj.carrier obj .Preorder.Carrier) → Dec (Is-⊥ obj x)
-  open Obj obj public
-
-------------------------------------------------------------------------------
--- Forgetful map back to plain Galois.
-forget : Obj-dec → Obj
-forget = Obj-dec.obj
+    ⊥-decidable : (x : Obj.carrier obj .Preorder.Carrier)
+                → Dec (Preorder._≃_ (Obj.carrier obj) x (JoinSemilattice.⊥ (Obj.joins obj)))
 
 ------------------------------------------------------------------------------
 -- Pending: a `force : 𝕃 X ⇒g X` construction using ⊥-decidable.

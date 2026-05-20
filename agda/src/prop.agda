@@ -32,6 +32,11 @@ data _∨_ {a b} (P : Prop a) (Q : Prop b) : Prop (a ⊔ b) where
   inj₁ : P → P ∨ Q
   inj₂ : Q → P ∨ Q
 
+-- Decidability of a Prop. Set-level so it can be branched on; proofs inside are Prop.
+data Dec {ℓ} (P : Prop ℓ) : Set ℓ where
+  yes : P → Dec P
+  no  : (P → ⊥ {ℓ}) → Dec P
+
 record ∃ₚ {a b} (A : Prop a)(B : A → Prop b) : Prop (a ⊔ b) where
   constructor _,_
   field
