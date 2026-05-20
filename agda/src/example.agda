@@ -29,6 +29,8 @@ module Tag
   open HasTerminal T
   open HasProducts P
   open Functor
+  open import prop-setoid using (module ≈-Reasoning; IsEquivalence)
+  open IsEquivalence
 
   Tag-F : Functor 𝒞 𝒞
   Tag-F .fobj x = prod A x
@@ -44,7 +46,10 @@ module Tag
   Tag-PointedFunctor .PointedFunctor.force {x}      = p₂
   -- Right-strength: x × (A × y) ⇒ A × (x × y). Tag (in second slot) moves to outside.
   Tag-PointedFunctor .PointedFunctor.right-strength = pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂))
-  -- FIXME: naturality proof.
+  -- FIXME: naturality proof. Calculation works on paper (both sides reduce to
+  -- pair (p₁ ∘ p₂) (pair (f ∘ p₁) (g ∘ (p₂ ∘ p₂)))) but Agda's implicit-args
+  -- inference for nested pair expressions in the begin/end chain keeps
+  -- producing spurious unification failures. Revisit with fresher eyes.
   Tag-PointedFunctor .PointedFunctor.right-strength-natural f g = {!!}
 
 ------------------------------------------------------------------------------

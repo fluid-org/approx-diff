@@ -11,6 +11,8 @@ open import basics using (IsBottom)
 open import prop using (Dec; yes; no; tt; _,_; proj₁; proj₂) renaming (⊥ to ⊥p)
 open import preorder using (Preorder; bottom; <_>)
 open import join-semilattice using (JoinSemilattice)
+import meet-semilattice
+import join-semilattice
 open import Data.Product using () renaming (_,_ to _,p_)
 open import categories using (Category; HasProducts)
 open import functor using (Functor; PointedFunctor)
@@ -111,5 +113,12 @@ pointedFunctor .PointedFunctor.F                          = 𝕃-functor
 pointedFunctor .PointedFunctor.unit                       = 𝕃-unit
 pointedFunctor .PointedFunctor.force {X}                  = force X
 pointedFunctor .PointedFunctor.right-strength             = 𝕃-strength
--- FIXME: naturality of 𝕃-strength.
-pointedFunctor .PointedFunctor.right-strength-natural f g = {!!}
+pointedFunctor .PointedFunctor.right-strength-natural f g ._≃g_.right-eq =
+  meet-semilattice.L-strength-natural (_⇒g_.right-∧ f) (_⇒g_.right-∧ g)
+    .meet-semilattice._≃m_.eqfunc
+-- FIXME: left-eq. join-semilattice.L-costrength-natural uses ⟨_,_⟩ (pair) form,
+-- but galois.products' (prod-m f g).left uses [_,_] (copair) form (via join-side
+-- biproduct). They're equal modulo ⊥-identity laws (x ∨ ⊥ ≃ x), but proving the
+-- bridge requires a separate biproduct lemma in join-semilattice — or a
+-- copair-form version of L-costrength-natural.
+pointedFunctor .PointedFunctor.right-strength-natural f g ._≃g_.left-eq = {!!}

@@ -556,6 +556,21 @@ module _ where
     A .≤-refl , B .≤-refl
   L-costrength {A} .⊥-preserving = A .≤-refl , tt
 
+  -- Naturality of L-costrength: commutes with the bifunctorial action of L
+  -- combined with the product on the first arg.
+  L-costrength-natural : ∀ {A₁ A₂ B₁ B₂}
+                         {X₁ : JoinSemilattice A₁} {X₂ : JoinSemilattice A₂}
+                         {Y₁ : JoinSemilattice B₁} {Y₂ : JoinSemilattice B₂}
+                         (f : X₁ => X₂) (g : Y₁ => Y₂) →
+                         (⟨ f ∘ project₁ , L-map g ∘ project₂ ⟩ ∘ L-costrength {X = X₁} {Y = Y₁}) ≃m
+                         (L-costrength {X = X₂} {Y = Y₂} ∘ L-map ⟨ f ∘ project₁ , g ∘ project₂ ⟩)
+  L-costrength-natural {X₂ = X₂} f g .eqfunc .eqfun bottom .proj₁ =
+    f .⊥-preserving , tt
+  L-costrength-natural {X₂ = X₂} f g .eqfunc .eqfun bottom .proj₂ =
+    X₂ .⊥-isBottom .IsBottom.≤-bottom , tt
+  L-costrength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun < x , y > =
+    (A₂ × B₂) .≃-refl
+
 {-
   L-coassoc : ∀ {A}{X : JoinSemilattice A} → (L-map L-dup ∘ L-dup) ≃m (L-dup ∘ L-dup {X = X})
   L-coassoc .eqfunc .eqfun bottom .proj₁ = tt

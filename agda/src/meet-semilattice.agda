@@ -323,6 +323,8 @@ module _ where
   open MeetSemilattice
   open _=>_
   open preorder._=>_
+  open _≃m_
+  open preorder._≃m_
 
   L : ∀ {A} → MeetSemilattice A → MeetSemilattice (preorder.L A)
   L X ._∧_ bottom _ = bottom
@@ -391,3 +393,15 @@ module _ where
   L-strength .∧-preserving {x , < x₁ >} {x' , bottom} = tt
   L-strength {A}{B} .∧-preserving {x , < x₁ >} {x' , < x₂ >} = A .≤-refl , B .≤-refl
   L-strength {A}{B} .⊤-preserving = A .≤-refl , B .≤-refl
+
+  -- Naturality of L-strength: L-strength commutes with the bifunctorial action of L
+  -- combined with the product on the first arg.
+  L-strength-natural : ∀ {A₁ A₂ B₁ B₂}
+                       {X₁ : MeetSemilattice A₁} {X₂ : MeetSemilattice A₂}
+                       {Y₁ : MeetSemilattice B₁} {Y₂ : MeetSemilattice B₂}
+                       (f : X₁ => X₂) (g : Y₁ => Y₂) →
+                       (L-map ⟨ f ∘ project₁ , g ∘ project₂ ⟩ ∘ L-strength {X = X₁} {Y = Y₁}) ≃m
+                       (L-strength {X = X₂} {Y = Y₂} ∘ ⟨ f ∘ project₁ , L-map g ∘ project₂ ⟩)
+  L-strength-natural f g .eqfunc .eqfun (x , bottom) = tt , tt
+  L-strength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun (x , < y >) =
+    (A₂ × B₂) .≃-refl
