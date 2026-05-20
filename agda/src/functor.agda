@@ -247,8 +247,7 @@ module _ {o₁ m₁ e₁}
     open Functor F public
     open IsStrongMonad isStrongMon public
 
-  -- Endofunctor with a unit and a force (retraction of unit). Weaker than a
-  -- monad: no multiplication or strength.
+  -- Endofunctor with a unit and a force (retraction of unit, so it's copointed as well).
   record PointedFunctor : Set (o₁ ⊔ m₁ ⊔ e₁) where
     open Category 𝒞
     field

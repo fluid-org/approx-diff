@@ -2,16 +2,46 @@
 
 module example where
 
-open import Level using (0ℓ; lift)
+open import Level using (0ℓ; lift; _⊔_)
 open import Data.List using (List; []; _∷_)
 open import every using (Every; []; _∷_)
 open import signature
+open import categories using (Category; HasTerminal; HasProducts)
+open import functor using (Functor; PointedFunctor)
 import language-syntax
 import label
 
 open import example-signature
 
 module L = language-syntax Sig
+
+------------------------------------------------------------------------------
+-- Writer-style F X = A × X, but with unit and force.
+
+module Tag
+  {o m e} (𝒞 : Category o m e)
+  (T : HasTerminal 𝒞) (P : HasProducts 𝒞)
+  (A : Category.obj 𝒞)
+  (⊤ : Category._⇒_ 𝒞 (HasTerminal.witness T) A)
+  where
+
+  open Category 𝒞
+  open HasTerminal T
+  open HasProducts P
+  open Functor
+
+  Tag-F : Functor 𝒞 𝒞
+  Tag-F .fobj x = prod A x
+  Tag-F .fmor f = prod-m (id _) f
+  Tag-F .fmor-cong eq = prod-m-cong ≈-refl eq
+  Tag-F .fmor-id = prod-m-id
+  Tag-F .fmor-comp f g =
+    ≈-trans (prod-m-cong (≈-sym id-left) ≈-refl) (pair-functorial _ _ _ _)
+
+  Tag-PointedFunctor : PointedFunctor
+  Tag-PointedFunctor .PointedFunctor.F         = Tag-F
+  Tag-PointedFunctor .PointedFunctor.unit {x}  = pair (⊤ ∘ to-terminal) (id _)
+  Tag-PointedFunctor .PointedFunctor.force {x} = p₂
 
 -- example query. Given `List (label [×] nat)`, add up all the
 -- elements labelled with a specific label:
@@ -43,21 +73,6 @@ module ex where
   Tag-monad .Mon = Tag
   Tag-monad .pure = Tag-pure
   Tag-monad .bind = Tag-bind
-
-  -- Lifting monad.
-  L : type → type
-  L τ = unit [+] τ
-
-  L-pure : ∀ {Γ τ} → Γ ⊢ τ [→] L τ
-  L-pure = lam (inr (var zero))
-
-  L-bind : ∀ {Γ σ τ} → Γ ⊢ L σ [→] (σ [→] L τ) [→] L τ
-  L-bind = lam (lam (case (var (succ zero)) (inl unit) (app (var (succ zero)) (var zero))))
-
-  L-monad : SynMonad
-  L-monad .Mon = L
-  L-monad .pure = L-pure
-  L-monad .bind = L-bind
 
   `_ : ∀ {Γ} → label.label → Γ ⊢ base label
   ` l = bop (lbl l) []
@@ -93,20 +108,8 @@ module ex where
     cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
     cbn-query l = ⟪ query l ⟫tm
 
-  module cbn-L where
-    open import cbn-translation Sig L-monad
-
-    cbn-query : label.label → emp , L (list (L (L (base label) [×] L (base number)))) ⊢ L (base number)
-    cbn-query l = ⟪ query l ⟫tm
-
   module approx-Tag where
     open import approx-translation Sig Tag-monad
-
-    approx-query : label.label → ⟪ emp , list (base label [×] base number) ⟫ctxt ⊢ ⟪ base number ⟫ty
-    approx-query l = ⟪ query l ⟫tm
-
-  module approx-L where
-    open import approx-translation Sig L-monad
 
     approx-query : label.label → ⟪ emp , list (base label [×] base number) ⟫ctxt ⊢ ⟪ base number ⟫ty
     approx-query l = ⟪ query l ⟫tm

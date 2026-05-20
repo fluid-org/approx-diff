@@ -72,10 +72,8 @@ apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ μPoly-obj ⟦ Q ⟧poly
 apply-coincides one          τ = refl
 apply-coincides (const σ)    τ = refl
 apply-coincides var          τ = refl
-apply-coincides (P [+] Q)    τ =
-  cong₂ _⊕_ (cong M (apply-coincides P τ)) (cong M (apply-coincides Q τ))
-apply-coincides (P [×] Q)    τ =
-  cong₂ _⊗_ (cong M (apply-coincides P τ)) (cong M (apply-coincides Q τ))
+apply-coincides (P [+] Q)    τ = cong₂ _⊕_ (cong M (apply-coincides P τ)) (cong M (apply-coincides Q τ))
+apply-coincides (P [×] Q)    τ = cong₂ _⊗_ (cong M (apply-coincides P τ)) (cong M (apply-coincides Q τ))
 
 -- map-eval evaluates a polynomial-of-closures over an input context to produce
 -- a polynomial of values. Defined per μPoly constructor.
