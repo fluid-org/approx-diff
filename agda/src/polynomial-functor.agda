@@ -75,7 +75,7 @@ module Sem {o m e} {𝒞 : Category o m e}
       ⦅_⦆  : ∀ {Q y} → (poly-obj Q y ⇒ y) → μ Q ⇒ y
     -- FIXME: equations (β/η for inF / ⦅_⦆)
 
-  -- Interpretation of μPoly as a functor in 𝒞, plus the corresponding HasMu interface.
+  -- Interpretation of μPoly as a functor in 𝒞, plus the corresponding HasMu interface, where F interprets Mon.
   module _ (F : Functor 𝒞 𝒞) where
     μPoly-obj : μPoly 𝒞 → obj → obj
     μPoly-obj one        _ = terminal
