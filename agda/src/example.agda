@@ -16,7 +16,7 @@ open import example-signature
 module L = language-syntax Sig
 
 ------------------------------------------------------------------------------
--- Writer-style F X = A × X, but with unit and force.
+-- Writer-style F X = A × X, but with unit (no bind) and a retraction.
 
 module Tag
   {o m e} (𝒞 : Category o m e)
@@ -43,6 +43,19 @@ module Tag
   Tag-PointedFunctor .PointedFunctor.unit {x}  = pair (⊤ ∘ to-terminal) (id _)
   Tag-PointedFunctor .PointedFunctor.force {x} = p₂
 
+  -- Tag's strength: (A × x) × y ⇒ A × (x × y). Reassociates so the tag stays
+  -- outside while x and y pair up inside.
+  Tag-strength : ∀ {x y} → prod (prod A x) y ⇒ prod A (prod x y)
+  Tag-strength = pair (p₁ ∘ p₁) (pair (p₂ ∘ p₁) p₂)
+
+------------------------------------------------------------------------------
+-- Tag PointedFunctor on galois.cat, using galois.TWO as the approximation object.
+
+module _ where
+  import galois
+  Tag-galois : PointedFunctor {𝒞 = galois.cat}
+  Tag-galois = Tag.Tag-PointedFunctor galois.cat galois.terminal galois.products galois.TWO galois.unit
+
 -- example query. Given `List (label [×] nat)`, add up all the
 -- elements labelled with a specific label:
 --
@@ -57,7 +70,7 @@ module ex where
   open SynMonad
 
   -- Writer monad over the approximation sort: pairs values with an
-  -- accuracy tag. Tag-bind multiplies the two tags via approx-mult.
+  -- approximation tag. Tag-bind multiplies the two tags via approx-mult.
   Tag : type → type
   Tag τ = base approx [×] τ
 

@@ -29,6 +29,11 @@ module language-interpretation-cbn
   (let open HasBooleans (coproducts+exp→booleans T C E))
   (PM : PointedFunctor)
   (let open μPoly-Sem (PointedFunctor.F PM))
+  -- Strength: lets us pass a side context under the F-wrap without losing
+  -- F-structure (whereas `force` would discard it). Required for fmor-style
+  -- traversal in map-eval at Mon nodes.
+  (strength : ∀ {x y} → Category._⇒_ 𝒞 (HasProducts.prod P (PointedFunctor.F PM .Functor.fobj x) y)
+                                       (PointedFunctor.F PM .Functor.fobj (HasProducts.prod P x y)))
   (Mu : HasMu-μPoly)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where
@@ -83,7 +88,7 @@ map-eval (μPoly.const _)   = p₁
 map-eval μPoly.var         = eval
 map-eval (P μPoly.+ Q)     = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
 map-eval (P μPoly.× Q)     = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
-map-eval (μPoly.Mon P)     = η ∘ map-eval P ∘ ⟨ force ∘ p₁ , p₂ ⟩
+map-eval (μPoly.Mon P)     = fmor (map-eval P) ∘ strength
 
 -- Variable lookup gives back an M-wrapped value (stored that way in the context).
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ M ⟦ τ ⟧ty

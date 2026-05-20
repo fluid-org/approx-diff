@@ -87,7 +87,7 @@ J×Jop-biproducts =
 J×Jop-products : HasProducts J×Jop
 J×Jop-products = biproducts→products _ J×Jop-biproducts
 
-open import functor using (Functor)
+open import functor using (Functor; PointedFunctor)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 open import prop using (_,_)
 open import prop-setoid using (IsEquivalence)
@@ -192,11 +192,13 @@ module Interpretation
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
-  -- Approx (per-root Mon-decorated) interpretation. Caller supplies the PointedMonad.
+  -- Approx (per-root Mon-decorated) interpretation. Caller supplies the PointedFunctor.
   module interp-approx (Sig : Signature 0ℓ)
                        (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
                        (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
-                       (PM : PointedMonad)
+                       (PF : PointedFunctor {𝒞 = Fam⟨𝒟⟩.cat})
+                       (let open μPoly-Sem (PointedFunctor.F PF))
+                       (Mu : HasMu-μPoly)
      where
 
      open Fam⟨𝒟⟩.Mor public
@@ -208,8 +210,36 @@ module Interpretation
        Fam⟨𝒟⟩-products
        Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
-       (polynomial-functor.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
-       PM
+       PF
+       Mu
+       (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
+       public
+
+  -- CBN (per-leaf Mon-decorated) interpretation. Caller supplies the PointedFunctor.
+  module interp-cbn (Sig : Signature 0ℓ)
+                    (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
+                    (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
+                    (PF : PointedFunctor {𝒞 = Fam⟨𝒟⟩.cat})
+                    (let open μPoly-Sem (PointedFunctor.F PF))
+                    (strength : ∀ {x y} →
+                       Category._⇒_ Fam⟨𝒟⟩.cat
+                         (HasProducts.prod Fam⟨𝒟⟩-products (PointedFunctor.F PF .Functor.fobj x) y)
+                         (PointedFunctor.F PF .Functor.fobj (HasProducts.prod Fam⟨𝒟⟩-products x y)))
+                    (Mu : HasMu-μPoly)
+     where
+
+     open Fam⟨𝒟⟩.Mor public
+     open Fam⟨𝒟⟩.Obj public
+
+     open import language-interpretation-cbn Sig
+       Fam⟨𝒟⟩.cat
+       Fam⟨𝒟⟩-terminal
+       Fam⟨𝒟⟩-products
+       Fam⟨𝒟⟩-coproducts
+       Fam⟨𝒟⟩-exponentials
+       PF
+       strength
+       Mu
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
