@@ -52,8 +52,8 @@ module _ (X : Obj-dec) where
   ... | no _     | no _     = a≤b
 
   force ._⇒g_.left⊣right {bottom}  {y} with ⊥-decidable y
-  ... | yes y≃⊥ = (λ _ → tt) , (λ _ → y≃⊥ .proj₁)
+  ... | yes y≃⊥ = (λ y≤⊥ → tt) , (λ _ → y≃⊥ .proj₁)
   ... | no y≇⊥  = (λ y≤⊥ → y≇⊥ (y≤⊥ , Xj.⊥-isBottom .IsBottom.≤-bottom)) , λ ()
   force ._⇒g_.left⊣right {< x >}   {y} with ⊥-decidable y
-  ... | yes y≃⊥ = (λ _ → tt) , λ _ → X≤.≤-trans (y≃⊥ .proj₁) (Xj.⊥-isBottom .IsBottom.≤-bottom)
-  ... | no _    = (λ y≤x → y≤x) , λ p → p
+  ... | yes y≃⊥ = (λ y≤x → tt) , λ _ → X≤.≤-trans (y≃⊥ .proj₁) (Xj.⊥-isBottom .IsBottom.≤-bottom)
+  ... | no _    = (λ y≤x → y≤x) , λ y≤x → y≤x
