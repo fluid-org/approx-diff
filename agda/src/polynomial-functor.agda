@@ -750,7 +750,7 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
       project-fam-open (μPoly.Mon P)     γ i         =
         fmor (project-fam-open P γ i) ∘ right-strength
 
-      -- Naturality of project-fam-open w.r.t. γ and W-tree equivalences. FIXME: prove.
+      -- Naturality of project-fam-open w.r.t. γ and W-tree equivalences.
       project-fam-natural-open :
         (P : μPoly cat) → ∀ {γ₁ γ₂ : Γ .idx .Setoid.Carrier} {x z}
         (eγ : Γ .idx .Setoid._≈_ γ₁ γ₂)
@@ -758,7 +758,108 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
         (project-fam-open P γ₂ z ∘
           prod-m (Γ .fam .subst eγ) (WFam-subst P ei)) ≈
         (μPoly-obj P y .fam .subst (project-≈-open P eγ ei) ∘ project-fam-open P γ₁ x)
-      project-fam-natural-open = {!!}
+      project-fam-natural-open μPoly.one _ _ =
+        HasTerminal.to-terminal-unique T _ _
+      project-fam-natural-open (μPoly.const A) {x = a} {z = b} _ ei =
+        begin
+          p₂ ∘ prod-m _ (A .fam .subst ei)
+        ≈⟨ pair-p₂ _ _ ⟩
+          A .fam .subst ei ∘ p₂
+        ∎ where open ≈-Reasoning isEquiv
+      project-fam-natural-open μPoly.var {γ₁} {γ₂} {inF i₁} {inF i₂} eγ ei =
+        begin
+          (alg .famf .transf (γ₂ , _) ∘ pair p₁ (project-fam-open Q γ₂ i₂))
+            ∘ prod-m (Γ .fam .subst eγ) (WFam-subst Q ei)
+        ≈⟨ assoc _ _ _ ⟩
+          alg .famf .transf (γ₂ , _) ∘
+            (pair p₁ (project-fam-open Q γ₂ i₂) ∘ prod-m (Γ .fam .subst eγ) (WFam-subst Q ei))
+        ≈⟨ ∘-cong (isEquiv .refl) (pair-natural _ _ _) ⟩
+          alg .famf .transf (γ₂ , _) ∘
+            pair (p₁ ∘ prod-m _ _) (project-fam-open Q γ₂ i₂ ∘ prod-m _ _)
+        ≈⟨ ∘-cong (isEquiv .refl)
+             (pair-cong (pair-p₁ _ _) (project-fam-natural-open Q eγ ei)) ⟩
+          alg .famf .transf (γ₂ , _) ∘
+            pair (Γ .fam .subst eγ ∘ p₁)
+                 (μPoly-obj Q y .fam .subst (project-≈-open Q eγ ei) ∘ project-fam-open Q γ₁ i₁)
+        ≈⟨ ≈-sym (∘-cong (isEquiv .refl) (pair-compose _ _ _ _)) ⟩
+          alg .famf .transf (γ₂ , _) ∘
+            (prod-m (Γ .fam .subst eγ) (μPoly-obj Q y .fam .subst (project-≈-open Q eγ ei))
+              ∘ pair p₁ (project-fam-open Q γ₁ i₁))
+        ≈⟨ ≈-sym (assoc _ _ _) ⟩
+          (alg .famf .transf (γ₂ , _) ∘
+            prod-m (Γ .fam .subst eγ) (μPoly-obj Q y .fam .subst (project-≈-open Q eγ ei)))
+            ∘ pair p₁ (project-fam-open Q γ₁ i₁)
+        ≈⟨ ∘-cong (alg .famf .natural (eγ , project-≈-open Q eγ ei)) (isEquiv .refl) ⟩
+          (y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (eγ , project-≈-open Q eγ ei))
+            ∘ alg .famf .transf (γ₁ , _))
+            ∘ pair p₁ (project-fam-open Q γ₁ i₁)
+        ≈⟨ assoc _ _ _ ⟩
+          y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (eγ , project-≈-open Q eγ ei))
+            ∘ (alg .famf .transf (γ₁ , _) ∘ pair p₁ (project-fam-open Q γ₁ i₁))
+        ∎ where open ≈-Reasoning isEquiv
+      project-fam-natural-open (P μPoly.+ R) {x = inj₁ _} {inj₁ _} eγ ei =
+        project-fam-natural-open P eγ ei
+      project-fam-natural-open (P μPoly.+ R) {x = inj₂ _} {inj₂ _} eγ ei =
+        project-fam-natural-open R eγ ei
+      project-fam-natural-open (P μPoly.× R) {γ₁} {γ₂} {x₁ , z₁} {x₂ , z₂} eγ (eP , eR) =
+        begin
+          pair (project-fam-open P γ₂ x₂ ∘ pair p₁ (p₁ ∘ p₂))
+               (project-fam-open R γ₂ z₂ ∘ pair p₁ (p₂ ∘ p₂))
+            ∘ prod-m (Γ .fam .subst eγ) (prod-m (WFam-subst P eP) (WFam-subst R eR))
+        ≈⟨ pair-natural _ _ _ ⟩
+          pair ((project-fam-open P γ₂ x₂ ∘ pair p₁ (p₁ ∘ p₂)) ∘ prod-m _ _)
+               ((project-fam-open R γ₂ z₂ ∘ pair p₁ (p₂ ∘ p₂)) ∘ prod-m _ _)
+        ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+          pair (project-fam-open P γ₂ x₂ ∘ (pair p₁ (p₁ ∘ p₂) ∘ prod-m _ _))
+               (project-fam-open R γ₂ z₂ ∘ (pair p₁ (p₂ ∘ p₂) ∘ prod-m _ _))
+        ≈⟨ pair-cong
+             (∘-cong (isEquiv .refl)
+               (≈-trans (pair-natural _ _ _)
+                 (pair-cong (pair-p₁ _ _)
+                   (≈-trans (assoc _ _ _)
+                     (≈-trans (∘-cong (isEquiv .refl) (pair-p₂ _ _))
+                       (≈-trans (≈-sym (assoc _ _ _))
+                         (≈-trans (∘-cong (pair-p₁ _ _) (isEquiv .refl))
+                                  (assoc _ _ _))))))))
+             (∘-cong (isEquiv .refl)
+               (≈-trans (pair-natural _ _ _)
+                 (pair-cong (pair-p₁ _ _)
+                   (≈-trans (assoc _ _ _)
+                     (≈-trans (∘-cong (isEquiv .refl) (pair-p₂ _ _))
+                       (≈-trans (≈-sym (assoc _ _ _))
+                         (≈-trans (∘-cong (pair-p₂ _ _) (isEquiv .refl))
+                                  (assoc _ _ _)))))))) ⟩
+          pair (project-fam-open P γ₂ x₂ ∘ pair (Γ .fam .subst eγ ∘ p₁) (WFam-subst P eP ∘ (p₁ ∘ p₂)))
+               (project-fam-open R γ₂ z₂ ∘ pair (Γ .fam .subst eγ ∘ p₁) (WFam-subst R eR ∘ (p₂ ∘ p₂)))
+        ≈⟨ pair-cong (∘-cong (isEquiv .refl) (≈-sym (pair-compose _ _ _ _)))
+                     (∘-cong (isEquiv .refl) (≈-sym (pair-compose _ _ _ _))) ⟩
+          pair (project-fam-open P γ₂ x₂ ∘
+                 (prod-m (Γ .fam .subst eγ) (WFam-subst P eP) ∘ pair p₁ (p₁ ∘ p₂)))
+               (project-fam-open R γ₂ z₂ ∘
+                 (prod-m (Γ .fam .subst eγ) (WFam-subst R eR) ∘ pair p₁ (p₂ ∘ p₂)))
+        ≈⟨ pair-cong (≈-sym (assoc _ _ _)) (≈-sym (assoc _ _ _)) ⟩
+          pair ((project-fam-open P γ₂ x₂ ∘ prod-m _ _) ∘ pair p₁ (p₁ ∘ p₂))
+               ((project-fam-open R γ₂ z₂ ∘ prod-m _ _) ∘ pair p₁ (p₂ ∘ p₂))
+        ≈⟨ pair-cong (∘-cong (project-fam-natural-open P eγ eP) (isEquiv .refl))
+                     (∘-cong (project-fam-natural-open R eγ eR) (isEquiv .refl)) ⟩
+          pair ((μPoly-obj P y .fam .subst (project-≈-open P eγ eP) ∘ project-fam-open P γ₁ x₁)
+                  ∘ pair p₁ (p₁ ∘ p₂))
+               ((μPoly-obj R y .fam .subst (project-≈-open R eγ eR) ∘ project-fam-open R γ₁ z₁)
+                  ∘ pair p₁ (p₂ ∘ p₂))
+        ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+          pair (μPoly-obj P y .fam .subst (project-≈-open P eγ eP)
+                 ∘ (project-fam-open P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂)))
+               (μPoly-obj R y .fam .subst (project-≈-open R eγ eR)
+                 ∘ (project-fam-open R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂)))
+        ≈⟨ ≈-sym (pair-compose _ _ _ _) ⟩
+          prod-m (μPoly-obj P y .fam .subst (project-≈-open P eγ eP))
+                 (μPoly-obj R y .fam .subst (project-≈-open R eγ eR))
+            ∘ pair (project-fam-open P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂))
+                   (project-fam-open R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂))
+        ∎ where open ≈-Reasoning isEquiv
+      -- Mon case requires naturality of right-strength, which isn't yet a field
+      -- of PointedFunctor. Leave as a hole until we add it as a law.
+      project-fam-natural-open (μPoly.Mon P) eγ ei = {!!}
 
       fold-open : Mor (Γ ⊗ WObj) y
       fold-open .idxf .PS._⇒_.func (γ , inF i) =

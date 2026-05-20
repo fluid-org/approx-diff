@@ -257,6 +257,10 @@ module _ {o₁ m₁ e₁}
       unit           : ∀ {x} → x ⇒ F .fobj x
       force          : ∀ {x} → F .fobj x ⇒ x
       right-strength : ∀ {x y} → prod x (F .fobj y) ⇒ F .fobj (prod x y)
+      -- Naturality of right-strength in both arguments.
+      right-strength-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ x₂) (g : y₁ ⇒ y₂) →
+        (F .Functor.fmor (prod-m f g) 𝒞.∘ right-strength) 𝒞.≈
+        (right-strength 𝒞.∘ prod-m f (F .Functor.fmor g))
     open Functor F public
     -- FIXME: force ∘ unit ≈ id
 
