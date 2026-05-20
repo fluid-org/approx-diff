@@ -38,22 +38,19 @@ module Tag
   Tag-F .fmor-comp f g =
     ≈-trans (prod-m-cong (≈-sym id-left) ≈-refl) (pair-functorial _ _ _ _)
 
-  Tag-PointedFunctor : PointedFunctor
-  Tag-PointedFunctor .PointedFunctor.F         = Tag-F
-  Tag-PointedFunctor .PointedFunctor.unit {x}  = pair (⊤ ∘ to-terminal) (id _)
-  Tag-PointedFunctor .PointedFunctor.force {x} = p₂
-
-  -- Tag's strength: (A × x) × y ⇒ A × (x × y). Reassociates so the tag stays
-  -- outside while x and y pair up inside.
-  Tag-strength : ∀ {x y} → prod (prod A x) y ⇒ prod A (prod x y)
-  Tag-strength = pair (p₁ ∘ p₁) (pair (p₂ ∘ p₁) p₂)
+  Tag-PointedFunctor : PointedFunctor P
+  Tag-PointedFunctor .PointedFunctor.F              = Tag-F
+  Tag-PointedFunctor .PointedFunctor.unit {x}       = pair (⊤ ∘ to-terminal) (id _)
+  Tag-PointedFunctor .PointedFunctor.force {x}      = p₂
+  -- Right-strength: x × (A × y) ⇒ A × (x × y). Tag (in second slot) moves to outside.
+  Tag-PointedFunctor .PointedFunctor.right-strength = pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂))
 
 ------------------------------------------------------------------------------
 -- Tag PointedFunctor on galois.cat, using galois.TWO as the approximation object.
 
 module _ where
   import galois
-  Tag-galois : PointedFunctor {𝒞 = galois.cat}
+  Tag-galois : PointedFunctor galois.products
   Tag-galois = Tag.Tag-PointedFunctor galois.cat galois.terminal galois.products galois.TWO galois.unit
 
 -- example query. Given `List (label [×] nat)`, add up all the

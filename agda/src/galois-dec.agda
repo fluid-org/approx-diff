@@ -106,7 +106,8 @@ module _ (X : Obj-dec) where
   ... | yes y≃⊥ = (λ y≤x → tt) , λ _ → X≤.≤-trans (y≃⊥ .proj₁) (Xj.⊥-isBottom .IsBottom.≤-bottom)
   ... | no _    = (λ y≤x → y≤x) , λ y≤x → y≤x
 
-pointedFunctor : PointedFunctor
-pointedFunctor .PointedFunctor.F           = 𝕃-functor
-pointedFunctor .PointedFunctor.unit        = 𝕃-unit
-pointedFunctor .PointedFunctor.force {X}   = force X
+pointedFunctor : PointedFunctor products
+pointedFunctor .PointedFunctor.F              = 𝕃-functor
+pointedFunctor .PointedFunctor.unit           = 𝕃-unit
+pointedFunctor .PointedFunctor.force {X}      = force X
+pointedFunctor .PointedFunctor.right-strength = 𝕃-strength

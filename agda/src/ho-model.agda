@@ -196,7 +196,7 @@ module Interpretation
   module interp-approx (Sig : Signature 0ℓ)
                        (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
                        (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
-                       (PF : PointedFunctor {𝒞 = Fam⟨𝒟⟩.cat})
+                       (PF : PointedFunctor Fam⟨𝒟⟩-products)
                        (let open μPoly-Sem (PointedFunctor.F PF))
                        (Mu : HasMu-μPoly)
      where
@@ -219,12 +219,8 @@ module Interpretation
   module interp-cbn (Sig : Signature 0ℓ)
                     (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
                     (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
-                    (PF : PointedFunctor {𝒞 = Fam⟨𝒟⟩.cat})
+                    (PF : PointedFunctor Fam⟨𝒟⟩-products)
                     (let open μPoly-Sem (PointedFunctor.F PF))
-                    (strength : ∀ {x y} →
-                       Category._⇒_ Fam⟨𝒟⟩.cat
-                         (HasProducts.prod Fam⟨𝒟⟩-products (PointedFunctor.F PF .Functor.fobj x) y)
-                         (PointedFunctor.F PF .Functor.fobj (HasProducts.prod Fam⟨𝒟⟩-products x y)))
                     (Mu : HasMu-μPoly)
      where
 
@@ -238,7 +234,6 @@ module Interpretation
        Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
        PF
-       strength
        Mu
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public

@@ -25,7 +25,7 @@ module language-interpretation-approx
   (E  : HasExponentials 𝒞 P)
   (let open Sem T P C)
   (let open HasBooleans (coproducts+exp→booleans T C E))
-  (PM : PointedFunctor)
+  (PM : PointedFunctor P)
   (let open μPoly-Sem (PointedFunctor.F PM))
   (Mu : HasMu-μPoly)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)

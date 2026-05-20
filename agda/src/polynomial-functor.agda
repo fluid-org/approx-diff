@@ -90,7 +90,11 @@ module Sem {o m e} {𝒞 : Category o m e}
         μ    : μPoly 𝒞 → obj
         inμ  : ∀ Q → μPoly-obj Q (μ Q) ⇒ μ Q
         ⦅_⦆  : ∀ {Q y} → (μPoly-obj Q y ⇒ y) → μ Q ⇒ y
-      -- FIXME: equations (β/η for inμ / ⦅_⦆)
+        -- Open (parametric) form: algebra in extended context. Closed ⦅_⦆ is
+        -- the special case where Γ = terminal; open form avoids the closure
+        -- conversion that would otherwise need exponentials.
+        ⦅_⦆-open : ∀ {Γ Q y} → (prod Γ (μPoly-obj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
+      -- FIXME: equations (β/η for inμ / ⦅_⦆ / ⦅_⦆-open)
 
 
 ------------------------------------------------------------------------------
@@ -184,7 +188,7 @@ module _ {o e} where
 -- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). `Mon` decorates a
 -- sub-polynomial with the ambient fibre-level lifting monad, fibre-only.
 module Mu {o m e os es} {𝒟 : Category o m e}
-          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (L : PointedFunctor) where
+          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (L : PointedFunctor PP) where
   open fam.CategoryOfFamilies os es 𝒟
   open Obj
   open products PP
@@ -438,7 +442,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 -- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
 -- Mon case at each clause: idx is unchanged, fibre is L.F applied.
 module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
-              (T : HasTerminal 𝒟) (P : HasProducts 𝒟) (L : PointedFunctor) where
+              (T : HasTerminal 𝒟) (P : HasProducts 𝒟) (L : PointedFunctor P) where
   open Category 𝒟
   open IsEquivalence
   open HasTerminal
@@ -695,7 +699,20 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
       fold .famf .transf (inF i)                        = alg .famf .transf (project-idx Q i) ∘ project-fam Q i
       fold .famf .natural {inF _} {inF _} eq            = project-fam-natural μPoly.var eq
 
+    -- Open (parametric) fold: takes algebra in extended context Γ ⊗ μPoly-obj Q y ⇒ y
+    -- and produces Γ ⊗ μ Q ⇒ y. Threads γ through the structural recursion;
+    -- right-strength of L handles the Mon case.
+    module Open {Γ y : Obj} (alg : Mor (Γ ⊗ μPoly-obj Q y) y) where
+      open Obj
+      open Mor
+
+      -- (proof obligation deferred — placeholder using closed fold with discarded Γ
+      -- to typecheck the interface; not semantically correct for general Γ. FIXME.)
+      fold-open : Mor (Γ ⊗ WObj) y
+      fold-open = {!!}
+
   hasMu-μPoly : HasMu-μPoly
-  hasMu-μPoly .HasMu-μPoly.μ Q       = W-types-μ.WObj Q
-  hasMu-μPoly .HasMu-μPoly.inμ Q     = W-types-μ.inF-mor Q
-  hasMu-μPoly .HasMu-μPoly.⦅_⦆ {Q}   = W-types-μ.fold Q
+  hasMu-μPoly .HasMu-μPoly.μ Q              = W-types-μ.WObj Q
+  hasMu-μPoly .HasMu-μPoly.inμ Q            = W-types-μ.inF-mor Q
+  hasMu-μPoly .HasMu-μPoly.⦅_⦆ {Q}          = W-types-μ.fold Q
+  hasMu-μPoly .HasMu-μPoly.⦅_⦆-open {Γ} {Q} = W-types-μ.Open.fold-open Q

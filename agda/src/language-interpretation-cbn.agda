@@ -27,13 +27,8 @@ module language-interpretation-cbn
   (E  : HasExponentials 𝒞 P)
   (let open Sem T P C)
   (let open HasBooleans (coproducts+exp→booleans T C E))
-  (PM : PointedFunctor)
+  (PM : PointedFunctor P)
   (let open μPoly-Sem (PointedFunctor.F PM))
-  -- Strength: lets us pass a side context under the F-wrap without losing
-  -- F-structure (whereas `force` would discard it). Required for fmor-style
-  -- traversal in map-eval at Mon nodes.
-  (strength : ∀ {x y} → Category._⇒_ 𝒞 (HasProducts.prod P (PointedFunctor.F PM .Functor.fobj x) y)
-                                       (PointedFunctor.F PM .Functor.fobj (HasProducts.prod P x y)))
   (Mu : HasMu-μPoly)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where

@@ -248,19 +248,27 @@ module _ {o₁ m₁ e₁}
     open IsStrongMonad isStrongMon public
 
   -- Endofunctor with a unit and a force (retraction of unit, so it's copointed as well).
-  record PointedFunctor : Set (o₁ ⊔ m₁ ⊔ e₁) where
+  -- Carries a right-strength; left-strength is derived below via swap.
+  record PointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
     open Category 𝒞
+    open HasProducts P
     field
-      F     : Functor 𝒞 𝒞
-      unit  : ∀ {x} → x ⇒ F .fobj x
-      force : ∀ {x} → F .fobj x ⇒ x
+      F              : Functor 𝒞 𝒞
+      unit           : ∀ {x} → x ⇒ F .fobj x
+      force          : ∀ {x} → F .fobj x ⇒ x
+      right-strength : ∀ {x y} → prod x (F .fobj y) ⇒ F .fobj (prod x y)
     open Functor F public
     -- FIXME: force ∘ unit ≈ id
 
-  PointedFunctor-Id : PointedFunctor
-  PointedFunctor-Id .PointedFunctor.F         = Id
-  PointedFunctor-Id .PointedFunctor.unit {x}  = 𝒞.id x
-  PointedFunctor-Id .PointedFunctor.force {x} = 𝒞.id x
+    -- Left-strength derived by swapping inputs/outputs around right-strength.
+    strength : ∀ {x y} → prod (F .fobj x) y ⇒ F .fobj (prod x y)
+    strength = F .Functor.fmor (pair p₂ p₁) 𝒞.∘ right-strength 𝒞.∘ pair p₂ p₁
+
+  PointedFunctor-Id : ∀ (P : HasProducts 𝒞) → PointedFunctor P
+  PointedFunctor-Id P .PointedFunctor.F              = Id
+  PointedFunctor-Id P .PointedFunctor.unit {x}       = 𝒞.id x
+  PointedFunctor-Id P .PointedFunctor.force {x}      = 𝒞.id x
+  PointedFunctor-Id P .PointedFunctor.right-strength = 𝒞.id _
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}
