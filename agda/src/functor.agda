@@ -257,10 +257,10 @@ module _ {o₁ m₁ e₁}
     -- FIXME: force ∘ unit ≈ id; force ∘ mul ≈ force ∘ map force
 
   PointedMonad-Id : ∀ {P : HasProducts 𝒞} → PointedMonad P
-  PointedMonad-Id .PointedMonad.strongMonad .StrongMonad.F                     = Id
-  PointedMonad-Id .PointedMonad.strongMonad .StrongMonad.isStrongMon .unit {x} = 𝒞.id x
-  PointedMonad-Id .PointedMonad.strongMonad .StrongMonad.isStrongMon .extend f = f
-  PointedMonad-Id .PointedMonad.force {x}                                      = 𝒞.id x
+  PointedMonad-Id .PointedMonad.strongMonad .StrongMonad.F                                   = Id
+  PointedMonad-Id .PointedMonad.strongMonad .StrongMonad.isStrongMon .IsStrongMonad.unit {x} = 𝒞.id x
+  PointedMonad-Id .PointedMonad.strongMonad .StrongMonad.isStrongMon .IsStrongMonad.extend f = f
+  PointedMonad-Id .PointedMonad.force {x}                                                    = 𝒞.id x
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}
