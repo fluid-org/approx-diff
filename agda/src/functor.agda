@@ -247,20 +247,21 @@ module _ {o₁ m₁ e₁}
     open Functor F public
     open IsStrongMonad isStrongMon public
 
-  -- Strong monad augmented with a force (retraction of unit), giving every object a Mon-algebra.
-  record PointedStrongMonad (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+  -- Endofunctor with a unit and a force (retraction of unit). Weaker than a
+  -- monad: no multiplication or strength.
+  record PointedFunctor : Set (o₁ ⊔ m₁ ⊔ e₁) where
     open Category 𝒞
     field
-      strongMonad : StrongMonad P
-      force       : ∀ {x} → StrongMonad.fobj strongMonad x ⇒ x
-    open StrongMonad strongMonad public
-    -- FIXME: force ∘ unit ≈ id; force ∘ mul ≈ force ∘ map force
+      F     : Functor 𝒞 𝒞
+      unit  : ∀ {x} → x ⇒ F .fobj x
+      force : ∀ {x} → F .fobj x ⇒ x
+    open Functor F public
+    -- FIXME: force ∘ unit ≈ id
 
-  PointedStrongMonad-Id : ∀ {P : HasProducts 𝒞} → PointedStrongMonad P
-  PointedStrongMonad-Id .PointedStrongMonad.strongMonad .StrongMonad.F                                   = Id
-  PointedStrongMonad-Id .PointedStrongMonad.strongMonad .StrongMonad.isStrongMon .IsStrongMonad.unit {x} = 𝒞.id x
-  PointedStrongMonad-Id .PointedStrongMonad.strongMonad .StrongMonad.isStrongMon .IsStrongMonad.extend f = f
-  PointedStrongMonad-Id .PointedStrongMonad.force {x}                                                    = 𝒞.id x
+  PointedFunctor-Id : PointedFunctor
+  PointedFunctor-Id .PointedFunctor.F         = Id
+  PointedFunctor-Id .PointedFunctor.unit {x}  = 𝒞.id x
+  PointedFunctor-Id .PointedFunctor.force {x} = 𝒞.id x
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}

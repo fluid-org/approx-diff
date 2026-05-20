@@ -9,7 +9,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans)
-open import functor using (Functor; PointedStrongMonad)
+open import functor using (Functor; PointedFunctor)
 open import polynomial-functor using (μPoly; module Sem)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
@@ -25,8 +25,8 @@ module language-interpretation-approx
   (E  : HasExponentials 𝒞 P)
   (let open Sem T P C)
   (let open HasBooleans (coproducts+exp→booleans T C E))
-  (PM : PointedStrongMonad P)
-  (let open μPoly-Sem (PointedStrongMonad.F PM))
+  (PM : PointedFunctor)
+  (let open μPoly-Sem (PointedFunctor.F PM))
   (Mu : HasMu-μPoly)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where
@@ -36,7 +36,7 @@ open PointedFPCat PFPC[ 𝒞 , T , P , Bool ] renaming (_×_ to _⊗_)
 open HasCoproducts C renaming (coprod to _⊕_)
 open language-syntax Sig
 open Model Int
-open PointedStrongMonad PM renaming (unit to η)
+open PointedFunctor PM renaming (unit to η)
 
 M : obj → obj
 M X = fobj X
@@ -71,16 +71,13 @@ apply-coincides (P [+] Q)    τ =
 apply-coincides (P [×] Q)    τ =
   cong M (cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ))
 
-swap : ∀ {x y} → (x ⊗ y) ⇒ (y ⊗ x)
-swap = ⟨ p₂ , p₁ ⟩
-
 map-eval : (Q : μPoly 𝒞) {ctx t : obj} → (μPoly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ μPoly-obj Q t
 map-eval μPoly.one         = to-terminal
 map-eval (μPoly.const _)   = p₁
 map-eval μPoly.var         = eval
 map-eval (P μPoly.+ Q)     = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
 map-eval (P μPoly.× Q)     = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
-map-eval (μPoly.Mon P)     = extend (η ∘ map-eval P ∘ swap) ∘ swap
+map-eval (μPoly.Mon P)     = η ∘ map-eval P ∘ ⟨ force ∘ p₁ , p₂ ⟩
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂

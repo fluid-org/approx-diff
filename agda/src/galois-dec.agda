@@ -13,9 +13,8 @@ open import preorder using (Preorder; bottom; <_>)
 open import join-semilattice using (JoinSemilattice)
 open import Data.Product using () renaming (_,_ to _,p_)
 open import categories using (Category; HasProducts)
-open import functor using (Functor; IsStrongMonad; StrongMonad; PointedStrongMonad)
+open import functor using (Functor; PointedFunctor)
 open Functor
-open StrongMonad
 open import galois using (Obj; _⇒g_; 𝕃; 𝕃-map; 𝕃-unit; 𝕃-join; 𝕃-strength;
                             idg; _∘g_; _≃g_; ∘g-cong; ≃g-isEquivalence)
 import galois
@@ -75,11 +74,6 @@ products .HasProducts.pair-ext          = galois.products .HasProducts.pair-ext
 𝕃-functor .fmor-id                               = galois.𝕃-functor .fmor-id
 𝕃-functor .fmor-comp                             = galois.𝕃-functor .fmor-comp
 
-𝕃-strong : IsStrongMonad products (fobj 𝕃-functor)
-𝕃-strong .IsStrongMonad.unit     = 𝕃-unit
-𝕃-strong .IsStrongMonad.extend f = 𝕃-join ∘g (𝕃-map f ∘g 𝕃-strength)
-
-
 module _ (X : Obj-dec) where
   open Obj-dec X
   open Obj obj using (carrier; meets; joins)
@@ -112,7 +106,7 @@ module _ (X : Obj-dec) where
   ... | yes y≃⊥ = (λ y≤x → tt) , λ _ → X≤.≤-trans (y≃⊥ .proj₁) (Xj.⊥-isBottom .IsBottom.≤-bottom)
   ... | no _    = (λ y≤x → y≤x) , λ y≤x → y≤x
 
-pointedStrongMonad : PointedStrongMonad products
-pointedStrongMonad .PointedStrongMonad.strongMonad .F           = 𝕃-functor
-pointedStrongMonad .PointedStrongMonad.strongMonad .isStrongMon = 𝕃-strong
-pointedStrongMonad .PointedStrongMonad.force {X}                = force X
+pointedFunctor : PointedFunctor
+pointedFunctor .PointedFunctor.F           = 𝕃-functor
+pointedFunctor .PointedFunctor.unit        = 𝕃-unit
+pointedFunctor .PointedFunctor.force {X}   = force X

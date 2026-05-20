@@ -9,7 +9,7 @@ import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts)
-open import functor using (Functor; Id; IsStrongMonad; StrongMonad; PointedStrongMonad; PointedStrongMonad-Id)
+open import functor using (Functor; Id; PointedFunctor; PointedFunctor-Id)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_; changeCat)
@@ -184,11 +184,11 @@ module _ {o e} where
 -- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). `Mon` decorates a
 -- sub-polynomial with the ambient fibre-level lifting monad, fibre-only.
 module Mu {o m e os es} {𝒟 : Category o m e}
-          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (L : PointedStrongMonad PP) where
+          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (L : PointedFunctor) where
   open fam.CategoryOfFamilies os es 𝒟
   open Obj
   open products PP
-  open PointedStrongMonad L using (F)   -- L's underlying Functor 𝒟 𝒟
+  open PointedFunctor L using (F)   -- L's underlying Functor 𝒟 𝒟
 
   idx-of : μPoly cat → IdxPoly {os} {es}
   idx-of one          = IdxPoly.one
@@ -438,7 +438,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 -- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
 -- Mon case at each clause: idx is unchanged, fibre is L.F applied.
 module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
-              (T : HasTerminal 𝒟) (P : HasProducts 𝒟) (L : PointedStrongMonad P) where
+              (T : HasTerminal 𝒟) (P : HasProducts 𝒟) (L : PointedFunctor) where
   open Category 𝒟
   open IsEquivalence
   open HasTerminal
@@ -447,8 +447,8 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
   open products P  -- Fam-level products
   open _⇒f_
   open Sem (terminal T) products coproducts
-  open μPoly-Sem (fam-functor.FamF os es (PointedStrongMonad.F L))
-  open PointedStrongMonad L using (F; fobj; fmor; fmor-cong; fmor-id; fmor-comp)
+  open μPoly-Sem (fam-functor.FamF os es (PointedFunctor.F L))
+  open PointedFunctor L using (F; fobj; fmor; fmor-cong; fmor-id; fmor-comp)
 
   module W-types-μ (Q : μPoly cat) where
     open Obj
