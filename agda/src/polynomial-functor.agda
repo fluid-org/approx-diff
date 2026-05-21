@@ -973,6 +973,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                        (Γ .Obj.idx .isEquivalence .refl ,
                         poly-obj Poly.var WObj .Obj.idx .isEquivalence .sym (unembed-embed-id Poly.var (inF j))))) ≈-refl ⟩
           (y .Obj.fam .Fam.subst _ ∘ y .Obj.fam .Fam.subst _) ∘ h .Mor.famf .transf (γ , inF j)
+        ≈⟨ assoc _ _ _ ⟩
+          y .Obj.fam .Fam.subst _ ∘ (y .Obj.fam .Fam.subst _ ∘ h .Mor.famf .transf (γ , inF j))
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
