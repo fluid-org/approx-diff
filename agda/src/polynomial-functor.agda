@@ -17,7 +17,7 @@ import fam
 import fam-functor
 
 -- Rename Setoid._≈_ to _≈s_ to avoid clashing with Category._≈_ (morphism eq).
-open Setoid using (Carrier) renaming (_≈_ to _≈s_)
+open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 
 module polynomial-functor where
 
