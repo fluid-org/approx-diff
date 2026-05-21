@@ -639,11 +639,31 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       fold-open .famf .natural {γ₁ , inF _} {γ₂ , inF _} (eγ , ei) =
         project-fam-natural-open Poly.var eγ ei
 
+      -- β-idx: project-idx-open through embed-idx agrees with poly-fmor's idx
+      -- action of fold-open. Used to prove the β law for ⦅_⦆.
+      β-idx : (P : Poly cat)
+              {γ₁ γ₂ : Γ .idx .Setoid.Carrier} (eγ : Γ .idx .Setoid._≈_ γ₁ γ₂)
+              {i₁ i₂ : poly-obj P WObj .idx .Setoid.Carrier}
+              (ei : poly-obj P WObj .idx .Setoid._≈_ i₁ i₂) →
+              poly-obj P y .idx .Setoid._≈_
+                (project-idx-open P γ₁ (embed-idx P i₁)) (poly-fmor P fold-open .idxf .PS._⇒_.func (γ₂ , i₂))
+      β-idx Poly.one       eγ ei                                    = tt
+      β-idx (Poly.const A) eγ ei                                    = {!!}
+      β-idx Poly.var       eγ {inF i₁} {inF i₂} ei                  = {!!}
+      β-idx (P Poly.+ R)   eγ {inj₁ x₁} {inj₁ x₂} ei                = {!!}
+      β-idx (P Poly.+ R)   eγ {inj₂ y₁} {inj₂ y₂} ei                = {!!}
+      β-idx (P Poly.× R)   eγ {x₁ , z₁} {x₂ , z₂} (eP , eR)         = {!!}
+
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
   hasMu .HasMu.inF Q        = W-types.inF-mor Q
   hasMu .HasMu.⦅_⦆ {Γ} {Q}  = W-types.Open.fold-open Q
-  hasMu .HasMu.⦅⦆-β alg     = {!!}
+  -- β law for fold-open: by structural induction on the polynomial.
+  -- Pointwise both sides apply alg to (γ, X) where X is the result of
+  -- recursive folding; the two ways of computing X (via project-idx-open or
+  -- via poly-fmor) agree definitionally on each Poly constructor.
+  hasMu .HasMu.⦅⦆-β alg ._≃_.idxf-eq = {!!}
+  hasMu .HasMu.⦅⦆-β alg ._≃_.famf-eq = {!!}
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
 
 ------------------------------------------------------------------------------
