@@ -642,7 +642,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       fold-open .famf .natural {γ₁ , inF _} {γ₂ , inF _} (γ₁≈γ₂ , i₁≈i₂) =
         project-fam-natural-open Poly.var γ₁≈γ₂ i₁≈i₂
 
-      -- project-idx-open through embed-idx agrees with poly-fmor's idx action of fold-open.
+      -- project-idx through embed-idx agrees with poly-fmor's idx action of fold.
       β-idx : (P : Poly cat)
               {γ₁ γ₂ : Γ .idx .Carrier} (γ₁≈γ₂ : Γ .idx ._≈s_ γ₁ γ₂)
               {i₁ i₂ : poly-obj P WObj .idx .Carrier} (i₁≈i₂ : poly-obj P WObj .idx ._≈s_ i₁ i₂) →
@@ -656,13 +656,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ _} {inj₂ _} i₁≈i₂  = β-idx R γ₁≈γ₂ i₁≈i₂
       β-idx (P Poly.× R)   γ₁≈γ₂ (x₁≈x₂ , z₁≈z₂)          = β-idx P γ₁≈γ₂ x₁≈x₂ , β-idx R γ₁≈γ₂ z₁≈z₂
 
-      -- β-fam: project-fam-open through embed agrees (modulo subst from β-idx)
-      -- with poly-fmor's fam action of fold-open. Mirrors β-idx at the fam level.
+      -- project-fam through embed agrees (modulo subst from β-idx) with poly-fmor's fam action of fold.
       β-fam : (P : Poly cat) (γ : Γ .idx .Carrier) (i : poly-obj P WObj .idx .Carrier) →
               (poly-obj P y .fam .subst
                 (β-idx P (Γ .idx .Setoid.refl) (poly-obj P WObj .idx .Setoid.refl)) ∘
-                project-fam-open P γ (embed-idx P i) ∘
-                pair p₁ (embed-fam P i ∘ p₂)) ≈
+                project-fam-open P γ (embed-idx P i) ∘ pair p₁ (embed-fam P i ∘ p₂)) ≈
               poly-fmor P fold-open .famf .transf (γ , i)
       β-fam Poly.one       _ _              = HasTerminal.to-terminal-unique T _ _
       β-fam (Poly.const A) _ _              = {!!}
