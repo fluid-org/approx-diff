@@ -952,7 +952,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                   (η-idx P (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of P) {embed-idx P j}))) ∘
                 poly-fmor P h .Mor.famf .transf (γ , j)) ≈
               (project-fam-open P γ (embed-idx P j) ∘ pair p₁ (embed-fam P j ∘ p₂))
-      η-fam Poly.one       γ j         = {!!}
+      η-fam Poly.one       γ j         = HasTerminal.to-terminal-unique T _ _
       η-fam (Poly.const A) γ j         = {!!}
       η-fam Poly.var       γ (inF j)   = {!!}
       η-fam (P Poly.+ R)   γ (inj₁ x)  = {!!}
