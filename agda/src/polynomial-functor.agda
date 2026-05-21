@@ -689,8 +689,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈⟨ id-left ⟩
           alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i)
         ∎ where open ≈-Reasoning isEquiv
-      β-fam (P Poly.+ R)   γ (inj₁ x)       = {!!}
-      β-fam (P Poly.+ R)   γ (inj₂ z)       = {!!}
+      β-fam (P Poly.+ R)   γ (inj₁ x)       =
+        ≈-trans (β-fam P γ x) (≈-sym (≈-trans id-left id-left))
+      β-fam (P Poly.+ R)   γ (inj₂ z)       =
+        ≈-trans (β-fam R γ z) (≈-sym (≈-trans id-left id-left))
       β-fam (P Poly.× R)   γ (x , z)        = {!!}
 
   hasMu : HasMu
