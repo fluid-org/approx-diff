@@ -87,7 +87,7 @@ J×Jop-biproducts =
 J×Jop-products : HasProducts J×Jop
 J×Jop-products = biproducts→products _ J×Jop-biproducts
 
-open import functor using (Functor; PointedFunctor)
+open import functor using (Functor; StrongPointedFunctor)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 open import prop using (_,_)
 open import prop-setoid using (IsEquivalence)
@@ -192,12 +192,12 @@ module Interpretation
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
-  -- Approx (per-root Mon-decorated) interpretation. Caller supplies the PointedFunctor.
+  -- Approx (per-root Mon-decorated) interpretation. Caller supplies the StrongPointedFunctor.
   module interp-approx (Sig : Signature 0ℓ)
                        (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
                        (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
-                       (PF : PointedFunctor Fam⟨𝒟⟩-products)
-                       (let open μPoly-Sem (PointedFunctor.F PF))
+                       (PF : StrongPointedFunctor Fam⟨𝒟⟩-products)
+                       (let open μPoly-Sem (StrongPointedFunctor.F PF))
                        (Mu : HasMu-μPoly)
      where
 
@@ -215,12 +215,12 @@ module Interpretation
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
-  -- CBN (per-leaf Mon-decorated) interpretation. Caller supplies the PointedFunctor.
+  -- CBN (per-leaf Mon-decorated) interpretation. Caller supplies the StrongPointedFunctor.
   module interp-cbn (Sig : Signature 0ℓ)
                     (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
                     (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
-                    (PF : PointedFunctor Fam⟨𝒟⟩-products)
-                    (let open μPoly-Sem (PointedFunctor.F PF))
+                    (PF : StrongPointedFunctor Fam⟨𝒟⟩-products)
+                    (let open μPoly-Sem (StrongPointedFunctor.F PF))
                     (Mu : HasMu-μPoly)
      where
 

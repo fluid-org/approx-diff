@@ -11,7 +11,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans)
-open import functor using (Functor; PointedFunctor)
+open import functor using (Functor; StrongPointedFunctor)
 open import polynomial-functor using (μPoly; module Sem)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
@@ -27,8 +27,8 @@ module language-interpretation-cbn
   (E  : HasExponentials 𝒞 P)
   (let open Sem T P C)
   (let open HasBooleans (coproducts+exp→booleans T C E))
-  (PM : PointedFunctor P)
-  (let open μPoly-Sem (PointedFunctor.F PM))
+  (PM : StrongPointedFunctor P)
+  (let open μPoly-Sem (StrongPointedFunctor.F PM))
   (Mu : HasMu-μPoly)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
   where
@@ -38,7 +38,7 @@ open PointedFPCat PFPC[ 𝒞 , T , P , Bool ] renaming (_×_ to _⊗_)
 open HasCoproducts C renaming (coprod to _⊕_)
 open language-syntax Sig
 open Model Int
-open PointedFunctor PM renaming (unit to η)
+open StrongPointedFunctor PM renaming (unit to η)
 
 M : obj → obj
 M X = fobj X
