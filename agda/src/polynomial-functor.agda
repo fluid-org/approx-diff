@@ -650,12 +650,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               (i₁≈i₂ : poly-obj P WObj .idx ._≈s_ i₁ i₂) →
               poly-obj P y .idx ._≈s_
                 (project-idx-open P γ₁ (embed-idx P i₁)) (poly-fmor P fold-open .idxf .PS._⇒_.func (γ₂ , i₂))
-      β-idx Poly.one       γ₁≈γ₂ i₁≈i₂                                    = tt
-      β-idx (Poly.const A) γ₁≈γ₂ i₁≈i₂                                    = i₁≈i₂
-      β-idx Poly.var       γ₁≈γ₂ {inF i₁} {inF i₂} i₁≈i₂                  = {!!}
-      β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ x₁} {inj₁ x₂} i₁≈i₂                = {!!}
-      β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ y₁} {inj₂ y₂} i₁≈i₂                = {!!}
-      β-idx (P Poly.× R)   γ₁≈γ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂)         = {!!}
+      β-idx Poly.one       γ₁≈γ₂ i₁≈i₂                               = tt
+      β-idx (Poly.const A) γ₁≈γ₂ i₁≈i₂                               = i₁≈i₂
+      β-idx Poly.var       γ₁≈γ₂ {inF i₁} {inF i₂} i₁≈i₂             =
+        alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂)
+      β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ x₁} {inj₁ x₂} i₁≈i₂           = {!!}
+      β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ y₁} {inj₂ y₂} i₁≈i₂           = {!!}
+      β-idx (P Poly.× R)   γ₁≈γ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) = {!!}
 
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
