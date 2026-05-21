@@ -844,8 +844,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               (alg : Mor (Γ ⊗ Sem.poly-obj (terminal T) products strongCoproducts Q y) y)
               (γ : Γ .Obj.idx .Carrier)
               (i : Sem.poly-obj (terminal T) products strongCoproducts Q (W-types.WObj Q) .Obj.idx .Carrier) →
-              (pair p₁ (W-types.Open.project-fam-open Q alg Q γ (W-types.embed-idx Q Q i)) ∘
-                pair p₁ (id _ ∘ (W-types.embed-fam Q Q i ∘ p₂)))
+              pair p₁ (W-types.Open.project-fam-open Q alg Q γ (W-types.embed-idx Q Q i)) ∘
+                pair p₁ (id _ ∘ (W-types.embed-fam Q Q i ∘ p₂))
               ≈ pair p₁ (W-types.Open.project-fam-open Q alg Q γ (W-types.embed-idx Q Q i) ∘
                   pair p₁ (W-types.embed-fam Q Q i ∘ p₂))
   bridge-fm Q alg γ i = ≈-trans (pair-natural _ _ _)
