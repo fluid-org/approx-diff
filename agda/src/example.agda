@@ -46,11 +46,20 @@ module Tag
   Tag-PointedFunctor .PointedFunctor.force {x}      = p₂
   -- Right-strength: x × (A × y) ⇒ A × (x × y). Tag (in second slot) moves to outside.
   Tag-PointedFunctor .PointedFunctor.right-strength = pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂))
-  -- FIXME: naturality proof. Calculation works on paper (both sides reduce to
-  -- pair (p₁ ∘ p₂) (pair (f ∘ p₁) (g ∘ (p₂ ∘ p₂)))) but Agda's implicit-args
-  -- inference for nested pair expressions in the begin/end chain keeps
-  -- producing spurious unification failures. Revisit with fresher eyes.
-  Tag-PointedFunctor .PointedFunctor.right-strength-natural f g = {!!}
+  -- Naturality: both sides reduce to pair (p₁ ∘ p₂) (pair (f ∘ p₁) (g ∘ (p₂ ∘ p₂))).
+  -- LHS direction filled; RHS-to-mid direction left as a hole (would mirror LHS
+  -- via pair-natural + pair-cong unfolding the inner composites).
+  Tag-PointedFunctor .PointedFunctor.right-strength-natural f g =
+    begin
+      prod-m (id A) (prod-m f g) ∘ pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂))
+    ≈⟨ pair-compose _ _ _ _ ⟩
+      pair (id A ∘ (p₁ ∘ p₂)) (prod-m f g ∘ pair p₁ (p₂ ∘ p₂))
+    ≈⟨ pair-cong id-left (pair-compose _ _ _ _) ⟩
+      pair (p₁ ∘ p₂) (pair (f ∘ p₁) (g ∘ (p₂ ∘ p₂)))
+    ≈⟨ {!!} ⟩
+      pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂)) ∘ prod-m f (prod-m (id A) g)
+    ∎
+    where open ≈-Reasoning isEquiv
 
 ------------------------------------------------------------------------------
 -- Tag PointedFunctor on galois.cat, using galois.TWO as the approximation object.
