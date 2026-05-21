@@ -7,7 +7,8 @@ open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst; trans)
 open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
+  using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
+         strong-coproducts→coproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans)
 open import functor using (Functor; StrongPointedFunctor)
 open import polynomial-functor using (μPoly; module Sem)
@@ -21,9 +22,10 @@ module language-interpretation-approx
   (𝒞 : Category o m e)
   (T  : HasTerminal 𝒞)
   (P  : HasProducts 𝒞)
-  (C  : HasCoproducts 𝒞)
+  (SC : HasStrongCoproducts 𝒞 P)
   (E  : HasExponentials 𝒞 P)
-  (let open Sem T P C)
+  (let C = strong-coproducts→coproducts T SC)
+  (let open Sem T P SC)
   (let open HasBooleans (coproducts+exp→booleans T C E))
   (PM : StrongPointedFunctor P)
   (let open μPoly-Sem (StrongPointedFunctor.F PM))

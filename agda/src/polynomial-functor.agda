@@ -8,7 +8,7 @@ open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
 import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts)
+  using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts; strong-coproducts→coproducts)
 open import functor using (Functor; Id; StrongPointedFunctor; StrongPointedFunctor-Id)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
@@ -55,10 +55,12 @@ data μPoly {o m e} (𝒞 : Category o m e) : Set o where
   Mon    : μPoly 𝒞 → μPoly 𝒞
 
 module Sem {o m e} {𝒞 : Category o m e}
-           (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CP : HasCoproducts 𝒞) where
+           (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (SCP : HasStrongCoproducts 𝒞 P) where
   open Category 𝒞
   open HasTerminal T renaming (witness to terminal)
   open HasProducts P
+  CP : HasCoproducts 𝒞
+  CP = strong-coproducts→coproducts T SCP
   open HasCoproducts CP
 
   poly-obj : Poly 𝒞 → obj → obj
@@ -109,12 +111,12 @@ module Sem {o m e} {𝒞 : Category o m e}
 -- A functor F : 𝒞 → 𝒟 preserves μ if, for each polynomial signature P, the
 -- F-image of 𝒞's μ P is isomorphic to 𝒟's μ of the F-mapped polynomial.
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
-         (T₁ : HasTerminal 𝒞) (P₁ : HasProducts 𝒞) (CP₁ : HasCoproducts 𝒞)
-         (T₂ : HasTerminal 𝒟) (P₂ : HasProducts 𝒟) (CP₂ : HasCoproducts 𝒟)
+         (T₁ : HasTerminal 𝒞) (P₁ : HasProducts 𝒞) (SCP₁ : HasStrongCoproducts 𝒞 P₁)
+         (T₂ : HasTerminal 𝒟) (P₂ : HasProducts 𝒟) (SCP₂ : HasStrongCoproducts 𝒟 P₂)
          where
   private
-    module S₁ = Sem T₁ P₁ CP₁
-    module S₂ = Sem T₂ P₂ CP₂
+    module S₁ = Sem T₁ P₁ SCP₁
+    module S₂ = Sem T₂ P₂ SCP₂
 
   Preserves-μ : S₁.HasMu → S₂.HasMu → Functor 𝒞 𝒟 → Set _
   Preserves-μ 𝒞Mu 𝒟Mu F =
@@ -253,7 +255,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   open fam.CategoryOfFamilies os es 𝒞
   open products P  -- Fam-level products
   open _⇒f_
-  open Sem (terminal T) products coproducts
+  open Sem (terminal T) products strongCoproducts
 
   ----------------------------------------------------------------------
   -- Generic μ-types in Fam(𝒞), for polynomials Q : Poly cat. The idx side is WSetoid of Q (projecting param
@@ -636,7 +638,7 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
   open fam.CategoryOfFamilies os es 𝒟
   open products P  -- Fam-level products
   open _⇒f_
-  open Sem (terminal T) products coproducts
+  open Sem (terminal T) products strongCoproducts
   open StrongPointedFunctor L
   open μPoly-Sem (fam-functor.FamF os es F)
 

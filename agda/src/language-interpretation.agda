@@ -4,7 +4,8 @@ open import Level using (_⊔_)
 open import Data.List using (List; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials;
+  using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
+         strong-coproducts→coproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans)
 open import polynomial-functor using (Poly; module Sem)
 import language-syntax
@@ -17,9 +18,10 @@ module language-interpretation
   (𝒞 : Category o m e)
   (T  : HasTerminal 𝒞)
   (P  : HasProducts 𝒞)
-  (C  : HasCoproducts 𝒞)
+  (SC : HasStrongCoproducts 𝒞 P)
   (E  : HasExponentials 𝒞 P)
-  (let open Sem T P C)
+  (let C = strong-coproducts→coproducts T SC)
+  (let open Sem T P SC)
   (let open HasBooleans (coproducts+exp→booleans T C E))
   (Mu : HasMu)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)

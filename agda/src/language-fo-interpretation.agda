@@ -1,6 +1,7 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; HasBooleans; coproducts+exp→booleans)
+open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
+                              strong-coproducts→coproducts; HasExponentials; HasBooleans; coproducts+exp→booleans)
 open import polynomial-functor using (Poly; module Sem; Poly-map; Preserves-μ)
 open import functor using (Functor)
 open import finite-product-functor
@@ -15,15 +16,17 @@ open Functor
 
 module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o₁ m₁ e₁ o₂ m₂ e₂}
-  (𝒞 : Category o₁ m₁ e₁) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞)
-  (let open Sem 𝒞T 𝒞P 𝒞CP renaming (HasMu to 𝒞HasMu)) (𝒞Mu : 𝒞HasMu)
-  (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P)
-  (let open Sem 𝒟T 𝒟P 𝒟CP) (𝒟Mu : HasMu)
+  (𝒞 : Category o₁ m₁ e₁) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
+  (let 𝒞CP = strong-coproducts→coproducts 𝒞T 𝒞SC)
+  (let open Sem 𝒞T 𝒞P 𝒞SC renaming (HasMu to 𝒞HasMu)) (𝒞Mu : 𝒞HasMu)
+  (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SC : HasStrongCoproducts 𝒟 𝒟P) (𝒟E : HasExponentials 𝒟 𝒟P)
+  (let 𝒟CP = strong-coproducts→coproducts 𝒟T 𝒟SC)
+  (let open Sem 𝒟T 𝒟P 𝒟SC) (𝒟Mu : HasMu)
   (F : Functor 𝒞 𝒟)
   (FT : Category.IsIso 𝒟 (HasTerminal.to-terminal 𝒟T {F .fobj (𝒞T .HasTerminal.witness)}))
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
   (FC : preserve-chosen-coproducts F 𝒞CP 𝒟CP)
-  (Fμ : Preserves-μ 𝒞T 𝒞P 𝒞CP 𝒟T 𝒟P 𝒟CP 𝒞Mu 𝒟Mu F)
+  (Fμ : Preserves-μ 𝒞T 𝒞P 𝒞SC 𝒟T 𝒟P 𝒟SC 𝒞Mu 𝒟Mu F)
   (𝒞-Sig-model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
   where
 
@@ -34,7 +37,7 @@ module _ where
   open HasTerminal 𝒞T renaming (witness to 𝟙)
   open HasProducts 𝒞P renaming (prod to _×_)
   open HasCoproducts 𝒞CP renaming (coprod to _+_)
-  open Sem 𝒞T 𝒞P 𝒞CP using (poly-obj)
+  open Sem 𝒞T 𝒞P 𝒞SC using (poly-obj)
   open 𝒞HasMu 𝒞Mu using () renaming (μ to μ-obj)
 
   mutual
@@ -74,7 +77,7 @@ Bool-iso =
 𝒟-Sig-model : Model PFPC[ 𝒟 , 𝒟T , 𝒟P , 𝒟Bool ] Sig
 𝒟-Sig-model = transport-model Sig F FT FP (Bool-iso .𝒟.Iso.fwd) 𝒞-Sig-model
 
-open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟CP 𝒟E 𝒟Mu 𝒟-Sig-model
+open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟SC 𝒟E 𝒟Mu 𝒟-Sig-model
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm) using ()
   public
 

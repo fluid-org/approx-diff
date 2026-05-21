@@ -551,6 +551,141 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
     copair-ext  : ∀ {w x y z} (h : prod w (coprod x y) ⇒ z) →
                   copair (h ∘ pair p₁ (in₁ ∘ p₂)) (h ∘ pair p₁ (in₂ ∘ p₂)) ≈ h
 
+-- Given a terminal, every HasStrongCoproducts gives a plain HasCoproducts:
+-- copair f g := strong-copair (f ∘ p₂) (g ∘ p₂) ∘ pair to-terminal (id _).
+strong-coproducts→coproducts : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞}
+                               → HasTerminal 𝒞 → HasStrongCoproducts 𝒞 P → HasCoproducts 𝒞
+strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
+  where
+    open Category 𝒞
+    open HasProducts P
+    open HasTerminal T renaming (witness to 𝟙)
+    open HasStrongCoproducts SCP
+      using (in₁; in₂)
+      renaming (coprod to scoprod; copair to scopair;
+                copair-cong to scopair-cong; copair-in₁ to scopair-in₁;
+                copair-in₂ to scopair-in₂; copair-ext to scopair-ext)
+
+    -- Section a ⇒ 𝟙 × a for converting plain → strong-shaped.
+    sect : ∀ {a} → a ⇒ prod 𝟙 a
+    sect = pair to-terminal (id _)
+
+    plain-copair : ∀ {x y z} → x ⇒ z → y ⇒ z → scoprod x y ⇒ z
+    plain-copair f g = scopair (f ∘ p₂) (g ∘ p₂) ∘ sect
+
+    -- For the copair-in₁/in₂ proofs: sect ∘ in_i ≈ pair p₁ (in_i ∘ p₂) ∘ sect.
+    sect-LHS : ∀ {x y} → (sect ∘ in₁ {x} {y}) ≈ pair to-terminal in₁
+    sect-LHS = begin
+        pair to-terminal (id _) ∘ in₁
+      ≈⟨ pair-natural _ _ _ ⟩
+        pair (to-terminal ∘ in₁) (id _ ∘ in₁)
+      ≈⟨ pair-cong (≈-sym (to-terminal-ext _)) id-left ⟩
+        pair to-terminal in₁
+      ∎ where open ≈-Reasoning isEquiv
+
+    sect-LHS₂ : ∀ {x y} → (sect ∘ in₂ {x} {y}) ≈ pair to-terminal in₂
+    sect-LHS₂ = begin
+        pair to-terminal (id _) ∘ in₂
+      ≈⟨ pair-natural _ _ _ ⟩
+        pair (to-terminal ∘ in₂) (id _ ∘ in₂)
+      ≈⟨ pair-cong (≈-sym (to-terminal-ext _)) id-left ⟩
+        pair to-terminal in₂
+      ∎ where open ≈-Reasoning isEquiv
+
+    sect-RHS : ∀ {x y} → (pair p₁ (in₁ ∘ p₂) ∘ sect {x}) ≈ pair to-terminal (in₁ {x} {y})
+    sect-RHS = begin
+        pair p₁ (in₁ ∘ p₂) ∘ pair to-terminal (id _)
+      ≈⟨ pair-natural _ _ _ ⟩
+        pair (p₁ ∘ pair to-terminal (id _)) ((in₁ ∘ p₂) ∘ pair to-terminal (id _))
+      ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+        pair to-terminal (in₁ ∘ (p₂ ∘ pair to-terminal (id _)))
+      ≈⟨ pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+        pair to-terminal (in₁ ∘ id _)
+      ≈⟨ pair-cong ≈-refl id-right ⟩
+        pair to-terminal in₁
+      ∎ where open ≈-Reasoning isEquiv
+
+    sect-RHS₂ : ∀ {x y} → (pair p₁ (in₂ ∘ p₂) ∘ sect {y}) ≈ pair to-terminal (in₂ {x} {y})
+    sect-RHS₂ = begin
+        pair p₁ (in₂ ∘ p₂) ∘ pair to-terminal (id _)
+      ≈⟨ pair-natural _ _ _ ⟩
+        pair (p₁ ∘ pair to-terminal (id _)) ((in₂ ∘ p₂) ∘ pair to-terminal (id _))
+      ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+        pair to-terminal (in₂ ∘ (p₂ ∘ pair to-terminal (id _)))
+      ≈⟨ pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+        pair to-terminal (in₂ ∘ id _)
+      ≈⟨ pair-cong ≈-refl id-right ⟩
+        pair to-terminal in₂
+      ∎ where open ≈-Reasoning isEquiv
+
+    sect-in₁ : ∀ {x y} → (sect ∘ in₁ {x} {y}) ≈ (pair p₁ (in₁ ∘ p₂) ∘ sect)
+    sect-in₁ = isEquiv .trans sect-LHS (isEquiv .sym sect-RHS)
+
+    sect-in₂ : ∀ {x y} → (sect ∘ in₂ {x} {y}) ≈ (pair p₁ (in₂ ∘ p₂) ∘ sect)
+    sect-in₂ = isEquiv .trans sect-LHS₂ (isEquiv .sym sect-RHS₂)
+
+    p₂-sect : ∀ {a} → (p₂ ∘ sect {a}) ≈ id _
+    p₂-sect = pair-p₂ _ _
+
+    result : HasCoproducts 𝒞
+    result .HasCoproducts.coprod = scoprod
+    result .HasCoproducts.in₁ = in₁
+    result .HasCoproducts.in₂ = in₂
+    result .HasCoproducts.copair = plain-copair
+    result .HasCoproducts.copair-cong f₁≈f₂ g₁≈g₂ =
+      ∘-cong (scopair-cong (∘-cong f₁≈f₂ ≈-refl) (∘-cong g₁≈g₂ ≈-refl)) ≈-refl
+    result .HasCoproducts.copair-in₁ f g = begin
+        (scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ in₁
+      ≈⟨ assoc _ _ _ ⟩
+        scopair (f ∘ p₂) (g ∘ p₂) ∘ (sect ∘ in₁)
+      ≈⟨ ∘-cong ≈-refl sect-in₁ ⟩
+        scopair (f ∘ p₂) (g ∘ p₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘ sect)
+      ≈˘⟨ assoc _ _ _ ⟩
+        (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (in₁ ∘ p₂)) ∘ sect
+      ≈⟨ ∘-cong (scopair-in₁ _ _) ≈-refl ⟩
+        (f ∘ p₂) ∘ sect
+      ≈⟨ assoc _ _ _ ⟩
+        f ∘ (p₂ ∘ sect)
+      ≈⟨ ∘-cong ≈-refl p₂-sect ⟩
+        f ∘ id _
+      ≈⟨ id-right ⟩
+        f
+      ∎ where open ≈-Reasoning isEquiv
+    result .HasCoproducts.copair-in₂ f g = begin
+        (scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ in₂
+      ≈⟨ assoc _ _ _ ⟩
+        scopair (f ∘ p₂) (g ∘ p₂) ∘ (sect ∘ in₂)
+      ≈⟨ ∘-cong ≈-refl sect-in₂ ⟩
+        scopair (f ∘ p₂) (g ∘ p₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘ sect)
+      ≈˘⟨ assoc _ _ _ ⟩
+        (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (in₂ ∘ p₂)) ∘ sect
+      ≈⟨ ∘-cong (scopair-in₂ _ _) ≈-refl ⟩
+        (g ∘ p₂) ∘ sect
+      ≈⟨ assoc _ _ _ ⟩
+        g ∘ (p₂ ∘ sect)
+      ≈⟨ ∘-cong ≈-refl p₂-sect ⟩
+        g ∘ id _
+      ≈⟨ id-right ⟩
+        g
+      ∎ where open ≈-Reasoning isEquiv
+    result .HasCoproducts.copair-ext {x} {y} {z} h = begin
+        scopair ((h ∘ in₁) ∘ p₂) ((h ∘ in₂) ∘ p₂) ∘ sect
+      ≈⟨ ∘-cong (scopair-cong (assoc _ _ _) (assoc _ _ _)) ≈-refl ⟩
+        scopair (h ∘ (in₁ ∘ p₂)) (h ∘ (in₂ ∘ p₂)) ∘ sect
+      ≈˘⟨ ∘-cong (scopair-cong (∘-cong ≈-refl (pair-p₂ _ _)) (∘-cong ≈-refl (pair-p₂ _ _))) ≈-refl ⟩
+        scopair (h ∘ (p₂ ∘ pair p₁ (in₁ ∘ p₂))) (h ∘ (p₂ ∘ pair p₁ (in₂ ∘ p₂))) ∘ sect
+      ≈˘⟨ ∘-cong (scopair-cong (assoc _ _ _) (assoc _ _ _)) ≈-refl ⟩
+        scopair ((h ∘ p₂) ∘ pair p₁ (in₁ ∘ p₂)) ((h ∘ p₂) ∘ pair p₁ (in₂ ∘ p₂)) ∘ sect
+      ≈⟨ ∘-cong (scopair-ext (h ∘ p₂)) ≈-refl ⟩
+        (h ∘ p₂) ∘ sect
+      ≈⟨ assoc _ _ _ ⟩
+        h ∘ (p₂ ∘ sect)
+      ≈⟨ ∘-cong ≈-refl p₂-sect ⟩
+        h ∘ id _
+      ≈⟨ id-right ⟩
+        h
+      ∎ where open ≈-Reasoning isEquiv
+
 record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasProducts P
