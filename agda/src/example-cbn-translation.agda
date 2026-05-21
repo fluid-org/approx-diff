@@ -1,10 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Backward analysis using CBN lifting. Currently a work-in-progress: the
--- CBN translation uses cbn-coerce, which generates O(|P|) syntactic
--- bind/pure boilerplate per roll/fold-μ. With the W-form interpretation,
--- evaluating the resulting terms (for the tests below) times out
--- (>4min, ≥14GB RSS) on a 3-element input. Tests retained as a TODO.
+-- Backward analysis using CBN lifting.
 
 module example-cbn-translation where
 

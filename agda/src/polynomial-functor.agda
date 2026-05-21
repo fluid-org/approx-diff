@@ -105,6 +105,22 @@ module Sem {o m e} {𝒞 : Category o m e}
         ⦅_⦆  : ∀ {Γ Q y} → (prod Γ (μPoly-obj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
       -- FIXME: equations (β/η for inμ / ⦅_⦆)
 
+------------------------------------------------------------------------------
+-- A functor F : 𝒞 → 𝒟 preserves μ if, for each polynomial signature P, the
+-- F-image of 𝒞's μ P is isomorphic to 𝒟's μ of the F-mapped polynomial.
+module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
+         (T₁ : HasTerminal 𝒞) (P₁ : HasProducts 𝒞) (CP₁ : HasCoproducts 𝒞)
+         (T₂ : HasTerminal 𝒟) (P₂ : HasProducts 𝒟) (CP₂ : HasCoproducts 𝒟)
+         where
+  private
+    module S₁ = Sem T₁ P₁ CP₁
+    module S₂ = Sem T₂ P₂ CP₂
+
+  Preserves-μ : S₁.HasMu → S₂.HasMu → Functor 𝒞 𝒟 → Set _
+  Preserves-μ 𝒞Mu 𝒟Mu F =
+    ∀ (P : Poly 𝒞) →
+      Category.Iso 𝒟 (Functor.fobj F (S₁.HasMu.μ 𝒞Mu P))
+                      (S₂.HasMu.μ 𝒟Mu (Poly-map F P))
 
 ------------------------------------------------------------------------------
 -- Like Poly above but constant slots hold a setoid rather than a category object. Used to build the W-type

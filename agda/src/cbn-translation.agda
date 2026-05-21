@@ -47,12 +47,6 @@ _$_ = app
 
 infixl 10 _$_
 
--- The type translation Mon-wraps at every sum/product, but apply (a
--- meta-level operation on syntactic types) doesn't see the wraps when
--- applied at the polynomial level. So ⟪apply P τ⟫ has extra Mon-wraps
--- compared to apply ⟪P⟫poly ⟪τ⟫. cbn-coerce builds a target-language
--- term that unwraps the Mon at each sum/product layer and rewraps once
--- around the result.
 cbn-coerce : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ ⟪ apply P τ ⟫ty → Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty)
 cbn-coerce one         M = pure $ unit
 cbn-coerce (const σ)   M = pure $ (pure $ M)
