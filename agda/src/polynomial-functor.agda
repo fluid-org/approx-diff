@@ -847,14 +847,22 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.⦅⦆-β {Γ} {Q} alg ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , i₁} {γ₂ , i₂} (γ₁≈γ₂ , i₁≈i₂) =
     alg .Mor.idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , β-idx Q γ₁≈γ₂ i₁≈i₂)
     where open W-types Q; open Open alg
-  hasMu .HasMu.⦅⦆-β {Γ} {Q} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , i} = body
+  hasMu .HasMu.⦅⦆-β {Γ} {Q} {y} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , i} = body
     where
       open W-types Q; open Open alg
+      open Obj; open Mor
 
       bridge-fm : (pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘
                     pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂)))
                   ≈ pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
-      bridge-fm = {!!}
+      bridge-fm = begin
+          pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))
+        ≈⟨ pair-natural _ _ _ ⟩
+          pair (p₁ ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂)))
+               (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂)))
+        ≈⟨ pair-cong (pair-p₁ _ _) (∘-cong ≈-refl (pair-cong ≈-refl id-left)) ⟩
+          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
+        ∎ where open ≈-Reasoning isEquiv
 
       body = {!!}
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
