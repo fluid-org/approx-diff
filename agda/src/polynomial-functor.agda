@@ -403,6 +403,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     embed-unembed-id (P Poly.+ Q)   (inj₂ y)  = embed-unembed-id Q y
     embed-unembed-id (P Poly.× Q)   (x , y)   = (embed-unembed-id P x , embed-unembed-id Q y)
 
+    unembed-embed-id : (P : Poly cat) (j : poly-obj P WObj .idx .Carrier) →
+                       poly-obj P WObj .idx ._≈s_ (unembed-idx P (embed-idx P j)) j
+    unembed-embed-id Poly.one       (lift tt) = tt
+    unembed-embed-id (Poly.const A) a         = A .idx .isEquivalence .refl
+    unembed-embed-id Poly.var       (inF _)   = poly-obj Poly.var WObj .idx .isEquivalence .refl
+    unembed-embed-id (P Poly.+ Q)   (inj₁ x)  = unembed-embed-id P x
+    unembed-embed-id (P Poly.+ Q)   (inj₂ y)  = unembed-embed-id Q y
+    unembed-embed-id (P Poly.× Q)   (x , y)   = (unembed-embed-id P x , unembed-embed-id Q y)
+
     embed-fam : (P : Poly cat) (i : poly-obj P WObj .idx .Carrier) →
                 poly-obj P WObj .fam .fm i ⇒ WFam-fm P (embed-idx P i)
     embed-fam Poly.one         (lift tt)  = id _
@@ -902,8 +911,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           pair p₁ (poly-fmor Q fold-open .Mor.famf .transf (γ , i)))
     ∎ where
       open W-types Q; open Open alg; open ≈-Reasoning isEquiv
-  hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) =
-    η-idx Poly.var γ₁≈γ₂ {inF i₁} {inF i₂} t₁≈t₂
+  hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step = result
     where
       open W-types Q; open Open alg
       η-idx : (P : Poly cat) {δ₁ δ₂ : Γ .Obj.idx .Carrier} (δ₁≈δ₂ : Γ .Obj.idx ._≈s_ δ₁ δ₂)
@@ -933,14 +941,28 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₂ y₁} {inj₂ y₂} j₁≈j₂      = η-idx R δ₁≈δ₂ j₁≈j₂
       η-idx (P Poly.× R)   δ₁≈δ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) =
         η-idx P δ₁≈δ₂ x₁≈x₂ , η-idx R δ₁≈δ₂ z₁≈z₂
-  hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , inF i} = begin
-      y .Obj.fam .Fam.subst _ ∘ h .Mor.famf .transf (γ , inF i)
-    ≈⟨ {!!} ⟩
-      alg .Mor.famf .transf (γ , project-idx-open Q γ i) ∘
-          pair p₁ (project-fam-open Q γ i)
-    ∎ where
-      open W-types Q; open Open alg
-      open ≈-Reasoning isEquiv
+
+      -- Fam-level analog: relates poly-fmor h's transf to project-fam-open (modulo subst from η-idx).
+      η-fam : (P : Poly cat) (γ : Γ .Obj.idx .Carrier) (j : poly-obj P WObj .Obj.idx .Carrier) →
+              (poly-obj P y .Obj.fam .Fam.subst
+                (poly-obj P y .Obj.idx .isEquivalence .trans
+                  (poly-fmor P h .Mor.idxf .PS._⇒_.func-resp-≈
+                    (Γ .Obj.idx .isEquivalence .refl ,
+                     poly-obj P WObj .Obj.idx .isEquivalence .sym (unembed-embed-id P j)))
+                  (η-idx P (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of P) {embed-idx P j}))) ∘
+                poly-fmor P h .Mor.famf .transf (γ , j)) ≈
+              (project-fam-open P γ (embed-idx P j) ∘ pair p₁ (embed-fam P j ∘ p₂))
+      η-fam Poly.one       γ j         = {!!}
+      η-fam (Poly.const A) γ j         = {!!}
+      η-fam Poly.var       γ (inF j)   = {!!}
+      η-fam (P Poly.+ R)   γ (inj₁ x)  = {!!}
+      η-fam (P Poly.+ R)   γ (inj₂ z)  = {!!}
+      η-fam (P Poly.× R)   γ (x , z)   = {!!}
+
+      result : h ≃ fold-open
+      result ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) =
+        η-idx Poly.var γ₁≈γ₂ {inF i₁} {inF i₂} t₁≈t₂
+      result ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , inF i} = {!!}
 
 ------------------------------------------------------------------------------
 -- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
