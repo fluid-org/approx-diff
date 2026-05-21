@@ -543,7 +543,13 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
     in₁    : ∀ {x y} → x ⇒ coprod x y
     in₂    : ∀ {x y} → y ⇒ coprod x y
     copair : ∀ {w x y z} → prod w x ⇒ z → prod w y ⇒ z → prod w (coprod x y) ⇒ z
-    -- FIXME: equations
+
+    copair-cong : ∀ {w x y z} {f₁ f₂ : prod w x ⇒ z} {g₁ g₂ : prod w y ⇒ z} →
+                  f₁ ≈ f₂ → g₁ ≈ g₂ → copair f₁ g₁ ≈ copair f₂ g₂
+    copair-in₁  : ∀ {w x y z} (f : prod w x ⇒ z) (g : prod w y ⇒ z) → (copair f g ∘ pair p₁ (in₁ ∘ p₂)) ≈ f
+    copair-in₂  : ∀ {w x y z} (f : prod w x ⇒ z) (g : prod w y ⇒ z) → (copair f g ∘ pair p₁ (in₂ ∘ p₂)) ≈ g
+    copair-ext  : ∀ {w x y z} (h : prod w (coprod x y) ⇒ z) →
+                  copair (h ∘ pair p₁ (in₁ ∘ p₂)) (h ∘ pair p₁ (in₂ ∘ p₂)) ≈ h
 
 record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
