@@ -860,8 +860,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     where open W-types Q; open Open alg
   hasMu .HasMu.⦅⦆-β {Γ} {Q} {y} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , i} =
     ≈-trans (∘-cong ≈-refl id-left)
-    (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-    (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (bridge-fm Q alg γ i))) {!!}))
+      (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+      (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (bridge-fm Q alg γ i))) (≈-trans (≈-sym (assoc _ _ _)) {!!})))
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
 
 ------------------------------------------------------------------------------
