@@ -368,6 +368,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     embed-idx (P Poly.+ Q)     (inj₂ y)   = inj₂ (embed-idx Q y)
     embed-idx (P Poly.× Q)     (x , y)    = (embed-idx P x , embed-idx Q y)
 
+    unembed-idx : (P : Poly cat) → WIdx poly (idx-of P) → poly-obj P WObj .idx .Carrier
+    unembed-idx Poly.one         (lift tt)  = lift tt
+    unembed-idx (Poly.const A)   a          = a
+    unembed-idx Poly.var         w          = w
+    unembed-idx (P Poly.+ Q)     (inj₁ x)   = inj₁ (unembed-idx P x)
+    unembed-idx (P Poly.+ Q)     (inj₂ y)   = inj₂ (unembed-idx Q y)
+    unembed-idx (P Poly.× Q)     (x , y)    = (unembed-idx P x , unembed-idx Q y)
+
     embed-≈ : (P : Poly cat) → ∀ {x y} →
               poly-obj P WObj .idx ._≈s_ x y → WIdx-≈ poly (idx-of P) (embed-idx P x) (embed-idx P y)
     embed-≈ Poly.one         _    = tt
@@ -376,6 +384,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     embed-≈ (P Poly.+ Q) {inj₁ _} {inj₁ _} x≈y         = embed-≈ P x≈y
     embed-≈ (P Poly.+ Q) {inj₂ _} {inj₂ _} x≈y         = embed-≈ Q x≈y
     embed-≈ (P Poly.× Q) {_ , _} {_ , _} (x₁≈y₁ , x₂≈y₂) = (embed-≈ P x₁≈y₁ , embed-≈ Q x₂≈y₂)
+
+    unembed-≈ : (P : Poly cat) → ∀ {x y} →
+                WIdx-≈ poly (idx-of P) x y → poly-obj P WObj .idx ._≈s_ (unembed-idx P x) (unembed-idx P y)
+    unembed-≈ Poly.one         _    = tt
+    unembed-≈ (Poly.const A)   x≈y  = x≈y
+    unembed-≈ Poly.var         x≈y  = x≈y
+    unembed-≈ (P Poly.+ Q) {inj₁ _} {inj₁ _} x≈y         = unembed-≈ P x≈y
+    unembed-≈ (P Poly.+ Q) {inj₂ _} {inj₂ _} x≈y         = unembed-≈ Q x≈y
+    unembed-≈ (P Poly.× Q) {_ , _} {_ , _} (x₁≈y₁ , x₂≈y₂) = (unembed-≈ P x₁≈y₁ , unembed-≈ Q x₂≈y₂)
 
     embed-fam : (P : Poly cat) (i : poly-obj P WObj .idx .Carrier) →
                 poly-obj P WObj .fam .fm i ⇒ WFam-fm P (embed-idx P i)
@@ -880,16 +897,20 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     η-idx Poly.var γ₁≈γ₂ t₁≈t₂
     where
       open W-types Q; open Open alg
-      η-idx : (P : Poly cat) {γ₁ γ₂ : Γ .Obj.idx .Carrier} (γ₁≈γ₂ : Γ .Obj.idx ._≈s_ γ₁ γ₂)
-              {i₁ i₂ : poly-obj P WObj .Obj.idx .Carrier} (i₁≈i₂ : poly-obj P WObj .Obj.idx ._≈s_ i₁ i₂) →
+      η-idx : (P : Poly cat) {δ₁ δ₂ : Γ .Obj.idx .Carrier} (δ₁≈δ₂ : Γ .Obj.idx ._≈s_ δ₁ δ₂)
+              {j₁ j₂ : poly-obj P WObj .Obj.idx .Carrier} (j₁≈j₂ : poly-obj P WObj .Obj.idx ._≈s_ j₁ j₂) →
               poly-obj P y .Obj.idx ._≈s_
-                (poly-fmor P h .Mor.idxf .PS._⇒_.func (γ₁ , i₁)) (project-idx-open P γ₂ (embed-idx P i₂))
+                (poly-fmor P h .Mor.idxf .PS._⇒_.func (δ₁ , j₁)) (project-idx-open P δ₂ (embed-idx P j₂))
       η-idx Poly.one       _ _                                  = tt
-      η-idx (Poly.const A) _ i₁≈i₂                              = i₁≈i₂
-      η-idx Poly.var       γ₁≈γ₂ {inF i₁} {inF i₂} i₁≈i₂        = {!!}
-      η-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ x₁} {inj₁ x₂} i₁≈i₂      = {!!}
-      η-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ y₁} {inj₂ y₂} i₁≈i₂      = {!!}
-      η-idx (P Poly.× R)   γ₁≈γ₂ (x₁≈x₂ , z₁≈z₂)                = {!!}
+      η-idx (Poly.const A) _ j₁≈j₂                              = j₁≈j₂
+      η-idx Poly.var       δ₁≈δ₂ {inF j₁} {inF j₂} j₁≈j₂        = begin
+          h .Mor.idxf .PS._⇒_.func (_ , inF j₁)
+        ≈⟨ {!!} ⟩
+          alg .Mor.idxf .PS._⇒_.func (_ , project-idx-open Q _ j₂)
+        ∎ where open ≈-Reasoning (y .Obj.idx .isEquivalence)
+      η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₁ x₁} {inj₁ x₂} j₁≈j₂      = {!!}
+      η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₂ y₁} {inj₂ y₂} j₁≈j₂      = {!!}
+      η-idx (P Poly.× R)   δ₁≈δ₂ (x₁≈x₂ , z₁≈z₂)                = {!!}
   hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.famf-eq = {!!}
 
 ------------------------------------------------------------------------------
