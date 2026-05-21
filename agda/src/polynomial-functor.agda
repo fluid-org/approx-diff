@@ -664,7 +664,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 project-fam-open P γ (embed-idx P i) ∘
                 pair p₁ (embed-fam P i ∘ p₂)) ≈
               poly-fmor P fold-open .famf .transf (γ , i)
-      β-fam Poly.one       _ _              = {!!}
+      β-fam Poly.one       _ _              = HasTerminal.to-terminal-unique T _ _
       β-fam (Poly.const A) _ _              = {!!}
       β-fam Poly.var       γ (inF i)        = {!!}
       β-fam (P Poly.+ R)   γ (inj₁ x)       = {!!}
