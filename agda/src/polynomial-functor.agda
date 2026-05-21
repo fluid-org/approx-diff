@@ -642,22 +642,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       fold-open .famf .natural {γ₁ , inF _} {γ₂ , inF _} (γ₁≈γ₂ , i₁≈i₂) =
         project-fam-natural-open Poly.var γ₁≈γ₂ i₁≈i₂
 
-      -- β-idx: project-idx-open through embed-idx agrees with poly-fmor's idx
-      -- action of fold-open. Used to prove the β law for ⦅_⦆.
+      -- project-idx-open through embed-idx agrees with poly-fmor's idx action of fold-open.
       β-idx : (P : Poly cat)
               {γ₁ γ₂ : Γ .idx .Carrier} (γ₁≈γ₂ : Γ .idx ._≈s_ γ₁ γ₂)
-              {i₁ i₂ : poly-obj P WObj .idx .Carrier}
-              (i₁≈i₂ : poly-obj P WObj .idx ._≈s_ i₁ i₂) →
+              {i₁ i₂ : poly-obj P WObj .idx .Carrier} (i₁≈i₂ : poly-obj P WObj .idx ._≈s_ i₁ i₂) →
               poly-obj P y .idx ._≈s_
                 (project-idx-open P γ₁ (embed-idx P i₁)) (poly-fmor P fold-open .idxf .PS._⇒_.func (γ₂ , i₂))
-      β-idx Poly.one       γ₁≈γ₂ i₁≈i₂                               = tt
-      β-idx (Poly.const A) γ₁≈γ₂ i₁≈i₂                               = i₁≈i₂
-      β-idx Poly.var       γ₁≈γ₂ {inF i₁} {inF i₂} i₁≈i₂             =
+      β-idx Poly.one       _ _                            = tt
+      β-idx (Poly.const A) _ i₁≈i₂                        = i₁≈i₂
+      β-idx Poly.var       γ₁≈γ₂ {inF _} {inF _} i₁≈i₂    =
         alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂)
-      β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ x₁} {inj₁ x₂} i₁≈i₂           = β-idx P γ₁≈γ₂ i₁≈i₂
-      β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ y₁} {inj₂ y₂} i₁≈i₂           = β-idx R γ₁≈γ₂ i₁≈i₂
-      β-idx (P Poly.× R)   γ₁≈γ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) =
-        β-idx P γ₁≈γ₂ x₁≈x₂ , β-idx R γ₁≈γ₂ z₁≈z₂
+      β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ _} {inj₁ _} i₁≈i₂  = β-idx P γ₁≈γ₂ i₁≈i₂
+      β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ _} {inj₂ _} i₁≈i₂  = β-idx R γ₁≈γ₂ i₁≈i₂
+      β-idx (P Poly.× R)   γ₁≈γ₂ (x₁≈x₂ , z₁≈z₂)          = β-idx P γ₁≈γ₂ x₁≈x₂ , β-idx R γ₁≈γ₂ z₁≈z₂
 
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
