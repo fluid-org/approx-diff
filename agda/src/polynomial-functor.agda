@@ -696,30 +696,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       β-fam (P Poly.× R)   γ (x , z)        =
         ≈-trans (∘-cong (pair-natural _ _ _) ≈-refl) (≈-trans (pair-natural _ _ _) (pair-cong eq-P eq-R))
         where
-          Src = prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm x) (poly-obj R WObj .fam .fm z))
-          Mid = prod (Γ .fam .fm γ) (prod (WFam-fm P (embed-idx P x)) (WFam-fm R (embed-idx R z)))
-
           -- Lift a WObj-fibre pair into the WFam-fibre form.
-          pair-embed : Src ⇒ Mid
+          pair-embed : prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm x) (poly-obj R WObj .fam .fm z)) ⇒
+                       prod (Γ .fam .fm γ) (prod (WFam-fm P (embed-idx P x)) (WFam-fm R (embed-idx R z)))
           pair-embed = pair p₁ (pair (embed-fam P x ∘ p₁) (embed-fam R z ∘ p₂) ∘ p₂)
 
-          -- Project to (γ, P-part) and (γ, R-part) at the WFam fibre level (Mid).
-          proj-P : Mid ⇒ prod (Γ .fam .fm γ) (WFam-fm P (embed-idx P x))
-          proj-P = pair p₁ (p₁ ∘ p₂)
-
-          proj-R : Mid ⇒ prod (Γ .fam .fm γ) (WFam-fm R (embed-idx R z))
-          proj-R = pair p₁ (p₂ ∘ p₂)
-
-          -- Same projections at the WObj fibre level (Src).
-          proj-src-P : Src ⇒ prod (Γ .fam .fm γ) (poly-obj P WObj .fam .fm x)
-          proj-src-P = pair p₁ (p₁ ∘ p₂)
-
-          proj-src-R : Src ⇒ prod (Γ .fam .fm γ) (poly-obj R WObj .fam .fm z)
-          proj-src-R = pair p₁ (p₂ ∘ p₂)
-
-          bridge-P : (proj-P ∘ pair-embed) ≈ pair p₁ (embed-fam P x ∘ (p₁ ∘ p₂))
+          bridge-P : (pair p₁ (p₁ ∘ p₂) ∘ pair-embed) ≈ pair p₁ (embed-fam P x ∘ (p₁ ∘ p₂))
           bridge-P = begin
-              proj-P ∘ pair-embed
+              pair p₁ (p₁ ∘ p₂) ∘ pair-embed
             ≈⟨ pair-natural _ _ _ ⟩
               pair (p₁ ∘ pair-embed) ((p₁ ∘ p₂) ∘ pair-embed)
             ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
@@ -734,9 +718,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               pair p₁ (embed-fam P x ∘ (p₁ ∘ p₂))
             ∎ where open ≈-Reasoning isEquiv
 
-          bridge-R : (proj-R ∘ pair-embed) ≈ pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
+          bridge-R : (pair p₁ (p₂ ∘ p₂) ∘ pair-embed) ≈ pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
           bridge-R = begin
-              proj-R ∘ pair-embed
+              pair p₁ (p₂ ∘ p₂) ∘ pair-embed
             ≈⟨ pair-natural _ _ _ ⟩
               pair (p₁ ∘ pair-embed) ((p₂ ∘ p₂) ∘ pair-embed)
             ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
@@ -766,29 +750,29 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             ≈⟨ ∘-cong (∘-cong ≈-refl (pair-p₁ _ _)) ≈-refl ⟩
               (poly-obj P y .fam .subst _ ∘ (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘ pair-embed
             ≈⟨ ∘-cong (≈-sym (assoc _ _ _)) ≈-refl ⟩
-              ((poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘ proj-P) ∘ pair-embed
+              ((poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair-embed
             ≈⟨ assoc _ _ _ ⟩
-              (poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘ (proj-P ∘ pair-embed)
+              (poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair-embed)
             ≈⟨ ∘-cong ≈-refl bridge-P ⟩
               (poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
                 pair p₁ (embed-fam P x ∘ (p₁ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _))) ⟩
               (poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
-                pair p₁ (embed-fam P x ∘ (p₂ ∘ proj-src-P))
+                pair p₁ (embed-fam P x ∘ (p₂ ∘ pair p₁ (p₁ ∘ p₂)))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl (assoc _ _ _)) ⟩
               (poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
-                pair p₁ ((embed-fam P x ∘ p₂) ∘ proj-src-P)
+                pair p₁ ((embed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) ≈-refl) ⟩
               (poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
-                pair (p₁ ∘ proj-src-P) ((embed-fam P x ∘ p₂) ∘ proj-src-P)
+                pair (p₁ ∘ pair p₁ (p₁ ∘ p₂)) ((embed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
               (poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
-                (pair p₁ (embed-fam P x ∘ p₂) ∘ proj-src-P)
+                (pair p₁ (embed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂))
             ≈˘⟨ assoc _ _ _ ⟩
               ((poly-obj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
-                pair p₁ (embed-fam P x ∘ p₂)) ∘ proj-src-P
+                pair p₁ (embed-fam P x ∘ p₂)) ∘ pair p₁ (p₁ ∘ p₂)
             ≈⟨ ∘-cong (β-fam P γ x) ≈-refl ⟩
-              poly-fmor P fold-open .famf .transf (γ , x) ∘ proj-src-P
+              poly-fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (p₁ ∘ p₂)
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
               poly-fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂))
             ≈˘⟨ id-left ⟩
@@ -810,35 +794,34 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             ≈⟨ ∘-cong (∘-cong ≈-refl (pair-p₂ _ _)) ≈-refl ⟩
               (poly-obj R y .fam .subst _ ∘ (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
             ≈⟨ ∘-cong (≈-sym (assoc _ _ _)) ≈-refl ⟩
-              ((poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘ proj-R) ∘ pair-embed
+              ((poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair-embed
             ≈⟨ assoc _ _ _ ⟩
-              (poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘ (proj-R ∘ pair-embed)
+              (poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘ (pair p₁ (p₂ ∘ p₂) ∘ pair-embed)
             ≈⟨ ∘-cong ≈-refl bridge-R ⟩
               (poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
                 pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _))) ⟩
               (poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
-                pair p₁ (embed-fam R z ∘ (p₂ ∘ proj-src-R))
+                pair p₁ (embed-fam R z ∘ (p₂ ∘ pair p₁ (p₂ ∘ p₂)))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl (assoc _ _ _)) ⟩
               (poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
-                pair p₁ ((embed-fam R z ∘ p₂) ∘ proj-src-R)
+                pair p₁ ((embed-fam R z ∘ p₂) ∘ pair p₁ (p₂ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) ≈-refl) ⟩
               (poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
-                pair (p₁ ∘ proj-src-R) ((embed-fam R z ∘ p₂) ∘ proj-src-R)
+                pair (p₁ ∘ pair p₁ (p₂ ∘ p₂)) ((embed-fam R z ∘ p₂) ∘ pair p₁ (p₂ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
               (poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
-                (pair p₁ (embed-fam R z ∘ p₂) ∘ proj-src-R)
+                (pair p₁ (embed-fam R z ∘ p₂) ∘ pair p₁ (p₂ ∘ p₂))
             ≈˘⟨ assoc _ _ _ ⟩
               ((poly-obj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
-                pair p₁ (embed-fam R z ∘ p₂)) ∘ proj-src-R
+                pair p₁ (embed-fam R z ∘ p₂)) ∘ pair p₁ (p₂ ∘ p₂)
             ≈⟨ ∘-cong (β-fam R γ z) ≈-refl ⟩
-              poly-fmor R fold-open .famf .transf (γ , z) ∘ proj-src-R
+              poly-fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (p₂ ∘ p₂)
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
               poly-fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂))
             ≈˘⟨ id-left ⟩
               id _ ∘ (poly-fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
             ∎ where open ≈-Reasoning isEquiv
-
 
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
