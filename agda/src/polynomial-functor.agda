@@ -840,17 +840,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             ∎ where open ≈-Reasoning isEquiv
 
 
-  bridge-fm : ∀ {Γ y : Obj} (Q : Poly cat)
-              (alg : Mor (Γ ⊗ Sem.poly-obj (terminal T) products strongCoproducts Q y) y)
-              (γ : Γ .Obj.idx .Carrier)
-              (i : Sem.poly-obj (terminal T) products strongCoproducts Q (W-types.WObj Q) .Obj.idx .Carrier) →
-              pair p₁ (W-types.Open.project-fam-open Q alg Q γ (W-types.embed-idx Q Q i)) ∘
-                pair p₁ (id _ ∘ (W-types.embed-fam Q Q i ∘ p₂))
-              ≈ pair p₁ (W-types.Open.project-fam-open Q alg Q γ (W-types.embed-idx Q Q i) ∘
-                  pair p₁ (W-types.embed-fam Q Q i ∘ p₂))
-  bridge-fm Q alg γ i = ≈-trans (pair-natural _ _ _)
-    (pair-cong (pair-p₁ _ _) (∘-cong ≈-refl (pair-cong ≈-refl id-left)))
-
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
   hasMu .HasMu.inF Q        = W-types.inF-mor Q
@@ -867,7 +856,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
       y .Obj.fam .Fam.subst _ ∘ (alg .Mor.famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
           (pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (bridge-fm Q alg γ i)) ⟩
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl
+        (≈-trans (pair-natural _ _ _)
+                 (pair-cong (pair-p₁ _ _) (∘-cong ≈-refl (pair-cong ≈-refl id-left))))) ⟩
       y .Obj.fam .Fam.subst _ ∘ (alg .Mor.famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
           pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ≈-sym (assoc _ _ _) ⟩
@@ -895,9 +886,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     ≈⟨ ∘-cong ≈-refl (pair-cong
                 (≈-trans (∘-cong (Γ .Obj.fam .Fam.refl*) ≈-refl) id-left)
                 (≈-trans (≈-sym (assoc _ _ _)) (β-fam Q γ i))) ⟩
-      _
+      alg .Mor.famf .transf (γ , poly-fmor Q fold-open .Mor.idxf .PS._⇒_.func (γ , i)) ∘
+          pair p₁ (poly-fmor Q fold-open .Mor.famf .transf (γ , i))
     ≈⟨ ≈-sym id-left ⟩
-      _
+      id _ ∘ (alg .Mor.famf .transf (γ , poly-fmor Q fold-open .Mor.idxf .PS._⇒_.func (γ , i)) ∘
+          pair p₁ (poly-fmor Q fold-open .Mor.famf .transf (γ , i)))
     ∎ where
       open W-types Q; open Open alg; open ≈-Reasoning isEquiv
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
