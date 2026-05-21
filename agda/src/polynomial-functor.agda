@@ -862,7 +862,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       y .Obj.fam .Fam.subst _ ∘ (id _ ∘ (alg .Mor.famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
           pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))))
     ≈⟨ ∘-cong ≈-refl id-left ⟩
-      _
+      y .Obj.fam .Fam.subst _ ∘ (alg .Mor.famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
+          pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂)))
     ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
       _
     ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (bridge-fm Q alg γ i)) ⟩
