@@ -695,8 +695,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈-trans (β-fam R γ z) (≈-sym (≈-trans id-left id-left))
       β-fam (P Poly.× R)   γ (x , z)        = body
         where
-          open ≈-Reasoning isEquiv
-
           Src = prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm x) (poly-obj R WObj .fam .fm z))
           Mid = prod (Γ .fam .fm γ) (prod (WFam-fm P (embed-idx P x)) (WFam-fm R (embed-idx R z)))
 
