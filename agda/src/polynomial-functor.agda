@@ -116,20 +116,6 @@ module Sem {o m e} {𝒞 : Category o m e}
     μPoly-obj (P × Q)    x = prod   (μPoly-obj P x) (μPoly-obj Q x)
     μPoly-obj (Mon P)    x = Functor.fobj F (μPoly-obj P x)
 
-    -- Open-form action; Mon case uses F's fmor with strength to thread the context.
-    μPoly-fmor : ∀ Q {Γ X Y} → (prod Γ X ⇒ Y) → (prod Γ (μPoly-obj Q X) ⇒ μPoly-obj Q Y)
-    μPoly-fmor one         _ = to-terminal
-    μPoly-fmor (const A)   _ = p₂
-    μPoly-fmor var         h = h
-    μPoly-fmor (Q₁ + Q₂)   h = scopair (in₁ ∘ μPoly-fmor Q₁ h) (in₂ ∘ μPoly-fmor Q₂ h)
-    μPoly-fmor (Q₁ × Q₂)   h = pair (μPoly-fmor Q₁ h ∘ pair p₁ (p₁ ∘ p₂))
-                                     (μPoly-fmor Q₂ h ∘ pair p₁ (p₂ ∘ p₂))
-    -- Mon case: F is just a functor (no strength here); naïvely we only get the
-    -- closed action F.fmor (μPoly-fmor Q h ∘ ⟨id,p₂⟩) ∘ ⟨ p₂ → wait we need to thread Γ.
-    -- For now this case requires the strength of F if treated as part of the open action.
-    -- Stating naïvely as if F preserved products (likely correct in our use case via L's strength):
-    μPoly-fmor (Mon Q)     h = Functor.fmor F (μPoly-fmor Q h) ∘ {!!}
-
     record HasMu-μPoly : Set (o ⊔ m ⊔ e) where
       field
         μ    : μPoly 𝒞 → obj
@@ -137,12 +123,7 @@ module Sem {o m e} {𝒞 : Category o m e}
         -- Open (parametric) form: algebra in extended context. Avoids the
         -- closure conversion that would otherwise need exponentials.
         ⦅_⦆  : ∀ {Γ Q y} → (prod Γ (μPoly-obj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
-
-        ⦅⦆-β : ∀ {Γ Q y} (alg : prod Γ (μPoly-obj Q y) ⇒ y) →
-               (⦅ alg ⦆ ∘ pair p₁ (inμ Q ∘ p₂)) ≈ (alg ∘ pair p₁ (μPoly-fmor Q ⦅ alg ⦆))
-        ⦅⦆-η : ∀ {Γ Q y} (alg : prod Γ (μPoly-obj Q y) ⇒ y) (h : prod Γ (μ Q) ⇒ y) →
-               (h ∘ pair p₁ (inμ Q ∘ p₂)) ≈ (alg ∘ pair p₁ (μPoly-fmor Q h)) →
-               h ≈ ⦅ alg ⦆
+      -- FIXME: equations (β/η for inμ / ⦅_⦆). Mon case needs strength on F.
 
 ------------------------------------------------------------------------------
 -- A functor F : 𝒞 → 𝒟 preserves μ if, for each polynomial signature P, the
@@ -1124,5 +1105,3 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
   hasMu-μPoly .HasMu-μPoly.μ Q              = W-types-μ.WObj Q
   hasMu-μPoly .HasMu-μPoly.inμ Q            = W-types-μ.inF-mor Q
   hasMu-μPoly .HasMu-μPoly.⦅_⦆ {Γ} {Q} = W-types-μ.Open.fold-open Q
-  hasMu-μPoly .HasMu-μPoly.⦅⦆-β alg = {!!}
-  hasMu-μPoly .HasMu-μPoly.⦅⦆-η alg h x = {!!}
