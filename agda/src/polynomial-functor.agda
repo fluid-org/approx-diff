@@ -903,13 +903,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     ∎ where
       open W-types Q; open Open alg; open ≈-Reasoning isEquiv
   hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) =
-    η-idx Poly.var γ₁≈γ₂ t₁≈t₂
+    η-idx Poly.var γ₁≈γ₂ {inF i₁} {inF i₂} t₁≈t₂
     where
       open W-types Q; open Open alg
       η-idx : (P : Poly cat) {δ₁ δ₂ : Γ .Obj.idx .Carrier} (δ₁≈δ₂ : Γ .Obj.idx ._≈s_ δ₁ δ₂)
-              {j₁ j₂ : poly-obj P WObj .Obj.idx .Carrier} (j₁≈j₂ : poly-obj P WObj .Obj.idx ._≈s_ j₁ j₂) →
+              {j₁ j₂ : WIdx poly (idx-of P)} (j₁≈j₂ : WIdx-≈ poly (idx-of P) j₁ j₂) →
               poly-obj P y .Obj.idx ._≈s_
-                (poly-fmor P h .Mor.idxf .PS._⇒_.func (δ₁ , j₁)) (project-idx-open P δ₂ (embed-idx P j₂))
+                (poly-fmor P h .Mor.idxf .PS._⇒_.func (δ₁ , unembed-idx P j₁))
+                (project-idx-open P δ₂ j₂)
       η-idx Poly.one       _ _                                  = tt
       η-idx (Poly.const A) _ j₁≈j₂                              = j₁≈j₂
       η-idx Poly.var       δ₁≈δ₂ {inF j₁} {inF j₂} j₁≈j₂        = begin
@@ -923,7 +924,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
              (Γ .Obj.idx .isEquivalence .refl ,
               poly-obj Q WObj .Obj.idx .isEquivalence .refl) ⟩
           alg .Mor.idxf .PS._⇒_.func (_ , poly-fmor Q h .Mor.idxf .PS._⇒_.func (_ , unembed-idx Q j₂))
-        ≈⟨ {!!} ⟩
+        ≈⟨ alg .Mor.idxf .PS._⇒_.func-resp-≈
+             (Γ .Obj.idx .isEquivalence .refl ,
+              η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ⟩
           alg .Mor.idxf .PS._⇒_.func (_ , project-idx-open Q _ j₂)
         ∎ where open ≈-Reasoning (y .Obj.idx .isEquivalence)
       η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₁ x₁} {inj₁ x₂} j₁≈j₂      = {!!}
