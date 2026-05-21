@@ -452,7 +452,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     embed-unembed-fam-id : (P : Poly cat) (j : WIdx poly (idx-of P)) →
                            (embed-fam P (unembed-idx P j) ∘ unembed-fam P j) ≈
                            WFam-subst P (WIdx-≈-sym poly (idx-of P) (embed-unembed-id P j))
-    embed-unembed-fam-id P j = {!!}
+    embed-unembed-fam-id Poly.one       _        = id-left
+    embed-unembed-fam-id (Poly.const A) _        = isEquiv .trans id-left (≈-sym (A .fam .refl*))
+    embed-unembed-fam-id Poly.var       (inF j)  = isEquiv .trans id-left (≈-sym (WFam-refl* Q {j}))
+    embed-unembed-fam-id (P Poly.+ Q')  (inj₁ x) = embed-unembed-fam-id P x
+    embed-unembed-fam-id (P Poly.+ Q')  (inj₂ y) = embed-unembed-fam-id Q' y
+    embed-unembed-fam-id (P Poly.× Q')  (x , y)  =
+      isEquiv .trans (≈-sym (pair-functorial _ _ _ _))
+                     (prod-m-cong (embed-unembed-fam-id P x) (embed-unembed-fam-id Q' y))
 
     inF-mor : Mor (poly-obj Q WObj) WObj
     inF-mor .idxf .PS._⇒_.func i            = inF (embed-idx Q i)
