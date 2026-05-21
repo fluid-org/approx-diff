@@ -859,7 +859,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     alg .Mor.idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , β-idx Q γ₁≈γ₂ i₁≈i₂)
     where open W-types Q; open Open alg
   hasMu .HasMu.⦅⦆-β {Γ} {Q} {y} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , i} = begin
-      _
+      y .Obj.fam .Fam.subst _ ∘ (id _ ∘ (alg .Mor.famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
+          pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))))
     ≈⟨ ∘-cong ≈-refl id-left ⟩
       _
     ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
