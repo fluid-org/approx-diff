@@ -423,6 +423,22 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
   prod-m : ∀ {x₁ x₂ y₁ y₂} → x₁ ⇒ y₁ → x₂ ⇒ y₂ → prod x₁ x₂ ⇒ prod y₁ y₂
   prod-m f₁ f₂ = pair (f₁ ∘ p₁) (f₂ ∘ p₂)
 
+  swap : ∀ {x y} → prod x y ⇒ prod y x
+  swap = pair p₂ p₁
+
+  swap-involutive : ∀ {x y} → (swap {y} {x} ∘ swap {x} {y}) ≈ id _
+  swap-involutive = begin
+      pair p₂ p₁ ∘ pair p₂ p₁
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair (p₂ ∘ pair p₂ p₁) (p₁ ∘ pair p₂ p₁)
+    ≈⟨ pair-cong (pair-p₂ _ _) (pair-p₁ _ _) ⟩
+      pair p₁ p₂
+    ≈˘⟨ pair-cong id-right id-right ⟩
+      pair (p₁ ∘ id _) (p₂ ∘ id _)
+    ≈⟨ pair-ext (id _) ⟩
+      id _
+    ∎ where open ≈-Reasoning isEquiv
+
   pair-compose : ∀ {x y₁ y₂ z₁ z₂} (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x ⇒ y₁) (g₂ : x ⇒ y₂) →
     (prod-m f₁ f₂ ∘ pair g₁ g₂) ≈ pair (f₁ ∘ g₁) (f₂ ∘ g₂)
   pair-compose f₁ f₂ g₁ g₂ =
@@ -850,3 +866,167 @@ module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) {P : HasProducts
   coproducts+exp→booleans .False = in₂
   coproducts+exp→booleans .cond f g =
     eval ∘ (prod-m (copair (lambda (f ∘ p₂)) (lambda (g ∘ p₂))) (id _) ∘ pair p₂ p₁)
+
+-- Any CCC has strong coproducts.
+ccc→strong-coproducts : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞}
+                        → HasCoproducts 𝒞 → HasExponentials 𝒞 P → HasStrongCoproducts 𝒞 P
+ccc→strong-coproducts {𝒞 = 𝒞} {P = P} CP E = strongCoproducts
+  where
+    open Category 𝒞
+    open HasProducts P
+    open HasCoproducts CP
+    open HasExponentials E
+
+    -- Lambda-abstract over the *second* factor of a product (via swap).
+    lambda' : ∀ {w x y} → prod w x ⇒ y → x ⇒ exp w y
+    lambda' f = lambda (f ∘ swap)
+
+    pair-via-swap : ∀ {w x y} (h : x ⇒ y) → (prod-m h (id _) ∘ swap {w} {x}) ≈ pair (h ∘ p₂) p₁
+    pair-via-swap h = begin
+        pair (h ∘ p₁) (id _ ∘ p₂) ∘ pair p₂ p₁
+      ≈⟨ pair-natural _ _ _ ⟩
+        pair ((h ∘ p₁) ∘ pair p₂ p₁) ((id _ ∘ p₂) ∘ pair p₂ p₁)
+      ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+        pair (h ∘ (p₁ ∘ pair p₂ p₁)) (id _ ∘ (p₂ ∘ pair p₂ p₁))
+      ≈⟨ pair-cong (∘-cong ≈-refl (pair-p₁ _ _)) (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+        pair (h ∘ p₂) (id _ ∘ p₁)
+      ≈⟨ pair-cong ≈-refl id-left ⟩
+        pair (h ∘ p₂) p₁
+      ∎ where open ≈-Reasoning isEquiv
+
+    eval-lambda' : ∀ {w x y} (f : prod w x ⇒ y) → eval ∘ pair (lambda' f ∘ p₂) p₁ ≈ f
+    eval-lambda' f = begin
+        eval ∘ pair (lambda (f ∘ swap) ∘ p₂) p₁
+      ≈˘⟨ ∘-cong ≈-refl (pair-via-swap (lambda (f ∘ swap))) ⟩
+        eval ∘ (prod-m (lambda (f ∘ swap)) (id _) ∘ swap)
+      ≈˘⟨ assoc _ _ _ ⟩
+        (eval ∘ prod-m (lambda (f ∘ swap)) (id _)) ∘ swap
+      ≈⟨ ∘-cong (eval-lambda (f ∘ swap)) ≈-refl ⟩
+        (f ∘ swap) ∘ swap
+      ≈⟨ assoc _ _ _ ⟩
+        f ∘ (swap ∘ swap)
+      ≈⟨ ∘-cong ≈-refl swap-involutive ⟩
+        f ∘ id _
+      ≈⟨ id-right ⟩
+        f
+      ∎ where open ≈-Reasoning isEquiv
+
+    lambda'-ext : ∀ {w x y} (f : x ⇒ exp w y) → lambda' (eval ∘ pair (f ∘ p₂) p₁) ≈ f
+    lambda'-ext f = begin
+        lambda ((eval ∘ pair (f ∘ p₂) p₁) ∘ swap)
+      ≈⟨ lambda-cong (assoc _ _ _) ⟩
+        lambda (eval ∘ (pair (f ∘ p₂) p₁ ∘ swap))
+      ≈⟨ lambda-cong (∘-cong ≈-refl (pair-natural _ _ _)) ⟩
+        lambda (eval ∘ pair ((f ∘ p₂) ∘ swap) (p₁ ∘ swap))
+      ≈⟨ lambda-cong (∘-cong ≈-refl (pair-cong (assoc _ _ _) (pair-p₁ _ _))) ⟩
+        lambda (eval ∘ pair (f ∘ (p₂ ∘ swap)) p₂)
+      ≈⟨ lambda-cong (∘-cong ≈-refl (pair-cong (∘-cong ≈-refl (pair-p₂ _ _)) ≈-refl)) ⟩
+        lambda (eval ∘ pair (f ∘ p₁) p₂)
+      ≈˘⟨ lambda-cong (∘-cong ≈-refl (pair-cong ≈-refl id-left)) ⟩
+        lambda (eval ∘ pair (f ∘ p₁) (id _ ∘ p₂))
+      ≈⟨ lambda-ext f ⟩
+        f
+      ∎ where open ≈-Reasoning isEquiv
+
+    swap-shape : ∀ {w x x'} (j : x' ⇒ x) →
+                 pair (p₁ {w} {x'}) (j ∘ p₂) ∘ swap {x'} {w} ≈ swap {x} {w} ∘ prod-m j (id w)
+    swap-shape j = begin
+        pair p₁ (j ∘ p₂) ∘ pair p₂ p₁
+      ≈⟨ pair-natural _ _ _ ⟩
+        pair (p₁ ∘ pair p₂ p₁) ((j ∘ p₂) ∘ pair p₂ p₁)
+      ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+        pair p₂ (j ∘ (p₂ ∘ pair p₂ p₁))
+      ≈⟨ pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+        pair p₂ (j ∘ p₁)
+      ≈˘⟨ pair-cong id-left ≈-refl ⟩
+        pair (id _ ∘ p₂) (j ∘ p₁)
+      ≈˘⟨ pair-cong (pair-p₂ _ _) (pair-p₁ _ _) ⟩
+        pair (p₂ ∘ pair (j ∘ p₁) (id _ ∘ p₂)) (p₁ ∘ pair (j ∘ p₁) (id _ ∘ p₂))
+      ≈˘⟨ pair-natural _ _ _ ⟩
+        pair p₂ p₁ ∘ pair (j ∘ p₁) (id _ ∘ p₂)
+      ∎ where open ≈-Reasoning isEquiv
+
+    lambda'-natural : ∀ {w x x' y} (j : x' ⇒ x) (h : prod w x ⇒ y) →
+                      lambda' (h ∘ pair p₁ (j ∘ p₂)) ≈ (lambda' h ∘ j)
+    lambda'-natural j h = begin
+        lambda ((h ∘ pair p₁ (j ∘ p₂)) ∘ swap)
+      ≈⟨ lambda-cong (assoc _ _ _) ⟩
+        lambda (h ∘ (pair p₁ (j ∘ p₂) ∘ swap))
+      ≈⟨ lambda-cong (∘-cong ≈-refl (swap-shape j)) ⟩
+        lambda (h ∘ (swap ∘ prod-m j (id _)))
+      ≈˘⟨ lambda-cong (assoc _ _ _) ⟩
+        lambda ((h ∘ swap) ∘ prod-m j (id _))
+      ≈˘⟨ lambda-natural _ _ ⟩
+        lambda (h ∘ swap) ∘ j
+      ∎ where open ≈-Reasoning isEquiv
+
+    strong-copair : ∀ {w x y z} → prod w x ⇒ z → prod w y ⇒ z → prod w (coprod x y) ⇒ z
+    strong-copair f g = eval ∘ pair (copair (lambda' f) (lambda' g) ∘ p₂) p₁
+
+    strong-copair-cong : ∀ {w x y z} {f₁ f₂ : prod w x ⇒ z} {g₁ g₂ : prod w y ⇒ z} →
+                         f₁ ≈ f₂ → g₁ ≈ g₂ → strong-copair f₁ g₁ ≈ strong-copair f₂ g₂
+    strong-copair-cong f₁≈f₂ g₁≈g₂ =
+      ∘-cong ≈-refl (pair-cong (∘-cong (copair-cong (lambda-cong (∘-cong f₁≈f₂ ≈-refl))
+                                                    (lambda-cong (∘-cong g₁≈g₂ ≈-refl))) ≈-refl) ≈-refl)
+
+    strong-copair-in₁ : ∀ {w x y z} (f : prod w x ⇒ z) (g : prod w y ⇒ z) →
+                        (strong-copair f g ∘ pair p₁ (in₁ ∘ p₂)) ≈ f
+    strong-copair-in₁ f g = begin
+        (eval ∘ pair (copair (lambda' f) (lambda' g) ∘ p₂) p₁) ∘ pair p₁ (in₁ ∘ p₂)
+      ≈⟨ assoc _ _ _ ⟩
+        eval ∘ (pair (copair (lambda' f) (lambda' g) ∘ p₂) p₁ ∘ pair p₁ (in₁ ∘ p₂))
+      ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
+        eval ∘ pair ((copair (lambda' f) (lambda' g) ∘ p₂) ∘ pair p₁ (in₁ ∘ p₂)) (p₁ ∘ pair p₁ (in₁ ∘ p₂))
+      ≈⟨ ∘-cong ≈-refl (pair-cong (assoc _ _ _) (pair-p₁ _ _)) ⟩
+        eval ∘ pair (copair (lambda' f) (lambda' g) ∘ (p₂ ∘ pair p₁ (in₁ ∘ p₂))) p₁
+      ≈⟨ ∘-cong ≈-refl (pair-cong (∘-cong ≈-refl (pair-p₂ _ _)) ≈-refl) ⟩
+        eval ∘ pair (copair (lambda' f) (lambda' g) ∘ (in₁ ∘ p₂)) p₁
+      ≈˘⟨ ∘-cong ≈-refl (pair-cong (assoc _ _ _) ≈-refl) ⟩
+        eval ∘ pair ((copair (lambda' f) (lambda' g) ∘ in₁) ∘ p₂) p₁
+      ≈⟨ ∘-cong ≈-refl (pair-cong (∘-cong (copair-in₁ _ _) ≈-refl) ≈-refl) ⟩
+        eval ∘ pair (lambda' f ∘ p₂) p₁
+      ≈⟨ eval-lambda' f ⟩
+        f
+      ∎ where open ≈-Reasoning isEquiv
+
+    strong-copair-in₂ : ∀ {w x y z} (f : prod w x ⇒ z) (g : prod w y ⇒ z) →
+                        (strong-copair f g ∘ pair p₁ (in₂ ∘ p₂)) ≈ g
+    strong-copair-in₂ f g = begin
+        (eval ∘ pair (copair (lambda' f) (lambda' g) ∘ p₂) p₁) ∘ pair p₁ (in₂ ∘ p₂)
+      ≈⟨ assoc _ _ _ ⟩
+        eval ∘ (pair (copair (lambda' f) (lambda' g) ∘ p₂) p₁ ∘ pair p₁ (in₂ ∘ p₂))
+      ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
+        eval ∘ pair ((copair (lambda' f) (lambda' g) ∘ p₂) ∘ pair p₁ (in₂ ∘ p₂)) (p₁ ∘ pair p₁ (in₂ ∘ p₂))
+      ≈⟨ ∘-cong ≈-refl (pair-cong (assoc _ _ _) (pair-p₁ _ _)) ⟩
+        eval ∘ pair (copair (lambda' f) (lambda' g) ∘ (p₂ ∘ pair p₁ (in₂ ∘ p₂))) p₁
+      ≈⟨ ∘-cong ≈-refl (pair-cong (∘-cong ≈-refl (pair-p₂ _ _)) ≈-refl) ⟩
+        eval ∘ pair (copair (lambda' f) (lambda' g) ∘ (in₂ ∘ p₂)) p₁
+      ≈˘⟨ ∘-cong ≈-refl (pair-cong (assoc _ _ _) ≈-refl) ⟩
+        eval ∘ pair ((copair (lambda' f) (lambda' g) ∘ in₂) ∘ p₂) p₁
+      ≈⟨ ∘-cong ≈-refl (pair-cong (∘-cong (copair-in₂ _ _) ≈-refl) ≈-refl) ⟩
+        eval ∘ pair (lambda' g ∘ p₂) p₁
+      ≈⟨ eval-lambda' g ⟩
+        g
+      ∎ where open ≈-Reasoning isEquiv
+
+    strong-copair-ext : ∀ {w x y z} (h : prod w (coprod x y) ⇒ z) →
+                        strong-copair (h ∘ pair p₁ (in₁ ∘ p₂)) (h ∘ pair p₁ (in₂ ∘ p₂)) ≈ h
+    strong-copair-ext h = begin
+        eval ∘ pair (copair (lambda' (h ∘ pair p₁ (in₁ ∘ p₂))) (lambda' (h ∘ pair p₁ (in₂ ∘ p₂))) ∘ p₂) p₁
+      ≈⟨ ∘-cong ≈-refl (pair-cong (∘-cong (copair-cong (lambda'-natural in₁ h) (lambda'-natural in₂ h)) ≈-refl) ≈-refl) ⟩
+        eval ∘ pair (copair (lambda' h ∘ in₁) (lambda' h ∘ in₂) ∘ p₂) p₁
+      ≈⟨ ∘-cong ≈-refl (pair-cong (∘-cong (copair-ext _) ≈-refl) ≈-refl) ⟩
+        eval ∘ pair (lambda' h ∘ p₂) p₁
+      ≈⟨ eval-lambda' h ⟩
+        h
+      ∎ where open ≈-Reasoning isEquiv
+
+    strongCoproducts : HasStrongCoproducts 𝒞 P
+    strongCoproducts .HasStrongCoproducts.coprod = coprod
+    strongCoproducts .HasStrongCoproducts.in₁ = in₁
+    strongCoproducts .HasStrongCoproducts.in₂ = in₂
+    strongCoproducts .HasStrongCoproducts.copair = strong-copair
+    strongCoproducts .HasStrongCoproducts.copair-cong = strong-copair-cong
+    strongCoproducts .HasStrongCoproducts.copair-in₁ = strong-copair-in₁
+    strongCoproducts .HasStrongCoproducts.copair-in₂ = strong-copair-in₂
+    strongCoproducts .HasStrongCoproducts.copair-ext = strong-copair-ext

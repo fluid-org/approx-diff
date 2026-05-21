@@ -67,9 +67,6 @@ apply-eq (P [×] Q)    τ = cong₂ _⊗_ (apply-eq P τ) (apply-eq Q τ)
 ⟦ zero ⟧var = p₂
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
 
-swap : ∀ {x y} → (x ⊗ y) ⇒ (y ⊗ x)
-swap = ⟨ p₂ , p₁ ⟩
-
 mutual
   ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
   ⟦ var x ⟧tm = ⟦ x ⟧var
