@@ -394,6 +394,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     unembed-≈ (P Poly.+ Q) {inj₂ _} {inj₂ _} x≈y         = unembed-≈ Q x≈y
     unembed-≈ (P Poly.× Q) {_ , _} {_ , _} (x₁≈y₁ , x₂≈y₂) = (unembed-≈ P x₁≈y₁ , unembed-≈ Q x₂≈y₂)
 
+    embed-unembed-id : (P : Poly cat) (i : WIdx poly (idx-of P)) →
+                       WIdx-≈ poly (idx-of P) (embed-idx P (unembed-idx P i)) i
+    embed-unembed-id Poly.one       (lift tt) = tt
+    embed-unembed-id (Poly.const A) a         = A .idx .isEquivalence .refl
+    embed-unembed-id Poly.var       w         = W-≈-refl poly {w}
+    embed-unembed-id (P Poly.+ Q)   (inj₁ x)  = embed-unembed-id P x
+    embed-unembed-id (P Poly.+ Q)   (inj₂ y)  = embed-unembed-id Q y
+    embed-unembed-id (P Poly.× Q)   (x , y)   = (embed-unembed-id P x , embed-unembed-id Q y)
+
     embed-fam : (P : Poly cat) (i : poly-obj P WObj .idx .Carrier) →
                 poly-obj P WObj .fam .fm i ⇒ WFam-fm P (embed-idx P i)
     embed-fam Poly.one         (lift tt)  = id _
