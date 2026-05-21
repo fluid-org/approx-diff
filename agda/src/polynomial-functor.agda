@@ -858,23 +858,36 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.⦅⦆-β {Γ} {Q} alg ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , i₁} {γ₂ , i₂} (γ₁≈γ₂ , i₁≈i₂) =
     alg .Mor.idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , β-idx Q γ₁≈γ₂ i₁≈i₂)
     where open W-types Q; open Open alg
-  hasMu .HasMu.⦅⦆-β {Γ} {Q} {y} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , i} =
-    ≈-trans (∘-cong ≈-refl id-left)
-      (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-      (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (bridge-fm Q alg γ i)))
-      (≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong (≈-sym (alg .Mor.famf .natural
-                  (Setoid.isEquivalence (Γ .Obj.idx) .IsEquivalence.refl ,
-                   β-idx Q (Setoid.isEquivalence (Γ .Obj.idx) .IsEquivalence.refl)
-                          (Setoid.isEquivalence (Sem.poly-obj (terminal T) products strongCoproducts Q (W-types.WObj Q) .Obj.idx) .IsEquivalence.refl))))
-                ≈-refl)
-      (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
-      (≈-trans (∘-cong ≈-refl (pair-cong
-                  (≈-trans (∘-cong (Γ .Obj.fam .Fam.refl*) ≈-refl) id-left)
-                  (≈-trans (≈-sym (assoc _ _ _)) (β-fam Q γ i))))
-      (≈-sym id-left))))))))
-    where open W-types Q; open Open alg
+  hasMu .HasMu.⦅⦆-β {Γ} {Q} {y} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , i} = begin
+      _
+    ≈⟨ ∘-cong ≈-refl id-left ⟩
+      _
+    ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      _
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (bridge-fm Q alg γ i)) ⟩
+      _
+    ≈⟨ ≈-sym (assoc _ _ _) ⟩
+      _
+    ≈⟨ ∘-cong
+        (≈-sym (alg .Mor.famf .natural (
+          Setoid.isEquivalence (Γ .Obj.idx) .IsEquivalence.refl ,
+          β-idx Q (Setoid.isEquivalence (Γ .Obj.idx) .IsEquivalence.refl)
+                  (Setoid.isEquivalence (poly-obj Q WObj .Obj.idx) .IsEquivalence.refl)
+        )))
+        ≈-refl ⟩
+      _
+    ≈⟨ assoc _ _ _ ⟩
+      _
+    ≈⟨ ∘-cong ≈-refl (pair-compose _ _ _ _) ⟩
+      _
+    ≈⟨ ∘-cong ≈-refl (pair-cong
+                (≈-trans (∘-cong (Γ .Obj.fam .Fam.refl*) ≈-refl) id-left)
+                (≈-trans (≈-sym (assoc _ _ _)) (β-fam Q γ i))) ⟩
+      _
+    ≈⟨ ≈-sym id-left ⟩
+      _
+    ∎ where
+      open W-types Q; open Open alg; open ≈-Reasoning isEquiv
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
 
 ------------------------------------------------------------------------------
