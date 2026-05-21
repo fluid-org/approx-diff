@@ -876,7 +876,21 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           pair p₁ (poly-fmor Q fold-open .Mor.famf .transf (γ , i)))
     ∎ where
       open W-types Q; open Open alg; open ≈-Reasoning isEquiv
-  hasMu .HasMu.⦅⦆-η alg h x = {!!}
+  hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) =
+    η-idx Poly.var γ₁≈γ₂ t₁≈t₂
+    where
+      open W-types Q; open Open alg
+      η-idx : (P : Poly cat) {γ₁ γ₂ : Γ .Obj.idx .Carrier} (γ₁≈γ₂ : Γ .Obj.idx ._≈s_ γ₁ γ₂)
+              {i₁ i₂ : poly-obj P WObj .Obj.idx .Carrier} (i₁≈i₂ : poly-obj P WObj .Obj.idx ._≈s_ i₁ i₂) →
+              poly-obj P y .Obj.idx ._≈s_
+                (poly-fmor P h .Mor.idxf .PS._⇒_.func (γ₁ , i₁)) (project-idx-open P γ₂ (embed-idx P i₂))
+      η-idx Poly.one       _ _                                  = tt
+      η-idx (Poly.const A) _ i₁≈i₂                              = {!!}
+      η-idx Poly.var       γ₁≈γ₂ {inF i₁} {inF i₂} i₁≈i₂        = {!!}
+      η-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ x₁} {inj₁ x₂} i₁≈i₂      = {!!}
+      η-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ y₁} {inj₂ y₂} i₁≈i₂      = {!!}
+      η-idx (P Poly.× R)   γ₁≈γ₂ (x₁≈x₂ , z₁≈z₂)                = {!!}
+  hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.famf-eq = {!!}
 
 ------------------------------------------------------------------------------
 -- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
