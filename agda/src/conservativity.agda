@@ -5,7 +5,8 @@ open import Data.Product using (_,_)
 open import prop using (_,_; proj₁; proj₂; ∃; LiftP; lift; lower; liftS; LiftS; inj₁; inj₂)
 open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet)
 open import categories
-  using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
+  using (Category; HasBooleans; HasProducts; HasCoproducts; HasStrongCoproducts;
+         strong-coproducts→coproducts; ccc→strong-coproducts; HasExponentials;
          HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans; setoid→category)
 import polynomial-functor
 open import functor
@@ -50,7 +51,8 @@ open ≃-NatTrans
 module conservativity
   {o m e}
   -- Category for interpreting first-order things
-  (𝒞 : Category o m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP)
+  (𝒞 : Category o m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
+  (let 𝒞CP = strong-coproducts→coproducts 𝒞T 𝒞SC) (stable : Stable 𝒞CP)
   -- A higher order model
   (𝒟 : Category o m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P)
   (𝒟DC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) 𝒟)
@@ -304,6 +306,10 @@ module GlPE = Gl.products-and-exponentials 𝒟T 𝒟P 𝒟E G-preserve-products
 module GlPM = HasProducts GlPE.products
 module GlT = HasTerminal GlPE.terminal
 
+-- Gl is a CCC so it has strong coproducts.
+GlSC : HasStrongCoproducts Gl.cat GlPE.products
+GlSC = ccc→strong-coproducts GlCP.coproducts GlPE.exponentials
+
 GDC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) Gl.cat
 GDC A = colimits where open Gl.colimits (setoid→category A) (𝒟DC A)
 
@@ -442,16 +448,16 @@ definability {X} {Y} f with f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))
 
 module syntactic {ℓ}
    (Sig : Signature ℓ)
-   (𝒞Mu : polynomial-functor.Sem.HasMu 𝒞T 𝒞P 𝒞CP)
-   (Gl-HasMu : polynomial-functor.Sem.HasMu GlPE.terminal GlPE.products GlCP.coproducts)
-   (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞CP GlPE.terminal GlPE.products GlCP.coproducts 𝒞Mu Gl-HasMu GF)
+   (𝒞Mu : polynomial-functor.Sem.HasMu 𝒞T 𝒞P 𝒞SC)
+   (Gl-HasMu : polynomial-functor.Sem.HasMu GlPE.terminal GlPE.products GlSC)
+   (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-HasMu GF)
    (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig) where
 
   open import language-syntax Sig
 
   open import language-fo-interpretation Sig
-         𝒞 𝒞T 𝒞P 𝒞CP 𝒞Mu
-         Gl.cat GlPE.terminal GlPE.products GlCP.coproducts GlPE.exponentials Gl-HasMu
+         𝒞 𝒞T 𝒞P 𝒞SC 𝒞Mu
+         Gl.cat GlPE.terminal GlPE.products GlSC GlPE.exponentials Gl-HasMu
          GF GF-preserve-terminal GF-preserve-products GF-preserve-coproducts GFμ
          𝒞-Sig-Model
     renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
