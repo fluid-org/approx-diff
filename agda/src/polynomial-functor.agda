@@ -870,7 +870,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 ≈-refl)
       (≈-trans (assoc _ _ _)
       (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
-      {!!}))))))
+      (≈-trans (∘-cong ≈-refl (pair-cong
+                  (≈-trans (∘-cong (Γ .Obj.fam .Fam.refl*) ≈-refl) id-left)
+                  (≈-trans (≈-sym (assoc _ _ _)) (β-fam Q γ i))))
+      {!!})))))))
     where open W-types Q; open Open alg
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
 
