@@ -51,6 +51,7 @@ module backward where
   BaseInterp .Model.⟦sort⟧ label = simple[ label.Label , galois.𝟙 ]
   BaseInterp .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , galois.TWO ]
   BaseInterp .Model.⟦op⟧ zero = Galois.zero-mor
+  BaseInterp .Model.⟦op⟧ one = Galois.one-mor
   BaseInterp .Model.⟦op⟧ add = Galois.add-mor C.∘ binary2
   BaseInterp .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , galois.cat .Category.id _ ]
   BaseInterp .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
@@ -121,6 +122,7 @@ module forward where
   BaseInterp .Model.⟦sort⟧ label = simple[ label.Label , conjugate.𝟙 ]
   BaseInterp .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , conjugate.TWO ]
   BaseInterp .Model.⟦op⟧ zero = Conjugate.zero-mor
+  BaseInterp .Model.⟦op⟧ one = Conjugate.one-mor
   BaseInterp .Model.⟦op⟧ add = Conjugate.add-mor C.∘ binary2
   BaseInterp .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , conjugate.cat .Category.id _ ]
   BaseInterp .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary

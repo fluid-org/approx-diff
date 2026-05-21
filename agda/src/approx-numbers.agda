@@ -17,7 +17,7 @@ open import categories using (HasTerminal; Category)
 
 import fam
 
-open import Data.Rational using (ℚ; _≤_; _⊔_; _⊓_; _+_; _-_; 0ℚ; -_; Positive; _*_; _÷_; NonZero)
+open import Data.Rational using (ℚ; _≤_; _⊔_; _⊓_; _+_; _-_; 0ℚ; 1ℚ; -_; Positive; _*_; _÷_; NonZero)
 open import Data.Rational.Properties
   using (
     ≤-refl; ≤-trans; ⊓-glb; ⊔-lub; p⊓q≤p; p⊓q≤q; +-mono-≤; module ≤-Reasoning; +-comm; ≤-reflexive; +-assoc;
@@ -344,6 +344,20 @@ module Galois where
   zero-mor .famf .natural e .right-eq .eqfun _ = (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
   zero-mor .famf .natural e .left-eq .eqfun _ = tt , tt
 
+  one-mor : Fam.Mor 𝟙 ℚ-intv
+  one-mor .idxf .prop-setoid._⇒_.func _ = 1ℚ
+  one-mor .idxf .prop-setoid._⇒_.func-resp-≈ _ = liftS ≡-refl
+  one-mor .famf .transf _ ._⇒g_.right ._=>_.fun _ =
+    < record { lower = 1ℚ ; upper = 1ℚ ; l≤q = liftS ≤-refl ; q≤u = liftS ≤-refl } >
+  one-mor .famf .transf _ ._⇒g_.right ._=>_.mono _ = liftS ≤-refl , liftS ≤-refl
+  one-mor .famf .transf _ ._⇒g_.left ._=>_.fun _ = tt
+  one-mor .famf .transf _ ._⇒g_.left ._=>_.mono _ = tt
+  one-mor .famf .transf _ ._⇒g_.left⊣right {tt} {y} .proj₁ _ = tt
+  one-mor .famf .transf _ ._⇒g_.left⊣right {tt} {bottom} .proj₂ _ = tt
+  one-mor .famf .transf _ ._⇒g_.left⊣right {tt} {< x >} .proj₂ _ = x .l≤q , x .q≤u
+  one-mor .famf .natural e .right-eq .eqfun _ = (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
+  one-mor .famf .natural e .left-eq .eqfun _ = tt , tt
+
 ------------------------------------------------------------------------------
 -- Conjugate (forward) interpretation
 module Conjugate where
@@ -636,6 +650,24 @@ module Conjugate where
   zero-mor .famf .natural e ._≃c_.right-eq ._≃J_.eqfunc ._≃m_.eqfun tt = tt , tt
   zero-mor .famf .natural e ._≃c_.left-eq ._≃J_.eqfunc ._≃m_.eqfun bottom = tt , tt
   zero-mor .famf .natural e ._≃c_.left-eq ._≃J_.eqfunc ._≃m_.eqfun < x > = tt , tt
+
+  one-mor : Fam.Mor 𝟙 ℚ-intv
+  one-mor .idxf .prop-setoid._⇒_.func _ = 1ℚ
+  one-mor .idxf .prop-setoid._⇒_.func-resp-≈ _ = liftS ≡-refl
+  one-mor .famf .transf _ ._⇒c_.right ._=>J_.func ._=>_.fun tt = bottom
+  one-mor .famf .transf _ ._⇒c_.right ._=>J_.func ._=>_.mono {tt} {tt} _ = tt
+  one-mor .famf .transf _ ._⇒c_.right ._=>J_.∨-preserving = tt
+  one-mor .famf .transf _ ._⇒c_.right ._=>J_.⊥-preserving = tt
+  one-mor .famf .transf _ ._⇒c_.left ._=>J_.func ._=>_.fun _ = tt
+  one-mor .famf .transf _ ._⇒c_.left ._=>J_.func ._=>_.mono _ = tt
+  one-mor .famf .transf _ ._⇒c_.left ._=>J_.∨-preserving = tt
+  one-mor .famf .transf _ ._⇒c_.left ._=>J_.⊥-preserving = tt
+  one-mor .famf .transf _ ._⇒c_.conjugate .proj₁ _ = tt
+  one-mor .famf .transf _ ._⇒c_.conjugate {x = tt} {y = bottom} .proj₂ _ = tt
+  one-mor .famf .transf _ ._⇒c_.conjugate {x = tt} {y = < _ >} .proj₂ _ = tt
+  one-mor .famf .natural e ._≃c_.right-eq ._≃J_.eqfunc ._≃m_.eqfun tt = tt , tt
+  one-mor .famf .natural e ._≃c_.left-eq ._≃J_.eqfunc ._≃m_.eqfun bottom = tt , tt
+  one-mor .famf .natural e ._≃c_.left-eq ._≃J_.eqfunc ._≃m_.eqfun < x > = tt , tt
 
   add-mor : Fam.Mor (ℚ-intv ⊗ ℚ-intv) ℚ-intv
   add-mor .idxf .prop-setoid._⇒_.func (q₁ , q₂) = q₁ + q₂
