@@ -919,6 +919,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               WObj .Obj.idx .isEquivalence .trans j₁≈j₂
                 (WObj .Obj.idx .isEquivalence .sym (embed-unembed-id Q j₂))) ⟩
           h .Mor.idxf .PS._⇒_.func (_ , inF (embed-idx Q (unembed-idx Q j₂)))
+        ≈⟨ h-step ._≃_.idxf-eq .PS._≃m_.func-eq
+             (Γ .Obj.idx .isEquivalence .refl ,
+              poly-obj Q WObj .Obj.idx .isEquivalence .refl) ⟩
+          alg .Mor.idxf .PS._⇒_.func (_ , poly-fmor Q h .Mor.idxf .PS._⇒_.func (_ , unembed-idx Q j₂))
         ≈⟨ {!!} ⟩
           alg .Mor.idxf .PS._⇒_.func (_ , project-idx-open Q _ j₂)
         ∎ where open ≈-Reasoning (y .Obj.idx .isEquivalence)
