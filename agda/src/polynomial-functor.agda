@@ -966,10 +966,23 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ∎ where open ≈-Reasoning isEquiv
       η-fam Poly.var       γ (inF j)   = begin
           y .Obj.fam .Fam.subst _ ∘ h .Mor.famf .transf (γ , inF j)
+        ≈⟨ ∘-cong (y .Obj.fam .Fam.trans* proof-after br1) ≈-refl ⟩
+          (y .Obj.fam .Fam.subst proof-after ∘ y .Obj.fam .Fam.subst br1) ∘ h .Mor.famf .transf (γ , inF j)
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
-        ∎ where open ≈-Reasoning isEquiv
+        ∎ where
+          open ≈-Reasoning isEquiv
+          br1 = h .Mor.idxf .PS._⇒_.func-resp-≈
+                  (Γ .Obj.idx .isEquivalence .refl ,
+                   WObj .Obj.idx .isEquivalence .sym (embed-unembed-id Q j))
+          proof-after = poly-obj Poly.var y .Obj.idx .isEquivalence .trans
+                  (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
+                    (Γ .Obj.idx .isEquivalence .refl ,
+                     poly-obj Q WObj .Obj.idx .isEquivalence .refl))
+                  (alg .Mor.idxf .PS._⇒_.func-resp-≈
+                    (Γ .Obj.idx .isEquivalence .refl ,
+                     η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))))
       η-fam (P Poly.+ R)   γ (inj₁ x)  = {!!}
       η-fam (P Poly.+ R)   γ (inj₂ z)  = {!!}
       η-fam (P Poly.× R)   γ (x , z)   = {!!}
