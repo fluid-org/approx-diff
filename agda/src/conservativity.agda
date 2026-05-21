@@ -442,15 +442,17 @@ definability {X} {Y} f with f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))
 
 module syntactic {ℓ}
    (Sig : Signature ℓ)
+   (𝒞Mu : polynomial-functor.Sem.HasMu 𝒞T 𝒞P 𝒞CP)
    (Gl-HasMu : polynomial-functor.Sem.HasMu GlPE.terminal GlPE.products GlCP.coproducts)
+   (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞CP GlPE.terminal GlPE.products GlCP.coproducts 𝒞Mu Gl-HasMu GF)
    (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig) where
 
   open import language-syntax Sig
 
   open import language-fo-interpretation Sig
-         𝒞 𝒞T 𝒞P 𝒞CP
+         𝒞 𝒞T 𝒞P 𝒞CP 𝒞Mu
          Gl.cat GlPE.terminal GlPE.products GlCP.coproducts GlPE.exponentials Gl-HasMu
-         GF GF-preserve-terminal GF-preserve-products GF-preserve-coproducts
+         GF GF-preserve-terminal GF-preserve-products GF-preserve-coproducts GFμ
          𝒞-Sig-Model
     renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
 

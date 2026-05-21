@@ -33,12 +33,22 @@ apply (P [×] Q) τ   = apply P τ [×] apply Q τ
 
 infixr 35 _[→]_
 
-data first-order : type → Set ℓ where
-  unit  : first-order unit
-  bool  : first-order bool
-  base  : ∀ s → first-order (base s)
-  _[×]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [×] τ₂)
-  _[+]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [+] τ₂)
+mutual
+  data first-order : type → Set ℓ where
+    unit  : first-order unit
+    bool  : first-order bool
+    base  : ∀ s → first-order (base s)
+    _[×]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [×] τ₂)
+    _[+]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [+] τ₂)
+    μ     : ∀ {P} → first-order-poly P → first-order (μ P)
+
+  -- Polynomials whose const slots only mention first-order types.
+  data first-order-poly : polynomial → Set ℓ where
+    one   : first-order-poly one
+    const : ∀ {τ} → first-order τ → first-order-poly (const τ)
+    var   : first-order-poly var
+    _[+]_ : ∀ {P Q} → first-order-poly P → first-order-poly Q → first-order-poly (P [+] Q)
+    _[×]_ : ∀ {P Q} → first-order-poly P → first-order-poly Q → first-order-poly (P [×] Q)
 
 infixl 40 _[×]_ _[+]_
 

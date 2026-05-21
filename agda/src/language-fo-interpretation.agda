@@ -1,7 +1,7 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; HasBooleans; coproducts+exp→booleans)
-open import polynomial-functor using (Poly; module Sem)
+open import polynomial-functor using (Poly; module Sem; Poly-map; Preserves-μ)
 open import functor using (Functor)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
@@ -16,12 +16,14 @@ open Functor
 module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o₁ m₁ e₁ o₂ m₂ e₂}
   (𝒞 : Category o₁ m₁ e₁) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞)
+  (let open Sem 𝒞T 𝒞P 𝒞CP renaming (HasMu to 𝒞HasMu)) (𝒞Mu : 𝒞HasMu)
   (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P)
   (let open Sem 𝒟T 𝒟P 𝒟CP) (𝒟Mu : HasMu)
   (F : Functor 𝒞 𝒟)
   (FT : Category.IsIso 𝒟 (HasTerminal.to-terminal 𝒟T {F .fobj (𝒞T .HasTerminal.witness)}))
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
   (FC : preserve-chosen-coproducts F 𝒞CP 𝒟CP)
+  (Fμ : Preserves-μ 𝒞T 𝒞P 𝒞CP 𝒟T 𝒟P 𝒟CP 𝒞Mu 𝒟Mu F)
   (𝒞-Sig-model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
   where
 
@@ -32,13 +34,24 @@ module _ where
   open HasTerminal 𝒞T renaming (witness to 𝟙)
   open HasProducts 𝒞P renaming (prod to _×_)
   open HasCoproducts 𝒞CP renaming (coprod to _+_)
+  open Sem 𝒞T 𝒞P 𝒞CP using (poly-obj)
+  open 𝒞HasMu 𝒞Mu using () renaming (μ to μ-obj)
 
-  𝒞⟦_⟧ty : ∀ {τ} → first-order τ → obj
-  𝒞⟦ unit ⟧ty = 𝟙
-  𝒞⟦ bool ⟧ty = 𝟙 + 𝟙
-  𝒞⟦ base s ⟧ty = 𝒞-Sig-model .Model.⟦sort⟧ s
-  𝒞⟦ τ₁ [×] τ₂ ⟧ty = 𝒞⟦ τ₁ ⟧ty × 𝒞⟦ τ₂ ⟧ty
-  𝒞⟦ τ₁ [+] τ₂ ⟧ty = 𝒞⟦ τ₁ ⟧ty + 𝒞⟦ τ₂ ⟧ty
+  mutual
+    𝒞⟦_⟧ty : ∀ {τ} → first-order τ → obj
+    𝒞⟦ unit ⟧ty = 𝟙
+    𝒞⟦ bool ⟧ty = 𝟙 + 𝟙
+    𝒞⟦ base s ⟧ty = 𝒞-Sig-model .Model.⟦sort⟧ s
+    𝒞⟦ τ₁ [×] τ₂ ⟧ty = 𝒞⟦ τ₁ ⟧ty × 𝒞⟦ τ₂ ⟧ty
+    𝒞⟦ τ₁ [+] τ₂ ⟧ty = 𝒞⟦ τ₁ ⟧ty + 𝒞⟦ τ₂ ⟧ty
+    𝒞⟦ μ P-fo ⟧ty = μ-obj 𝒞⟦ P-fo ⟧poly
+
+    𝒞⟦_⟧poly : ∀ {P} → first-order-poly P → Poly 𝒞
+    𝒞⟦ one ⟧poly        = Poly.one
+    𝒞⟦ const τ-fo ⟧poly = Poly.const 𝒞⟦ τ-fo ⟧ty
+    𝒞⟦ var ⟧poly        = Poly.var
+    𝒞⟦ P [+] Q ⟧poly    = 𝒞⟦ P ⟧poly Poly.+ 𝒞⟦ Q ⟧poly
+    𝒞⟦ P [×] Q ⟧poly    = 𝒞⟦ P ⟧poly Poly.× 𝒞⟦ Q ⟧poly
 
   𝒞⟦_⟧ctxt : ∀ {Γ} → first-order-ctxt Γ → obj
   𝒞⟦ emp ⟧ctxt = 𝟙
@@ -71,6 +84,9 @@ open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟CP 𝒟E 𝒟Mu �
 ⟦ base s ⟧-iso    = 𝒟.Iso-refl
 ⟦ τ₁ [×] τ₂ ⟧-iso = 𝒟.Iso-trans (𝒟.IsIso→Iso FP) (𝒟P.product-preserves-iso ⟦ τ₁ ⟧-iso ⟦ τ₂ ⟧-iso)
 ⟦ τ₁ [+] τ₂ ⟧-iso = 𝒟.Iso-trans (𝒟.Iso-sym (𝒟.IsIso→Iso FC)) (𝒟CP.coproduct-preserve-iso ⟦ τ₁ ⟧-iso ⟦ τ₂ ⟧-iso)
+-- F preserves μ (Fμ); then we need an extra iso showing that 𝒟Mu.μ
+-- respects iso at const slots of its polynomial. FIXME: that second iso.
+⟦ μ P-fo ⟧-iso    = {!!}
 
 ⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → 𝒟.Iso (F .fobj 𝒞⟦ Γ-fo ⟧ctxt) 𝒟⟦ Γ ⟧ctxt
 ⟦ emp ⟧ctxt-iso   = 𝒟.IsIso→Iso FT
