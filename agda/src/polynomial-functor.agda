@@ -656,13 +656,29 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ _} {inj₂ _} i₁≈i₂  = β-idx R γ₁≈γ₂ i₁≈i₂
       β-idx (P Poly.× R)   γ₁≈γ₂ (x₁≈x₂ , z₁≈z₂)          = β-idx P γ₁≈γ₂ x₁≈x₂ , β-idx R γ₁≈γ₂ z₁≈z₂
 
+      -- β-fam: project-fam-open through embed agrees (modulo subst from β-idx)
+      -- with poly-fmor's fam action of fold-open. Mirrors β-idx at the fam level.
+      β-fam : (P : Poly cat) (γ : Γ .idx .Carrier) (i : poly-obj P WObj .idx .Carrier) →
+              (project-fam-open P γ (embed-idx P i) ∘
+                pair p₁ (embed-fam P i ∘ p₂)) ≈
+              (poly-obj P y .fam .subst
+                (β-idx P (Γ .idx .Setoid.refl) (poly-obj P WObj .idx .Setoid.refl)) ∘
+                poly-fmor P fold-open .famf .transf (γ , i))
+      β-fam Poly.one       _ _              = {!!}
+      β-fam (Poly.const A) _ _              = {!!}
+      β-fam Poly.var       γ (inF i)        = {!!}
+      β-fam (P Poly.+ R)   γ (inj₁ x)       = {!!}
+      β-fam (P Poly.+ R)   γ (inj₂ z)       = {!!}
+      β-fam (P Poly.× R)   γ (x , z)        = {!!}
+
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
   hasMu .HasMu.inF Q        = W-types.inF-mor Q
   hasMu .HasMu.⦅_⦆ {Γ} {Q}  = W-types.Open.fold-open Q
   hasMu .HasMu.⦅⦆-β {Γ} {Q} alg ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , i₁} {γ₂ , i₂} (γ₁≈γ₂ , i₁≈i₂) =
-    alg .Mor.idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , W-types.Open.β-idx Q alg Q γ₁≈γ₂ i₁≈i₂)
-  hasMu .HasMu.⦅⦆-β alg ._≃_.famf-eq = {!!}
+    alg .Mor.idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , β-idx Q γ₁≈γ₂ i₁≈i₂)
+    where open W-types Q; open Open alg
+  hasMu .HasMu.⦅⦆-β {Γ} {Q} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , i} = {!!}
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
 
 ------------------------------------------------------------------------------
