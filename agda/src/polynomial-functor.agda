@@ -693,7 +693,31 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈-trans (β-fam P γ x) (≈-sym (≈-trans id-left id-left))
       β-fam (P Poly.+ R)   γ (inj₂ z)       =
         ≈-trans (β-fam R γ z) (≈-sym (≈-trans id-left id-left))
-      β-fam (P Poly.× R)   γ (x , z)        = {!!}
+      β-fam (P Poly.× R)   γ (x , z)        = body
+        where
+          open ≈-Reasoning isEquiv
+
+          Src = prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm x) (poly-obj R WObj .fam .fm z))
+          Mid = prod (Γ .fam .fm γ) (prod (WFam-fm P (embed-idx P x)) (WFam-fm R (embed-idx R z)))
+
+          -- Lift a WObj-fibre pair into the WFam-fibre form.
+          pair-embed : Src ⇒ Mid
+          pair-embed = pair p₁ (pair (embed-fam P x ∘ p₁) (embed-fam R z ∘ p₂) ∘ p₂)
+
+          -- Project to (γ, P-part) and (γ, R-part) at the WFam fibre level.
+          proj-P : Mid ⇒ prod (Γ .fam .fm γ) (WFam-fm P (embed-idx P x))
+          proj-P = pair p₁ (p₁ ∘ p₂)
+
+          proj-R : Mid ⇒ prod (Γ .fam .fm γ) (WFam-fm R (embed-idx R z))
+          proj-R = pair p₁ (p₂ ∘ p₂)
+
+          bridge-P : (proj-P ∘ pair-embed) ≈ pair p₁ (embed-fam P x ∘ (p₁ ∘ p₂))
+          bridge-P = {!!}
+
+          bridge-R : (proj-R ∘ pair-embed) ≈ pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
+          bridge-R = {!!}
+
+          body = {!!}
 
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
