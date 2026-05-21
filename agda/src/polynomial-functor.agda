@@ -728,7 +728,21 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             ∎ where open ≈-Reasoning isEquiv
 
           bridge-R : (proj-R ∘ pair-embed) ≈ pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
-          bridge-R = {!!}
+          bridge-R = begin
+              proj-R ∘ pair-embed
+            ≈⟨ pair-natural _ _ _ ⟩
+              pair (p₁ ∘ pair-embed) ((p₂ ∘ p₂) ∘ pair-embed)
+            ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+              pair p₁ (p₂ ∘ (p₂ ∘ pair-embed))
+            ≈⟨ pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+              pair p₁ (p₂ ∘ (pair (embed-fam P x ∘ p₁) (embed-fam R z ∘ p₂) ∘ p₂))
+            ≈⟨ pair-cong ≈-refl (≈-sym (assoc _ _ _)) ⟩
+              pair p₁ ((p₂ ∘ pair (embed-fam P x ∘ p₁) (embed-fam R z ∘ p₂)) ∘ p₂)
+            ≈⟨ pair-cong ≈-refl (∘-cong (pair-p₂ _ _) ≈-refl) ⟩
+              pair p₁ ((embed-fam R z ∘ p₂) ∘ p₂)
+            ≈⟨ pair-cong ≈-refl (assoc _ _ _) ⟩
+              pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
+            ∎ where open ≈-Reasoning isEquiv
 
           eq-P : ((poly-obj P y .fam .subst _ ∘ p₁) ∘
                     pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
