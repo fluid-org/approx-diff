@@ -975,6 +975,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           (y .Obj.fam .Fam.subst _ ∘ y .Obj.fam .Fam.subst _) ∘ h .Mor.famf .transf (γ , inF j)
         ≈⟨ assoc _ _ _ ⟩
           y .Obj.fam .Fam.subst _ ∘ (y .Obj.fam .Fam.subst _ ∘ h .Mor.famf .transf (γ , inF j))
+        ≈˘⟨ ∘-cong ≈-refl (h .Mor.famf .natural {γ , inF j} {γ , inF j}
+              (Γ .Obj.idx .isEquivalence .refl ,
+               poly-obj Poly.var WObj .Obj.idx .isEquivalence .sym (unembed-embed-id Poly.var (inF j)))) ⟩
+          y .Obj.fam .Fam.subst
+            (η-idx Poly.var (Γ .Obj.idx .isEquivalence .refl)
+               (WIdx-≈-refl poly (idx-of Poly.var) {embed-idx Poly.var (inF j)})) ∘
+            (h .Mor.famf .transf (γ , inF j) ∘ (Γ ⊗ WObj) .Obj.fam .Fam.subst
+              (Γ .Obj.idx .isEquivalence .refl ,
+               poly-obj Poly.var WObj .Obj.idx .isEquivalence .sym (unembed-embed-id Poly.var (inF j))))
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
