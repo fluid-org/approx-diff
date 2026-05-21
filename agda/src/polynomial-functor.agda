@@ -662,7 +662,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 (β-idx P (Γ .idx .Setoid.refl) (poly-obj P WObj .idx .Setoid.refl)) ∘
                 project-fam-open P γ (embed-idx P i) ∘ pair p₁ (embed-fam P i ∘ p₂)) ≈
               poly-fmor P fold-open .famf .transf (γ , i)
-      β-fam Poly.one       _ _              = HasTerminal.to-terminal-unique T _ _
+      β-fam Poly.one _ _ = HasTerminal.to-terminal-unique T _ _
       β-fam (Poly.const A) γ i = begin
           (A .fam .subst _ ∘ p₂) ∘ pair p₁ (id _ ∘ p₂)
         ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
@@ -676,7 +676,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈⟨ id-left ⟩
           p₂
         ∎ where open ≈-Reasoning isEquiv
-      β-fam Poly.var       γ (inF i)        = {!!}
+      β-fam Poly.var γ (inF i) = begin
+          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))) ∘ pair p₁ (id _ ∘ p₂)
+        ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
+          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))) ∘ pair p₁ p₂
+        ≈⟨ ∘-cong ≈-refl (≈-trans (pair-cong (≈-sym id-right) (≈-sym id-right)) (pair-ext (id _))) ⟩
+          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))) ∘ id _
+        ≈⟨ id-right ⟩
+          y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))
+        ≈⟨ ∘-cong (y .fam .refl*) ≈-refl ⟩
+          id _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))
+        ≈⟨ id-left ⟩
+          alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i)
+        ∎ where open ≈-Reasoning isEquiv
       β-fam (P Poly.+ R)   γ (inj₁ x)       = {!!}
       β-fam (P Poly.+ R)   γ (inj₂ z)       = {!!}
       β-fam (P Poly.× R)   γ (x , z)        = {!!}
