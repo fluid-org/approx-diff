@@ -869,7 +869,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                           (Setoid.isEquivalence (Sem.poly-obj (terminal T) products strongCoproducts Q (W-types.WObj Q) .Obj.idx) .IsEquivalence.refl))))
                 ≈-refl)
       (≈-trans (assoc _ _ _)
-      {!!})))))
+      (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
+      {!!}))))))
     where open W-types Q; open Open alg
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
 
