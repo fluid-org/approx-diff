@@ -693,7 +693,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈-trans (β-fam P γ x) (≈-sym (≈-trans id-left id-left))
       β-fam (P Poly.+ R)   γ (inj₂ z)       =
         ≈-trans (β-fam R γ z) (≈-sym (≈-trans id-left id-left))
-      β-fam (P Poly.× R)   γ (x , z)        = body
+      β-fam (P Poly.× R)   γ (x , z)        =
+        ≈-trans (∘-cong (pair-natural _ _ _) ≈-refl)
+        (≈-trans (pair-natural _ _ _) (pair-cong eq-P eq-R))
         where
           Src = prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm x) (poly-obj R WObj .fam .fm z))
           Mid = prod (Γ .fam .fm γ) (prod (WFam-fm P (embed-idx P x)) (WFam-fm R (embed-idx R z)))
@@ -729,15 +731,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 ≈ id _ ∘ (poly-fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
           eq-R = {!!}
 
-          body = begin
-              _
-            ≈⟨ ∘-cong (pair-natural _ _ _) ≈-refl ⟩
-              _
-            ≈⟨ pair-natural _ _ _ ⟩
-              _
-            ≈⟨ pair-cong eq-P eq-R ⟩
-              _
-            ∎ where open ≈-Reasoning isEquiv
 
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
