@@ -34,6 +34,15 @@ var        ∘ₚ Q = Q
 (P₁ + P₂)  ∘ₚ Q = (P₁ ∘ₚ Q) + (P₂ ∘ₚ Q)
 (P₁ × P₂)  ∘ₚ Q = (P₁ ∘ₚ Q) × (P₂ ∘ₚ Q)
 
+-- Map a polynomial through a functor by applying F to const slots.
+Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} →
+           Functor 𝒞 𝒟 → Poly 𝒞 → Poly 𝒟
+Poly-map F one         = one
+Poly-map F (const A)   = const (Functor.fobj F A)
+Poly-map F var         = var
+Poly-map F (P₁ + P₂)   = Poly-map F P₁ + Poly-map F P₂
+Poly-map F (P₁ × P₂)   = Poly-map F P₁ × Poly-map F P₂
+
 ------------------------------------------------------------------------------
 -- Polynomial signature extended with a Mon constructor (fibre-only decoration relative to whatever LiftMon
 -- the interpretation supplies).
