@@ -966,6 +966,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ∎ where open ≈-Reasoning isEquiv
       η-fam Poly.var       γ (inF j)   = begin
           y .Obj.fam .Fam.subst _ ∘ h .Mor.famf .transf (γ , inF j)
+        ≈⟨ ∘-cong (y .Obj.fam .Fam.trans*
+                    (η-idx Poly.var (Γ .Obj.idx .isEquivalence .refl)
+                       (WIdx-≈-refl poly (idx-of Poly.var) {embed-idx Poly.var (inF j)}))
+                    (h .Mor.idxf .PS._⇒_.func-resp-≈
+                       (Γ .Obj.idx .isEquivalence .refl ,
+                        poly-obj Poly.var WObj .Obj.idx .isEquivalence .sym (unembed-embed-id Poly.var (inF j))))) ≈-refl ⟩
+          (y .Obj.fam .Fam.subst _ ∘ y .Obj.fam .Fam.subst _) ∘ h .Mor.famf .transf (γ , inF j)
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
