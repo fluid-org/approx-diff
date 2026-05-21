@@ -306,14 +306,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     WFam-subst : (P : Poly cat) → ∀ {x y} → WIdx-≈ poly (idx-of P) x y → WFam-fm P x ⇒ WFam-fm P y
     WFam-subst Poly.one _ = id _
-    WFam-subst (Poly.const A) {x} {y} eq = A .fam .subst eq
-    WFam-subst Poly.var {inF i₁} {inF i₂} eq = WFam-subst Q eq
-    WFam-subst (P Poly.+ Q) {inj₁ _} {inj₁ _} eq = WFam-subst P eq
-    WFam-subst (P Poly.+ Q) {inj₂ _} {inj₂ _} eq = WFam-subst Q eq
+    WFam-subst (Poly.const A) {x} {y} x≈y = A .fam .subst x≈y
+    WFam-subst Poly.var {inF i₁} {inF i₂} i₁≈i₂ = WFam-subst Q i₁≈i₂
+    WFam-subst (P Poly.+ Q) {inj₁ _} {inj₁ _} x≈y = WFam-subst P x≈y
+    WFam-subst (P Poly.+ Q) {inj₂ _} {inj₂ _} x≈y = WFam-subst Q x≈y
     WFam-subst (P Poly.+ Q) {inj₁ _} {inj₂ _} ()
     WFam-subst (P Poly.+ Q) {inj₂ _} {inj₁ _} ()
-    WFam-subst (P Poly.× Q) {_ , _} {_ , _} (e₁ , e₂) =
-      prod-m (WFam-subst P e₁) (WFam-subst Q e₂)
+    WFam-subst (P Poly.× Q) {_ , _} {_ , _} (x₁≈y₁ , x₂≈y₂) =
+      prod-m (WFam-subst P x₁≈y₁) (WFam-subst Q x₂≈y₂)
 
     WFam-refl* : (P : Poly cat) → ∀ {x} →
                     WFam-subst P (WIdx-≈-refl poly (idx-of P) {x}) ≈ id _
@@ -332,29 +332,29 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       ∎ where open ≈-Reasoning isEquiv
 
     WFam-trans* : (P : Poly cat) → ∀ {x y z}
-                     (e₁ : WIdx-≈ poly (idx-of P) y z) (e₂ : WIdx-≈ poly (idx-of P) x y) →
-                     WFam-subst P (WIdx-≈-trans poly (idx-of P) e₂ e₁) ≈
-                     (WFam-subst P e₁ ∘ WFam-subst P e₂)
+                     (y≈z : WIdx-≈ poly (idx-of P) y z) (x≈y : WIdx-≈ poly (idx-of P) x y) →
+                     WFam-subst P (WIdx-≈-trans poly (idx-of P) x≈y y≈z) ≈
+                     (WFam-subst P y≈z ∘ WFam-subst P x≈y)
     WFam-trans* Poly.one _ _ = isEquiv .sym id-left
-    WFam-trans* (Poly.const A) e₁ e₂ = A .fam .trans* e₁ e₂
-    WFam-trans* Poly.var {inF _} {inF _} {inF _} e₁ e₂ =
-      WFam-trans* Q e₁ e₂
-    WFam-trans* (P Poly.+ Q) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WFam-trans* P e₁ e₂
-    WFam-trans* (P Poly.+ Q) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WFam-trans* Q e₁ e₂
-    WFam-trans* (P Poly.× Q) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
+    WFam-trans* (Poly.const A) y≈z x≈y = A .fam .trans* y≈z x≈y
+    WFam-trans* Poly.var {inF _} {inF _} {inF _} y≈z x≈y =
+      WFam-trans* Q y≈z x≈y
+    WFam-trans* (P Poly.+ Q) {inj₁ _} {inj₁ _} {inj₁ _} y≈z x≈y = WFam-trans* P y≈z x≈y
+    WFam-trans* (P Poly.+ Q) {inj₂ _} {inj₂ _} {inj₂ _} y≈z x≈y = WFam-trans* Q y≈z x≈y
+    WFam-trans* (P Poly.× Q) {_ , _} {_ , _} {_ , _} (y₁≈z₁ , y₂≈z₂) (x₁≈y₁ , x₂≈y₂) =
       begin
         prod-m (WFam-subst P _) (WFam-subst Q _)
-      ≈⟨ prod-m-cong (WFam-trans* P e₁ e₂) (WFam-trans* Q f₁ f₂) ⟩
-        prod-m (WFam-subst P e₁ ∘ WFam-subst P e₂) (WFam-subst Q f₁ ∘ WFam-subst Q f₂)
+      ≈⟨ prod-m-cong (WFam-trans* P y₁≈z₁ x₁≈y₁) (WFam-trans* Q y₂≈z₂ x₂≈y₂) ⟩
+        prod-m (WFam-subst P y₁≈z₁ ∘ WFam-subst P x₁≈y₁) (WFam-subst Q y₂≈z₂ ∘ WFam-subst Q x₂≈y₂)
       ≈⟨ pair-functorial _ _ _ _ ⟩
-        prod-m (WFam-subst P e₁) (WFam-subst Q f₁) ∘ prod-m (WFam-subst P e₂) (WFam-subst Q f₂)
+        prod-m (WFam-subst P y₁≈z₁) (WFam-subst Q y₂≈z₂) ∘ prod-m (WFam-subst P x₁≈y₁) (WFam-subst Q x₂≈y₂)
       ∎ where open ≈-Reasoning isEquiv
 
     WFam : Fam (WSetoid poly) 𝒞
     WFam .fm (inF i)                            = WFam-fm Q i
-    WFam .subst {inF _} {inF _} eq              = WFam-subst Q eq
+    WFam .subst {inF _} {inF _} i₁≈i₂           = WFam-subst Q i₁≈i₂
     WFam .refl* {inF _}                         = WFam-refl* Q
-    WFam .trans* {inF _} {inF _} {inF _} e₁ e₂  = WFam-trans* Q e₁ e₂
+    WFam .trans* {inF _} {inF _} {inF _} y≈z x≈y = WFam-trans* Q y≈z x≈y
 
     WObj : Obj
     WObj .idx = WSetoid poly
@@ -370,12 +370,12 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     embed-≈ : (P : Poly cat) → ∀ {x y} →
               poly-obj P WObj .idx ._≈s_ x y → WIdx-≈ poly (idx-of P) (embed-idx P x) (embed-idx P y)
-    embed-≈ Poly.one         _   = tt
-    embed-≈ (Poly.const A)   eq  = eq
-    embed-≈ Poly.var         eq  = eq
-    embed-≈ (P Poly.+ Q) {inj₁ _} {inj₁ _} eq        = embed-≈ P eq
-    embed-≈ (P Poly.+ Q) {inj₂ _} {inj₂ _} eq        = embed-≈ Q eq
-    embed-≈ (P Poly.× Q) {_ , _} {_ , _} (e₁ , e₂)   = (embed-≈ P e₁ , embed-≈ Q e₂)
+    embed-≈ Poly.one         _    = tt
+    embed-≈ (Poly.const A)   x≈y  = x≈y
+    embed-≈ Poly.var         x≈y  = x≈y
+    embed-≈ (P Poly.+ Q) {inj₁ _} {inj₁ _} x≈y         = embed-≈ P x≈y
+    embed-≈ (P Poly.+ Q) {inj₂ _} {inj₂ _} x≈y         = embed-≈ Q x≈y
+    embed-≈ (P Poly.× Q) {_ , _} {_ , _} (x₁≈y₁ , x₂≈y₂) = (embed-≈ P x₁≈y₁ , embed-≈ Q x₂≈y₂)
 
     embed-fam : (P : Poly cat) (i : poly-obj P WObj .idx .Carrier) →
                 poly-obj P WObj .fam .fm i ⇒ WFam-fm P (embed-idx P i)
@@ -386,30 +386,30 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     embed-fam (P Poly.+ Q)     (inj₂ y)   = embed-fam Q y
     embed-fam (P Poly.× Q)     (x , y)    = prod-m (embed-fam P x) (embed-fam Q y)
 
-    embed-fam-natural : (P : Poly cat) → ∀ {x₁ x₂} (e : poly-obj P WObj .idx ._≈s_ x₁ x₂) →
-                        (embed-fam P x₂ ∘ poly-obj P WObj .fam .subst e) ≈
-                        (WFam-subst P (embed-≈ P e) ∘ embed-fam P x₁)
+    embed-fam-natural : (P : Poly cat) → ∀ {x₁ x₂} (x₁≈x₂ : poly-obj P WObj .idx ._≈s_ x₁ x₂) →
+                        (embed-fam P x₂ ∘ poly-obj P WObj .fam .subst x₁≈x₂) ≈
+                        (WFam-subst P (embed-≈ P x₁≈x₂) ∘ embed-fam P x₁)
     embed-fam-natural Poly.one _ = isEquiv .trans id-left (≈-sym id-right)
     embed-fam-natural (Poly.const A) _ = isEquiv .trans id-left (≈-sym id-right)
     embed-fam-natural Poly.var {inF _} {inF _} _ = isEquiv .trans id-left (≈-sym id-right)
-    embed-fam-natural (P Poly.+ Q) {inj₁ _} {inj₁ _} e = embed-fam-natural P e
-    embed-fam-natural (P Poly.+ Q) {inj₂ _} {inj₂ _} e = embed-fam-natural Q e
-    embed-fam-natural (P Poly.× Q) {x₁ , y₁} {x₂ , y₂} (e , f) =
+    embed-fam-natural (P Poly.+ Q) {inj₁ _} {inj₁ _} x₁≈x₂ = embed-fam-natural P x₁≈x₂
+    embed-fam-natural (P Poly.+ Q) {inj₂ _} {inj₂ _} x₁≈x₂ = embed-fam-natural Q x₁≈x₂
+    embed-fam-natural (P Poly.× Q) {x₁ , y₁} {x₂ , y₂} (x₁≈x₂ , y₁≈y₂) =
       begin
         prod-m (embed-fam P x₂) (embed-fam Q y₂) ∘ prod-m _ _
       ≈⟨ ≈-sym (pair-functorial _ _ _ _) ⟩
         prod-m (embed-fam P x₂ ∘ _) (embed-fam Q y₂ ∘ _)
-      ≈⟨ prod-m-cong (embed-fam-natural P e) (embed-fam-natural Q f) ⟩
-        prod-m (WFam-subst P (embed-≈ P e) ∘ embed-fam P x₁) (WFam-subst Q (embed-≈ Q f) ∘ embed-fam Q y₁)
+      ≈⟨ prod-m-cong (embed-fam-natural P x₁≈x₂) (embed-fam-natural Q y₁≈y₂) ⟩
+        prod-m (WFam-subst P (embed-≈ P x₁≈x₂) ∘ embed-fam P x₁) (WFam-subst Q (embed-≈ Q y₁≈y₂) ∘ embed-fam Q y₁)
       ≈⟨ pair-functorial _ _ _ _ ⟩
-        prod-m (WFam-subst P (embed-≈ P e)) (WFam-subst Q (embed-≈ Q f)) ∘ prod-m (embed-fam P x₁) (embed-fam Q y₁)
+        prod-m (WFam-subst P (embed-≈ P x₁≈x₂)) (WFam-subst Q (embed-≈ Q y₁≈y₂)) ∘ prod-m (embed-fam P x₁) (embed-fam Q y₁)
       ∎ where open ≈-Reasoning isEquiv
 
     inF-mor : Mor (poly-obj Q WObj) WObj
-    inF-mor .idxf .PS._⇒_.func i          = inF (embed-idx Q i)
-    inF-mor .idxf .PS._⇒_.func-resp-≈ eq  = embed-≈ Q eq
-    inF-mor .famf .transf i               = embed-fam Q i
-    inF-mor .famf .natural e              = embed-fam-natural Q e
+    inF-mor .idxf .PS._⇒_.func i            = inF (embed-idx Q i)
+    inF-mor .idxf .PS._⇒_.func-resp-≈ x≈y   = embed-≈ Q x≈y
+    inF-mor .famf .transf i                 = embed-fam Q i
+    inF-mor .famf .natural x₁≈x₂            = embed-fam-natural Q x₁≈x₂
 
     module _ {y : Obj} (alg : Mor (poly-obj Q y) y) where
 
@@ -424,12 +424,12 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       project-≈ : (P : Poly cat) → ∀ {x z} → WIdx-≈ poly (idx-of P) x z →
                   poly-obj P y .idx ._≈s_ (project-idx P x) (project-idx P z)
       project-≈ Poly.one _ = tt
-      project-≈ (Poly.const A) eq = eq
-      project-≈ Poly.var {inF _} {inF _} eq =
-        alg .idxf .PS._⇒_.func-resp-≈ (project-≈ Q eq)
-      project-≈ (P Poly.+ Q) {inj₁ _} {inj₁ _} eq = project-≈ P eq
-      project-≈ (P Poly.+ Q) {inj₂ _} {inj₂ _} eq = project-≈ Q eq
-      project-≈ (P Poly.× Q) {_ , _} {_ , _} (e , f) = (project-≈ P e , project-≈ Q f)
+      project-≈ (Poly.const A) x≈z = x≈z
+      project-≈ Poly.var {inF _} {inF _} x≈z =
+        alg .idxf .PS._⇒_.func-resp-≈ (project-≈ Q x≈z)
+      project-≈ (P Poly.+ Q) {inj₁ _} {inj₁ _} x≈z = project-≈ P x≈z
+      project-≈ (P Poly.+ Q) {inj₂ _} {inj₂ _} x≈z = project-≈ Q x≈z
+      project-≈ (P Poly.× Q) {_ , _} {_ , _} (x₁≈z₁ , x₂≈z₂) = (project-≈ P x₁≈z₁ , project-≈ Q x₂≈z₂)
 
       project-fam : (P : Poly cat) (i : WIdx poly (idx-of P)) →
                     WFam-fm P i ⇒ poly-obj P y .fam .fm (project-idx P i)
