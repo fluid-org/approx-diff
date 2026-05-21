@@ -888,7 +888,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           (pair (Γ .Obj.fam .Fam.subst _ ∘ p₁) (poly-obj Q y .Obj.fam .Fam.subst _ ∘ p₂) ∘
           pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ∘-cong ≈-refl (pair-compose _ _ _ _) ⟩
-      _
+      alg .Mor.famf .transf (γ , poly-fmor Q fold-open .Mor.idxf .PS._⇒_.func (γ , i)) ∘
+          pair (Γ .Obj.fam .Fam.subst _ ∘ p₁)
+               (poly-obj Q y .Obj.fam .Fam.subst _ ∘
+                  (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ∘-cong ≈-refl (pair-cong
                 (≈-trans (∘-cong (Γ .Obj.fam .Fam.refl*) ≈-refl) id-left)
                 (≈-trans (≈-sym (assoc _ _ _)) (β-fam Q γ i))) ⟩
