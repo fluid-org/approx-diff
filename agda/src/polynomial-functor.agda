@@ -640,10 +640,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         project-fam-natural-open Poly.var eγ ei
 
   hasMu : HasMu
-  hasMu .HasMu.μ Q              = W-types.WObj Q
-  hasMu .HasMu.inF Q            = W-types.inF-mor Q
-  hasMu .HasMu.⦅_⦆ {Γ} {Q} = W-types.Open.fold-open Q
-  hasMu .HasMu.⦅⦆-β alg = {!!}
+  hasMu .HasMu.μ Q          = W-types.WObj Q
+  hasMu .HasMu.inF Q        = W-types.inF-mor Q
+  hasMu .HasMu.⦅_⦆ {Γ} {Q}  = W-types.Open.fold-open Q
+  hasMu .HasMu.⦅⦆-β alg     = {!!}
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
 
 ------------------------------------------------------------------------------
@@ -1102,6 +1102,6 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
         project-fam-natural-open μPoly.var eγ ei
 
   hasMu-μPoly : HasMu-μPoly
-  hasMu-μPoly .HasMu-μPoly.μ Q              = W-types-μ.WObj Q
-  hasMu-μPoly .HasMu-μPoly.inμ Q            = W-types-μ.inF-mor Q
-  hasMu-μPoly .HasMu-μPoly.⦅_⦆ {Γ} {Q} = W-types-μ.Open.fold-open Q
+  hasMu-μPoly .HasMu-μPoly.μ Q          = W-types-μ.WObj Q
+  hasMu-μPoly .HasMu-μPoly.inμ Q        = W-types-μ.inF-mor Q
+  hasMu-μPoly .HasMu-μPoly.⦅_⦆ {Γ} {Q}  = W-types-μ.Open.fold-open Q
