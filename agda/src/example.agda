@@ -7,7 +7,7 @@ open import Data.List using (List; []; _∷_)
 open import every using (Every; []; _∷_)
 open import signature
 open import categories using (Category; HasTerminal; HasProducts)
-open import functor using (Functor; PointedFunctor)
+open import functor using (Functor; StrongPointedFunctor)
 import language-syntax
 import label
 
@@ -40,16 +40,15 @@ module Tag
   Tag-F .fmor-comp f g =
     ≈-trans (prod-m-cong (≈-sym id-left) ≈-refl) (pair-functorial _ _ _ _)
 
-  Tag-PointedFunctor : PointedFunctor P
-  Tag-PointedFunctor .PointedFunctor.F              = Tag-F
-  Tag-PointedFunctor .PointedFunctor.unit {x}       = pair (⊤ ∘ to-terminal) (id _)
-  Tag-PointedFunctor .PointedFunctor.force {x}      = p₂
+  Tag-StrongPointedFunctor : StrongPointedFunctor P
+  Tag-StrongPointedFunctor .StrongPointedFunctor.F              = Tag-F
+  Tag-StrongPointedFunctor .StrongPointedFunctor.unit {x}       = pair (⊤ ∘ to-terminal) (id _)
   -- Right-strength: x × (A × y) ⇒ A × (x × y). Tag (in second slot) moves to outside.
-  Tag-PointedFunctor .PointedFunctor.right-strength = pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂))
+  Tag-StrongPointedFunctor .StrongPointedFunctor.right-strength = pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂))
   -- Naturality: both sides reduce to pair (p₁ ∘ p₂) (pair (f ∘ p₁) (g ∘ (p₂ ∘ p₂))).
   -- LHS direction filled; RHS-to-mid direction left as a hole (would mirror LHS
   -- via pair-natural + pair-cong unfolding the inner composites).
-  Tag-PointedFunctor .PointedFunctor.right-strength-natural f g =
+  Tag-StrongPointedFunctor .StrongPointedFunctor.right-strength-natural f g =
     begin
       prod-m (id A) (prod-m f g) ∘ pair (p₁ ∘ p₂) (pair p₁ (p₂ ∘ p₂))
     ≈⟨ pair-compose _ _ _ _ ⟩
@@ -62,12 +61,12 @@ module Tag
     where open ≈-Reasoning isEquiv
 
 ------------------------------------------------------------------------------
--- Tag PointedFunctor on galois.cat, using galois.TWO as the approximation object.
+-- Tag StrongPointedFunctor on galois.cat, using galois.TWO as the approximation object.
 
 module _ where
   import galois
-  Tag-galois : PointedFunctor galois.products
-  Tag-galois = Tag.Tag-PointedFunctor galois.cat galois.terminal galois.products galois.TWO galois.unit
+  Tag-galois : StrongPointedFunctor galois.products
+  Tag-galois = Tag.Tag-StrongPointedFunctor galois.cat galois.terminal galois.products galois.TWO galois.unit
 
 -- example query. Given `List (label [×] nat)`, add up all the
 -- elements labelled with a specific label:

@@ -23,7 +23,7 @@ open import join-semilattice
             _⊕_ to _⊕J_;
             ≃m-isEquivalence to ≃J-isEquivalence)
 open import cmon-enriched
-open import functor using (Functor)
+open import functor using (Functor; StrongPointedFunctor)
 
 -- Category LatGal of bounded lattices and Galois connections between them.
 record Obj : Set (suc 0ℓ) where
@@ -340,6 +340,21 @@ module _ where
   𝕃-functor .Functor.fmor-comp {X} {Y} {Z} f g .right-eq .eqfun < x > = Z .carrier .Preorder.≃-refl
   𝕃-functor .Functor.fmor-comp f g .left-eq .eqfun bottom = tt , tt
   𝕃-functor .Functor.fmor-comp {X} {Y} {Z} f g .left-eq .eqfun < z > = X .carrier .Preorder.≃-refl
+
+  -- 𝕃 as a strong pointed endofunctor on galois.cat.
+  strongPointedFunctor : StrongPointedFunctor products
+  strongPointedFunctor .StrongPointedFunctor.F              = 𝕃-functor
+  strongPointedFunctor .StrongPointedFunctor.unit           = 𝕃-unit
+  strongPointedFunctor .StrongPointedFunctor.right-strength = 𝕃-strength
+  strongPointedFunctor .StrongPointedFunctor.right-strength-natural f g ._≃g_.right-eq =
+    meet-semilattice.L-strength-natural (_⇒g_.right-∧ f) (_⇒g_.right-∧ g)
+      .meet-semilattice._≃m_.eqfunc
+  -- FIXME: left-eq. join-semilattice.L-costrength-natural uses ⟨_,_⟩ (pair) form,
+  -- but galois.products' (prod-m f g).left uses [_,_] (copair) form (via join-side
+  -- biproduct). They're equal modulo ⊥-identity laws (x ∨ ⊥ ≃ x), but proving
+  -- the bridge requires a separate biproduct lemma — or a copair-form version of
+  -- L-costrength-natural.
+  strongPointedFunctor .StrongPointedFunctor.right-strength-natural f g ._≃g_.left-eq = {!!}
 
 module _ where
 

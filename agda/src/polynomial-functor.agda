@@ -9,7 +9,7 @@ import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts)
-open import functor using (Functor; Id; PointedFunctor; PointedFunctor-Id)
+open import functor using (Functor; Id; StrongPointedFunctor; StrongPointedFunctor-Id)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_; changeCat)
@@ -188,11 +188,11 @@ module _ {o e} where
 -- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). `Mon` decorates a
 -- sub-polynomial with the ambient fibre-level lifting monad, fibre-only.
 module Mu {o m e os es} {𝒟 : Category o m e}
-          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (L : PointedFunctor PP) where
+          (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (L : StrongPointedFunctor PP) where
   open fam.CategoryOfFamilies os es 𝒟
   open Obj
   open products PP
-  open PointedFunctor L using (F)   -- L's underlying Functor 𝒟 𝒟
+  open StrongPointedFunctor L using (F)   -- L's underlying Functor 𝒟 𝒟
 
   idx-of : μPoly cat → IdxPoly {os} {es}
   idx-of one          = IdxPoly.one
@@ -442,7 +442,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 -- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
 -- Mon case at each clause: idx is unchanged, fibre is L.F applied.
 module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
-              (T : HasTerminal 𝒟) (P : HasProducts 𝒟) (L : PointedFunctor P) where
+              (T : HasTerminal 𝒟) (P : HasProducts 𝒟) (L : StrongPointedFunctor P) where
   open Category 𝒟
   open IsEquivalence
   open HasTerminal
@@ -451,8 +451,8 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
   open products P  -- Fam-level products
   open _⇒f_
   open Sem (terminal T) products coproducts
-  open μPoly-Sem (fam-functor.FamF os es (PointedFunctor.F L))
-  open PointedFunctor L using (F; fobj; fmor; fmor-cong; fmor-id; fmor-comp)
+  open StrongPointedFunctor L
+  open μPoly-Sem (fam-functor.FamF os es F)
 
   module W-types-μ (Q : μPoly cat) where
     open Obj
@@ -705,7 +705,6 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
     module Open {Γ y : Obj} (alg : Mor (Γ ⊗ μPoly-obj Q y) y) where
       open Obj
       open Mor
-      open PointedFunctor L using (right-strength)
 
       -- idx-level: descend the W-tree, applying alg at var positions with γ fixed.
       project-idx-open : (P : μPoly cat) → Γ .idx .Setoid.Carrier → WIdx poly (idx-of-μ P) →
@@ -863,7 +862,7 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
           fmor (project-fam-open P γ₂ z) ∘
             (right-strength ∘ prod-m (Γ .fam .subst eγ) (fmor (WFam-subst P ei)))
         ≈⟨ ∘-cong (isEquiv .refl)
-             (isEquiv .sym (PointedFunctor.right-strength-natural L _ _)) ⟩
+             (isEquiv .sym (right-strength-natural _ _)) ⟩
           fmor (project-fam-open P γ₂ z) ∘
             (fmor (prod-m (Γ .fam .subst eγ) (WFam-subst P ei)) ∘ right-strength)
         ≈⟨ isEquiv .sym (assoc _ _ _) ⟩

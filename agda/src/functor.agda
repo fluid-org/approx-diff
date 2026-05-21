@@ -247,33 +247,30 @@ module _ {o₁ m₁ e₁}
     open Functor F public
     open IsStrongMonad isStrongMon public
 
-  -- Endofunctor with a unit and a force (retraction of unit, so it's copointed as well).
-  -- Carries a right-strength; left-strength is derived below via swap.
-  record PointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+  -- Pointed strong endofunctor: F with unit and right-strength (+ naturality).
+  -- Strength threads a side context under F without losing F-structure.
+  record StrongPointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
     open Category 𝒞
     open HasProducts P
     field
       F              : Functor 𝒞 𝒞
       unit           : ∀ {x} → x ⇒ F .fobj x
-      force          : ∀ {x} → F .fobj x ⇒ x
       right-strength : ∀ {x y} → prod x (F .fobj y) ⇒ F .fobj (prod x y)
       -- Naturality of right-strength in both arguments.
       right-strength-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ x₂) (g : y₁ ⇒ y₂) →
         (F .Functor.fmor (prod-m f g) 𝒞.∘ right-strength) 𝒞.≈
         (right-strength 𝒞.∘ prod-m f (F .Functor.fmor g))
     open Functor F public
-    -- FIXME: force ∘ unit ≈ id
 
     -- Left-strength derived by swapping inputs/outputs around right-strength.
     strength : ∀ {x y} → prod (F .fobj x) y ⇒ F .fobj (prod x y)
     strength = F .Functor.fmor (pair p₂ p₁) 𝒞.∘ right-strength 𝒞.∘ pair p₂ p₁
 
-  PointedFunctor-Id : ∀ (P : HasProducts 𝒞) → PointedFunctor P
-  PointedFunctor-Id P .PointedFunctor.F              = Id
-  PointedFunctor-Id P .PointedFunctor.unit {x}       = 𝒞.id x
-  PointedFunctor-Id P .PointedFunctor.force {x}      = 𝒞.id x
-  PointedFunctor-Id P .PointedFunctor.right-strength = 𝒞.id _
-  PointedFunctor-Id P .PointedFunctor.right-strength-natural f g =
+  StrongPointedFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongPointedFunctor P
+  StrongPointedFunctor-Id P .StrongPointedFunctor.F              = Id
+  StrongPointedFunctor-Id P .StrongPointedFunctor.unit {x}       = 𝒞.id x
+  StrongPointedFunctor-Id P .StrongPointedFunctor.right-strength = 𝒞.id _
+  StrongPointedFunctor-Id P .StrongPointedFunctor.right-strength-natural f g =
     𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
