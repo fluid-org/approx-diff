@@ -711,7 +711,21 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           proj-R = pair p₁ (p₂ ∘ p₂)
 
           bridge-P : (proj-P ∘ pair-embed) ≈ pair p₁ (embed-fam P x ∘ (p₁ ∘ p₂))
-          bridge-P = {!!}
+          bridge-P = begin
+              proj-P ∘ pair-embed
+            ≈⟨ pair-natural _ _ _ ⟩
+              pair (p₁ ∘ pair-embed) ((p₁ ∘ p₂) ∘ pair-embed)
+            ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+              pair p₁ (p₁ ∘ (p₂ ∘ pair-embed))
+            ≈⟨ pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+              pair p₁ (p₁ ∘ (pair (embed-fam P x ∘ p₁) (embed-fam R z ∘ p₂) ∘ p₂))
+            ≈⟨ pair-cong ≈-refl (≈-sym (assoc _ _ _)) ⟩
+              pair p₁ ((p₁ ∘ pair (embed-fam P x ∘ p₁) (embed-fam R z ∘ p₂)) ∘ p₂)
+            ≈⟨ pair-cong ≈-refl (∘-cong (pair-p₁ _ _) ≈-refl) ⟩
+              pair p₁ ((embed-fam P x ∘ p₁) ∘ p₂)
+            ≈⟨ pair-cong ≈-refl (assoc _ _ _) ⟩
+              pair p₁ (embed-fam P x ∘ (p₁ ∘ p₂))
+            ∎ where open ≈-Reasoning isEquiv
 
           bridge-R : (proj-R ∘ pair-embed) ≈ pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
           bridge-R = {!!}
