@@ -440,6 +440,20 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         prod-m (WFam-subst P (embed-≈ P x₁≈x₂)) (WFam-subst Q (embed-≈ Q y₁≈y₂)) ∘ prod-m (embed-fam P x₁) (embed-fam Q y₁)
       ∎ where open ≈-Reasoning isEquiv
 
+    unembed-fam : (P : Poly cat) (j : WIdx poly (idx-of P)) →
+                  WFam-fm P j ⇒ poly-obj P WObj .fam .fm (unembed-idx P j)
+    unembed-fam Poly.one       _        = id _
+    unembed-fam (Poly.const A) _        = id _
+    unembed-fam Poly.var       (inF _)  = id _
+    unembed-fam (P Poly.+ Q)   (inj₁ x) = unembed-fam P x
+    unembed-fam (P Poly.+ Q)   (inj₂ y) = unembed-fam Q y
+    unembed-fam (P Poly.× Q)   (x , y)  = prod-m (unembed-fam P x) (unembed-fam Q y)
+
+    embed-unembed-fam-id : (P : Poly cat) (j : WIdx poly (idx-of P)) →
+                           (embed-fam P (unembed-idx P j) ∘ unembed-fam P j) ≈
+                           WFam-subst P (WIdx-≈-sym poly (idx-of P) (embed-unembed-id P j))
+    embed-unembed-fam-id P j = {!!}
+
     inF-mor : Mor (poly-obj Q WObj) WObj
     inF-mor .idxf .PS._⇒_.func i            = inF (embed-idx Q i)
     inF-mor .idxf .PS._⇒_.func-resp-≈ x≈y   = embed-≈ Q x≈y
