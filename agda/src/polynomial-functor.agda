@@ -930,7 +930,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           alg .Mor.idxf .PS._⇒_.func (_ , project-idx-open Q _ j₂)
         ∎ where open ≈-Reasoning (y .Obj.idx .isEquivalence)
       η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₁ x₁} {inj₁ x₂} j₁≈j₂      = η-idx P δ₁≈δ₂ j₁≈j₂
-      η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₂ y₁} {inj₂ y₂} j₁≈j₂      = {!!}
+      η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₂ y₁} {inj₂ y₂} j₁≈j₂      = η-idx R δ₁≈δ₂ j₁≈j₂
       η-idx (P Poly.× R)   δ₁≈δ₂ (x₁≈x₂ , z₁≈z₂)                = {!!}
   hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.famf-eq = {!!}
 
