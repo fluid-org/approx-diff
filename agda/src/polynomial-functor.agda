@@ -715,7 +715,29 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           bridge-R : (proj-R ∘ pair-embed) ≈ pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
           bridge-R = {!!}
 
-          body = {!!}
+          eq-P : (((poly-obj P y .fam .subst _ ∘ p₁) ∘
+                    pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                         (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
+                   pair-embed)
+                ≈ id _ ∘ (poly-fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂)))
+          eq-P = {!!}
+
+          eq-R : (((poly-obj R y .fam .subst _ ∘ p₂) ∘
+                    pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                         (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
+                   pair-embed)
+                ≈ id _ ∘ (poly-fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
+          eq-R = {!!}
+
+          body = begin
+              _
+            ≈⟨ ∘-cong (pair-natural _ _ _) ≈-refl ⟩
+              _
+            ≈⟨ pair-natural _ _ _ ⟩
+              _
+            ≈⟨ pair-cong eq-P eq-R ⟩
+              _
+            ∎ where open ≈-Reasoning isEquiv
 
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
