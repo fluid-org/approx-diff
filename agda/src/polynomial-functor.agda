@@ -914,6 +914,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       η-idx (Poly.const A) _ j₁≈j₂                              = j₁≈j₂
       η-idx Poly.var       δ₁≈δ₂ {inF j₁} {inF j₂} j₁≈j₂        = begin
           h .Mor.idxf .PS._⇒_.func (_ , inF j₁)
+        ≈⟨ h .Mor.idxf .PS._⇒_.func-resp-≈
+             (δ₁≈δ₂ ,
+              WObj .Obj.idx .isEquivalence .trans j₁≈j₂
+                (WObj .Obj.idx .isEquivalence .sym (embed-unembed-id Q j₂))) ⟩
+          h .Mor.idxf .PS._⇒_.func (_ , inF (embed-idx Q (unembed-idx Q j₂)))
         ≈⟨ {!!} ⟩
           alg .Mor.idxf .PS._⇒_.func (_ , project-idx-open Q _ j₂)
         ∎ where open ≈-Reasoning (y .Obj.idx .isEquivalence)
