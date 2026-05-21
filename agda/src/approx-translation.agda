@@ -95,11 +95,11 @@ mutual
   ⟪ roll {P = P} M ⟫tm =
     bind $ approx-coerce P ⟪ M ⟫tm $ lam (pure $ roll (var zero))
   ⟪ fold-μ {P = Q} {τ = τ} alg M ⟫tm =
-    bind $ ⟪ alg ⟫tm $ lam (
-      bind $ (weaken * ⟪ M ⟫tm) $ lam (
-        fold-μ
-          (lam (app (var (succ (succ zero))) (approx-coerce' Q (var zero))))
-          (var zero)))
+    bind $ ⟪ M ⟫tm $ lam (
+      fold-μ
+        (app (weaken * (weaken * (lam ⟪ alg ⟫tm)))
+             (approx-coerce' Q (var zero)))
+        (var zero))
 
   bindAll : ∀ {Γ Γ' σs τ} → Every (λ σ → Γ ⊢ base σ) σs → Ren ⟪ Γ ⟫ctxt Γ' →
             (∀ {Γ''} → Ren Γ' Γ'' → Every (λ σ → Γ'' ⊢ base σ) σs → Γ'' ⊢ Mon τ) → Γ' ⊢ Mon τ

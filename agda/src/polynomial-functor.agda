@@ -72,12 +72,10 @@ module Sem {o m e} {𝒞 : Category o m e}
     field
       μ    : Poly 𝒞 → obj
       inF  : ∀ Q → poly-obj Q (μ Q) ⇒ μ Q
-      ⦅_⦆  : ∀ {Q y} → (poly-obj Q y ⇒ y) → μ Q ⇒ y
-      -- Open (parametric) form: algebra in extended context. Closed ⦅_⦆ is
-      -- the special case where Γ = terminal; open form avoids the closure
-      -- conversion that would otherwise need exponentials.
-      ⦅_⦆-open : ∀ {Γ Q y} → (prod Γ (poly-obj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
-    -- FIXME: equations (β/η for inF / ⦅_⦆ / ⦅_⦆-open)
+      -- Open (parametric) form: algebra in extended context. Avoids the
+      -- closure conversion that would otherwise need exponentials.
+      ⦅_⦆  : ∀ {Γ Q y} → (prod Γ (poly-obj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
+    -- FIXME: equations (β/η for inF / ⦅_⦆)
 
   -- Interpretation of μPoly as a functor in 𝒞, plus the corresponding HasMu interface, where F interprets Mon.
   module μPoly-Sem (F : Functor 𝒞 𝒞) where
@@ -93,12 +91,10 @@ module Sem {o m e} {𝒞 : Category o m e}
       field
         μ    : μPoly 𝒞 → obj
         inμ  : ∀ Q → μPoly-obj Q (μ Q) ⇒ μ Q
-        ⦅_⦆  : ∀ {Q y} → (μPoly-obj Q y ⇒ y) → μ Q ⇒ y
-        -- Open (parametric) form: algebra in extended context. Closed ⦅_⦆ is
-        -- the special case where Γ = terminal; open form avoids the closure
-        -- conversion that would otherwise need exponentials.
-        ⦅_⦆-open : ∀ {Γ Q y} → (prod Γ (μPoly-obj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
-      -- FIXME: equations (β/η for inμ / ⦅_⦆ / ⦅_⦆-open)
+        -- Open (parametric) form: algebra in extended context. Avoids the
+        -- closure conversion that would otherwise need exponentials.
+        ⦅_⦆  : ∀ {Γ Q y} → (prod Γ (μPoly-obj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
+      -- FIXME: equations (β/η for inμ / ⦅_⦆)
 
 
 ------------------------------------------------------------------------------
@@ -601,8 +597,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu : HasMu
   hasMu .HasMu.μ Q              = W-types.WObj Q
   hasMu .HasMu.inF Q            = W-types.inF-mor Q
-  hasMu .HasMu.⦅_⦆ {Q}          = W-types.fold Q
-  hasMu .HasMu.⦅_⦆-open {Γ} {Q} = W-types.Open.fold-open Q
+  hasMu .HasMu.⦅_⦆ {Γ} {Q} = W-types.Open.fold-open Q
 
 ------------------------------------------------------------------------------
 -- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
@@ -1062,5 +1057,4 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
   hasMu-μPoly : HasMu-μPoly
   hasMu-μPoly .HasMu-μPoly.μ Q              = W-types-μ.WObj Q
   hasMu-μPoly .HasMu-μPoly.inμ Q            = W-types-μ.inF-mor Q
-  hasMu-μPoly .HasMu-μPoly.⦅_⦆ {Q}          = W-types-μ.fold Q
-  hasMu-μPoly .HasMu-μPoly.⦅_⦆-open {Γ} {Q} = W-types-μ.Open.fold-open Q
+  hasMu-μPoly .HasMu-μPoly.⦅_⦆ {Γ} {Q} = W-types-μ.Open.fold-open Q

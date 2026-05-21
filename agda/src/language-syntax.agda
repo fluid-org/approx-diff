@@ -110,7 +110,8 @@ data _⊢_ : ctxt → type → Set ℓ where
 
   -- inductive types
   roll : ∀ {Γ P} → Γ ⊢ apply P (μ P) → Γ ⊢ μ P
-  fold-μ : ∀ {Γ P τ} → Γ ⊢ apply P τ [→] τ → Γ ⊢ μ P → Γ ⊢ τ
+  -- Open algebra: term in extended context Γ , apply P τ. Avoids exponentials.
+  fold-μ : ∀ {Γ P τ} → Γ , apply P τ ⊢ τ → Γ ⊢ μ P → Γ ⊢ τ
 
 -- Applying renamings to terms
 mutual
@@ -131,7 +132,7 @@ mutual
   ρ * lam M = lam (ext ρ * M)
   ρ * app M N = app (ρ * M) (ρ * N)
   ρ * roll M = roll (ρ * M)
-  ρ * fold-μ alg M = fold-μ (ρ * alg) (ρ * M)
+  ρ * fold-μ alg M = fold-μ (ext ρ * alg) (ρ * M)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
   ρ ** [] = []
@@ -150,9 +151,9 @@ cons h t = roll (inr (pair h t))
 fold : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
 fold {σ = σ} {τ = τ} nilCase consCase M =
   fold-μ {P = one [+] (const σ [×] var)}
-    (lam (case (var zero)
-               (weaken * (weaken * nilCase))
-               (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero)))))
+    (case (var zero)
+          (weaken * (weaken * nilCase))
+          (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero))))
     M
 
 append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ

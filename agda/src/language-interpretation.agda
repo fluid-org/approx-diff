@@ -95,12 +95,13 @@ mutual
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     HasMu.inF Mu ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    HasMu.⦅_⦆-open Mu open-alg ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+    HasMu.⦅_⦆ Mu uncurried-alg ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
     where
-      open-alg : (⟦ Γ ⟧ctxt ⊗ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty) ⇒ ⟦ τ ⟧ty
-      open-alg = eval ∘ ⟨ ⟦ alg ⟧tm ∘ p₁ ,
-                          subst (λ X → (⟦ Γ ⟧ctxt ⊗ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty) ⇒ X)
-                                (sym (apply-coincides Q τ)) p₂ ⟩
+      -- alg : Γ , apply Q τ ⊢ τ has interpretation Γ ⊗ ⟦apply Q τ⟧ty ⇒ τ;
+      -- subst on the right slot via apply-coincides aligns the poly shape.
+      uncurried-alg : (⟦ Γ ⟧ctxt ⊗ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty) ⇒ ⟦ τ ⟧ty
+      uncurried-alg = subst (λ X → (⟦ Γ ⟧ctxt ⊗ X) ⇒ ⟦ τ ⟧ty)
+                            (apply-coincides Q τ) ⟦ alg ⟧tm
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms = to-terminal

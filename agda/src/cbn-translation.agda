@@ -106,11 +106,13 @@ mutual
   ⟪ roll {P = P} M ⟫tm =
     bind $ ⟪ M ⟫tm $ lam (bind $ cbn-coerce P (var zero) $ lam (pure $ roll (var zero)))
   ⟪ fold-μ {P = Q} {τ = τ} alg M ⟫tm =
-    bind $ ⟪ alg ⟫tm $ lam (
-      bind $ (weaken * ⟪ M ⟫tm) $ lam (
-        fold-μ
-          (lam (app (var (succ (succ zero))) (cbn-coerce' Q (var zero))))
-          (var zero)))
+    bind $ ⟪ M ⟫tm $ lam (
+      fold-μ
+        -- Open-form alg: var zero is the polynomial value, coerced via cbn-coerce'
+        -- to the source-translation shape and applied to the lam-wrapped translated alg.
+        (app (weaken * (weaken * (lam ⟪ alg ⟫tm)))
+             (cbn-coerce' Q (var zero)))
+        (var zero))
 
   bindAll : ∀ {Γ Γ' σs τ} →
             Every (λ σ → Γ ⊢ base σ) σs →
