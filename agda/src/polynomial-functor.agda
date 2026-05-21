@@ -970,6 +970,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           (y .Obj.fam .Fam.subst proof-after ∘ y .Obj.fam .Fam.subst br1) ∘ h .Mor.famf .transf (γ , inF j)
         ≈⟨ assoc _ _ _ ⟩
           y .Obj.fam .Fam.subst proof-after ∘ (y .Obj.fam .Fam.subst br1 ∘ h .Mor.famf .transf (γ , inF j))
+        ≈˘⟨ ∘-cong ≈-refl (h .Mor.famf .natural {γ , inF j} {γ , inF (embed-idx Q (unembed-idx Q j))}
+              (Γ .Obj.idx .isEquivalence .refl ,
+               WObj .Obj.idx .isEquivalence .sym (embed-unembed-id Q j))) ⟩
+          y .Obj.fam .Fam.subst proof-after ∘
+            (h .Mor.famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
+             (Γ ⊗ WObj) .Obj.fam .Fam.subst
+               (Γ .Obj.idx .isEquivalence .refl ,
+                WObj .Obj.idx .isEquivalence .sym (embed-unembed-id Q j)))
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
