@@ -1030,6 +1030,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             ((h .Mor.famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
               pair p₁ (embed-fam Q (unembed-idx Q j) ∘ p₂)) ∘
              pair p₁ (unembed-fam Q j ∘ p₂))
+        ≈⟨ ∘-cong (y .Obj.fam .Fam.trans* alg-step h-step-bridge) ≈-refl ⟩
+          (y .Obj.fam .Fam.subst alg-step ∘ y .Obj.fam .Fam.subst h-step-bridge) ∘
+            ((h .Mor.famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
+              pair p₁ (embed-fam Q (unembed-idx Q j) ∘ p₂)) ∘
+             pair p₁ (unembed-fam Q j ∘ p₂))
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
@@ -1038,13 +1043,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           br1 = h .Mor.idxf .PS._⇒_.func-resp-≈
                   (Γ .Obj.idx .isEquivalence .refl ,
                    WObj .Obj.idx .isEquivalence .sym (embed-unembed-id Q j))
-          proof-after = poly-obj Poly.var y .Obj.idx .isEquivalence .trans
-                  (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
+          h-step-bridge = h-step ._≃_.idxf-eq .PS._≃m_.func-eq
                     (Γ .Obj.idx .isEquivalence .refl ,
-                     poly-obj Q WObj .Obj.idx .isEquivalence .refl))
-                  (alg .Mor.idxf .PS._⇒_.func-resp-≈
+                     poly-obj Q WObj .Obj.idx .isEquivalence .refl)
+          alg-step = alg .Mor.idxf .PS._⇒_.func-resp-≈
                     (Γ .Obj.idx .isEquivalence .refl ,
-                     η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))))
+                     η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q)))
+          proof-after = poly-obj Poly.var y .Obj.idx .isEquivalence .trans h-step-bridge alg-step
       η-fam (P Poly.+ R)   γ (inj₁ x)  = {!!}
       η-fam (P Poly.+ R)   γ (inj₂ z)  = {!!}
       η-fam (P Poly.× R)   γ (x , z)   = {!!}
