@@ -1009,6 +1009,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           y .Obj.fam .Fam.subst proof-after ∘
             (h .Mor.famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
              pair p₁ ((embed-fam Q (unembed-idx Q j) ∘ unembed-fam Q j) ∘ p₂))
+        ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (pair-cong ≈-refl (assoc _ _ _))) ⟩
+          y .Obj.fam .Fam.subst proof-after ∘
+            (h .Mor.famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
+             pair p₁ (embed-fam Q (unembed-idx Q j) ∘ (unembed-fam Q j ∘ p₂)))
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
