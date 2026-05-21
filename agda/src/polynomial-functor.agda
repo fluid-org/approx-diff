@@ -659,11 +659,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       -- β-fam: project-fam-open through embed agrees (modulo subst from β-idx)
       -- with poly-fmor's fam action of fold-open. Mirrors β-idx at the fam level.
       β-fam : (P : Poly cat) (γ : Γ .idx .Carrier) (i : poly-obj P WObj .idx .Carrier) →
-              (project-fam-open P γ (embed-idx P i) ∘
-                pair p₁ (embed-fam P i ∘ p₂)) ≈
               (poly-obj P y .fam .subst
                 (β-idx P (Γ .idx .Setoid.refl) (poly-obj P WObj .idx .Setoid.refl)) ∘
-                poly-fmor P fold-open .famf .transf (γ , i))
+                project-fam-open P γ (embed-idx P i) ∘
+                pair p₁ (embed-fam P i ∘ p₂)) ≈
+              poly-fmor P fold-open .famf .transf (γ , i)
       β-fam Poly.one       _ _              = {!!}
       β-fam (Poly.const A) _ _              = {!!}
       β-fam Poly.var       γ (inF i)        = {!!}
