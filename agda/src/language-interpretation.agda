@@ -95,14 +95,12 @@ mutual
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
     HasMu.inF Mu ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    eval ∘ ⟨ HasMu.⦅_⦆ Mu closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
+    HasMu.⦅_⦆-open Mu open-alg ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
     where
-      closure-converted : poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⇒ (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty)
-      closure-converted = lambda (eval ∘ ⟨
-        ⟦ alg ⟧tm ∘ p₂ ,
-          subst (λ X → (poly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
-                (sym (apply-coincides Q τ)) (map-eval ⟦ Q ⟧poly)
-        ⟩)
+      open-alg : (⟦ Γ ⟧ctxt ⊗ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty) ⇒ ⟦ τ ⟧ty
+      open-alg = eval ∘ ⟨ ⟦ alg ⟧tm ∘ p₁ ,
+                          subst (λ X → (⟦ Γ ⟧ctxt ⊗ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty) ⇒ X)
+                                (sym (apply-coincides Q τ)) p₂ ⟩
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms = to-terminal
