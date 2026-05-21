@@ -694,8 +694,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       β-fam (P Poly.+ R)   γ (inj₂ z)       =
         ≈-trans (β-fam R γ z) (≈-sym (≈-trans id-left id-left))
       β-fam (P Poly.× R)   γ (x , z)        =
-        ≈-trans (∘-cong (pair-natural _ _ _) ≈-refl)
-        (≈-trans (pair-natural _ _ _) (pair-cong eq-P eq-R))
+        ≈-trans (∘-cong (pair-natural _ _ _) ≈-refl) (≈-trans (pair-natural _ _ _) (pair-cong eq-P eq-R))
         where
           Src = prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm x) (poly-obj R WObj .fam .fm z))
           Mid = prod (Γ .fam .fm γ) (prod (WFam-fm P (embed-idx P x)) (WFam-fm R (embed-idx R z)))
@@ -717,18 +716,17 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           bridge-R : (proj-R ∘ pair-embed) ≈ pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
           bridge-R = {!!}
 
-          eq-P : (((poly-obj P y .fam .subst _ ∘ p₁) ∘
+          eq-P : ((poly-obj P y .fam .subst _ ∘ p₁) ∘
                     pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
-                         (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
-                   pair-embed)
-                ≈ id _ ∘ (poly-fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂)))
+                         (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
+                 ≈ id _ ∘ (poly-fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂)))
           eq-P = {!!}
 
-          eq-R : (((poly-obj R y .fam .subst _ ∘ p₂) ∘
+          eq-R : ((poly-obj R y .fam .subst _ ∘ p₂) ∘
                     pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
                          (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
-                   pair-embed)
-                ≈ id _ ∘ (poly-fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
+                   pair-embed
+                 ≈ id _ ∘ (poly-fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
           eq-R = {!!}
 
 
