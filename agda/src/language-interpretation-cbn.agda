@@ -55,7 +55,7 @@ mutual
   ⟦ μ P ⟧ty        = HasMu-μPoly.μ Mu ⟦ P ⟧poly
 
   -- Mon inside each side of sum/product; const/var unwrapped. Matches per-leaf
-  -- type translation so apply-coincides holds at ⟦τ⟧ty without coercion.
+  -- type translation so apply-eq holds at ⟦τ⟧ty without coercion.
   ⟦_⟧poly : polynomial → μPoly 𝒞
   ⟦ one ⟧poly       = μPoly.one
   ⟦ const σ ⟧poly   = μPoly.const ⟦ σ ⟧ty
@@ -68,12 +68,12 @@ mutual
 ⟦ emp ⟧ctxt   = 𝟙
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ M ⟦ τ ⟧ty
 
-apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ μPoly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
-apply-coincides one          τ = refl
-apply-coincides (const σ)    τ = refl
-apply-coincides var          τ = refl
-apply-coincides (P [+] Q)    τ = cong₂ _⊕_ (cong M (apply-coincides P τ)) (cong M (apply-coincides Q τ))
-apply-coincides (P [×] Q)    τ = cong₂ _⊗_ (cong M (apply-coincides P τ)) (cong M (apply-coincides Q τ))
+apply-eq : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ μPoly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
+apply-eq one          τ = refl
+apply-eq (const σ)    τ = refl
+apply-eq var          τ = refl
+apply-eq (P [+] Q)    τ = cong₂ _⊕_ (cong M (apply-eq P τ)) (cong M (apply-eq Q τ))
+apply-eq (P [×] Q)    τ = cong₂ _⊗_ (cong M (apply-eq P τ)) (cong M (apply-eq Q τ))
 
 -- map-eval evaluates a polynomial-of-closures over an input context to produce
 -- a polynomial of values. Defined per μPoly constructor.
@@ -111,7 +111,7 @@ mutual
   ⟦ brel ω Ms ⟧tm = η ∘ ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} t ⟧tm =
     η ∘ HasMu-μPoly.inμ Mu ⟦ P ⟧poly ∘ force ∘
-      subst (⟦ Γ ⟧ctxt ⇒_) (cong M (apply-coincides P (μ P))) ⟦ t ⟧tm
+      subst (⟦ Γ ⟧ctxt ⇒_) (cong M (apply-eq P (μ P))) ⟦ t ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
     η ∘ eval ∘ ⟨ HasMu-μPoly.⦅_⦆ Mu closure-converted ∘ force ∘ ⟦ M ⟧tm , id _ ⟩
     where
@@ -121,7 +121,7 @@ mutual
       closure-converted = lambda (force ∘ eval ∘ ⟨
         force ∘ ⟦ alg ⟧tm ∘ p₂ ,
           η ∘ subst (λ X → (μPoly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
-                    (sym (apply-coincides Q τ)) (map-eval ⟦ Q ⟧poly)
+                    (sym (apply-eq Q τ)) (map-eval ⟦ Q ⟧poly)
         ⟩)
 
   -- Base-typed args need to be unwrapped before being passed to the operation;

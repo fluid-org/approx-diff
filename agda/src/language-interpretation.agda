@@ -30,6 +30,7 @@ open PointedFPCat PFPC[ 𝒞 , T , P , Bool ] renaming (_×_ to _⊗_)
 open HasCoproducts C renaming (coprod to _⊕_)
 open language-syntax Sig
 open Model Int
+open HasMu Mu using (inF; ⦅_⦆) renaming (μ to μ-obj)
 
 mutual
   ⟦_⟧ty : type → obj
@@ -39,7 +40,7 @@ mutual
   ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊗ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [→] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦→⟧ ⟦ τ₂ ⟧ty
   ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⊕ ⟦ τ₂ ⟧ty
-  ⟦ μ P ⟧ty = HasMu.μ Mu ⟦ P ⟧poly
+  ⟦ μ P ⟧ty = μ-obj ⟦ P ⟧poly
 
   ⟦_⟧poly : polynomial → Poly 𝒞
   ⟦ one ⟧poly       = Poly.one
@@ -53,20 +54,12 @@ mutual
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ ⟦ τ ⟧ty
 
 -- Syntactic application of a polynomial agrees with action of corresponding functor on objects.
-apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
-apply-coincides one          τ = refl
-apply-coincides (const σ)    τ = refl
-apply-coincides var          τ = refl
-apply-coincides (P [+] Q)    τ = cong₂ _⊕_ (apply-coincides P τ) (apply-coincides Q τ)
-apply-coincides (P [×] Q)    τ = cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ)
-
--- Take a polynomial container of (ctx ⇒ t) morphisms and a ctx, and reduce using eval.
-map-eval : (Q : Poly 𝒞) {ctx t : obj} → (poly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ poly-obj Q t
-map-eval Poly.one       = to-terminal
-map-eval (Poly.const _) = p₁
-map-eval Poly.var       = eval
-map-eval (P Poly.+ Q) = eval ∘ ⟨ copair (lambda (in₁ ∘ map-eval P)) (lambda (in₂ ∘ map-eval Q)) ∘ p₁ , p₂ ⟩
-map-eval (P Poly.× Q) = ⟨ map-eval P ∘ ⟨ p₁ ∘ p₁ , p₂ ⟩ , map-eval Q ∘ ⟨ p₂ ∘ p₁ , p₂ ⟩ ⟩
+apply-eq : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
+apply-eq one          τ = refl
+apply-eq (const σ)    τ = refl
+apply-eq var          τ = refl
+apply-eq (P [+] Q)    τ = cong₂ _⊕_ (apply-eq P τ) (apply-eq Q τ)
+apply-eq (P [×] Q)    τ = cong₂ _⊗_ (apply-eq P τ) (apply-eq Q τ)
 
 ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
 ⟦ zero ⟧var = p₂
@@ -92,16 +85,9 @@ mutual
   ⟦ app M  N ⟧tm = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
-  ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    HasMu.inF Mu ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
+  ⟦ roll {Γ = Γ} {P = P} M ⟧tm = inF ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-eq P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
-    HasMu.⦅_⦆ Mu uncurried-alg ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
-    where
-      -- alg : Γ , apply Q τ ⊢ τ has interpretation Γ ⊗ ⟦apply Q τ⟧ty ⇒ τ;
-      -- subst on the right slot via apply-coincides aligns the poly shape.
-      uncurried-alg : (⟦ Γ ⟧ctxt ⊗ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty) ⇒ ⟦ τ ⟧ty
-      uncurried-alg = subst (λ X → (⟦ Γ ⟧ctxt ⊗ X) ⇒ ⟦ τ ⟧ty)
-                            (apply-coincides Q τ) ⟦ alg ⟧tm
+    ⦅ subst (λ X → (⟦ Γ ⟧ctxt ⊗ X) ⇒ ⟦ τ ⟧ty) (apply-eq Q τ) ⟦ alg ⟧tm ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms = to-terminal

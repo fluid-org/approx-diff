@@ -62,12 +62,12 @@ mutual
 ⟦ emp ⟧ctxt = 𝟙
 ⟦ Γ , τ ⟧ctxt = ⟦ Γ ⟧ctxt ⊗ ⟦ τ ⟧ty
 
-apply-coincides : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ μPoly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
-apply-coincides one          τ = refl
-apply-coincides (const σ)    τ = refl
-apply-coincides var          τ = refl
-apply-coincides (P [+] Q)    τ = cong M (cong₂ _⊕_ (apply-coincides P τ) (apply-coincides Q τ))
-apply-coincides (P [×] Q)    τ = cong M (cong₂ _⊗_ (apply-coincides P τ) (apply-coincides Q τ))
+apply-eq : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ μPoly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
+apply-eq one          τ = refl
+apply-eq (const σ)    τ = refl
+apply-eq var          τ = refl
+apply-eq (P [+] Q)    τ = cong M (cong₂ _⊕_ (apply-eq P τ) (apply-eq Q τ))
+apply-eq (P [×] Q)    τ = cong M (cong₂ _⊗_ (apply-eq P τ) (apply-eq Q τ))
 
 map-eval : (Q : μPoly 𝒞) {ctx t : obj} → (μPoly-obj Q (ctx ⟦→⟧ t) ⊗ ctx) ⇒ μPoly-obj Q t
 map-eval μPoly.one         = to-terminal
@@ -100,7 +100,7 @@ mutual
   ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel ω Ms ⟧tm = η ∘ ⟦rel⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {P = P} M ⟧tm =
-    HasMu-μPoly.inμ Mu ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-coincides P (μ P)) ⟦ M ⟧tm
+    HasMu-μPoly.inμ Mu ⟦ P ⟧poly ∘ subst (⟦ Γ ⟧ctxt ⇒_) (apply-eq P (μ P)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {P = Q} {τ = τ} alg M ⟧tm =
     eval ∘ ⟨ HasMu-μPoly.⦅_⦆ Mu closure-converted ∘ ⟦ M ⟧tm , id _ ⟩
     where
@@ -108,7 +108,7 @@ mutual
       closure-converted = lambda (eval ∘ ⟨
         force ∘ ⟦ alg ⟧tm ∘ p₂ ,
           subst (λ X → (μPoly-obj ⟦ Q ⟧poly (⟦ Γ ⟧ctxt ⟦→⟧ ⟦ τ ⟧ty) ⊗ ⟦ Γ ⟧ctxt) ⇒ X)
-                (sym (apply-coincides Q τ)) (map-eval ⟦ Q ⟧poly)
+                (sym (apply-eq Q τ)) (map-eval ⟦ Q ⟧poly)
         ⟩)
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
