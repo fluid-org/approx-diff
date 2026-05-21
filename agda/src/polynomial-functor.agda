@@ -656,7 +656,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂)
       β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ x₁} {inj₁ x₂} i₁≈i₂           = β-idx P γ₁≈γ₂ i₁≈i₂
       β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ y₁} {inj₂ y₂} i₁≈i₂           = β-idx R γ₁≈γ₂ i₁≈i₂
-      β-idx (P Poly.× R)   γ₁≈γ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) = {!!}
+      β-idx (P Poly.× R)   γ₁≈γ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) =
+        β-idx P γ₁≈γ₂ x₁≈x₂ , β-idx R γ₁≈γ₂ z₁≈z₂
 
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
