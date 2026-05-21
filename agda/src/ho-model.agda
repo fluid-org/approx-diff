@@ -87,7 +87,7 @@ J×Jop-biproducts =
 J×Jop-products : HasProducts J×Jop
 J×Jop-products = biproducts→products _ J×Jop-biproducts
 
-open import functor using (Functor; StrongPointedFunctor)
+open import functor using (Functor)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 open import prop using (_,_)
 open import prop-setoid using (IsEquivalence)
@@ -189,52 +189,6 @@ module Interpretation
        Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
        (polynomial-functor.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
-       (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
-       public
-
-  -- Approx (per-root Mon-decorated) interpretation. Caller supplies the StrongPointedFunctor.
-  module interp-approx (Sig : Signature 0ℓ)
-                       (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
-                       (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
-                       (PF : StrongPointedFunctor Fam⟨𝒟⟩-products)
-                       (let open μPoly-Sem (StrongPointedFunctor.F PF))
-                       (Mu : HasMu-μPoly)
-     where
-
-     open Fam⟨𝒟⟩.Mor public
-     open Fam⟨𝒟⟩.Obj public
-
-     open import language-interpretation-approx Sig
-       Fam⟨𝒟⟩.cat
-       Fam⟨𝒟⟩-terminal
-       Fam⟨𝒟⟩-products
-       Fam⟨𝒟⟩-coproducts
-       Fam⟨𝒟⟩-exponentials
-       PF
-       Mu
-       (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
-       public
-
-  -- CBN (per-leaf Mon-decorated) interpretation. Caller supplies the StrongPointedFunctor.
-  module interp-cbn (Sig : Signature 0ℓ)
-                    (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
-                    (let open polynomial-functor.Sem Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts)
-                    (PF : StrongPointedFunctor Fam⟨𝒟⟩-products)
-                    (let open μPoly-Sem (StrongPointedFunctor.F PF))
-                    (Mu : HasMu-μPoly)
-     where
-
-     open Fam⟨𝒟⟩.Mor public
-     open Fam⟨𝒟⟩.Obj public
-
-     open import language-interpretation-cbn Sig
-       Fam⟨𝒟⟩.cat
-       Fam⟨𝒟⟩-terminal
-       Fam⟨𝒟⟩-products
-       Fam⟨𝒟⟩-coproducts
-       Fam⟨𝒟⟩-exponentials
-       PF
-       Mu
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
