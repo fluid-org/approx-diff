@@ -651,7 +651,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               poly-obj P y .idx ._≈s_
                 (project-idx-open P γ₁ (embed-idx P i₁)) (poly-fmor P fold-open .idxf .PS._⇒_.func (γ₂ , i₂))
       β-idx Poly.one       γ₁≈γ₂ i₁≈i₂                                    = tt
-      β-idx (Poly.const A) γ₁≈γ₂ i₁≈i₂                                    = {!!}
+      β-idx (Poly.const A) γ₁≈γ₂ i₁≈i₂                                    = i₁≈i₂
       β-idx Poly.var       γ₁≈γ₂ {inF i₁} {inF i₂} i₁≈i₂                  = {!!}
       β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ x₁} {inj₁ x₂} i₁≈i₂                = {!!}
       β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ y₁} {inj₂ y₂} i₁≈i₂                = {!!}
