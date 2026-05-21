@@ -868,9 +868,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       y .Obj.fam .Fam.subst _ ∘ (alg .Mor.famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
           (pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))))
     ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (bridge-fm Q alg γ i)) ⟩
-      _
+      y .Obj.fam .Fam.subst _ ∘ (alg .Mor.famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
+          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ≈-sym (assoc _ _ _) ⟩
-      _
+      (y .Obj.fam .Fam.subst _ ∘ alg .Mor.famf .transf (γ , project-idx-open Q γ (embed-idx Q i))) ∘
+          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
     ≈⟨ ∘-cong
         (≈-sym (alg .Mor.famf .natural (
           Setoid.isEquivalence (Γ .Obj.idx) .IsEquivalence.refl ,
@@ -878,9 +880,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                   (Setoid.isEquivalence (poly-obj Q WObj .Obj.idx) .IsEquivalence.refl)
         )))
         ≈-refl ⟩
-      _
+      (alg .Mor.famf .transf (γ , poly-fmor Q fold-open .Mor.idxf .PS._⇒_.func (γ , i)) ∘
+          pair (Γ .Obj.fam .Fam.subst _ ∘ p₁) (poly-obj Q y .Obj.fam .Fam.subst _ ∘ p₂)) ∘
+          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
     ≈⟨ assoc _ _ _ ⟩
-      _
+      alg .Mor.famf .transf (γ , poly-fmor Q fold-open .Mor.idxf .PS._⇒_.func (γ , i)) ∘
+          (pair (Γ .Obj.fam .Fam.subst _ ∘ p₁) (poly-obj Q y .Obj.fam .Fam.subst _ ∘ p₂) ∘
+          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ∘-cong ≈-refl (pair-compose _ _ _ _) ⟩
       _
     ≈⟨ ∘-cong ≈-refl (pair-cong
