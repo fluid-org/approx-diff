@@ -660,11 +660,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.μ Q          = W-types.WObj Q
   hasMu .HasMu.inF Q        = W-types.inF-mor Q
   hasMu .HasMu.⦅_⦆ {Γ} {Q}  = W-types.Open.fold-open Q
-  -- β law for fold-open: by structural induction on the polynomial.
-  -- Pointwise both sides apply alg to (γ, X) where X is the result of
-  -- recursive folding; the two ways of computing X (via project-idx-open or
-  -- via poly-fmor) agree definitionally on each Poly constructor.
-  hasMu .HasMu.⦅⦆-β alg ._≃_.idxf-eq = {!!}
+  hasMu .HasMu.⦅⦆-β {Γ} {Q} alg ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , i₁} {γ₂ , i₂} (γ₁≈γ₂ , i₁≈i₂) =
+    alg .Mor.idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , W-types.Open.β-idx Q alg Q γ₁≈γ₂ i₁≈i₂)
   hasMu .HasMu.⦅⦆-β alg ._≃_.famf-eq = {!!}
   hasMu .HasMu.⦅⦆-η alg h x = {!!}
 
