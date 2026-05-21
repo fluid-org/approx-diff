@@ -201,29 +201,29 @@ module _ {o e} where
 
   mutual
     W-≈-sym : ∀ P {w₁ w₂} → W-≈ P w₁ w₂ → W-≈ P w₂ w₁
-    W-≈-sym P {inF i₁} {inF i₂} eq = WIdx-≈-sym P P {i₁} {i₂} eq
+    W-≈-sym P {inF i₁} {inF i₂} i₁≈i₂ = WIdx-≈-sym P P {i₁} {i₂} i₁≈i₂
 
     WIdx-≈-sym : ∀ P Q {x y} → WIdx-≈ P Q x y → WIdx-≈ P Q y x
     WIdx-≈-sym P one         _  = tt
-    WIdx-≈-sym P (param A) {x} {y} eq = IsEquivalence.sym (Setoid.isEquivalence A) eq
-    WIdx-≈-sym P var       {w₁} {w₂} eq = W-≈-sym P {w₁} {w₂} eq
-    WIdx-≈-sym P (Q₁ + Q₂) {inj₁ x₁} {inj₁ x₂} eq = WIdx-≈-sym P Q₁ eq
-    WIdx-≈-sym P (Q₁ + Q₂) {inj₂ y₁} {inj₂ y₂} eq = WIdx-≈-sym P Q₂ eq
-    WIdx-≈-sym P (Q₁ × Q₂) {x₁ , y₁} {x₂ , y₂} (e₁ , e₂) = WIdx-≈-sym P Q₁ e₁ , WIdx-≈-sym P Q₂ e₂
+    WIdx-≈-sym P (param A) {x} {y} x≈y = IsEquivalence.sym (Setoid.isEquivalence A) x≈y
+    WIdx-≈-sym P var       {w₁} {w₂} w₁≈w₂ = W-≈-sym P {w₁} {w₂} w₁≈w₂
+    WIdx-≈-sym P (Q₁ + Q₂) {inj₁ x₁} {inj₁ x₂} x₁≈x₂ = WIdx-≈-sym P Q₁ x₁≈x₂
+    WIdx-≈-sym P (Q₁ + Q₂) {inj₂ y₁} {inj₂ y₂} y₁≈y₂ = WIdx-≈-sym P Q₂ y₁≈y₂
+    WIdx-≈-sym P (Q₁ × Q₂) {x₁ , y₁} {x₂ , y₂} (x₁≈x₂ , y₁≈y₂) = WIdx-≈-sym P Q₁ x₁≈x₂ , WIdx-≈-sym P Q₂ y₁≈y₂
 
   mutual
     W-≈-trans : ∀ P {w₁ w₂ w₃} → W-≈ P w₁ w₂ → W-≈ P w₂ w₃ → W-≈ P w₁ w₃
-    W-≈-trans P {inF _} {inF _} {inF _} e₁ e₂ = WIdx-≈-trans P P e₁ e₂
+    W-≈-trans P {inF _} {inF _} {inF _} w₁≈w₂ w₂≈w₃ = WIdx-≈-trans P P w₁≈w₂ w₂≈w₃
 
     WIdx-≈-trans : ∀ P Q {x y z} →
                       WIdx-≈ P Q x y → WIdx-≈ P Q y z → WIdx-≈ P Q x z
     WIdx-≈-trans P one        _  _  = tt
-    WIdx-≈-trans P (param A) {x} {y} {z} e₁ e₂ = IsEquivalence.trans (Setoid.isEquivalence A) e₁ e₂
-    WIdx-≈-trans P var       {x} {y} {z} e₁ e₂ = W-≈-trans P {x} {y} {z} e₁ e₂
-    WIdx-≈-trans P (Q₁ + Q₂) {inj₁ _} {inj₁ _} {inj₁ _} e₁ e₂ = WIdx-≈-trans P Q₁ e₁ e₂
-    WIdx-≈-trans P (Q₁ + Q₂) {inj₂ _} {inj₂ _} {inj₂ _} e₁ e₂ = WIdx-≈-trans P Q₂ e₁ e₂
-    WIdx-≈-trans P (Q₁ × Q₂) {_ , _} {_ , _} {_ , _} (e₁ , f₁) (e₂ , f₂) =
-      WIdx-≈-trans P Q₁ e₁ e₂ , WIdx-≈-trans P Q₂ f₁ f₂
+    WIdx-≈-trans P (param A) {x} {y} {z} x≈y y≈z = IsEquivalence.trans (Setoid.isEquivalence A) x≈y y≈z
+    WIdx-≈-trans P var       {x} {y} {z} x≈y y≈z = W-≈-trans P {x} {y} {z} x≈y y≈z
+    WIdx-≈-trans P (Q₁ + Q₂) {inj₁ _} {inj₁ _} {inj₁ _} x≈y y≈z = WIdx-≈-trans P Q₁ x≈y y≈z
+    WIdx-≈-trans P (Q₁ + Q₂) {inj₂ _} {inj₂ _} {inj₂ _} x≈y y≈z = WIdx-≈-trans P Q₂ x≈y y≈z
+    WIdx-≈-trans P (Q₁ × Q₂) {_ , _} {_ , _} {_ , _} (x₁≈y₁ , x₂≈y₂) (y₁≈z₁ , y₂≈z₂) =
+      WIdx-≈-trans P Q₁ x₁≈y₁ y₁≈z₁ , WIdx-≈-trans P Q₂ x₂≈y₂ y₂≈z₂
 
   WSetoid : IdxPoly → Setoid o e
   WSetoid P .Carrier                            = W P
