@@ -160,6 +160,11 @@ module Sem {o m e} {𝒞 : Category o m e}
             ∘ (⦅ inF P ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))))
           ∘ p₂)
           ∘ pair to-terminal (id (μ P'))
+      ≈⟨ ∘-cong (⦅⦆-η (inF P' ∘ p₂)
+                        (((⦅ inF P' ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
+                            ∘ (⦅ inF P ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))))
+                          ∘ p₂) {!!}) ≈-refl ⟩
+        ⦅ inF P' ∘ p₂ ⦆ ∘ pair to-terminal (id (μ P'))
       ≈⟨ {!!} ⟩
         id (μ P')
       ∎ where open ≈-Reasoning isEquiv
