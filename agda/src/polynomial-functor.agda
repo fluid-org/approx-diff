@@ -199,13 +199,18 @@ module Sem {o m e} {𝒞 : Category o m e}
     poly-iso-mor (pi₁ × pi₂)     = pair (poly-iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂))
                                         (poly-iso-mor pi₂ ∘ pair p₁ (p₂ ∘ p₂))
 
-    iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
-    iso one                         = Category.Iso-refl 𝒞
-    iso (const {A} {B} A≅B)         =
-      Category.Iso-trans 𝒞 (μ-const-iso A) (Category.Iso-trans 𝒞 A≅B (Category.Iso-sym 𝒞 (μ-const-iso B)))
-    iso var                         = Category.Iso-refl 𝒞
-    iso (pi₁ + pi₂)                 = {!!}
-    iso (pi₁ × pi₂)                 = {!!}
+    Poly-iso-sym : ∀ {P P'} → Poly-iso P P' → Poly-iso P' P
+    Poly-iso-sym one         = one
+    Poly-iso-sym (const A≅B) = const (Category.Iso-sym 𝒞 A≅B)
+    Poly-iso-sym var         = var
+    Poly-iso-sym (pi₁ + pi₂) = Poly-iso-sym pi₁ + Poly-iso-sym pi₂
+    Poly-iso-sym (pi₁ × pi₂) = Poly-iso-sym pi₁ × Poly-iso-sym pi₂
+
+    iso : ∀ {P P'} → Poly-iso P P' → Category.Iso 𝒞 (μ P) (μ P')
+    iso pi .fwd        = ⦅ inF _ ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id _)
+    iso pi .bwd        = ⦅ inF _ ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id _)
+    iso pi .fwd∘bwd≈id = {!!}
+    iso pi .bwd∘fwd≈id = {!!}
 
   {- μPoly-Sem: interpretation of μPoly with Mon (commented out alongside μPoly).
   module μPoly-Sem (F : Functor 𝒞 𝒞) where
