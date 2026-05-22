@@ -144,7 +144,11 @@ module Sem {o m e} {𝒞 : Category o m e}
             (≈-trans (pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ to-terminal (id _))))
                      (pair-cong ≈-refl id-right)))) ⟩
         ⦅ p₂ ⦆ ∘ (pair p₁ (inF (const A) ∘ p₂) ∘ pair to-terminal (id _))
-      ≈⟨ {!!} ⟩
+      ≈˘⟨ assoc _ _ _ ⟩
+        (⦅ p₂ ⦆ ∘ pair p₁ (inF (const A) ∘ p₂)) ∘ pair to-terminal (id _)
+      ≈⟨ ∘-cong (≈-trans (⦅⦆-β p₂) (pair-p₂ _ _)) ≈-refl ⟩
+        p₂ ∘ pair to-terminal (id _)
+      ≈⟨ pair-p₂ _ _ ⟩
         id A
       ∎ where open ≈-Reasoning isEquiv
     μ-const-iso A .bwd∘fwd≈id = {!!}
