@@ -973,8 +973,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                  (η-idx P (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of P) {j})) ∘
                poly-fmor P h .famf .transf (γ , unembed-idx P j) ∘ pair p₁ (unembed-fam P j ∘ p₂)) ≈
               project-fam-open P γ j
-      η-fam Poly.one       γ j         = HasTerminal.to-terminal-unique T _ _
-      η-fam (Poly.const A) γ j         = begin
+      η-fam Poly.one γ j = HasTerminal.to-terminal-unique T _ _
+      η-fam (Poly.const A) γ j = begin
           (A .fam .subst _ ∘ p₂) ∘ pair p₁ (id _ ∘ p₂)
         ≈⟨ ∘-cong (∘-cong (A .fam .refl*) ≈-refl) ≈-refl ⟩
           (id _ ∘ p₂) ∘ pair p₁ (id _ ∘ p₂)
@@ -985,19 +985,17 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈⟨ pair-p₂ _ _ ⟩
           p₂
         ∎ where open ≈-Reasoning isEquiv
-      η-fam Poly.var       γ (inF j)   = {!!}
-      η-fam (P Poly.+ R)   γ (inj₁ x)  =
+      η-fam Poly.var γ (inF j) = {!!}
+      η-fam (P Poly.+ R) γ (inj₁ x) =
         isEquiv .trans
           (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl) (η-fam P γ x)
-      η-fam (P Poly.+ R)   γ (inj₂ z)  =
+      η-fam (P Poly.+ R) γ (inj₂ z) =
         isEquiv .trans
           (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl) (η-fam R γ z)
       η-fam (P Poly.× R)   γ (x , z)   = begin
           (prod-m (poly-obj P y .fam .subst _) (poly-obj R y .fam .subst _) ∘
-           pair (id _ ∘ (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘
-                          pair p₁ (id _ ∘ (p₁ ∘ p₂))))
-                (id _ ∘ (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘
-                          pair p₁ (id _ ∘ (p₂ ∘ p₂))))) ∘
+           pair (id _ ∘ (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂))))
+                (id _ ∘ (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂))))) ∘
           pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
         ≈⟨ ∘-cong (∘-cong ≈-refl
               (pair-cong (isEquiv .trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left)))
@@ -1007,8 +1005,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
           pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
         ≈⟨ {!!} ⟩
-          pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂))
-               (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
+          pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
         ∎ where open ≈-Reasoning isEquiv
 
       result : h ≃ fold-open
