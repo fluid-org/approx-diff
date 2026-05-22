@@ -156,6 +156,15 @@ module Sem {o m e} {𝒞 : Category o m e}
     Poly-iso-sym (pi₁ + pi₂) = Poly-iso-sym pi₁ + Poly-iso-sym pi₂
     Poly-iso-sym (pi₁ × pi₂) = Poly-iso-sym pi₁ × Poly-iso-sym pi₂
 
+    -- Round-trip law: forward then backward at the polynomial-functor level is (parameterised) identity.
+    poly-iso-mor-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') {Γ X} →
+      poly-iso-mor pi {Γ} {X} ∘ pair p₁ (poly-iso-mor (Poly-iso-sym pi)) ≈ p₂
+    poly-iso-mor-fwd∘bwd one         = {!!}
+    poly-iso-mor-fwd∘bwd (const A≅B) = {!!}
+    poly-iso-mor-fwd∘bwd var         = {!!}
+    poly-iso-mor-fwd∘bwd (pi₁ + pi₂) = {!!}
+    poly-iso-mor-fwd∘bwd (pi₁ × pi₂) = {!!}
+
     iso-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') →
       (⦅ inF P' ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
         ∘ (⦅ inF P ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))) ≈ id (μ P')
@@ -185,7 +194,7 @@ module Sem {o m e} {𝒞 : Category o m e}
                           (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
                                    (∘-cong ≈-refl (poly-fmor-id P')))))))) ≈-refl ⟩
         p₂ ∘ pair to-terminal (id (μ P'))
-      ≈⟨ {!!} ⟩
+      ≈⟨ pair-p₂ _ _ ⟩
         id (μ P')
       ∎ where open ≈-Reasoning isEquiv
 
