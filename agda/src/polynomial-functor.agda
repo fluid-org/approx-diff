@@ -158,6 +158,13 @@ module Sem {o m e} {𝒞 : Category o m e}
     Poly-iso-sym (pi₁ + pi₂) = Poly-iso-sym pi₁ + Poly-iso-sym pi₂
     Poly-iso-sym (pi₁ × pi₂) = Poly-iso-sym pi₁ × Poly-iso-sym pi₂
 
+    Poly-iso-sym-involutive : ∀ {P P'} (pi : Poly-iso P P') → Poly-iso-sym (Poly-iso-sym pi) ≡ pi
+    Poly-iso-sym-involutive one         = ≡.refl
+    Poly-iso-sym-involutive (const A≅B) = ≡.refl
+    Poly-iso-sym-involutive var         = ≡.refl
+    Poly-iso-sym-involutive (pi₁ + pi₂) = ≡.cong₂ _+_ (Poly-iso-sym-involutive pi₁) (Poly-iso-sym-involutive pi₂)
+    Poly-iso-sym-involutive (pi₁ × pi₂) = ≡.cong₂ _×_ (Poly-iso-sym-involutive pi₁) (Poly-iso-sym-involutive pi₂)
+
     -- Round-trip law: forward then backward at the polynomial-functor level is (parameterised) identity.
     poly-iso-mor-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') {Γ X} →
       poly-iso-mor pi {Γ} {X} ∘ pair p₁ (poly-iso-mor (Poly-iso-sym pi)) ≈ p₂
@@ -314,7 +321,15 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso pi .fwd        = ⦅ inF _ ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id _)
     iso pi .bwd        = ⦅ inF _ ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id _)
     iso pi .fwd∘bwd≈id = iso-fwd∘bwd pi
-    iso pi .bwd∘fwd≈id = iso-fwd∘bwd (Poly-iso-sym pi)
+    iso {P} {P'} pi .bwd∘fwd≈id =
+      substP (λ q → (⦅ inF P ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id _))
+                       ∘ (⦅ inF P' ∘ poly-iso-mor q ⦆ ∘ pair to-terminal (id _))
+                     ≈ id (μ P))
+             (Poly-iso-sym-involutive pi)
+             (iso-fwd∘bwd (Poly-iso-sym pi))
+      where
+        substP : ∀ {a b} {A : Set a} (Q : A → Prop b) {x y : A} → x ≡ y → Q x → Q y
+        substP _ ≡.refl q = q
 
   {- μPoly-Sem: interpretation of μPoly with Mon (commented out alongside μPoly).
   module μPoly-Sem (F : Functor 𝒞 𝒞) where
