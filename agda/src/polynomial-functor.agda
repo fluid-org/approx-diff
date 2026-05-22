@@ -274,6 +274,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   open HasTerminal
   open HasProducts P
   open fam.CategoryOfFamilies os es 𝒞
+  open Obj
+  open Mor
+  open Fam
   open products P  -- Fam-level products
   open _⇒f_
   open Sem (terminal T) products strongCoproducts
