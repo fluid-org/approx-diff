@@ -985,13 +985,30 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       η-fam Poly.var       γ (inF j)   = {!!}
       η-fam (P Poly.+ R)   γ (inj₁ x)  =
         isEquiv .trans
-          (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl)
-          (η-fam P γ x)
+          (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl) (η-fam P γ x)
       η-fam (P Poly.+ R)   γ (inj₂ z)  =
         isEquiv .trans
-          (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl)
-          (η-fam R γ z)
-      η-fam (P Poly.× R)   γ (x , z)   = {!!}
+          (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl) (η-fam R γ z)
+      η-fam (P Poly.× R)   γ (x , z)   = begin
+          (pair (poly-obj P y .Obj.fam .Fam.subst _ ∘ p₁)
+                (poly-obj R y .Obj.fam .Fam.subst _ ∘ p₂) ∘
+           pair (id _ ∘ (poly-fmor P h .Mor.famf .transf (γ , unembed-idx P x) ∘
+                          pair p₁ (id _ ∘ (p₁ ∘ p₂))))
+                (id _ ∘ (poly-fmor R h .Mor.famf .transf (γ , unembed-idx R z) ∘
+                          pair p₁ (id _ ∘ (p₂ ∘ p₂))))) ∘
+          pair p₁ (pair (unembed-fam P x ∘ p₁) (unembed-fam R z ∘ p₂) ∘ p₂)
+        ≈⟨ ∘-cong (∘-cong ≈-refl
+              (pair-cong (isEquiv .trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left)))
+                         (isEquiv .trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left))))) ≈-refl ⟩
+          (pair (poly-obj P y .Obj.fam .Fam.subst _ ∘ p₁)
+                (poly-obj R y .Obj.fam .Fam.subst _ ∘ p₂) ∘
+           pair (poly-fmor P h .Mor.famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                (poly-fmor R h .Mor.famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
+          pair p₁ (pair (unembed-fam P x ∘ p₁) (unembed-fam R z ∘ p₂) ∘ p₂)
+        ≈⟨ {!!} ⟩
+          pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂))
+               (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
+        ∎ where open ≈-Reasoning isEquiv
 
       result : h ≃ fold-open
       result ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) =
