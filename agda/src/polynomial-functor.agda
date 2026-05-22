@@ -168,7 +168,8 @@ module Sem {o m e} {𝒞 : Category o m e}
         lemma : ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) ≈ p₂
         lemma = ≈-trans
           (⦅⦆-η (inF (const A) ∘ p₂) ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) {!!})
-          (≈-sym (⦅⦆-η (inF (const A) ∘ p₂) p₂ {!!}))
+          (≈-sym (⦅⦆-η (inF (const A) ∘ p₂) p₂
+            (≈-trans (pair-p₂ _ _) (≈-trans (≈-sym id-right) (≈-sym (∘-cong ≈-refl pair-ext0))))))
 
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
     iso one                         = {!!}
