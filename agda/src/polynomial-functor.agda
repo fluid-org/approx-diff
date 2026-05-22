@@ -192,7 +192,7 @@ module Sem {o m e} {𝒞 : Category o m e}
         open ≈-Reasoning isEquiv
 
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
-    iso one                         = {!!}
+    iso one                         = Category.Iso-refl 𝒞
     iso (const {A} {B} A≅B)         =
       Category.Iso-trans 𝒞 (μ-const-iso A) (Category.Iso-trans 𝒞 A≅B (Category.Iso-sym 𝒞 (μ-const-iso B)))
     iso var                         = {!!}
