@@ -161,17 +161,14 @@ module Sem {o m e} {𝒞 : Category o m e}
     -- Round-trip law: forward then backward at the polynomial-functor level is (parameterised) identity.
     poly-iso-mor-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') {Γ X} →
       poly-iso-mor pi {Γ} {X} ∘ pair p₁ (poly-iso-mor (Poly-iso-sym pi)) ≈ p₂
-    poly-iso-mor-fwd∘bwd one         = to-terminal-unique _ _
+    poly-iso-mor-fwd∘bwd one = to-terminal-unique _ _
     poly-iso-mor-fwd∘bwd (const A≅B) =
       ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
-      (≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong (A≅B .fwd∘bwd≈id) ≈-refl) id-left)))
-    poly-iso-mor-fwd∘bwd var         = pair-p₂ _ _
+      (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (A≅B .fwd∘bwd≈id) ≈-refl) id-left)))
+    poly-iso-mor-fwd∘bwd var = pair-p₂ _ _
     poly-iso-mor-fwd∘bwd (_+_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) {Γ} {X} =
-      ≈-trans (≈-sym (scopair-ext _))
-      (≈-trans (scopair-cong in₁-branch in₂-branch)
-               (scopair-ext _))
+      ≈-trans (≈-sym (scopair-ext _)) (≈-trans (scopair-cong in₁-branch in₂-branch) (scopair-ext _))
       where
         in₁-branch : (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
                       pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₁ ∘ p₂)
@@ -229,9 +226,7 @@ module Sem {o m e} {𝒞 : Category o m e}
           ∎ where open ≈-Reasoning isEquiv
 
     poly-iso-mor-fwd∘bwd (_×_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) {Γ} {X} =
-      ≈-trans (≈-sym (pair-ext _))
-      (≈-trans (pair-cong p₁-branch p₂-branch)
-               (pair-ext _))
+      ≈-trans (≈-sym (pair-ext _)) (≈-trans (pair-cong p₁-branch p₂-branch) (pair-ext _))
       where
         pair-fwd = pair (poly-iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂)) (poly-iso-mor pi₂ ∘ pair p₁ (p₂ ∘ p₂))
         pair-bwd = pair (poly-iso-mor (Poly-iso-sym pi₁) ∘ pair p₁ (p₁ ∘ p₂))
@@ -261,7 +256,27 @@ module Sem {o m e} {𝒞 : Category o m e}
           ∎ where open ≈-Reasoning isEquiv
 
         p₂-branch : p₂ ∘ (pair-fwd ∘ pair p₁ pair-bwd) ≈ p₂ ∘ p₂
-        p₂-branch = {!!}
+        p₂-branch = begin
+            p₂ ∘ (pair-fwd ∘ pair p₁ pair-bwd)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (p₂ ∘ pair-fwd) ∘ pair p₁ pair-bwd
+          ≈⟨ ∘-cong (pair-p₂ _ _) ≈-refl ⟩
+            (poly-iso-mor pi₂ ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair p₁ pair-bwd
+          ≈⟨ assoc _ _ _ ⟩
+            poly-iso-mor pi₂ ∘ (pair p₁ (p₂ ∘ p₂) ∘ pair p₁ pair-bwd)
+          ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _)
+                           (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
+                                    (pair-cong ≈-refl (pair-p₂ _ _)))) ⟩
+            poly-iso-mor pi₂ ∘ pair p₁ (poly-iso-mor (Poly-iso-sym pi₂) ∘ pair p₁ (p₂ ∘ p₂))
+          ≈˘⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)) ⟩
+            poly-iso-mor pi₂ ∘ (pair p₁ (poly-iso-mor (Poly-iso-sym pi₂)) ∘ pair p₁ (p₂ ∘ p₂))
+          ≈˘⟨ assoc _ _ _ ⟩
+            (poly-iso-mor pi₂ ∘ pair p₁ (poly-iso-mor (Poly-iso-sym pi₂))) ∘ pair p₁ (p₂ ∘ p₂)
+          ≈⟨ ∘-cong (poly-iso-mor-fwd∘bwd pi₂) ≈-refl ⟩
+            p₂ ∘ pair p₁ (p₂ ∘ p₂)
+          ≈⟨ pair-p₂ _ _ ⟩
+            p₂ ∘ p₂
+          ∎ where open ≈-Reasoning isEquiv
 
     iso-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') →
       (⦅ inF P' ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
@@ -299,7 +314,7 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso pi .fwd        = ⦅ inF _ ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id _)
     iso pi .bwd        = ⦅ inF _ ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id _)
     iso pi .fwd∘bwd≈id = iso-fwd∘bwd pi
-    iso pi .bwd∘fwd≈id = {!!}
+    iso pi .bwd∘fwd≈id = iso-fwd∘bwd (Poly-iso-sym pi)
 
   {- μPoly-Sem: interpretation of μPoly with Mon (commented out alongside μPoly).
   module μPoly-Sem (F : Functor 𝒞 𝒞) where
