@@ -178,8 +178,7 @@ module Sem {o m e} {𝒞 : Category o m e}
                 (inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ (inF (const A) ∘ p₂)
               ≈˘⟨ assoc _ _ _ ⟩
                 ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ inF (const A)) ∘ p₂
-              ≈⟨ ∘-cong (≈-trans (assoc _ _ _)
-                          (≈-trans (∘-cong ≈-refl (μ-const-fwd∘bwd A)) id-right)) ≈-refl ⟩
+              ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (μ-const-fwd∘bwd A)) id-right)) ≈-refl ⟩
                 inF (const A) ∘ p₂
               ≈˘⟨ id-right ⟩
                 (inF (const A) ∘ p₂) ∘ id _
