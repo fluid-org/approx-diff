@@ -244,7 +244,13 @@ module Sem {o m e} {𝒞 : Category o m e}
                         (poly-iso-mor (Poly-iso-sym pi₂) ∘ pair p₁ (p₂ ∘ p₂))
 
         p₁-branch : p₁ ∘ (pair-fwd ∘ pair p₁ pair-bwd) ≈ p₁ ∘ p₂
-        p₁-branch = {!!}
+        p₁-branch = begin
+            p₁ ∘ (pair-fwd ∘ pair p₁ pair-bwd)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (p₁ ∘ pair-fwd) ∘ pair p₁ pair-bwd
+          ≈⟨ {!!} ⟩
+            p₁ ∘ p₂
+          ∎ where open ≈-Reasoning isEquiv
 
         p₂-branch : p₂ ∘ (pair-fwd ∘ pair p₁ pair-bwd) ≈ p₂ ∘ p₂
         p₂-branch = {!!}
