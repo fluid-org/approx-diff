@@ -935,7 +935,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           ≈⟨ pair-p₂ _ _ ⟩
             p₂
           ∎ where open ≈-Reasoning isEquiv
-        η-fam Poly.var γ (inF j) = {!!}
+        η-fam Poly.var γ (inF j) = begin
+            (y .fam .subst _ ∘ h .famf .transf (γ , inF j) ∘ pair p₁ (id _ ∘ p₂))
+          ≈⟨ isEquiv .trans (∘-cong ≈-refl (isEquiv .trans (pair-cong ≈-refl id-left) pair-ext0)) id-right ⟩
+            y .fam .subst _ ∘ h .famf .transf (γ , inF j)
+          ≈⟨ {!!} ⟩
+            alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
+          ∎ where open ≈-Reasoning isEquiv
         η-fam (P Poly.+ R) γ (inj₁ x) =
           isEquiv .trans
             (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl) (η-fam P γ x)
