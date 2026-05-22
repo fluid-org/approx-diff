@@ -195,7 +195,7 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso one                         = Category.Iso-refl 𝒞
     iso (const {A} {B} A≅B)         =
       Category.Iso-trans 𝒞 (μ-const-iso A) (Category.Iso-trans 𝒞 A≅B (Category.Iso-sym 𝒞 (μ-const-iso B)))
-    iso var                         = {!!}
+    iso var                         = Category.Iso-refl 𝒞
     iso (pi₁ + pi₂)                 = {!!}
     iso (pi₁ × pi₂)                 = {!!}
 
