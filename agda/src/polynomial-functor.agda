@@ -990,21 +990,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         isEquiv .trans
           (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl) (η-fam R γ z)
       η-fam (P Poly.× R)   γ (x , z)   = begin
-          (pair (poly-obj P y .Obj.fam .Fam.subst _ ∘ p₁)
-                (poly-obj R y .Obj.fam .Fam.subst _ ∘ p₂) ∘
+          (prod-m (poly-obj P y .Obj.fam .Fam.subst _) (poly-obj R y .Obj.fam .Fam.subst _) ∘
            pair (id _ ∘ (poly-fmor P h .Mor.famf .transf (γ , unembed-idx P x) ∘
                           pair p₁ (id _ ∘ (p₁ ∘ p₂))))
                 (id _ ∘ (poly-fmor R h .Mor.famf .transf (γ , unembed-idx R z) ∘
                           pair p₁ (id _ ∘ (p₂ ∘ p₂))))) ∘
-          pair p₁ (pair (unembed-fam P x ∘ p₁) (unembed-fam R z ∘ p₂) ∘ p₂)
+          pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
         ≈⟨ ∘-cong (∘-cong ≈-refl
               (pair-cong (isEquiv .trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left)))
                          (isEquiv .trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left))))) ≈-refl ⟩
-          (pair (poly-obj P y .Obj.fam .Fam.subst _ ∘ p₁)
-                (poly-obj R y .Obj.fam .Fam.subst _ ∘ p₂) ∘
+          (prod-m (poly-obj P y .Obj.fam .Fam.subst _) (poly-obj R y .Obj.fam .Fam.subst _) ∘
            pair (poly-fmor P h .Mor.famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
                 (poly-fmor R h .Mor.famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
-          pair p₁ (pair (unembed-fam P x ∘ p₁) (unembed-fam R z ∘ p₂) ∘ p₂)
+          pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
         ≈⟨ {!!} ⟩
           pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂))
                (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
