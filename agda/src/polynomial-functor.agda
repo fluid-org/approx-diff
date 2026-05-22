@@ -935,7 +935,18 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           pair p₁ (poly-fmor Q fold-open .famf .transf (γ , i)))
     ∎ where
       open W-types Q; open Open alg; open ≈-Reasoning isEquiv
-  hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step = result
+  hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step = record
+    { idxf-eq = record
+        { func-eq = λ { {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) →
+                         η-idx Poly.var γ₁≈γ₂ {inF i₁} {inF i₂} t₁≈t₂ } }
+    ; famf-eq = record
+        { transf-eq = λ { {γ , inF i} →
+                       isEquiv .trans
+                         (isEquiv .trans (≈-sym id-right)
+                                         (≈-sym (∘-cong ≈-refl
+                                            (isEquiv .trans (pair-cong ≈-refl id-left) pair-ext0))))
+                         (η-fam Poly.var γ (inF i)) } }
+    }
     where
       open W-types Q; open Open alg
       η-idx : (P : Poly cat) {δ₁ δ₂ : Γ .idx .Carrier} (δ₁≈δ₂ : Γ .idx ._≈s_ δ₁ δ₂)
@@ -1020,15 +1031,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈⟨ {!!} ⟩
           pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
         ∎ where open ≈-Reasoning isEquiv
-
-      result : h ≃ fold-open
-      result ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) =
-        η-idx Poly.var γ₁≈γ₂ {inF i₁} {inF i₂} t₁≈t₂
-      result ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , inF i} =
-        isEquiv .trans
-          (isEquiv .trans (≈-sym id-right)
-                          (≈-sym (∘-cong ≈-refl (isEquiv .trans (pair-cong ≈-refl id-left) pair-ext0))))
-          (η-fam Poly.var γ (inF i))
 
 ------------------------------------------------------------------------------
 -- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
