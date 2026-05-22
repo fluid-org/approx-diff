@@ -970,13 +970,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           ≈⟨ pair-cong bridge-P bridge-R ⟩
             pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
           ∎ where
-            merge-pair-P : pair {prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm (unembed-idx P x))
-                                                              (poly-obj R WObj .fam .fm (unembed-idx R z)))}
-                                {Γ .fam .fm γ}
-                                {poly-obj P WObj .fam .fm (unembed-idx P x)} p₁ (p₁ ∘ p₂) ∘
-                           pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
-                         ≈ pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
-            merge-pair-P = begin
+            merge-pair-P : pair {prod (Γ .fam .fm γ) _} p₁ (p₁ ∘ p₂) ∘
+                             pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂) ≈
+                           pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
+            merge-pair-P =
+              begin
                 pair p₁ (p₁ ∘ p₂) ∘ pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
               ≈⟨ pair-natural _ _ _ ⟩
                 pair (p₁ ∘ pair p₁ _) ((p₁ ∘ p₂) ∘ pair p₁ _)
