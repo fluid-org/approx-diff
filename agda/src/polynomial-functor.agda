@@ -159,8 +159,12 @@ module Sem {o m e} {𝒞 : Category o m e}
     -- Round-trip law: forward then backward at the polynomial-functor level is (parameterised) identity.
     poly-iso-mor-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') {Γ X} →
       poly-iso-mor pi {Γ} {X} ∘ pair p₁ (poly-iso-mor (Poly-iso-sym pi)) ≈ p₂
-    poly-iso-mor-fwd∘bwd one         = {!!}
-    poly-iso-mor-fwd∘bwd (const A≅B) = {!!}
+    poly-iso-mor-fwd∘bwd one         = to-terminal-unique _ _
+    poly-iso-mor-fwd∘bwd (const A≅B) =
+      ≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+      (≈-trans (≈-sym (assoc _ _ _))
+      (≈-trans (∘-cong (A≅B .fwd∘bwd≈id) ≈-refl) id-left)))
     poly-iso-mor-fwd∘bwd var         = pair-p₂ _ _
     poly-iso-mor-fwd∘bwd (pi₁ + pi₂) = {!!}
     poly-iso-mor-fwd∘bwd (pi₁ × pi₂) = {!!}
