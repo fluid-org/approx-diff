@@ -970,14 +970,27 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           ≈⟨ pair-cong bridge-P bridge-R ⟩
             pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
           ∎ where
-            open ≈-Reasoning isEquiv
             merge-pair-P : pair {prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm (unembed-idx P x))
                                                               (poly-obj R WObj .fam .fm (unembed-idx R z)))}
                                 {Γ .fam .fm γ}
                                 {poly-obj P WObj .fam .fm (unembed-idx P x)} p₁ (p₁ ∘ p₂) ∘
                            pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
                          ≈ pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
-            merge-pair-P = {!!}
+            merge-pair-P = begin
+                pair p₁ (p₁ ∘ p₂) ∘ pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
+              ≈⟨ pair-natural _ _ _ ⟩
+                pair (p₁ ∘ pair p₁ _) ((p₁ ∘ p₂) ∘ pair p₁ _)
+              ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+                pair p₁ (p₁ ∘ (p₂ ∘ pair p₁ _))
+              ≈⟨ pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+                pair p₁ (p₁ ∘ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂))
+              ≈⟨ pair-cong ≈-refl (≈-sym (assoc _ _ _)) ⟩
+                pair p₁ ((p₁ ∘ prod-m (unembed-fam P x) (unembed-fam R z)) ∘ p₂)
+              ≈⟨ pair-cong ≈-refl (∘-cong (pair-p₁ _ _) ≈-refl) ⟩
+                pair p₁ ((unembed-fam P x ∘ p₁) ∘ p₂)
+              ≈⟨ pair-cong ≈-refl (assoc _ _ _) ⟩
+                pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
+              ∎ where open ≈-Reasoning isEquiv
 
             fold-pair-P : pair {prod (Γ .fam .fm γ) (WFam-fm P x)}
                                {Γ .fam .fm γ}
@@ -998,6 +1011,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                        pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
                      ≈ project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂)
             bridge-R = {!!}
+
+            open ≈-Reasoning isEquiv
 
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
