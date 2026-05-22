@@ -234,7 +234,20 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₂ ∘ pair p₁ (in₂ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
 
-    poly-iso-mor-fwd∘bwd (pi₁ × pi₂) = {!!}
+    poly-iso-mor-fwd∘bwd (_×_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) {Γ} {X} =
+      ≈-trans (≈-sym (pair-ext _))
+      (≈-trans (pair-cong p₁-branch p₂-branch)
+               (pair-ext _))
+      where
+        pair-fwd = pair (poly-iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂)) (poly-iso-mor pi₂ ∘ pair p₁ (p₂ ∘ p₂))
+        pair-bwd = pair (poly-iso-mor (Poly-iso-sym pi₁) ∘ pair p₁ (p₁ ∘ p₂))
+                        (poly-iso-mor (Poly-iso-sym pi₂) ∘ pair p₁ (p₂ ∘ p₂))
+
+        p₁-branch : p₁ ∘ (pair-fwd ∘ pair p₁ pair-bwd) ≈ p₁ ∘ p₂
+        p₁-branch = {!!}
+
+        p₂-branch : p₂ ∘ (pair-fwd ∘ pair p₁ pair-bwd) ≈ p₂ ∘ p₂
+        p₂-branch = {!!}
 
     iso-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') →
       (⦅ inF P' ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
