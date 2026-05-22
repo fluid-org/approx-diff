@@ -285,6 +285,14 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₂ ∘ p₂
           ∎ where open ≈-Reasoning isEquiv
 
+    iso-fwd∘bwd-β : ∀ {P P'} (pi : Poly-iso P P') {Γ} →
+      let fwd∘bwd∘p₂ : prod Γ (μ P') ⇒ μ P'
+          fwd∘bwd∘p₂ = ((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
+                          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂
+      in fwd∘bwd∘p₂ ∘ pair p₁ (inF P' ∘ p₂)
+         ≈ (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P' fwd∘bwd∘p₂)
+    iso-fwd∘bwd-β pi = {!!}
+
     iso-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') →
       (⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
         ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))) ≈ id (μ P')
@@ -306,7 +314,7 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ ∘-cong (⦅⦆-η (inF P' ∘ p₂)
                         (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
                             ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))))
-                          ∘ p₂) {!!}) ≈-refl ⟩
+                          ∘ p₂) (iso-fwd∘bwd-β pi)) ≈-refl ⟩
         ⦅ inF P' ∘ p₂ ⦆ ∘ pair to-terminal (id (μ P'))
       ≈⟨ ∘-cong (≈-sym (⦅⦆-η (inF P' ∘ p₂) p₂
                           (≈-trans (pair-p₂ _ _) (≈-sym
