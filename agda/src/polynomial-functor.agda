@@ -78,7 +78,9 @@ module Sem {o m e} {𝒞 : Category o m e}
   CP = strong-coproducts→coproducts T SCP
   open HasCoproducts CP
   open HasStrongCoproducts SCP using ()
-    renaming (copair to scopair; copair-cong to scopair-cong; copair-ext to scopair-ext)
+    renaming (copair to scopair; copair-cong to scopair-cong;
+              copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂;
+              copair-ext to scopair-ext)
 
   poly-obj : Poly 𝒞 → obj → obj
   poly-obj one         _ = terminal
@@ -169,7 +171,8 @@ module Sem {o m e} {𝒞 : Category o m e}
     poly-iso-mor-fwd∘bwd (pi₁ + pi₂) =
       ≈-trans (≈-sym (scopair-ext _))
       (≈-trans (scopair-cong (≈-trans (assoc _ _ _)
-                              (≈-trans (∘-cong ≈-refl (pair-natural _ _ _)) {!!})) {!!})
+                              (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
+                              (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (scopair-in₁ _ _))) {!!}))) {!!})
                (scopair-ext _))
     poly-iso-mor-fwd∘bwd (pi₁ × pi₂) = {!!}
 
