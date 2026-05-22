@@ -4,6 +4,11 @@ module prop where
 
 open import Level
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+
+-- Prop-variant of Relation.Binary.PropositionalEquality.subst (which requires a Set-valued motive).
+substP : ∀ {a b} {A : Set a} (Q : A → Prop b) {x y : A} → x ≡ y → Q x → Q y
+substP _ refl q = q
 
 data ⊥ {ℓ} : Prop ℓ where
 
