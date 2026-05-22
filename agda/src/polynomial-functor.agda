@@ -183,10 +183,7 @@ module Sem {o m e} {𝒞 : Category o m e}
           ≈⟨ assoc _ _ _ ⟩
             scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
             (pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂))) ∘ pair p₁ (in₁ ∘ p₂))
-          ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
-            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
-            pair (p₁ ∘ pair p₁ (in₁ ∘ p₂)) (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)) ∘ pair p₁ (in₁ ∘ p₂))
-          ≈⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (scopair-in₁ _ _)) ⟩
+          ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (scopair-in₁ _ _))) ⟩
             scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair p₁ (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁))
           ≈˘⟨ ∘-cong ≈-refl
                 (≈-trans (pair-natural _ _ _)
@@ -213,10 +210,7 @@ module Sem {o m e} {𝒞 : Category o m e}
           ≈⟨ assoc _ _ _ ⟩
             scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
             (pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂))) ∘ pair p₁ (in₂ ∘ p₂))
-          ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
-            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
-            pair (p₁ ∘ pair p₁ (in₂ ∘ p₂)) (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)) ∘ pair p₁ (in₂ ∘ p₂))
-          ≈⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (scopair-in₂ _ _)) ⟩
+          ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (scopair-in₂ _ _))) ⟩
             scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair p₁ (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂))
           ≈˘⟨ ∘-cong ≈-refl
                 (≈-trans (pair-natural _ _ _)
@@ -289,8 +283,7 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ ∘-cong (≈-sym (⦅⦆-η (inF P' ∘ p₂) p₂
                           (≈-trans (pair-p₂ _ _) (≈-sym
                           (≈-trans (assoc _ _ _)
-                          (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
-                                   (∘-cong ≈-refl (poly-fmor-id P')))))))) ≈-refl ⟩
+                          (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) (poly-fmor-id P')))))))) ≈-refl ⟩
         p₂ ∘ pair to-terminal (id (μ P'))
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ P')
