@@ -119,6 +119,12 @@ module Sem {o m e} {𝒞 : Category o m e}
              (h ∘ pair p₁ (inF Q ∘ p₂)) ≈ (alg ∘ pair p₁ (poly-fmor Q h)) →
              h ≈ ⦅ alg ⦆
 
+  -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
+  -- Built directly from catamorphism universal property (β, η).
+  μ-respects-Poly-iso : (Mu : HasMu) → ∀ {P Q} → Poly-iso P Q →
+                        Category.Iso 𝒞 (HasMu.μ Mu P) (HasMu.μ Mu Q)
+  μ-respects-Poly-iso Mu pi = {!!}
+
   -- Interpretation of μPoly as a functor in 𝒞, plus the corresponding HasMu interface, where F interprets Mon.
   module μPoly-Sem (F : Functor 𝒞 𝒞) where
     μPoly-obj : μPoly 𝒞 → obj → obj
