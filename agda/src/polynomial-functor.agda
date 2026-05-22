@@ -1005,8 +1005,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                        (alg .idxf .PS._⇒_.func-resp-≈
                           (Γ .idx .isEquivalence .refl , η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))))
                        (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
-                          (Γ .idx .isEquivalence .refl ,
-                           poly-obj Q WObj .idx .isEquivalence .refl))) ≈-refl ⟩
+                          (Γ .idx .isEquivalence .refl , poly-obj Q WObj .idx .isEquivalence .refl))) ≈-refl ⟩
             (y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈
                               (Γ .idx .isEquivalence .refl , η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q)))) ∘
              y .fam .subst (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
@@ -1059,24 +1058,21 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             alg .famf .transf (γ , project-idx-open Q γ j) ∘
               (pair p₁ (poly-obj Q y .fam .subst
                           (η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘ p₂) ∘
-               (pair p₁ (poly-fmor Q h .famf .transf (γ , unembed-idx Q j)) ∘
-                pair p₁ (unembed-fam Q j ∘ p₂)))
+               (pair p₁ (poly-fmor Q h .famf .transf (γ , unembed-idx Q j)) ∘ pair p₁ (unembed-fam Q j ∘ p₂)))
           ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl
                 (isEquiv .trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl))) ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘
               (pair p₁ (poly-obj Q y .fam .subst
                           (η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘ p₂) ∘
-               pair p₁ (poly-fmor Q h .famf .transf (γ , unembed-idx Q j) ∘
-                         pair p₁ (unembed-fam Q j ∘ p₂)))
+               pair p₁ (poly-fmor Q h .famf .transf (γ , unembed-idx Q j) ∘ pair p₁ (unembed-fam Q j ∘ p₂)))
           ≈⟨ ∘-cong ≈-refl (isEquiv .trans (pair-natural _ _ _)
                               (isEquiv .trans (pair-cong (pair-p₁ _ _) (assoc _ _ _))
                                               (pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _))))) ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘
               pair p₁ (poly-obj Q y .fam .subst
                          (η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘
-                       (poly-fmor Q h .famf .transf (γ , unembed-idx Q j) ∘
-                        pair p₁ (unembed-fam Q j ∘ p₂)))
-          ≈⟨ {!!} ⟩
+                       (poly-fmor Q h .famf .transf (γ , unembed-idx Q j) ∘ pair p₁ (unembed-fam Q j ∘ p₂)))
+          ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (isEquiv .trans (≈-sym (assoc _ _ _)) (η-fam Q γ j))) ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
           ∎ where open ≈-Reasoning isEquiv
         η-fam (P Poly.+ R) γ (inj₁ x) =
