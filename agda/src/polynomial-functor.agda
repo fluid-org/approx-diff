@@ -254,6 +254,8 @@ module Sem {o m e} {𝒞 : Category o m e}
             poly-iso-mor pi₁ ∘ (pair p₁ (poly-iso-mor (Poly-iso-sym pi₁)) ∘ pair p₁ (p₁ ∘ p₂))
           ≈˘⟨ assoc _ _ _ ⟩
             (poly-iso-mor pi₁ ∘ pair p₁ (poly-iso-mor (Poly-iso-sym pi₁))) ∘ pair p₁ (p₁ ∘ p₂)
+          ≈⟨ ∘-cong (poly-iso-mor-fwd∘bwd pi₁) ≈-refl ⟩
+            p₂ ∘ pair p₁ (p₁ ∘ p₂)
           ≈⟨ {!!} ⟩
             p₁ ∘ p₂
           ∎ where open ≈-Reasoning isEquiv
