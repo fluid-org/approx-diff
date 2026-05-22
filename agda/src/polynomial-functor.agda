@@ -286,11 +286,12 @@ module Sem {o m e} {𝒞 : Category o m e}
           ∎ where open ≈-Reasoning isEquiv
 
     iso-fwd∘bwd-β : ∀ {P P'} (pi : Poly-iso P P') {Γ} →
-      let fwd∘bwd∘p₂ : prod Γ (μ P') ⇒ μ P'
-          fwd∘bwd∘p₂ = ((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-                          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂
-      in fwd∘bwd∘p₂ ∘ pair p₁ (inF P' ∘ p₂)
-         ≈ (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P' fwd∘bwd∘p₂)
+      (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ})
+        ∘ pair p₁ (inF P' ∘ p₂)
+      ≈ (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P'
+          (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
+              ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}))
     iso-fwd∘bwd-β pi = {!!}
 
     iso-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') →
