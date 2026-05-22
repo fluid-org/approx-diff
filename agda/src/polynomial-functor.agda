@@ -168,7 +168,8 @@ module Sem {o m e} {𝒞 : Category o m e}
     poly-iso-mor-fwd∘bwd var         = pair-p₂ _ _
     poly-iso-mor-fwd∘bwd (pi₁ + pi₂) =
       ≈-trans (≈-sym (scopair-ext _))
-      (≈-trans (scopair-cong (≈-trans (assoc _ _ _) {!!}) {!!})
+      (≈-trans (scopair-cong (≈-trans (assoc _ _ _)
+                              (≈-trans (∘-cong ≈-refl (pair-natural _ _ _)) {!!})) {!!})
                (scopair-ext _))
     poly-iso-mor-fwd∘bwd (pi₁ × pi₂) = {!!}
 
