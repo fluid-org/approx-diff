@@ -1013,7 +1013,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       result : h ≃ fold-open
       result ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) =
         η-idx Poly.var γ₁≈γ₂ {inF i₁} {inF i₂} t₁≈t₂
-      result ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , inF i} = {!!}
+      result ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , inF i} =
+        isEquiv .trans (isEquiv .trans (≈-sym id-right) (≈-sym (∘-cong ≈-refl pair-id-collapse)))
+                       (η-fam Poly.var γ (inF i))
+        where
+          pair-id-collapse : pair p₁ (id _ ∘ p₂) ≈ id _
+          pair-id-collapse = isEquiv .trans (pair-cong ≈-refl id-left)
+                             (isEquiv .trans (pair-cong (≈-sym id-right) (≈-sym id-right))
+                                             (pair-ext (id _)))
 
 ------------------------------------------------------------------------------
 -- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
