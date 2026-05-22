@@ -984,7 +984,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                          (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘
                        pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
                      ≈ project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)
-            bridge-P = {!!}
+            bridge-P = isEquiv .trans (assoc _ _ _)
+              (isEquiv .trans (∘-cong ≈-refl (assoc _ _ _))
+              (isEquiv .trans (∘-cong ≈-refl (∘-cong ≈-refl merge-pair-P))
+              (isEquiv .trans (∘-cong ≈-refl (∘-cong ≈-refl (isEquiv .sym fold-pair-P)))
+              (isEquiv .trans (∘-cong ≈-refl (isEquiv .sym (assoc _ _ _)))
+              (isEquiv .trans (isEquiv .sym (assoc _ _ _))
+              (isEquiv .trans (∘-cong (isEquiv .sym (assoc _ _ _)) ≈-refl)
+                              (∘-cong (η-fam P γ x) ≈-refl)))))))
             bridge-R : (poly-obj R y .fam .subst _ ∘
                          (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
                        pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
