@@ -56,9 +56,10 @@ data Poly-iso {o m e} {𝒞 : Category o m e} : Poly 𝒞 → Poly 𝒞 → Set 
   _+_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ + P₂) (Q₁ + Q₂)
   _×_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ × P₂) (Q₁ × Q₂)
 
-------------------------------------------------------------------------------
--- Polynomial signature extended with a Mon constructor (fibre-only decoration relative to whatever LiftMon
--- the interpretation supplies).
+{- ------------------------------------------------------------------------------
+-- μPoly: polynomial signature extended with a Mon constructor (fibre-only decoration relative to whatever
+-- LiftMon the interpretation supplies). Currently only consumed by language-interpretation-approx (broken);
+-- commented out until that's revived.
 data μPoly {o m e} (𝒞 : Category o m e) : Set o where
   one    : μPoly 𝒞
   const  : Category.obj 𝒞 → μPoly 𝒞
@@ -66,6 +67,7 @@ data μPoly {o m e} (𝒞 : Category o m e) : Set o where
   _+_    : μPoly 𝒞 → μPoly 𝒞 → μPoly 𝒞
   _×_    : μPoly 𝒞 → μPoly 𝒞 → μPoly 𝒞
   Mon    : μPoly 𝒞 → μPoly 𝒞
+-}
 
 module Sem {o m e} {𝒞 : Category o m e}
            (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (SCP : HasStrongCoproducts 𝒞 P) where
@@ -125,7 +127,7 @@ module Sem {o m e} {𝒞 : Category o m e}
                         Category.Iso 𝒞 (HasMu.μ Mu P) (HasMu.μ Mu Q)
   μ-respects-Poly-iso Mu pi = {!!}
 
-  -- Interpretation of μPoly as a functor in 𝒞, plus the corresponding HasMu interface, where F interprets Mon.
+  {- μPoly-Sem: interpretation of μPoly with Mon (commented out alongside μPoly).
   module μPoly-Sem (F : Functor 𝒞 𝒞) where
     μPoly-obj : μPoly 𝒞 → obj → obj
     μPoly-obj one        _ = terminal
@@ -139,10 +141,9 @@ module Sem {o m e} {𝒞 : Category o m e}
       field
         μ    : μPoly 𝒞 → obj
         inμ  : ∀ Q → μPoly-obj Q (μ Q) ⇒ μ Q
-        -- Open (parametric) form: algebra in extended context. Avoids the
-        -- closure conversion that would otherwise need exponentials.
         ⦅_⦆  : ∀ {Γ Q y} → (prod Γ (μPoly-obj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
       -- FIXME: equations (β/η for inμ / ⦅_⦆). Mon case needs strength on F.
+  -}
 
 ------------------------------------------------------------------------------
 -- A functor F : 𝒞 → 𝒟 preserves μ if, for each polynomial signature P, the
@@ -248,9 +249,8 @@ module _ {o e} where
   WSetoid P .Setoid.isEquivalence .IsEquivalence.sym   {w₁} {w₂} = W-≈-sym P {w₁} {w₂}
   WSetoid P .Setoid.isEquivalence .IsEquivalence.trans {w₁} {w₂} {w₃} = W-≈-trans P {w₁} {w₂} {w₃}
 
-------------------------------------------------------------------------------
--- Subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). `Mon` decorates a
--- sub-polynomial with the ambient fibre-level lifting monad, fibre-only.
+{- ------------------------------------------------------------------------------
+-- Mu: subset of Lucatelli Nunes & Vákár's μν Poly_L (Def 53). Commented out alongside μPoly.
 module Mu {o m e os es} {𝒟 : Category o m e}
           (T : HasTerminal 𝒟) (PP : HasProducts 𝒟) (L : StrongPointedFunctor PP) where
   open fam.CategoryOfFamilies os es 𝒟
@@ -269,7 +269,6 @@ module Mu {o m e os es} {𝒟 : Category o m e}
   open HasTerminal (terminal T) using () renaming (witness to Fam-terminal)
   open HasCoproducts coproducts using () renaming (coprod to Fam-coprod)
 
-  -- Fibre-wise lift of L's endofunctor to Fam(𝒟). Idx preserved; each fibre wrapped.
   Mon-Fam : Obj → Obj
   Mon-Fam Y .idx = Y .idx
   Mon-Fam Y .fam = changeCat F (Y .fam)
@@ -281,6 +280,7 @@ module Mu {o m e os es} {𝒟 : Category o m e}
   μPoly-obj (F + G)    X = Fam-coprod (μPoly-obj F X) (μPoly-obj G X)
   μPoly-obj (F × G)    X = (μPoly-obj F X) ⊗ (μPoly-obj G X)
   μPoly-obj (Mon F)    X = Mon-Fam (μPoly-obj F X)
+-}
 
 ------------------------------------------------------------------------------
 -- HasMu instance for the Fam construction.
@@ -1306,9 +1306,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       (η-fam h h-step Poly.var γ (inF i))
     where open W-types Q; open Open alg
 
-------------------------------------------------------------------------------
--- HasMu-μPoly instance for the Fam construction. Same shape as WFam, with a
--- Mon case at each clause: idx is unchanged, fibre is L.F applied.
+{- ------------------------------------------------------------------------------
+-- WFam-μ: HasMu-μPoly instance for the Fam construction. Commented out alongside μPoly.
 module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
               (T : HasTerminal 𝒟) (P : HasProducts 𝒟) (L : StrongPointedFunctor P) where
   open Category 𝒟
@@ -1765,3 +1764,4 @@ module WFam-μ {o m e} (os es : _) {𝒟 : Category o m e}
   hasMu-μPoly .HasMu-μPoly.μ Q          = W-types-μ.WObj Q
   hasMu-μPoly .HasMu-μPoly.inμ Q        = W-types-μ.inF-mor Q
   hasMu-μPoly .HasMu-μPoly.⦅_⦆ {Γ} {Q}  = W-types-μ.Open.fold-open Q
+-}
