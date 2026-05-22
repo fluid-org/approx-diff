@@ -156,7 +156,7 @@ module Sem {o m e} {𝒞 : Category o m e}
           ∘ (⦅ inF P ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))))
           ∘ (p₂ ∘ pair to-terminal (id (μ P')))
       ≈⟨ {!!} ⟩
-        {!!}
+        id (μ P')
       ∎ where open ≈-Reasoning isEquiv
 
     iso : ∀ {P P'} → Poly-iso P P' → Category.Iso 𝒞 (μ P) (μ P')
