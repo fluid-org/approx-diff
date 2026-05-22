@@ -162,13 +162,13 @@ module Sem {o m e} {𝒞 : Category o m e}
         (inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ (p₂ ∘ pair to-terminal (id _))
       ≈˘⟨ assoc _ _ _ ⟩
         ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) ∘ pair to-terminal (id _)
-      ≈⟨ ∘-cong lemma ≈-refl ⟩
+      ≈⟨ ∘-cong bwd∘fwd∘p₂≈p₂ ≈-refl ⟩
         p₂ ∘ pair to-terminal (id _)
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ (const A))
       ∎ where
-        lemma : (inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂ ≈ p₂
-        lemma = ≈-trans
+        bwd∘fwd∘p₂≈p₂ : (inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂ ≈ p₂
+        bwd∘fwd∘p₂≈p₂ = ≈-trans
           (⦅⦆-η (inF (const A) ∘ p₂) ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂)
             (begin
                 ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂) ∘ pair p₁ (inF (const A) ∘ p₂)
