@@ -105,7 +105,10 @@ module Sem {o m e} {𝒞 : Category o m e}
     ≈-trans (scopair-cong (∘-cong ≈-refl (poly-fmor-id Q₁)) (∘-cong ≈-refl (poly-fmor-id Q₂)))
             (≈-trans (scopair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
                      (scopair-ext p₂))
-  poly-fmor-id (Q₁ × Q₂)   = {!!}
+  poly-fmor-id (Q₁ × Q₂)   =
+    ≈-trans (pair-cong (∘-cong (poly-fmor-id Q₁) ≈-refl) (∘-cong (poly-fmor-id Q₂) ≈-refl))
+            (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _))
+                     (pair-ext p₂))
 
   -- Polynomial composition agrees with composition of functor actions.
   poly-obj-comp : ∀ P Q X → poly-obj (P ∘ₚ Q) X ≡ poly-obj P (poly-obj Q X)
