@@ -46,6 +46,16 @@ Poly-map F var         = var
 Poly-map F (P₁ + P₂)   = Poly-map F P₁ + Poly-map F P₂
 Poly-map F (P₁ × P₂)   = Poly-map F P₁ × Poly-map F P₂
 
+-- Two polynomials are iso if they have the same tree shape, with isomorphic objects at const slots.
+-- Restrictive (requires matching tree shapes); sufficient for our use (P₁ and P₂ both derived from the
+-- same first-order-poly P-fo, differing only at const slots).
+data Poly-iso {o m e} {𝒞 : Category o m e} : Poly 𝒞 → Poly 𝒞 → Set (o ⊔ m ⊔ e) where
+  one   : Poly-iso one one
+  const : ∀ {A B} → Category.Iso 𝒞 A B → Poly-iso (const A) (const B)
+  var   : Poly-iso var var
+  _+_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ + P₂) (Q₁ + Q₂)
+  _×_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ × P₂) (Q₁ × Q₂)
+
 ------------------------------------------------------------------------------
 -- Polynomial signature extended with a Mon constructor (fibre-only decoration relative to whatever LiftMon
 -- the interpretation supplies).
