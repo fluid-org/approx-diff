@@ -983,8 +983,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           p₂
         ∎ where open ≈-Reasoning isEquiv
       η-fam Poly.var       γ (inF j)   = {!!}
-      η-fam (P Poly.+ R)   γ (inj₁ x)  = {!!}
-      η-fam (P Poly.+ R)   γ (inj₂ z)  = {!!}
+      η-fam (P Poly.+ R)   γ (inj₁ x)  =
+        isEquiv .trans
+          (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl)
+          (η-fam P γ x)
+      η-fam (P Poly.+ R)   γ (inj₂ z)  =
+        isEquiv .trans
+          (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl)
+          (η-fam R γ z)
       η-fam (P Poly.× R)   γ (x , z)   = {!!}
 
       result : h ≃ fold-open
