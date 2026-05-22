@@ -77,7 +77,8 @@ module Sem {o m e} {𝒞 : Category o m e}
   CP : HasCoproducts 𝒞
   CP = strong-coproducts→coproducts T SCP
   open HasCoproducts CP
-  open HasStrongCoproducts SCP using () renaming (copair to scopair)
+  open HasStrongCoproducts SCP using ()
+    renaming (copair to scopair; copair-cong to scopair-cong; copair-ext to scopair-ext)
 
   poly-obj : Poly 𝒞 → obj → obj
   poly-obj one         _ = terminal
@@ -100,7 +101,10 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-fmor-id one         = to-terminal-unique _ _
   poly-fmor-id (const A)   = ≈-refl
   poly-fmor-id var         = ≈-refl
-  poly-fmor-id (Q₁ + Q₂)   = {!!}
+  poly-fmor-id (Q₁ + Q₂)   =
+    ≈-trans (scopair-cong (∘-cong ≈-refl (poly-fmor-id Q₁)) (∘-cong ≈-refl (poly-fmor-id Q₂)))
+            (≈-trans (scopair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
+                     (scopair-ext p₂))
   poly-fmor-id (Q₁ × Q₂)   = {!!}
 
   -- Polynomial composition agrees with composition of functor actions.
