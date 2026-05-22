@@ -955,6 +955,12 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                y .fam .subst (h .idxf .PS._⇒_.func-resp-≈
                                 (Γ .idx .isEquivalence .refl , WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))) ∘
             h .famf .transf (γ , inF j)
+          ≈⟨ assoc _ _ _ ⟩
+            y .fam .subst _ ∘
+              (y .fam .subst (h .idxf .PS._⇒_.func-resp-≈
+                                (Γ .idx .isEquivalence .refl ,
+                                 WObj .idx .isEquivalence .sym (embed-unembed-id Q j))) ∘
+               h .famf .transf (γ , inF j))
           ≈⟨ {!!} ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
           ∎ where open ≈-Reasoning isEquiv
