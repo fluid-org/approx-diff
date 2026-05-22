@@ -166,7 +166,9 @@ module Sem {o m e} {𝒞 : Category o m e}
       ∎ where
         open ≈-Reasoning isEquiv
         lemma : ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) ≈ p₂
-        lemma = {!!}
+        lemma = ≈-trans
+          (⦅⦆-η (inF (const A) ∘ p₂) ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) {!!})
+          (≈-sym (⦅⦆-η (inF (const A) ∘ p₂) p₂ {!!}))
 
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
     iso one                         = {!!}
