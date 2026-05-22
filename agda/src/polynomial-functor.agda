@@ -968,11 +968,20 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       η-fam : (P : Poly cat) (γ : Γ .Obj.idx .Carrier) (j : WIdx poly (idx-of P)) →
               (poly-obj P y .Obj.fam .Fam.subst
                  (η-idx P (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of P) {j})) ∘
-               poly-fmor P h .Mor.famf .transf (γ , unembed-idx P j) ∘
-               pair p₁ (unembed-fam P j ∘ p₂)) ≈
+               poly-fmor P h .Mor.famf .transf (γ , unembed-idx P j) ∘ pair p₁ (unembed-fam P j ∘ p₂)) ≈
               project-fam-open P γ j
-      η-fam Poly.one       γ j         = {!!}
-      η-fam (Poly.const A) γ j         = {!!}
+      η-fam Poly.one       γ j         = HasTerminal.to-terminal-unique T _ _
+      η-fam (Poly.const A) γ j         = begin
+          (A .Obj.fam .Fam.subst _ ∘ p₂) ∘ pair p₁ (id _ ∘ p₂)
+        ≈⟨ ∘-cong (∘-cong (A .Obj.fam .Fam.refl*) ≈-refl) ≈-refl ⟩
+          (id _ ∘ p₂) ∘ pair p₁ (id _ ∘ p₂)
+        ≈⟨ ∘-cong id-left ≈-refl ⟩
+          p₂ ∘ pair p₁ (id _ ∘ p₂)
+        ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
+          p₂ ∘ pair p₁ p₂
+        ≈⟨ pair-p₂ _ _ ⟩
+          p₂
+        ∎ where open ≈-Reasoning isEquiv
       η-fam Poly.var       γ (inF j)   = {!!}
       η-fam (P Poly.+ R)   γ (inj₁ x)  = {!!}
       η-fam (P Poly.+ R)   γ (inj₂ z)  = {!!}
