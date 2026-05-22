@@ -195,8 +195,9 @@ module Sem {o m e} {𝒞 : Category o m e}
     poly-iso-mor one             = to-terminal
     poly-iso-mor (const A≅B)     = A≅B .fwd ∘ p₂
     poly-iso-mor var             = p₂
-    poly-iso-mor (pi₁ + pi₂)     = {!!}
-    poly-iso-mor (pi₁ × pi₂)     = {!!}
+    poly-iso-mor (pi₁ + pi₂)     = scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂)
+    poly-iso-mor (pi₁ × pi₂)     = pair (poly-iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂))
+                                        (poly-iso-mor pi₂ ∘ pair p₁ (p₂ ∘ p₂))
 
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
     iso one                         = Category.Iso-refl 𝒞
