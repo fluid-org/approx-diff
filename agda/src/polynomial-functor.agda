@@ -1119,6 +1119,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                         (η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘
                       poly-fmor Q h .Mor.famf .transf (γ , unembed-idx Q j)) ∘
              pair p₁ (unembed-fam Q j ∘ p₂))
+        ≈⟨ ∘-cong ≈-refl (∘-cong (pair-cong ≈-refl
+              (∘-cong (poly-obj Q y .Obj.fam .Fam.trans* project-bridge η-fam-Q-subst) ≈-refl)) ≈-refl) ⟩
+          alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
+            (pair p₁ ((poly-obj Q y .Obj.fam .Fam.subst project-bridge ∘
+                       poly-obj Q y .Obj.fam .Fam.subst η-fam-Q-subst) ∘
+                      poly-fmor Q h .Mor.famf .transf (γ , unembed-idx Q j)) ∘
+             pair p₁ (unembed-fam Q j ∘ p₂))
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
@@ -1134,6 +1141,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                     (Γ .Obj.idx .isEquivalence .refl ,
                      η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q)))
           proof-after = poly-obj Poly.var y .Obj.idx .isEquivalence .trans h-step-bridge alg-step
+          η-fam-Q-subst = poly-obj Q y .Obj.idx .isEquivalence .trans
+                    (poly-fmor Q h .Mor.idxf .PS._⇒_.func-resp-≈
+                       (Γ .Obj.idx .isEquivalence .refl ,
+                        poly-obj Q WObj .Obj.idx .isEquivalence .sym (unembed-embed-id Q (unembed-idx Q j))))
+                    (η-idx Q (Γ .Obj.idx .isEquivalence .refl)
+                       (WIdx-≈-refl poly (idx-of Q) {embed-idx Q (unembed-idx Q j)}))
+          project-bridge = project-≈-open Q (Γ .Obj.idx .isEquivalence .refl) (embed-unembed-id Q j)
       η-fam (P Poly.+ R)   γ (inj₁ x)  = {!!}
       η-fam (P Poly.+ R)   γ (inj₂ z)  = {!!}
       η-fam (P Poly.× R)   γ (x , z)   = {!!}
