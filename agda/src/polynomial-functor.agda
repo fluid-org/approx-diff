@@ -287,8 +287,7 @@ module Sem {o m e} {𝒞 : Category o m e}
 
     iso-fwd∘bwd-β : ∀ {P P'} (pi : Poly-iso P P') {Γ} →
       (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ})
-        ∘ pair p₁ (inF P' ∘ p₂)
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}) ∘ pair p₁ (inF P' ∘ p₂)
       ≈ (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P'
           (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
               ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}))
