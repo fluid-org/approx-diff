@@ -123,9 +123,12 @@ module Sem {o m e} {𝒞 : Category o m e}
 
   -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
   -- Built directly from catamorphism universal property (β, η).
-  μ-respects-Poly-iso : (Mu : HasMu) → ∀ {P Q} → Poly-iso P Q →
-                        Category.Iso 𝒞 (HasMu.μ Mu P) (HasMu.μ Mu Q)
-  μ-respects-Poly-iso Mu pi = {!!}
+  μ-respects-Poly-iso : (Mu : HasMu) → ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (HasMu.μ Mu P) (HasMu.μ Mu Q)
+  μ-respects-Poly-iso Mu one              = {!!}
+  μ-respects-Poly-iso Mu (const A≅B)      = {!!}
+  μ-respects-Poly-iso Mu var              = {!!}
+  μ-respects-Poly-iso Mu (pi₁ + pi₂)      = {!!}
+  μ-respects-Poly-iso Mu (pi₁ × pi₂)      = {!!}
 
   {- μPoly-Sem: interpretation of μPoly with Mon (commented out alongside μPoly).
   module μPoly-Sem (F : Functor 𝒞 𝒞) where
