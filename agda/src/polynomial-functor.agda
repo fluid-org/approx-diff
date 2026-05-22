@@ -314,6 +314,13 @@ module Sem {o m e} {𝒞 : Category o m e}
            (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)))) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (inF P'))) ∘ p₂
+      ≈˘⟨ ∘-cong (∘-cong ≈-refl (∘-cong ≈-refl
+            (≈-trans (pair-natural _ _ _)
+                     (pair-cong (pair-p₁ _ _)
+                                (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) id-right)))))) ≈-refl ⟩
+        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ (pair p₁ (inF P' ∘ p₂) ∘ pair to-terminal (id _))))
+          ∘ p₂
       ≈⟨ {!!} ⟩
         (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P'
           (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
