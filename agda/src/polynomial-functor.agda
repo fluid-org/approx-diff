@@ -967,12 +967,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                  ((poly-obj R y .fam .subst _ ∘
                      (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
                   pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂))
-          ≈⟨ pair-cong bridge-P bridge-R ⟩
+          ≈⟨ pair-cong (bridge P x (p₁ ∘ p₂) (p₁ ∘ p₂) merge-pair-P fold-pair-P)
+                       (bridge R z (p₂ ∘ p₂) (p₂ ∘ p₂) merge-pair-R fold-pair-R) ⟩
             pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
           ∎ where
             merge-pair-P : pair {prod (Γ .fam .fm γ) _} p₁ (p₁ ∘ p₂)
-                           ∘ pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂) ≈
-                           pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
+                           ∘ pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
+                         ≈ pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
             merge-pair-P =
               begin
                 pair p₁ (p₁ ∘ p₂) ∘ pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
@@ -991,8 +992,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               ∎ where open ≈-Reasoning isEquiv
 
             fold-pair-P : pair {prod (Γ .fam .fm γ) (WFam-fm P x)} p₁ (unembed-fam P x ∘ p₂)
-                          ∘ pair {prod (Γ .fam .fm γ) (prod (WFam-fm P x) (WFam-fm R z))} p₁ (p₁ ∘ p₂) ≈
-                          pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
+                          ∘ pair {prod (Γ .fam .fm γ) (prod (WFam-fm P x) (WFam-fm R z))} p₁ (p₁ ∘ p₂)
+                        ≈ pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
             fold-pair-P = begin
                 pair p₁ (unembed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂)
               ≈⟨ pair-natural _ _ _ ⟩
@@ -1003,9 +1004,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
               ∎ where open ≈-Reasoning isEquiv
 
-            merge-pair-R : pair {prod (Γ .fam .fm γ) (prod (poly-obj P WObj .fam .fm (unembed-idx P x))
-                                                              (poly-obj R WObj .fam .fm (unembed-idx R z)))}
-                                p₁ (p₂ ∘ p₂) ∘
+            merge-pair-R : pair {prod (Γ .fam .fm γ) _} p₁ (p₂ ∘ p₂) ∘
                            pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
                          ≈ pair p₁ (unembed-fam R z ∘ (p₂ ∘ p₂))
             merge-pair-R = begin
@@ -1025,8 +1024,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               ∎ where open ≈-Reasoning isEquiv
 
             fold-pair-R : pair {prod (Γ .fam .fm γ) (WFam-fm R z)} p₁ (unembed-fam R z ∘ p₂)
-                          ∘ pair {prod (Γ .fam .fm γ) (prod (WFam-fm P x) (WFam-fm R z))} p₁ (p₂ ∘ p₂) ≈
-                          pair p₁ (unembed-fam R z ∘ (p₂ ∘ p₂))
+                          ∘ pair {prod (Γ .fam .fm γ) (prod (WFam-fm P x) (WFam-fm R z))} p₁ (p₂ ∘ p₂)
+                        ≈ pair p₁ (unembed-fam R z ∘ (p₂ ∘ p₂))
             fold-pair-R = begin
                 pair p₁ (unembed-fam R z ∘ p₂) ∘ pair p₁ (p₂ ∘ p₂)
               ≈⟨ pair-natural _ _ _ ⟩
@@ -1037,10 +1036,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 pair p₁ (unembed-fam R z ∘ (p₂ ∘ p₂))
               ∎ where open ≈-Reasoning isEquiv
 
-            -- Abstract bridge: given W, j, and two projections (π_poly into poly-obj W WObj at the
-            -- left pair, π_WFam into WFam-fm W j at the right pair), reduce the bridge equation via
-            -- η-fam W γ j. The two projections are syntactically the same morphism (e.g., p₁ ∘ p₂),
-            -- but live at different types depending on the surrounding context.
             bridge : (W : Poly cat) (j : WIdx poly (idx-of W))
                      (π-poly : prod (Γ .fam .fm γ)
                                     (prod (poly-obj P WObj .fam .fm (unembed-idx P x))
@@ -1089,18 +1084,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               ≈⟨ ∘-cong (η-fam W γ j) ≈-refl ⟩
                 project-fam-open W γ j ∘ pair p₁ π-WFam
               ∎ where open ≈-Reasoning isEquiv
-
-            bridge-P : (poly-obj P y .fam .subst _ ∘
-                         (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘
-                       pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
-                     ≈ project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)
-            bridge-P = bridge P x (p₁ ∘ p₂) (p₁ ∘ p₂) merge-pair-P fold-pair-P
-
-            bridge-R : (poly-obj R y .fam .subst _ ∘
-                         (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
-                       pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
-                     ≈ project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂)
-            bridge-R = bridge R z (p₂ ∘ p₂) (p₂ ∘ p₂) merge-pair-R fold-pair-R
 
             open ≈-Reasoning isEquiv
 
