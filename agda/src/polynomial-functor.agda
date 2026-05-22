@@ -971,6 +971,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
           ∎ where
             open ≈-Reasoning isEquiv
+            merge-pair-P : pair p₁ (p₁ ∘ p₂) ∘
+                           pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
+                         ≈ pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
+            merge-pair-P = {!!}
+
+            fold-pair-P : pair p₁ (unembed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂)
+                        ≈ pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂))
+            fold-pair-P = {!!}
+
             bridge-P : (poly-obj P y .fam .subst _ ∘
                          (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘
                        pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
