@@ -297,16 +297,16 @@ module Sem {o m e} {𝒞 : Category o m e}
             ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}) ∘ pair p₁ (inF P' ∘ p₂)
       ≈⟨ assoc _ _ _ ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))))
-          ∘ (p₂ ∘ pair p₁ (inF P' ∘ p₂))
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ (p₂ ∘ pair p₁ (inF P' ∘ p₂))
       ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))))
-          ∘ (inF P' ∘ p₂)
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ (inF P' ∘ p₂)
       ≈˘⟨ assoc _ _ _ ⟩
         (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-            ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ inF P')
-          ∘ p₂
+            ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ inF P') ∘ p₂
+      ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+          ∘ ((⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))) ∘ inF P')) ∘ p₂
       ≈⟨ {!!} ⟩
         (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P'
           (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
