@@ -128,7 +128,10 @@ module Sem {o m e} {𝒞 : Category o m e}
     open Iso
 
     μ-const-iso : ∀ A → Category.Iso 𝒞 (μ (const A)) A
-    μ-const-iso A = {!!}
+    μ-const-iso A .fwd        = ⦅ p₂ ⦆ ∘ pair to-terminal (id _)
+    μ-const-iso A .bwd        = inF (const A)
+    μ-const-iso A .fwd∘bwd≈id = {!!}
+    μ-const-iso A .bwd∘fwd≈id = {!!}
 
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
     iso one                         = {!!}
