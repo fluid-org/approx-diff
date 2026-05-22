@@ -126,7 +126,6 @@ module Sem {o m e} {𝒞 : Category o m e}
   module μ-respects-Poly-iso (Mu : HasMu) where
     open HasMu Mu
     open Iso
-    open IsEquivalence
 
     μ-const-iso : ∀ A → Category.Iso 𝒞 (μ (const A)) A
     μ-const-iso A .fwd        = ⦅ p₂ ⦆ ∘ pair to-terminal (id _)
@@ -139,6 +138,12 @@ module Sem {o m e} {𝒞 : Category o m e}
         ⦅ p₂ ⦆ ∘ pair (to-terminal ∘ inF (const A)) (id _ ∘ inF (const A))
       ≈⟨ ∘-cong ≈-refl (pair-cong (to-terminal-unique _ _) id-left) ⟩
         ⦅ p₂ ⦆ ∘ pair to-terminal (inF (const A))
+      ≈˘⟨ ∘-cong ≈-refl
+            (≈-trans (pair-natural (pair to-terminal (id _)) p₁ (inF (const A) ∘ p₂))
+            (≈-trans (pair-cong (pair-p₁ to-terminal (id _)) (assoc _ _ _))
+            (≈-trans (pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ to-terminal (id _))))
+                     (pair-cong ≈-refl id-right)))) ⟩
+        ⦅ p₂ ⦆ ∘ (pair p₁ (inF (const A) ∘ p₂) ∘ pair to-terminal (id _))
       ≈⟨ {!!} ⟩
         id A
       ∎ where open ≈-Reasoning isEquiv
