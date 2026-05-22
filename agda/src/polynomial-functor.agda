@@ -248,6 +248,8 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₁ ∘ (pair-fwd ∘ pair p₁ pair-bwd)
           ≈˘⟨ assoc _ _ _ ⟩
             (p₁ ∘ pair-fwd) ∘ pair p₁ pair-bwd
+          ≈⟨ ∘-cong (pair-p₁ _ _) ≈-refl ⟩
+            (poly-iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ pair-bwd
           ≈⟨ {!!} ⟩
             p₁ ∘ p₂
           ∎ where open ≈-Reasoning isEquiv
