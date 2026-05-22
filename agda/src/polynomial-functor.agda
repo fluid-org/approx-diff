@@ -345,6 +345,12 @@ module Sem {o m e} {𝒞 : Category o m e}
           ∘ ((iso-mor (iso-sym P≅P') ∘ pair p₁ (poly-fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆))
               ∘ pair to-terminal (id _)))
           ∘ p₂
+      ≈⟨ ∘-cong (∘-cong (∘-cong ≈-refl
+           (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left))) ≈-refl) ≈-refl ⟩
+        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (inF P))
+          ∘ ((iso-mor (iso-sym P≅P') ∘ pair p₁ (poly-fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆))
+              ∘ pair to-terminal (id _)))
+          ∘ p₂
       ≈⟨ {!!} ⟩
         (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P'
           (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
