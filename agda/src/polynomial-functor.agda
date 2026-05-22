@@ -130,7 +130,13 @@ module Sem {o m e} {𝒞 : Category o m e}
     μ-const-iso : ∀ A → Category.Iso 𝒞 (μ (const A)) A
     μ-const-iso A .fwd        = ⦅ p₂ ⦆ ∘ pair to-terminal (id _)
     μ-const-iso A .bwd        = inF (const A)
-    μ-const-iso A .fwd∘bwd≈id = {!!}
+    μ-const-iso A .fwd∘bwd≈id = begin
+        (⦅ p₂ ⦆ ∘ pair to-terminal (id _)) ∘ inF (const A)
+      ≈⟨ assoc _ _ _ ⟩
+        ⦅ p₂ ⦆ ∘ (pair to-terminal (id _) ∘ inF (const A))
+      ≈⟨ {!!} ⟩
+        id A
+      ∎ where open ≈-Reasoning isEquiv
     μ-const-iso A .bwd∘fwd≈id = {!!}
 
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
