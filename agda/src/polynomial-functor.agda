@@ -96,6 +96,10 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-fmor (Q₁ × Q₂)   h = pair (poly-fmor Q₁ h ∘ pair p₁ (p₁ ∘ p₂))
                                   (poly-fmor Q₂ h ∘ pair p₁ (p₂ ∘ p₂))
 
+  -- Identity preservation: poly-fmor applied to the (parameterised) identity is the (parameterised) identity.
+  poly-fmor-id : ∀ Q {Γ X} → poly-fmor Q {Γ} {X} {X} p₂ ≈ p₂
+  poly-fmor-id Q = {!!}
+
   -- Polynomial composition agrees with composition of functor actions.
   poly-obj-comp : ∀ P Q X → poly-obj (P ∘ₚ Q) X ≡ poly-obj P (poly-obj Q X)
   poly-obj-comp one        Q X = ≡.refl
@@ -165,6 +169,12 @@ module Sem {o m e} {𝒞 : Category o m e}
                             ∘ (⦅ inF P ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))))
                           ∘ p₂) {!!}) ≈-refl ⟩
         ⦅ inF P' ∘ p₂ ⦆ ∘ pair to-terminal (id (μ P'))
+      ≈⟨ ∘-cong (≈-sym (⦅⦆-η (inF P' ∘ p₂) p₂
+                          (≈-trans (pair-p₂ _ _) (≈-sym
+                          (≈-trans (assoc _ _ _)
+                          (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+                                   (∘-cong ≈-refl (poly-fmor-id P')))))))) ≈-refl ⟩
+        p₂ ∘ pair to-terminal (id (μ P'))
       ≈⟨ {!!} ⟩
         id (μ P')
       ∎ where open ≈-Reasoning isEquiv
