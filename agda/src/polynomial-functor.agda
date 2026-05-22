@@ -97,7 +97,7 @@ module Sem {o m e} {𝒞 : Category o m e}
 
   -- Identity preservation: poly-fmor applied to the (parameterised) identity is the (parameterised) identity.
   poly-fmor-id : ∀ Q {Γ X} → poly-fmor Q {Γ} {X} {X} p₂ ≈ p₂
-  poly-fmor-id one         = {!!}
+  poly-fmor-id one         = to-terminal-unique _ _
   poly-fmor-id (const A)   = ≈-refl
   poly-fmor-id var         = ≈-refl
   poly-fmor-id (Q₁ + Q₂)   = {!!}
