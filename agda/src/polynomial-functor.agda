@@ -310,6 +310,10 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ ∘-cong (∘-cong ≈-refl (assoc _ _ _)) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ (pair to-terminal (id (μ P')) ∘ inF P'))) ∘ p₂
+      ≈⟨ ∘-cong (∘-cong ≈-refl (∘-cong ≈-refl
+           (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)))) ≈-refl ⟩
+        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (inF P'))) ∘ p₂
       ≈⟨ {!!} ⟩
         (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P'
           (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
