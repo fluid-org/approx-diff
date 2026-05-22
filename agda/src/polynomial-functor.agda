@@ -127,10 +127,8 @@ module Sem {o m e} {𝒞 : Category o m e}
     open HasMu Mu
     open Iso
 
-    μ-const-iso : ∀ A → Category.Iso 𝒞 (μ (const A)) A
-    μ-const-iso A .fwd        = ⦅ p₂ ⦆ ∘ pair to-terminal (id _)
-    μ-const-iso A .bwd        = inF (const A)
-    μ-const-iso A .fwd∘bwd≈id = begin
+    μ-const-fwd∘bwd : ∀ A → (⦅ p₂ ⦆ ∘ pair to-terminal (id _)) ∘ inF (const A) ≈ id A
+    μ-const-fwd∘bwd A = begin
         (⦅ p₂ ⦆ ∘ pair to-terminal (id _)) ∘ inF (const A)
       ≈⟨ assoc _ _ _ ⟩
         ⦅ p₂ ⦆ ∘ (pair to-terminal (id _) ∘ inF (const A))
@@ -151,6 +149,11 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ pair-p₂ _ _ ⟩
         id A
       ∎ where open ≈-Reasoning isEquiv
+
+    μ-const-iso : ∀ A → Category.Iso 𝒞 (μ (const A)) A
+    μ-const-iso A .fwd        = ⦅ p₂ ⦆ ∘ pair to-terminal (id _)
+    μ-const-iso A .bwd        = inF (const A)
+    μ-const-iso A .fwd∘bwd≈id = μ-const-fwd∘bwd A
     μ-const-iso A .bwd∘fwd≈id = begin
         inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))
       ≈˘⟨ id-right ⟩
@@ -164,12 +167,29 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ (const A))
       ∎ where
-        open ≈-Reasoning isEquiv
         lemma : ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) ≈ p₂
         lemma = ≈-trans
-          (⦅⦆-η (inF (const A) ∘ p₂) ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) {!!})
+          (⦅⦆-η (inF (const A) ∘ p₂) ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂)
+            (begin
+                ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂) ∘ pair p₁ (inF (const A) ∘ p₂)
+              ≈⟨ assoc _ _ _ ⟩
+                (inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ (p₂ ∘ pair p₁ (inF (const A) ∘ p₂))
+              ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
+                (inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ (inF (const A) ∘ p₂)
+              ≈˘⟨ assoc _ _ _ ⟩
+                ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ inF (const A)) ∘ p₂
+              ≈⟨ ∘-cong (≈-trans (assoc _ _ _)
+                          (≈-trans (∘-cong ≈-refl (μ-const-fwd∘bwd A)) id-right)) ≈-refl ⟩
+                inF (const A) ∘ p₂
+              ≈˘⟨ id-right ⟩
+                (inF (const A) ∘ p₂) ∘ id _
+              ≈˘⟨ ∘-cong ≈-refl pair-ext0 ⟩
+                (inF (const A) ∘ p₂) ∘ pair p₁ p₂
+              ∎))
           (≈-sym (⦅⦆-η (inF (const A) ∘ p₂) p₂
             (≈-trans (pair-p₂ _ _) (≈-trans (≈-sym id-right) (≈-sym (∘-cong ≈-refl pair-ext0))))))
+          where open ≈-Reasoning isEquiv
+        open ≈-Reasoning isEquiv
 
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
     iso one                         = {!!}
