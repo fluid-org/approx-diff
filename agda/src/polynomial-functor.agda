@@ -1004,6 +1004,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
            pair (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
                 (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
           pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
+        ≈⟨ ∘-cong (pair-compose _ _ _ _) ≈-refl ⟩
+          pair (poly-obj P y .fam .subst _ ∘
+                  (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂)))
+               (poly-obj R y .fam .subst _ ∘
+                  (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
+          pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
+        ≈⟨ pair-natural _ _ _ ⟩
+          pair ((poly-obj P y .fam .subst _ ∘
+                   (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘
+                pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂))
+               ((poly-obj R y .fam .subst _ ∘
+                   (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
+                pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂))
         ≈⟨ {!!} ⟩
           pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
         ∎ where open ≈-Reasoning isEquiv
