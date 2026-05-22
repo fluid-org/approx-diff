@@ -192,7 +192,7 @@ module Sem {o m e} {𝒞 : Category o m e}
         open ≈-Reasoning isEquiv
 
     poly-iso-mor : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (poly-obj P X) ⇒ poly-obj P' X
-    poly-iso-mor one             = {!!}
+    poly-iso-mor one             = to-terminal
     poly-iso-mor (const A≅B)     = {!!}
     poly-iso-mor var             = {!!}
     poly-iso-mor (pi₁ + pi₂)     = {!!}
