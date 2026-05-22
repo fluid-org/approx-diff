@@ -93,8 +93,7 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-fmor (const A)   _ = p₂
   poly-fmor var         h = h
   poly-fmor (Q₁ + Q₂)   h = scopair (in₁ ∘ poly-fmor Q₁ h) (in₂ ∘ poly-fmor Q₂ h)
-  poly-fmor (Q₁ × Q₂)   h = pair (poly-fmor Q₁ h ∘ pair p₁ (p₁ ∘ p₂))
-                                  (poly-fmor Q₂ h ∘ pair p₁ (p₂ ∘ p₂))
+  poly-fmor (Q₁ × Q₂)   h = pair (poly-fmor Q₁ h ∘ pair p₁ (p₁ ∘ p₂)) (poly-fmor Q₂ h ∘ pair p₁ (p₂ ∘ p₂))
 
   -- Identity preservation: poly-fmor applied to the (parameterised) identity is the (parameterised) identity.
   poly-fmor-id : ∀ Q {Γ X} → poly-fmor Q {Γ} {X} {X} p₂ ≈ p₂
