@@ -147,97 +147,97 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso-mor one             = to-terminal
     iso-mor (const A≅B)     = A≅B .fwd ∘ p₂
     iso-mor var             = p₂
-    iso-mor (pi₁ + pi₂)     = scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂)
-    iso-mor (pi₁ × pi₂)     = pair (iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂))
-                                        (iso-mor pi₂ ∘ pair p₁ (p₂ ∘ p₂))
+    iso-mor (P₁≅Q₁ + P₂≅Q₂)     = scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
+    iso-mor (P₁≅Q₁ × P₂≅Q₂)     = pair (iso-mor P₁≅Q₁ ∘ pair p₁ (p₁ ∘ p₂))
+                                        (iso-mor P₂≅Q₂ ∘ pair p₁ (p₂ ∘ p₂))
 
     iso-sym : ∀ {P P'} → Poly-iso P P' → Poly-iso P' P
     iso-sym one         = one
     iso-sym (const A≅B) = const (Category.Iso-sym 𝒞 A≅B)
     iso-sym var         = var
-    iso-sym (pi₁ + pi₂) = iso-sym pi₁ + iso-sym pi₂
-    iso-sym (pi₁ × pi₂) = iso-sym pi₁ × iso-sym pi₂
+    iso-sym (P₁≅Q₁ + P₂≅Q₂) = iso-sym P₁≅Q₁ + iso-sym P₂≅Q₂
+    iso-sym (P₁≅Q₁ × P₂≅Q₂) = iso-sym P₁≅Q₁ × iso-sym P₂≅Q₂
 
-    iso-sym-involutive : ∀ {P P'} (pi : Poly-iso P P') → iso-sym (iso-sym pi) ≡ pi
+    iso-sym-involutive : ∀ {P P'} (P≅P' : Poly-iso P P') → iso-sym (iso-sym P≅P') ≡ P≅P'
     iso-sym-involutive one         = ≡.refl
     iso-sym-involutive (const A≅B) = ≡.refl
     iso-sym-involutive var         = ≡.refl
-    iso-sym-involutive (pi₁ + pi₂) = ≡.cong₂ _+_ (iso-sym-involutive pi₁) (iso-sym-involutive pi₂)
-    iso-sym-involutive (pi₁ × pi₂) = ≡.cong₂ _×_ (iso-sym-involutive pi₁) (iso-sym-involutive pi₂)
+    iso-sym-involutive (P₁≅Q₁ + P₂≅Q₂) = ≡.cong₂ _+_ (iso-sym-involutive P₁≅Q₁) (iso-sym-involutive P₂≅Q₂)
+    iso-sym-involutive (P₁≅Q₁ × P₂≅Q₂) = ≡.cong₂ _×_ (iso-sym-involutive P₁≅Q₁) (iso-sym-involutive P₂≅Q₂)
 
     -- Round-trip law: forward then backward at the polynomial-functor level is (parameterised) identity.
-    iso-mor-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') {Γ X} →
-      iso-mor pi {Γ} {X} ∘ pair p₁ (iso-mor (iso-sym pi)) ≈ p₂
+    iso-mor-fwd∘bwd : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ X} →
+      iso-mor P≅P' {Γ} {X} ∘ pair p₁ (iso-mor (iso-sym P≅P')) ≈ p₂
     iso-mor-fwd∘bwd one = to-terminal-unique _ _
     iso-mor-fwd∘bwd (const A≅B) =
       ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
       (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (A≅B .fwd∘bwd≈id) ≈-refl) id-left)))
     iso-mor-fwd∘bwd var = pair-p₂ _ _
-    iso-mor-fwd∘bwd (_+_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) {Γ} {X} =
+    iso-mor-fwd∘bwd (_+_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) {Γ} {X} =
       ≈-trans (≈-sym (scopair-ext _)) (≈-trans (scopair-cong in₁-branch in₂-branch) (scopair-ext _))
       where
-        in₁-branch : (scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘
-                      pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym pi₁)) (in₂ ∘ iso-mor (iso-sym pi₂)))) ∘ pair p₁ (in₁ ∘ p₂)
+        in₁-branch : (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
+                      pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘ pair p₁ (in₁ ∘ p₂)
                    ≈ p₂ ∘ pair p₁ (in₁ ∘ p₂)
         in₁-branch =
           begin
-            (scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘
-             pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym pi₁)) (in₂ ∘ iso-mor (iso-sym pi₂)))) ∘ pair p₁ (in₁ ∘ p₂)
+            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
+             pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘ pair p₁ (in₁ ∘ p₂)
           ≈⟨ assoc _ _ _ ⟩
-            scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘
-            (pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym pi₁)) (in₂ ∘ iso-mor (iso-sym pi₂))) ∘ pair p₁ (in₁ ∘ p₂))
+            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
+            (pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))) ∘ pair p₁ (in₁ ∘ p₂))
           ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (scopair-in₁ _ _))) ⟩
-            scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘ pair p₁ (in₁ ∘ iso-mor (iso-sym pi₁))
+            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ pair p₁ (in₁ ∘ iso-mor (iso-sym P₁≅Q₁))
           ≈˘⟨ ∘-cong ≈-refl
                 (≈-trans (pair-natural _ _ _)
                 (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))) ⟩
-            scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘ pair p₁ (iso-mor (iso-sym pi₁)))
+            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘ pair p₁ (iso-mor (iso-sym P₁≅Q₁)))
           ≈˘⟨ assoc _ _ _ ⟩
-            (scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘ pair p₁ (in₁ ∘ p₂)) ∘ pair p₁ (iso-mor (iso-sym pi₁))
+            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ pair p₁ (in₁ ∘ p₂)) ∘ pair p₁ (iso-mor (iso-sym P₁≅Q₁))
           ≈⟨ ∘-cong (scopair-in₁ _ _) ≈-refl ⟩
-            (in₁ ∘ iso-mor pi₁) ∘ pair p₁ (iso-mor (iso-sym pi₁))
+            (in₁ ∘ iso-mor P₁≅Q₁) ∘ pair p₁ (iso-mor (iso-sym P₁≅Q₁))
           ≈⟨ assoc _ _ _ ⟩
-            in₁ ∘ (iso-mor pi₁ ∘ pair p₁ (iso-mor (iso-sym pi₁)))
-          ≈⟨ ∘-cong ≈-refl (iso-mor-fwd∘bwd pi₁) ⟩
+            in₁ ∘ (iso-mor P₁≅Q₁ ∘ pair p₁ (iso-mor (iso-sym P₁≅Q₁)))
+          ≈⟨ ∘-cong ≈-refl (iso-mor-fwd∘bwd P₁≅Q₁) ⟩
             in₁ ∘ p₂
           ≈˘⟨ pair-p₂ _ _ ⟩
             p₂ ∘ pair p₁ (in₁ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
 
-        in₂-branch : (scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘
-                      pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym pi₁)) (in₂ ∘ iso-mor (iso-sym pi₂)))) ∘ pair p₁ (in₂ ∘ p₂)
+        in₂-branch : (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
+                      pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘ pair p₁ (in₂ ∘ p₂)
                    ≈ p₂ ∘ pair p₁ (in₂ ∘ p₂)
         in₂-branch = begin
-            (scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘
-             pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym pi₁)) (in₂ ∘ iso-mor (iso-sym pi₂)))) ∘ pair p₁ (in₂ ∘ p₂)
+            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
+             pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘ pair p₁ (in₂ ∘ p₂)
           ≈⟨ assoc _ _ _ ⟩
-            scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘
-            (pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym pi₁)) (in₂ ∘ iso-mor (iso-sym pi₂))) ∘ pair p₁ (in₂ ∘ p₂))
+            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
+            (pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))) ∘ pair p₁ (in₂ ∘ p₂))
           ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (scopair-in₂ _ _))) ⟩
-            scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘ pair p₁ (in₂ ∘ iso-mor (iso-sym pi₂))
+            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ pair p₁ (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))
           ≈˘⟨ ∘-cong ≈-refl
                 (≈-trans (pair-natural _ _ _)
                 (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))) ⟩
-            scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘ pair p₁ (iso-mor (iso-sym pi₂)))
+            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘ pair p₁ (iso-mor (iso-sym P₂≅Q₂)))
           ≈˘⟨ assoc _ _ _ ⟩
-            (scopair (in₁ ∘ iso-mor pi₁) (in₂ ∘ iso-mor pi₂) ∘ pair p₁ (in₂ ∘ p₂)) ∘ pair p₁ (iso-mor (iso-sym pi₂))
+            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ pair p₁ (in₂ ∘ p₂)) ∘ pair p₁ (iso-mor (iso-sym P₂≅Q₂))
           ≈⟨ ∘-cong (scopair-in₂ _ _) ≈-refl ⟩
-            (in₂ ∘ iso-mor pi₂) ∘ pair p₁ (iso-mor (iso-sym pi₂))
+            (in₂ ∘ iso-mor P₂≅Q₂) ∘ pair p₁ (iso-mor (iso-sym P₂≅Q₂))
           ≈⟨ assoc _ _ _ ⟩
-            in₂ ∘ (iso-mor pi₂ ∘ pair p₁ (iso-mor (iso-sym pi₂)))
-          ≈⟨ ∘-cong ≈-refl (iso-mor-fwd∘bwd pi₂) ⟩
+            in₂ ∘ (iso-mor P₂≅Q₂ ∘ pair p₁ (iso-mor (iso-sym P₂≅Q₂)))
+          ≈⟨ ∘-cong ≈-refl (iso-mor-fwd∘bwd P₂≅Q₂) ⟩
             in₂ ∘ p₂
           ≈˘⟨ pair-p₂ _ _ ⟩
             p₂ ∘ pair p₁ (in₂ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
 
-    iso-mor-fwd∘bwd (_×_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) {Γ} {X} =
+    iso-mor-fwd∘bwd (_×_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) {Γ} {X} =
       ≈-trans (≈-sym (pair-ext _)) (≈-trans (pair-cong p₁-branch p₂-branch) (pair-ext _))
       where
-        pair-fwd = pair (iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂)) (iso-mor pi₂ ∘ pair p₁ (p₂ ∘ p₂))
-        pair-bwd = pair (iso-mor (iso-sym pi₁) ∘ pair p₁ (p₁ ∘ p₂))
-                        (iso-mor (iso-sym pi₂) ∘ pair p₁ (p₂ ∘ p₂))
+        pair-fwd = pair (iso-mor P₁≅Q₁ ∘ pair p₁ (p₁ ∘ p₂)) (iso-mor P₂≅Q₂ ∘ pair p₁ (p₂ ∘ p₂))
+        pair-bwd = pair (iso-mor (iso-sym P₁≅Q₁) ∘ pair p₁ (p₁ ∘ p₂))
+                        (iso-mor (iso-sym P₂≅Q₂) ∘ pair p₁ (p₂ ∘ p₂))
 
         p₁-branch : p₁ ∘ (pair-fwd ∘ pair p₁ pair-bwd) ≈ p₁ ∘ p₂
         p₁-branch = begin
@@ -245,18 +245,18 @@ module Sem {o m e} {𝒞 : Category o m e}
           ≈˘⟨ assoc _ _ _ ⟩
             (p₁ ∘ pair-fwd) ∘ pair p₁ pair-bwd
           ≈⟨ ∘-cong (pair-p₁ _ _) ≈-refl ⟩
-            (iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ pair-bwd
+            (iso-mor P₁≅Q₁ ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ pair-bwd
           ≈⟨ assoc _ _ _ ⟩
-            iso-mor pi₁ ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair p₁ pair-bwd)
+            iso-mor P₁≅Q₁ ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair p₁ pair-bwd)
           ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _)
                            (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
                                     (pair-cong ≈-refl (pair-p₁ _ _)))) ⟩
-            iso-mor pi₁ ∘ pair p₁ (iso-mor (iso-sym pi₁) ∘ pair p₁ (p₁ ∘ p₂))
+            iso-mor P₁≅Q₁ ∘ pair p₁ (iso-mor (iso-sym P₁≅Q₁) ∘ pair p₁ (p₁ ∘ p₂))
           ≈˘⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)) ⟩
-            iso-mor pi₁ ∘ (pair p₁ (iso-mor (iso-sym pi₁)) ∘ pair p₁ (p₁ ∘ p₂))
+            iso-mor P₁≅Q₁ ∘ (pair p₁ (iso-mor (iso-sym P₁≅Q₁)) ∘ pair p₁ (p₁ ∘ p₂))
           ≈˘⟨ assoc _ _ _ ⟩
-            (iso-mor pi₁ ∘ pair p₁ (iso-mor (iso-sym pi₁))) ∘ pair p₁ (p₁ ∘ p₂)
-          ≈⟨ ∘-cong (iso-mor-fwd∘bwd pi₁) ≈-refl ⟩
+            (iso-mor P₁≅Q₁ ∘ pair p₁ (iso-mor (iso-sym P₁≅Q₁))) ∘ pair p₁ (p₁ ∘ p₂)
+          ≈⟨ ∘-cong (iso-mor-fwd∘bwd P₁≅Q₁) ≈-refl ⟩
             p₂ ∘ pair p₁ (p₁ ∘ p₂)
           ≈⟨ pair-p₂ _ _ ⟩
             p₁ ∘ p₂
@@ -268,53 +268,53 @@ module Sem {o m e} {𝒞 : Category o m e}
           ≈˘⟨ assoc _ _ _ ⟩
             (p₂ ∘ pair-fwd) ∘ pair p₁ pair-bwd
           ≈⟨ ∘-cong (pair-p₂ _ _) ≈-refl ⟩
-            (iso-mor pi₂ ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair p₁ pair-bwd
+            (iso-mor P₂≅Q₂ ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair p₁ pair-bwd
           ≈⟨ assoc _ _ _ ⟩
-            iso-mor pi₂ ∘ (pair p₁ (p₂ ∘ p₂) ∘ pair p₁ pair-bwd)
+            iso-mor P₂≅Q₂ ∘ (pair p₁ (p₂ ∘ p₂) ∘ pair p₁ pair-bwd)
           ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _)
                            (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
                                     (pair-cong ≈-refl (pair-p₂ _ _)))) ⟩
-            iso-mor pi₂ ∘ pair p₁ (iso-mor (iso-sym pi₂) ∘ pair p₁ (p₂ ∘ p₂))
+            iso-mor P₂≅Q₂ ∘ pair p₁ (iso-mor (iso-sym P₂≅Q₂) ∘ pair p₁ (p₂ ∘ p₂))
           ≈˘⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)) ⟩
-            iso-mor pi₂ ∘ (pair p₁ (iso-mor (iso-sym pi₂)) ∘ pair p₁ (p₂ ∘ p₂))
+            iso-mor P₂≅Q₂ ∘ (pair p₁ (iso-mor (iso-sym P₂≅Q₂)) ∘ pair p₁ (p₂ ∘ p₂))
           ≈˘⟨ assoc _ _ _ ⟩
-            (iso-mor pi₂ ∘ pair p₁ (iso-mor (iso-sym pi₂))) ∘ pair p₁ (p₂ ∘ p₂)
-          ≈⟨ ∘-cong (iso-mor-fwd∘bwd pi₂) ≈-refl ⟩
+            (iso-mor P₂≅Q₂ ∘ pair p₁ (iso-mor (iso-sym P₂≅Q₂))) ∘ pair p₁ (p₂ ∘ p₂)
+          ≈⟨ ∘-cong (iso-mor-fwd∘bwd P₂≅Q₂) ≈-refl ⟩
             p₂ ∘ pair p₁ (p₂ ∘ p₂)
           ≈⟨ pair-p₂ _ _ ⟩
             p₂ ∘ p₂
           ∎ where open ≈-Reasoning isEquiv
 
-    iso-fwd∘bwd-β : ∀ {P P'} (pi : Poly-iso P P') {Γ} →
-      (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}) ∘ pair p₁ (inF P' ∘ p₂)
+    iso-fwd∘bwd-β : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
+      (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}) ∘ pair p₁ (inF P' ∘ p₂)
       ≈ (inF P' ∘ p₂) ∘ pair p₁ (poly-fmor P'
-          (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-              ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}))
-    iso-fwd∘bwd-β pi = {!!}
+          (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+              ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}))
+    iso-fwd∘bwd-β P≅P' = {!!}
 
-    iso-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') →
-      (⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-        ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))) ≈ id (μ P')
-    iso-fwd∘bwd {P} {P'} pi = begin
-        (⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))
+    iso-fwd∘bwd : ∀ {P P'} (P≅P' : Poly-iso P P') →
+      (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+        ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))) ≈ id (μ P')
+    iso-fwd∘bwd {P} {P'} P≅P' = begin
+        (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))
       ≈⟨ ≈-sym id-right ⟩
-        ((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P')))) ∘ id (μ P')
+        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ id (μ P')
       ≈⟨ ∘-cong ≈-refl (≈-sym (pair-p₂ to-terminal (id (μ P')))) ⟩
-        ((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))))
+        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))))
           ∘ (p₂ ∘ pair to-terminal (id (μ P')))
       ≈⟨ ≈-sym (assoc _ _ _) ⟩
-        (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-            ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))))
+        (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+            ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))))
           ∘ p₂)
           ∘ pair to-terminal (id (μ P'))
       ≈⟨ ∘-cong (⦅⦆-η (inF P' ∘ p₂)
-                        (((⦅ inF P' ∘ iso-mor pi ⦆ ∘ pair to-terminal (id (μ P)))
-                            ∘ (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id (μ P'))))
-                          ∘ p₂) (iso-fwd∘bwd-β pi)) ≈-refl ⟩
+                        (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+                            ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))))
+                          ∘ p₂) (iso-fwd∘bwd-β P≅P')) ≈-refl ⟩
         ⦅ inF P' ∘ p₂ ⦆ ∘ pair to-terminal (id (μ P'))
       ≈⟨ ∘-cong (≈-sym (⦅⦆-η (inF P' ∘ p₂) p₂
                           (≈-trans (pair-p₂ _ _) (≈-sym
@@ -326,14 +326,14 @@ module Sem {o m e} {𝒞 : Category o m e}
       ∎ where open ≈-Reasoning isEquiv
 
     iso : ∀ {P P'} → Poly-iso P P' → Category.Iso 𝒞 (μ P) (μ P')
-    iso pi .fwd        = ⦅ inF _ ∘ iso-mor pi ⦆ ∘ pair to-terminal (id _)
-    iso pi .bwd        = ⦅ inF _ ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id _)
-    iso pi .fwd∘bwd≈id = iso-fwd∘bwd pi
-    iso {P} {P'} pi .bwd∘fwd≈id =
-      substP (λ q → (⦅ inF P ∘ iso-mor (iso-sym pi) ⦆ ∘ pair to-terminal (id _))
+    iso P≅P' .fwd        = ⦅ inF _ ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id _)
+    iso P≅P' .bwd        = ⦅ inF _ ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id _)
+    iso P≅P' .fwd∘bwd≈id = iso-fwd∘bwd P≅P'
+    iso {P} {P'} P≅P' .bwd∘fwd≈id =
+      substP (λ q → (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id _))
                        ∘ (⦅ inF P' ∘ iso-mor q ⦆ ∘ pair to-terminal (id _)) ≈ id (μ P))
-             (iso-sym-involutive pi)
-             (iso-fwd∘bwd (iso-sym pi))
+             (iso-sym-involutive P≅P')
+             (iso-fwd∘bwd (iso-sym P≅P'))
 
   {- μPoly-Sem: interpretation of μPoly with Mon (commented out alongside μPoly).
   module μPoly-Sem (F : Functor 𝒞 𝒞) where
