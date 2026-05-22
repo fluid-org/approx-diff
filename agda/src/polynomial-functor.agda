@@ -97,7 +97,11 @@ module Sem {o m e} {𝒞 : Category o m e}
 
   -- Identity preservation: poly-fmor applied to the (parameterised) identity is the (parameterised) identity.
   poly-fmor-id : ∀ Q {Γ X} → poly-fmor Q {Γ} {X} {X} p₂ ≈ p₂
-  poly-fmor-id Q = {!!}
+  poly-fmor-id one         = {!!}
+  poly-fmor-id (const A)   = ≈-refl
+  poly-fmor-id var         = {!!}
+  poly-fmor-id (Q₁ + Q₂)   = {!!}
+  poly-fmor-id (Q₁ × Q₂)   = {!!}
 
   -- Polynomial composition agrees with composition of functor actions.
   poly-obj-comp : ∀ P Q X → poly-obj (P ∘ₚ Q) X ≡ poly-obj P (poly-obj Q X)
