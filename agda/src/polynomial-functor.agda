@@ -99,7 +99,7 @@ module Sem {o m e} {𝒞 : Category o m e}
   poly-fmor-id : ∀ Q {Γ X} → poly-fmor Q {Γ} {X} {X} p₂ ≈ p₂
   poly-fmor-id one         = {!!}
   poly-fmor-id (const A)   = ≈-refl
-  poly-fmor-id var         = {!!}
+  poly-fmor-id var         = ≈-refl
   poly-fmor-id (Q₁ + Q₂)   = {!!}
   poly-fmor-id (Q₁ × Q₂)   = {!!}
 
