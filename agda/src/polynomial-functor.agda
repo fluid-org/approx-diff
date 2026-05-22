@@ -142,10 +142,15 @@ module Sem {o m e} {𝒞 : Category o m e}
     Poly-iso-sym (pi₁ + pi₂) = Poly-iso-sym pi₁ + Poly-iso-sym pi₂
     Poly-iso-sym (pi₁ × pi₂) = Poly-iso-sym pi₁ × Poly-iso-sym pi₂
 
+    iso-fwd∘bwd : ∀ {P P'} (pi : Poly-iso P P') →
+      (⦅ inF P' ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id _))
+        ∘ (⦅ inF P ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id _)) ≈ id (μ P')
+    iso-fwd∘bwd {P} {P'} pi = ≈-trans (≈-sym id-right) {!!}
+
     iso : ∀ {P P'} → Poly-iso P P' → Category.Iso 𝒞 (μ P) (μ P')
     iso pi .fwd        = ⦅ inF _ ∘ poly-iso-mor pi ⦆ ∘ pair to-terminal (id _)
     iso pi .bwd        = ⦅ inF _ ∘ poly-iso-mor (Poly-iso-sym pi) ⦆ ∘ pair to-terminal (id _)
-    iso pi .fwd∘bwd≈id = {!!}
+    iso pi .fwd∘bwd≈id = iso-fwd∘bwd pi
     iso pi .bwd∘fwd≈id = {!!}
 
   {- μPoly-Sem: interpretation of μPoly with Mon (commented out alongside μPoly).
