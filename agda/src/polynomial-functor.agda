@@ -277,7 +277,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   open Obj
   open Mor
   open Fam
-  open Category cat using () renaming (_∘_ to _∘ᶜ_)
+  private module Fam𝒞 = Category cat
   open products P  -- Fam-level products
   open _⇒f_
   open Sem (terminal T) products strongCoproducts
@@ -885,9 +885,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
       -- Cata helpers (η case): given h with h-step, build proof h ≃ fold-open.
       module _ (h : Mor (Γ ⊗ WObj) y)
-               (h-step : (h ∘ᶜ products .HasProducts.pair (products .HasProducts.p₁)
-                                          (inF-mor ∘ᶜ products .HasProducts.p₂)) ≃
-                         (alg ∘ᶜ products .HasProducts.pair (products .HasProducts.p₁)
+               (h-step : (h Fam𝒞.∘ products .HasProducts.pair (products .HasProducts.p₁)
+                                          (inF-mor Fam𝒞.∘ products .HasProducts.p₂)) ≃
+                         (alg Fam𝒞.∘ products .HasProducts.pair (products .HasProducts.p₁)
                                            (poly-fmor Q h))) where
         η-idx : (P : Poly cat) {δ₁ δ₂ : Γ .idx .Carrier} (δ₁≈δ₂ : Γ .idx ._≈s_ δ₁ δ₂)
                 {j₁ j₂ : WIdx poly (idx-of P)} (j₁≈j₂ : WIdx-≈ poly (idx-of P) j₁ j₂) →
