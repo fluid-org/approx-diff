@@ -191,6 +191,13 @@ module Sem {o m e} {𝒞 : Category o m e}
           ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
 
+    poly-iso-mor : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (poly-obj P X) ⇒ poly-obj P' X
+    poly-iso-mor one             = {!!}
+    poly-iso-mor (const A≅B)     = {!!}
+    poly-iso-mor var             = {!!}
+    poly-iso-mor (pi₁ + pi₂)     = {!!}
+    poly-iso-mor (pi₁ × pi₂)     = {!!}
+
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
     iso one                         = Category.Iso-refl 𝒞
     iso (const {A} {B} A≅B)         =
