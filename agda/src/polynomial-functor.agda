@@ -173,14 +173,19 @@ module Sem {o m e} {𝒞 : Category o m e}
       (≈-trans (scopair-cong in₁-branch in₂-branch)
                (scopair-ext _))
       where
-        in₁-branch : (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₁ ∘ p₂) ≈ p₂ ∘ pair p₁ (in₁ ∘ p₂)
+        in₁-branch : (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
+                      pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₁ ∘ p₂)
+                   ≈ p₂ ∘ pair p₁ (in₁ ∘ p₂)
         in₁-branch =
           begin
-            (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₁ ∘ p₂)
+            (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
+             pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₁ ∘ p₂)
           ≈⟨ assoc _ _ _ ⟩
-            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ (pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂))) ∘ pair p₁ (in₁ ∘ p₂))
+            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
+            (pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂))) ∘ pair p₁ (in₁ ∘ p₂))
           ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
-            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair (p₁ ∘ pair p₁ (in₁ ∘ p₂)) (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)) ∘ pair p₁ (in₁ ∘ p₂))
+            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
+            pair (p₁ ∘ pair p₁ (in₁ ∘ p₂)) (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)) ∘ pair p₁ (in₁ ∘ p₂))
           ≈⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (scopair-in₁ _ _)) ⟩
             scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair p₁ (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁))
           ≈˘⟨ ∘-cong ≈-refl
@@ -199,13 +204,18 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₂ ∘ pair p₁ (in₁ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
 
-        in₂-branch : (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₂ ∘ p₂) ≈ p₂ ∘ pair p₁ (in₂ ∘ p₂)
+        in₂-branch : (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
+                      pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₂ ∘ p₂)
+                   ≈ p₂ ∘ pair p₁ (in₂ ∘ p₂)
         in₂-branch = begin
-            (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₂ ∘ p₂)
+            (scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
+             pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)))) ∘ pair p₁ (in₂ ∘ p₂)
           ≈⟨ assoc _ _ _ ⟩
-            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ (pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂))) ∘ pair p₁ (in₂ ∘ p₂))
+            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
+            (pair p₁ (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂))) ∘ pair p₁ (in₂ ∘ p₂))
           ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
-            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair (p₁ ∘ pair p₁ (in₂ ∘ p₂)) (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)) ∘ pair p₁ (in₂ ∘ p₂))
+            scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘
+            pair (p₁ ∘ pair p₁ (in₂ ∘ p₂)) (scopair (in₁ ∘ poly-iso-mor (Poly-iso-sym pi₁)) (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂)) ∘ pair p₁ (in₂ ∘ p₂))
           ≈⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (scopair-in₂ _ _)) ⟩
             scopair (in₁ ∘ poly-iso-mor pi₁) (in₂ ∘ poly-iso-mor pi₂) ∘ pair p₁ (in₂ ∘ poly-iso-mor (Poly-iso-sym pi₂))
           ≈˘⟨ ∘-cong ≈-refl
