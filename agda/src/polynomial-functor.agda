@@ -939,15 +939,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             (y .fam .subst _ ∘ h .famf .transf (γ , inF j) ∘ pair p₁ (id _ ∘ p₂))
           ≈⟨ isEquiv .trans (∘-cong ≈-refl (isEquiv .trans (pair-cong ≈-refl id-left) pair-ext0)) id-right ⟩
             y .fam .subst _ ∘ h .famf .transf (γ , inF j)
-          ≈⟨ ∘-cong (y .fam .trans* after-bridge bridge1) ≈-refl ⟩
-            (y .fam .subst after-bridge ∘ y .fam .subst bridge1) ∘ h .famf .transf (γ , inF j)
+          ≈⟨ ∘-cong (y .fam .trans* after-bridge
+                       (h .idxf .PS._⇒_.func-resp-≈
+                          (Γ .idx .isEquivalence .refl ,
+                           WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))) ≈-refl ⟩
+            (y .fam .subst after-bridge ∘
+               y .fam .subst (h .idxf .PS._⇒_.func-resp-≈
+                                (Γ .idx .isEquivalence .refl ,
+                                 WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))) ∘
+            h .famf .transf (γ , inF j)
           ≈⟨ {!!} ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
           ∎ where
             open ≈-Reasoning isEquiv
-            bridge1 = h .idxf .PS._⇒_.func-resp-≈
-                        (Γ .idx .isEquivalence .refl ,
-                         WObj .idx .isEquivalence .sym (embed-unembed-id Q j))
             after-bridge = y .idx .isEquivalence .trans
                         (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
                           (Γ .idx .isEquivalence .refl ,
