@@ -161,7 +161,7 @@ module Sem {o m e} {𝒞 : Category o m e}
       poly-iso-mor pi {Γ} {X} ∘ pair p₁ (poly-iso-mor (Poly-iso-sym pi)) ≈ p₂
     poly-iso-mor-fwd∘bwd one         = {!!}
     poly-iso-mor-fwd∘bwd (const A≅B) = {!!}
-    poly-iso-mor-fwd∘bwd var         = {!!}
+    poly-iso-mor-fwd∘bwd var         = pair-p₂ _ _
     poly-iso-mor-fwd∘bwd (pi₁ + pi₂) = {!!}
     poly-iso-mor-fwd∘bwd (pi₁ × pi₂) = {!!}
 
