@@ -1090,6 +1090,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q)))) ∘
            pair p₁ (poly-fmor Q h .Mor.famf .transf (γ , unembed-idx Q j))) ∘
            pair p₁ (unembed-fam Q j ∘ p₂)
+        ≈⟨ ∘-cong (∘-cong (∘-cong ≈-refl
+              (pair-cong (≈-trans (∘-cong (Γ .Obj.fam .Fam.refl*) ≈-refl) id-left) ≈-refl)) ≈-refl) ≈-refl ⟩
+          ((alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
+            pair p₁ (poly-obj Q y .Obj.fam .Fam.subst
+                       (η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘ p₂)) ∘
+           pair p₁ (poly-fmor Q h .Mor.famf .transf (γ , unembed-idx Q j))) ∘
+           pair p₁ (unembed-fam Q j ∘ p₂)
         ≈⟨ {!!} ⟩
           alg .Mor.famf .transf (γ , project-idx-open Q γ j) ∘
             pair p₁ (project-fam-open Q γ j) ∘ pair p₁ (id _ ∘ p₂)
