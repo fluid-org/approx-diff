@@ -939,26 +939,25 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             (y .fam .subst _ ∘ h .famf .transf (γ , inF j) ∘ pair p₁ (id _ ∘ p₂))
           ≈⟨ isEquiv .trans (∘-cong ≈-refl (isEquiv .trans (pair-cong ≈-refl id-left) pair-ext0)) id-right ⟩
             y .fam .subst _ ∘ h .famf .transf (γ , inF j)
-          ≈⟨ ∘-cong (y .fam .trans* after-bridge
+          ≈⟨ ∘-cong (y .fam .trans*
+                       (y .idx .isEquivalence .trans
+                         (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
+                           (Γ .idx .isEquivalence .refl , poly-obj Q WObj .idx .isEquivalence .refl))
+                         (alg .idxf .PS._⇒_.func-resp-≈
+                           (Γ .idx .isEquivalence .refl , η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q)))))
                        (h .idxf .PS._⇒_.func-resp-≈
-                          (Γ .idx .isEquivalence .refl ,
-                           WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))) ≈-refl ⟩
-            (y .fam .subst after-bridge ∘
+                          (Γ .idx .isEquivalence .refl , WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))) ≈-refl ⟩
+            (y .fam .subst (y .idx .isEquivalence .trans
+                             (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
+                               (Γ .idx .isEquivalence .refl , poly-obj Q WObj .idx .isEquivalence .refl))
+                             (alg .idxf .PS._⇒_.func-resp-≈
+                               (Γ .idx .isEquivalence .refl , η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))))) ∘
                y .fam .subst (h .idxf .PS._⇒_.func-resp-≈
-                                (Γ .idx .isEquivalence .refl ,
-                                 WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))) ∘
+                                (Γ .idx .isEquivalence .refl , WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))) ∘
             h .famf .transf (γ , inF j)
           ≈⟨ {!!} ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
-          ∎ where
-            open ≈-Reasoning isEquiv
-            after-bridge = y .idx .isEquivalence .trans
-                        (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
-                          (Γ .idx .isEquivalence .refl ,
-                           poly-obj Q WObj .idx .isEquivalence .refl))
-                        (alg .idxf .PS._⇒_.func-resp-≈
-                          (Γ .idx .isEquivalence .refl ,
-                           η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))))
+          ∎ where open ≈-Reasoning isEquiv
         η-fam (P Poly.+ R) γ (inj₁ x) =
           isEquiv .trans
             (∘-cong (∘-cong ≈-refl (isEquiv .trans id-left id-left)) ≈-refl) (η-fam P γ x)
