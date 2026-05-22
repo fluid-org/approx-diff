@@ -1001,6 +1001,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               ((id _ ∘
                 (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘ pair p₁ (id _ ∘ (embed-fam Q (unembed-idx Q j) ∘ p₂)))) ∘
                pair p₁ (unembed-fam Q j ∘ p₂))
+          ≈⟨ ∘-cong (y .fam .trans*
+                       (alg .idxf .PS._⇒_.func-resp-≈
+                          (Γ .idx .isEquivalence .refl , η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))))
+                       (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
+                          (Γ .idx .isEquivalence .refl ,
+                           poly-obj Q WObj .idx .isEquivalence .refl))) ≈-refl ⟩
+            (y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈
+                              (Γ .idx .isEquivalence .refl , η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q)))) ∘
+             y .fam .subst (h-step ._≃_.idxf-eq .PS._≃m_.func-eq
+                              (Γ .idx .isEquivalence .refl , poly-obj Q WObj .idx .isEquivalence .refl))) ∘
+              ((id _ ∘
+                (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘ pair p₁ (id _ ∘ (embed-fam Q (unembed-idx Q j) ∘ p₂)))) ∘
+               pair p₁ (unembed-fam Q j ∘ p₂))
           ≈⟨ {!!} ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
           ∎ where open ≈-Reasoning isEquiv
