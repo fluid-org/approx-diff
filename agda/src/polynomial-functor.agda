@@ -172,7 +172,12 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈-trans (≈-sym (scopair-ext _))
       (≈-trans (scopair-cong (≈-trans (assoc _ _ _)
                               (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
-                              (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (scopair-in₁ _ _))) {!!}))) {!!})
+                              (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (scopair-in₁ _ _)))
+                              (≈-trans (∘-cong ≈-refl
+                                         (≈-trans (pair-cong ≈-refl (∘-cong ≈-refl (≈-sym (pair-p₂ _ _))))
+                                         (≈-trans (pair-cong ≈-refl (≈-sym (assoc _ _ _)))
+                                         (≈-trans (pair-cong (≈-sym (pair-p₁ _ _)) ≈-refl)
+                                                  (≈-sym (pair-natural _ _ _)))))) {!!})))) {!!})
                (scopair-ext _))
     poly-iso-mor-fwd∘bwd (pi₁ × pi₂) = {!!}
 
