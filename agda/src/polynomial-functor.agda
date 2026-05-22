@@ -162,32 +162,33 @@ module Sem {o m e} {𝒞 : Category o m e}
         (inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ (p₂ ∘ pair to-terminal (id _))
       ≈˘⟨ assoc _ _ _ ⟩
         ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) ∘ pair to-terminal (id _)
-      ≈⟨ ∘-cong bwd∘fwd∘p₂≈p₂ ≈-refl ⟩
+      ≈⟨ ∘-cong (⦅⦆-η (inF (const A) ∘ p₂)
+                        ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) bwd∘fwd∘p₂-β) ≈-refl ⟩
+        ⦅ inF (const A) ∘ p₂ ⦆ ∘ pair to-terminal (id _)
+      ≈˘⟨ ∘-cong (⦅⦆-η (inF (const A) ∘ p₂) p₂ (≈-trans (pair-p₂ _ _)
+                   (≈-trans (≈-sym id-right) (≈-sym (∘-cong ≈-refl pair-ext0))))) ≈-refl ⟩
         p₂ ∘ pair to-terminal (id _)
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ (const A))
       ∎ where
-        bwd∘fwd∘p₂≈p₂ : (inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂ ≈ p₂
-        bwd∘fwd∘p₂≈p₂ = ≈-trans
-          (⦅⦆-η (inF (const A) ∘ p₂) ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂)
-            (begin
-                ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂) ∘ pair p₁ (inF (const A) ∘ p₂)
-              ≈⟨ assoc _ _ _ ⟩
-                (inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ (p₂ ∘ pair p₁ (inF (const A) ∘ p₂))
-              ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
-                (inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ (inF (const A) ∘ p₂)
-              ≈˘⟨ assoc _ _ _ ⟩
-                ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ inF (const A)) ∘ p₂
-              ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (μ-const-fwd∘bwd A)) id-right)) ≈-refl ⟩
-                inF (const A) ∘ p₂
-              ≈˘⟨ id-right ⟩
-                (inF (const A) ∘ p₂) ∘ id _
-              ≈˘⟨ ∘-cong ≈-refl pair-ext0 ⟩
-                (inF (const A) ∘ p₂) ∘ pair p₁ p₂
-              ∎))
-          (≈-sym (⦅⦆-η (inF (const A) ∘ p₂) p₂
-            (≈-trans (pair-p₂ _ _) (≈-trans (≈-sym id-right) (≈-sym (∘-cong ≈-refl pair-ext0))))))
-          where open ≈-Reasoning isEquiv
+        bwd∘fwd∘p₂-β :
+          ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂) ∘ pair p₁ (inF (const A) ∘ p₂)
+          ≈ (inF (const A) ∘ p₂) ∘ pair p₁ p₂
+        bwd∘fwd∘p₂-β = begin
+            ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂) ∘ pair p₁ (inF (const A) ∘ p₂)
+          ≈⟨ assoc _ _ _ ⟩
+            (inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ (p₂ ∘ pair p₁ (inF (const A) ∘ p₂))
+          ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
+            (inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ (inF (const A) ∘ p₂)
+          ≈˘⟨ assoc _ _ _ ⟩
+            ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ inF (const A)) ∘ p₂
+          ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (μ-const-fwd∘bwd A)) id-right)) ≈-refl ⟩
+            inF (const A) ∘ p₂
+          ≈˘⟨ id-right ⟩
+            (inF (const A) ∘ p₂) ∘ id _
+          ≈˘⟨ ∘-cong ≈-refl pair-ext0 ⟩
+            (inF (const A) ∘ p₂) ∘ pair p₁ p₂
+          ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
 
     iso : ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (μ P) (μ Q)
