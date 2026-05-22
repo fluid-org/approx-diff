@@ -167,7 +167,7 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ (const A))
       ∎ where
-        lemma : ((inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂) ≈ p₂
+        lemma : (inF (const A) ∘ (⦅ p₂ ⦆ ∘ pair to-terminal (id _))) ∘ p₂ ≈ p₂
         lemma = ≈-trans
           (⦅⦆-η (inF (const A) ∘ p₂) ((inF (const A) ∘ (⦅_⦆ {Q = const A} p₂ ∘ pair to-terminal (id _))) ∘ p₂)
             (begin
