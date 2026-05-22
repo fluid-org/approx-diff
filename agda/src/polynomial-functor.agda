@@ -125,7 +125,12 @@ module Sem {o m e} {𝒞 : Category o m e}
   -- Built directly from catamorphism universal property (β, η).
   μ-respects-Poly-iso : (Mu : HasMu) → ∀ {P Q} → Poly-iso P Q → Category.Iso 𝒞 (HasMu.μ Mu P) (HasMu.μ Mu Q)
   μ-respects-Poly-iso Mu one              = {!!}
-  μ-respects-Poly-iso Mu (const A≅B)      = {!!}
+  μ-respects-Poly-iso Mu (const {A} {B} A≅B) .Iso.fwd =
+    HasMu.⦅_⦆ Mu (HasMu.inF Mu (const B) ∘ A≅B .Iso.fwd ∘ p₂) ∘ pair to-terminal (id _)
+  μ-respects-Poly-iso Mu (const {A} {B} A≅B) .Iso.bwd =
+    HasMu.⦅_⦆ Mu (HasMu.inF Mu (const A) ∘ A≅B .Iso.bwd ∘ p₂) ∘ pair to-terminal (id _)
+  μ-respects-Poly-iso Mu (const {A} {B} A≅B) .Iso.fwd∘bwd≈id = {!!}
+  μ-respects-Poly-iso Mu (const {A} {B} A≅B) .Iso.bwd∘fwd≈id = {!!}
   μ-respects-Poly-iso Mu var              = {!!}
   μ-respects-Poly-iso Mu (pi₁ + pi₂)      = {!!}
   μ-respects-Poly-iso Mu (pi₁ × pi₂)      = {!!}
