@@ -193,8 +193,8 @@ module Sem {o m e} {𝒞 : Category o m e}
 
     poly-iso-mor : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (poly-obj P X) ⇒ poly-obj P' X
     poly-iso-mor one             = to-terminal
-    poly-iso-mor (const A≅B)     = {!!}
-    poly-iso-mor var             = {!!}
+    poly-iso-mor (const A≅B)     = A≅B .fwd ∘ p₂
+    poly-iso-mor var             = p₂
     poly-iso-mor (pi₁ + pi₂)     = {!!}
     poly-iso-mor (pi₁ × pi₂)     = {!!}
 
