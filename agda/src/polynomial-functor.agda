@@ -1007,7 +1007,42 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                          (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘
                        pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
                      ≈ project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)
-            bridge-P = {!!}
+            bridge-P =
+              begin
+                (poly-obj P y .fam .subst _ ∘
+                   (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘
+                pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
+              ≈⟨ assoc _ _ _ ⟩
+                poly-obj P y .fam .subst _ ∘
+                  ((poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂)) ∘
+                   pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂))
+              ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+                poly-obj P y .fam .subst _ ∘
+                  (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘
+                   (pair p₁ (p₁ ∘ p₂) ∘ pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)))
+              ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl merge-pair-P) ⟩
+                poly-obj P y .fam .subst _ ∘
+                  (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘
+                   pair p₁ (unembed-fam P x ∘ (p₁ ∘ p₂)))
+              ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl fold-pair-P) ⟩
+                poly-obj P y .fam .subst _ ∘
+                  (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘
+                   (pair p₁ (unembed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂)))
+              ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+                poly-obj P y .fam .subst _ ∘
+                  ((poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (unembed-fam P x ∘ p₂)) ∘
+                   pair p₁ (p₁ ∘ p₂))
+              ≈˘⟨ assoc _ _ _ ⟩
+                (poly-obj P y .fam .subst _ ∘
+                   (poly-fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (unembed-fam P x ∘ p₂))) ∘
+                pair p₁ (p₁ ∘ p₂)
+              ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+                ((poly-obj P y .fam .subst _ ∘
+                    poly-fmor P h .famf .transf (γ , unembed-idx P x)) ∘ pair p₁ (unembed-fam P x ∘ p₂)) ∘
+                pair p₁ (p₁ ∘ p₂)
+              ≈⟨ ∘-cong (η-fam P γ x) ≈-refl ⟩
+                project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)
+              ∎ where open ≈-Reasoning isEquiv
 
             bridge-R : (poly-obj R y .fam .subst _ ∘
                          (poly-fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
