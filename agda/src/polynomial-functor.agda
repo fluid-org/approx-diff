@@ -908,9 +908,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
     ≈⟨ ∘-cong
         (≈-sym (alg .famf .natural (
-          Setoid.isEquivalence (Γ .Obj.idx) .IsEquivalence.refl ,
-          β-idx Q (Setoid.isEquivalence (Γ .Obj.idx) .IsEquivalence.refl)
-                  (Setoid.isEquivalence (poly-obj Q WObj .Obj.idx) .IsEquivalence.refl)
+          Setoid.isEquivalence (Γ .idx) .IsEquivalence.refl ,
+          β-idx Q (Setoid.isEquivalence (Γ .idx) .IsEquivalence.refl)
+                  (Setoid.isEquivalence (poly-obj Q WObj .idx) .IsEquivalence.refl)
         )))
         ≈-refl ⟩
       (alg .famf .transf (γ , poly-fmor Q fold-open .idxf .PS._⇒_.func (γ , i)) ∘
@@ -938,9 +938,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step = result
     where
       open W-types Q; open Open alg
-      η-idx : (P : Poly cat) {δ₁ δ₂ : Γ .Obj.idx .Carrier} (δ₁≈δ₂ : Γ .Obj.idx ._≈s_ δ₁ δ₂)
+      η-idx : (P : Poly cat) {δ₁ δ₂ : Γ .idx .Carrier} (δ₁≈δ₂ : Γ .idx ._≈s_ δ₁ δ₂)
               {j₁ j₂ : WIdx poly (idx-of P)} (j₁≈j₂ : WIdx-≈ poly (idx-of P) j₁ j₂) →
-              poly-obj P y .Obj.idx ._≈s_
+              poly-obj P y .idx ._≈s_
                 (poly-fmor P h .idxf .PS._⇒_.func (δ₁ , unembed-idx P j₁))
                 (project-idx-open P δ₂ j₂)
       η-idx Poly.one       _ _                                  = tt
@@ -949,18 +949,18 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           h .idxf .PS._⇒_.func (_ , inF j₁)
         ≈⟨ h .idxf .PS._⇒_.func-resp-≈
              (δ₁≈δ₂ ,
-              WObj .Obj.idx .isEquivalence .trans j₁≈j₂
-                (WObj .Obj.idx .isEquivalence .sym (embed-unembed-id Q j₂))) ⟩
+              WObj .idx .isEquivalence .trans j₁≈j₂
+                (WObj .idx .isEquivalence .sym (embed-unembed-id Q j₂))) ⟩
           h .idxf .PS._⇒_.func (_ , inF (embed-idx Q (unembed-idx Q j₂)))
         ≈⟨ h-step ._≃_.idxf-eq .PS._≃m_.func-eq
-             (Γ .Obj.idx .isEquivalence .refl ,
-              poly-obj Q WObj .Obj.idx .isEquivalence .refl) ⟩
+             (Γ .idx .isEquivalence .refl ,
+              poly-obj Q WObj .idx .isEquivalence .refl) ⟩
           alg .idxf .PS._⇒_.func (_ , poly-fmor Q h .idxf .PS._⇒_.func (_ , unembed-idx Q j₂))
         ≈⟨ alg .idxf .PS._⇒_.func-resp-≈
-             (Γ .Obj.idx .isEquivalence .refl ,
-              η-idx Q (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ⟩
+             (Γ .idx .isEquivalence .refl ,
+              η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ⟩
           alg .idxf .PS._⇒_.func (_ , project-idx-open Q _ j₂)
-        ∎ where open ≈-Reasoning (y .Obj.idx .isEquivalence)
+        ∎ where open ≈-Reasoning (y .idx .isEquivalence)
       η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₁ x₁} {inj₁ x₂} j₁≈j₂      = η-idx P δ₁≈δ₂ j₁≈j₂
       η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₂ y₁} {inj₂ y₂} j₁≈j₂      = η-idx R δ₁≈δ₂ j₁≈j₂
       η-idx (P Poly.× R)   δ₁≈δ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) =
@@ -968,9 +968,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
       -- Fam-level analog at WIdx level: relates poly-fmor h's transf (bridged via unembed-fam) to
       -- project-fam-open (modulo subst from η-idx).
-      η-fam : (P : Poly cat) (γ : Γ .Obj.idx .Carrier) (j : WIdx poly (idx-of P)) →
+      η-fam : (P : Poly cat) (γ : Γ .idx .Carrier) (j : WIdx poly (idx-of P)) →
               (poly-obj P y .fam .subst
-                 (η-idx P (Γ .Obj.idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of P) {j})) ∘
+                 (η-idx P (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of P) {j})) ∘
                poly-fmor P h .famf .transf (γ , unembed-idx P j) ∘ pair p₁ (unembed-fam P j ∘ p₂)) ≈
               project-fam-open P γ j
       η-fam Poly.one       γ j         = HasTerminal.to-terminal-unique T _ _
