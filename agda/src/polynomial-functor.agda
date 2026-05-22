@@ -993,6 +993,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
                (pair p₁ (id _ ∘ (embed-fam Q (unembed-idx Q j) ∘ p₂)) ∘
                 pair p₁ (unembed-fam Q j ∘ p₂)))
+          ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+            y .fam .subst _ ∘
+              ((h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
+                pair p₁ (id _ ∘ (embed-fam Q (unembed-idx Q j) ∘ p₂))) ∘
+               pair p₁ (unembed-fam Q j ∘ p₂))
           ≈⟨ {!!} ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
           ∎ where open ≈-Reasoning isEquiv
