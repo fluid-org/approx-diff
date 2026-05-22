@@ -966,8 +966,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             y .fam .subst _ ∘
               (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
                (Γ ⊗ WObj) .fam .subst
-                 (Γ .idx .isEquivalence .refl ,
-                  WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))
+                 (Γ .idx .isEquivalence .refl , WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))
           ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl
                 (pair-cong (isEquiv .trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left) ≈-refl)) ⟩
             y .fam .subst _ ∘
@@ -983,12 +982,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
                pair p₁ (embed-fam Q (unembed-idx Q j) ∘ (unembed-fam Q j ∘ p₂)))
           ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl
-                (isEquiv .trans (pair-cong (≈-sym id-left) ≈-refl)
-                                (≈-sym (pair-compose _ _ _ _)))) ⟩
+                (isEquiv .trans (pair-cong (≈-sym id-left) ≈-refl) (≈-sym (pair-compose _ _ _ _)))) ⟩
             y .fam .subst _ ∘
               (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
-               (prod-m (id _) (embed-fam Q (unembed-idx Q j)) ∘
-                pair p₁ (unembed-fam Q j ∘ p₂)))
+               (prod-m (id _) (embed-fam Q (unembed-idx Q j)) ∘ pair p₁ (unembed-fam Q j ∘ p₂)))
           ≈⟨ {!!} ⟩
             alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
           ∎ where open ≈-Reasoning isEquiv
