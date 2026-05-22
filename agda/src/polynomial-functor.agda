@@ -252,9 +252,8 @@ module Sem {o m e} {𝒞 : Category o m e}
             (poly-iso-mor pi₁ ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ pair-bwd
           ≈⟨ assoc _ _ _ ⟩
             poly-iso-mor pi₁ ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair p₁ pair-bwd)
-          ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
-            poly-iso-mor pi₁ ∘ pair (p₁ ∘ pair p₁ pair-bwd) ((p₁ ∘ p₂) ∘ pair p₁ pair-bwd)
-          ≈⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))) ⟩
+          ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _)
+                           (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))) ⟩
             poly-iso-mor pi₁ ∘ pair p₁ (p₁ ∘ pair-bwd)
           ≈⟨ {!!} ⟩
             p₁ ∘ p₂
