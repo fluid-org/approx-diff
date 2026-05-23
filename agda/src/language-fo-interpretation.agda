@@ -2,7 +2,7 @@
 
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
                               strong-coproducts→coproducts; HasExponentials; HasBooleans; coproducts+exp→booleans)
-open import polynomial-functor using (Poly; module Sem; Poly-map; Preserves-μ)
+open import polynomial-functor using (Poly; module Sem; Poly-map; Poly-iso; Preserves-μ)
 open import functor using (Functor)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
@@ -18,10 +18,11 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o₁ m₁ e₁ o₂ m₂ e₂}
   (𝒞 : Category o₁ m₁ e₁) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (let 𝒞CP = strong-coproducts→coproducts 𝒞T 𝒞SC)
-  (let open Sem 𝒞T 𝒞P 𝒞SC renaming (HasMu to 𝒞HasMu)) (𝒞Mu : 𝒞HasMu)
+  (let open Sem 𝒞T 𝒞P 𝒞SC hiding (fobj; fmor; functor; fmor-id; fmor-cong; fmor-comp; module μ-respects-Poly-iso)
+         renaming (HasMu to 𝒞HasMu)) (𝒞Mu : 𝒞HasMu)
   (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SC : HasStrongCoproducts 𝒟 𝒟P) (𝒟E : HasExponentials 𝒟 𝒟P)
   (let 𝒟CP = strong-coproducts→coproducts 𝒟T 𝒟SC)
-  (let open Sem 𝒟T 𝒟P 𝒟SC) (𝒟Mu : HasMu)
+  (let open Sem 𝒟T 𝒟P 𝒟SC hiding (fobj; fmor; functor; fmor-id; fmor-cong; fmor-comp)) (𝒟Mu : HasMu)
   (F : Functor 𝒞 𝒟)
   (FT : Category.IsIso 𝒟 (HasTerminal.to-terminal 𝒟T {F .fobj (𝒞T .HasTerminal.witness)}))
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
@@ -37,7 +38,7 @@ module _ where
   open HasTerminal 𝒞T renaming (witness to 𝟙)
   open HasProducts 𝒞P renaming (prod to _×_)
   open HasCoproducts 𝒞CP renaming (coprod to _+_)
-  open Sem 𝒞T 𝒞P 𝒞SC using (poly-obj)
+  open Sem 𝒞T 𝒞P 𝒞SC renaming (fobj to poly-obj) using ()
   open 𝒞HasMu 𝒞Mu using () renaming (μ to μ-obj)
 
   mutual
@@ -78,18 +79,24 @@ Bool-iso =
 𝒟-Sig-model = transport-model Sig F FT FP (Bool-iso .𝒟.Iso.fwd) 𝒞-Sig-model
 
 open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟SC 𝒟E 𝒟Mu 𝒟-Sig-model
-  renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm) using ()
+  renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; ⟦_⟧poly to 𝒟⟦_⟧poly) using ()
   public
 
-⟦_⟧-iso : ∀ {τ} (τ-fo : first-order τ) → 𝒟.Iso (F .fobj 𝒞⟦ τ-fo ⟧ty) 𝒟⟦ τ ⟧ty
-⟦ unit ⟧-iso      = 𝒟.IsIso→Iso FT
-⟦ bool ⟧-iso      = Bool-iso
-⟦ base s ⟧-iso    = 𝒟.Iso-refl
-⟦ τ₁ [×] τ₂ ⟧-iso = 𝒟.Iso-trans (𝒟.IsIso→Iso FP) (𝒟P.product-preserves-iso ⟦ τ₁ ⟧-iso ⟦ τ₂ ⟧-iso)
-⟦ τ₁ [+] τ₂ ⟧-iso = 𝒟.Iso-trans (𝒟.Iso-sym (𝒟.IsIso→Iso FC)) (𝒟CP.coproduct-preserve-iso ⟦ τ₁ ⟧-iso ⟦ τ₂ ⟧-iso)
--- F preserves μ (Fμ); then we need an extra iso showing that 𝒟Mu.μ
--- respects iso at const slots of its polynomial. FIXME: that second iso.
-⟦ μ P-fo ⟧-iso    = {!!}
+mutual
+  ⟦_⟧-iso : ∀ {τ} (τ-fo : first-order τ) → 𝒟.Iso (F .fobj 𝒞⟦ τ-fo ⟧ty) 𝒟⟦ τ ⟧ty
+  ⟦ unit ⟧-iso      = 𝒟.IsIso→Iso FT
+  ⟦ bool ⟧-iso      = Bool-iso
+  ⟦ base s ⟧-iso    = 𝒟.Iso-refl
+  ⟦ τ₁ [×] τ₂ ⟧-iso = 𝒟.Iso-trans (𝒟.IsIso→Iso FP) (𝒟P.product-preserves-iso ⟦ τ₁ ⟧-iso ⟦ τ₂ ⟧-iso)
+  ⟦ τ₁ [+] τ₂ ⟧-iso = 𝒟.Iso-trans (𝒟.Iso-sym (𝒟.IsIso→Iso FC)) (𝒟CP.coproduct-preserve-iso ⟦ τ₁ ⟧-iso ⟦ τ₂ ⟧-iso)
+  ⟦ μ P-fo ⟧-iso    = 𝒟.Iso-trans (Fμ 𝒞⟦ P-fo ⟧poly) (μ-respects-Poly-iso.iso 𝒟Mu ⟦ P-fo ⟧poly-iso)
+
+  ⟦_⟧poly-iso : ∀ {P} (P-fo : first-order-poly P) → Poly-iso (Poly-map F 𝒞⟦ P-fo ⟧poly) 𝒟⟦ P ⟧poly
+  ⟦ one ⟧poly-iso        = Poly-iso.one
+  ⟦ const τ-fo ⟧poly-iso = Poly-iso.const ⟦ τ-fo ⟧-iso
+  ⟦ var ⟧poly-iso        = Poly-iso.var
+  ⟦ P [+] Q ⟧poly-iso    = ⟦ P ⟧poly-iso Poly-iso.+ ⟦ Q ⟧poly-iso
+  ⟦ P [×] Q ⟧poly-iso    = ⟦ P ⟧poly-iso Poly-iso.× ⟦ Q ⟧poly-iso
 
 ⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → 𝒟.Iso (F .fobj 𝒞⟦ Γ-fo ⟧ctxt) 𝒟⟦ Γ ⟧ctxt
 ⟦ emp ⟧ctxt-iso   = 𝒟.IsIso→Iso FT

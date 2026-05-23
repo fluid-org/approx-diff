@@ -21,7 +21,7 @@ module language-interpretation
   (SC : HasStrongCoproducts 𝒞 P)
   (E  : HasExponentials 𝒞 P)
   (let C = strong-coproducts→coproducts T SC)
-  (let open Sem T P SC)
+  (let open Sem T P SC renaming (fobj to poly-obj))
   (let open HasBooleans (coproducts+exp→booleans T C E))
   (Mu : HasMu)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)
