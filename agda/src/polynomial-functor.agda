@@ -585,6 +585,8 @@ module Sem {o m e} {𝒞 : Category o m e}
         ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co ((inF P ∘ p₂) ∘co iso-mor (iso-sym P≅P'))
       ≈˘⟨ assoc-co _ _ _ ⟩
         (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co (inF P ∘ p₂)) ∘co iso-mor (iso-sym P≅P')
+      ≈⟨ ∘-cong-co (⦅⦆-β _) ≈-refl ⟩
+        ((inF P' ∘ iso-mor P≅P') ∘co fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆) ∘co iso-mor (iso-sym P≅P')
       ≈⟨ {!!} ⟩
         (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆
       ∎ where open ≈-Reasoning isEquiv
