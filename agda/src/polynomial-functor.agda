@@ -483,7 +483,31 @@ module Sem {o m e} {𝒞 : Category o m e}
       ∎ where
         eq-p₁ : p₁ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
                 ≈ p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
-        eq-p₁ = {!!}
+        eq-p₁ = begin
+            p₁ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (p₁ ∘ iso-mor (pi₁ × pi₂)) ∘co fmor (P₁ × P₂) f
+          ≈⟨ ∘-cong-co (pair-p₁ _ _) ≈-refl ⟩
+            (iso-mor pi₁ ∘co (p₁ ∘ p₂)) ∘co fmor (P₁ × P₂) f
+          ≈⟨ assoc-co _ _ _ ⟩
+            iso-mor pi₁ ∘co ((p₁ ∘ p₂) ∘co fmor (P₁ × P₂) f)
+          ≈⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (pair-p₁ _ _))) ⟩
+            iso-mor pi₁ ∘co (fmor P₁ f ∘co (p₁ ∘ p₂))
+          ≈˘⟨ assoc-co _ _ _ ⟩
+            (iso-mor pi₁ ∘co fmor P₁ f) ∘co (p₁ ∘ p₂)
+          ≈⟨ ∘-cong-co (iso-mor-natural pi₁ f) ≈-refl ⟩
+            (fmor Q₁ f ∘co iso-mor pi₁) ∘co (p₁ ∘ p₂)
+          ≈⟨ assoc-co _ _ _ ⟩
+            fmor Q₁ f ∘co (iso-mor pi₁ ∘co (p₁ ∘ p₂))
+          ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (pair-p₁ _ _))) ⟩
+            fmor Q₁ f ∘co ((p₁ ∘ p₂) ∘co iso-mor (pi₁ × pi₂))
+          ≈˘⟨ assoc-co _ _ _ ⟩
+            (fmor Q₁ f ∘co (p₁ ∘ p₂)) ∘co iso-mor (pi₁ × pi₂)
+          ≈˘⟨ ∘-cong-co (pair-p₁ _ _) ≈-refl ⟩
+            (p₁ ∘ fmor (Q₁ × Q₂) f) ∘co iso-mor (pi₁ × pi₂)
+          ≈⟨ assoc _ _ _ ⟩
+            p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
+          ∎ where open ≈-Reasoning isEquiv
         eq-p₂ : p₂ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
                 ≈ p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
         eq-p₂ = {!!}
