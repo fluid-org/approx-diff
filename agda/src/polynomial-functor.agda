@@ -250,11 +250,8 @@ module Sem {o m e} {𝒞 : Category o m e}
   module HasMu-derived (Mu : HasMu) where
     open HasMu Mu
 
-    -- Catamorphism fusion: an algebra morphism f from alg to alg' absorbs into the cata.
     cata-fusion : ∀ {Γ Q y y'} (alg : prod Γ (fobj Q y) ⇒ y) (alg' : prod Γ (fobj Q y') ⇒ y')
-                  (f : prod Γ y ⇒ y') →
-                  (f ∘co alg) ≈ (alg' ∘co fmor Q f) →
-                  (f ∘co ⦅ alg ⦆) ≈ ⦅ alg' ⦆
+                  (f : prod Γ y ⇒ y') → (f ∘co alg) ≈ (alg' ∘co fmor Q f) → (f ∘co ⦅ alg ⦆) ≈ ⦅ alg' ⦆
     cata-fusion {Q = Q} alg alg' f f-is-alg-mor = ⦅⦆-η _ _ (begin
         (f ∘co ⦅ alg ⦆) ∘co (inF Q ∘ p₂)
       ≈⟨ assoc-co _ _ _ ⟩
