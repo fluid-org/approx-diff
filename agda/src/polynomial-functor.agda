@@ -66,9 +66,9 @@ module Sem {o m e} {𝒞 : Category o m e}
   CP = strong-coproducts→coproducts T SCP
   open HasCoproducts CP
   open HasStrongCoproducts SCP using ()
-    renaming (copair to scopair; copair-cong to scopair-cong;
-              copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂;
-              copair-ext to scopair-ext)
+    renaming (copair to s-copair; copair-cong to s-copair-cong;
+              copair-in₁ to s-copair-in₁; copair-in₂ to s-copair-in₂;
+              copair-ext to s-copair-ext)
 
   cat-ext : obj → Category o m e
   cat-ext = coKleisli-prod P
@@ -93,7 +93,7 @@ module Sem {o m e} {𝒞 : Category o m e}
     fmor one         _ = to-terminal
     fmor (const A)   _ = p₂
     fmor var         h = h
-    fmor (Q₁ + Q₂)   h = scopair (in₁ ∘ fmor Q₁ h) (in₂ ∘ fmor Q₂ h)
+    fmor (Q₁ + Q₂)   h = s-copair (in₁ ∘ fmor Q₁ h) (in₂ ∘ fmor Q₂ h)
     fmor (Q₁ × Q₂)   h = pair (fmor Q₁ h ∘co (p₁ ∘ p₂)) (fmor Q₂ h ∘co (p₂ ∘ p₂))
 
     fmor-id : ∀ Q {Γ X} → fmor Q {Γ} {X} {X} p₂ ≈ p₂
@@ -101,8 +101,8 @@ module Sem {o m e} {𝒞 : Category o m e}
     fmor-id (const A)   = ≈-refl
     fmor-id var         = ≈-refl
     fmor-id (Q₁ + Q₂)   =
-      ≈-trans (scopair-cong (∘-cong₂ (fmor-id Q₁)) (∘-cong₂ (fmor-id Q₂)))
-              (≈-trans (scopair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _))) (scopair-ext p₂))
+      ≈-trans (s-copair-cong (∘-cong₂ (fmor-id Q₁)) (∘-cong₂ (fmor-id Q₂)))
+              (≈-trans (s-copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _))) (s-copair-ext p₂))
     fmor-id (Q₁ × Q₂)   =
       ≈-trans (pair-cong (∘-cong₁ (fmor-id Q₁)) (∘-cong₁ (fmor-id Q₂)))
               (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext p₂))
@@ -111,7 +111,7 @@ module Sem {o m e} {𝒞 : Category o m e}
     fmor-cong one         _    = ≈-refl
     fmor-cong (const A)   _    = ≈-refl
     fmor-cong var         f≈g  = f≈g
-    fmor-cong (Q₁ + Q₂)   f≈g  = scopair-cong (∘-cong₂ (fmor-cong Q₁ f≈g)) (∘-cong₂ (fmor-cong Q₂ f≈g))
+    fmor-cong (Q₁ + Q₂)   f≈g  = s-copair-cong (∘-cong₂ (fmor-cong Q₁ f≈g)) (∘-cong₂ (fmor-cong Q₂ f≈g))
     fmor-cong (Q₁ × Q₂)   f≈g  = pair-cong (∘-cong₁ (fmor-cong Q₁ f≈g)) (∘-cong₁ (fmor-cong Q₂ f≈g))
 
     fmor-comp : ∀ Q {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
@@ -161,7 +161,7 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso-mor one             = to-terminal
     iso-mor (const A≅B)     = A≅B .fwd ∘ p₂
     iso-mor var             = p₂
-    iso-mor (P₁≅Q₁ + P₂≅Q₂) = scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
+    iso-mor (P₁≅Q₁ + P₂≅Q₂) = s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
     iso-mor (P₁≅Q₁ × P₂≅Q₂) = pair (iso-mor P₁≅Q₁ ∘co (p₁ ∘ p₂)) (iso-mor P₂≅Q₂ ∘co (p₂ ∘ p₂))
 
     iso-sym : ∀ {P P'} → Poly-iso P P' → Poly-iso P' P
@@ -187,27 +187,27 @@ module Sem {o m e} {𝒞 : Category o m e}
       (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (A≅B .fwd∘bwd≈id)) id-left)))
     iso-mor-fwd∘bwd var = pair-p₂ _ _
     iso-mor-fwd∘bwd (_+_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) {Γ} {X} =
-      ≈-trans (≈-sym (scopair-ext _)) (≈-trans (scopair-cong in₁-branch in₂-branch) (scopair-ext _))
+      ≈-trans (≈-sym (s-copair-ext _)) (≈-trans (s-copair-cong in₁-branch in₂-branch) (s-copair-ext _))
       where
-        in₁-branch : (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
-                       ∘co scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))
+        in₁-branch : (s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
+                       ∘co s-copair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))
                        ∘co (in₁ ∘ p₂)
                    ≈ p₂ ∘co (in₁ ∘ p₂)
         in₁-branch =
           begin
-            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
-             (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₁ ∘ p₂)
+            (s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+             (s-copair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₁ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
-            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
-            (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)) ∘co (in₁ ∘ p₂))
-          ≈⟨ ∘-cong-co ≈-refl (scopair-in₁ _ _) ⟩
-            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₁ ∘ iso-mor (iso-sym P₁≅Q₁))
+            s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+            (s-copair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)) ∘co (in₁ ∘ p₂))
+          ≈⟨ ∘-cong-co ≈-refl (s-copair-in₁ _ _) ⟩
+            s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₁ ∘ iso-mor (iso-sym P₁≅Q₁))
           ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
                 (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
-            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘co (iso-mor (iso-sym P₁≅Q₁)))
+            s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘co (iso-mor (iso-sym P₁≅Q₁)))
           ≈˘⟨ assoc _ _ _ ⟩
-            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₁ ∘ p₂)) ∘co (iso-mor (iso-sym P₁≅Q₁))
-          ≈⟨ ∘-cong₁ (scopair-in₁ _ _) ⟩
+            (s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₁ ∘ p₂)) ∘co (iso-mor (iso-sym P₁≅Q₁))
+          ≈⟨ ∘-cong₁ (s-copair-in₁ _ _) ⟩
             (in₁ ∘ iso-mor P₁≅Q₁) ∘co (iso-mor (iso-sym P₁≅Q₁))
           ≈⟨ assoc _ _ _ ⟩
             in₁ ∘ (iso-mor P₁≅Q₁ ∘co (iso-mor (iso-sym P₁≅Q₁)))
@@ -217,23 +217,23 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₂ ∘co (in₁ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
 
-        in₂-branch : (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
-                      (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₂ ∘ p₂)
+        in₂-branch : (s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+                      (s-copair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₂ ∘ p₂)
                    ≈ p₂ ∘co (in₂ ∘ p₂)
         in₂-branch = begin
-            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
-             (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₂ ∘ p₂)
+            (s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+             (s-copair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₂ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
-            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
-            (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)) ∘co (in₂ ∘ p₂))
-          ≈⟨ ∘-cong-co ≈-refl (scopair-in₂ _ _) ⟩
-            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))
+            s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+            (s-copair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)) ∘co (in₂ ∘ p₂))
+          ≈⟨ ∘-cong-co ≈-refl (s-copair-in₂ _ _) ⟩
+            s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))
           ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
                 (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
-            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘co (iso-mor (iso-sym P₂≅Q₂)))
+            s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘co (iso-mor (iso-sym P₂≅Q₂)))
           ≈˘⟨ assoc _ _ _ ⟩
-            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₂ ∘ p₂)) ∘co (iso-mor (iso-sym P₂≅Q₂))
-          ≈⟨ ∘-cong₁ (scopair-in₂ _ _) ⟩
+            (s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₂ ∘ p₂)) ∘co (iso-mor (iso-sym P₂≅Q₂))
+          ≈⟨ ∘-cong₁ (s-copair-in₂ _ _) ⟩
             (in₂ ∘ iso-mor P₂≅Q₂) ∘co (iso-mor (iso-sym P₂≅Q₂))
           ≈⟨ assoc _ _ _ ⟩
             in₂ ∘ (iso-mor P₂≅Q₂ ∘co (iso-mor (iso-sym P₂≅Q₂)))
