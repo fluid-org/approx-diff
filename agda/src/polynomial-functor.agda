@@ -129,11 +129,23 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ s-copair-ext _ ⟩
         fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g
       ∎ where
-        eq-in₁ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂)
-                 ≈ in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)
-        eq-in₁ = {!!}
-        eq-in₂ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂)
-                 ≈ in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g)
+        eq-in₁ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂) ≈ in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)
+        eq-in₁ = begin
+            (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂)
+          ≈⟨ assoc-co _ _ _ ⟩
+            fmor (Q₁ + Q₂) f ∘co (fmor (Q₁ + Q₂) g ∘co (in₁ ∘ p₂))
+          ≈⟨ ∘-cong-co ≈-refl (s-copair-in₁ _ _) ⟩
+            fmor (Q₁ + Q₂) f ∘co (in₁ ∘ fmor Q₁ g)
+          ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
+            fmor (Q₁ + Q₂) f ∘co ((in₁ ∘ p₂) ∘co fmor Q₁ g)
+          ≈˘⟨ assoc-co _ _ _ ⟩
+            (fmor (Q₁ + Q₂) f ∘co (in₁ ∘ p₂)) ∘co fmor Q₁ g
+          ≈⟨ ∘-cong-co (s-copair-in₁ _ _) ≈-refl ⟩
+            (in₁ ∘ fmor Q₁ f) ∘co fmor Q₁ g
+          ≈⟨ assoc _ _ _ ⟩
+            in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)
+          ∎ where open ≈-Reasoning isEquiv
+        eq-in₂ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂) ≈ in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g)
         eq-in₂ = {!!}
         open ≈-Reasoning isEquiv
     fmor-comp (Q₁ × Q₂)   f g = {!!}
