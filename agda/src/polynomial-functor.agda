@@ -574,76 +574,17 @@ module Sem {o m e} {𝒞 : Category o m e}
           ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
 
-    iso-fwd∘bwd-β : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
-      (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}) ∘co (inF P' ∘ p₂)
-      ≈ (inF P' ∘ p₂) ∘co (fmor P'
-          (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-              ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}))
-    iso-fwd∘bwd-β {P} {P'} P≅P' {Γ} =
-      begin
-        (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-            ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}) ∘co (inF P' ∘ p₂)
-      ≈⟨ assoc _ _ _ ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ (p₂ ∘co (inF P' ∘ p₂))
-      ≈⟨ ∘-cong₂ (pair-p₂ _ _) ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ (inF P' ∘ p₂)
-      ≈˘⟨ assoc _ _ _ ⟩
-        (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-            ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ inF P') ∘ p₂
-      ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ ((⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))) ∘ inF P')) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong₂ (assoc _ _ _)) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ (pair to-terminal (id (μ P')) ∘ inF P'))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong₂ (∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)))) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (inF P'))) ∘ p₂
-      ≈˘⟨ ∘-cong (∘-cong₂ (∘-cong₂
-            (≈-trans (pair-natural _ _ _)
-                     (pair-cong (pair-p₁ _ _)
-                                (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) id-right)))))) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ (pair p₁ (inF P' ∘ p₂) ∘ pair to-terminal (id _)))) ∘ p₂
-      ≈˘⟨ ∘-cong (∘-cong₂ (assoc _ _ _)) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ ((⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘co (inF P' ∘ p₂)) ∘ pair to-terminal (id _))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong₂ (∘-cong₁ (⦅⦆-β _))) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (((inF P ∘ iso-mor (iso-sym P≅P')) ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆))
-              ∘ pair to-terminal (id _))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong₂ (≈-trans (∘-cong₁ (assoc _ _ _)) (assoc _ _ _))) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (inF P ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆))
-                        ∘ pair to-terminal (id _)))) ∘ p₂
-      ≈˘⟨ ∘-cong₁ (assoc _ _ _) ⟩
-        (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P))) ∘ inF P)
-          ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong₁ (assoc _ _ _)) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ (pair to-terminal (id (μ P)) ∘ inF P))
-          ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong (∘-cong₂
-           (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left))) ≈-refl) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (inF P))
-          ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _))) ∘ p₂
-      ≈˘⟨ ∘-cong (∘-cong (∘-cong₂
-            (≈-trans (pair-natural _ _ _)
-                     (pair-cong (pair-p₁ _ _)
-                                (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) id-right))))) ≈-refl) ≈-refl ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ (pair p₁ (inF P ∘ p₂) ∘ pair to-terminal (id _)))
-          ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆))
-              ∘ pair to-terminal (id _))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⦅⦆-β _))) ≈-refl) ≈-refl ⟩
-        ((((inF P' ∘ iso-mor P≅P') ∘co (fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆)) ∘ pair to-terminal (id _))
-          ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _))) ∘ p₂
-      ≈⟨ {!!} ⟩
-        (inF P' ∘ p₂) ∘co (fmor P'
-          (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-              ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}))
-      ∎ where open ≈-Reasoning isEquiv
+    -- Algebra-morphism condition: fwd-cata ⦅ alg-fwd ⦆ commutes with alg-bwd and inF P', after
+    -- using iso-mor-natural to move iso-mor through fmor and iso-mor-fwd∘bwd to cancel iso-mor pairs.
+    fwd-cata-alg-mor : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
+      ⦅ inF P' ∘ iso-mor P≅P' {Γ} ⦆ ∘co (inF P ∘ iso-mor (iso-sym P≅P'))
+      ≈ (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆
+    fwd-cata-alg-mor P≅P' = {!!}
+
+    iso-fwd∘bwd-co : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
+      ⦅ inF P' ∘ iso-mor P≅P' {Γ} ⦆ ∘co ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ≈ p₂
+    iso-fwd∘bwd-co P≅P' =
+      ≈-trans (cata-fusion _ _ _ (fwd-cata-alg-mor P≅P')) (≈-sym cata-inF)
 
     iso-fwd∘bwd : ∀ {P P'} (P≅P' : Poly-iso P P') →
       (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
@@ -651,24 +592,27 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso-fwd∘bwd {P} {P'} P≅P' = begin
         (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))
-      ≈⟨ ≈-sym id-right ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ id (μ P')
-      ≈⟨ ∘-cong₂ (≈-sym (pair-p₂ to-terminal (id (μ P')))) ⟩
-        ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
+      ≈⟨ assoc _ _ _ ⟩
+        ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ (pair to-terminal (id (μ P))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))))
-          ∘ (p₂ ∘ pair to-terminal (id (μ P')))
-      ≈⟨ ≈-sym (assoc _ _ _) ⟩
-        (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-            ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂) ∘ pair to-terminal (id (μ P'))
-      ≈⟨ ∘-cong (⦅⦆-η (inF P' ∘ p₂)
-                        (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-                            ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))))
-                          ∘ p₂) (iso-fwd∘bwd-β P≅P')) ≈-refl ⟩
-        ⦅ inF P' ∘ p₂ ⦆ ∘ pair to-terminal (id (μ P'))
-      ≈⟨ ∘-cong (≈-sym (⦅⦆-η (inF P' ∘ p₂) p₂
-                          (≈-trans (pair-p₂ _ _) (≈-sym
-                          (≈-trans (assoc _ _ _) (∘-cong₂ (≈-trans (pair-p₂ _ _) (fmor-id P')))))))) ≈-refl ⟩
+      ≈˘⟨ ∘-cong₂ (assoc _ _ _) ⟩
+        ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ ((pair to-terminal (id (μ P)) ∘ ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)
+          ∘ pair to-terminal (id (μ P')))
+      ≈⟨ ∘-cong₂ (∘-cong₁
+           (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left))) ⟩
+        ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ (pair to-terminal ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆
+          ∘ pair to-terminal (id (μ P')))
+      ≈⟨ ∘-cong₂ (pair-natural _ _ _) ⟩
+        ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair (to-terminal ∘ pair to-terminal (id (μ P')))
+                                          (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))
+      ≈⟨ ∘-cong₂ (pair-cong₁ (≈-trans (to-terminal-unique _ _) (≈-sym (pair-p₁ _ _)))) ⟩
+        ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair (p₁ ∘ pair to-terminal (id (μ P')))
+                                          (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))
+      ≈˘⟨ ∘-cong₂ (pair-natural _ _ _) ⟩
+        ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ (pair p₁ ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))
+      ≈˘⟨ assoc _ _ _ ⟩
+        (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆) ∘ pair to-terminal (id (μ P'))
+      ≈⟨ ∘-cong₁ (iso-fwd∘bwd-co P≅P') ⟩
         p₂ ∘ pair to-terminal (id (μ P'))
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ P')
