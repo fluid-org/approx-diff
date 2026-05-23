@@ -148,14 +148,13 @@ module Sem {o m e} {𝒞 : Category o m e}
       -- closure conversion that would otherwise need exponentials.
       ⦅_⦆  : ∀ {Γ Q y} → (prod Γ (fobj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
 
-      -- β: ⦅alg⦆ on a rolled value (in extended context) equals alg applied
-      -- to the recursively folded structure (γ threaded through).
+      -- ⦅alg⦆ on a rolled value (in extended context) equals alg applied to the recursively folded structure
+         (γ threaded through).
       ⦅⦆-β : ∀ {Γ Q y} (alg : prod Γ (fobj Q y) ⇒ y) →
              (⦅ alg ⦆ ∘ pair p₁ (inF Q ∘ p₂)) ≈ (alg ∘ pair p₁ (fmor Q ⦅ alg ⦆))
-      -- η: ⦅alg⦆ is the unique morphism satisfying β.
+      -- ⦅alg⦆ is the unique morphism satisfying β.
       ⦅⦆-η : ∀ {Γ Q y} (alg : prod Γ (fobj Q y) ⇒ y) (h : prod Γ (μ Q) ⇒ y) →
-             (h ∘ pair p₁ (inF Q ∘ p₂)) ≈ (alg ∘ pair p₁ (fmor Q h)) →
-             h ≈ ⦅ alg ⦆
+             (h ∘ pair p₁ (inF Q ∘ p₂)) ≈ (alg ∘ pair p₁ (fmor Q h)) → h ≈ ⦅ alg ⦆
 
   -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
   -- Built directly from catamorphism universal property (β, η).
