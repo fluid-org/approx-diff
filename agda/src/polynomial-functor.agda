@@ -390,6 +390,10 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₂ ∘ p₂
           ∎ where open ≈-Reasoning isEquiv
 
+    iso-mor-natural : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ X Y} (f : prod Γ X ⇒ Y) →
+                      iso-mor P≅P' ∘co fmor P f ≈ fmor P' f ∘co iso-mor P≅P'
+    iso-mor-natural P≅P' f = {!!}
+
     iso-fwd∘bwd-β : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
       (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ p₂ {x = Γ}) ∘co (inF P' ∘ p₂)
