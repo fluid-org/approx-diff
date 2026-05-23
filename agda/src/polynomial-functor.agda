@@ -86,6 +86,10 @@ module Sem {o m e} {𝒞 : Category o m e}
   cat-ext : obj → Category o m e
   cat-ext = coKleisli-prod P
 
+  infixl 21 _∘co_
+  _∘co_ : ∀ {Γ X Y Z} → (prod Γ Y ⇒ Z) → (prod Γ X ⇒ Y) → (prod Γ X ⇒ Z)
+  _∘co_ {Γ} = Category._∘_ (cat-ext Γ)
+
   module Poly-fun where
     fobj : Poly 𝒞 → obj → obj
     fobj one         _ = terminal
@@ -148,13 +152,10 @@ module Sem {o m e} {𝒞 : Category o m e}
       -- closure conversion that would otherwise need exponentials.
       ⦅_⦆  : ∀ {Γ Q y} → (prod Γ (fobj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
 
-      -- ⦅alg⦆ on a rolled value (in extended context) equals alg applied to the recursively folded structure
-         (γ threaded through).
       ⦅⦆-β : ∀ {Γ Q y} (alg : prod Γ (fobj Q y) ⇒ y) →
-             (⦅ alg ⦆ ∘ pair p₁ (inF Q ∘ p₂)) ≈ (alg ∘ pair p₁ (fmor Q ⦅ alg ⦆))
-      -- ⦅alg⦆ is the unique morphism satisfying β.
+             (⦅ alg ⦆ ∘co (inF Q ∘ p₂)) ≈ (alg ∘co fmor Q ⦅ alg ⦆)
       ⦅⦆-η : ∀ {Γ Q y} (alg : prod Γ (fobj Q y) ⇒ y) (h : prod Γ (μ Q) ⇒ y) →
-             (h ∘ pair p₁ (inF Q ∘ p₂)) ≈ (alg ∘ pair p₁ (fmor Q h)) → h ≈ ⦅ alg ⦆
+             (h ∘co (inF Q ∘ p₂)) ≈ (alg ∘co fmor Q h) → h ≈ ⦅ alg ⦆
 
   -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
   -- Built directly from catamorphism universal property (β, η).
@@ -166,9 +167,8 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso-mor one             = to-terminal
     iso-mor (const A≅B)     = A≅B .fwd ∘ p₂
     iso-mor var             = p₂
-    iso-mor (P₁≅Q₁ + P₂≅Q₂)     = scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
-    iso-mor (P₁≅Q₁ × P₂≅Q₂)     = pair (iso-mor P₁≅Q₁ ∘ pair p₁ (p₁ ∘ p₂))
-                                        (iso-mor P₂≅Q₂ ∘ pair p₁ (p₂ ∘ p₂))
+    iso-mor (P₁≅Q₁ + P₂≅Q₂) = scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
+    iso-mor (P₁≅Q₁ × P₂≅Q₂) = pair (iso-mor P₁≅Q₁ ∘ pair p₁ (p₁ ∘ p₂)) (iso-mor P₂≅Q₂ ∘ pair p₁ (p₂ ∘ p₂))
 
     iso-sym : ∀ {P P'} → Poly-iso P P' → Poly-iso P' P
     iso-sym one         = one
