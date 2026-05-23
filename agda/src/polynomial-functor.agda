@@ -470,7 +470,24 @@ module Sem {o m e} {𝒞 : Category o m e}
             (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
-    iso-mor-natural (pi₁ × pi₂) f = {!!}
+    iso-mor-natural (_×_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) f = begin
+        iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f
+      ≈˘⟨ pair-ext _ ⟩
+        pair (p₁ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f))
+             (p₂ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f))
+      ≈⟨ pair-cong eq-p₁ eq-p₂ ⟩
+        pair (p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂)))
+             (p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂)))
+      ≈⟨ pair-ext _ ⟩
+        fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂)
+      ∎ where
+        eq-p₁ : p₁ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
+                ≈ p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
+        eq-p₁ = {!!}
+        eq-p₂ : p₂ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
+                ≈ p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
+        eq-p₂ = {!!}
+        open ≈-Reasoning isEquiv
 
     iso-fwd∘bwd-β : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
       (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
