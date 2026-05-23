@@ -119,14 +119,23 @@ module Sem {o m e} {𝒞 : Category o m e}
     fmor-comp one         f g = to-terminal-unique _ _
     fmor-comp (const A)   f g = ≈-sym id-left-co
     fmor-comp var         f g = ≈-refl
-    fmor-comp (Q₁ + Q₂)   f g =
-      begin
+    fmor-comp (Q₁ + Q₂)   f g = begin
         fmor (Q₁ + Q₂) (f ∘co g)
       ≈⟨ s-copair-cong (∘-cong₂ (fmor-comp Q₁ f g)) (∘-cong₂ (fmor-comp Q₂ f g)) ⟩
         s-copair (in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)) (in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g))
-      ≈⟨ {!!} ⟩
+      ≈˘⟨ s-copair-cong eq-in₁ eq-in₂ ⟩
+        s-copair ((fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂))
+                 ((fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂))
+      ≈⟨ s-copair-ext _ ⟩
         fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g
-      ∎ where open ≈-Reasoning isEquiv
+      ∎ where
+        eq-in₁ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂)
+                 ≈ in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)
+        eq-in₁ = {!!}
+        eq-in₂ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂)
+                 ≈ in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g)
+        eq-in₂ = {!!}
+        open ≈-Reasoning isEquiv
     fmor-comp (Q₁ × Q₂)   f g = {!!}
 
     functor : ∀ Q Γ → Functor (cat-ext Γ) (cat-ext Γ)
