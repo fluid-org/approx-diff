@@ -424,7 +424,11 @@ private
 
 copair-agreement : ∀ {x y z} (f : x Glued.⇒ z) (g : y Glued.⇒ z) →
                    GlCP.coproducts .HasCoproducts.copair f g Glued.≈ GlCP-from-SC.copair f g
-copair-agreement f g = {!!}
+copair-agreement f g =
+  Glued.≈-trans
+    (GlCPM.copair-cong (Glued.≈-sym (GlCP-from-SC.copair-in₁ f g))
+                       (Glued.≈-sym (GlCP-from-SC.copair-in₂ f g)))
+    (GlCPM.copair-ext (GlCP-from-SC.copair f g))
 
 GF-preserve-coproducts : preserve-chosen-coproducts GF 𝒞CP (strong-coproducts→coproducts GlPE.terminal GlSC)
 GF-preserve-coproducts .Category.IsIso.inverse = presv-cp
