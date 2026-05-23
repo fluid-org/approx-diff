@@ -579,7 +579,11 @@ module Sem {o m e} {𝒞 : Category o m e}
     fwd-cata-alg-mor : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
       ⦅ inF P' ∘ iso-mor P≅P' {Γ} ⦆ ∘co (inF P ∘ iso-mor (iso-sym P≅P'))
       ≈ (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆
-    fwd-cata-alg-mor P≅P' = {!!}
+    fwd-cata-alg-mor {P} {P'} P≅P' = begin
+        ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co (inF P ∘ iso-mor (iso-sym P≅P'))
+      ≈⟨ {!!} ⟩
+        (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆
+      ∎ where open ≈-Reasoning isEquiv
 
     iso-fwd∘bwd-co : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
       ⦅ inF P' ∘ iso-mor P≅P' {Γ} ⦆ ∘co ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ≈ p₂
