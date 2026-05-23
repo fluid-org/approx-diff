@@ -588,8 +588,7 @@ module Sem {o m e} {𝒞 : Category o m e}
         (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co (inF P ∘ p₂)) ∘co iso-mor (iso-sym P≅P')
       ≈⟨ ∘-cong-co₁ (⦅⦆-β _) ⟩
         ((inF P' ∘ iso-mor P≅P') ∘co fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆) ∘co iso-mor (iso-sym P≅P')
-      ≈⟨ ∘-cong-co₁ (≈-trans (assoc _ _ _)
-                              (≈-sym (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
+      ≈⟨ ∘-cong-co₁ (≈-trans (assoc _ _ _) (≈-sym (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
         ((inF P' ∘ p₂) ∘co (iso-mor P≅P' ∘co fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆)) ∘co iso-mor (iso-sym P≅P')
       ≈⟨ ∘-cong-co₁ (∘-cong-co₂ (iso-mor-natural P≅P' _)) ⟩
         ((inF P' ∘ p₂) ∘co (fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co iso-mor P≅P')) ∘co iso-mor (iso-sym P≅P')
