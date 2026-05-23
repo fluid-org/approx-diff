@@ -440,7 +440,35 @@ module Sem {o m e} {𝒞 : Category o m e}
           ∎ where open ≈-Reasoning isEquiv
         eq-in₂ : (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂)
                  ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂)
-        eq-in₂ = {!!}
+        eq-in₂ = begin
+            (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂)
+          ≈⟨ assoc-co _ _ _ ⟩
+            iso-mor (pi₁ + pi₂) ∘co (fmor (P₁ + P₂) f ∘co (in₂ ∘ p₂))
+          ≈⟨ ∘-cong-co ≈-refl (s-copair-in₂ _ _) ⟩
+            iso-mor (pi₁ + pi₂) ∘co (in₂ ∘ fmor P₂ f)
+          ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
+            iso-mor (pi₁ + pi₂) ∘co ((in₂ ∘ p₂) ∘co fmor P₂ f)
+          ≈˘⟨ assoc-co _ _ _ ⟩
+            (iso-mor (pi₁ + pi₂) ∘co (in₂ ∘ p₂)) ∘co fmor P₂ f
+          ≈⟨ ∘-cong-co (s-copair-in₂ _ _) ≈-refl ⟩
+            (in₂ ∘ iso-mor pi₂) ∘co fmor P₂ f
+          ≈⟨ assoc _ _ _ ⟩
+            in₂ ∘ (iso-mor pi₂ ∘co fmor P₂ f)
+          ≈⟨ ∘-cong₂ (iso-mor-natural pi₂ f) ⟩
+            in₂ ∘ (fmor Q₂ f ∘co iso-mor pi₂)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (in₂ ∘ fmor Q₂ f) ∘co iso-mor pi₂
+          ≈˘⟨ ∘-cong-co (s-copair-in₂ _ _) ≈-refl ⟩
+            (fmor (Q₁ + Q₂) f ∘co (in₂ ∘ p₂)) ∘co iso-mor pi₂
+          ≈⟨ assoc-co _ _ _ ⟩
+            fmor (Q₁ + Q₂) f ∘co ((in₂ ∘ p₂) ∘co iso-mor pi₂)
+          ≈⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
+            fmor (Q₁ + Q₂) f ∘co (in₂ ∘ iso-mor pi₂)
+          ≈˘⟨ ∘-cong-co ≈-refl (s-copair-in₂ _ _) ⟩
+            fmor (Q₁ + Q₂) f ∘co (iso-mor (pi₁ + pi₂) ∘co (in₂ ∘ p₂))
+          ≈˘⟨ assoc-co _ _ _ ⟩
+            (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂)
+          ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
     iso-mor-natural (pi₁ × pi₂) f = {!!}
 
