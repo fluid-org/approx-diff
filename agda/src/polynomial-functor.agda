@@ -255,7 +255,21 @@ module Sem {o m e} {𝒞 : Category o m e}
                   (f : prod Γ y ⇒ y') →
                   (f ∘co alg) ≈ (alg' ∘co fmor Q f) →
                   (f ∘co ⦅ alg ⦆) ≈ ⦅ alg' ⦆
-    cata-fusion alg alg' f f-is-alg-mor = {!!}
+    cata-fusion {Q = Q} alg alg' f f-is-alg-mor = ⦅⦆-η _ _ (begin
+        (f ∘co ⦅ alg ⦆) ∘co (inF Q ∘ p₂)
+      ≈⟨ assoc-co _ _ _ ⟩
+        f ∘co (⦅ alg ⦆ ∘co (inF Q ∘ p₂))
+      ≈⟨ ∘-cong-co ≈-refl (⦅⦆-β _) ⟩
+        f ∘co (alg ∘co fmor Q ⦅ alg ⦆)
+      ≈˘⟨ assoc-co _ _ _ ⟩
+        (f ∘co alg) ∘co fmor Q ⦅ alg ⦆
+      ≈⟨ ∘-cong-co f-is-alg-mor ≈-refl ⟩
+        (alg' ∘co fmor Q f) ∘co fmor Q ⦅ alg ⦆
+      ≈⟨ assoc-co _ _ _ ⟩
+        alg' ∘co (fmor Q f ∘co fmor Q ⦅ alg ⦆)
+      ≈˘⟨ ∘-cong-co ≈-refl (fmor-comp Q _ _) ⟩
+        alg' ∘co fmor Q (f ∘co ⦅ alg ⦆)
+      ∎) where open ≈-Reasoning isEquiv
 
     -- Cata of inF is the coKleisli identity p₂.
     cata-inF : ∀ {Γ Q} → p₂ {x = Γ} {y = μ Q} ≈ ⦅ inF Q ∘ p₂ ⦆
