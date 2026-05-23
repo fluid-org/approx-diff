@@ -551,6 +551,38 @@ op-coproducts→products cp .HasProducts.pair-p₁ = HasCoproducts.copair-in₁ 
 op-coproducts→products cp .HasProducts.pair-p₂ = HasCoproducts.copair-in₂ cp
 op-coproducts→products cp .HasProducts.pair-ext = HasCoproducts.copair-ext cp
 
+-- coKleisli category for the (prod w ⋅) comonad: morphisms X → Y are prod w X ⇒ Y in 𝒞.
+-- Identity is p₂; composition is f ∘ pair p₁ g.
+module _ {o m e} {𝒞 : Category o m e} (P : HasProducts 𝒞) (w : Category.obj 𝒞) where
+  open Category 𝒞
+  open HasProducts P
+
+  coKleisli-prod : Category o m e
+  coKleisli-prod .Category.obj              = obj
+  coKleisli-prod .Category._⇒_ X Y          = prod w X ⇒ Y
+  coKleisli-prod .Category._≈_              = _≈_
+  coKleisli-prod .Category.isEquiv          = isEquiv
+  coKleisli-prod .Category.id _             = p₂
+  coKleisli-prod .Category._∘_ f g          = f ∘ pair p₁ g
+  coKleisli-prod .Category.∘-cong f≈ g≈     = ∘-cong f≈ (pair-cong ≈-refl g≈)
+  coKleisli-prod .Category.id-left          = pair-p₂ _ _
+  coKleisli-prod .Category.id-right {f = f} = begin
+      f ∘ pair p₁ p₂
+    ≈⟨ ∘-cong ≈-refl pair-ext0 ⟩
+      f ∘ id _
+    ≈⟨ id-right ⟩
+      f
+    ∎ where open ≈-Reasoning isEquiv
+  coKleisli-prod .Category.assoc f g h      = begin
+      (f ∘ pair p₁ g) ∘ pair p₁ h
+    ≈⟨ assoc _ _ _ ⟩
+      f ∘ (pair p₁ g ∘ pair p₁ h)
+    ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
+      f ∘ pair (p₁ ∘ pair p₁ h) (g ∘ pair p₁ h)
+    ≈⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) ≈-refl) ⟩
+      f ∘ pair p₁ (g ∘ pair p₁ h)
+    ∎ where open ≈-Reasoning isEquiv
+
 record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasProducts P

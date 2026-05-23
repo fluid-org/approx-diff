@@ -8,7 +8,8 @@ open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
 import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_; cong₂)
 open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts; strong-coproducts→coproducts)
+  using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts; strong-coproducts→coproducts;
+         coKleisli-prod)
 open import functor using (Functor; Id; StrongPointedFunctor; StrongPointedFunctor-Id)
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
@@ -82,6 +83,10 @@ module Sem {o m e} {𝒞 : Category o m e}
               copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂;
               copair-ext to scopair-ext)
 
+  -- Extended-context category: morphisms X → Y in cat-ext Γ are prod Γ X ⇒ Y in 𝒞.
+  cat-ext : obj → Category o m e
+  cat-ext = coKleisli-prod P
+
   poly-obj : Poly 𝒞 → obj → obj
   poly-obj one         _ = terminal
   poly-obj (const A)   _ = A
@@ -111,6 +116,11 @@ module Sem {o m e} {𝒞 : Category o m e}
     ≈-trans (pair-cong (∘-cong (poly-fmor-id Q₁) ≈-refl) (∘-cong (poly-fmor-id Q₂) ≈-refl))
             (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _))
                      (pair-ext p₂))
+
+  -- Composition preservation: poly-fmor distributes over (parameterised) composition.
+  poly-fmor-comp : ∀ Q {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
+    poly-fmor Q (f ∘ pair p₁ g) ≈ poly-fmor Q f ∘ pair p₁ (poly-fmor Q g)
+  poly-fmor-comp Q f g = {!!}
 
   -- Polynomial composition agrees with composition of functor actions.
   poly-obj-comp : ∀ P Q X → poly-obj (P ∘ₚ Q) X ≡ poly-obj P (poly-obj Q X)
