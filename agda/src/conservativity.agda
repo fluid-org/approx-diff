@@ -419,8 +419,23 @@ GF-preserve-coproducts-GlCP .Category.IsIso.inverse = presv-cp
 GF-preserve-coproducts-GlCP .Category.IsIso.f∘inverse≈id .f≃f = Category.IsIso.f∘inverse≈id FC
 GF-preserve-coproducts-GlCP .Category.IsIso.inverse∘f≈id .f≃f = Category.IsIso.inverse∘f≈id FC
 
+private
+  module GlCP-rt = HasCoproducts (strong-coproducts→coproducts GlPE.terminal GlSC)
+
+-- GlCP.copair and the round-tripped copair agree by uniqueness of mediating morphisms (both
+-- coproducts share the same coprod/in₁/in₂; their copairs satisfy the same β-laws).
+copair-agreement : ∀ {x y z} (f : x Glued.⇒ z) (g : y Glued.⇒ z) →
+                   GlCP.coproducts .HasCoproducts.copair f g Glued.≈ GlCP-rt.copair f g
+copair-agreement f g = {!!}
+
 GF-preserve-coproducts : preserve-chosen-coproducts GF 𝒞CP (strong-coproducts→coproducts GlPE.terminal GlSC)
-GF-preserve-coproducts = {!!}
+GF-preserve-coproducts .Category.IsIso.inverse = presv-cp
+GF-preserve-coproducts .Category.IsIso.f∘inverse≈id =
+  Glued.≈-trans (Glued.∘-cong (Glued.≈-sym (copair-agreement _ _)) Glued.≈-refl)
+                (Category.IsIso.f∘inverse≈id GF-preserve-coproducts-GlCP)
+GF-preserve-coproducts .Category.IsIso.inverse∘f≈id =
+  Glued.≈-trans (Glued.∘-cong Glued.≈-refl (Glued.≈-sym (copair-agreement _ _)))
+                (Category.IsIso.inverse∘f≈id GF-preserve-coproducts-GlCP)
 
 -- FIXME: If 𝒞 has exponentials, then GF preserves them as well.
 
