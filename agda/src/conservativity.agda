@@ -414,10 +414,13 @@ presv-cp {x} {y} .presv = begin
   where open ≤-Reasoning ⊑-isPreorder
         open preserve-chosen-coproducts-consequences F 𝒞CP 𝒟CP FC
 
-GF-preserve-coproducts : preserve-chosen-coproducts GF 𝒞CP GlCP.coproducts
-GF-preserve-coproducts .Category.IsIso.inverse = presv-cp
-GF-preserve-coproducts .Category.IsIso.f∘inverse≈id .f≃f = Category.IsIso.f∘inverse≈id FC
-GF-preserve-coproducts .Category.IsIso.inverse∘f≈id .f≃f = Category.IsIso.inverse∘f≈id FC
+GF-preserve-coproducts-GlCP : preserve-chosen-coproducts GF 𝒞CP GlCP.coproducts
+GF-preserve-coproducts-GlCP .Category.IsIso.inverse = presv-cp
+GF-preserve-coproducts-GlCP .Category.IsIso.f∘inverse≈id .f≃f = Category.IsIso.f∘inverse≈id FC
+GF-preserve-coproducts-GlCP .Category.IsIso.inverse∘f≈id .f≃f = Category.IsIso.inverse∘f≈id FC
+
+GF-preserve-coproducts : preserve-chosen-coproducts GF 𝒞CP (strong-coproducts→coproducts GlPE.terminal GlSC)
+GF-preserve-coproducts = {!!}
 
 -- FIXME: If 𝒞 has exponentials, then GF preserves them as well.
 
