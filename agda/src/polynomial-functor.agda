@@ -395,7 +395,8 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso-mor-natural one         f = to-terminal-unique _ _
     iso-mor-natural (const A≅B) f = ≈-trans id-right-co (≈-sym id-left-co)
     iso-mor-natural var         f = ≈-trans id-left-co (≈-sym id-right-co)
-    iso-mor-natural (_+_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) f = begin
+    iso-mor-natural (_+_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) f =
+      begin
         iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f
       ≈˘⟨ s-copair-ext _ ⟩
         s-copair ((iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂))
@@ -408,7 +409,35 @@ module Sem {o m e} {𝒞 : Category o m e}
       ∎ where
         eq-in₁ : (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂)
                  ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₁ ∘ p₂)
-        eq-in₁ = {!!}
+        eq-in₁ = begin
+            (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂)
+          ≈⟨ assoc-co _ _ _ ⟩
+            iso-mor (pi₁ + pi₂) ∘co (fmor (P₁ + P₂) f ∘co (in₁ ∘ p₂))
+          ≈⟨ ∘-cong-co ≈-refl (s-copair-in₁ _ _) ⟩
+            iso-mor (pi₁ + pi₂) ∘co (in₁ ∘ fmor P₁ f)
+          ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
+            iso-mor (pi₁ + pi₂) ∘co ((in₁ ∘ p₂) ∘co fmor P₁ f)
+          ≈˘⟨ assoc-co _ _ _ ⟩
+            (iso-mor (pi₁ + pi₂) ∘co (in₁ ∘ p₂)) ∘co fmor P₁ f
+          ≈⟨ ∘-cong-co (s-copair-in₁ _ _) ≈-refl ⟩
+            (in₁ ∘ iso-mor pi₁) ∘co fmor P₁ f
+          ≈⟨ assoc _ _ _ ⟩
+            in₁ ∘ (iso-mor pi₁ ∘co fmor P₁ f)
+          ≈⟨ ∘-cong₂ (iso-mor-natural pi₁ f) ⟩
+            in₁ ∘ (fmor Q₁ f ∘co iso-mor pi₁)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (in₁ ∘ fmor Q₁ f) ∘co iso-mor pi₁
+          ≈˘⟨ ∘-cong-co (s-copair-in₁ _ _) ≈-refl ⟩
+            (fmor (Q₁ + Q₂) f ∘co (in₁ ∘ p₂)) ∘co iso-mor pi₁
+          ≈⟨ assoc-co _ _ _ ⟩
+            fmor (Q₁ + Q₂) f ∘co ((in₁ ∘ p₂) ∘co iso-mor pi₁)
+          ≈⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
+            fmor (Q₁ + Q₂) f ∘co (in₁ ∘ iso-mor pi₁)
+          ≈˘⟨ ∘-cong-co ≈-refl (s-copair-in₁ _ _) ⟩
+            fmor (Q₁ + Q₂) f ∘co (iso-mor (pi₁ + pi₂) ∘co (in₁ ∘ p₂))
+          ≈˘⟨ assoc-co _ _ _ ⟩
+            (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₁ ∘ p₂)
+          ∎ where open ≈-Reasoning isEquiv
         eq-in₂ : (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂)
                  ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂)
         eq-in₂ = {!!}
