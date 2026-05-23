@@ -259,7 +259,17 @@ module Sem {o m e} {𝒞 : Category o m e}
 
     -- Cata of inF is the coKleisli identity p₂.
     cata-inF : ∀ {Γ Q} → p₂ {x = Γ} {y = μ Q} ≈ ⦅ inF Q ∘ p₂ ⦆
-    cata-inF = {!!}
+    cata-inF {Γ} {Q} = ⦅⦆-η _ _ (begin
+        p₂ ∘co (inF Q ∘ p₂)
+      ≈⟨ pair-p₂ _ _ ⟩
+        inF Q ∘ p₂
+      ≈˘⟨ id-right ⟩
+        (inF Q ∘ p₂) ∘ id _
+      ≈˘⟨ ∘-cong₂ pair-ext0 ⟩
+        (inF Q ∘ p₂) ∘ pair p₁ p₂
+      ≈˘⟨ ∘-cong₂ (pair-cong₂ (fmor-id Q)) ⟩
+        (inF Q ∘ p₂) ∘co fmor Q p₂
+      ∎) where open ≈-Reasoning isEquiv
 
   -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
   -- Built directly from catamorphism universal property (β, η).
