@@ -706,172 +706,101 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     inF-mor .idxf .PS._⇒_.func-resp-≈ x≈y   = embed-≈ Q x≈y
     inF-mor .famf .transf i                 = embed-fam Q i
     inF-mor .famf .natural x₁≈x₂            = embed-fam-natural Q x₁≈x₂
-
-    module _ {y : Obj} (alg : Mor (fobj Q y) y) where
-
-      project-idx : (P : Poly cat) → WIdx poly (idx-of P) → fobj P y .idx .Carrier
-      project-idx Poly.one       _         = lift tt
-      project-idx (Poly.const A) a         = a
-      project-idx Poly.var       (inF i)   = alg .idxf .PS._⇒_.func (project-idx Q i)
-      project-idx (P Poly.+ Q)   (inj₁ x)  = inj₁ (project-idx P x)
-      project-idx (P Poly.+ Q)   (inj₂ z)  = inj₂ (project-idx Q z)
-      project-idx (P Poly.× Q)   (x , z)   = (project-idx P x , project-idx Q z)
-
-      project-≈ : (P : Poly cat) → ∀ {x z} → WIdx-≈ poly (idx-of P) x z →
-                  fobj P y .idx ._≈s_ (project-idx P x) (project-idx P z)
-      project-≈ Poly.one _ = tt
-      project-≈ (Poly.const A) x≈z = x≈z
-      project-≈ Poly.var {inF _} {inF _} x≈z =
-        alg .idxf .PS._⇒_.func-resp-≈ (project-≈ Q x≈z)
-      project-≈ (P Poly.+ Q) {inj₁ _} {inj₁ _} x≈z = project-≈ P x≈z
-      project-≈ (P Poly.+ Q) {inj₂ _} {inj₂ _} x≈z = project-≈ Q x≈z
-      project-≈ (P Poly.× Q) {_ , _} {_ , _} (x₁≈z₁ , x₂≈z₂) = (project-≈ P x₁≈z₁ , project-≈ Q x₂≈z₂)
-
-      project-fam : (P : Poly cat) (i : WIdx poly (idx-of P)) →
-                    WFam-fm P i ⇒ fobj P y .fam .fm (project-idx P i)
-      project-fam Poly.one _            = id _
-      project-fam (Poly.const A) a      = id _
-      project-fam Poly.var (inF i)      = alg .famf .transf (project-idx Q i) ∘ project-fam Q i
-      project-fam (P Poly.+ Q) (inj₁ x) = project-fam P x
-      project-fam (P Poly.+ Q) (inj₂ z) = project-fam Q z
-      project-fam (P Poly.× Q) (x , z)  = prod-m (project-fam P x) (project-fam Q z)
-
-      project-fam-natural : (P : Poly cat) → ∀ {x z} (x≈z : WIdx-≈ poly (idx-of P) x z) →
-                            (project-fam P z ∘ WFam-subst P x≈z) ≈
-                            (fobj P y .fam .subst (project-≈ P x≈z) ∘ project-fam P x)
-      project-fam-natural Poly.one _ = isEquiv .trans id-left (≈-sym id-right)
-      project-fam-natural (Poly.const A) _ = isEquiv .trans id-left (≈-sym id-right)
-      project-fam-natural Poly.var {inF i₁} {inF i₂} i₁≈i₂ =
-        begin
-          (alg .famf .transf (project-idx Q i₂) ∘ project-fam Q i₂) ∘ WFam-subst Q i₁≈i₂
-        ≈⟨ assoc _ _ _ ⟩
-          alg .famf .transf (project-idx Q i₂) ∘ (project-fam Q i₂ ∘ WFam-subst Q i₁≈i₂)
-        ≈⟨ ∘-cong (isEquiv .refl) (project-fam-natural Q i₁≈i₂) ⟩
-          alg .famf .transf (project-idx Q i₂) ∘
-            (fobj Q y .fam .subst (project-≈ Q i₁≈i₂) ∘ project-fam Q i₁)
-        ≈⟨ ≈-sym (assoc _ _ _) ⟩
-          (alg .famf .transf (project-idx Q i₂) ∘
-            fobj Q y .fam .subst (project-≈ Q i₁≈i₂)) ∘ project-fam Q i₁
-        ≈⟨ ∘-cong (alg .famf .natural (project-≈ Q i₁≈i₂)) (isEquiv .refl) ⟩
-          (y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (project-≈ Q i₁≈i₂)) ∘ alg .famf .transf (project-idx Q i₁)) ∘ project-fam Q i₁
-        ≈⟨ assoc _ _ _ ⟩
-          y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (project-≈ Q i₁≈i₂)) ∘
-            (alg .famf .transf (project-idx Q i₁) ∘ project-fam Q i₁)
-        ∎ where open ≈-Reasoning isEquiv
-      project-fam-natural (P Poly.+ Q) {inj₁ _} {inj₁ _} x≈z = project-fam-natural P x≈z
-      project-fam-natural (P Poly.+ Q) {inj₂ _} {inj₂ _} x≈z = project-fam-natural Q x≈z
-      project-fam-natural (P Poly.× Q) {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) =
-        begin
-          prod-m (project-fam P x₂) (project-fam Q z₂) ∘ prod-m _ _
-        ≈⟨ ≈-sym (pair-functorial _ _ _ _) ⟩
-          prod-m (project-fam P x₂ ∘ _) (project-fam Q z₂ ∘ _)
-        ≈⟨ prod-m-cong (project-fam-natural P x₁≈x₂) (project-fam-natural Q z₁≈z₂) ⟩
-          prod-m (_ ∘ project-fam P x₁) (_ ∘ project-fam Q z₁)
-        ≈⟨ pair-functorial _ _ _ _ ⟩
-          prod-m _ _ ∘ prod-m (project-fam P x₁) (project-fam Q z₁)
-        ∎ where open ≈-Reasoning isEquiv
-
-      fold : Mor WObj y
-      fold .idxf .PS._⇒_.func (inF i)                       = alg .idxf .PS._⇒_.func (project-idx Q i)
-      fold .idxf .PS._⇒_.func-resp-≈ {inF _} {inF _} i₁≈i₂  = alg .idxf .PS._⇒_.func-resp-≈ (project-≈ Q i₁≈i₂)
-      fold .famf .transf (inF i)                            = alg .famf .transf (project-idx Q i) ∘ project-fam Q i
-      fold .famf .natural {inF _} {inF _} i₁≈i₂             = project-fam-natural Poly.var i₁≈i₂
-
     -- Open (parametric) fold: takes algebra in extended context Γ ⊗ fobj Q y ⇒ y and produces Γ ⊗ μ Q ⇒ y.
     -- Threads γ through the structural recursion.
-    module Open {Γ y : Obj} (alg : Mor (Γ ⊗ fobj Q y) y) where
+    module Fold {Γ y : Obj} (alg : Mor (Γ ⊗ fobj Q y) y) where
       open Obj
       open Mor
 
-      project-idx-open : (P : Poly cat) → Γ .idx .Carrier → WIdx poly (idx-of P) → fobj P y .idx .Carrier
-      project-idx-open Poly.one       _ _         = lift tt
-      project-idx-open (Poly.const A) _ a         = a
-      project-idx-open Poly.var       γ (inF i)   =
-        alg .idxf .PS._⇒_.func (γ , project-idx-open Q γ i)
-      project-idx-open (P Poly.+ R)   γ (inj₁ x)  = inj₁ (project-idx-open P γ x)
-      project-idx-open (P Poly.+ R)   γ (inj₂ z)  = inj₂ (project-idx-open R γ z)
-      project-idx-open (P Poly.× R)   γ (x , z)   = (project-idx-open P γ x , project-idx-open R γ z)
+      project-idx : (P : Poly cat) → Γ .idx .Carrier → WIdx poly (idx-of P) → fobj P y .idx .Carrier
+      project-idx Poly.one       _ _         = lift tt
+      project-idx (Poly.const A) _ a         = a
+      project-idx Poly.var       γ (inF i)   =
+        alg .idxf .PS._⇒_.func (γ , project-idx Q γ i)
+      project-idx (P Poly.+ R)   γ (inj₁ x)  = inj₁ (project-idx P γ x)
+      project-idx (P Poly.+ R)   γ (inj₂ z)  = inj₂ (project-idx R γ z)
+      project-idx (P Poly.× R)   γ (x , z)   = (project-idx P γ x , project-idx R γ z)
 
-      project-≈-open : (P : Poly cat) → ∀ {γ₁ γ₂ : Γ .idx .Carrier} {x z}
+      project-≈ : (P : Poly cat) → ∀ {γ₁ γ₂ : Γ .idx .Carrier} {x z}
                        (γ₁≈γ₂ : Γ .idx ._≈s_ γ₁ γ₂) (i₁≈i₂ : WIdx-≈ poly (idx-of P) x z) →
-                       fobj P y .idx ._≈s_ (project-idx-open P γ₁ x) (project-idx-open P γ₂ z)
-      project-≈-open Poly.one _ _ = tt
-      project-≈-open (Poly.const A) _ x≈z = x≈z
-      project-≈-open Poly.var {γ₁} {γ₂} {inF _} {inF _} γ₁≈γ₂ x≈z =
-        alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ x≈z)
-      project-≈-open (P Poly.+ R) {x = inj₁ _} {inj₁ _} γ₁≈γ₂ x≈z = project-≈-open P γ₁≈γ₂ x≈z
-      project-≈-open (P Poly.+ R) {x = inj₂ _} {inj₂ _} γ₁≈γ₂ x≈z = project-≈-open R γ₁≈γ₂ x≈z
-      project-≈-open (P Poly.× R) {x = _ , _} {_ , _} γ₁≈γ₂ (x₁≈z₁ , x₂≈z₂) =
-        project-≈-open P γ₁≈γ₂ x₁≈z₁ , project-≈-open R γ₁≈γ₂ x₂≈z₂
+                       fobj P y .idx ._≈s_ (project-idx P γ₁ x) (project-idx P γ₂ z)
+      project-≈ Poly.one _ _ = tt
+      project-≈ (Poly.const A) _ x≈z = x≈z
+      project-≈ Poly.var {γ₁} {γ₂} {inF _} {inF _} γ₁≈γ₂ x≈z =
+        alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈ Q γ₁≈γ₂ x≈z)
+      project-≈ (P Poly.+ R) {x = inj₁ _} {inj₁ _} γ₁≈γ₂ x≈z = project-≈ P γ₁≈γ₂ x≈z
+      project-≈ (P Poly.+ R) {x = inj₂ _} {inj₂ _} γ₁≈γ₂ x≈z = project-≈ R γ₁≈γ₂ x≈z
+      project-≈ (P Poly.× R) {x = _ , _} {_ , _} γ₁≈γ₂ (x₁≈z₁ , x₂≈z₂) =
+        project-≈ P γ₁≈γ₂ x₁≈z₁ , project-≈ R γ₁≈γ₂ x₂≈z₂
 
-      project-fam-open : (P : Poly cat) (γ : Γ .idx .Carrier)
+      project-fam : (P : Poly cat) (γ : Γ .idx .Carrier)
                          (i : WIdx poly (idx-of P)) →
-                         prod (Γ .fam .fm γ) (WFam-fm P i) ⇒ fobj P y .fam .fm (project-idx-open P γ i)
-      project-fam-open Poly.one         _ _         = HasTerminal.to-terminal T
-      project-fam-open (Poly.const A)   _ _         = p₂
-      project-fam-open Poly.var         γ (inF i)   =
-        alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i)
-      project-fam-open (P Poly.+ R)     γ (inj₁ x)  = project-fam-open P γ x
-      project-fam-open (P Poly.+ R)     γ (inj₂ z)  = project-fam-open R γ z
-      project-fam-open (P Poly.× R)     γ (x , z)   =
-        pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
+                         prod (Γ .fam .fm γ) (WFam-fm P i) ⇒ fobj P y .fam .fm (project-idx P γ i)
+      project-fam Poly.one         _ _         = HasTerminal.to-terminal T
+      project-fam (Poly.const A)   _ _         = p₂
+      project-fam Poly.var         γ (inF i)   =
+        alg .famf .transf (γ , project-idx Q γ i) ∘ pair p₁ (project-fam Q γ i)
+      project-fam (P Poly.+ R)     γ (inj₁ x)  = project-fam P γ x
+      project-fam (P Poly.+ R)     γ (inj₂ z)  = project-fam R γ z
+      project-fam (P Poly.× R)     γ (x , z)   =
+        pair (project-fam P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam R γ z ∘ pair p₁ (p₂ ∘ p₂))
 
-      project-fam-natural-open : (P : Poly cat) → ∀ {γ₁ γ₂ : Γ .idx .Carrier} {x z}
+      project-fam-natural : (P : Poly cat) → ∀ {γ₁ γ₂ : Γ .idx .Carrier} {x z}
                                  (γ₁≈γ₂ : Γ .idx ._≈s_ γ₁ γ₂) (i₁≈i₂ : WIdx-≈ poly (idx-of P) x z) →
-                                 project-fam-open P γ₂ z ∘ prod-m (Γ .fam .subst γ₁≈γ₂) (WFam-subst P i₁≈i₂) ≈
-                                 fobj P y .fam .subst (project-≈-open P γ₁≈γ₂ i₁≈i₂) ∘ project-fam-open P γ₁ x
-      project-fam-natural-open Poly.one _ _ =
+                                 project-fam P γ₂ z ∘ prod-m (Γ .fam .subst γ₁≈γ₂) (WFam-subst P i₁≈i₂) ≈
+                                 fobj P y .fam .subst (project-≈ P γ₁≈γ₂ i₁≈i₂) ∘ project-fam P γ₁ x
+      project-fam-natural Poly.one _ _ =
         HasTerminal.to-terminal-unique T _ _
-      project-fam-natural-open (Poly.const A) {x = a} {z = b} _ i₁≈i₂ =
+      project-fam-natural (Poly.const A) {x = a} {z = b} _ i₁≈i₂ =
         begin
           p₂ ∘ prod-m _ (A .fam .subst i₁≈i₂)
         ≈⟨ pair-p₂ _ _ ⟩
           A .fam .subst i₁≈i₂ ∘ p₂
         ∎ where open ≈-Reasoning isEquiv
-      project-fam-natural-open Poly.var {γ₁} {γ₂} {inF i₁} {inF i₂} γ₁≈γ₂ i₁≈i₂ =
+      project-fam-natural Poly.var {γ₁} {γ₂} {inF i₁} {inF i₂} γ₁≈γ₂ i₁≈i₂ =
         begin
-          (alg .famf .transf (γ₂ , _) ∘ pair p₁ (project-fam-open Q γ₂ i₂))
+          (alg .famf .transf (γ₂ , _) ∘ pair p₁ (project-fam Q γ₂ i₂))
             ∘ prod-m (Γ .fam .subst γ₁≈γ₂) (WFam-subst Q i₁≈i₂)
         ≈⟨ assoc _ _ _ ⟩
           alg .famf .transf (γ₂ , _) ∘
-            (pair p₁ (project-fam-open Q γ₂ i₂) ∘ prod-m (Γ .fam .subst γ₁≈γ₂) (WFam-subst Q i₁≈i₂))
+            (pair p₁ (project-fam Q γ₂ i₂) ∘ prod-m (Γ .fam .subst γ₁≈γ₂) (WFam-subst Q i₁≈i₂))
         ≈⟨ ∘-cong (isEquiv .refl) (pair-natural _ _ _) ⟩
           alg .famf .transf (γ₂ , _) ∘
-            pair (p₁ ∘ prod-m _ _) (project-fam-open Q γ₂ i₂ ∘ prod-m _ _)
-        ≈⟨ ∘-cong (isEquiv .refl) (pair-cong (pair-p₁ _ _) (project-fam-natural-open Q γ₁≈γ₂ i₁≈i₂)) ⟩
+            pair (p₁ ∘ prod-m _ _) (project-fam Q γ₂ i₂ ∘ prod-m _ _)
+        ≈⟨ ∘-cong (isEquiv .refl) (pair-cong (pair-p₁ _ _) (project-fam-natural Q γ₁≈γ₂ i₁≈i₂)) ⟩
           alg .famf .transf (γ₂ , _) ∘
             pair (Γ .fam .subst γ₁≈γ₂ ∘ p₁)
-                 (fobj Q y .fam .subst (project-≈-open Q γ₁≈γ₂ i₁≈i₂) ∘ project-fam-open Q γ₁ i₁)
+                 (fobj Q y .fam .subst (project-≈ Q γ₁≈γ₂ i₁≈i₂) ∘ project-fam Q γ₁ i₁)
         ≈⟨ ≈-sym (∘-cong (isEquiv .refl) (pair-compose _ _ _ _)) ⟩
           alg .famf .transf (γ₂ , _) ∘
-            (prod-m (Γ .fam .subst γ₁≈γ₂) (fobj Q y .fam .subst (project-≈-open Q γ₁≈γ₂ i₁≈i₂))
-              ∘ pair p₁ (project-fam-open Q γ₁ i₁))
+            (prod-m (Γ .fam .subst γ₁≈γ₂) (fobj Q y .fam .subst (project-≈ Q γ₁≈γ₂ i₁≈i₂))
+              ∘ pair p₁ (project-fam Q γ₁ i₁))
         ≈⟨ ≈-sym (assoc _ _ _) ⟩
           (alg .famf .transf (γ₂ , _) ∘
-            prod-m (Γ .fam .subst γ₁≈γ₂) (fobj Q y .fam .subst (project-≈-open Q γ₁≈γ₂ i₁≈i₂)))
-            ∘ pair p₁ (project-fam-open Q γ₁ i₁)
-        ≈⟨ ∘-cong (alg .famf .natural (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂)) (isEquiv .refl) ⟩
-          (y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂))
-            ∘ alg .famf .transf (γ₁ , _)) ∘ pair p₁ (project-fam-open Q γ₁ i₁)
+            prod-m (Γ .fam .subst γ₁≈γ₂) (fobj Q y .fam .subst (project-≈ Q γ₁≈γ₂ i₁≈i₂)))
+            ∘ pair p₁ (project-fam Q γ₁ i₁)
+        ≈⟨ ∘-cong (alg .famf .natural (γ₁≈γ₂ , project-≈ Q γ₁≈γ₂ i₁≈i₂)) (isEquiv .refl) ⟩
+          (y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈ Q γ₁≈γ₂ i₁≈i₂))
+            ∘ alg .famf .transf (γ₁ , _)) ∘ pair p₁ (project-fam Q γ₁ i₁)
         ≈⟨ assoc _ _ _ ⟩
-          y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂))
-            ∘ (alg .famf .transf (γ₁ , _) ∘ pair p₁ (project-fam-open Q γ₁ i₁))
+          y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈ Q γ₁≈γ₂ i₁≈i₂))
+            ∘ (alg .famf .transf (γ₁ , _) ∘ pair p₁ (project-fam Q γ₁ i₁))
         ∎ where open ≈-Reasoning isEquiv
-      project-fam-natural-open (P Poly.+ R) {x = inj₁ _} {inj₁ _} γ₁≈γ₂ i₁≈i₂ =
-        project-fam-natural-open P γ₁≈γ₂ i₁≈i₂
-      project-fam-natural-open (P Poly.+ R) {x = inj₂ _} {inj₂ _} γ₁≈γ₂ i₁≈i₂ =
-        project-fam-natural-open R γ₁≈γ₂ i₁≈i₂
-      project-fam-natural-open (P Poly.× R) {γ₁} {γ₂} {x₁ , z₁} {x₂ , z₂} γ₁≈γ₂ (x₁≈x₂ , z₁≈z₂) =
+      project-fam-natural (P Poly.+ R) {x = inj₁ _} {inj₁ _} γ₁≈γ₂ i₁≈i₂ =
+        project-fam-natural P γ₁≈γ₂ i₁≈i₂
+      project-fam-natural (P Poly.+ R) {x = inj₂ _} {inj₂ _} γ₁≈γ₂ i₁≈i₂ =
+        project-fam-natural R γ₁≈γ₂ i₁≈i₂
+      project-fam-natural (P Poly.× R) {γ₁} {γ₂} {x₁ , z₁} {x₂ , z₂} γ₁≈γ₂ (x₁≈x₂ , z₁≈z₂) =
         begin
-          pair (project-fam-open P γ₂ x₂ ∘ pair p₁ (p₁ ∘ p₂))
-               (project-fam-open R γ₂ z₂ ∘ pair p₁ (p₂ ∘ p₂))
+          pair (project-fam P γ₂ x₂ ∘ pair p₁ (p₁ ∘ p₂))
+               (project-fam R γ₂ z₂ ∘ pair p₁ (p₂ ∘ p₂))
             ∘ prod-m (Γ .fam .subst γ₁≈γ₂) (prod-m (WFam-subst P x₁≈x₂) (WFam-subst R z₁≈z₂))
         ≈⟨ pair-natural _ _ _ ⟩
-          pair ((project-fam-open P γ₂ x₂ ∘ pair p₁ (p₁ ∘ p₂)) ∘ prod-m _ _)
-               ((project-fam-open R γ₂ z₂ ∘ pair p₁ (p₂ ∘ p₂)) ∘ prod-m _ _)
+          pair ((project-fam P γ₂ x₂ ∘ pair p₁ (p₁ ∘ p₂)) ∘ prod-m _ _)
+               ((project-fam R γ₂ z₂ ∘ pair p₁ (p₂ ∘ p₂)) ∘ prod-m _ _)
         ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-          pair (project-fam-open P γ₂ x₂ ∘ (pair p₁ (p₁ ∘ p₂) ∘ prod-m _ _))
-               (project-fam-open R γ₂ z₂ ∘ (pair p₁ (p₂ ∘ p₂) ∘ prod-m _ _))
+          pair (project-fam P γ₂ x₂ ∘ (pair p₁ (p₁ ∘ p₂) ∘ prod-m _ _))
+               (project-fam R γ₂ z₂ ∘ (pair p₁ (p₂ ∘ p₂) ∘ prod-m _ _))
         ≈⟨ pair-cong
              (∘-cong (isEquiv .refl)
                (≈-trans (pair-natural _ _ _)
@@ -887,53 +816,53 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                      (≈-trans (∘-cong (isEquiv .refl) (pair-p₂ _ _))
                        (≈-trans (≈-sym (assoc _ _ _))
                          (≈-trans (∘-cong (pair-p₂ _ _) (isEquiv .refl)) (assoc _ _ _)))))))) ⟩
-          pair (project-fam-open P γ₂ x₂ ∘ pair (Γ .fam .subst γ₁≈γ₂ ∘ p₁) (WFam-subst P x₁≈x₂ ∘ (p₁ ∘ p₂)))
-               (project-fam-open R γ₂ z₂ ∘ pair (Γ .fam .subst γ₁≈γ₂ ∘ p₁) (WFam-subst R z₁≈z₂ ∘ (p₂ ∘ p₂)))
+          pair (project-fam P γ₂ x₂ ∘ pair (Γ .fam .subst γ₁≈γ₂ ∘ p₁) (WFam-subst P x₁≈x₂ ∘ (p₁ ∘ p₂)))
+               (project-fam R γ₂ z₂ ∘ pair (Γ .fam .subst γ₁≈γ₂ ∘ p₁) (WFam-subst R z₁≈z₂ ∘ (p₂ ∘ p₂)))
         ≈⟨ pair-cong (∘-cong (isEquiv .refl) (≈-sym (pair-compose _ _ _ _)))
                      (∘-cong (isEquiv .refl) (≈-sym (pair-compose _ _ _ _))) ⟩
-          pair (project-fam-open P γ₂ x₂ ∘
+          pair (project-fam P γ₂ x₂ ∘
                  (prod-m (Γ .fam .subst γ₁≈γ₂) (WFam-subst P x₁≈x₂) ∘ pair p₁ (p₁ ∘ p₂)))
-               (project-fam-open R γ₂ z₂ ∘
+               (project-fam R γ₂ z₂ ∘
                  (prod-m (Γ .fam .subst γ₁≈γ₂) (WFam-subst R z₁≈z₂) ∘ pair p₁ (p₂ ∘ p₂)))
         ≈⟨ pair-cong (≈-sym (assoc _ _ _)) (≈-sym (assoc _ _ _)) ⟩
-          pair ((project-fam-open P γ₂ x₂ ∘ prod-m _ _) ∘ pair p₁ (p₁ ∘ p₂))
-               ((project-fam-open R γ₂ z₂ ∘ prod-m _ _) ∘ pair p₁ (p₂ ∘ p₂))
-        ≈⟨ pair-cong (∘-cong (project-fam-natural-open P γ₁≈γ₂ x₁≈x₂) (isEquiv .refl))
-                     (∘-cong (project-fam-natural-open R γ₁≈γ₂ z₁≈z₂) (isEquiv .refl)) ⟩
-          pair ((fobj P y .fam .subst (project-≈-open P γ₁≈γ₂ x₁≈x₂) ∘ project-fam-open P γ₁ x₁)
+          pair ((project-fam P γ₂ x₂ ∘ prod-m _ _) ∘ pair p₁ (p₁ ∘ p₂))
+               ((project-fam R γ₂ z₂ ∘ prod-m _ _) ∘ pair p₁ (p₂ ∘ p₂))
+        ≈⟨ pair-cong (∘-cong (project-fam-natural P γ₁≈γ₂ x₁≈x₂) (isEquiv .refl))
+                     (∘-cong (project-fam-natural R γ₁≈γ₂ z₁≈z₂) (isEquiv .refl)) ⟩
+          pair ((fobj P y .fam .subst (project-≈ P γ₁≈γ₂ x₁≈x₂) ∘ project-fam P γ₁ x₁)
                   ∘ pair p₁ (p₁ ∘ p₂))
-               ((fobj R y .fam .subst (project-≈-open R γ₁≈γ₂ z₁≈z₂) ∘ project-fam-open R γ₁ z₁)
+               ((fobj R y .fam .subst (project-≈ R γ₁≈γ₂ z₁≈z₂) ∘ project-fam R γ₁ z₁)
                   ∘ pair p₁ (p₂ ∘ p₂))
         ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-          pair (fobj P y .fam .subst (project-≈-open P γ₁≈γ₂ x₁≈x₂) ∘ (project-fam-open P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂)))
-               (fobj R y .fam .subst (project-≈-open R γ₁≈γ₂ z₁≈z₂) ∘ (project-fam-open R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂)))
+          pair (fobj P y .fam .subst (project-≈ P γ₁≈γ₂ x₁≈x₂) ∘ (project-fam P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂)))
+               (fobj R y .fam .subst (project-≈ R γ₁≈γ₂ z₁≈z₂) ∘ (project-fam R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂)))
         ≈⟨ ≈-sym (pair-compose _ _ _ _) ⟩
-          prod-m (fobj P y .fam .subst (project-≈-open P γ₁≈γ₂ x₁≈x₂))
-                 (fobj R y .fam .subst (project-≈-open R γ₁≈γ₂ z₁≈z₂))
-            ∘ pair (project-fam-open P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂))
-                   (project-fam-open R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂))
+          prod-m (fobj P y .fam .subst (project-≈ P γ₁≈γ₂ x₁≈x₂))
+                 (fobj R y .fam .subst (project-≈ R γ₁≈γ₂ z₁≈z₂))
+            ∘ pair (project-fam P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂))
+                   (project-fam R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂))
         ∎ where open ≈-Reasoning isEquiv
 
-      fold-open : Mor (Γ ⊗ WObj) y
-      fold-open .idxf .PS._⇒_.func (γ , inF i) =
-        alg .idxf .PS._⇒_.func (γ , project-idx-open Q γ i)
-      fold-open .idxf .PS._⇒_.func-resp-≈ {γ₁ , inF _} {γ₂ , inF _} (γ₁≈γ₂ , i₁≈i₂) =
-        alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂)
-      fold-open .famf .transf (γ , inF i) =
-        alg .famf .transf (γ , project-idx-open Q γ i) ∘
-          pair p₁ (project-fam-open Q γ i)
-      fold-open .famf .natural {γ₁ , inF _} {γ₂ , inF _} (γ₁≈γ₂ , i₁≈i₂) =
-        project-fam-natural-open Poly.var γ₁≈γ₂ i₁≈i₂
+      fold : Mor (Γ ⊗ WObj) y
+      fold .idxf .PS._⇒_.func (γ , inF i) =
+        alg .idxf .PS._⇒_.func (γ , project-idx Q γ i)
+      fold .idxf .PS._⇒_.func-resp-≈ {γ₁ , inF _} {γ₂ , inF _} (γ₁≈γ₂ , i₁≈i₂) =
+        alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈ Q γ₁≈γ₂ i₁≈i₂)
+      fold .famf .transf (γ , inF i) =
+        alg .famf .transf (γ , project-idx Q γ i) ∘
+          pair p₁ (project-fam Q γ i)
+      fold .famf .natural {γ₁ , inF _} {γ₂ , inF _} (γ₁≈γ₂ , i₁≈i₂) =
+        project-fam-natural Poly.var γ₁≈γ₂ i₁≈i₂
 
       -- project-idx through embed-idx agrees with fmor's idx action of fold.
       β-idx : (P : Poly cat)
               {γ₁ γ₂ : Γ .idx .Carrier} (γ₁≈γ₂ : Γ .idx ._≈s_ γ₁ γ₂)
               {i₁ i₂ : fobj P WObj .idx .Carrier} (i₁≈i₂ : fobj P WObj .idx ._≈s_ i₁ i₂) →
-              fobj P y .idx ._≈s_ (project-idx-open P γ₁ (embed-idx P i₁)) (fmor P fold-open .idxf .PS._⇒_.func (γ₂ , i₂))
+              fobj P y .idx ._≈s_ (project-idx P γ₁ (embed-idx P i₁)) (fmor P fold .idxf .PS._⇒_.func (γ₂ , i₂))
       β-idx Poly.one       _ _                            = tt
       β-idx (Poly.const A) _ i₁≈i₂                        = i₁≈i₂
       β-idx Poly.var       γ₁≈γ₂ {inF _} {inF _} i₁≈i₂    =
-        alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂)
+        alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈ Q γ₁≈γ₂ i₁≈i₂)
       β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₁ _} {inj₁ _} i₁≈i₂  = β-idx P γ₁≈γ₂ i₁≈i₂
       β-idx (P Poly.+ R)   γ₁≈γ₂ {inj₂ _} {inj₂ _} i₁≈i₂  = β-idx R γ₁≈γ₂ i₁≈i₂
       β-idx (P Poly.× R)   γ₁≈γ₂ (x₁≈x₂ , z₁≈z₂)          = β-idx P γ₁≈γ₂ x₁≈x₂ , β-idx R γ₁≈γ₂ z₁≈z₂
@@ -942,8 +871,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       β-fam : (P : Poly cat) (γ : Γ .idx .Carrier) (i : fobj P WObj .idx .Carrier) →
               (fobj P y .fam .subst
                 (β-idx P (Γ .idx .Setoid.refl) (fobj P WObj .idx .Setoid.refl)) ∘
-                project-fam-open P γ (embed-idx P i) ∘ pair p₁ (embed-fam P i ∘ p₂)) ≈
-              fmor P fold-open .famf .transf (γ , i)
+                project-fam P γ (embed-idx P i) ∘ pair p₁ (embed-fam P i ∘ p₂)) ≈
+              fmor P fold .famf .transf (γ , i)
       β-fam Poly.one _ _ = HasTerminal.to-terminal-unique T _ _
       β-fam (Poly.const A) γ i = begin
           (A .fam .subst _ ∘ p₂) ∘ pair p₁ (id _ ∘ p₂)
@@ -959,17 +888,17 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           p₂
         ∎ where open ≈-Reasoning isEquiv
       β-fam Poly.var γ (inF i) = begin
-          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))) ∘ pair p₁ (id _ ∘ p₂)
+          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx Q γ i) ∘ pair p₁ (project-fam Q γ i))) ∘ pair p₁ (id _ ∘ p₂)
         ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
-          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))) ∘ pair p₁ p₂
+          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx Q γ i) ∘ pair p₁ (project-fam Q γ i))) ∘ pair p₁ p₂
         ≈⟨ ∘-cong ≈-refl (≈-trans (pair-cong (≈-sym id-right) (≈-sym id-right)) (pair-ext (id _))) ⟩
-          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))) ∘ id _
+          (y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx Q γ i) ∘ pair p₁ (project-fam Q γ i))) ∘ id _
         ≈⟨ id-right ⟩
-          y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))
+          y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx Q γ i) ∘ pair p₁ (project-fam Q γ i))
         ≈⟨ ∘-cong (y .fam .refl*) ≈-refl ⟩
-          id _ ∘ (alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i))
+          id _ ∘ (alg .famf .transf (γ , project-idx Q γ i) ∘ pair p₁ (project-fam Q γ i))
         ≈⟨ id-left ⟩
-          alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i)
+          alg .famf .transf (γ , project-idx Q γ i) ∘ pair p₁ (project-fam Q γ i)
         ∎ where open ≈-Reasoning isEquiv
       β-fam (P Poly.+ R)   γ (inj₁ x) =
         ≈-trans (β-fam P γ x) (≈-sym (≈-trans id-left id-left))
@@ -1018,100 +947,100 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             ∎ where open ≈-Reasoning isEquiv
 
           eq-P : ((fobj P y .fam .subst _ ∘ p₁) ∘
-                    pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
-                         (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
-                 ≈ id _ ∘ (fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂)))
+                    pair (project-fam P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                         (project-fam R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
+                 ≈ id _ ∘ (fmor P fold .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂)))
           eq-P = begin
               ((fobj P y .fam .subst _ ∘ p₁) ∘
-                pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
-                     (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
+                pair (project-fam P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                     (project-fam R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
             ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
               (fobj P y .fam .subst _ ∘ (p₁ ∘
-                pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
-                     (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂)))) ∘ pair-embed
+                pair (project-fam P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                     (project-fam R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂)))) ∘ pair-embed
             ≈⟨ ∘-cong (∘-cong ≈-refl (pair-p₁ _ _)) ≈-refl ⟩
-              (fobj P y .fam .subst _ ∘ (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘ pair-embed
+              (fobj P y .fam .subst _ ∘ (project-fam P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘ pair-embed
             ≈⟨ ∘-cong (≈-sym (assoc _ _ _)) ≈-refl ⟩
-              ((fobj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair-embed
+              ((fobj P y .fam .subst _ ∘ project-fam P γ (embed-idx P x)) ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair-embed
             ≈⟨ assoc _ _ _ ⟩
-              (fobj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair-embed)
+              (fobj P y .fam .subst _ ∘ project-fam P γ (embed-idx P x)) ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair-embed)
             ≈⟨ ∘-cong ≈-refl bridge-P ⟩
-              (fobj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
+              (fobj P y .fam .subst _ ∘ project-fam P γ (embed-idx P x)) ∘
                 pair p₁ (embed-fam P x ∘ (p₁ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _))) ⟩
-              (fobj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
+              (fobj P y .fam .subst _ ∘ project-fam P γ (embed-idx P x)) ∘
                 pair p₁ (embed-fam P x ∘ (p₂ ∘ pair p₁ (p₁ ∘ p₂)))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl (assoc _ _ _)) ⟩
-              (fobj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
+              (fobj P y .fam .subst _ ∘ project-fam P γ (embed-idx P x)) ∘
                 pair p₁ ((embed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) ≈-refl) ⟩
-              (fobj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
+              (fobj P y .fam .subst _ ∘ project-fam P γ (embed-idx P x)) ∘
                 pair (p₁ ∘ pair p₁ (p₁ ∘ p₂)) ((embed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
-              (fobj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
+              (fobj P y .fam .subst _ ∘ project-fam P γ (embed-idx P x)) ∘
                 (pair p₁ (embed-fam P x ∘ p₂) ∘ pair p₁ (p₁ ∘ p₂))
             ≈˘⟨ assoc _ _ _ ⟩
-              ((fobj P y .fam .subst _ ∘ project-fam-open P γ (embed-idx P x)) ∘
+              ((fobj P y .fam .subst _ ∘ project-fam P γ (embed-idx P x)) ∘
                 pair p₁ (embed-fam P x ∘ p₂)) ∘ pair p₁ (p₁ ∘ p₂)
             ≈⟨ ∘-cong (β-fam P γ x) ≈-refl ⟩
-              fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (p₁ ∘ p₂)
+              fmor P fold .famf .transf (γ , x) ∘ pair p₁ (p₁ ∘ p₂)
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
-              fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂))
+              fmor P fold .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂))
             ≈˘⟨ id-left ⟩
-              id _ ∘ (fmor P fold-open .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂)))
+              id _ ∘ (fmor P fold .famf .transf (γ , x) ∘ pair p₁ (id _ ∘ (p₁ ∘ p₂)))
             ∎ where open ≈-Reasoning isEquiv
 
           eq-R : ((fobj R y .fam .subst _ ∘ p₂) ∘
-                    pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
-                         (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
-                 ≈ id _ ∘ (fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
+                    pair (project-fam P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                         (project-fam R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
+                 ≈ id _ ∘ (fmor R fold .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
           eq-R = begin
               ((fobj R y .fam .subst _ ∘ p₂) ∘
-                pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
-                     (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
+                pair (project-fam P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                     (project-fam R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
             ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
               (fobj R y .fam .subst _ ∘ (p₂ ∘
-                pair (project-fam-open P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
-                     (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂)))) ∘ pair-embed
+                pair (project-fam P γ (embed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))
+                     (project-fam R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂)))) ∘ pair-embed
             ≈⟨ ∘-cong (∘-cong ≈-refl (pair-p₂ _ _)) ≈-refl ⟩
-              (fobj R y .fam .subst _ ∘ (project-fam-open R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
+              (fobj R y .fam .subst _ ∘ (project-fam R γ (embed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘ pair-embed
             ≈⟨ ∘-cong (≈-sym (assoc _ _ _)) ≈-refl ⟩
-              ((fobj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair-embed
+              ((fobj R y .fam .subst _ ∘ project-fam R γ (embed-idx R z)) ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair-embed
             ≈⟨ assoc _ _ _ ⟩
-              (fobj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘ (pair p₁ (p₂ ∘ p₂) ∘ pair-embed)
+              (fobj R y .fam .subst _ ∘ project-fam R γ (embed-idx R z)) ∘ (pair p₁ (p₂ ∘ p₂) ∘ pair-embed)
             ≈⟨ ∘-cong ≈-refl bridge-R ⟩
-              (fobj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
+              (fobj R y .fam .subst _ ∘ project-fam R γ (embed-idx R z)) ∘
                 pair p₁ (embed-fam R z ∘ (p₂ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _))) ⟩
-              (fobj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
+              (fobj R y .fam .subst _ ∘ project-fam R γ (embed-idx R z)) ∘
                 pair p₁ (embed-fam R z ∘ (p₂ ∘ pair p₁ (p₂ ∘ p₂)))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl (assoc _ _ _)) ⟩
-              (fobj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
+              (fobj R y .fam .subst _ ∘ project-fam R γ (embed-idx R z)) ∘
                 pair p₁ ((embed-fam R z ∘ p₂) ∘ pair p₁ (p₂ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) ≈-refl) ⟩
-              (fobj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
+              (fobj R y .fam .subst _ ∘ project-fam R γ (embed-idx R z)) ∘
                 pair (p₁ ∘ pair p₁ (p₂ ∘ p₂)) ((embed-fam R z ∘ p₂) ∘ pair p₁ (p₂ ∘ p₂))
             ≈˘⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
-              (fobj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
+              (fobj R y .fam .subst _ ∘ project-fam R γ (embed-idx R z)) ∘
                 (pair p₁ (embed-fam R z ∘ p₂) ∘ pair p₁ (p₂ ∘ p₂))
             ≈˘⟨ assoc _ _ _ ⟩
-              ((fobj R y .fam .subst _ ∘ project-fam-open R γ (embed-idx R z)) ∘
+              ((fobj R y .fam .subst _ ∘ project-fam R γ (embed-idx R z)) ∘
                 pair p₁ (embed-fam R z ∘ p₂)) ∘ pair p₁ (p₂ ∘ p₂)
             ≈⟨ ∘-cong (β-fam R γ z) ≈-refl ⟩
-              fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (p₂ ∘ p₂)
+              fmor R fold .famf .transf (γ , z) ∘ pair p₁ (p₂ ∘ p₂)
             ≈˘⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
-              fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂))
+              fmor R fold .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂))
             ≈˘⟨ id-left ⟩
-              id _ ∘ (fmor R fold-open .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
+              id _ ∘ (fmor R fold .famf .transf (γ , z) ∘ pair p₁ (id _ ∘ (p₂ ∘ p₂)))
             ∎ where open ≈-Reasoning isEquiv
 
-      -- Cata helpers (η case): given h with h-step, build proof h ≃ fold-open.
+      -- Cata helpers (η case): given h with h-step, build proof h ≃ fold.
       module _ (h : Mor (Γ ⊗ WObj) y)
                (h-step : (h Fam𝒞.∘ Fam𝒞-P.pair Fam𝒞-P.p₁ (inF-mor Fam𝒞.∘ Fam𝒞-P.p₂)) ≃
                          (alg Fam𝒞.∘ Fam𝒞-P.pair Fam𝒞-P.p₁ (fmor Q h))) where
         η-idx : (P : Poly cat) {δ₁ δ₂ : Γ .idx .Carrier} (δ₁≈δ₂ : Γ .idx ._≈s_ δ₁ δ₂)
                 {j₁ j₂ : WIdx poly (idx-of P)} (j₁≈j₂ : WIdx-≈ poly (idx-of P) j₁ j₂) →
-                fobj P y .idx ._≈s_ (fmor P h .idxf .PS._⇒_.func (δ₁ , unembed-idx P j₁)) (project-idx-open P δ₂ j₂)
+                fobj P y .idx ._≈s_ (fmor P h .idxf .PS._⇒_.func (δ₁ , unembed-idx P j₁)) (project-idx P δ₂ j₂)
         η-idx Poly.one _ _ = tt
         η-idx (Poly.const A) _ j₁≈j₂ = j₁≈j₂
         η-idx Poly.var δ₁≈δ₂ {inF j₁} {inF j₂} j₁≈j₂ =
@@ -1129,7 +1058,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           ≈⟨ alg .idxf .PS._⇒_.func-resp-≈
                (Γ .idx .isEquivalence .refl ,
                 η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ⟩
-            alg .idxf .PS._⇒_.func (_ , project-idx-open Q _ j₂)
+            alg .idxf .PS._⇒_.func (_ , project-idx Q _ j₂)
           ∎ where open ≈-Reasoning (y .idx .isEquivalence)
         η-idx (P Poly.+ R) δ₁≈δ₂ {inj₁ x₁} {inj₁ x₂} j₁≈j₂      = η-idx P δ₁≈δ₂ j₁≈j₂
         η-idx (P Poly.+ R) δ₁≈δ₂ {inj₂ y₁} {inj₂ y₂} j₁≈j₂      = η-idx R δ₁≈δ₂ j₁≈j₂
@@ -1137,12 +1066,12 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           η-idx P δ₁≈δ₂ x₁≈x₂ , η-idx R δ₁≈δ₂ z₁≈z₂
 
         -- Fam-level analog at WIdx level: relates fmor h's transf (bridged via unembed-fam) to
-        -- project-fam-open (modulo subst from η-idx).
+        -- project-fam (modulo subst from η-idx).
         η-fam : (P : Poly cat) (γ : Γ .idx .Carrier) (j : WIdx poly (idx-of P)) →
                 (fobj P y .fam .subst
                    (η-idx P (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of P) {j})) ∘
                  fmor P h .famf .transf (γ , unembed-idx P j) ∘ pair p₁ (unembed-fam P j ∘ p₂)) ≈
-                project-fam-open P γ j
+                project-fam P γ j
         η-fam Poly.one γ j = HasTerminal.to-terminal-unique T _ _
         η-fam (Poly.const A) γ j = begin
             (A .fam .subst _ ∘ p₂) ∘ pair p₁ (id _ ∘ p₂)
@@ -1260,38 +1189,38 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           ≈˘⟨ ∘-cong (∘-cong (alg .famf .natural
                                 (Γ .idx .isEquivalence .refl ,
                                  η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q)))) ≈-refl) ≈-refl ⟩
-            ((alg .famf .transf (γ , project-idx-open Q γ j) ∘
+            ((alg .famf .transf (γ , project-idx Q γ j) ∘
               (Γ ⊗ fobj Q y) .fam .subst
                 (Γ .idx .isEquivalence .refl , η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q)))) ∘
              pair p₁ (fmor Q h .famf .transf (γ , unembed-idx Q j))) ∘
             pair p₁ (unembed-fam Q j ∘ p₂)
           ≈⟨ ∘-cong (∘-cong (∘-cong ≈-refl
                 (pair-cong (isEquiv .trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left) ≈-refl)) ≈-refl) ≈-refl ⟩
-            ((alg .famf .transf (γ , project-idx-open Q γ j) ∘
+            ((alg .famf .transf (γ , project-idx Q γ j) ∘
               pair p₁ (fobj Q y .fam .subst
                          (η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘ p₂)) ∘
              pair p₁ (fmor Q h .famf .transf (γ , unembed-idx Q j))) ∘
             pair p₁ (unembed-fam Q j ∘ p₂)
           ≈⟨ isEquiv .trans (assoc _ _ _) (assoc _ _ _) ⟩
-            alg .famf .transf (γ , project-idx-open Q γ j) ∘
+            alg .famf .transf (γ , project-idx Q γ j) ∘
               (pair p₁ (fobj Q y .fam .subst
                           (η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘ p₂) ∘
                (pair p₁ (fmor Q h .famf .transf (γ , unembed-idx Q j)) ∘ pair p₁ (unembed-fam Q j ∘ p₂)))
           ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl
                 (isEquiv .trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl))) ⟩
-            alg .famf .transf (γ , project-idx-open Q γ j) ∘
+            alg .famf .transf (γ , project-idx Q γ j) ∘
               (pair p₁ (fobj Q y .fam .subst
                           (η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘ p₂) ∘
                pair p₁ (fmor Q h .famf .transf (γ , unembed-idx Q j) ∘ pair p₁ (unembed-fam Q j ∘ p₂)))
           ≈⟨ ∘-cong ≈-refl (isEquiv .trans (pair-natural _ _ _)
                               (isEquiv .trans (pair-cong (pair-p₁ _ _) (assoc _ _ _))
                                               (pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _))))) ⟩
-            alg .famf .transf (γ , project-idx-open Q γ j) ∘
+            alg .famf .transf (γ , project-idx Q γ j) ∘
               pair p₁ (fobj Q y .fam .subst
                          (η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ∘
                        (fmor Q h .famf .transf (γ , unembed-idx Q j) ∘ pair p₁ (unembed-fam Q j ∘ p₂)))
           ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (isEquiv .trans (≈-sym (assoc _ _ _)) (η-fam Q γ j))) ⟩
-            alg .famf .transf (γ , project-idx-open Q γ j) ∘ pair p₁ (project-fam-open Q γ j)
+            alg .famf .transf (γ , project-idx Q γ j) ∘ pair p₁ (project-fam Q γ j)
           ∎ where open ≈-Reasoning isEquiv
         η-fam (P Poly.+ R) γ (inj₁ x) =
           isEquiv .trans
@@ -1323,7 +1252,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                   pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂))
           ≈⟨ pair-cong (bridge P x (p₁ ∘ p₂) (p₁ ∘ p₂) merge-pair-P fold-pair-P)
                        (bridge R z (p₂ ∘ p₂) (p₂ ∘ p₂) merge-pair-R fold-pair-R) ⟩
-            pair (project-fam-open P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam-open R γ z ∘ pair p₁ (p₂ ∘ p₂))
+            pair (project-fam P γ x ∘ pair p₁ (p₁ ∘ p₂)) (project-fam R γ z ∘ pair p₁ (p₂ ∘ p₂))
           ∎ where
             merge-pair-P : pair {prod (Γ .fam .fm γ) _} p₁ (p₁ ∘ p₂)
                            ∘ pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
@@ -1403,7 +1332,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                      (fobj W y .fam .subst _ ∘
                        (fmor W h .famf .transf (γ , unembed-idx W j) ∘ pair p₁ π-poly)) ∘
                      pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
-                   ≈ project-fam-open W γ j ∘ pair p₁ π-WFam
+                   ≈ project-fam W γ j ∘ pair p₁ π-WFam
             bridge W j π-poly π-WFam merge fold = begin
                 (fobj W y .fam .subst _ ∘
                    (fmor W h .famf .transf (γ , unembed-idx W j) ∘ pair p₁ π-poly)) ∘
@@ -1436,7 +1365,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                     fmor W h .famf .transf (γ , unembed-idx W j)) ∘ pair p₁ (unembed-fam W j ∘ p₂)) ∘
                 pair p₁ π-WFam
               ≈⟨ ∘-cong (η-fam W γ j) ≈-refl ⟩
-                project-fam-open W γ j ∘ pair p₁ π-WFam
+                project-fam W γ j ∘ pair p₁ π-WFam
               ∎ where open ≈-Reasoning isEquiv
 
             open ≈-Reasoning isEquiv
@@ -1444,60 +1373,60 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu : HasMu
   hasMu .HasMu.μ Q          = W-types.WObj Q
   hasMu .HasMu.inF Q        = W-types.inF-mor Q
-  hasMu .HasMu.⦅_⦆ {Γ} {Q}  = W-types.Open.fold-open Q
+  hasMu .HasMu.⦅_⦆ {Γ} {Q}  = W-types.Fold.fold Q
   hasMu .HasMu.⦅⦆-β {Γ} {Q} alg ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , i₁} {γ₂ , i₂} (γ₁≈γ₂ , i₁≈i₂) =
     alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , β-idx Q γ₁≈γ₂ i₁≈i₂)
-    where open W-types Q; open Open alg
+    where open W-types Q; open Fold alg
   hasMu .HasMu.⦅⦆-β {Γ} {Q} {y} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , i} = begin
-      y .fam .subst _ ∘ (id _ ∘ (alg .famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
-          pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))))
+      y .fam .subst _ ∘ (id _ ∘ (alg .famf .transf (γ , project-idx Q γ (embed-idx Q i)) ∘
+          pair p₁ (project-fam Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))))
     ≈⟨ ∘-cong ≈-refl id-left ⟩
-      y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
-          pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂)))
+      y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx Q γ (embed-idx Q i)) ∘
+          pair p₁ (project-fam Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂)))
     ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
-          (pair p₁ (project-fam-open Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))))
+      y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx Q γ (embed-idx Q i)) ∘
+          (pair p₁ (project-fam Q γ (embed-idx Q i)) ∘ pair p₁ (id _ ∘ (embed-fam Q i ∘ p₂))))
     ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl
         (≈-trans (pair-natural _ _ _)
                  (pair-cong (pair-p₁ _ _) (∘-cong ≈-refl (pair-cong ≈-refl id-left))))) ⟩
-      y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx-open Q γ (embed-idx Q i)) ∘
-          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
+      y .fam .subst _ ∘ (alg .famf .transf (γ , project-idx Q γ (embed-idx Q i)) ∘
+          pair p₁ (project-fam Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ≈-sym (assoc _ _ _) ⟩
-      (y .fam .subst _ ∘ alg .famf .transf (γ , project-idx-open Q γ (embed-idx Q i))) ∘
-          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
+      (y .fam .subst _ ∘ alg .famf .transf (γ , project-idx Q γ (embed-idx Q i))) ∘
+          pair p₁ (project-fam Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
     ≈⟨ ∘-cong
         (≈-sym (alg .famf .natural (
           Setoid.isEquivalence (Γ .idx) .IsEquivalence.refl ,
           β-idx Q (Setoid.isEquivalence (Γ .idx) .IsEquivalence.refl)
                   (Setoid.isEquivalence (fobj Q WObj .idx) .IsEquivalence.refl)
         ))) ≈-refl ⟩
-      (alg .famf .transf (γ , fmor Q fold-open .idxf .PS._⇒_.func (γ , i)) ∘
+      (alg .famf .transf (γ , fmor Q fold .idxf .PS._⇒_.func (γ , i)) ∘
           pair (Γ .fam .subst _ ∘ p₁) (fobj Q y .fam .subst _ ∘ p₂)) ∘
-          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
+          pair p₁ (project-fam Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂))
     ≈⟨ assoc _ _ _ ⟩
-      alg .famf .transf (γ , fmor Q fold-open .idxf .PS._⇒_.func (γ , i)) ∘
+      alg .famf .transf (γ , fmor Q fold .idxf .PS._⇒_.func (γ , i)) ∘
           (pair (Γ .fam .subst _ ∘ p₁) (fobj Q y .fam .subst _ ∘ p₂) ∘
-          pair p₁ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
+          pair p₁ (project-fam Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ∘-cong ≈-refl (pair-compose _ _ _ _) ⟩
-      alg .famf .transf (γ , fmor Q fold-open .idxf .PS._⇒_.func (γ , i)) ∘
+      alg .famf .transf (γ , fmor Q fold .idxf .PS._⇒_.func (γ , i)) ∘
           pair (Γ .fam .subst _ ∘ p₁)
-               (fobj Q y .fam .subst _ ∘ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
+               (fobj Q y .fam .subst _ ∘ (project-fam Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ∘-cong ≈-refl (pair-cong
                 (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left) (≈-trans (≈-sym (assoc _ _ _)) (β-fam Q γ i))) ⟩
-      alg .famf .transf (γ , fmor Q fold-open .idxf .PS._⇒_.func (γ , i)) ∘
-          pair p₁ (fmor Q fold-open .famf .transf (γ , i))
+      alg .famf .transf (γ , fmor Q fold .idxf .PS._⇒_.func (γ , i)) ∘
+          pair p₁ (fmor Q fold .famf .transf (γ , i))
     ≈⟨ ≈-sym id-left ⟩
-      id _ ∘ (alg .famf .transf (γ , fmor Q fold-open .idxf .PS._⇒_.func (γ , i)) ∘
-          pair p₁ (fmor Q fold-open .famf .transf (γ , i)))
+      id _ ∘ (alg .famf .transf (γ , fmor Q fold .idxf .PS._⇒_.func (γ , i)) ∘
+          pair p₁ (fmor Q fold .famf .transf (γ , i)))
     ∎ where
-      open W-types Q; open Open alg; open ≈-Reasoning isEquiv
+      open W-types Q; open Fold alg; open ≈-Reasoning isEquiv
   hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , inF i₁} {γ₂ , inF i₂} (γ₁≈γ₂ , t₁≈t₂) =
     η-idx h h-step Poly.var γ₁≈γ₂ {inF i₁} {inF i₂} t₁≈t₂
-    where open W-types Q; open Open alg
+    where open W-types Q; open Fold alg
   hasMu .HasMu.⦅⦆-η {Γ} {Q} {y} alg h h-step ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , inF i} =
     isEquiv .trans
       (isEquiv .trans (≈-sym id-right)
                       (≈-sym (∘-cong ≈-refl (isEquiv .trans (pair-cong ≈-refl id-left) pair-ext0))))
       (η-fam h h-step Poly.var γ (inF i))
-    where open W-types Q; open Open alg
+    where open W-types Q; open Fold alg
 
