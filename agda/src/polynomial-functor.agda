@@ -588,6 +588,9 @@ module Sem {o m e} {𝒞 : Category o m e}
         (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co (inF P ∘ p₂)) ∘co iso-mor (iso-sym P≅P')
       ≈⟨ ∘-cong-co₁ (⦅⦆-β _) ⟩
         ((inF P' ∘ iso-mor P≅P') ∘co fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆) ∘co iso-mor (iso-sym P≅P')
+      ≈⟨ ∘-cong-co₁ (≈-trans (assoc _ _ _)
+                              (≈-sym (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
+        ((inF P' ∘ p₂) ∘co (iso-mor P≅P' ∘co fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆)) ∘co iso-mor (iso-sym P≅P')
       ≈⟨ {!!} ⟩
         (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆
       ∎ where open ≈-Reasoning isEquiv
@@ -1646,4 +1649,3 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                       (≈-sym (∘-cong ≈-refl (≈-trans (pair-cong ≈-refl id-left) pair-ext0))))
       (η-fam h h-step Poly.var γ (inF i))
     where open W-types Q; open Fold alg
-
