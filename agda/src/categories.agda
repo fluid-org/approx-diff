@@ -51,6 +51,12 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ≡-to-≈ : ∀ {x y} {f g : x ⇒ y} → f ≡ g → f ≈ g
   ≡-to-≈ ≡.refl = ≈-refl
 
+  ∘-cong₁ : ∀ {x y z} {f₁ f₂ : y ⇒ z} {g : x ⇒ y} → f₁ ≈ f₂ → (f₁ ∘ g) ≈ (f₂ ∘ g)
+  ∘-cong₁ f≈ = ∘-cong f≈ ≈-refl
+
+  ∘-cong₂ : ∀ {x y z} {f : y ⇒ z} {g₁ g₂ : x ⇒ y} → g₁ ≈ g₂ → (f ∘ g₁) ≈ (f ∘ g₂)
+  ∘-cong₂ g≈ = ∘-cong ≈-refl g≈
+
   id-swap : ∀ {x y}{f : x ⇒ y} → (id y ∘ f) ≈ (f ∘ id x)
   id-swap = isEquiv .trans id-left (≈-sym id-right)
 
@@ -407,6 +413,12 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     pair-p₂ : ∀ {x y z} (f : x ⇒ y) (g : x ⇒ z) → (p₂ ∘ pair f g) ≈ g
     pair-ext : ∀ {x y z} (f : x ⇒ prod y z) → pair (p₁ ∘ f) (p₂ ∘ f) ≈ f
 
+  pair-cong₁ : ∀ {x y z} {f₁ f₂ : x ⇒ y} {g : x ⇒ z} → f₁ ≈ f₂ → pair f₁ g ≈ pair f₂ g
+  pair-cong₁ f≈ = pair-cong f≈ ≈-refl
+
+  pair-cong₂ : ∀ {x y z} {f : x ⇒ y} {g₁ g₂ : x ⇒ z} → g₁ ≈ g₂ → pair f g₁ ≈ pair f g₂
+  pair-cong₂ g≈ = pair-cong ≈-refl g≈
+
   pair-natural : ∀ {w x y z} (h : w ⇒ x) (f : x ⇒ y) (g : x ⇒ z) → (pair f g ∘ h) ≈ pair (f ∘ h) (g ∘ h)
   pair-natural h f g =
     begin
@@ -598,6 +610,14 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
     copair-in₂  : ∀ {w x y z} (f : prod w x ⇒ z) (g : prod w y ⇒ z) → (copair f g ∘ pair p₁ (in₂ ∘ p₂)) ≈ g
     copair-ext  : ∀ {w x y z} (h : prod w (coprod x y) ⇒ z) →
                   copair (h ∘ pair p₁ (in₁ ∘ p₂)) (h ∘ pair p₁ (in₂ ∘ p₂)) ≈ h
+
+  copair-cong₁ : ∀ {w x y z} {f₁ f₂ : prod w x ⇒ z} {g : prod w y ⇒ z} →
+                 f₁ ≈ f₂ → copair f₁ g ≈ copair f₂ g
+  copair-cong₁ f≈ = copair-cong f≈ ≈-refl
+
+  copair-cong₂ : ∀ {w x y z} {f : prod w x ⇒ z} {g₁ g₂ : prod w y ⇒ z} →
+                 g₁ ≈ g₂ → copair f g₁ ≈ copair f g₂
+  copair-cong₂ g≈ = copair-cong ≈-refl g≈
 
 -- Given a terminal, every HasStrongCoproducts gives a plain HasCoproducts:
 -- copair f g := strong-copair (f ∘ p₂) (g ∘ p₂) ∘ pair to-terminal (id _).

@@ -57,19 +57,6 @@ data Poly-iso {o m e} {𝒞 : Category o m e} : Poly 𝒞 → Poly 𝒞 → Set 
   _+_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ + P₂) (Q₁ + Q₂)
   _×_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ × P₂) (Q₁ × Q₂)
 
-{- ------------------------------------------------------------------------------
--- μPoly: polynomial signature extended with a Mon constructor (fibre-only decoration relative to whatever
--- LiftMon the interpretation supplies). Currently only consumed by language-interpretation-approx (broken);
--- commented out until that's revived.
-data μPoly {o m e} (𝒞 : Category o m e) : Set o where
-  one    : μPoly 𝒞
-  const  : Category.obj 𝒞 → μPoly 𝒞
-  var    : μPoly 𝒞
-  _+_    : μPoly 𝒞 → μPoly 𝒞 → μPoly 𝒞
-  _×_    : μPoly 𝒞 → μPoly 𝒞 → μPoly 𝒞
-  Mon    : μPoly 𝒞 → μPoly 𝒞
--}
-
 module Sem {o m e} {𝒞 : Category o m e}
            (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (SCP : HasStrongCoproducts 𝒞 P) where
   open Category 𝒞
@@ -92,8 +79,7 @@ module Sem {o m e} {𝒞 : Category o m e}
 
   module _ {Γ : obj} where
     open Category (cat-ext Γ) public using ()
-      renaming (assoc to assoc-co; ∘-cong to ∘-cong-co;
-                id-left to id-left-co; id-right to id-right-co)
+      renaming (assoc to assoc-co; ∘-cong to ∘-cong-co; id-left to id-left-co; id-right to id-right-co)
 
   module Poly-fun where
     fobj : Poly 𝒞 → obj → obj
@@ -115,18 +101,18 @@ module Sem {o m e} {𝒞 : Category o m e}
     fmor-id (const A)   = ≈-refl
     fmor-id var         = ≈-refl
     fmor-id (Q₁ + Q₂)   =
-      ≈-trans (scopair-cong (∘-cong ≈-refl (fmor-id Q₁)) (∘-cong ≈-refl (fmor-id Q₂)))
+      ≈-trans (scopair-cong (∘-cong₂ (fmor-id Q₁)) (∘-cong₂ (fmor-id Q₂)))
               (≈-trans (scopair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _))) (scopair-ext p₂))
     fmor-id (Q₁ × Q₂)   =
-      ≈-trans (pair-cong (∘-cong (fmor-id Q₁) ≈-refl) (∘-cong (fmor-id Q₂) ≈-refl))
+      ≈-trans (pair-cong (∘-cong₁ (fmor-id Q₁)) (∘-cong₁ (fmor-id Q₂)))
               (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext p₂))
 
     fmor-cong : ∀ Q {Γ X Y} {f₁ f₂ : prod Γ X ⇒ Y} → f₁ ≈ f₂ → fmor Q f₁ ≈ fmor Q f₂
     fmor-cong one         _    = ≈-refl
     fmor-cong (const A)   _    = ≈-refl
     fmor-cong var         f≈g  = f≈g
-    fmor-cong (Q₁ + Q₂)   f≈g  = scopair-cong (∘-cong ≈-refl (fmor-cong Q₁ f≈g)) (∘-cong ≈-refl (fmor-cong Q₂ f≈g))
-    fmor-cong (Q₁ × Q₂)   f≈g  = pair-cong (∘-cong (fmor-cong Q₁ f≈g) ≈-refl) (∘-cong (fmor-cong Q₂ f≈g) ≈-refl)
+    fmor-cong (Q₁ + Q₂)   f≈g  = scopair-cong (∘-cong₂ (fmor-cong Q₁ f≈g)) (∘-cong₂ (fmor-cong Q₂ f≈g))
+    fmor-cong (Q₁ × Q₂)   f≈g  = pair-cong (∘-cong₁ (fmor-cong Q₁ f≈g)) (∘-cong₁ (fmor-cong Q₂ f≈g))
 
     fmor-comp : ∀ Q {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
       fmor Q (f ∘co g) ≈ fmor Q f ∘co (fmor Q g)
@@ -194,8 +180,8 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso-mor-fwd∘bwd one = to-terminal-unique _ _
     iso-mor-fwd∘bwd (const A≅B) =
       ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
-      (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (A≅B .fwd∘bwd≈id) ≈-refl) id-left)))
+      (≈-trans (∘-cong₂ (pair-p₂ _ _))
+      (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (A≅B .fwd∘bwd≈id)) id-left)))
     iso-mor-fwd∘bwd var = pair-p₂ _ _
     iso-mor-fwd∘bwd (_+_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) {Γ} {X} =
       ≈-trans (≈-sym (scopair-ext _)) (≈-trans (scopair-cong in₁-branch in₂-branch) (scopair-ext _))
@@ -213,17 +199,16 @@ module Sem {o m e} {𝒞 : Category o m e}
             (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)) ∘co (in₁ ∘ p₂))
           ≈⟨ ∘-cong-co ≈-refl (scopair-in₁ _ _) ⟩
             scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₁ ∘ iso-mor (iso-sym P₁≅Q₁))
-          ≈˘⟨ ∘-cong ≈-refl
-                (≈-trans (pair-natural _ _ _)
-                (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))) ⟩
+          ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
+                (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
             scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘co (iso-mor (iso-sym P₁≅Q₁)))
           ≈˘⟨ assoc _ _ _ ⟩
             (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₁ ∘ p₂)) ∘co (iso-mor (iso-sym P₁≅Q₁))
-          ≈⟨ ∘-cong (scopair-in₁ _ _) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (scopair-in₁ _ _) ⟩
             (in₁ ∘ iso-mor P₁≅Q₁) ∘co (iso-mor (iso-sym P₁≅Q₁))
           ≈⟨ assoc _ _ _ ⟩
             in₁ ∘ (iso-mor P₁≅Q₁ ∘co (iso-mor (iso-sym P₁≅Q₁)))
-          ≈⟨ ∘-cong ≈-refl (iso-mor-fwd∘bwd P₁≅Q₁) ⟩
+          ≈⟨ ∘-cong₂ (iso-mor-fwd∘bwd P₁≅Q₁) ⟩
             in₁ ∘ p₂
           ≈˘⟨ pair-p₂ _ _ ⟩
             p₂ ∘co (in₁ ∘ p₂)
@@ -240,17 +225,16 @@ module Sem {o m e} {𝒞 : Category o m e}
             (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)) ∘co (in₂ ∘ p₂))
           ≈⟨ ∘-cong-co ≈-refl (scopair-in₂ _ _) ⟩
             scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))
-          ≈˘⟨ ∘-cong ≈-refl
-                (≈-trans (pair-natural _ _ _)
-                (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))) ⟩
+          ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
+                (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
             scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘co (iso-mor (iso-sym P₂≅Q₂)))
           ≈˘⟨ assoc _ _ _ ⟩
             (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₂ ∘ p₂)) ∘co (iso-mor (iso-sym P₂≅Q₂))
-          ≈⟨ ∘-cong (scopair-in₂ _ _) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (scopair-in₂ _ _) ⟩
             (in₂ ∘ iso-mor P₂≅Q₂) ∘co (iso-mor (iso-sym P₂≅Q₂))
           ≈⟨ assoc _ _ _ ⟩
             in₂ ∘ (iso-mor P₂≅Q₂ ∘co (iso-mor (iso-sym P₂≅Q₂)))
-          ≈⟨ ∘-cong ≈-refl (iso-mor-fwd∘bwd P₂≅Q₂) ⟩
+          ≈⟨ ∘-cong₂ (iso-mor-fwd∘bwd P₂≅Q₂) ⟩
             in₂ ∘ p₂
           ≈˘⟨ pair-p₂ _ _ ⟩
             p₂ ∘co (in₂ ∘ p₂)
@@ -267,19 +251,19 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₁ ∘ (pair-fwd ∘co pair-bwd)
           ≈˘⟨ assoc _ _ _ ⟩
             (p₁ ∘ pair-fwd) ∘co pair-bwd
-          ≈⟨ ∘-cong (pair-p₁ _ _) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (pair-p₁ _ _) ⟩
             (iso-mor P₁≅Q₁ ∘co (p₁ ∘ p₂)) ∘co pair-bwd
           ≈⟨ assoc _ _ _ ⟩
             iso-mor P₁≅Q₁ ∘ (pair p₁ (p₁ ∘ p₂) ∘co pair-bwd)
-          ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _)
-                           (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
-                                    (pair-cong ≈-refl (pair-p₁ _ _)))) ⟩
+          ≈⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
+                           (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))
+                                    (pair-cong₂ (pair-p₁ _ _)))) ⟩
             iso-mor P₁≅Q₁ ∘co (iso-mor (iso-sym P₁≅Q₁) ∘co (p₁ ∘ p₂))
-          ≈˘⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)) ⟩
+          ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))) ⟩
             iso-mor P₁≅Q₁ ∘ (pair p₁ (iso-mor (iso-sym P₁≅Q₁)) ∘co (p₁ ∘ p₂))
           ≈˘⟨ assoc _ _ _ ⟩
             (iso-mor P₁≅Q₁ ∘co (iso-mor (iso-sym P₁≅Q₁))) ∘co (p₁ ∘ p₂)
-          ≈⟨ ∘-cong (iso-mor-fwd∘bwd P₁≅Q₁) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (iso-mor-fwd∘bwd P₁≅Q₁) ⟩
             p₂ ∘co (p₁ ∘ p₂)
           ≈⟨ pair-p₂ _ _ ⟩
             p₁ ∘ p₂
@@ -290,19 +274,19 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₂ ∘ (pair-fwd ∘co pair-bwd)
           ≈˘⟨ assoc _ _ _ ⟩
             (p₂ ∘ pair-fwd) ∘co pair-bwd
-          ≈⟨ ∘-cong (pair-p₂ _ _) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (pair-p₂ _ _) ⟩
             (iso-mor P₂≅Q₂ ∘co (p₂ ∘ p₂)) ∘co pair-bwd
           ≈⟨ assoc _ _ _ ⟩
             iso-mor P₂≅Q₂ ∘ (pair p₁ (p₂ ∘ p₂) ∘co pair-bwd)
-          ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _)
-                           (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
-                                    (pair-cong ≈-refl (pair-p₂ _ _)))) ⟩
+          ≈⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
+                           (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))
+                                    (pair-cong₂ (pair-p₂ _ _)))) ⟩
             iso-mor P₂≅Q₂ ∘co (iso-mor (iso-sym P₂≅Q₂) ∘co (p₂ ∘ p₂))
-          ≈˘⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)) ⟩
+          ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))) ⟩
             iso-mor P₂≅Q₂ ∘ (pair p₁ (iso-mor (iso-sym P₂≅Q₂)) ∘co (p₂ ∘ p₂))
           ≈˘⟨ assoc _ _ _ ⟩
             (iso-mor P₂≅Q₂ ∘co (iso-mor (iso-sym P₂≅Q₂))) ∘co (p₂ ∘ p₂)
-          ≈⟨ ∘-cong (iso-mor-fwd∘bwd P₂≅Q₂) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (iso-mor-fwd∘bwd P₂≅Q₂) ⟩
             p₂ ∘co (p₂ ∘ p₂)
           ≈⟨ pair-p₂ _ _ ⟩
             p₂ ∘ p₂
@@ -321,63 +305,56 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ assoc _ _ _ ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ (p₂ ∘co (inF P' ∘ p₂))
-      ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
+      ≈⟨ ∘-cong₂ (pair-p₂ _ _) ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ (inF P' ∘ p₂)
       ≈˘⟨ assoc _ _ _ ⟩
         (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
             ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ inF P') ∘ p₂
-      ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ ((⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))) ∘ inF P')) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong ≈-refl (assoc _ _ _)) ≈-refl ⟩
+      ≈⟨ ∘-cong (∘-cong₂ (assoc _ _ _)) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ (pair to-terminal (id (μ P')) ∘ inF P'))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong ≈-refl (∘-cong ≈-refl
-           (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)))) ≈-refl ⟩
+      ≈⟨ ∘-cong (∘-cong₂ (∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)))) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (inF P'))) ∘ p₂
-      ≈˘⟨ ∘-cong (∘-cong ≈-refl (∘-cong ≈-refl
+      ≈˘⟨ ∘-cong (∘-cong₂ (∘-cong₂
             (≈-trans (pair-natural _ _ _)
                      (pair-cong (pair-p₁ _ _)
-                                (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) id-right)))))) ≈-refl ⟩
+                                (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) id-right)))))) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ (pair p₁ (inF P' ∘ p₂) ∘ pair to-terminal (id _))))
-          ∘ p₂
-      ≈˘⟨ ∘-cong (∘-cong ≈-refl (assoc _ _ _)) ≈-refl ⟩
+          ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ (pair p₁ (inF P' ∘ p₂) ∘ pair to-terminal (id _)))) ∘ p₂
+      ≈˘⟨ ∘-cong (∘-cong₂ (assoc _ _ _)) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-          ∘ ((⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘co (inF P' ∘ p₂)) ∘ pair to-terminal (id _)))
-          ∘ p₂
-      ≈⟨ ∘-cong (∘-cong ≈-refl (∘-cong (⦅⦆-β _) ≈-refl)) ≈-refl ⟩
+          ∘ ((⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘co (inF P' ∘ p₂)) ∘ pair to-terminal (id _))) ∘ p₂
+      ≈⟨ ∘-cong (∘-cong₂ (∘-cong₁ (⦅⦆-β _))) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (((inF P ∘ iso-mor (iso-sym P≅P')) ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆))
-              ∘ pair to-terminal (id _)))
-          ∘ p₂
-      ≈⟨ ∘-cong (∘-cong ≈-refl (≈-trans (∘-cong (assoc _ _ _) ≈-refl) (assoc _ _ _))) ≈-refl ⟩
+              ∘ pair to-terminal (id _))) ∘ p₂
+      ≈⟨ ∘-cong (∘-cong₂ (≈-trans (∘-cong₁ (assoc _ _ _)) (assoc _ _ _))) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (inF P ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆))
-                        ∘ pair to-terminal (id _))))
-          ∘ p₂
-      ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+                        ∘ pair to-terminal (id _)))) ∘ p₂
+      ≈˘⟨ ∘-cong₁ (assoc _ _ _) ⟩
         (((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P))) ∘ inF P)
           ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong (assoc _ _ _) ≈-refl) ≈-refl ⟩
+      ≈⟨ ∘-cong (∘-cong₁ (assoc _ _ _)) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ (pair to-terminal (id (μ P)) ∘ inF P))
           ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _))) ∘ p₂
-      ≈⟨ ∘-cong (∘-cong (∘-cong ≈-refl
+      ≈⟨ ∘-cong (∘-cong (∘-cong₂
            (≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left))) ≈-refl) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (inF P))
-          ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _)))
-          ∘ p₂
-      ≈˘⟨ ∘-cong (∘-cong (∘-cong ≈-refl
+          ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _))) ∘ p₂
+      ≈˘⟨ ∘-cong (∘-cong (∘-cong₂
             (≈-trans (pair-natural _ _ _)
                      (pair-cong (pair-p₁ _ _)
-                                (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) id-right))))) ≈-refl) ≈-refl ⟩
+                                (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) id-right))))) ≈-refl) ≈-refl ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ (pair p₁ (inF P ∘ p₂) ∘ pair to-terminal (id _)))
           ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆))
-              ∘ pair to-terminal (id _)))
-          ∘ p₂
-      ≈⟨ ∘-cong (∘-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (⦅⦆-β _) ≈-refl)) ≈-refl) ≈-refl ⟩
+              ∘ pair to-terminal (id _))) ∘ p₂
+      ≈⟨ ∘-cong (∘-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⦅⦆-β _))) ≈-refl) ≈-refl ⟩
         ((((inF P' ∘ iso-mor P≅P') ∘co (fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆)) ∘ pair to-terminal (id _))
           ∘ ((iso-mor (iso-sym P≅P') ∘co (fmor P' ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆)) ∘ pair to-terminal (id _))) ∘ p₂
       ≈⟨ {!!} ⟩
@@ -395,7 +372,7 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈⟨ ≈-sym id-right ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))) ∘ id (μ P')
-      ≈⟨ ∘-cong ≈-refl (≈-sym (pair-p₂ to-terminal (id (μ P')))) ⟩
+      ≈⟨ ∘-cong₂ (≈-sym (pair-p₂ to-terminal (id (μ P')))) ⟩
         ((⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))))
           ∘ (p₂ ∘ pair to-terminal (id (μ P')))
@@ -409,8 +386,7 @@ module Sem {o m e} {𝒞 : Category o m e}
         ⦅ inF P' ∘ p₂ ⦆ ∘ pair to-terminal (id (μ P'))
       ≈⟨ ∘-cong (≈-sym (⦅⦆-η (inF P' ∘ p₂) p₂
                           (≈-trans (pair-p₂ _ _) (≈-sym
-                          (≈-trans (assoc _ _ _)
-                          (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) (fmor-id P')))))))) ≈-refl ⟩
+                          (≈-trans (assoc _ _ _) (∘-cong₂ (≈-trans (pair-p₂ _ _) (fmor-id P')))))))) ≈-refl ⟩
         p₂ ∘ pair to-terminal (id (μ P'))
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ P')
@@ -801,8 +777,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       fold .famf .transf (inF i)                            = alg .famf .transf (project-idx Q i) ∘ project-fam Q i
       fold .famf .natural {inF _} {inF _} i₁≈i₂             = project-fam-natural Poly.var i₁≈i₂
 
-    -- Open (parametric) fold: takes algebra in extended context Γ ⊗ fobj Q y ⇒ y
-    -- and produces Γ ⊗ μ Q ⇒ y. Threads γ through the structural recursion.
+    -- Open (parametric) fold: takes algebra in extended context Γ ⊗ fobj Q y ⇒ y and produces Γ ⊗ μ Q ⇒ y.
+    -- Threads γ through the structural recursion.
     module Open {Γ y : Obj} (alg : Mor (Γ ⊗ fobj Q y) y) where
       open Obj
       open Mor
@@ -862,8 +838,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈⟨ ∘-cong (isEquiv .refl) (pair-natural _ _ _) ⟩
           alg .famf .transf (γ₂ , _) ∘
             pair (p₁ ∘ prod-m _ _) (project-fam-open Q γ₂ i₂ ∘ prod-m _ _)
-        ≈⟨ ∘-cong (isEquiv .refl)
-             (pair-cong (pair-p₁ _ _) (project-fam-natural-open Q γ₁≈γ₂ i₁≈i₂)) ⟩
+        ≈⟨ ∘-cong (isEquiv .refl) (pair-cong (pair-p₁ _ _) (project-fam-natural-open Q γ₁≈γ₂ i₁≈i₂)) ⟩
           alg .famf .transf (γ₂ , _) ∘
             pair (Γ .fam .subst γ₁≈γ₂ ∘ p₁)
                  (fobj Q y .fam .subst (project-≈-open Q γ₁≈γ₂ i₁≈i₂) ∘ project-fam-open Q γ₁ i₁)
@@ -877,8 +852,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             ∘ pair p₁ (project-fam-open Q γ₁ i₁)
         ≈⟨ ∘-cong (alg .famf .natural (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂)) (isEquiv .refl) ⟩
           (y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂))
-            ∘ alg .famf .transf (γ₁ , _))
-            ∘ pair p₁ (project-fam-open Q γ₁ i₁)
+            ∘ alg .famf .transf (γ₁ , _)) ∘ pair p₁ (project-fam-open Q γ₁ i₁)
         ≈⟨ assoc _ _ _ ⟩
           y .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (γ₁≈γ₂ , project-≈-open Q γ₁≈γ₂ i₁≈i₂))
             ∘ (alg .famf .transf (γ₁ , _) ∘ pair p₁ (project-fam-open Q γ₁ i₁))
@@ -931,10 +905,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                ((fobj R y .fam .subst (project-≈-open R γ₁≈γ₂ z₁≈z₂) ∘ project-fam-open R γ₁ z₁)
                   ∘ pair p₁ (p₂ ∘ p₂))
         ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-          pair (fobj P y .fam .subst (project-≈-open P γ₁≈γ₂ x₁≈x₂)
-                 ∘ (project-fam-open P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂)))
-               (fobj R y .fam .subst (project-≈-open R γ₁≈γ₂ z₁≈z₂)
-                 ∘ (project-fam-open R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂)))
+          pair (fobj P y .fam .subst (project-≈-open P γ₁≈γ₂ x₁≈x₂) ∘ (project-fam-open P γ₁ x₁ ∘ pair p₁ (p₁ ∘ p₂)))
+               (fobj R y .fam .subst (project-≈-open R γ₁≈γ₂ z₁≈z₂) ∘ (project-fam-open R γ₁ z₁ ∘ pair p₁ (p₂ ∘ p₂)))
         ≈⟨ ≈-sym (pair-compose _ _ _ _) ⟩
           prod-m (fobj P y .fam .subst (project-≈-open P γ₁≈γ₂ x₁≈x₂))
                  (fobj R y .fam .subst (project-≈-open R γ₁≈γ₂ z₁≈z₂))
@@ -957,8 +929,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       β-idx : (P : Poly cat)
               {γ₁ γ₂ : Γ .idx .Carrier} (γ₁≈γ₂ : Γ .idx ._≈s_ γ₁ γ₂)
               {i₁ i₂ : fobj P WObj .idx .Carrier} (i₁≈i₂ : fobj P WObj .idx ._≈s_ i₁ i₂) →
-              fobj P y .idx ._≈s_
-                (project-idx-open P γ₁ (embed-idx P i₁)) (fmor P fold-open .idxf .PS._⇒_.func (γ₂ , i₂))
+              fobj P y .idx ._≈s_ (project-idx-open P γ₁ (embed-idx P i₁)) (fmor P fold-open .idxf .PS._⇒_.func (γ₂ , i₂))
       β-idx Poly.one       _ _                            = tt
       β-idx (Poly.const A) _ i₁≈i₂                        = i₁≈i₂
       β-idx Poly.var       γ₁≈γ₂ {inF _} {inF _} i₁≈i₂    =
@@ -1000,11 +971,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         ≈⟨ id-left ⟩
           alg .famf .transf (γ , project-idx-open Q γ i) ∘ pair p₁ (project-fam-open Q γ i)
         ∎ where open ≈-Reasoning isEquiv
-      β-fam (P Poly.+ R)   γ (inj₁ x)       =
+      β-fam (P Poly.+ R)   γ (inj₁ x) =
         ≈-trans (β-fam P γ x) (≈-sym (≈-trans id-left id-left))
-      β-fam (P Poly.+ R)   γ (inj₂ z)       =
+      β-fam (P Poly.+ R)   γ (inj₂ z) =
         ≈-trans (β-fam R γ z) (≈-sym (≈-trans id-left id-left))
-      β-fam (P Poly.× R)   γ (x , z)        =
+      β-fam (P Poly.× R)   γ (x , z) =
         ≈-trans (∘-cong (pair-natural _ _ _) ≈-refl) (≈-trans (pair-natural _ _ _) (pair-cong eq-P eq-R))
         where
           -- Lift a WObj-fibre pair into the WFam-fibre form.
@@ -1160,9 +1131,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 η-idx Q (Γ .idx .isEquivalence .refl) (WIdx-≈-refl poly (idx-of Q))) ⟩
             alg .idxf .PS._⇒_.func (_ , project-idx-open Q _ j₂)
           ∎ where open ≈-Reasoning (y .idx .isEquivalence)
-        η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₁ x₁} {inj₁ x₂} j₁≈j₂      = η-idx P δ₁≈δ₂ j₁≈j₂
-        η-idx (P Poly.+ R)   δ₁≈δ₂ {inj₂ y₁} {inj₂ y₂} j₁≈j₂      = η-idx R δ₁≈δ₂ j₁≈j₂
-        η-idx (P Poly.× R)   δ₁≈δ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) =
+        η-idx (P Poly.+ R) δ₁≈δ₂ {inj₁ x₁} {inj₁ x₂} j₁≈j₂      = η-idx P δ₁≈δ₂ j₁≈j₂
+        η-idx (P Poly.+ R) δ₁≈δ₂ {inj₂ y₁} {inj₂ y₂} j₁≈j₂      = η-idx R δ₁≈δ₂ j₁≈j₂
+        η-idx (P Poly.× R) δ₁≈δ₂ {x₁ , z₁} {x₂ , z₂} (x₁≈x₂ , z₁≈z₂) =
           η-idx P δ₁≈δ₂ x₁≈x₂ , η-idx R δ₁≈δ₂ z₁≈z₂
 
         -- Fam-level analog at WIdx level: relates fmor h's transf (bridged via unembed-fam) to
@@ -1212,8 +1183,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           ≈˘⟨ ∘-cong ≈-refl (h .famf .natural {γ , inF j} {γ , inF (embed-idx Q (unembed-idx Q j))}
                               (Γ .idx .isEquivalence .refl ,
                                WObj .idx .isEquivalence .sym (embed-unembed-id Q j))) ⟩
-            y .fam .subst _ ∘
-              (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
+            y .fam .subst _ ∘ (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
                (Γ ⊗ WObj) .fam .subst
                  (Γ .idx .isEquivalence .refl , WObj .idx .isEquivalence .sym (embed-unembed-id Q j)))
           ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl
@@ -1221,8 +1191,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             y .fam .subst _ ∘
               (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
                pair p₁ (WFam-subst Q (WObj .idx .isEquivalence .sym (embed-unembed-id Q j)) ∘ p₂))
-          ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (pair-cong ≈-refl
-                (∘-cong (embed-unembed-fam-id Q j) ≈-refl))) ⟩
+          ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (pair-cong ≈-refl (∘-cong (embed-unembed-fam-id Q j) ≈-refl))) ⟩
             y .fam .subst _ ∘
               (h .famf .transf (γ , inF (embed-idx Q (unembed-idx Q j))) ∘
                pair p₁ ((embed-fam Q (unembed-idx Q j) ∘ unembed-fam Q j) ∘ p₂))
@@ -1343,17 +1312,14 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                   (fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
             pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
           ≈⟨ ∘-cong (pair-compose _ _ _ _) ≈-refl ⟩
-            pair (fobj P y .fam .subst _ ∘
-                    (fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂)))
-                 (fobj R y .fam .subst _ ∘
-                    (fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
+            pair (fobj P y .fam .subst _ ∘ (fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂)))
+                 (fobj R y .fam .subst _ ∘ (fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
             pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂)
           ≈⟨ pair-natural _ _ _ ⟩
             pair ((fobj P y .fam .subst _ ∘
                      (fmor P h .famf .transf (γ , unembed-idx P x) ∘ pair p₁ (p₁ ∘ p₂))) ∘
                   pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂))
-                 ((fobj R y .fam .subst _ ∘
-                     (fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
+                 ((fobj R y .fam .subst _ ∘ (fmor R h .famf .transf (γ , unembed-idx R z) ∘ pair p₁ (p₂ ∘ p₂))) ∘
                   pair p₁ (prod-m (unembed-fam P x) (unembed-fam R z) ∘ p₂))
           ≈⟨ pair-cong (bridge P x (p₁ ∘ p₂) (p₁ ∘ p₂) merge-pair-P fold-pair-P)
                        (bridge R z (p₂ ∘ p₂) (p₂ ∘ p₂) merge-pair-R fold-pair-R) ⟩
