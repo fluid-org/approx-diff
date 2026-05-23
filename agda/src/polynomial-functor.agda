@@ -583,8 +583,7 @@ module Sem {o m e} {𝒞 : Category o m e}
 
     iso-fwd∘bwd-co : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
       ⦅ inF P' ∘ iso-mor P≅P' {Γ} ⦆ ∘co ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ≈ p₂
-    iso-fwd∘bwd-co P≅P' =
-      ≈-trans (cata-fusion _ _ _ (fwd-cata-alg-mor P≅P')) (≈-sym cata-inF)
+    iso-fwd∘bwd-co P≅P' = ≈-trans (cata-fusion _ _ _ (fwd-cata-alg-mor P≅P')) (≈-sym cata-inF)
 
     iso-fwd∘bwd : ∀ {P P'} (P≅P' : Poly-iso P P') →
       (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
