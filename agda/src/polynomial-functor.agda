@@ -107,21 +107,17 @@ module Sem {o m e} {𝒞 : Category o m e}
     fmor-id var         = ≈-refl
     fmor-id (Q₁ + Q₂)   =
       ≈-trans (scopair-cong (∘-cong ≈-refl (fmor-id Q₁)) (∘-cong ≈-refl (fmor-id Q₂)))
-              (≈-trans (scopair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
-                       (scopair-ext p₂))
+              (≈-trans (scopair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _))) (scopair-ext p₂))
     fmor-id (Q₁ × Q₂)   =
       ≈-trans (pair-cong (∘-cong (fmor-id Q₁) ≈-refl) (∘-cong (fmor-id Q₂) ≈-refl))
-              (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _))
-                       (pair-ext p₂))
+              (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext p₂))
 
     fmor-cong : ∀ Q {Γ X Y} {f₁ f₂ : prod Γ X ⇒ Y} → f₁ ≈ f₂ → fmor Q f₁ ≈ fmor Q f₂
     fmor-cong one         _    = ≈-refl
     fmor-cong (const A)   _    = ≈-refl
     fmor-cong var         f≈g  = f≈g
-    fmor-cong (Q₁ + Q₂)   f≈g  = scopair-cong (∘-cong ≈-refl (fmor-cong Q₁ f≈g))
-                                                (∘-cong ≈-refl (fmor-cong Q₂ f≈g))
-    fmor-cong (Q₁ × Q₂)   f≈g  = pair-cong (∘-cong (fmor-cong Q₁ f≈g) ≈-refl)
-                                             (∘-cong (fmor-cong Q₂ f≈g) ≈-refl)
+    fmor-cong (Q₁ + Q₂)   f≈g  = scopair-cong (∘-cong ≈-refl (fmor-cong Q₁ f≈g)) (∘-cong ≈-refl (fmor-cong Q₂ f≈g))
+    fmor-cong (Q₁ × Q₂)   f≈g  = pair-cong (∘-cong (fmor-cong Q₁ f≈g) ≈-refl) (∘-cong (fmor-cong Q₂ f≈g) ≈-refl)
 
     fmor-comp : ∀ Q {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
       fmor Q (f ∘ pair p₁ g) ≈ fmor Q f ∘ pair p₁ (fmor Q g)
