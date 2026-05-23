@@ -162,7 +162,24 @@ module Sem {o m e} {𝒞 : Category o m e}
             in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g)
           ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
-    fmor-comp (Q₁ × Q₂)   f g = {!!}
+    fmor-comp (Q₁ × Q₂)   f g = begin
+        fmor (Q₁ × Q₂) (f ∘co g)
+      ≈⟨ pair-cong (∘-cong₁ (fmor-comp Q₁ f g)) (∘-cong₁ (fmor-comp Q₂ f g)) ⟩
+        pair ((fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂))
+             ((fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂))
+      ≈˘⟨ pair-cong eq-p₁ eq-p₂ ⟩
+        pair (p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g))
+             (p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g))
+      ≈⟨ pair-ext _ ⟩
+        fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g
+      ∎ where
+        eq-p₁ : p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
+                ≈ (fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂)
+        eq-p₁ = {!!}
+        eq-p₂ : p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
+                ≈ (fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂)
+        eq-p₂ = {!!}
+        open ≈-Reasoning isEquiv
 
     functor : ∀ Q Γ → Functor (cat-ext Γ) (cat-ext Γ)
     functor Q Γ .Functor.fobj      = fobj Q
