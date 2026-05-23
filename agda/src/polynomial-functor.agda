@@ -246,10 +246,26 @@ module Sem {o m e} {𝒞 : Category o m e}
       ⦅⦆-η : ∀ {Γ Q y} (alg : prod Γ (fobj Q y) ⇒ y) (h : prod Γ (μ Q) ⇒ y) →
              (h ∘co (inF Q ∘ p₂)) ≈ (alg ∘co fmor Q h) → h ≈ ⦅ alg ⦆
 
+  -- Derived consequences of HasMu's β/η.
+  module HasMu-derived (Mu : HasMu) where
+    open HasMu Mu
+
+    -- Catamorphism fusion: an algebra morphism f from alg to alg' absorbs into the cata.
+    cata-fusion : ∀ {Γ Q y y'} (alg : prod Γ (fobj Q y) ⇒ y) (alg' : prod Γ (fobj Q y') ⇒ y')
+                  (f : prod Γ y ⇒ y') →
+                  (f ∘co alg) ≈ (alg' ∘co fmor Q f) →
+                  (f ∘co ⦅ alg ⦆) ≈ ⦅ alg' ⦆
+    cata-fusion alg alg' f f-is-alg-mor = {!!}
+
+    -- Cata of inF is the coKleisli identity p₂.
+    cata-inF : ∀ {Γ Q} → p₂ {x = Γ} {y = μ Q} ≈ ⦅ inF Q ∘ p₂ ⦆
+    cata-inF = {!!}
+
   -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
   -- Built directly from catamorphism universal property (β, η).
   module μ-respects-Poly-iso (Mu : HasMu) where
     open HasMu Mu
+    open HasMu-derived Mu
     open Iso
 
     iso-mor : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (fobj P X) ⇒ fobj P' X
@@ -395,145 +411,145 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso-mor-natural one         f = to-terminal-unique _ _
     iso-mor-natural (const A≅B) f = ≈-trans id-right-co (≈-sym id-left-co)
     iso-mor-natural var         f = ≈-trans id-left-co (≈-sym id-right-co)
-    iso-mor-natural (_+_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) f =
+    iso-mor-natural (_+_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) f =
       begin
-        iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f
+        iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co fmor (P₁ + P₂) f
       ≈˘⟨ s-copair-ext _ ⟩
-        s-copair ((iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂))
-                 ((iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂))
+        s-copair ((iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂))
+                 ((iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂))
       ≈⟨ s-copair-cong eq-in₁ eq-in₂ ⟩
-        s-copair ((fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₁ ∘ p₂))
-                 ((fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂))
+        s-copair ((fmor (Q₁ + Q₂) f ∘co iso-mor (P₁≅Q₁ + P₂≅Q₂)) ∘co (in₁ ∘ p₂))
+                 ((fmor (Q₁ + Q₂) f ∘co iso-mor (P₁≅Q₁ + P₂≅Q₂)) ∘co (in₂ ∘ p₂))
       ≈⟨ s-copair-ext _ ⟩
-        fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)
+        fmor (Q₁ + Q₂) f ∘co iso-mor (P₁≅Q₁ + P₂≅Q₂)
       ∎ where
-        eq-in₁ : (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂)
-                 ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₁ ∘ p₂)
+        eq-in₁ : (iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂)
+                 ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (P₁≅Q₁ + P₂≅Q₂)) ∘co (in₁ ∘ p₂)
         eq-in₁ = begin
-            (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂)
+            (iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
-            iso-mor (pi₁ + pi₂) ∘co (fmor (P₁ + P₂) f ∘co (in₁ ∘ p₂))
+            iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co (fmor (P₁ + P₂) f ∘co (in₁ ∘ p₂))
           ≈⟨ ∘-cong-co ≈-refl (s-copair-in₁ _ _) ⟩
-            iso-mor (pi₁ + pi₂) ∘co (in₁ ∘ fmor P₁ f)
+            iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co (in₁ ∘ fmor P₁ f)
           ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
-            iso-mor (pi₁ + pi₂) ∘co ((in₁ ∘ p₂) ∘co fmor P₁ f)
+            iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co ((in₁ ∘ p₂) ∘co fmor P₁ f)
           ≈˘⟨ assoc-co _ _ _ ⟩
-            (iso-mor (pi₁ + pi₂) ∘co (in₁ ∘ p₂)) ∘co fmor P₁ f
+            (iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co (in₁ ∘ p₂)) ∘co fmor P₁ f
           ≈⟨ ∘-cong-co (s-copair-in₁ _ _) ≈-refl ⟩
-            (in₁ ∘ iso-mor pi₁) ∘co fmor P₁ f
+            (in₁ ∘ iso-mor P₁≅Q₁) ∘co fmor P₁ f
           ≈⟨ assoc _ _ _ ⟩
-            in₁ ∘ (iso-mor pi₁ ∘co fmor P₁ f)
-          ≈⟨ ∘-cong₂ (iso-mor-natural pi₁ f) ⟩
-            in₁ ∘ (fmor Q₁ f ∘co iso-mor pi₁)
+            in₁ ∘ (iso-mor P₁≅Q₁ ∘co fmor P₁ f)
+          ≈⟨ ∘-cong₂ (iso-mor-natural P₁≅Q₁ f) ⟩
+            in₁ ∘ (fmor Q₁ f ∘co iso-mor P₁≅Q₁)
           ≈˘⟨ assoc _ _ _ ⟩
-            (in₁ ∘ fmor Q₁ f) ∘co iso-mor pi₁
+            (in₁ ∘ fmor Q₁ f) ∘co iso-mor P₁≅Q₁
           ≈˘⟨ ∘-cong-co (s-copair-in₁ _ _) ≈-refl ⟩
-            (fmor (Q₁ + Q₂) f ∘co (in₁ ∘ p₂)) ∘co iso-mor pi₁
+            (fmor (Q₁ + Q₂) f ∘co (in₁ ∘ p₂)) ∘co iso-mor P₁≅Q₁
           ≈⟨ assoc-co _ _ _ ⟩
-            fmor (Q₁ + Q₂) f ∘co ((in₁ ∘ p₂) ∘co iso-mor pi₁)
+            fmor (Q₁ + Q₂) f ∘co ((in₁ ∘ p₂) ∘co iso-mor P₁≅Q₁)
           ≈⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
-            fmor (Q₁ + Q₂) f ∘co (in₁ ∘ iso-mor pi₁)
+            fmor (Q₁ + Q₂) f ∘co (in₁ ∘ iso-mor P₁≅Q₁)
           ≈˘⟨ ∘-cong-co ≈-refl (s-copair-in₁ _ _) ⟩
-            fmor (Q₁ + Q₂) f ∘co (iso-mor (pi₁ + pi₂) ∘co (in₁ ∘ p₂))
+            fmor (Q₁ + Q₂) f ∘co (iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co (in₁ ∘ p₂))
           ≈˘⟨ assoc-co _ _ _ ⟩
-            (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₁ ∘ p₂)
+            (fmor (Q₁ + Q₂) f ∘co iso-mor (P₁≅Q₁ + P₂≅Q₂)) ∘co (in₁ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
-        eq-in₂ : (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂)
-                 ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂)
+        eq-in₂ : (iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂)
+                 ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (P₁≅Q₁ + P₂≅Q₂)) ∘co (in₂ ∘ p₂)
         eq-in₂ = begin
-            (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂)
+            (iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
-            iso-mor (pi₁ + pi₂) ∘co (fmor (P₁ + P₂) f ∘co (in₂ ∘ p₂))
+            iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co (fmor (P₁ + P₂) f ∘co (in₂ ∘ p₂))
           ≈⟨ ∘-cong-co ≈-refl (s-copair-in₂ _ _) ⟩
-            iso-mor (pi₁ + pi₂) ∘co (in₂ ∘ fmor P₂ f)
+            iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co (in₂ ∘ fmor P₂ f)
           ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
-            iso-mor (pi₁ + pi₂) ∘co ((in₂ ∘ p₂) ∘co fmor P₂ f)
+            iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co ((in₂ ∘ p₂) ∘co fmor P₂ f)
           ≈˘⟨ assoc-co _ _ _ ⟩
-            (iso-mor (pi₁ + pi₂) ∘co (in₂ ∘ p₂)) ∘co fmor P₂ f
+            (iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co (in₂ ∘ p₂)) ∘co fmor P₂ f
           ≈⟨ ∘-cong-co (s-copair-in₂ _ _) ≈-refl ⟩
-            (in₂ ∘ iso-mor pi₂) ∘co fmor P₂ f
+            (in₂ ∘ iso-mor P₂≅Q₂) ∘co fmor P₂ f
           ≈⟨ assoc _ _ _ ⟩
-            in₂ ∘ (iso-mor pi₂ ∘co fmor P₂ f)
-          ≈⟨ ∘-cong₂ (iso-mor-natural pi₂ f) ⟩
-            in₂ ∘ (fmor Q₂ f ∘co iso-mor pi₂)
+            in₂ ∘ (iso-mor P₂≅Q₂ ∘co fmor P₂ f)
+          ≈⟨ ∘-cong₂ (iso-mor-natural P₂≅Q₂ f) ⟩
+            in₂ ∘ (fmor Q₂ f ∘co iso-mor P₂≅Q₂)
           ≈˘⟨ assoc _ _ _ ⟩
-            (in₂ ∘ fmor Q₂ f) ∘co iso-mor pi₂
+            (in₂ ∘ fmor Q₂ f) ∘co iso-mor P₂≅Q₂
           ≈˘⟨ ∘-cong-co (s-copair-in₂ _ _) ≈-refl ⟩
-            (fmor (Q₁ + Q₂) f ∘co (in₂ ∘ p₂)) ∘co iso-mor pi₂
+            (fmor (Q₁ + Q₂) f ∘co (in₂ ∘ p₂)) ∘co iso-mor P₂≅Q₂
           ≈⟨ assoc-co _ _ _ ⟩
-            fmor (Q₁ + Q₂) f ∘co ((in₂ ∘ p₂) ∘co iso-mor pi₂)
+            fmor (Q₁ + Q₂) f ∘co ((in₂ ∘ p₂) ∘co iso-mor P₂≅Q₂)
           ≈⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
-            fmor (Q₁ + Q₂) f ∘co (in₂ ∘ iso-mor pi₂)
+            fmor (Q₁ + Q₂) f ∘co (in₂ ∘ iso-mor P₂≅Q₂)
           ≈˘⟨ ∘-cong-co ≈-refl (s-copair-in₂ _ _) ⟩
-            fmor (Q₁ + Q₂) f ∘co (iso-mor (pi₁ + pi₂) ∘co (in₂ ∘ p₂))
+            fmor (Q₁ + Q₂) f ∘co (iso-mor (P₁≅Q₁ + P₂≅Q₂) ∘co (in₂ ∘ p₂))
           ≈˘⟨ assoc-co _ _ _ ⟩
-            (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂)
+            (fmor (Q₁ + Q₂) f ∘co iso-mor (P₁≅Q₁ + P₂≅Q₂)) ∘co (in₂ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
-    iso-mor-natural (_×_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) f = begin
-        iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f
+    iso-mor-natural (_×_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) f = begin
+        iso-mor (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f
       ≈˘⟨ pair-ext _ ⟩
-        pair (p₁ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f))
-             (p₂ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f))
+        pair (p₁ ∘ (iso-mor (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f))
+             (p₂ ∘ (iso-mor (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f))
       ≈⟨ pair-cong eq-p₁ eq-p₂ ⟩
-        pair (p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂)))
-             (p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂)))
+        pair (p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂)))
+             (p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂)))
       ≈⟨ pair-ext _ ⟩
-        fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂)
+        fmor (Q₁ × Q₂) f ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂)
       ∎ where
-        eq-p₁ : p₁ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
-                ≈ p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
+        eq-p₁ : p₁ ∘ (iso-mor (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f)
+                ≈ p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂))
         eq-p₁ = begin
-            p₁ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
+            p₁ ∘ (iso-mor (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f)
           ≈˘⟨ assoc _ _ _ ⟩
-            (p₁ ∘ iso-mor (pi₁ × pi₂)) ∘co fmor (P₁ × P₂) f
+            (p₁ ∘ iso-mor (P₁≅Q₁ × P₂≅Q₂)) ∘co fmor (P₁ × P₂) f
           ≈⟨ ∘-cong-co (pair-p₁ _ _) ≈-refl ⟩
-            (iso-mor pi₁ ∘co (p₁ ∘ p₂)) ∘co fmor (P₁ × P₂) f
+            (iso-mor P₁≅Q₁ ∘co (p₁ ∘ p₂)) ∘co fmor (P₁ × P₂) f
           ≈⟨ assoc-co _ _ _ ⟩
-            iso-mor pi₁ ∘co ((p₁ ∘ p₂) ∘co fmor (P₁ × P₂) f)
+            iso-mor P₁≅Q₁ ∘co ((p₁ ∘ p₂) ∘co fmor (P₁ × P₂) f)
           ≈⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (pair-p₁ _ _))) ⟩
-            iso-mor pi₁ ∘co (fmor P₁ f ∘co (p₁ ∘ p₂))
+            iso-mor P₁≅Q₁ ∘co (fmor P₁ f ∘co (p₁ ∘ p₂))
           ≈˘⟨ assoc-co _ _ _ ⟩
-            (iso-mor pi₁ ∘co fmor P₁ f) ∘co (p₁ ∘ p₂)
-          ≈⟨ ∘-cong-co (iso-mor-natural pi₁ f) ≈-refl ⟩
-            (fmor Q₁ f ∘co iso-mor pi₁) ∘co (p₁ ∘ p₂)
+            (iso-mor P₁≅Q₁ ∘co fmor P₁ f) ∘co (p₁ ∘ p₂)
+          ≈⟨ ∘-cong-co (iso-mor-natural P₁≅Q₁ f) ≈-refl ⟩
+            (fmor Q₁ f ∘co iso-mor P₁≅Q₁) ∘co (p₁ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
-            fmor Q₁ f ∘co (iso-mor pi₁ ∘co (p₁ ∘ p₂))
+            fmor Q₁ f ∘co (iso-mor P₁≅Q₁ ∘co (p₁ ∘ p₂))
           ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (pair-p₁ _ _))) ⟩
-            fmor Q₁ f ∘co ((p₁ ∘ p₂) ∘co iso-mor (pi₁ × pi₂))
+            fmor Q₁ f ∘co ((p₁ ∘ p₂) ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂))
           ≈˘⟨ assoc-co _ _ _ ⟩
-            (fmor Q₁ f ∘co (p₁ ∘ p₂)) ∘co iso-mor (pi₁ × pi₂)
+            (fmor Q₁ f ∘co (p₁ ∘ p₂)) ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂)
           ≈˘⟨ ∘-cong-co (pair-p₁ _ _) ≈-refl ⟩
-            (p₁ ∘ fmor (Q₁ × Q₂) f) ∘co iso-mor (pi₁ × pi₂)
+            (p₁ ∘ fmor (Q₁ × Q₂) f) ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂)
           ≈⟨ assoc _ _ _ ⟩
-            p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
+            p₁ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂))
           ∎ where open ≈-Reasoning isEquiv
-        eq-p₂ : p₂ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
-                ≈ p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
+        eq-p₂ : p₂ ∘ (iso-mor (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f)
+                ≈ p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂))
         eq-p₂ = begin
-            p₂ ∘ (iso-mor (pi₁ × pi₂) ∘co fmor (P₁ × P₂) f)
+            p₂ ∘ (iso-mor (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f)
           ≈˘⟨ assoc _ _ _ ⟩
-            (p₂ ∘ iso-mor (pi₁ × pi₂)) ∘co fmor (P₁ × P₂) f
+            (p₂ ∘ iso-mor (P₁≅Q₁ × P₂≅Q₂)) ∘co fmor (P₁ × P₂) f
           ≈⟨ ∘-cong-co (pair-p₂ _ _) ≈-refl ⟩
-            (iso-mor pi₂ ∘co (p₂ ∘ p₂)) ∘co fmor (P₁ × P₂) f
+            (iso-mor P₂≅Q₂ ∘co (p₂ ∘ p₂)) ∘co fmor (P₁ × P₂) f
           ≈⟨ assoc-co _ _ _ ⟩
-            iso-mor pi₂ ∘co ((p₂ ∘ p₂) ∘co fmor (P₁ × P₂) f)
+            iso-mor P₂≅Q₂ ∘co ((p₂ ∘ p₂) ∘co fmor (P₁ × P₂) f)
           ≈⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (pair-p₂ _ _))) ⟩
-            iso-mor pi₂ ∘co (fmor P₂ f ∘co (p₂ ∘ p₂))
+            iso-mor P₂≅Q₂ ∘co (fmor P₂ f ∘co (p₂ ∘ p₂))
           ≈˘⟨ assoc-co _ _ _ ⟩
-            (iso-mor pi₂ ∘co fmor P₂ f) ∘co (p₂ ∘ p₂)
-          ≈⟨ ∘-cong-co (iso-mor-natural pi₂ f) ≈-refl ⟩
-            (fmor Q₂ f ∘co iso-mor pi₂) ∘co (p₂ ∘ p₂)
+            (iso-mor P₂≅Q₂ ∘co fmor P₂ f) ∘co (p₂ ∘ p₂)
+          ≈⟨ ∘-cong-co (iso-mor-natural P₂≅Q₂ f) ≈-refl ⟩
+            (fmor Q₂ f ∘co iso-mor P₂≅Q₂) ∘co (p₂ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
-            fmor Q₂ f ∘co (iso-mor pi₂ ∘co (p₂ ∘ p₂))
+            fmor Q₂ f ∘co (iso-mor P₂≅Q₂ ∘co (p₂ ∘ p₂))
           ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (pair-p₂ _ _))) ⟩
-            fmor Q₂ f ∘co ((p₂ ∘ p₂) ∘co iso-mor (pi₁ × pi₂))
+            fmor Q₂ f ∘co ((p₂ ∘ p₂) ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂))
           ≈˘⟨ assoc-co _ _ _ ⟩
-            (fmor Q₂ f ∘co (p₂ ∘ p₂)) ∘co iso-mor (pi₁ × pi₂)
+            (fmor Q₂ f ∘co (p₂ ∘ p₂)) ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂)
           ≈˘⟨ ∘-cong-co (pair-p₂ _ _) ≈-refl ⟩
-            (p₂ ∘ fmor (Q₁ × Q₂) f) ∘co iso-mor (pi₁ × pi₂)
+            (p₂ ∘ fmor (Q₁ × Q₂) f) ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂)
           ≈⟨ assoc _ _ _ ⟩
-            p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (pi₁ × pi₂))
+            p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor (P₁≅Q₁ × P₂≅Q₂))
           ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
 
