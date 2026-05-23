@@ -592,13 +592,15 @@ module Sem {o m e} {𝒞 : Category o m e}
         ((inF P' ∘ p₂) ∘co (iso-mor P≅P' ∘co fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆)) ∘co iso-mor (iso-sym P≅P')
       ≈⟨ ∘-cong-co₁ (∘-cong-co₂ (iso-mor-natural P≅P' _)) ⟩
         ((inF P' ∘ p₂) ∘co (fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co iso-mor P≅P')) ∘co iso-mor (iso-sym P≅P')
-      ≈⟨ {!!} ⟩
+      ≈˘⟨ ∘-cong-co₁ (assoc-co _ _ _) ⟩
+        (((inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆) ∘co iso-mor P≅P') ∘co iso-mor (iso-sym P≅P')
+      ≈⟨ assoc-co _ _ _ ⟩
+        ((inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆) ∘co (iso-mor P≅P' ∘co iso-mor (iso-sym P≅P'))
+      ≈⟨ ∘-cong-co₂ (iso-mor-fwd∘bwd P≅P') ⟩
+        ((inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆) ∘co p₂
+      ≈⟨ ≈-trans (∘-cong₂ pair-ext0) id-right ⟩
         (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆
       ∎ where open ≈-Reasoning isEquiv
-
-    iso-fwd∘bwd-co : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
-      ⦅ inF P' ∘ iso-mor P≅P' {Γ} ⦆ ∘co ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ≈ p₂
-    iso-fwd∘bwd-co P≅P' = ≈-trans (cata-fusion _ _ _ (fwd-cata-alg-mor P≅P')) (≈-sym cata-inF)
 
     iso-fwd∘bwd : ∀ {P P'} (P≅P' : Poly-iso P P') →
       (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
@@ -626,7 +628,7 @@ module Sem {o m e} {𝒞 : Category o m e}
         ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘ (pair p₁ ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))
       ≈˘⟨ assoc _ _ _ ⟩
         (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co ⦅ inF P ∘ iso-mor (iso-sym P≅P') ⦆) ∘ pair to-terminal (id (μ P'))
-      ≈⟨ ∘-cong₁ (iso-fwd∘bwd-co P≅P') ⟩
+      ≈⟨ ∘-cong₁ (≈-trans (cata-fusion _ _ _ (fwd-cata-alg-mor P≅P')) (≈-sym cata-inF)) ⟩
         p₂ ∘ pair to-terminal (id (μ P'))
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ P')
