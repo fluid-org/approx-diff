@@ -131,8 +131,9 @@ module Interpretation
   open import fam-exponentials 0ℓ 0ℓ
     𝒟 𝒟-cmon 𝒟-biproducts
     (indexed-family.hasSetoidProducts 0ℓ 0ℓ 𝒟 λ A → limits→limits' (𝒟-limits _))
-    renaming ( exponentials to Fam⟨𝒟⟩-exponentials
-             ; products     to Fam⟨𝒟⟩-products
+    renaming ( exponentials    to Fam⟨𝒟⟩-exponentials
+             ; products        to Fam⟨𝒟⟩-products
+             ; strongCoproducts to Fam⟨𝒟⟩-strongCoproducts
              )
     using ()
     public
@@ -186,7 +187,7 @@ module Interpretation
        Fam⟨𝒟⟩.cat
        Fam⟨𝒟⟩-terminal
        Fam⟨𝒟⟩-products
-       Fam⟨𝒟⟩-coproducts
+       Fam⟨𝒟⟩-strongCoproducts
        Fam⟨𝒟⟩-exponentials
        (polynomial-functor.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
