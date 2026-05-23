@@ -115,8 +115,12 @@ module Sem {o m e} {𝒞 : Category o m e}
     fmor-cong (Q₁ × Q₂)   f≈g  = pair-cong (∘-cong₁ (fmor-cong Q₁ f≈g)) (∘-cong₁ (fmor-cong Q₂ f≈g))
 
     fmor-comp : ∀ Q {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
-      fmor Q (f ∘co g) ≈ fmor Q f ∘co (fmor Q g)
-    fmor-comp Q f g = {!!}
+                fmor Q (f ∘co g) ≈ fmor Q f ∘co (fmor Q g)
+    fmor-comp one         f g = to-terminal-unique _ _
+    fmor-comp (const A)   f g = ≈-sym id-left-co
+    fmor-comp var         f g = ≈-refl
+    fmor-comp (Q₁ + Q₂)   f g = {!!}
+    fmor-comp (Q₁ × Q₂)   f g = {!!}
 
     functor : ∀ Q Γ → Functor (cat-ext Γ) (cat-ext Γ)
     functor Q Γ .Functor.fobj      = fobj Q
