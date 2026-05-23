@@ -175,7 +175,25 @@ module Sem {o m e} {𝒞 : Category o m e}
       ∎ where
         eq-p₁ : p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
                 ≈ (fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂)
-        eq-p₁ = {!!}
+        eq-p₁ = begin
+            p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (p₁ ∘ fmor (Q₁ × Q₂) f) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
+          ≈⟨ ∘-cong₁ (pair-p₁ _ _) ⟩
+            (fmor Q₁ f ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
+          ≈⟨ assoc _ _ _ ⟩
+            fmor Q₁ f ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair p₁ (fmor (Q₁ × Q₂) g))
+          ≈⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
+                              (pair-cong (pair-p₁ _ _)
+                                         (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
+            fmor Q₁ f ∘ pair p₁ (p₁ ∘ fmor (Q₁ × Q₂) g)
+          ≈⟨ ∘-cong₂ (pair-cong₂ (pair-p₁ _ _)) ⟩
+            fmor Q₁ f ∘ pair p₁ (fmor Q₁ g ∘ pair p₁ (p₁ ∘ p₂))
+          ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))) ⟩
+            fmor Q₁ f ∘ (pair p₁ (fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂))
+          ≈˘⟨ assoc _ _ _ ⟩
+            (fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂)
+          ∎ where open ≈-Reasoning isEquiv
         eq-p₂ : p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
                 ≈ (fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂)
         eq-p₂ = {!!}
