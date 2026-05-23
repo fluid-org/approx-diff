@@ -79,7 +79,8 @@ module Sem {o m e} {𝒞 : Category o m e}
 
   module _ {Γ : obj} where
     open Category (cat-ext Γ) public using ()
-      renaming (assoc to assoc-co; ∘-cong to ∘-cong-co; id-left to id-left-co; id-right to id-right-co)
+      renaming (assoc to assoc-co; ∘-cong to ∘-cong-co; ∘-cong₁ to ∘-cong-co₁; ∘-cong₂ to ∘-cong-co₂;
+                id-left to id-left-co; id-right to id-right-co)
 
   module Poly-fun where
     fobj : Poly 𝒞 → obj → obj
@@ -581,11 +582,11 @@ module Sem {o m e} {𝒞 : Category o m e}
       ≈ (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆
     fwd-cata-alg-mor {P} {P'} P≅P' = begin
         ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co (inF P ∘ iso-mor (iso-sym P≅P'))
-      ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
+      ≈˘⟨ ∘-cong-co₂ (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
         ⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co ((inF P ∘ p₂) ∘co iso-mor (iso-sym P≅P'))
       ≈˘⟨ assoc-co _ _ _ ⟩
         (⦅ inF P' ∘ iso-mor P≅P' ⦆ ∘co (inF P ∘ p₂)) ∘co iso-mor (iso-sym P≅P')
-      ≈⟨ ∘-cong-co (⦅⦆-β _) ≈-refl ⟩
+      ≈⟨ ∘-cong-co₁ (⦅⦆-β _) ⟩
         ((inF P' ∘ iso-mor P≅P') ∘co fmor P ⦅ inF P' ∘ iso-mor P≅P' ⦆) ∘co iso-mor (iso-sym P≅P')
       ≈⟨ {!!} ⟩
         (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor P≅P' ⦆
