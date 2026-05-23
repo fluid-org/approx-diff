@@ -420,12 +420,10 @@ GF-preserve-coproducts-GlCP .Category.IsIso.f∘inverse≈id .f≃f = Category.I
 GF-preserve-coproducts-GlCP .Category.IsIso.inverse∘f≈id .f≃f = Category.IsIso.inverse∘f≈id FC
 
 private
-  module GlCP-rt = HasCoproducts (strong-coproducts→coproducts GlPE.terminal GlSC)
+  module GlCP-from-SC = HasCoproducts (strong-coproducts→coproducts GlPE.terminal GlSC)
 
--- GlCP.copair and the round-tripped copair agree by uniqueness of mediating morphisms (both
--- coproducts share the same coprod/in₁/in₂; their copairs satisfy the same β-laws).
 copair-agreement : ∀ {x y z} (f : x Glued.⇒ z) (g : y Glued.⇒ z) →
-                   GlCP.coproducts .HasCoproducts.copair f g Glued.≈ GlCP-rt.copair f g
+                   GlCP.coproducts .HasCoproducts.copair f g Glued.≈ GlCP-from-SC.copair f g
 copair-agreement f g = {!!}
 
 GF-preserve-coproducts : preserve-chosen-coproducts GF 𝒞CP (strong-coproducts→coproducts GlPE.terminal GlSC)
