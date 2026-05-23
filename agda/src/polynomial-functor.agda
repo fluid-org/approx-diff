@@ -90,6 +90,11 @@ module Sem {o m e} {𝒞 : Category o m e}
   _∘co_ : ∀ {Γ X Y Z} → (prod Γ Y ⇒ Z) → (prod Γ X ⇒ Y) → (prod Γ X ⇒ Z)
   _∘co_ {Γ} = Category._∘_ (cat-ext Γ)
 
+  module _ {Γ : obj} where
+    open Category (cat-ext Γ) public using ()
+      renaming (assoc to assoc-co; ∘-cong to ∘-cong-co;
+                id-left to id-left-co; id-right to id-right-co)
+
   module Poly-fun where
     fobj : Poly 𝒞 → obj → obj
     fobj one         _ = terminal
@@ -201,12 +206,12 @@ module Sem {o m e} {𝒞 : Category o m e}
                    ≈ p₂ ∘co (in₁ ∘ p₂)
         in₁-branch =
           begin
-            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
-             pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₁ ∘ p₂)
-          ≈⟨ assoc _ _ _ ⟩
-            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
-            (pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))) ∘co (in₁ ∘ p₂))
-          ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (scopair-in₁ _ _))) ⟩
+            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+             (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₁ ∘ p₂)
+          ≈⟨ assoc-co _ _ _ ⟩
+            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+            (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)) ∘co (in₁ ∘ p₂))
+          ≈⟨ ∘-cong-co ≈-refl (scopair-in₁ _ _) ⟩
             scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₁ ∘ iso-mor (iso-sym P₁≅Q₁))
           ≈˘⟨ ∘-cong ≈-refl
                 (≈-trans (pair-natural _ _ _)
@@ -224,16 +229,16 @@ module Sem {o m e} {𝒞 : Category o m e}
             p₂ ∘co (in₁ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
 
-        in₂-branch : (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
-                      pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₂ ∘ p₂)
+        in₂-branch : (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+                      (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₂ ∘ p₂)
                    ≈ p₂ ∘co (in₂ ∘ p₂)
         in₂-branch = begin
-            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
-             pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₂ ∘ p₂)
-          ≈⟨ assoc _ _ _ ⟩
-            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘
-            (pair p₁ (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))) ∘co (in₂ ∘ p₂))
-          ≈⟨ ∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (scopair-in₂ _ _))) ⟩
+            (scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+             (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)))) ∘co (in₂ ∘ p₂)
+          ≈⟨ assoc-co _ _ _ ⟩
+            scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co
+            (scopair (in₁ ∘ iso-mor (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor (iso-sym P₂≅Q₂)) ∘co (in₂ ∘ p₂))
+          ≈⟨ ∘-cong-co ≈-refl (scopair-in₂ _ _) ⟩
             scopair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂) ∘co (in₂ ∘ iso-mor (iso-sym P₂≅Q₂))
           ≈˘⟨ ∘-cong ≈-refl
                 (≈-trans (pair-natural _ _ _)
@@ -1510,11 +1515,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     ≈⟨ ∘-cong ≈-refl (pair-compose _ _ _ _) ⟩
       alg .famf .transf (γ , fmor Q fold-open .idxf .PS._⇒_.func (γ , i)) ∘
           pair (Γ .fam .subst _ ∘ p₁)
-               (fobj Q y .fam .subst _ ∘
-                  (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
+               (fobj Q y .fam .subst _ ∘ (project-fam-open Q γ (embed-idx Q i) ∘ pair p₁ (embed-fam Q i ∘ p₂)))
     ≈⟨ ∘-cong ≈-refl (pair-cong
-                (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
-                (≈-trans (≈-sym (assoc _ _ _)) (β-fam Q γ i))) ⟩
+                (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left) (≈-trans (≈-sym (assoc _ _ _)) (β-fam Q γ i))) ⟩
       alg .famf .transf (γ , fmor Q fold-open .idxf .PS._⇒_.func (γ , i)) ∘
           pair p₁ (fmor Q fold-open .famf .transf (γ , i))
     ≈⟨ ≈-sym id-left ⟩
