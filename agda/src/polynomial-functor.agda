@@ -395,7 +395,24 @@ module Sem {o m e} {𝒞 : Category o m e}
     iso-mor-natural one         f = to-terminal-unique _ _
     iso-mor-natural (const A≅B) f = ≈-trans id-right-co (≈-sym id-left-co)
     iso-mor-natural var         f = ≈-trans id-left-co (≈-sym id-right-co)
-    iso-mor-natural (pi₁ + pi₂) f = {!!}
+    iso-mor-natural (_+_ {P₁} {P₂} {Q₁} {Q₂} pi₁ pi₂) f = begin
+        iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f
+      ≈˘⟨ s-copair-ext _ ⟩
+        s-copair ((iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂))
+                 ((iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂))
+      ≈⟨ s-copair-cong eq-in₁ eq-in₂ ⟩
+        s-copair ((fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₁ ∘ p₂))
+                 ((fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂))
+      ≈⟨ s-copair-ext _ ⟩
+        fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)
+      ∎ where
+        eq-in₁ : (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₁ ∘ p₂)
+                 ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₁ ∘ p₂)
+        eq-in₁ = {!!}
+        eq-in₂ : (iso-mor (pi₁ + pi₂) ∘co fmor (P₁ + P₂) f) ∘co (in₂ ∘ p₂)
+                 ≈ (fmor (Q₁ + Q₂) f ∘co iso-mor (pi₁ + pi₂)) ∘co (in₂ ∘ p₂)
+        eq-in₂ = {!!}
+        open ≈-Reasoning isEquiv
     iso-mor-natural (pi₁ × pi₂) f = {!!}
 
     iso-fwd∘bwd-β : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
