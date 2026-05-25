@@ -70,16 +70,3 @@ module ex where
       (from var zero collect
       when fst (var zero) ≟ (` l) ；
       return (snd (var zero)))
-
-  -- Instantiate our two translations with our two example approximation monads.
-  module cbn-Tag where
-    open import cbn-translation Sig Tag-monad
-
-    cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
-    cbn-query l = ⟪ query l ⟫tm
-
-  module approx-Tag where
-    open import approx-translation Sig Tag-monad
-
-    approx-query : label.label → ⟪ emp , list (base label [×] base number) ⟫ctxt ⊢ ⟪ base number ⟫ty
-    approx-query l = ⟪ query l ⟫tm

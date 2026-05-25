@@ -1,11 +1,5 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-------------------------------------------------------------------------------
--- Moggi-style CBN translation, parameterised on a SynMonad. Wraps every
--- component of every compound type former with the supplied Mon —
--- distinct from approx-translation's per-root design.
-------------------------------------------------------------------------------
-
 open import Data.List using (List; []; _∷_)
 open import signature using (Signature)
 open import every
@@ -27,6 +21,9 @@ mutual
   ⟪ τ₁ [→] τ₂ ⟫ty = (Mon ⟪ τ₁ ⟫ty) [→] (Mon ⟪ τ₂ ⟫ty)
   ⟪ μ P ⟫ty = μ ⟪ P ⟫poly
 
+  -- Roughly emulates the previous ⟪list τ⟫ty = list (Mon ⟪τ⟫ty), but isn't compatible with ⟪_⟫ty now that
+  -- list τ is just shorthand for μ (one [+] (const τ [×] var)). Need a way to insert composition with Mon
+  -- into a polynomial.
   ⟪_⟫poly : polynomial → polynomial
   ⟪ one ⟫poly       = one
   ⟪ const σ ⟫poly   = const (Mon ⟪ σ ⟫ty)
@@ -47,38 +44,6 @@ _$_ = app
 
 infixl 10 _$_
 
-cbn-coerce : (P : polynomial) → ∀ {Γ τ} → Γ ⊢ ⟪ apply P τ ⟫ty → Γ ⊢ Mon (apply ⟪ P ⟫poly ⟪ τ ⟫ty)
-cbn-coerce one         M = pure $ unit
-cbn-coerce (const σ)   M = pure $ (pure $ M)
-cbn-coerce var         M = pure $ M
-cbn-coerce (P [+] Q) M =
-  case M
-    (bind $ var zero $ lam (bind $ cbn-coerce P (var zero) $ lam (pure $ inl (var zero))))
-    (bind $ var zero $ lam (bind $ cbn-coerce Q (var zero) $ lam (pure $ inr (var zero))))
-cbn-coerce (P [×] Q) M =
-  bind $ fst M $ lam (
-    bind $ cbn-coerce P (var zero) $ lam (
-      bind $ snd (weaken * (weaken * M)) $ lam (
-        bind $ cbn-coerce Q (var zero) $ lam (
-          pure $ pair (var (succ (succ zero))) (var zero)))))
-
--- The other direction (used by fold-μ): from apply ⟪P⟫poly (Mon ⟪τ⟫ty)
--- (target-side, with Mon at var positions but no Mon at sum/product
--- nodes) to Mon ⟪apply P τ⟫ty (source-translation-side, with Mon at
--- sum/product nodes). Aligns the algebra-argument type for fold-μ.
-cbn-coerce' : (P : polynomial) → ∀ {Γ τ} →
-              Γ ⊢ apply ⟪ P ⟫poly (Mon ⟪ τ ⟫ty) →
-              Γ ⊢ Mon ⟪ apply P τ ⟫ty
-cbn-coerce' one       M = pure $ M
-cbn-coerce' (const σ) M = M
-cbn-coerce' var       M = M
-cbn-coerce' (P [+] Q) M =
-  case M
-    (pure $ inl (cbn-coerce' P (var zero)))
-    (pure $ inr (cbn-coerce' Q (var zero)))
-cbn-coerce' (P [×] Q) M =
-  pure $ pair (cbn-coerce' P (fst M)) (cbn-coerce' Q (snd M))
-
 mutual
   ⟪_⟫tm : ∀ {Γ τ} → Γ ⊢ τ → ⟪ Γ ⟫ctxt ⊢ Mon ⟪ τ ⟫ty
   ⟪ var x ⟫tm = var ⟪ x ⟫var
@@ -97,16 +62,8 @@ mutual
   ⟪ app M₁ M₂ ⟫tm = bind $ ⟪ M₁ ⟫tm $ lam ((var zero) $ (weaken * ⟪ M₂ ⟫tm))
   ⟪ bop ω Ms ⟫tm = bindAll Ms (id-ren _) λ ρ Ms' → pure $ bop ω Ms'
   ⟪ brel r Ms ⟫tm = bindAll Ms (id-ren _) λ ρ Ms' → pure $ brel r Ms'
-  ⟪ roll {P = P} M ⟫tm =
-    bind $ ⟪ M ⟫tm $ lam (bind $ cbn-coerce P (var zero) $ lam (pure $ roll (var zero)))
-  ⟪ fold-μ {P = Q} {τ = τ} alg M ⟫tm =
-    bind $ ⟪ M ⟫tm $ lam (
-      fold-μ
-        -- Open-form alg: var zero is the polynomial value, coerced via cbn-coerce'
-        -- to the source-translation shape and applied to the lam-wrapped translated alg.
-        (app (weaken * (weaken * (lam ⟪ alg ⟫tm)))
-             (cbn-coerce' Q (var zero)))
-        (var zero))
+  ⟪ roll {P = P} M ⟫tm = bind $ ⟪ M ⟫tm $ lam (pure $ roll (var zero))
+  ⟪ fold-μ {P = P} {τ = τ} alg M ⟫tm = bind $ ⟪ M ⟫tm $ lam (fold-μ (ext weaken * ⟪ alg ⟫tm) (var zero))
 
   bindAll : ∀ {Γ Γ' σs τ} →
             Every (λ σ → Γ ⊢ base σ) σs →

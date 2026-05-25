@@ -27,18 +27,24 @@ open prop-setoid.Setoid
 
 open import two renaming (I to ⊤; O to ⊥)
 open import polynomial-functor using (inF)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 
 open L hiding (_,_)
 
 import example
+open example.ex using (Tag; Tag-monad; query)
+
+open import cbn-translation Sig Tag-monad
+
+cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
+cbn-query l = ⟪ query l ⟫tm
 
 module backward-cbn where
   open import ho-model
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
   open Galois.interp Sig BaseInterp0
-  open example.ex using (Tag)
-  open example.ex.cbn-Tag using (cbn-query)
 
+  -- μ-list representation
   input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
   input = _ ,
           inF (inj₂ ((_ , (_ , label.a) , (_ , 0)) ,
@@ -54,14 +60,9 @@ module backward-cbn where
       open join-semilattice._=>_
       open preorder._=>_
 
-  -- TODO: tests below — reconstructed structure for the W-form result:
-  --     (⊤ , ((⊤ , (⊤ , ·) , (⊤ , ·)) ,
-  --           ((⊤ , (⊤ , ·) , (⊥ , ·)) ,
-  --            ((⊤ , (⊤ , ·) , (⊤ , ·)) ,
-  --             ·))))
-  -- ...but enabling them makes typechecking timeout. Blocked on design
-  -- rework: eliminating cbn-coerce requires the pointed-types redesign
-  -- (sums-as-Mon-wrapped + polynomial-approx + force primitive), which
-  -- is a coordinated overhaul. See conversation log 2026-05-19.
-  -- test1 : bwd-slice label.a ≡ ... ; test1 = ≡-refl
-  -- test2 : bwd-slice label.b ≡ ... ; test2 = ≡-refl
+  -- Slices will also need adjusting to μ-list format, but currently cbn-translation doesn't compile.
+  test1 : bwd-slice label.a ≡ (⊤ , (⊤ , (⊤ , ·) , ⊤ , ·) , (⊤ , (⊤ , ·) , ⊥ , ·) , (⊤ , (⊤ , ·) , ⊤ , ·) , ·)
+  test1 = ≡-refl
+
+  test2 : bwd-slice label.b ≡ (⊤ , (⊤ , (⊤ , ·) , ⊥ , ·) , (⊤ , (⊤ , ·) , ⊤ , ·) , (⊤ , (⊤ , ·) , ⊥ , ·) , ·)
+  test2 = ≡-refl
