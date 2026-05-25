@@ -38,9 +38,7 @@ Poly-map F var         = var
 Poly-map F (P₁ + P₂)   = Poly-map F P₁ + Poly-map F P₂
 Poly-map F (P₁ × P₂)   = Poly-map F P₁ × Poly-map F P₂
 
--- Two polynomials are iso if they have the same tree shape, with isomorphic objects at const slots.
--- Restrictive (requires matching tree shapes); sufficient for our use (P₁ and P₂ both derived from the
--- same first-order-idx-of Q P-fo, differing only at const slots).
+-- A narrow notion of isomorphism: two polynomials with the same tree shape and isomorphic objects at const slots.
 data Poly-iso {o m e} {𝒞 : Category o m e} : Poly 𝒞 → Poly 𝒞 → Set (o ⊔ m ⊔ e) where
   const : ∀ {A B} → Category.Iso 𝒞 A B → Poly-iso (const A) (const B)
   var   : Poly-iso var var
@@ -48,20 +46,18 @@ data Poly-iso {o m e} {𝒞 : Category o m e} : Poly 𝒞 → Poly 𝒞 → Set 
   _×_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ × P₂) (Q₁ × Q₂)
 
 module Sem {o m e} {𝒞 : Category o m e}
-           (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (SCP : HasStrongCoproducts 𝒞 P) where
+           (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P) where
   open Category 𝒞
-  open HasTerminal T renaming (witness to terminal)
-  open HasProducts P
-  CP : HasCoproducts 𝒞
-  CP = strong-coproducts→coproducts T SCP
-  open HasCoproducts CP
-  open HasStrongCoproducts SCP using ()
+  open HasTerminal 𝒞T renaming (witness to terminal)
+  open HasProducts 𝒞P
+  open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
+  open HasStrongCoproducts 𝒞SCP using ()
     renaming (copair to s-copair; copair-cong to s-copair-cong;
               copair-in₁ to s-copair-in₁; copair-in₂ to s-copair-in₂;
               copair-ext to s-copair-ext)
 
   cat-ext : obj → Category o m e
-  cat-ext = coKleisli-prod P
+  cat-ext = coKleisli-prod 𝒞P
 
   infixl 21 _∘co_
   _∘co_ : ∀ {Γ X Y Z} → (prod Γ Y ⇒ Z) → (prod Γ X ⇒ Y) → (prod Γ X ⇒ Z)
@@ -620,12 +616,12 @@ module Sem {o m e} {𝒞 : Category o m e}
 -- A functor F : 𝒞 → 𝒟 preserves μ if, for each polynomial signature P, the
 -- F-image of 𝒞's μ P is isomorphic to 𝒟's μ of the F-mapped polynomial.
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
-         (T₁ : HasTerminal 𝒞) (P₁ : HasProducts 𝒞) (SCP₁ : HasStrongCoproducts 𝒞 P₁)
-         (T₂ : HasTerminal 𝒟) (P₂ : HasProducts 𝒟) (SCP₂ : HasStrongCoproducts 𝒟 P₂)
+         (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P)
+         (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SCP : HasStrongCoproducts 𝒟 𝒟P)
          where
   private
-    module S₁ = Sem T₁ P₁ SCP₁
-    module S₂ = Sem T₂ P₂ SCP₂
+    module S₁ = Sem 𝒞T 𝒞P 𝒞SCP
+    module S₂ = Sem 𝒟T 𝒟P 𝒟SCP
 
   Preserves-μ : S₁.HasMu → S₂.HasMu → Functor 𝒞 𝒟 → Set _
   Preserves-μ 𝒞Mu 𝒟Mu F =
