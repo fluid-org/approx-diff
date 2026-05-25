@@ -45,7 +45,6 @@ mutual
   ⟦ μ P ⟧ty = μ-obj ⟦ P ⟧poly
 
   ⟦_⟧poly : polynomial → Poly 𝒞
-  ⟦ one ⟧poly       = Poly.const 𝟙
   ⟦ const σ ⟧poly   = Poly.const ⟦ σ ⟧ty
   ⟦ var ⟧poly       = Poly.var
   ⟦ P [+] Q ⟧poly   = ⟦ P ⟧poly Poly.+ ⟦ Q ⟧poly
@@ -57,7 +56,6 @@ mutual
 
 -- Syntactic application of a polynomial agrees with action of corresponding functor on objects.
 apply-eq : ∀ Q τ → ⟦ apply Q τ ⟧ty ≡ poly-obj ⟦ Q ⟧poly ⟦ τ ⟧ty
-apply-eq one          τ = refl
 apply-eq (const σ)    τ = refl
 apply-eq var          τ = refl
 apply-eq (P [+] Q)    τ = cong₂ _⊕_ (apply-eq P τ) (apply-eq Q τ)

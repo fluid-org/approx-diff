@@ -51,7 +51,6 @@ module _ where
     𝒞⟦ μ P-fo ⟧ty = μ-obj 𝒞⟦ P-fo ⟧poly
 
     𝒞⟦_⟧poly : ∀ {P} → first-order-poly P → Poly 𝒞
-    𝒞⟦ one ⟧poly        = Poly.const 𝟙
     𝒞⟦ const τ-fo ⟧poly = Poly.const 𝒞⟦ τ-fo ⟧ty
     𝒞⟦ var ⟧poly        = Poly.var
     𝒞⟦ P [+] Q ⟧poly    = 𝒞⟦ P ⟧poly Poly.+ 𝒞⟦ Q ⟧poly
@@ -92,7 +91,6 @@ mutual
   ⟦ μ P-fo ⟧-iso    = 𝒟.Iso-trans (Fμ 𝒞⟦ P-fo ⟧poly) (μ-respects-Poly-iso.iso 𝒟Mu ⟦ P-fo ⟧poly-iso)
 
   ⟦_⟧poly-iso : ∀ {P} (P-fo : first-order-poly P) → Poly-iso (Poly-map F 𝒞⟦ P-fo ⟧poly) 𝒟⟦ P ⟧poly
-  ⟦ one ⟧poly-iso        = Poly-iso.const (𝒟.IsIso→Iso FT)
   ⟦ const τ-fo ⟧poly-iso = Poly-iso.const ⟦ τ-fo ⟧-iso
   ⟦ var ⟧poly-iso        = Poly-iso.var
   ⟦ P [+] Q ⟧poly-iso    = ⟦ P ⟧poly-iso Poly-iso.+ ⟦ Q ⟧poly-iso

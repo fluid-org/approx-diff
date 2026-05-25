@@ -22,10 +22,9 @@ mutual
   ⟪ μ P ⟫ty = μ ⟪ P ⟫poly
 
   -- Roughly emulates the previous ⟪list τ⟫ty = list (Mon ⟪τ⟫ty), but isn't compatible with ⟪_⟫ty now that
-  -- list τ is just shorthand for μ (one [+] (const τ [×] var)). Need a way to insert composition with Mon
-  -- into a polynomial.
+  -- list τ is just shorthand for μ (const unit [+] (const τ [×] var)). Need a way to insert composition with
+  -- Mon into a polynomial.
   ⟪_⟫poly : polynomial → polynomial
-  ⟪ one ⟫poly       = one
   ⟪ const σ ⟫poly   = const (Mon ⟪ σ ⟫ty)
   ⟪ var ⟫poly       = var
   ⟪ P [+] Q ⟫poly   = ⟪ P ⟫poly [+] ⟪ Q ⟫poly

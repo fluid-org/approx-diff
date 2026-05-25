@@ -18,14 +18,12 @@ mutual
 
   -- Polynomial functors syntactically (cf. Chad §3.6).
   data polynomial : Set ℓ where
-    one : polynomial
     const : type → polynomial
     var : polynomial
     _[+]_ : polynomial → polynomial → polynomial
     _[×]_ : polynomial → polynomial → polynomial
 
 apply : polynomial → type → type
-apply one _         = unit
 apply (const σ) _   = σ
 apply var τ         = τ
 apply (P [+] Q) τ   = apply P τ [+] apply Q τ
@@ -44,7 +42,6 @@ mutual
 
   -- Polynomials whose const slots only mention first-order types.
   data first-order-poly : polynomial → Set ℓ where
-    one   : first-order-poly one
     const : ∀ {τ} → first-order τ → first-order-poly (const τ)
     var   : first-order-poly var
     _[+]_ : ∀ {P Q} → first-order-poly P → first-order-poly Q → first-order-poly (P [+] Q)
@@ -150,7 +147,7 @@ mutual
 
 -- “macros” for lists
 list : type → type
-list τ = μ (one [+] (const τ [×] var))
+list τ = μ (const unit [+] (const τ [×] var))
 
 nil : ∀ {Γ τ} → Γ ⊢ list τ
 nil = roll (inl unit)
@@ -160,7 +157,7 @@ cons h t = roll (inr (pair h t))
 
 fold : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
 fold {σ = σ} {τ = τ} nilCase consCase M =
-  fold-μ {P = one [+] (const σ [×] var)}
+  fold-μ {P = const unit [+] (const σ [×] var)}
     (case (var zero)
           (weaken * (weaken * nilCase))
           (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero))))
