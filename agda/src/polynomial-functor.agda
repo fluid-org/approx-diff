@@ -209,7 +209,6 @@ module Sem {o m e} {𝒞 : Category o m e}
       -- Open (parametric) form: algebra in extended context. Avoids the closure conversion that would
       -- otherwise need exponentials.
       ⦅_⦆  : ∀ {Γ Q y} → (prod Γ (fobj Q y) ⇒ y) → prod Γ (μ Q) ⇒ y
-
       ⦅⦆-β : ∀ {Γ Q y} (alg : prod Γ (fobj Q y) ⇒ y) → (⦅ alg ⦆ ∘co (inF Q ∘ p₂)) ≈ (alg ∘co fmor Q ⦅ alg ⦆)
       ⦅⦆-η : ∀ {Γ Q y} (alg : prod Γ (fobj Q y) ⇒ y) (h : prod Γ (μ Q) ⇒ y) →
              (h ∘co (inF Q ∘ p₂)) ≈ (alg ∘co fmor Q h) → h ≈ ⦅ alg ⦆
