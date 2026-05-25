@@ -12,6 +12,7 @@ import meet-semilattice-category
 import join-semilattice-category
 import fam
 import polynomial-functor
+import fam-mu-types
 import indexed-family
 open Category using (opposite)
 
@@ -189,7 +190,7 @@ module Interpretation
        Fam⟨𝒟⟩-products
        Fam⟨𝒟⟩-strongCoproducts
        Fam⟨𝒟⟩-exponentials
-       (polynomial-functor.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
+       (fam-mu-types.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
