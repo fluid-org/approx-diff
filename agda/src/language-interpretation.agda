@@ -45,7 +45,7 @@ mutual
   ⟦ μ P ⟧ty = μ-obj ⟦ P ⟧poly
 
   ⟦_⟧poly : polynomial → Poly 𝒞
-  ⟦ one ⟧poly       = Poly.one
+  ⟦ one ⟧poly       = Poly.const 𝟙
   ⟦ const σ ⟧poly   = Poly.const ⟦ σ ⟧ty
   ⟦ var ⟧poly       = Poly.var
   ⟦ P [+] Q ⟧poly   = ⟦ P ⟧poly Poly.+ ⟦ Q ⟧poly

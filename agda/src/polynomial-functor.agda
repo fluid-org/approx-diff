@@ -26,7 +26,6 @@ module polynomial-functor where
 -- Syntactic polynomial expressions in one variable, with constants drawn from obj 𝒞; they form a category, but
 -- but we don't make use of that fact.
 data Poly {o m e} (𝒞 : Category o m e) : Set o where
-  one  : Poly 𝒞                            -- constant terminal
   const : Category.obj 𝒞 → Poly 𝒞
   var  : Poly 𝒞
   _+_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞
@@ -34,7 +33,6 @@ data Poly {o m e} (𝒞 : Category o m e) : Set o where
 
 Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} →
            Functor 𝒞 𝒟 → Poly 𝒞 → Poly 𝒟
-Poly-map F one         = one
 Poly-map F (const A)   = const (Functor.fobj F A)
 Poly-map F var         = var
 Poly-map F (P₁ + P₂)   = Poly-map F P₁ + Poly-map F P₂
@@ -44,7 +42,6 @@ Poly-map F (P₁ × P₂)   = Poly-map F P₁ × Poly-map F P₂
 -- Restrictive (requires matching tree shapes); sufficient for our use (P₁ and P₂ both derived from the
 -- same first-order-idx-of Q P-fo, differing only at const slots).
 data Poly-iso {o m e} {𝒞 : Category o m e} : Poly 𝒞 → Poly 𝒞 → Set (o ⊔ m ⊔ e) where
-  one   : Poly-iso one one
   const : ∀ {A B} → Category.Iso 𝒞 A B → Poly-iso (const A) (const B)
   var   : Poly-iso var var
   _+_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ + P₂) (Q₁ + Q₂)
@@ -77,21 +74,18 @@ module Sem {o m e} {𝒞 : Category o m e}
 
   module Poly-fun where
     fobj : Poly 𝒞 → obj → obj
-    fobj one         _ = terminal
     fobj (const A)   _ = A
     fobj var         x = x
     fobj (P + Q)     x = coprod (fobj P x) (fobj Q x)
     fobj (P × Q)     x = prod   (fobj P x) (fobj Q x)
 
     fmor : ∀ Q {Γ X Y} → (prod Γ X ⇒ Y) → (prod Γ (fobj Q X) ⇒ fobj Q Y)
-    fmor one         _ = to-terminal
     fmor (const A)   _ = p₂
     fmor var         h = h
     fmor (Q₁ + Q₂)   h = s-copair (in₁ ∘ fmor Q₁ h) (in₂ ∘ fmor Q₂ h)
     fmor (Q₁ × Q₂)   h = pair (fmor Q₁ h ∘co (p₁ ∘ p₂)) (fmor Q₂ h ∘co (p₂ ∘ p₂))
 
     fmor-id : ∀ Q {Γ X} → fmor Q {Γ} {X} {X} p₂ ≈ p₂
-    fmor-id one         = to-terminal-unique _ _
     fmor-id (const A)   = ≈-refl
     fmor-id var         = ≈-refl
     fmor-id (Q₁ + Q₂)   =
@@ -102,7 +96,6 @@ module Sem {o m e} {𝒞 : Category o m e}
               (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext p₂))
 
     fmor-cong : ∀ Q {Γ X Y} {f₁ f₂ : prod Γ X ⇒ Y} → f₁ ≈ f₂ → fmor Q f₁ ≈ fmor Q f₂
-    fmor-cong one         _    = ≈-refl
     fmor-cong (const A)   _    = ≈-refl
     fmor-cong var         f≈g  = f≈g
     fmor-cong (Q₁ + Q₂)   f≈g  = s-copair-cong (∘-cong₂ (fmor-cong Q₁ f≈g)) (∘-cong₂ (fmor-cong Q₂ f≈g))
@@ -110,7 +103,6 @@ module Sem {o m e} {𝒞 : Category o m e}
 
     fmor-comp : ∀ Q {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
                 fmor Q (f ∘co g) ≈ fmor Q f ∘co (fmor Q g)
-    fmor-comp one         f g = to-terminal-unique _ _
     fmor-comp (const A)   f g = ≈-sym id-left-co
     fmor-comp var         f g = ≈-refl
     fmor-comp (Q₁ + Q₂)   f g = begin
@@ -276,21 +268,18 @@ module Sem {o m e} {𝒞 : Category o m e}
     open Iso
 
     iso-mor : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (fobj P X) ⇒ fobj P' X
-    iso-mor one             = to-terminal
     iso-mor (const A≅B)     = A≅B .fwd ∘ p₂
     iso-mor var             = p₂
     iso-mor (P₁≅Q₁ + P₂≅Q₂) = s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
     iso-mor (P₁≅Q₁ × P₂≅Q₂) = pair (iso-mor P₁≅Q₁ ∘co (p₁ ∘ p₂)) (iso-mor P₂≅Q₂ ∘co (p₂ ∘ p₂))
 
     iso-sym : ∀ {P P'} → Poly-iso P P' → Poly-iso P' P
-    iso-sym one         = one
     iso-sym (const A≅B) = const (Category.Iso-sym 𝒞 A≅B)
     iso-sym var         = var
     iso-sym (P₁≅Q₁ + P₂≅Q₂) = iso-sym P₁≅Q₁ + iso-sym P₂≅Q₂
     iso-sym (P₁≅Q₁ × P₂≅Q₂) = iso-sym P₁≅Q₁ × iso-sym P₂≅Q₂
 
     iso-sym-involutive : ∀ {P P'} (P≅P' : Poly-iso P P') → iso-sym (iso-sym P≅P') ≡ P≅P'
-    iso-sym-involutive one         = ≡.refl
     iso-sym-involutive (const A≅B) = ≡.refl
     iso-sym-involutive var         = ≡.refl
     iso-sym-involutive (P₁≅Q₁ + P₂≅Q₂) = ≡.cong₂ _+_ (iso-sym-involutive P₁≅Q₁) (iso-sym-involutive P₂≅Q₂)
@@ -298,7 +287,6 @@ module Sem {o m e} {𝒞 : Category o m e}
 
     -- Round-trip law: forward then backward at the polynomial-functor level is (parameterised) identity.
     iso-mor-fwd∘bwd : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ X} → iso-mor P≅P' {Γ} {X} ∘co iso-mor (iso-sym P≅P') ≈ p₂
-    iso-mor-fwd∘bwd one = to-terminal-unique _ _
     iso-mor-fwd∘bwd (const A≅B) =
       ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong₂ (pair-p₂ _ _))
@@ -415,7 +403,6 @@ module Sem {o m e} {𝒞 : Category o m e}
 
     iso-mor-natural : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ X Y} (f : prod Γ X ⇒ Y) →
                       iso-mor P≅P' ∘co fmor P f ≈ fmor P' f ∘co iso-mor P≅P'
-    iso-mor-natural one         f = to-terminal-unique _ _
     iso-mor-natural (const A≅B) f = ≈-trans id-right-co (≈-sym id-left-co)
     iso-mor-natural var         f = ≈-trans id-left-co (≈-sym id-right-co)
     iso-mor-natural (_+_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) f =
