@@ -213,10 +213,6 @@ module Sem {o m e} {𝒞 : Category o m e}
       ⦅⦆-η : ∀ {Γ Q y} (alg : prod Γ (fobj Q y) ⇒ y) (h : prod Γ (μ Q) ⇒ y) →
              (h ∘co (inF Q ∘ p₂)) ≈ (alg ∘co fmor Q h) → h ≈ ⦅ alg ⦆
 
-  -- Derived consequences of HasMu's β/η.
-  module HasMu-derived (Mu : HasMu) where
-    open HasMu Mu
-
     cata-fusion : ∀ {Γ Q y y'} (alg : prod Γ (fobj Q y) ⇒ y) (alg' : prod Γ (fobj Q y') ⇒ y')
                   (f : prod Γ y ⇒ y') → (f ∘co alg) ≈ (alg' ∘co fmor Q f) → (f ∘co ⦅ alg ⦆) ≈ ⦅ alg' ⦆
     cata-fusion {Q = Q} alg alg' f f-is-alg-mor = ⦅⦆-η _ _ (begin
@@ -253,7 +249,6 @@ module Sem {o m e} {𝒞 : Category o m e}
   -- Built directly from catamorphism universal property (β, η).
   module μ-respects-Poly-iso (Mu : HasMu) where
     open HasMu Mu
-    open HasMu-derived Mu
     open Iso
 
     iso-mor : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (fobj P X) ⇒ fobj P' X
