@@ -23,15 +23,15 @@ open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 module polynomial-functor where
 
 ------------------------------------------------------------------------------
--- Syntactic polynomial expressions in one variable, with constants drawn from obj 𝒞; they form a category.
+-- Syntactic polynomial expressions in one variable, with constants drawn from obj 𝒞; they form a category, but
+-- but we don't make use of that fact.
 data Poly {o m e} (𝒞 : Category o m e) : Set o where
-  one  : Poly 𝒞                              -- constant terminal
-  const : Category.obj 𝒞 → Poly 𝒞            -- constant object
-  var  : Poly 𝒞                              -- recursive slot
-  _+_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞          -- sum
-  _×_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞          -- product
+  one  : Poly 𝒞                            -- constant terminal
+  const : Category.obj 𝒞 → Poly 𝒞
+  var  : Poly 𝒞
+  _+_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞
+  _×_  : Poly 𝒞 → Poly 𝒞 → Poly 𝒞
 
--- Map a polynomial through a functor by applying F to const slots.
 Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} →
            Functor 𝒞 𝒟 → Poly 𝒞 → Poly 𝒟
 Poly-map F one         = one
