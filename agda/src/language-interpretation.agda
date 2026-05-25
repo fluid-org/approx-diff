@@ -7,7 +7,7 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasExponentials;
          HasBooleans; coproducts+exp→booleans)
-open import polynomial-functor using (Poly; module Sem)
+open import polynomial-functor using (Poly; module Interp)
 import language-syntax
 open import signature using (Signature; Model; PFPC[_,_,_,_]; PointedFPCat)
 open import every using (Every; []; _∷_)
@@ -21,7 +21,7 @@ module language-interpretation
   (SC : HasStrongCoproducts 𝒞 P)
   (E  : HasExponentials 𝒞 P)
   (let C = strong-coproducts→coproducts T SC)
-  (let open Sem T P SC renaming (fobj to poly-obj))
+  (let open Interp T P SC renaming (fobj to poly-obj))
   (let open HasBooleans (coproducts+exp→booleans T C E))
   (Mu : HasMu)
   (Int : Model PFPC[ 𝒞 , T , P , Bool ] Sig)

@@ -468,8 +468,8 @@ definability {X} {Y} f with f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))
 
 module syntactic {ℓ}
    (Sig : Signature ℓ)
-   (𝒞Mu : polynomial-functor.Sem.HasMu 𝒞T 𝒞P 𝒞SC)
-   (Gl-HasMu : polynomial-functor.Sem.HasMu GlPE.terminal GlPE.products GlSC)
+   (𝒞Mu : polynomial-functor.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
+   (Gl-HasMu : polynomial-functor.Interp.HasMu GlPE.terminal GlPE.products GlSC)
    (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-HasMu GF)
    (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig) where
 

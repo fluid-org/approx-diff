@@ -18,7 +18,7 @@ open import prop-setoid as PS
 open import indexed-family using (Fam; _⇒f_; changeCat)
 import fam
 import polynomial-functor
-open polynomial-functor using (Poly; module Sem)
+open polynomial-functor using (Poly; module Interp)
 
 open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 
@@ -120,7 +120,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   open products P  -- Fam-level products
   private module Fam𝒞-P = HasProducts products
   open _⇒f_
-  open Sem (terminal T) products strongCoproducts
+  open Interp (terminal T) products strongCoproducts
 
   ----------------------------------------------------------------------
   -- Generic μ-types in Fam(𝒞), for polynomials Q : Poly cat. The idx side is WSetoid of Q (projecting param

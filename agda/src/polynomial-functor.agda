@@ -45,7 +45,7 @@ data Poly-iso {o m e} {𝒞 : Category o m e} : Poly 𝒞 → Poly 𝒞 → Set 
   _+_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ + P₂) (Q₁ + Q₂)
   _×_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ × P₂) (Q₁ × Q₂)
 
-module Sem {o m e} {𝒞 : Category o m e}
+module Interp {o m e} {𝒞 : Category o m e}
            (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P) where
   open Category 𝒞
   open HasTerminal 𝒞T renaming (witness to terminal)
@@ -245,10 +245,8 @@ module Sem {o m e} {𝒞 : Category o m e}
         (inF Q ∘ p₂) ∘co fmor Q p₂
       ∎) where open ≈-Reasoning isEquiv
 
-  -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
-  -- Built directly from catamorphism universal property (β, η).
-  module μ-respects-Poly-iso (Mu : HasMu) where
-    open HasMu Mu
+    -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
+    -- Built directly from catamorphism universal property (β, η).
     open Iso
 
     iso-mor : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (fobj P X) ⇒ fobj P' X
@@ -608,8 +606,8 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
          (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SCP : HasStrongCoproducts 𝒟 𝒟P)
          where
   private
-    module S₁ = Sem 𝒞T 𝒞P 𝒞SCP
-    module S₂ = Sem 𝒟T 𝒟P 𝒟SCP
+    module S₁ = Interp 𝒞T 𝒞P 𝒞SCP
+    module S₂ = Interp 𝒟T 𝒟P 𝒟SCP
 
   Preserves-μ : S₁.HasMu → S₂.HasMu → Functor 𝒞 𝒟 → Set _
   Preserves-μ 𝒞Mu 𝒟Mu F =
