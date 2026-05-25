@@ -68,145 +68,139 @@ module Sem {o m e} {𝒞 : Category o m e}
       renaming (assoc to assoc-co; ∘-cong to ∘-cong-co; ∘-cong₁ to ∘-cong-co₁; ∘-cong₂ to ∘-cong-co₂;
                 id-left to id-left-co; id-right to id-right-co)
 
-  module Poly-fun where
-    fobj : Poly 𝒞 → obj → obj
-    fobj (const A)   _ = A
-    fobj var         x = x
-    fobj (P + Q)     x = coprod (fobj P x) (fobj Q x)
-    fobj (P × Q)     x = prod   (fobj P x) (fobj Q x)
+  fobj : Poly 𝒞 → obj → obj
+  fobj (const A)   _ = A
+  fobj var         x = x
+  fobj (P + Q)     x = coprod (fobj P x) (fobj Q x)
+  fobj (P × Q)     x = prod (fobj P x) (fobj Q x)
 
-    fmor : ∀ Q {Γ X Y} → (prod Γ X ⇒ Y) → (prod Γ (fobj Q X) ⇒ fobj Q Y)
-    fmor (const A)   _ = p₂
-    fmor var         h = h
-    fmor (Q₁ + Q₂)   h = s-copair (in₁ ∘ fmor Q₁ h) (in₂ ∘ fmor Q₂ h)
-    fmor (Q₁ × Q₂)   h = pair (fmor Q₁ h ∘co (p₁ ∘ p₂)) (fmor Q₂ h ∘co (p₂ ∘ p₂))
+  fmor : ∀ Q {Γ X Y} → (prod Γ X ⇒ Y) → (prod Γ (fobj Q X) ⇒ fobj Q Y)
+  fmor (const A)   _ = p₂
+  fmor var         h = h
+  fmor (Q₁ + Q₂)   h = s-copair (in₁ ∘ fmor Q₁ h) (in₂ ∘ fmor Q₂ h)
+  fmor (Q₁ × Q₂)   h = pair (fmor Q₁ h ∘co (p₁ ∘ p₂)) (fmor Q₂ h ∘co (p₂ ∘ p₂))
 
-    fmor-id : ∀ Q {Γ X} → fmor Q {Γ} {X} {X} p₂ ≈ p₂
-    fmor-id (const A)   = ≈-refl
-    fmor-id var         = ≈-refl
-    fmor-id (Q₁ + Q₂)   =
-      ≈-trans (s-copair-cong (∘-cong₂ (fmor-id Q₁)) (∘-cong₂ (fmor-id Q₂)))
-              (≈-trans (s-copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _))) (s-copair-ext p₂))
-    fmor-id (Q₁ × Q₂)   =
-      ≈-trans (pair-cong (∘-cong₁ (fmor-id Q₁)) (∘-cong₁ (fmor-id Q₂)))
-              (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext p₂))
+  fmor-id : ∀ Q {Γ X} → fmor Q {Γ} {X} {X} p₂ ≈ p₂
+  fmor-id (const A)   = ≈-refl
+  fmor-id var         = ≈-refl
+  fmor-id (Q₁ + Q₂)   =
+    ≈-trans (s-copair-cong (∘-cong₂ (fmor-id Q₁)) (∘-cong₂ (fmor-id Q₂)))
+            (≈-trans (s-copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _))) (s-copair-ext p₂))
+  fmor-id (Q₁ × Q₂)   =
+    ≈-trans (pair-cong (∘-cong₁ (fmor-id Q₁)) (∘-cong₁ (fmor-id Q₂)))
+            (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext p₂))
 
-    fmor-cong : ∀ Q {Γ X Y} {f₁ f₂ : prod Γ X ⇒ Y} → f₁ ≈ f₂ → fmor Q f₁ ≈ fmor Q f₂
-    fmor-cong (const A)   _    = ≈-refl
-    fmor-cong var         f≈g  = f≈g
-    fmor-cong (Q₁ + Q₂)   f≈g  = s-copair-cong (∘-cong₂ (fmor-cong Q₁ f≈g)) (∘-cong₂ (fmor-cong Q₂ f≈g))
-    fmor-cong (Q₁ × Q₂)   f≈g  = pair-cong (∘-cong₁ (fmor-cong Q₁ f≈g)) (∘-cong₁ (fmor-cong Q₂ f≈g))
+  fmor-cong : ∀ Q {Γ X Y} {f₁ f₂ : prod Γ X ⇒ Y} → f₁ ≈ f₂ → fmor Q f₁ ≈ fmor Q f₂
+  fmor-cong (const A)   _    = ≈-refl
+  fmor-cong var         f≈g  = f≈g
+  fmor-cong (Q₁ + Q₂)   f≈g  = s-copair-cong (∘-cong₂ (fmor-cong Q₁ f≈g)) (∘-cong₂ (fmor-cong Q₂ f≈g))
+  fmor-cong (Q₁ × Q₂)   f≈g  = pair-cong (∘-cong₁ (fmor-cong Q₁ f≈g)) (∘-cong₁ (fmor-cong Q₂ f≈g))
 
-    fmor-comp : ∀ Q {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
-                fmor Q (f ∘co g) ≈ fmor Q f ∘co (fmor Q g)
-    fmor-comp (const A)   f g = ≈-sym id-left-co
-    fmor-comp var         f g = ≈-refl
-    fmor-comp (Q₁ + Q₂)   f g = begin
-        fmor (Q₁ + Q₂) (f ∘co g)
-      ≈⟨ s-copair-cong (∘-cong₂ (fmor-comp Q₁ f g)) (∘-cong₂ (fmor-comp Q₂ f g)) ⟩
-        s-copair (in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)) (in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g))
-      ≈˘⟨ s-copair-cong eq-in₁ eq-in₂ ⟩
-        s-copair ((fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂))
-                 ((fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂))
-      ≈⟨ s-copair-ext _ ⟩
-        fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g
-      ∎ where
-        eq-in₁ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂) ≈ in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)
-        eq-in₁ = begin
-            (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂)
-          ≈⟨ assoc-co _ _ _ ⟩
-            fmor (Q₁ + Q₂) f ∘co (fmor (Q₁ + Q₂) g ∘co (in₁ ∘ p₂))
-          ≈⟨ ∘-cong-co ≈-refl (s-copair-in₁ _ _) ⟩
-            fmor (Q₁ + Q₂) f ∘co (in₁ ∘ fmor Q₁ g)
-          ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
-            fmor (Q₁ + Q₂) f ∘co ((in₁ ∘ p₂) ∘co fmor Q₁ g)
-          ≈˘⟨ assoc-co _ _ _ ⟩
-            (fmor (Q₁ + Q₂) f ∘co (in₁ ∘ p₂)) ∘co fmor Q₁ g
-          ≈⟨ ∘-cong-co (s-copair-in₁ _ _) ≈-refl ⟩
-            (in₁ ∘ fmor Q₁ f) ∘co fmor Q₁ g
-          ≈⟨ assoc _ _ _ ⟩
-            in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)
-          ∎ where open ≈-Reasoning isEquiv
-        eq-in₂ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂) ≈ in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g)
-        eq-in₂ = begin
-            (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂)
-          ≈⟨ assoc-co _ _ _ ⟩
-            fmor (Q₁ + Q₂) f ∘co (fmor (Q₁ + Q₂) g ∘co (in₂ ∘ p₂))
-          ≈⟨ ∘-cong-co ≈-refl (s-copair-in₂ _ _) ⟩
-            fmor (Q₁ + Q₂) f ∘co (in₂ ∘ fmor Q₂ g)
-          ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
-            fmor (Q₁ + Q₂) f ∘co ((in₂ ∘ p₂) ∘co fmor Q₂ g)
-          ≈˘⟨ assoc-co _ _ _ ⟩
-            (fmor (Q₁ + Q₂) f ∘co (in₂ ∘ p₂)) ∘co fmor Q₂ g
-          ≈⟨ ∘-cong-co (s-copair-in₂ _ _) ≈-refl ⟩
-            (in₂ ∘ fmor Q₂ f) ∘co fmor Q₂ g
-          ≈⟨ assoc _ _ _ ⟩
-            in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g)
-          ∎ where open ≈-Reasoning isEquiv
-        open ≈-Reasoning isEquiv
-    fmor-comp (Q₁ × Q₂)   f g = begin
-        fmor (Q₁ × Q₂) (f ∘co g)
-      ≈⟨ pair-cong (∘-cong₁ (fmor-comp Q₁ f g)) (∘-cong₁ (fmor-comp Q₂ f g)) ⟩
-        pair ((fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂))
-             ((fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂))
-      ≈˘⟨ pair-cong eq-p₁ eq-p₂ ⟩
-        pair (p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g))
-             (p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g))
-      ≈⟨ pair-ext _ ⟩
-        fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g
-      ∎ where
-        eq-p₁ : p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
-                ≈ (fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂)
-        eq-p₁ = begin
-            p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
-          ≈˘⟨ assoc _ _ _ ⟩
-            (p₁ ∘ fmor (Q₁ × Q₂) f) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
-          ≈⟨ ∘-cong₁ (pair-p₁ _ _) ⟩
-            (fmor Q₁ f ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
-          ≈⟨ assoc _ _ _ ⟩
-            fmor Q₁ f ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair p₁ (fmor (Q₁ × Q₂) g))
-          ≈⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
-                              (pair-cong (pair-p₁ _ _)
-                                         (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
-            fmor Q₁ f ∘ pair p₁ (p₁ ∘ fmor (Q₁ × Q₂) g)
-          ≈⟨ ∘-cong₂ (pair-cong₂ (pair-p₁ _ _)) ⟩
-            fmor Q₁ f ∘ pair p₁ (fmor Q₁ g ∘ pair p₁ (p₁ ∘ p₂))
-          ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))) ⟩
-            fmor Q₁ f ∘ (pair p₁ (fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂))
-          ≈˘⟨ assoc _ _ _ ⟩
-            (fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂)
-          ∎ where open ≈-Reasoning isEquiv
-        eq-p₂ : p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
-                ≈ (fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂)
-        eq-p₂ = begin
-            p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
-          ≈˘⟨ assoc _ _ _ ⟩
-            (p₂ ∘ fmor (Q₁ × Q₂) f) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
-          ≈⟨ ∘-cong₁ (pair-p₂ _ _) ⟩
-            (fmor Q₂ f ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
-          ≈⟨ assoc _ _ _ ⟩
-            fmor Q₂ f ∘ (pair p₁ (p₂ ∘ p₂) ∘ pair p₁ (fmor (Q₁ × Q₂) g))
-          ≈⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
-                              (pair-cong (pair-p₁ _ _)
-                                         (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
-            fmor Q₂ f ∘ pair p₁ (p₂ ∘ fmor (Q₁ × Q₂) g)
-          ≈⟨ ∘-cong₂ (pair-cong₂ (pair-p₂ _ _)) ⟩
-            fmor Q₂ f ∘ pair p₁ (fmor Q₂ g ∘ pair p₁ (p₂ ∘ p₂))
-          ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))) ⟩
-            fmor Q₂ f ∘ (pair p₁ (fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂))
-          ≈˘⟨ assoc _ _ _ ⟩
-            (fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂)
-          ∎ where open ≈-Reasoning isEquiv
-        open ≈-Reasoning isEquiv
+  fmor-comp : ∀ Q {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
+              fmor Q (f ∘co g) ≈ fmor Q f ∘co (fmor Q g)
+  fmor-comp (const A)   f g = ≈-sym id-left-co
+  fmor-comp var         f g = ≈-refl
+  fmor-comp (Q₁ + Q₂)   f g = begin
+      fmor (Q₁ + Q₂) (f ∘co g)
+    ≈⟨ s-copair-cong (∘-cong₂ (fmor-comp Q₁ f g)) (∘-cong₂ (fmor-comp Q₂ f g)) ⟩
+      s-copair (in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)) (in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g))
+    ≈˘⟨ s-copair-cong eq-in₁ eq-in₂ ⟩
+      s-copair ((fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂))
+               ((fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂))
+    ≈⟨ s-copair-ext _ ⟩
+      fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g
+    ∎ where
+      eq-in₁ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂) ≈ in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)
+      eq-in₁ = begin
+          (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₁ ∘ p₂)
+        ≈⟨ assoc-co _ _ _ ⟩
+          fmor (Q₁ + Q₂) f ∘co (fmor (Q₁ + Q₂) g ∘co (in₁ ∘ p₂))
+        ≈⟨ ∘-cong-co ≈-refl (s-copair-in₁ _ _) ⟩
+          fmor (Q₁ + Q₂) f ∘co (in₁ ∘ fmor Q₁ g)
+        ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
+          fmor (Q₁ + Q₂) f ∘co ((in₁ ∘ p₂) ∘co fmor Q₁ g)
+        ≈˘⟨ assoc-co _ _ _ ⟩
+          (fmor (Q₁ + Q₂) f ∘co (in₁ ∘ p₂)) ∘co fmor Q₁ g
+        ≈⟨ ∘-cong-co (s-copair-in₁ _ _) ≈-refl ⟩
+          (in₁ ∘ fmor Q₁ f) ∘co fmor Q₁ g
+        ≈⟨ assoc _ _ _ ⟩
+          in₁ ∘ (fmor Q₁ f ∘co fmor Q₁ g)
+        ∎ where open ≈-Reasoning isEquiv
+      eq-in₂ : (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂) ≈ in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g)
+      eq-in₂ = begin
+          (fmor (Q₁ + Q₂) f ∘co fmor (Q₁ + Q₂) g) ∘co (in₂ ∘ p₂)
+        ≈⟨ assoc-co _ _ _ ⟩
+          fmor (Q₁ + Q₂) f ∘co (fmor (Q₁ + Q₂) g ∘co (in₂ ∘ p₂))
+        ≈⟨ ∘-cong-co ≈-refl (s-copair-in₂ _ _) ⟩
+          fmor (Q₁ + Q₂) f ∘co (in₂ ∘ fmor Q₂ g)
+        ≈˘⟨ ∘-cong-co ≈-refl (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
+          fmor (Q₁ + Q₂) f ∘co ((in₂ ∘ p₂) ∘co fmor Q₂ g)
+        ≈˘⟨ assoc-co _ _ _ ⟩
+          (fmor (Q₁ + Q₂) f ∘co (in₂ ∘ p₂)) ∘co fmor Q₂ g
+        ≈⟨ ∘-cong-co (s-copair-in₂ _ _) ≈-refl ⟩
+          (in₂ ∘ fmor Q₂ f) ∘co fmor Q₂ g
+        ≈⟨ assoc _ _ _ ⟩
+          in₂ ∘ (fmor Q₂ f ∘co fmor Q₂ g)
+        ∎ where open ≈-Reasoning isEquiv
+      open ≈-Reasoning isEquiv
+  fmor-comp (Q₁ × Q₂)   f g =
+    begin
+      fmor (Q₁ × Q₂) (f ∘co g)
+    ≈⟨ pair-cong (∘-cong₁ (fmor-comp Q₁ f g)) (∘-cong₁ (fmor-comp Q₂ f g)) ⟩
+      pair ((fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂))
+           ((fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂))
+    ≈˘⟨ pair-cong eq-p₁ eq-p₂ ⟩
+      pair (p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g))
+           (p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g))
+    ≈⟨ pair-ext _ ⟩
+      fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g
+    ∎ where
+      eq-p₁ : p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g) ≈ (fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂)
+      eq-p₁ = begin
+          p₁ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
+        ≈˘⟨ assoc _ _ _ ⟩
+          (p₁ ∘ fmor (Q₁ × Q₂) f) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
+        ≈⟨ ∘-cong₁ (pair-p₁ _ _) ⟩
+          (fmor Q₁ f ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
+        ≈⟨ assoc _ _ _ ⟩
+          fmor Q₁ f ∘ (pair p₁ (p₁ ∘ p₂) ∘ pair p₁ (fmor (Q₁ × Q₂) g))
+        ≈⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
+                            (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
+          fmor Q₁ f ∘ pair p₁ (p₁ ∘ fmor (Q₁ × Q₂) g)
+        ≈⟨ ∘-cong₂ (pair-cong₂ (pair-p₁ _ _)) ⟩
+          fmor Q₁ f ∘ pair p₁ (fmor Q₁ g ∘ pair p₁ (p₁ ∘ p₂))
+        ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))) ⟩
+          fmor Q₁ f ∘ (pair p₁ (fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂))
+        ≈˘⟨ assoc _ _ _ ⟩
+          (fmor Q₁ f ∘co fmor Q₁ g) ∘ pair p₁ (p₁ ∘ p₂)
+        ∎ where open ≈-Reasoning isEquiv
+      eq-p₂ : p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g) ≈ (fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂)
+      eq-p₂ = begin
+          p₂ ∘ (fmor (Q₁ × Q₂) f ∘co fmor (Q₁ × Q₂) g)
+        ≈˘⟨ assoc _ _ _ ⟩
+          (p₂ ∘ fmor (Q₁ × Q₂) f) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
+        ≈⟨ ∘-cong₁ (pair-p₂ _ _) ⟩
+          (fmor Q₂ f ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair p₁ (fmor (Q₁ × Q₂) g)
+        ≈⟨ assoc _ _ _ ⟩
+          fmor Q₂ f ∘ (pair p₁ (p₂ ∘ p₂) ∘ pair p₁ (fmor (Q₁ × Q₂) g))
+        ≈⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _)
+                            (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
+          fmor Q₂ f ∘ pair p₁ (p₂ ∘ fmor (Q₁ × Q₂) g)
+        ≈⟨ ∘-cong₂ (pair-cong₂ (pair-p₂ _ _)) ⟩
+          fmor Q₂ f ∘ pair p₁ (fmor Q₂ g ∘ pair p₁ (p₂ ∘ p₂))
+        ≈˘⟨ ∘-cong₂ (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))) ⟩
+          fmor Q₂ f ∘ (pair p₁ (fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂))
+        ≈˘⟨ assoc _ _ _ ⟩
+          (fmor Q₂ f ∘co fmor Q₂ g) ∘ pair p₁ (p₂ ∘ p₂)
+        ∎ where open ≈-Reasoning isEquiv
+      open ≈-Reasoning isEquiv
 
-    functor : ∀ Q Γ → Functor (cat-ext Γ) (cat-ext Γ)
-    functor Q Γ .Functor.fobj      = fobj Q
-    functor Q Γ .Functor.fmor      = fmor Q
-    functor Q Γ .Functor.fmor-cong = fmor-cong Q
-    functor Q Γ .Functor.fmor-id   = fmor-id Q
-    functor Q Γ .Functor.fmor-comp = fmor-comp Q
-
-  open Poly-fun public
+  functor : ∀ Q Γ → Functor (cat-ext Γ) (cat-ext Γ)
+  functor Q Γ .Functor.fobj      = fobj Q
+  functor Q Γ .Functor.fmor      = fmor Q
+  functor Q Γ .Functor.fmor-cong = fmor-cong Q
+  functor Q Γ .Functor.fmor-id   = fmor-id Q
+  functor Q Γ .Functor.fmor-comp = fmor-comp Q
 
   record HasMu : Set (o ⊔ m ⊔ e) where
     field
