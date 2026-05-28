@@ -24,15 +24,14 @@ open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 
 module fam-mu-types where
 
-------------------------------------------------------------------------------
--- Like Poly above but constant slots hold a setoid rather than a category object. Used to build the W-type
--- carrier of HasMu in the Fam category. W P is the set of P-shaped trees; W-≈ is tree equality by structural
--- recursion on the polynomial.
 module _ {o e} where
   open import Data.Sum using (_⊎_)
   open import Data.Product using () renaming (_×_ to _×T_)
   open import prop using (_∧_; ⊤; ⊥)
 
+  ------------------------------------------------------------------------------
+  -- Syntactic representation of polynomial functor but with constant slots holding a setoid rather than a
+  -- category object. Used to define the W-type carrier of HasMu by structural recursion.
   data IdxPoly : Set (suc (o ⊔ e)) where
     param : Setoid o e → IdxPoly
     var  : IdxPoly
@@ -41,6 +40,7 @@ module _ {o e} where
 
   -- Well-founded tree carrier (Martin-Löf W-types).
   mutual
+    -- P-shaped trees.
     data W (P : IdxPoly) : Set o where
       inF : WIdx P P → W P
 
@@ -51,6 +51,7 @@ module _ {o e} where
     WIdx P (Q₁ × Q₂)   = WIdx P Q₁ ×T WIdx P Q₂
 
   mutual
+    -- Tree equality by structural recursion on the polynomial.
     W-≈ : (P : IdxPoly) → W P → W P → Prop e
     W-≈ P (inF i₁) (inF i₂) = WIdx-≈ P P i₁ i₂
 
