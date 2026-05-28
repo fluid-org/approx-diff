@@ -215,7 +215,7 @@ module Interp {o m e} {𝒞 : Category o m e}
   functor Q Γ .Functor.fmor-id   = fmor-id Q
   functor Q Γ .Functor.fmor-comp = fmor-comp Q
 
-  -- Polynomials which differ only in isomorphic constants yield isomorphic μ-types.
+  -- Natural isomorphism between interpretation of syntactic polynomials that differ only in isomorphic constants.
   open Iso
 
   iso-mor-fwd : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (fobj P X) ⇒ fobj P' X
@@ -236,8 +236,7 @@ module Interp {o m e} {𝒞 : Category o m e}
     where
       in₁-branch : (s-copair (in₁ ∘ iso-mor-fwd P₁≅Q₁) (in₂ ∘ iso-mor-fwd P₂≅Q₂)
                      ∘co s-copair (in₁ ∘ iso-mor-fwd (iso-sym P₁≅Q₁)) (in₂ ∘ iso-mor-fwd (iso-sym P₂≅Q₂)))
-                     ∘co (in₁ ∘ p₂)
-                 ≈ p₂ ∘co (in₁ ∘ p₂)
+                     ∘co (in₁ ∘ p₂) ≈ p₂ ∘co (in₁ ∘ p₂)
       in₁-branch =
         begin
           (s-copair (in₁ ∘ iso-mor-fwd P₁≅Q₁) (in₂ ∘ iso-mor-fwd P₂≅Q₂) ∘co
@@ -343,7 +342,7 @@ module Interp {o m e} {𝒞 : Category o m e}
   iso-mor-natural : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ X Y} (f : prod Γ X ⇒ Y) →
                     iso-mor-fwd P≅P' ∘co fmor P f ≈ fmor P' f ∘co iso-mor-fwd P≅P'
   iso-mor-natural (const A≅B) f = ≈-trans id-right-co (≈-sym id-left-co)
-  iso-mor-natural var         f = ≈-trans id-left-co (≈-sym id-right-co)
+  iso-mor-natural var f = ≈-trans id-left-co (≈-sym id-right-co)
   iso-mor-natural (_+_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) f =
     begin
       iso-mor-fwd (P₁≅Q₁ + P₂≅Q₂) ∘co fmor (P₁ + P₂) f
@@ -419,7 +418,8 @@ module Interp {o m e} {𝒞 : Category o m e}
           (fmor (Q₁ + Q₂) f ∘co iso-mor-fwd (P₁≅Q₁ + P₂≅Q₂)) ∘co (in₂ ∘ p₂)
         ∎ where open ≈-Reasoning isEquiv
       open ≈-Reasoning isEquiv
-  iso-mor-natural (_×_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) f = begin
+  iso-mor-natural (_×_ {P₁} {P₂} {Q₁} {Q₂} P₁≅Q₁ P₂≅Q₂) f =
+    begin
       iso-mor-fwd (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f
     ≈˘⟨ pair-ext _ ⟩
       pair (p₁ ∘ (iso-mor-fwd (P₁≅Q₁ × P₂≅Q₂) ∘co fmor (P₁ × P₂) f))
@@ -485,6 +485,7 @@ module Interp {o m e} {𝒞 : Category o m e}
           p₂ ∘ (fmor (Q₁ × Q₂) f ∘co iso-mor-fwd (P₁≅Q₁ × P₂≅Q₂))
         ∎ where open ≈-Reasoning isEquiv
       open ≈-Reasoning isEquiv
+
   record HasMu : Set (o ⊔ m ⊔ e) where
     field
       μ    : Poly 𝒞 → obj
@@ -527,13 +528,13 @@ module Interp {o m e} {𝒞 : Category o m e}
         (inF Q ∘ p₂) ∘co fmor Q p₂
       ∎) where open ≈-Reasoning isEquiv
 
-
     -- Algebra-morphism condition: fwd-cata ⦅ alg-fwd ⦆ commutes with alg-bwd and inF P', after
     -- using iso-mor-natural to move iso-mor-fwd through fmor and iso-mor-fwd∘bwd to cancel iso-mor-fwd pairs.
     fwd-cata-alg-mor : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
-      ⦅ inF P' ∘ iso-mor-fwd P≅P' {Γ} ⦆ ∘co (inF P ∘ iso-mor-fwd (iso-sym P≅P'))
-      ≈ (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆
-    fwd-cata-alg-mor {P} {P'} P≅P' = begin
+                       ⦅ inF P' ∘ iso-mor-fwd P≅P' {Γ} ⦆ ∘co (inF P ∘ iso-mor-fwd (iso-sym P≅P'))
+                     ≈ (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆
+    fwd-cata-alg-mor {P} {P'} P≅P' =
+      begin
         ⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆ ∘co (inF P ∘ iso-mor-fwd (iso-sym P≅P'))
       ≈˘⟨ ∘-cong-co₂ (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
         ⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆ ∘co ((inF P ∘ p₂) ∘co iso-mor-fwd (iso-sym P≅P'))
@@ -556,9 +557,10 @@ module Interp {o m e} {𝒞 : Category o m e}
       ∎ where open ≈-Reasoning isEquiv
 
     iso-fwd∘bwd : ∀ {P P'} (P≅P' : Poly-iso P P') →
-      (⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
-        ∘ (⦅ inF P ∘ iso-mor-fwd (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))) ≈ id (μ P')
-    iso-fwd∘bwd {P} {P'} P≅P' = begin
+                  (⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆ ∘ pair to-terminal (id (μ P))) ∘
+                  (⦅ inF P ∘ iso-mor-fwd (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P'))) ≈ id (μ P')
+    iso-fwd∘bwd {P} {P'} P≅P' =
+      begin
         (⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆ ∘ pair to-terminal (id (μ P)))
           ∘ (⦅ inF P ∘ iso-mor-fwd (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))
       ≈⟨ assoc _ _ _ ⟩
@@ -587,6 +589,7 @@ module Interp {o m e} {𝒞 : Category o m e}
         id (μ P')
       ∎ where open ≈-Reasoning isEquiv
 
+    -- Polynomials which differ only in isomorphic constants yield isomorphic μ-types.
     iso : ∀ {P P'} → Poly-iso P P' → Category.Iso 𝒞 (μ P) (μ P')
     iso P≅P' .fwd        = ⦅ inF _ ∘ iso-mor-fwd P≅P' ⦆ ∘ pair to-terminal (id _)
     iso P≅P' .bwd        = ⦅ inF _ ∘ iso-mor-fwd (iso-sym P≅P') ⦆ ∘ pair to-terminal (id _)
@@ -598,17 +601,16 @@ module Interp {o m e} {𝒞 : Category o m e}
              (iso-fwd∘bwd (iso-sym P≅P'))
 
 ------------------------------------------------------------------------------
--- A functor F : 𝒞 → 𝒟 preserves μ if, for each polynomial signature P, the
--- F-image of 𝒞's μ P is isomorphic to 𝒟's μ of the F-mapped polynomial.
+-- A functor F : 𝒞 → 𝒟 preserves μ if, for any polynomial signature P, the F-image of 𝒞's μP is isomorphic to
+-- 𝒟's μ of the F-mapped polynomial.
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
          (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P)
          (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SCP : HasStrongCoproducts 𝒟 𝒟P)
          where
   private
-    module S₁ = Interp 𝒞T 𝒞P 𝒞SCP
-    module S₂ = Interp 𝒟T 𝒟P 𝒟SCP
+    module 𝒞-Interp = Interp 𝒞T 𝒞P 𝒞SCP
+    module 𝒟-Interp = Interp 𝒟T 𝒟P 𝒟SCP
 
-  Preserves-μ : S₁.HasMu → S₂.HasMu → Functor 𝒞 𝒟 → Set _
+  Preserves-μ : 𝒞-Interp.HasMu → 𝒟-Interp.HasMu → Functor 𝒞 𝒟 → Set _
   Preserves-μ 𝒞Mu 𝒟Mu F =
-    ∀ (P : Poly 𝒞) → Category.Iso 𝒟 (Functor.fobj F (S₁.HasMu.μ 𝒞Mu P)) (S₂.HasMu.μ 𝒟Mu (Poly-map F P))
-
+    ∀ (P : Poly 𝒞) → Category.Iso 𝒟 (Functor.fobj F (𝒞-Interp.HasMu.μ 𝒞Mu P)) (𝒟-Interp.HasMu.μ 𝒟Mu (Poly-map F P))
