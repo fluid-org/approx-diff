@@ -38,7 +38,7 @@ module _ {o e} where
     _+_  : IdxPoly → IdxPoly → IdxPoly
     _×_  : IdxPoly → IdxPoly → IdxPoly
 
-  -- Well-founded tree carrier (Martin-Löf W-types).
+  -- Well-founded tree carrier (Martin-Löf W-types; see Wellorderings, pp. 43-47 of Intuitionistic Type Theory).
   mutual
     -- P-shaped trees.
     data W (P : IdxPoly) : Set o where
