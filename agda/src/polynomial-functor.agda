@@ -38,15 +38,28 @@ Poly-map F var         = var
 Poly-map F (P₁ + P₂)   = Poly-map F P₁ + Poly-map F P₂
 Poly-map F (P₁ × P₂)   = Poly-map F P₁ × Poly-map F P₂
 
--- A narrow notion of isomorphism: two polynomials with the same tree shape and isomorphic objects at const slots.
+-- A narrow notion of isomorphism: two polynomials which differ only in isomorphic objects at const slots.
 data Poly-iso {o m e} {𝒞 : Category o m e} : Poly 𝒞 → Poly 𝒞 → Set (o ⊔ m ⊔ e) where
   const : ∀ {A B} → Category.Iso 𝒞 A B → Poly-iso (const A) (const B)
   var   : Poly-iso var var
   _+_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ + P₂) (Q₁ + Q₂)
   _×_   : ∀ {P₁ P₂ Q₁ Q₂} → Poly-iso P₁ Q₁ → Poly-iso P₂ Q₂ → Poly-iso (P₁ × P₂) (Q₁ × Q₂)
 
+iso-sym : ∀ {o m e} {𝒞 : Category o m e} {P P'} → Poly-iso {𝒞 = 𝒞} P P' → Poly-iso P' P
+iso-sym (const A≅B)     = const (Category.Iso-sym _ A≅B)
+iso-sym var             = var
+iso-sym (P₁≅Q₁ + P₂≅Q₂) = iso-sym P₁≅Q₁ + iso-sym P₂≅Q₂
+iso-sym (P₁≅Q₁ × P₂≅Q₂) = iso-sym P₁≅Q₁ × iso-sym P₂≅Q₂
+
+iso-sym-involutive : ∀ {o m e} {𝒞 : Category o m e} {P P'} (P≅P' : Poly-iso {𝒞 = 𝒞} P P') →
+                     iso-sym (iso-sym P≅P') ≡ P≅P'
+iso-sym-involutive (const A≅B)      = ≡.refl
+iso-sym-involutive var              = ≡.refl
+iso-sym-involutive (P₁≅Q₁ + P₂≅Q₂)  = ≡.cong₂ _+_ (iso-sym-involutive P₁≅Q₁) (iso-sym-involutive P₂≅Q₂)
+iso-sym-involutive (P₁≅Q₁ × P₂≅Q₂)  = ≡.cong₂ _×_ (iso-sym-involutive P₁≅Q₁) (iso-sym-involutive P₂≅Q₂)
+
 module Interp {o m e} {𝒞 : Category o m e}
-           (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P) where
+              (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P) where
   open Category 𝒞
   open HasTerminal 𝒞T renaming (witness to terminal)
   open HasProducts 𝒞P
@@ -245,8 +258,7 @@ module Interp {o m e} {𝒞 : Category o m e}
         (inF Q ∘ p₂) ∘co fmor Q p₂
       ∎) where open ≈-Reasoning isEquiv
 
-    -- μ respects Poly-iso: structurally iso polynomials (matching shape, const slots iso) yield iso μ-types.
-    -- Built directly from catamorphism universal property (β, η).
+    -- Polynomials which differ only in isomorphic constants yield isomorphic μ-types.
     open Iso
 
     iso-mor : ∀ {P P'} → Poly-iso P P' → ∀ {Γ X} → prod Γ (fobj P X) ⇒ fobj P' X
@@ -254,18 +266,6 @@ module Interp {o m e} {𝒞 : Category o m e}
     iso-mor var             = p₂
     iso-mor (P₁≅Q₁ + P₂≅Q₂) = s-copair (in₁ ∘ iso-mor P₁≅Q₁) (in₂ ∘ iso-mor P₂≅Q₂)
     iso-mor (P₁≅Q₁ × P₂≅Q₂) = pair (iso-mor P₁≅Q₁ ∘co (p₁ ∘ p₂)) (iso-mor P₂≅Q₂ ∘co (p₂ ∘ p₂))
-
-    iso-sym : ∀ {P P'} → Poly-iso P P' → Poly-iso P' P
-    iso-sym (const A≅B) = const (Category.Iso-sym 𝒞 A≅B)
-    iso-sym var         = var
-    iso-sym (P₁≅Q₁ + P₂≅Q₂) = iso-sym P₁≅Q₁ + iso-sym P₂≅Q₂
-    iso-sym (P₁≅Q₁ × P₂≅Q₂) = iso-sym P₁≅Q₁ × iso-sym P₂≅Q₂
-
-    iso-sym-involutive : ∀ {P P'} (P≅P' : Poly-iso P P') → iso-sym (iso-sym P≅P') ≡ P≅P'
-    iso-sym-involutive (const A≅B) = ≡.refl
-    iso-sym-involutive var         = ≡.refl
-    iso-sym-involutive (P₁≅Q₁ + P₂≅Q₂) = ≡.cong₂ _+_ (iso-sym-involutive P₁≅Q₁) (iso-sym-involutive P₂≅Q₂)
-    iso-sym-involutive (P₁≅Q₁ × P₂≅Q₂) = ≡.cong₂ _×_ (iso-sym-involutive P₁≅Q₁) (iso-sym-involutive P₂≅Q₂)
 
     -- Round-trip law: forward then backward at the polynomial-functor level is (parameterised) identity.
     iso-mor-fwd∘bwd : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ X} → iso-mor P≅P' {Γ} {X} ∘co iso-mor (iso-sym P≅P') ≈ p₂
