@@ -10,3 +10,5 @@
 *.pdf
 *.zip
 *.DS_Store
+*.fdb_latexmk
+*.fls
