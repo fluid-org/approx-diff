@@ -528,12 +528,14 @@ module Interp {o m e} {𝒞 : Category o m e}
         (inF Q ∘ p₂) ∘co fmor Q p₂
       ∎) where open ≈-Reasoning isEquiv
 
-    -- Algebra-morphism condition: fwd-cata ⦅ alg-fwd ⦆ commutes with alg-bwd and inF P', after
-    -- using iso-mor-natural to move iso-mor-fwd through fmor and iso-mor-fwd∘bwd to cancel iso-mor-fwd pairs.
-    fwd-cata-alg-mor : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
+    -- Let's write "P-algebra" to mean an (fobj P)-algebra. The catamorphism ⦅ inF _ ∘ iso-mor-fwd P≅P' which
+    -- provides the forward direction of the isomorphism μP ≅ μP' is a P'-algebra morphism from μP (viewed as
+    -- a P'-algebra by "twisting" its canonical P-algebra `inF P` through the backward iso P'≅P) to μP' (with
+    -- its canonical P'-algebra `inF P`). Precondition needed by cata-fusion in the round-trip proof.
+    iso-cata-alg-mor : ∀ {P P'} (P≅P' : Poly-iso P P') {Γ} →
                        ⦅ inF P' ∘ iso-mor-fwd P≅P' {Γ} ⦆ ∘co (inF P ∘ iso-mor-fwd (iso-sym P≅P'))
                      ≈ (inF P' ∘ p₂) ∘co fmor P' ⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆
-    fwd-cata-alg-mor {P} {P'} P≅P' =
+    iso-cata-alg-mor {P} {P'} P≅P' =
       begin
         ⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆ ∘co (inF P ∘ iso-mor-fwd (iso-sym P≅P'))
       ≈˘⟨ ∘-cong-co₂ (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))) ⟩
@@ -583,7 +585,7 @@ module Interp {o m e} {𝒞 : Category o m e}
         ⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆ ∘ (pair p₁ ⦅ inF P ∘ iso-mor-fwd (iso-sym P≅P') ⦆ ∘ pair to-terminal (id (μ P')))
       ≈˘⟨ assoc _ _ _ ⟩
         (⦅ inF P' ∘ iso-mor-fwd P≅P' ⦆ ∘co ⦅ inF P ∘ iso-mor-fwd (iso-sym P≅P') ⦆) ∘ pair to-terminal (id (μ P'))
-      ≈⟨ ∘-cong₁ (≈-trans (cata-fusion _ _ _ (fwd-cata-alg-mor P≅P')) (≈-sym cata-inF)) ⟩
+      ≈⟨ ∘-cong₁ (≈-trans (cata-fusion _ _ _ (iso-cata-alg-mor P≅P')) (≈-sym cata-inF)) ⟩
         p₂ ∘ pair to-terminal (id (μ P'))
       ≈⟨ pair-p₂ _ _ ⟩
         id (μ P')
