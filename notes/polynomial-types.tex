@@ -17,7 +17,7 @@ t$ or $t[\tau]$, so this is type-level parameterisation only, not parametric pol
    \Delta &::=& \cdot \mid \Delta, \alpha : \mathsf{type} & \text{(kinding contexts)} \\
    \tau, \sigma &::=& \alpha \mid \tyUnit \mid \rho \mid \sigma \tySum \tau \mid \sigma \tyProd \tau \mid
                       \sigma \tyFun \tau \mid \mu\alpha.\tau & \text{(types)} \\
-   t, s &::=& \cdots \mid \tmRoll{t} \mid \fold\,t\,\with\,x.s & \text{(terms)}
+   t, s &::=& \cdots \mid \tmRoll{t} \mid \syn{fold}\,t\,\syn{with}\,x.s & \text{(terms)}
 \end{array}
 \]
 \caption{Syntax of polynomial types and terms}
@@ -104,7 +104,7 @@ since $\mu F$ can subsequently appear as a $\const$ in further polynomials.
 \label{sec:polynomial-types:language}
 
 Typing contexts $\Gamma = x_1 : \sigma_1, \ldots, x_n : \sigma_n$ have all $\sigma_i$ closed
-($\cdot \vdash \sigma_i : \mathsf{type}$). The typing rules for $\roll$ and $\fold$ are
+($\cdot \vdash \sigma_i : \mathsf{type}$). The typing rules for $\syn{roll}$ and $\syn{fold}$ are
 \begin{mathpar}
 \inferrule*
   {\Gamma \vdash t : \subst{\tau}{\mu\alpha.\tau}{\alpha}}
@@ -113,12 +113,13 @@ Typing contexts $\Gamma = x_1 : \sigma_1, \ldots, x_n : \sigma_n$ have all $\sig
 \inferrule*
   {\Gamma \vdash t : \mu\alpha.\tau \\
    \Gamma, x : \subst{\tau}{\sigma}{\alpha} \vdash s : \sigma}
-  {\Gamma \vdash \fold\,t\,\with\,x.s : \sigma}
+  {\Gamma \vdash \syn{fold}\,t\,\syn{with}\,x.s : \sigma}
 \end{mathpar}
 with $\sigma$ closed and $\tau$ kinded in context $\alpha : \mathsf{type}$. The $\fold$ rule uses the
 parametric (open) form of the catamorphism: the algebra body $s$ lives in the extended context $\Gamma, x :
 \subst{\tau}{\sigma}{\alpha}$ rather than as a closed function, avoiding the need for exponentials in the
-semantic category.
+semantic category. (The $\syn{fold}$ rule uses $\syn{with}$ to bind the algebra-body's free
+variable.)
 
 \subsection{Existence of initial algebras in $\Fam(\cat{C})$}
 \label{sec:polynomial-types:fam}
@@ -158,6 +159,6 @@ h_{\inMap_F} &= \id_{\mu F} \tag{$\eta$}
 \end{align*}
 where $\beta$ is the algebra-morphism property of $h_\alpha$ and $\eta$ applies uniqueness with $\alpha =
 \inMap_F$, where $\id_{\mu F}$ is trivially an algebra morphism. At the term level, $\beta$ reduces
-$\fold\,(\roll\,t)\,\with\,x.s$ by recursively folding each $\mu P$-child of $t$ before substituting into
-$s$, and $\eta$ says $\fold\,t\,\with\,x.\roll\,x = t$.
+$\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu P$-child of $t$
+before substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
 
