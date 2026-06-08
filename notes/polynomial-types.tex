@@ -2,14 +2,14 @@
 \label{sec:polynomial-types}
 
 This section follows \citet{nunes2023}'s presentation, restricted to inductive types. Types are kinded
-over a context $\Delta = \alpha_1 : \mathsf{type}, \ldots, \alpha_n : \mathsf{type}$ of type variables,
-with the recursive type former $\mu\alpha.\tau$ binding a type variable in its body. Strict positivity is
-enforced not by a syntactic restriction on $\tau$ but by the kinding rule for function space, which
-requires both argument and result to be closed (kinded in the empty context); type variables therefore
-cannot occur in function positions, and in particular not under any $\mu$-bound variable. A type with free
-kinding-context variables acts as a schema: a polymorphic list, for example, is $\mu\beta.\,\tyUnit \tySum
-(\alpha \tyProd \beta)$ kinded under $\alpha : \mathsf{type}$, with $\alpha$ instantiated by substitution to
-obtain particular list types. \figref{polynomial-types:syntax} gives the syntax of types and terms.
+over a context $\Delta = \alpha_1 : \mathsf{type}, \ldots, \alpha_n : \mathsf{type}$, with $\mu\alpha.\tau$
+binding a type variable in its body. Strict positivity is enforced by the kinding rule for function space:
+both argument and result must be closed (kinded in the empty context), so type variables cannot occur under
+$\tyFun$. A type with free kinding-context variables thus acts as a \emph{schema}: $\mu\beta.\,\tyUnit
+\tySum (\alpha \tyProd \beta)$, kinded under $\alpha : \mathsf{type}$, becomes a particular list type by
+substituting a closed type for $\alpha$. As in \citet{nunes2023}, the term language has no $\Lambda\alpha.\,
+t$ or $t[\tau]$, so this is type-level parameterisation only, not parametric polymorphism.
+\figref{polynomial-types:syntax} gives the syntax of types and terms.
 
 \begin{figure}
 \[
