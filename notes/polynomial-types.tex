@@ -1,29 +1,77 @@
 \section{Inductive types from polynomial endofunctors}
 \label{sec:polynomial-types}
 
-This section loosely follows \citet{nunes2023}'s presentation, restricted to inductive types. They take
-types over a kinding context $\Delta = \alpha_1 : \mathsf{type}, \ldots, \alpha_n : \mathsf{type}$ so that a
-polynomial body $\tau$ in $\mu\alpha.\tau$ may mention other free type variables and a single rule schema
-covers every instantiation, whereas our types are closed and each $F \in \Poly_{\cat{C}}$ mentions specific
-objects of $\cat{C}$. Where they admit arbitrary type expressions $\mu\alpha.\tau$ and impose strict
-positivity as a side-condition on $\tau$, we restrict $\mu$ to elements of $\Poly_{\cat{C}}$, which is
-strictly positive by construction. \figref{polynomial-types:syntax} summarises the additional type and term
-formers.
+This section follows \citet{nunes2023}'s presentation, restricted to inductive types. Types are kinded
+over a context $\Delta = \alpha_1 : \mathsf{type}, \ldots, \alpha_n : \mathsf{type}$ of type variables,
+with the recursive type former $\mu\alpha.\tau$ binding a type variable in its body. Strict positivity is
+enforced not by a syntactic restriction on $\tau$ but by the kinding rule for function space, which
+requires both argument and result to be closed (kinded in the empty context); type variables therefore
+cannot occur in function positions, and in particular not under any $\mu$-bound variable. Polymorphism is
+automatic: a polymorphic list, for example, is $\mu\beta.\,\mathsf{unit} + (\alpha \times \beta)$ kinded
+under $\alpha : \mathsf{type}$.
+
+\figref{polynomial-types:syntax} gives the syntax of types and terms.
 
 \begin{figure}
 \[
 \begin{array}{rclr}
-   P, Q &::=& \const(\sigma) \mid \mathsf{var} \mid P + Q \mid P \times Q & \text{(polynomials over }\cat{C}\text{)} \\
-   \tau, \sigma &::=& \cdots \mid \mu P & \text{(types)} \\
+   \Delta &::=& \cdot \mid \Delta, \alpha : \mathsf{type} & \text{(kinding contexts)} \\
+   \tau, \sigma &::=& \alpha \mid \mathsf{unit} \mid \rho \mid \sigma + \tau \mid \sigma \times \tau \mid
+                      \sigma \to \tau \mid \mu\alpha.\tau & \text{(types)} \\
    t, s &::=& \cdots \mid \roll\,t \mid \fold\,t\,\with\,x.s & \text{(terms)}
 \end{array}
 \]
-\caption{Additional syntactic forms for polynomial types.}
+\caption{Syntax of polynomial types and terms.}
 \label{fig:polynomial-types:syntax}
+\end{figure}
+
+\subsection{Kinding rules}
+\label{sec:polynomial-types:kinding}
+
+A type $\tau$ is \emph{well-kinded} in context $\Delta$, written $\Delta \vdash \tau : \mathsf{type}$, by
+the rules in \figref{polynomial-types:kinding}. The function-space rule requires both $\sigma$ and $\tau$ to
+be kinded in the empty context, so function types are closed; this rules out any occurrence of a type
+variable under $\to$, which suffices for strict positivity of $\mu\alpha.\tau$.
+
+\begin{figure}
+\begin{mathpar}
+\inferrule* [right=\textsc{TyVar}]
+  {\alpha : \mathsf{type} \in \Delta}
+  {\Delta \vdash \alpha : \mathsf{type}}
+\and
+\inferrule* [right=\textsc{TyUnit}]
+  { }
+  {\Delta \vdash \mathsf{unit} : \mathsf{type}}
+\and
+\inferrule* [right=\textsc{TyBase}]
+  {\rho \in \mathit{PrimTy}}
+  {\Delta \vdash \rho : \mathsf{type}}
+\and
+\inferrule* [right=\textsc{TyProd}]
+  {\Delta \vdash \sigma : \mathsf{type} \\ \Delta \vdash \tau : \mathsf{type}}
+  {\Delta \vdash \sigma \times \tau : \mathsf{type}}
+\and
+\inferrule* [right=\textsc{TySum}]
+  {\Delta \vdash \sigma : \mathsf{type} \\ \Delta \vdash \tau : \mathsf{type}}
+  {\Delta \vdash \sigma + \tau : \mathsf{type}}
+\and
+\inferrule* [right=\textsc{TyFun}]
+  {\cdot \vdash \sigma : \mathsf{type} \\ \cdot \vdash \tau : \mathsf{type}}
+  {\Delta \vdash \sigma \to \tau : \mathsf{type}}
+\and
+\inferrule* [right=\textsc{TyMu}]
+  {\Delta, \alpha : \mathsf{type} \vdash \tau : \mathsf{type}}
+  {\Delta \vdash \mu\alpha.\tau : \mathsf{type}}
+\end{mathpar}
+\caption{Kinding rules for types.}
+\label{fig:polynomial-types:kinding}
 \end{figure}
 
 \subsection{The category $\Poly_{\cat{C}}$ of polynomial endofunctors}
 \label{sec:polynomial-types:poly}
+
+\todo{This subsection describes the previous setup with an explicit polynomial grammar; it will be
+reworked once the new semantics is in place.}
 
 In the style of \citet[Definition~6]{nunes2023} we treat the polynomial endofunctors as a (sub)category of
 $\Cat$, generated under a fixed collection of operations.
@@ -52,19 +100,22 @@ since $\mu F$ can subsequently appear as a $\const$ in further polynomials.
 \subsection{Typing rules}
 \label{sec:polynomial-types:language}
 
-Here $P(\tau)$ denotes the type obtained by substituting $\tau$ for $\mathsf{var}$ in $P$, with
-$\const(\sigma)(\tau) = \sigma$, $\mathsf{var}(\tau) = \tau$, $(P + Q)(\tau) = P(\tau) + Q(\tau)$, and
-$(P \times Q)(\tau) = P(\tau) \times Q(\tau)$. The typing rules for the new term formers are
-\[
-\begin{array}{c}
-   \infer{\Gamma \vdash \roll\,t : \mu P}{\Gamma \vdash t : P(\mu P)} \qquad
-   \infer{\Gamma \vdash \fold\,t\,\with\,x.s : \tau}{\Gamma \vdash t : \mu P \qquad
-   \Gamma, x : P(\tau) \vdash s : \tau}
-\end{array}
-\]
-The second rule uses the parametric (open) form of the catamorphism: the algebra body $s$ lives in the
-extended context $\Gamma, x : P(\tau)$ rather than as a closed function $P(\tau) \to \tau$, avoiding the
-need for exponentials in $\cat{C}$.
+Typing contexts $\Gamma = x_1 : \sigma_1, \ldots, x_n : \sigma_n$ have all $\sigma_i$ closed
+($\cdot \vdash \sigma_i : \mathsf{type}$). The typing rules for $\roll$ and $\fold$ are
+\begin{mathpar}
+\inferrule* [right=\textsc{Roll}]
+  {\Gamma \vdash t : \tau[\mu\alpha.\tau/\alpha]}
+  {\Gamma \vdash \roll\,t : \mu\alpha.\tau}
+\and
+\inferrule* [right=\textsc{Fold}]
+  {\Gamma \vdash t : \mu\alpha.\tau \\
+   \Gamma, x : \tau[\sigma/\alpha] \vdash s : \sigma}
+  {\Gamma \vdash \fold\,t\,\with\,x.s : \sigma}
+\end{mathpar}
+with $\sigma$ closed and $\tau$ kinded in context $\alpha : \mathsf{type}$. The $\fold$ rule uses the
+parametric (open) form of the catamorphism: the algebra body $s$ lives in the extended context $\Gamma, x :
+\tau[\sigma/\alpha]$ rather than as a closed function, avoiding the need for exponentials in the semantic
+category.
 
 \subsection{Existence of initial algebras in $\Fam(\cat{C})$}
 \label{sec:polynomial-types:fam}
