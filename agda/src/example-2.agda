@@ -5,6 +5,7 @@ module example-2 where
 open import Level using (0ℓ; lift)
 open import Data.List using (List; []; _∷_)
 open import every using (Every; []; _∷_)
+open import Relation.Binary.PropositionalEquality using (refl)
 open import signature
 import language-syntax-2
 import label
@@ -17,7 +18,7 @@ module ex where
   open L
   open SynMonad
 
-  Tag : type 0 → type 0
+  Tag : ∀ {Δ} → type Δ → type Δ
   Tag τ = base approx [×] τ
 
   Tag-pure : ∀ {Γ τ} → Γ ⊢ τ [→] Tag τ
@@ -29,9 +30,11 @@ module ex where
                    (snd (app (var zero) (snd (var (succ zero)))))))
 
   Tag-monad : SynMonad
-  Tag-monad .Mon = Tag
-  Tag-monad .pure = Tag-pure
-  Tag-monad .bind = Tag-bind
+  Tag-monad .Mon         = Tag
+  Tag-monad .Mon-ren _ _ = refl
+  Tag-monad .Mon-sub _ _ = refl
+  Tag-monad .pure        = Tag-pure
+  Tag-monad .bind        = Tag-bind
 
   `_ : ∀ {Γ} → label.label → Γ ⊢ base label
   ` l = bop (lbl l) []

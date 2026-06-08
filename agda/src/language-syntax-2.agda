@@ -66,6 +66,20 @@ _[_] : ∀ {Δ} → type (suc Δ) → type Δ → type Δ
 
 infix 50 _[_]
 
+sub-cong : ∀ {Δ Δ'} {σ σ' : Fin Δ → type Δ'} (τ : type Δ)
+         → (∀ i → σ i ≡ σ' i) → sub σ τ ≡ sub σ' τ
+sub-cong (var i)     p = p i
+sub-cong unit        p = refl
+sub-cong (base s)    p = refl
+sub-cong (τ₁ [+] τ₂) p = cong₂ _[+]_ (sub-cong τ₁ p) (sub-cong τ₂ p)
+sub-cong (τ₁ [×] τ₂) p = cong₂ _[×]_ (sub-cong τ₁ p) (sub-cong τ₂ p)
+sub-cong (τ₁ [→] τ₂) p = refl
+sub-cong (μ τ)       p = cong μ (sub-cong τ lifted)
+  where
+    lifted : ∀ i → sub-lift _ i ≡ sub-lift _ i
+    lifted zero    = refl
+    lifted (suc i) = cong (ren suc) (p i)
+
 sub-ren-id : ∀ {Δ Δ'} (τ : type Δ) {f : Fin Δ → Fin Δ'} {σ : Fin Δ' → type Δ}
              → (∀ i → σ (f i) ≡ var i)
              → sub σ (ren f τ) ≡ τ
@@ -200,6 +214,8 @@ when M ； N = if M then N else nil
 
 record SynMonad : Set ℓ where
   field
-    Mon  : type 0 → type 0
-    pure : ∀ {Γ τ} → Γ ⊢ τ [→] Mon τ
-    bind : ∀ {Γ σ τ} → Γ ⊢ Mon σ [→] (σ [→] Mon τ) [→] Mon τ
+    Mon     : ∀ {Δ} → type Δ → type Δ
+    Mon-ren : ∀ {Δ Δ'} (ρ : Fin Δ → Fin Δ') (τ : type Δ) → ren ρ (Mon τ) ≡ Mon (ren ρ τ)
+    Mon-sub : ∀ {Δ Δ'} (σ : Fin Δ → type Δ') (τ : type Δ) → sub σ (Mon τ) ≡ Mon (sub σ τ)
+    pure    : ∀ {Γ τ} → Γ ⊢ τ [→] Mon τ
+    bind    : ∀ {Γ σ τ} → Γ ⊢ Mon σ [→] (σ [→] Mon τ) [→] Mon τ
