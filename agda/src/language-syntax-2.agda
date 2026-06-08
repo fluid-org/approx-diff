@@ -5,9 +5,11 @@
 -- the empty context), so type variables cannot occur in function positions.
 
 open import Data.Fin using (Fin; zero; suc)
+open import Data.List using (List; []; _∷_)
 open import Data.Nat using (ℕ; zero; suc)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 
+open import every using (Every; []; _∷_)
 open import signature using (Signature)
 
 module language-syntax-2 {ℓ} (Sig : Signature ℓ) where
@@ -117,22 +119,37 @@ data _⊢_ : ctxt → type 0 → Set ℓ where
   snd  : ∀ {Γ τ₁ τ₂}    → Γ ⊢ τ₁ [×] τ₂ → Γ ⊢ τ₂
   lam  : ∀ {Γ σ τ}      → Γ , σ ⊢ τ → Γ ⊢ σ [→] τ
   app  : ∀ {Γ σ τ}      → Γ ⊢ σ [→] τ → Γ ⊢ σ → Γ ⊢ τ
+  bop  : ∀ {Γ in-sorts out-sort} →
+         op in-sorts out-sort →
+         Every (λ σ → Γ ⊢ base σ) in-sorts →
+         Γ ⊢ base out-sort
+  brel : ∀ {Γ in-sorts} →
+         rel in-sorts →
+         Every (λ σ → Γ ⊢ base σ) in-sorts →
+         Γ ⊢ unit [+] unit
   roll   : ∀ {Γ} {τ : type 1} → Γ ⊢ τ [ μ τ ] → Γ ⊢ μ τ
   fold-μ : ∀ {Γ} {τ : type 1} {σ : type 0} → Γ , τ [ σ ] ⊢ σ → Γ ⊢ μ τ → Γ ⊢ σ
 
-_*_ : ∀ {Γ Γ' τ} → Ren Γ Γ' → Γ ⊢ τ → Γ' ⊢ τ
-ρ * var x        = var (ρ x)
-ρ * unit         = unit
-ρ * inl t        = inl (ρ * t)
-ρ * inr t        = inr (ρ * t)
-ρ * case s t₁ t₂ = case (ρ * s) (ext ρ * t₁) (ext ρ * t₂)
-ρ * pair s t     = pair (ρ * s) (ρ * t)
-ρ * fst t        = fst (ρ * t)
-ρ * snd t        = snd (ρ * t)
-ρ * lam t        = lam (ext ρ * t)
-ρ * app s t      = app (ρ * s) (ρ * t)
-ρ * roll t       = roll (ρ * t)
-ρ * fold-μ s t   = fold-μ (ext ρ * s) (ρ * t)
+mutual
+  _*_ : ∀ {Γ Γ' τ} → Ren Γ Γ' → Γ ⊢ τ → Γ' ⊢ τ
+  ρ * var x        = var (ρ x)
+  ρ * unit         = unit
+  ρ * inl t        = inl (ρ * t)
+  ρ * inr t        = inr (ρ * t)
+  ρ * case s t₁ t₂ = case (ρ * s) (ext ρ * t₁) (ext ρ * t₂)
+  ρ * pair s t     = pair (ρ * s) (ρ * t)
+  ρ * fst t        = fst (ρ * t)
+  ρ * snd t        = snd (ρ * t)
+  ρ * lam t        = lam (ext ρ * t)
+  ρ * app s t      = app (ρ * s) (ρ * t)
+  ρ * bop ω ts     = bop ω (ρ ** ts)
+  ρ * brel ω ts    = brel ω (ρ ** ts)
+  ρ * roll t       = roll (ρ * t)
+  ρ * fold-μ s t   = fold-μ (ext ρ * s) (ρ * t)
+
+  _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
+  ρ ** []       = []
+  ρ ** (t ∷ ts) = (ρ * t) ∷ (ρ ** ts)
 
 list : type 0 → type 0
 list τ = μ (unit [+] (ren (λ ()) τ [×] var zero))
@@ -180,3 +197,9 @@ if M then N₁ else N₂ = case M (weaken * N₁) (weaken * N₂)
 
 when_；_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ list τ → Γ ⊢ list τ
 when M ； N = if M then N else nil
+
+record SynMonad : Set ℓ where
+  field
+    Mon  : type 0 → type 0
+    pure : ∀ {Γ τ} → Γ ⊢ τ [→] Mon τ
+    bind : ∀ {Γ σ τ} → Γ ⊢ Mon σ [→] (σ [→] Mon τ) [→] Mon τ
