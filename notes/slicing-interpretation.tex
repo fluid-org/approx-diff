@@ -84,7 +84,7 @@ arrow; each introduction composes with $\eta$ at the result. The $\syn{roll}$ cl
 $(\eta \comp \mathsf{in}_F)^\dagger$ rather than just $\mathsf{in}_F \comp \sem{t}$ because the
 source's $\sem{t}$ is $T$-wrapped.
 
-The $\syn{fold}$ clause uses a \emph{monadic} catamorphism $\cata{-}^T$, taking the Kleisli
+The $\syn{fold}$ clause uses a \emph{monadic} catamorphism $\cata{-}_F^T$, taking the Kleisli
 $F$-algebra $\sem{t} : \sem{\Gamma} \times T(F(\sem{\sigma})) \to T(\sem{\sigma})$ to a
 parameterised Kleisli morphism $\sem{\Gamma} \times T(\mu F) \to T(\sem{\sigma})$. The standard
 constructions for this, namely a distributive law $F \circ T \Rightarrow T \circ F$ or a
@@ -129,8 +129,8 @@ generalisation, defined by iterating the unary case with strength. Introductions
 $\eta$; eliminations take the Kleisli extension of the underlying operation, using strength to
 thread $\Gamma$ where needed. Unlike the Moggi semantics (\secref{slicing-interpretation:moggi-terms}),
 the $\syn{fold}$ clause here takes a plain $F$-algebra $\sem{t} : \sem{\Gamma} \times F(\sem{\sigma}) \to
-\sem{\sigma}$ and uses the standard catamorphism, avoiding the monadic-recursion machinery and
-its attendant collapsing of per-constructor approximations.
+\sem{\sigma}$ and uses the standard catamorphism, so the issue of collapsing per-constructor
+approximations under fold does not arise.
 
 \begin{align*}
 \sem{x_i}                              & = \pi_i \\
@@ -159,7 +159,7 @@ its attendant collapsing of per-constructor approximations.
 In the $\syn{case}$ clause, $\delta : \sem{\Gamma} \times (\sem{\sigma_1}+\sem{\sigma_2}) \to
 (\sem{\Gamma}\times\sem{\sigma_1}) + (\sem{\Gamma}\times\sem{\sigma_2})$ is the distributivity
 isomorphism. In the $\syn{roll}$ and $\syn{fold}$ clauses, for a type $\mu\alpha.\tau$, $F$ is
-the endofunctor $X \mapsto \sem{\tau}[X/\alpha]$ on $\cat{D}$, and $\cata{-}$ the catamorphism it
+the endofunctor $X \mapsto \sem{\tau}[X/\alpha]$ on $\cat{D}$, and $\cata{-}_F$ the catamorphism it
 induces (\secref{slicing-interpretation:mu}).
 
 \subsection{Inductive types}
