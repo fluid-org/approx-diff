@@ -15,7 +15,7 @@ module language-interpretation-slicing
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
   (T  : StrongMonad 𝒞P)
-  (let open Interp 𝒞T 𝒞P 𝒞SC)
+  (let open Interp {T = StrongMonad.F T} 𝒞T 𝒞P 𝒞SC)
   (Mu : HasMu)
   (⟦sort⟧ : Signature.sort Sig → Category.obj 𝒞)
   where

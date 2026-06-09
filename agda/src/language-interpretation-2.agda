@@ -8,6 +8,7 @@ open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasExponentials)
+open import functor using (Id)
 open import signature using (Signature)
 open import polynomial-functor-2 using (Poly; module Interp)
 import language-syntax-2
@@ -18,7 +19,7 @@ module language-interpretation-2
   (𝒞 : Category o m e)
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
-  (let open Interp 𝒞T 𝒞P 𝒞SC)
+  (let open Interp {T = Id} 𝒞T 𝒞P 𝒞SC)
   (Mu : HasMu)
   (⟦sort⟧ : Signature.sort Sig → Category.obj 𝒞)
   where
@@ -41,7 +42,7 @@ mutual
   ⟦ τ₁ [→] τ₂ ⟧ty val = ⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ())
   ⟦ μ τ ⟧ty       val = μ-obj (build-poly τ val) (λ ())
 
-  build-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 n
+  build-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 Id n
   build-poly {Δ} {n} (var i) val = [ Poly.var , (λ j → Poly.const (val j)) ] (splitAt n i)
   build-poly unit         val = Poly.const 𝟙
   build-poly (base s)     val = Poly.const (⟦sort⟧ s)
