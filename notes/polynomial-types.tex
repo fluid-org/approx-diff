@@ -116,9 +116,9 @@ Typing contexts $\Gamma = x_1 : \sigma_1, \ldots, x_n : \sigma_n$ have all $\sig
   {\Gamma \vdash \syn{fold}\,t\,\syn{with}\,x.s : \sigma}
 \end{mathpar}
 with $\sigma$ closed and $\tau$ kinded in context $\alpha : \mathsf{type}$. The $\fold$ rule uses the
-parametric (open) form of the catamorphism: the algebra body $s$ lives in the extended context $\Gamma, x :
+parametric (open) form of the catamorphism: the fold body $s$ lives in the extended context $\Gamma, x :
 \subst{\tau}{\sigma}{\alpha}$ rather than as a closed function, avoiding the need for exponentials in the
-semantic category. (The $\syn{fold}$ rule uses $\syn{with}$ to bind the algebra-body's free
+semantic category. (The $\syn{fold}$ rule uses $\syn{with}$ to bind the fold body's free
 variable.)
 
 \subsection{Existence of initial algebras in $\Fam(\cat{C})$}
@@ -161,4 +161,57 @@ where $\beta$ is the algebra-morphism property of $h_\alpha$ and $\eta$ applies 
 \inMap_F$, where $\id_{\mu F}$ is trivially an algebra morphism. At the term level, $\beta$ reduces
 $\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu P$-child of $t$
 before substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
+
+\subsection{Why a syntactic CBN translation does not extend to inductive types}
+\label{sec:polynomial-types:no-cbn}
+
+The current paper draft uses Moggi's CBN translation $\cbn{-}$ into the source language extended
+with a strong monad $T$, inserting $T$ around each \emph{child} of every
+non-base type constructor: $\cbn{\sigma \tySum \tau} = T(\cbn{\sigma}) \tySum T(\cbn{\tau})$ and
+similarly for $\tyProd$ and $\tyFun$, with $\cbn{\rho} = \rho$ and $\cbn{\tyUnit} = \tyUnit$
+leaving primitives and unit untouched. With inductive types this translation breaks: the
+substitution $\subst{\tau}{\sigma}{\alpha}$ in the $\syn{fold}$ typing rule does not commute with
+the $T$-tagging.
+
+For example, take $\tau = \tyUnit \tySum (\beta \tyProd \alpha)$ (the list schema) and $\sigma =
+\beta$, supposing $\beta$ is a closed base type. The rule for $\syn{fold}$ types the body of the
+fold in a context extended by $\subst{\tau}{\sigma}{\alpha} = \tyUnit \tySum (\beta \tyProd
+\beta)$. For the CBN-translated fold to typecheck, the translated context entry must equal what
+the same rule gives when applied to the translated schema and result type; translation must
+commute with substitution. In other words, the following must agree:
+
+\begin{description}
+\item[\normalfont\textit{(a) Translate $\subst{\tau}{\sigma}{\alpha}$, then $T$-wrap as a CBN context entry.}]
+Because the context translation wraps each entry in $T$ (every variable is a CBN thunk),
+the fold body's translated context entry is
+\[
+T(\cbn{\subst{\tau}{\sigma}{\alpha}}) = T(\tyUnit \tySum T(T(\beta) \tyProd T(\beta)))
+\]
+(applying the CBN type translation: $\tySum$ and $\tyProd$ wrap their children in $T$; $\tyUnit$
+and base $\beta$ stay as is).
+\item[\normalfont\textit{(b) Translate $\tau$ as a schema, then substitute the translated $\sigma$.}] The target's
+$\syn{fold}$ typing rule expects $\subst{\cbn{\tau}}{T(\cbn{\sigma})}{\alpha}$, since the result
+type of a translated computation is $T$-wrapped:
+\begin{align*}
+\cbn{\tau}                                       & = \tyUnit \tySum T(T(\beta) \tyProd T(\alpha)) \\
+\subst{\cbn{\tau}}{T(\cbn{\sigma})}{\alpha} & = \tyUnit \tySum T(T(\beta) \tyProd T(T(\beta)))
+\end{align*}
+\end{description}
+
+\noindent The two disagree in two ways:
+
+\begin{enumerate}
+\item (a) has an extra outermost $T$, contributed by the context translation. (b) has no such
+outer wrap because the target $\syn{fold}$ takes the $\cbn{\tau}$ schema directly.
+
+\item At the recursive position, (b) substitutes $T(\cbn{\sigma}) = T(\beta)$ for $\alpha$,
+which falls inside the $T$ that the $\tyProd$-rule had placed around $\alpha$ in $\cbn{\tau}$,
+giving $T(T(\beta))$. (a) has only $T(\beta)$ there, because the substitution happened in the
+source when $\alpha$ was just a type variable with no $T$ around it.
+\end{enumerate}
+
+It is not clear how this could be resolved within Moggi's CBN translation. One possible
+alternative is the CBN-into-CBPV translation (Levy). We pursue a different route in
+\secref{slicing-interpretation}: keep the source language as is, and put the $T$-tagging in the
+\emph{interpretation} rather than as a syntactic translation.
 

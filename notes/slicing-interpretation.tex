@@ -1,114 +1,119 @@
-\section{Slicing interpretation}
+\section{Interpretations parameterised by a strong monad}
 \label{sec:slicing-interpretation}
 
-Earlier work attached approximation information at the syntactic level via a CBN translation into
-the source language extended with a monad $\mathsf{Mon}$, modelling the per-constructor ``hole''
-of prior Galois slicing work. That route does not extend to inductive types: the
-substitution $\subst{\tau}{\sigma}{\alpha}$ in the typing rule for $\fold$ does not commute with a
-syntactic Mon-tagging at constructor roots (the outer Mon lands at the wrong level once the
-recursive variable is substituted). The obstruction is specific to source-to-source translations;
-moving the Mon-tagging into the \emph{interpretation} avoids it, because semantic substitution is
-just composition of interpretations and so commutes automatically.
-
-This section gives such an interpretation, parameterised by a category $\cat{D}$ equipped with an
-endofunctor $T : \cat{D} \to \cat{D}$ playing the role of $\mathsf{Mon}$. We leave the concrete
-choice of $\cat{D}$ and $T$ for Galois slicing to a later section.
+In response to the obstruction described in \secref{polynomial-types:no-cbn}, we move the
+$T$-tagging from a syntactic translation into the interpretation. The source language stays as in
+\secref{polynomial-types}. Following \citet{notions-of-computation}, the interpretation is
+parameterised by a category $\cat{D}$ equipped with a strong monad $T : \cat{D} \to \cat{D}$
+modelling a notion of computation. Within this setup we give two distinct interpretations: a Moggi-style CBN interpretation
+(\secref{slicing-interpretation:moggi}) with $T$ around the children of each non-base type former
+(matching the placement of \secref{polynomial-types:no-cbn}'s CBN translation), and one intended
+to model Galois slicing (\secref{slicing-interpretation:galois}) with $T$ at the root of each type
+former.
 
 \subsection{Semantic assumptions}
 \label{sec:slicing-interpretation:assumptions}
 
 Assume a category $\cat{D}$ with:
 \begin{itemize}
-\item finite products $(\times, 1)$ and exponentials (so $\cat{D}$ is cartesian closed);
+\item finite products $(\times, \One)$ and exponentials (so $\cat{D}$ is Cartesian closed);
 \item finite coproducts $(+, 0)$, with the products distributing over coproducts;
 \item a strong monad $T : \cat{D} \to \cat{D}$ with unit $\eta : \id \Rightarrow T$, multiplication
-  $\mu : T^2 \Rightarrow T$, and strength $\mathsf{st}_{X,Y} : X \times TY \to T(X \times Y)$;
-\item a signature interpretation, in particular assigning each $\rho \in \PrimTy$ an object
+  $\mu : T^2 \Rightarrow T$, and strength $\mathsf{st}_{X,Y} : X \times T(Y) \to T(X \times Y)$;
+\item a signature interpretation, assigning each $\rho \in \PrimTy$ an object
   $\sem{\rho}_{\PrimTy} \in \cat{D}$;
 \item initial algebras of the endofunctors arising from the interpretation of $\mu$-types
   (\secref{slicing-interpretation:mu}).
 \end{itemize}
 
-Commutativity of $T$ is not required: introductions package already-$T$-wrapped components inside
-a fresh outer $T$ without sequencing the inner effects, and eliminations only ever fire one
-monadic action at a time.
-
-\subsection{Type interpretation}
-\label{sec:slicing-interpretation:types}
-
 A type $\tau$ kinded in context $\Delta = \alpha_1, \ldots, \alpha_n$ is interpreted as a functor
-$\sem{\tau} : \cat{D}^n \to \cat{D}$. Closed types ($\Delta = \cdot$) thus interpret as objects of
-$\cat{D}$. The interpretation puts $T$ at the root of each type constructor:
+$\sem{\tau} : \cat{D}^n \to \cat{D}$; closed types ($\Delta = \cdot$) thus interpret as objects of
+$\cat{D}$. The interpretation common to both placements is:
 \begin{align*}
 \sem{\alpha_i}                & = \pi_i \\
-\sem{\rho}                    & = T\,\sem{\rho}_{\PrimTy} & \text{for $\rho \in \PrimTy$} \\
-\sem{\tyUnit}                 & = T\,1 \\
-\sem{\sigma \tyProd \tau}     & = T\,(\sem{\sigma} \times \sem{\tau}) \\
-\sem{\sigma \tySum \tau}      & = T\,(\sem{\sigma} + \sem{\tau}) \\
-\sem{\sigma \tyFun \tau}      & = T\,(\sem{\sigma} \Rightarrow \sem{\tau}) \\
 \sem{\mu\alpha.\tau}          & = \mu(X \mapsto \sem{\tau}[X/\alpha]) & \text{see \secref{slicing-interpretation:mu}}
 \end{align*}
-where $\sem{\rho}_{\PrimTy}$ is the chosen object for $\rho$. The outer $T$ on primitives is not optional:
-without it, eliminations whose result is a base type (e.g.\ $\tmFst M$ with $M : \rho \tyProd
-\tau$) cannot be interpreted, since the Kleisli extension always produces a $T$-wrapped result
-and the strong monad assumption alone gives no way to project the outer $T$ off.
+The two placements differ on the other type formers.
 
-The placement of $T$ at \emph{each} constructor root is what realises the per-constructor
-approximation point that prior Galois slicing work attaches at every constructor. Substitution
-commutes with the
-interpretation:
+\subsection{Moggi-style CBN interpretation}
+\label{sec:slicing-interpretation:moggi}
+
+The Moggi placement matches \secref{polynomial-types:no-cbn}'s CBN translation: $T$ wraps each
+\emph{child} of every non-base type former, with primitives and $\tyUnit$ left bare.
+\begin{align*}
+\sem{\rho}                    & = \sem{\rho}_{\PrimTy} \\
+\sem{\tyUnit}                 & = \One \\
+\sem{\sigma \tyProd \tau}     & = T(\sem{\sigma}) \times T(\sem{\tau}) \\
+\sem{\sigma \tySum \tau}      & = T(\sem{\sigma}) + T(\sem{\tau}) \\
+\sem{\sigma \tyFun \tau}      & = T(\sem{\sigma}) \Rightarrow T(\sem{\tau}) \\[3mm]
+\sem{\emptyCxt}               & = \One \\
+\sem{\Gamma, x : \tau}        & = \sem{\Gamma} \times T(\sem{\tau})
+\end{align*}
+Context entries are $T$-wrapped because in CBN every variable is a thunk. Substitution commutes
+with the interpretation:
 \[
 \sem{\subst{\tau}{\sigma}{\alpha}} = \sem{\tau}[\sem{\sigma}/\alpha]
 \]
 which is just function composition and so holds by definition.
 
-\subsection{Typing contexts}
-\label{sec:slicing-interpretation:contexts}
+\subsection{Galois slicing interpretation}
+\label{sec:slicing-interpretation:galois}
 
-Contexts $\Gamma = x_1 : \tau_1, \ldots, x_n : \tau_n$ (with each $\tau_i$ closed) interpret as
-\[
-\sem{\Gamma} = \sem{\tau_1} \times \cdots \times \sem{\tau_n}
-\]
-using the cartesian product in $\cat{D}$. We do \emph{not} add a further $T$-wrap to context
-entries: the type interpretation already places $T$ at the root of each $\tau_i$.
+The Galois placement puts $T$ at the root of each type former, including primitives:
+\begin{align*}
+\sem{\rho}                    & = T(\sem{\rho}_{\PrimTy}) \\
+\sem{\tyUnit}                 & = T(\One) \\
+\sem{\sigma \tyProd \tau}     & = T(\sem{\sigma} \times \sem{\tau}) \\
+\sem{\sigma \tySum \tau}      & = T(\sem{\sigma} + \sem{\tau}) \\
+\sem{\sigma \tyFun \tau}      & = T(\sem{\sigma} \Rightarrow \sem{\tau}) \\[3mm]
+\sem{\emptyCxt}               & = \One \\
+\sem{\Gamma, x : \tau}        & = \sem{\Gamma} \times \sem{\tau}
+\end{align*}
+We do \emph{not} add a further $T$ to context entries: the type interpretation already places $T$
+at the root of each $\tau_i$. The outer $T$ on primitives is not optional: without it,
+eliminations whose result is a base type (e.g.\ $\tmFst M$ with $M : \rho \tyProd \tau$) cannot be
+interpreted, since the Kleisli extension always produces a $T$-wrapped result, with no general
+way to project the outer $T$ off. The placement of $T$ at each constructor root realises
+the per-constructor approximation point of prior Galois slicing work.
 
-\subsection{Term interpretation}
+\subsubsection{Term interpretation}
 \label{sec:slicing-interpretation:terms}
 
 A term judgement $\Gamma \vdash t : \tau$ is interpreted as a morphism $\sem{t} : \sem{\Gamma} \to
-\sem{\tau}$. Write $f^* = \mu \comp T(f) : TX \to TY$ for the Kleisli extension of $f : X \to TY$.
-Introductions compose with $\eta$; eliminations take the Kleisli extension of the underlying
-operation, using strength to thread $\Gamma$ where needed.
+\sem{\tau}$. Write $f^\dagger = \mu \comp T(f) : T(X) \to T(Y)$ for the Kleisli extension of $f :
+X \to T(Y)$, with the convention that for $n$-ary $f : X_1 \times \cdots \times X_n \to T(Y)$,
+the same notation $f^\dagger : T(X_1) \times \cdots \times T(X_n) \to T(Y)$ denotes the $n$-ary
+generalisation, defined by iterating the unary case with strength. Introductions compose with
+$\eta$; eliminations take the Kleisli extension of the underlying operation, using strength to
+thread $\Gamma$ where needed.
 
 \begin{align*}
 \sem{x_i}                              & = \pi_i \\
-\sem{\tmUnit}                          & = \eta_{1} \comp {!_{\sem{\Gamma}}} \\
+\sem{\tmUnit}                          & = \eta_{\One} \comp {!_{\sem{\Gamma}}} \\
 \sem{\tmPair{s}{t}}                    & = \eta_{\sem{\sigma}\times\sem{\tau}} \comp
                                             \prodM{\sem{s}}{\sem{t}} \\
-\sem{\tmFst{s}}                        & = \pi_1^* \comp \sem{s} \\
-\sem{\tmSnd{s}}                        & = \pi_2^* \comp \sem{s} \\
+\sem{\tmFst{s}}                        & = \pi_1^\dagger \comp \sem{s} \\
+\sem{\tmSnd{s}}                        & = \pi_2^\dagger \comp \sem{s} \\
 \sem{\tmInl{s}}                        & = \eta_{\sem{\sigma}+\sem{\tau}} \comp \mathsf{inj}_1
                                             \comp \sem{s} \\
 \sem{\tmInr{s}}                        & = \eta_{\sem{\sigma}+\sem{\tau}} \comp \mathsf{inj}_2
                                             \comp \sem{s} \\
-\sem{\tmCase{s}{x_1}{t_1}{x_2}{t_2}}   & = c^* \comp
+\sem{\tmCase{s}{x_1}{t_1}{x_2}{t_2}}   & = c^\dagger \comp
                                             \mathsf{st}_{\sem{\Gamma}, \sem{\sigma_1}+\sem{\sigma_2}}
                                             \comp \prodM{\id}{\sem{s}} \\
 \sem{\tmFun{x}{t}}                     & = \eta_{\sem{\sigma}\Rightarrow\sem{\tau}} \comp \lambda(\sem{t}) \\
-\sem{\tmApp{s}{t}}                     & = \eval^* \comp
+\sem{\tmApp{s}{t}}                     & = \eval^\dagger \comp
                                             \mathsf{st}_{\sem{\sigma}\Rightarrow\sem{\tau}, \sem{\sigma}}
                                             \comp \prodM{\sem{s}}{\sem{t}} \\
-\sem{\phi(t_1, \ldots, t_n)}           & = (\eta_{\sem{\rho}_{\PrimTy}} \comp \sem{\phi}_{\Op})_{\diamond}
-                                            \comp \prodM{\sem{t_1}}{\ldots, \sem{t_n}} \\
+\sem{\phi(t_1, \ldots, t_n)}           & = (\eta_{\sem{\rho}_{\PrimTy}} \comp \sem{\phi}_{\Op})^\dagger
+                                            \comp \langle\sem{t_1}, \ldots, \sem{t_n}\rangle \\
 \sem{\tmRoll{t}}                       & = \mathsf{in}_F \comp \sem{t} \\
 \sem{\syn{fold}\,s\,\syn{with}\,x.t}   & = h \comp \prodM{\id}{\sem{s}} & \text{see \secref{slicing-interpretation:mu}}
 \end{align*}
 
 In the $\syn{case}$ clause, $c : \sem{\Gamma} \times (\sem{\sigma_1}+\sem{\sigma_2}) \to \sem{\tau}$ is
-the (Kleisli) arrow $\coprodM{\sem{t_1}}{\sem{t_2}} \comp \delta$ for $\delta$ the distributivity
-isomorphism. The $\phi$ clause's iterated extension $(-)_{\diamond}$ is the obvious chained
-Kleisli-extension that consumes each argument's outer $T$ in turn, threading $\Gamma$ via
-strength.
+the (Kleisli) arrow $\coprodM{\sem{t_1}}{\sem{t_2}} \comp \delta$ for the distributivity
+isomorphism $\delta$.
 
 \subsection{Inductive types}
 \label{sec:slicing-interpretation:mu}
@@ -134,7 +139,7 @@ For $\fold\,s\,\with\,x.t$ with $s : \mu\alpha.\tau$ and $x : \subst{\tau}{\sigm
 \]
 which curries to a map $\sem{\Gamma} \to F(\sem{\sigma}) \Rightarrow \sem{\sigma}$, i.e.\ a
 parameterised $F$-algebra. The unique algebra morphism $h : \mu F \to \sem{\sigma}$ exists by
-initiality (in fact, a parameterised version of it, using the cartesian closed structure to handle
+initiality (in fact, a parameterised version of it, using the Cartesian closed structure to handle
 the $\Gamma$-context).
 
 Crucially, no monad-substitution commutation lemma is required: the equation

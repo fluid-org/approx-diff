@@ -1,6 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Fin using (Fin) renaming (zero to fzero; suc to fsuc)
+import Data.Fin as Fin
+open Fin using (Fin)
 open import Data.Nat using (ℕ; zero; suc)
 open import Level using (_⊔_)
 open import categories
@@ -23,11 +24,10 @@ module Interp {o m e} {𝒞 : Category o m e}
   open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
 
   extend : ∀ {n} → (Fin n → obj) → obj → Fin (suc n) → obj
-  extend val A fzero    = A
-  extend val A (fsuc i) = val i
+  extend val A Fin.zero    = A
+  extend val A (Fin.suc i) = val i
 
-  fobj : ∀ {n} → (μh : ∀ {m} → Poly 𝒞 (suc m) → (Fin m → obj) → obj)
-       → Poly 𝒞 n → (Fin n → obj) → obj
+  fobj : ∀ {n} → (μh : ∀ {m} → Poly 𝒞 (suc m) → (Fin m → obj) → obj) → Poly 𝒞 n → (Fin n → obj) → obj
   fobj μh (const A) val = A
   fobj μh (var i)   val = val i
   fobj μh (P + Q)   val = coprod (fobj μh P val) (fobj μh Q val)
@@ -36,9 +36,8 @@ module Interp {o m e} {𝒞 : Category o m e}
 
   record HasMu : Set (o ⊔ m) where
     field
-      μ-poly : ∀ {n} → Poly 𝒞 (suc n) → (Fin n → obj) → obj
-      in-alg : ∀ {n} (P : Poly 𝒞 (suc n)) (val : Fin n → obj)
-             → fobj μ-poly P (extend val (μ-poly P val)) ⇒ μ-poly P val
-      cata   : ∀ {n Γ y} (P : Poly 𝒞 (suc n)) (val : Fin n → obj)
-             → (prod Γ (fobj μ-poly P (extend val y)) ⇒ y)
-             → prod Γ (μ-poly P val) ⇒ y
+      μ-obj : ∀ {n} → Poly 𝒞 (suc n) → (Fin n → obj) → obj
+      inF   : ∀ {n} (P : Poly 𝒞 (suc n)) (val : Fin n → obj) →
+              fobj μ-obj P (extend val (μ-obj P val)) ⇒ μ-obj P val
+      ⦅_⦆   : ∀ {n Γ y} {P : Poly 𝒞 (suc n)} {val : Fin n → obj} →
+             (prod Γ (fobj μ-obj P (extend val y)) ⇒ y) → prod Γ (μ-obj P val) ⇒ y

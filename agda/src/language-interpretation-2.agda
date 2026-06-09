@@ -1,6 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Fin using (Fin; splitAt) renaming (zero to fzero; suc to fsuc)
+import Data.Fin as Fin
+open Fin using (Fin; splitAt)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Sum using ([_,_])
 open import Level using (_⊔_)
@@ -38,7 +39,7 @@ mutual
   ⟦ τ₁ [+] τ₂ ⟧ty val = coprod (⟦ τ₁ ⟧ty val) (⟦ τ₂ ⟧ty val)
   ⟦ τ₁ [×] τ₂ ⟧ty val = prod   (⟦ τ₁ ⟧ty val) (⟦ τ₂ ⟧ty val)
   ⟦ τ₁ [→] τ₂ ⟧ty val = ⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ())
-  ⟦ μ τ ⟧ty       val = μ-poly (build-poly τ val) (λ ())
+  ⟦ μ τ ⟧ty       val = μ-obj (build-poly τ val) (λ ())
 
   build-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 n
   build-poly {Δ} {n} (var i) val = [ Poly.var , (λ j → Poly.const (val j)) ] (splitAt n i)
