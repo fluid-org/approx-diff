@@ -22,8 +22,9 @@ Assume a category $\cat{D}$ with:
   $\mu : T^2 \Rightarrow T$, and strength $\mathsf{st}_{X,Y} : X \times T(Y) \to T(X \times Y)$;
 \item a signature interpretation, assigning each $\rho \in \PrimTy$ an object
   $\sem{\rho}_{\PrimTy} \in \cat{D}$;
-\item initial algebras of the endofunctors arising from the interpretation of $\mu$-types
-  (\secref{slicing-interpretation:mu}).
+\item initial algebras for all endofunctors in $\Poly^T_{\cat{D}}$, where
+  $\Poly^T_{\cat{D}}$ extends $\Poly_{\cat{D}}$ (\defref{polynomial-types:Poly}) by additionally
+  closing under pointwise application of $T$. We say $\cat{D}$ \emph{has $\Poly^T$-types}.
 \end{itemize}
 
 A type $\tau$ kinded in context $\Delta = \alpha_1, \ldots, \alpha_n$ is interpreted as a functor
@@ -98,7 +99,7 @@ thread $\Gamma$ where needed.
                                             \comp \sem{s} \\
 \sem{\tmInr{s}}                        & = \eta_{\sem{\sigma}+\sem{\tau}} \comp \mathsf{inj}_2
                                             \comp \sem{s} \\
-\sem{\tmCase{s}{x_1}{t_1}{x_2}{t_2}}   & = c^\dagger \comp
+\sem{\tmCase{s}{x_1}{t_1}{x_2}{t_2}}   & = (\coprodM{\sem{t_1}}{\sem{t_2}} \comp \delta)^\dagger \comp
                                             \mathsf{st}_{\sem{\Gamma}, \sem{\sigma_1}+\sem{\sigma_2}}
                                             \comp \prodM{\id}{\sem{s}} \\
 \sem{\tmFun{x}{t}}                     & = \eta_{\sem{\sigma}\Rightarrow\sem{\tau}} \comp \lambda(\sem{t}) \\
@@ -111,10 +112,10 @@ thread $\Gamma$ where needed.
 \sem{\syn{fold}\,s\,\syn{with}\,x.t}   & = \cata{\sem{t}} \comp \prodM{\id}{\sem{s}}
 \end{align*}
 
-In the $\syn{case}$ clause, $c : \sem{\Gamma} \times (\sem{\sigma_1}+\sem{\sigma_2}) \to \sem{\tau}$ is
-the (Kleisli) arrow $\coprodM{\sem{t_1}}{\sem{t_2}} \comp \delta$ for the distributivity
-isomorphism $\delta$. In the $\syn{roll}$ and $\syn{fold}$ clauses, the $\mu$-type is some $\mu\alpha.\tau$; $F$ is the
-endofunctor $X \mapsto \sem{\tau}[X/\alpha]$ on $\cat{D}$, and $\cata{-}$ the catamorphism it
+In the $\syn{case}$ clause, $\delta : \sem{\Gamma} \times (\sem{\sigma_1}+\sem{\sigma_2}) \to
+(\sem{\Gamma}\times\sem{\sigma_1}) + (\sem{\Gamma}\times\sem{\sigma_2})$ is the distributivity
+isomorphism. In the $\syn{roll}$ and $\syn{fold}$ clauses, for a type $\mu\alpha.\tau$, $F$ is
+the endofunctor $X \mapsto \sem{\tau}[X/\alpha]$ on $\cat{D}$, and $\cata{-}$ the catamorphism it
 induces (\secref{slicing-interpretation:mu}).
 
 \subsection{Inductive types}
@@ -145,17 +146,11 @@ parameterised algebra morphism
 using the Cartesian closed structure to handle the $\Gamma$-context. Precomposing with
 $\prodM{\id}{\sem{s}}$ recovers the table's fold clause.
 
-\subsection{Where the approximation lives}
+\subsection{Realising $T$ for Galois slicing}
 \label{sec:slicing-interpretation:approximation}
 
-The monad $T$ is the carrier of the per-constructor approximation. Its concrete realisation
-depends on which analysis we are doing:
-\begin{itemize}
-\item For Galois slicing, $T$ adds a ``hole'' value or top lattice element at each constructor.
-\item For automatic differentiation, $T$ would attach tangent-space information.
-\end{itemize}
 A subsequent section will spell out $T$ concretely for Galois slicing in $\cat{D} = \Fam(\cat{C})$
-for an appropriate $\cat{C}$, and verify the strong monad laws there. The point of the present
-section is that, with such a $T$ assumed, the interpretation is uniform across all type
-constructors including $\mu$, and no substitution-commutation obligation arises at the syntactic
-level.
+for an appropriate $\cat{C}$, where $T$ adds a ``hole'' value or top lattice element at each
+constructor, and verify the strong monad laws there. The point of the present section is that,
+with such a $T$ assumed, the interpretation is uniform across all type constructors including
+$\mu$, and no substitution-commutation obligation arises at the syntactic level.
