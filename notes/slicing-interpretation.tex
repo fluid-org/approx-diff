@@ -28,13 +28,9 @@ Assume a category $\cat{D}$ with:
 
 A type $\tau$ kinded in context $\Delta = \alpha_1, \ldots, \alpha_n$ is interpreted as a functor
 $\sem{\tau} : \cat{D}^n \to \cat{D}$; closed types ($\Delta = \cdot$) thus interpret as objects of
-$\cat{D}$. Writing $\vec{X} = (X_1, \ldots, X_n)$ for an $n$-tuple of objects, the interpretation
-common to both placements is:
-\begin{align*}
-\sem{\alpha_i}(\vec{X})         & = X_i \\
-\sem{\mu\alpha.\tau}(\vec{X})   & = \mu(X \mapsto \sem{\tau}(\vec{X}, X)) & \text{see \secref{slicing-interpretation:mu}}
-\end{align*}
-The two placements differ on the other type formers.
+$\cat{D}$. Term contexts contain only closed types, so the $\sem{\tau}$ appearing in a context
+entry is $\sem{\tau}$ applied to the empty vector. The two placements differ on the type formers
+other than the variable and $\mu$ clauses, which are unaffected by where $T$ is placed.
 
 \subsection{Moggi-style CBN interpretation}
 \label{sec:slicing-interpretation:moggi}
@@ -42,13 +38,15 @@ The two placements differ on the other type formers.
 The Moggi placement matches \secref{polynomial-types:no-cbn}'s CBN translation: $T$ wraps each
 \emph{child} of every non-base type former, with primitives and $\tyUnit$ left bare.
 \begin{align*}
-\sem{\rho}(\vec{X})           & = \sem{\rho}_{\PrimTy} \\
-\sem{\tyUnit}(\vec{X})        & = \One \\
+\sem{\alpha_i}(\vec{X})            & = X_i \\
+\sem{\rho}(\vec{X})                & = \sem{\rho}_{\PrimTy} \\
+\sem{\tyUnit}(\vec{X})             & = \One \\
 \sem{\sigma \tyProd \tau}(\vec{X}) & = T(\sem{\sigma}(\vec{X})) \times T(\sem{\tau}(\vec{X})) \\
 \sem{\sigma \tySum \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X})) + T(\sem{\tau}(\vec{X})) \\
-\sem{\sigma \tyFun \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X})) \Rightarrow T(\sem{\tau}(\vec{X})) \\[3mm]
-\sem{\emptyCxt}               & = \One \\
-\sem{\Gamma, x : \tau}        & = \sem{\Gamma} \times T(\sem{\tau})
+\sem{\sigma \tyFun \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X})) \Rightarrow T(\sem{\tau}(\vec{X})) \\
+\sem{\mu\alpha.\tau}(\vec{X})      & = \mu(X \mapsto \sem{\tau}(\vec{X}, X)) & \text{see \secref{slicing-interpretation:mu}} \\[3mm]
+\sem{\emptyCxt}                    & = \One \\
+\sem{\Gamma, x : \tau}             & = \sem{\Gamma} \times T(\sem{\tau})
 \end{align*}
 Context entries are $T$-wrapped because in CBN every variable is a thunk. Substitution commutes
 with the interpretation:
@@ -60,15 +58,17 @@ which is just function composition and so holds by definition.
 \subsection{Galois slicing interpretation}
 \label{sec:slicing-interpretation:galois}
 
-The Galois placement puts $T$ at the root of each type former, including primitives:
+The Galois slicing placement puts $T$ at the root of each type former, including primitives:
 \begin{align*}
-\sem{\rho}(\vec{X})           & = T(\sem{\rho}_{\PrimTy}) \\
-\sem{\tyUnit}(\vec{X})        & = T(\One) \\
+\sem{\alpha_i}(\vec{X})            & = X_i \\
+\sem{\rho}(\vec{X})                & = T(\sem{\rho}_{\PrimTy}) \\
+\sem{\tyUnit}(\vec{X})             & = T(\One) \\
 \sem{\sigma \tyProd \tau}(\vec{X}) & = T(\sem{\sigma}(\vec{X}) \times \sem{\tau}(\vec{X})) \\
 \sem{\sigma \tySum \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X}) + \sem{\tau}(\vec{X})) \\
-\sem{\sigma \tyFun \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X}) \Rightarrow \sem{\tau}(\vec{X})) \\[3mm]
-\sem{\emptyCxt}               & = \One \\
-\sem{\Gamma, x : \tau}        & = \sem{\Gamma} \times \sem{\tau}
+\sem{\sigma \tyFun \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X}) \Rightarrow \sem{\tau}(\vec{X})) \\
+\sem{\mu\alpha.\tau}(\vec{X})      & = \mu(X \mapsto \sem{\tau}(\vec{X}, X)) & \text{see \secref{slicing-interpretation:mu}} \\[3mm]
+\sem{\emptyCxt}                    & = \One \\
+\sem{\Gamma, x : \tau}             & = \sem{\Gamma} \times \sem{\tau}
 \end{align*}
 We do \emph{not} add a further $T$ to context entries: the type interpretation already places $T$
 at the root of each $\tau_i$. The outer $T$ on primitives is not optional: without it,
