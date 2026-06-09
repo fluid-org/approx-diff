@@ -37,7 +37,7 @@ mutual
   ⟦ unit ⟧ty      val = 𝟙
   ⟦ base s ⟧ty    val = ⟦sort⟧ s
   ⟦ τ₁ [+] τ₂ ⟧ty val = coprod (⟦ τ₁ ⟧ty val) (⟦ τ₂ ⟧ty val)
-  ⟦ τ₁ [×] τ₂ ⟧ty val = prod   (⟦ τ₁ ⟧ty val) (⟦ τ₂ ⟧ty val)
+  ⟦ τ₁ [×] τ₂ ⟧ty val = prod (⟦ τ₁ ⟧ty val) (⟦ τ₂ ⟧ty val)
   ⟦ τ₁ [→] τ₂ ⟧ty val = ⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ())
   ⟦ μ τ ⟧ty       val = μ-obj (build-poly τ val) (λ ())
 

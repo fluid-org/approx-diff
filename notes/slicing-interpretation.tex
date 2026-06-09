@@ -126,8 +126,8 @@ A term judgement $\Gamma \vdash t : \tau$ is interpreted as a morphism $\sem{t} 
 X \to T(Y)$, with the convention that for $n$-ary $f : X_1 \times \cdots \times X_n \to T(Y)$,
 the same notation $f^\dagger : T(X_1) \times \cdots \times T(X_n) \to T(Y)$ denotes the $n$-ary
 generalisation, defined by iterating the unary case with strength. Introductions compose with
-$\eta$; eliminations take the Kleisli extension of the underlying operation, using strength to
-thread $\Gamma$ where needed. Unlike the Moggi semantics (\secref{slicing-interpretation:moggi-terms}),
+$\eta$; eliminations take the Kleisli extension of the underlying operation, using strength
+where needed. Unlike the Moggi semantics (\secref{slicing-interpretation:moggi-terms}),
 the $\syn{fold}$ clause here takes a plain $F$-algebra $\sem{t} : \sem{\Gamma} \times F(\sem{\sigma}) \to
 \sem{\sigma}$ and uses the standard catamorphism, so the issue of collapsing per-constructor
 approximations under fold does not arise.
@@ -159,42 +159,7 @@ approximations under fold does not arise.
 In the $\syn{case}$ clause, $\delta : \sem{\Gamma} \times (\sem{\sigma_1}+\sem{\sigma_2}) \to
 (\sem{\Gamma}\times\sem{\sigma_1}) + (\sem{\Gamma}\times\sem{\sigma_2})$ is the distributivity
 isomorphism. In the $\syn{roll}$ and $\syn{fold}$ clauses, for a type $\mu\alpha.\tau$, $F$ is
-the endofunctor $X \mapsto \sem{\tau}[X/\alpha]$ on $\cat{D}$, and $\cata{-}_F$ the catamorphism it
-induces (\secref{slicing-interpretation:mu}).
+the endofunctor $X \mapsto \sem{\tau}[X/\alpha]$ on $\cat{D}$; $\cata{-}_F$ denotes the
+parameterised catamorphism it induces, which exists by initiality of $\mu F$ together with the
+exponential structure of $\cat{D}$, used to internalise the $\Gamma$-parameter via currying.
 
-\subsection{Inductive types}
-\label{sec:slicing-interpretation:mu}
-
-For $\Delta, \alpha \vdash \tau : \mathsf{type}$, the interpretation $\sem{\tau}$ is a functor
-$\cat{D}^{|\Delta|+1} \to \cat{D}$; for any choice of objects for the variables in $\Delta$ this
-gives an endofunctor $F = (X \mapsto \sem{\tau}[X/\alpha])$ on $\cat{D}$. We require initial
-algebras for all such $F$, and set $\sem{\mu\alpha.\tau} = \mu F$, with algebra map
-$\mathsf{in}_F : F(\mu F) \to \mu F$.
-
-The typing of $\syn{roll}$ reads
-$\sem{\subst{\tau}{\mu\alpha.\tau}{\alpha}} \to \sem{\mu\alpha.\tau}$. By substitution commutation
-this is $F(\mu F) \to \mu F$, i.e.\ $\mathsf{in}_F$ — agreeing with the table.
-
-For $\syn{fold}\,s\,\syn{with}\,x.t$ with $s : \mu\alpha.\tau$ and $x :
-\subst{\tau}{\sigma}{\alpha} \vdash t : \sigma$ (writing $\sigma$ for the result type), the body
-interprets as
-\[
-\sem{t} : \sem{\Gamma} \times F(\sem{\sigma}) \to \sem{\sigma}
-\]
-again using substitution commutation on the $\Gamma$-context entry. This is a parameterised
-$F$-algebra: an algebra for each value of $\sem{\Gamma}$. Initiality of $\mu F$ gives a unique
-parameterised algebra morphism
-\[
-\cata{\sem{t}}_F : \sem{\Gamma} \times \mu F \to \sem{\sigma}
-\]
-using the Cartesian closed structure to handle the $\Gamma$-context. Precomposing with
-$\prodM{\id}{\sem{s}}$ recovers the table's fold clause.
-
-\subsection{Realising $T$ for Galois slicing}
-\label{sec:slicing-interpretation:approximation}
-
-A subsequent section will spell out $T$ concretely for Galois slicing in $\cat{D} = \Fam(\cat{C})$
-for an appropriate $\cat{C}$, where $T$ adds a ``hole'' value or top lattice element at each
-constructor, and verify the strong monad laws there. The point of the present section is that,
-with such a $T$ assumed, the interpretation is uniform across all type constructors including
-$\mu$, and no substitution-commutation obligation arises at the syntactic level.
