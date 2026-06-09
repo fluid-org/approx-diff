@@ -108,12 +108,14 @@ thread $\Gamma$ where needed.
 \sem{\phi(t_1, \ldots, t_n)}           & = (\eta_{\sem{\rho}_{\PrimTy}} \comp \sem{\phi}_{\Op})^\dagger
                                             \comp \langle\sem{t_1}, \ldots, \sem{t_n}\rangle \\
 \sem{\tmRoll{t}}                       & = \mathsf{in}_F \comp \sem{t} \\
-\sem{\syn{fold}\,s\,\syn{with}\,x.t}   & = h \comp \prodM{\id}{\sem{s}} & \text{see \secref{slicing-interpretation:mu}}
+\sem{\syn{fold}\,s\,\syn{with}\,x.t}   & = \cata{\sem{t}} \comp \prodM{\id}{\sem{s}}
 \end{align*}
 
 In the $\syn{case}$ clause, $c : \sem{\Gamma} \times (\sem{\sigma_1}+\sem{\sigma_2}) \to \sem{\tau}$ is
 the (Kleisli) arrow $\coprodM{\sem{t_1}}{\sem{t_2}} \comp \delta$ for the distributivity
-isomorphism $\delta$.
+isomorphism $\delta$. In the $\syn{roll}$ and $\syn{fold}$ clauses, the $\mu$-type is some $\mu\alpha.\tau$; $F$ is the
+endofunctor $X \mapsto \sem{\tau}[X/\alpha]$ on $\cat{D}$, and $\cata{-}$ the catamorphism it
+induces (\secref{slicing-interpretation:mu}).
 
 \subsection{Inductive types}
 \label{sec:slicing-interpretation:mu}
