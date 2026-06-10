@@ -2,12 +2,35 @@
 
 module product-category where
 
+open import Data.Fin using (Fin)
+open import Data.Nat using (ℕ)
 open import Level using (_⊔_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import prop using (_∧_; _,_; proj₁; proj₂)
 open import prop-setoid using (IsEquivalence)
 open import categories using (Category; HasProducts; HasTerminal)
 open import functor using (Functor; Limit; IsLimit; _∘F_; NatTrans; ≃-NatTrans)
+
+open IsEquivalence
+
+module _ {o m e} (𝒞 : Category o m e) where
+
+  private
+    module 𝒞 = Category 𝒞
+
+  power : ℕ → Category o m e
+  power n .Category.obj           = Fin n → 𝒞.obj
+  power n .Category._⇒_ δ δ'      = ∀ i → δ i 𝒞.⇒ δ' i
+  power n .Category._≈_ fs gs     = ∀ i → fs i 𝒞.≈ gs i
+  power n .Category.isEquiv .refl                 i = 𝒞.isEquiv .refl
+  power n .Category.isEquiv .sym fs≈gs            i = 𝒞.isEquiv .sym (fs≈gs i)
+  power n .Category.isEquiv .trans fs≈gs gs≈hs    i = 𝒞.isEquiv .trans (fs≈gs i) (gs≈hs i)
+  power n .Category.id δ                          i = 𝒞.id (δ i)
+  power n .Category._∘_ fs gs                     i = fs i 𝒞.∘ gs i
+  power n .Category.∘-cong fs≈fs' gs≈gs'          i = 𝒞.∘-cong (fs≈fs' i) (gs≈gs' i)
+  power n .Category.id-left                       i = 𝒞.id-left
+  power n .Category.id-right                      i = 𝒞.id-right
+  power n .Category.assoc fs gs hs                i = 𝒞.assoc (fs i) (gs i) (hs i)
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒞 : Category o₁ m₁ e₁) (𝒟 : Category o₂ m₂ e₂) where
 
