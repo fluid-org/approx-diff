@@ -59,6 +59,13 @@ record HasMu : Set (o ⊔ m ⊔ e) where
 
   open HasTerminal 𝒞T using (witness; to-terminal)
 
+  ⦅_⦆ᴹ-cong : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
+              {step₁ step₂ : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)} →
+              (∀ X (x→A : prod Γ X ⇒ A) → step₁ X x→A ≈ step₂ X x→A) → ⦅ step₁ ⦆ᴹ ≈ ⦅ step₂ ⦆ᴹ
+  ⦅_⦆ᴹ-cong {P = P} {δ = δ} {step₁ = step₁} {step₂ = step₂} eq =
+    ⦅⦆ᴹ-η {P = P} {δ = δ} step₂ ⦅ step₁ ⦆ᴹ
+      (≈-trans (⦅⦆ᴹ-β {P = P} {δ = δ} step₁) (eq (μ-obj P δ) ⦅ step₁ ⦆ᴹ))
+
   extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
                (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) → ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
   extend-mor fs x→y Fin.zero    = x→y
