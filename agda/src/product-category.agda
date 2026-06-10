@@ -13,24 +13,19 @@ open import functor using (Functor; Limit; IsLimit; _∘F_; NatTrans; ≃-NatTra
 
 open IsEquivalence
 
-module _ {o m e} (𝒞 : Category o m e) where
-
-  private
-    module 𝒞 = Category 𝒞
-
-  power : ℕ → Category o m e
-  power n .Category.obj           = Fin n → 𝒞.obj
-  power n .Category._⇒_ δ δ'      = ∀ i → δ i 𝒞.⇒ δ' i
-  power n .Category._≈_ fs gs     = ∀ i → fs i 𝒞.≈ gs i
-  power n .Category.isEquiv .refl                 i = 𝒞.isEquiv .refl
-  power n .Category.isEquiv .sym fs≈gs            i = 𝒞.isEquiv .sym (fs≈gs i)
-  power n .Category.isEquiv .trans fs≈gs gs≈hs    i = 𝒞.isEquiv .trans (fs≈gs i) (gs≈hs i)
-  power n .Category.id δ                          i = 𝒞.id (δ i)
-  power n .Category._∘_ fs gs                     i = fs i 𝒞.∘ gs i
-  power n .Category.∘-cong fs≈fs' gs≈gs'          i = 𝒞.∘-cong (fs≈fs' i) (gs≈gs' i)
-  power n .Category.id-left                       i = 𝒞.id-left
-  power n .Category.id-right                      i = 𝒞.id-right
-  power n .Category.assoc fs gs hs                i = 𝒞.assoc (fs i) (gs i) (hs i)
+_^_ : ∀ {o m e} → Category o m e → ℕ → Category o m e
+(𝒞 ^ n) .Category.obj           = Fin n → Category.obj 𝒞
+(𝒞 ^ n) .Category._⇒_ δ δ'      = ∀ i → Category._⇒_ 𝒞 (δ i) (δ' i)
+(𝒞 ^ n) .Category._≈_ fs gs     = ∀ i → Category._≈_ 𝒞 (fs i) (gs i)
+(𝒞 ^ n) .Category.isEquiv .refl                 i = Category.isEquiv 𝒞 .refl
+(𝒞 ^ n) .Category.isEquiv .sym fs≈gs            i = Category.isEquiv 𝒞 .sym (fs≈gs i)
+(𝒞 ^ n) .Category.isEquiv .trans fs≈gs gs≈hs    i = Category.isEquiv 𝒞 .trans (fs≈gs i) (gs≈hs i)
+(𝒞 ^ n) .Category.id δ                          i = Category.id 𝒞 (δ i)
+(𝒞 ^ n) .Category._∘_ fs gs                     i = Category._∘_ 𝒞 (fs i) (gs i)
+(𝒞 ^ n) .Category.∘-cong fs≈fs' gs≈gs'          i = Category.∘-cong 𝒞 (fs≈fs' i) (gs≈gs' i)
+(𝒞 ^ n) .Category.id-left                       i = Category.id-left 𝒞
+(𝒞 ^ n) .Category.id-right                      i = Category.id-right 𝒞
+(𝒞 ^ n) .Category.assoc fs gs hs                i = Category.assoc 𝒞 (fs i) (gs i) (hs i)
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒞 : Category o₁ m₁ e₁) (𝒟 : Category o₂ m₂ e₂) where
 

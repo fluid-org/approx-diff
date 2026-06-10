@@ -37,6 +37,19 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
   fobj μh (μ P)     δ = μh P δ
   fobj μh (T∘_ P)   δ = Functor.fobj T (fobj μh P δ)
 
+  fmor : ∀ {n}
+         (μh      : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
+         (μh-fmor : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj} →
+                    (∀ i → δ i ⇒ δ' i) → μh P δ ⇒ μh P δ')
+         (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} →
+         (∀ i → δ i ⇒ δ' i) → fobj μh P δ ⇒ fobj μh P δ'
+  fmor μh μh-fmor (const A) fs = id A
+  fmor μh μh-fmor (var i)   fs = fs i
+  fmor μh μh-fmor (P + Q)   fs = coprod-m (fmor μh μh-fmor P fs) (fmor μh μh-fmor Q fs)
+  fmor μh μh-fmor (P × Q)   fs = prod-m (fmor μh μh-fmor P fs) (fmor μh μh-fmor Q fs)
+  fmor μh μh-fmor (μ P)     fs = μh-fmor P fs
+  fmor μh μh-fmor (T∘_ P)   fs = Functor.fmor T (fmor μh μh-fmor P fs)
+
   record HasMu : Set (o ⊔ m) where
     field
       μ-obj : ∀ {n} → Poly 𝒞 T (suc n) → (Fin n → obj) → obj
