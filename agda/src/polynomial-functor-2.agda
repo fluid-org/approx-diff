@@ -8,6 +8,7 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts)
 open import functor using (Functor)
+open import product-category using (_^_)
 
 module polynomial-functor-2 where
 
@@ -39,17 +40,17 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
 
   module Functorial
     -- Recursion needs to be "open" to avoid circularity with HasMu.
-    (μ-obj           : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
+    (μ-obj       : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
     (μ-fmor      : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj} →
-                    (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ')
+                   (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ')
     (μ-fmor-cong : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj}
-                    {fs gs : ∀ i → δ i ⇒ δ' i} →
-                    (∀ i → fs i ≈ gs i) → μ-fmor P fs ≈ μ-fmor P gs)
+                   {fs gs : ∀ i → δ i ⇒ δ' i} →
+                   (∀ i → fs i ≈ gs i) → μ-fmor P fs ≈ μ-fmor P gs)
     (μ-fmor-id   : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ : Fin m → obj} →
-                    μ-fmor P (λ i → id (δ i)) ≈ id (μ-obj P δ))
+                   μ-fmor P (λ i → id (δ i)) ≈ id (μ-obj P δ))
     (μ-fmor-comp : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' δ'' : Fin m → obj}
-                    (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
-                    μ-fmor P (λ i → fs i ∘ gs i) ≈ (μ-fmor P fs ∘ μ-fmor P gs))
+                   (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
+                   μ-fmor P (λ i → fs i ∘ gs i) ≈ (μ-fmor P fs ∘ μ-fmor P gs))
     where
 
     fmor : ∀ {n} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} →
@@ -91,6 +92,13 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
     fmor-comp (μ P)     fs gs = μ-fmor-comp P fs gs
     fmor-comp (T∘ P)   fs gs = ≈-trans (Functor.fmor-cong T (fmor-comp P fs gs))
                                         (Functor.fmor-comp T _ _)
+
+    functor : ∀ {n} → Poly 𝒞 T n → Functor (𝒞 ^ n) 𝒞
+    functor P .Functor.fobj      δ     = fobj μ-obj P δ
+    functor P .Functor.fmor      fs    = fmor P fs
+    functor P .Functor.fmor-cong fs≈gs = fmor-cong P fs≈gs
+    functor P .Functor.fmor-id         = fmor-id P
+    functor P .Functor.fmor-comp fs gs = fmor-comp P fs gs
 
   record HasMu : Set (o ⊔ m) where
     field
