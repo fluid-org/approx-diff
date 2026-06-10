@@ -6,7 +6,7 @@ open import Data.Nat using (ℕ; zero; suc)
 open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
-         strong-coproducts→coproducts)
+         strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor; StrongFunctor)
 open import product-category using (_^_)
 
@@ -20,6 +20,21 @@ open HasProducts 𝒞P
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
 open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair; copair-cong to scopair-cong)
 open StrongFunctor T-strong using (right-strength; right-strength-p₂; right-strength-natural) renaming (F to T)
+
+-- co-Kleisli notation: a morphism f : prod Γ X ⇒ Y lives in the co-Kleisli category for prod Γ -.
+-- _∘co_ is composition there; id-co is the identity (p₂). Re-exported for use in HasMu laws.
+infixl 21 _∘co_
+_∘co_ : ∀ {Γ X Y Z} → (prod Γ Y ⇒ Z) → (prod Γ X ⇒ Y) → (prod Γ X ⇒ Z)
+_∘co_ {Γ} = Category._∘_ (coKleisli-prod 𝒞P Γ)
+
+id-co : ∀ {Γ X} → prod Γ X ⇒ X
+id-co = p₂
+
+module _ {Γ : obj} where
+  open Category (coKleisli-prod 𝒞P Γ) public using ()
+    renaming (assoc to assoc-co;
+              ∘-cong to ∘-cong-co; ∘-cong₁ to ∘-cong-co₁; ∘-cong₂ to ∘-cong-co₂;
+              id-left to id-left-co; id-right to id-right-co)
 
 data Poly (n : ℕ) : Set o where
   const : obj → Poly n
@@ -52,10 +67,10 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           (∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)) → prod Γ (μ-obj P δ) ⇒ A
     ⦅⦆ᴹ-β : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
            (step : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)) →
-           (⦅ step ⦆ᴹ ∘ pair p₁ (α P δ ∘ p₂)) ≈ step (μ-obj P δ) ⦅ step ⦆ᴹ
+           (⦅ step ⦆ᴹ ∘co (α P δ ∘ p₂)) ≈ step (μ-obj P δ) ⦅ step ⦆ᴹ
     ⦅⦆ᴹ-η : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
            (step : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A))
-           (h : prod Γ (μ-obj P δ) ⇒ A) → (h ∘ pair p₁ (α P δ ∘ p₂)) ≈ step (μ-obj P δ) h → h ≈ ⦅ step ⦆ᴹ
+           (h : prod Γ (μ-obj P δ) ⇒ A) → (h ∘co (α P δ ∘ p₂)) ≈ step (μ-obj P δ) h → h ≈ ⦅ step ⦆ᴹ
 
   open HasTerminal 𝒞T using (witness; to-terminal)
 
@@ -170,11 +185,26 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                                  (fmor Q (extend-fam f) ∘ Iso.fwd (unfold-iso X)) ≈
                                  (Iso.fwd (unfold-iso Y) ∘ fmor P (extend-fam f))) →
                Iso (μ-obj P δ) (μ-obj Q δ')
-  μ-obj-resp {Q = Q} {δ' = δ'} unfold-iso _ .Iso.fwd =
-    ⦅ (λ X x→μ' → α Q δ' ∘ fmor Q (extend-fam (x→μ' ∘ pair to-terminal (id _))) ∘ Iso.fwd (unfold-iso X) ∘ p₂) ⦆ᴹ
-    ∘ pair to-terminal (id _)
-  μ-obj-resp {P = P} {δ = δ} unfold-iso _ .Iso.bwd =
-    ⦅ (λ X x→μ → α P δ ∘ fmor P (extend-fam (x→μ ∘ pair to-terminal (id _))) ∘ Iso.bwd (unfold-iso X) ∘ p₂) ⦆ᴹ
-    ∘ pair to-terminal (id _)
-  μ-obj-resp unfold-iso _ .Iso.fwd∘bwd≈id = {!!}
-  μ-obj-resp unfold-iso _ .Iso.bwd∘fwd≈id = {!!}
+  μ-obj-resp {P = P} {δ = δ} {Q = Q} {δ' = δ'} unfold-iso unfold-natural = iso
+    where
+      step-fwd : ∀ X → (prod witness X ⇒ μ-obj Q δ') →
+                 prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj Q δ'
+      step-fwd X x→μ' =
+        α Q δ' ∘ fmor Q (extend-fam (x→μ' ∘ pair to-terminal (id _))) ∘ Iso.fwd (unfold-iso X) ∘ p₂
+
+      step-bwd : ∀ X → (prod witness X ⇒ μ-obj P δ) →
+                 prod witness (fobj μ-obj Q (extend δ' X)) ⇒ μ-obj P δ
+      step-bwd X x→μ =
+        α P δ ∘ fmor P (extend-fam (x→μ ∘ pair to-terminal (id _))) ∘ Iso.bwd (unfold-iso X) ∘ p₂
+
+      fwd : μ-obj P δ ⇒ μ-obj Q δ'
+      fwd = ⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)
+
+      bwd : μ-obj Q δ' ⇒ μ-obj P δ
+      bwd = ⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)
+
+      iso : Iso (μ-obj P δ) (μ-obj Q δ')
+      iso .Iso.fwd = fwd
+      iso .Iso.bwd = bwd
+      iso .Iso.fwd∘bwd≈id = {!!}
+      iso .Iso.bwd∘fwd≈id = {!!}
