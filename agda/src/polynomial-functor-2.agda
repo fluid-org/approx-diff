@@ -205,22 +205,50 @@ record HasMu : Set (o ⊔ m ⊔ e) where
       iso : Iso (μ-obj P δ) (μ-obj Q δ')
       iso .Iso.fwd = fwd
       iso .Iso.bwd = bwd
-      iso .Iso.fwd∘bwd≈id = begin
-          fwd ∘ bwd
-        ≈⟨ assoc _ _ _ ⟩
-          ⦅ step-fwd ⦆ᴹ ∘ (pair to-terminal (id _) ∘ bwd)
-        ≈⟨ ∘-cong ≈-refl (≈-sym (assoc _ _ _)) ⟩
-          ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal (id _) ∘ ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
-        ≈⟨ ∘-cong ≈-refl (∘-cong (pair-natural _ _ _) ≈-refl) ⟩
-          ⦅ step-fwd ⦆ᴹ ∘ ((pair (to-terminal ∘ ⦅ step-bwd ⦆ᴹ) (id _ ∘ ⦅ step-bwd ⦆ᴹ)) ∘ pair to-terminal (id _))
-        ≈⟨ ∘-cong ≈-refl (∘-cong (pair-cong (to-terminal-unique _ _) id-left) ≈-refl) ⟩
-          ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
-        ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
-          ⦅ step-fwd ⦆ᴹ ∘ pair (to-terminal ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
-        ≈⟨ ∘-cong ≈-refl (pair-cong₁ (≈-trans (to-terminal-unique _ _) (≈-sym (pair-p₁ _ _)))) ⟩
-          ⦅ step-fwd ⦆ᴹ ∘ pair (p₁ ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
-        ≈⟨ {!!} ⟩
-          id (μ-obj Q δ')
-        ∎
-        where open ≈-Reasoning isEquiv
+      iso .Iso.fwd∘bwd≈id = outer-proof
+        where
+          -- The "trivial" Mendler step whose cata is p₂ (by strong-μ-fmor-id).
+          trivial-step : ∀ X → (prod witness X ⇒ μ-obj Q δ') →
+                         prod witness (fobj μ-obj Q (extend δ' X)) ⇒ μ-obj Q δ'
+          trivial-step X x→μ' = α Q δ' ∘ strong-fmor Q (extend-mor (λ _ → p₂) x→μ')
+
+          fwd∘bwd-β :
+            ((⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘co (α Q δ' ∘ p₂))
+            ≈ trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
+          fwd∘bwd-β = begin
+              (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘co (α Q δ' ∘ p₂)
+            ≈⟨ assoc-co _ _ _ ⟩
+              ⦅ step-fwd ⦆ᴹ ∘co (⦅ step-bwd ⦆ᴹ ∘co (α Q δ' ∘ p₂))
+            ≈⟨ {!!} ⟩
+              trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
+            ∎
+            where open ≈-Reasoning isEquiv
+
+          outer-proof : (fwd ∘ bwd) ≈ id (μ-obj Q δ')
+          outer-proof = begin
+              fwd ∘ bwd
+            ≈⟨ assoc _ _ _ ⟩
+              ⦅ step-fwd ⦆ᴹ ∘ (pair to-terminal (id _) ∘ bwd)
+            ≈⟨ ∘-cong₂ (≈-sym (assoc _ _ _)) ⟩
+              ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal (id _) ∘ ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
+            ≈⟨ ∘-cong₂ (∘-cong₁ (pair-natural _ _ _)) ⟩
+              ⦅ step-fwd ⦆ᴹ ∘ ((pair (to-terminal ∘ ⦅ step-bwd ⦆ᴹ) (id _ ∘ ⦅ step-bwd ⦆ᴹ)) ∘ pair to-terminal (id _))
+            ≈⟨ ∘-cong₂ (∘-cong₁ (pair-cong (to-terminal-unique _ _) id-left)) ⟩
+              ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
+            ≈⟨ ∘-cong₂ (pair-natural _ _ _) ⟩
+              ⦅ step-fwd ⦆ᴹ ∘ pair (to-terminal ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
+            ≈⟨ ∘-cong₂ (pair-cong₁ (≈-trans (to-terminal-unique _ _) (≈-sym (pair-p₁ _ _)))) ⟩
+              ⦅ step-fwd ⦆ᴹ ∘ pair (p₁ ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
+            ≈⟨ ∘-cong₂ (≈-sym (pair-natural _ _ _)) ⟩
+              ⦅ step-fwd ⦆ᴹ ∘ (pair p₁ ⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
+            ≈⟨ ≈-sym (assoc _ _ _) ⟩
+              (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _)
+            ≈⟨ ∘-cong₁
+                 (≈-trans (⦅⦆ᴹ-η {P = Q} {δ = δ'} trivial-step (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) fwd∘bwd-β)
+                          (strong-μ-fmor-id Q)) ⟩
+              p₂ ∘ pair to-terminal (id _)
+            ≈⟨ pair-p₂ _ _ ⟩
+              id (μ-obj Q δ')
+            ∎
+            where open ≈-Reasoning isEquiv
       iso .Iso.bwd∘fwd≈id = {!!}
