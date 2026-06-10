@@ -41,30 +41,30 @@ mutual
   ⟦ var i ⟧ty     δ = δ i
   ⟦ unit ⟧ty      δ = 𝟙
   ⟦ base s ⟧ty    δ = ⟦sort⟧ s
-  ⟦ τ₁ [+] τ₂ ⟧ty δ = coprod (⟦ τ₁ ⟧ty δ) (⟦ τ₂ ⟧ty δ)
-  ⟦ τ₁ [×] τ₂ ⟧ty δ = prod (⟦ τ₁ ⟧ty δ) (⟦ τ₂ ⟧ty δ)
-  ⟦ τ₁ [→] τ₂ ⟧ty δ = ⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ())
-  ⟦ μ τ ⟧ty       δ = μ-obj (build-poly τ δ) (λ ())
+  ⟦ σ [+] τ ⟧ty δ = coprod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ)
+  ⟦ σ [×] τ ⟧ty δ = prod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ)
+  ⟦ σ [→] τ ⟧ty δ = ⟦ σ ⟧ty (λ ()) ⟹ ⟦ τ ⟧ty (λ ())
+  ⟦ μ τ ⟧ty       δ = μ-obj (as-poly τ δ) (λ ())
 
-  build-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 Id n
-  build-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
-  build-poly unit            δ = Poly.const 𝟙
-  build-poly (base s)        δ = Poly.const (⟦sort⟧ s)
-  build-poly (τ₁ [+] τ₂)     δ = build-poly τ₁ δ Poly.+ build-poly τ₂ δ
-  build-poly (τ₁ [×] τ₂)     δ = build-poly τ₁ δ Poly.× build-poly τ₂ δ
-  build-poly (τ₁ [→] τ₂)     δ = Poly.const (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
-  build-poly (μ τ)           δ = Poly.μ (build-poly τ δ)
+  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 Id n
+  as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
+  as-poly unit            δ = Poly.const 𝟙
+  as-poly (base s)        δ = Poly.const (⟦sort⟧ s)
+  as-poly (σ [+] τ)       δ = as-poly σ δ Poly.+ as-poly τ δ
+  as-poly (σ [×] τ)       δ = as-poly σ δ Poly.× as-poly τ δ
+  as-poly (σ [→] τ)       δ = Poly.const (⟦ σ ⟧ty (λ ()) ⟹ ⟦ τ ⟧ty (λ ()))
+  as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
 
--- Syntactic subsitution is the same as
-build-eq : (τ : type 1) (σ : type 0) →
-           ⟦ τ [ σ ] ⟧ty (λ ()) ≡ fobj μ-obj (build-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ σ ⟧ty (λ ())))
-build-eq (var Fin.zero)  σ = refl
-build-eq unit            σ = refl
-build-eq (base s)        σ = refl
-build-eq (τ₁ [+] τ₂)     σ = cong₂ coprod (build-eq τ₁ σ) (build-eq τ₂ σ)
-build-eq (τ₁ [×] τ₂)     σ = cong₂ prod   (build-eq τ₁ σ) (build-eq τ₂ σ)
-build-eq (τ₁ [→] τ₂)     σ = refl
-build-eq (μ τ')          σ = {!!}  -- nested μ: build-poly vs substitution-under-binder
+-- Syntactic substitution is functor application.
+sub-as-apply : (τ : type 1) (τ' : type 0) →
+               ⟦ τ [ τ' ] ⟧ty (λ ()) ≡ fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ())))
+sub-as-apply (var Fin.zero) _  = refl
+sub-as-apply unit           _  = refl
+sub-as-apply (base s)       _  = refl
+sub-as-apply (σ [+] τ)      τ' = cong₂ coprod (sub-as-apply σ τ') (sub-as-apply τ τ')
+sub-as-apply (σ [×] τ)      τ' = cong₂ prod   (sub-as-apply σ τ') (sub-as-apply τ τ')
+sub-as-apply (σ [→] τ)      _  = refl
+sub-as-apply (μ τ)          τ' = {!!}  -- nested μ: as-poly vs substitution-under-binder
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
@@ -92,9 +92,9 @@ mutual
   ⟦ bop ω Ms ⟧tm     = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel r Ms ⟧tm    = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {τ = τ} M ⟧tm =
-    inF (build-poly τ (λ ())) (λ ()) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (build-eq τ (μ τ)) ⟦ M ⟧tm
+    inF (as-poly τ (λ ())) (λ ()) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (sub-as-apply τ (μ τ)) ⟦ M ⟧tm
   ⟦ fold-μ {Γ = Γ} {τ = τ} {σ = σ} alg M ⟧tm =
-    ⦅ subst (λ A → prod ⟦ Γ ⟧ctxt A ⇒ ⟦ σ ⟧ty (λ ())) (build-eq τ σ) ⟦ alg ⟧tm ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+    ⦅ subst (λ A → prod ⟦ Γ ⟧ctxt A ⇒ ⟦ σ ⟧ty (λ ())) (sub-as-apply τ σ) ⟦ alg ⟧tm ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms     = to-terminal

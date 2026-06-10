@@ -41,16 +41,16 @@ mutual
   ⟦ var i ⟧ty     δ = δ i
   ⟦ unit ⟧ty      δ = T-obj 𝟙
   ⟦ base s ⟧ty    δ = T-obj (⟦sort⟧ s)
-  ⟦ τ₁ [+] τ₂ ⟧ty δ = T-obj (coprod (⟦ τ₁ ⟧ty δ) (⟦ τ₂ ⟧ty δ))
-  ⟦ τ₁ [×] τ₂ ⟧ty δ = T-obj (prod   (⟦ τ₁ ⟧ty δ) (⟦ τ₂ ⟧ty δ))
-  ⟦ τ₁ [→] τ₂ ⟧ty δ = T-obj (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
-  ⟦ μ τ ⟧ty       δ = μ-obj (build-poly τ δ) (λ ())
+  ⟦ σ [+] τ ⟧ty δ = T-obj (coprod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ))
+  ⟦ σ [×] τ ⟧ty δ = T-obj (prod   (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ))
+  ⟦ σ [→] τ ⟧ty δ = T-obj (⟦ σ ⟧ty (λ ()) ⟹ ⟦ τ ⟧ty (λ ()))
+  ⟦ μ τ ⟧ty     δ = μ-obj (as-poly τ δ) (λ ())
 
-  build-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 (StrongMonad.F T) n
-  build-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
-  build-poly unit         δ = Poly.T∘ Poly.const 𝟙
-  build-poly (base s)     δ = Poly.T∘ Poly.const (⟦sort⟧ s)
-  build-poly (τ₁ [+] τ₂)  δ = Poly.T∘ (build-poly τ₁ δ Poly.+ build-poly τ₂ δ)
-  build-poly (τ₁ [×] τ₂)  δ = Poly.T∘ (build-poly τ₁ δ Poly.× build-poly τ₂ δ)
-  build-poly (τ₁ [→] τ₂)  δ = Poly.T∘ Poly.const (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
-  build-poly (μ τ)        δ = Poly.μ (build-poly τ δ)
+  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 (StrongMonad.F T) n
+  as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
+  as-poly unit       δ = Poly.T∘ Poly.const 𝟙
+  as-poly (base s)   δ = Poly.T∘ Poly.const (⟦sort⟧ s)
+  as-poly (σ [+] τ)  δ = Poly.T∘ (as-poly σ δ Poly.+ as-poly τ δ)
+  as-poly (σ [×] τ)  δ = Poly.T∘ (as-poly σ δ Poly.× as-poly τ δ)
+  as-poly (σ [→] τ)  δ = Poly.T∘ Poly.const (⟦ σ ⟧ty (λ ()) ⟹ ⟦ τ ⟧ty (λ ()))
+  as-poly (μ τ)      δ = Poly.μ (as-poly τ δ)
