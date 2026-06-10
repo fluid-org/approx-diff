@@ -31,6 +31,7 @@ open Category 𝒞
 open HasTerminal 𝒞T renaming (witness to 𝟙)
 open HasProducts 𝒞P renaming (pair to ⟨_,_⟩)
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
+open HasStrongCoproducts 𝒞SC using () renaming (copair to scopair)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax-2 Sig
 open HasMu Mu
@@ -83,9 +84,7 @@ mutual
   ⟦ unit ⟧tm         = to-terminal
   ⟦ inl M ⟧tm        = in₁ ∘ ⟦ M ⟧tm
   ⟦ inr M ⟧tm        = in₂ ∘ ⟦ M ⟧tm
-  ⟦ case M M₁ M₂ ⟧tm =
-    eval ∘ ⟨ copair (lambda (⟦ M₁ ⟧tm ∘ HasProducts.swap 𝒞P))
-                    (lambda (⟦ M₂ ⟧tm ∘ HasProducts.swap 𝒞P)) ∘ ⟦ M ⟧tm , id _ ⟩
+  ⟦ case M M₁ M₂ ⟧tm = scopair ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ pair M N ⟧tm     = ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
   ⟦ fst M ⟧tm        = p₁ ∘ ⟦ M ⟧tm
   ⟦ snd M ⟧tm        = p₂ ∘ ⟦ M ⟧tm

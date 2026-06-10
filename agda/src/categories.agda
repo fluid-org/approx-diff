@@ -634,14 +634,10 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
                 copair-cong to scopair-cong; copair-in₁ to scopair-in₁;
                 copair-in₂ to scopair-in₂; copair-ext to scopair-ext)
 
-    -- Section a ⇒ 𝟙 × a for converting plain → strong-shaped.
+    -- Convert plain → strong-shaped.
     sect : ∀ {a} → a ⇒ prod 𝟙 a
     sect = pair to-terminal (id _)
 
-    plain-copair : ∀ {x y z} → x ⇒ z → y ⇒ z → scoprod x y ⇒ z
-    plain-copair f g = scopair (f ∘ p₂) (g ∘ p₂) ∘ sect
-
-    -- For the copair-in₁/in₂ proofs: sect ∘ in_i ≈ pair p₁ (in_i ∘ p₂) ∘ sect.
     sect-LHS : ∀ {x y} → (sect ∘ in₁ {x} {y}) ≈ pair to-terminal in₁
     sect-LHS = begin
         pair to-terminal (id _) ∘ in₁
@@ -686,27 +682,18 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
         pair to-terminal in₂
       ∎ where open ≈-Reasoning isEquiv
 
-    sect-in₁ : ∀ {x y} → (sect ∘ in₁ {x} {y}) ≈ (pair p₁ (in₁ ∘ p₂) ∘ sect)
-    sect-in₁ = isEquiv .trans sect-LHS (isEquiv .sym sect-RHS)
-
-    sect-in₂ : ∀ {x y} → (sect ∘ in₂ {x} {y}) ≈ (pair p₁ (in₂ ∘ p₂) ∘ sect)
-    sect-in₂ = isEquiv .trans sect-LHS₂ (isEquiv .sym sect-RHS₂)
-
-    p₂-sect : ∀ {a} → (p₂ ∘ sect {a}) ≈ id _
-    p₂-sect = pair-p₂ _ _
-
     result : HasCoproducts 𝒞
     result .HasCoproducts.coprod = scoprod
     result .HasCoproducts.in₁ = in₁
     result .HasCoproducts.in₂ = in₂
-    result .HasCoproducts.copair = plain-copair
+    result .HasCoproducts.copair f g = scopair (f ∘ p₂) (g ∘ p₂) ∘ sect
     result .HasCoproducts.copair-cong f₁≈f₂ g₁≈g₂ =
       ∘-cong (scopair-cong (∘-cong f₁≈f₂ ≈-refl) (∘-cong g₁≈g₂ ≈-refl)) ≈-refl
     result .HasCoproducts.copair-in₁ f g = begin
         (scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ in₁
       ≈⟨ assoc _ _ _ ⟩
         scopair (f ∘ p₂) (g ∘ p₂) ∘ (sect ∘ in₁)
-      ≈⟨ ∘-cong ≈-refl sect-in₁ ⟩
+      ≈⟨ ∘-cong ≈-refl (isEquiv .trans sect-LHS (isEquiv .sym sect-RHS)) ⟩
         scopair (f ∘ p₂) (g ∘ p₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘ sect)
       ≈˘⟨ assoc _ _ _ ⟩
         (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (in₁ ∘ p₂)) ∘ sect
@@ -714,7 +701,7 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
         (f ∘ p₂) ∘ sect
       ≈⟨ assoc _ _ _ ⟩
         f ∘ (p₂ ∘ sect)
-      ≈⟨ ∘-cong ≈-refl p₂-sect ⟩
+      ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
         f ∘ id _
       ≈⟨ id-right ⟩
         f
@@ -723,7 +710,7 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
         (scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ in₂
       ≈⟨ assoc _ _ _ ⟩
         scopair (f ∘ p₂) (g ∘ p₂) ∘ (sect ∘ in₂)
-      ≈⟨ ∘-cong ≈-refl sect-in₂ ⟩
+      ≈⟨ ∘-cong ≈-refl (isEquiv .trans sect-LHS₂ (isEquiv .sym sect-RHS₂)) ⟩
         scopair (f ∘ p₂) (g ∘ p₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘ sect)
       ≈˘⟨ assoc _ _ _ ⟩
         (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (in₂ ∘ p₂)) ∘ sect
@@ -731,7 +718,7 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
         (g ∘ p₂) ∘ sect
       ≈⟨ assoc _ _ _ ⟩
         g ∘ (p₂ ∘ sect)
-      ≈⟨ ∘-cong ≈-refl p₂-sect ⟩
+      ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
         g ∘ id _
       ≈⟨ id-right ⟩
         g
@@ -748,7 +735,7 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
         (h ∘ p₂) ∘ sect
       ≈⟨ assoc _ _ _ ⟩
         h ∘ (p₂ ∘ sect)
-      ≈⟨ ∘-cong ≈-refl p₂-sect ⟩
+      ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
         h ∘ id _
       ≈⟨ id-right ⟩
         h
