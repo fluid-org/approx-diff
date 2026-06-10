@@ -26,7 +26,8 @@ module Interp {o m e} {𝒞 : Category o m e}
   open Category 𝒞
   open HasProducts 𝒞P
   open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
-  open StrongFunctor T-strong using () renaming (F to T)
+  open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair)
+  open StrongFunctor T-strong using (right-strength) renaming (F to T)
 
   extend : ∀ {n} → (Fin n → obj) → obj → Fin (suc n) → obj
   extend δ A Fin.zero    = A
@@ -138,3 +139,27 @@ module Interp {o m e} {𝒞 : Category o m e}
         where
           step : ∀ X → (prod witness X ⇒ μ-obj P δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
           step X x→A = α P δ' ∘ fmor P (extend-mor fs (x→A ∘ pair to-terminal (id _))) ∘ p₂
+
+    extend-mor-strong : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
+                        (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) →
+                        ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
+    extend-mor-strong fs x→y Fin.zero    = x→y
+    extend-mor-strong fs x→y (Fin.suc i) = fs i
+
+    mutual
+      strong-fmor : ∀ {n Γ} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} →
+                    (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (fobj μ-obj P δ) ⇒ fobj μ-obj P δ'
+      strong-fmor (const A) fs = p₂
+      strong-fmor (var i)   fs = fs i
+      strong-fmor (P + Q)   fs = scopair (in₁ ∘ strong-fmor P fs) (in₂ ∘ strong-fmor Q fs)
+      strong-fmor (P × Q)   fs = pair (strong-fmor P fs ∘ pair p₁ (p₁ ∘ p₂))
+                                      (strong-fmor Q fs ∘ pair p₁ (p₂ ∘ p₂))
+      strong-fmor (μ P)     fs = strong-μ-fmor P fs
+      strong-fmor (T∘ P)    fs = Functor.fmor T (strong-fmor P fs) ∘ right-strength
+
+      strong-μ-fmor : ∀ {n Γ} (P : Poly 𝒞 T (suc n)) {δ δ' : Fin n → obj} →
+                      (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj P δ'
+      strong-μ-fmor P {δ} {δ'} fs = mcata step
+        where
+          step : ∀ X → (prod _ X ⇒ μ-obj P δ') → prod _ (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
+          step X x→μ' = α P δ' ∘ strong-fmor P (extend-mor-strong fs x→μ')
