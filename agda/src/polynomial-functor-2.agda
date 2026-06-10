@@ -205,12 +205,62 @@ record HasMu : Set (o ⊔ m ⊔ e) where
       iso : Iso (μ-obj P δ) (μ-obj Q δ')
       iso .Iso.fwd = fwd
       iso .Iso.bwd = bwd
-      iso .Iso.fwd∘bwd≈id = outer-proof
+      iso .Iso.fwd∘bwd≈id =
+        let open ≈-Reasoning isEquiv in begin
+            fwd ∘ bwd
+          ≈⟨ assoc _ _ _ ⟩
+            ⦅ step-fwd ⦆ᴹ ∘ (pair to-terminal (id _) ∘ bwd)
+          ≈⟨ ∘-cong₂ (≈-sym (assoc _ _ _)) ⟩
+            ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal (id _) ∘ ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
+          ≈⟨ ∘-cong₂ (∘-cong₁ (pair-natural _ _ _)) ⟩
+            ⦅ step-fwd ⦆ᴹ ∘ ((pair (to-terminal ∘ ⦅ step-bwd ⦆ᴹ) (id _ ∘ ⦅ step-bwd ⦆ᴹ)) ∘ pair to-terminal (id _))
+          ≈⟨ ∘-cong₂ (∘-cong₁ (pair-cong (to-terminal-unique _ _) id-left)) ⟩
+            ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
+          ≈⟨ ∘-cong₂ (pair-natural _ _ _) ⟩
+            ⦅ step-fwd ⦆ᴹ ∘ pair (to-terminal ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
+          ≈⟨ ∘-cong₂ (pair-cong₁ (≈-trans (to-terminal-unique _ _) (≈-sym (pair-p₁ _ _)))) ⟩
+            ⦅ step-fwd ⦆ᴹ ∘ pair (p₁ ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
+          ≈⟨ ∘-cong₂ (≈-sym (pair-natural _ _ _)) ⟩
+            ⦅ step-fwd ⦆ᴹ ∘ (pair p₁ ⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
+          ≈⟨ ≈-sym (assoc _ _ _) ⟩
+            (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _)
+          ≈⟨ ∘-cong₁
+               (≈-trans (⦅⦆ᴹ-η {P = Q} {δ = δ'} trivial-step (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) fwd∘bwd-β)
+                        (strong-μ-fmor-id Q)) ⟩
+            p₂ ∘ pair to-terminal (id _)
+          ≈⟨ pair-p₂ _ _ ⟩
+            id (μ-obj Q δ')
+          ∎
         where
           -- The "trivial" Mendler step whose cata is p₂ (by strong-μ-fmor-id).
           trivial-step : ∀ X → (prod witness X ⇒ μ-obj Q δ') →
                          prod witness (fobj μ-obj Q (extend δ' X)) ⇒ μ-obj Q δ'
           trivial-step X x→μ' = α Q δ' ∘ strong-fmor Q (extend-mor (λ _ → p₂) x→μ')
+
+          -- Iso.bwd version of unfold-natural, derived from unfold-natural + iso round-trips.
+          unfold-natural-bwd : ∀ {X Y} (f : X ⇒ Y) →
+                               (fmor P (extend-fam f) ∘ Iso.bwd (unfold-iso X)) ≈
+                               (Iso.bwd (unfold-iso Y) ∘ fmor Q (extend-fam f))
+          unfold-natural-bwd {X} {Y} f = begin
+              fmor P (extend-fam f) ∘ Iso.bwd (unfold-iso X)
+            ≈˘⟨ id-left ⟩
+              id _ ∘ (fmor P (extend-fam f) ∘ Iso.bwd (unfold-iso X))
+            ≈˘⟨ ∘-cong₁ (Iso.bwd∘fwd≈id (unfold-iso Y)) ⟩
+              (Iso.bwd (unfold-iso Y) ∘ Iso.fwd (unfold-iso Y)) ∘ (fmor P (extend-fam f) ∘ Iso.bwd (unfold-iso X))
+            ≈⟨ assoc _ _ _ ⟩
+              Iso.bwd (unfold-iso Y) ∘ (Iso.fwd (unfold-iso Y) ∘ (fmor P (extend-fam f) ∘ Iso.bwd (unfold-iso X)))
+            ≈˘⟨ ∘-cong₂ (assoc _ _ _) ⟩
+              Iso.bwd (unfold-iso Y) ∘ ((Iso.fwd (unfold-iso Y) ∘ fmor P (extend-fam f)) ∘ Iso.bwd (unfold-iso X))
+            ≈˘⟨ ∘-cong₂ (∘-cong₁ (unfold-natural f)) ⟩
+              Iso.bwd (unfold-iso Y) ∘ ((fmor Q (extend-fam f) ∘ Iso.fwd (unfold-iso X)) ∘ Iso.bwd (unfold-iso X))
+            ≈⟨ ∘-cong₂ (assoc _ _ _) ⟩
+              Iso.bwd (unfold-iso Y) ∘ (fmor Q (extend-fam f) ∘ (Iso.fwd (unfold-iso X) ∘ Iso.bwd (unfold-iso X)))
+            ≈⟨ ∘-cong₂ (∘-cong₂ (Iso.fwd∘bwd≈id (unfold-iso X))) ⟩
+              Iso.bwd (unfold-iso Y) ∘ (fmor Q (extend-fam f) ∘ id _)
+            ≈⟨ ∘-cong₂ id-right ⟩
+              Iso.bwd (unfold-iso Y) ∘ fmor Q (extend-fam f)
+            ∎
+            where open ≈-Reasoning isEquiv
 
           fwd∘bwd-β :
             ((⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘co (α Q δ' ∘ p₂))
@@ -246,36 +296,17 @@ record HasMu : Set (o ⊔ m ⊔ e) where
               step-fwd (μ-obj P δ) ⦅ step-fwd ⦆ᴹ
                 ∘co (fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
                      ∘ (Iso.bwd (unfold-iso (μ-obj Q δ')) ∘ p₂))
+            ≈⟨ ∘-cong-co₂ (≈-sym (assoc _ _ _)) ⟩
+              step-fwd (μ-obj P δ) ⦅ step-fwd ⦆ᴹ
+                ∘co ((fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                      ∘ Iso.bwd (unfold-iso (μ-obj Q δ'))) ∘ p₂)
+            ≈⟨ ∘-cong-co₂ (∘-cong₁ (unfold-natural-bwd _)) ⟩
+              step-fwd (μ-obj P δ) ⦅ step-fwd ⦆ᴹ
+                ∘co ((Iso.bwd (unfold-iso (μ-obj P δ))
+                      ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))) ∘ p₂)
             ≈⟨ {!!} ⟩
               trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
             ∎
             where open ≈-Reasoning isEquiv
 
-          outer-proof : (fwd ∘ bwd) ≈ id (μ-obj Q δ')
-          outer-proof = begin
-              fwd ∘ bwd
-            ≈⟨ assoc _ _ _ ⟩
-              ⦅ step-fwd ⦆ᴹ ∘ (pair to-terminal (id _) ∘ bwd)
-            ≈⟨ ∘-cong₂ (≈-sym (assoc _ _ _)) ⟩
-              ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal (id _) ∘ ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
-            ≈⟨ ∘-cong₂ (∘-cong₁ (pair-natural _ _ _)) ⟩
-              ⦅ step-fwd ⦆ᴹ ∘ ((pair (to-terminal ∘ ⦅ step-bwd ⦆ᴹ) (id _ ∘ ⦅ step-bwd ⦆ᴹ)) ∘ pair to-terminal (id _))
-            ≈⟨ ∘-cong₂ (∘-cong₁ (pair-cong (to-terminal-unique _ _) id-left)) ⟩
-              ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
-            ≈⟨ ∘-cong₂ (pair-natural _ _ _) ⟩
-              ⦅ step-fwd ⦆ᴹ ∘ pair (to-terminal ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
-            ≈⟨ ∘-cong₂ (pair-cong₁ (≈-trans (to-terminal-unique _ _) (≈-sym (pair-p₁ _ _)))) ⟩
-              ⦅ step-fwd ⦆ᴹ ∘ pair (p₁ ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
-            ≈⟨ ∘-cong₂ (≈-sym (pair-natural _ _ _)) ⟩
-              ⦅ step-fwd ⦆ᴹ ∘ (pair p₁ ⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
-            ≈⟨ ≈-sym (assoc _ _ _) ⟩
-              (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _)
-            ≈⟨ ∘-cong₁
-                 (≈-trans (⦅⦆ᴹ-η {P = Q} {δ = δ'} trivial-step (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) fwd∘bwd-β)
-                          (strong-μ-fmor-id Q)) ⟩
-              p₂ ∘ pair to-terminal (id _)
-            ≈⟨ pair-p₂ _ _ ⟩
-              id (μ-obj Q δ')
-            ∎
-            where open ≈-Reasoning isEquiv
       iso .Iso.bwd∘fwd≈id = {!!}
