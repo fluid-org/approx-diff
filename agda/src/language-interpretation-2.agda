@@ -92,7 +92,7 @@ mutual
   ⟦ bop ω Ms ⟧tm     = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel r Ms ⟧tm    = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
   ⟦ roll {τ = τ} M ⟧tm =
-    inF (as-poly τ (λ ())) (λ ()) ∘ Iso.fwd (sub-as-apply τ (μ τ)) ∘ ⟦ M ⟧tm
+    α (as-poly τ (λ ())) (λ ()) ∘ Iso.fwd (sub-as-apply τ (μ τ)) ∘ ⟦ M ⟧tm
   ⟦ fold {τ = τ} {σ = σ} alg M ⟧tm =
     ⦅ ⟦ alg ⟧tm ∘ prod-m (id _) (Iso.bwd (sub-as-apply τ σ)) ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
 

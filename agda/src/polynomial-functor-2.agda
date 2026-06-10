@@ -103,8 +103,8 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
     -- Recursion needs to be "open" to avoid circularity with Poly's functor instance.
     field
       μ-obj : ∀ {n} → Poly 𝒞 T (suc n) → (Fin n → obj) → obj
-      inF   : ∀ {n} (P : Poly 𝒞 T (suc n)) (δ : Fin n → obj) →
-              fobj μ-obj P (extend δ (μ-obj P δ)) ⇒ μ-obj P δ
+      α   : ∀ {n} (P : Poly 𝒞 T (suc n)) (δ : Fin n → obj) →
+            fobj μ-obj P (extend δ (μ-obj P δ)) ⇒ μ-obj P δ
       ⦅_⦆   : ∀ {n Γ A} {P : Poly 𝒞 T (suc n)} {δ : Fin n → obj} →
              (prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) → prod Γ (μ-obj P δ) ⇒ A
       mcata : ∀ {n Γ A} {P : Poly 𝒞 T (suc n)} {δ : Fin n → obj} →
@@ -135,4 +135,4 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
         mcata {Γ = witness} step ∘ pair to-terminal (id _)
         where
           step : ∀ X → (prod witness X ⇒ μ-obj P δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
-          step X x→A = inF P δ' ∘ fmor P (extend-mor fs (x→A ∘ pair to-terminal (id _))) ∘ p₂
+          step X x→A = α P δ' ∘ fmor P (extend-mor fs (x→A ∘ pair to-terminal (id _))) ∘ p₂
