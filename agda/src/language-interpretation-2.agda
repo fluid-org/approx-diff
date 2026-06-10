@@ -8,9 +8,9 @@ open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasExponentials)
-open import functor using (Id; StrongFunctor; StrongFunctor-Id)
+open import functor using (StrongFunctor; StrongFunctor-Id)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
-open import polynomial-functor-2 using (Poly; module Interp)
+import polynomial-functor-2 as PF2
 import language-syntax-2
 
 module language-interpretation-2
@@ -19,7 +19,7 @@ module language-interpretation-2
   (𝒞 : Category o m e)
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
-  (let open Interp 𝒞T 𝒞P 𝒞SC (StrongFunctor-Id 𝒞P))
+  (let open PF2 𝒞T 𝒞P 𝒞SC (StrongFunctor-Id 𝒞P) hiding (_+_; _×_))
   (Mu : HasMu)
   (let Bool = HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
               (HasTerminal.witness 𝒞T) (HasTerminal.witness 𝒞T))
@@ -34,6 +34,7 @@ open HasStrongCoproducts 𝒞SC using () renaming (copair to scopair)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax-2 Sig
 open HasMu Mu
+open PF2.Functorial 𝒞T 𝒞P 𝒞SC (StrongFunctor-Id 𝒞P) Mu using (⦅_⦆)
 open Model Int
 
 mutual
@@ -46,7 +47,7 @@ mutual
   ⟦ σ [→] τ ⟧ty δ = ⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ())
   ⟦ μ τ ⟧ty       δ = μ-obj (as-poly τ δ) (λ ())
 
-  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 Id n
+  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly n
   as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
   as-poly unit            δ = Poly.const 𝟙
   as-poly (base s)        δ = Poly.const (⟦sort⟧ s)
