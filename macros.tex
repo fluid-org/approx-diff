@@ -25,9 +25,9 @@
 \definechangesauthor[name=Roly, color=red]{roly}
 % Capitalised = inline markup + a margin changebar. Use the lowercase \added/\deleted/\replaced
 % (no bar) inside figures or math, where changebar spans can misbehave.
-\newcommand{\Added}[1]{\protect\cbstart\added{#1}\protect\cbend}
-\newcommand{\Deleted}[1]{\protect\cbstart\deleted{#1}\protect\cbend}
-\newcommand{\Replaced}[2]{\protect\cbstart\replaced{#1}{#2}\protect\cbend}
+\newcommand{\Added}[1]{\protect\cbstart\added{#1}\protect\cbend\xspace}
+\newcommand{\Deleted}[1]{\protect\cbstart\deleted{#1}\protect\cbend\xspace}
+\newcommand{\Replaced}[2]{\protect\cbstart\replaced{#1}{#2}\protect\cbend\xspace}
 
 \newenvironment{salign*}
    {\par\nobreak\small\noindent\csname align*\endcsname}

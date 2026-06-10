@@ -70,9 +70,9 @@ At a high level, \GPS assumes that, for each possible value that may be input or
       \draw (top) -- (bot);
     \end{tikzpicture}
   \end{center}
-  These are not the only choices of approximation lattices that we could have made. For the input, we have chosen a lattice that allows us to ``forget'' (approximate away) numbers in the input, but not the labels or the structure of the list itself. However, other choices are also useful. Indeed, one of the aims of this work is to clarify how to choose an approximation structure appropriate for different tasks by use of type information. We elaborate on this further in \secref{semantic-gps}.
+  These are not the only choices of approximation lattices that we could have made. For the input, we have chosen a lattice that allows us to ``forget'' (approximate away) numbers in the input, but not the labels or the structure of the list itself. \Added{Each such number occupies a \emph{position} in the value; an approximation keeps the shape of the value and retains the numbers only at some subset of the positions.} However, other choices are also useful. Indeed, one of the aims of this work is to clarify how to choose an approximation structure appropriate for different tasks by use of type information. We elaborate on this further in \secref{semantic-gps}.
 
-  \GPS associates with each run of the program a Galois connection telling us how the inputs and outputs are related in that run. \Added{We can think of this as arising from a \emph{dependency relation} recording which input entries the returned number depends on: for $\mathit{query}\,\mathsf{a}$, the two $\mathsf{a}$-labelled entries; for $\mathit{query}\,\mathsf{b}$, the single $\mathsf{b}$-labelled one.}
+  \GPS associates with each run of the program a Galois connection telling us how the inputs and outputs are related in that run. \Added{We can think of this as arising from a \emph{dependency relation} recording which input entries each part of the output depends on. Here the output is a single number, depending on the two $\mathsf{a}$-labelled entries for $\mathit{query}\,\mathsf{a}$, and the single $\mathsf{b}$-labelled one for $\mathit{query}\,\mathsf{b}$.}
 
   \cbstart
   \begin{center}
@@ -83,20 +83,20 @@ At a high level, \GPS assumes that, for each possible value that may be input or
       \node (a2) at (0,0) {$(\mathsf{b},1)$};
       \node (a3) at (0,-0.8) {$(\mathsf{a},1)$};
       \node (ao) at (2.4,0) {$1$};
-      \draw (a1) -- (ao);
-      \draw (a3) -- (ao);
+      \draw[->] (ao) -- (a1);
+      \draw[->] (ao) -- (a3);
       % query b
       \node (lb) at (6,1.4) {$\mathit{query}\;\mathsf{b}$};
       \node (b1) at (6,0.8) {$(\mathsf{a},0)$};
       \node (b2) at (6,0) {$(\mathsf{b},1)$};
       \node (b3) at (6,-0.8) {$(\mathsf{a},1)$};
       \node (bo) at (8.4,0) {$1$};
-      \draw (b2) -- (bo);
+      \draw[->] (bo) -- (b2);
     \end{tikzpicture}
   \end{center}
   \cbend
 
-  The backwards portion $\partial (\mathit{query}\,l)_r$ tells us, given an approximation of the output, what the least approximation of the input is needed to generate that output. In the case of the two runs considered in this example, if we say we are not interested in the output by feeding in the least approximation $\bot$, then we find that we only need the least approximation of the input:
+  The backwards portion $\partial (\mathit{query}\,l)_r$ tells us, given an approximation of the output, what the least approximation of the input is needed to generate that output. \Added{This backwards map is simply the relation above lifted to sets: a set of output positions maps to the union of the input positions they depend on.} In the case of the two runs considered in this example, if we say we are not interested in the output by feeding in the least approximation $\bot$, \Added{namely the empty set of output positions,} then we find that we only need the least approximation of the input:
   \begin{displaymath}
     \partial (\mathit{query}\,l\,\mathit{db})_r(\bot) = [(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]
   \end{displaymath}
@@ -109,7 +109,9 @@ At a high level, \GPS assumes that, for each possible value that may be input or
   \end{displaymath}
   Pieces of the input that were {\em not} used are replaced by $\bot$. As we expect, the run of the query with label $\mathsf{a}$ depends on the entries in the database labelled with $\mathsf{a}$, and likewise for the run with label $\mathsf{b}$.
 
-  In this case, the forwards portion of the Galois connection tells us, for each approximation of the input, whether or not it is sufficient to compute the output. If we provide insufficient data to compute the output, then we will get an underapproximated output. Here for example we will find that $\partial (\mathit{query}\, \mathsf{a})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) = \bot$ because we need all the values associated with the label $\mathsf{a}$ to compute their sum.
+  In this case, the forwards portion of the Galois connection tells us, for each approximation of the input, whether or not it is sufficient to compute the output. \Added{Here this just asks whether the input set contains every position the output set depends on.} If we provide insufficient data to compute the output, then we will get an underapproximated output. Here for example we will find that $\partial (\mathit{query}\, \mathsf{a})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) = \bot$ because we need all the values associated with the label $\mathsf{a}$ to compute their sum.
+
+  \Added{However, sufficiency is only one way to read the forward direction. Reading the relation from inputs to outputs instead gives a second forward map, recording for each input position which parts of the output depend on it, and hence whether that input is \emph{necessary} to compute them: for $\mathit{query}\,\mathsf{a}$, the entry $(\mathsf{a},0)$ is necessary for the output, whereas $(\mathsf{b},1)$ is not.}
 
   In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of \GPS, and other language-based approaches, is that it is {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
 \end{example}
