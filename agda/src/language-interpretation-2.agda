@@ -31,7 +31,7 @@ open Category 𝒞
 open HasTerminal 𝒞T renaming (witness to 𝟙)
 open HasProducts 𝒞P renaming (pair to ⟨_,_⟩)
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
-open HasExponentials 𝒞E renaming (exp to _⟹_)
+open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax-2 Sig
 open HasMu Mu
 open Model Int
@@ -43,7 +43,7 @@ mutual
   ⟦ base s ⟧ty    δ = ⟦sort⟧ s
   ⟦ σ [+] τ ⟧ty δ = coprod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ)
   ⟦ σ [×] τ ⟧ty δ = prod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ)
-  ⟦ σ [→] τ ⟧ty δ = ⟦ σ ⟧ty (λ ()) ⟹ ⟦ τ ⟧ty (λ ())
+  ⟦ σ [→] τ ⟧ty δ = ⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ())
   ⟦ μ τ ⟧ty       δ = μ-obj (as-poly τ δ) (λ ())
 
   as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 Id n
@@ -52,7 +52,7 @@ mutual
   as-poly (base s)        δ = Poly.const (⟦sort⟧ s)
   as-poly (σ [+] τ)       δ = as-poly σ δ Poly.+ as-poly τ δ
   as-poly (σ [×] τ)       δ = as-poly σ δ Poly.× as-poly τ δ
-  as-poly (σ [→] τ)       δ = Poly.const (⟦ σ ⟧ty (λ ()) ⟹ ⟦ τ ⟧ty (λ ()))
+  as-poly (σ [→] τ)       δ = Poly.const (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
 
 -- Syntactic substitution is functor application.
@@ -83,12 +83,14 @@ mutual
   ⟦ unit ⟧tm         = to-terminal
   ⟦ inl M ⟧tm        = in₁ ∘ ⟦ M ⟧tm
   ⟦ inr M ⟧tm        = in₂ ∘ ⟦ M ⟧tm
-  ⟦ case M M₁ M₂ ⟧tm = HasStrongCoproducts.copair 𝒞SC ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ case M M₁ M₂ ⟧tm =
+    eval ∘ ⟨ copair (lambda (⟦ M₁ ⟧tm ∘ HasProducts.swap 𝒞P))
+                    (lambda (⟦ M₂ ⟧tm ∘ HasProducts.swap 𝒞P)) ∘ ⟦ M ⟧tm , id _ ⟩
   ⟦ pair M N ⟧tm     = ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
   ⟦ fst M ⟧tm        = p₁ ∘ ⟦ M ⟧tm
   ⟦ snd M ⟧tm        = p₂ ∘ ⟦ M ⟧tm
-  ⟦ lam M ⟧tm        = HasExponentials.lambda 𝒞E ⟦ M ⟧tm
-  ⟦ app M N ⟧tm      = HasExponentials.eval 𝒞E ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ lam M ⟧tm        = lambda ⟦ M ⟧tm
+  ⟦ app M N ⟧tm      = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm     = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel r Ms ⟧tm    = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {τ = τ} M ⟧tm =

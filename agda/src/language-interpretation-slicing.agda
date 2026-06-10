@@ -29,7 +29,7 @@ open Category 𝒞
 open HasTerminal 𝒞T renaming (witness to 𝟙)
 open HasProducts 𝒞P
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
-open HasExponentials 𝒞E renaming (exp to _⟹_)
+open HasExponentials 𝒞E renaming (exp to _⟦→⟧_)
 open language-syntax-2 Sig
 open HasMu Mu
 
@@ -43,7 +43,7 @@ mutual
   ⟦ base s ⟧ty    δ = T-obj (⟦sort⟧ s)
   ⟦ σ [+] τ ⟧ty δ = T-obj (coprod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ))
   ⟦ σ [×] τ ⟧ty δ = T-obj (prod   (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ))
-  ⟦ σ [→] τ ⟧ty δ = T-obj (⟦ σ ⟧ty (λ ()) ⟹ ⟦ τ ⟧ty (λ ()))
+  ⟦ σ [→] τ ⟧ty δ = T-obj (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
   ⟦ μ τ ⟧ty     δ = μ-obj (as-poly τ δ) (λ ())
 
   as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 (StrongMonad.F T) n
@@ -52,5 +52,5 @@ mutual
   as-poly (base s)   δ = Poly.T∘ Poly.const (⟦sort⟧ s)
   as-poly (σ [+] τ)  δ = Poly.T∘ (as-poly σ δ Poly.+ as-poly τ δ)
   as-poly (σ [×] τ)  δ = Poly.T∘ (as-poly σ δ Poly.× as-poly τ δ)
-  as-poly (σ [→] τ)  δ = Poly.T∘ Poly.const (⟦ σ ⟧ty (λ ()) ⟹ ⟦ τ ⟧ty (λ ()))
+  as-poly (σ [→] τ)  δ = Poly.T∘ Poly.const (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
   as-poly (μ τ)      δ = Poly.μ (as-poly τ δ)
