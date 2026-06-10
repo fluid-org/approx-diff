@@ -10,7 +10,7 @@ open import categories
          strong-coproducts→coproducts; HasExponentials)
 open import functor using (Functor; StrongFunctor)
 open import signature using (Signature)
-open import polynomial-functor-2 using (Poly; module Interp)
+import polynomial-functor-2 as PF2
 import language-syntax-2
 
 module language-interpretation-slicing
@@ -20,7 +20,7 @@ module language-interpretation-slicing
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
   (T  : StrongFunctor 𝒞P)
-  (let open Interp 𝒞T 𝒞P 𝒞SC T)
+  (let open PF2 𝒞T 𝒞P 𝒞SC T hiding (_+_; _×_))
   (Mu : HasMu)
   (⟦sort⟧ : Signature.sort Sig → Category.obj 𝒞)
   where
@@ -46,7 +46,7 @@ mutual
   ⟦ σ [→] τ ⟧ty δ = T-obj (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
   ⟦ μ τ ⟧ty     δ = μ-obj (as-poly τ δ) (λ ())
 
-  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 (StrongFunctor.F T) n
+  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly n
   as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
   as-poly unit       δ = Poly.T∘ Poly.const 𝟙
   as-poly (base s)   δ = Poly.T∘ Poly.const (⟦sort⟧ s)
