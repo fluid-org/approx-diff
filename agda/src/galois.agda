@@ -341,27 +341,37 @@ module _ where
   𝕃-functor .Functor.fmor-comp f g .left-eq .eqfun bottom = tt , tt
   𝕃-functor .Functor.fmor-comp {X} {Y} {Z} f g .left-eq .eqfun < z > = X .carrier .Preorder.≃-refl
 
-  strongPointedFunctor : StrongPointedFunctor products
-  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.F              = 𝕃-functor
-  strongPointedFunctor .StrongPointedFunctor.unit           = 𝕃-unit
-  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength = 𝕃-strength
-  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural f g ._≃g_.right-eq =
+  open StrongFunctor using (F; right-strength; right-strength-natural; right-strength-p₂)
+  open JoinSemilattice using (⊥-isBottom; ∨-isJoin)
+
+  strongFunctor : StrongFunctor products
+  strongFunctor .F              = 𝕃-functor
+  strongFunctor .right-strength = 𝕃-strength
+  strongFunctor .right-strength-natural f g ._≃g_.right-eq =
     meet-semilattice.L-strength-natural (_⇒g_.right-∧ f) (_⇒g_.right-∧ g)
       .meet-semilattice._≃m_.eqfunc
-  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
-    ._≃g_.left-eq .eqfun bottom .proj₁ =
-      x₁ .joins .JoinSemilattice.∨-isJoin .IsJoin.inr , tt
-  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
-    ._≃g_.left-eq .eqfun bottom .proj₂ =
-      x₁ .joins .JoinSemilattice.∨-isJoin .IsJoin.[_,_]
-        (_⇒g_.left-∨ f .join-semilattice._=>_.⊥-preserving)
-        (x₁ .carrier .Preorder.≤-refl) , tt
-  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
-    ._≃g_.left-eq .eqfun < (a , b) > .proj₁ =
-      x₁ .carrier .Preorder.≤-refl , y₁ .joins .JoinSemilattice.∨-lunit .proj₁
-  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
-    ._≃g_.left-eq .eqfun < (a , b) > .proj₂ =
-      x₁ .carrier .Preorder.≤-refl , y₁ .joins .JoinSemilattice.∨-lunit .proj₂
+  strongFunctor .right-strength-natural {x₁} f g ._≃g_.left-eq .eqfun bottom .proj₁ =
+    x₁ .joins .∨-isJoin .IsJoin.inr , tt
+  strongFunctor .right-strength-natural {x₁} f g ._≃g_.left-eq .eqfun bottom .proj₂ =
+    x₁ .joins .∨-isJoin .IsJoin.[_,_]
+      (_⇒g_.left-∨ f .join-semilattice._=>_.⊥-preserving)
+      (x₁ .carrier .Preorder.≤-refl) , tt
+  strongFunctor .right-strength-natural {x₁} {y₁ = y₁} f g ._≃g_.left-eq .eqfun < (a , b) > .proj₁ =
+    x₁ .carrier .Preorder.≤-refl , y₁ .joins .JoinSemilattice.∨-lunit .proj₁
+  strongFunctor .right-strength-natural {x₁} {y₁ = y₁} f g ._≃g_.left-eq .eqfun < (a , b) > .proj₂ =
+    x₁ .carrier .Preorder.≤-refl , y₁ .joins .JoinSemilattice.∨-lunit .proj₂
+  strongFunctor .right-strength-p₂ ._≃g_.right-eq =
+    meet-semilattice.L-strength-p₂ .meet-semilattice._≃m_.eqfunc
+  strongFunctor .right-strength-p₂ {X} ._≃g_.left-eq .eqfun bottom .proj₁ = X .carrier .Preorder.≤-refl , tt
+  strongFunctor .right-strength-p₂ {X} ._≃g_.left-eq .eqfun bottom .proj₂ = X .carrier .Preorder.≤-refl , tt
+  strongFunctor .right-strength-p₂ {X} {Y} ._≃g_.left-eq .eqfun < y > .proj₁ =
+    X .carrier .Preorder.≤-refl , Y .carrier .Preorder.≤-refl
+  strongFunctor .right-strength-p₂ {X} {Y} ._≃g_.left-eq .eqfun < y > .proj₂ =
+    X .carrier .Preorder.≤-refl , Y .carrier .Preorder.≤-refl
+
+  strongPointedFunctor : StrongPointedFunctor products
+  strongPointedFunctor .StrongPointedFunctor.strongFunctor = strongFunctor
+  strongPointedFunctor .StrongPointedFunctor.unit          = 𝕃-unit
 
 module _ where
 

@@ -571,6 +571,11 @@ module _ where
   L-costrength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun < x , y > =
     (A₂ × B₂) .≃-refl
 
+  L-costrength-p₂ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
+                    (project₂ {X = X} {Y = L Y} ∘ L-costrength {X = X} {Y = Y}) ≃m L-map (project₂ {X = X} {Y = Y})
+  L-costrength-p₂ .eqfunc .eqfun bottom = tt , tt
+  L-costrength-p₂ {B = B} .eqfunc .eqfun < x , y > = B .≃-refl
+
 {-
   L-coassoc : ∀ {A}{X : JoinSemilattice A} → (L-map L-dup ∘ L-dup) ≃m (L-dup ∘ L-dup {X = X})
   L-coassoc .eqfunc .eqfun bottom .proj₁ = tt
