@@ -37,39 +37,32 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
   fobj μh (μ P)     δ = μh P δ
   fobj μh (T∘_ P)   δ = Functor.fobj T (fobj μh P δ)
 
-  fmor : ∀ {n}
-         (μh      : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
-         (μh-fmor : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj} →
+  module Algebra
+    (μh           : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
+    (μh-fmor      : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj} →
                     (∀ i → δ i ⇒ δ' i) → μh P δ ⇒ μh P δ')
-         (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} →
-         (∀ i → δ i ⇒ δ' i) → fobj μh P δ ⇒ fobj μh P δ'
-  fmor μh μh-fmor (const A) fs = id A
-  fmor μh μh-fmor (var i)   fs = fs i
-  fmor μh μh-fmor (P + Q)   fs = coprod-m (fmor μh μh-fmor P fs) (fmor μh μh-fmor Q fs)
-  fmor μh μh-fmor (P × Q)   fs = prod-m (fmor μh μh-fmor P fs) (fmor μh μh-fmor Q fs)
-  fmor μh μh-fmor (μ P)     fs = μh-fmor P fs
-  fmor μh μh-fmor (T∘_ P)   fs = Functor.fmor T (fmor μh μh-fmor P fs)
+    (μh-fmor-cong : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj}
+                    {fs gs : ∀ i → δ i ⇒ δ' i} →
+                    (∀ i → fs i ≈ gs i) → μh-fmor P fs ≈ μh-fmor P gs)
+    where
 
-  fmor-cong : ∀ {n}
-              (μh           : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
-              (μh-fmor      : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj} →
-                              (∀ i → δ i ⇒ δ' i) → μh P δ ⇒ μh P δ')
-              (μh-fmor-cong : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj}
-                              {fs gs : ∀ i → δ i ⇒ δ' i} →
-                              (∀ i → fs i ≈ gs i) → μh-fmor P fs ≈ μh-fmor P gs)
-              (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
-              (∀ i → fs i ≈ gs i) → fmor μh μh-fmor P fs ≈ fmor μh μh-fmor P gs
-  fmor-cong μh μh-fmor μh-fmor-cong (const A) fs≈gs = ≈-refl
-  fmor-cong μh μh-fmor μh-fmor-cong (var i)   fs≈gs = fs≈gs i
-  fmor-cong μh μh-fmor μh-fmor-cong (P + Q)   fs≈gs =
-    coprod-m-cong (fmor-cong μh μh-fmor μh-fmor-cong P fs≈gs)
-                  (fmor-cong μh μh-fmor μh-fmor-cong Q fs≈gs)
-  fmor-cong μh μh-fmor μh-fmor-cong (P × Q)   fs≈gs =
-    prod-m-cong   (fmor-cong μh μh-fmor μh-fmor-cong P fs≈gs)
-                  (fmor-cong μh μh-fmor μh-fmor-cong Q fs≈gs)
-  fmor-cong μh μh-fmor μh-fmor-cong (μ P)     fs≈gs = μh-fmor-cong P fs≈gs
-  fmor-cong μh μh-fmor μh-fmor-cong (T∘_ P)   fs≈gs =
-    Functor.fmor-cong T (fmor-cong μh μh-fmor μh-fmor-cong P fs≈gs)
+    fmor : ∀ {n} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} →
+           (∀ i → δ i ⇒ δ' i) → fobj μh P δ ⇒ fobj μh P δ'
+    fmor (const A) fs = id A
+    fmor (var i)   fs = fs i
+    fmor (P + Q)   fs = coprod-m (fmor P fs) (fmor Q fs)
+    fmor (P × Q)   fs = prod-m   (fmor P fs) (fmor Q fs)
+    fmor (μ P)     fs = μh-fmor P fs
+    fmor (T∘_ P)   fs = Functor.fmor T (fmor P fs)
+
+    fmor-cong : ∀ {n} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
+                (∀ i → fs i ≈ gs i) → fmor P fs ≈ fmor P gs
+    fmor-cong (const A) fs≈gs = ≈-refl
+    fmor-cong (var i)   fs≈gs = fs≈gs i
+    fmor-cong (P + Q)   fs≈gs = coprod-m-cong (fmor-cong P fs≈gs) (fmor-cong Q fs≈gs)
+    fmor-cong (P × Q)   fs≈gs = prod-m-cong   (fmor-cong P fs≈gs) (fmor-cong Q fs≈gs)
+    fmor-cong (μ P)     fs≈gs = μh-fmor-cong P fs≈gs
+    fmor-cong (T∘_ P)   fs≈gs = Functor.fmor-cong T (fmor-cong P fs≈gs)
 
   record HasMu : Set (o ⊔ m) where
     field
