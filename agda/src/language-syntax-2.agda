@@ -37,22 +37,24 @@ TyRen Δ Δ' = Fin Δ → Fin Δ'
 TySub : TyCtxt → TyCtxt → Set ℓ
 TySub Δ Δ' = Fin Δ → type Δ'
 
-ren-ext : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → TyRen (suc Δ₁) (suc Δ₂)
-ren-ext ρ zero    = zero
-ren-ext ρ (suc i) = suc (ρ i)
+*ᵗ-ext : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → TyRen (suc Δ₁) (suc Δ₂)
+*ᵗ-ext ρ zero    = zero
+*ᵗ-ext ρ (suc i) = suc (ρ i)
 
-ren : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → type Δ₁ → type Δ₂
-ren ρ (var i)     = var (ρ i)
-ren ρ unit        = unit
-ren ρ (base s)    = base s
-ren ρ (τ₁ [+] τ₂) = ren ρ τ₁ [+] ren ρ τ₂
-ren ρ (τ₁ [×] τ₂) = ren ρ τ₁ [×] ren ρ τ₂
-ren ρ (τ₁ [→] τ₂) = τ₁ [→] τ₂
-ren ρ (μ τ)       = μ (ren (ren-ext ρ) τ)
+_*ᵗ_ : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → type Δ₁ → type Δ₂
+ρ *ᵗ var i       = var (ρ i)
+ρ *ᵗ unit        = unit
+ρ *ᵗ base s      = base s
+ρ *ᵗ (τ₁ [+] τ₂) = (ρ *ᵗ τ₁) [+] (ρ *ᵗ τ₂)
+ρ *ᵗ (τ₁ [×] τ₂) = (ρ *ᵗ τ₁) [×] (ρ *ᵗ τ₂)
+ρ *ᵗ (τ₁ [→] τ₂) = τ₁ [→] τ₂
+ρ *ᵗ μ τ         = μ (*ᵗ-ext ρ *ᵗ τ)
+
+infixr 50 _*ᵗ_
 
 sub-lift : ∀ {Δ₁ Δ₂} → TySub Δ₁ Δ₂ → TySub (suc Δ₁) (suc Δ₂)
 sub-lift σ zero    = var zero
-sub-lift σ (suc i) = ren suc (σ i)
+sub-lift σ (suc i) = suc *ᵗ σ i
 
 sub : ∀ {Δ₁ Δ₂} → TySub Δ₁ Δ₂ → type Δ₁ → type Δ₂
 sub σ (var i)     = σ i
@@ -83,21 +85,21 @@ sub-cong (μ τ)       σ≡σ' = cong μ (sub-cong τ lifted)
   where
     lifted : ∀ i → sub-lift _ i ≡ sub-lift _ i
     lifted zero    = refl
-    lifted (suc i) = cong (ren suc) (σ≡σ' i)
+    lifted (suc i) = cong (suc *ᵗ_) (σ≡σ' i)
 
-sub-ren-id : ∀ {Δ Δ'} (τ : type Δ) {f : TyRen Δ Δ'} {σ : TySub Δ' Δ} →
-             (∀ i → σ (f i) ≡ var i) → sub σ (ren f τ) ≡ τ
-sub-ren-id (var i)     p = p i
-sub-ren-id unit        p = refl
-sub-ren-id (base s)    p = refl
-sub-ren-id (τ₁ [+] τ₂) p = cong₂ _[+]_ (sub-ren-id τ₁ p) (sub-ren-id τ₂ p)
-sub-ren-id (τ₁ [×] τ₂) p = cong₂ _[×]_ (sub-ren-id τ₁ p) (sub-ren-id τ₂ p)
-sub-ren-id (τ₁ [→] τ₂) p = refl
-sub-ren-id (μ τ)       p = cong μ (sub-ren-id τ lifted)
+sub-ren-id : ∀ {Δ Δ'} (τ : type Δ) {ρ : TyRen Δ Δ'} {σ : TySub Δ' Δ} →
+             (∀ i → σ (ρ i) ≡ var i) → sub σ (ρ *ᵗ τ) ≡ τ
+sub-ren-id (var i)     σ∘ρ≡id = σ∘ρ≡id i
+sub-ren-id unit        _       = refl
+sub-ren-id (base s)    _       = refl
+sub-ren-id (τ₁ [+] τ₂) σ∘ρ≡id = cong₂ _[+]_ (sub-ren-id τ₁ σ∘ρ≡id) (sub-ren-id τ₂ σ∘ρ≡id)
+sub-ren-id (τ₁ [×] τ₂) σ∘ρ≡id = cong₂ _[×]_ (sub-ren-id τ₁ σ∘ρ≡id) (sub-ren-id τ₂ σ∘ρ≡id)
+sub-ren-id (τ₁ [→] τ₂) _       = refl
+sub-ren-id (μ τ)       σ∘ρ≡id = cong μ (sub-ren-id τ lifted)
   where
-    lifted : ∀ i → sub-lift _ (ren-ext _ i) ≡ var i
+    lifted : ∀ i → sub-lift _ (*ᵗ-ext _ i) ≡ var i
     lifted zero    = refl
-    lifted (suc i) rewrite p i = refl
+    lifted (suc i) rewrite σ∘ρ≡id i = refl
 
 data ctxt : Set ℓ where
   emp : ctxt
@@ -163,14 +165,14 @@ mutual
   ρ * bop ω ts     = bop ω (ρ ** ts)
   ρ * brel ω ts    = brel ω (ρ ** ts)
   ρ * roll t       = roll (ρ * t)
-  ρ * fold s t   = fold (ext ρ * s) (ρ * t)
+  ρ * fold s t     = fold (ext ρ * s) (ρ * t)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
   ρ ** []       = []
   ρ ** (t ∷ ts) = (ρ * t) ∷ (ρ ** ts)
 
 list : type 0 → type 0
-list τ = μ (unit [+] (ren (λ ()) τ [×] var zero))
+list τ = μ (unit [+] (((λ ()) *ᵗ τ) [×] var zero))
 
 nil : ∀ {Γ τ} → Γ ⊢ list τ
 nil = roll (inl unit)
@@ -180,7 +182,7 @@ cons {_} {τ} h t = roll (inr (pair (subst (λ t → _ ⊢ t) (sym (sub-ren-id �
 
 foldr : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
 foldr {Γ} {σ} {τ} nilCase consCase M =
-  fold {τ = unit [+] (ren (λ ()) σ [×] var zero)}
+  fold {τ = unit [+] (((λ ()) *ᵗ σ) [×] var zero)}
     (case (var zero)
           (weaken * (weaken * nilCase))
           (app (app (weaken * (weaken * (lam (lam consCase))))
@@ -189,7 +191,7 @@ foldr {Γ} {σ} {τ} nilCase consCase M =
     M
   where
     Γ-inr : ctxt
-    Γ-inr = Γ , (unit [+] (ren (λ ()) σ [×] var zero)) [ τ ] , sub (sub-head τ) (ren (λ ()) σ) [×] τ
+    Γ-inr = Γ , (unit [+] (((λ ()) *ᵗ σ) [×] var zero)) [ τ ] , ((λ ()) *ᵗ σ) [ τ ] [×] τ
 
 append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
 append xs ys = foldr ys (cons (var (succ zero)) (var zero)) xs
@@ -219,7 +221,7 @@ when M ； N = if M then N else nil
 record SynMonad : Set ℓ where
   field
     Mon     : ∀ {Δ} → type Δ → type Δ
-    Mon-ren : ∀ {Δ Δ'} (ρ : Fin Δ → Fin Δ') (τ : type Δ) → ren ρ (Mon τ) ≡ Mon (ren ρ τ)
+    Mon-ren : ∀ {Δ Δ'} (ρ : TyRen Δ Δ') (τ : type Δ) → (ρ *ᵗ Mon τ) ≡ Mon (ρ *ᵗ τ)
     Mon-sub : ∀ {Δ Δ'} (σ : Fin Δ → type Δ') (τ : type Δ) → sub σ (Mon τ) ≡ Mon (sub σ τ)
     pure    : ∀ {Γ τ} → Γ ⊢ τ [→] Mon τ
     bind    : ∀ {Γ σ τ} → Γ ⊢ Mon σ [→] (σ [→] Mon τ) [→] Mon τ
