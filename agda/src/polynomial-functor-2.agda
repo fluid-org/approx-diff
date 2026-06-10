@@ -309,16 +309,16 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                       ∘ Iso.fwd (unfold-iso (μ-obj P δ)) ∘ p₂)
                 ∘ pair p₁ ((Iso.bwd (unfold-iso (μ-obj P δ))
                             ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))) ∘ p₂)
-            ≈⟨ ≈-trans (assoc _ _ _) (∘-cong₂ (≈-trans (assoc _ _ _) (∘-cong₂ (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _)))))) ⟩
+            ≈⟨ assoc _ p₂ _ ⟩
               α Q δ' ∘ fmor Q (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)))
                      ∘ Iso.fwd (unfold-iso (μ-obj P δ))
-                     ∘ Iso.bwd (unfold-iso (μ-obj P δ))
-                     ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
-                     ∘ p₂
-            ≈⟨ {!!} ⟩
+                     ∘ (p₂ ∘ pair p₁ ((Iso.bwd (unfold-iso (μ-obj P δ))
+                                       ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))) ∘ p₂))
+            ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (pair-p₂ _ _))) ⟩
               α Q δ' ∘ fmor Q (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)))
-                     ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
-                     ∘ p₂
+                     ∘ Iso.fwd (unfold-iso (μ-obj P δ))
+                     ∘ ((Iso.bwd (unfold-iso (μ-obj P δ))
+                         ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))) ∘ p₂)
             ≈⟨ {!!} ⟩
               trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
             ∎
