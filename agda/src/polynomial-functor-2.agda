@@ -72,7 +72,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
            (step : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A))
            (h : prod Γ (μ-obj P δ) ⇒ A) → (h ∘co (α P δ ∘ p₂)) ≈ step (μ-obj P δ) h → h ≈ ⦅ step ⦆ᴹ
 
-  open HasTerminal 𝒞T using (witness; to-terminal)
+  open HasTerminal 𝒞T using (witness; to-terminal; to-terminal-unique)
 
   ⦅_⦆ᴹ-cong : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
               {step₁ step₂ : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)} →
@@ -206,6 +206,14 @@ record HasMu : Set (o ⊔ m ⊔ e) where
       iso .Iso.bwd = bwd
       iso .Iso.fwd∘bwd≈id = begin
           fwd ∘ bwd
+        ≈⟨ assoc _ _ _ ⟩
+          ⦅ step-fwd ⦆ᴹ ∘ (pair to-terminal (id _) ∘ bwd)
+        ≈⟨ ∘-cong ≈-refl (≈-sym (assoc _ _ _)) ⟩
+          ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal (id _) ∘ ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
+        ≈⟨ ∘-cong ≈-refl (∘-cong (pair-natural _ _ _) ≈-refl) ⟩
+          ⦅ step-fwd ⦆ᴹ ∘ ((pair (to-terminal ∘ ⦅ step-bwd ⦆ᴹ) (id _ ∘ ⦅ step-bwd ⦆ᴹ)) ∘ pair to-terminal (id _))
+        ≈⟨ ∘-cong ≈-refl (∘-cong (pair-cong (to-terminal-unique _ _) id-left) ≈-refl) ⟩
+          ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
         ≈⟨ {!!} ⟩
           id (μ-obj Q δ')
         ∎
