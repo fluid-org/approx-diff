@@ -316,6 +316,10 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                      ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
                      ∘ p₂
             ≈⟨ {!!} ⟩
+              α Q δ' ∘ fmor Q (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                     ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                     ∘ p₂
+            ≈⟨ {!!} ⟩
               trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
             ∎
             where open ≈-Reasoning isEquiv
