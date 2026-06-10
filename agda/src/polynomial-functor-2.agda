@@ -41,21 +41,26 @@ fobj μ-obj (P × Q)   δ = prod (fobj μ-obj P δ) (fobj μ-obj Q δ)
 fobj μ-obj (μ P)     δ = μ-obj P δ
 fobj μ-obj (T∘ P)    δ = Functor.fobj T (fobj μ-obj P δ)
 
-record HasMu : Set (o ⊔ m) where
-  -- Recursion needs to be "open" to avoid circularity with Poly's functor instance.
+-- Use a Mendler-style catamorphism (Mendler 1991, "Inductive types and type constraints
+-- in the second-order lambda calculus") whih abstracts over the recursive carrier, so β/η can be stated
+-- without reference to a functorial action; otherwise things get circular. Usual ⦅_⦆ is then derived.
+record HasMu : Set (o ⊔ m ⊔ e) where
   field
     μ-obj : ∀ {n} → Poly (suc n) → (Fin n → obj) → obj
-    α     : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) →
-            fobj μ-obj P (extend δ (μ-obj P δ)) ⇒ μ-obj P δ
-    mcata : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
-            (∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)) →
-            prod Γ (μ-obj P δ) ⇒ A
+    α     : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) → fobj μ-obj P (extend δ (μ-obj P δ)) ⇒ μ-obj P δ
+    ⦅_⦆ᴹ : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
+          (∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)) → prod Γ (μ-obj P δ) ⇒ A
+    ⦅⦆ᴹ-β : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
+           (step : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)) →
+           (⦅ step ⦆ᴹ ∘ pair p₁ (α P δ ∘ p₂)) ≈ step (μ-obj P δ) ⦅ step ⦆ᴹ
+    ⦅⦆ᴹ-η : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
+           (step : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A))
+           (h : prod Γ (μ-obj P δ) ⇒ A) → (h ∘ pair p₁ (α P δ ∘ p₂)) ≈ step (μ-obj P δ) h → h ≈ ⦅ step ⦆ᴹ
 
   open HasTerminal 𝒞T using (witness; to-terminal)
 
   extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
-               (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) →
-               ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
+               (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) → ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
   extend-mor fs x→y Fin.zero    = x→y
   extend-mor fs x→y (Fin.suc i) = fs i
 
@@ -72,7 +77,7 @@ record HasMu : Set (o ⊔ m) where
 
     strong-μ-fmor : ∀ {n Γ} (P : Poly (suc n)) {δ δ' : Fin n → obj} →
                     (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj P δ'
-    strong-μ-fmor P {δ} {δ'} fs = mcata step
+    strong-μ-fmor P {δ} {δ'} fs = ⦅ step ⦆ᴹ
       where
         step : ∀ X → (prod _ X ⇒ μ-obj P δ') → prod _ (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
         step X x→μ' = α P δ' ∘ strong-fmor P (extend-mor fs x→μ')
@@ -85,7 +90,7 @@ record HasMu : Set (o ⊔ m) where
 
   ⦅_⦆ : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
         (prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) → prod Γ (μ-obj P δ) ⇒ A
-  ⦅_⦆ {Γ = Γ} {A = A} {P = P} {δ = δ} alg = mcata step
+  ⦅_⦆ {Γ = Γ} {A = A} {P = P} {δ = δ} alg = ⦅ step ⦆ᴹ
     where
       step : ∀ X → (prod Γ X ⇒ A) → prod Γ (fobj μ-obj P (extend δ X)) ⇒ A
       step X x→A = alg ∘ pair p₁ (strong-fmor P (extend-mor (λ _ → p₂) x→A))
