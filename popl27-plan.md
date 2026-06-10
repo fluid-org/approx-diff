@@ -2,7 +2,7 @@
 
 ### §1.1
 
-- [ ] Currently we say "the forward analysis tells whether it's sufficient to compute the output". I think we can
+- [x] Currently we say "the forward analysis tells whether it's sufficient to compute the output". I think we can
   present that as one kind of forward analysis but also introduce the other intuition too: an alternative
   forward map can tell us whether an input is _necessary_ to compute some part of the output.
 
@@ -18,9 +18,9 @@
 - [ ] Perhaps reframe as an analogy between (Galois-slicing-style) _dependency analysis_ and AD, rather than
   Galois slicing per se; use the matrix intuition to lead into the analogy. For dependency analysis:
   - [ ] Every value has a lattice of approximations given by the powerset of the set of positions in the value
-  - [ ] Every program has a forward approximation map that preserves joins (not meets, at this stage) and also a
+  - [x] Every program has a forward approximation map that preserves joins (not meets, at this stage) and also a
   backwards map that also preserves joins.
-  - [ ] For dependency analysis, these forward and backward maps are related by forming a _conjugate pair_.
+  - [x] For dependency analysis, these forward and backward maps are related by forming a _conjugate pair_.
     Because powersets have negation, we can also frame this as a Galois connection.
 - [ ] After the bullet-list analogy, perhaps unpack the correspondence more precisely by outlining how both AD and
   this kind of dependency analysis can be understood in terms of linear maps (matrices), in one case between
