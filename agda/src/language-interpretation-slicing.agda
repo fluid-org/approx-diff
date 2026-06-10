@@ -8,7 +8,7 @@ open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasExponentials)
-open import functor using (Functor; StrongMonad)
+open import functor using (Functor; StrongFunctor)
 open import signature using (Signature)
 open import polynomial-functor-2 using (Poly; module Interp)
 import language-syntax-2
@@ -19,8 +19,8 @@ module language-interpretation-slicing
   (𝒞 : Category o m e)
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
-  (T  : StrongMonad 𝒞P)
-  (let open Interp {T = StrongMonad.F T} 𝒞T 𝒞P 𝒞SC)
+  (T  : StrongFunctor 𝒞P)
+  (let open Interp {T = StrongFunctor.F T} 𝒞T 𝒞P 𝒞SC)
   (Mu : HasMu)
   (⟦sort⟧ : Signature.sort Sig → Category.obj 𝒞)
   where
@@ -34,7 +34,7 @@ open language-syntax-2 Sig
 open HasMu Mu
 
 T-obj : obj → obj
-T-obj = Functor.fobj (StrongMonad.F T)
+T-obj = Functor.fobj (StrongFunctor.F T)
 
 mutual
   ⟦_⟧ty : ∀ {Δ} → type Δ → (Fin Δ → obj) → obj
@@ -46,7 +46,7 @@ mutual
   ⟦ σ [→] τ ⟧ty δ = T-obj (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
   ⟦ μ τ ⟧ty     δ = μ-obj (as-poly τ δ) (λ ())
 
-  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 (StrongMonad.F T) n
+  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 (StrongFunctor.F T) n
   as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
   as-poly unit       δ = Poly.T∘ Poly.const 𝟙
   as-poly (base s)   δ = Poly.T∘ Poly.const (⟦sort⟧ s)

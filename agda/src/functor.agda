@@ -231,47 +231,38 @@ module _ {o₁ m₁ e₁}
   Id .fmor-id = 𝒞.≈-refl
   Id .fmor-comp f g = 𝒞.≈-refl
 
-  -- Strong monad: a functor equipped with a unit and strength-aware Kleisli extension.
-  record IsStrongMonad (P : HasProducts 𝒞) (M : Category.obj 𝒞 → Category.obj 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
-    open Category 𝒞
-    open HasProducts P
-    field
-      unit   : ∀ {x} → x ⇒ M x
-      extend : ∀ {x y z} → prod x y ⇒ M z → prod x (M y) ⇒ M z
-    -- FIXME: equations
-
-  record StrongMonad (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
-    field
-      F           : Functor 𝒞 𝒞
-      isStrongMon : IsStrongMonad P (F .fobj)
-    open Functor F public
-    open IsStrongMonad isStrongMon public
-
-  -- Pointed strong endofunctor: F with unit and right-strength (+ naturality).
-  -- Strength threads a side context under F without losing F-structure.
-  record StrongPointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+  -- Strong endofunctor with right-strength + naturality.
+  record StrongFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
     open Category 𝒞
     open HasProducts P
     field
       F              : Functor 𝒞 𝒞
-      unit           : ∀ {x} → x ⇒ F .fobj x
       right-strength : ∀ {x y} → prod x (F .fobj y) ⇒ F .fobj (prod x y)
-      -- Naturality of right-strength in both arguments.
       right-strength-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ x₂) (g : y₁ ⇒ y₂) →
-        (F .Functor.fmor (prod-m f g) 𝒞.∘ right-strength) 𝒞.≈
-        (right-strength 𝒞.∘ prod-m f (F .Functor.fmor g))
+                               (F .Functor.fmor (prod-m f g) 𝒞.∘ right-strength) 𝒞.≈
+                               (right-strength 𝒞.∘ prod-m f (F .Functor.fmor g))
     open Functor F public
 
     -- Left-strength derived by swapping inputs/outputs around right-strength.
     strength : ∀ {x y} → prod (F .fobj x) y ⇒ F .fobj (prod x y)
     strength = F .Functor.fmor (pair p₂ p₁) 𝒞.∘ right-strength 𝒞.∘ pair p₂ p₁
 
-  StrongPointedFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongPointedFunctor P
-  StrongPointedFunctor-Id P .StrongPointedFunctor.F              = Id
-  StrongPointedFunctor-Id P .StrongPointedFunctor.unit {x}       = 𝒞.id x
-  StrongPointedFunctor-Id P .StrongPointedFunctor.right-strength = 𝒞.id _
-  StrongPointedFunctor-Id P .StrongPointedFunctor.right-strength-natural f g =
+  -- Strong endofunctor with a unit.
+  record StrongPointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+    field
+      strongFunctor : StrongFunctor P
+      unit          : ∀ {x} → Category._⇒_ 𝒞 x (StrongFunctor.F strongFunctor .Functor.fobj x)
+    open StrongFunctor strongFunctor public
+
+  StrongFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongFunctor P
+  StrongFunctor-Id P .StrongFunctor.F              = Id
+  StrongFunctor-Id P .StrongFunctor.right-strength = 𝒞.id _
+  StrongFunctor-Id P .StrongFunctor.right-strength-natural f g =
     𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
+
+  StrongPointedFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongPointedFunctor P
+  StrongPointedFunctor-Id P .StrongPointedFunctor.strongFunctor = StrongFunctor-Id P
+  StrongPointedFunctor-Id P .StrongPointedFunctor.unit {x}      = 𝒞.id x
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}

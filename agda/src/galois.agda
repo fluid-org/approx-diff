@@ -23,7 +23,7 @@ open import join-semilattice
             _⊕_ to _⊕J_;
             ≃m-isEquivalence to ≃J-isEquivalence)
 open import cmon-enriched
-open import functor using (Functor; StrongPointedFunctor)
+open import functor using (Functor; StrongFunctor; StrongPointedFunctor)
 
 -- Category LatGal of bounded lattices and Galois connections between them.
 record Obj : Set (suc 0ℓ) where
@@ -342,24 +342,24 @@ module _ where
   𝕃-functor .Functor.fmor-comp {X} {Y} {Z} f g .left-eq .eqfun < z > = X .carrier .Preorder.≃-refl
 
   strongPointedFunctor : StrongPointedFunctor products
-  strongPointedFunctor .StrongPointedFunctor.F              = 𝕃-functor
+  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.F              = 𝕃-functor
   strongPointedFunctor .StrongPointedFunctor.unit           = 𝕃-unit
-  strongPointedFunctor .StrongPointedFunctor.right-strength = 𝕃-strength
-  strongPointedFunctor .StrongPointedFunctor.right-strength-natural f g ._≃g_.right-eq =
+  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength = 𝕃-strength
+  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural f g ._≃g_.right-eq =
     meet-semilattice.L-strength-natural (_⇒g_.right-∧ f) (_⇒g_.right-∧ g)
       .meet-semilattice._≃m_.eqfunc
-  strongPointedFunctor .StrongPointedFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
+  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
     ._≃g_.left-eq .eqfun bottom .proj₁ =
       x₁ .joins .JoinSemilattice.∨-isJoin .IsJoin.inr , tt
-  strongPointedFunctor .StrongPointedFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
+  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
     ._≃g_.left-eq .eqfun bottom .proj₂ =
       x₁ .joins .JoinSemilattice.∨-isJoin .IsJoin.[_,_]
         (_⇒g_.left-∨ f .join-semilattice._=>_.⊥-preserving)
         (x₁ .carrier .Preorder.≤-refl) , tt
-  strongPointedFunctor .StrongPointedFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
+  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
     ._≃g_.left-eq .eqfun < (a , b) > .proj₁ =
       x₁ .carrier .Preorder.≤-refl , y₁ .joins .JoinSemilattice.∨-lunit .proj₁
-  strongPointedFunctor .StrongPointedFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
+  strongPointedFunctor .StrongPointedFunctor.strongFunctor .StrongFunctor.right-strength-natural {x₁} {x₂} {y₁} {y₂} f g
     ._≃g_.left-eq .eqfun < (a , b) > .proj₂ =
       x₁ .carrier .Preorder.≤-refl , y₁ .joins .JoinSemilattice.∨-lunit .proj₂
 
