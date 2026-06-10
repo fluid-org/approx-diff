@@ -64,7 +64,7 @@ sub-as-apply (base s)       _  = Iso-refl
 sub-as-apply (σ [+] τ)      τ' = coproduct-preserve-iso (sub-as-apply σ τ') (sub-as-apply τ τ')
 sub-as-apply (σ [×] τ)      τ' = product-preserves-iso  (sub-as-apply σ τ') (sub-as-apply τ τ')
 sub-as-apply (σ [→] τ)      _  = Iso-refl
-sub-as-apply (μ τ)          τ' = {!!}  -- nested μ: requires β/η from HasMu
+sub-as-apply (μ τ)          τ' = {!!}
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙

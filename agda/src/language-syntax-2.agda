@@ -16,10 +16,10 @@ module language-syntax-2 {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig
 
-KCtx : Set
-KCtx = ℕ
+TyCtxt : Set
+TyCtxt = ℕ
 
-data type : KCtx → Set ℓ where
+data type : TyCtxt → Set ℓ where
   var   : ∀ {Δ} → Fin Δ → type Δ
   unit  : ∀ {Δ} → type Δ
   base  : ∀ {Δ} → sort → type Δ
@@ -31,11 +31,17 @@ data type : KCtx → Set ℓ where
 infixl 40 _[×]_ _[+]_
 infixr 35 _[→]_
 
-ren-ext : ∀ {Δ₁ Δ₂} → (Fin Δ₁ → Fin Δ₂) → Fin (suc Δ₁) → Fin (suc Δ₂)
+TyRen : TyCtxt → TyCtxt → Set
+TyRen Δ Δ' = Fin Δ → Fin Δ'
+
+TySub : TyCtxt → TyCtxt → Set ℓ
+TySub Δ Δ' = Fin Δ → type Δ'
+
+ren-ext : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → TyRen (suc Δ₁) (suc Δ₂)
 ren-ext ρ zero    = zero
 ren-ext ρ (suc i) = suc (ρ i)
 
-ren : ∀ {Δ₁ Δ₂} → (Fin Δ₁ → Fin Δ₂) → type Δ₁ → type Δ₂
+ren : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → type Δ₁ → type Δ₂
 ren ρ (var i)     = var (ρ i)
 ren ρ unit        = unit
 ren ρ (base s)    = base s
@@ -44,11 +50,11 @@ ren ρ (τ₁ [×] τ₂) = ren ρ τ₁ [×] ren ρ τ₂
 ren ρ (τ₁ [→] τ₂) = τ₁ [→] τ₂
 ren ρ (μ τ)       = μ (ren (ren-ext ρ) τ)
 
-sub-lift : ∀ {Δ₁ Δ₂} → (Fin Δ₁ → type Δ₂) → Fin (suc Δ₁) → type (suc Δ₂)
+sub-lift : ∀ {Δ₁ Δ₂} → TySub Δ₁ Δ₂ → TySub (suc Δ₁) (suc Δ₂)
 sub-lift σ zero    = var zero
 sub-lift σ (suc i) = ren suc (σ i)
 
-sub : ∀ {Δ₁ Δ₂} → (Fin Δ₁ → type Δ₂) → type Δ₁ → type Δ₂
+sub : ∀ {Δ₁ Δ₂} → TySub Δ₁ Δ₂ → type Δ₁ → type Δ₂
 sub σ (var i)     = σ i
 sub σ unit        = unit
 sub σ (base s)    = base s
@@ -57,32 +63,30 @@ sub σ (τ₁ [×] τ₂) = sub σ τ₁ [×] sub σ τ₂
 sub σ (τ₁ [→] τ₂) = τ₁ [→] τ₂
 sub σ (μ τ)       = μ (sub (sub-lift σ) τ)
 
-sub-head : ∀ {Δ} → type Δ → Fin (suc Δ) → type Δ
-sub-head σ zero    = σ
-sub-head σ (suc i) = var i
+sub-head : ∀ {Δ} → type Δ → TySub (suc Δ) Δ
+sub-head τ zero    = τ
+sub-head τ (suc i) = var i
 
 _[_] : ∀ {Δ} → type (suc Δ) → type Δ → type Δ
-τ [ σ ] = sub (sub-head σ) τ
+τ [ τ' ] = sub (sub-head τ') τ
 
 infix 50 _[_]
 
-sub-cong : ∀ {Δ Δ'} {σ σ' : Fin Δ → type Δ'} (τ : type Δ)
-         → (∀ i → σ i ≡ σ' i) → sub σ τ ≡ sub σ' τ
-sub-cong (var i)     p = p i
-sub-cong unit        p = refl
-sub-cong (base s)    p = refl
-sub-cong (τ₁ [+] τ₂) p = cong₂ _[+]_ (sub-cong τ₁ p) (sub-cong τ₂ p)
-sub-cong (τ₁ [×] τ₂) p = cong₂ _[×]_ (sub-cong τ₁ p) (sub-cong τ₂ p)
-sub-cong (τ₁ [→] τ₂) p = refl
-sub-cong (μ τ)       p = cong μ (sub-cong τ lifted)
+sub-cong : ∀ {Δ Δ'} {σ σ' : TySub Δ Δ'} (τ : type Δ) → (∀ i → σ i ≡ σ' i) → sub σ τ ≡ sub σ' τ
+sub-cong (var i)     σ≡σ' = σ≡σ' i
+sub-cong unit        _    = refl
+sub-cong (base s)    _    = refl
+sub-cong (τ₁ [+] τ₂) σ≡σ' = cong₂ _[+]_ (sub-cong τ₁ σ≡σ') (sub-cong τ₂ σ≡σ')
+sub-cong (τ₁ [×] τ₂) σ≡σ' = cong₂ _[×]_ (sub-cong τ₁ σ≡σ') (sub-cong τ₂ σ≡σ')
+sub-cong (τ₁ [→] τ₂) _ = refl
+sub-cong (μ τ)       σ≡σ' = cong μ (sub-cong τ lifted)
   where
     lifted : ∀ i → sub-lift _ i ≡ sub-lift _ i
     lifted zero    = refl
-    lifted (suc i) = cong (ren suc) (p i)
+    lifted (suc i) = cong (ren suc) (σ≡σ' i)
 
-sub-ren-id : ∀ {Δ Δ'} (τ : type Δ) {f : Fin Δ → Fin Δ'} {σ : Fin Δ' → type Δ}
-             → (∀ i → σ (f i) ≡ var i)
-             → sub σ (ren f τ) ≡ τ
+sub-ren-id : ∀ {Δ Δ'} (τ : type Δ) {f : TyRen Δ Δ'} {σ : TySub Δ' Δ} →
+             (∀ i → σ (f i) ≡ var i) → sub σ (ren f τ) ≡ τ
 sub-ren-id (var i)     p = p i
 sub-ren-id unit        p = refl
 sub-ren-id (base s)    p = refl
