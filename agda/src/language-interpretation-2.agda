@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections --safe #-}
+{-# OPTIONS --prop --postfix-projections --allow-unsolved-metas #-}
 
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)

@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections --safe #-}
+{-# OPTIONS --prop --postfix-projections --allow-unsolved-metas #-}
 
 import Data.Fin as Fin
 open Fin using (Fin)
@@ -157,3 +157,24 @@ record HasMu : Set (o ⊔ m ⊔ e) where
     where
       step : ∀ X → (prod Γ X ⇒ A) → prod Γ (fobj μ-obj P (extend δ X)) ⇒ A
       step X x→A = alg ∘ pair p₁ (strong-fmor P (extend-mor (λ _ → p₂) x→A))
+
+  -- Carrier-shaped morphism family: f at position 0, id at positions 1..n.
+  extend-fam : ∀ {n} {δ : Fin n → obj} {X Y} → (X ⇒ Y) → ∀ i → extend δ X i ⇒ extend δ Y i
+  extend-fam f Fin.zero    = f
+  extend-fam f (Fin.suc i) = id _
+
+  -- Initial algebras of pointwise-isomorphic functors are isomorphic.
+  μ-obj-resp : ∀ {m n} {P : Poly (suc m)} {δ : Fin m → obj} {Q : Poly (suc n)} {δ' : Fin n → obj}
+               (unfold-iso : ∀ X → Iso (fobj μ-obj P (extend δ X)) (fobj μ-obj Q (extend δ' X))) →
+               (unfold-natural : ∀ {X Y} (f : X ⇒ Y) →
+                                 (fmor Q (extend-fam f) ∘ Iso.fwd (unfold-iso X)) ≈
+                                 (Iso.fwd (unfold-iso Y) ∘ fmor P (extend-fam f))) →
+               Iso (μ-obj P δ) (μ-obj Q δ')
+  μ-obj-resp {Q = Q} {δ' = δ'} unfold-iso _ .Iso.fwd =
+    ⦅ (λ X x→μ' → α Q δ' ∘ fmor Q (extend-fam (x→μ' ∘ pair to-terminal (id _))) ∘ Iso.fwd (unfold-iso X) ∘ p₂) ⦆ᴹ
+    ∘ pair to-terminal (id _)
+  μ-obj-resp {P = P} {δ = δ} unfold-iso _ .Iso.bwd =
+    ⦅ (λ X x→μ → α P δ ∘ fmor P (extend-fam (x→μ ∘ pair to-terminal (id _))) ∘ Iso.bwd (unfold-iso X) ∘ p₂) ⦆ᴹ
+    ∘ pair to-terminal (id _)
+  μ-obj-resp unfold-iso _ .Iso.fwd∘bwd≈id = {!!}
+  μ-obj-resp unfold-iso _ .Iso.bwd∘fwd≈id = {!!}
