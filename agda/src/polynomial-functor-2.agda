@@ -37,7 +37,7 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
   fobj μh (μ P)     δ = μh P δ
   fobj μh (T∘_ P)   δ = Functor.fobj T (fobj μh P δ)
 
-  module Algebra
+  module Functorial
     (μh           : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
     (μh-fmor      : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj} →
                     (∀ i → δ i ⇒ δ' i) → μh P δ ⇒ μh P δ')
