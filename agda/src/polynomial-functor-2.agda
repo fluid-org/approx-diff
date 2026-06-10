@@ -19,7 +19,7 @@ open Category 𝒞
 open HasProducts 𝒞P
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
 open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair; copair-cong to scopair-cong)
-open StrongFunctor T-strong using (right-strength) renaming (F to T)
+open StrongFunctor T-strong using (right-strength; right-strength-p₂; right-strength-natural) renaming (F to T)
 
 data Poly (n : ℕ) : Set o where
   const : obj → Poly n
@@ -101,10 +101,10 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                        (∀ i → fs i ≈ gs i) → strong-fmor P fs ≈ strong-fmor P gs
     strong-fmor-cong (const A) fs≈gs = ≈-refl
     strong-fmor-cong (var i)   fs≈gs = fs≈gs i
-    strong-fmor-cong (P + Q)   fs≈gs = scopair-cong (∘-cong ≈-refl (strong-fmor-cong P fs≈gs))
-                                                    (∘-cong ≈-refl (strong-fmor-cong Q fs≈gs))
-    strong-fmor-cong (P × Q)   fs≈gs = pair-cong (∘-cong (strong-fmor-cong P fs≈gs) ≈-refl)
-                                                 (∘-cong (strong-fmor-cong Q fs≈gs) ≈-refl)
+    strong-fmor-cong (P + Q)   fs≈gs =
+      scopair-cong (∘-cong ≈-refl (strong-fmor-cong P fs≈gs)) (∘-cong ≈-refl (strong-fmor-cong Q fs≈gs))
+    strong-fmor-cong (P × Q)   fs≈gs =
+      pair-cong (∘-cong (strong-fmor-cong P fs≈gs) ≈-refl) (∘-cong (strong-fmor-cong Q fs≈gs) ≈-refl)
     strong-fmor-cong (μ P)     fs≈gs = strong-μ-fmor-cong P fs≈gs
     strong-fmor-cong (T∘ P)    fs≈gs = ∘-cong (Functor.fmor-cong T (strong-fmor-cong P fs≈gs)) ≈-refl
 
@@ -113,6 +113,37 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                          (∀ i → fs i ≈ gs i) → strong-μ-fmor P fs ≈ strong-μ-fmor P gs
     strong-μ-fmor-cong P {δ} {δ'} fs≈gs = ⦅_⦆ᴹ-cong λ X x→μ' →
       ∘-cong ≈-refl (strong-fmor-cong P (extend-mor-cong fs≈gs))
+
+  scopair-p₂ : ∀ {Γ x y} → scopair (in₁ ∘ p₂ {Γ} {x}) (in₂ ∘ p₂ {Γ} {y}) ≈ p₂
+  scopair-p₂ =
+    ≈-trans (scopair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
+            (HasStrongCoproducts.copair-ext 𝒞SCP p₂)
+
+  extend-mor-p₂ : ∀ {n Γ} {δ : Fin n → obj} {X} →
+                  ∀ i → extend-mor {δ = δ} {δ' = δ} (λ _ → p₂) (p₂ {Γ} {X}) i ≈ p₂
+  extend-mor-p₂ Fin.zero    = ≈-refl
+  extend-mor-p₂ (Fin.suc i) = ≈-refl
+
+  mutual
+    strong-fmor-id : ∀ {n Γ} (P : Poly n) {δ : Fin n → obj} →
+                     strong-fmor {Γ = Γ} P {δ = δ} {δ' = δ} (λ _ → p₂) ≈ p₂
+    strong-fmor-id (const A) = ≈-refl
+    strong-fmor-id (var i) = ≈-refl
+    strong-fmor-id (P + Q) =
+      ≈-trans (scopair-cong (∘-cong ≈-refl (strong-fmor-id P)) (∘-cong ≈-refl (strong-fmor-id Q))) scopair-p₂
+    strong-fmor-id (P × Q) =
+      ≈-trans (pair-cong (∘-cong (strong-fmor-id P) ≈-refl) (∘-cong (strong-fmor-id Q) ≈-refl))
+              (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext _))
+    strong-fmor-id (μ P) = strong-μ-fmor-id P
+    strong-fmor-id (T∘ P) =
+      ≈-trans (∘-cong (Functor.fmor-cong T (strong-fmor-id P)) ≈-refl) right-strength-p₂
+
+    strong-μ-fmor-id : ∀ {n Γ} (P : Poly (suc n)) {δ : Fin n → obj} →
+                       strong-μ-fmor {Γ = Γ} P {δ = δ} {δ' = δ} (λ _ → p₂) ≈ p₂
+    strong-μ-fmor-id P {δ} =
+      ≈-sym (⦅⦆ᴹ-η _ p₂
+        (≈-trans (pair-p₂ _ _)
+                 (≈-sym (∘-cong ≈-refl (≈-trans (strong-fmor-cong P extend-mor-p₂) (strong-fmor-id P))))))
 
   fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
   fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
