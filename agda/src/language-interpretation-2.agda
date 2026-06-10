@@ -4,7 +4,6 @@ import Data.Fin as Fin
 open Fin using (Fin; splitAt)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Sum using ([_,_])
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; subst)
 open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
@@ -30,7 +29,7 @@ module language-interpretation-2
 open Category 𝒞
 open HasTerminal 𝒞T renaming (witness to 𝟙)
 open HasProducts 𝒞P renaming (pair to ⟨_,_⟩)
-open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
+open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC) using (coprod; in₁; in₂; coproduct-preserve-iso)
 open HasStrongCoproducts 𝒞SC using () renaming (copair to scopair)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax-2 Sig
@@ -56,16 +55,16 @@ mutual
   as-poly (σ [→] τ)       δ = Poly.const (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
 
--- Syntactic substitution is functor application.
+-- Syntactic substitution is functor application (up to isomorphism).
 sub-as-apply : (τ : type 1) (τ' : type 0) →
-               ⟦ τ [ τ' ] ⟧ty (λ ()) ≡ fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ())))
-sub-as-apply (var Fin.zero) _  = refl
-sub-as-apply unit           _  = refl
-sub-as-apply (base s)       _  = refl
-sub-as-apply (σ [+] τ)      τ' = cong₂ coprod (sub-as-apply σ τ') (sub-as-apply τ τ')
-sub-as-apply (σ [×] τ)      τ' = cong₂ prod   (sub-as-apply σ τ') (sub-as-apply τ τ')
-sub-as-apply (σ [→] τ)      _  = refl
-sub-as-apply (μ τ)          τ' = {!!}  -- nested μ: as-poly vs substitution-under-binder
+               Iso (⟦ τ [ τ' ] ⟧ty (λ ())) (fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))))
+sub-as-apply (var Fin.zero) _  = Iso-refl
+sub-as-apply unit           _  = Iso-refl
+sub-as-apply (base s)       _  = Iso-refl
+sub-as-apply (σ [+] τ)      τ' = coproduct-preserve-iso (sub-as-apply σ τ') (sub-as-apply τ τ')
+sub-as-apply (σ [×] τ)      τ' = product-preserves-iso  (sub-as-apply σ τ') (sub-as-apply τ τ')
+sub-as-apply (σ [→] τ)      _  = Iso-refl
+sub-as-apply (μ τ)          τ' = {!!}  -- nested μ: requires β/η from HasMu
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
@@ -92,10 +91,10 @@ mutual
   ⟦ app M N ⟧tm      = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm     = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel r Ms ⟧tm    = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
-  ⟦ roll {Γ = Γ} {τ = τ} M ⟧tm =
-    inF (as-poly τ (λ ())) (λ ()) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (sub-as-apply τ (μ τ)) ⟦ M ⟧tm
-  ⟦ fold {Γ = Γ} {τ = τ} {σ = σ} alg M ⟧tm =
-    ⦅ subst (λ A → prod ⟦ Γ ⟧ctxt A ⇒ ⟦ σ ⟧ty (λ ())) (sub-as-apply τ σ) ⟦ alg ⟧tm ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ roll {τ = τ} M ⟧tm =
+    inF (as-poly τ (λ ())) (λ ()) ∘ Iso.fwd (sub-as-apply τ (μ τ)) ∘ ⟦ M ⟧tm
+  ⟦ fold {τ = τ} {σ = σ} alg M ⟧tm =
+    ⦅ ⟦ alg ⟧tm ∘ prod-m (id _) (Iso.bwd (sub-as-apply τ σ)) ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms     = to-terminal
