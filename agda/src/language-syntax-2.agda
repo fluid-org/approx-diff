@@ -37,9 +37,9 @@ TyRen Δ Δ' = Fin Δ → Fin Δ'
 TySub : TyCtxt → TyCtxt → Set ℓ
 TySub Δ Δ' = Fin Δ → type Δ'
 
-*ᵗ-ext : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → TyRen (suc Δ₁) (suc Δ₂)
-*ᵗ-ext ρ zero    = zero
-*ᵗ-ext ρ (suc i) = suc (ρ i)
+extᵗ : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → TyRen (suc Δ₁) (suc Δ₂)
+extᵗ ρ zero    = zero
+extᵗ ρ (suc i) = suc (ρ i)
 
 _*ᵗ_ : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → type Δ₁ → type Δ₂
 ρ *ᵗ var i       = var (ρ i)
@@ -48,7 +48,7 @@ _*ᵗ_ : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → type Δ₁ → type Δ₂
 ρ *ᵗ (τ₁ [+] τ₂) = (ρ *ᵗ τ₁) [+] (ρ *ᵗ τ₂)
 ρ *ᵗ (τ₁ [×] τ₂) = (ρ *ᵗ τ₁) [×] (ρ *ᵗ τ₂)
 ρ *ᵗ (τ₁ [→] τ₂) = τ₁ [→] τ₂
-ρ *ᵗ μ τ         = μ (*ᵗ-ext ρ *ᵗ τ)
+ρ *ᵗ μ τ         = μ (extᵗ ρ *ᵗ τ)
 
 infixr 50 _*ᵗ_
 
@@ -97,7 +97,7 @@ sub-ren-id (τ₁ [×] τ₂) σ∘ρ≡id = cong₂ _[×]_ (sub-ren-id τ₁ σ
 sub-ren-id (τ₁ [→] τ₂) _       = refl
 sub-ren-id (μ τ)       σ∘ρ≡id = cong μ (sub-ren-id τ lifted)
   where
-    lifted : ∀ i → sub-lift _ (*ᵗ-ext _ i) ≡ var i
+    lifted : ∀ i → sub-lift _ (extᵗ _ i) ≡ var i
     lifted zero    = refl
     lifted (suc i) rewrite σ∘ρ≡id i = refl
 
