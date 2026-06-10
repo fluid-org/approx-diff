@@ -23,11 +23,11 @@
 % Attribute inline edits with the optional id, e.g. \added[id=roly]{...}, \deleted[id=bob]{...}.
 \definechangesauthor[name=Bob, color=purple]{bob}
 \definechangesauthor[name=Roly, color=red]{roly}
-% Combined helpers: inline markup + a margin changebar. Use the bare \added/\deleted/\replaced
+% Capitalised = inline markup + a margin changebar. Use the lowercase \added/\deleted/\replaced
 % (no bar) inside figures or math, where changebar spans can misbehave.
-\newcommand{\ins}[1]{\protect\cbstart\added{#1}\protect\cbend}
-\newcommand{\del}[1]{\protect\cbstart\deleted{#1}\protect\cbend}
-\newcommand{\repl}[2]{\protect\cbstart\replaced{#1}{#2}\protect\cbend}
+\newcommand{\Added}[1]{\protect\cbstart\added{#1}\protect\cbend}
+\newcommand{\Deleted}[1]{\protect\cbstart\deleted{#1}\protect\cbend}
+\newcommand{\Replaced}[2]{\protect\cbstart\replaced{#1}{#2}\protect\cbend}
 
 \newenvironment{salign*}
    {\par\nobreak\small\noindent\csname align*\endcsname}

@@ -8,8 +8,14 @@
 \usepackage{subcaption}
 \usepackage{tikz-cd}
 \usepackage{xspace}
-\usepackage[commandnameprefix=ifneeded,commentmarkup=footnote]{changes}  % \added \deleted \replaced for coauthor review; pass final to render clean version
+% \finalmode (set by main-final.tex) renders the clean version: deletions dropped, no margin bars.
+\ifdefined\finalmode
+  \usepackage[final,commandnameprefix=ifneeded,commentmarkup=footnote]{changes}
+\else
+  \usepackage[commandnameprefix=ifneeded,commentmarkup=footnote]{changes}
+\fi
 \usepackage{changebar}    % margin bars marking changed regions
+\ifdefined\finalmode\nochangebars\fi
 
 %\geometry{paperwidth=8.3in, paperheight=11.7in} % force to A4 for now
 \settopmatter{printacmref=false}
@@ -20,7 +26,7 @@
 
 \begin{document}
 
-\title{Galois Slicing as Automatic Differentiation}
+\title{\Replaced{Data Provenance as}{Galois Slicing as} Automatic Differentiation}
 
 \author{Robert Atkey}
 \email{robert.atkey@strath.ac.uk}

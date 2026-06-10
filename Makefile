@@ -1,8 +1,9 @@
-.PHONY: main notes clean # otherwise confused by folders with the same name
+.PHONY: main final notes clean # otherwise confused by folders with the same name
 
 default: main
 
 main: main.pdf
+final: main-final.pdf
 notes: notes.pdf
 
 # -out2dir unsupported on default Mac installation
@@ -18,6 +19,13 @@ main.pdf: main.tex $(MAIN_DEPS)
 	cp _latex/main.pdf .
 	@! grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/main.log
 
+main-final.pdf: main-final.tex main.tex $(MAIN_DEPS)
+	latexmk $(LATEXMK_OPTS) main-final
+	cd _latex && bibtex main-final
+	latexmk $(LATEXMK_OPTS) -g main-final
+	cp _latex/main-final.pdf .
+	@! grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/main-final.log
+
 NOTES_DEPS:=$(wildcard notes/*.tex) $(wildcard fig/*.tex) macros.tex bib.bib
 
 notes.pdf: notes.tex $(NOTES_DEPS)
@@ -30,4 +38,5 @@ notes.pdf: notes.tex $(NOTES_DEPS)
 clean:
 	rm -rf _latex
 	rm -f main.pdf
+	rm -f main-final.pdf
 	rm -f notes.pdf
