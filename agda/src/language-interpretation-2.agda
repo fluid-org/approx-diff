@@ -48,12 +48,12 @@ mutual
 
   build-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 Id n
   build-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
-  build-poly unit         δ = Poly.const 𝟙
-  build-poly (base s)     δ = Poly.const (⟦sort⟧ s)
-  build-poly (τ₁ [+] τ₂)  δ = build-poly τ₁ δ Poly.+ build-poly τ₂ δ
-  build-poly (τ₁ [×] τ₂)  δ = build-poly τ₁ δ Poly.× build-poly τ₂ δ
-  build-poly (τ₁ [→] τ₂)  δ = Poly.const (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
-  build-poly (μ τ)        δ = Poly.μ (build-poly τ δ)
+  build-poly unit            δ = Poly.const 𝟙
+  build-poly (base s)        δ = Poly.const (⟦sort⟧ s)
+  build-poly (τ₁ [+] τ₂)     δ = build-poly τ₁ δ Poly.+ build-poly τ₂ δ
+  build-poly (τ₁ [×] τ₂)     δ = build-poly τ₁ δ Poly.× build-poly τ₂ δ
+  build-poly (τ₁ [→] τ₂)     δ = Poly.const (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
+  build-poly (μ τ)           δ = Poly.μ (build-poly τ δ)
 
 -- Syntactic subsitution is the same as
 build-eq : (τ : type 1) (σ : type 0) →

@@ -38,19 +38,19 @@ T-obj = Functor.fobj (StrongMonad.F T)
 
 mutual
   ⟦_⟧ty : ∀ {Δ} → type Δ → (Fin Δ → obj) → obj
-  ⟦ var i ⟧ty     val = val i
-  ⟦ unit ⟧ty      val = T-obj 𝟙
-  ⟦ base s ⟧ty    val = T-obj (⟦sort⟧ s)
-  ⟦ τ₁ [+] τ₂ ⟧ty val = T-obj (coprod (⟦ τ₁ ⟧ty val) (⟦ τ₂ ⟧ty val))
-  ⟦ τ₁ [×] τ₂ ⟧ty val = T-obj (prod   (⟦ τ₁ ⟧ty val) (⟦ τ₂ ⟧ty val))
-  ⟦ τ₁ [→] τ₂ ⟧ty val = T-obj (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
-  ⟦ μ τ ⟧ty       val = μ-obj (build-poly τ val) (λ ())
+  ⟦ var i ⟧ty     δ = δ i
+  ⟦ unit ⟧ty      δ = T-obj 𝟙
+  ⟦ base s ⟧ty    δ = T-obj (⟦sort⟧ s)
+  ⟦ τ₁ [+] τ₂ ⟧ty δ = T-obj (coprod (⟦ τ₁ ⟧ty δ) (⟦ τ₂ ⟧ty δ))
+  ⟦ τ₁ [×] τ₂ ⟧ty δ = T-obj (prod   (⟦ τ₁ ⟧ty δ) (⟦ τ₂ ⟧ty δ))
+  ⟦ τ₁ [→] τ₂ ⟧ty δ = T-obj (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
+  ⟦ μ τ ⟧ty       δ = μ-obj (build-poly τ δ) (λ ())
 
   build-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 (StrongMonad.F T) n
-  build-poly {Δ} {n} (var i) val = [ Poly.var , (λ j → Poly.const (val j)) ] (splitAt n i)
-  build-poly unit         val = Poly.T∘ Poly.const 𝟙
-  build-poly (base s)     val = Poly.T∘ Poly.const (⟦sort⟧ s)
-  build-poly (τ₁ [+] τ₂)  val = Poly.T∘ (build-poly τ₁ val Poly.+ build-poly τ₂ val)
-  build-poly (τ₁ [×] τ₂)  val = Poly.T∘ (build-poly τ₁ val Poly.× build-poly τ₂ val)
-  build-poly (τ₁ [→] τ₂)  val = Poly.T∘ Poly.const (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
-  build-poly (μ τ)        val = Poly.μ (build-poly τ val)
+  build-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
+  build-poly unit         δ = Poly.T∘ Poly.const 𝟙
+  build-poly (base s)     δ = Poly.T∘ Poly.const (⟦sort⟧ s)
+  build-poly (τ₁ [+] τ₂)  δ = Poly.T∘ (build-poly τ₁ δ Poly.+ build-poly τ₂ δ)
+  build-poly (τ₁ [×] τ₂)  δ = Poly.T∘ (build-poly τ₁ δ Poly.× build-poly τ₂ δ)
+  build-poly (τ₁ [→] τ₂)  δ = Poly.T∘ Poly.const (⟦ τ₁ ⟧ty (λ ()) ⟹ ⟦ τ₂ ⟧ty (λ ()))
+  build-poly (μ τ)        δ = Poly.μ (build-poly τ δ)
