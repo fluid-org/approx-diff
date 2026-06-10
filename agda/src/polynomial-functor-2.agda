@@ -110,3 +110,29 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
       mcata : ∀ {n Γ A} {P : Poly 𝒞 T (suc n)} {δ : Fin n → obj} →
               (∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)) →
               prod Γ (μ-obj P δ) ⇒ A
+
+  module Derived (Mu : HasMu) where
+    open HasMu Mu
+    open HasTerminal 𝒞T using (witness; to-terminal)
+
+    extend-mor : ∀ {n} {δ δ' : Fin n → obj} {X Y} →
+                 (∀ i → δ i ⇒ δ' i) → (X ⇒ Y) → ∀ i → extend δ X i ⇒ extend δ' Y i
+    extend-mor fs x→y Fin.zero    = x→y
+    extend-mor fs x→y (Fin.suc i) = fs i
+
+    mutual
+      fmor : ∀ {n} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} →
+             (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
+      fmor (const A) fs = id A
+      fmor (var i)   fs = fs i
+      fmor (P + Q)   fs = coprod-m (fmor P fs) (fmor Q fs)
+      fmor (P × Q)   fs = prod-m   (fmor P fs) (fmor Q fs)
+      fmor (μ P)     fs = μ-fmor P fs
+      fmor (T∘ P)    fs = Functor.fmor T (fmor P fs)
+
+      μ-fmor : ∀ {n} (P : Poly 𝒞 T (suc n)) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ'
+      μ-fmor P {δ} {δ'} fs =
+        mcata {Γ = witness} step ∘ pair to-terminal (id _)
+        where
+          step : ∀ X → (prod witness X ⇒ μ-obj P δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
+          step X x→A = inF P δ' ∘ fmor P (extend-mor fs (x→A ∘ pair to-terminal (id _))) ∘ p₂
