@@ -187,13 +187,11 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                Iso (μ-obj P δ) (μ-obj Q δ')
   μ-obj-resp {P = P} {δ = δ} {Q = Q} {δ' = δ'} unfold-iso unfold-natural = iso
     where
-      step-fwd : ∀ X → (prod witness X ⇒ μ-obj Q δ') →
-                 prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj Q δ'
+      step-fwd : ∀ X → (prod witness X ⇒ μ-obj Q δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj Q δ'
       step-fwd X x→μ' =
         α Q δ' ∘ fmor Q (extend-fam (x→μ' ∘ pair to-terminal (id _))) ∘ Iso.fwd (unfold-iso X) ∘ p₂
 
-      step-bwd : ∀ X → (prod witness X ⇒ μ-obj P δ) →
-                 prod witness (fobj μ-obj Q (extend δ' X)) ⇒ μ-obj P δ
+      step-bwd : ∀ X → (prod witness X ⇒ μ-obj P δ) → prod witness (fobj μ-obj Q (extend δ' X)) ⇒ μ-obj P δ
       step-bwd X x→μ =
         α P δ ∘ fmor P (extend-fam (x→μ ∘ pair to-terminal (id _))) ∘ Iso.bwd (unfold-iso X) ∘ p₂
 
@@ -206,5 +204,11 @@ record HasMu : Set (o ⊔ m ⊔ e) where
       iso : Iso (μ-obj P δ) (μ-obj Q δ')
       iso .Iso.fwd = fwd
       iso .Iso.bwd = bwd
-      iso .Iso.fwd∘bwd≈id = {!!}
+      iso .Iso.fwd∘bwd≈id = begin
+          fwd ∘ bwd
+        ≈⟨ {!!} ⟩
+          id (μ-obj Q δ')
+        ∎
+        where open import prop-setoid using (module ≈-Reasoning)
+              open ≈-Reasoning isEquiv
       iso .Iso.bwd∘fwd≈id = {!!}
