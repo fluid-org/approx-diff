@@ -26,10 +26,7 @@ module Interp {o m e} {𝒞 : Category o m e}
   open Category 𝒞
   open HasProducts 𝒞P
   open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
-
-  private
-    T : Functor 𝒞 𝒞
-    T = StrongFunctor.F T-strong
+  open StrongFunctor T-strong using () renaming (F to T)
 
   extend : ∀ {n} → (Fin n → obj) → obj → Fin (suc n) → obj
   extend δ A Fin.zero    = A
@@ -41,7 +38,7 @@ module Interp {o m e} {𝒞 : Category o m e}
   fobj μ-obj (P + Q)   δ = coprod (fobj μ-obj P δ) (fobj μ-obj Q δ)
   fobj μ-obj (P × Q)   δ = prod (fobj μ-obj P δ) (fobj μ-obj Q δ)
   fobj μ-obj (μ P)     δ = μ-obj P δ
-  fobj μ-obj (T∘ P)   δ = Functor.fobj T (fobj μ-obj P δ)
+  fobj μ-obj (T∘ P)    δ = Functor.fobj T (fobj μ-obj P δ)
 
   module Functorial
     (μ-obj       : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
