@@ -39,7 +39,6 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
   fobj μ-obj (T∘ P)   δ = Functor.fobj T (fobj μ-obj P δ)
 
   module Functorial
-    -- Recursion needs to be "open" to avoid circularity with HasMu.
     (μ-obj       : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
     (μ-fmor      : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj} →
                    (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ')
@@ -101,6 +100,7 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
     functor P .Functor.fmor-comp fs gs = fmor-comp P fs gs
 
   record HasMu : Set (o ⊔ m) where
+    -- Recursion needs to be "open" to avoid circularity with Poly's functor instance.
     field
       μ-obj : ∀ {n} → Poly 𝒞 T (suc n) → (Fin n → obj) → obj
       inF   : ∀ {n} (P : Poly 𝒞 T (suc n)) (δ : Fin n → obj) →
