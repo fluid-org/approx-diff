@@ -18,7 +18,7 @@ module polynomial-functor-2
 open Category 𝒞
 open HasProducts 𝒞P
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
-open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair)
+open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair; copair-cong to scopair-cong)
 open StrongFunctor T-strong using (right-strength) renaming (F to T)
 
 data Poly (n : ℕ) : Set o where
@@ -42,7 +42,7 @@ fobj μ-obj (μ P)     δ = μ-obj P δ
 fobj μ-obj (T∘ P)    δ = Functor.fobj T (fobj μ-obj P δ)
 
 -- Use a Mendler-style catamorphism (Mendler 1991, "Inductive types and type constraints
--- in the second-order lambda calculus") whih abstracts over the recursive carrier, so β/η can be stated
+-- in the second-order lambda calculus") which abstracts over the recursive carrier, so β/η can be stated
 -- without reference to a functorial action; otherwise things get circular. Usual ⦅_⦆ is then derived.
 record HasMu : Set (o ⊔ m ⊔ e) where
   field
@@ -88,6 +88,31 @@ record HasMu : Set (o ⊔ m ⊔ e) where
       where
         step : ∀ X → (prod _ X ⇒ μ-obj P δ') → prod _ (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
         step X x→μ' = α P δ' ∘ strong-fmor P (extend-mor fs x→μ')
+
+  extend-mor-cong : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y}
+                    {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} {x→y : prod Γ X ⇒ Y} →
+                    (∀ i → fs i ≈ gs i) → ∀ i → extend-mor fs x→y i ≈ extend-mor gs x→y i
+  extend-mor-cong eq Fin.zero    = ≈-refl
+  extend-mor-cong eq (Fin.suc i) = eq i
+
+  mutual
+    strong-fmor-cong : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj}
+                       {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} →
+                       (∀ i → fs i ≈ gs i) → strong-fmor P fs ≈ strong-fmor P gs
+    strong-fmor-cong (const A) eq = ≈-refl
+    strong-fmor-cong (var i)   eq = eq i
+    strong-fmor-cong (P + Q)   eq = scopair-cong (∘-cong ≈-refl (strong-fmor-cong P eq))
+                                                 (∘-cong ≈-refl (strong-fmor-cong Q eq))
+    strong-fmor-cong (P × Q)   eq = pair-cong (∘-cong (strong-fmor-cong P eq) ≈-refl)
+                                              (∘-cong (strong-fmor-cong Q eq) ≈-refl)
+    strong-fmor-cong (μ P)     eq = strong-μ-fmor-cong P eq
+    strong-fmor-cong (T∘ P)    eq = ∘-cong (Functor.fmor-cong T (strong-fmor-cong P eq)) ≈-refl
+
+    strong-μ-fmor-cong : ∀ {n Γ} (P : Poly (suc n)) {δ δ' : Fin n → obj}
+                         {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} →
+                         (∀ i → fs i ≈ gs i) → strong-μ-fmor P fs ≈ strong-μ-fmor P gs
+    strong-μ-fmor-cong P {δ} {δ'} eq = ⦅_⦆ᴹ-cong λ X x→μ' →
+      ∘-cong ≈-refl (strong-fmor-cong P (extend-mor-cong eq))
 
   fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
   fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
