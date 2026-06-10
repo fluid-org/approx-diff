@@ -60,7 +60,7 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
     fmor (P + Q)   fs = coprod-m (fmor P fs) (fmor Q fs)
     fmor (P × Q)   fs = prod-m   (fmor P fs) (fmor Q fs)
     fmor (μ P)     fs = μ-fmor P fs
-    fmor (T∘ P)   fs = Functor.fmor T (fmor P fs)
+    fmor (T∘ P)    fs = Functor.fmor T (fmor P fs)
 
     fmor-cong : ∀ {n} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
                 (∀ i → fs i ≈ gs i) → fmor P fs ≈ fmor P gs
@@ -69,7 +69,7 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
     fmor-cong (P + Q)   fs≈gs = coprod-m-cong (fmor-cong P fs≈gs) (fmor-cong Q fs≈gs)
     fmor-cong (P × Q)   fs≈gs = prod-m-cong   (fmor-cong P fs≈gs) (fmor-cong Q fs≈gs)
     fmor-cong (μ P)     fs≈gs = μ-fmor-cong P fs≈gs
-    fmor-cong (T∘ P)   fs≈gs = Functor.fmor-cong T (fmor-cong P fs≈gs)
+    fmor-cong (T∘ P)    fs≈gs = Functor.fmor-cong T (fmor-cong P fs≈gs)
 
     fmor-id : ∀ {n} (P : Poly 𝒞 T n) {δ : Fin n → obj} →
               fmor P (λ i → id (δ i)) ≈ id (fobj μ-obj P δ)
@@ -78,7 +78,7 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
     fmor-id (P + Q)   = ≈-trans (coprod-m-cong (fmor-id P) (fmor-id Q)) coprod-m-id
     fmor-id (P × Q)   = ≈-trans (prod-m-cong   (fmor-id P) (fmor-id Q)) prod-m-id
     fmor-id (μ P)     = μ-fmor-id P
-    fmor-id (T∘ P)   = ≈-trans (Functor.fmor-cong T (fmor-id P)) (Functor.fmor-id T)
+    fmor-id (T∘ P)    = ≈-trans (Functor.fmor-cong T (fmor-id P)) (Functor.fmor-id T)
 
     fmor-comp : ∀ {n} (P : Poly 𝒞 T n) {δ δ' δ'' : Fin n → obj}
                 (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
@@ -90,7 +90,7 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
     fmor-comp (P × Q)   fs gs = ≈-trans (prod-m-cong   (fmor-comp P fs gs) (fmor-comp Q fs gs))
                                         (pair-functorial _ _ _ _)
     fmor-comp (μ P)     fs gs = μ-fmor-comp P fs gs
-    fmor-comp (T∘ P)   fs gs = ≈-trans (Functor.fmor-cong T (fmor-comp P fs gs))
+    fmor-comp (T∘ P)    fs gs = ≈-trans (Functor.fmor-cong T (fmor-comp P fs gs))
                                         (Functor.fmor-comp T _ _)
 
     functor : ∀ {n} → Poly 𝒞 T n → Functor (𝒞 ^ n) 𝒞
@@ -107,3 +107,6 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
               fobj μ-obj P (extend δ (μ-obj P δ)) ⇒ μ-obj P δ
       ⦅_⦆   : ∀ {n Γ A} {P : Poly 𝒞 T (suc n)} {δ : Fin n → obj} →
              (prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) → prod Γ (μ-obj P δ) ⇒ A
+      mcata : ∀ {n Γ A} {P : Poly 𝒞 T (suc n)} {δ : Fin n → obj} →
+              (∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)) →
+              prod Γ (μ-obj P δ) ⇒ A
