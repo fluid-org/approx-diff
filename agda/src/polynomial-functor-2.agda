@@ -7,7 +7,7 @@ open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts)
-open import functor using (Functor)
+open import functor using (Functor; StrongFunctor)
 open import product-category using (_^_)
 
 module polynomial-functor-2 where
@@ -20,11 +20,16 @@ data Poly {o m e} (𝒞 : Category o m e) (T : Functor 𝒞 𝒞) (n : ℕ) : Se
   μ     : Poly 𝒞 T (suc n) → Poly 𝒞 T n
   T∘_   : Poly 𝒞 T n → Poly 𝒞 T n
 
-module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
-              (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P) where
+module Interp {o m e} {𝒞 : Category o m e}
+              (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P)
+              (T-strong : StrongFunctor 𝒞P) where
   open Category 𝒞
   open HasProducts 𝒞P
   open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
+
+  private
+    T : Functor 𝒞 𝒞
+    T = StrongFunctor.F T-strong
 
   extend : ∀ {n} → (Fin n → obj) → obj → Fin (suc n) → obj
   extend δ A Fin.zero    = A
