@@ -17,7 +17,7 @@ data Poly {o m e} (𝒞 : Category o m e) (T : Functor 𝒞 𝒞) (n : ℕ) : Se
   _+_   : Poly 𝒞 T n → Poly 𝒞 T n → Poly 𝒞 T n
   _×_   : Poly 𝒞 T n → Poly 𝒞 T n → Poly 𝒞 T n
   μ     : Poly 𝒞 T (suc n) → Poly 𝒞 T n
-  T∘_    : Poly 𝒞 T n → Poly 𝒞 T n
+  T∘_   : Poly 𝒞 T n → Poly 𝒞 T n
 
 module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
               (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P) where
@@ -26,21 +26,21 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
   open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
 
   extend : ∀ {n} → (Fin n → obj) → obj → Fin (suc n) → obj
-  extend val A Fin.zero    = A
-  extend val A (Fin.suc i) = val i
+  extend δ A Fin.zero    = A
+  extend δ A (Fin.suc i) = δ i
 
   fobj : ∀ {n} → (μh : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj) → Poly 𝒞 T n → (Fin n → obj) → obj
-  fobj μh (const A) val = A
-  fobj μh (var i)   val = val i
-  fobj μh (P + Q)   val = coprod (fobj μh P val) (fobj μh Q val)
-  fobj μh (P × Q)   val = prod   (fobj μh P val) (fobj μh Q val)
-  fobj μh (μ P)     val = μh P val
-  fobj μh (T∘_ P)    val = Functor.fobj T (fobj μh P val)
+  fobj μh (const A) δ = A
+  fobj μh (var i)   δ = δ i
+  fobj μh (P + Q)   δ = coprod (fobj μh P δ) (fobj μh Q δ)
+  fobj μh (P × Q)   δ = prod (fobj μh P δ) (fobj μh Q δ)
+  fobj μh (μ P)     δ = μh P δ
+  fobj μh (T∘_ P)   δ = Functor.fobj T (fobj μh P δ)
 
   record HasMu : Set (o ⊔ m) where
     field
       μ-obj : ∀ {n} → Poly 𝒞 T (suc n) → (Fin n → obj) → obj
-      inF   : ∀ {n} (P : Poly 𝒞 T (suc n)) (val : Fin n → obj) →
-              fobj μ-obj P (extend val (μ-obj P val)) ⇒ μ-obj P val
-      ⦅_⦆   : ∀ {n Γ y} {P : Poly 𝒞 T (suc n)} {val : Fin n → obj} →
-             (prod Γ (fobj μ-obj P (extend val y)) ⇒ y) → prod Γ (μ-obj P val) ⇒ y
+      inF   : ∀ {n} (P : Poly 𝒞 T (suc n)) (δ : Fin n → obj) →
+              fobj μ-obj P (extend δ (μ-obj P δ)) ⇒ μ-obj P δ
+      ⦅_⦆   : ∀ {n Γ y} {P : Poly 𝒞 T (suc n)} {δ : Fin n → obj} →
+             (prod Γ (fobj μ-obj P (extend δ y)) ⇒ y) → prod Γ (μ-obj P δ) ⇒ y
