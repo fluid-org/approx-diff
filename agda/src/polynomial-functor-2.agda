@@ -214,6 +214,8 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           ⦅ step-fwd ⦆ᴹ ∘ ((pair (to-terminal ∘ ⦅ step-bwd ⦆ᴹ) (id _ ∘ ⦅ step-bwd ⦆ᴹ)) ∘ pair to-terminal (id _))
         ≈⟨ ∘-cong ≈-refl (∘-cong (pair-cong (to-terminal-unique _ _) id-left) ≈-refl) ⟩
           ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
+        ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
+          ⦅ step-fwd ⦆ᴹ ∘ pair (to-terminal ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
         ≈⟨ {!!} ⟩
           id (μ-obj Q δ')
         ∎
