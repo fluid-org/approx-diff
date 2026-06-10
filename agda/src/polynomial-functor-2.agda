@@ -51,8 +51,6 @@ record HasMu : Set (o ⊔ m) where
             (∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)) →
             prod Γ (μ-obj P δ) ⇒ A
 
-module Functorial (Mu : HasMu) where
-  open HasMu Mu
   open HasTerminal 𝒞T using (witness; to-terminal)
 
   extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →

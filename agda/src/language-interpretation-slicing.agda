@@ -10,7 +10,7 @@ open import categories
          strong-coproducts→coproducts; HasExponentials)
 open import functor using (Functor; StrongFunctor)
 open import signature using (Signature)
-import polynomial-functor-2 as PF2
+import polynomial-functor-2
 import language-syntax-2
 
 module language-interpretation-slicing
@@ -20,7 +20,7 @@ module language-interpretation-slicing
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
   (T  : StrongFunctor 𝒞P)
-  (let open PF2 𝒞T 𝒞P 𝒞SC T hiding (_+_; _×_))
+  (let open polynomial-functor-2 𝒞T 𝒞P 𝒞SC T hiding (_+_; _×_))
   (Mu : HasMu)
   (⟦sort⟧ : Signature.sort Sig → Category.obj 𝒞)
   where

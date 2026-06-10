@@ -10,7 +10,7 @@ open import categories
          strong-coproducts→coproducts; HasExponentials)
 open import functor using (StrongFunctor; StrongFunctor-Id)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
-import polynomial-functor-2 as PF2
+import polynomial-functor-2
 import language-syntax-2
 
 module language-interpretation-2
@@ -19,7 +19,7 @@ module language-interpretation-2
   (𝒞 : Category o m e)
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
-  (let open PF2 𝒞T 𝒞P 𝒞SC (StrongFunctor-Id 𝒞P) hiding (_+_; _×_))
+  (let open polynomial-functor-2 𝒞T 𝒞P 𝒞SC (StrongFunctor-Id 𝒞P) hiding (_+_; _×_))
   (Mu : HasMu)
   (let Bool = HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
               (HasTerminal.witness 𝒞T) (HasTerminal.witness 𝒞T))
@@ -34,7 +34,6 @@ open HasStrongCoproducts 𝒞SC using () renaming (copair to scopair)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax-2 Sig
 open HasMu Mu
-open PF2.Functorial 𝒞T 𝒞P 𝒞SC (StrongFunctor-Id 𝒞P) Mu using (⦅_⦆)
 open Model Int
 
 mutual
