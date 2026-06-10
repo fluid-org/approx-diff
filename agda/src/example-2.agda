@@ -43,11 +43,11 @@ module ex where
   M ≟ N = brel equal-label (M ∷ N ∷ [])
 
   sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
-  sum = lam (fold (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
+  sum = lam (foldr (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
 
   some-eq : ∀ {Γ} → Γ ⊢ base label [→] list (base label) [→] bool
   some-eq = lam (lam
-    (fold false
+    (foldr false
       (if (brel equal-label (var (succ zero) ∷ var (succ (succ (succ zero))) ∷ []))
        then true else (var zero))
       (var zero)))

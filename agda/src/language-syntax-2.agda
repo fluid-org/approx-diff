@@ -142,7 +142,7 @@ data _⊢_ : ctxt → type 0 → Set ℓ where
          Every (λ σ → Γ ⊢ base σ) in-sorts →
          Γ ⊢ unit [+] unit
   roll   : ∀ {Γ} {τ : type 1} → Γ ⊢ τ [ μ τ ] → Γ ⊢ μ τ
-  fold-μ : ∀ {Γ} {τ : type 1} {σ : type 0} → Γ , τ [ σ ] ⊢ σ → Γ ⊢ μ τ → Γ ⊢ σ
+  fold : ∀ {Γ} {τ : type 1} {σ : type 0} → Γ , τ [ σ ] ⊢ σ → Γ ⊢ μ τ → Γ ⊢ σ
 
 mutual
   _*_ : ∀ {Γ Γ' τ} → Ren Γ Γ' → Γ ⊢ τ → Γ' ⊢ τ
@@ -159,7 +159,7 @@ mutual
   ρ * bop ω ts     = bop ω (ρ ** ts)
   ρ * brel ω ts    = brel ω (ρ ** ts)
   ρ * roll t       = roll (ρ * t)
-  ρ * fold-μ s t   = fold-μ (ext ρ * s) (ρ * t)
+  ρ * fold s t   = fold (ext ρ * s) (ρ * t)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
   ρ ** []       = []
@@ -174,9 +174,9 @@ nil = roll (inl unit)
 cons : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ → Γ ⊢ list τ
 cons {_} {τ} h t = roll (inr (pair (subst (λ t → _ ⊢ t) (sym (sub-ren-id τ (λ ()))) h) t))
 
-fold : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
-fold {Γ} {σ} {τ} nilCase consCase M =
-  fold-μ {τ = unit [+] (ren (λ ()) σ [×] var zero)}
+foldr : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
+foldr {Γ} {σ} {τ} nilCase consCase M =
+  fold {τ = unit [+] (ren (λ ()) σ [×] var zero)}
     (case (var zero)
           (weaken * (weaken * nilCase))
           (app (app (weaken * (weaken * (lam (lam consCase))))
@@ -188,16 +188,16 @@ fold {Γ} {σ} {τ} nilCase consCase M =
     Γ-inr = Γ , (unit [+] (ren (λ ()) σ [×] var zero)) [ τ ] , sub (sub-head τ) (ren (λ ()) σ) [×] τ
 
 append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
-append xs ys = fold ys (cons (var (succ zero)) (var zero)) xs
+append xs ys = foldr ys (cons (var (succ zero)) (var zero)) xs
 
 return : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ
 return x = cons x nil
 
 from_collect_ : ∀ {Γ τ₁ τ₂} → Γ ⊢ list τ₁ → Γ , τ₁ ⊢ list τ₂ → Γ ⊢ list τ₂
-from M collect N = fold nil (append (weaken * N) (var zero)) M
+from M collect N = foldr nil (append (weaken * N) (var zero)) M
 
 append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
-append-f = lam (lam (fold (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
+append-f = lam (lam (foldr (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
 
 bool : type 0
 bool = unit [+] unit

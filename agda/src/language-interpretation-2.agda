@@ -94,7 +94,7 @@ mutual
   ⟦ brel r Ms ⟧tm    = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
   ⟦ roll {Γ = Γ} {τ = τ} M ⟧tm =
     inF (as-poly τ (λ ())) (λ ()) ∘ subst (⟦ Γ ⟧ctxt ⇒_) (sub-as-apply τ (μ τ)) ⟦ M ⟧tm
-  ⟦ fold-μ {Γ = Γ} {τ = τ} {σ = σ} alg M ⟧tm =
+  ⟦ fold {Γ = Γ} {τ = τ} {σ = σ} alg M ⟧tm =
     ⦅ subst (λ A → prod ⟦ Γ ⟧ctxt A ⇒ ⟦ σ ⟧ty (λ ())) (sub-as-apply τ σ) ⟦ alg ⟧tm ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
