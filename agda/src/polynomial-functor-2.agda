@@ -118,33 +118,11 @@ module Interp {o m e} {𝒞 : Category o m e}
     open HasMu Mu
     open HasTerminal 𝒞T using (witness; to-terminal)
 
-    extend-mor : ∀ {n} {δ δ' : Fin n → obj} {X Y} →
-                 (∀ i → δ i ⇒ δ' i) → (X ⇒ Y) → ∀ i → extend δ X i ⇒ extend δ' Y i
+    extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
+                 (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) →
+                 ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
     extend-mor fs x→y Fin.zero    = x→y
     extend-mor fs x→y (Fin.suc i) = fs i
-
-    mutual
-      fmor : ∀ {n} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} →
-             (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
-      fmor (const A) fs = id A
-      fmor (var i)   fs = fs i
-      fmor (P + Q)   fs = coprod-m (fmor P fs) (fmor Q fs)
-      fmor (P × Q)   fs = prod-m   (fmor P fs) (fmor Q fs)
-      fmor (μ P)     fs = μ-fmor P fs
-      fmor (T∘ P)    fs = Functor.fmor T (fmor P fs)
-
-      μ-fmor : ∀ {n} (P : Poly 𝒞 T (suc n)) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ'
-      μ-fmor P {δ} {δ'} fs =
-        mcata {Γ = witness} step ∘ pair to-terminal (id _)
-        where
-          step : ∀ X → (prod witness X ⇒ μ-obj P δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
-          step X x→A = α P δ' ∘ fmor P (extend-mor fs (x→A ∘ pair to-terminal (id _))) ∘ p₂
-
-    extend-mor-strong : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
-                        (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) →
-                        ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
-    extend-mor-strong fs x→y Fin.zero    = x→y
-    extend-mor-strong fs x→y (Fin.suc i) = fs i
 
     mutual
       strong-fmor : ∀ {n Γ} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} →
@@ -162,4 +140,10 @@ module Interp {o m e} {𝒞 : Category o m e}
       strong-μ-fmor P {δ} {δ'} fs = mcata step
         where
           step : ∀ X → (prod _ X ⇒ μ-obj P δ') → prod _ (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
-          step X x→μ' = α P δ' ∘ strong-fmor P (extend-mor-strong fs x→μ')
+          step X x→μ' = α P δ' ∘ strong-fmor P (extend-mor fs x→μ')
+
+    fmor : ∀ {n} (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
+    fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
+
+    μ-fmor : ∀ {n} (P : Poly 𝒞 T (suc n)) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ'
+    μ-fmor P fs = strong-μ-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
