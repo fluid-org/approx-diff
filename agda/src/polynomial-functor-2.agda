@@ -50,6 +50,27 @@ module Interp {o m e} {𝒞 : Category o m e} {T : Functor 𝒞 𝒞}
   fmor μh μh-fmor (μ P)     fs = μh-fmor P fs
   fmor μh μh-fmor (T∘_ P)   fs = Functor.fmor T (fmor μh μh-fmor P fs)
 
+  fmor-cong : ∀ {n}
+              (μh           : ∀ {m} → Poly 𝒞 T (suc m) → (Fin m → obj) → obj)
+              (μh-fmor      : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj} →
+                              (∀ i → δ i ⇒ δ' i) → μh P δ ⇒ μh P δ')
+              (μh-fmor-cong : ∀ {m} (P : Poly 𝒞 T (suc m)) {δ δ' : Fin m → obj}
+                              {fs gs : ∀ i → δ i ⇒ δ' i} →
+                              (∀ i → fs i ≈ gs i) → μh-fmor P fs ≈ μh-fmor P gs)
+              (P : Poly 𝒞 T n) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
+              (∀ i → fs i ≈ gs i) → fmor μh μh-fmor P fs ≈ fmor μh μh-fmor P gs
+  fmor-cong μh μh-fmor μh-fmor-cong (const A) fs≈gs = ≈-refl
+  fmor-cong μh μh-fmor μh-fmor-cong (var i)   fs≈gs = fs≈gs i
+  fmor-cong μh μh-fmor μh-fmor-cong (P + Q)   fs≈gs =
+    coprod-m-cong (fmor-cong μh μh-fmor μh-fmor-cong P fs≈gs)
+                  (fmor-cong μh μh-fmor μh-fmor-cong Q fs≈gs)
+  fmor-cong μh μh-fmor μh-fmor-cong (P × Q)   fs≈gs =
+    prod-m-cong   (fmor-cong μh μh-fmor μh-fmor-cong P fs≈gs)
+                  (fmor-cong μh μh-fmor μh-fmor-cong Q fs≈gs)
+  fmor-cong μh μh-fmor μh-fmor-cong (μ P)     fs≈gs = μh-fmor-cong P fs≈gs
+  fmor-cong μh μh-fmor μh-fmor-cong (T∘_ P)   fs≈gs =
+    Functor.fmor-cong T (fmor-cong μh μh-fmor μh-fmor-cong P fs≈gs)
+
   record HasMu : Set (o ⊔ m) where
     field
       μ-obj : ∀ {n} → Poly 𝒞 T (suc n) → (Fin n → obj) → obj
