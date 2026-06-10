@@ -9,6 +9,7 @@ open import categories
          strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor; StrongFunctor)
 open import product-category using (_^_)
+open import prop-setoid using (module ≈-Reasoning)
 
 module polynomial-functor-2
   {o m e} {𝒞 : Category o m e}
@@ -216,9 +217,10 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           ⦅ step-fwd ⦆ᴹ ∘ ((pair to-terminal ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _))
         ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
           ⦅ step-fwd ⦆ᴹ ∘ pair (to-terminal ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
+        ≈⟨ ∘-cong ≈-refl (pair-cong₁ (≈-trans (to-terminal-unique _ _) (≈-sym (pair-p₁ _ _)))) ⟩
+          ⦅ step-fwd ⦆ᴹ ∘ pair (p₁ ∘ pair to-terminal (id _)) (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))
         ≈⟨ {!!} ⟩
           id (μ-obj Q δ')
         ∎
-        where open import prop-setoid using (module ≈-Reasoning)
-              open ≈-Reasoning isEquiv
+        where open ≈-Reasoning isEquiv
       iso .Iso.bwd∘fwd≈id = {!!}
