@@ -17,11 +17,9 @@ approximation strategies, including quantitative forms of slicing.
 
 Perera and collaborators introduced the idea of {\em Galois program slicing} as a particular conception of program slicing for provenance, described in several publications~\cite{perera12a,perera16d,ricciotti17}. Galois program slicing (hereafter simply {\emph \GPS}) forms the basis of the open source data visualisation tool \href{https://f.luid.org/}{Fluid}~\cite{perera2025fluid} that allows interactive exploration of programmatically generated visualisations.
 
-At a high level, \GPS assumes that, for each possible value that may be input or output by a program, there exists a lattice of {\em approximations} of that value. For a particular run of a program that takes input $x$ and produces output $y$, we also get a Galois connection between the lattice of approximations of $x$ and the lattice of approximations of $y$. The right half of the Galois connection is the ``forward direction'' taking approximations of the input to approximations of the output; the left half of the Galois connection is the ``backward direction'' that takes approximations of the output to the least (i.e., most approximate) approximation of the input that gives rise to this output approximation.
+At a high level, \GPS assumes that, for each possible value that may be input or output by a program, there exists a lattice of {\em approximations} of that value. For a particular run of a program that takes input $x$ and produces output $y$, we also get a Galois connection between the lattice of approximations of $x$ and the lattice of approximations of $y$. The right half of the Galois connection is the ``forward direction'' taking approximations of the input to approximations of the output; the left half of the Galois connection is the ``backward direction'' that takes approximations of the output to the least (i.e., most approximate) approximation of the input that gives rise to this output approximation. This becomes {\em program slicing} by including the source code of the program as part of the input; then, in the backward direction, the least approximation of the input required for an output approximation includes the least part of the program required as well.
 
-\Added{As \citet{bond25} show, however, underlying this connection is a more elementary object: a \emph{dependency relation} between the parts of the input and the parts of the output, recording which inputs each output consumes. The Galois connection is just one possible derived view of this relation, obtained by lifting it to the lattices of approximations. The forward and backward directions are the two ways of reading it. We take the dependency relation as our starting point.}
-
-This becomes {\em program slicing} by including the source code of the program as part of the input; then, in the backward direction, the least approximation of the input required for an output approximation includes the least part of the program required as well.
+\Added{As \citet{bond25} show, however, underlying this Galois connection is a more elementary object: a \emph{dependency relation} between the parts of the input and the parts of the output, recording which inputs each output consumes. The Galois connection is just one possible derived view of this relation, obtained by lifting it to the lattices of approximations.}
 
 \begin{example}
   \label{ex:introduction-example}
@@ -74,7 +72,31 @@ This becomes {\em program slicing} by including the source code of the program a
   \end{center}
   These are not the only choices of approximation lattices that we could have made. For the input, we have chosen a lattice that allows us to ``forget'' (approximate away) numbers in the input, but not the labels or the structure of the list itself. However, other choices are also useful. Indeed, one of the aims of this work is to clarify how to choose an approximation structure appropriate for different tasks by use of type information. We elaborate on this further in \secref{semantic-gps}.
 
-  \GPS associates with each run of the program a Galois connection telling us how the inputs and outputs are related in that run. The backwards portion $\partial (\mathit{query}\,l)_r$ tells us, given an approximation of the output, what the least approximation of the input is needed to generate that output. In the case of the two runs considered in this example, if we say we are not interested in the output by feeding in the least approximation $\bot$, then we find that we only need the least approximation of the input:
+  \GPS associates with each run of the program a Galois connection telling us how the inputs and outputs are related in that run. \Added{We can think of this as arising from a \emph{dependency relation} recording which input entries the returned number depends on: for $\mathit{query}\,\mathsf{a}$, the two $\mathsf{a}$-labelled entries; for $\mathit{query}\,\mathsf{b}$, the single $\mathsf{b}$-labelled one.}
+
+  \cbstart
+  \begin{center}
+    \begin{tikzpicture}[every node/.style={font=\small}]
+      % query a
+      \node (la) at (0,1.4) {$\mathit{query}\;\mathsf{a}$};
+      \node (a1) at (0,0.8) {$(\mathsf{a},0)$};
+      \node (a2) at (0,0) {$(\mathsf{b},1)$};
+      \node (a3) at (0,-0.8) {$(\mathsf{a},1)$};
+      \node (ao) at (2.4,0) {$1$};
+      \draw (a1) -- (ao);
+      \draw (a3) -- (ao);
+      % query b
+      \node (lb) at (6,1.4) {$\mathit{query}\;\mathsf{b}$};
+      \node (b1) at (6,0.8) {$(\mathsf{a},0)$};
+      \node (b2) at (6,0) {$(\mathsf{b},1)$};
+      \node (b3) at (6,-0.8) {$(\mathsf{a},1)$};
+      \node (bo) at (8.4,0) {$1$};
+      \draw (b2) -- (bo);
+    \end{tikzpicture}
+  \end{center}
+  \cbend
+
+  The backwards portion $\partial (\mathit{query}\,l)_r$ tells us, given an approximation of the output, what the least approximation of the input is needed to generate that output. In the case of the two runs considered in this example, if we say we are not interested in the output by feeding in the least approximation $\bot$, then we find that we only need the least approximation of the input:
   \begin{displaymath}
     \partial (\mathit{query}\,l\,\mathit{db})_r(\bot) = [(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]
   \end{displaymath}
