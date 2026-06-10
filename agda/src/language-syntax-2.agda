@@ -65,12 +65,12 @@ sub σ (τ₁ [×] τ₂) = sub σ τ₁ [×] sub σ τ₂
 sub σ (τ₁ [→] τ₂) = τ₁ [→] τ₂
 sub σ (μ τ)       = μ (sub (sub-lift σ) τ)
 
-sub-head : ∀ {Δ} → type Δ → TySub (suc Δ) Δ
-sub-head τ zero    = τ
-sub-head τ (suc i) = var i
-
 _[_] : ∀ {Δ} → type (suc Δ) → type Δ → type Δ
-τ [ τ' ] = sub (sub-head τ') τ
+τ [ τ' ] = sub (push τ') τ
+  where
+    push : ∀ {Δ} → type Δ → TySub (suc Δ) Δ
+    push τ zero    = τ
+    push τ (suc i) = var i
 
 infix 50 _[_]
 
