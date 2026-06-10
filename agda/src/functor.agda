@@ -231,7 +231,6 @@ module _ {o₁ m₁ e₁}
   Id .fmor-id = 𝒞.≈-refl
   Id .fmor-comp f g = 𝒞.≈-refl
 
-  -- Strong endofunctor with right-strength + naturality.
   record StrongFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
     open Category 𝒞
     open HasProducts P
@@ -241,6 +240,8 @@ module _ {o₁ m₁ e₁}
       right-strength-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ x₂) (g : y₁ ⇒ y₂) →
                                (F .Functor.fmor (prod-m f g) 𝒞.∘ right-strength) 𝒞.≈
                                (right-strength 𝒞.∘ prod-m f (F .Functor.fmor g))
+      right-strength-p₂ : ∀ {x y} → (F .Functor.fmor p₂ 𝒞.∘ right-strength {x} {y}) 𝒞.≈ p₂
+      -- FIXME: associativity coherence (right-strength interacts with prod's associator).
     open Functor F public
 
     -- Left-strength derived by swapping inputs/outputs around right-strength.
@@ -259,6 +260,7 @@ module _ {o₁ m₁ e₁}
   StrongFunctor-Id P .StrongFunctor.right-strength = 𝒞.id _
   StrongFunctor-Id P .StrongFunctor.right-strength-natural f g =
     𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
+  StrongFunctor-Id P .StrongFunctor.right-strength-p₂ = 𝒞.id-right
 
   StrongPointedFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongPointedFunctor P
   StrongPointedFunctor-Id P .StrongPointedFunctor.strongFunctor = StrongFunctor-Id P

@@ -62,9 +62,9 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   ⦅_⦆ᴹ-cong : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
               {step₁ step₂ : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)} →
               (∀ X (x→A : prod Γ X ⇒ A) → step₁ X x→A ≈ step₂ X x→A) → ⦅ step₁ ⦆ᴹ ≈ ⦅ step₂ ⦆ᴹ
-  ⦅_⦆ᴹ-cong {P = P} {δ = δ} {step₁ = step₁} {step₂ = step₂} eq =
+  ⦅_⦆ᴹ-cong {P = P} {δ = δ} {step₁ = step₁} {step₂ = step₂} step₁≈step₂ =
     ⦅⦆ᴹ-η {P = P} {δ = δ} step₂ ⦅ step₁ ⦆ᴹ
-      (≈-trans (⦅⦆ᴹ-β {P = P} {δ = δ} step₁) (eq (μ-obj P δ) ⦅ step₁ ⦆ᴹ))
+      (≈-trans (⦅⦆ᴹ-β {P = P} {δ = δ} step₁) (step₁≈step₂ (μ-obj P δ) ⦅ step₁ ⦆ᴹ))
 
   extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
                (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) → ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
@@ -92,27 +92,27 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   extend-mor-cong : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y}
                     {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} {x→y : prod Γ X ⇒ Y} →
                     (∀ i → fs i ≈ gs i) → ∀ i → extend-mor fs x→y i ≈ extend-mor gs x→y i
-  extend-mor-cong eq Fin.zero    = ≈-refl
-  extend-mor-cong eq (Fin.suc i) = eq i
+  extend-mor-cong fs≈gs Fin.zero    = ≈-refl
+  extend-mor-cong fs≈gs (Fin.suc i) = fs≈gs i
 
   mutual
     strong-fmor-cong : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj}
                        {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} →
                        (∀ i → fs i ≈ gs i) → strong-fmor P fs ≈ strong-fmor P gs
-    strong-fmor-cong (const A) eq = ≈-refl
-    strong-fmor-cong (var i)   eq = eq i
-    strong-fmor-cong (P + Q)   eq = scopair-cong (∘-cong ≈-refl (strong-fmor-cong P eq))
-                                                 (∘-cong ≈-refl (strong-fmor-cong Q eq))
-    strong-fmor-cong (P × Q)   eq = pair-cong (∘-cong (strong-fmor-cong P eq) ≈-refl)
-                                              (∘-cong (strong-fmor-cong Q eq) ≈-refl)
-    strong-fmor-cong (μ P)     eq = strong-μ-fmor-cong P eq
-    strong-fmor-cong (T∘ P)    eq = ∘-cong (Functor.fmor-cong T (strong-fmor-cong P eq)) ≈-refl
+    strong-fmor-cong (const A) fs≈gs = ≈-refl
+    strong-fmor-cong (var i)   fs≈gs = fs≈gs i
+    strong-fmor-cong (P + Q)   fs≈gs = scopair-cong (∘-cong ≈-refl (strong-fmor-cong P fs≈gs))
+                                                    (∘-cong ≈-refl (strong-fmor-cong Q fs≈gs))
+    strong-fmor-cong (P × Q)   fs≈gs = pair-cong (∘-cong (strong-fmor-cong P fs≈gs) ≈-refl)
+                                                 (∘-cong (strong-fmor-cong Q fs≈gs) ≈-refl)
+    strong-fmor-cong (μ P)     fs≈gs = strong-μ-fmor-cong P fs≈gs
+    strong-fmor-cong (T∘ P)    fs≈gs = ∘-cong (Functor.fmor-cong T (strong-fmor-cong P fs≈gs)) ≈-refl
 
     strong-μ-fmor-cong : ∀ {n Γ} (P : Poly (suc n)) {δ δ' : Fin n → obj}
                          {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} →
                          (∀ i → fs i ≈ gs i) → strong-μ-fmor P fs ≈ strong-μ-fmor P gs
-    strong-μ-fmor-cong P {δ} {δ'} eq = ⦅_⦆ᴹ-cong λ X x→μ' →
-      ∘-cong ≈-refl (strong-fmor-cong P (extend-mor-cong eq))
+    strong-μ-fmor-cong P {δ} {δ'} fs≈gs = ⦅_⦆ᴹ-cong λ X x→μ' →
+      ∘-cong ≈-refl (strong-fmor-cong P (extend-mor-cong fs≈gs))
 
   fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
   fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)

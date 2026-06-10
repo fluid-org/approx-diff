@@ -382,8 +382,7 @@ module _ where
   L-map f .∧-preserving {< x >} {< x₁ >} = f .∧-preserving
   L-map f .⊤-preserving = f .⊤-preserving
 
-  L-strength : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
-               (X ⊕ L Y) => L (X ⊕ Y)
+  L-strength : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} → (X ⊕ L Y) => L (X ⊕ Y)
   L-strength .func .fun (x , bottom) = bottom
   L-strength .func .fun (x , < y >) = < x , y >
   L-strength .func .mono {x₁ , bottom} {x₂ , bottom} (x₁≤x₂ , tt) = tt
@@ -394,8 +393,6 @@ module _ where
   L-strength {A}{B} .∧-preserving {x , < x₁ >} {x' , < x₂ >} = A .≤-refl , B .≤-refl
   L-strength {A}{B} .⊤-preserving = A .≤-refl , B .≤-refl
 
-  -- Naturality of L-strength: L-strength commutes with the bifunctorial action of L
-  -- combined with the product on the first arg.
   L-strength-natural : ∀ {A₁ A₂ B₁ B₂}
                        {X₁ : MeetSemilattice A₁} {X₂ : MeetSemilattice A₂}
                        {Y₁ : MeetSemilattice B₁} {Y₂ : MeetSemilattice B₂}
@@ -405,3 +402,8 @@ module _ where
   L-strength-natural f g .eqfunc .eqfun (x , bottom) = tt , tt
   L-strength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun (x , < y >) =
     (A₂ × B₂) .≃-refl
+
+  L-strength-p₂ : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
+                  (L-map project₂ ∘ L-strength {X = X} {Y = Y}) ≃m project₂
+  L-strength-p₂ .eqfunc .eqfun (x , bottom) = tt , tt
+  L-strength-p₂ {B = B} .eqfunc .eqfun (x , < y >) = B .≃-refl
