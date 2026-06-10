@@ -219,6 +219,33 @@ record HasMu : Set (o ⊔ m ⊔ e) where
               (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘co (α Q δ' ∘ p₂)
             ≈⟨ assoc-co _ _ _ ⟩
               ⦅ step-fwd ⦆ᴹ ∘co (⦅ step-bwd ⦆ᴹ ∘co (α Q δ' ∘ p₂))
+            ≈⟨ ∘-cong-co₂ (⦅⦆ᴹ-β {P = Q} {δ = δ'} step-bwd) ⟩
+              ⦅ step-fwd ⦆ᴹ ∘co step-bwd (μ-obj Q δ') ⦅ step-bwd ⦆ᴹ
+            ≡⟨⟩
+              ⦅ step-fwd ⦆ᴹ
+                ∘co (α P δ ∘ fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                                    ∘ Iso.bwd (unfold-iso (μ-obj Q δ')) ∘ p₂)
+            ≈⟨ ∘-cong-co₂ (assoc _ _ _) ⟩
+              ⦅ step-fwd ⦆ᴹ
+                ∘co ((α P δ ∘ fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))))
+                     ∘ (Iso.bwd (unfold-iso (μ-obj Q δ')) ∘ p₂))
+            ≈⟨ ∘-cong-co₂ (assoc _ _ _) ⟩
+              ⦅ step-fwd ⦆ᴹ
+                ∘co (α P δ ∘ (fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                              ∘ (Iso.bwd (unfold-iso (μ-obj Q δ')) ∘ p₂)))
+            ≈⟨ ∘-cong-co₂ (≈-trans (≈-sym (∘-cong₂ (pair-p₂ _ _))) (≈-sym (assoc _ _ _))) ⟩
+              ⦅ step-fwd ⦆ᴹ
+                ∘co ((α P δ ∘ p₂)
+                     ∘co (fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                          ∘ (Iso.bwd (unfold-iso (μ-obj Q δ')) ∘ p₂)))
+            ≈⟨ ≈-sym (assoc-co _ _ _) ⟩
+              (⦅ step-fwd ⦆ᴹ ∘co (α P δ ∘ p₂))
+                ∘co (fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                     ∘ (Iso.bwd (unfold-iso (μ-obj Q δ')) ∘ p₂))
+            ≈⟨ ∘-cong-co₁ (⦅⦆ᴹ-β {P = P} {δ = δ} step-fwd) ⟩
+              step-fwd (μ-obj P δ) ⦅ step-fwd ⦆ᴹ
+                ∘co (fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                     ∘ (Iso.bwd (unfold-iso (μ-obj Q δ')) ∘ p₂))
             ≈⟨ {!!} ⟩
               trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
             ∎
