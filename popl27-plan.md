@@ -2,7 +2,7 @@
 
 ### §1
 
-- [ ] What the more recent work (POPL 2022, ESOP 2025) work showed is that, while the Galois connections are
+- [x] What the more recent work (POPL 2022, ESOP 2025) work showed is that, while the Galois connections are
   useful for characterising _when_ minimal backward slices can be computed, there aren't particularly useful
   for computing forward slices. For data provenance, we're usually interested in a different forward query.
 
