@@ -75,7 +75,10 @@ sub-as-apply (σ [+] τ)      τ' = coproduct-preserve-iso (sub-as-apply σ τ')
 sub-as-apply (σ [×] τ)      τ' = product-preserves-iso  (sub-as-apply σ τ') (sub-as-apply τ τ')
 sub-as-apply (σ [→] τ)      _  = Iso-refl
 sub-as-apply (μ τ)          τ' =
-  μ-obj-resp {!!} {!!}
+  μ-obj-resp
+    (λ X → Iso-trans (Iso-sym (apply-lemma (sub (sub-lift (push τ')) τ) (λ ()) (extend (λ ()) X)))
+                     (Iso-trans {!!} (apply-lemma {Δ = 0} {n = 2} τ (λ ()) (extend (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) X))))
+    {!!}
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
