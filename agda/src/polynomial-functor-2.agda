@@ -156,13 +156,37 @@ record HasMu : Set (o ⊔ m ⊔ e) where
         (≈-trans (pair-p₂ _ _)
                  (≈-sym (∘-cong ≈-refl (≈-trans (strong-fmor-cong P extend-mor-p₂) (strong-fmor-id P))))))
 
+  -- Functoriality of strong-fmor in the co-Kleisli category for prod Γ -.
+  mutual
+    strong-fmor-comp : ∀ {n Γ} (P : Poly n) {δ δ' δ'' : Fin n → obj}
+                       (fs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (gs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
+                       (strong-fmor P fs ∘ pair p₁ (strong-fmor P gs))
+                       ≈ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i))
+    strong-fmor-comp (const A) fs gs = pair-p₂ _ _
+    strong-fmor-comp (var i)   fs gs = ≈-refl
+    strong-fmor-comp (P + Q)   fs gs = {!!}
+    strong-fmor-comp (P × Q)   fs gs = {!!}
+    strong-fmor-comp (μ P)     fs gs = strong-μ-fmor-comp P fs gs
+    strong-fmor-comp (T∘ P)    fs gs = {!!}
+
+    strong-μ-fmor-comp : ∀ {n Γ} (P : Poly (suc n)) {δ δ' δ'' : Fin n → obj}
+                         (fs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (gs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
+                         (strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs))
+                         ≈ strong-μ-fmor P (λ i → fs i ∘ pair p₁ (gs i))
+    strong-μ-fmor-comp P fs gs = {!!}
+
   fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
   fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
 
   fmor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
               (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
               (fmor P fs ∘ fmor P gs) ≈ fmor P (λ i → fs i ∘ gs i)
-  fmor-comp P fs gs = {!!}
+  fmor-comp (const A) fs gs = ≈-trans (∘-cong (pair-p₂ _ _) ≈-refl) id-left
+  fmor-comp (var i)   fs gs = {!!}
+  fmor-comp (P + Q)   fs gs = {!!}
+  fmor-comp (P × Q)   fs gs = {!!}
+  fmor-comp (μ P)     fs gs = {!!}
+  fmor-comp (T∘ P)    fs gs = {!!}
 
   μ-fmor : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ'
   μ-fmor P fs = strong-μ-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
