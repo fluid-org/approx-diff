@@ -11,6 +11,7 @@ open import categories
          strong-coproducts→coproducts; HasExponentials)
 open import functor using (StrongFunctor; StrongFunctor-Id)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
+open import prop-setoid using (module ≈-Reasoning)
 import polynomial-functor-2
 import language-syntax-2
 
@@ -111,6 +112,25 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
     ... | inj₁ k = refl
     ... | inj₂ l = refl
 
+-- ⟦ τ ⟧ty is functorial in its poly-variables.
+ty-fmor : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} →
+          (∀ i → δ₀ i ⇒ δ₀' i) → ⟦ τ ⟧ty (concat δ₀ δ) ⇒ ⟦ τ ⟧ty (concat δ₀' δ)
+ty-fmor τ δ {δ₀} {δ₀'} fs =
+  Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+
+-- apply-lemma intertwines ty-fmor and fmor; immediate from fwd∘bwd≈id, no induction.
+apply-nat : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj}
+            (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
+            Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs
+            ≈ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+apply-nat τ δ {δ₀} {δ₀'} fs =
+  begin
+    Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs
+  ≈⟨ {!!} ⟩
+    fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+  ∎
+  where open ≈-Reasoning isEquiv
+
 -- Syntactic substitution is functor application (up to isomorphism). The μ case is iso-level
 -- (as-poly expands the substituted type, whereas the environment freezes it as a Poly.const).
 sub-as-apply : (τ : type 1) (τ' : type 0) →
@@ -124,7 +144,8 @@ sub-as-apply (σ [→] τ)      _  = Iso-refl
 sub-as-apply (μ τ)          τ' =
   μ-obj-resp
     (λ X → Iso-trans (Iso-sym (apply-lemma (sub (sub-lift (push τ')) τ) (λ ()) (extend (λ ()) X)))
-                     (Iso-trans {!!} (apply-lemma {Δ = 0} {n = 2} τ (λ ()) (extend (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) X))))
+                     (Iso-trans {!!}
+                                (apply-lemma {Δ = 0} {n = 2} τ (λ ()) (extend (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) X))))
     {!!}
 
 ⟦_⟧ctxt : ctxt → obj
