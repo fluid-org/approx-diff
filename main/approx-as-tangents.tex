@@ -108,7 +108,10 @@ exactly when some intermediate position carries the dependency across.}
 
 \subsection{Stable Functions as Differentiable Functions}
 
-\Replaced{Galois connections played a prominent role in the earlier work on \GPS, where they capture the conditions under which a backward slicing map exists, recovering the least input responsible for a given output.}{Our thesis is that \GPS is a generalised form of differentiable programming, where tangents are not linear approximations of curves but instead are qualitative information approximations of elements.} Smooth functions in this setting are Berry's \emph{stable functions} \cite{berry79,berry82}. We now introduce these concepts and how they relate to \GPS.
+\Replaced{Galois connections played a prominent role in the earlier work on program slicing: the forward map preserves meets, and the backward slicing map, recovering the least input responsible for a given output, is its adjoint, the two together forming a Galois connection.}{Our thesis is that \GPS is a generalised form of differentiable programming, where tangents are
+not linear approximations of curves but instead are qualitative information approximations of elements.}
+\Replaced{Not every function admits such a backward map. In analysis it is \emph{smoothness} that determines when a function can be differentiated; the qualitative counterpart is Berry's notion of a \emph{stable function}~\cite{berry79,berry82}, the condition under which a function's forward and backward maps form this connection, and hence under which the backward slice exists.}{Smooth functions in this setting are Berry's \emph{stable functions}
+\cite{berry79,berry82}.} We now introduce these concepts and how they relate to \GPS.
 
 \subsubsection{Domains as a Qualitative Theory of Approximation}
 
