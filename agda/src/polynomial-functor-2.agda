@@ -321,12 +321,27 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   fmor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
               (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
               (fmor P fs ∘ fmor P gs) ≈ fmor P (λ i → fs i ∘ gs i)
-  fmor-comp (const A) fs gs = ≈-trans (∘-cong₁ (pair-p₂ _ _)) id-left
-  fmor-comp (var i)   fs gs = {!!}
-  fmor-comp (P + Q)   fs gs = {!!}
-  fmor-comp (P × Q)   fs gs = {!!}
-  fmor-comp (μ P)     fs gs = {!!}
-  fmor-comp (T∘ P)    fs gs = {!!}
+  fmor-comp P fs gs =
+    begin
+      fmor P fs ∘ fmor P gs
+    ≈⟨ assoc _ _ _ ⟩
+      strong-fmor P (λ i → fs i ∘ p₂) ∘ (pair to-terminal (id _) ∘ fmor P gs)
+    ≈⟨ ∘-cong₂ (≈-sym (assoc _ _ _)) ⟩
+      strong-fmor P (λ i → fs i ∘ p₂) ∘ ((pair to-terminal (id _) ∘ strong-fmor P (λ i → gs i ∘ p₂)) ∘ pair to-terminal (id _))
+    ≈⟨ ∘-cong₂ (∘-cong₁ (unit-nat _)) ⟩
+      strong-fmor P (λ i → fs i ∘ p₂) ∘ (pair p₁ (strong-fmor P (λ i → gs i ∘ p₂)) ∘ pair to-terminal (id _))
+    ≈⟨ ≈-sym (assoc _ _ _) ⟩
+      (strong-fmor P (λ i → fs i ∘ p₂) ∘ pair p₁ (strong-fmor P (λ i → gs i ∘ p₂))) ∘ pair to-terminal (id _)
+    ≈⟨ ∘-cong₁ (strong-fmor-comp P (λ i → fs i ∘ p₂) (λ i → gs i ∘ p₂)) ⟩
+      strong-fmor P (λ i → (fs i ∘ p₂) ∘ pair p₁ (gs i ∘ p₂)) ∘ pair to-terminal (id _)
+    ≈⟨ ∘-cong₁ (strong-fmor-cong P (λ i → ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (≈-sym (assoc _ _ _))))) ⟩
+      strong-fmor P (λ i → (fs i ∘ gs i) ∘ p₂) ∘ pair to-terminal (id _)
+    ∎
+    where
+      -- Unit naturality: pair to-terminal (id _) ∘ h ≈ pair p₁ h, since to-terminal ∘ h ≈ p₁.
+      unit-nat : ∀ {X Y} (h : prod witness X ⇒ Y) → pair to-terminal (id _) ∘ h ≈ pair p₁ h
+      unit-nat h = ≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)
+      open ≈-Reasoning isEquiv
 
   μ-fmor : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ'
   μ-fmor P fs = strong-μ-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
@@ -429,7 +444,8 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           fwd∘bwd-β :
             ((⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘co (α Q δ' ∘ p₂))
             ≈ trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
-          fwd∘bwd-β = begin
+          fwd∘bwd-β =
+            begin
               (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) ∘co (α Q δ' ∘ p₂)
             ≈⟨ assoc-co _ _ _ ⟩
               ⦅ step-fwd ⦆ᴹ ∘co (⦅ step-bwd ⦆ᴹ ∘co (α Q δ' ∘ p₂))
@@ -487,7 +503,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                                     (≈-trans (∘-cong₁ (Iso.fwd∘bwd≈id (unfold-iso (μ-obj P δ)))) id-left)))) ⟩
               α Q δ' ∘ (fmor Q (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)))
                      ∘ (fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))) ∘ p₂))
-            ≈⟨ {!!} ⟩
+            ≈⟨ ∘-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (fmor-comp Q _ _))) ⟩
               α Q δ' ∘ (fmor Q (λ i → extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)) i
                                     ∘ extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)) i)
                               ∘ p₂)
