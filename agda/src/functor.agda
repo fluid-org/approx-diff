@@ -241,7 +241,11 @@ module _ {o₁ m₁ e₁}
                                (F .Functor.fmor (prod-m f g) 𝒞.∘ right-strength) 𝒞.≈
                                (right-strength 𝒞.∘ prod-m f (F .Functor.fmor g))
       right-strength-p₂ : ∀ {x y} → (F .Functor.fmor p₂ 𝒞.∘ right-strength {x} {y}) 𝒞.≈ p₂
-      -- FIXME: associativity coherence (right-strength interacts with prod's associator).
+      -- Associativity coherence: right-strength commutes with the diagonal pair p₁ (id _),
+      -- the comultiplication of the prod x - comonad.
+      right-strength-assoc : ∀ {x y} →
+        (right-strength {x} {prod x y} 𝒞.∘ pair p₁ (right-strength {x} {y}))
+        𝒞.≈ (F .Functor.fmor (pair p₁ (𝒞.id _)) 𝒞.∘ right-strength {x} {y})
     open Functor F public
 
     -- Left-strength derived by swapping inputs/outputs around right-strength.
@@ -261,6 +265,8 @@ module _ {o₁ m₁ e₁}
   StrongFunctor-Id P .StrongFunctor.right-strength-natural f g =
     𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
   StrongFunctor-Id P .StrongFunctor.right-strength-p₂ = 𝒞.id-right
+  StrongFunctor-Id P .StrongFunctor.right-strength-assoc =
+    𝒞.isEquiv .IsEquivalence.trans 𝒞.id-left (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-right)
 
   StrongPointedFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongPointedFunctor P
   StrongPointedFunctor-Id P .StrongPointedFunctor.strongFunctor = StrongFunctor-Id P

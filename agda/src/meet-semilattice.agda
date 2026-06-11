@@ -407,3 +407,10 @@ module _ where
                   (L-map project₂ ∘ L-strength {X = X} {Y = Y}) ≃m project₂
   L-strength-p₂ .eqfunc .eqfun (x , bottom) = tt , tt
   L-strength-p₂ {B = B} .eqfunc .eqfun (x , < y >) = B .≃-refl
+
+  -- Associativity coherence: L-strength commutes with the diagonal ⟨ project₁ , id ⟩.
+  L-strength-assoc : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
+                     (L-strength {X = X} {Y = X ⊕ Y} ∘ ⟨ project₁ , L-strength {X = X} {Y = Y} ⟩) ≃m
+                     (L-map ⟨ project₁ , id ⟩ ∘ L-strength {X = X} {Y = Y})
+  L-strength-assoc .eqfunc .eqfun (x , bottom) = tt , tt
+  L-strength-assoc {A} {B} .eqfunc .eqfun (x , < y >) = (A × (A × B)) .≃-refl

@@ -341,7 +341,7 @@ module _ where
   𝕃-functor .Functor.fmor-comp f g .left-eq .eqfun bottom = tt , tt
   𝕃-functor .Functor.fmor-comp {X} {Y} {Z} f g .left-eq .eqfun < z > = X .carrier .Preorder.≃-refl
 
-  open StrongFunctor using (F; right-strength; right-strength-natural; right-strength-p₂)
+  open StrongFunctor using (F; right-strength; right-strength-natural; right-strength-p₂; right-strength-assoc)
   open JoinSemilattice using (⊥-isBottom; ∨-isJoin)
 
   strongFunctor : StrongFunctor products
@@ -368,6 +368,10 @@ module _ where
     X .carrier .Preorder.≤-refl , Y .carrier .Preorder.≤-refl
   strongFunctor .right-strength-p₂ {X} {Y} ._≃g_.left-eq .eqfun < y > .proj₂ =
     X .carrier .Preorder.≤-refl , Y .carrier .Preorder.≤-refl
+  strongFunctor .right-strength-assoc ._≃g_.right-eq =
+    meet-semilattice.L-strength-assoc .meet-semilattice._≃m_.eqfunc
+  strongFunctor .right-strength-assoc ._≃g_.left-eq =
+    join-semilattice.L-costrength-assoc .join-semilattice._≃m_.eqfunc
 
   strongPointedFunctor : StrongPointedFunctor products
   strongPointedFunctor .StrongPointedFunctor.strongFunctor = strongFunctor
