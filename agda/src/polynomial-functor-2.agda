@@ -6,7 +6,7 @@ open import Data.Nat using (ℕ; zero; suc)
 open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
-         strong-coproducts→coproducts; coKleisli-prod)
+         strong-coproducts→coproducts; coKleisli-prod; module Unitor)
 open import functor using (Functor; StrongFunctor)
 open import product-category using (_^_)
 open import prop-setoid using (module ≈-Reasoning)
@@ -21,6 +21,7 @@ open HasProducts 𝒞P
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
 open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair; copair-cong to scopair-cong; copair-ext0 to scopair-p₂; copair-ext to scopair-ext; copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂)
 open StrongFunctor T-strong using (strengthᵣ; strengthᵣ-p₂; strengthᵣ-natural; strengthᵣ-assoc) renaming (F to T)
+open Unitor 𝒞T 𝒞P using (unitor-natural; unitor-comp)
 
 -- co-Kleisli notation: a morphism f : prod Γ X ⇒ Y lives in the co-Kleisli category for prod Γ -.
 infixl 21 _∘co_
@@ -85,26 +86,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) → ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
   extend-mor fs x→y Fin.zero    = x→y
   extend-mor fs x→y (Fin.suc i) = fs i
-
-  -- pair to-terminal (id _) is the unitor X ≅ witness × X (p₂ is its inverse).
-  unit-nat : ∀ {X Y} (h : prod witness X ⇒ Y) → pair to-terminal (id _) ∘ h ≈ pair p₁ h
-  unit-nat h = ≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)
-
-  -- Composing two global-element maps is the co-Kleisli composite, embedded.
-  comp-unit : ∀ {X Y Z} (f : prod witness Y ⇒ Z) (g : prod witness X ⇒ Y) →
-              (f ∘ pair to-terminal (id _)) ∘ (g ∘ pair to-terminal (id _)) ≈ (f ∘ pair p₁ g) ∘ pair to-terminal (id _)
-  comp-unit f g =
-    begin
-      (f ∘ pair to-terminal (id _)) ∘ (g ∘ pair to-terminal (id _))
-    ≈⟨ assoc _ _ _ ⟩
-      f ∘ (pair to-terminal (id _) ∘ (g ∘ pair to-terminal (id _)))
-    ≈⟨ ∘-cong₂ (≈-sym (assoc _ _ _)) ⟩
-      f ∘ ((pair to-terminal (id _) ∘ g) ∘ pair to-terminal (id _))
-    ≈⟨ ∘-cong₂ (∘-cong₁ (unit-nat g)) ⟩
-      f ∘ (pair p₁ g ∘ pair to-terminal (id _))
-    ≈⟨ ≈-sym (assoc _ _ _) ⟩
-      (f ∘ pair p₁ g) ∘ pair to-terminal (id _)
-    ∎ where open ≈-Reasoning isEquiv
 
   mutual
     strong-fmor : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} →
@@ -340,7 +321,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   -- Precomposing fmor with the counit p₂ undoes the unit, leaving the co-Kleisli action.
   fmor-p₂ : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} (fs : ∀ i → δ i ⇒ δ' i) →
             fmor P fs ∘ p₂ ≈ strong-fmor P (λ i → fs i ∘ p₂)
-  fmor-p₂ P fs = ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (≈-trans (unit-nat p₂) pair-ext0)) id-right)
+  fmor-p₂ P fs = ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (≈-trans (unitor-natural p₂) pair-ext0)) id-right)
 
   fmor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
               (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
@@ -352,7 +333,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
       strong-fmor P (λ i → fs i ∘ p₂) ∘ (pair to-terminal (id _) ∘ fmor P gs)
     ≈⟨ ∘-cong₂ (≈-sym (assoc _ _ _)) ⟩
       strong-fmor P (λ i → fs i ∘ p₂) ∘ ((pair to-terminal (id _) ∘ strong-fmor P (λ i → gs i ∘ p₂)) ∘ pair to-terminal (id _))
-    ≈⟨ ∘-cong₂ (∘-cong₁ (unit-nat _)) ⟩
+    ≈⟨ ∘-cong₂ (∘-cong₁ (unitor-natural _)) ⟩
       strong-fmor P (λ i → fs i ∘ p₂) ∘ (pair p₁ (strong-fmor P (λ i → gs i ∘ p₂)) ∘ pair to-terminal (id _))
     ≈⟨ ≈-sym (assoc _ _ _) ⟩
       (strong-fmor P (λ i → fs i ∘ p₂) ∘ pair p₁ (strong-fmor P (λ i → gs i ∘ p₂))) ∘ pair to-terminal (id _)
@@ -536,11 +517,11 @@ record HasMu : Set (o ⊔ m ⊔ e) where
               last-pointwise Fin.zero =
                 begin
                   ((⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)) ∘ (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))) ∘ p₂
-                ≈⟨ ∘-cong₁ (comp-unit ⦅ step-fwd ⦆ᴹ ⦅ step-bwd ⦆ᴹ) ⟩
+                ≈⟨ ∘-cong₁ (unitor-comp ⦅ step-fwd ⦆ᴹ ⦅ step-bwd ⦆ᴹ) ⟩
                   ((⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _)) ∘ p₂
                 ≈⟨ assoc _ _ _ ⟩
                   (⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ (pair to-terminal (id _) ∘ p₂)
-                ≈⟨ ∘-cong₂ (≈-trans (unit-nat p₂) pair-ext0) ⟩
+                ≈⟨ ∘-cong₂ (≈-trans (unitor-natural p₂) pair-ext0) ⟩
                   (⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ id _
                 ≈⟨ id-right ⟩
                   ⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ
