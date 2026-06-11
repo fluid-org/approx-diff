@@ -71,7 +71,11 @@ apply-lemma (base s)  δ δ₀ = Iso-refl
 apply-lemma (σ [+] τ) δ δ₀ = coproduct-preserve-iso (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
 apply-lemma (σ [×] τ) δ δ₀ = product-preserves-iso  (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
 apply-lemma (σ [→] τ) δ δ₀ = Iso-refl
-apply-lemma (μ τ)     δ δ₀ = {!!}
+apply-lemma (μ τ)     δ δ₀ =
+  μ-obj-resp
+    (λ X → Iso-trans (Iso-sym (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
+                     (Iso-trans {!!} (apply-lemma τ δ (extend δ₀ X))))
+    {!!}
 
 -- Syntactic substitution is functor application (up to isomorphism).
 sub-as-apply : (τ : type 1) (τ' : type 0) →
