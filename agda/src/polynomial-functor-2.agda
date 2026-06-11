@@ -335,6 +335,10 @@ record HasMu : Set (o ⊔ m ⊔ e) where
               α Q δ' ∘ (fmor Q (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)))
                      ∘ (fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))) ∘ p₂))
             ≈⟨ {!!} ⟩
+              α Q δ' ∘ (fmor Q (λ i → extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)) i
+                                    ∘ extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)) i)
+                              ∘ p₂)
+            ≈⟨ {!!} ⟩
               α Q δ' ∘ strong-fmor Q (extend-mor (λ _ → p₂) (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ))
             ≡⟨⟩
               trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
