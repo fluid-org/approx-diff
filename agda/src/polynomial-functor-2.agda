@@ -314,7 +314,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                      ∘ Iso.fwd (unfold-iso (μ-obj P δ))
                      ∘ (p₂ ∘ pair p₁ ((Iso.bwd (unfold-iso (μ-obj P δ))
                                        ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))) ∘ p₂))
-            ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (pair-p₂ _ _))) ⟩
+            ≈⟨ ∘-cong₂ (pair-p₂ _ _) ⟩
               α Q δ' ∘ fmor Q (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)))
                      ∘ Iso.fwd (unfold-iso (μ-obj P δ))
                      ∘ ((Iso.bwd (unfold-iso (μ-obj P δ))
