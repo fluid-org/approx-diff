@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections --allow-unsolved-metas #-}
+{-# OPTIONS --prop --postfix-projections #-}
 
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
@@ -55,6 +55,16 @@ mutual
   as-poly (σ [→] τ)       δ = Poly.const (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
 
+-- Combined context: the first n variables from δ₀ (the Poly variables), the rest from δ.
+concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
+concat {n} δ₀ δ i = [ δ₀ , δ ] (splitAt n i)
+
+-- Applying the polynomial (as-poly τ δ) is the interpretation of τ: the non-μ cases are
+-- definitional, the μ case uses μ-obj-resp. sub-as-apply is the n=1, Δ=0 instance up to substitution.
+apply-lemma : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
+              Iso (⟦ τ ⟧ty (concat δ₀ δ)) (fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀)
+apply-lemma τ δ δ₀ = {!!}
+
 -- Syntactic substitution is functor application (up to isomorphism).
 sub-as-apply : (τ : type 1) (τ' : type 0) →
                Iso (⟦ τ [ τ' ] ⟧ty (λ ())) (fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))))
@@ -64,7 +74,8 @@ sub-as-apply (base s)       _  = Iso-refl
 sub-as-apply (σ [+] τ)      τ' = coproduct-preserve-iso (sub-as-apply σ τ') (sub-as-apply τ τ')
 sub-as-apply (σ [×] τ)      τ' = product-preserves-iso  (sub-as-apply σ τ') (sub-as-apply τ τ')
 sub-as-apply (σ [→] τ)      _  = Iso-refl
-sub-as-apply (μ τ)          τ' = {!!}
+sub-as-apply (μ τ)          τ' =
+  μ-obj-resp {!!} {!!}
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
