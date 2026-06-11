@@ -67,12 +67,11 @@ concat {n} δ₀ δ i = [ δ₀ , δ ] (splitAt n i)
 -- the way down (the μ case is just cong over the Poly tree); ty-cong lifts it through μ-obj.
 as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} →
                (∀ i → δ i ≡ δ' i) → as-poly τ δ ≡ as-poly τ δ'
-as-poly-cong {Δ} {n} (var i) {δ} {δ'} h = lemma (splitAt n i)
+as-poly-cong {Δ} {n} (var i) {δ} {δ'} h = go (splitAt n i)
   where
-    lemma : (s : Fin n ⊎ Fin Δ) →
-            [ Poly.var , (λ j → Poly.const (δ j)) ] s ≡ [ Poly.var , (λ j → Poly.const (δ' j)) ] s
-    lemma (inj₁ k) = refl
-    lemma (inj₂ j) = cong Poly.const (h j)
+    go : (s : Fin n ⊎ Fin Δ) → [ Poly.var , (λ j → Poly.const (δ j)) ] s ≡ [ Poly.var , (λ j → Poly.const (δ' j)) ] s
+    go (inj₁ k) = refl
+    go (inj₂ j) = cong Poly.const (h j)
 as-poly-cong unit      h = refl
 as-poly-cong (base s)  h = refl
 as-poly-cong (σ [+] τ) h = cong₂ Poly._+_ (as-poly-cong σ h) (as-poly-cong τ h)
