@@ -3,7 +3,8 @@
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
 open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Sum using ([_,_]; inj₁; inj₂)
+open import Data.Sum using (_⊎_; [_,_]; inj₁; inj₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
@@ -58,6 +59,36 @@ mutual
 -- Combined context: the first n variables from δ₀ (the Poly variables), the rest from δ.
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
 concat {n} δ₀ δ i = [ δ₀ , δ ] (splitAt n i)
+
+≡→Iso : ∀ {x y} → x ≡ y → Iso x y
+≡→Iso refl = Iso-refl
+
+-- Both as-poly and ⟦_⟧ty respect pointwise-equal environments. as-poly-cong is propositional all
+-- the way down (the μ case is just cong over the Poly tree); ty-cong lifts it through μ-obj.
+as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} →
+               (∀ i → δ i ≡ δ' i) → as-poly τ δ ≡ as-poly τ δ'
+as-poly-cong {Δ} {n} (var i) {δ} {δ'} h = lemma (splitAt n i)
+  where
+    lemma : (s : Fin n ⊎ Fin Δ) →
+            [ Poly.var , (λ j → Poly.const (δ j)) ] s ≡ [ Poly.var , (λ j → Poly.const (δ' j)) ] s
+    lemma (inj₁ k) = refl
+    lemma (inj₂ j) = cong Poly.const (h j)
+as-poly-cong unit      h = refl
+as-poly-cong (base s)  h = refl
+as-poly-cong (σ [+] τ) h = cong₂ Poly._+_ (as-poly-cong σ h) (as-poly-cong τ h)
+as-poly-cong (σ [×] τ) h = cong₂ Poly._×_ (as-poly-cong σ h) (as-poly-cong τ h)
+as-poly-cong (σ [→] τ) h = refl
+as-poly-cong (μ τ)     h = cong Poly.μ (as-poly-cong τ h)
+
+ty-cong : ∀ {Δ} (τ : type Δ) {δ δ' : Fin Δ → obj} →
+          (∀ i → δ i ≡ δ' i) → ⟦ τ ⟧ty δ ≡ ⟦ τ ⟧ty δ'
+ty-cong (var i)   h = h i
+ty-cong unit      h = refl
+ty-cong (base s)  h = refl
+ty-cong (σ [+] τ) h = cong₂ coprod (ty-cong σ h) (ty-cong τ h)
+ty-cong (σ [×] τ) h = cong₂ prod  (ty-cong σ h) (ty-cong τ h)
+ty-cong (σ [→] τ) h = refl
+ty-cong (μ τ)     h = cong (λ (P : Poly 1) → μ-obj P (λ ())) (as-poly-cong τ h)
 
 -- Applying the polynomial (as-poly τ δ) is the interpretation of τ: the non-μ cases are
 -- definitional, the μ case uses μ-obj-resp. sub-as-apply is the n=1, Δ=0 instance up to substitution.
