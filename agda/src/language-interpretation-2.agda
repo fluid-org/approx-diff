@@ -63,10 +63,8 @@ concat {n} δ₀ δ i = [ δ₀ , δ ] (splitAt n i)
 ≡→Iso : ∀ {x y} → x ≡ y → Iso x y
 ≡→Iso refl = Iso-refl
 
--- Both as-poly and ⟦_⟧ty respect pointwise-equal environments. as-poly-cong is propositional all
--- the way down (the μ case is just cong over the Poly tree); ty-cong lifts it through μ-obj.
-as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} →
-               (∀ i → δ i ≡ δ' i) → as-poly τ δ ≡ as-poly τ δ'
+-- Both as-poly and ⟦_⟧ty respect pointwise-equal environments.
+as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} → (∀ i → δ i ≡ δ' i) → as-poly τ δ ≡ as-poly τ δ'
 as-poly-cong {Δ} {n} (var i) {δ} {δ'} h = go (splitAt n i)
   where
     go : (s : Fin n ⊎ Fin Δ) → [ Poly.var , (λ j → Poly.const (δ j)) ] s ≡ [ Poly.var , (λ j → Poly.const (δ' j)) ] s
@@ -79,8 +77,7 @@ as-poly-cong (σ [×] τ) h = cong₂ Poly._×_ (as-poly-cong σ h) (as-poly-con
 as-poly-cong (σ [→] τ) h = refl
 as-poly-cong (μ τ)     h = cong Poly.μ (as-poly-cong τ h)
 
-ty-cong : ∀ {Δ} (τ : type Δ) {δ δ' : Fin Δ → obj} →
-          (∀ i → δ i ≡ δ' i) → ⟦ τ ⟧ty δ ≡ ⟦ τ ⟧ty δ'
+ty-cong : ∀ {Δ} (τ : type Δ) {δ δ' : Fin Δ → obj} → (∀ i → δ i ≡ δ' i) → ⟦ τ ⟧ty δ ≡ ⟦ τ ⟧ty δ'
 ty-cong (var i)   h = h i
 ty-cong unit      h = refl
 ty-cong (base s)  h = refl
@@ -101,11 +98,15 @@ apply-lemma (base s)  δ δ₀ = Iso-refl
 apply-lemma (σ [+] τ) δ δ₀ = coproduct-preserve-iso (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
 apply-lemma (σ [×] τ) δ δ₀ = product-preserves-iso  (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
 apply-lemma (σ [→] τ) δ δ₀ = Iso-refl
-apply-lemma (μ τ)     δ δ₀ =
+apply-lemma {Δ} {n} (μ τ) δ δ₀ =
   μ-obj-resp
     (λ X → Iso-trans (Iso-sym (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
-                     (Iso-trans {!!} (apply-lemma τ δ (extend δ₀ X))))
+                     (Iso-trans (≡→Iso (ty-cong τ (env-pw X))) (apply-lemma τ δ (extend δ₀ X))))
     {!!}
+  where
+    env-pw : ∀ X (i : Fin (suc (n + Δ))) →
+             concat (extend {0} (λ ()) X) (concat δ₀ δ) i ≡ concat (extend δ₀ X) δ i
+    env-pw X i = {!!}
 
 -- Syntactic substitution is functor application (up to isomorphism).
 sub-as-apply : (τ : type 1) (τ' : type 0) →
