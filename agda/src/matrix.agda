@@ -680,7 +680,7 @@ module _ {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     open IsTop ⊤-isTop using () renaming (≤-top to ≤-⊤)
 
     to-adj-candidate : ∀ {m n} → Matrix n m →
-                   meet-semilattice._=>_ (DistribLattice n .Obj.meets) (DistribLattice m .Obj.meets)
+                       meet-semilattice._=>_ (DistribLattice n .Obj.meets) (DistribLattice m .Obj.meets)
     to-adj-candidate {m} {n} M .meet-semilattice._=>_.func .preorder._=>_.fun y j =
       M-op.Σ {n} (λ i → M i j ∨ y i)
     to-adj-candidate {m} {n} M .meet-semilattice._=>_.func .preorder._=>_.mono y≤y' j =

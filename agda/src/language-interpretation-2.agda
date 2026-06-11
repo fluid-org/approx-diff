@@ -111,19 +111,21 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
     ... | inj₁ k = refl
     ... | inj₂ l = refl
 
--- Semantic single substitution: substituting τ' then interpreting agrees with interpreting τ in the
--- environment that binds the variable to ⟦ τ' ⟧. Propositional, so no μ-obj-resp.
-subst-coh : (τ : type 1) (τ' : type 0) →
-            ⟦ τ [ τ' ] ⟧ty (λ ()) ≡ ⟦ τ ⟧ty (concat (extend {0} (λ ()) (⟦ τ' ⟧ty (λ ()))) (λ ()))
-subst-coh τ τ' = {!!}
-
--- Syntactic substitution is functor application (up to isomorphism): substitution coherence composed
--- with apply-lemma at Δ=0, n=1.
+-- Syntactic substitution is functor application (up to isomorphism). The μ case is iso-level
+-- (as-poly expands the substituted type, whereas the environment freezes it as a Poly.const).
 sub-as-apply : (τ : type 1) (τ' : type 0) →
                Iso (⟦ τ [ τ' ] ⟧ty (λ ())) (fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))))
-sub-as-apply τ τ' =
-  Iso-trans (≡→Iso (subst-coh τ τ'))
-            (apply-lemma {0} {1} τ (λ ()) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))))
+sub-as-apply (var Fin.zero) _  = Iso-refl
+sub-as-apply unit           _  = Iso-refl
+sub-as-apply (base s)       _  = Iso-refl
+sub-as-apply (σ [+] τ)      τ' = coproduct-preserve-iso (sub-as-apply σ τ') (sub-as-apply τ τ')
+sub-as-apply (σ [×] τ)      τ' = product-preserves-iso  (sub-as-apply σ τ') (sub-as-apply τ τ')
+sub-as-apply (σ [→] τ)      _  = Iso-refl
+sub-as-apply (μ τ)          τ' =
+  μ-obj-resp
+    (λ X → Iso-trans (Iso-sym (apply-lemma (sub (sub-lift (push τ')) τ) (λ ()) (extend (λ ()) X)))
+                     (Iso-trans {!!} (apply-lemma {Δ = 0} {n = 2} τ (λ ()) (extend (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) X))))
+    {!!}
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
