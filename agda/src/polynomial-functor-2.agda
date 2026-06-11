@@ -164,6 +164,11 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
   fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
 
+  fmor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
+              (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
+              (fmor P fs ∘ fmor P gs) ≈ fmor P (λ i → fs i ∘ gs i)
+  fmor-comp P fs gs = {!!}
+
   μ-fmor : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ'
   μ-fmor P fs = strong-μ-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
 
