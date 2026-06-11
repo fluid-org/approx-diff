@@ -26,8 +26,17 @@
 % Capitalised = inline markup + a margin changebar. Use the lowercase \added/\deleted/\replaced
 % (no bar) inside figures or math, where changebar spans can misbehave.
 \newcommand{\Added}[1]{\protect\cbstart\added{#1}\protect\cbend\xspace}
-\newcommand{\Deleted}[1]{\protect\cbstart\deleted{#1}\protect\cbend\xspace}
-\newcommand{\Replaced}[2]{\protect\cbstart\replaced{#1}{#2}\protect\cbend\xspace}
+% ulem's strikethrough (used for \deleted text) breaks on fragile commands such as \cite and \ref;
+% inside deleted/replaced text we box them with \mbox so they survive the strikethrough.
+\newcommand{\cmBoxCite}[1]{\mbox{\cmOldCite{#1}}}
+\newcommand{\cmBoxCitet}[1]{\mbox{\cmOldCitet{#1}}}
+\newcommand{\cmBoxCitep}[1]{\mbox{\cmOldCitep{#1}}}
+\newcommand{\cmBoxRef}[1]{\mbox{\cmOldRef{#1}}}
+\AtBeginDocument{\let\cmOldCite\cite \let\cmOldCitet\citet \let\cmOldCitep\citep \let\cmOldRef\ref}
+\newcommand{\cmRobustCites}{\let\cite\cmBoxCite \let\citet\cmBoxCitet \let\citep\cmBoxCitep \let\ref\cmBoxRef}
+\pdfstringdefDisableCommands{\let\cmRobustCites\relax}
+\newcommand{\Deleted}[1]{\protect\cbstart{\cmRobustCites\deleted{#1}}\protect\cbend\xspace}
+\newcommand{\Replaced}[2]{\protect\cbstart{\cmRobustCites\replaced{#1}{#2}}\protect\cbend\xspace}
 
 \newenvironment{salign*}
    {\par\nobreak\small\noindent\csname align*\endcsname}

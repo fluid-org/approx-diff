@@ -478,14 +478,14 @@ minimum approximation.
 \newcommand{\Bool}{\mathrm{Bool}}
 
 Let $\Bool = \Disc(\{\mathsf{tt},\mathsf{ff}\})$ be the
-(unapproximated) embedding of the booleans and
+(unapproximated) embedding of the Booleans and
 $\mathrm{or} : \Bool \times \Bool \to \Bool$ be the (unapproximated)
-boolean OR function. Using a Moggi-style let notation
+Boolean OR function. Using a Moggi-style let notation
 \cite{notions-of-computation} for morphisms constructed using the
 Monad structure of $\Lift$, we can reproduce the functions
 $\mathrm{strictOr}$ and $\mathrm{shortCircuitOr}$ functions from
 \exref{strict-short-circuit} (we also assume an if-then-else operation
-on booleans, definable from the fact that $\Fam(\LatGal)$ has
+on Booleans, definable from the fact that $\Fam(\LatGal)$ has
 coproducts and $\Disc$ preserves them). Both of these expressions
 define morphisms $\Lift(\Bool) \times \Lift(\Bool) \to \Lift(\Bool)$
 in $\Fam(\LatGal)$:
@@ -497,7 +497,7 @@ in $\Fam(\LatGal)$:
 \end{displaymath}
 Examining the morphisms so defined in $\Fam(\LatGal)$, we can see
 that, in the $\Set$ component, they are both exactly the normal
-boolean-or operation. However, they have different approximation
+Boolean-or operation. However, they have different approximation
 behaviour, reflecting the different ways that they examine their
 inputs. Let us write $\top,\bot$ for the elements of the approximation
 lattice at each point of $\Lift(\Bool)$, then applying the reverse

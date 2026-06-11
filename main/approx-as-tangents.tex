@@ -1,13 +1,10 @@
 \section{Approximations as Tangents}
 \label{sec:approx-as-tangents}
 
-We motivate our approach by showing how to combine ideas from differential geometry and stable domain theory to reconstruct the ideas of \GPS in a denotational setting.
-% From this basis, we apply the CHAD framework of V{\'a}k{\'a}r \etal to obtain a denotational model of automatic differentiation that gives us an effective way to interpret programs as functions along with their forward and backwards approximation maps.
+We motivate our approach by showing how to combine ideas from differential geometry\Added{, Boolean-valued dependency analysis,} and stable domain theory to reconstruct the ideas of \GPS in a denotational setting.
 
 \subsection{Manifolds, Smooth Functions, and Automatic Differentiation}
 \label{sec:approx-as-tangents:autodiff}
-
-% For what follows we do not need to know in detail what a manifold is, or exactly how smooth functions are defined. We only state some definitions in order to fix terminology and to justify our claim of a connection to manifolds and smooth functions. \bob{Need a good reference here.}
 
 The general study of differentiable functions takes place on
 \emph{manifolds}, topological spaces that ``locally'' behave like an
@@ -38,10 +35,11 @@ Smooth functions $f$ between manifolds $M$ and $N$ are functions on their points
   \item $\pushf{(g \circ f)}_x = \pushf{g}_{f(x)} \circ \pushf{f}_x : \tangents_x(M) \linearto \tangents_{g(f(x))}(K)$
   \item $\pullf{(g \circ f)}_x = \pullf{f}_x \circ \pullf{g}_{f(x)} : \cotangents_{g(f(x))}(K) \linearto \cotangents_x(M)$
   \end{itemize}
+  \Added{In the Euclidean case, where these maps are Jacobian matrices, the chain rule is matrix multiplication: the Jacobian of $g \circ f$ is the product of the Jacobians of $g$ and $f$, and the backward derivative is the product of their transposes in the reverse order.}
   The chain rule has the practical effect that we can compute
   derivative maps of $f$ and $g$ independently and compose them,
   instead of the potentially more difficult task of computing the
-  derivative maps of $g \circ f$. As we shall see below, stable maps
+  derivative maps of $g \circ f$. As we shall see below, \Added{dependency maps and} stable maps
   also obey a chain rule, and this forms the basis of the general
   categorical approach to differentiability that we describe in
   \secref{models-of-total-gps}.
@@ -51,9 +49,66 @@ Computing the forward and backward derivatives of smooth functions $f$ has many 
 
 Derivatives can be computed numerically by computing $f$ on small perturbations of its input, or symbolically by examining a closed-form representation of $f$. However, a more common and practical technique is to use \emph{automatic differentiation}, where a program computing $f$ is instrumented to produce (a representation of) the forward and/or backward derivative as a side-effect of producing the output~\cite{linnainmaa76}. This has led to the area of differentiable programming, where programming languages and their implementations are specifically designed to admit efficient automatic differentation algorithms~\cite{jax2018github,abadi16,elliott17,sigal24}.
 
+\cbstart
+\subsection{Dependency Analysis as Differentiation}
+\label{sec:dependency-as-differentiation}
+
+\added{Our thesis is that dependency analysis of the Galois slicing variety is a form of \emph{qualitative
+differentiation} in which the real scalars are replaced by Booleans. For data provenance, we are interested in
+how a program, viewed as a function, depends on its input. At its most basic, we can ask whether it depends on
+its input at all: for a function $f : A \to B$ we define its \emph{derivative} at $a \in A$ to be the truth
+value
+\[ f'(a) = \exists a' \in A.\ f(a) \neq f(a'), \] which is $\bot$ when $f$ is constant and $\top$ when its
+output can change as its input varies, the qualitative analogue of a derivative being nonzero. This definition
+doesn't actually depend on $a$, but if we consider $n$-ary functions $f : A_1 \times \cdots \times A_n \to B$,
+we can define the \emph{partial derivative} at input position $i$ as
+\[ \partial_i f(a_1, \ldots, a_n) = \exists a'.\ f(a_1, \ldots, a_i, \ldots, a_n) \neq f(a_1, \ldots, a',
+\ldots, a_n), \] and the partial derivatives at a point form a vector of truth values, a qualitative analogue
+of the \emph{gradient}. For integer multiplication, for instance, the gradient is $(\top, \top)$ wherever both
+arguments are nonzero; at $(0, a)$ with $a$ nonzero it is $(\top, \bot)$, at $(a, 0)$ it is $(\bot, \top)$,
+and at $(0, 0)$ it is $(\bot, \bot)$. For a function
+with several outputs, $f : A_1 \times \cdots \times A_n \to B_1 \times \cdots \times B_m$, the partial
+derivative of each output with respect to each input forms a matrix of truth values, the \emph{Boolean
+Jacobian}, whose $(j, i)$ entries record whether output $j$ depends on input $i$, just as the ordinary Jacobian
+of \secref{approx-as-tangents:autodiff} assembles the partial derivatives of a smooth function.}
+
+\added{Just as the Jacobian of a smooth function acts on tangent spaces, the Boolean Jacobian acts on the
+\emph{approximations} of a value. An approximation of a value records, at each of its positions, whether the data there is retained ($\top$) or
+discarded ($\bot$), the $\bot$s being exactly the approximated-away data of \secref{introduction:galois-slicing}.
+Such an approximation is thus a vector of truth values over the positions, or equivalently the subset of
+positions marked $\top$, so the approximations form the powerset of the positions: a finite Boolean algebra
+in which the Booleans $\mathbbm{2}$ play the role of the scalars $\RR$, and the individual positions the role
+of a basis. The Boolean Jacobian is bare incidence data, the dependency relation between input and output
+positions, and as in \secref{introduction:galois-slicing} it can be lifted to a map on approximations in two
+ways; we take the join-preserving one:}
+\begin{itemize}[leftmargin=\enummargin]
+\item \added{The \emph{forward map} is the join-preserving (conjugate) map from approximations of the input to approximations of the output represented by the Boolean Jacobian.}
+\item \added{The \emph{backward map} is the join-preserving map from approximations of the output to approximations of the input represented by its transpose.}
+\end{itemize}
+
+\begin{remark}[Chain Rule]
+  \label{rem:chain-rule-bool}
+  \added{Dependency maps compose by the chain rule, just as derivatives do: the Boolean Jacobian of a composite is the matrix product of the Boolean Jacobians, with forward maps composing in order and backward maps in reverse. As with smooth functions, this lets us compute the dependency maps of a composite program from those of its parts.}
+\end{remark}
+
+\added{Both cases are matrix multiplication over a semiring, $(NM)_{ji} = \sum_k N_{jk} M_{ki}$. Over the
+reals this is the Jacobian product of \secref{approx-as-tangents:autodiff}; over the Booleans, where $+$
+is $\join$ and $\times$ is $\meet$, it is $(N \comp M)_{ji} = \bigjoin_k N_{jk} \meet M_{ki}$, which is
+relational composition. The Boolean Jacobians are accordingly the morphisms of $\Mat(\Two)$, the category of
+matrices over the Booleans, and since such a matrix is the same data as a relation between input and output
+positions, $\Mat(\Two)$ is isomorphic to $\FinRel$, the category of finite sets and relations. Transposing a
+matrix inverts the relation, which is how the backward map runs dependencies from outputs back to inputs;
+this is the depends-on direction in which we drew the relation in \secref{introduction:galois-slicing}, and
+for dependency analysis it is arguably the backward map that is primary, with the forward map obtained by
+transposition.
+Composing two
+slicing functions thus chains their dependency relations: an output of the composite depends on an input
+exactly when some intermediate position carries the dependency across.}
+\cbend
+
 \subsection{Stable Functions as Differentiable Functions}
 
-Our thesis is that \GPS is a generalised form of differentiable programming, where tangents are not linear approximations of curves but instead are qualitative information approximations of elements. Smooth functions in this setting are Berry's \emph{stable functions} \cite{berry79,berry82}. We now introduce these concepts and how they relate to \GPS.
+\Replaced{Galois connections played a prominent role in the earlier work on \GPS, where they capture the conditions under which a backward slicing map exists, recovering the least input responsible for a given output.}{Our thesis is that \GPS is a generalised form of differentiable programming, where tangents are not linear approximations of curves but instead are qualitative information approximations of elements.} Smooth functions in this setting are Berry's \emph{stable functions} \cite{berry79,berry82}. We now introduce these concepts and how they relate to \GPS.
 
 \subsubsection{Domains as a Qualitative Theory of Approximation}
 
@@ -152,7 +207,7 @@ For the approximation version of the forward derivative of $f$ at $x$, we take $
 \begin{example}[Conditionally Multiplicative Functions]
   \label{ex:strict-short-circuit}
   To see the effect of conditional multiplicativity, consider several
-  ways of defining the OR on the lifted booleans
+  ways of defining the OR on the lifted Booleans
   $\mathbb{B}_\bot$. Two functions that are cm are the strict and
   left-short-circuiting ORs\footnote{The clauses in these examples are
     shorthand for the graph of the function. They are not to be

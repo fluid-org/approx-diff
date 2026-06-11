@@ -1,38 +1,43 @@
 ## Plan
 
+### §1
+
+- [ ] What the more recent work (POPL 2022, ESOP 2025) work showed is that, while the Galois connections are
+  useful for characterising _when_ minimal backward slices can be computed, there aren't particularly useful
+  for computing forward slices. For data provenance, we're usually interested in a different forward query.
+
 ### §1.1
 
 - [x] Currently we say "the forward analysis tells whether it's sufficient to compute the output". I think we can
   present that as one kind of forward analysis but also introduce the other intuition too: an alternative
   forward map can tell us whether an input is _necessary_ to compute some part of the output.
 
-- [ ] New section here introducing the "Bool Jacobean" idea: that we can understand these I/O dependencies in
-  terms of a matrix where each entry tells us one atomic dependency fact: entry [j, i] = 1 iff input position
-  i participates in producing output position j. Equivalently: think of the Jacobean as the characteristic
-  function of a _dependency relation_ between inputs and outputs. The relational perspective is nice because
-  it doesn't require us to decide between Galois connections or conjugate pairs at all: we can think about
-  individual edges (with that information combining additively).
-
 ### §1.2
 
-- [ ] Perhaps reframe as an analogy between (Galois-slicing-style) _dependency analysis_ and AD, rather than
+- [x] Perhaps reframe as an analogy between (Galois-slicing-style) _dependency analysis_ and AD, rather than
   Galois slicing per se; use the matrix intuition to lead into the analogy. For dependency analysis:
-  - [ ] Every value has a lattice of approximations given by the powerset of the set of positions in the value
+  - [x] Every value has a lattice of approximations given by the powerset of the set of positions in the value
   - [x] Every program has a forward approximation map that preserves joins (not meets, at this stage) and also a
   backwards map that also preserves joins.
   - [x] For dependency analysis, these forward and backward maps are related by forming a _conjugate pair_.
     Because powersets have negation, we can also frame this as a Galois connection.
-- [ ] After the bullet-list analogy, perhaps unpack the correspondence more precisely by outlining how both AD and
+- [x] After the bullet-list analogy, perhaps unpack the correspondence more precisely by outlining how both AD and
   this kind of dependency analysis can be understood in terms of linear maps (matrices), in one case between
   finite-dimensional vector spaces, in the other between Boolean semimodules, with composition as matrix
   multiplication, and linearity corresponding to +-preservation or ∨-preservation.
-- [ ] A subtlety [can perhaps defer]: in AD, the forward map is usually "given" and the backwards map obtained by
+- [x] A subtlety [can perhaps defer]: in AD, the forward map is usually "given" and the backwards map obtained by
   transposition, whereas in dependency analysis it is (arguably) more natural to think of the backwards map as
   given and the transpose as giving the forward map (but involutivity makes this just a matter of
   presentation).
 
 ### §2.2
 
+- [x] New section here introducing the "Bool Jacobean" idea: that we can understand these I/O dependencies in
+  terms of a matrix where each entry tells us one atomic dependency fact: entry [j, i] = 1 iff input position
+  i participates in producing output position j. Equivalently: think of the Jacobean as the characteristic
+  function of a _dependency relation_ between inputs and outputs. The relational perspective is nice because
+  it doesn't require us to decide between Galois connections or conjugate pairs at all: we can think about
+  individual edges (with that information combining additively).
 - [ ] The framing in §1.2 introduced conjugate pairs and Galois connections as alternative presentations of the
   same data. But that's only valid in the Boolean setting. More generally, we might want to consider when
   sufficient conditions arise for the existence of backwards join-preserving maps, given some properties of a
