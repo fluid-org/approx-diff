@@ -319,6 +319,11 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                      ∘ Iso.fwd (unfold-iso (μ-obj P δ))
                      ∘ ((Iso.bwd (unfold-iso (μ-obj P δ))
                          ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))) ∘ p₂)
+            ≈⟨ ≈-trans (assoc _ _ _) (assoc _ _ _) ⟩
+              α Q δ' ∘ (fmor Q (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)))
+                     ∘ (Iso.fwd (unfold-iso (μ-obj P δ))
+                     ∘ ((Iso.bwd (unfold-iso (μ-obj P δ))
+                         ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))) ∘ p₂)))
             ≈⟨ {!!} ⟩
               α Q δ' ∘ strong-fmor Q (extend-mor (λ _ → p₂) (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ))
             ≡⟨⟩
