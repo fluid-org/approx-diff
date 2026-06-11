@@ -106,7 +106,10 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
   where
     env-pw : ∀ X (i : Fin (suc (n + Δ))) →
              concat (extend {0} (λ ()) X) (concat δ₀ δ) i ≡ concat (extend δ₀ X) δ i
-    env-pw X i = {!!}
+    env-pw X Fin.zero    = refl
+    env-pw X (Fin.suc j) with splitAt n j
+    ... | inj₁ k = refl
+    ... | inj₂ l = refl
 
 -- Semantic single substitution: substituting τ' then interpreting agrees with interpreting τ in the
 -- environment that binds the variable to ⟦ τ' ⟧. Propositional, so no μ-obj-resp.
