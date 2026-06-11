@@ -160,8 +160,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   mutual
     strong-fmor-comp : ∀ {n Γ} (P : Poly n) {δ δ' δ'' : Fin n → obj}
                        (fs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (gs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
-                       strong-fmor P fs ∘ pair p₁ (strong-fmor P gs)
-                       ≈ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i))
+                       strong-fmor P fs ∘ pair p₁ (strong-fmor P gs) ≈ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i))
     strong-fmor-comp (const A) fs gs = pair-p₂ _ _
     strong-fmor-comp (var i) fs gs = ≈-refl
     strong-fmor-comp (P + Q) fs gs =
@@ -175,9 +174,10 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                 (in₂ ∘ strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i)))
       ∎
       where
-        in₁-branch : strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₁ ∘ p₂)
-                     ≈ in₁ ∘ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i))
-        in₁-branch = begin
+        in₁-branch : strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₁ ∘ p₂) ≈
+                     in₁ ∘ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i))
+        in₁-branch =
+          begin
             strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₁ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
             strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs ∘ pair p₁ (in₁ ∘ p₂))
@@ -194,9 +194,10 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           ≈⟨ ∘-cong₂ (strong-fmor-comp P fs gs) ⟩
             in₁ ∘ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i))
           ∎ where open ≈-Reasoning isEquiv
-        in₂-branch : strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₂ ∘ p₂)
-                     ≈ in₂ ∘ strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i))
-        in₂-branch = begin
+        in₂-branch : strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₂ ∘ p₂) ≈
+                     in₂ ∘ strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i))
+        in₂-branch =
+          begin
             strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₂ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
             strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs ∘ pair p₁ (in₂ ∘ p₂))
@@ -214,7 +215,8 @@ record HasMu : Set (o ⊔ m ⊔ e) where
             in₂ ∘ strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i))
           ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
-    strong-fmor-comp (P × Q)   fs gs = begin
+    strong-fmor-comp (P × Q) fs gs =
+      begin
         strong-fmor (P × Q) fs ∘ pair p₁ (strong-fmor (P × Q) gs)
       ≈⟨ pair-natural _ _ _ ⟩
         pair ((strong-fmor P fs ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ (strong-fmor (P × Q) gs))
@@ -224,8 +226,8 @@ record HasMu : Set (o ⊔ m ⊔ e) where
              (strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i)) ∘ pair p₁ (p₂ ∘ p₂))
       ∎
       where
-        fst-branch : (strong-fmor P fs ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ (strong-fmor (P × Q) gs)
-                     ≈ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i)) ∘ pair p₁ (p₁ ∘ p₂)
+        fst-branch : (strong-fmor P fs ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ (strong-fmor (P × Q) gs) ≈
+                     strong-fmor P (λ i → fs i ∘ pair p₁ (gs i)) ∘ pair p₁ (p₁ ∘ p₂)
         fst-branch = begin
             (strong-fmor P fs ∘ pair p₁ (p₁ ∘ p₂)) ∘ pair p₁ (strong-fmor (P × Q) gs)
           ≈⟨ assoc-co _ _ _ ⟩
@@ -239,8 +241,8 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           ≈⟨ ∘-cong₁ (strong-fmor-comp P fs gs) ⟩
             strong-fmor P (λ i → fs i ∘ pair p₁ (gs i)) ∘ pair p₁ (p₁ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
-        snd-branch : (strong-fmor Q fs ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair p₁ (strong-fmor (P × Q) gs)
-                     ≈ strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i)) ∘ pair p₁ (p₂ ∘ p₂)
+        snd-branch : (strong-fmor Q fs ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair p₁ (strong-fmor (P × Q) gs) ≈
+                     strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i)) ∘ pair p₁ (p₂ ∘ p₂)
         snd-branch = begin
             (strong-fmor Q fs ∘ pair p₁ (p₂ ∘ p₂)) ∘ pair p₁ (strong-fmor (P × Q) gs)
           ≈⟨ assoc-co _ _ _ ⟩
@@ -255,13 +257,12 @@ record HasMu : Set (o ⊔ m ⊔ e) where
             strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i)) ∘ pair p₁ (p₂ ∘ p₂)
           ∎ where open ≈-Reasoning isEquiv
         open ≈-Reasoning isEquiv
-    strong-fmor-comp (μ P)     fs gs = strong-μ-fmor-comp P fs gs
-    strong-fmor-comp (T∘ P)    fs gs = {!!}
+    strong-fmor-comp (μ P) fs gs = strong-μ-fmor-comp P fs gs
+    strong-fmor-comp (T∘ P) fs gs = {!!}
 
     strong-μ-fmor-comp : ∀ {n Γ} (P : Poly (suc n)) {δ δ' δ'' : Fin n → obj}
                          (fs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (gs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
-                         strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs)
-                         ≈ strong-μ-fmor P (λ i → fs i ∘ pair p₁ (gs i))
+                         strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs) ≈ strong-μ-fmor P (λ i → fs i ∘ pair p₁ (gs i))
     strong-μ-fmor-comp P {δ = δ} {δ' = δ'} {δ'' = δ''} fs gs =
       ⦅⦆ᴹ-η _ (strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs))
         (begin
@@ -275,22 +276,16 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           ≈⟨ ≈-sym (assoc-co _ _ _) ⟩
             (strong-μ-fmor P fs ∘ pair p₁ (α P δ' ∘ p₂)) ∘ pair p₁ (strong-fmor P (extend-mor gs (strong-μ-fmor P gs)))
           ≈⟨ ∘-cong₁ (⦅⦆ᴹ-β _) ⟩
-            (α P δ'' ∘ strong-fmor P (extend-mor fs (strong-μ-fmor P fs))) ∘
-            pair p₁ (strong-fmor P (extend-mor gs (strong-μ-fmor P gs)))
+            (α P δ'' ∘ strong-fmor P (extend-mor fs (strong-μ-fmor P fs))) ∘ pair p₁ (strong-fmor P (extend-mor gs (strong-μ-fmor P gs)))
           ≈⟨ assoc _ _ _ ⟩
             α P δ'' ∘
             (strong-fmor P (extend-mor fs (strong-μ-fmor P fs)) ∘ pair p₁ (strong-fmor P (extend-mor gs (strong-μ-fmor P gs))))
           ≈⟨ ∘-cong₂ (strong-fmor-comp P (extend-mor fs (strong-μ-fmor P fs)) (extend-mor gs (strong-μ-fmor P gs))) ⟩
             α P δ'' ∘ strong-fmor P (λ i → extend-mor fs (strong-μ-fmor P fs) i ∘ pair p₁ (extend-mor gs (strong-μ-fmor P gs) i))
-          ≈⟨ ∘-cong₂ (strong-fmor-cong P pointwise) ⟩
+          ≈⟨ ∘-cong₂ (strong-fmor-cong P (λ { Fin.zero → ≈-refl ; (Fin.suc _) → ≈-refl })) ⟩
             α P δ'' ∘ strong-fmor P (extend-mor (λ i → fs i ∘ pair p₁ (gs i)) (strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs)))
           ∎)
-      where
-        open ≈-Reasoning isEquiv
-        pointwise : ∀ i → extend-mor fs (strong-μ-fmor P fs) i ∘ pair p₁ (extend-mor gs (strong-μ-fmor P gs) i) ≈
-                          extend-mor (λ i → fs i ∘ pair p₁ (gs i)) (strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs)) i
-        pointwise Fin.zero    = ≈-refl
-        pointwise (Fin.suc i) = ≈-refl
+      where open ≈-Reasoning isEquiv
 
   fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
   fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
