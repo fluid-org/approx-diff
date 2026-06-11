@@ -3,7 +3,7 @@
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
 open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Sum using ([_,_])
+open import Data.Sum using ([_,_]; inj₁; inj₂)
 open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
@@ -63,7 +63,15 @@ concat {n} δ₀ δ i = [ δ₀ , δ ] (splitAt n i)
 -- definitional, the μ case uses μ-obj-resp. sub-as-apply is the n=1, Δ=0 instance up to substitution.
 apply-lemma : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
               Iso (⟦ τ ⟧ty (concat δ₀ δ)) (fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀)
-apply-lemma τ δ δ₀ = {!!}
+apply-lemma {n = n} (var i) δ δ₀ with splitAt n i
+... | inj₁ j = Iso-refl
+... | inj₂ k = Iso-refl
+apply-lemma unit      δ δ₀ = Iso-refl
+apply-lemma (base s)  δ δ₀ = Iso-refl
+apply-lemma (σ [+] τ) δ δ₀ = coproduct-preserve-iso (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
+apply-lemma (σ [×] τ) δ δ₀ = product-preserves-iso  (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
+apply-lemma (σ [→] τ) δ δ₀ = Iso-refl
+apply-lemma (μ τ)     δ δ₀ = {!!}
 
 -- Syntactic substitution is functor application (up to isomorphism).
 sub-as-apply : (τ : type 1) (τ' : type 0) →
