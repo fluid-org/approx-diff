@@ -619,6 +619,10 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
                  g₁ ≈ g₂ → copair f g₁ ≈ copair f g₂
   copair-cong₂ g≈ = copair-cong ≈-refl g≈
 
+  copair-ext0 : ∀ {w x y} → copair (in₁ ∘ p₂ {w} {x}) (in₂ ∘ p₂ {w} {y}) ≈ p₂
+  copair-ext0 = ≈-trans (copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
+                        (copair-ext p₂)
+
 -- Given a terminal, every HasStrongCoproducts gives a plain HasCoproducts:
 -- copair f g := strong-copair (f ∘ p₂) (g ∘ p₂) ∘ pair to-terminal (id _).
 strong-coproducts→coproducts : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞}

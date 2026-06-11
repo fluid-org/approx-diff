@@ -19,7 +19,7 @@ module polynomial-functor-2
 open Category 𝒞
 open HasProducts 𝒞P
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
-open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair; copair-cong to scopair-cong)
+open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair; copair-cong to scopair-cong; copair-ext0 to scopair-p₂)
 open StrongFunctor T-strong using (right-strength; right-strength-p₂; right-strength-natural) renaming (F to T)
 
 -- co-Kleisli notation: a morphism f : prod Γ X ⇒ Y lives in the co-Kleisli category for prod Γ -.
@@ -129,11 +129,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                          (∀ i → fs i ≈ gs i) → strong-μ-fmor P fs ≈ strong-μ-fmor P gs
     strong-μ-fmor-cong P {δ} {δ'} fs≈gs = ⦅_⦆ᴹ-cong λ X x→μ' →
       ∘-cong ≈-refl (strong-fmor-cong P (extend-mor-cong fs≈gs))
-
-  scopair-p₂ : ∀ {Γ x y} → scopair (in₁ ∘ p₂ {Γ} {x}) (in₂ ∘ p₂ {Γ} {y}) ≈ p₂
-  scopair-p₂ =
-    ≈-trans (scopair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
-            (HasStrongCoproducts.copair-ext 𝒞SCP p₂)
 
   extend-mor-p₂ : ∀ {n Γ} {δ : Fin n → obj} {X} →
                   ∀ i → extend-mor {δ = δ} {δ' = δ} (λ _ → p₂) (p₂ {Γ} {X}) i ≈ p₂
