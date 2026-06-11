@@ -301,9 +301,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
             strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs) ∘ pair p₁ (α P δ ∘ p₂)
           ≈⟨ assoc-co _ _ _ ⟩
             strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs ∘ pair p₁ (α P δ ∘ p₂))
-          ≈⟨ ∘-cong₂ (pair-cong ≈-refl (⦅⦆ᴹ-β _)) ⟩
-            strong-μ-fmor P fs ∘ pair p₁ (α P δ' ∘ strong-fmor P (extend-mor gs (strong-μ-fmor P gs)))
-          ≈⟨ ∘-cong₂ (pair-cong ≈-refl (≈-sym (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _))))) ⟩
+          ≈⟨ ∘-cong₂ (pair-cong ≈-refl (≈-trans (⦅⦆ᴹ-β _) (≈-sym (≈-trans (assoc _ _ _) (∘-cong₂ (pair-p₂ _ _)))))) ⟩
             strong-μ-fmor P fs ∘ pair p₁ ((α P δ' ∘ p₂) ∘ pair p₁ (strong-fmor P (extend-mor gs (strong-μ-fmor P gs))))
           ≈⟨ ≈-sym (assoc-co _ _ _) ⟩
             (strong-μ-fmor P fs ∘ pair p₁ (α P δ' ∘ p₂)) ∘ pair p₁ (strong-fmor P (extend-mor gs (strong-μ-fmor P gs)))
@@ -312,9 +310,8 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           ≈⟨ assoc _ _ _ ⟩
             α P δ'' ∘
             (strong-fmor P (extend-mor fs (strong-μ-fmor P fs)) ∘ pair p₁ (strong-fmor P (extend-mor gs (strong-μ-fmor P gs))))
-          ≈⟨ ∘-cong₂ (strong-fmor-comp P (extend-mor fs (strong-μ-fmor P fs)) (extend-mor gs (strong-μ-fmor P gs))) ⟩
-            α P δ'' ∘ strong-fmor P (λ i → extend-mor fs (strong-μ-fmor P fs) i ∘ pair p₁ (extend-mor gs (strong-μ-fmor P gs) i))
-          ≈⟨ ∘-cong₂ (strong-fmor-cong P (λ { Fin.zero → ≈-refl ; (Fin.suc _) → ≈-refl })) ⟩
+          ≈⟨ ∘-cong₂ (≈-trans (strong-fmor-comp P (extend-mor fs (strong-μ-fmor P fs)) (extend-mor gs (strong-μ-fmor P gs)))
+                              (strong-fmor-cong P (λ { Fin.zero → ≈-refl ; (Fin.suc _) → ≈-refl }))) ⟩
             α P δ'' ∘ strong-fmor P (extend-mor (λ i → fs i ∘ pair p₁ (gs i)) (strong-μ-fmor P fs ∘ pair p₁ (strong-μ-fmor P gs)))
           ∎)
       where open ≈-Reasoning isEquiv
