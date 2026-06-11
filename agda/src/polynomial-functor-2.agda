@@ -23,7 +23,6 @@ open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair; copair-co
 open StrongFunctor T-strong using (strengthᵣ; strengthᵣ-p₂; strengthᵣ-natural; strengthᵣ-assoc) renaming (F to T)
 
 -- co-Kleisli notation: a morphism f : prod Γ X ⇒ Y lives in the co-Kleisli category for prod Γ -.
--- _∘co_ is composition there; id-co is the identity (p₂). Re-exported for use in HasMu laws.
 infixl 21 _∘co_
 _∘co_ : ∀ {Γ X Y Z} → (prod Γ Y ⇒ Z) → (prod Γ X ⇒ Y) → (prod Γ X ⇒ Z)
 _∘co_ {Γ} = Category._∘_ (coKleisli-prod 𝒞P Γ)
@@ -87,12 +86,9 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   extend-mor fs x→y Fin.zero    = x→y
   extend-mor fs x→y (Fin.suc i) = fs i
 
-  -- Global-element embedding pair to-terminal (id _) : X ⇒ prod witness X, and its laws.
+  -- pair to-terminal (id _) is the unitor X ≅ witness × X (p₂ is its inverse).
   unit-nat : ∀ {X Y} (h : prod witness X ⇒ Y) → pair to-terminal (id _) ∘ h ≈ pair p₁ h
   unit-nat h = ≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)
-
-  unit∘p₂ : ∀ {X} → pair to-terminal (id _) ∘ p₂ ≈ id (prod witness X)
-  unit∘p₂ = ≈-trans (unit-nat p₂) pair-ext0
 
   -- Composing two global-element maps is the co-Kleisli composite, embedded.
   comp-unit : ∀ {X Y Z} (f : prod witness Y ⇒ Z) (g : prod witness X ⇒ Y) →
@@ -344,7 +340,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   -- Precomposing fmor with the counit p₂ undoes the unit, leaving the co-Kleisli action.
   fmor-p₂ : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} (fs : ∀ i → δ i ⇒ δ' i) →
             fmor P fs ∘ p₂ ≈ strong-fmor P (λ i → fs i ∘ p₂)
-  fmor-p₂ P fs = ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ unit∘p₂) id-right)
+  fmor-p₂ P fs = ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (≈-trans (unit-nat p₂) pair-ext0)) id-right)
 
   fmor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
               (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
@@ -544,7 +540,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                   ((⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _)) ∘ p₂
                 ≈⟨ assoc _ _ _ ⟩
                   (⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ (pair to-terminal (id _) ∘ p₂)
-                ≈⟨ ∘-cong₂ unit∘p₂ ⟩
+                ≈⟨ ∘-cong₂ (≈-trans (unit-nat p₂) pair-ext0) ⟩
                   (⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ id _
                 ≈⟨ id-right ⟩
                   ⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ

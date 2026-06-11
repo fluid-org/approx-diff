@@ -623,6 +623,56 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
   copair-ext0 = ≈-trans (copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
                         (copair-ext p₂)
 
+-- The section sect = pair to-terminal (id _) : X ⇒ witness × X of p₂ (witness terminal),
+-- i.e. the unitor X ≅ witness × X, and how it interacts with composition.
+module Unitor {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+  open Category 𝒞
+  open HasTerminal T
+  open HasProducts P
+
+  sect : ∀ {X} → X ⇒ prod witness X
+  sect = pair to-terminal (id _)
+
+  -- sect ∘ f and (witness × g) ∘ sect both have the unique terminal map as first component.
+  sect-pre : ∀ {X Y} (f : X ⇒ Y) → (sect ∘ f) ≈ pair to-terminal f
+  sect-pre f = ≈-trans (pair-natural _ _ _) (pair-cong (≈-sym (to-terminal-ext _)) id-left)
+
+  sect-post : ∀ {X Y} (g : X ⇒ Y) → (pair p₁ (g ∘ p₂) ∘ sect) ≈ pair to-terminal g
+  sect-post g = begin
+      pair p₁ (g ∘ p₂) ∘ sect
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair (p₁ ∘ sect) ((g ∘ p₂) ∘ sect)
+    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+      pair to-terminal (g ∘ (p₂ ∘ sect))
+    ≈⟨ pair-cong ≈-refl (∘-cong₂ (pair-p₂ _ _)) ⟩
+      pair to-terminal (g ∘ id _)
+    ≈⟨ pair-cong ≈-refl id-right ⟩
+      pair to-terminal g
+    ∎ where open ≈-Reasoning isEquiv
+
+  -- Naturality of sect : Id ⇒ witness × -.
+  sect-natural : ∀ {X Y} (f : X ⇒ Y) → (sect ∘ f) ≈ (pair p₁ (f ∘ p₂) ∘ sect)
+  sect-natural f = ≈-trans (sect-pre f) (≈-sym (sect-post f))
+
+  -- When the domain is already witness × X, the terminal component collapses to p₁.
+  unitor-natural : ∀ {X Y} (h : prod witness X ⇒ Y) → (sect ∘ h) ≈ pair p₁ h
+  unitor-natural h = ≈-trans (sect-pre h) (pair-cong (to-terminal-unique _ _) ≈-refl)
+
+  -- Composing two sect-embedded maps is the embedded co-Kleisli composite.
+  unitor-comp : ∀ {X Y Z} (f : prod witness Y ⇒ Z) (g : prod witness X ⇒ Y) →
+                ((f ∘ sect) ∘ (g ∘ sect)) ≈ ((f ∘ pair p₁ g) ∘ sect)
+  unitor-comp f g = begin
+      (f ∘ sect) ∘ (g ∘ sect)
+    ≈⟨ assoc _ _ _ ⟩
+      f ∘ (sect ∘ (g ∘ sect))
+    ≈⟨ ∘-cong₂ (≈-sym (assoc _ _ _)) ⟩
+      f ∘ ((sect ∘ g) ∘ sect)
+    ≈⟨ ∘-cong₂ (∘-cong₁ (unitor-natural g)) ⟩
+      f ∘ (pair p₁ g ∘ sect)
+    ≈⟨ ≈-sym (assoc _ _ _) ⟩
+      (f ∘ pair p₁ g) ∘ sect
+    ∎ where open ≈-Reasoning isEquiv
+
 -- Given a terminal, every HasStrongCoproducts gives a plain HasCoproducts:
 -- copair f g := strong-copair (f ∘ p₂) (g ∘ p₂) ∘ pair to-terminal (id _).
 strong-coproducts→coproducts : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞}
@@ -638,53 +688,8 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
                 copair-cong to scopair-cong; copair-in₁ to scopair-in₁;
                 copair-in₂ to scopair-in₂; copair-ext to scopair-ext)
 
-    -- Convert plain → strong-shaped.
-    sect : ∀ {a} → a ⇒ prod 𝟙 a
-    sect = pair to-terminal (id _)
-
-    sect-LHS : ∀ {x y} → (sect ∘ in₁ {x} {y}) ≈ pair to-terminal in₁
-    sect-LHS = begin
-        pair to-terminal (id _) ∘ in₁
-      ≈⟨ pair-natural _ _ _ ⟩
-        pair (to-terminal ∘ in₁) (id _ ∘ in₁)
-      ≈⟨ pair-cong (≈-sym (to-terminal-ext _)) id-left ⟩
-        pair to-terminal in₁
-      ∎ where open ≈-Reasoning isEquiv
-
-    sect-LHS₂ : ∀ {x y} → (sect ∘ in₂ {x} {y}) ≈ pair to-terminal in₂
-    sect-LHS₂ = begin
-        pair to-terminal (id _) ∘ in₂
-      ≈⟨ pair-natural _ _ _ ⟩
-        pair (to-terminal ∘ in₂) (id _ ∘ in₂)
-      ≈⟨ pair-cong (≈-sym (to-terminal-ext _)) id-left ⟩
-        pair to-terminal in₂
-      ∎ where open ≈-Reasoning isEquiv
-
-    sect-RHS : ∀ {x y} → (pair p₁ (in₁ ∘ p₂) ∘ sect {x}) ≈ pair to-terminal (in₁ {x} {y})
-    sect-RHS = begin
-        pair p₁ (in₁ ∘ p₂) ∘ pair to-terminal (id _)
-      ≈⟨ pair-natural _ _ _ ⟩
-        pair (p₁ ∘ pair to-terminal (id _)) ((in₁ ∘ p₂) ∘ pair to-terminal (id _))
-      ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
-        pair to-terminal (in₁ ∘ (p₂ ∘ pair to-terminal (id _)))
-      ≈⟨ pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
-        pair to-terminal (in₁ ∘ id _)
-      ≈⟨ pair-cong ≈-refl id-right ⟩
-        pair to-terminal in₁
-      ∎ where open ≈-Reasoning isEquiv
-
-    sect-RHS₂ : ∀ {x y} → (pair p₁ (in₂ ∘ p₂) ∘ sect {y}) ≈ pair to-terminal (in₂ {x} {y})
-    sect-RHS₂ = begin
-        pair p₁ (in₂ ∘ p₂) ∘ pair to-terminal (id _)
-      ≈⟨ pair-natural _ _ _ ⟩
-        pair (p₁ ∘ pair to-terminal (id _)) ((in₂ ∘ p₂) ∘ pair to-terminal (id _))
-      ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
-        pair to-terminal (in₂ ∘ (p₂ ∘ pair to-terminal (id _)))
-      ≈⟨ pair-cong ≈-refl (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
-        pair to-terminal (in₂ ∘ id _)
-      ≈⟨ pair-cong ≈-refl id-right ⟩
-        pair to-terminal in₂
-      ∎ where open ≈-Reasoning isEquiv
+    -- Convert plain → strong-shaped via the unitor section sect : a ⇒ 𝟙 × a.
+    open Unitor T P
 
     result : HasCoproducts 𝒞
     result .HasCoproducts.coprod = scoprod
@@ -697,7 +702,7 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
         (scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ in₁
       ≈⟨ assoc _ _ _ ⟩
         scopair (f ∘ p₂) (g ∘ p₂) ∘ (sect ∘ in₁)
-      ≈⟨ ∘-cong ≈-refl (isEquiv .trans sect-LHS (isEquiv .sym sect-RHS)) ⟩
+      ≈⟨ ∘-cong ≈-refl (sect-natural in₁) ⟩
         scopair (f ∘ p₂) (g ∘ p₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘ sect)
       ≈˘⟨ assoc _ _ _ ⟩
         (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (in₁ ∘ p₂)) ∘ sect
@@ -714,7 +719,7 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
         (scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ in₂
       ≈⟨ assoc _ _ _ ⟩
         scopair (f ∘ p₂) (g ∘ p₂) ∘ (sect ∘ in₂)
-      ≈⟨ ∘-cong ≈-refl (isEquiv .trans sect-LHS₂ (isEquiv .sym sect-RHS₂)) ⟩
+      ≈⟨ ∘-cong ≈-refl (sect-natural in₂) ⟩
         scopair (f ∘ p₂) (g ∘ p₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘ sect)
       ≈˘⟨ assoc _ _ _ ⟩
         (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (in₂ ∘ p₂)) ∘ sect
