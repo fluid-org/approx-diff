@@ -87,6 +87,29 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   extend-mor fs x→y Fin.zero    = x→y
   extend-mor fs x→y (Fin.suc i) = fs i
 
+  -- Global-element embedding pair to-terminal (id _) : X ⇒ prod witness X, and its laws.
+  unit-nat : ∀ {X Y} (h : prod witness X ⇒ Y) → pair to-terminal (id _) ∘ h ≈ pair p₁ h
+  unit-nat h = ≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)
+
+  unit∘p₂ : ∀ {X} → pair to-terminal (id _) ∘ p₂ ≈ id (prod witness X)
+  unit∘p₂ = ≈-trans (unit-nat p₂) pair-ext0
+
+  -- Composing two global-element maps is the co-Kleisli composite, embedded.
+  comp-unit : ∀ {X Y Z} (f : prod witness Y ⇒ Z) (g : prod witness X ⇒ Y) →
+              (f ∘ pair to-terminal (id _)) ∘ (g ∘ pair to-terminal (id _)) ≈ (f ∘ pair p₁ g) ∘ pair to-terminal (id _)
+  comp-unit f g =
+    begin
+      (f ∘ pair to-terminal (id _)) ∘ (g ∘ pair to-terminal (id _))
+    ≈⟨ assoc _ _ _ ⟩
+      f ∘ (pair to-terminal (id _) ∘ (g ∘ pair to-terminal (id _)))
+    ≈⟨ ∘-cong₂ (≈-sym (assoc _ _ _)) ⟩
+      f ∘ ((pair to-terminal (id _) ∘ g) ∘ pair to-terminal (id _))
+    ≈⟨ ∘-cong₂ (∘-cong₁ (unit-nat g)) ⟩
+      f ∘ (pair p₁ g ∘ pair to-terminal (id _))
+    ≈⟨ ≈-sym (assoc _ _ _) ⟩
+      (f ∘ pair p₁ g) ∘ pair to-terminal (id _)
+    ∎ where open ≈-Reasoning isEquiv
+
   mutual
     strong-fmor : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} →
                   (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (fobj μ-obj P δ) ⇒ fobj μ-obj P δ'
@@ -318,6 +341,11 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
   fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
 
+  -- Precomposing fmor with the counit p₂ undoes the unit, leaving the co-Kleisli action.
+  fmor-p₂ : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} (fs : ∀ i → δ i ⇒ δ' i) →
+            fmor P fs ∘ p₂ ≈ strong-fmor P (λ i → fs i ∘ p₂)
+  fmor-p₂ P fs = ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ unit∘p₂) id-right)
+
   fmor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
               (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
               (fmor P fs ∘ fmor P gs) ≈ fmor P (λ i → fs i ∘ gs i)
@@ -337,11 +365,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
     ≈⟨ ∘-cong₁ (strong-fmor-cong P (λ i → ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (≈-sym (assoc _ _ _))))) ⟩
       strong-fmor P (λ i → (fs i ∘ gs i) ∘ p₂) ∘ pair to-terminal (id _)
     ∎
-    where
-      -- Unit naturality: pair to-terminal (id _) ∘ h ≈ pair p₁ h, since to-terminal ∘ h ≈ p₁.
-      unit-nat : ∀ {X Y} (h : prod witness X ⇒ Y) → pair to-terminal (id _) ∘ h ≈ pair p₁ h
-      unit-nat h = ≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) id-left)
-      open ≈-Reasoning isEquiv
+    where open ≈-Reasoning isEquiv
 
   μ-fmor : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ'
   μ-fmor P fs = strong-μ-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
@@ -505,11 +529,27 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                      ∘ (fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))) ∘ p₂))
             ≈⟨ ∘-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (fmor-comp Q _ _))) ⟩
               α Q δ' ∘ (fmor Q (λ i → extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)) i
-                                    ∘ extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)) i)
-                              ∘ p₂)
-            ≈⟨ {!!} ⟩
+                                    ∘ extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)) i) ∘ p₂)
+            ≈⟨ ∘-cong₂ (≈-trans (fmor-p₂ Q _) (strong-fmor-cong Q last-pointwise)) ⟩
               trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
             ∎
-            where open ≈-Reasoning isEquiv
+            where
+              last-pointwise : ∀ i →
+                (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)) i ∘ extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)) i) ∘ p₂ ≈
+                extend-mor (λ _ → p₂) (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ) i
+              last-pointwise Fin.zero =
+                begin
+                  ((⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)) ∘ (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _))) ∘ p₂
+                ≈⟨ ∘-cong₁ (comp-unit ⦅ step-fwd ⦆ᴹ ⦅ step-bwd ⦆ᴹ) ⟩
+                  ((⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ pair to-terminal (id _)) ∘ p₂
+                ≈⟨ assoc _ _ _ ⟩
+                  (⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ (pair to-terminal (id _) ∘ p₂)
+                ≈⟨ ∘-cong₂ unit∘p₂ ⟩
+                  (⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ) ∘ id _
+                ≈⟨ id-right ⟩
+                  ⦅ step-fwd ⦆ᴹ ∘ pair p₁ ⦅ step-bwd ⦆ᴹ
+                ∎ where open ≈-Reasoning isEquiv
+              last-pointwise (Fin.suc i) = ≈-trans (∘-cong₁ id-left) id-left
+              open ≈-Reasoning isEquiv
 
       iso .Iso.bwd∘fwd≈id = {!!}
