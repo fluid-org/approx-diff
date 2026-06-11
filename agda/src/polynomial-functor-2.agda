@@ -170,8 +170,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
         scopair (strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₁ ∘ p₂))
                 (strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₂ ∘ p₂))
       ≈⟨ scopair-cong in₁-branch in₂-branch ⟩
-        scopair (in₁ ∘ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i)))
-                (in₂ ∘ strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i)))
+        scopair (in₁ ∘ strong-fmor P (λ i → fs i ∘ pair p₁ (gs i))) (in₂ ∘ strong-fmor Q (λ i → fs i ∘ pair p₁ (gs i)))
       ∎
       where
         in₁-branch : strong-fmor (P + Q) fs ∘ pair p₁ (strong-fmor (P + Q) gs) ∘ pair p₁ (in₁ ∘ p₂) ≈
@@ -435,8 +434,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
             ≈⟨ assoc-co _ _ _ ⟩
               ⦅ step-fwd ⦆ᴹ ∘co (⦅ step-bwd ⦆ᴹ ∘co (α Q δ' ∘ p₂))
             ≈⟨ ∘-cong-co₂ (⦅⦆ᴹ-β {P = Q} {δ = δ'} step-bwd) ⟩
-              ⦅ step-fwd ⦆ᴹ ∘co step-bwd (μ-obj Q δ') ⦅ step-bwd ⦆ᴹ
-            ≡⟨⟩
               ⦅ step-fwd ⦆ᴹ
                 ∘co (α P δ ∘ fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
                                     ∘ Iso.bwd (unfold-iso (μ-obj Q δ')) ∘ p₂)
@@ -466,10 +463,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                 ∘co ((fmor P (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))
                       ∘ Iso.bwd (unfold-iso (μ-obj Q δ'))) ∘ p₂)
             ≈⟨ ∘-cong-co₂ (∘-cong₁ (unfold-natural-bwd _)) ⟩
-              step-fwd (μ-obj P δ) ⦅ step-fwd ⦆ᴹ
-                ∘co ((Iso.bwd (unfold-iso (μ-obj P δ))
-                      ∘ fmor Q (extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)))) ∘ p₂)
-            ≡⟨⟩
               (α Q δ' ∘ fmor Q (extend-fam (⦅ step-fwd ⦆ᴹ ∘ pair to-terminal (id _)))
                       ∘ Iso.fwd (unfold-iso (μ-obj P δ)) ∘ p₂)
                 ∘ pair p₁ ((Iso.bwd (unfold-iso (μ-obj P δ))
@@ -499,8 +492,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
                                     ∘ extend-fam (⦅ step-bwd ⦆ᴹ ∘ pair to-terminal (id _)) i)
                               ∘ p₂)
             ≈⟨ {!!} ⟩
-              α Q δ' ∘ strong-fmor Q (extend-mor (λ _ → p₂) (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ))
-            ≡⟨⟩
               trivial-step (μ-obj Q δ') (⦅ step-fwd ⦆ᴹ ∘co ⦅ step-bwd ⦆ᴹ)
             ∎
             where open ≈-Reasoning isEquiv
