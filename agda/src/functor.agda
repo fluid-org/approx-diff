@@ -236,21 +236,21 @@ module _ {o₁ m₁ e₁}
     open HasProducts P
     field
       F              : Functor 𝒞 𝒞
-      right-strength : ∀ {x y} → prod x (F .fobj y) ⇒ F .fobj (prod x y)
-      right-strength-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ x₂) (g : y₁ ⇒ y₂) →
-                               (F .Functor.fmor (prod-m f g) 𝒞.∘ right-strength) 𝒞.≈
-                               (right-strength 𝒞.∘ prod-m f (F .Functor.fmor g))
-      right-strength-p₂ : ∀ {x y} → (F .Functor.fmor p₂ 𝒞.∘ right-strength {x} {y}) 𝒞.≈ p₂
-      -- Associativity coherence: right-strength commutes with the diagonal pair p₁ (id _),
+      strengthᵣ : ∀ {x y} → prod x (F .fobj y) ⇒ F .fobj (prod x y)
+      strengthᵣ-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ x₂) (g : y₁ ⇒ y₂) →
+                               (F .Functor.fmor (prod-m f g) 𝒞.∘ strengthᵣ) 𝒞.≈
+                               (strengthᵣ 𝒞.∘ prod-m f (F .Functor.fmor g))
+      strengthᵣ-p₂ : ∀ {x y} → (F .Functor.fmor p₂ 𝒞.∘ strengthᵣ {x} {y}) 𝒞.≈ p₂
+      -- Associativity coherence: strengthᵣ commutes with the diagonal pair p₁ (id _),
       -- the comultiplication of the prod x - comonad.
-      right-strength-assoc : ∀ {x y} →
-        (right-strength {x} {prod x y} 𝒞.∘ pair p₁ (right-strength {x} {y}))
-        𝒞.≈ (F .Functor.fmor (pair p₁ (𝒞.id _)) 𝒞.∘ right-strength {x} {y})
+      strengthᵣ-assoc : ∀ {x y} →
+        (strengthᵣ {x} {prod x y} 𝒞.∘ pair p₁ (strengthᵣ {x} {y}))
+        𝒞.≈ (F .Functor.fmor (pair p₁ (𝒞.id _)) 𝒞.∘ strengthᵣ {x} {y})
     open Functor F public
 
-    -- Left-strength derived by swapping inputs/outputs around right-strength.
-    strength : ∀ {x y} → prod (F .fobj x) y ⇒ F .fobj (prod x y)
-    strength = F .Functor.fmor (pair p₂ p₁) 𝒞.∘ right-strength 𝒞.∘ pair p₂ p₁
+    -- strengthₗ (left strength) derived by swapping inputs/outputs around strengthᵣ.
+    strengthₗ : ∀ {x y} → prod (F .fobj x) y ⇒ F .fobj (prod x y)
+    strengthₗ = F .Functor.fmor (pair p₂ p₁) 𝒞.∘ strengthᵣ 𝒞.∘ pair p₂ p₁
 
   -- Strong endofunctor with a unit.
   record StrongPointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
@@ -261,11 +261,11 @@ module _ {o₁ m₁ e₁}
 
   StrongFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongFunctor P
   StrongFunctor-Id P .StrongFunctor.F              = Id
-  StrongFunctor-Id P .StrongFunctor.right-strength = 𝒞.id _
-  StrongFunctor-Id P .StrongFunctor.right-strength-natural f g =
+  StrongFunctor-Id P .StrongFunctor.strengthᵣ = 𝒞.id _
+  StrongFunctor-Id P .StrongFunctor.strengthᵣ-natural f g =
     𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
-  StrongFunctor-Id P .StrongFunctor.right-strength-p₂ = 𝒞.id-right
-  StrongFunctor-Id P .StrongFunctor.right-strength-assoc =
+  StrongFunctor-Id P .StrongFunctor.strengthᵣ-p₂ = 𝒞.id-right
+  StrongFunctor-Id P .StrongFunctor.strengthᵣ-assoc =
     𝒞.isEquiv .IsEquivalence.trans 𝒞.id-left (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-right)
 
   StrongPointedFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongPointedFunctor P
