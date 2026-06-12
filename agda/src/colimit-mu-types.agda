@@ -24,15 +24,15 @@ module colimit-mu-types
 
 open Category 𝒟
 open HasProducts 𝒟P
-open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC) using (coprod; coprod-m; coprod-m-cong; in₁; in₂)
+open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC) using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; in₁; in₂)
 open HasInitial 𝒟I renaming (witness to 𝟘)
 open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
 open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend)
 open Poly
 
 -- The interpretation of a polynomial, by structural recursion: at μ, the colimit of the
--- initial-algebra chain. (fobj cannot be used directly: it takes the complete μ-obj as an argument,
--- which would not be structurally recursive. That fobj μ-obj and ⟦_⟧ agree is a lemma, proved later.)
+-- initial-algebra chain. (fobj can't used directly: it takes the complete μ-obj as an argument,
+-- which would not be structurally recursive. Later we prove fobj μ-obj and ⟦_⟧ agree.)
 mutual
   ⟦_⟧ : ∀ {n} → Poly n → (Fin n → obj) → obj
   ⟦ const A ⟧ δ = A
@@ -88,3 +88,16 @@ mutual
   ⟦ P × Q ⟧mor-cong   fs≈gs = prod-m-cong (⟦ P ⟧mor-cong fs≈gs) (⟦ Q ⟧mor-cong fs≈gs)
   ⟦ μ P ⟧mor-cong     fs≈gs = {!!}
   ⟦ T∘ P ⟧mor-cong    fs≈gs = Functor.fmor-cong T (⟦ P ⟧mor-cong fs≈gs)
+
+  ⟦_⟧mor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
+                (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
+                ⟦ P ⟧mor (λ i → fs i ∘ gs i) ≈ (⟦ P ⟧mor fs ∘ ⟦ P ⟧mor gs)
+  ⟦ const A ⟧mor-comp fs gs = ≈-sym id-left
+  ⟦ var i ⟧mor-comp   fs gs = ≈-refl
+  ⟦ P + Q ⟧mor-comp   fs gs =
+    ≈-trans (coprod-m-cong (⟦ P ⟧mor-comp fs gs) (⟦ Q ⟧mor-comp fs gs)) (coprod-m-comp _ _ _ _)
+  ⟦ P × Q ⟧mor-comp   fs gs =
+    ≈-trans (prod-m-cong (⟦ P ⟧mor-comp fs gs) (⟦ Q ⟧mor-comp fs gs)) (prod-m-comp _ _ _ _)
+  ⟦ μ P ⟧mor-comp     fs gs = {!!}
+  ⟦ T∘ P ⟧mor-comp    fs gs =
+    ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)

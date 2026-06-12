@@ -464,6 +464,17 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       pair (f₁ ∘ g₁) (f₂ ∘ g₂)
     ∎ where open ≈-Reasoning isEquiv
 
+  prod-m-comp : ∀ {x₁ x₂ y₁ y₂ z₁ z₂} (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
+    prod-m (f₁ ∘ g₁) (f₂ ∘ g₂) ≈ (prod-m f₁ f₂ ∘ prod-m g₁ g₂)
+  prod-m-comp f₁ f₂ g₁ g₂ =
+    begin
+      pair ((f₁ ∘ g₁) ∘ p₁) ((f₂ ∘ g₂) ∘ p₂)
+    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      pair (f₁ ∘ (g₁ ∘ p₁)) (f₂ ∘ (g₂ ∘ p₂))
+    ≈˘⟨ pair-compose _ _ _ _ ⟩
+      prod-m f₁ f₂ ∘ pair (g₁ ∘ p₁) (g₂ ∘ p₂)
+    ∎ where open ≈-Reasoning isEquiv
+
   pair-functorial : ∀ {x₁ x₂ y₁ y₂ z₁ z₂} (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
     prod-m (f₁ ∘ g₁) (f₂ ∘ g₂) ≈ (prod-m f₁ f₂ ∘ prod-m g₁ g₂)
   pair-functorial f₁ f₂ g₁ g₂ =
