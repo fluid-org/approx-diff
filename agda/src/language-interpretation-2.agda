@@ -95,8 +95,11 @@ apply-lemma : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin
 ty-fmor : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} →
           (∀ i → δ₀ i ⇒ δ₀' i) → ⟦ τ ⟧ty (concat δ₀ δ) ⇒ ⟦ τ ⟧ty (concat δ₀' δ)
 
-apply-nat : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
-            Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs ≈ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+apply-nat-fwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
+                Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs ≈ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+
+apply-nat-bwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
+                ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀) ≈ Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs
 
 apply-lemma {n = n} (var i) δ δ₀ with splitAt n i
 ... | inj₁ j = Iso-refl
@@ -116,7 +119,7 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
         fmor (as-poly τ δ) (extend-fam f) ∘ Iso.fwd (apply-lemma τ δ (extend δ₀ X))
           ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
           ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
-      ≈⟨ ∘-cong₁ (∘-cong₁ (≈-sym (apply-nat τ δ (extend-fam f)))) ⟩
+      ≈⟨ ∘-cong₁ (∘-cong₁ (≈-sym (apply-nat-fwd τ δ (extend-fam f)))) ⟩
         Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ ty-fmor τ δ (extend-fam f)
           ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
           ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
@@ -138,13 +141,35 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
 ty-fmor τ δ {δ₀} {δ₀'} fs =
   Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
 
-apply-nat τ δ {δ₀} {δ₀'} fs =
+apply-nat-fwd τ δ {δ₀} {δ₀'} fs =
   begin
     Iso.fwd (apply-lemma τ δ δ₀') ∘ ((Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)))
   ≈⟨ ≈-trans (∘-cong₂ (assoc _ _ _)) (≈-sym (assoc _ _ _)) ⟩
     (Iso.fwd (apply-lemma τ δ δ₀') ∘ (Iso.bwd (apply-lemma τ δ δ₀')) ∘ (fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)))
   ≈⟨ ≈-trans (∘-cong₁ (Iso.fwd∘bwd≈id (apply-lemma τ δ δ₀'))) id-left ⟩
     fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+  ∎
+  where open ≈-Reasoning isEquiv
+
+apply-nat-bwd τ δ {δ₀} {δ₀'} fs =
+  begin
+    ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀)
+  ≈˘⟨ id-left ⟩
+    id _ ∘ (ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀))
+  ≈˘⟨ ∘-cong₁ (Iso.bwd∘fwd≈id (apply-lemma τ δ δ₀')) ⟩
+    (Iso.bwd (apply-lemma τ δ δ₀') ∘ Iso.fwd (apply-lemma τ δ δ₀')) ∘ (ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀))
+  ≈⟨ assoc _ _ _ ⟩
+    Iso.bwd (apply-lemma τ δ δ₀') ∘ (Iso.fwd (apply-lemma τ δ δ₀') ∘ (ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀)))
+  ≈˘⟨ ∘-cong₂ (assoc _ _ _) ⟩
+    Iso.bwd (apply-lemma τ δ δ₀') ∘ ((Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs) ∘ Iso.bwd (apply-lemma τ δ δ₀))
+  ≈⟨ ∘-cong₂ (∘-cong₁ (apply-nat-fwd τ δ fs)) ⟩
+    Iso.bwd (apply-lemma τ δ δ₀') ∘ ((fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)) ∘ Iso.bwd (apply-lemma τ δ δ₀))
+  ≈⟨ ∘-cong₂ (assoc _ _ _) ⟩
+    Iso.bwd (apply-lemma τ δ δ₀') ∘ (fmor (as-poly τ δ) fs ∘ (Iso.fwd (apply-lemma τ δ δ₀) ∘ Iso.bwd (apply-lemma τ δ δ₀)))
+  ≈⟨ ∘-cong₂ (∘-cong₂ (Iso.fwd∘bwd≈id (apply-lemma τ δ δ₀))) ⟩
+    Iso.bwd (apply-lemma τ δ δ₀') ∘ (fmor (as-poly τ δ) fs ∘ id _)
+  ≈⟨ ∘-cong₂ id-right ⟩
+    Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs
   ∎
   where open ≈-Reasoning isEquiv
 
