@@ -160,8 +160,8 @@ The construction of \secref{polynomial-types:fam} is specific to $\Fam(\cat{C})$
 extensions now present in the formalisation: polynomials have $n$ free variables with nested $\mu$, and may
 be composed with a strong functor $T$ (the basis for the Galois slicing interpretation of
 \secref{slicing-interpretation}). Here we specify a replacement construction that works in an arbitrary
-category $\cat{D}$ with enough colimits, so that $\Fam(\cat{C})$ and setoids become instances of a single
-development.
+category $\cat{D}$ with enough colimits, so that $\Fam(\cat{C})$ and categories of sets become instances
+of a single development.
 
 \paragraph{Polynomials.}
 Syntactic polynomials over $\cat{D}$ are kinded over a context $\Delta$ of type variables, as in
@@ -263,26 +263,28 @@ generic in the grid and belongs with the $\omega$-chain machinery, independent o
 \paragraph{Instances.}
 The construction is needed in two places: the higher-order model $\Fam(\cat{D})$ for $\cat{D} =
 \namedcat{Meet} \times \namedcat{Join}^{\mathrm{op}}$ and variants; and eventually the first-order model
-$\LatGal$ and the glued logical-relations category, which the conservativity development takes as
-parameters ($\Fam(\LatGal)$ itself hosts only the transported signature model, which involves no
-$\mu$-types).
+$\Fam(\LatGal)$ and the glued logical-relations category, which the conservativity development takes as
+parameters. (The first-order model must be a $\Fam$ category: conservativity requires strong coproducts,
+and $\LatGal$'s coproducts are biproducts, hence not strong; $\Fam$, the free coproduct completion,
+supplies them.)
 
-The semilattice categories are
-categories of finitary algebras, hence cocomplete and complete; completeness gives their opposites
-$\omega$-colimits as well, so $\cat{D}$ has $\omega$-colimits componentwise, and $\Fam(\cat{D})$ inherits
-them (setoid colimits on the index part, fibre colimits along threads). So plain $\omega$-colimits suffice
-for everything the higher-order interpretation needs.
+For the higher-order model, plain $\omega$-colimits suffice. The semilattice categories are categories of
+finitary algebras, hence cocomplete and complete; completeness gives their opposites $\omega$-colimits as
+well, so $\cat{D}$ has $\omega$-colimits componentwise, and $\Fam(\cat{D})$ inherits them (colimits of
+index sets, fibre colimits along threads).
 
-$\LatGal$ is more delicate: the candidate colimit of an $\omega$-chain of Galois connections is the inverse
-limit of the right adjoints, which has pointwise meets but in general no joins. For chains of
-\emph{embedding--projection} links ($f^R \circ f^L = \id$), however, the classical bilimit construction
-stays within lattices, and the initial-algebra chains built above start from $0$ (trivially e--p) with
-polynomial functors preserving e--p-ness. (The W-type construction of \secref{polynomial-types:fam}
-exploits the same phenomenon in $\Fam(\cat{C})$ for $\cat{C}$ without colimits: its chains are fibrewise
-isomorphisms.) When the time comes to instantiate the first-order side, the assumption can be refined to
-colimits of $\omega$-chains \emph{whose links lie in a designated class of embeddings}, with the
-construction additionally establishing that its chains remain in the class; for now we adopt plain
-$\omega$-colimits.
+The first-order model does not have plain $\omega$-colimits: a chain colimit in $\Fam(\cat{C})$ needs, over
+each index, the colimit in $\cat{C}$ of the thread of fibres, and $\LatGal$ lacks $\omega$-colimits (the
+inverse limit of the right adjoints has pointwise meets but in general no joins). However, the chains the
+construction builds have \emph{fibrewise-isomorphism} links: a tree, once formed, keeps the same fibre
+along the chain, which is how the W-type construction of \secref{polynomial-types:fam} works in
+$\Fam(\cat{C})$ for $\cat{C}$ with finite products only. So the colimit assumption should be refined to
+colimits of $\omega$-chains \emph{whose links lie in a designated class} (fibrewise isomorphisms, in the
+$\Fam$ instances), with the construction additionally establishing that its chains remain in the class.
+The refinement is contained: every use of colimits in the development flows through packaged colimiting
+cocones, so only the points where the colimit assumption is invoked, all at initial-algebra chains, need
+accompanying class membership, established by one further induction. We adopt plain $\omega$-colimits
+until the first-order side is instantiated.
 
 \subsection{Why a syntactic CBN translation does not extend to inductive types}
 \label{sec:polynomial-types:no-cbn}
