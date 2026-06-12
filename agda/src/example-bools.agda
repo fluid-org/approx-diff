@@ -27,7 +27,7 @@ open import two renaming (I to ⊤; O to ⊥)
 open import Data.Unit renaming (tt to ·; ⊤ to Unit) using ()
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
-open import polynomial-functor using (inF)
+open import fam-mu-types using (inF)
 
 open prop-setoid.Setoid
 

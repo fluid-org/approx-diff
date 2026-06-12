@@ -10,6 +10,14 @@ module everything where
 -- 4.4.
 import example
 
+-- Backward (Galois), forward (Conjugate) and matrix-model analyses of the
+-- examples, with two-valued (Bool) approximation.
+import example-bools
+
+-- Backward (Galois) analysis of the examples, with rational-interval
+-- approximation.
+import example-intervals
+
 -- Proof from Section 2.2 (Theorem 2.3) that CM (category of bounded
 -- meet semilattices and conditionally multiplicative functions) is
 -- bicartesian closed. We have not yet formalised Theorem 2.14 on

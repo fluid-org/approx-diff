@@ -6,7 +6,7 @@ open import Level
 open import prop
 open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Empty using () renaming (⊥ to 𝟘)
+open import Data.Empty using () renaming (⊥ to 𝟘S)
 open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Relation.Binary.PropositionalEquality as ≡ using (_≡_)
 
@@ -149,6 +149,20 @@ module _ {o e} where
   const : (X : Setoid o e) → X .Carrier → 𝟙 ⇒ X
   const X x .func _ = x
   const X x .func-resp-≈ tt = X .refl
+
+  𝟘 : Setoid o e
+  𝟘 .Carrier = Lift _ 𝟘S
+  𝟘 ._≈_ _ _ = ⊤
+  𝟘 .isEquivalence .refl = tt
+  𝟘 .isEquivalence .sym _ = tt
+  𝟘 .isEquivalence .trans _ _ = tt
+
+  from-𝟘 : ∀ {X : Setoid o e} → 𝟘 ⇒ X
+  from-𝟘 .func (lift ())
+  from-𝟘 .func-resp-≈ {lift ()}
+
+  from-𝟘-unique : ∀ {X : Setoid o e} (f g : 𝟘 ⇒ X) → f ≃m g
+  from-𝟘-unique f g ._≃m_.func-eq {lift ()}
 
 open _≃m_
 

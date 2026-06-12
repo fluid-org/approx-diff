@@ -11,7 +11,7 @@ open import prop-setoid
   using (IsEquivalence; Setoid; 𝟙; +-setoid; ⊗-setoid; idS; _∘S_; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence)
 open import categories
-  using (Category; HasTerminal; IsTerminal; HasCoproducts; HasProducts; HasStrongCoproducts; setoid→category)
+  using (Category; HasTerminal; IsTerminal; HasInitial; IsInitial; HasCoproducts; HasProducts; HasStrongCoproducts; setoid→category)
 open import setoid-cat using (Setoid-products)
 open import indexed-family
   using (Fam; _⇒f_; idf; _∘f_; ∘f-cong; _≃f_; ≃f-isEquivalence; ≃f-id-left; ≃f-assoc;
@@ -223,6 +223,19 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     simplef[ f , g ] .famf ._⇒f_.natural _ = ≈-sym id-swap
 
     -- FIXME: simple is a functor and preserves products
+
+  -- The category of families always has an initial object: the family over the empty index.
+  initial : HasInitial cat
+  initial .HasInitial.witness .idx = prop-setoid.𝟘
+  initial .HasInitial.witness .fam .fm (lift ())
+  initial .HasInitial.witness .fam .subst {lift ()}
+  initial .HasInitial.witness .fam .refl* {lift ()}
+  initial .HasInitial.witness .fam .trans* {lift ()}
+  initial .HasInitial.is-initial .IsInitial.from-initial .idxf = prop-setoid.from-𝟘
+  initial .HasInitial.is-initial .IsInitial.from-initial .famf ._⇒f_.transf (lift ())
+  initial .HasInitial.is-initial .IsInitial.from-initial .famf ._⇒f_.natural {lift ()}
+  initial .HasInitial.is-initial .IsInitial.from-initial-ext f .idxf-eq = prop-setoid.from-𝟘-unique _ _
+  initial .HasInitial.is-initial .IsInitial.from-initial-ext f .famf-eq ._≃f_.transf-eq {lift ()}
 
   -- If 𝒞 has a terminal object, then so does the category of families
   module _ (T : HasTerminal 𝒞) where
