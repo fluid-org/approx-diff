@@ -23,6 +23,8 @@
 % Attribute inline edits with the optional id, e.g. \added[id=roly]{...}, \deleted[id=bob]{...}.
 \definechangesauthor[name=Bob, color=purple]{bob}
 \definechangesauthor[name=Roly, color=red]{roly}
+% Deleted text in grey, whoever the author.
+\setdeletedmarkup{\textcolor{gray}{\sout{#1}}}
 % Capitalised = inline markup + a margin changebar. Use the lowercase \added/\deleted/\replaced
 % (no bar) inside figures or math, where changebar spans can misbehave.
 \newcommand{\Added}[1]{\protect\cbstart\added{#1}\protect\cbend\xspace}
@@ -111,6 +113,8 @@
 }
 
 \newcommand*{\adj}{\dashv}
+\newcommand*{\disjoint}{\mathrel{\#}}
+\newcommand*{\transpose}[1]{#1^{\top}}
 \newcommand*{\biinj}{\mathsf{i}}
 \newcommand*{\biprod}{\oplus}
 \newcommand*{\biproj}{\mathsf{p}}

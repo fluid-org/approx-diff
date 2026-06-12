@@ -1,11 +1,16 @@
 \section{Models of Galois Slicing for a Total Language} % \GPS doesn't use title caps
 \label{sec:models-of-total-gps}
 
-The previous section concluded that L-posets and stable functions give
+\Replaced{\secref{dependency-as-differentiation} presented the dependency maps of \GPS as conjugate pairs of
+join-preserving maps, represented by Boolean matrices. The category $\Mat(\Two)$ is not itself a suitable
+setting for interpreting a programming language: it has biproducts, so products and coproducts coincide,
+presenting difficulties for interpreting a language with coproducts or exponentials. Moreover, just as a Jacobian describes a smooth
+function only at a point, a Boolean matrix captures the dependency structure of a program only at a single
+input value; a model must package the underlying function on values together with a matrix at each input.}{The previous section concluded that L-posets and stable functions give
 a model of \GPS analogous to manifolds and smooth functions. However,
 we noted a conceptual shortcoming of this model, for the purposes of
 modelling total computations, that proper values and their
-approximations live in the same category. In this section, we propose
+approximations live in the same category.} In this section, we propose
 a model for total \GPS based on the \emph{Category of Families}
 construction. This construction, and the more general Grothendieck
 construction, has been previously used by V{\'a}k{\'a}r and
@@ -16,13 +21,15 @@ and discuss the commonalities as we go.
 \subsection{The Category of Families Construction}
 \label{sec:models-of-total-gps:fam}
 
-L-posets are partially ordered sets where every principal downset
+\Replaced{Our model pairs a set $X$ of values with, for each $x \in X$, a bounded lattice $\partial X(x)$ of
+approximations of $x$, generalising the lattices of positions on which a Boolean Jacobian acts in
+\secref{dependency-as-differentiation}.}{L-posets are partially ordered sets where every principal downset
 $\downset{x}$ is a bounded lattice of approximations/tangents. As we
 explained in \secref{stab}, the shortcoming of this setup is that
 proper values and their approximations live in the same set. We fix
 this by changing our model to one where we have sets $X$ of values,
 and for each $x \in X$, a bounded lattice $\partial X(x)$ of
-approximations of $x$. This construction is an instance of the general
+approximations of $x$.} This construction is an instance of the general
 \emph{Category of Families} construction:
 
 \begin{definition}
@@ -37,8 +44,8 @@ approximations of $x$. This construction is an instance of the general
 
 The reason for choosing the $\Fam$ construction is that composition in
 this category is an abstract version of the chain rule that we have
-seen in \remref{chain-rule}, \remref{chain-rule-cm}, and
-\remref{chain-rule-stable}. Composition $f \circ g $ of morphisms
+seen in \Replaced{\remref{chain-rule} and \remref{chain-rule-bool}}{\remref{chain-rule},
+\remref{chain-rule-cm}, and \remref{chain-rule-stable}}. Composition $f \circ g $ of morphisms
 $f : (Y, \partial Y) \to (Z, \partial Z)$ and
 $g : (X, \partial X) \to (Y, \partial Y)$ in this category is given by
 normal function composition on the set components, and
@@ -69,45 +76,35 @@ turning smooth maps into pairs of plain functions and linear
 functions. We conjecture at the end of this section that the analogous
 construction in our partially ordered setting does not.
 
-For the categories $\CM$ and $\Lposet$, we pick the appropriate
-categories of partial orders and monotone maps:
+\Replaced{For dependency analysis, we pick categories of lattices and join-preserving maps:}{For the
+categories $\CM$ and $\Lposet$, we pick the appropriate categories of partial orders and monotone maps:}
 
 \begin{enumerate}[leftmargin=\enummargin]
-\item The category $\LatGal$ has bounded lattices as objects and
-  Galois connections as morphisms, with the right adjoint going in the
-  ``forward'' direction. The category $\Fam(\LatGal)$ is our preferred
-  model for total functions with Galois slicing. We explore some
-  specific examples in this category in \secref{semantic-gps}.
-\item The category $\MeetSLat$ has meet-semilattices with top as
-  objects and monotone finite meet preserving functions as
-  morphisms. The category $\Fam(\MeetSLat)$ provides a model of
-  total functions with ``forward derivatives'' only.
-\item The category $\JoinSLat$ has join-semilattices with bottom as
-  objects and monotone finite join preserving functions as
-  morphisms. The category $\Fam(\JoinSLat^\op)$ provides a model of
-  total functions with ``backwards derivatives'' only.
+\item \Replaced{The category $\LatConj$ has bounded lattices as objects and conjugate pairs
+  (\defref{conjugate-pair}) as morphisms, with the forward map going in the direction of the morphism. The
+  category $\Fam(\LatConj)$ is our preferred model for total functions with dependency analysis. We explore
+  some specific examples in this category in \secref{semantic-gps}.}{The category $\LatGal$ has bounded
+  lattices as objects and Galois connections as morphisms, with the right adjoint going in the ``forward''
+  direction. The category $\Fam(\LatGal)$ is our preferred model for total functions with Galois slicing. We
+  explore some specific examples in this category in \secref{semantic-gps}.}
+\item \Replaced{The category $\JoinSLat$ has join-semilattices with bottom as objects and monotone finite
+  join preserving functions as morphisms. The categories $\Fam(\JoinSLat)$ and $\Fam(\JoinSLat^\op)$ provide
+  models of total functions with only ``forward derivatives'' or only ``backwards derivatives'',
+  respectively.}{The category $\MeetSLat$ has meet-semilattices with top as objects and monotone finite meet
+  preserving functions as morphisms. The category $\Fam(\MeetSLat)$ provides a model of total functions with
+  ``forward derivatives'' only. The category $\JoinSLat$ has join-semilattices with bottom as objects and
+  monotone finite join preserving functions as morphisms. The category $\Fam(\JoinSLat^\op)$ provides a model
+  of total functions with ``backwards derivatives'' only.}
 \end{enumerate}
 
-We can get an analogous result to \propref{embed-manifolds} for
-L-posets and stable maps:
-
-\begin{proposition}
-  \label{prop:embed-stable}
-  There is a faithful functor $\Lposet \to \Fam(\LatGal)$ that maps an
-  L-poset $X$ to $(X, \lambda x. \downset{x})$ and stable functions
-  $f$ to $(f, \lambda x. (f_x, f^*_x))$. Likewise, there is a faithful
-  functor $\CM \to \Fam(\MeetSLat)$.
-\end{proposition}
-
-Despite its similarity, this proposition has a lesser status than
-\propref{embed-manifolds} because it is not clear that the category
-$\Lposet$ (or $\CM$) is a canonical definition of approximable sets
-and functions with approximation derivatives, as we discussed at the
-end of \secref{stab}.
-% We could restrict $\Lposet$ to morphisms that preserve maximal
-% elements and take L-posets $X$ to
-% $(\mathrm{Max}(M), \lambda x. \downset{x})$.
-Our working hypothesis is that $\Fam(\LatGal)$, where values and their
+\Deleted{We can get an analogous result to \propref{embed-manifolds} for L-posets and stable maps: there is
+a faithful functor $\Lposet \to \Fam(\LatGal)$ that maps an L-poset $X$ to $(X, \lambda x. \downset{x})$ and
+stable functions $f$ to $(f, \lambda x. (f_x, f^*_x))$, and likewise a faithful functor
+$\CM \to \Fam(\MeetSLat)$. Despite its similarity, this result has a lesser status than
+\propref{embed-manifolds} because it is not clear that the category $\Lposet$ (or $\CM$) is a canonical
+definition of approximable sets and functions with approximation derivatives, as we discussed at the end of
+\secref{stab}.}
+Our working hypothesis is that \Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$}, where values and their
 approximations are separated by construction, is a natural model of
 semantic \GPS in a total setting, though we note some shortcomings in
 \remref{further-structure}. We now investigate some categorical
@@ -154,15 +151,17 @@ $\Fam(\cat{C})$. For example, lists can be constructed as a coproduct
 \end{equation}
 where $X^0 = 1$ (the terminal object) and $X^{n+1} = X \times X^n$.
 
-Our category of interest, $\Fam(\LatGal)$ has coproducts and finite
-products, because $\LatGal$ has products. Similarly for
-$\Fam(\MeetSLat)$. As we shall see below, the products in $\LatGal$
-(and $\MeetSLat$ and $\JoinSLat)$ are also coproducts, which is
-essential to obtaining cartesian closure.
+\Replaced{Our category of interest, $\Fam(\LatConj)$ has all coproducts, from the $\Fam$ construction
+itself, and finite products, because $\LatConj$ has products. Similarly for $\Fam(\JoinSLat)$. As we shall
+see below, the products in $\LatConj$ (and
+$\JoinSLat$) are also coproducts, which is essential to obtaining Cartesian closure.}{Our category of
+interest, $\Fam(\LatGal)$ has coproducts and finite products, because $\LatGal$ has products. Similarly for
+$\Fam(\MeetSLat)$. As we shall see below, the products in $\LatGal$ (and $\MeetSLat$ and $\JoinSLat)$ are
+also coproducts, which is essential to obtaining Cartesian closure.}
 
 \subsubsection{Cartesian Closure}
 
-For cartesian closure of the categories $\Fam(C)$ that we are
+For Cartesian closure of the categories $\Fam(C)$ that we are
 interested in, we rely on the following theorem of \citet{nunes2023},
 specialised from their setting with the general Grothendieck
 construction to $\Fam(\cat{C})$. This relies on the definition of
@@ -171,11 +170,11 @@ construction to $\Fam(\cat{C})$. This relies on the definition of
 \begin{theorem}[\cite{nunes2023}]
   \label{thm:fam-closed}
   \AGDA.  If $\cat{C}$ has biproducts (\defref{biproducts}) and all
-  products, then $\Fam(\cat{C})$ is cartesian closed\footnote{More
+  products, then $\Fam(\cat{C})$ is Cartesian closed\footnote{More
     precisely, if $\cat{C}$ has coproducts then we have a monoidal
     product on $\Fam(\cat{C})$ which is closed by this
     construction. When these coproducts are in fact biproducts, we get
-    cartesian closure.}. On objects, the internal hom can be given by:
+    Cartesian closure.}. On objects, the internal hom can be given by:
   \begin{displaymath}
     (X, \partial X) \to (Y, \partial Y) = (\Pi_{x : X}. \Sigma_{y : Y}. \cat{C}(\partial X(x), \partial Y(y)), \lambda f. \Pi_{x : X}. \partial Y(\pi_1(f\, x)))
   \end{displaymath}
@@ -184,17 +183,17 @@ construction to $\Fam(\cat{C})$. This relies on the definition of
 The $\Set$-component of $(X, \partial X) \to (Y, \partial Y)$ consists
 of exactly the morphisms of $\Fam(\cat{C})$, rephrased into a single
 object. When $\cat{C} = \FinVect$, these are functions with an
-associated linear map at every point, and when $\cat{C} = \LatGal$,
-these are functions with an associated Galois connection at every
-point. A tangent to a function is then defined to be a mapping from
+associated linear map at every point, and when
+\Replaced{$\cat{C} = \LatConj$, these are functions with an associated conjugate pair at every
+point}{$\cat{C} = \LatGal$, these are functions with an associated Galois connection at every point}. A tangent to a function is then defined to be a mapping from
 points in the domain to tangents in the codomain along the function.
 
-The category $\MeetSLat$ satisfies the hypotheses of
+The category \Replaced{$\JoinSLat$}{$\MeetSLat$} satisfies the hypotheses of
 \thmref{fam-closed}, so:
 \begin{corollary}
-  $\Fam(\MeetSLat)$ is cartesian closed and has all coproducts.
+  \Replaced{$\Fam(\JoinSLat)$}{$\Fam(\MeetSLat)$} is Cartesian closed and has all coproducts.
 \end{corollary}
-Unfortunately, neither $\LatGal$ nor $\FinVect$ satisfy the
+Unfortunately, neither \Replaced{$\LatConj$}{$\LatGal$} nor $\FinVect$ satisfy the
 hypotheses of this theorem, because neither of them have infinite
 products. We will consider ways to rectify this below in
 \secref{fixing-completeness}.
@@ -204,14 +203,14 @@ products. We will consider ways to rectify this below in
   There is another construction of internal homs on $\Fam(\cat{C})$
   arising from the use of fibrations for categorical logical
   relations, due to \citet[Corollary 4.12]{hermida99}. If we assume
-  that $\cat{C}$ is itself cartesian closed and has all products, then
+  that $\cat{C}$ is itself Cartesian closed and has all products, then
   we could construct an internal hom as:
   \begin{displaymath}
     (X, \partial X) \to (Y, \partial Y) = (X \to Y, \lambda f. \Pi_{x : X}.\,\partial X(x) \to \partial Y(f\,x))
   \end{displaymath}
   However, for the purposes of modelling differentiable programs, this
-  is fatally flawed in that neither $\LatGal$ nor $\FinVect$ are
-  cartesian closed, and there is no way of making them so without
+  is fatally flawed in that neither \Replaced{$\LatConj$}{$\LatGal$} nor $\FinVect$ are
+  Cartesian closed, and there is no way of making them so without
   losing the property of being able to conjunct or add tangents, as we
   shall see below. We will implicitly use Hermida's construction in
   our definability proof in \secref{definability}, where we use a
@@ -298,22 +297,22 @@ coproducts:
   hence biproducts:
   \begin{enumerate}[leftmargin=\enummargin]
   \item In $\FinVect$, morphisms are linear maps and so can be added
-    and have a zero map. Finite products are given by cartesian
+    and have a zero map. Finite products are given by Cartesian
     products of the underlying sets, with the vector operations
     defined pointwise.
-  \item In $\LatGal$, right adjoints are summed using meets and left
-    adjoints are summed using joins. The zero maps are given by the
-    constantly $\top$ and constantly $\bot$ functions
-    respectively. Products are given by the cartesian product of the
-    underlying set and the one-element lattice for the
-    terminal/initial/zero object.
-  \item $\MeetSLat$ and $\JoinSLat$ are both $\CMon$-enriched and have
-    finite products similar to $\LatGal$.
+  \item \Replaced{In $\LatConj$, both components of a conjugate pair are summed using joins, and the zero
+    maps are given by the constantly $\bot$ functions.}{In $\LatGal$, right
+    adjoints are summed using meets and left adjoints are summed using joins. The zero maps are given by the
+    constantly $\top$ and constantly $\bot$ functions respectively.} Products are given by the Cartesian
+    product of the underlying set and the one-element lattice for the terminal/initial/zero object.
+  \item \Replaced{$\JoinSLat$ is also $\CMon$-enriched and has finite products similar to
+    $\LatConj$.}{$\MeetSLat$ and $\JoinSLat$ are both $\CMon$-enriched and have finite products similar to
+    $\LatGal$.}
   \end{enumerate}
 \end{example}
 
 \begin{remark}
-  Categories with zero objects cannot be cartesian closed without
+  Categories with zero objects cannot be Cartesian closed without
   being trivial in the sense of having exactly one morphism between
   every pair of objects because
   $\cat{C}(X, Y) \cong \cat{C}(1 \times X,Y) \cong \cat{C}(0 \times
@@ -328,7 +327,7 @@ coproducts:
 The second hypothesis of \thmref{fam-closed} is that the category
 $\cat{C}$ has all (i.e., infinite) products. This is required to
 gather together tangents for all of the points in the domain of the
-function. Unfortunately, neither $\FinVect$ nor $\LatGal$ is complete
+function. Unfortunately, neither $\FinVect$ nor \Replaced{$\LatConj$}{$\LatGal$} is complete
 in this sense.
 
 In the case of $\FinVect$, the solution is to expand to the category
@@ -344,8 +343,8 @@ first-order type, the interpretation in $\Fam(\Vect)$ correctly yields
 the forward derivative of the defined function on the reals (and
 reverse derivative for $\Fam(\Vect^\op)$).
 
-For $\LatGal$ we could expand to the category of complete lattices and
-Galois connections between them. From a classical mathematical point
+For \Replaced{$\LatConj$}{$\LatGal$} we could expand to the category of complete lattices and
+\Replaced{conjugate pairs}{Galois connections} between them. From a classical mathematical point
 of view, this would give a model of \GPS that would be suitable for
 reasoning about programs' behaviour and their forward and backward
 approximations. However, in terms of building an executable model
@@ -355,78 +354,74 @@ moving to complete lattices is very different to moving to arbitrary
 dimension vector spaces: in the former we have infinitary operations,
 while the latter still has only finitary operations.)
 
-We will avoid the need for infinitary operations by separating the
-forward and backward parts of the Galois connections to act
-independently by moving to the product category
-$\MeetSLat \times \JoinSLat^\op$. Objects in this category consist of
-\emph{separate} meet- and join-semilattices and potentially unrelated
-forward meet-preserving and backward join-preserving maps. We first
+We will avoid the need for infinitary operations by separating the forward and backward parts of
+the \Replaced{conjugate pairs}{Galois connections} to act independently by moving to the product category
+\Replaced{$\JoinSLat \times \JoinSLat^\op$}{$\MeetSLat \times \JoinSLat^\op$}. Objects in this category
+consist of \emph{separate} \Replaced{join-semilattices and potentially unrelated forward and backward
+join-preserving maps}{meet- and join-semilattices and potentially unrelated forward meet-preserving and
+backward join-preserving maps}. We first
 check that this category satisfies the hypotheses of
 \thmref{fam-closed}:
 
 \begin{proposition}
-  $\MeetSLat \times \JoinSLat^\op$ has biproducts and all products.
+  \Replaced{$\JoinSLat \times \JoinSLat^\op$}{$\MeetSLat \times \JoinSLat^\op$} has biproducts and all products.
 \end{proposition}
 
 \begin{proof}
-  $\MeetSLat$ and $\JoinSLat$ are both $\CMon$-enriched and have
-  finite products, as noted above. The opposite of a category with
-  biproducts also has biproducts (by swapping the injections $i$ and
-  projections $p$), and products of categories with biproducts also
-  have biproducts pointwise. Hence $\MeetSLat \times \JoinSLat^\op$
+  \Replaced{$\JoinSLat$ is $\CMon$-enriched and has}{$\MeetSLat$ and $\JoinSLat$ are both $\CMon$-enriched
+  and have} finite products, as noted above. The opposite of a category with biproducts also has biproducts
+  (by swapping the injections $i$ and projections $p$), and products of categories with biproducts also have
+  biproducts pointwise. Hence \Replaced{$\JoinSLat \times \JoinSLat^\op$}{$\MeetSLat \times \JoinSLat^\op$}
   has biproducts.
 
-  $\MeetSLat$ has all products, indeed all limits, because it is the
-  category of algebras for a Lawvere theory. Similarly, $\JoinSLat$
-  has all coproducts, indeed all colimits, for the same reason. Note
-  that these are very different constructions: elements of a product
-  of meet-semilattices consist of (possibly infinite) tuples of
-  elements, while elements of a coproduct of join-semilattices consist
-  of \emph{finite} formal joins of elements quotiented by the
-  join-semilattice equations. Since $\JoinSLat$ has all coproducts,
-  $\JoinSLat^\op$ has all products, and so
-  $\MeetSLat \times \JoinSLat^\op$ has all products, as required.
+  \Replaced{$\JoinSLat$}{$\MeetSLat$} has all products, indeed all limits, because it is the category of
+  algebras for a Lawvere theory. \Replaced{It also has}{Similarly, $\JoinSLat$ has} all coproducts, indeed
+  all colimits, for the same reason. Note that these are very different constructions: elements of a product
+  of \Replaced{join-semilattices}{meet-semilattices} consist of (possibly infinite) tuples of elements,
+  while elements of a coproduct of join-semilattices consist of \emph{finite} formal joins of elements
+  quotiented by the join-semilattice equations. Since $\JoinSLat$ has all coproducts, $\JoinSLat^\op$ has
+  all products, and so \Replaced{$\JoinSLat \times \JoinSLat^\op$}{$\MeetSLat \times \JoinSLat^\op$} has all
+  products, as required.
 \end{proof}
 
 \begin{corollary}
   \label{cor:mslat-jslat-bcc}
-  $\Fam(\MeetSLat \times \JoinSLat^\op)$ is cartesian closed and has
+  \Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$} is Cartesian closed and has
   all coproducts.
 \end{corollary}
 
-This corollary means that, assuming a sensible intepretation of
-primitive types and operations, we can use
-$\Fam(\MeetSLat \times \JoinSLat^\op)$ to interpret the higher-order
-language we describe in the next section. We still regard the category
-$\Fam(\LatGal)$ as the reference model of approximable sets with
+This corollary means that, assuming a sensible intepretation of primitive types and operations, we
+can use \Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$} to
+interpret the higher-order language we describe in the next section. We still regard the category
+\Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$} as the reference model of approximable sets with
 forward and backward approximation maps; the category
-$\Fam(\MeetSLat \times \JoinSLat^\op)$ is a technical device to carry
-out the interpretation of higher-order programs. To get
-interpretations of first-order types and primitive operations, we can
-embed $\Fam(\LatGal)$ into $\Fam(\MeetSLat \times \JoinSLat^\op)$:
+\Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$} is a technical
+device to carry out the interpretation of higher-order programs. To get interpretations of first-order types
+and primitive operations, we can embed \Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$} into
+\Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$}:
 
 \begin{proposition}
   \label{prop:ho-embedding}
   The functor
-  $\HoEmbed : \Fam(\LatGal) \to \Fam(\MeetSLat \times \JoinSLat^\op)$ is defined
+  \Replaced{$\HoEmbed : \Fam(\LatConj) \to \Fam(\JoinSLat \times
+  \JoinSLat^\op)$}{$\HoEmbed : \Fam(\LatGal) \to \Fam(\MeetSLat \times \JoinSLat^\op)$} is defined
   on objects as
   $\HoEmbed(X, \partial X) = (X, \lambda x. (\partial X(x), \partial
   X(x)))$. This functor is faithful and preserves coproducts and
   finite products.
 \end{proposition}
 
-With this embedding functor, we will see in
-\lemref{first-order-agreement-types} that the interpretation of
-first-order types will be the same up to isomorphism in
-$\Fam(\LatGal)$ and $\Fam(\MeetSLat \times \JoinSLat^\op)$, as long as
-we interpret the base types as objects in $\Fam(\LatGal)$. At
-higher-order, however, the meet-semilattice and join-semilattice sides
-of the interpretation will diverge, and it is no longer clear that the
-interpretation of programs using higher-order functions internally
-will result in Galois connections. In \secref{definability} we will
-see that every program with first-order type (even if it uses
-higher-order functions internally) does in fact have an interpretation
-definable in $\Fam(\LatGal)$.
+With this embedding functor, we will see in \lemref{first-order-agreement-types} that the
+interpretation of first-order types will be the same up to isomorphism in
+\Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$} and
+\Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$}, as long as we
+interpret the base types as objects in \Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$}. At higher-order,
+however, the \Replaced{forward and backward}{meet-semilattice and join-semilattice} sides of the
+interpretation will diverge, and it is no longer clear that the interpretation of programs using
+higher-order functions internally will result in \Replaced{conjugate pairs}{Galois connections}. In
+\secref{definability} we will see that every program with first-order type (even if it uses higher-order
+functions internally) does in fact have an interpretation definable in
+\Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$}.
 
 % \bob{In the conclusion, we have to admit to the possibility that
 %   $\Fam(CLatGal)$ might be sensible. We could have also used
@@ -666,7 +661,7 @@ see an example of the use of these operations in
 
 We have seen that the category $\Fam(\LatGal)$ has enough structure to
 express useful approximation maps at first-order and that
-$\Fam(\MeetSLat \times \JoinSLat^\op)$, which is a cartesian closed
+$\Fam(\MeetSLat \times \JoinSLat^\op)$, which is a Cartesian closed
 category with all coproducts, is enough to interpret the total
 higher-order language we define in the next section with primitive
 types and operations defined in $\Fam(\LatGal)$. However, we are not

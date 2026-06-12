@@ -122,7 +122,16 @@ At a high level, \GPS assumes that, for each possible value that may be input or
 
   In this case, the forwards portion of the Galois connection tells us, for each approximation of the input, whether or not it is sufficient to compute the output. \Added{Here this just asks whether the input set contains every position the output set depends on.} If we provide insufficient data to compute the output, then we will get an underapproximated output. Here for example we will find that $\partial (\mathit{query}\, \mathsf{a})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) = \bot$ because we need all the values associated with the label $\mathsf{a}$ to compute their sum.
 
-  \Added{However, sufficiency is only one way to read the forward direction. Reading the relation from inputs to outputs instead gives a second forward map, recording for each input position which parts of the output depend on it, and hence whether that input is \emph{necessary} to compute them: for $\mathit{query}\,\mathsf{a}$, the entry $(\mathsf{a},0)$ is necessary for the output, whereas $(\mathsf{b},1)$ is not. Whereas the sufficiency map is \emph{adjoint} to the backward map, forming a Galois connection, the necessity map is its \emph{conjugate}, a notion introduced by \citet{jonsson51}. For this particular choice of approximation, namely sets of positions within a value, the conjugate forward query is the De Morgan dual of the forwards Galois map~\cite{perera22}: an output depends on a given input exactly when it can no longer be reconstructed without it.}
+  \Added{However, sufficiency is only one way to read the forward direction. Reading the relation from inputs to outputs instead gives a second forward map, recording for each input position which parts of the output depend on it, and hence whether that input is \emph{necessary} to compute them. Writing $\partial(\mathit{query}\,\mathsf{a})_{\hat{f}}$ for this map, feeding in a single retained entry isolates its effect:}
+  \cbstart
+  \begin{displaymath}
+    \begin{array}{l}
+      \partial(\mathit{query}\,\mathsf{a})_{\hat{f}}([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) = 1 \\
+      \partial(\mathit{query}\,\mathsf{a})_{\hat{f}}([(\mathsf{a},\bot),(\mathsf{b},1),(\mathsf{a},\bot)]) = \bot
+    \end{array}
+  \end{displaymath}
+  \cbend
+  \Added{The first shows that $(\mathsf{a},0)$ is used, the second that $(\mathsf{b},1)$ is not; on the first input the sufficiency map returned $\bot$ instead, since one retained $\mathsf{a}$-entry is not enough to recompute the sum. Whereas the sufficiency map is \emph{adjoint} to the backward map, forming a Galois connection, the necessity map is its \emph{conjugate}, a notion introduced by \citet{jonsson51}. For this particular choice of approximation, namely sets of positions within a value, the conjugate forward query is the De Morgan dual of the forwards Galois map~\cite{perera22}: an output depends on a given input exactly when it can no longer be reconstructed without it.}
 
   In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of \GPS, and other language-based approaches, is that it is {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
 \end{example}

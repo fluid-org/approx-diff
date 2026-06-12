@@ -44,7 +44,7 @@
   forwards map.
 - [ ] After the discussion about how operational reasoning about sequentiality (meet-preservation, cm, etc) can
   establish the existence of a join-preserving backward map, perhaps make the point that these meet-preserving
-  forward maps may not actually be that useful independently. In Example 2.6 (Interval and Maximal Elements),
+  forward maps may not actually be that useful independently. In the Intervals and Maximal Elements example,
   use the _conjugate_ forward map (which preserves joins, not meets) to illustrate, showing addᵀ computes
   [4/5, 1], whereas add⁎ computes [1/2, 3/2], which is lower in the information order
 

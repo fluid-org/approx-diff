@@ -137,9 +137,32 @@ interpretation.
   Thus, to achieve an output within $[\frac{9}{10},\frac{11}{10}]$, either the first ``$\mathsf{a}$'' row
   could be in $[-\frac{1}{10},\frac{1}{10}]$ or the second one could be in $[\frac{9}{10},\frac{11}{10}]$, and
   the number in the ``$\mathsf{b}$'' row is not relevant.
+
+  \Added{In the forward direction we have the two readings contrasted in
+  \exref{intervals-and-maxima-elements}. The forward map of the addition morphism in
+  \secref{interval-approx} is the meet-preserving sufficiency map; its conjugate, the join-preserving
+  dependency map, is obtained by exchanging $\sqcap$ and $\sqcup$:}
+  \cbstart
+  \begin{displaymath}
+    \transpose{\mathrm{add}} =
+    \lambda (x_1,x_2)\,([l_1,u_1],[l_2,u_2]).\,[(l_1+x_2) \sqcup (l_2+x_1),(u_1+x_2) \sqcap (u_2+x_1)]
+  \end{displaymath}
+  \cbend
+  \Added{Suppose we approximate the first ``$\mathsf{a}$'' row by $[-\frac{1}{2},0]$ and the second by
+  $[\frac{4}{5},\frac{3}{2}]$, discarding the ``$\mathsf{b}$'' row. Each contributes a translate of its
+  interval to the output, $[\frac{1}{2},1]$ and $[\frac{4}{5},\frac{3}{2}]$ respectively, and the conjugate
+  forward map, written $(\partial\mathrm{query})_{\hat{f}}$ as in \secref{introduction:galois-slicing}, joins
+  the contributions by intersecting them:}
+  \cbstart
+  \begin{displaymath}
+    (\partial\mathrm{query})_{\hat{f}}(\mathsf{a},\mathit{db})(\cdot,
+    (\cdot,[-\tfrac{1}{2},0]),(\cdot,\bot),(\cdot,[\tfrac{4}{5},\tfrac{3}{2}]), \cdot) = [\tfrac{4}{5},1]
+  \end{displaymath}
+  \cbend
 \end{enumerate}
 
-We have tested these examples on our Agda implementation. See the file \texttt{example.agda}.
+We have tested these examples on our Agda implementation. See the
+\Replaced{files \texttt{example.agda} and \texttt{example-intervals.agda}}{file \texttt{example.agda}}.
 
 \subsection{Systematic Insertion of Approximation via Moggi's CBN translation}
 \label{sec:cbn-translation}
