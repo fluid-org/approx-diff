@@ -118,17 +118,15 @@ ty-fmor : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : 
 ty-fmor τ δ {δ₀} {δ₀'} fs =
   Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
 
--- apply-lemma intertwines ty-fmor and fmor; immediate from fwd∘bwd≈id, no induction.
 apply-nat : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj}
             (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
-            Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs
-            ≈ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+            Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs ≈ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
 apply-nat τ δ {δ₀} {δ₀'} fs =
   begin
     Iso.fwd (apply-lemma τ δ δ₀') ∘ ((Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)))
-  ≈⟨ {!!} ⟩
+  ≈⟨ ≈-trans (∘-cong₂ (assoc _ _ _)) (≈-sym (assoc _ _ _)) ⟩
     (Iso.fwd (apply-lemma τ δ δ₀') ∘ (Iso.bwd (apply-lemma τ δ δ₀')) ∘ (fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)))
-  ≈⟨ {!!} ⟩
+  ≈⟨ ≈-trans (∘-cong₁ (Iso.fwd∘bwd≈id (apply-lemma τ δ δ₀'))) id-left ⟩
     fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
   ∎
   where open ≈-Reasoning isEquiv
