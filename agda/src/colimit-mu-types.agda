@@ -59,6 +59,18 @@ mutual
   extend-fam f Fin.zero    = f
   extend-fam f (Fin.suc i) = id _
 
+  -- Two-family version: fs on the parameters, f at the recursion slot.
+  extend-mor : ∀ {n} {δ δ' : Fin n → obj} {X Y} →
+               (∀ i → δ i ⇒ δ' i) → (X ⇒ Y) → ∀ i → extend δ X i ⇒ extend δ' Y i
+  extend-mor fs f Fin.zero    = f
+  extend-mor fs f (Fin.suc i) = fs i
+
+  -- Stage maps between the chains at different parameters.
+  iter-mor : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} →
+             (∀ i → δ i ⇒ δ' i) → ∀ k → iter P δ k ⇒ iter P δ' k
+  iter-mor P fs zero    = id 𝟘
+  iter-mor P fs (suc k) = ⟦ P ⟧mor (extend-mor fs (iter-mor P fs k))
+
   -- Functorial action of ⟦ P ⟧.
   ⟦_⟧mor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → ⟦ P ⟧ δ ⇒ ⟦ P ⟧ δ'
   ⟦ const A ⟧mor fs = id A
