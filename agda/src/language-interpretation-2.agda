@@ -160,15 +160,9 @@ apply-nat-bwd τ δ {δ₀} {δ₀'} fs =
     (Iso.bwd (apply-lemma τ δ δ₀') ∘ Iso.fwd (apply-lemma τ δ δ₀')) ∘ (ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀))
   ≈⟨ assoc _ _ _ ⟩
     Iso.bwd (apply-lemma τ δ δ₀') ∘ (Iso.fwd (apply-lemma τ δ δ₀') ∘ (ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀)))
-  ≈˘⟨ ∘-cong₂ (assoc _ _ _) ⟩
-    Iso.bwd (apply-lemma τ δ δ₀') ∘ ((Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs) ∘ Iso.bwd (apply-lemma τ δ δ₀))
-  ≈⟨ ∘-cong₂ (∘-cong₁ (apply-nat-fwd τ δ fs)) ⟩
+  ≈⟨ ∘-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (apply-nat-fwd τ δ fs))) ⟩
     Iso.bwd (apply-lemma τ δ δ₀') ∘ ((fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)) ∘ Iso.bwd (apply-lemma τ δ δ₀))
-  ≈⟨ ∘-cong₂ (assoc _ _ _) ⟩
-    Iso.bwd (apply-lemma τ δ δ₀') ∘ (fmor (as-poly τ δ) fs ∘ (Iso.fwd (apply-lemma τ δ δ₀) ∘ Iso.bwd (apply-lemma τ δ δ₀)))
-  ≈⟨ ∘-cong₂ (∘-cong₂ (Iso.fwd∘bwd≈id (apply-lemma τ δ δ₀))) ⟩
-    Iso.bwd (apply-lemma τ δ δ₀') ∘ (fmor (as-poly τ δ) fs ∘ id _)
-  ≈⟨ ∘-cong₂ id-right ⟩
+  ≈⟨ ∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (Iso.fwd∘bwd≈id (apply-lemma τ δ δ₀))) id-right)) ⟩
     Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs
   ∎
   where open ≈-Reasoning isEquiv
