@@ -100,17 +100,25 @@ apply-lemma (σ [+] τ) δ δ₀ = coproduct-preserve-iso (apply-lemma σ δ δ�
 apply-lemma (σ [×] τ) δ δ₀ = product-preserves-iso  (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
 apply-lemma (σ [→] τ) δ δ₀ = Iso-refl
 apply-lemma {Δ} {n} (μ τ) δ δ₀ =
-  μ-obj-resp
-    (λ X → Iso-trans (Iso-sym (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
-                     (Iso-trans (≡→Iso (ty-cong τ (env-pw X))) (apply-lemma τ δ (extend δ₀ X))))
-    {!!}
+  μ-obj-resp unfold
+    (λ {X} {Y} f →
+      let open ≈-Reasoning isEquiv in
+      begin
+        fmor (as-poly τ δ) (extend-fam f) ∘ Iso.fwd (unfold X)
+      ≈⟨ {!!} ⟩
+        Iso.fwd (unfold Y) ∘ fmor (as-poly τ (concat δ₀ δ)) (extend-fam {n = 0} {δ = λ ()} f)
+      ∎)
   where
-    env-pw : ∀ X (i : Fin (suc (n + Δ))) →
-             concat (extend {0} (λ ()) X) (concat δ₀ δ) i ≡ concat (extend δ₀ X) δ i
+    env-pw : ∀ X (i : Fin (suc (n + Δ))) → concat (extend {0} (λ ()) X) (concat δ₀ δ) i ≡ concat (extend δ₀ X) δ i
     env-pw X Fin.zero    = refl
     env-pw X (Fin.suc j) with splitAt n j
     ... | inj₁ k = refl
     ... | inj₂ l = refl
+
+    unfold : ∀ X → Iso (fobj μ-obj (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (extend {0} (λ ()) X))
+                       (fobj μ-obj (as-poly {Δ} {suc n} τ δ) (extend δ₀ X))
+    unfold X = Iso-trans (Iso-sym (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
+                         (Iso-trans (≡→Iso (ty-cong τ (env-pw X))) (apply-lemma τ δ (extend δ₀ X)))
 
 -- ⟦ τ ⟧ty is functorial in its poly-variables.
 ty-fmor : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} →
