@@ -217,7 +217,7 @@ The construction requires:
 \paragraph{Construction.}
 By structural induction on $P$ we define simultaneously: (i) the object part $\sem{P}$; (ii) the strong
 action $\sem{P}^{\mathrm{s}}$, using pairing for $\times$, strong copairing for $+$, and the strength of
-$T$; (iii) preservation of $\omega$-colimits in each variable; and (iv) for $\mu\alpha.P$, the
+$T$; (iii) preservation of $\omega$-colimits, jointly in all variables; and (iv) for $\mu\alpha.P$, the
 parameterised initial algebra. For (iv), fix $\delta$ and let $F = \sem{P}(\delta[\alpha \mapsto -])$. Form
 the classical initial-algebra chain
 \[
@@ -234,9 +234,31 @@ $g_n : \Gamma \times F^n 0 \to Y$:
 \]
 using $\Gamma \times 0 \cong 0$ for $g_0$. Cocone compatibility, and the $\beta$/$\eta$ laws, follow from
 the functoriality laws of $\sem{P}^{\mathrm{s}}$ (already established in the formalisation) and uniqueness
-of maps out of the colimit. The $\mu$ case of (iii), that $\mu_{\alpha.P}$ preserves $\omega$-colimits in
-the remaining variables, is the standard interchange argument: a colimit of initial-algebra chains is the
-initial-algebra chain of the colimit, since colimits commute with colimits.
+of maps out of the colimit.
+
+\paragraph{Joint cocontinuity and the interchange argument.}
+Clause (iii) must be stated jointly: for an $\omega$-chain of \emph{environments} $\delta_0 \to \delta_1
+\to \cdots$ (a chain in each coordinate) whose coordinatewise colimit is $\delta_\infty$, the canonical
+cocone $\sem{P}(\delta_k) \to \sem{P}(\delta_\infty)$ is colimiting. Preservation in each variable
+separately would not suffice for the $\mu$ case, because the chain defining $\mu_{\alpha.P}$ varies the
+recursion coordinate \emph{together with} the parameters. The non-$\mu$ cases are unaffected: variables
+project the given coordinate colimits, constants are colimits of constant chains, and $+$, $\times$ and $T$
+combine the induction hypotheses (two single image chains) as before.
+
+For the $\mu$ case, fix an environment chain $\delta_k$ with colimit $\delta_\infty$ and form the grid
+\[
+  G_{k,j} = F_k^j\,0 \qquad \text{where } F_k = \sem{P}(\delta_k[\alpha \mapsto -]),
+\]
+with vertical steps the initial-algebra chains, horizontal steps the mediated stage maps between them, and
+commuting squares. Row $k$ has colimit $\mu_{\alpha.P}(\delta_k)$ by construction. By induction on $j$,
+column $j$ has colimit $F_\infty^j\,0$: column $0$ is constantly $0$, and column $j{+}1$ is the
+$\sem{P}$-image of the environment chain $\delta_k[\alpha \mapsto G_{k,j}]$, to which the structural
+induction hypothesis (joint cocontinuity of $\sem{P}$) applies, using the column-$j$ colimit for the
+$\alpha$ coordinate. Finally a generic \emph{interchange lemma}, stated for an arbitrary commuting grid:
+given row colimits, column colimits, and a colimit $g_\infty$ of the chain of column apexes, $g_\infty$ is
+also a colimit of the chain of row apexes, via the mediated cocone. Here $g_\infty =
+\mathrm{colim}_j F_\infty^j\,0 = \mu_{\alpha.P}(\delta_\infty)$, as required. The interchange lemma is
+generic in the grid and belongs with the $\omega$-chain machinery, independent of polynomials.
 
 \paragraph{Instances.}
 The construction is needed in two places: the higher-order model $\Fam(\cat{D})$ for $\cat{D} =

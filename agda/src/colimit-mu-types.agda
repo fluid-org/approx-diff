@@ -16,7 +16,7 @@ open import functor
   renaming (_∘_ to _∘NT_)
 open import omega-chains
   using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
-         step-cocone; cocone-step; const-chain-colimit)
+         step-cocone; cocone-step; const-chain-colimit; ChainColimit)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -174,37 +174,34 @@ mutual
   ⟦ T∘ P ⟧mor-comp    fs gs =
     ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)
 
--- The image of a chain (with colimit C) under ⟦ P ⟧ (extend δ −).
-module _ {n} (P : Poly (suc n)) (δ : Fin n → obj)
-         {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} (C : Colimit (chain {𝒞 = 𝒟} X f)) where
+-- An environment chain assigns to each coordinate a chain with a chosen colimit. The image of an
+-- environment chain under ⟦ P ⟧, and the statement that ⟦ P ⟧ preserves its colimit. (Cocontinuity
+-- must be joint in all coordinates: the chain defining a μ varies the recursion coordinate together
+-- with the parameters.)
+module _ {n} (P : Poly n) (E : Fin n → ChainColimit 𝒟) where
 
-  open NatTrans
+  open ChainColimit
 
-  img-step : ∀ k → ⟦ P ⟧ (extend δ (X k)) ⇒ ⟦ P ⟧ (extend δ (X (suc k)))
-  img-step k = ⟦ P ⟧mor (extend-fam (f k))
+  img-step : ∀ k → ⟦ P ⟧ (λ i → E i .obs k) ⇒ ⟦ P ⟧ (λ i → E i .obs (suc k))
+  img-step k = ⟦ P ⟧mor (λ i → E i .steps k)
 
   img-chain : Functor ω 𝒟
-  img-chain = chain (λ k → ⟦ P ⟧ (extend δ (X k))) img-step
+  img-chain = chain (λ k → ⟦ P ⟧ (λ i → E i .obs k)) img-step
 
-  img-inj : ∀ k → ⟦ P ⟧ (extend δ (X k)) ⇒ ⟦ P ⟧ (extend δ (C .Colimit.apex))
-  img-inj k = ⟦ P ⟧mor (extend-fam (C .Colimit.cocone .transf k))
+  img-inj : ∀ k → ⟦ P ⟧ (λ i → E i .obs k) ⇒ ⟦ P ⟧ (λ i → apex (E i))
+  img-inj k = ⟦ P ⟧mor (λ i → inj (E i) k)
 
   img-inj-step : ∀ k → img-inj k ≈ (img-inj (suc k) ∘ img-step k)
   img-inj-step k =
-    ≈-trans (⟦ P ⟧mor-cong pointwise)
-            (⟦ P ⟧mor-comp (extend-fam (C .Colimit.cocone .transf (suc k))) (extend-fam (f k)))
-    where
-      pointwise : ∀ i → extend-fam (C .Colimit.cocone .transf k) i
-                      ≈ (extend-fam (C .Colimit.cocone .transf (suc k)) i ∘ extend-fam (f k) i)
-      pointwise Fin.zero    = cocone-step (C .Colimit.cocone) k
-      pointwise (Fin.suc i) = ≈-sym id-left
+    ≈-trans (⟦ P ⟧mor-cong (λ i → cocone-step (E i .colim .Colimit.cocone) k))
+            (⟦ P ⟧mor-comp (λ i → inj (E i) (suc k)) (λ i → E i .steps k))
 
-  img-cocone : NatTrans img-chain (constF ω (⟦ P ⟧ (extend δ (C .Colimit.apex))))
+  img-cocone : NatTrans img-chain (constF ω (⟦ P ⟧ (λ i → apex (E i))))
   img-cocone = step-cocone img-inj img-inj-step
 
-  -- ⟦ P ⟧ (extend δ −) preserves the colimit C when the image cocone is itself colimiting.
+  -- ⟦ P ⟧ preserves the environment-chain colimit when the image cocone is itself colimiting.
   PreservesChain : Set (o ⊔ m ⊔ e)
-  PreservesChain = IsColimit img-chain (⟦ P ⟧ (extend δ (C .Colimit.apex))) img-cocone
+  PreservesChain = IsColimit img-chain (⟦ P ⟧ (λ i → apex (E i))) img-cocone
 
 -- Canonical cocones: the pointwise product, coproduct and T-image of cocones, over the
 -- corresponding pointwise chains. Built with step-cocone so that they align definitionally with
@@ -306,16 +303,12 @@ module cocont
 
   open functor using (IsColimit-cong)
 
-  ⟦_⟧-cocont : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj)
-               {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} (C : Colimit (chain {𝒞 = 𝒟} X f)) →
-               PreservesChain P δ C
-  ⟦ const A ⟧-cocont        δ C =
+  ⟦_⟧-cocont : ∀ {n} (P : Poly n) (E : Fin n → ChainColimit 𝒟) → PreservesChain P E
+  ⟦ const A ⟧-cocont E =
     IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit A .Colimit.isColimit)
-  ⟦ var Fin.zero ⟧-cocont    δ C =
-    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (C .Colimit.isColimit)
-  ⟦ var (Fin.suc j) ⟧-cocont δ C =
-    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit (δ j) .Colimit.isColimit)
-  ⟦ P + Q ⟧-cocont          δ C = +-cocont (⟦ P ⟧-cocont δ C) (⟦ Q ⟧-cocont δ C)
-  ⟦ P × Q ⟧-cocont          δ C = ×-cocont (⟦ P ⟧-cocont δ C) (⟦ Q ⟧-cocont δ C)
-  ⟦ μ P ⟧-cocont            δ C = {!!}
-  ⟦ T∘ P ⟧-cocont           δ C = T-cocont (⟦ P ⟧-cocont δ C)
+  ⟦ var i ⟧-cocont   E =
+    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (E i .ChainColimit.colim .Colimit.isColimit)
+  ⟦ P + Q ⟧-cocont   E = +-cocont (⟦ P ⟧-cocont E) (⟦ Q ⟧-cocont E)
+  ⟦ P × Q ⟧-cocont   E = ×-cocont (⟦ P ⟧-cocont E) (⟦ Q ⟧-cocont E)
+  ⟦ μ P ⟧-cocont     E = {!!}
+  ⟦ T∘ P ⟧-cocont    E = T-cocont (⟦ P ⟧-cocont E)

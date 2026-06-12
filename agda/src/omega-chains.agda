@@ -4,7 +4,7 @@
 -- initial-algebra construction for polynomial functors. A chain is most conveniently given by its
 -- step maps; `chain` packages these as a functor out of ω.
 
-open import Level using (0ℓ)
+open import Level using (0ℓ; _⊔_)
 open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl; ≤′-step)
 open import Data.Nat.Properties using (≤′-trans; ≤′⇒≤; 1+n≰n; z≤′n)
 open import prop using (⊤; tt)
@@ -187,3 +187,17 @@ module _ {o m e} {𝒞 : Category o m e} where
           (colim-map g e k k-step CY CZ ∘ colim-map f g h h-step CX CY) ∘ CX .Colimit.cocone .transf n
         ∎
         where open ≈-Reasoning isEquiv
+
+-- A chain packaged with a chosen colimit.
+record ChainColimit {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
+  open Category 𝒞
+  field
+    obs   : ℕ → obj
+    steps : ∀ n → obs n ⇒ obs (suc n)
+    colim : Colimit (chain {𝒞 = 𝒞} obs steps)
+
+  apex : obj
+  apex = colim .Colimit.apex
+
+  inj : ∀ n → obs n ⇒ apex
+  inj n = colim .Colimit.cocone .NatTrans.transf n
