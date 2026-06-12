@@ -148,7 +148,8 @@ mutual
   apply-fwd (σ [→] τ) δ δ₀ = id _
   apply-fwd {Δ} {n} (μ τ) δ δ₀ =
     μ-map (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ()) (as-poly {Δ} {suc n} τ δ) δ₀
-      (λ X → apply-fwd τ δ (extend δ₀ X) ∘ coe (ty-cong τ (env-pw δ δ₀ X)) ∘ apply-bwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
+      (apply-fwd τ δ (extend δ₀ M) ∘ coe (ty-cong τ (env-pw δ δ₀ M)) ∘ apply-bwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) M))
+    where M = μ-obj (as-poly {Δ} {suc n} τ δ) δ₀
 
   apply-bwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
               fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀ ⇒ ⟦ τ ⟧ty (concat δ₀ δ)
@@ -162,7 +163,8 @@ mutual
   apply-bwd (σ [→] τ) δ δ₀ = id _
   apply-bwd {Δ} {n} (μ τ) δ δ₀ =
     μ-map (as-poly {Δ} {suc n} τ δ) δ₀ (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ())
-      (λ X → apply-fwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) X) ∘ coe (sym (ty-cong τ (env-pw δ δ₀ X))) ∘ apply-bwd τ δ (extend δ₀ X))
+      (apply-fwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) M) ∘ coe (sym (ty-cong τ (env-pw δ δ₀ M))) ∘ apply-bwd τ δ (extend δ₀ M))
+    where M = μ-obj (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ())
 
 -- Pointwise action of a lifted substitution on the extended environment: the new variable is mapped
 -- to itself, and the (weakened) old ones ignore it.
@@ -183,10 +185,11 @@ subst-fwd σ (τ₁ [×] τ₂) δ = prod-m (subst-fwd σ τ₁ δ) (subst-fwd �
 subst-fwd σ (τ₁ [→] τ₂) δ = id _
 subst-fwd {Δ} {Δ'} σ (μ τ) δ =
   μ-map (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (λ ()) (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (λ ())
-    (λ X → apply-fwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend (λ ()) X)
-         ∘ coe (ty-cong τ (sub-lift-pw σ δ X))
-         ∘ subst-fwd (sub-lift σ) τ (concat (extend {0} (λ ()) X) δ)
-         ∘ apply-bwd {n = 1} (sub (sub-lift σ) τ) δ (extend (λ ()) X))
+    (apply-fwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend (λ ()) M)
+     ∘ coe (ty-cong τ (sub-lift-pw σ δ M))
+     ∘ subst-fwd (sub-lift σ) τ (concat (extend {0} (λ ()) M) δ)
+     ∘ apply-bwd {n = 1} (sub (sub-lift σ) τ) δ (extend (λ ()) M))
+  where M = μ-obj (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (λ ())
 
 subst-bwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) (δ : Fin Δ' → obj) →
             ⟦ τ ⟧ty (λ i → ⟦ σ i ⟧ty δ) ⇒ ⟦ sub σ τ ⟧ty δ
@@ -198,10 +201,11 @@ subst-bwd σ (τ₁ [×] τ₂) δ = prod-m (subst-bwd σ τ₁ δ) (subst-bwd �
 subst-bwd σ (τ₁ [→] τ₂) δ = id _
 subst-bwd {Δ} {Δ'} σ (μ τ) δ =
   μ-map (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (λ ()) (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (λ ())
-    (λ X → apply-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend (λ ()) X)
-         ∘ subst-bwd (sub-lift σ) τ (concat (extend {0} (λ ()) X) δ)
-         ∘ coe (sym (ty-cong τ (sub-lift-pw σ δ X)))
-         ∘ apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend (λ ()) X))
+    (apply-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend (λ ()) M)
+     ∘ subst-bwd (sub-lift σ) τ (concat (extend {0} (λ ()) M) δ)
+     ∘ coe (sym (ty-cong τ (sub-lift-pw σ δ M)))
+     ∘ apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend (λ ()) M))
+  where M = μ-obj (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (λ ())
 
 -- The single substitution push τ', read pointwise as an environment.
 push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} (λ ()) (⟦ τ' ⟧ty (λ ()))) (λ ()) i
