@@ -492,6 +492,17 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 
                  (∘NT-cong (≃-isEquivalence .refl) (≃-isEquivalence .sym eq)))
               (isColim .IsColimit.colambda-ext x f)
 
+  -- Mediating morphisms out of a colimit are unique: morphisms agreeing on the cocone agree.
+  colambda-unique : ∀ {D : Functor 𝒮 𝒞} {apex} {cocone : NatTrans D (constF 𝒮 apex)} →
+                    IsColimit D apex cocone →
+                    ∀ {x} {f g : apex 𝒞.⇒ x} →
+                    (∀ s → (f 𝒞.∘ cocone .NatTrans.transf s) 𝒞.≈ (g 𝒞.∘ cocone .NatTrans.transf s)) →
+                    f 𝒞.≈ g
+  colambda-unique isColim {x} {f} {g} eq =
+    𝒞.≈-trans (𝒞.≈-sym (isColim .IsColimit.colambda-ext x f))
+    (𝒞.≈-trans (isColim .IsColimit.colambda-cong (record { transf-eq = eq }))
+               (isColim .IsColimit.colambda-ext x g))
+
   record IsLimit (D : Functor 𝒮 𝒞)
                  (apex : 𝒞.obj) (cone : NatTrans (constF 𝒮 apex) D)
            : Set (o₁ ⊔ m₁ ⊔ e₁ ⊔ o₂ ⊔ m₂ ⊔ e₂) where

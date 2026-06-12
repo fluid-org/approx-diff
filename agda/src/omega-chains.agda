@@ -11,7 +11,7 @@ open import prop using (⊤; tt)
 open import prop-setoid using (⊤-isEquivalence; module ≈-Reasoning)
 open import categories using (Category)
 import functor
-open functor using (Functor; NatTrans; ≃-NatTrans; Colimit; constF; constFmor) renaming (_∘_ to _∘NT_)
+open functor using (Functor; NatTrans; ≃-NatTrans; Colimit; IsColimit; constF; constFmor; colambda-unique) renaming (_∘_ to _∘NT_)
 
 module omega-chains where
 
@@ -201,3 +201,58 @@ record ChainColimit {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
 
   inj : ∀ n → obs n ⇒ apex
   inj n = colim .Colimit.cocone .NatTrans.transf n
+
+-- Interchange of colimits for a commuting ω×ω grid: given colimits of the rows, colimits of the
+-- columns onto a chain of column apexes, and a colimit of that chain, the latter is also a colimit
+-- of the chain of row apexes.
+module interchange {o m e} {𝒞 : Category o m e}
+  (let open Category 𝒞)
+  (G : ℕ → ℕ → obj)
+  (v : ∀ k j → G k j ⇒ G k (suc j))            -- steps within row k
+  (h : ∀ k j → G k j ⇒ G (suc k) j)            -- steps between rows
+  (sq : ∀ k j → (h k (suc j) ∘ v k j) ≈ (v (suc k) j ∘ h k j))
+  (R : ∀ k → Colimit (chain {𝒞 = 𝒞} (G k) (v k)))
+  (γ : ℕ → obj) (w : ∀ j → γ j ⇒ γ (suc j))    -- the chain of column apexes
+  (ℓ : ∀ k j → G k j ⇒ γ j)                    -- column cocone legs
+  (ℓ-step : ∀ k j → ℓ k j ≈ (ℓ (suc k) j ∘ h k j))
+  (ℓ-v : ∀ k j → (w j ∘ ℓ k j) ≈ (ℓ k (suc j) ∘ v k j))
+  (CL : ∀ j → IsColimit (chain {𝒞 = 𝒞} (λ k → G k j) (λ k → h k j)) (γ j)
+                        (step-cocone (λ k → ℓ k j) (λ k → ℓ-step k j)))
+  (CΓ : Colimit (chain {𝒞 = 𝒞} γ w))
+  where
+
+  open NatTrans
+
+  -- The chain of row apexes, with the mediated steps.
+  ρ : ℕ → obj
+  ρ k = R k .Colimit.apex
+
+  ρ-step : ∀ k → ρ k ⇒ ρ (suc k)
+  ρ-step k = colim-map (v k) (v (suc k)) (h k) (sq k) (R k) (R (suc k))
+
+  -- Each row maps into the apex of the column chain, mediated row by row.
+  row-legs : ∀ k j → G k j ⇒ CΓ .Colimit.apex
+  row-legs k j = CΓ .Colimit.cocone .transf j ∘ ℓ k j
+
+  row-legs-step : ∀ k j → row-legs k j ≈ (row-legs k (suc j) ∘ v k j)
+  row-legs-step k j =
+    ≈-trans (∘-cong₁ (cocone-step (CΓ .Colimit.cocone) j))
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong₂ (ℓ-v k j)) (≈-sym (assoc _ _ _))))
+
+  ρ-inj : ∀ k → ρ k ⇒ CΓ .Colimit.apex
+  ρ-inj k = R k .Colimit.colambda _ (step-cocone (row-legs k) (row-legs-step k))
+
+  ρ-inj-step : ∀ k → ρ-inj k ≈ (ρ-inj (suc k) ∘ ρ-step k)
+  ρ-inj-step k = ≈-sym (colambda-unique (R k .Colimit.isColimit) pointwise)
+    where
+      pointwise : ∀ j → ((ρ-inj (suc k) ∘ ρ-step k) ∘ R k .Colimit.cocone .transf j)
+                      ≈ (ρ-inj k ∘ R k .Colimit.cocone .transf j)
+      pointwise j =
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
+        (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong₁ (R (suc k) .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
+        (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (≈-sym (ℓ-step k j)))
+                 (≈-sym (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j)))))))
