@@ -17,6 +17,7 @@ open import functor
 open import omega-chains
   using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
          step-cocone; cocone-step; const-chain-colimit; module interchange)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -34,12 +35,12 @@ open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
          copair; copair-cong; copair-in₁; copair-in₂; copair-ext; copair-coprod)
 open HasInitial 𝒟I renaming (witness to 𝟘)
 open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
-open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend)
+open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend; fobj)
 open Poly
 
 -- The interpretation of a polynomial, by structural recursion: at μ, the colimit of the
 -- initial-algebra chain. (fobj can't used directly: it takes the complete μ-obj as an argument,
--- which would not be structurally recursive. Later we prove fobj μ-obj and ⟦_⟧ agree.)
+-- which would not be structurally recursive. That fobj μ-carrier and ⟦_⟧ agree is ⟦⟧-fobj below.)
 mutual
   ⟦_⟧ : ∀ {n} → Poly n → (Fin n → obj) → obj
   ⟦ const A ⟧ δ = A
@@ -173,6 +174,16 @@ mutual
       comp-sq = square-comp {𝒞 = 𝒟} (iter-mor-step P gs) (iter-mor-step P fs)
   ⟦ T∘ P ⟧mor-comp    fs gs =
     ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)
+
+-- ⟦_⟧ agrees with fobj at μ-carrier: the two are defined by matching clauses, so every case is a
+-- congruence.
+⟦⟧-fobj : ∀ {n} (P : Poly n) (δ : Fin n → obj) → ⟦ P ⟧ δ ≡ fobj μ-carrier P δ
+⟦⟧-fobj (const A) δ = refl
+⟦⟧-fobj (var i)   δ = refl
+⟦⟧-fobj (P + Q)   δ = cong₂ coprod (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)
+⟦⟧-fobj (P × Q)   δ = cong₂ prod (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)
+⟦⟧-fobj (μ P)     δ = refl
+⟦⟧-fobj (T∘ P)    δ = cong (Functor.fobj T) (⟦⟧-fobj P δ)
 
 -- An environment chain: a chain of environments with a coordinatewise colimit. A record (with η)
 -- rather than a Fin-indexed family of packaged chains: the μ case extends an environment chain
