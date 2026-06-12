@@ -359,20 +359,32 @@ record HasMu : Set (o ⊔ m ⊔ e) where
   extend-fam f Fin.zero    = f
   extend-fam f (Fin.suc i) = id _
 
-  -- The two Mendler steps for μ-obj-resp, parameterized by the unfolding iso. Swapping the iso
-  -- (Iso-sym) exchanges them: μ-step-fwd (Iso-sym ∘ ι) ≡ μ-step-bwd ι, definitionally.
-  -- P, δ, Q, δ' are explicit because fobj/μ-obj are not injective, so they can't be inferred from the iso.
+  -- Mendler step for μ-map, parameterized by an unfolding morphism family.
+  -- P, δ, Q, δ' are explicit because fobj/μ-obj are not injective, so they can't be inferred from the family.
+  μ-map-step : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj) →
+               (∀ X → fobj μ-obj P (extend δ X) ⇒ fobj μ-obj Q (extend δ' X)) →
+               ∀ X → (prod witness X ⇒ μ-obj Q δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj Q δ'
+  μ-map-step P δ Q δ' unfold X x→μ' =
+    α Q δ' ∘ fmor Q (extend-fam (x→μ' ∘ pair to-terminal (id _))) ∘ unfold X ∘ p₂
+
+  -- μ-obj is functorial along unfolding morphism families. No naturality requirement: that is only
+  -- needed for the iso laws (μ-obj-resp below), not to construct the map.
+  μ-map : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj) →
+          (∀ X → fobj μ-obj P (extend δ X) ⇒ fobj μ-obj Q (extend δ' X)) →
+          μ-obj P δ ⇒ μ-obj Q δ'
+  μ-map P δ Q δ' unfold = ⦅ μ-map-step P δ Q δ' unfold ⦆ᴹ ∘ pair to-terminal (id _)
+
+  -- The two Mendler steps for μ-obj-resp, instances of μ-map-step at the iso's fwd and bwd legs.
+  -- Swapping the iso (Iso-sym) exchanges them: μ-step-fwd (Iso-sym ∘ ι) ≡ μ-step-bwd ι, definitionally.
   μ-step-fwd : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj) →
                (∀ X → Iso (fobj μ-obj P (extend δ X)) (fobj μ-obj Q (extend δ' X))) →
                ∀ X → (prod witness X ⇒ μ-obj Q δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj Q δ'
-  μ-step-fwd P δ Q δ' unfold-iso X x→μ' =
-    α Q δ' ∘ fmor Q (extend-fam (x→μ' ∘ pair to-terminal (id _))) ∘ Iso.fwd (unfold-iso X) ∘ p₂
+  μ-step-fwd P δ Q δ' unfold-iso = μ-map-step P δ Q δ' (λ X → Iso.fwd (unfold-iso X))
 
   μ-step-bwd : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj) →
                (∀ X → Iso (fobj μ-obj P (extend δ X)) (fobj μ-obj Q (extend δ' X))) →
                ∀ X → (prod witness X ⇒ μ-obj P δ) → prod witness (fobj μ-obj Q (extend δ' X)) ⇒ μ-obj P δ
-  μ-step-bwd P δ Q δ' unfold-iso X x→μ =
-    α P δ ∘ fmor P (extend-fam (x→μ ∘ pair to-terminal (id _))) ∘ Iso.bwd (unfold-iso X) ∘ p₂
+  μ-step-bwd P δ Q δ' unfold-iso = μ-map-step Q δ' P δ (λ X → Iso.bwd (unfold-iso X))
 
   -- fwd ∘ bwd ≈ id for μ-obj-resp below; single proof serves both directions.
   roundtrip-id : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj)
