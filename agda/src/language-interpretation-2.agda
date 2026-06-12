@@ -123,7 +123,22 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
         Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ ty-fmor τ δ (extend-fam f)
           ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
           ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
-      ≈⟨ {!!} ⟩
+      ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
+        (Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ (ty-fmor τ δ (extend-fam f) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))))
+          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
+      ≈⟨ ∘-cong₁ (∘-cong₂ (ty-cong-nat f)) ⟩
+        (Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ (Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)))
+          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
+      ≈⟨ ∘-cong₁ (≈-sym (assoc _ _ _)) ⟩
+        (Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f))
+          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
+      ≈⟨ assoc _ _ _ ⟩
+        Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw Y)))
+          ∘ (ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f) ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
+      ≈⟨ ∘-cong₂ (apply-nat-bwd τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)) ⟩
+        Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw Y)))
+          ∘ (Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) Y)) ∘ fmor (as-poly τ (concat δ₀ δ)) (extend-fam {n = 0} {δ = λ ()} f))
+      ≈⟨ ≈-sym (assoc _ _ _) ⟩
         Iso.fwd (unfold Y) ∘ fmor (as-poly τ (concat δ₀ δ)) (extend-fam {n = 0} {δ = λ ()} f)
       ∎)
   where
