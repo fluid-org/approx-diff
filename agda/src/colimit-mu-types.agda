@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections #-}
+{-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- μ-types (parameterised initial algebras of polynomial functors) in a category 𝒟 with an initial
 -- object and colimits of ω-chains, via the initial-algebra chain 0 → F0 → F²0 → ⋯ . Counterpart of
@@ -16,7 +16,7 @@ open import functor
   renaming (_∘_ to _∘NT_)
 open import omega-chains
   using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
-         step-cocone; cocone-step; const-chain-colimit; ChainColimit)
+         step-cocone; cocone-step; const-chain-colimit; module interchange)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -174,34 +174,45 @@ mutual
   ⟦ T∘ P ⟧mor-comp    fs gs =
     ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)
 
--- An environment chain assigns to each coordinate a chain with a chosen colimit. The image of an
--- environment chain under ⟦ P ⟧, and the statement that ⟦ P ⟧ preserves its colimit. (Cocontinuity
--- must be joint in all coordinates: the chain defining a μ varies the recursion coordinate together
--- with the parameters.)
-module _ {n} (P : Poly n) (E : Fin n → ChainColimit 𝒟) where
+-- An environment chain: a chain of environments with a coordinatewise colimit. A record (with η)
+-- rather than a Fin-indexed family of packaged chains: the μ case extends an environment chain
+-- with the recursion coordinate, and needs the stage-k environment of the extension to reduce
+-- definitionally to an extend.
+record EnvChain (n : ℕ) : Set (o ⊔ m ⊔ e) where
+  field
+    obs      : ℕ → Fin n → obj
+    steps    : ∀ k i → obs k i ⇒ obs (suc k) i
+    apex     : Fin n → obj
+    inj      : ∀ k i → obs k i ⇒ apex i
+    inj-step : ∀ k i → inj k i ≈ (inj (suc k) i ∘ steps k i)
+    colimiting : ∀ i → IsColimit (chain {𝒞 = 𝒟} (λ k → obs k i) (λ k → steps k i)) (apex i)
+                                 (step-cocone (λ k → inj k i) (λ k → inj-step k i))
 
-  open ChainColimit
+-- The image of an environment chain under ⟦ P ⟧, and the statement that ⟦ P ⟧ preserves its
+-- colimit. (Cocontinuity must be joint in all coordinates: the chain defining a μ varies the
+-- recursion coordinate together with the parameters.)
+module _ {n} (P : Poly n) (E : EnvChain n) where
+  open EnvChain E
 
-  img-step : ∀ k → ⟦ P ⟧ (λ i → E i .obs k) ⇒ ⟦ P ⟧ (λ i → E i .obs (suc k))
-  img-step k = ⟦ P ⟧mor (λ i → E i .steps k)
+  img-step : ∀ k → ⟦ P ⟧ (obs k) ⇒ ⟦ P ⟧ (obs (suc k))
+  img-step k = ⟦ P ⟧mor (steps k)
 
   img-chain : Functor ω 𝒟
-  img-chain = chain (λ k → ⟦ P ⟧ (λ i → E i .obs k)) img-step
+  img-chain = chain (λ k → ⟦ P ⟧ (obs k)) img-step
 
-  img-inj : ∀ k → ⟦ P ⟧ (λ i → E i .obs k) ⇒ ⟦ P ⟧ (λ i → apex (E i))
-  img-inj k = ⟦ P ⟧mor (λ i → inj (E i) k)
+  img-inj : ∀ k → ⟦ P ⟧ (obs k) ⇒ ⟦ P ⟧ apex
+  img-inj k = ⟦ P ⟧mor (inj k)
 
   img-inj-step : ∀ k → img-inj k ≈ (img-inj (suc k) ∘ img-step k)
   img-inj-step k =
-    ≈-trans (⟦ P ⟧mor-cong (λ i → cocone-step (E i .colim .Colimit.cocone) k))
-            (⟦ P ⟧mor-comp (λ i → inj (E i) (suc k)) (λ i → E i .steps k))
+    ≈-trans (⟦ P ⟧mor-cong (inj-step k)) (⟦ P ⟧mor-comp (inj (suc k)) (steps k))
 
-  img-cocone : NatTrans img-chain (constF ω (⟦ P ⟧ (λ i → apex (E i))))
+  img-cocone : NatTrans img-chain (constF ω (⟦ P ⟧ apex))
   img-cocone = step-cocone img-inj img-inj-step
 
   -- ⟦ P ⟧ preserves the environment-chain colimit when the image cocone is itself colimiting.
   PreservesChain : Set (o ⊔ m ⊔ e)
-  PreservesChain = IsColimit img-chain (⟦ P ⟧ (λ i → apex (E i))) img-cocone
+  PreservesChain = IsColimit img-chain (⟦ P ⟧ apex) img-cocone
 
 -- Canonical cocones: the pointwise product, coproduct and T-image of cocones, over the
 -- corresponding pointwise chains. Built with step-cocone so that they align definitionally with
@@ -303,12 +314,61 @@ module cocont
 
   open functor using (IsColimit-cong)
 
-  ⟦_⟧-cocont : ∀ {n} (P : Poly n) (E : Fin n → ChainColimit 𝒟) → PreservesChain P E
+  ⟦_⟧-cocont : ∀ {n} (P : Poly n) (E : EnvChain n) → PreservesChain P E
   ⟦ const A ⟧-cocont E =
     IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit A .Colimit.isColimit)
   ⟦ var i ⟧-cocont   E =
-    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (E i .ChainColimit.colim .Colimit.isColimit)
+    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (E .EnvChain.colimiting i)
   ⟦ P + Q ⟧-cocont   E = +-cocont (⟦ P ⟧-cocont E) (⟦ Q ⟧-cocont E)
   ⟦ P × Q ⟧-cocont   E = ×-cocont (⟦ P ⟧-cocont E) (⟦ Q ⟧-cocont E)
-  ⟦ μ P ⟧-cocont     E = {!!}
+  ⟦_⟧-cocont {n} (μ P) E = IsColimit-cong (record { transf-eq = legs-eq }) IC.is-colimit
+    where
+      open EnvChain E
+
+      Rk : ∀ k → Colimit (chain {𝒞 = 𝒟} (iter P (obs k)) (step P (obs k)))
+      Rk k = colimits (chain (iter P (obs k)) (step P (obs k)))
+
+      -- Column cocone legs commute with the horizontal steps, and with the vertical steps.
+      ℓ-step : ∀ k j → iter-mor P (inj k) j ≈ (iter-mor P (inj (suc k)) j ∘ iter-mor P (steps k) j)
+      ℓ-step k j =
+        ≈-trans (iter-mor-cong P (inj-step k) j) (iter-mor-comp P (inj (suc k)) (steps k) j)
+
+      ℓ-v : ∀ k j → (step P apex j ∘ iter-mor P (inj k) j)
+                  ≈ (iter-mor P (inj k) (suc j) ∘ step P (obs k) j)
+      ℓ-v k j = ≈-sym (iter-mor-step P (inj k) j)
+
+      -- Column j has colimit iter P apex j, by induction on j: column 0 is constantly 𝟘, and
+      -- column j+1 is the ⟦ P ⟧-image of the environment chain extended with column j.
+      extend-env : ℕ → EnvChain (suc n)
+      columns : ∀ j → IsColimit (chain {𝒞 = 𝒟} (λ k → iter P (obs k) j) (λ k → iter-mor P (steps k) j))
+                                (iter P apex j)
+                                (step-cocone (λ k → iter-mor P (inj k) j) (λ k → ℓ-step k j))
+
+      extend-env j .EnvChain.obs k      = extend (obs k) (iter P (obs k) j)
+      extend-env j .EnvChain.steps k    = extend-mor (steps k) (iter-mor P (steps k) j)
+      extend-env j .EnvChain.apex       = extend apex (iter P apex j)
+      extend-env j .EnvChain.inj k      = extend-mor (inj k) (iter-mor P (inj k) j)
+      extend-env j .EnvChain.inj-step k Fin.zero    = ℓ-step k j
+      extend-env j .EnvChain.inj-step k (Fin.suc i) = inj-step k i
+      extend-env j .EnvChain.colimiting Fin.zero    = columns j
+      extend-env j .EnvChain.colimiting (Fin.suc i) = colimiting i
+
+      columns zero    = IsColimit-cong (record { transf-eq = λ k → ≈-refl })
+                                       (const-chain-colimit 𝟘 .Colimit.isColimit)
+      columns (suc j) = ⟦ P ⟧-cocont (extend-env j)
+
+      module IC = interchange {𝒞 = 𝒟}
+        (λ k j → iter P (obs k) j)
+        (λ k j → step P (obs k) j)
+        (λ k j → iter-mor P (steps k) j)
+        (λ k j → iter-mor-step P (steps k) j)
+        Rk
+        (iter P apex) (step P apex)
+        (λ k j → iter-mor P (inj k) j)
+        ℓ-step ℓ-v columns
+        (colimits (chain (iter P apex) (step P apex)))
+
+      -- The interchange cocone legs agree with the canonical ones (both mediate the same legs).
+      legs-eq : ∀ k → IC.ρ-inj k ≈ ⟦ μ P ⟧mor (inj k)
+      legs-eq k = Rk k .Colimit.colambda-cong (record { transf-eq = λ j → ≈-refl })
   ⟦ T∘ P ⟧-cocont    E = T-cocont (⟦ P ⟧-cocont E)

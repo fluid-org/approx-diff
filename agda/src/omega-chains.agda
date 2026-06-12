@@ -188,20 +188,6 @@ module _ {o m e} {𝒞 : Category o m e} where
         ∎
         where open ≈-Reasoning isEquiv
 
--- A chain packaged with a chosen colimit.
-record ChainColimit {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
-  open Category 𝒞
-  field
-    obs   : ℕ → obj
-    steps : ∀ n → obs n ⇒ obs (suc n)
-    colim : Colimit (chain {𝒞 = 𝒞} obs steps)
-
-  apex : obj
-  apex = colim .Colimit.apex
-
-  inj : ∀ n → obs n ⇒ apex
-  inj n = colim .Colimit.cocone .NatTrans.transf n
-
 -- Interchange of colimits for a commuting ω×ω grid: given colimits of the rows, colimits of the
 -- columns onto a chain of column apexes, and a colimit of that chain, the latter is also a colimit
 -- of the chain of row apexes.
