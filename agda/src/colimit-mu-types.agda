@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections --safe #-}
+{-# OPTIONS --prop --postfix-projections #-}
 
 -- μ-types (parameterised initial algebras of polynomial functors) in a category 𝒟 with an initial
 -- object and colimits of ω-chains, via the initial-algebra chain 0 → F0 → F²0 → ⋯ . Counterpart of
@@ -14,7 +14,7 @@ open import Level using (_⊔_)
 open import functor using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; constF)
 open import omega-chains
   using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
-         step-cocone; cocone-step)
+         step-cocone; cocone-step; const-chain-colimit)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -231,3 +231,34 @@ module _ {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {a : obj}
   T-cocone =
     step-cocone (λ k → Functor.fmor T (c .NatTrans.transf k))
       (λ k → ≈-trans (Functor.fmor-cong T (cocone-step c k)) (Functor.fmor-comp T _ _))
+
+-- Cocontinuity of the interpretation: assuming products and T preserve chain colimits, every
+-- ⟦ P ⟧ (extend δ −) does. Coproducts need no assumption (they commute with all colimits;
+-- proved below), and the μ case is the interchange of colimits.
+module cocont
+  (×-cocont : ∀ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y k ⇒ Y (suc k)} {a b : obj}
+              {cX : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a)}
+              {cY : NatTrans (chain {𝒞 = 𝒟} Y g) (constF ω b)} →
+              IsColimit (chain {𝒞 = 𝒟} X f) a cX → IsColimit (chain {𝒞 = 𝒟} Y g) b cY →
+              IsColimit _ (prod a b) (prod-cocone cX cY))
+  (T-cocont : ∀ {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {a : obj}
+              {c : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a)} →
+              IsColimit (chain {𝒞 = 𝒟} X f) a c →
+              IsColimit _ (Functor.fobj T a) (T-cocone c))
+  where
+
+  open functor using (IsColimit-cong)
+
+  ⟦_⟧-cocont : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj)
+               {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} (C : Colimit (chain {𝒞 = 𝒟} X f)) →
+               PreservesChain P δ C
+  ⟦ const A ⟧-cocont        δ C =
+    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit A .Colimit.isColimit)
+  ⟦ var Fin.zero ⟧-cocont    δ C =
+    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (C .Colimit.isColimit)
+  ⟦ var (Fin.suc j) ⟧-cocont δ C =
+    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit (δ j) .Colimit.isColimit)
+  ⟦ P + Q ⟧-cocont          δ C = {!!}
+  ⟦ P × Q ⟧-cocont          δ C = ×-cocont (⟦ P ⟧-cocont δ C) (⟦ Q ⟧-cocont δ C)
+  ⟦ μ P ⟧-cocont            δ C = {!!}
+  ⟦ T∘ P ⟧-cocont           δ C = T-cocont (⟦ P ⟧-cocont δ C)
