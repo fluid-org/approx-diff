@@ -10,7 +10,7 @@ open import Data.Nat.Properties using (≤′-trans; ≤′⇒≤; 1+n≰n)
 open import prop using (⊤; tt)
 open import prop-setoid using (⊤-isEquivalence)
 open import categories using (Category)
-open import functor using (Functor)
+open import functor using (Functor; NatTrans; Colimit) renaming (_∘_ to _∘NT_)
 
 module omega-chains where
 
@@ -29,11 +29,8 @@ module omega-chains where
 module _ {o m e} {𝒞 : Category o m e} where
   open Category 𝒞
 
-  chain : (X : ℕ → obj) → (∀ n → X n ⇒ X (suc n)) → Functor ω 𝒞
-  chain X f = record
-    { fobj = X ; fmor = walk ; fmor-cong = λ {_} {_} {p} {q} _ → walk-cong p q
-    ; fmor-id = ≈-refl ; fmor-comp = λ p q → walk-comp p q }
-    where
+  module _ (X : ℕ → obj) (f : ∀ n → X n ⇒ X (suc n)) where
+    private
       walk : ∀ {m n} → m ≤′ n → X m ⇒ X n
       walk ≤′-refl     = id _
       walk (≤′-step p) = f _ ∘ walk p
@@ -48,3 +45,33 @@ module _ {o m e} {𝒞 : Category o m e} where
       walk-comp : ∀ {x y z} (p : y ≤′ z) (q : x ≤′ y) → walk (≤′-trans q p) ≈ (walk p ∘ walk q)
       walk-comp ≤′-refl     q = ≈-sym id-left
       walk-comp (≤′-step p) q = ≈-trans (∘-cong₂ (walk-comp p q)) (≈-sym (assoc _ _ _))
+
+    chain : Functor ω 𝒞
+    chain .Functor.fobj = X
+    chain .Functor.fmor = walk
+    chain .Functor.fmor-cong {_} {_} {p} {q} _ = walk-cong p q
+    chain .Functor.fmor-id = ≈-refl
+    chain .Functor.fmor-comp = walk-comp
+
+  -- Stage maps commuting with the steps induce a natural transformation between chains, and a
+  -- mediating morphism between their colimits.
+  module _ {X Y : ℕ → obj} (f : ∀ n → X n ⇒ X (suc n)) (g : ∀ n → Y n ⇒ Y (suc n))
+           (h : ∀ n → X n ⇒ Y n)
+           (h-step : ∀ n → (h (suc n) ∘ f n) ≈ (g n ∘ h n)) where
+
+    open NatTrans
+
+    chain-map : NatTrans (chain X f) (chain Y g)
+    chain-map .transf = h
+    chain-map .natural p = square p
+      where
+        square : ∀ {k n} (p : k ≤′ n) → (chain Y g .Functor.fmor p ∘ h k) ≈ (h n ∘ chain X f .Functor.fmor p)
+        square ≤′-refl     = id-swap
+        square (≤′-step p) =
+          ≈-trans (assoc _ _ _)
+          (≈-trans (∘-cong₂ (square p))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong₁ (≈-sym (h-step _))) (assoc _ _ _))))
+
+    colim-map : (CX : Colimit (chain X f)) (CY : Colimit (chain Y g)) → CX .Colimit.apex ⇒ CY .Colimit.apex
+    colim-map CX CY = CX .Colimit.colambda _ (CY .Colimit.cocone ∘NT chain-map)
