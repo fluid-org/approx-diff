@@ -138,6 +138,11 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
     unfold X = Iso-trans (Iso-sym (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
                          (Iso-trans (≡→Iso (ty-cong τ (env-pw X))) (apply-lemma τ δ (extend δ₀ X)))
 
+    ty-cong-nat : ∀ {X Y} (f : X ⇒ Y) →
+                 ty-fmor τ δ (extend-fam {δ = δ₀} f) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X))) ≈
+                 Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)
+    ty-cong-nat f = {!!}
+
 ty-fmor τ δ {δ₀} {δ₀'} fs =
   Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
 
