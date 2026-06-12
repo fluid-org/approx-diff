@@ -3,8 +3,8 @@
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
 open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Sum using (_⊎_; [_,_]; inj₁; inj₂)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
+open import Data.Sum using (_⊎_; [_,_]; inj₁; inj₂; map₁)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
@@ -31,7 +31,7 @@ module language-interpretation-2
 open Category 𝒞
 open HasTerminal 𝒞T renaming (witness to 𝟙)
 open HasProducts 𝒞P renaming (pair to ⟨_,_⟩)
-open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC) using (coprod; in₁; in₂; coproduct-preserve-iso)
+open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC) using (coprod; coprod-m; in₁; in₂)
 open HasStrongCoproducts 𝒞SC using () renaming (copair to scopair)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax-2 Sig
@@ -61,8 +61,8 @@ mutual
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
 concat {n} δ₀ δ i = [ δ₀ , δ ] (splitAt n i)
 
-≡→Iso : ∀ {x y} → x ≡ y → Iso x y
-≡→Iso refl = Iso-refl
+coe : ∀ {x y} → x ≡ y → x ⇒ y
+coe refl = id _
 
 -- Both as-poly and ⟦_⟧ty respect pointwise-equal environments.
 as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} → (∀ i → δ i ≡ δ' i) → as-poly τ δ ≡ as-poly τ δ'
@@ -87,128 +87,107 @@ ty-cong (σ [×] τ) h = cong₂ prod  (ty-cong σ h) (ty-cong τ h)
 ty-cong (σ [→] τ) h = refl
 ty-cong (μ τ)     h = cong (λ (P : Poly 1) → μ-obj P (λ ())) (as-poly-cong τ h)
 
--- Applying the polynomial (as-poly τ δ) is the interpretation of τ.
-apply-lemma : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
-              Iso (⟦ τ ⟧ty (concat δ₀ δ)) (fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀)
-
--- ⟦ τ ⟧ty is functorial in its poly-variables, with the action transported from fmor across apply-lemma.
-ty-fmor : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} →
-          (∀ i → δ₀ i ⇒ δ₀' i) → ⟦ τ ⟧ty (concat δ₀ δ) ⇒ ⟦ τ ⟧ty (concat δ₀' δ)
-
-apply-nat-fwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
-                Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs ≈ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
-
-apply-nat-bwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
-                ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀) ≈ Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs
-
-apply-lemma {n = n} (var i) δ δ₀ with splitAt n i
-... | inj₁ j = Iso-refl
-... | inj₂ k = Iso-refl
-apply-lemma unit      δ δ₀ = Iso-refl
-apply-lemma (base s)  δ δ₀ = Iso-refl
-apply-lemma (σ [+] τ) δ δ₀ = coproduct-preserve-iso (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
-apply-lemma (σ [×] τ) δ δ₀ = product-preserves-iso  (apply-lemma σ δ δ₀) (apply-lemma τ δ δ₀)
-apply-lemma (σ [→] τ) δ δ₀ = Iso-refl
-apply-lemma {Δ} {n} (μ τ) δ δ₀ =
-  μ-obj-resp unfold
-    (λ {X} {Y} f →
-      let open ≈-Reasoning isEquiv in
-      begin
-        fmor (as-poly τ δ) (extend-fam f) ∘ Iso.fwd (unfold X)
-      ≈⟨ ≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (≈-sym (assoc _ _ _))) ⟩
-        fmor (as-poly τ δ) (extend-fam f) ∘ Iso.fwd (apply-lemma τ δ (extend δ₀ X))
-          ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
-          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
-      ≈⟨ ∘-cong₁ (∘-cong₁ (≈-sym (apply-nat-fwd τ δ (extend-fam f)))) ⟩
-        Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ ty-fmor τ δ (extend-fam f)
-          ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
-          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
-      ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
-        (Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ (ty-fmor τ δ (extend-fam f) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))))
-          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
-      ≈⟨ ∘-cong₁ (∘-cong₂ (ty-cong-nat f)) ⟩
-        (Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ (Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)))
-          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
-      ≈⟨ ∘-cong₁ (≈-sym (assoc _ _ _)) ⟩
-        (Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f))
-          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
-      ≈⟨ assoc _ _ _ ⟩
-        Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw Y)))
-          ∘ (ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f) ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
-      ≈⟨ ∘-cong₂ (apply-nat-bwd τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)) ⟩
-        Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw Y)))
-          ∘ (Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) Y)) ∘ fmor (as-poly τ (concat δ₀ δ)) (extend-fam {n = 0} {δ = λ ()} f))
-      ≈⟨ ≈-sym (assoc _ _ _) ⟩
-        Iso.fwd (unfold Y) ∘ fmor (as-poly τ (concat δ₀ δ)) (extend-fam {n = 0} {δ = λ ()} f)
-      ∎)
+-- Renaming a type is reindexing its environment. extᵗⁿ leaves the first n (poly) variables alone,
+-- so splitAt commutes with it.
+splitAt-extᵗⁿ : ∀ {Δ₁ Δ₂} n (ρ : TyRen Δ₁ Δ₂) (i : Fin (n + Δ₁)) →
+                splitAt n (extᵗⁿ n ρ i) ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] (splitAt n i)
+splitAt-extᵗⁿ zero    ρ i           = refl
+splitAt-extᵗⁿ (suc n) ρ Fin.zero    = refl
+splitAt-extᵗⁿ {Δ₁} (suc n) ρ (Fin.suc i) =
+  trans (cong (map₁ Fin.suc) (splitAt-extᵗⁿ n ρ i)) (go (splitAt n i))
   where
-    env-pw : ∀ X (i : Fin (suc (n + Δ))) → concat (extend {0} (λ ()) X) (concat δ₀ δ) i ≡ concat (extend δ₀ X) δ i
-    env-pw X Fin.zero    = refl
-    env-pw X (Fin.suc j) with splitAt n j
-    ... | inj₁ k = refl
-    ... | inj₂ l = refl
+    go : (s : Fin n ⊎ Fin Δ₁) →
+         map₁ Fin.suc ([ inj₁ , (λ k → inj₂ (ρ k)) ] s) ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] (map₁ Fin.suc s)
+    go (inj₁ j) = refl
+    go (inj₂ k) = refl
 
-    unfold : ∀ X → Iso (fobj μ-obj (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (extend {0} (λ ()) X))
-                       (fobj μ-obj (as-poly {Δ} {suc n} τ δ) (extend δ₀ X))
-    unfold X = Iso-trans (Iso-sym (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
-                         (Iso-trans (≡→Iso (ty-cong τ (env-pw X))) (apply-lemma τ δ (extend δ₀ X)))
+as-poly-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (n + Δ₁)) (δ : Fin Δ₂ → obj) →
+              as-poly {Δ₂} {n} (extᵗⁿ n ρ *ᵗ τ) δ ≡ as-poly {Δ₁} {n} τ (λ i → δ (ρ i))
+as-poly-ren {Δ₁} {Δ₂} {n} ρ (var i) δ = go (splitAt n i) (splitAt n (extᵗⁿ n ρ i)) (splitAt-extᵗⁿ n ρ i)
+  where
+    go : (s : Fin n ⊎ Fin Δ₁) (s' : Fin n ⊎ Fin Δ₂) → s' ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] s →
+         [ Poly.var , (λ j → Poly.const (δ j)) ] s' ≡ [ Poly.var , (λ j → Poly.const (δ (ρ j))) ] s
+    go (inj₁ j) _ refl = refl
+    go (inj₂ k) _ refl = refl
+as-poly-ren ρ unit      δ = refl
+as-poly-ren ρ (base s)  δ = refl
+as-poly-ren ρ (σ [+] τ) δ = cong₂ Poly._+_ (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ)
+as-poly-ren ρ (σ [×] τ) δ = cong₂ Poly._×_ (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ)
+as-poly-ren ρ (σ [→] τ) δ = refl
+as-poly-ren ρ (μ τ)     δ = cong Poly.μ (as-poly-ren ρ τ δ)
 
-    ty-cong-nat : ∀ {X Y} (f : X ⇒ Y) →
-                 ty-fmor τ δ (extend-fam {δ = δ₀} f) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X))) ≈
-                 Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)
-    ty-cong-nat {X} {Y} f =
-      begin
-        ty-fmor τ δ (extend-fam {δ = δ₀} f) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
-      ≈⟨ {!!} ⟩
-        Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)
-      ∎
-      where open ≈-Reasoning isEquiv
+ty-ren : ∀ {Δ₁ Δ₂} (ρ : TyRen Δ₁ Δ₂) (τ : type Δ₁) (δ : Fin Δ₂ → obj) →
+         ⟦ ρ *ᵗ τ ⟧ty δ ≡ ⟦ τ ⟧ty (λ i → δ (ρ i))
+ty-ren ρ (var i)   δ = refl
+ty-ren ρ unit      δ = refl
+ty-ren ρ (base s)  δ = refl
+ty-ren ρ (σ [+] τ) δ = cong₂ coprod (ty-ren ρ σ δ) (ty-ren ρ τ δ)
+ty-ren ρ (σ [×] τ) δ = cong₂ prod  (ty-ren ρ σ δ) (ty-ren ρ τ δ)
+ty-ren ρ (σ [→] τ) δ = refl
+ty-ren ρ (μ τ)     δ = cong (λ (P : Poly 1) → μ-obj P (λ ())) (as-poly-ren ρ τ δ)
 
-ty-fmor τ δ {δ₀} {δ₀'} fs =
-  Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+-- Freezing the poly-variables δ₀ into the environment (with X at position 0) reshuffles the
+-- combined context only up to pointwise equality.
+env-pw : ∀ {Δ n} (δ : Fin Δ → obj) (δ₀ : Fin n → obj) (X : obj) (i : Fin (suc (n + Δ))) →
+         concat (extend {0} (λ ()) X) (concat δ₀ δ) i ≡ concat (extend δ₀ X) δ i
+env-pw δ δ₀ X Fin.zero    = refl
+env-pw {n = n} δ δ₀ X (Fin.suc j) with splitAt n j
+... | inj₁ k = refl
+... | inj₂ l = refl
 
-apply-nat-fwd τ δ {δ₀} {δ₀'} fs =
-  begin
-    Iso.fwd (apply-lemma τ δ δ₀') ∘ ((Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)))
-  ≈⟨ ≈-trans (∘-cong₂ (assoc _ _ _)) (≈-sym (assoc _ _ _)) ⟩
-    (Iso.fwd (apply-lemma τ δ δ₀') ∘ (Iso.bwd (apply-lemma τ δ δ₀')) ∘ (fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)))
-  ≈⟨ ≈-trans (∘-cong₁ (Iso.fwd∘bwd≈id (apply-lemma τ δ δ₀'))) id-left ⟩
-    fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
-  ∎
-  where open ≈-Reasoning isEquiv
+-- Applying the polynomial (as-poly τ δ) is the interpretation of τ, in each direction. Morphisms
+-- suffice for the term semantics; the inverse laws are deferred.
+mutual
+  apply-fwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
+              ⟦ τ ⟧ty (concat δ₀ δ) ⇒ fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀
+  apply-fwd {n = n} (var i) δ δ₀ with splitAt n i
+  ... | inj₁ j = id _
+  ... | inj₂ k = id _
+  apply-fwd unit      δ δ₀ = id _
+  apply-fwd (base s)  δ δ₀ = id _
+  apply-fwd (σ [+] τ) δ δ₀ = coprod-m (apply-fwd σ δ δ₀) (apply-fwd τ δ δ₀)
+  apply-fwd (σ [×] τ) δ δ₀ = prod-m (apply-fwd σ δ δ₀) (apply-fwd τ δ δ₀)
+  apply-fwd (σ [→] τ) δ δ₀ = id _
+  apply-fwd {Δ} {n} (μ τ) δ δ₀ =
+    μ-map (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ()) (as-poly {Δ} {suc n} τ δ) δ₀
+      (λ X → apply-fwd τ δ (extend δ₀ X) ∘ coe (ty-cong τ (env-pw δ δ₀ X)) ∘ apply-bwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
 
-apply-nat-bwd τ δ {δ₀} {δ₀'} fs =
-  begin
-    ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀)
-  ≈˘⟨ id-left ⟩
-    id _ ∘ (ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀))
-  ≈˘⟨ ∘-cong₁ (Iso.bwd∘fwd≈id (apply-lemma τ δ δ₀')) ⟩
-    (Iso.bwd (apply-lemma τ δ δ₀') ∘ Iso.fwd (apply-lemma τ δ δ₀')) ∘ (ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀))
-  ≈⟨ assoc _ _ _ ⟩
-    Iso.bwd (apply-lemma τ δ δ₀') ∘ (Iso.fwd (apply-lemma τ δ δ₀') ∘ (ty-fmor τ δ fs ∘ Iso.bwd (apply-lemma τ δ δ₀)))
-  ≈⟨ ∘-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (apply-nat-fwd τ δ fs))) ⟩
-    Iso.bwd (apply-lemma τ δ δ₀') ∘ ((fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)) ∘ Iso.bwd (apply-lemma τ δ δ₀))
-  ≈⟨ ∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (Iso.fwd∘bwd≈id (apply-lemma τ δ δ₀))) id-right)) ⟩
-    Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs
-  ∎
-  where open ≈-Reasoning isEquiv
+  apply-bwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
+              fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀ ⇒ ⟦ τ ⟧ty (concat δ₀ δ)
+  apply-bwd {n = n} (var i) δ δ₀ with splitAt n i
+  ... | inj₁ j = id _
+  ... | inj₂ k = id _
+  apply-bwd unit      δ δ₀ = id _
+  apply-bwd (base s)  δ δ₀ = id _
+  apply-bwd (σ [+] τ) δ δ₀ = coprod-m (apply-bwd σ δ δ₀) (apply-bwd τ δ δ₀)
+  apply-bwd (σ [×] τ) δ δ₀ = prod-m (apply-bwd σ δ δ₀) (apply-bwd τ δ δ₀)
+  apply-bwd (σ [→] τ) δ δ₀ = id _
+  apply-bwd {Δ} {n} (μ τ) δ δ₀ =
+    μ-map (as-poly {Δ} {suc n} τ δ) δ₀ (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ())
+      (λ X → apply-fwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) X) ∘ coe (sym (ty-cong τ (env-pw δ δ₀ X))) ∘ apply-bwd τ δ (extend δ₀ X))
 
--- Syntactic substitution is functor application (up to isomorphism). The μ case is iso-level
--- (as-poly expands the substituted type, whereas the environment freezes it as a Poly.const).
-sub-as-apply : (τ : type 1) (τ' : type 0) →
-               Iso (⟦ τ [ τ' ] ⟧ty (λ ())) (fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))))
-sub-as-apply (var Fin.zero) _  = Iso-refl
-sub-as-apply unit           _  = Iso-refl
-sub-as-apply (base s)       _  = Iso-refl
-sub-as-apply (σ [+] τ)      τ' = coproduct-preserve-iso (sub-as-apply σ τ') (sub-as-apply τ τ')
-sub-as-apply (σ [×] τ)      τ' = product-preserves-iso  (sub-as-apply σ τ') (sub-as-apply τ τ')
-sub-as-apply (σ [→] τ)      _  = Iso-refl
-sub-as-apply (μ τ)          τ' =
-  μ-obj-resp
-    (λ X → Iso-trans (Iso-sym (apply-lemma (sub (sub-lift (push τ')) τ) (λ ()) (extend (λ ()) X)))
-                     (Iso-trans {!!}
-                                (apply-lemma {Δ = 0} {n = 2} τ (λ ()) (extend (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) X))))
-    {!!}
+-- Syntactic substitution is functor application, in each direction. The μ case crosses the two
+-- presentations (as-poly expands the substituted type, whereas the environment freezes it as a
+-- Poly.const), so it needs the substitution coherence.
+sub-as-apply-fwd : (τ : type 1) (τ' : type 0) →
+                   ⟦ τ [ τ' ] ⟧ty (λ ()) ⇒ fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ())))
+sub-as-apply-fwd (var Fin.zero) _  = id _
+sub-as-apply-fwd unit           _  = id _
+sub-as-apply-fwd (base s)       _  = id _
+sub-as-apply-fwd (σ [+] τ)      τ' = coprod-m (sub-as-apply-fwd σ τ') (sub-as-apply-fwd τ τ')
+sub-as-apply-fwd (σ [×] τ)      τ' = prod-m (sub-as-apply-fwd σ τ') (sub-as-apply-fwd τ τ')
+sub-as-apply-fwd (σ [→] τ)      _  = id _
+sub-as-apply-fwd (μ τ)          τ' = {!!}
+
+sub-as-apply-bwd : (τ : type 1) (τ' : type 0) →
+                   fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) ⇒ ⟦ τ [ τ' ] ⟧ty (λ ())
+sub-as-apply-bwd (var Fin.zero) _  = id _
+sub-as-apply-bwd unit           _  = id _
+sub-as-apply-bwd (base s)       _  = id _
+sub-as-apply-bwd (σ [+] τ)      τ' = coprod-m (sub-as-apply-bwd σ τ') (sub-as-apply-bwd τ τ')
+sub-as-apply-bwd (σ [×] τ)      τ' = prod-m (sub-as-apply-bwd σ τ') (sub-as-apply-bwd τ τ')
+sub-as-apply-bwd (σ [→] τ)      _  = id _
+sub-as-apply-bwd (μ τ)          τ' = {!!}
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
@@ -223,22 +202,20 @@ open PointedFPCat PFPC[ 𝒞 , 𝒞T , 𝒞P , Bool ] using (list→product)
 
 mutual
   ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty (λ ())
-  ⟦ var x ⟧tm        = ⟦ x ⟧var
-  ⟦ unit ⟧tm         = to-terminal
-  ⟦ inl M ⟧tm        = in₁ ∘ ⟦ M ⟧tm
-  ⟦ inr M ⟧tm        = in₂ ∘ ⟦ M ⟧tm
-  ⟦ case M M₁ M₂ ⟧tm = scopair ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
-  ⟦ pair M N ⟧tm     = ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ fst M ⟧tm        = p₁ ∘ ⟦ M ⟧tm
-  ⟦ snd M ⟧tm        = p₂ ∘ ⟦ M ⟧tm
-  ⟦ lam M ⟧tm        = lambda ⟦ M ⟧tm
-  ⟦ app M N ⟧tm      = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ bop ω Ms ⟧tm     = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
-  ⟦ brel r Ms ⟧tm    = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
-  ⟦ roll {τ = τ} M ⟧tm =
-    α (as-poly τ (λ ())) (λ ()) ∘ Iso.fwd (sub-as-apply τ (μ τ)) ∘ ⟦ M ⟧tm
-  ⟦ fold {τ = τ} {σ = σ} alg M ⟧tm =
-    ⦅ ⟦ alg ⟧tm ∘ prod-m (id _) (Iso.bwd (sub-as-apply τ σ)) ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ var x ⟧tm                       = ⟦ x ⟧var
+  ⟦ unit ⟧tm                        = to-terminal
+  ⟦ inl M ⟧tm                       = in₁ ∘ ⟦ M ⟧tm
+  ⟦ inr M ⟧tm                       = in₂ ∘ ⟦ M ⟧tm
+  ⟦ case M M₁ M₂ ⟧tm                = scopair ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ pair M N ⟧tm                    = ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ fst M ⟧tm                       = p₁ ∘ ⟦ M ⟧tm
+  ⟦ snd M ⟧tm                       = p₂ ∘ ⟦ M ⟧tm
+  ⟦ lam M ⟧tm                       = lambda ⟦ M ⟧tm
+  ⟦ app M N ⟧tm                     = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ bop ω Ms ⟧tm                    = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
+  ⟦ brel r Ms ⟧tm                   = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
+  ⟦ roll {τ = τ} M ⟧tm              = α (as-poly τ (λ ())) (λ ()) ∘ sub-as-apply-fwd τ (μ τ) ∘ ⟦ M ⟧tm
+  ⟦ fold {τ = τ} {σ = σ} alg M ⟧tm  = ⦅ ⟦ alg ⟧tm ∘ prod-m (id _) (sub-as-apply-bwd τ σ) ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms     = to-terminal

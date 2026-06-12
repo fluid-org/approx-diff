@@ -6,7 +6,7 @@
 
 open import Data.Fin using (Fin; zero; suc)
 open import Data.List using (List; []; _∷_)
-open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 
 open import every using (Every; []; _∷_)
@@ -40,6 +40,10 @@ TySub Δ Δ' = Fin Δ → type Δ'
 extᵗ : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → TyRen (suc Δ₁) (suc Δ₂)
 extᵗ ρ zero    = zero
 extᵗ ρ (suc i) = suc (ρ i)
+
+extᵗⁿ : ∀ {Δ₁ Δ₂} n → TyRen Δ₁ Δ₂ → TyRen (n + Δ₁) (n + Δ₂)
+extᵗⁿ zero    ρ = ρ
+extᵗⁿ (suc n) ρ = extᵗ (extᵗⁿ n ρ)
 
 _*ᵗ_ : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → type Δ₁ → type Δ₂
 ρ *ᵗ var i       = var (ρ i)
