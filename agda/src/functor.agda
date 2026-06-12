@@ -762,6 +762,44 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     ∎
     where open ≈-Reasoning 𝒞.isEquiv
 
+  private
+    coswitch : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans (constF 𝒮.opposite x) (opF' D) → NatTrans D (constF 𝒮 x)
+    coswitch D α .transf = α .transf
+    coswitch D α .natural f = 𝒞.≈-sym (α .natural f)
+
+    coswitch⁻¹ : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans D (constF 𝒮 x) → NatTrans (constF 𝒮.opposite x) (opF' D)
+    coswitch⁻¹ D α .transf = α .transf
+    coswitch⁻¹ D α .natural f = 𝒞.≈-sym (α .natural f)
+
+    coswitch⁻¹-cong : ∀ (D : Functor 𝒮 𝒞.opposite) {x} {α β} → ≃-NatTrans α β → ≃-NatTrans (coswitch⁻¹ D {x} α) (coswitch⁻¹ D {x} β)
+    coswitch⁻¹-cong D α≃β .transf-eq = α≃β .transf-eq
+
+    coswitch⁻¹-comp : ∀ D {x y α} {f : x 𝒞.⇒ y} → ≃-NatTrans (coswitch⁻¹ D {x} (constFmor f ∘ α)) (coswitch⁻¹ D α ∘ constFmor f)
+    coswitch⁻¹-comp D .transf-eq s = 𝒞.≈-refl
+
+    coswitch⁻¹-coswitch : ∀ D {x α} → ≃-NatTrans (coswitch⁻¹ D {x} (coswitch D α)) α
+    coswitch⁻¹-coswitch D .transf-eq s = 𝒞.≈-refl
+
+  op-limit : (D : Functor 𝒮 𝒞.opposite) → Limit (opF' D) → Colimit D
+  op-limit D limitOpD .Colimit.apex = limitOpD .Limit.apex
+  op-limit D limitOpD .Colimit.cocone = coswitch D (limitOpD .Limit.cone)
+  op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda x α =
+    limitOpD .Limit.lambda x (coswitch⁻¹ D α)
+  op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda-cong α≃β =
+    limitOpD .Limit.lambda-cong (coswitch⁻¹-cong D α≃β)
+  op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda-coeval x α .transf-eq s =
+    limitOpD .Limit.lambda-eval _ .transf-eq s
+  op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda-ext x f = begin
+      limitOpD .Limit.lambda x (coswitch⁻¹ D (constFmor f ∘ coswitch D (limitOpD .Limit.cone)))
+    ≈⟨ limitOpD .Limit.lambda-cong (coswitch⁻¹-comp D) ⟩
+      limitOpD .Limit.lambda x (coswitch⁻¹ D (coswitch D (limitOpD .Limit.cone)) ∘ constFmor f)
+    ≈⟨ limitOpD .Limit.lambda-cong (∘NT-cong (coswitch⁻¹-coswitch D) (≃-isEquivalence .refl)) ⟩
+      limitOpD .Limit.lambda x (limitOpD .Limit.cone ∘ constFmor f)
+    ≈⟨ limitOpD .Limit.lambda-ext f ⟩
+      f
+    ∎
+    where open ≈-Reasoning 𝒞.isEquiv
+
 
 ------------------------------------------------------------------------------
 -- Definition of limit preservation
