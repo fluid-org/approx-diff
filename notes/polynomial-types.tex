@@ -153,6 +153,115 @@ where $\beta$ is the algebra-morphism property of $h_\alpha$ and $\eta$ applies 
 $\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu P$-child of $t$
 before substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
 
+\subsection{Initial algebras from $\omega$-colimits}
+\label{sec:polynomial-types:omega-mu}
+
+The construction of \secref{polynomial-types:fam} is specific to $\Fam(\cat{C})$, and predates two
+extensions now present in the formalisation: polynomials have $n$ free variables with nested $\mu$, and may
+be composed with a strong functor $T$ (the basis for the Galois slicing interpretation of
+\secref{slicing-interpretation}). Here we specify a replacement construction that works in an arbitrary
+category $\cat{D}$ with enough colimits, so that $\Fam(\cat{C})$ and setoids become instances of a single
+development.
+
+\paragraph{Polynomials.}
+Syntactic polynomials over $\cat{D}$ are kinded over a context $\Delta$ of type variables, as in
+\secref{polynomial-types:kinding}:
+\[
+  P, Q \in \Poly_\Delta \;::=\; \const(A) \mid \alpha \mid P + Q \mid P \times Q \mid \mu\alpha.P \mid T
+  \circ P
+\]
+where $A$ ranges over objects of $\cat{D}$ and $\alpha$ over $\Delta$; in $\mu\alpha.P$ the body $P \in
+\Poly_{\Delta,\alpha}$ binds $\alpha$. (The formalisation uses de Bruijn indices, with $\Poly_n$ indexed by
+the number of free variables.) Each $P \in \Poly_\Delta$ will denote a functor $\sem{P} : \cat{D}^\Delta
+\to \cat{D}$, with $\sem{\mu\alpha.P}$ the parameterised initial algebra of $\sem{P}$: for an environment
+$\delta \in \cat{D}^\Delta$, the object $\sem{\mu\alpha.P}(\delta)$ carries an initial algebra for the
+endofunctor $X \mapsto \sem{P}(\delta[\alpha \mapsto X])$.
+
+\paragraph{Interface.}
+The construction must provide, for each $P \in \Poly_{\Delta,\alpha}$ and environment $\delta \in
+\cat{D}^\Delta$:
+\begin{itemize}
+\item an object $\mu_{\alpha.P}(\delta)$ and algebra map $\inMap : \sem{P}(\delta[\alpha \mapsto
+  \mu_{\alpha.P}(\delta)]) \to \mu_{\alpha.P}(\delta)$;
+\item a catamorphism in context: for every $\Gamma$ and algebra $a : \Gamma \times \sem{P}(\delta[\alpha
+  \mapsto Y]) \to Y$, a morphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$ satisfying, writing
+  $f \circ_\Gamma g = f \circ \prodM{\pi_1}{g}$ for composition in context,
+  \begin{align*}
+  \cata{a} \circ_\Gamma (\inMap \circ \pi_2) &= a \circ_\Gamma \sem{P}^{\mathrm{s}}(\cata{a},
+    \vec{\pi_2}) \tag{$\beta$} \\
+  h \circ_\Gamma (\inMap \circ \pi_2) = a \circ_\Gamma \sem{P}^{\mathrm{s}}(h, \vec{\pi_2})
+    &\implies h = \cata{a} \tag{$\eta$}
+  \end{align*}
+  where $\sem{P}^{\mathrm{s}}$ is the \emph{strong} functorial action of $\sem{P}$, taking morphisms in
+  context $\Gamma \times X_\beta \to Y_\beta$ for each variable $\beta$.
+\end{itemize}
+The context $\Gamma$ avoids closure conversion (and hence exponentials) in the term semantics, as in
+\secref{polynomial-types:language}; the strong action is needed for the same reason. In the Agda
+formalisation the interface is staged to break an apparent circularity: a first record provides the
+\emph{operations} ($\mu$, $\inMap$, $\cata{-}$) with no laws; the strong action $\sem{P}^{\mathrm{s}}$ is
+then defined by structural recursion on $P$, its $\mu$ case using the catamorphism operation; the laws
+$\beta$/$\eta$, which mention $\sem{P}^{\mathrm{s}}$, form a second record over the first.
+
+\paragraph{Assumptions on $\cat{D}$.}
+The construction requires:
+\begin{enumerate}
+\item an initial object $0$ and colimits of $\omega$-chains;
+\item finite products, and that $\Gamma \times -$ preserves the initial object and $\omega$-colimits (both
+  are automatic when $\cat{D}$ has exponentials, which the interpretation assumes anyway);
+\item strong (stable) finite coproducts, as already assumed by the term semantics; coproducts, being
+  colimits, commute with $\omega$-colimits automatically;
+\item $T$ a strong functor preserving $\omega$-colimits ($T = \mathrm{Id}$ for the standard interpretation,
+  where this is trivial).
+\end{enumerate}
+
+\paragraph{Construction.}
+By structural induction on $P$ we define simultaneously: (i) the object part $\sem{P}$; (ii) the strong
+action $\sem{P}^{\mathrm{s}}$, using pairing for $\times$, strong copairing for $+$, and the strength of
+$T$; (iii) preservation of $\omega$-colimits in each variable; and (iv) for $\mu\alpha.P$, the
+parameterised initial algebra. For (iv), fix $\delta$ and let $F = \sem{P}(\delta[\alpha \mapsto -])$. Form
+the classical initial-algebra chain
+\[
+  0 \xrightarrow{\;!\;} F0 \xrightarrow{\;F!\;} F^2 0 \to \cdots
+\]
+and set $\mu_{\alpha.P}(\delta) = \mathrm{colim}_n\, F^n 0$. By (iii), $F$ preserves this colimit, so
+$F(\mu_{\alpha.P}(\delta)) \cong \mathrm{colim}_n\, F^{n+1} 0$ and $\inMap$ is the evident comparison map
+(an isomorphism,
+though the interface does not require stating this). For the catamorphism in context, given $a : \Gamma
+\times F Y \to Y$, since $\Gamma \times -$ preserves the chain colimit it suffices to give a cocone
+$g_n : \Gamma \times F^n 0 \to Y$:
+\[
+  g_0 = \mathord{!} \qquad g_{n+1} = a \circ_\Gamma \sem{P}^{\mathrm{s}}(g_n, \vec{\pi_2})
+\]
+using $\Gamma \times 0 \cong 0$ for $g_0$. Cocone compatibility, and the $\beta$/$\eta$ laws, follow from
+the functoriality laws of $\sem{P}^{\mathrm{s}}$ (already established in the formalisation) and uniqueness
+of maps out of the colimit. The $\mu$ case of (iii), that $\mu_{\alpha.P}$ preserves $\omega$-colimits in
+the remaining variables, is the standard interchange argument: a colimit of initial-algebra chains is the
+initial-algebra chain of the colimit, since colimits commute with colimits.
+
+\paragraph{Instances.}
+The construction is needed in two places: the higher-order model $\Fam(\cat{D})$ for $\cat{D} =
+\namedcat{Meet} \times \namedcat{Join}^{\mathrm{op}}$ and variants; and eventually the first-order model
+$\LatGal$ and the glued logical-relations category, which the conservativity development takes as
+parameters ($\Fam(\LatGal)$ itself hosts only the transported signature model, which involves no
+$\mu$-types).
+
+The semilattice categories are
+categories of finitary algebras, hence cocomplete and complete; completeness gives their opposites
+$\omega$-colimits as well, so $\cat{D}$ has $\omega$-colimits componentwise, and $\Fam(\cat{D})$ inherits
+them (setoid colimits on the index part, fibre colimits along threads). So plain $\omega$-colimits suffice
+for everything the higher-order interpretation needs.
+
+$\LatGal$ is more delicate: the candidate colimit of an $\omega$-chain of Galois connections is the inverse
+limit of the right adjoints, which has pointwise meets but in general no joins. For chains of
+\emph{embedding--projection} links ($f^R \circ f^L = \id$), however, the classical bilimit construction
+stays within lattices, and the initial-algebra chains built above start from $0$ (trivially e--p) with
+polynomial functors preserving e--p-ness. (The W-type construction of \secref{polynomial-types:fam}
+exploits the same phenomenon in $\Fam(\cat{C})$ for $\cat{C}$ without colimits: its chains are fibrewise
+isomorphisms.) When the time comes to instantiate the first-order side, the assumption can be refined to
+colimits of $\omega$-chains \emph{whose links lie in a designated class of embeddings}, with the
+construction additionally establishing that its chains remain in the class; for now we adopt plain
+$\omega$-colimits.
+
 \subsection{Why a syntactic CBN translation does not extend to inductive types}
 \label{sec:polynomial-types:no-cbn}
 
