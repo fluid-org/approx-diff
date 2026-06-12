@@ -24,7 +24,7 @@ module colimit-mu-types
 
 open Category 𝒟
 open HasProducts 𝒟P
-open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC) using (coprod; coprod-m; in₁; in₂)
+open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC) using (coprod; coprod-m; coprod-m-cong; in₁; in₂)
 open HasInitial 𝒟I renaming (witness to 𝟘)
 open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
 open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend)
@@ -79,3 +79,12 @@ mutual
   ⟦ P × Q ⟧mor   fs = prod-m (⟦ P ⟧mor fs) (⟦ Q ⟧mor fs)
   ⟦ μ P ⟧mor     fs = {!!}
   ⟦ T∘ P ⟧mor    fs = Functor.fmor T (⟦ P ⟧mor fs)
+
+  ⟦_⟧mor-cong : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
+                (∀ i → fs i ≈ gs i) → ⟦ P ⟧mor fs ≈ ⟦ P ⟧mor gs
+  ⟦ const A ⟧mor-cong fs≈gs = ≈-refl
+  ⟦ var i ⟧mor-cong   fs≈gs = fs≈gs i
+  ⟦ P + Q ⟧mor-cong   fs≈gs = coprod-m-cong (⟦ P ⟧mor-cong fs≈gs) (⟦ Q ⟧mor-cong fs≈gs)
+  ⟦ P × Q ⟧mor-cong   fs≈gs = prod-m-cong (⟦ P ⟧mor-cong fs≈gs) (⟦ Q ⟧mor-cong fs≈gs)
+  ⟦ μ P ⟧mor-cong     fs≈gs = {!!}
+  ⟦ T∘ P ⟧mor-cong    fs≈gs = Functor.fmor-cong T (⟦ P ⟧mor-cong fs≈gs)
