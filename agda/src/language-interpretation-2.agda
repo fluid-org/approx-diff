@@ -1,17 +1,15 @@
-{-# OPTIONS --prop --postfix-projections #-}
+{-# OPTIONS --prop --postfix-projections --safe #-}
 
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
-open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Nat using (zero; suc; _+_)
 open import Data.Sum using (_⊎_; [_,_]; inj₁; inj₂; map₁)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
-open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasExponentials)
 open import functor using (StrongFunctor; StrongFunctor-Id)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
-open import prop-setoid using (module ≈-Reasoning)
 import polynomial-functor-2
 import language-syntax-2
 
@@ -166,28 +164,61 @@ mutual
     μ-map (as-poly {Δ} {suc n} τ δ) δ₀ (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ())
       (λ X → apply-fwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) X) ∘ coe (sym (ty-cong τ (env-pw δ δ₀ X))) ∘ apply-bwd τ δ (extend δ₀ X))
 
--- Syntactic substitution is functor application, in each direction. The μ case crosses the two
--- presentations (as-poly expands the substituted type, whereas the environment freezes it as a
--- Poly.const), so it needs the substitution coherence.
+-- Pointwise action of a lifted substitution on the extended environment: the new variable is mapped
+-- to itself, and the (weakened) old ones ignore it.
+sub-lift-pw : ∀ {Δ Δ'} (σ : TySub Δ Δ') (δ : Fin Δ' → obj) (X : obj) (i : Fin (suc Δ)) →
+              ⟦ sub-lift σ i ⟧ty (concat (extend {0} (λ ()) X) δ) ≡ concat (extend {0} (λ ()) X) (λ j → ⟦ σ j ⟧ty δ) i
+sub-lift-pw σ δ X Fin.zero    = refl
+sub-lift-pw σ δ X (Fin.suc j) = ty-ren Fin.suc (σ j) (concat (extend {0} (λ ()) X) δ)
+
+-- Semantic substitution: substituting then interpreting maps to interpreting in the environment
+-- that interprets the substituents (in each direction).
+subst-fwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) (δ : Fin Δ' → obj) →
+            ⟦ sub σ τ ⟧ty δ ⇒ ⟦ τ ⟧ty (λ i → ⟦ σ i ⟧ty δ)
+subst-fwd σ (var i)     δ = id _
+subst-fwd σ unit        δ = id _
+subst-fwd σ (base s)    δ = id _
+subst-fwd σ (τ₁ [+] τ₂) δ = coprod-m (subst-fwd σ τ₁ δ) (subst-fwd σ τ₂ δ)
+subst-fwd σ (τ₁ [×] τ₂) δ = prod-m (subst-fwd σ τ₁ δ) (subst-fwd σ τ₂ δ)
+subst-fwd σ (τ₁ [→] τ₂) δ = id _
+subst-fwd {Δ} {Δ'} σ (μ τ) δ =
+  μ-map (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (λ ()) (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (λ ())
+    (λ X → apply-fwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend (λ ()) X)
+         ∘ coe (ty-cong τ (sub-lift-pw σ δ X))
+         ∘ subst-fwd (sub-lift σ) τ (concat (extend {0} (λ ()) X) δ)
+         ∘ apply-bwd {n = 1} (sub (sub-lift σ) τ) δ (extend (λ ()) X))
+
+subst-bwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) (δ : Fin Δ' → obj) →
+            ⟦ τ ⟧ty (λ i → ⟦ σ i ⟧ty δ) ⇒ ⟦ sub σ τ ⟧ty δ
+subst-bwd σ (var i)     δ = id _
+subst-bwd σ unit        δ = id _
+subst-bwd σ (base s)    δ = id _
+subst-bwd σ (τ₁ [+] τ₂) δ = coprod-m (subst-bwd σ τ₁ δ) (subst-bwd σ τ₂ δ)
+subst-bwd σ (τ₁ [×] τ₂) δ = prod-m (subst-bwd σ τ₁ δ) (subst-bwd σ τ₂ δ)
+subst-bwd σ (τ₁ [→] τ₂) δ = id _
+subst-bwd {Δ} {Δ'} σ (μ τ) δ =
+  μ-map (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (λ ()) (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (λ ())
+    (λ X → apply-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend (λ ()) X)
+         ∘ subst-bwd (sub-lift σ) τ (concat (extend {0} (λ ()) X) δ)
+         ∘ coe (sym (ty-cong τ (sub-lift-pw σ δ X)))
+         ∘ apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend (λ ()) X))
+
+-- The single substitution push τ', read pointwise as an environment.
+push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} (λ ()) (⟦ τ' ⟧ty (λ ()))) (λ ()) i
+push-pw τ' Fin.zero = refl
+
+-- Syntactic substitution is functor application.
 sub-as-apply-fwd : (τ : type 1) (τ' : type 0) →
                    ⟦ τ [ τ' ] ⟧ty (λ ()) ⇒ fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ())))
-sub-as-apply-fwd (var Fin.zero) _  = id _
-sub-as-apply-fwd unit           _  = id _
-sub-as-apply-fwd (base s)       _  = id _
-sub-as-apply-fwd (σ [+] τ)      τ' = coprod-m (sub-as-apply-fwd σ τ') (sub-as-apply-fwd τ τ')
-sub-as-apply-fwd (σ [×] τ)      τ' = prod-m (sub-as-apply-fwd σ τ') (sub-as-apply-fwd τ τ')
-sub-as-apply-fwd (σ [→] τ)      _  = id _
-sub-as-apply-fwd (μ τ)          τ' = {!!}
+sub-as-apply-fwd τ τ' =
+  apply-fwd {0} {1} τ (λ ()) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) ∘
+  coe (ty-cong τ (push-pw τ')) ∘ subst-fwd (push τ') τ (λ ())
 
 sub-as-apply-bwd : (τ : type 1) (τ' : type 0) →
                    fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) ⇒ ⟦ τ [ τ' ] ⟧ty (λ ())
-sub-as-apply-bwd (var Fin.zero) _  = id _
-sub-as-apply-bwd unit           _  = id _
-sub-as-apply-bwd (base s)       _  = id _
-sub-as-apply-bwd (σ [+] τ)      τ' = coprod-m (sub-as-apply-bwd σ τ') (sub-as-apply-bwd τ τ')
-sub-as-apply-bwd (σ [×] τ)      τ' = prod-m (sub-as-apply-bwd σ τ') (sub-as-apply-bwd τ τ')
-sub-as-apply-bwd (σ [→] τ)      _  = id _
-sub-as-apply-bwd (μ τ)          τ' = {!!}
+sub-as-apply-bwd τ τ' =
+  subst-bwd (push τ') τ (λ ()) ∘
+  coe (sym (ty-cong τ (push-pw τ'))) ∘ apply-bwd {0} {1} τ (λ ()) (extend (λ ()) (⟦ τ' ⟧ty (λ ())))
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
@@ -202,20 +233,22 @@ open PointedFPCat PFPC[ 𝒞 , 𝒞T , 𝒞P , Bool ] using (list→product)
 
 mutual
   ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty (λ ())
-  ⟦ var x ⟧tm                       = ⟦ x ⟧var
-  ⟦ unit ⟧tm                        = to-terminal
-  ⟦ inl M ⟧tm                       = in₁ ∘ ⟦ M ⟧tm
-  ⟦ inr M ⟧tm                       = in₂ ∘ ⟦ M ⟧tm
-  ⟦ case M M₁ M₂ ⟧tm                = scopair ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
-  ⟦ pair M N ⟧tm                    = ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ fst M ⟧tm                       = p₁ ∘ ⟦ M ⟧tm
-  ⟦ snd M ⟧tm                       = p₂ ∘ ⟦ M ⟧tm
-  ⟦ lam M ⟧tm                       = lambda ⟦ M ⟧tm
-  ⟦ app M N ⟧tm                     = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ bop ω Ms ⟧tm                    = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
-  ⟦ brel r Ms ⟧tm                   = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
-  ⟦ roll {τ = τ} M ⟧tm              = α (as-poly τ (λ ())) (λ ()) ∘ sub-as-apply-fwd τ (μ τ) ∘ ⟦ M ⟧tm
-  ⟦ fold {τ = τ} {σ = σ} alg M ⟧tm  = ⦅ ⟦ alg ⟧tm ∘ prod-m (id _) (sub-as-apply-bwd τ σ) ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ var x ⟧tm           = ⟦ x ⟧var
+  ⟦ unit ⟧tm            = to-terminal
+  ⟦ inl M ⟧tm           = in₁ ∘ ⟦ M ⟧tm
+  ⟦ inr M ⟧tm           = in₂ ∘ ⟦ M ⟧tm
+  ⟦ case M M₁ M₂ ⟧tm    = scopair ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ pair M N ⟧tm        = ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ fst M ⟧tm           = p₁ ∘ ⟦ M ⟧tm
+  ⟦ snd M ⟧tm           = p₂ ∘ ⟦ M ⟧tm
+  ⟦ lam M ⟧tm           = lambda ⟦ M ⟧tm
+  ⟦ app M N ⟧tm         = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ bop ω Ms ⟧tm        = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
+  ⟦ brel r Ms ⟧tm       = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
+  ⟦ roll {τ = τ} M ⟧tm  =
+    α (as-poly τ (λ ())) (λ ()) ∘ sub-as-apply-fwd τ (μ τ) ∘ ⟦ M ⟧tm
+  ⟦ fold {τ = τ} {σ = σ} alg M ⟧tm =
+    ⦅ ⟦ alg ⟧tm ∘ prod-m (id _) (sub-as-apply-bwd τ σ) ⦆ ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
 
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms     = to-terminal

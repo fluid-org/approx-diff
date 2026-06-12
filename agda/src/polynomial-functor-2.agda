@@ -28,14 +28,9 @@ infixl 21 _∘co_
 _∘co_ : ∀ {Γ X Y Z} → (prod Γ Y ⇒ Z) → (prod Γ X ⇒ Y) → (prod Γ X ⇒ Z)
 _∘co_ {Γ} = Category._∘_ (coKleisli-prod 𝒞P Γ)
 
-id-co : ∀ {Γ X} → prod Γ X ⇒ X
-id-co = p₂
-
 module _ {Γ : obj} where
   open Category (coKleisli-prod 𝒞P Γ) public using ()
-    renaming (assoc to assoc-co;
-              ∘-cong to ∘-cong-co; ∘-cong₁ to ∘-cong-co₁; ∘-cong₂ to ∘-cong-co₂;
-              id-left to id-left-co; id-right to id-right-co)
+    renaming (assoc to assoc-co; ∘-cong₁ to ∘-cong-co₁; ∘-cong₂ to ∘-cong-co₂)
 
 data Poly (n : ℕ) : Set o where
   const : obj → Poly n
@@ -75,13 +70,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
 
   open HasTerminal 𝒞T using (witness; to-terminal; to-terminal-unique)
 
-  ⦅_⦆ᴹ-cong : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
-              {step₁ step₂ : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)} →
-              (∀ X (x→A : prod Γ X ⇒ A) → step₁ X x→A ≈ step₂ X x→A) → ⦅ step₁ ⦆ᴹ ≈ ⦅ step₂ ⦆ᴹ
-  ⦅_⦆ᴹ-cong {P = P} {δ = δ} {step₁ = step₁} {step₂ = step₂} step₁≈step₂ =
-    ⦅⦆ᴹ-η {P = P} {δ = δ} step₂ ⦅ step₁ ⦆ᴹ
-      (≈-trans (⦅⦆ᴹ-β {P = P} {δ = δ} step₁) (step₁≈step₂ (μ-obj P δ) ⦅ step₁ ⦆ᴹ))
-
   extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
                (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) → ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
   extend-mor fs x→y Fin.zero    = x→y
@@ -104,6 +92,47 @@ record HasMu : Set (o ⊔ m ⊔ e) where
       where
         step : ∀ X → (prod _ X ⇒ μ-obj P δ') → prod _ (fobj μ-obj P (extend δ X)) ⇒ μ-obj P δ'
         step X x→μ' = α P δ' ∘ strong-fmor P (extend-mor fs x→μ')
+
+  fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
+  fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
+
+  ⦅_⦆ : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
+        (prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) → prod Γ (μ-obj P δ) ⇒ A
+  ⦅_⦆ {Γ = Γ} {A = A} {P = P} {δ = δ} alg = ⦅ step ⦆ᴹ
+    where
+      step : ∀ X → (prod Γ X ⇒ A) → prod Γ (fobj μ-obj P (extend δ X)) ⇒ A
+      step X x→A = alg ∘ pair p₁ (strong-fmor P (extend-mor (λ _ → p₂) x→A))
+
+  -- Carrier-shaped morphism family: f at position 0, id at positions 1..n.
+  extend-fam : ∀ {n} {δ : Fin n → obj} {X Y} → (X ⇒ Y) → ∀ i → extend δ X i ⇒ extend δ Y i
+  extend-fam f Fin.zero    = f
+  extend-fam f (Fin.suc i) = id _
+
+  -- Mendler step for μ-map, parameterized by an unfolding morphism family.
+  -- P, δ, Q, δ' are explicit because fobj/μ-obj are not injective, so they can't be inferred from the family.
+  μ-map-step : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj) →
+               (∀ X → fobj μ-obj P (extend δ X) ⇒ fobj μ-obj Q (extend δ' X)) →
+               ∀ X → (prod witness X ⇒ μ-obj Q δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj Q δ'
+  μ-map-step P δ Q δ' unfold X x→μ' =
+    α Q δ' ∘ fmor Q (extend-fam (x→μ' ∘ pair to-terminal (id _))) ∘ unfold X ∘ p₂
+
+  -- μ-obj is functorial along unfolding morphism families. No naturality requirement: that is only
+  -- needed for the iso laws (μ-obj-resp below), not to construct the map.
+  μ-map : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj) →
+          (∀ X → fobj μ-obj P (extend δ X) ⇒ fobj μ-obj Q (extend δ' X)) →
+          μ-obj P δ ⇒ μ-obj Q δ'
+  μ-map P δ Q δ' unfold = ⦅ μ-map-step P δ Q δ' unfold ⦆ᴹ ∘ pair to-terminal (id _)
+
+  -- Equational properties of the functorial actions, culminating in μ-obj-resp: initial algebras
+  -- of pointwise-isomorphic functors are isomorphic. Nothing below is needed to define the term
+  -- semantics; retained for the iso laws.
+
+  ⦅_⦆ᴹ-cong : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
+              {step₁ step₂ : ∀ X → (prod Γ X ⇒ A) → (prod Γ (fobj μ-obj P (extend δ X)) ⇒ A)} →
+              (∀ X (x→A : prod Γ X ⇒ A) → step₁ X x→A ≈ step₂ X x→A) → ⦅ step₁ ⦆ᴹ ≈ ⦅ step₂ ⦆ᴹ
+  ⦅_⦆ᴹ-cong {P = P} {δ = δ} {step₁ = step₁} {step₂ = step₂} step₁≈step₂ =
+    ⦅⦆ᴹ-η {P = P} {δ = δ} step₂ ⦅ step₁ ⦆ᴹ
+      (≈-trans (⦅⦆ᴹ-β {P = P} {δ = δ} step₁) (step₁≈step₂ (μ-obj P δ) ⦅ step₁ ⦆ᴹ))
 
   extend-mor-cong : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y}
                     {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} {x→y : prod Γ X ⇒ Y} →
@@ -315,9 +344,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
           ∎)
       where open ≈-Reasoning isEquiv
 
-  fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
-  fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
-
   -- Precomposing fmor with the counit p₂ undoes the unit, leaving the co-Kleisli action.
   fmor-p₂ : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} (fs : ∀ i → δ i ⇒ δ' i) →
             fmor P fs ∘ p₂ ≈ strong-fmor P (λ i → fs i ∘ p₂)
@@ -343,36 +369,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
       strong-fmor P (λ i → (fs i ∘ gs i) ∘ p₂) ∘ pair to-terminal (id _)
     ∎
     where open ≈-Reasoning isEquiv
-
-  μ-fmor : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → μ-obj P δ ⇒ μ-obj P δ'
-  μ-fmor P fs = strong-μ-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
-
-  ⦅_⦆ : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
-        (prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) → prod Γ (μ-obj P δ) ⇒ A
-  ⦅_⦆ {Γ = Γ} {A = A} {P = P} {δ = δ} alg = ⦅ step ⦆ᴹ
-    where
-      step : ∀ X → (prod Γ X ⇒ A) → prod Γ (fobj μ-obj P (extend δ X)) ⇒ A
-      step X x→A = alg ∘ pair p₁ (strong-fmor P (extend-mor (λ _ → p₂) x→A))
-
-  -- Carrier-shaped morphism family: f at position 0, id at positions 1..n.
-  extend-fam : ∀ {n} {δ : Fin n → obj} {X Y} → (X ⇒ Y) → ∀ i → extend δ X i ⇒ extend δ Y i
-  extend-fam f Fin.zero    = f
-  extend-fam f (Fin.suc i) = id _
-
-  -- Mendler step for μ-map, parameterized by an unfolding morphism family.
-  -- P, δ, Q, δ' are explicit because fobj/μ-obj are not injective, so they can't be inferred from the family.
-  μ-map-step : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj) →
-               (∀ X → fobj μ-obj P (extend δ X) ⇒ fobj μ-obj Q (extend δ' X)) →
-               ∀ X → (prod witness X ⇒ μ-obj Q δ') → prod witness (fobj μ-obj P (extend δ X)) ⇒ μ-obj Q δ'
-  μ-map-step P δ Q δ' unfold X x→μ' =
-    α Q δ' ∘ fmor Q (extend-fam (x→μ' ∘ pair to-terminal (id _))) ∘ unfold X ∘ p₂
-
-  -- μ-obj is functorial along unfolding morphism families. No naturality requirement: that is only
-  -- needed for the iso laws (μ-obj-resp below), not to construct the map.
-  μ-map : ∀ {m n} (P : Poly (suc m)) (δ : Fin m → obj) (Q : Poly (suc n)) (δ' : Fin n → obj) →
-          (∀ X → fobj μ-obj P (extend δ X) ⇒ fobj μ-obj Q (extend δ' X)) →
-          μ-obj P δ ⇒ μ-obj Q δ'
-  μ-map P δ Q δ' unfold = ⦅ μ-map-step P δ Q δ' unfold ⦆ᴹ ∘ pair to-terminal (id _)
 
   -- The two Mendler steps for μ-obj-resp, instances of μ-map-step at the iso's fwd and bwd legs.
   -- Swapping the iso (Iso-sym) exchanges them: μ-step-fwd (Iso-sym ∘ ι) ≡ μ-step-bwd ι, definitionally.
