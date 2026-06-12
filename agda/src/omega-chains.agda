@@ -6,11 +6,12 @@
 
 open import Level using (0ℓ)
 open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl; ≤′-step)
-open import Data.Nat.Properties using (≤′-trans; ≤′⇒≤; 1+n≰n)
+open import Data.Nat.Properties using (≤′-trans; ≤′⇒≤; 1+n≰n; z≤′n)
 open import prop using (⊤; tt)
 open import prop-setoid using (⊤-isEquivalence; module ≈-Reasoning)
 open import categories using (Category)
-open import functor using (Functor; NatTrans; ≃-NatTrans; Colimit; constFmor) renaming (_∘_ to _∘NT_)
+import functor
+open functor using (Functor; NatTrans; ≃-NatTrans; Colimit; constFmor) renaming (_∘_ to _∘NT_)
 
 module omega-chains where
 
@@ -52,6 +53,31 @@ module _ {o m e} {𝒞 : Category o m e} where
     chain .Functor.fmor-cong {_} {_} {p} {q} _ = walk-cong p q
     chain .Functor.fmor-id = ≈-refl
     chain .Functor.fmor-comp = walk-comp
+
+  -- A constant chain has its value as a colimit.
+  module _ (A : obj) where
+    private
+      walk-id : ∀ {m n} (p : m ≤′ n) → chain (λ _ → A) (λ _ → id A) .Functor.fmor p ≈ id A
+      walk-id ≤′-refl     = ≈-refl
+      walk-id (≤′-step p) = ≈-trans id-left (walk-id p)
+
+    open NatTrans
+    open Colimit
+    open functor.IsColimit
+
+    const-chain-colimit : Colimit (chain (λ _ → A) (λ _ → id A))
+    const-chain-colimit .apex = A
+    const-chain-colimit .cocone .transf n = id A
+    const-chain-colimit .cocone .natural p =
+      ≈-trans id-left (≈-trans (≈-sym (walk-id p)) (≈-sym id-left))
+    const-chain-colimit .isColimit .colambda x β = β .transf 0
+    const-chain-colimit .isColimit .colambda-cong β≃γ = β≃γ .≃-NatTrans.transf-eq 0
+    const-chain-colimit .isColimit .colambda-coeval x β .≃-NatTrans.transf-eq n =
+      ≈-trans id-right
+      (≈-trans (≈-sym id-left)
+      (≈-trans (β .natural (z≤′n {n}))
+      (≈-trans (∘-cong₂ (walk-id (z≤′n {n}))) id-right)))
+    const-chain-colimit .isColimit .colambda-ext x f = id-right
 
   -- Stage maps commuting with the steps induce a natural transformation between chains, and a
   -- mediating morphism between their colimits.
