@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections #-}
+{-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- μ-types (parameterised initial algebras of polynomial functors) in a category 𝒟 with an initial
 -- object and colimits of ω-chains, via the initial-algebra chain 0 → F0 → F²0 → ⋯ . Counterpart of
@@ -11,7 +11,7 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasInitial)
 open import functor using (Functor; StrongFunctor; HasColimits; Colimit)
-open import omega-chains using (ω; chain; colim-map)
+open import omega-chains using (ω; chain; colim-map; colim-map-cong; colim-map-comp; square-comp)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -85,6 +85,29 @@ mutual
       pointwise Fin.zero    = iter-mor-step P fs k
       pointwise (Fin.suc i) = id-swap'
 
+  -- The stage maps respect pointwise-equal parameter families, and compose.
+  iter-mor-cong : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
+                  (∀ i → fs i ≈ gs i) → ∀ k → iter-mor P fs k ≈ iter-mor P gs k
+  iter-mor-cong P fs≈gs zero    = ≈-refl
+  iter-mor-cong P {fs = fs} {gs} fs≈gs (suc k) = ⟦ P ⟧mor-cong pointwise
+    where
+      pointwise : ∀ i → extend-mor fs (iter-mor P fs k) i ≈ extend-mor gs (iter-mor P gs k) i
+      pointwise Fin.zero    = iter-mor-cong P fs≈gs k
+      pointwise (Fin.suc i) = fs≈gs i
+
+  iter-mor-comp : ∀ {n} (P : Poly (suc n)) {δ δ' δ'' : Fin n → obj}
+                  (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
+                  ∀ k → iter-mor P (λ i → fs i ∘ gs i) k ≈ (iter-mor P fs k ∘ iter-mor P gs k)
+  iter-mor-comp P fs gs zero    = ≈-sym id-left
+  iter-mor-comp P fs gs (suc k) =
+    ≈-trans (⟦ P ⟧mor-cong pointwise)
+            (⟦ P ⟧mor-comp (extend-mor fs (iter-mor P fs k)) (extend-mor gs (iter-mor P gs k)))
+    where
+      pointwise : ∀ i → extend-mor (λ j → fs j ∘ gs j) (iter-mor P (λ j → fs j ∘ gs j) k) i
+                      ≈ (extend-mor fs (iter-mor P fs k) i ∘ extend-mor gs (iter-mor P gs k) i)
+      pointwise Fin.zero    = iter-mor-comp P fs gs k
+      pointwise (Fin.suc i) = ≈-refl
+
   -- Functorial action of ⟦ P ⟧.
   ⟦_⟧mor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → ⟦ P ⟧ δ ⇒ ⟦ P ⟧ δ'
   ⟦ const A ⟧mor fs = id A
@@ -102,7 +125,7 @@ mutual
   ⟦ var i ⟧mor-cong   fs≈gs = fs≈gs i
   ⟦ P + Q ⟧mor-cong   fs≈gs = coprod-m-cong (⟦ P ⟧mor-cong fs≈gs) (⟦ Q ⟧mor-cong fs≈gs)
   ⟦ P × Q ⟧mor-cong   fs≈gs = prod-m-cong (⟦ P ⟧mor-cong fs≈gs) (⟦ Q ⟧mor-cong fs≈gs)
-  ⟦ μ P ⟧mor-cong     fs≈gs = {!!}
+  ⟦ μ P ⟧mor-cong     fs≈gs = colim-map-cong (iter-mor-cong P fs≈gs) (colimits _) (colimits _)
   ⟦ T∘ P ⟧mor-cong    fs≈gs = Functor.fmor-cong T (⟦ P ⟧mor-cong fs≈gs)
 
   ⟦_⟧mor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
@@ -114,6 +137,12 @@ mutual
     ≈-trans (coprod-m-cong (⟦ P ⟧mor-comp fs gs) (⟦ Q ⟧mor-comp fs gs)) (coprod-m-comp _ _ _ _)
   ⟦ P × Q ⟧mor-comp   fs gs =
     ≈-trans (prod-m-cong (⟦ P ⟧mor-comp fs gs) (⟦ Q ⟧mor-comp fs gs)) (prod-m-comp _ _ _ _)
-  ⟦ μ P ⟧mor-comp     fs gs = {!!}
+  ⟦ μ P ⟧mor-comp {δ = δ} {δ'} {δ''} fs gs =
+    ≈-trans (colim-map-cong {h'-step = comp-sq} (iter-mor-comp P fs gs) (colimits _) (colimits _))
+            (colim-map-comp (colimits _) (colimits _) (colimits _))
+    where
+      comp-sq : ∀ k → ((iter-mor P fs (suc k) ∘ iter-mor P gs (suc k)) ∘ step P δ k)
+                    ≈ (step P δ'' k ∘ (iter-mor P fs k ∘ iter-mor P gs k))
+      comp-sq = square-comp {𝒞 = 𝒟} (iter-mor-step P gs) (iter-mor-step P fs)
   ⟦ T∘ P ⟧mor-comp    fs gs =
     ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)
