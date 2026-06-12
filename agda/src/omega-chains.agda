@@ -11,7 +11,7 @@ open import prop using (⊤; tt)
 open import prop-setoid using (⊤-isEquivalence; module ≈-Reasoning)
 open import categories using (Category)
 import functor
-open functor using (Functor; NatTrans; ≃-NatTrans; Colimit; constFmor) renaming (_∘_ to _∘NT_)
+open functor using (Functor; NatTrans; ≃-NatTrans; Colimit; constF; constFmor) renaming (_∘_ to _∘NT_)
 
 module omega-chains where
 
@@ -53,6 +53,28 @@ module _ {o m e} {𝒞 : Category o m e} where
     chain .Functor.fmor-cong {_} {_} {p} {q} _ = walk-cong p q
     chain .Functor.fmor-id = ≈-refl
     chain .Functor.fmor-comp = walk-comp
+
+  -- A cocone over a chain, from legs commuting with single steps.
+  module _ {X : ℕ → obj} {f : ∀ n → X n ⇒ X (suc n)} {a : obj}
+           (legs : ∀ n → X n ⇒ a) (legs-step : ∀ n → legs n ≈ (legs (suc n) ∘ f n)) where
+
+    open NatTrans
+
+    step-cocone : NatTrans (chain X f) (constF ω a)
+    step-cocone .transf = legs
+    step-cocone .natural p = nat p
+      where
+        nat : ∀ {k n} (p : k ≤′ n) → (id a ∘ legs k) ≈ (legs n ∘ chain X f .Functor.fmor p)
+        nat ≤′-refl     = id-swap
+        nat (≤′-step p) = ≈-trans (nat p) (≈-trans (∘-cong₁ (legs-step _)) (assoc _ _ _))
+
+  -- Conversely, any cocone commutes with single steps.
+  cocone-step : ∀ {X : ℕ → obj} {f : ∀ n → X n ⇒ X (suc n)} {a : obj}
+                (c : NatTrans (chain X f) (constF ω a)) →
+                ∀ n → c .NatTrans.transf n ≈ (c .NatTrans.transf (suc n) ∘ f n)
+  cocone-step c n =
+    ≈-trans (≈-sym id-left)
+    (≈-trans (c .NatTrans.natural (≤′-step ≤′-refl)) (∘-cong₂ id-right))
 
   -- A constant chain has its value as a colimit.
   module _ (A : obj) where

@@ -12,7 +12,9 @@ open import categories
          strong-coproducts→coproducts; HasInitial)
 open import Level using (_⊔_)
 open import functor using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; constF)
-open import omega-chains using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp)
+open import omega-chains
+  using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
+         step-cocone; cocone-step)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -190,20 +192,42 @@ module _ {n} (P : Poly (suc n)) (δ : Fin n → obj)
     where
       pointwise : ∀ i → extend-fam (C .Colimit.cocone .transf k) i
                       ≈ (extend-fam (C .Colimit.cocone .transf (suc k)) i ∘ extend-fam (f k) i)
-      pointwise Fin.zero =
-        ≈-trans (≈-sym id-left)
-        (≈-trans (C .Colimit.cocone .natural (≤′-step ≤′-refl)) (∘-cong₂ id-right))
+      pointwise Fin.zero    = cocone-step (C .Colimit.cocone) k
       pointwise (Fin.suc i) = ≈-sym id-left
 
   img-cocone : NatTrans img-chain (constF ω (⟦ P ⟧ (extend δ (C .Colimit.apex))))
-  img-cocone .transf = img-inj
-  img-cocone .natural p = nat p
-    where
-      nat : ∀ {k n'} (p : k ≤′ n') → (id _ ∘ img-inj k) ≈ (img-inj n' ∘ img-chain .Functor.fmor p)
-      nat ≤′-refl     = id-swap
-      nat (≤′-step p) =
-        ≈-trans (nat p) (≈-trans (∘-cong₁ (img-inj-step _)) (assoc _ _ _))
+  img-cocone = step-cocone img-inj img-inj-step
 
   -- ⟦ P ⟧ (extend δ −) preserves the colimit C when the image cocone is itself colimiting.
   PreservesChain : Set (o ⊔ m ⊔ e)
   PreservesChain = IsColimit img-chain (⟦ P ⟧ (extend δ (C .Colimit.apex))) img-cocone
+
+-- Canonical cocones: the pointwise product, coproduct and T-image of cocones, over the
+-- corresponding pointwise chains. Built with step-cocone so that they align definitionally with
+-- the image cocones of the corresponding polynomials.
+module _ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y k ⇒ Y (suc k)} {a b : obj}
+         (cX : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a))
+         (cY : NatTrans (chain {𝒞 = 𝒟} Y g) (constF ω b)) where
+
+  open NatTrans
+
+  prod-cocone : NatTrans (chain {𝒞 = 𝒟} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k)))
+                         (constF ω (prod a b))
+  prod-cocone =
+    step-cocone (λ k → prod-m (cX .transf k) (cY .transf k))
+      (λ k → ≈-trans (prod-m-cong (cocone-step cX k) (cocone-step cY k)) (prod-m-comp _ _ _ _))
+
+  coprod-cocone : NatTrans (chain {𝒞 = 𝒟} (λ k → coprod (X k) (Y k)) (λ k → coprod-m (f k) (g k)))
+                           (constF ω (coprod a b))
+  coprod-cocone =
+    step-cocone (λ k → coprod-m (cX .transf k) (cY .transf k))
+      (λ k → ≈-trans (coprod-m-cong (cocone-step cX k) (cocone-step cY k)) (coprod-m-comp _ _ _ _))
+
+module _ {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {a : obj}
+         (c : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a)) where
+
+  T-cocone : NatTrans (chain {𝒞 = 𝒟} (λ k → Functor.fobj T (X k)) (λ k → Functor.fmor T (f k)))
+                      (constF ω (Functor.fobj T a))
+  T-cocone =
+    step-cocone (λ k → Functor.fmor T (c .NatTrans.transf k))
+      (λ k → ≈-trans (Functor.fmor-cong T (cocone-step c k)) (Functor.fmor-comp T _ _))

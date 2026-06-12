@@ -481,8 +481,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 
 
   -- Transport a colimit along an equivalent cocone.
   IsColimit-cong : ∀ {D : Functor 𝒮 𝒞} {apex} {cocone₁ cocone₂ : NatTrans D (constF 𝒮 apex)} →
-                   ≃-NatTrans cocone₁ cocone₂ →
-                   IsColimit D apex cocone₁ → IsColimit D apex cocone₂
+                   ≃-NatTrans cocone₁ cocone₂ → IsColimit D apex cocone₁ → IsColimit D apex cocone₂
   IsColimit-cong eq isColim .IsColimit.colambda = isColim .IsColimit.colambda
   IsColimit-cong eq isColim .IsColimit.colambda-cong = isColim .IsColimit.colambda-cong
   IsColimit-cong eq isColim .IsColimit.colambda-coeval x α .transf-eq s =
