@@ -11,7 +11,7 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasInitial)
 open import functor using (Functor; StrongFunctor; HasColimits; Colimit)
-open import omega-chains using (ω; chain)
+open import omega-chains using (ω; chain; colim-map)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -71,13 +71,29 @@ mutual
   iter-mor P fs zero    = id 𝟘
   iter-mor P fs (suc k) = ⟦ P ⟧mor (extend-mor fs (iter-mor P fs k))
 
+  -- The stage maps commute with the chain steps.
+  iter-mor-step : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} (fs : ∀ i → δ i ⇒ δ' i) (k : ℕ) →
+                  (iter-mor P fs (suc k) ∘ step P δ k) ≈ (step P δ' k ∘ iter-mor P fs k)
+  iter-mor-step P fs zero = ≈-trans (≈-sym (from-initial-ext _)) (from-initial-ext _)
+  iter-mor-step P {δ} {δ'} fs (suc k) =
+    ≈-trans (≈-sym (⟦ P ⟧mor-comp (extend-mor fs (iter-mor P fs (suc k))) (extend-fam (step P δ k))))
+    (≈-trans (⟦ P ⟧mor-cong pointwise)
+             (⟦ P ⟧mor-comp (extend-fam (step P δ' k)) (extend-mor fs (iter-mor P fs k))))
+    where
+      pointwise : ∀ i → (extend-mor fs (iter-mor P fs (suc k)) i ∘ extend-fam (step P δ k) i)
+                      ≈ (extend-fam (step P δ' k) i ∘ extend-mor fs (iter-mor P fs k) i)
+      pointwise Fin.zero    = iter-mor-step P fs k
+      pointwise (Fin.suc i) = id-swap'
+
   -- Functorial action of ⟦ P ⟧.
   ⟦_⟧mor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → ⟦ P ⟧ δ ⇒ ⟦ P ⟧ δ'
   ⟦ const A ⟧mor fs = id A
   ⟦ var i ⟧mor   fs = fs i
   ⟦ P + Q ⟧mor   fs = coprod-m (⟦ P ⟧mor fs) (⟦ Q ⟧mor fs)
   ⟦ P × Q ⟧mor   fs = prod-m (⟦ P ⟧mor fs) (⟦ Q ⟧mor fs)
-  ⟦ μ P ⟧mor     fs = {!!}
+  ⟦ μ P ⟧mor {δ} {δ'} fs =
+    colim-map (step P δ) (step P δ') (iter-mor P fs) (iter-mor-step P fs)
+      (colimits (chain (iter P δ) (step P δ))) (colimits (chain (iter P δ') (step P δ')))
   ⟦ T∘ P ⟧mor    fs = Functor.fmor T (⟦ P ⟧mor fs)
 
   ⟦_⟧mor-cong : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
