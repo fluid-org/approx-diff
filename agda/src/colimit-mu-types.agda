@@ -372,3 +372,28 @@ module cocont
       legs-eq : ∀ k → IC.ρ-inj k ≈ ⟦ μ P ⟧mor (inj k)
       legs-eq k = Rk k .Colimit.colambda-cong (record { transf-eq = λ j → ≈-refl })
   ⟦ T∘ P ⟧-cocont    E = T-cocont (⟦ P ⟧-cocont E)
+
+  -- The algebra map: by cocontinuity, ⟦ P ⟧ at the carrier is the colimit of the shifted
+  -- initial-algebra chain, which the shifted injections mediate back into the carrier.
+  α : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) → ⟦ P ⟧ (extend δ (μ-carrier P δ)) ⇒ μ-carrier P δ
+  α {n} P δ =
+    ⟦ P ⟧-cocont carrier-env .IsColimit.colambda (μ-carrier P δ)
+      (step-cocone (λ k → μC .Colimit.cocone .NatTrans.transf (suc k))
+                   (λ k → cocone-step (μC .Colimit.cocone) (suc k)))
+    where
+      μC : Colimit (chain {𝒞 = 𝒟} (iter P δ) (step P δ))
+      μC = colimits (chain (iter P δ) (step P δ))
+
+      -- The constant environment δ, extended in the recursion coordinate by the initial-algebra
+      -- chain and its colimit.
+      carrier-env : EnvChain (suc n)
+      carrier-env .EnvChain.obs k   = extend δ (iter P δ k)
+      carrier-env .EnvChain.steps k = extend-fam (step P δ k)
+      carrier-env .EnvChain.apex    = extend δ (μ-carrier P δ)
+      carrier-env .EnvChain.inj k   = extend-fam (μC .Colimit.cocone .NatTrans.transf k)
+      carrier-env .EnvChain.inj-step k Fin.zero    = cocone-step (μC .Colimit.cocone) k
+      carrier-env .EnvChain.inj-step k (Fin.suc i) = ≈-sym id-left
+      carrier-env .EnvChain.colimiting Fin.zero    =
+        IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (μC .Colimit.isColimit)
+      carrier-env .EnvChain.colimiting (Fin.suc i) =
+        IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit (δ i) .Colimit.isColimit)
