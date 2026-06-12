@@ -156,7 +156,13 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
     ty-cong-nat : ∀ {X Y} (f : X ⇒ Y) →
                  ty-fmor τ δ (extend-fam {δ = δ₀} f) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X))) ≈
                  Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)
-    ty-cong-nat f = {!!}
+    ty-cong-nat {X} {Y} f =
+      begin
+        ty-fmor τ δ (extend-fam {δ = δ₀} f) ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
+      ≈⟨ {!!} ⟩
+        Iso.fwd (≡→Iso (ty-cong τ (env-pw Y))) ∘ ty-fmor τ (concat δ₀ δ) (extend-fam {n = 0} {δ = λ ()} f)
+      ∎
+      where open ≈-Reasoning isEquiv
 
 ty-fmor τ δ {δ₀} {δ₀'} fs =
   Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
