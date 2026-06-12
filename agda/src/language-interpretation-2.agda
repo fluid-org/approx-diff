@@ -87,10 +87,17 @@ ty-cong (σ [×] τ) h = cong₂ prod  (ty-cong σ h) (ty-cong τ h)
 ty-cong (σ [→] τ) h = refl
 ty-cong (μ τ)     h = cong (λ (P : Poly 1) → μ-obj P (λ ())) (as-poly-cong τ h)
 
--- Applying the polynomial (as-poly τ δ) is the interpretation of τ: the non-μ cases are
--- definitional, the μ case uses μ-obj-resp. sub-as-apply is the n=1, Δ=0 instance up to substitution.
+-- Applying the polynomial (as-poly τ δ) is the interpretation of τ.
 apply-lemma : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
               Iso (⟦ τ ⟧ty (concat δ₀ δ)) (fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀)
+
+-- ⟦ τ ⟧ty is functorial in its poly-variables, with the action transported from fmor across apply-lemma.
+ty-fmor : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} →
+          (∀ i → δ₀ i ⇒ δ₀' i) → ⟦ τ ⟧ty (concat δ₀ δ) ⇒ ⟦ τ ⟧ty (concat δ₀' δ)
+
+apply-nat : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
+            Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs ≈ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
+
 apply-lemma {n = n} (var i) δ δ₀ with splitAt n i
 ... | inj₁ j = Iso-refl
 ... | inj₂ k = Iso-refl
@@ -105,6 +112,14 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
       let open ≈-Reasoning isEquiv in
       begin
         fmor (as-poly τ δ) (extend-fam f) ∘ Iso.fwd (unfold X)
+      ≈⟨ ≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (≈-sym (assoc _ _ _))) ⟩
+        fmor (as-poly τ δ) (extend-fam f) ∘ Iso.fwd (apply-lemma τ δ (extend δ₀ X))
+          ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
+          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
+      ≈⟨ ∘-cong₁ (∘-cong₁ (≈-sym (apply-nat τ δ (extend-fam f)))) ⟩
+        Iso.fwd (apply-lemma τ δ (extend δ₀ Y)) ∘ ty-fmor τ δ (extend-fam f)
+          ∘ Iso.fwd (≡→Iso (ty-cong τ (env-pw X)))
+          ∘ Iso.bwd (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X))
       ≈⟨ {!!} ⟩
         Iso.fwd (unfold Y) ∘ fmor (as-poly τ (concat δ₀ δ)) (extend-fam {n = 0} {δ = λ ()} f)
       ∎)
@@ -120,14 +135,9 @@ apply-lemma {Δ} {n} (μ τ) δ δ₀ =
     unfold X = Iso-trans (Iso-sym (apply-lemma {n = 1} τ (concat δ₀ δ) (extend (λ ()) X)))
                          (Iso-trans (≡→Iso (ty-cong τ (env-pw X))) (apply-lemma τ δ (extend δ₀ X)))
 
--- ⟦ τ ⟧ty is functorial in its poly-variables.
-ty-fmor : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} →
-          (∀ i → δ₀ i ⇒ δ₀' i) → ⟦ τ ⟧ty (concat δ₀ δ) ⇒ ⟦ τ ⟧ty (concat δ₀' δ)
 ty-fmor τ δ {δ₀} {δ₀'} fs =
   Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
 
-apply-nat : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
-            Iso.fwd (apply-lemma τ δ δ₀') ∘ ty-fmor τ δ fs ≈ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)
 apply-nat τ δ {δ₀} {δ₀'} fs =
   begin
     Iso.fwd (apply-lemma τ δ δ₀') ∘ ((Iso.bwd (apply-lemma τ δ δ₀') ∘ fmor (as-poly τ δ) fs ∘ Iso.fwd (apply-lemma τ δ δ₀)))
