@@ -11,7 +11,9 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasInitial)
 open import Level using (_⊔_)
-open import functor using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; constF)
+open import functor
+  using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; ≃-NatTrans; constF; constFmor)
+  renaming (_∘_ to _∘NT_)
 open import omega-chains
   using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
          step-cocone; cocone-step; const-chain-colimit)
@@ -27,7 +29,9 @@ module colimit-mu-types
 
 open Category 𝒟
 open HasProducts 𝒟P
-open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC) using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂)
+open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
+  using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
+         copair; copair-cong; copair-in₁; copair-in₂; copair-ext; copair-coprod)
 open HasInitial 𝒟I renaming (witness to 𝟘)
 open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
 open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend)
@@ -232,6 +236,59 @@ module _ {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {a : obj}
     step-cocone (λ k → Functor.fmor T (c .NatTrans.transf k))
       (λ k → ≈-trans (Functor.fmor-cong T (cocone-step c k)) (Functor.fmor-comp T _ _))
 
+-- Coproducts preserve chain colimits: no assumption needed. A cocone over the coproduct chain
+-- restricts along each injection, and the copairing of the mediated maps mediates.
+module _ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y k ⇒ Y (suc k)} {a b : obj}
+         {cX : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a)}
+         {cY : NatTrans (chain {𝒞 = 𝒟} Y g) (constF ω b)} where
+
+  open NatTrans
+
+  private
+    module _ {x : obj} (β : NatTrans (chain {𝒞 = 𝒟} (λ k → coprod (X k) (Y k)) (λ k → coprod-m (f k) (g k)))
+                                     (constF ω x)) where
+
+      restrict₁ : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω x)
+      restrict₁ = step-cocone (λ k → β .transf k ∘ in₁)
+        (λ k → ≈-trans (∘-cong₁ (cocone-step β k))
+               (≈-trans (assoc _ _ _)
+               (≈-trans (∘-cong₂ (copair-in₁ _ _)) (≈-sym (assoc _ _ _)))))
+
+      restrict₂ : NatTrans (chain {𝒞 = 𝒟} Y g) (constF ω x)
+      restrict₂ = step-cocone (λ k → β .transf k ∘ in₂)
+        (λ k → ≈-trans (∘-cong₁ (cocone-step β k))
+               (≈-trans (assoc _ _ _)
+               (≈-trans (∘-cong₂ (copair-in₂ _ _)) (≈-sym (assoc _ _ _)))))
+
+  +-cocont : IsColimit (chain {𝒞 = 𝒟} X f) a cX → IsColimit (chain {𝒞 = 𝒟} Y g) b cY →
+             IsColimit (chain {𝒞 = 𝒟} (λ k → coprod (X k) (Y k)) (λ k → coprod-m (f k) (g k)))
+                       (coprod a b) (coprod-cocone cX cY)
+  +-cocont LX LY .IsColimit.colambda x β =
+    copair (LX .IsColimit.colambda x (restrict₁ β)) (LY .IsColimit.colambda x (restrict₂ β))
+  +-cocont LX LY .IsColimit.colambda-cong β≃γ =
+    copair-cong
+      (LX .IsColimit.colambda-cong (record { transf-eq = λ k → ∘-cong₁ (β≃γ .≃-NatTrans.transf-eq k) }))
+      (LY .IsColimit.colambda-cong (record { transf-eq = λ k → ∘-cong₁ (β≃γ .≃-NatTrans.transf-eq k) }))
+  +-cocont LX LY .IsColimit.colambda-coeval x β .≃-NatTrans.transf-eq k =
+    ≈-trans (≈-sym (copair-coprod _ _ _ _))
+    (≈-trans (copair-cong (LX .IsColimit.colambda-coeval x (restrict₁ β) .≃-NatTrans.transf-eq k)
+                          (LY .IsColimit.colambda-coeval x (restrict₂ β) .≃-NatTrans.transf-eq k))
+             (copair-ext _))
+  +-cocont LX LY .IsColimit.colambda-ext x h =
+    ≈-trans (copair-cong
+              (≈-trans (LX .IsColimit.colambda-cong E₁) (LX .IsColimit.colambda-ext x (h ∘ in₁)))
+              (≈-trans (LY .IsColimit.colambda-cong E₂) (LY .IsColimit.colambda-ext x (h ∘ in₂))))
+            (copair-ext h)
+    where
+      E₁ : ≃-NatTrans (restrict₁ (constFmor h ∘NT coprod-cocone cX cY)) (constFmor (h ∘ in₁) ∘NT cX)
+      E₁ .≃-NatTrans.transf-eq k =
+        ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (copair-in₁ _ _)) (≈-sym (assoc _ _ _)))
+
+      E₂ : ≃-NatTrans (restrict₂ (constFmor h ∘NT coprod-cocone cX cY)) (constFmor (h ∘ in₂) ∘NT cY)
+      E₂ .≃-NatTrans.transf-eq k =
+        ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (copair-in₂ _ _)) (≈-sym (assoc _ _ _)))
+
+
 -- Cocontinuity of the interpretation: assuming products and T preserve chain colimits, every
 -- ⟦ P ⟧ (extend δ −) does. Coproducts need no assumption (they commute with all colimits;
 -- proved below), and the μ case is the interchange of colimits.
@@ -258,7 +315,7 @@ module cocont
     IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (C .Colimit.isColimit)
   ⟦ var (Fin.suc j) ⟧-cocont δ C =
     IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit (δ j) .Colimit.isColimit)
-  ⟦ P + Q ⟧-cocont          δ C = {!!}
+  ⟦ P + Q ⟧-cocont          δ C = +-cocont (⟦ P ⟧-cocont δ C) (⟦ Q ⟧-cocont δ C)
   ⟦ P × Q ⟧-cocont          δ C = ×-cocont (⟦ P ⟧-cocont δ C) (⟦ Q ⟧-cocont δ C)
   ⟦ μ P ⟧-cocont            δ C = {!!}
   ⟦ T∘ P ⟧-cocont           δ C = T-cocont (⟦ P ⟧-cocont δ C)
