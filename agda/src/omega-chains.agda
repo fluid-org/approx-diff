@@ -112,6 +112,14 @@ module _ {o m e} {𝒞 : Category o m e} where
   colim-map-cong h≈h' CX CY =
     CX .Colimit.colambda-cong (record { transf-eq = λ n → ∘-cong₂ (h≈h' n) })
 
+  -- Identity stage maps mediate to the identity.
+  colim-map-id : ∀ {X : ℕ → obj} {f : ∀ n → X n ⇒ X (suc n)}
+                 {id-step : ∀ n → ((id (X (suc n))) ∘ f n) ≈ (f n ∘ id (X n))} →
+                 ∀ CX → colim-map f f (λ n → id (X n)) id-step CX CX ≈ id (CX .Colimit.apex)
+  colim-map-id CX =
+    ≈-trans (CX .Colimit.colambda-cong (record { transf-eq = λ n → id-swap' }))
+            (CX .Colimit.colambda-ext _ (id _))
+
   -- Composite stage maps satisfy the composite square.
   square-comp : ∀ {X Y Z : ℕ → obj}
                 {f : ∀ n → X n ⇒ X (suc n)} {g : ∀ n → Y n ⇒ Y (suc n)} {e : ∀ n → Z n ⇒ Z (suc n)}

@@ -11,7 +11,7 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasInitial)
 open import functor using (Functor; StrongFunctor; HasColimits; Colimit)
-open import omega-chains using (ω; chain; colim-map; colim-map-cong; colim-map-comp; square-comp)
+open import omega-chains using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -24,7 +24,7 @@ module colimit-mu-types
 
 open Category 𝒟
 open HasProducts 𝒟P
-open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC) using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; in₁; in₂)
+open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC) using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂)
 open HasInitial 𝒟I renaming (witness to 𝟘)
 open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
 open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend)
@@ -118,6 +118,26 @@ mutual
     colim-map (step P δ) (step P δ') (iter-mor P fs) (iter-mor-step P fs)
       (colimits (chain (iter P δ) (step P δ))) (colimits (chain (iter P δ') (step P δ')))
   ⟦ T∘ P ⟧mor    fs = Functor.fmor T (⟦ P ⟧mor fs)
+
+  iter-mor-id : ∀ {n} (P : Poly (suc n)) {δ : Fin n → obj} (k : ℕ) →
+                iter-mor P (λ i → id (δ i)) k ≈ id (iter P δ k)
+  iter-mor-id P zero        = ≈-refl
+  iter-mor-id P {δ} (suc k) = ≈-trans (⟦ P ⟧mor-cong pointwise) ⟦ P ⟧mor-id
+    where
+      pointwise : ∀ i → extend-mor (λ j → id (δ j)) (iter-mor P (λ j → id (δ j)) k) i
+                      ≈ id (extend δ (iter P δ k) i)
+      pointwise Fin.zero    = iter-mor-id P k
+      pointwise (Fin.suc i) = ≈-refl
+
+  ⟦_⟧mor-id : ∀ {n} (P : Poly n) {δ : Fin n → obj} → ⟦ P ⟧mor (λ i → id (δ i)) ≈ id (⟦ P ⟧ δ)
+  ⟦ const A ⟧mor-id = ≈-refl
+  ⟦ var i ⟧mor-id   = ≈-refl
+  ⟦ P + Q ⟧mor-id   = ≈-trans (coprod-m-cong ⟦ P ⟧mor-id ⟦ Q ⟧mor-id) coprod-m-id
+  ⟦ P × Q ⟧mor-id   = ≈-trans (prod-m-cong ⟦ P ⟧mor-id ⟦ Q ⟧mor-id) prod-m-id
+  ⟦ μ P ⟧mor-id {δ} =
+    ≈-trans (colim-map-cong {h'-step = λ k → id-swap} (iter-mor-id P) (colimits _) (colimits _))
+            (colim-map-id (colimits _))
+  ⟦ T∘ P ⟧mor-id    = ≈-trans (Functor.fmor-cong T ⟦ P ⟧mor-id) (Functor.fmor-id T)
 
   ⟦_⟧mor-cong : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
                 (∀ i → fs i ≈ gs i) → ⟦ P ⟧mor fs ≈ ⟦ P ⟧mor gs
