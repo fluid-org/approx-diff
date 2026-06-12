@@ -6,11 +6,12 @@
 
 import Data.Fin as Fin
 open Fin using (Fin)
-open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat using (ℕ; zero; suc; _≤′_; ≤′-refl; ≤′-step)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasInitial)
-open import functor using (Functor; StrongFunctor; HasColimits; Colimit)
+open import Level using (_⊔_)
+open import functor using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; constF)
 open import omega-chains using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp)
 import polynomial-functor-2
 
@@ -166,3 +167,43 @@ mutual
       comp-sq = square-comp {𝒞 = 𝒟} (iter-mor-step P gs) (iter-mor-step P fs)
   ⟦ T∘ P ⟧mor-comp    fs gs =
     ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)
+
+-- The image of a chain (with colimit C) under ⟦ P ⟧ (extend δ −).
+module _ {n} (P : Poly (suc n)) (δ : Fin n → obj)
+         {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} (C : Colimit (chain {𝒞 = 𝒟} X f)) where
+
+  open NatTrans
+
+  img-step : ∀ k → ⟦ P ⟧ (extend δ (X k)) ⇒ ⟦ P ⟧ (extend δ (X (suc k)))
+  img-step k = ⟦ P ⟧mor (extend-fam (f k))
+
+  img-chain : Functor ω 𝒟
+  img-chain = chain (λ k → ⟦ P ⟧ (extend δ (X k))) img-step
+
+  img-inj : ∀ k → ⟦ P ⟧ (extend δ (X k)) ⇒ ⟦ P ⟧ (extend δ (C .Colimit.apex))
+  img-inj k = ⟦ P ⟧mor (extend-fam (C .Colimit.cocone .transf k))
+
+  img-inj-step : ∀ k → img-inj k ≈ (img-inj (suc k) ∘ img-step k)
+  img-inj-step k =
+    ≈-trans (⟦ P ⟧mor-cong pointwise)
+            (⟦ P ⟧mor-comp (extend-fam (C .Colimit.cocone .transf (suc k))) (extend-fam (f k)))
+    where
+      pointwise : ∀ i → extend-fam (C .Colimit.cocone .transf k) i
+                      ≈ (extend-fam (C .Colimit.cocone .transf (suc k)) i ∘ extend-fam (f k) i)
+      pointwise Fin.zero =
+        ≈-trans (≈-sym id-left)
+        (≈-trans (C .Colimit.cocone .natural (≤′-step ≤′-refl)) (∘-cong₂ id-right))
+      pointwise (Fin.suc i) = ≈-sym id-left
+
+  img-cocone : NatTrans img-chain (constF ω (⟦ P ⟧ (extend δ (C .Colimit.apex))))
+  img-cocone .transf = img-inj
+  img-cocone .natural p = nat p
+    where
+      nat : ∀ {k n'} (p : k ≤′ n') → (id _ ∘ img-inj k) ≈ (img-inj n' ∘ img-chain .Functor.fmor p)
+      nat ≤′-refl     = id-swap
+      nat (≤′-step p) =
+        ≈-trans (nat p) (≈-trans (∘-cong₁ (img-inj-step _)) (assoc _ _ _))
+
+  -- ⟦ P ⟧ (extend δ −) preserves the colimit C when the image cocone is itself colimiting.
+  PreservesChain : Set (o ⊔ m ⊔ e)
+  PreservesChain = IsColimit img-chain (⟦ P ⟧ (extend δ (C .Colimit.apex))) img-cocone
