@@ -479,6 +479,20 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 
       isColimit : IsColimit D apex cocone
     open IsColimit isColimit public
 
+  -- Transport a colimit along an equivalent cocone.
+  IsColimit-cong : ∀ {D : Functor 𝒮 𝒞} {apex} {cocone₁ cocone₂ : NatTrans D (constF 𝒮 apex)} →
+                   ≃-NatTrans cocone₁ cocone₂ →
+                   IsColimit D apex cocone₁ → IsColimit D apex cocone₂
+  IsColimit-cong eq isColim .IsColimit.colambda = isColim .IsColimit.colambda
+  IsColimit-cong eq isColim .IsColimit.colambda-cong = isColim .IsColimit.colambda-cong
+  IsColimit-cong eq isColim .IsColimit.colambda-coeval x α .transf-eq s =
+    𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (eq .transf-eq s)))
+              (isColim .IsColimit.colambda-coeval x α .transf-eq s)
+  IsColimit-cong eq isColim .IsColimit.colambda-ext x f =
+    𝒞.≈-trans (isColim .IsColimit.colambda-cong
+                 (∘NT-cong (≃-isEquivalence .refl) (≃-isEquivalence .sym eq)))
+              (isColim .IsColimit.colambda-ext x f)
+
   record IsLimit (D : Functor 𝒮 𝒞)
                  (apex : 𝒞.obj) (cone : NatTrans (constF 𝒮 apex) D)
            : Set (o₁ ⊔ m₁ ⊔ e₁ ⊔ o₂ ⊔ m₂ ⊔ e₂) where
