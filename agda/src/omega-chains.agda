@@ -13,6 +13,7 @@ open import categories using (Category)
 import functor
 open functor using (Functor; NatTrans; ≃-NatTrans; Colimit; IsColimit; constF; constFmor; colambda-unique) renaming (_∘_ to _∘NT_)
 open IsColimit
+open Colimit
 
 module omega-chains where
 
@@ -85,7 +86,6 @@ module _ {o m e} {𝒞 : Category o m e} where
       walk-id (≤′-step p) = ≈-trans id-left (walk-id p)
 
     open NatTrans
-    open Colimit
 
     const-chain-colimit : Colimit (chain (λ _ → A) (λ _ → id A))
     const-chain-colimit .apex = A
@@ -121,8 +121,8 @@ module _ {o m e} {𝒞 : Category o m e} where
           (≈-trans (≈-sym (assoc _ _ _))
           (≈-trans (∘-cong₁ (≈-sym (h-step _))) (assoc _ _ _))))
 
-    colim-map : (CX : Colimit (chain X f)) (CY : Colimit (chain Y g)) → CX .Colimit.apex ⇒ CY .Colimit.apex
-    colim-map CX CY = CX .Colimit.colambda _ (CY .Colimit.cocone ∘NT chain-map)
+    colim-map : (CX : Colimit (chain X f)) (CY : Colimit (chain Y g)) → CX .apex ⇒ CY .apex
+    colim-map CX CY = CX .colambda _ (CY .cocone ∘NT chain-map)
 
   -- The mediating morphism respects pointwise-equal stage maps (and so is independent of the squares).
   colim-map-cong : ∀ {X Y : ℕ → obj} {f : ∀ n → X n ⇒ X (suc n)} {g : ∀ n → Y n ⇒ Y (suc n)}
@@ -132,15 +132,15 @@ module _ {o m e} {𝒞 : Category o m e} where
                    (∀ n → h n ≈ h' n) → ∀ CX CY →
                    colim-map f g h h-step CX CY ≈ colim-map f g h' h'-step CX CY
   colim-map-cong h≈h' CX CY =
-    CX .Colimit.colambda-cong (record { transf-eq = λ n → ∘-cong₂ (h≈h' n) })
+    CX .colambda-cong (record { transf-eq = λ n → ∘-cong₂ (h≈h' n) })
 
   -- Identity stage maps mediate to the identity.
   colim-map-id : ∀ {X : ℕ → obj} {f : ∀ n → X n ⇒ X (suc n)}
                  {id-step : ∀ n → ((id (X (suc n))) ∘ f n) ≈ (f n ∘ id (X n))} →
-                 ∀ CX → colim-map f f (λ n → id (X n)) id-step CX CX ≈ id (CX .Colimit.apex)
+                 ∀ CX → colim-map f f (λ n → id (X n)) id-step CX CX ≈ id (CX .apex)
   colim-map-id CX =
-    ≈-trans (CX .Colimit.colambda-cong (record { transf-eq = λ n → id-swap' }))
-            (CX .Colimit.colambda-ext _ (id _))
+    ≈-trans (CX .colambda-cong (record { transf-eq = λ n → id-swap' }))
+            (CX .colambda-ext _ (id _))
 
   -- Composite stage maps satisfy the composite square.
   square-comp : ∀ {X Y Z : ℕ → obj}
@@ -166,25 +166,24 @@ module _ {o m e} {𝒞 : Category o m e} where
                    colim-map f e (λ n → k n ∘ h n) kh-step CX CZ
                      ≈ (colim-map g e k k-step CY CZ ∘ colim-map f g h h-step CX CY)
   colim-map-comp {f = f} {g} {e} {h} {k} {h-step} {k-step} {kh-step} CX CY CZ =
-    ≈-trans (CX .Colimit.colambda-cong E) (CX .Colimit.colambda-ext _ _)
+    ≈-trans (CX .colambda-cong E) (CX .colambda-ext _ _)
     where
       open NatTrans
 
-      E : ≃-NatTrans (CZ .Colimit.cocone ∘NT chain-map f e (λ n → k n ∘ h n) kh-step)
-                     (constFmor (colim-map g e k k-step CY CZ ∘ colim-map f g h h-step CX CY)
-                        ∘NT CX .Colimit.cocone)
+      E : ≃-NatTrans (CZ .cocone ∘NT chain-map f e (λ n → k n ∘ h n) kh-step)
+                     (constFmor (colim-map g e k k-step CY CZ ∘ colim-map f g h h-step CX CY) ∘NT CX .cocone)
       E .≃-NatTrans.transf-eq n = begin
-          CZ .Colimit.cocone .transf n ∘ (k n ∘ h n)
+          CZ .cocone .transf n ∘ (k n ∘ h n)
         ≈˘⟨ assoc _ _ _ ⟩
-          (CZ .Colimit.cocone .transf n ∘ k n) ∘ h n
-        ≈˘⟨ ∘-cong₁ (CY .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq n) ⟩
-          (colim-map g e k k-step CY CZ ∘ CY .Colimit.cocone .transf n) ∘ h n
+          (CZ .cocone .transf n ∘ k n) ∘ h n
+        ≈˘⟨ ∘-cong₁ (CY .colambda-coeval _ _ .≃-NatTrans.transf-eq n) ⟩
+          (colim-map g e k k-step CY CZ ∘ CY .cocone .transf n) ∘ h n
         ≈⟨ assoc _ _ _ ⟩
-          colim-map g e k k-step CY CZ ∘ (CY .Colimit.cocone .transf n ∘ h n)
-        ≈˘⟨ ∘-cong₂ (CX .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq n) ⟩
-          colim-map g e k k-step CY CZ ∘ (colim-map f g h h-step CX CY ∘ CX .Colimit.cocone .transf n)
+          colim-map g e k k-step CY CZ ∘ (CY .cocone .transf n ∘ h n)
+        ≈˘⟨ ∘-cong₂ (CX .colambda-coeval _ _ .≃-NatTrans.transf-eq n) ⟩
+          colim-map g e k k-step CY CZ ∘ (colim-map f g h h-step CX CY ∘ CX .cocone .transf n)
         ≈˘⟨ assoc _ _ _ ⟩
-          (colim-map g e k k-step CY CZ ∘ colim-map f g h h-step CX CY) ∘ CX .Colimit.cocone .transf n
+          (colim-map g e k k-step CY CZ ∘ colim-map f g h h-step CX CY) ∘ CX .cocone .transf n
         ∎
         where open ≈-Reasoning isEquiv
 
@@ -211,37 +210,37 @@ module interchange {o m e} {𝒞 : Category o m e}
 
   -- The chain of row apexes, with the mediated steps.
   ρ : ℕ → obj
-  ρ k = R k .Colimit.apex
+  ρ k = R k .apex
 
   ρ-step : ∀ k → ρ k ⇒ ρ (suc k)
   ρ-step k = colim-map (v k) (v (suc k)) (h k) (sq k) (R k) (R (suc k))
 
   -- Each row maps into the apex of the column chain, mediated row by row.
-  row-legs : ∀ k j → G k j ⇒ CΓ .Colimit.apex
-  row-legs k j = CΓ .Colimit.cocone .transf j ∘ ℓ k j
+  row-legs : ∀ k j → G k j ⇒ CΓ .apex
+  row-legs k j = CΓ .cocone .transf j ∘ ℓ k j
 
   row-legs-step : ∀ k j → row-legs k j ≈ (row-legs k (suc j) ∘ v k j)
   row-legs-step k j =
-    ≈-trans (∘-cong₁ (cocone-step (CΓ .Colimit.cocone) j))
+    ≈-trans (∘-cong₁ (cocone-step (CΓ .cocone) j))
     (≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (ℓ-v k j)) (≈-sym (assoc _ _ _))))
 
-  ρ-inj : ∀ k → ρ k ⇒ CΓ .Colimit.apex
-  ρ-inj k = R k .Colimit.colambda _ (step-cocone (row-legs k) (row-legs-step k))
+  ρ-inj : ∀ k → ρ k ⇒ CΓ .apex
+  ρ-inj k = R k .colambda _ (step-cocone (row-legs k) (row-legs-step k))
 
   ρ-inj-step : ∀ k → ρ-inj k ≈ (ρ-inj (suc k) ∘ ρ-step k)
-  ρ-inj-step k = ≈-sym (colambda-unique (R k .Colimit.isColimit) pointwise)
+  ρ-inj-step k = ≈-sym (colambda-unique (R k .isColimit) pointwise)
     where
-      pointwise : ∀ j → ((ρ-inj (suc k) ∘ ρ-step k) ∘ R k .Colimit.cocone .transf j)
-                      ≈ (ρ-inj k ∘ R k .Colimit.cocone .transf j)
+      pointwise : ∀ j → ((ρ-inj (suc k) ∘ ρ-step k) ∘ R k .cocone .transf j)
+                      ≈ (ρ-inj k ∘ R k .cocone .transf j)
       pointwise j =
         ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong₂ (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
+        (≈-trans (∘-cong₂ (R k .colambda-coeval _ _ .≃-NatTrans.transf-eq j))
         (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong₁ (R (suc k) .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
+        (≈-trans (∘-cong₁ (R (suc k) .colambda-coeval _ _ .≃-NatTrans.transf-eq j))
         (≈-trans (assoc _ _ _)
         (≈-trans (∘-cong₂ (≈-sym (ℓ-step k j)))
-                 (≈-sym (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j)))))))
+                 (≈-sym (R k .colambda-coeval _ _ .≃-NatTrans.transf-eq j)))))))
 
   -- Mediation: a cocone over the row-apex chain mediates column-wise, then along the column-apex
   -- chain.
@@ -249,13 +248,13 @@ module interchange {o m e} {𝒞 : Category o m e}
     module _ {x : obj} (β : NatTrans (chain {𝒞 = 𝒞} ρ ρ-step) (constF ω x)) where
 
       col-legs : ∀ j k → G k j ⇒ x
-      col-legs j k = β .transf k ∘ R k .Colimit.cocone .transf j
+      col-legs j k = β .transf k ∘ R k .cocone .transf j
 
       col-legs-step : ∀ j k → col-legs j k ≈ (col-legs j (suc k) ∘ h k j)
       col-legs-step j k =
         ≈-trans (∘-cong₁ (cocone-step β k))
         (≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong₂ (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
+        (≈-trans (∘-cong₂ (R k .colambda-coeval _ _ .≃-NatTrans.transf-eq j))
                  (≈-sym (assoc _ _ _))))
 
       col-mediate : ∀ j → γ j ⇒ x
@@ -273,41 +272,41 @@ module interchange {o m e} {𝒞 : Category o m e}
               (≈-trans (≈-sym (assoc _ _ _))
               (≈-trans (∘-cong₁ (CL (suc j) .colambda-coeval _ _ .≃-NatTrans.transf-eq k))
               (≈-trans (assoc _ _ _)
-                       (∘-cong₂ (≈-sym (cocone-step (R k .Colimit.cocone) j)))))))))
+                       (∘-cong₂ (≈-sym (cocone-step (R k .cocone) j)))))))))
 
-      mediate : CΓ .Colimit.apex ⇒ x
-      mediate = CΓ .Colimit.colambda x (step-cocone col-mediate col-mediate-step)
+      mediate : CΓ .apex ⇒ x
+      mediate = CΓ .colambda x (step-cocone col-mediate col-mediate-step)
 
-  is-colimit : IsColimit (chain {𝒞 = 𝒞} ρ ρ-step) (CΓ .Colimit.apex) (step-cocone ρ-inj ρ-inj-step)
+  is-colimit : IsColimit (chain {𝒞 = 𝒞} ρ ρ-step) (CΓ .apex) (step-cocone ρ-inj ρ-inj-step)
   is-colimit .colambda x β = mediate β
   is-colimit .colambda-cong β≃β' =
-    CΓ .Colimit.colambda-cong (record { transf-eq = λ j →
+    CΓ .colambda-cong (record { transf-eq = λ j →
       CL j .colambda-cong (record { transf-eq = λ k →
         ∘-cong₁ (β≃β' .≃-NatTrans.transf-eq k) }) })
   is-colimit .colambda-coeval x β .≃-NatTrans.transf-eq k =
-    colambda-unique (R k .Colimit.isColimit) pointwise
+    colambda-unique (R k .isColimit) pointwise
     where
-      pointwise : ∀ j → ((mediate β ∘ ρ-inj k) ∘ R k .Colimit.cocone .transf j)
-                      ≈ (β .transf k ∘ R k .Colimit.cocone .transf j)
+      pointwise : ∀ j → ((mediate β ∘ ρ-inj k) ∘ R k .cocone .transf j)
+                      ≈ (β .transf k ∘ R k .cocone .transf j)
       pointwise j =
         ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong₂ (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
+        (≈-trans (∘-cong₂ (R k .colambda-coeval _ _ .≃-NatTrans.transf-eq j))
         (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong₁ (CΓ .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
+        (≈-trans (∘-cong₁ (CΓ .colambda-coeval _ _ .≃-NatTrans.transf-eq j))
                  (CL j .colambda-coeval _ _ .≃-NatTrans.transf-eq k))))
   is-colimit .colambda-ext x f =
-    colambda-unique (CΓ .Colimit.isColimit) pointwise
+    colambda-unique (CΓ .isColimit) pointwise
     where
       βf = constFmor f ∘NT step-cocone ρ-inj ρ-inj-step
 
-      pointwise : ∀ j → (mediate βf ∘ CΓ .Colimit.cocone .transf j) ≈ (f ∘ CΓ .Colimit.cocone .transf j)
+      pointwise : ∀ j → (mediate βf ∘ CΓ .cocone .transf j) ≈ (f ∘ CΓ .cocone .transf j)
       pointwise j =
-        ≈-trans (CΓ .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j)
+        ≈-trans (CΓ .colambda-coeval _ _ .≃-NatTrans.transf-eq j)
                 (colambda-unique (CL j) inner)
         where
-          inner : ∀ k → (col-mediate βf j ∘ ℓ k j) ≈ ((f ∘ CΓ .Colimit.cocone .transf j) ∘ ℓ k j)
+          inner : ∀ k → (col-mediate βf j ∘ ℓ k j) ≈ ((f ∘ CΓ .cocone .transf j) ∘ ℓ k j)
           inner k =
             ≈-trans (CL j .colambda-coeval _ _ .≃-NatTrans.transf-eq k)
             (≈-trans (assoc _ _ _)
-            (≈-trans (∘-cong₂ (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
+            (≈-trans (∘-cong₂ (R k .colambda-coeval _ _ .≃-NatTrans.transf-eq j))
                      (≈-sym (assoc _ _ _))))

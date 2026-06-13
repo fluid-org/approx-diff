@@ -14,6 +14,8 @@ open import Level using (_⊔_)
 open import functor
   using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; ≃-NatTrans; constF; constFmor)
   renaming (_∘_ to _∘NT_)
+open IsColimit
+open Colimit
 open import omega-chains
   using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
          step-cocone; cocone-step; const-chain-colimit; module interchange)
@@ -52,7 +54,7 @@ mutual
   ⟦ T∘ P ⟧    δ = Functor.fobj T (⟦ P ⟧ δ)
 
   μ-carrier : ∀ {n} → Poly (suc n) → (Fin n → obj) → obj
-  μ-carrier P δ = colimits (chain (iter P δ) (step P δ)) .Colimit.apex
+  μ-carrier P δ = colimits (chain (iter P δ) (step P δ)) .apex
 
   -- The initial-algebra chain for P at parameters δ.
   iter : ∀ {n} → Poly (suc n) → (Fin n → obj) → ℕ → obj
@@ -133,8 +135,8 @@ mutual
   iter-mor-id P zero        = ≈-refl
   iter-mor-id P {δ} (suc k) = ≈-trans (⟦ P ⟧mor-cong pointwise) ⟦ P ⟧mor-id
     where
-      pointwise : ∀ i → extend-mor (λ j → id (δ j)) (iter-mor P (λ j → id (δ j)) k) i
-                      ≈ id (extend δ (iter P δ k) i)
+      pointwise : ∀ i → extend-mor (λ j → id (δ j)) (iter-mor P (λ j → id (δ j)) k) i ≈
+                        id (extend δ (iter P δ k) i)
       pointwise Fin.zero    = iter-mor-id P k
       pointwise (Fin.suc i) = ≈-refl
 
@@ -176,8 +178,7 @@ mutual
   ⟦ T∘ P ⟧mor-comp    fs gs =
     ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)
 
--- ⟦_⟧ agrees with fobj at μ-carrier: the two are defined by matching clauses, so every case is a
--- congruence.
+-- ⟦_⟧ agrees with fobj at μ-carrier: the two are defined by matching clauses, so every case is a congruence.
 ⟦⟧-fobj : ∀ {n} (P : Poly n) (δ : Fin n → obj) → ⟦ P ⟧ δ ≡ fobj μ-carrier P δ
 ⟦⟧-fobj (const A) δ = refl
 ⟦⟧-fobj (var i)   δ = refl
@@ -283,21 +284,21 @@ module _ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y 
   +-cocont : IsColimit (chain {𝒞 = 𝒟} X f) a cX → IsColimit (chain {𝒞 = 𝒟} Y g) b cY →
              IsColimit (chain {𝒞 = 𝒟} (λ k → coprod (X k) (Y k)) (λ k → coprod-m (f k) (g k)))
                        (coprod a b) (coprod-cocone cX cY)
-  +-cocont LX LY .IsColimit.colambda x β =
-    copair (LX .IsColimit.colambda x (restrict₁ β)) (LY .IsColimit.colambda x (restrict₂ β))
-  +-cocont LX LY .IsColimit.colambda-cong β≃γ =
+  +-cocont LX LY .colambda x β =
+    copair (LX .colambda x (restrict₁ β)) (LY .colambda x (restrict₂ β))
+  +-cocont LX LY .colambda-cong β≃γ =
     copair-cong
-      (LX .IsColimit.colambda-cong (record { transf-eq = λ k → ∘-cong₁ (β≃γ .≃-NatTrans.transf-eq k) }))
-      (LY .IsColimit.colambda-cong (record { transf-eq = λ k → ∘-cong₁ (β≃γ .≃-NatTrans.transf-eq k) }))
-  +-cocont LX LY .IsColimit.colambda-coeval x β .≃-NatTrans.transf-eq k =
+      (LX .colambda-cong (record { transf-eq = λ k → ∘-cong₁ (β≃γ .≃-NatTrans.transf-eq k) }))
+      (LY .colambda-cong (record { transf-eq = λ k → ∘-cong₁ (β≃γ .≃-NatTrans.transf-eq k) }))
+  +-cocont LX LY .colambda-coeval x β .≃-NatTrans.transf-eq k =
     ≈-trans (≈-sym (copair-coprod _ _ _ _))
-    (≈-trans (copair-cong (LX .IsColimit.colambda-coeval x (restrict₁ β) .≃-NatTrans.transf-eq k)
-                          (LY .IsColimit.colambda-coeval x (restrict₂ β) .≃-NatTrans.transf-eq k))
+    (≈-trans (copair-cong (LX .colambda-coeval x (restrict₁ β) .≃-NatTrans.transf-eq k)
+                          (LY .colambda-coeval x (restrict₂ β) .≃-NatTrans.transf-eq k))
              (copair-ext _))
-  +-cocont LX LY .IsColimit.colambda-ext x h =
+  +-cocont LX LY .colambda-ext x h =
     ≈-trans (copair-cong
-              (≈-trans (LX .IsColimit.colambda-cong E₁) (LX .IsColimit.colambda-ext x (h ∘ in₁)))
-              (≈-trans (LY .IsColimit.colambda-cong E₂) (LY .IsColimit.colambda-ext x (h ∘ in₂))))
+              (≈-trans (LX .colambda-cong E₁) (LX .colambda-ext x (h ∘ in₁)))
+              (≈-trans (LY .colambda-cong E₂) (LY .colambda-ext x (h ∘ in₂))))
             (copair-ext h)
     where
       E₁ : ≃-NatTrans (restrict₁ (constFmor h ∘NT coprod-cocone cX cY)) (constFmor (h ∘ in₁) ∘NT cX)
@@ -327,7 +328,7 @@ module cocont
 
   ⟦_⟧-cocont : ∀ {n} (P : Poly n) (E : EnvChain n) → PreservesChain P E
   ⟦ const A ⟧-cocont E =
-    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit A .Colimit.isColimit)
+    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit A .isColimit)
   ⟦ var i ⟧-cocont   E =
     IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (colimiting E i)
   ⟦ P + Q ⟧-cocont   E = +-cocont (⟦ P ⟧-cocont E) (⟦ Q ⟧-cocont E)
@@ -363,7 +364,7 @@ module cocont
       extend-env j .colimiting (Fin.suc i) = colimiting E i
 
       columns zero    = IsColimit-cong (record { transf-eq = λ k → ≈-refl })
-                                       (const-chain-colimit 𝟘 .Colimit.isColimit)
+                                       (const-chain-colimit 𝟘 .isColimit)
       columns (suc j) = ⟦ P ⟧-cocont (extend-env j)
 
       module IC = interchange {𝒞 = 𝒟}
@@ -379,16 +380,16 @@ module cocont
 
       -- The interchange cocone legs agree with the canonical ones (both mediate the same legs).
       legs-eq : ∀ k → IC.ρ-inj k ≈ ⟦ μ P ⟧mor (inj E k)
-      legs-eq k = Rk k .Colimit.colambda-cong (record { transf-eq = λ j → ≈-refl })
+      legs-eq k = Rk k .colambda-cong (record { transf-eq = λ j → ≈-refl })
   ⟦ T∘ P ⟧-cocont    E = T-cocont (⟦ P ⟧-cocont E)
 
   -- The algebra map: by cocontinuity, ⟦ P ⟧ at the carrier is the colimit of the shifted
   -- initial-algebra chain, which the shifted injections mediate back into the carrier.
   α : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) → ⟦ P ⟧ (extend δ (μ-carrier P δ)) ⇒ μ-carrier P δ
   α {n} P δ =
-    ⟦ P ⟧-cocont carrier-env .IsColimit.colambda (μ-carrier P δ)
-      (step-cocone (λ k → μC .Colimit.cocone .NatTrans.transf (suc k))
-                   (λ k → cocone-step (μC .Colimit.cocone) (suc k)))
+    ⟦ P ⟧-cocont carrier-env .colambda (μ-carrier P δ)
+      (step-cocone (λ k → μC .cocone .NatTrans.transf (suc k))
+                   (λ k → cocone-step (μC .cocone) (suc k)))
     where
       μC : Colimit (chain {𝒞 = 𝒟} (iter P δ) (step P δ))
       μC = colimits (chain (iter P δ) (step P δ))
@@ -399,13 +400,13 @@ module cocont
       carrier-env .obs k   = extend δ (iter P δ k)
       carrier-env .steps k = extend-fam (step P δ k)
       carrier-env .apex    = extend δ (μ-carrier P δ)
-      carrier-env .inj k   = extend-fam (μC .Colimit.cocone .NatTrans.transf k)
-      carrier-env .inj-step k Fin.zero    = cocone-step (μC .Colimit.cocone) k
+      carrier-env .inj k   = extend-fam (μC .cocone .NatTrans.transf k)
+      carrier-env .inj-step k Fin.zero    = cocone-step (μC .cocone) k
       carrier-env .inj-step k (Fin.suc i) = ≈-sym id-left
       carrier-env .colimiting Fin.zero    =
-        IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (μC .Colimit.isColimit)
+        IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (μC .isColimit)
       carrier-env .colimiting (Fin.suc i) =
-        IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit (δ i) .Colimit.isColimit)
+        IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit (δ i) .isColimit)
 
   -- Context-Γ version of extend-mor, for the strong action below.
   strong-extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
