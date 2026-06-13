@@ -93,6 +93,26 @@ record _⇒c_ (X Y : Obj) : Set where
 
 open _⇒c_
 
+-- The dual-lifting monad 𝕃: freely adjoin a top. Dual to the lifting monad of galois.agda; here the
+-- object's joins carry the add-top monad (join-semilattice.L⊤), its meets the object-level add-top
+-- lift, and distributivity is re-established by cases on the added top.
+module _ (X : Obj) where
+  private module X = Obj X
+
+  𝕃 : Obj
+  𝕃 .carrier = preorder.L⊤ (X .carrier)
+  𝕃 .meets   = meet-semilattice.L⊤ (X .meets)
+  𝕃 .joins   = join-semilattice.L⊤ (X .joins)
+  -- Split fully so the lifted ∧/∨ reduce: each goal is then `tt` or an X-level lattice fact.
+  𝕃 .∧-∨-distrib top   top   top   = tt
+  𝕃 .∧-∨-distrib top   top   < c > = tt
+  𝕃 .∧-∨-distrib top   < b > top   = tt
+  𝕃 .∧-∨-distrib top   < b > < c > = X.≤-refl
+  𝕃 .∧-∨-distrib < a > top   top   = X.inl
+  𝕃 .∧-∨-distrib < a > top   < c > = X.inl
+  𝕃 .∧-∨-distrib < a > < b > top   = X.inr
+  𝕃 .∧-∨-distrib < a > < b > < c > = X.∧-∨-distrib a b c
+
 -- Wwhen both objects are Boolean algebras, join-preservation of right and left can be derived from conjugacy.
 module _ {X Y : Obj} (X-bool : BooleanAlgebra X) (Y-bool : BooleanAlgebra Y) where
   open _=>J_
