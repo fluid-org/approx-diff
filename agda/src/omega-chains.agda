@@ -12,6 +12,7 @@ open import prop-setoid using (⊤-isEquivalence; module ≈-Reasoning)
 open import categories using (Category)
 import functor
 open functor using (Functor; NatTrans; ≃-NatTrans; Colimit; IsColimit; constF; constFmor; colambda-unique) renaming (_∘_ to _∘NT_)
+open IsColimit
 
 module omega-chains where
 
@@ -85,7 +86,6 @@ module _ {o m e} {𝒞 : Category o m e} where
 
     open NatTrans
     open Colimit
-    open functor.IsColimit
 
     const-chain-colimit : Colimit (chain (λ _ → A) (λ _ → id A))
     const-chain-colimit .apex = A
@@ -259,19 +259,19 @@ module interchange {o m e} {𝒞 : Category o m e}
                  (≈-sym (assoc _ _ _))))
 
       col-mediate : ∀ j → γ j ⇒ x
-      col-mediate j = CL j .IsColimit.colambda x (step-cocone (col-legs j) (col-legs-step j))
+      col-mediate j = CL j .colambda x (step-cocone (col-legs j) (col-legs-step j))
 
       col-mediate-step : ∀ j → col-mediate j ≈ (col-mediate (suc j) ∘ w j)
       col-mediate-step j = colambda-unique (CL j) pointwise
         where
           pointwise : ∀ k → (col-mediate j ∘ ℓ k j) ≈ ((col-mediate (suc j) ∘ w j) ∘ ℓ k j)
           pointwise k =
-            ≈-trans (CL j .IsColimit.colambda-coeval _ _ .≃-NatTrans.transf-eq k)
+            ≈-trans (CL j .colambda-coeval _ _ .≃-NatTrans.transf-eq k)
             (≈-sym
               (≈-trans (assoc _ _ _)
               (≈-trans (∘-cong₂ (ℓ-v k j))
               (≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (CL (suc j) .IsColimit.colambda-coeval _ _ .≃-NatTrans.transf-eq k))
+              (≈-trans (∘-cong₁ (CL (suc j) .colambda-coeval _ _ .≃-NatTrans.transf-eq k))
               (≈-trans (assoc _ _ _)
                        (∘-cong₂ (≈-sym (cocone-step (R k .Colimit.cocone) j)))))))))
 
@@ -279,12 +279,12 @@ module interchange {o m e} {𝒞 : Category o m e}
       mediate = CΓ .Colimit.colambda x (step-cocone col-mediate col-mediate-step)
 
   is-colimit : IsColimit (chain {𝒞 = 𝒞} ρ ρ-step) (CΓ .Colimit.apex) (step-cocone ρ-inj ρ-inj-step)
-  is-colimit .IsColimit.colambda x β = mediate β
-  is-colimit .IsColimit.colambda-cong β≃β' =
+  is-colimit .colambda x β = mediate β
+  is-colimit .colambda-cong β≃β' =
     CΓ .Colimit.colambda-cong (record { transf-eq = λ j →
-      CL j .IsColimit.colambda-cong (record { transf-eq = λ k →
+      CL j .colambda-cong (record { transf-eq = λ k →
         ∘-cong₁ (β≃β' .≃-NatTrans.transf-eq k) }) })
-  is-colimit .IsColimit.colambda-coeval x β .≃-NatTrans.transf-eq k =
+  is-colimit .colambda-coeval x β .≃-NatTrans.transf-eq k =
     colambda-unique (R k .Colimit.isColimit) pointwise
     where
       pointwise : ∀ j → ((mediate β ∘ ρ-inj k) ∘ R k .Colimit.cocone .transf j)
@@ -294,8 +294,8 @@ module interchange {o m e} {𝒞 : Category o m e}
         (≈-trans (∘-cong₂ (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
         (≈-trans (≈-sym (assoc _ _ _))
         (≈-trans (∘-cong₁ (CΓ .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
-                 (CL j .IsColimit.colambda-coeval _ _ .≃-NatTrans.transf-eq k))))
-  is-colimit .IsColimit.colambda-ext x f =
+                 (CL j .colambda-coeval _ _ .≃-NatTrans.transf-eq k))))
+  is-colimit .colambda-ext x f =
     colambda-unique (CΓ .Colimit.isColimit) pointwise
     where
       βf = constFmor f ∘NT step-cocone ρ-inj ρ-inj-step
@@ -307,7 +307,7 @@ module interchange {o m e} {𝒞 : Category o m e}
         where
           inner : ∀ k → (col-mediate βf j ∘ ℓ k j) ≈ ((f ∘ CΓ .Colimit.cocone .transf j) ∘ ℓ k j)
           inner k =
-            ≈-trans (CL j .IsColimit.colambda-coeval _ _ .≃-NatTrans.transf-eq k)
+            ≈-trans (CL j .colambda-coeval _ _ .≃-NatTrans.transf-eq k)
             (≈-trans (assoc _ _ _)
             (≈-trans (∘-cong₂ (R k .Colimit.colambda-coeval _ _ .≃-NatTrans.transf-eq j))
                      (≈-sym (assoc _ _ _))))

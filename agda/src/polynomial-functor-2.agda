@@ -58,10 +58,10 @@ record HasMu : Set (o ⊔ m ⊔ e) where
 
   open HasTerminal 𝒞T using (witness; to-terminal; to-terminal-unique)
 
-  extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
+  strong-extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
                (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) → ∀ i → prod Γ (extend δ X i) ⇒ extend δ' Y i
-  extend-mor fs x→y Fin.zero    = x→y
-  extend-mor fs x→y (Fin.suc i) = fs i
+  strong-extend-mor fs x→y Fin.zero    = x→y
+  strong-extend-mor fs x→y (Fin.suc i) = fs i
 
   mutual
     strong-fmor : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} →
@@ -76,7 +76,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
 
     strong-μ-fmor : ∀ {n Γ} (P : Poly (suc n)) {δ δ' : Fin n → obj} →
                     (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj P δ'
-    strong-μ-fmor P {δ} {δ'} fs = ⦅ α P δ' ∘ strong-fmor P (extend-mor fs p₂) ⦆
+    strong-μ-fmor P {δ} {δ'} fs = ⦅ α P δ' ∘ strong-fmor P (strong-extend-mor fs p₂) ⦆
 
   fmor : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
   fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
@@ -94,7 +94,7 @@ record HasMuLaws (Mu : HasMu) : Set (o ⊔ m ⊔ e) where
   field
     ⦅⦆-β : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
            (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) →
-           (⦅ alg ⦆ ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (extend-mor (λ i → p₂) ⦅ alg ⦆))
+           (⦅ alg ⦆ ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) ⦅ alg ⦆))
     ⦅⦆-η : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
            (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) (h : prod Γ (μ-obj P δ) ⇒ A) →
-           (h ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (extend-mor (λ i → p₂) h)) → h ≈ ⦅ alg ⦆
+           (h ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h)) → h ≈ ⦅ alg ⦆
