@@ -9,7 +9,7 @@ open Fin using (Fin)
 open import Data.Nat using (ℕ; zero; suc; _≤′_; ≤′-refl; ≤′-step)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
-         strong-coproducts→coproducts; HasInitial)
+         strong-coproducts→coproducts; HasInitial; IsInitial)
 open import Level using (_⊔_)
 open import functor
   using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; ≃-NatTrans; constF; constFmor)
@@ -38,7 +38,7 @@ open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
 open HasStrongCoproducts 𝒟SC using () renaming (copair to scopair)
 open HasInitial 𝒟I renaming (witness to 𝟘)
 open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
-open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend; fobj)
+open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend; fobj; _∘co_)
 open Poly
 
 -- The interpretation of a polynomial, by structural recursion: at μ, the colimit of the
@@ -310,8 +310,8 @@ module _ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y 
         ≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (copair-in₂ _ _)) (≈-sym (assoc _ _ _)))
 
 -- Cocontinuity of the interpretation: assuming products and T preserve chain colimits, every
--- ⟦ P ⟧ (extend δ −) does. Coproducts need no assumption (they commute with all colimits;
--- proved below), and the μ case is the interchange of colimits.
+-- ⟦ P ⟧ (extend δ −) does. Coproducts need no assumption (they commute with all colimits, proved below), and
+-- the μ case is the interchange of colimits.
 module cocont
   (×-cocont : ∀ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y k ⇒ Y (suc k)} {a b : obj}
               {cX : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a)}
@@ -322,6 +322,9 @@ module cocont
               {c : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a)} →
               IsColimit (chain {𝒞 = 𝒟} X f) a c →
               IsColimit _ (Functor.fobj T a) (T-cocone c))
+  -- The catamorphism's base leg prod Γ 𝟘 ⇒ A needs prod Γ 𝟘 to be initial. (Automatic with
+  -- exponentials, and holds in Fam 𝒟 since the index of prod Γ 𝟘 is empty.)
+  (prod𝟘-initial : ∀ {Γ} → IsInitial 𝒟 (prod Γ 𝟘))
   where
 
   open functor using (IsColimit-cong)
@@ -416,11 +419,27 @@ module cocont
   strong-extend-mor fs f (Fin.suc i) = fs i
 
   mutual
-    -- The catamorphism in context Γ: maps out of the carrier by mediating the cocone of fold legs
-    -- out of the Γ-product of the initial-algebra chain.
+    -- Fold legs: leg 0 out of the initial prod Γ 𝟘, leg (k+1) by the algebra after folding the
+    -- children. These form a cocone over the Γ-product of the initial-algebra chain (legs-step).
+    legs : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
+           (prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) → ∀ k → prod Γ (iter P δ k) ⇒ A
+    legs alg zero          = prod𝟘-initial .IsInitial.from-initial
+    legs {P = P} alg (suc k) = alg ∘co ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) (legs alg k))
+
+    legs-step : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
+                (alg : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) →
+                ∀ k → legs alg k ≈ (legs alg (suc k) ∘ prod-m (id Γ) (step P δ k))
+    legs-step alg zero    = prod𝟘-initial .IsInitial.from-initial-ext _
+    legs-step alg (suc k) = {!!}
+
+    -- The catamorphism in context Γ: mediate the cocone of fold legs out of the Γ-product of the
+    -- initial-algebra chain (a colimit by ×-cocont at the constant-Γ and initial-algebra chains).
     ⦅_⦆ : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
           (prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) → prod Γ (μ-carrier P δ) ⇒ A
-    ⦅_⦆ {A = A} {P = P} {δ = δ} alg = {!!}
+    ⦅_⦆ {Γ = Γ} {A = A} {P = P} {δ = δ} alg =
+      ×-cocont (const-chain-colimit Γ .isColimit)
+               (colimits (chain (iter P δ) (step P δ)) .isColimit) .colambda A
+        (step-cocone (legs alg) (legs-step alg))
 
     -- Strong (context-Γ) functorial action of ⟦ P ⟧, as needed for the catamorphism legs. The μ case
     -- is the catamorphism formula, mutually with the catamorphism itself (structurally decreasing:
