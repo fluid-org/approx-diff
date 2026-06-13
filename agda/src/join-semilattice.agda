@@ -606,3 +606,51 @@ module _ where
   L-unit2 .eqfunc .eqfun bottom .proj₂ = tt
   L-unit2 {A} .eqfunc .eqfun < x > = A .≃-refl
 -}
+
+-- Dual lifting: adjoin a top, absorbing for ∨. Dual to meet-semilattice.L (add bottom). Unlike L
+-- (add bottom), which is a comonad here, L⊤ is a monad: its unit is ⊥-preserving, because L⊤'s
+-- bottom is the embedded ⊥.
+module _ where
+  open Preorder
+  open preorder using (L⊤Carrier; <_>; top)
+  open JoinSemilattice
+  open _=>_
+  open preorder._=>_
+  open _≃m_
+  open preorder._≃m_
+
+  L⊤ : ∀ {A} → JoinSemilattice A → JoinSemilattice (preorder.L⊤ A)
+  L⊤ X ._∨_ top   _     = top
+  L⊤ X ._∨_ < x > top   = top
+  L⊤ X ._∨_ < x > < y > = < X ._∨_ x y >
+  L⊤ X .⊥ = < X .⊥ >
+  L⊤ X .∨-isJoin .IsJoin.inl {top}   {y}      = tt
+  L⊤ X .∨-isJoin .IsJoin.inl {< x >} {top}    = tt
+  L⊤ X .∨-isJoin .IsJoin.inl {< x >} {< y >}  = X .∨-isJoin .IsJoin.inl
+  L⊤ X .∨-isJoin .IsJoin.inr {top}   {y}      = tt
+  L⊤ X .∨-isJoin .IsJoin.inr {< x >} {top}    = tt
+  L⊤ X .∨-isJoin .IsJoin.inr {< x >} {< y >}  = X .∨-isJoin .IsJoin.inr
+  L⊤ X .∨-isJoin .IsJoin.[_,_] {top}   {y}     {z}     m₁ m₂ = m₁
+  L⊤ X .∨-isJoin .IsJoin.[_,_] {< x >} {top}   {z}     m₁ m₂ = m₂
+  L⊤ X .∨-isJoin .IsJoin.[_,_] {< x >} {< y >} {top}   m₁ m₂ = tt
+  L⊤ X .∨-isJoin .IsJoin.[_,_] {< x >} {< y >} {< z >} m₁ m₂ = X .∨-isJoin .IsJoin.[_,_] m₁ m₂
+  L⊤ X .⊥-isBottom .IsBottom.≤-bottom {top}   = tt
+  L⊤ X .⊥-isBottom .IsBottom.≤-bottom {< x >} = X .⊥-isBottom .IsBottom.≤-bottom
+
+  L⊤-map : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → X => Y → L⊤ X => L⊤ Y
+  L⊤-map m .func .fun top   = top
+  L⊤-map m .func .fun < x > = < m .func .fun x >
+  L⊤-map m .func .mono {top}   {top}   _     = tt
+  L⊤-map m .func .mono {< _ >} {top}   _     = tt
+  L⊤-map m .func .mono {< _ >} {< _ >} x₁≤x₂ = m .func .mono x₁≤x₂
+  L⊤-map m .∨-preserving {top}   {y'}    = tt
+  L⊤-map m .∨-preserving {< x >} {top}   = tt
+  L⊤-map m .∨-preserving {< x >} {< y >} = m .∨-preserving
+  L⊤-map m .⊥-preserving = m .⊥-preserving
+
+  -- The monad unit. ⊥-preserving (the embedded ⊥ is L⊤'s bottom), so this is a join map.
+  L⊤-unit : ∀ {A}{X : JoinSemilattice A} → X => L⊤ X
+  L⊤-unit .func .fun x = < x >
+  L⊤-unit .func .mono x₁≤x₂ = x₁≤x₂
+  L⊤-unit {A} .∨-preserving = A .≤-refl
+  L⊤-unit {A} .⊥-preserving = A .≤-refl
