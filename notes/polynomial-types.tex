@@ -5,9 +5,9 @@ This section follows \citet{nunes2023}'s presentation, restricted to inductive t
 over a context $\Delta = \alpha_1 : \mathsf{type}, \ldots, \alpha_n : \mathsf{type}$, with $\mu\alpha.\tau$
 binding a type variable in its body. Strict positivity is enforced by the kinding rule for function space:
 both argument and result must be closed (kinded in the empty context), so type variables cannot occur under
-$\tyFun$. A type with free kinding-context variables thus acts as a \emph{schema}: $\mu\beta.\,\tyUnit
-\tySum (\alpha \tyProd \beta)$, kinded under $\alpha : \mathsf{type}$, becomes a particular list type by
-substituting a closed type for $\alpha$. As in \citet{nunes2023}, the term language has no $\Lambda\alpha.\,
+$\tyFun$. A type with free kinding-context variables thus acts as a \emph{schema}: $\mu\alpha.\,\tyUnit
+\tySum (\gamma \tyProd \alpha)$, kinded under $\gamma : \mathsf{type}$, becomes a particular list type by
+substituting a closed type for $\gamma$. As in \citet{nunes2023}, the term language has no $\Lambda\alpha.\,
 t$ or $t[\tau]$, so this is type-level parameterisation only, not parametric polymorphism.
 \figref{polynomial-types:syntax} gives the syntax of types and terms.
 
@@ -32,7 +32,7 @@ the rules in \figref{polynomial-types:kinding}. The function-space rule requires
 be kinded in the empty context, so function types are closed; this rules out any occurrence of a type
 variable under $\tyFun$, which suffices for strict positivity of $\mu\alpha.\tau$. The restriction is
 strictly stronger than classical strict positivity (which forbids type variables only in the \emph{domain}
-of $\tyFun$): our rule also excludes them from the codomain, so types like $\mu\alpha.\,\beta \tyFun \alpha$
+of $\tyFun$): our rule also excludes them from the codomain, so types like $\mu\alpha.\,\gamma \tyFun \alpha$
 are ruled out even though they are strictly positive in $\alpha$. The trade-off is a rule that needs no
 polarity tracking.
 
@@ -143,12 +143,12 @@ identity because the fibre of the assembled tree is computed by the same recursi
 parts.
 
 Initiality (proved by induction on the tree) unpacks as the standard $\beta$ and $\eta$ equations. For any
-$F$-algebra $\alpha: F(Y) \to Y$, write $h_\alpha: \mu F \to Y$ for the unique algebra morphism. Then
+$F$-algebra $a: F(Y) \to Y$, write $\cata{a}: \mu F \to Y$ for the unique algebra morphism. Then
 \begin{align*}
-h_\alpha \circ \inMap_F &= \alpha \circ F(h_\alpha) \tag{$\beta$} \\
-h_{\inMap_F} &= \id_{\mu F} \tag{$\eta$}
+\cata{a} \circ \inMap_F &= a \circ F(\cata{a}) \tag{$\beta$} \\
+\cata{\inMap_F} &= \id_{\mu F} \tag{$\eta$}
 \end{align*}
-where $\beta$ is the algebra-morphism property of $h_\alpha$ and $\eta$ applies uniqueness with $\alpha =
+where $\beta$ is the algebra-morphism property of $\cata{a}$ and $\eta$ applies uniqueness with $a =
 \inMap_F$, where $\id_{\mu F}$ is trivially an algebra morphism. At the term level, $\beta$ reduces
 $\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu P$-child of $t$
 before substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
@@ -184,16 +184,21 @@ The construction must provide, for each $P \in \Poly_{\Delta,\alpha}$ and enviro
 \item an object $\mu_{\alpha.P}(\delta)$ and algebra map $\inMap : \sem{P}(\delta[\alpha \mapsto
   \mu_{\alpha.P}(\delta)]) \to \mu_{\alpha.P}(\delta)$;
 \item a catamorphism in context: for every $\Gamma$ and algebra $a : \Gamma \times \sem{P}(\delta[\alpha
-  \mapsto Y]) \to Y$, a morphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$ satisfying, writing
-  $f \circ_\Gamma g = f \circ \prodM{\pi_1}{g}$ for composition in context,
-  \begin{align*}
-  \cata{a} \circ_\Gamma (\inMap \circ \pi_2) &= a \circ_\Gamma \sem{P}^{\mathrm{s}}(\cata{a},
-    \vec{\pi_2}) \tag{$\beta$} \\
-  h \circ_\Gamma (\inMap \circ \pi_2) = a \circ_\Gamma \sem{P}^{\mathrm{s}}(h, \vec{\pi_2})
-    &\implies h = \cata{a} \tag{$\eta$}
-  \end{align*}
-  where $\sem{P}^{\mathrm{s}}$ is the \emph{strong} functorial action of $\sem{P}$, taking morphisms in
-  context $\Gamma \times X_\beta \to Y_\beta$ for each variable $\beta$.
+  \mapsto Y]) \to Y$, a morphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$. Writing $f
+  \circ_\Gamma g = f \circ \prodM{\pi_1}{g}$ for composition in context and $F = \sem{P}(\delta[\alpha
+  \mapsto -])$, the map $\cata{a}$ is the unique one making
+  \begin{center}
+  \begin{tikzcd}[row sep=2.2em, column sep=3.2em]
+    F\,\mu_{\alpha.P}(\delta) \arrow[r, "\inMap"] \arrow[d, "F\cata{a}"'] & \mu_{\alpha.P}(\delta)
+      \arrow[d, "\cata{a}"] \\
+    F\,Y \arrow[r, "a"'] & Y
+  \end{tikzcd}
+  \end{center}
+  commute in the co-Kleisli category for $\circ_\Gamma$, that is, $\cata{a} \circ_\Gamma (\inMap \circ
+  \pi_2) = a \circ_\Gamma F\cata{a}$ ($\beta$), uniqueness giving $\eta$. The edge $F\cata{a} =
+  \sem{P}^{\mathrm{s}}(\cata{a}, \vec{\pi_2})$ is the action of $F$ in context, the \emph{strong} functorial
+  action $\sem{P}^{\mathrm{s}}$, which takes a morphism in context $\Gamma \times X_i \to Y_i$ for each
+  variable $i$.
 \end{itemize}
 The context $\Gamma$ avoids closure conversion (and hence exponentials) in the term semantics, as in
 \secref{polynomial-types:language}; the strong action is needed for the same reason. In the Agda
@@ -245,33 +250,56 @@ recursion coordinate \emph{together with} the parameters. The non-$\mu$ cases ar
 project the given coordinate colimits, constants are colimits of constant chains, and $+$, $\times$ and $T$
 combine the induction hypotheses (two single image chains) as before.
 
-For the $\mu$ case, fix an environment chain $\delta_k$ with colimit $\delta_\infty$ and form the grid
-\[
-  G_{k,j} = F_k^j\,0 \qquad \text{where } F_k = \sem{P}(\delta_k[\alpha \mapsto -]),
-\]
-with vertical steps the initial-algebra chains, horizontal steps the mediated stage maps between them, and
-commuting squares. Row $k$ has colimit $\mu_{\alpha.P}(\delta_k)$ by construction. By induction on $j$,
-column $j$ has colimit $F_\infty^j\,0$: column $0$ is constantly $0$, and column $j{+}1$ is the
-$\sem{P}$-image of the environment chain $\delta_k[\alpha \mapsto G_{k,j}]$, to which the structural
-induction hypothesis (joint cocontinuity of $\sem{P}$) applies, using the column-$j$ colimit for the
-$\alpha$ coordinate. Finally a generic \emph{interchange lemma}, stated for an arbitrary commuting grid:
-given row colimits, column colimits, and a colimit $g_\infty$ of the chain of column apexes, $g_\infty$ is
-also a colimit of the chain of row apexes, via the mediated cocone. Here $g_\infty =
-\mathrm{colim}_j F_\infty^j\,0 = \mu_{\alpha.P}(\delta_\infty)$, as required. The interchange lemma is
-generic in the grid and belongs with the $\omega$-chain machinery, independent of polynomials.
+For the $\mu$ case, fix an environment chain $\delta_k$ with colimit $\delta_\infty$ and form the grid of
+$G_{k,j} = F_k^j\,0$, where $F_k = \sem{P}(\delta_k[\alpha \mapsto -])$, with horizontal maps the mediated
+stage maps (in $k$) and vertical maps the initial-algebra-chain steps (in $j$). Writing the colimits in the
+margins (and omitting the chains' common base $0$):
+\begin{center}
+\begin{tikzcd}[row sep=2em, column sep=2.6em]
+  F_0\,0 \arrow[r] \arrow[d] & F_1\,0 \arrow[r] \arrow[d] & \cdots \arrow[r, dashed]
+    & F_\infty\,0 \arrow[d] \\
+  F_0^2\,0 \arrow[r] \arrow[d] & F_1^2\,0 \arrow[r] \arrow[d] & \cdots \arrow[r, dashed]
+    & F_\infty^2\,0 \arrow[d] \\
+  \vdots \arrow[d, dashed] & \vdots \arrow[d, dashed] & & \vdots \arrow[d, dashed] \\
+  \mu_{\alpha.P}(\delta_0) \arrow[r] & \mu_{\alpha.P}(\delta_1) \arrow[r] & \cdots \arrow[r, dashed]
+    & \mu_{\alpha.P}(\delta_\infty)
+\end{tikzcd}
+\end{center}
+Each column (fixed $k$) is the initial-algebra chain for $F_k$, with colimit $\mu_{\alpha.P}(\delta_k)$ along
+the bottom by construction. By induction on $j$, each row (fixed $j$) has colimit $F_\infty^j\,0$ along the
+right: row $0$ is constantly $0$, and row $j{+}1$ is the $\sem{P}$-image of the environment chain
+$\delta_k[\alpha \mapsto G_{k,j}]$, to which the structural induction hypothesis (joint cocontinuity of
+$\sem{P}$) applies, using the row-$j$ colimit for the $\alpha$ coordinate. A generic \emph{interchange
+lemma}, for an arbitrary commuting grid, identifies the two ways of reaching the corner: given the row and
+column colimits and a colimit of the chain of right-hand apexes, the latter is also a colimit of the chain
+of bottom apexes. Here both are $\mu_{\alpha.P}(\delta_\infty)$, as required. The lemma is generic in the
+grid and belongs with the $\omega$-chain machinery, independent of polynomials.
 
 \paragraph{Fusion for the strong action.}
 The cocone compatibility $g_n = g_{n+1} \circ (\Gamma \times \mathrm{step}_n)$ above rests on a
 functoriality law for the strong action, the analogue of $\sem{P}(g \circ g') = \sem{P}(g) \circ
 \sem{P}(g')$: for a reindexing $g : \delta \to \delta'$ and context maps $f : \Gamma \times \delta' \to
-\delta''$,
-\[
-  \sem{P}^{\mathrm{s}}(f) \circ (\Gamma \times \sem{P}(g))
-  \;=\; \sem{P}^{\mathrm{s}}\big(f \cdot (\Gamma \times g)\big),
-  \qquad (f \cdot (\Gamma \times g))_i = f_i \circ (\Gamma \times g_i),
-\]
-proved by induction on $P$. Variables and constants are immediate; $+$, $\times$ and $T$ use naturality of
-strong copairing, pairing and the strength. The $\mu$ case is mutual with the catamorphism. Writing
+\delta''$, the triangle
+\begin{center}
+\begin{tikzcd}[row sep=2.6em, column sep=4.5em]
+  \Gamma \times \sem{P}(\delta) \arrow[r, "\Gamma \times \sem{P}(g)"]
+    \arrow[dr, "\sem{P}^{\mathrm{s}}(f \cdot (\Gamma \times g))"']
+  & \Gamma \times \sem{P}(\delta') \arrow[d, "\sem{P}^{\mathrm{s}}(f)"] \\
+  & \sem{P}(\delta'')
+\end{tikzcd}
+\end{center}
+commutes, where $(f \cdot (\Gamma \times g))_i = f_i \circ (\Gamma \times g_i)$. The clean reading is
+functoriality of $\sem{P}^{\mathrm{s}}$ in the co-Kleisli category
+$\cat{D}_\Gamma$ of the reader comonad $\Gamma \times -$ (with $X \to Y$ a morphism $\Gamma \times X \to Y$
+and composition $h \mathbin{\circ_\Gamma} k = h \circ \prodM{\pi_1}{k}$): the action $\sem{P}^{\mathrm{s}}$
+is the morphism part of a functor $(\cat{D}_\Gamma)^\Delta \to \cat{D}_\Gamma$, and fusion is preservation
+of composition, specialised to the case where the second factor $\Gamma \times \sem{P}(g) =
+\prodM{\pi_1}{\sem{P}(g) \circ \pi_2}$ is the pure lift of a context-free reindexing. The plain action
+$\sem{P}(-)$ is $\sem{P}^{\mathrm{s}}$ restricted to such pure morphisms.
+
+The law is proved by induction on $P$. Variables and constants are immediate; $+$, $\times$ and $T$ use
+naturality of strong copairing, pairing and the strength. The $\mu$ case is mutual with the catamorphism.
+Writing
 $\sem{\mu\alpha.P}^{\mathrm{s}}(f) = \cata{a_f}$ for $a_f = \inMap \circ
 \sem{P}^{\mathrm{s}}(f[\alpha \mapsto \pi_2])$, the goal $\cata{a_f} \circ (\Gamma \times
 \sem{\mu\alpha.P}(g)) = \cata{a_{f \cdot g}}$ is a map out of $\Gamma \times \mu_{\alpha.P}(\delta)$, itself
@@ -318,10 +346,10 @@ leaving primitives and unit untouched. With inductive types this translation bre
 substitution $\subst{\tau}{\sigma}{\alpha}$ in the $\syn{fold}$ typing rule does not commute with
 the $T$-tagging.
 
-For example, take $\tau = \tyUnit \tySum (\beta \tyProd \alpha)$ (the list schema) and $\sigma =
-\beta$, supposing $\beta$ is a closed base type. The rule for $\syn{fold}$ types the body of the
-fold in a context extended by $\subst{\tau}{\sigma}{\alpha} = \tyUnit \tySum (\beta \tyProd
-\beta)$. For the CBN-translated fold to typecheck, the translated context entry must equal what
+For example, take $\tau = \tyUnit \tySum (\gamma \tyProd \alpha)$ (the list schema) and $\sigma =
+\gamma$, supposing $\gamma$ is a closed base type. The rule for $\syn{fold}$ types the body of the
+fold in a context extended by $\subst{\tau}{\sigma}{\alpha} = \tyUnit \tySum (\gamma \tyProd
+\gamma)$. For the CBN-translated fold to typecheck, the translated context entry must equal what
 the same rule gives when applied to the translated schema and result type; translation must
 commute with substitution. In other words, the following must agree:
 
@@ -330,16 +358,16 @@ commute with substitution. In other words, the following must agree:
 Because the context translation wraps each entry in $T$ (every variable is a CBN thunk),
 the fold body's translated context entry is
 \[
-T(\cbn{\subst{\tau}{\sigma}{\alpha}}) = T(\tyUnit \tySum T(T(\beta) \tyProd T(\beta)))
+T(\cbn{\subst{\tau}{\sigma}{\alpha}}) = T(\tyUnit \tySum T(T(\gamma) \tyProd T(\gamma)))
 \]
 (applying the CBN type translation: $\tySum$ and $\tyProd$ wrap their children in $T$; $\tyUnit$
-and base $\beta$ stay as is).
+and base $\gamma$ stay as is).
 \item[\normalfont\textit{(b) Translate $\tau$ as a schema, then substitute the translated $\sigma$.}] The target's
 $\syn{fold}$ typing rule expects $\subst{\cbn{\tau}}{T(\cbn{\sigma})}{\alpha}$, since the result
 type of a translated computation is $T$-wrapped:
 \begin{align*}
-\cbn{\tau}                                       & = \tyUnit \tySum T(T(\beta) \tyProd T(\alpha)) \\
-\subst{\cbn{\tau}}{T(\cbn{\sigma})}{\alpha} & = \tyUnit \tySum T(T(\beta) \tyProd T(T(\beta)))
+\cbn{\tau}                                       & = \tyUnit \tySum T(T(\gamma) \tyProd T(\alpha)) \\
+\subst{\cbn{\tau}}{T(\cbn{\sigma})}{\alpha} & = \tyUnit \tySum T(T(\gamma) \tyProd T(T(\gamma)))
 \end{align*}
 \end{description}
 
@@ -349,9 +377,9 @@ type of a translated computation is $T$-wrapped:
 \item (a) has an extra outermost $T$, contributed by the context translation. (b) has no such
 outer wrap because the target $\syn{fold}$ takes the $\cbn{\tau}$ schema directly.
 
-\item At the recursive position, (b) substitutes $T(\cbn{\sigma}) = T(\beta)$ for $\alpha$,
+\item At the recursive position, (b) substitutes $T(\cbn{\sigma}) = T(\gamma)$ for $\alpha$,
 which falls inside the $T$ that the $\tyProd$-rule had placed around $\alpha$ in $\cbn{\tau}$,
-giving $T(T(\beta))$. (a) has only $T(\beta)$ there, because the substitution happened in the
+giving $T(T(\gamma))$. (a) has only $T(\gamma)$ there, because the substitution happened in the
 source when $\alpha$ was just a type variable with no $T$ around it.
 \end{enumerate}
 
