@@ -447,7 +447,7 @@ module _ where
 -- Lifting
 module _ where
   open Preorder
-  open preorder using (LCarrier; <_>; bottom)
+  open preorder using (L⊥Carrier; <_>; bottom)
   open JoinSemilattice
   open _=>_
   open preorder._=>_
@@ -455,7 +455,7 @@ module _ where
   open preorder._≃m_
 
   -- The original preorder needn't have a bottom
-  L₀ : ∀ {A _∨_} → IsJoin (A .≤-isPreorder) _∨_ → JoinSemilattice (preorder.L A)
+  L₀ : ∀ {A _∨_} → IsJoin (A .≤-isPreorder) _∨_ → JoinSemilattice (preorder.L⊥ A)
   L₀ ∨-isJoin ._∨_ bottom bottom = bottom
   L₀ ∨-isJoin ._∨_ < x > bottom = < x >
   L₀ ∨-isJoin ._∨_ bottom < y > = < y >
@@ -476,7 +476,7 @@ module _ where
   L₀ ∨-isJoin .∨-isJoin .IsJoin.[_,_] {< x >} {< y >} {< z >}  m₁ m₂ = ∨-isJoin .IsJoin.[_,_] m₁ m₂
   L₀ ∨-isJoin .⊥-isBottom .IsBottom.≤-bottom = tt
 
-  L : ∀ {A} → JoinSemilattice A → JoinSemilattice (preorder.L A)
+  L : ∀ {A} → JoinSemilattice A → JoinSemilattice (preorder.L⊥ A)
   L X = L₀ (X .∨-isJoin)
 
   L-map : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → X => Y → L X => L Y

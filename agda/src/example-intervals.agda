@@ -62,7 +62,7 @@ module backward where
   open import Data.Nat hiding (_/_)
   open import Data.Rational renaming (_≤_ to _≤ℚ_; show to ℚ-show)
   open import Data.Integer hiding (_/_; show; -_)
-  open import preorder using (bottom; <_>; LCarrier)
+  open import preorder using (bottom; <_>; L⊥Carrier)
   open import approx-numbers using (Intv)
   open import prop using (liftS)
   open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
@@ -83,7 +83,7 @@ module backward where
 
   open import Data.Maybe
 
-  extract-interval : ∀ {q} → LCarrier (Intv q) → Maybe (ℚ ×ₜ ℚ)
+  extract-interval : ∀ {q} → L⊥Carrier (Intv q) → Maybe (ℚ ×ₜ ℚ)
   extract-interval bottom = nothing
   extract-interval < x > = just (x .lower , x .upper)
 
@@ -132,7 +132,7 @@ module forward where
   open Conjugate.interp Sig BaseInterp
   open import Data.Rational
   open import Data.Rational.Properties using (≤-refl)
-  open import preorder using (bottom; <_>; LCarrier; Preorder; L)
+  open import preorder using (bottom; <_>; L⊥Carrier; Preorder; L⊥)
   open import approx-numbers using (Intv; IntvPreorder)
   open import prop using (liftS)
   open import Data.Nat hiding (_/_)
@@ -161,7 +161,7 @@ module forward where
   open import Data.Maybe
   open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
 
-  extract-interval : ∀ {q} → LCarrier (Intv q) → Maybe (ℚ ×ₜ ℚ)
+  extract-interval : ∀ {q} → L⊥Carrier (Intv q) → Maybe (ℚ ×ₜ ℚ)
   extract-interval bottom = nothing
   extract-interval < x > = just (x .lower , x .upper)
 
@@ -192,5 +192,5 @@ module forward where
   test-add⁎ = ≡-refl
 
   -- addᵀ here produces a result higher in the information order (tighter bounds) than the adjoint add⁎.
-  addᵀ-tighter : Preorder._≤_ (L (IntvPreorder 1ℚ)) fwd-add⁎ fwd-addᵀ
+  addᵀ-tighter : Preorder._≤_ (L⊥ (IntvPreorder 1ℚ)) fwd-add⁎ fwd-addᵀ
   addᵀ-tighter = prop._,_ (liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s (s≤s z≤n)))))))) (intv1 .q≤u)
