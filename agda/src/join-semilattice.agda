@@ -673,3 +673,15 @@ module _ where
   L⊤-join .∨-preserving {< < x > >} {< top >}   = tt
   L⊤-join {A} .∨-preserving {< < x > >} {< < y > >} = A .≤-refl
   L⊤-join {A} .⊥-preserving = A .≤-refl
+
+  -- Tensorial strength of the monad.
+  L⊤-strength : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → (X ⊕ L⊤ Y) => L⊤ (X ⊕ Y)
+  L⊤-strength .func .fun (x , top)   = top
+  L⊤-strength .func .fun (x , < y >) = < x , y >
+  L⊤-strength .func .mono {x₁ , top}    {x₂ , top}    (x₁≤x₂ , tt)      = tt
+  L⊤-strength .func .mono {x₁ , < y₁ >} {x₂ , top}    (x₁≤x₂ , tt)      = tt
+  L⊤-strength .func .mono {x₁ , < y₁ >} {x₂ , < y₂ >} (x₁≤x₂ , y₁≤y₂)   = x₁≤x₂ , y₁≤y₂
+  L⊤-strength .∨-preserving {x , top}    {x' , y'}   = tt
+  L⊤-strength .∨-preserving {x , < y >}  {x' , top}  = tt
+  L⊤-strength {A}{B} .∨-preserving {x , < y >} {x' , < y' >} = A .≤-refl , B .≤-refl
+  L⊤-strength {A}{B} .⊥-preserving = A .≤-refl , B .≤-refl
