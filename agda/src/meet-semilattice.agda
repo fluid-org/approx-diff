@@ -319,14 +319,14 @@ module _ where
 -- Lifting
 module _ where
   open Preorder
-  open preorder using (L⊥Carrier; <_>; bottom)
+  open preorder using (LCarrier; <_>; bottom)
   open MeetSemilattice
   open _=>_
   open preorder._=>_
   open _≃m_
   open preorder._≃m_
 
-  L : ∀ {A} → MeetSemilattice A → MeetSemilattice (preorder.L⊥ A)
+  L : ∀ {A} → MeetSemilattice A → MeetSemilattice (preorder.L A)
   L X ._∧_ bottom _ = bottom
   L X ._∧_ < x > bottom = bottom
   L X ._∧_ < x > < y > = < X ._∧_ x y >

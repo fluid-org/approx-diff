@@ -249,7 +249,7 @@ module Galois where
     liftS (⊔-mono-≤ (+-mono-≤ (≤-refl {q₂}) ϕ₂) (+-mono-≤ (≤-refl {q₁}) ψ₂))
 
   Interval : ℚ → Obj
-  Interval q .galois.Obj.carrier = preorder.L⊥ (IntvPreorder q)
+  Interval q .galois.Obj.carrier = preorder.L (IntvPreorder q)
   Interval q .galois.Obj.meets = meet-semilattice.L (meets q)
   Interval q .galois.Obj.joins = join-semilattice.L₀ ⊔I-isJoin
 
@@ -427,7 +427,7 @@ module Conjugate where
   addᵀ-split-≥ q₁ q₂ x y = ⊑I-isPreorder .refl {addᵀ q₁ q₂ x y}
 
   Interval : ℚ → conjugate.Obj
-  Interval q .ObjC.carrier = preorder.L⊥ (IntvPreorder q)
+  Interval q .ObjC.carrier = preorder.L (IntvPreorder q)
   Interval q .ObjC.meets = meet-semilattice.L (meets q)
   Interval q .ObjC.joins = join-semilattice.L₀ ⊔I-isJoin
   Interval q .ObjC.∧-∨-distrib bottom _ _ = tt

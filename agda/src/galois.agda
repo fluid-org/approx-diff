@@ -276,7 +276,7 @@ module _ where
 module _ where
 
   𝕃 : Obj → Obj
-  𝕃 X .carrier = L⊥ (X .carrier)
+  𝕃 X .carrier = L (X .carrier)
   𝕃 X .meets = meet-semilattice.L (X .meets)
   𝕃 X .joins = join-semilattice.L (X .joins)
 

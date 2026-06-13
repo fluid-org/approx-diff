@@ -7,7 +7,7 @@ module bounded-meet where
 open import prop using (proj₁; proj₂; _∧_; _,_; LiftS; liftS; ⊥; tt)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import basics using (IsPreorder)
-open import preorder using (L⊥Carrier; _≤L⊥_; ≤L⊥-isPreorder; bottom; <_>)
+open import preorder using (LCarrier; _≤L_; ≤L-isPreorder; bottom; <_>)
 open import prop-setoid using (IsEquivalence)
 open import categories using (Category; HasProducts; HasExponentials; HasCoproducts)
 
@@ -455,9 +455,9 @@ Approx = {!!}
 -- Lifting monad
 
 Lift : BoundedMeet → BoundedMeet
-Lift X .Carrier = L⊥Carrier (X .Carrier)
-Lift X ._≤_ = _≤L⊥_ (X .≤-isPreorder)
-Lift X .≤-isPreorder = ≤L⊥-isPreorder (X .≤-isPreorder)
+Lift X .Carrier = LCarrier (X .Carrier)
+Lift X ._≤_ = _≤L_ (X .≤-isPreorder)
+Lift X .≤-isPreorder = ≤L-isPreorder (X .≤-isPreorder)
 Lift X .bounded-∧ {bottom} {y} _ _ .meet = bottom
 Lift X .bounded-∧ {bottom} {y} _ _ .is-meet .lower₁ = tt
 Lift X .bounded-∧ {bottom} {y} _ _ .is-meet .lower₂ = tt
