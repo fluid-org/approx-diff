@@ -23,9 +23,10 @@
 % Attribute inline edits with the optional id, e.g. \added[id=roly]{...}, \deleted[id=bob]{...}.
 \definechangesauthor[name=Bob, color=purple]{bob}
 \definechangesauthor[name=Roly, color=red]{roly}
-% Deleted text in grey, whoever the author. Smash the strikeout so its box
-% adds no height/depth, otherwise ulem inflates the interline spacing.
-\setdeletedmarkup{\textcolor{gray}{\smash{\sout{#1}}}}
+% Deleted text in grey, whoever the author. No strikethrough: ulem's \sout is
+% not both line-breakable and metric-neutral, so it either overflows long
+% deletions or nudges the interline spacing. Grey alone breaks cleanly.
+\setdeletedmarkup{\textcolor{gray}{#1}}
 % Capitalised = inline markup + a margin changebar. Use the lowercase \added/\deleted/\replaced
 % (no bar) inside figures or math, where changebar spans can misbehave.
 \newcommand{\Added}[1]{\protect\cbstart\added{#1}\protect\cbend\xspace}
@@ -40,6 +41,18 @@
 \pdfstringdefDisableCommands{\let\cmRobustCites\relax}
 \newcommand{\Deleted}[1]{\protect\cbstart{\cmRobustCites\deleted{#1}}\protect\cbend\xspace}
 \newcommand{\Replaced}[2]{\protect\cbstart{\cmRobustCites\replaced{#1}{#2}}\protect\cbend\xspace}
+% Final mode: bypass the changes package entirely. Its final-mode emptiness test
+% (\IfIsEmpty) expands the replacement text, and a macro like \secref whose body
+% contains #1 then causes a runaway ``Incomplete \iffalse''. Plain definitions
+% (output the new text, drop the old) sidestep this and need no changebars.
+\ifdefined\finalmode
+  \renewcommand{\Added}[1]{#1}%
+  \renewcommand{\Deleted}[1]{}%
+  \renewcommand{\Replaced}[2]{#1}%
+  \renewcommand{\added}[2][]{#2}%
+  \renewcommand{\deleted}[2][]{}%
+  \renewcommand{\replaced}[3][]{#2}%
+\fi
 
 \newenvironment{salign*}
    {\par\nobreak\small\noindent\csname align*\endcsname}
