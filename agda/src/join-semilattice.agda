@@ -654,3 +654,22 @@ module _ where
   L⊤-unit .func .mono x₁≤x₂ = x₁≤x₂
   L⊤-unit {A} .∨-preserving = A .≤-refl
   L⊤-unit {A} .⊥-preserving = A .≤-refl
+
+  -- The monad multiplication.
+  L⊤-join : ∀ {A}{X : JoinSemilattice A} → L⊤ (L⊤ X) => L⊤ X
+  L⊤-join .func .fun top       = top
+  L⊤-join .func .fun < top >   = top
+  L⊤-join .func .fun < < x > > = < x >
+  L⊤-join .func .mono {top}       {top}       _     = tt
+  L⊤-join .func .mono {< top >}   {top}       _     = tt
+  L⊤-join .func .mono {< < x > >} {top}       _     = tt
+  L⊤-join .func .mono {< top >}   {< top >}   _     = tt
+  L⊤-join .func .mono {< < x > >} {< top >}   _     = tt
+  L⊤-join .func .mono {< < x > >} {< < y > >} x₁≤x₂ = x₁≤x₂
+  L⊤-join .∨-preserving {top}       {_}         = tt
+  L⊤-join .∨-preserving {< top >}   {top}       = tt
+  L⊤-join .∨-preserving {< < x > >} {top}       = tt
+  L⊤-join .∨-preserving {< top >}   {< _ >}     = tt
+  L⊤-join .∨-preserving {< < x > >} {< top >}   = tt
+  L⊤-join {A} .∨-preserving {< < x > >} {< < y > >} = A .≤-refl
+  L⊤-join {A} .⊥-preserving = A .≤-refl
