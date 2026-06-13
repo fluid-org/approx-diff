@@ -104,7 +104,7 @@ $\CM \to \Fam(\MeetSLat)$. Despite its similarity, this result has a lesser stat
 \propref{embed-manifolds} because it is not clear that the category $\Lposet$ (or $\CM$) is a canonical
 definition of approximable sets and functions with approximation derivatives, as we discussed at the end of
 \secref{stab}.}
-Our working hypothesis is that \Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$}, where values and their
+Our working hypothesis is that $\Fam(\Replaced{\LatConj}{\LatGal})$, where values and their
 approximations are separated by construction, is a natural model of
 semantic \GPS in a total setting, though we note some shortcomings in
 \remref{further-structure}. We now investigate some categorical
@@ -191,7 +191,7 @@ points in the domain to tangents in the codomain along the function.
 The category \Replaced{$\JoinSLat$}{$\MeetSLat$} satisfies the hypotheses of
 \thmref{fam-closed}, so:
 \begin{corollary}
-  \Replaced{$\Fam(\JoinSLat)$}{$\Fam(\MeetSLat)$} is Cartesian closed and has all coproducts.
+  $\Fam(\Replaced{\JoinSLat}{\MeetSLat})$ is Cartesian closed and has all coproducts.
 \end{corollary}
 Unfortunately, neither \Replaced{$\LatConj$}{$\LatGal$} nor $\FinVect$ satisfy the
 hypotheses of this theorem, because neither of them have infinite
@@ -386,25 +386,25 @@ check that this category satisfies the hypotheses of
 
 \begin{corollary}
   \label{cor:mslat-jslat-bcc}
-  \Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$} is Cartesian closed and has
+  $\Fam(\Replaced{\JoinSLat}{\MeetSLat} \times \JoinSLat^\op)$ is Cartesian closed and has
   all coproducts.
 \end{corollary}
 
 This corollary means that, assuming a sensible intepretation of primitive types and operations, we
-can use \Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$} to
+can use $\Fam(\Replaced{\JoinSLat}{\MeetSLat} \times \JoinSLat^\op)$ to
 interpret the higher-order language we describe in the next section. We still regard the category
-\Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$} as the reference model of approximable sets with
+$\Fam(\Replaced{\LatConj}{\LatGal})$ as the reference model of approximable sets with
 forward and backward approximation maps; the category
-\Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$} is a technical
+$\Fam(\Replaced{\JoinSLat}{\MeetSLat} \times \JoinSLat^\op)$ is a technical
 device to carry out the interpretation of higher-order programs. To get interpretations of first-order types
-and primitive operations, we can embed \Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$} into
-\Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$}:
+and primitive operations, we can embed $\Fam(\Replaced{\LatConj}{\LatGal})$ into
+$\Fam(\Replaced{\JoinSLat}{\MeetSLat} \times \JoinSLat^\op)$:
 
 \begin{proposition}
   \label{prop:ho-embedding}
   The functor
-  \Replaced{$\HoEmbed : \Fam(\LatConj) \to \Fam(\JoinSLat \times
-  \JoinSLat^\op)$}{$\HoEmbed : \Fam(\LatGal) \to \Fam(\MeetSLat \times \JoinSLat^\op)$} is defined
+  $\HoEmbed : \Fam(\Replaced{\LatConj}{\LatGal}) \to \Fam(\Replaced{\JoinSLat}{\MeetSLat} \times
+  \JoinSLat^\op)$ is defined
   on objects as
   $\HoEmbed(X, \partial X) = (X, \lambda x. (\partial X(x), \partial
   X(x)))$. This functor is faithful and preserves coproducts and
@@ -413,15 +413,15 @@ and primitive operations, we can embed \Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal
 
 With this embedding functor, we will see in \lemref{first-order-agreement-types} that the
 interpretation of first-order types will be the same up to isomorphism in
-\Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$} and
-\Replaced{$\Fam(\JoinSLat \times \JoinSLat^\op)$}{$\Fam(\MeetSLat \times \JoinSLat^\op)$}, as long as we
-interpret the base types as objects in \Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$}. At higher-order,
+$\Fam(\Replaced{\LatConj}{\LatGal})$ and
+$\Fam(\Replaced{\JoinSLat}{\MeetSLat} \times \JoinSLat^\op)$, as long as we
+interpret the base types as objects in $\Fam(\Replaced{\LatConj}{\LatGal})$. At higher-order,
 however, the \Replaced{forward and backward}{meet-semilattice and join-semilattice} sides of the
 interpretation will diverge, and it is no longer clear that the interpretation of programs using
 higher-order functions internally will result in \Replaced{conjugate pairs}{Galois connections}. In
 \secref{definability} we will see that every program with first-order type (even if it uses higher-order
 functions internally) does in fact have an interpretation definable in
-\Replaced{$\Fam(\LatConj)$}{$\Fam(\LatGal)$}.
+$\Fam(\Replaced{\LatConj}{\LatGal})$.
 
 % \bob{In the conclusion, we have to admit to the possibility that
 %   $\Fam(CLatGal)$ might be sensible. We could have also used
@@ -429,30 +429,30 @@ functions internally) does in fact have an interpretation definable in
 %   normalisation. We would have different problems with proving
 %   correctness however.}
 
-\subsection{Semantic Galois Slicing in $\Fam(\LatGal)$}
+\subsection{Semantic Galois Slicing in $\Fam(\Replaced{\LatConj}{\LatGal})$}
 \label{sec:semantic-gps}
 
-Our thesis is that $\Fam(\LatGal)$ is a suitable setting for
+Our thesis is that $\Fam(\Replaced{\LatConj}{\LatGal})$ is a suitable setting for
 interpreting first-order programs for \GPS. The above discussion has
 been somewhat abstract, so we now consider some examples in the
-category $\Fam(\LatGal)$ and how they relate to \GPS.
+category $\Fam(\Replaced{\LatConj}{\LatGal})$ and how they relate to \GPS.
 
-Spelt out in full, $\Fam(\LatGal)$ has as objects $(X, \partial X)$,
+Spelt out in full, $\Fam(\Replaced{\LatConj}{\LatGal})$ has as objects $(X, \partial X)$,
 all pairs of a set $X$ and and for every $x \in X$, a bounded lattice
 $\partial X(x)$. Morphisms $(X, \partial X) \to (Y, \partial Y)$, are
 triples $(f, \partial f_f, \partial f_r)$ of functions $f : X \to Y$
-and families of monotone maps
+and families of \Replaced{join-preserving}{monotone} maps
 $\partial f_f : \Pi_{x : X}.\partial X(x) \multimap \partial Y(f\,x)$
 (``forward derivative'') and
 $\partial f_r : \Pi_{x : X}. \partial Y(f\,x) \multimap \partial X(x)$
-(``reverse derivative''), such that for all $x$,
-$\partial f_r(x) \dashv \partial f_f(x)$.
+(``reverse derivative''), \Replaced{such that for all $x$, $\partial f_f(x)$ and $\partial f_r(x)$ form a
+conjugate pair}{such that for all $x$, $\partial f_r(x) \dashv \partial f_f(x)$}.
 
 \subsubsection{Unapproximated Functions}
 \label{sec:unapproximated-functions}
 
-$\LatGal$ has a terminal (also zero) object $\mathbb{1}$, so there is
-a functor $\Disc : \Set \to \Fam(\LatGal)$ that maps a set $X$ to
+The category \Replaced{$\LatConj$}{$\LatGal$} has a terminal (also zero) object $\mathbb{1}$, so there is
+a functor $\Disc : \Set \to \Fam(\Replaced{\LatConj}{\LatGal})$ that maps a set $X$ to
 $(X, \lambda x. \mathbb{1})$ and functions $f$ to morphisms
 $(f, \lambda\_.\,\mathrm{id}_{\mathbb{1}})$. This functor preserves
 products and coproducts. Therefore, we can take any sets and functions
@@ -464,8 +464,8 @@ approximation information.
 \label{sec:models-of-total-gps:lifting}
 
 The operation of adding a new bottom element to a bounded lattice
-forms part of a monad $L$ on $\LatGal$. This monad extends to a
-(strong) monad $\Lift$ on $\Fam(\LatGal)$ with
+forms part of a monad $L$ on \Replaced{$\LatConj$}{$\LatGal$}. This monad extends to a
+(strong) monad $\Lift$ on $\Fam(\Replaced{\LatConj}{\LatGal})$ with
 $\Lift(X, \partial X) = (X, L \circ \partial X)$. The monad $\Lift$
 does not affect the points of the original object, but adds a new
 minimum approximation.
@@ -480,17 +480,17 @@ Boolean OR function. Using a Moggi-style let notation
 Monad structure of $\Lift$, we can reproduce the functions
 $\mathrm{strictOr}$ and $\mathrm{shortCircuitOr}$ functions from
 \exref{strict-short-circuit} (we also assume an if-then-else operation
-on Booleans, definable from the fact that $\Fam(\LatGal)$ has
+on Booleans, definable from the fact that $\Fam(\Replaced{\LatConj}{\LatGal})$ has
 coproducts and $\Disc$ preserves them). Both of these expressions
 define morphisms $\Lift(\Bool) \times \Lift(\Bool) \to \Lift(\Bool)$
-in $\Fam(\LatGal)$:
+in $\Fam(\Replaced{\LatConj}{\LatGal})$:
 \begin{displaymath}
   \begin{array}{lcl}
     \mathrm{strictOr}(x,y)&=&\mathrm{let}\,b_1 \Leftarrow x\,\mathrm{in}\,\mathrm{let}\,b_2 \Leftarrow y\,\mathrm{in}\,\eta(\mathrm{or}(b_1,b_2)) \\
     \mathrm{shortCircuitOr}(x,y)&=&\mathrm{let}\,b_1 \Leftarrow x\,\mathrm{in}\,\mathrm{if}\,b_1\,\mathrm{then}\,\eta(\mathsf{tt})\,\mathrm{else}\,y
   \end{array}
 \end{displaymath}
-Examining the morphisms so defined in $\Fam(\LatGal)$, we can see
+Examining the morphisms so defined in $\Fam(\Replaced{\LatConj}{\LatGal})$, we can see
 that, in the $\Set$ component, they are both exactly the normal
 Boolean-or operation. However, they have different approximation
 behaviour, reflecting the different ways that they examine their
@@ -510,7 +510,7 @@ In comparison to the categories $\CM$ and $\Lposet$ from
 the forward and reverse tangents, but we also accurately model
 totality of the functions. That is, the constantly $\bot$ function is
 also present in both $\CM$ and $\Lposet$, but is not expressible in
-$\Fam(\LatGal)$.
+$\Fam(\Replaced{\LatConj}{\LatGal})$.
 
 An analogue of the $\mathrm{parallelOr}$ function from
 \exref{parallel-or} is not definable in $\Fam(\LatGal)$. We would have
@@ -535,12 +535,12 @@ $\mathrm{shortCircuitOr}$.
 
 \begin{remark}
   \label{rem:further-structure}
-  These examples highlight a potential criticism of $\Fam(\LatGal)$ as
+  These examples highlight a potential criticism of $\Fam(\Replaced{\LatConj}{\LatGal})$ as
   a category for modelling \GPS. For $\mathrm{shortCircuitOr}$, we had
   $(\partial \mathrm{shortCircuitOr})_r(\mathsf{tt},\mathsf{tt})(\top)
   = (\top, \bot)$, indicating that the second argument was not needed
   for computing the output. However, there is no way, in
-  $\Fam(\LatGal)$, of turning this into a rigorous statement that the
+  $\Fam(\Replaced{\LatConj}{\LatGal})$, of turning this into a rigorous statement that the
   $\Set$-component of this morphism does not actually depend on its
   second argument. We conjecture that this can be rectified by
   requiring some kind of additional structure on each object
@@ -557,7 +557,7 @@ $\mathrm{shortCircuitOr}$.
     ``jumped to'' by some change $\delta x : \partial X(x)$ at $x$. In
     our proposed setup, we follow the approximation theme of \GPS by
     having a \emph{set} of things that could be used to replace the
-    original $x$. We observe that objects of $\Fam(\LatGal)$ arising
+    original $x$. We observe that objects of $\Fam(\Replaced{\LatConj}{\LatGal})$ arising
     from $\Lposet$ are ``directed'' in the
     \citet{ahman-chapman-uustalu2012} sense because the map can pick
     out the element of the original poset that was approximating
@@ -582,15 +582,15 @@ to uniformly add $\Lift$ approximation points to composite data types.
 
 The $\Lift$ monad provides a way of tagging first-order data with
 presence and absence information. The object $\Lift(1)$, the lifting
-of the terminal object in $\Fam(\LatGal)$, yields an object that
+of the terminal object in $\Fam(\Replaced{\LatConj}{\LatGal})$, yields an object that
 consists purely of presence/absence information:
 $\mathbb{A} = (1, \lambda\_.\,\{\top,\bot\})$. This object is the
-carrier of a commutative monoid in $\Fam(\LatGal)$, where the forward
+carrier of a commutative monoid in $\Fam(\Replaced{\LatConj}{\LatGal})$, where the forward
 maps take the meet (both the inputs are required for the output to be
 present) and the backwards maps duplicate.% \bob{Is it also a comonoid?}
 
 Since $\mathbb{A}$ is a monoid, we can define the writer monad
-$T(X) = \mathbb{A} \times X$ in $\Fam(\LatGal)$ which ``tags'' $X$
+$T(X) = \mathbb{A} \times X$ in $\Fam(\Replaced{\LatConj}{\LatGal})$ which ``tags'' $X$
 values with approximation information. This is similar to the $\Lift$
 monad in that it adds approximation information to an object. On
 discrete objects it agrees with the lifting:
@@ -611,9 +611,9 @@ $\mathbb{A}$.)
 
 
 This example shows that we have to be careful about how we choose the
-interpretation of approximable sets in $\Fam(\LatGal)$, and again
+interpretation of approximable sets in $\Fam(\Replaced{\LatConj}{\LatGal})$, and again
 highlights the point we made in \remref{further-structure} that
-perhaps $\Fam(\LatGal)$ does not have quite enough structure to
+perhaps $\Fam(\Replaced{\LatConj}{\LatGal})$ does not have quite enough structure to
 determine ``sensible'' approximation information. On the other hand,
 the use of the $T$ monad does have the advantage that the
 approximation lattices built from discrete sets, products, and
@@ -627,12 +627,12 @@ approximations has been used by \citet{perera22} to compute
 \label{sec:interval-approx}
 
 So far, the approximation lattices we have looked at in
-$\Fam(\LatGal)$ have only consisted of those constructed from finite
+$\Fam(\Replaced{\LatConj}{\LatGal})$ have only consisted of those constructed from finite
 products and lifting, and only track binary usage/non-usage
 information. \exref{intervals-and-maxima-elements} shows how we can go
 beyond this to get more ``quantitative'' approximation
 information. Let the object of reals with interval approximations in
-$\Fam(\LatGal)$ be
+$\Fam(\Replaced{\LatConj}{\LatGal})$ be
 $\mathbb{R}_{\mathit{intv}} = (\mathbb{R}, \lambda x.\,\{[l,u] \mid l
 \leq x \leq u\} \cup \{\bot\})$ where the lattices of intervals are
 reverse ordered by inclusion with $\bot$ at the bottom. Then,
@@ -659,14 +659,14 @@ see an example of the use of these operations in
 \subsection{Summary}
 \label{sec:models:summary}
 
-We have seen that the category $\Fam(\LatGal)$ has enough structure to
+We have seen that the category $\Fam(\Replaced{\LatConj}{\LatGal})$ has enough structure to
 express useful approximation maps at first-order and that
-$\Fam(\MeetSLat \times \JoinSLat^\op)$, which is a Cartesian closed
+$\Fam(\Replaced{\JoinSLat}{\MeetSLat} \times \JoinSLat^\op)$, which is a Cartesian closed
 category with all coproducts, is enough to interpret the total
 higher-order language we define in the next section with primitive
-types and operations defined in $\Fam(\LatGal)$. However, we are not
+types and operations defined in $\Fam(\Replaced{\LatConj}{\LatGal})$. However, we are not
 guaranteed by construction that at first-order type, the
-interpretations are in fact Galois connections. We will rectify this
+interpretations are in fact \Replaced{conjugate pairs}{Galois connections}. We will rectify this
 in \secref{definability} using a logical relations construction.
 
 As we did in \secref{approx-as-tangents}, we end the section with a

@@ -50,12 +50,12 @@
 
 ### §3
 
-- [ ] The L-poset/stable functions point might be a distraction given that the Fam(C) motivation that comes later
+- [x] The L-poset/stable functions point might be a distraction given that the Fam(C) motivation that comes later
   anyway in terms of providing coproducts (distinct from products in the underlying C) and Cartesian closure.
   Moreover later (end of 3.1) we hedge Proposition 3.3 with a caveat about the significance of Stable and CM
   Maybe instead focus on why categories of relations or matrices and why they are unsuitable for interpreting
   programs (products and coproducts coincide)
-- [ ] Rather than LatGal and Fam(LatGal), maybe LatConj and Fam(LatConj) is the preferred model
+- [x] Rather than LatGal and Fam(LatGal), maybe LatConj and Fam(LatConj) is the preferred model
 - [ ] §3 onwards can focus on Fam(JoinSLat), with JoinSLat (like MeetSLat) having all small limits
 
 ### §3.3.2 Lifting Monad
