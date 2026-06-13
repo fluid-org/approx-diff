@@ -118,6 +118,26 @@ interpreted, since the Kleisli extension always produces a $T$-wrapped result, w
 way to project the outer $T$ off. The placement of $T$ at each constructor root realises
 the per-constructor approximation point of prior Galois slicing work.
 
+\begin{remark}[No lifting monad on the forward model]
+\label{rem:slicing-interpretation:no-conjugate-lift}
+On the backward model $\LatGal$ (Galois connections) $T$ is realised by the \emph{lifting} monad that
+freely adjoins a bottom. The dual forward model $\namedcat{LatConj}$---distributive lattices and
+\emph{Tarski conjugates}, pairs of join-preserving maps $(f, g)$ glued by $g(b) \mathrel{\#} a
+\Leftrightarrow b \mathrel{\#} f(a)$ for the disjointness relation $x \mathrel{\#} y \Leftrightarrow x
+\wedge y \le \bot$---admits no lifting monad. Adjoining a bottom breaks the unit ($x \mapsto \langle x
+\rangle$ fails to preserve $\bot$); the dual construction that adjoins a top $\hat\top$ has a unit but is
+not a functor.
+
+The obstruction is that $\#$ is an \emph{orthogonality} relation: a conjugate morphism sees an element
+only through which elements it is disjoint from, and a freshly adjoined top is orthogonally invisible,
+sharing the old top's profile, $\hat\top \mathrel{\#} v \Leftrightarrow \langle\top\rangle \mathrel{\#}
+v \Leftrightarrow v \le \bot$. Lifting the annihilating conjugate $f = g = (\lambda v.\,\bot)$ on the
+two-element lattice then forces a left leg sending $\hat\top$ to an element disjoint from
+$\langle\top\rangle$ but not from $\hat\top$, which cannot exist, as $\#$ does not separate the two tops.
+Order-based Galois connections track the added extreme point and lift; orthogonality-based conjugates
+cannot see it.
+\end{remark}
+
 \subsubsection{Term interpretation}
 \label{sec:slicing-interpretation:terms}
 

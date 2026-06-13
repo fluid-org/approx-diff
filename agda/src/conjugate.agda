@@ -93,52 +93,6 @@ record _⇒c_ (X Y : Obj) : Set where
 
 open _⇒c_
 
--- The dual-lifting monad 𝕃: freely adjoin a top. Dual to the lifting monad of galois.agda; here the
--- object's joins carry the add-top monad (join-semilattice.L⊤), its meets the object-level add-top
--- lift, and distributivity is re-established by cases on the added top.
-module _ (X : Obj) where
-  private module X = Obj X
-
-  𝕃 : Obj
-  𝕃 .carrier = preorder.L⊤ (X .carrier)
-  𝕃 .meets   = meet-semilattice.L⊤ (X .meets)
-  𝕃 .joins   = join-semilattice.L⊤ (X .joins)
-  -- Split fully so the lifted ∧/∨ reduce: each goal is then `tt` or an X-level lattice fact.
-  𝕃 .∧-∨-distrib top   top   top   = tt
-  𝕃 .∧-∨-distrib top   top   < c > = tt
-  𝕃 .∧-∨-distrib top   < b > top   = tt
-  𝕃 .∧-∨-distrib top   < b > < c > = X.≤-refl
-  𝕃 .∧-∨-distrib < a > top   top   = X.inl
-  𝕃 .∧-∨-distrib < a > top   < c > = X.inl
-  𝕃 .∧-∨-distrib < a > < b > top   = X.inr
-  𝕃 .∧-∨-distrib < a > < b > < c > = X.∧-∨-distrib a b c
-
--- The monad unit X ⇒c 𝕃 X. Its very existence (the ⊥-preserving inclusion) is the point of the dual
--- lift: the right leg is the add-top monad unit; the left leg collapses the added top to the lattice ⊤.
-module _ (X : Obj) where
-  private module X = Obj X
-  open _=>J_
-  open preorder._=>_
-
-  private
-    unit-left : join-semilattice.L⊤ (X .joins) =>J X .joins
-    unit-left .func .fun top    = X.⊤
-    unit-left .func .fun < w >  = w
-    unit-left .func .mono {top}   {top}    _    = X.≤-refl
-    unit-left .func .mono {< w >} {top}    _    = X.≤-top
-    unit-left .func .mono {< w >} {< w' >} w≤w' = w≤w'
-    unit-left .∨-preserving {top}   {b}      = X.inl
-    unit-left .∨-preserving {< w >} {top}    = X.inr
-    unit-left .∨-preserving {< w >} {< w' >} = X.≤-refl
-    unit-left .⊥-preserving = X.≤-refl
-
-  𝕃-unit : X ⇒c 𝕃 X
-  𝕃-unit .right = join-semilattice.L⊤-unit
-  𝕃-unit .left  = unit-left
-  𝕃-unit .conjugate {x} {top}   .proj₁ x≤⊥  = X.≤-trans X.π₂ x≤⊥
-  𝕃-unit .conjugate {x} {top}   .proj₂ ⊤x≤⊥ = X.≤-trans X.⟨ X.≤-top ∧ X.≤-refl ⟩ ⊤x≤⊥
-  𝕃-unit .conjugate {x} {< w >} = refl-⇔
-
 -- Wwhen both objects are Boolean algebras, join-preservation of right and left can be derived from conjugacy.
 module _ {X Y : Obj} (X-bool : BooleanAlgebra X) (Y-bool : BooleanAlgebra Y) where
   open _=>J_

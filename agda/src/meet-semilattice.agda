@@ -414,28 +414,3 @@ module _ where
                      (L-map ⟨ project₁ , id ⟩ ∘ L-strength {X = X} {Y = Y})
   L-strength-assoc .eqfunc .eqfun (x , bottom) = tt , tt
   L-strength-assoc {A} {B} .eqfunc .eqfun (x , < y >) = (A × (A × B)) .≃-refl
-
--- Object-level dual lift: adjoin a new top, which becomes the meet's ⊤ (identity for ∧). Dual to
--- join-semilattice.L₀ (add bottom, the ∨-identity). Needed for the meet structure of a dual-lifted
--- object in conjugate, where the disjointness relation # is defined from ∧.
-module _ where
-  open Preorder
-  open preorder using (L⊤Carrier; <_>; top)
-  open MeetSemilattice
-
-  L⊤ : ∀ {A} → MeetSemilattice A → MeetSemilattice (preorder.L⊤ A)
-  L⊤ X ._∧_ top   y     = y
-  L⊤ X ._∧_ < x > top   = < x >
-  L⊤ X ._∧_ < x > < y > = < X ._∧_ x y >
-  L⊤ X .⊤ = top
-  L⊤ X     .∧-isMeet .IsMeet.π₁ {top}   {y}     = tt
-  L⊤ {A} X .∧-isMeet .IsMeet.π₁ {< x >} {top}   = A .≤-refl
-  L⊤ X     .∧-isMeet .IsMeet.π₁ {< x >} {< y >} = X .∧-isMeet .IsMeet.π₁
-  L⊤ X     .∧-isMeet .IsMeet.π₂ {top}   {top}   = tt
-  L⊤ {A} X .∧-isMeet .IsMeet.π₂ {top}   {< y >} = A .≤-refl
-  L⊤ X     .∧-isMeet .IsMeet.π₂ {< x >} {top}   = tt
-  L⊤ X     .∧-isMeet .IsMeet.π₂ {< x >} {< y >} = X .∧-isMeet .IsMeet.π₂
-  L⊤ X .∧-isMeet .IsMeet.⟨_,_⟩ {x}     {top}   {z}     m₁ m₂ = m₂
-  L⊤ X .∧-isMeet .IsMeet.⟨_,_⟩ {x}     {< y >} {top}   m₁ m₂ = m₁
-  L⊤ X .∧-isMeet .IsMeet.⟨_,_⟩ {< x >} {< y >} {< z >} m₁ m₂ = X .∧-isMeet .IsMeet.⟨_,_⟩ m₁ m₂
-  L⊤ X .⊤-isTop .IsTop.≤-top = tt

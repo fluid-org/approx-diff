@@ -124,33 +124,6 @@ L⊥ X .Preorder.Carrier = L⊥Carrier (X .Preorder.Carrier)
 L⊥ X .Preorder._≤_ = _≤L⊥_ (X .Preorder.≤-isPreorder)
 L⊥ X .Preorder.≤-isPreorder = ≤L⊥-isPreorder (X .Preorder.≤-isPreorder)
 
--- Dual lifting: freely adjoin a new top point.
-data L⊤Carrier (X : Set) : Set where
-  top : L⊤Carrier X
-  <_> : X → L⊤Carrier X
-
-module _ {X : Set} {_≤_ : X → X → Prop} (≤-isPreorder : IsPreorder _≤_) where
-
-  _≤L⊤_ : L⊤Carrier X → L⊤Carrier X → Prop
-  _     ≤L⊤ top    = ⊤
-  top   ≤L⊤ < x' > = ⊥
-  < x > ≤L⊤ < x' > = x ≤ x'
-
-  open IsPreorder
-
-  ≤L⊤-isPreorder : IsPreorder _≤L⊤_
-  ≤L⊤-isPreorder .refl {top} = tt
-  ≤L⊤-isPreorder .refl {< x >} = ≤-isPreorder .refl
-  ≤L⊤-isPreorder .trans {top}   {top}   {top}   m₁ m₂ = tt
-  ≤L⊤-isPreorder .trans {< x >} {top}   {top}   m₁ m₂ = tt
-  ≤L⊤-isPreorder .trans {< x >} {< y >} {top}   m₁ m₂ = tt
-  ≤L⊤-isPreorder .trans {< x >} {< y >} {< z >} m₁ m₂ = ≤-isPreorder .trans m₁ m₂
-
-L⊤ : Preorder → Preorder
-L⊤ X .Preorder.Carrier = L⊤Carrier (X .Preorder.Carrier)
-L⊤ X .Preorder._≤_ = _≤L⊤_ (X .Preorder.≤-isPreorder)
-L⊤ X .Preorder.≤-isPreorder = ≤L⊤-isPreorder (X .Preorder.≤-isPreorder)
-
 -- Binary products
 module _ where
   open Preorder
