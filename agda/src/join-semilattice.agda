@@ -685,3 +685,24 @@ module _ where
   L⊤-strength .∨-preserving {x , < y >}  {x' , top}  = tt
   L⊤-strength {A}{B} .∨-preserving {x , < y >} {x' , < y' >} = A .≤-refl , B .≤-refl
   L⊤-strength {A}{B} .⊥-preserving = A .≤-refl , B .≤-refl
+
+  L⊤-strength-natural : ∀ {A₁ A₂ B₁ B₂}
+                        {X₁ : JoinSemilattice A₁} {X₂ : JoinSemilattice A₂}
+                        {Y₁ : JoinSemilattice B₁} {Y₂ : JoinSemilattice B₂}
+                        (f : X₁ => X₂) (g : Y₁ => Y₂) →
+                        (L⊤-map ⟨ f ∘ project₁ , g ∘ project₂ ⟩ ∘ L⊤-strength {X = X₁} {Y = Y₁}) ≃m
+                        (L⊤-strength {X = X₂} {Y = Y₂} ∘ ⟨ f ∘ project₁ , L⊤-map g ∘ project₂ ⟩)
+  L⊤-strength-natural f g .eqfunc .eqfun (x , top)   = tt , tt
+  L⊤-strength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun (x , < y >) =
+    (A₂ × B₂) .≃-refl
+
+  L⊤-strength-p₂ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
+                   (L⊤-map project₂ ∘ L⊤-strength {X = X} {Y = Y}) ≃m project₂
+  L⊤-strength-p₂ .eqfunc .eqfun (x , top)   = tt , tt
+  L⊤-strength-p₂ {B = B} .eqfunc .eqfun (x , < y >) = B .≃-refl
+
+  L⊤-strength-assoc : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
+                      (L⊤-strength {X = X} {Y = X ⊕ Y} ∘ ⟨ project₁ , L⊤-strength {X = X} {Y = Y} ⟩) ≃m
+                      (L⊤-map ⟨ project₁ , id ⟩ ∘ L⊤-strength {X = X} {Y = Y})
+  L⊤-strength-assoc .eqfunc .eqfun (x , top)   = tt , tt
+  L⊤-strength-assoc {A} {B} .eqfunc .eqfun (x , < y >) = (A × (A × B)) .≃-refl
