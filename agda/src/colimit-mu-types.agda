@@ -423,8 +423,8 @@ module cocont
     -- children. These form a cocone over the Γ-product of the initial-algebra chain (legs-step).
     legs : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
            (prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) → ∀ k → prod Γ (iter P δ k) ⇒ A
-    legs alg zero          = prod𝟘-initial .IsInitial.from-initial
-    legs {P = P} alg (suc k) = alg ∘co ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) (legs alg k))
+    legs alg zero             = prod𝟘-initial .IsInitial.from-initial
+    legs {P = P} alg (suc k)  = alg ∘co ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) (legs alg k))
 
     legs-step : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
                 (alg : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) →
