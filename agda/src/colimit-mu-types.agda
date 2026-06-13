@@ -415,14 +415,21 @@ module cocont
   strong-extend-mor fs f Fin.zero    = f
   strong-extend-mor fs f (Fin.suc i) = fs i
 
-  -- Strong (context-Γ) functorial action of ⟦ P ⟧, as needed for the catamorphism legs. The μ case
-  -- is the catamorphism formula, mutually with the catamorphism itself (structurally decreasing:
-  -- the catamorphism at P uses the strong action of P's body).
-  ⟦_⟧ˢ : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} →
-         (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (⟦ P ⟧ δ) ⇒ ⟦ P ⟧ δ'
-  ⟦ const A ⟧ˢ fs = p₂
-  ⟦ var i ⟧ˢ   fs = fs i
-  ⟦ P + Q ⟧ˢ   fs = scopair (in₁ ∘ ⟦ P ⟧ˢ fs) (in₂ ∘ ⟦ Q ⟧ˢ fs)
-  ⟦ P × Q ⟧ˢ   fs = pair (⟦ P ⟧ˢ fs ∘ pair p₁ (p₁ ∘ p₂)) (⟦ Q ⟧ˢ fs ∘ pair p₁ (p₂ ∘ p₂))
-  ⟦ μ P ⟧ˢ     fs = {!!}
-  ⟦ T∘ P ⟧ˢ    fs = Functor.fmor T (⟦ P ⟧ˢ fs) ∘ strengthᵣ
+  mutual
+    -- The catamorphism in context Γ: maps out of the carrier by mediating the cocone of fold legs
+    -- out of the Γ-product of the initial-algebra chain.
+    ⦅_⦆ : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
+          (prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) → prod Γ (μ-carrier P δ) ⇒ A
+    ⦅_⦆ {A = A} {P = P} {δ = δ} alg = {!!}
+
+    -- Strong (context-Γ) functorial action of ⟦ P ⟧, as needed for the catamorphism legs. The μ case
+    -- is the catamorphism formula, mutually with the catamorphism itself (structurally decreasing:
+    -- the catamorphism at P uses the strong action of P's body).
+    ⟦_⟧ˢ : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} →
+           (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (⟦ P ⟧ δ) ⇒ ⟦ P ⟧ δ'
+    ⟦ const A ⟧ˢ fs = p₂
+    ⟦ var i ⟧ˢ   fs = fs i
+    ⟦ P + Q ⟧ˢ   fs = scopair (in₁ ∘ ⟦ P ⟧ˢ fs) (in₂ ∘ ⟦ Q ⟧ˢ fs)
+    ⟦ P × Q ⟧ˢ   fs = pair (⟦ P ⟧ˢ fs ∘ pair p₁ (p₁ ∘ p₂)) (⟦ Q ⟧ˢ fs ∘ pair p₁ (p₂ ∘ p₂))
+    ⟦ μ P ⟧ˢ {δ = δ} {δ' = δ'} fs = ⦅_⦆ {P = P} {δ = δ} (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor fs p₂))
+    ⟦ T∘ P ⟧ˢ    fs = Functor.fmor T (⟦ P ⟧ˢ fs) ∘ strengthᵣ
