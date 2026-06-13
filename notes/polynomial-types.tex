@@ -260,6 +260,27 @@ also a colimit of the chain of row apexes, via the mediated cocone. Here $g_\inf
 \mathrm{colim}_j F_\infty^j\,0 = \mu_{\alpha.P}(\delta_\infty)$, as required. The interchange lemma is
 generic in the grid and belongs with the $\omega$-chain machinery, independent of polynomials.
 
+\paragraph{Fusion for the strong action.}
+The cocone compatibility $g_n = g_{n+1} \circ (\Gamma \times \mathrm{step}_n)$ above rests on a
+functoriality law for the strong action, the analogue of $\sem{P}(g \circ g') = \sem{P}(g) \circ
+\sem{P}(g')$: for a reindexing $g : \delta \to \delta'$ and context maps $f : \Gamma \times \delta' \to
+\delta''$,
+\[
+  \sem{P}^{\mathrm{s}}(f) \circ (\Gamma \times \sem{P}(g))
+  \;=\; \sem{P}^{\mathrm{s}}\big(f \cdot (\Gamma \times g)\big),
+  \qquad (f \cdot (\Gamma \times g))_i = f_i \circ (\Gamma \times g_i),
+\]
+proved by induction on $P$. Variables and constants are immediate; $+$, $\times$ and $T$ use naturality of
+strong copairing, pairing and the strength. The $\mu$ case is mutual with the catamorphism. Writing
+$\sem{\mu\alpha.P}^{\mathrm{s}}(f) = \cata{a_f}$ for $a_f = \inMap \circ
+\sem{P}^{\mathrm{s}}(f[\alpha \mapsto \pi_2])$, the goal $\cata{a_f} \circ (\Gamma \times
+\sem{\mu\alpha.P}(g)) = \cata{a_{f \cdot g}}$ is a map out of $\Gamma \times \mu_{\alpha.P}(\delta)$, itself
+a colimit; by uniqueness it suffices to agree after each leg $\Gamma \times \mathrm{in}_k$. There the
+$\mu$-map and catamorphism coevaluations rewrite both sides to fold legs, and $g^{a_f}_k \circ (\Gamma
+\times \mathrm{iter}_k) = g^{a_{f \cdot g}}_k$ holds by induction on $k$, from the leg recurrence and
+fusion at the body $P$ (structurally smaller). The compatibility itself is the instance of fusion at the
+body with $g$ the chain step.
+
 \paragraph{Instances.}
 The construction is needed in two places: the higher-order model $\Fam(\cat{D})$ for $\cat{D} =
 \namedcat{Meet} \times \namedcat{Join}^{\mathrm{op}}$ and variants; and eventually the first-order model
