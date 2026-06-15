@@ -60,8 +60,7 @@ scopair-fuse {Γ} f g h k =
                               (pair-cong (pair-p₁ _ _)
                                          (≈-trans (assoc _ _ _)
                                          (≈-trans (∘-cong₂ (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))))
-    commute₂ : prod-m (id Γ) (coprod-m h k) ∘ pair p₁ (in₂ ∘ p₂)
-                 ≈ pair p₁ (in₂ ∘ p₂) ∘ prod-m (id Γ) k
+    commute₂ : prod-m (id Γ) (coprod-m h k) ∘ pair p₁ (in₂ ∘ p₂) ≈ pair p₁ (in₂ ∘ p₂) ∘ prod-m (id Γ) k
     commute₂ =
       ≈-trans (≈-trans (pair-compose _ _ _ _)
                        (pair-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (copair-in₂ _ _)))))
