@@ -656,34 +656,35 @@ module cocont
               (prod𝟘-initial .IsInitial.from-initial-ext _)
     legs-fuse {Γ = Γ} P δ δ' δ'' fs gs (suc k) =
       ≈-trans (∘co-prod-m _ _ _)
-      (≈-trans (∘co-cong₂ (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → p₂) (legs alg-fs k))
-                                       (extend-mor gs (iter-mor P gs k))))
-      (≈-trans (∘co-cong₂ (⟦ P ⟧ˢ-cong {gs = λ i → c i ∘ a i} famW))
-      (≈-trans (∘co-cong₂ (≈-sym (⟦ P ⟧ˢ-fuse-left c a)))
-               recombine)))
+        (≈-trans (∘co-cong₂ (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → p₂) (legs alg-fs k))
+                                        (extend-mor gs (iter-mor P gs k))))
+        (≈-trans (∘co-cong₂ (⟦ P ⟧ˢ-cong {gs = λ i → c i ∘ a i} famW))
+        (≈-trans (∘co-cong₂ (≈-sym (⟦ P ⟧ˢ-fuse-left c a))) recombine)))
       where
-        A = μ-carrier P δ''
         alg-fs = α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor fs p₂)
         alg-FG = α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂)
-        c : ∀ i → extend δ A i ⇒ extend δ' A i
-        c = extend-mor gs (id A)
-        a : ∀ i → prod Γ (extend δ (iter P δ k) i) ⇒ extend δ A i
+
+        c : ∀ i → extend δ (μ-carrier P δ'') i ⇒ extend δ' (μ-carrier P δ'') i
+        c = extend-mor gs (id (μ-carrier P δ''))
+
+        a : ∀ i → prod Γ (extend δ (iter P δ k) i) ⇒ extend δ (μ-carrier P δ'') i
         a = strong-extend-mor (λ i → p₂) (legs alg-FG k)
+
         famW : ∀ i → (strong-extend-mor (λ i → p₂) (legs alg-fs k) i
                        ∘ prod-m (id Γ) (extend-mor gs (iter-mor P gs k) i))
                      ≈ (c i ∘ a i)
         famW Fin.zero    = ≈-trans (legs-fuse P δ δ' δ'' fs gs k) (≈-sym id-left)
         famW (Fin.suc j) = pair-p₂ _ _
-        pcs : (prod-m (id Γ) (⟦ P ⟧mor c) ∘ pair p₁ (⟦ P ⟧ˢ a)) ≈ pair p₁ (⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a)
-        pcs = ≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left)
+
         famFG : ∀ i → (strong-extend-mor fs p₂ i ∘ prod-m (id Γ) (c i))
                       ≈ strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂ i
         famFG Fin.zero    = ≈-trans (∘-cong₂ prod-m-id) id-right
         famFG (Fin.suc j) = ≈-refl
-        algrecomb : (alg-fs ∘ prod-m (id Γ) (⟦ P ⟧mor c)) ≈ alg-FG
-        algrecomb = ≈-trans (assoc _ _ _)
-                            (∘-cong₂ (≈-trans (⟦ P ⟧ˢ-fuse (strong-extend-mor fs p₂) c)
-                                              (⟦ P ⟧ˢ-cong famFG)))
+
         recombine : (alg-fs ∘co (⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a)) ≈ (alg-FG ∘co ⟦ P ⟧ˢ a)
-        recombine = ≈-trans (∘-cong₂ (≈-sym pcs))
-                    (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ algrecomb))
+        recombine =
+          ≈-trans (∘-cong₂ (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
+                  (≈-trans (≈-sym (assoc _ _ _))
+                            (∘-cong₁ (≈-trans (assoc _ _ _)
+                                              (∘-cong₂ (≈-trans (⟦ P ⟧ˢ-fuse (strong-extend-mor fs p₂) c)
+                                                                (⟦ P ⟧ˢ-cong famFG))))))
