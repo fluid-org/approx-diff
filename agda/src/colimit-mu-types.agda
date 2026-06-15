@@ -138,15 +138,15 @@ mutual
 
   -- The stage maps commute with the chain steps.
   iter-mor-step : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} (fs : ∀ i → δ i ⇒ δ' i) (k : ℕ) →
-                  (iter-mor P fs (suc k) ∘ step P δ k) ≈ (step P δ' k ∘ iter-mor P fs k)
+                  iter-mor P fs (suc k) ∘ step P δ k ≈ step P δ' k ∘ iter-mor P fs k
   iter-mor-step P fs zero = ≈-trans (≈-sym (from-initial-ext _)) (from-initial-ext _)
   iter-mor-step P {δ} {δ'} fs (suc k) =
     ≈-trans (≈-sym (⟦ P ⟧mor-comp (extend-mor fs (iter-mor P fs (suc k))) (extend-fam (step P δ k))))
     (≈-trans (⟦ P ⟧mor-cong pointwise)
              (⟦ P ⟧mor-comp (extend-fam (step P δ' k)) (extend-mor fs (iter-mor P fs k))))
     where
-      pointwise : ∀ i → (extend-mor fs (iter-mor P fs (suc k)) i ∘ extend-fam (step P δ k) i)
-                      ≈ (extend-fam (step P δ' k) i ∘ extend-mor fs (iter-mor P fs k) i)
+      pointwise : ∀ i → extend-mor fs (iter-mor P fs (suc k)) i ∘ extend-fam (step P δ k) i
+                      ≈ extend-fam (step P δ' k) i ∘ extend-mor fs (iter-mor P fs k) i
       pointwise Fin.zero    = iter-mor-step P fs k
       pointwise (Fin.suc i) = id-swap'
 
@@ -162,7 +162,7 @@ mutual
 
   iter-mor-comp : ∀ {n} (P : Poly (suc n)) {δ δ' δ'' : Fin n → obj}
                   (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
-                  ∀ k → iter-mor P (λ i → fs i ∘ gs i) k ≈ (iter-mor P fs k ∘ iter-mor P gs k)
+                  ∀ k → iter-mor P (λ i → fs i ∘ gs i) k ≈ iter-mor P fs k ∘ iter-mor P gs k
   iter-mor-comp P fs gs zero    = ≈-sym id-left
   iter-mor-comp P fs gs (suc k) =
     ≈-trans (⟦ P ⟧mor-cong pointwise)
@@ -215,7 +215,7 @@ mutual
 
   ⟦_⟧mor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
                 (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
-                ⟦ P ⟧mor (λ i → fs i ∘ gs i) ≈ (⟦ P ⟧mor fs ∘ ⟦ P ⟧mor gs)
+                ⟦ P ⟧mor (λ i → fs i ∘ gs i) ≈ ⟦ P ⟧mor fs ∘ ⟦ P ⟧mor gs
   ⟦ const A ⟧mor-comp fs gs = ≈-sym id-left
   ⟦ var i ⟧mor-comp   fs gs = ≈-refl
   ⟦ P + Q ⟧mor-comp   fs gs =
@@ -226,8 +226,8 @@ mutual
     ≈-trans (colim-map-cong {h'-step = comp-sq} (iter-mor-comp P fs gs) (colimits _) (colimits _))
             (colim-map-comp (colimits _) (colimits _) (colimits _))
     where
-      comp-sq : ∀ k → ((iter-mor P fs (suc k) ∘ iter-mor P gs (suc k)) ∘ step P δ k)
-                    ≈ (step P δ'' k ∘ (iter-mor P fs k ∘ iter-mor P gs k))
+      comp-sq : ∀ k → (iter-mor P fs (suc k) ∘ iter-mor P gs (suc k)) ∘ step P δ k
+                    ≈ step P δ'' k ∘ (iter-mor P fs k ∘ iter-mor P gs k)
       comp-sq = square-comp {𝒞 = 𝒟} (iter-mor-step P gs) (iter-mor-step P fs)
   ⟦ T∘ P ⟧mor-comp    fs gs =
     ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)
@@ -251,7 +251,7 @@ record EnvChain (n : ℕ) : Set (o ⊔ m ⊔ e) where
     steps    : ∀ k i → obs k i ⇒ obs (suc k) i
     apex     : Fin n → obj
     inj      : ∀ k i → obs k i ⇒ apex i
-    inj-step : ∀ k i → inj k i ≈ (inj (suc k) i ∘ steps k i)
+    inj-step : ∀ k i → inj k i ≈ inj (suc k) i ∘ steps k i
     colimiting : ∀ i → IsColimit (chain {𝒞 = 𝒟} (λ k → obs k i) (λ k → steps k i)) (apex i)
                                  (step-cocone (λ k → inj k i) (λ k → inj-step k i))
 open EnvChain
@@ -270,7 +270,7 @@ module _ {n} (P : Poly n) (E : EnvChain n) where
   img-inj : ∀ k → ⟦ P ⟧ (obs E k) ⇒ ⟦ P ⟧ (apex E)
   img-inj k = ⟦ P ⟧mor (inj E k)
 
-  img-inj-step : ∀ k → img-inj k ≈ (img-inj (suc k) ∘ img-step k)
+  img-inj-step : ∀ k → img-inj k ≈ img-inj (suc k) ∘ img-step k
   img-inj-step k =
     ≈-trans (⟦ P ⟧mor-cong (inj-step E k)) (⟦ P ⟧mor-comp (inj E (suc k)) (steps E k))
 
@@ -396,12 +396,12 @@ module cocont
       Rk k = colimits (chain (iter P (obs E k)) (step P (obs E k)))
 
       -- Column cocone legs commute with the horizontal steps, and with the vertical steps.
-      ℓ-step : ∀ k j → iter-mor P (inj E k) j ≈ (iter-mor P (inj E (suc k)) j ∘ iter-mor P (steps E k) j)
+      ℓ-step : ∀ k j → iter-mor P (inj E k) j ≈ iter-mor P (inj E (suc k)) j ∘ iter-mor P (steps E k) j
       ℓ-step k j =
         ≈-trans (iter-mor-cong P (inj-step E k) j) (iter-mor-comp P (inj E (suc k)) (steps E k) j)
 
-      ℓ-v : ∀ k j → (step P (apex E) j ∘ iter-mor P (inj E k) j)
-                  ≈ (iter-mor P (inj E k) (suc j) ∘ step P (obs E k) j)
+      ℓ-v : ∀ k j → step P (apex E) j ∘ iter-mor P (inj E k) j ≈
+                    iter-mor P (inj E k) (suc j) ∘ step P (obs E k) j
       ℓ-v k j = ≈-sym (iter-mor-step P (inj E k) j)
 
       -- Column j has colimit iter P (apex E) j, by induction on j: column 0 is constantly 𝟘, and
@@ -420,8 +420,7 @@ module cocont
       extend-env j .colimiting Fin.zero    = columns j
       extend-env j .colimiting (Fin.suc i) = colimiting E i
 
-      columns zero    = IsColimit-cong (record { transf-eq = λ k → ≈-refl })
-                                       (const-chain-colimit 𝟘 .isColimit)
+      columns zero    = IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit 𝟘 .isColimit)
       columns (suc j) = ⟦ P ⟧-cocont (extend-env j)
 
       module IC = interchange {𝒞 = 𝒟}
@@ -445,8 +444,7 @@ module cocont
   α : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) → ⟦ P ⟧ (extend δ (μ-carrier P δ)) ⇒ μ-carrier P δ
   α {n} P δ =
     ⟦ P ⟧-cocont carrier-env .colambda (μ-carrier P δ)
-      (step-cocone (λ k → μC .cocone .NatTrans.transf (suc k))
-                   (λ k → cocone-step (μC .cocone) (suc k)))
+      (step-cocone (λ k → μC .cocone .NatTrans.transf (suc k)) (λ k → cocone-step (μC .cocone) (suc k)))
     where
       μC : Colimit (chain {𝒞 = 𝒟} (iter P δ) (step P δ))
       μC = colimits (chain (iter P δ) (step P δ))
@@ -493,11 +491,12 @@ module cocont
       where
         Z  = prod-m (id Γ) (step P δ (suc k))
         G' = ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) (legs alg (suc k)))
-        pointwise : ∀ i → strong-extend-mor (λ i → p₂) (legs alg k) i
-                          ≈ strong-extend-mor (λ i → p₂) (legs alg (suc k)) i
-                             ∘ prod-m (id Γ) (extend-fam (step P δ k) i)
+
+        pointwise : ∀ i → strong-extend-mor (λ i → p₂) (legs alg k) i ≈
+                          strong-extend-mor (λ i → p₂) (legs alg (suc k)) i ∘ prod-m (id Γ) (extend-fam (step P δ k) i)
         pointwise Fin.zero    = legs-step alg k
         pointwise (Fin.suc i) = ≈-sym (≈-trans (∘-cong₂ prod-m-id) id-right)
+
         -- Move the outer chain step inside the co-Kleisli composition.
         rhs-rewrite : (alg ∘ pair p₁ G') ∘ Z ≈ alg ∘ pair p₁ (G' ∘ Z)
         rhs-rewrite =
