@@ -12,7 +12,8 @@ open import categories
          strong-coproducts→coproducts; HasInitial; IsInitial)
 open import Level using (_⊔_)
 open import functor
-  using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; ≃-NatTrans; constF; constFmor)
+  using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; ≃-NatTrans; constF; constFmor;
+         colambda-unique)
   renaming (_∘_ to _∘NT_)
 open IsColimit
 open Colimit
@@ -579,7 +580,11 @@ module cocont
         Q-comp = ≈-trans (assoc _ _ _)
                  (≈-trans (∘-cong₂ q₂-nat)
                  (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse fs gs))))
-    ⟦ μ P ⟧ˢ-fuse     fs gs = {!!}
+    ⟦ μ P ⟧ˢ-fuse {Γ = Γ} {δ = δ} fs gs =
+      colambda-unique
+        (×-cocont (const-chain-colimit Γ .isColimit)
+                  (colimits (chain (iter P δ) (step P δ)) .isColimit))
+        λ k → {!!}
     ⟦ T∘ P ⟧ˢ-fuse {Γ = Γ} fs gs =
       ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong₂ (≈-sym (strengthᵣ-natural (id Γ) (⟦ P ⟧mor gs))))
