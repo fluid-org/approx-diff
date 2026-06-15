@@ -580,14 +580,35 @@ module cocont
         Q-comp = ≈-trans (assoc _ _ _)
                  (≈-trans (∘-cong₂ q₂-nat)
                  (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse fs gs))))
-    ⟦ μ P ⟧ˢ-fuse {Γ = Γ} {δ = δ} fs gs =
-      colambda-unique
-        (×-cocont (const-chain-colimit Γ .isColimit)
-                  (colimits (chain (iter P δ) (step P δ)) .isColimit))
-        λ k → {!!}
+    ⟦ μ P ⟧ˢ-fuse {Γ = Γ} {δ = δ} {δ' = δ'} {δ'' = δ''} fs gs =
+      colambda-unique Rδ (λ k →
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (≈-sym (prod-m-comp _ _ _ _)))
+        (≈-trans (∘-cong₂ (prod-m-cong ≈-refl
+                   (colimits (chain (iter P δ) (step P δ)) .colambda-coeval _ _ .≃-NatTrans.transf-eq k)))
+        (≈-trans (∘-cong₂ (prod-m-comp _ _ _ _))
+        (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong₁ (Rδ' .colambda-coeval _ _ .≃-NatTrans.transf-eq k))
+        (≈-trans (legs-fuse P δ δ' δ'' fs gs k)
+                 (≈-sym (Rδ .colambda-coeval _ _ .≃-NatTrans.transf-eq k)))))))))
+      where
+        Rδ  = ×-cocont (const-chain-colimit Γ .isColimit)
+                       (colimits (chain (iter P δ) (step P δ)) .isColimit)
+        Rδ' = ×-cocont (const-chain-colimit Γ .isColimit)
+                       (colimits (chain (iter P δ') (step P δ')) .isColimit)
     ⟦ T∘ P ⟧ˢ-fuse {Γ = Γ} fs gs =
       ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong₂ (≈-sym (strengthᵣ-natural (id Γ) (⟦ P ⟧mor gs))))
       (≈-trans (≈-sym (assoc _ _ _))
                (∘-cong₁ (≈-trans (≈-sym (Functor.fmor-comp T _ _))
                                  (Functor.fmor-cong T (⟦ P ⟧ˢ-fuse fs gs))))))
+
+    -- Fold-leg fusion: folding the δ-chain directly equals mapping δ→δ' then folding the δ'-chain.
+    legs-fuse : ∀ {n Γ} (P : Poly (suc n)) (δ δ' δ'' : Fin n → obj)
+                (fs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) (k : ℕ) →
+                legs {P = P} {δ = δ'} (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor fs p₂)) k ∘ prod-m (id Γ) (iter-mor P gs k) ≈
+                legs (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂)) k
+    legs-fuse P δ δ' δ'' fs gs zero =
+      ≈-trans (≈-sym (prod𝟘-initial .IsInitial.from-initial-ext _))
+              (prod𝟘-initial .IsInitial.from-initial-ext _)
+    legs-fuse P δ δ' δ'' fs gs (suc k) = {!!}
