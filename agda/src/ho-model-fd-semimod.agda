@@ -13,11 +13,7 @@ import semimodule
 import two
 import ho-model
 
--- The inclusion of the free finitely-generated semimodules (FDSemiMod) into
--- all S-semimodules (SemiMod): Sⁿ becomes the semimodule on Vec n, and an
--- FDSemiMod morphism is already a SemiMod morphism.  This is the source-slot
--- functor F : 𝒞 → 𝒟 for the higher-order model.  The source is kept FD-qualified
--- throughout; the target SemiMod is opened, so its record fields are unqualified.
+-- The inclusion of the free finitely-generated semimodules (FDSemiMod) into all S-semimodules.
 module _ {o} {A : Setoid o o} (S : CommutativeSemiring A) where
 
   private
@@ -123,7 +119,6 @@ module _ {o} {A : Setoid o o} (S : CommutativeSemiring A) where
 
 ------------------------------------------------------------------------------
 -- The higher-order model: Fam(FDSemiMod Two) interpreted in Fam(SemiMod Two).
--- No matrix-embedding or scalar isomorphism: FDSemiMod is the source directly.
 
 module FD = fd-semimodule.FDSemiMod two.semiring
 module SM = semimodule.SemiMod two.semiring
