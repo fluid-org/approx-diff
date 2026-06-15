@@ -2,7 +2,7 @@
 
 module semimodule where
 
-open import Level using (suc; _⊔_)
+open import Level using (suc; _⊔_; 0ℓ)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -25,7 +25,7 @@ module SemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   record SemiModule : Set (suc (o ⊔ ℓ)) where
     no-eta-equality
     field
-      carrier : Setoid o ℓ
+      carrier : Setoid (o ⊔ ℓ) (o ⊔ ℓ)
     open Setoid carrier public
     field
       +-monoid : CommutativeMonoid carrier
@@ -241,3 +241,68 @@ module SemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   products : HasProducts cat
   products = biproducts→products cmon biproduct
+
+  ----------------------------------------------------------------------------
+  -- Limits, computed pointwise: SemiMod is an algebraic category, so the
+  -- limit of D is the semimodule of natural families, with +/ε/scale defined
+  -- componentwise.  No finiteness bound on carriers (cf. FDSemiMod).
+
+  open import functor using (Functor; NatTrans; ≃-NatTrans; IsLimit; Limit; HasLimits)
+
+  module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
+    private module 𝒮 = Category 𝒮
+    open Functor
+    open NatTrans
+    open ≃-NatTrans
+
+    -- A natural family: a choice of element at each index, stable under D's maps.
+    record Π-Carrier (D : Functor 𝒮 cat) : Set (o ⊔ ℓ) where
+      field
+        Π-func    : (s : 𝒮.obj) → D .fobj s .Carrier
+        Π-natural : ∀ {s₁ s₂} (f : s₁ 𝒮.⇒ s₂) →
+                    D .fobj s₂ ._≈_ (D .fmor f .func (Π-func s₁)) (Π-func s₂)
+    open Π-Carrier
+
+    Π : Functor 𝒮 cat → SemiModule
+    Π D .carrier .Setoid.Carrier = Π-Carrier D
+    Π D .carrier .Setoid._≈_ α β = ∀ s → D .fobj s ._≈_ (α .Π-func s) (β .Π-func s)
+    Π D .carrier .Setoid.isEquivalence .IsEquivalence.refl s = D .fobj s .refl
+    Π D .carrier .Setoid.isEquivalence .IsEquivalence.sym α≈β s = D .fobj s .sym (α≈β s)
+    Π D .carrier .Setoid.isEquivalence .IsEquivalence.trans α≈β β≈γ s = D .fobj s .trans (α≈β s) (β≈γ s)
+    Π D .+-monoid .CommutativeMonoid.ε .Π-func s = D .fobj s .ε
+    Π D .+-monoid .CommutativeMonoid.ε .Π-natural f = D .fmor f .ε-preserving
+    Π D .+-monoid .CommutativeMonoid._+_ α β .Π-func s = D .fobj s ._+_ (α .Π-func s) (β .Π-func s)
+    Π D .+-monoid .CommutativeMonoid._+_ α β .Π-natural {s₂ = s₂} f =
+      D .fobj s₂ .trans (D .fmor f .+-preserving) (D .fobj s₂ .+-cong (α .Π-natural f) (β .Π-natural f))
+    Π D .+-monoid .CommutativeMonoid.+-cong α≈ β≈ s = D .fobj s .+-cong (α≈ s) (β≈ s)
+    Π D .+-monoid .CommutativeMonoid.+-lunit s = D .fobj s .+-lunit
+    Π D .+-monoid .CommutativeMonoid.+-assoc s = D .fobj s .+-assoc
+    Π D .+-monoid .CommutativeMonoid.+-comm s = D .fobj s .+-comm
+    Π D .scale a α .Π-func s = D .fobj s .scale a (α .Π-func s)
+    Π D .scale a α .Π-natural {s₂ = s₂} f =
+      D .fobj s₂ .trans (D .fmor f .scale-preserving) (D .fobj s₂ .scale-cong (Setoid.refl A) (α .Π-natural f))
+    Π D .scale-cong a≈ α≈ s = D .fobj s .scale-cong a≈ (α≈ s)
+    Π D .scale-+ᵣ s = D .fobj s .scale-+ᵣ
+    Π D .scale-+ₗ s = D .fobj s .scale-+ₗ
+    Π D .scale-· s = D .fobj s .scale-·
+    Π D .scale-ι s = D .fobj s .scale-ι
+    Π D .scale-0ₗ s = D .fobj s .scale-0ₗ
+    Π D .scale-0ᵣ s = D .fobj s .scale-0ᵣ
+
+    limits : HasLimits 𝒮 cat
+    limits D .Limit.apex = Π D
+    limits D .Limit.cone .transf s .func α = α .Π-func s
+    limits D .Limit.cone .transf s .func-resp-≈ α≈β = α≈β s
+    limits D .Limit.cone .transf s .+-preserving = D .fobj s .refl
+    limits D .Limit.cone .transf s .ε-preserving = D .fobj s .refl
+    limits D .Limit.cone .transf s .scale-preserving = D .fobj s .refl
+    limits D .Limit.cone .natural f α = α .Π-natural f
+    limits D .Limit.isLimit .IsLimit.lambda X α .func x .Π-func s = α .transf s .func x
+    limits D .Limit.isLimit .IsLimit.lambda X α .func x .Π-natural f = α .natural f x
+    limits D .Limit.isLimit .IsLimit.lambda X α .func-resp-≈ x≈y s = α .transf s .func-resp-≈ x≈y
+    limits D .Limit.isLimit .IsLimit.lambda X α .+-preserving s = α .transf s .+-preserving
+    limits D .Limit.isLimit .IsLimit.lambda X α .ε-preserving s = α .transf s .ε-preserving
+    limits D .Limit.isLimit .IsLimit.lambda X α .scale-preserving s = α .transf s .scale-preserving
+    limits D .Limit.isLimit .IsLimit.lambda-cong α≈β z s = α≈β .transf-eq s z
+    limits D .Limit.isLimit .IsLimit.lambda-eval α .transf-eq s z = D .fobj s .refl
+    limits D .Limit.isLimit .IsLimit.lambda-ext f z s = D .fobj s .refl
