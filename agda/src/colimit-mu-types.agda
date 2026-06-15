@@ -430,7 +430,17 @@ module cocont
                 (alg : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) →
                 ∀ k → legs alg k ≈ (legs alg (suc k) ∘ prod-m (id Γ) (step P δ k))
     legs-step alg zero    = prod𝟘-initial .IsInitial.from-initial-ext _
-    legs-step alg (suc k) = {!!}
+    legs-step {Γ = Γ} {P = P} {δ = δ} alg (suc k) =
+      ≈-trans (∘-cong₂ (pair-cong₂ {!!})) (≈-sym rhs-rewrite)
+      where
+        Z  = prod-m (id Γ) (step P δ (suc k))
+        G' = ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) (legs alg (suc k)))
+        -- Move the outer chain step inside the co-Kleisli composition.
+        rhs-rewrite : ((alg ∘ pair p₁ G') ∘ Z) ≈ (alg ∘ pair p₁ (G' ∘ Z))
+        rhs-rewrite =
+          ≈-trans (assoc _ _ _)
+                  (∘-cong₂ (≈-trans (pair-natural _ _ _)
+                                    (pair-cong₁ (≈-trans (pair-p₁ _ _) id-left))))
 
     -- The catamorphism in context Γ: mediate the cocone of fold legs out of the Γ-product of the
     -- initial-algebra chain (a colimit by ×-cocont at the constant-Γ and initial-algebra chains).
