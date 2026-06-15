@@ -1,5 +1,6 @@
-\newcommand*{\note}[1]{\textcolor{blue}{\textbf{note:} #1}}
-\newcommand*{\todo}[1]{\textcolor{blue}{\textbf{todo:} #1}}
+% Magenta keeps editorial notes clear of the change-markup palette (added blue, bob purple, roly red, deleted grey).
+\newcommand*{\note}[1]{\textcolor{magenta}{\textbf{note:} #1}}
+\newcommand*{\todo}[1]{\textcolor{magenta}{\textbf{todo:} #1}}
 \newcommand*{\GPS}{Galois slicing\xspace} % in case we change our mind about how to refer to this
 
 \newcommand*{\enummargin}{8mm}
@@ -29,7 +30,10 @@
 \setdeletedmarkup{\textcolor{gray}{#1}}
 % Capitalised = inline markup + a margin changebar. Use the lowercase \added/\deleted/\replaced
 % (no bar) inside figures or math, where changebar spans can misbehave.
-\newcommand{\Added}[1]{\protect\cbstart\added{#1}\protect\cbend\xspace}
+% \leavevmode first so that, when one of these starts a paragraph after a run-in
+% heading, the heading is committed in the default colour before the markup colour
+% begins (otherwise the added/deleted colour bleeds back over the heading).
+\newcommand{\Added}[1]{\leavevmode\protect\cbstart\added{#1}\protect\cbend\xspace}
 % ulem's strikethrough (used for \deleted text) breaks on fragile commands such as \cite and \ref;
 % inside deleted/replaced text we box them with \mbox so they survive the strikethrough.
 \newcommand{\cmBoxCite}[1]{\mbox{\cmOldCite{#1}}}
@@ -39,8 +43,8 @@
 \AtBeginDocument{\let\cmOldCite\cite \let\cmOldCitet\citet \let\cmOldCitep\citep \let\cmOldRef\ref}
 \newcommand{\cmRobustCites}{\let\cite\cmBoxCite \let\citet\cmBoxCitet \let\citep\cmBoxCitep \let\ref\cmBoxRef}
 \pdfstringdefDisableCommands{\let\cmRobustCites\relax}
-\newcommand{\Deleted}[1]{\protect\cbstart{\cmRobustCites\deleted{#1}}\protect\cbend\xspace}
-\newcommand{\Replaced}[2]{\protect\cbstart{\cmRobustCites\replaced{#1}{#2}}\protect\cbend\xspace}
+\newcommand{\Deleted}[1]{\leavevmode\protect\cbstart{\cmRobustCites\deleted{#1}}\protect\cbend\xspace}
+\newcommand{\Replaced}[2]{\leavevmode\protect\cbstart{\cmRobustCites\replaced{#1}{#2}}\protect\cbend\xspace}
 % Final mode: bypass the changes package entirely. Its final-mode emptiness test
 % (\IfIsEmpty) expands the replacement text, and a macro like \secref whose body
 % contains #1 then causes a runaway ``Incomplete \iffalse''. Plain definitions

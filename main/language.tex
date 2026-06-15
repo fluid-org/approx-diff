@@ -60,25 +60,25 @@ preserving functors:
 
 Given the above, we can now interpret the language in any of the bicartesian closed categories with list
 objects we constructed in \secref{models-of-total-gps}. Specifically, we assume that we have an interpretation
-of our chosen signature in $\Fam(\LatGal)$. Signatures are first-order, so it does not matter that
-$\Fam(\LatGal)$ is not closed. Any such interpretation can be transported to
-$\Fam(\MeetSLat \times \JoinSLat^\op)$ along the functor $H$ from \propref{ho-embedding} because it preserves
-finite products. We can then interpret the whole language in $\Fam(\MeetSLat \times \JoinSLat^\op)$.
+of our chosen signature in $\Fam(\LatConj)$. Signatures are first-order, so it does not matter that
+$\Fam(\LatConj)$ is not closed. Any such interpretation can be transported to
+$\Fam(\JoinSLat \times \JoinSLat^\op)$ along the functor $H$ from \propref{ho-embedding} because it preserves
+finite products. We can then interpret the whole language in $\Fam(\JoinSLat \times \JoinSLat^\op)$.
 
 Interpreting a whole program $\Gamma \vdash t : \tau$ yield morphisms in
-$\Fam(\MeetSLat \times \JoinSLat^\op)$ which, as in \secref{semantic-gps}, are triples
+$\Fam(\JoinSLat \times \JoinSLat^\op)$ which, as in \secref{semantic-gps}, are triples
 $(f, \partial f_f, \partial f_r)$ of the underlying function and the forward and backward approximation
-maps. However, unlike in $\Fam(\LatGal)$, it is not guaranteed that the forward and backward maps even operate on
-the same lattices, let alone form a Galois connection. \lemref{first-order-agreement-types} guarantees that
-the lattices agree, but the fact that the pair form a Galois connection is less trivial. We will prove this
+maps. However, unlike in $\Fam(\LatConj)$, it is not guaranteed that the forward and backward maps even operate on
+the same lattices, let alone form a conjugate pair. \lemref{first-order-agreement-types} guarantees that
+the lattices agree, but the fact that they form a conjugate pair is less trivial. We will prove this
 property in \secref{definability}.
 
-% Given a model of $\Sigma$ in $\Fam(\LatGal)$, the category $\Fam(\MeetSLat \times \JoinSLat^\op)$ can
+% Given a model of $\Sigma$ in $\Fam(\LatConj)$, the category $\Fam(\JoinSLat \times \JoinSLat^\op)$ can
 % implement $\Sem$. It is bicartesian closed by \corref{mslat-jslat-bcc}, and can model $\tyList$ using infinite
-% coproducts (\secref{models-of-total-gps:coproducts-and-products}). The embedding $\HoEmbed: \Fam(\LatGal) \to
-% \Fam(\MeetSLat \times \JoinSLat^\op)$ from \propref{ho-embedding} preserves finite products, and so can
+% coproducts (\secref{models-of-total-gps:coproducts-and-products}). The embedding $\HoEmbed: \Fam(\LatConj) \to
+% \Fam(\JoinSLat \times \JoinSLat^\op)$ from \propref{ho-embedding} preserves finite products, and so can
 % transport each $\sem{\rho}_{\PrimTy}$ and $\sem{\phi}_{\Op}$ into the higher-order setting to provide a model
-% of $\Sigma$. Finally the lifting monad in $\Fam(\LatGal)$ (\secref{first-order:lifting}) is also preserved by
+% of $\Sigma$. Finally the lifting monad in $\Fam(\LatConj)$ (\secref{first-order:lifting}) is also preserved by
 % $H$. \roly{don't think we actually show this}
 
 % The correctness of this interpretation is considered in the next section.
@@ -91,7 +91,7 @@ $\Sigma_{\mathsf{num}} = (\{\mathsf{num}\}, \{\mathrm{zero} : \tyUnit \to \maths
 \mathsf{num} \times \mathsf{num} \to \mathsf{num}\})$. This signature suffices to write the simple query
 function in \exref{introduction-example}, where we interpret the $\mathrm{Label}$ type as the sum
 $\tyUnit \tySum \tyUnit$ and the labels $\mathsf{a}$ and $\mathsf{b}$ as $\tmInl{\tmUnit}$ and
-$\tmInr{\tmUnit}$. We consider several interpretations of $\Sigma_{\mathsf{num}}$ in $\Fam(\LatGal)$ and their
+$\tmInr{\tmUnit}$. We consider several interpretations of $\Sigma_{\mathsf{num}}$ in $\Fam(\LatConj)$ and their
 behaviour on the selection-and-sum query from \exref{introduction-example}. First, we note the type of the
 reverse approximation map in this case. The type of the approximation maps depends on the input value. Our example input database was $\mathit{db} = [(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, 1)]$, meaning that the type of the reverse approximation map for this database and any label $l$ is:
 \begin{displaymath}
@@ -113,7 +113,8 @@ interpretation.
   $\sem{\mathrm{add}}_{\PrimOp}$ the embeddings of the usual zero and addition functions via $\Disc$, then the
   resulting interpretation contains no approximation information. We have
   $\partial\sem{\mathsf{num}}(x) = \mathbb{1}$ so the type of $(\partial \mathrm{query})_r$ is trivial.
-\item We take $\sem{\mathsf{num}}_{\PrimTy} = \Lift(\Disc(\mathbb{R}))$, using the lifting monad from
+\item \Added{\todo{This interpretation uses the lifting monad, which does not transfer to $\LatConj$ (see
+  \secref{models-of-total-gps:lifting}); revisit.}}We take $\sem{\mathsf{num}}_{\PrimTy} = \Lift(\Disc(\mathbb{R}))$, using the lifting monad from
   \secref{models-of-total-gps:lifting}, with $\sem{\mathrm{zero}}_{\PrimOp}$ and
   $\sem{\mathrm{add}}_{\PrimOp}$ defined from the unlifted interpretations above and the monad structure. The
   type of the reverse map now becomes, where $\TWO = \{\top.\bot\}$:
@@ -138,10 +139,8 @@ interpretation.
   could be in $[-\frac{1}{10},\frac{1}{10}]$ or the second one could be in $[\frac{9}{10},\frac{11}{10}]$, and
   the number in the ``$\mathsf{b}$'' row is not relevant.
 
-  \Added{In the forward direction we have the two readings contrasted in
-  \exref{intervals-and-maxima-elements}. The forward map of the addition morphism in
-  \secref{interval-approx} is the meet-preserving sufficiency map; its conjugate, the join-preserving
-  dependency map, is obtained by exchanging $\sqcap$ and $\sqcup$:}
+  \Added{For slicing, the forward map is the join-preserving conjugate, which differs from the
+  meet-preserving map of \exref{intervals-and-maxima-elements} by exchanging $\sqcap$ and $\sqcup$:}
   \cbstart
   \begin{displaymath}
     \transpose{\mathrm{add}} =
@@ -213,7 +212,7 @@ We illustrate the effect of the CBN translation on the query example from
   T(\mathrm{Label}) \times T(\tyList(T(T(\mathrm{Label}) \tyProd T(\mathsf{num})))) \to T(\mathsf{num})
 \end{displaymath}
 Thus, every substructure of the input and output has been annotated with usage information. Under
-interpretation in $\Fam(\MeetSLat \times \JoinSLat^\op)$, the type of the reverse approximation map as a
+interpretation in $\Fam(\JoinSLat \times \JoinSLat^\op)$, the type of the reverse approximation map as a
 morphism in $\JoinSLat$ at the input $\mathit{db}$ is now (suppressing some ``$\times \mathbb{1}$'' for
 readability):
 \begin{displaymath}
