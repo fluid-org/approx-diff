@@ -195,6 +195,6 @@ module forward-fdsemimod where
   fwd-slice : _ → _
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
-  -- TODO: concrete ≡-refl tests.  fwd-slice computes (the model reduces), but the
-  -- slice values here are SemiMod carriers (Vec functions / lifted units), not the
-  -- lattice values used in forward-matrix, so the literals need rewriting.
+  -- Slice values are SemiMod carriers: object 1 is Vec 1 = Fin 1 → Two, units are lifted.
+  test-1 : fwd-slice (lift · , ((λ _ → ⊤) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊤)
+  test-1 = ≡-refl
