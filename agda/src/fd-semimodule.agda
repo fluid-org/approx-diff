@@ -96,3 +96,27 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   cat .Category.id-left _ _ = refl
   cat .Category.id-right _ _ = refl
   cat .Category.assoc _ _ _ _ _ = refl
+
+  ----------------------------------------------------------------------------
+  -- 0 is a zero object (both terminal and initial); Vec 0 is a singleton.
+
+  open import categories using (HasTerminal; IsTerminal; HasInitial; IsInitial)
+
+  terminal : HasTerminal cat
+  terminal .HasTerminal.witness = 0
+  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .func _ ()
+  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .func-resp-≈ _ ()
+  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .+-preserving ()
+  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .ε-preserving ()
+  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .scale-preserving ()
+  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f v ()
+
+  initial : HasInitial cat
+  initial .HasInitial.witness = 0
+  initial .HasInitial.is-initial .IsInitial.from-initial .func _ = εv
+  initial .HasInitial.is-initial .IsInitial.from-initial .func-resp-≈ _ _ = refl
+  initial .HasInitial.is-initial .IsInitial.from-initial .+-preserving _ = sym +-lunit
+  initial .HasInitial.is-initial .IsInitial.from-initial .ε-preserving _ = refl
+  initial .HasInitial.is-initial .IsInitial.from-initial .scale-preserving _ = sym ε-annihilᵣ
+  initial .HasInitial.is-initial .IsInitial.from-initial-ext f v i =
+    sym (trans (f .func-resp-≈ (λ ()) i) (f .ε-preserving i))
