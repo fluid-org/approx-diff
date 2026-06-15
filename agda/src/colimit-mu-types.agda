@@ -35,7 +35,7 @@ open HasProducts 𝒟P
 open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
   using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
          copair; copair-cong; copair-in₁; copair-in₂; copair-ext; copair-coprod)
-open HasStrongCoproducts 𝒟SC using () renaming (copair to scopair)
+open HasStrongCoproducts 𝒟SC using () renaming (copair to scopair; copair-cong to scopair-cong)
 open HasInitial 𝒟I renaming (witness to 𝟘)
 open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
 open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend; fobj; _∘co_)
@@ -475,10 +475,20 @@ module cocont
     -- Congruence for the strong action.
     ⟦_⟧ˢ-cong : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} →
                 (∀ i → fs i ≈ gs i) → ⟦ P ⟧ˢ fs ≈ ⟦ P ⟧ˢ gs
-    ⟦ P ⟧ˢ-cong fs≈gs = {!!}
+    ⟦ const A ⟧ˢ-cong fs≈gs = ≈-refl
+    ⟦ var i ⟧ˢ-cong   fs≈gs = fs≈gs i
+    ⟦ P + Q ⟧ˢ-cong   fs≈gs = scopair-cong (∘-cong₂ (⟦ P ⟧ˢ-cong fs≈gs)) (∘-cong₂ (⟦ Q ⟧ˢ-cong fs≈gs))
+    ⟦ P × Q ⟧ˢ-cong   fs≈gs = pair-cong (∘-cong₁ (⟦ P ⟧ˢ-cong fs≈gs)) (∘-cong₁ (⟦ Q ⟧ˢ-cong fs≈gs))
+    ⟦ μ P ⟧ˢ-cong     fs≈gs = {!!}
+    ⟦ T∘ P ⟧ˢ-cong    fs≈gs = ∘-cong₁ (Functor.fmor-cong T (⟦ P ⟧ˢ-cong fs≈gs))
 
     -- Fusion: the strong action absorbs a precomposed Γ-image of a reindexing.
     ⟦_⟧ˢ-fuse : ∀ {n Γ} (P : Poly n) {δ δ' δ'' : Fin n → obj}
                 (fs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
                 ⟦ P ⟧ˢ fs ∘ prod-m (id Γ) (⟦ P ⟧mor gs) ≈ ⟦ P ⟧ˢ (λ i → fs i ∘ prod-m (id Γ) (gs i))
-    ⟦ P ⟧ˢ-fuse fs gs = {!!}
+    ⟦ const A ⟧ˢ-fuse fs gs = ≈-trans (∘-cong₂ prod-m-id) id-right
+    ⟦ var i ⟧ˢ-fuse   fs gs = ≈-refl
+    ⟦ P + Q ⟧ˢ-fuse   fs gs = {!!}
+    ⟦ P × Q ⟧ˢ-fuse   fs gs = {!!}
+    ⟦ μ P ⟧ˢ-fuse     fs gs = {!!}
+    ⟦ T∘ P ⟧ˢ-fuse    fs gs = {!!}
