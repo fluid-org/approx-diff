@@ -513,6 +513,7 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     ≈⟨ pair-ext0 ⟩
       id _
     ∎
+
     where open ≈-Reasoning isEquiv
 
   -- functors preserve isomorphisms

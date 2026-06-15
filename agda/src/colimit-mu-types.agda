@@ -704,13 +704,37 @@ module cocont
     -- Left fusion at the level of fold legs: post-composing a leg with the μ-functorial action.
     legs-left-fuse : ∀ {n Γ} (P : Poly (suc n)) (δ δ' δ'' : Fin n → obj)
                      (c : ∀ i → δ' i ⇒ δ'' i) (a : ∀ i → prod Γ (δ i) ⇒ δ' i) (k : ℕ) →
-                     ⟦ μ P ⟧mor c ∘ legs {P = P} {δ = δ} (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)) k
-                       ≈ legs {P = P} {δ = δ} (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)) k
+                     ⟦ μ P ⟧mor c ∘ legs {P = P} {δ = δ} (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)) k ≈
+                     legs {P = P} {δ = δ} (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)) k
     legs-left-fuse P δ δ' δ'' c a zero =
       ≈-trans (≈-sym (prod𝟘-initial .IsInitial.from-initial-ext _))
               (prod𝟘-initial .IsInitial.from-initial-ext _)
-    legs-left-fuse P δ δ' δ'' c a (suc k) =
+    legs-left-fuse {Γ = Γ} P δ δ' δ'' c a (suc k) =
       ≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong₁ (≈-sym (assoc _ _ _)))
-      (≈-trans (∘-cong₁ (∘-cong₁ (α-nat P δ' δ'' c)))
-               {!!}))
+              (≈-trans (∘-cong₁ (≈-sym (assoc _ _ _)))
+                       (≈-trans (∘-cong₁ (∘-cong₁ (α-nat P δ' δ'' c)))
+                                (≈-trans (∘-cong₁ (assoc _ _ _))
+                                         (≈-trans (assoc _ _ _)
+                                                  (≈-trans (∘-cong₂ INNER) (≈-sym (assoc _ _ _)))))))
+      where
+        μc = ⟦ μ P ⟧mor c
+        alg-a  = α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)
+        alg-ca = α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)
+        -- Route the parameter reindex c into the algebra, and the slot reindex μc out to the right.
+        famALG : ∀ i → extend-mor c μc i ∘ strong-extend-mor a p₂ i
+                      ≈ strong-extend-mor (λ i → c i ∘ a i) p₂ i ∘ prod-m (id Γ) (extend-fam μc i)
+        famALG Fin.zero    = ≈-sym (pair-p₂ _ _)
+        famALG (Fin.suc j) = ≈-sym (≈-trans (∘-cong₂ prod-m-id) id-right)
+        ALG = ≈-trans (⟦ P ⟧ˢ-fuse-left (extend-mor c μc) (strong-extend-mor a p₂))
+              (≈-trans (⟦ P ⟧ˢ-cong famALG)
+                       (≈-sym (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → c i ∘ a i) p₂) (extend-fam μc))))
+        -- The slot reindex absorbs into the recursive leg via the induction hypothesis.
+        famLEG : ∀ i → extend-fam μc i ∘ strong-extend-mor (λ i → p₂) (legs alg-a k) i
+                      ≈ strong-extend-mor (λ i → p₂) (legs alg-ca k) i
+        famLEG Fin.zero    = legs-left-fuse P δ δ' δ'' c a k
+        famLEG (Fin.suc j) = id-left
+        LEG = ≈-trans (pair-compose _ _ _ _)
+              (≈-trans (pair-cong₁ id-left)
+                       (pair-cong₂ (≈-trans (⟦ P ⟧ˢ-fuse-left (extend-fam μc) (strong-extend-mor (λ i → p₂) (legs alg-a k)))
+                                            (⟦ P ⟧ˢ-cong famLEG))))
+        INNER = ≈-trans (∘-cong₁ ALG) (≈-trans (assoc _ _ _) (∘-cong₂ LEG))
