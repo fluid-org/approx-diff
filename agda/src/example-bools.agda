@@ -37,9 +37,9 @@ open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl t
 
 -- Backward analysis (Galois). Example (2) in Section 4.3.
 module backward where
-  open import ho-model
+  import ho-model-galois
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open Galois.interp Sig BaseInterp1
+  open ho-model-galois.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -62,9 +62,9 @@ module backward where
 
 -- Backward analysis using CBN lifting.
 module backward-cbn where
-  open import ho-model
+  import ho-model-galois
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open Galois.interp Sig BaseInterp0
+  open ho-model-galois.interp Sig BaseInterp0
   open example.ex using (Tag; cbn-query)
 
   input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
@@ -86,9 +86,9 @@ module backward-cbn where
 
 -- Forward analysis (Conjugate).
 module forward where
-  open import ho-model
+  import ho-model-conjugate
   open import example-signature-interpretation conjugate.cat conjugate.products conjugate.terminal conjugate.TWO conjugate.unit conjugate.conjunct
-  open Conjugate.interp Sig BaseInterp1
+  open ho-model-conjugate.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -123,8 +123,8 @@ module forward-matrix where
   open CMon.CMonEnriched SemiLat.cmon-enriched using (_+m_)
   open CMon using (biproducts→products)
 
-  import ho-model
-  open ho-model.Matrix
+  import ho-model-matrix
+  open ho-model-matrix
 
   private
     module MatRep = Category cat
@@ -139,7 +139,7 @@ module forward-matrix where
   conjunctm = HasProducts.p₁ products {1} {1} +m HasProducts.p₂ products {1} {1}
 
   open import example-signature-interpretation cat products terminal 1 unitm conjunctm
-  open ho-model.Matrix.interp Sig BaseInterp1
+  open ho-model-matrix.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -164,3 +164,37 @@ module forward-matrix where
   -- Output depends on 3rd label (would be ⊥ in the Galois example)
   test-3 : fwd-slice (· , (· , ⊥ , ·) , (· , ⊥ , ·) , (· , ⊤ , ·) , _) ≡ (⊤ , ·)
   test-3 = ≡-refl
+
+module forward-fdsemimod where
+  open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
+
+  import cmon-enriched as CMon
+  import fd-semimodule
+  import semimodule
+  import ho-model-fd-semimod
+
+  module FD = fd-semimodule.FDSemiMod two.semiring
+  module SM = semimodule.SemiMod two.semiring
+  open CMon.CMonEnriched FD.cmon using (_+m_)
+
+  unitm : FD._⇒_ 0 1
+  unitm = HasInitial.from-initial FD.initial {1}
+
+  conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
+  conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
+
+  open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
+  open ho-model-fd-semimod.interp Sig BaseInterp1
+
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
+  input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
+
+  open indexed-family._⇒f_
+  open SM._⇒_
+
+  fwd-slice : _ → _
+  fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
+
+  -- TODO: concrete ≡-refl tests.  fwd-slice computes (the model reduces), but the
+  -- slice values here are SemiMod carriers (Vec functions / lifted units), not the
+  -- lattice values used in forward-matrix, so the literals need rewriting.

@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-module fd-semimodule-embedding where
+module ho-model-fd-semimod where
 
 open import Data.Nat using (ℕ)
 open import prop-setoid using (Setoid; IsEquivalence)
@@ -10,6 +10,8 @@ open import categories using (Category)
 open import functor using (Functor)
 import fd-semimodule
 import semimodule
+import two
+import ho-model
 
 -- The inclusion of the free finitely-generated semimodules (FDSemiMod) into
 -- all S-semimodules (SemiMod): Sⁿ becomes the semimodule on Vec n, and an
@@ -118,3 +120,18 @@ module _ {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   F-preserve-products {m} {n} .IsIso.inverse∘f≈id v k with splitAt m k in eq
   ... | inj₁ i rewrite ≡-trans (≡-sym (join-splitAt m n k)) (cong (join m n) eq) = FD.trans FD.+-comm FD.+-lunit
   ... | inj₂ j rewrite ≡-trans (≡-sym (join-splitAt m n k)) (cong (join m n) eq) = FD.+-lunit
+
+------------------------------------------------------------------------------
+-- The higher-order model: Fam(FDSemiMod Two) interpreted in Fam(SemiMod Two).
+-- No matrix-embedding or scalar isomorphism: FDSemiMod is the source directly.
+
+module FD = fd-semimodule.FDSemiMod two.semiring
+module SM = semimodule.SemiMod two.semiring
+
+open ho-model.Interpretation
+  FD.cat FD.terminal FD.products
+  SM.cat SM.cmon SM.limits SM.terminal SM.biproduct
+  (F two.semiring)
+  (F-preserve-terminal two.semiring)
+  (λ {X} {Y} → F-preserve-products two.semiring {X} {Y})
+  public
