@@ -118,28 +118,17 @@ interpreted, since the Kleisli extension always produces a $T$-wrapped result, w
 way to project the outer $T$ off. The placement of $T$ at each constructor root realises
 the per-constructor approximation point of prior Galois slicing work.
 
-\begin{remark}[No lifting monad on the forward model]
+\begin{remark}[Lifting degenerates on $\LatConj$]
 \label{rem:slicing-interpretation:no-conjugate-lift}
-On the backward model $\LatGal$ (Galois connections) $T$ is realised by the \emph{lifting} monad that
-adjoins a bottom. The forward model $\LatConj$---distributive lattices and \emph{Tarski conjugates},
-pairs of join-preserving maps $(f, g)$ glued by $g(b) \mathrel{\#} a \Leftrightarrow b \mathrel{\#}
-f(a)$ for the disjointness relation $x \mathrel{\#} y \Leftrightarrow x \wedge y \le \bot$---admits
-none. The root cause is that adjoining a bottom is redundant here: a join-semilattice is already pointed,
-with a least element $\bot$ (the empty join), so the lift inserts a \emph{second} bottom below it.
-
-This redundancy breaks things both ways. Adjoining a bottom makes the unit ill-defined ($x \mapsto
-\langle x \rangle$ no longer preserves $\bot$, since $\langle \bot \rangle \ne \bot^{\mathrm{new}}$) and
-degenerates disjointness: measured against $\bot^{\mathrm{new}}$, no two embedded elements are disjoint
-($\langle a \rangle \mathrel{\#} \langle b \rangle \Leftrightarrow \langle a \wedge b \rangle \le
-\bot^{\mathrm{new}}$ is false), so $\#$ collapses to ``one side is the new bottom''. Adjoining a top
-instead gives a $\bot$-preserving unit but no functor: $\#$ is an \emph{orthogonality} relation, blind to
-a fresh top, which shares the old top's profile ($\hat\top \mathrel{\#} v \Leftrightarrow
-\langle\top\rangle \mathrel{\#} v \Leftrightarrow v \le \bot$); lifting the annihilating conjugate $f = g
-= (\lambda v.\,\bot)$ on the two-element lattice then forces a left leg sending $\hat\top$ to an element
-disjoint from $\langle\top\rangle$ but not from $\hat\top$, which cannot exist. The one structure that
-does survive---adjoin a bottom via the join \emph{comonad} on both legs---is a comonad, hence
-\emph{costrong}, the wrong variance for the strength $T$ requires. The forward model thus carries the
-polynomial types only with $T = \id$.
+On $\LatGal$ the approximation monad $T$ is the lifting that adjoins a bottom. On $\LatConj$ the same
+construction is a comonad, not a monad: its morphisms are pairs of join-preserving maps, on which the
+bottom-adjoining lift is a comonad, whose counit collapses the hole rather than propagating it. It also
+degenerates the disjointness its morphisms depend on.
+Disjointness $x \mathrel{\#} y$ means $x \wedge y \le \bot$, that is $x \wedge y = \bot$ since $\bot$ is
+least. Adjoining a new least element $\bot'$ below the old bottom
+makes $\#$ require $x \wedge y = \bot'$, which embedded meets $\langle a \rangle \wedge \langle b \rangle =
+\langle a \wedge b \rangle$ never reach. So no two embedded elements are disjoint, and the lift retains
+none of the original disjointness.
 \end{remark}
 
 \subsubsection{Term interpretation}
