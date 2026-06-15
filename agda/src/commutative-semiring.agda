@@ -16,7 +16,8 @@ record CommutativeSemiring {o e} (A : Setoid o e) : Set (o ⊔ e) where
   open CommutativeMonoid additive public
     renaming (ε to ε; _+_ to _+_)
   open CommutativeMonoid multiplicative public
-    renaming (_+_ to _·_; +-cong to ·-cong; +-lunit to ·-lunit; +-assoc to ·-assoc; +-comm to ·-comm)
+    renaming (_+_ to _·_; +-cong to ·-cong; +-lunit to ·-lunit; +-assoc to ·-assoc; +-comm to ·-comm;
+              +-interchange to ·-interchange)
     hiding (ε)
 
   ι : Carrier

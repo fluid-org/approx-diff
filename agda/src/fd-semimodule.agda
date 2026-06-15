@@ -136,10 +136,6 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   εₘ .ε-preserving _ = refl
   εₘ .scale-preserving _ = sym ε-annihilᵣ
 
-  +-interchange : ∀ {a b c d} → (a + b) + (c + d) ≈ (a + c) + (b + d)
-  +-interchange =
-    trans +-assoc (trans (+-cong refl (trans (sym +-assoc) (trans (+-cong +-comm refl) +-assoc))) (sym +-assoc))
-
   -- Pointwise sum of linear maps.
   infixl 21 _+ₘ_
   _+ₘ_ : ∀ {n m} → n ⇒ m → n ⇒ m → n ⇒ m

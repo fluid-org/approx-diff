@@ -27,6 +27,11 @@ record CommutativeMonoid {o e} (A : Setoid o e) : Set (o ⊔ e) where
     +-assoc : ∀ {x y z} → ((x + y) + z) ≈ (x + (y + z))
     +-comm  : ∀ {x y} → (x + y) ≈ (y + x)
 
+  -- Middle-four interchange.
+  +-interchange : ∀ {a b c d} → ((a + b) + (c + d)) ≈ ((a + c) + (b + d))
+  +-interchange =
+    trans +-assoc (trans (+-cong refl (trans (sym +-assoc) (trans (+-cong +-comm refl) +-assoc))) (sym +-assoc))
+
 ------------------------------------------------------------------------------
 
 record _=[_]>_ {o e}{A B : Setoid o e}(X : CommutativeMonoid A)(f : A ⇒s B)(Y : CommutativeMonoid B) : Prop (o ⊔ e) where
