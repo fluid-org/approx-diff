@@ -35,11 +35,45 @@ open HasProducts 𝒟P
 open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
   using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
          copair; copair-cong; copair-in₁; copair-in₂; copair-ext; copair-coprod)
-open HasStrongCoproducts 𝒟SC using () renaming (copair to scopair; copair-cong to scopair-cong)
+open HasStrongCoproducts 𝒟SC using () renaming (copair to scopair; copair-cong to scopair-cong;
+       copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂; copair-ext to scopair-ext)
 open HasInitial 𝒟I renaming (witness to 𝟘)
-open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
+open StrongFunctor T-strong using (strengthᵣ; strengthᵣ-natural) renaming (F to T)
 open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend; fobj; _∘co_)
 open Poly
+
+-- The strong copair absorbs a coproduct reindexing precomposed in the recursion coordinate.
+scopair-fuse : ∀ {Γ X Y X' Y' Z} (f : prod Γ X' ⇒ Z) (g : prod Γ Y' ⇒ Z) (h : X ⇒ X') (k : Y ⇒ Y') →
+  (scopair f g ∘ prod-m (id Γ) (coprod-m h k))
+    ≈ scopair (f ∘ prod-m (id Γ) h) (g ∘ prod-m (id Γ) k)
+scopair-fuse {Γ} f g h k =
+  ≈-trans (≈-sym (scopair-ext (scopair f g ∘ prod-m (id Γ) (coprod-m h k))))
+          (scopair-cong branch₁ branch₂)
+  where
+    commute₁ : (prod-m (id Γ) (coprod-m h k) ∘ pair p₁ (in₁ ∘ p₂))
+                 ≈ (pair p₁ (in₁ ∘ p₂) ∘ prod-m (id Γ) h)
+    commute₁ =
+      ≈-trans (≈-trans (pair-compose _ _ _ _)
+                       (pair-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (copair-in₁ _ _)))))
+              (≈-sym (≈-trans (pair-natural _ _ _)
+                              (pair-cong (pair-p₁ _ _)
+                                         (≈-trans (assoc _ _ _)
+                                         (≈-trans (∘-cong₂ (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))))
+    commute₂ : (prod-m (id Γ) (coprod-m h k) ∘ pair p₁ (in₂ ∘ p₂))
+                 ≈ (pair p₁ (in₂ ∘ p₂) ∘ prod-m (id Γ) k)
+    commute₂ =
+      ≈-trans (≈-trans (pair-compose _ _ _ _)
+                       (pair-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (copair-in₂ _ _)))))
+              (≈-sym (≈-trans (pair-natural _ _ _)
+                              (pair-cong (pair-p₁ _ _)
+                                         (≈-trans (assoc _ _ _)
+                                         (≈-trans (∘-cong₂ (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))))
+    branch₁ = ≈-trans (assoc _ _ _)
+              (≈-trans (∘-cong₂ commute₁)
+              (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (scopair-in₁ _ _))))
+    branch₂ = ≈-trans (assoc _ _ _)
+              (≈-trans (∘-cong₂ commute₂)
+              (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (scopair-in₂ _ _))))
 
 -- The interpretation of a polynomial, by structural recursion: at μ, the colimit of the
 -- initial-algebra chain. (fobj cannot be used directly: it takes the complete μ-obj as an argument,
@@ -451,6 +485,15 @@ module cocont
                   (∘-cong₂ (≈-trans (pair-natural _ _ _)
                                     (pair-cong₁ (≈-trans (pair-p₁ _ _) id-left))))
 
+    -- Congruence of the fold legs in the algebra.
+    legs-cong : ∀ {n Γ A} (P : Poly (suc n)) (δ : Fin n → obj)
+                {alg alg' : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A} →
+                alg ≈ alg' → ∀ k → legs {P = P} {δ = δ} alg k ≈ legs {P = P} {δ = δ} alg' k
+    legs-cong P δ alg≈ zero    = ≈-refl
+    legs-cong P δ alg≈ (suc k) =
+      ∘-cong alg≈ (pair-cong ≈-refl
+        (⟦ P ⟧ˢ-cong (λ { Fin.zero → legs-cong P δ alg≈ k ; (Fin.suc i) → ≈-refl })))
+
     -- The catamorphism in context Γ: mediate the cocone of fold legs out of the Γ-product of the
     -- initial-algebra chain (a colimit by ×-cocont at the constant-Γ and initial-algebra chains).
     ⦅_⦆ : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj} →
@@ -459,6 +502,18 @@ module cocont
       ×-cocont (const-chain-colimit Γ .isColimit)
                (colimits (chain (iter P δ) (step P δ)) .isColimit) .colambda A
         (step-cocone (legs alg) (legs-step alg))
+
+    -- Congruence of the catamorphism in the algebra, by colimit uniqueness.
+    cata-cong : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
+                {alg alg' : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A} →
+                alg ≈ alg' → ⦅ alg ⦆ ≈ ⦅ alg' ⦆
+    cata-cong {Γ = Γ} {A = A} {P = P} {δ = δ} {alg = alg} {alg' = alg'} alg≈ =
+      ×-cocont (const-chain-colimit Γ .isColimit)
+               (colimits (chain (iter P δ) (step P δ)) .isColimit) .colambda-cong cocone-eq
+      where
+        cocone-eq : ≃-NatTrans (step-cocone (legs alg) (legs-step alg))
+                               (step-cocone (legs alg') (legs-step alg'))
+        cocone-eq .≃-NatTrans.transf-eq k = legs-cong P δ alg≈ k
 
     -- Strong (context-Γ) functorial action of ⟦ P ⟧, as needed for the catamorphism legs. The μ case
     -- is the catamorphism formula, mutually with the catamorphism itself (structurally decreasing:
@@ -479,7 +534,8 @@ module cocont
     ⟦ var i ⟧ˢ-cong   fs≈gs = fs≈gs i
     ⟦ P + Q ⟧ˢ-cong   fs≈gs = scopair-cong (∘-cong₂ (⟦ P ⟧ˢ-cong fs≈gs)) (∘-cong₂ (⟦ Q ⟧ˢ-cong fs≈gs))
     ⟦ P × Q ⟧ˢ-cong   fs≈gs = pair-cong (∘-cong₁ (⟦ P ⟧ˢ-cong fs≈gs)) (∘-cong₁ (⟦ Q ⟧ˢ-cong fs≈gs))
-    ⟦ μ P ⟧ˢ-cong     fs≈gs = {!!}
+    ⟦ μ P ⟧ˢ-cong     fs≈gs =
+      cata-cong (∘-cong₂ (⟦ P ⟧ˢ-cong (λ { Fin.zero → ≈-refl ; (Fin.suc i) → fs≈gs i })))
     ⟦ T∘ P ⟧ˢ-cong    fs≈gs = ∘-cong₁ (Functor.fmor-cong T (⟦ P ⟧ˢ-cong fs≈gs))
 
     -- Fusion: the strong action absorbs a precomposed Γ-image of a reindexing.
@@ -488,7 +544,10 @@ module cocont
                 ⟦ P ⟧ˢ fs ∘ prod-m (id Γ) (⟦ P ⟧mor gs) ≈ ⟦ P ⟧ˢ (λ i → fs i ∘ prod-m (id Γ) (gs i))
     ⟦ const A ⟧ˢ-fuse fs gs = ≈-trans (∘-cong₂ prod-m-id) id-right
     ⟦ var i ⟧ˢ-fuse   fs gs = ≈-refl
-    ⟦ P + Q ⟧ˢ-fuse   fs gs = {!!}
+    ⟦ P + Q ⟧ˢ-fuse   fs gs =
+      ≈-trans (scopair-fuse _ _ _ _)
+              (scopair-cong (≈-trans (assoc _ _ _) (∘-cong₂ (⟦ P ⟧ˢ-fuse fs gs)))
+                            (≈-trans (assoc _ _ _) (∘-cong₂ (⟦ Q ⟧ˢ-fuse fs gs))))
     ⟦ P × Q ⟧ˢ-fuse {Γ = Γ} fs gs = ≈-trans (pair-natural _ _ _) (pair-cong P-comp Q-comp)
       where
         A' = ⟦ P ⟧mor gs
@@ -521,4 +580,9 @@ module cocont
                  (≈-trans (∘-cong₂ q₂-nat)
                  (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse fs gs))))
     ⟦ μ P ⟧ˢ-fuse     fs gs = {!!}
-    ⟦ T∘ P ⟧ˢ-fuse    fs gs = {!!}
+    ⟦ T∘ P ⟧ˢ-fuse {Γ = Γ} fs gs =
+      ≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong₂ (≈-sym (strengthᵣ-natural (id Γ) (⟦ P ⟧mor gs))))
+      (≈-trans (≈-sym (assoc _ _ _))
+               (∘-cong₁ (≈-trans (≈-sym (Functor.fmor-comp T _ _))
+                                 (Functor.fmor-cong T (⟦ P ⟧ˢ-fuse fs gs))))))
