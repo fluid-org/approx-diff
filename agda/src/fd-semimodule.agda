@@ -169,7 +169,8 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   open import Data.Sum using (inj₁; inj₂; [_,_])
   open import Data.Fin.Properties using (splitAt-↑ˡ; splitAt-↑ʳ; join-splitAt)
   open import Relation.Binary.PropositionalEquality using (cong) renaming (sym to ≡-sym; trans to ≡-trans)
-  open import cmon-enriched using (Biproduct)
+  open import cmon-enriched using (Biproduct; biproducts→products)
+  open import categories using (HasProducts)
 
   -- Projections: take the first m / last n components.  Reindexing, so linear definitionally.
   p₁ : ∀ {m n} → (m +ℕ n) ⇒ m
@@ -245,3 +246,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   biproduct m n .Biproduct.zero-1 = zero-1 m n
   biproduct m n .Biproduct.zero-2 = zero-2 m n
   biproduct m n .Biproduct.id-+ = id-+ m n
+
+  -- Finite products, from the biproducts.
+  products : HasProducts cat
+  products = biproducts→products cmon biproduct
