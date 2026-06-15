@@ -45,14 +45,14 @@ open Poly
 
 -- The strong copair absorbs a coproduct reindexing precomposed in the recursion coordinate.
 scopair-fuse : ∀ {Γ X Y X' Y' Z} (f : prod Γ X' ⇒ Z) (g : prod Γ Y' ⇒ Z) (h : X ⇒ X') (k : Y ⇒ Y') →
-  (scopair f g ∘ prod-m (id Γ) (coprod-m h k))
+  scopair f g ∘ prod-m (id Γ) (coprod-m h k)
     ≈ scopair (f ∘ prod-m (id Γ) h) (g ∘ prod-m (id Γ) k)
 scopair-fuse {Γ} f g h k =
   ≈-trans (≈-sym (scopair-ext (scopair f g ∘ prod-m (id Γ) (coprod-m h k))))
           (scopair-cong branch₁ branch₂)
   where
-    commute₁ : (prod-m (id Γ) (coprod-m h k) ∘ pair p₁ (in₁ ∘ p₂))
-                 ≈ (pair p₁ (in₁ ∘ p₂) ∘ prod-m (id Γ) h)
+    commute₁ : prod-m (id Γ) (coprod-m h k) ∘ pair p₁ (in₁ ∘ p₂)
+                 ≈ pair p₁ (in₁ ∘ p₂) ∘ prod-m (id Γ) h
     commute₁ =
       ≈-trans (≈-trans (pair-compose _ _ _ _)
                        (pair-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (copair-in₁ _ _)))))
@@ -60,8 +60,8 @@ scopair-fuse {Γ} f g h k =
                               (pair-cong (pair-p₁ _ _)
                                          (≈-trans (assoc _ _ _)
                                          (≈-trans (∘-cong₂ (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))))
-    commute₂ : (prod-m (id Γ) (coprod-m h k) ∘ pair p₁ (in₂ ∘ p₂))
-                 ≈ (pair p₁ (in₂ ∘ p₂) ∘ prod-m (id Γ) k)
+    commute₂ : prod-m (id Γ) (coprod-m h k) ∘ pair p₁ (in₂ ∘ p₂)
+                 ≈ pair p₁ (in₂ ∘ p₂) ∘ prod-m (id Γ) k
     commute₂ =
       ≈-trans (≈-trans (pair-compose _ _ _ _)
                        (pair-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (copair-in₂ _ _)))))
@@ -78,18 +78,18 @@ scopair-fuse {Γ} f g h k =
 
 -- The strong copair is natural in the target: post-composition distributes over it.
 scopair-natural : ∀ {Γ X Y Z Z'} (h : Z ⇒ Z') (f : prod Γ X ⇒ Z) (g : prod Γ Y ⇒ Z) →
-                  (h ∘ scopair f g) ≈ scopair (h ∘ f) (h ∘ g)
+                  h ∘ scopair f g ≈ scopair (h ∘ f) (h ∘ g)
 scopair-natural h f g =
   ≈-trans (≈-sym (scopair-ext (h ∘ scopair f g)))
           (scopair-cong (≈-trans (assoc _ _ _) (∘-cong₂ (scopair-in₁ _ _)))
                         (≈-trans (assoc _ _ _) (∘-cong₂ (scopair-in₂ _ _))))
 
 -- Congruence and a prod-m absorption law for co-Kleisli composition.
-∘co-cong₂ : ∀ {Γ X Y Z} {f : prod Γ Y ⇒ Z} {g g' : prod Γ X ⇒ Y} → g ≈ g' → (f ∘co g) ≈ (f ∘co g')
+∘co-cong₂ : ∀ {Γ X Y Z} {f : prod Γ Y ⇒ Z} {g g' : prod Γ X ⇒ Y} → g ≈ g' → f ∘co g ≈ f ∘co g'
 ∘co-cong₂ e = ∘-cong₂ (pair-cong₂ e)
 
 ∘co-prod-m : ∀ {Γ A X Y X'} (f : prod Γ Y ⇒ A) (g : prod Γ X ⇒ Y) (h : X' ⇒ X) →
-             ((f ∘co g) ∘ prod-m (id Γ) h) ≈ (f ∘co (g ∘ prod-m (id Γ) h))
+             (f ∘co g) ∘ prod-m (id Γ) h ≈ f ∘co (g ∘ prod-m (id Γ) h)
 ∘co-prod-m f g h =
   ≈-trans (assoc _ _ _)
           (∘-cong₂ (≈-trans (pair-natural _ _ _)
@@ -482,7 +482,7 @@ module cocont
 
     legs-step : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
                 (alg : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) →
-                ∀ k → legs alg k ≈ (legs alg (suc k) ∘ prod-m (id Γ) (step P δ k))
+                ∀ k → legs alg k ≈ legs alg (suc k) ∘ prod-m (id Γ) (step P δ k)
     legs-step alg zero    = prod𝟘-initial .IsInitial.from-initial-ext _
     legs-step {Γ = Γ} {P = P} {δ = δ} alg (suc k) =
       ≈-trans (∘-cong₂ (pair-cong₂
@@ -494,12 +494,12 @@ module cocont
         Z  = prod-m (id Γ) (step P δ (suc k))
         G' = ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) (legs alg (suc k)))
         pointwise : ∀ i → strong-extend-mor (λ i → p₂) (legs alg k) i
-                          ≈ (strong-extend-mor (λ i → p₂) (legs alg (suc k)) i
-                             ∘ prod-m (id Γ) (extend-fam (step P δ k) i))
+                          ≈ strong-extend-mor (λ i → p₂) (legs alg (suc k)) i
+                             ∘ prod-m (id Γ) (extend-fam (step P δ k) i)
         pointwise Fin.zero    = legs-step alg k
         pointwise (Fin.suc i) = ≈-sym (≈-trans (∘-cong₂ prod-m-id) id-right)
         -- Move the outer chain step inside the co-Kleisli composition.
-        rhs-rewrite : ((alg ∘ pair p₁ G') ∘ Z) ≈ (alg ∘ pair p₁ (G' ∘ Z))
+        rhs-rewrite : (alg ∘ pair p₁ G') ∘ Z ≈ alg ∘ pair p₁ (G' ∘ Z)
         rhs-rewrite =
           ≈-trans (assoc _ _ _)
                   (∘-cong₂ (≈-trans (pair-natural _ _ _)
@@ -573,8 +573,8 @@ module cocont
         A' = ⟦ P ⟧mor gs
         B' = ⟦ Q ⟧mor gs
         -- The (Γ, left)-projection commutes past the product reindexing.
-        q₁-nat : (pair p₁ (p₁ ∘ p₂) ∘ prod-m (id Γ) (prod-m A' B'))
-                   ≈ (prod-m (id Γ) A' ∘ pair p₁ (p₁ ∘ p₂))
+        q₁-nat : pair p₁ (p₁ ∘ p₂) ∘ prod-m (id Γ) (prod-m A' B')
+                   ≈ prod-m (id Γ) A' ∘ pair p₁ (p₁ ∘ p₂)
         q₁-nat =
           ≈-trans (pair-natural _ _ _)
           (≈-trans (pair-cong (≈-trans (pair-p₁ _ _) id-left)
@@ -583,8 +583,8 @@ module cocont
                               (≈-trans (≈-sym (assoc _ _ _))
                               (≈-trans (∘-cong₁ (pair-p₁ _ _)) (assoc _ _ _))))))
                    (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
-        q₂-nat : (pair p₁ (p₂ ∘ p₂) ∘ prod-m (id Γ) (prod-m A' B'))
-                   ≈ (prod-m (id Γ) B' ∘ pair p₁ (p₂ ∘ p₂))
+        q₂-nat : pair p₁ (p₂ ∘ p₂) ∘ prod-m (id Γ) (prod-m A' B')
+                   ≈ prod-m (id Γ) B' ∘ pair p₁ (p₂ ∘ p₂)
         q₂-nat =
           ≈-trans (pair-natural _ _ _)
           (≈-trans (pair-cong (≈-trans (pair-p₁ _ _) id-left)
@@ -625,10 +625,10 @@ module cocont
     -- Left fusion: the plain action absorbs into the strong action on the left.
     ⟦_⟧ˢ-fuse-left : ∀ {n Γ} (P : Poly n) {δ δ' δ'' : Fin n → obj}
                      (c : ∀ i → δ' i ⇒ δ'' i) (a : ∀ i → prod Γ (δ i) ⇒ δ' i) →
-                     (⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a) ≈ ⟦ P ⟧ˢ (λ i → c i ∘ a i)
+                     ⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a ≈ ⟦ P ⟧ˢ (λ i → c i ∘ a i)
     ⟦ const A ⟧ˢ-fuse-left c a = id-left
-    ⟦ var i ⟧ˢ-fuse-left   c a = ≈-refl
-    ⟦ P + Q ⟧ˢ-fuse-left   c a =
+    ⟦ var i ⟧ˢ-fuse-left c a = ≈-refl
+    ⟦ P + Q ⟧ˢ-fuse-left c a =
       ≈-trans (scopair-natural _ _ _)
               (scopair-cong (≈-trans (≈-sym (assoc _ _ _))
                             (≈-trans (∘-cong₁ (copair-in₁ _ _))
@@ -636,12 +636,12 @@ module cocont
                             (≈-trans (≈-sym (assoc _ _ _))
                             (≈-trans (∘-cong₁ (copair-in₂ _ _))
                             (≈-trans (assoc _ _ _) (∘-cong₂ (⟦ Q ⟧ˢ-fuse-left c a))))))
-    ⟦ P × Q ⟧ˢ-fuse-left   c a =
+    ⟦ P × Q ⟧ˢ-fuse-left c a =
       ≈-trans (pair-compose _ _ _ _)
               (pair-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ P ⟧ˢ-fuse-left c a)))
                          (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse-left c a))))
-    ⟦ μ P ⟧ˢ-fuse-left     c a = {!!}
-    ⟦ T∘ P ⟧ˢ-fuse-left    c a =
+    ⟦ μ P ⟧ˢ-fuse-left c a = {!!}
+    ⟦ T∘ P ⟧ˢ-fuse-left c a =
       ≈-trans (≈-sym (assoc _ _ _))
               (∘-cong₁ (≈-trans (≈-sym (Functor.fmor-comp T _ _))
                                 (Functor.fmor-cong T (⟦ P ⟧ˢ-fuse-left c a))))
@@ -670,18 +670,18 @@ module cocont
         a : ∀ i → prod Γ (extend δ (iter P δ k) i) ⇒ extend δ (μ-carrier P δ'') i
         a = strong-extend-mor (λ i → p₂) (legs alg-FG k)
 
-        famW : ∀ i → (strong-extend-mor (λ i → p₂) (legs alg-fs k) i
-                       ∘ prod-m (id Γ) (extend-mor gs (iter-mor P gs k) i))
-                     ≈ (c i ∘ a i)
+        famW : ∀ i → strong-extend-mor (λ i → p₂) (legs alg-fs k) i
+                       ∘ prod-m (id Γ) (extend-mor gs (iter-mor P gs k) i)
+                     ≈ c i ∘ a i
         famW Fin.zero    = ≈-trans (legs-fuse P δ δ' δ'' fs gs k) (≈-sym id-left)
         famW (Fin.suc j) = pair-p₂ _ _
 
-        famFG : ∀ i → (strong-extend-mor fs p₂ i ∘ prod-m (id Γ) (c i))
-                      ≈ strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂ i
+        famFG : ∀ i → strong-extend-mor fs p₂ i ∘ prod-m (id Γ) (c i) ≈
+                      strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂ i
         famFG Fin.zero    = ≈-trans (∘-cong₂ prod-m-id) id-right
         famFG (Fin.suc j) = ≈-refl
 
-        recombine : (alg-fs ∘co (⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a)) ≈ (alg-FG ∘co ⟦ P ⟧ˢ a)
+        recombine : alg-fs ∘co (⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a) ≈ alg-FG ∘co ⟦ P ⟧ˢ a
         recombine =
           ≈-trans (∘-cong₂ (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
                   (≈-trans (≈-sym (assoc _ _ _))
