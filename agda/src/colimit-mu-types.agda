@@ -622,7 +622,7 @@ module cocont
                                  (Functor.fmor-cong T (⟦ P ⟧ˢ-fuse fs gs))))))
 
     -- Left fusion: the plain action absorbs into the strong action on the left.
-    ⟦_⟧ˢ-fuse-left : ∀ {n Γ} (P : Poly n) {δ δ' δ'' : Fin n → obj}
+    ⟦_⟧ˢ-fuse-left : ∀ {n} (P : Poly n) {Γ} {δ δ' δ'' : Fin n → obj}
                      (c : ∀ i → δ' i ⇒ δ'' i) (a : ∀ i → prod Γ (δ i) ⇒ δ' i) →
                      ⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a ≈ ⟦ P ⟧ˢ (λ i → c i ∘ a i)
     ⟦ const A ⟧ˢ-fuse-left c a = id-left
@@ -639,7 +639,15 @@ module cocont
       ≈-trans (pair-compose _ _ _ _)
               (pair-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ P ⟧ˢ-fuse-left c a)))
                          (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse-left c a))))
-    ⟦ μ P ⟧ˢ-fuse-left c a = {!!}
+    ⟦ μ P ⟧ˢ-fuse-left {Γ = Γ} {δ = δ} {δ' = δ'} {δ'' = δ''} c a =
+      colambda-unique Rδ (λ k →
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (Rδ .colambda-coeval _ _ .≃-NatTrans.transf-eq k))
+        (≈-trans (legs-left-fuse P δ δ' δ'' c a k)
+                 (≈-sym (Rδ .colambda-coeval _ _ .≃-NatTrans.transf-eq k)))))
+      where
+        Rδ = ×-cocont (const-chain-colimit Γ .isColimit)
+                      (colimits (chain (iter P δ) (step P δ)) .isColimit)
     ⟦ T∘ P ⟧ˢ-fuse-left c a =
       ≈-trans (≈-sym (assoc _ _ _))
               (∘-cong₁ (≈-trans (≈-sym (Functor.fmor-comp T _ _))
@@ -687,3 +695,22 @@ module cocont
                             (∘-cong₁ (≈-trans (assoc _ _ _)
                                               (∘-cong₂ (≈-trans (⟦ P ⟧ˢ-fuse (strong-extend-mor fs p₂) c)
                                                                 (⟦ P ⟧ˢ-cong famFG))))))
+
+    -- α is natural: the algebra commutes with the μ-functorial action.
+    α-nat : ∀ {n} (P : Poly (suc n)) (δ δ' : Fin n → obj) (c : ∀ i → δ i ⇒ δ' i) →
+            ⟦ μ P ⟧mor c ∘ α P δ ≈ α P δ' ∘ ⟦ P ⟧mor (extend-mor c (⟦ μ P ⟧mor c))
+    α-nat P δ δ' c = {!!}
+
+    -- Left fusion at the level of fold legs: post-composing a leg with the μ-functorial action.
+    legs-left-fuse : ∀ {n Γ} (P : Poly (suc n)) (δ δ' δ'' : Fin n → obj)
+                     (c : ∀ i → δ' i ⇒ δ'' i) (a : ∀ i → prod Γ (δ i) ⇒ δ' i) (k : ℕ) →
+                     ⟦ μ P ⟧mor c ∘ legs {P = P} {δ = δ} (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)) k
+                       ≈ legs {P = P} {δ = δ} (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)) k
+    legs-left-fuse P δ δ' δ'' c a zero =
+      ≈-trans (≈-sym (prod𝟘-initial .IsInitial.from-initial-ext _))
+              (prod𝟘-initial .IsInitial.from-initial-ext _)
+    legs-left-fuse P δ δ' δ'' c a (suc k) =
+      ≈-trans (≈-sym (assoc _ _ _))
+      (≈-trans (∘-cong₁ (≈-sym (assoc _ _ _)))
+      (≈-trans (∘-cong₁ (∘-cong₁ (α-nat P δ' δ'' c)))
+               {!!}))
