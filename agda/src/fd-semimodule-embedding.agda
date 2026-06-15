@@ -59,3 +59,44 @@ module _ {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   F .Functor.fmor-cong f₁≈f₂ = f₁≈f₂
   F .Functor.fmor-id v i = FD.refl
   F .Functor.fmor-comp f g v i = FD.refl
+
+  ----------------------------------------------------------------------------
+  -- Product preservation.  The canonical map ⟦ m + n ⟧ → ⟦ m ⟧ ⊕ ⟦ n ⟧ is an
+  -- iso: its inverse joins the two blocks back together (Vec splitAt/join).
+
+  open import Data.Nat using () renaming (_+_ to _+ℕ_)
+  open import Data.Fin using (splitAt; join)
+  open import Data.Sum using (inj₁; inj₂; [_,_])
+  open import Data.Product using (_,_)
+  open import prop using (_,_; proj₁; proj₂)
+  open import Data.Fin.Properties using (splitAt-↑ˡ; splitAt-↑ʳ; join-splitAt)
+  open import Relation.Binary.PropositionalEquality using (cong) renaming (sym to ≡-sym; trans to ≡-trans)
+  import finite-product-functor
+
+  module FPF = finite-product-functor F
+
+  -- The inverse: combine a pair of vectors into one over m + n.
+  combine : ∀ {m n} → (⟦ m ⟧ SM.⊕ ⟦ n ⟧) SM.⇒ ⟦ m +ℕ n ⟧
+  combine {m} .SM._⇒_.func (u , w) k = [ u , w ] (splitAt m k)
+  combine {m} .SM._⇒_.func-resp-≈ (u≈ , w≈) k with splitAt m k
+  ... | inj₁ i = u≈ i
+  ... | inj₂ j = w≈ j
+  combine {m} .SM._⇒_.+-preserving k with splitAt m k
+  ... | inj₁ i = FD.refl
+  ... | inj₂ j = FD.refl
+  combine {m} .SM._⇒_.ε-preserving k with splitAt m k
+  ... | inj₁ i = FD.refl
+  ... | inj₂ j = FD.refl
+  combine {m} .SM._⇒_.scale-preserving k with splitAt m k
+  ... | inj₁ i = FD.refl
+  ... | inj₂ j = FD.refl
+
+  F-preserve-products : FPF.preserve-chosen-products FD.products SM.products
+  F-preserve-products {m} {n} .Category.IsIso.inverse = combine {m} {n}
+  F-preserve-products {m} {n} .Category.IsIso.f∘inverse≈id (u , w) .proj₁ i
+    rewrite splitAt-↑ˡ m i n = FD.trans FD.+-comm FD.+-lunit
+  F-preserve-products {m} {n} .Category.IsIso.f∘inverse≈id (u , w) .proj₂ j
+    rewrite splitAt-↑ʳ m n j = FD.+-lunit
+  F-preserve-products {m} {n} .Category.IsIso.inverse∘f≈id v k with splitAt m k in eq
+  ... | inj₁ i rewrite ≡-trans (≡-sym (join-splitAt m n k)) (cong (join m n) eq) = FD.trans FD.+-comm FD.+-lunit
+  ... | inj₂ j rewrite ≡-trans (≡-sym (join-splitAt m n k)) (cong (join m n) eq) = FD.+-lunit
