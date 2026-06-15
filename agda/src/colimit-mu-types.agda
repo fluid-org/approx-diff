@@ -431,7 +431,11 @@ module cocont
                 ∀ k → legs alg k ≈ (legs alg (suc k) ∘ prod-m (id Γ) (step P δ k))
     legs-step alg zero    = prod𝟘-initial .IsInitial.from-initial-ext _
     legs-step {Γ = Γ} {P = P} {δ = δ} alg (suc k) =
-      ≈-trans (∘-cong₂ (pair-cong₂ {!!})) (≈-sym rhs-rewrite)
+      ≈-trans (∘-cong₂ (pair-cong₂
+        (≈-trans {!!}
+                 (≈-sym (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → p₂) (legs alg (suc k)))
+                                     (extend-fam (step P δ k)))))))
+        (≈-sym rhs-rewrite)
       where
         Z  = prod-m (id Γ) (step P δ (suc k))
         G' = ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) (legs alg (suc k)))
@@ -462,3 +466,10 @@ module cocont
     ⟦ P × Q ⟧ˢ   fs = pair (⟦ P ⟧ˢ fs ∘ pair p₁ (p₁ ∘ p₂)) (⟦ Q ⟧ˢ fs ∘ pair p₁ (p₂ ∘ p₂))
     ⟦ μ P ⟧ˢ {δ = δ} {δ' = δ'} fs = ⦅_⦆ {P = P} {δ = δ} (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor fs p₂))
     ⟦ T∘ P ⟧ˢ    fs = Functor.fmor T (⟦ P ⟧ˢ fs) ∘ strengthᵣ
+
+    -- Fusion: the strong action absorbs a precomposed Γ-image of a reindexing.
+    ⟦_⟧ˢ-fuse : ∀ {n Γ} (P : Poly n) {δ δ' δ'' : Fin n → obj}
+                (fs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
+                (⟦ P ⟧ˢ fs ∘ prod-m (id Γ) (⟦ P ⟧mor gs))
+                  ≈ ⟦ P ⟧ˢ (λ i → fs i ∘ prod-m (id Γ) (gs i))
+    ⟦ P ⟧ˢ-fuse fs gs = {!!}
