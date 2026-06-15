@@ -120,3 +120,43 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   initial .HasInitial.is-initial .IsInitial.from-initial .scale-preserving _ = sym ε-annihilᵣ
   initial .HasInitial.is-initial .IsInitial.from-initial-ext f v i =
     sym (trans (f .func-resp-≈ (λ ()) i) (f .ε-preserving i))
+
+  ----------------------------------------------------------------------------
+  -- CMon-enrichment: each hom is a commutative monoid under pointwise sum of
+  -- linear maps, and composition is bilinear.
+
+  open import cmon-enriched using (CMonEnriched)
+  open import commutative-monoid using (CommutativeMonoid)
+
+  -- The zero map.
+  εₘ : ∀ {n m} → n ⇒ m
+  εₘ .func _ = εv
+  εₘ .func-resp-≈ _ _ = refl
+  εₘ .+-preserving _ = sym +-lunit
+  εₘ .ε-preserving _ = refl
+  εₘ .scale-preserving _ = sym ε-annihilᵣ
+
+  +-interchange : ∀ {a b c d} → (a + b) + (c + d) ≈ (a + c) + (b + d)
+  +-interchange =
+    trans +-assoc (trans (+-cong refl (trans (sym +-assoc) (trans (+-cong +-comm refl) +-assoc))) (sym +-assoc))
+
+  -- Pointwise sum of linear maps.
+  infixl 21 _+ₘ_
+  _+ₘ_ : ∀ {n m} → n ⇒ m → n ⇒ m → n ⇒ m
+  (f +ₘ g) .func v = f .func v +v g .func v
+  (f +ₘ g) .func-resp-≈ p i = +-cong (f .func-resp-≈ p i) (g .func-resp-≈ p i)
+  (f +ₘ g) .+-preserving i = trans (+-cong (f .+-preserving i) (g .+-preserving i)) +-interchange
+  (f +ₘ g) .ε-preserving i = trans (+-cong (f .ε-preserving i) (g .ε-preserving i)) +-lunit
+  (f +ₘ g) .scale-preserving i = trans (+-cong (f .scale-preserving i) (g .scale-preserving i)) (sym ·-+-distribₗ)
+
+  cmon : CMonEnriched cat
+  cmon .CMonEnriched.homCM n m .CommutativeMonoid.ε = εₘ
+  cmon .CMonEnriched.homCM n m .CommutativeMonoid._+_ = _+ₘ_
+  cmon .CMonEnriched.homCM n m .CommutativeMonoid.+-cong p q v i = +-cong (p v i) (q v i)
+  cmon .CMonEnriched.homCM n m .CommutativeMonoid.+-lunit v i = +-lunit
+  cmon .CMonEnriched.homCM n m .CommutativeMonoid.+-assoc v i = +-assoc
+  cmon .CMonEnriched.homCM n m .CommutativeMonoid.+-comm v i = +-comm
+  cmon .CMonEnriched.comp-bilinear₁ f₁ f₂ g v i = refl
+  cmon .CMonEnriched.comp-bilinear₂ f g₁ g₂ v i = f .+-preserving i
+  cmon .CMonEnriched.comp-bilinear-ε₁ f v i = refl
+  cmon .CMonEnriched.comp-bilinear-ε₂ f v i = f .ε-preserving i
