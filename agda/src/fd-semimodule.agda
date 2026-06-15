@@ -22,18 +22,18 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Vec n = Fin n → Carrier
 
   -- Pointwise equality of vectors.
-  infix 4 _≈v_
-  _≈v_ : ∀ {n} → Vec n → Vec n → Prop ℓ
-  u ≈v v = ∀ i → u i ≈ v i
+  infix 4 _≈ᵥ_
+  _≈ᵥ_ : ∀ {n} → Vec n → Vec n → Prop ℓ
+  u ≈ᵥ v = ∀ i → u i ≈ v i
 
   -- Zero vector.
-  εv : ∀ {n} → Vec n
-  εv _ = ε
+  εᵥ : ∀ {n} → Vec n
+  εᵥ _ = ε
 
   -- Pointwise addition.
-  infixl 20 _+v_
-  _+v_ : ∀ {n} → Vec n → Vec n → Vec n
-  (u +v v) i = u i + v i
+  infixl 20 _+ᵥ_
+  _+ᵥ_ : ∀ {n} → Vec n → Vec n → Vec n
+  (u +ᵥ v) i = u i + v i
 
   -- Pointwise scalar multiplication.
   scale : ∀ {n} → Carrier → Vec n → Vec n
@@ -46,16 +46,16 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
     no-eta-equality
     field
       func             : Vec n → Vec m
-      func-resp-≈      : ∀ {u v} → u ≈v v → func u ≈v func v
-      +-preserving     : ∀ {u v} → func (u +v v) ≈v (func u +v func v)
-      ε-preserving     : func εv ≈v εv
-      scale-preserving : ∀ {a v} → func (scale a v) ≈v scale a (func v)
+      func-resp-≈      : ∀ {u v} → u ≈ᵥ v → func u ≈ᵥ func v
+      +-preserving     : ∀ {u v} → func (u +ᵥ v) ≈ᵥ (func u +ᵥ func v)
+      ε-preserving     : func εᵥ ≈ᵥ εᵥ
+      scale-preserving : ∀ {a v} → func (scale a v) ≈ᵥ scale a (func v)
   open _⇒_ public
 
   -- Extensional (pointwise) equality of morphisms.
   infix 4 _≃_
   _≃_ : ∀ {n m} → n ⇒ m → n ⇒ m → Prop (o ⊔ ℓ)
-  f ≃ g = ∀ v → f .func v ≈v g .func v
+  f ≃ g = ∀ v → f .func v ≈ᵥ g .func v
 
   ≃-isEquiv : ∀ {n m} → IsEquivalence (_≃_ {n} {m})
   ≃-isEquiv .IsEquivalence.refl v i = refl
@@ -67,7 +67,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   id : ∀ {n} → n ⇒ n
   id .func v = v
-  id .func-resp-≈ u≈v = u≈v
+  id .func-resp-≈ u≈ᵥ = u≈ᵥ
   id .+-preserving _ = refl
   id .ε-preserving _ = refl
   id .scale-preserving _ = refl
@@ -75,7 +75,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   infixl 21 _∘_
   _∘_ : ∀ {n m k} → m ⇒ k → n ⇒ m → n ⇒ k
   (g ∘ f) .func v = g .func (f .func v)
-  (g ∘ f) .func-resp-≈ u≈v = g .func-resp-≈ (f .func-resp-≈ u≈v)
+  (g ∘ f) .func-resp-≈ u≈ᵥ = g .func-resp-≈ (f .func-resp-≈ u≈ᵥ)
   (g ∘ f) .+-preserving i = trans (g .func-resp-≈ (f .+-preserving) i) (g .+-preserving i)
   (g ∘ f) .ε-preserving i = trans (g .func-resp-≈ (f .ε-preserving) i) (g .ε-preserving i)
   (g ∘ f) .scale-preserving i = trans (g .func-resp-≈ (f .scale-preserving) i) (g .scale-preserving i)
@@ -113,7 +113,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   initial : HasInitial cat
   initial .HasInitial.witness = 0
-  initial .HasInitial.is-initial .IsInitial.from-initial .func _ = εv
+  initial .HasInitial.is-initial .IsInitial.from-initial .func _ = εᵥ
   initial .HasInitial.is-initial .IsInitial.from-initial .func-resp-≈ _ _ = refl
   initial .HasInitial.is-initial .IsInitial.from-initial .+-preserving _ = sym +-lunit
   initial .HasInitial.is-initial .IsInitial.from-initial .ε-preserving _ = refl
@@ -130,7 +130,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   -- The zero map.
   εₘ : ∀ {n m} → n ⇒ m
-  εₘ .func _ = εv
+  εₘ .func _ = εᵥ
   εₘ .func-resp-≈ _ _ = refl
   εₘ .+-preserving _ = sym +-lunit
   εₘ .ε-preserving _ = refl
@@ -143,7 +143,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   -- Pointwise sum of linear maps.
   infixl 21 _+ₘ_
   _+ₘ_ : ∀ {n m} → n ⇒ m → n ⇒ m → n ⇒ m
-  (f +ₘ g) .func v = f .func v +v g .func v
+  (f +ₘ g) .func v = f .func v +ᵥ g .func v
   (f +ₘ g) .func-resp-≈ p i = +-cong (f .func-resp-≈ p i) (g .func-resp-≈ p i)
   (f +ₘ g) .+-preserving i = trans (+-cong (f .+-preserving i) (g .+-preserving i)) +-interchange
   (f +ₘ g) .ε-preserving i = trans (+-cong (f .ε-preserving i) (g .ε-preserving i)) +-lunit
