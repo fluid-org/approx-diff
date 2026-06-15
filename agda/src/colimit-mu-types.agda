@@ -483,12 +483,42 @@ module cocont
     ⟦ T∘ P ⟧ˢ-cong    fs≈gs = ∘-cong₁ (Functor.fmor-cong T (⟦ P ⟧ˢ-cong fs≈gs))
 
     -- Fusion: the strong action absorbs a precomposed Γ-image of a reindexing.
-    ⟦_⟧ˢ-fuse : ∀ {n Γ} (P : Poly n) {δ δ' δ'' : Fin n → obj}
+    ⟦_⟧ˢ-fuse : ∀ {n} (P : Poly n) {Γ} {δ δ' δ'' : Fin n → obj}
                 (fs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
                 ⟦ P ⟧ˢ fs ∘ prod-m (id Γ) (⟦ P ⟧mor gs) ≈ ⟦ P ⟧ˢ (λ i → fs i ∘ prod-m (id Γ) (gs i))
     ⟦ const A ⟧ˢ-fuse fs gs = ≈-trans (∘-cong₂ prod-m-id) id-right
     ⟦ var i ⟧ˢ-fuse   fs gs = ≈-refl
     ⟦ P + Q ⟧ˢ-fuse   fs gs = {!!}
-    ⟦ P × Q ⟧ˢ-fuse   fs gs = {!!}
+    ⟦ P × Q ⟧ˢ-fuse {Γ = Γ} fs gs = ≈-trans (pair-natural _ _ _) (pair-cong P-comp Q-comp)
+      where
+        A' = ⟦ P ⟧mor gs
+        B' = ⟦ Q ⟧mor gs
+        -- The (Γ, left)-projection commutes past the product reindexing.
+        q₁-nat : (pair p₁ (p₁ ∘ p₂) ∘ prod-m (id Γ) (prod-m A' B'))
+                   ≈ (prod-m (id Γ) A' ∘ pair p₁ (p₁ ∘ p₂))
+        q₁-nat =
+          ≈-trans (pair-natural _ _ _)
+          (≈-trans (pair-cong (≈-trans (pair-p₁ _ _) id-left)
+                              (≈-trans (assoc _ _ _)
+                              (≈-trans (∘-cong₂ (pair-p₂ _ _))
+                              (≈-trans (≈-sym (assoc _ _ _))
+                              (≈-trans (∘-cong₁ (pair-p₁ _ _)) (assoc _ _ _))))))
+                   (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
+        q₂-nat : (pair p₁ (p₂ ∘ p₂) ∘ prod-m (id Γ) (prod-m A' B'))
+                   ≈ (prod-m (id Γ) B' ∘ pair p₁ (p₂ ∘ p₂))
+        q₂-nat =
+          ≈-trans (pair-natural _ _ _)
+          (≈-trans (pair-cong (≈-trans (pair-p₁ _ _) id-left)
+                              (≈-trans (assoc _ _ _)
+                              (≈-trans (∘-cong₂ (pair-p₂ _ _))
+                              (≈-trans (≈-sym (assoc _ _ _))
+                              (≈-trans (∘-cong₁ (pair-p₂ _ _)) (assoc _ _ _))))))
+                   (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
+        P-comp = ≈-trans (assoc _ _ _)
+                 (≈-trans (∘-cong₂ q₁-nat)
+                 (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ P ⟧ˢ-fuse fs gs))))
+        Q-comp = ≈-trans (assoc _ _ _)
+                 (≈-trans (∘-cong₂ q₂-nat)
+                 (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse fs gs))))
     ⟦ μ P ⟧ˢ-fuse     fs gs = {!!}
     ⟦ T∘ P ⟧ˢ-fuse    fs gs = {!!}
