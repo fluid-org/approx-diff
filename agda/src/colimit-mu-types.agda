@@ -738,9 +738,8 @@ module cocont
         leg-ih Fin.zero    = legs-left-fuse P δ δ' δ'' fs gs k
         leg-ih (Fin.suc j) = id-left
 
-  colimit-HasMu : HasMu
-  colimit-HasMu = record
-    { μ-obj = μ-carrier
-    ; α = λ P δ → α P δ ∘ ≡-to-⇒ (sym (⟦⟧-fobj P (extend δ (μ-carrier P δ))))
-    ; ⦅_⦆ = λ alg → {!!}
-    }
+  hasMu : HasMu
+  hasMu .HasMu.μ-obj = μ-carrier
+  hasMu .HasMu.α P δ = α P δ ∘ ≡-to-⇒ (sym (⟦⟧-fobj P (extend δ (μ-carrier P δ))))
+  hasMu .HasMu.⦅_⦆ {_} {Γ} {A} {P} {δ} alg =
+    ⦅ alg ∘ ≡-to-⇒ (cong (prod Γ) (⟦⟧-fobj P (extend δ A))) ⦆
