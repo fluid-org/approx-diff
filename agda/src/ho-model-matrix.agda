@@ -1,7 +1,7 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 -- The matrix model: Mat(Two) embedded into JoinSLat via matrix-embedding,
--- interpreted in Fam(JoinSLat).  Superseded by ho-model-fd-semimod.
+-- interpreted in Fam(JoinSLat).  Superseded by ho-model-fd-semimod-2.
 module ho-model-matrix where
 
 open import Level using (0ℓ)

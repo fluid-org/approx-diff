@@ -2,12 +2,12 @@
 
 open import Level using (0ℓ; suc; _⊔_)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
-open import prop using (_,_; LiftS; liftS)
+open import prop using (_,_; LiftS; liftS; tt)
 open import prop-setoid
-  using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂)
+  using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂; 𝟙)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
-open import categories using (Category; HasProducts)
-open import commutative-monoid using (CommutativeMonoid) renaming (_⊗_ to _×CM_)
+open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; IsTerminal)
+open import commutative-monoid using (CommutativeMonoid; 𝟙cm) renaming (_⊗_ to _×CM_)
 open import commutative-semiring using (CommutativeSemiring)
 open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimits)
 
@@ -88,7 +88,7 @@ cat .Category.id-right .*≈* = idS-right
 cat .Category.assoc f g h .*≈* = assocS (f .*→*) (g .*→*) (h .*→*)
 
 ------------------------------------------------------------------------------
-open import cmon-enriched using (CMonEnriched)
+open import cmon-enriched using (CMonEnriched; Biproduct; biproduct-iso; biproducts→coproducts)
 
 ε-map : ∀ X Y → X ⇒ Y
 ε-map X Y .*→* ._⇒s_.func x = Y .ε
@@ -160,6 +160,42 @@ products .HasProducts.pair-cong f₁≈f₂ g₁≈g₂ .*≈* = pairS-cong (f�
 products .HasProducts.pair-p₁ f g .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (f .*→*)
 products .HasProducts.pair-p₂ f g .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (g .*→*)
 products .HasProducts.pair-ext f .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (f .*→*)
+
+------------------------------------------------------------------------------
+-- Terminal object (the one-point / zero semimodule)
+
+𝟘 : Semimodule
+𝟘 .setoid = 𝟙
+𝟘 .additive = 𝟙cm
+𝟘 ._·_ _ x = x
+𝟘 .·-cong _ _ = tt
+𝟘 .·-mul = tt
+𝟘 .·-unit = tt
+𝟘 .+-distribʳ = tt
+𝟘 .+-distribˡ = tt
+𝟘 .zero-distribʳ = tt
+𝟘 .zero-distribˡ = tt
+
+terminal : HasTerminal cat
+terminal .HasTerminal.witness = 𝟘
+terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {X} = ε-map X 𝟘
+terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f .*≈* ._≈s_.func-eq _ = tt
+
+------------------------------------------------------------------------------
+-- Biproducts (the products above, packaged with injections)
+
+biproduct : ∀ X Y → Biproduct cmon-enriched X Y
+biproduct X Y .Biproduct.prod = X ⊕ Y
+biproduct X Y .Biproduct.p₁ = p₁
+biproduct X Y .Biproduct.p₂ = p₂
+biproduct X Y .Biproduct.in₁ = pair (id X) (ε-map X Y)
+biproduct X Y .Biproduct.in₂ = pair (ε-map Y X) (id Y)
+biproduct X Y .Biproduct.id-1 = products .HasProducts.pair-p₁ (id X) (ε-map X Y)
+biproduct X Y .Biproduct.id-2 = products .HasProducts.pair-p₂ (ε-map Y X) (id Y)
+biproduct X Y .Biproduct.zero-1 = products .HasProducts.pair-p₁ (ε-map Y X) (id Y)
+biproduct X Y .Biproduct.zero-2 = products .HasProducts.pair-p₂ (id X) (ε-map X Y)
+biproduct X Y .Biproduct.id-+ .*≈* ._≈s_.func-eq (x₁≈x₂ , y₁≈y₂) =
+  X .trans (X .+-comm) (X .trans (X .+-lunit) x₁≈x₂) , Y .trans (Y .+-lunit) y₁≈y₂
 
 ------------------------------------------------------------------------------
 -- Tensor products
@@ -258,6 +294,136 @@ _⊸_ : Semimodule → Semimodule → Semimodule
 
 Dual : Semimodule → Semimodule
 Dual M = M ⊸ 𝕀
+
+------------------------------------------------------------------------------
+-- Transpose: the contravariant action of Dual, f ↦ (φ ↦ φ ∘ f).  Additive and
+-- contravariantly functorial, purely from the category + cmon-enrichment.
+
+open Category cat using (≈-trans; ≈-sym; Iso; IsIso→Iso)
+open CMonEnriched cmon-enriched using (homCM; _+m_; εm; comp-bilinear₁; comp-bilinear-ε₁; comp-bilinear-ε₂)
+
+infix 25 _ᵀ
+_ᵀ : ∀ {X Y} → X ⇒ Y → Dual Y ⇒ Dual X
+(f ᵀ) .*→* ._⇒s_.func φ = φ ∘ f
+(f ᵀ) .*→* ._⇒s_.func-resp-≈ φ≈φ' .*≈* ._≈s_.func-eq x≈x' =
+  φ≈φ' .*≈* ._≈s_.func-eq (f .func-resp-≈ x≈x')
+(f ᵀ) .preserve-ze = comp-bilinear-ε₁ f
+(f ᵀ) .preserve-+ {φ} {ψ} = comp-bilinear₁ φ ψ f
+(f ᵀ) .preserve-· {s} {φ} .*≈* ._≈s_.func-eq x≈x' =
+  S.·-cong S.refl (φ .func-resp-≈ (f .func-resp-≈ x≈x'))
+
+ᵀ-cong : ∀ {X Y} {f g : X ⇒ Y} → (f ≈m g) → ((f ᵀ) ≈m (g ᵀ))
+ᵀ-cong f≈g .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
+  φ≈ψ .*≈* ._≈s_.func-eq (f≈g .*≈* ._≈s_.func-eq x≈x')
+
+-- Contravariant functoriality.  Associativity / identity are definitional here
+-- (composition of the underlying functions), so the proofs are just the bridge
+-- through the given φ ≈ ψ.
+ᵀ-id : ∀ {X} → ((id X) ᵀ) ≈m (id (Dual X))
+ᵀ-id .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' = φ≈ψ .*≈* ._≈s_.func-eq x≈x'
+
+ᵀ-comp : ∀ {X Y Z} (g : Y ⇒ Z) (f : X ⇒ Y) → ((g ∘ f) ᵀ) ≈m ((f ᵀ) ∘ (g ᵀ))
+ᵀ-comp g f .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
+  φ≈ψ .*≈* ._≈s_.func-eq (g .func-resp-≈ (f .func-resp-≈ x≈x'))
+
+-- Additivity: what biproduct preservation needs.
+ᵀ-+ : ∀ {X Y} (f g : X ⇒ Y) → ((f +m g) ᵀ) ≈m ((f ᵀ) +m (g ᵀ))
+ᵀ-+ f g .*≈* ._≈s_.func-eq {φ} φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
+  trans 𝕀 (φ .preserve-+)
+    (+-cong 𝕀 (φ≈ψ .*≈* ._≈s_.func-eq (f .func-resp-≈ x≈x'))
+              (φ≈ψ .*≈* ._≈s_.func-eq (g .func-resp-≈ x≈x')))
+
+ᵀ-ε : ∀ {X Y} → ((εm {X} {Y}) ᵀ) ≈m εm
+ᵀ-ε .*≈* ._≈s_.func-eq {φ} _ = comp-bilinear-ε₂ φ
+
+------------------------------------------------------------------------------
+-- Dual preserves biproducts: transport the biproduct laws through _ᵀ (swapping
+-- p ↔ in by contravariance).  Apex Dual(X⊕Y) is then a biproduct of Dual X, Dual Y.
+
+Dual-preserves-⊕ : ∀ {X Y} → Biproduct cmon-enriched (Dual X) (Dual Y)
+Dual-preserves-⊕ {X} {Y} = D
+  where
+    open Biproduct (biproduct X Y) using (in₁; in₂; id-1; id-2; zero-1; zero-2; id-+)
+    D : Biproduct cmon-enriched (Dual X) (Dual Y)
+    D .Biproduct.prod = Dual (X ⊕ Y)
+    D .Biproduct.p₁ = in₁ ᵀ
+    D .Biproduct.p₂ = in₂ ᵀ
+    D .Biproduct.in₁ = p₁ ᵀ
+    D .Biproduct.in₂ = p₂ ᵀ
+    D .Biproduct.id-1 = ≈-trans (≈-sym (ᵀ-comp p₁ in₁)) (≈-trans (ᵀ-cong id-1) ᵀ-id)
+    D .Biproduct.id-2 = ≈-trans (≈-sym (ᵀ-comp p₂ in₂)) (≈-trans (ᵀ-cong id-2) ᵀ-id)
+    D .Biproduct.zero-1 = ≈-trans (≈-sym (ᵀ-comp p₂ in₁)) (≈-trans (ᵀ-cong zero-2) ᵀ-ε)
+    D .Biproduct.zero-2 = ≈-trans (≈-sym (ᵀ-comp p₁ in₂)) (≈-trans (ᵀ-cong zero-1) ᵀ-ε)
+    D .Biproduct.id-+ =
+      ≈-trans (homCM _ _ .CommutativeMonoid.+-cong (≈-sym (ᵀ-comp in₁ p₁)) (≈-sym (ᵀ-comp in₂ p₂)))
+      (≈-trans (≈-sym (ᵀ-+ (in₁ ∘ p₁) (in₂ ∘ p₂)))
+      (≈-trans (ᵀ-cong id-+) ᵀ-id))
+
+------------------------------------------------------------------------------
+-- Base case 𝕀 ≅ Dual 𝕀:  a ↦ (x ↦ a·x), inverse φ ↦ φ ι.  The only
+-- coordinate-level (1-dimensional) input to self-duality.
+
+private
+  ·-runit : ∀ {x} → (x S.· S.ι) S.≈ x
+  ·-runit = S.trans S.·-comm S.·-lunit
+
+η : 𝕀 ⇒ Dual 𝕀
+η .*→* ._⇒s_.func a .*→* ._⇒s_.func x = a S.· x
+η .*→* ._⇒s_.func a .*→* ._⇒s_.func-resp-≈ x≈x' = S.·-cong S.refl x≈x'
+η .*→* ._⇒s_.func a .preserve-ze = S.ε-annihilᵣ
+η .*→* ._⇒s_.func a .preserve-+ = S.·-+-distribₗ
+η .*→* ._⇒s_.func a .preserve-· =
+  S.trans (S.sym S.·-assoc) (S.trans (S.·-cong S.·-comm S.refl) S.·-assoc)
+η .*→* ._⇒s_.func-resp-≈ a≈a' .*≈* ._≈s_.func-eq x≈x' = S.·-cong a≈a' x≈x'
+η .preserve-ze .*≈* ._≈s_.func-eq _ = S.ε-annihilₗ
+η .preserve-+ .*≈* ._≈s_.func-eq x≈x' =
+  S.trans S.·-+-distribᵣ (S.+-cong (S.·-cong S.refl x≈x') (S.·-cong S.refl x≈x'))
+η .preserve-· .*≈* ._≈s_.func-eq x≈x' =
+  S.trans S.·-assoc (S.·-cong S.refl (S.·-cong S.refl x≈x'))
+
+η⁻¹ : Dual 𝕀 ⇒ 𝕀
+η⁻¹ .*→* ._⇒s_.func φ = φ .func S.ι
+η⁻¹ .*→* ._⇒s_.func-resp-≈ φ≈φ' = φ≈φ' .*≈* ._≈s_.func-eq S.refl
+η⁻¹ .preserve-ze = S.refl
+η⁻¹ .preserve-+ = S.refl
+η⁻¹ .preserve-· = S.refl
+
+𝕀-self-dual : Category.IsIso cat η
+𝕀-self-dual .Category.IsIso.inverse = η⁻¹
+𝕀-self-dual .Category.IsIso.f∘inverse≈id .*≈* ._≈s_.func-eq {φ} φ≈ψ .*≈* ._≈s_.func-eq {x} x≈x' =
+  S.trans S.·-comm
+    (S.trans (S.sym (φ .preserve-· {x} {S.ι})) (φ≈ψ .*≈* ._≈s_.func-eq (S.trans ·-runit x≈x')))
+𝕀-self-dual .Category.IsIso.inverse∘f≈id .*≈* ._≈s_.func-eq a≈a' = S.trans ·-runit a≈a'
+
+------------------------------------------------------------------------------
+-- Dual preserves isomorphisms (contravariantly) and the zero object.
+
+Dual-iso : ∀ {X Y} → Iso X Y → Iso (Dual Y) (Dual X)
+Dual-iso iso .Iso.fwd = (iso .Iso.fwd) ᵀ
+Dual-iso iso .Iso.bwd = (iso .Iso.bwd) ᵀ
+Dual-iso iso .Iso.fwd∘bwd≈id =
+  ≈-trans (≈-sym (ᵀ-comp (iso .Iso.bwd) (iso .Iso.fwd))) (≈-trans (ᵀ-cong (iso .Iso.bwd∘fwd≈id)) ᵀ-id)
+Dual-iso iso .Iso.bwd∘fwd≈id =
+  ≈-trans (≈-sym (ᵀ-comp (iso .Iso.fwd) (iso .Iso.bwd))) (≈-trans (ᵀ-cong (iso .Iso.fwd∘bwd≈id)) ᵀ-id)
+
+-- Dual 𝟘 ≅ 𝟘: both are the zero object (every functional on 𝟘 is the zero map).
+Dual-𝟘 : Iso (Dual 𝟘) 𝟘
+Dual-𝟘 .Iso.fwd = HasTerminal.to-terminal terminal
+Dual-𝟘 .Iso.bwd = εm
+Dual-𝟘 .Iso.fwd∘bwd≈id = HasTerminal.to-terminal-unique terminal _ _
+Dual-𝟘 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {_} {ψ} _ .*≈* ._≈s_.func-eq _ =
+  sym 𝕀 (trans 𝕀 (ψ .func-resp-≈ tt) (ψ .preserve-ze))
+
+-- Dual(X⊕Y) ≅ Dual X ⊕ Dual Y, and ⊕ acting on isos (via SemiMod's biproducts).
+private
+  coproducts : HasCoproducts cat
+  coproducts = biproducts→coproducts cmon-enriched biproduct
+
+Dual-⊕-iso : ∀ {X Y} → Iso (Dual (X ⊕ Y)) (Dual X ⊕ Dual Y)
+Dual-⊕-iso {X} {Y} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-⊕ (biproduct (Dual X) (Dual Y)))
+
+⊕-iso : ∀ {X X' Y Y'} → Iso X X' → Iso Y Y' → Iso (X ⊕ Y) (X' ⊕ Y')
+⊕-iso = HasCoproducts.coproduct-preserve-iso coproducts
 
 -- Isomorphisms M ≅ Dual M are equivalent to certain kinds of
 --
