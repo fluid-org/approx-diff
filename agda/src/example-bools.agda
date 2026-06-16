@@ -195,11 +195,17 @@ module forward-fdsemimod where
   fwd-slice : _ → _
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
-  -- Slice values are SemiMod carriers: each sort's slice is a Vec (Fin dim → Two),
-  -- list/ctxt units are lifted.  The shape below typechecks (domain accepted); the
-  -- ≡-refl reduction currently times out — a performance issue to resume tomorrow.
-  -- test-1 : fwd-slice (lift · , ((λ _ → ⊤) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊤)
+  -- Slice values: label slice is Fin 0 → Two (dim 0, vacuous); the dependency
+  -- bit is the number slice (Fin 1 → Two).  Query is for label a, which occurs
+  -- at positions 1 and 3, so the output depends on those number slices.
+  -- test-1 : fwd-slice (lift · , ((λ _ → ⊥) , (λ _ → ⊤)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊤)
   -- test-1 = ≡-refl
+
+  -- test-2 : fwd-slice (lift · , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊤)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊥)
+  -- test-2 = ≡-refl
+
+  -- test-3 : fwd-slice (lift · , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊤)) , _) ≡ (λ _ → ⊤)
+  -- test-3 = ≡-refl
 
 -- Forward analysis via the Data.Vec model (FDSemiMod₂).  Same setup as
 -- forward-fdsemimod; slice values are now Data.Vec, not functions.
@@ -234,7 +240,13 @@ module forward-fdsemimod-2 where
   fwd-slice : _ → _
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
-  -- For interactive testing: slice values are Data.Vec now (a Vec 1 leaf is
-  -- `x ∷ []`), units still lifted.  e.g. (uncomment and normalise in VSCode):
-  test-1 : fwd-slice (lift · , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
-  test-1 = ≡-refl
+  -- Same three cases as forward-fdsemimod; label slice is [] (dim 0), the
+  -- dependency bit is the number slice (x ∷ []).
+  -- test-1 : fwd-slice (lift · , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
+  -- test-1 = ≡-refl
+
+  -- test-2 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊥ ∷ [])
+  -- test-2 = ≡-refl
+
+  -- test-3 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , _) ≡ (⊤ ∷ [])
+  -- test-3 = ≡-refl
