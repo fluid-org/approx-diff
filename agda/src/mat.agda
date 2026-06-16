@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-module fd-semimodule-2 where
+module mat where
 
 open import Level using (_⊔_)
 open import prop using (⊤; tt; _∧_; _,_; proj₁; proj₂)
@@ -8,13 +8,14 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category)
 
--- FDSemiMod with vectors as inductive Data.Vec, instead of functions Fin n → Carrier.
-module FDSemiMod₂ {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
+-- Free f.g. S-semimodules ("matrices"), with vectors as inductive Data.Vec
+-- (instead of functions Fin n → Carrier).
+module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   open CommutativeSemiring S public
   open import Data.Nat using (ℕ; zero; suc)
   import Data.Vec as V
-  open V using ([]; _∷_)
+  open V public using ([]; _∷_)
 
   ----------------------------------------------------------------------------
   -- The carrier: vectors S^n as inductive data.
@@ -384,7 +385,7 @@ module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   import finite-product-functor
 
   private
-    module FD = FDSemiMod₂ S
+    module FD = Mat S
     module SM = semimodule {o} {o} S
   open SM
   open SM._⇒_
@@ -494,5 +495,13 @@ module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
               (Iso-trans (Iso-sym Dual-𝟘) (Dual-iso (IsIso→Iso F-preserve-terminal)))
   fobj-self-dual (suc n) =
     Iso-trans (IsIso→Iso (F-preserve-products {1} {n}))
-              (Iso-trans (⊕-iso (Iso-trans 1≅𝕀 (Iso-trans (IsIso→Iso 𝕀-self-dual) (Dual-iso 1≅𝕀))) (fobj-self-dual n))
+              (Iso-trans (⊕-iso (Iso-trans 1≅𝕀 (Iso-trans 𝕀≅𝕀* (Dual-iso 1≅𝕀))) (fobj-self-dual n))
                          (Iso-trans (Iso-sym Dual-⊕-iso) (Dual-iso (IsIso→Iso (F-preserve-products {1} {n})))))
+
+  ----------------------------------------------------------------------------
+  -- Conjugate of a free-object morphism: the generic conjugate instantiated at
+  -- the free-object self-dualities.  conj-pairing then gives the conjugate
+  -- relation ⟨ conj-free f y , x ⟩ ≈ ⟨ y , f x ⟩.
+
+  conj-free : ∀ {m n} → (fobj m ⇒ fobj n) → (fobj n ⇒ fobj m)
+  conj-free {m} {n} = conj (fobj-self-dual m) (fobj-self-dual n)

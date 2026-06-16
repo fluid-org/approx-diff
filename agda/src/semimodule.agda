@@ -295,14 +295,33 @@ _⊸_ : Semimodule → Semimodule → Semimodule
 Dual : Semimodule → Semimodule
 Dual M = M ⊸ 𝕀
 
-------------------------------------------------------------------------------
--- Transpose: the contravariant action of Dual, f ↦ (φ ↦ φ ∘ f).  Additive and
--- contravariantly functorial, purely from the category + cmon-enrichment.
+-- Isomorphisms M ≅ Dual M are equivalent to certain kinds of
+--
+--   M ⇒ M ⊸ 𝕀
+-- ≅ M ⊗ M ⇒ 𝕀
+--
+-- i.e. a bilinear map.
+--
+-- When the original map is an isomorphism, then can this property be
+-- stated in terms of the bilinear map?
+--
+-- Non-degeneracy: ∀ x → x ≠ ε → ∃ y → ⟨ x , y ⟩ ≠ ε
 
-open Category cat using (≈-trans; ≈-sym; Iso; IsIso→Iso)
+-- forward map: M ⇒ M ⊸ I
+--              x ↦ y ↦ ⟨ x , y ⟩
+--
+-- backward map: (M ⊸ I) ⇒ M
+--               f ↦ Σ f(eᵢ) eᵢ
+-- In finite dimensions, equivalent to unimodularity?
+
+------------------------------------------------------------------------------
+-- Transpose: the contravariant action of Dual, f ↦ (_ ∘ f).
+
+open Category cat using (≈-trans; ≈-sym; ≈-refl; ∘-cong; assoc; id-left; Iso; IsIso→Iso)
 open CMonEnriched cmon-enriched using (homCM; _+m_; εm; comp-bilinear₁; comp-bilinear-ε₁; comp-bilinear-ε₂)
 
 infix 25 _ᵀ
+
 _ᵀ : ∀ {X Y} → X ⇒ Y → Dual Y ⇒ Dual X
 (f ᵀ) .*→* ._⇒s_.func φ = φ ∘ f
 (f ᵀ) .*→* ._⇒s_.func-resp-≈ φ≈φ' .*≈* ._≈s_.func-eq x≈x' =
@@ -316,17 +335,14 @@ _ᵀ : ∀ {X Y} → X ⇒ Y → Dual Y ⇒ Dual X
 ᵀ-cong f≈g .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
   φ≈ψ .*≈* ._≈s_.func-eq (f≈g .*≈* ._≈s_.func-eq x≈x')
 
--- Contravariant functoriality.  Associativity / identity are definitional here
--- (composition of the underlying functions), so the proofs are just the bridge
--- through the given φ ≈ ψ.
-ᵀ-id : ∀ {X} → ((id X) ᵀ) ≈m (id (Dual X))
+ᵀ-id : ∀ {X} → ((id X) ᵀ) ≈m id (Dual X)
 ᵀ-id .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' = φ≈ψ .*≈* ._≈s_.func-eq x≈x'
 
 ᵀ-comp : ∀ {X Y Z} (g : Y ⇒ Z) (f : X ⇒ Y) → ((g ∘ f) ᵀ) ≈m ((f ᵀ) ∘ (g ᵀ))
 ᵀ-comp g f .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
   φ≈ψ .*≈* ._≈s_.func-eq (g .func-resp-≈ (f .func-resp-≈ x≈x'))
 
--- Additivity: what biproduct preservation needs.
+-- Additivity.
 ᵀ-+ : ∀ {X Y} (f g : X ⇒ Y) → ((f +m g) ᵀ) ≈m ((f ᵀ) +m (g ᵀ))
 ᵀ-+ f g .*≈* ._≈s_.func-eq {φ} φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
   trans 𝕀 (φ .preserve-+)
@@ -360,40 +376,34 @@ Dual-preserves-⊕ {X} {Y} = D
       (≈-trans (ᵀ-cong id-+) ᵀ-id))
 
 ------------------------------------------------------------------------------
--- Base case 𝕀 ≅ Dual 𝕀:  a ↦ (x ↦ a·x), inverse φ ↦ φ ι.  The only
--- coordinate-level (1-dimensional) input to self-duality.
+-- Base case 𝕀 ≅ Dual 𝕀 for self-duality.
 
 private
   ·-runit : ∀ {x} → (x S.· S.ι) S.≈ x
   ·-runit = S.trans S.·-comm S.·-lunit
 
-η : 𝕀 ⇒ Dual 𝕀
-η .*→* ._⇒s_.func a .*→* ._⇒s_.func x = a S.· x
-η .*→* ._⇒s_.func a .*→* ._⇒s_.func-resp-≈ x≈x' = S.·-cong S.refl x≈x'
-η .*→* ._⇒s_.func a .preserve-ze = S.ε-annihilᵣ
-η .*→* ._⇒s_.func a .preserve-+ = S.·-+-distribₗ
-η .*→* ._⇒s_.func a .preserve-· =
+𝕀≅𝕀* : Iso 𝕀 (Dual 𝕀)
+𝕀≅𝕀* .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func x = a S.· x
+𝕀≅𝕀* .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func-resp-≈ x≈x' = S.·-cong S.refl x≈x'
+𝕀≅𝕀* .Iso.fwd .*→* ._⇒s_.func a .preserve-ze = S.ε-annihilᵣ
+𝕀≅𝕀* .Iso.fwd .*→* ._⇒s_.func a .preserve-+ = S.·-+-distribₗ
+𝕀≅𝕀* .Iso.fwd .*→* ._⇒s_.func a .preserve-· =
   S.trans (S.sym S.·-assoc) (S.trans (S.·-cong S.·-comm S.refl) S.·-assoc)
-η .*→* ._⇒s_.func-resp-≈ a≈a' .*≈* ._≈s_.func-eq x≈x' = S.·-cong a≈a' x≈x'
-η .preserve-ze .*≈* ._≈s_.func-eq _ = S.ε-annihilₗ
-η .preserve-+ .*≈* ._≈s_.func-eq x≈x' =
+𝕀≅𝕀* .Iso.fwd .*→* ._⇒s_.func-resp-≈ a≈a' .*≈* ._≈s_.func-eq x≈x' = S.·-cong a≈a' x≈x'
+𝕀≅𝕀* .Iso.fwd .preserve-ze .*≈* ._≈s_.func-eq _ = S.ε-annihilₗ
+𝕀≅𝕀* .Iso.fwd .preserve-+ .*≈* ._≈s_.func-eq x≈x' =
   S.trans S.·-+-distribᵣ (S.+-cong (S.·-cong S.refl x≈x') (S.·-cong S.refl x≈x'))
-η .preserve-· .*≈* ._≈s_.func-eq x≈x' =
+𝕀≅𝕀* .Iso.fwd .preserve-· .*≈* ._≈s_.func-eq x≈x' =
   S.trans S.·-assoc (S.·-cong S.refl (S.·-cong S.refl x≈x'))
-
-η⁻¹ : Dual 𝕀 ⇒ 𝕀
-η⁻¹ .*→* ._⇒s_.func φ = φ .func S.ι
-η⁻¹ .*→* ._⇒s_.func-resp-≈ φ≈φ' = φ≈φ' .*≈* ._≈s_.func-eq S.refl
-η⁻¹ .preserve-ze = S.refl
-η⁻¹ .preserve-+ = S.refl
-η⁻¹ .preserve-· = S.refl
-
-𝕀-self-dual : Category.IsIso cat η
-𝕀-self-dual .Category.IsIso.inverse = η⁻¹
-𝕀-self-dual .Category.IsIso.f∘inverse≈id .*≈* ._≈s_.func-eq {φ} φ≈ψ .*≈* ._≈s_.func-eq {x} x≈x' =
+𝕀≅𝕀* .Iso.bwd .*→* ._⇒s_.func φ = φ .func S.ι
+𝕀≅𝕀* .Iso.bwd .*→* ._⇒s_.func-resp-≈ φ≈φ' = φ≈φ' .*≈* ._≈s_.func-eq S.refl
+𝕀≅𝕀* .Iso.bwd .preserve-ze = S.refl
+𝕀≅𝕀* .Iso.bwd .preserve-+ = S.refl
+𝕀≅𝕀* .Iso.bwd .preserve-· = S.refl
+𝕀≅𝕀* .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq {φ} φ≈ψ .*≈* ._≈s_.func-eq {x} x≈x' =
   S.trans S.·-comm
     (S.trans (S.sym (φ .preserve-· {x} {S.ι})) (φ≈ψ .*≈* ._≈s_.func-eq (S.trans ·-runit x≈x')))
-𝕀-self-dual .Category.IsIso.inverse∘f≈id .*≈* ._≈s_.func-eq a≈a' = S.trans ·-runit a≈a'
+𝕀≅𝕀* .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq a≈a' = S.trans ·-runit a≈a'
 
 ------------------------------------------------------------------------------
 -- Dual preserves isomorphisms (contravariantly) and the zero object.
@@ -406,7 +416,7 @@ Dual-iso iso .Iso.fwd∘bwd≈id =
 Dual-iso iso .Iso.bwd∘fwd≈id =
   ≈-trans (≈-sym (ᵀ-comp (iso .Iso.fwd) (iso .Iso.bwd))) (≈-trans (ᵀ-cong (iso .Iso.fwd∘bwd≈id)) ᵀ-id)
 
--- Dual 𝟘 ≅ 𝟘: both are the zero object (every functional on 𝟘 is the zero map).
+-- Dual 𝟘 ≅ 𝟘: both are the zero object.
 Dual-𝟘 : Iso (Dual 𝟘) 𝟘
 Dual-𝟘 .Iso.fwd = HasTerminal.to-terminal terminal
 Dual-𝟘 .Iso.bwd = εm
@@ -414,7 +424,7 @@ Dual-𝟘 .Iso.fwd∘bwd≈id = HasTerminal.to-terminal-unique terminal _ _
 Dual-𝟘 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {_} {ψ} _ .*≈* ._≈s_.func-eq _ =
   sym 𝕀 (trans 𝕀 (ψ .func-resp-≈ tt) (ψ .preserve-ze))
 
--- Dual(X⊕Y) ≅ Dual X ⊕ Dual Y, and ⊕ acting on isos (via SemiMod's biproducts).
+-- Dual(X⊕Y) ≅ Dual X ⊕ Dual Y, and ⊕ acting on isos (via biproducts).
 private
   coproducts : HasCoproducts cat
   coproducts = biproducts→coproducts cmon-enriched biproduct
@@ -425,24 +435,29 @@ Dual-⊕-iso {X} {Y} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-�
 ⊕-iso : ∀ {X X' Y Y'} → Iso X X' → Iso Y Y' → Iso (X ⊕ Y) (X' ⊕ Y')
 ⊕-iso = HasCoproducts.coproduct-preserve-iso coproducts
 
--- Isomorphisms M ≅ Dual M are equivalent to certain kinds of
---
---   M ⇒ M ⊸ 𝕀
--- ≅ M ⊗ M ⇒ 𝕀
---
--- i.e. a bilinear map.
---
--- When the original map is an isomorphism, then can this property be
--- stated in terms of the bilinear map?
---
--- Non-degeneracy: ∀ x → x ≠ ε → ∃ y → ⟨ x , y ⟩ ≠ ε
+------------------------------------------------------------------------------
+-- Conjugate of a morphism w.r.t. chosen self-dualities d : X ≅ Dual X.
 
--- forward map: M ⇒ M ⊸ I
---              x ↦ y ↦ ⟨ x , y ⟩
---
--- backward map: (M ⊸ I) ⇒ M
---               f ↦ Σ f(eᵢ) eᵢ
--- In finite dimensions, equivalent to unimodularity?
+conj : ∀ {X Y} → Iso X (Dual X) → Iso Y (Dual Y) → (X ⇒ Y) → (Y ⇒ X)
+conj X≅X* Y≅Y* f = X≅X* .Iso.bwd ∘ ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))
+
+-- conj f transported back through d_X is fᵀ ∘ d_Y: the conjugate relation, in
+-- morphism form (d_X ∘ conj f ≈ fᵀ ∘ d_Y).
+conj-transpose : ∀ {X Y} (X≅X* : Iso X (Dual X)) (Y≅Y* : Iso Y (Dual Y)) (f : X ⇒ Y) →
+                 ((X≅X* .Iso.fwd) ∘ conj X≅X* Y≅Y* f) ≈m ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))
+conj-transpose X≅X* Y≅Y* f =
+  ≈-trans (≈-sym (assoc (X≅X* .Iso.fwd) (X≅X* .Iso.bwd) ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))))
+          (≈-trans (∘-cong (X≅X* .Iso.fwd∘bwd≈id) (≈-refl {f = (f ᵀ) ∘ (Y≅Y* .Iso.fwd)})) id-left)
+
+-- Pairing ⟨ x , y ⟩ = (d x) y induced by a self-duality, and pointwise conjugate relation
+-- ⟨ conj f y , x ⟩ ≈ ⟨ y , f x ⟩.
+pairing : ∀ {X} → Iso X (Dual X) → X .Carrier → X .Carrier → S.Carrier
+pairing X≅X* x y = ((X≅X* .Iso.fwd) .*→* ._⇒s_.func x) .*→* ._⇒s_.func y
+
+conj-pairing : ∀ {X Y} (X≅X* : Iso X (Dual X)) (Y≅Y* : Iso Y (Dual Y)) (f : X ⇒ Y) {x y} →
+               S._≈_ (pairing X≅X* ((conj X≅X* Y≅Y* f) .*→* ._⇒s_.func y) x) (pairing Y≅Y* y (f .*→* ._⇒s_.func x))
+conj-pairing {X} {Y} X≅X* Y≅Y* f =
+  conj-transpose X≅X* Y≅Y* f .*≈* ._≈s_.func-eq (refl Y) .*≈* ._≈s_.func-eq (refl X)
 
 ------------------------------------------------------------------------------
 module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
