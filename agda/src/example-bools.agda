@@ -195,9 +195,9 @@ module forward-fdsemimod where
   fwd-slice : _ → _
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
-  -- Slice values: label slice is Fin 0 → Two (dim 0, vacuous); the dependency
-  -- bit is the number slice (Fin 1 → Two).  Query is for label a, which occurs
-  -- at positions 1 and 3, so the output depends on those number slices.
+  -- Slice values: label slice is Fin 0 → Two (dim 0, vacuous); the dependency bit is the number slice
+  -- (Fin 1 → Two).  Query is for label a, which occurs at positions 1 and 3, so the output depends on those
+  -- number slices.
   -- test-1 : fwd-slice (lift · , ((λ _ → ⊥) , (λ _ → ⊤)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊤)
   -- test-1 = ≡-refl
 
@@ -240,8 +240,7 @@ module forward-fdsemimod-2 where
   fwd-slice : _ → _
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
-  -- Same three cases as forward-fdsemimod; label slice is [] (dim 0), the
-  -- dependency bit is the number slice (x ∷ []).
+  -- Label slice is [] (dim 0), the dependency bit is the number slice (x ∷ []).
   -- test-1 : fwd-slice (lift · , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
   -- test-1 = ≡-refl
 
