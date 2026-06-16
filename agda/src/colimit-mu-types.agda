@@ -21,6 +21,7 @@ open import omega-chains
   using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
          step-cocone; cocone-step; const-chain-colimit; module interchange)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
+open import prop-setoid using (module ≈-Reasoning)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -709,31 +710,79 @@ module cocont
       ≈-trans (≈-sym (prod𝟘-initial .IsInitial.from-initial-ext _))
               (prod𝟘-initial .IsInitial.from-initial-ext _)
     legs-left-fuse {Γ = Γ} P δ δ' δ'' c a (suc k) =
-      ≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (≈-sym (assoc _ _ _)))
-                       (≈-trans (∘-cong₁ (∘-cong₁ (α-nat P δ' δ'' c)))
-                                (≈-trans (∘-cong₁ (assoc _ _ _))
-                                         (≈-trans (assoc _ _ _)
-                                                  (≈-trans (∘-cong₂ INNER) (≈-sym (assoc _ _ _)))))))
+      begin
+        μc ∘ legs {P = P} {δ = δ} alg-a (suc k)
+      ≈˘⟨ assoc _ _ _ ⟩
+        (μc ∘ alg-a) ∘ pX
+      ≈⟨ ∘-cong₁ (≈-sym (assoc _ _ _)) ⟩
+        ((μc ∘ α P δ') ∘ Ba) ∘ pX
+      ≈⟨ ∘-cong₁ (∘-cong₁ (α-nat P δ' δ'' c)) ⟩
+        ((α P δ'' ∘ ⟦ P ⟧mor R) ∘ Ba) ∘ pX
+      ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
+        (α P δ'' ∘ (⟦ P ⟧mor R ∘ Ba)) ∘ pX
+      ≈⟨ assoc _ _ _ ⟩
+        α P δ'' ∘ ((⟦ P ⟧mor R ∘ Ba) ∘ pX)
+      ≈⟨ ∘-cong₂ INNER ⟩
+        α P δ'' ∘ (Bca ∘ pX')
+      ≈˘⟨ assoc _ _ _ ⟩
+        legs {P = P} {δ = δ} alg-ca (suc k)
+      ∎
       where
-        μc = ⟦ μ P ⟧mor c
-        alg-a  = α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)
-        alg-ca = α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)
-        -- Route the parameter reindex c into the algebra, and the slot reindex μc out to the right.
+        μc  = ⟦ μ P ⟧mor c
+        R   = extend-mor c μc
+        eμc = extend-fam {δ = δ} μc
+        Ba  = ⟦ P ⟧ˢ (strong-extend-mor a p₂)
+        Bca = ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)
+        alg-a  = α P δ' ∘ Ba
+        alg-ca = α P δ'' ∘ Bca
+        Ya  = strong-extend-mor {δ = δ} {δ' = δ} (λ i → p₂) (legs {P = P} {δ = δ} alg-a k)
+        Yca = strong-extend-mor {δ = δ} {δ' = δ} (λ i → p₂) (legs {P = P} {δ = δ} alg-ca k)
+        X  = ⟦ P ⟧ˢ Ya
+        X' = ⟦ P ⟧ˢ Yca
+        pX  = pair p₁ X
+        pX' = pair p₁ X'
         famALG : ∀ i → extend-mor c μc i ∘ strong-extend-mor a p₂ i
-                      ≈ strong-extend-mor (λ i → c i ∘ a i) p₂ i ∘ prod-m (id Γ) (extend-fam μc i)
+                      ≈ strong-extend-mor (λ i → c i ∘ a i) p₂ i ∘ prod-m (id Γ) (eμc i)
         famALG Fin.zero    = ≈-sym (pair-p₂ _ _)
         famALG (Fin.suc j) = ≈-sym (≈-trans (∘-cong₂ prod-m-id) id-right)
-        ALG = ≈-trans (⟦ P ⟧ˢ-fuse-left (extend-mor c μc) (strong-extend-mor a p₂))
-              (≈-trans (⟦ P ⟧ˢ-cong famALG)
-                       (≈-sym (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → c i ∘ a i) p₂) (extend-fam μc))))
-        -- The slot reindex absorbs into the recursive leg via the induction hypothesis.
-        famLEG : ∀ i → extend-fam μc i ∘ strong-extend-mor (λ i → p₂) (legs alg-a k) i
-                      ≈ strong-extend-mor (λ i → p₂) (legs alg-ca k) i
+        famLEG : ∀ i → eμc i ∘ Ya i ≈ Yca i
         famLEG Fin.zero    = legs-left-fuse P δ δ' δ'' c a k
         famLEG (Fin.suc j) = id-left
-        LEG = ≈-trans (pair-compose _ _ _ _)
-              (≈-trans (pair-cong₁ id-left)
-                       (pair-cong₂ (≈-trans (⟦ P ⟧ˢ-fuse-left (extend-fam μc) (strong-extend-mor (λ i → p₂) (legs alg-a k)))
-                                            (⟦ P ⟧ˢ-cong famLEG))))
-        INNER = ≈-trans (∘-cong₁ ALG) (≈-trans (assoc _ _ _) (∘-cong₂ LEG))
+        -- Route the parameter reindex c into the algebra, slot reindex μc out to the right.
+        ALG : ⟦ P ⟧mor R ∘ Ba ≈ Bca ∘ prod-m (id Γ) (⟦ P ⟧mor eμc)
+        ALG =
+          begin
+            ⟦ P ⟧mor R ∘ Ba
+          ≈⟨ ⟦ P ⟧ˢ-fuse-left R (strong-extend-mor a p₂) ⟩
+            ⟦ P ⟧ˢ (λ i → R i ∘ strong-extend-mor a p₂ i)
+          ≈⟨ ⟦ P ⟧ˢ-cong famALG ⟩
+            ⟦ P ⟧ˢ (λ i → strong-extend-mor (λ i → c i ∘ a i) p₂ i ∘ prod-m (id Γ) (eμc i))
+          ≈˘⟨ ⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → c i ∘ a i) p₂) eμc ⟩
+            Bca ∘ prod-m (id Γ) (⟦ P ⟧mor eμc)
+          ∎ where open ≈-Reasoning isEquiv
+        -- The slot reindex absorbs into the recursive leg via the induction hypothesis.
+        LEG : prod-m (id Γ) (⟦ P ⟧mor eμc) ∘ pX ≈ pX'
+        LEG =
+          begin
+            prod-m (id Γ) (⟦ P ⟧mor eμc) ∘ pX
+          ≈⟨ pair-compose _ _ _ _ ⟩
+            pair (id Γ ∘ p₁) (⟦ P ⟧mor eμc ∘ X)
+          ≈⟨ pair-cong₁ id-left ⟩
+            pair p₁ (⟦ P ⟧mor eμc ∘ X)
+          ≈⟨ pair-cong₂ (⟦ P ⟧ˢ-fuse-left eμc Ya) ⟩
+            pair p₁ (⟦ P ⟧ˢ (λ i → eμc i ∘ Ya i))
+          ≈⟨ pair-cong₂ (⟦ P ⟧ˢ-cong famLEG) ⟩
+            pX'
+          ∎ where open ≈-Reasoning isEquiv
+        INNER : (⟦ P ⟧mor R ∘ Ba) ∘ pX ≈ Bca ∘ pX'
+        INNER =
+          begin
+            (⟦ P ⟧mor R ∘ Ba) ∘ pX
+          ≈⟨ ∘-cong₁ ALG ⟩
+            (Bca ∘ prod-m (id Γ) (⟦ P ⟧mor eμc)) ∘ pX
+          ≈⟨ assoc _ _ _ ⟩
+            Bca ∘ (prod-m (id Γ) (⟦ P ⟧mor eμc) ∘ pX)
+          ≈⟨ ∘-cong₂ LEG ⟩
+            Bca ∘ pX'
+          ∎ where open ≈-Reasoning isEquiv
+        open ≈-Reasoning isEquiv
