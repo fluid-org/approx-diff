@@ -38,7 +38,7 @@ open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
 open HasStrongCoproducts 𝒟SC using () renaming (copair to scopair; copair-cong to scopair-cong;
        copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂; copair-ext to scopair-ext)
 open HasInitial 𝒟I renaming (witness to 𝟘)
-open polynomial-functor-2 𝒟T 𝒟P 𝒟SC using (Poly; extend; fobj; _∘co_; HasMu)
+open polynomial-functor-2 𝒟T 𝒟P 𝒟SC using (Poly; extend; fobj; _∘co_; HasMu; HasMuLaws)
 open Poly
 
 -- The strong copair absorbs a coproduct reindexing precomposed in the recursion coordinate.
@@ -743,3 +743,7 @@ module cocont
   hasMu .HasMu.α P δ = α P δ ∘ ≡-to-⇒ (sym (⟦⟧-fobj P (extend δ (μ-carrier P δ))))
   hasMu .HasMu.⦅_⦆ {_} {Γ} {A} {P} {δ} alg =
     ⦅ alg ∘ ≡-to-⇒ (cong (prod Γ) (⟦⟧-fobj P (extend δ A))) ⦆
+
+  hasMuLaws : HasMuLaws hasMu
+  hasMuLaws .HasMuLaws.⦅⦆-β alg = ≈-trans (∘co-cong₂ (assoc _ _ _)) {!!}
+  hasMuLaws .HasMuLaws.⦅⦆-η alg h eq = {!!}
