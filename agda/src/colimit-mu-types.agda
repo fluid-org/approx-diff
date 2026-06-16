@@ -756,5 +756,6 @@ module cocont
     (≈-trans (∘co-cong₂ (∘-cong₂ (≈-sym (pair-p₂ (id _ ∘ p₁) _))))
     (≈-trans (∘co-cong₂ (≈-sym (assoc _ _ _)))
     (≈-trans (≈-sym (∘co-prod-m _ _ _))
-    (≈-trans (∘-cong₁ (cata-β _)) {!!}))))
+    (≈-trans (∘-cong₁ (cata-β _))
+    (≈-trans (∘co-prod-m _ _ _) {!!})))))
   hasMuLaws .HasMuLaws.⦅⦆-η alg h eq = {!!}
