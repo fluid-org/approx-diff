@@ -58,9 +58,6 @@ mutual
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
 concat {n} δ₀ δ i = [ δ₀ , δ ] (splitAt n i)
 
-coe : ∀ {x y} → x ≡ y → x ⇒ y
-coe refl = id _
-
 -- Both as-poly and ⟦_⟧ty respect pointwise-equal environments.
 as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} → (∀ i → δ i ≡ δ' i) → as-poly τ δ ≡ as-poly τ δ'
 as-poly-cong {Δ} {n} (var i) {δ} {δ'} h = go (splitAt n i)
@@ -147,7 +144,7 @@ mutual
   apply-fwd (σ [→] τ) δ δ₀ = id _
   apply-fwd {Δ} {n} (μ τ) δ δ₀ =
     μ-map (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ()) (as-poly {Δ} {suc n} τ δ) δ₀
-      (apply-fwd τ δ (extend δ₀ M) ∘ coe (ty-cong τ (env-pw δ δ₀ M)) ∘ apply-bwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) M))
+      (apply-fwd τ δ (extend δ₀ M) ∘ ≡-to-⇒ (ty-cong τ (env-pw δ δ₀ M)) ∘ apply-bwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) M))
     where M = μ-obj (as-poly {Δ} {suc n} τ δ) δ₀
 
   apply-bwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
@@ -162,7 +159,7 @@ mutual
   apply-bwd (σ [→] τ) δ δ₀ = id _
   apply-bwd {Δ} {n} (μ τ) δ δ₀ =
     μ-map (as-poly {Δ} {suc n} τ δ) δ₀ (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ())
-      (apply-fwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) M) ∘ coe (sym (ty-cong τ (env-pw δ δ₀ M))) ∘ apply-bwd τ δ (extend δ₀ M))
+      (apply-fwd {n = 1} τ (concat δ₀ δ) (extend (λ ()) M) ∘ ≡-to-⇒ (sym (ty-cong τ (env-pw δ δ₀ M))) ∘ apply-bwd τ δ (extend δ₀ M))
     where M = μ-obj (as-poly {n + Δ} {1} τ (concat δ₀ δ)) (λ ())
 
 -- Pointwise action of a lifted substitution on the extended environment: the new variable is mapped
@@ -185,7 +182,7 @@ subst-fwd σ (τ₁ [→] τ₂) δ = id _
 subst-fwd {Δ} {Δ'} σ (μ τ) δ =
   μ-map (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (λ ()) (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (λ ())
     (apply-fwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend (λ ()) M)
-     ∘ coe (ty-cong τ (sub-lift-pw σ δ M))
+     ∘ ≡-to-⇒ (ty-cong τ (sub-lift-pw σ δ M))
      ∘ subst-fwd (sub-lift σ) τ (concat (extend {0} (λ ()) M) δ)
      ∘ apply-bwd {n = 1} (sub (sub-lift σ) τ) δ (extend (λ ()) M))
   where M = μ-obj (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (λ ())
@@ -202,7 +199,7 @@ subst-bwd {Δ} {Δ'} σ (μ τ) δ =
   μ-map (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (λ ()) (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (λ ())
     (apply-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend (λ ()) M)
      ∘ subst-bwd (sub-lift σ) τ (concat (extend {0} (λ ()) M) δ)
-     ∘ coe (sym (ty-cong τ (sub-lift-pw σ δ M)))
+     ∘ ≡-to-⇒ (sym (ty-cong τ (sub-lift-pw σ δ M)))
      ∘ apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend (λ ()) M))
   where M = μ-obj (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (λ ())
 
@@ -215,13 +212,13 @@ sub-as-apply-fwd : (τ : type 1) (τ' : type 0) →
                    ⟦ τ [ τ' ] ⟧ty (λ ()) ⇒ fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ())))
 sub-as-apply-fwd τ τ' =
   apply-fwd {0} {1} τ (λ ()) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) ∘
-  coe (ty-cong τ (push-pw τ')) ∘ subst-fwd (push τ') τ (λ ())
+  ≡-to-⇒ (ty-cong τ (push-pw τ')) ∘ subst-fwd (push τ') τ (λ ())
 
 sub-as-apply-bwd : (τ : type 1) (τ' : type 0) →
                    fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend (λ ()) (⟦ τ' ⟧ty (λ ()))) ⇒ ⟦ τ [ τ' ] ⟧ty (λ ())
 sub-as-apply-bwd τ τ' =
   subst-bwd (push τ') τ (λ ()) ∘
-  coe (sym (ty-cong τ (push-pw τ'))) ∘ apply-bwd {0} {1} τ (λ ()) (extend (λ ()) (⟦ τ' ⟧ty (λ ())))
+  ≡-to-⇒ (sym (ty-cong τ (push-pw τ'))) ∘ apply-bwd {0} {1} τ (λ ()) (extend (λ ()) (⟦ τ' ⟧ty (λ ())))
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙

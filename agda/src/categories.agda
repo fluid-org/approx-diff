@@ -51,6 +51,10 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ≡-to-≈ : ∀ {x y} {f g : x ⇒ y} → f ≡ g → f ≈ g
   ≡-to-≈ ≡.refl = ≈-refl
 
+  -- An object equality as a (cast) morphism: the transport of the identity.
+  ≡-to-⇒ : ∀ {x y} → x ≡ y → x ⇒ y
+  ≡-to-⇒ ≡.refl = id _
+
   ∘-cong₁ : ∀ {x y z} {f₁ f₂ : y ⇒ z} {g : x ⇒ y} → f₁ ≈ f₂ → (f₁ ∘ g) ≈ (f₂ ∘ g)
   ∘-cong₁ f≈ = ∘-cong f≈ ≈-refl
 
