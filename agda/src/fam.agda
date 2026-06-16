@@ -715,6 +715,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       ∎
       where open ≈-Reasoning isEquiv
 -}
+{-
   module _ (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
     open import Data.List using ([]; _∷_)
@@ -850,3 +851,4 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     lists .HasLists.nil = nil
     lists .HasLists.cons = cons
     lists .HasLists.fold = foldr
+-}

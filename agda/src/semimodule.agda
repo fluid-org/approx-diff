@@ -1,308 +1,341 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-module semimodule where
-
-open import Level using (suc; _⊔_; 0ℓ)
-open import prop-setoid using (Setoid; IsEquivalence)
-open import commutative-monoid using (CommutativeMonoid)
+open import Level using (0ℓ; suc; _⊔_)
+open import Data.Product using (_,_; _×_; proj₁; proj₂)
+open import prop using (_,_; LiftS; liftS)
+open import prop-setoid
+  using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂)
+  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
+open import categories using (Category; HasProducts)
+open import commutative-monoid using (CommutativeMonoid) renaming (_⊗_ to _×CM_)
 open import commutative-semiring using (CommutativeSemiring)
-open import categories using (Category)
+open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimits)
 
--- The category of all S-semimodules and their linear homomorphisms.  Unlike
--- FDSemiMod (the free finitely-generated ones) this is an algebraic category,
--- so it is complete: limits are computed pointwise, with no bound on the size
--- of carriers.  It is the limit-complete target into which FDSemiMod embeds,
--- playing the role JoinSLat plays for the join-semilattice development.
-module SemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
-  open CommutativeSemiring S
-    using ()
-    renaming (Carrier to Scalar; _≈_ to _≈ₛ_; _+_ to _+ₛ_; _·_ to _·ₛ_; ε to εₛ; ι to ιₛ)
+-- FIXME: should probably just have one level?
+module semimodule {o ℓ} {A : Setoid (o ⊔ ℓ) (o ⊔ ℓ)} (S : CommutativeSemiring A) where
 
-  ----------------------------------------------------------------------------
-  -- Objects: a setoid carrying a commutative monoid and a scalar action.
+module S = CommutativeSemiring S
 
-  record SemiModule : Set (suc (o ⊔ ℓ)) where
-    no-eta-equality
+record Semimodule : Set (suc o ⊔ suc ℓ) where
+  no-eta-equality
+  field
+    setoid : Setoid (o ⊔ ℓ) (o ⊔ ℓ)
+  open Setoid setoid public
+
+  field
+    additive : CommutativeMonoid setoid
+    _·_     : S.Carrier → Carrier → Carrier
+
+  open CommutativeMonoid additive public
+  field
+    ·-cong : ∀ {s₁ s₂ x₁ x₂} → s₁ S.≈ s₂ → x₁ ≈ x₂ → s₁ · x₁ ≈ s₂ · x₂
+
+    ·-mul         : ∀ {s₁ s₂ x} → (s₁ S.· s₂) · x ≈ s₁ · (s₂ · x)
+    ·-unit        : ∀ {x} → (S.ι · x) ≈ x
+    +-distribʳ    : ∀ {s₁ s₂ x} → (s₁ S.+ s₂) · x ≈ (s₁ · x) + (s₂ · x)
+    +-distribˡ    : ∀ {s x₁ x₂} → s · (x₁ + x₂) ≈ (s · x₁) + (s · x₂)
+    zero-distribʳ : ∀ {x} → S.ε · x ≈ ε
+    zero-distribˡ : ∀ {s} → s · ε ≈ ε
+open Semimodule
+
+record _⇒_ (X Y : Semimodule) : Set (o ⊔ ℓ) where
+  private
+    module X = Semimodule X
+    module Y = Semimodule Y
+  field
+    *→* : X.setoid ⇒s Y.setoid
+  open _⇒s_ *→* public
+  field
+    preserve-ze : func X.ε Y.≈ Y.ε
+    preserve-+  : ∀ {x₁ x₂} → func (x₁ X.+ x₂) Y.≈ func x₁ Y.+ func x₂
+    preserve-·  : ∀ {s x} → func (s X.· x) Y.≈ s Y.· func x
+open _⇒_
+
+record _≈m_ {X Y : Semimodule} (f g : X ⇒ Y) : Prop (o ⊔ ℓ) where
+  field
+    *≈* : f .*→* ≈s g .*→*
+  open _≈s_ *≈* public
+open _≈m_
+
+------------------------------------------------------------------------------
+-- Category of semimodules and semilinear maps
+id : ∀ X → X ⇒ X
+id X .*→* = idS _
+id X .preserve-ze = X .refl
+id X .preserve-+ = X .refl
+id X .preserve-· = X .refl
+
+module _ {X Y Z} where
+  _∘_ : Y ⇒ Z → X ⇒ Y → X ⇒ Z
+  (f ∘ g) .*→* = f .*→* ∘S g .*→*
+  (f ∘ g) .preserve-ze = Z .trans (f .func-resp-≈ (g .preserve-ze)) (f .preserve-ze)
+  (f ∘ g) .preserve-+ = Z .trans (f .func-resp-≈ (g .preserve-+)) (f .preserve-+)
+  (f ∘ g) .preserve-· = Z .trans (f .func-resp-≈ (g .preserve-·)) (f .preserve-·)
+
+cat : Category (suc o ⊔ suc ℓ) (o ⊔ ℓ) (o ⊔ ℓ)
+cat .Category.obj = Semimodule
+cat .Category._⇒_ = _⇒_
+cat .Category._≈_ = _≈m_
+cat .Category.isEquiv .IsEquivalence.refl .*≈* = ≈s-isEquivalence .IsEquivalence.refl
+cat .Category.isEquiv .IsEquivalence.sym f≈g .*≈* = ≈s-isEquivalence .IsEquivalence.sym (f≈g .*≈*)
+cat .Category.isEquiv .IsEquivalence.trans f≈g g≈h .*≈* = ≈s-isEquivalence .IsEquivalence.trans (f≈g .*≈*) (g≈h .*≈*)
+cat .Category.id = id
+cat .Category._∘_ = _∘_
+cat .Category.∘-cong f₁≈f₂ g₁≈g₂ .*≈* = ∘S-cong (f₁≈f₂ .*≈*) (g₁≈g₂ .*≈*)
+cat .Category.id-left .*≈* = idS-left
+cat .Category.id-right .*≈* = idS-right
+cat .Category.assoc f g h .*≈* = assocS (f .*→*) (g .*→*) (h .*→*)
+
+------------------------------------------------------------------------------
+open import cmon-enriched using (CMonEnriched)
+
+ε-map : ∀ X Y → X ⇒ Y
+ε-map X Y .*→* ._⇒s_.func x = Y .ε
+ε-map X Y .*→* ._⇒s_.func-resp-≈ _ = Y .refl
+ε-map X Y .preserve-ze = Y .refl
+ε-map X Y .preserve-+ = sym Y (Y .+-lunit)
+ε-map X Y .preserve-· = sym Y (zero-distribˡ Y)
+
++-map : ∀ X Y → X ⇒ Y → X ⇒ Y → X ⇒ Y
++-map X Y f g .*→* ._⇒s_.func x = Y ._+_ (f .func x) (g .func x)
++-map X Y f g .*→* ._⇒s_.func-resp-≈ x₁≈x₂ = +-cong Y (_⇒s_.func-resp-≈ (f .*→*) x₁≈x₂)
+                                              (_⇒s_.func-resp-≈ (g .*→*) x₁≈x₂)
++-map X Y f g .preserve-ze = trans Y (+-cong Y (f .preserve-ze) (g .preserve-ze)) (+-lunit Y)
++-map X Y f g .preserve-+ = Y .trans (Y .+-cong (f .preserve-+) (g .preserve-+)) (+-interchange Y)
++-map X Y f g .preserve-· = trans Y (+-cong Y (f .preserve-·) (g .preserve-·))
+                             (sym Y (+-distribˡ Y))
+
+cmon-enriched : CMonEnriched cat
+cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid.ε = ε-map M N
+cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid._+_ = +-map M N
+cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid.+-cong f₁≈f₂ g₁≈g₂ .*≈* ._≈s_.func-eq x = +-cong N (f₁≈f₂ .func-eq x) (g₁≈g₂ .func-eq x)
+cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid.+-lunit {f} .*≈* ._≈s_.func-eq x₁≈x₂ = N .trans (N .+-lunit) (f .func-resp-≈ x₁≈x₂)
+cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid.+-assoc {f} {g} {h} .*≈* ._≈s_.func-eq {m}{n} m≈n = N .trans (N .+-cong (N .+-cong (f .func-resp-≈ m≈n) (g .func-resp-≈ m≈n)) (h .func-resp-≈ m≈n)) (N .+-assoc)
+cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid.+-comm {f} {g} .*≈* ._≈s_.func-eq {m}{n} m≈n = N .trans (N .+-cong (f .func-resp-≈ m≈n) (g .func-resp-≈ m≈n)) (N .+-comm)
+cmon-enriched .CMonEnriched.comp-bilinear₁ {M}{N}{O} f₁ f₂ g .*≈* ._≈s_.func-eq x₁≈x₂ = O .+-cong (f₁ .func-resp-≈ (g .func-resp-≈ x₁≈x₂)) (f₂ .func-resp-≈ (g .func-resp-≈ x₁≈x₂))
+cmon-enriched .CMonEnriched.comp-bilinear₂ {M} {N} {O} f g₁ g₂ .*≈* ._≈s_.func-eq x₁≈x₂ = O .trans (f .preserve-+) (O .+-cong (f .func-resp-≈ (g₁ .func-resp-≈ x₁≈x₂)) (f .func-resp-≈ (g₂ .func-resp-≈ x₁≈x₂)))
+cmon-enriched .CMonEnriched.comp-bilinear-ε₁ {M}{N}{O} f .*≈* ._≈s_.func-eq _ = O .refl
+cmon-enriched .CMonEnriched.comp-bilinear-ε₂ {M} {N} {O} f .*≈* ._≈s_.func-eq _ = f .preserve-ze
+
+------------------------------------------------------------------------------
+-- (Bi)products
+
+_⊕_ : Semimodule → Semimodule → Semimodule
+(M ⊕ N) .setoid = ⊗-setoid (M .setoid) (N .setoid)
+(M ⊕ N) .additive = (M .additive) ×CM (N .additive)
+(M ⊕ N) ._·_ s (m , n) = (M ._·_ s m) , (N ._·_ s n)
+(M ⊕ N) .·-cong s₁≈s₂ (m₁≈m₂ , n₁≈n₂) = ·-cong M s₁≈s₂ m₁≈m₂ , ·-cong N s₁≈s₂ n₁≈n₂
+(M ⊕ N) .·-mul = ·-mul M , ·-mul N
+(M ⊕ N) .·-unit = ·-unit M , ·-unit N
+(M ⊕ N) .+-distribʳ = +-distribʳ M , +-distribʳ N
+(M ⊕ N) .+-distribˡ = +-distribˡ M , +-distribˡ N
+(M ⊕ N) .zero-distribʳ = zero-distribʳ M , zero-distribʳ N
+(M ⊕ N) .zero-distribˡ = zero-distribˡ M , zero-distribˡ N
+
+p₁ : ∀ {X Y} → (X ⊕ Y) ⇒ X
+p₁ .*→* = project₁
+p₁ {X} {Y} .preserve-ze = refl X
+p₁ {X} {Y} .preserve-+ = refl X
+p₁ {X} {Y} .preserve-· = refl X
+
+p₂ : ∀ {X Y} → (X ⊕ Y) ⇒ Y
+p₂ .*→* = project₂
+p₂ {X} {Y} .preserve-ze = refl Y
+p₂ {X} {Y} .preserve-+ = refl Y
+p₂ {X} {Y} .preserve-· = refl Y
+
+pair : ∀ {X Y Z} → (X ⇒ Y) → (X ⇒ Z) → X ⇒ (Y ⊕ Z)
+pair {X} {Y} {Z} f g .*→* = pairS (f .*→*) (g .*→*)
+pair {X} {Y} {Z} f g .preserve-ze = f .preserve-ze , g .preserve-ze
+pair {X} {Y} {Z} f g .preserve-+ = f .preserve-+ , g .preserve-+
+pair {X} {Y} {Z} f g .preserve-· = f .preserve-· , g .preserve-·
+
+products : HasProducts cat
+products .HasProducts.prod M N = M ⊕ N
+products .HasProducts.p₁ = p₁
+products .HasProducts.p₂ = p₂
+products .HasProducts.pair = pair
+products .HasProducts.pair-cong f₁≈f₂ g₁≈g₂ .*≈* = pairS-cong (f₁≈f₂ .*≈*) (g₁≈g₂ .*≈*)
+products .HasProducts.pair-p₁ f g .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (f .*→*)
+products .HasProducts.pair-p₂ f g .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (g .*→*)
+products .HasProducts.pair-ext f .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (f .*→*)
+
+------------------------------------------------------------------------------
+-- Tensor products
+
+𝕀 : Semimodule
+𝕀 .setoid = A
+𝕀 .additive = S.additive
+𝕀 ._·_ = S._·_
+𝕀 .·-cong = S.·-cong
+𝕀 .·-mul = S.·-assoc
+𝕀 .·-unit = S.·-lunit
+𝕀 .+-distribʳ = S.·-+-distribᵣ
+𝕀 .+-distribˡ = S.·-+-distribₗ
+𝕀 .zero-distribʳ = S.ε-annihilₗ
+𝕀 .zero-distribˡ = S.ε-annihilᵣ
+
+data ⊗-elt (M N : Semimodule) : Set (o ⊔ ℓ) where
+  el    : M .Carrier → N .Carrier -> ⊗-elt M N
+  _`+`_ : ⊗-elt M N → ⊗-elt M N → ⊗-elt M N
+  _`·`_ : S.Carrier → ⊗-elt M N → ⊗-elt M N
+  `ε    : ⊗-elt M N
+
+data ⊗-eq {M N} : ⊗-elt M N → ⊗-elt M N → Set (o ⊔ ℓ) where
+  ⊗-eq-refl    : ∀ {x} → ⊗-eq x x
+  ⊗-eq-sym     : ∀ {x y} → ⊗-eq x y → ⊗-eq y x
+  ⊗-eq-trans   : ∀ {x y z} → ⊗-eq x y → ⊗-eq y z → ⊗-eq x z
+  ⊗-eq-+-cong  : ∀ {x₁ x₂ y₁ y₂} → ⊗-eq x₁ x₂ → ⊗-eq y₁ y₂ → ⊗-eq (x₁ `+` y₁) (x₂ `+` y₂)
+  ⊗-eq-+-lunit : ∀ {x} → ⊗-eq (`ε `+` x) x
+  ⊗-eq-+-assoc : ∀ {x y z} → ⊗-eq ((x `+` y) `+` z) (x `+` (y `+` z))
+  ⊗-eq-+-comm  : ∀ {x y} → ⊗-eq (x `+` y) (y `+` x)
+  ⊗-eq-·-cong  : ∀ {s₁ s₂ x₁ x₂} → s₁ S.≈ s₂ → ⊗-eq x₁ x₂ → ⊗-eq (s₁ `·` x₁) (s₂ `·` x₂)
+  ⊗-eq-·-mul   : ∀ {s₁ s₂ x} → ⊗-eq ((s₁ S.· s₂) `·` x) (s₁ `·` (s₂ `·` x))
+  ⊗-eq-·-unit  : ∀ {x} → ⊗-eq (S.ι `·` x) x
+  ⊗-eq-+-distribʳ : ∀ {s₁ s₂ x} → ⊗-eq ((s₁ S.+ s₂) `·` x) ((s₁ `·` x) `+` (s₂ `·` x))
+  ⊗-eq-+-distribˡ : ∀ {s x₁ x₂} → ⊗-eq (s `·` (x₁ `+` x₂)) ((s `·` x₁) `+` (s `·` x₂))
+  ⊗-eq-zero-distribʳ : ∀ {x} → ⊗-eq (S.ε `·` x) `ε
+  ⊗-eq-zero-distribˡ : ∀ {s} → ⊗-eq (s `·` `ε) `ε
+  ⊗-eq-el-cong : ∀ {m₁ m₂ n₁ n₂} → M ._≈_ m₁ m₂ → N ._≈_ n₁ n₂ → ⊗-eq (el m₁ n₁) (el m₂ n₂)
+  ⊗-eq-el-+    : ∀ {m₁ m₂ n₁ n₂} → ⊗-eq (el m₁ n₁ `+` el m₂ n₂) (el (M ._+_ m₁ m₂) (N ._+_ n₁ n₂))
+  ⊗-eq-el-·    : ∀ {m n s}       → ⊗-eq (s `·` el m n) (el (M ._·_ s m) (N ._·_ s n))
+
+_⊗_ : Semimodule → Semimodule → Semimodule
+(M ⊗ N) .setoid .Setoid.Carrier = ⊗-elt M N
+(M ⊗ N) .setoid .Setoid._≈_ x y = LiftS ℓ (⊗-eq x y)
+(M ⊗ N) .setoid .Setoid.isEquivalence .IsEquivalence.refl = liftS ⊗-eq-refl
+(M ⊗ N) .setoid .Setoid.isEquivalence .IsEquivalence.sym (liftS eq) = liftS (⊗-eq-sym eq)
+(M ⊗ N) .setoid .Setoid.isEquivalence .IsEquivalence.trans (liftS eq₁) (liftS eq₂) = liftS (⊗-eq-trans eq₁ eq₂)
+(M ⊗ N) .additive .CommutativeMonoid.ε = `ε
+(M ⊗ N) .additive .CommutativeMonoid._+_ = _`+`_
+(M ⊗ N) .additive .CommutativeMonoid.+-cong (liftS x₁≈x₂) (liftS y₁≈y₂) = liftS (⊗-eq-+-cong x₁≈x₂ y₁≈y₂)
+(M ⊗ N) .additive .CommutativeMonoid.+-lunit = liftS ⊗-eq-+-lunit
+(M ⊗ N) .additive .CommutativeMonoid.+-assoc = liftS ⊗-eq-+-assoc
+(M ⊗ N) .additive .CommutativeMonoid.+-comm = liftS ⊗-eq-+-comm
+(M ⊗ N) ._·_ = _`·`_
+(M ⊗ N) .·-cong s₁≈s₂ (liftS x₁≈x₂) = liftS (⊗-eq-·-cong s₁≈s₂ x₁≈x₂)
+(M ⊗ N) .·-mul = liftS ⊗-eq-·-mul
+(M ⊗ N) .·-unit = liftS ⊗-eq-·-unit
+(M ⊗ N) .+-distribʳ = liftS ⊗-eq-+-distribʳ
+(M ⊗ N) .+-distribˡ = liftS ⊗-eq-+-distribˡ
+(M ⊗ N) .zero-distribʳ = liftS ⊗-eq-zero-distribʳ
+(M ⊗ N) .zero-distribˡ = liftS ⊗-eq-zero-distribˡ
+
+-- Universal property: bilinear functions M, N ⇒ O are iso to linear functions M ⊗ N ⇒ O
+--
+-- Presumably this would help with proving that the above is a monoidal product?
+
+
+_⊸_ : Semimodule → Semimodule → Semimodule
+(M ⊸ N) .setoid = Category.hom-setoid cat M N
+(M ⊸ N) .additive = cmon-enriched .CMonEnriched.homCM M N
+(M ⊸ N) ._·_ s f .*→* ._⇒s_.func x = N ._·_ s (f .func x)
+(M ⊸ N) ._·_ s f .*→* ._⇒s_.func-resp-≈ = λ z → N .·-cong S.refl (f .func-resp-≈ z)
+(M ⊸ N) ._·_ s f .preserve-ze = trans N (·-cong N S.refl (f .preserve-ze)) (zero-distribˡ N)
+(M ⊸ N) ._·_ s f .preserve-+ = trans N (·-cong N S.refl (f .preserve-+)) (+-distribˡ N)
+(M ⊸ N) ._·_ s f .preserve-· {s₁}{x} =
+  N .trans (N .·-cong S.refl (f .preserve-·))
+ (N .trans (N .sym (N .·-mul))
+ (N .trans (N .·-cong S.·-comm (N .refl))
+           (N .·-mul)))
+(M ⊸ N) .·-cong x x₁ .*≈* ._≈s_.func-eq = λ z → ·-cong N x (x₁ .*≈* ._≈s_.func-eq z)
+(M ⊸ N) .·-mul {s₁} {s₂} {f} .*≈* ._≈s_.func-eq x = trans N (·-cong N S.refl (f .func-resp-≈ x)) (·-mul N)
+(M ⊸ N) .·-unit {f} .*≈* ._≈s_.func-eq x₁≈x₂ = N .trans (N .·-unit) (f .func-resp-≈ x₁≈x₂)
+(M ⊸ N) .+-distribʳ {s₁} {s₂} {f} .*≈* ._≈s_.func-eq x₁≈x₂ =
+  N .trans (N .·-cong S.refl (f .func-resp-≈ x₁≈x₂)) (+-distribʳ N)
+(M ⊸ N) .+-distribˡ {s} {f₁} {f₂} .*≈* ._≈s_.func-eq x₁≈x₂ =
+  N .trans (N .·-cong S.refl (N .+-cong (f₁ .func-resp-≈ x₁≈x₂) (f₂ .func-resp-≈ x₁≈x₂)))
+           (N .+-distribˡ)
+(M ⊸ N) .zero-distribʳ {f} .*≈* ._≈s_.func-eq x₁≈x₂ = zero-distribʳ N
+(M ⊸ N) .zero-distribˡ {s} .*≈* ._≈s_.func-eq x₁≈x₂ = zero-distribˡ N
+
+-- TODO: Tensor products and adjointness, or could just state that the
+-- category is closed without the tensor.
+
+------------------------------------------------------------------------------
+-- Duality
+
+Dual : Semimodule → Semimodule
+Dual M = M ⊸ 𝕀
+
+-- Isomorphisms M ≅ Dual M are equivalent to certain kinds of
+--
+--   M ⇒ M ⊸ 𝕀
+-- ≅ M ⊗ M ⇒ 𝕀
+--
+-- i.e. a bilinear map.
+--
+-- When the original map is an isomorphism, then can this property be
+-- stated in terms of the bilinear map?
+--
+-- Non-degeneracy: ∀ x → x ≠ ε → ∃ y → ⟨ x , y ⟩ ≠ ε
+
+-- forward map: M ⇒ M ⊸ I
+--              x ↦ y ↦ ⟨ x , y ⟩
+--
+-- backward map: (M ⊸ I) ⇒ M
+--               f ↦ Σ f(eᵢ) eᵢ
+-- In finite dimensions, equivalent to unimodularity?
+
+------------------------------------------------------------------------------
+module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
+  private
+    module 𝒮 = Category 𝒮
+
+  open Functor
+  open NatTrans
+  open ≃-NatTrans
+
+  -- Set of Natural Transformations Id ⇒ D
+  record Π-Carrier (D : Functor 𝒮 cat) : Set (o ⊔ ℓ) where
     field
-      carrier : Setoid (o ⊔ ℓ) (o ⊔ ℓ)
-    open Setoid carrier public
-    field
-      +-monoid : CommutativeMonoid carrier
-    open CommutativeMonoid +-monoid public
-    field
-      scale      : Scalar → Carrier → Carrier
-      scale-cong : ∀ {a a′ x x′} → a ≈ₛ a′ → x ≈ x′ → scale a x ≈ scale a′ x′
-      scale-+ᵣ   : ∀ {a x y} → scale a (x + y) ≈ (scale a x + scale a y)
-      scale-+ₗ   : ∀ {a b x} → scale (a +ₛ b) x ≈ (scale a x + scale b x)
-      scale-·    : ∀ {a b x} → scale (a ·ₛ b) x ≈ scale a (scale b x)
-      scale-ι    : ∀ {x} → scale ιₛ x ≈ x
-      scale-0ₗ   : ∀ {x} → scale εₛ x ≈ ε
-      scale-0ᵣ   : ∀ {a} → scale a ε ≈ ε
-  open SemiModule
+      Π-func : (x : 𝒮.obj) → D .fobj x .Carrier
+      Π-natural : ∀ {x₁ x₂} (f : x₁ 𝒮.⇒ x₂) → _≈_ (D .fobj x₂) (D .fmor f .func (Π-func x₁)) (Π-func x₂)
+  open Π-Carrier
 
-  ----------------------------------------------------------------------------
-  -- Morphisms: linear maps preserving +, ε and the scalar action.
+  Π : Functor 𝒮 cat → Semimodule
+  Π D .setoid .Setoid.Carrier = Π-Carrier D
+  Π D .setoid .Setoid._≈_ α β = ∀ x → D .fobj x ._≈_ (α .Π-func x) (β .Π-func x)
+  Π D .setoid .Setoid.isEquivalence .IsEquivalence.refl x = refl (fobj D x)
+  Π D .setoid .Setoid.isEquivalence .IsEquivalence.sym x x₁ = sym (fobj D x₁) (x x₁)
+  Π D .setoid .Setoid.isEquivalence .IsEquivalence.trans z₁ z₂ x₁ = trans (fobj D x₁) (z₁ x₁) (z₂ x₁)
+  Π D .additive .CommutativeMonoid.ε .Π-func x = D .fobj x .ε
+  Π D .additive .CommutativeMonoid.ε .Π-natural f = D .fmor f .preserve-ze
+  Π D .additive .CommutativeMonoid._+_ α₁ α₂ .Π-func x = D .fobj x ._+_ (α₁ .Π-func x) (α₂ .Π-func x)
+  Π D .additive .CommutativeMonoid._+_ α₁ α₂ .Π-natural = λ f →
+                                                             trans (fobj D _) (D .fmor f .preserve-+)
+                                                             (+-cong (fobj D _) (α₁ .Π-natural f) (α₂ .Π-natural f))
+  Π D .additive .CommutativeMonoid.+-cong = λ z z₁ x → +-cong (fobj D x) (z x) (z₁ x)
+  Π D .additive .CommutativeMonoid.+-lunit = λ x₁ → +-lunit (fobj D x₁)
+  Π D .additive .CommutativeMonoid.+-assoc = λ x₁ → +-assoc (fobj D x₁)
+  Π D .additive .CommutativeMonoid.+-comm = λ x₁ → +-comm (fobj D x₁)
+  Π D ._·_ s α .Π-func x = D .fobj x ._·_ s (α .Π-func x)
+  Π D ._·_ s α .Π-natural f =
+    D .fobj _ .trans (D .fmor f .preserve-·) (D .fobj _ .·-cong S.refl (α .Π-natural f))
+  Π D .·-cong = λ z z₁ x → ·-cong (D .fobj x) z (z₁ x)
+  Π D .·-mul = λ x₁ → ·-mul (D .fobj x₁)
+  Π D .·-unit = λ x₁ → ·-unit (D .fobj x₁)
+  Π D .+-distribʳ = λ x₁ → +-distribʳ (D .fobj x₁)
+  Π D .+-distribˡ = λ x → +-distribˡ (D .fobj x)
+  Π D .zero-distribʳ = λ x₁ → zero-distribʳ (D .fobj x₁)
+  Π D .zero-distribˡ = λ x → zero-distribˡ (D .fobj x)
 
-  record _⇒_ (M N : SemiModule) : Set (o ⊔ ℓ) where
-    no-eta-equality
-    open SemiModule M using () renaming (Carrier to ∣M∣; _≈_ to _≈ᴹ_; _+_ to _+ᴹ_; ε to εᴹ; scale to scaleᴹ)
-    open SemiModule N using () renaming (Carrier to ∣N∣; _≈_ to _≈ᴺ_; _+_ to _+ᴺ_; ε to εᴺ; scale to scaleᴺ)
-    field
-      func             : ∣M∣ → ∣N∣
-      func-resp-≈      : ∀ {x y} → x ≈ᴹ y → func x ≈ᴺ func y
-      +-preserving     : ∀ {x y} → func (x +ᴹ y) ≈ᴺ (func x +ᴺ func y)
-      ε-preserving     : func εᴹ ≈ᴺ εᴺ
-      scale-preserving : ∀ {a x} → func (scaleᴹ a x) ≈ᴺ scaleᴺ a (func x)
-  open _⇒_ public
-
-  -- Extensional (pointwise) equality of morphisms.
-  infix 4 _≃_
-  _≃_ : ∀ {M N} → M ⇒ N → M ⇒ N → Prop (o ⊔ ℓ)
-  _≃_ {M} {N} f g = ∀ x → N ._≈_ (f .func x) (g .func x)
-
-  ≃-isEquiv : ∀ {M N} → IsEquivalence (_≃_ {M} {N})
-  ≃-isEquiv {N = N} .IsEquivalence.refl x = N .refl
-  ≃-isEquiv {N = N} .IsEquivalence.sym f≃g x = N .sym (f≃g x)
-  ≃-isEquiv {N = N} .IsEquivalence.trans f≃g g≃h x = N .trans (f≃g x) (g≃h x)
-
-  ----------------------------------------------------------------------------
-  -- Identity and composition.
-
-  id : ∀ {M} → M ⇒ M
-  id .func x = x
-  id .func-resp-≈ x≈y = x≈y
-  id {M} .+-preserving = M .refl
-  id {M} .ε-preserving = M .refl
-  id {M} .scale-preserving = M .refl
-
-  infixl 21 _∘_
-  _∘_ : ∀ {M N P} → N ⇒ P → M ⇒ N → M ⇒ P
-  (g ∘ f) .func x = g .func (f .func x)
-  (g ∘ f) .func-resp-≈ x≈y = g .func-resp-≈ (f .func-resp-≈ x≈y)
-  _∘_ {P = P} g f .+-preserving = P .trans (g .func-resp-≈ (f .+-preserving)) (g .+-preserving)
-  _∘_ {P = P} g f .ε-preserving = P .trans (g .func-resp-≈ (f .ε-preserving)) (g .ε-preserving)
-  _∘_ {P = P} g f .scale-preserving = P .trans (g .func-resp-≈ (f .scale-preserving)) (g .scale-preserving)
-
-  ----------------------------------------------------------------------------
-  -- The category of S-semimodules.
-
-  cat : Category (suc (o ⊔ ℓ)) (o ⊔ ℓ) (o ⊔ ℓ)
-  cat .Category.obj = SemiModule
-  cat .Category._⇒_ M N = M ⇒ N
-  cat .Category._≈_ = _≃_
-  cat .Category.isEquiv = ≃-isEquiv
-  cat .Category.id M = id
-  cat .Category._∘_ = _∘_
-  cat .Category.∘-cong {z = P} {f₁ = F₁} {g₂ = G₂} F≃ G≃ x =
-    P .trans (F₁ .func-resp-≈ (G≃ x)) (F≃ (G₂ .func x))
-  cat .Category.id-left {y = N} x = N .refl
-  cat .Category.id-right {y = N} x = N .refl
-  cat .Category.assoc {z = P} f g h x = P .refl
-
-  ----------------------------------------------------------------------------
-  -- The one-point semimodule is a zero object.
-
-  open import categories using (HasTerminal; IsTerminal; HasInitial; IsInitial)
-  open import prop-setoid using (𝟙)
-  open import commutative-monoid using (𝟙cm)
-
-  𝟘 : SemiModule
-  𝟘 .carrier = 𝟙
-  𝟘 .+-monoid = 𝟙cm
-  𝟘 .scale _ c = c
-  𝟘 .scale-cong _ _ = _
-  𝟘 .scale-+ᵣ = _
-  𝟘 .scale-+ₗ = _
-  𝟘 .scale-· = _
-  𝟘 .scale-ι = _
-  𝟘 .scale-0ₗ = _
-  𝟘 .scale-0ᵣ = _
-
-  terminal : HasTerminal cat
-  terminal .HasTerminal.witness = 𝟘
-  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .func _ = 𝟘 .ε
-  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .func-resp-≈ _ = _
-  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .+-preserving = _
-  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .ε-preserving = _
-  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .scale-preserving = _
-  terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f x = _
-
-  initial : HasInitial cat
-  initial .HasInitial.witness = 𝟘
-  initial .HasInitial.is-initial .IsInitial.from-initial {x = M} .func _ = M .ε
-  initial .HasInitial.is-initial .IsInitial.from-initial {x = M} .func-resp-≈ _ = M .refl
-  initial .HasInitial.is-initial .IsInitial.from-initial {x = M} .+-preserving = M .sym (M .+-lunit)
-  initial .HasInitial.is-initial .IsInitial.from-initial {x = M} .ε-preserving = M .refl
-  initial .HasInitial.is-initial .IsInitial.from-initial {x = M} .scale-preserving = M .sym (M .scale-0ᵣ)
-  initial .HasInitial.is-initial .IsInitial.from-initial-ext {x = M} f x = M .sym (f .ε-preserving)
-
-  ----------------------------------------------------------------------------
-  -- CMon-enrichment: pointwise sum of linear maps, composition bilinear.
-
-  open import cmon-enriched using (CMonEnriched)
-
-  -- The zero map.
-  εₘ : ∀ {M N} → M ⇒ N
-  εₘ {N = N} .func _ = N .ε
-  εₘ {N = N} .func-resp-≈ _ = N .refl
-  εₘ {N = N} .+-preserving = N .sym (N .+-lunit)
-  εₘ {N = N} .ε-preserving = N .refl
-  εₘ {N = N} .scale-preserving = N .sym (N .scale-0ᵣ)
-
-  -- Pointwise sum of linear maps.
-  infixl 21 _+ₘ_
-  _+ₘ_ : ∀ {M N} → M ⇒ N → M ⇒ N → M ⇒ N
-  _+ₘ_ {N = N} f g .func x = N ._+_ (f .func x) (g .func x)
-  _+ₘ_ {N = N} f g .func-resp-≈ p = N .+-cong (f .func-resp-≈ p) (g .func-resp-≈ p)
-  _+ₘ_ {N = N} f g .+-preserving = N .trans (N .+-cong (f .+-preserving) (g .+-preserving)) (CommutativeMonoid.+-interchange (N .+-monoid))
-  _+ₘ_ {N = N} f g .ε-preserving = N .trans (N .+-cong (f .ε-preserving) (g .ε-preserving)) (N .+-lunit)
-  _+ₘ_ {N = N} f g .scale-preserving = N .trans (N .+-cong (f .scale-preserving) (g .scale-preserving)) (N .sym (N .scale-+ᵣ))
-
-  cmon : CMonEnriched cat
-  cmon .CMonEnriched.homCM M N .CommutativeMonoid.ε = εₘ
-  cmon .CMonEnriched.homCM M N .CommutativeMonoid._+_ = _+ₘ_
-  cmon .CMonEnriched.homCM M N .CommutativeMonoid.+-cong p q x = N .+-cong (p x) (q x)
-  cmon .CMonEnriched.homCM M N .CommutativeMonoid.+-lunit x = N .+-lunit
-  cmon .CMonEnriched.homCM M N .CommutativeMonoid.+-assoc x = N .+-assoc
-  cmon .CMonEnriched.homCM M N .CommutativeMonoid.+-comm x = N .+-comm
-  cmon .CMonEnriched.comp-bilinear₁ {Z = P} f₁ f₂ g x = P .refl
-  cmon .CMonEnriched.comp-bilinear₂ f g₁ g₂ x = f .+-preserving
-  cmon .CMonEnriched.comp-bilinear-ε₁ {Z = P} f x = P .refl
-  cmon .CMonEnriched.comp-bilinear-ε₂ f x = f .ε-preserving
-
-  ----------------------------------------------------------------------------
-  -- Biproducts: the direct sum M ⊕ N, with componentwise structure.
-
-  open import prop using (_,_)
-  open import Data.Product using (_,_)
-  open import prop-setoid using (⊗-setoid)
-  open import commutative-monoid using (_⊗_)
-  open import cmon-enriched using (Biproduct)
-
-  infixr 20 _⊕_
-  _⊕_ : SemiModule → SemiModule → SemiModule
-  (M ⊕ N) .carrier = ⊗-setoid (M .carrier) (N .carrier)
-  (M ⊕ N) .+-monoid = M .+-monoid ⊗ N .+-monoid
-  (M ⊕ N) .scale a (x , y) = M .scale a x , N .scale a y
-  (M ⊕ N) .scale-cong a≈ (x≈ , y≈) = M .scale-cong a≈ x≈ , N .scale-cong a≈ y≈
-  (M ⊕ N) .scale-+ᵣ = M .scale-+ᵣ , N .scale-+ᵣ
-  (M ⊕ N) .scale-+ₗ = M .scale-+ₗ , N .scale-+ₗ
-  (M ⊕ N) .scale-· = M .scale-· , N .scale-·
-  (M ⊕ N) .scale-ι = M .scale-ι , N .scale-ι
-  (M ⊕ N) .scale-0ₗ = M .scale-0ₗ , N .scale-0ₗ
-  (M ⊕ N) .scale-0ᵣ = M .scale-0ᵣ , N .scale-0ᵣ
-
-  -- Projections.
-  p₁ : ∀ {M N} → (M ⊕ N) ⇒ M
-  p₁ {M} .func (x , y) = x
-  p₁ {M} .func-resp-≈ (x≈ , y≈) = x≈
-  p₁ {M} .+-preserving = M .refl
-  p₁ {M} .ε-preserving = M .refl
-  p₁ {M} .scale-preserving = M .refl
-
-  p₂ : ∀ {M N} → (M ⊕ N) ⇒ N
-  p₂ {N = N} .func (x , y) = y
-  p₂ {N = N} .func-resp-≈ (x≈ , y≈) = y≈
-  p₂ {N = N} .+-preserving = N .refl
-  p₂ {N = N} .ε-preserving = N .refl
-  p₂ {N = N} .scale-preserving = N .refl
-
-  -- Injections: pad with zero in the other component.
-  in₁ : ∀ {M N} → M ⇒ (M ⊕ N)
-  in₁ {M} {N} .func x = x , N .ε
-  in₁ {M} {N} .func-resp-≈ x≈ = x≈ , N .refl
-  in₁ {M} {N} .+-preserving = M .refl , N .sym (N .+-lunit)
-  in₁ {M} {N} .ε-preserving = M .refl , N .refl
-  in₁ {M} {N} .scale-preserving = M .refl , N .sym (N .scale-0ᵣ)
-
-  in₂ : ∀ {M N} → N ⇒ (M ⊕ N)
-  in₂ {M} {N} .func y = M .ε , y
-  in₂ {M} {N} .func-resp-≈ y≈ = M .refl , y≈
-  in₂ {M} {N} .+-preserving = M .sym (M .+-lunit) , N .refl
-  in₂ {M} {N} .ε-preserving = M .refl , N .refl
-  in₂ {M} {N} .scale-preserving = M .sym (M .scale-0ᵣ) , N .refl
-
-  biproduct : ∀ M N → Biproduct cmon M N
-  biproduct M N .Biproduct.prod = M ⊕ N
-  biproduct M N .Biproduct.p₁ = p₁ {M} {N}
-  biproduct M N .Biproduct.p₂ = p₂ {M} {N}
-  biproduct M N .Biproduct.in₁ = in₁ {M} {N}
-  biproduct M N .Biproduct.in₂ = in₂ {M} {N}
-  biproduct M N .Biproduct.id-1 x = M .refl
-  biproduct M N .Biproduct.id-2 x = N .refl
-  biproduct M N .Biproduct.zero-1 x = M .refl
-  biproduct M N .Biproduct.zero-2 x = N .refl
-  biproduct M N .Biproduct.id-+ (x , y) = M .trans (M .+-comm) (M .+-lunit) , N .+-lunit
-
-  -- Finite products, from the biproducts.
-  open import categories using (HasProducts)
-  open import cmon-enriched using (biproducts→products)
-
-  products : HasProducts cat
-  products = biproducts→products cmon biproduct
-
-  ----------------------------------------------------------------------------
-  -- Limits, computed pointwise: SemiMod is an algebraic category, so the
-  -- limit of D is the semimodule of natural families, with +/ε/scale defined
-  -- componentwise.  No finiteness bound on carriers (cf. FDSemiMod).
-
-  open import functor using (Functor; NatTrans; ≃-NatTrans; IsLimit; Limit; HasLimits)
-
-  module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
-    private module 𝒮 = Category 𝒮
-    open Functor
-    open NatTrans
-    open ≃-NatTrans
-
-    -- A natural family: a choice of element at each index, stable under D's maps.
-    record Π-Carrier (D : Functor 𝒮 cat) : Set (o ⊔ ℓ) where
-      field
-        Π-func    : (s : 𝒮.obj) → D .fobj s .Carrier
-        Π-natural : ∀ {s₁ s₂} (f : s₁ 𝒮.⇒ s₂) →
-                    D .fobj s₂ ._≈_ (D .fmor f .func (Π-func s₁)) (Π-func s₂)
-    open Π-Carrier
-
-    Π : Functor 𝒮 cat → SemiModule
-    Π D .carrier .Setoid.Carrier = Π-Carrier D
-    Π D .carrier .Setoid._≈_ α β = ∀ s → D .fobj s ._≈_ (α .Π-func s) (β .Π-func s)
-    Π D .carrier .Setoid.isEquivalence .IsEquivalence.refl s = D .fobj s .refl
-    Π D .carrier .Setoid.isEquivalence .IsEquivalence.sym α≈β s = D .fobj s .sym (α≈β s)
-    Π D .carrier .Setoid.isEquivalence .IsEquivalence.trans α≈β β≈γ s = D .fobj s .trans (α≈β s) (β≈γ s)
-    Π D .+-monoid .CommutativeMonoid.ε .Π-func s = D .fobj s .ε
-    Π D .+-monoid .CommutativeMonoid.ε .Π-natural f = D .fmor f .ε-preserving
-    Π D .+-monoid .CommutativeMonoid._+_ α β .Π-func s = D .fobj s ._+_ (α .Π-func s) (β .Π-func s)
-    Π D .+-monoid .CommutativeMonoid._+_ α β .Π-natural {s₂ = s₂} f =
-      D .fobj s₂ .trans (D .fmor f .+-preserving) (D .fobj s₂ .+-cong (α .Π-natural f) (β .Π-natural f))
-    Π D .+-monoid .CommutativeMonoid.+-cong α≈ β≈ s = D .fobj s .+-cong (α≈ s) (β≈ s)
-    Π D .+-monoid .CommutativeMonoid.+-lunit s = D .fobj s .+-lunit
-    Π D .+-monoid .CommutativeMonoid.+-assoc s = D .fobj s .+-assoc
-    Π D .+-monoid .CommutativeMonoid.+-comm s = D .fobj s .+-comm
-    Π D .scale a α .Π-func s = D .fobj s .scale a (α .Π-func s)
-    Π D .scale a α .Π-natural {s₂ = s₂} f =
-      D .fobj s₂ .trans (D .fmor f .scale-preserving) (D .fobj s₂ .scale-cong (Setoid.refl A) (α .Π-natural f))
-    Π D .scale-cong a≈ α≈ s = D .fobj s .scale-cong a≈ (α≈ s)
-    Π D .scale-+ᵣ s = D .fobj s .scale-+ᵣ
-    Π D .scale-+ₗ s = D .fobj s .scale-+ₗ
-    Π D .scale-· s = D .fobj s .scale-·
-    Π D .scale-ι s = D .fobj s .scale-ι
-    Π D .scale-0ₗ s = D .fobj s .scale-0ₗ
-    Π D .scale-0ᵣ s = D .fobj s .scale-0ᵣ
-
-    limits : HasLimits 𝒮 cat
-    limits D .Limit.apex = Π D
-    limits D .Limit.cone .transf s .func α = α .Π-func s
-    limits D .Limit.cone .transf s .func-resp-≈ α≈β = α≈β s
-    limits D .Limit.cone .transf s .+-preserving = D .fobj s .refl
-    limits D .Limit.cone .transf s .ε-preserving = D .fobj s .refl
-    limits D .Limit.cone .transf s .scale-preserving = D .fobj s .refl
-    limits D .Limit.cone .natural f α = α .Π-natural f
-    limits D .Limit.isLimit .IsLimit.lambda X α .func x .Π-func s = α .transf s .func x
-    limits D .Limit.isLimit .IsLimit.lambda X α .func x .Π-natural f = α .natural f x
-    limits D .Limit.isLimit .IsLimit.lambda X α .func-resp-≈ x≈y s = α .transf s .func-resp-≈ x≈y
-    limits D .Limit.isLimit .IsLimit.lambda X α .+-preserving s = α .transf s .+-preserving
-    limits D .Limit.isLimit .IsLimit.lambda X α .ε-preserving s = α .transf s .ε-preserving
-    limits D .Limit.isLimit .IsLimit.lambda X α .scale-preserving s = α .transf s .scale-preserving
-    limits D .Limit.isLimit .IsLimit.lambda-cong α≈β z s = α≈β .transf-eq s z
-    limits D .Limit.isLimit .IsLimit.lambda-eval α .transf-eq s z = D .fobj s .refl
-    limits D .Limit.isLimit .IsLimit.lambda-ext f z s = D .fobj s .refl
+  limits : HasLimits 𝒮 cat
+  limits D .functor.Limit.apex = Π D
+  limits D .functor.Limit.cone .transf x .*→* ._⇒s_.func α = α .Π-func x
+  limits D .functor.Limit.cone .transf x .*→* ._⇒s_.func-resp-≈ α₁≈α₂ = α₁≈α₂ x
+  limits D .functor.Limit.cone .transf x .preserve-ze = D .fobj x .refl
+  limits D .functor.Limit.cone .transf x .preserve-+ = D .fobj x .refl
+  limits D .functor.Limit.cone .transf x .preserve-· = D .fobj x .refl
+  limits D .functor.Limit.cone .natural f .*≈* ._≈s_.func-eq {α₁} {α₂} α₁≈α₂ =
+    D .fobj _ .trans (α₁ .Π-natural f) (α₁≈α₂ _)
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .*→* ._⇒s_.func m .Π-func x = α .transf x .func m
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .*→* ._⇒s_.func m .Π-natural f = α .natural f .*≈* ._≈s_.func-eq (M .refl)
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .*→* ._⇒s_.func-resp-≈ m≈n x = α .transf x .func-resp-≈ m≈n
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .preserve-ze x = α .transf x .preserve-ze
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .preserve-+ x = α .transf x .preserve-+
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .preserve-· x = α .transf x .preserve-·
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda-cong {M} α≃β .*≈* ._≈s_.func-eq {m}{n} m≈n x = α≃β .transf-eq x .*≈* ._≈s_.func-eq m≈n
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda-eval α .transf-eq x .*≈* ._≈s_.func-eq = α .transf x .func-resp-≈
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
