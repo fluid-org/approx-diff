@@ -681,7 +681,7 @@ module cocont
         leg = strong-extend-mor (λ i → p₂) (legs alg-fg k)
 
         leg-ih : ∀ i → strong-extend-mor (λ i → p₂) (legs alg-fs k) i ∘ prod-m (id Γ) (extend-mor gs (iter-mor P gs k) i) ≈
-                       extend-mor gs (id _) i ∘ strong-extend-mor (λ i → p₂) (legs alg-fg k) i
+                       extend-mor gs (id _) i ∘ leg i
         leg-ih Fin.zero    = ≈-trans (legs-fuse P δ δ' δ'' fs gs k) (≈-sym id-left)
         leg-ih (Fin.suc j) = pair-p₂ _ _
 
