@@ -229,11 +229,12 @@ module forward-fdsemimod-2 where
 
   open indexed-family._⇒f_
   open SM._⇒_
+  open import Data.Vec using (_∷_; [])
 
   fwd-slice : _ → _
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
   -- For interactive testing: slice values are Data.Vec now (a Vec 1 leaf is
   -- `x ∷ []`), units still lifted.  e.g. (uncomment and normalise in VSCode):
-  -- test-1 : fwd-slice (lift · , ((⊤ ∷ []) , (⊥ ∷ [])) , ((⊥ ∷ []) , (⊥ ∷ [])) , ((⊥ ∷ []) , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
-  -- test-1 = ≡-refl
+  test-1 : fwd-slice (lift · , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
+  test-1 = ≡-refl
