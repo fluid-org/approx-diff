@@ -18,7 +18,7 @@ open import functor
 open IsColimit
 open Colimit
 open import omega-chains
-  using (ω; chain; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
+  using (ω; chain; chain-map; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
          step-cocone; cocone-step; const-chain-colimit; module interchange)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 import polynomial-functor-2
@@ -476,6 +476,15 @@ module cocont
   α-coeval P δ k =
     ⟦ P ⟧-cocont (carrier-env P δ) .colambda-coeval (μ-carrier P δ) (shifted-cocone P δ) .≃-NatTrans.transf-eq k
 
+  -- The μ-functorial action mediates the injections: it sends the m-th δ-leg to the m-th δ'-leg
+  -- precomposed with the stage map.
+  μ-mor-coeval : ∀ {n} (P : Poly (suc n)) {δ δ' : Fin n → obj} (fs : ∀ i → δ i ⇒ δ' i) (m : ℕ) →
+                 ⟦ μ P ⟧mor fs ∘ μ-inj P δ m ≈ μ-inj P δ' m ∘ iter-mor P fs m
+  μ-mor-coeval P {δ} {δ'} fs m =
+    μ-colim P δ .colambda-coeval _
+      (μ-colim P δ' .cocone ∘NT chain-map (step P δ) (step P δ') (iter-mor P fs) (iter-mor-step P fs))
+      .≃-NatTrans.transf-eq m
+
   -- Context-Γ version of extend-mor, for the strong action below.
   strong-extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
                       (∀ i → prod Γ (δ i) ⇒ δ' i) → (prod Γ X ⇒ Y) →
@@ -707,7 +716,19 @@ module cocont
     -- α is natural: the algebra commutes with the μ-functorial action.
     α-nat : ∀ {n} (P : Poly (suc n)) (δ δ' : Fin n → obj) (fs : ∀ i → δ i ⇒ δ' i) →
             ⟦ μ P ⟧mor fs ∘ α P δ ≈ α P δ' ∘ ⟦ P ⟧mor (extend-mor fs (⟦ μ P ⟧mor fs))
-    α-nat P δ δ' fs = colambda-unique (⟦ P ⟧-cocont (carrier-env P δ)) (λ k → {!!})
+    α-nat P δ δ' fs = colambda-unique (⟦ P ⟧-cocont (carrier-env P δ)) (λ k →
+      ≈-trans (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (α-coeval P δ k)) (μ-mor-coeval P fs (suc k))))
+              (≈-sym (≈-trans (assoc _ _ _)
+                      (≈-trans (∘-cong₂ (≈-sym (⟦ P ⟧mor-comp _ _)))
+                      (≈-trans (∘-cong₂ (⟦ P ⟧mor-cong (famR k)))
+                      (≈-trans (∘-cong₂ (⟦ P ⟧mor-comp _ _))
+                      (≈-trans (≈-sym (assoc _ _ _))
+                               (∘-cong₁ (α-coeval P δ' k)))))))))
+      where
+        famR : ∀ k i → extend-mor fs (⟦ μ P ⟧mor fs) i ∘ extend-fam (μ-inj P δ k) i ≈
+                       extend-fam (μ-inj P δ' k) i ∘ extend-mor fs (iter-mor P fs k) i
+        famR k Fin.zero    = μ-mor-coeval P fs k
+        famR k (Fin.suc j) = id-swap'
 
     -- Left fusion at the level of fold legs: post-composing a leg with the μ-functorial action.
     legs-left-fuse : ∀ {n Γ} (P : Poly (suc n)) (δ δ' δ'' : Fin n → obj)
