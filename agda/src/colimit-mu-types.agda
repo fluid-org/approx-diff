@@ -748,7 +748,7 @@ module cocont
   hasMu .HasMu.μ-obj = μ-carrier
   hasMu .HasMu.α P δ = α P δ ∘ ≡-to-⇒ (sym (⟦⟧-fobj P (extend δ (μ-carrier P δ))))
   hasMu .HasMu.⦅_⦆ {_} {Γ} {A} {P} {δ} alg =
-    ⦅ alg ∘ ≡-to-⇒ (cong (prod Γ) (⟦⟧-fobj P (extend δ A))) ⦆
+    ⦅ alg ∘ prod-m (id Γ) (≡-to-⇒ (⟦⟧-fobj P (extend δ A))) ⦆
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β alg =
