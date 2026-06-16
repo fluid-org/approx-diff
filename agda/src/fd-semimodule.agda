@@ -43,7 +43,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   -- Morphisms: linear maps S^n → S^m.
 
   record _⇒_ (n m : ℕ) : Set (o ⊔ ℓ) where
-    no-eta-equality
+--    no-eta-equality
     field
       func             : Vec n → Vec m
       func-resp-≈      : ∀ {u v} → u ≈ᵥ v → func u ≈ᵥ func v
@@ -63,7 +63,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   ≃-isEquiv .IsEquivalence.trans f≃g g≃h v i = trans (f≃g v i) (g≃h v i)
 
   ----------------------------------------------------------------------------
-  -- Identity and composition.
+  -- Category of free semimodules.
 
   id : ∀ {n} → n ⇒ n
   id .func v = v
@@ -80,10 +80,6 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   (g ∘ f) .ε-preserving i = trans (g .func-resp-≈ (f .ε-preserving) i) (g .ε-preserving i)
   (g ∘ f) .scale-preserving i = trans (g .func-resp-≈ (f .scale-preserving) i) (g .scale-preserving i)
 
-  ----------------------------------------------------------------------------
-  -- The category of free semimodules.  Laws are given inline by copattern, so
-  -- the implicit morphisms stay rigid (the record has no eta).
-
   cat : Category _ _ _
   cat .Category.obj = ℕ
   cat .Category._⇒_ n m = n ⇒ m
@@ -91,8 +87,7 @@ module FDSemiMod {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   cat .Category.isEquiv = ≃-isEquiv
   cat .Category.id n = id
   cat .Category._∘_ = _∘_
-  cat .Category.∘-cong {f₁ = F₁} {g₂ = G₂} F≃ G≃ v i =
-    trans (F₁ .func-resp-≈ (G≃ v) i) (F≃ (G₂ .func v) i)
+  cat .Category.∘-cong {f₁ = F₁} {g₂ = G₂} F≃ G≃ v i = trans (F₁ .func-resp-≈ (G≃ v) i) (F≃ (G₂ .func v) i)
   cat .Category.id-left _ _ = refl
   cat .Category.id-right _ _ = refl
   cat .Category.assoc _ _ _ _ _ = refl

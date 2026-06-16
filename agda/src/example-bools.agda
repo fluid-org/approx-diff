@@ -198,5 +198,5 @@ module forward-fdsemimod where
   -- Slice values are SemiMod carriers: each sort's slice is a Vec (Fin dim → Two),
   -- list/ctxt units are lifted.  The shape below typechecks (domain accepted); the
   -- ≡-refl reduction currently times out — a performance issue to resume tomorrow.
-  -- test-1 : fwd-slice (lift · , ((λ _ → ⊤) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊤)
-  -- test-1 = ≡-refl
+  test-1 : fwd-slice (lift · , ((λ _ → ⊤) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊤)
+  test-1 = ≡-refl
