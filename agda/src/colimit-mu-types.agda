@@ -745,5 +745,9 @@ module cocont
     ⦅ alg ∘ ≡-to-⇒ (cong (prod Γ) (⟦⟧-fobj P (extend δ A))) ⦆
 
   hasMuLaws : HasMuLaws hasMu
-  hasMuLaws .HasMuLaws.⦅⦆-β alg = ≈-trans (∘co-cong₂ (assoc _ _ _)) {!!}
+  hasMuLaws .HasMuLaws.⦅⦆-β alg =
+    ≈-trans (∘co-cong₂ (assoc _ _ _))
+    (≈-trans (∘co-cong₂ (∘-cong₂ (≈-sym (pair-p₂ (id _ ∘ p₁) _))))
+    (≈-trans (∘co-cong₂ (≈-sym (assoc _ _ _)))
+    (≈-trans (≈-sym (∘co-prod-m _ _ _)) {!!})))
   hasMuLaws .HasMuLaws.⦅⦆-η alg h eq = {!!}
