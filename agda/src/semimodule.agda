@@ -441,8 +441,6 @@ Dual-⊕-iso {X} {Y} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-�
 conj : ∀ {X Y} → Iso X (Dual X) → Iso Y (Dual Y) → (X ⇒ Y) → (Y ⇒ X)
 conj X≅X* Y≅Y* f = X≅X* .Iso.bwd ∘ ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))
 
--- conj f transported back through d_X is fᵀ ∘ d_Y: the conjugate relation, in
--- morphism form (d_X ∘ conj f ≈ fᵀ ∘ d_Y).
 conj-transpose : ∀ {X Y} (X≅X* : Iso X (Dual X)) (Y≅Y* : Iso Y (Dual Y)) (f : X ⇒ Y) →
                  ((X≅X* .Iso.fwd) ∘ conj X≅X* Y≅Y* f) ≈m ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))
 conj-transpose X≅X* Y≅Y* f =
