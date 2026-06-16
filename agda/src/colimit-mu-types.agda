@@ -663,37 +663,32 @@ module cocont
     legs-fuse {Γ = Γ} P δ δ' δ'' fs gs (suc k) =
       ≈-trans (∘co-prod-m _ _ _)
         (≈-trans (∘co-cong₂ (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → p₂) (legs alg-fs k))
-                                        (extend-mor gs (iter-mor P gs k))))
-        (≈-trans (∘co-cong₂ (⟦ P ⟧ˢ-cong {gs = λ i → c i ∘ a i} famW))
-        (≈-trans (∘co-cong₂ (≈-sym (⟦ P ⟧ˢ-fuse-left c a))) recombine)))
+                                         (extend-mor gs (iter-mor P gs k))))
+          (≈-trans (∘co-cong₂ (⟦ P ⟧ˢ-cong {gs = λ i → extend-mor gs (id _) i ∘ leg i} leg-ih))
+            (≈-trans (∘co-cong₂ (≈-sym (⟦ P ⟧ˢ-fuse-left (extend-mor gs (id _)) leg)))
+              (≈-trans (∘-cong₂ (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
+                (≈-trans (≈-sym (assoc _ _ _))
+                  (∘-cong₁
+                    (≈-trans (assoc _ _ _)
+                      (∘-cong₂
+                        (≈-trans (⟦ P ⟧ˢ-fuse (strong-extend-mor fs p₂) (extend-mor gs (id _)))
+                          (⟦ P ⟧ˢ-cong route-gs))))))))))
       where
         alg-fs = α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor fs p₂)
-        alg-FG = α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂)
+        alg-fg = α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂)
 
-        c : ∀ i → extend δ (μ-carrier P δ'') i ⇒ extend δ' (μ-carrier P δ'') i
-        c = extend-mor gs (id (μ-carrier P δ''))
+        leg : ∀ i → prod Γ (extend δ (iter P δ k) i) ⇒ extend δ (μ-carrier P δ'') i
+        leg = strong-extend-mor (λ i → p₂) (legs alg-fg k)
 
-        a : ∀ i → prod Γ (extend δ (iter P δ k) i) ⇒ extend δ (μ-carrier P δ'') i
-        a = strong-extend-mor (λ i → p₂) (legs alg-FG k)
+        leg-ih : ∀ i → strong-extend-mor (λ i → p₂) (legs alg-fs k) i ∘ prod-m (id Γ) (extend-mor gs (iter-mor P gs k) i) ≈
+                       extend-mor gs (id _) i ∘ strong-extend-mor (λ i → p₂) (legs alg-fg k) i
+        leg-ih Fin.zero    = ≈-trans (legs-fuse P δ δ' δ'' fs gs k) (≈-sym id-left)
+        leg-ih (Fin.suc j) = pair-p₂ _ _
 
-        famW : ∀ i → strong-extend-mor (λ i → p₂) (legs alg-fs k) i
-                       ∘ prod-m (id Γ) (extend-mor gs (iter-mor P gs k) i)
-                     ≈ c i ∘ a i
-        famW Fin.zero    = ≈-trans (legs-fuse P δ δ' δ'' fs gs k) (≈-sym id-left)
-        famW (Fin.suc j) = pair-p₂ _ _
-
-        famFG : ∀ i → strong-extend-mor fs p₂ i ∘ prod-m (id Γ) (c i) ≈
-                      strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂ i
-        famFG Fin.zero    = ≈-trans (∘-cong₂ prod-m-id) id-right
-        famFG (Fin.suc j) = ≈-refl
-
-        recombine : alg-fs ∘co (⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a) ≈ alg-FG ∘co ⟦ P ⟧ˢ a
-        recombine =
-          ≈-trans (∘-cong₂ (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
-                  (≈-trans (≈-sym (assoc _ _ _))
-                            (∘-cong₁ (≈-trans (assoc _ _ _)
-                                              (∘-cong₂ (≈-trans (⟦ P ⟧ˢ-fuse (strong-extend-mor fs p₂) c)
-                                                                (⟦ P ⟧ˢ-cong famFG))))))
+        route-gs : ∀ i → strong-extend-mor fs p₂ i ∘ prod-m (id Γ) (extend-mor gs (id _) i) ≈
+                         strong-extend-mor (λ i → fs i ∘ prod-m (id Γ) (gs i)) p₂ i
+        route-gs Fin.zero    = ≈-trans (∘-cong₂ prod-m-id) id-right
+        route-gs (Fin.suc j) = ≈-refl
 
     -- α is natural: the algebra commutes with the μ-functorial action.
     α-nat : ∀ {n} (P : Poly (suc n)) (δ δ' : Fin n → obj) (fs : ∀ i → δ i ⇒ δ' i) →
@@ -719,7 +714,7 @@ module cocont
                     (≈-trans
                       (∘-cong₁
                         (≈-trans (⟦ P ⟧ˢ-fuse-left (extend-mor fs (⟦ μ P ⟧mor fs)) (strong-extend-mor gs p₂))
-                          (≈-trans (⟦ P ⟧ˢ-cong famALG)
+                          (≈-trans (⟦ P ⟧ˢ-cong route-fs)
                             (≈-sym (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → fs i ∘ gs i) p₂) (extend-fam (⟦ μ P ⟧mor fs)))))))
                       (≈-trans (assoc _ _ _)
                         (∘-cong₂
@@ -730,15 +725,15 @@ module cocont
                                   (⟦ P ⟧ˢ-fuse-left (extend-fam (⟦ μ P ⟧mor fs))
                                     (strong-extend-mor (λ i → p₂)
                                       (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor gs p₂)) k)))
-                                  (⟦ P ⟧ˢ-cong famLEG)))))))))
+                                  (⟦ P ⟧ˢ-cong leg-ih)))))))))
                   (≈-sym (assoc _ _ _)))))))
       where
-        famALG : ∀ i → extend-mor fs (⟦ μ P ⟧mor fs) i ∘ strong-extend-mor gs p₂ i ≈
-                       strong-extend-mor (λ i → fs i ∘ gs i) p₂ i ∘ prod-m (id Γ) (extend-fam (⟦ μ P ⟧mor fs) i)
-        famALG Fin.zero    = ≈-sym (pair-p₂ _ _)
-        famALG (Fin.suc j) = ≈-sym (≈-trans (∘-cong₂ prod-m-id) id-right)
+        route-fs : ∀ i → extend-mor fs (⟦ μ P ⟧mor fs) i ∘ strong-extend-mor gs p₂ i ≈
+                         strong-extend-mor (λ i → fs i ∘ gs i) p₂ i ∘ prod-m (id Γ) (extend-fam (⟦ μ P ⟧mor fs) i)
+        route-fs Fin.zero    = ≈-sym (pair-p₂ _ _)
+        route-fs (Fin.suc j) = ≈-sym (≈-trans (∘-cong₂ prod-m-id) id-right)
 
-        famLEG : ∀ i → extend-fam (⟦ μ P ⟧mor fs) i ∘ strong-extend-mor (λ i → p₂) (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor gs p₂)) k) i ≈
+        leg-ih : ∀ i → extend-fam (⟦ μ P ⟧mor fs) i ∘ strong-extend-mor (λ i → p₂) (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor gs p₂)) k) i ≈
                        strong-extend-mor (λ i → p₂) (legs (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → fs i ∘ gs i) p₂)) k) i
-        famLEG Fin.zero    = legs-left-fuse P δ δ' δ'' fs gs k
-        famLEG (Fin.suc j) = id-left
+        leg-ih Fin.zero    = legs-left-fuse P δ δ' δ'' fs gs k
+        leg-ih (Fin.suc j) = id-left
