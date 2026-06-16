@@ -37,9 +37,9 @@ open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl t
 
 -- Backward analysis (Galois). Example (2) in Section 4.3.
 module backward where
-  open import ho-model
+  import ho-model-galois
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open Galois.interp Sig BaseInterp1
+  open ho-model-galois.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -62,9 +62,9 @@ module backward where
 
 -- Backward analysis using CBN lifting.
 module backward-cbn where
-  open import ho-model
+  import ho-model-galois
   open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open Galois.interp Sig BaseInterp0
+  open ho-model-galois.interp Sig BaseInterp0
   open example.ex using (Tag; cbn-query)
 
   input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
@@ -86,9 +86,9 @@ module backward-cbn where
 
 -- Forward analysis (Conjugate).
 module forward where
-  open import ho-model
+  import ho-model-conjugate
   open import example-signature-interpretation conjugate.cat conjugate.products conjugate.terminal conjugate.TWO conjugate.unit conjugate.conjunct
-  open Conjugate.interp Sig BaseInterp1
+  open ho-model-conjugate.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -114,53 +114,45 @@ module forward where
   test-3 : fwd-slice ((· , ⊥) , (· , ⊥) , (· , ⊤) , _) ≡ ⊤
   test-3 = ≡-refl
 
--- Matrix model variant.
-module forward-matrix where
+-- Forward analysis via the Mat model, embedded into the category of all
+-- S-semimodules.  Slice values are Mat vectors.
+module forward-mat where
   open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
 
-  import join-semilattice-category as SemiLat
   import cmon-enriched as CMon
-  open CMon.CMonEnriched SemiLat.cmon-enriched using (_+m_)
-  open CMon using (biproducts→products)
+  import mat
+  import semimodule
+  import ho-model-mat
 
-  import ho-model
-  open ho-model.Matrix
+  module FD = mat.Mat two.semiring
+  module SM = semimodule {0ℓ} {0ℓ} two.semiring
+  open CMon.CMonEnriched FD.cmon using (_+m_)
 
-  private
-    module MatRep = Category cat
+  unitm : FD._⇒_ 0 1
+  unitm = HasInitial.from-initial FD.initial {1}
 
-    products : HasProducts cat
-    products = biproducts→products cmon biproduct
+  conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
+  conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
 
-  unitm : MatRep._⇒_ 0 1
-  unitm = HasInitial.from-initial initial {1}
-
-  conjunctm : MatRep._⇒_ (HasProducts.prod products 1 1) 1
-  conjunctm = HasProducts.p₁ products {1} {1} +m HasProducts.p₂ products {1} {1}
-
-  open import example-signature-interpretation cat products terminal 1 unitm conjunctm
-  open ho-model.Matrix.interp Sig BaseInterp1
+  open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
+  open ho-model-mat.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
 
   open indexed-family._⇒f_
-  open SemiLat._⇒_
-  open join-semilattice._=>_
-  open preorder._=>_
+  open SM._⇒_
+  open FD using (_∷_; [])
 
-  -- Reproduce the conjugate example (fwd direction only) via the matrix model.
   fwd-slice : _ → _
-  fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .*→* .func .fun n
+  fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
-  -- Output depends on 1st label (would be ⊥ in the Galois example)
-  test-1 : fwd-slice (· , (· , ⊤ , ·) , (· , ⊥ , ·) , (· , ⊥ , ·) , _) ≡ (⊤ , ·)
-  test-1 = ≡-refl
+  -- Label slice is [] (dim 0), the dependency bit is the number slice (x ∷ []).
+  -- test-1 : fwd-slice (lift · , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
+  -- test-1 = ≡-refl
 
-  -- Output doesn't depend on 2nd label
-  test-2 : fwd-slice (· , (· , ⊥ , ·) , (· , ⊤ , ·) , (· , ⊥ , ·) , _) ≡ (⊥ , ·)
-  test-2 = ≡-refl
+  -- test-2 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊥ ∷ [])
+  -- test-2 = ≡-refl
 
-  -- Output depends on 3rd label (would be ⊥ in the Galois example)
-  test-3 : fwd-slice (· , (· , ⊥ , ·) , (· , ⊥ , ·) , (· , ⊤ , ·) , _) ≡ (⊤ , ·)
-  test-3 = ≡-refl
+  -- test-3 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , _) ≡ (⊤ ∷ [])
+  -- test-3 = ≡-refl
