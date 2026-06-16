@@ -368,9 +368,8 @@ module FDSemiMod₂ {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   products = biproducts→products cmon biproduct
 
 ------------------------------------------------------------------------------
--- Embedding F : FDSemiMod₂ ↪ SemiMod, the category of all S-semimodules, with
--- terminal/product preservation and self-duality of the free objects.  Reused
--- by the higher-order model (which interprets into Fam(SemiMod)).
+-- Embedding of free S-semimodules into all S-semimodules, with terminal/product preservation and
+-- self-duality of the free objects.
 
 module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   open import Data.Nat using (ℕ; zero; suc)
@@ -395,29 +394,29 @@ module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   ----------------------------------------------------------------------------
   -- Object part: Sⁿ as a semimodule, with Vec n's (Data.Vec) structure.
 
-  ⟦_⟧ : ℕ → Semimodule
-  ⟦ n ⟧ .Semimodule.setoid .Setoid.Carrier = FD.Vec n
-  ⟦ n ⟧ .Semimodule.setoid .Setoid._≈_ = FD._≈ᵥ_
-  ⟦ n ⟧ .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.refl = FD.≈ᵥ-refl
-  ⟦ n ⟧ .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.sym = FD.≈ᵥ-sym
-  ⟦ n ⟧ .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.trans = FD.≈ᵥ-trans
-  ⟦ n ⟧ .Semimodule.additive .CommutativeMonoid.ε = FD.εᵥ
-  ⟦ n ⟧ .Semimodule.additive .CommutativeMonoid._+_ = FD._+ᵥ_
-  ⟦ n ⟧ .Semimodule.additive .CommutativeMonoid.+-cong = FD.+ᵥ-cong
-  ⟦ n ⟧ .Semimodule.additive .CommutativeMonoid.+-lunit = FD.+ᵥ-lunit
-  ⟦ n ⟧ .Semimodule.additive .CommutativeMonoid.+-assoc = FD.+ᵥ-assoc
-  ⟦ n ⟧ .Semimodule.additive .CommutativeMonoid.+-comm = FD.+ᵥ-comm
-  ⟦ n ⟧ .Semimodule._·_ = FD.scale
-  ⟦ n ⟧ .Semimodule.·-cong = FD.scale-cong
-  ⟦ n ⟧ .Semimodule.·-mul = FD.scale-·
-  ⟦ n ⟧ .Semimodule.·-unit = FD.scale-ι
-  ⟦ n ⟧ .Semimodule.+-distribʳ = FD.scale-+ₗ
-  ⟦ n ⟧ .Semimodule.+-distribˡ = FD.scale-+ᵥ
-  ⟦ n ⟧ .Semimodule.zero-distribʳ = FD.scale-0ₗ
-  ⟦ n ⟧ .Semimodule.zero-distribˡ = FD.scale-εᵥ
+  fobj : ℕ → Semimodule
+  fobj n .Semimodule.setoid .Setoid.Carrier = FD.Vec n
+  fobj n .Semimodule.setoid .Setoid._≈_ = FD._≈ᵥ_
+  fobj n .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.refl = FD.≈ᵥ-refl
+  fobj n .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.sym = FD.≈ᵥ-sym
+  fobj n .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.trans = FD.≈ᵥ-trans
+  fobj n .Semimodule.additive .CommutativeMonoid.ε = FD.εᵥ
+  fobj n .Semimodule.additive .CommutativeMonoid._+_ = FD._+ᵥ_
+  fobj n .Semimodule.additive .CommutativeMonoid.+-cong = FD.+ᵥ-cong
+  fobj n .Semimodule.additive .CommutativeMonoid.+-lunit = FD.+ᵥ-lunit
+  fobj n .Semimodule.additive .CommutativeMonoid.+-assoc = FD.+ᵥ-assoc
+  fobj n .Semimodule.additive .CommutativeMonoid.+-comm = FD.+ᵥ-comm
+  fobj n .Semimodule._·_ = FD.scale
+  fobj n .Semimodule.·-cong = FD.scale-cong
+  fobj n .Semimodule.·-mul = FD.scale-·
+  fobj n .Semimodule.·-unit = FD.scale-ι
+  fobj n .Semimodule.+-distribʳ = FD.scale-+ₗ
+  fobj n .Semimodule.+-distribˡ = FD.scale-+ᵥ
+  fobj n .Semimodule.zero-distribʳ = FD.scale-0ₗ
+  fobj n .Semimodule.zero-distribˡ = FD.scale-εᵥ
 
   F : Functor FD.cat SM.cat
-  F .Functor.fobj = ⟦_⟧
+  F .Functor.fobj = fobj
   F .Functor.fmor f .*→* ._⇒s_.func = f .FD.func
   F .Functor.fmor f .*→* ._⇒s_.func-resp-≈ = f .FD.func-resp-≈
   F .Functor.fmor f .preserve-ze = f .FD.ε-preserving
@@ -432,9 +431,9 @@ module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   module FPF = finite-product-functor F
 
   ----------------------------------------------------------------------------
-  -- Terminal preservation: ⟦ 0 ⟧ (the one-point Vec 0) is isomorphic to 𝟘.
+  -- Terminal preservation: fobj 0 (the one-point Vec 0) is isomorphic to 𝟘.
 
-  term-inv : 𝟘 ⇒ ⟦ 0 ⟧
+  term-inv : 𝟘 ⇒ fobj 0
   term-inv .*→* ._⇒s_.func _ = FD.εᵥ
   term-inv .*→* ._⇒s_.func-resp-≈ _ = FD.≈ᵥ-refl
   term-inv .preserve-ze = FD.≈ᵥ-refl
@@ -447,9 +446,9 @@ module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   F-preserve-terminal .IsIso.inverse∘f≈id .*≈* ._≈s_.func-eq {_} {v} _ = FD.[]-≈ᵥ v
 
   ----------------------------------------------------------------------------
-  -- Product preservation: ⟦ m + n ⟧ ≅ ⟦ m ⟧ ⊕ ⟦ n ⟧, the inverse being _++_.
+  -- Product preservation: fobj (m + n) ≅ fobj m ⊕ fobj n, the inverse being _++_.
 
-  combine : ∀ {m n} → (⟦ m ⟧ ⊕ ⟦ n ⟧) ⇒ ⟦ m +ℕ n ⟧
+  combine : ∀ {m n} → (fobj m ⊕ fobj n) ⇒ fobj (m +ℕ n)
   combine .*→* ._⇒s_.func (u , w) = u ++ w
   combine .*→* ._⇒s_.func-resp-≈ (u≈ , w≈) = FD.++-cong u≈ w≈
   combine {m} {n} .preserve-ze = FD.++-εᵥ {m} {n}
@@ -475,7 +474,7 @@ module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   ----------------------------------------------------------------------------
   -- Self-duality of the free S-semimodules.
 
-  1≅𝕀 : Iso ⟦ 1 ⟧ 𝕀
+  1≅𝕀 : Iso (fobj 1) 𝕀
   1≅𝕀 .Iso.fwd .*→* ._⇒s_.func (x ∷ []) = x
   1≅𝕀 .Iso.fwd .*→* ._⇒s_.func-resp-≈ {x ∷ []} {y ∷ []} (p , _) = p
   1≅𝕀 .Iso.fwd .preserve-ze = FD.refl
@@ -489,11 +488,11 @@ module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
   1≅𝕀 .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq x≈x' = x≈x'
   1≅𝕀 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {x ∷ []} {y ∷ []} h = h
 
-  ⟦⟧-self-dual : ∀ n → Iso ⟦ n ⟧ (Dual ⟦ n ⟧)
-  ⟦⟧-self-dual zero =
+  fobj-self-dual : ∀ n → Iso (fobj n) (Dual (fobj n))
+  fobj-self-dual zero =
     Iso-trans (IsIso→Iso F-preserve-terminal)
               (Iso-trans (Iso-sym Dual-𝟘) (Dual-iso (IsIso→Iso F-preserve-terminal)))
-  ⟦⟧-self-dual (suc n) =
+  fobj-self-dual (suc n) =
     Iso-trans (IsIso→Iso (F-preserve-products {1} {n}))
-              (Iso-trans (⊕-iso (Iso-trans 1≅𝕀 (Iso-trans (IsIso→Iso 𝕀-self-dual) (Dual-iso 1≅𝕀))) (⟦⟧-self-dual n))
+              (Iso-trans (⊕-iso (Iso-trans 1≅𝕀 (Iso-trans (IsIso→Iso 𝕀-self-dual) (Dual-iso 1≅𝕀))) (fobj-self-dual n))
                          (Iso-trans (Iso-sym Dual-⊕-iso) (Dual-iso (IsIso→Iso (F-preserve-products {1} {n})))))
