@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections #-}
+{-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- μ-types (parameterised initial algebras of polynomial functors) in a category 𝒟 with an initial
 -- object and colimits of ω-chains, via the initial-algebra chain 0 → F0 → F²0 → ⋯ . Counterpart of
@@ -12,7 +12,7 @@ open import categories
          strong-coproducts→coproducts; HasInitial; IsInitial)
 open import Level using (_⊔_)
 open import functor
-  using (Functor; StrongFunctor; HasColimits; Colimit; IsColimit; NatTrans; ≃-NatTrans; constF; constFmor;
+  using (Functor; HasColimits; Colimit; IsColimit; NatTrans; ≃-NatTrans; constF; constFmor;
          colambda-unique)
   renaming (_∘_ to _∘NT_)
 open IsColimit
@@ -26,7 +26,6 @@ import polynomial-functor-2
 module colimit-mu-types
   {o m e} {𝒟 : Category o m e}
   (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SC : HasStrongCoproducts 𝒟 𝒟P)
-  (T-strong : StrongFunctor 𝒟P)
   (𝒟I : HasInitial 𝒟)
   (colimits : HasColimits ω 𝒟)
   where
@@ -39,8 +38,7 @@ open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
 open HasStrongCoproducts 𝒟SC using () renaming (copair to scopair; copair-cong to scopair-cong;
        copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂; copair-ext to scopair-ext)
 open HasInitial 𝒟I renaming (witness to 𝟘)
-open StrongFunctor T-strong using (strengthᵣ; strengthᵣ-natural) renaming (F to T)
-open polynomial-functor-2 𝒟T 𝒟P 𝒟SC T-strong using (Poly; extend; fobj; _∘co_)
+open polynomial-functor-2 𝒟T 𝒟P 𝒟SC using (Poly; extend; fobj; _∘co_)
 open Poly
 
 -- The strong copair absorbs a coproduct reindexing precomposed in the recursion coordinate.
@@ -104,7 +102,6 @@ mutual
   ⟦ P + Q ⟧   δ = coprod (⟦ P ⟧ δ) (⟦ Q ⟧ δ)
   ⟦ P × Q ⟧   δ = prod (⟦ P ⟧ δ) (⟦ Q ⟧ δ)
   ⟦ μ P ⟧     δ = μ-carrier P δ
-  ⟦ T∘ P ⟧    δ = Functor.fobj T (⟦ P ⟧ δ)
 
   μ-carrier : ∀ {n} → Poly (suc n) → (Fin n → obj) → obj
   μ-carrier P δ = colimits (chain (iter P δ) (step P δ)) .apex
@@ -181,7 +178,6 @@ mutual
   ⟦ μ P ⟧mor {δ} {δ'} fs =
     colim-map (step P δ) (step P δ') (iter-mor P fs) (iter-mor-step P fs)
       (colimits (chain (iter P δ) (step P δ))) (colimits (chain (iter P δ') (step P δ')))
-  ⟦ T∘ P ⟧mor    fs = Functor.fmor T (⟦ P ⟧mor fs)
 
   iter-mor-id : ∀ {n} (P : Poly (suc n)) {δ : Fin n → obj} (k : ℕ) →
                 iter-mor P (λ i → id (δ i)) k ≈ id (iter P δ k)
@@ -201,7 +197,6 @@ mutual
   ⟦ μ P ⟧mor-id {δ} =
     ≈-trans (colim-map-cong {h'-step = λ k → id-swap} (iter-mor-id P) (colimits _) (colimits _))
             (colim-map-id (colimits _))
-  ⟦ T∘ P ⟧mor-id    = ≈-trans (Functor.fmor-cong T ⟦ P ⟧mor-id) (Functor.fmor-id T)
 
   ⟦_⟧mor-cong : ∀ {n} (P : Poly n) {δ δ' : Fin n → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
                 (∀ i → fs i ≈ gs i) → ⟦ P ⟧mor fs ≈ ⟦ P ⟧mor gs
@@ -210,7 +205,6 @@ mutual
   ⟦ P + Q ⟧mor-cong   fs≈gs = coprod-m-cong (⟦ P ⟧mor-cong fs≈gs) (⟦ Q ⟧mor-cong fs≈gs)
   ⟦ P × Q ⟧mor-cong   fs≈gs = prod-m-cong (⟦ P ⟧mor-cong fs≈gs) (⟦ Q ⟧mor-cong fs≈gs)
   ⟦ μ P ⟧mor-cong     fs≈gs = colim-map-cong (iter-mor-cong P fs≈gs) (colimits _) (colimits _)
-  ⟦ T∘ P ⟧mor-cong    fs≈gs = Functor.fmor-cong T (⟦ P ⟧mor-cong fs≈gs)
 
   ⟦_⟧mor-comp : ∀ {n} (P : Poly n) {δ δ' δ'' : Fin n → obj}
                 (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) →
@@ -228,8 +222,6 @@ mutual
       comp-sq : ∀ k → (iter-mor P fs (suc k) ∘ iter-mor P gs (suc k)) ∘ step P δ k
                     ≈ step P δ'' k ∘ (iter-mor P fs k ∘ iter-mor P gs k)
       comp-sq = square-comp {𝒞 = 𝒟} (iter-mor-step P gs) (iter-mor-step P fs)
-  ⟦ T∘ P ⟧mor-comp    fs gs =
-    ≈-trans (Functor.fmor-cong T (⟦ P ⟧mor-comp fs gs)) (Functor.fmor-comp T _ _)
 
 -- ⟦_⟧ agrees with fobj at μ-carrier: the two are defined by matching clauses, so every case is a congruence.
 ⟦⟧-fobj : ∀ {n} (P : Poly n) (δ : Fin n → obj) → ⟦ P ⟧ δ ≡ fobj μ-carrier P δ
@@ -238,7 +230,6 @@ mutual
 ⟦⟧-fobj (P + Q)   δ = cong₂ coprod (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)
 ⟦⟧-fobj (P × Q)   δ = cong₂ prod (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)
 ⟦⟧-fobj (μ P)     δ = refl
-⟦⟧-fobj (T∘ P)    δ = cong (Functor.fobj T) (⟦⟧-fobj P δ)
 
 -- An environment chain: a chain of environments with a coordinatewise colimit. A record (with η)
 -- rather than a Fin-indexed family of packaged chains: the μ case extends an environment chain
@@ -301,15 +292,6 @@ module _ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y 
     step-cocone (λ k → coprod-m (cX .transf k) (cY .transf k))
       (λ k → ≈-trans (coprod-m-cong (cocone-step cX k) (cocone-step cY k)) (coprod-m-comp _ _ _ _))
 
-module _ {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {a : obj}
-         (c : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a)) where
-
-  T-cocone : NatTrans (chain {𝒞 = 𝒟} (λ k → Functor.fobj T (X k)) (λ k → Functor.fmor T (f k)))
-                      (constF ω (Functor.fobj T a))
-  T-cocone =
-    step-cocone (λ k → Functor.fmor T (c .NatTrans.transf k))
-      (λ k → ≈-trans (Functor.fmor-cong T (cocone-step c k)) (Functor.fmor-comp T _ _))
-
 -- Coproducts preserve chain colimits: no assumption needed. A cocone over the coproduct chain
 -- restricts along each injection, and the copairing of the mediated maps mediates.
 module _ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y k ⇒ Y (suc k)} {a b : obj}
@@ -371,10 +353,6 @@ module cocont
               {cY : NatTrans (chain {𝒞 = 𝒟} Y g) (constF ω b)} →
               IsColimit (chain {𝒞 = 𝒟} X f) a cX → IsColimit (chain {𝒞 = 𝒟} Y g) b cY →
               IsColimit _ (prod a b) (prod-cocone cX cY))
-  (T-cocont : ∀ {X : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {a : obj}
-              {c : NatTrans (chain {𝒞 = 𝒟} X f) (constF ω a)} →
-              IsColimit (chain {𝒞 = 𝒟} X f) a c →
-              IsColimit _ (Functor.fobj T a) (T-cocone c))
   -- The catamorphism's base leg prod Γ 𝟘 ⇒ A needs prod Γ 𝟘 to be initial. (Automatic with
   -- exponentials, and holds in Fam 𝒟 since the index of prod Γ 𝟘 is empty.)
   (prod𝟘-initial : ∀ {Γ} → IsInitial 𝒟 (prod Γ 𝟘))
@@ -436,7 +414,6 @@ module cocont
       -- The interchange cocone legs agree with the canonical ones (both mediate the same legs).
       legs-eq : ∀ k → IC.ρ-inj k ≈ ⟦ μ P ⟧mor (inj E k)
       legs-eq k = Rk k .colambda-cong (record { transf-eq = λ j → ≈-refl })
-  ⟦ T∘ P ⟧-cocont    E = T-cocont (⟦ P ⟧-cocont E)
 
   -- The initial-algebra colimit and its injections.
   μ-colim : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) → Colimit (chain {𝒞 = 𝒟} (iter P δ) (step P δ))
@@ -566,7 +543,6 @@ module cocont
     ⟦ P + Q ⟧ˢ   fs = scopair (in₁ ∘ ⟦ P ⟧ˢ fs) (in₂ ∘ ⟦ Q ⟧ˢ fs)
     ⟦ P × Q ⟧ˢ   fs = pair (⟦ P ⟧ˢ fs ∘ pair p₁ (p₁ ∘ p₂)) (⟦ Q ⟧ˢ fs ∘ pair p₁ (p₂ ∘ p₂))
     ⟦ μ P ⟧ˢ {δ = δ} {δ' = δ'} fs = ⦅_⦆ {P = P} {δ = δ} (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor fs p₂))
-    ⟦ T∘ P ⟧ˢ    fs = Functor.fmor T (⟦ P ⟧ˢ fs) ∘ strengthᵣ
 
     -- Congruence for the strong action.
     ⟦_⟧ˢ-cong : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} {fs gs : ∀ i → prod Γ (δ i) ⇒ δ' i} →
@@ -577,7 +553,6 @@ module cocont
     ⟦ P × Q ⟧ˢ-cong   fs≈gs = pair-cong (∘-cong₁ (⟦ P ⟧ˢ-cong fs≈gs)) (∘-cong₁ (⟦ Q ⟧ˢ-cong fs≈gs))
     ⟦ μ P ⟧ˢ-cong     fs≈gs =
       cata-cong (∘-cong₂ (⟦ P ⟧ˢ-cong (λ { Fin.zero → ≈-refl ; (Fin.suc i) → fs≈gs i })))
-    ⟦ T∘ P ⟧ˢ-cong    fs≈gs = ∘-cong₁ (Functor.fmor-cong T (⟦ P ⟧ˢ-cong fs≈gs))
 
     -- Fusion: the strong action absorbs a precomposed Γ-image of a reindexing.
     ⟦_⟧ˢ-fuse : ∀ {n} (P : Poly n) {Γ} {δ δ' δ'' : Fin n → obj}
@@ -636,12 +611,6 @@ module cocont
                        (colimits (chain (iter P δ) (step P δ)) .isColimit)
         Rδ' = ×-cocont (const-chain-colimit Γ .isColimit)
                        (colimits (chain (iter P δ') (step P δ')) .isColimit)
-    ⟦ T∘ P ⟧ˢ-fuse {Γ = Γ} fs gs =
-      ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (≈-sym (strengthᵣ-natural (id Γ) (⟦ P ⟧mor gs))))
-      (≈-trans (≈-sym (assoc _ _ _))
-               (∘-cong₁ (≈-trans (≈-sym (Functor.fmor-comp T _ _))
-                                 (Functor.fmor-cong T (⟦ P ⟧ˢ-fuse fs gs))))))
 
     -- Left fusion: the plain action absorbs into the strong action on the left.
     ⟦_⟧ˢ-fuse-left : ∀ {n} (P : Poly n) {Γ} {δ δ' δ'' : Fin n → obj}
@@ -670,10 +639,6 @@ module cocont
       where
         Rδ = ×-cocont (const-chain-colimit Γ .isColimit)
                       (colimits (chain (iter P δ) (step P δ)) .isColimit)
-    ⟦ T∘ P ⟧ˢ-fuse-left fs gs =
-      ≈-trans (≈-sym (assoc _ _ _))
-              (∘-cong₁ (≈-trans (≈-sym (Functor.fmor-comp T _ _))
-                                (Functor.fmor-cong T (⟦ P ⟧ˢ-fuse-left fs gs))))
 
     -- Fold-leg fusion: folding the δ-chain directly equals mapping δ→δ' then folding the δ'-chain.
     legs-fuse : ∀ {n Γ} (P : Poly (suc n)) (δ δ' δ'' : Fin n → obj)

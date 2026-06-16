@@ -7,18 +7,16 @@ open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; coKleisli-prod)
-open import functor using (Functor; StrongFunctor)
 
 module polynomial-functor-2
   {o m e} {𝒞 : Category o m e}
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P)
-  (T-strong : StrongFunctor 𝒞P) where
+  where
 
 open Category 𝒞
 open HasProducts 𝒞P
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP)
 open HasStrongCoproducts 𝒞SCP using () renaming (copair to scopair)
-open StrongFunctor T-strong using (strengthᵣ) renaming (F to T)
 
 -- co-Kleisli notation: a morphism f : prod Γ X ⇒ Y lives in the co-Kleisli category for prod Γ -.
 infixl 21 _∘co_
@@ -31,7 +29,6 @@ data Poly (n : ℕ) : Set o where
   _+_   : Poly n → Poly n → Poly n
   _×_   : Poly n → Poly n → Poly n
   μ     : Poly (suc n) → Poly n
-  T∘_   : Poly n → Poly n
 
 extend : ∀ {n} → (Fin n → obj) → obj → Fin (suc n) → obj
 extend δ A Fin.zero    = A
@@ -43,7 +40,6 @@ fobj μ-obj (var i)   δ = δ i
 fobj μ-obj (P + Q)   δ = coprod (fobj μ-obj P δ) (fobj μ-obj Q δ)
 fobj μ-obj (P × Q)   δ = prod (fobj μ-obj P δ) (fobj μ-obj Q δ)
 fobj μ-obj (μ P)     δ = μ-obj P δ
-fobj μ-obj (T∘ P)    δ = Functor.fobj T (fobj μ-obj P δ)
 
 -- Parameterised initial algebras for the polynomials: carrier, algebra map and catamorphism, as
 -- operations only. The catamorphism is in context Γ (the open form avoids closure conversion, hence
@@ -72,7 +68,6 @@ record HasMu : Set (o ⊔ m ⊔ e) where
     strong-fmor (P × Q)   fs = pair (strong-fmor P fs ∘ pair p₁ (p₁ ∘ p₂))
                                     (strong-fmor Q fs ∘ pair p₁ (p₂ ∘ p₂))
     strong-fmor (μ P)     fs = strong-μ-fmor P fs
-    strong-fmor (T∘ P)    fs = Functor.fmor T (strong-fmor P fs) ∘ strengthᵣ
 
     strong-μ-fmor : ∀ {n Γ} (P : Poly (suc n)) {δ δ' : Fin n → obj} →
                     (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj P δ'
