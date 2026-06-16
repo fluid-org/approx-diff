@@ -198,5 +198,42 @@ module forward-fdsemimod where
   -- Slice values are SemiMod carriers: each sort's slice is a Vec (Fin dim → Two),
   -- list/ctxt units are lifted.  The shape below typechecks (domain accepted); the
   -- ≡-refl reduction currently times out — a performance issue to resume tomorrow.
-  test-1 : fwd-slice (lift · , ((λ _ → ⊤) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊤)
-  test-1 = ≡-refl
+  -- test-1 : fwd-slice (lift · , ((λ _ → ⊤) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , ((λ _ → ⊥) , (λ _ → ⊥)) , _) ≡ (λ _ → ⊤)
+  -- test-1 = ≡-refl
+
+-- Forward analysis via the Data.Vec model (FDSemiMod₂).  Same setup as
+-- forward-fdsemimod; slice values are now Data.Vec, not functions.
+module forward-fdsemimod-2 where
+  open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
+
+  import cmon-enriched as CMon
+  import fd-semimodule-2
+  import semimodule
+  import ho-model-fd-semimod-2
+
+  module FD = fd-semimodule-2.FDSemiMod₂ two.semiring
+  module SM = semimodule.SemiMod two.semiring
+  open CMon.CMonEnriched FD.cmon using (_+m_)
+
+  unitm : FD._⇒_ 0 1
+  unitm = HasInitial.from-initial FD.initial {1}
+
+  conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
+  conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
+
+  open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
+  open ho-model-fd-semimod-2.interp Sig BaseInterp1
+
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
+  input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
+
+  open indexed-family._⇒f_
+  open SM._⇒_
+
+  fwd-slice : _ → _
+  fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
+
+  -- For interactive testing: slice values are Data.Vec now (a Vec 1 leaf is
+  -- `x ∷ []`), units still lifted.  e.g. (uncomment and normalise in VSCode):
+  -- test-1 : fwd-slice (lift · , ((⊤ ∷ []) , (⊥ ∷ [])) , ((⊥ ∷ []) , (⊥ ∷ [])) , ((⊥ ∷ []) , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
+  -- test-1 = ≡-refl

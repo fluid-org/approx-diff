@@ -139,6 +139,46 @@ module FDSemiMod₂ {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   scale-+ᵥ {u = []} {[]} = tt
   scale-+ᵥ {u = _ ∷ _} {_ ∷ _} = ·-+-distribₗ , scale-+ᵥ
 
+  +ᵥ-runit : ∀ {n} {v : Vec n} → (v +ᵥ εᵥ) ≈ᵥ v
+  +ᵥ-runit {v = []}    = tt
+  +ᵥ-runit {v = x ∷ v} = trans +-comm +-lunit , +ᵥ-runit
+
+  scale-cong : ∀ {n} {a a'} {u v : Vec n} → a ≈ a' → u ≈ᵥ v → scale a u ≈ᵥ scale a' v
+  scale-cong {u = []}    {[]}    _  _       = tt
+  scale-cong {u = _ ∷ _} {_ ∷ _} a≈ (p , q) = ·-cong a≈ p , scale-cong a≈ q
+
+  scale-+ₗ : ∀ {n} {a b} {v : Vec n} → scale (a + b) v ≈ᵥ (scale a v +ᵥ scale b v)
+  scale-+ₗ {v = []}    = tt
+  scale-+ₗ {v = _ ∷ _} = ·-+-distribᵣ , scale-+ₗ
+
+  scale-· : ∀ {n} {a b} {v : Vec n} → scale (a · b) v ≈ᵥ scale a (scale b v)
+  scale-· {v = []}    = tt
+  scale-· {v = _ ∷ _} = ·-assoc , scale-·
+
+  scale-ι : ∀ {n} {v : Vec n} → scale ι v ≈ᵥ v
+  scale-ι {v = []}    = tt
+  scale-ι {v = _ ∷ _} = ·-lunit , scale-ι
+
+  scale-0ₗ : ∀ {n} {v : Vec n} → scale ε v ≈ᵥ εᵥ
+  scale-0ₗ {v = []}    = tt
+  scale-0ₗ {v = _ ∷ _} = ε-annihilₗ , scale-0ₗ
+
+  open import Data.Nat using () renaming (_+_ to _+ℕ_)
+  open V using (_++_)
+
+  ++-cong : ∀ {m n} {u u' : Vec m} {v v' : Vec n} → u ≈ᵥ u' → v ≈ᵥ v' → (u ++ v) ≈ᵥ (u' ++ v')
+  ++-cong {u = []}    {[]}    _        q = q
+  ++-cong {u = _ ∷ _} {_ ∷ _} (p , ps) q = p , ++-cong ps q
+
+  ++-+ᵥ : ∀ {m n} {u u' : Vec m} {v v' : Vec n} →
+          ((u +ᵥ u') ++ (v +ᵥ v')) ≈ᵥ ((u ++ v) +ᵥ (u' ++ v'))
+  ++-+ᵥ {u = []}    {[]}                              = ≈ᵥ-refl
+  ++-+ᵥ {u = _ ∷ _} {_ ∷ _} {v = v} {v' = v'}        = refl , ++-+ᵥ {v = v} {v' = v'}
+
+  ++-scale : ∀ {m n} {a} {u : Vec m} {v : Vec n} → scale a (u ++ v) ≈ᵥ (scale a u ++ scale a v)
+  ++-scale {u = []}                  = ≈ᵥ-refl
+  ++-scale {u = _ ∷ _} {v = v}       = refl , ++-scale {v = v}
+
   ----------------------------------------------------------------------------
   -- 0 is a zero object.
 
@@ -200,8 +240,6 @@ module FDSemiMod₂ {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   ----------------------------------------------------------------------------
   -- Biproducts: direct sum m + n, via recursive vtake/vdrop and _++_.
 
-  open import Data.Nat using () renaming (_+_ to _+ℕ_)
-  open V using (_++_)
   open import cmon-enriched using (Biproduct; biproducts→products)
   open import categories using (HasProducts)
 
@@ -212,10 +250,6 @@ module FDSemiMod₂ {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   vdrop : ∀ m {n} → Vec (m +ℕ n) → Vec n
   vdrop zero    xs       = xs
   vdrop (suc m) (x ∷ xs) = vdrop m xs
-
-  +ᵥ-runit : ∀ {n} {v : Vec n} → (v +ᵥ εᵥ) ≈ᵥ v
-  +ᵥ-runit {v = []}    = tt
-  +ᵥ-runit {v = x ∷ v} = trans +-comm +-lunit , +ᵥ-runit
 
   vtake-cong : ∀ m {n} {u v : Vec (m +ℕ n)} → u ≈ᵥ v → vtake m u ≈ᵥ vtake m v
   vtake-cong zero _ = tt
