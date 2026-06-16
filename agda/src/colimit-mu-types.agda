@@ -438,29 +438,43 @@ module cocont
       legs-eq k = Rk k .colambda-cong (record { transf-eq = λ j → ≈-refl })
   ⟦ T∘ P ⟧-cocont    E = T-cocont (⟦ P ⟧-cocont E)
 
+  -- The initial-algebra colimit and its injections.
+  μ-colim : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) → Colimit (chain {𝒞 = 𝒟} (iter P δ) (step P δ))
+  μ-colim P δ = colimits (chain (iter P δ) (step P δ))
+
+  μ-inj : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) (k : ℕ) → iter P δ k ⇒ μ-carrier P δ
+  μ-inj P δ k = μ-colim P δ .cocone .NatTrans.transf k
+
+  -- The constant environment δ, extended in the recursion coordinate by the initial-algebra
+  -- chain and its colimit.
+  carrier-env : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) → EnvChain (suc n)
+  carrier-env P δ .obs k   = extend δ (iter P δ k)
+  carrier-env P δ .steps k = extend-fam (step P δ k)
+  carrier-env P δ .apex    = extend δ (μ-carrier P δ)
+  carrier-env P δ .inj k   = extend-fam (μ-inj P δ k)
+  carrier-env P δ .inj-step k Fin.zero    = cocone-step (μ-colim P δ .cocone) k
+  carrier-env P δ .inj-step k (Fin.suc i) = ≈-sym id-left
+  carrier-env P δ .colimiting Fin.zero    =
+    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (μ-colim P δ .isColimit)
+  carrier-env P δ .colimiting (Fin.suc i) =
+    IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit (δ i) .isColimit)
+
+  -- The shifted cocone whose mediator is the algebra map.
+  shifted-cocone : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) →
+                   NatTrans (chain {𝒞 = 𝒟} (λ k → iter P δ (suc k)) (λ k → step P δ (suc k)))
+                            (constF ω (μ-carrier P δ))
+  shifted-cocone P δ = step-cocone (λ k → μ-inj P δ (suc k)) (λ k → cocone-step (μ-colim P δ .cocone) (suc k))
+
   -- The algebra map: by cocontinuity, ⟦ P ⟧ at the carrier is the colimit of the shifted
   -- initial-algebra chain, which the shifted injections mediate back into the carrier.
   α : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) → ⟦ P ⟧ (extend δ (μ-carrier P δ)) ⇒ μ-carrier P δ
-  α {n} P δ =
-    ⟦ P ⟧-cocont carrier-env .colambda (μ-carrier P δ)
-      (step-cocone (λ k → μC .cocone .NatTrans.transf (suc k)) (λ k → cocone-step (μC .cocone) (suc k)))
-    where
-      μC : Colimit (chain {𝒞 = 𝒟} (iter P δ) (step P δ))
-      μC = colimits (chain (iter P δ) (step P δ))
+  α P δ = ⟦ P ⟧-cocont (carrier-env P δ) .colambda (μ-carrier P δ) (shifted-cocone P δ)
 
-      -- The constant environment δ, extended in the recursion coordinate by the initial-algebra
-      -- chain and its colimit.
-      carrier-env : EnvChain (suc n)
-      carrier-env .obs k   = extend δ (iter P δ k)
-      carrier-env .steps k = extend-fam (step P δ k)
-      carrier-env .apex    = extend δ (μ-carrier P δ)
-      carrier-env .inj k   = extend-fam (μC .cocone .NatTrans.transf k)
-      carrier-env .inj-step k Fin.zero    = cocone-step (μC .cocone) k
-      carrier-env .inj-step k (Fin.suc i) = ≈-sym id-left
-      carrier-env .colimiting Fin.zero    =
-        IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (μC .isColimit)
-      carrier-env .colimiting (Fin.suc i) =
-        IsColimit-cong (record { transf-eq = λ k → ≈-refl }) (const-chain-colimit (δ i) .isColimit)
+  -- α mediates the shifted injections: precomposing with the k-th image leg gives the (k+1)-th.
+  α-coeval : ∀ {n} (P : Poly (suc n)) (δ : Fin n → obj) (k : ℕ) →
+             α P δ ∘ ⟦ P ⟧mor (extend-fam (μ-inj P δ k)) ≈ μ-inj P δ (suc k)
+  α-coeval P δ k =
+    ⟦ P ⟧-cocont (carrier-env P δ) .colambda-coeval (μ-carrier P δ) (shifted-cocone P δ) .≃-NatTrans.transf-eq k
 
   -- Context-Γ version of extend-mor, for the strong action below.
   strong-extend-mor : ∀ {n Γ} {δ δ' : Fin n → obj} {X Y} →
@@ -693,7 +707,7 @@ module cocont
     -- α is natural: the algebra commutes with the μ-functorial action.
     α-nat : ∀ {n} (P : Poly (suc n)) (δ δ' : Fin n → obj) (fs : ∀ i → δ i ⇒ δ' i) →
             ⟦ μ P ⟧mor fs ∘ α P δ ≈ α P δ' ∘ ⟦ P ⟧mor (extend-mor fs (⟦ μ P ⟧mor fs))
-    α-nat P δ δ' fs = {!!}
+    α-nat P δ δ' fs = colambda-unique (⟦ P ⟧-cocont (carrier-env P δ)) (λ k → {!!})
 
     -- Left fusion at the level of fold legs: post-composing a leg with the μ-functorial action.
     legs-left-fuse : ∀ {n Γ} (P : Poly (suc n)) (δ δ' δ'' : Fin n → obj)
