@@ -718,29 +718,27 @@ module cocont
                   (∘-cong₂
                     (≈-trans
                       (∘-cong₁
-                        (≈-trans (⟦ P ⟧ˢ-fuse-left (extend-mor c μc) (strong-extend-mor a p₂))
+                        (≈-trans (⟦ P ⟧ˢ-fuse-left (extend-mor c (⟦ μ P ⟧mor c)) (strong-extend-mor a p₂))
                           (≈-trans (⟦ P ⟧ˢ-cong famALG)
-                            (≈-sym (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → c i ∘ a i) p₂) (extend-fam μc))))))
+                            (≈-sym (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → c i ∘ a i) p₂) (extend-fam (⟦ μ P ⟧mor c)))))))
                       (≈-trans (assoc _ _ _)
                         (∘-cong₂
                           (≈-trans (pair-compose _ _ _ _)
                             (≈-trans (pair-cong₁ id-left)
                               (pair-cong₂
                                 (≈-trans
-                                  (⟦ P ⟧ˢ-fuse-left (extend-fam μc) (strong-extend-mor (λ i → p₂) (legs alg-a k)))
+                                  (⟦ P ⟧ˢ-fuse-left (extend-fam (⟦ μ P ⟧mor c))
+                                    (strong-extend-mor (λ i → p₂)
+                                      (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)) k)))
                                   (⟦ P ⟧ˢ-cong famLEG)))))))))
                   (≈-sym (assoc _ _ _)))))))
       where
-        μc = ⟦ μ P ⟧mor c
-        alg-a  = α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)
-        alg-ca = α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)
-
-        famALG : ∀ i → extend-mor c μc i ∘ strong-extend-mor a p₂ i ≈
-                       strong-extend-mor (λ i → c i ∘ a i) p₂ i ∘ prod-m (id Γ) (extend-fam μc i)
+        famALG : ∀ i → extend-mor c (⟦ μ P ⟧mor c) i ∘ strong-extend-mor a p₂ i ≈
+                       strong-extend-mor (λ i → c i ∘ a i) p₂ i ∘ prod-m (id Γ) (extend-fam (⟦ μ P ⟧mor c) i)
         famALG Fin.zero    = ≈-sym (pair-p₂ _ _)
         famALG (Fin.suc j) = ≈-sym (≈-trans (∘-cong₂ prod-m-id) id-right)
 
-        famLEG : ∀ i → extend-fam μc i ∘ strong-extend-mor (λ i → p₂) (legs alg-a k) i ≈
-                       strong-extend-mor (λ i → p₂) (legs alg-ca k) i
+        famLEG : ∀ i → extend-fam (⟦ μ P ⟧mor c) i ∘ strong-extend-mor (λ i → p₂) (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)) k) i ≈
+                       strong-extend-mor (λ i → p₂) (legs (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)) k) i
         famLEG Fin.zero    = legs-left-fuse P δ δ' δ'' c a k
         famLEG (Fin.suc j) = id-left
