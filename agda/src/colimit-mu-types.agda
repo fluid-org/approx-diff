@@ -20,7 +20,7 @@ open Colimit
 open import omega-chains
   using (ω; chain; chain-map; colim-map; colim-map-cong; colim-map-comp; colim-map-id; square-comp;
          step-cocone; cocone-step; const-chain-colimit; module interchange)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong; cong₂)
 import polynomial-functor-2
 
 module colimit-mu-types
@@ -38,7 +38,7 @@ open HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
 open HasStrongCoproducts 𝒟SC using () renaming (copair to scopair; copair-cong to scopair-cong;
        copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂; copair-ext to scopair-ext)
 open HasInitial 𝒟I renaming (witness to 𝟘)
-open polynomial-functor-2 𝒟T 𝒟P 𝒟SC using (Poly; extend; fobj; _∘co_)
+open polynomial-functor-2 𝒟T 𝒟P 𝒟SC using (Poly; extend; fobj; _∘co_; HasMu)
 open Poly
 
 -- The strong copair absorbs a coproduct reindexing precomposed in the recursion coordinate.
@@ -737,3 +737,10 @@ module cocont
                        strong-extend-mor (λ i → p₂) (legs (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → fs i ∘ gs i) p₂)) k) i
         leg-ih Fin.zero    = legs-left-fuse P δ δ' δ'' fs gs k
         leg-ih (Fin.suc j) = id-left
+
+  colimit-HasMu : HasMu
+  colimit-HasMu = record
+    { μ-obj = μ-carrier
+    ; α = λ P δ → α P δ ∘ ≡-to-⇒ (sym (⟦⟧-fobj P (extend δ (μ-carrier P δ))))
+    ; ⦅_⦆ = λ alg → {!!}
+    }
