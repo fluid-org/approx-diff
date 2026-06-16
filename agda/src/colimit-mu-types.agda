@@ -622,35 +622,35 @@ module cocont
 
     -- Left fusion: the plain action absorbs into the strong action on the left.
     ⟦_⟧ˢ-fuse-left : ∀ {n} (P : Poly n) {Γ} {δ δ' δ'' : Fin n → obj}
-                     (c : ∀ i → δ' i ⇒ δ'' i) (a : ∀ i → prod Γ (δ i) ⇒ δ' i) →
-                     ⟦ P ⟧mor c ∘ ⟦ P ⟧ˢ a ≈ ⟦ P ⟧ˢ (λ i → c i ∘ a i)
-    ⟦ const A ⟧ˢ-fuse-left c a = id-left
-    ⟦ var i ⟧ˢ-fuse-left c a = ≈-refl
-    ⟦ P + Q ⟧ˢ-fuse-left c a =
+                     (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
+                     ⟦ P ⟧mor fs ∘ ⟦ P ⟧ˢ gs ≈ ⟦ P ⟧ˢ (λ i → fs i ∘ gs i)
+    ⟦ const A ⟧ˢ-fuse-left fs gs = id-left
+    ⟦ var i ⟧ˢ-fuse-left fs gs = ≈-refl
+    ⟦ P + Q ⟧ˢ-fuse-left fs gs =
       ≈-trans (scopair-natural _ _ _)
               (scopair-cong (≈-trans (≈-sym (assoc _ _ _))
                             (≈-trans (∘-cong₁ (copair-in₁ _ _))
-                            (≈-trans (assoc _ _ _) (∘-cong₂ (⟦ P ⟧ˢ-fuse-left c a)))))
+                            (≈-trans (assoc _ _ _) (∘-cong₂ (⟦ P ⟧ˢ-fuse-left fs gs)))))
                             (≈-trans (≈-sym (assoc _ _ _))
                             (≈-trans (∘-cong₁ (copair-in₂ _ _))
-                            (≈-trans (assoc _ _ _) (∘-cong₂ (⟦ Q ⟧ˢ-fuse-left c a))))))
-    ⟦ P × Q ⟧ˢ-fuse-left c a =
+                            (≈-trans (assoc _ _ _) (∘-cong₂ (⟦ Q ⟧ˢ-fuse-left fs gs))))))
+    ⟦ P × Q ⟧ˢ-fuse-left fs gs =
       ≈-trans (pair-compose _ _ _ _)
-              (pair-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ P ⟧ˢ-fuse-left c a)))
-                         (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse-left c a))))
-    ⟦ μ P ⟧ˢ-fuse-left {Γ = Γ} {δ = δ} {δ' = δ'} {δ'' = δ''} c a =
+              (pair-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ P ⟧ˢ-fuse-left fs gs)))
+                         (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse-left fs gs))))
+    ⟦ μ P ⟧ˢ-fuse-left {Γ = Γ} {δ = δ} {δ' = δ'} {δ'' = δ''} fs gs =
       colambda-unique Rδ (λ k →
         ≈-trans (assoc _ _ _)
         (≈-trans (∘-cong₂ (Rδ .colambda-coeval _ _ .≃-NatTrans.transf-eq k))
-        (≈-trans (legs-left-fuse P δ δ' δ'' c a k)
+        (≈-trans (legs-left-fuse P δ δ' δ'' fs gs k)
                  (≈-sym (Rδ .colambda-coeval _ _ .≃-NatTrans.transf-eq k)))))
       where
         Rδ = ×-cocont (const-chain-colimit Γ .isColimit)
                       (colimits (chain (iter P δ) (step P δ)) .isColimit)
-    ⟦ T∘ P ⟧ˢ-fuse-left c a =
+    ⟦ T∘ P ⟧ˢ-fuse-left fs gs =
       ≈-trans (≈-sym (assoc _ _ _))
               (∘-cong₁ (≈-trans (≈-sym (Functor.fmor-comp T _ _))
-                                (Functor.fmor-cong T (⟦ P ⟧ˢ-fuse-left c a))))
+                                (Functor.fmor-cong T (⟦ P ⟧ˢ-fuse-left fs gs))))
 
     -- Fold-leg fusion: folding the δ-chain directly equals mapping δ→δ' then folding the δ'-chain.
     legs-fuse : ∀ {n Γ} (P : Poly (suc n)) (δ δ' δ'' : Fin n → obj)
@@ -696,49 +696,49 @@ module cocont
                                                                 (⟦ P ⟧ˢ-cong famFG))))))
 
     -- α is natural: the algebra commutes with the μ-functorial action.
-    α-nat : ∀ {n} (P : Poly (suc n)) (δ δ' : Fin n → obj) (c : ∀ i → δ i ⇒ δ' i) →
-            ⟦ μ P ⟧mor c ∘ α P δ ≈ α P δ' ∘ ⟦ P ⟧mor (extend-mor c (⟦ μ P ⟧mor c))
-    α-nat P δ δ' c = {!!}
+    α-nat : ∀ {n} (P : Poly (suc n)) (δ δ' : Fin n → obj) (fs : ∀ i → δ i ⇒ δ' i) →
+            ⟦ μ P ⟧mor fs ∘ α P δ ≈ α P δ' ∘ ⟦ P ⟧mor (extend-mor fs (⟦ μ P ⟧mor fs))
+    α-nat P δ δ' fs = {!!}
 
     -- Left fusion at the level of fold legs: post-composing a leg with the μ-functorial action.
     legs-left-fuse : ∀ {n Γ} (P : Poly (suc n)) (δ δ' δ'' : Fin n → obj)
-                     (c : ∀ i → δ' i ⇒ δ'' i) (a : ∀ i → prod Γ (δ i) ⇒ δ' i) (k : ℕ) →
-                     ⟦ μ P ⟧mor c ∘ legs {P = P} {δ = δ} (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)) k ≈
-                     legs {P = P} {δ = δ} (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)) k
-    legs-left-fuse P δ δ' δ'' c a zero =
+                     (fs : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → prod Γ (δ i) ⇒ δ' i) (k : ℕ) →
+                     ⟦ μ P ⟧mor fs ∘ legs {P = P} {δ = δ} (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor gs p₂)) k ≈
+                     legs {P = P} {δ = δ} (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → fs i ∘ gs i) p₂)) k
+    legs-left-fuse P δ δ' δ'' fs gs zero =
       ≈-trans (≈-sym (prod𝟘-initial .IsInitial.from-initial-ext _))
               (prod𝟘-initial .IsInitial.from-initial-ext _)
-    legs-left-fuse {Γ = Γ} P δ δ' δ'' c a (suc k) =
+    legs-left-fuse {Γ = Γ} P δ δ' δ'' fs gs (suc k) =
       ≈-trans (≈-sym (assoc _ _ _))
         (≈-trans (∘-cong₁ (≈-sym (assoc _ _ _)))
-          (≈-trans (∘-cong₁ (∘-cong₁ (α-nat P δ' δ'' c)))
+          (≈-trans (∘-cong₁ (∘-cong₁ (α-nat P δ' δ'' fs)))
             (≈-trans (∘-cong₁ (assoc _ _ _))
               (≈-trans (assoc _ _ _)
                 (≈-trans
                   (∘-cong₂
                     (≈-trans
                       (∘-cong₁
-                        (≈-trans (⟦ P ⟧ˢ-fuse-left (extend-mor c (⟦ μ P ⟧mor c)) (strong-extend-mor a p₂))
+                        (≈-trans (⟦ P ⟧ˢ-fuse-left (extend-mor fs (⟦ μ P ⟧mor fs)) (strong-extend-mor gs p₂))
                           (≈-trans (⟦ P ⟧ˢ-cong famALG)
-                            (≈-sym (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → c i ∘ a i) p₂) (extend-fam (⟦ μ P ⟧mor c)))))))
+                            (≈-sym (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → fs i ∘ gs i) p₂) (extend-fam (⟦ μ P ⟧mor fs)))))))
                       (≈-trans (assoc _ _ _)
                         (∘-cong₂
                           (≈-trans (pair-compose _ _ _ _)
                             (≈-trans (pair-cong₁ id-left)
                               (pair-cong₂
                                 (≈-trans
-                                  (⟦ P ⟧ˢ-fuse-left (extend-fam (⟦ μ P ⟧mor c))
+                                  (⟦ P ⟧ˢ-fuse-left (extend-fam (⟦ μ P ⟧mor fs))
                                     (strong-extend-mor (λ i → p₂)
-                                      (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)) k)))
+                                      (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor gs p₂)) k)))
                                   (⟦ P ⟧ˢ-cong famLEG)))))))))
                   (≈-sym (assoc _ _ _)))))))
       where
-        famALG : ∀ i → extend-mor c (⟦ μ P ⟧mor c) i ∘ strong-extend-mor a p₂ i ≈
-                       strong-extend-mor (λ i → c i ∘ a i) p₂ i ∘ prod-m (id Γ) (extend-fam (⟦ μ P ⟧mor c) i)
+        famALG : ∀ i → extend-mor fs (⟦ μ P ⟧mor fs) i ∘ strong-extend-mor gs p₂ i ≈
+                       strong-extend-mor (λ i → fs i ∘ gs i) p₂ i ∘ prod-m (id Γ) (extend-fam (⟦ μ P ⟧mor fs) i)
         famALG Fin.zero    = ≈-sym (pair-p₂ _ _)
         famALG (Fin.suc j) = ≈-sym (≈-trans (∘-cong₂ prod-m-id) id-right)
 
-        famLEG : ∀ i → extend-fam (⟦ μ P ⟧mor c) i ∘ strong-extend-mor (λ i → p₂) (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor a p₂)) k) i ≈
-                       strong-extend-mor (λ i → p₂) (legs (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → c i ∘ a i) p₂)) k) i
-        famLEG Fin.zero    = legs-left-fuse P δ δ' δ'' c a k
+        famLEG : ∀ i → extend-fam (⟦ μ P ⟧mor fs) i ∘ strong-extend-mor (λ i → p₂) (legs (α P δ' ∘ ⟦ P ⟧ˢ (strong-extend-mor gs p₂)) k) i ≈
+                       strong-extend-mor (λ i → p₂) (legs (α P δ'' ∘ ⟦ P ⟧ˢ (strong-extend-mor (λ i → fs i ∘ gs i) p₂)) k) i
+        famLEG Fin.zero    = legs-left-fuse P δ δ' δ'' fs gs k
         famLEG (Fin.suc j) = id-left
