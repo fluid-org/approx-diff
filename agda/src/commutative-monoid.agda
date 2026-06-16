@@ -27,6 +27,16 @@ record CommutativeMonoid {o e} (A : Setoid o e) : Set (o ⊔ e) where
     +-assoc : ∀ {x y z} → ((x + y) + z) ≈ (x + (y + z))
     +-comm  : ∀ {x y} → (x + y) ≈ (y + x)
 
+  +-interchange : ∀ {w x y z} → (w + x) + (y + z) ≈ (w + y) + (x + z)
+  +-interchange {w}{x}{y}{z} = begin
+      (w + x) + (y + z)     ≈⟨ +-assoc ⟩
+      w + (x + (y + z))     ≈⟨ +-cong refl (sym +-assoc) ⟩
+      w + ((x + y) + z)     ≈⟨ +-cong refl (+-cong +-comm refl) ⟩
+      w + ((y + x) + z)     ≈⟨ +-cong refl +-assoc ⟩
+      w + (y + (x + z))     ≈⟨ sym +-assoc ⟩
+      (w + y) + (x + z)     ∎
+    where open ≈-Reasoning isEquivalence
+
 ------------------------------------------------------------------------------
 
 record _=[_]>_ {o e}{A B : Setoid o e}(X : CommutativeMonoid A)(f : A ⇒s B)(Y : CommutativeMonoid B) : Prop (o ⊔ e) where
