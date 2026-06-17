@@ -831,7 +831,13 @@ module cocont
                  (≈-trans (∘-cong₂ (≈-trans (∘-cong₁ (assoc _ _ _)) (assoc _ _ _)))
                  (≈-trans (≈-sym (assoc _ _ _))
                  (≈-trans (∘-cong₁ (≡-to-⇒-sym-l (⟦⟧-fobj P (extend δ' (μ-carrier P δ')))))
-                 (≈-trans id-left {!!}))))))))
+                 (≈-trans id-left
+                 (≈-trans (assoc _ _ _)
+                 (≈-trans (∘-cong₂ (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                                   (≈-trans (prod-m-cong id-left (≡-to-⇒-sym-l (⟦⟧-fobj P (extend δ (μ-carrier P δ')))))
+                                            prod-m-id)))
+                 (≈-trans id-right
+                          (⟦ P ⟧ˢ-cong (λ { Fin.zero → ≈-refl ; (Fin.suc j) → ≈-refl })))))))))))))
     (≈-sym (≈-trans (∘-cong₁ id-left) (≈-trans (∘-cong₂ prod-m-id) id-right)))
 
   hasMuLaws : HasMuLaws hasMu
