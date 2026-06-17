@@ -39,20 +39,21 @@ record Semimodule : Set (suc o ⊔ suc ℓ) where
     zero-distribˡ : ∀ {s} → s · ε ≈ ε
 open Semimodule
 
-record _⇒_ (X Y : Semimodule) : Set (o ⊔ ℓ) where
+record _⇒_ (M N : Semimodule) : Set (o ⊔ ℓ) where
   private
-    module X = Semimodule X
-    module Y = Semimodule Y
+    module M = Semimodule M
+    module N = Semimodule N
   field
-    *→* : X.setoid ⇒s Y.setoid
+    *→* : M.setoid ⇒s N.setoid
   open _⇒s_ *→* public
   field
-    preserve-ze : func X.ε Y.≈ Y.ε
-    preserve-+  : ∀ {x₁ x₂} → func (x₁ X.+ x₂) Y.≈ func x₁ Y.+ func x₂
-    preserve-·  : ∀ {s x} → func (s X.· x) Y.≈ s Y.· func x
+    preserve-ze : func M.ε N.≈ N.ε
+    preserve-+  : ∀ {x₁ x₂} → func (x₁ M.+ x₂) N.≈ func x₁ N.+ func x₂
+    preserve-·  : ∀ {s x} → func (s M.· x) N.≈ s N.· func x
 open _⇒_
 
-record _≈m_ {X Y : Semimodule} (f g : X ⇒ Y) : Prop (o ⊔ ℓ) where
+infix 4 _≈m_
+record _≈m_ {M N : Semimodule} (f g : M ⇒ N) : Prop (o ⊔ ℓ) where
   field
     *≈* : f .*→* ≈s g .*→*
   open _≈s_ *≈* public
@@ -60,18 +61,19 @@ open _≈m_
 
 ------------------------------------------------------------------------------
 -- Category of semimodules and semilinear maps
-id : ∀ X → X ⇒ X
-id X .*→* = idS _
-id X .preserve-ze = X .refl
-id X .preserve-+ = X .refl
-id X .preserve-· = X .refl
+id : ∀ M → M ⇒ M
+id M .*→* = idS _
+id M .preserve-ze = M .refl
+id M .preserve-+ = M .refl
+id M .preserve-· = M .refl
 
-module _ {X Y Z} where
-  _∘_ : Y ⇒ Z → X ⇒ Y → X ⇒ Z
+module _ {M N O} where
+  infixl 21 _∘_
+  _∘_ : N ⇒ O → M ⇒ N → M ⇒ O
   (f ∘ g) .*→* = f .*→* ∘S g .*→*
-  (f ∘ g) .preserve-ze = Z .trans (f .func-resp-≈ (g .preserve-ze)) (f .preserve-ze)
-  (f ∘ g) .preserve-+ = Z .trans (f .func-resp-≈ (g .preserve-+)) (f .preserve-+)
-  (f ∘ g) .preserve-· = Z .trans (f .func-resp-≈ (g .preserve-·)) (f .preserve-·)
+  (f ∘ g) .preserve-ze = O .trans (f .func-resp-≈ (g .preserve-ze)) (f .preserve-ze)
+  (f ∘ g) .preserve-+ = O .trans (f .func-resp-≈ (g .preserve-+)) (f .preserve-+)
+  (f ∘ g) .preserve-· = O .trans (f .func-resp-≈ (g .preserve-·)) (f .preserve-·)
 
 cat : Category (suc o ⊔ suc ℓ) (o ⊔ ℓ) (o ⊔ ℓ)
 cat .Category.obj = Semimodule
@@ -90,21 +92,21 @@ cat .Category.assoc f g h .*≈* = assocS (f .*→*) (g .*→*) (h .*→*)
 ------------------------------------------------------------------------------
 open import cmon-enriched using (CMonEnriched; Biproduct; biproduct-iso; biproducts→coproducts)
 
-ε-map : ∀ X Y → X ⇒ Y
-ε-map X Y .*→* ._⇒s_.func x = Y .ε
-ε-map X Y .*→* ._⇒s_.func-resp-≈ _ = Y .refl
-ε-map X Y .preserve-ze = Y .refl
-ε-map X Y .preserve-+ = sym Y (Y .+-lunit)
-ε-map X Y .preserve-· = sym Y (zero-distribˡ Y)
+ε-map : ∀ M N → M ⇒ N
+ε-map M N .*→* ._⇒s_.func x = N .ε
+ε-map M N .*→* ._⇒s_.func-resp-≈ _ = N .refl
+ε-map M N .preserve-ze = N .refl
+ε-map M N .preserve-+ = sym N (N .+-lunit)
+ε-map M N .preserve-· = sym N (zero-distribˡ N)
 
-+-map : ∀ X Y → X ⇒ Y → X ⇒ Y → X ⇒ Y
-+-map X Y f g .*→* ._⇒s_.func x = Y ._+_ (f .func x) (g .func x)
-+-map X Y f g .*→* ._⇒s_.func-resp-≈ x₁≈x₂ = +-cong Y (_⇒s_.func-resp-≈ (f .*→*) x₁≈x₂)
++-map : ∀ M N → M ⇒ N → M ⇒ N → M ⇒ N
++-map M N f g .*→* ._⇒s_.func x = N ._+_ (f .func x) (g .func x)
++-map M N f g .*→* ._⇒s_.func-resp-≈ x₁≈x₂ = +-cong N (_⇒s_.func-resp-≈ (f .*→*) x₁≈x₂)
                                               (_⇒s_.func-resp-≈ (g .*→*) x₁≈x₂)
-+-map X Y f g .preserve-ze = trans Y (+-cong Y (f .preserve-ze) (g .preserve-ze)) (+-lunit Y)
-+-map X Y f g .preserve-+ = Y .trans (Y .+-cong (f .preserve-+) (g .preserve-+)) (+-interchange Y)
-+-map X Y f g .preserve-· = trans Y (+-cong Y (f .preserve-·) (g .preserve-·))
-                             (sym Y (+-distribˡ Y))
++-map M N f g .preserve-ze = trans N (+-cong N (f .preserve-ze) (g .preserve-ze)) (+-lunit N)
++-map M N f g .preserve-+ = N .trans (N .+-cong (f .preserve-+) (g .preserve-+)) (+-interchange N)
++-map M N f g .preserve-· = trans N (+-cong N (f .preserve-·) (g .preserve-·))
+                             (sym N (+-distribˡ N))
 
 cmon-enriched : CMonEnriched cat
 cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid.ε = ε-map M N
@@ -133,23 +135,23 @@ _⊕_ : Semimodule → Semimodule → Semimodule
 (M ⊕ N) .zero-distribʳ = zero-distribʳ M , zero-distribʳ N
 (M ⊕ N) .zero-distribˡ = zero-distribˡ M , zero-distribˡ N
 
-p₁ : ∀ {X Y} → (X ⊕ Y) ⇒ X
+p₁ : ∀ {M N} → (M ⊕ N) ⇒ M
 p₁ .*→* = project₁
-p₁ {X} {Y} .preserve-ze = refl X
-p₁ {X} {Y} .preserve-+ = refl X
-p₁ {X} {Y} .preserve-· = refl X
+p₁ {M} {N} .preserve-ze = refl M
+p₁ {M} {N} .preserve-+ = refl M
+p₁ {M} {N} .preserve-· = refl M
 
-p₂ : ∀ {X Y} → (X ⊕ Y) ⇒ Y
+p₂ : ∀ {M N} → (M ⊕ N) ⇒ N
 p₂ .*→* = project₂
-p₂ {X} {Y} .preserve-ze = refl Y
-p₂ {X} {Y} .preserve-+ = refl Y
-p₂ {X} {Y} .preserve-· = refl Y
+p₂ {M} {N} .preserve-ze = refl N
+p₂ {M} {N} .preserve-+ = refl N
+p₂ {M} {N} .preserve-· = refl N
 
-pair : ∀ {X Y Z} → (X ⇒ Y) → (X ⇒ Z) → X ⇒ (Y ⊕ Z)
-pair {X} {Y} {Z} f g .*→* = pairS (f .*→*) (g .*→*)
-pair {X} {Y} {Z} f g .preserve-ze = f .preserve-ze , g .preserve-ze
-pair {X} {Y} {Z} f g .preserve-+ = f .preserve-+ , g .preserve-+
-pair {X} {Y} {Z} f g .preserve-· = f .preserve-· , g .preserve-·
+pair : ∀ {M N O} → (M ⇒ N) → (M ⇒ O) → M ⇒ (N ⊕ O)
+pair {M} {N} {O} f g .*→* = pairS (f .*→*) (g .*→*)
+pair {M} {N} {O} f g .preserve-ze = f .preserve-ze , g .preserve-ze
+pair {M} {N} {O} f g .preserve-+ = f .preserve-+ , g .preserve-+
+pair {M} {N} {O} f g .preserve-· = f .preserve-· , g .preserve-·
 
 products : HasProducts cat
 products .HasProducts.prod M N = M ⊕ N
@@ -178,24 +180,24 @@ products .HasProducts.pair-ext f .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (
 
 terminal : HasTerminal cat
 terminal .HasTerminal.witness = 𝟘
-terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {X} = ε-map X 𝟘
+terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {M} = ε-map M 𝟘
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f .*≈* ._≈s_.func-eq _ = tt
 
 ------------------------------------------------------------------------------
 -- Biproducts (the products above, packaged with injections)
 
-biproduct : ∀ X Y → Biproduct cmon-enriched X Y
-biproduct X Y .Biproduct.prod = X ⊕ Y
-biproduct X Y .Biproduct.p₁ = p₁
-biproduct X Y .Biproduct.p₂ = p₂
-biproduct X Y .Biproduct.in₁ = pair (id X) (ε-map X Y)
-biproduct X Y .Biproduct.in₂ = pair (ε-map Y X) (id Y)
-biproduct X Y .Biproduct.id-1 = products .HasProducts.pair-p₁ (id X) (ε-map X Y)
-biproduct X Y .Biproduct.id-2 = products .HasProducts.pair-p₂ (ε-map Y X) (id Y)
-biproduct X Y .Biproduct.zero-1 = products .HasProducts.pair-p₁ (ε-map Y X) (id Y)
-biproduct X Y .Biproduct.zero-2 = products .HasProducts.pair-p₂ (id X) (ε-map X Y)
-biproduct X Y .Biproduct.id-+ .*≈* ._≈s_.func-eq (x₁≈x₂ , y₁≈y₂) =
-  X .trans (X .+-comm) (X .trans (X .+-lunit) x₁≈x₂) , Y .trans (Y .+-lunit) y₁≈y₂
+biproduct : ∀ M N → Biproduct cmon-enriched M N
+biproduct M N .Biproduct.prod = M ⊕ N
+biproduct M N .Biproduct.p₁ = p₁
+biproduct M N .Biproduct.p₂ = p₂
+biproduct M N .Biproduct.in₁ = pair (id M) (ε-map M N)
+biproduct M N .Biproduct.in₂ = pair (ε-map N M) (id N)
+biproduct M N .Biproduct.id-1 = products .HasProducts.pair-p₁ (id M) (ε-map M N)
+biproduct M N .Biproduct.id-2 = products .HasProducts.pair-p₂ (ε-map N M) (id N)
+biproduct M N .Biproduct.zero-1 = products .HasProducts.pair-p₁ (ε-map N M) (id N)
+biproduct M N .Biproduct.zero-2 = products .HasProducts.pair-p₂ (id M) (ε-map M N)
+biproduct M N .Biproduct.id-+ .*≈* ._≈s_.func-eq (x₁≈x₂ , y₁≈y₂) =
+  M .trans (M .+-comm) (M .trans (M .+-lunit) x₁≈x₂) , N .trans (N .+-lunit) y₁≈y₂
 
 ------------------------------------------------------------------------------
 -- Tensor products
@@ -292,6 +294,7 @@ _⊸_ : Semimodule → Semimodule → Semimodule
 ------------------------------------------------------------------------------
 -- Duality
 
+-- The linear measurements of M.
 Dual : Semimodule → Semimodule
 Dual M = M ⊸ 𝕀
 
@@ -322,7 +325,7 @@ open CMonEnriched cmon-enriched using (homCM; _+m_; εm; comp-bilinear₁; comp-
 
 infix 25 _ᵀ
 
-_ᵀ : ∀ {X Y} → X ⇒ Y → Dual Y ⇒ Dual X
+_ᵀ : ∀ {M N} → M ⇒ N → Dual N ⇒ Dual M
 (f ᵀ) .*→* ._⇒s_.func φ = φ ∘ f
 (f ᵀ) .*→* ._⇒s_.func-resp-≈ φ≈φ' .*≈* ._≈s_.func-eq x≈x' =
   φ≈φ' .*≈* ._≈s_.func-eq (f .func-resp-≈ x≈x')
@@ -331,37 +334,37 @@ _ᵀ : ∀ {X Y} → X ⇒ Y → Dual Y ⇒ Dual X
 (f ᵀ) .preserve-· {s} {φ} .*≈* ._≈s_.func-eq x≈x' =
   S.·-cong S.refl (φ .func-resp-≈ (f .func-resp-≈ x≈x'))
 
-ᵀ-cong : ∀ {X Y} {f g : X ⇒ Y} → (f ≈m g) → ((f ᵀ) ≈m (g ᵀ))
+ᵀ-cong : ∀ {M N} {f g : M ⇒ N} → f ≈m g → f ᵀ ≈m g ᵀ
 ᵀ-cong f≈g .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
   φ≈ψ .*≈* ._≈s_.func-eq (f≈g .*≈* ._≈s_.func-eq x≈x')
 
-ᵀ-id : ∀ {X} → ((id X) ᵀ) ≈m id (Dual X)
+ᵀ-id : ∀ {M} → (id M) ᵀ ≈m id (Dual M)
 ᵀ-id .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' = φ≈ψ .*≈* ._≈s_.func-eq x≈x'
 
-ᵀ-comp : ∀ {X Y Z} (g : Y ⇒ Z) (f : X ⇒ Y) → ((g ∘ f) ᵀ) ≈m ((f ᵀ) ∘ (g ᵀ))
+ᵀ-comp : ∀ {M N O} (g : N ⇒ O) (f : M ⇒ N) → (g ∘ f) ᵀ ≈m f ᵀ ∘ g ᵀ
 ᵀ-comp g f .*≈* ._≈s_.func-eq φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
   φ≈ψ .*≈* ._≈s_.func-eq (g .func-resp-≈ (f .func-resp-≈ x≈x'))
 
 -- Additivity.
-ᵀ-+ : ∀ {X Y} (f g : X ⇒ Y) → ((f +m g) ᵀ) ≈m ((f ᵀ) +m (g ᵀ))
+ᵀ-+ : ∀ {M N} (f g : M ⇒ N) → (f +m g) ᵀ ≈m f ᵀ +m g ᵀ
 ᵀ-+ f g .*≈* ._≈s_.func-eq {φ} φ≈ψ .*≈* ._≈s_.func-eq x≈x' =
   trans 𝕀 (φ .preserve-+)
     (+-cong 𝕀 (φ≈ψ .*≈* ._≈s_.func-eq (f .func-resp-≈ x≈x'))
               (φ≈ψ .*≈* ._≈s_.func-eq (g .func-resp-≈ x≈x')))
 
-ᵀ-ε : ∀ {X Y} → ((εm {X} {Y}) ᵀ) ≈m εm
+ᵀ-ε : ∀ {M N} → (εm {M} {N}) ᵀ ≈m εm
 ᵀ-ε .*≈* ._≈s_.func-eq {φ} _ = comp-bilinear-ε₂ φ
 
 ------------------------------------------------------------------------------
 -- Dual preserves biproducts: transport the biproduct laws through _ᵀ (swapping
--- p ↔ in by contravariance).  Apex Dual(X⊕Y) is then a biproduct of Dual X, Dual Y.
+-- p ↔ in by contravariance).  Apex Dual(M⊕N) is then a biproduct of Dual M, Dual N.
 
-Dual-preserves-⊕ : ∀ {X Y} → Biproduct cmon-enriched (Dual X) (Dual Y)
-Dual-preserves-⊕ {X} {Y} = D
+Dual-preserves-⊕ : ∀ {M N} → Biproduct cmon-enriched (Dual M) (Dual N)
+Dual-preserves-⊕ {M} {N} = D
   where
-    open Biproduct (biproduct X Y) using (in₁; in₂; id-1; id-2; zero-1; zero-2; id-+)
-    D : Biproduct cmon-enriched (Dual X) (Dual Y)
-    D .Biproduct.prod = Dual (X ⊕ Y)
+    open Biproduct (biproduct M N) using (in₁; in₂; id-1; id-2; zero-1; zero-2; id-+)
+    D : Biproduct cmon-enriched (Dual M) (Dual N)
+    D .Biproduct.prod = Dual (M ⊕ N)
     D .Biproduct.p₁ = in₁ ᵀ
     D .Biproduct.p₂ = in₂ ᵀ
     D .Biproduct.in₁ = p₁ ᵀ
@@ -408,7 +411,7 @@ private
 ------------------------------------------------------------------------------
 -- Dual preserves isomorphisms (contravariantly) and the zero object.
 
-Dual-iso : ∀ {X Y} → Iso X Y → Iso (Dual Y) (Dual X)
+Dual-iso : ∀ {M N} → Iso M N → Iso (Dual N) (Dual M)
 Dual-iso iso .Iso.fwd = (iso .Iso.fwd) ᵀ
 Dual-iso iso .Iso.bwd = (iso .Iso.bwd) ᵀ
 Dual-iso iso .Iso.fwd∘bwd≈id =
@@ -424,47 +427,48 @@ Dual-𝟘 .Iso.fwd∘bwd≈id = HasTerminal.to-terminal-unique terminal _ _
 Dual-𝟘 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {_} {ψ} _ .*≈* ._≈s_.func-eq _ =
   sym 𝕀 (trans 𝕀 (ψ .func-resp-≈ tt) (ψ .preserve-ze))
 
--- Dual(X⊕Y) ≅ Dual X ⊕ Dual Y, and ⊕ acting on isos (via biproducts).
+-- Dual(M⊕N) ≅ Dual M ⊕ Dual N, and ⊕ acting on isos (via biproducts).
 private
   coproducts : HasCoproducts cat
   coproducts = biproducts→coproducts cmon-enriched biproduct
 
-Dual-⊕-iso : ∀ {X Y} → Iso (Dual (X ⊕ Y)) (Dual X ⊕ Dual Y)
-Dual-⊕-iso {X} {Y} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-⊕ (biproduct (Dual X) (Dual Y)))
+Dual-⊕-iso : ∀ {M N} → Iso (Dual (M ⊕ N)) (Dual M ⊕ Dual N)
+Dual-⊕-iso {M} {N} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-⊕ (biproduct (Dual M) (Dual N)))
 
-⊕-iso : ∀ {X X' Y Y'} → Iso X X' → Iso Y Y' → Iso (X ⊕ Y) (X' ⊕ Y')
+⊕-iso : ∀ {M M' N N'} → Iso M M' → Iso N N' → Iso (M ⊕ N) (M' ⊕ N')
 ⊕-iso = HasCoproducts.coproduct-preserve-iso coproducts
 
 ------------------------------------------------------------------------------
--- Conjugate of a morphism w.r.t. chosen self-dualities d : X ≅ Dual X.
+-- Conjugate of a morphism w.r.t. chosen self-dualities d : M ≅ Dual M.
 
-conj : ∀ {X Y} → Iso X (Dual X) → Iso Y (Dual Y) → (X ⇒ Y) → (Y ⇒ X)
-conj X≅X* Y≅Y* f = X≅X* .Iso.bwd ∘ ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))
+-- Pairing ⟨ x , y ⟩ = (d x) y induced by a self-duality: a measure of the extent to which x and y overlap.
+pairing : ∀ {M} → Iso M (Dual M) → M .Carrier → M .Carrier → S.Carrier
+pairing M≅M* x y = M≅M* .Iso.fwd .*→* ._⇒s_.func x .*→* ._⇒s_.func y
 
-conj-transpose : ∀ {X Y} (X≅X* : Iso X (Dual X)) (Y≅Y* : Iso Y (Dual Y)) (f : X ⇒ Y) →
-                 ((X≅X* .Iso.fwd) ∘ conj X≅X* Y≅Y* f) ≈m ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))
-conj-transpose X≅X* Y≅Y* f =
-  ≈-trans (≈-sym (assoc (X≅X* .Iso.fwd) (X≅X* .Iso.bwd) ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))))
-          (≈-trans (∘-cong (X≅X* .Iso.fwd∘bwd≈id) (≈-refl {f = (f ᵀ) ∘ (Y≅Y* .Iso.fwd)})) id-left)
+module _ {M N} (M≅M* : Iso M (Dual M)) (N≅N* : Iso N (Dual N)) where
 
--- Pairing ⟨ x , y ⟩ = (d x) y induced by a self-duality.
-pairing : ∀ {X} → Iso X (Dual X) → X .Carrier → X .Carrier → S.Carrier
-pairing X≅X* x y = X≅X* .Iso.fwd .*→* ._⇒s_.func x .*→* ._⇒s_.func y
+  conj : (M ⇒ N) → (N ⇒ M)
+  conj f = M≅M* .Iso.bwd ∘ (f ᵀ ∘ N≅N* .Iso.fwd)
 
--- Pointwise conjugate equivalence ⟨ conj f y , x ⟩ ≈ ⟨ y , f x ⟩.
-conj-pairing : ∀ {X Y} (X≅X* : Iso X (Dual X)) (Y≅Y* : Iso Y (Dual Y)) (f : X ⇒ Y) {x y} →
-               S._≈_ (pairing X≅X* ((conj X≅X* Y≅Y* f) .*→* ._⇒s_.func y) x) (pairing Y≅Y* y (f .*→* ._⇒s_.func x))
-conj-pairing {X} {Y} X≅X* Y≅Y* f =
-  conj-transpose X≅X* Y≅Y* f .*≈* ._≈s_.func-eq (refl Y) .*≈* ._≈s_.func-eq (refl X)
+  conj-transpose : (f : M ⇒ N) → M≅M* .Iso.fwd ∘ conj f ≈m f ᵀ ∘ N≅N* .Iso.fwd
+  conj-transpose f =
+    ≈-trans (≈-sym (assoc (M≅M* .Iso.fwd) (M≅M* .Iso.bwd) (f ᵀ ∘ N≅N* .Iso.fwd)))
+            (≈-trans (∘-cong (M≅M* .Iso.fwd∘bwd≈id) (≈-refl {f = f ᵀ ∘ N≅N* .Iso.fwd})) id-left)
 
--- conj swaps pairing-disjointness (⟨_,_⟩ ≈ ⊥): the conjugate relation of (f, conj f),
--- the heart of the LatConj embedding.  Generic — no lattice structure; linking it to
--- a lattice # is the per-object alignment (a # b ⟺ ⟨a,b⟩ ≈ ⊥), supplied downstream.
-conj-⊥ : ∀ {X Y} (X≅X* : Iso X (Dual X)) (Y≅Y* : Iso Y (Dual Y)) (f : X ⇒ Y) {x y}
-       → (pairing Y≅Y* y (f .*→* ._⇒s_.func x) S.≈ S.ε)
-       ⇔ (pairing X≅X* ((conj X≅X* Y≅Y* f) .*→* ._⇒s_.func y) x S.≈ S.ε)
-conj-⊥ X≅X* Y≅Y* f =
-  (λ p → S.trans (conj-pairing X≅X* Y≅Y* f) p) , λ q → S.trans (S.sym (conj-pairing X≅X* Y≅Y* f)) q
+  -- Pointwise conjugate equivalence ⟨ conj f y , x ⟩ ≈ ⟨ y , f x ⟩.
+  conj-pairing : ∀ (f : M ⇒ N) {x y} →
+                 S._≈_ (pairing M≅M* (conj f .*→* ._⇒s_.func y) x) (pairing N≅N* y (f .*→* ._⇒s_.func x))
+  conj-pairing f =
+    conj-transpose f .*≈* ._≈s_.func-eq (refl N) .*≈* ._≈s_.func-eq (refl M)
+
+  -- conj swaps pairing-disjointness (⟨_,_⟩ ≈ ⊥): the conjugate relation of (f, conj f),
+  -- the heart of the LatConj embedding.  Generic — no lattice structure; linking it to
+  -- a lattice # is the per-object alignment (a # b ⟺ ⟨a,b⟩ ≈ ⊥), supplied downstream.
+  conj-⊥ : ∀ (f : M ⇒ N) {x y}
+         → (pairing N≅N* y (f .*→* ._⇒s_.func x) S.≈ S.ε)
+         ⇔ (pairing M≅M* (conj f .*→* ._⇒s_.func y) x S.≈ S.ε)
+  conj-⊥ f =
+    (λ p → S.trans (conj-pairing f) p) , λ q → S.trans (S.sym (conj-pairing f)) q
 
 ------------------------------------------------------------------------------
 module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
