@@ -771,7 +771,7 @@ module cocont
   hasMu .HasMu.⦅_⦆ {_} {Γ} {A} {P} {δ} alg =
     ⦅ alg ∘ prod-m (id Γ) (≡-to-⇒ (⟦⟧-fobj P (extend δ A))) ⦆
 
-  -- ≡-to-⇒ transports a coproduct of object-equalities to the functorial coprod-m of the transports.
+  -- Some ≡-to-⇒ helpers.
   ≡⇒-coprod : ∀ {X₁ X₂ Y₁ Y₂} (e₁ : X₁ ≡ X₂) (e₂ : Y₁ ≡ Y₂) →
               ≡-to-⇒ (cong₂ coprod e₁ e₂) ≈ coprod-m (≡-to-⇒ e₁) (≡-to-⇒ e₂)
   ≡⇒-coprod refl refl = ≈-sym coprod-m-id
@@ -807,7 +807,7 @@ module cocont
     (≈-sym (≈-trans (≈-trans (∘-cong₁ (∘-cong₁ (≡⇒-prod (⟦⟧-fobj P δ') (⟦⟧-fobj Q δ'))))
                              (∘-cong₂ (prod-m-cong ≈-refl (≡⇒-prod-sym (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)))))
                     {!!}))
-  strong-fmor-⟦⟧ˢ (μ P)     fs = {!!}
+  strong-fmor-⟦⟧ˢ (μ P) fs = {!!}
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg =
