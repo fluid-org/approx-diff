@@ -750,8 +750,13 @@ module cocont
   hasMu .HasMu.⦅_⦆ {_} {Γ} {A} {P} {δ} alg =
     ⦅ alg ∘ prod-m (id Γ) (≡-to-⇒ (⟦⟧-fobj P (extend δ A))) ⦆
 
+  strong-fmor-⟦⟧ˢ : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
+                    HasMu.strong-fmor hasMu P fs ≈
+                    ≡-to-⇒ (⟦⟧-fobj P δ') ∘ ⟦ P ⟧ˢ fs ∘ prod-m (id Γ) (≡-to-⇒ (sym (⟦⟧-fobj P δ)))
+  strong-fmor-⟦⟧ˢ P fs = {!!}
+
   hasMuLaws : HasMuLaws hasMu
-  hasMuLaws .HasMuLaws.⦅⦆-β alg =
+  hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg =
     ≈-trans (∘co-cong₂ (assoc _ _ _))
     (≈-trans (∘co-cong₂ (∘-cong₂ (≈-sym (pair-p₂ (id _ ∘ p₁) _))))
     (≈-trans (∘co-cong₂ (≈-sym (assoc _ _ _)))
@@ -761,5 +766,8 @@ module cocont
     (≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (pair-compose _ _ _ _))
     (≈-trans (∘-cong₂ (pair-cong id-left ≈-refl))
-    (∘co-cong₂ {!!})))))))))
+    (∘co-cong₂
+      (≈-trans (∘-cong₂ (∘-cong₁ (⟦ P ⟧ˢ-cong (λ { Fin.zero → ≈-refl ; (Fin.suc i) → ≈-refl }))))
+      (≈-trans (≈-sym (assoc _ _ _))
+               (≈-sym (strong-fmor-⟦⟧ˢ P _)))))))))))))
   hasMuLaws .HasMuLaws.⦅⦆-η alg h eq = {!!}
