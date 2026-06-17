@@ -90,8 +90,7 @@ module _ {o e} where
     W-≈-trans : ∀ P {w₁ w₂ w₃} → W-≈ P w₁ w₂ → W-≈ P w₂ w₃ → W-≈ P w₁ w₃
     W-≈-trans P {inF _} {inF _} {inF _} w₁≈w₂ w₂≈w₃ = WIdx-≈-trans P P w₁≈w₂ w₂≈w₃
 
-    WIdx-≈-trans : ∀ P Q {x y z} →
-                      WIdx-≈ P Q x y → WIdx-≈ P Q y z → WIdx-≈ P Q x z
+    WIdx-≈-trans : ∀ P Q {x y z} → WIdx-≈ P Q x y → WIdx-≈ P Q y z → WIdx-≈ P Q x z
     WIdx-≈-trans P (param A) {x} {y} {z} x≈y y≈z = IsEquivalence.trans (Setoid.isEquivalence A) x≈y y≈z
     WIdx-≈-trans P var {x} {y} {z} x≈y y≈z = W-≈-trans P {x} {y} {z} x≈y y≈z
     WIdx-≈-trans P (Q₁ + Q₂) {inj₁ _} {inj₁ _} {inj₁ _} x≈y y≈z = WIdx-≈-trans P Q₁ x≈y y≈z
