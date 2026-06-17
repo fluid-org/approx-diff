@@ -878,4 +878,18 @@ module cocont
         (≈-trans (≈-sym (assoc _ _ _))
         (≈-trans (∘-cong₁ (≈-trans (∘co-prod-m _ _ _)
                           (∘co-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))))
-        (≈-trans (∘-cong₁ eq) {!!})))))))
+        (≈-trans (∘-cong₁ eq)
+        (≈-trans (∘co-prod-m _ _ _)
+        (≈-trans (∘co-cong₂
+                   (≈-trans (∘-cong₁ (strong-fmor-⟦⟧ˢ P _))
+                   (≈-trans (assoc _ _ _)
+                   (≈-trans (∘-cong₂ (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                                     (prod-m-cong id-left
+                                       (≈-trans (≈-sym (assoc _ _ _))
+                                       (≈-trans (∘-cong₁ (≡-to-⇒-sym-l (⟦⟧-fobj P (extend δ (μ-carrier P δ))))) id-left)))))
+                   (≈-trans (assoc _ _ _)
+                            (∘-cong₂ (≈-trans (⟦ P ⟧ˢ-fuse _ (extend-fam (μ-inj P δ j)))
+                                     (⟦ P ⟧ˢ-cong (λ { Fin.zero → h-leg j
+                                                     ; (Fin.suc i) → ≈-trans (∘-cong₂ prod-m-id) id-right })))))))))
+        (≈-trans (∘-cong₂ (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong id-left ≈-refl))))
+                 (≈-sym (assoc _ _ _))))))))))))
