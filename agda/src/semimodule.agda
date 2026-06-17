@@ -521,6 +521,10 @@ module DistributiveLattice
   (⊤-add-top : ∀ {x} → (⊤ ∨ x) S.≈ ⊤)
   where
 
+  open import preorder using (Preorder)
+  open import basics using (IsPreorder; IsJoin; IsBottom)
+  open import join-semilattice using (JoinSemilattice)
+
   -- Addition in every S-semimodule is idempotent (x + x ≈ x), so SemiMod(S) objects are join-semilattices and
   -- morphisms are join-preserving.
   +-idem : ∀ (M : Semimodule) {x : M .Carrier} → M ._≈_ (M ._+_ x x) x
@@ -528,3 +532,35 @@ module DistributiveLattice
     trans M (+-cong M (sym M (·-unit M)) (sym M (·-unit M)))
     (trans M (sym M (+-distribʳ M))
     (trans M (·-cong M ⊤-add-top (refl M)) (·-unit M)))
+
+  -- The additive structure of each S-semimodule, as a join-semilattice: x ≤ y := x + y ≈ y, join +, bottom ε.
+  module _ (M : Semimodule) where
+    infix 4 _≤_
+    _≤_ : M .Carrier → M .Carrier → Prop
+    x ≤ y = M ._≈_ (M ._+_ x y) y
+
+    ≤-isPreorder : IsPreorder _≤_
+    ≤-isPreorder .IsPreorder.refl = +-idem M
+    ≤-isPreorder .IsPreorder.trans x≤y y≤z =
+      trans M (+-cong M (refl M) (sym M y≤z)) (trans M (sym M (+-assoc M)) (trans M (+-cong M x≤y (refl M)) y≤z))
+
+    order : Preorder
+    order .Preorder.Carrier = M .Carrier
+    order .Preorder._≤_ = _≤_
+    order .Preorder.≤-isPreorder = ≤-isPreorder
+
+    ∨-isJoin : IsJoin ≤-isPreorder (M ._+_)
+    ∨-isJoin .IsJoin.inl = trans M (sym M (+-assoc M)) (+-cong M (+-idem M) (refl M))
+    ∨-isJoin .IsJoin.inr =
+      trans M (+-cong M (refl M) (+-comm M))
+        (trans M (sym M (+-assoc M)) (trans M (+-cong M (+-idem M) (refl M)) (+-comm M)))
+    ∨-isJoin .IsJoin.[_,_] x≤z y≤z = trans M (+-assoc M) (trans M (+-cong M (refl M) y≤z) x≤z)
+
+    ⊥-isBottom : IsBottom ≤-isPreorder (M .ε)
+    ⊥-isBottom .IsBottom.≤-bottom = +-lunit M
+
+    joins : JoinSemilattice order
+    joins .JoinSemilattice._∨_ = M ._+_
+    joins .JoinSemilattice.⊥ = M .ε
+    joins .JoinSemilattice.∨-isJoin = ∨-isJoin
+    joins .JoinSemilattice.⊥-isBottom = ⊥-isBottom
