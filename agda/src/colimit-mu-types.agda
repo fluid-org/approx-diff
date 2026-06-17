@@ -855,4 +855,7 @@ module cocont
       (≈-trans (∘-cong₂ (∘-cong₁ (⟦ P ⟧ˢ-cong (λ { Fin.zero → ≈-refl ; (Fin.suc i) → ≈-refl }))))
       (≈-trans (≈-sym (assoc _ _ _))
                (≈-sym (strong-fmor-⟦⟧ˢ P _)))))))))))))
-  hasMuLaws .HasMuLaws.⦅⦆-η alg h eq = {!!}
+  hasMuLaws .HasMuLaws.⦅⦆-η {Γ = Γ} {P = P} {δ = δ} alg h eq =
+    colambda-unique
+      (×-cocont (const-chain-colimit Γ .isColimit) (colimits (chain (iter P δ) (step P δ)) .isColimit))
+      (λ k → ≈-trans {!!} (≈-sym (cata-coeval _ k)))
