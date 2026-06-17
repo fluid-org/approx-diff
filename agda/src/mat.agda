@@ -3,7 +3,7 @@
 module mat where
 
 open import Level using (0ℓ; _⊔_)
-open import prop using (tt; _,_; proj₁; proj₂)
+open import prop using (tt; _,_; proj₁; proj₂; _⇔_; sym-⇔; trans-⇔)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category)
@@ -514,46 +514,129 @@ module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open import Data.Nat using (ℕ; zero; suc)
   open import basics using (IsPreorder; IsMeet; IsTop)
+  open import meet-semilattice using (MeetSemilattice)
   import semimodule
 
-  open CommutativeSemiring S using (_≈_; refl; sym; trans)
-    renaming ( _·_ to _∧_ ; _+_ to _∨_ ; ε to ⊥ ; ι to ⊤
-             ; ·-cong to ∧-cong ; ·-comm to ∧-comm ; ·-lunit to ∧-lunit
-             ; +-cong to ∨-cong ; +-comm to ∨-comm
-             ; ·-+-distribₗ to ∧-∨-distribₗ ; ·-+-distribᵣ to ∧-∨-distribᵣ )
-
-  module SM  = semimodule S
-  module Emb = Embedding S
+  open Mat S using ([]; _∷_; Vec; εᵥ; _+ᵥ_; _≈ᵥ_; ≈ᵥ-trans; ≈ᵥ-sym; +ᵥ-runit)
+  open semimodule S using (module S; 𝕀; module DistributiveLattice)
+  open Embedding S using (fobj; fobj-self-dual)
 
   module DistribLattice
-    (∧-idem    : ∀ {x} → x ∧ x ≈ x)
-    (⊤-add-top : ∀ {x} → ⊤ ∨ x ≈ ⊤)
+    (∧-idem    : ∀ {x} → S._≈_ (S._·_ x x) x)
+    (⊤-add-top : ∀ {x} → S._≈_ (S._+_ S.ι x) S.ι)
     where
-    module DL = SM.DistributiveLattice ∧-idem ⊤-add-top
-    open IsPreorder (DL.≤-isPreorder SM.𝕀) using () renaming (refl to ≤-refl; trans to ≤-trans)
-
-    ≈→≤ : ∀ {x y} → x ≈ y → DL._≤_ SM.𝕀 x y
-    ≈→≤ = DL.≈→≤ SM.𝕀
+    module DL = DistributiveLattice ∧-idem ⊤-add-top
 
     ----------------------------------------------------------------------------
     -- S as a distributive lattice: the meet · is the lattice meet of the join order.
+    private
+      module Scalar where
+        open CommutativeSemiring S using (_≈_; refl; sym; trans)
+          renaming ( _·_ to _∧_ ; _+_ to _∨_ ; ε to ⊥ ; ι to ⊤
+                   ; ·-cong to ∧-cong ; ·-comm to ∧-comm ; ·-lunit to ∧-lunit
+                   ; +-cong to ∨-cong ; +-comm to ∨-comm ; +-assoc to ∨-assoc ; +-lunit to ∨-lunit
+                   ; ·-+-distribₗ to ∧-∨-distribₗ ; ·-+-distribᵣ to ∧-∨-distribᵣ ) public
+        open IsPreorder (DL.≤-isPreorder 𝕀) using () renaming (refl to ≤-refl; trans to ≤-trans)
 
-    ∨-∧-absorption : ∀ {a b} → a ∨ (a ∧ b) ≈ a
-    ∨-∧-absorption =
-      trans (∨-cong (trans (sym ∧-lunit) ∧-comm) refl)
-            (trans (sym ∧-∨-distribₗ) (trans (∧-cong refl ⊤-add-top) (trans ∧-comm ∧-lunit)))
+        ∨-∧-absorption : ∀ {a b} → a ∨ (a ∧ b) ≈ a
+        ∨-∧-absorption =
+          trans (∨-cong (trans (sym ∧-lunit) ∧-comm) refl)
+                (trans (sym ∧-∨-distribₗ) (trans (∧-cong refl ⊤-add-top) (trans ∧-comm ∧-lunit)))
 
-    ∧-monoʳ : ∀ {a b c} → DL._≤_ SM.𝕀 a b → DL._≤_ SM.𝕀 (c ∧ a) (c ∧ b)
-    ∧-monoʳ a≤b = trans (sym ∧-∨-distribₗ) (∧-cong refl a≤b)
+        ∧-monoʳ : ∀ {a b c} → DL._≤_ 𝕀 a b → DL._≤_ 𝕀 (c ∧ a) (c ∧ b)
+        ∧-monoʳ a≤b = trans (sym ∧-∨-distribₗ) (∧-cong refl a≤b)
 
-    ∧-monoˡ : ∀ {a b c} → DL._≤_ SM.𝕀 a b → DL._≤_ SM.𝕀 (a ∧ c) (b ∧ c)
-    ∧-monoˡ a≤b = trans (sym ∧-∨-distribᵣ) (∧-cong a≤b refl)
+        ∧-monoˡ : ∀ {a b c} → DL._≤_ 𝕀 a b → DL._≤_ 𝕀 (a ∧ c) (b ∧ c)
+        ∧-monoˡ a≤b = trans (sym ∧-∨-distribᵣ) (∧-cong a≤b refl)
 
-    ∧-isMeet : IsMeet (DL.≤-isPreorder SM.𝕀) _∧_
-    ∧-isMeet .IsMeet.π₁ = trans ∨-comm ∨-∧-absorption
-    ∧-isMeet .IsMeet.π₂ = trans (∨-cong ∧-comm refl) (trans ∨-comm ∨-∧-absorption)
-    ∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z =
-      ≤-trans (trans (∨-cong (sym ∧-idem) refl) (∧-monoʳ x≤z)) (∧-monoˡ x≤y)
+        ∧-isMeet : IsMeet (DL.≤-isPreorder 𝕀) _∧_
+        ∧-isMeet .IsMeet.π₁ = trans ∨-comm ∨-∧-absorption
+        ∧-isMeet .IsMeet.π₂ = trans (∨-cong ∧-comm refl) (trans ∨-comm ∨-∧-absorption)
+        ∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z =
+          ≤-trans (trans (∨-cong (sym ∧-idem) refl) (∧-monoʳ x≤z)) (∧-monoˡ x≤y)
 
-    ⊤-isTop : IsTop (DL.≤-isPreorder SM.𝕀) ⊤
-    ⊤-isTop .IsTop.≤-top = trans ∨-comm ⊤-add-top
+        ⊤-isTop : IsTop (DL.≤-isPreorder 𝕀) ⊤
+        ⊤-isTop .IsTop.≤-top = trans ∨-comm ⊤-add-top
+
+        ∧-∨-distrib : ∀ {a b c} → DL._≤_ 𝕀 (a ∧ (b ∨ c)) ((a ∧ b) ∨ (a ∧ c))
+        ∧-∨-distrib = DL.≈→≤ 𝕀 ∧-∨-distribₗ
+
+        -- The join is zero-sum-free: a ∨ b ≈ ⊥ iff both are ⊥.
+        ∨-idem : ∀ {a} → (a ∨ a) ≈ a
+        ∨-idem = DL.+-idem 𝕀
+
+        ∨-runit : ∀ {a} → (a ∨ ⊥) ≈ a
+        ∨-runit = trans ∨-comm ∨-lunit
+
+        ∨-≈⊥ₗ : ∀ {a b} → (a ∨ b) ≈ ⊥ → a ≈ ⊥
+        ∨-≈⊥ₗ a∨b≈⊥ =
+          trans (sym ∨-runit)
+            (trans (∨-cong refl (sym a∨b≈⊥))
+              (trans (sym ∨-assoc) (trans (∨-cong ∨-idem refl) a∨b≈⊥)))
+
+        ∨-≈⊥ᵣ : ∀ {a b} → (a ∨ b) ≈ ⊥ → b ≈ ⊥
+        ∨-≈⊥ᵣ a∨b≈⊥ = ∨-≈⊥ₗ (trans ∨-comm a∨b≈⊥)
+
+        ⊥-∨ : ∀ {a b} → a ≈ ⊥ → b ≈ ⊥ → (a ∨ b) ≈ ⊥
+        ⊥-∨ a≈⊥ b≈⊥ = trans (∨-cong a≈⊥ b≈⊥) ∨-lunit
+
+        -- Dot product ⟪ x , y ⟫ = ⋁ᵢ (xᵢ ∧ yᵢ).
+        ⟪_,_⟫ : ∀ {n} → Vec n → Vec n → S.Carrier
+        ⟪ []    , []    ⟫ = ⊥
+        ⟪ x ∷ u , y ∷ v ⟫ = (x ∧ y) ∨ ⟪ u , v ⟫
+
+    open Scalar using (⟪_,_⟫; _≈_; ⊥; refl; ∨-≈⊥ₗ; ∨-≈⊥ᵣ; ⊥-∨)
+
+    ----------------------------------------------------------------------------
+    -- Pointwise lift of the meet to fobj n.
+
+    _∧_ : ∀ {n} → Vec n → Vec n → Vec n
+    []      ∧ []      = []
+    (x ∷ u) ∧ (y ∷ v) = (x Scalar.∧ y) ∷ (u ∧ v)
+
+    ⊤ : ∀ {n} → Vec n
+    ⊤ {zero}  = []
+    ⊤ {suc n} = Scalar.⊤ ∷ ⊤
+
+    π₁ : ∀ {n} {u v : Vec n} → DL._≤_ (fobj n) (u ∧ v) u
+    π₁ {u = []}    {[]}    = tt
+    π₁ {u = _ ∷ _} {_ ∷ _} = Scalar.∧-isMeet .IsMeet.π₁ , π₁
+
+    π₂ : ∀ {n} {u v : Vec n} → DL._≤_ (fobj n) (u ∧ v) v
+    π₂ {u = []}    {[]}    = tt
+    π₂ {u = _ ∷ _} {_ ∷ _} = Scalar.∧-isMeet .IsMeet.π₂ , π₂
+
+    ⟨_,_⟩ : ∀ {n} {u v w : Vec n} → DL._≤_ (fobj n) u v → DL._≤_ (fobj n) u w → DL._≤_ (fobj n) u (v ∧ w)
+    ⟨_,_⟩ {u = []}    {[]}    {[]}    _           _           = tt
+    ⟨_,_⟩ {u = _ ∷ _} {_ ∷ _} {_ ∷ _} (u≤v , u≤v') (u≤w , u≤w') =
+      Scalar.∧-isMeet .IsMeet.⟨_,_⟩ u≤v u≤w , ⟨ u≤v' , u≤w' ⟩
+
+    ⊤-top : ∀ {n} {u : Vec n} → DL._≤_ (fobj n) u ⊤
+    ⊤-top {u = []}    = tt
+    ⊤-top {u = _ ∷ _} = Scalar.⊤-isTop .IsTop.≤-top , ⊤-top
+
+    ∧-∨-distrib : ∀ {n} (u v w : Vec n) →
+                  DL._≤_ (fobj n) (u ∧ (v +ᵥ w)) ((u ∧ v) +ᵥ (u ∧ w))
+    ∧-∨-distrib []      []      []      = tt
+    ∧-∨-distrib (x ∷ u) (y ∷ v) (z ∷ w) = Scalar.∧-∨-distrib , ∧-∨-distrib u v w
+
+    meets : ∀ n → MeetSemilattice (DL.preorder (fobj n))
+    meets n .MeetSemilattice._∧_                    = _∧_
+    meets n .MeetSemilattice.⊤                      = ⊤
+    meets n .MeetSemilattice.∧-isMeet .IsMeet.π₁    = π₁
+    meets n .MeetSemilattice.∧-isMeet .IsMeet.π₂    = π₂
+    meets n .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ = ⟨_,_⟩
+    meets n .MeetSemilattice.⊤-isTop .IsTop.≤-top   = ⊤-top
+
+    ----------------------------------------------------------------------------
+    -- Disjointness aligns with the dot product: x # y iff ⟪ x , y ⟫ ≈ ⊥.
+
+    align-core : ∀ {n} {a b : Vec n} → _≈ᵥ_ (a ∧ b) εᵥ ⇔ (⟪ a , b ⟫ ≈ ⊥)
+    align-core {a = []}    {[]}    .proj₁ _       = refl
+    align-core {a = []}    {[]}    .proj₂ _       = tt
+    align-core {a = _ ∷ _} {_ ∷ _} .proj₁ (h , t) = ⊥-∨ h (align-core .proj₁ t)
+    align-core {a = _ ∷ _} {_ ∷ _} .proj₂ p       = ∨-≈⊥ₗ p , align-core .proj₂ (∨-≈⊥ᵣ p)
+
+    align-lattice : ∀ {n} {a b : Vec n} → DL._≤_ (fobj n) (a ∧ b) εᵥ ⇔ (⟪ a , b ⟫ ≈ ⊥)
+    align-lattice {a = a} {b} .proj₁ h = align-core {a = a} {b} .proj₁ (≈ᵥ-trans (≈ᵥ-sym +ᵥ-runit) h)
+    align-lattice {a = a} {b} .proj₂ q = ≈ᵥ-trans +ᵥ-runit (align-core {a = a} {b} .proj₂ q)
