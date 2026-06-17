@@ -771,13 +771,42 @@ module cocont
   hasMu .HasMu.⦅_⦆ {_} {Γ} {A} {P} {δ} alg =
     ⦅ alg ∘ prod-m (id Γ) (≡-to-⇒ (⟦⟧-fobj P (extend δ A))) ⦆
 
+  -- ≡-to-⇒ transports a coproduct of object-equalities to the functorial coprod-m of the transports.
+  ≡⇒-coprod : ∀ {X₁ X₂ Y₁ Y₂} (e₁ : X₁ ≡ X₂) (e₂ : Y₁ ≡ Y₂) →
+              ≡-to-⇒ (cong₂ coprod e₁ e₂) ≈ coprod-m (≡-to-⇒ e₁) (≡-to-⇒ e₂)
+  ≡⇒-coprod refl refl = ≈-sym coprod-m-id
+
+  ≡⇒-coprod-sym : ∀ {X₁ X₂ Y₁ Y₂} (e₁ : X₁ ≡ X₂) (e₂ : Y₁ ≡ Y₂) →
+                  ≡-to-⇒ (sym (cong₂ coprod e₁ e₂)) ≈ coprod-m (≡-to-⇒ (sym e₁)) (≡-to-⇒ (sym e₂))
+  ≡⇒-coprod-sym refl refl = ≈-sym coprod-m-id
+
+  ≡⇒-prod : ∀ {X₁ X₂ Y₁ Y₂} (e₁ : X₁ ≡ X₂) (e₂ : Y₁ ≡ Y₂) →
+            ≡-to-⇒ (cong₂ prod e₁ e₂) ≈ prod-m (≡-to-⇒ e₁) (≡-to-⇒ e₂)
+  ≡⇒-prod refl refl = ≈-sym prod-m-id
+
+  ≡⇒-prod-sym : ∀ {X₁ X₂ Y₁ Y₂} (e₁ : X₁ ≡ X₂) (e₂ : Y₁ ≡ Y₂) →
+                ≡-to-⇒ (sym (cong₂ prod e₁ e₂)) ≈ prod-m (≡-to-⇒ (sym e₁)) (≡-to-⇒ (sym e₂))
+  ≡⇒-prod-sym refl refl = ≈-sym prod-m-id
+
   strong-fmor-⟦⟧ˢ : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
                     HasMu.strong-fmor hasMu P fs ≈
                     ≡-to-⇒ (⟦⟧-fobj P δ') ∘ ⟦ P ⟧ˢ fs ∘ prod-m (id Γ) (≡-to-⇒ (sym (⟦⟧-fobj P δ)))
   strong-fmor-⟦⟧ˢ (const A) fs = ≈-sym (≈-trans (∘-cong₁ id-left) (≈-trans (∘-cong₂ prod-m-id) id-right))
   strong-fmor-⟦⟧ˢ (var i)   fs = ≈-sym (≈-trans (∘-cong₁ id-left) (≈-trans (∘-cong₂ prod-m-id) id-right))
-  strong-fmor-⟦⟧ˢ (P + Q)   fs = {!!}
-  strong-fmor-⟦⟧ˢ (P × Q)   fs = {!!}
+  strong-fmor-⟦⟧ˢ (P + Q) {δ = δ} {δ' = δ'} fs =
+    ≈-trans (scopair-cong (∘-cong₂ (strong-fmor-⟦⟧ˢ P fs)) (∘-cong₂ (strong-fmor-⟦⟧ˢ Q fs)))
+    (≈-sym (≈-trans (≈-trans (∘-cong₁ (∘-cong₁ (≡⇒-coprod (⟦⟧-fobj P δ') (⟦⟧-fobj Q δ'))))
+                             (∘-cong₂ (prod-m-cong ≈-refl (≡⇒-coprod-sym (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)))))
+                    (≈-trans (∘-cong₁ (scopair-natural _ _ _))
+                    (≈-trans (scopair-fuse _ _ _ _)
+                             (scopair-cong
+                               (≈-trans (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (copair-in₁ _ _)) (assoc _ _ _)))) (assoc _ _ _))
+                               (≈-trans (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (copair-in₂ _ _)) (assoc _ _ _)))) (assoc _ _ _))))) ))
+  strong-fmor-⟦⟧ˢ (P × Q) {δ = δ} {δ' = δ'} fs =
+    ≈-trans (pair-cong (∘-cong₁ (strong-fmor-⟦⟧ˢ P fs)) (∘-cong₁ (strong-fmor-⟦⟧ˢ Q fs)))
+    (≈-sym (≈-trans (≈-trans (∘-cong₁ (∘-cong₁ (≡⇒-prod (⟦⟧-fobj P δ') (⟦⟧-fobj Q δ'))))
+                             (∘-cong₂ (prod-m-cong ≈-refl (≡⇒-prod-sym (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)))))
+                    {!!}))
   strong-fmor-⟦⟧ˢ (μ P)     fs = {!!}
 
   hasMuLaws : HasMuLaws hasMu
