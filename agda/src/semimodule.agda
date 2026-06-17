@@ -2,7 +2,7 @@
 
 open import Level using (0ℓ; suc)
 open import Data.Product using (_,_; _×_)
-open import prop using (_,_; proj₁; proj₂; LiftS; liftS; tt; _⇔_)
+open import prop using (_,_; proj₁; proj₂; LiftS; liftS; tt; _⇔_; sym-⇔; trans-⇔)
 open import prop-setoid
   using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂; 𝟙)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
@@ -512,18 +512,19 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
 
 ------------------------------------------------------------------------------
--- Now suppose S is a (bounded) distributive lattice, with semimodule operations renamed to lattice
--- operations. Meet-idempotence and top-absorption are sufficient.
+-- Now suppose S is a (bounded) distributive lattice (join +, meet ·): meet-idempotence and top-absorption
+-- suffice; join-idempotence is derivable.
 
 module DistributiveLattice
-  (open S using () renaming (_+_ to _∨_; _·_ to _∧_; ε to ⊥; ι to ⊤))
-  (∧-idem    : ∀ {x} → (x ∧ x) S.≈ x)
-  (⊤-add-top : ∀ {x} → (⊤ ∨ x) S.≈ ⊤)
+  (∧-idem    : ∀ {x} → (x S.· x) S.≈ x)
+  (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
   where
 
   open import preorder using (Preorder)
-  open import basics using (IsPreorder; IsJoin; IsBottom)
-  open import join-semilattice using (JoinSemilattice)
+  open import basics using (IsPreorder; IsJoin; IsBottom; module Disjoint)
+  open import join-semilattice using (JoinSemilattice) renaming (_=>_ to _=>J_)
+  open import meet-semilattice using (MeetSemilattice)
+  open import conjugate using (Obj; _⇒c_)
 
   -- Addition in every S-semimodule is idempotent (x + x ≈ x), so SemiMod(S) objects are join-semilattices and
   -- morphisms are join-preserving.
@@ -544,10 +545,13 @@ module DistributiveLattice
     ≤-isPreorder .IsPreorder.trans x≤y y≤z =
       trans M (+-cong M (refl M) (sym M y≤z)) (trans M (sym M (+-assoc M)) (trans M (+-cong M x≤y (refl M)) y≤z))
 
-    order : Preorder
-    order .Preorder.Carrier = M .Carrier
-    order .Preorder._≤_ = _≤_
-    order .Preorder.≤-isPreorder = ≤-isPreorder
+    ≈→≤ : ∀ {x y} → M ._≈_ x y → x ≤ y
+    ≈→≤ x≈y = trans M (+-cong M x≈y (refl M)) (+-idem M)
+
+    preorder : Preorder
+    preorder .Preorder.Carrier = M .Carrier
+    preorder .Preorder._≤_ = _≤_
+    preorder .Preorder.≤-isPreorder = ≤-isPreorder
 
     ∨-isJoin : IsJoin ≤-isPreorder (M ._+_)
     ∨-isJoin .IsJoin.inl = trans M (sym M (+-assoc M)) (+-cong M (+-idem M) (refl M))
@@ -559,8 +563,52 @@ module DistributiveLattice
     ⊥-isBottom : IsBottom ≤-isPreorder (M .ε)
     ⊥-isBottom .IsBottom.≤-bottom = +-lunit M
 
-    joins : JoinSemilattice order
+    joins : JoinSemilattice preorder
     joins .JoinSemilattice._∨_ = M ._+_
     joins .JoinSemilattice.⊥ = M .ε
     joins .JoinSemilattice.∨-isJoin = ∨-isJoin
     joins .JoinSemilattice.⊥-isBottom = ⊥-isBottom
+
+  -- A semimodule morphism is join-preserving: it preserves + (join) and ε (bottom).
+  joins-map : ∀ {M N} → (M ⇒ N) → joins M =>J joins N
+  joins-map {M} {N} f ._=>J_.func .preorder._=>_.fun = f .func
+  joins-map {M} {N} f ._=>J_.func .preorder._=>_.mono x≤y = trans N (sym N (f .preserve-+)) (f .func-resp-≈ x≤y)
+  joins-map {M} {N} f ._=>J_.∨-preserving = ≈→≤ N (f .preserve-+)
+  joins-map {M} {N} f ._=>J_.⊥-preserving = ≈→≤ N (f .preserve-ze)
+
+  -- A semimodule presented as a self-dual bounded distributive lattice: the client supplies the meet, the
+  -- self-duality, distributivity, and the alignment of disjointness with the pairing.  Its joins come from
+  -- the additive structure; toObj is the underlying distributive lattice.
+  record SelfDualLattice : Set (suc 0ℓ) where
+    no-eta-equality
+    field
+      M         : Semimodule
+      self-dual : Iso M (Dual M)
+      meets     : MeetSemilattice (preorder M)
+
+    open MeetSemilattice meets using (_∧_)
+    open JoinSemilattice (joins M) using (_∨_)
+    open Disjoint (≤-isPreorder M) (MeetSemilattice.∧-isMeet meets) (JoinSemilattice.⊥-isBottom (joins M)) using (_#_)
+
+    field
+      ∧-∨-distrib : ∀ x y z → _≤_ M (x ∧ (y ∨ z)) ((x ∧ y) ∨ (x ∧ z))
+      align       : ∀ {a b} → (a # b) ⇔ (pairing self-dual a b S.≈ S.ε)
+
+    toObj : Obj
+    toObj .Obj.carrier     = preorder M
+    toObj .Obj.meets       = meets
+    toObj .Obj.joins       = joins M
+    toObj .Obj.∧-∨-distrib = ∧-∨-distrib
+
+  -- The conjugate embedding on morphisms: f ↦ (joins-map f, joins-map (conj f)), the conjugate biconditional
+  -- being conj-⊥ bracketed by the two objects' alignments.
+  module _ (X Y : SelfDualLattice) where
+    private
+      module X = SelfDualLattice X
+      module Y = SelfDualLattice Y
+
+    to-conj : (X.M ⇒ Y.M) → X.toObj ⇒c Y.toObj
+    to-conj f ._⇒c_.right = joins-map f
+    to-conj f ._⇒c_.left = joins-map (conj X.self-dual Y.self-dual f)
+    to-conj f ._⇒c_.conjugate =
+      trans-⇔ Y.align (trans-⇔ (conj-⊥ X.self-dual Y.self-dual f) (sym-⇔ X.align))
