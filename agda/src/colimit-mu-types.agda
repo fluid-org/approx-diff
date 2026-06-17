@@ -797,22 +797,32 @@ module cocont
   strong-fmor-⟦⟧ˢ (var i)   fs = ≈-sym (≈-trans (∘-cong₁ id-left) (≈-trans (∘-cong₂ prod-m-id) id-right))
   strong-fmor-⟦⟧ˢ (P + Q) {δ = δ} {δ' = δ'} fs =
     ≈-trans (scopair-cong (∘-cong₂ (strong-fmor-⟦⟧ˢ P fs)) (∘-cong₂ (strong-fmor-⟦⟧ˢ Q fs)))
-    (≈-sym (≈-trans (≈-trans (∘-cong₁ (∘-cong₁ (≡⇒-coprod (⟦⟧-fobj P δ') (⟦⟧-fobj Q δ'))))
-                             (∘-cong₂ (prod-m-cong ≈-refl (≡⇒-coprod-sym (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)))))
-                    (≈-trans (∘-cong₁ (scopair-natural _ _ _))
-                    (≈-trans (scopair-fuse _ _ _ _)
-                             (scopair-cong
-                               (≈-trans (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (copair-in₁ _ _)) (assoc _ _ _)))) (assoc _ _ _))
-                               (≈-trans (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (copair-in₂ _ _)) (assoc _ _ _)))) (assoc _ _ _))))) ))
+    (≈-sym
+    (≈-trans (≈-trans (∘-cong₁ (∘-cong₁ (≡⇒-coprod (⟦⟧-fobj P δ') (⟦⟧-fobj Q δ'))))
+                      (∘-cong₂ (prod-m-cong ≈-refl (≡⇒-coprod-sym (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)))))
+    (≈-trans (∘-cong₁ (scopair-natural _ _ _))
+    (≈-trans (scopair-fuse _ _ _ _)
+    (scopair-cong
+      (≈-trans (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (copair-in₁ _ _)) (assoc _ _ _))))
+               (assoc _ _ _))
+      (≈-trans (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (copair-in₂ _ _)) (assoc _ _ _))))
+               (assoc _ _ _)))))))
   strong-fmor-⟦⟧ˢ (P × Q) {δ = δ} {δ' = δ'} fs =
     ≈-trans (pair-cong (∘-cong₁ (strong-fmor-⟦⟧ˢ P fs)) (∘-cong₁ (strong-fmor-⟦⟧ˢ Q fs)))
-    (≈-sym (≈-trans (≈-trans (∘-cong₁ (∘-cong₁ (≡⇒-prod (⟦⟧-fobj P δ') (⟦⟧-fobj Q δ'))))
-                             (∘-cong₂ (prod-m-cong ≈-refl (≡⇒-prod-sym (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)))))
-                    (≈-trans (∘-cong₁ (pair-compose _ _ _ _))
-                    (≈-trans (pair-natural _ _ _)
-                             (pair-cong
-                               (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (q₁-nat _ _)) (≈-sym (assoc _ _ _))))) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (≈-sym (assoc _ _ _))))))
-                               (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (q₂-nat _ _)) (≈-sym (assoc _ _ _))))) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (≈-sym (assoc _ _ _)))))))) )))
+    (≈-sym
+    (≈-trans (≈-trans (∘-cong₁ (∘-cong₁ (≡⇒-prod (⟦⟧-fobj P δ') (⟦⟧-fobj Q δ'))))
+                      (∘-cong₂ (prod-m-cong ≈-refl (≡⇒-prod-sym (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)))))
+    (≈-trans (∘-cong₁ (pair-compose _ _ _ _))
+    (≈-trans (pair-natural _ _ _)
+    (pair-cong
+      (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (q₁-nat _ _)) (≈-sym (assoc _ _ _)))))
+      (≈-trans (≈-sym (assoc _ _ _))
+               (∘-cong₁ (≈-sym (assoc _ _ _))))))
+      (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (q₂-nat _ _)) (≈-sym (assoc _ _ _)))))
+      (≈-trans (≈-sym (assoc _ _ _))
+               (∘-cong₁ (≈-sym (assoc _ _ _)))))))))))
   strong-fmor-⟦⟧ˢ (μ P) fs = {!!}
 
   hasMuLaws : HasMuLaws hasMu
