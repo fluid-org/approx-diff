@@ -855,7 +855,17 @@ module cocont
       (≈-trans (∘-cong₂ (∘-cong₁ (⟦ P ⟧ˢ-cong (λ { Fin.zero → ≈-refl ; (Fin.suc i) → ≈-refl }))))
       (≈-trans (≈-sym (assoc _ _ _))
                (≈-sym (strong-fmor-⟦⟧ˢ P _)))))))))))))
-  hasMuLaws .HasMuLaws.⦅⦆-η {Γ = Γ} {P = P} {δ = δ} alg h eq =
+  hasMuLaws .HasMuLaws.⦅⦆-η {Γ = Γ} {A = A} {P = P} {δ = δ} alg h eq =
     colambda-unique
       (×-cocont (const-chain-colimit Γ .isColimit) (colimits (chain (iter P δ) (step P δ)) .isColimit))
-      (λ k → ≈-trans {!!} (≈-sym (cata-coeval _ k)))
+      (λ k → ≈-trans (h-leg k) (≈-sym (cata-coeval _ k)))
+    where
+      alg' : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A
+      alg' = alg ∘ prod-m (id Γ) (≡-to-⇒ (⟦⟧-fobj P (extend δ A)))
+
+      h-leg : ∀ k → h ∘ prod-m (id Γ) (μ-inj P δ k) ≈ legs alg' k
+      h-leg zero    = ≈-sym (prod𝟘-initial .IsInitial.from-initial-ext _)
+      h-leg (suc j) =
+        ≈-trans (∘-cong₂ (prod-m-cong ≈-refl (≈-sym (α-coeval P δ j))))
+        (≈-trans (∘-cong₂ (≈-trans (prod-m-cong (≈-sym id-left) ≈-refl) (prod-m-comp _ _ _ _)))
+        (≈-trans (≈-sym (assoc _ _ _)) {!!}))
