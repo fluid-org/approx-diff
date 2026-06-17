@@ -1,8 +1,8 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import Level using (0ℓ; suc; _⊔_)
-open import Data.Product using (_,_; _×_; proj₁; proj₂)
-open import prop using (_,_; LiftS; liftS; tt; _⇔_)
+open import Data.Product using (_,_; _×_)
+open import prop using (_,_; proj₁; proj₂; LiftS; liftS; tt; _⇔_)
 open import prop-setoid
   using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂; 𝟙)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
@@ -444,13 +444,11 @@ module _ {M N} (M≅M* : Iso M (Dual M)) (N≅N* : Iso N (Dual N)) where
   conj-pairing f =
     conj-transpose f .*≈* ._≈s_.func-eq (refl N) .*≈* ._≈s_.func-eq (refl M)
 
-  -- conj swaps pairing-disjointness (⟨_,_⟩ ≈ ⊥): the conjugate relation of (f, conj f),
-  -- the heart of the LatConj embedding.  Generic — no lattice structure; linking it to
-  -- a lattice # is the per-object alignment (a # b ⟺ ⟨a,b⟩ ≈ ⊥), supplied downstream.
+  -- conj swaps pairing-orthogonality: (⟨ y , f x ⟩ ≈ ε ⇔ ⟨ conj f y , x ⟩ ≈ ε).
   conj-⊥ : ∀ (f : M ⇒ N) {x y} →
            (pairing N≅N* y (f .*→* ._⇒s_.func x) S.≈ S.ε) ⇔ (pairing M≅M* (conj f .*→* ._⇒s_.func y) x S.≈ S.ε)
-  conj-⊥ f =
-    (λ p → S.trans (conj-pairing f) p) , λ q → S.trans (S.sym (conj-pairing f)) q
+  conj-⊥ f .proj₁ p = S.trans (conj-pairing f) p
+  conj-⊥ f .proj₂ q = S.trans (S.sym (conj-pairing f)) q
 
 ------------------------------------------------------------------------------
 module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
