@@ -774,7 +774,11 @@ module cocont
   strong-fmor-⟦⟧ˢ : ∀ {n Γ} (P : Poly n) {δ δ' : Fin n → obj} (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
                     HasMu.strong-fmor hasMu P fs ≈
                     ≡-to-⇒ (⟦⟧-fobj P δ') ∘ ⟦ P ⟧ˢ fs ∘ prod-m (id Γ) (≡-to-⇒ (sym (⟦⟧-fobj P δ)))
-  strong-fmor-⟦⟧ˢ P fs = {!!}
+  strong-fmor-⟦⟧ˢ (const A) fs = ≈-sym (≈-trans (∘-cong₁ id-left) (≈-trans (∘-cong₂ prod-m-id) id-right))
+  strong-fmor-⟦⟧ˢ (var i)   fs = ≈-sym (≈-trans (∘-cong₁ id-left) (≈-trans (∘-cong₂ prod-m-id) id-right))
+  strong-fmor-⟦⟧ˢ (P + Q)   fs = {!!}
+  strong-fmor-⟦⟧ˢ (P × Q)   fs = {!!}
+  strong-fmor-⟦⟧ˢ (μ P)     fs = {!!}
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg =
