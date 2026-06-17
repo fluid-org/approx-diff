@@ -55,6 +55,10 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ≡-to-⇒ : ∀ {x y} → x ≡ y → x ⇒ y
   ≡-to-⇒ ≡.refl = id _
 
+  -- A cast and its inverse compose to the identity.
+  ≡-to-⇒-sym-l : ∀ {x y} (e : x ≡ y) → (≡-to-⇒ (≡.sym e) ∘ ≡-to-⇒ e) ≈ id x
+  ≡-to-⇒-sym-l ≡.refl = id-left
+
   ∘-cong₁ : ∀ {x y z} {f₁ f₂ : y ⇒ z} {g : x ⇒ y} → f₁ ≈ f₂ → (f₁ ∘ g) ≈ (f₂ ∘ g)
   ∘-cong₁ f≈ = ∘-cong f≈ ≈-refl
 

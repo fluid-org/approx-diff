@@ -823,11 +823,15 @@ module cocont
       (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (q₂-nat _ _)) (≈-sym (assoc _ _ _)))))
       (≈-trans (≈-sym (assoc _ _ _))
                (∘-cong₁ (≈-sym (assoc _ _ _)))))))))))
-  strong-fmor-⟦⟧ˢ (μ P) fs =
+  strong-fmor-⟦⟧ˢ (μ P) {δ = δ} {δ' = δ'} fs =
     ≈-trans (cata-cong
       (≈-trans (∘-cong₁ (∘-cong₂ (strong-fmor-⟦⟧ˢ P _)))
       (≈-trans (≈-trans (assoc _ _ _) (assoc _ _ _))
-               (∘-cong₂ {!!}))))
+               (∘-cong₂
+                 (≈-trans (∘-cong₂ (≈-trans (∘-cong₁ (assoc _ _ _)) (assoc _ _ _)))
+                 (≈-trans (≈-sym (assoc _ _ _))
+                 (≈-trans (∘-cong₁ (≡-to-⇒-sym-l (⟦⟧-fobj P (extend δ' (μ-carrier P δ')))))
+                 (≈-trans id-left {!!}))))))))
     (≈-sym (≈-trans (∘-cong₁ id-left) (≈-trans (∘-cong₂ prod-m-id) id-right)))
 
   hasMuLaws : HasMuLaws hasMu
