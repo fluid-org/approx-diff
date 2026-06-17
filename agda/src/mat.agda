@@ -3,7 +3,7 @@
 module mat where
 
 open import Level using (0ℓ; _⊔_)
-open import prop using (⊤; tt; _∧_; _,_; proj₁; proj₂)
+open import prop using (tt; _,_; proj₁; proj₂)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category)
@@ -13,6 +13,7 @@ open import categories using (Category)
 module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   open CommutativeSemiring S public
+  open import prop using (⊤; _∧_)
   open import Data.Nat using (ℕ; zero; suc)
   import Data.Vec as V
   open V public using ([]; _∷_)
@@ -505,3 +506,54 @@ module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
   conj-free : ∀ {m n} → (fobj m ⇒ fobj n) → (fobj n ⇒ fobj m)
   conj-free {m} {n} = conj (fobj-self-dual m) (fobj-self-dual n)
+
+------------------------------------------------------------------------------
+-- For S a (bounded) distributive lattice (join +, meet ·), each free object
+-- fobj n is a self-dual distributive lattice, so the conjugate embedding
+-- (semimodule.DistributiveLattice.to-conj) applies.
+module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+  open import Data.Nat using (ℕ; zero; suc)
+  open import basics using (IsPreorder; IsMeet; IsTop)
+  import semimodule
+
+  open CommutativeSemiring S using (_≈_; refl; sym; trans)
+    renaming ( _·_ to _∧_ ; _+_ to _∨_ ; ε to ⊥ ; ι to ⊤
+             ; ·-cong to ∧-cong ; ·-comm to ∧-comm ; ·-lunit to ∧-lunit
+             ; +-cong to ∨-cong ; +-comm to ∨-comm
+             ; ·-+-distribₗ to ∧-∨-distribₗ ; ·-+-distribᵣ to ∧-∨-distribᵣ )
+
+  module SM  = semimodule S
+  module Emb = Embedding S
+
+  module DistribLattice
+    (∧-idem    : ∀ {x} → x ∧ x ≈ x)
+    (⊤-add-top : ∀ {x} → ⊤ ∨ x ≈ ⊤)
+    where
+    module DL = SM.DistributiveLattice ∧-idem ⊤-add-top
+    open IsPreorder (DL.≤-isPreorder SM.𝕀) using () renaming (refl to ≤-refl; trans to ≤-trans)
+
+    ≈→≤ : ∀ {x y} → x ≈ y → DL._≤_ SM.𝕀 x y
+    ≈→≤ = DL.≈→≤ SM.𝕀
+
+    ----------------------------------------------------------------------------
+    -- S as a distributive lattice: the meet · is the lattice meet of the join order.
+
+    ∨-∧-absorption : ∀ {a b} → a ∨ (a ∧ b) ≈ a
+    ∨-∧-absorption =
+      trans (∨-cong (trans (sym ∧-lunit) ∧-comm) refl)
+            (trans (sym ∧-∨-distribₗ) (trans (∧-cong refl ⊤-add-top) (trans ∧-comm ∧-lunit)))
+
+    ∧-monoʳ : ∀ {a b c} → DL._≤_ SM.𝕀 a b → DL._≤_ SM.𝕀 (c ∧ a) (c ∧ b)
+    ∧-monoʳ a≤b = trans (sym ∧-∨-distribₗ) (∧-cong refl a≤b)
+
+    ∧-monoˡ : ∀ {a b c} → DL._≤_ SM.𝕀 a b → DL._≤_ SM.𝕀 (a ∧ c) (b ∧ c)
+    ∧-monoˡ a≤b = trans (sym ∧-∨-distribᵣ) (∧-cong a≤b refl)
+
+    ∧-isMeet : IsMeet (DL.≤-isPreorder SM.𝕀) _∧_
+    ∧-isMeet .IsMeet.π₁ = trans ∨-comm ∨-∧-absorption
+    ∧-isMeet .IsMeet.π₂ = trans (∨-cong ∧-comm refl) (trans ∨-comm ∨-∧-absorption)
+    ∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z =
+      ≤-trans (trans (∨-cong (sym ∧-idem) refl) (∧-monoʳ x≤z)) (∧-monoˡ x≤y)
+
+    ⊤-isTop : IsTop (DL.≤-isPreorder SM.𝕀) ⊤
+    ⊤-isTop .IsTop.≤-top = trans ∨-comm ⊤-add-top
