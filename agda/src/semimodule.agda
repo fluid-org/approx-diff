@@ -377,10 +377,6 @@ module _ {M N} where
 ------------------------------------------------------------------------------
 -- Base case 𝕀 ≅ Dual 𝕀 for self-duality.
 
-private
-  ·-runit : ∀ {x} → (x S.· S.ι) S.≈ x
-  ·-runit = S.trans S.·-comm S.·-lunit
-
 𝕀≅𝕀* : Iso 𝕀 (Dual 𝕀)
 𝕀≅𝕀* .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func x = a S.· x
 𝕀≅𝕀* .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func-resp-≈ x≈y = S.·-cong S.refl x≈y
@@ -401,8 +397,9 @@ private
 𝕀≅𝕀* .Iso.bwd .preserve-· = S.refl
 𝕀≅𝕀* .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq {φ} φ≈ψ .*≈* ._≈s_.func-eq {x} x≈y =
   S.trans S.·-comm
-    (S.trans (S.sym (φ .preserve-· {x} {S.ι})) (φ≈ψ .*≈* ._≈s_.func-eq (S.trans ·-runit x≈y)))
-𝕀≅𝕀* .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq a≈b = S.trans ·-runit a≈b
+    (S.trans (S.sym (φ .preserve-· {x} {S.ι}))
+      (φ≈ψ .*≈* ._≈s_.func-eq (S.trans (S.trans S.·-comm S.·-lunit) x≈y)))
+𝕀≅𝕀* .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq a≈b = S.trans (S.trans S.·-comm S.·-lunit) a≈b
 
 ------------------------------------------------------------------------------
 -- Dual preserves isomorphisms (contravariantly) and the zero object.
