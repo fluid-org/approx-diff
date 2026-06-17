@@ -860,10 +860,7 @@ module cocont
       (×-cocont (const-chain-colimit Γ .isColimit) (colimits (chain (iter P δ) (step P δ)) .isColimit))
       (λ k → ≈-trans (h-leg k) (≈-sym (cata-coeval _ k)))
     where
-      alg' : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A
-      alg' = alg ∘ prod-m (id Γ) (≡-to-⇒ (⟦⟧-fobj P (extend δ A)))
-
-      h-leg : ∀ k → h ∘ prod-m (id Γ) (μ-inj P δ k) ≈ legs alg' k
+      h-leg : ∀ k → h ∘ prod-m (id Γ) (μ-inj P δ k) ≈ legs (alg ∘ prod-m (id Γ) (≡-to-⇒ (⟦⟧-fobj P (extend δ A)))) k
       h-leg zero    = ≈-sym (prod𝟘-initial .IsInitial.from-initial-ext _)
       h-leg (suc j) =
         ≈-trans (∘-cong₂ (prod-m-cong ≈-refl (≈-sym (α-coeval P δ j))))
