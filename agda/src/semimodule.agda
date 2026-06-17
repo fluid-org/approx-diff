@@ -513,12 +513,13 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
 
 ------------------------------------------------------------------------------
--- S a (bounded) distributive lattice (join = +, meet = ·).  Only meet-
--- idempotence and top-absorption are assumed; join-idempotence is derivable.
+-- Now suppose S is a (bounded) distributive lattice, with semimodule operations renamed to lattice
+-- operations. Meet-idempotence and top-absorption are sufficient.
 
 module DistributiveLattice
-  (∧-idem    : ∀ {x} → (x S.· x) S.≈ x)
-  (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
+  (open S using () renaming (_+_ to _∨_; _·_ to _∧_; ε to ⊥; ι to ⊤))
+  (∧-idem    : ∀ {x} → (x ∧ x) S.≈ x)
+  (⊤-add-top : ∀ {x} → (⊤ ∨ x) S.≈ ⊤)
   where
 
   -- Addition in every S-semimodule is idempotent (x + x ≈ x), so SemiMod(S)
