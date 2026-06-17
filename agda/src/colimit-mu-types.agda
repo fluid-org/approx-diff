@@ -738,11 +738,13 @@ module cocont
         leg-ih Fin.zero    = legs-left-fuse P δ δ' δ'' fs gs k
         leg-ih (Fin.suc j) = id-left
 
-  -- Catamorphism β: folding an α-image equals applying the algebra to the folded children.
+  -- Catamorphism β: folding an α-image is the same as applying the algebra to the folded children.
   cata-β : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
            (alg : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) →
            ⦅ alg ⦆ ∘co (α P δ ∘ p₂) ≈ alg ∘co ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) ⦅ alg ⦆)
-  cata-β alg = {!!}
+  cata-β {Γ = Γ} {P = P} {δ = δ} alg =
+    colambda-unique (×-cocont (const-chain-colimit Γ .isColimit) (⟦ P ⟧-cocont (carrier-env P δ)))
+      (λ k → {!!})
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj = μ-carrier
