@@ -744,7 +744,7 @@ module cocont
            ⦅ alg ⦆ ∘co (α P δ ∘ p₂) ≈ alg ∘co ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) ⦅ alg ⦆)
   cata-β {Γ = Γ} {P = P} {δ = δ} alg =
     colambda-unique (×-cocont (const-chain-colimit Γ .isColimit) (⟦ P ⟧-cocont (carrier-env P δ)))
-      (λ k → {!!})
+      (λ k → ≈-trans (∘co-prod-m _ _ _) {!!})
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj = μ-carrier
