@@ -469,6 +469,29 @@ module cocont
   strong-extend-mor fs f Fin.zero    = f
   strong-extend-mor fs f (Fin.suc i) = fs i
 
+  -- The (Γ, left/right) projection of a strong product commutes past a product reindexing.
+  q₁-nat : ∀ {Γ X Y X' Y'} (a : X ⇒ X') (b : Y ⇒ Y') →
+           pair p₁ (p₁ ∘ p₂) ∘ prod-m (id Γ) (prod-m a b) ≈ prod-m (id Γ) a ∘ pair p₁ (p₁ ∘ p₂)
+  q₁-nat a b =
+    ≈-trans (pair-natural _ _ _)
+    (≈-trans (pair-cong (≈-trans (pair-p₁ _ _) id-left)
+                        (≈-trans (assoc _ _ _)
+                        (≈-trans (∘-cong₂ (pair-p₂ _ _))
+                        (≈-trans (≈-sym (assoc _ _ _))
+                        (≈-trans (∘-cong₁ (pair-p₁ _ _)) (assoc _ _ _))))))
+             (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
+
+  q₂-nat : ∀ {Γ X Y X' Y'} (a : X ⇒ X') (b : Y ⇒ Y') →
+           pair p₁ (p₂ ∘ p₂) ∘ prod-m (id Γ) (prod-m a b) ≈ prod-m (id Γ) b ∘ pair p₁ (p₂ ∘ p₂)
+  q₂-nat a b =
+    ≈-trans (pair-natural _ _ _)
+    (≈-trans (pair-cong (≈-trans (pair-p₁ _ _) id-left)
+                        (≈-trans (assoc _ _ _)
+                        (≈-trans (∘-cong₂ (pair-p₂ _ _))
+                        (≈-trans (≈-sym (assoc _ _ _))
+                        (≈-trans (∘-cong₁ (pair-p₂ _ _)) (assoc _ _ _))))))
+             (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
+
   mutual
     -- Fold legs: leg 0 out of the initial prod Γ 𝟘, leg (k+1) by the algebra after folding the
     -- children. These form a cocone over the Γ-product of the initial-algebra chain (legs-step).
@@ -568,32 +591,11 @@ module cocont
       where
         A' = ⟦ P ⟧mor gs
         B' = ⟦ Q ⟧mor gs
-        -- The (Γ, left)-projection commutes past the product reindexing.
-        q₁-nat : pair p₁ (p₁ ∘ p₂) ∘ prod-m (id Γ) (prod-m A' B')
-                   ≈ prod-m (id Γ) A' ∘ pair p₁ (p₁ ∘ p₂)
-        q₁-nat =
-          ≈-trans (pair-natural _ _ _)
-          (≈-trans (pair-cong (≈-trans (pair-p₁ _ _) id-left)
-                              (≈-trans (assoc _ _ _)
-                              (≈-trans (∘-cong₂ (pair-p₂ _ _))
-                              (≈-trans (≈-sym (assoc _ _ _))
-                              (≈-trans (∘-cong₁ (pair-p₁ _ _)) (assoc _ _ _))))))
-                   (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
-        q₂-nat : pair p₁ (p₂ ∘ p₂) ∘ prod-m (id Γ) (prod-m A' B')
-                   ≈ prod-m (id Γ) B' ∘ pair p₁ (p₂ ∘ p₂)
-        q₂-nat =
-          ≈-trans (pair-natural _ _ _)
-          (≈-trans (pair-cong (≈-trans (pair-p₁ _ _) id-left)
-                              (≈-trans (assoc _ _ _)
-                              (≈-trans (∘-cong₂ (pair-p₂ _ _))
-                              (≈-trans (≈-sym (assoc _ _ _))
-                              (≈-trans (∘-cong₁ (pair-p₂ _ _)) (assoc _ _ _))))))
-                   (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong₁ id-left))))
         P-comp = ≈-trans (assoc _ _ _)
-                 (≈-trans (∘-cong₂ q₁-nat)
+                 (≈-trans (∘-cong₂ (q₁-nat A' B'))
                  (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ P ⟧ˢ-fuse fs gs))))
         Q-comp = ≈-trans (assoc _ _ _)
-                 (≈-trans (∘-cong₂ q₂-nat)
+                 (≈-trans (∘-cong₂ (q₂-nat A' B'))
                  (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (⟦ Q ⟧ˢ-fuse fs gs))))
     ⟦ μ P ⟧ˢ-fuse {Γ = Γ} {δ = δ} {δ' = δ'} {δ'' = δ''} fs gs =
       colambda-unique Rδ (λ k →
@@ -806,7 +808,11 @@ module cocont
     ≈-trans (pair-cong (∘-cong₁ (strong-fmor-⟦⟧ˢ P fs)) (∘-cong₁ (strong-fmor-⟦⟧ˢ Q fs)))
     (≈-sym (≈-trans (≈-trans (∘-cong₁ (∘-cong₁ (≡⇒-prod (⟦⟧-fobj P δ') (⟦⟧-fobj Q δ'))))
                              (∘-cong₂ (prod-m-cong ≈-refl (≡⇒-prod-sym (⟦⟧-fobj P δ) (⟦⟧-fobj Q δ)))))
-                    {!!}))
+                    (≈-trans (∘-cong₁ (pair-compose _ _ _ _))
+                    (≈-trans (pair-natural _ _ _)
+                             (pair-cong
+                               (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (q₁-nat _ _)) (≈-sym (assoc _ _ _))))) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (≈-sym (assoc _ _ _))))))
+                               (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (q₂-nat _ _)) (≈-sym (assoc _ _ _))))) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (≈-sym (assoc _ _ _)))))))) )))
   strong-fmor-⟦⟧ˢ (μ P) fs = {!!}
 
   hasMuLaws : HasMuLaws hasMu
