@@ -738,13 +738,32 @@ module cocont
         leg-ih Fin.zero    = legs-left-fuse P δ δ' δ'' fs gs k
         leg-ih (Fin.suc j) = id-left
 
+  -- The catamorphism mediates the product injections: folding the k-th carrier leg gives the k-th fold leg.
+  cata-coeval : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
+                (alg : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) (k : ℕ) →
+                ⦅ alg ⦆ ∘ prod-m (id Γ) (μ-inj P δ k) ≈ legs alg k
+  cata-coeval {Γ = Γ} {P = P} {δ = δ} alg k =
+    ×-cocont (const-chain-colimit Γ .isColimit) (colimits (chain (iter P δ) (step P δ)) .isColimit)
+      .colambda-coeval _ (step-cocone (legs alg) (legs-step alg)) .≃-NatTrans.transf-eq k
+
   -- Catamorphism β: folding an α-image is the same as applying the algebra to the folded children.
   cata-β : ∀ {n Γ A} {P : Poly (suc n)} {δ : Fin n → obj}
            (alg : prod Γ (⟦ P ⟧ (extend δ A)) ⇒ A) →
            ⦅ alg ⦆ ∘co (α P δ ∘ p₂) ≈ alg ∘co ⟦ P ⟧ˢ (strong-extend-mor (λ i → p₂) ⦅ alg ⦆)
   cata-β {Γ = Γ} {P = P} {δ = δ} alg =
     colambda-unique (×-cocont (const-chain-colimit Γ .isColimit) (⟦ P ⟧-cocont (carrier-env P δ)))
-      (λ k → ≈-trans (∘co-prod-m _ _ _) {!!})
+      (λ k → ≈-trans (∘co-prod-m _ _ _)
+             (≈-trans (∘co-cong₂
+                        (≈-trans (assoc _ _ _)
+                        (≈-trans (∘-cong₂ (pair-p₂ _ _))
+                        (≈-trans (≈-sym (assoc _ _ _))
+                                 (∘-cong₁ (α-coeval P δ k))))))
+                      (≈-trans (∘-cong₂ (pair-cong₁ (≈-sym id-left)))
+                      (≈-trans (cata-coeval alg (suc k))
+                      (≈-sym (≈-trans (∘co-prod-m _ _ _)
+                      (≈-trans (∘co-cong₂ (⟦ P ⟧ˢ-fuse (strong-extend-mor (λ i → p₂) ⦅ alg ⦆) (extend-fam (μ-inj P δ k))))
+                               (∘co-cong₂ (⟦ P ⟧ˢ-cong (λ { Fin.zero → cata-coeval alg k
+                                                         ; (Fin.suc j) → ≈-trans (∘-cong₂ prod-m-id) id-right }))))))))))
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj = μ-carrier
