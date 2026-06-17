@@ -412,7 +412,6 @@ Dual-iso iso .Iso.fwd∘bwd≈id =
 Dual-iso iso .Iso.bwd∘fwd≈id =
   ≈-trans (≈-sym (ᵀ-comp (iso .Iso.fwd) (iso .Iso.bwd))) (≈-trans (ᵀ-cong (iso .Iso.fwd∘bwd≈id)) ᵀ-id)
 
--- Dual 𝟘 ≅ 𝟘: both are the zero object.
 Dual-𝟘 : Iso (Dual 𝟘) 𝟘
 Dual-𝟘 .Iso.fwd = HasTerminal.to-terminal terminal
 Dual-𝟘 .Iso.bwd = εm
@@ -420,16 +419,11 @@ Dual-𝟘 .Iso.fwd∘bwd≈id = HasTerminal.to-terminal-unique terminal _ _
 Dual-𝟘 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {_} {ψ} _ .*≈* ._≈s_.func-eq _ =
   sym 𝕀 (trans 𝕀 (ψ .func-resp-≈ tt) (ψ .preserve-ze))
 
--- Dual(M⊕N) ≅ Dual M ⊕ Dual N, and ⊕ acting on isos (via biproducts).
-private
-  coproducts : HasCoproducts cat
-  coproducts = biproducts→coproducts cmon-enriched biproduct
-
 Dual-⊕-iso : ∀ {M N} → Iso (Dual (M ⊕ N)) (Dual M ⊕ Dual N)
 Dual-⊕-iso {M} {N} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-⊕ (biproduct (Dual M) (Dual N)))
 
 ⊕-iso : ∀ {M M' N N'} → Iso M M' → Iso N N' → Iso (M ⊕ N) (M' ⊕ N')
-⊕-iso = HasCoproducts.coproduct-preserve-iso coproducts
+⊕-iso = HasCoproducts.coproduct-preserve-iso (biproducts→coproducts cmon-enriched biproduct)
 
 ------------------------------------------------------------------------------
 -- Conjugate of a morphism w.r.t. chosen self-dualities d : M ≅ Dual M.
