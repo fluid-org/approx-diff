@@ -37,7 +37,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   open IsEquivalence
   open HasTerminal
   open HasProducts P
-  open fam.CategoryOfFamilies os es 𝒞
+  open fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   open Obj
   open Mor
   open Fam
@@ -55,8 +55,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   ------------------------------------------------------------------------------
   -- Syntactic representation of polynomial functor but with constant slots holding a setoid rather than a
   -- category object. Used to define the W-type carrier of HasMu by structural recursion.
-  data IdxPoly (n : ℕ) : Set (lsuc (o ⊔ e)) where
-    param : Setoid o e → IdxPoly n
+  data IdxPoly (n : ℕ) : Set (lsuc (os ⊔ es)) where
+    param : Setoid os (os ⊔ es) → IdxPoly n
     var   : Fin n → IdxPoly n
     _+_   : IdxPoly n → IdxPoly n → IdxPoly n
     _×_   : IdxPoly n → IdxPoly n → IdxPoly n
@@ -64,7 +64,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
   -- Well-founded tree carrier (Martin-Löf W-types; see Wellorderings, pp. 43-47 of Intuitionistic Type Theory).
   mutual
-    ⟦_⟧C : ∀ {n} → IdxPoly n → (Fin n → Set o) → Set o
+    ⟦_⟧C : ∀ {n} → IdxPoly n → (Fin n → Set os) → Set os
     ⟦ param A ⟧C ρ = Carrier A
     ⟦ var i ⟧C   ρ = ρ i
     ⟦ P + Q ⟧C   ρ = ⟦ P ⟧C ρ ⊎ ⟦ Q ⟧C ρ
@@ -72,8 +72,34 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     ⟦ μ P ⟧C     ρ = W P ρ
 
     -- P-shaped trees.
-    data W {n} (P : IdxPoly (suc n)) (ρ : Fin n → Set o) : Set o where
+    data W {n} (P : IdxPoly (suc n)) (ρ : Fin n → Set os) : Set os where
       sup : ⟦ P ⟧C (extend ρ (W P ρ)) → W P ρ
+
+  extendR : ∀ {n} {ρ : Fin n → Set os} {X} →
+            ((i : Fin n) → ρ i → ρ i → Prop (os ⊔ es)) → (X → X → Prop (os ⊔ es)) →
+            (i : Fin (suc n)) → extend ρ X i → extend ρ X i → Prop (os ⊔ es)
+  extendR R r Fin.zero    = r
+  extendR R r (Fin.suc i) = R i
+
+  -- Two trees are equal when their roots are equal and their subtrees on equal
+  -- branches are equal: an inductively defined relation (cf. W-types in setoids).
+  mutual
+    data W-≈ {n} (P : IdxPoly (suc n)) {ρ : Fin n → Set os}
+             (R : (i : Fin n) → ρ i → ρ i → Prop (os ⊔ es)) : W P ρ → W P ρ → Prop (os ⊔ es) where
+      sup : ∀ {x y} → shape≈ P R P x y → W-≈ P R (sup x) (sup y)
+
+    shape≈ : ∀ {n} (P : IdxPoly (suc n)) {ρ : Fin n → Set os}
+             (R : (i : Fin n) → ρ i → ρ i → Prop (os ⊔ es)) (Q : IdxPoly (suc n)) →
+             ⟦ Q ⟧C (extend ρ (W P ρ)) → ⟦ Q ⟧C (extend ρ (W P ρ)) → Prop (os ⊔ es)
+    shape≈ P R (param A)         x y = _≈s_ A x y
+    shape≈ P R (var Fin.zero)    x y = W-≈ P R x y
+    shape≈ P R (var (Fin.suc i)) x y = R i x y
+    shape≈ P R (Q₁ + Q₂) (inj₁ x) (inj₁ y) = shape≈ P R Q₁ x y
+    shape≈ P R (Q₁ + Q₂) (inj₁ _) (inj₂ _) = ⊥
+    shape≈ P R (Q₁ + Q₂) (inj₂ _) (inj₁ _) = ⊥
+    shape≈ P R (Q₁ + Q₂) (inj₂ x) (inj₂ y) = shape≈ P R Q₂ x y
+    shape≈ P R (Q₁ × Q₂) (x₁ , x₂) (y₁ , y₂) = shape≈ P R Q₁ x₁ y₁ ∧ shape≈ P R Q₂ x₂ y₂
+    shape≈ P R (μ Q') x y = W-≈ Q' (extendR R (W-≈ P R)) x y
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ = {!!}
