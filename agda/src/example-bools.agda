@@ -125,7 +125,7 @@ module forward-mat where
   import ho-model-mat
 
   module FD = mat.Mat two.semiring
-  module SM = semimodule {0ℓ} {0ℓ} two.semiring
+  module SM = semimodule two.semiring
   open CMon.CMonEnriched FD.cmon using (_+m_)
 
   unitm : FD._⇒_ 0 1

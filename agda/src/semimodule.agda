@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-open import Level using (0ℓ; suc; _⊔_)
+open import Level using (0ℓ; suc)
 open import Data.Product using (_,_; _×_)
 open import prop using (_,_; proj₁; proj₂; LiftS; liftS; tt; _⇔_)
 open import prop-setoid
@@ -12,15 +12,14 @@ open import commutative-semiring using (CommutativeSemiring)
 open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimits)
 
 
--- FIXME: should probably just have one level?
-module semimodule {o ℓ} {A : Setoid (o ⊔ ℓ) (o ⊔ ℓ)} (S : CommutativeSemiring A) where
+module semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 module S = CommutativeSemiring S
 
-record Semimodule : Set (suc o ⊔ suc ℓ) where
+record Semimodule : Set (suc 0ℓ) where
   no-eta-equality
   field
-    setoid : Setoid (o ⊔ ℓ) (o ⊔ ℓ)
+    setoid : Setoid (0ℓ) (0ℓ)
   open Setoid setoid public
 
   field
@@ -39,7 +38,7 @@ record Semimodule : Set (suc o ⊔ suc ℓ) where
     zero-distribˡ : ∀ {s} → s · ε ≈ ε
 open Semimodule
 
-record _⇒_ (M N : Semimodule) : Set (o ⊔ ℓ) where
+record _⇒_ (M N : Semimodule) : Set (0ℓ) where
   private
     module M = Semimodule M
     module N = Semimodule N
@@ -53,7 +52,7 @@ record _⇒_ (M N : Semimodule) : Set (o ⊔ ℓ) where
 open _⇒_
 
 infix 4 _≈m_
-record _≈m_ {M N : Semimodule} (f g : M ⇒ N) : Prop (o ⊔ ℓ) where
+record _≈m_ {M N : Semimodule} (f g : M ⇒ N) : Prop (0ℓ) where
   field
     *≈* : f .*→* ≈s g .*→*
   open _≈s_ *≈* public
@@ -75,7 +74,7 @@ module _ {M N O} where
   (f ∘ g) .preserve-+ = O .trans (f .func-resp-≈ (g .preserve-+)) (f .preserve-+)
   (f ∘ g) .preserve-· = O .trans (f .func-resp-≈ (g .preserve-·)) (f .preserve-·)
 
-cat : Category (suc o ⊔ suc ℓ) (o ⊔ ℓ) (o ⊔ ℓ)
+cat : Category (suc 0ℓ) (0ℓ) (0ℓ)
 cat .Category.obj = Semimodule
 cat .Category._⇒_ = _⇒_
 cat .Category._≈_ = _≈m_
@@ -214,13 +213,13 @@ biproduct M N .Biproduct.id-+ .*≈* ._≈s_.func-eq (x₁≈x₂ , y₁≈y₂)
 𝕀 .zero-distribʳ = S.ε-annihilₗ
 𝕀 .zero-distribˡ = S.ε-annihilᵣ
 
-data ⊗-elt (M N : Semimodule) : Set (o ⊔ ℓ) where
+data ⊗-elt (M N : Semimodule) : Set (0ℓ) where
   el    : M .Carrier → N .Carrier -> ⊗-elt M N
   _`+`_ : ⊗-elt M N → ⊗-elt M N → ⊗-elt M N
   _`·`_ : S.Carrier → ⊗-elt M N → ⊗-elt M N
   `ε    : ⊗-elt M N
 
-data ⊗-eq {M N} : ⊗-elt M N → ⊗-elt M N → Set (o ⊔ ℓ) where
+data ⊗-eq {M N} : ⊗-elt M N → ⊗-elt M N → Set (0ℓ) where
   ⊗-eq-refl    : ∀ {x} → ⊗-eq x x
   ⊗-eq-sym     : ∀ {x y} → ⊗-eq x y → ⊗-eq y x
   ⊗-eq-trans   : ∀ {x y z} → ⊗-eq x y → ⊗-eq y z → ⊗-eq x z
@@ -241,7 +240,7 @@ data ⊗-eq {M N} : ⊗-elt M N → ⊗-elt M N → Set (o ⊔ ℓ) where
 
 _⊗_ : Semimodule → Semimodule → Semimodule
 (M ⊗ N) .setoid .Setoid.Carrier = ⊗-elt M N
-(M ⊗ N) .setoid .Setoid._≈_ x y = LiftS ℓ (⊗-eq x y)
+(M ⊗ N) .setoid .Setoid._≈_ x y = LiftS 0ℓ (⊗-eq x y)
 (M ⊗ N) .setoid .Setoid.isEquivalence .IsEquivalence.refl = liftS ⊗-eq-refl
 (M ⊗ N) .setoid .Setoid.isEquivalence .IsEquivalence.sym (liftS eq) = liftS (⊗-eq-sym eq)
 (M ⊗ N) .setoid .Setoid.isEquivalence .IsEquivalence.trans (liftS eq₁) (liftS eq₂) = liftS (⊗-eq-trans eq₁ eq₂)
@@ -460,7 +459,7 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   open ≃-NatTrans
 
   -- Set of Natural Transformations Id ⇒ D
-  record Π-Carrier (D : Functor 𝒮 cat) : Set (o ⊔ ℓ) where
+  record Π-Carrier (D : Functor 𝒮 cat) : Set (0ℓ) where
     field
       Π-func : (x : 𝒮.obj) → D .fobj x .Carrier
       Π-natural : ∀ {x₁ x₂} (f : x₁ 𝒮.⇒ x₂) → _≈_ (D .fobj x₂) (D .fmor f .func (Π-func x₁)) (Π-func x₂)
@@ -522,8 +521,8 @@ module DistributiveLattice
   (⊤-add-top : ∀ {x} → (⊤ ∨ x) S.≈ ⊤)
   where
 
-  -- Addition in every S-semimodule is idempotent (x + x ≈ x), so SemiMod(S)
-  -- objects are join-semilattices and morphisms are join-preserving.
+  -- Addition in every S-semimodule is idempotent (x + x ≈ x), so SemiMod(S) objects are join-semilattices and
+  -- morphisms are join-preserving.
   +-idem : ∀ (M : Semimodule) {x : M .Carrier} → M ._≈_ (M ._+_ x x) x
   +-idem M =
     trans M (+-cong M (sym M (·-unit M)) (sym M (·-unit M)))

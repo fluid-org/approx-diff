@@ -2,7 +2,7 @@
 
 module mat where
 
-open import Level using (_⊔_)
+open import Level using (0ℓ; _⊔_)
 open import prop using (⊤; tt; _∧_; _,_; proj₁; proj₂)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
@@ -372,7 +372,7 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 -- Embedding of free S-semimodules into all S-semimodules, with terminal/product preservation and
 -- self-duality of the free objects.
 
-module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
+module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open import Data.Nat using (ℕ; zero; suc)
   open import Data.Nat using () renaming (_+_ to _+ℕ_)
   open import Data.Vec using (_++_; _∷_; [])
@@ -386,7 +386,7 @@ module Embedding {o} {A : Setoid o o} (S : CommutativeSemiring A) where
 
   private
     module FD = Mat S
-    module SM = semimodule {o} {o} S
+    module SM = semimodule S
   open SM
   open SM._⇒_
   open SM._≈m_

@@ -12,7 +12,7 @@ import ho-model
 
 module E  = mat.Embedding two.semiring
 module FD = mat.Mat two.semiring
-module SM = semimodule {0ℓ} {0ℓ} two.semiring
+module SM = semimodule two.semiring
 
 open ho-model.Interpretation
   FD.cat FD.terminal FD.products
