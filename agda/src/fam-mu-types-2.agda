@@ -30,38 +30,6 @@ open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 
 module fam-mu-types-2 where
 
-module _ {o e} where
-  open import Data.Sum using (_⊎_)
-  open import Data.Product using () renaming (_×_ to _×T_)
-  open import prop using (_∧_; ⊥)
-
-  ------------------------------------------------------------------------------
-  -- Syntactic representation of polynomial functor but with constant slots holding a setoid rather than a
-  -- category object. Used to define the W-type carrier of HasMu by structural recursion.
-  data IdxPoly (n : ℕ) : Set (lsuc (o ⊔ e)) where
-    param : Setoid o e → IdxPoly n
-    var   : Fin n → IdxPoly n
-    _+_   : IdxPoly n → IdxPoly n → IdxPoly n
-    _×_   : IdxPoly n → IdxPoly n → IdxPoly n
-    μ     : IdxPoly (suc n) → IdxPoly n
-
-  _◁_ : ∀ {ℓ} {A : Set ℓ} {n} → (Fin n → A) → A → Fin (suc n) → A
-  (ρ ◁ x) Fin.zero    = x
-  (ρ ◁ x) (Fin.suc i) = ρ i
-
-  -- Well-founded tree carrier (Martin-Löf W-types; see Wellorderings, pp. 43-47 of Intuitionistic Type Theory).
-  mutual
-    ⟦_⟧C : ∀ {n} → IdxPoly n → (Fin n → Set o) → Set o
-    ⟦ param A ⟧C ρ = Carrier A
-    ⟦ var i ⟧C   ρ = ρ i
-    ⟦ P + Q ⟧C   ρ = ⟦ P ⟧C ρ ⊎ ⟦ Q ⟧C ρ
-    ⟦ P × Q ⟧C   ρ = ⟦ P ⟧C ρ ×T ⟦ Q ⟧C ρ
-    ⟦ μ P ⟧C     ρ = W P ρ
-
-    -- P-shaped trees.
-    data W {n} (P : IdxPoly (suc n)) (ρ : Fin n → Set o) : Set o where
-      sup : ⟦ P ⟧C (ρ ◁ W P ρ) → W P ρ
-
 ------------------------------------------------------------------------------
 -- HasMu instance for the Fam construction.
 module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
@@ -79,6 +47,33 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   open _⇒f_
   open polynomial-functor-2 (terminal T) products strongCoproducts
     using (Poly; extend; fobj; HasMu; HasMuLaws)
+
+  open import Data.Sum using (_⊎_)
+  open import Data.Product using () renaming (_×_ to _×T_)
+  open import prop using (_∧_; ⊥)
+
+  ------------------------------------------------------------------------------
+  -- Syntactic representation of polynomial functor but with constant slots holding a setoid rather than a
+  -- category object. Used to define the W-type carrier of HasMu by structural recursion.
+  data IdxPoly (n : ℕ) : Set (lsuc (o ⊔ e)) where
+    param : Setoid o e → IdxPoly n
+    var   : Fin n → IdxPoly n
+    _+_   : IdxPoly n → IdxPoly n → IdxPoly n
+    _×_   : IdxPoly n → IdxPoly n → IdxPoly n
+    μ     : IdxPoly (suc n) → IdxPoly n
+
+  -- Well-founded tree carrier (Martin-Löf W-types; see Wellorderings, pp. 43-47 of Intuitionistic Type Theory).
+  mutual
+    ⟦_⟧C : ∀ {n} → IdxPoly n → (Fin n → Set o) → Set o
+    ⟦ param A ⟧C ρ = Carrier A
+    ⟦ var i ⟧C   ρ = ρ i
+    ⟦ P + Q ⟧C   ρ = ⟦ P ⟧C ρ ⊎ ⟦ Q ⟧C ρ
+    ⟦ P × Q ⟧C   ρ = ⟦ P ⟧C ρ ×T ⟦ Q ⟧C ρ
+    ⟦ μ P ⟧C     ρ = W P ρ
+
+    -- P-shaped trees.
+    data W {n} (P : IdxPoly (suc n)) (ρ : Fin n → Set o) : Set o where
+      sup : ⟦ P ⟧C (extend ρ (W P ρ)) → W P ρ
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ = {!!}

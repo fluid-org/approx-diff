@@ -30,9 +30,9 @@ data Poly (n : ℕ) : Set o where
   _×_   : Poly n → Poly n → Poly n
   μ     : Poly (suc n) → Poly n
 
-extend : ∀ {n} → (Fin n → obj) → obj → Fin (suc n) → obj
-extend δ A Fin.zero    = A
-extend δ A (Fin.suc i) = δ i
+extend : ∀ {n} {ℓ} {A : Set ℓ} → (Fin n → A) → A → Fin (suc n) → A
+extend δ x Fin.zero    = x
+extend δ x (Fin.suc i) = δ i
 
 fobj : ∀ {n} → (μ-obj : ∀ {m} → Poly (suc m) → (Fin m → obj) → obj) → Poly n → (Fin n → obj) → obj
 fobj μ-obj (const A) δ = A
