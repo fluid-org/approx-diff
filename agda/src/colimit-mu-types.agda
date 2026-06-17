@@ -823,7 +823,9 @@ module cocont
       (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (q₂-nat _ _)) (≈-sym (assoc _ _ _)))))
       (≈-trans (≈-sym (assoc _ _ _))
                (∘-cong₁ (≈-sym (assoc _ _ _)))))))))))
-  strong-fmor-⟦⟧ˢ (μ P) fs = {!!}
+  strong-fmor-⟦⟧ˢ (μ P) fs =
+    ≈-trans (cata-cong {!!})
+    (≈-sym (≈-trans (∘-cong₁ id-left) (≈-trans (∘-cong₂ prod-m-id) id-right)))
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg =
