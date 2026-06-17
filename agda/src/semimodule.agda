@@ -2,7 +2,7 @@
 
 open import Level using (0ℓ; suc; _⊔_)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
-open import prop using (_,_; LiftS; liftS; tt)
+open import prop using (_,_; LiftS; liftS; tt; _⇔_)
 open import prop-setoid
   using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂; 𝟙)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
@@ -447,15 +447,24 @@ conj-transpose X≅X* Y≅Y* f =
   ≈-trans (≈-sym (assoc (X≅X* .Iso.fwd) (X≅X* .Iso.bwd) ((f ᵀ) ∘ (Y≅Y* .Iso.fwd))))
           (≈-trans (∘-cong (X≅X* .Iso.fwd∘bwd≈id) (≈-refl {f = (f ᵀ) ∘ (Y≅Y* .Iso.fwd)})) id-left)
 
--- Pairing ⟨ x , y ⟩ = (d x) y induced by a self-duality, and pointwise conjugate relation
--- ⟨ conj f y , x ⟩ ≈ ⟨ y , f x ⟩.
+-- Pairing ⟨ x , y ⟩ = (d x) y induced by a self-duality.
 pairing : ∀ {X} → Iso X (Dual X) → X .Carrier → X .Carrier → S.Carrier
-pairing X≅X* x y = ((X≅X* .Iso.fwd) .*→* ._⇒s_.func x) .*→* ._⇒s_.func y
+pairing X≅X* x y = X≅X* .Iso.fwd .*→* ._⇒s_.func x .*→* ._⇒s_.func y
 
+-- Pointwise conjugate equivalence ⟨ conj f y , x ⟩ ≈ ⟨ y , f x ⟩.
 conj-pairing : ∀ {X Y} (X≅X* : Iso X (Dual X)) (Y≅Y* : Iso Y (Dual Y)) (f : X ⇒ Y) {x y} →
                S._≈_ (pairing X≅X* ((conj X≅X* Y≅Y* f) .*→* ._⇒s_.func y) x) (pairing Y≅Y* y (f .*→* ._⇒s_.func x))
 conj-pairing {X} {Y} X≅X* Y≅Y* f =
   conj-transpose X≅X* Y≅Y* f .*≈* ._≈s_.func-eq (refl Y) .*≈* ._≈s_.func-eq (refl X)
+
+-- conj swaps pairing-disjointness (⟨_,_⟩ ≈ ⊥): the conjugate relation of (f, conj f),
+-- the heart of the LatConj embedding.  Generic — no lattice structure; linking it to
+-- a lattice # is the per-object alignment (a # b ⟺ ⟨a,b⟩ ≈ ⊥), supplied downstream.
+conj-⊥ : ∀ {X Y} (X≅X* : Iso X (Dual X)) (Y≅Y* : Iso Y (Dual Y)) (f : X ⇒ Y) {x y}
+       → (pairing Y≅Y* y (f .*→* ._⇒s_.func x) S.≈ S.ε)
+       ⇔ (pairing X≅X* ((conj X≅X* Y≅Y* f) .*→* ._⇒s_.func y) x S.≈ S.ε)
+conj-⊥ X≅X* Y≅Y* f =
+  (λ p → S.trans (conj-pairing X≅X* Y≅Y* f) p) , λ q → S.trans (S.sym (conj-pairing X≅X* Y≅Y* f)) q
 
 ------------------------------------------------------------------------------
 module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
@@ -518,3 +527,20 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-cong {M} α≃β .*≈* ._≈s_.func-eq {m}{n} m≈n x = α≃β .transf-eq x .*≈* ._≈s_.func-eq m≈n
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-eval α .transf-eq x .*≈* ._≈s_.func-eq = α .transf x .func-resp-≈
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
+
+------------------------------------------------------------------------------
+-- S a (bounded) distributive lattice (join = +, meet = ·).  Only meet-
+-- idempotence and top-absorption are assumed; join-idempotence is derivable.
+
+module DistributiveLattice
+  (∧-idem    : ∀ {x} → (x S.· x) S.≈ x)
+  (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
+  where
+
+  -- Addition in every S-semimodule is idempotent (x + x ≈ x), so SemiMod(S)
+  -- objects are join-semilattices and morphisms are join-preserving.
+  +-idem : ∀ (M : Semimodule) {x : M .Carrier} → M ._≈_ (M ._+_ x x) x
+  +-idem M =
+    trans M (+-cong M (sym M (·-unit M)) (sym M (·-unit M)))
+    (trans M (sym M (+-distribʳ M))
+    (trans M (·-cong M ⊤-add-top (refl M)) (·-unit M)))
