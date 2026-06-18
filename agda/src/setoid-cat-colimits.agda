@@ -6,7 +6,7 @@
 
 open import Level using (_⊔_)
 open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl) renaming (_⊔_ to _⊔ℕ_)
-open import Data.Nat.Properties using (m≤m⊔n; m≤n⊔m; ≤⇒≤′)
+open import Data.Nat.Properties using (m≤m⊔n; m≤n⊔m; ≤⇒≤′; ≤′⇒≤; ⊔-monoˡ-≤)
 open import Data.Product using (_,_; Σ)
 open import Data.Sum using (inj₁; inj₂)
 open import prop using (_,_; ∃; liftS)
@@ -61,26 +61,33 @@ module _ o e where
   ωcolimits D = colim
     where
     module D = Functor D
+
     A : Set o
     A = Σ ℕ (λ n → D.fobj n .Carrier)
+
     R : A → A → Prop (o ⊔ e)
     R (n , x) (m , y) = ∃ (n ≤′ m) (λ p → D.fobj m ._≈_ (D.fmor p .func x) y)
+
     apex : Setoid o (o ⊔ e)
     apex = rel→Setoid A R
+
     cocone : NatTrans D (constF ω apex)
     cocone .NatTrans.transf n .func x = n , x
     cocone .NatTrans.transf n .func-resp-≈ x≈ = EquivOf-intro (≤′-refl , D.fmor-id .func-eq x≈)
     cocone .NatTrans.natural p .func-eq a≈ = EquivOf-intro (p , D.fmor p .func-resp-≈ a≈)
+
     mediate : (X' : Setoid o (o ⊔ e)) → NatTrans D (constF ω X') → apex ⇒s X'
     mediate X' γ = rel-preserving-func X' f base
       where
       f : A → X' .Carrier
       f (n , a) = γ .NatTrans.transf n .func a
+
       base : ∀ {u v} → R u v → X' ._≈_ (f u) (f v)
       base {n , a} {m , b} (p , da≈b) =
         X' .isEquivalence .trans
           (γ .NatTrans.natural p .func-eq (D.fobj n .isEquivalence .refl))
           (γ .NatTrans.transf m .func-resp-≈ da≈b)
+
     colim : Colimit D
     colim .Colimit.apex = apex
     colim .Colimit.cocone = cocone
@@ -105,7 +112,6 @@ module _ o e where
       CXY = ωcolimits (chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k)))
 
       canonX = ωcolimits (chain {𝒞 = 𝒮} X f)
-
       canonY = ωcolimits (chain {𝒞 = 𝒮} Y g)
 
       ιX : a ⇒s canonX .Colimit.apex
@@ -118,10 +124,11 @@ module _ o e where
       κ-fwd .func ((k , x) , (j , y)) =
         _ , (chain {𝒞 = 𝒮} X f .Functor.fmor (≤⇒≤′ (m≤m⊔n k j)) .func x
             , chain {𝒞 = 𝒮} Y g .Functor.fmor (≤⇒≤′ (m≤n⊔m k j)) .func y)
-      κ-fwd .func-resp-≈ {u₁ , u₂} {v₁ , v₂} (liftS px , liftS qy) =
+      κ-fwd .func-resp-≈ {u₁ , (uj , uy)} {(vk , vx) , v₂} (liftS px , liftS qy) =
         CXY .Colimit.apex .isEquivalence .trans
-          (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func (w , u₂)) (λ r → {!!}) px)
-          (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func (v₁ , w)) (λ r → {!!}) qy)
+          (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func (w , (uj , uy)))
+            (λ { {k , x} {k' , x'} (p , wx) → EquivOf-intro (≤⇒≤′ (⊔-monoˡ-≤ uj (≤′⇒≤ p)) , {!!}) }) px)
+          (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func ((vk , vx) , w)) (λ r → {!!}) qy)
 
       forward : prod a b ⇒s CXY .Colimit.apex
       forward = κ-fwd ∘ prod-m ιX ιY
