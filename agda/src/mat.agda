@@ -578,9 +578,8 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
         ⟪⟫-·₂ {a = _ ∷ u} {b = _ ∷ v} =
           trans (∨-cong (trans (∧-cong refl ∧-comm) (trans (sym ∧-assoc) ∧-comm)) (⟪⟫-·₂ {a = u} {v})) (sym ∧-∨-distribₗ)
 
-    open Scalar using (⟪_,_⟫; ⊥; refl; sym; trans; ∨-cong; ∧-cong; ∨-≈⊥ₗ; ∨-≈⊥ᵣ; ⊥-∨
-                      ; ∧-comm; ∧-lunit; ∨-lunit; ∨-runit; ε-annihilᵣ
-                      ; ⟪⟫-comm; ⟪⟫-resp-≈; ⟪⟫-ε₂; ⟪⟫-+₂; ⟪⟫-·₂)
+    open Scalar using (⟪_,_⟫; ⊥; refl; sym; trans; ∨-cong; ∧-cong; ∨-≈⊥ₗ; ∨-≈⊥ᵣ; ⊥-∨; ∧-comm; ∧-lunit; ∨-lunit;
+                       ∨-runit; ε-annihilᵣ; ⟪⟫-comm; ⟪⟫-resp-≈; ⟪⟫-ε₂; ⟪⟫-+₂; ⟪⟫-·₂)
 
     ----------------------------------------------------------------------------
     -- Pointwise lift of the meet to fobj n.
