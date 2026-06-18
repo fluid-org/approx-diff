@@ -577,7 +577,7 @@ module JoinSemilattices
 
   -- Now extend a semimodule's join-semilattice to a self-dual bounded distributive lattice with the condition
   -- that lattice-level disjointness agrees with semimodule-level orthogonality.
-  record SelfDualLattice : Set (suc 0ℓ) where
+  record SelfDualDistributiveLattice : Set (suc 0ℓ) where
     no-eta-equality
     field
       M         : Semimodule
@@ -600,10 +600,10 @@ module JoinSemilattices
     toObj .Obj.∧-∨-distrib = ∧-∨-distrib
 
   -- Embedding of morphisms into LatConj.
-  module _ (X Y : SelfDualLattice) where
+  module _ (X Y : SelfDualDistributiveLattice) where
     private
-      module X = SelfDualLattice X
-      module Y = SelfDualLattice Y
+      module X = SelfDualDistributiveLattice X
+      module Y = SelfDualDistributiveLattice Y
 
     to-conj : (X.M ⇒ Y.M) → X.toObj ⇒c Y.toObj
     to-conj f ._⇒c_.right = joins-map f

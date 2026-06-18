@@ -714,11 +714,11 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
       trans (eval-weights φ b) (φ≈φ' .*≈* ._≈s_.func-eq b≈b')
     self-dual n .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {a} a≈a' = ≈-trans (weights-fwd a) a≈a'
 
-    -- Each S-vector is a self-dual distributive lattice, so the LatConj embedding JoinSemilattices.to-conj
-    -- applies to S-matrices.
-    freeSDL : ℕ → SelfDualLattice
-    freeSDL n .SelfDualLattice.M           = fobj n
-    freeSDL n .SelfDualLattice.self-dual   = self-dual n
-    freeSDL n .SelfDualLattice.meets       = meets n
-    freeSDL n .SelfDualLattice.∧-∨-distrib = ∧-∨-distrib
-    freeSDL n .SelfDualLattice.align       = align
+    -- Each S-vector is a self-dual distributive lattice, so the LatConj embedding applies to S-matrices.
+    -- We don't actually use this; it's metatheory for the paper.
+    vec-sddl : ℕ → SelfDualDistributiveLattice
+    vec-sddl n .SelfDualDistributiveLattice.M           = fobj n
+    vec-sddl n .SelfDualDistributiveLattice.self-dual   = self-dual n
+    vec-sddl n .SelfDualDistributiveLattice.meets       = meets n
+    vec-sddl n .SelfDualDistributiveLattice.∧-∨-distrib = ∧-∨-distrib
+    vec-sddl n .SelfDualDistributiveLattice.align       = align
