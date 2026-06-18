@@ -494,7 +494,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     (∧-idem    : ∀ {x} → S._≈_ (S._·_ x x) x)
     (⊤-add-top : ∀ {x} → S._≈_ (S._+_ S.ι x) S.ι)
     where
-    module DL = DistributiveLattice ∧-idem ⊤-add-top
+    open DistributiveLattice ∧-idem ⊤-add-top
 
     ----------------------------------------------------------------------------
     -- S as a distributive lattice: the meet · is the lattice meet of the join order.
@@ -506,34 +506,34 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
                    ; +-cong to ∨-cong ; +-comm to ∨-comm ; +-assoc to ∨-assoc ; +-lunit to ∨-lunit
                    ; +-interchange to ∨-interchange
                    ; ·-+-distribₗ to ∧-∨-distribₗ ; ·-+-distribᵣ to ∧-∨-distribᵣ ) public
-        open IsPreorder (DL.≤-isPreorder 𝕀) using () renaming (refl to ≤-refl; trans to ≤-trans)
+        open IsPreorder (≤-isPreorder 𝕀) using () renaming (refl to ≤-refl; trans to ≤-trans)
 
         ∨-∧-absorption : ∀ {a b} → a ∨ (a ∧ b) S.≈ a
         ∨-∧-absorption =
           trans (∨-cong (trans (sym ∧-lunit) ∧-comm) refl)
                 (trans (sym ∧-∨-distribₗ) (trans (∧-cong refl ⊤-add-top) (trans ∧-comm ∧-lunit)))
 
-        ∧-monoʳ : ∀ {a b c} → DL._≤_ 𝕀 a b → DL._≤_ 𝕀 (c ∧ a) (c ∧ b)
+        ∧-monoʳ : ∀ {a b c} → _≤_ 𝕀 a b → _≤_ 𝕀 (c ∧ a) (c ∧ b)
         ∧-monoʳ a≤b = trans (sym ∧-∨-distribₗ) (∧-cong refl a≤b)
 
-        ∧-monoˡ : ∀ {a b c} → DL._≤_ 𝕀 a b → DL._≤_ 𝕀 (a ∧ c) (b ∧ c)
+        ∧-monoˡ : ∀ {a b c} → _≤_ 𝕀 a b → _≤_ 𝕀 (a ∧ c) (b ∧ c)
         ∧-monoˡ a≤b = trans (sym ∧-∨-distribᵣ) (∧-cong a≤b refl)
 
-        ∧-isMeet : IsMeet (DL.≤-isPreorder 𝕀) _∧_
+        ∧-isMeet : IsMeet (≤-isPreorder 𝕀) _∧_
         ∧-isMeet .IsMeet.π₁ = trans ∨-comm ∨-∧-absorption
         ∧-isMeet .IsMeet.π₂ = trans (∨-cong ∧-comm refl) (trans ∨-comm ∨-∧-absorption)
         ∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z =
           ≤-trans (trans (∨-cong (sym ∧-idem) refl) (∧-monoʳ x≤z)) (∧-monoˡ x≤y)
 
-        ⊤-isTop : IsTop (DL.≤-isPreorder 𝕀) ⊤
+        ⊤-isTop : IsTop (≤-isPreorder 𝕀) ⊤
         ⊤-isTop .IsTop.≤-top = trans ∨-comm ⊤-add-top
 
-        ∧-∨-distrib : ∀ {a b c} → DL._≤_ 𝕀 (a ∧ (b ∨ c)) ((a ∧ b) ∨ (a ∧ c))
-        ∧-∨-distrib = DL.≈→≤ 𝕀 ∧-∨-distribₗ
+        ∧-∨-distrib : ∀ {a b c} → _≤_ 𝕀 (a ∧ (b ∨ c)) ((a ∧ b) ∨ (a ∧ c))
+        ∧-∨-distrib = ≈→≤ 𝕀 ∧-∨-distribₗ
 
         -- The join is zero-sum-free: a ∨ b ≈ ⊥ iff both are ⊥.
         ∨-idem : ∀ {a} → (a ∨ a) S.≈ a
-        ∨-idem = DL.+-idem 𝕀
+        ∨-idem = +-idem 𝕀
 
         ∨-runit : ∀ {a} → (a ∨ ⊥) S.≈ a
         ∨-runit = trans ∨-comm ∨-lunit
@@ -593,29 +593,29 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     ⊤ {zero}  = []
     ⊤ {suc n} = Scalar.⊤ ∷ ⊤
 
-    π₁ : ∀ {n} {u v : Vec n} → DL._≤_ (fobj n) (u ∧ v) u
+    π₁ : ∀ {n} {u v : Vec n} → _≤_ (fobj n) (u ∧ v) u
     π₁ {u = []}    {[]}    = tt
     π₁ {u = _ ∷ _} {_ ∷ _} = Scalar.∧-isMeet .IsMeet.π₁ , π₁
 
-    π₂ : ∀ {n} {u v : Vec n} → DL._≤_ (fobj n) (u ∧ v) v
+    π₂ : ∀ {n} {u v : Vec n} → _≤_ (fobj n) (u ∧ v) v
     π₂ {u = []}    {[]}    = tt
     π₂ {u = _ ∷ _} {_ ∷ _} = Scalar.∧-isMeet .IsMeet.π₂ , π₂
 
-    ⟨_,_⟩ : ∀ {n} {u v w : Vec n} → DL._≤_ (fobj n) u v → DL._≤_ (fobj n) u w → DL._≤_ (fobj n) u (v ∧ w)
+    ⟨_,_⟩ : ∀ {n} {u v w : Vec n} → _≤_ (fobj n) u v → _≤_ (fobj n) u w → _≤_ (fobj n) u (v ∧ w)
     ⟨_,_⟩ {u = []}    {[]}    {[]}    _           _           = tt
     ⟨_,_⟩ {u = _ ∷ _} {_ ∷ _} {_ ∷ _} (u≤v , u≤v') (u≤w , u≤w') =
       Scalar.∧-isMeet .IsMeet.⟨_,_⟩ u≤v u≤w , ⟨ u≤v' , u≤w' ⟩
 
-    ⊤-top : ∀ {n} {u : Vec n} → DL._≤_ (fobj n) u ⊤
+    ⊤-top : ∀ {n} {u : Vec n} → _≤_ (fobj n) u ⊤
     ⊤-top {u = []}    = tt
     ⊤-top {u = _ ∷ _} = Scalar.⊤-isTop .IsTop.≤-top , ⊤-top
 
     ∧-∨-distrib : ∀ {n} (u v w : Vec n) →
-                  DL._≤_ (fobj n) (u ∧ (v + w)) ((u ∧ v) + (u ∧ w))
+                  _≤_ (fobj n) (u ∧ (v + w)) ((u ∧ v) + (u ∧ w))
     ∧-∨-distrib []      []      []      = tt
     ∧-∨-distrib (x ∷ u) (y ∷ v) (z ∷ w) = Scalar.∧-∨-distrib , ∧-∨-distrib u v w
 
-    meets : ∀ n → MeetSemilattice (DL.preorder (fobj n))
+    meets : ∀ n → MeetSemilattice (preorder (fobj n))
     meets n .MeetSemilattice._∧_                    = _∧_
     meets n .MeetSemilattice.⊤                      = ⊤
     meets n .MeetSemilattice.∧-isMeet .IsMeet.π₁    = π₁
@@ -632,7 +632,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     align-core {a = _ ∷ _} {_ ∷ _} .proj₁ (h , t) = ⊥-∨ h (align-core .proj₁ t)
     align-core {a = _ ∷ _} {_ ∷ _} .proj₂ p       = ∨-≈⊥ₗ p , align-core .proj₂ (∨-≈⊥ᵣ p)
 
-    align : ∀ {n} {a b : Vec n} → DL._≤_ (fobj n) (a ∧ b) ε ⇔ (⟪ a , b ⟫ S.≈ ⊥)
+    align : ∀ {n} {a b : Vec n} → _≤_ (fobj n) (a ∧ b) ε ⇔ (⟪ a , b ⟫ S.≈ ⊥)
     align {a = a} {b} .proj₁ h = align-core {a = a} {b} .proj₁ (≈-trans (≈-sym +-runit) h)
     align {a = a} {b} .proj₂ q = ≈-trans +-runit (align-core {a = a} {b} .proj₂ q)
 
@@ -717,9 +717,9 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
     -- Each S-vector is a self-dual distributive lattice, so the LatConj embedding DistributiveLattice.to-conj
     -- applies to S-matrices.
-    freeSDL : ℕ → DL.SelfDualLattice
-    freeSDL n .DL.SelfDualLattice.M           = fobj n
-    freeSDL n .DL.SelfDualLattice.self-dual   = self-dual n
-    freeSDL n .DL.SelfDualLattice.meets       = meets n
-    freeSDL n .DL.SelfDualLattice.∧-∨-distrib = ∧-∨-distrib
-    freeSDL n .DL.SelfDualLattice.align       = align
+    freeSDL : ℕ → SelfDualLattice
+    freeSDL n .SelfDualLattice.M           = fobj n
+    freeSDL n .SelfDualLattice.self-dual   = self-dual n
+    freeSDL n .SelfDualLattice.meets       = meets n
+    freeSDL n .SelfDualLattice.∧-∨-distrib = ∧-∨-distrib
+    freeSDL n .SelfDualLattice.align       = align
