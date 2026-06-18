@@ -100,28 +100,48 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   μ-carrier : ∀ {n} → IdxPoly (suc n) → (Fin n → Set os) → Set os
   μ-carrier {n} P ρ = Σ[ w ∈ Wsh P ] ((i : Fin n) → WPos P w i → ρ i)
 
-  -- Element equality: recurse on the (ρ-free) shapes, comparing the position-functions in parallel; at each
-  -- leaf both are applied at the canonical position, so positions align without transport. R relates the
-  -- variable interpretations. The μ case recurses on the shape-tree (Wμ≈), descending into explicit subtrees.
-  mutual
-    Elt≈ : ∀ {n} {ρ : Fin n → Set os} (R : (i : Fin n) → ρ i → ρ i → Prop (os ⊔ es))
-           (P : IdxPoly n) (s : Sh P) → ((i : Fin n) → Pos P s i → ρ i) →
-           (s' : Sh P) → ((i : Fin n) → Pos P s' i → ρ i) → Prop (os ⊔ es)
-    Elt≈ R (param A) a _ a' _ = _≈s_ A a a'
-    Elt≈ R (var j) _ g _ g' = R j (g j ≡-refl) (g' j ≡-refl)
-    Elt≈ R (P + Q) (inj₁ s) g (inj₁ s') g' = Elt≈ R P s g s' g'
-    Elt≈ R (P + Q) (inj₁ _) _ (inj₂ _) _ = ⊥
-    Elt≈ R (P + Q) (inj₂ _) _ (inj₁ _) _ = ⊥
-    Elt≈ R (P + Q) (inj₂ t) g (inj₂ t') g' = Elt≈ R Q t g t' g'
-    Elt≈ R (P × Q) (s , t) g (s' , t') g' =
-      Elt≈ R P s (λ i p → g i (inj₁ p)) s' (λ i p → g' i (inj₁ p)) ∧
-      Elt≈ R Q t (λ i q → g i (inj₂ q)) t' (λ i q → g' i (inj₂ q))
-    Elt≈ R (μ Q) w g w' g' = Wμ≈ R Q w g w' g'
+  -- Position correspondence: which variable-i positions of two shapes match up. R-free, so it carries no
+  -- environment. Used to align subtrees in the shape equality and position-functions in the element equality.
+  PosR : ∀ {n} (P : IdxPoly n) (s s' : Sh P) (i : Fin n) → Pos P s i → Pos P s' i → Prop (os ⊔ es)
+  PosR (param A) _ _ _ ()
+  PosR (var _) _ _ _ _ _ = ⊤
+  PosR (P + Q) (inj₁ s) (inj₁ s') i p p' = PosR P s s' i p p'
+  PosR (P + Q) (inj₁ _) (inj₂ _) _ _ _ = ⊥
+  PosR (P + Q) (inj₂ _) (inj₁ _) _ _ _ = ⊥
+  PosR (P + Q) (inj₂ t) (inj₂ t') i p p' = PosR Q t t' i p p'
+  PosR (P × Q) (s , _) (s' , _) i (inj₁ p) (inj₁ p') = PosR P s s' i p p'
+  PosR (P × Q) _ _ _ (inj₁ _) (inj₂ _) = ⊥
+  PosR (P × Q) _ _ _ (inj₂ _) (inj₁ _) = ⊥
+  PosR (P × Q) (_ , t) (_ , t') i (inj₂ q) (inj₂ q') = PosR Q t t' i q q'
+  PosR (μ Q) (sup s _) (sup s' _) i (inj₁ p) (inj₁ p') = PosR Q s s' (Fin.suc i) p p'
+  PosR (μ Q) (sup _ _) (sup _ _) _ (inj₁ _) (inj₂ _) = ⊥
+  PosR (μ Q) (sup _ _) (sup _ _) _ (inj₂ _) (inj₁ _) = ⊥
+  PosR (μ Q) (sup s f) (sup s' f') i (inj₂ (r , q)) (inj₂ (r' , q')) =
+    PosR Q s s' Fin.zero r r' ∧ PosR (μ Q) (f r) (f' r') i q q'
 
-    Wμ≈ : ∀ {n} {ρ : Fin n → Set os} (R : (i : Fin n) → ρ i → ρ i → Prop (os ⊔ es))
-          (Q : IdxPoly (suc n)) (w : Wsh Q) → ((i : Fin n) → WPos Q w i → ρ i) →
-          (w' : Wsh Q) → ((i : Fin n) → WPos Q w' i → ρ i) → Prop (os ⊔ es)
-    Wμ≈ R Q w g w' g' = {!!}
+  -- Shape equality: structural on the (ρ-free) shapes, matching (via Wsh≈) on μ shape-trees, aligning subtrees
+  -- by PosR. R-free, hence no threading: refl/sym/trans recurse on the shape-trees directly.
+  mutual
+    Sh≈ : ∀ {n} (P : IdxPoly n) → Sh P → Sh P → Prop (os ⊔ es)
+    Sh≈ (param A) a a' = _≈s_ A a a'
+    Sh≈ (var _) _ _ = ⊤
+    Sh≈ (P + Q) (inj₁ s) (inj₁ s') = Sh≈ P s s'
+    Sh≈ (P + Q) (inj₁ _) (inj₂ _) = ⊥
+    Sh≈ (P + Q) (inj₂ _) (inj₁ _) = ⊥
+    Sh≈ (P + Q) (inj₂ t) (inj₂ t') = Sh≈ Q t t'
+    Sh≈ (P × Q) (s , t) (s' , t') = Sh≈ P s s' ∧ Sh≈ Q t t'
+    Sh≈ (μ Q) w w' = Wsh≈ Q w w'
+
+    Wsh≈ : ∀ {n} (Q : IdxPoly (suc n)) → Wsh Q → Wsh Q → Prop (os ⊔ es)
+    Wsh≈ Q (sup s f) (sup s' f') =
+      Sh≈ Q s s' ∧ (∀ r r' → PosR Q s s' Fin.zero r r' → Wsh≈ Q (f r) (f' r'))
+
+  -- Element equality: shapes equal, and the position-functions agree on every matching pair of positions.
+  Elt≈ : ∀ {n} {ρ : Fin n → Set os} (R : (i : Fin n) → ρ i → ρ i → Prop (os ⊔ es))
+         (P : IdxPoly n) (s : Sh P) → ((i : Fin n) → Pos P s i → ρ i) →
+         (s' : Sh P) → ((i : Fin n) → Pos P s' i → ρ i) → Prop (os ⊔ es)
+  Elt≈ R P s g s' g' =
+    Sh≈ P s s' ∧ (∀ i (p : Pos P s i) (p' : Pos P s' i) → PosR P s s' i p p' → R i (g i p) (g' i p'))
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ = {!!}
