@@ -96,26 +96,27 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     WPos : ∀ {n} (Q : IdxPoly (suc n)) → Wsh Q → Fin n → Set
     WPos Q (sup s f) i = Pos Q s (Fin.suc i) ⊎ Σ[ r ∈ Pos Q s Fin.zero ] WPos Q (f r) i
 
-  -- Container extension: a shape with an assignment of each position to its variable's interpretation.
-  ⟦_⟧ : ∀ {n} → IdxPoly n → (Fin n → Set os) → Set os
-  ⟦_⟧ {n} P ρ = Σ[ s ∈ Sh P ] ((i : Fin n) → Pos P s i → ρ i)
+  -- Carrier of the μ-type: a shape-tree with an assignment of each variable position to its interpretation.
+  μ-carrier : ∀ {n} → IdxPoly (suc n) → (Fin n → Set os) → Set os
+  μ-carrier {n} P ρ = Σ[ w ∈ Wsh P ] ((i : Fin n) → WPos P w i → ρ i)
 
   -- Element equality: recurse on the (ρ-free) shapes, comparing the position-functions in parallel; at each
   -- leaf both are applied at the canonical position, so positions align without transport. R relates the
   -- variable interpretations. The μ case recurses on the shape-tree (Wμ≈), descending into explicit subtrees.
   mutual
     Elt≈ : ∀ {n} {ρ : Fin n → Set os} (R : (i : Fin n) → ρ i → ρ i → Prop (os ⊔ es))
-           (P : IdxPoly n) → ⟦ P ⟧ ρ → ⟦ P ⟧ ρ → Prop (os ⊔ es)
-    Elt≈ R (param A) (a , _)      (a' , _)       = _≈s_ A a a'
-    Elt≈ R (var j)   (_ , g)      (_ , g')       = R j (g j ≡-refl) (g' j ≡-refl)
-    Elt≈ R (P + Q)   (inj₁ s , g) (inj₁ s' , g') = Elt≈ R P (s , g) (s' , g')
-    Elt≈ R (P + Q)   (inj₁ _ , _) (inj₂ _ , _)   = ⊥
-    Elt≈ R (P + Q)   (inj₂ _ , _) (inj₁ _ , _)   = ⊥
-    Elt≈ R (P + Q)   (inj₂ t , g) (inj₂ t' , g') = Elt≈ R Q (t , g) (t' , g')
-    Elt≈ R (P × Q)   ((s , t) , g) ((s' , t') , g') =
-      Elt≈ R P (s , λ i p → g i (inj₁ p)) (s' , λ i p → g' i (inj₁ p)) ∧
-      Elt≈ R Q (t , λ i q → g i (inj₂ q)) (t' , λ i q → g' i (inj₂ q))
-    Elt≈ R (μ Q)     (w , g)      (w' , g')       = Wμ≈ R Q w g w' g'
+           (P : IdxPoly n) (s : Sh P) → ((i : Fin n) → Pos P s i → ρ i) →
+           (s' : Sh P) → ((i : Fin n) → Pos P s' i → ρ i) → Prop (os ⊔ es)
+    Elt≈ R (param A) a _ a' _ = _≈s_ A a a'
+    Elt≈ R (var j) _ g _ g' = R j (g j ≡-refl) (g' j ≡-refl)
+    Elt≈ R (P + Q) (inj₁ s) g (inj₁ s') g' = Elt≈ R P s g s' g'
+    Elt≈ R (P + Q) (inj₁ _) _ (inj₂ _) _ = ⊥
+    Elt≈ R (P + Q) (inj₂ _) _ (inj₁ _) _ = ⊥
+    Elt≈ R (P + Q) (inj₂ t) g (inj₂ t') g' = Elt≈ R Q t g t' g'
+    Elt≈ R (P × Q) (s , t) g (s' , t') g' =
+      Elt≈ R P s (λ i p → g i (inj₁ p)) s' (λ i p → g' i (inj₁ p)) ∧
+      Elt≈ R Q t (λ i q → g i (inj₂ q)) t' (λ i q → g' i (inj₂ q))
+    Elt≈ R (μ Q) w g w' g' = Wμ≈ R Q w g w' g'
 
     Wμ≈ : ∀ {n} {ρ : Fin n → Set os} (R : (i : Fin n) → ρ i → ρ i → Prop (os ⊔ es))
           (Q : IdxPoly (suc n)) (w : Wsh Q) → ((i : Fin n) → WPos Q w i → ρ i) →
