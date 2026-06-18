@@ -4,7 +4,7 @@
 -- cocontinuous products. This is the standalone half of the factorisation — instantiating colimit-mu-types
 -- against it builds μ-types of polynomial functors on setoids (the index μ-types of the Fam construction).
 
-open import Level using (_⊔_)
+open import Level using (_⊔_; lift)
 open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl; ≤′-step) renaming (_⊔_ to _⊔ℕ_)
 open import Data.Nat.Properties using (m≤m⊔n; m≤n⊔m; ≤⇒≤′; ≤′⇒≤; ⊔-monoˡ-≤; ⊔-monoʳ-≤)
 open import Data.Product using (_,_; Σ)
@@ -13,7 +13,8 @@ open import prop using (_,_; ∃; liftS; tt; proj₁; proj₂)
 open import categories
   using (Category; HasInitial; IsInitial; HasProducts; HasStrongCoproducts)
 open import functor
-  using (Functor; NatTrans; Colimit; IsColimit; constF; ≃-NatTrans; HasColimits)
+  using (Functor; NatTrans; Colimit; IsColimit; constF; constFmor; ≃-NatTrans; HasColimits; colambda-unique)
+  renaming (_∘_ to _∘NT_)
 open import omega-chains using (ω; chain; step-cocone; cocone-step)
 open import prop-setoid
   using (Setoid; IsEquivalence; 𝟘; from-𝟘; from-𝟘-unique; +-setoid; ⊗-setoid; case; inject₁; inject₂;
@@ -100,7 +101,7 @@ module _ o e where
       γ .NatTrans.transf n .func-resp-≈ a≈
     colim .Colimit.isColimit .IsColimit.colambda-ext X' f .func-eq {n , a} u≈v = f .func-resp-≈ u≈v
 
-  open HasProducts (Setoid-products o (o ⊔ e)) using (prod; prod-m; prod-m-cong; prod-m-comp)
+  open HasProducts (Setoid-products o (o ⊔ e)) using (prod; prod-m; prod-m-cong; prod-m-comp; prod-m-id)
   open NatTrans using (transf)
 
   -- Finite products preserve ω-colimits: the product of two colimits is the colimit of the product chain.
@@ -123,6 +124,11 @@ module _ o e where
 
       ιY : b ⇒s canonY .Colimit.apex
       ιY = isY .IsColimit.colambda (canonY .Colimit.apex) (canonY .Colimit.cocone)
+
+      cocone₀ : NatTrans PXY (constF ω (prod a b))
+      cocone₀ = step-cocone (λ k → prod-m (cX .transf k) (cY .transf k))
+                            (λ k → ≈-trans (prod-m-cong (cocone-step cX k) (cocone-step cY k))
+                                           (prod-m-comp (cX .transf (suc k)) (cY .transf (suc k)) (f k) (g k)))
 
       -- Two walks with the same endpoints agree; `varying` additionally absorbs a single-step shift of
       -- the source through the chain.
@@ -212,10 +218,80 @@ module _ o e where
         (≈-trans (∘-cong₂ (prod-m-cong (ι-coevalX k) (ι-coevalY k)))
                  (κ-cocone k)))
 
-    ×-cocont : IsColimit (chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k))) (prod a b)
-                         (step-cocone (λ k → prod-m (cX .transf k) (cY .transf k))
-                                      (λ k → ≈-trans (prod-m-cong (cocone-step cX k) (cocone-step cY k))
-                                                     (prod-m-comp (cX .transf (suc k)) (cY .transf (suc k)) (f k) (g k))))
+      -- The comparison maps are isos; their inverses mediate the canonical colimits back to a, b.
+      ι⁻X : canonX .Colimit.apex ⇒s a
+      ι⁻X = canonX .Colimit.isColimit .IsColimit.colambda a cX
+
+      ι⁻Y : canonY .Colimit.apex ⇒s b
+      ι⁻Y = canonY .Colimit.isColimit .IsColimit.colambda b cY
+
+      ι⁻X-coeval : ∀ k → Category._≈_ 𝒮 (ι⁻X ∘ canonX .Colimit.cocone .transf k) (cX .transf k)
+      ι⁻X-coeval = canonX .Colimit.isColimit .IsColimit.colambda-coeval a cX .≃-NatTrans.transf-eq
+
+      ι⁻Y-coeval : ∀ k → Category._≈_ 𝒮 (ι⁻Y ∘ canonY .Colimit.cocone .transf k) (cY .transf k)
+      ι⁻Y-coeval = canonY .Colimit.isColimit .IsColimit.colambda-coeval b cY .≃-NatTrans.transf-eq
+
+      ιinvX : Category._≈_ 𝒮 (ι⁻X ∘ ιX) (id a)
+      ιinvX = colambda-unique isX (λ k →
+        ≈-trans (assoc ι⁻X ιX (cX .transf k))
+        (≈-trans (∘-cong₂ (ι-coevalX k))
+        (≈-trans (ι⁻X-coeval k) (≈-sym id-left))))
+
+      ιinvY : Category._≈_ 𝒮 (ι⁻Y ∘ ιY) (id b)
+      ιinvY = colambda-unique isY (λ k →
+        ≈-trans (assoc ι⁻Y ιY (cY .transf k))
+        (≈-trans (∘-cong₂ (ι-coevalY k))
+        (≈-trans (ι⁻Y-coeval k) (≈-sym id-left))))
+
+      -- κ-bwd splits κ-fwd: it sends a stage-n product back to the diagonal pair of injections.
+      ρ : NatTrans PXY (constF ω (prod (canonX .Colimit.apex) (canonY .Colimit.apex)))
+      ρ = step-cocone (λ k → prod-m (canonX .Colimit.cocone .transf k) (canonY .Colimit.cocone .transf k))
+                      (λ k → ≈-trans (prod-m-cong (cocone-step (canonX .Colimit.cocone) k)
+                                                  (cocone-step (canonY .Colimit.cocone) k))
+                                     (prod-m-comp (canonX .Colimit.cocone .transf (suc k))
+                                                  (canonY .Colimit.cocone .transf (suc k)) (f k) (g k)))
+
+      κ-bwd : CXY .Colimit.apex ⇒s prod (canonX .Colimit.apex) (canonY .Colimit.apex)
+      κ-bwd = CXY .Colimit.isColimit .IsColimit.colambda (prod (canonX .Colimit.apex) (canonY .Colimit.apex)) ρ
+
+      κ-bwd-coeval : ∀ k → Category._≈_ 𝒮 (κ-bwd ∘ CXY .Colimit.cocone .transf k)
+                                          (prod-m (canonX .Colimit.cocone .transf k) (canonY .Colimit.cocone .transf k))
+      κ-bwd-coeval =
+        CXY .Colimit.isColimit .IsColimit.colambda-coeval
+          (prod (canonX .Colimit.apex) (canonY .Colimit.apex)) ρ .≃-NatTrans.transf-eq
+
+      κ-bwd∘fwd : Category._≈_ 𝒮 (κ-bwd ∘ κ-fwd) (id (prod (canonX .Colimit.apex) (canonY .Colimit.apex)))
+      κ-bwd∘fwd .func-eq {(k , x) , (j , y)} {(k' , x') , (j' , y')} (ex , ey) =
+        ( canonX .Colimit.apex .isEquivalence .trans
+            (canonX .Colimit.apex .isEquivalence .sym
+              (EquivOf-intro (≤⇒≤′ (m≤m⊔n k j) , X (k ⊔ℕ j) .isEquivalence .refl)))
+            ex
+        , canonY .Colimit.apex .isEquivalence .trans
+            (canonY .Colimit.apex .isEquivalence .sym
+              (EquivOf-intro (≤⇒≤′ (m≤n⊔m k j) , Y (k ⊔ℕ j) .isEquivalence .refl)))
+            ey )
+
+      backward : prod (canonX .Colimit.apex) (canonY .Colimit.apex) ⇒s prod a b
+      backward = prod-m ι⁻X ι⁻Y
+
+      -- `backward ∘ κ-bwd` is a section of `forward`.
+      retract : Category._≈_ 𝒮 ((backward ∘ κ-bwd) ∘ forward) (id (prod a b))
+      retract =
+        ≈-trans (assoc backward κ-bwd forward)
+        (≈-trans (∘-cong₂ (≈-trans (≈-sym (assoc κ-bwd κ-fwd (prod-m ιX ιY)))
+                          (≈-trans (∘-cong₁ κ-bwd∘fwd) id-left)))
+        (≈-trans (≈-sym (prod-m-comp ι⁻X ι⁻Y ιX ιY))
+        (≈-trans (prod-m-cong ιinvX ιinvY) prod-m-id)))
+
+      retract-cocone : ∀ k → Category._≈_ 𝒮 ((backward ∘ κ-bwd) ∘ CXY .Colimit.cocone .transf k)
+                                            (prod-m (cX .transf k) (cY .transf k))
+      retract-cocone k =
+        ≈-trans (assoc backward κ-bwd (CXY .Colimit.cocone .transf k))
+        (≈-trans (∘-cong₂ (κ-bwd-coeval k))
+        (≈-trans (≈-sym (prod-m-comp ι⁻X ι⁻Y (canonX .Colimit.cocone .transf k) (canonY .Colimit.cocone .transf k)))
+                 (prod-m-cong (ι⁻X-coeval k) (ι⁻Y-coeval k))))
+
+    ×-cocont : IsColimit PXY (prod a b) cocone₀
     ×-cocont .IsColimit.colambda Z γ = CXY .Colimit.isColimit .IsColimit.colambda Z γ ∘ forward
     ×-cocont .IsColimit.colambda-cong α≃β =
       ∘-cong₁ (CXY .Colimit.isColimit .IsColimit.colambda-cong α≃β)
@@ -223,4 +299,21 @@ module _ o e where
       ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong₂ (forward-cocone k))
                (CXY .Colimit.isColimit .IsColimit.colambda-coeval Z γ .≃-NatTrans.transf-eq k))
-    ×-cocont .IsColimit.colambda-ext Z h = {!!}
+    ×-cocont .IsColimit.colambda-ext Z h =
+      ≈-trans (∘-cong₁ lemA)
+      (≈-trans (assoc h (backward ∘ κ-bwd) forward)
+      (≈-trans (∘-cong₂ retract) id-right))
+      where
+        lemA : Category._≈_ 𝒮 (CXY .Colimit.isColimit .IsColimit.colambda Z (constFmor h ∘NT cocone₀))
+                              (h ∘ (backward ∘ κ-bwd))
+        lemA = colambda-unique (CXY .Colimit.isColimit) (λ k →
+          ≈-trans (CXY .Colimit.isColimit .IsColimit.colambda-coeval Z (constFmor h ∘NT cocone₀) .≃-NatTrans.transf-eq k)
+          (≈-sym (≈-trans (assoc h (backward ∘ κ-bwd) (CXY .Colimit.cocone .transf k))
+                          (∘-cong₂ (retract-cocone k)))))
+
+  -- A product with the initial (empty) setoid is itself initial: a pair needs a 𝟘 element, so the
+  -- carrier is empty.
+  prod𝟘-initial : ∀ {Γ} → IsInitial 𝒮 (prod Γ 𝟘)
+  prod𝟘-initial .from-initial .func (_ , lift ())
+  prod𝟘-initial .from-initial .func-resp-≈ {_ , lift ()}
+  prod𝟘-initial .from-initial-ext f .func-eq {_ , lift ()}
