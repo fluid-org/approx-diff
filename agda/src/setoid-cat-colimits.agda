@@ -5,7 +5,7 @@
 -- against it builds μ-types of polynomial functors on setoids (the index μ-types of the Fam construction).
 
 open import Level using (_⊔_)
-open import Data.Nat using (ℕ; _≤′_; ≤′-refl)
+open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl)
 open import Data.Product using (_,_; Σ)
 open import Data.Sum using (inj₁; inj₂)
 open import prop using (_,_; ∃)
@@ -13,7 +13,7 @@ open import categories
   using (Category; HasInitial; IsInitial; HasProducts; HasStrongCoproducts)
 open import functor
   using (Functor; NatTrans; Colimit; IsColimit; constF; ≃-NatTrans; HasColimits)
-open import omega-chains using (ω)
+open import omega-chains using (ω; chain; step-cocone; cocone-step)
 open import prop-setoid
   using (Setoid; IsEquivalence; 𝟘; from-𝟘; from-𝟘-unique; +-setoid; ⊗-setoid; case; inject₁; inject₂;
          rel→Setoid; EquivOf-intro; rel-preserving-func)
@@ -91,3 +91,16 @@ module _ o e where
     colim .Colimit.isColimit .IsColimit.colambda-coeval X' γ .≃-NatTrans.transf-eq n .func-eq a≈ =
       γ .NatTrans.transf n .func-resp-≈ a≈
     colim .Colimit.isColimit .IsColimit.colambda-ext X' f .func-eq {n , a} u≈v = f .func-resp-≈ u≈v
+
+  open HasProducts (Setoid-products o (o ⊔ e)) using (prod; prod-m; prod-m-cong; prod-m-comp)
+  open NatTrans using (transf)
+
+  -- Finite products preserve ω-colimits: the product of two colimits is the colimit of the product chain.
+  Setoid-×cocont : ∀ {X Y : ℕ → obj} {f : ∀ k → X k ⇒ X (suc k)} {g : ∀ k → Y k ⇒ Y (suc k)} {a b : obj}
+                   {cX : NatTrans (chain {𝒞 = 𝒮} X f) (constF ω a)} {cY : NatTrans (chain {𝒞 = 𝒮} Y g) (constF ω b)} →
+                   IsColimit (chain {𝒞 = 𝒮} X f) a cX → IsColimit (chain {𝒞 = 𝒮} Y g) b cY →
+                   IsColimit (chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k))) (prod a b)
+                             (step-cocone (λ k → prod-m (cX .transf k) (cY .transf k))
+                                          (λ k → ≈-trans (prod-m-cong (cocone-step cX k) (cocone-step cY k))
+                                                         (prod-m-comp (cX .transf (suc k)) (cY .transf (suc k)) (f k) (g k))))
+  Setoid-×cocont cX cY = {!!}
