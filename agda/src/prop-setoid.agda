@@ -100,6 +100,9 @@ module _ {o e} where
       func-eq : ∀ {x₁ x₂} → x₁ X.≈ x₂ → f .func x₁ Y.≈ g .func x₂
   open _≃m_
 
+  mk-≃m : ∀ {X Y : Setoid o e} {f g : X ⇒ Y} → (∀ x → Y ._≈_ (f .func x) (g .func x)) → f ≃m g
+  mk-≃m {X} {Y} {f} {g} eq .func-eq x₁≈x₂ = Y .trans (f .func-resp-≈ x₁≈x₂) (eq _)
+
   ≃m-isEquivalence : ∀ {X Y : Setoid o e} → IsEquivalence (_≃m_ {X} {Y})
   ≃m-isEquivalence {X} {Y} .refl {f} .func-eq = f .func-resp-≈
   ≃m-isEquivalence {X} {Y} .sym {f} {g} f≈g .func-eq x₁≈x₂ =

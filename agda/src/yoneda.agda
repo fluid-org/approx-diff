@@ -1,16 +1,16 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Level using (suc; _⊔_; Level; lift; lower)
-open import Data.Product using (_,_)
-open import prop using (lift; lower; _,_)
+open import Data.Product using (_,_; Σ-syntax) renaming (_×_ to _×S_)
+open import prop using (lift; lower; _,_; LiftS; liftS)
 open import prop-setoid
   using (Setoid; IsEquivalence; module ≈-Reasoning; _∘S_; idS)
-  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_)
+  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; mk-≃m to mk-≈s)
 open import categories using (Category; HasProducts; IsProduct; HasExponentials)
 open import functor using ([_⇒_]; Functor; NatTrans; ≃-NatTrans;
   HasLimits';
   preserve-limits-of-shape; IsLimit; constF; constF-F; constFmor;
-  _∘F_; id; _∘H_; _∘_; ≃-isEquivalence)
+  _∘F_; id; _∘H_; _∘_; ≃-isEquivalence; Id)
 open import setoid-cat using (SetoidCat; Setoid-terminal; Setoid-products; Setoid-Limit'; Setoid-coproducts)
 
 -- extra 'os' level is to raise the level of the codomain if needed
@@ -288,3 +288,86 @@ preserve-limits 𝒮 D apex cone isLimit = lim
 -- FIXME: Yoneda embedding also preserves exponentials. Slick proof given here:
 --
 --   https://math.stackexchange.com/questions/3511252/show-that-the-yoneda-embedding-preserves-exponential-objects?rq=1
+
+------------------------------------------------------------------------------
+-- Lifting EndoFunctors
+
+module _ (M : Functor 𝒞 𝒞) where
+
+  private
+    cancel-M-left : ∀ {x y} {f : x 𝒞.⇒ M .fobj y} → M .fmor (𝒞.id y) 𝒞.∘ f 𝒞.≈ f
+    cancel-M-left = trans 𝒞.isEquiv (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left
+
+
+  M-hat-carrier : (F : PSh .Category.obj) → 𝒞.obj → Set ℓ
+  M-hat-carrier F x = Σ[ y ∈ _ ] (x 𝒞.⇒ M .fobj y ×S F .fobj y .Carrier)
+
+  data M-hat-eq {F} {x} : M-hat-carrier F x → M-hat-carrier F x → Set ℓ where
+    eq-f : ∀ {y f Fy y' g Fy'} →
+          (h : y 𝒞.⇒ y') →
+          M .fmor h 𝒞.∘ f 𝒞.≈ g →
+          F .fobj y ._≈_ (F .fmor h .func Fy') Fy →
+          M-hat-eq (y , f , Fy) (y' , g , Fy')
+    eq-sym : ∀ {a b} → M-hat-eq {F} a b → M-hat-eq b a
+    eq-trans : ∀ {a b c} → M-hat-eq {F} a b → M-hat-eq {F} b c → M-hat-eq a c
+
+  M-hat-setoid : (F : PSh .Category.obj) → 𝒞.obj → Setoid ℓ ℓ
+  M-hat-setoid F x .Carrier = M-hat-carrier F x
+  M-hat-setoid F x ._≈_ a b = LiftS ℓ (M-hat-eq {F} a b)
+  M-hat-setoid F x .isEquivalence .refl {y , f , Fy} =
+    liftS (eq-f (𝒞.id y) cancel-M-left (F .fmor-id .func-eq (F .fobj y .refl)))
+  M-hat-setoid F x .isEquivalence .sym (liftS eq) = liftS (eq-sym eq)
+  M-hat-setoid F x .isEquivalence .trans (liftS eq₁) (liftS eq₂) = liftS (eq-trans eq₁ eq₂)
+
+  M-hat-mor : ∀ (F : PSh .Category.obj) {x y} (f : x 𝒞.⇒ y) → M-hat-setoid F y ⇒s M-hat-setoid F x
+  M-hat-mor F f .func (z , g , Fz) = z , g 𝒞.∘ f , Fz
+  M-hat-mor F f .func-resp-≈ (liftS eq) = liftS (resp-≈ eq)
+    where resp-≈ : ∀ {z₁ g₁ Fz₁ z₂ g₂ Fz₂} → M-hat-eq {F} (z₁ , g₁ , Fz₁) (z₂ , g₂ , Fz₂) → M-hat-eq {F} (z₁ , g₁ 𝒞.∘ f , Fz₁) (z₂ , g₂ 𝒞.∘ f , Fz₂)
+          resp-≈ (eq-f h eq₁ eq₂) = eq-f h (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _)) (𝒞.∘-cong eq₁ 𝒞.≈-refl)) eq₂
+          resp-≈ (eq-sym eq) = eq-sym (resp-≈ eq)
+          resp-≈ (eq-trans eq eq₁) = eq-trans (resp-≈ eq) (resp-≈ eq₁)
+
+  M-hat-PSh : PSh .Category.obj → PSh .Category.obj
+  M-hat-PSh F .fobj = M-hat-setoid F
+  M-hat-PSh F .fmor = M-hat-mor F
+  M-hat-PSh F .fmor-cong {x} {y} f₁≈f₂ =
+    mk-≈s (λ (z , f , Fz) → liftS (eq-f (𝒞.id z) (𝒞.≈-trans cancel-M-left (𝒞.∘-cong 𝒞.≈-refl f₁≈f₂)) (F .fmor-id .func-eq (F .fobj z .refl))))
+  M-hat-PSh F .fmor-id = mk-≈s (λ (z , f , Fz) → liftS (eq-f (𝒞.id _) (trans 𝒞.isEquiv (𝒞.∘-cong (M .fmor-id) 𝒞.id-right) 𝒞.id-left) (F .fmor-id .func-eq (refl (isEquivalence (F .fobj z))))))
+  M-hat-PSh F .fmor-comp f g = mk-≈s (λ (z , h , Fz) → liftS (eq-f (𝒞.id z) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) (𝒞.≈-sym (𝒞.assoc _ _ _))) 𝒞.id-left) (F .fmor-id .func-eq (F .fobj z .refl))))
+
+  M-hat-nat : (F G : PSh .Category.obj) → NatTrans F G → NatTrans (M-hat-PSh F) (M-hat-PSh G)
+  M-hat-nat F G α .transf x .func (z , g , Fz) = z , g , α .transf z .func Fz
+  M-hat-nat F G α .transf x .func-resp-≈ (liftS eq) = liftS (resp-≈ eq)
+    where
+      resp-≈ : ∀ {z₁ g₁ Fz₁ z₂ g₂ Fz₂} → M-hat-eq {F} {x} (z₁ , g₁ , Fz₁) (z₂ , g₂ , Fz₂) → M-hat-eq {G} (z₁ , g₁ , α .transf _ .func Fz₁) (z₂ , g₂ , α .transf _ .func Fz₂)
+      resp-≈ (eq-f h x x₁) = eq-f h x (G .fobj _ .trans (α .natural h .func-eq (F .fobj _ .refl)) (α .transf _ .func-resp-≈ x₁))
+      resp-≈ (eq-sym x) = eq-sym (resp-≈ x)
+      resp-≈ (eq-trans x x₁) = eq-trans (resp-≈ x) (resp-≈ x₁)
+  M-hat-nat F G α .natural {x} {y} f =
+    mk-≈s (λ { (z , g , Fz) → liftS (eq-f (𝒞.id z) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left)
+                                                   (G .fmor-id .func-eq (G .fobj z .refl)))  })
+
+  M-hat : Functor PSh PSh
+  M-hat .fobj = M-hat-PSh
+  M-hat .fmor {F} {G} α = M-hat-nat F G α
+  M-hat .fmor-cong {F} {G} α₁≈α₂ .transf-eq x =
+    mk-≈s (λ { (z , g , Fz) → liftS (eq-f (𝒞.id _) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left)
+                                          (G .fmor-id .func-eq (G .fobj z .sym (α₁≈α₂ .transf-eq _ .func-eq (F .fobj z .refl))))) })
+  M-hat .fmor-id {F} .transf-eq x =
+    mk-≈s λ { (z , g , Fz) → liftS (eq-f (𝒞.id _) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left) (F .fmor-id .func-eq (F .fobj z .refl))) }
+  M-hat .fmor-comp {F} {G} {H} α β .transf-eq x =
+    mk-≈s λ { (z , g , Fz) → liftS (eq-f (𝒞.id _) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left) (H .fmor-id .func-eq (H .fobj z .refl))) }
+
+  -- Should also have that yoneda preserves the functor?
+
+
+  unit-hat : NatTrans Id M → NatTrans Id M-hat
+  unit-hat η .transf F .transf x .func Fx = x , η .transf x , Fx
+  unit-hat η .transf F .transf x .func-resp-≈ {Fx₁} {Fx₂} Fx₁≈Fx₂ =
+    liftS (eq-f (𝒞.id _) cancel-M-left (F .fmor-id .func-eq (F .fobj x .sym Fx₁≈Fx₂)))
+  unit-hat η .transf F .natural f .func-eq x₁≈x₂ =
+    liftS (eq-sym (eq-f f (η .natural f) (F .fmor f .func-resp-≈ x₁≈x₂)))
+  unit-hat η .natural {F}{G} α .transf-eq x .func-eq {x₁}{x₂} x₁≈x₂ =
+    liftS (eq-f (𝒞.id _) cancel-M-left (G .fmor-id .func-eq (α .transf x .func-resp-≈ (F .fobj x .sym x₁≈x₂))))
+
+  -- TODO: join and strength
