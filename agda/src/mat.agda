@@ -666,9 +666,9 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     align-core {a = _ ∷ _} {_ ∷ _} .proj₁ (h , t) = ⊥-∨ h (align-core .proj₁ t)
     align-core {a = _ ∷ _} {_ ∷ _} .proj₂ p       = ∨-≈⊥ₗ p , align-core .proj₂ (∨-≈⊥ᵣ p)
 
-    align-lattice : ∀ {n} {a b : Vec n} → DL._≤_ (fobj n) (a ∧ b) εᵥ ⇔ (⟪ a , b ⟫ ≈ ⊥)
-    align-lattice {a = a} {b} .proj₁ h = align-core {a = a} {b} .proj₁ (≈ᵥ-trans (≈ᵥ-sym +ᵥ-runit) h)
-    align-lattice {a = a} {b} .proj₂ q = ≈ᵥ-trans +ᵥ-runit (align-core {a = a} {b} .proj₂ q)
+    align : ∀ {n} {a b : Vec n} → DL._≤_ (fobj n) (a ∧ b) εᵥ ⇔ (⟪ a , b ⟫ ≈ ⊥)
+    align {a = a} {b} .proj₁ h = align-core {a = a} {b} .proj₁ (≈ᵥ-trans (≈ᵥ-sym +ᵥ-runit) h)
+    align {a = a} {b} .proj₂ q = ≈ᵥ-trans +ᵥ-runit (align-core {a = a} {b} .proj₂ q)
 
     ----------------------------------------------------------------------------
     -- The dot-product self-duality: fwd a = (b ↦ ⟪ a , b ⟫), so pairing reduces to ⟪_,_⟫.
@@ -690,6 +690,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
       trans (⟪⟫-resp-≈ {a = scale s a} ≈ᵥ-refl b≈b')
         (trans (⟪⟫-comm {a = scale s a} {b'})
           (trans (⟪⟫-·₂ {s = s} {a = b'} {a}) (∧-cong refl (⟪⟫-comm {a = b'} {a}))))
+
     dot-self-dual n .Iso.bwd = {!!}
     dot-self-dual n .Iso.fwd∘bwd≈id = {!!}
     dot-self-dual n .Iso.bwd∘fwd≈id = {!!}
