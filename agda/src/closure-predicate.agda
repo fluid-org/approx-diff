@@ -4,7 +4,8 @@ open import Level using (suc; _⊔_; 0ℓ)
 open import basics
   using (IsPreorder; IsTop; IsMeet; IsResidual; monoidOfMeet; module ≤-Reasoning; IsJoin; IsClosureOp; IsBigJoin)
 open import categories using (Category; HasProducts; HasExponentials)
-open import predicate-system using (PredicateSystem; ClosureOp)
+open import functor using (Functor)
+open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred)
 
 module closure-predicate
     {o m e}
@@ -200,3 +201,12 @@ system .PredicateSystem.⋀-lambda = S.⋀-lambda
 system .PredicateSystem.⋁ = ⋁
 system .PredicateSystem.⋁-isJoin = ⋁-isJoin
 system .PredicateSystem.[]-⋁ {X} {Y} {I} {P} = []-⋁ {X} {Y} {I} {P}
+
+module _ (F : Functor 𝒞 𝒞) (FP : FunctorPred _ _ S F) where
+
+  open FunctorPred
+
+  𝐂FP : FunctorPred _ _ system F
+  𝐂FP .FunctorPred.liftF P = embed (FP .liftF (P .pred))
+  𝐂FP .FunctorPred.liftF-⊑ P⊑Q = 𝐂-isClosure .mono (FP .liftF-⊑ P⊑Q)
+  𝐂FP .FunctorPred.liftF-[] f = S⊑-trans (𝐂-isClosure .mono (FP .liftF-[] f)) 𝐂-[]

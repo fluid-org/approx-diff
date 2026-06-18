@@ -1,15 +1,15 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import Level using (_⊔_; suc; 0ℓ)
-open import Data.Product using (_,_) renaming (_×_ to _××_)
-open import prop using (_,_; tt; ∃; _∧_; LiftS; liftS)
+open import Data.Product using (_,_; proj₁; proj₂) renaming (_×_ to _××_)
+open import prop using (_,_; tt; ∃; _∧_; LiftS; liftS; proj₁; proj₂)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; module ≤-Reasoning; monoidOfMeet; IsJoin; IsClosureOp; IsBigJoin)
 open import prop-setoid using (Setoid; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_)
 open import categories using (Category; HasProducts; HasTerminal; IsTerminal; HasCoproducts)
 open import setoid-cat using (SetoidCat; Setoid-products; Setoid-coproducts)
 open import functor using (Functor; [_⇒_]; NatTrans; ≃-NatTrans)
-open import predicate-system using (PredicateSystem; ClosureOp)
+open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred)
 import setoid-predicate
 
 module presheaf-predicate {o m e} os (𝒞 : Category o m e) where
@@ -259,6 +259,23 @@ system .PredicateSystem.⋁-isJoin = ⋁-isJoin
 system .PredicateSystem.[]-⋁ = []-⋁
 
 ------------------------------------------------------------------------------
+-- Endofunctors: for any endofunctor on 𝒞, there is a predicate
+-- lifting on the matching functor on PSh⟨𝒞⟩
+
+module _ (F : Functor 𝒞 𝒞) where
+
+  open FunctorPred
+
+  endofunctor : FunctorPred _ _ system (M-hat F)
+  endofunctor .liftF {X} P .pred a .pred z-g-Xz = ∃ (M-hat-carrier F X a) λ z-g-Xz' → LiftS ℓ (M-hat-eq F {X} z-g-Xz z-g-Xz') ∧ P .pred _ .pred (z-g-Xz' .proj₂ .proj₂)
+  endofunctor .liftF {X} P .pred a .pred-≃ {x₁} {x₂} (liftS eq) (x' , liftS ϕ , ψ) = x' , liftS (eq-trans (eq-sym eq) ϕ) , ψ
+  endofunctor .liftF {X} P .pred-mor f .*⊑* (z , g , Xz) (x' , ϕ , ψ) = M-hat-mor F X f .func x' , (M-hat-mor F X f .func-resp-≈ ϕ) , ψ
+  endofunctor .liftF-⊑ {X} {P} {Q} P⊑Q .*⊑* a .*⊑* (z , g , Xz) ((z' , g' , Xz') , ϕ , ψ) =
+    (z' , g' , Xz') , ϕ , P⊑Q .*⊑* z' .*⊑* Xz' ψ
+  endofunctor .liftF-[] {X} {Y} {P} α .*⊑* a .*⊑* x (x' , ϕ , ψ) =
+    M-hat-nat F X Y α .transf a .func x' , (M-hat-nat F X Y α .transf a .func-resp-≈ ϕ) , ψ
+
+------------------------------------------------------------------------------
 -- Coproduct closure. This monad is "sheafification" monad for
 -- Grothendieck logical relations a la Simpson and Fiore for the
 -- “extensive topology” on 𝒞.
@@ -446,3 +463,26 @@ module CoproductMonad (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP) whe
   closureOp .ClosureOp.𝐂-[] = 𝐂-[]
   closureOp .ClosureOp.𝐂-[]⁻¹ = 𝐂-[]⁻¹
   closureOp .ClosureOp.𝐂-strong = 𝐂-strong
+
+{-
+  -- Can't do this directly -- need an additional closure operator for
+  -- the monad that interleaves sum closure and functor lifting.
+
+  module _ (F : Functor 𝒞 𝒞) where
+
+    FP : FunctorPred _ _ system (M-hat F)
+    FP = endofunctor F
+
+    open FunctorPred
+
+    distrib : ∀ {X} {P : Predicate X} → FP .liftF (𝐂 P) ⊑ 𝐂 (FP .liftF P)
+    distrib {X} {P} .*⊑* c .*⊑* (z , g , Xz) ((z' , g' , Xz') , liftS ϕ , liftS ψ) = liftS (h ϕ ψ)
+      where
+        h : ∀ {z g Xz z' g' Xz'} → M-hat-eq F (z , g , Xz) (z' , g' , Xz') → Context X P z' Xz' → Context (M-hat F .fobj X) (FP .liftF P) c (z , g , Xz)
+        h eq (leaf x) = leaf (_ , liftS eq , x)
+        h {z}{g}{Xz}{z'}{g'}{Xz'} eq (node a b x y f ϕ₁ ϕ₂ x₁ x₂) =
+          node {!!} {!!} {!!} {!!}
+            {!!}
+            {!!} {!!}
+            {!!} {!!}
+-}

@@ -5,7 +5,7 @@ open import prop-setoid using (module ≈-Reasoning; IsEquivalence)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; module ≤-Reasoning; IsJoin; IsBigJoin)
 open import categories using (Category; HasProducts; HasExponentials; HasCoproducts; HasTerminal; IsTerminal)
 open import functor using (Functor; HasColimits; Colimit; IsColimit; _∘F_; NatTrans; ≃-NatTrans)
-open import predicate-system using (PredicateSystem)
+open import predicate-system using (PredicateSystem; FunctorPred)
 open import finite-product-functor using (preserve-chosen-products; module preserve-chosen-products-consequences)
 
 -- FIXME: refactor this into
@@ -371,3 +371,36 @@ module colimits (𝒮 : Category 0ℓ 0ℓ 0ℓ) (𝒞-colimits : HasColimits �
       f .morph
     ∎
     where open ≈-Reasoning 𝒞.isEquiv
+
+-- If we have an endofunctor with a lifting, then we can transfer it to the glued category
+module endofunctor
+         (𝒞M : Functor 𝒞 𝒞)
+         (𝒟M : Functor 𝒟 𝒟)
+         (α  : NatTrans (F ∘F 𝒞M) (𝒟M ∘F F))
+         (MP : FunctorPred 𝒟 𝒟P 𝒟-predicates 𝒟M)
+  where
+
+  open NatTrans
+  open FunctorPred
+
+  MM : Functor cat cat
+  MM .fobj X .carrier = 𝒞M .fobj (X .carrier)
+  MM .fobj X .pred = MP .liftF (X .pred) [ α .transf _ ]
+  MM .fmor f .morph = 𝒞M .fmor (f .morph)
+  MM .fmor {X} {Y} f .presv = begin
+      MP .liftF (X .pred) [ α .transf (X .carrier) ]
+    ≤⟨ MP .liftF-⊑ (f .presv) [ _ ]m ⟩
+      MP .liftF (Y .pred [ F .fmor (f .morph) ]) [ α .transf (X .carrier) ]
+    ≤⟨ (MP .liftF-[] (F .fmor (f .morph))) [ _ ]m ⟩
+      MP .liftF (Y .pred) [ 𝒟M .fmor (F .fmor (f .morph)) ] [ α .transf (X .carrier) ]
+    ≤⟨ []-comp _ _ ⟩
+      MP .liftF (Y .pred) [ 𝒟M .fmor (F .fmor (f .morph)) 𝒟.∘ α .transf (X .carrier) ]
+    ≤⟨ []-cong (α .natural (f .morph)) ⟩
+      MP .liftF (Y .pred) [ α .transf (Y .carrier) 𝒟.∘ F .fmor (𝒞M .fmor (f .morph)) ]
+    ≤⟨ []-comp⁻¹ _ _ ⟩
+      MP .liftF (Y .pred) [ α .transf (Y .carrier) ] [ F .fmor (𝒞M .fmor (f .morph)) ]
+    ∎
+    where open ≤-Reasoning ⊑-isPreorder
+  MM .fmor-cong f₁≈f₂ .f≃f = 𝒞M .fmor-cong (f₁≈f₂ .f≃f)
+  MM .fmor-id = record { f≃f = 𝒞M .fmor-id }
+  MM .fmor-comp = λ f g → record { f≃f = 𝒞M .fmor-comp (f .morph) (g .morph) }
