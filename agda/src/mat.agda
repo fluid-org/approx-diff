@@ -461,7 +461,7 @@ module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   combine-fwd : ∀ m {n} {v : FD.Vec (m +ℕ n)} →
                 ((FD.vtake m v FD.+ᵥ FD.εᵥ) ++ (FD.εᵥ FD.+ᵥ FD.vdrop m v)) FD.≈ᵥ v
   combine-fwd zero                    = FD.+ᵥ-lunit
-  combine-fwd (suc m) {n} {v = x ∷ v} = FD.S.trans FD.S.+-comm FD.S.+-lunit , combine-fwd m {n}
+  combine-fwd (suc m) {n} {v = x ∷ v} = S.trans S.+-comm S.+-lunit , combine-fwd m {n}
 
   F-preserve-products : FPF.preserve-chosen-products FD.products
                           (biproducts→products SM.cmon-enriched SM.biproduct)
