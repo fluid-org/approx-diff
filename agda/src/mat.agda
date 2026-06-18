@@ -494,7 +494,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     (∧-idem    : ∀ {x} → S._≈_ (S._·_ x x) x)
     (⊤-add-top : ∀ {x} → S._≈_ (S._+_ S.ι x) S.ι)
     where
-    open DistributiveLattice ∧-idem ⊤-add-top
+    open DistributiveLattice ⊤-add-top
 
     ----------------------------------------------------------------------------
     -- S as a distributive lattice: the meet · is the lattice meet of the join order.

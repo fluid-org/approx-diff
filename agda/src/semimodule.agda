@@ -512,11 +512,10 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
 
 ------------------------------------------------------------------------------
--- Now suppose S is a (bounded) distributive lattice (join +, meet ·): meet-idempotence and top-absorption
--- suffice; join-idempotence is derivable.
+-- Now suppose S is a (bounded) distributive lattice (join +, meet ·).  Top-absorption makes join idempotent,
+-- so each S-semimodule is a join-semilattice.
 
 module DistributiveLattice
-  (∧-idem    : ∀ {x} → (x S.· x) S.≈ x)
   (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
   where
 
