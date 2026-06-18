@@ -517,7 +517,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open import meet-semilattice using (MeetSemilattice)
   import semimodule
 
-  open Mat S using ([]; _∷_; Vec; εᵥ; _+ᵥ_; _≈ᵥ_; ≈ᵥ-trans; ≈ᵥ-sym; +ᵥ-runit)
+  open Mat S using ([]; _∷_; Vec; εᵥ; _+ᵥ_; _≈ᵥ_; ≈ᵥ-trans; ≈ᵥ-sym; +ᵥ-runit; scale)
   open semimodule S using (module S; 𝕀; module DistributiveLattice)
   open Embedding S using (fobj; fobj-self-dual)
 
@@ -531,10 +531,11 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     -- S as a distributive lattice: the meet · is the lattice meet of the join order.
     private
       module Scalar where
-        open CommutativeSemiring S using (_≈_; refl; sym; trans)
+        open CommutativeSemiring S using (_≈_; refl; sym; trans; ε-annihilᵣ)
           renaming ( _·_ to _∧_ ; _+_ to _∨_ ; ε to ⊥ ; ι to ⊤
-                   ; ·-cong to ∧-cong ; ·-comm to ∧-comm ; ·-lunit to ∧-lunit
+                   ; ·-cong to ∧-cong ; ·-comm to ∧-comm ; ·-assoc to ∧-assoc ; ·-lunit to ∧-lunit
                    ; +-cong to ∨-cong ; +-comm to ∨-comm ; +-assoc to ∨-assoc ; +-lunit to ∨-lunit
+                   ; +-interchange to ∨-interchange
                    ; ·-+-distribₗ to ∧-∨-distribₗ ; ·-+-distribᵣ to ∧-∨-distribᵣ ) public
         open IsPreorder (DL.≤-isPreorder 𝕀) using () renaming (refl to ≤-refl; trans to ≤-trans)
 
@@ -585,7 +586,30 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
         ⟪ []    , []    ⟫ = ⊥
         ⟪ x ∷ u , y ∷ v ⟫ = (x ∧ y) ∨ ⟪ u , v ⟫
 
-    open Scalar using (⟪_,_⟫; _≈_; ⊥; refl; ∨-≈⊥ₗ; ∨-≈⊥ᵣ; ⊥-∨)
+        -- The dot product is a symmetric bilinear form.
+        ⟪⟫-comm : ∀ {n} {a b : Vec n} → ⟪ a , b ⟫ ≈ ⟪ b , a ⟫
+        ⟪⟫-comm {a = []}    {[]}    = refl
+        ⟪⟫-comm {a = _ ∷ u} {_ ∷ v} = ∨-cong ∧-comm (⟪⟫-comm {a = u} {v})
+
+        ⟪⟫-resp-≈ : ∀ {n} {a a' b b' : Vec n} → a ≈ᵥ a' → b ≈ᵥ b' → ⟪ a , b ⟫ ≈ ⟪ a' , b' ⟫
+        ⟪⟫-resp-≈ {a = []}    {[]}    {[]}    {[]}    _        _        = refl
+        ⟪⟫-resp-≈ {a = _ ∷ _} {_ ∷ _} {_ ∷ _} {_ ∷ _} (p , ps) (q , qs) = ∨-cong (∧-cong p q) (⟪⟫-resp-≈ ps qs)
+
+        ⟪⟫-ε₂ : ∀ {n} {a : Vec n} → ⟪ a , εᵥ ⟫ ≈ ⊥
+        ⟪⟫-ε₂ {a = []}    = refl
+        ⟪⟫-ε₂ {a = _ ∷ u} = ⊥-∨ ε-annihilᵣ (⟪⟫-ε₂ {a = u})
+
+        ⟪⟫-+₂ : ∀ {n} {a b b' : Vec n} → ⟪ a , b +ᵥ b' ⟫ ≈ (⟪ a , b ⟫ ∨ ⟪ a , b' ⟫)
+        ⟪⟫-+₂ {a = []}    {[]}    {[]}    = sym ∨-lunit
+        ⟪⟫-+₂ {a = _ ∷ u} {b = _ ∷ v} {b' = _ ∷ v'} =
+          trans (∨-cong ∧-∨-distribₗ (⟪⟫-+₂ {a = u} {v} {v'})) ∨-interchange
+
+        ⟪⟫-·₂ : ∀ {n} {s} {a b : Vec n} → ⟪ a , scale s b ⟫ ≈ (s ∧ ⟪ a , b ⟫)
+        ⟪⟫-·₂ {a = []}    {b = []}    = sym ε-annihilᵣ
+        ⟪⟫-·₂ {a = _ ∷ u} {b = _ ∷ v} =
+          trans (∨-cong (trans (∧-cong refl ∧-comm) (trans (sym ∧-assoc) ∧-comm)) (⟪⟫-·₂ {a = u} {v})) (sym ∧-∨-distribₗ)
+
+    open Scalar using (⟪_,_⟫; _≈_; ⊥; refl; ∨-≈⊥ₗ; ∨-≈⊥ᵣ; ⊥-∨; ⟪⟫-comm; ⟪⟫-resp-≈; ⟪⟫-ε₂; ⟪⟫-+₂; ⟪⟫-·₂)
 
     ----------------------------------------------------------------------------
     -- Pointwise lift of the meet to fobj n.
