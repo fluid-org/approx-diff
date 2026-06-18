@@ -475,7 +475,7 @@ module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 ------------------------------------------------------------------------------
 -- For S a (bounded) distributive lattice (join +, meet ·), each free object
 -- fobj n is a self-dual distributive lattice, so the conjugate embedding
--- (semimodule.DistributiveLattice.to-conj) applies.
+-- (semimodule.JoinSemilattices.to-conj) applies.
 module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open import Data.Nat using (ℕ; zero; suc)
   open import basics using (IsPreorder; IsMeet; IsTop)
@@ -483,7 +483,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   import semimodule
 
   open Mat S using ([]; _∷_; Vec; ε; _+_; _≈_; ≈-refl; ≈-trans; ≈-sym; +-runit; +-lunit; +-cong; scale-ε; scale)
-  open semimodule S using (module S; 𝕀; module DistributiveLattice; _⇒_; _≈m_; _∘_; Dual; cat)
+  open semimodule S using (module S; 𝕀; module JoinSemilattices; _⇒_; _≈m_; _∘_; Dual; cat)
   open _⇒_
   open _≈m_
   open Embedding S using (fobj)
@@ -494,7 +494,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     (∧-idem    : ∀ {x} → S._≈_ (S._·_ x x) x)
     (⊤-add-top : ∀ {x} → S._≈_ (S._+_ S.ι x) S.ι)
     where
-    open DistributiveLattice ⊤-add-top
+    open JoinSemilattices ⊤-add-top
 
     ----------------------------------------------------------------------------
     -- S as a distributive lattice: the meet · is the lattice meet of the join order.
@@ -714,7 +714,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
       trans (eval-weights φ b) (φ≈φ' .*≈* ._≈s_.func-eq b≈b')
     self-dual n .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {a} a≈a' = ≈-trans (weights-fwd a) a≈a'
 
-    -- Each S-vector is a self-dual distributive lattice, so the LatConj embedding DistributiveLattice.to-conj
+    -- Each S-vector is a self-dual distributive lattice, so the LatConj embedding JoinSemilattices.to-conj
     -- applies to S-matrices.
     freeSDL : ℕ → SelfDualLattice
     freeSDL n .SelfDualLattice.M           = fobj n
