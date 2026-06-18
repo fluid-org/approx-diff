@@ -517,9 +517,13 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open import meet-semilattice using (MeetSemilattice)
   import semimodule
 
-  open Mat S using ([]; _∷_; Vec; εᵥ; _+ᵥ_; _≈ᵥ_; ≈ᵥ-trans; ≈ᵥ-sym; +ᵥ-runit; scale)
-  open semimodule S using (module S; 𝕀; module DistributiveLattice)
+  open Mat S using ([]; _∷_; Vec; εᵥ; _+ᵥ_; _≈ᵥ_; ≈ᵥ-refl; ≈ᵥ-trans; ≈ᵥ-sym; +ᵥ-runit; scale)
+  open semimodule S using (module S; 𝕀; module DistributiveLattice; _⇒_; _≈m_; Dual; cat)
+  open _⇒_
+  open _≈m_
   open Embedding S using (fobj; fobj-self-dual)
+  open import prop-setoid using () renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_)
+  open Category cat using (Iso)
 
   module DistribLattice
     (∧-idem    : ∀ {x} → S._≈_ (S._·_ x x) x)
@@ -609,7 +613,8 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
         ⟪⟫-·₂ {a = _ ∷ u} {b = _ ∷ v} =
           trans (∨-cong (trans (∧-cong refl ∧-comm) (trans (sym ∧-assoc) ∧-comm)) (⟪⟫-·₂ {a = u} {v})) (sym ∧-∨-distribₗ)
 
-    open Scalar using (⟪_,_⟫; _≈_; ⊥; refl; ∨-≈⊥ₗ; ∨-≈⊥ᵣ; ⊥-∨; ⟪⟫-comm; ⟪⟫-resp-≈; ⟪⟫-ε₂; ⟪⟫-+₂; ⟪⟫-·₂)
+    open Scalar using (⟪_,_⟫; _≈_; ⊥; refl; sym; trans; ∨-cong; ∧-cong; ∨-≈⊥ₗ; ∨-≈⊥ᵣ; ⊥-∨
+                      ; ⟪⟫-comm; ⟪⟫-resp-≈; ⟪⟫-ε₂; ⟪⟫-+₂; ⟪⟫-·₂)
 
     ----------------------------------------------------------------------------
     -- Pointwise lift of the meet to fobj n.
@@ -664,3 +669,27 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     align-lattice : ∀ {n} {a b : Vec n} → DL._≤_ (fobj n) (a ∧ b) εᵥ ⇔ (⟪ a , b ⟫ ≈ ⊥)
     align-lattice {a = a} {b} .proj₁ h = align-core {a = a} {b} .proj₁ (≈ᵥ-trans (≈ᵥ-sym +ᵥ-runit) h)
     align-lattice {a = a} {b} .proj₂ q = ≈ᵥ-trans +ᵥ-runit (align-core {a = a} {b} .proj₂ q)
+
+    ----------------------------------------------------------------------------
+    -- The dot-product self-duality: fwd a = (b ↦ ⟪ a , b ⟫), so pairing reduces to ⟪_,_⟫.
+
+    dot-self-dual : ∀ n → Iso (fobj n) (Dual (fobj n))
+    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func b = ⟪ a , b ⟫
+    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func-resp-≈ b≈b' = ⟪⟫-resp-≈ {a = a} ≈ᵥ-refl b≈b'
+    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-ze = ⟪⟫-ε₂ {a = a}
+    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-+ = ⟪⟫-+₂ {a = a}
+    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-· = ⟪⟫-·₂ {a = a}
+    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func-resp-≈ a≈a' .*≈* ._≈s_.func-eq b≈b' = ⟪⟫-resp-≈ a≈a' b≈b'
+    dot-self-dual n .Iso.fwd .preserve-ze .*≈* ._≈s_.func-eq {b} _ =
+      trans (⟪⟫-comm {a = εᵥ} {b}) (⟪⟫-ε₂ {a = b})
+    dot-self-dual n .Iso.fwd .preserve-+ {a₁} {a₂} .*≈* ._≈s_.func-eq {b} {b'} b≈b' =
+      trans (⟪⟫-resp-≈ {a = a₁ +ᵥ a₂} ≈ᵥ-refl b≈b')
+        (trans (⟪⟫-comm {a = a₁ +ᵥ a₂} {b'})
+          (trans (⟪⟫-+₂ {a = b'} {a₁} {a₂}) (∨-cong (⟪⟫-comm {a = b'} {a₁}) (⟪⟫-comm {a = b'} {a₂}))))
+    dot-self-dual n .Iso.fwd .preserve-· {s} {a} .*≈* ._≈s_.func-eq {b} {b'} b≈b' =
+      trans (⟪⟫-resp-≈ {a = scale s a} ≈ᵥ-refl b≈b')
+        (trans (⟪⟫-comm {a = scale s a} {b'})
+          (trans (⟪⟫-·₂ {s = s} {a = b'} {a}) (∧-cong refl (⟪⟫-comm {a = b'} {a}))))
+    dot-self-dual n .Iso.bwd = {!!}
+    dot-self-dual n .Iso.fwd∘bwd≈id = {!!}
+    dot-self-dual n .Iso.bwd∘fwd≈id = {!!}
