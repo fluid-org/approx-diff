@@ -5,11 +5,11 @@
 -- against it builds μ-types of polynomial functors on setoids (the index μ-types of the Fam construction).
 
 open import Level using (_⊔_)
-open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl) renaming (_⊔_ to _⊔ℕ_)
-open import Data.Nat.Properties using (m≤m⊔n; m≤n⊔m; ≤⇒≤′; ≤′⇒≤; ⊔-monoˡ-≤)
+open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl; ≤′-step) renaming (_⊔_ to _⊔ℕ_)
+open import Data.Nat.Properties using (m≤m⊔n; m≤n⊔m; ≤⇒≤′; ≤′⇒≤; ⊔-monoˡ-≤; ⊔-monoʳ-≤)
 open import Data.Product using (_,_; Σ)
 open import Data.Sum using (inj₁; inj₂)
-open import prop using (_,_; ∃; liftS)
+open import prop using (_,_; ∃; liftS; tt; proj₁; proj₂)
 open import categories
   using (Category; HasInitial; IsInitial; HasProducts; HasStrongCoproducts)
 open import functor
@@ -108,11 +108,15 @@ module _ o e where
            {cX : NatTrans (chain {𝒞 = 𝒮} X f) (constF ω a)} {cY : NatTrans (chain {𝒞 = 𝒮} Y g) (constF ω b)}
            (isX : IsColimit (chain {𝒞 = 𝒮} X f) a cX) (isY : IsColimit (chain {𝒞 = 𝒮} Y g) b cY) where
     private
-      CXY : Colimit (chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k)))
-      CXY = ωcolimits (chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k)))
+      Xc  = chain {𝒞 = 𝒮} X f
+      Yc  = chain {𝒞 = 𝒮} Y g
+      PXY = chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k))
 
-      canonX = ωcolimits (chain {𝒞 = 𝒮} X f)
-      canonY = ωcolimits (chain {𝒞 = 𝒮} Y g)
+      CXY : Colimit PXY
+      CXY = ωcolimits PXY
+
+      canonX = ωcolimits Xc
+      canonY = ωcolimits Yc
 
       ιX : a ⇒s canonX .Colimit.apex
       ιX = isX .IsColimit.colambda (canonX .Colimit.apex) (canonX .Colimit.cocone)
@@ -120,15 +124,62 @@ module _ o e where
       ιY : b ⇒s canonY .Colimit.apex
       ιY = isY .IsColimit.colambda (canonY .Colimit.apex) (canonY .Colimit.cocone)
 
+      -- Two walks with the same endpoints agree; `varying` additionally absorbs a single-step shift of
+      -- the source through the chain.
+      module walks (D : Functor ω 𝒮) where
+        private
+          module D = Functor D
+
+        fixed : ∀ {k M N} (low : k ≤′ M) (mid : M ≤′ N) (hi : k ≤′ N) (a : D.fobj k .Carrier) →
+                D.fobj N ._≈_ (D.fmor mid .func (D.fmor low .func a)) (D.fmor hi .func a)
+        fixed low mid hi a =
+          D.fobj _ .isEquivalence .trans
+            (D.fobj _ .isEquivalence .sym (D.fmor-comp mid low .func-eq (D.fobj _ .isEquivalence .refl)))
+            (D.fmor-cong tt .func-eq (D.fobj _ .isEquivalence .refl))
+
+        varying : ∀ {k k' M N} (p : k ≤′ k') (low : k ≤′ M) (mid : M ≤′ N) (hi : k' ≤′ N)
+                  {a : D.fobj k .Carrier} {a' : D.fobj k' .Carrier} →
+                  D.fobj k' ._≈_ (D.fmor p .func a) a' →
+                  D.fobj N ._≈_ (D.fmor mid .func (D.fmor low .func a)) (D.fmor hi .func a')
+        varying p low mid hi wa =
+          D.fobj _ .isEquivalence .trans
+            (D.fobj _ .isEquivalence .sym (D.fmor-comp mid low .func-eq (D.fobj _ .isEquivalence .refl)))
+          (D.fobj _ .isEquivalence .trans
+            (D.fmor-cong tt .func-eq (D.fobj _ .isEquivalence .refl))
+          (D.fobj _ .isEquivalence .trans
+            (D.fmor-comp hi p .func-eq (D.fobj _ .isEquivalence .refl))
+            (D.fmor hi .func-resp-≈ wa)))
+
+      module wX = walks Xc
+      module wY = walks Yc
+
+      -- The product chain's transport is the pairing of the component transports.
+      prod-walk : ∀ {m n} (qw : m ≤′ n) (a : X m .Carrier) (b : Y m .Carrier) →
+                  prod (X n) (Y n) ._≈_ (PXY .Functor.fmor qw .func (a , b))
+                                         (Xc .Functor.fmor qw .func a , Yc .Functor.fmor qw .func b)
+      prod-walk ≤′-refl      a b = prod (X _) (Y _) .isEquivalence .refl
+      prod-walk (≤′-step qw) a b .proj₁ = f _ .func-resp-≈ (prod-walk qw a b .proj₁)
+      prod-walk (≤′-step qw) a b .proj₂ = g _ .func-resp-≈ (prod-walk qw a b .proj₂)
+
       κ-fwd : prod (canonX .Colimit.apex) (canonY .Colimit.apex) ⇒s CXY .Colimit.apex
       κ-fwd .func ((k , x) , (j , y)) =
-        _ , (chain {𝒞 = 𝒮} X f .Functor.fmor (≤⇒≤′ (m≤m⊔n k j)) .func x
-            , chain {𝒞 = 𝒮} Y g .Functor.fmor (≤⇒≤′ (m≤n⊔m k j)) .func y)
+        _ , (Xc .Functor.fmor (≤⇒≤′ (m≤m⊔n k j)) .func x , Yc .Functor.fmor (≤⇒≤′ (m≤n⊔m k j)) .func y)
       κ-fwd .func-resp-≈ {u₁ , (uj , uy)} {(vk , vx) , v₂} (liftS px , liftS qy) =
         CXY .Colimit.apex .isEquivalence .trans
           (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func (w , (uj , uy)))
-            (λ { {k , x} {k' , x'} (p , wx) → EquivOf-intro (≤⇒≤′ (⊔-monoˡ-≤ uj (≤′⇒≤ p)) , {!!}) }) px)
-          (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func ((vk , vx) , w)) (λ r → {!!}) qy)
+            (λ { {k , x} {k' , x'} (p , wx) →
+              EquivOf-intro
+                ( ≤⇒≤′ (⊔-monoˡ-≤ uj (≤′⇒≤ p))
+                , prod (X _) (Y _) .isEquivalence .trans (prod-walk (≤⇒≤′ (⊔-monoˡ-≤ uj (≤′⇒≤ p))) _ _)
+                    ( wX.varying p (≤⇒≤′ (m≤m⊔n k uj)) (≤⇒≤′ (⊔-monoˡ-≤ uj (≤′⇒≤ p))) (≤⇒≤′ (m≤m⊔n k' uj)) wx
+                    , wY.fixed (≤⇒≤′ (m≤n⊔m k uj)) (≤⇒≤′ (⊔-monoˡ-≤ uj (≤′⇒≤ p))) (≤⇒≤′ (m≤n⊔m k' uj)) uy )) }) px)
+          (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func ((vk , vx) , w))
+            (λ { {j , y} {j' , y'} (p' , wy) →
+              EquivOf-intro
+                ( ≤⇒≤′ (⊔-monoʳ-≤ vk (≤′⇒≤ p'))
+                , prod (X _) (Y _) .isEquivalence .trans (prod-walk (≤⇒≤′ (⊔-monoʳ-≤ vk (≤′⇒≤ p'))) _ _)
+                    ( wX.fixed (≤⇒≤′ (m≤m⊔n vk j)) (≤⇒≤′ (⊔-monoʳ-≤ vk (≤′⇒≤ p'))) (≤⇒≤′ (m≤m⊔n vk j')) vx
+                    , wY.varying p' (≤⇒≤′ (m≤n⊔m vk j)) (≤⇒≤′ (⊔-monoʳ-≤ vk (≤′⇒≤ p'))) (≤⇒≤′ (m≤n⊔m vk j')) wy )) }) qy)
 
       forward : prod a b ⇒s CXY .Colimit.apex
       forward = κ-fwd ∘ prod-m ιX ιY
