@@ -370,8 +370,7 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   products = biproducts→products cmon biproduct
 
 ------------------------------------------------------------------------------
--- Embedding of free S-semimodules into all S-semimodules, with terminal/product preservation and
--- self-duality of the free objects.
+-- Embedding of free S-semimodules into all S-semimodules, with terminal/product preservation.
 
 module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open import Data.Nat using (ℕ; zero; suc)
@@ -391,7 +390,7 @@ module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open SM
   open SM._⇒_
   open SM._≈m_
-  open Category SM.cat using (IsIso; Iso; Iso-trans; Iso-sym; IsIso→Iso)
+  open Category SM.cat using (IsIso)
 
   ----------------------------------------------------------------------------
   -- Object part: Sⁿ as a semimodule, with Vec n's (Data.Vec) structure.
@@ -473,40 +472,6 @@ module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   F-preserve-products {m} {n} .IsIso.inverse∘f≈id .*≈* ._≈s_.func-eq {v} v≈ =
     FD.≈ᵥ-trans (combine-fwd m {n} {v}) v≈
 
-  ----------------------------------------------------------------------------
-  -- Self-duality of the free S-semimodules.
-
-  1≅𝕀 : Iso (fobj 1) 𝕀
-  1≅𝕀 .Iso.fwd .*→* ._⇒s_.func (x ∷ []) = x
-  1≅𝕀 .Iso.fwd .*→* ._⇒s_.func-resp-≈ {x ∷ []} {y ∷ []} (p , _) = p
-  1≅𝕀 .Iso.fwd .preserve-ze = FD.refl
-  1≅𝕀 .Iso.fwd .preserve-+ {x ∷ []} {y ∷ []} = FD.refl
-  1≅𝕀 .Iso.fwd .preserve-· {a} {x ∷ []} = FD.refl
-  1≅𝕀 .Iso.bwd .*→* ._⇒s_.func x = x ∷ []
-  1≅𝕀 .Iso.bwd .*→* ._⇒s_.func-resp-≈ x≈y = x≈y , tt
-  1≅𝕀 .Iso.bwd .preserve-ze = FD.refl , tt
-  1≅𝕀 .Iso.bwd .preserve-+ = FD.refl , tt
-  1≅𝕀 .Iso.bwd .preserve-· = FD.refl , tt
-  1≅𝕀 .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq x≈x' = x≈x'
-  1≅𝕀 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {x ∷ []} {y ∷ []} h = h
-
-  fobj-self-dual : ∀ n → Iso (fobj n) (Dual (fobj n))
-  fobj-self-dual zero =
-    Iso-trans (IsIso→Iso F-preserve-terminal)
-              (Iso-trans (Iso-sym Dual-𝟘) (Dual-iso (IsIso→Iso F-preserve-terminal)))
-  fobj-self-dual (suc n) =
-    Iso-trans (IsIso→Iso (F-preserve-products {1} {n}))
-              (Iso-trans (⊕-iso (Iso-trans 1≅𝕀 (Iso-trans 𝕀≅𝕀* (Dual-iso 1≅𝕀))) (fobj-self-dual n))
-                         (Iso-trans (Iso-sym Dual-⊕-iso) (Dual-iso (IsIso→Iso (F-preserve-products {1} {n})))))
-
-  ----------------------------------------------------------------------------
-  -- Conjugate of a free-object morphism: the generic conjugate instantiated at
-  -- the free-object self-dualities.  conj-pairing then gives the conjugate
-  -- relation ⟨ conj-free f y , x ⟩ ≈ ⟨ y , f x ⟩.
-
-  conj-free : ∀ {m n} → (fobj m ⇒ fobj n) → (fobj n ⇒ fobj m)
-  conj-free {m} {n} = conj (fobj-self-dual m) (fobj-self-dual n)
-
 ------------------------------------------------------------------------------
 -- For S a (bounded) distributive lattice (join +, meet ·), each free object
 -- fobj n is a self-dual distributive lattice, so the conjugate embedding
@@ -517,11 +482,11 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open import meet-semilattice using (MeetSemilattice)
   import semimodule
 
-  open Mat S using ([]; _∷_; Vec; εᵥ; _+ᵥ_; _≈ᵥ_; ≈ᵥ-refl; ≈ᵥ-trans; ≈ᵥ-sym; +ᵥ-runit; scale)
-  open semimodule S using (module S; 𝕀; module DistributiveLattice; _⇒_; _≈m_; Dual; cat)
+  open Mat S using ([]; _∷_; Vec; εᵥ; _+ᵥ_; _≈ᵥ_; ≈ᵥ-refl; ≈ᵥ-trans; ≈ᵥ-sym; +ᵥ-runit; +ᵥ-lunit; +ᵥ-cong; scale-εᵥ; scale)
+  open semimodule S using (module S; 𝕀; module DistributiveLattice; _⇒_; _≈m_; _∘_; Dual; cat)
   open _⇒_
   open _≈m_
-  open Embedding S using (fobj; fobj-self-dual)
+  open Embedding S using (fobj)
   open import prop-setoid using () renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_)
   open Category cat using (Iso)
 
@@ -614,6 +579,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
           trans (∨-cong (trans (∧-cong refl ∧-comm) (trans (sym ∧-assoc) ∧-comm)) (⟪⟫-·₂ {a = u} {v})) (sym ∧-∨-distribₗ)
 
     open Scalar using (⟪_,_⟫; _≈_; ⊥; refl; sym; trans; ∨-cong; ∧-cong; ∨-≈⊥ₗ; ∨-≈⊥ᵣ; ⊥-∨
+                      ; ∧-comm; ∧-lunit; ∨-lunit; ∨-runit; ε-annihilᵣ
                       ; ⟪⟫-comm; ⟪⟫-resp-≈; ⟪⟫-ε₂; ⟪⟫-+₂; ⟪⟫-·₂)
 
     ----------------------------------------------------------------------------
@@ -660,7 +626,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     ----------------------------------------------------------------------------
     -- Disjointness aligns with the dot product: x # y iff ⟪ x , y ⟫ ≈ ⊥.
 
-    align-core : ∀ {n} {a b : Vec n} → _≈ᵥ_ (a ∧ b) εᵥ ⇔ (⟪ a , b ⟫ ≈ ⊥)
+    align-core : ∀ {n} {a b : Vec n} → ((a ∧ b) ≈ᵥ εᵥ) ⇔ (⟪ a , b ⟫ ≈ ⊥)
     align-core {a = []}    {[]}    .proj₁ _       = refl
     align-core {a = []}    {[]}    .proj₂ _       = tt
     align-core {a = _ ∷ _} {_ ∷ _} .proj₁ (h , t) = ⊥-∨ h (align-core .proj₁ t)
@@ -670,27 +636,91 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     align {a = a} {b} .proj₁ h = align-core {a = a} {b} .proj₁ (≈ᵥ-trans (≈ᵥ-sym +ᵥ-runit) h)
     align {a = a} {b} .proj₂ q = ≈ᵥ-trans +ᵥ-runit (align-core {a = a} {b} .proj₂ q)
 
-    ----------------------------------------------------------------------------
-    -- The dot-product self-duality: fwd a = (b ↦ ⟪ a , b ⟫), so pairing reduces to ⟪_,_⟫.
+    -- Reconstruct a vector from a functional (linear map to a scalar): weights f = (f e₀ , f e₁ , …).
+    weights : ∀ {n} → (Vec n → S.Carrier) → Vec n
+    weights {zero}  f = []
+    weights {suc n} f = f (S.ι ∷ εᵥ) ∷ weights (λ w → f (S.ε ∷ w))
 
-    dot-self-dual : ∀ n → Iso (fobj n) (Dual (fobj n))
-    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func b = ⟪ a , b ⟫
-    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func-resp-≈ b≈b' = ⟪⟫-resp-≈ {a = a} ≈ᵥ-refl b≈b'
-    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-ze = ⟪⟫-ε₂ {a = a}
-    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-+ = ⟪⟫-+₂ {a = a}
-    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-· = ⟪⟫-·₂ {a = a}
-    dot-self-dual n .Iso.fwd .*→* ._⇒s_.func-resp-≈ a≈a' .*≈* ._≈s_.func-eq b≈b' = ⟪⟫-resp-≈ a≈a' b≈b'
-    dot-self-dual n .Iso.fwd .preserve-ze .*≈* ._≈s_.func-eq {b} _ =
+    weights-resp : ∀ {n} {f g : Vec n → S.Carrier} → (∀ w → f w ≈ g w) → weights f ≈ᵥ weights g
+    weights-resp {zero}  f≈g = tt
+    weights-resp {suc n} f≈g = f≈g (S.ι ∷ εᵥ) , weights-resp (λ w → f≈g (S.ε ∷ w))
+
+    weights-ε : ∀ {n} → weights {n} (λ _ → S.ε) ≈ᵥ εᵥ
+    weights-ε {zero}  = tt
+    weights-ε {suc n} = refl , weights-ε
+
+    weights-+ : ∀ {n} {f g : Vec n → S.Carrier} → weights (λ w → f w S.+ g w) ≈ᵥ (weights f +ᵥ weights g)
+    weights-+ {zero}  = tt
+    weights-+ {suc n} {f} {g} = refl , weights-+ {f = λ w → f (S.ε ∷ w)} {g = λ w → g (S.ε ∷ w)}
+
+    weights-· : ∀ {n} {s} {f : Vec n → S.Carrier} → weights (λ w → s S.· f w) ≈ᵥ scale s (weights f)
+    weights-· {zero}  = tt
+    weights-· {suc n} {s} {f} = refl , weights-· {f = λ w → f (S.ε ∷ w)}
+
+    -- weights recovers a vector from the measurement it induces.
+    weights-fwd : ∀ {n} (a : Vec n) → weights (λ b → ⟪ a , b ⟫) ≈ᵥ a
+    weights-fwd []       = tt
+    weights-fwd (x ∷ xs) =
+        trans (∨-cong (trans ∧-comm ∧-lunit) (⟪⟫-ε₂ {a = xs})) ∨-runit
+      , ≈ᵥ-trans (weights-resp (λ w → trans (∨-cong ε-annihilᵣ refl) ∨-lunit)) (weights-fwd xs)
+
+    shift : ∀ {n} → fobj n ⇒ fobj (suc n)
+    shift .*→* ._⇒s_.func w = S.ε ∷ w
+    shift .*→* ._⇒s_.func-resp-≈ w≈w' = refl , w≈w'
+    shift .preserve-ze = ≈ᵥ-refl
+    shift .preserve-+ = sym ∨-lunit , ≈ᵥ-refl
+    shift .preserve-· = sym ε-annihilᵣ , ≈ᵥ-refl
+
+    -- Decompose a vector into its first basis component plus the tail below a zero head.
+    decomp : ∀ {n} (b₀ : S.Carrier) (bs : Vec n) → (b₀ ∷ bs) ≈ᵥ (scale b₀ (S.ι ∷ εᵥ) +ᵥ (S.ε ∷ bs))
+    decomp b₀ bs .proj₁ = sym (trans ∨-runit (trans ∧-comm ∧-lunit))
+    decomp b₀ bs .proj₂ = ≈ᵥ-sym (≈ᵥ-trans (+ᵥ-cong scale-εᵥ ≈ᵥ-refl) +ᵥ-lunit)
+
+    -- Measurement induced by weights φ agrees with φ.
+    eval-weights : ∀ {n} (φ : fobj n ⇒ 𝕀) (b : Vec n) → ⟪ weights (φ .func) , b ⟫ ≈ φ .func b
+    eval-weights {zero}  φ []        = sym (φ .preserve-ze)
+    eval-weights {suc n} φ (b₀ ∷ bs) =
+      trans (∨-cong refl (eval-weights (φ ∘ shift) bs))
+            (trans (∨-cong ∧-comm refl)
+                   (sym (trans (φ .func-resp-≈ (decomp b₀ bs))
+                               (trans (φ .preserve-+) (∨-cong (φ .preserve-·) refl)))))
+
+    ----------------------------------------------------------------------------
+    -- Self-duality: fwd a = (b ↦ ⟪ a , b ⟫), so pairing reduces to ⟪_,_⟫.
+
+    self-dual : ∀ n → Iso (fobj n) (Dual (fobj n))
+    self-dual n .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func b = ⟪ a , b ⟫
+    self-dual n .Iso.fwd .*→* ._⇒s_.func a .*→* ._⇒s_.func-resp-≈ b≈b' = ⟪⟫-resp-≈ {a = a} ≈ᵥ-refl b≈b'
+    self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-ze = ⟪⟫-ε₂ {a = a}
+    self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-+ = ⟪⟫-+₂ {a = a}
+    self-dual n .Iso.fwd .*→* ._⇒s_.func a .preserve-· = ⟪⟫-·₂ {a = a}
+    self-dual n .Iso.fwd .*→* ._⇒s_.func-resp-≈ a≈a' .*≈* ._≈s_.func-eq b≈b' = ⟪⟫-resp-≈ a≈a' b≈b'
+    self-dual n .Iso.fwd .preserve-ze .*≈* ._≈s_.func-eq {b} _ =
       trans (⟪⟫-comm {a = εᵥ} {b}) (⟪⟫-ε₂ {a = b})
-    dot-self-dual n .Iso.fwd .preserve-+ {a₁} {a₂} .*≈* ._≈s_.func-eq {b} {b'} b≈b' =
+    self-dual n .Iso.fwd .preserve-+ {a₁} {a₂} .*≈* ._≈s_.func-eq {b} {b'} b≈b' =
       trans (⟪⟫-resp-≈ {a = a₁ +ᵥ a₂} ≈ᵥ-refl b≈b')
         (trans (⟪⟫-comm {a = a₁ +ᵥ a₂} {b'})
           (trans (⟪⟫-+₂ {a = b'} {a₁} {a₂}) (∨-cong (⟪⟫-comm {a = b'} {a₁}) (⟪⟫-comm {a = b'} {a₂}))))
-    dot-self-dual n .Iso.fwd .preserve-· {s} {a} .*≈* ._≈s_.func-eq {b} {b'} b≈b' =
+    self-dual n .Iso.fwd .preserve-· {s} {a} .*≈* ._≈s_.func-eq {b} {b'} b≈b' =
       trans (⟪⟫-resp-≈ {a = scale s a} ≈ᵥ-refl b≈b')
         (trans (⟪⟫-comm {a = scale s a} {b'})
           (trans (⟪⟫-·₂ {s = s} {a = b'} {a}) (∧-cong refl (⟪⟫-comm {a = b'} {a}))))
 
-    dot-self-dual n .Iso.bwd = {!!}
-    dot-self-dual n .Iso.fwd∘bwd≈id = {!!}
-    dot-self-dual n .Iso.bwd∘fwd≈id = {!!}
+    self-dual n .Iso.bwd .*→* ._⇒s_.func φ = weights (φ .func)
+    self-dual n .Iso.bwd .*→* ._⇒s_.func-resp-≈ φ≈φ' = weights-resp (λ w → φ≈φ' .*≈* ._≈s_.func-eq (≈ᵥ-refl {v = w}))
+    self-dual n .Iso.bwd .preserve-ze = weights-ε
+    self-dual n .Iso.bwd .preserve-+ {φ} {φ'} = weights-+ {f = φ .func} {g = φ' .func}
+    self-dual n .Iso.bwd .preserve-· {s} {φ} = weights-· {f = φ .func}
+    self-dual n .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq {φ} φ≈φ' .*≈* ._≈s_.func-eq {b} b≈b' =
+      trans (eval-weights φ b) (φ≈φ' .*≈* ._≈s_.func-eq b≈b')
+    self-dual n .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {a} a≈a' = ≈ᵥ-trans (weights-fwd a) a≈a'
+
+    -- Each S-vector is a self-dual distributive lattice, so the LatConj embedding DistributiveLattice.to-conj
+    -- applies to S-matrices.
+
+    freeSDL : ℕ → DL.SelfDualLattice
+    freeSDL n .DL.SelfDualLattice.M           = fobj n
+    freeSDL n .DL.SelfDualLattice.self-dual   = self-dual n
+    freeSDL n .DL.SelfDualLattice.meets       = meets n
+    freeSDL n .DL.SelfDualLattice.∧-∨-distrib = ∧-∨-distrib
+    freeSDL n .DL.SelfDualLattice.align       = align
