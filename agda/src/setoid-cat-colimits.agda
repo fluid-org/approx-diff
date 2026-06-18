@@ -5,7 +5,8 @@
 -- against it builds μ-types of polynomial functors on setoids (the index μ-types of the Fam construction).
 
 open import Level using (_⊔_)
-open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl)
+open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl) renaming (_⊔_ to _⊔ℕ_)
+open import Data.Nat.Properties using (m≤m⊔n; m≤n⊔m; ≤⇒≤′)
 open import Data.Product using (_,_; Σ)
 open import Data.Sum using (inj₁; inj₂)
 open import prop using (_,_; ∃)
@@ -109,7 +110,10 @@ module _ o e where
       ιY : b ⇒s canonY .Colimit.apex
       ιY = isY .IsColimit.colambda (canonY .Colimit.apex) (canonY .Colimit.cocone)
       κ-fwd : prod (canonX .Colimit.apex) (canonY .Colimit.apex) ⇒s CXY .Colimit.apex
-      κ-fwd = {!!}
+      κ-fwd .func ((k , x) , (j , y)) =
+        _ , (chain {𝒞 = 𝒮} X f .Functor.fmor (≤⇒≤′ (m≤m⊔n k j)) .func x
+            , chain {𝒞 = 𝒮} Y g .Functor.fmor (≤⇒≤′ (m≤n⊔m k j)) .func y)
+      κ-fwd .func-resp-≈ = {!!}
       forward : prod a b ⇒s CXY .Colimit.apex
       forward = κ-fwd ∘ prod-m ιX ιY
 
