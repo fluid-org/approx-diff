@@ -9,7 +9,7 @@ open import Data.Nat using (ℕ; suc; _≤′_; ≤′-refl) renaming (_⊔_ to 
 open import Data.Nat.Properties using (m≤m⊔n; m≤n⊔m; ≤⇒≤′)
 open import Data.Product using (_,_; Σ)
 open import Data.Sum using (inj₁; inj₂)
-open import prop using (_,_; ∃)
+open import prop using (_,_; ∃; liftS)
 open import categories
   using (Category; HasInitial; IsInitial; HasProducts; HasStrongCoproducts)
 open import functor
@@ -17,7 +17,7 @@ open import functor
 open import omega-chains using (ω; chain; step-cocone; cocone-step)
 open import prop-setoid
   using (Setoid; IsEquivalence; 𝟘; from-𝟘; from-𝟘-unique; +-setoid; ⊗-setoid; case; inject₁; inject₂;
-         rel→Setoid; EquivOf-intro; rel-preserving-func)
+         rel→Setoid; EquivOf-intro; rel-preserving-func; elim-EquivOfS)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_)
 open import setoid-cat using (SetoidCat; Setoid-products)
 
@@ -113,7 +113,10 @@ module _ o e where
       κ-fwd .func ((k , x) , (j , y)) =
         _ , (chain {𝒞 = 𝒮} X f .Functor.fmor (≤⇒≤′ (m≤m⊔n k j)) .func x
             , chain {𝒞 = 𝒮} Y g .Functor.fmor (≤⇒≤′ (m≤n⊔m k j)) .func y)
-      κ-fwd .func-resp-≈ = {!!}
+      κ-fwd .func-resp-≈ {u₁ , u₂} {v₁ , v₂} (liftS px , liftS qy) =
+        CXY .Colimit.apex .isEquivalence .trans
+          (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func (w , u₂)) (λ r → {!!}) px)
+          (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func (v₁ , w)) (λ r → {!!}) qy)
       forward : prod a b ⇒s CXY .Colimit.apex
       forward = κ-fwd ∘ prod-m ιX ιY
 
