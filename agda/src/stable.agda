@@ -6,7 +6,7 @@ open import Level using (suc; 0ℓ)
 open import Data.Unit using (tt) renaming (⊤ to Unit)
 open import Data.Product using (Σ-syntax; _×_; _,_; proj₁; proj₂)
 open import prop using (∃ₛ; _∧_; _,_; ⊥; proj₁; proj₂)
-open import basics using (IsPreorder)
+open import basics using (IsPreorder; IsBottom; IsTop; IsMeet; IsJoin)
 open import prop-setoid using (IsEquivalence; Setoid) renaming (_⇒_ to _⇒S_; _≃m_ to _≈s_)
 open import categories using (Category; HasProducts)
 open import functor using (Functor)
@@ -334,8 +334,6 @@ Flat A .bounded-∧ {x₁} {x₂} {x} x₁≈x x₂≈x .is-meet .lower₁ = A .
 Flat A .bounded-∧ {x₁} {x₂} {x} x₁≈x x₂≈x .is-meet .lower₂ = A .Setoid.sym x₂≈x
 Flat A .bounded-∧ {x₁} {x₂} {x} x₁≈x x₂≈x .is-meet .greatest z≈x₁ z≈x₂ = A .Setoid.trans z≈x₁ x₁≈x
 
--- FIXME: functorial and preserves products and coproducts
-
 FlatF : ∀ {A B} → A ⇒S B → Stable (Flat A) (Flat B)
 FlatF {A} {B} f .func = f ._⇒S_.func
 FlatF {A} {B} f .mono = f ._⇒S_.func-resp-≈
@@ -354,13 +352,14 @@ Setoid→LPoset .Functor.fmor-id {A} .*≈* = A .Setoid.refl , A .Setoid.refl
 Setoid→LPoset .Functor.fmor-comp {A} {B} {C} f g .*≈* .proj₁ = C .Setoid.refl
 Setoid→LPoset .Functor.fmor-comp {A} {B} {C} f g .*≈* .proj₂ = C .Setoid.refl
 
+-- FIXME: preserves products and coproducts
+
 ------------------------------------------------------------------------------
 -- Lifting. Adds a new global bottom element
 
 data L-carrier (A : Set) : Set where
   `⊥ : L-carrier A
   `↑ : A → L-carrier A
-
 
 L : LPoset → LPoset
 L A .Carrier = L-carrier (A .Carrier)
@@ -460,3 +459,56 @@ L-strong {A} {B} .stable (a , `↑ b) (`↑ (a₀ , b₀)) ϕ =
 --      - product ?
 --      - flat sets
 --      - is lifting laxly preserved?
+
+------------------------------------------------------------------------------
+-- Getting the Lattice for each element of an LPoset
+
+import galois
+import preorder
+open import meet-semilattice using (MeetSemilattice)
+open import join-semilattice using (JoinSemilattice)
+
+open galois using (_⇒g_; Obj)
+open _⇒g_
+
+-- Every element of the LPoset has an associated lattice of approximations
+lattice : (X : LPoset) → X .Carrier → galois.Obj
+lattice X x .Obj.carrier .preorder.Preorder.Carrier = ∃ₛ (X .Carrier) λ δx → X ._≤_ δx x
+lattice X x .Obj.carrier .preorder.Preorder._≤_ (δx₁ , _) (δx₂ , _) = X ._≤_ δx₁ δx₂
+lattice X x .Obj.carrier .preorder.Preorder.≤-isPreorder .IsPreorder.refl = X .≤-refl
+lattice X x .Obj.carrier .preorder.Preorder.≤-isPreorder .IsPreorder.trans = X .≤-trans
+lattice X x .Obj.meets .MeetSemilattice._∧_ (x₁ , x₁≤x) (x₂ , x₂≤x) =
+  X .bounded-∧ x₁≤x x₂≤x .meet ,
+  X .≤-trans (bounded-∧ X _ _ .is-meet .lower₂) x₂≤x
+lattice X x .Obj.meets .MeetSemilattice.⊤ = x , X .≤-refl
+lattice X x .Obj.meets .MeetSemilattice.∧-isMeet .IsMeet.π₁ = bounded-∧ X _ _ .is-meet .lower₁
+lattice X x .Obj.meets .MeetSemilattice.∧-isMeet .IsMeet.π₂ = bounded-∧ X _ _ .is-meet .lower₂
+lattice X x .Obj.meets .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ = bounded-∧ X _ _ .is-meet .greatest
+lattice X x .Obj.meets .MeetSemilattice.⊤-isTop .IsTop.≤-top {_ , x₁≤x} = x₁≤x
+lattice X x .Obj.joins .JoinSemilattice._∨_ (x₁ , x₁≤x) (x₂ , x₂≤x) =
+  X .bounded-∨ x₁≤x x₂≤x .join ,
+  X .bounded-∨ x₁≤x x₂≤x .least x₁≤x x₂≤x
+lattice X x .Obj.joins .JoinSemilattice.⊥ =
+  X .bounded-⊥ x .bot , X .bounded-⊥ x .is-bot x (X .≤-refl)
+lattice X x .Obj.joins .JoinSemilattice.∨-isJoin .IsJoin.inl = bounded-∨ X _ _ .is-join .upper₁
+lattice X x .Obj.joins .JoinSemilattice.∨-isJoin .IsJoin.inr = bounded-∨ X _ _ .is-join .upper₂
+lattice X x .Obj.joins .JoinSemilattice.∨-isJoin .IsJoin.[_,_] = bounded-∨ X _ _ .is-join .least
+lattice X x .Obj.joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom {x₁ , x₁≤x} = bounded-⊥ X x .is-bot x₁ x₁≤x
+
+
+-- Every morphism of LPosets yields a Galois connection!
+morphism : ∀ (X Y : LPoset) (f : Stable X Y) x → lattice X x ⇒g lattice Y (f .func x)
+morphism X Y f x .right .preorder._=>_.fun (δx , δx≤x) = f .func δx , f .mono δx≤x
+morphism X Y f x .right .preorder._=>_.mono = f .mono
+morphism X Y f x .left .preorder._=>_.fun (δy , δy≤fx) =
+  f .stable x δy δy≤fx .∃ₛ.fst , f .stable x δy _ .∃ₛ.snd .proj₁
+morphism X Y f x .left .preorder._=>_.mono {δy₁ , δy₁≤fx} {δy₂ , δy₂≤fx} δy₁≤δy₂ =
+  f .stable x δy₁ _ .∃ₛ.snd .proj₂ .proj₂
+    (f .stable x δy₂ _ .∃ₛ.fst)
+    (f .stable x δy₂ _ .∃ₛ.snd .proj₁)
+    (Y .≤-trans δy₁≤δy₂ (f .stable x δy₂ _ .∃ₛ.snd .proj₂ .proj₁))
+morphism X Y f x .left⊣right {δx , δx≤x} {δy , δy≤fx} .proj₁ = f .stable x δy _ .∃ₛ.snd .proj₂ .proj₂ δx δx≤x
+morphism X Y f x .left⊣right {δx , δx≤x} {δy , δy≤fx} .proj₂ left≤δx = Y .≤-trans (f .stable x δy _ .∃ₛ.snd .proj₂ .proj₁) (f .mono left≤δx)
+
+-- Now need to prove that this assignment is invariant under equality
+-- of elements so that we get a setoid-indexed family
