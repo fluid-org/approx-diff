@@ -184,11 +184,43 @@ module _ o e where
       forward : prod a b ⇒s CXY .Colimit.apex
       forward = κ-fwd ∘ prod-m ιX ιY
 
+      -- The comparison maps intertwine the given cocones with the canonical ones.
+      ι-coevalX : ∀ k → Category._≈_ 𝒮 (ιX ∘ cX .transf k) (canonX .Colimit.cocone .transf k)
+      ι-coevalX = isX .IsColimit.colambda-coeval (canonX .Colimit.apex) (canonX .Colimit.cocone) .≃-NatTrans.transf-eq
+
+      ι-coevalY : ∀ k → Category._≈_ 𝒮 (ιY ∘ cY .transf k) (canonY .Colimit.cocone .transf k)
+      ι-coevalY = isY .IsColimit.colambda-coeval (canonY .Colimit.apex) (canonY .Colimit.cocone) .≃-NatTrans.transf-eq
+
+      -- κ-fwd carries the product of the canonical cocones onto the product-chain cocone (its k-stage
+      -- injection lands one diagonal step `k ⊔ k` up, which the chain absorbs).
+      κ-cocone : ∀ k → Category._≈_ 𝒮 (κ-fwd ∘ prod-m (canonX .Colimit.cocone .transf k) (canonY .Colimit.cocone .transf k))
+                                      (CXY .Colimit.cocone .transf k)
+      κ-cocone k .func-eq {x₁ , y₁} {x₂ , y₂} (x₁≈x₂ , y₁≈y₂) =
+        CXY .Colimit.apex .isEquivalence .sym
+          (EquivOf-intro
+            ( ≤⇒≤′ (m≤m⊔n k k)
+            , prod (X _) (Y _) .isEquivalence .trans (prod-walk (≤⇒≤′ (m≤m⊔n k k)) x₂ y₂)
+                ( Xc .Functor.fmor (≤⇒≤′ (m≤m⊔n k k)) .func-resp-≈ (X k .isEquivalence .sym x₁≈x₂)
+                , Yc .Functor.fmor-cong {f₁ = ≤⇒≤′ (m≤m⊔n k k)} {f₂ = ≤⇒≤′ (m≤n⊔m k k)} tt
+                    .func-eq (Y k .isEquivalence .sym y₁≈y₂) )))
+
+      -- Hence `forward` is a cocone morphism from the product-chain cocone to the canonical apex.
+      forward-cocone : ∀ k → Category._≈_ 𝒮 (forward ∘ prod-m (cX .transf k) (cY .transf k)) (CXY .Colimit.cocone .transf k)
+      forward-cocone k =
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (≈-sym (prod-m-comp ιX ιY (cX .transf k) (cY .transf k))))
+        (≈-trans (∘-cong₂ (prod-m-cong (ι-coevalX k) (ι-coevalY k)))
+                 (κ-cocone k)))
+
     ×-cocont : IsColimit (chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k))) (prod a b)
                          (step-cocone (λ k → prod-m (cX .transf k) (cY .transf k))
                                       (λ k → ≈-trans (prod-m-cong (cocone-step cX k) (cocone-step cY k))
                                                      (prod-m-comp (cX .transf (suc k)) (cY .transf (suc k)) (f k) (g k))))
     ×-cocont .IsColimit.colambda Z γ = CXY .Colimit.isColimit .IsColimit.colambda Z γ ∘ forward
-    ×-cocont .IsColimit.colambda-cong α≃β = {!!}
-    ×-cocont .IsColimit.colambda-coeval Z γ = {!!}
+    ×-cocont .IsColimit.colambda-cong α≃β =
+      ∘-cong₁ (CXY .Colimit.isColimit .IsColimit.colambda-cong α≃β)
+    ×-cocont .IsColimit.colambda-coeval Z γ .≃-NatTrans.transf-eq k =
+      ≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong₂ (forward-cocone k))
+               (CXY .Colimit.isColimit .IsColimit.colambda-coeval Z γ .≃-NatTrans.transf-eq k))
     ×-cocont .IsColimit.colambda-ext Z h = {!!}
