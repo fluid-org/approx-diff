@@ -14,7 +14,7 @@
 ------------------------------------------------------------------------------
 
 open import Level using (_⊔_; lift) renaming (suc to lsuc)
-open import Data.Nat using (ℕ; suc)
+open import Data.Nat using (ℕ; zero; suc; _<_; s≤s; z≤n) renaming (_+_ to _+ℕ_)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
@@ -104,6 +104,22 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     shape≈ P R (Q₁ + Q₂) (inj₂ x) (inj₂ y) = shape≈ P R Q₂ x y
     shape≈ P R (Q₁ × Q₂) (x₁ , x₂) (y₁ , y₂) = shape≈ P R Q₁ x₁ y₁ ∧ shape≈ P R Q₂ x₂ y₂
     shape≈ P R (μ Q') x y = W-≈ Q' (extendR R (W-≈ P R)) x y
+
+  -- Structural node-count of a tree. Recurses directly (variable 0 is the recursive position), so it has no
+  -- higher-order environment and needs no well-founded justification; it is the measure for the proofs below.
+  mutual
+    size : ∀ {n} {Q : IdxPoly (suc n)} {ρ : Fin n → Set os} → W Q ρ → ℕ
+    size {Q = Q} (sup x) = suc (contentSize {P = Q} Q x)
+
+    contentSize : ∀ {n} {P : IdxPoly (suc n)} {ρ : Fin n → Set os} (Q : IdxPoly (suc n)) →
+                  ⟦ Q ⟧C (extend ρ (W P ρ)) → ℕ
+    contentSize (param A) _ = 0
+    contentSize (var Fin.zero) t = size t
+    contentSize (var (Fin.suc i)) _ = 0
+    contentSize (Q₁ + Q₂) (inj₁ x) = contentSize Q₁ x
+    contentSize (Q₁ + Q₂) (inj₂ y) = contentSize Q₂ y
+    contentSize (Q₁ × Q₂) (x , y) = contentSize Q₁ x +ℕ contentSize Q₂ y
+    contentSize (μ Q') t = size t
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ = {!!}
