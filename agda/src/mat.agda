@@ -12,7 +12,7 @@ open import categories using (Category)
 -- (instead of functions Fin n → Carrier).
 module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
-  open CommutativeSemiring S public
+  module S = CommutativeSemiring S
   open import prop using (⊤; _∧_)
   open import Data.Nat using (ℕ; zero; suc)
   import Data.Vec as V
@@ -22,38 +22,38 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   -- The carrier: vectors S^n as inductive data.
 
   Vec : ℕ → Set o
-  Vec n = V.Vec Carrier n
+  Vec n = V.Vec S.Carrier n
 
   -- Pointwise equality.
   infix 4 _≈ᵥ_
   _≈ᵥ_ : ∀ {n} → Vec n → Vec n → Prop ℓ
   []      ≈ᵥ []      = ⊤
-  (x ∷ u) ≈ᵥ (y ∷ v) = (x ≈ y) ∧ (u ≈ᵥ v)
+  (x ∷ u) ≈ᵥ (y ∷ v) = (x S.≈ y) ∧ (u ≈ᵥ v)
 
   ≈ᵥ-refl : ∀ {n} {v : Vec n} → v ≈ᵥ v
   ≈ᵥ-refl {v = []}    = tt
-  ≈ᵥ-refl {v = x ∷ v} = refl , ≈ᵥ-refl
+  ≈ᵥ-refl {v = x ∷ v} = S.refl , ≈ᵥ-refl
 
   ≈ᵥ-sym : ∀ {n} {u v : Vec n} → u ≈ᵥ v → v ≈ᵥ u
   ≈ᵥ-sym {u = []} {[]} _              = tt
-  ≈ᵥ-sym {u = _ ∷ _} {_ ∷ _} (p , q)  = sym p , ≈ᵥ-sym q
+  ≈ᵥ-sym {u = _ ∷ _} {_ ∷ _} (p , q)  = S.sym p , ≈ᵥ-sym q
 
   ≈ᵥ-trans : ∀ {n} {u v w : Vec n} → u ≈ᵥ v → v ≈ᵥ w → u ≈ᵥ w
   ≈ᵥ-trans {u = []} {[]} {[]} _ _                         = tt
-  ≈ᵥ-trans {u = _ ∷ _} {_ ∷ _} {_ ∷ _} (p , q) (p' , q')  = trans p p' , ≈ᵥ-trans q q'
+  ≈ᵥ-trans {u = _ ∷ _} {_ ∷ _} {_ ∷ _} (p , q) (p' , q')  = S.trans p p' , ≈ᵥ-trans q q'
 
   -- Zero vector.
   εᵥ : ∀ {n} → Vec n
   εᵥ {zero}  = []
-  εᵥ {suc n} = ε ∷ εᵥ
+  εᵥ {suc n} = S.ε ∷ εᵥ
 
   -- Pointwise addition and scalar multiplication.
   infixl 20 _+ᵥ_
   _+ᵥ_ : ∀ {n} → Vec n → Vec n → Vec n
-  _+ᵥ_ = V.zipWith _+_
+  _+ᵥ_ = V.zipWith S._+_
 
-  scale : ∀ {n} → Carrier → Vec n → Vec n
-  scale a = V.map (a ·_)
+  scale : ∀ {n} → S.Carrier → Vec n → Vec n
+  scale a = V.map (a S.·_)
 
   ----------------------------------------------------------------------------
   -- Morphisms: linear maps S^n → S^m.
@@ -115,55 +115,55 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   +ᵥ-cong : ∀ {n} {u u' v v' : Vec n} → u ≈ᵥ u' → v ≈ᵥ v' → (u +ᵥ v) ≈ᵥ (u' +ᵥ v')
   +ᵥ-cong {u = []} {[]} {[]} {[]} _ _ = tt
-  +ᵥ-cong {u = _ ∷ _} {_ ∷ _} {_ ∷ _} {_ ∷ _} (p , q) (p' , q') = +-cong p p' , +ᵥ-cong q q'
+  +ᵥ-cong {u = _ ∷ _} {_ ∷ _} {_ ∷ _} {_ ∷ _} (p , q) (p' , q') = S.+-cong p p' , +ᵥ-cong q q'
 
   +ᵥ-lunit : ∀ {n} {v : Vec n} → (εᵥ +ᵥ v) ≈ᵥ v
   +ᵥ-lunit {v = []} = tt
-  +ᵥ-lunit {v = x ∷ v} = +-lunit , +ᵥ-lunit
+  +ᵥ-lunit {v = x ∷ v} = S.+-lunit , +ᵥ-lunit
 
   +ᵥ-assoc : ∀ {n} {u v w : Vec n} → ((u +ᵥ v) +ᵥ w) ≈ᵥ (u +ᵥ (v +ᵥ w))
   +ᵥ-assoc {u = []} {[]} {[]} = tt
-  +ᵥ-assoc {u = _ ∷ _} {_ ∷ _} {_ ∷ _} = +-assoc , +ᵥ-assoc
+  +ᵥ-assoc {u = _ ∷ _} {_ ∷ _} {_ ∷ _} = S.+-assoc , +ᵥ-assoc
 
   +ᵥ-comm : ∀ {n} {u v : Vec n} → (u +ᵥ v) ≈ᵥ (v +ᵥ u)
   +ᵥ-comm {u = []} {[]} = tt
-  +ᵥ-comm {u = _ ∷ _} {_ ∷ _} = +-comm , +ᵥ-comm
+  +ᵥ-comm {u = _ ∷ _} {_ ∷ _} = S.+-comm , +ᵥ-comm
 
   +ᵥ-interchange : ∀ {n} {a b c d : Vec n} → ((a +ᵥ b) +ᵥ (c +ᵥ d)) ≈ᵥ ((a +ᵥ c) +ᵥ (b +ᵥ d))
   +ᵥ-interchange {a = []} {[]} {[]} {[]} = tt
-  +ᵥ-interchange {a = _ ∷ _} {_ ∷ _} {_ ∷ _} {_ ∷ _} = +-interchange , +ᵥ-interchange
+  +ᵥ-interchange {a = _ ∷ _} {_ ∷ _} {_ ∷ _} {_ ∷ _} = S.+-interchange , +ᵥ-interchange
 
   scale-εᵥ : ∀ {n} {a} → scale a (εᵥ {n}) ≈ᵥ εᵥ
   scale-εᵥ {zero}  = tt
-  scale-εᵥ {suc n} = ε-annihilᵣ , scale-εᵥ
+  scale-εᵥ {suc n} = S.ε-annihilᵣ , scale-εᵥ
 
   scale-+ᵥ : ∀ {n} {a} {u v : Vec n} → scale a (u +ᵥ v) ≈ᵥ (scale a u +ᵥ scale a v)
   scale-+ᵥ {u = []} {[]} = tt
-  scale-+ᵥ {u = _ ∷ _} {_ ∷ _} = ·-+-distribₗ , scale-+ᵥ
+  scale-+ᵥ {u = _ ∷ _} {_ ∷ _} = S.·-+-distribₗ , scale-+ᵥ
 
   +ᵥ-runit : ∀ {n} {v : Vec n} → (v +ᵥ εᵥ) ≈ᵥ v
   +ᵥ-runit {v = []}    = tt
-  +ᵥ-runit {v = x ∷ v} = trans +-comm +-lunit , +ᵥ-runit
+  +ᵥ-runit {v = x ∷ v} = S.trans S.+-comm S.+-lunit , +ᵥ-runit
 
-  scale-cong : ∀ {n} {a a'} {u v : Vec n} → a ≈ a' → u ≈ᵥ v → scale a u ≈ᵥ scale a' v
+  scale-cong : ∀ {n} {a a'} {u v : Vec n} → a S.≈ a' → u ≈ᵥ v → scale a u ≈ᵥ scale a' v
   scale-cong {u = []}    {[]}    _  _       = tt
-  scale-cong {u = _ ∷ _} {_ ∷ _} a≈ (p , q) = ·-cong a≈ p , scale-cong a≈ q
+  scale-cong {u = _ ∷ _} {_ ∷ _} a≈ (p , q) = S.·-cong a≈ p , scale-cong a≈ q
 
-  scale-+ₗ : ∀ {n} {a b} {v : Vec n} → scale (a + b) v ≈ᵥ (scale a v +ᵥ scale b v)
+  scale-+ₗ : ∀ {n} {a b} {v : Vec n} → scale (a S.+ b) v ≈ᵥ (scale a v +ᵥ scale b v)
   scale-+ₗ {v = []}    = tt
-  scale-+ₗ {v = _ ∷ _} = ·-+-distribᵣ , scale-+ₗ
+  scale-+ₗ {v = _ ∷ _} = S.·-+-distribᵣ , scale-+ₗ
 
-  scale-· : ∀ {n} {a b} {v : Vec n} → scale (a · b) v ≈ᵥ scale a (scale b v)
+  scale-· : ∀ {n} {a b} {v : Vec n} → scale (a S.· b) v ≈ᵥ scale a (scale b v)
   scale-· {v = []}    = tt
-  scale-· {v = _ ∷ _} = ·-assoc , scale-·
+  scale-· {v = _ ∷ _} = S.·-assoc , scale-·
 
-  scale-ι : ∀ {n} {v : Vec n} → scale ι v ≈ᵥ v
+  scale-ι : ∀ {n} {v : Vec n} → scale S.ι v ≈ᵥ v
   scale-ι {v = []}    = tt
-  scale-ι {v = _ ∷ _} = ·-lunit , scale-ι
+  scale-ι {v = _ ∷ _} = S.·-lunit , scale-ι
 
-  scale-0ₗ : ∀ {n} {v : Vec n} → scale ε v ≈ᵥ εᵥ
+  scale-0ₗ : ∀ {n} {v : Vec n} → scale S.ε v ≈ᵥ εᵥ
   scale-0ₗ {v = []}    = tt
-  scale-0ₗ {v = _ ∷ _} = ε-annihilₗ , scale-0ₗ
+  scale-0ₗ {v = _ ∷ _} = S.ε-annihilₗ , scale-0ₗ
 
   open import Data.Nat using () renaming (_+_ to _+ℕ_)
   open V using (_++_)
@@ -175,11 +175,11 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   ++-+ᵥ : ∀ {m n} {u u' : Vec m} {v v' : Vec n} →
           ((u +ᵥ u') ++ (v +ᵥ v')) ≈ᵥ ((u ++ v) +ᵥ (u' ++ v'))
   ++-+ᵥ {u = []}    {[]}                              = ≈ᵥ-refl
-  ++-+ᵥ {u = _ ∷ _} {_ ∷ _} {v = v} {v' = v'}        = refl , ++-+ᵥ {v = v} {v' = v'}
+  ++-+ᵥ {u = _ ∷ _} {_ ∷ _} {v = v} {v' = v'}        = S.refl , ++-+ᵥ {v = v} {v' = v'}
 
   ++-scale : ∀ {m n} {a} {u : Vec m} {v : Vec n} → scale a (u ++ v) ≈ᵥ (scale a u ++ scale a v)
   ++-scale {u = []}                  = ≈ᵥ-refl
-  ++-scale {u = _ ∷ _} {v = v}       = refl , ++-scale {v = v}
+  ++-scale {u = _ ∷ _} {v = v}       = S.refl , ++-scale {v = v}
 
   ----------------------------------------------------------------------------
   -- 0 is a zero object.
@@ -263,7 +263,7 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   vtake-εᵥ : ∀ m {n} → vtake m (εᵥ {m +ℕ n}) ≈ᵥ εᵥ
   vtake-εᵥ zero    = tt
-  vtake-εᵥ (suc m) = refl , vtake-εᵥ m
+  vtake-εᵥ (suc m) = S.refl , vtake-εᵥ m
 
   vdrop-εᵥ : ∀ m {n} → vdrop m (εᵥ {m +ℕ n}) ≈ᵥ εᵥ {n}
   vdrop-εᵥ zero    = ≈ᵥ-refl
@@ -271,7 +271,7 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   vtake-+ᵥ : ∀ m {n} {u v : Vec (m +ℕ n)} → vtake m (u +ᵥ v) ≈ᵥ (vtake m u +ᵥ vtake m v)
   vtake-+ᵥ zero = tt
-  vtake-+ᵥ (suc m) {u = _ ∷ _} {_ ∷ _} = refl , vtake-+ᵥ m
+  vtake-+ᵥ (suc m) {u = _ ∷ _} {_ ∷ _} = S.refl , vtake-+ᵥ m
 
   vdrop-+ᵥ : ∀ m {n} {u v : Vec (m +ℕ n)} → vdrop m (u +ᵥ v) ≈ᵥ (vdrop m u +ᵥ vdrop m v)
   vdrop-+ᵥ zero = ≈ᵥ-refl
@@ -279,7 +279,7 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   vtake-scale : ∀ m {n} {a} {v : Vec (m +ℕ n)} → vtake m (scale a v) ≈ᵥ scale a (vtake m v)
   vtake-scale zero = tt
-  vtake-scale (suc m) {v = _ ∷ _} = refl , vtake-scale m
+  vtake-scale (suc m) {v = _ ∷ _} = S.refl , vtake-scale m
 
   vdrop-scale : ∀ m {n} {a} {v : Vec (m +ℕ n)} → vdrop m (scale a v) ≈ᵥ scale a (vdrop m v)
   vdrop-scale zero = ≈ᵥ-refl
@@ -287,11 +287,11 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   ++-εᵥ : ∀ {m n} → (εᵥ {m} ++ εᵥ {n}) ≈ᵥ εᵥ {m +ℕ n}
   ++-εᵥ {zero}      = ≈ᵥ-refl
-  ++-εᵥ {suc m} {n} = refl , ++-εᵥ {m} {n}
+  ++-εᵥ {suc m} {n} = S.refl , ++-εᵥ {m} {n}
 
   vtake-++ : ∀ {m n} {u : Vec m} {v : Vec n} → vtake m (u ++ v) ≈ᵥ u
   vtake-++ {u = []}    = tt
-  vtake-++ {u = _ ∷ _} = refl , vtake-++
+  vtake-++ {u = _ ∷ _} = S.refl , vtake-++
 
   vdrop-++ : ∀ {m n} {u : Vec m} {v : Vec n} → vdrop m (u ++ v) ≈ᵥ v
   vdrop-++ {u = []} = ≈ᵥ-refl
@@ -303,27 +303,27 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   in₁-+ : ∀ {m n} {u v : Vec m} → ((u +ᵥ v) ++ εᵥ {n}) ≈ᵥ ((u ++ εᵥ) +ᵥ (v ++ εᵥ))
   in₁-+ {u = []} {[]} = ≈ᵥ-sym +ᵥ-lunit
-  in₁-+ {n = n} {u = _ ∷ _} {_ ∷ _} = refl , in₁-+ {n = n}
+  in₁-+ {n = n} {u = _ ∷ _} {_ ∷ _} = S.refl , in₁-+ {n = n}
 
   in₁-scale : ∀ {m n} {a} {v : Vec m} → ((scale a v) ++ εᵥ {n}) ≈ᵥ scale a (v ++ εᵥ)
   in₁-scale {v = []}            = ≈ᵥ-sym scale-εᵥ
-  in₁-scale {n = n} {v = _ ∷ _} = refl , in₁-scale {n = n}
+  in₁-scale {n = n} {v = _ ∷ _} = S.refl , in₁-scale {n = n}
 
   in₂-cong : ∀ {m n} {u v : Vec n} → u ≈ᵥ v → (εᵥ {m} ++ u) ≈ᵥ (εᵥ ++ v)
   in₂-cong {m = zero}  p = p
-  in₂-cong {m = suc m} p = refl , in₂-cong p
+  in₂-cong {m = suc m} p = S.refl , in₂-cong p
 
   in₂-+ : ∀ {m n} {u v : Vec n} → (εᵥ {m} ++ (u +ᵥ v)) ≈ᵥ ((εᵥ ++ u) +ᵥ (εᵥ ++ v))
   in₂-+ {m = zero}            = ≈ᵥ-refl
-  in₂-+ {m = suc m} {n = n}   = sym +-lunit , in₂-+ {n = n}
+  in₂-+ {m = suc m} {n = n}   = S.sym S.+-lunit , in₂-+ {n = n}
 
   in₂-scale : ∀ {m n} {a} {v : Vec n} → (εᵥ {m} ++ scale a v) ≈ᵥ scale a (εᵥ {m} ++ v)
   in₂-scale {m = zero}            = ≈ᵥ-refl
-  in₂-scale {m = suc m} {n = n}   = sym ε-annihilᵣ , in₂-scale {n = n}
+  in₂-scale {m = suc m} {n = n}   = S.sym S.ε-annihilᵣ , in₂-scale {n = n}
 
   id-+-lem : ∀ m {n} {v : Vec (m +ℕ n)} → (((vtake m v) ++ εᵥ {n}) +ᵥ (εᵥ {m} ++ (vdrop m v))) ≈ᵥ v
   id-+-lem zero                = +ᵥ-lunit
-  id-+-lem (suc m) {v = x ∷ v} = trans +-comm +-lunit , id-+-lem m
+  id-+-lem (suc m) {v = x ∷ v} = S.trans S.+-comm S.+-lunit , id-+-lem m
 
   -- Projections / injections.
   p₁ : ∀ {m n} → (m +ℕ n) ⇒ m
@@ -461,7 +461,7 @@ module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   combine-fwd : ∀ m {n} {v : FD.Vec (m +ℕ n)} →
                 ((FD.vtake m v FD.+ᵥ FD.εᵥ) ++ (FD.εᵥ FD.+ᵥ FD.vdrop m v)) FD.≈ᵥ v
   combine-fwd zero                    = FD.+ᵥ-lunit
-  combine-fwd (suc m) {n} {v = x ∷ v} = FD.trans FD.+-comm FD.+-lunit , combine-fwd m {n}
+  combine-fwd (suc m) {n} {v = x ∷ v} = FD.S.trans FD.S.+-comm FD.S.+-lunit , combine-fwd m {n}
 
   F-preserve-products : FPF.preserve-chosen-products FD.products
                           (biproducts→products SM.cmon-enriched SM.biproduct)
