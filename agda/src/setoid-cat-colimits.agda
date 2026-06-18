@@ -103,12 +103,17 @@ module _ o e where
     private
       CXY : Colimit (chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k)))
       CXY = ωcolimits (chain {𝒞 = 𝒮} (λ k → prod (X k) (Y k)) (λ k → prod-m (f k) (g k)))
+
       canonX = ωcolimits (chain {𝒞 = 𝒮} X f)
+
       canonY = ωcolimits (chain {𝒞 = 𝒮} Y g)
+
       ιX : a ⇒s canonX .Colimit.apex
       ιX = isX .IsColimit.colambda (canonX .Colimit.apex) (canonX .Colimit.cocone)
+
       ιY : b ⇒s canonY .Colimit.apex
       ιY = isY .IsColimit.colambda (canonY .Colimit.apex) (canonY .Colimit.cocone)
+
       κ-fwd : prod (canonX .Colimit.apex) (canonY .Colimit.apex) ⇒s CXY .Colimit.apex
       κ-fwd .func ((k , x) , (j , y)) =
         _ , (chain {𝒞 = 𝒮} X f .Functor.fmor (≤⇒≤′ (m≤m⊔n k j)) .func x
@@ -117,6 +122,7 @@ module _ o e where
         CXY .Colimit.apex .isEquivalence .trans
           (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func (w , u₂)) (λ r → {!!}) px)
           (elim-EquivOfS (CXY .Colimit.apex) (λ w → κ-fwd .func (v₁ , w)) (λ r → {!!}) qy)
+
       forward : prod a b ⇒s CXY .Colimit.apex
       forward = κ-fwd ∘ prod-m ιX ιY
 
