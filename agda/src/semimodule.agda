@@ -428,6 +428,18 @@ Dual-⊕-iso {M} {N} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-�
 ⊕-self-dual : ∀ {M N} → Iso M (Dual M) → Iso N (Dual N) → Iso (M ⊕ N) (Dual (M ⊕ N))
 ⊕-self-dual M≅M* N≅N* = Iso-trans (⊕-iso M≅M* N≅N*) (Iso-sym Dual-⊕-iso)
 
+⊕-iso-fwd : ∀ {M N} (M≅M* : Iso M (Dual M)) (N≅N* : Iso N (Dual N))  {x : M .Carrier} {y : N .Carrier} →
+            (Dual M ⊕ Dual N) ._≈_ (⊕-iso M≅M* N≅N* .Iso.fwd .func (x , y))
+                                   (M≅M* .Iso.fwd .func x , N≅N* .Iso.fwd .func y)
+⊕-iso-fwd {M} {N} M≅M* N≅N* =
+  trans (Dual M) (+-comm (Dual M)) (+-lunit (Dual M)) , +-lunit (Dual N)
+
+pairing-⊕ : ∀ {M N} (M≅M* : Iso M (Dual M)) (N≅N* : Iso N (Dual N)) {x x' : M .Carrier} {y y' : N .Carrier} →
+            pairing (⊕-self-dual M≅M* N≅N*) (x , y) (x' , y') S.≈ ((pairing M≅M* x x') S.+ (pairing N≅N* y y'))
+pairing-⊕ {M} {N} M≅M* N≅N* {x} {x'} {y} {y'} =
+  S.trans (Dual-⊕-iso .Iso.bwd .func-resp-≈ (⊕-iso-fwd M≅M* N≅N* {x} {y}) .*≈* ._≈s_.func-eq (refl (M ⊕ N)))
+          S.refl
+
 ------------------------------------------------------------------------------
 -- Conjugate of a morphism w.r.t. chosen self-dualities d : M ≅ Dual M.
 
