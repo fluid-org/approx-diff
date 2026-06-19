@@ -279,9 +279,12 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     data MorD : ∀ {k} → (Fin k → Fin nA ⊎ Sort nA) → (Fin k → Fin nB ⊎ Sort nB) →
                 Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
-      base : ∀ {k} {ρA ρB} (f : ∀ v → TA.El (ρA v) → TB.El (ρB v)) →
-             (∀ v {a a'} → TA.elEq (ρA v) a a' → TB.elEq (ρB v) (f v a) (f v a')) →
-             (∀ v a → TA.fib-el (ρA v) a ⇒ TB.fib-el (ρB v) (f v a)) → MorD {k} ρA ρB
+      base : ∀ {k} {ρA ρB} (f : ∀ v → TA.El (ρA v) → TB.El (ρB v))
+             (f-resp : ∀ v {a a'} → TA.elEq (ρA v) a a' → TB.elEq (ρB v) (f v a) (f v a'))
+             (ffam : ∀ v a → TA.fib-el (ρA v) a ⇒ TB.fib-el (ρB v) (f v a)) →
+             (∀ v {a a'} (p : TA.elEq (ρA v) a a') →
+                (ffam v a' ∘ TA.fib-el-subst (ρA v) p) ≈ (TB.fib-el-subst (ρB v) (f-resp v p) ∘ ffam v a)) →
+             MorD {k} ρA ρB
       bind : ∀ {k} {ρA ρB} (Q : Poly (suc k)) → MorD ρA ρB →
              MorD (extend ρA (inj₂ (mkSort Q ρA))) (extend ρB (inj₂ (mkSort Q ρB)))
 
@@ -298,7 +301,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       reindex-shape (μ Q') md t = reindex md t
 
       apply : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) → TA.El (ρA v) → TB.El (ρB v)
-      apply (base f _ _) v          a = f v a
+      apply (base f _ _ _) v        a = f v a
       apply (bind Q md) Fin.zero    a = reindex md a
       apply (bind Q md) (Fin.suc v) a = apply md v a
 
@@ -320,7 +323,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
       apply-resp : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) {a a'} →
                    TA.elEq (ρA v) a a' → TB.elEq (ρB v) (apply md v a) (apply md v a')
-      apply-resp (base f f-resp _) v         p = f-resp v p
+      apply-resp (base f f-resp _ _) v       p = f-resp v p
       apply-resp (bind Q md)     Fin.zero    {a} {a'} p = reindex-resp md {a} {a'} p
       apply-resp (bind Q md)     (Fin.suc v) p = apply-resp md v p
 
@@ -341,9 +344,43 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
       apply-fam : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) (a : TA.El (ρA v)) →
                   TA.fib-el (ρA v) a ⇒ TB.fib-el (ρB v) (apply md v a)
-      apply-fam (base _ _ ffam) v           a = ffam v a
+      apply-fam (base _ _ ffam _) v         a = ffam v a
       apply-fam (bind Q md)     Fin.zero    a = reindex-fam-W md {a}
       apply-fam (bind Q md)     (Fin.suc v) a = apply-fam md v a
+
+    -- The fibre reindex commutes with subst (naturality).
+    -- PARKED: typechecks structurally but the non-injective `W-≈`/`fib` in the types
+    -- generate cascading unsolved implicits at the `μ`/W level; needs per-occurrence pinning.
+    {-
+    mutual
+      reindex-fam-nat : ∀ {j} (R : Poly j) {ηA ηB} (md : MorD ηA ηB)
+                        {a a' : TA.⟦ R ⟧shape ηA} (p : TA.shape≈ R ηA a a') →
+                        (reindex-fam R md {a'} ∘ TA.fib-shape-subst R ηA p)
+                          ≈ (TB.fib-shape-subst R ηB (reindex-shape-resp R md p) ∘ reindex-fam R md {a})
+      reindex-fam-nat (const A) md p = ≈-trans id-left (≈-sym id-right)
+      reindex-fam-nat (var v)   md {a} {a'} p = apply-fam-nat md v {a} {a'} p
+      reindex-fam-nat (P + Q) md {inj₁ a} {inj₁ a'} p = reindex-fam-nat P md p
+      reindex-fam-nat (P + Q) md {inj₂ b} {inj₂ b'} p = reindex-fam-nat Q md p
+      reindex-fam-nat (P × Q) md {a , b} {a' , b'} (p₁ , p₂) =
+        ≈-trans (≈-sym (prod-m-comp _ _ _ _))
+        (≈-trans (prod-m-cong (reindex-fam-nat P md p₁) (reindex-fam-nat Q md p₂))
+                 (prod-m-comp _ _ _ _))
+      reindex-fam-nat (μ Q') md {t} {t'} p = reindex-fam-W-nat md {t} {t'} p
+
+      reindex-fam-W-nat : ∀ {k} {Q : Poly (suc k)} {ρA ρB} (md : MorD ρA ρB)
+                          {t t' : TA.W Q ρA} (p : TA.W-≈ t t') →
+                          (reindex-fam-W md {t'} ∘ TA.fib-subst p)
+                            ≈ (TB.fib-subst (reindex-resp md {t} {t'} p) ∘ reindex-fam-W md {t})
+      reindex-fam-W-nat {Q = Q} md {TA.sup x} {TA.sup y} p = reindex-fam-nat Q (bind Q md) {x} {y} p
+
+      apply-fam-nat : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) {a a'}
+                      (p : TA.elEq (ρA v) a a') →
+                      (apply-fam md v a' ∘ TA.fib-el-subst (ρA v) p)
+                        ≈ (TB.fib-el-subst (ρB v) (apply-resp md v p) ∘ apply-fam md v a)
+      apply-fam-nat (base _ _ _ ffam-nat) v p = ffam-nat v p
+      apply-fam-nat (bind Q md) Fin.zero    {a} {a'} p = reindex-fam-W-nat md {a} {a'} p
+      apply-fam-nat (bind Q md) (Fin.suc v) p = apply-fam-nat md v p
+    -}
 
   μObj : ∀ {n} → Poly (suc n) → (Fin n → Obj) → Obj
   μObj P δ .idx = WSetoid δ P (λ i → inj₁ i)
@@ -385,7 +422,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       m₀-fam : ∀ v (a : TX.El (inj₁ v)) → TX.fib-el (inj₁ v) a ⇒ Tδ.fib-el (η₀ v) (m₀ v a)
       m₀-fam Fin.zero    a = id _
       m₀-fam (Fin.suc i) a = id _
-      mor₀ = R.base m₀ m₀-resp m₀-fam
+      m₀-fam-nat : ∀ v {a a'} (p : TX.elEq (inj₁ v) a a') →
+                   (m₀-fam v a' ∘ TX.fib-el-subst (inj₁ v) p) ≈ (Tδ.fib-el-subst (η₀ v) (m₀-resp v p) ∘ m₀-fam v a)
+      m₀-fam-nat Fin.zero    p = ≈-trans id-left (≈-sym id-right)
+      m₀-fam-nat (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
+      mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-nat
       -- Fibre bridge: `fobj`'s fibre to our `fib-shape` (identity at leaves, products at ×).
       embed-fam : (Q : Poly (suc n)) (x : fobj μo Q δ' .idx .Carrier) →
                   fobj μo Q δ' .fam .fm x ⇒ TX.fib-shape Q (λ v → inj₁ v) (embed-idx Q x)
