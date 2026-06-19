@@ -297,7 +297,7 @@ _⊸_ : Semimodule → Semimodule → Semimodule
 Dual : Semimodule → Semimodule
 Dual M = M ⊸ 𝕀
 
-open Category cat using (≈-trans; ≈-sym; ≈-refl; ∘-cong; assoc; id-left; Iso; IsIso→Iso)
+open Category cat using (≈-trans; ≈-sym; ≈-refl; ∘-cong; assoc; id-left; Iso; IsIso→Iso; Iso-trans; Iso-sym)
 
 -- Pairing ⟨ x , y ⟩ = (d x) y induced by a self-duality; a measure of the extent to which x and y overlap.
 pairing : ∀ {M} → Iso M (Dual M) → M .Carrier → M .Carrier → S.Carrier
@@ -423,6 +423,10 @@ Dual-⊕-iso {M} {N} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-�
 
 ⊕-iso : ∀ {M M' N N'} → Iso M M' → Iso N N' → Iso (M ⊕ N) (M' ⊕ N')
 ⊕-iso = HasCoproducts.coproduct-preserve-iso (biproducts→coproducts cmon-enriched biproduct)
+
+-- The biproduct of two self-dualities is a self-duality of the biproduct.
+⊕-self-dual : ∀ {M N} → Iso M (Dual M) → Iso N (Dual N) → Iso (M ⊕ N) (Dual (M ⊕ N))
+⊕-self-dual M≅M* N≅N* = Iso-trans (⊕-iso M≅M* N≅N*) (Iso-sym Dual-⊕-iso)
 
 ------------------------------------------------------------------------------
 -- Conjugate of a morphism w.r.t. chosen self-dualities d : M ≅ Dual M.
