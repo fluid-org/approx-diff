@@ -458,9 +458,18 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     where
       μo = μObj
       module Tδ = Tree δ
+      module TA' = Tree (extend δ A)
       η₀ : Fin (suc n) → Fin n ⊎ Sort n
       η₀ = extend (λ i → inj₁ i) (inj₂ (mkSort P (λ i → inj₁ i)))
-      -- Fold the outer μ via `alg`; nested μ are reindexed into the `extend δ A` context.
+      -- Fold-specific reindex morphism (first-order, like `MorD`): `fbase` sends the outer
+      -- recursion slot to the fold and parameters to themselves; `fbind` records a binder.
+      data FMor : ∀ {k} → (Fin k → Fin n ⊎ Sort n) → (Fin k → Fin (suc n) ⊎ Sort (suc n)) →
+                  Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+        fbase : FMor η₀ (λ v → inj₁ v)
+        fbind : ∀ {k} {ρ ρ'} (Q : Poly (suc k)) → FMor ρ ρ' →
+                FMor (extend ρ (inj₂ (mkSort Q ρ))) (extend ρ' (inj₂ (mkSort Q ρ')))
+      -- Fold the outer μ via `alg`; nested μ are reindexed into the `extend δ A` context,
+      -- the recursion slot carrying the fold itself (inlined, so every call is structural).
       mutual
         fold-idx : Γ .idx .Carrier → Tδ.W P (λ i → inj₁ i) → A .idx .Carrier
         fold-idx γ (Tδ.sup x) = alg .idxf .PS._⇒_.func (γ , foldShape-idx P γ x)
@@ -473,7 +482,27 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         foldShape-idx (Q₁ + Q₂) γ (inj₁ x) = inj₁ (foldShape-idx Q₁ γ x)
         foldShape-idx (Q₁ + Q₂) γ (inj₂ y) = inj₂ (foldShape-idx Q₂ γ y)
         foldShape-idx (Q₁ × Q₂) γ (x , y) = foldShape-idx Q₁ γ x , foldShape-idx Q₂ γ y
-        foldShape-idx (μ Q')    γ t = {!!}
+        foldShape-idx (μ Q')    γ t = fold-reindex γ fbase t
+
+        fold-reindex : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ') →
+                       Tδ.W Q ρ → TA'.W Q ρ'
+        fold-reindex {Q = Q} γ fm (Tδ.sup x) = TA'.sup (fold-reindex-shape γ Q (fbind Q fm) x)
+
+        fold-reindex-shape : ∀ {j} (γ : Γ .idx .Carrier) (R : Poly j) {ηA ηB} (fm : FMor ηA ηB) →
+                             Tδ.⟦ R ⟧shape ηA → TA'.⟦ R ⟧shape ηB
+        fold-reindex-shape γ (const A') fm a = a
+        fold-reindex-shape γ (var v)    fm a = fold-apply γ fm v a
+        fold-reindex-shape γ (P' + Q') fm (inj₁ a) = inj₁ (fold-reindex-shape γ P' fm a)
+        fold-reindex-shape γ (P' + Q') fm (inj₂ b) = inj₂ (fold-reindex-shape γ Q' fm b)
+        fold-reindex-shape γ (P' × Q') fm (a , b) = fold-reindex-shape γ P' fm a , fold-reindex-shape γ Q' fm b
+        fold-reindex-shape γ (μ Q'')   fm t = fold-reindex γ fm t
+
+        fold-apply : ∀ {k} {ρ ρ'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ') (v : Fin k) →
+                     Tδ.El (ρ v) → TA'.El (ρ' v)
+        fold-apply γ fbase        Fin.zero    t = fold-idx γ t
+        fold-apply γ fbase        (Fin.suc i) a = a
+        fold-apply γ (fbind Q fm) Fin.zero    a = fold-reindex γ fm a
+        fold-apply γ (fbind Q fm) (Fin.suc v) a = fold-apply γ fm v a
       foldMor : Mor (Fam𝒞-P.prod Γ (μo P δ)) A
       foldMor .idxf .PS._⇒_.func (γ , t) = fold-idx γ t
       foldMor .idxf .PS._⇒_.func-resp-≈ = {!!}
