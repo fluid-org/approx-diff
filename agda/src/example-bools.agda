@@ -147,7 +147,7 @@ module forward-mat where
   fwd-slice : _ → _
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
-  -- Label slice is [] (dim 0), the dependency bit is the number slice (x ∷ []).
+  -- Output depends on the 1st and 3rd numbers (those with label a), not the 2nd.
   -- test-1 : fwd-slice (lift · , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
   -- test-1 = ≡-refl
 
@@ -157,8 +157,7 @@ module forward-mat where
   -- test-3 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , _) ≡ (⊤ ∷ [])
   -- test-3 = ≡-refl
 
--- Forward analysis via the SemiMod model directly (no intermediate Mat), with
--- the identity functor.  Slice values are scalars, not Mat vectors.
+-- Forward analysis via the SemiMod model directly (no intermediate Mat).
 module forward-semimod where
   open import categories using (Category; HasTerminal; HasProducts)
 
