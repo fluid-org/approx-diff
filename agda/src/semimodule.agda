@@ -656,7 +656,7 @@ module JoinSemilattices
       let p₁ , p₂ = zero-sum-free 𝕀 (S.trans (S.sym (pairing-⊕ X.self-dual Y.self-dual)) h)
       in X.align .proj₂ p₁ , Y.align .proj₂ p₂
 
-    to-conj : (X.M ⇒ Y.M) → X.toObj ⇒c Y.toObj
+    to-conj : X.M ⇒ Y.M → X.toObj ⇒c Y.toObj
     to-conj f ._⇒c_.right = joins-map f
     to-conj f ._⇒c_.left = joins-map (conj X.self-dual Y.self-dual f)
     to-conj f ._⇒c_.conjugate =
@@ -728,7 +728,7 @@ module JoinSemilattices
 
   -- With the scalars a bounded distributive lattice, 𝕀 (and hence every biproduct of copies of it) is a
   -- self-dual distributive lattice: multiplication is the meet of the join order.
-  module DistributiveLattices (∧-idem : ∀ {x} → (x S.· x) S.≈ x) where
+  module DistribLattices (∧-idem : ∀ {x} → (x S.· x) S.≈ x) where
 
     private
       ∨-∧-absorption : ∀ {a b} → (a S.+ (a S.· b)) S.≈ a
