@@ -188,7 +188,6 @@ module forward-semimod where
   fwd-slice : _ → _
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
-  -- Label slice is the point of 𝟘; the dependency bit is the scalar number slice.
   -- Output depends on the 1st and 3rd numbers (those with label a), not the 2nd.
   test-1 : fwd-slice (lift · , (lift · , ⊤) , (lift · , ⊥) , (lift · , ⊥) , _) ≡ ⊤
   test-1 = ≡-refl
