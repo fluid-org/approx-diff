@@ -201,9 +201,62 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       fib-el-subst (inj₁ p)            e = δ p .fam .subst e
       fib-el-subst (inj₂ (mkSort Q ρ)) {x} {y} e = fib-subst {x = x} {y = y} e
 
+    -- Transport along reflexivity is the identity.
+    mutual
+      fib-refl* : ∀ {k} {Q : Poly (suc k)} {ρ} (x : W Q ρ) →
+                  fib-subst {x = x} {y = x} (W-≈-refl x) ≈ id (fib x)
+      fib-refl* {Q = Q} {ρ = ρ} (sup x) = fib-shape-refl* Q (extend ρ (inj₂ (mkSort Q ρ))) x
+
+      fib-shape-refl* : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) (x : ⟦ Q ⟧shape η) →
+                        fib-shape-subst Q η (shape≈-refl Q η x) ≈ id (fib-shape Q η x)
+      fib-shape-refl* (const A) η x = A .fam .refl*
+      fib-shape-refl* (var j)   η x = fib-el-refl* (η j) x
+      fib-shape-refl* (P + Q) η (inj₁ x) = fib-shape-refl* P η x
+      fib-shape-refl* (P + Q) η (inj₂ y) = fib-shape-refl* Q η y
+      fib-shape-refl* (P × Q) η (x , y) =
+        ≈-trans (prod-m-cong (fib-shape-refl* P η x) (fib-shape-refl* Q η y)) prod-m-id
+      fib-shape-refl* (μ Q') η x = fib-refl* x
+
+      fib-el-refl* : (r : Fin n ⊎ Sort n) (x : El r) →
+                     fib-el-subst r (elEq-refl r x) ≈ id (fib-el r x)
+      fib-el-refl* (inj₁ p)            x = δ p .fam .refl*
+      fib-el-refl* (inj₂ (mkSort Q ρ)) x = fib-refl* x
+
+    -- Transport is functorial: a composite is the composite of the transports.
+    mutual
+      fib-trans* : ∀ {k} {Q : Poly (suc k)} {ρ} {x y z : W Q ρ} (q : W-≈ y z) (p : W-≈ x y) →
+                   fib-subst {x = x} {y = z} (W-≈-trans {x = x} {y = y} {z = z} p q)
+                     ≈ (fib-subst {x = y} {y = z} q ∘ fib-subst {x = x} {y = y} p)
+      fib-trans* {Q = Q} {ρ = ρ} {sup x} {sup y} {sup z} q p =
+        fib-shape-trans* Q (extend ρ (inj₂ (mkSort Q ρ))) q p
+
+      fib-shape-trans* : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) {x y z : ⟦ Q ⟧shape η}
+                         (q : shape≈ Q η y z) (p : shape≈ Q η x y) →
+                         fib-shape-subst Q η (shape≈-trans Q η p q) ≈ (fib-shape-subst Q η q ∘ fib-shape-subst Q η p)
+      fib-shape-trans* (const A) η q p = A .fam .trans* q p
+      fib-shape-trans* (var j)   η q p = fib-el-trans* (η j) q p
+      fib-shape-trans* (P + Q) η {inj₁ _} {inj₁ _} {inj₁ _} q p = fib-shape-trans* P η q p
+      fib-shape-trans* (P + Q) η {inj₂ _} {inj₂ _} {inj₂ _} q p = fib-shape-trans* Q η q p
+      fib-shape-trans* (P × Q) η {_ , _} {_ , _} {_ , _} (q₁ , q₂) (p₁ , p₂) =
+        ≈-trans (prod-m-cong (fib-shape-trans* P η q₁ p₁) (fib-shape-trans* Q η q₂ p₂))
+                (prod-m-comp _ _ _ _)
+      fib-shape-trans* (μ Q') η {x} {y} {z} q p = fib-trans* {x = x} {y = y} {z = z} q p
+
+      fib-el-trans* : (r : Fin n ⊎ Sort n) {x y z : El r} (q : elEq r y z) (p : elEq r x y) →
+                      fib-el-subst r (elEq-trans r p q) ≈ (fib-el-subst r q ∘ fib-el-subst r p)
+      fib-el-trans* (inj₁ i)            q p = δ i .fam .trans* q p
+      fib-el-trans* (inj₂ (mkSort Q ρ)) {x} {y} {z} q p = fib-trans* {x = x} {y = y} {z = z} q p
+
+    -- The fibre family of the μ-type at sort (Q , ρ).
+    WFam : ∀ {k} (Q : Poly (suc k)) (ρ : Fin k → Fin n ⊎ Sort n) → Fam (WSetoid Q ρ) 𝒞
+    WFam Q ρ .fm = fib
+    WFam Q ρ .subst {x} {y} = fib-subst {x = x} {y = y}
+    WFam Q ρ .refl* {x} = fib-refl* x
+    WFam Q ρ .trans* {x} {y} {z} e₁ e₂ = fib-trans* {x = x} {y = y} {z = z} e₁ e₂
+
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ .idx = WSetoid δ P (λ i → inj₁ i)
-  hasMu .HasMu.μ-obj P δ .fam = {!!}
+  hasMu .HasMu.μ-obj P δ .fam = WFam δ P (λ i → inj₁ i)
   hasMu .HasMu.α P δ          = {!!}
   hasMu .HasMu.⦅_⦆ alg        = {!!}
 
