@@ -65,6 +65,18 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   data Sort (n : ℕ) : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     mkSort : ∀ {k} → Poly (suc k) → (Fin k → Fin n ⊎ Sort n) → Sort n
 
+  -- Abstract the freshly-bound recursion variable (slot 0 of a suc-n context) into
+  -- a given sort, contracting the context to n. Used to translate `fobj`'s nested
+  -- μ (recursion-as-parameter) into our representation (recursion-as-sort).
+  mutual
+    abs-ref : ∀ {n} → Sort n → Fin (suc n) ⊎ Sort (suc n) → Fin n ⊎ Sort n
+    abs-ref rec (inj₁ Fin.zero)    = inj₂ rec
+    abs-ref rec (inj₁ (Fin.suc i)) = inj₁ i
+    abs-ref rec (inj₂ s)           = inj₂ (abs-sort rec s)
+
+    abs-sort : ∀ {n} → Sort n → Sort (suc n) → Sort n
+    abs-sort rec (mkSort R ρ) = mkSort R (λ i → abs-ref rec (ρ i))
+
   -- The carrier of the μ-type: trees indexed by sort. `⟦_⟧shape` interprets a body
   -- into a Set, resolving variables through `El`; nested μ lands at a fresh sort. The
   -- three are mutually recursive (induction-recursion), with `W` strictly positive.
