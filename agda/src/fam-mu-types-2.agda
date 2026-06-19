@@ -349,9 +349,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       apply-fam (bind Q md)     (Fin.suc v) a = apply-fam md v a
 
     -- The fibre reindex commutes with subst (naturality).
-    -- PARKED: typechecks structurally but the non-injective `W-≈`/`fib` in the types
-    -- generate cascading unsolved implicits at the `μ`/W level; needs per-occurrence pinning.
-    {-
     mutual
       reindex-fam-nat : ∀ {j} (R : Poly j) {ηA ηB} (md : MorD ηA ηB)
                         {a a' : TA.⟦ R ⟧shape ηA} (p : TA.shape≈ R ηA a a') →
@@ -369,8 +366,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
       reindex-fam-W-nat : ∀ {k} {Q : Poly (suc k)} {ρA ρB} (md : MorD ρA ρB)
                           {t t' : TA.W Q ρA} (p : TA.W-≈ t t') →
-                          (reindex-fam-W md {t'} ∘ TA.fib-subst p)
-                            ≈ (TB.fib-subst (reindex-resp md {t} {t'} p) ∘ reindex-fam-W md {t})
+                          (reindex-fam-W md {t'} ∘ TA.fib-subst {x = t} {y = t'} p)
+                            ≈ (TB.fib-subst {x = reindex md t} {y = reindex md t'}
+                                            (reindex-resp md {t} {t'} p) ∘ reindex-fam-W md {t})
       reindex-fam-W-nat {Q = Q} md {TA.sup x} {TA.sup y} p = reindex-fam-nat Q (bind Q md) {x} {y} p
 
       apply-fam-nat : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) {a a'}
@@ -380,7 +378,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       apply-fam-nat (base _ _ _ ffam-nat) v p = ffam-nat v p
       apply-fam-nat (bind Q md) Fin.zero    {a} {a'} p = reindex-fam-W-nat md {a} {a'} p
       apply-fam-nat (bind Q md) (Fin.suc v) p = apply-fam-nat md v p
-    -}
 
   μObj : ∀ {n} → Poly (suc n) → (Fin n → Obj) → Obj
   μObj P δ .idx = WSetoid δ P (λ i → inj₁ i)
@@ -436,11 +433,27 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       embed-fam (Q₁ + Q₂) (inj₂ y) = embed-fam Q₂ y
       embed-fam (Q₁ × Q₂) (x , y) = prod-m (embed-fam Q₁ x) (embed-fam Q₂ y)
       embed-fam (μ Q')    t = id _
+      embed-fam-natural : (Q : Poly (suc n)) {x y : fobj μo Q δ' .idx .Carrier} (e : _≈s_ (fobj μo Q δ' .idx) x y) →
+                          (embed-fam Q y ∘ fobj μo Q δ' .fam .subst e)
+                            ≈ (TX.fib-shape-subst Q (λ v → inj₁ v) (embed-idx-resp Q e) ∘ embed-fam Q x)
+      embed-fam-natural (const A) e = ≈-trans id-left (≈-sym id-right)
+      embed-fam-natural (var v)   e = ≈-trans id-left (≈-sym id-right)
+      embed-fam-natural (Q₁ + Q₂) {inj₁ _} {inj₁ _} e = embed-fam-natural Q₁ e
+      embed-fam-natural (Q₁ + Q₂) {inj₂ _} {inj₂ _} e = embed-fam-natural Q₂ e
+      embed-fam-natural (Q₁ × Q₂) {_ , _} {_ , _} (e₁ , e₂) =
+        ≈-trans (≈-sym (prod-m-comp _ _ _ _))
+        (≈-trans (prod-m-cong (embed-fam-natural Q₁ e₁) (embed-fam-natural Q₂ e₂)) (prod-m-comp _ _ _ _))
+      embed-fam-natural (μ Q')    e = ≈-trans id-left (≈-sym id-right)
       αmor : Mor (fobj μo P δ') (μo P δ)
       αmor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape P mor₀ (embed-idx P i))
       αmor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp P mor₀ (embed-idx-resp P x≈y)
       αmor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
-      αmor .famf ._⇒f_.natural e = {!!}
+      αmor .famf ._⇒f_.natural e =
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (embed-fam-natural P e))
+        (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong₁ (R.reindex-fam-nat P mor₀ (embed-idx-resp P e)))
+                 (assoc _ _ _))))
   hasMu .HasMu.⦅_⦆ alg        = {!!}
 
   hasMuLaws : HasMuLaws hasMu
