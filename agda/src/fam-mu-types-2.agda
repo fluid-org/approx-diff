@@ -268,6 +268,38 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
   open Tree
 
+  -- Reindex a tree from one parameter context to another along a context morphism.
+  -- The morphism is first-order data: `base` carries the leaf maps (applied only at
+  -- leaves), `bind` records one binder. So `reindex`'s recursive calls are syntactically
+  -- direct and structurally terminating — no closure, no fuel.
+  module _ {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
+    private
+      module TA = Tree δA
+      module TB = Tree δB
+
+    data MorD : ∀ {k} → (Fin k → Fin nA ⊎ Sort nA) → (Fin k → Fin nB ⊎ Sort nB) →
+                Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+      base : ∀ {k} {ρA ρB} → (∀ v → TA.El (ρA v) → TB.El (ρB v)) → MorD {k} ρA ρB
+      bind : ∀ {k} {ρA ρB} (Q : Poly (suc k)) → MorD ρA ρB →
+             MorD (extend ρA (inj₂ (mkSort Q ρA))) (extend ρB (inj₂ (mkSort Q ρB)))
+
+    mutual
+      reindex : ∀ {k} {Q : Poly (suc k)} {ρA ρB} (md : MorD ρA ρB) → TA.W Q ρA → TB.W Q ρB
+      reindex {Q = Q} md (TA.sup x) = TB.sup (reindex-shape Q (bind Q md) x)
+
+      reindex-shape : ∀ {j} (R : Poly j) {ηA ηB} (md : MorD ηA ηB) → TA.⟦ R ⟧shape ηA → TB.⟦ R ⟧shape ηB
+      reindex-shape (const A) md a = a
+      reindex-shape (var v)   md a = apply md v a
+      reindex-shape (P + Q) md (inj₁ a) = inj₁ (reindex-shape P md a)
+      reindex-shape (P + Q) md (inj₂ b) = inj₂ (reindex-shape Q md b)
+      reindex-shape (P × Q) md (a , b) = reindex-shape P md a , reindex-shape Q md b
+      reindex-shape (μ Q') md t = reindex md t
+
+      apply : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) → TA.El (ρA v) → TB.El (ρB v)
+      apply (base f)    v           a = f v a
+      apply (bind Q md) Fin.zero    a = reindex md a
+      apply (bind Q md) (Fin.suc v) a = apply md v a
+
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ .idx = WSetoid δ P (λ i → inj₁ i)
   hasMu .HasMu.μ-obj P δ .fam = WFam δ P (λ i → inj₁ i)
