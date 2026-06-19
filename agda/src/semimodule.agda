@@ -1,6 +1,7 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import Level using (0ℓ; suc)
+open import Data.Nat using (ℕ)
 open import Data.Product using (_,_; _×_)
 open import prop using (_,_; proj₁; proj₂; LiftS; liftS; tt; _⇔_; sym-⇔; trans-⇔)
 open import prop-setoid
@@ -660,3 +661,57 @@ module JoinSemilattices
     to-conj f ._⇒c_.left = joins-map (conj X.self-dual Y.self-dual f)
     to-conj f ._⇒c_.conjugate =
       trans-⇔ Y.align (trans-⇔ (conj-⊥ X.self-dual Y.self-dual f) (sym-⇔ X.align))
+
+  -- With the scalars a bounded distributive lattice, 𝕀 (and hence every biproduct of copies of it) is a
+  -- self-dual distributive lattice: multiplication is the meet of the join order.
+  module DistributiveLattices (∧-idem : ∀ {x} → (x S.· x) S.≈ x) where
+
+    private
+      ∨-∧-absorption : ∀ {a b} → (a S.+ (a S.· b)) S.≈ a
+      ∨-∧-absorption =
+        S.trans (S.+-cong (S.trans (S.sym S.·-lunit) S.·-comm) S.refl)
+                (S.trans (S.sym S.·-+-distribₗ) (S.trans (S.·-cong S.refl ⊤-add-top) (S.trans S.·-comm S.·-lunit)))
+
+      ∧-monoʳ : ∀ {a b c} → _≤_ 𝕀 a b → _≤_ 𝕀 (c S.· a) (c S.· b)
+      ∧-monoʳ a≤b = S.trans (S.sym S.·-+-distribₗ) (S.·-cong S.refl a≤b)
+
+      ∧-monoˡ : ∀ {a b c} → _≤_ 𝕀 a b → _≤_ 𝕀 (a S.· c) (b S.· c)
+      ∧-monoˡ a≤b = S.trans (S.sym S.·-+-distribᵣ) (S.·-cong a≤b S.refl)
+
+    𝕀-meet : MeetSemilattice (preorder 𝕀)
+    𝕀-meet .MeetSemilattice._∧_ = S._·_
+    𝕀-meet .MeetSemilattice.⊤ = S.ι
+    𝕀-meet .MeetSemilattice.∧-isMeet .IsMeet.π₁ = S.trans S.+-comm ∨-∧-absorption
+    𝕀-meet .MeetSemilattice.∧-isMeet .IsMeet.π₂ =
+      S.trans (S.+-cong S.·-comm S.refl) (S.trans S.+-comm ∨-∧-absorption)
+    𝕀-meet .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z =
+      ≤-isPreorder 𝕀 .IsPreorder.trans
+        (S.trans (S.+-cong (S.sym ∧-idem) S.refl) (∧-monoʳ x≤z)) (∧-monoˡ x≤y)
+    𝕀-meet .MeetSemilattice.⊤-isTop .IsTop.≤-top = S.trans S.+-comm ⊤-add-top
+
+    𝕀-sddl : SelfDualDistributiveLattice
+    𝕀-sddl .SelfDualDistributiveLattice.M           = 𝕀
+    𝕀-sddl .SelfDualDistributiveLattice.self-dual   = 𝕀≅𝕀*
+    𝕀-sddl .SelfDualDistributiveLattice.meets       = 𝕀-meet
+    𝕀-sddl .SelfDualDistributiveLattice.∧-∨-distrib x y z = ≈→≤ 𝕀 S.·-+-distribₗ
+    𝕀-sddl .SelfDualDistributiveLattice.align .proj₁ h = S.trans (S.sym (S.trans S.+-comm S.+-lunit)) h
+    𝕀-sddl .SelfDualDistributiveLattice.align .proj₂ h = ≈→≤ 𝕀 h
+
+    -- 𝟘 (= ⊕⁰ 𝕀) is trivially a self-dual distributive lattice.
+    𝟘-sddl : SelfDualDistributiveLattice
+    𝟘-sddl .SelfDualDistributiveLattice.M                                          = 𝟘
+    𝟘-sddl .SelfDualDistributiveLattice.self-dual                                  = Iso-sym Dual-𝟘
+    𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice._∧_ _ _             = 𝟘 .ε
+    𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice.⊤                   = 𝟘 .ε
+    𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice.∧-isMeet .IsMeet.π₁ = tt
+    𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice.∧-isMeet .IsMeet.π₂ = tt
+    𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ _ _ = tt
+    𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice.⊤-isTop .IsTop.≤-top = tt
+    𝟘-sddl .SelfDualDistributiveLattice.∧-∨-distrib _ _ _                          = tt
+    𝟘-sddl .SelfDualDistributiveLattice.align .proj₁ _                             = S.refl
+    𝟘-sddl .SelfDualDistributiveLattice.align .proj₂ _                             = tt
+
+    -- n-fold biproduct of 𝕀: the free self-dual distributive lattice on n generators.
+    ⊕ⁿ : ℕ → SelfDualDistributiveLattice
+    ⊕ⁿ ℕ.zero    = 𝟘-sddl
+    ⊕ⁿ (ℕ.suc n) = ⊕-sddl 𝕀-sddl (⊕ⁿ n)
