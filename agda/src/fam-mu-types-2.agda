@@ -95,6 +95,25 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   data Sort (n : ℕ) : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     mkSort : ∀ {k} → Poly (suc k) → (Fin k → Fin n ⊎ Sort n) → Sort n
 
+  -- The carrier of the μ-type: trees indexed by sort. `⟦_⟧shape` interprets a body
+  -- into a Set, resolving variables through `El`; nested μ lands at a fresh sort. The
+  -- three are mutually recursive (induction-recursion), with `W` strictly positive.
+  module _ {n} (δ : Fin n → Obj) where
+    mutual
+      data W {k} (Q : Poly (suc k)) (ρ : Fin k → Fin n ⊎ Sort n) : Set os where
+        sup : ⟦ Q ⟧shape (extend ρ (inj₂ (mkSort Q ρ))) → W Q ρ
+
+      ⟦_⟧shape : ∀ {k} → Poly k → (Fin k → Fin n ⊎ Sort n) → Set os
+      ⟦ const A ⟧shape η = A .idx .Carrier
+      ⟦ var j   ⟧shape η = El (η j)
+      ⟦ P + Q   ⟧shape η = ⟦ P ⟧shape η ⊎ ⟦ Q ⟧shape η
+      ⟦ P × Q   ⟧shape η = ⟦ P ⟧shape η ×T ⟦ Q ⟧shape η
+      ⟦ μ Q'    ⟧shape η = W Q' η
+
+      El : Fin n ⊎ Sort n → Set os
+      El (inj₁ p)            = δ p .idx .Carrier
+      El (inj₂ (mkSort Q ρ)) = W Q ρ
+
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ .idx = idx-mu P δ
   hasMu .HasMu.μ-obj P δ .fam = {!!}
