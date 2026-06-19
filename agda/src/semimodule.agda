@@ -648,7 +648,8 @@ module JoinSemilattices
     ⊕-sddl .SelfDualDistributiveLattice.M           = X.M ⊕ Y.M
     ⊕-sddl .SelfDualDistributiveLattice.self-dual   = ⊕-self-dual X.self-dual Y.self-dual
     ⊕-sddl .SelfDualDistributiveLattice.meets       = meets-⊕
-    ⊕-sddl .SelfDualDistributiveLattice.∧-∨-distrib = {!!}
+    ⊕-sddl .SelfDualDistributiveLattice.∧-∨-distrib (x₁ , x₂) (y₁ , y₂) (z₁ , z₂) =
+      X.∧-∨-distrib x₁ y₁ z₁ , Y.∧-∨-distrib x₂ y₂ z₂
     ⊕-sddl .SelfDualDistributiveLattice.align       = {!!}
 
     to-conj : (X.M ⇒ Y.M) → X.toObj ⇒c Y.toObj
