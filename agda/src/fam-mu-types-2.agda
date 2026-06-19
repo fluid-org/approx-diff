@@ -68,7 +68,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   -- The carrier of the μ-type: trees indexed by sort. `⟦_⟧shape` interprets a body
   -- into a Set, resolving variables through `El`; nested μ lands at a fresh sort. The
   -- three are mutually recursive (induction-recursion), with `W` strictly positive.
-  module _ {n} (δ : Fin n → Obj) where
+  module Tree {n} (δ : Fin n → Obj) where
     mutual
       data W {k} (Q : Poly (suc k)) (ρ : Fin k → Fin n ⊎ Sort n) : Set os where
         sup : ⟦ Q ⟧shape (extend ρ (inj₂ (mkSort Q ρ))) → W Q ρ
@@ -253,6 +253,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     WFam Q ρ .subst {x} {y} = fib-subst {x = x} {y = y}
     WFam Q ρ .refl* {x} = fib-refl* x
     WFam Q ρ .trans* {x} {y} {z} e₁ e₂ = fib-trans* {x = x} {y = y} {z = z} e₁ e₂
+
+  open Tree
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ .idx = WSetoid δ P (λ i → inj₁ i)
