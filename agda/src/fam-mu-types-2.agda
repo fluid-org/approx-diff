@@ -27,9 +27,6 @@ open import categories
 open import prop-setoid as PS
   using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_; changeCat)
-open import setoid-cat using (SetoidCat; Setoid-terminal; Setoid-products)
-import setoid-cat-colimits
-import colimit-mu-types
 import fam
 import polynomial-functor-2
 
@@ -54,33 +51,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   open _⇒f_
   open polynomial-functor-2 (terminal T) products strongCoproducts
     using (Poly; const; var; _+_; _×_; μ; extend; fobj; HasMu; HasMuLaws)
-
-  ------------------------------------------------------------------------------
-  -- The index of the Fam μ-type is a setoid μ-type: SetoidCat is cocomplete
-  -- (setoid-cat-colimits), so colimit-mu-types builds initial algebras there.
-  -- A Fam-polynomial maps to a setoid-polynomial by sending each const's Fam-obj
-  -- to its index setoid; the index of `μ-obj P δ` is the setoid μ of that image.
-  private
-    𝒮T   = Setoid-terminal os (os ⊔ es)
-    𝒮P   = Setoid-products os (os ⊔ es)
-    𝒮SC  = setoid-cat-colimits.strongCoproducts os es
-    𝒮I   = setoid-cat-colimits.initial os es
-    𝒮Col = setoid-cat-colimits.ωcolimits os es
-
-  module SetoidPoly = polynomial-functor-2 𝒮T 𝒮P 𝒮SC
-  module SμT = colimit-mu-types 𝒮T 𝒮P 𝒮SC 𝒮I 𝒮Col
-
-  -- Index translation: replace each parameter object by its index setoid.
-  tr : ∀ {n} → Poly n → SetoidPoly.Poly n
-  tr (const A) = SetoidPoly.const (A .idx)
-  tr (var i)   = SetoidPoly.var i
-  tr (P + Q)   = tr P SetoidPoly.+ tr Q
-  tr (P × Q)   = tr P SetoidPoly.× tr Q
-  tr (μ P)     = SetoidPoly.μ (tr P)
-
-  -- The index setoid of the Fam μ-type.
-  idx-mu : ∀ {n} → Poly (suc n) → (Fin n → Obj) → Setoid os (os ⊔ es)
-  idx-mu P δ = SμT.μ-carrier (tr P) (λ i → δ i .idx)
 
   open import Data.Sum using (_⊎_)
   open import Data.Product using () renaming (_×_ to _×T_)
@@ -187,8 +157,16 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       elEq-trans (inj₁ p)            e f = δ p .idx .isEquivalence .trans e f
       elEq-trans (inj₂ (mkSort Q ρ)) e f = W-≈-trans e f
 
+    -- The carrier setoid of the μ-type at sort (Q , ρ).
+    WSetoid : ∀ {k} (Q : Poly (suc k)) (ρ : Fin k → Fin n ⊎ Sort n) → Setoid os (os ⊔ es)
+    WSetoid Q ρ .Carrier = W Q ρ
+    WSetoid Q ρ ._≈s_ = W-≈
+    WSetoid Q ρ .isEquivalence .refl {x} = W-≈-refl x
+    WSetoid Q ρ .isEquivalence .sym = W-≈-sym
+    WSetoid Q ρ .isEquivalence .trans = W-≈-trans
+
   hasMu : HasMu
-  hasMu .HasMu.μ-obj P δ .idx = idx-mu P δ
+  hasMu .HasMu.μ-obj P δ .idx = WSetoid δ P (λ i → inj₁ i)
   hasMu .HasMu.μ-obj P δ .fam = {!!}
   hasMu .HasMu.α P δ          = {!!}
   hasMu .HasMu.⦅_⦆ alg        = {!!}
