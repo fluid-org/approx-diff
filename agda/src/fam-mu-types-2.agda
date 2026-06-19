@@ -516,11 +516,82 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         fold-apply-fam γ (fbind Q md) Fin.zero    a = fold-reindex-fam γ md a
         fold-apply-fam γ (fbind Q md) (Fin.suc v) a = fold-apply-fam γ md v a
 
+
+
+      -- The fibre fold is natural: it commutes with `subst` (in both Γ and the tree).
+      mutual
+        fold-fam-nat : ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {t t'} (p : Tδ.W-≈ t t') →
+                       (fold-fam γ₂ t' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-subst {x = t} {y = t'} p))
+                         ≈ (A .fam .subst (fold-idx-resp γ≈ {t} {t'} p) ∘ fold-fam γ₁ t)
+        fold-fam-nat {γ₁} {γ₂} γ≈ {Tδ.sup x} {Tδ.sup y} p =
+          ≈-trans (assoc _ _ _)
+          (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
+          (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (foldShape-fam-nat P γ≈ {x} {y} p)))
+          (≈-trans (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _)))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (alg .famf ._⇒f_.natural (γ≈ , foldShape-idx-resp P γ≈ {x} {y} p)) ≈-refl)
+                   (assoc _ _ _))))))
+
+        foldShape-fam-nat : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
+                            (p : Tδ.shape≈ Q η₀ x x') →
+                            (foldShape-fam Q γ₂ x' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-shape-subst Q η₀ p))
+                              ≈ (fobj μo Q (extend δ A) .fam .subst (foldShape-idx-resp Q γ≈ p) ∘ foldShape-fam Q γ₁ x)
+        foldShape-fam-nat (const A')        γ≈ p = pair-p₂ _ _
+        foldShape-fam-nat (var Fin.zero)    γ≈ {x} {x'} p = fold-fam-nat γ≈ {x} {x'} p
+        foldShape-fam-nat (var (Fin.suc i)) γ≈ p = pair-p₂ _ _
+        foldShape-fam-nat (Q₁ + Q₂) γ≈ {inj₁ _} {inj₁ _} p = foldShape-fam-nat Q₁ γ≈ p
+        foldShape-fam-nat (Q₁ + Q₂) γ≈ {inj₂ _} {inj₂ _} p = foldShape-fam-nat Q₂ γ≈ p
+        foldShape-fam-nat (Q₁ × Q₂) γ≈ {x₁ , x₂} {x₁' , x₂'} (p₁p , p₂p) =
+          ≈-trans (pair-natural _ _ _)
+          (≈-trans (pair-cong (assoc _ _ _) (assoc _ _ _))
+          (≈-trans (pair-cong (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (pair-p₁ _ _) ≈-refl) (assoc _ _ _)))))))) (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (pair-p₂ _ _) ≈-refl) (assoc _ _ _)))))))))
+          (≈-trans (pair-cong (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _))) (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _))))
+          (≈-trans (pair-cong (≈-sym (assoc _ _ _)) (≈-sym (assoc _ _ _)))
+          (≈-trans (pair-cong (∘-cong (foldShape-fam-nat Q₁ γ≈ p₁p) ≈-refl) (∘-cong (foldShape-fam-nat Q₂ γ≈ p₂p) ≈-refl))
+          (≈-trans (pair-cong (assoc _ _ _) (assoc _ _ _))
+                   (≈-sym (pair-compose _ _ _ _))))))))
+        foldShape-fam-nat (μ Q')    γ≈ {x} {x'} p = fold-reindex-fam-nat γ≈ fbase {x} {x'} p
+
+        fold-reindex-fam-nat : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂)
+                               (md : FMor ρ ρ') {t t' : Tδ.W Q ρ} (p : Tδ.W-≈ t t') →
+                               (fold-reindex-fam γ₂ md t' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-subst {x = t} {y = t'} p))
+                                 ≈ (TA'.fib-subst {x = fold-reindex γ₁ md t} {y = fold-reindex γ₂ md t'}
+                                                  (fold-reindex-resp γ≈ md {t} {t'} p) ∘ fold-reindex-fam γ₁ md t)
+        fold-reindex-fam-nat {Q = Q} γ≈ md {Tδ.sup x} {Tδ.sup y} p = fold-reindex-shape-fam-nat γ≈ Q (fbind Q md) {x} {y} p
+
+        fold-reindex-shape-fam-nat : ∀ {j} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) (R : Poly j) {ηA ηB} (md : FMor ηA ηB)
+                                     {a a' : Tδ.⟦ R ⟧shape ηA} (p : Tδ.shape≈ R ηA a a') →
+                                     (fold-reindex-shape-fam γ₂ R md a' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-shape-subst R ηA p))
+                                       ≈ (TA'.fib-shape-subst R ηB (fold-reindex-shape-resp γ≈ R md p) ∘ fold-reindex-shape-fam γ₁ R md a)
+        fold-reindex-shape-fam-nat γ≈ (const A') md p = pair-p₂ _ _
+        fold-reindex-shape-fam-nat γ≈ (var v)    md p = fold-apply-fam-nat γ≈ md v p
+        fold-reindex-shape-fam-nat γ≈ (P' + Q') md {inj₁ _} {inj₁ _} p = fold-reindex-shape-fam-nat γ≈ P' md p
+        fold-reindex-shape-fam-nat γ≈ (P' + Q') md {inj₂ _} {inj₂ _} p = fold-reindex-shape-fam-nat γ≈ Q' md p
+        fold-reindex-shape-fam-nat γ≈ (P' × Q') md {a₁ , a₂} {a₁' , a₂'} (p₁p , p₂p) =
+          ≈-trans (pair-natural _ _ _)
+          (≈-trans (pair-cong (assoc _ _ _) (assoc _ _ _))
+          (≈-trans (pair-cong (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (pair-p₁ _ _) ≈-refl) (assoc _ _ _)))))))) (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (pair-p₂ _ _) ≈-refl) (assoc _ _ _)))))))))
+          (≈-trans (pair-cong (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _))) (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _))))
+          (≈-trans (pair-cong (≈-sym (assoc _ _ _)) (≈-sym (assoc _ _ _)))
+          (≈-trans (pair-cong (∘-cong (fold-reindex-shape-fam-nat γ≈ P' md p₁p) ≈-refl) (∘-cong (fold-reindex-shape-fam-nat γ≈ Q' md p₂p) ≈-refl))
+          (≈-trans (pair-cong (assoc _ _ _) (assoc _ _ _))
+                   (≈-sym (pair-compose _ _ _ _))))))))
+        fold-reindex-shape-fam-nat γ≈ (μ Q'')   md {a} {a'} p = fold-reindex-fam-nat γ≈ md {a} {a'} p
+
+        fold-apply-fam-nat : ∀ {k} {ρ ρ'} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) (md : FMor ρ ρ') (v : Fin k)
+                             {a a'} (p : Tδ.elEq (ρ v) a a') →
+                             (fold-apply-fam γ₂ md v a' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-el-subst (ρ v) p))
+                               ≈ (TA'.fib-el-subst (ρ' v) (fold-apply-resp γ≈ md v p) ∘ fold-apply-fam γ₁ md v a)
+        fold-apply-fam-nat γ≈ fbase        Fin.zero    {a} {a'} p = fold-fam-nat γ≈ {a} {a'} p
+        fold-apply-fam-nat γ≈ fbase        (Fin.suc i) p = pair-p₂ _ _
+        fold-apply-fam-nat γ≈ (fbind Q md) Fin.zero    {a} {a'} p = fold-reindex-fam-nat γ≈ md {a} {a'} p
+        fold-apply-fam-nat γ≈ (fbind Q md) (Fin.suc v) p = fold-apply-fam-nat γ≈ md v p
+
       foldMor : Mor (Fam𝒞-P.prod Γ (μo P δ)) A
       foldMor .idxf .PS._⇒_.func (γ , t) = fold-idx γ t
       foldMor .idxf .PS._⇒_.func-resp-≈ {γ , t} {γ' , t'} (γ≈ , t≈) = fold-idx-resp γ≈ {t} {t'} t≈
       foldMor .famf ._⇒f_.transf (γ , t) = fold-fam γ t
-      foldMor .famf ._⇒f_.natural e = {!!}
+      foldMor .famf ._⇒f_.natural {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) = fold-fam-nat γ≈ {t₁} {t₂} t≈
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj = μObj
