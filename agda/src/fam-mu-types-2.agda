@@ -136,6 +136,57 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       elEq (inj₁ p)            x y = _≈s_ (δ p .idx) x y
       elEq (inj₂ (mkSort Q ρ)) x y = W-≈ x y
 
+    mutual
+      W-≈-refl : ∀ {k} {Q : Poly (suc k)} {ρ} (x : W Q ρ) → W-≈ x x
+      W-≈-refl {Q = Q} {ρ = ρ} (sup x) = sup (shape≈-refl Q (extend ρ (inj₂ (mkSort Q ρ))) x)
+
+      shape≈-refl : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) (x : ⟦ Q ⟧shape η) → shape≈ Q η x x
+      shape≈-refl (const A) η x = A .idx .isEquivalence .refl
+      shape≈-refl (var j)   η x = elEq-refl (η j) x
+      shape≈-refl (P + Q) η (inj₁ x) = shape≈-refl P η x
+      shape≈-refl (P + Q) η (inj₂ y) = shape≈-refl Q η y
+      shape≈-refl (P × Q) η (x₁ , x₂) = shape≈-refl P η x₁ , shape≈-refl Q η x₂
+      shape≈-refl (μ Q') η x = W-≈-refl x
+
+      elEq-refl : (r : Fin n ⊎ Sort n) (x : El r) → elEq r x x
+      elEq-refl (inj₁ p)            x = δ p .idx .isEquivalence .refl
+      elEq-refl (inj₂ (mkSort Q ρ)) x = W-≈-refl x
+
+    mutual
+      W-≈-sym : ∀ {k} {Q : Poly (suc k)} {ρ} {x y : W Q ρ} → W-≈ x y → W-≈ y x
+      W-≈-sym {Q = Q} {ρ = ρ} (sup p) = sup (shape≈-sym Q (extend ρ (inj₂ (mkSort Q ρ))) p)
+
+      shape≈-sym : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) {x y : ⟦ Q ⟧shape η} →
+                   shape≈ Q η x y → shape≈ Q η y x
+      shape≈-sym (const A) η p = A .idx .isEquivalence .sym p
+      shape≈-sym (var j)   η p = elEq-sym (η j) p
+      shape≈-sym (P + Q) η {inj₁ _} {inj₁ _} p = shape≈-sym P η p
+      shape≈-sym (P + Q) η {inj₂ _} {inj₂ _} p = shape≈-sym Q η p
+      shape≈-sym (P × Q) η {_ , _} {_ , _} (p₁ , p₂) = shape≈-sym P η p₁ , shape≈-sym Q η p₂
+      shape≈-sym (μ Q') η p = W-≈-sym p
+
+      elEq-sym : (r : Fin n ⊎ Sort n) {x y : El r} → elEq r x y → elEq r y x
+      elEq-sym (inj₁ p)            e = δ p .idx .isEquivalence .sym e
+      elEq-sym (inj₂ (mkSort Q ρ)) e = W-≈-sym e
+
+    mutual
+      W-≈-trans : ∀ {k} {Q : Poly (suc k)} {ρ} {x y z : W Q ρ} → W-≈ x y → W-≈ y z → W-≈ x z
+      W-≈-trans {Q = Q} {ρ = ρ} (sup p) (sup q) = sup (shape≈-trans Q (extend ρ (inj₂ (mkSort Q ρ))) p q)
+
+      shape≈-trans : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) {x y z : ⟦ Q ⟧shape η} →
+                     shape≈ Q η x y → shape≈ Q η y z → shape≈ Q η x z
+      shape≈-trans (const A) η p q = A .idx .isEquivalence .trans p q
+      shape≈-trans (var j)   η p q = elEq-trans (η j) p q
+      shape≈-trans (P + Q) η {inj₁ _} {inj₁ _} {inj₁ _} p q = shape≈-trans P η p q
+      shape≈-trans (P + Q) η {inj₂ _} {inj₂ _} {inj₂ _} p q = shape≈-trans Q η p q
+      shape≈-trans (P × Q) η {_ , _} {_ , _} {_ , _} (p₁ , p₂) (q₁ , q₂) =
+        shape≈-trans P η p₁ q₁ , shape≈-trans Q η p₂ q₂
+      shape≈-trans (μ Q') η p q = W-≈-trans p q
+
+      elEq-trans : (r : Fin n ⊎ Sort n) {x y z : El r} → elEq r x y → elEq r y z → elEq r x z
+      elEq-trans (inj₁ p)            e f = δ p .idx .isEquivalence .trans e f
+      elEq-trans (inj₂ (mkSort Q ρ)) e f = W-≈-trans e f
+
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ .idx = idx-mu P δ
   hasMu .HasMu.μ-obj P δ .fam = {!!}
