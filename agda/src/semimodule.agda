@@ -536,9 +536,9 @@ module JoinSemilattices
   where
 
   open import preorder using (Preorder)
-  open import basics using (IsPreorder; IsJoin; IsBottom; module Disjoint)
+  open import basics using (IsPreorder; IsJoin; IsBottom; IsMeet; IsTop; module Disjoint)
   open import join-semilattice using (JoinSemilattice) renaming (_=>_ to _=>J_)
-  open import meet-semilattice using (MeetSemilattice)
+  open import meet-semilattice using (MeetSemilattice) renaming (_⊕_ to _⊕ₘ_)
   open import conjugate using (Obj; _⇒c_)
 
   module _ (M : Semimodule) where
@@ -631,6 +631,25 @@ module JoinSemilattices
     private
       module X = SelfDualDistributiveLattice X
       module Y = SelfDualDistributiveLattice Y
+      module MX = MeetSemilattice X.meets
+      module MY = MeetSemilattice Y.meets
+
+    -- Componentwise meet on the biproduct (the meet-semilattice product, but indexed by preorder (X.M ⊕ Y.M)).
+    meets-⊕ : MeetSemilattice (preorder (X.M ⊕ Y.M))
+    meets-⊕ .MeetSemilattice._∧_ (x₁ , y₁) (x₂ , y₂) = MX._∧_ x₁ x₂ , MY._∧_ y₁ y₂
+    meets-⊕ .MeetSemilattice.⊤ = MX.⊤ , MY.⊤
+    meets-⊕ .MeetSemilattice.∧-isMeet .IsMeet.π₁ = MX.∧-isMeet .IsMeet.π₁ , MY.∧-isMeet .IsMeet.π₁
+    meets-⊕ .MeetSemilattice.∧-isMeet .IsMeet.π₂ = MX.∧-isMeet .IsMeet.π₂ , MY.∧-isMeet .IsMeet.π₂
+    meets-⊕ .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ (x₁≤y₁ , x₂≤y₂) (x₁≤z₁ , x₂≤z₂) =
+      MX.∧-isMeet .IsMeet.⟨_,_⟩ x₁≤y₁ x₁≤z₁ , MY.∧-isMeet .IsMeet.⟨_,_⟩ x₂≤y₂ x₂≤z₂
+    meets-⊕ .MeetSemilattice.⊤-isTop .IsTop.≤-top = MX.⊤-isTop .IsTop.≤-top , MY.⊤-isTop .IsTop.≤-top
+
+    ⊕-sddl : SelfDualDistributiveLattice
+    ⊕-sddl .SelfDualDistributiveLattice.M           = X.M ⊕ Y.M
+    ⊕-sddl .SelfDualDistributiveLattice.self-dual   = ⊕-self-dual X.self-dual Y.self-dual
+    ⊕-sddl .SelfDualDistributiveLattice.meets       = meets-⊕
+    ⊕-sddl .SelfDualDistributiveLattice.∧-∨-distrib = {!!}
+    ⊕-sddl .SelfDualDistributiveLattice.align       = {!!}
 
     to-conj : (X.M ⇒ Y.M) → X.toObj ⇒c Y.toObj
     to-conj f ._⇒c_.right = joins-map f
