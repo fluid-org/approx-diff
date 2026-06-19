@@ -279,7 +279,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     data MorD : ∀ {k} → (Fin k → Fin nA ⊎ Sort nA) → (Fin k → Fin nB ⊎ Sort nB) →
                 Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
-      base : ∀ {k} {ρA ρB} → (∀ v → TA.El (ρA v) → TB.El (ρB v)) → MorD {k} ρA ρB
+      base : ∀ {k} {ρA ρB} (f : ∀ v → TA.El (ρA v) → TB.El (ρB v)) →
+             (∀ v {a a'} → TA.elEq (ρA v) a a' → TB.elEq (ρB v) (f v a) (f v a')) → MorD {k} ρA ρB
       bind : ∀ {k} {ρA ρB} (Q : Poly (suc k)) → MorD ρA ρB →
              MorD (extend ρA (inj₂ (mkSort Q ρA))) (extend ρB (inj₂ (mkSort Q ρB)))
 
@@ -296,9 +297,31 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       reindex-shape (μ Q') md t = reindex md t
 
       apply : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) → TA.El (ρA v) → TB.El (ρB v)
-      apply (base f)    v           a = f v a
+      apply (base f _)  v           a = f v a
       apply (bind Q md) Fin.zero    a = reindex md a
       apply (bind Q md) (Fin.suc v) a = apply md v a
+
+    -- `reindex` respects bisimilarity.
+    mutual
+      reindex-resp : ∀ {k} {Q : Poly (suc k)} {ρA ρB} (md : MorD ρA ρB) {t t' : TA.W Q ρA} →
+                     TA.W-≈ t t' → TB.W-≈ (reindex md t) (reindex md t')
+      reindex-resp {Q = Q} md {TA.sup x} {TA.sup y} p = reindex-shape-resp Q (bind Q md) {x} {y} p
+
+      reindex-shape-resp : ∀ {j} (R : Poly j) {ηA ηB} (md : MorD ηA ηB) {a a' : TA.⟦ R ⟧shape ηA} →
+                           TA.shape≈ R ηA a a' → TB.shape≈ R ηB (reindex-shape R md a) (reindex-shape R md a')
+      reindex-shape-resp (const A) md p = p
+      reindex-shape-resp (var v)   md p = apply-resp md v p
+      reindex-shape-resp (P + Q) md {inj₁ _} {inj₁ _} p = reindex-shape-resp P md p
+      reindex-shape-resp (P + Q) md {inj₂ _} {inj₂ _} p = reindex-shape-resp Q md p
+      reindex-shape-resp (P × Q) md {_ , _} {_ , _} (p₁ , p₂) =
+        reindex-shape-resp P md p₁ , reindex-shape-resp Q md p₂
+      reindex-shape-resp (μ Q') md {a} {a'} p = reindex-resp md {a} {a'} p
+
+      apply-resp : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) {a a'} →
+                   TA.elEq (ρA v) a a' → TB.elEq (ρB v) (apply md v a) (apply md v a')
+      apply-resp (base f f-resp) v           p = f-resp v p
+      apply-resp (bind Q md)     Fin.zero    {a} {a'} p = reindex-resp md {a} {a'} p
+      apply-resp (bind Q md)     (Fin.suc v) p = apply-resp md v p
 
   μObj : ∀ {n} → Poly (suc n) → (Fin n → Obj) → Obj
   μObj P δ .idx = WSetoid δ P (λ i → inj₁ i)
@@ -306,14 +329,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj = μObj
-  hasMu .HasMu.α {n} P δ .idxf .PS._⇒_.func i =
-    Tδ.sup (R.reindex-shape P (R.base m₀) (embed-idx P i))
+  hasMu .HasMu.α {n} P δ = αmor
     where
       μo = μObj
       δ' = extend δ (μo P δ)
       module Tδ = Tree δ
       module TX = Tree δ'
       module R  = Reidx δ' δ
+      η₀ : Fin (suc n) → Fin n ⊎ Sort n
+      η₀ = extend (λ i → inj₁ i) (inj₂ (mkSort P (λ i → inj₁ i)))
       -- Bridge `fobj`'s native structure to our `⟦_⟧shape` (identity at leaves and μ).
       embed-idx : (Q : Poly (suc n)) → fobj μo Q δ' .idx .Carrier → TX.⟦ Q ⟧shape (λ v → inj₁ v)
       embed-idx (const A) a = a
@@ -322,11 +346,24 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       embed-idx (Q₁ + Q₂) (inj₂ y) = inj₂ (embed-idx Q₂ y)
       embed-idx (Q₁ × Q₂) (x , y) = embed-idx Q₁ x , embed-idx Q₂ y
       embed-idx (μ Q')    t = t
-      m₀ : ∀ v → TX.El (inj₁ v) → Tδ.El (extend (λ i → inj₁ i) (inj₂ (mkSort P (λ i → inj₁ i))) v)
+      embed-idx-resp : (Q : Poly (suc n)) {x y : fobj μo Q δ' .idx .Carrier} →
+                       _≈s_ (fobj μo Q δ' .idx) x y → TX.shape≈ Q (λ v → inj₁ v) (embed-idx Q x) (embed-idx Q y)
+      embed-idx-resp (const A) p = p
+      embed-idx-resp (var v)   p = p
+      embed-idx-resp (Q₁ + Q₂) {inj₁ _} {inj₁ _} p = embed-idx-resp Q₁ p
+      embed-idx-resp (Q₁ + Q₂) {inj₂ _} {inj₂ _} p = embed-idx-resp Q₂ p
+      embed-idx-resp (Q₁ × Q₂) {_ , _} {_ , _} (p₁ , p₂) = embed-idx-resp Q₁ p₁ , embed-idx-resp Q₂ p₂
+      embed-idx-resp (μ Q')    p = p
+      m₀ : ∀ v → TX.El (inj₁ v) → Tδ.El (η₀ v)
       m₀ Fin.zero    a = a
       m₀ (Fin.suc i) a = a
-  hasMu .HasMu.α P δ .idxf .PS._⇒_.func-resp-≈ x≈y = {!!}
-  hasMu .HasMu.α P δ .famf = {!!}
+      m₀-resp : ∀ v {a a'} → TX.elEq (inj₁ v) a a' → Tδ.elEq (η₀ v) (m₀ v a) (m₀ v a')
+      m₀-resp Fin.zero    p = p
+      m₀-resp (Fin.suc i) p = p
+      αmor : Mor (fobj μo P δ') (μo P δ)
+      αmor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape P (R.base m₀ m₀-resp) (embed-idx P i))
+      αmor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp P (R.base m₀ m₀-resp) (embed-idx-resp P x≈y)
+      αmor .famf = {!!}
   hasMu .HasMu.⦅_⦆ alg        = {!!}
 
   hasMuLaws : HasMuLaws hasMu
