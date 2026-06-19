@@ -585,13 +585,11 @@ module JoinSemilattices
     joins .JoinSemilattice.⊥-isBottom = ⊥-isBottom
 
     -- x + y ≈ ε forces each summand to ε.
-    zero-sum-freeₗ : ∀ {x y} → (x M.+ y) M.≈ M.ε → x M.≈ M.ε
-    zero-sum-freeₗ h =
+    zero-sum-free : ∀ {x y} → (x M.+ y) M.≈ M.ε → prop._∧_ (x M.≈ M.ε) (y M.≈ M.ε)
+    zero-sum-free h .proj₁ =
       M.trans (M.sym (M.trans M.+-comm M.+-lunit))
               (≤-isPreorder .IsPreorder.trans (∨-isJoin .IsJoin.inl) (≈→≤ h))
-
-    zero-sum-freeᵣ : ∀ {x y} → (x M.+ y) M.≈ M.ε → y M.≈ M.ε
-    zero-sum-freeᵣ h =
+    zero-sum-free h .proj₂ =
       M.trans (M.sym (M.trans M.+-comm M.+-lunit))
               (≤-isPreorder .IsPreorder.trans (∨-isJoin .IsJoin.inr) (≈→≤ h))
 
@@ -654,9 +652,8 @@ module JoinSemilattices
       S.trans (pairing-⊕ X.self-dual Y.self-dual)
               (S.trans (S.+-cong (X.align .proj₁ d₁) (Y.align .proj₁ d₂)) S.+-lunit)
     ⊕-sddl .SelfDualDistributiveLattice.align {x₁ , x₂} {y₁ , y₂} .proj₂ h =
-        X.align .proj₂ (zero-sum-freeₗ 𝕀 h')
-      , Y.align .proj₂ (zero-sum-freeᵣ 𝕀 h')
-      where h' = S.trans (S.sym (pairing-⊕ X.self-dual Y.self-dual)) h
+      let p₁ , p₂ = zero-sum-free 𝕀 (S.trans (S.sym (pairing-⊕ X.self-dual Y.self-dual)) h)
+      in X.align .proj₂ p₁ , Y.align .proj₂ p₂
 
     to-conj : (X.M ⇒ Y.M) → X.toObj ⇒c Y.toObj
     to-conj f ._⇒c_.right = joins-map f
