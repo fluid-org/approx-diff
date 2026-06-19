@@ -650,7 +650,13 @@ module JoinSemilattices
     ⊕-sddl .SelfDualDistributiveLattice.meets       = meets-⊕
     ⊕-sddl .SelfDualDistributiveLattice.∧-∨-distrib (x₁ , x₂) (y₁ , y₂) (z₁ , z₂) =
       X.∧-∨-distrib x₁ y₁ z₁ , Y.∧-∨-distrib x₂ y₂ z₂
-    ⊕-sddl .SelfDualDistributiveLattice.align       = {!!}
+    ⊕-sddl .SelfDualDistributiveLattice.align {x₁ , x₂} {y₁ , y₂} .proj₁ (d₁ , d₂) =
+      S.trans (pairing-⊕ X.self-dual Y.self-dual)
+              (S.trans (S.+-cong (X.align .proj₁ d₁) (Y.align .proj₁ d₂)) S.+-lunit)
+    ⊕-sddl .SelfDualDistributiveLattice.align {x₁ , x₂} {y₁ , y₂} .proj₂ h =
+        X.align .proj₂ (zero-sum-freeₗ 𝕀 h')
+      , Y.align .proj₂ (zero-sum-freeᵣ 𝕀 h')
+      where h' = S.trans (S.sym (pairing-⊕ X.self-dual Y.self-dual)) h
 
     to-conj : (X.M ⇒ Y.M) → X.toObj ⇒c Y.toObj
     to-conj f ._⇒c_.right = joins-map f
