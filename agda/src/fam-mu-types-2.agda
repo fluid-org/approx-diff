@@ -383,79 +383,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   μObj P δ .idx = WSetoid δ P (λ i → inj₁ i)
   μObj P δ .fam = WFam δ P (λ i → inj₁ i)
 
-  hasMu : HasMu
-  hasMu .HasMu.μ-obj = μObj
-  hasMu .HasMu.α {n} P δ = αmor
-    where
-      μo = μObj
-      δ' = extend δ (μo P δ)
-      module Tδ = Tree δ
-      module TX = Tree δ'
-      module R  = Reidx δ' δ
-      η₀ : Fin (suc n) → Fin n ⊎ Sort n
-      η₀ = extend (λ i → inj₁ i) (inj₂ (mkSort P (λ i → inj₁ i)))
-      -- Bridge `fobj`'s native structure to our `⟦_⟧shape` (identity at leaves and μ).
-      embed-idx : (Q : Poly (suc n)) → fobj μo Q δ' .idx .Carrier → TX.⟦ Q ⟧shape (λ v → inj₁ v)
-      embed-idx (const A) a = a
-      embed-idx (var v)   a = a
-      embed-idx (Q₁ + Q₂) (inj₁ x) = inj₁ (embed-idx Q₁ x)
-      embed-idx (Q₁ + Q₂) (inj₂ y) = inj₂ (embed-idx Q₂ y)
-      embed-idx (Q₁ × Q₂) (x , y) = embed-idx Q₁ x , embed-idx Q₂ y
-      embed-idx (μ Q')    t = t
-      embed-idx-resp : (Q : Poly (suc n)) {x y : fobj μo Q δ' .idx .Carrier} →
-                       _≈s_ (fobj μo Q δ' .idx) x y → TX.shape≈ Q (λ v → inj₁ v) (embed-idx Q x) (embed-idx Q y)
-      embed-idx-resp (const A) p = p
-      embed-idx-resp (var v)   p = p
-      embed-idx-resp (Q₁ + Q₂) {inj₁ _} {inj₁ _} p = embed-idx-resp Q₁ p
-      embed-idx-resp (Q₁ + Q₂) {inj₂ _} {inj₂ _} p = embed-idx-resp Q₂ p
-      embed-idx-resp (Q₁ × Q₂) {_ , _} {_ , _} (p₁ , p₂) = embed-idx-resp Q₁ p₁ , embed-idx-resp Q₂ p₂
-      embed-idx-resp (μ Q')    p = p
-      m₀ : ∀ v → TX.El (inj₁ v) → Tδ.El (η₀ v)
-      m₀ Fin.zero    a = a
-      m₀ (Fin.suc i) a = a
-      m₀-resp : ∀ v {a a'} → TX.elEq (inj₁ v) a a' → Tδ.elEq (η₀ v) (m₀ v a) (m₀ v a')
-      m₀-resp Fin.zero    p = p
-      m₀-resp (Fin.suc i) p = p
-      m₀-fam : ∀ v (a : TX.El (inj₁ v)) → TX.fib-el (inj₁ v) a ⇒ Tδ.fib-el (η₀ v) (m₀ v a)
-      m₀-fam Fin.zero    a = id _
-      m₀-fam (Fin.suc i) a = id _
-      m₀-fam-nat : ∀ v {a a'} (p : TX.elEq (inj₁ v) a a') →
-                   (m₀-fam v a' ∘ TX.fib-el-subst (inj₁ v) p) ≈ (Tδ.fib-el-subst (η₀ v) (m₀-resp v p) ∘ m₀-fam v a)
-      m₀-fam-nat Fin.zero    p = ≈-trans id-left (≈-sym id-right)
-      m₀-fam-nat (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
-      mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-nat
-      -- Fibre bridge: `fobj`'s fibre to our `fib-shape` (identity at leaves, products at ×).
-      embed-fam : (Q : Poly (suc n)) (x : fobj μo Q δ' .idx .Carrier) →
-                  fobj μo Q δ' .fam .fm x ⇒ TX.fib-shape Q (λ v → inj₁ v) (embed-idx Q x)
-      embed-fam (const A) a = id _
-      embed-fam (var v)   a = id _
-      embed-fam (Q₁ + Q₂) (inj₁ x) = embed-fam Q₁ x
-      embed-fam (Q₁ + Q₂) (inj₂ y) = embed-fam Q₂ y
-      embed-fam (Q₁ × Q₂) (x , y) = prod-m (embed-fam Q₁ x) (embed-fam Q₂ y)
-      embed-fam (μ Q')    t = id _
-      embed-fam-natural : (Q : Poly (suc n)) {x y : fobj μo Q δ' .idx .Carrier} (e : _≈s_ (fobj μo Q δ' .idx) x y) →
-                          (embed-fam Q y ∘ fobj μo Q δ' .fam .subst e)
-                            ≈ (TX.fib-shape-subst Q (λ v → inj₁ v) (embed-idx-resp Q e) ∘ embed-fam Q x)
-      embed-fam-natural (const A) e = ≈-trans id-left (≈-sym id-right)
-      embed-fam-natural (var v)   e = ≈-trans id-left (≈-sym id-right)
-      embed-fam-natural (Q₁ + Q₂) {inj₁ _} {inj₁ _} e = embed-fam-natural Q₁ e
-      embed-fam-natural (Q₁ + Q₂) {inj₂ _} {inj₂ _} e = embed-fam-natural Q₂ e
-      embed-fam-natural (Q₁ × Q₂) {_ , _} {_ , _} (e₁ , e₂) =
-        ≈-trans (≈-sym (prod-m-comp _ _ _ _))
-        (≈-trans (prod-m-cong (embed-fam-natural Q₁ e₁) (embed-fam-natural Q₂ e₂)) (prod-m-comp _ _ _ _))
-      embed-fam-natural (μ Q')    e = ≈-trans id-left (≈-sym id-right)
-      αmor : Mor (fobj μo P δ') (μo P δ)
-      αmor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape P mor₀ (embed-idx P i))
-      αmor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp P mor₀ (embed-idx-resp P x≈y)
-      αmor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
-      αmor .famf ._⇒f_.natural e =
-        ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong₂ (embed-fam-natural P e))
-        (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong₁ (R.reindex-fam-nat P mor₀ (embed-idx-resp P e)))
-                 (assoc _ _ _))))
-  hasMu .HasMu.⦅_⦆ {n} {Γ} {A} {P} {δ} alg = foldMor
-    where
+  -- The fold (catamorphism) for the μ-type, lifted to a standalone module so its
+  -- mutual recursion is termination-checked independently of the `hasMu` copattern.
+  module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+                 (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A) where
       μo = μObj
       module Tδ = Tree δ
       module TA' = Tree (extend δ A)
@@ -546,10 +477,123 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         fold-apply-resp γ≈ (fbind Q fm) Fin.zero    {a} {a'} p = fold-reindex-resp γ≈ fm {a} {a'} p
         fold-apply-resp γ≈ (fbind Q fm) (Fin.suc v) p = fold-apply-resp γ≈ fm v p
 
+      -- The fibre fold: collapse the tree's fibre via `alg.famf`, threading the Γ-fibre.
+      mutual
+        fold-fam : (γ : Γ .idx .Carrier) (t : Tδ.W P (λ i → inj₁ i)) →
+                   prod (Γ .fam .fm γ) (Tδ.fib t) ⇒ A .fam .fm (fold-idx γ t)
+        fold-fam γ (Tδ.sup x) =
+          alg .famf ._⇒f_.transf (γ , foldShape-idx P γ x) ∘ pair p₁ (foldShape-fam P γ x)
+
+        foldShape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ Q ⟧shape η₀) →
+                        prod (Γ .fam .fm γ) (Tδ.fib-shape Q η₀ x) ⇒ fobj μo Q (extend δ A) .fam .fm (foldShape-idx Q γ x)
+        foldShape-fam (const A')        γ a = p₂
+        foldShape-fam (var Fin.zero)    γ t = fold-fam γ t
+        foldShape-fam (var (Fin.suc i)) γ a = p₂
+        foldShape-fam (Q₁ + Q₂) γ (inj₁ x) = foldShape-fam Q₁ γ x
+        foldShape-fam (Q₁ + Q₂) γ (inj₂ y) = foldShape-fam Q₂ γ y
+        foldShape-fam (Q₁ × Q₂) γ (x , y) =
+          pair (foldShape-fam Q₁ γ x ∘ pair p₁ (p₁ ∘ p₂)) (foldShape-fam Q₂ γ y ∘ pair p₁ (p₂ ∘ p₂))
+        foldShape-fam (μ Q')    γ t = fold-reindex-fam γ fbase t
+
+        fold-reindex-fam : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} (γ : Γ .idx .Carrier) (md : FMor ρ ρ') (t : Tδ.W Q ρ) →
+                           prod (Γ .fam .fm γ) (Tδ.fib t) ⇒ TA'.fib (fold-reindex γ md t)
+        fold-reindex-fam {Q = Q} γ md (Tδ.sup x) = fold-reindex-shape-fam γ Q (fbind Q md) x
+
+        fold-reindex-shape-fam : ∀ {j} (γ : Γ .idx .Carrier) (R : Poly j) {ηA ηB} (md : FMor ηA ηB) (a : Tδ.⟦ R ⟧shape ηA) →
+                                 prod (Γ .fam .fm γ) (Tδ.fib-shape R ηA a) ⇒ TA'.fib-shape R ηB (fold-reindex-shape γ R md a)
+        fold-reindex-shape-fam γ (const A') md a = p₂
+        fold-reindex-shape-fam γ (var v)    md a = fold-apply-fam γ md v a
+        fold-reindex-shape-fam γ (P' + Q') md (inj₁ a) = fold-reindex-shape-fam γ P' md a
+        fold-reindex-shape-fam γ (P' + Q') md (inj₂ b) = fold-reindex-shape-fam γ Q' md b
+        fold-reindex-shape-fam γ (P' × Q') md (a , b) =
+          pair (fold-reindex-shape-fam γ P' md a ∘ pair p₁ (p₁ ∘ p₂)) (fold-reindex-shape-fam γ Q' md b ∘ pair p₁ (p₂ ∘ p₂))
+        fold-reindex-shape-fam γ (μ Q'')   md t = fold-reindex-fam γ md t
+
+        fold-apply-fam : ∀ {k} {ρ ρ'} (γ : Γ .idx .Carrier) (md : FMor ρ ρ') (v : Fin k) (a : Tδ.El (ρ v)) →
+                         prod (Γ .fam .fm γ) (Tδ.fib-el (ρ v) a) ⇒ TA'.fib-el (ρ' v) (fold-apply γ md v a)
+        fold-apply-fam γ fbase        Fin.zero    t = fold-fam γ t
+        fold-apply-fam γ fbase        (Fin.suc i) a = p₂
+        fold-apply-fam γ (fbind Q md) Fin.zero    a = fold-reindex-fam γ md a
+        fold-apply-fam γ (fbind Q md) (Fin.suc v) a = fold-apply-fam γ md v a
+
       foldMor : Mor (Fam𝒞-P.prod Γ (μo P δ)) A
       foldMor .idxf .PS._⇒_.func (γ , t) = fold-idx γ t
       foldMor .idxf .PS._⇒_.func-resp-≈ {γ , t} {γ' , t'} (γ≈ , t≈) = fold-idx-resp γ≈ {t} {t'} t≈
-      foldMor .famf = {!!}
+      foldMor .famf ._⇒f_.transf (γ , t) = fold-fam γ t
+      foldMor .famf ._⇒f_.natural e = {!!}
+
+  hasMu : HasMu
+  hasMu .HasMu.μ-obj = μObj
+  hasMu .HasMu.α {n} P δ = αmor
+    where
+      μo = μObj
+      δ' = extend δ (μo P δ)
+      module Tδ = Tree δ
+      module TX = Tree δ'
+      module R  = Reidx δ' δ
+      η₀ : Fin (suc n) → Fin n ⊎ Sort n
+      η₀ = extend (λ i → inj₁ i) (inj₂ (mkSort P (λ i → inj₁ i)))
+      -- Bridge `fobj`'s native structure to our `⟦_⟧shape` (identity at leaves and μ).
+      embed-idx : (Q : Poly (suc n)) → fobj μo Q δ' .idx .Carrier → TX.⟦ Q ⟧shape (λ v → inj₁ v)
+      embed-idx (const A) a = a
+      embed-idx (var v)   a = a
+      embed-idx (Q₁ + Q₂) (inj₁ x) = inj₁ (embed-idx Q₁ x)
+      embed-idx (Q₁ + Q₂) (inj₂ y) = inj₂ (embed-idx Q₂ y)
+      embed-idx (Q₁ × Q₂) (x , y) = embed-idx Q₁ x , embed-idx Q₂ y
+      embed-idx (μ Q')    t = t
+      embed-idx-resp : (Q : Poly (suc n)) {x y : fobj μo Q δ' .idx .Carrier} →
+                       _≈s_ (fobj μo Q δ' .idx) x y → TX.shape≈ Q (λ v → inj₁ v) (embed-idx Q x) (embed-idx Q y)
+      embed-idx-resp (const A) p = p
+      embed-idx-resp (var v)   p = p
+      embed-idx-resp (Q₁ + Q₂) {inj₁ _} {inj₁ _} p = embed-idx-resp Q₁ p
+      embed-idx-resp (Q₁ + Q₂) {inj₂ _} {inj₂ _} p = embed-idx-resp Q₂ p
+      embed-idx-resp (Q₁ × Q₂) {_ , _} {_ , _} (p₁ , p₂) = embed-idx-resp Q₁ p₁ , embed-idx-resp Q₂ p₂
+      embed-idx-resp (μ Q')    p = p
+      m₀ : ∀ v → TX.El (inj₁ v) → Tδ.El (η₀ v)
+      m₀ Fin.zero    a = a
+      m₀ (Fin.suc i) a = a
+      m₀-resp : ∀ v {a a'} → TX.elEq (inj₁ v) a a' → Tδ.elEq (η₀ v) (m₀ v a) (m₀ v a')
+      m₀-resp Fin.zero    p = p
+      m₀-resp (Fin.suc i) p = p
+      m₀-fam : ∀ v (a : TX.El (inj₁ v)) → TX.fib-el (inj₁ v) a ⇒ Tδ.fib-el (η₀ v) (m₀ v a)
+      m₀-fam Fin.zero    a = id _
+      m₀-fam (Fin.suc i) a = id _
+      m₀-fam-nat : ∀ v {a a'} (p : TX.elEq (inj₁ v) a a') →
+                   (m₀-fam v a' ∘ TX.fib-el-subst (inj₁ v) p) ≈ (Tδ.fib-el-subst (η₀ v) (m₀-resp v p) ∘ m₀-fam v a)
+      m₀-fam-nat Fin.zero    p = ≈-trans id-left (≈-sym id-right)
+      m₀-fam-nat (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
+      mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-nat
+      -- Fibre bridge: `fobj`'s fibre to our `fib-shape` (identity at leaves, products at ×).
+      embed-fam : (Q : Poly (suc n)) (x : fobj μo Q δ' .idx .Carrier) →
+                  fobj μo Q δ' .fam .fm x ⇒ TX.fib-shape Q (λ v → inj₁ v) (embed-idx Q x)
+      embed-fam (const A) a = id _
+      embed-fam (var v)   a = id _
+      embed-fam (Q₁ + Q₂) (inj₁ x) = embed-fam Q₁ x
+      embed-fam (Q₁ + Q₂) (inj₂ y) = embed-fam Q₂ y
+      embed-fam (Q₁ × Q₂) (x , y) = prod-m (embed-fam Q₁ x) (embed-fam Q₂ y)
+      embed-fam (μ Q')    t = id _
+      embed-fam-natural : (Q : Poly (suc n)) {x y : fobj μo Q δ' .idx .Carrier} (e : _≈s_ (fobj μo Q δ' .idx) x y) →
+                          (embed-fam Q y ∘ fobj μo Q δ' .fam .subst e)
+                            ≈ (TX.fib-shape-subst Q (λ v → inj₁ v) (embed-idx-resp Q e) ∘ embed-fam Q x)
+      embed-fam-natural (const A) e = ≈-trans id-left (≈-sym id-right)
+      embed-fam-natural (var v)   e = ≈-trans id-left (≈-sym id-right)
+      embed-fam-natural (Q₁ + Q₂) {inj₁ _} {inj₁ _} e = embed-fam-natural Q₁ e
+      embed-fam-natural (Q₁ + Q₂) {inj₂ _} {inj₂ _} e = embed-fam-natural Q₂ e
+      embed-fam-natural (Q₁ × Q₂) {_ , _} {_ , _} (e₁ , e₂) =
+        ≈-trans (≈-sym (prod-m-comp _ _ _ _))
+        (≈-trans (prod-m-cong (embed-fam-natural Q₁ e₁) (embed-fam-natural Q₂ e₂)) (prod-m-comp _ _ _ _))
+      embed-fam-natural (μ Q')    e = ≈-trans id-left (≈-sym id-right)
+      αmor : Mor (fobj μo P δ') (μo P δ)
+      αmor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape P mor₀ (embed-idx P i))
+      αmor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp P mor₀ (embed-idx-resp P x≈y)
+      αmor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
+      αmor .famf ._⇒f_.natural e =
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (embed-fam-natural P e))
+        (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong₁ (R.reindex-fam-nat P mor₀ (embed-idx-resp P e)))
+                 (assoc _ _ _))))
+  hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β alg     = {!!}
