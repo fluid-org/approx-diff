@@ -272,7 +272,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   -- The morphism is first-order data: `base` carries the leaf maps (applied only at
   -- leaves), `bind` records one binder. So `reindex`'s recursive calls are syntactically
   -- direct and structurally terminating — no closure, no fuel.
-  module _ {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
+  module Reidx {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     private
       module TA = Tree δA
       module TB = Tree δB
@@ -300,10 +300,33 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       apply (bind Q md) Fin.zero    a = reindex md a
       apply (bind Q md) (Fin.suc v) a = apply md v a
 
+  μObj : ∀ {n} → Poly (suc n) → (Fin n → Obj) → Obj
+  μObj P δ .idx = WSetoid δ P (λ i → inj₁ i)
+  μObj P δ .fam = WFam δ P (λ i → inj₁ i)
+
   hasMu : HasMu
-  hasMu .HasMu.μ-obj P δ .idx = WSetoid δ P (λ i → inj₁ i)
-  hasMu .HasMu.μ-obj P δ .fam = WFam δ P (λ i → inj₁ i)
-  hasMu .HasMu.α P δ          = {!!}
+  hasMu .HasMu.μ-obj = μObj
+  hasMu .HasMu.α {n} P δ .idxf .PS._⇒_.func i =
+    Tδ.sup (R.reindex-shape P (R.base m₀) (embed-idx P i))
+    where
+      μo = μObj
+      δ' = extend δ (μo P δ)
+      module Tδ = Tree δ
+      module TX = Tree δ'
+      module R  = Reidx δ' δ
+      -- Bridge `fobj`'s native structure to our `⟦_⟧shape` (identity at leaves and μ).
+      embed-idx : (Q : Poly (suc n)) → fobj μo Q δ' .idx .Carrier → TX.⟦ Q ⟧shape (λ v → inj₁ v)
+      embed-idx (const A) a = a
+      embed-idx (var v)   a = a
+      embed-idx (Q₁ + Q₂) (inj₁ x) = inj₁ (embed-idx Q₁ x)
+      embed-idx (Q₁ + Q₂) (inj₂ y) = inj₂ (embed-idx Q₂ y)
+      embed-idx (Q₁ × Q₂) (x , y) = embed-idx Q₁ x , embed-idx Q₂ y
+      embed-idx (μ Q')    t = t
+      m₀ : ∀ v → TX.El (inj₁ v) → Tδ.El (extend (λ i → inj₁ i) (inj₂ (mkSort P (λ i → inj₁ i))) v)
+      m₀ Fin.zero    a = a
+      m₀ (Fin.suc i) a = a
+  hasMu .HasMu.α P δ .idxf .PS._⇒_.func-resp-≈ x≈y = {!!}
+  hasMu .HasMu.α P δ .famf = {!!}
   hasMu .HasMu.⦅_⦆ alg        = {!!}
 
   hasMuLaws : HasMuLaws hasMu
