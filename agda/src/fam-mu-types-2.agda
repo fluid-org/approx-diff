@@ -454,7 +454,30 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         (≈-trans (≈-sym (assoc _ _ _))
         (≈-trans (∘-cong₁ (R.reindex-fam-nat P mor₀ (embed-idx-resp P e)))
                  (assoc _ _ _))))
-  hasMu .HasMu.⦅_⦆ alg        = {!!}
+  hasMu .HasMu.⦅_⦆ {n} {Γ} {A} {P} {δ} alg = foldMor
+    where
+      μo = μObj
+      module Tδ = Tree δ
+      η₀ : Fin (suc n) → Fin n ⊎ Sort n
+      η₀ = extend (λ i → inj₁ i) (inj₂ (mkSort P (λ i → inj₁ i)))
+      -- Fold the outer μ via `alg`; nested μ are reindexed into the `extend δ A` context.
+      mutual
+        fold-idx : Γ .idx .Carrier → Tδ.W P (λ i → inj₁ i) → A .idx .Carrier
+        fold-idx γ (Tδ.sup x) = alg .idxf .PS._⇒_.func (γ , foldShape-idx P γ x)
+
+        foldShape-idx : (Q : Poly (suc n)) → Γ .idx .Carrier → Tδ.⟦ Q ⟧shape η₀ →
+                        fobj μo Q (extend δ A) .idx .Carrier
+        foldShape-idx (const A')        γ a = a
+        foldShape-idx (var Fin.zero)    γ t = fold-idx γ t
+        foldShape-idx (var (Fin.suc i)) γ a = a
+        foldShape-idx (Q₁ + Q₂) γ (inj₁ x) = inj₁ (foldShape-idx Q₁ γ x)
+        foldShape-idx (Q₁ + Q₂) γ (inj₂ y) = inj₂ (foldShape-idx Q₂ γ y)
+        foldShape-idx (Q₁ × Q₂) γ (x , y) = foldShape-idx Q₁ γ x , foldShape-idx Q₂ γ y
+        foldShape-idx (μ Q')    γ t = {!!}
+      foldMor : Mor (Fam𝒞-P.prod Γ (μo P δ)) A
+      foldMor .idxf .PS._⇒_.func (γ , t) = fold-idx γ t
+      foldMor .idxf .PS._⇒_.func-resp-≈ = {!!}
+      foldMor .famf = {!!}
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β alg     = {!!}
