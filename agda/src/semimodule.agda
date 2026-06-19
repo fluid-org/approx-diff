@@ -726,15 +726,16 @@ module JoinSemilattices
                      (P.∧-∨-distrib (fwd .func x) (fwd .func y) (fwd .func z)))
     transport-sddl .SelfDualDistributiveLattice.align {a} {b} = trans-⇔ #⇔# P.align
 
-  -- With the scalars a bounded distributive lattice, 𝕀 (and hence every biproduct of copies of it) is a
-  -- self-dual distributive lattice: multiplication is the meet of the join order.
+  -- With S a bounded distributive lattice, 𝕀 (and every n-ary biproduct of it) is one too, with
+  -- multiplication as the meet.
   module DistribLattices (∧-idem : ∀ {x} → (x S.· x) S.≈ x) where
 
     private
       ∨-∧-absorption : ∀ {a b} → (a S.+ (a S.· b)) S.≈ a
       ∨-∧-absorption =
         S.trans (S.+-cong (S.trans (S.sym S.·-lunit) S.·-comm) S.refl)
-                (S.trans (S.sym S.·-+-distribₗ) (S.trans (S.·-cong S.refl ⊤-add-top) (S.trans S.·-comm S.·-lunit)))
+                (S.trans (S.sym S.·-+-distribₗ)
+                         (S.trans (S.·-cong S.refl ⊤-add-top) (S.trans S.·-comm S.·-lunit)))
 
       ∧-monoʳ : ∀ {a b c} → _≤_ 𝕀 a b → _≤_ 𝕀 (c S.· a) (c S.· b)
       ∧-monoʳ a≤b = S.trans (S.sym S.·-+-distribₗ) (S.·-cong S.refl a≤b)
