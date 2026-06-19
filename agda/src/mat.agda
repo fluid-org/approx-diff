@@ -512,7 +512,6 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     fobjⁿ≅⊕ⁿ𝕀 zero    = IsIso→Iso F-preserve-terminal
     fobjⁿ≅⊕ⁿ𝕀 (suc n) = Iso-trans (IsIso→Iso (F-preserve-products {1} {n})) (⊕-iso fobj1≅𝕀 (fobjⁿ≅⊕ⁿ𝕀 n))
 
-    -- Each S-vector is a self-dual distributive lattice, obtained by transporting the abstract
-    -- structure on ⊕ⁿ 𝕀 along fobjⁿ≅⊕ⁿ𝕀.
+    -- Each S-vector is a self-dual distributive lattice.
     vec-sddl : ℕ → SelfDualDistributiveLattice
     vec-sddl n = transport-sddl (⊕ⁿ n) (fobjⁿ≅⊕ⁿ𝕀 n)
