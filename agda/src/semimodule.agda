@@ -584,6 +584,17 @@ module JoinSemilattices
     joins .JoinSemilattice.∨-isJoin = ∨-isJoin
     joins .JoinSemilattice.⊥-isBottom = ⊥-isBottom
 
+    -- x + y ≈ ε forces each summand to ε.
+    zero-sum-freeₗ : ∀ {x y} → (x M.+ y) M.≈ M.ε → x M.≈ M.ε
+    zero-sum-freeₗ h =
+      M.trans (M.sym (M.trans M.+-comm M.+-lunit))
+              (≤-isPreorder .IsPreorder.trans (∨-isJoin .IsJoin.inl) (≈→≤ h))
+
+    zero-sum-freeᵣ : ∀ {x y} → (x M.+ y) M.≈ M.ε → y M.≈ M.ε
+    zero-sum-freeᵣ h =
+      M.trans (M.sym (M.trans M.+-comm M.+-lunit))
+              (≤-isPreorder .IsPreorder.trans (∨-isJoin .IsJoin.inr) (≈→≤ h))
+
   -- Semimodule morphisms are now join-preserving.
   joins-map : ∀ {M N} → (M ⇒ N) → joins M =>J joins N
   joins-map {M} {N} f ._=>J_.func .preorder._=>_.fun = f .func
