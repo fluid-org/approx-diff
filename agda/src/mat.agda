@@ -489,7 +489,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     (⊤-add-top : ∀ {x} → S._≈_ (S._+_ S.ι x) S.ι)
     where
     open JoinSemilattices ⊤-add-top
-    open DistributiveLattices ∧-idem
+    open JoinSemilattices.DistribLattices ⊤-add-top ∧-idem
 
     --------------------------------------------------------------------------
     -- An S-vector of length n is the n-ary biproduct of the unit.
