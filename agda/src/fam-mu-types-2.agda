@@ -88,8 +88,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     -- environment is syntactic, so `shape≈` carries no relation to thread; nested-μ and
     -- recursive positions recurse straight to `W-≈` on structurally-smaller subtrees.
     mutual
-      data W-≈ {k} {Q : Poly (suc k)} {ρ : Fin k → Fin n ⊎ Sort n} : W Q ρ → W Q ρ → Prop (os ⊔ es) where
-        sup : ∀ {x y} → shape≈ Q (extend ρ (inj₂ (mkSort Q ρ))) x y → W-≈ (sup x) (sup y)
+      W-≈ : ∀ {k} {Q : Poly (suc k)} {ρ : Fin k → Fin n ⊎ Sort n} → W Q ρ → W Q ρ → Prop (os ⊔ es)
+      W-≈ {Q = Q} {ρ = ρ} (sup x) (sup y) = shape≈ Q (extend ρ (inj₂ (mkSort Q ρ))) x y
 
       shape≈ : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) →
                ⟦ Q ⟧shape η → ⟦ Q ⟧shape η → Prop (os ⊔ es)
@@ -108,7 +108,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     mutual
       W-≈-refl : ∀ {k} {Q : Poly (suc k)} {ρ} (x : W Q ρ) → W-≈ x x
-      W-≈-refl {Q = Q} {ρ = ρ} (sup x) = sup (shape≈-refl Q (extend ρ (inj₂ (mkSort Q ρ))) x)
+      W-≈-refl {Q = Q} {ρ = ρ} (sup x) = shape≈-refl Q (extend ρ (inj₂ (mkSort Q ρ))) x
 
       shape≈-refl : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) (x : ⟦ Q ⟧shape η) → shape≈ Q η x x
       shape≈-refl (const A) η x = A .idx .isEquivalence .refl
@@ -124,7 +124,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     mutual
       W-≈-sym : ∀ {k} {Q : Poly (suc k)} {ρ} {x y : W Q ρ} → W-≈ x y → W-≈ y x
-      W-≈-sym {Q = Q} {ρ = ρ} (sup p) = sup (shape≈-sym Q (extend ρ (inj₂ (mkSort Q ρ))) p)
+      W-≈-sym {Q = Q} {ρ = ρ} {sup x} {sup y} p = shape≈-sym Q (extend ρ (inj₂ (mkSort Q ρ))) p
 
       shape≈-sym : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) {x y : ⟦ Q ⟧shape η} →
                    shape≈ Q η x y → shape≈ Q η y x
@@ -133,15 +133,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       shape≈-sym (P + Q) η {inj₁ _} {inj₁ _} p = shape≈-sym P η p
       shape≈-sym (P + Q) η {inj₂ _} {inj₂ _} p = shape≈-sym Q η p
       shape≈-sym (P × Q) η {_ , _} {_ , _} (p₁ , p₂) = shape≈-sym P η p₁ , shape≈-sym Q η p₂
-      shape≈-sym (μ Q') η p = W-≈-sym p
+      shape≈-sym (μ Q') η {x} {y} p = W-≈-sym {x = x} {y = y} p
 
       elEq-sym : (r : Fin n ⊎ Sort n) {x y : El r} → elEq r x y → elEq r y x
       elEq-sym (inj₁ p)            e = δ p .idx .isEquivalence .sym e
-      elEq-sym (inj₂ (mkSort Q ρ)) e = W-≈-sym e
+      elEq-sym (inj₂ (mkSort Q ρ)) {x} {y} e = W-≈-sym {x = x} {y = y} e
 
     mutual
       W-≈-trans : ∀ {k} {Q : Poly (suc k)} {ρ} {x y z : W Q ρ} → W-≈ x y → W-≈ y z → W-≈ x z
-      W-≈-trans {Q = Q} {ρ = ρ} (sup p) (sup q) = sup (shape≈-trans Q (extend ρ (inj₂ (mkSort Q ρ))) p q)
+      W-≈-trans {Q = Q} {ρ = ρ} {sup x} {sup y} {sup z} p q = shape≈-trans Q (extend ρ (inj₂ (mkSort Q ρ))) p q
 
       shape≈-trans : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) {x y z : ⟦ Q ⟧shape η} →
                      shape≈ Q η x y → shape≈ Q η y z → shape≈ Q η x z
@@ -151,19 +151,55 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       shape≈-trans (P + Q) η {inj₂ _} {inj₂ _} {inj₂ _} p q = shape≈-trans Q η p q
       shape≈-trans (P × Q) η {_ , _} {_ , _} {_ , _} (p₁ , p₂) (q₁ , q₂) =
         shape≈-trans P η p₁ q₁ , shape≈-trans Q η p₂ q₂
-      shape≈-trans (μ Q') η p q = W-≈-trans p q
+      shape≈-trans (μ Q') η {x} {y} {z} p q = W-≈-trans {x = x} {y = y} {z = z} p q
 
       elEq-trans : (r : Fin n ⊎ Sort n) {x y z : El r} → elEq r x y → elEq r y z → elEq r x z
       elEq-trans (inj₁ p)            e f = δ p .idx .isEquivalence .trans e f
-      elEq-trans (inj₂ (mkSort Q ρ)) e f = W-≈-trans e f
+      elEq-trans (inj₂ (mkSort Q ρ)) {x} {y} {z} e f = W-≈-trans {x = x} {y = y} {z = z} e f
 
     -- The carrier setoid of the μ-type at sort (Q , ρ).
     WSetoid : ∀ {k} (Q : Poly (suc k)) (ρ : Fin k → Fin n ⊎ Sort n) → Setoid os (os ⊔ es)
     WSetoid Q ρ .Carrier = W Q ρ
     WSetoid Q ρ ._≈s_ = W-≈
     WSetoid Q ρ .isEquivalence .refl {x} = W-≈-refl x
-    WSetoid Q ρ .isEquivalence .sym = W-≈-sym
-    WSetoid Q ρ .isEquivalence .trans = W-≈-trans
+    WSetoid Q ρ .isEquivalence .sym {x} {y} = W-≈-sym {x = x} {y = y}
+    WSetoid Q ρ .isEquivalence .trans {x} {y} {z} = W-≈-trans {x = x} {y = y} {z = z}
+
+    -- The fibre object at each tree: 𝒞-products at ×, parameter/const fibres at the leaves.
+    mutual
+      fib : ∀ {k} {Q : Poly (suc k)} {ρ} → W Q ρ → obj
+      fib {Q = Q} {ρ = ρ} (sup x) = fib-shape Q (extend ρ (inj₂ (mkSort Q ρ))) x
+
+      fib-shape : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) → ⟦ Q ⟧shape η → obj
+      fib-shape (const A) η x = A .fam .fm x
+      fib-shape (var j)   η x = fib-el (η j) x
+      fib-shape (P + Q) η (inj₁ x) = fib-shape P η x
+      fib-shape (P + Q) η (inj₂ y) = fib-shape Q η y
+      fib-shape (P × Q) η (x , y) = prod (fib-shape P η x) (fib-shape Q η y)
+      fib-shape (μ Q') η x = fib x
+
+      fib-el : (r : Fin n ⊎ Sort n) → El r → obj
+      fib-el (inj₁ p)            x = δ p .fam .fm x
+      fib-el (inj₂ (mkSort Q ρ)) x = fib x
+
+    -- Transport of fibres along bisimilarity, by recursion on the W-≈ proof.
+    mutual
+      fib-subst : ∀ {k} {Q : Poly (suc k)} {ρ} {x y : W Q ρ} → W-≈ x y → fib x ⇒ fib y
+      fib-subst {Q = Q} {ρ = ρ} {sup x} {sup y} p = fib-shape-subst Q (extend ρ (inj₂ (mkSort Q ρ))) p
+
+      fib-shape-subst : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) {x y : ⟦ Q ⟧shape η} →
+                        shape≈ Q η x y → fib-shape Q η x ⇒ fib-shape Q η y
+      fib-shape-subst (const A) η p = A .fam .subst p
+      fib-shape-subst (var j)   η p = fib-el-subst (η j) p
+      fib-shape-subst (P + Q) η {inj₁ _} {inj₁ _} p = fib-shape-subst P η p
+      fib-shape-subst (P + Q) η {inj₂ _} {inj₂ _} p = fib-shape-subst Q η p
+      fib-shape-subst (P × Q) η {_ , _} {_ , _} (p₁ , p₂) =
+        prod-m (fib-shape-subst P η p₁) (fib-shape-subst Q η p₂)
+      fib-shape-subst (μ Q') η {x} {y} p = fib-subst {x = x} {y = y} p
+
+      fib-el-subst : (r : Fin n ⊎ Sort n) {x y : El r} → elEq r x y → fib-el r x ⇒ fib-el r y
+      fib-el-subst (inj₁ p)            e = δ p .fam .subst e
+      fib-el-subst (inj₂ (mkSort Q ρ)) {x} {y} e = fib-subst {x = x} {y = y} e
 
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ .idx = WSetoid δ P (λ i → inj₁ i)
