@@ -156,3 +156,45 @@ module forward-mat where
 
   -- test-3 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , _) ≡ (⊤ ∷ [])
   -- test-3 = ≡-refl
+
+-- Forward analysis via the SemiMod model directly (no intermediate Mat), with
+-- the identity functor.  Slice values are scalars, not Mat vectors.
+module forward-semimod where
+  open import categories using (Category; HasTerminal; HasProducts)
+
+  import cmon-enriched as CMon
+  import semimodule
+  import ho-model-semimod
+
+  module SM = semimodule two.semiring
+  open CMon.CMonEnriched SM.cmon-enriched using (_+m_)
+  open SM using (𝟘; 𝕀; ε-map)
+
+  unitm : SM._⇒_ 𝟘 𝕀
+  unitm = ε-map 𝟘 𝕀
+
+  conjunctm : SM._⇒_ (HasProducts.prod ho-model-semimod.products 𝕀 𝕀) 𝕀
+  conjunctm = HasProducts.p₁ ho-model-semimod.products {𝕀} {𝕀} +m HasProducts.p₂ ho-model-semimod.products {𝕀} {𝕀}
+
+  open import example-signature-interpretation SM.cat ho-model-semimod.products SM.terminal 𝕀 unitm conjunctm
+  open ho-model-semimod.interp Sig BaseInterp1
+
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
+  input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
+
+  open indexed-family._⇒f_
+  open SM._⇒_
+
+  fwd-slice : _ → _
+  fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
+
+  -- Label slice is the point of 𝟘; the dependency bit is the scalar number slice.
+  -- Output depends on the 1st and 3rd numbers (those with label a), not the 2nd.
+  test-1 : fwd-slice (lift · , (lift · , ⊤) , (lift · , ⊥) , (lift · , ⊥) , _) ≡ ⊤
+  test-1 = ≡-refl
+
+  test-2 : fwd-slice (lift · , (lift · , ⊥) , (lift · , ⊤) , (lift · , ⊥) , _) ≡ ⊥
+  test-2 = ≡-refl
+
+  test-3 : fwd-slice (lift · , (lift · , ⊥) , (lift · , ⊥) , (lift · , ⊤) , _) ≡ ⊤
+  test-3 = ≡-refl
