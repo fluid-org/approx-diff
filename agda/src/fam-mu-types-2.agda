@@ -503,9 +503,52 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         fold-apply γ fbase        (Fin.suc i) a = a
         fold-apply γ (fbind Q fm) Fin.zero    a = fold-reindex γ fm a
         fold-apply γ (fbind Q fm) (Fin.suc v) a = fold-apply γ fm v a
+
+      -- The index fold respects ≈ (in both Γ and the tree).
+      mutual
+        fold-idx-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
+                        _≈s_ (A .idx) (fold-idx γ t) (fold-idx γ' t')
+        fold-idx-resp γ≈ {Tδ.sup x} {Tδ.sup y} p = alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , foldShape-idx-resp P γ≈ p)
+
+        foldShape-idx-resp : (Q : Poly (suc n)) → ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {x x'}
+                             (p : Tδ.shape≈ Q η₀ x x') →
+                             _≈s_ (fobj μo Q (extend δ A) .idx) (foldShape-idx Q γ x) (foldShape-idx Q γ' x')
+        foldShape-idx-resp (const A')        γ≈ p = p
+        foldShape-idx-resp (var Fin.zero)    γ≈ {x} {x'} p = fold-idx-resp γ≈ {x} {x'} p
+        foldShape-idx-resp (var (Fin.suc i)) γ≈ p = p
+        foldShape-idx-resp (Q₁ + Q₂) γ≈ {inj₁ _} {inj₁ _} p = foldShape-idx-resp Q₁ γ≈ p
+        foldShape-idx-resp (Q₁ + Q₂) γ≈ {inj₂ _} {inj₂ _} p = foldShape-idx-resp Q₂ γ≈ p
+        foldShape-idx-resp (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (p₁ , p₂) =
+          foldShape-idx-resp Q₁ γ≈ p₁ , foldShape-idx-resp Q₂ γ≈ p₂
+        foldShape-idx-resp (μ Q')    γ≈ {x} {x'} p = fold-reindex-resp γ≈ fbase {x} {x'} p
+
+        fold-reindex-resp : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') (fm : FMor ρ ρ')
+                            {t t' : Tδ.W Q ρ} (p : Tδ.W-≈ t t') →
+                            TA'.W-≈ (fold-reindex γ fm t) (fold-reindex γ' fm t')
+        fold-reindex-resp {Q = Q} γ≈ fm {Tδ.sup x} {Tδ.sup y} p = fold-reindex-shape-resp γ≈ Q (fbind Q fm) {x} {y} p
+
+        fold-reindex-shape-resp : ∀ {j} {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') (R : Poly j) {ηA ηB} (fm : FMor ηA ηB)
+                                  {a a' : Tδ.⟦ R ⟧shape ηA} (p : Tδ.shape≈ R ηA a a') →
+                                  TA'.shape≈ R ηB (fold-reindex-shape γ R fm a) (fold-reindex-shape γ' R fm a')
+        fold-reindex-shape-resp γ≈ (const A') fm p = p
+        fold-reindex-shape-resp γ≈ (var v)    fm p = fold-apply-resp γ≈ fm v p
+        fold-reindex-shape-resp γ≈ (P' + Q') fm {inj₁ _} {inj₁ _} p = fold-reindex-shape-resp γ≈ P' fm p
+        fold-reindex-shape-resp γ≈ (P' + Q') fm {inj₂ _} {inj₂ _} p = fold-reindex-shape-resp γ≈ Q' fm p
+        fold-reindex-shape-resp γ≈ (P' × Q') fm {_ , _} {_ , _} (p₁ , p₂) =
+          fold-reindex-shape-resp γ≈ P' fm p₁ , fold-reindex-shape-resp γ≈ Q' fm p₂
+        fold-reindex-shape-resp γ≈ (μ Q'')   fm {a} {a'} p = fold-reindex-resp γ≈ fm {a} {a'} p
+
+        fold-apply-resp : ∀ {k} {ρ ρ'} {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') (fm : FMor ρ ρ') (v : Fin k)
+                          {a a'} (p : Tδ.elEq (ρ v) a a') →
+                          TA'.elEq (ρ' v) (fold-apply γ fm v a) (fold-apply γ' fm v a')
+        fold-apply-resp γ≈ fbase        Fin.zero    {a} {a'} p = fold-idx-resp γ≈ {a} {a'} p
+        fold-apply-resp γ≈ fbase        (Fin.suc i) p = p
+        fold-apply-resp γ≈ (fbind Q fm) Fin.zero    {a} {a'} p = fold-reindex-resp γ≈ fm {a} {a'} p
+        fold-apply-resp γ≈ (fbind Q fm) (Fin.suc v) p = fold-apply-resp γ≈ fm v p
+
       foldMor : Mor (Fam𝒞-P.prod Γ (μo P δ)) A
       foldMor .idxf .PS._⇒_.func (γ , t) = fold-idx γ t
-      foldMor .idxf .PS._⇒_.func-resp-≈ = {!!}
+      foldMor .idxf .PS._⇒_.func-resp-≈ {γ , t} {γ' , t'} (γ≈ , t≈) = fold-idx-resp γ≈ {t} {t'} t≈
       foldMor .famf = {!!}
 
   hasMuLaws : HasMuLaws hasMu
