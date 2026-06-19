@@ -114,6 +114,28 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       El (inj₁ p)            = δ p .idx .Carrier
       El (inj₂ (mkSort Q ρ)) = W Q ρ
 
+    -- Bisimilarity of trees: equal roots with equal subtrees on equal branches. The
+    -- environment is syntactic, so `shape≈` carries no relation to thread; nested-μ and
+    -- recursive positions recurse straight to `W-≈` on structurally-smaller subtrees.
+    mutual
+      data W-≈ {k} {Q : Poly (suc k)} {ρ : Fin k → Fin n ⊎ Sort n} : W Q ρ → W Q ρ → Prop (os ⊔ es) where
+        sup : ∀ {x y} → shape≈ Q (extend ρ (inj₂ (mkSort Q ρ))) x y → W-≈ (sup x) (sup y)
+
+      shape≈ : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) →
+               ⟦ Q ⟧shape η → ⟦ Q ⟧shape η → Prop (os ⊔ es)
+      shape≈ (const A) η x y = _≈s_ (A .idx) x y
+      shape≈ (var j)   η x y = elEq (η j) x y
+      shape≈ (P + Q) η (inj₁ x) (inj₁ y) = shape≈ P η x y
+      shape≈ (P + Q) η (inj₁ _) (inj₂ _) = ⊥
+      shape≈ (P + Q) η (inj₂ _) (inj₁ _) = ⊥
+      shape≈ (P + Q) η (inj₂ x) (inj₂ y) = shape≈ Q η x y
+      shape≈ (P × Q) η (x₁ , x₂) (y₁ , y₂) = shape≈ P η x₁ y₁ ∧ shape≈ Q η x₂ y₂
+      shape≈ (μ Q') η x y = W-≈ x y
+
+      elEq : (r : Fin n ⊎ Sort n) → El r → El r → Prop (os ⊔ es)
+      elEq (inj₁ p)            x y = _≈s_ (δ p .idx) x y
+      elEq (inj₂ (mkSort Q ρ)) x y = W-≈ x y
+
   hasMu : HasMu
   hasMu .HasMu.μ-obj P δ .idx = idx-mu P δ
   hasMu .HasMu.μ-obj P δ .fam = {!!}
