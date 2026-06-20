@@ -693,14 +693,34 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       module Fβ = FoldDef {Γ = Γ} {A = μo Q' (extend δ A)} {P = Q'} {δ = δ'} β
 
     -- Nested-μ fusion: the double reindex (α's mor₀ then the fold's fbase) equals the nested
-    -- catamorphism (strong-μ-fmor = ⦅ α ∘ strong-fmor ⦆). Both reduce to `sup` of a body; the
-    -- remaining obligation is the shape-level equality of those bodies.
-    μ-fuse-idx : (Q' : Poly (suc (suc n))) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
-                 (m≈ : _≈s_ (fobj μo (μ Q') δ' .idx) m₁ m₂) →
-                 _≈s_ (fobj μo (μ Q') (extend δ A) .idx)
-                      (Fα.foldShape-idx (μ Q') γ₁ (Aα.R.reindex-shape (μ Q') Aα.mor₀ (Aα.embed-idx (μ Q') m₁)))
-                      (strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ₂ , m₂))
-    μ-fuse-idx Q' γ≈ {Aα.TX.sup x₁} {Aα.TX.sup x₂} m≈ = {!!}
+    -- catamorphism (strong-μ-fmor = ⦅ α ∘ strong-fmor ⦆). `μ-fuse-idx` reduces `sup` on both
+    -- sides to the shape-level body equality `μ-fuse-shape`, which inducts on the μ-body.
+    module FuseM (Q' : Poly (suc (suc n))) where
+      module Nβ = Nested Q'
+      ηb : Fin (suc (suc n)) → Fin (suc n) ⊎ Sort (suc n)
+      ηb = extend (λ v → inj₁ v) (inj₂ (mkSort Q' (λ v → inj₁ v)))
+      mutual
+        μ-fuse-idx : ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
+                     (m≈ : _≈s_ (fobj μo (μ Q') δ' .idx) m₁ m₂) →
+                     _≈s_ (fobj μo (μ Q') (extend δ A) .idx)
+                          (Fα.foldShape-idx (μ Q') γ₁ (Aα.R.reindex-shape (μ Q') Aα.mor₀ (Aα.embed-idx (μ Q') m₁)))
+                          (strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ₂ , m₂))
+        μ-fuse-idx γ≈ {Aα.TX.sup x₁} {Aα.TX.sup x₂} m≈ = μ-fuse-shape Q' γ≈ {x₁} {x₂} m≈
+
+        μ-fuse-shape : (R : Poly (suc (suc n))) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x₁ x₂}
+                       (x≈ : Aα.TX.shape≈ R ηb x₁ x₂) →
+                       Fα.TA'.shape≈ R ηb
+                         (Fα.fold-reindex-shape γ₁ R (Fα.fbind Q' Fα.fbase) (Aα.R.reindex-shape R (Aα.R.MorD.bind Q' Aα.mor₀) x₁))
+                         (Nβ.Aβ.R.reindex-shape R Nβ.Aβ.mor₀
+                          (Nβ.Aβ.embed-idx R (strong-fmor R Nβ.fs' .idxf .PS._⇒_.func (γ₂ , Nβ.Fβ.foldShape-idx R γ₂ x₂))))
+        μ-fuse-shape (const A')                   γ≈ x≈ = x≈
+        μ-fuse-shape (var Fin.zero)               γ≈ {x₁} {x₂} x≈ = μ-fuse-idx γ≈ {x₁} {x₂} x≈
+        μ-fuse-shape (var (Fin.suc Fin.zero))     γ≈ {x₁} {x₂} x≈ = Fα.fold-idx-resp γ≈ {x₁} {x₂} x≈
+        μ-fuse-shape (var (Fin.suc (Fin.suc j)))  γ≈ x≈ = x≈
+        μ-fuse-shape (R₁ + R₂) γ≈ {inj₁ _} {inj₁ _} x≈ = μ-fuse-shape R₁ γ≈ x≈
+        μ-fuse-shape (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = μ-fuse-shape R₂ γ≈ x≈
+        μ-fuse-shape (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) = μ-fuse-shape R₁ γ≈ x≈₁ , μ-fuse-shape R₂ γ≈ x≈₂
+        μ-fuse-shape (μ R'')   γ≈ x≈ = {!!}
 
     -- foldShape-idx ∘ reindex-shape ∘ embed-idx ≈ strong-fmor's idx action of the fold.
     β-idx : (R : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
@@ -714,7 +734,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     β-idx (Q₁ + Q₂) γ≈ {inj₁ _} {inj₁ _} m≈ = β-idx Q₁ γ≈ m≈
     β-idx (Q₁ + Q₂) γ≈ {inj₂ _} {inj₂ _} m≈ = β-idx Q₂ γ≈ m≈
     β-idx (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (m≈₁ , m≈₂) = β-idx Q₁ γ≈ m≈₁ , β-idx Q₂ γ≈ m≈₂
-    β-idx (μ Q')            γ≈ {m₁} {m₂} m≈ = μ-fuse-idx Q' γ≈ {m₁} {m₂} m≈
+    β-idx (μ Q')            γ≈ {m₁} {m₂} m≈ = FuseM.μ-fuse-idx Q' γ≈ {m₁} {m₂} m≈
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
