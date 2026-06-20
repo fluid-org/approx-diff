@@ -667,5 +667,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg
 
   hasMuLaws : HasMuLaws hasMu
-  hasMuLaws .HasMuLaws.⦅⦆-β alg     = {!!}
+  hasMuLaws .HasMuLaws.⦅⦆-β alg ._≃_.idxf-eq = {!!}
+  hasMuLaws .HasMuLaws.⦅⦆-β alg ._≃_.famf-eq = {!!}
   hasMuLaws .HasMuLaws.⦅⦆-η alg h eq = {!!}
