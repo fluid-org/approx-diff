@@ -798,6 +798,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     β-idx (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (m≈₁ , m≈₂) = β-idx Q₁ γ≈ m≈₁ , β-idx Q₂ γ≈ m≈₂
     β-idx (μ Q')            γ≈ {m₁} {m₂} m≈ = FuseM.μ-fuse-idx Q' γ≈ {m₁} {m₂} m≈
 
+  -- Probe: external function instantiating BetaDef and delegating to its FuseM.
+  μ-fuse-idx-ext : ∀ {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+                   (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A)
+                   (Q' : Poly (suc (suc n))) →
+                   let module B = BetaDef {Γ = Γ} {A = A} {P = P} {δ = δ} alg in
+                   ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
+                   (m≈ : _≈s_ (fobj μObj (μ Q') (B.δ') .idx) m₁ m₂) →
+                   _≈s_ (fobj μObj (μ Q') (extend δ A) .idx)
+                        (B.Fα.foldShape-idx (μ Q') γ₁ (B.Aα.R.reindex-shape (μ Q') B.Aα.mor₀ (B.Aα.embed-idx (μ Q') m₁)))
+                        (HasMu.strong-fmor hasMu (μ Q') B.fs .idxf .PS._⇒_.func (γ₂ , m₂))
+  μ-fuse-idx-ext {Γ = Γ} {A = A} {P = P} {δ = δ} alg Q' γ≈ {m₁} {m₂} m≈ =
+    BetaDef.FuseM.μ-fuse-idx {Γ = Γ} {A = A} {P = P} {δ = δ} alg Q' γ≈ {m₁} {m₂} m≈
+
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
     alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , BetaDef.β-idx alg P γ≈ m≈)
