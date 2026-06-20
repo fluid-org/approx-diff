@@ -692,6 +692,16 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       β = Mor-∘ Aβ.αmor (strong-fmor Q' fs')
       module Fβ = FoldDef {Γ = Γ} {A = μo Q' (extend δ A)} {P = Q'} {δ = δ'} β
 
+    -- PROBE: can the FMor-reindex composed with the MorD-reindex collapse to a single MorD-reindex?
+    module Rcomb = Reidx δ' (extend δ A)
+    combine : (γ : Γ .idx .Carrier) → ∀ {k} {ρA ρB ρC} → Aα.R.MorD {k} ρA ρB → Fα.FMor {k} ρB ρC → Rcomb.MorD {k} ρA ρC
+    combine γ md fm = Rcomb.base (λ v a → Fα.fold-apply γ fm v (Aα.R.apply md v a)) {!!} {!!} {!!}
+
+    combine-lemma : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC} (γ : Γ .idx .Carrier)
+                    (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) (t : Aα.TX.W Q ρA) →
+                    Fα.TA'.W-≈ (Fα.fold-reindex γ fm (Aα.R.reindex md t)) (Rcomb.reindex (combine γ md fm) t)
+    combine-lemma γ md fm (Aα.TX.sup x) = {!!}
+
     -- Nested-μ fusion: the double reindex (α's mor₀ then the fold's fbase) equals the nested
     -- catamorphism (strong-μ-fmor = ⦅ α ∘ strong-fmor ⦆). `μ-fuse-idx` reduces `sup` on both
     -- sides to the shape-level body equality `μ-fuse-shape`, which inducts on the μ-body.
