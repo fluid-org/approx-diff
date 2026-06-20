@@ -697,10 +697,26 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     combine : (γ : Γ .idx .Carrier) → ∀ {k} {ρA ρB ρC} → Aα.R.MorD {k} ρA ρB → Fα.FMor {k} ρB ρC → Rcomb.MorD {k} ρA ρC
     combine γ md fm = Rcomb.base (λ v a → Fα.fold-apply γ fm v (Aα.R.apply md v a)) {!!} {!!} {!!}
 
-    combine-lemma : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC} (γ : Γ .idx .Carrier)
-                    (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) (t : Aα.TX.W Q ρA) →
-                    Fα.TA'.W-≈ (Fα.fold-reindex γ fm (Aα.R.reindex md t)) (Rcomb.reindex (combine γ md fm) t)
-    combine-lemma γ md fm (Aα.TX.sup x) = {!!}
+    mutual
+      combine-lemma : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC} (γ : Γ .idx .Carrier)
+                      (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) (t : Aα.TX.W Q ρA) →
+                      Fα.TA'.W-≈ (Fα.fold-reindex γ fm (Aα.R.reindex md t)) (Rcomb.reindex (combine γ md fm) t)
+      combine-lemma {Q = Q} γ md fm (Aα.TX.sup x) = combine-lemma-shape Q Q γ md fm x
+
+      combine-lemma-shape : ∀ {k} (Q : Poly (suc k)) (R : Poly (suc k)) {ρA ρB ρC} (γ : Γ .idx .Carrier)
+                            (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC)
+                            (x : Aα.TX.⟦ R ⟧shape (extend ρA (inj₂ (mkSort Q ρA)))) →
+                            Fα.TA'.shape≈ R (extend ρC (inj₂ (mkSort Q ρC)))
+                              (Fα.fold-reindex-shape γ R (Fα.fbind Q fm) (Aα.R.reindex-shape R (Aα.R.bind Q md) x))
+                              (Rcomb.reindex-shape R (Rcomb.bind Q (combine γ md fm)) x)
+      combine-lemma-shape Q (const A')              γ md fm x = A' .idx .isEquivalence .refl
+      combine-lemma-shape Q (var Fin.zero)          γ md fm x = combine-lemma γ md fm x
+      combine-lemma-shape Q (var (Fin.suc v)) {ρC = ρC} γ md fm x = Fα.TA'.elEq-refl (ρC v) _
+      combine-lemma-shape Q (P + Q') γ md fm (inj₁ x) = combine-lemma-shape Q P γ md fm x
+      combine-lemma-shape Q (P + Q') γ md fm (inj₂ y) = combine-lemma-shape Q Q' γ md fm y
+      combine-lemma-shape Q (P × Q') γ md fm (x , y) =
+        combine-lemma-shape Q P γ md fm x , combine-lemma-shape Q Q' γ md fm y
+      combine-lemma-shape Q (μ R'') γ md fm x = {!!}
 
     -- Nested-μ fusion: the double reindex (α's mor₀ then the fold's fbase) equals the nested
     -- catamorphism (strong-μ-fmor = ⦅ α ∘ strong-fmor ⦆). `μ-fuse-idx` reduces `sup` on both
