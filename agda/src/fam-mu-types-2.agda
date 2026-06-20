@@ -593,10 +593,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       foldMor .famf ._⇒f_.transf (γ , t) = fold-fam γ t
       foldMor .famf ._⇒f_.natural {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) = fold-fam-nat γ≈ {t₁} {t₂} t≈
 
-  hasMu : HasMu
-  hasMu .HasMu.μ-obj = μObj
-  hasMu .HasMu.α {n} P δ = αmor
-    where
+  -- α's reconstruction machinery, lifted to a named module so the β/η laws can
+  -- reference embed-idx / embed-fam / mor₀ (the fold and Reidx are already named).
+  module AlphaDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       μo = μObj
       δ' = extend δ (μo P δ)
       module Tδ = Tree δ
@@ -633,6 +632,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                    (m₀-fam v a' ∘ TX.fib-el-subst (inj₁ v) p) ≈ (Tδ.fib-el-subst (η₀ v) (m₀-resp v p) ∘ m₀-fam v a)
       m₀-fam-nat Fin.zero    p = ≈-trans id-left (≈-sym id-right)
       m₀-fam-nat (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
+      mor₀ : R.MorD (λ v → inj₁ v) η₀
       mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-nat
       -- Fibre bridge: `fobj`'s fibre to our `fib-shape` (identity at leaves, products at ×).
       embed-fam : (Q : Poly (suc n)) (x : fobj μo Q δ' .idx .Carrier) →
@@ -664,6 +664,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         (≈-trans (≈-sym (assoc _ _ _))
         (≈-trans (∘-cong₁ (R.reindex-fam-nat P mor₀ (embed-idx-resp P e)))
                  (assoc _ _ _))))
+
+  hasMu : HasMu
+  hasMu .HasMu.μ-obj = μObj
+  hasMu .HasMu.α P δ = AlphaDef.αmor P δ
   hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg
 
   hasMuLaws : HasMuLaws hasMu
