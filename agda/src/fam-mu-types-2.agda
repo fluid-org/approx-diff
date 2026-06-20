@@ -798,18 +798,44 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     β-idx (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (m≈₁ , m≈₂) = β-idx Q₁ γ≈ m≈₁ , β-idx Q₂ γ≈ m≈₂
     β-idx (μ Q')            γ≈ {m₁} {m₂} m≈ = FuseM.μ-fuse-idx Q' γ≈ {m₁} {m₂} m≈
 
-  -- Probe: external function instantiating BetaDef and delegating to its FuseM.
-  μ-fuse-idx-ext : ∀ {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
-                   (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A)
-                   (Q' : Poly (suc (suc n))) →
-                   let module B = BetaDef {Γ = Γ} {A = A} {P = P} {δ = δ} alg in
-                   ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
-                   (m≈ : _≈s_ (fobj μObj (μ Q') (B.δ') .idx) m₁ m₂) →
-                   _≈s_ (fobj μObj (μ Q') (extend δ A) .idx)
-                        (B.Fα.foldShape-idx (μ Q') γ₁ (B.Aα.R.reindex-shape (μ Q') B.Aα.mor₀ (B.Aα.embed-idx (μ Q') m₁)))
-                        (HasMu.strong-fmor hasMu (μ Q') B.fs .idxf .PS._⇒_.func (γ₂ , m₂))
-  μ-fuse-idx-ext {Γ = Γ} {A = A} {P = P} {δ = δ} alg Q' γ≈ {m₁} {m₂} m≈ =
-    BetaDef.FuseM.μ-fuse-idx {Γ = Γ} {A = A} {P = P} {δ = δ} alg Q' γ≈ {m₁} {m₂} m≈
+  -- Threaded external fusion: carries the RHS family fsk so the nested-μ case can recurse
+  -- at a shifted (higher-arity) context. Fixed-arity cases here; the μ R'' clause is next.
+  mutual
+    μ-fuse-idxT : ∀ {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+                  (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A)
+                  (Q' : Poly (suc (suc n))) →
+                  let module B = BetaDef {Γ = Γ} {A = A} {P = P} {δ = δ} alg in
+                  (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (B.δ' i)) (extend δ A i)) →
+                  ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
+                  (m≈ : _≈s_ (fobj μObj (μ Q') (B.δ') .idx) m₁ m₂) →
+                  _≈s_ (fobj μObj (μ Q') (extend δ A) .idx)
+                       (B.Fα.foldShape-idx (μ Q') γ₁ (B.Aα.R.reindex-shape (μ Q') B.Aα.mor₀ (B.Aα.embed-idx (μ Q') m₁)))
+                       (HasMu.strong-fmor hasMu (μ Q') fsk .idxf .PS._⇒_.func (γ₂ , m₂))
+    μ-fuse-idxT alg Q' fsk γ≈ {BetaDef.Aα.TX.sup x₁} {BetaDef.Aα.TX.sup x₂} m≈ =
+      μ-fuse-shapeT alg Q' fsk Q' γ≈ {x₁} {x₂} m≈
+
+    μ-fuse-shapeT : ∀ {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+                    (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A)
+                    (Q' : Poly (suc (suc n))) →
+                    let module B = BetaDef {Γ = Γ} {A = A} {P = P} {δ = δ} alg in
+                    (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (B.δ' i)) (extend δ A i))
+                    (R : Poly (suc (suc n))) →
+                    let module Nβ = B.Nested Q' fsk in
+                    ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x₁ x₂}
+                    (x≈ : B.Aα.TX.shape≈ R (extend (λ v → inj₁ v) (inj₂ (mkSort Q' (λ v → inj₁ v)))) x₁ x₂) →
+                    B.Fα.TA'.shape≈ R (extend (λ v → inj₁ v) (inj₂ (mkSort Q' (λ v → inj₁ v))))
+                      (B.Fα.fold-reindex-shape γ₁ R (B.Fα.fbind Q' B.Fα.fbase) (B.Aα.R.reindex-shape R (B.Aα.R.MorD.bind Q' B.Aα.mor₀) x₁))
+                      (Nβ.Aβ.R.reindex-shape R Nβ.Aβ.mor₀
+                       (Nβ.Aβ.embed-idx R (HasMu.strong-fmor hasMu R Nβ.fs' .idxf .PS._⇒_.func (γ₂ , Nβ.Fβ.foldShape-idx R γ₂ x₂))))
+    μ-fuse-shapeT alg Q' fsk (const A')                  γ≈ x≈ = x≈
+    μ-fuse-shapeT alg Q' fsk (var Fin.zero)              γ≈ {x₁} {x₂} x≈ = μ-fuse-idxT alg Q' fsk γ≈ {x₁} {x₂} x≈
+    μ-fuse-shapeT alg Q' fsk (var (Fin.suc Fin.zero))    γ≈ {x₁} {x₂} x≈ = {!!}  -- needs fsk↔fold correspondence
+    μ-fuse-shapeT alg Q' fsk (var (Fin.suc (Fin.suc j))) γ≈ x≈ = {!!}  -- needs fsk↔projection correspondence
+    μ-fuse-shapeT alg Q' fsk (R₁ + R₂) γ≈ {inj₁ _} {inj₁ _} x≈ = μ-fuse-shapeT alg Q' fsk R₁ γ≈ x≈
+    μ-fuse-shapeT alg Q' fsk (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = μ-fuse-shapeT alg Q' fsk R₂ γ≈ x≈
+    μ-fuse-shapeT alg Q' fsk (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) =
+      μ-fuse-shapeT alg Q' fsk R₁ γ≈ x≈₁ , μ-fuse-shapeT alg Q' fsk R₂ γ≈ x≈₂
+    μ-fuse-shapeT alg Q' fsk (μ R'') γ≈ x≈ = {!!}
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
