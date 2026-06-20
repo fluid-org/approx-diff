@@ -682,6 +682,16 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     fs : ∀ i → Mor (Fam𝒞-P.prod Γ (δ' i)) (extend δ A i)
     fs = strong-extend-mor (λ i → Fam𝒞-P.p₂) Fα.foldMor
 
+    -- The nested algebra `β = α ∘ strong-fmor` and its α/fold instances, per μ-body Q'.
+    -- (RHS of the fusion: strong-μ-fmor Q' fs = ⦅ β ⦆ unfolds through these.)
+    module Nested (Q' : Poly (suc (suc n))) where
+      module Aβ = AlphaDef Q' (extend δ A)
+      fs' : ∀ i → Mor (Fam𝒞-P.prod Γ (extend δ' (μo Q' (extend δ A)) i)) (extend (extend δ A) (μo Q' (extend δ A)) i)
+      fs' = strong-extend-mor fs Fam𝒞-P.p₂
+      β : Mor (Fam𝒞-P.prod Γ (fobj μo Q' (extend δ' (μo Q' (extend δ A))))) (μo Q' (extend δ A))
+      β = Mor-∘ Aβ.αmor (strong-fmor Q' fs')
+      module Fβ = FoldDef {Γ = Γ} {A = μo Q' (extend δ A)} {P = Q'} {δ = δ'} β
+
     -- Nested-μ fusion: the double reindex (α's mor₀ then the fold's fbase) equals the nested
     -- catamorphism (strong-μ-fmor = ⦅ α ∘ strong-fmor ⦆). Both reduce to `sup` of a body; the
     -- remaining obligation is the shape-level equality of those bodies.
