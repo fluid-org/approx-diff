@@ -684,10 +684,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     -- The nested algebra `β = α ∘ strong-fmor` and its α/fold instances, per μ-body Q'.
     -- (RHS of the fusion: strong-μ-fmor Q' fs = ⦅ β ⦆ unfolds through these.)
-    module Nested (Q' : Poly (suc (suc n))) where
+    module Nested (Q' : Poly (suc (suc n))) (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (δ' i)) (extend δ A i)) where
       module Aβ = AlphaDef Q' (extend δ A)
       fs' : ∀ i → Mor (Fam𝒞-P.prod Γ (extend δ' (μo Q' (extend δ A)) i)) (extend (extend δ A) (μo Q' (extend δ A)) i)
-      fs' = strong-extend-mor fs Fam𝒞-P.p₂
+      fs' = strong-extend-mor fsk Fam𝒞-P.p₂
       β : Mor (Fam𝒞-P.prod Γ (fobj μo Q' (extend δ' (μo Q' (extend δ A))))) (μo Q' (extend δ A))
       β = Mor-∘ Aβ.αmor (strong-fmor Q' fs')
       module Fβ = FoldDef {Γ = Γ} {A = μo Q' (extend δ A)} {P = Q'} {δ = δ'} β
@@ -758,7 +758,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     -- catamorphism (strong-μ-fmor = ⦅ α ∘ strong-fmor ⦆). `μ-fuse-idx` reduces `sup` on both
     -- sides to the shape-level body equality `μ-fuse-shape`, which inducts on the μ-body.
     module FuseM (Q' : Poly (suc (suc n))) where
-      module Nβ = Nested Q'
+      module Nβ = Nested Q' fs
       ηb : Fin (suc (suc n)) → Fin (suc n) ⊎ Sort (suc n)
       ηb = extend (λ v → inj₁ v) (inj₂ (mkSort Q' (λ v → inj₁ v)))
       mutual
