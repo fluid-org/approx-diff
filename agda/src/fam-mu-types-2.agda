@@ -670,7 +670,34 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.α P δ = AlphaDef.αmor P δ
   hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg
 
+  -- β/η proof machinery: the fusion of `α`'s reconstruction with the fold equals the
+  -- strong functorial action of `⦅ alg ⦆`. References both AlphaDef and FoldDef internals.
+  module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+                 (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A) where
+    open HasMu hasMu using (strong-fmor; strong-extend-mor; ⦅_⦆; α)
+    module Aα = AlphaDef P δ
+    module Fα = FoldDef {Γ = Γ} {A = A} {P = P} {δ = δ} alg
+    μo = μObj
+    δ' = extend δ (μo P δ)
+    fs : ∀ i → Mor (Fam𝒞-P.prod Γ (δ' i)) (extend δ A i)
+    fs = strong-extend-mor (λ i → Fam𝒞-P.p₂) Fα.foldMor
+
+    -- foldShape-idx ∘ reindex-shape ∘ embed-idx ≈ strong-fmor's idx action of the fold.
+    β-idx : (R : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
+            (m≈ : _≈s_ (fobj μo R δ' .idx) m₁ m₂) →
+            _≈s_ (fobj μo R (extend δ A) .idx)
+                 (Fα.foldShape-idx R γ₁ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m₁)))
+                 (strong-fmor R fs .idxf .PS._⇒_.func (γ₂ , m₂))
+    β-idx (const A')        γ≈ m≈ = m≈
+    β-idx (var Fin.zero)    γ≈ {m₁} {m₂} m≈ = Fα.fold-idx-resp γ≈ {m₁} {m₂} m≈
+    β-idx (var (Fin.suc j)) γ≈ m≈ = m≈
+    β-idx (Q₁ + Q₂) γ≈ {inj₁ _} {inj₁ _} m≈ = β-idx Q₁ γ≈ m≈
+    β-idx (Q₁ + Q₂) γ≈ {inj₂ _} {inj₂ _} m≈ = β-idx Q₂ γ≈ m≈
+    β-idx (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (m≈₁ , m≈₂) = β-idx Q₁ γ≈ m≈₁ , β-idx Q₂ γ≈ m≈₂
+    β-idx (μ Q')            γ≈ m≈ = {!!}
+
   hasMuLaws : HasMuLaws hasMu
-  hasMuLaws .HasMuLaws.⦅⦆-β alg ._≃_.idxf-eq = {!!}
+  hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
+    alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , BetaDef.β-idx alg P γ≈ m≈)
   hasMuLaws .HasMuLaws.⦅⦆-β alg ._≃_.famf-eq = {!!}
   hasMuLaws .HasMuLaws.⦅⦆-η alg h eq = {!!}
