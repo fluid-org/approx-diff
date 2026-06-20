@@ -698,6 +698,38 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     combine γ md fm = Rcomb.base (λ v a → Fα.fold-apply γ fm v (Aα.R.apply md v a)) {!!} {!!} {!!}
 
     mutual
+      -- Defunctionalised relation "these two Rcomb.MorDs are combine-lemma-related under binders".
+      data Rel : ∀ {k} {ρA ρB} → Rcomb.MorD {k} ρA ρB → Rcomb.MorD {k} ρA ρB →
+                 Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+        rcomb : ∀ {k} {ρA ρB ρC} (γ : Γ .idx .Carrier) (Q : Poly (suc k))
+                (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) →
+                Rel (combine γ (Aα.R.bind Q md) (Fα.fbind Q fm)) (Rcomb.bind Q (combine γ md fm))
+        rbind : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.MorD ρA ρB} (Q : Poly (suc k)) →
+                Rel md₁ md₂ → Rel (Rcomb.bind Q md₁) (Rcomb.bind Q md₂)
+
+      -- reindex respects Rel-related morphisms; the binder recursion is structural on Rel.
+      reindex-mcong : ∀ {k} {Q : Poly (suc k)} {ρA ρB} {md₁ md₂ : Rcomb.MorD ρA ρB}
+                      (r : Rel md₁ md₂) (t : Aα.TX.W Q ρA) →
+                      Fα.TA'.W-≈ (Rcomb.reindex md₁ t) (Rcomb.reindex md₂ t)
+      reindex-mcong {Q = Q} r (Aα.TX.sup y) = reindex-mcong-shape Q (rbind Q r) y
+
+      reindex-mcong-shape : ∀ {j} (R : Poly j) {ρA ρB} {md₁ md₂ : Rcomb.MorD ρA ρB}
+                            (r : Rel md₁ md₂) (y : Aα.TX.⟦ R ⟧shape ρA) →
+                            Fα.TA'.shape≈ R ρB (Rcomb.reindex-shape R md₁ y) (Rcomb.reindex-shape R md₂ y)
+      reindex-mcong-shape (const A') r y = A' .idx .isEquivalence .refl
+      reindex-mcong-shape (var v)    r y = mrel-apply r v
+      reindex-mcong-shape (P + P') r (inj₁ y) = reindex-mcong-shape P r y
+      reindex-mcong-shape (P + P') r (inj₂ z) = reindex-mcong-shape P' r z
+      reindex-mcong-shape (P × P') r (y , z) = reindex-mcong-shape P r y , reindex-mcong-shape P' r z
+      reindex-mcong-shape (μ R'') r y = reindex-mcong r y
+
+      mrel-apply : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.MorD ρA ρB} (r : Rel md₁ md₂) (v : Fin k) {a} →
+                   Fα.TA'.elEq (ρB v) (Rcomb.apply md₁ v a) (Rcomb.apply md₂ v a)
+      mrel-apply (rcomb γ Q md fm)            Fin.zero     {a} = combine-lemma γ md fm a
+      mrel-apply (rcomb {ρC = ρC} γ Q md fm) (Fin.suc v')      = Fα.TA'.elEq-refl (ρC v') _
+      mrel-apply (rbind Q r)                  Fin.zero     {a} = reindex-mcong r a
+      mrel-apply (rbind Q r)                 (Fin.suc v')      = mrel-apply r v'
+
       combine-lemma : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC} (γ : Γ .idx .Carrier)
                       (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) (t : Aα.TX.W Q ρA) →
                       Fα.TA'.W-≈ (Fα.fold-reindex γ fm (Aα.R.reindex md t)) (Rcomb.reindex (combine γ md fm) t)
@@ -716,7 +748,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       combine-lemma-shape Q (P + Q') γ md fm (inj₂ y) = combine-lemma-shape Q Q' γ md fm y
       combine-lemma-shape Q (P × Q') γ md fm (x , y) =
         combine-lemma-shape Q P γ md fm x , combine-lemma-shape Q Q' γ md fm y
-      combine-lemma-shape Q (μ R'') γ md fm x = {!!}
+      combine-lemma-shape Q (μ R'') γ md fm x =
+        Fα.TA'.W-≈-trans {x = Fα.fold-reindex γ (Fα.fbind Q fm) (Aα.R.reindex (Aα.R.bind Q md) x)}
+                         {y = Rcomb.reindex (combine γ (Aα.R.bind Q md) (Fα.fbind Q fm)) x}
+                         (combine-lemma γ (Aα.R.bind Q md) (Fα.fbind Q fm) x)
+                         (reindex-mcong (rcomb γ Q md fm) x)
 
     -- Nested-μ fusion: the double reindex (α's mor₀ then the fold's fbase) equals the nested
     -- catamorphism (strong-μ-fmor = ⦅ α ∘ strong-fmor ⦆). `μ-fuse-idx` reduces `sup` on both
