@@ -803,7 +803,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   gen-fuse-idx : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
                  let module Rs = Reidx sₛ sₜ in
                  (cmb : Γ .idx .Carrier → Rs.MorD (λ v → inj₁ v) (λ v → inj₁ v))
-                 (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i)) →
+                 (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
+                 (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
+                         _≈s_ (sₜ i .idx) (Rs.apply (cmb γ₁) i a₁) (fsk i .idxf .PS._⇒_.func (γ₂ , a₂))) →
                  ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
                  (m≈ : _≈s_ (μObj Q sₛ .idx) m₁ m₂) →
                  _≈s_ (μObj Q sₜ .idx)
@@ -815,7 +817,9 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                        module Tt = Tree sₜ
                        module At = AlphaDef Q sₜ in
                    (cmb : Γ .idx .Carrier → Rs.MorD (λ v → inj₁ v) (λ v → inj₁ v))
-                   (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i)) →
+                   (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
+                   (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
+                           _≈s_ (sₜ i .idx) (Rs.apply (cmb γ₁) i a₁) (fsk i .idxf .PS._⇒_.func (γ₂ , a₂))) →
                    let module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
                                      (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))) in
                    (R : Poly (suc n)) →
@@ -826,16 +830,16 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                      (At.R.reindex-shape R At.mor₀
                       (At.embed-idx R (HasMu.strong-fmor hasMu R (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func
                         (γ₂ , Ft.foldShape-idx R γ₂ x₂))))
-  gen-fuse-idx Q cmb fsk γ≈ {Tree.sup x₁} {Tree.sup x₂} m≈ = gen-fuse-shape Q cmb fsk Q γ≈ {x₁} {x₂} m≈
+  gen-fuse-idx Q cmb fsk corr γ≈ {Tree.sup x₁} {Tree.sup x₂} m≈ = gen-fuse-shape Q cmb fsk corr Q γ≈ {x₁} {x₂} m≈
 
-  gen-fuse-shape Q cmb fsk (const A')                  γ≈ x≈ = x≈
-  gen-fuse-shape Q cmb fsk (var Fin.zero)              γ≈ {x₁} {x₂} x≈ = gen-fuse-idx Q cmb fsk γ≈ {x₁} {x₂} x≈
-  gen-fuse-shape Q cmb fsk (var (Fin.suc i))           γ≈ x≈ = {!!}  -- corr i
-  gen-fuse-shape Q cmb fsk (R₁ + R₂) γ≈ {inj₁ _} {inj₁ _} x≈ = gen-fuse-shape Q cmb fsk R₁ γ≈ x≈
-  gen-fuse-shape Q cmb fsk (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = gen-fuse-shape Q cmb fsk R₂ γ≈ x≈
-  gen-fuse-shape Q cmb fsk (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) =
-    gen-fuse-shape Q cmb fsk R₁ γ≈ x≈₁ , gen-fuse-shape Q cmb fsk R₂ γ≈ x≈₂
-  gen-fuse-shape Q cmb fsk (μ R'') γ≈ x≈ = {!!}
+  gen-fuse-shape Q cmb fsk corr (const A')                  γ≈ x≈ = x≈
+  gen-fuse-shape Q cmb fsk corr (var Fin.zero)              γ≈ {x₁} {x₂} x≈ = gen-fuse-idx Q cmb fsk corr γ≈ {x₁} {x₂} x≈
+  gen-fuse-shape Q cmb fsk corr (var (Fin.suc i))           γ≈ x≈ = corr i γ≈ x≈
+  gen-fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₁ _} {inj₁ _} x≈ = gen-fuse-shape Q cmb fsk corr R₁ γ≈ x≈
+  gen-fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = gen-fuse-shape Q cmb fsk corr R₂ γ≈ x≈
+  gen-fuse-shape Q cmb fsk corr (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) =
+    gen-fuse-shape Q cmb fsk corr R₁ γ≈ x≈₁ , gen-fuse-shape Q cmb fsk corr R₂ γ≈ x≈₂
+  gen-fuse-shape Q cmb fsk corr (μ R'') γ≈ x≈ = {!!}
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
