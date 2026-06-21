@@ -839,7 +839,36 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   gen-fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = gen-fuse-shape Q cmb fsk corr R₂ γ≈ x≈
   gen-fuse-shape Q cmb fsk corr (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) =
     gen-fuse-shape Q cmb fsk corr R₁ γ≈ x≈₁ , gen-fuse-shape Q cmb fsk corr R₂ γ≈ x≈₂
-  gen-fuse-shape Q cmb fsk corr (μ R'') γ≈ x≈ = {!!}
+  gen-fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁} {γ₂} γ≈ {x₁} {x₂} x≈ =
+    Tt.W-≈-trans {x = Rs.reindex-shape (μ R'') (Rs.bind Q (cmb γ₁)) x₁}
+                 {z = At.R.reindex-shape (μ R'') At.mor₀ (At.embed-idx (μ R'')
+                        (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
+                          .idxf .PS._⇒_.func (γ₂ , w)))}
+                 telescope
+                 (At.R.reindex-resp At.mor₀
+                   {t = Rs'.reindex (cmb' γ₂) w}
+                   {t' = HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func (γ₂ , w)}
+                   rec)
+    where
+      module Tt = Tree sₜ
+      module At = AlphaDef Q sₜ
+      module Rs = Reidx sₛ sₜ
+      module Rs' = Reidx (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
+      module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
+                    (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
+      w = Ft.fold-reindex γ₂ Ft.fbase x₂
+      cmb' : Γ .idx .Carrier → Rs'.MorD (λ v → inj₁ v) (λ v → inj₁ v)
+      cmb' γ = Rs'.base (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.apply (cmb γ) i a }) {!!} {!!} {!!}
+      rec : _≈s_ (μObj R'' (extend sₜ (μObj Q sₜ)) .idx)
+                 (Rs'.reindex (cmb' γ₂) w)
+                 (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func (γ₂ , w))
+      rec = gen-fuse-idx R'' cmb' (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
+              (λ { Fin.zero γ≈ a≈ → a≈ ; (Fin.suc j) γ≈ a≈ → corr j γ≈ a≈ })
+              (Γ .idx .isEquivalence .refl {γ₂}) {m₁ = w} {m₂ = w}
+              (μObj R'' (extend sₛ (μObj Q sₜ)) .idx .isEquivalence .refl {w})
+      telescope : Tt.W-≈ (Rs.reindex-shape (μ R'') (Rs.bind Q (cmb γ₁)) x₁)
+                         (At.R.reindex At.mor₀ (Rs'.reindex (cmb' γ₂) w))
+      telescope = {!!}
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
