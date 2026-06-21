@@ -508,7 +508,7 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     fobj1≅𝕀 .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq x≈x' = x≈x'
     fobj1≅𝕀 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {x ∷ []} {y ∷ []} h = h
 
-    fobjⁿ≅⊕ⁿ𝕀 : ∀ n → Iso (fobj n) (SelfDualDistributiveLattice.M (⊕ⁿ n))
+    fobjⁿ≅⊕ⁿ𝕀 : ∀ n → Iso (fobj n) (SelfDualDistributiveLattice.obj (⊕ⁿ n))
     fobjⁿ≅⊕ⁿ𝕀 zero    = IsIso→Iso F-preserve-terminal
     fobjⁿ≅⊕ⁿ𝕀 (suc n) = Iso-trans (IsIso→Iso (F-preserve-products {1} {n})) (⊕-iso fobj1≅𝕀 (fobjⁿ≅⊕ⁿ𝕀 n))
 

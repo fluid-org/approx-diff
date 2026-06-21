@@ -412,12 +412,12 @@ Dual-iso iso .Iso.fwd∘bwd≈id =
 Dual-iso iso .Iso.bwd∘fwd≈id =
   ≈-trans (≈-sym (ᵀ-comp (iso .Iso.fwd) (iso .Iso.bwd))) (≈-trans (ᵀ-cong (iso .Iso.fwd∘bwd≈id)) ᵀ-id)
 
-Dual-𝟘 : Iso (Dual 𝟘) 𝟘
-Dual-𝟘 .Iso.fwd = HasTerminal.to-terminal terminal
-Dual-𝟘 .Iso.bwd = εm
-Dual-𝟘 .Iso.fwd∘bwd≈id = HasTerminal.to-terminal-unique terminal _ _
-Dual-𝟘 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {_} {ψ} _ .*≈* ._≈s_.func-eq _ =
+𝟘≅𝟘* : Iso 𝟘 (Dual 𝟘)
+𝟘≅𝟘* .Iso.fwd = εm
+𝟘≅𝟘* .Iso.bwd = HasTerminal.to-terminal terminal
+𝟘≅𝟘* .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq {_} {ψ} _ .*≈* ._≈s_.func-eq _ =
   sym 𝕀 (trans 𝕀 (ψ .func-resp-≈ tt) (ψ .preserve-ze))
+𝟘≅𝟘* .Iso.bwd∘fwd≈id = HasTerminal.to-terminal-unique terminal _ _
 
 Dual-⊕-iso : ∀ {M N} → Iso (Dual (M ⊕ N)) (Dual M ⊕ Dual N)
 Dual-⊕-iso {M} {N} = IsIso→Iso (biproduct-iso cmon-enriched Dual-preserves-⊕ (biproduct (Dual M) (Dual N)))
@@ -465,6 +465,33 @@ module _ {M N} (M≅M* : Iso M (Dual M)) (N≅N* : Iso N (Dual N)) where
            (pairing N≅N* y (f .*→* ._⇒s_.func x) S.≈ S.ε) ⇔ (pairing M≅M* (conj f .*→* ._⇒s_.func y) x S.≈ S.ε)
   conj-⊥ f .proj₁ p = S.trans (conj-pairing f) p
   conj-⊥ f .proj₂ q = S.trans (S.sym (conj-pairing f)) q
+
+------------------------------------------------------------------------------
+-- Semimodule with a chosen self-duality.
+
+record SelfDual : Set (suc 0ℓ) where
+  field
+    obj  : Semimodule
+    dual : Iso obj (Dual obj)
+-- local open so the obj/dual projections don't leak to SelfDualDistributiveLattice below.
+module _ where
+  open SelfDual
+
+  𝕀-sd : SelfDual
+  𝕀-sd .obj = 𝕀
+  𝕀-sd .dual = 𝕀≅𝕀*
+
+  𝟘-sd : SelfDual
+  𝟘-sd .obj = 𝟘
+  𝟘-sd .dual = 𝟘≅𝟘*
+
+  ⊕-sd : SelfDual → SelfDual → SelfDual
+  ⊕-sd X Y .obj = X .obj ⊕ Y .obj
+  ⊕-sd X Y .dual = ⊕-self-dual (X .dual) (Y .dual)
+
+  -- The conjugate of a morphism, with self-dualities read off the objects.
+  conjugate : (X Y : SelfDual) → (X .obj ⇒ Y .obj) → (Y .obj ⇒ X .obj)
+  conjugate X Y = conj (X .dual) (Y .dual)
 
 ------------------------------------------------------------------------------
 module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
@@ -606,23 +633,25 @@ module JoinSemilattices
   record SelfDualDistributiveLattice : Set (suc 0ℓ) where
     no-eta-equality
     field
-      M         : Semimodule
-      self-dual : Iso M (Dual M)
-      meets     : MeetSemilattice (preorder M)
-
-    open MeetSemilattice meets using (_∧_)
-    open JoinSemilattice (joins M) using (_∨_)
-    open Disjoint (≤-isPreorder M) (MeetSemilattice.∧-isMeet meets) (JoinSemilattice.⊥-isBottom (joins M)) using (_#_)
+      selfDual : SelfDual
+    open SelfDual selfDual public
 
     field
-      ∧-∨-distrib : ∀ x y z → _≤_ M (x ∧ (y ∨ z)) ((x ∧ y) ∨ (x ∧ z))
-      align       : ∀ {a b} → (a # b) ⇔ (pairing self-dual a b S.≈ S.ε)
+      meets : MeetSemilattice (preorder obj)
+
+    open MeetSemilattice meets using (_∧_)
+    open JoinSemilattice (joins obj) using (_∨_)
+    open Disjoint (≤-isPreorder obj) (MeetSemilattice.∧-isMeet meets) (JoinSemilattice.⊥-isBottom (joins obj)) using (_#_)
+
+    field
+      ∧-∨-distrib : ∀ x y z → _≤_ obj (x ∧ (y ∨ z)) ((x ∧ y) ∨ (x ∧ z))
+      align       : ∀ {a b} → (a # b) ⇔ (pairing dual a b S.≈ S.ε)
 
   -- Embedding of objects into LatConj.
     toObj : Obj
-    toObj .Obj.carrier     = preorder M
+    toObj .Obj.carrier     = preorder obj
     toObj .Obj.meets       = meets
-    toObj .Obj.joins       = joins M
+    toObj .Obj.joins       = joins obj
     toObj .Obj.∧-∨-distrib = ∧-∨-distrib
 
   -- Embedding of morphisms into LatConj.
@@ -633,8 +662,8 @@ module JoinSemilattices
       module MX = MeetSemilattice X.meets
       module MY = MeetSemilattice Y.meets
 
-    -- Componentwise meet on the biproduct (the meet-semilattice product, but indexed by preorder (X.M ⊕ Y.M)).
-    meets-⊕ : MeetSemilattice (preorder (X.M ⊕ Y.M))
+    -- Componentwise meet on the biproduct (the meet-semilattice product, but indexed by preorder (X.obj ⊕ Y.obj)).
+    meets-⊕ : MeetSemilattice (preorder (X.obj ⊕ Y.obj))
     meets-⊕ .MeetSemilattice._∧_ (x₁ , y₁) (x₂ , y₂) = MX._∧_ x₁ x₂ , MY._∧_ y₁ y₂
     meets-⊕ .MeetSemilattice.⊤ = MX.⊤ , MY.⊤
     meets-⊕ .MeetSemilattice.∧-isMeet .IsMeet.π₁ = MX.∧-isMeet .IsMeet.π₁ , MY.∧-isMeet .IsMeet.π₁
@@ -644,31 +673,32 @@ module JoinSemilattices
     meets-⊕ .MeetSemilattice.⊤-isTop .IsTop.≤-top = MX.⊤-isTop .IsTop.≤-top , MY.⊤-isTop .IsTop.≤-top
 
     ⊕-sddl : SelfDualDistributiveLattice
-    ⊕-sddl .SelfDualDistributiveLattice.M           = X.M ⊕ Y.M
-    ⊕-sddl .SelfDualDistributiveLattice.self-dual   = ⊕-self-dual X.self-dual Y.self-dual
+    ⊕-sddl .SelfDualDistributiveLattice.selfDual    = ⊕-sd X.selfDual Y.selfDual
     ⊕-sddl .SelfDualDistributiveLattice.meets       = meets-⊕
     ⊕-sddl .SelfDualDistributiveLattice.∧-∨-distrib (x₁ , x₂) (y₁ , y₂) (z₁ , z₂) =
       X.∧-∨-distrib x₁ y₁ z₁ , Y.∧-∨-distrib x₂ y₂ z₂
     ⊕-sddl .SelfDualDistributiveLattice.align {x₁ , x₂} {y₁ , y₂} .proj₁ (d₁ , d₂) =
-      S.trans (pairing-⊕ X.self-dual Y.self-dual)
+      S.trans (pairing-⊕ X.dual Y.dual)
               (S.trans (S.+-cong (X.align .proj₁ d₁) (Y.align .proj₁ d₂)) S.+-lunit)
     ⊕-sddl .SelfDualDistributiveLattice.align {x₁ , x₂} {y₁ , y₂} .proj₂ h =
-      let p₁ , p₂ = zero-sum-free 𝕀 (S.trans (S.sym (pairing-⊕ X.self-dual Y.self-dual)) h)
+      let p₁ , p₂ = zero-sum-free 𝕀 (S.trans (S.sym (pairing-⊕ X.dual Y.dual)) h)
       in X.align .proj₂ p₁ , Y.align .proj₂ p₂
 
-    to-conj : X.M ⇒ Y.M → X.toObj ⇒c Y.toObj
+    to-conj : X.obj ⇒ Y.obj → X.toObj ⇒c Y.toObj
     to-conj f ._⇒c_.right = joins-map f
-    to-conj f ._⇒c_.left = joins-map (conj X.self-dual Y.self-dual f)
+    to-conj f ._⇒c_.left = joins-map (conjugate X.selfDual Y.selfDual f)
     to-conj f ._⇒c_.conjugate =
-      trans-⇔ Y.align (trans-⇔ (conj-⊥ X.self-dual Y.self-dual f) (sym-⇔ X.align))
+      trans-⇔ Y.align (trans-⇔ (conj-⊥ X.dual Y.dual f) (sym-⇔ X.align))
 
   -- A self-dual distributive lattice structure transports along any semimodule isomorphism.
   module _ (P : SelfDualDistributiveLattice) {N : Semimodule}
-           (N≅M : Iso N (SelfDualDistributiveLattice.M P)) where
+           (N≅M : Iso N (SelfDualDistributiveLattice.obj P)) where
+    open SelfDualDistributiveLattice
+    open SelfDual
     private
       module P  = SelfDualDistributiveLattice P
       module MP = MeetSemilattice P.meets
-      module M  = Semimodule P.M
+      module M  = Semimodule P.obj
       module N  = Semimodule N
       open Iso N≅M
 
@@ -679,24 +709,24 @@ module JoinSemilattices
       bwd∘fwd = bwd∘fwd≈id .*≈* ._≈s_.func-eq N.refl
 
       -- fwd preserves and reflects the order.
-      ≤-fwd : ∀ {x y} → _≤_ N x y → _≤_ P.M (fwd .func x) (fwd .func y)
+      ≤-fwd : ∀ {x y} → _≤_ N x y → _≤_ P.obj (fwd .func x) (fwd .func y)
       ≤-fwd x≤y = M.trans (M.sym (fwd .preserve-+)) (fwd .func-resp-≈ x≤y)
-      ≤-bwd : ∀ {x y} → _≤_ P.M (fwd .func x) (fwd .func y) → _≤_ N x y
+      ≤-bwd : ∀ {x y} → _≤_ P.obj (fwd .func x) (fwd .func y) → _≤_ N x y
       ≤-bwd {x} {y} h =
         N.trans (N.sym (bwd∘fwd {x N.+ y}))
           (N.trans (bwd .func-resp-≈ (fwd .preserve-+))
             (N.trans (bwd .func-resp-≈ h) (bwd∘fwd {y})))
 
-      ≤M-resp : ∀ {x x' y y'} → x M.≈ x' → y M.≈ y' → _≤_ P.M x y → _≤_ P.M x' y'
+      ≤M-resp : ∀ {x x' y y'} → x M.≈ x' → y M.≈ y' → _≤_ P.obj x y → _≤_ P.obj x' y'
       ≤M-resp x≈x' y≈y' h = M.trans (M.+-cong (M.sym x≈x') (M.sym y≈y')) (M.trans h y≈y')
 
-      ≤-antisym : ∀ {x y} → _≤_ P.M x y → _≤_ P.M y x → x M.≈ y
+      ≤-antisym : ∀ {x y} → _≤_ P.obj x y → _≤_ P.obj y x → x M.≈ y
       ≤-antisym x≤y y≤x = M.trans (M.sym y≤x) (M.trans M.+-comm x≤y)
 
       ∧≈ : ∀ {a a' b b'} → a M.≈ a' → b M.≈ b' → MP._∧_ a b M.≈ MP._∧_ a' b'
       ∧≈ a≈a' b≈b' =
-        ≤-antisym (MP.∧-mono (≈→≤ P.M a≈a') (≈→≤ P.M b≈b'))
-                  (MP.∧-mono (≈→≤ P.M (M.sym a≈a')) (≈→≤ P.M (M.sym b≈b')))
+        ≤-antisym (MP.∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
+                  (MP.∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
 
       meets' : MeetSemilattice (preorder N)
       meets' .MeetSemilattice._∧_ a b = bwd .func (MP._∧_ (fwd .func a) (fwd .func b))
@@ -712,19 +742,19 @@ module JoinSemilattices
 
       -- Disjointness transports: a # b iff fwd a # fwd b.
       #⇔# : ∀ {a b} → _≤_ N (bwd .func (MP._∧_ (fwd .func a) (fwd .func b))) N.ε ⇔
-                      _≤_ P.M (MP._∧_ (fwd .func a) (fwd .func b)) M.ε
+                      _≤_ P.obj (MP._∧_ (fwd .func a) (fwd .func b)) M.ε
       #⇔# .proj₁ h = ≤M-resp fwd∘bwd (fwd .preserve-ze) (≤-fwd h)
       #⇔# .proj₂ h = ≤-bwd (≤M-resp (M.sym fwd∘bwd) (M.sym (fwd .preserve-ze)) h)
 
     transport-sddl : SelfDualDistributiveLattice
-    transport-sddl .SelfDualDistributiveLattice.M         = N
-    transport-sddl .SelfDualDistributiveLattice.self-dual = Iso-trans N≅M (Iso-trans P.self-dual (Dual-iso N≅M))
-    transport-sddl .SelfDualDistributiveLattice.meets     = meets'
-    transport-sddl .SelfDualDistributiveLattice.∧-∨-distrib x y z =
+    transport-sddl .selfDual .obj  = N
+    transport-sddl .selfDual .dual = Iso-trans N≅M (Iso-trans P.dual (Dual-iso N≅M))
+    transport-sddl .meets     = meets'
+    transport-sddl .∧-∨-distrib x y z =
       ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl (fwd .preserve-+))))
                      (M.sym (M.trans (fwd .preserve-+) (M.+-cong fwd∘bwd fwd∘bwd)))
                      (P.∧-∨-distrib (fwd .func x) (fwd .func y) (fwd .func z)))
-    transport-sddl .SelfDualDistributiveLattice.align {a} {b} = trans-⇔ #⇔# P.align
+    transport-sddl .align {a} {b} = trans-⇔ #⇔# P.align
 
   -- With S a bounded distributive lattice, 𝕀 (and every n-ary biproduct of it) is one too, with
   -- multiplication as the meet.
@@ -755,8 +785,7 @@ module JoinSemilattices
     𝕀-meet .MeetSemilattice.⊤-isTop .IsTop.≤-top = S.trans S.+-comm ⊤-add-top
 
     𝕀-sddl : SelfDualDistributiveLattice
-    𝕀-sddl .SelfDualDistributiveLattice.M           = 𝕀
-    𝕀-sddl .SelfDualDistributiveLattice.self-dual   = 𝕀≅𝕀*
+    𝕀-sddl .SelfDualDistributiveLattice.selfDual    = 𝕀-sd
     𝕀-sddl .SelfDualDistributiveLattice.meets       = 𝕀-meet
     𝕀-sddl .SelfDualDistributiveLattice.∧-∨-distrib x y z = ≈→≤ 𝕀 S.·-+-distribₗ
     𝕀-sddl .SelfDualDistributiveLattice.align .proj₁ h = S.trans (S.sym (S.trans S.+-comm S.+-lunit)) h
@@ -764,8 +793,7 @@ module JoinSemilattices
 
     -- 𝟘 (= ⊕⁰ 𝕀) is trivially a self-dual distributive lattice.
     𝟘-sddl : SelfDualDistributiveLattice
-    𝟘-sddl .SelfDualDistributiveLattice.M                                          = 𝟘
-    𝟘-sddl .SelfDualDistributiveLattice.self-dual                                  = Iso-sym Dual-𝟘
+    𝟘-sddl .SelfDualDistributiveLattice.selfDual                                   = 𝟘-sd
     𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice._∧_ _ _             = 𝟘 .ε
     𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice.⊤                   = 𝟘 .ε
     𝟘-sddl .SelfDualDistributiveLattice.meets .MeetSemilattice.∧-isMeet .IsMeet.π₁ = tt
