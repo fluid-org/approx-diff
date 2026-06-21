@@ -25,7 +25,8 @@ open import categories using (Category; HasTerminal; HasProducts)
 import cmon-enriched as CMon
 import semimodule
 import radius-semiring
-import ho-model-semimod-D as HM
+import ho-model-semimod
+module HM = ho-model-semimod radius-semiring.semiring
 
 open radius-semiring using (∞; fin)
 open import Data.Rational using (0ℚ; 1ℚ; _/_)

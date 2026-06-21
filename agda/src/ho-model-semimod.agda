@@ -2,19 +2,22 @@
 
 -- The higher-order model interpreted directly in Fam(SemiMod S), with no
 -- intermediate Mat(S): the source base category is SemiMod itself and the
--- transporting functor F is the identity.
-module ho-model-semimod where
-
+-- transporting functor F is the identity.  Parameterised by the scalar semiring
+-- S (instantiated at two.semiring for the boolean model, radius-semiring for
+-- the interval model, etc.).
 open import Level using (0ℓ)
+open import prop-setoid using (Setoid)
+open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category; HasTerminal; HasProducts)
 open import functor using (Functor; Id)
 open import finite-product-functor using (preserve-chosen-terminal; preserve-chosen-products)
 open import cmon-enriched using (biproducts→products)
 import semimodule
-import two
 import ho-model
 
-module SM = semimodule two.semiring
+module ho-model-semimod {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+
+module SM = semimodule S
 
 private
   module SMc = Category SM.cat
