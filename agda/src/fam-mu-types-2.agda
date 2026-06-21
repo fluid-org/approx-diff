@@ -846,7 +846,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                           .idxf .PS._⇒_.func (γ₂ , w)))}
                  telescope
                  (At.R.reindex-resp At.mor₀
-                   {t = Rs'.reindex (cmb' γ₂) w}
+                   {t = Rs'.reindex (cmb' γ₁) wm₁}
                    {t' = HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func (γ₂ , w)}
                    rec)
     where
@@ -856,18 +856,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       module Rs' = Reidx (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
       module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
                     (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
-      w = Ft.fold-reindex γ₂ Ft.fbase x₂
+      wm₁ = Ft.fold-reindex γ₁ Ft.fbase x₁
+      w   = Ft.fold-reindex γ₂ Ft.fbase x₂
       cmb' : Γ .idx .Carrier → Rs'.MorD (λ v → inj₁ v) (λ v → inj₁ v)
       cmb' γ = Rs'.base (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.apply (cmb γ) i a }) {!!} {!!} {!!}
       rec : _≈s_ (μObj R'' (extend sₜ (μObj Q sₜ)) .idx)
-                 (Rs'.reindex (cmb' γ₂) w)
+                 (Rs'.reindex (cmb' γ₁) wm₁)
                  (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func (γ₂ , w))
       rec = gen-fuse-idx R'' cmb' (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
               (λ { Fin.zero γ≈ a≈ → a≈ ; (Fin.suc j) γ≈ a≈ → corr j γ≈ a≈ })
-              (Γ .idx .isEquivalence .refl {γ₂}) {m₁ = w} {m₂ = w}
-              (μObj R'' (extend sₛ (μObj Q sₜ)) .idx .isEquivalence .refl {w})
+              γ≈ {m₁ = wm₁} {m₂ = w}
+              (Ft.fold-reindex-resp γ≈ Ft.fbase {x₁} {x₂} x≈)
       telescope : Tt.W-≈ (Rs.reindex-shape (μ R'') (Rs.bind Q (cmb γ₁)) x₁)
-                         (At.R.reindex At.mor₀ (Rs'.reindex (cmb' γ₂) w))
+                         (At.R.reindex At.mor₀ (Rs'.reindex (cmb' γ₁) wm₁))
       telescope = {!!}
 
   hasMuLaws : HasMuLaws hasMu
