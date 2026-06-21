@@ -55,7 +55,8 @@ module backward where
   BaseInterp .Model.⟦op⟧ approx-unit = simplef[ idS _ , galois.unit ]
   BaseInterp .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , galois.conjunct ] C.∘ binary
 
-  open Galois.interp Sig BaseInterp
+  import ho-model-galois
+  open ho-model-galois.interp Sig BaseInterp
   open import Data.Nat hiding (_/_)
   open import Data.Rational renaming (_≤_ to _≤ℚ_; show to ℚ-show)
   open import Data.Integer hiding (_/_; show; -_)
@@ -122,7 +123,8 @@ module forward where
   BaseInterp .Model.⟦op⟧ approx-unit = simplef[ idS _ , conjugate.unit ]
   BaseInterp .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjugate.conjunct ] C.∘ binary
 
-  open Conjugate.interp Sig BaseInterp
+  import ho-model-conjugate
+  open ho-model-conjugate.interp Sig BaseInterp
   open import Data.Rational
   open import Data.Rational.Properties using (≤-refl)
   open import preorder using (bottom; <_>; LCarrier; Preorder; L)

@@ -8,9 +8,10 @@ module example-signature-interpretation
   (𝒞 : Category o 0ℓ 0ℓ)
   (𝒞-products : HasProducts 𝒞)
   (𝒞-terminal : HasTerminal 𝒞)
-  (TWO : Category.obj 𝒞)
-  (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) TWO)
-  (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products TWO TWO) TWO)
+  -- the object approximating the `number` and `approx` sorts; unit and conjunct give it a monoid structure.
+  (Approx : Category.obj 𝒞)
+  (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) Approx)
+  (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products Approx Approx) Approx)
   where
 
 import fam
@@ -102,7 +103,7 @@ import label
 BaseInterp0 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
 BaseInterp0 .Model.⟦sort⟧ number = simple[ nat.ℕₛ , 𝟙-base ]
 BaseInterp0 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
-BaseInterp0 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , TWO ]
+BaseInterp0 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
 BaseInterp0 .Model.⟦op⟧ zero = simplef[ nat.zero-m , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦op⟧ add = simplef[ nat.add , to-𝟙-base ] C.∘ binary
 BaseInterp0 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
@@ -111,9 +112,9 @@ BaseInterp0 .Model.⟦op⟧ approx-unit = simplef[ idS _ , unit ]
 BaseInterp0 .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjunct ] C.∘ binary
 
 BaseInterp1 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-BaseInterp1 .Model.⟦sort⟧ number = simple[ nat.ℕₛ , TWO ]
+BaseInterp1 .Model.⟦sort⟧ number = simple[ nat.ℕₛ , Approx ]
 BaseInterp1 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
-BaseInterp1 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , TWO ]
+BaseInterp1 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
 BaseInterp1 .Model.⟦op⟧ zero = simplef[ nat.zero-m , unit ]
 BaseInterp1 .Model.⟦op⟧ add = simplef[ nat.add , conjunct ] C.∘ binary
 BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
