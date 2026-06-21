@@ -883,6 +883,20 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
           (λ { Fin.zero γ≈ {a₁} {a₂} a≈ → Fα.fold-idx-resp γ≈ {a₁} {a₂} a≈ ; (Fin.suc j) γ≈ a≈ → a≈ })
           γ≈ {m₁} {m₂} m≈)
 
+    -- Fibre analogue of `β-idx`: the fibre transformations agree (modulo transport along β-idx).
+    β-fam : (R : Poly (suc n)) → ∀ {γ} {m} →
+            Category._≈_ 𝒞
+              (fobj μo R (extend δ A) .fam .subst
+                 (β-idx R (Γ .idx .isEquivalence .refl) (fobj μo R δ' .idx .isEquivalence .refl))
+               ∘ (Fα.foldShape-fam R γ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m))
+                  ∘ prod-m (id _) (Aα.R.reindex-fam R Aα.mor₀ ∘ Aα.embed-fam R m)))
+              (strong-fmor R fs .famf ._⇒f_.transf (γ , m))
+    β-fam (const A') = {!!}
+    β-fam (var v) = {!!}
+    β-fam (R₁ + R₂) = {!!}
+    β-fam (R₁ × R₂) = {!!}
+    β-fam (μ R'') = {!!}
+
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
     alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , BetaDef.β-idx alg P γ≈ m≈)
