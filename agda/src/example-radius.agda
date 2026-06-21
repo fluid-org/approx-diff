@@ -32,7 +32,7 @@ open import Data.Rational using (0ℚ; 1ℚ; _/_)
 open import Data.Integer using (+_)
 module SM = semimodule radius-semiring.semiring
 open CMon.CMonEnriched SM.cmon-enriched using (_+m_)
-open SM using (𝟘; 𝕀; _⊕_; _⇒_; ε-map)
+open SM using (𝟘; 𝕀; _⊕_; _⇒_; ε-map; 𝕀-sd; 𝟘-sd; ⊕-sd; conjugate)
 
 -- numbers approximated by D² = 𝕀 ⊕ 𝕀 (left and right radius).
 D² : SM.Semimodule
@@ -62,3 +62,28 @@ test-addᵀ : fwd-slice (lift · , (lift · , (fin (+ 1 / 2) , fin 0ℚ))
                               , (lift · , (fin (+ 1 / 5) , fin (+ 1 / 2))) , _)
             ≡ (fin (+ 1 / 5) , fin 0ℚ)
 test-addᵀ = ≡-refl
+
+queryMor : _
+queryMor = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input)
+
+-- each element is  label ⊕ number  =  𝟘 ⊕ D²
+eltSD : SM.SelfDual
+eltSD = ⊕-sd 𝟘-sd (⊕-sd 𝕀-sd 𝕀-sd)
+
+-- empty context ⊕ (e₁ ⊕ (e₂ ⊕ (e₃ ⊕ nil)))
+inputSD : SM.SelfDual
+inputSD = ⊕-sd 𝟘-sd (⊕-sd eltSD (⊕-sd eltSD (⊕-sd eltSD 𝟘-sd)))
+
+bwd-slice : _ → _
+bwd-slice r = conjugate inputSD (⊕-sd 𝕀-sd 𝕀-sd) queryMor .func r
+
+-- example-intervals.backward feeds output [9/10, 11/10] around 1 = radii (1/10, 1/10).
+-- The transpose copies it to the two label-a inputs (#1, #3) and leaves ∞ elsewhere:
+--   #1 around 0: (1/10, 1/10) = [-1/10, 1/10]
+--   #2 (label b): (∞, ∞)      = no constraint
+--   #3 around 1: (1/10, 1/10) = [9/10, 11/10]
+test-bwd : bwd-slice (fin (+ 1 / 10) , fin (+ 1 / 10))
+           ≡ (lift · , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10)))
+                     , (lift · , (∞ , ∞))
+                     , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10))) , lift ·)
+test-bwd = ≡-refl
