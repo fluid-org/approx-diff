@@ -811,6 +811,25 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                    (HasMu.strong-fmor hasMu (μ Q) fsk .idxf .PS._⇒_.func (γ₂ , m₂))
   gen-fuse-idx Q cmb fsk γ≈ m≈ = {!!}
 
+  gen-fuse-shape : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
+                   let module Rs = Reidx sₛ sₜ
+                       module Ts = Tree sₛ
+                       module Tt = Tree sₜ
+                       module At = AlphaDef Q sₜ in
+                   (cmb : Γ .idx .Carrier → Rs.MorD (λ v → inj₁ v) (λ v → inj₁ v))
+                   (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i)) →
+                   let module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
+                                     (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))) in
+                   (R : Poly (suc n)) →
+                   ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x₁ x₂}
+                   (x≈ : Ts.shape≈ R (extend (λ v → inj₁ v) (inj₂ (mkSort Q (λ v → inj₁ v)))) x₁ x₂) →
+                   Tt.shape≈ R (extend (λ v → inj₁ v) (inj₂ (mkSort Q (λ v → inj₁ v))))
+                     (Rs.reindex-shape R (Rs.bind Q (cmb γ₁)) x₁)
+                     (At.R.reindex-shape R At.mor₀
+                      (At.embed-idx R (HasMu.strong-fmor hasMu R (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func
+                        (γ₂ , Ft.foldShape-idx R γ₂ x₂))))
+  gen-fuse-shape Q cmb fsk R γ≈ x≈ = {!!}
+
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
     alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , BetaDef.β-idx alg P γ≈ m≈)
