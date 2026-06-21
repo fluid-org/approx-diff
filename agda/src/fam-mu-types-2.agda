@@ -798,6 +798,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     β-idx (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (m≈₁ , m≈₂) = β-idx Q₁ γ≈ m≈₁ , β-idx Q₂ γ≈ m≈₂
     β-idx (μ Q')            γ≈ {m₁} {m₂} m≈ = FuseM.μ-fuse-idx Q' γ≈ {m₁} {m₂} m≈
 
+  -- General free-family fusion: a single reindex (the collapsed double-reindex, via combine-lemma)
+  -- equals the functorial map. Families sₛ/sₜ are FREE so the nested-μ recursion's family fits.
+  gen-fuse-idx : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
+                 let module Rs = Reidx sₛ sₜ in
+                 (cmb : Γ .idx .Carrier → Rs.MorD (λ v → inj₁ v) (λ v → inj₁ v))
+                 (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i)) →
+                 ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
+                 (m≈ : _≈s_ (μObj Q sₛ .idx) m₁ m₂) →
+                 _≈s_ (μObj Q sₜ .idx)
+                   (Rs.reindex (cmb γ₁) m₁)
+                   (HasMu.strong-fmor hasMu (μ Q) fsk .idxf .PS._⇒_.func (γ₂ , m₂))
+  gen-fuse-idx Q cmb fsk γ≈ m≈ = {!!}
+
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
     alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , BetaDef.β-idx alg P γ≈ m≈)
