@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Forward analysis of the example query in the radius model: interpret directly
--- into Fam(SemiMod D), numbers approximated by D² (left, right radius).
+-- into Fam(SemiMod ℚ∞), numbers approximated by ℚ∞² (left, right radius).
 module example-radius where
 
 open import Level using (0ℓ; lift)
@@ -24,25 +24,25 @@ open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl t
 open import categories using (Category; HasTerminal; HasProducts)
 import cmon-enriched as CMon
 import semimodule
-import radius-semiring
+import semiring-Q-tropical
 import ho-model-semimod
-module HM = ho-model-semimod radius-semiring.semiring
+module HM = ho-model-semimod semiring-Q-tropical.semiring
 
-open radius-semiring using (∞; fin)
+open semiring-Q-tropical using (∞; fin)
 open import Data.Rational using (0ℚ; 1ℚ; _/_)
 open import Data.Integer using (+_)
-module SM = semimodule radius-semiring.semiring
+module SM = semimodule semiring-Q-tropical.semiring
 open CMon.CMonEnriched SM.cmon-enriched using (_+m_)
 open SM using (𝟘; 𝕀; _⊕_; _⇒_; ε-map; 𝕀-sd; 𝟘-sd; ⊕-sd; conjugate)
 
--- numbers approximated by D² = 𝕀 ⊕ 𝕀 (left and right radius).
-D² : SM.Semimodule
-D² = 𝕀 ⊕ 𝕀
+-- numbers approximated by ℚ∞² = 𝕀 ⊕ 𝕀 (left and right radius).
+ℚ∞² : SM.Semimodule
+ℚ∞² = 𝕀 ⊕ 𝕀
 
-conjunctm : HasProducts.prod HM.products D² D² ⇒ D²
-conjunctm = HasProducts.p₁ HM.products {D²} {D²} +m HasProducts.p₂ HM.products {D²} {D²}
+conjunctm : HasProducts.prod HM.products ℚ∞² ℚ∞² ⇒ ℚ∞²
+conjunctm = HasProducts.p₁ HM.products {ℚ∞²} {ℚ∞²} +m HasProducts.p₂ HM.products {ℚ∞²} {ℚ∞²}
 
-open import example-signature-interpretation SM.cat HM.products SM.terminal D² (ε-map 𝟘 D²) conjunctm
+open import example-signature-interpretation SM.cat HM.products SM.terminal ℚ∞² (ε-map 𝟘 ℚ∞²) conjunctm
 open HM.interp Sig BaseInterp1
 
 input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
@@ -67,7 +67,7 @@ test-addᵀ = ≡-refl
 queryMor : _
 queryMor = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input)
 
--- each element is  label ⊕ number  =  𝟘 ⊕ D²
+-- each element is  label ⊕ number  =  𝟘 ⊕ ℚ∞²
 eltSD : SM.SelfDual
 eltSD = ⊕-sd 𝟘-sd (⊕-sd 𝕀-sd 𝕀-sd)
 

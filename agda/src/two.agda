@@ -121,7 +121,6 @@ complement-∨ {I} = tt
 
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
-open import commutative-semiring using (CommutativeSemiring)
 
 Two-setoid : Setoid _ _
 Two-setoid .Setoid.Carrier = Two
@@ -152,9 +151,3 @@ open CommutativeMonoid
 
 O-⊓-annihilₗ : ∀ {x} → (O ⊓ x) ≃ O
 O-⊓-annihilₗ = ≤-refl {O} , ≤-refl {O}
-
-semiring : CommutativeSemiring Two-setoid
-semiring .CommutativeSemiring.additive = ⊔-cmon
-semiring .CommutativeSemiring.multiplicative = ⊓-cmon
-semiring .CommutativeSemiring.·-+-distribₗ {x} {y} {z} = ⊓-⊔-distribₗ {x} {y} {z}
-semiring .CommutativeSemiring.ε-annihilₗ {x} = O-⊓-annihilₗ {x}

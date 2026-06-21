@@ -7,12 +7,12 @@ module ho-model-mat where
 open import Level using (0ℓ)
 import mat
 import semimodule
-import two
+import semiring-bool
 import ho-model
 
-module E  = mat.Embedding two.semiring
-module FD = mat.Mat two.semiring
-module SM = semimodule two.semiring
+module E  = mat.Embedding semiring-bool.semiring
+module FD = mat.Mat semiring-bool.semiring
+module SM = semimodule semiring-bool.semiring
 
 open ho-model.Interpretation
   FD.cat FD.terminal FD.products

@@ -24,6 +24,7 @@ import preorder
 import prop-setoid
 
 open import two renaming (I to ⊤; O to ⊥)
+import semiring-bool
 open import Data.Unit renaming (tt to ·; ⊤ to Unit) using ()
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 
@@ -124,8 +125,8 @@ module forward-mat where
   import semimodule
   import ho-model-mat
 
-  module FD = mat.Mat two.semiring
-  module SM = semimodule two.semiring
+  module FD = mat.Mat semiring-bool.semiring
+  module SM = semimodule semiring-bool.semiring
   open CMon.CMonEnriched FD.cmon using (_+m_)
 
   unitm : FD._⇒_ 0 1
@@ -165,8 +166,8 @@ module forward-semimod where
   import semimodule
   import ho-model-semimod
 
-  module SM = semimodule two.semiring
-  module HM = ho-model-semimod two.semiring
+  module SM = semimodule semiring-bool.semiring
+  module HM = ho-model-semimod semiring-bool.semiring
   open CMon.CMonEnriched SM.cmon-enriched using (_+m_)
   open SM using (𝟘; 𝕀; ε-map)
 

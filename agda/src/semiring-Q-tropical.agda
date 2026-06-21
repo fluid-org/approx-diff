@@ -1,11 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The radius semiring D = (ℚ ∪ {∞}, min, ∞, +, 0): the min-plus tropical
+-- The radius semiring ℚ∞ = (ℚ ∪ {∞}, min, ∞, +, 0): the min-plus tropical
 -- semiring used to model interval approximations in radius coordinates.
 -- A radius records how far an endpoint sits from the nominated point; ∞ is
 -- "no information".  Information-join is min (the tighter bound wins); the
 -- multiplicative structure is ordinary addition (radii add when shifting).
-module radius-semiring where
+module semiring-Q-tropical where
 
 open import Level using (0ℓ)
 open import Data.Rational using (ℚ; 0ℚ; _⊓_; _+_)
@@ -17,20 +17,20 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
 
-data D : Set where
-  ∞   : D
-  fin : ℚ → D
+data ℚ∞ : Set where
+  ∞   : ℚ∞
+  fin : ℚ → ℚ∞
 
 -- min, with ∞ the (largest) additive identity.
 infixl 20 _⊓ᴰ_
-_⊓ᴰ_ : D → D → D
+_⊓ᴰ_ : ℚ∞ → ℚ∞ → ℚ∞
 ∞     ⊓ᴰ y     = y
 fin p ⊓ᴰ ∞     = fin p
 fin p ⊓ᴰ fin q = fin (p ⊓ q)
 
 -- arithmetic +, with ∞ absorbing.
 infixl 21 _+ᴰ_
-_+ᴰ_ : D → D → D
+_+ᴰ_ : ℚ∞ → ℚ∞ → ℚ∞
 ∞     +ᴰ y     = ∞
 fin p +ᴰ ∞     = ∞
 fin p +ᴰ fin q = fin (p + q)
@@ -77,7 +77,7 @@ distrib (fin p) (fin q) (fin r) = cong fin (mono-≤-distrib-⊓ (+-monoʳ-≤ p
 -- Packaging.
 
 setoid : Setoid 0ℓ 0ℓ
-setoid .Setoid.Carrier = D
+setoid .Setoid.Carrier = ℚ∞
 setoid .Setoid._≈_ a b = LiftS 0ℓ (a ≡ b)
 setoid .Setoid.isEquivalence .IsEquivalence.refl = liftS refl
 setoid .Setoid.isEquivalence .IsEquivalence.sym (liftS e) = liftS (sym e)

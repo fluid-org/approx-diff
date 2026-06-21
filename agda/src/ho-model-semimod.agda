@@ -3,7 +3,7 @@
 -- The higher-order model interpreted directly in Fam(SemiMod S), with no
 -- intermediate Mat(S): the source base category is SemiMod itself and the
 -- transporting functor F is the identity.  Parameterised by the scalar semiring
--- S (instantiated at two.semiring for the boolean model, radius-semiring for
+-- S (instantiated at semiring-bool for the boolean model, semiring-Q-tropical for
 -- the interval model, etc.).
 open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
