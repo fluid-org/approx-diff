@@ -851,6 +851,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                    rec)
     where
       module Tt = Tree sₜ
+      module Ts = Tree sₛ
       module At = AlphaDef Q sₜ
       module Rs = Reidx sₛ sₜ
       module Rs' = Reidx (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
@@ -867,9 +868,22 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               (λ { Fin.zero γ≈ a≈ → a≈ ; (Fin.suc j) γ≈ a≈ → corr j γ≈ a≈ })
               γ≈ {m₁ = wm₁} {m₂ = w}
               (Ft.fold-reindex-resp γ≈ Ft.fbase {x₁} {x₂} x≈)
+      tele-shape : ∀ {j} (S : Poly j) {ηA ηB ηC ηD}
+                   (md : Rs.MorD ηA ηB) (mdA : At.R.MorD ηC ηB) (md' : Rs'.MorD ηD ηC) (fm : Ft.FMor ηA ηD)
+                   (z : Ft.Tδ.⟦ S ⟧shape ηA) →
+                   Tt.shape≈ S ηB
+                     (Rs.reindex-shape S md z)
+                     (At.R.reindex-shape S mdA (Rs'.reindex-shape S md' (Ft.fold-reindex-shape γ₁ S fm z)))
+      tele-shape (const A') md mdA md' fm z = A' .idx .isEquivalence .refl
+      tele-shape (var v) md mdA md' fm z = {!!}
+      tele-shape (S₁ + S₂) md mdA md' fm (inj₁ z) = tele-shape S₁ md mdA md' fm z
+      tele-shape (S₁ + S₂) md mdA md' fm (inj₂ z) = tele-shape S₂ md mdA md' fm z
+      tele-shape (S₁ × S₂) md mdA md' fm (z₁ , z₂) = tele-shape S₁ md mdA md' fm z₁ , tele-shape S₂ md mdA md' fm z₂
+      tele-shape (μ S') md mdA md' fm (Ts.sup z') =
+        tele-shape S' (Rs.bind S' md) (At.R.bind S' mdA) (Rs'.bind S' md') (Ft.fbind S' fm) z'
       telescope : Tt.W-≈ (Rs.reindex-shape (μ R'') (Rs.bind Q (cmb γ₁)) x₁)
                          (At.R.reindex At.mor₀ (Rs'.reindex (cmb' γ₁) wm₁))
-      telescope = {!!}
+      telescope = tele-shape (μ R'') (Rs.bind Q (cmb γ₁)) At.mor₀ (cmb' γ₁) Ft.fbase x₁
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
