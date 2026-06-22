@@ -817,26 +817,30 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       telescope = tele-shape (μ R'') tbase x₁
 
   -- Fibre analogue of `gen-fuse-idx`: the fibre reindex (via the external fold action `act`)
-  -- equals the strong functorial action's fibre, transported along the index fusion `ieq`.
+  -- equals the strong functorial action's fibre, transported along the index fusion.
+  -- Mirrors `gen-fuse-idx`'s interface (function `cmb`, general `corr`) so the μ-recursion can
+  -- build nested index equations, plus the fibre `act`/`corr-fam` (at the fixed `γ`).
   gen-fuse-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
                  let module Rs = Reidx sₛ sₜ
                      module FR = FReidx {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
-                 (cmb : Rs.MorD (λ v → inj₁ v) (λ v → inj₁ v))
-                 (act : FR.FAct cmb)
+                 (cmb : Γ .idx .Carrier → Rs.MorD (λ v → inj₁ v) (λ v → inj₁ v))
+                 (act : FR.FAct (cmb γ))
                  (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
-                 (corr : ∀ i {a} → _≈s_ (sₜ i .idx) (Rs.apply cmb i a) (fsk i .idxf .PS._⇒_.func (γ , a)))
+                 (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
+                         _≈s_ (sₜ i .idx) (Rs.apply (cmb γ₁) i a₁) (fsk i .idxf .PS._⇒_.func (γ₂ , a₂)))
                  (corr-fam : ∀ i {a} →
                     Category._≈_ 𝒞
-                      (sₜ i .fam .subst (corr i {a}) ∘ FR.aapply act i a)
-                      (fsk i .famf ._⇒f_.transf (γ , a)))
-                 (ieq : ∀ {m} → _≈s_ (μObj Q sₜ .idx)
-                          (Rs.reindex cmb m)
-                          (HasMu.strong-fmor hasMu (μ Q) fsk .idxf .PS._⇒_.func (γ , m))) →
+                      (sₜ i .fam .subst (corr i (Γ .idx .isEquivalence .refl) (sₛ i .idx .isEquivalence .refl {a}))
+                       ∘ FR.aapply act i a)
+                      (fsk i .famf ._⇒f_.transf (γ , a))) →
                  ∀ {m} →
                  Category._≈_ 𝒞
-                   (μObj Q sₜ .fam .subst {x = Rs.reindex cmb m} (ieq {m}) ∘ FR.freindex-fam act {m})
+                   (μObj Q sₜ .fam .subst {x = Rs.reindex (cmb γ) m}
+                      (gen-fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl)
+                        {m} {m} (μObj Q sₛ .idx .isEquivalence .refl {m}))
+                    ∘ FR.freindex-fam act {m})
                    (HasMu.strong-fmor hasMu (μ Q) fsk .famf ._⇒f_.transf (γ , m))
-  gen-fuse-fam γ Q cmb act fsk corr corr-fam ieq = {!!}
+  gen-fuse-fam γ Q cmb act fsk corr corr-fam = {!!}
 
   -- β/η proof machinery: the fusion of `α`'s reconstruction with the fold equals the
   -- strong functorial action of `⦅ alg ⦆`. References both AlphaDef and FoldDef internals.
