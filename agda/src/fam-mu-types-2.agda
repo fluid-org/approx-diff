@@ -891,9 +891,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                ∘ (Fα.foldShape-fam R γ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m))
                   ∘ prod-m (id _) (Aα.R.reindex-fam R Aα.mor₀ ∘ Aα.embed-fam R m)))
               (strong-fmor R fs .famf ._⇒f_.transf (γ , m))
-    β-fam (const A') = {!!}
-    β-fam (var v) = {!!}
-    β-fam (R₁ + R₂) = {!!}
+    β-fam (const A') = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans (prod-m-cong ≈-refl id-left) prod-m-id)) id-right))
+    β-fam (var Fin.zero) = ≈-trans (∘-cong (A .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans (prod-m-cong ≈-refl id-left) prod-m-id)) id-right))
+    β-fam (var (Fin.suc i)) = ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans (prod-m-cong ≈-refl id-left) prod-m-id)) id-right))
+    β-fam (R₁ + R₂) {m = inj₁ m'} = ≈-trans (β-fam R₁) (≈-sym (≈-trans id-left id-left))
+    β-fam (R₁ + R₂) {m = inj₂ m'} = ≈-trans (β-fam R₂) (≈-sym (≈-trans id-left id-left))
     β-fam (R₁ × R₂) = {!!}
     β-fam (μ R'') = {!!}
 
