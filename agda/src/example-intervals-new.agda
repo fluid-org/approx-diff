@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Forward analysis of the example query in the radius model: interpret directly
--- into Fam(SemiMod ℚ∞), numbers approximated by ℚ∞² (left, right radius).
+-- Forward analysis of the example query in the perturbation-bound model: interpret directly
+-- into Fam(SemiMod ℚ∞), numbers approximated by ℚ∞² (left, right perturbation bound).
 module example-intervals-new where
 
 open import Level using (0ℓ; lift)
@@ -35,7 +35,7 @@ module SM = semimodule semiring-Q-tropical.semiring
 open CMon.CMonEnriched SM.cmon-enriched using (_+m_)
 open SM using (𝟘; 𝕀; _⊕_; _⇒_; ε-map; 𝕀-sd; 𝟘-sd; ⊕-sd; conjugate)
 
--- numbers approximated by ℚ∞² = 𝕀 ⊕ 𝕀 (left and right radius).
+-- numbers approximated by ℚ∞² = 𝕀 ⊕ 𝕀 (left and right perturbation bound).
 ℚ∞² : SM.Semimodule
 ℚ∞² = 𝕀 ⊕ 𝕀
 
@@ -54,9 +54,9 @@ open SM._⇒_
 fwd-slice : _ → _
 fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
--- An interval [l, u] around q from the paper becomes the pair of radii (q - l , u - q); ∞ is the absent
--- (bottom) approximation. So [4/5, 3/2] around 1 becomes (1/5, 1/2).
--- Query a sums #1 and #3; the forward slice combines their radii by min:
+-- An interval [l, u] around q from the paper becomes the pair of perturbation bounds (q - l , u - q); ∞ is
+-- the absent (bottom) approximation. So [4/5, 3/2] around 1 becomes (1/5, 1/2).
+-- Query a sums #1 and #3; the forward slice combines their perturbation bounds by min:
 --   ( min(1/2, 1/5) , min(0, 1/2) ) = (1/5 , 0) = the interval [4/5, 1] around 1.
 test-addᵀ : fwd-slice (lift · , (lift · , (fin (+ 1 / 2) , fin 0ℚ))
                               , (lift · , (∞ , ∞))
@@ -67,7 +67,7 @@ test-addᵀ = ≡-refl
 queryMor : _
 queryMor = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input)
 
--- each element is  label ⊕ number  =  𝟘 ⊕ ℚ∞²
+-- each element is label ⊕ number  =  𝟘 ⊕ ℚ∞²
 eltSD : SM.SelfDual
 eltSD = ⊕-sd 𝟘-sd (⊕-sd 𝕀-sd 𝕀-sd)
 
@@ -78,7 +78,7 @@ inputSD = ⊕-sd 𝟘-sd (⊕-sd eltSD (⊕-sd eltSD (⊕-sd eltSD 𝟘-sd)))
 bwd-slice : _ → _
 bwd-slice r = conjugate inputSD (⊕-sd 𝕀-sd 𝕀-sd) queryMor .func r
 
--- example-intervals.backward feeds output [9/10, 11/10] around 1 = radii (1/10, 1/10).
+-- example-intervals.backward feeds output [9/10, 11/10] around 1 = perturbation bounds (1/10, 1/10).
 -- The transpose copies it to the two label-a inputs (#1, #3) and leaves ∞ elsewhere:
 --   #1 around 0: (1/10, 1/10) = [-1/10, 1/10]
 --   #2 (label b): (∞, ∞)      = no constraint

@@ -1,10 +1,10 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The radius semiring ℚ∞ = (ℚ ∪ {∞}, min, ∞, +, 0): the min-plus tropical
--- semiring used to model interval approximations in radius coordinates.
--- A radius records how far an endpoint sits from the nominated point; ∞ is
+-- The perturbation-bound semiring ℚ∞ = (ℚ ∪ {∞}, min, ∞, +, 0): the min-plus tropical
+-- semiring used to model interval approximations in perturbation-bound coordinates.
+-- A perturbation bound records how far an endpoint sits from the nominated point; ∞ is
 -- "no information".  Information-join is min (the tighter bound wins); the
--- multiplicative structure is ordinary addition (radii add when shifting).
+-- multiplicative structure is ordinary addition (perturbation bounds add when shifting).
 module semiring-Q-tropical where
 
 open import Level using (0ℓ)
