@@ -10,10 +10,10 @@ open import commutative-monoid using (CommutativeMonoid; _=[_]>_)
 open import commutative-semiring using (CommutativeSemiring)
 open import functor using (Functor)
 
--- Suppose 𝒞 a biproduct category with a chosen object X whose endomorphism hom 𝒞(X, X) is a commutative
--- semiring (with composition as multiplication and addition of morphisms as addition), semiring-isomorphic
--- to a given commutative semiring S. Then MatRep(𝒞, X) is the full subcategory of 𝒞 whose objects are
--- iterated biproducts X^n, and is equivalent to Mat(S), with 𝒞(X, X) representing the scalars.
+-- Suppose 𝒞 a biproduct category with a chosen object X whose endomorphism hom 𝒞(X, X) is commutative.
+-- Then 𝒞(X, X) is a commutative semiring (composition as multiplication, addition of morphisms as
+-- addition), and MatRep(𝒞, X), the full subcategory of 𝒞 on iterated biproducts X^n, is equivalent to
+-- Mat(𝒞(X, X)).
 module matrix-embedding
   {o m e} {𝒞 : Category o m e}
   (CM : CMonEnriched 𝒞)
@@ -22,18 +22,9 @@ module matrix-embedding
   (𝟘-initial : IsInitial 𝒞 𝟘)
   (𝟘-terminal : IsTerminal 𝒞 𝟘)
   (X : Category.obj 𝒞)
-  (A : Setoid m e) (S : CommutativeSemiring A)
   (let open Category 𝒞)
   (let open CMonEnriched CM)
-  (let module CS = CommutativeSemiring S)
-  (let open CS using () renaming (_+_ to _+ₛ_; _·_ to _·ₛ_))
-  (scalar-iso : Category.Iso (SetoidCat m e) A (hom-setoid X X))
-  (let open _⇒s_)
-  (let open Category.Iso)
-  (let scalar = scalar-iso .fwd)
-  (scalar-cmon : CS.additive =[ scalar-iso .fwd ]> homCM X X)
-  (scalar-ι : scalar .func CS.ι ≈ id X)
-  (scalar-· : ∀ {a b} → scalar .func (a ·ₛ b) ≈ scalar .func a ∘ scalar .func b)
+  (∘-comm : ∀ {f g : X ⇒ X} → (f ∘ g) ≈ (g ∘ f))
   where
 
   open _⇒s_
@@ -44,6 +35,44 @@ module matrix-embedding
   open CommutativeMonoid
   open IsInitial 𝟘-initial
   open IsTerminal 𝟘-terminal
+
+  -- Scalars: the endomorphism semiring End(X) = 𝒞(X, X), composition as multiplication.
+  A : Setoid m e
+  A = hom-setoid X X
+
+  ∘-monoid : CommutativeMonoid A
+  ∘-monoid .CommutativeMonoid.ε = id X
+  ∘-monoid .CommutativeMonoid._+_ = _∘_
+  ∘-monoid .CommutativeMonoid.+-cong = ∘-cong
+  ∘-monoid .CommutativeMonoid.+-lunit = id-left
+  ∘-monoid .CommutativeMonoid.+-assoc = assoc _ _ _
+  ∘-monoid .CommutativeMonoid.+-comm = ∘-comm
+
+  S : CommutativeSemiring A
+  S .CommutativeSemiring.additive = homCM X X
+  S .CommutativeSemiring.multiplicative = ∘-monoid
+  S .CommutativeSemiring.·-+-distribₗ {x} {y} {z} = comp-bilinear₂ x y z
+  S .CommutativeSemiring.ε-annihilₗ {x} = comp-bilinear-ε₁ x
+
+  module CS = CommutativeSemiring S
+  open CS using () renaming (_+_ to _+ₛ_; _·_ to _·ₛ_)
+
+  -- 𝒞(X, X) IS the scalar carrier, so the embedding's scalar map is the identity and the
+  -- semiring-iso obligations are reflexivity.
+  scalar-iso : Category.Iso (SetoidCat m e) A (hom-setoid X X)
+  scalar-iso = Category.Iso-refl (SetoidCat m e)
+
+  scalar = scalar-iso .fwd
+
+  scalar-cmon : CS.additive =[ scalar-iso .fwd ]> homCM X X
+  scalar-cmon .preserve-ε = ≈-refl
+  scalar-cmon .preserve-+ = ≈-refl
+
+  scalar-ι : scalar .func CS.ι ≈ id X
+  scalar-ι = ≈-refl
+
+  scalar-· : ∀ {a b} → scalar .func (a ·ₛ b) ≈ scalar .func a ∘ scalar .func b
+  scalar-· = ≈-refl
 
   scalar⁻¹ = scalar-iso .bwd
   scalar∘scalar⁻¹≈id = scalar-iso .fwd∘bwd≈id
