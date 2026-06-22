@@ -334,6 +334,10 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         ≡→≈ : ∀ {s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier} → s ≡ s' → (coprod x₁ x₂) .idx ._≈_ s s'
         ≡→≈ {s} ≡.refl = (coprod x₁ x₂) .idx .isEquivalence .refl {s}
 
+        -- Transport the coproduct's (Prop-valued) equality along ≡ on both endpoints.
+        substₚ₂ : {x x' y y' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier} → x ≡ x' → y ≡ y' → (coprod x₁ x₂) .idx ._≈_ x y → (coprod x₁ x₂) .idx ._≈_ x' y'
+        substₚ₂ ≡.refl ≡.refl r = r
+
         Y₁ : Obj
         Y₁ .idx .Carrier = Σ[ i ∈ y .idx .Carrier ] Σ[ a ∈ x₁ .idx .Carrier ] (p .func i ≡ inj₁ a)
         Y₁ .idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
@@ -358,9 +362,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
 
         h₁ : Mor Y₁ x₁
         h₁ .idxf .func (i , a , _) = a
-        h₁ .idxf .func-resp-≈ {i , a , eq} {j , a' , eq'} i≈j =
-          (coprod x₁ x₂) .idx .isEquivalence .trans (≡→≈ (≡.sym eq))
-            ((coprod x₁ x₂) .idx .isEquivalence .trans (p .func-resp-≈ i≈j) (≡→≈ eq'))
+        h₁ .idxf .func-resp-≈ {i , a , eq} {j , a' , eq'} i≈j = substₚ₂ eq eq' (p .func-resp-≈ i≈j)
         h₁ .famf .transf (i , a , eq) =
           (coprod x₁ x₂) .fam .subst {p .func i} {inj₁ a} (≡→≈ eq) ∘ g' .famf .transf i
         h₁ .famf .natural {i , a , eq} {j , a' , eq'} e = {!!}
