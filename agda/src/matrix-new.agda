@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-module mat where
+module matrix-new where
 
 open import Level using (0ℓ; _⊔_)
 open import prop using (tt; _,_; proj₁; proj₂; _⇔_; sym-⇔; trans-⇔)

@@ -5,13 +5,13 @@
 module ho-model-mat where
 
 open import Level using (0ℓ)
-import mat
+import matrix-new
 import semimodule
 import semiring-bool
 import ho-model
 
-module E  = mat.Embedding semiring-bool.semiring
-module FD = mat.Mat semiring-bool.semiring
+module E  = matrix-new.Embedding semiring-bool.semiring
+module FD = matrix-new.Mat semiring-bool.semiring
 module SM = semimodule semiring-bool.semiring
 
 open ho-model.Interpretation

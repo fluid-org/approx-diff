@@ -121,11 +121,11 @@ module forward-mat where
   open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
 
   import cmon-enriched as CMon
-  import mat
+  import matrix-new
   import semimodule
   import ho-model-mat
 
-  module FD = mat.Mat semiring-bool.semiring
+  module FD = matrix-new.Mat semiring-bool.semiring
   module SM = semimodule semiring-bool.semiring
   open CMon.CMonEnriched FD.cmon using (_+m_)
 
