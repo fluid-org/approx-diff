@@ -966,6 +966,69 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                    ∘ FR'.freindex-fam act' {wm₁})
                   (HasMu.strong-fmor hasMu (μ R'') fsk' .famf ._⇒f_.transf (γ , wm₁))
       rec-fam = gen-fuse-fam γ R'' cmb' act' fsk' corr' corr-fam' {wm₁}
+      mutual
+        data TeleRel : ∀ {j} {ηA ηB ηC ηD}
+                       (md : Rs.MorD {j} ηA ηB) (mdA : At.R.MorD {j} ηC ηB) (md' : Rs'.MorD {j} ηD ηC) (fm : Ft.FMor {j} ηA ηD) →
+                       FR.FAct md → FR'.FAct md' → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+          tbase : TeleRel (Rs.bind Q (cmb γ)) At.mor₀ (cmb' γ) Ft.fbase (FR.abind Q (cmb γ) act) act'
+          tbind : ∀ {j} {ηA ηB ηC ηD} {md : Rs.MorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.MorD ηD ηC} {fm : Ft.FMor ηA ηD}
+                  {am : FR.FAct md} {am' : FR'.FAct md'} (S' : Poly (suc j)) →
+                  TeleRel md mdA md' fm am am' →
+                  TeleRel (Rs.bind S' md) (At.R.bind S' mdA) (Rs'.bind S' md') (Ft.fbind S' fm)
+                          (FR.abind S' md am) (FR'.abind S' md' am')
+
+        tele-shape : ∀ {j} (S : Poly j) {ηA ηB ηC ηD}
+                     {md : Rs.MorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.MorD ηD ηC} {fm : Ft.FMor ηA ηD}
+                     {am : FR.FAct md} {am' : FR'.FAct md'}
+                     (rel : TeleRel md mdA md' fm am am') (z : Ft.Tδ.⟦ S ⟧shape ηA) →
+                     Tt.shape≈ S ηB
+                       (Rs.reindex-shape S md z)
+                       (At.R.reindex-shape S mdA (Rs'.reindex-shape S md' (Ft.fold-reindex-shape γ S fm z)))
+        tele-shape (const A') rel z = A' .idx .isEquivalence .refl
+        tele-shape (var v) rel z = tele-apply rel v
+        tele-shape (S₁ + S₂) rel (inj₁ z) = tele-shape S₁ rel z
+        tele-shape (S₁ + S₂) rel (inj₂ z) = tele-shape S₂ rel z
+        tele-shape (S₁ × S₂) rel (z₁ , z₂) = tele-shape S₁ rel z₁ , tele-shape S₂ rel z₂
+        tele-shape (μ S') rel (Ts.sup z') = tele-shape S' (tbind S' rel) z'
+
+        tele-apply : ∀ {j} {ηA ηB ηC ηD} {md : Rs.MorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.MorD ηD ηC} {fm : Ft.FMor ηA ηD}
+                     {am : FR.FAct md} {am' : FR'.FAct md'}
+                     (rel : TeleRel md mdA md' fm am am') (v : Fin j) {z} →
+                     Tt.elEq (ηB v) (Rs.apply md v z) (At.R.apply mdA v (Rs'.apply md' v (Ft.fold-apply γ fm v z)))
+        tele-apply (tbind S' r) Fin.zero    {z} = tele-shape (μ S') r z
+        tele-apply (tbind S' r) (Fin.suc v)     = tele-apply r v
+        tele-apply tbase Fin.zero    {z} =
+          gen-fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl {γ}) {m₁ = z} {m₂ = z}
+            (μObj Q sₛ .idx .isEquivalence .refl {z})
+        tele-apply tbase (Fin.suc i) {z} = Tt.elEq-refl (inj₁ i) (Rs.apply (cmb γ) i z)
+
+        tele-shape-fam : ∀ {j} (S : Poly j) {ηA ηB ηC ηD}
+                         {md : Rs.MorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.MorD ηD ηC} {fm : Ft.FMor ηA ηD}
+                         {am : FR.FAct md} {am' : FR'.FAct md'}
+                         (rel : TeleRel md mdA md' fm am am') (z : Ft.Tδ.⟦ S ⟧shape ηA) →
+                         (Tt.fib-shape-subst S ηB (tele-shape S rel z) ∘ FR.freindex-shape-fam S am {z})
+                         ≈ (At.R.reindex-fam S mdA
+                            ∘ (FR'.freindex-shape-fam S am' {Ft.fold-reindex-shape γ S fm z}
+                               ∘ pair p₁ (Ft.fold-reindex-shape-fam γ S fm z)))
+        tele-shape-fam (const A') rel z = {!tsf-const!}
+        tele-shape-fam (var v) rel z = tele-apply-fam rel v
+        tele-shape-fam (S₁ + S₂) rel (inj₁ z) = {!tsf-plusL!}
+        tele-shape-fam (S₁ + S₂) rel (inj₂ z) = {!tsf-plusR!}
+        tele-shape-fam (S₁ × S₂) rel (z₁ , z₂) = {!tsf-times!}
+        tele-shape-fam (μ S') rel (Ts.sup z') = tele-shape-fam S' (tbind S' rel) z'
+
+        tele-apply-fam : ∀ {j} {ηA ηB ηC ηD}
+                         {md : Rs.MorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.MorD ηD ηC} {fm : Ft.FMor ηA ηD}
+                         {am : FR.FAct md} {am' : FR'.FAct md'}
+                         (rel : TeleRel md mdA md' fm am am') (v : Fin j) {z} →
+                         (Tt.fib-el-subst (ηB v) (tele-apply rel v {z}) ∘ FR.aapply am v z)
+                         ≈ (At.R.apply-fam mdA v (Rs'.apply md' v (Ft.fold-apply γ fm v z))
+                            ∘ (FR'.aapply am' v (Ft.fold-apply γ fm v z)
+                               ∘ pair p₁ (Ft.fold-apply-fam γ fm v z)))
+        tele-apply-fam (tbind S' r) Fin.zero    {z} = {!taf-bind-zero!}
+        tele-apply-fam (tbind S' r) (Fin.suc v)     = tele-apply-fam r v
+        tele-apply-fam tbase Fin.zero    {z} = {!taf-base-zero!}
+        tele-apply-fam tbase (Fin.suc i) {z} = {!taf-base-suc!}
 
   -- β/η proof machinery: the fusion of `α`'s reconstruction with the fold equals the
   -- strong functorial action of `⦅ alg ⦆`. References both AlphaDef and FoldDef internals.
