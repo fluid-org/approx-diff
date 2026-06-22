@@ -931,7 +931,27 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (pair-natural _ _ _)))
                   (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
                     (pair-compose _ _ _ _)))))
-  gen-fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} = {!assembly!}
+  gen-fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} =
+    ≈-trans (∘-cong (Tt.fib-trans*
+                       {x = Rs.reindex-shape (μ R'') (Rs.bind Q (cmb γ)) x}
+                       {y = At.R.reindex At.mor₀ (Rs'.reindex (cmb' γ) wm₁)}
+                       {z = At.R.reindex At.mor₀ (HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁))}
+                       (At.R.reindex-resp At.mor₀
+                          {Rs'.reindex (cmb' γ) wm₁}
+                          {HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
+                          rec-idx)
+                       (tele-shape (μ R'') tbase x)) ≈-refl)
+      (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (tele-shape-fam (μ R'') tbase x))
+          (≈-trans (≈-sym (assoc _ _ _))
+            (≈-trans (∘-cong (≈-sym (At.R.reindex-fam-W-nat At.mor₀
+                                       {Rs'.reindex (cmb' γ) wm₁}
+                                       {HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
+                                       rec-idx)) ≈-refl)
+              (≈-trans (assoc _ _ _)
+                (∘-cong ≈-refl
+                  (≈-trans (≈-sym (assoc _ _ _))
+                    (≈-trans (∘-cong rec-fam ≈-refl) (≈-sym id-left)))))))))
     where
       module Tt = Tree sₜ
       module Ts = Tree sₛ
@@ -966,6 +986,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                    ∘ FR'.freindex-fam act' {wm₁})
                   (HasMu.strong-fmor hasMu (μ R'') fsk' .famf ._⇒f_.transf (γ , wm₁))
       rec-fam = gen-fuse-fam γ R'' cmb' act' fsk' corr' corr-fam' {wm₁}
+      rec-idx = gen-fuse-idx R'' cmb' fsk' corr' (Γ .idx .isEquivalence .refl)
+                  {wm₁} {wm₁} (μObj R'' (extend sₛ (μObj Q sₜ)) .idx .isEquivalence .refl {wm₁})
       mutual
         data TeleRel : ∀ {j} {ηA ηB ηC ηD}
                        (md : Rs.MorD {j} ηA ηB) (mdA : At.R.MorD {j} ηC ηB) (md' : Rs'.MorD {j} ηD ηC) (fm : Ft.FMor {j} ηA ηD) →
@@ -1010,10 +1032,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                          ≈ (At.R.reindex-fam S mdA
                             ∘ (FR'.freindex-shape-fam S am' {Ft.fold-reindex-shape γ S fm z}
                                ∘ pair p₁ (Ft.fold-reindex-shape-fam γ S fm z)))
-        tele-shape-fam (const A') rel z = {!tsf-const!}
+        tele-shape-fam (const A') rel z =
+          ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left (≈-sym (≈-trans id-left (pair-p₂ _ _))))
         tele-shape-fam (var v) rel z = tele-apply-fam rel v
-        tele-shape-fam (S₁ + S₂) rel (inj₁ z) = {!tsf-plusL!}
-        tele-shape-fam (S₁ + S₂) rel (inj₂ z) = {!tsf-plusR!}
+        tele-shape-fam (S₁ + S₂) rel (inj₁ z) = tele-shape-fam S₁ rel z
+        tele-shape-fam (S₁ + S₂) rel (inj₂ z) = tele-shape-fam S₂ rel z
         tele-shape-fam (S₁ × S₂) rel (z₁ , z₂) = {!tsf-times!}
         tele-shape-fam (μ S') rel (Ts.sup z') = tele-shape-fam S' (tbind S' rel) z'
 
@@ -1025,10 +1048,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                          ≈ (At.R.apply-fam mdA v (Rs'.apply md' v (Ft.fold-apply γ fm v z))
                             ∘ (FR'.aapply am' v (Ft.fold-apply γ fm v z)
                                ∘ pair p₁ (Ft.fold-apply-fam γ fm v z)))
-        tele-apply-fam (tbind S' r) Fin.zero    {z} = {!taf-bind-zero!}
+        tele-apply-fam (tbind S' r) Fin.zero    {z} = tele-shape-fam (μ S') r z
         tele-apply-fam (tbind S' r) (Fin.suc v)     = tele-apply-fam r v
-        tele-apply-fam tbase Fin.zero    {z} = {!taf-base-zero!}
-        tele-apply-fam tbase (Fin.suc i) {z} = {!taf-base-suc!}
+        tele-apply-fam tbase Fin.zero    {z} =
+          ≈-trans (gen-fuse-fam γ Q cmb act fsk corr corr-fam {z}) (≈-sym (≈-trans id-left (pair-p₂ _ _)))
+        tele-apply-fam tbase (Fin.suc i) {z} =
+          ≈-trans (∘-cong (sₜ i .fam .refl*) ≈-refl)
+            (≈-trans id-left (≈-sym (≈-trans id-left (≈-trans (∘-cong ≈-refl pair-ext0) id-right))))
 
   -- β/η proof machinery: the fusion of `α`'s reconstruction with the fold equals the
   -- strong functorial action of `⦅ alg ⦆`. References both AlphaDef and FoldDef internals.
