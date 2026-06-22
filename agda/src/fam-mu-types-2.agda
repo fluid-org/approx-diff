@@ -931,7 +931,41 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (pair-natural _ _ _)))
                   (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
                     (pair-compose _ _ _ _)))))
-  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (μ R'') = {!mu!}
+  gen-fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} = {!assembly!}
+    where
+      module Tt = Tree sₜ
+      module Ts = Tree sₛ
+      module At = AlphaDef Q sₜ
+      module Rs = Reidx sₛ sₜ
+      module Rs' = Reidx (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
+      module FR = FReidx {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ)
+      module FR' = FReidx {δA = extend sₛ (μObj Q sₜ)} {δB = extend sₜ (μObj Q sₜ)} (Γ .fam .fm γ)
+      module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
+                    (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
+      fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂
+      wm₁ = Ft.fold-reindex γ Ft.fbase x
+      cmb' : Γ .idx .Carrier → Rs'.MorD (λ v → inj₁ v) (λ v → inj₁ v)
+      cmb' γ' = Rs'.base (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.apply (cmb γ') i a }) {!!} {!!} {!!}
+      act' : FR'.FAct (cmb' γ)
+      act' = FR'.abase (λ { Fin.zero a → p₂ ; (Fin.suc i) a → FR.aapply act i a })
+      corr' : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (extend sₛ (μObj Q sₜ) i .idx) a₁ a₂) →
+              _≈s_ (extend sₜ (μObj Q sₜ) i .idx) (Rs'.apply (cmb' γ₁) i a₁) (fsk' i .idxf .PS._⇒_.func (γ₂ , a₂))
+      corr' Fin.zero    γ≈ a≈ = a≈
+      corr' (Fin.suc j) γ≈ a≈ = corr j γ≈ a≈
+      corr-fam' : ∀ i {a} → Category._≈_ 𝒞
+                    (extend sₜ (μObj Q sₜ) i .fam .subst
+                       (corr' i (Γ .idx .isEquivalence .refl) (extend sₛ (μObj Q sₜ) i .idx .isEquivalence .refl {a}))
+                     ∘ FR'.aapply act' i a)
+                    (fsk' i .famf ._⇒f_.transf (γ , a))
+      corr-fam' Fin.zero {a} = ≈-trans (∘-cong (μObj Q sₜ .fam .refl* {a}) ≈-refl) id-left
+      corr-fam' (Fin.suc j) = corr-fam j
+      rec-fam : Category._≈_ 𝒞
+                  (μObj R'' (extend sₜ (μObj Q sₜ)) .fam .subst {x = Rs'.reindex (cmb' γ) wm₁}
+                     (gen-fuse-idx R'' cmb' fsk' corr' (Γ .idx .isEquivalence .refl)
+                       {wm₁} {wm₁} (μObj R'' (extend sₛ (μObj Q sₜ)) .idx .isEquivalence .refl {wm₁}))
+                   ∘ FR'.freindex-fam act' {wm₁})
+                  (HasMu.strong-fmor hasMu (μ R'') fsk' .famf ._⇒f_.transf (γ , wm₁))
+      rec-fam = gen-fuse-fam γ R'' cmb' act' fsk' corr' corr-fam' {wm₁}
 
   -- β/η proof machinery: the fusion of `α`'s reconstruction with the fold equals the
   -- strong functorial action of `⦅ alg ⦆`. References both AlphaDef and FoldDef internals.
