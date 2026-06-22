@@ -313,7 +313,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     open _⇒s_
     open _⇒f_
     open Setoid
-    open Category 𝒞 using (_⇒_; obj; _∘_) renaming (_≈_ to _≈C_)
+    open Category 𝒞 using (_⇒_; obj; _∘_; id; id-left; id-right; ≈-sym; ≈-trans) renaming (_≈_ to _≈C_)
     open HasCoproducts coproducts using (coprod)
 
     module SC = stable-coproducts {𝒞 = cat} coproducts
@@ -414,12 +414,32 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         h₂ .famf .transf (i , w) = fib₂ (p .func i) w (g' .famf .transf i)
         h₂ .famf .natural {i , w} {j , w'} e = fib₂-nat (g' .famf .natural e)
 
+        fwd : Mor (coprod Y₁ Y₂) y
+        fwd .idxf .func (inj₁ (i , _)) = i
+        fwd .idxf .func (inj₂ (i , _)) = i
+        fwd .idxf .func-resp-≈ {inj₁ (i , _)} {inj₁ (j , _)} e = e
+        fwd .idxf .func-resp-≈ {inj₂ (i , _)} {inj₂ (j , _)} e = e
+        fwd .idxf .func-resp-≈ {inj₁ _} {inj₂ _} ()
+        fwd .idxf .func-resp-≈ {inj₂ _} {inj₁ _} ()
+        fwd .famf .transf (inj₁ (i , _)) = id (y .fam .fm i)
+        fwd .famf .transf (inj₂ (i , _)) = id (y .fam .fm i)
+        fwd .famf .natural {inj₁ (i , _)} {inj₁ (j , _)} e = ≈-trans id-left (≈-sym id-right)
+        fwd .famf .natural {inj₂ (i , _)} {inj₂ (j , _)} e = ≈-trans id-left (≈-sym id-right)
+        fwd .famf .natural {inj₁ _} {inj₂ _} ()
+        fwd .famf .natural {inj₂ _} {inj₁ _} ()
+
+        h : Category.Iso cat (coprod Y₁ Y₂) y
+        h .Category.Iso.fwd = fwd
+        h .Category.Iso.bwd = {!!}
+        h .Category.Iso.fwd∘bwd≈id = {!!}
+        h .Category.Iso.bwd∘fwd≈id = {!!}
+
         stb : StableBits f g
         stb .StableBits.y₁ = Y₁
         stb .StableBits.y₂ = Y₂
         stb .StableBits.h₁ = h₁
         stb .StableBits.h₂ = h₂
-        stb .StableBits.h = {!!}
+        stb .StableBits.h = h
         stb .StableBits.eq₁ = {!!}
         stb .StableBits.eq₂ = {!!}
 
