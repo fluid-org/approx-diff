@@ -67,6 +67,7 @@ test-addᵀ = ≡-refl
 queryMor : _
 queryMor = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input)
 
+-- FIXME: derive these from the type structure?
 -- each element is label ⊕ number  =  𝟘 ⊕ ℚ∞²
 eltSD : SM.SelfDual
 eltSD = ⊕-sd 𝟘-sd (⊕-sd 𝕀-sd 𝕀-sd)
