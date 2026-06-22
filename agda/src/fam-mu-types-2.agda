@@ -327,6 +327,53 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       apply-resp (bind Q md)     Fin.zero    {a} {a'} p = reindex-resp md {a} {a'} p
       apply-resp (bind Q md)     (Fin.suc v) p = apply-resp md v p
 
+    -- Index-only reindex: like `MorD` without the fibre action `ffam`, for reindexings
+    -- whose fibre is Γ-dependent (`combine`) and so carried externally via `FReidx`.
+    data IMorD : ∀ {k} → (Fin k → Fin nA ⊎ Sort nA) → (Fin k → Fin nB ⊎ Sort nB) →
+                 Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+      ibase : ∀ {k} {ρA ρB} (f : ∀ v → TA.El (ρA v) → TB.El (ρB v))
+              (f-resp : ∀ v {a a'} → TA.elEq (ρA v) a a' → TB.elEq (ρB v) (f v a) (f v a')) →
+              IMorD {k} ρA ρB
+      ibind : ∀ {k} {ρA ρB} (Q : Poly (suc k)) → IMorD ρA ρB →
+              IMorD (extend ρA (inj₂ (mkSort Q ρA))) (extend ρB (inj₂ (mkSort Q ρB)))
+
+    mutual
+      ireindex : ∀ {k} {Q : Poly (suc k)} {ρA ρB} (md : IMorD ρA ρB) → TA.W Q ρA → TB.W Q ρB
+      ireindex {Q = Q} md (TA.sup x) = TB.sup (ireindex-shape Q (ibind Q md) x)
+
+      ireindex-shape : ∀ {j} (R : Poly j) {ηA ηB} (md : IMorD ηA ηB) → TA.⟦ R ⟧shape ηA → TB.⟦ R ⟧shape ηB
+      ireindex-shape (const A) md a = a
+      ireindex-shape (var v)   md a = iapply md v a
+      ireindex-shape (P + Q) md (inj₁ a) = inj₁ (ireindex-shape P md a)
+      ireindex-shape (P + Q) md (inj₂ b) = inj₂ (ireindex-shape Q md b)
+      ireindex-shape (P × Q) md (a , b) = ireindex-shape P md a , ireindex-shape Q md b
+      ireindex-shape (μ Q') md t = ireindex md t
+
+      iapply : ∀ {k} {ρA ρB} (md : IMorD {k} ρA ρB) (v : Fin k) → TA.El (ρA v) → TB.El (ρB v)
+      iapply (ibase f _) v        a = f v a
+      iapply (ibind Q md) Fin.zero    a = ireindex md a
+      iapply (ibind Q md) (Fin.suc v) a = iapply md v a
+
+    mutual
+      ireindex-resp : ∀ {k} {Q : Poly (suc k)} {ρA ρB} (md : IMorD ρA ρB) {t t' : TA.W Q ρA} →
+                      TA.W-≈ t t' → TB.W-≈ (ireindex md t) (ireindex md t')
+      ireindex-resp {Q = Q} md {TA.sup x} {TA.sup y} p = ireindex-shape-resp Q (ibind Q md) {x} {y} p
+
+      ireindex-shape-resp : ∀ {j} (R : Poly j) {ηA ηB} (md : IMorD ηA ηB) {a a' : TA.⟦ R ⟧shape ηA} →
+                            TA.shape≈ R ηA a a' → TB.shape≈ R ηB (ireindex-shape R md a) (ireindex-shape R md a')
+      ireindex-shape-resp (const A) md p = p
+      ireindex-shape-resp (var v)   md p = iapply-resp md v p
+      ireindex-shape-resp (P + Q) md {inj₁ _} {inj₁ _} p = ireindex-shape-resp P md p
+      ireindex-shape-resp (P + Q) md {inj₂ _} {inj₂ _} p = ireindex-shape-resp Q md p
+      ireindex-shape-resp (P × Q) md {_ , _} {_ , _} (p₁ , p₂) = ireindex-shape-resp P md p₁ , ireindex-shape-resp Q md p₂
+      ireindex-shape-resp (μ Q') md {a} {a'} p = ireindex-resp md {a} {a'} p
+
+      iapply-resp : ∀ {k} {ρA ρB} (md : IMorD {k} ρA ρB) (v : Fin k) {a a'} →
+                    TA.elEq (ρA v) a a' → TB.elEq (ρB v) (iapply md v a) (iapply md v a')
+      iapply-resp (ibase f f-resp) v       p = f-resp v p
+      iapply-resp (ibind Q md)     Fin.zero    {a} {a'} p = ireindex-resp md {a} {a'} p
+      iapply-resp (ibind Q md)     (Fin.suc v) p = iapply-resp md v p
+
     -- The fibre side of `reindex`: a 𝒞-morphism into the reindexed fibre.
     mutual
       reindex-fam : ∀ {j} (R : Poly j) {ηA ηB} (md : MorD ηA ηB) {a : TA.⟦ R ⟧shape ηA} →
