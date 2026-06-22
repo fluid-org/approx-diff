@@ -892,7 +892,45 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     ≈-trans (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b})
       (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (≈-sym (≈-trans id-left id-left)) ≈-refl)))
   gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ × R₂) {a , b} =
-    ≈-trans (pair-compose _ _ _ _) {!times!}
+    ≈-trans (pair-compose _ _ _ _)
+      (≈-trans (pair-cong
+                 (≈-trans (≈-sym (assoc _ _ _))
+                   (≈-trans (∘-cong (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a}) ≈-refl)
+                     (≈-trans (assoc _ _ _)
+                       (∘-cong ≈-refl
+                         (≈-trans (assoc _ _ _)
+                           (∘-cong ≈-refl
+                             (≈-trans (assoc _ _ _)
+                               (≈-trans (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)))
+                                 (≈-sym
+                                   (≈-trans (∘-cong id-left ≈-refl)
+                                     (≈-trans (assoc _ _ _)
+                                       (∘-cong ≈-refl
+                                         (≈-trans (pair-natural _ _ _)
+                                           (pair-cong (pair-p₁ _ _)
+                                             (≈-trans (∘-cong id-left ≈-refl)
+                                               (≈-trans (assoc _ _ _)
+                                                 (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (pair-p₁ _ _))))))))))))))))))
+                 (≈-trans (≈-sym (assoc _ _ _))
+                   (≈-trans (∘-cong (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b}) ≈-refl)
+                     (≈-trans (assoc _ _ _)
+                       (∘-cong ≈-refl
+                         (≈-trans (assoc _ _ _)
+                           (∘-cong ≈-refl
+                             (≈-trans (assoc _ _ _)
+                               (≈-trans (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)))
+                                 (≈-sym
+                                   (≈-trans (∘-cong id-left ≈-refl)
+                                     (≈-trans (assoc _ _ _)
+                                       (∘-cong ≈-refl
+                                         (≈-trans (pair-natural _ _ _)
+                                           (pair-cong (pair-p₁ _ _)
+                                             (≈-trans (∘-cong id-left ≈-refl)
+                                               (≈-trans (assoc _ _ _)
+                                                 (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (pair-p₂ _ _)))))))))))))))))))
+        (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (pair-natural _ _ _)))
+                  (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
+                    (pair-compose _ _ _ _)))))
   gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (μ R'') = {!mu!}
 
   -- β/η proof machinery: the fusion of `α`'s reconstruction with the fold equals the
