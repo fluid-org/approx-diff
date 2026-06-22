@@ -4,7 +4,7 @@ module fam where
 
 open import Level using (_⊔_; suc; lift)
 open import Data.Unit using (⊤; tt)
-open import Data.Empty using (⊥)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_×_; _,_; Σ-syntax)
 open import prop using (_,_; tt; ∃ₚ; ⟪_⟫)
@@ -311,7 +311,9 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     open Obj
     open Mor
     open _⇒s_
+    open _⇒f_
     open Setoid
+    open Category 𝒞 using (_⇒_; obj; _∘_) renaming (_≈_ to _≈C_)
     open HasCoproducts coproducts using (coprod)
 
     module SC = stable-coproducts {𝒞 = cat} coproducts
@@ -356,10 +358,40 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         Y₂ .fam .refl* {i , _} = y .fam .refl*
         Y₂ .fam .trans* {i , _} {j , _} {k , _} e₁ e₂ = y .fam .trans* e₁ e₂
 
+        get₁ : (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) → P₁ s → x₁ .idx .Carrier
+        get₁ (inj₁ a) _ = a
+        get₁ (inj₂ _) ()
+
+        get₁-resp : (s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₁ s) (w' : P₁ s') → (coprod x₁ x₂) .idx ._≈_ s s' → x₁ .idx ._≈_ (get₁ s w) (get₁ s' w')
+        get₁-resp (inj₁ _) (inj₁ _) _ _ e = e
+        get₁-resp (inj₁ _) (inj₂ _) _ ()
+        get₁-resp (inj₂ _) _ ()
+
+        fib₁ : ∀ {z : obj} (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₁ s) → z ⇒ (coprod x₁ x₂) .fam .fm s → z ⇒ x₁ .fam .fm (get₁ s w)
+        fib₁ (inj₁ a) _ m = m
+        fib₁ (inj₂ _) ()
+
+        fib₁-nat : ∀ {zi zj : obj} (s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₁ s) (w' : P₁ s')
+                   (es : (coprod x₁ x₂) .idx ._≈_ s s')
+                   (mi : zi ⇒ (coprod x₁ x₂) .fam .fm s) (mj : zj ⇒ (coprod x₁ x₂) .fam .fm s') (sub : zi ⇒ zj) →
+                   (mj ∘ sub) ≈C ((coprod x₁ x₂) .fam .subst {s} {s'} es ∘ mi) →
+                   (fib₁ s' w' mj ∘ sub) ≈C (x₁ .fam .subst (get₁-resp s s' w w' es) ∘ fib₁ s w mi)
+        fib₁-nat (inj₁ a) (inj₁ a') w w' es mi mj sub hyp = hyp
+        fib₁-nat (inj₁ _) (inj₂ _) _ ()
+        fib₁-nat (inj₂ _) _ ()
+
+        h₁ : Mor Y₁ x₁
+        h₁ .idxf .func (i , w) = get₁ (p .func i) w
+        h₁ .idxf .func-resp-≈ {i , w} {j , w'} i≈j = get₁-resp (p .func i) (p .func j) w w' (p .func-resp-≈ i≈j)
+        h₁ .famf .transf (i , w) = fib₁ (p .func i) w (g' .famf .transf i)
+        h₁ .famf .natural {i , w} {j , w'} e =
+          fib₁-nat (p .func i) (p .func j) w w' (p .func-resp-≈ e)
+                   (g' .famf .transf i) (g' .famf .transf j) (y .fam .subst e) (g' .famf .natural e)
+
         stb : StableBits f g
         stb .StableBits.y₁ = Y₁
         stb .StableBits.y₂ = Y₂
-        stb .StableBits.h₁ = {!!}
+        stb .StableBits.h₁ = h₁
         stb .StableBits.h₂ = {!!}
         stb .StableBits.h = {!!}
         stb .StableBits.eq₁ = {!!}
