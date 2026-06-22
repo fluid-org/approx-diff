@@ -816,6 +816,28 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                          (At.R.reindex At.mor₀ (Rs'.reindex (cmb' γ₁) wm₁))
       telescope = tele-shape (μ R'') tbase x₁
 
+  -- Fibre analogue of `gen-fuse-idx`: the fibre reindex (via the external fold action `act`)
+  -- equals the strong functorial action's fibre, transported along the index fusion `ieq`.
+  gen-fuse-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
+                 let module Rs = Reidx sₛ sₜ
+                     module FR = FReidx {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
+                 (cmb : Rs.MorD (λ v → inj₁ v) (λ v → inj₁ v))
+                 (act : FR.FAct cmb)
+                 (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
+                 (corr : ∀ i {a} → _≈s_ (sₜ i .idx) (Rs.apply cmb i a) (fsk i .idxf .PS._⇒_.func (γ , a)))
+                 (corr-fam : ∀ i {a} →
+                    Category._≈_ 𝒞
+                      (sₜ i .fam .subst (corr i {a}) ∘ FR.aapply act i a)
+                      (fsk i .famf ._⇒f_.transf (γ , a)))
+                 (ieq : ∀ {m} → _≈s_ (μObj Q sₜ .idx)
+                          (Rs.reindex cmb m)
+                          (HasMu.strong-fmor hasMu (μ Q) fsk .idxf .PS._⇒_.func (γ , m))) →
+                 ∀ {m} →
+                 Category._≈_ 𝒞
+                   (μObj Q sₜ .fam .subst {x = Rs.reindex cmb m} (ieq {m}) ∘ FR.freindex-fam act {m})
+                   (HasMu.strong-fmor hasMu (μ Q) fsk .famf ._⇒f_.transf (γ , m))
+  gen-fuse-fam γ Q cmb act fsk corr corr-fam ieq = {!!}
+
   -- β/η proof machinery: the fusion of `α`'s reconstruction with the fold equals the
   -- strong functorial action of `⦅ alg ⦆`. References both AlphaDef and FoldDef internals.
   module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
