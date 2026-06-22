@@ -772,7 +772,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       wm₁ = Ft.fold-reindex γ₁ Ft.fbase x₁
       w   = Ft.fold-reindex γ₂ Ft.fbase x₂
       cmb' : Γ .idx .Carrier → Rs'.MorD (λ v → inj₁ v) (λ v → inj₁ v)
-      cmb' γ = Rs'.base (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.apply (cmb γ) i a }) {!!} {!!} {!!}
+      cmb' γ = Rs'.base (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.apply (cmb γ) i a })
+                        (λ { Fin.zero p → p ; (Fin.suc i) p → Rs.apply-resp (cmb γ) i p })
+                        (λ { Fin.zero a → id _ ; (Fin.suc i) a → Rs.apply-fam (cmb γ) i a })
+                        (λ { Fin.zero p → ≈-trans id-left (≈-sym id-right) ; (Fin.suc i) p → Rs.apply-fam-nat (cmb γ) i p })
       rec : _≈s_ (μObj R'' (extend sₜ (μObj Q sₜ)) .idx)
                  (Rs'.reindex (cmb' γ₁) wm₁)
                  (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func (γ₂ , w))
@@ -965,7 +968,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂
       wm₁ = Ft.fold-reindex γ Ft.fbase x
       cmb' : Γ .idx .Carrier → Rs'.MorD (λ v → inj₁ v) (λ v → inj₁ v)
-      cmb' γ' = Rs'.base (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.apply (cmb γ') i a }) {!!} {!!} {!!}
+      cmb' γ' = Rs'.base (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.apply (cmb γ') i a })
+                         (λ { Fin.zero p → p ; (Fin.suc i) p → Rs.apply-resp (cmb γ') i p })
+                         (λ { Fin.zero a → id _ ; (Fin.suc i) a → Rs.apply-fam (cmb γ') i a })
+                         (λ { Fin.zero p → ≈-trans id-left (≈-sym id-right) ; (Fin.suc i) p → Rs.apply-fam-nat (cmb γ') i p })
       act' : FR'.FAct (cmb' γ)
       act' = FR'.abase (λ { Fin.zero a → p₂ ; (Fin.suc i) a → FR.aapply act i a })
       corr' : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (extend sₛ (μObj Q sₜ) i .idx) a₁ a₂) →
