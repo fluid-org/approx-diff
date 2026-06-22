@@ -5,7 +5,9 @@ module fam where
 open import Level using (_⊔_; suc; lift)
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
+import Relation.Binary.PropositionalEquality as ≡
+open ≡ using (_≡_)
 open import Data.Product using (_×_; _,_; Σ-syntax)
 open import prop using (_,_; tt; ∃ₚ; ⟪_⟫)
 open import prop-setoid
@@ -328,16 +330,12 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         p : y .idx ⇒s (coprod x₁ x₂) .idx
         p = g' .idxf
 
-        P₁ : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier → Set
-        P₁ (inj₁ _) = ⊤
-        P₁ (inj₂ _) = ⊥
-
-        P₂ : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier → Set
-        P₂ (inj₁ _) = ⊥
-        P₂ (inj₂ _) = ⊤
+        -- ≡ between sum elements lifts to the coproduct's setoid equality.
+        ≡→≈ : ∀ {s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier} → s ≡ s' → (coprod x₁ x₂) .idx ._≈_ s s'
+        ≡→≈ {s} ≡.refl = (coprod x₁ x₂) .idx .isEquivalence .refl {s}
 
         Y₁ : Obj
-        Y₁ .idx .Carrier = Σ[ i ∈ y .idx .Carrier ] P₁ (p .func i)
+        Y₁ .idx .Carrier = Σ[ i ∈ y .idx .Carrier ] Σ[ a ∈ x₁ .idx .Carrier ] (p .func i ≡ inj₁ a)
         Y₁ .idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
         Y₁ .idx .isEquivalence .refl = y .idx .isEquivalence .refl
         Y₁ .idx .isEquivalence .sym e = y .idx .isEquivalence .sym e
@@ -348,7 +346,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         Y₁ .fam .trans* {i , _} {j , _} {k , _} e₁ e₂ = y .fam .trans* e₁ e₂
 
         Y₂ : Obj
-        Y₂ .idx .Carrier = Σ[ i ∈ y .idx .Carrier ] P₂ (p .func i)
+        Y₂ .idx .Carrier = Σ[ i ∈ y .idx .Carrier ] Σ[ b ∈ x₂ .idx .Carrier ] (p .func i ≡ inj₂ b)
         Y₂ .idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
         Y₂ .idx .isEquivalence .refl = y .idx .isEquivalence .refl
         Y₂ .idx .isEquivalence .sym e = y .idx .isEquivalence .sym e
@@ -358,61 +356,11 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         Y₂ .fam .refl* {i , _} = y .fam .refl*
         Y₂ .fam .trans* {i , _} {j , _} {k , _} e₁ e₂ = y .fam .trans* e₁ e₂
 
-        get₁ : (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) → P₁ s → x₁ .idx .Carrier
-        get₁ (inj₁ a) _ = a
-        get₁ (inj₂ _) ()
-
-        get₁-resp : (s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₁ s) (w' : P₁ s') → (coprod x₁ x₂) .idx ._≈_ s s' → x₁ .idx ._≈_ (get₁ s w) (get₁ s' w')
-        get₁-resp (inj₁ _) (inj₁ _) _ _ e = e
-        get₁-resp (inj₁ _) (inj₂ _) _ ()
-        get₁-resp (inj₂ _) _ ()
-
-        fib₁ : ∀ {z : obj} (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₁ s) → z ⇒ (coprod x₁ x₂) .fam .fm s → z ⇒ x₁ .fam .fm (get₁ s w)
-        fib₁ (inj₁ a) _ m = m
-        fib₁ (inj₂ _) ()
-
-        fib₁-nat : ∀ {z₁ z₂ : obj} {s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier}
-                   {w : P₁ s} {w' : P₁ s'} {e : (coprod x₁ x₂) .idx ._≈_ s s'}
-                   {m₁ : z₁ ⇒ (coprod x₁ x₂) .fam .fm s} {m₂ : z₂ ⇒ (coprod x₁ x₂) .fam .fm s'} {r : z₁ ⇒ z₂} →
-                   (m₂ ∘ r) ≈C ((coprod x₁ x₂) .fam .subst {s} {s'} e ∘ m₁) →
-                   (fib₁ s' w' m₂ ∘ r) ≈C (x₁ .fam .subst (get₁-resp s s' w w' e) ∘ fib₁ s w m₁)
-        fib₁-nat {s = inj₁ _} {s' = inj₁ _} hyp = hyp
-        fib₁-nat {s = inj₁ _} {s' = inj₂ _} {w' = ()}
-        fib₁-nat {s = inj₂ _} {w = ()}
-
         h₁ : Mor Y₁ x₁
-        h₁ .idxf .func (i , w) = get₁ (p .func i) w
-        h₁ .idxf .func-resp-≈ {i , w} {j , w'} i≈j = get₁-resp (p .func i) (p .func j) w w' (p .func-resp-≈ i≈j)
-        h₁ .famf .transf (i , w) = fib₁ (p .func i) w (g' .famf .transf i)
-        h₁ .famf .natural {i , w} {j , w'} e = fib₁-nat (g' .famf .natural e)
-
-        get₂ : (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) → P₂ s → x₂ .idx .Carrier
-        get₂ (inj₂ b) _ = b
-        get₂ (inj₁ _) ()
-
-        get₂-resp : (s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₂ s) (w' : P₂ s') → (coprod x₁ x₂) .idx ._≈_ s s' → x₂ .idx ._≈_ (get₂ s w) (get₂ s' w')
-        get₂-resp (inj₂ _) (inj₂ _) _ _ e = e
-        get₂-resp (inj₂ _) (inj₁ _) _ ()
-        get₂-resp (inj₁ _) _ ()
-
-        fib₂ : ∀ {z : obj} (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₂ s) → z ⇒ (coprod x₁ x₂) .fam .fm s → z ⇒ x₂ .fam .fm (get₂ s w)
-        fib₂ (inj₂ b) _ m = m
-        fib₂ (inj₁ _) ()
-
-        fib₂-nat : ∀ {z₁ z₂ : obj} {s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier}
-                   {w : P₂ s} {w' : P₂ s'} {e : (coprod x₁ x₂) .idx ._≈_ s s'}
-                   {m₁ : z₁ ⇒ (coprod x₁ x₂) .fam .fm s} {m₂ : z₂ ⇒ (coprod x₁ x₂) .fam .fm s'} {r : z₁ ⇒ z₂} →
-                   (m₂ ∘ r) ≈C ((coprod x₁ x₂) .fam .subst {s} {s'} e ∘ m₁) →
-                   (fib₂ s' w' m₂ ∘ r) ≈C (x₂ .fam .subst (get₂-resp s s' w w' e) ∘ fib₂ s w m₁)
-        fib₂-nat {s = inj₂ _} {s' = inj₂ _} hyp = hyp
-        fib₂-nat {s = inj₂ _} {s' = inj₁ _} {w' = ()}
-        fib₂-nat {s = inj₁ _} {w = ()}
+        h₁ = {!!}
 
         h₂ : Mor Y₂ x₂
-        h₂ .idxf .func (i , w) = get₂ (p .func i) w
-        h₂ .idxf .func-resp-≈ {i , w} {j , w'} i≈j = get₂-resp (p .func i) (p .func j) w w' (p .func-resp-≈ i≈j)
-        h₂ .famf .transf (i , w) = fib₂ (p .func i) w (g' .famf .transf i)
-        h₂ .famf .natural {i , w} {j , w'} e = fib₂-nat (g' .famf .natural e)
+        h₂ = {!!}
 
         fwd : Mor (coprod Y₁ Y₂) y
         fwd .idxf .func (inj₁ (i , _)) = i
