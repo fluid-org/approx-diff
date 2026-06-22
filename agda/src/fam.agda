@@ -371,22 +371,20 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         fib₁ (inj₁ a) _ m = m
         fib₁ (inj₂ _) ()
 
-        fib₁-nat : ∀ {zi zj : obj} (s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₁ s) (w' : P₁ s')
-                   (es : (coprod x₁ x₂) .idx ._≈_ s s')
-                   (mi : zi ⇒ (coprod x₁ x₂) .fam .fm s) (mj : zj ⇒ (coprod x₁ x₂) .fam .fm s') (sub : zi ⇒ zj) →
-                   (mj ∘ sub) ≈C ((coprod x₁ x₂) .fam .subst {s} {s'} es ∘ mi) →
-                   (fib₁ s' w' mj ∘ sub) ≈C (x₁ .fam .subst (get₁-resp s s' w w' es) ∘ fib₁ s w mi)
-        fib₁-nat (inj₁ a) (inj₁ a') w w' es mi mj sub hyp = hyp
-        fib₁-nat (inj₁ _) (inj₂ _) _ ()
-        fib₁-nat (inj₂ _) _ ()
+        fib₁-nat : ∀ {z₁ z₂ : obj} {s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier}
+                   {w : P₁ s} {w' : P₁ s'} {e : (coprod x₁ x₂) .idx ._≈_ s s'}
+                   {m₁ : z₁ ⇒ (coprod x₁ x₂) .fam .fm s} {m₂ : z₂ ⇒ (coprod x₁ x₂) .fam .fm s'} {r : z₁ ⇒ z₂} →
+                   (m₂ ∘ r) ≈C ((coprod x₁ x₂) .fam .subst {s} {s'} e ∘ m₁) →
+                   (fib₁ s' w' m₂ ∘ r) ≈C (x₁ .fam .subst (get₁-resp s s' w w' e) ∘ fib₁ s w m₁)
+        fib₁-nat {s = inj₁ _} {s' = inj₁ _} hyp = hyp
+        fib₁-nat {s = inj₁ _} {s' = inj₂ _} {w' = ()}
+        fib₁-nat {s = inj₂ _} {w = ()}
 
         h₁ : Mor Y₁ x₁
         h₁ .idxf .func (i , w) = get₁ (p .func i) w
         h₁ .idxf .func-resp-≈ {i , w} {j , w'} i≈j = get₁-resp (p .func i) (p .func j) w w' (p .func-resp-≈ i≈j)
         h₁ .famf .transf (i , w) = fib₁ (p .func i) w (g' .famf .transf i)
-        h₁ .famf .natural {i , w} {j , w'} e =
-          fib₁-nat (p .func i) (p .func j) w w' (p .func-resp-≈ e)
-                   (g' .famf .transf i) (g' .famf .transf j) (y .fam .subst e) (g' .famf .natural e)
+        h₁ .famf .natural {i , w} {j , w'} e = fib₁-nat (g' .famf .natural e)
 
         stb : StableBits f g
         stb .StableBits.y₁ = Y₁
