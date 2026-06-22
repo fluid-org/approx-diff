@@ -386,11 +386,39 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         h₁ .famf .transf (i , w) = fib₁ (p .func i) w (g' .famf .transf i)
         h₁ .famf .natural {i , w} {j , w'} e = fib₁-nat (g' .famf .natural e)
 
+        get₂ : (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) → P₂ s → x₂ .idx .Carrier
+        get₂ (inj₂ b) _ = b
+        get₂ (inj₁ _) ()
+
+        get₂-resp : (s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₂ s) (w' : P₂ s') → (coprod x₁ x₂) .idx ._≈_ s s' → x₂ .idx ._≈_ (get₂ s w) (get₂ s' w')
+        get₂-resp (inj₂ _) (inj₂ _) _ _ e = e
+        get₂-resp (inj₂ _) (inj₁ _) _ ()
+        get₂-resp (inj₁ _) _ ()
+
+        fib₂ : ∀ {z : obj} (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) (w : P₂ s) → z ⇒ (coprod x₁ x₂) .fam .fm s → z ⇒ x₂ .fam .fm (get₂ s w)
+        fib₂ (inj₂ b) _ m = m
+        fib₂ (inj₁ _) ()
+
+        fib₂-nat : ∀ {z₁ z₂ : obj} {s s' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier}
+                   {w : P₂ s} {w' : P₂ s'} {e : (coprod x₁ x₂) .idx ._≈_ s s'}
+                   {m₁ : z₁ ⇒ (coprod x₁ x₂) .fam .fm s} {m₂ : z₂ ⇒ (coprod x₁ x₂) .fam .fm s'} {r : z₁ ⇒ z₂} →
+                   (m₂ ∘ r) ≈C ((coprod x₁ x₂) .fam .subst {s} {s'} e ∘ m₁) →
+                   (fib₂ s' w' m₂ ∘ r) ≈C (x₂ .fam .subst (get₂-resp s s' w w' e) ∘ fib₂ s w m₁)
+        fib₂-nat {s = inj₂ _} {s' = inj₂ _} hyp = hyp
+        fib₂-nat {s = inj₂ _} {s' = inj₁ _} {w' = ()}
+        fib₂-nat {s = inj₁ _} {w = ()}
+
+        h₂ : Mor Y₂ x₂
+        h₂ .idxf .func (i , w) = get₂ (p .func i) w
+        h₂ .idxf .func-resp-≈ {i , w} {j , w'} i≈j = get₂-resp (p .func i) (p .func j) w w' (p .func-resp-≈ i≈j)
+        h₂ .famf .transf (i , w) = fib₂ (p .func i) w (g' .famf .transf i)
+        h₂ .famf .natural {i , w} {j , w'} e = fib₂-nat (g' .famf .natural e)
+
         stb : StableBits f g
         stb .StableBits.y₁ = Y₁
         stb .StableBits.y₂ = Y₂
         stb .StableBits.h₁ = h₁
-        stb .StableBits.h₂ = {!!}
+        stb .StableBits.h₂ = h₂
         stb .StableBits.h = {!!}
         stb .StableBits.eq₁ = {!!}
         stb .StableBits.eq₂ = {!!}
