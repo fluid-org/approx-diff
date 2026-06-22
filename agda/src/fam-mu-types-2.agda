@@ -670,6 +670,46 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMu .HasMu.α P δ = AlphaDef.αmor P δ
   hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg
 
+  -- Fibre reindex driven by an EXTERNAL per-variable action `act`, so a Γ-dependent fold can
+  -- supply the var fibres (the Rcomb fibre fields can't — they must be Γ-free). The ambient
+  -- Γ-fibre is the object `G`; `act` mirrors `apply`, extended at each binder by `ext-act`.
+  module FReidx {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj} (G : obj) where
+    private
+      module TA = Tree δA
+      module TB = Tree δB
+    open Reidx δA δB using (MorD; reindex; reindex-shape; apply; bind)
+
+    -- Defunctionalised action: `abase` supplies all var fibres directly (a Γ-dependent fold);
+    -- `abind` extends across a binder. Data (not a function) so the recursion stays structural.
+    data FAct : ∀ {k} {ρA ρB} → MorD {k} ρA ρB → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+      abase : ∀ {k} {ρA ρB} {cmb : MorD {k} ρA ρB}
+              (afib : ∀ v (a : TA.El (ρA v)) → prod G (TA.fib-el (ρA v) a) ⇒ TB.fib-el (ρB v) (apply cmb v a)) →
+              FAct cmb
+      abind : ∀ {k} {ρA ρB} (Q : Poly (suc k)) (cmb : MorD ρA ρB) → FAct cmb → FAct (bind Q cmb)
+
+    mutual
+      freindex-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB} {cmb : MorD ρA ρB} (act : FAct cmb)
+                     {t : TA.W Q ρA} → prod G (TA.fib t) ⇒ TB.fib (reindex cmb t)
+      freindex-fam {Q = Q} {cmb = cmb} act {TA.sup x} = freindex-shape-fam Q (abind Q cmb act) {x}
+
+      freindex-shape-fam : ∀ {j} (R : Poly j) {ηA ηB} {cmb : MorD ηA ηB} (act : FAct cmb)
+                           {a : TA.⟦ R ⟧shape ηA} →
+                           prod G (TA.fib-shape R ηA a) ⇒ TB.fib-shape R ηB (reindex-shape R cmb a)
+      freindex-shape-fam (const A') act = p₂
+      freindex-shape-fam (var v)    act {a} = aapply act v a
+      freindex-shape-fam (P + Q) act {inj₁ a} = freindex-shape-fam P act {a}
+      freindex-shape-fam (P + Q) act {inj₂ b} = freindex-shape-fam Q act {b}
+      freindex-shape-fam (P × Q) act {a , b} =
+        pair (freindex-shape-fam P act {a} ∘ pair p₁ (p₁ ∘ p₂))
+             (freindex-shape-fam Q act {b} ∘ pair p₁ (p₂ ∘ p₂))
+      freindex-shape-fam (μ Q') act {t} = freindex-fam act {t}
+
+      aapply : ∀ {k} {ρA ρB} {cmb : MorD {k} ρA ρB} (act : FAct cmb) (v : Fin k) (a : TA.El (ρA v)) →
+               prod G (TA.fib-el (ρA v) a) ⇒ TB.fib-el (ρB v) (apply cmb v a)
+      aapply (abase afib)     v           a = afib v a
+      aapply (abind Q cmb act) Fin.zero    a = freindex-fam act {a}
+      aapply (abind Q cmb act) (Fin.suc v) a = aapply act v a
+
   -- General free-family fusion: a single reindex (the collapsed double-reindex, via combine-lemma)
   -- equals the functorial map. Families sₛ/sₜ are FREE so the nested-μ recursion's family fits.
   gen-fuse-idx : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
