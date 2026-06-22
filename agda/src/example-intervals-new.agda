@@ -2,7 +2,7 @@
 
 -- Forward analysis of the example query in the radius model: interpret directly
 -- into Fam(SemiMod ℚ∞), numbers approximated by ℚ∞² (left, right radius).
-module example-radius where
+module example-intervals-new where
 
 open import Level using (0ℓ; lift)
 open import signature
