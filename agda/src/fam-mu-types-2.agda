@@ -840,7 +840,60 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                         {m} {m} (μObj Q sₛ .idx .isEquivalence .refl {m}))
                     ∘ FR.freindex-fam act {m})
                    (HasMu.strong-fmor hasMu (μ Q) fsk .famf ._⇒f_.transf (γ , m))
-  gen-fuse-fam γ Q cmb act fsk corr corr-fam = {!!}
+  -- Shape-level recursion for `gen-fuse-fam` (mirrors `gen-fuse-shape`): the fibre reindex of
+  -- the μ-body sub-poly `R` equals the embed ∘ reindex ∘ strong ∘ fold fibre composite.
+  gen-fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
+                       let module Rs = Reidx sₛ sₜ
+                           module Ts = Tree sₛ
+                           module Tt = Tree sₜ
+                           module At = AlphaDef Q sₜ
+                           module FR = FReidx {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
+                       (cmb : Γ .idx .Carrier → Rs.MorD (λ v → inj₁ v) (λ v → inj₁ v))
+                       (act : FR.FAct (cmb γ))
+                       (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
+                       (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
+                               _≈s_ (sₜ i .idx) (Rs.apply (cmb γ₁) i a₁) (fsk i .idxf .PS._⇒_.func (γ₂ , a₂)))
+                       (corr-fam : ∀ i {a} →
+                          Category._≈_ 𝒞
+                            (sₜ i .fam .subst (corr i (Γ .idx .isEquivalence .refl) (sₛ i .idx .isEquivalence .refl {a}))
+                             ∘ FR.aapply act i a)
+                            (fsk i .famf ._⇒f_.transf (γ , a))) →
+                       let module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
+                                         (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
+                           fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂ in
+                       (R : Poly (suc n))
+                       {x : Ts.⟦ R ⟧shape (extend (λ v → inj₁ v) (inj₂ (mkSort Q (λ v → inj₁ v))))} →
+                       Category._≈_ 𝒞
+                         (Tt.fib-shape-subst R (extend (λ v → inj₁ v) (inj₂ (mkSort Q (λ v → inj₁ v))))
+                            (gen-fuse-shape Q cmb fsk corr R (Γ .idx .isEquivalence .refl)
+                              (Ts.shape≈-refl R (extend (λ v → inj₁ v) (inj₂ (mkSort Q (λ v → inj₁ v)))) x))
+                          ∘ FR.freindex-shape-fam R (FR.abind Q (cmb γ) act) {x})
+                         (At.R.reindex-fam R At.mor₀
+                          ∘ (At.embed-fam R (HasMu.strong-fmor hasMu R fsk' .idxf .PS._⇒_.func (γ , Ft.foldShape-idx R γ x))
+                             ∘ (HasMu.strong-fmor hasMu R fsk' .famf ._⇒f_.transf (γ , Ft.foldShape-idx R γ x)
+                                ∘ pair p₁ (Ft.foldShape-fam R γ x))))
+
+  gen-fuse-fam γ Q cmb act fsk corr corr-fam {Tree.sup x} =
+    ≈-trans (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam Q {x})
+      (≈-sym (≈-trans (∘-cong id-left ≈-refl) (≈-trans (assoc _ _ _) (assoc _ _ _))))
+  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (const A') =
+    ≈-trans (∘-cong (A' .fam .refl*) ≈-refl)
+      (≈-trans id-left (≈-sym (≈-trans id-left (≈-trans id-left (pair-p₂ _ _)))))
+  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (var Fin.zero) {x} =
+    ≈-trans (gen-fuse-fam γ Q cmb act fsk corr corr-fam {x})
+      (≈-sym (≈-trans id-left (≈-trans id-left (pair-p₂ _ _))))
+  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (var (Fin.suc i)) {x} =
+    ≈-trans (corr-fam i)
+      (≈-sym (≈-trans id-left (≈-trans id-left (≈-trans (∘-cong ≈-refl pair-ext0) id-right))))
+  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₁ a} =
+    ≈-trans (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a})
+      (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (≈-sym (≈-trans id-left id-left)) ≈-refl)))
+  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₂ b} =
+    ≈-trans (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b})
+      (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (≈-sym (≈-trans id-left id-left)) ≈-refl)))
+  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ × R₂) {a , b} =
+    ≈-trans (pair-compose _ _ _ _) {!times!}
+  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (μ R'') = {!mu!}
 
   -- β/η proof machinery: the fusion of `α`'s reconstruction with the fold equals the
   -- strong functorial action of `⦅ alg ⦆`. References both AlphaDef and FoldDef internals.
