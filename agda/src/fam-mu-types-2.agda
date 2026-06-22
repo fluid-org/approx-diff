@@ -896,7 +896,51 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     β-fam (var (Fin.suc i)) = ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans (prod-m-cong ≈-refl id-left) prod-m-id)) id-right))
     β-fam (R₁ + R₂) {m = inj₁ m'} = ≈-trans (β-fam R₁) (≈-sym (≈-trans id-left id-left))
     β-fam (R₁ + R₂) {m = inj₂ m'} = ≈-trans (β-fam R₂) (≈-sym (≈-trans id-left id-left))
-    β-fam (R₁ × R₂) = {!!}
+    β-fam (R₁ × R₂) {m = m₁' , m₂'} =
+      ≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
+        (≈-trans (pair-compose _ _ _ _)
+          (pair-cong
+            (≈-trans (∘-cong ≈-refl
+                       (≈-trans (assoc _ _ _)
+                         (≈-trans (∘-cong ≈-refl
+                                    (≈-trans (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym (prod-m-comp _ _ _ _))))
+                                      (rc _ _)))
+                           (≈-sym (assoc _ _ _)))))
+              (≈-trans (≈-sym (assoc _ _ _))
+                (≈-trans (∘-cong (β-fam R₁) ≈-refl)
+                  (≈-trans (∘-cong ≈-refl (pair-cong ≈-refl (≈-sym id-left))) (≈-sym id-left)))))
+            (≈-trans (∘-cong ≈-refl
+                       (≈-trans (assoc _ _ _)
+                         (≈-trans (∘-cong ≈-refl
+                                    (≈-trans (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym (prod-m-comp _ _ _ _))))
+                                      (rc2 _ _)))
+                           (≈-sym (assoc _ _ _)))))
+              (≈-trans (≈-sym (assoc _ _ _))
+                (≈-trans (∘-cong (β-fam R₂) ≈-refl)
+                  (≈-trans (∘-cong ≈-refl (pair-cong ≈-refl (≈-sym id-left))) (≈-sym id-left)))))))
+      where
+        rc : ∀ {Z W₁ W₂ V₁ V₂} (a : W₁ ⇒ V₁) (b : W₂ ⇒ V₂) →
+             (pair p₁ (p₁ ∘ p₂) ∘ prod-m (id Z) (prod-m a b))
+               ≈ (prod-m (id Z) a ∘ pair p₁ (p₁ ∘ p₂))
+        rc a b =
+          ≈-trans (pair-natural _ _ _)
+            (≈-trans (pair-cong (pair-p₁ _ _)
+                                (≈-trans (assoc _ _ _)
+                                  (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+                                    (≈-trans (≈-sym (assoc _ _ _))
+                                      (≈-trans (∘-cong (pair-p₁ _ _) ≈-refl) (assoc _ _ _))))))
+              (≈-sym (pair-compose _ _ _ _)))
+        rc2 : ∀ {Z W₁ W₂ V₁ V₂} (a : W₁ ⇒ V₁) (b : W₂ ⇒ V₂) →
+              (pair p₁ (p₂ ∘ p₂) ∘ prod-m (id Z) (prod-m a b))
+                ≈ (prod-m (id Z) b ∘ pair p₁ (p₂ ∘ p₂))
+        rc2 a b =
+          ≈-trans (pair-natural _ _ _)
+            (≈-trans (pair-cong (pair-p₁ _ _)
+                                (≈-trans (assoc _ _ _)
+                                  (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+                                    (≈-trans (≈-sym (assoc _ _ _))
+                                      (≈-trans (∘-cong (pair-p₂ _ _) ≈-refl) (assoc _ _ _))))))
+              (≈-sym (pair-compose _ _ _ _)))
     β-fam (μ R'') = {!!}
 
   hasMuLaws : HasMuLaws hasMu
