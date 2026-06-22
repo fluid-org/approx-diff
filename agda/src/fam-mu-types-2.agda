@@ -1037,7 +1037,22 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         tele-shape-fam (var v) rel z = tele-apply-fam rel v
         tele-shape-fam (S₁ + S₂) rel (inj₁ z) = tele-shape-fam S₁ rel z
         tele-shape-fam (S₁ + S₂) rel (inj₂ z) = tele-shape-fam S₂ rel z
-        tele-shape-fam (S₁ × S₂) rel (z₁ , z₂) = {!tsf-times!}
+        tele-shape-fam (S₁ × S₂) rel (z₁ , z₂) =
+          ≈-trans (pair-compose _ _ _ _)
+            (≈-trans (pair-cong
+                       (≈-trans (≈-sym (assoc _ _ _))
+                         (≈-trans (∘-cong (tele-shape-fam S₁ rel z₁) ≈-refl)
+                           (≈-trans (assoc _ _ _)
+                             (∘-cong ≈-refl
+                               (≈-trans (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl))))
+                                 (≈-sym (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (pair-p₁ _ _)))))))))))))
+                       (≈-trans (≈-sym (assoc _ _ _))
+                         (≈-trans (∘-cong (tele-shape-fam S₂ rel z₂) ≈-refl)
+                           (≈-trans (assoc _ _ _)
+                             (∘-cong ≈-refl
+                               (≈-trans (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl))))
+                                 (≈-sym (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (pair-p₂ _ _))))))))))))))
+              (≈-sym (≈-trans (∘-cong ≈-refl (pair-natural _ _ _)) (pair-compose _ _ _ _))))
         tele-shape-fam (μ S') rel (Ts.sup z') = tele-shape-fam S' (tbind S' rel) z'
 
         tele-apply-fam : ∀ {j} {ηA ηB ηC ηD}
