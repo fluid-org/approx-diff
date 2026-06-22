@@ -315,7 +315,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     open _⇒s_
     open _⇒f_
     open Setoid
-    open Category 𝒞 using (_⇒_; obj; _∘_; id; id-left; id-right; ≈-sym; ≈-trans) renaming (_≈_ to _≈C_)
+    open Category 𝒞 using (_⇒_; obj; _∘_; id; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; assoc; ∘-cong; isEquiv) renaming (_≈_ to _≈C_)
     open HasCoproducts coproducts using (coprod)
 
     module SC = stable-coproducts {𝒞 = cat} coproducts
@@ -365,10 +365,54 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         h₁ .idxf .func-resp-≈ {i , a , eq} {j , a' , eq'} i≈j = substₚ₂ eq eq' (p .func-resp-≈ i≈j)
         h₁ .famf .transf (i , a , eq) =
           (coprod x₁ x₂) .fam .subst {p .func i} {inj₁ a} (≡→≈ eq) ∘ g' .famf .transf i
-        h₁ .famf .natural {i , a , eq} {j , a' , eq'} e = {!!}
+        h₁ .famf .natural {i , a , eq} {j , a' , eq'} e =
+          begin
+            (Cf .subst {p .func j} {inj₁ a'} (≡→≈ eq') ∘ g' .famf .transf j) ∘ y .fam .subst e
+          ≈⟨ assoc _ _ _ ⟩
+            Cf .subst {p .func j} {inj₁ a'} (≡→≈ eq') ∘ (g' .famf .transf j ∘ y .fam .subst e)
+          ≈⟨ ∘-cong ≈-refl (g' .famf .natural e) ⟩
+            Cf .subst {p .func j} {inj₁ a'} (≡→≈ eq') ∘ (Cf .subst {p .func i} {p .func j} pre ∘ g' .famf .transf i)
+          ≈⟨ ≈-sym (assoc _ _ _) ⟩
+            (Cf .subst {p .func j} {inj₁ a'} (≡→≈ eq') ∘ Cf .subst {p .func i} {p .func j} pre) ∘ g' .famf .transf i
+          ≈⟨ ∘-cong (≈-sym (Cf .trans* {p .func i} {p .func j} {inj₁ a'} (≡→≈ eq') pre)) ≈-refl ⟩
+            Cf .subst {p .func i} {inj₁ a'} (Ci .isEquivalence .trans {p .func i} {p .func j} {inj₁ a'} pre (≡→≈ eq')) ∘ g' .famf .transf i
+          ≈⟨ ∘-cong (Cf .trans* {p .func i} {inj₁ a} {inj₁ a'} (substₚ₂ eq eq' pre) (≡→≈ eq)) ≈-refl ⟩
+            (Cf .subst {inj₁ a} {inj₁ a'} (substₚ₂ eq eq' pre) ∘ Cf .subst {p .func i} {inj₁ a} (≡→≈ eq)) ∘ g' .famf .transf i
+          ≈⟨ assoc _ _ _ ⟩
+            Cf .subst {inj₁ a} {inj₁ a'} (substₚ₂ eq eq' pre) ∘ (Cf .subst {p .func i} {inj₁ a} (≡→≈ eq) ∘ g' .famf .transf i)
+          ∎
+          where
+            Cf = (coprod x₁ x₂) .fam
+            Ci = (coprod x₁ x₂) .idx
+            pre = p .func-resp-≈ e
+            open ≈-Reasoning isEquiv
 
         h₂ : Mor Y₂ x₂
-        h₂ = {!!}
+        h₂ .idxf .func (i , b , _) = b
+        h₂ .idxf .func-resp-≈ {i , b , eq} {j , b' , eq'} i≈j = substₚ₂ eq eq' (p .func-resp-≈ i≈j)
+        h₂ .famf .transf (i , b , eq) =
+          (coprod x₁ x₂) .fam .subst {p .func i} {inj₂ b} (≡→≈ eq) ∘ g' .famf .transf i
+        h₂ .famf .natural {i , b , eq} {j , b' , eq'} e =
+          begin
+            (Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ g' .famf .transf j) ∘ y .fam .subst e
+          ≈⟨ assoc _ _ _ ⟩
+            Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ (g' .famf .transf j ∘ y .fam .subst e)
+          ≈⟨ ∘-cong ≈-refl (g' .famf .natural e) ⟩
+            Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ (Cf .subst {p .func i} {p .func j} pre ∘ g' .famf .transf i)
+          ≈⟨ ≈-sym (assoc _ _ _) ⟩
+            (Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ Cf .subst {p .func i} {p .func j} pre) ∘ g' .famf .transf i
+          ≈⟨ ∘-cong (≈-sym (Cf .trans* {p .func i} {p .func j} {inj₂ b'} (≡→≈ eq') pre)) ≈-refl ⟩
+            Cf .subst {p .func i} {inj₂ b'} (Ci .isEquivalence .trans {p .func i} {p .func j} {inj₂ b'} pre (≡→≈ eq')) ∘ g' .famf .transf i
+          ≈⟨ ∘-cong (Cf .trans* {p .func i} {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' pre) (≡→≈ eq)) ≈-refl ⟩
+            (Cf .subst {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' pre) ∘ Cf .subst {p .func i} {inj₂ b} (≡→≈ eq)) ∘ g' .famf .transf i
+          ≈⟨ assoc _ _ _ ⟩
+            Cf .subst {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' pre) ∘ (Cf .subst {p .func i} {inj₂ b} (≡→≈ eq) ∘ g' .famf .transf i)
+          ∎
+          where
+            Cf = (coprod x₁ x₂) .fam
+            Ci = (coprod x₁ x₂) .idx
+            pre = p .func-resp-≈ e
+            open ≈-Reasoning isEquiv
 
         fwd : Mor (coprod Y₁ Y₂) y
         fwd .idxf .func (inj₁ (i , _)) = i
