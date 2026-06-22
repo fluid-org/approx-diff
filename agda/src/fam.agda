@@ -4,6 +4,7 @@ module fam where
 
 open import Level using (_⊔_; suc; lift)
 open import Data.Unit using (⊤; tt)
+open import Data.Empty using (⊥)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_×_; _,_; Σ-syntax)
 open import prop using (_,_; tt; ∃ₚ; ⟪_⟫)
@@ -19,6 +20,7 @@ open import indexed-family
          reindex-comp-≈; reindex-f-comp; reindex-f-cong; reindex-sq;
          reindex-id-left; reindex-id-right; reindex-id-natural; reindex-assoc; reindex-comp-natural;
          constantFam)
+import stable-coproducts
 
 open IsEquivalence
 
@@ -302,6 +304,69 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       isEquiv .trans (∘-cong (Z .fam .refl*) id-left) (isEquiv .trans id-left id-right)
     coproducts .copair-ext {X} {Y} {Z} f .famf-eq .transf-eq {inj₂ y} =
       isEquiv .trans (∘-cong (Z .fam .refl*) id-left) (isEquiv .trans id-left id-right)
+
+  -- Fam(𝒞) has stable (universal) coproducts: it is extensive.
+  module _ where
+
+    module SC = stable-coproducts {𝒞 = cat} coproducts
+    open SC using (Stable; StableBits)
+
+    fam-stable : Stable
+    fam-stable {x₁} {x₂} {x} {y} f-iso g = go
+      where
+        open Obj
+        open Mor
+        open _⇒s_
+        open Setoid
+
+        Cprod : Obj
+        Cprod = coproducts .HasCoproducts.coprod x₁ x₂
+
+        g' : Mor y Cprod
+        g' = Mor-∘ (f-iso .Category.Iso.bwd) g
+
+        p : y .idx ⇒s Cprod .idx
+        p = g' .idxf
+
+        P₁ P₂ : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier → Set
+        P₁ (inj₁ _) = ⊤
+        P₁ (inj₂ _) = ⊥
+        P₂ (inj₁ _) = ⊥
+        P₂ (inj₂ _) = ⊤
+
+        Y₁idx Y₂idx : Setoid os es
+        Y₁idx .Carrier = Σ[ i ∈ y .idx .Carrier ] P₁ (p .func i)
+        Y₁idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
+        Y₁idx .isEquivalence .refl = y .idx .isEquivalence .refl
+        Y₁idx .isEquivalence .sym e = y .idx .isEquivalence .sym e
+        Y₁idx .isEquivalence .trans e₁ e₂ = y .idx .isEquivalence .trans e₁ e₂
+        Y₂idx .Carrier = Σ[ i ∈ y .idx .Carrier ] P₂ (p .func i)
+        Y₂idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
+        Y₂idx .isEquivalence .refl = y .idx .isEquivalence .refl
+        Y₂idx .isEquivalence .sym e = y .idx .isEquivalence .sym e
+        Y₂idx .isEquivalence .trans e₁ e₂ = y .idx .isEquivalence .trans e₁ e₂
+
+        projY₁ : Y₁idx ⇒s y .idx
+        projY₁ .func (i , _) = i
+        projY₁ .func-resp-≈ e = e
+        projY₂ : Y₂idx ⇒s y .idx
+        projY₂ .func (i , _) = i
+        projY₂ .func-resp-≈ e = e
+
+        Y₁ Y₂ : Obj
+        Y₁ .idx = Y₁idx
+        Y₁ .fam = y .fam [ projY₁ ]
+        Y₂ .idx = Y₂idx
+        Y₂ .fam = y .fam [ projY₂ ]
+
+        go : StableBits f-iso g
+        go .StableBits.y₁  = Y₁
+        go .StableBits.y₂  = Y₂
+        go .StableBits.h₁  = {!!}
+        go .StableBits.h₂  = {!!}
+        go .StableBits.h   = {!!}
+        go .StableBits.eq₁ = {!!}
+        go .StableBits.eq₂ = {!!}
 
   -- Fam(𝒞) is discretely cocomplete
   module _ where
