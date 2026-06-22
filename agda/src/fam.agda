@@ -428,9 +428,52 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         fwd .famf .natural {inj₁ _} {inj₂ _} ()
         fwd .famf .natural {inj₂ _} {inj₁ _} ()
 
+        ⊥-elimₚ : ∀ {ℓ ℓ'} {A : Prop ℓ'} → prop.⊥ {ℓ} → A
+        ⊥-elimₚ ()
+
+        decide : (s : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier) → (Σ[ a ∈ x₁ .idx .Carrier ] (s ≡ inj₁ a)) ⊎ (Σ[ b ∈ x₂ .idx .Carrier ] (s ≡ inj₂ b))
+        decide (inj₁ a) = inj₁ (a , ≡.refl)
+        decide (inj₂ b) = inj₂ (b , ≡.refl)
+
+        build : (i : y .idx .Carrier) → (Σ[ a ∈ x₁ .idx .Carrier ] (p .func i ≡ inj₁ a)) ⊎ (Σ[ b ∈ x₂ .idx .Carrier ] (p .func i ≡ inj₂ b)) → (coprod Y₁ Y₂) .idx .Carrier
+        build i (inj₁ (a , eq)) = inj₁ (i , a , eq)
+        build i (inj₂ (b , eq)) = inj₂ (i , b , eq)
+
+        build-resp : {i j : y .idx .Carrier}
+                     (di : (Σ[ a ∈ x₁ .idx .Carrier ] (p .func i ≡ inj₁ a)) ⊎ (Σ[ b ∈ x₂ .idx .Carrier ] (p .func i ≡ inj₂ b)))
+                     (dj : (Σ[ a ∈ x₁ .idx .Carrier ] (p .func j ≡ inj₁ a)) ⊎ (Σ[ b ∈ x₂ .idx .Carrier ] (p .func j ≡ inj₂ b))) →
+                     (coprod x₁ x₂) .idx ._≈_ (p .func i) (p .func j) → y .idx ._≈_ i j →
+                     (coprod Y₁ Y₂) .idx ._≈_ (build _ di) (build _ dj)
+        build-resp (inj₁ (a , eq)) (inj₁ (a' , eq')) es i≈j = i≈j
+        build-resp (inj₂ (b , eq)) (inj₂ (b' , eq')) es i≈j = i≈j
+        build-resp (inj₁ (a , eq)) (inj₂ (b' , eq')) es i≈j = ⊥-elimₚ (substₚ₂ eq eq' es)
+        build-resp (inj₂ (b , eq)) (inj₁ (a' , eq')) es i≈j = ⊥-elimₚ (substₚ₂ eq eq' es)
+
+        build-fib : (i : y .idx .Carrier)
+                    (d : (Σ[ a ∈ x₁ .idx .Carrier ] (p .func i ≡ inj₁ a)) ⊎ (Σ[ b ∈ x₂ .idx .Carrier ] (p .func i ≡ inj₂ b))) →
+                    y .fam .fm i ⇒ (coprod Y₁ Y₂) .fam .fm (build i d)
+        build-fib i (inj₁ (a , eq)) = id (y .fam .fm i)
+        build-fib i (inj₂ (b , eq)) = id (y .fam .fm i)
+
+        build-fib-nat : {i j : y .idx .Carrier}
+                        (di : (Σ[ a ∈ x₁ .idx .Carrier ] (p .func i ≡ inj₁ a)) ⊎ (Σ[ b ∈ x₂ .idx .Carrier ] (p .func i ≡ inj₂ b)))
+                        (dj : (Σ[ a ∈ x₁ .idx .Carrier ] (p .func j ≡ inj₁ a)) ⊎ (Σ[ b ∈ x₂ .idx .Carrier ] (p .func j ≡ inj₂ b)))
+                        (es : (coprod x₁ x₂) .idx ._≈_ (p .func i) (p .func j)) (e : y .idx ._≈_ i j) →
+                        (build-fib _ dj ∘ y .fam .subst e) ≈C ((coprod Y₁ Y₂) .fam .subst {build _ di} {build _ dj} (build-resp di dj es e) ∘ build-fib _ di)
+        build-fib-nat (inj₁ (a , eq)) (inj₁ (a' , eq')) es e = ≈-trans id-left (≈-sym id-right)
+        build-fib-nat (inj₂ (b , eq)) (inj₂ (b' , eq')) es e = ≈-trans id-left (≈-sym id-right)
+        build-fib-nat (inj₁ (a , eq)) (inj₂ (b' , eq')) es e = ⊥-elimₚ (substₚ₂ eq eq' es)
+        build-fib-nat (inj₂ (b , eq)) (inj₁ (a' , eq')) es e = ⊥-elimₚ (substₚ₂ eq eq' es)
+
+        bwd : Mor y (coprod Y₁ Y₂)
+        bwd .idxf .func i = build i (decide (p .func i))
+        bwd .idxf .func-resp-≈ {i} {j} i≈j = build-resp (decide (p .func i)) (decide (p .func j)) (p .func-resp-≈ i≈j) i≈j
+        bwd .famf .transf i = build-fib i (decide (p .func i))
+        bwd .famf .natural {i} {j} e = build-fib-nat (decide (p .func i)) (decide (p .func j)) (p .func-resp-≈ e) e
+
         h : Category.Iso cat (coprod Y₁ Y₂) y
         h .Category.Iso.fwd = fwd
-        h .Category.Iso.bwd = {!!}
+        h .Category.Iso.bwd = bwd
         h .Category.Iso.fwd∘bwd≈id = {!!}
         h .Category.Iso.bwd∘fwd≈id = {!!}
 
