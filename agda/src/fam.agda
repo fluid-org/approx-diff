@@ -357,7 +357,13 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         Y₂ .fam .trans* {i , _} {j , _} {k , _} e₁ e₂ = y .fam .trans* e₁ e₂
 
         h₁ : Mor Y₁ x₁
-        h₁ = {!!}
+        h₁ .idxf .func (i , a , _) = a
+        h₁ .idxf .func-resp-≈ {i , a , eq} {j , a' , eq'} i≈j =
+          (coprod x₁ x₂) .idx .isEquivalence .trans (≡→≈ (≡.sym eq))
+            ((coprod x₁ x₂) .idx .isEquivalence .trans (p .func-resp-≈ i≈j) (≡→≈ eq'))
+        h₁ .famf .transf (i , a , eq) =
+          (coprod x₁ x₂) .fam .subst {p .func i} {inj₁ a} (≡→≈ eq) ∘ g' .famf .transf i
+        h₁ .famf .natural {i , a , eq} {j , a' , eq'} e = {!!}
 
         h₂ : Mor Y₂ x₂
         h₂ = {!!}
