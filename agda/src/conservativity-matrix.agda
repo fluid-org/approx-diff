@@ -1,15 +1,7 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
--- Conservativity for the matrix model over an arbitrary biproduct base D (with a
--- chosen object X whose endomorphisms commute):
---   𝒞 = Fam(MatRep(D, X)),  𝒟 = Fam(D),  F = Fam⟨𝓕⟩
--- where 𝓕 : MatRep(D, X) ↪ D is the inclusion (matrix-embedding).
---
--- The Fam⟨_⟩ structure and the lifted functor are reused wholesale from
--- ho-model.Interpretation — its (𝒞, 𝒟, F)-context is exactly conservativity's,
--- so we only add fam-stable and bigCoproducts (both generic to Fam).
--- SemiMod(S) is one instantiation (D = SemiMod S, X = 𝕀).
-
+-- Conservativity for the matrix model over an arbitrary biproduct base D (with chosen object X whose
+-- endomorphisms commute).
 open import Level using (0ℓ; suc)
 open import categories
   using (Category; HasTerminal; IsInitial; IsTerminal)
