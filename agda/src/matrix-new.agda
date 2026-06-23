@@ -545,3 +545,23 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     -- Each S-vector is a self-dual distributive lattice.
     vec-sddl : ℕ → SelfDualDistributiveLattice
     vec-sddl n = transport-sddl (⊕ⁿ n) (fobjⁿ≅⊕ⁿ𝕀 n)
+
+    -- ...and, given a Boolean negation on the scalar, a BooleanSDDL (the n-vector negated pointwise).
+    -- (⊕ⁿ-bsddl's lattice is ⊕ⁿ, but only up to the parallel recursion, so we transport the iso along it.)
+    open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong; subst)
+
+    private
+      ⊕ⁿ-bsddl-sdl : (¬ : S.Carrier → S.Carrier)
+                     (c-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε) (c-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) →
+                     ∀ n → BooleanSDDL.selfDualLat (⊕ⁿ-bsddl ¬ c-∧ c-∨ n) ≡ ⊕ⁿ n
+      ⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ zero    = refl
+      ⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ (suc n) = cong (⊕-sddl 𝕀-sddl) (⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ n)
+
+    vec-bsddl : (¬ : S.Carrier → S.Carrier)
+                (complement-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
+                (complement-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) →
+                ℕ → BooleanSDDL
+    vec-bsddl ¬ c-∧ c-∨ n =
+      transport-bsddl (⊕ⁿ-bsddl ¬ c-∧ c-∨ n)
+        (subst (λ s → Iso (fobj n) (SelfDualDistributiveLattice.obj s))
+               (sym (⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ n)) (fobjⁿ≅⊕ⁿ𝕀 n))

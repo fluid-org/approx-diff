@@ -85,7 +85,7 @@ module backward-cbn where
   test2 = ≡-refl
 
 -- Forward analysis (matrix-new), embedded into SemiMod.
-module forward-matrix-new where
+module forward where
   open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
 
   import cmon-enriched as CMon
