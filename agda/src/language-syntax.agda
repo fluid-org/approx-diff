@@ -24,6 +24,16 @@ data first-order : type → Set ℓ where
   _[×]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [×] τ₂)
   _[+]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [+] τ₂)
 
+-- First-order types extended with `list`; not yet supported by conservativity, but useful for deriving
+-- self-dualities for our examples.
+data first-order-data : type → Set ℓ where
+  unit  : first-order-data unit
+  bool  : first-order-data bool
+  base  : ∀ s → first-order-data (base s)
+  _[×]_ : ∀ {τ₁ τ₂} → first-order-data τ₁ → first-order-data τ₂ → first-order-data (τ₁ [×] τ₂)
+  _[+]_ : ∀ {τ₁ τ₂} → first-order-data τ₁ → first-order-data τ₂ → first-order-data (τ₁ [+] τ₂)
+  list  : ∀ {τ} → first-order-data τ → first-order-data (list τ)
+
 infixl 40 _[×]_ _[+]_
 
 data ctxt : Set ℓ where
@@ -33,6 +43,10 @@ data ctxt : Set ℓ where
 data first-order-ctxt : ctxt → Set ℓ where
   emp : first-order-ctxt emp
   _,_ : ∀ {Γ τ} → first-order-ctxt Γ → first-order τ → first-order-ctxt (Γ , τ)
+
+data first-order-data-ctxt : ctxt → Set ℓ where
+  emp : first-order-data-ctxt emp
+  _,_ : ∀ {Γ τ} → first-order-data-ctxt Γ → first-order-data τ → first-order-data-ctxt (Γ , τ)
 
 infixl 30 _,_
 

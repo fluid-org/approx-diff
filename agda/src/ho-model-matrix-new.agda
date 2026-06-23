@@ -1,18 +1,19 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 -- The higher-order model over the Data.Vec matrix representation (matrix-new):
--- Fam(Mat Two) interpreted in Fam(SemiMod Two) via the embedding F : Mat ↪ SemiMod.
-module ho-model-matrix-new where
-
+-- Fam(Mat S) interpreted in Fam(SemiMod S) via the embedding F : Mat ↪ SemiMod.
 open import Level using (0ℓ)
+open import prop-setoid using (Setoid)
+open import commutative-semiring using (CommutativeSemiring)
 import matrix-new
 import semimodule
-import semiring-bool
 import ho-model
 
-module E  = matrix-new.Embedding semiring-bool.semiring
-module FD = matrix-new.Mat semiring-bool.semiring
-module SM = semimodule semiring-bool.semiring
+module ho-model-matrix-new {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+
+module E  = matrix-new.Embedding S
+module FD = matrix-new.Mat S
+module SM = semimodule S
 
 open ho-model.Interpretation
   FD.cat FD.terminal FD.products

@@ -124,6 +124,7 @@ module forward-matrix-new where
   import semimodule
   import ho-model-matrix-new
 
+  module HM = ho-model-matrix-new semiring-bool.semiring
   module FD = matrix-new.Mat semiring-bool.semiring
   module SM = semimodule semiring-bool.semiring
   open CMon.CMonEnriched FD.cmon using (_+m_)
@@ -135,7 +136,7 @@ module forward-matrix-new where
   conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
 
   open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
-  open ho-model-matrix-new.interp Sig BaseInterp1
+  open HM.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
