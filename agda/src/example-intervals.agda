@@ -11,7 +11,6 @@ open import signature
 import language-syntax
 import label
 import galois
-import conjugate
 
 open import example-signature
 
@@ -102,87 +101,3 @@ module backward where
 
   test3 : extract-interval (bwd-slice .proj₂ .proj₂ .proj₁ .proj₂) ≡ just (+ 9 / 10 , + 11 / 10)
   test3 = ≡-refl
-
--- Forward analysis using addᵀ (Tarski conjugate).
-module forward where
-  open import ho-model
-  open import example-signature-interpretation conjugate.cat conjugate.products conjugate.terminal conjugate.TWO conjugate.unit conjugate.conjunct
-  open import prop-setoid using (idS)
-    renaming (𝟙 to 𝟙ₛ; const to constₛ)
-  open import approx-numbers using (module Conjugate; module Galois)
-  open import categories using (Category; HasProducts; HasTerminal)
-
-  BaseInterp : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-  BaseInterp .Model.⟦sort⟧ number = Conjugate.ℚ-intv
-  BaseInterp .Model.⟦sort⟧ label = simple[ label.Label , conjugate.𝟙 ]
-  BaseInterp .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , conjugate.TWO ]
-  BaseInterp .Model.⟦op⟧ zero = Conjugate.zero-mor
-  BaseInterp .Model.⟦op⟧ add = Conjugate.add-mor C.∘ binary2
-  BaseInterp .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , conjugate.cat .Category.id _ ]
-  BaseInterp .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
-  BaseInterp .Model.⟦op⟧ approx-unit = simplef[ idS _ , conjugate.unit ]
-  BaseInterp .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjugate.conjunct ] C.∘ binary
-
-  import ho-model-conjugate
-  open ho-model-conjugate.interp Sig BaseInterp
-  open import Data.Rational
-  open import Data.Rational.Properties using (≤-refl)
-  open import preorder using (bottom; <_>; LCarrier; Preorder; L)
-  open import approx-numbers using (Intv; IntvPreorder)
-  open import prop using (liftS)
-  open import Data.Nat hiding (_/_)
-  open import Data.Integer hiding (_/_; show; -_)
-
-  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = 3 , (label.a , 0ℚ) , (label.b , 1ℚ) , (label.a , 1ℚ) , _
-
-  open Intv
-
-  intv1 : Intv 1ℚ
-  intv1 .lower = + 4 / 5
-  intv1 .upper = + 3 / 2
-  intv1 .l≤q = liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s z≤n))))))
-  intv1 .q≤u = liftS (*≤* (+≤+ (s≤s (s≤s z≤n))))
-
-  intv0 : Intv 0ℚ
-  intv0 .lower = - (+ 1 / 2)
-  intv0 .upper = 0ℚ
-  intv0 .l≤q = liftS (*≤* -≤+)
-  intv0 .q≤u = liftS Data.Rational.Properties.≤-refl
-
-  open import Data.Maybe
-  open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
-
-  extract-interval : ∀ {q} → LCarrier (Intv q) → Maybe (ℚ ×ₜ ℚ)
-  extract-interval bottom = nothing
-  extract-interval < x > = just (x .lower , x .upper)
-
-  -- Unfortunately this is a bit slow to normalise, so not using at the moment; instead have simpler isolated
-  -- tests using the 'add' conjugate pair and Galois connection directly.
-  fwd-slice : _
-  fwd-slice = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun
-    (_ , (_ , < intv0 >) , (_ , bottom) , (_ , < intv1 >) , _)
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
-
-  fwd-addᵀ : _
-  fwd-addᵀ = Conjugate.add-interval 0ℚ 1ℚ .conjugate._⇒c_.right .join-semilattice._=>_.func .preorder._=>_.fun
-    (< intv0 > , < intv1 >)
-
-  fwd-add⁎ : _
-  fwd-add⁎ = Galois.add-interval 0ℚ 1ℚ .galois._⇒g_.right .preorder._=>_.fun
-    (< intv0 > , < intv1 >)
-
-  test-addᵀ : extract-interval fwd-addᵀ ≡ just (+ 4 / 5 , + 1 / 1)
-  test-addᵀ = ≡-refl
-
-  -- And add⁎ takes the union.
-  test-add⁎ : extract-interval fwd-add⁎ ≡ just (+ 1 / 2 , + 3 / 2)
-  test-add⁎ = ≡-refl
-
-  -- addᵀ here produces a result higher in the information order (tighter bounds) than the adjoint add⁎.
-  addᵀ-tighter : Preorder._≤_ (L (IntvPreorder 1ℚ)) fwd-add⁎ fwd-addᵀ
-  addᵀ-tighter = prop._,_ (liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s (s≤s z≤n)))))))) (intv1 .q≤u)
