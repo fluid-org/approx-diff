@@ -128,10 +128,6 @@ module forward where
   test-3 = ≡-refl
 
 -- Backward analysis (Galois) via to-gal on the matrix-new model, replacing ho-model-galois.
--- WIP: blocked on Agda higher-order unification — the complement laws `x · ¬ x` don't let Agda solve the
--- implicit {x} when the witnesses propagate through the BooleanSDDL constructors (⊓/⊔ aren't injective).
--- Fix: make complement-∧/∨ take x explicitly in semimodule.agda's BooleanSDDL record + constructors.
-{-
 module backward-mat where
   open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
   import cmon-enriched as CMon
@@ -159,24 +155,27 @@ module backward-mat where
   open HM.interp Sig BaseInterp1
 
   -- S = 2 is a Boolean lattice; every witness is an antisymmetric (tt , tt) pair.
-  ⊤-add-top : ∀ {x} → SM.S._≈_ (SM.S._+_ SM.S.ι x) SM.S.ι
-  ⊤-add-top = tt ,p tt
-  ∧-idem : ∀ {x} → SM.S._≈_ (SM.S._·_ x x) x
-  ∧-idem {⊥} = tt ,p tt
-  ∧-idem {⊤} = tt ,p tt
+  -- The lattice witnesses take x explicitly and are passed wrapped as `λ {x} → · x`: a pattern-matching
+  -- (or x-independent) proof of `∀ {x} → …` gets its implicit eagerly instantiated to an unsolvable
+  -- metavar by module application, but the wrapper keeps the binder abstract without eta-contracting.
+  ⊤-add-top : ∀ x → SM.S._≈_ (SM.S._+_ SM.S.ι x) SM.S.ι
+  ⊤-add-top _ = tt ,p tt
+  ∧-idem : ∀ x → SM.S._≈_ (SM.S._·_ x x) x
+  ∧-idem ⊥ = tt ,p tt
+  ∧-idem ⊤ = tt ,p tt
 
   open SM using (𝕀)
-  open SM.JoinSemilattices ⊤-add-top using (BooleanSDDL; to-gal) renaming (_≤_ to _≤m_)
-  open SM.JoinSemilattices.DistribLattices ⊤-add-top ∧-idem using (𝟘-bsddl; ⊕-bsddl)
+  open SM.JoinSemilattices (λ {x} → ⊤-add-top x) using (BooleanSDDL; to-gal) renaming (_≤_ to _≤m_)
+  open SM.JoinSemilattices.DistribLattices (λ {x} → ⊤-add-top x) (λ {x} → ∧-idem x) using (𝟘-bsddl; ⊕-bsddl)
 
-  compl-∧ : ∀ {x} → _≤m_ 𝕀 (SM.S._·_ x (¬ x)) SM.S.ε
-  compl-∧ {⊥} = tt ,p tt
-  compl-∧ {⊤} = tt ,p tt
-  compl-∨ : ∀ {x} → _≤m_ 𝕀 SM.S.ι (SM.S._+_ x (¬ x))
-  compl-∨ {⊥} = tt ,p tt
-  compl-∨ {⊤} = tt ,p tt
+  compl-∧ : ∀ x → _≤m_ 𝕀 (SM.S._·_ x (¬ x)) SM.S.ε
+  compl-∧ ⊥ = tt ,p tt
+  compl-∧ ⊤ = tt ,p tt
+  compl-∨ : ∀ x → _≤m_ 𝕀 SM.S.ι (SM.S._+_ x (¬ x))
+  compl-∨ ⊥ = tt ,p tt
+  compl-∨ ⊤ = tt ,p tt
 
-  module TB = HM.interp-sd.ty-bsddl-mod Sig BaseInterp1 ∧-idem ⊤-add-top ¬ compl-∧ compl-∨
+  module TB = HM.interp-sd.ty-bsddl-mod Sig BaseInterp1 (λ {x} → ∧-idem x) (λ {x} → ⊤-add-top x) ¬
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -184,20 +183,32 @@ module backward-mat where
   input-fod : first-order-data (list (base label [×] base number))
   input-fod = list (base label [×] base number)
 
+  -- The wrapped witnesses must be passed inline (a `λ {x} → · x`): a let/def alias of the same is a neutral
+  -- whose implicit gets inserted again, re-triggering the metavar.
+  -- input self-dual: empty context ⊕ the list type; output: the number (Boolean) lattice.
   inputBSDDL : BooleanSDDL
-  inputBSDDL = ⊕-bsddl ¬ compl-∧ compl-∨
-                 (𝟘-bsddl ¬ compl-∧ compl-∨)
-                 (TB.ty-bsddl input-fod input)
+  inputBSDDL = ⊕-bsddl ¬ (λ {x} → compl-∧ x) (λ {x} → compl-∨ x)
+                 (𝟘-bsddl ¬ (λ {x} → compl-∧ x) (λ {x} → compl-∨ x))
+                 (TB.ty-bsddl (λ {x} → compl-∧ x) (λ {x} → compl-∨ x) input-fod input)
 
   outputBSDDL : BooleanSDDL
-  outputBSDDL = TB.ty-bsddl (base number) nat.zero
+  outputBSDDL = TB.ty-bsddl (λ {x} → compl-∧ x) (λ {x} → compl-∨ x) (base number) nat.zero
 
   open indexed-family._⇒f_
 
+  -- Galois backward slice: the upper adjoint of the query morphism, applied to full output demand.
   bwd-slice : label.label → _
   bwd-slice l =
-    to-gal inputBSDDL outputBSDDL (⟦ example.ex.query l ⟧tm .famf .transf (_ , input)) .right .fun (⊤ ∷ [])
+    to-gal inputBSDDL outputBSDDL (⟦ example.ex.query l ⟧tm .famf .transf (_ , input)) .right .fun (⊥ ∷ [])
     where
       open galois._⇒g_
       open preorder._=>_
--}
+
+  -- Galois (to-gal) backward slice.  Feeding the output's demand as ⊥, a needed input is marked ⊥ — the De
+  -- Morgan dual of module backward's ⊤-convention (to-gal's right adjoint is ¬ ∘ conjugate ∘ ¬).
+  -- Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd — agreeing with module backward.
+  test1 : bwd-slice label.a ≡ (lift · , ([] , ⊥ ∷ []) , ([] , ⊤ ∷ []) , ([] , ⊥ ∷ []) , _)
+  test1 = ≡-refl
+
+  test2 : bwd-slice label.b ≡ (lift · , ([] , ⊤ ∷ []) , ([] , ⊥ ∷ []) , ([] , ⊤ ∷ []) , _)
+  test2 = ≡-refl

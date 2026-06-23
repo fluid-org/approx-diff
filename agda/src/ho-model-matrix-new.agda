@@ -64,28 +64,28 @@ module interp-sd (Sig : Signature 0ℓ)
     (⊤-add-top : ∀ {x} → SM.S._≈_ (SM.S._+_ SM.S.ι x) SM.S.ι)
     (let module JS = SM.JoinSemilattices ⊤-add-top)
     (¬ : SM.S.Carrier → SM.S.Carrier)
-    (complement-∧ : ∀ {x} → JS._≤_ SM.𝕀 (SM.S._·_ x (¬ x)) SM.S.ε)
-    (complement-∨ : ∀ {x} → JS._≤_ SM.𝕀 SM.S.ι (SM.S._+_ x (¬ x)))
     where
     open JS using (BooleanSDDL)
     open JS.DistribLattices ∧-idem using (𝟘-bsddl; ⊕-bsddl)
     open matrix-new.DistribLattices.DistribLattice S ∧-idem ⊤-add-top using (vec-bsddl)
 
-    private
-      𝟘b   = 𝟘-bsddl ¬ complement-∧ complement-∨
-      ⊕b   = ⊕-bsddl ¬ complement-∧ complement-∨
-      vecb = vec-bsddl ¬ complement-∧ complement-∨
+    -- The complement laws are ordinary function arguments of ty-bsddl/pow-bsddl, NOT module parameters: a
+    -- witness of the stuck type `x ⊓ ¬ x ≤ ε` can't survive module-application's eager implicit
+    -- instantiation, but plain function application (pi-subtyping) keeps the binder abstract.
+    ty-bsddl  : (∀ {x} → JS._≤_ SM.𝕀 (SM.S._·_ x (¬ x)) SM.S.ε) →
+                (∀ {x} → JS._≤_ SM.𝕀 SM.S.ι (SM.S._+_ x (¬ x))) →
+                ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → BooleanSDDL
+    pow-bsddl : (∀ {x} → JS._≤_ SM.𝕀 (SM.S._·_ x (¬ x)) SM.S.ε) →
+                (∀ {x} → JS._≤_ SM.𝕀 SM.S.ι (SM.S._+_ x (¬ x))) →
+                ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → BooleanSDDL
 
-    ty-bsddl  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → BooleanSDDL
-    pow-bsddl : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → BooleanSDDL
+    ty-bsddl c∧ c∨ unit       _        = 𝟘-bsddl ¬ c∧ c∨
+    ty-bsddl c∧ c∨ bool       _        = 𝟘-bsddl ¬ c∧ c∨
+    ty-bsddl c∧ c∨ (base s)   i        = vec-bsddl ¬ c∧ c∨ (ImplM.⟦sort⟧ s .fam .fm i)
+    ty-bsddl c∧ c∨ (a [×] b)  (i , j)  = ⊕-bsddl ¬ c∧ c∨ (ty-bsddl c∧ c∨ a i) (ty-bsddl c∧ c∨ b j)
+    ty-bsddl c∧ c∨ (a [+] b)  (inj₁ i) = ty-bsddl c∧ c∨ a i
+    ty-bsddl c∧ c∨ (a [+] b)  (inj₂ j) = ty-bsddl c∧ c∨ b j
+    ty-bsddl c∧ c∨ (list a)   (n , i)  = pow-bsddl c∧ c∨ a n i
 
-    ty-bsddl unit       _        = 𝟘b
-    ty-bsddl bool       _        = 𝟘b
-    ty-bsddl (base s)   i        = vecb (ImplM.⟦sort⟧ s .fam .fm i)
-    ty-bsddl (a [×] b)  (i , j)  = ⊕b (ty-bsddl a i) (ty-bsddl b j)
-    ty-bsddl (a [+] b)  (inj₁ i) = ty-bsddl a i
-    ty-bsddl (a [+] b)  (inj₂ j) = ty-bsddl b j
-    ty-bsddl (list a)   (n , i)  = pow-bsddl a n i
-
-    pow-bsddl a nat.zero     _        = 𝟘b
-    pow-bsddl a (nat.succ n) (i , is) = ⊕b (ty-bsddl a i) (pow-bsddl a n is)
+    pow-bsddl c∧ c∨ a nat.zero     _        = 𝟘-bsddl ¬ c∧ c∨
+    pow-bsddl c∧ c∨ a (nat.succ n) (i , is) = ⊕-bsddl ¬ c∧ c∨ (ty-bsddl c∧ c∨ a i) (pow-bsddl c∧ c∨ a n is)
