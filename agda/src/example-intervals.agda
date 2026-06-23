@@ -101,3 +101,41 @@ module backward where
 
   test3 : extract-interval (bwd-slice .proj₂ .proj₂ .proj₁ .proj₂) ≡ just (+ 9 / 10 , + 11 / 10)
   test3 = ≡-refl
+
+-- Forward analysis: the meet-preserving (upper-adjoint) Galois map add⁎, which unions the shifted input bounds.
+module forward where
+  open import approx-numbers using (module Galois; Intv)
+  open import Data.Rational
+  import Data.Rational.Properties
+  open import preorder using (bottom; <_>; LCarrier)
+  open import prop using (liftS)
+  open import Data.Nat hiding (_/_)
+  open import Data.Integer hiding (_/_; show; -_)
+  open import Data.Maybe
+  open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
+
+  open Intv
+
+  intv1 : Intv 1ℚ
+  intv1 .lower = + 4 / 5
+  intv1 .upper = + 3 / 2
+  intv1 .l≤q = liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s z≤n))))))
+  intv1 .q≤u = liftS (*≤* (+≤+ (s≤s (s≤s z≤n))))
+
+  intv0 : Intv 0ℚ
+  intv0 .lower = - (+ 1 / 2)
+  intv0 .upper = 0ℚ
+  intv0 .l≤q = liftS (*≤* -≤+)
+  intv0 .q≤u = liftS Data.Rational.Properties.≤-refl
+
+  extract-interval : ∀ {q} → LCarrier (Intv q) → Maybe (ℚ ×ₜ ℚ)
+  extract-interval bottom = nothing
+  extract-interval < x > = just (x .lower , x .upper)
+
+  -- [-1/2, 0] around 0 added to [4/5, 3/2] around 1: add⁎ unions the shifted bounds, giving [1/2, 3/2] around 1.
+  fwd-add⁎ : _
+  fwd-add⁎ = Galois.add-interval 0ℚ 1ℚ .galois._⇒g_.right .preorder._=>_.fun
+    (< intv0 > , < intv1 >)
+
+  test-add⁎ : extract-interval fwd-add⁎ ≡ just (+ 1 / 2 , + 3 / 2)
+  test-add⁎ = ≡-refl
