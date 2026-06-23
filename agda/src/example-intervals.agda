@@ -104,7 +104,8 @@ module backward where
 
 -- Forward analysis: the meet-preserving (upper-adjoint) Galois map add⁎, which unions the shifted input bounds.
 module forward where
-  open import approx-numbers using (module Galois; Intv)
+  open import approx-numbers using (module Conjugate; module Galois; Intv)
+  import conjugate
   open import Data.Rational
   import Data.Rational.Properties
   open import preorder using (bottom; <_>; LCarrier)
@@ -139,3 +140,13 @@ module forward where
 
   test-add⁎ : extract-interval fwd-add⁎ ≡ just (+ 1 / 2 , + 3 / 2)
   test-add⁎ = ≡-refl
+
+  -- addᵀ (the Tarski conjugate) instead unions the bounds order-dually, giving the tighter [4/5, 1] around 1.
+  fwd-addᵀ : _
+  fwd-addᵀ = Conjugate.add-interval 0ℚ 1ℚ .conjugate._⇒c_.right .join-semilattice._=>_.func .preorder._=>_.fun
+    (< intv0 > , < intv1 >)
+
+  -- [4/5, 1] around 1 is perturbation bounds (1 − 4/5, 1 − 1) = (1/5, 0): the same forward slice the ℚ∞ model
+  -- computes in example-intervals-new (its test-addᵀ), read off the q-dependent interval lattice.
+  test-addᵀ : extract-interval fwd-addᵀ ≡ just (+ 4 / 5 , + 1 / 1)
+  test-addᵀ = ≡-refl
