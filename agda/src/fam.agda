@@ -395,20 +395,19 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
           ≈⟨ assoc _ _ _ ⟩
             Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ (g' .famf .transf j ∘ y .fam .subst e)
           ≈⟨ ∘-cong ≈-refl (g' .famf .natural e) ⟩
-            Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ (Cf .subst {p .func i} {p .func j} pre ∘ g' .famf .transf i)
+            Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ (Cf .subst {p .func i} {p .func j} (p .func-resp-≈ e) ∘ g' .famf .transf i)
           ≈⟨ ≈-sym (assoc _ _ _) ⟩
-            (Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ Cf .subst {p .func i} {p .func j} pre) ∘ g' .famf .transf i
-          ≈⟨ ∘-cong (≈-sym (Cf .trans* {p .func i} {p .func j} {inj₂ b'} (≡→≈ eq') pre)) ≈-refl ⟩
-            Cf .subst {p .func i} {inj₂ b'} (Ci .isEquivalence .trans {p .func i} {p .func j} {inj₂ b'} pre (≡→≈ eq')) ∘ g' .famf .transf i
-          ≈⟨ ∘-cong (Cf .trans* {p .func i} {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' pre) (≡→≈ eq)) ≈-refl ⟩
-            (Cf .subst {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' pre) ∘ Cf .subst {p .func i} {inj₂ b} (≡→≈ eq)) ∘ g' .famf .transf i
+            (Cf .subst {p .func j} {inj₂ b'} (≡→≈ eq') ∘ Cf .subst {p .func i} {p .func j} (p .func-resp-≈ e)) ∘ g' .famf .transf i
+          ≈⟨ ∘-cong (≈-sym (Cf .trans* {p .func i} {p .func j} {inj₂ b'} (≡→≈ eq') (p .func-resp-≈ e))) ≈-refl ⟩
+            Cf .subst {p .func i} {inj₂ b'} (Ci .isEquivalence .trans {p .func i} {p .func j} {inj₂ b'} (p .func-resp-≈ e) (≡→≈ eq')) ∘ g' .famf .transf i
+          ≈⟨ ∘-cong (Cf .trans* {p .func i} {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' (p .func-resp-≈ e)) (≡→≈ eq)) ≈-refl ⟩
+            (Cf .subst {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' (p .func-resp-≈ e)) ∘ Cf .subst {p .func i} {inj₂ b} (≡→≈ eq)) ∘ g' .famf .transf i
           ≈⟨ assoc _ _ _ ⟩
-            Cf .subst {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' pre) ∘ (Cf .subst {p .func i} {inj₂ b} (≡→≈ eq) ∘ g' .famf .transf i)
+            Cf .subst {inj₂ b} {inj₂ b'} (substₚ₂ eq eq' (p .func-resp-≈ e)) ∘ (Cf .subst {p .func i} {inj₂ b} (≡→≈ eq) ∘ g' .famf .transf i)
           ∎
           where
             Cf = (coprod x₁ x₂) .fam
             Ci = (coprod x₁ x₂) .idx
-            pre = p .func-resp-≈ e
             open ≈-Reasoning isEquiv
 
         fwd : Mor (coprod Y₁ Y₂) y
