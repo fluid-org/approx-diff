@@ -1,7 +1,7 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
--- Conservativity for the matrix model over an arbitrary biproduct base D (with chosen object X whose
--- endomorphisms commute).
+-- The higher-order model over the matrix-embedding representation MatRep(D, X),
+-- for a biproduct base D with chosen object X whose endomorphisms commute.
 open import Level using (0ℓ; suc)
 open import categories
   using (Category; HasTerminal; IsInitial; IsTerminal)
@@ -10,7 +10,7 @@ open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 import matrix-embedding
 import ho-model
 
-module conservativity-matrix
+module ho-model-matrix
   (𝒟 : Category (suc 0ℓ) 0ℓ 0ℓ)
   (𝒟-cmon : CMonEnriched 𝒟)
   (𝒟-biproducts : ∀ x y → Biproduct 𝒟-cmon x y)
@@ -26,7 +26,6 @@ module conservativity-matrix
 
 module ME = matrix-embedding 𝒟-cmon 𝒟-biproducts 𝟘 𝟘-initial 𝟘-terminal X ∘-comm
 
--- In a biproduct category the terminal is the zero object; use the one 𝓕 preserves.
 𝒟-terminal : HasTerminal 𝒟
 𝒟-terminal = record { witness = 𝟘 ; is-terminal = 𝟘-terminal }
 
@@ -34,9 +33,4 @@ open ho-model.Interpretation
   ME.cat ME.terminal (biproducts→products ME.cmon ME.biproduct)
   𝒟 𝒟-cmon 𝒟-limits 𝒟-terminal 𝒟-biproducts
   ME.𝓕 ME.𝓕-preserve-terminal (λ {x} {y} → ME.𝓕-preserve-products {x} {y})
-
-open import conservativity
-  Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable
-  Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
-  Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
   public

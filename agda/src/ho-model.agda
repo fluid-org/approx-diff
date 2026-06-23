@@ -193,27 +193,9 @@ module Interpretation
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
-------------------------------------------------------------------------------
--- Conservativity instance for the (𝒞, 𝒟, F) context.
-
-module Conservativity
-  (𝒞 : Category 0ℓ 0ℓ 0ℓ)
-  (𝒞-terminal : HasTerminal 𝒞)
-  (𝒞-products : HasProducts 𝒞)
-  (𝒟 : Category (suc 0ℓ) 0ℓ 0ℓ)
-  (𝒟-cmon : CMonEnriched 𝒟)
-  (𝒟-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 𝒟)
-  (𝒟-terminal : HasTerminal 𝒟)
-  (𝒟-biproducts : ∀ x y → Biproduct 𝒟-cmon x y)
-  (F : Functor 𝒞 𝒟)
-  (F-preserve-terminal : preserve-chosen-terminal F 𝒞-terminal 𝒟-terminal)
-  (F-preserve-products : preserve-chosen-products F 𝒞-products (biproducts→products _ 𝒟-biproducts))
-  where
-
-  open Interpretation 𝒞 𝒞-terminal 𝒞-products 𝒟 𝒟-cmon 𝒟-limits 𝒟-terminal 𝒟-biproducts F F-preserve-terminal F-preserve-products
-
-  open import conservativity
-    Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable
-    Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
-    Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
-    public
+  module Conservativity where
+    open import conservativity
+      Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable
+      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
+      Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
+      public

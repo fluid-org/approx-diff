@@ -1,8 +1,8 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
--- The higher-order model: Fam(Mat Two) interpreted in Fam(SemiMod Two),
--- via the embedding F : Mat ↪ SemiMod (in mat).
-module ho-model-mat where
+-- The higher-order model over the Data.Vec matrix representation (matrix-new):
+-- Fam(Mat Two) interpreted in Fam(SemiMod Two) via the embedding F : Mat ↪ SemiMod.
+module ho-model-matrix-new where
 
 open import Level using (0ℓ)
 import matrix-new
