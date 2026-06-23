@@ -126,3 +126,78 @@ module forward where
 
   test-3 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , _) ≡ (⊤ ∷ [])
   test-3 = ≡-refl
+
+-- Backward analysis (Galois) via to-gal on the matrix-new model, replacing ho-model-galois.
+-- WIP: blocked on Agda higher-order unification — the complement laws `x · ¬ x` don't let Agda solve the
+-- implicit {x} when the witnesses propagate through the BooleanSDDL constructors (⊓/⊔ aren't injective).
+-- Fix: make complement-∧/∨ take x explicitly in semimodule.agda's BooleanSDDL record + constructors.
+{-
+module backward-mat where
+  open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
+  import cmon-enriched as CMon
+  import matrix-new
+  import semimodule
+  import ho-model-matrix-new
+  import nat
+  import galois
+  import preorder
+  import indexed-family
+  open import prop using (tt) renaming (_,_ to _,p_)
+
+  module HM = ho-model-matrix-new semiring-bool.semiring
+  module FD = matrix-new.Mat semiring-bool.semiring
+  module SM = semimodule semiring-bool.semiring
+  open CMon.CMonEnriched FD.cmon using (_+m_)
+  open FD using (_∷_; [])
+
+  unitm : FD._⇒_ 0 1
+  unitm = HasInitial.from-initial FD.initial {1}
+  conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
+  conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
+
+  open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
+  open HM.interp Sig BaseInterp1
+
+  -- S = 2 is a Boolean lattice; every witness is an antisymmetric (tt , tt) pair.
+  ⊤-add-top : ∀ {x} → SM.S._≈_ (SM.S._+_ SM.S.ι x) SM.S.ι
+  ⊤-add-top = tt ,p tt
+  ∧-idem : ∀ {x} → SM.S._≈_ (SM.S._·_ x x) x
+  ∧-idem {⊥} = tt ,p tt
+  ∧-idem {⊤} = tt ,p tt
+
+  open SM using (𝕀)
+  open SM.JoinSemilattices ⊤-add-top using (BooleanSDDL; to-gal) renaming (_≤_ to _≤m_)
+  open SM.JoinSemilattices.DistribLattices ⊤-add-top ∧-idem using (𝟘-bsddl; ⊕-bsddl)
+
+  compl-∧ : ∀ {x} → _≤m_ 𝕀 (SM.S._·_ x (¬ x)) SM.S.ε
+  compl-∧ {⊥} = tt ,p tt
+  compl-∧ {⊤} = tt ,p tt
+  compl-∨ : ∀ {x} → _≤m_ 𝕀 SM.S.ι (SM.S._+_ x (¬ x))
+  compl-∨ {⊥} = tt ,p tt
+  compl-∨ {⊤} = tt ,p tt
+
+  module TB = HM.interp-sd.ty-bsddl-mod Sig BaseInterp1 ∧-idem ⊤-add-top ¬ compl-∧ compl-∨
+
+  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
+  input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
+
+  input-fod : first-order-data (list (base label [×] base number))
+  input-fod = list (base label [×] base number)
+
+  inputBSDDL : BooleanSDDL
+  inputBSDDL = ⊕-bsddl ¬ compl-∧ compl-∨
+                 (𝟘-bsddl ¬ compl-∧ compl-∨)
+                 (TB.ty-bsddl input-fod input)
+
+  outputBSDDL : BooleanSDDL
+  outputBSDDL = TB.ty-bsddl (base number) nat.zero
+
+  open indexed-family._⇒f_
+
+  bwd-slice : label.label → _
+  bwd-slice l =
+    to-gal inputBSDDL outputBSDDL (⟦ example.ex.query l ⟧tm .famf .transf (_ , input)) .right .fun (⊤ ∷ [])
+    where
+      open galois._⇒g_
+      open preorder._=>_
+-}
