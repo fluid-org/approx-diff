@@ -145,41 +145,33 @@ module backward-mat where
 
   unitm : FD._⇒_ 0 1
   unitm = HasInitial.from-initial FD.initial {1}
+
   conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
   conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
 
   open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
   open HM.interp Sig BaseInterp1
 
-  module TB = HM.interp-sd.ty-bsddl-mod Sig BaseInterp1 semiring-bool.boolean
-  open TB using (BooleanSDDL; to-gal; 𝟘b; ⊕b; ty-bsddl)
+  open HM.interp-sd.ty-bsddl-mod Sig BaseInterp1 semiring-bool.boolean
+    using (BooleanSDDL; to-gal; 𝟘b; ⊕b; ty-bsddl)
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
 
-  input-fod : first-order-data (list (base label [×] base number))
-  input-fod = list (base label [×] base number)
-
-  -- input: empty context ⊕ the list type; output: the number (Boolean) lattice.
-  inputBSDDL : BooleanSDDL
-  inputBSDDL = ⊕b 𝟘b (ty-bsddl input-fod input)
-
-  outputBSDDL : BooleanSDDL
-  outputBSDDL = ty-bsddl (base number) nat.zero
+  input-ty : first-order-data (list (base label [×] base number))
+  input-ty = list (base label [×] base number)
 
   open indexed-family._⇒f_
+  open galois._⇒g_
+  open preorder._=>_
 
   -- Galois backward slice: the upper adjoint of the query morphism, applied to full output demand.
   bwd-slice : label.label → _
   bwd-slice l =
-    to-gal inputBSDDL outputBSDDL (⟦ example.ex.query l ⟧tm .famf .transf (_ , input)) .right .fun (⊥ ∷ [])
-    where
-      open galois._⇒g_
-      open preorder._=>_
+    to-gal (⊕b 𝟘b (ty-bsddl input-ty input)) (ty-bsddl (base number) nat.zero)
+           (⟦ example.ex.query l ⟧tm .famf .transf (_ , input)) .right .fun (⊥ ∷ [])
 
-  -- Galois (to-gal) backward slice.  Feeding the output's demand as ⊥, a needed input is marked ⊥ — the De
-  -- Morgan dual of module backward's ⊤-convention (to-gal's right adjoint is ¬ ∘ conjugate ∘ ¬).
-  -- Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd — agreeing with module backward.
+  -- Galois backward slice. Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd.
   test1 : bwd-slice label.a ≡ (lift · , ([] , ⊥ ∷ []) , ([] , ⊤ ∷ []) , ([] , ⊥ ∷ []) , _)
   test1 = ≡-refl
 
