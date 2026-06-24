@@ -152,8 +152,8 @@ module backward-mat where
   open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
   open HM.interp Sig BaseInterp1
 
-  open HM.interp-sd.ty-bsddl-mod Sig BaseInterp1 semiring-bool.boolean
-    using (BooleanSDDL; to-gal; 𝟘b; ⊕b; ty-bsddl)
+  open HM.interp-sd.bsddl Sig BaseInterp1 semiring-bool.boolean
+    using (BooleanSDDL; to-gal; ty-bsddl)
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -168,7 +168,7 @@ module backward-mat where
   -- Galois backward slice.
   bwd-slice : label.label → _
   bwd-slice l =
-    to-gal (⊕b 𝟘b (ty-bsddl input-ty input)) (ty-bsddl (base number) nat.zero)
+    to-gal (ty-bsddl (unit [×] input-ty) (_ , input)) (ty-bsddl (base number) nat.zero)
            (⟦ example.ex.query l ⟧tm .famf .transf (_ , input)) .right .fun (⊥ ∷ [])
 
   -- Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd.

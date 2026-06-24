@@ -35,7 +35,7 @@ module interp-sd (Sig : Signature 0ℓ)
 
   open interp Sig Impl public
   open language-syntax Sig using (first-order-data; unit; bool; base; _[×]_; _[+]_; list)
-  open SM using (SelfDual; 𝟘-sd; ⊕-sd)
+  open SM using (SelfDual; 𝟘-sd; ⊕-sd; BooleanSemiring; module JoinSemilattices)
   open Setoid using (Carrier)
   open Fam⟨𝒞⟩ using (fm)
   open Fam⟨𝒞⟩.Obj using (fam)
@@ -58,12 +58,12 @@ module interp-sd (Sig : Signature 0ℓ)
   pow-sd a (nat.succ n) (i , is) = ⊕-sd (ty-sd a i) (pow-sd a n is)
 
   -- Boolean self-dual lattices on first-order-data types, given that the scalar S is a Boolean algebra.
-  module ty-bsddl-mod (bs : SM.BooleanSemiring) where
-    open SM.BooleanSemiring bs
-    private module JS = SM.JoinSemilattices (λ {x} → ⊤-add-top {x})
+  module bsddl (bs : BooleanSemiring) where
+    open BooleanSemiring bs
+    private module JS = JoinSemilattices ⊤-add-top
     open JS using (BooleanSDDL; to-gal) public
-    open JS.DistribLattices (λ {x} → ∧-idem {x}) using (𝟘-bsddl; ⊕-bsddl)
-    open matrix-new.DistribLattices.DistribLattice S (λ {x} → ∧-idem {x}) (λ {x} → ⊤-add-top {x}) using (vec-bsddl)
+    open JS.DistribLattices ∧-idem using (𝟘-bsddl; ⊕-bsddl)
+    open matrix-new.DistribLattices.DistribLattice S ∧-idem ⊤-add-top using (vec-bsddl)
 
     ty-bsddl  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → BooleanSDDL
     pow-bsddl : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → BooleanSDDL

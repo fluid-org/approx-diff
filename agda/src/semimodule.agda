@@ -700,20 +700,13 @@ module JoinSemilattices
     to-conj f ._⇒c_.conjugate =
       trans-⇔ Y.align (trans-⇔ (conj-⊥ X.dual Y.dual f) (sym-⇔ X.align))
 
-  -- A self-dual distributive lattice with a Boolean negation, following unused/matrix.agda's BooleanAlgebra
-  -- (¬, compl-∨, compl-∧).  Heyting weakens these to a residual ⇨, but then the Galois right
-  -- adjoint is the entry-wise ⊓ᵢ (M i j ⇨ x i) rather than this coordinate-free ¬ ∘ conjugate ∘ ¬.
+  -- A self-dual distributive lattice with a Boolean negation.
   record BooleanSDDL : Set (suc 0ℓ) where
     field selfDualLat : SelfDualDistributiveLattice
     open SelfDualDistributiveLattice selfDualLat public
-    private
-      module MM = MeetSemilattice meets
-      module JM = JoinSemilattice (joins obj)
-    open MM using (_∧_; ⊤; ∧-mono; π₁; π₂; ≤-top) renaming (⟨_∧_⟩ to ⟨_,_⟩∧)
-    open JM using (_∨_; ⊥; ∨-mono; [_∨_]; ≤-bottom)
-    open IsPreorder (≤-isPreorder obj) using () renaming (refl to ≤-refl; trans to ≤-trans)
-    open Disjoint (≤-isPreorder obj) (MeetSemilattice.∧-isMeet meets) (JoinSemilattice.⊥-isBottom (joins obj))
-      using (_#_; #-sym) public
+    open DistributiveLattice toObj public using (_#_; #-sym)
+    open DistributiveLattice toObj
+      using (∧-mono; ∨-mono; π₂; ≤-top; ≤-bottom; [_∨_]; ≤-refl; ≤-trans) renaming (⟨_∧_⟩ to ⟨_,_⟩∧)
     field
       boolean : BooleanAlgebra toObj
     open BooleanAlgebra boolean public
@@ -729,11 +722,11 @@ module JoinSemilattices
 
   import galois
 
-  -- The galois object underlying a BooleanSDDL (galois.Obj = DistributiveLattice without the ∧-∨-distrib field).
-  toObjG : BooleanSDDL → galois.Obj
-  toObjG X .galois.Obj.carrier = preorder (BooleanSDDL.obj X)
-  toObjG X .galois.Obj.meets   = BooleanSDDL.meets X
-  toObjG X .galois.Obj.joins   = joins (BooleanSDDL.obj X)
+  -- BooleanSDDL's underlying galois object.
+  toBounded : BooleanSDDL → galois.Obj
+  toBounded X .galois.Obj.carrier = preorder (BooleanSDDL.obj X)
+  toBounded X .galois.Obj.meets   = BooleanSDDL.meets X
+  toBounded X .galois.Obj.joins   = joins (BooleanSDDL.obj X)
 
   -- Galois-connection embedding: left = the forward action, right = ¬ ∘ conjugate ∘ ¬ (the De Morgan dual
   -- of the transpose, which is the meet-preserving Galois adjoint).
@@ -742,7 +735,7 @@ module JoinSemilattices
       module X = BooleanSDDL X
       module Y = BooleanSDDL Y
 
-    to-gal : X.obj ⇒ Y.obj → galois._⇒g_ (toObjG Y) (toObjG X)
+    to-gal : X.obj ⇒ Y.obj → galois._⇒g_ (toBounded Y) (toBounded X)
     to-gal f .galois._⇒g_.left = joins-map f ._=>J_.func
     to-gal f .galois._⇒g_.right .preorder._=>_.fun x =
       X.¬ (joins-map (conjugate X.selfDual Y.selfDual f) ._=>J_.func .preorder._=>_.fun (Y.¬ x))
