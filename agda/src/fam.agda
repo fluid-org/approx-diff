@@ -556,23 +556,15 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         eqσ-fib : (i : y .idx .Carrier) (s : (coprod x₁ x₂) .idx .Carrier) (eq : p .func i ≡ s) →
                   (x .fam .subst (eqσ i s eq) ∘ (id _ ∘ (f .fwd .famf .transf s ∘ (id _ ∘ (id _ ∘ ((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ (id _ ∘ (f .bwd .famf .transf (g .idxf .func i) ∘ g .famf .transf i)))))))) ≈C
                   (id _ ∘ (g .famf .transf i ∘ (id _ ∘ (id _ ∘ id _))))
-        eqσ-fib i s eq = begin
-            x .fam .subst (eqσ i s eq) ∘ (id _ ∘ (f .fwd .famf .transf s ∘ (id _ ∘ (id _ ∘ ((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ (id _ ∘ (f .bwd .famf .transf (g .idxf .func i) ∘ g .famf .transf i)))))))
-          ≈⟨ ∘-cong ≈-refl (≈-trans id-left (∘-cong ≈-refl (≈-trans (≈-trans id-left id-left) (∘-cong ≈-refl id-left)))) ⟩
-            x .fam .subst (eqσ i s eq) ∘ (f .fwd .famf .transf s ∘ ((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ (f .bwd .famf .transf (g .idxf .func i) ∘ g .famf .transf i)))
-          ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-            x .fam .subst (eqσ i s eq) ∘ (f .fwd .famf .transf s ∘ (((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ f .bwd .famf .transf (g .idxf .func i)) ∘ g .famf .transf i))
-          ≈⟨ ∘-cong ≈-refl (≈-sym (assoc _ _ _)) ⟩
-            x .fam .subst (eqσ i s eq) ∘ ((f .fwd .famf .transf s ∘ ((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ f .bwd .famf .transf (g .idxf .func i))) ∘ g .famf .transf i)
-          ≈⟨ ≈-sym (assoc _ _ _) ⟩
-            (x .fam .subst (eqσ i s eq) ∘ (f .fwd .famf .transf s ∘ ((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ f .bwd .famf .transf (g .idxf .func i)))) ∘ g .famf .transf i
-          ≈⟨ ∘-cong (f-roundtrip i s eq) ≈-refl ⟩
-            id _ ∘ g .famf .transf i
-          ≈⟨ id-left ⟩
-            g .famf .transf i
-          ≈˘⟨ ≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans id-left id-left)) id-right) ⟩
-            id _ ∘ (g .famf .transf i ∘ (id _ ∘ (id _ ∘ id _)))
-          ∎ where open ≈-Reasoning isEquiv
+        eqσ-fib i s eq =
+          ≈-trans
+            (≈-trans (∘-cong ≈-refl (≈-trans id-left (∘-cong ≈-refl (≈-trans (≈-trans id-left id-left) (∘-cong ≈-refl id-left)))))
+            (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-sym (assoc _ _ _))))
+            (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+                     (≈-sym (assoc _ _ _)))))
+          (≈-trans (∘-cong (f-roundtrip i s eq) ≈-refl)
+          (≈-trans id-left
+                   (≈-sym (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans id-left id-left)) id-right)))))
 
         stb : StableBits f g
         stb .StableBits.y₁ = Y₁
