@@ -756,7 +756,7 @@ module JoinSemilattices
     open SelfDual
     private
       module P  = SelfDualDistributiveLattice P
-      module MP = MeetSemilattice P.meets
+      open MeetSemilattice P.meets
       module M  = Semimodule P.obj
       module N  = Semimodule N
       open Iso N≅M
@@ -782,26 +782,26 @@ module JoinSemilattices
       ≤-antisym : ∀ {x y} → _≤_ P.obj x y → _≤_ P.obj y x → x M.≈ y
       ≤-antisym x≤y y≤x = M.trans (M.sym y≤x) (M.trans M.+-comm x≤y)
 
-      ∧≈ : ∀ {a a' b b'} → a M.≈ a' → b M.≈ b' → MP._∧_ a b M.≈ MP._∧_ a' b'
+      ∧≈ : ∀ {a a' b b'} → a M.≈ a' → b M.≈ b' → _∧_ a b M.≈ _∧_ a' b'
       ∧≈ a≈a' b≈b' =
-        ≤-antisym (MP.∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
-                  (MP.∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
+        ≤-antisym (∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
+                  (∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
 
       meets' : MeetSemilattice (preorder N)
-      meets' .MeetSemilattice._∧_ a b = bwd .func (MP._∧_ (fwd .func a) (fwd .func b))
-      meets' .MeetSemilattice.⊤ = bwd .func MP.⊤
+      meets' .MeetSemilattice._∧_ a b = bwd .func (_∧_ (fwd .func a) (fwd .func b))
+      meets' .MeetSemilattice.⊤ = bwd .func ⊤
       meets' .MeetSemilattice.∧-isMeet .IsMeet.π₁ =
-        ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (MP.∧-isMeet .IsMeet.π₁))
+        ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (∧-isMeet .IsMeet.π₁))
       meets' .MeetSemilattice.∧-isMeet .IsMeet.π₂ =
-        ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (MP.∧-isMeet .IsMeet.π₂))
+        ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (∧-isMeet .IsMeet.π₂))
       meets' .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ a≤b a≤c =
-        ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (MP.∧-isMeet .IsMeet.⟨_,_⟩ (≤-fwd a≤b) (≤-fwd a≤c)))
+        ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (∧-isMeet .IsMeet.⟨_,_⟩ (≤-fwd a≤b) (≤-fwd a≤c)))
       meets' .MeetSemilattice.⊤-isTop .IsTop.≤-top =
-        ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (MP.⊤-isTop .IsTop.≤-top))
+        ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (⊤-isTop .IsTop.≤-top))
 
       -- Disjointness transports: a # b iff fwd a # fwd b.
-      #⇔# : ∀ {a b} → _≤_ N (bwd .func (MP._∧_ (fwd .func a) (fwd .func b))) N.ε ⇔
-                      _≤_ P.obj (MP._∧_ (fwd .func a) (fwd .func b)) M.ε
+      #⇔# : ∀ {a b} → _≤_ N (bwd .func (_∧_ (fwd .func a) (fwd .func b))) N.ε ⇔
+                      _≤_ P.obj (_∧_ (fwd .func a) (fwd .func b)) M.ε
       #⇔# .proj₁ h = ≤M-resp fwd∘bwd (fwd .preserve-ze) (≤-fwd h)
       #⇔# .proj₂ h = ≤-bwd (≤M-resp (M.sym fwd∘bwd) (M.sym (fwd .preserve-ze)) h)
 
@@ -822,7 +822,7 @@ module JoinSemilattices
     open SelfDualDistributiveLattice
     private
       module P  = BooleanSDDL P
-      module MP = MeetSemilattice P.meets
+      open MeetSemilattice P.meets
       module M  = Semimodule P.obj
       module N  = Semimodule N
       open Iso N≅M
@@ -842,10 +842,10 @@ module JoinSemilattices
       ≤M-resp x≈x' y≈y' h = M.trans (M.+-cong (M.sym x≈x') (M.sym y≈y')) (M.trans h y≈y')
       ≤-antisym : ∀ {x y} → _≤_ P.obj x y → _≤_ P.obj y x → x M.≈ y
       ≤-antisym x≤y y≤x = M.trans (M.sym y≤x) (M.trans M.+-comm x≤y)
-      ∧≈ : ∀ {a a' b b'} → a M.≈ a' → b M.≈ b' → MP._∧_ a b M.≈ MP._∧_ a' b'
+      ∧≈ : ∀ {a a' b b'} → a M.≈ a' → b M.≈ b' → _∧_ a b M.≈ _∧_ a' b'
       ∧≈ a≈a' b≈b' =
-        ≤-antisym (MP.∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
-                  (MP.∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
+        ≤-antisym (∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
+                  (∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
 
     transport-bsddl : BooleanSDDL
     transport-bsddl .BooleanSDDL.selfDualLat = transport-sddl P.selfDualLat N≅M
