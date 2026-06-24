@@ -787,18 +787,6 @@ module JoinSemilattices
         ≤-antisym (∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
                   (∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
 
-      meets' : MeetSemilattice (preorder N)
-      meets' .MeetSemilattice._∧_ a b = bwd .func (_∧_ (fwd .func a) (fwd .func b))
-      meets' .MeetSemilattice.⊤ = bwd .func ⊤
-      meets' .MeetSemilattice.∧-isMeet .IsMeet.π₁ =
-        ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (∧-isMeet .IsMeet.π₁))
-      meets' .MeetSemilattice.∧-isMeet .IsMeet.π₂ =
-        ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (∧-isMeet .IsMeet.π₂))
-      meets' .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ a≤b a≤c =
-        ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (∧-isMeet .IsMeet.⟨_,_⟩ (≤-fwd a≤b) (≤-fwd a≤c)))
-      meets' .MeetSemilattice.⊤-isTop .IsTop.≤-top =
-        ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (⊤-isTop .IsTop.≤-top))
-
       -- Disjointness transports: a # b iff fwd a # fwd b.
       #⇔# : ∀ {a b} → _≤_ N (bwd .func (_∧_ (fwd .func a) (fwd .func b))) N.ε ⇔
                       _≤_ P.obj (_∧_ (fwd .func a) (fwd .func b)) M.ε
@@ -808,7 +796,16 @@ module JoinSemilattices
     transport-sddl : SelfDualDistributiveLattice
     transport-sddl .selfDual .obj  = N
     transport-sddl .selfDual .dual = Iso-trans N≅M (Iso-trans P.dual (Dual-iso N≅M))
-    transport-sddl .meets     = meets'
+    transport-sddl .meets .MeetSemilattice._∧_ a b = bwd .func (_∧_ (fwd .func a) (fwd .func b))
+    transport-sddl .meets .MeetSemilattice.⊤ = bwd .func ⊤
+    transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.π₁ =
+      ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (∧-isMeet .IsMeet.π₁))
+    transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.π₂ =
+      ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (∧-isMeet .IsMeet.π₂))
+    transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ a≤b a≤c =
+      ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (∧-isMeet .IsMeet.⟨_,_⟩ (≤-fwd a≤b) (≤-fwd a≤c)))
+    transport-sddl .meets .MeetSemilattice.⊤-isTop .IsTop.≤-top =
+      ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (⊤-isTop .IsTop.≤-top))
     transport-sddl .∧-∨-distrib x y z =
       ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl (fwd .preserve-+))))
                      (M.sym (M.trans (fwd .preserve-+) (M.+-cong fwd∘bwd fwd∘bwd)))
