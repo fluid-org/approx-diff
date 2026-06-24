@@ -658,33 +658,6 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
       id _
     ∎ where open ≈-Reasoning isEquiv
 
--- FIXME: separate out 'endofunctor' and 'natural transformation'
-record Monad {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
-  open Category 𝒞
-  field
-    M    : obj → obj
-    map  : ∀ {x y} → x ⇒ y → M x ⇒ M y
-    unit : ∀ {x} → x ⇒ M x
-    join : ∀ {x} → M (M x) ⇒ M x
-    map-cong : ∀ {x y}{f g : x ⇒ y} → f ≈ g → map f ≈ map g
-    map-id   : ∀ {x} → map (id x) ≈ id (M x)
-    map-comp : ∀ {x y z} (f : y ⇒ z) (g : x ⇒ y) → map (f ∘ g) ≈ (map f ∘ map g)
-    unit-natural : ∀ {x y} (f : x ⇒ y) → (unit ∘ f) ≈ (map f ∘ unit)
-    join-natural : ∀ {x y} (f : x ⇒ y) → (join ∘ map (map f)) ≈ (map f ∘ join)
-    -- FIXME: actual monad equations
-
-
-
-
-record StrongMonad {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
-  open Category 𝒞
-  open HasProducts P
-  field
-    M      : obj → obj
-    unit   : ∀ {x} → x ⇒ M x
-    extend : ∀ {x y z} → prod x y ⇒ M z → prod x (M y) ⇒ M z
-  -- FIXME: equations
-
 record HasBooleans {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasTerminal T renaming (witness to terminal)
