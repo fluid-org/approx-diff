@@ -141,7 +141,7 @@ module backward-mat where
   module HM = ho-model-matrix-new semiring-bool.semiring
   module FD = matrix-new.Mat semiring-bool.semiring
   open CMon.CMonEnriched FD.cmon using (_+m_)
-  open FD using (_∷_; [])
+  open FD using (_⇒_; _∷_; [])
 
   unitm : FD._⇒_ 0 1
   unitm = HasInitial.from-initial FD.initial {1}
