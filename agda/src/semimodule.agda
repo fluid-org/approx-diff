@@ -799,13 +799,13 @@ module JoinSemilattices
     transport-sddl .meets .MeetSemilattice._∧_ a b = bwd .func (_∧_ (fwd .func a) (fwd .func b))
     transport-sddl .meets .MeetSemilattice.⊤ = bwd .func ⊤
     transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.π₁ =
-      ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (∧-isMeet .IsMeet.π₁))
+      ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl π₁)
     transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.π₂ =
-      ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl (∧-isMeet .IsMeet.π₂))
+      ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl π₂)
     transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ a≤b a≤c =
-      ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (∧-isMeet .IsMeet.⟨_,_⟩ (≤-fwd a≤b) (≤-fwd a≤c)))
+      ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) ⟨ ≤-fwd a≤b ∧ ≤-fwd a≤c ⟩)
     transport-sddl .meets .MeetSemilattice.⊤-isTop .IsTop.≤-top =
-      ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) (⊤-isTop .IsTop.≤-top))
+      ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) ≤-top)
     transport-sddl .∧-∨-distrib x y z =
       ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl (fwd .preserve-+))))
                      (M.sym (M.trans (fwd .preserve-+) (M.+-cong fwd∘bwd fwd∘bwd)))
@@ -848,13 +848,9 @@ module JoinSemilattices
     transport-bsddl .BooleanSDDL.selfDualLat = transport-sddl P.selfDualLat N≅M
     transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ a = bwd .func (P.¬ (fwd .func a))
     transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ =
-      ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl fwd∘bwd)))
-                     (M.sym (fwd .preserve-ze))
-                     P.compl-∧)
+      ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl fwd∘bwd))) (M.sym (fwd .preserve-ze)) P.compl-∧)
     transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ =
-      ≤-bwd (≤M-resp (M.sym fwd∘bwd)
-                     (M.sym (M.trans (fwd .preserve-+) (M.+-cong M.refl fwd∘bwd)))
-                     P.compl-∨)
+      ≤-bwd (≤M-resp (M.sym fwd∘bwd) (M.sym (M.trans (fwd .preserve-+) (M.+-cong M.refl fwd∘bwd))) P.compl-∨)
 
   -- With S a bounded distributive lattice, 𝕀 (and every n-ary biproduct of it) is one too, with
   -- multiplication as the meet.
