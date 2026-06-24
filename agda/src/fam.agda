@@ -535,23 +535,14 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         f-roundtrip : (i : y .idx .Carrier) (s : (coprod x₁ x₂) .idx .Carrier) (eq : p .func i ≡ s) →
                       (x .fam .subst (eqσ i s eq) ∘ (f .fwd .famf .transf s ∘ ((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ f .bwd .famf .transf (g .idxf .func i)))) ≈C
                       id (x .fam .fm (g .idxf .func i))
-        f-roundtrip i s eq = begin
-            x .fam .subst (eqσ i s eq) ∘ (f .fwd .famf .transf s ∘ ((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ f .bwd .famf .transf (g .idxf .func i)))
-          ≈⟨ ∘-cong ≈-refl (≈-sym (assoc _ _ _)) ⟩
-            x .fam .subst (eqσ i s eq) ∘ ((f .fwd .famf .transf s ∘ (coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq)) ∘ f .bwd .famf .transf (g .idxf .func i))
-          ≈⟨ ∘-cong ≈-refl (∘-cong (f .fwd .famf .natural {p .func i} {s} (≡→≈ eq)) ≈-refl) ⟩
-            x .fam .subst (eqσ i s eq) ∘ ((x .fam .subst (f .fwd .idxf .func-resp-≈ (≡→≈ eq)) ∘ f .fwd .famf .transf (p .func i)) ∘ f .bwd .famf .transf (g .idxf .func i))
-          ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-            x .fam .subst (eqσ i s eq) ∘ (x .fam .subst (f .fwd .idxf .func-resp-≈ (≡→≈ eq)) ∘ (f .fwd .famf .transf (p .func i) ∘ f .bwd .famf .transf (g .idxf .func i)))
-          ≈⟨ ≈-sym (assoc _ _ _) ⟩
-            (x .fam .subst (eqσ i s eq) ∘ x .fam .subst (f .fwd .idxf .func-resp-≈ (≡→≈ eq))) ∘ (f .fwd .famf .transf (p .func i) ∘ f .bwd .famf .transf (g .idxf .func i))
-          ≈⟨ ∘-cong (≈-sym (x .fam .trans* (eqσ i s eq) (f .fwd .idxf .func-resp-≈ (≡→≈ eq)))) ≈-refl ⟩
-            x .fam .subst (x .idx .isEquivalence .trans (f .fwd .idxf .func-resp-≈ (≡→≈ eq)) (eqσ i s eq)) ∘ (f .fwd .famf .transf (p .func i) ∘ f .bwd .famf .transf (g .idxf .func i))
-          ≈⟨ ∘-cong ≈-refl (≈-sym id-left) ⟩
-            x .fam .subst (x .idx .isEquivalence .trans (f .fwd .idxf .func-resp-≈ (≡→≈ eq)) (eqσ i s eq)) ∘ (id _ ∘ (f .fwd .famf .transf (p .func i) ∘ f .bwd .famf .transf (g .idxf .func i)))
-          ≈⟨ f .fwd∘bwd≈id .famf-eq ._≃f_.transf-eq {g .idxf .func i} ⟩
-            id (x .fam .fm (g .idxf .func i))
-          ∎ where open ≈-Reasoning isEquiv
+        f-roundtrip i s eq =
+          ≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+          (≈-trans (∘-cong ≈-refl (∘-cong (f .fwd .famf .natural {p .func i} {s} (≡→≈ eq)) ≈-refl))
+          (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (≈-sym (x .fam .trans* (eqσ i s eq) (f .fwd .idxf .func-resp-≈ (≡→≈ eq)))) ≈-refl)
+          (≈-trans (∘-cong ≈-refl (≈-sym id-left))
+                   (f .fwd∘bwd≈id .famf-eq ._≃f_.transf-eq {g .idxf .func i}))))))
 
         eqσ-fib : (i : y .idx .Carrier) (s : (coprod x₁ x₂) .idx .Carrier) (eq : p .func i ≡ s) →
                   (x .fam .subst (eqσ i s eq) ∘ (id _ ∘ (f .fwd .famf .transf s ∘ (id _ ∘ (id _ ∘ ((coprod x₁ x₂) .fam .subst {p .func i} {s} (≡→≈ eq) ∘ (id _ ∘ (f .bwd .famf .transf (g .idxf .func i) ∘ g .famf .transf i)))))))) ≈C
