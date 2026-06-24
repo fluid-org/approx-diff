@@ -209,8 +209,8 @@ module _ where
 
   𝟙-boolean : BooleanAlgebra 𝟙
   𝟙-boolean .BooleanAlgebra.¬ _ = ttU
-  𝟙-boolean .BooleanAlgebra.complement-∨ = tt
-  𝟙-boolean .BooleanAlgebra.complement-∧ = tt
+  𝟙-boolean .BooleanAlgebra.compl-∨ = tt
+  𝟙-boolean .BooleanAlgebra.compl-∧ = tt
 
   to-𝟙 : ∀ X → X ⇒c 𝟙
   to-𝟙 X .right = join-semilattice.terminal {X = X .joins}
@@ -245,8 +245,8 @@ module _ where
 
   ⊕-boolean : ∀ {X Y} → BooleanAlgebra X → BooleanAlgebra Y → BooleanAlgebra (X ⊕ Y)
   ⊕-boolean BX BY .BooleanAlgebra.¬ (x , y) = BX .BooleanAlgebra.¬ x , BY .BooleanAlgebra.¬ y
-  ⊕-boolean BX BY .BooleanAlgebra.complement-∨ = BX .BooleanAlgebra.complement-∨ , BY .BooleanAlgebra.complement-∨
-  ⊕-boolean BX BY .BooleanAlgebra.complement-∧ = BX .BooleanAlgebra.complement-∧ , BY .BooleanAlgebra.complement-∧
+  ⊕-boolean BX BY .BooleanAlgebra.compl-∨ = BX .BooleanAlgebra.compl-∨ , BY .BooleanAlgebra.compl-∨
+  ⊕-boolean BX BY .BooleanAlgebra.compl-∧ = BX .BooleanAlgebra.compl-∧ , BY .BooleanAlgebra.compl-∧
 
   ⊕-# : ∀ {X Y} {x₁ x₂ y₁ y₂} → _#_ (X ⊕ Y) (x₁ , y₁) (x₂ , y₂) ⇔ _#_ X x₁ x₂ ∧ₚ _#_ Y y₁ y₂
   ⊕-# .proj₁ p = p
@@ -310,5 +310,5 @@ module _ where
 
   TWO-boolean : BooleanAlgebra TWO
   TWO-boolean .BooleanAlgebra.¬ = two.¬
-  TWO-boolean .BooleanAlgebra.complement-∨ {x} = two.complement-∨ {x}
-  TWO-boolean .BooleanAlgebra.complement-∧ {x} = two.complement-∧ {x}
+  TWO-boolean .BooleanAlgebra.compl-∨ {x} = two.compl-∨ {x}
+  TWO-boolean .BooleanAlgebra.compl-∧ {x} = two.compl-∧ {x}

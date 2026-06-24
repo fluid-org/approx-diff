@@ -68,13 +68,13 @@ module interp-sd (Sig : Signature 0ℓ)
     ty-bsddl  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → BooleanSDDL
     pow-bsddl : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → BooleanSDDL
 
-    ty-bsddl unit       _        = 𝟘-bsddl ¬ complement-∧ complement-∨
-    ty-bsddl bool       _        = 𝟘-bsddl ¬ complement-∧ complement-∨
-    ty-bsddl (base s)   i        = vec-bsddl ¬ complement-∧ complement-∨ (ImplM.⟦sort⟧ s .fam .fm i)
-    ty-bsddl (a [×] b)  (i , j)  = ⊕-bsddl ¬ complement-∧ complement-∨ (ty-bsddl a i) (ty-bsddl b j)
+    ty-bsddl unit       _        = 𝟘-bsddl ¬ compl-∧ compl-∨
+    ty-bsddl bool       _        = 𝟘-bsddl ¬ compl-∧ compl-∨
+    ty-bsddl (base s)   i        = vec-bsddl ¬ compl-∧ compl-∨ (ImplM.⟦sort⟧ s .fam .fm i)
+    ty-bsddl (a [×] b)  (i , j)  = ⊕-bsddl ¬ compl-∧ compl-∨ (ty-bsddl a i) (ty-bsddl b j)
     ty-bsddl (a [+] b)  (inj₁ i) = ty-bsddl a i
     ty-bsddl (a [+] b)  (inj₂ j) = ty-bsddl b j
     ty-bsddl (list a)   (n , i)  = pow-bsddl a n i
 
-    pow-bsddl a nat.zero     _        = 𝟘-bsddl ¬ complement-∧ complement-∨
-    pow-bsddl a (nat.succ n) (i , is) = ⊕-bsddl ¬ complement-∧ complement-∨ (ty-bsddl a i) (pow-bsddl a n is)
+    pow-bsddl a nat.zero     _        = 𝟘-bsddl ¬ compl-∧ compl-∨
+    pow-bsddl a (nat.succ n) (i , is) = ⊕-bsddl ¬ compl-∧ compl-∨ (ty-bsddl a i) (pow-bsddl a n is)

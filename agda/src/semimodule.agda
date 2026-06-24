@@ -555,16 +555,14 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-eval α .transf-eq x .*≈* ._≈s_.func-eq = α .transf x .func-resp-≈
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
 
--- The data making the scalar S a Boolean algebra: idempotent meet, top-absorbing join, and a complemented
--- negation.  The complement laws are the 𝕀-order `_≤_ 𝕀` unfolded (`(a + b) ≈ b`), stated here so the record
--- needs nothing from JoinSemilattices below.
+-- The data making the scalar S a Boolean algebra (complement laws = the 𝕀-order unfolded).
 record BooleanSemiring : Set where
   field
     ∧-idem       : ∀ {x} → (x S.· x) S.≈ x
     ⊤-add-top    : ∀ {x} → (S.ι S.+ x) S.≈ S.ι
     ¬            : S.Carrier → S.Carrier
-    complement-∧ : ∀ {x} → ((x S.· ¬ x) S.+ S.ε) S.≈ S.ε
-    complement-∨ : ∀ {x} → (S.ι S.+ (x S.+ ¬ x)) S.≈ (x S.+ ¬ x)
+    compl-∧ : ∀ {x} → ((x S.· ¬ x) S.+ S.ε) S.≈ S.ε
+    compl-∨ : ∀ {x} → (S.ι S.+ (x S.+ ¬ x)) S.≈ (x S.+ ¬ x)
 
 ------------------------------------------------------------------------------
 -- Top-absorption makes addition idempotent, so every S-semimodule is a bounded join-semilattice and every
@@ -703,7 +701,7 @@ module JoinSemilattices
       trans-⇔ Y.align (trans-⇔ (conj-⊥ X.dual Y.dual f) (sym-⇔ X.align))
 
   -- A self-dual distributive lattice with a Boolean negation, following unused/matrix.agda's BooleanAlgebra
-  -- (¬, complement-∨, complement-∧).  Heyting weakens these to a residual ⇨, but then the Galois right
+  -- (¬, compl-∨, compl-∧).  Heyting weakens these to a residual ⇨, but then the Galois right
   -- adjoint is the entry-wise ⊓ᵢ (M i j ⇨ x i) rather than this coordinate-free ¬ ∘ conjugate ∘ ¬.
   record BooleanSDDL : Set (suc 0ℓ) where
     field selfDualLat : SelfDualDistributiveLattice
@@ -719,13 +717,13 @@ module JoinSemilattices
     field
       boolean : BooleanAlgebra toObj
     open BooleanAlgebra boolean public
-      using (¬; complement-∧; complement-∨; ¬-antitone) renaming (#-↔-≤¬ to #-≤-¬)
+      using (¬; compl-∧; compl-∨; ¬-antitone) renaming (#-↔-≤¬ to #-≤-¬)
 
     ≤-#-¬ : ∀ {a b} → (_≤_ obj a b) ⇔ (a # ¬ b)
-    ≤-#-¬ .proj₁ a≤b = ≤-trans (∧-mono a≤b ≤-refl) complement-∧
+    ≤-#-¬ .proj₁ a≤b = ≤-trans (∧-mono a≤b ≤-refl) compl-∧
     ≤-#-¬ {a} {b} .proj₂ a#¬b =
       ≤-trans ⟨ ≤-refl , ≤-top ⟩∧
-        (≤-trans (∧-mono ≤-refl complement-∨)
+        (≤-trans (∧-mono ≤-refl compl-∨)
           (≤-trans (∧-∨-distrib a b (¬ b))
             (≤-trans (∨-mono ≤-refl a#¬b) [ π₂ ∨ ≤-bottom ])))
 
@@ -859,14 +857,14 @@ module JoinSemilattices
     transport-bsddl : BooleanSDDL
     transport-bsddl .BooleanSDDL.selfDualLat = transport-sddl P.selfDualLat N≅M
     transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ a = bwd .func (P.¬ (fwd .func a))
-    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∧ =
+    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ =
       ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl fwd∘bwd)))
                      (M.sym (fwd .preserve-ze))
-                     P.complement-∧)
-    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∨ =
+                     P.compl-∧)
+    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ =
       ≤-bwd (≤M-resp (M.sym fwd∘bwd)
                      (M.sym (M.trans (fwd .preserve-+) (M.+-cong M.refl fwd∘bwd)))
-                     P.complement-∨)
+                     P.compl-∨)
 
   -- With S a bounded distributive lattice, 𝕀 (and every n-ary biproduct of it) is one too, with
   -- multiplication as the meet.
@@ -923,25 +921,25 @@ module JoinSemilattices
 
     -- Given a Boolean negation on the scalar, every free lattice 𝕀/𝟘/⊕ⁿ is a BooleanSDDL (¬ pointwise).
     module _ (¬ : S.Carrier → S.Carrier)
-             (complement-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
-             (complement-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) where
+             (compl-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
+             (compl-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) where
       𝕀-bsddl : BooleanSDDL
       𝕀-bsddl .BooleanSDDL.selfDualLat = 𝕀-sddl
       𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ = ¬
-      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∧ = complement-∧
-      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∨ = complement-∨
+      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ = compl-∧
+      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ = compl-∨
 
       𝟘-bsddl : BooleanSDDL
       𝟘-bsddl .BooleanSDDL.selfDualLat = 𝟘-sddl
       𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ x = x
-      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∧ = tt
-      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∨ = tt
+      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ = tt
+      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ = tt
 
       ⊕-bsddl : BooleanSDDL → BooleanSDDL → BooleanSDDL
       ⊕-bsddl X Y .BooleanSDDL.selfDualLat = ⊕-sddl (BooleanSDDL.selfDualLat X) (BooleanSDDL.selfDualLat Y)
       ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.¬ (a , b) = BooleanSDDL.¬ X a , BooleanSDDL.¬ Y b
-      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.complement-∧ {a , b} = BooleanSDDL.complement-∧ X , BooleanSDDL.complement-∧ Y
-      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.complement-∨ {a , b} = BooleanSDDL.complement-∨ X , BooleanSDDL.complement-∨ Y
+      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ {a , b} = BooleanSDDL.compl-∧ X , BooleanSDDL.compl-∧ Y
+      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ {a , b} = BooleanSDDL.compl-∨ X , BooleanSDDL.compl-∨ Y
 
       ⊕ⁿ-bsddl : ℕ → BooleanSDDL
       ⊕ⁿ-bsddl ℕ.zero    = 𝟘-bsddl

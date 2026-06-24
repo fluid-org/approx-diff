@@ -558,8 +558,8 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
       ⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ (suc n) = cong (⊕-sddl 𝕀-sddl) (⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ n)
 
     vec-bsddl : (¬ : S.Carrier → S.Carrier)
-                (complement-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
-                (complement-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) →
+                (compl-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
+                (compl-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) →
                 ℕ → BooleanSDDL
     vec-bsddl ¬ c-∧ c-∨ n =
       transport-bsddl (⊕ⁿ-bsddl ¬ c-∧ c-∨ n)

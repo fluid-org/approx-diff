@@ -47,17 +47,17 @@ record BooleanAlgebra (X : DistributiveLattice) : Set where
 
   field
     ¬ : Carrier → Carrier
-    complement-∨ : ∀ {x} → ⊤ ≤ (x ∨ ¬ x)
-    complement-∧ : ∀ {x} → (x ∧ ¬ x) ≤ ⊥
+    compl-∨ : ∀ {x} → ⊤ ≤ (x ∨ ¬ x)
+    compl-∧ : ∀ {x} → (x ∧ ¬ x) ≤ ⊥
 
   #-↔-≤¬ : ∀ {x y} → (x # y) ⇔ (x ≤ ¬ y)
   #-↔-≤¬ {x} {y} .proj₁ x#y =
     ≤-trans ⟨ ≤-refl ∧ ≤-top ⟩
-      (≤-trans (∧-mono ≤-refl complement-∨)
+      (≤-trans (∧-mono ≤-refl compl-∨)
         (≤-trans (∧-∨-distrib x y (¬ y))
           [ ≤-trans x#y ≤-bottom ∨ π₂ ]))
   #-↔-≤¬ .proj₂ x≤¬y =
-    ≤-trans (∧-mono x≤¬y ≤-refl) (≤-trans ∧-comm complement-∧)
+    ≤-trans (∧-mono x≤¬y ≤-refl) (≤-trans ∧-comm compl-∧)
 
   ¬-antitone : ∀ {x y} → x ≤ y → ¬ y ≤ ¬ x
   ¬-antitone x≤y =
@@ -66,9 +66,9 @@ record BooleanAlgebra (X : DistributiveLattice) : Set where
   ¬-involutive : ∀ {x} → ¬ (¬ x) ≤ x
   ¬-involutive {x} =
     ≤-trans ⟨ ≤-refl ∧ ≤-top ⟩
-      (≤-trans (∧-mono ≤-refl complement-∨)
+      (≤-trans (∧-mono ≤-refl compl-∨)
         (≤-trans (∧-∨-distrib (¬ (¬ x)) x (¬ x))
-          [ π₂ ∨ ≤-trans (≤-trans ∧-comm complement-∧) ≤-bottom ]))
+          [ π₂ ∨ ≤-trans (≤-trans ∧-comm compl-∧) ≤-bottom ]))
 
   #-reflect : ∀ {x y} → (∀ z → y # z → x # z) → x ≤ y
   #-reflect {x} {y} h =

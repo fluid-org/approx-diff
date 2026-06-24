@@ -96,13 +96,13 @@ I ⊔ x = I
 ¬ O = I
 ¬ I = O
 
-complement-∧ : ∀ {x} → (x ⊓ ¬ x) ≤ O
-complement-∧ {O} = tt
-complement-∧ {I} = tt
+compl-∧ : ∀ {x} → (x ⊓ ¬ x) ≤ O
+compl-∧ {O} = tt
+compl-∧ {I} = tt
 
-complement-∨ : ∀ {x} → I ≤ (x ⊔ ¬ x)
-complement-∨ {O} = tt
-complement-∨ {I} = tt
+compl-∨ : ∀ {x} → I ≤ (x ⊔ ¬ x)
+compl-∨ {O} = tt
+compl-∨ {I} = tt
 
 ¬-involutive : ∀ {x} → x ≃ ¬ (¬ x)
 ¬-involutive {O} = ≃-refl {O}
