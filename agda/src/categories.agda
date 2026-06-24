@@ -47,6 +47,12 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ≈-trans : ∀ {x y} {f g h : x ⇒ y} → f ≈ g → g ≈ h → f ≈ h
   ≈-trans = isEquiv .trans
 
+  ∘-cong₁ : ∀ {x y z} {f₁ f₂ : y ⇒ z} {g : x ⇒ y} → f₁ ≈ f₂ → (f₁ ∘ g) ≈ (f₂ ∘ g)
+  ∘-cong₁ e = ∘-cong e (isEquiv .refl)
+
+  ∘-cong₂ : ∀ {x y z} {f : y ⇒ z} {g₁ g₂ : x ⇒ y} → g₁ ≈ g₂ → (f ∘ g₁) ≈ (f ∘ g₂)
+  ∘-cong₂ e = ∘-cong (isEquiv .refl) e
+
   ≡-to-≈ : ∀ {x y} {f g : x ⇒ y} → f ≡ g → f ≈ g
   ≡-to-≈ ≡.refl = ≈-refl
 

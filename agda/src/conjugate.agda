@@ -18,62 +18,7 @@ open import join-semilattice
 open import cmon-enriched
 
 -- Category LatConj of distributive lattices (with bounded meet and join) and Tarski conjugates between them.
-record Obj : Set (suc 0ℓ) where
-  no-eta-equality
-  field
-    carrier : Preorder
-    meets   : MeetSemilattice carrier
-    joins   : JoinSemilattice carrier
-
-  open Preorder carrier public
-  open MeetSemilattice meets renaming (idem to ∧-idem; interchange to ∧-interchange) public
-  open JoinSemilattice joins renaming (idem to ∨-idem; interchange to ∨-interchange) public
-  open Disjoint ≤-isPreorder ∧-isMeet ⊥-isBottom public
-
-  field
-    ∧-∨-distrib  : ∀ x y z → x ∧ (y ∨ z) ≤ (x ∧ y) ∨ (x ∧ z)
-
-  -- Holds in any bounded lattice.
-  ∨-∧-distrib : ∀ x y z → x ∨ (y ∧ z) ≤ (x ∨ y) ∧ (x ∨ z)
-  ∨-∧-distrib x y z = [ ⟨ inl ∧ inl ⟩ ∨ ⟨ ≤-trans π₁ inr ∧ ≤-trans π₂ inr ⟩ ]
-
-  #-distrib : ∀ {x y z} → x # y → x # z → x # (y ∨ z)
-  #-distrib x#y x#z = ≤-trans (∧-∨-distrib _ _ _) (≤-trans (∨-mono x#y x#z) (∨-idem .proj₁))
-
--- Boolean algebra structure on top of a distributive lattice.
-record BooleanAlgebra (X : Obj) : Set where
-  open Obj X
-
-  field
-    ¬ : Carrier → Carrier
-    complement-∨ : ∀ {x} → ⊤ ≤ (x ∨ ¬ x)
-    complement-∧ : ∀ {x} → (x ∧ ¬ x) ≤ ⊥
-
-  -- Holds in any pseudocomplemented lattice.
-  #-↔-≤¬ : ∀ {x y} → (x # y) ⇔ (x ≤ ¬ y)
-  #-↔-≤¬ {x} {y} .proj₁ x#y =
-    ≤-trans ⟨ ≤-refl ∧ ≤-top ⟩
-      (≤-trans (∧-mono ≤-refl complement-∨)
-        (≤-trans (∧-∨-distrib x y (¬ y))
-          [ ≤-trans x#y ≤-bottom ∨ π₂ ]))
-  #-↔-≤¬ .proj₂ x≤¬y =
-    ≤-trans (∧-mono x≤¬y ≤-refl) (≤-trans ∧-comm complement-∧)
-
-  ¬-antitone : ∀ {x y} → x ≤ y → ¬ y ≤ ¬ x
-  ¬-antitone x≤y =
-    #-↔-≤¬ .proj₁ (#-sym (#-mono x≤y _ (#-sym (#-↔-≤¬ .proj₂ ≤-refl))))
-
-  ¬-involutive : ∀ {x} → ¬ (¬ x) ≤ x
-  ¬-involutive {x} =
-    ≤-trans ⟨ ≤-refl ∧ ≤-top ⟩
-      (≤-trans (∧-mono ≤-refl complement-∨)
-        (≤-trans (∧-∨-distrib (¬ (¬ x)) x (¬ x))
-          [ π₂ ∨ ≤-trans (≤-trans ∧-comm complement-∧) ≤-bottom ]))
-
-  -- The annihilator map is injective.
-  #-reflect : ∀ {x y} → (∀ z → y # z → x # z) → x ≤ y
-  #-reflect {x} {y} h =
-    ≤-trans (#-↔-≤¬ .proj₁ (h (¬ y) (#-sym (#-↔-≤¬ .proj₂ ≤-refl)))) ¬-involutive
+open import lattice using (BooleanAlgebra) renaming (DistributiveLattice to Obj) public
 
 open Obj
 
@@ -264,8 +209,8 @@ module _ where
 
   𝟙-boolean : BooleanAlgebra 𝟙
   𝟙-boolean .BooleanAlgebra.¬ _ = ttU
-  𝟙-boolean .BooleanAlgebra.complement-∨ = tt
-  𝟙-boolean .BooleanAlgebra.complement-∧ = tt
+  𝟙-boolean .BooleanAlgebra.compl-∨ = tt
+  𝟙-boolean .BooleanAlgebra.compl-∧ = tt
 
   to-𝟙 : ∀ X → X ⇒c 𝟙
   to-𝟙 X .right = join-semilattice.terminal {X = X .joins}
@@ -300,8 +245,8 @@ module _ where
 
   ⊕-boolean : ∀ {X Y} → BooleanAlgebra X → BooleanAlgebra Y → BooleanAlgebra (X ⊕ Y)
   ⊕-boolean BX BY .BooleanAlgebra.¬ (x , y) = BX .BooleanAlgebra.¬ x , BY .BooleanAlgebra.¬ y
-  ⊕-boolean BX BY .BooleanAlgebra.complement-∨ = BX .BooleanAlgebra.complement-∨ , BY .BooleanAlgebra.complement-∨
-  ⊕-boolean BX BY .BooleanAlgebra.complement-∧ = BX .BooleanAlgebra.complement-∧ , BY .BooleanAlgebra.complement-∧
+  ⊕-boolean BX BY .BooleanAlgebra.compl-∨ = BX .BooleanAlgebra.compl-∨ , BY .BooleanAlgebra.compl-∨
+  ⊕-boolean BX BY .BooleanAlgebra.compl-∧ = BX .BooleanAlgebra.compl-∧ , BY .BooleanAlgebra.compl-∧
 
   ⊕-# : ∀ {X Y} {x₁ x₂ y₁ y₂} → _#_ (X ⊕ Y) (x₁ , y₁) (x₂ , y₂) ⇔ _#_ X x₁ x₂ ∧ₚ _#_ Y y₁ y₂
   ⊕-# .proj₁ p = p
@@ -365,5 +310,5 @@ module _ where
 
   TWO-boolean : BooleanAlgebra TWO
   TWO-boolean .BooleanAlgebra.¬ = two.¬
-  TWO-boolean .BooleanAlgebra.complement-∨ {x} = two.complement-∨ {x}
-  TWO-boolean .BooleanAlgebra.complement-∧ {x} = two.complement-∧ {x}
+  TWO-boolean .BooleanAlgebra.compl-∨ {x} = two.compl-∨ {x}
+  TWO-boolean .BooleanAlgebra.compl-∧ {x} = two.compl-∧ {x}

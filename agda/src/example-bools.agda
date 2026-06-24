@@ -11,7 +11,6 @@ open import signature
 import language-syntax
 import label
 import galois
-import conjugate
 
 open import example-signature
 
@@ -85,46 +84,16 @@ module backward-cbn where
   test2 : bwd-slice label.b ≡ (⊤ , (⊤ , (⊤ , ·) , ⊥ , ·) , (⊤ , (⊤ , ·) , ⊤ , ·) , (⊤ , (⊤ , ·) , ⊥ , ·) , ·)
   test2 = ≡-refl
 
--- Forward analysis (Conjugate).
+-- Forward analysis (matrix-new), embedded into SemiMod.
 module forward where
-  import ho-model-conjugate
-  open import example-signature-interpretation conjugate.cat conjugate.products conjugate.terminal conjugate.TWO conjugate.unit conjugate.conjunct
-  open ho-model-conjugate.interp Sig BaseInterp1
-
-  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
-
-  -- bwd-slice behaves the same as in the Galois examples, but fwd-slice does not
-  fwd-slice : _ → _
-  fwd-slice supply = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun (· , supply)
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
-
-  -- Output depends on 1st label (would be ⊥ in the Galois example)
-  test-1 : fwd-slice ((· , ⊤) , (· , ⊥) , (· , ⊥) , _) ≡ ⊤
-  test-1 = ≡-refl
-
-  -- Output doesn't depend on 2nd label
-  test-2 : fwd-slice ((· , ⊥) , (· , ⊤) , (· , ⊥) , _) ≡ ⊥
-  test-2 = ≡-refl
-
-  -- Output depends on 3rd label (would be ⊥ in the Galois example)
-  test-3 : fwd-slice ((· , ⊥) , (· , ⊥) , (· , ⊤) , _) ≡ ⊤
-  test-3 = ≡-refl
-
--- Forward analysis via the Mat model, embedded into the category of all
--- S-semimodules.  Slice values are Mat vectors.
-module forward-mat where
   open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
 
   import cmon-enriched as CMon
   import matrix-new
   import semimodule
-  import ho-model-mat
+  import ho-model-matrix-new
 
+  module HM = ho-model-matrix-new semiring-bool.semiring
   module FD = matrix-new.Mat semiring-bool.semiring
   module SM = semimodule semiring-bool.semiring
   open CMon.CMonEnriched FD.cmon using (_+m_)
@@ -136,7 +105,7 @@ module forward-mat where
   conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
 
   open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
-  open ho-model-mat.interp Sig BaseInterp1
+  open HM.interp Sig BaseInterp1
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -149,52 +118,62 @@ module forward-mat where
   fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
 
   -- Output depends on the 1st and 3rd numbers (those with label a), not the 2nd.
-  -- test-1 : fwd-slice (lift · , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
-  -- test-1 = ≡-refl
+  test-1 : fwd-slice (lift · , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊤ ∷ [])
+  test-1 = ≡-refl
 
-  -- test-2 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊥ ∷ [])
-  -- test-2 = ≡-refl
+  test-2 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , ([] , (⊥ ∷ [])) , _) ≡ (⊥ ∷ [])
+  test-2 = ≡-refl
 
-  -- test-3 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , _) ≡ (⊤ ∷ [])
-  -- test-3 = ≡-refl
+  test-3 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , _) ≡ (⊤ ∷ [])
+  test-3 = ≡-refl
 
--- Forward analysis via the SemiMod model directly (no intermediate Mat).
-module forward-semimod where
-  open import categories using (Category; HasTerminal; HasProducts)
-
+-- Backward analysis (Galois) via to-gal on the matrix-new model, replacing ho-model-galois.
+module backward-mat where
+  open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
   import cmon-enriched as CMon
-  import semimodule
-  import ho-model-semimod
+  import matrix-new
+  import ho-model-matrix-new
+  import nat
+  import galois
+  import preorder
+  import indexed-family
 
-  module SM = semimodule semiring-bool.semiring
-  module HM = ho-model-semimod semiring-bool.semiring
-  open CMon.CMonEnriched SM.cmon-enriched using (_+m_)
-  open SM using (𝟘; 𝕀; ε-map)
+  module HM = ho-model-matrix-new semiring-bool.semiring
+  module FD = matrix-new.Mat semiring-bool.semiring
+  open CMon.CMonEnriched FD.cmon using (_+m_)
+  open FD using (_⇒_; _∷_; [])
 
-  unitm : SM._⇒_ 𝟘 𝕀
-  unitm = ε-map 𝟘 𝕀
+  unitm : FD._⇒_ 0 1
+  unitm = HasInitial.from-initial FD.initial {1}
 
-  conjunctm : SM._⇒_ (HasProducts.prod HM.products 𝕀 𝕀) 𝕀
-  conjunctm = HasProducts.p₁ HM.products {𝕀} {𝕀} +m HasProducts.p₂ HM.products {𝕀} {𝕀}
+  conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
+  conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
 
-  open import example-signature-interpretation SM.cat HM.products SM.terminal 𝕀 unitm conjunctm
+  open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
   open HM.interp Sig BaseInterp1
+
+  open HM.interp-sd.bsddl Sig BaseInterp1 semiring-bool.boolean
+    using (BooleanSDDL; to-gal; ty-bsddl)
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
 
+  input-ty : first-order-data (list (base label [×] base number))
+  input-ty = list (base label [×] base number)
+
   open indexed-family._⇒f_
-  open SM._⇒_
+  open galois._⇒g_
+  open preorder._=>_
 
-  fwd-slice : _ → _
-  fwd-slice n = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .func n
+  -- Galois backward slice.
+  bwd-slice : label.label → _
+  bwd-slice l =
+    to-gal (ty-bsddl (unit [×] input-ty) (_ , input)) (ty-bsddl (base number) nat.zero)
+           (⟦ example.ex.query l ⟧tm .famf .transf (_ , input)) .right .fun (⊥ ∷ [])
 
-  -- Output depends on the 1st and 3rd numbers (those with label a), not the 2nd.
-  test-1 : fwd-slice (lift · , (lift · , ⊤) , (lift · , ⊥) , (lift · , ⊥) , _) ≡ ⊤
-  test-1 = ≡-refl
+  -- Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd.
+  test1 : bwd-slice label.a ≡ (lift · , ([] , ⊥ ∷ []) , ([] , ⊤ ∷ []) , ([] , ⊥ ∷ []) , _)
+  test1 = ≡-refl
 
-  test-2 : fwd-slice (lift · , (lift · , ⊥) , (lift · , ⊤) , (lift · , ⊥) , _) ≡ ⊥
-  test-2 = ≡-refl
-
-  test-3 : fwd-slice (lift · , (lift · , ⊥) , (lift · , ⊥) , (lift · , ⊤) , _) ≡ ⊤
-  test-3 = ≡-refl
+  test2 : bwd-slice label.b ≡ (lift · , ([] , ⊤ ∷ []) , ([] , ⊥ ∷ []) , ([] , ⊤ ∷ []) , _)
+  test2 = ≡-refl

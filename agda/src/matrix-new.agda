@@ -8,8 +8,8 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category)
 
--- Free f.g. S-semimodules ("matrices"), with vectors as inductive Data.Vec
--- (instead of functions Fin n → Carrier).
+-- Free finitely-generated S-semimodules ("matrices"), with vectors as Data.Vec (instead of functions
+-- Fin n → Carrier).
 module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   module S = CommutativeSemiring S
@@ -469,6 +469,36 @@ module Embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   F-preserve-products {m} {n} .IsIso.inverse∘f≈id .*≈* ._≈s_.func-eq {v} v≈ =
     FD.≈-trans (combine-fwd m {n} {v}) v≈
 
+  open Category SM.cat using (Iso; IsIso→Iso; Iso-trans; Iso-refl)
+  open import prop using (tt)
+
+  -- Each free object Sⁿ = fobj n is canonically self-dual: 𝕀's self-duality lifted through ⊕, transported
+  -- along fobj(1+n) ≅ 𝕀 ⊕ fobj n.
+  private
+    dual-transport : ∀ {M N} → Iso M N → Iso N (Dual N) → Iso M (Dual M)
+    dual-transport M≅N N≅N* = Iso-trans (Iso-trans M≅N N≅N*) (Dual-iso M≅N)
+
+    fobj1≅𝕀 : Iso (fobj 1) 𝕀
+    fobj1≅𝕀 .Iso.fwd .*→* ._⇒s_.func (x ∷ []) = x
+    fobj1≅𝕀 .Iso.fwd .*→* ._⇒s_.func-resp-≈ {x ∷ []} {y ∷ []} (p , _) = p
+    fobj1≅𝕀 .Iso.fwd .preserve-ze = S.refl
+    fobj1≅𝕀 .Iso.fwd .preserve-+ {x ∷ []} {y ∷ []} = S.refl
+    fobj1≅𝕀 .Iso.fwd .preserve-· {a} {x ∷ []} = S.refl
+    fobj1≅𝕀 .Iso.bwd .*→* ._⇒s_.func x = x ∷ []
+    fobj1≅𝕀 .Iso.bwd .*→* ._⇒s_.func-resp-≈ x≈y = x≈y , tt
+    fobj1≅𝕀 .Iso.bwd .preserve-ze = S.refl , tt
+    fobj1≅𝕀 .Iso.bwd .preserve-+ = S.refl , tt
+    fobj1≅𝕀 .Iso.bwd .preserve-· = S.refl , tt
+    fobj1≅𝕀 .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq x≈x' = x≈x'
+    fobj1≅𝕀 .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq {x ∷ []} {y ∷ []} h = h
+
+  fobj-sd : (n : ℕ) → SelfDual
+  fobj-sd n .SelfDual.obj = fobj n
+  fobj-sd zero .SelfDual.dual = dual-transport (IsIso→Iso F-preserve-terminal) (𝟘-sd .SelfDual.dual)
+  fobj-sd (suc n) .SelfDual.dual =
+    dual-transport (Iso-trans (IsIso→Iso (F-preserve-products {1} {n})) (⊕-iso fobj1≅𝕀 Iso-refl))
+                   (⊕-sd 𝕀-sd (fobj-sd n) .SelfDual.dual)
+
 ------------------------------------------------------------------------------
 -- For S a (bounded) distributive lattice (join +, meet ·), each free object fobj n is a self-dual
 -- distributive lattice, so the conjugate embedding (semimodule.JoinSemilattices.to-conj) applies.
@@ -515,3 +545,23 @@ module DistribLattices {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     -- Each S-vector is a self-dual distributive lattice.
     vec-sddl : ℕ → SelfDualDistributiveLattice
     vec-sddl n = transport-sddl (⊕ⁿ n) (fobjⁿ≅⊕ⁿ𝕀 n)
+
+    -- ...and, given a Boolean negation on the scalar, a BooleanSDDL (the n-vector negated pointwise).
+    -- (⊕ⁿ-bsddl's lattice is ⊕ⁿ, but only up to the parallel recursion, so we transport the iso along it.)
+    open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong; subst)
+
+    private
+      ⊕ⁿ-bsddl-sdl : (¬ : S.Carrier → S.Carrier)
+                     (c-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε) (c-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) →
+                     ∀ n → BooleanSDDL.selfDualLat (⊕ⁿ-bsddl ¬ c-∧ c-∨ n) ≡ ⊕ⁿ n
+      ⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ zero    = refl
+      ⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ (suc n) = cong (⊕-sddl 𝕀-sddl) (⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ n)
+
+    vec-bsddl : (¬ : S.Carrier → S.Carrier)
+                (compl-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
+                (compl-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) →
+                ℕ → BooleanSDDL
+    vec-bsddl ¬ c-∧ c-∨ n =
+      transport-bsddl (⊕ⁿ-bsddl ¬ c-∧ c-∨ n)
+        (subst (λ s → Iso (fobj n) (SelfDualDistributiveLattice.obj s))
+               (sym (⊕ⁿ-bsddl-sdl ¬ c-∧ c-∨ n)) (fobjⁿ≅⊕ⁿ𝕀 n))

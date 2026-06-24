@@ -47,11 +47,11 @@ open ≃-NatTrans
 --   7. Stability: prove it for Fam⟨𝒞⟩ (!!!)
 
 module conservativity
-  {o m e}
+  {o₁ o₂ m e}
   -- Category for interpreting first-order things
-  (𝒞 : Category o m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP)
+  (𝒞 : Category o₁ m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP)
   -- A higher order model
-  (𝒟 : Category o m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P)
+  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P)
   (𝒟DC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) 𝒟)
   -- A functor which preserves terminal, products, and coproducts
   (F  : Functor 𝒞 𝒟)
@@ -72,8 +72,8 @@ private
 
 ------------------------------------------------------------------------------
 -- Kripke Predicates “of varying arity”
-open import yoneda (m ⊔ e) 𝒞 renaming (PSh to PSh⟨𝒞⟩; products to PSh⟨𝒞⟩-products) using ()
-open import yoneda (m ⊔ e) 𝒟 renaming (よ to 𝒟よ) using ()
+open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞 renaming (PSh to PSh⟨𝒞⟩; products to PSh⟨𝒞⟩-products) using ()
+open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒟 renaming (よ to 𝒟よ) using ()
 
 private
   module PSh⟨𝒞⟩ = Category PSh⟨𝒞⟩
@@ -131,7 +131,7 @@ module _ where
 
 ------------------------------------------------------------------------------
 -- Presheaf predicates
-open import presheaf-predicate (m ⊔ e) 𝒞
+open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞
   renaming (system to PSh⟨𝒞⟩-system; Predicate to PShPredicate)
   using (_⊑_; module CoproductMonad;
          _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop)
@@ -145,7 +145,7 @@ open _⊑_
 
 -- The “𝒞 definability” predicate.
 Definable : ∀ x → PShPredicate (G .fobj (F .fobj x))
-Definable x .pred y .pred (lift f) = LiftP o (∃ (y 𝒞.⇒ x) λ g → F .fmor g 𝒟.≈ f)
+Definable x .pred y .pred (lift f) = LiftP (o₁ ⊔ o₂) (∃ (y 𝒞.⇒ x) λ g → F .fmor g 𝒟.≈ f)
 Definable x .pred y .pred-≃ {lift f₁} {lift f₂} (lift f₁≈f₂) (lift (g , eq)) = lift (g , 𝒟.≈-trans eq f₁≈f₂)
 Definable x .pred-mor h .*⊑* (lift f) (lift (g , eq)) =
    lift (g 𝒞.∘ h , 𝒟.≈-trans (F .fmor-comp g h) (𝒟.∘-cong eq 𝒟.≈-refl))
