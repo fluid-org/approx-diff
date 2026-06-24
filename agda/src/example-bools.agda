@@ -132,17 +132,14 @@ module backward-mat where
   open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
   import cmon-enriched as CMon
   import matrix-new
-  import semimodule
   import ho-model-matrix-new
   import nat
   import galois
   import preorder
   import indexed-family
-  open import prop using (tt) renaming (_,_ to _,p_)
 
   module HM = ho-model-matrix-new semiring-bool.semiring
   module FD = matrix-new.Mat semiring-bool.semiring
-  module SM = semimodule semiring-bool.semiring
   open CMon.CMonEnriched FD.cmon using (_+m_)
   open FD using (_∷_; [])
 
@@ -154,29 +151,8 @@ module backward-mat where
   open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
   open HM.interp Sig BaseInterp1
 
-  -- S = 2 is a Boolean lattice; every witness is an antisymmetric (tt , tt) pair.
-  -- The lattice witnesses take x explicitly and are passed wrapped as `λ {x} → · x`: a pattern-matching
-  -- (or x-independent) proof of `∀ {x} → …` gets its implicit eagerly instantiated to an unsolvable
-  -- metavar by module application, but the wrapper keeps the binder abstract without eta-contracting.
-  ⊤-add-top : ∀ x → SM.S._≈_ (SM.S._+_ SM.S.ι x) SM.S.ι
-  ⊤-add-top _ = tt ,p tt
-
-  ∧-idem : ∀ x → SM.S._≈_ (SM.S._·_ x x) x
-  ∧-idem ⊥ = tt ,p tt
-  ∧-idem ⊤ = tt ,p tt
-
-  open SM using (𝕀)
-  open SM.JoinSemilattices (λ {x} → ⊤-add-top x) using (BooleanSDDL; to-gal) renaming (_≤_ to _≤m_)
-  open SM.JoinSemilattices.DistribLattices (λ {x} → ⊤-add-top x) (λ {x} → ∧-idem x) using (𝟘-bsddl; ⊕-bsddl)
-
-  compl-∧ : ∀ x → _≤m_ 𝕀 (SM.S._·_ x (¬ x)) SM.S.ε
-  compl-∧ ⊥ = tt ,p tt
-  compl-∧ ⊤ = tt ,p tt
-  compl-∨ : ∀ x → _≤m_ 𝕀 SM.S.ι (SM.S._+_ x (¬ x))
-  compl-∨ ⊥ = tt ,p tt
-  compl-∨ ⊤ = tt ,p tt
-
-  module TB = HM.interp-sd.ty-bsddl-mod Sig BaseInterp1 (λ {x} → ∧-idem x) (λ {x} → ⊤-add-top x) ¬
+  module TB = HM.interp-sd.ty-bsddl-mod Sig BaseInterp1 semiring-bool.boolean
+  open TB using (BooleanSDDL; to-gal; 𝟘b; ⊕b; ty-bsddl)
 
   input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
   input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
@@ -184,16 +160,12 @@ module backward-mat where
   input-fod : first-order-data (list (base label [×] base number))
   input-fod = list (base label [×] base number)
 
-  -- The wrapped witnesses must be passed inline (a `λ {x} → · x`): a let/def alias of the same is a neutral
-  -- whose implicit gets inserted again, re-triggering the metavar.
-  -- input self-dual: empty context ⊕ the list type; output: the number (Boolean) lattice.
+  -- input: empty context ⊕ the list type; output: the number (Boolean) lattice.
   inputBSDDL : BooleanSDDL
-  inputBSDDL = ⊕-bsddl ¬ (λ {x} → compl-∧ x) (λ {x} → compl-∨ x)
-                 (𝟘-bsddl ¬ (λ {x} → compl-∧ x) (λ {x} → compl-∨ x))
-                 (TB.ty-bsddl (λ {x} → compl-∧ x) (λ {x} → compl-∨ x) input-fod input)
+  inputBSDDL = ⊕b 𝟘b (ty-bsddl input-fod input)
 
   outputBSDDL : BooleanSDDL
-  outputBSDDL = TB.ty-bsddl (λ {x} → compl-∧ x) (λ {x} → compl-∨ x) (base number) nat.zero
+  outputBSDDL = ty-bsddl (base number) nat.zero
 
   open indexed-family._⇒f_
 

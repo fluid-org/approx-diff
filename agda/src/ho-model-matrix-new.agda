@@ -58,34 +58,32 @@ module interp-sd (Sig : Signature 0ℓ)
   pow-sd a (nat.succ n) (i , is) = ⊕-sd (ty-sd a i) (pow-sd a n is)
 
   -- Boolean self-dual lattices on first-order-data types (for the Galois backward via to-gal), given that
-  -- S is a Boolean lattice: ∧-idem, ⊤-add-top, and a scalar negation with complement laws.
-  module ty-bsddl-mod
-    (∧-idem    : ∀ {x} → SM.S._≈_ (SM.S._·_ x x) x)
-    (⊤-add-top : ∀ {x} → SM.S._≈_ (SM.S._+_ SM.S.ι x) SM.S.ι)
-    (let module JS = SM.JoinSemilattices ⊤-add-top)
-    (¬ : SM.S.Carrier → SM.S.Carrier)
-    where
-    open JS using (BooleanSDDL)
-    open JS.DistribLattices ∧-idem using (𝟘-bsddl; ⊕-bsddl)
-    open matrix-new.DistribLattices.DistribLattice S ∧-idem ⊤-add-top using (vec-bsddl)
+  -- the scalar S is a Boolean algebra.  The bundle's laws drive the module applications below via inline
+  -- `λ {x} → · {x}` wrappers, the one spot where the stuck implicit must be kept abstract.
+  module ty-bsddl-mod (bs : SM.BooleanSemiring) where
+    open SM.BooleanSemiring bs
+    private module JS = SM.JoinSemilattices (λ {x} → ⊤-add-top {x})
+    open JS using (BooleanSDDL; to-gal) public
+    open JS.DistribLattices (λ {x} → ∧-idem {x}) using (𝟘-bsddl; ⊕-bsddl)
+    open matrix-new.DistribLattices.DistribLattice S (λ {x} → ∧-idem {x}) (λ {x} → ⊤-add-top {x}) using (vec-bsddl)
 
-    -- The complement laws are ordinary function arguments of ty-bsddl/pow-bsddl, NOT module parameters: a
-    -- witness of the stuck type `x ⊓ ¬ x ≤ ε` can't survive module-application's eager implicit
-    -- instantiation, but plain function application (pi-subtyping) keeps the binder abstract.
-    ty-bsddl  : (∀ {x} → JS._≤_ SM.𝕀 (SM.S._·_ x (¬ x)) SM.S.ε) →
-                (∀ {x} → JS._≤_ SM.𝕀 SM.S.ι (SM.S._+_ x (¬ x))) →
-                ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → BooleanSDDL
-    pow-bsddl : (∀ {x} → JS._≤_ SM.𝕀 (SM.S._·_ x (¬ x)) SM.S.ε) →
-                (∀ {x} → JS._≤_ SM.𝕀 SM.S.ι (SM.S._+_ x (¬ x))) →
-                ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → BooleanSDDL
+    𝟘b : BooleanSDDL
+    𝟘b = 𝟘-bsddl ¬ complement-∧ complement-∨
+    ⊕b : BooleanSDDL → BooleanSDDL → BooleanSDDL
+    ⊕b = ⊕-bsddl ¬ complement-∧ complement-∨
+    private
+      vecb = vec-bsddl ¬ complement-∧ complement-∨
 
-    ty-bsddl c∧ c∨ unit       _        = 𝟘-bsddl ¬ c∧ c∨
-    ty-bsddl c∧ c∨ bool       _        = 𝟘-bsddl ¬ c∧ c∨
-    ty-bsddl c∧ c∨ (base s)   i        = vec-bsddl ¬ c∧ c∨ (ImplM.⟦sort⟧ s .fam .fm i)
-    ty-bsddl c∧ c∨ (a [×] b)  (i , j)  = ⊕-bsddl ¬ c∧ c∨ (ty-bsddl c∧ c∨ a i) (ty-bsddl c∧ c∨ b j)
-    ty-bsddl c∧ c∨ (a [+] b)  (inj₁ i) = ty-bsddl c∧ c∨ a i
-    ty-bsddl c∧ c∨ (a [+] b)  (inj₂ j) = ty-bsddl c∧ c∨ b j
-    ty-bsddl c∧ c∨ (list a)   (n , i)  = pow-bsddl c∧ c∨ a n i
+    ty-bsddl  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → BooleanSDDL
+    pow-bsddl : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → BooleanSDDL
 
-    pow-bsddl c∧ c∨ a nat.zero     _        = 𝟘-bsddl ¬ c∧ c∨
-    pow-bsddl c∧ c∨ a (nat.succ n) (i , is) = ⊕-bsddl ¬ c∧ c∨ (ty-bsddl c∧ c∨ a i) (pow-bsddl c∧ c∨ a n is)
+    ty-bsddl unit       _        = 𝟘b
+    ty-bsddl bool       _        = 𝟘b
+    ty-bsddl (base s)   i        = vecb (ImplM.⟦sort⟧ s .fam .fm i)
+    ty-bsddl (a [×] b)  (i , j)  = ⊕b (ty-bsddl a i) (ty-bsddl b j)
+    ty-bsddl (a [+] b)  (inj₁ i) = ty-bsddl a i
+    ty-bsddl (a [+] b)  (inj₂ j) = ty-bsddl b j
+    ty-bsddl (list a)   (n , i)  = pow-bsddl a n i
+
+    pow-bsddl a nat.zero     _        = 𝟘b
+    pow-bsddl a (nat.succ n) (i , is) = ⊕b (ty-bsddl a i) (pow-bsddl a n is)

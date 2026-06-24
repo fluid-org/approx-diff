@@ -555,6 +555,17 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-eval α .transf-eq x .*≈* ._≈s_.func-eq = α .transf x .func-resp-≈
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
 
+-- The data making the scalar S a Boolean algebra: idempotent meet, top-absorbing join, and a complemented
+-- negation.  The complement laws are the 𝕀-order `_≤_ 𝕀` unfolded (`(a + b) ≈ b`), stated here so the record
+-- needs nothing from JoinSemilattices below.
+record BooleanSemiring : Set where
+  field
+    ∧-idem       : ∀ {x} → (x S.· x) S.≈ x
+    ⊤-add-top    : ∀ {x} → (S.ι S.+ x) S.≈ S.ι
+    ¬            : S.Carrier → S.Carrier
+    complement-∧ : ∀ {x} → ((x S.· ¬ x) S.+ S.ε) S.≈ S.ε
+    complement-∨ : ∀ {x} → (S.ι S.+ (x S.+ ¬ x)) S.≈ (x S.+ ¬ x)
+
 ------------------------------------------------------------------------------
 -- Top-absorption makes addition idempotent, so every S-semimodule is a bounded join-semilattice and every
 -- morphism join-preserving.
