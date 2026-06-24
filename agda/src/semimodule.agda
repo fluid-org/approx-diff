@@ -567,7 +567,8 @@ module JoinSemilattices
   open import basics using (IsPreorder; IsJoin; IsBottom; IsMeet; IsTop; module Disjoint)
   open import join-semilattice using (JoinSemilattice) renaming (_=>_ to _=>J_)
   open import meet-semilattice using (MeetSemilattice) renaming (_⊕_ to _⊕ₘ_)
-  open import conjugate using (Obj; _⇒c_)
+  open import lattice using (DistributiveLattice; BooleanAlgebra)
+  open import conjugate using (_⇒c_)
 
   module _ (M : Semimodule) where
     private module M = Semimodule M
@@ -648,11 +649,11 @@ module JoinSemilattices
       align       : ∀ {a b} → (a # b) ⇔ (pairing dual a b S.≈ S.ε)
 
   -- Embedding of objects into LatConj.
-    toObj : Obj
-    toObj .Obj.carrier     = preorder obj
-    toObj .Obj.meets       = meets
-    toObj .Obj.joins       = joins obj
-    toObj .Obj.∧-∨-distrib = ∧-∨-distrib
+    toObj : DistributiveLattice
+    toObj .DistributiveLattice.carrier     = preorder obj
+    toObj .DistributiveLattice.meets       = meets
+    toObj .DistributiveLattice.joins       = joins obj
+    toObj .DistributiveLattice.∧-∨-distrib = ∧-∨-distrib
 
   -- Embedding of morphisms into LatConj.
   module _ (X Y : SelfDualDistributiveLattice) where
@@ -705,11 +706,10 @@ module JoinSemilattices
     open Disjoint (≤-isPreorder obj) (MeetSemilattice.∧-isMeet meets) (JoinSemilattice.⊥-isBottom (joins obj))
       using (_#_; #-sym) public
     field
-      ¬           : obj .Carrier → obj .Carrier
-      complement-∧ : ∀ {x} → _≤_ obj (x ∧ ¬ x) ⊥
-      complement-∨ : ∀ {x} → _≤_ obj ⊤ (x ∨ ¬ x)
+      boolean : BooleanAlgebra toObj
+    open BooleanAlgebra boolean public
+      using (¬; complement-∧; complement-∨; ¬-antitone) renaming (#-↔-≤¬ to #-≤-¬)
 
-    -- a ≤ b  ⇔  a disjoint from ¬ b; and dually a # b ⇔ a ≤ ¬ b.
     ≤-#-¬ : ∀ {a b} → (_≤_ obj a b) ⇔ (a # ¬ b)
     ≤-#-¬ .proj₁ a≤b = ≤-trans (∧-mono a≤b ≤-refl) complement-∧
     ≤-#-¬ {a} {b} .proj₂ a#¬b =
@@ -718,20 +718,9 @@ module JoinSemilattices
           (≤-trans (∧-∨-distrib a b (¬ b))
             (≤-trans (∨-mono ≤-refl a#¬b) [ π₂ ∨ ≤-bottom ])))
 
-    #-≤-¬ : ∀ {a b} → (a # b) ⇔ (_≤_ obj a (¬ b))
-    #-≤-¬ {a} {b} .proj₁ a#b =
-      ≤-trans ⟨ ≤-refl , ≤-top ⟩∧
-        (≤-trans (∧-mono ≤-refl complement-∨)
-          (≤-trans (∧-∨-distrib a b (¬ b))
-            (≤-trans (∨-mono a#b ≤-refl) [ ≤-bottom ∨ π₂ ])))
-    #-≤-¬ .proj₂ a≤¬b = ≤-trans (∧-mono a≤¬b ≤-refl) (≤-trans ⟨ π₂ , π₁ ⟩∧ complement-∧)
-
-    ¬-antitone : ∀ {x y} → _≤_ obj x y → _≤_ obj (¬ y) (¬ x)
-    ¬-antitone x≤y = #-≤-¬ .proj₁ (#-sym (≤-#-¬ .proj₁ x≤y))
-
   import galois
 
-  -- The galois object underlying a BooleanSDDL (galois.Obj = conjugate.Obj without the ∧-∨-distrib field).
+  -- The galois object underlying a BooleanSDDL (galois.Obj = DistributiveLattice without the ∧-∨-distrib field).
   toObjG : BooleanSDDL → galois.Obj
   toObjG X .galois.Obj.carrier = preorder (BooleanSDDL.obj X)
   toObjG X .galois.Obj.meets   = BooleanSDDL.meets X
@@ -858,12 +847,12 @@ module JoinSemilattices
 
     transport-bsddl : BooleanSDDL
     transport-bsddl .BooleanSDDL.selfDualLat = transport-sddl P.selfDualLat N≅M
-    transport-bsddl .BooleanSDDL.¬ a = bwd .func (P.¬ (fwd .func a))
-    transport-bsddl .BooleanSDDL.complement-∧ =
+    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ a = bwd .func (P.¬ (fwd .func a))
+    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∧ =
       ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl fwd∘bwd)))
                      (M.sym (fwd .preserve-ze))
                      P.complement-∧)
-    transport-bsddl .BooleanSDDL.complement-∨ =
+    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∨ =
       ≤-bwd (≤M-resp (M.sym fwd∘bwd)
                      (M.sym (M.trans (fwd .preserve-+) (M.+-cong M.refl fwd∘bwd)))
                      P.complement-∨)
@@ -926,22 +915,22 @@ module JoinSemilattices
              (complement-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
              (complement-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) where
       𝕀-bsddl : BooleanSDDL
-      𝕀-bsddl .BooleanSDDL.selfDualLat  = 𝕀-sddl
-      𝕀-bsddl .BooleanSDDL.¬            = ¬
-      𝕀-bsddl .BooleanSDDL.complement-∧ = complement-∧
-      𝕀-bsddl .BooleanSDDL.complement-∨ = complement-∨
+      𝕀-bsddl .BooleanSDDL.selfDualLat = 𝕀-sddl
+      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ = ¬
+      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∧ = complement-∧
+      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∨ = complement-∨
 
       𝟘-bsddl : BooleanSDDL
-      𝟘-bsddl .BooleanSDDL.selfDualLat  = 𝟘-sddl
-      𝟘-bsddl .BooleanSDDL.¬ x          = x
-      𝟘-bsddl .BooleanSDDL.complement-∧ = tt
-      𝟘-bsddl .BooleanSDDL.complement-∨ = tt
+      𝟘-bsddl .BooleanSDDL.selfDualLat = 𝟘-sddl
+      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ x = x
+      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∧ = tt
+      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.complement-∨ = tt
 
       ⊕-bsddl : BooleanSDDL → BooleanSDDL → BooleanSDDL
       ⊕-bsddl X Y .BooleanSDDL.selfDualLat = ⊕-sddl (BooleanSDDL.selfDualLat X) (BooleanSDDL.selfDualLat Y)
-      ⊕-bsddl X Y .BooleanSDDL.¬ (a , b) = BooleanSDDL.¬ X a , BooleanSDDL.¬ Y b
-      ⊕-bsddl X Y .BooleanSDDL.complement-∧ {a , b} = BooleanSDDL.complement-∧ X , BooleanSDDL.complement-∧ Y
-      ⊕-bsddl X Y .BooleanSDDL.complement-∨ {a , b} = BooleanSDDL.complement-∨ X , BooleanSDDL.complement-∨ Y
+      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.¬ (a , b) = BooleanSDDL.¬ X a , BooleanSDDL.¬ Y b
+      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.complement-∧ {a , b} = BooleanSDDL.complement-∧ X , BooleanSDDL.complement-∧ Y
+      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.complement-∨ {a , b} = BooleanSDDL.complement-∨ X , BooleanSDDL.complement-∨ Y
 
       ⊕ⁿ-bsddl : ℕ → BooleanSDDL
       ⊕ⁿ-bsddl ℕ.zero    = 𝟘-bsddl

@@ -25,15 +25,7 @@ open import join-semilattice
 open import cmon-enriched
 
 -- Category LatGal of bounded lattices and Galois connections between them.
-record Obj : Set (suc 0ℓ) where
-  no-eta-equality
-  field
-    carrier : Preorder
-    meets   : MeetSemilattice carrier
-    joins   : JoinSemilattice carrier
-  open Preorder carrier public
-  open MeetSemilattice meets renaming (idem to ∧-idem; interchange to ∧-interchange) public
-  open JoinSemilattice joins renaming (idem to ∨-idem; interchange to ∨-interchange) public
+open import lattice using () renaming (BoundedLattice to Obj) public
 open Obj
 
 record _⇒g_ (X Y : Obj) : Set where

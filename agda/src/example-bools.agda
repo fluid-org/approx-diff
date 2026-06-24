@@ -160,6 +160,7 @@ module backward-mat where
   -- metavar by module application, but the wrapper keeps the binder abstract without eta-contracting.
   ⊤-add-top : ∀ x → SM.S._≈_ (SM.S._+_ SM.S.ι x) SM.S.ι
   ⊤-add-top _ = tt ,p tt
+
   ∧-idem : ∀ x → SM.S._≈_ (SM.S._·_ x x) x
   ∧-idem ⊥ = tt ,p tt
   ∧-idem ⊤ = tt ,p tt
