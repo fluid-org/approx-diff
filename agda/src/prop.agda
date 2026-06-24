@@ -7,6 +7,9 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 
 data ⊥ {ℓ} : Prop ℓ where
 
+⊥-elim : ∀ {ℓ ℓ'} {A : Prop ℓ'} → ⊥ {ℓ} → A
+⊥-elim ()
+
 record ⊤ {ℓ} : Prop ℓ where
   constructor tt
 
