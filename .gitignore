@@ -7,6 +7,8 @@
 *.blg
 *.log
 *.out
+*.fdb_latexmk
+*.fls
 *.pdf
 *.zip
 *.DS_Store
