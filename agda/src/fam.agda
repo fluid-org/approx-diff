@@ -336,27 +336,24 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         substₚ₂ : {x x' y y' : x₁ .idx .Carrier ⊎ x₂ .idx .Carrier} → x ≡ x' → y ≡ y' → (coprod x₁ x₂) .idx ._≈_ x y → (coprod x₁ x₂) .idx ._≈_ x' y'
         substₚ₂ ≡.refl ≡.refl r = r
 
+        -- Restrict y to the indices satisfying a predicate; ≈ and fibres are
+        -- inherited from y, ignoring the witness.
+        Yσ : (Pred : y .idx .Carrier → Set os) → Obj
+        Yσ Pred .idx .Carrier = Σ[ i ∈ y .idx .Carrier ] Pred i
+        Yσ Pred .idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
+        Yσ Pred .idx .isEquivalence .refl = y .idx .isEquivalence .refl
+        Yσ Pred .idx .isEquivalence .sym e = y .idx .isEquivalence .sym e
+        Yσ Pred .idx .isEquivalence .trans e₁ e₂ = y .idx .isEquivalence .trans e₁ e₂
+        Yσ Pred .fam .fm (i , _) = y .fam .fm i
+        Yσ Pred .fam .subst {i , _} {j , _} e = y .fam .subst e
+        Yσ Pred .fam .refl* {i , _} = y .fam .refl*
+        Yσ Pred .fam .trans* {i , _} {j , _} {k , _} e₁ e₂ = y .fam .trans* e₁ e₂
+
         Y₁ : Obj
-        Y₁ .idx .Carrier = Σ[ i ∈ y .idx .Carrier ] Σ[ a ∈ x₁ .idx .Carrier ] (p .func i ≡ inj₁ a)
-        Y₁ .idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
-        Y₁ .idx .isEquivalence .refl = y .idx .isEquivalence .refl
-        Y₁ .idx .isEquivalence .sym e = y .idx .isEquivalence .sym e
-        Y₁ .idx .isEquivalence .trans e₁ e₂ = y .idx .isEquivalence .trans e₁ e₂
-        Y₁ .fam .fm (i , _) = y .fam .fm i
-        Y₁ .fam .subst {i , _} {j , _} e = y .fam .subst e
-        Y₁ .fam .refl* {i , _} = y .fam .refl*
-        Y₁ .fam .trans* {i , _} {j , _} {k , _} e₁ e₂ = y .fam .trans* e₁ e₂
+        Y₁ = Yσ (λ i → Σ[ a ∈ x₁ .idx .Carrier ] (p .func i ≡ inj₁ a))
 
         Y₂ : Obj
-        Y₂ .idx .Carrier = Σ[ i ∈ y .idx .Carrier ] Σ[ b ∈ x₂ .idx .Carrier ] (p .func i ≡ inj₂ b)
-        Y₂ .idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
-        Y₂ .idx .isEquivalence .refl = y .idx .isEquivalence .refl
-        Y₂ .idx .isEquivalence .sym e = y .idx .isEquivalence .sym e
-        Y₂ .idx .isEquivalence .trans e₁ e₂ = y .idx .isEquivalence .trans e₁ e₂
-        Y₂ .fam .fm (i , _) = y .fam .fm i
-        Y₂ .fam .subst {i , _} {j , _} e = y .fam .subst e
-        Y₂ .fam .refl* {i , _} = y .fam .refl*
-        Y₂ .fam .trans* {i , _} {j , _} {k , _} e₁ e₂ = y .fam .trans* e₁ e₂
+        Y₂ = Yσ (λ i → Σ[ b ∈ x₂ .idx .Carrier ] (p .func i ≡ inj₂ b))
 
         h₁ : Mor Y₁ x₁
         h₁ .idxf .func (i , a , _) = a
