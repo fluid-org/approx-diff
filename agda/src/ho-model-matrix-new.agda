@@ -57,9 +57,7 @@ module interp-sd (Sig : Signature 0ℓ)
   pow-sd a nat.zero     _        = 𝟘-sd
   pow-sd a (nat.succ n) (i , is) = ⊕-sd (ty-sd a i) (pow-sd a n is)
 
-  -- Boolean self-dual lattices on first-order-data types (for the Galois backward via to-gal), given that
-  -- the scalar S is a Boolean algebra.  The bundle's laws drive the module applications below via inline
-  -- `λ {x} → · {x}` wrappers, the one spot where the stuck implicit must be kept abstract.
+  -- Boolean self-dual lattices on first-order-data types, given that the scalar S is a Boolean algebra.
   module ty-bsddl-mod (bs : SM.BooleanSemiring) where
     open SM.BooleanSemiring bs
     private module JS = SM.JoinSemilattices (λ {x} → ⊤-add-top {x})
@@ -67,23 +65,16 @@ module interp-sd (Sig : Signature 0ℓ)
     open JS.DistribLattices (λ {x} → ∧-idem {x}) using (𝟘-bsddl; ⊕-bsddl)
     open matrix-new.DistribLattices.DistribLattice S (λ {x} → ∧-idem {x}) (λ {x} → ⊤-add-top {x}) using (vec-bsddl)
 
-    𝟘b : BooleanSDDL
-    𝟘b = 𝟘-bsddl ¬ complement-∧ complement-∨
-    ⊕b : BooleanSDDL → BooleanSDDL → BooleanSDDL
-    ⊕b = ⊕-bsddl ¬ complement-∧ complement-∨
-    private
-      vecb = vec-bsddl ¬ complement-∧ complement-∨
-
     ty-bsddl  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → BooleanSDDL
     pow-bsddl : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → BooleanSDDL
 
-    ty-bsddl unit       _        = 𝟘b
-    ty-bsddl bool       _        = 𝟘b
-    ty-bsddl (base s)   i        = vecb (ImplM.⟦sort⟧ s .fam .fm i)
-    ty-bsddl (a [×] b)  (i , j)  = ⊕b (ty-bsddl a i) (ty-bsddl b j)
+    ty-bsddl unit       _        = 𝟘-bsddl ¬ complement-∧ complement-∨
+    ty-bsddl bool       _        = 𝟘-bsddl ¬ complement-∧ complement-∨
+    ty-bsddl (base s)   i        = vec-bsddl ¬ complement-∧ complement-∨ (ImplM.⟦sort⟧ s .fam .fm i)
+    ty-bsddl (a [×] b)  (i , j)  = ⊕-bsddl ¬ complement-∧ complement-∨ (ty-bsddl a i) (ty-bsddl b j)
     ty-bsddl (a [+] b)  (inj₁ i) = ty-bsddl a i
     ty-bsddl (a [+] b)  (inj₂ j) = ty-bsddl b j
     ty-bsddl (list a)   (n , i)  = pow-bsddl a n i
 
-    pow-bsddl a nat.zero     _        = 𝟘b
-    pow-bsddl a (nat.succ n) (i , is) = ⊕b (ty-bsddl a i) (pow-bsddl a n is)
+    pow-bsddl a nat.zero     _        = 𝟘-bsddl ¬ complement-∧ complement-∨
+    pow-bsddl a (nat.succ n) (i , is) = ⊕-bsddl ¬ complement-∧ complement-∨ (ty-bsddl a i) (pow-bsddl a n is)

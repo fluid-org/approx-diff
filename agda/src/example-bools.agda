@@ -165,13 +165,13 @@ module backward-mat where
   open galois._⇒g_
   open preorder._=>_
 
-  -- Galois backward slice: the upper adjoint of the query morphism, applied to full output demand.
+  -- Galois backward slice.
   bwd-slice : label.label → _
   bwd-slice l =
     to-gal (⊕b 𝟘b (ty-bsddl input-ty input)) (ty-bsddl (base number) nat.zero)
            (⟦ example.ex.query l ⟧tm .famf .transf (_ , input)) .right .fun (⊥ ∷ [])
 
-  -- Galois backward slice. Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd.
+  -- Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd.
   test1 : bwd-slice label.a ≡ (lift · , ([] , ⊥ ∷ []) , ([] , ⊤ ∷ []) , ([] , ⊥ ∷ []) , _)
   test1 = ≡-refl
 
