@@ -104,11 +104,11 @@ module backward where
 
 -- Forward analysis: the meet-preserving (upper-adjoint) Galois map add⁎, which unions the shifted input bounds.
 module forward where
-  open import approx-numbers using (module Conjugate; module Galois; Intv)
+  open import approx-numbers using (module Conjugate; module Galois; Intv; IntvPreorder)
   import conjugate
   open import Data.Rational
   import Data.Rational.Properties
-  open import preorder using (bottom; <_>; LCarrier)
+  open import preorder using (bottom; <_>; LCarrier; Preorder; L)
   open import prop using (liftS)
   open import Data.Nat hiding (_/_)
   open import Data.Integer hiding (_/_; show; -_)
@@ -150,3 +150,7 @@ module forward where
   -- computes in example-intervals-new (its test-addᵀ), read off the q-dependent interval lattice.
   test-addᵀ : extract-interval fwd-addᵀ ≡ just (+ 4 / 5 , + 1 / 1)
   test-addᵀ = ≡-refl
+
+  -- addᵀ lands higher in the information order (tighter bounds) than the Galois adjoint add⁎.
+  addᵀ-tighter : Preorder._≤_ (L (IntvPreorder 1ℚ)) fwd-add⁎ fwd-addᵀ
+  addᵀ-tighter = prop._,_ (liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s (s≤s z≤n)))))))) (intv1 .q≤u)
