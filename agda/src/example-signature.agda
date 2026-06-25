@@ -13,6 +13,7 @@ data sort : Set where
 data op : List sort → sort → Set where
   zero : op [] number
   add  : op (number ∷ number ∷ []) number
+  mult : op (number ∷ number ∷ []) number
   lbl  : label.label → op [] label
   approx-unit : op [] approx
   approx-mult : op (approx ∷ approx ∷ []) approx

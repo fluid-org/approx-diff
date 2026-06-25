@@ -49,6 +49,8 @@ module backward where
   BaseInterp .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , galois.TWO ]
   BaseInterp .Model.⟦op⟧ zero = Galois.zero-mor
   BaseInterp .Model.⟦op⟧ add = Galois.add-mor C.∘ binary2
+  -- mult is not modelled in the interval world; placeholder (it isn't exercised here).
+  BaseInterp .Model.⟦op⟧ mult = Galois.add-mor C.∘ binary2
   BaseInterp .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , galois.cat .Category.id _ ]
   BaseInterp .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
   BaseInterp .Model.⟦op⟧ approx-unit = simplef[ idS _ , galois.unit ]

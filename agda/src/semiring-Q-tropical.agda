@@ -1,10 +1,10 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The perturbation-bound semiring ℚ∞ = (ℚ ∪ {∞}, min, ∞, +, 0): the min-plus tropical
--- semiring used to model interval approximations in perturbation-bound coordinates.
--- A perturbation bound records how far an endpoint sits from the nominated point; ∞ is
--- "no information".  Information-join is min (the tighter bound wins); the
--- multiplicative structure is ordinary addition (perturbation bounds add when shifting).
+-- The perturbation-bound semiring ℚ∞ = (ℚ ∪ {∞}, min, ∞, +, 0): the min-plus tropical semiring used to model
+-- interval approximations. A perturbation bound records how far an endpoint sits from the nominated point; ∞
+-- is "no information".  Information-join is min (tighter bound wins) and the multiplicative structure is
+-- ordinary addition.
+
 module semiring-Q-tropical where
 
 open import Level using (0ℓ)
