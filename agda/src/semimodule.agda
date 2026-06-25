@@ -707,11 +707,7 @@ module JoinSemilattices
     field boolean : BooleanAlgebra toObj
     open BooleanAlgebra boolean public using (¬; compl-∧; compl-∨)
 
-  import galois
-
-  -- BooleanSDDL's underlying galois object.
-  toBounded : BooleanSDDL → galois.Obj
-  toBounded X = bounded (SelfDualDistributiveLattice.toObj (BooleanSDDL.selfDualLat X))
+  open import galois using (_⇒g_; conj→gal)
 
   -- The Galois connection of f: its Tarski conjugate pair (to-conj) read as adjoints via De Morgan.
   module _ (X Y : BooleanSDDL) where
@@ -719,8 +715,8 @@ module JoinSemilattices
       module X = BooleanSDDL X
       module Y = BooleanSDDL Y
 
-    to-gal : X.obj ⇒ Y.obj → galois._⇒g_ (toBounded Y) (toBounded X)
-    to-gal f = galois.conj→gal X.boolean Y.boolean (to-conj X.selfDualLat Y.selfDualLat f)
+    to-gal : X.obj ⇒ Y.obj → bounded Y.toObj ⇒g bounded X.toObj
+    to-gal f = conj→gal X.boolean Y.boolean (to-conj X.selfDualLat Y.selfDualLat f)
 
   -- A self-dual distributive lattice structure transports along any semimodule isomorphism.
   module _ (P : SelfDualDistributiveLattice) {N : Semimodule}

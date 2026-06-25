@@ -35,31 +35,6 @@ import example
 
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 
--- Backward analysis (Galois). Example (2) in Section 4.3.
-module backward where
-  import ho-model-galois
-  open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open ho-model-galois.interp Sig BaseInterp1
-
-  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = 3 , (label.a , 0) , (label.b , 1) , (label.a , 1) , _
-
-  bwd-slice : label.label → _
-  bwd-slice l = ⟦ example.ex.query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun ⊤ .proj₂
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
-
-  -- Querying for the 'a' label uses the 1st and 3rd numbers
-  test1 : bwd-slice label.a ≡ ((· , ⊤) , (· , ⊥) , (· , ⊤) , _)
-  test1 = ≡-refl
-
-  -- Querying for the 'b' label uses the 2nd number
-  test2 : bwd-slice label.b ≡ ((· , ⊥) , (· , ⊤) , (· , ⊥) , _)
-  test2 = ≡-refl
-
 -- Backward analysis using CBN lifting.
 module backward-cbn where
   import ho-model-galois
@@ -127,8 +102,8 @@ module forward where
   test-3 : fwd-slice (lift · , ([] , (⊥ ∷ [])) , ([] , (⊥ ∷ [])) , ([] , (⊤ ∷ [])) , _) ≡ (⊤ ∷ [])
   test-3 = ≡-refl
 
--- Backward analysis (Galois) via to-gal on the matrix-new model, replacing ho-model-galois.
-module backward-mat where
+-- Backward analysis (matrix-new), via the to-gal Galois connection.
+module backward where
   open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
   import cmon-enriched as CMon
   import matrix-new
