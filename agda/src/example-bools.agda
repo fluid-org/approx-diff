@@ -35,28 +35,65 @@ import example
 
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 
--- Backward analysis using CBN lifting.
+-- Backward analysis using CBN lifting (matrix-new), via to-gal.
 module backward-cbn where
-  import ho-model-galois
-  open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open ho-model-galois.interp Sig BaseInterp0
+  open import categories using (Category; HasTerminal; HasInitial; IsInitial; IsTerminal; HasProducts)
+  import cmon-enriched as CMon
+  import matrix-new
+  import ho-model-matrix-new
+  import nat
+  import galois
+  import preorder
+  import indexed-family
+
+  module HM = ho-model-matrix-new semiring-bool.semiring
+  module FD = matrix-new.Mat semiring-bool.semiring
+  open CMon.CMonEnriched FD.cmon using (_+m_)
+  open FD using (_⇒_; _∷_; [])
+
+  unitm : FD._⇒_ 0 1
+  unitm = HasInitial.from-initial FD.initial {1}
+
+  conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
+  conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
+
+  open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
+  open HM.interp Sig BaseInterp0
   open example.ex using (Tag; cbn-query)
+
+  open HM.interp-sd.bsddl Sig BaseInterp0 semiring-bool.boolean
+    using (BooleanSDDL; to-gal; ty-bsddl)
+
+  Tag-ty : ∀ {τ} → first-order-data τ → first-order-data (Tag τ)
+  Tag-ty d = base approx [×] d
 
   input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
   input = _ , 3 , (_ , (_ , label.a) , (_ , 0)) , (_ , (_ , label.b) , (_ , 1)) , (_ , (_ , label.a) , (_ , 1)) , _
 
-  bwd-slice : label.label → _
-  bwd-slice l = ⟦ example.ex.cbn-query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun (⊤ , ·) .proj₂
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
+  input-ty : first-order-data (Tag (list (Tag (Tag (base label) [×] Tag (base number)))))
+  input-ty = Tag-ty (list (Tag-ty (Tag-ty (base label) [×] Tag-ty (base number))))
 
-  test1 : bwd-slice label.a ≡ (⊤ , (⊤ , (⊤ , ·) , ⊤ , ·) , (⊤ , (⊤ , ·) , ⊥ , ·) , (⊤ , (⊤ , ·) , ⊤ , ·) , ·)
+  open indexed-family._⇒f_
+  open galois._⇒g_
+  open preorder._=>_
+
+  bwd-slice : label.label → _
+  bwd-slice l =
+    to-gal (ty-bsddl (unit [×] input-ty) (_ , input)) (ty-bsddl (Tag-ty (base number)) (_ , nat.zero))
+           (⟦ cbn-query l ⟧tm .famf .transf (_ , input)) .right .fun (⊥ ∷ [] , [])
+
+  test1 : bwd-slice label.a ≡
+    (lift · , ⊥ ∷ [] ,
+      (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊥ ∷ [] , []) ,
+      (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊤ ∷ [] , []) ,
+      (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊥ ∷ [] , []) , _)
   test1 = ≡-refl
 
-  test2 : bwd-slice label.b ≡ (⊤ , (⊤ , (⊤ , ·) , ⊥ , ·) , (⊤ , (⊤ , ·) , ⊤ , ·) , (⊤ , (⊤ , ·) , ⊥ , ·) , ·)
+  test2 : bwd-slice label.b ≡
+    (lift · , ⊥ ∷ [] ,
+      (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊤ ∷ [] , []) ,
+      (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊥ ∷ [] , []) ,
+      (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊤ ∷ [] , []) , _)
   test2 = ≡-refl
 
 -- Forward analysis (matrix-new), embedded into SemiMod.
