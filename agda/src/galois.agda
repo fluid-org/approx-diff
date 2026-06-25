@@ -23,6 +23,8 @@ open import join-semilattice
             _⊕_ to _⊕J_;
             ≃m-isEquivalence to ≃J-isEquivalence)
 open import cmon-enriched
+import conjugate
+import lattice
 
 -- Category LatGal of bounded lattices and Galois connections between them.
 open import lattice using () renaming (BoundedLattice to Obj) public
@@ -60,6 +62,28 @@ record _⇒g_ (X Y : Obj) : Set where
   left-∨ .⊥-preserving = left⊣right .proj₁ YJ.≤-bottom
 
 open _⇒g_
+
+-- A Tarski conjugate between Boolean algebras is a Galois connection: the right adjoint is the De Morgan
+-- dual ¬ ∘ conjugate-left ∘ ¬ of the conjugate's left map.
+module _ {X Y : lattice.DistributiveLattice}
+         (Xb : lattice.BooleanAlgebra X) (Yb : lattice.BooleanAlgebra Y) where
+  open _=>J_
+  open preorder._=>_
+  private
+    module DX = lattice.DistributiveLattice X
+    module DY = lattice.DistributiveLattice Y
+    module Xb = lattice.BooleanAlgebra Xb
+    module Yb = lattice.BooleanAlgebra Yb
+
+  conj→gal : conjugate._⇒c_ X Y → (lattice.bounded Y) ⇒g (lattice.bounded X)
+  conj→gal c .left = conjugate._⇒c_.right c .func
+  conj→gal c .right .fun x = Xb.¬ (conjugate._⇒c_.left c .func .fun (Yb.¬ x))
+  conj→gal c .right .mono x≤x' = Xb.¬-antitone (conjugate._⇒c_.left c .func .mono (Yb.¬-antitone x≤x'))
+  conj→gal c .left⊣right =
+    sym-⇔ (trans-⇔ Yb.≤-#-¬
+          (trans-⇔ (record { proj₁ = DY.#-sym ; proj₂ = DY.#-sym })
+          (trans-⇔ (conjugate._⇒c_.conjugate c)
+          (trans-⇔ (record { proj₁ = DX.#-sym ; proj₂ = DX.#-sym }) Xb.#-↔-≤¬))))
 
 record _≃g_ {X Y : Obj} (f g : X ⇒g Y) : Prop where
   field

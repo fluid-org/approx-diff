@@ -42,6 +42,11 @@ record DistributiveLattice : Set (suc 0ℓ) where
   #-distrib : ∀ {x y z} → x # y → x # z → x # (y ∨ z)
   #-distrib x#y x#z = ≤-trans (∧-∨-distrib _ _ _) (≤-trans (∨-mono x#y x#z) (∨-idem .proj₁))
 
+bounded : DistributiveLattice → BoundedLattice
+bounded X .BoundedLattice.carrier = DistributiveLattice.carrier X
+bounded X .BoundedLattice.meets   = DistributiveLattice.meets X
+bounded X .BoundedLattice.joins   = DistributiveLattice.joins X
+
 record BooleanAlgebra (X : DistributiveLattice) : Set where
   open DistributiveLattice X
 
@@ -58,6 +63,14 @@ record BooleanAlgebra (X : DistributiveLattice) : Set where
           [ ≤-trans x#y ≤-bottom ∨ π₂ ]))
   #-↔-≤¬ .proj₂ x≤¬y =
     ≤-trans (∧-mono x≤¬y ≤-refl) (≤-trans ∧-comm compl-∧)
+
+  ≤-#-¬ : ∀ {a b} → (a ≤ b) ⇔ (a # ¬ b)
+  ≤-#-¬ .proj₁ a≤b = ≤-trans (∧-mono a≤b ≤-refl) compl-∧
+  ≤-#-¬ {a} {b} .proj₂ a#¬b =
+    ≤-trans ⟨ ≤-refl ∧ ≤-top ⟩
+      (≤-trans (∧-mono ≤-refl compl-∨)
+        (≤-trans (∧-∨-distrib a b (¬ b))
+          (≤-trans (∨-mono ≤-refl a#¬b) [ π₂ ∨ ≤-bottom ])))
 
   ¬-antitone : ∀ {x y} → x ≤ y → ¬ y ≤ ¬ x
   ¬-antitone x≤y =
