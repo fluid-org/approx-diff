@@ -58,6 +58,8 @@ private
   ⊑I : ∀ {z} → (z T.+ I) T.≈ I
   ⊑I {z} = T.trans (T.+-comm {z} {I}) (T.refl {I})
 
+-- Multiplicatively strict, additively lax. FIXME: lift this to a lax functor Mat(ℚ) → Mat(Two) or
+-- SemiMod(ℚ) → SemiMod(Two)
 nonzero : semiring ⇒ˡ two.semiring
 nonzero ._⇒ˡ_.f = nz
 nonzero ._⇒ˡ_.f-cong {a} (liftS refl) with a ≟ 0ℚ
