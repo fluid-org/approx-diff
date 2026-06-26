@@ -27,8 +27,8 @@ import cmon-enriched as CMon
 import matrix-new
 import semimodule
 import semiring-Q-tropical
-import ho-model-matrix-new
-module HM = ho-model-matrix-new semiring-Q-tropical.semiring
+import ho-model-semimod
+module HM = ho-model-semimod semiring-Q-tropical.semiring
 module FD = matrix-new.Mat semiring-Q-tropical.semiring
 module SM = semimodule semiring-Q-tropical.semiring
 

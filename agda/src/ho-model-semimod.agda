@@ -15,7 +15,7 @@ import matrix-new
 import semimodule
 import ho-model
 
-module ho-model-matrix-new {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+module ho-model-semimod {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 module E  = matrix-new.Embedding S
 module FD = matrix-new.Mat S

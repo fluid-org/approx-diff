@@ -9,7 +9,7 @@ open import categories using (HasInitial; HasProducts)
 import cmon-enriched as CMon
 import matrix-new
 import semimodule
-import ho-model-matrix-new
+import ho-model-semimod
 import semiring-bool
 import galois
 import preorder
@@ -31,7 +31,7 @@ open example.ex public                                 -- query, mult-ex, cbn-qu
 open import label using (a; b) public
 
 -- Model instantiation.
-module HM = ho-model-matrix-new semiring-bool.semiring
+module HM = ho-model-semimod semiring-bool.semiring
 module FD = matrix-new.Mat semiring-bool.semiring
 module SM = semimodule semiring-bool.semiring
 open CMon.CMonEnriched FD.cmon using (_+m_)
