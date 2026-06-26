@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- CBN backward slice, label.a (split out so each heavy slice compiles on its own).
-module example-bool-cbn-bwd-a where
+-- CBN backward slice, label.b (split out so each heavy slice compiles on its own).
+module example-bool-cbn-2 where
 
 open import example-bool-cbn
 
@@ -16,8 +16,8 @@ bwd-slice l =
   to-gal (ty-bsddl (unit [×] input-ty) (_ , input)) (ty-bsddl (Tag-ty (base number)) (_ , 0))
          (mor (cbn-query l) (_ , input)) .right .fun (⊥ ∷ [] , [])
 
-test : bwd-slice a ≡
+test : bwd-slice b ≡
   (lift · , ⊥ ∷ [] ,
-    (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊥ ∷ [] , []) ,
-    (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊤ ∷ [] , []) , _)
+    (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊤ ∷ [] , []) ,
+    (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊥ ∷ [] , []) , _)
 test = refl

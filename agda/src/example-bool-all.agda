@@ -1,13 +1,12 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Examples with Two-valued (Bool) approximation.  Each analysis lives in its own file for fast independent
--- compilation; this module just aggregates them.
+-- Examples with Two-valued (Bool) approximation.
 module example-bool-all where
 
-import example-bool-fwd    -- forward slice
-import example-bool-bwd    -- Galois backward slice (to-gal)
-import example-bool-mult   -- value-dependent derivative interpretation of `mult`
+import example-bool-fwd    -- forward slice (query)
+import example-bool-bwd    -- Galois backward slice (query)
+import example-bool-mult   -- derivative interpretation of `mult`
 
 -- These take several mins to run each; commented out for now
--- import example-bool-cbn-bwd-a     -- CBN backward slice (label a)
--- import example-bool-cbn-bwd-b     -- CBN backward slice (label b)
+-- import example-bool-cbn-1
+-- import example-bool-cbn-2

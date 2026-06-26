@@ -4,7 +4,7 @@
 -- Fam(Mat S) interpreted in Fam(SemiMod S) via the embedding F : Mat ↪ SemiMod.
 open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
-open import commutative-semiring using (CommutativeSemiring)
+open import commutative-semiring using (CommutativeSemiring; BooleanAlgebra)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
@@ -35,7 +35,7 @@ module interp-sd (Sig : Signature 0ℓ)
 
   open interp Sig Impl public
   open language-syntax Sig using (first-order-data; unit; bool; base; _[×]_; _[+]_; list)
-  open SM using (SelfDual; 𝟘-sd; ⊕-sd; BooleanSemiring; module JoinSemilattices)
+  open SM using (SelfDual; 𝟘-sd; ⊕-sd; module JoinSemilattices)
   open Setoid using (Carrier)
   open Fam⟨𝒞⟩ using (fm)
   open Fam⟨𝒞⟩.Obj using (fam)
@@ -58,8 +58,8 @@ module interp-sd (Sig : Signature 0ℓ)
   pow-sd a (nat.succ n) (i , is) = ⊕-sd (ty-sd a i) (pow-sd a n is)
 
   -- Boolean self-dual lattices on first-order-data types, given that the scalar S is a Boolean algebra.
-  module bsddl (bs : BooleanSemiring) where
-    open BooleanSemiring bs
+  module bsddl (bs : BooleanAlgebra S) where
+    open BooleanAlgebra bs
     private module JS = JoinSemilattices ⊤-add-top
     open JS using (BooleanSDDL; to-gal) public
     open JS.DistribLattices ∧-idem using (𝟘-bsddl; ⊕-bsddl)
