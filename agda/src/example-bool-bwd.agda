@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Backward analysis (matrix-new), via the to-gal Galois connection.
-module example-bools-matrix-bwd where
+module example-bool-bwd where
 
-open import example-bools-matrix
+open import example-bool
 
 input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
 input = 3 , (a , 0) , (b , 1) , (a , 1) , _

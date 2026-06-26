@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Test harness for the two-valued (Bool) matrix model with the value-carrying base interpretation
+-- Test harness for the two-valued (Bool) model with the value-carrying base interpretation
 -- (BaseInterp1).  Open this in a test file and write `fwd …` / `bwd …` slices and `≡` checks directly;
 -- all the model plumbing lives here and compiles once.
-module example-bools-matrix where
+module example-bool where
 
 open import categories using (HasInitial; HasProducts)
 import cmon-enriched as CMon

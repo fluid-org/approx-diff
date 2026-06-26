@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Forward analysis (matrix-new, embedded into SemiMod).
-module example-bools-matrix-fwd where
+module example-bool-fwd where
 
-open import example-bools-matrix
+open import example-bool
 
 input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
 input = 3 , (a , 0) , (b , 1) , (a , 1) , _

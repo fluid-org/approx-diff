@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Test harness for the two-valued (Bool) matrix model with the call-by-name base interpretation
+-- Test harness for the two-valued (Bool) model with the call-by-name base interpretation
 -- (BaseInterp0: `number` carries no approximation; demand flows through the `Tag` wrapper).  As with
--- example-bools-matrix, open this and write `to-gal … (mor …) …` slices directly.
-module example-bools-cbn where
+-- example-bool, open this and write `to-gal … (mor …) …` slices directly.
+module example-bool-cbn where
 
 open import categories using (HasInitial; HasProducts)
 import cmon-enriched as CMon
