@@ -28,7 +28,7 @@ record CommutativeSemiring {o e} (A : Setoid o e) : Set (o ⊔ e) where
   ε-annihilᵣ = trans ·-comm ε-annihilₗ
 
 -- The additional data making a commutative semiring a Boolean algebra.
-record BooleanAlgebra {o e} {A : Setoid o e} (S : CommutativeSemiring A) : Set o where
+record BooleanAlgebra {o e} {A : Setoid o e} (S : CommutativeSemiring A) : Set (o ⊔ e) where
   open CommutativeSemiring S
   field
     ∧-idem : ∀ {x} → (x · x) ≈ x

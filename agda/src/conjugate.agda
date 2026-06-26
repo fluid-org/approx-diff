@@ -294,7 +294,7 @@ module _ where
   open import two using (Two; I; O)
 
   TWO : Obj
-  TWO .carrier = two.Two-preorder
+  TWO .carrier = two.preorder
   TWO .meets .MeetSemilattice._∧_ = two._⊓_
   TWO .meets .MeetSemilattice.⊤ = I
   TWO .meets .MeetSemilattice.∧-isMeet = two.⊓-isMeet

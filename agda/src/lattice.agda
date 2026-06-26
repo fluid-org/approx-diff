@@ -5,9 +5,11 @@ module lattice where
 open import Level using (suc; 0ℓ)
 open import prop hiding (_∨_; ⊥; ⊤) renaming (_∧_ to _∧ₚ_)
 open import preorder using (Preorder)
-open import basics using (module Disjoint)
+open import basics using (module Disjoint; setoidOf; IsMeet; IsJoin; IsBottom; IsTop)
 open import meet-semilattice using (MeetSemilattice)
 open import join-semilattice using (JoinSemilattice)
+open import commutative-monoid using (CommutativeMonoid)
+import commutative-semiring as CS
 
 record BoundedLattice : Set (suc 0ℓ) where
   no-eta-equality
@@ -86,3 +88,47 @@ record BooleanAlgebra (X : DistributiveLattice) : Set where
   #-reflect : ∀ {x y} → (∀ z → y # z → x # z) → x ≤ y
   #-reflect {x} {y} h =
     ≤-trans (#-↔-≤¬ .proj₁ (h (¬ y) (#-sym (#-↔-≤¬ .proj₂ ≤-refl)))) ¬-involutive
+
+------------------------------------------------------------------------------
+-- Every distributive lattice is a commutative semiring (+ = ∨, · = ∧), and a Boolean algebra on the
+-- lattice is the semiring's BooleanAlgebra.  This is the lattice-to-semiring downcast.
+
+module _ (X : DistributiveLattice) where
+  open DistributiveLattice X
+  private
+    module M  = IsMeet ∧-isMeet
+    module J  = IsJoin ∨-isJoin
+    module Tp = IsTop ⊤-isTop
+    module Bt = IsBottom ⊥-isBottom
+
+    join-cmon : CommutativeMonoid (setoidOf ≤-isPreorder)
+    join-cmon .CommutativeMonoid.ε = ⊥
+    join-cmon .CommutativeMonoid._+_ = _∨_
+    join-cmon .CommutativeMonoid.+-cong = J.cong
+    join-cmon .CommutativeMonoid.+-lunit = J.[ Bt.≤-bottom , ≤-refl ] , J.inr
+    join-cmon .CommutativeMonoid.+-assoc = J.assoc
+    join-cmon .CommutativeMonoid.+-comm {x} {y} = J.comm {x} {y} , J.comm {y} {x}
+
+    meet-cmon : CommutativeMonoid (setoidOf ≤-isPreorder)
+    meet-cmon .CommutativeMonoid.ε = ⊤
+    meet-cmon .CommutativeMonoid._+_ = _∧_
+    meet-cmon .CommutativeMonoid.+-cong = M.cong
+    meet-cmon .CommutativeMonoid.+-lunit = M.π₂ , M.⟨ Tp.≤-top , ≤-refl ⟩
+    meet-cmon .CommutativeMonoid.+-assoc = M.assoc
+    meet-cmon .CommutativeMonoid.+-comm {x} {y} = M.comm {x} {y} , M.comm {y} {x}
+
+  asSemiring : CS.CommutativeSemiring (setoidOf ≤-isPreorder)
+  asSemiring .CS.CommutativeSemiring.additive = join-cmon
+  asSemiring .CS.CommutativeSemiring.multiplicative = meet-cmon
+  asSemiring .CS.CommutativeSemiring.·-+-distribₗ {x} {y} {z} =
+    ∧-∨-distrib x y z ,
+    J.[ M.⟨ M.π₁ , ≤-trans M.π₂ J.inl ⟩ , M.⟨ M.π₁ , ≤-trans M.π₂ J.inr ⟩ ]
+  asSemiring .CS.CommutativeSemiring.ε-annihilₗ {x} =
+    M.π₁ , M.⟨ ≤-refl , Bt.≤-bottom ⟩
+
+  asBoolean : BooleanAlgebra X → CS.BooleanAlgebra asSemiring
+  asBoolean ba .CS.BooleanAlgebra.∧-idem = ∧-idem
+  asBoolean ba .CS.BooleanAlgebra.⊤-add-top = J.[ ≤-refl , Tp.≤-top ] , J.inl
+  asBoolean ba .CS.BooleanAlgebra.¬ = BooleanAlgebra.¬ ba
+  asBoolean ba .CS.BooleanAlgebra.compl-∧ = J.[ BooleanAlgebra.compl-∧ ba , ≤-refl ] , J.inr
+  asBoolean ba .CS.BooleanAlgebra.compl-∨ = J.[ BooleanAlgebra.compl-∨ ba , ≤-refl ] , J.inr

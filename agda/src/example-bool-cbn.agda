@@ -10,7 +10,6 @@ import cmon-enriched as CMon
 import matrix-new
 import semimodule
 import ho-model-semimod
-import semiring-bool
 import galois
 import preorder
 import indexed-family
@@ -29,9 +28,9 @@ open import language-syntax Sig hiding (_,_) public
 open example.ex public                                 -- cbn-query, Tag, …
 open import label using (a; b) public
 
-module HM = ho-model-semimod semiring-bool.semiring
-module FD = matrix-new.Mat semiring-bool.semiring
-module SM = semimodule semiring-bool.semiring
+module HM = ho-model-semimod two.semiring
+module FD = matrix-new.Mat two.semiring
+module SM = semimodule two.semiring
 open CMon.CMonEnriched FD.cmon using (_+m_)
 open FD using (_∷_; []) public
 
@@ -42,7 +41,7 @@ conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products
 
 open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm public
 open HM.interp Sig BaseInterp0 public
-open HM.interp-sd.bsddl Sig BaseInterp0 semiring-bool.boolean using (BooleanSDDL; to-gal; ty-bsddl) public
+open HM.interp-sd.bsddl Sig BaseInterp0 two.semiring-boolean using (BooleanSDDL; to-gal; ty-bsddl) public
 
 open indexed-family._⇒f_ public
 open SM._⇒_ public
