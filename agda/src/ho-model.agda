@@ -4,87 +4,11 @@ module ho-model where
 
 open import Level using (Level; 0ℓ; suc)
 open import categories using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial; op-coproducts→products; op-initial→terminal; HasCoproducts)
-open import product-category using (product; product-limit; product-products; product-terminal)
 open import cmon-enriched
   using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
 open import functor using (HasLimits; op-colimit; limits→limits')
-import meet-semilattice-category
-import join-semilattice-category
 import fam
 import indexed-family
-open Category using (opposite)
-
-------------------------------------------------------------------------------
--- Construct Meet × Join^op
-
-M×Jop : Category (suc 0ℓ) 0ℓ 0ℓ
-M×Jop = product meet-semilattice-category.cat (opposite join-semilattice-category.cat)
-
-private
-  module M×Jop = Category M×Jop
-
-M×Jop-cmon-enriched : CMonEnriched M×Jop
-M×Jop-cmon-enriched =
-  product-cmon-enriched
-    meet-semilattice-category.cmon-enriched
-    (op-cmon-enriched join-semilattice-category.cmon-enriched)
-
-M×Jop-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 M×Jop
-M×Jop-limits 𝒮 D =
-  product-limit _ _ 𝒮 D
-    (meet-semilattice-category.limits 𝒮 _)
-    (op-colimit _ (join-semilattice-category.colimits (opposite 𝒮) _))
-
--- We make the products and terminal object "by hand" so that the
--- representations used for programs are nice.
-
-M×Jop-terminal : HasTerminal M×Jop
-M×Jop-terminal =
-  product-terminal _ _ meet-semilattice-category.terminal
-                       (op-initial→terminal join-semilattice-category.initial)
-
-M×Jop-biproducts : ∀ x y → cmon-enriched.Biproduct M×Jop-cmon-enriched x y
-M×Jop-biproducts =
-  cmon-enriched.cmon+products→biproducts M×Jop-cmon-enriched
-    (product-products _ _
-      meet-semilattice-category.products
-      (op-coproducts→products join-semilattice-category.coproducts))
-
-M×Jop-products : HasProducts M×Jop
-M×Jop-products = biproducts→products _ M×Jop-biproducts
-
-------------------------------------------------------------------------------
--- Construct Join × Join^op
-
-J×Jop : Category (suc 0ℓ) 0ℓ 0ℓ
-J×Jop = product join-semilattice-category.cat (opposite join-semilattice-category.cat)
-
-J×Jop-cmon-enriched : CMonEnriched J×Jop
-J×Jop-cmon-enriched =
-  product-cmon-enriched
-    join-semilattice-category.cmon-enriched
-    (op-cmon-enriched join-semilattice-category.cmon-enriched)
-
-J×Jop-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 J×Jop
-J×Jop-limits 𝒮 D =
-  product-limit _ _ 𝒮 D
-    (join-semilattice-category.limits 𝒮 _)
-    (op-colimit _ (join-semilattice-category.colimits (opposite 𝒮) _))
-
-J×Jop-terminal : HasTerminal J×Jop
-J×Jop-terminal =
-  product-terminal _ _ join-semilattice-category.terminal
-                       (op-initial→terminal join-semilattice-category.initial)
-
-J×Jop-biproducts : ∀ x y → cmon-enriched.Biproduct J×Jop-cmon-enriched x y
-J×Jop-biproducts =
-  cmon-enriched.cmon+products→biproducts J×Jop-cmon-enriched
-    (product-products _ _
-      join-semilattice-category.products
-      (op-coproducts→products join-semilattice-category.coproducts))
-
-J×Jop-products : HasProducts J×Jop
-J×Jop-products = biproducts→products _ J×Jop-biproducts
 
 open import functor using (Functor)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)

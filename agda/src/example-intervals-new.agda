@@ -27,8 +27,8 @@ import cmon-enriched as CMon
 import matrix-new
 import semimodule
 import semiring-Q-tropical
-import ho-model-matrix-new
-module HM = ho-model-matrix-new semiring-Q-tropical.semiring
+import ho-model-semimod
+module HM = ho-model-semimod semiring-Q-tropical.semiring
 module FD = matrix-new.Mat semiring-Q-tropical.semiring
 module SM = semimodule semiring-Q-tropical.semiring
 
@@ -70,13 +70,13 @@ test-addᵀ : fwd-slice (lift · , ([] , (fin (+ 1 / 2) ∷ fin 0ℚ ∷ []))
             ≡ (fin (+ 1 / 5) ∷ fin 0ℚ ∷ [])
 test-addᵀ = ≡-refl
 
-queryMor : _
-queryMor = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input)
+query : _
+query = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input)
 
 bwd-slice : _ → _
 bwd-slice r =
   conjugate (⊕-sd 𝟘-sd (SD.ty-sd (list (base label [×] base number)) input))
-            (SD.ty-sd (base number) nat.zero) queryMor .func r
+            (SD.ty-sd (base number) nat.zero) query .func r
 
 -- example-intervals.backward feeds output [9/10, 11/10] around 1 = perturbation bounds (1/10, 1/10).
 -- The transpose copies it to the two label-a inputs (#1, #3) and leaves ∞ elsewhere:

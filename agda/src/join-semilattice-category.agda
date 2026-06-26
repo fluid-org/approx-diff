@@ -264,7 +264,7 @@ terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal .*→* = jo
 terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal-ext f .f≃f = join-semilattice.terminal-unique _ _ _
 
 TWO : Obj
-TWO .carrier = two.Two-preorder
+TWO .carrier = two.preorder
 TWO .joins .JoinSemilattice._∨_ = two._⊔_
 TWO .joins .JoinSemilattice.⊥ = two.O
 TWO .joins .JoinSemilattice.∨-isJoin = two.⊔-isJoin

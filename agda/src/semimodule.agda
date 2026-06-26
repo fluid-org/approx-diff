@@ -555,15 +555,6 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-eval α .transf-eq x .*≈* ._≈s_.func-eq = α .transf x .func-resp-≈
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
 
--- The data making the scalar S a Boolean algebra (complement laws = the 𝕀-order unfolded).
-record BooleanSemiring : Set where
-  field
-    ∧-idem       : ∀ {x} → (x S.· x) S.≈ x
-    ⊤-add-top    : ∀ {x} → (S.ι S.+ x) S.≈ S.ι
-    ¬            : S.Carrier → S.Carrier
-    compl-∧ : ∀ {x} → ((x S.· ¬ x) S.+ S.ε) S.≈ S.ε
-    compl-∨ : ∀ {x} → (S.ι S.+ (x S.+ ¬ x)) S.≈ (x S.+ ¬ x)
-
 ------------------------------------------------------------------------------
 -- Top-absorption makes addition idempotent, so every S-semimodule is a bounded join-semilattice and every
 -- morphism join-preserving.
@@ -576,7 +567,7 @@ module JoinSemilattices
   open import basics using (IsPreorder; IsJoin; IsBottom; IsMeet; IsTop; module Disjoint)
   open import join-semilattice using (JoinSemilattice) renaming (_=>_ to _=>J_)
   open import meet-semilattice using (MeetSemilattice) renaming (_⊕_ to _⊕ₘ_)
-  open import lattice using (DistributiveLattice; BooleanAlgebra)
+  open import lattice using (DistributiveLattice; BooleanAlgebra; bounded)
   open import conjugate using (_⇒c_)
 
   module _ (M : Semimodule) where
@@ -704,50 +695,19 @@ module JoinSemilattices
   record BooleanSDDL : Set (suc 0ℓ) where
     field selfDualLat : SelfDualDistributiveLattice
     open SelfDualDistributiveLattice selfDualLat public
-    open DistributiveLattice toObj public using (_#_; #-sym)
-    open DistributiveLattice toObj
-      using (∧-mono; ∨-mono; π₂; ≤-top; ≤-bottom; [_∨_]; ≤-refl; ≤-trans) renaming (⟨_∧_⟩ to ⟨_,_⟩∧)
-    field
-      boolean : BooleanAlgebra toObj
-    open BooleanAlgebra boolean public
-      using (¬; compl-∧; compl-∨; ¬-antitone) renaming (#-↔-≤¬ to #-≤-¬)
+    field boolean : BooleanAlgebra toObj
+    open BooleanAlgebra boolean public using (¬; compl-∧; compl-∨)
 
-    ≤-#-¬ : ∀ {a b} → (_≤_ obj a b) ⇔ (a # ¬ b)
-    ≤-#-¬ .proj₁ a≤b = ≤-trans (∧-mono a≤b ≤-refl) compl-∧
-    ≤-#-¬ {a} {b} .proj₂ a#¬b =
-      ≤-trans ⟨ ≤-refl , ≤-top ⟩∧
-        (≤-trans (∧-mono ≤-refl compl-∨)
-          (≤-trans (∧-∨-distrib a b (¬ b))
-            (≤-trans (∨-mono ≤-refl a#¬b) [ π₂ ∨ ≤-bottom ])))
+  open import galois using (_⇒g_; conj→gal)
 
-  import galois
-
-  -- BooleanSDDL's underlying galois object.
-  toBounded : BooleanSDDL → galois.Obj
-  toBounded X .galois.Obj.carrier = preorder (BooleanSDDL.obj X)
-  toBounded X .galois.Obj.meets   = BooleanSDDL.meets X
-  toBounded X .galois.Obj.joins   = joins (BooleanSDDL.obj X)
-
-  -- Galois-connection embedding: left = the forward action, right = ¬ ∘ conjugate ∘ ¬ (the De Morgan dual
-  -- of the transpose, which is the meet-preserving Galois adjoint).
+  -- The Galois connection of f: its Tarski conjugate pair (to-conj) read as adjoints via De Morgan.
   module _ (X Y : BooleanSDDL) where
     private
       module X = BooleanSDDL X
       module Y = BooleanSDDL Y
 
-    to-gal : X.obj ⇒ Y.obj → galois._⇒g_ (toBounded Y) (toBounded X)
-    to-gal f .galois._⇒g_.left = joins-map f ._=>J_.func
-    to-gal f .galois._⇒g_.right .preorder._=>_.fun x =
-      X.¬ (joins-map (conjugate X.selfDual Y.selfDual f) ._=>J_.func .preorder._=>_.fun (Y.¬ x))
-    to-gal f .galois._⇒g_.right .preorder._=>_.mono x≤x' =
-      X.¬-antitone (joins-map (conjugate X.selfDual Y.selfDual f) ._=>J_.func .preorder._=>_.mono (Y.¬-antitone x≤x'))
-    to-gal f .galois._⇒g_.left⊣right =
-      sym-⇔ (trans-⇔ Y.≤-#-¬
-            (trans-⇔ (record { proj₁ = Y.#-sym ; proj₂ = Y.#-sym })
-            (trans-⇔ Y.align
-            (trans-⇔ (conj-⊥ X.dual Y.dual f)
-            (trans-⇔ (sym-⇔ X.align)
-            (trans-⇔ (record { proj₁ = X.#-sym ; proj₂ = X.#-sym }) X.#-≤-¬))))))
+    to-gal : X.obj ⇒ Y.obj → bounded Y.toObj ⇒g bounded X.toObj
+    to-gal f = conj→gal X.boolean Y.boolean (to-conj X.selfDualLat Y.selfDualLat f)
 
   -- A self-dual distributive lattice structure transports along any semimodule isomorphism.
   module _ (P : SelfDualDistributiveLattice) {N : Semimodule}
@@ -814,8 +774,7 @@ module JoinSemilattices
 
   -- A BooleanSDDL transports along an iso likewise: the SDDL via transport-sddl, the negation conjugated
   -- through the iso (¬' = bwd ∘ ¬ ∘ fwd), complements carried along.
-  module _ (P : BooleanSDDL) {N : Semimodule}
-           (N≅M : Iso N (BooleanSDDL.obj P)) where
+  module _ (P : BooleanSDDL) {N : Semimodule} (N≅M : Iso N (BooleanSDDL.obj P)) where
     open SelfDualDistributiveLattice
     private
       module P  = BooleanSDDL P

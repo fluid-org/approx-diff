@@ -57,6 +57,10 @@ module ex where
                  when fst (var zero) ≟ (` l) ；
                  return (snd (var zero)))
 
+  -- Product of the two factors, for exercising the derivative interpretation of `mult`.
+  mult-ex : emp , base number [×] base number ⊢ base number
+  mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])
+
   open import cbn-translation Sig Tag-monad
 
   cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)

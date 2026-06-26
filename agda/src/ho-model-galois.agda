@@ -3,14 +3,16 @@
 -- The Galois-connection model: Fam(galois.cat) interpreted in Fam(M×Jop).
 module ho-model-galois where
 
-open import Level using (0ℓ)
-open import categories using (Category; HasTerminal; HasProducts)
-open import functor using (Functor)
-open import cmon-enriched using (biproducts→products)
+open import Level using (0ℓ; suc)
+open import categories using (Category; HasTerminal; HasProducts; HasInitial; IsTerminal; IsInitial; HasCoproducts; op-coproducts→products; op-initial→terminal)
+open import product-category using (product; product-limit; product-products; product-terminal)
+open import functor using (Functor; HasLimits; op-colimit)
+open import cmon-enriched using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 open import prop-setoid using (IsEquivalence)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 open import ho-model
+open Category using (opposite)
 
 import galois
 import preorder
@@ -28,6 +30,43 @@ open join-semilattice._≃m_
 open preorder._≃m_
 open galois.Obj
 open Functor
+
+------------------------------------------------------------------------------
+-- The target category Meet × Join^op.
+
+M×Jop : Category (suc 0ℓ) 0ℓ 0ℓ
+M×Jop = product meet-semilattice-category.cat (opposite join-semilattice-category.cat)
+
+private
+  module M×Jop = Category M×Jop
+
+M×Jop-cmon-enriched : CMonEnriched M×Jop
+M×Jop-cmon-enriched =
+  product-cmon-enriched
+    meet-semilattice-category.cmon-enriched
+    (op-cmon-enriched join-semilattice-category.cmon-enriched)
+
+M×Jop-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 M×Jop
+M×Jop-limits 𝒮 D =
+  product-limit _ _ 𝒮 D
+    (meet-semilattice-category.limits 𝒮 _)
+    (op-colimit _ (join-semilattice-category.colimits (opposite 𝒮) _))
+
+-- The products and terminal object are made "by hand" so the representations used for programs are nice.
+M×Jop-terminal : HasTerminal M×Jop
+M×Jop-terminal =
+  product-terminal _ _ meet-semilattice-category.terminal
+                       (op-initial→terminal join-semilattice-category.initial)
+
+M×Jop-biproducts : ∀ x y → Biproduct M×Jop-cmon-enriched x y
+M×Jop-biproducts =
+  cmon-enriched.cmon+products→biproducts M×Jop-cmon-enriched
+    (product-products _ _
+      meet-semilattice-category.products
+      (op-coproducts→products join-semilattice-category.coproducts))
+
+M×Jop-products : HasProducts M×Jop
+M×Jop-products = biproducts→products _ M×Jop-biproducts
 
 𝓕 : Functor galois.cat M×Jop
 𝓕 .fobj X .proj₁ = record { carrier = X .galois.Obj.carrier ; meets = X .galois.Obj.meets }

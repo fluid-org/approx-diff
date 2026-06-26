@@ -18,7 +18,8 @@ import bounded-meet
 
 -- Proof from section 3.2 (Theorem 3.6) that Fam(C) is a cartesian
 -- closed if C has biproducts and all small products (Lucatelli Nunes
--- and Vákár 2023).
+-- and Vákár 2023). (Imported by ho-model anyway, but included here
+-- for documentation purposes.)
 import fam-exponentials
 
 -- Construction of the interpretation of the higher-order language in
@@ -36,4 +37,7 @@ import ho-model
 --     definable in the first-order language (Theorem 5.2). See the
 --     declaration "syntactic-definability" in the conservativity
 --     module.
+--
+-- Imported by ho-model anyway, but included here for documentation
+-- purposes.
 import conservativity
