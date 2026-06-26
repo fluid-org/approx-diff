@@ -36,3 +36,22 @@ record BooleanAlgebra {o e} {A : Setoid o e} (S : CommutativeSemiring A) : Set (
     ¬ : Carrier → Carrier
     compl-∧ : ∀ {x} → ((x · ¬ x) + ε) ≈ ε
     compl-∨ : ∀ {x} → (ι + (x + ¬ x)) ≈ (x + ¬ x)
+
+-- Lax homomorphisms: preserving + and · up to the target's additive preorder x ⊑ y = (x + y) ≈ y, and ε, ι
+-- exactly.
+record _⇒ˡ_ {o₁ e₁ o₂ e₂} {A : Setoid o₁ e₁} {B : Setoid o₂ e₂}
+            (S : CommutativeSemiring A) (T : CommutativeSemiring B) : Set (o₁ ⊔ e₁ ⊔ o₂ ⊔ e₂) where
+  private
+    module S = CommutativeSemiring S
+    module T = CommutativeSemiring T
+
+  _⊑_ : T.Carrier → T.Carrier → Prop e₂
+  x ⊑ y = (x T.+ y) T.≈ y
+
+  field
+    f      : S.Carrier → T.Carrier
+    f-cong : ∀ {a b} → a S.≈ b → f a T.≈ f b
+    f-+    : ∀ {a b} → f (a S.+ b) ⊑ (f a T.+ f b)
+    f-·    : ∀ {a b} → f (a S.· b) ⊑ (f a T.· f b)
+    f-ε    : f S.ε T.≈ T.ε
+    f-ι    : f S.ι T.≈ T.ι
