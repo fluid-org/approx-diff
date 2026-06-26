@@ -5,12 +5,13 @@ open import Data.Product using (_,_; Σ-syntax) renaming (_×_ to _×S_)
 open import prop using (lift; lower; _,_; LiftS; liftS)
 open import prop-setoid
   using (Setoid; IsEquivalence; module ≈-Reasoning; _∘S_; idS)
-  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; mk-≃m to mk-≈s)
-open import categories using (Category; HasProducts; IsProduct; HasExponentials)
+  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; mk-≃m to mk-≈s; ⊗-setoid to _×s_)
+open import categories using (Category; HasProducts; IsProduct; HasExponentials; HasTerminal)
 open import functor using ([_⇒_]; Functor; NatTrans; ≃-NatTrans;
   HasLimits';
   preserve-limits-of-shape; IsLimit; constF; constF-F; constFmor;
   _∘F_; id; _∘H_; _∘_; ≃-isEquivalence; Id)
+open import monad using (Monad)
 open import setoid-cat using (SetoidCat; Setoid-terminal; Setoid-products; Setoid-Limit'; Setoid-coproducts)
 
 -- extra 'os' level is to raise the level of the codomain if needed
@@ -32,6 +33,13 @@ open IsEquivalence
 open Functor
 open NatTrans
 open ≃-NatTrans
+
+atObj : 𝒞.obj → Functor PSh (SetoidCat ℓ ℓ)
+atObj x .fobj F = F .fobj x
+atObj x .fmor α = α .transf x
+atObj x .fmor-cong α₁≈α₂ = α₁≈α₂ .transf-eq x
+atObj x .fmor-id .func-eq eq = eq
+atObj x .fmor-comp f g .func-eq eq = f .transf x .func-resp-≈ (g .transf x .func-resp-≈ eq)
 
 よ₀ : 𝒞.obj → PSh .Category.obj
 よ₀ x .fobj y = Category.hom-setoid-l 𝒞 ℓ ℓ y x
@@ -290,84 +298,355 @@ preserve-limits 𝒮 D apex cone isLimit = lim
 --   https://math.stackexchange.com/questions/3511252/show-that-the-yoneda-embedding-preserves-exponential-objects?rq=1
 
 ------------------------------------------------------------------------------
+-- A little bit of coends
+
+open import product-category using (product; pairF; project₁; project₂)
+
+private
+  module SP = HasProducts (Setoid-products ℓ ℓ)
+  module ST = HasTerminal (Setoid-terminal ℓ ℓ)
+
+-- record Dinatural (F G : Functor (product 𝒞 𝒞.opposite) (SetoidCat ℓ ℓ)) : Set ℓ where
+--   field
+--     dtransf   : ∀ x → F .fobj (x , x) ⇒s G .fobj (x , x)
+--     dinatural : ∀ {x₁ x₂} (f : x₁ 𝒞.⇒ x₂) → ((G .fmor (f , 𝒞.id _) ∘S dtransf x₁) ∘S F .fmor (𝒞.id _ , f)) ≈s ((G .fmor (𝒞.id _ , f) ∘S dtransf x₂) ∘S F .fmor (f , 𝒞.id _))
+
+-- A Cowedge is a Dinatural transformation to a constant
+record Cowedge (Y : Setoid ℓ ℓ) (F : Functor (product 𝒞 𝒞.opposite) (SetoidCat ℓ ℓ)) (X : Setoid ℓ ℓ) : Set ℓ where
+  field
+    dtransf   : ∀ y → (Y ×s (F .fobj (y , y))) ⇒s X
+    dinatural : ∀ {y₁ y₂} (f : y₁ 𝒞.⇒ y₂) → (dtransf y₁ ∘S SP.prod-m (idS _) (F .fmor (𝒞.id _ , f))) ≈s (dtransf y₂ ∘S SP.prod-m (idS _) (F .fmor (f , 𝒞.id _)))
+open Cowedge
+
+record _≈cw_ {F : Functor (product 𝒞 𝒞.opposite) (SetoidCat ℓ ℓ)} {Y X : Setoid ℓ ℓ} (f g : Cowedge Y F X) : Set ℓ where
+  field
+    ≈cw≈ : ∀ y → f .dtransf y ≈s g .dtransf y
+open _≈cw_
+
+_∘cw_ : ∀ {F Z X Y} → X ⇒s Y → Cowedge Z F X → Cowedge Z F Y
+(f ∘cw g) .dtransf y = f ∘S (g .dtransf y)
+_∘cw_ {F} f g .dinatural {y₁}{y₂} h = begin
+    (f ∘S g .dtransf y₁) ∘S SP.prod-m (idS _) (F .fmor (𝒞.id y₁ , h))
+  ≈⟨ prop-setoid.assoc _ _ _ ⟩
+    f ∘S (g .dtransf y₁ ∘S SP.prod-m (idS _) (F .fmor (𝒞.id y₁ , h)))
+  ≈⟨ prop-setoid.∘S-cong (prop-setoid.≃m-isEquivalence .refl) (g .dinatural h) ⟩
+    f ∘S (g .dtransf y₂ ∘S SP.prod-m (idS _) (F .fmor (h , 𝒞.id y₂)))
+  ≈˘⟨ prop-setoid.assoc _ _ _ ⟩
+    (f ∘S g .dtransf y₂) ∘S SP.prod-m (idS _) (F .fmor (h , 𝒞.id y₂))
+  ∎
+  where open ≈-Reasoning prop-setoid.≃m-isEquivalence
+
+record Coend (F : Functor (product 𝒞 𝒞.opposite) (SetoidCat ℓ ℓ)) : Set (suc ℓ) where
+  field
+    coend-obj : Setoid ℓ ℓ
+    coend-inj : Cowedge ST.witness F coend-obj
+    coend-ext : ∀ {X Z} → Cowedge X F Z → (X ×s coend-obj) ⇒s Z
+    coend-ext-cong : ∀ {X Z} {f g : Cowedge X F Z} → f ≈cw g → coend-ext f ≈s coend-ext g
+    coend-eq  : ∀ {X Z} {f : Cowedge X F Z} {x} → f .dtransf x ≈s (coend-ext f ∘S SP.prod-m (idS X) (coend-inj .dtransf x ∘S SP.pair ST.to-terminal (idS _)))
+    coend-uni : ∀ {X Z} {f : Cowedge X F Z} {h : (X ×s coend-obj) ⇒s Z} →
+                (∀ x → f .dtransf x ≈s (h ∘S SP.prod-m (idS X) (coend-inj .dtransf x ∘S SP.pair ST.to-terminal (idS _)))) →
+                h ≈s coend-ext f
+  -- coend-natural : ∀ {Z Z'} {h : Z ⇒s Z'} {α : Cowedge F Z} → (h ∘S coend-ext α) ≈s coend-ext (h ∘cw α)
+  -- coend-natural {Z} {Z'} {h} {α} = coend-uni eq
+  --   where eq : (x : 𝒞.obj) → (h ∘S α .dtransf x) ≈s ((h ∘S coend-ext α) ∘S coend-inj .dtransf x)
+  --         eq x = begin
+  --                   h ∘S α .dtransf x                           ≈⟨ prop-setoid.∘S-cong (prop-setoid.≃m-isEquivalence .refl) coend-eq ⟩
+  --                   h ∘S (coend-ext α ∘S coend-inj .dtransf x)  ≈˘⟨ prop-setoid.assoc _ _ _ ⟩
+  --                   (h ∘S coend-ext α) ∘S coend-inj .dtransf x  ∎
+  --                 where open ≈-Reasoning prop-setoid.≃m-isEquivalence
+open Coend
+
+
+
+------------------------------------------------------------------------------
 -- Lifting EndoFunctors
 
-module _ (M : Functor 𝒞 𝒞) where
+import cartesian-monoidal (SetoidCat ℓ ℓ) (Setoid-terminal ℓ ℓ) (Setoid-products ℓ ℓ) as SM
+open import monoidal-product
 
-  private
-    cancel-M-left : ∀ {x y} {f : x 𝒞.⇒ M .fobj y} → M .fmor (𝒞.id y) 𝒞.∘ f 𝒞.≈ f
-    cancel-M-left = trans 𝒞.isEquiv (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left
+module UnaryDay (M : Functor 𝒞 𝒞) where
 
+  -- This is really the coend ∫ʸ 𝒞(x,My) × Fy
+  --
+  -- There is a dinatural transformation in : 𝒞(x,My) × Fy ⇒ ∫ʸ 𝒞(x,My) × Fy
+  --
+  -- dinatural:
+  --
+  -- It has the universal property that for any other f : 𝒞(x,My) × Fy ⇒ X, there is a unique h : ∫ʸ 𝒞(x,My) × Fy ⇒ X, making h ∘ in = f
+  --
+  -- This can then be used to define the other parts, such as naturality.
+  --
+  -- Start by postulating the existence, and then using that
+
+  -- FIXME: generalise to n-ary M.
+
+  -- Maybe an arbitrary functor 𝒞 × 𝒞op → Setoid?
+
+  -- FIXME: construction of coends in Setoid
+
+  -- Now construct the lifting of a functor using coends
+
+  M-hat-F : (F : PSh .Category.obj) (x : 𝒞.obj) → Functor (product 𝒞 𝒞.opposite) (SetoidCat ℓ ℓ)
+  M-hat-F F x = MonoidalProduct.⊗-functor SM.×-monoidal ∘F pairF ((atObj x ∘F (よ ∘F M)) ∘F project₁) (F ∘F project₂)
+
+{-
+  postulate
+    M-hat-obj : (F : PSh .Category.obj) (x : 𝒞.obj) → Coend (M-hat-F F x)
+
+  M-hat-mor-cowedge : ∀ (F : PSh .Category.obj) {x y} (f : x 𝒞.⇒ y) → Cowedge (M-hat-F F y) (M-hat-obj F x .coend-obj)
+  M-hat-mor-cowedge F f .dtransf z = M-hat-obj F _ .coend-inj .dtransf z ∘S HasProducts.prod-m (Setoid-products ℓ ℓ) (𝒞.precompose f ) (idS _)
+  M-hat-mor-cowedge F f .dinatural g = {!!}
+
+  -- M-hat-mor-cowedge-cong
+
+  M-hat-mor-cowedge-id : ∀ (F : PSh .Category.obj) {x} → M-hat-mor-cowedge F (𝒞.id x) ≈cw M-hat-obj F x .coend-inj
+  M-hat-mor-cowedge-id F .≈cw≈ y = begin
+      M-hat-obj F _ .coend-inj .dtransf y ∘S HasProducts.prod-m (Setoid-products ℓ ℓ) (𝒞.precompose (𝒞.id _)) (idS (F .fobj y))
+    ≈⟨ prop-setoid.∘S-cong (prop-setoid.≃m-isEquivalence .refl) (HasProducts.prod-m-cong (Setoid-products ℓ ℓ) {!!} (prop-setoid.≃m-isEquivalence .refl)) ⟩
+      M-hat-obj F _ .coend-inj .dtransf y ∘S HasProducts.prod-m (Setoid-products ℓ ℓ) (idS _) (idS (F .fobj y))
+    ≈⟨ prop-setoid.∘S-cong (prop-setoid.≃m-isEquivalence .refl) (HasProducts.prod-m-id (Setoid-products ℓ ℓ)) ⟩
+      M-hat-obj F _ .coend-inj .dtransf y ∘S idS _
+    ≈⟨ prop-setoid.id-right ⟩
+      M-hat-obj F _ .coend-inj .dtransf y
+    ∎
+    where open ≈-Reasoning prop-setoid.≃m-isEquivalence
+
+  M-hat-mor : ∀ (F : PSh .Category.obj) {x y} (f : x 𝒞.⇒ y) → M-hat-obj F y .coend-obj ⇒s M-hat-obj F x .coend-obj
+  M-hat-mor F {x} {y} f = M-hat-obj F y .coend-ext (M-hat-mor-cowedge F f)
+
+  M-hat-PSh : (F : PSh .Category.obj) → PSh .Category.obj
+  M-hat-PSh F .fobj x = M-hat-obj F x .coend-obj
+  M-hat-PSh F .fmor {x} {y} f = M-hat-mor F f
+  M-hat-PSh F .fmor-cong f₁≈f₂ = M-hat-obj F _ .coend-ext-cong {!!}
+  M-hat-PSh F .fmor-id {x} = begin
+      M-hat-mor F (Category.id 𝒞.opposite x)
+    ≡⟨⟩
+      M-hat-obj F x .coend-ext (M-hat-mor-cowedge F (𝒞.id x))
+    ≈⟨ M-hat-obj F x .coend-ext-cong (M-hat-mor-cowedge-id F) ⟩
+      M-hat-obj F x .coend-ext (M-hat-obj F x .coend-inj)
+    ≈˘⟨ M-hat-obj F x .coend-uni (λ w → prop-setoid.≃m-isEquivalence .sym prop-setoid.id-left) ⟩
+      idS (M-hat-obj F x .coend-obj)
+    ∎
+    where open ≈-Reasoning prop-setoid.≃m-isEquivalence
+  M-hat-PSh F .fmor-comp {x}{y}{z} f g = begin
+      M-hat-obj F x .coend-ext (M-hat-mor-cowedge F (g 𝒞.∘ f))
+    ≈⟨ M-hat-obj F x .coend-ext-cong {!!} ⟩
+      M-hat-obj F x .coend-ext (M-hat-obj F y .coend-ext (M-hat-mor-cowedge F f) ∘cw M-hat-mor-cowedge F g)
+    ≈˘⟨ coend-natural (M-hat-obj F x) ⟩
+      M-hat-obj F y .coend-ext (M-hat-mor-cowedge F f) ∘S M-hat-obj F x .coend-ext (M-hat-mor-cowedge F g)
+    ∎
+    where open ≈-Reasoning prop-setoid.≃m-isEquivalence
+
+  M-hat : Functor PSh PSh
+  M-hat .fobj = M-hat-PSh
+  M-hat .fmor {F} {G} α .transf x = M-hat-obj F x .coend-ext {!!}
+  M-hat .fmor {F} {G} α .natural = {!!}
+  M-hat .fmor-cong = {!!}
+  M-hat .fmor-id = {!!}
+  M-hat .fmor-comp = {!!}
+-}
 
   M-hat-carrier : (F : PSh .Category.obj) → 𝒞.obj → Set ℓ
   M-hat-carrier F x = Σ[ y ∈ _ ] (x 𝒞.⇒ M .fobj y ×S F .fobj y .Carrier)
 
   data M-hat-eq {F} {x} : M-hat-carrier F x → M-hat-carrier F x → Set ℓ where
-    eq-f : ∀ {y f Fy y' g Fy'} →
-          (h : y 𝒞.⇒ y') →
-          M .fmor h 𝒞.∘ f 𝒞.≈ g →
-          F .fobj y ._≈_ (F .fmor h .func Fy') Fy →
-          M-hat-eq (y , f , Fy) (y' , g , Fy')
-    eq-sym : ∀ {a b} → M-hat-eq {F} a b → M-hat-eq b a
-    eq-trans : ∀ {a b c} → M-hat-eq {F} a b → M-hat-eq {F} b c → M-hat-eq a c
+    eq-stop : ∀ a → M-hat-eq {F} a a
+    eq-step : ∀ {y₁ f₁ Fy₁ y₂ f₂ Fy₂ y c} {Fy : F .fobj y .Carrier} →
+          (h₁ : y₁ 𝒞.⇒ y) →
+          (h₂ : y₂ 𝒞.⇒ y) →
+          M .fmor h₁ 𝒞.∘ f₁ 𝒞.≈ M .fmor h₂ 𝒞.∘ f₂ →
+          F .fobj y₁ ._≈_ (F .fmor h₁ .func Fy) Fy₁ →
+          F .fobj y₂ ._≈_ (F .fmor h₂ .func Fy) Fy₂ →
+          M-hat-eq {F} (y₂ , f₂ , Fy₂) c →
+          M-hat-eq (y₁ , f₁ , Fy₁) c
+
+  eq-trans : ∀ {F x a b c} → M-hat-eq {F} {x} a b → M-hat-eq {F} {x} b c → M-hat-eq {F} {x} a c
+  eq-trans (eq-stop a) eq₂ = eq₂
+  eq-trans (eq-step h₁ h₂ x x₁ x₂ eq₁) eq₂ = eq-step h₁ h₂ x x₁ x₂ (eq-trans eq₁ eq₂)
+
+  eq-revtrans : ∀ {F x a b c} → M-hat-eq {F} {x} a b → M-hat-eq {F} {x} a c → M-hat-eq {F} {x} b c
+  eq-revtrans (eq-stop a) eq₂ = eq₂
+  eq-revtrans (eq-step h₁ h₂ x x₁ x₂ eq₁) eq₂ = eq-revtrans eq₁ (eq-step h₂ h₁ (sym 𝒞.isEquiv x) x₂ x₁ eq₂)
+
+  eq-sym : ∀ {F x a b} → M-hat-eq {F} {x} a b → M-hat-eq {F} {x} b a
+  eq-sym eq = eq-revtrans eq (eq-stop _)
 
   M-hat-setoid : (F : PSh .Category.obj) → 𝒞.obj → Setoid ℓ ℓ
   M-hat-setoid F x .Carrier = M-hat-carrier F x
   M-hat-setoid F x ._≈_ a b = LiftS ℓ (M-hat-eq {F} a b)
-  M-hat-setoid F x .isEquivalence .refl {y , f , Fy} =
-    liftS (eq-f (𝒞.id y) cancel-M-left (F .fmor-id .func-eq (F .fobj y .refl)))
+  M-hat-setoid F x .isEquivalence .refl {y , f , Fy} = liftS (eq-stop (y , f , Fy))
   M-hat-setoid F x .isEquivalence .sym (liftS eq) = liftS (eq-sym eq)
   M-hat-setoid F x .isEquivalence .trans (liftS eq₁) (liftS eq₂) = liftS (eq-trans eq₁ eq₂)
+
+  {----------------------------------------------------------------------------------------------------}
+  {- M-hat-setoid is actually the coend object -}
+
+  M-hat-coend-inj : (F : PSh .Category.obj) (x : 𝒞.obj) → Cowedge ST.witness (M-hat-F F x) (M-hat-setoid F x)
+  M-hat-coend-inj F x .dtransf y .func (lift _ , (lift f , Fy)) = y , f , Fy
+  M-hat-coend-inj F x .dtransf y .func-resp-≈ {_ , lift f₁ , Fy₁} {_ , lift f₂ , Fy₂} (_ , lift f₁≈f₂ , Fy₁≈Fy₂) =
+    liftS (eq-step (𝒞.id y) (𝒞.id y) (𝒞.∘-cong 𝒞.≈-refl f₁≈f₂) (F .fmor-id .func-eq (F .fobj y .refl)) (F .fmor-id .func-eq Fy₁≈Fy₂) (eq-stop _))
+  M-hat-coend-inj F x .dinatural {y₁} {y₂} f .func-eq (_ , lift g₁≈g₂ , Fy₂≈Fy₂') =
+    liftS (eq-step f (𝒞.id _) (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl)) (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-left) (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl g₁≈g₂) (𝒞.≈-trans (𝒞.≈-sym 𝒞.id-left) (𝒞.∘-cong (𝒞.≈-sym (M .fmor-id)) 𝒞.≈-refl)))))
+      (F .fmor f .func-resp-≈ (F .fobj _ .sym Fy₂≈Fy₂')) (F .fmor (𝒞.id _) .func-resp-≈ (F .fobj _ .refl)) (eq-stop _))
+
+  M-hat-coend : (F : PSh .Category.obj) (x : 𝒞.obj) → Coend (M-hat-F F x)
+  M-hat-coend F x .coend-obj = M-hat-setoid F x
+  M-hat-coend F x .coend-inj = M-hat-coend-inj F x
+  M-hat-coend F x .coend-ext α .func (p , (z , g , Fz)) = α .dtransf z .func (p , lift g , Fz)
+  M-hat-coend F x .coend-ext {P} {Z} α .func-resp-≈ {p₁ , z₁ , g₁ , Fz₁} {p₂ , z₂ , g₂ , Fz₂} (p₁≈p₂ , liftS eq) = resp-≈ eq
+    where resp-≈ : ∀ {z₁ g₁ Fz₁ z₂ g₂ Fz₂} → M-hat-eq (z₁ , g₁ , Fz₁) (z₂ , g₂ , Fz₂) → Z ._≈_ (α .dtransf z₁ .func (p₁ , lift g₁ , Fz₁)) (α .dtransf z₂ .func (p₂ , lift g₂ , Fz₂))
+          resp-≈ (eq-stop a) = α .dtransf _ .func-resp-≈ (p₁≈p₂ , lift 𝒞.≈-refl , F .fobj _ .refl)
+          resp-≈ {z₁}{g₁}{Fz₁}{z₂}{g₂}{Fz₂} (eq-step {y = y} {Fy = Fy} h₁ h₂ x x₁ x₂ eq) =
+            Z .trans (α .dtransf z₁ .func-resp-≈ (P .refl , lift (𝒞.≈-sym (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left)) , F .fobj z₁ .sym x₁))
+           (Z .trans (α .dinatural h₁ .func-eq (P .refl , M-hat-F F _ .fobj _ .refl))
+           (Z .trans (α .dtransf y .func-resp-≈ (P .refl , lift x , F .fobj _ .refl))
+           (Z .trans (Z .sym (α .dinatural h₂ .func-eq (P .refl , M-hat-F F _ .fobj _ .refl)))
+           (Z .trans (α .dtransf _ .func-resp-≈ (P .refl , lift (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left) , x₂))
+                     (resp-≈ eq)))))
+  M-hat-coend F x .coend-ext-cong {P} {Z} {α} {β} α≈β = mk-≈s λ { (p , y , f , Fy) → α≈β .≈cw≈ y .func-eq (P .refl , lift 𝒞.≈-refl , F .fobj _ .refl) }
+  M-hat-coend F x .coend-eq {P} {Z} {α} {y} = mk-≈s λ { (p , lift f , Fy) → Z .refl }
+  M-hat-coend F x .coend-uni {P} {Z} {α} {h} h-property = mk-≈s (λ { (p , y , f , Fy) → Z .sym (h-property y .func-eq (P .refl , lift 𝒞.≈-refl , F .fobj _ .refl)) })
+
+  {------------------------------------------------------------------------------}
 
   M-hat-mor : ∀ (F : PSh .Category.obj) {x y} (f : x 𝒞.⇒ y) → M-hat-setoid F y ⇒s M-hat-setoid F x
   M-hat-mor F f .func (z , g , Fz) = z , g 𝒞.∘ f , Fz
   M-hat-mor F f .func-resp-≈ (liftS eq) = liftS (resp-≈ eq)
     where resp-≈ : ∀ {z₁ g₁ Fz₁ z₂ g₂ Fz₂} → M-hat-eq {F} (z₁ , g₁ , Fz₁) (z₂ , g₂ , Fz₂) → M-hat-eq {F} (z₁ , g₁ 𝒞.∘ f , Fz₁) (z₂ , g₂ 𝒞.∘ f , Fz₂)
-          resp-≈ (eq-f h eq₁ eq₂) = eq-f h (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _)) (𝒞.∘-cong eq₁ 𝒞.≈-refl)) eq₂
-          resp-≈ (eq-sym eq) = eq-sym (resp-≈ eq)
-          resp-≈ (eq-trans eq eq₁) = eq-trans (resp-≈ eq) (resp-≈ eq₁)
+          resp-≈ (eq-stop a) = eq-stop (_ , _ 𝒞.∘ f , _)
+          resp-≈ (eq-step h₁ h₂ x x₁ x₂ eq) = eq-step h₁ h₂ (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _)) (𝒞.≈-trans (𝒞.∘-cong x 𝒞.≈-refl) (𝒞.assoc _ _ _))) x₁ x₂ (resp-≈ eq)
 
   M-hat-PSh : PSh .Category.obj → PSh .Category.obj
   M-hat-PSh F .fobj = M-hat-setoid F
   M-hat-PSh F .fmor = M-hat-mor F
   M-hat-PSh F .fmor-cong {x} {y} f₁≈f₂ =
-    mk-≈s (λ (z , f , Fz) → liftS (eq-f (𝒞.id z) (𝒞.≈-trans cancel-M-left (𝒞.∘-cong 𝒞.≈-refl f₁≈f₂)) (F .fmor-id .func-eq (F .fobj z .refl))))
-  M-hat-PSh F .fmor-id = mk-≈s (λ (z , f , Fz) → liftS (eq-f (𝒞.id _) (trans 𝒞.isEquiv (𝒞.∘-cong (M .fmor-id) 𝒞.id-right) 𝒞.id-left) (F .fmor-id .func-eq (refl (isEquivalence (F .fobj z))))))
-  M-hat-PSh F .fmor-comp f g = mk-≈s (λ (z , h , Fz) → liftS (eq-f (𝒞.id z) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) (𝒞.≈-sym (𝒞.assoc _ _ _))) 𝒞.id-left) (F .fmor-id .func-eq (F .fobj z .refl))))
+    mk-≈s (λ (z , f , Fz) → liftS (eq-step (𝒞.id z) (𝒞.id z) (𝒞.∘-cong 𝒞.≈-refl (𝒞.∘-cong 𝒞.≈-refl f₁≈f₂)) (F .fmor-id .func-eq (F .fobj _ .refl)) (F .fmor-id .func-eq (F .fobj _ .refl)) (eq-stop _)))
+  M-hat-PSh F .fmor-id = mk-≈s (λ (z , f , Fz) → liftS (eq-step (𝒞.id z) (𝒞.id z) (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-right) (F .fmor-id .func-eq (F .fobj _ .refl)) (F .fmor-id .func-eq (F .fobj _ .refl)) (eq-stop _)))
+  M-hat-PSh F .fmor-comp f g = mk-≈s (λ (z , h , Fz) → liftS (eq-step (𝒞.id z) (𝒞.id z) (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (𝒞.assoc h g f))) (F .fmor-id .func-eq (F .fobj _ .refl)) (F .fmor-id .func-eq (F .fobj _ .refl)) (eq-stop _)))
 
   M-hat-nat : (F G : PSh .Category.obj) → NatTrans F G → NatTrans (M-hat-PSh F) (M-hat-PSh G)
   M-hat-nat F G α .transf x .func (z , g , Fz) = z , g , α .transf z .func Fz
   M-hat-nat F G α .transf x .func-resp-≈ (liftS eq) = liftS (resp-≈ eq)
     where
       resp-≈ : ∀ {z₁ g₁ Fz₁ z₂ g₂ Fz₂} → M-hat-eq {F} {x} (z₁ , g₁ , Fz₁) (z₂ , g₂ , Fz₂) → M-hat-eq {G} (z₁ , g₁ , α .transf _ .func Fz₁) (z₂ , g₂ , α .transf _ .func Fz₂)
-      resp-≈ (eq-f h x x₁) = eq-f h x (G .fobj _ .trans (α .natural h .func-eq (F .fobj _ .refl)) (α .transf _ .func-resp-≈ x₁))
-      resp-≈ (eq-sym x) = eq-sym (resp-≈ x)
-      resp-≈ (eq-trans x x₁) = eq-trans (resp-≈ x) (resp-≈ x₁)
-  M-hat-nat F G α .natural {x} {y} f =
-    mk-≈s (λ { (z , g , Fz) → liftS (eq-f (𝒞.id z) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left)
-                                                   (G .fmor-id .func-eq (G .fobj z .refl)))  })
+      resp-≈ (eq-step h₁ h₂ eq₁ eq₂ eq₃ eq) =
+        eq-step h₁ h₂ eq₁ (G .fobj _ .trans (α .natural h₁ .func-eq (F .fobj _ .refl)) (α .transf _ .func-resp-≈ eq₂))
+                          (G .fobj _ .trans (α .natural h₂ .func-eq (F .fobj _ .refl)) (α .transf _ .func-resp-≈ eq₃))
+                          (resp-≈ eq)
+      resp-≈ (eq-stop x) = eq-stop (_ , _ , α .transf _ .func _)
+  M-hat-nat F G α .natural {x} {y} f = mk-≈s help
+    where help : ((z , g , Fz) : Carrier (M-hat-setoid F x)) →  LiftS ℓ (M-hat-eq (z , g 𝒞.∘ f , α .transf z .func Fz) (z , g 𝒞.∘ f , α .transf z .func Fz))
+          help (z , g , Fz) = liftS (eq-stop _)
 
   M-hat : Functor PSh PSh
   M-hat .fobj = M-hat-PSh
   M-hat .fmor {F} {G} α = M-hat-nat F G α
   M-hat .fmor-cong {F} {G} α₁≈α₂ .transf-eq x =
-    mk-≈s (λ { (z , g , Fz) → liftS (eq-f (𝒞.id _) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left)
-                                          (G .fmor-id .func-eq (G .fobj z .sym (α₁≈α₂ .transf-eq _ .func-eq (F .fobj z .refl))))) })
+    mk-≈s (λ { (z , g , Fz) → liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl
+                                          (G .fmor-id .func-eq (G .fobj z .sym (α₁≈α₂ .transf-eq _ .func-eq (F .fobj z .refl))))
+                                          (G .fmor-id .func-eq (refl (isEquivalence (G .fobj z)))) (eq-stop _)) })
   M-hat .fmor-id {F} .transf-eq x =
-    mk-≈s λ { (z , g , Fz) → liftS (eq-f (𝒞.id _) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left) (F .fmor-id .func-eq (F .fobj z .refl))) }
+    mk-≈s λ { (z , g , Fz) → liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl (F .fmor-id .func-eq (F .fobj z .refl)) (F .fmor-id .func-eq (F .fobj _ .refl)) (eq-stop _)) }
   M-hat .fmor-comp {F} {G} {H} α β .transf-eq x =
-    mk-≈s λ { (z , g , Fz) → liftS (eq-f (𝒞.id _) (𝒞.≈-trans (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) 𝒞.id-left) (H .fmor-id .func-eq (H .fobj z .refl))) }
+    mk-≈s λ { (z , g , Fz) → liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl (H .fmor-id .func-eq (H .fobj z .refl)) (H .fmor-id .func-eq (H .fobj _ .refl)) (eq-stop _)) }
 
   -- Should also have that yoneda preserves the functor?
 
+------------------------------------------------------------------------------
+module DayMonad (M : Monad 𝒞) where
 
-  unit-hat : NatTrans Id M → NatTrans Id M-hat
-  unit-hat η .transf F .transf x .func Fx = x , η .transf x , Fx
-  unit-hat η .transf F .transf x .func-resp-≈ {Fx₁} {Fx₂} Fx₁≈Fx₂ =
-    liftS (eq-f (𝒞.id _) cancel-M-left (F .fmor-id .func-eq (F .fobj x .sym Fx₁≈Fx₂)))
-  unit-hat η .transf F .natural f .func-eq x₁≈x₂ =
-    liftS (eq-sym (eq-f f (η .natural f) (F .fmor f .func-resp-≈ x₁≈x₂)))
-  unit-hat η .natural {F}{G} α .transf-eq x .func-eq {x₁}{x₂} x₁≈x₂ =
-    liftS (eq-f (𝒞.id _) cancel-M-left (G .fmor-id .func-eq (α .transf x .func-resp-≈ (F .fobj x .sym x₁≈x₂))))
+  open Monad M renaming (funct to Mfunct)
 
-  -- TODO: join and strength
+  open UnaryDay Mfunct
+
+  unit-hat : NatTrans Id M-hat
+  unit-hat .transf F .transf x .func Fx = x , unit .transf x , Fx
+  unit-hat .transf F .transf x .func-resp-≈ {Fx₁} {Fx₂} Fx₁≈Fx₂ =
+    liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl (F .fmor-id .func-eq (F .fobj x .sym Fx₁≈Fx₂)) (F .fmor-id .func-eq (F .fobj _ .refl)) (eq-stop _))
+  unit-hat .transf F .natural f .func-eq x₁≈x₂ =
+    liftS (eq-step (𝒞.id _) f
+                (𝒞.≈-trans (𝒞.∘-cong (Mfunct .fmor-id) 𝒞.≈-refl) (𝒞.≈-trans 𝒞.id-left (𝒞.≈-sym (unit .natural f))))
+                (F .fmor-id .func-eq (F .fobj _ .refl))
+                (F .fmor f .func-resp-≈ x₁≈x₂) (eq-stop _))
+  unit-hat .natural {F}{G} α .transf-eq x .func-eq {x₁}{x₂} x₁≈x₂ =
+    liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl (G .fmor-id .func-eq (α .transf x .func-resp-≈ (F .fobj x .sym x₁≈x₂))) (G .fmor-id .func-eq (G .fobj _ .refl)) (eq-stop _))
+
+  join-cw-inner : ∀ F x y → Cowedge (𝒞.hom-setoid-l ℓ ℓ x (Mfunct .fobj y)) (M-hat-F F y) (M-hat-setoid F x)
+  join-cw-inner F x y .dtransf z .func (lift f , lift g , Fz) = z , join .transf z 𝒞.∘ (Mfunct .fmor g 𝒞.∘ f) , Fz
+  join-cw-inner F x y .dtransf z .func-resp-≈ (lift f₁≈f₂ , lift g₁≈g₂ , Fz₁≈Fz₂) =
+    liftS (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl (𝒞.∘-cong 𝒞.≈-refl (𝒞.∘-cong (Mfunct .fmor-cong g₁≈g₂) f₁≈f₂))) (F .fmor-id .func-eq (F .fobj z .refl)) (F .fmor-id .func-eq Fz₁≈Fz₂) (eq-stop _))
+  join-cw-inner F x y .dinatural {y₁} {y₂} h =
+    mk-≈s λ (lift f , lift g , Fy₂) → liftS (eq-step h (𝒞.id _)
+                                                     (begin
+                                                       Mfunct .fmor h 𝒞.∘ (join .transf y₁ 𝒞.∘ (Mfunct .fmor (Mfunct .fmor (𝒞.id y₁) 𝒞.∘ g) 𝒞.∘ f))
+                                                     ≈˘⟨ 𝒞.assoc _ _ _ ⟩
+                                                       (Mfunct .fmor h 𝒞.∘ join .transf y₁) 𝒞.∘ (Mfunct .fmor (Mfunct .fmor (𝒞.id y₁) 𝒞.∘ g) 𝒞.∘ f)
+                                                     ≈⟨ 𝒞.∘-cong (join .natural h) (𝒞.∘-cong (Mfunct .fmor-cong (𝒞.∘-cong (Mfunct .fmor-id) 𝒞.≈-refl)) 𝒞.≈-refl) ⟩
+                                                       (join .transf y₂ 𝒞.∘ Mfunct .fmor (Mfunct .fmor h)) 𝒞.∘ (Mfunct .fmor (𝒞.id _ 𝒞.∘ g) 𝒞.∘ f)
+                                                     ≈⟨ 𝒞.∘-cong 𝒞.≈-refl (𝒞.∘-cong (Mfunct .fmor-cong 𝒞.id-left) 𝒞.≈-refl) ⟩
+                                                       (join .transf y₂ 𝒞.∘ Mfunct .fmor (Mfunct .fmor h)) 𝒞.∘ (Mfunct .fmor g 𝒞.∘ f)
+                                                     ≈⟨ 𝒞.assoc _ _ _ ⟩
+                                                       join .transf y₂ 𝒞.∘ (Mfunct .fmor (Mfunct .fmor h) 𝒞.∘ (Mfunct .fmor g 𝒞.∘ f))
+                                                     ≈˘⟨ 𝒞.∘-cong 𝒞.id-left (𝒞.assoc _ _ _) ⟩
+                                                       (𝒞.id _ 𝒞.∘ join .transf y₂) 𝒞.∘ ((Mfunct .fmor (Mfunct .fmor h) 𝒞.∘ Mfunct .fmor g) 𝒞.∘ f)
+                                                     ≈˘⟨ 𝒞.∘-cong (𝒞.∘-cong (Mfunct .fmor-id) 𝒞.≈-refl) (𝒞.∘-cong (Mfunct .fmor-comp _ _) 𝒞.≈-refl) ⟩
+                                                       (Mfunct .fmor (𝒞.id _) 𝒞.∘ join .transf y₂) 𝒞.∘ (Mfunct .fmor (Mfunct .fmor h 𝒞.∘ g) 𝒞.∘ f)
+                                                     ≈⟨ 𝒞.assoc _ _ _ ⟩
+                                                       Mfunct .fmor (𝒞.id y₂) 𝒞.∘ (join .transf y₂ 𝒞.∘ (Mfunct .fmor (Mfunct .fmor h 𝒞.∘ g) 𝒞.∘ f))
+                                                     ∎)
+                                                     (F .fobj y₁ .refl) (F .fobj y₂ .refl) (eq-stop _))
+    where open ≈-Reasoning 𝒞.isEquiv
+
+  join-cw : ∀ F x → Cowedge prop-setoid.𝟙 (M-hat-F (M-hat-PSh F) x) (M-hat-setoid F x)
+  join-cw F x .dtransf y = M-hat-coend F y .coend-ext (join-cw-inner F x y) ∘S SM.×-lunit
+  join-cw F x .dinatural {y₁} {y₂} h = mk-≈s λ (lift _ , lift f , z , g , Fz) →
+    liftS (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-trans (𝒞.∘-cong (Mfunct .fmor-comp _ _) (𝒞.∘-cong (Mfunct .fmor-id) 𝒞.≈-refl)) (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-left) (𝒞.≈-trans (𝒞.assoc _ _ _) (𝒞.∘-cong (Mfunct .fmor-cong (𝒞.≈-sym 𝒞.id-right)) 𝒞.≈-refl)))))) (F .fmor-id .func-eq (F .fobj _ .refl)) (F .fmor-id .func-eq (F .fobj _ .refl)) (eq-stop _))
+
+  join-hat : NatTrans (M-hat ∘F M-hat) M-hat
+  join-hat .transf F .transf x = M-hat-coend (M-hat-PSh F) x .coend-ext (join-cw F x) ∘S SM.×-lunit⁻¹
+  join-hat .transf F .natural {x₂} {x₁} f = mk-≈s λ { (y , f , z , g , Fz) → liftS (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-trans (𝒞.assoc _ _ _) (𝒞.∘-cong 𝒞.≈-refl (𝒞.assoc _ _ _)))) (F .fmor-id .func-eq (F .fobj _ .refl)) (F .fmor-id .func-eq (F .fobj _ .refl)) (eq-stop _)) }
+  join-hat .natural {F} {G} α .transf-eq x = mk-≈s λ (y , f , z , g , Fz) → liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl (G .fobj z .trans (α .natural (𝒞.id _) .func-eq (F .fobj _ .refl)) (α .transf z .func-resp-≈ (F .fmor-id .func-eq (F .fobj _ .refl)))) (G .fobj _ .trans (α .natural (𝒞.id _) .func-eq (F .fobj _ .refl)) (α .transf z .func-resp-≈ (F .fmor-id .func-eq (F .fobj _ .refl)))) (eq-stop _))
+
+  monad-hat : Monad PSh
+  monad-hat .Monad.funct = M-hat
+  monad-hat .Monad.unit = unit-hat
+  monad-hat .Monad.join = join-hat
+
+  module _ (𝒞P : HasProducts 𝒞) (str : ∀ {x y} → 𝒞P .HasProducts.prod x (Mfunct .fobj y) 𝒞.⇒ Mfunct .fobj (𝒞P .HasProducts.prod x y)) where
+
+    module 𝒞P = HasProducts 𝒞P
+    open MonoidalProduct
+    import cartesian-monoidal _ terminal products as PShM
+
+{-
+    strength-cw : ∀ F G x → Cowedge (F .fobj x) (M-hat-F G x) (M-hat-setoid ((PShM.×-monoidal ⊗ F) G) x)
+    strength-cw F G x .dtransf y .func (Fx , lift f , Gy) = 𝒞P.prod x y , (str 𝒞.∘ 𝒞P.pair (𝒞.id _) f) , (F .fmor 𝒞P.p₁ .func Fx) , (G .fmor 𝒞P.p₂ .func Gy)
+    strength-cw F G x .dtransf y .func-resp-≈ (Fx₁≈Fx₂ , lift f₁≈f₂ , Gy₁≈Gy₂) =
+      liftS (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl (𝒞.∘-cong 𝒞.≈-refl (𝒞P.pair-cong 𝒞.≈-refl f₁≈f₂)))
+                     ((F .fobj _ .trans (F .fmor-id .func-eq (F .fobj _ .refl)) (F .fmor 𝒞P.p₁ .func-resp-≈ (F .fobj _ .sym Fx₁≈Fx₂))) , G .fobj _ .trans (G .fmor-id .func-eq (G .fobj _ .refl)) (G .fmor 𝒞P.p₂ .func-resp-≈ (G .fobj _ .sym Gy₁≈Gy₂)))
+                     ((F .fmor-id .func-eq (F .fobj _ .refl)) , G .fmor-id .func-eq (G .fobj _ .refl))
+                     (eq-stop _))
+    strength-cw F G x .dinatural {y₁} {y₂} f = mk-≈s λ (Fx , lift g , Gy₂) →
+      liftS (eq-step (𝒞P.prod-m (𝒞.id _) f) (𝒞.id _)
+                     {!!}
+                     (F .fobj _ .trans (F .fobj _ .sym (F .fmor-comp _ _ .func-eq (F .fobj _ .refl))) (F .fobj _ .trans (F .fmor-cong (𝒞P.pair-p₁ _ _) .func-eq (F .fobj _ .refl)) (F .fmor-cong 𝒞.id-left .func-eq (F .fobj _ .refl))) ,
+                      G .fobj _ .trans (G .fobj _ .sym (G .fmor-comp _ _ .func-eq (G .fobj _ .refl))) (G .fobj _ .trans (G .fmor-cong (𝒞P.pair-p₂ _ _ ) .func-eq (G .fobj _ .refl)) (G .fmor-comp _ _ .func-eq (G .fobj _ .refl))))
+                     (F .fmor-id .func-eq (F .fobj _ .refl) ,
+                      G .fmor-id .func-eq (G .fmor 𝒞P.p₂ .func-resp-≈ (G .fobj _ .sym (G .fmor-id .func-eq (G .fobj _ .refl)))))
+                     (eq-stop _))
+
+    strength-hat : NatTrans (⊗-functor PShM.×-monoidal ∘F pairF project₁ (M-hat ∘F project₂)) (M-hat ∘F ⊗-functor PShM.×-monoidal)
+    strength-hat .transf (F , G) .transf x = M-hat-coend _ _ .coend-ext (strength-cw F G x)
+    strength-hat .transf (F , G) .natural {x₂} {x₁} f = mk-≈s λ (Fx₂ , y , g , Gy) →
+      liftS (eq-step (𝒞.id _) (𝒞P.prod-m f (𝒞.id _))
+                     {!!}
+                     ((F .fmor-id .func-eq (F .fobj _ .refl)) , (G .fmor-id .func-eq (G .fobj _ .refl)))
+                     (F .fobj _ .trans (F .fobj _ .sym (F .fmor-comp _ _ .func-eq (F .fobj _ .refl))) (F .fobj _ .trans (F .fmor-cong (𝒞P.pair-p₁ _ _) .func-eq (F .fobj _ .refl)) (F .fmor-comp _ _ .func-eq (F .fobj _ .refl))) ,
+                      G .fobj _ .trans (G .fobj _ .sym (G .fmor-comp _ _ .func-eq (G .fobj _ .refl))) (G .fobj _ .trans (G .fmor-cong (𝒞P.pair-p₂ _ _) .func-eq (G .fobj _ .refl)) (G .fmor-cong 𝒞.id-left .func-eq (G .fobj _ .refl))))
+                     (eq-stop _))
+    strength-hat .natural {F₁ , G₁} {F₂ , G₂} (α₁ , α₂) .transf-eq x = mk-≈s λ (F₁x , y , g , G₁y) →
+      liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl
+                     (F₂ .fobj _ .trans (F₂ .fmor-id .func-eq (F₂ .fobj _ .refl)) (α₁ .natural _ .func-eq (F₁ .fobj _ .refl)) , G₂ .fobj _ .trans (G₂ .fmor-id .func-eq (G₂ .fobj _ .refl)) (α₂ .natural _ .func-eq (G₁ .fobj _ .refl)))
+                     (F₂ .fmor-id .func-eq (F₂ .fobj _ .refl) , G₂ .fmor-id .func-eq (G₂ .fobj _ .refl))
+                     (eq-stop _))
+-}
