@@ -3,7 +3,7 @@
 -- Derivative interpretation of `mult`: the output's dependence on each factor is value-dependent.
 -- ∂(x·y)/∂x = y, ∂(x·y)/∂y = x, pushed through · → Bool (non-zero ↦ ⊤).  So at (0,5) only the first factor
 -- matters; at (3,0) only the second.
-module example-mult where
+module example-bools-matrix-mult where
 
 open import example-bools-matrix
 
