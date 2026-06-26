@@ -5,8 +5,9 @@
 -- all the model plumbing lives here and compiles once.
 module example-bool where
 
-open import categories using (HasInitial; HasProducts)
+open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched as CMon
+import prop
 import matrix-new
 import semimodule
 import ho-model-semimod
@@ -33,7 +34,7 @@ open import label using (a; b) public
 module HM = ho-model-semimod two.semiring
 module FD = matrix-new.Mat two.semiring
 module SM = semimodule two.semiring
-open CMon.CMonEnriched FD.cmon using (_+m_)
+open CMon.CMonEnriched FD.cmon using (_+m_; εm)
 open FD using (_∷_; []) public
 
 unitm : FD._⇒_ 0 1
@@ -41,9 +42,24 @@ unitm = HasInitial.from-initial FD.initial {1}
 conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
 conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
 
-open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm public
-open HM.interp Sig BaseInterp1 public
-open HM.interp-sd.bsddl Sig BaseInterp1 two.semiring-boolean using (BooleanSDDL; to-gal; ty-bsddl) public
+open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
+  nat.ℕₛ nat.zero-m nat.add nat.mult public
+
+-- Boolean-collapse derivative coefficient: zero map vs identity.
+private
+  module FDm = Category FD.cat
+  coeff-b : ℕ → FD._⇒_ 1 1
+  coeff-b nat.zero     = εm
+  coeff-b (nat.succ _) = FDm.id 1
+  coeff-cong-b : ∀ {x y} → nat._≃_ x y → coeff-b x FDm.≈ coeff-b y
+  coeff-cong-b {nat.zero}   {nat.zero}   _ = FDm.≈-refl {f = εm}
+  coeff-cong-b {nat.succ _} {nat.succ _} _ = FDm.≈-refl {f = FDm.id 1}
+  coeff-cong-b {nat.zero}   {nat.succ _} (prop._,_ _ ())
+  coeff-cong-b {nat.succ _} {nat.zero}   (prop._,_ () _)
+
+module D = Deriv coeff-b coeff-cong-b
+open HM.interp Sig D.BaseInterp1 public
+open HM.interp-sd.bsddl Sig D.BaseInterp1 two.semiring-boolean using (BooleanSDDL; to-gal; ty-bsddl) public
 
 open indexed-family._⇒f_ public
 open SM._⇒_ public

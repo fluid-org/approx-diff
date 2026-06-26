@@ -2,6 +2,7 @@
 
 open import Level using (Level; 0ℓ; suc)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts)
+open import prop-setoid using (Setoid)
 
 module example-signature-interpretation
   {o : Level}
@@ -12,6 +13,11 @@ module example-signature-interpretation
   (Approx : Category.obj 𝒞)
   (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) Approx)
   (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products Approx Approx) Approx)
+  -- what a `number` carries, with zero/add/mult on the index side.
+  (Numₛ : Setoid 0ℓ 0ℓ)
+  (num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) Numₛ)
+  (num-add  : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
+  (num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
   where
 
 import fam
@@ -97,58 +103,57 @@ binary = simple-monoidal C.∘ binary2
 
 open import example-signature
 open import signature
-import nat
 import label
 
 private
   module CP = HasProducts 𝒞-products
   import prop
   open import Data.Product using (proj₁; proj₂)
+  open import prop-setoid using (IsEquivalence)
 
-  -- ∂(x·y) = y·dx + x·dy: an input matters iff the *other* factor is non-zero. Either the identity (it
-  -- matters) or the zero endomorphism (it doesn't).
-  coeff : nat.ℕ → (Approx 𝒞m.⇒ Approx)
-  coeff nat.zero     = unit 𝒞m.∘ to-𝟙-base
-  coeff (nat.succ _) = 𝒞m.id Approx
-
-  coeff-cong : ∀ {x y} → nat._≃_ x y → coeff x 𝒞m.≈ coeff y
-  coeff-cong {nat.zero}   {nat.zero}   _                 = 𝒞m.≈-refl
-  coeff-cong {nat.succ _} {nat.succ _} _                 = 𝒞m.≈-refl
-  coeff-cong {nat.zero}   {nat.succ _} (prop._,_ _ ())
-  coeff-cong {nat.succ _} {nat.zero}   (prop._,_ () _)
-
-  -- Derivative interpretation of mult: index-side just the usual multiplication, fibre-side the
-  -- value-dependent Jacobian [ ∂/∂x , ∂/∂y ] = [ coeff y , coeff x ].
-  mult-core : simple[ nat.ℕₛ ×ₛ nat.ℕₛ , CP.prod Approx Approx ] C.⇒ simple[ nat.ℕₛ , Approx ]
-  mult-core .idxf = nat.mult
-  mult-core .famf .transf xy =
-    conjunct 𝒞m.∘ CP.pair (coeff (proj₂ xy) 𝒞m.∘ CP.p₁) (coeff (proj₁ xy) 𝒞m.∘ CP.p₂)
-  mult-core .famf .natural e =
-    𝒞m.≈-trans 𝒞m.id-right (𝒞m.≈-trans
-      (𝒞m.∘-cong 𝒞m.≈-refl (CP.pair-cong (𝒞m.∘-cong (coeff-cong (nat.≃-sym (prop.proj₂ e))) 𝒞m.≈-refl)
-                                         (𝒞m.∘-cong (coeff-cong (nat.≃-sym (prop.proj₁ e))) 𝒞m.≈-refl)))
-      (𝒞m.≈-sym 𝒞m.id-left))
+  num-sym : ∀ {x y} → Setoid._≈_ Numₛ x y → Setoid._≈_ Numₛ y x
+  num-sym = Setoid.isEquivalence Numₛ .IsEquivalence.sym
 
 BaseInterp0 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-BaseInterp0 .Model.⟦sort⟧ number = simple[ nat.ℕₛ , 𝟙-base ]
+BaseInterp0 .Model.⟦sort⟧ number = simple[ Numₛ , 𝟙-base ]
 BaseInterp0 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
 BaseInterp0 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
-BaseInterp0 .Model.⟦op⟧ zero = simplef[ nat.zero-m , 𝒞m.id _ ]
-BaseInterp0 .Model.⟦op⟧ add = simplef[ nat.add , to-𝟙-base ] C.∘ binary
-BaseInterp0 .Model.⟦op⟧ mult = simplef[ nat.mult , to-𝟙-base ] C.∘ binary
+BaseInterp0 .Model.⟦op⟧ zero = simplef[ num-zero , 𝒞m.id _ ]
+BaseInterp0 .Model.⟦op⟧ add = simplef[ num-add , to-𝟙-base ] C.∘ binary
+BaseInterp0 .Model.⟦op⟧ mult = simplef[ num-mult , to-𝟙-base ] C.∘ binary
 BaseInterp0 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
 BaseInterp0 .Model.⟦op⟧ approx-unit = simplef[ idS _ , unit ]
 BaseInterp0 .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjunct ] C.∘ binary
 
-BaseInterp1 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-BaseInterp1 .Model.⟦sort⟧ number = simple[ nat.ℕₛ , Approx ]
-BaseInterp1 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
-BaseInterp1 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
-BaseInterp1 .Model.⟦op⟧ zero = simplef[ nat.zero-m , unit ]
-BaseInterp1 .Model.⟦op⟧ add = simplef[ nat.add , conjunct ] C.∘ binary
-BaseInterp1 .Model.⟦op⟧ mult = mult-core C.∘ binary
-BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
-BaseInterp1 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
-BaseInterp1 .Model.⟦op⟧ approx-unit = simplef[ idS _ , unit ]
-BaseInterp1 .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjunct ] C.∘ binary
+-- The value-carrying model, parameterized by the derivative coefficient `coeff v` (the Jacobian entry for
+-- value v).  This is the only part of the interpretation that varies between the qualitative (Boolean) and
+-- the rational (AD) models.
+module Deriv
+  (coeff : Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Approx Approx)
+  (coeff-cong : ∀ {x y} → Setoid._≈_ Numₛ x y → Category._≈_ 𝒞 (coeff x) (coeff y))
+  where
+
+  -- Derivative interpretation of mult: index-side just the usual multiplication, fibre-side the
+  -- value-dependent Jacobian [ ∂/∂x , ∂/∂y ] = [ coeff y , coeff x ].
+  mult-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod Approx Approx ] C.⇒ simple[ Numₛ , Approx ]
+  mult-deriv .idxf = num-mult
+  mult-deriv .famf .transf xy =
+    conjunct 𝒞m.∘ CP.pair (coeff (proj₂ xy) 𝒞m.∘ CP.p₁) (coeff (proj₁ xy) 𝒞m.∘ CP.p₂)
+  mult-deriv .famf .natural e =
+    𝒞m.≈-trans 𝒞m.id-right (𝒞m.≈-trans
+      (𝒞m.∘-cong 𝒞m.≈-refl (CP.pair-cong (𝒞m.∘-cong (coeff-cong (num-sym (prop.proj₂ e))) 𝒞m.≈-refl)
+                                         (𝒞m.∘-cong (coeff-cong (num-sym (prop.proj₁ e))) 𝒞m.≈-refl)))
+      (𝒞m.≈-sym 𝒞m.id-left))
+
+  BaseInterp1 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
+  BaseInterp1 .Model.⟦sort⟧ number = simple[ Numₛ , Approx ]
+  BaseInterp1 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
+  BaseInterp1 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
+  BaseInterp1 .Model.⟦op⟧ zero = simplef[ num-zero , unit ]
+  BaseInterp1 .Model.⟦op⟧ add = simplef[ num-add , conjunct ] C.∘ binary
+  BaseInterp1 .Model.⟦op⟧ mult = mult-deriv C.∘ binary
+  BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
+  BaseInterp1 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
+  BaseInterp1 .Model.⟦op⟧ approx-unit = simplef[ idS _ , unit ]
+  BaseInterp1 .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjunct ] C.∘ binary
