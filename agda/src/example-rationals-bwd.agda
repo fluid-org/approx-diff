@@ -4,6 +4,11 @@ module example-rationals-bwd where
 
 open import example-rationals
 import Data.Rational as Q
+open import Data.Integer using (+_)
+open import Data.Rational using (_/_)
+
+2ℚ = (+ 2) / 1
+3ℚ = (+ 3) / 1
 
 bwd-mult : ℚ → ℚ → FD.Vec 1 → _
 bwd-mult a b w =
@@ -11,8 +16,6 @@ bwd-mult a b w =
                (ty-sd (base number) (Q._*_ a b))
                (mor mult-ex (_ , (a , b))) .func w
 
-test-rev : bwd-mult 0ℚ 1ℚ (1ℚ ∷ []) ≡ (lift · , (1ℚ ∷ [] , 0ℚ ∷ []))
+-- Reverse mode: the gradient of x × y at (2, 3) is (∂/∂x, ∂/∂y) = (y, x) = (3, 2).
+test-rev : bwd-mult 2ℚ 3ℚ (1ℚ ∷ []) ≡ (lift · , (3ℚ ∷ [] , 2ℚ ∷ []))
 test-rev = refl
-
-test-rev' : bwd-mult 1ℚ 0ℚ (1ℚ ∷ []) ≡ (lift · , (0ℚ ∷ [] , 1ℚ ∷ []))
-test-rev' = refl

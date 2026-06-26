@@ -57,9 +57,13 @@ module ex where
                  when fst (var zero) ≟ (` l) ；
                  return (snd (var zero)))
 
-  -- Product of the two factors, for exercising the derivative interpretation of `mult`.
+  -- Product of two numbers.
   mult-ex : emp , base number [×] base number ⊢ base number
   mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])
+
+  -- Sum of a list of numbers, multiplied by another number.
+  sum-mul : emp , list (base number) [×] base number ⊢ base number
+  sum-mul = bop mult (app sum (fst (var zero)) ∷ snd (var zero) ∷ [])
 
   open import cbn-translation Sig Tag-monad
 
