@@ -4,7 +4,8 @@ open import Level using (suc; _⊔_; 0ℓ)
 open import basics
   using (IsPreorder; IsTop; IsMeet; IsResidual; monoidOfMeet; module ≤-Reasoning; IsJoin; IsClosureOp; IsBigJoin)
 open import categories using (Category; HasProducts; HasExponentials)
-open import functor using (Functor)
+open import functor using (Functor; NatTrans)
+open import monad using (Monad)
 
 module predicate-system {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) where
 
@@ -139,9 +140,17 @@ record FunctorPred (S : PredicateSystem) (F : Functor 𝒞 𝒞) : Set (suc (o �
     liftF-⊑ : ∀ {X} {P Q : Predicate X} → P ⊑ Q → liftF P ⊑ liftF Q
     liftF-[] : ∀ {X Y P} (f : X 𝒞.⇒ Y) → liftF (P [ f ]) ⊑ liftF P [ F .fmor f ]
 
-    ------ If F is a monad, then we need:
-    -- lift-unit : ∀ {X} {P : Predicate X} → P ⊑ liftF P [ unit ]
-    -- lift-join : ∀ {X} {P : Predicate X} → liftF (liftF P) ⊑ liftF P [ join ]
+record MonadPred (S : PredicateSystem) (M : Monad 𝒞) : Set (suc (o ⊔ m ⊔ e)) where
+  open PredicateSystem S
+  open Monad
+  field
+    functP : FunctorPred S (M .funct)
+  open FunctorPred functP public
+  open NatTrans
+  field
+    unitP : ∀ {X} {P : Predicate X} → P ⊑ liftF P [ M .Monad.unit .transf X ]
+    joinP : ∀ {X} {P : Predicate X} → liftF (liftF P) ⊑ liftF P [ M .join .transf X ]
+
     -- lift-str  : ∀ {X} {P Q : Predicate X} → (liftF P && Q) ⊑ liftF (P && Q) [ str ]
 
 record ClosureOp (S : PredicateSystem) : Set (suc (o ⊔ m ⊔ e)) where
