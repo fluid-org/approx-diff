@@ -76,6 +76,10 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   hom-setoid-l _ _ x y .isEquivalence .sym (lift e) = lift (isEquiv .sym e)
   hom-setoid-l _ _ x y .isEquivalence .trans (lift p) (lift q) = lift (isEquiv .trans p q)
 
+  precompose : ∀ {ℓ₁ ℓ₂} {x y z} (f : y ⇒ x) → hom-setoid-l ℓ₁ ℓ₂ x z ⇒s hom-setoid-l ℓ₁ ℓ₂ y z
+  precompose f ._⇒s_.func (lift g) = lift (g ∘ f)
+  precompose f ._⇒s_.func-resp-≈ (lift eq) = lift (∘-cong eq ≈-refl)
+
   record IsIso {x y} (f : x ⇒ y) : Set (m ⊔ e) where
     field
       inverse     : y ⇒ x
