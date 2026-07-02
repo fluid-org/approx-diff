@@ -15,8 +15,19 @@ import semimodule
 module sd-semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 module SemiMod = semimodule S
-open SemiMod using (SelfDual; 𝟘-sd; ⊕-sd; _⇒_; _≈m_; id; _∘_)
+open SemiMod public using (SelfDual)
+open SemiMod using (𝟘-sd; ⊕-sd; 𝕀-sd; _⇒_; _≈m_; id; _∘_)
 open SelfDual
+
+-- The scalars as a one-dimensional object, the trivial object, and the biproduct of objects.
+𝕀 : SelfDual
+𝕀 = 𝕀-sd
+
+𝟘 : SelfDual
+𝟘 = 𝟘-sd
+
+_⊕_ : SelfDual → SelfDual → SelfDual
+_⊕_ = ⊕-sd
 
 cat : Category (suc 0ℓ) 0ℓ 0ℓ
 cat .Category.obj = SelfDual
@@ -47,14 +58,14 @@ cmon-enriched .CMonEnriched.comp-bilinear-ε₁ = comp-bilinear-ε₁
 cmon-enriched .CMonEnriched.comp-bilinear-ε₂ = comp-bilinear-ε₂
 
 terminal : HasTerminal cat
-terminal .HasTerminal.witness = 𝟘-sd
+terminal .HasTerminal.witness = 𝟘
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {X} =
   SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {X .obj}
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext =
   SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext
 
 biproduct : ∀ X Y → Biproduct cmon-enriched X Y
-biproduct X Y .Biproduct.prod = ⊕-sd X Y
+biproduct X Y .Biproduct.prod = X ⊕ Y
 biproduct X Y .Biproduct.p₁ = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.p₁
 biproduct X Y .Biproduct.p₂ = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.p₂
 biproduct X Y .Biproduct.in₁ = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.in₁
@@ -105,13 +116,13 @@ U-preserve-products {X} {Y} .IsIso.inverse∘f≈id = ≈-trans id-left pair-p�
         (≈-trans (pair-natural (id ((X .obj) SemiMod.⊕ (Y .obj))) p₁ p₂)
           (pair-ext (id ((X .obj) SemiMod.⊕ (Y .obj)))))
 
--- 𝟘-sd is also initial: any map out of it is the zero map, since id on 𝟘 is the zero map.
+-- 𝟘 is also initial: any map out of it is the zero map, since id on 𝟘 is the zero map.
 initial : HasInitial cat
-initial .HasInitial.witness = 𝟘-sd
+initial .HasInitial.witness = 𝟘
 initial .HasInitial.is-initial .IsInitial.from-initial = εm
 initial .HasInitial.is-initial .IsInitial.from-initial-ext f =
   ≈-sym (≈-trans (≈-sym id-right)
-    (≈-trans (∘-cong (≈-refl {f = f}) (to-terminal-unique (id (𝟘-sd .obj)) εm))
+    (≈-trans (∘-cong (≈-refl {f = f}) (to-terminal-unique (id (𝟘 .obj)) εm))
       (comp-bilinear-ε₂ f)))
 
 -- The embedding Mat(S) ↪ SemiMod(S) factors through SDSemiMod(S) as U ∘ F; each free semimodule carries the

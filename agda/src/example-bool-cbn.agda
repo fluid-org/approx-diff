@@ -42,7 +42,7 @@ conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products
 open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
   nat.ℕₛ nat.zero-m nat.add nat.mult public
 open HM.interp Sig BaseInterp0 public
-open HM.interp-sd.bsddl Sig BaseInterp0 two.semiring-boolean using (BooleanSDDL; to-gal; ty-bsddl) public
+open HM.interp-sd.bsddl Sig BaseInterp0 two.semiring-boolean using (SelfDualBooleanAlgebra; to-gal; ty-bsddl) public
 
 open indexed-family._⇒f_ public
 open SM._⇒_ public

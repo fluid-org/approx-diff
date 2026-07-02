@@ -59,7 +59,7 @@ private
 
 module D = Deriv coeff-b coeff-cong-b
 open HM.interp Sig D.BaseInterp1 public
-open HM.interp-sd.bsddl Sig D.BaseInterp1 two.semiring-boolean using (BooleanSDDL; to-gal; ty-bsddl) public
+open HM.interp-sd.bsddl Sig D.BaseInterp1 two.semiring-boolean using (SelfDualBooleanAlgebra; to-gal; ty-bsddl) public
 
 open indexed-family._⇒f_ public
 open SM._⇒_ public
@@ -74,5 +74,5 @@ mor tm env = ⟦ tm ⟧tm .famf .transf env
 fwd : ∀ {Γ τ} (tm : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
 fwd tm env = mor tm env .func
 
--- Backward slice: `to-gal input output (mor tm env) .right .fun demand`, with input/output the BooleanSDDLs
+-- Backward slice: `to-gal input output (mor tm env) .right .fun demand`, with input/output the SelfDualBooleanAlgebras
 -- of the term's domain/codomain (built with `ty-bsddl`).  Inlined at the call site so the obj types unify.

@@ -692,7 +692,7 @@ module JoinSemilattices
       trans-⇔ Y.align (trans-⇔ (conj-⊥ X.dual Y.dual f) (sym-⇔ X.align))
 
   -- A self-dual distributive lattice with a Boolean negation.
-  record BooleanSDDL : Set (suc 0ℓ) where
+  record SelfDualBooleanAlgebra : Set (suc 0ℓ) where
     field selfDualLat : SelfDualDistributiveLattice
     open SelfDualDistributiveLattice selfDualLat public
     field boolean : BooleanAlgebra toObj
@@ -701,10 +701,10 @@ module JoinSemilattices
   open import galois using (_⇒g_; conj→gal)
 
   -- The Galois connection of f: its Tarski conjugate pair (to-conj) read as adjoints via De Morgan.
-  module _ (X Y : BooleanSDDL) where
+  module _ (X Y : SelfDualBooleanAlgebra) where
     private
-      module X = BooleanSDDL X
-      module Y = BooleanSDDL Y
+      module X = SelfDualBooleanAlgebra X
+      module Y = SelfDualBooleanAlgebra Y
 
     to-gal : X.obj ⇒ Y.obj → bounded Y.toObj ⇒g bounded X.toObj
     to-gal f = conj→gal X.boolean Y.boolean (to-conj X.selfDualLat Y.selfDualLat f)
@@ -772,12 +772,12 @@ module JoinSemilattices
                      (P.∧-∨-distrib (fwd .func x) (fwd .func y) (fwd .func z)))
     transport-sddl .align {a} {b} = trans-⇔ #⇔# P.align
 
-  -- A BooleanSDDL transports along an iso likewise: the SDDL via transport-sddl, the negation conjugated
+  -- A SelfDualBooleanAlgebra transports along an iso likewise: the SDDL via transport-sddl, the negation conjugated
   -- through the iso (¬' = bwd ∘ ¬ ∘ fwd), complements carried along.
-  module _ (P : BooleanSDDL) {N : Semimodule} (N≅M : Iso N (BooleanSDDL.obj P)) where
+  module _ (P : SelfDualBooleanAlgebra) {N : Semimodule} (N≅M : Iso N (SelfDualBooleanAlgebra.obj P)) where
     open SelfDualDistributiveLattice
     private
-      module P  = BooleanSDDL P
+      module P  = SelfDualBooleanAlgebra P
       open MeetSemilattice P.meets
       module M  = Semimodule P.obj
       module N  = Semimodule N
@@ -803,12 +803,12 @@ module JoinSemilattices
         ≤-antisym (∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
                   (∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
 
-    transport-bsddl : BooleanSDDL
-    transport-bsddl .BooleanSDDL.selfDualLat = transport-sddl P.selfDualLat N≅M
-    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ a = bwd .func (P.¬ (fwd .func a))
-    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ =
+    transport-bsddl : SelfDualBooleanAlgebra
+    transport-bsddl .SelfDualBooleanAlgebra.selfDualLat = transport-sddl P.selfDualLat N≅M
+    transport-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.¬ a = bwd .func (P.¬ (fwd .func a))
+    transport-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∧ =
       ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl fwd∘bwd))) (M.sym (fwd .preserve-ze)) P.compl-∧)
-    transport-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ =
+    transport-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∨ =
       ≤-bwd (≤M-resp (M.sym fwd∘bwd) (M.sym (M.trans (fwd .preserve-+) (M.+-cong M.refl fwd∘bwd))) P.compl-∨)
 
   -- With S a bounded distributive lattice, 𝕀 (and every n-ary biproduct of it) is one too, with
@@ -864,28 +864,28 @@ module JoinSemilattices
     ⊕ⁿ ℕ.zero    = 𝟘-sddl
     ⊕ⁿ (ℕ.suc n) = ⊕-sddl 𝕀-sddl (⊕ⁿ n)
 
-    -- Given a Boolean negation on the scalar, every free lattice 𝕀/𝟘/⊕ⁿ is a BooleanSDDL (¬ pointwise).
+    -- Given a Boolean negation on the scalar, every free lattice 𝕀/𝟘/⊕ⁿ is a SelfDualBooleanAlgebra (¬ pointwise).
     module _ (¬ : S.Carrier → S.Carrier)
              (compl-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
              (compl-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) where
-      𝕀-bsddl : BooleanSDDL
-      𝕀-bsddl .BooleanSDDL.selfDualLat = 𝕀-sddl
-      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ = ¬
-      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ = compl-∧
-      𝕀-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ = compl-∨
+      𝕀-bsddl : SelfDualBooleanAlgebra
+      𝕀-bsddl .SelfDualBooleanAlgebra.selfDualLat = 𝕀-sddl
+      𝕀-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.¬ = ¬
+      𝕀-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∧ = compl-∧
+      𝕀-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∨ = compl-∨
 
-      𝟘-bsddl : BooleanSDDL
-      𝟘-bsddl .BooleanSDDL.selfDualLat = 𝟘-sddl
-      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.¬ x = x
-      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ = tt
-      𝟘-bsddl .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ = tt
+      𝟘-bsddl : SelfDualBooleanAlgebra
+      𝟘-bsddl .SelfDualBooleanAlgebra.selfDualLat = 𝟘-sddl
+      𝟘-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.¬ x = x
+      𝟘-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∧ = tt
+      𝟘-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∨ = tt
 
-      ⊕-bsddl : BooleanSDDL → BooleanSDDL → BooleanSDDL
-      ⊕-bsddl X Y .BooleanSDDL.selfDualLat = ⊕-sddl (BooleanSDDL.selfDualLat X) (BooleanSDDL.selfDualLat Y)
-      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.¬ (a , b) = BooleanSDDL.¬ X a , BooleanSDDL.¬ Y b
-      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.compl-∧ {a , b} = BooleanSDDL.compl-∧ X , BooleanSDDL.compl-∧ Y
-      ⊕-bsddl X Y .BooleanSDDL.boolean .BooleanAlgebra.compl-∨ {a , b} = BooleanSDDL.compl-∨ X , BooleanSDDL.compl-∨ Y
+      ⊕-bsddl : SelfDualBooleanAlgebra → SelfDualBooleanAlgebra → SelfDualBooleanAlgebra
+      ⊕-bsddl X Y .SelfDualBooleanAlgebra.selfDualLat = ⊕-sddl (SelfDualBooleanAlgebra.selfDualLat X) (SelfDualBooleanAlgebra.selfDualLat Y)
+      ⊕-bsddl X Y .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.¬ (a , b) = SelfDualBooleanAlgebra.¬ X a , SelfDualBooleanAlgebra.¬ Y b
+      ⊕-bsddl X Y .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∧ {a , b} = SelfDualBooleanAlgebra.compl-∧ X , SelfDualBooleanAlgebra.compl-∧ Y
+      ⊕-bsddl X Y .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∨ {a , b} = SelfDualBooleanAlgebra.compl-∨ X , SelfDualBooleanAlgebra.compl-∨ Y
 
-      ⊕ⁿ-bsddl : ℕ → BooleanSDDL
+      ⊕ⁿ-bsddl : ℕ → SelfDualBooleanAlgebra
       ⊕ⁿ-bsddl ℕ.zero    = 𝟘-bsddl
       ⊕ⁿ-bsddl (ℕ.suc n) = ⊕-bsddl 𝕀-bsddl (⊕ⁿ-bsddl n)

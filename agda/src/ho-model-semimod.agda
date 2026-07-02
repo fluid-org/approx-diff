@@ -61,12 +61,12 @@ module interp-sd (Sig : Signature 0ℓ)
   module bsddl (bs : BooleanAlgebra S) where
     open BooleanAlgebra bs
     private module JS = JoinSemilattices ⊤-add-top
-    open JS using (BooleanSDDL; to-gal) public
+    open JS using (SelfDualBooleanAlgebra; to-gal) public
     open JS.DistribLattices ∧-idem using (𝟘-bsddl; ⊕-bsddl)
     open matrix-new.DistribLattices.DistribLattice S ∧-idem ⊤-add-top using (vec-bsddl)
 
-    ty-bsddl  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → BooleanSDDL
-    pow-bsddl : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → BooleanSDDL
+    ty-bsddl  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → SelfDualBooleanAlgebra
+    pow-bsddl : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (L._^_ (⟦ τ ⟧ty) n) .idx .Carrier) → SelfDualBooleanAlgebra
 
     ty-bsddl unit       _        = 𝟘-bsddl ¬ compl-∧ compl-∨
     ty-bsddl bool       _        = 𝟘-bsddl ¬ compl-∧ compl-∨
