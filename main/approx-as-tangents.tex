@@ -1,7 +1,9 @@
 \section{Approximations as Tangents}
 \label{sec:approx-as-tangents}
 
-We motivate our approach by showing how to combine ideas from differential geometry and stable domain theory to reconstruct the ideas of \GPS in a denotational setting.
+We motivate our approach by showing how to combine ideas from differential geometry and
+\Replaced{linear algebra}{stable domain theory} to reconstruct the \Replaced{dependency analyses of
+\secref{introduction}}{ideas of \GPS} in a denotational setting.
 % From this basis, we apply the CHAD framework of V{\'a}k{\'a}r \etal to obtain a denotational model of automatic differentiation that gives us an effective way to interpret programs as functions along with their forward and backwards approximation maps.
 
 \subsection{Manifolds, Smooth Functions, and Automatic Differentiation}
@@ -50,6 +52,56 @@ Smooth functions $f$ between manifolds $M$ and $N$ are functions on their points
 Computing the forward and backward derivatives of smooth functions $f$ has many applications of practical interest. For example, computation of the reverse derivative is of central interest in machine learning by gradient descent, the main technique used to train deep neural networks~\cite{rumelhart88,goodfellow16}.
 
 Derivatives can be computed numerically by computing $f$ on small perturbations of its input, or symbolically by examining a closed-form representation of $f$. However, a more common and practical technique is to use \emph{automatic differentiation}, where a program computing $f$ is instrumented to produce (a representation of) the forward and/or backward derivative as a side-effect of producing the output~\cite{linnainmaa76}. This has led to the area of differentiable programming, where programming languages and their implementations are specifically designed to admit efficient automatic differentation algorithms~\cite{jax2018github,abadi16,elliott17,sigal24}.
+
+\subsection{Derivatives over a Commutative Semiring}
+\label{sec:approx-as-tangents:semiring}
+
+\Added{In the Euclidean case, the differential picture above is plain matrix algebra: with a chosen basis,
+tangent and cotangent spaces are both $\RR^n$, the forward derivative at a point is the Jacobian matrix, and
+the backward derivative is its transpose. The real numbers play no role in this picture beyond supplying the
+scalars. Our first move is therefore to keep the matrix algebra and change the scalars. Throughout this
+section, fix a commutative semiring $S = (S, +, 0, \cdot, 1)$, whose elements we think of as pieces of
+dependency information, with $\cdot$ combining information along a path from an input to an output and $+$
+combining information across parallel paths.}
+
+\Added{Write $\Mat(S)$ for the category whose objects are natural numbers and whose morphisms $m \to n$ are
+$n \times m$ matrices over $S$, with composition given by matrix multiplication $(NM)_{ij} = \sum_k N_{ik}
+\cdot M_{kj}$ and identities by the Kronecker $\delta$. (Associativity uses distributivity of $\cdot$ over
+$+$ and the interchange law for iterated sums, both consequences of the semiring axioms.) A vector $v \in
+S^m$ is a morphism $1 \to m$, and decomposes as $v = \sum_i v_i \cdot e_i$, where $e_i$ is the $i$-th
+standard basis vector. The Jacobians of \secref{introduction} live here: a dependency relation between $m$
+input positions and $n$ output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$, where $\Two$ is
+the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule for dependencies is
+composition in $\Mat(\Two)$.}
+
+\Added{The \emph{transpose} $\transpose{M} : n \to m$ of $M : m \to n$, with entries $(\transpose{M})_{ji} =
+M_{ij}$, is involutive and reverses composition, $\transpose{(N \comp M)} = \transpose{M} \comp
+\transpose{N}$, using commutativity of $\cdot$; in the language of dagger categories, $(-)^{\top}$ is a
+dagger on $\Mat(S)$. The transpose is characterised by the \emph{dot product} $\langle u, v \rangle = \sum_i
+u_i \cdot v_i$: it is the unique matrix satisfying}
+\cbstart
+\begin{displaymath}
+  \langle M u, v \rangle = \langle u, \transpose{M} v \rangle
+\end{displaymath}
+\cbend
+\Added{uniqueness holding because pairing with the basis vectors extracts components, $\langle e_i, v
+\rangle = v_i$. This is the sense in which the forward and backward analyses of \secref{introduction}
+determine one another. Over $\Two$ the dot product has a direct reading: $\langle u, v \rangle = \top$
+exactly when the selections $u$ and $v$ overlap. It also explains why no separate space of cotangents
+appeared there: a morphism $n \to 1$ in $\Mat(S)$ is a row vector, so cotangents at $n$ are again vectors in
+$S^n$, and the pairing implements their action on tangents.}
+
+\Added{Matrix addition makes each hom-set of $\Mat(S)$ a commutative monoid, with composition bilinear; the
+object $0$ is a zero object; and $m + n$ is a \emph{biproduct} of $m$ and $n$, at once a product and a
+coproduct, with the injections the transposes of the projections, $\biinj_i = \transpose{\biproj_i}$. The
+coincidence of products and coproducts is characteristic of such linear settings, and is the reason
+$\Mat(S)$ on its own cannot interpret programs over sum types; we return to this in
+\secref{models-of-total-gps}.}
+
+\roly{Is $\Mat(S)$ the right level of generality here, or should the first-order model be something more
+general (arbitrary self-dual semimodules, or a Chu-style category of pairs), with $\Mat(S)$ as the concrete
+instance the examples run on? If we stick with $\Mat(S)$, we should say how it fits into the more general
+picture.}
 
 \subsection{Stable Functions as Differentiable Functions}
 
