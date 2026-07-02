@@ -58,21 +58,24 @@ Derivatives can be computed numerically by computing $f$ on small perturbations 
 
 \Added{In the Euclidean case, the differential picture above is plain matrix algebra: with a chosen basis,
 tangent and cotangent spaces are both $\RR^n$, the forward derivative at a point is the Jacobian matrix, and
-the backward derivative is its transpose. The real numbers play no role in this picture beyond supplying the
-scalars. Our first move is therefore to keep the matrix algebra and change the scalars. Throughout this
+the backward derivative is its transpose. Once the picture is presented in coordinates like this, the real
+numbers play no further role beyond supplying the scalars. (Getting to coordinates is where the special
+structure of the reals is used: every finite-dimensional vector space has a basis, which is what lets us
+identify cotangents with tangents. In what follows we take the coordinate presentation as primitive.) Our
+first move is therefore to keep the matrix algebra and change the scalars. Throughout this
 section, fix a commutative semiring $S = (S, +, 0, \cdot, 1)$, whose elements we think of as pieces of
 dependency information, with $\cdot$ combining information along a path from an input to an output and $+$
 combining information across parallel paths.}
 
-\Added{Write $\Mat(S)$ for the category whose objects are natural numbers and whose morphisms $m \to n$ are
-$n \times m$ matrices over $S$, with composition given by matrix multiplication $(NM)_{ij} = \sum_k N_{ik}
-\cdot M_{kj}$ and identities by the Kronecker $\delta$. (Associativity uses distributivity of $\cdot$ over
-$+$ and the interchange law for iterated sums, both consequences of the semiring axioms.) A vector $v \in
-S^m$ is a morphism $1 \to m$, and decomposes as $v = \sum_i v_i \cdot e_i$, where $e_i$ is the $i$-th
-standard basis vector. The Jacobians of \secref{introduction} live here: a dependency relation between $m$
-input positions and $n$ output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$, where $\Two$ is
-the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule for dependencies is
-composition in $\Mat(\Two)$.}
+\Added{Write $\Mat(S)$ for the category whose objects are natural numbers and whose morphisms $m \to n$ are $n
+\times m$ matrices over $S$, with composition given by matrix multiplication $(NM)_{ij} = \sum_k N_{ik} \cdot
+M_{kj}$ and identities by the Kronecker $\delta$. (Associativity of composition follows from distributivity of
+$\cdot$ over $+$ and the interchange law for iterated sums, both consequences of the semiring axioms.) A
+vector $v \in S^m$ is a morphism $1 \to m$, and decomposes as $v = \sum_i v_i \cdot e_i$, where $e_i$ is the
+$i$-th standard basis vector. The Jacobians of \secref{introduction} live here: a dependency relation between
+$m$ input positions and $n$ output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$, where $\Two$ is
+the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule for dependencies is composition
+in $\Mat(\Two)$.}
 
 \Added{The \emph{transpose} $\transpose{M} : n \to m$ of $M : m \to n$, with entries $(\transpose{M})_{ji} =
 M_{ij}$, is involutive and reverses composition, $\transpose{(N \comp M)} = \transpose{M} \comp
@@ -99,9 +102,10 @@ $\Mat(S)$ on its own cannot interpret programs over sum types; we return to this
 \secref{models-of-total-gps}.}
 
 \roly{Is $\Mat(S)$ the right level of generality here, or should the first-order model be something more
-general (arbitrary self-dual semimodules, or a Chu-style category of pairs), with $\Mat(S)$ as the concrete
-instance the examples run on? If we stick with $\Mat(S)$, we should say how it fits into the more general
-picture.}
+general (perhaps with $\Mat(S)$ as the concrete instance the examples run on)? Two candidates: (i)
+\emph{self-dual semimodules}, pairs $\langle M, i : M \cong M^* \rangle$; (ii) a \emph{Chu-style category} of
+pairs $\langle M, N, k : M \otimes N \to S \rangle$, with $N$ playing the cotangent role, where a morphism is
+a pair of a forward $f : M \to M'$ and backward $g : N' \to N$ where $k'(f\,m, n') = k(m, g\,n')$.}
 
 \subsection{Stable Functions as Differentiable Functions}
 
