@@ -175,7 +175,40 @@ Given this close connection between \Replaced{dependency analysis}{\GPS} and dif
 
 %Our primary contribution in this article is to elucidate \GPS by relating it to differentiable programming and automatic differentiation. In doing so, we aim to expand the applicability of program slicing, and to potentially transfer efficient automatic differentiation implementation techniques from automatic differentiation to program slicing and provenance tracking.
 
-\GPS, as any program slicing technique, essentially rests on an analysis of how programs intensionally explore their input, in addition to their extensional behaviour. Such analysis has been carried out over many years in Domain Theory. In \secref{approx-as-tangents}, we use ideas from \citet{berry79}'s \emph{stable domain theory} and develop an analogy between stable functions and smooth functions from mathematical analysis, where stable functions provide a kind of semantic provenance analysis. In \secref{models-of-total-gps}, we abstract from stable functions using V{\'a}k{\'a}r \etal{}'s CHAD framework \cite{vakar22,nunes2023} to build models of a higher-order language that automatically compute slices. We apply this to a concrete higher-order language in \secref{language} and demonstrate the use of the model on variations of \exref{introduction-example}, highlighting the flexibility of our approach. In particular, we show how type structure can be used to control the approximation lattices associated with data points, something that was ``hard coded'' in previous presentations of \GPS. We prove two correctness properties in \secref{definability}, relating the higher-order interpretations to first-order ones, proving the crucial Galois connection property. \secref{related-work} and \secref{conclusion} discuss additional related and future work.
+\Replaced{Our central contribution is to show that data provenance can be organised as differentiation over
+a commutative semiring of dependency information. In \secref{approx-as-tangents} we develop the first-order
+picture, for programs over tuples of atomic data: derivatives as matrices over a semiring $S$, with the
+transpose relating forward and backward
+evaluation, and with successively stronger conditions on $S$ yielding join-preserving maps, conjugate pairs
+and, for Boolean algebras, the Galois connections of \GPS; ordinary AD occupies the case $S = \mathbb{R}$. We
+also relate this picture to \citet{berry79}'s \emph{stable domain theory}, where stable functions provide a
+kind of semantic provenance analysis. In \secref{models-of-total-gps} we extend to sum types and structured
+data using the category of families construction and, following V{\'a}k{\'a}r \etal{}'s CHAD
+framework~\cite{vakar22,nunes2023}, build models of a higher-order language in which every program is
+interpreted together with its family of derivatives. We apply this to a concrete higher-order language in
+\secref{language} and demonstrate the model on variations of \exref{introduction-example}, showing how type
+structure can be used to control the dependency structure associated with data, something that was ``hard
+coded'' in previous presentations of \GPS. We prove two correctness properties in \secref{definability}:
+programs of first-order type denote matrices in the sense of \secref{approx-as-tangents}, and the
+higher-order interpretation agrees with the standard set-theoretic semantics. \secref{related-work} and
+\secref{conclusion} discuss additional related and future work.}{\GPS, as any program slicing technique, essentially rests on an analysis of how programs intensionally explore their input, in addition to their extensional behaviour. Such analysis has been carried out over many years in Domain Theory. In \secref{approx-as-tangents}, we use ideas from \citet{berry79}'s \emph{stable domain theory} and develop an analogy between stable functions and smooth functions from mathematical analysis, where stable functions provide a kind of semantic provenance analysis. In \secref{models-of-total-gps}, we abstract from stable functions using V{\'a}k{\'a}r \etal{}'s CHAD framework \cite{vakar22,nunes2023} to build models of a higher-order language that automatically compute slices. We apply this to a concrete higher-order language in \secref{language} and demonstrate the use of the model on variations of \exref{introduction-example}, highlighting the flexibility of our approach. In particular, we show how type structure can be used to control the approximation lattices associated with data points, something that was ``hard coded'' in previous presentations of \GPS. We prove two correctness properties in \secref{definability}, relating the higher-order interpretations to first-order ones, proving the crucial Galois connection property. \secref{related-work} and \secref{conclusion} discuss additional related and future work.}
+
+\Added{The following table summarises the correspondence developed over the course of the paper:}
+\cbstart
+\begin{center}
+  \small
+  \begin{tabular}{lll}
+    & \textbf{Differentiable programming} & \textbf{Dependency analysis} \\
+    scalars & real numbers & commutative semiring $S$ \\
+    space at a point & vector space of tangents & join-semilattice of approximations \\
+    derivative of a run & Jacobian matrix & dependency relation as Boolean matrix \\
+    chain rule & matrix multiplication & matrix multiplication over $S$ \\
+    forward mode & pushes tangents forward & propagates dependencies forward \\
+    reverse mode & pulls cotangents back & computes backward slices \\
+    forward/backward relation & transpose & transpose (conjugate pair) \\
+  \end{tabular}
+\end{center}
+\cbend
 
 % \begin{enumerate}[leftmargin=\enummargin]
 % \item We explain how the CHAD framework of Vákár et al. can be adapted to give a general categorical framework for \GPS.
