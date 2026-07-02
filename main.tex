@@ -57,19 +57,18 @@
   commutative semiring of dependency information rather than the real numbers, the derivative of a program
   becomes a linear map between spaces of approximations of its input and output. The choice of semiring
   determines the notion of provenance. Over distributive lattices, the Jacobian of a program and its transpose
-  propagate approximations forwards and backwards as a \emph{conjugate pair} of maps, yielding program
-  slicing; when the lattice is a Boolean algebra, the two directions are moreover related by adjunction,
-  recovering \GPS. Over the simplest Boolean algebra, the two-element lattice, the Jacobian records which
+  propagate dependency information forwards and backwards as a \emph{conjugate pair} of maps; when the lattice is a
+  Boolean algebra, the two directions are moreover related by adjunction, recovering \GPS. Over the simplest Boolean algebra, the two-element lattice, the Jacobian records which
   input positions each output position may depend on, and composing Jacobians forwards or backwards is
   \emph{dependency analysis} in the manner of forward- and reverse-mode AD. We interpret a higher-order total
   functional language in this framework, prove that every program of first-order type denotes such a Jacobian,
-  and instantiate the semiring to obtain dependency tracking (Booleans), automatic differentiation
-  (rationals), and quantitative interval provenance (tropical rationals). All results are formalised in
-  Agda.}{\GPS is a technique for program slicing for provenance, developed by Perera and collaborators. \GPS
-  aims to explain program executions by demonstrating how to track approximations of the input and output
-  forwards and backwards along a particular execution. In this paper, we explore an analogy between \GPS and
-  differentiable programming, seeing the implementation of forwards and backwards slicing as a kind of
-  automatic differentiation. Using the CHAD approach to automatic differentiation due to V{\'a}k{\'a}r and
+  and instantiate the semiring to obtain dependency tracking (Booleans), automatic differentiation (reals),
+  and quantitative interval provenance (the tropical semiring). All results are formalised in Agda.}{\GPS is a
+  technique for program slicing for provenance, developed by Perera and collaborators. \GPS aims to explain
+  program executions by demonstrating how to track approximations of the input and output forwards and
+  backwards along a particular execution. In this paper, we explore an analogy between \GPS and differentiable
+  programming, seeing the implementation of forwards and backwards slicing as a kind of automatic
+  differentiation. Using the CHAD approach to automatic differentiation due to V{\'a}k{\'a}r and
   collaborators, we reformulate \GPS via a categorical semantics. In doing so, we are able to explore
   extensions of the \GPS idea to quantitative interval analysis, and to clarify the implicit choices made in
   existing instantiations of this approach.}

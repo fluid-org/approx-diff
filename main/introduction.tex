@@ -3,12 +3,34 @@
 
 To audit any computational process, we need robust and well-founded notions of \emph{provenance} to track how data are used. This allows us to answer questions like ``Where did these data come from?'', ``Why are these data in the output?'' and ``How were these data computed?''. Provenance tracking has a wide range of applications, from debugging and program comprehension~\cite{buneman95,cheney07} to improving reproducibility and transparency in scientific workflows~\cite{kontogiannis08}. \emph{Program slicing}, first proposed by~\citet{weiser81}, is a collection of techniques for provenance tracking that attempts to take a run of a program and areas of interest in the output, and turn them into the subset of the input and the program that were responsible for generating those specific outputs.
 
+\Added{Underlying all of these questions is a more basic one: how does the output of a program respond when
+its input changes? For programs that compute with real numbers, calculus has a canonical answer: the
+derivative, a linear map between tangent spaces describing how the output varies as the input varies, with
+\emph{automatic differentiation} (AD)~\cite{siskind08,elliott18,vakar22} being a computational technique for
+computing such derivatives alongside the program itself. For provenance, where the inputs are database tuples, elements of a data structure or fragments of source
+code rather than quantities, the question is qualitative rather than quantitative: if we perturb the input at a given position, can the
+output change at all? Posing this question one input at a time yields a vector of Boolean partial
+derivatives, and for a program with several outputs, a \emph{Boolean Jacobian}: a matrix whose entry at
+$(j, i)$ records whether output position $j$ may depend on input position $i$. Consider multiplication: at the point $(x, y)$, the usual partial derivative
+$\partial(x \cdot y)/\partial x$ is $y$, and its Boolean counterpart records that the output can vary with
+$x$ only when $y \neq 0$. \todo{Work up a more interesting running illustration here, alongside the
+corresponding Agda example.} Like their numerical counterparts, Boolean Jacobians compose by matrix
+multiplication. This paper develops the proposal that dependency analysis is precisely the evaluation of such
+Jacobians alongside the program, forwards or backwards, in the manner of forward- and reverse-mode AD, with
+the two directions related by matrix transposition.}
+
 Existing approaches to program slicing are often tied to particular programming languages or implementations.
-In this paper we develop a general categorical approach to program slicing, focusing on a particular technique
+\Replaced{In this paper we develop this analogy into a general categorical approach to data provenance, in
+which the derivative of a program is a linear map between spaces of approximations of its input and output,
+with scalars drawn from a commutative semiring of dependency information. The choice of semiring determines
+the analysis: the reals recover AD itself, while over distributive lattices the derivative and its transpose
+form a \emph{conjugate pair}, propagating dependency information forwards and backwards; when the lattices are
+Boolean algebras, the same maps can instead be presented as an adjunction, recovering the \GPS of Perera and
+collaborators.}{In this paper we develop a general categorical approach to program slicing, focusing on a particular technique
 called \GPS, where the set of slices of a given value form a lattice of approximations and the forward and
 backward slicing procedures generate Galois connections between these lattices. Our main contribution is that
 this approach can be seen as a generalised form of automatic differentiation, with slices of values playing
-the role of tangents. Our categorical approach should provide a suitable setting for enabling ``automatic''
+the role of tangents.} Our categorical approach should provide a suitable setting for enabling ``automatic''
 data provenance for a variety of programming languages, and is easily configured to use alternative
 approximation strategies, including quantitative forms of slicing.
 
