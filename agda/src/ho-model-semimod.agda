@@ -18,11 +18,11 @@ import ho-model
 module ho-model-semimod {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 module E  = matrix-new.Embedding S
-module FD = matrix-new.Mat S
+module Mat = matrix-new.Mat S
 module SM = semimodule S
 
 open ho-model.Interpretation
-  FD.cat FD.terminal FD.products
+  Mat.cat Mat.terminal Mat.products
   SM.cat SM.cmon-enriched SM.limits SM.terminal SM.biproduct
   E.F E.F-preserve-terminal
   (λ {X} {Y} → E.F-preserve-products {X} {Y})

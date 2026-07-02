@@ -65,46 +65,52 @@ and change the scalars. Throughout this section, fix a commutative semiring $S =
 elements we think of as atoms of dependency information, with $\cdot$ combining information along a path from
 an input to an output and $+$ combining information across parallel paths.}
 
-\Added{Write $\Mat(S)$ for the category whose objects are natural numbers and whose morphisms $m \to n$ are $n
-\times m$ matrices over $S$, with composition given by matrix multiplication $(NM)_{ij} = \sum_k N_{ik} \cdot
-M_{kj}$ and identities by the Kronecker $\delta$. (Associativity of composition follows from distributivity of
-$\cdot$ over $+$ and the interchange law for iterated sums, both consequences of the semiring axioms.) A
-vector $v \in S^m$ is a morphism $1 \to m$, and decomposes as $v = \sum_i v_i \cdot e_i$, where $e_i$ is the
-$i$-th standard basis vector. The Boolean Jacobians from \secref{introduction} live here: a dependency
-relation between $m$ input positions and $n$ output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$,
-where $\Two$ is the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule for dependencies
-is composition in $\Mat(\Two)$, or equivalently \emph{relational} composition under the equivalence of
-categories $\Mat(\Two) \simeq \FinRel$.}
+\Added{The role of vector spaces, which are defined over fields, is played by \emph{semimodules}: commutative
+monoids $(M, +, 0)$ equipped with an action $a \cdot x$ of the scalars, satisfying the usual laws. Linear maps
+preserve $+$, $0$ and the action, and form a category $\SemiMod(S)$; pointwise addition of linear maps makes
+each hom-set a commutative monoid, with composition bilinear. Every semimodule has a \emph{dual} $M^* = M
+\linearto S$ of linear maps into the scalars, and every linear map $f : M \linearto N$ has a \emph{transpose}
+$\transpose{f} = (- \comp f) : N^* \linearto M^*$, contravariantly.}
 
-\Added{The \emph{transpose} $\transpose{M} : n \to m$ of $M : m \to n$, with entries $(\transpose{M})_{ji} =
-M_{ij}$, is involutive and reverses composition, $\transpose{(N \comp M)} = \transpose{M} \comp
-\transpose{N}$, using commutativity of $\cdot$. $(-)^{\top}$ is thus a dagger on $\Mat(S)$. The transpose
-can also be characterised equationally, in terms of the \emph{dot product} $\langle u, v \rangle = \sum_i
-u_i \cdot v_i$: it is the unique matrix satisfying}
+\Added{The transpose is almost the backward analysis we are after: it runs in the opposite direction to $f$,
+but between the duals $N^*$ and $M^*$, the cotangent spaces, rather than between the tangent spaces $M$ and
+$N$ themselves. What we want is a map $N \linearto M$, running dependency information back through the same
+spaces the forward map runs it through, as the transposed matrix did in \secref{introduction}. For that, each space must be identified with its dual.
+Whereas a finite-dimensional vector space always admits such an identification (choose a basis), a semimodule
+need not. We therefore make the identification part of the data. A \emph{self-dual} semimodule is a pair
+$\langle M, i \rangle$ of a semimodule and a chosen isomorphism $i : M \cong M^*$, which induces a pairing
+$\langle x, y \rangle = i(x)(y)$. Between self-dual semimodules $\langle M, i \rangle$ and $\langle N, j
+\rangle$, every linear map $f : M \linearto N$ then has a \emph{conjugate} $\conj{f} = i^{-1} \comp
+\transpose{f} \comp j : N \linearto M$, the unique linear map satisfying}
 \cbstart
 \begin{displaymath}
-  \added{\langle M u, v \rangle = \langle u, \transpose{M} v \rangle}
+  \added{\langle f(x), y \rangle = \langle x, \conj{f}(y) \rangle}
 \end{displaymath}
 \cbend
-\Added{uniqueness holding because pairing with the basis vectors extracts components, $\langle e_i, v
-\rangle = v_i$. This makes precise the relationship between the forward and backward analyses asserted in
-\secref{introduction}. Over $\Two$ the dot product has a direct reading: $\langle u, v \rangle = \top$
-exactly when the selections $u$ and $v$ overlap. It also explains why no separate space of cotangents
-appeared there: a morphism $n \to 1$ in $\Mat(S)$ is a row vector, so cotangents at $n$ are again vectors in
-$S^n$, and the pairing implements their action on tangents.}
+\Added{The conjugate is our backward analysis, and this equation makes precise its relationship with the
+forward one asserted in \secref{introduction}. Self-dual semimodules and linear maps form a category
+$\SDSemiMod(S)$.}
 
-\Added{Matrix addition makes each hom-set of $\Mat(S)$ a commutative monoid, with composition bilinear; the
-natural number $0$ is a zero object, and $m + n$ is a \emph{biproduct} of $m$ and $n$, an object which is both
-a product and a coproduct, with the injections the transposes of the projections, $\biinj_i =
-\transpose{\biproj_i}$. The coincidence of products and coproducts is characteristic of such linear settings,
-and is the reason $\Mat(S)$ on its own cannot interpret programs over sum types; we return to this in
-\secref{models-of-total-gps}.}
+\Added{The canonical instances are the \emph{free} finite-dimensional semimodules $S^n$, whose elements are
+$n$-length vectors of scalars, with standard basis vectors $e_i$ and every $v \in S^n$ decomposing as $v =
+\sum_i v_i \cdot e_i$. Currying the \emph{dot product} $\langle u, v \rangle = \sum_i u_i \cdot v_i$ gives
+an isomorphism $S^n \cong (S^n)^*$, since pairing with the basis vectors extracts components, $\langle e_i,
+v \rangle = v_i$; so free semimodules are self-dual. By basis decomposition, a linear map $S^m \linearto
+S^n$ is exactly an $n \times m$ matrix over $S$, with composition as matrix multiplication and the conjugate
+as the familiar matrix transpose, $(\conj{M})_{ji} = M_{ij}$. We write $\Mat(S)$ for the skeletal category
+whose objects are natural numbers and whose morphisms $m \to n$ are $n \times m$ matrices. The Boolean
+Jacobians from \secref{introduction} live here: a dependency relation between $m$ input positions and $n$
+output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$, where $\Two$ is the Boolean semiring with
+$+ = \vee$ and $\cdot = \wedge$; the chain rule for dependencies is composition in $\Mat(\Two)$, or
+equivalently \emph{relational} composition under the equivalence of categories $\Mat(\Two) \simeq \FinRel$;
+and the dot product reads as overlap, $\langle u, v \rangle = \top$ exactly when the selections $u$ and $v$
+share a position.}
 
-\roly{Is $\Mat(S)$ the right level of generality here, or should the first-order model be something more
-general (perhaps with $\Mat(S)$ as the concrete instance the examples run on)? Two candidates: (i)
-\emph{self-dual semimodules}, pairs $\langle M, i : M \cong M^* \rangle$; (ii) a \emph{Chu-style category} of
-pairs $\langle M, N, k : M \otimes N \to S \rangle$, with $N$ playing the cotangent role, where a morphism is
-a pair of a forward $f : M \to M'$ and backward $g : N' \to N$ with $k'(f\,m, n') = k(m, g\,n')$.}
+\Added{The trivial semimodule is a zero object in $\SDSemiMod(S)$, and self-dual semimodules are closed
+under the \emph{biproduct} $M \biprod N$, an object which is both a product and a coproduct, with the
+injections conjugate to the projections, $\biinj_i = \conj{\biproj_i}$. The coincidence of products and
+coproducts is characteristic of such linear settings, and is the reason $\SDSemiMod(S)$ on its own cannot
+interpret programs over sum types; we return to this in \secref{models-of-total-gps}.}
 
 \subsection{Stable Functions as Differentiable Functions}
 
