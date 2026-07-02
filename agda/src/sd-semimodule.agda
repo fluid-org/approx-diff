@@ -77,28 +77,33 @@ U .Functor.fmor-cong f₁≈f₂ = f₁≈f₂
 U .Functor.fmor-id = SM.cat .Category.isEquiv .IsEquivalence.refl
 U .Functor.fmor-comp f g = SM.cat .Category.isEquiv .IsEquivalence.refl
 
--- U preserves the chosen terminal and products, as required of the FO model by the interpretation.
-open Category SM.cat using (IsIso; ≈-trans; ≈-sym; id-left; id-right)
+-- U preserves the chosen terminal and products, as required for the FO model.
 private
-  module SMT = IsTerminal (SM.terminal .HasTerminal.is-terminal)
-  module SMP = HasProducts (biproducts→products SM.cmon-enriched SM.biproduct)
-module FPF = finite-product-functor U
+  SM-products : HasProducts SM.cat
+  SM-products = biproducts→products SM.cmon-enriched SM.biproduct
 
-U-preserve-terminal : FPF.preserve-chosen-terminal terminal SM.terminal
-U-preserve-terminal .IsIso.inverse = SMT.to-terminal
-U-preserve-terminal .IsIso.f∘inverse≈id = SMT.to-terminal-unique _ _
-U-preserve-terminal .IsIso.inverse∘f≈id = SMT.to-terminal-unique _ _
+open Category SM.cat using (IsIso; ≈-trans; ≈-sym; id-left; id-right)
+open IsTerminal (SM.terminal .HasTerminal.is-terminal) using (to-terminal; to-terminal-unique)
+open HasProducts SM-products using (pair; p₁; p₂; pair-natural; pair-ext)
+open finite-product-functor U using (preserve-chosen-terminal; preserve-chosen-products)
 
-U-preserve-products : FPF.preserve-chosen-products products (biproducts→products SM.cmon-enriched SM.biproduct)
+U-preserve-terminal : preserve-chosen-terminal terminal SM.terminal
+U-preserve-terminal .IsIso.inverse = to-terminal
+U-preserve-terminal .IsIso.f∘inverse≈id = to-terminal-unique _ _
+U-preserve-terminal .IsIso.inverse∘f≈id = to-terminal-unique _ _
+
+U-preserve-products : preserve-chosen-products products SM-products
 U-preserve-products {X} {Y} .IsIso.inverse = id ((X .obj) SM.⊕ (Y .obj))
 U-preserve-products {X} {Y} .IsIso.f∘inverse≈id =
-  ≈-trans (SMP.pair-natural (id ((X .obj) SM.⊕ (Y .obj))) SMP.p₁ SMP.p₂)
-    (SMP.pair-ext (id ((X .obj) SM.⊕ (Y .obj))))
-U-preserve-products {X} {Y} .IsIso.inverse∘f≈id =
-  ≈-trans id-left
-    (≈-trans (≈-sym id-right)
-      (≈-trans (SMP.pair-natural (id ((X .obj) SM.⊕ (Y .obj))) SMP.p₁ SMP.p₂)
-        (SMP.pair-ext (id ((X .obj) SM.⊕ (Y .obj))))))
+  ≈-trans (pair-natural (id ((X .obj) SM.⊕ (Y .obj))) p₁ p₂)
+    (pair-ext (id ((X .obj) SM.⊕ (Y .obj))))
+U-preserve-products {X} {Y} .IsIso.inverse∘f≈id = ≈-trans id-left pair-p≈id
+  where
+    pair-p≈id : pair (p₁ {X .obj} {Y .obj}) (p₂ {X .obj} {Y .obj}) ≈m id ((X .obj) SM.⊕ (Y .obj))
+    pair-p≈id =
+      ≈-trans (≈-sym id-right)
+        (≈-trans (pair-natural (id ((X .obj) SM.⊕ (Y .obj))) p₁ p₂)
+          (pair-ext (id ((X .obj) SM.⊕ (Y .obj)))))
 
 -- The embedding Mat(S) ↪ SemiMod(S) factors through SDSemiMod(S) as U ∘ F; each free semimodule carries the
 -- self-duality induced by the dot product.
