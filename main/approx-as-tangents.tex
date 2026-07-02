@@ -59,32 +59,31 @@ Derivatives can be computed numerically by computing $f$ on small perturbations 
 \Added{In the Euclidean case, the differential picture above is plain matrix algebra: with a chosen basis,
 tangent and cotangent spaces are both $\RR^n$, the forward derivative at a point is the Jacobian matrix, and
 the backward derivative is its transpose. Once the picture is presented in coordinates like this, the real
-numbers play no further role beyond supplying the scalars. (Getting to coordinates is where the special
-structure of the reals is used: every finite-dimensional vector space has a basis, which is what lets us
-identify cotangents with tangents. In what follows we take the coordinate presentation as primitive.) Our
-first move is therefore to keep the matrix algebra and change the scalars. Throughout this
-section, fix a commutative semiring $S = (S, +, 0, \cdot, 1)$, whose elements we think of as pieces of
-dependency information, with $\cdot$ combining information along a path from an input to an output and $+$
-combining information across parallel paths.}
+numbers play no further role beyond supplying the scalars; since dependency information is typically indexed
+by positions in a value, which then serve as a coordinate basis, our first move is to keep the matrix algebra
+and change the scalars. Throughout this section, fix a commutative semiring $S = (S, +, 0, \cdot, 1)$, whose
+elements we think of as atoms of dependency information, with $\cdot$ combining information along a path from
+an input to an output and $+$ combining information across parallel paths.}
 
 \Added{Write $\Mat(S)$ for the category whose objects are natural numbers and whose morphisms $m \to n$ are $n
 \times m$ matrices over $S$, with composition given by matrix multiplication $(NM)_{ij} = \sum_k N_{ik} \cdot
 M_{kj}$ and identities by the Kronecker $\delta$. (Associativity of composition follows from distributivity of
 $\cdot$ over $+$ and the interchange law for iterated sums, both consequences of the semiring axioms.) A
 vector $v \in S^m$ is a morphism $1 \to m$, and decomposes as $v = \sum_i v_i \cdot e_i$, where $e_i$ is the
-$i$-th standard basis vector. The Jacobians of \secref{introduction} live here: a dependency relation between
-$m$ input positions and $n$ output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$, where $\Two$ is
-the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule for dependencies is composition
-in $\Mat(\Two)$.}
+$i$-th standard basis vector. The Boolean Jacobians from \secref{introduction} live here: a dependency
+relation between $m$ input positions and $n$ output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$,
+where $\Two$ is the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule for dependencies
+is composition in $\Mat(\Two)$, or equivalently \emph{relational} composition under the equivalence of
+categories $\Mat(\Two) \simeq \FinRel$.}
 
 \Added{The \emph{transpose} $\transpose{M} : n \to m$ of $M : m \to n$, with entries $(\transpose{M})_{ji} =
 M_{ij}$, is involutive and reverses composition, $\transpose{(N \comp M)} = \transpose{M} \comp
-\transpose{N}$, using commutativity of $\cdot$; in the language of dagger categories, $(-)^{\top}$ is a
-dagger on $\Mat(S)$. The transpose is characterised by the \emph{dot product} $\langle u, v \rangle = \sum_i
-u_i \cdot v_i$: it is the unique matrix satisfying}
+\transpose{N}$, using commutativity of $\cdot$. $(-)^{\top}$ is thus a dagger on $\Mat(S)$. The transpose is
+characterised by the \emph{dot product} $\langle u, v \rangle = \sum_i u_i \cdot v_i$: it is the unique matrix
+satisfying}
 \cbstart
 \begin{displaymath}
-  \langle M u, v \rangle = \langle u, \transpose{M} v \rangle
+  \added{\langle M u, v \rangle = \langle u, \transpose{M} v \rangle}
 \end{displaymath}
 \cbend
 \Added{uniqueness holding because pairing with the basis vectors extracts components, $\langle e_i, v
@@ -95,10 +94,10 @@ appeared there: a morphism $n \to 1$ in $\Mat(S)$ is a row vector, so cotangents
 $S^n$, and the pairing implements their action on tangents.}
 
 \Added{Matrix addition makes each hom-set of $\Mat(S)$ a commutative monoid, with composition bilinear; the
-object $0$ is a zero object; and $m + n$ is a \emph{biproduct} of $m$ and $n$, at once a product and a
-coproduct, with the injections the transposes of the projections, $\biinj_i = \transpose{\biproj_i}$. The
-coincidence of products and coproducts is characteristic of such linear settings, and is the reason
-$\Mat(S)$ on its own cannot interpret programs over sum types; we return to this in
+natural number $0$ is a zero object, and $m + n$ is a \emph{biproduct} of $m$ and $n$, an object which is both
+a product and a coproduct, with the injections the transposes of the projections, $\biinj_i =
+\transpose{\biproj_i}$. The coincidence of products and coproducts is characteristic of such linear settings,
+and is the reason $\Mat(S)$ on its own cannot interpret programs over sum types; we return to this in
 \secref{models-of-total-gps}.}
 
 \roly{Is $\Mat(S)$ the right level of generality here, or should the first-order model be something more
