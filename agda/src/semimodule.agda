@@ -709,109 +709,8 @@ module JoinSemilattices
     to-gal : X.obj ⇒ Y.obj → bounded Y.toObj ⇒g bounded X.toObj
     to-gal f = conj→gal X.boolean Y.boolean (to-conj X.selfDualLat Y.selfDualLat f)
 
-  -- A self-dual distributive lattice structure transports along any semimodule isomorphism.
-  module _ (P : SelfDualDistributiveLattice) {N : Semimodule}
-           (N≅M : Iso N (SelfDualDistributiveLattice.obj P)) where
-    open SelfDualDistributiveLattice
-    open SelfDual
-    private
-      module P  = SelfDualDistributiveLattice P
-      open MeetSemilattice P.meets
-      module M  = Semimodule P.obj
-      module N  = Semimodule N
-      open Iso N≅M
 
-      fwd∘bwd : ∀ {z} → fwd .func (bwd .func z) M.≈ z
-      fwd∘bwd = fwd∘bwd≈id .*≈* ._≈s_.func-eq M.refl
-
-      bwd∘fwd : ∀ {a} → bwd .func (fwd .func a) N.≈ a
-      bwd∘fwd = bwd∘fwd≈id .*≈* ._≈s_.func-eq N.refl
-
-      -- fwd preserves and reflects the order.
-      ≤-fwd : ∀ {x y} → _≤_ N x y → _≤_ P.obj (fwd .func x) (fwd .func y)
-      ≤-fwd x≤y = M.trans (M.sym (fwd .preserve-+)) (fwd .func-resp-≈ x≤y)
-      ≤-bwd : ∀ {x y} → _≤_ P.obj (fwd .func x) (fwd .func y) → _≤_ N x y
-      ≤-bwd {x} {y} h =
-        N.trans (N.sym (bwd∘fwd {x N.+ y}))
-          (N.trans (bwd .func-resp-≈ (fwd .preserve-+))
-            (N.trans (bwd .func-resp-≈ h) (bwd∘fwd {y})))
-
-      ≤M-resp : ∀ {x x' y y'} → x M.≈ x' → y M.≈ y' → _≤_ P.obj x y → _≤_ P.obj x' y'
-      ≤M-resp x≈x' y≈y' h = M.trans (M.+-cong (M.sym x≈x') (M.sym y≈y')) (M.trans h y≈y')
-
-      ≤-antisym : ∀ {x y} → _≤_ P.obj x y → _≤_ P.obj y x → x M.≈ y
-      ≤-antisym x≤y y≤x = M.trans (M.sym y≤x) (M.trans M.+-comm x≤y)
-
-      ∧≈ : ∀ {a a' b b'} → a M.≈ a' → b M.≈ b' → _∧_ a b M.≈ _∧_ a' b'
-      ∧≈ a≈a' b≈b' =
-        ≤-antisym (∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
-                  (∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
-
-      -- Disjointness transports: a # b iff fwd a # fwd b.
-      #⇔# : ∀ {a b} → _≤_ N (bwd .func (_∧_ (fwd .func a) (fwd .func b))) N.ε ⇔
-                      _≤_ P.obj (_∧_ (fwd .func a) (fwd .func b)) M.ε
-      #⇔# .proj₁ h = ≤M-resp fwd∘bwd (fwd .preserve-ze) (≤-fwd h)
-      #⇔# .proj₂ h = ≤-bwd (≤M-resp (M.sym fwd∘bwd) (M.sym (fwd .preserve-ze)) h)
-
-    transport-sddl : SelfDualDistributiveLattice
-    transport-sddl .selfDual .obj  = N
-    transport-sddl .selfDual .dual = Iso-trans N≅M (Iso-trans P.dual (Dual-iso N≅M))
-    transport-sddl .meets .MeetSemilattice._∧_ a b = bwd .func (_∧_ (fwd .func a) (fwd .func b))
-    transport-sddl .meets .MeetSemilattice.⊤ = bwd .func ⊤
-    transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.π₁ =
-      ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl π₁)
-    transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.π₂ =
-      ≤-bwd (≤M-resp (M.sym fwd∘bwd) M.refl π₂)
-    transport-sddl .meets .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ a≤b a≤c =
-      ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) ⟨ ≤-fwd a≤b ∧ ≤-fwd a≤c ⟩)
-    transport-sddl .meets .MeetSemilattice.⊤-isTop .IsTop.≤-top =
-      ≤-bwd (≤M-resp M.refl (M.sym fwd∘bwd) ≤-top)
-    transport-sddl .∧-∨-distrib x y z =
-      ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl (fwd .preserve-+))))
-                     (M.sym (M.trans (fwd .preserve-+) (M.+-cong fwd∘bwd fwd∘bwd)))
-                     (P.∧-∨-distrib (fwd .func x) (fwd .func y) (fwd .func z)))
-    transport-sddl .align {a} {b} = trans-⇔ #⇔# P.align
-
-  -- A SelfDualBooleanAlgebra transports along an iso likewise: the SDDL via transport-sddl, the negation conjugated
-  -- through the iso (¬' = bwd ∘ ¬ ∘ fwd), complements carried along.
-  module _ (P : SelfDualBooleanAlgebra) {N : Semimodule} (N≅M : Iso N (SelfDualBooleanAlgebra.obj P)) where
-    open SelfDualDistributiveLattice
-    private
-      module P  = SelfDualBooleanAlgebra P
-      open MeetSemilattice P.meets
-      module M  = Semimodule P.obj
-      module N  = Semimodule N
-      open Iso N≅M
-
-      fwd∘bwd : ∀ {z} → fwd .func (bwd .func z) M.≈ z
-      fwd∘bwd = fwd∘bwd≈id .*≈* ._≈s_.func-eq M.refl
-      bwd∘fwd : ∀ {a} → bwd .func (fwd .func a) N.≈ a
-      bwd∘fwd = bwd∘fwd≈id .*≈* ._≈s_.func-eq N.refl
-      ≤-fwd : ∀ {x y} → _≤_ N x y → _≤_ P.obj (fwd .func x) (fwd .func y)
-      ≤-fwd x≤y = M.trans (M.sym (fwd .preserve-+)) (fwd .func-resp-≈ x≤y)
-      ≤-bwd : ∀ {x y} → _≤_ P.obj (fwd .func x) (fwd .func y) → _≤_ N x y
-      ≤-bwd {x} {y} h =
-        N.trans (N.sym (bwd∘fwd {x N.+ y}))
-          (N.trans (bwd .func-resp-≈ (fwd .preserve-+))
-            (N.trans (bwd .func-resp-≈ h) (bwd∘fwd {y})))
-      ≤M-resp : ∀ {x x' y y'} → x M.≈ x' → y M.≈ y' → _≤_ P.obj x y → _≤_ P.obj x' y'
-      ≤M-resp x≈x' y≈y' h = M.trans (M.+-cong (M.sym x≈x') (M.sym y≈y')) (M.trans h y≈y')
-      ≤-antisym : ∀ {x y} → _≤_ P.obj x y → _≤_ P.obj y x → x M.≈ y
-      ≤-antisym x≤y y≤x = M.trans (M.sym y≤x) (M.trans M.+-comm x≤y)
-      ∧≈ : ∀ {a a' b b'} → a M.≈ a' → b M.≈ b' → _∧_ a b M.≈ _∧_ a' b'
-      ∧≈ a≈a' b≈b' =
-        ≤-antisym (∧-mono (≈→≤ P.obj a≈a') (≈→≤ P.obj b≈b'))
-                  (∧-mono (≈→≤ P.obj (M.sym a≈a')) (≈→≤ P.obj (M.sym b≈b')))
-
-    transport-bsddl : SelfDualBooleanAlgebra
-    transport-bsddl .SelfDualBooleanAlgebra.selfDualLat = transport-sddl P.selfDualLat N≅M
-    transport-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.¬ a = bwd .func (P.¬ (fwd .func a))
-    transport-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∧ =
-      ≤-bwd (≤M-resp (M.sym (M.trans fwd∘bwd (∧≈ M.refl fwd∘bwd))) (M.sym (fwd .preserve-ze)) P.compl-∧)
-    transport-bsddl .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∨ =
-      ≤-bwd (≤M-resp (M.sym fwd∘bwd) (M.sym (M.trans (fwd .preserve-+) (M.+-cong M.refl fwd∘bwd))) P.compl-∨)
-
-  -- With S a bounded distributive lattice, 𝕀 (and every n-ary biproduct of it) is one too, with
+  -- With S a bounded distributive lattice, 𝕀 (and every biproduct of such) is one too, with
   -- multiplication as the meet.
   module DistribLattices (∧-idem : ∀ {x} → (x S.· x) S.≈ x) where
 
@@ -859,12 +758,7 @@ module JoinSemilattices
     𝟘-sddl .SelfDualDistributiveLattice.align .proj₁ _                             = S.refl
     𝟘-sddl .SelfDualDistributiveLattice.align .proj₂ _                             = tt
 
-    -- n-fold biproduct of 𝕀: the free self-dual distributive lattice on n generators.
-    ⊕ⁿ : ℕ → SelfDualDistributiveLattice
-    ⊕ⁿ ℕ.zero    = 𝟘-sddl
-    ⊕ⁿ (ℕ.suc n) = ⊕-sddl 𝕀-sddl (⊕ⁿ n)
-
-    -- Given a Boolean negation on the scalar, every free lattice 𝕀/𝟘/⊕ⁿ is a SelfDualBooleanAlgebra (¬ pointwise).
+    -- Given a Boolean negation on the scalar, 𝕀 and 𝟘 are SelfDualBooleanAlgebras (¬ pointwise), closed under ⊕.
     module _ (¬ : S.Carrier → S.Carrier)
              (compl-∧ : ∀ {x} → _≤_ 𝕀 (x S.· ¬ x) S.ε)
              (compl-∨ : ∀ {x} → _≤_ 𝕀 S.ι (x S.+ ¬ x)) where
@@ -885,7 +779,3 @@ module JoinSemilattices
       ⊕-bsddl X Y .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.¬ (a , b) = SelfDualBooleanAlgebra.¬ X a , SelfDualBooleanAlgebra.¬ Y b
       ⊕-bsddl X Y .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∧ {a , b} = SelfDualBooleanAlgebra.compl-∧ X , SelfDualBooleanAlgebra.compl-∧ Y
       ⊕-bsddl X Y .SelfDualBooleanAlgebra.boolean .BooleanAlgebra.compl-∨ {a , b} = SelfDualBooleanAlgebra.compl-∨ X , SelfDualBooleanAlgebra.compl-∨ Y
-
-      ⊕ⁿ-bsddl : ℕ → SelfDualBooleanAlgebra
-      ⊕ⁿ-bsddl ℕ.zero    = 𝟘-bsddl
-      ⊕ⁿ-bsddl (ℕ.suc n) = ⊕-bsddl 𝕀-bsddl (⊕ⁿ-bsddl n)
