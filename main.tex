@@ -51,37 +51,26 @@
 }
 
 \begin{abstract}
-  \Replaced{Automatic differentiation (AD) computes the derivative of
-  a program alongside the program itself, as a linear map between
-  tangent spaces, propagated forwards or backwards along an
-  execution. We present a semantic framework in which data provenance
-  arises as the same construction: taking scalars from a commutative
-  semiring of dependency information rather than the real numbers,
-  the derivative of a program becomes a linear map between spaces of
-  approximations of its input and output. Over the Booleans, the
-  Jacobian of a program is a matrix recording which input positions
-  each output position may depend on, and propagating such Jacobians
-  forwards or backwards is dependency analysis in the manner of
-  forward- and reverse-mode AD. Richer semirings yield richer notions
-  of provenance: with lattice structure, the same construction gives
-  rise to program slicing in the style of \GPS. We interpret a
-  higher-order total functional language in this framework, prove
-  that every program of first-order type denotes such a Jacobian, and
-  instantiate the semiring to obtain dependency tracking (Booleans),
-  automatic differentiation (rationals), and quantitative interval
-  provenance (tropical rationals). All results are formalised in
-  Agda.}{\GPS is a
-  technique for program slicing for provenance, developed by
-  Perera and collaborators. \GPS aims to explain program executions by
-  demonstrating how to track approximations of the input and output
-  forwards and backwards along a particular execution. In this paper,
-  we explore an analogy between \GPS and differentiable programming,
-  seeing the implementation of forwards and backwards slicing as a kind of automatic
-  differentiation. Using the CHAD approach to automatic differentiation
-  due to V{\'a}k{\'a}r and collaborators, we reformulate \GPS via a
-  categorical semantics. In doing so, we are able to explore
-  extensions of the \GPS idea to quantitative interval analysis, and
-  to clarify the implicit choices made in existing instantiations of this approach.}
+  \Replaced{Automatic differentiation (AD) computes the derivative of a program alongside the program itself,
+  as a linear map between tangent spaces, propagated forwards or backwards along an execution. We present a
+  semantic framework in models \emph{data provenance} via the same construction: taking scalars from a
+  commutative semiring of dependency information rather than the real numbers, the derivative of a program
+  becomes a linear map between spaces of approximations of its input and output. Over the Booleans, the
+  Jacobian of a program is a matrix recording which input positions each output position may depend on, and
+  propagating such Jacobians forwards or backwards is dependency analysis in the manner of forward- and
+  reverse-mode AD. Richer semirings yield richer notions of provenance: with lattice structure, the same
+  construction gives rise to program slicing in the style of \GPS. We interpret a higher-order total
+  functional language in this framework, prove that every program of first-order type denotes such a Jacobian,
+  and instantiate the semiring to obtain dependency tracking (Booleans), automatic differentiation
+  (rationals), and quantitative interval provenance (tropical rationals). All results are formalised in
+  Agda.}{\GPS is a technique for program slicing for provenance, developed by Perera and collaborators. \GPS
+  aims to explain program executions by demonstrating how to track approximations of the input and output
+  forwards and backwards along a particular execution. In this paper, we explore an analogy between \GPS and
+  differentiable programming, seeing the implementation of forwards and backwards slicing as a kind of
+  automatic differentiation. Using the CHAD approach to automatic differentiation due to V{\'a}k{\'a}r and
+  collaborators, we reformulate \GPS via a categorical semantics. In doing so, we are able to explore
+  extensions of the \GPS idea to quantitative interval analysis, and to clarify the implicit choices made in
+  existing instantiations of this approach.}
 \end{abstract}
 \maketitle
 
