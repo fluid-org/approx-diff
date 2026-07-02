@@ -1,5 +1,6 @@
-\newcommand*{\note}[1]{\textcolor{blue}{\textbf{note:} #1}}
-\newcommand*{\todo}[1]{\textcolor{blue}{\textbf{todo:} #1}}
+% Magenta keeps notes clear of the change-markup palette.
+\newcommand*{\note}[1]{\textcolor{magenta}{\textbf{note:} #1}}
+\newcommand*{\todo}[1]{\textcolor{magenta}{\textbf{todo:} #1}}
 \newcommand*{\GPS}{Galois slicing\xspace} % in case we change our mind about how to refer to this
 
 \newcommand*{\enummargin}{8mm}
@@ -18,6 +19,38 @@
 
 \newcommand{\bob}[1]{\textcolor{purple}{\textbf{BOB:} #1}}
 \newcommand{\roly}[1]{\textcolor{red}{\textbf{ROLY:} #1}}
+
+% Attribute inline edits with the optional id, e.g. \added[id=roly]{...}.
+\definechangesauthor[name=Bob, color=purple]{bob}
+\definechangesauthor[name=Roly, color=red]{roly}
+% No strikethrough: ulem's \sout is neither line-breakable nor metric-neutral.
+\setdeletedmarkup{\textcolor{gray}{#1}}
+% Capitalised variants add a margin changebar; use the lowercase forms inside
+% figures or math, where changebar spans misbehave. \leavevmode commits a run-in
+% heading in the default colour before the markup colour starts.
+\newcommand{\Added}[1]{\leavevmode\protect\cbstart\added{#1}\protect\cbend\xspace}
+% Box \cite/\ref so they survive inside deleted/replaced text.
+\newcommand{\cmBoxCite}[1]{\mbox{\cmOldCite{#1}}}
+\newcommand{\cmBoxCitet}[1]{\mbox{\cmOldCitet{#1}}}
+\newcommand{\cmBoxCitep}[1]{\mbox{\cmOldCitep{#1}}}
+\newcommand{\cmBoxRef}[1]{\mbox{\cmOldRef{#1}}}
+\AtBeginDocument{\let\cmOldCite\cite \let\cmOldCitet\citet \let\cmOldCitep\citep \let\cmOldRef\ref}
+\newcommand{\cmRobustCites}{\let\cite\cmBoxCite \let\citet\cmBoxCitet \let\citep\cmBoxCitep \let\ref\cmBoxRef}
+\pdfstringdefDisableCommands{\let\cmRobustCites\relax}
+\newcommand{\Deleted}[1]{\leavevmode\protect\cbstart{\cmRobustCites\deleted{#1}}\protect\cbend\xspace}
+% The control space after #1 separates the new text from the deleted text shown
+% after it (a plain space at the start of #2 is eaten by the changes package).
+\newcommand{\Replaced}[2]{\leavevmode\protect\cbstart{\cmRobustCites\replaced{#1\ }{#2}}\protect\cbend\xspace}
+% Final mode bypasses the changes package: its \IfIsEmpty test expands the
+% replacement text, and any macro with #1 in its body then causes a runaway \iffalse.
+\ifdefined\finalmode
+  \renewcommand{\Added}[1]{#1}%
+  \renewcommand{\Deleted}[1]{}%
+  \renewcommand{\Replaced}[2]{#1}%
+  \renewcommand{\added}[2][]{#2}%
+  \renewcommand{\deleted}[2][]{}%
+  \renewcommand{\replaced}[3][]{#2}%
+\fi
 
 \newenvironment{salign*}
    {\par\nobreak\small\noindent\csname align*\endcsname}
