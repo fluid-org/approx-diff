@@ -2,11 +2,12 @@
 
 open import Level using (0ℓ; suc)
 open import prop-setoid using (Setoid; IsEquivalence)
-open import categories using (Category; HasTerminal; IsTerminal)
+open import categories using (Category; HasTerminal; IsTerminal; HasProducts)
 open import commutative-semiring using (CommutativeSemiring)
-open import cmon-enriched using (CMonEnriched; Biproduct)
+open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import commutative-monoid using (CommutativeMonoid)
 open import functor using (Functor)
+import finite-product-functor
 import matrix-new
 import semimodule
 
@@ -64,6 +65,9 @@ biproduct X Y .Biproduct.zero-1 = SM.biproduct (X .obj) (Y .obj) .Biproduct.zero
 biproduct X Y .Biproduct.zero-2 = SM.biproduct (X .obj) (Y .obj) .Biproduct.zero-2
 biproduct X Y .Biproduct.id-+ = SM.biproduct (X .obj) (Y .obj) .Biproduct.id-+
 
+products : HasProducts cat
+products = biproducts→products cmon-enriched biproduct
+
 -- Forgetful functor to SemiMod; full and faithful, so SDSemiMod is equivalent to the full subcategory of
 -- SemiMod on the self-dualisable objects (objects for which some isomorphism to the dual exists).
 U : Functor cat SM.cat
@@ -72,6 +76,29 @@ U .Functor.fmor f = f
 U .Functor.fmor-cong f₁≈f₂ = f₁≈f₂
 U .Functor.fmor-id = SM.cat .Category.isEquiv .IsEquivalence.refl
 U .Functor.fmor-comp f g = SM.cat .Category.isEquiv .IsEquivalence.refl
+
+-- U preserves the chosen terminal and products, as required of the FO model by the interpretation.
+open Category SM.cat using (IsIso; ≈-trans; ≈-sym; id-left; id-right)
+private
+  module SMT = IsTerminal (SM.terminal .HasTerminal.is-terminal)
+  module SMP = HasProducts (biproducts→products SM.cmon-enriched SM.biproduct)
+module FPF = finite-product-functor U
+
+U-preserve-terminal : FPF.preserve-chosen-terminal terminal SM.terminal
+U-preserve-terminal .IsIso.inverse = SMT.to-terminal
+U-preserve-terminal .IsIso.f∘inverse≈id = SMT.to-terminal-unique _ _
+U-preserve-terminal .IsIso.inverse∘f≈id = SMT.to-terminal-unique _ _
+
+U-preserve-products : FPF.preserve-chosen-products products (biproducts→products SM.cmon-enriched SM.biproduct)
+U-preserve-products {X} {Y} .IsIso.inverse = id ((X .obj) SM.⊕ (Y .obj))
+U-preserve-products {X} {Y} .IsIso.f∘inverse≈id =
+  ≈-trans (SMP.pair-natural (id ((X .obj) SM.⊕ (Y .obj))) SMP.p₁ SMP.p₂)
+    (SMP.pair-ext (id ((X .obj) SM.⊕ (Y .obj))))
+U-preserve-products {X} {Y} .IsIso.inverse∘f≈id =
+  ≈-trans id-left
+    (≈-trans (≈-sym id-right)
+      (≈-trans (SMP.pair-natural (id ((X .obj) SM.⊕ (Y .obj))) SMP.p₁ SMP.p₂)
+        (SMP.pair-ext (id ((X .obj) SM.⊕ (Y .obj))))))
 
 -- The embedding Mat(S) ↪ SemiMod(S) factors through SDSemiMod(S) as U ∘ F; each free semimodule carries the
 -- self-duality induced by the dot product.

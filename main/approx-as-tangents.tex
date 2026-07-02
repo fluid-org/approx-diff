@@ -65,8 +65,9 @@ and change the scalars. Throughout this section, fix a commutative semiring $S =
 elements we think of as atoms of dependency information, with $\cdot$ combining information along a path from
 an input to an output and $+$ combining information across parallel paths.}
 
-\Added{Rather than axiomatise the matrices of \secref{introduction} directly, we identify the minimal
-structure required to capture what made that story work: a space of dependency information for each value,
+\Added{Our second move is one of abstraction: rather than axiomatise the matrices of \secref{introduction}
+directly, we identify the minimal structure required to capture what made that story work: a space of
+dependency information for each value,
 linear maps between spaces for the forward analysis, and an identification of each space with its dual, the
 extra structure needed to support an analogue of matrix transposition, and hence a backward analysis.
 The role of vector spaces, which are defined over fields, is played by \emph{semimodules}: commutative
@@ -79,13 +80,13 @@ $\transpose{f} = (- \comp f) : N^* \linearto M^*$, contravariantly.}
 \Added{The transpose is almost the backward analysis we are after: it runs in the opposite direction to $f$,
 but between the duals $N^*$ and $M^*$, the cotangent spaces, rather than between the tangent spaces $M$ and
 $N$ themselves. What we want is a map $N \linearto M$, running dependency information back through the same
-spaces the forward map runs it through, as the transposed matrix did in \secref{introduction}. For that, each space must be identified with its dual.
-Whereas a finite-dimensional vector space always admits such an identification (choose a basis), a semimodule
-need not. We therefore make the identification part of the data. A \emph{self-dual} semimodule is a pair
-$\langle M, i \rangle$ of a semimodule and a chosen isomorphism $i : M \cong M^*$, which induces a pairing
-$\langle x, y \rangle = i(x)(y)$. Between self-dual semimodules $\langle M, i \rangle$ and $\langle N, j
-\rangle$, every linear map $f : M \linearto N$ then has a \emph{conjugate} $\conj{f} = i^{-1} \comp
-\transpose{f} \comp j : N \linearto M$, the unique linear map satisfying}
+spaces the forward map runs it through, as the transposed matrix did in \secref{introduction}. For that, each
+space must be identified with its dual. Whereas a finite-dimensional vector space always admits such an
+identification (choose a basis), a semimodule need not; we therefore make the identification part of the data.
+A \emph{self-dual} semimodule is a pair $\langle M, i \rangle$ of a semimodule and a chosen isomorphism $i : M
+\cong M^*$, which induces a pairing $\langle x, y \rangle = i(x)(y)$. Between self-dual semimodules $\langle
+M, i \rangle$ and $\langle N, j \rangle$, every linear map $f : M \linearto N$ then has a \emph{conjugate}
+$\conj{f} = i^{-1} \comp \transpose{f} \comp j : N \linearto M$, the unique linear map satisfying}
 \cbstart
 \begin{displaymath}
   \added{\langle f(x), y \rangle = \langle x, \conj{f}(y) \rangle}
@@ -95,9 +96,9 @@ $\langle x, y \rangle = i(x)(y)$. Between self-dual semimodules $\langle M, i \r
 forward one asserted in \secref{introduction}. Self-dual semimodules and linear maps form a category
 $\SDSemiMod(S)$.}
 
-\Added{The canonical instances are the \emph{free} finite-dimensional semimodules $S^n$, whose elements are
-$n$-length vectors of scalars, with standard basis vectors $e_i$ and every $v \in S^n$ decomposing as $v =
-\sum_i v_i \cdot e_i$. Currying the \emph{dot product} $\langle u, v \rangle = \sum_i u_i \cdot v_i$ gives
+\Added{The matrices of \secref{introduction} now reappear as the canonical instances. The \emph{free}
+finite-dimensional semimodule $S^n$ has as elements the $n$-length vectors of scalars, with standard basis
+vectors $e_i$ and every $v \in S^n$ decomposing as $v = \sum_i v_i \cdot e_i$. Currying the \emph{dot product} $\langle u, v \rangle = \sum_i u_i \cdot v_i$ gives
 an isomorphism $S^n \cong (S^n)^*$, since pairing with the basis vectors extracts components, $\langle e_i,
 v \rangle = v_i$; so free semimodules are self-dual. By basis decomposition, a linear map $S^m \linearto
 S^n$ is exactly an $n \times m$ matrix over $S$, with composition as matrix multiplication and the conjugate
