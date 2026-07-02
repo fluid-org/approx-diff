@@ -13,7 +13,7 @@ import indexed-family
 open import functor using (Functor)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 open import prop using (_,_)
-open import prop-setoid using (IsEquivalence)
+open import prop-setoid using (IsEquivalence; Setoid)
 open import finite-product-functor
   using (preserve-chosen-products; preserve-chosen-terminal)
 
@@ -28,6 +28,7 @@ open Functor
 open import fam-functor using (FamF)
 open import signature
 import lists
+import language-syntax
 
 module Interpretation
   {o : Level}
@@ -106,6 +107,9 @@ module Interpretation
 
      open Fam⟨𝒟⟩.Mor public
      open Fam⟨𝒟⟩.Obj public
+     open language-syntax Sig using (_⊢_)
+     open indexed-family._⇒f_ using (transf)
+     open Setoid using (Carrier)
 
      open import language-interpretation Sig
        Fam⟨𝒟⟩.cat
@@ -116,6 +120,10 @@ module Interpretation
        Fam⟨𝒟⟩-lists
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
+
+     -- The fibre map of a term at a given environment.
+     mor : ∀ {Γ τ} (M : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
+     mor M env = ⟦ M ⟧tm .famf .transf env
 
   module Conservativity where
     open import conservativity

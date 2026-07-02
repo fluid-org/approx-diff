@@ -100,18 +100,20 @@ $\SDSemiMod(S)$.}
 
 \Added{The matrices of \secref{introduction} now reappear as concrete instances. The \emph{free} semimodule
 $S^n$ on $n$ generators has as elements the $n$-length vectors of scalars, with standard basis vectors $e_i$
-and every $v \in S^n$ decomposing as $v = \sum_i v_i \cdot e_i$. Currying the \emph{dot product} $\langle u, v \rangle = \sum_i u_i \cdot v_i$ gives
-an isomorphism $S^n \cong (S^n)^*$, since pairing with the basis vectors extracts components, $\langle e_i,
-v \rangle = v_i$; so free semimodules are self-dual. By basis decomposition, a linear map $S^m \linearto
-S^n$ is exactly an $n \times m$ matrix over $S$, with composition as matrix multiplication and the conjugate
-as the familiar matrix transpose, $(\conj{M})_{ji} = M_{ij}$. We write $\Mat(S)$ for the skeletal category
-whose objects are natural numbers and whose morphisms $m \to n$ are $n \times m$ matrices. The Boolean
-Jacobians from \secref{introduction} live here: a dependency relation between $m$ input positions and $n$
-output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$, where $\Two$ is the Boolean semiring with
-$+ = \vee$ and $\cdot = \wedge$; the chain rule for dependencies is composition in $\Mat(\Two)$, or
-equivalently \emph{relational} composition under the equivalence of categories $\Mat(\Two) \simeq \FinRel$;
-and the dot product reads as overlap, $\langle u, v \rangle = \top$ exactly when the selections $u$ and $v$
-share a position, i.e.\ are not disjoint.}
+and every $v \in S^n$ decomposing as $v = \sum_i v_i \cdot e_i$. Currying the \emph{dot product} $\langle u, v
+\rangle = \sum_i u_i \cdot v_i$ gives an isomorphism $S^n \cong (S^n)^*$, since pairing with the basis vectors
+extracts components, $\langle e_i, v \rangle = v_i$; so free semimodules are self-dual. By basis
+decomposition, a linear map $S^m \linearto S^n$ is exactly an $n \times m$ matrix over $S$, with composition
+as matrix multiplication and the conjugate as the familiar matrix transpose, $(\conj{M})_{ji} = M_{ij}$.}
+
+\Added{We write $\Mat(S)$ for the skeletal category whose objects are the natural numbers and whose morphisms
+$m \to n$ are the $n \times m$ matrices. The Boolean Jacobians from \secref{introduction} live here: a
+dependency relation between $m$ input positions and $n$ output positions is exactly a morphism $m \to n$ in
+$\Mat(\Two)$, where $\Two$ is the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule
+for dependencies is composition in $\Mat(\Two)$, or equivalently \emph{relational} composition under the
+equivalence of categories $\Mat(\Two) \simeq \FinRel$. The dot product can be interpreted as ``overlap'',
+becauses $\langle u, v \rangle = \top$ exactly when the selections $u$ and $v$ share a position, i.e.\ are not
+disjoint.}
 
 \Added{The trivial semimodule is a zero object in $\SDSemiMod(S)$, and self-dual semimodules are closed
 under the \emph{biproduct} $M \biprod N$, an object which is both a product and a coproduct, with the
