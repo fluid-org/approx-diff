@@ -57,7 +57,7 @@
   commutative semiring of dependency information rather than the real numbers, the derivative of a program
   becomes a linear map between spaces of approximations of its input and output. Over the Booleans, the
   Jacobian of a program is a matrix recording which input positions each output position may depend on, and
-  propagating such Jacobians forwards or backwards is dependency analysis in the manner of forward- and
+  composing Jacobians forwards or backwards is \emph{dependency analysis} in the manner of forward- and
   reverse-mode AD. Richer semirings yield richer notions of provenance: with lattice structure, the same
   construction gives rise to program slicing in the style of \GPS. We interpret a higher-order total
   functional language in this framework, prove that every program of first-order type denotes such a Jacobian,
