@@ -141,26 +141,38 @@ programmatically generated visualisations.}
   In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of \Replaced{language-based approaches is that they are}{\GPS, and other language-based approaches, is that it is} {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
 \end{example}
 
-\Added{The backward maps compute \emph{program slices}: selecting part of the output yields the part of the
-input needed to explain it, and when the program text is itself treated as part of the input, the relevant
-part of the program too. One such technique is the \GPS of Perera and
-collaborators~\cite{perera12a,perera16d,ricciotti17}, which underlies the open source data visualisation tool
-\href{https://f.luid.org/}{Fluid}~\cite{perera2025fluid} and packages the forward and backward maps of a run
-as a Galois connection between lattices of approximations. \GPS will emerge as one instance of the
-differential framework developed in this paper (\secref{approx-as-tangents}).}
-
 \subsection{Galois Slicing and Automatic Differentiation}
 
-Previous work on \GPS used a special operational semantics to generate a trace of each execution, and then uses that trace to compute the Galois connections described above, by re-running forwards or backwards over the trace. It would be useful to have a denotational account of \GPS as well, especially if we could provide a semantics where the backwards analysis is baked in, rather than provided by a separately defined ``backwards evaluation'' operation. Our thesis, developed in \secref{approx-as-tangents} and \secref{models-of-total-gps} is that there is a close analogy between \GPS and \emph{automatic differentiation} for differentiable programs~\cite{siskind08,elliott18,vakar22}, which points to a way to develop such an approach. We have already hinted at this in the description above, but let us now make it explicit.
+\Added{The backward maps of the previous section compute a form of \emph{data provenance}: for each part of
+the output, the part of the input needed to explain it. Dependency information of this kind is the common
+currency of a range of existing techniques, from program slicing~\cite{weiser81} to provenance for database
+queries~\cite{buneman95,cheney07}, including semiring provenance~\cite{green07}. Closest
+to our setting is the \GPS of Perera and
+collaborators~\cite{perera12a,perera16d,ricciotti17}, which organises the forward and backward maps of a run
+into a Galois connection between lattices of approximations.}
+
+\Replaced{Many forms of dynamic provenance analysis, \GPS included, work by recording a trace of each
+execution and computing the backwards analysis by re-running over the trace. A denotational account would
+instead bake the analysis into the semantics of the program itself, rather than provide it as a separately
+defined ``backwards evaluation'' operation.}{Previous work on \GPS used a special operational semantics to generate a trace of each execution, and then uses that trace to compute the Galois connections described above, by re-running forwards or backwards over the trace. It would be useful to have a denotational account of \GPS as well, especially if we could provide a semantics where the backwards analysis is baked in, rather than provided by a separately defined ``backwards evaluation'' operation.} \Deleted{Our thesis, developed in \secref{approx-as-tangents} and \secref{models-of-total-gps} is that there is a close analogy between \GPS and \emph{automatic differentiation} for differentiable programs~\cite{siskind08,elliott18,vakar22}, which points to a way to develop such an approach. We have already hinted at this in the description above, but let us now make it explicit.}
+\Added{The differential reading of dependency analysis, developed in \secref{approx-as-tangents}, points to
+a way to obtain such an account, by analogy with \emph{automatic
+differentiation}~\cite{siskind08,elliott18,vakar22}; let us make the correspondence explicit.}
 
 \begin{itemize}[leftmargin=\enummargin]
-\item For \GPS, we assume that every value has an associated lattice of {\em approximations}. For differentiable programs, every point has an associated vector space of {\em tangents}.
-\item For \GPS, every program has an associated forward approximation map that takes approximations forward from the input to the output. This map {\em preserves meets}. For differentiable programs, every program has a forward derivative that takes tangents of the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of tangents and the zero tangent.
-\item For \GPS, every program has an associated backward approximation map that takes approximations of the output back to least approximations of the input. This map {\em preserves joins}. For differentiable programs, every program has a reverse derivative that takes tangents of the output to tangents of the input. This map is again {\em linear}.
-\item For \GPS, the forward and backward approximation maps are related by being a Galois connection. For differentiable programming, the forward and reverse derivatives are related by being each others' transpose.
+\item \Replaced{For dependency analysis,}{For \GPS, we assume that} every value has an associated \Replaced{join-semilattice of \emph{approximations}, with least element $\bot$ (the empty selection)}{lattice of {\em approximations}}. For differentiable programs, every point has an associated vector space of {\em tangents}.
+\item \Replaced{For dependency analysis,}{For \GPS,} every program has an associated forward approximation map that takes approximations \Replaced{of the input to the approximations of the output that depend on them}{forward from the input to the output}. This map {\em preserves \Replaced{joins and $\bot$}{meets}}. For differentiable programs, every program has a forward derivative that takes tangents of the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of tangents and the zero tangent.
+\item \Replaced{For dependency analysis,}{For \GPS,} every program has an associated backward approximation map that takes approximations of the output back to least approximations of the input \Added{that they depend on}. This map \Added{also} {\em preserves joins \Added{and $\bot$}}. For differentiable programs, every program has a reverse derivative that takes \Replaced{\emph{cotangents} of the output (linear maps from tangents to scalars) to cotangents}{tangents of the output to tangents} of the input. This map is again {\em linear}.
+\item \Replaced{In both settings, the forward and backward maps are related by being each other's transpose.
+The transpose makes sense because the spaces are \emph{self-dual}: tangent vectors pair with tangent vectors
+via the dot product, identifying cotangents with tangents, and selections of positions pair by the same dot
+product formula, with joins and meets in place of sums and products: $\langle x, y \rangle = 1$ exactly when
+$x$ and $y$ overlap. The
+forward map $f$ and backward map $g$ then determine one another by $\langle f(x), y \rangle = \langle x, g(y)
+\rangle$.}{For \GPS, the forward and backward approximation maps are related by being a Galois connection. For differentiable programming, the forward and reverse derivatives are related by being each others' transpose.}
 \end{itemize}
 
-Given this close connection between \GPS and differentiable programming, we can take structures intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model \GPS. This will enable us to generalise and expand the scope of \GPS to act as a foundation for data provenance in a wider range of computational settings.
+Given this close connection between \Replaced{dependency analysis}{\GPS} and differentiable programming, we can take structures intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model \Replaced{dependency analysis}{\GPS}. This will enable us to generalise and expand the scope of \Replaced{automatic differentiation}{\GPS} to act as a foundation for data provenance in a wider range of computational settings.
 
 \subsection{Outline and Contributions}
 
