@@ -4,20 +4,22 @@
 To audit any computational process, we need robust and well-founded notions of \emph{provenance} to track how data are used. This allows us to answer questions like ``Where did these data come from?'', ``Why are these data in the output?'' and ``How were these data computed?''. Provenance tracking has a wide range of applications, from debugging and program comprehension~\cite{buneman95,cheney07} to improving reproducibility and transparency in scientific workflows~\cite{kontogiannis08}. \emph{Program slicing}, first proposed by~\citet{weiser81}, is a collection of techniques for provenance tracking that attempts to take a run of a program and areas of interest in the output, and turn them into the subset of the input and the program that were responsible for generating those specific outputs.
 
 \Added{Underlying all of these questions is a more basic one: how does the output of a program respond when
-its input changes? For programs that compute with real numbers, calculus has a canonical answer: the
+its input changes? For programs that compute with real numbers, calculus provides a canonical answer: the
 derivative, a linear map between tangent spaces describing how the output varies as the input varies, with
-\emph{automatic differentiation} (AD)~\cite{siskind08,elliott18,vakar22} being a computational technique for
-computing such derivatives alongside the program itself. For provenance, where the inputs are database tuples, elements of a data structure or fragments of source
-code rather than quantities, the question is qualitative rather than quantitative: if we perturb the input at a given position, can the
-output change at all? Posing this question one input at a time yields a vector of Boolean partial
-derivatives, and for a program with several outputs, a \emph{Boolean Jacobian}: a matrix whose entry at
-$(j, i)$ records whether output position $j$ may depend on input position $i$. Consider multiplication: at the point $(x, y)$, the usual partial derivative
-$\partial(x \cdot y)/\partial x$ is $y$, and its Boolean counterpart records that the output can vary with
-$x$ only when $y \neq 0$. \todo{Work up a more interesting running illustration here, alongside the
-corresponding Agda example.} Like their numerical counterparts, Boolean Jacobians compose by matrix
-multiplication. This paper develops the proposal that dependency analysis is precisely the evaluation of such
-Jacobians alongside the program, forwards or backwards, in the manner of forward- and reverse-mode AD, with
-the two directions related by matrix transposition.}
+\emph{automatic differentiation} (AD) being a computational technique for computing such derivatives alongside
+the program itself~\cite{siskind08,elliott18,vakar22}. For data provenance and dependency analysis, where the
+inputs are database tuples or elements of a data structure, the question is often framed in a more qualitative
+way: if we perturb the input at a given position, can the output change at all? Posing this question one input
+at a time yields a vector of Boolean partial ``derivatives'', and for a program with several outputs, a
+\emph{Boolean Jacobian}: a matrix whose entry at $(j, i)$ records whether output position $j$ may depend on
+input position $i$. Consider multiplication: at the point $(x, y)$, the usual partial derivative $\partial(x
+\cdot y)/\partial x$ is $y$, and its Boolean counterpart records that the output can vary with $x$ only when
+$y \neq 0$. \todo{Work up a more interesting running illustration here, alongside the corresponding Agda
+example.} Like their numerical counterparts, Boolean Jacobians compose by matrix multiplication, with
+conjunction and disjunction playing the role of multiplication and addition. This paper presents an approach
+to dynamic dependency analysis where such Jacobians are evaluated alongside the program, forwards or
+backwards, in the manner of forward- and reverse-mode AD, with the two directions related by matrix
+transposition.}
 
 Existing approaches to program slicing are often tied to particular programming languages or implementations.
 \Replaced{In this paper we develop this analogy into a general categorical approach to data provenance, in
@@ -34,12 +36,21 @@ the role of tangents.} Our categorical approach should provide a suitable settin
 data provenance for a variety of programming languages, and is easily configured to use alternative
 approximation strategies, including quantitative forms of slicing.
 
-\subsection{Galois Program Slicing}
+\subsection{Dependencies as Derivatives}
 \label{sec:introduction:galois-slicing}
 
-Perera and collaborators introduced the idea of {\em Galois program slicing} as a particular conception of program slicing for provenance, described in several publications~\cite{perera12a,perera16d,ricciotti17}. Galois program slicing (hereafter simply {\emph \GPS}) forms the basis of the open source data visualisation tool \href{https://f.luid.org/}{Fluid}~\cite{perera2025fluid} that allows interactive exploration of programmatically generated visualisations.
+\Replaced{Consider a single run of a program on a particular input. Each part of the output is computed from
+certain parts of the input, and recording these facts gives the \emph{dependency relation} of the run,
+relating each output position to the input positions it depends on. This section works through a small
+example showing how dependency relations behave as derivatives: they tabulate as Boolean matrices, they
+compose like Jacobians, and they can be evaluated forwards or backwards.}{Perera and collaborators introduced
+the idea of {\em Galois program slicing} as a particular conception of program slicing for provenance,
+described in several publications~\cite{perera12a,perera16d,ricciotti17}. Galois program slicing (hereafter
+simply {\emph \GPS}) forms the basis of the open source data visualisation tool
+\href{https://f.luid.org/}{Fluid}~\cite{perera2025fluid} that allows interactive exploration of
+programmatically generated visualisations.}
 
-At a high level, \GPS assumes that, for each possible value that may be input or output by a program, there exists a lattice of {\em approximations} of that value. For a particular run of a program that takes input $x$ and produces output $y$, we also get a Galois connection between the lattice of approximations of $x$ and the lattice of approximations of $y$. The right half of the Galois connection is the ``forward direction'' taking approximations of the input to approximations of the output; the left half of the Galois connection is the ``backward direction'' that takes approximations of the output to the least (i.e., most approximate) approximation of the input that gives rise to this output approximation. This becomes {\em program slicing} by including the source code of the program as part of the input; then, in the backward direction, the least approximation of the input required for an output approximation includes the least part of the program required as well.
+\Deleted{At a high level, \GPS assumes that, for each possible value that may be input or output by a program, there exists a lattice of {\em approximations} of that value. For a particular run of a program that takes input $x$ and produces output $y$, we also get a Galois connection between the lattice of approximations of $x$ and the lattice of approximations of $y$. The right half of the Galois connection is the ``forward direction'' taking approximations of the input to approximations of the output; the left half of the Galois connection is the ``backward direction'' that takes approximations of the output to the least (i.e., most approximate) approximation of the input that gives rise to this output approximation. This becomes {\em program slicing} by including the source code of the program as part of the input; then, in the backward direction, the least approximation of the input required for an output approximation includes the least part of the program required as well.}
 
 \begin{example}
   \label{ex:introduction-example}
@@ -52,51 +63,65 @@ At a high level, \GPS assumes that, for each possible value that may be input or
   \end{displaymath}
   With $\mathit{db} = [(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, 1)]$, we will have $\mathit{query}\,\mathsf{a}\,\mathit{db}$ and $\mathit{query}\,\mathsf{b}\,\mathit{db}$ both evaluating to $1$.
 
-  Now suppose that for a given run of the program, we are interested in which of the numerical parts of the input are used to compute the output for the query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. We can use \GPS to do this. We arrange for the approximations of the input to form the following lattice, where the actual piece of data is at the top and information lost by approximation is represented by $\bot$s:
+  \Replaced{Suppose we are interested in which of the numerical parts of the input are used to compute the
+  output, for the query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. The three numbers in $\mathit{db}$
+  occupy three \emph{positions}, and the output a single position. In the run with $l = \mathsf{a}$, the
+  output is computed from the numbers at the first and third positions; in the run with $l = \mathsf{b}$,
+  from the number at the second. We depict each output position pointing to the input positions it depends
+  on:}{Now suppose that for a given run of the program, we are interested in which of the numerical parts of the input are used to compute the output for the query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. We can use \GPS to do this. We arrange for the approximations of the input to form the following lattice, where the actual piece of data is at the top and information lost by approximation is represented by $\bot$s: [\ldots] In both runs of the program, the output approximation lattice looks like this, where $1$ is the actual data point that was returned, and $\bot$ indicates that we are approximating this piece of data away: [\ldots]}
+  \cbstart
   \begin{center}
-    \begin{tikzpicture}[node distance=0.75cm]
-      \node (top) at (0,0) {$[(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, 1)]$};
-      % row 2
-      \node [below of=top] (ioi) {$[(\mathsf{a}, 0), (\mathsf{b}, \bot), (\mathsf{a}, 1)]$};
-      \node [left of=ioi,xshift=-3cm] (oii) {$[(\mathsf{a}, \bot), (\mathsf{b}, 1), (\mathsf{a}, 1)]$};
-      \node [right of=ioi,xshift=3cm] (iio) {$[(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, \bot)]$};
-      % row 3
-      \node [below of=ioi] (oio) {$[(\mathsf{a}, \bot), (\mathsf{b}, 1), (\mathsf{a}, \bot)]$};
-      \node [left of=oio,xshift=-3cm] (ooi) {$[(\mathsf{a}, \bot), (\mathsf{b}, \bot), (\mathsf{a}, 1)]$};
-      \node [right of=oio,xshift=3cm] (ioo) {$[(\mathsf{a}, 0), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]$};
-      % row 4
-      \node [below of=oio] (bot) {$[(\mathsf{a}, \bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]$};
-
-      % links
-      \draw (top) -- (ioi);
-      \draw (top) -- (oii);
-      \draw (top) -- (iio);
-      \draw (ioi) -- (ooi);
-      \draw (ioi) -- (ioo);
-      \draw (oii) -- (ooi);
-      \draw (oii) -- (oio);
-      \draw (iio) -- (ioo);
-      \draw (iio) -- (oio);
-      \draw (ooi) -- (bot);
-      \draw (oio) -- (bot);
-      \draw (ioo) -- (bot);
+    \begin{tikzpicture}[every node/.style={font=\small}]
+      % query a
+      \node (la) at (0,1.4) {$\mathit{query}\;\mathsf{a}$};
+      \node (a1) at (0,0.8) {$(\mathsf{a},0)$};
+      \node (a2) at (0,0) {$(\mathsf{b},1)$};
+      \node (a3) at (0,-0.8) {$(\mathsf{a},1)$};
+      \node (ao) at (2.4,0) {$1$};
+      \draw[->] (ao) -- (a1);
+      \draw[->] (ao) -- (a3);
+      % query b
+      \node (lb) at (6,1.4) {$\mathit{query}\;\mathsf{b}$};
+      \node (b1) at (6,0.8) {$(\mathsf{a},0)$};
+      \node (b2) at (6,0) {$(\mathsf{b},1)$};
+      \node (b3) at (6,-0.8) {$(\mathsf{a},1)$};
+      \node (bo) at (8.4,0) {$1$};
+      \draw[->] (bo) -- (b2);
     \end{tikzpicture}
   \end{center}
-  In both runs of the program, the output approximation lattice looks like this, where $1$ is the actual data point that was returned, and $\bot$ indicates that we are approximating this piece of data away:
-  \begin{center}
-    \begin{tikzpicture}[node distance=0.75cm]
-      \node (top) at (0,0) {$1$};
-      \node [below of=top] (bot) {$\bot$};
-      \draw (top) -- (bot);
-    \end{tikzpicture}
-  \end{center}
-  These are not the only choices of approximation lattices that we could have made. For the input, we have chosen a lattice that allows us to ``forget'' (approximate away) numbers in the input, but not the labels or the structure of the list itself. However, other choices are also useful. Indeed, one of the aims of this work is to clarify how to choose an approximation structure appropriate for different tasks by use of type information. We elaborate on this further in \secref{semantic-gps}.
+  \cbend
+  \Added{Tabulating each relation, with a row for each output position and a column for each input position,
+  gives the \emph{Jacobian} of the run:}
+  \cbstart
+  \begin{displaymath}
+    \partial(\mathit{query}\,\mathsf{a}\,\mathit{db}) =
+    \begin{pmatrix} 1 & 0 & 1 \end{pmatrix}
+    \qquad
+    \partial(\mathit{query}\,\mathsf{b}\,\mathit{db}) =
+    \begin{pmatrix} 0 & 1 & 0 \end{pmatrix}
+  \end{displaymath}
+  \cbend
+  \Added{As in calculus, the Jacobian is taken at a point: the two runs of the same program have different
+  Jacobians. And like their numerical counterparts, these matrices compose: $\mathit{query}\,l$ is a sum
+  applied to a selection, and the Jacobian of the run is the product of the Jacobians of those two stages, a
+  chain rule for dependencies.}
 
-  \GPS associates with each run of the program a Galois connection telling us how the inputs and outputs are related in that run. The backwards portion $\partial (\mathit{query}\,l)_r$ tells us, given an approximation of the output, what the least approximation of the input is needed to generate that output. In the case of the two runs considered in this example, if we say we are not interested in the output by feeding in the least approximation $\bot$, then we find that we only need the least approximation of the input:
+  \Replaced{In setting up the positions, we chose to make only the numbers perturbable, keeping the labels
+  and the structure of the list itself fixed. Other choices are also useful, and one of the aims of this work
+  is to clarify how to choose a dependency structure appropriate for different tasks by use of type
+  information. We elaborate on this further in \secref{semantic-gps}.}{These are not the only choices of approximation lattices that we could have made. For the input, we have chosen a lattice that allows us to ``forget'' (approximate away) numbers in the input, but not the labels or the structure of the list itself. However, other choices are also useful. Indeed, one of the aims of this work is to clarify how to choose an approximation structure appropriate for different tasks by use of type information. We elaborate on this further in \secref{semantic-gps}.}
+
+  \Replaced{The transpose of the Jacobian evaluates dependencies \emph{backwards}: given a selection of
+  output positions, it returns the input positions on which they depend. A selection of positions can be
+  displayed as an \emph{approximation} of the underlying value, with the numbers at unselected positions
+  replaced by $\bot$. Writing $\partial(\mathit{query}\,l\,\mathit{db})_r$ for this reverse action of the
+  Jacobian, selecting no output positions requires no input positions:}{\GPS associates with each run of the program a Galois connection telling us how the inputs and outputs are related in that run. The backwards portion $\partial (\mathit{query}\,l)_r$ tells us, given an approximation of the output, what the least approximation of the input is needed to generate that output. In the case of the two runs considered in this example, if we say we are not interested in the output by feeding in the least approximation $\bot$, then we find that we only need the least approximation of the input:}
   \begin{displaymath}
     \partial (\mathit{query}\,l\,\mathit{db})_r(\bot) = [(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]
   \end{displaymath}
-  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we take the greatest approximation of the output (i.e., the output ``$1$'' itself), then the two query runs' backwards approximations return different results:
+  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we \Replaced{select the output position
+  itself}{take the greatest approximation of the output (i.e., the output ``$1$'' itself)}, then the two
+  query runs' backwards \Replaced{actions}{approximations} return different results:
   \begin{displaymath}
     \begin{array}{l}
       \partial (\mathit{query}\,\mathsf{a}\,\mathit{db})_r(1) = [(\mathsf{a},0), (\mathsf{b},\bot), (\mathsf{a},1)] \\
@@ -105,10 +130,25 @@ At a high level, \GPS assumes that, for each possible value that may be input or
   \end{displaymath}
   Pieces of the input that were {\em not} used are replaced by $\bot$. As we expect, the run of the query with label $\mathsf{a}$ depends on the entries in the database labelled with $\mathsf{a}$, and likewise for the run with label $\mathsf{b}$.
 
-  In this case, the forwards portion of the Galois connection tells us, for each approximation of the input, whether or not it is sufficient to compute the output. If we provide insufficient data to compute the output, then we will get an underapproximated output. Here for example we will find that $\partial (\mathit{query}\, \mathsf{a})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) = \bot$ because we need all the values associated with the label $\mathsf{a}$ to compute their sum.
+  \Replaced{The Jacobian acting directly evaluates dependencies \emph{forwards}: given a selection of input
+  positions, it returns the output positions that depend on them. Writing
+  $\partial(\mathit{query}\,l\,\mathit{db})_f$ for this forward action, we have
+  $\partial(\mathit{query}\,\mathsf{a}\,\mathit{db})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) =
+  1$, since the output depends on the entry $(\mathsf{a},0)$, whereas
+  $\partial(\mathit{query}\,\mathsf{b}\,\mathit{db})_f$ applied to the same selection returns $\bot$: that
+  run consulted no $\mathsf{a}$-labelled entries.}{In this case, the forwards portion of the Galois connection tells us, for each approximation of the input, whether or not it is sufficient to compute the output. If we provide insufficient data to compute the output, then we will get an underapproximated output. Here for example we will find that $\partial (\mathit{query}\, \mathsf{a})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) = \bot$ because we need all the values associated with the label $\mathsf{a}$ to compute their sum.}
 
-  In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of \GPS, and other language-based approaches, is that it is {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
+  In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of \Replaced{language-based approaches is that they are}{\GPS, and other language-based approaches, is that it is} {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
 \end{example}
+
+\Added{The backward maps compute \emph{program slices}: selecting part of the output yields the part of the
+input needed to explain it, and when the program text is itself treated as part of the input, the relevant
+part of the program too. One such technique is the \GPS of Perera and
+collaborators~\cite{perera12a,perera16d,ricciotti17}, which underlies the open source data visualisation tool
+\href{https://f.luid.org/}{Fluid}~\cite{perera2025fluid} and packages the forward and backward maps of a run
+as a Galois connection between lattices of approximations. We do not take Galois connections as a starting
+point; rather, \GPS will emerge later as one instance of the differential framework developed in this paper
+(\secref{approx-as-tangents}).}
 
 \subsection{Galois Slicing and Automatic Differentiation}
 
