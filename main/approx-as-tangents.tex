@@ -65,7 +65,11 @@ and change the scalars. Throughout this section, fix a commutative semiring $S =
 elements we think of as atoms of dependency information, with $\cdot$ combining information along a path from
 an input to an output and $+$ combining information across parallel paths.}
 
-\Added{The role of vector spaces, which are defined over fields, is played by \emph{semimodules}: commutative
+\Added{Rather than axiomatise the matrices of \secref{introduction} directly, we identify the minimal
+structure required to capture what made that story work: a space of dependency information for each value,
+linear maps between spaces for the forward analysis, and an identification of each space with its dual, the
+extra structure needed to support an analogue of matrix transposition, and hence a backward analysis.
+The role of vector spaces, which are defined over fields, is played by \emph{semimodules}: commutative
 monoids $(M, +, 0)$ equipped with an action $a \cdot x$ of the scalars, satisfying the usual laws. Linear maps
 preserve $+$, $0$ and the action, and form a category $\SemiMod(S)$; pointwise addition of linear maps makes
 each hom-set a commutative monoid, with composition bilinear. Every semimodule has a \emph{dual} $M^* = M
