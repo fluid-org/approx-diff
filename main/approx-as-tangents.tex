@@ -78,17 +78,17 @@ categories $\Mat(\Two) \simeq \FinRel$.}
 
 \Added{The \emph{transpose} $\transpose{M} : n \to m$ of $M : m \to n$, with entries $(\transpose{M})_{ji} =
 M_{ij}$, is involutive and reverses composition, $\transpose{(N \comp M)} = \transpose{M} \comp
-\transpose{N}$, using commutativity of $\cdot$. $(-)^{\top}$ is thus a dagger on $\Mat(S)$. The transpose is
-characterised by the \emph{dot product} $\langle u, v \rangle = \sum_i u_i \cdot v_i$: it is the unique matrix
-satisfying}
+\transpose{N}$, using commutativity of $\cdot$. $(-)^{\top}$ is thus a dagger on $\Mat(S)$. The transpose
+can also be characterised equationally, in terms of the \emph{dot product} $\langle u, v \rangle = \sum_i
+u_i \cdot v_i$: it is the unique matrix satisfying}
 \cbstart
 \begin{displaymath}
   \added{\langle M u, v \rangle = \langle u, \transpose{M} v \rangle}
 \end{displaymath}
 \cbend
 \Added{uniqueness holding because pairing with the basis vectors extracts components, $\langle e_i, v
-\rangle = v_i$. This is the sense in which the forward and backward analyses of \secref{introduction}
-determine one another. Over $\Two$ the dot product has a direct reading: $\langle u, v \rangle = \top$
+\rangle = v_i$. This makes precise the relationship between the forward and backward analyses asserted in
+\secref{introduction}. Over $\Two$ the dot product has a direct reading: $\langle u, v \rangle = \top$
 exactly when the selections $u$ and $v$ overlap. It also explains why no separate space of cotangents
 appeared there: a morphism $n \to 1$ in $\Mat(S)$ is a row vector, so cotangents at $n$ are again vectors in
 $S^n$, and the pairing implements their action on tangents.}
@@ -104,7 +104,7 @@ and is the reason $\Mat(S)$ on its own cannot interpret programs over sum types;
 general (perhaps with $\Mat(S)$ as the concrete instance the examples run on)? Two candidates: (i)
 \emph{self-dual semimodules}, pairs $\langle M, i : M \cong M^* \rangle$; (ii) a \emph{Chu-style category} of
 pairs $\langle M, N, k : M \otimes N \to S \rangle$, with $N$ playing the cotangent role, where a morphism is
-a pair of a forward $f : M \to M'$ and backward $g : N' \to N$ where $k'(f\,m, n') = k(m, g\,n')$.}
+a pair of a forward $f : M \to M'$ and backward $g : N' \to N$ with $k'(f\,m, n') = k(m, g\,n')$.}
 
 \subsection{Stable Functions as Differentiable Functions}
 
