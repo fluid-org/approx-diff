@@ -65,5 +65,3 @@ open indexed-family._⇒f_ public
 open SemiMod-𝟚._⇒_ public
 open galois._⇒g_ public
 open preorder._=>_ public
-
-

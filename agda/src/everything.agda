@@ -2,13 +2,7 @@
 
 module everything where
 
--- Examples from from Section 1.1 and Section 4.3.
---
--- This formalises Example 1.1 and Section 4.3, part (2), with binary
--- approximated numbers, Section 4.3, part (3), with quantitative
--- approximated numbers, and the CBN translation example in Section
--- 4.4.
-import example
+import examples
 
 -- Proof from Section 2.2 (Theorem 2.3) that CM (category of bounded
 -- meet semilattices and conditionally multiplicative functions) is
