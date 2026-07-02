@@ -166,10 +166,7 @@ differentiation}~\cite{siskind08,elliott18,vakar22}; let us make the corresponde
 \item \Replaced{In both settings, the forward and backward maps are related by being each other's transpose.
 The transpose makes sense because the spaces are \emph{self-dual}: tangent vectors pair with tangent vectors
 via the dot product, identifying cotangents with tangents, and selections of positions pair by the same dot
-product formula, with joins and meets in place of sums and products: $\langle x, y \rangle = 1$ exactly when
-$x$ and $y$ overlap. The
-forward map $f$ and backward map $g$ then determine one another by $\langle f(x), y \rangle = \langle x, g(y)
-\rangle$.}{For \GPS, the forward and backward approximation maps are related by being a Galois connection. For differentiable programming, the forward and reverse derivatives are related by being each others' transpose.}
+product formula, with joins and meets in place of sums and products.}{For \GPS, the forward and backward approximation maps are related by being a Galois connection. For differentiable programming, the forward and reverse derivatives are related by being each others' transpose.}
 \end{itemize}
 
 Given this close connection between \Replaced{dependency analysis}{\GPS} and differentiable programming, we can take structures intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model \Replaced{dependency analysis}{\GPS}. This will enable us to generalise and expand the scope of \Replaced{automatic differentiation}{\GPS} to act as a foundation for data provenance in a wider range of computational settings.
