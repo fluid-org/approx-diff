@@ -41,12 +41,12 @@ approximation strategies, including quantitative forms of slicing.
 
 \Replaced{Consider a single run of a program on a particular input. Each part of the output is computed from
 certain parts of the input, and recording these facts gives the \emph{dependency relation} of the run,
-relating each output position to the input positions it depends on. This section works through a small
-example showing how dependency relations behave as derivatives: they tabulate as Boolean matrices, they
-compose like Jacobians, and they can be evaluated forwards or backwards.}{Perera and collaborators introduced
-the idea of {\em Galois program slicing} as a particular conception of program slicing for provenance,
-described in several publications~\cite{perera12a,perera16d,ricciotti17}. Galois program slicing (hereafter
-simply {\emph \GPS}) forms the basis of the open source data visualisation tool
+relating each output position to the input positions it depends on. This section works through a small example
+showing how dependency relations behave as derivatives: they have a tabular representation as Boolean
+matrices, compose using matrix multiplication, and can be evaluated forwards or backwards.}{Perera and
+collaborators introduced the idea of {\em Galois program slicing} as a particular conception of program
+slicing for provenance, described in several publications~\cite{perera12a,perera16d,ricciotti17}. Galois
+program slicing (hereafter simply {\emph \GPS}) forms the basis of the open source data visualisation tool
 \href{https://f.luid.org/}{Fluid}~\cite{perera2025fluid} that allows interactive exploration of
 programmatically generated visualisations.}
 
@@ -67,8 +67,8 @@ programmatically generated visualisations.}
   output, for the query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. The three numbers in $\mathit{db}$
   occupy three \emph{positions}, and the output a single position. In the run with $l = \mathsf{a}$, the
   output is computed from the numbers at the first and third positions; in the run with $l = \mathsf{b}$,
-  from the number at the second. We depict each output position pointing to the input positions it depends
-  on:}{Now suppose that for a given run of the program, we are interested in which of the numerical parts of the input are used to compute the output for the query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. We can use \GPS to do this. We arrange for the approximations of the input to form the following lattice, where the actual piece of data is at the top and information lost by approximation is represented by $\bot$s: [\ldots] In both runs of the program, the output approximation lattice looks like this, where $1$ is the actual data point that was returned, and $\bot$ indicates that we are approximating this piece of data away: [\ldots]}
+  from the number at the second. We depict each input position pointing to the output positions that depend
+  on it:}{Now suppose that for a given run of the program, we are interested in which of the numerical parts of the input are used to compute the output for the query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. We can use \GPS to do this. We arrange for the approximations of the input to form the following lattice, where the actual piece of data is at the top and information lost by approximation is represented by $\bot$s: [\ldots] In both runs of the program, the output approximation lattice looks like this, where $1$ is the actual data point that was returned, and $\bot$ indicates that we are approximating this piece of data away: [\ldots]}
   \cbstart
   \begin{center}
     \begin{tikzpicture}[every node/.style={font=\small}]
@@ -78,15 +78,15 @@ programmatically generated visualisations.}
       \node (a2) at (0,0) {$(\mathsf{b},1)$};
       \node (a3) at (0,-0.8) {$(\mathsf{a},1)$};
       \node (ao) at (2.4,0) {$1$};
-      \draw[->] (ao) -- (a1);
-      \draw[->] (ao) -- (a3);
+      \draw[->] (a1) -- (ao);
+      \draw[->] (a3) -- (ao);
       % query b
       \node (lb) at (6,1.4) {$\mathit{query}\;\mathsf{b}$};
       \node (b1) at (6,0.8) {$(\mathsf{a},0)$};
       \node (b2) at (6,0) {$(\mathsf{b},1)$};
       \node (b3) at (6,-0.8) {$(\mathsf{a},1)$};
       \node (bo) at (8.4,0) {$1$};
-      \draw[->] (bo) -- (b2);
+      \draw[->] (b2) -- (bo);
     \end{tikzpicture}
   \end{center}
   \cbend
@@ -109,7 +109,7 @@ programmatically generated visualisations.}
   \Replaced{In setting up the positions, we chose to make only the numbers perturbable, keeping the labels
   and the structure of the list itself fixed. Other choices are also useful, and one of the aims of this work
   is to clarify how to choose a dependency structure appropriate for different tasks by use of type
-  information. We elaborate on this further in \secref{semantic-gps}.}{These are not the only choices of approximation lattices that we could have made. For the input, we have chosen a lattice that allows us to ``forget'' (approximate away) numbers in the input, but not the labels or the structure of the list itself. However, other choices are also useful. Indeed, one of the aims of this work is to clarify how to choose an approximation structure appropriate for different tasks by use of type information. We elaborate on this further in \secref{semantic-gps}.}
+  information.}{These are not the only choices of approximation lattices that we could have made. For the input, we have chosen a lattice that allows us to ``forget'' (approximate away) numbers in the input, but not the labels or the structure of the list itself. However, other choices are also useful. Indeed, one of the aims of this work is to clarify how to choose an approximation structure appropriate for different tasks by use of type information.} We elaborate on this further in \secref{semantic-gps}.
 
   \Replaced{The transpose of the Jacobian evaluates dependencies \emph{backwards}: given a selection of
   output positions, it returns the input positions on which they depend. A selection of positions can be
