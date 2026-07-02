@@ -29,18 +29,10 @@
 % figures or math, where changebar spans misbehave. \leavevmode commits a run-in
 % heading in the default colour before the markup colour starts.
 \newcommand{\Added}[1]{\leavevmode\protect\cbstart\added{#1}\protect\cbend\xspace}
-% Box \cite/\ref so they survive inside deleted/replaced text.
-\newcommand{\cmBoxCite}[1]{\mbox{\cmOldCite{#1}}}
-\newcommand{\cmBoxCitet}[1]{\mbox{\cmOldCitet{#1}}}
-\newcommand{\cmBoxCitep}[1]{\mbox{\cmOldCitep{#1}}}
-\newcommand{\cmBoxRef}[1]{\mbox{\cmOldRef{#1}}}
-\AtBeginDocument{\let\cmOldCite\cite \let\cmOldCitet\citet \let\cmOldCitep\citep \let\cmOldRef\ref}
-\newcommand{\cmRobustCites}{\let\cite\cmBoxCite \let\citet\cmBoxCitet \let\citep\cmBoxCitep \let\ref\cmBoxRef}
-\pdfstringdefDisableCommands{\let\cmRobustCites\relax}
-\newcommand{\Deleted}[1]{\leavevmode\protect\cbstart{\cmRobustCites\deleted{#1}}\protect\cbend\xspace}
+\newcommand{\Deleted}[1]{\leavevmode\protect\cbstart\deleted{#1}\protect\cbend\xspace}
 % The control space after #1 separates the new text from the deleted text shown
 % after it (a plain space at the start of #2 is eaten by the changes package).
-\newcommand{\Replaced}[2]{\leavevmode\protect\cbstart{\cmRobustCites\replaced{#1\ }{#2}}\protect\cbend\xspace}
+\newcommand{\Replaced}[2]{\leavevmode\protect\cbstart\replaced{#1\ }{#2}\protect\cbend\xspace}
 % Final mode bypasses the changes package: its \IfIsEmpty test expands the
 % replacement text, and any macro with #1 in its body then causes a runaway \iffalse.
 \ifdefined\finalmode
