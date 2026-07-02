@@ -2,7 +2,7 @@
 
 open import Level using (0ℓ; suc)
 open import prop-setoid using (Setoid; IsEquivalence)
-open import categories using (Category; HasTerminal; IsTerminal; HasProducts)
+open import categories using (Category; HasTerminal; IsTerminal; HasInitial; IsInitial; HasProducts)
 open import commutative-semiring using (CommutativeSemiring)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import commutative-monoid using (CommutativeMonoid)
@@ -14,23 +14,23 @@ import semimodule
 -- Category SDSemiMod of self-dual semimodules and linear maps.
 module sd-semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
-module SM = semimodule S
-open SM using (SelfDual; 𝟘-sd; ⊕-sd; _⇒_; _≈m_; id; _∘_)
+module SemiMod = semimodule S
+open SemiMod using (SelfDual; 𝟘-sd; ⊕-sd; _⇒_; _≈m_; id; _∘_)
 open SelfDual
 
 cat : Category (suc 0ℓ) 0ℓ 0ℓ
 cat .Category.obj = SelfDual
 cat .Category._⇒_ X Y = X .obj ⇒ Y .obj
 cat .Category._≈_ = _≈m_
-cat .Category.isEquiv = SM.cat .Category.isEquiv
+cat .Category.isEquiv = SemiMod.cat .Category.isEquiv
 cat .Category.id X = id (X .obj)
 cat .Category._∘_ = _∘_
-cat .Category.∘-cong = SM.cat .Category.∘-cong
-cat .Category.id-left = SM.cat .Category.id-left
-cat .Category.id-right = SM.cat .Category.id-right
-cat .Category.assoc = SM.cat .Category.assoc
+cat .Category.∘-cong = SemiMod.cat .Category.∘-cong
+cat .Category.id-left = SemiMod.cat .Category.id-left
+cat .Category.id-right = SemiMod.cat .Category.id-right
+cat .Category.assoc = SemiMod.cat .Category.assoc
 
-open CMonEnriched SM.cmon-enriched
+open CMonEnriched SemiMod.cmon-enriched
   using (homCM; εm; _+m_; comp-bilinear₁; comp-bilinear₂; comp-bilinear-ε₁; comp-bilinear-ε₂)
 open CommutativeMonoid
 
@@ -49,61 +49,70 @@ cmon-enriched .CMonEnriched.comp-bilinear-ε₂ = comp-bilinear-ε₂
 terminal : HasTerminal cat
 terminal .HasTerminal.witness = 𝟘-sd
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {X} =
-  SM.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {X .obj}
+  SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {X .obj}
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext =
-  SM.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext
+  SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext
 
 biproduct : ∀ X Y → Biproduct cmon-enriched X Y
 biproduct X Y .Biproduct.prod = ⊕-sd X Y
-biproduct X Y .Biproduct.p₁ = SM.biproduct (X .obj) (Y .obj) .Biproduct.p₁
-biproduct X Y .Biproduct.p₂ = SM.biproduct (X .obj) (Y .obj) .Biproduct.p₂
-biproduct X Y .Biproduct.in₁ = SM.biproduct (X .obj) (Y .obj) .Biproduct.in₁
-biproduct X Y .Biproduct.in₂ = SM.biproduct (X .obj) (Y .obj) .Biproduct.in₂
-biproduct X Y .Biproduct.id-1 = SM.biproduct (X .obj) (Y .obj) .Biproduct.id-1
-biproduct X Y .Biproduct.id-2 = SM.biproduct (X .obj) (Y .obj) .Biproduct.id-2
-biproduct X Y .Biproduct.zero-1 = SM.biproduct (X .obj) (Y .obj) .Biproduct.zero-1
-biproduct X Y .Biproduct.zero-2 = SM.biproduct (X .obj) (Y .obj) .Biproduct.zero-2
-biproduct X Y .Biproduct.id-+ = SM.biproduct (X .obj) (Y .obj) .Biproduct.id-+
+biproduct X Y .Biproduct.p₁ = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.p₁
+biproduct X Y .Biproduct.p₂ = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.p₂
+biproduct X Y .Biproduct.in₁ = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.in₁
+biproduct X Y .Biproduct.in₂ = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.in₂
+biproduct X Y .Biproduct.id-1 = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.id-1
+biproduct X Y .Biproduct.id-2 = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.id-2
+biproduct X Y .Biproduct.zero-1 = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.zero-1
+biproduct X Y .Biproduct.zero-2 = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.zero-2
+biproduct X Y .Biproduct.id-+ = SemiMod.biproduct (X .obj) (Y .obj) .Biproduct.id-+
 
 products : HasProducts cat
 products = biproducts→products cmon-enriched biproduct
 
 -- Forgetful functor to SemiMod; full and faithful, so SDSemiMod is equivalent to the full subcategory of
 -- SemiMod on the self-dualisable objects (objects for which some isomorphism to the dual exists).
-U : Functor cat SM.cat
+U : Functor cat SemiMod.cat
 U .Functor.fobj = SelfDual.obj
 U .Functor.fmor f = f
 U .Functor.fmor-cong f₁≈f₂ = f₁≈f₂
-U .Functor.fmor-id = SM.cat .Category.isEquiv .IsEquivalence.refl
-U .Functor.fmor-comp f g = SM.cat .Category.isEquiv .IsEquivalence.refl
+U .Functor.fmor-id = SemiMod.cat .Category.isEquiv .IsEquivalence.refl
+U .Functor.fmor-comp f g = SemiMod.cat .Category.isEquiv .IsEquivalence.refl
 
 -- U preserves the chosen terminal and products, as required for the FO model.
 private
-  SM-products : HasProducts SM.cat
-  SM-products = biproducts→products SM.cmon-enriched SM.biproduct
+  SemiMod-products : HasProducts SemiMod.cat
+  SemiMod-products = biproducts→products SemiMod.cmon-enriched SemiMod.biproduct
 
-open Category SM.cat using (IsIso; ≈-trans; ≈-sym; id-left; id-right)
-open IsTerminal (SM.terminal .HasTerminal.is-terminal) using (to-terminal; to-terminal-unique)
-open HasProducts SM-products using (pair; p₁; p₂; pair-natural; pair-ext)
+open Category SemiMod.cat using (IsIso; ≈-refl; ≈-trans; ≈-sym; id-left; id-right; ∘-cong)
+open IsTerminal (SemiMod.terminal .HasTerminal.is-terminal) using (to-terminal; to-terminal-unique)
+open HasProducts SemiMod-products using (pair; p₁; p₂; pair-natural; pair-ext)
 open finite-product-functor U using (preserve-chosen-terminal; preserve-chosen-products)
 
-U-preserve-terminal : preserve-chosen-terminal terminal SM.terminal
+U-preserve-terminal : preserve-chosen-terminal terminal SemiMod.terminal
 U-preserve-terminal .IsIso.inverse = to-terminal
 U-preserve-terminal .IsIso.f∘inverse≈id = to-terminal-unique _ _
 U-preserve-terminal .IsIso.inverse∘f≈id = to-terminal-unique _ _
 
-U-preserve-products : preserve-chosen-products products SM-products
-U-preserve-products {X} {Y} .IsIso.inverse = id ((X .obj) SM.⊕ (Y .obj))
+U-preserve-products : preserve-chosen-products products SemiMod-products
+U-preserve-products {X} {Y} .IsIso.inverse = id ((X .obj) SemiMod.⊕ (Y .obj))
 U-preserve-products {X} {Y} .IsIso.f∘inverse≈id =
-  ≈-trans (pair-natural (id ((X .obj) SM.⊕ (Y .obj))) p₁ p₂)
-    (pair-ext (id ((X .obj) SM.⊕ (Y .obj))))
+  ≈-trans (pair-natural (id ((X .obj) SemiMod.⊕ (Y .obj))) p₁ p₂)
+    (pair-ext (id ((X .obj) SemiMod.⊕ (Y .obj))))
 U-preserve-products {X} {Y} .IsIso.inverse∘f≈id = ≈-trans id-left pair-p≈id
   where
-    pair-p≈id : pair (p₁ {X .obj} {Y .obj}) (p₂ {X .obj} {Y .obj}) ≈m id ((X .obj) SM.⊕ (Y .obj))
+    pair-p≈id : pair (p₁ {X .obj} {Y .obj}) (p₂ {X .obj} {Y .obj}) ≈m id ((X .obj) SemiMod.⊕ (Y .obj))
     pair-p≈id =
       ≈-trans (≈-sym id-right)
-        (≈-trans (pair-natural (id ((X .obj) SM.⊕ (Y .obj))) p₁ p₂)
-          (pair-ext (id ((X .obj) SM.⊕ (Y .obj)))))
+        (≈-trans (pair-natural (id ((X .obj) SemiMod.⊕ (Y .obj))) p₁ p₂)
+          (pair-ext (id ((X .obj) SemiMod.⊕ (Y .obj)))))
+
+-- 𝟘-sd is also initial: any map out of it is the zero map, since id on 𝟘 is the zero map.
+initial : HasInitial cat
+initial .HasInitial.witness = 𝟘-sd
+initial .HasInitial.is-initial .IsInitial.from-initial = εm
+initial .HasInitial.is-initial .IsInitial.from-initial-ext f =
+  ≈-sym (≈-trans (≈-sym id-right)
+    (≈-trans (∘-cong (≈-refl {f = f}) (to-terminal-unique (id (𝟘-sd .obj)) εm))
+      (comp-bilinear-ε₂ f)))
 
 -- The embedding Mat(S) ↪ SemiMod(S) factors through SDSemiMod(S) as U ∘ F; each free semimodule carries the
 -- self-duality induced by the dot product.
