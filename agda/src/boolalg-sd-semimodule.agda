@@ -21,7 +21,6 @@ open SemiMod.JoinSemilattices ⊤-add-top using (SelfDualBooleanAlgebra; to-gal)
 open SemiMod.JoinSemilattices.DistribLattices ⊤-add-top ∧-idem using (𝟘-bsddl; ⊕-bsddl; 𝕀-bsddl)
 open SelfDualBooleanAlgebra using (obj)
 
--- The scalars as a one-dimensional object, the trivial object, and the biproduct of objects.
 𝕀 : SelfDualBooleanAlgebra
 𝕀 = 𝕀-bsddl ¬ compl-∧ compl-∨
 
@@ -81,7 +80,6 @@ biproduct X Y .Biproduct.id-+ = SemiMod.biproduct (obj X) (obj Y) .Biproduct.id-
 products : HasProducts cat
 products = biproducts→products cmon-enriched biproduct
 
--- Forgetful functor to SemiMod.
 U : Functor cat SemiMod.cat
 U .Functor.fobj = obj
 U .Functor.fmor f = f
@@ -89,7 +87,6 @@ U .Functor.fmor-cong f₁≈f₂ = f₁≈f₂
 U .Functor.fmor-id = SemiMod.cat .Category.isEquiv .IsEquivalence.refl
 U .Functor.fmor-comp f g = SemiMod.cat .Category.isEquiv .IsEquivalence.refl
 
--- U preserves the chosen terminal and products, as required for the FO model.
 private
   SemiMod-products : HasProducts SemiMod.cat
   SemiMod-products = biproducts→products SemiMod.cmon-enriched SemiMod.biproduct

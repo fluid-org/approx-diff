@@ -26,7 +26,7 @@ open ho-model.Interpretation
   SDSemiMod.U SDSemiMod.U-preserve-terminal (λ {X} {Y} → SDSemiMod.U-preserve-products {X} {Y})
   public
 
--- Self-dualities on first-order-data types, read off the model's objects.
+-- Self-dualities on first-order-data types.
 module interp-sd (Sig : Signature 0ℓ)
                  (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
    where

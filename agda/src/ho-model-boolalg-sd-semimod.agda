@@ -26,7 +26,7 @@ open ho-model.Interpretation
   BoolAlg.U BoolAlg.U-preserve-terminal (λ {X} {Y} → BoolAlg.U-preserve-products {X} {Y})
   public
 
--- Self-dual Boolean algebras on first-order-data types, read off the model's objects.
+-- Self-dual Boolean algebras on first-order-data types.
 module interp-boolean (Sig : Signature 0ℓ)
                       (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
    where

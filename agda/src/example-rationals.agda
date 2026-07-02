@@ -1,14 +1,16 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
+-- Test harness for the rationals (AD) model with the value-carrying base interpretation
+-- (BaseInterp1), over the self-dual semimodules as first-order model.
 module example-rationals where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
-import cmon-enriched as CMon
-import matrix-new
-import semimodule
-import ho-model-semimod
-import indexed-family
+import cmon-enriched
 import prop
+import semimodule
+import sd-semimodule
+import ho-model-sd-semimod
+import indexed-family
 import semiring-Q
 
 open import Level using (lift; 0ℓ) public
@@ -26,25 +28,28 @@ import example
 open import language-syntax Sig hiding (_,_) public
 open example.ex public
 
-module HM = ho-model-semimod semiring-Q.semiring
-module FD = matrix-new.Mat semiring-Q.semiring
-module SM = semimodule semiring-Q.semiring
-module Sq = CommutativeSemiring semiring-Q.semiring
-open CMon.CMonEnriched FD.cmon using (_+m_)
-open FD using (_∷_; []) public
+-- Model instantiation.
 
-unitm : FD._⇒_ 0 1
-unitm = HasInitial.from-initial FD.initial {1}
-conjunctm : FD._⇒_ (HasProducts.prod FD.products 1 1) 1
-conjunctm = HasProducts.p₁ FD.products {1} {1} +m HasProducts.p₂ FD.products {1} {1}
+module SDSemiMod-ℚ = sd-semimodule semiring-Q.semiring
+module SemiMod-ℚ = semimodule semiring-Q.semiring
+module Scalars = CommutativeSemiring semiring-Q.semiring
+open cmon-enriched.CMonEnriched SemiMod-ℚ.cmon-enriched using (_+m_)
+
+Approxm : Category.obj SDSemiMod-ℚ.cat
+Approxm = SDSemiMod-ℚ.𝕀
+
+unitm : Category._⇒_ SDSemiMod-ℚ.cat (HasTerminal.witness SDSemiMod-ℚ.terminal) Approxm
+unitm = HasInitial.from-initial SDSemiMod-ℚ.initial {Approxm}
+conjunctm : Category._⇒_ SDSemiMod-ℚ.cat (HasProducts.prod SDSemiMod-ℚ.products Approxm Approxm) Approxm
+conjunctm = HasProducts.p₁ SDSemiMod-ℚ.products {Approxm} {Approxm}
+        +m HasProducts.p₂ SDSemiMod-ℚ.products {Approxm} {Approxm}
 
 private
-  module FDm = Category FD.cat
   module Add = CommutativeMonoid semiring-Q.additive
   module Mul = CommutativeMonoid semiring-Q.multiplicative
 
   num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → Sq.refl }
+  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → Scalars.refl }
 
   num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
   num-add = record { func = λ (x , y) → Add._+_ x y ; func-resp-≈ = λ e → Add.+-cong (prop.proj₁ e) (prop.proj₂ e) }
@@ -52,32 +57,25 @@ private
   num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
   num-mult = record { func = λ (x , y) → Mul._+_ x y ; func-resp-≈ = λ e → Mul.+-cong (prop.proj₁ e) (prop.proj₂ e) }
 
-  scalar : ℚ → FD._⇒_ 1 1
-  scalar c = record
-    { func             = FD.scale c
-    ; func-resp-≈      = FD.scale-cong {a = c} {a' = c} Sq.refl
-    ; +-preserving     = FD.scale-+ {a = c}
-    ; ε-preserving     = FD.scale-ε {a = c}
-    ; scale-preserving = λ {a} {v} →
-        FD.≈-trans (FD.≈-sym (FD.scale-· {a = c} {b = a} {v = v}))
-          (FD.≈-trans (FD.scale-cong (Sq.·-comm {c} {a}) (FD.≈-refl {v = v}))
-                      (FD.scale-· {a = a} {b = c} {v = v}))
-    }
+  -- Multiplication by c as a linear endomorphism of the scalars.
+  scalar : ℚ → Category._⇒_ SDSemiMod-ℚ.cat Approxm Approxm
+  scalar c .SemiMod-ℚ._⇒_.*→* = record { func = λ x → c Scalars.· x ; func-resp-≈ = λ e → Scalars.·-cong (Scalars.refl {c}) e }
+  scalar c .SemiMod-ℚ._⇒_.preserve-ze = Scalars.ε-annihilᵣ {c}
+  scalar c .SemiMod-ℚ._⇒_.preserve-+ {x} {y} = Scalars.·-+-distribₗ {c} {x} {y}
+  scalar c .SemiMod-ℚ._⇒_.preserve-· {s} {x} =
+    Scalars.trans (Scalars.sym (Scalars.·-assoc {c} {s} {x}))
+      (Scalars.trans (Scalars.·-cong (Scalars.·-comm {c} {s}) Scalars.refl) (Scalars.·-assoc {s} {c} {x}))
 
-  scalar-cong : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → scalar x FDm.≈ scalar y
-  scalar-cong {x} (liftS refl) = FDm.≈-refl {f = scalar x}
+  scalar-cong : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → Category._≈_ SemiMod-ℚ.cat (scalar x) (scalar y)
+  scalar-cong e = record { *≈* = record { func-eq = λ u≈v → Scalars.·-cong e u≈v } }
 
-open import example-signature-interpretation FD.cat FD.products FD.terminal 1 unitm conjunctm
-  semiring-Q.setoid num-zero num-add num-mult public
+open import example-signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
+  Approxm unitm conjunctm semiring-Q.setoid num-zero num-add num-mult public
 module D = Deriv scalar scalar-cong
-open HM.interp Sig D.BaseInterp1 public
-open HM.interp-sd Sig D.BaseInterp1 using (ty-sd) public
+open ho-model-sd-semimod.interp-sd semiring-Q.semiring Sig D.BaseInterp1 public
+open SemiMod-ℚ public using (conjugate)
 
 open indexed-family._⇒f_ public
-open SM._⇒_ public
+open SemiMod-ℚ._⇒_ public
 
-mor : ∀ {Γ τ} (tm : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
-mor tm env = ⟦ tm ⟧tm .famf .transf env
 
-fwd : ∀ {Γ τ} (tm : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
-fwd tm env = mor tm env .func

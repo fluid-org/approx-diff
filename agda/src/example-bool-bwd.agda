@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Backward analysis (matrix-new), via the to-gal Galois connection.
+-- Backward analysis over the self-dual Boolean algebras, via the to-gal Galois connection.
 module example-bool-bwd where
 
 open import example-bool
@@ -13,11 +13,11 @@ input-ty = list (base label [×] base number)
 
 bwd-slice : _ → _
 bwd-slice l =
-  to-gal (ty-bsddl (unit [×] input-ty) (_ , input)) (ty-bsddl (base number) 0)
-         (mor (query l) (_ , input)) .right .fun (⊥ ∷ [])
+  to-gal (ty (unit [×] input-ty) (_ , input)) (ty (base number) 0)
+         (mor (query l) (_ , input)) .right .fun ⊥
 
 -- Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd.
-test1 : bwd-slice a ≡ (lift · , ([] , ⊥ ∷ []) , ([] , ⊤ ∷ []) , ([] , ⊥ ∷ []) , _)
+test1 : bwd-slice a ≡ (lift · , (lift · , ⊥) , (lift · , ⊤) , (lift · , ⊥) , _)
 test1 = refl
-test2 : bwd-slice b ≡ (lift · , ([] , ⊤ ∷ []) , ([] , ⊥ ∷ []) , ([] , ⊤ ∷ []) , _)
+test2 : bwd-slice b ≡ (lift · , (lift · , ⊤) , (lift · , ⊥) , (lift · , ⊤) , _)
 test2 = refl

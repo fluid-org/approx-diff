@@ -13,11 +13,11 @@ input-ty = Tag-ty (list (Tag-ty (Tag-ty (base label) [×] Tag-ty (base number)))
 
 bwd-slice : _ → _
 bwd-slice l =
-  to-gal (ty-bsddl (unit [×] input-ty) (_ , input)) (ty-bsddl (Tag-ty (base number)) (_ , 0))
-         (mor (cbn-query l) (_ , input)) .right .fun (⊥ ∷ [] , [])
+  to-gal (ty (unit [×] input-ty) (_ , input)) (ty (Tag-ty (base number)) (_ , 0))
+         (mor (cbn-query l) (_ , input)) .right .fun (⊥ , lift ·)
 
 test : bwd-slice a ≡
-  (lift · , ⊥ ∷ [] ,
-    (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊥ ∷ [] , []) ,
-    (⊥ ∷ [] , (⊥ ∷ [] , []) , ⊤ ∷ [] , []) , _)
+  (lift · , ⊥ ,
+    (⊥ , (⊥ , lift ·) , ⊥ , lift ·) ,
+    (⊥ , (⊥ , lift ·) , ⊤ , lift ·) , _)
 test = refl

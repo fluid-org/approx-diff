@@ -26,6 +26,11 @@ import fam-exponentials
 -- Section 4
 import ho-model
 
+-- Instantiations of the interpretation, with self-dual semimodules and self-dual Boolean algebras
+-- as the first-order models.
+import ho-model-sd-semimod
+import ho-model-boolalg-sd-semimod
+
 -- Proofs from Section 5 "Definability"
 --
 -- (1) a factorisation of the embedding of the first-order semantic

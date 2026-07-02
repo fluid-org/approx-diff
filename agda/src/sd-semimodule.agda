@@ -19,7 +19,6 @@ open SemiMod public using (SelfDual)
 open SemiMod using (𝟘-sd; ⊕-sd; 𝕀-sd; _⇒_; _≈m_; id; _∘_)
 open SelfDual
 
--- The scalars as a one-dimensional object, the trivial object, and the biproduct of objects.
 𝕀 : SelfDual
 𝕀 = 𝕀-sd
 
@@ -88,7 +87,6 @@ U .Functor.fmor-cong f₁≈f₂ = f₁≈f₂
 U .Functor.fmor-id = SemiMod.cat .Category.isEquiv .IsEquivalence.refl
 U .Functor.fmor-comp f g = SemiMod.cat .Category.isEquiv .IsEquivalence.refl
 
--- U preserves the chosen terminal and products, as required for the FO model.
 private
   SemiMod-products : HasProducts SemiMod.cat
   SemiMod-products = biproducts→products SemiMod.cmon-enriched SemiMod.biproduct

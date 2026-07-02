@@ -2,7 +2,7 @@
 
 -- Forward and backward analysis of the example query in the perturbation-bound model, over the
 -- self-dual semimodules; numbers approximated by ℚ∞² (left, right perturbation bound).
-module example-intervals-2 where
+module example-intervals where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
