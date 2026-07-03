@@ -48,20 +48,20 @@ M×Jop-cmon-enriched =
 
 M×Jop-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 M×Jop
 M×Jop-limits 𝒮 D =
-  product-limit _ _ 𝒮 D
+  product-limit 𝒮 D
     (meet-semilattice-category.limits 𝒮 _)
     (op-colimit _ (join-semilattice-category.colimits (opposite 𝒮) _))
 
 -- The products and terminal object are made "by hand" so the representations used for programs are nice.
 M×Jop-terminal : HasTerminal M×Jop
 M×Jop-terminal =
-  product-terminal _ _ meet-semilattice-category.terminal
-                       (op-initial→terminal join-semilattice-category.initial)
+  product-terminal meet-semilattice-category.terminal
+                   (op-initial→terminal join-semilattice-category.initial)
 
 M×Jop-biproducts : ∀ x y → Biproduct M×Jop-cmon-enriched x y
 M×Jop-biproducts =
   cmon-enriched.cmon+products→biproducts M×Jop-cmon-enriched
-    (product-products _ _
+    (product-products
       meet-semilattice-category.products
       (op-coproducts→products join-semilattice-category.coproducts))
 
