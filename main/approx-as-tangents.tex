@@ -183,13 +183,27 @@ be linked to ``cognate'' selections in another.}
 
 \subsubsection[Galois slicing]{\added{Galois slicing}}
 
-\Added{Suppose now that $S$ is a Boolean algebra. Negation converts conjugates into adjoints: composing
-$\conj{f}$ with complements on either side yields the upper adjoint of $f$, and forward and backward analysis
-form a Galois connection between the lattices of approximations. This is precisely the setting of \GPS,
-recovered here as the Boolean instance of the general story. The two presentations answer
-different questions: the conjugate propagates \emph{necessity} (which inputs may the output depend on), while
-its De Morgan dual propagates \emph{sufficiency} (which inputs are enough to determine the output); we return
-to this reading below.}
+\Added{Suppose in addition that every scalar has a complement: an operation $\neg$ with $a \meet \neg a =
+0$ and $a \join \neg a = 1$, making $S$ a Boolean algebra. Negation supports an alternative presentation of
+conjugates as adjoints: composing $\conj{f}$ with complements on either side, giving its \emph{De Morgan
+dual} $\neg \comp \conj{f} \comp \neg$, yields the upper adjoint of $f$, so forward and backward analysis
+form a \emph{Galois connection} between the lattices of approximations.}
+\begin{AddedBlock}
+\begin{definition}[Galois connection]
+  \label{def:galois-connection}
+  Suppose $X$ and $Y$ are posets. A \emph{Galois connection} $f \adj g: X \to Y$ is a pair of monotone functions $f: Y \to X$ and $g: X \to Y$ satisfying $y \leq g(x) \iff f(y) \leq x$ for any $x \in X$ and $y \in Y$. Since a Galois connection is also an adjunction, we refer to $f$ as the left adjoint and $g$ as the right adjoint.
+\end{definition}
+\end{AddedBlock}
+\Added{This is precisely the setting of
+\GPS~\cite{perera12a,perera16d,ricciotti17}, recovered here as the Boolean instance of the general semimodule picture.
+Galois connections as such presuppose none of the algebraic structure of this section: they make sense between
+arbitrary posets. The Boolean algebra and the De Morgan
+dual are simply how the adjoint presentation arises in the present framework, where the conjugate is the
+primitive notion. Notably, in that line of work the forward map, a meet-preserving right adjoint, serves only to establish the
+existence of the join-preserving backward map, and plays no direct role in the slicing or dependency analyses
+themselves. The two presentations answer different questions: the conjugate propagates \emph{necessity} (which
+inputs may the output depend on), while its De Morgan dual propagates \emph{sufficiency} (which inputs are
+enough to determine the output); we return to this reading below.}
 
 \subsection{Stable Functions as Differentiable Functions}
 
@@ -520,14 +534,15 @@ that any meets exist:
 % thinking about how to trace computations for provenance information.
 
 Stability has an alternative definition in terms of Galois
-connections, which will be more useful for what follows. This
-characterisation is due to~\citet{taylor99}. We first define Galois
-connections, which we used informally in \exref{introduction-example}.
+connections \added{(\defref{galois-connection})}, which will be more useful for what follows. This
+characterisation is due to~\citet{taylor99}. \Deleted{We first define Galois
+connections, which we used informally in \exref{introduction-example}.}
 
+\begin{DeletedBlock}
 \begin{definition}[Galois connection]
-  \label{def:galois-connection}
   Suppose $X$ and $Y$ are posets. A \emph{Galois connection} $f \adj g: X \to Y$ is a pair of monotone functions $f: Y \to X$ and $g: X \to Y$ satisfying $y \leq g(x) \iff f(y) \leq x$ for any $x \in X$ and $y \in Y$. Since a Galois connection is also an adjunction, we refer to $f$ as the left adjoint and $g$ as the right adjoint.
 \end{definition}
+\end{DeletedBlock}
 
 \begin{lemma}
   A monotone function $f : X \to Y$ is stable if and only if for all
