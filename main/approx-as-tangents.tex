@@ -91,7 +91,8 @@ identification (choose a basis), a semimodule need not; we therefore make the id
 \end{definition}
 \end{AddedBlock}
 \Added{The pairing is an $S$-valued measure of the extent to which $x$ and $y$ overlap; its prototype is the
-dot product of vectors (the pairing induced by the self-duality of $S^n$, as we will see below).}
+dot product of vectors (the pairing induced by the self-duality of $S^n$, as we will see below). Extending the
+analogy, we call $x$ and $y$ \emph{orthogonal} when $\langle x, y \rangle = 0$.}
 \begin{AddedBlock}
 \begin{definition}[Conjugate]
   \label{def:conjugate}
@@ -130,31 +131,56 @@ conjugate to the projections, $\biinj_i = \conj{\biproj_i}$. The coincidence of 
 characteristic of such linear settings, and means $\SDSemiMod(S)$ on its own cannot interpret programs over
 sum types; we return to this in \secref{models-of-total-gps}.}
 
-\subsection{Dependency Structures over Richer Semirings}
+\subsection[Dependency Structures over Richer Semirings]{\added{Dependency Structures over Richer Semirings}}
 \label{sec:approx-as-tangents:richer-semirings}
 
-\Added{The framework so far asks very little of the scalars: any commutative semiring $S$ yields a category
-$\SDSemiMod(S)$ with a forward derivative and its conjugate, related through the pairing. This is where the
-reals sit, with the conjugate as the familiar adjoint of linear algebra; addition of real numbers is not
-idempotent, and no order structure is available. Additional axioms on $S$ equips the analysis with additional
-structure.}
+\Added{The framework so far only asks for commutativity of the scalars, which makes the dual $M^*$
+an $S$-semimodule again, so that the transpose remains a map between $S$-semimodules.
+Any commutative semiring $S$ thus yields a category
+$\SDSemiMod(S)$ with forward derivatives and their conjugates, related through the pairing. When $S$ is the
+reals, the conjugate is the familiar adjoint of linear algebra. In a dependency-tracking setting, however, the
+relationships of interest are typically granular: we ask whether, or to what degree, an output depends on an
+input, and want to compare one answer with another. This calls for an order on dependency information, which
+additional axioms on $S$ provide.}
 
-\Added{Suppose first that $S$ is \emph{additively bounded}: $1 + x = 1$, and hence $x + x = x$. Then every
-semimodule carries a partial order, $x \leq y$ iff $x + y = y$, making it a join-semilattice with joins given
-by $+$ and least element $0$, and every linear map automatically preserves joins and $0$. Dependency
+\subsubsection[Conjugate pairs and conjugacy analyses]{\added{Conjugate pairs and conjugacy analyses}}
+
+\Added{Suppose first that $1$ is an additive top in $S$ ($1 + a = 1$). Addition is then
+idempotent, meaning $a + a = a$. Idempotent addition induces an order: $S$ becomes a join-semilattice,
+with $a \leq b$ iff $a + b = b$, joins given by $+$ and least element $0$. This structure lifts pointwise to every semimodule,
+and every linear map automatically preserves joins and $0$. Dependency
 information is now ordered by informativeness: $0$ means ``no dependency'', and the forward and backward
-analyses are monotone, taking more approximate inputs to more approximate outputs.}
+analyses are monotone, taking more informative inputs to more informative outputs and vice-versa.}
 
-\Added{Suppose further that $S$ is a bounded distributive lattice, so that multiplication is a meet. The
-lattice structure of $S$ does not lift to every semimodule, but it does equip the basic building blocks: the
-scalars themselves, the trivial semimodule, and biproducts of such. Call two elements of a join-semilattice
-\emph{disjoint} when their meet is $0$; on these building blocks, disjointness agrees with orthogonality of
-the pairing, $x \meet y = 0$ iff $\langle x, y \rangle = 0$. The defining equation of the conjugate then
-specialises to an exchange of disjointness: $\langle f(x), y \rangle = 0$ iff $\langle x, \conj{f}(y)
-\rangle = 0$, so $f$ and $\conj{f}$ form a \emph{conjugate pair} in the sense of Tarski's relation
-algebra~\cite{jonsson51}, each transporting non-overlap across the map.}
+\Added{If multiplication is also idempotent ($a \cdot a = a$), then $S$ is a bounded distributive lattice,
+with multiplication as the meet and distributivity given by the semiring. This opens the way to reading the
+two analyses in terms of \emph{disjointness}: where meets exist, say $x \disj y$ when $x \meet y = 0$, and
+if disjointness agrees with the orthogonality given by the pairing, the defining equation of the conjugate
+(\defref{conjugate}) says that $f$ and $\conj{f}$ exchange disjointness, $f(x) \disj y$ iff $x \disj
+\conj{f}(y)$. Let us therefore consider the case where each semimodule has meets, preserved by the scalar action and
+agreeing with orthogonality in this sense; meets, unlike joins, do not lift from $S$, so this is additional
+structure. Maps that exchange disjointness in this way have a standard name.}
+\begin{AddedBlock}
+\begin{definition}[Conjugate pair]
+  \label{def:conjugate-pair}
+  Join-preserving maps $f : L \to M$ and $g : M \to L$ between bounded lattices form a \emph{conjugate
+  pair} when $f(x) \disj y$ iff $x \disj g(y)$ for all $x \in L$ and $y \in M$.
+\end{definition}
+\end{AddedBlock}
+\Added{The notion originates in relation algebra~\cite{jonsson51}, where the conjugate of composition with a
+relation is composition with its converse. The relevance to us here is that conjugate pairs also underpin the
+\emph{cognacy} (common ancestry) analyses of work on linked visualisations~\cite{perera22,bond25}: composing a
+join-preserving dependency analysis with its conjugate yields a map sending a selection of outputs to its
+\emph{related outputs}, those sharing a dependency on some part of the input; selecting marks in one chart
+then highlights the cognate marks in another. Over a bounded distributive lattice, then, forward and backward
+dependency analysis form a conjugate pair. The scalars, viewed as a semimodule over themselves, qualify
+automatically for this reading, and biproducts (including the empty biproduct $S^0$) inherit the structure
+componentwise, giving the linear maps between free semimodules $S^n$, with their conjugates, as the canonical
+instances of conjugate pairs.}
 
-\Added{Finally, suppose $S$ is a Boolean algebra. Negation converts conjugates into adjoints: composing
+\subsubsection[Galois slicing]{\added{Galois slicing}}
+
+\Added{Suppose now that $S$ is a Boolean algebra. Negation converts conjugates into adjoints: composing
 $\conj{f}$ with complements on either side yields the upper adjoint of $f$, and forward and backward analysis
 form a Galois connection between the lattices of approximations. This is precisely the setting of \GPS,
 recovered here as the Boolean instance of the general story. The two presentations answer

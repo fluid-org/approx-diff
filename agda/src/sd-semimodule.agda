@@ -371,6 +371,9 @@ module DistributiveLattices
 
     field
       ∧-∨-distrib : ∀ x y z → _≤_ (selfDual .SelfDual.obj) (x ∧ (y ∨ z)) ((x ∧ y) ∨ (x ∧ z))
+      ∧-action    : ∀ {a m n} → Semimodule._≈_ (selfDual .SelfDual.obj)
+                      (Semimodule._·_ (selfDual .SelfDual.obj) a (m ∧ n))
+                      (Semimodule._·_ (selfDual .SelfDual.obj) a m ∧ Semimodule._·_ (selfDual .SelfDual.obj) a n)
       align       : ∀ {a b} → (a # b) ⇔ (pairing (selfDual .SelfDual.dual) a b S.≈ S.ε)
 
   -- Embedding of objects into LatConj.
@@ -401,6 +404,8 @@ module DistributiveLattices
     ⊕-lattice : SelfDualDistributiveLattice
     ⊕-lattice .SelfDualDistributiveLattice.selfDual    = ⊕-sd X.selfDual Y.selfDual
     ⊕-lattice .SelfDualDistributiveLattice.meets       = meets-⊕
+    ⊕-lattice .SelfDualDistributiveLattice.∧-action =
+      X.∧-action , Y.∧-action
     ⊕-lattice .SelfDualDistributiveLattice.∧-∨-distrib (x₁ , x₂) (y₁ , y₂) (z₁ , z₂) =
       X.∧-∨-distrib x₁ y₁ z₁ , Y.∧-∨-distrib x₂ y₂ z₂
     ⊕-lattice .SelfDualDistributiveLattice.align {x₁ , x₂} {y₁ , y₂} .proj₁ (d₁ , d₂) =
@@ -444,6 +449,10 @@ module DistributiveLattices
   𝕀-lattice : SelfDualDistributiveLattice
   𝕀-lattice .SelfDualDistributiveLattice.selfDual    = 𝕀-sd
   𝕀-lattice .SelfDualDistributiveLattice.meets       = 𝕀-meet
+  𝕀-lattice .SelfDualDistributiveLattice.∧-action =
+    S.sym (S.trans S.·-assoc
+      (S.trans (S.·-cong S.refl (S.trans (S.sym S.·-assoc) (S.trans (S.·-cong S.·-comm S.refl) S.·-assoc)))
+        (S.trans (S.sym S.·-assoc) (S.·-cong ∧-idem S.refl))))
   𝕀-lattice .SelfDualDistributiveLattice.∧-∨-distrib x y z = ≈→≤ SemiMod.𝕀 S.·-+-distribₗ
   𝕀-lattice .SelfDualDistributiveLattice.align .proj₁ h = S.trans (S.sym (S.trans S.+-comm S.+-lunit)) h
   𝕀-lattice .SelfDualDistributiveLattice.align .proj₂ h = ≈→≤ SemiMod.𝕀 h
@@ -457,6 +466,7 @@ module DistributiveLattices
   𝟘-lattice .SelfDualDistributiveLattice.meets .MeetSemilattice.∧-isMeet .IsMeet.π₂ = tt
   𝟘-lattice .SelfDualDistributiveLattice.meets .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ _ _ = tt
   𝟘-lattice .SelfDualDistributiveLattice.meets .MeetSemilattice.⊤-isTop .IsTop.≤-top = tt
+  𝟘-lattice .SelfDualDistributiveLattice.∧-action                                   = tt
   𝟘-lattice .SelfDualDistributiveLattice.∧-∨-distrib _ _ _                          = tt
   𝟘-lattice .SelfDualDistributiveLattice.align .proj₁ _                             = S.refl
   𝟘-lattice .SelfDualDistributiveLattice.align .proj₂ _                             = tt
