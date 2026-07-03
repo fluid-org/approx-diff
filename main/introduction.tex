@@ -258,7 +258,9 @@ dependency reading a sound over-approximation}.
   with label $\mathsf{a}$ depends on the entries in the database labelled with $\mathsf{a}$, and likewise
   for the run with label $\mathsf{b}$. Note that the backward action for $\mathsf{a}$ retains
   $\mathit{price}\,\mathsf{a}$, even though the numerical derivative there is $0$: read backwards, too, the
-  dependency Jacobian cannot see that contributions cancelled.
+  dependency Jacobian cannot see that contributions cancelled. Asking \emph{how much} an output can change as an
+  input varies, rather than whether it can move at all, calls for a more quantitative choice of scalars; we
+  develop this in \secref{approx-as-tangents:richer-semirings}.
 
 \end{example}
 \end{AddedBlock}

@@ -10,7 +10,7 @@ import prop
 import semimodule
 import sd-semimodule
 import ho-model-sd-semimod
-import semiring-Q-tropical
+import semiring-Q-tropical-add
 import nat
 
 open import Level using (lift; 0ℓ)
@@ -26,11 +26,11 @@ import example
 open import language-syntax Sig hiding (_,_)
 open example.ex using (query)
 open import label using (a; b)
-open semiring-Q-tropical using (∞; fin)
+open semiring-Q-tropical-add using (∞; fin)
 
 -- Model instantiation.
-module SDSemiMod-ℚ∞ = sd-semimodule semiring-Q-tropical.semiring
-module SemiMod-ℚ∞ = semimodule semiring-Q-tropical.semiring
+module SDSemiMod-ℚ∞ = sd-semimodule semiring-Q-tropical-add.semiring
+module SemiMod-ℚ∞ = semimodule semiring-Q-tropical-add.semiring
 open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (_+m_; εm)
 
 Approxm : Category.obj SDSemiMod-ℚ∞.cat
@@ -54,7 +54,7 @@ private
   coeff-cong-t {x} _ = Category.≈-refl SemiMod-ℚ∞.cat {f = coeff-t x}
 
 module D = Deriv coeff-t coeff-cong-t
-open ho-model-sd-semimod.interp-sd semiring-Q-tropical.semiring Sig D.BaseInterp1
+open ho-model-sd-semimod.interp-sd semiring-Q-tropical-add.semiring Sig D.BaseInterp1
 open SDSemiMod-ℚ∞ using (conjugate)
 open SemiMod-ℚ∞._⇒_
 

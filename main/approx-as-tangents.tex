@@ -129,84 +129,115 @@ conjugate to the projections, $\biinj_i = \conj{\biproj_i}$. The coincidence of 
 characteristic of such linear settings, and means $\SDSemiMod(S)$ on its own cannot interpret programs over
 sum types; we return to this in \secref{models-of-total-gps}.
 
-\subsection[Dependency Structures over Semirings]{\added{Dependency Structures over Semirings}}
+\subsection{Dependency Structures over Semirings}
 \label{sec:approx-as-tangents:richer-semirings}
 
-\Added{The framework so far only asks for commutativity of the scalars, which makes the dual $M^*$
+The framework so far only asks for commutativity of the scalars, which makes the dual $M^*$
 an $S$-semimodule again, so that the transpose remains a map between $S$-semimodules.
 Any commutative semiring $S$ thus yields a category
 $\SDSemiMod(S)$ with forward derivatives and their conjugates, related through the pairing. When $S$ is the
 reals, the conjugate is the familiar adjoint of linear algebra. In a dependency-tracking setting, however, the
 relationships of interest are typically granular: we ask whether, or to what degree, an output depends on an
 input, and want to compare one answer with another. This calls for an order on dependency information, which
-additional axioms on $S$ provide.}
+additional axioms on $S$ provide.
 
-\subsubsection[Conjugate pairs and conjugacy analyses]{\added{Conjugate pairs and conjugacy analyses}}
+\subsubsection{Conjugate pairs and conjugacy analyses}
 
-\Added{Suppose first that $1$ is an additive top in $S$ ($1 + a = 1$). Addition is then
+Suppose first that $1$ is an additive top in $S$ ($1 + a = 1$). Addition is then
 idempotent, meaning $a + a = a$. Idempotent addition induces an order: $S$ becomes a join-semilattice,
 with $a \leq b$ iff $a + b = b$, joins given by $+$ and least element $0$. This structure lifts pointwise to every semimodule,
 and every linear map automatically preserves joins and $0$. Dependency
 information is now ordered by informativeness: $0$ means ``no dependency'', and the forward and backward
-analyses are monotone, taking more informative inputs to more informative outputs and vice-versa.}
+analyses are monotone, taking more informative inputs to more informative outputs and vice-versa.
 
-\Added{If multiplication is also idempotent ($a \cdot a = a$), then $S$ is a bounded distributive lattice,
+If multiplication is also idempotent ($a \cdot a = a$), then $S$ is a bounded distributive lattice,
 with multiplication as the meet and distributivity given by the semiring. This opens the way to reading the
 two analyses in terms of \emph{disjointness}: where meets exist, define $x \disj y$ when $x \meet y = 0$, and
 if disjointness agrees with the orthogonality given by the pairing, the defining equation of the conjugate
 (\defref{conjugate}) says that $f$ and $\conj{f}$ exchange disjointness: $f(x) \disj y$ iff $x \disj
 \conj{f}(y)$. Let us therefore consider the case where each semimodule has meets, preserved by the scalar action and
 agreeing with orthogonality in this sense; meets, unlike joins, do not lift from $S$, so this is additional
-structure. Maps that exchange disjointness in this way have a standard name.}
-\begin{AddedBlock}
+structure. Maps that exchange disjointness in this way have a standard name.
 \begin{definition}[Conjugate pair]
   \label{def:conjugate-pair}
   Join-preserving maps $f : L \to M$ and $g : M \to L$ between bounded lattices form a \emph{conjugate
   pair} when $f(x) \disj y$ iff $x \disj g(y)$ for all $x \in L$ and $y \in M$.
 \end{definition}
-\end{AddedBlock}
-\Added{The notion originates in relation algebra~\cite{jonsson51}, where the conjugate of composition with a
+The notion originates in relation algebra~\cite{jonsson51}, where the conjugate of composition with a
 relation is composition with its converse. The scalars $S$, viewed as a semimodule over itself, qualify
 automatically for this reading, and biproducts (including the empty biproduct $S^0$) inherit the structure
 componentwise, giving the linear maps between free semimodules $S^n$, along with their conjugates, as the canonical
-instances of conjugate pairs.}
+instances of conjugate pairs.
 
-\Added{The relevance to us here is that conjugate pairs also underpin the \emph{cognacy} (common ancestry)
+The relevance to us here is that conjugate pairs also underpin the \emph{cognacy} (common ancestry)
 analyses of work on linked visualisations~\cite{perera22,bond25}. These dependency analyses work by composing
 a join-preserving dependency analysis with its conjugate, yielding a map sending a selection of outputs to its
 \emph{related outputs}, those sharing a dependency on some part of the input; selections in one chart can then
-be linked to ``cognate'' selections in another.}
+be linked to ``cognate'' selections in another.
 
-\subsubsection[Galois slicing]{\added{Galois slicing}}
+\subsubsection{Galois slicing}
 
-\Added{Suppose in addition that every scalar has a complement: an operation $\neg$ with $a \meet \neg a =
+Suppose in addition that every scalar has a complement: an operation $\neg$ with $a \meet \neg a =
 0$ and $a \join \neg a = 1$, making $S$ a Boolean algebra. Negation supports an alternative presentation of
 conjugates as adjoints. Composing a map with complements on either side preserves its direction but exchanges
 join-preservation for meet-preservation; the \emph{De Morgan dual} $\neg \comp \conj{f} \comp \neg$ of
 the conjugate is thus meet-preserving, and is precisely the upper adjoint of $f$ (upper adjoints
 preserve meets, dually to lower adjoints and joins). Forward and backward analysis therefore form a
-\emph{Galois connection} between the lattices of approximations.}
-\begin{AddedBlock}
+\emph{Galois connection} between the lattices of approximations.
 \begin{definition}[Galois connection]
   \label{def:galois-connection}
-  Suppose $X$ and $Y$ are posets. A \emph{Galois connection} $f \adj g: X \to Y$ is a pair of monotone functions $f: Y \to X$ and $g: X \to Y$ satisfying $y \leq g(x) \iff f(y) \leq x$ for any $x \in X$ and $y \in Y$. Since a Galois connection is also an adjunction, we refer to $f$ as the left adjoint and $g$ as the right adjoint.
+  Suppose $X$ and $Y$ are posets. A \emph{Galois connection} $f \adj g: X \to Y$ is a pair of monotone
+  functions $f: Y \to X$ and $g: X \to Y$ satisfying $y \leq g(x) \iff f(y) \leq x$ for any $x \in X$ and $y
+  \in Y$. Since a Galois connection is also an adjunction, we refer to $f$ as the left adjoint and $g$ as the
+  right adjoint.
 \end{definition}
-\end{AddedBlock}
-\Added{This is precisely the setting of \GPS~\cite{perera12a,perera16d,ricciotti17}, recovered here as the
+This is precisely the setting of \GPS~\cite{perera12a,perera16d,ricciotti17}, recovered here as the
 Boolean instance of the general semimodule picture. Galois connections as such presuppose none of the
 algebraic structure of this section, being definable between arbitrary posets; De Morgan duality is simply how
 the adjoint presentation arises here, where the conjugate is the primary notion. One orientation to keep
 straight: the conjugate as presented here, $\conj{f}$, runs backwards, whereas the meet-preserving map of \GPS
 runs forwards. The two presentations agree because $\conj{-}$ is involutive: instantiating the construction at
 $\conj{f}$ in place of $f$ gives exactly the connection of \GPS, with meet-preserving forward map $\neg \comp
-f \comp \neg$.}
+f \comp \neg$.
 
-\Added{The join-preserving and meet-preserving maps answer different questions. In the forwards direction, the
+The join-preserving and meet-preserving maps answer different questions. In the forwards direction, the
 join-preserving map $f$ has a \emph{necessity}-flavoured interpretation: which outputs may depend on a given
 part of the input. Its meet-preserving counterpart $\neg \comp f \comp \neg$ reads as \emph{sufficiency}:
 which outputs a given input selection determines outright. Notably, in the Galois slicing work the
 meet-preserving forward map is only used to establish the existence of the join-preserving backward map; it
-seems to lack any direct dependency analysis applications of its own.}
+seems to lack any direct dependency analysis applications of its own.
+
+\subsubsection[Perturbation bounds]{\added{Perturbation bounds}}
+
+\Added{The Boolean instance answers whether an output can change; the refund example of
+\secref{introduction:galois-slicing} motivated asking how much. To answer the quantitative question, take as
+scalars the nonnegative rationals extended with $\infty$, where a scalar bounds the extent to which a value
+may change from its value in the run, with $\infty$ meaning unconstrained. Semiring addition is $\min$, so
+that combining bounds for parallel paths keeps the tighter bound, and multiplication is numerical $+$,
+accumulating bounds along a path: the \emph{tropical semiring} $(\mathbbm{Q}_{\geq 0} \cup \{\infty\}, \min,
+\infty, +, 0)$~\cite{simon88}. Addition is idempotent, so the analyses are monotone as in
+\secref{approx-as-tangents:richer-semirings}: smaller bounds are more informative, and the semiring zero
+$\infty$ means ``no information''.}
+
+\Added{A Jacobian entry $c$ now acts as a translation: if the input at that position changes by at most
+$\delta$, with the others held fixed, the output changes by at most $\delta + c$. Addition has entries $0$: a
+bound on either argument passes through undisturbed. Multiplication, however, scales perturbations: if $x$
+changes by $\delta$ then $x \cdot y$ changes by $|y|\,\delta$, and no translation bounds a scaling; its
+entries are $\infty$. This is sound, but reports nothing: propagation of absolute error is blind to
+multiplication.}
+
+\Added{Measuring perturbations multiplicatively instead exchanges the two behaviours. Take scalars to be
+factors, with $\min$ and numerical $\times$; this presentation is isomorphic to the previous one under
+logarithms, and the two are the classical dichotomy between absolute and relative
+error~\cite{high:ASNA2}. Multiplication now has unit entries, since relative perturbations pass through a
+product unchanged, while an addition $x + y$ acquires the entry $|x| / |x + y|$: the factor by which it
+amplifies relative error, its \emph{condition number}.}
+
+\Added{At the refund example the amplification is $|3| / |3 + (-3)|$: division by zero, an infinite condition
+number, the catastrophic cancellation of numerical analysis. The over-approximation that the Boolean instance
+could only signal as a spurious dependency is here measured, and for nonnegative data the factors are at most
+$1$, so the query examples remain exact. The choice between the two presentations, like the choice of semiring
+itself, is part of specifying what the analysis is to observe.}
 
 \begin{DeletedBlock}
 \input{main/stable-functions}

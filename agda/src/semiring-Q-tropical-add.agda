@@ -5,7 +5,7 @@
 -- is "no information".  Information-join is min (tighter bound wins) and the multiplicative structure is
 -- ordinary addition.
 
-module semiring-Q-tropical where
+module semiring-Q-tropical-add where
 
 open import Level using (0ℓ)
 open import Data.Rational using (ℚ; 0ℚ; _⊓_; _+_)
