@@ -126,8 +126,10 @@ module Interpretation
      mor M env = ⟦ M ⟧tm .famf .transf env
 
   module Conservativity where
+    open import monad using (IdentityMonad; preserve-identity-monad; Identity-monad-preserve-coproducts)
     open import conservativity
-      Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable
-      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
+      Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable (IdentityMonad Fam⟨𝒞⟩.cat)
+      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials (IdentityMonad Fam⟨𝒟⟩.cat) Fam⟨𝒟⟩.bigCoproducts
       Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
+      (preserve-identity-monad Fam⟨F⟩) (Identity-monad-preserve-coproducts Fam⟨𝒞⟩-coproducts)
       public

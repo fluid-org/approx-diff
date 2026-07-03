@@ -10,10 +10,10 @@ open import categories
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
          interchange; H-id; NT-id-left;
-         HasColimits)
+         HasColimits; NatIso)
 open import prop-setoid using (module ≈-Reasoning; IsEquivalence; Setoid)
 open import setoid-cat using (SetoidCat)
-open import predicate-system using (PredicateSystem; ClosureOp)
+open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 open import stable-coproducts using (StableBits; Stable)
 import glueing-simple
 import setoid-predicate
@@ -23,6 +23,7 @@ open import finite-product-functor
         ; module preserve-chosen-products-consequences)
 open import finite-coproduct-functor
   using (preserve-chosen-coproducts; module preserve-chosen-coproducts-consequences)
+open import monad using (Monad; preserve-monad; MonadFunctor)
 
 open import signature
 
@@ -49,15 +50,17 @@ open ≃-NatTrans
 module conservativity
   {o₁ o₂ m e}
   -- Category for interpreting first-order things
-  (𝒞 : Category o₁ m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP)
+  (𝒞 : Category o₁ m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP) (𝒞M : Monad 𝒞)
   -- A higher order model
-  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P)
+  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
   (𝒟DC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) 𝒟)
   -- A functor which preserves terminal, products, and coproducts
   (F  : Functor 𝒞 𝒟)
   (FT : preserve-chosen-terminal F 𝒞T 𝒟T)
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
   (FC : preserve-chosen-coproducts F 𝒞CP 𝒟CP)
+  (FM : preserve-monad F 𝒞M 𝒟M)
+  (FM-C : preserve-chosen-coproducts (Monad.funct 𝒞M) 𝒞CP 𝒞CP)
   where
 
 private
@@ -69,15 +72,23 @@ private
   module 𝒟T = HasTerminal 𝒟T
   module 𝒟P = HasProducts 𝒟P
   module 𝒟CP = HasCoproducts 𝒟CP
+  module 𝒞M = Monad 𝒞M
+  module 𝒟M = Monad 𝒟M
+  module FM = preserve-monad FM
 
 ------------------------------------------------------------------------------
 -- Kripke Predicates “of varying arity”
-open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞 renaming (PSh to PSh⟨𝒞⟩; products to PSh⟨𝒞⟩-products) using ()
+open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞 renaming (PSh to PSh⟨𝒞⟩; products to PSh⟨𝒞⟩-products) using (module DayMonad; module UnaryDay; Coend; Cowedge)
 open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒟 renaming (よ to 𝒟よ) using ()
+
+open DayMonad 𝒞M using (monad-hat)
 
 private
   module PSh⟨𝒞⟩ = Category PSh⟨𝒞⟩
   module PSh⟨𝒞⟩P = HasProducts PSh⟨𝒞⟩-products
+  module PSh⟨𝒞⟩M = Monad monad-hat
+
+-- FIXME: define PSh(F) : PSh⟨𝒟⟩ ⇒ PSh⟨𝒞⟩, then G is composition of this and yoneda
 
 G : Functor 𝒟 PSh⟨𝒞⟩
 G .fobj x = 𝒟よ .fobj x ∘F opF F
@@ -104,6 +115,7 @@ G .fmor-comp f g = begin
 module _ where
   open prop-setoid._⇒_
   open prop-setoid._≃m_
+  open prop-setoid renaming (mk-≃m to mk-≈s) using (_∘S_; 𝟙; pair; to-𝟙; idS)
 
   G-prod : ∀ {x y} → PSh⟨𝒞⟩P.prod (G .fobj x) (G .fobj y) PSh⟨𝒞⟩.⇒ G .fobj (𝒟P.prod x y)
   G-prod {X} {Y} .transf x .func (lift f , lift g) = lift (𝒟P.pair f g)
@@ -129,14 +141,128 @@ module _ where
          (𝒟.≈-trans (𝒟P.pair-ext _)
                     f₁≈f₂))
 
+  -- This is also a consequence of the yoneda embedding preserving the
+  -- monad lifting, and F being a monad functor
+  open UnaryDay 𝒞M.funct
+  open Coend
+  open Cowedge
+
+  G-monad-cw : ∀ x y → Cowedge 𝟙 (M-hat-F (𝒟よ .fobj x ∘F opF F) y) (𝒟.hom-setoid-l (o₁ ⊔ o₂ ⊔ m ⊔ e) (o₁ ⊔ o₂ ⊔ m ⊔ e) (F .fobj y) (𝒟M.funct .fobj x))
+  G-monad-cw x y .dtransf z .func (_ , lift g , lift h) =
+    lift (𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g))
+  G-monad-cw x y .dtransf z .func-resp-≈ (_ , lift g₁≈g₂ , lift h₁≈h₂) =
+    lift (𝒟.∘-cong (𝒟M.funct .fmor-cong h₁≈h₂) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong g₁≈g₂)))
+  G-monad-cw x y .dinatural {z₁} {z₂} f = mk-≈s λ (_ , lift g , lift h) →
+    lift (begin
+      𝒟M.funct .fmor (h 𝒟.∘ F .fmor f) 𝒟.∘ (FM.transform .transf z₁ 𝒟.∘ F .fmor (𝒞M.funct .fmor (𝒞.id z₁) 𝒞.∘ g))
+    ≈⟨ 𝒟.∘-cong (𝒟M.funct .fmor-comp _ _) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong (𝒞.∘-cong (𝒞M.funct .fmor-id) 𝒞.≈-refl))) ⟩
+      (𝒟M.funct .fmor h 𝒟.∘ 𝒟M.funct .fmor (F .fmor f)) 𝒟.∘ (FM.transform .transf z₁ 𝒟.∘ F .fmor (𝒞.id _ 𝒞.∘ g))
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong 𝒞.id-left)) ⟩
+      (𝒟M.funct .fmor h 𝒟.∘ 𝒟M.funct .fmor (F .fmor f)) 𝒟.∘ (FM.transform .transf z₁ 𝒟.∘ F .fmor g)
+    ≈⟨ 𝒟.assoc _ _ _ ⟩
+      𝒟M.funct .fmor h 𝒟.∘ (𝒟M.funct .fmor (F .fmor f) 𝒟.∘ (FM.transform .transf z₁ 𝒟.∘ F .fmor g))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+      𝒟M.funct .fmor h 𝒟.∘ (𝒟M.funct .fmor (F .fmor f) 𝒟.∘ FM.transform .transf z₁ 𝒟.∘ F .fmor g)
+    ≈⟨ 𝒟.∘-cong (𝒟M.funct .fmor-cong (𝒟.≈-sym 𝒟.id-right)) (𝒟.∘-cong (FM.transform .natural f) 𝒟.≈-refl) ⟩
+      𝒟M.funct .fmor (h 𝒟.∘ 𝒟.id _) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor (𝒞M.funct .fmor f) 𝒟.∘ F .fmor g)
+    ≈⟨ 𝒟.∘-cong (𝒟M.funct .fmor-cong (𝒟.∘-cong 𝒟.≈-refl (𝒟.≈-sym (F .fmor-id)))) (𝒟.assoc _ _ _) ⟩
+      𝒟M.funct .fmor (h 𝒟.∘ F .fmor (𝒞.id _)) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor f) 𝒟.∘ F .fmor g))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _ )) ⟩
+      𝒟M.funct .fmor (h 𝒟.∘ F .fmor (𝒞.id z₂)) 𝒟.∘ (FM.transform .transf z₂ 𝒟.∘ F .fmor (𝒞M.funct .fmor f 𝒞.∘ g))
+    ∎)
+    where open ≈-Reasoning 𝒟.isEquiv
+
+  G-monad : NatTrans (PSh⟨𝒞⟩M.funct ∘F G) (G ∘F 𝒟M.funct)
+  G-monad .transf x .transf y = M-hat-coend _ _ .coend-ext (G-monad-cw x y) ∘S pair to-𝟙 (idS _)
+  G-monad .transf x .natural {y₁}{y₂} f = mk-≈s λ (z , g , lift h) →
+    lift (begin
+      𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g) 𝒟.∘ F .fmor f
+    ≈⟨ 𝒟.assoc _ _ _ ⟩
+      𝒟M.funct .fmor h 𝒟.∘ ((FM.transform .transf z 𝒟.∘ F .fmor g) 𝒟.∘ F .fmor f)
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+      𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ (F .fmor g 𝒟.∘ F .fmor f))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _)) ⟩
+      𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor (g 𝒞.∘ f))
+    ∎)
+    where open ≈-Reasoning 𝒟.isEquiv
+  G-monad .natural {x₁} {x₂} f .transf-eq y = mk-≈s λ (z , g , lift h) →
+    lift (begin
+      𝒟M.funct .fmor f 𝒟.∘ (𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g) 𝒟.∘ 𝒟.id (F .fobj y))
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+      𝒟M.funct .fmor f 𝒟.∘ (𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g))
+    ≈˘⟨ 𝒟.assoc _ _ _ ⟩
+      (𝒟M.funct .fmor f 𝒟.∘ 𝒟M.funct .fmor h) 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g)
+    ≈˘⟨ 𝒟.∘-cong (𝒟M.funct .fmor-comp _ _) 𝒟.≈-refl ⟩
+      𝒟M.funct .fmor (f 𝒟.∘ h) 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g)
+    ≈˘⟨ 𝒟.∘-cong (𝒟M.funct .fmor-cong (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right)) 𝒟.≈-refl ⟩
+      𝒟M.funct .fmor (f 𝒟.∘ (h 𝒟.∘ 𝒟.id (F .fobj z))) 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g)
+    ∎)
+    where open ≈-Reasoning 𝒟.isEquiv
+
+  open MonadFunctor
+
+  G-MonadFunctor : MonadFunctor G 𝒟M (DayMonad.monad-hat 𝒞M)
+  G-MonadFunctor .transform = G-monad
+  G-MonadFunctor .preserve-unit .transf-eq x = mk-≈s λ (lift f) →
+    lift (begin
+      𝒟M.funct .fmor f 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor (𝒞M.unit .transf _))
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl FM.preserve-unit ⟩
+      𝒟M.funct .fmor f 𝒟.∘ 𝒟M.unit .transf _
+    ≈⟨ 𝒟M.unit .natural f ⟩
+      𝒟M.unit .transf _ 𝒟.∘ f
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+      𝒟M.unit .transf _ 𝒟.∘ (f 𝒟.∘ 𝒟.id _)
+    ∎)
+    where open ≈-Reasoning 𝒟.isEquiv
+  G-MonadFunctor .preserve-join .transf-eq x = mk-≈s λ (y , f , z , g , lift h) →
+    lift (begin
+      𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor (𝒞M.join .transf z 𝒞.∘ (𝒞M.funct .fmor g 𝒞.∘ f)))
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _)) ⟩
+      𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ (F .fmor (𝒞M.join .transf z) 𝒟.∘ F .fmor (𝒞M.funct .fmor g 𝒞.∘ f)))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+      𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor (𝒞M.join .transf z) 𝒟.∘ F .fmor (𝒞M.funct .fmor g 𝒞.∘ f))
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong FM.preserve-join (F .fmor-comp _ _)) ⟩
+      𝒟M.funct .fmor h 𝒟.∘ (𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ FM.transform .transf _) 𝒟.∘ (F .fmor (𝒞M.funct .fmor g) 𝒟.∘ F .fmor f))
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+      𝒟M.funct .fmor h 𝒟.∘ (𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ FM.transform .transf _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor g) 𝒟.∘ F .fmor f)))
+    ≈˘⟨ 𝒟.assoc _ _ _ ⟩
+      (𝒟M.funct .fmor h 𝒟.∘ 𝒟M.join .transf _) 𝒟.∘ (𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ FM.transform .transf _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor g) 𝒟.∘ F .fmor f))
+    ≈⟨ 𝒟.∘-cong (𝒟M.join .natural h) (𝒟.assoc _ _ _) ⟩
+      (𝒟M.join .transf _ 𝒟.∘ 𝒟M.funct .fmor (𝒟M.funct .fmor h)) 𝒟.∘ (𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor g) 𝒟.∘ F .fmor f)))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _)) ⟩
+      (𝒟M.join .transf _ 𝒟.∘ 𝒟M.funct .fmor (𝒟M.funct .fmor h)) 𝒟.∘ (𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor (𝒞M.funct .fmor g) 𝒟.∘ F .fmor f))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (FM.transform .natural g) 𝒟.≈-refl)) ⟩
+      (𝒟M.join .transf _ 𝒟.∘ 𝒟M.funct .fmor (𝒟M.funct .fmor h)) 𝒟.∘ (𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ (𝒟M.funct .fmor (F .fmor g) 𝒟.∘ FM.transform .transf _ 𝒟.∘ F .fmor f))
+    ≈⟨ 𝒟.assoc _ _ _ ⟩
+      𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (𝒟M.funct .fmor h) 𝒟.∘ (𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ (𝒟M.funct .fmor (F .fmor g) 𝒟.∘ FM.transform .transf _ 𝒟.∘ F .fmor f)))
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _))) ⟩
+      𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (𝒟M.funct .fmor h) 𝒟.∘ (𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ (𝒟M.funct .fmor (F .fmor g) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor f))))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+      𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (𝒟M.funct .fmor h) 𝒟.∘ 𝒟M.funct .fmor (FM.transform .transf _) 𝒟.∘ (𝒟M.funct .fmor (F .fmor g) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor f)))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (𝒟M.funct .fmor-comp _ _) 𝒟.≈-refl) ⟩
+      𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (𝒟M.funct .fmor h 𝒟.∘ FM.transform .transf _) 𝒟.∘ (𝒟M.funct .fmor (F .fmor g) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor f)))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+      𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (𝒟M.funct .fmor h 𝒟.∘ FM.transform .transf _) 𝒟.∘ 𝒟M.funct .fmor (F .fmor g) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor f))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (𝒟M.funct .fmor-comp _ _) 𝒟.≈-refl) ⟩
+      𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (𝒟M.funct .fmor h 𝒟.∘ FM.transform .transf _ 𝒟.∘ F .fmor g) 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor f))
+    ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (𝒟M.funct .fmor-cong (𝒟.assoc _ _ _)) 𝒟.≈-refl) ⟩
+      𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g)) 𝒟.∘ (FM.transform .transf y 𝒟.∘ F .fmor f))
+    ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+      𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g)) 𝒟.∘ (FM.transform .transf y 𝒟.∘ F .fmor f) 𝒟.∘ 𝒟.id _)
+    ∎)
+    where open ≈-Reasoning 𝒟.isEquiv
+
 ------------------------------------------------------------------------------
 -- Presheaf predicates
 open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞
   renaming (system to PSh⟨𝒞⟩-system; Predicate to PShPredicate)
   using (_⊑_; module CoproductMonad;
-         _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop)
+         _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop;
+         module Monad-hat-pred)
 
 module PSh⟨𝒞⟩-system = PredicateSystem PSh⟨𝒞⟩-system
+
+open Monad-hat-pred 𝒞M using (MP)
 
 open PShPredicate
 open setoid-predicate.Predicate
@@ -238,6 +364,103 @@ Definable-coproducts .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
           ∎
           where open ≈-Reasoning 𝒟.isEquiv
 
+open FunctorPred
+open MonadPred
+
+Definable-monad : ∀ {x} → Definable (𝒞M.funct .fobj x)
+                          ⊑ MP .liftF (Definable x) ⟨ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ G-monad .transf (F .fobj x) ⟩
+Definable-monad {x} .*⊑* a .*⊑* (lift f) (lift (g , Fg≈f)) =
+  (x , g , lift (𝒟.id _)) ,
+  ((x , g , lift (𝒟.id _)) , (liftS (eq-stop _)) , lift (𝒞.id _ , F .fmor-id)) ,
+  lift (begin
+    FM.transform⁻¹ .transf x 𝒟.∘ (𝒟M.funct .fmor (𝒟.id _) 𝒟.∘ (FM.transform .transf x 𝒟.∘ F .fmor g) 𝒟.∘ 𝒟.id _)
+  ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (𝒟.∘-cong (𝒟M.funct .fmor-id) (𝒟.∘-cong 𝒟.≈-refl Fg≈f)) 𝒟.≈-refl) ⟩
+    FM.transform⁻¹ .transf x 𝒟.∘ (𝒟.id _ 𝒟.∘ (FM.transform .transf x 𝒟.∘ f) 𝒟.∘ 𝒟.id _)
+  ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+    FM.transform⁻¹ .transf x 𝒟.∘ (𝒟.id _ 𝒟.∘ (FM.transform .transf x 𝒟.∘ f))
+  ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-left ⟩
+    FM.transform⁻¹ .transf x 𝒟.∘ (FM.transform .transf x 𝒟.∘ f)
+  ≈˘⟨ 𝒟.assoc _ _ _ ⟩
+    (FM.transform⁻¹ .transf x 𝒟.∘ FM.transform .transf x) 𝒟.∘ f
+  ≈⟨ 𝒟.∘-cong (Category.IsIso.inverse∘f≈id (FM.transf-iso x)) 𝒟.≈-refl ⟩
+    𝒟.id _ 𝒟.∘ f
+  ≈⟨ 𝒟.id-left ⟩
+    f
+  ∎)
+  where open ≈-Reasoning 𝒟.isEquiv
+        open UnaryDay 𝒞M.funct
+
+Definable-monad⁻¹ : ∀ {x} → MP .liftF (Definable x)
+                            ⊑ Definable (𝒞M.funct .fobj x) [ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ G-monad .transf (F .fobj x) ]
+Definable-monad⁻¹ {x} .*⊑* a .*⊑* (z , g , lift h) ((z' , g' , lift h') , liftS eq , lift (f , Ff≈h')) =
+  lift (𝒞M.funct .fmor f 𝒞.∘ g' , (begin
+          F .fmor (𝒞M.funct .fmor f 𝒞.∘ g')
+        ≈⟨ F .fmor-comp _ _ ⟩
+          F .fmor (𝒞M.funct .fmor f) 𝒟.∘ F .fmor g'
+        ≈˘⟨ 𝒟.id-left ⟩
+          𝒟.id _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor f) 𝒟.∘ F .fmor g')
+        ≈˘⟨ 𝒟.∘-cong (Category.IsIso.inverse∘f≈id (FM.transf-iso x)) 𝒟.≈-refl ⟩
+          (FM.transform⁻¹ .transf x 𝒟.∘ FM.transform .transf x) 𝒟.∘ (F .fmor (𝒞M.funct .fmor f) 𝒟.∘ F .fmor g')
+        ≈⟨ 𝒟.assoc _ _ _ ⟩
+          FM.transform⁻¹ .transf x 𝒟.∘ (FM.transform .transf x 𝒟.∘ (F .fmor (𝒞M.funct .fmor f) 𝒟.∘ F .fmor g'))
+        ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+          FM.transform⁻¹ .transf x 𝒟.∘ ((FM.transform .transf x 𝒟.∘ F .fmor (𝒞M.funct .fmor f)) 𝒟.∘ F .fmor g')
+        ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (FM.transform .natural f) 𝒟.≈-refl) ⟩
+          FM.transform⁻¹ .transf x 𝒟.∘ ((𝒟M.funct .fmor (F .fmor f) 𝒟.∘ FM.transform .transf _) 𝒟.∘ F .fmor g')
+        ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (𝒟.∘-cong (𝒟M.funct .fmor-cong Ff≈h') 𝒟.≈-refl) 𝒟.≈-refl) ⟩
+          FM.transform⁻¹ .transf x 𝒟.∘ ((𝒟M.funct .fmor h' 𝒟.∘ FM.transform .transf _) 𝒟.∘ F .fmor g')
+        ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (helper _ _ _ _ _ _ eq) ⟩
+          FM.transform⁻¹ .transf x 𝒟.∘ ((𝒟M.funct .fmor h 𝒟.∘ FM.transform .transf z) 𝒟.∘ F .fmor g)
+        ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+          FM.transform⁻¹ .transf x 𝒟.∘ (𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g))
+        ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+          FM.transform⁻¹ .transf x 𝒟.∘ (𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g) 𝒟.∘ 𝒟.id _)
+        ∎))
+  where open UnaryDay 𝒞M.funct
+
+        helper : ∀ z g h z' g' h' → M-hat-eq (z , g , lift h) (z' , g' , lift h') →
+                 (𝒟M.funct .fmor h' 𝒟.∘ FM.transform .transf _) 𝒟.∘ F .fmor g' 𝒟.≈ (𝒟M.funct .fmor h 𝒟.∘ FM.transform .transf _) 𝒟.∘ F .fmor g
+        helper z g h z' g' h' (eq-stop a) = 𝒟.≈-refl
+        helper z g h z' g' h' (eq-step {y₂ = z''} {f₂ = g''} {Fy₂ = lift h''} {Fy = lift h₃} h₁ h₂ ϕ (lift ψ₁) (lift ψ₂) eq) = begin
+            𝒟M.funct .fmor h' 𝒟.∘ FM.transform .transf z' 𝒟.∘ F .fmor g'
+          ≈⟨ helper _ _ _ _ _ _ eq ⟩
+            𝒟M.funct .fmor h'' 𝒟.∘ FM.transform .transf z'' 𝒟.∘ F .fmor g''
+          ≈˘⟨ 𝒟.∘-cong (𝒟.∘-cong (𝒟M.funct .fmor-cong ψ₂) 𝒟.≈-refl) 𝒟.≈-refl ⟩
+            𝒟M.funct .fmor (h₃ 𝒟.∘ F .fmor h₂) 𝒟.∘ FM.transform .transf z'' 𝒟.∘ F .fmor g''
+          ≈⟨ 𝒟.∘-cong (𝒟.∘-cong (𝒟M.funct .fmor-comp _ _) 𝒟.≈-refl) 𝒟.≈-refl ⟩
+            (𝒟M.funct .fmor h₃ 𝒟.∘ 𝒟M.funct .fmor (F .fmor h₂)) 𝒟.∘ FM.transform .transf z'' 𝒟.∘ F .fmor g''
+          ≈⟨ 𝒟.∘-cong (𝒟.assoc _ _ _) 𝒟.≈-refl ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (𝒟M.funct .fmor (F .fmor h₂) 𝒟.∘ FM.transform .transf z'') 𝒟.∘ F .fmor g''
+          ≈⟨ 𝒟.∘-cong (𝒟.∘-cong 𝒟.≈-refl (FM.transform .natural h₂)) 𝒟.≈-refl ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor (𝒞M.funct .fmor h₂)) 𝒟.∘ F .fmor g''
+          ≈⟨ 𝒟.assoc _ _ _ ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ ((FM.transform .transf _ 𝒟.∘ F .fmor (𝒞M.funct .fmor h₂)) 𝒟.∘ F .fmor g'')
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (FM.transform .transf _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor h₂) 𝒟.∘ F .fmor g''))
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _)) ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (FM.transform .transf _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor h₂ 𝒞.∘ g'')))
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong (𝒞.≈-sym ϕ))) ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (FM.transform .transf _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor h₁ 𝒞.∘ g)))
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _)) ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (FM.transform .transf _ 𝒟.∘ (F .fmor (𝒞M.funct .fmor h₁) 𝒟.∘ F .fmor g))
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (FM.transform .transf _ 𝒟.∘ F .fmor (𝒞M.funct .fmor h₁) 𝒟.∘ F .fmor g)
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (FM.transform .natural h₁) 𝒟.≈-refl) ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (𝒟M.funct .fmor (F .fmor h₁) 𝒟.∘ FM.transform .transf _ 𝒟.∘ F .fmor g)
+          ≈˘⟨ 𝒟.assoc _ _ _ ⟩
+            𝒟M.funct .fmor h₃ 𝒟.∘ (𝒟M.funct .fmor (F .fmor h₁) 𝒟.∘ FM.transform .transf _) 𝒟.∘ F .fmor g
+          ≈˘⟨ 𝒟.∘-cong (𝒟.assoc _ _ _) 𝒟.≈-refl ⟩
+            (𝒟M.funct .fmor h₃ 𝒟.∘ 𝒟M.funct .fmor (F .fmor h₁)) 𝒟.∘ FM.transform .transf _ 𝒟.∘ F .fmor g
+          ≈˘⟨ 𝒟.∘-cong (𝒟.∘-cong (𝒟M.funct .fmor-comp _ _) 𝒟.≈-refl) 𝒟.≈-refl ⟩
+            𝒟M.funct .fmor (h₃ 𝒟.∘ F .fmor h₁) 𝒟.∘ FM.transform .transf _ 𝒟.∘ F .fmor g
+          ≈⟨ 𝒟.∘-cong (𝒟.∘-cong (𝒟M.funct .fmor-cong ψ₁) 𝒟.≈-refl) 𝒟.≈-refl ⟩
+            𝒟M.funct .fmor h 𝒟.∘ FM.transform .transf z 𝒟.∘ F .fmor g
+          ∎
+          where open ≈-Reasoning 𝒟.isEquiv
+
+        open ≈-Reasoning 𝒟.isEquiv
+
+
 -- FIXME: this ought to be true for any predicate that is closed under
 -- glueing of sums.
 Definable-closed : ∀ {X Y} (f : F .fobj X 𝒟.⇒ F .fobj Y) →
@@ -292,7 +515,9 @@ Definable-closed f (node X₁ X₂ (lift f₁) (lift f₂) g t₁ t₂ (lift eq�
 -- Now construct the category of Grothendieck Logical Relations
 
 open import closure-predicate PSh⟨𝒞⟩-system closureOp
-  using (system; embed)
+  using (system; embed; module 𝐂Monad)
+
+open 𝐂Monad _ MP (distrib _ FM-C)
 
 module Gl = glueing-simple 𝒟 PSh⟨𝒞⟩ _ system G
 
@@ -302,6 +527,7 @@ module GlCPM = HasCoproducts GlCP.coproducts
 module GlPE = Gl.products-and-exponentials 𝒟T 𝒟P 𝒟E G-preserve-products
 module GlPM = HasProducts GlPE.products
 module GlT = HasTerminal GlPE.terminal
+module GlM = Gl.monad-glueing 𝒟M _ G-MonadFunctor 𝐂MP
 
 GDC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) Gl.cat
 GDC A = colimits where open Gl.colimits (setoid→category A) (𝒟DC A)
@@ -417,6 +643,77 @@ GF-preserve-coproducts .Category.IsIso.f∘inverse≈id .f≃f = Category.IsIso.
 GF-preserve-coproducts .Category.IsIso.inverse∘f≈id .f≃f = Category.IsIso.inverse∘f≈id FC
 
 -- FIXME: If 𝒞 has exponentials, then GF preserves them as well.
+
+open preserve-monad
+
+GF-preserve-monad : preserve-monad GF 𝒞M GlM.GM
+GF-preserve-monad .iso .NatIso.transform .transf x .morph = FM.transform .transf x
+GF-preserve-monad .iso .NatIso.transform .transf x .presv = begin
+    𝐂 (Definable (𝒞M.funct .fobj x))
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono Definable-monad ⟩
+    𝐂 (MP .liftF (Definable x) ⟨ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ G-monad .transf (F .fobj x) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (𝐂-isClosure .IsClosureOp.unit PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
+    𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ G-monad .transf (F .fobj x) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.⟨⟩-comp⁻¹ _ _) ⟩
+    𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ G-monad .transf (F .fobj x) ⟩ ⟨ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.unit _) ⟩
+    𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ G-monad .transf (F .fobj x) ⟩ ⟨ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) ⟩ ⟨ 𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F) ⟩ [ 𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F) ])
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono ((PSh⟨𝒞⟩-system.⟨⟩-comp _ _) PSh⟨𝒞⟩-system.[ _ ]m) ⟩
+    𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ G-monad .transf (F .fobj x) ⟩ ⟨ (𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) ⟩ [ 𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F) ])
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.⟨⟩-cong help PSh⟨𝒞⟩-system.[ _ ]m) ⟩
+    𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ G-monad .transf (F .fobj x) ⟩ ⟨ PSh⟨𝒞⟩.id _ ⟩ [ 𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F) ])
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.⟨⟩-id⁻¹ PSh⟨𝒞⟩-system.[ _ ]m) ⟩
+    𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ G-monad .transf (F .fobj x) ⟩ [ 𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F) ])
+  ≤⟨ 𝐂-[] ⟩
+    𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ G-monad .transf (F .fobj x) ⟩) [ 𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F) ]
+  ≤⟨ (𝐂-isClosure .IsClosureOp.mono ((𝐂-isClosure .IsClosureOp.mono (MP .liftF-⊑ (𝐂-isClosure .IsClosureOp.unit))) PSh⟨𝒞⟩-system.⟨ _ ⟩m)) PSh⟨𝒞⟩-system.[ _ ]m ⟩
+    𝐂 (𝐂 (MP .liftF (𝐂 (Definable x))) ⟨ G-monad .transf (F .fobj x) ⟩) [ 𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F) ]
+  ∎
+  where open prop-setoid renaming (mk-≃m to mk-≈s)
+
+        help : (𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.≈ PSh⟨𝒞⟩.id _
+        help .transf-eq x = mk-≈s λ (lift f) → lift (begin
+            FM.transform .transf _ 𝒟.∘ (FM.transform⁻¹ .transf _ 𝒟.∘ (f 𝒟.∘ 𝒟.id _) 𝒟.∘ 𝒟.id _)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+            FM.transform .transf _ 𝒟.∘ (FM.transform⁻¹ .transf _ 𝒟.∘ (f 𝒟.∘ 𝒟.id _))
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) ⟩
+            FM.transform .transf _ 𝒟.∘ (FM.transform⁻¹ .transf _ 𝒟.∘ f)
+          ≈˘⟨ 𝒟.assoc _ _ _ ⟩
+            (FM.transform .transf _ 𝒟.∘ FM.transform⁻¹ .transf _) 𝒟.∘ f
+          ≈⟨ 𝒟.∘-cong (FM.transf-iso _ .Category.IsIso.f∘inverse≈id) 𝒟.≈-refl ⟩
+            𝒟.id _ 𝒟.∘ f
+          ≈⟨ 𝒟.id-left ⟩
+            f
+          ∎)
+          where open ≈-Reasoning 𝒟.isEquiv
+
+        open ≤-Reasoning ⊑-isPreorder
+GF-preserve-monad .iso .NatIso.transform .natural f .f≃f = FM.transform .natural f
+GF-preserve-monad .iso .NatIso.transf-iso x .Category.IsIso.inverse .morph = FM.transform⁻¹ .transf x
+GF-preserve-monad .iso .NatIso.transf-iso x .Category.IsIso.inverse .presv = begin
+    𝐂 (𝐂 (MP .liftF (𝐂 (Definable x))) ⟨ G-monad .transf (F .fobj x) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (𝐂-isClosure .IsClosureOp.mono (distrib _ FM-C) PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
+    𝐂 (𝐂 (𝐂 (MP .liftF (Definable x))) ⟨ G-monad .transf (F .fobj x) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (𝐂-isClosure .IsClosureOp.closed PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
+    𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ G-monad .transf (F .fobj x) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (𝐂-isClosure .IsClosureOp.mono Definable-monad⁻¹ PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
+    𝐂 (𝐂 (Definable (𝒞M.funct .fobj x) [ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ G-monad .transf (F .fobj x) ]) ⟨ G-monad .transf (F .fobj x) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (𝐂-[] PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
+    𝐂 (𝐂 (Definable (𝒞M.funct .fobj x)) [ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ G-monad .transf (F .fobj x) ] ⟨ G-monad .transf (F .fobj x) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.[]-comp⁻¹ _ _ PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
+    𝐂 (𝐂 (Definable (𝒞M.funct .fobj x)) [ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) ] [ G-monad .transf (F .fobj x) ] ⟨ G-monad .transf (F .fobj x) ⟩)
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.counit _) ⟩
+    𝐂 (𝐂 (Definable (𝒞M.funct .fobj x)) [ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) ])
+  ≤⟨ 𝐂-[] ⟩
+    𝐂 (𝐂 (Definable (𝒞M.funct .fobj x))) [ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) ]
+  ≤⟨ 𝐂-isClosure .IsClosureOp.closed PSh⟨𝒞⟩-system.[ _ ]m ⟩
+    𝐂 (Definable (𝒞M.funct .fobj x)) [ 𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F) ]
+  ∎
+  where open ≤-Reasoning ⊑-isPreorder
+GF-preserve-monad .iso .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id .f≃f = Category.IsIso.f∘inverse≈id (FM.transf-iso x)
+GF-preserve-monad .iso .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id .f≃f = Category.IsIso.inverse∘f≈id (FM.transf-iso x)
+GF-preserve-monad .preserve-unit .f≃f = FM.preserve-unit
+GF-preserve-monad .preserve-join .f≃f = FM.preserve-join
 
 ------------------------------------------------------------------------------
 -- Semantic version of first-order definability: if we have a
