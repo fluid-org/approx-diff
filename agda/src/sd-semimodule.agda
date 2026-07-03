@@ -227,8 +227,6 @@ module _ where
     conjugate : (X Y : SelfDual) → (X .obj ⇒ Y .obj) → (Y .obj ⇒ X .obj)
     conjugate X Y = conj (X .dual) (Y .dual)
 
-
-
 open SelfDual
 
 𝕀 : SelfDual
