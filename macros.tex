@@ -37,6 +37,9 @@
 % Deleted display material (diagrams, figures) that cannot live inside \Deleted:
 % greyed out with a changebar in draft mode, discarded in final mode.
 \newenvironment{DeletedBlock}{\par\cbstart\color{deletedgray}}{\cbend\par}
+% Added display material (tables, figures) that cannot live inside \Added: alignment
+% and rule material is fragile inside the changes package's argument.
+\newenvironment{AddedBlock}{\par\cbstart\color{blue}}{\cbend\par}
 % Final mode bypasses the changes package: its \IfIsEmpty test expands the
 % replacement text, and any macro with #1 in its body then causes a runaway \iffalse.
 \ifdefined\finalmode
@@ -47,6 +50,7 @@
   \renewcommand{\deleted}[2][]{}%
   \renewcommand{\replaced}[3][]{#2}%
   \renewenvironment{DeletedBlock}{\setbox0\vbox\bgroup}{\egroup}%
+  \renewenvironment{AddedBlock}{\par}{\par}%
 \fi
 
 \newenvironment{salign*}

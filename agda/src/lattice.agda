@@ -78,6 +78,9 @@ record BooleanAlgebra (X : DistributiveLattice) : Set where
   ¬-antitone x≤y =
     #-↔-≤¬ .proj₁ (#-sym (#-mono x≤y _ (#-sym (#-↔-≤¬ .proj₂ ≤-refl))))
 
+  ¬¬-intro : ∀ {x} → x ≤ ¬ (¬ x)
+  ¬¬-intro = #-↔-≤¬ .proj₁ (≤-#-¬ .proj₁ ≤-refl)
+
   ¬-involutive : ∀ {x} → ¬ (¬ x) ≤ x
   ¬-involutive {x} =
     ≤-trans ⟨ ≤-refl ∧ ≤-top ⟩

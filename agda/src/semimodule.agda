@@ -402,6 +402,9 @@ module JoinSemilattices
     ⊥-isBottom : IsBottom ≤-isPreorder (M.ε)
     ⊥-isBottom .IsBottom.≤-bottom = M.+-lunit
 
+    ≤-antisym : ∀ {x y} → x ≤ y → y ≤ x → x M.≈ y
+    ≤-antisym p q = M.trans (M.sym q) (M.trans M.+-comm p)
+
     joins : JoinSemilattice preorder
     joins .JoinSemilattice._∨_ = M._+_
     joins .JoinSemilattice.⊥ = M.ε

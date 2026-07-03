@@ -34,16 +34,11 @@ record SelfDualBooleanAlgebra : Set (suc 0ℓ) where
   field boolean : lattice.BooleanAlgebra toObj
   open lattice.BooleanAlgebra boolean public using (¬; compl-∧; compl-∨)
 
+open SelfDualBooleanAlgebra using (obj; toObj; boolean; selfDualLat)
+
 -- The Galois connection of f: its Tarski conjugate pair (to-conj) read as adjoints via De Morgan.
-module _ (X Y : SelfDualBooleanAlgebra) where
-  private
-    module X = SelfDualBooleanAlgebra X
-    module Y = SelfDualBooleanAlgebra Y
-
-  to-gal : X.obj ⇒ Y.obj → bounded Y.toObj ⇒g bounded X.toObj
-  to-gal f = conj→gal X.boolean Y.boolean (to-conj X.selfDualLat Y.selfDualLat f)
-
-open SelfDualBooleanAlgebra using (obj)
+to-gal : (X Y : SelfDualBooleanAlgebra) → obj X ⇒ obj Y → bounded (toObj Y) ⇒g bounded (toObj X)
+to-gal X Y f = conj→gal (boolean X) (boolean Y) (to-conj (selfDualLat X) (selfDualLat Y) f)
 
 𝕀 : SelfDualBooleanAlgebra
 𝕀 .SelfDualBooleanAlgebra.selfDualLat = 𝕀-lattice
