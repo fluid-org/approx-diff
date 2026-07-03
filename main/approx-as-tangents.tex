@@ -107,7 +107,7 @@ analogy, we call $x$ and $y$ \emph{orthogonal} when $\langle x, y \rangle = 0$.}
 \end{definition}
 \end{AddedBlock}
 \Added{The conjugate is our backward analysis, and its defining equation makes precise the relationship with
-the forward one asserted in \secref{introduction}. Self-dual semimodules and linear maps form a category
+the forward one alluded to in \secref{introduction}. Self-dual semimodules and linear maps form a category
 $\SDSemiMod(S)$.}
 
 \Added{The matrices of \secref{introduction} now reappear as concrete instances. The \emph{free} semimodule
@@ -133,7 +133,7 @@ conjugate to the projections, $\biinj_i = \conj{\biproj_i}$. The coincidence of 
 characteristic of such linear settings, and means $\SDSemiMod(S)$ on its own cannot interpret programs over
 sum types; we return to this in \secref{models-of-total-gps}.}
 
-\subsection[Dependency Structures over Richer Semirings]{\added{Dependency Structures over Richer Semirings}}
+\subsection[Dependency Structures over Semirings]{\added{Dependency Structures over Semirings}}
 \label{sec:approx-as-tangents:richer-semirings}
 
 \Added{The framework so far only asks for commutativity of the scalars, which makes the dual $M^*$
@@ -156,9 +156,9 @@ analyses are monotone, taking more informative inputs to more informative output
 
 \Added{If multiplication is also idempotent ($a \cdot a = a$), then $S$ is a bounded distributive lattice,
 with multiplication as the meet and distributivity given by the semiring. This opens the way to reading the
-two analyses in terms of \emph{disjointness}: where meets exist, say $x \disj y$ when $x \meet y = 0$, and
+two analyses in terms of \emph{disjointness}: where meets exist, define $x \disj y$ when $x \meet y = 0$, and
 if disjointness agrees with the orthogonality given by the pairing, the defining equation of the conjugate
-(\defref{conjugate}) says that $f$ and $\conj{f}$ exchange disjointness, $f(x) \disj y$ iff $x \disj
+(\defref{conjugate}) says that $f$ and $\conj{f}$ exchange disjointness: $f(x) \disj y$ iff $x \disj
 \conj{f}(y)$. Let us therefore consider the case where each semimodule has meets, preserved by the scalar action and
 agreeing with orthogonality in this sense; meets, unlike joins, do not lift from $S$, so this is additional
 structure. Maps that exchange disjointness in this way have a standard name.}
@@ -170,9 +170,9 @@ structure. Maps that exchange disjointness in this way have a standard name.}
 \end{definition}
 \end{AddedBlock}
 \Added{The notion originates in relation algebra~\cite{jonsson51}, where the conjugate of composition with a
-relation is composition with its converse. The scalars, viewed as a semimodule over themselves, qualify
+relation is composition with its converse. The scalars $S$, viewed as a semimodule over itself, qualify
 automatically for this reading, and biproducts (including the empty biproduct $S^0$) inherit the structure
-componentwise, giving the linear maps between free semimodules $S^n$, with their conjugates, as the canonical
+componentwise, giving the linear maps between free semimodules $S^n$, along with their conjugates, as the canonical
 instances of conjugate pairs.}
 
 \Added{The relevance to us here is that conjugate pairs also underpin the \emph{cognacy} (common ancestry)
@@ -185,25 +185,32 @@ be linked to ``cognate'' selections in another.}
 
 \Added{Suppose in addition that every scalar has a complement: an operation $\neg$ with $a \meet \neg a =
 0$ and $a \join \neg a = 1$, making $S$ a Boolean algebra. Negation supports an alternative presentation of
-conjugates as adjoints: composing $\conj{f}$ with complements on either side, giving its \emph{De Morgan
-dual} $\neg \comp \conj{f} \comp \neg$, yields the upper adjoint of $f$, so forward and backward analysis
-form a \emph{Galois connection} between the lattices of approximations.}
+conjugates as adjoints. Composing a map with complements on either side preserves its direction but exchanges
+join-preservation for meet-preservation; the \emph{De Morgan dual} $\neg \comp \conj{f} \comp \neg$ of
+the conjugate is thus meet-preserving, and is precisely the upper adjoint of $f$ (as it must be: upper adjoints
+preserve meets, dually to lower adjoints and joins). Forward and backward analysis therefore form a
+\emph{Galois connection} between the lattices of approximations.}
 \begin{AddedBlock}
 \begin{definition}[Galois connection]
   \label{def:galois-connection}
   Suppose $X$ and $Y$ are posets. A \emph{Galois connection} $f \adj g: X \to Y$ is a pair of monotone functions $f: Y \to X$ and $g: X \to Y$ satisfying $y \leq g(x) \iff f(y) \leq x$ for any $x \in X$ and $y \in Y$. Since a Galois connection is also an adjunction, we refer to $f$ as the left adjoint and $g$ as the right adjoint.
 \end{definition}
 \end{AddedBlock}
-\Added{This is precisely the setting of
-\GPS~\cite{perera12a,perera16d,ricciotti17}, recovered here as the Boolean instance of the general semimodule picture.
-Galois connections as such presuppose none of the algebraic structure of this section: they make sense between
-arbitrary posets. The Boolean algebra and the De Morgan
-dual are simply how the adjoint presentation arises in the present framework, where the conjugate is the
-primitive notion. Notably, in that line of work the forward map, a meet-preserving right adjoint, serves only to establish the
-existence of the join-preserving backward map, and plays no direct role in the slicing or dependency analyses
-themselves. The two presentations answer different questions: the conjugate propagates \emph{necessity} (which
-inputs may the output depend on), while its De Morgan dual propagates \emph{sufficiency} (which inputs are
-enough to determine the output); we return to this reading below.}
+\Added{This is precisely the setting of \GPS~\cite{perera12a,perera16d,ricciotti17}, recovered here as the
+Boolean instance of the general semimodule picture. Galois connections as such presuppose none of the
+algebraic structure of this section, being definable between arbitrary posets; De Morgan duality is simply how
+the adjoint presentation arises here, where the conjugate is the primary notion. One orientation to keep
+straight: the conjugate as presented here, $\conj{f}$, runs backwards, whereas the meet-preserving map of \GPS
+runs forwards. The two presentations agree because $\conj{-}$ is involutive: instantiating the construction at
+$\conj{f}$ in place of $f$ gives exactly the connection of \GPS, with meet-preserving forward map $\neg \comp
+f \comp \neg$.}
+
+\Added{The join-preserving and meet-preserving maps answer different questions. In the forwards direction, the
+join-preserving map $f$ has a \emph{necessity}-flavoured interpretation: which outputs may depend on a given
+part of the input. Its meet-preserving counterpart $\neg \comp f \comp \neg$ reads as \emph{sufficiency}:
+which outputs a given input selection determines outright. Notably, in the Galois slicing work the
+meet-preserving forward map was only used to establish the existence of the join-preserving backward map; it
+seems to lack any direct applications in program slicing or dependency analysis.}
 
 \subsection{Stable Functions as Differentiable Functions}
 
