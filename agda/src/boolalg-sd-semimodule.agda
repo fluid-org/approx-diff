@@ -34,16 +34,11 @@ record SelfDualBooleanAlgebra : Set (suc 0ℓ) where
   field boolean : lattice.BooleanAlgebra toObj
   open lattice.BooleanAlgebra boolean public using (¬; compl-∧; compl-∨)
 
+open SelfDualBooleanAlgebra using (obj; toObj; boolean; selfDualLat)
+
 -- The Galois connection of f: its Tarski conjugate pair (to-conj) read as adjoints via De Morgan.
-module _ (X Y : SelfDualBooleanAlgebra) where
-  private
-    module X = SelfDualBooleanAlgebra X
-    module Y = SelfDualBooleanAlgebra Y
-
-  to-gal : X.obj ⇒ Y.obj → bounded Y.toObj ⇒g bounded X.toObj
-  to-gal f = conj→gal X.boolean Y.boolean (to-conj X.selfDualLat Y.selfDualLat f)
-
-open SelfDualBooleanAlgebra using (obj)
+to-gal : (X Y : SelfDualBooleanAlgebra) → obj X ⇒ obj Y → bounded (toObj Y) ⇒g bounded (toObj X)
+to-gal X Y f = conj→gal (boolean X) (boolean Y) (to-conj (selfDualLat X) (selfDualLat Y) f)
 
 𝕀 : SelfDualBooleanAlgebra
 𝕀 .SelfDualBooleanAlgebra.selfDualLat = 𝕀-lattice
@@ -157,59 +152,49 @@ initial .HasInitial.is-initial .IsInitial.from-initial-ext f =
       (comp-bilinear-ε₂ f)))
 
 ------------------------------------------------------------------------------
--- to-gal packaged as a contravariant functor to LatGal.
+-- to-gal as a contravariant functor to LatGal.
 
 module _ where
   open import functor using (Functor)
-  open import basics using (IsPreorder)
   import preorder
   open preorder._≃m_
   open preorder._=>_ using (fun)
   open SemiMod using (Semimodule)
   open SemiMod._⇒_ using (func)
   open SemiMod._≈m_
-  open SemiMod.JoinSemilattices ⊤-add-top using (_≤_; ≈→≤; ≤-isPreorder)
+  open SemiMod.JoinSemilattices ⊤-add-top using (_≤_; ≈→≤; ≤-antisym)
   open SDSemiMod using (conjugate; conjugate-cong; conjugate-id; conjugate-comp)
   open import prop-setoid using () renaming (_≃m_ to _≈s_)
-  open SelfDualBooleanAlgebra using (selfDual; boolean; ¬)
+  open SelfDualBooleanAlgebra using (selfDual; ¬)
 
   private
     module _ (X : SelfDualBooleanAlgebra) where
-      private
-        module MX = Semimodule (obj X)
-        module XB = lattice.BooleanAlgebra (boolean X)
+      private module M = Semimodule (obj X)
+      open lattice.BooleanAlgebra (boolean X) using (¬-antitone; ¬-involutive; ¬¬-intro)
 
-      ≤-antisym : ∀ {a b} → _≤_ (obj X) a b → _≤_ (obj X) b a → a MX.≈ b
-      ≤-antisym p q = MX.trans (MX.sym q) (MX.trans MX.+-comm p)
+      ¬-cong : ∀ {a b} → a M.≈ b → ¬ X a M.≈ ¬ X b
+      ¬-cong a≈b =
+        ≤-antisym (obj X) (¬-antitone (≈→≤ (obj X) (M.sym a≈b))) (¬-antitone (≈→≤ (obj X) a≈b))
 
-      ¬-cong : ∀ {a b} → a MX.≈ b → ¬ X a MX.≈ ¬ X b
-      ¬-cong a≈b = ≤-antisym (XB.¬-antitone (≈→≤ (obj X) (MX.sym a≈b)))
-                            (XB.¬-antitone (≈→≤ (obj X) a≈b))
+      ≈-to-≤≥ : ∀ {a b} → a M.≈ b → prop._∧_ (_≤_ (obj X) a b) (_≤_ (obj X) b a)
+      ≈-to-≤≥ e = ≈→≤ (obj X) e , ≈→≤ (obj X) (M.sym e)
 
-      ≈-to-≤≥ : ∀ {a b} → a MX.≈ b → prop._∧_ (_≤_ (obj X) a b) (_≤_ (obj X) b a)
-      ≈-to-≤≥ e = ≈→≤ (obj X) e , ≈→≤ (obj X) (MX.sym e)
-
-      ¬¬-elim : ∀ {a} → ¬ X (¬ X a) MX.≈ a
-      ¬¬-elim = ≤-antisym XB.¬-involutive (XB.#-↔-≤¬ .prop.proj₁ (XB.≤-#-¬ .prop.proj₁ (≤-refl' _)))
-        where
-          ≤-refl' : ∀ (a : MX.Carrier) → _≤_ (obj X) a a
-          ≤-refl' _ = ≤-isPreorder (obj X) .IsPreorder.refl
+      ¬¬-elim : ∀ {a} → ¬ X (¬ X a) M.≈ a
+      ¬¬-elim = ≤-antisym (obj X) ¬-involutive ¬¬-intro
 
   Gal : Functor cat (Category.opposite galois.cat)
-  Gal .Functor.fobj X = bounded (SelfDualBooleanAlgebra.toObj X)
+  Gal .Functor.fobj X = bounded (toObj X)
   Gal .Functor.fmor {X} {Y} f = to-gal X Y f
   Gal .Functor.fmor-cong {X} {Y} {f} {g} f≈g .galois._≃g_.right-eq .eqfun x =
     ≈-to-≤≥ X (¬-cong X (conjugate-cong (selfDual X) (selfDual Y) f≈g .*≈* ._≈s_.func-eq (Semimodule.refl (obj Y))))
-  Gal .Functor.fmor-id {X} .galois._≃g_.right-eq .eqfun x = ≈-to-≤≥ X eq
-    where
-      eq : _
-      eq = Semimodule.trans (obj X)
-             (¬-cong X (conjugate-id (selfDual X) .*≈* ._≈s_.func-eq (Semimodule.refl (obj X))))
-             (¬¬-elim X)
-  Gal .Functor.fmor-comp {X} {Y} {Z} f g .galois._≃g_.right-eq .eqfun x = ≈-to-≤≥ X eq
-    where
-      eq : _
-      eq = Semimodule.trans (obj X)
-             (¬-cong X (conjugate-comp (selfDual X) (selfDual Y) (selfDual Z) f g .*≈* ._≈s_.func-eq (Semimodule.refl (obj Z))))
-             (Semimodule.sym (obj X)
-               (¬-cong X (SemiMod._⇒_.func-resp-≈ (conjugate (selfDual X) (selfDual Y) g) (¬¬-elim Y))))
+  Gal .Functor.fmor-id {X} .galois._≃g_.right-eq .eqfun x =
+    ≈-to-≤≥ X
+      (Semimodule.trans (obj X)
+        (¬-cong X (conjugate-id (selfDual X) .*≈* ._≈s_.func-eq (Semimodule.refl (obj X))))
+        (¬¬-elim X))
+  Gal .Functor.fmor-comp {X} {Y} {Z} f g .galois._≃g_.right-eq .eqfun x =
+    ≈-to-≤≥ X
+      (Semimodule.trans (obj X)
+        (¬-cong X (conjugate-comp (selfDual X) (selfDual Y) (selfDual Z) f g .*≈* ._≈s_.func-eq (Semimodule.refl (obj Z))))
+        (Semimodule.sym (obj X)
+          (¬-cong X (SemiMod._⇒_.func-resp-≈ (conjugate (selfDual X) (selfDual Y) g) (¬¬-elim Y)))))

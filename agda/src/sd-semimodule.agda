@@ -200,7 +200,7 @@ module _ where
     conj-⊥ f .proj₁ p = S.trans (conj-pairing f) p
     conj-⊥ f .proj₂ q = S.trans (S.sym (conj-pairing f)) q
 
-  -- Pairing with a fixed element determines a morphism: the self-duality is injective.
+  -- Elements agreeing under all pairings are equal.
   pairing-inj : ∀ {M} (M≅M* : Iso M (Dual M)) {u v} →
                 (∀ {w} → pairing M≅M* u w S.≈ pairing M≅M* v w) → Semimodule._≈_ M u v
   pairing-inj {M} i {u} {v} h =
@@ -253,7 +253,6 @@ module _ where
       ≈-trans (∘-cong (≈-refl {f = X .dual .Iso.bwd}) (≈-trans (∘-cong ᵀ-id (≈-refl {f = X .dual .Iso.fwd})) (id-left {f = X .dual .Iso.fwd})))
         (X .dual .Iso.bwd∘fwd≈id)
 
-    -- Symmetry of the pairing makes the conjugate an involution.
     conjugate-involution : ∀ (X Y : SelfDual) (f : X .obj ⇒ Y .obj) →
                            conjugate Y X (conjugate X Y f) ≈m f
     conjugate-involution X Y f .*≈* ._≈s_.func-eq {x} {x'} x≈x' =
