@@ -42,7 +42,7 @@ the role of tangents.} Our categorical approach should provide a suitable settin
 data provenance for a variety of programming languages, and is easily configured to use alternative
 approximation strategies, including quantitative forms of slicing.
 
-\subsection{Dependencies as Derivatives}
+\subsection[Dependencies as Derivatives]{\replaced{Dependencies as Derivatives}{Galois Program Slicing}}
 \label{sec:introduction:galois-slicing}
 
 \Replaced{Consider a single run of a program on a particular input. Each part of the output is computed from
@@ -237,21 +237,25 @@ occupies the case $S = \mathbb{R}$. We also relate this picture to \citet{berry7
 theory}, where stable functions provide a kind of semantic provenance analysis.}
 
 \Added{The following table summarises the correspondence developed over the course of the paper:}
-\cbstart
+\begin{AddedBlock}
 \begin{center}
   \small
-  \added{\begin{tabular}{lll}
+  \begin{tabular}{lll}
+    \toprule
     & \textbf{Differentiable programming} & \textbf{Dependency analysis} \\
+    \midrule
     scalars & real numbers & commutative semiring $S$ \\
     space at a point & vector space of tangents & semimodule of approximations over $S$ \\
+    identification with the dual & finite dimensionality & chosen self-duality \\
     derivative at a point & Jacobian matrix & $S$-weighted relation as matrix over $S$ \\
     chain rule & matrix multiplication & matrix multiplication over $S$ \\
     forward mode & pushes tangents forward & propagates dependencies forward \\
     reverse mode & pulls cotangents back & propagates dependencies backwards \\
-    forward/backward relation & transpose & transpose \\
-  \end{tabular}}
+    forward/backward relation & transpose & transpose via self-dualities \\
+    \bottomrule
+  \end{tabular}
 \end{center}
-\cbend
+\end{AddedBlock}
 
 \Added{In \secref{models-of-total-gps} we extend to sum types using the category of families construction and,
 following V{\'a}k{\'a}r \etal{}'s CHAD framework~\cite{vakar22,nunes2023}, build models of a higher-order
