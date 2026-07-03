@@ -169,9 +169,9 @@ dependency reading a sound over-approximation}.
       \node[anchor=east] (a4) at (1.0,-0.8) {$\mathit{price}\,\mathsf{a} = 2$};
       \node[anchor=east] (a5) at (1.0,-1.6) {$\mathit{price}\,\mathsf{b} = 5$};
       \node (ao) at (2.8,0.3) {$0$};
-      \draw[->] (a1) -- (ao);
-      \draw[->] (a3) -- (ao);
-      \draw[->] (a4) -- (ao);
+      \draw[->] (a1.east) -- (ao);
+      \draw[->] (a3.east) -- (ao);
+      \draw[->] (a4.east) -- (ao);
       % total b
       \node (lb) at (6,2.2) {$\mathrm{total}\;\mathsf{b}$};
       \node[anchor=east] (b1) at (7.0,1.6) {$(\mathsf{a},3)$};
@@ -180,8 +180,8 @@ dependency reading a sound over-approximation}.
       \node[anchor=east] (b4) at (7.0,-0.8) {$\mathit{price}\,\mathsf{a} = 2$};
       \node[anchor=east] (b5) at (7.0,-1.6) {$\mathit{price}\,\mathsf{b} = 5$};
       \node (bo) at (8.8,-0.4) {$5$};
-      \draw[->] (b2) -- (bo);
-      \draw[->] (b5) -- (bo);
+      \draw[->] (b2.east) -- (bo);
+      \draw[->] (b5.east) -- (bo);
     \end{tikzpicture}
   \end{center}
     Tabulating each relation, with a row for each output position and a column for each input position
@@ -247,11 +247,11 @@ dependency reading a sound over-approximation}.
   unapproximated, then the two
   runs' backwards actions return different results:
   \begin{displaymath}
-    \begin{array}{l}
-      \partial_{\Two} (\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_r(0) =
-      ([(\mathsf{a},3), (\mathsf{b},\bot), (\mathsf{a},-3)], \langle 2, \bot \rangle) \\
-      \partial_{\Two} (\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_r(5) =
-      ([(\mathsf{a},\bot), (\mathsf{b},1), (\mathsf{a},\bot)], \langle \bot, 5 \rangle)
+    \begin{array}{r@{\;=\;([\,}c@{,\;}c@{,\;}c@{\,],\;\langle\,}c@{,\;}c@{\,\rangle)}}
+      \partial_{\Two} (\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_r(0)
+        & (\mathsf{a},3) & (\mathsf{b},\bot) & (\mathsf{a},-3) & 2 & \bot \\
+      \partial_{\Two} (\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_r(5)
+        & (\mathsf{a},\bot) & (\mathsf{b},1) & (\mathsf{a},\bot) & \bot & 5
     \end{array}
   \end{displaymath}
   Pieces of the input that were {\em not} used are replaced by $\bot$. As we expect, the run
