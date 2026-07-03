@@ -24,7 +24,8 @@
 \definechangesauthor[name=Bob, color=purple]{bob}
 \definechangesauthor[name=Roly, color=red]{roly}
 % No strikethrough: ulem's \sout is neither line-breakable nor metric-neutral.
-\setdeletedmarkup{\textcolor{gray}{#1}}
+\colorlet{deletedgray}{gray!70}
+\setdeletedmarkup{\textcolor{deletedgray}{#1}}
 % Capitalised variants add a margin changebar; use the lowercase forms inside
 % figures or math, where changebar spans misbehave. \leavevmode commits a run-in
 % heading in the default colour before the markup colour starts.
@@ -33,6 +34,9 @@
 % The control space after #1 separates the new text from the deleted text shown
 % after it (a plain space at the start of #2 is eaten by the changes package).
 \newcommand{\Replaced}[2]{\leavevmode\protect\cbstart\replaced{#1\ }{#2}\protect\cbend\xspace}
+% Deleted display material (diagrams, figures) that cannot live inside \Deleted:
+% greyed out with a changebar in draft mode, discarded in final mode.
+\newenvironment{DeletedBlock}{\par\cbstart\color{deletedgray}}{\cbend\par}
 % Final mode bypasses the changes package: its \IfIsEmpty test expands the
 % replacement text, and any macro with #1 in its body then causes a runaway \iffalse.
 \ifdefined\finalmode
@@ -42,6 +46,7 @@
   \renewcommand{\added}[2][]{#2}%
   \renewcommand{\deleted}[2][]{}%
   \renewcommand{\replaced}[3][]{#2}%
+  \renewenvironment{DeletedBlock}{\setbox0\vbox\bgroup}{\egroup}%
 \fi
 
 \newenvironment{salign*}

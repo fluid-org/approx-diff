@@ -75,6 +75,44 @@ programmatically generated visualisations.}
   output is computed from the numbers at the first and third positions; in the run with $l = \mathsf{b}$,
   from the number at the second. We depict each input position pointing to the output positions that depend
   on it:}{Now suppose that for a given run of the program, we are interested in which of the numerical parts of the input are used to compute the output for the query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. We can use \GPS to do this. We arrange for the approximations of the input to form the following lattice, where the actual piece of data is at the top and information lost by approximation is represented by $\bot$s: [\ldots] In both runs of the program, the output approximation lattice looks like this, where $1$ is the actual data point that was returned, and $\bot$ indicates that we are approximating this piece of data away: [\ldots]}
+  \begin{DeletedBlock}
+    \begin{center}
+      \begin{tikzpicture}[node distance=0.75cm]
+        \node (top) at (0,0) {$[(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, 1)]$};
+        % row 2
+        \node [below of=top] (ioi) {$[(\mathsf{a}, 0), (\mathsf{b}, \bot), (\mathsf{a}, 1)]$};
+        \node [left of=ioi,xshift=-3cm] (oii) {$[(\mathsf{a}, \bot), (\mathsf{b}, 1), (\mathsf{a}, 1)]$};
+        \node [right of=ioi,xshift=3cm] (iio) {$[(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, \bot)]$};
+        % row 3
+        \node [below of=ioi] (oio) {$[(\mathsf{a}, \bot), (\mathsf{b}, 1), (\mathsf{a}, \bot)]$};
+        \node [left of=oio,xshift=-3cm] (ooi) {$[(\mathsf{a}, \bot), (\mathsf{b}, \bot), (\mathsf{a}, 1)]$};
+        \node [right of=oio,xshift=3cm] (ioo) {$[(\mathsf{a}, 0), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]$};
+        % row 4
+        \node [below of=oio] (bot) {$[(\mathsf{a}, \bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]$};
+
+        % links
+        \draw (top) -- (ioi);
+        \draw (top) -- (oii);
+        \draw (top) -- (iio);
+        \draw (ioi) -- (ooi);
+        \draw (ioi) -- (ioo);
+        \draw (oii) -- (ooi);
+        \draw (oii) -- (oio);
+        \draw (iio) -- (ioo);
+        \draw (iio) -- (oio);
+        \draw (ooi) -- (bot);
+        \draw (oio) -- (bot);
+        \draw (ioo) -- (bot);
+      \end{tikzpicture}
+    \end{center}
+    \begin{center}
+      \begin{tikzpicture}[node distance=0.75cm]
+        \node (top) at (0,0) {$1$};
+        \node [below of=top] (bot) {$\bot$};
+        \draw (top) -- (bot);
+      \end{tikzpicture}
+    \end{center}
+  \end{DeletedBlock}
   \cbstart
   \begin{center}
     \begin{tikzpicture}[every node/.style={font=\small}]
