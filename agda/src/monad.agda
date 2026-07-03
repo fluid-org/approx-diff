@@ -3,7 +3,7 @@
 open import Level using (suc; _⊔_)
 open import categories using (Category)
 open import product-category using (pairF; project₁; project₂)
-open import functor using (Functor; NatTrans; Id; _∘F_; NatIso; ≃-NatTrans)
+open import functor using (Functor; NatTrans; Id; _∘F_; NatIso; ≃-NatTrans; id; right-unit)
 open import monoidal-product using (MonoidalProduct)
 
 module monad where
@@ -71,3 +71,43 @@ record StrongMonad {o m e} (𝒞 : Category o m e) (𝒞⊗ : MonoidalProduct �
                         (funct ∘F ⊗-functor)
 
     -- FIXME: laws
+
+------------------------------------------------------------------------------
+-- Every category has the identity monad
+
+IdentityMonad : ∀ {o m e} (𝒞 : Category o m e) → Monad 𝒞
+IdentityMonad 𝒞 .Monad.funct = Id
+IdentityMonad 𝒞 .Monad.unit = id _
+IdentityMonad 𝒞 .Monad.join = right-unit _
+
+-- and every functor preserves it
+module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} where
+
+  private
+    module 𝒟 = Category 𝒟
+
+  preserve-identity-monad : (F : Functor 𝒞 𝒟) → preserve-monad F (IdentityMonad 𝒞) (IdentityMonad 𝒟)
+  preserve-identity-monad F .preserve-monad.iso .NatIso.transform .NatTrans.transf x = 𝒟.id _
+  preserve-identity-monad F .preserve-monad.iso .NatIso.transform .NatTrans.natural f = 𝒟.id-swap'
+  preserve-identity-monad F .preserve-monad.iso .NatIso.transf-iso x .Category.IsIso.inverse = 𝒟.id _
+  preserve-identity-monad F .preserve-monad.iso .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒟.id-left
+  preserve-identity-monad F .preserve-monad.iso .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒟.id-left
+  preserve-identity-monad F .preserve-monad.preserve-unit = 𝒟.≈-trans 𝒟.id-left (F .Functor.fmor-id)
+  preserve-identity-monad F .preserve-monad.preserve-join = 𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl (F .Functor.fmor-id)) (𝒟.≈-sym 𝒟.id-left)
+
+-- And it always preserves coproducts and products
+open categories using (HasCoproducts)
+open import finite-coproduct-functor using (preserve-chosen-coproducts)
+
+module _ {o₁ m₁ e₁} {𝒞 : Category o₁ m₁ e₁} (𝒞CP : HasCoproducts 𝒞) where
+
+  private
+    module 𝒞CP = HasCoproducts 𝒞CP
+    module 𝒞 = Category 𝒞
+
+  Identity-monad-preserve-coproducts : preserve-chosen-coproducts (IdentityMonad 𝒞 .Monad.funct) 𝒞CP 𝒞CP
+  Identity-monad-preserve-coproducts .Category.IsIso.inverse = 𝒞.id _
+  Identity-monad-preserve-coproducts .Category.IsIso.f∘inverse≈id =
+    𝒞.≈-trans 𝒞.id-right 𝒞CP.copair-ext0
+  Identity-monad-preserve-coproducts .Category.IsIso.inverse∘f≈id =
+    𝒞.≈-trans 𝒞.id-left 𝒞CP.copair-ext0
