@@ -82,20 +82,29 @@ but between the duals $N^*$ and $M^*$, the cotangent spaces, rather than between
 $N$ themselves. What we want is a map $N \linearto M$, running dependency information back through the same
 spaces the forward map runs it through, as the transposed matrix did in \secref{introduction}. For that, each
 space must be identified with its dual. Whereas a finite-dimensional vector space always admits such an
-identification (choose a basis), a semimodule need not; we therefore make the identification part of the data.
-A \emph{self-dual} semimodule is a pair $\langle M, i \rangle$ of a semimodule and a chosen isomorphism $i : M
-\cong M^*$, which induces a \emph{pairing} $\langle x, y \rangle = i(x)(y)$: an $S$-valued measure of the
-extent to which $x$ and $y$ overlap, whose prototype is the dot product of vectors (the pairing induced by
-the self-duality of $S^n$, as we will see below). Between self-dual semimodules $\langle
-M, i \rangle$ and $\langle N, j \rangle$, every linear map $f : M \linearto N$ then has a \emph{conjugate}
-$\conj{f} = i^{-1} \comp \transpose{f} \comp j : N \linearto M$, the unique linear map satisfying}
-\cbstart
-\begin{displaymath}
-  \added{\langle f(x), y \rangle = \langle x, \conj{f}(y) \rangle}
-\end{displaymath}
-\cbend
-\Added{The conjugate is our backward analysis, and this equation makes precise its relationship with the
-forward one asserted in \secref{introduction}. Self-dual semimodules and linear maps form a category
+identification (choose a basis), a semimodule need not; we therefore make the identification part of the data.}
+\begin{AddedBlock}
+\begin{definition}[Self-dual semimodule]
+  \label{def:self-dual-semimodule}
+  A \emph{self-dual} semimodule is a pair $\langle M, i \rangle$ of a semimodule and a chosen isomorphism
+  $i : M \cong M^*$. The \emph{pairing} induced by $i$ is $\langle x, y \rangle = i(x)(y)$.
+\end{definition}
+\end{AddedBlock}
+\Added{The pairing is an $S$-valued measure of the extent to which $x$ and $y$ overlap; its prototype is the
+dot product of vectors (the pairing induced by the self-duality of $S^n$, as we will see below).}
+\begin{AddedBlock}
+\begin{definition}[Conjugate]
+  \label{def:conjugate}
+  Between self-dual semimodules $\langle M, i \rangle$ and $\langle N, j \rangle$, the \emph{conjugate} of
+  a linear map $f : M \linearto N$ is $\conj{f} = i^{-1} \comp \transpose{f} \comp j : N \linearto M$, the
+  unique linear map satisfying
+  \begin{displaymath}
+    \langle f(x), y \rangle = \langle x, \conj{f}(y) \rangle
+  \end{displaymath}
+\end{definition}
+\end{AddedBlock}
+\Added{The conjugate is our backward analysis, and its defining equation makes precise the relationship with
+the forward one asserted in \secref{introduction}. Self-dual semimodules and linear maps form a category
 $\SDSemiMod(S)$.}
 
 \Added{The matrices of \secref{introduction} now reappear as concrete instances. The \emph{free} semimodule
@@ -120,6 +129,38 @@ the \emph{biproduct} $M \biprod N$, an object which is both a product and a copr
 conjugate to the projections, $\biinj_i = \conj{\biproj_i}$. The coincidence of products and coproducts is
 characteristic of such linear settings, and means $\SDSemiMod(S)$ on its own cannot interpret programs over
 sum types; we return to this in \secref{models-of-total-gps}.}
+
+\subsection{Dependency Structures over Richer Semirings}
+\label{sec:approx-as-tangents:richer-semirings}
+
+\Added{The framework so far asks very little of the scalars: any commutative semiring $S$ yields a category
+$\SDSemiMod(S)$ with a forward derivative and its conjugate, related through the pairing. This is where the
+reals sit, with the conjugate as the familiar adjoint of linear algebra; addition of real
+numbers is not idempotent, and no order structure is available. Each further axiom on $S$ equips the analysis
+with more structure.}
+
+\Added{Suppose first that $S$ is \emph{additively bounded}: $1 + x = 1$, and hence $x + x = x$. Then every
+semimodule carries a partial order, $x \leq y$ iff $x + y = y$, making it a join-semilattice with joins given
+by $+$ and least element $0$, and every linear map automatically preserves joins and $0$. Dependency
+information is now ordered by informativeness: $0$ means ``no dependency'', and the forward and backward
+analyses are monotone, taking more approximate inputs to more approximate outputs.}
+
+\Added{Suppose further that $S$ is a bounded distributive lattice, so that multiplication is a meet. The
+lattice structure of $S$ does not lift to every semimodule, but it does equip the basic building blocks: the
+scalars themselves, the trivial semimodule, and biproducts of such. Call two elements of a join-semilattice
+\emph{disjoint} when their meet is $0$; on these building blocks, disjointness agrees with orthogonality of
+the pairing, $x \meet y = 0$ iff $\langle x, y \rangle = 0$. The defining equation of the conjugate then
+specialises to an exchange of disjointness: $\langle f(x), y \rangle = 0$ iff $\langle x, \conj{f}(y)
+\rangle = 0$, so $f$ and $\conj{f}$ form a \emph{conjugate pair} in the sense of Tarski's relation
+algebra~\cite{jonsson51}, each transporting non-overlap across the map.}
+
+\Added{Finally, suppose $S$ is a Boolean algebra. Negation converts conjugates into adjoints: composing
+$\conj{f}$ with complements on either side yields the upper adjoint of $f$, and forward and backward analysis
+form a Galois connection between the lattices of approximations. This is precisely the setting of \GPS,
+recovered here as the Boolean instance of the general story. The two presentations answer
+different questions: the conjugate propagates \emph{necessity} (which inputs may the output depend on), while
+its De Morgan dual propagates \emph{sufficiency} (which inputs are enough to determine the output); we return
+to this reading below.}
 
 \subsection{Stable Functions as Differentiable Functions}
 
