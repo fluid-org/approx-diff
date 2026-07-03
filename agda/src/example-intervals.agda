@@ -55,7 +55,7 @@ private
 
 module D = Deriv coeff-t coeff-cong-t
 open ho-model-sd-semimod.interp-sd semiring-Q-tropical.semiring Sig D.BaseInterp1
-open SemiMod-ℚ∞ using (conjugate)
+open SDSemiMod-ℚ∞ using (conjugate)
 open SemiMod-ℚ∞._⇒_
 
 input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier

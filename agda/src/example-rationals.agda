@@ -73,7 +73,7 @@ open import example-signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.pro
   Approxm unitm conjunctm semiring-Q.setoid num-zero num-add num-mult public
 module D = Deriv scalar scalar-cong
 open ho-model-sd-semimod.interp-sd semiring-Q.semiring Sig D.BaseInterp1 public
-open SemiMod-ℚ public using (conjugate)
+open SDSemiMod-ℚ public using (conjugate)
 
 open indexed-family._⇒f_ public
 open SemiMod-ℚ._⇒_ public

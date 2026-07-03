@@ -55,4 +55,31 @@ private
 ∘-comm {f} {g} .*≈* ._≈s_.func-eq {x₁} x₁≈x₂ =
   S.trans (endo-comm f g x₁) (g .func-resp-≈ (f .func-resp-≈ x₁≈x₂))
 
+private
+  scalars = S
+
 open import matrix-embedding SM.cmon-enriched SM.biproduct 𝟘 𝟘-initial 𝟘-terminal 𝕀 (λ {f} {g} → ∘-comm {f} {g}) public
+
+-- The embedding factors through the self-dual semimodules: each free object X^ n (an iterated
+-- biproduct of 𝕀) carries the self-duality built from those of 𝕀 and 𝟘.
+import sd-semimodule
+open import Data.Nat using (ℕ; zero; suc)
+open import functor using (Functor)
+
+module SDSemiMod = sd-semimodule scalars
+
+private
+  X^-self-dual : ∀ n → Category.Iso SM.cat (X^ n) (SDSemiMod.Dual (X^ n))
+  X^-self-dual zero    = SDSemiMod.𝟘≅𝟘*
+  X^-self-dual (suc n) = SDSemiMod.⊕-self-dual SDSemiMod.𝕀≅𝕀* (X^-self-dual n)
+
+fobj-sd : ℕ → SDSemiMod.SelfDual
+fobj-sd n .SDSemiMod.SelfDual.obj  = X^ n
+fobj-sd n .SDSemiMod.SelfDual.dual = X^-self-dual n
+
+embed : Functor Mat.cat SDSemiMod.cat
+embed .Functor.fobj = fobj-sd
+embed .Functor.fmor {m} {n} = F .Functor.fmor {m} {n}
+embed .Functor.fmor-cong {m} {n} = F .Functor.fmor-cong {m} {n}
+embed .Functor.fmor-id {n} = F .Functor.fmor-id {n}
+embed .Functor.fmor-comp {m} {n} {k} = F .Functor.fmor-comp {m} {n} {k}

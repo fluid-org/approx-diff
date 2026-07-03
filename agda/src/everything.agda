@@ -25,6 +25,10 @@ import ho-model
 import ho-model-sd-semimod
 import ho-model-boolalg-sd-semimod
 
+-- Mat(S) embeds in any biproduct category with a chosen object; instantiated at SemiMod(S) and 𝕀,
+-- the embedding factors through the self-dual semimodules.
+import matrix-embedding-semimod
+
 -- Proofs from Section 5 "Definability"
 --
 -- (1) a factorisation of the embedding of the first-order semantic

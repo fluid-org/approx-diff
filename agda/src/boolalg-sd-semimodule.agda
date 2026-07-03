@@ -8,27 +8,60 @@ open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import commutative-monoid using (CommutativeMonoid)
 open import functor using (Functor)
 import finite-product-functor
+import lattice
 import semimodule
+import sd-semimodule
 
 -- Category of self-dual Boolean algebras (self-dual S-semimodules whose induced lattice is Boolean)
 -- and linear maps.
-module boolalg-sd-semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (boolean : BooleanAlgebra S) where
+module boolalg-sd-semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (S-boolean : BooleanAlgebra S) where
 
 module SemiMod = semimodule S
+module SDSemiMod = sd-semimodule S
 open SemiMod using (_⇒_; _≈m_; id; _∘_)
-open BooleanAlgebra boolean
-open SemiMod.JoinSemilattices ⊤-add-top using (SelfDualBooleanAlgebra; to-gal) public
-open SemiMod.JoinSemilattices.DistribLattices ⊤-add-top ∧-idem using (𝟘-bsddl; ⊕-bsddl; 𝕀-bsddl)
+open BooleanAlgebra S-boolean
+open SDSemiMod.DistributiveLattices ⊤-add-top ∧-idem
+  using (SelfDualDistributiveLattice; 𝕀-lattice; 𝟘-lattice; ⊕-lattice; to-conj)
+open import galois using (_⇒g_; conj→gal)
+open import lattice using (bounded)
+open import prop using (tt; _,_)
+open import Data.Product using (_,_)
+
+-- A self-dual distributive lattice with a Boolean negation.
+record SelfDualBooleanAlgebra : Set (suc 0ℓ) where
+  field selfDualLat : SelfDualDistributiveLattice
+  open SelfDualDistributiveLattice selfDualLat public
+  field boolean : lattice.BooleanAlgebra toObj
+  open lattice.BooleanAlgebra boolean public using (¬; compl-∧; compl-∨)
+
+-- The Galois connection of f: its Tarski conjugate pair (to-conj) read as adjoints via De Morgan.
+module _ (X Y : SelfDualBooleanAlgebra) where
+  private
+    module X = SelfDualBooleanAlgebra X
+    module Y = SelfDualBooleanAlgebra Y
+
+  to-gal : X.obj ⇒ Y.obj → bounded Y.toObj ⇒g bounded X.toObj
+  to-gal f = conj→gal X.boolean Y.boolean (to-conj X.selfDualLat Y.selfDualLat f)
+
 open SelfDualBooleanAlgebra using (obj)
 
 𝕀 : SelfDualBooleanAlgebra
-𝕀 = 𝕀-bsddl ¬ compl-∧ compl-∨
+𝕀 .SelfDualBooleanAlgebra.selfDualLat = 𝕀-lattice
+𝕀 .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.¬ = ¬
+𝕀 .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.compl-∧ = compl-∧
+𝕀 .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.compl-∨ = compl-∨
 
 𝟘 : SelfDualBooleanAlgebra
-𝟘 = 𝟘-bsddl ¬ compl-∧ compl-∨
+𝟘 .SelfDualBooleanAlgebra.selfDualLat = 𝟘-lattice
+𝟘 .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.¬ x = x
+𝟘 .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.compl-∧ = tt
+𝟘 .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.compl-∨ = tt
 
 _⊕_ : SelfDualBooleanAlgebra → SelfDualBooleanAlgebra → SelfDualBooleanAlgebra
-_⊕_ = ⊕-bsddl ¬ compl-∧ compl-∨
+(X ⊕ Y) .SelfDualBooleanAlgebra.selfDualLat = ⊕-lattice (SelfDualBooleanAlgebra.selfDualLat X) (SelfDualBooleanAlgebra.selfDualLat Y)
+(X ⊕ Y) .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.¬ (a , b) = SelfDualBooleanAlgebra.¬ X a , SelfDualBooleanAlgebra.¬ Y b
+(X ⊕ Y) .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.compl-∧ {a , b} = SelfDualBooleanAlgebra.compl-∧ X , SelfDualBooleanAlgebra.compl-∧ Y
+(X ⊕ Y) .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.compl-∨ {a , b} = SelfDualBooleanAlgebra.compl-∨ X , SelfDualBooleanAlgebra.compl-∨ Y
 
 cat : Category (suc 0ℓ) 0ℓ 0ℓ
 cat .Category.obj = SelfDualBooleanAlgebra
