@@ -239,6 +239,30 @@ how badly the bound degrades. For nonnegative data the factors are at most $1$, 
 exact. The two are simply different semirings, and choosing between them is part of
 specifying what the analysis is to observe.}
 
+\subsubsection[Provenance semirings]{\added{Provenance semirings}}
+
+\Added{Database provenance has its own semiring tradition: in the framework of
+\citet{green07}, query results carry annotations from a commutative semiring, with the \emph{free}
+commutative semiring $\mathbbm{N}[X]$ of \emph{provenance polynomials} playing a universal role: its
+variables name the input tuples, multiplication records their joint use in a derivation, and addition
+collects the alternative derivations. Provenance
+computed once over $\mathbbm{N}[X]$ can be reused in any other semiring: assign each variable an element of that
+semiring and evaluate the polynomial, \emph{specialising} the provenance to it. Freeness guarantees that evaluation is a homomorphism. These semirings can equally serve as the scalars of the present framework: taking
+$S = \mathbbm{N}[X]$, a Jacobian entry is a polynomial recording symbolically how an input position
+contributes to an output position.}
+
+\Added{This reuse extends beyond the free semiring: any homomorphism of semirings acts on Jacobians
+entrywise, and since matrix composition is built from addition and multiplication, the action is functorial:
+translating Jacobians and then composing agrees with composing and then translating.}
+
+\Added{The semirings of database provenance are \emph{positive}: a sum is zero only when both summands
+are, and a product only when a factor is. Equivalently, ``zero-testing'' into the Booleans is a homomorphism.
+The rationals fail the first condition, since a number and its negation sum to zero, so zero-testing
+$\mathbbm{Q} \to \Two$ preserves multiplication exactly but addition only laxly. It still acts entrywise on
+matrices, preserving identities and transposition, but composition only up to over-approximation: composing
+Boolean Jacobians can record dependencies absent from the Boolean image of their composite. The refund example of \secref{introduction:galois-slicing} exhibits
+exactly this: the price genuinely does not matter to the total, yet the composed dependencies say it might.}
+
 \begin{DeletedBlock}
 \input{main/stable-functions}
 \end{DeletedBlock}
