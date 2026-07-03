@@ -71,9 +71,17 @@ private
   X^-self-dual zero    = SDSemiMod.𝟘≅𝟘*
   X^-self-dual (suc n) = SDSemiMod.⊕-self-dual SDSemiMod.𝕀≅𝕀* (X^-self-dual n)
 
+  X^-pairing-sym : ∀ n {x y} → SDSemiMod.pairing (X^-self-dual n) x y S.≈ SDSemiMod.pairing (X^-self-dual n) y x
+  X^-pairing-sym zero    = S.refl
+  X^-pairing-sym (suc n) =
+    S.trans (SDSemiMod.pairing-⊕ SDSemiMod.𝕀≅𝕀* (X^-self-dual n))
+      (S.trans (S.+-cong S.·-comm (X^-pairing-sym n))
+        (S.sym (SDSemiMod.pairing-⊕ SDSemiMod.𝕀≅𝕀* (X^-self-dual n))))
+
 fobj-sd : ℕ → SDSemiMod.SelfDual
 fobj-sd n .SDSemiMod.SelfDual.obj  = X^ n
 fobj-sd n .SDSemiMod.SelfDual.dual = X^-self-dual n
+fobj-sd n .SDSemiMod.SelfDual.pairing-sym = X^-pairing-sym n
 
 embed : Functor Mat.cat SDSemiMod.cat
 embed .Functor.fobj = fobj-sd
