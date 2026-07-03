@@ -45,10 +45,12 @@ Consider a single run of a program on a particular input. Each part of the outpu
 certain parts of the input, and recording these facts gives the \emph{dependency relation} of the run,
 relating each output position to the input positions it depends on. This section works through a small example
 showing how dependency relations behave as derivatives: they have a tabular representation as Boolean
-matrices, compose using matrix multiplication, and can be evaluated forwards or backwards.
+matrices, compose using matrix multiplication, and can be evaluated forwards or backwards\Added{, and how
+they relate to the numerical Jacobians of differential calculus: agreement, except where arithmetic cancellation makes the
+dependency reading a sound over-approximation}.
 
+\begin{DeletedBlock}
 \begin{example}
-  \label{ex:introduction-example}
   The following program is written in Haskell syntax \cite{haskell}, using a list comprehension to filter a list of pairs of labels and numbers to those numbers with a given label, and then computing the sum of the numbers:
   \begin{displaymath}
     \begin{array}{l}
@@ -130,8 +132,141 @@ matrices, compose using matrix multiplication, and can be evaluated forwards or 
   \end{displaymath}
   Pieces of the input that were {\em not} used are replaced by $\bot$. As we expect, the run of the query with label $\mathsf{a}$ depends on the entries in the database labelled with $\mathsf{a}$, and likewise for the run with label $\mathsf{b}$.
 
-  In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of language-based approaches is that they are {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
 \end{example}
+\end{DeletedBlock}
+
+\begin{AddedBlock}
+\begin{example}
+  \label{ex:introduction-example}
+  The following program is written in Haskell syntax \cite{haskell}. It filters a list of pairs
+  of labels and quantities to those with a given label, and computes the sum of the quantities weighted by a
+  per-label price:
+  \begin{displaymath}
+    \begin{array}{l}
+      \mathrm{total} :: \mathrm{Label} \to [(\mathrm{Label}, \mathrm{Float})] \to (\mathrm{Label} \to \mathrm{Float}) \to \mathrm{Float} \\
+      \mathrm{total}\,l\,\mathit{db}\,\mathit{price} = \mathit{price}\,l \cdot \mathrm{sum}\,[ q \mid (l',q) \leftarrow \mathit{db}, l \equiv l' ]
+    \end{array}
+  \end{displaymath}
+  With $\mathit{db} = [(\mathsf{a}, 3), (\mathsf{b}, 1), (\mathsf{a}, -3)]$, where the third
+  entry is a refund of the first, and prices $\mathit{price}\,\mathsf{a} = 2$ and $\mathit{price}\,\mathsf{b}
+  = 5$, we have $\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price} = 2 \cdot (3 - 3) = 0$ and
+  $\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price} = 5$.
+
+  Suppose we are interested in how the output depends on the numerical parts of the input, for the
+  query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. The three quantities in $\mathit{db}$
+  and the two prices occupy five \emph{positions}, and the output a single position. In the run with $l =
+  \mathsf{a}$, the output is computed from the quantities at the first and third positions and the price of
+  $\mathsf{a}$; in the run with $l = \mathsf{b}$, from the second quantity and the price of
+  $\mathsf{b}$. We depict each input position
+  pointing to the output positions that depend on it:
+  \begin{center}
+    \begin{tikzpicture}[every node/.style={font=\small}]
+      % total a
+      \node (la) at (0,2.2) {$\mathrm{total}\;\mathsf{a}$};
+      \node[anchor=east] (a1) at (1.0,1.6) {$(\mathsf{a},3)$};
+      \node[anchor=east] (a2) at (1.0,0.8) {$(\mathsf{b},1)$};
+      \node[anchor=east] (a3) at (1.0,0) {$(\mathsf{a},-3)$};
+      \node[anchor=east] (a4) at (1.0,-0.8) {$\mathit{price}\,\mathsf{a} = 2$};
+      \node[anchor=east] (a5) at (1.0,-1.6) {$\mathit{price}\,\mathsf{b} = 5$};
+      \node (ao) at (2.8,0.3) {$0$};
+      \draw[->] (a1) -- (ao);
+      \draw[->] (a3) -- (ao);
+      \draw[->] (a4) -- (ao);
+      % total b
+      \node (lb) at (6,2.2) {$\mathrm{total}\;\mathsf{b}$};
+      \node[anchor=east] (b1) at (7.0,1.6) {$(\mathsf{a},3)$};
+      \node[anchor=east] (b2) at (7.0,0.8) {$(\mathsf{b},1)$};
+      \node[anchor=east] (b3) at (7.0,0) {$(\mathsf{a},-3)$};
+      \node[anchor=east] (b4) at (7.0,-0.8) {$\mathit{price}\,\mathsf{a} = 2$};
+      \node[anchor=east] (b5) at (7.0,-1.6) {$\mathit{price}\,\mathsf{b} = 5$};
+      \node (bo) at (8.8,-0.4) {$5$};
+      \draw[->] (b2) -- (bo);
+      \draw[->] (b5) -- (bo);
+    \end{tikzpicture}
+  \end{center}
+    Tabulating each relation, with a row for each output position and a column for each input position
+  (ordered as the three quantities and then the two prices), gives the \emph{Jacobian} of the
+  run, shown here beside the numerical Jacobian of differential calculus, taken at the same point:
+  \begin{displaymath}
+    \begin{array}{ll}
+      \partial_{\Two}(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
+      \begin{pmatrix} 1 & 0 & 1 & 1 & 0 \end{pmatrix}
+      &
+      \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
+      \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
+      \\[2pt]
+      \partial_{\Two}(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
+      \begin{pmatrix} 0 & 1 & 0 & 0 & 1 \end{pmatrix}
+      &
+      \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
+      \begin{pmatrix} 0 & 5 & 0 & 0 & 1 \end{pmatrix}
+    \end{array}
+  \end{displaymath}
+    As in differential calculus, the Jacobian is taken at a point: the two runs of the same program have
+  different Jacobians. And like their numerical counterparts, these matrices compose: $\mathrm{total}\,l$
+  is a price applied to a sum applied to a selection, and the Jacobian of the run is the product of the
+  Jacobians of those stages, a chain rule for dependencies.
+
+  Comparing the two kinds of Jacobian makes the relationship precise. The quantity entries of $\partial$ are
+  the relevant price, since the derivative of a product is the other factor, and the corresponding
+  $\partial_{\Two}$-entries are exactly their nonzero pattern: on multiplication, the dependency reading agrees with
+  the derivative. The entry for $\mathit{price}\,\mathsf{a}$ is where they part company:
+  $\partial\,\mathrm{total}\,\mathsf{a} / \partial\,\mathit{price}\,\mathsf{a} = 3 + (-3) = 0$, since
+  the refund cancels the purchase and the total genuinely does not depend on that price. The Boolean Jacobian
+  instead records $1$: dependency information combines by joins, and joins cannot cancel. Boolean Jacobians
+  are thus a \emph{sound over-approximation} of the nonzero pattern of the numerical ones, and this is
+  inherent to tracking possible dependence.
+
+  In setting up the positions, we chose to make only the numbers (quantities and prices)
+  perturbable, keeping the labels and
+  the structure of the list itself fixed. Other choices are also useful, and one of the aims of this work is
+  to clarify how to choose a dependency structure appropriate for different tasks by selecting an appropriate
+  semiring of dependency information. We elaborate on this further in
+  \secref{semantic-gps}.
+
+  The Jacobian acting directly evaluates dependencies \emph{forwards}: given a selection of input
+  positions, it returns the output positions that depend on them. A selection of positions can be displayed as
+  an \emph{approximation} of the underlying value, with the numbers at unselected positions replaced by
+  $\bot$; we write the database first and the pair of prices $\langle \mathit{price}\,\mathsf{a},
+  \mathit{price}\,\mathsf{b} \rangle$ after it. Writing
+  $\partial_{\Two}(\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_f$ for this forward action, we have
+  $\partial_{\Two}(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a},\bot),(\mathsf{b},1),(\mathsf{a},\bot)],
+  \langle \bot, \bot \rangle) = 5$, since the output depends on the entry $(\mathsf{b},1)$, whereas
+  $\partial_{\Two}(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_f$ applied to the same selection
+  returns $\bot$: that run consulted no $\mathsf{b}$-labelled entries.
+
+  The transpose of the Jacobian evaluates dependencies \emph{backwards}: given a selection of
+  output positions, it returns the input positions on which they depend. Writing
+  $\partial_{\Two}(\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_r$ for this reverse action, the fully
+  approximated output $\bot$ requires none of the input:
+  \begin{displaymath}
+    \partial_{\Two} (\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_r(\bot) =
+    ([(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)], \langle \bot, \bot \rangle)
+  \end{displaymath}
+  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we retain the output
+  unapproximated, then the two
+  runs' backwards actions return different results:
+  \begin{displaymath}
+    \begin{array}{l}
+      \partial_{\Two} (\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_r(0) =
+      ([(\mathsf{a},3), (\mathsf{b},\bot), (\mathsf{a},-3)], \langle 2, \bot \rangle) \\
+      \partial_{\Two} (\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_r(5) =
+      ([(\mathsf{a},\bot), (\mathsf{b},1), (\mathsf{a},\bot)], \langle \bot, 5 \rangle)
+    \end{array}
+  \end{displaymath}
+  Pieces of the input that were {\em not} used are replaced by $\bot$. As we expect, the run
+  with label $\mathsf{a}$ depends on the entries in the database labelled with $\mathsf{a}$, and likewise
+  for the run with label $\mathsf{b}$. Note that the backward action for $\mathsf{a}$ retains
+  $\mathit{price}\,\mathsf{a}$, even though the numerical derivative there is $0$: read backwards, too, the
+  dependency Jacobian cannot see that contributions cancelled.
+
+\end{example}
+\end{AddedBlock}
+
+In a simple query like this, it is easy to work out the dependency relationship between the input and output.
+However, the benefit of language-based approaches is that they are {\em automatic} for all programs, no
+matter how complex the relationship between input and output. Moreover, by changing what we mean by
+``approximation'' we can compute a range of different information about a program.
 
 \subsection{Galois Slicing and Automatic Differentiation}
 
