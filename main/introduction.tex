@@ -188,34 +188,34 @@ dependency reading a sound over-approximation}.
   (ordered as the three quantities and then the two prices), gives the \emph{Jacobian} of the
   run, shown here beside the numerical Jacobian of differential calculus, taken at the same point:
   \begin{displaymath}
-    \begin{array}{ll}
-      \partial_{\Two}(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
-      \begin{pmatrix} 1 & 0 & 1 & 1 & 0 \end{pmatrix}
-      &
-      \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
-      \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
-      \\[2pt]
-      \partial_{\Two}(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
-      \begin{pmatrix} 0 & 1 & 0 & 0 & 1 \end{pmatrix}
-      &
-      \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
-      \begin{pmatrix} 0 & 5 & 0 & 0 & 1 \end{pmatrix}
-    \end{array}
+    \partial_{\Two}(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
+    \begin{pmatrix} 1 & 0 & 1 & 1 & 0 \end{pmatrix}
+    \qquad
+    \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
+    \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
   \end{displaymath}
-    As in differential calculus, the Jacobian is taken at a point: the two runs of the same program have
-  different Jacobians. And like their numerical counterparts, these matrices compose: $\mathrm{total}\,l$
+  As in differential calculus, the Jacobian is taken at a point; the run with $l = \mathsf{b}$, a different
+  point, has its own:
+  \begin{displaymath}
+    \partial_{\Two}(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
+    \begin{pmatrix} 0 & 1 & 0 & 0 & 1 \end{pmatrix}
+    \qquad
+    \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
+    \begin{pmatrix} 0 & 5 & 0 & 0 & 1 \end{pmatrix}
+  \end{displaymath}
+  And like their numerical counterparts, these matrices compose: $\mathrm{total}\,l$
   is a price applied to a sum applied to a selection, and the Jacobian of the run is the product of the
   Jacobians of those stages, a chain rule for dependencies.
 
   Comparing the two kinds of Jacobian makes the relationship precise. The quantity entries of $\partial$ are
   the relevant price, since the derivative of a product is the other factor, and the corresponding
-  $\partial_{\Two}$-entries are exactly their nonzero pattern: on multiplication, the dependency reading agrees with
-  the derivative. The entry for $\mathit{price}\,\mathsf{a}$ is where they part company:
+  $\partial_{\Two}$-entries record exactly which of them are nonzero: on multiplication, the dependency
+  reading agrees with the derivative. The entry for $\mathit{price}\,\mathsf{a}$ is where they part company:
   $\partial\,\mathrm{total}\,\mathsf{a} / \partial\,\mathit{price}\,\mathsf{a} = 3 + (-3) = 0$, since
   the refund cancels the purchase and the total genuinely does not depend on that price. The Boolean Jacobian
-  instead records $1$: dependency information combines by joins, and joins cannot cancel. Boolean Jacobians
-  are thus a \emph{sound over-approximation} of the nonzero pattern of the numerical ones, and this is
-  inherent to tracking possible dependence.
+  instead records $1$: dependency information combines by disjunction, and disjunction cannot cancel. Boolean Jacobians
+  thus soundly over-approximate which entries of the numerical ones are nonzero, and this is
+  inherent to tracking binary dependence.
 
   In setting up the positions, we chose to make only the numbers (quantities and prices)
   perturbable, keeping the labels and
