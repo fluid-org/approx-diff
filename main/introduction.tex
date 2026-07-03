@@ -46,8 +46,8 @@ certain parts of the input, and recording these facts gives the \emph{dependency
 relating each output position to the input positions it depends on. This section works through a small example
 showing how dependency relations behave as derivatives: they have a tabular representation as Boolean
 matrices, compose using matrix multiplication, and can be evaluated forwards or backwards\Added{, and how
-they relate to the numerical Jacobians of differential calculus: agreement, except where arithmetic cancellation makes the
-dependency reading a sound over-approximation}.
+they relate to the numerical Jacobians of differential calculus, agreeing except where arithmetic
+cancellation forces the dependency reading to err on the safe side}.
 
 \begin{DeletedBlock}
 \begin{example}
@@ -214,11 +214,11 @@ dependency reading a sound over-approximation}.
   $\partial\,\mathrm{total}\,\mathsf{a} / \partial\,\mathit{price}\,\mathsf{a} = 3 + (-3) = 0$, since
   the refund cancels the purchase and the total genuinely does not depend on that price. The Boolean Jacobian
   instead records $1$: dependency information combines by disjunction, and disjunction cannot cancel. Boolean Jacobians
-  thus soundly over-approximate which entries of the numerical ones are nonzero, and this is
-  inherent to tracking binary dependence.
+  can thus report more nonzero entries than their numerical counterparts, but never fewer; this
+  over-approximation is inherent to tracking binary dependence.
 
-  In setting up the positions, we chose to make only the numbers (quantities and prices)
-  perturbable, keeping the labels and
+  In setting up the positions, we chose to let only the numbers (quantities and prices)
+  vary, keeping the labels and
   the structure of the list itself fixed. Other choices are also useful, and one of the aims of this work is
   to clarify how to choose a dependency structure appropriate for different tasks by selecting an appropriate
   semiring of dependency information. We elaborate on this further in
@@ -243,8 +243,7 @@ dependency reading a sound over-approximation}.
     \partial_{\Two} (\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_r(\bot) =
     ([(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)], \langle \bot, \bot \rangle)
   \end{displaymath}
-  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we retain the output
-  unapproximated, then the two
+  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we keep the output unapproximated, then the two
   runs' backwards actions return different results:
   \begin{displaymath}
     \begin{array}{r@{\;=\;([\,}c@{,\;}c@{,\;}c@{\,],\;\langle\,}c@{,\;}c@{\,\rangle)}}

@@ -227,17 +227,17 @@ entries are $\infty$. This is sound, but reports nothing: propagation of absolut
 multiplication.}
 
 \Added{Measuring perturbations multiplicatively instead exchanges the two behaviours. Take scalars to be
-factors, with $\min$ and numerical $\times$; this is the multiplicative counterpart of the previous
-presentation, related to it by logarithms over the reals, and the two are the classical dichotomy between
-absolute and relative error~\cite{high:ASNA2}. Multiplication now has unit entries, since relative perturbations pass through a
+factors, with $\min$ as the addition and the numerical product as the multiplication. This is the multiplicative
+counterpart of the previous presentation, related to it by logarithms over the reals, and the two are the
+classical dichotomy between absolute and relative error~\cite{high:ASNA2}. Multiplication now has unit entries, since relative perturbations pass through a
 product unchanged, while an addition $x + y$ acquires the entry $|x| / |x + y|$: the factor by which it
 amplifies relative error, its \emph{condition number}.}
 
-\Added{At the refund example the amplification is $|3| / |3 + (-3)|$: division by zero, an infinite condition
-number, the catastrophic cancellation of numerical analysis. The over-approximation that the Boolean instance
-could only signal as a spurious dependency is here measured, and for nonnegative data the factors are at most
-$1$, so the query examples remain exact. The choice between the two presentations, like the choice of semiring
-itself, is part of specifying what the analysis is to observe.}
+\Added{In the refund example the amplification is $|3| / |3 + (-3)|$: division by zero, an infinite condition
+number, the catastrophic cancellation of numerical analysis. Where the Boolean instance could only report a dependency that was not really there, this instance says
+how badly the bound degrades. For nonnegative data the factors are at most $1$, so the query examples remain
+exact. The two are simply different semirings, and choosing between them is part of
+specifying what the analysis is to observe.}
 
 \begin{DeletedBlock}
 \input{main/stable-functions}

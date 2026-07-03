@@ -29,6 +29,10 @@ import ho-model-boolalg-sd-semimod
 -- the embedding factors through the self-dual semimodules.
 import matrix-embedding-semimod
 
+-- The nonzero entries of a rational matrix as a lax functor Mat(ℚ) → Mat(𝟚); composition is
+-- preserved only laxly, the chain-rule over-approximation of Boolean dependency tracking.
+import matrix-nonzero
+
 -- Proofs from Section 5 "Definability"
 --
 -- (1) a factorisation of the embedding of the first-order semantic
