@@ -16,7 +16,7 @@ module sd-semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 module SemiMod = semimodule S
 open SemiMod using (_⇒_; _≈m_; id; _∘_)
 
-module Duality where
+module _ where
   private module S = SemiMod.S
   open SemiMod using (Semimodule; terminal)
   open SemiMod.Semimodule using (Carrier; _≈_; refl; sym; trans; +-cong; +-comm; +-lunit)
@@ -228,7 +228,6 @@ module Duality where
     conjugate X Y = conj (X .dual) (Y .dual)
 
 
-open Duality public
 
 open SelfDual
 

@@ -398,4 +398,3 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Σ-p₂ {zero} w i = Σ-unit i w
   Σ-p₂ {suc x} w i =
     trans (+-cong ε-annihilₗ refl) (trans +-lunit (Σ-p₂ {x} (λ j → w (suc j)) i))
-
