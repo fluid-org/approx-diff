@@ -1139,6 +1139,107 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                          (combine-lemma γ (Aα.R.bind Q md) (Fα.fbind Q fm) x)
                          (reindex-mcong (rcomb γ Q md fm) x)
 
+    -- Fibre mirror of the collapse, at a fixed γ: `combine-act` is combine's Γ-dependent
+    -- fibre action, and the lemmas transport the fibre composites along the corresponding
+    -- index proofs, mirroring `Rel`/`reindex-mcong`/`combine-lemma` clause by clause.
+    module CF (γ : Γ .idx .Carrier) where
+      module FR = FReidx {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
+
+      combine-act : ∀ {k} {ρA ρB ρC} (md : Aα.R.MorD {k} ρA ρB) (fm : Fα.FMor {k} ρB ρC) →
+                    FR.FAct (combine γ md fm)
+      combine-act md fm =
+        FR.abase (λ v a → Fα.fold-apply-fam γ fm v (Aα.R.apply md v a)
+                          ∘ prod-m (id (Fam.fm (Γ .fam) γ)) (Aα.R.apply-fam md v a))
+
+      mutual
+        -- Fibre actions over Rel-related morphisms, related constructor by constructor.
+        data RelAct : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.IMorD {k} ρA ρB} →
+                      Rel md₁ md₂ → FR.FAct md₁ → FR.FAct md₂ → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+          rcombA : ∀ {k} {ρA ρB ρC} (Q : Poly (suc k)) (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) →
+                   RelAct (rcomb γ Q md fm) (combine-act (Aα.R.bind Q md) (Fα.fbind Q fm))
+                          (FR.abind Q (combine γ md fm) (combine-act md fm))
+          rbindA : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB} {r : Rel md₁ md₂}
+                   {a₁ : FR.FAct md₁} {a₂ : FR.FAct md₂} (Q : Poly (suc k)) →
+                   RelAct r a₁ a₂ → RelAct (rbind Q r) (FR.abind Q md₁ a₁) (FR.abind Q md₂ a₂)
+
+        reindex-mcong-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
+                            {r : Rel md₁ md₂} {a₁ : FR.FAct md₁} {a₂ : FR.FAct md₂}
+                            (ra : RelAct r a₁ a₂) (t : Aα.TX.W Q ρA) →
+                            (Fα.TA'.fib-subst {x = Rcomb.ireindex md₁ t} {y = Rcomb.ireindex md₂ t}
+                               (reindex-mcong r t)
+                             ∘ FR.freindex-fam a₁ {t})
+                            ≈ FR.freindex-fam a₂ {t}
+        reindex-mcong-fam {Q = Q} ra (Aα.TX.sup y) = reindex-mcong-shape-fam Q (rbindA Q ra) y
+
+        reindex-mcong-shape-fam : ∀ {j} (R : Poly j) {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
+                                  {r : Rel md₁ md₂} {a₁ : FR.FAct md₁} {a₂ : FR.FAct md₂}
+                                  (ra : RelAct r a₁ a₂) (y : Aα.TX.⟦ R ⟧shape ρA) →
+                                  (Fα.TA'.fib-shape-subst R ρB (reindex-mcong-shape R r y)
+                                   ∘ FR.freindex-shape-fam R a₁ {y})
+                                  ≈ FR.freindex-shape-fam R a₂ {y}
+        reindex-mcong-shape-fam (const A') ra y =
+          ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
+        reindex-mcong-shape-fam (var v) ra y = mrel-apply-fam ra v
+        reindex-mcong-shape-fam (P + P') ra (inj₁ y) = reindex-mcong-shape-fam P ra y
+        reindex-mcong-shape-fam (P + P') ra (inj₂ z) = reindex-mcong-shape-fam P' ra z
+        reindex-mcong-shape-fam (P × P') ra (y , z) =
+          ≈-trans (strong-prod-m-post _ _ _ _)
+            (strong-prod-m-cong (reindex-mcong-shape-fam P ra y) (reindex-mcong-shape-fam P' ra z))
+        reindex-mcong-shape-fam (μ R'') ra y = reindex-mcong-fam ra y
+
+        mrel-apply-fam : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
+                         {r : Rel md₁ md₂} {a₁ : FR.FAct md₁} {a₂ : FR.FAct md₂}
+                         (ra : RelAct r a₁ a₂) (v : Fin k) {z} →
+                         (Fα.TA'.fib-el-subst (ρB v) (mrel-apply r v {z}) ∘ FR.aapply a₁ v z)
+                         ≈ FR.aapply a₂ v z
+        mrel-apply-fam (rcombA Q md fm) Fin.zero {z} = combine-lemma-fam md fm z
+        mrel-apply-fam (rcombA {ρC = ρC} Q md fm) (Fin.suc v') {z} =
+          ≈-trans (∘-cong (Fα.TA'.fib-el-refl* (ρC v') _) ≈-refl) id-left
+        mrel-apply-fam (rbindA Q ra) Fin.zero {z} = reindex-mcong-fam ra z
+        mrel-apply-fam (rbindA Q ra) (Fin.suc v') = mrel-apply-fam ra v'
+
+        combine-lemma-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC}
+                            (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) (t : Aα.TX.W Q ρA) →
+                            (Fα.TA'.fib-subst {x = Fα.fold-reindex γ fm (Aα.R.reindex md t)}
+                                              {y = Rcomb.ireindex (combine γ md fm) t}
+                               (combine-lemma γ md fm t)
+                             ∘ (Fα.fold-reindex-fam γ fm (Aα.R.reindex md t)
+                                ∘ prod-m (id _) (Aα.R.reindex-fam-W md {t})))
+                            ≈ FR.freindex-fam (combine-act md fm) {t}
+        combine-lemma-fam {Q = Q} md fm (Aα.TX.sup x) = combine-lemma-shape-fam Q Q md fm x
+
+        combine-lemma-shape-fam : ∀ {k} (Q : Poly (suc k)) (R : Poly (suc k)) {ρA ρB ρC}
+                                  (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC)
+                                  (x : Aα.TX.⟦ R ⟧shape (extend ρA (inj₂ (mkSort Q ρA)))) →
+                                  (Fα.TA'.fib-shape-subst R (extend ρC (inj₂ (mkSort Q ρC)))
+                                     (combine-lemma-shape Q R γ md fm x)
+                                   ∘ (Fα.fold-reindex-shape-fam γ R (Fα.fbind Q fm)
+                                        (Aα.R.reindex-shape R (Aα.R.bind Q md) x)
+                                      ∘ prod-m (id _) (Aα.R.reindex-fam R (Aα.R.bind Q md) {x})))
+                                  ≈ FR.freindex-shape-fam R (FR.abind Q (combine γ md fm) (combine-act md fm)) {x}
+        combine-lemma-shape-fam Q (const A') md fm x =
+          ≈-trans (∘-cong (A' .fam .refl*) ≈-refl)
+            (≈-trans id-left (≈-trans (pair-p₂ _ _) id-left))
+        combine-lemma-shape-fam Q (var Fin.zero) md fm x = combine-lemma-fam md fm x
+        combine-lemma-shape-fam Q (var (Fin.suc v)) {ρC = ρC} md fm x =
+          ≈-trans (∘-cong (Fα.TA'.fib-el-refl* (ρC v) _) ≈-refl) id-left
+        combine-lemma-shape-fam Q (P + Q') md fm (inj₁ x) = combine-lemma-shape-fam Q P md fm x
+        combine-lemma-shape-fam Q (P + Q') md fm (inj₂ y) = combine-lemma-shape-fam Q Q' md fm y
+        combine-lemma-shape-fam Q (P × Q') md fm (x , y) =
+          ≈-trans (∘-cong ≈-refl (strong-prod-m-pre _ _ _ _ _))
+            (≈-trans (strong-prod-m-post _ _ _ _)
+              (strong-prod-m-cong (combine-lemma-shape-fam Q P md fm x) (combine-lemma-shape-fam Q Q' md fm y)))
+        combine-lemma-shape-fam Q (μ R'') md fm x =
+          ≈-trans (∘-cong (Fα.TA'.fib-trans*
+                             {x = Fα.fold-reindex γ (Fα.fbind Q fm) (Aα.R.reindex (Aα.R.bind Q md) x)}
+                             {y = Rcomb.ireindex (combine γ (Aα.R.bind Q md) (Fα.fbind Q fm)) x}
+                             {z = Rcomb.ireindex (Rcomb.ibind Q (combine γ md fm)) x}
+                             (reindex-mcong (rcomb γ Q md fm) x)
+                             (combine-lemma γ (Aα.R.bind Q md) (Fα.fbind Q fm) x)) ≈-refl)
+            (≈-trans (assoc _ _ _)
+              (≈-trans (∘-cong ≈-refl (combine-lemma-fam (Aα.R.bind Q md) (Fα.fbind Q fm) x))
+                (reindex-mcong-fam (rcombA Q md fm) x)))
+
     -- foldShape-idx ∘ reindex-shape ∘ embed-idx ≈ strong-fmor's idx action of the fold.
     β-idx : (R : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
             (m≈ : _≈s_ (fobj μObj R δ' .idx) m₁ m₂) →
@@ -1197,7 +1298,40 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               (≈-trans (≈-sym (assoc _ _ _))
                 (≈-trans (∘-cong (β-fam R₂) ≈-refl)
                   (≈-trans (∘-cong ≈-refl (pair-cong ≈-refl (≈-sym id-left))) (≈-sym id-left)))))))
-    β-fam (μ R'') = {!!}
+    β-fam (μ Q') {γ} {m} =
+      ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl id-right)))
+        (≈-trans (∘-cong (Fα.TA'.fib-trans*
+                            {x = Fα.fold-reindex γ Fα.fbase (Aα.R.reindex Aα.mor₀ m)}
+                            {y = Rcomb.ireindex (combine γ Aα.mor₀ Fα.fbase) m}
+                            {z = strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ , m)}
+                            (gen-fuse-idx {n = suc n} {Γ = Γ} {sₛ = δ'} {sₜ = extend δ A} Q'
+                              (λ γ' → combine γ' Aα.mor₀ Fα.fbase) fs corr-fs
+                              (Γ .idx .isEquivalence .refl) {m} {m}
+                              (μObj Q' δ' .idx .isEquivalence .refl {m}))
+                            (combine-lemma γ Aα.mor₀ Fα.fbase m)) ≈-refl)
+          (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl (CFγ.combine-lemma-fam Aα.mor₀ Fα.fbase m))
+              (gen-fuse-fam γ Q' (λ γ' → combine γ' Aα.mor₀ Fα.fbase)
+                (CFγ.combine-act Aα.mor₀ Fα.fbase) fs corr-fs corr-fs-fam {m}))))
+      where
+        module CFγ = CF γ
+        corr-fs : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (δ' i .idx) a₁ a₂) →
+                  _≈s_ (extend δ A i .idx)
+                       (Rcomb.iapply (combine γ₁ Aα.mor₀ Fα.fbase) i a₁)
+                       (fs i .idxf .PS._⇒_.func (γ₂ , a₂))
+        corr-fs Fin.zero γ≈ {a₁} {a₂} a≈ = Fα.fold-idx-resp γ≈ {a₁} {a₂} a≈
+        corr-fs (Fin.suc j) γ≈ a≈ = a≈
+        corr-fs-fam : ∀ i {a} →
+                      (extend δ A i .fam .subst
+                         (corr-fs i (Γ .idx .isEquivalence .refl) (δ' i .idx .isEquivalence .refl {a}))
+                       ∘ CFγ.FR.aapply (CFγ.combine-act Aα.mor₀ Fα.fbase) i a)
+                      ≈ (fs i .famf ._⇒f_.transf (γ , a))
+        corr-fs-fam Fin.zero {a} =
+          ≈-trans (∘-cong (A .fam .refl*) ≈-refl)
+            (≈-trans id-left (≈-trans (∘-cong ≈-refl prod-m-id) id-right))
+        corr-fs-fam (Fin.suc j) {a} =
+          ≈-trans (∘-cong (δ j .fam .refl*) ≈-refl)
+            (≈-trans id-left (≈-trans (∘-cong ≈-refl prod-m-id) id-right))
 
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =

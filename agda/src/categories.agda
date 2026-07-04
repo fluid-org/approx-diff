@@ -620,6 +620,22 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       strong-prod-m (s₁ ∘ f) (s₂ ∘ g)
     ∎ where open ≈-Reasoning isEquiv
 
+  strong-prod-m-pre : ∀ {w w' x₁ x₂ y₁ y₂ z₁ z₂} (f : prod w' x₁ ⇒ y₁) (g : prod w' x₂ ⇒ y₂)
+                      (u : w ⇒ w') (v₁ : z₁ ⇒ x₁) (v₂ : z₂ ⇒ x₂) →
+                      (strong-prod-m f g ∘ prod-m u (prod-m v₁ v₂)) ≈ strong-prod-m (f ∘ prod-m u v₁) (g ∘ prod-m u v₂)
+  strong-prod-m-pre f g u v₁ v₂ =
+    begin
+      strong-prod-m f g ∘ prod-m u (prod-m v₁ v₂)
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair ((f ∘ strong-p₁) ∘ prod-m u (prod-m v₁ v₂)) ((g ∘ strong-p₂) ∘ prod-m u (prod-m v₁ v₂))
+    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      pair (f ∘ (strong-p₁ ∘ prod-m u (prod-m v₁ v₂))) (g ∘ (strong-p₂ ∘ prod-m u (prod-m v₁ v₂)))
+    ≈⟨ pair-cong (∘-cong ≈-refl (strong-p₁-natural _ _ _)) (∘-cong ≈-refl (strong-p₂-natural _ _ _)) ⟩
+      pair (f ∘ (prod-m u v₁ ∘ strong-p₁)) (g ∘ (prod-m u v₂ ∘ strong-p₂))
+    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      strong-prod-m (f ∘ prod-m u v₁) (g ∘ prod-m u v₂)
+    ∎ where open ≈-Reasoning isEquiv
+
   strong-p₁-absorb : ∀ {w x₁ x₂ y₁ y₂} (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
                      (strong-p₁ ∘ pair p₁ (strong-prod-m h k)) ≈ pair p₁ (h ∘ strong-p₁)
   strong-p₁-absorb h k =
