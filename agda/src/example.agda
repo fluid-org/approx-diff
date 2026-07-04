@@ -57,6 +57,21 @@ module ex where
                  when fst (var zero) ≟ (` l) ；
                  return (snd (var zero)))
 
+  -- Price-weighted sum of the quantities with a given label; the per-label prices are a further
+  -- pair of inputs.
+  total : label.label →
+          emp , (list (base label [×] base number)) [×] (base number [×] base number) ⊢ base number
+  total l = app sum
+                (from fst (var zero) collect
+                 when fst (var zero) ≟ (` l) ；
+                 return (bop mult (price l ∷ snd (var zero) ∷ [])))
+    where
+      price : label.label →
+              (emp , (list (base label [×] base number)) [×] (base number [×] base number))
+                , (base label [×] base number) ⊢ base number
+      price label.a = fst (snd (var (succ zero)))
+      price _       = snd (snd (var (succ zero)))
+
   -- Product of two numbers.
   mult-ex : emp , base number [×] base number ⊢ base number
   mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])

@@ -233,7 +233,7 @@ classical dichotomy between absolute and relative error~\cite{high:ASNA2}. Multi
 product unchanged, while an addition $x + y$ acquires the entry $|x| / |x + y|$: the factor by which it
 amplifies relative error, its \emph{condition number}.}
 
-\Added{In the refund example the amplification is $|3| / |3 + (-3)|$: division by zero, an infinite condition
+\Added{In the refund example the amplification is $|6| / |6 + (-6)|$: division by zero, an infinite condition
 number, the catastrophic cancellation of numerical analysis. Where the Boolean instance could only report a dependency that was not really there, this instance says
 how badly the bound degrades. For nonnegative data the factors are at most $1$, so the query examples remain
 exact. The two are simply different semirings, and choosing between them is part of
@@ -263,7 +263,7 @@ dependency tracking. The rationals are not positive, since a number and its nega
 zero-testing $\mathbbm{Q} \to \Two$ preserves multiplication exactly but addition only laxly. It still acts
 entrywise on matrices, preserving identities and transposition, but composition only up to
 over-approximation: composing Boolean Jacobians can record dependencies absent from the Boolean image of
-their composite. The refund example of \secref{introduction:galois-slicing} exhibits exactly this: the price
+their composite. The refund example of \secref{introduction:galois-slicing} is a case in point: the price
 genuinely does not matter to the total, yet the composed dependencies say it might.}
 
 \Added{When exactness fails, the target determines how visible the loss is. The Booleans forget signs, so

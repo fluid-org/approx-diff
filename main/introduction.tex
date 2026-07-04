@@ -144,12 +144,12 @@ cancellation forces the dependency reading to err on the safe side}.
   \begin{displaymath}
     \begin{array}{l}
       \mathrm{total} :: \mathrm{Label} \to [(\mathrm{Label}, \mathrm{Float})] \to (\mathrm{Label} \to \mathrm{Float}) \to \mathrm{Float} \\
-      \mathrm{total}\,l\,\mathit{db}\,\mathit{price} = \mathit{price}\,l \cdot \mathrm{sum}\,[ q \mid (l',q) \leftarrow \mathit{db}, l \equiv l' ]
+      \mathrm{total}\,l\,\mathit{db}\,\mathit{price} = \mathrm{sum}\,[ \mathit{price}\,l \cdot q \mid (l',q) \leftarrow \mathit{db}, l \equiv l' ]
     \end{array}
   \end{displaymath}
   With $\mathit{db} = [(\mathsf{a}, 3), (\mathsf{b}, 1), (\mathsf{a}, -3)]$, where the third
   entry is a refund of the first, and prices $\mathit{price}\,\mathsf{a} = 2$ and $\mathit{price}\,\mathsf{b}
-  = 5$, we have $\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price} = 2 \cdot (3 - 3) = 0$ and
+  = 5$, we have $\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price} = 2 \cdot 3 + 2 \cdot (-3) = 0$ and
   $\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price} = 5$.
 
   Suppose we are interested in how the output depends on the numerical parts of the input, for the
@@ -194,8 +194,39 @@ cancellation forces the dependency reading to err on the safe side}.
     \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
     \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
   \end{displaymath}
+  And like their numerical counterparts, these matrices compose: $\mathrm{total}\,l$
+  is a sum applied to per-row products applied to a selection, and the Jacobian of the run is the product of
+  the Jacobians of those stages, a chain rule for dependencies. For the run with $l = \mathsf{a}$, the
+  Boolean pipeline is
+  \begin{displaymath}
+    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 1 & 1 \end{pmatrix}}_{\text{sum}}
+    \;
+    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 1 & 0 & 1 \\ 0 & 1 & 1 \end{pmatrix}}_{\text{multiply}}
+    \;
+    \underbrace{\begin{pmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \end{pmatrix}}_{\text{select}}
+    \;=\;
+    \begin{pmatrix} 1 & 0 & 1 & 1 & 0 \end{pmatrix}
+  \end{displaymath}
+  and the numerical pipeline is
+  \begin{displaymath}
+    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 1 & 1 \end{pmatrix}}_{\text{sum}}
+    \;
+    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 2 & 0 & 3 \\ 0 & 2 & -3 \end{pmatrix}}_{\text{multiply}}
+    \;
+    \underbrace{\begin{pmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \end{pmatrix}}_{\text{select}}
+    \;=\;
+    \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
+  \end{displaymath}
+  Reading right to left: selection maps the five input positions to the three this run uses (the two
+  $\mathsf{a}$-quantities and $\mathit{price}\,\mathsf{a}$); the multiply stage computes the two per-row
+  products, each depending on its quantity (with the price as coefficient) and on the price (with the
+  quantity as coefficient); and the sum merges the two products. The two pipelines part ways in the price
+  column of the multiply stage: the numerical coefficients $3$ and $-3$ cancel through the sum, while their
+  Boolean counterparts join as $1 \vee 1 = 1$. The division into these three stages is just one way of
+  viewing the computation, not a description of how the program actually runs.
+
   As in differential calculus, the Jacobian is taken at a point; the run with $l = \mathsf{b}$, a different
-  point, has its own:
+  point, has its own pipeline of stage Jacobians, with composites:
   \begin{displaymath}
     \partial_{\Two}(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
     \begin{pmatrix} 0 & 1 & 0 & 0 & 1 \end{pmatrix}
@@ -203,32 +234,13 @@ cancellation forces the dependency reading to err on the safe side}.
     \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
     \begin{pmatrix} 0 & 5 & 0 & 0 & 1 \end{pmatrix}
   \end{displaymath}
-  And like their numerical counterparts, these matrices compose: $\mathrm{total}\,l$
-  is a price applied to a sum applied to a selection, and the Jacobian of the run is the product of the
-  Jacobians of those stages, a chain rule for dependencies. For the run with $l = \mathsf{a}$:
-  \begin{displaymath}
-    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 2 & 0 \end{pmatrix}}_{\text{multiply}}
-    \;
-    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 1 & 1 & 0 \\ 0 & 0 & 1 \end{pmatrix}}_{\text{sum}}
-    \;
-    \underbrace{\begin{pmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \end{pmatrix}}_{\text{select}}
-    \;=\;
-    \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
-  \end{displaymath}
-  Reading right to left: selection maps the five input positions to the three this run uses (the two
-  $\mathsf{a}$-quantities and $\mathit{price}\,\mathsf{a}$); the sum merges the two quantities, the price
-  passing through; and the multiply stage is the Jacobian of the product at the point $(0, 2)$. The zeros of
-  the composite row have visible origins: the entries for $(\mathsf{b},1)$ and $\mathit{price}\,\mathsf{b}$
-  vanish at the selection stage, while the entry for $\mathit{price}\,\mathsf{a}$ vanishes at the multiply
-  stage, where the cofactor is the cancelled sum.
-
   Comparing the two kinds of Jacobian makes the relationship precise. The quantity entries of $\partial$ are
   the relevant price, since the derivative of a product is the other factor, and the corresponding
   $\partial_{\Two}$-entries record exactly which of them are nonzero: on multiplication, the dependency
-  reading agrees with the derivative. The entry for $\mathit{price}\,\mathsf{a}$ is where they part company:
+  reading agrees with the derivative. They differ at the entry for $\mathit{price}\,\mathsf{a}$:
   $\partial\,\mathrm{total}\,\mathsf{a} / \partial\,\mathit{price}\,\mathsf{a} = 3 + (-3) = 0$, since
   the refund cancels the purchase and the total genuinely does not depend on that price. The Boolean Jacobian
-  instead records $1$: dependency information combines by disjunction, and disjunction cannot cancel. Boolean Jacobians
+  instead records $1$, because dependency information combines by disjunction and disjunction cannot cancel. Boolean Jacobians
   can thus report more nonzero entries than their numerical counterparts, but never fewer; this
   over-approximation is inherent to tracking binary dependence.
 
