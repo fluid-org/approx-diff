@@ -13,20 +13,17 @@
 -- Emmenegger. W-types in setoids. arXiv:1809.02375, 2018.
 ------------------------------------------------------------------------------
 
-open import Level using (_⊔_; lift) renaming (suc to lsuc)
-open import Data.Nat using (ℕ; zero; suc; _<_; s≤s; z≤n) renaming (_+_ to _+ℕ_)
+open import Level using (_⊔_) renaming (suc to lsuc)
+open import Data.Nat using (ℕ; zero; suc)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
-open import prop using (_,_; tt)
-open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
-open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts; strong-coproducts→coproducts;
-         coKleisli-prod)
+open import prop using (_,_)
+open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS
-  using (IsEquivalence; Setoid; module ≈-Reasoning)
-open import indexed-family using (Fam; _⇒f_; changeCat)
+  using (IsEquivalence; Setoid)
+open import indexed-family using (Fam; _⇒f_)
 import fam
 import polynomial-functor-2
 
@@ -39,7 +36,6 @@ module fam-mu-types-2 where
 module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
   open Category 𝒞
   open IsEquivalence
-  open HasTerminal
   open HasProducts P
   open fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   open Obj
@@ -64,18 +60,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   -- rather than through a recursive environment of types.
   data Sort (n : ℕ) : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     mkSort : ∀ {k} → Poly (suc k) → (Fin k → Fin n ⊎ Sort n) → Sort n
-
-  -- Abstract the freshly-bound recursion variable (slot 0 of a suc-n context) into
-  -- a given sort, contracting the context to n. Used to translate `fobj`'s nested
-  -- μ (recursion-as-parameter) into our representation (recursion-as-sort).
-  mutual
-    abs-ref : ∀ {n} → Sort n → Fin (suc n) ⊎ Sort (suc n) → Fin n ⊎ Sort n
-    abs-ref rec (inj₁ Fin.zero)    = inj₂ rec
-    abs-ref rec (inj₁ (Fin.suc i)) = inj₁ i
-    abs-ref rec (inj₂ s)           = inj₂ (abs-sort rec s)
-
-    abs-sort : ∀ {n} → Sort n → Sort (suc n) → Sort n
-    abs-sort rec (mkSort R ρ) = mkSort R (λ i → abs-ref rec (ρ i))
 
   -- The body environment of a μ-binder: slot 0 is the binder's own sort, the
   -- rest are the ambient parameters.
