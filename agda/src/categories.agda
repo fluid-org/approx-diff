@@ -581,33 +581,6 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       prod-m u v₂ ∘ strong-p₂
     ∎ where open ≈-Reasoning isEquiv
 
-  -- Componentwise naturality squares against prod-m actions assemble to a square
-  -- for the strong product action.
-  strong-prod-m-natural : ∀ {w w' x₁ x₂ y₁ y₂ x₁' x₂' y₁' y₂'}
-                          {f : prod w x₁ ⇒ y₁} {g : prod w x₂ ⇒ y₂}
-                          {f' : prod w' x₁' ⇒ y₁'} {g' : prod w' x₂' ⇒ y₂'}
-                          {u : w ⇒ w'} {v₁ : x₁ ⇒ x₁'} {v₂ : x₂ ⇒ x₂'} {s₁ : y₁ ⇒ y₁'} {s₂ : y₂ ⇒ y₂'} →
-                          (f' ∘ prod-m u v₁) ≈ (s₁ ∘ f) → (g' ∘ prod-m u v₂) ≈ (s₂ ∘ g) →
-                          (strong-prod-m f' g' ∘ prod-m u (prod-m v₁ v₂)) ≈ (prod-m s₁ s₂ ∘ strong-prod-m f g)
-  strong-prod-m-natural {f = f} {g} {f'} {g'} {u} {v₁} {v₂} {s₁} {s₂} sq₁ sq₂ =
-    begin
-      strong-prod-m f' g' ∘ prod-m u (prod-m v₁ v₂)
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair ((f' ∘ strong-p₁) ∘ prod-m u (prod-m v₁ v₂)) ((g' ∘ strong-p₂) ∘ prod-m u (prod-m v₁ v₂))
-    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      pair (f' ∘ (strong-p₁ ∘ prod-m u (prod-m v₁ v₂))) (g' ∘ (strong-p₂ ∘ prod-m u (prod-m v₁ v₂)))
-    ≈⟨ pair-cong (∘-cong ≈-refl (strong-p₁-natural _ _ _)) (∘-cong ≈-refl (strong-p₂-natural _ _ _)) ⟩
-      pair (f' ∘ (prod-m u v₁ ∘ strong-p₁)) (g' ∘ (prod-m u v₂ ∘ strong-p₂))
-    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      pair ((f' ∘ prod-m u v₁) ∘ strong-p₁) ((g' ∘ prod-m u v₂) ∘ strong-p₂)
-    ≈⟨ pair-cong (∘-cong sq₁ ≈-refl) (∘-cong sq₂ ≈-refl) ⟩
-      pair ((s₁ ∘ f) ∘ strong-p₁) ((s₂ ∘ g) ∘ strong-p₂)
-    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      pair (s₁ ∘ (f ∘ strong-p₁)) (s₂ ∘ (g ∘ strong-p₂))
-    ≈˘⟨ pair-compose _ _ _ _ ⟩
-      prod-m s₁ s₂ ∘ strong-prod-m f g
-    ∎ where open ≈-Reasoning isEquiv
-
   strong-prod-m-post : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (s₁ : y₁ ⇒ z₁) (s₂ : y₂ ⇒ z₂)
                        (f : prod w x₁ ⇒ y₁) (g : prod w x₂ ⇒ y₂) →
                        (prod-m s₁ s₂ ∘ strong-prod-m f g) ≈ strong-prod-m (s₁ ∘ f) (s₂ ∘ g)
@@ -635,6 +608,18 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
       strong-prod-m (f ∘ prod-m u v₁) (g ∘ prod-m u v₂)
     ∎ where open ≈-Reasoning isEquiv
+
+  -- Componentwise naturality squares against prod-m actions assemble to a square
+  -- for the strong product action.
+  strong-prod-m-natural : ∀ {w w' x₁ x₂ y₁ y₂ x₁' x₂' y₁' y₂'}
+                          {f : prod w x₁ ⇒ y₁} {g : prod w x₂ ⇒ y₂}
+                          {f' : prod w' x₁' ⇒ y₁'} {g' : prod w' x₂' ⇒ y₂'}
+                          {u : w ⇒ w'} {v₁ : x₁ ⇒ x₁'} {v₂ : x₂ ⇒ x₂'} {s₁ : y₁ ⇒ y₁'} {s₂ : y₂ ⇒ y₂'} →
+                          (f' ∘ prod-m u v₁) ≈ (s₁ ∘ f) → (g' ∘ prod-m u v₂) ≈ (s₂ ∘ g) →
+                          (strong-prod-m f' g' ∘ prod-m u (prod-m v₁ v₂)) ≈ (prod-m s₁ s₂ ∘ strong-prod-m f g)
+  strong-prod-m-natural sq₁ sq₂ =
+    ≈-trans (strong-prod-m-pre _ _ _ _ _)
+      (≈-trans (strong-prod-m-cong sq₁ sq₂) (≈-sym (strong-prod-m-post _ _ _ _)))
 
   strong-p₁-absorb : ∀ {w x₁ x₂ y₁ y₂} (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
                      (strong-p₁ ∘ pair p₁ (strong-prod-m h k)) ≈ pair p₁ (h ∘ strong-p₁)

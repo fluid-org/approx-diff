@@ -1240,6 +1240,15 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               (≈-trans (∘-cong ≈-refl (combine-lemma-fam (Aα.R.bind Q md) (Fα.fbind Q fm) x))
                 (reindex-mcong-fam (rcombA Q md fm) x)))
 
+    -- Correspondence hypothesis for the gen-fuse instances: `combine mor₀ fbase` acts as
+    -- the fold at the recursion slot and as the identity at the parameter slots.
+    corr-fs : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (δ' i .idx) a₁ a₂) →
+              _≈s_ (extend δ A i .idx)
+                   (Rcomb.iapply (combine γ₁ Aα.mor₀ Fα.fbase) i a₁)
+                   (fs i .idxf .PS._⇒_.func (γ₂ , a₂))
+    corr-fs Fin.zero γ≈ {a₁} {a₂} a≈ = Fα.fold-idx-resp γ≈ {a₁} {a₂} a≈
+    corr-fs (Fin.suc j) γ≈ a≈ = a≈
+
     -- foldShape-idx ∘ reindex-shape ∘ embed-idx ≈ strong-fmor's idx action of the fold.
     β-idx : (R : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
             (m≈ : _≈s_ (fobj μObj R δ' .idx) m₁ m₂) →
@@ -1259,9 +1268,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         {z = strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ₂ , m₂)}
         (combine-lemma γ₁ Aα.mor₀ Fα.fbase m₁)
         (gen-fuse-idx {n = suc n} {Γ = Γ} {sₛ = δ'} {sₜ = extend δ A} Q'
-          (λ γ → combine γ Aα.mor₀ Fα.fbase) fs
-          (λ { Fin.zero γ≈ {a₁} {a₂} a≈ → Fα.fold-idx-resp γ≈ {a₁} {a₂} a≈ ; (Fin.suc j) γ≈ a≈ → a≈ })
-          γ≈ {m₁} {m₂} m≈)
+          (λ γ → combine γ Aα.mor₀ Fα.fbase) fs corr-fs γ≈ {m₁} {m₂} m≈)
 
     -- Fibre analogue of `β-idx`: the fibre transformations agree (modulo transport along β-idx).
     β-fam : (R : Poly (suc n)) → ∀ {γ} {m} →
@@ -1315,12 +1322,6 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                 (CFγ.combine-act Aα.mor₀ Fα.fbase) fs corr-fs corr-fs-fam {m}))))
       where
         module CFγ = CF γ
-        corr-fs : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (δ' i .idx) a₁ a₂) →
-                  _≈s_ (extend δ A i .idx)
-                       (Rcomb.iapply (combine γ₁ Aα.mor₀ Fα.fbase) i a₁)
-                       (fs i .idxf .PS._⇒_.func (γ₂ , a₂))
-        corr-fs Fin.zero γ≈ {a₁} {a₂} a≈ = Fα.fold-idx-resp γ≈ {a₁} {a₂} a≈
-        corr-fs (Fin.suc j) γ≈ a≈ = a≈
         corr-fs-fam : ∀ i {a} →
                       (extend δ A i .fam .subst
                          (corr-fs i (Γ .idx .isEquivalence .refl) (δ' i .idx .isEquivalence .refl {a}))
@@ -1336,5 +1337,23 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   hasMuLaws : HasMuLaws hasMu
   hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
     alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , BetaDef.β-idx alg P γ≈ m≈)
-  hasMuLaws .HasMuLaws.⦅⦆-β alg ._≃_.famf-eq = {!!}
+  hasMuLaws .HasMuLaws.⦅⦆-β {Γ = Γ} {P = P} {δ = δ} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , m} =
+    ≈-trans (∘-cong ≈-refl id-left)
+      (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (pair-cong ≈-refl id-left)))
+        (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+          (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl
+                     (≈-trans (pair-natural _ _ _)
+                       (pair-cong (pair-p₁ _ _) (∘-cong ≈-refl (pair-cong (≈-sym id-left) ≈-refl))))))
+            (≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong (≈-sym (alg .famf ._⇒f_.natural
+                                         (Γ .idx .isEquivalence .refl ,
+                                          B.β-idx P (Γ .idx .isEquivalence .refl)
+                                            (fobj μObj P B.δ' .idx .isEquivalence .refl)))) ≈-refl)
+                (≈-trans (assoc _ _ _)
+                  (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
+                    (≈-trans (∘-cong ≈-refl
+                               (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left) (B.β-fam P)))
+                      (≈-sym id-left)))))))))
+    where
+      module B = BetaDef {P = P} {δ = δ} alg
   hasMuLaws .HasMuLaws.⦅⦆-η alg h eq = {!!}
