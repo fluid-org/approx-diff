@@ -65,8 +65,7 @@ record HasMu : Set (o ⊔ m ⊔ e) where
     strong-fmor (const A) fs = p₂
     strong-fmor (var i)   fs = fs i
     strong-fmor (P + Q)   fs = scopair (in₁ ∘ strong-fmor P fs) (in₂ ∘ strong-fmor Q fs)
-    strong-fmor (P × Q)   fs = pair (strong-fmor P fs ∘ pair p₁ (p₁ ∘ p₂))
-                                    (strong-fmor Q fs ∘ pair p₁ (p₂ ∘ p₂))
+    strong-fmor (P × Q)   fs = strong-prod-m (strong-fmor P fs) (strong-fmor Q fs)
     strong-fmor (μ P)     fs = strong-μ-fmor P fs
 
     strong-μ-fmor : ∀ {n Γ} (P : Poly (suc n)) {δ δ' : Fin n → obj} →

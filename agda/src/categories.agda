@@ -524,6 +524,154 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
 
     where open ≈-Reasoning isEquiv
 
+  -- Strong (w-threading) projections and product action: the counterparts of
+  -- p₁/p₂/prod-m in the co-Kleisli category for the (prod w ⋅) comonad.
+  strong-p₁ : ∀ {w x₁ x₂} → prod w (prod x₁ x₂) ⇒ prod w x₁
+  strong-p₁ = pair p₁ (p₁ ∘ p₂)
+
+  strong-p₂ : ∀ {w x₁ x₂} → prod w (prod x₁ x₂) ⇒ prod w x₂
+  strong-p₂ = pair p₁ (p₂ ∘ p₂)
+
+  strong-prod-m : ∀ {w x₁ x₂ y₁ y₂} → prod w x₁ ⇒ y₁ → prod w x₂ ⇒ y₂ → prod w (prod x₁ x₂) ⇒ prod y₁ y₂
+  strong-prod-m f g = pair (f ∘ strong-p₁) (g ∘ strong-p₂)
+
+  strong-prod-m-cong : ∀ {w x₁ x₂ y₁ y₂} {f₁ f₂ : prod w x₁ ⇒ y₁} {g₁ g₂ : prod w x₂ ⇒ y₂} →
+                       f₁ ≈ f₂ → g₁ ≈ g₂ → strong-prod-m f₁ g₁ ≈ strong-prod-m f₂ g₂
+  strong-prod-m-cong f≈ g≈ = pair-cong (∘-cong f≈ ≈-refl) (∘-cong g≈ ≈-refl)
+
+  strong-p₁-natural : ∀ {w w' x₁ x₂ y₁ y₂} (u : w ⇒ w') (v₁ : x₁ ⇒ y₁) (v₂ : x₂ ⇒ y₂) →
+                      (strong-p₁ ∘ prod-m u (prod-m v₁ v₂)) ≈ (prod-m u v₁ ∘ strong-p₁)
+  strong-p₁-natural u v₁ v₂ =
+    begin
+      strong-p₁ ∘ prod-m u (prod-m v₁ v₂)
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair (p₁ ∘ prod-m u (prod-m v₁ v₂)) ((p₁ ∘ p₂) ∘ prod-m u (prod-m v₁ v₂))
+    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+      pair (u ∘ p₁) (p₁ ∘ (p₂ ∘ prod-m u (prod-m v₁ v₂)))
+    ≈⟨ pair-cong₂ (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+      pair (u ∘ p₁) (p₁ ∘ (prod-m v₁ v₂ ∘ p₂))
+    ≈˘⟨ pair-cong₂ (assoc _ _ _) ⟩
+      pair (u ∘ p₁) ((p₁ ∘ prod-m v₁ v₂) ∘ p₂)
+    ≈⟨ pair-cong₂ (∘-cong (pair-p₁ _ _) ≈-refl) ⟩
+      pair (u ∘ p₁) ((v₁ ∘ p₁) ∘ p₂)
+    ≈⟨ pair-cong₂ (assoc _ _ _) ⟩
+      pair (u ∘ p₁) (v₁ ∘ (p₁ ∘ p₂))
+    ≈˘⟨ pair-compose _ _ _ _ ⟩
+      prod-m u v₁ ∘ strong-p₁
+    ∎ where open ≈-Reasoning isEquiv
+
+  strong-p₂-natural : ∀ {w w' x₁ x₂ y₁ y₂} (u : w ⇒ w') (v₁ : x₁ ⇒ y₁) (v₂ : x₂ ⇒ y₂) →
+                      (strong-p₂ ∘ prod-m u (prod-m v₁ v₂)) ≈ (prod-m u v₂ ∘ strong-p₂)
+  strong-p₂-natural u v₁ v₂ =
+    begin
+      strong-p₂ ∘ prod-m u (prod-m v₁ v₂)
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair (p₁ ∘ prod-m u (prod-m v₁ v₂)) ((p₂ ∘ p₂) ∘ prod-m u (prod-m v₁ v₂))
+    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+      pair (u ∘ p₁) (p₂ ∘ (p₂ ∘ prod-m u (prod-m v₁ v₂)))
+    ≈⟨ pair-cong₂ (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+      pair (u ∘ p₁) (p₂ ∘ (prod-m v₁ v₂ ∘ p₂))
+    ≈˘⟨ pair-cong₂ (assoc _ _ _) ⟩
+      pair (u ∘ p₁) ((p₂ ∘ prod-m v₁ v₂) ∘ p₂)
+    ≈⟨ pair-cong₂ (∘-cong (pair-p₂ _ _) ≈-refl) ⟩
+      pair (u ∘ p₁) ((v₂ ∘ p₂) ∘ p₂)
+    ≈⟨ pair-cong₂ (assoc _ _ _) ⟩
+      pair (u ∘ p₁) (v₂ ∘ (p₂ ∘ p₂))
+    ≈˘⟨ pair-compose _ _ _ _ ⟩
+      prod-m u v₂ ∘ strong-p₂
+    ∎ where open ≈-Reasoning isEquiv
+
+  -- Componentwise naturality squares against prod-m actions assemble to a square
+  -- for the strong product action.
+  strong-prod-m-natural : ∀ {w w' x₁ x₂ y₁ y₂ x₁' x₂' y₁' y₂'}
+                          {f : prod w x₁ ⇒ y₁} {g : prod w x₂ ⇒ y₂}
+                          {f' : prod w' x₁' ⇒ y₁'} {g' : prod w' x₂' ⇒ y₂'}
+                          {u : w ⇒ w'} {v₁ : x₁ ⇒ x₁'} {v₂ : x₂ ⇒ x₂'} {s₁ : y₁ ⇒ y₁'} {s₂ : y₂ ⇒ y₂'} →
+                          (f' ∘ prod-m u v₁) ≈ (s₁ ∘ f) → (g' ∘ prod-m u v₂) ≈ (s₂ ∘ g) →
+                          (strong-prod-m f' g' ∘ prod-m u (prod-m v₁ v₂)) ≈ (prod-m s₁ s₂ ∘ strong-prod-m f g)
+  strong-prod-m-natural {f = f} {g} {f'} {g'} {u} {v₁} {v₂} {s₁} {s₂} sq₁ sq₂ =
+    begin
+      strong-prod-m f' g' ∘ prod-m u (prod-m v₁ v₂)
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair ((f' ∘ strong-p₁) ∘ prod-m u (prod-m v₁ v₂)) ((g' ∘ strong-p₂) ∘ prod-m u (prod-m v₁ v₂))
+    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      pair (f' ∘ (strong-p₁ ∘ prod-m u (prod-m v₁ v₂))) (g' ∘ (strong-p₂ ∘ prod-m u (prod-m v₁ v₂)))
+    ≈⟨ pair-cong (∘-cong ≈-refl (strong-p₁-natural _ _ _)) (∘-cong ≈-refl (strong-p₂-natural _ _ _)) ⟩
+      pair (f' ∘ (prod-m u v₁ ∘ strong-p₁)) (g' ∘ (prod-m u v₂ ∘ strong-p₂))
+    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      pair ((f' ∘ prod-m u v₁) ∘ strong-p₁) ((g' ∘ prod-m u v₂) ∘ strong-p₂)
+    ≈⟨ pair-cong (∘-cong sq₁ ≈-refl) (∘-cong sq₂ ≈-refl) ⟩
+      pair ((s₁ ∘ f) ∘ strong-p₁) ((s₂ ∘ g) ∘ strong-p₂)
+    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      pair (s₁ ∘ (f ∘ strong-p₁)) (s₂ ∘ (g ∘ strong-p₂))
+    ≈˘⟨ pair-compose _ _ _ _ ⟩
+      prod-m s₁ s₂ ∘ strong-prod-m f g
+    ∎ where open ≈-Reasoning isEquiv
+
+  strong-prod-m-post : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (s₁ : y₁ ⇒ z₁) (s₂ : y₂ ⇒ z₂)
+                       (f : prod w x₁ ⇒ y₁) (g : prod w x₂ ⇒ y₂) →
+                       (prod-m s₁ s₂ ∘ strong-prod-m f g) ≈ strong-prod-m (s₁ ∘ f) (s₂ ∘ g)
+  strong-prod-m-post s₁ s₂ f g =
+    begin
+      prod-m s₁ s₂ ∘ strong-prod-m f g
+    ≈⟨ pair-compose _ _ _ _ ⟩
+      pair (s₁ ∘ (f ∘ strong-p₁)) (s₂ ∘ (g ∘ strong-p₂))
+    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      strong-prod-m (s₁ ∘ f) (s₂ ∘ g)
+    ∎ where open ≈-Reasoning isEquiv
+
+  strong-p₁-absorb : ∀ {w x₁ x₂ y₁ y₂} (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
+                     (strong-p₁ ∘ pair p₁ (strong-prod-m h k)) ≈ pair p₁ (h ∘ strong-p₁)
+  strong-p₁-absorb h k =
+    begin
+      strong-p₁ ∘ pair p₁ (strong-prod-m h k)
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair (p₁ ∘ pair p₁ (strong-prod-m h k)) ((p₁ ∘ p₂) ∘ pair p₁ (strong-prod-m h k))
+    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+      pair p₁ (p₁ ∘ (p₂ ∘ pair p₁ (strong-prod-m h k)))
+    ≈⟨ pair-cong₂ (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+      pair p₁ (p₁ ∘ strong-prod-m h k)
+    ≈⟨ pair-cong₂ (pair-p₁ _ _) ⟩
+      pair p₁ (h ∘ strong-p₁)
+    ∎ where open ≈-Reasoning isEquiv
+
+  strong-p₂-absorb : ∀ {w x₁ x₂ y₁ y₂} (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
+                     (strong-p₂ ∘ pair p₁ (strong-prod-m h k)) ≈ pair p₁ (k ∘ strong-p₂)
+  strong-p₂-absorb h k =
+    begin
+      strong-p₂ ∘ pair p₁ (strong-prod-m h k)
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair (p₁ ∘ pair p₁ (strong-prod-m h k)) ((p₂ ∘ p₂) ∘ pair p₁ (strong-prod-m h k))
+    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
+      pair p₁ (p₂ ∘ (p₂ ∘ pair p₁ (strong-prod-m h k)))
+    ≈⟨ pair-cong₂ (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+      pair p₁ (p₂ ∘ strong-prod-m h k)
+    ≈⟨ pair-cong₂ (pair-p₂ _ _) ⟩
+      pair p₁ (k ∘ strong-p₂)
+    ∎ where open ≈-Reasoning isEquiv
+
+  -- The strong product action is functorial for co-Kleisli composition f ∘ pair p₁ g.
+  strong-prod-m-compose : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (f : prod w y₁ ⇒ z₁) (g : prod w y₂ ⇒ z₂)
+                          (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
+                          (strong-prod-m f g ∘ pair p₁ (strong-prod-m h k))
+                            ≈ strong-prod-m (f ∘ pair p₁ h) (g ∘ pair p₁ k)
+  strong-prod-m-compose f g h k =
+    begin
+      strong-prod-m f g ∘ pair p₁ (strong-prod-m h k)
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair ((f ∘ strong-p₁) ∘ pair p₁ (strong-prod-m h k)) ((g ∘ strong-p₂) ∘ pair p₁ (strong-prod-m h k))
+    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      pair (f ∘ (strong-p₁ ∘ pair p₁ (strong-prod-m h k))) (g ∘ (strong-p₂ ∘ pair p₁ (strong-prod-m h k)))
+    ≈⟨ pair-cong (∘-cong ≈-refl (strong-p₁-absorb _ _)) (∘-cong ≈-refl (strong-p₂-absorb _ _)) ⟩
+      pair (f ∘ pair p₁ (h ∘ strong-p₁)) (g ∘ pair p₁ (k ∘ strong-p₂))
+    ≈˘⟨ pair-cong (∘-cong ≈-refl (pair-cong₁ (pair-p₁ _ _))) (∘-cong ≈-refl (pair-cong₁ (pair-p₁ _ _))) ⟩
+      pair (f ∘ pair (p₁ ∘ strong-p₁) (h ∘ strong-p₁)) (g ∘ pair (p₁ ∘ strong-p₂) (k ∘ strong-p₂))
+    ≈˘⟨ pair-cong (∘-cong ≈-refl (pair-natural _ _ _)) (∘-cong ≈-refl (pair-natural _ _ _)) ⟩
+      pair (f ∘ (pair p₁ h ∘ strong-p₁)) (g ∘ (pair p₁ k ∘ strong-p₂))
+    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      strong-prod-m (f ∘ pair p₁ h) (g ∘ pair p₁ k)
+    ∎ where open ≈-Reasoning isEquiv
+
   -- functors preserve isomorphisms
   product-preserves-iso : ∀ {x₁ x₂ y₁ y₂} → Iso x₁ x₂ → Iso y₁ y₂ → Iso (prod x₁ y₁) (prod x₂ y₂)
   product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.fwd = prod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd)
