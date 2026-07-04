@@ -10,6 +10,7 @@ import example-rationals-fwd
 import example-rationals-bwd
 import example-rationals-total
 import example-intervals
+import example-intervals-mult
 
 -- Slow (several minutes each):
 -- import example-bool-cbn-1
