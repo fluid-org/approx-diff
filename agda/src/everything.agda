@@ -33,6 +33,11 @@ import matrix-embedding-semimod
 -- preserved only laxly, the chain-rule over-approximation of Boolean dependency tracking.
 import matrix-nonzero
 
+-- Further semirings awaiting worked examples: relative perturbation bounds (min-times tropical)
+-- and the rule-of-signs abstract domain.
+import semiring-Q-tropical-mult
+import semiring-sign
+
 -- Proofs from Section 5 "Definability"
 --
 -- (1) a factorisation of the embedding of the first-order semantic
