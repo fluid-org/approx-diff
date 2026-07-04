@@ -33,7 +33,7 @@ _×m_ = prod-m
 ×m-comp : ∀ {x₁ x₂ y₁ y₂ z₁ z₂}
           (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
           ((f₁ ∘ g₁) ×m (f₂ ∘ g₂)) ≈ ((f₁ ×m f₂) ∘ (g₁ ×m g₂))
-×m-comp = pair-functorial
+×m-comp = prod-m-comp
 
 -- Associativity
 ×-assoc : ∀ {x y z} → ((x × y) × z) ⇒ (x × (y × z))

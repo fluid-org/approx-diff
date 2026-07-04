@@ -180,7 +180,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         prod-m (WFam-subst P _) (WFam-subst Q _)
       ≈⟨ prod-m-cong (WFam-trans* P y₁≈z₁ x₁≈y₁) (WFam-trans* Q y₂≈z₂ x₂≈y₂) ⟩
         prod-m (WFam-subst P y₁≈z₁ ∘ WFam-subst P x₁≈y₁) (WFam-subst Q y₂≈z₂ ∘ WFam-subst Q x₂≈y₂)
-      ≈⟨ pair-functorial _ _ _ _ ⟩
+      ≈⟨ prod-m-comp _ _ _ _ ⟩
         prod-m (WFam-subst P y₁≈z₁) (WFam-subst Q y₂≈z₂) ∘ prod-m (WFam-subst P x₁≈y₁) (WFam-subst Q x₂≈y₂)
       ∎ where open ≈-Reasoning isEquiv
 
@@ -258,11 +258,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     embed-fam-natural (P Poly.× Q) {x₁ , y₁} {x₂ , y₂} (x₁≈x₂ , y₁≈y₂) =
       begin
         prod-m (embed-fam P x₂) (embed-fam Q y₂) ∘ prod-m _ _
-      ≈⟨ ≈-sym (pair-functorial _ _ _ _) ⟩
+      ≈⟨ ≈-sym (prod-m-comp _ _ _ _) ⟩
         prod-m (embed-fam P x₂ ∘ _) (embed-fam Q y₂ ∘ _)
       ≈⟨ prod-m-cong (embed-fam-natural P x₁≈x₂) (embed-fam-natural Q y₁≈y₂) ⟩
         prod-m (WFam-subst P (embed-≈ P x₁≈x₂) ∘ embed-fam P x₁) (WFam-subst Q (embed-≈ Q y₁≈y₂) ∘ embed-fam Q y₁)
-      ≈⟨ pair-functorial _ _ _ _ ⟩
+      ≈⟨ prod-m-comp _ _ _ _ ⟩
         prod-m (WFam-subst P (embed-≈ P x₁≈x₂)) (WFam-subst Q (embed-≈ Q y₁≈y₂)) ∘ prod-m (embed-fam P x₁) (embed-fam Q y₁)
       ∎ where open ≈-Reasoning isEquiv
 
@@ -281,7 +281,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     embed-unembed-fam-id (P Poly.+ Q')  (inj₁ x) = embed-unembed-fam-id P x
     embed-unembed-fam-id (P Poly.+ Q')  (inj₂ y) = embed-unembed-fam-id Q' y
     embed-unembed-fam-id (P Poly.× Q')  (x , y)  =
-      ≈-trans (≈-sym (pair-functorial _ _ _ _))
+      ≈-trans (≈-sym (prod-m-comp _ _ _ _))
                      (prod-m-cong (embed-unembed-fam-id P x) (embed-unembed-fam-id Q' y))
 
     inF-mor : Mor (fobj Q WObj) WObj

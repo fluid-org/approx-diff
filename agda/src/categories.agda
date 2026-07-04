@@ -483,22 +483,6 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       prod-m f₁ f₂ ∘ pair (g₁ ∘ p₁) (g₂ ∘ p₂)
     ∎ where open ≈-Reasoning isEquiv
 
-  pair-functorial : ∀ {x₁ x₂ y₁ y₂ z₁ z₂} (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
-    prod-m (f₁ ∘ g₁) (f₂ ∘ g₂) ≈ (prod-m f₁ f₂ ∘ prod-m g₁ g₂)
-  pair-functorial f₁ f₂ g₁ g₂ =
-    begin
-      pair ((f₁ ∘ g₁) ∘ p₁) ((f₂ ∘ g₂) ∘ p₂)
-    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      pair (f₁ ∘ (g₁ ∘ p₁)) (f₂ ∘ (g₂ ∘ p₂))
-    ≈⟨ ≈-sym (pair-cong (∘-cong ≈-refl (pair-p₁ _ _)) (∘-cong ≈-refl (pair-p₂ _ _))) ⟩
-      pair (f₁ ∘ (p₁ ∘ pair (g₁ ∘ p₁) (g₂ ∘ p₂))) (f₂ ∘ (p₂ ∘ pair (g₁ ∘ p₁) (g₂ ∘ p₂)))
-    ≈⟨ ≈-sym (pair-cong (assoc _ _ _) (assoc _ _ _)) ⟩
-      pair ((f₁ ∘ p₁) ∘ pair (g₁ ∘ p₁) (g₂ ∘ p₂)) ((f₂ ∘ p₂) ∘ pair (g₁ ∘ p₁) (g₂ ∘ p₂))
-    ≈⟨ ≈-sym (pair-natural _ _ _) ⟩
-      pair (f₁ ∘ p₁) (f₂ ∘ p₂) ∘ pair (g₁ ∘ p₁) (g₂ ∘ p₂)
-    ∎
-    where open ≈-Reasoning isEquiv
-
   prod-m-cong : ∀ {x₁ x₂ y₁ y₂} {f₁ f₂ : x₁ ⇒ y₁} {g₁ g₂ : x₂ ⇒ y₂} →
                 f₁ ≈ f₂ → g₁ ≈ g₂ → prod-m f₁ g₁ ≈ prod-m f₂ g₂
   prod-m-cong f₁≈f₂ g₁≈g₂ =
@@ -941,7 +925,7 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
       lambda (eval ∘ prod-m (lambda g ∘ f) (id _))
     ≈˘⟨ lambda-cong (∘-cong ≈-refl (prod-m-cong ≈-refl id-left)) ⟩
       lambda (eval ∘ prod-m (lambda g ∘ f) (id _ ∘ id _))
-    ≈⟨ lambda-cong (∘-cong ≈-refl (pair-functorial (lambda g) (id _) f (id _))) ⟩
+    ≈⟨ lambda-cong (∘-cong ≈-refl (prod-m-comp (lambda g) (id _) f (id _))) ⟩
       lambda (eval ∘ (prod-m (lambda g) (id _) ∘ prod-m f (id _)))
     ≈˘⟨ lambda-cong (assoc _ _ _) ⟩
       lambda ((eval ∘ prod-m (lambda g) (id _)) ∘ prod-m f (id _))
@@ -975,7 +959,7 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
       lambda ((g₁ ∘ g₂) ∘ (eval ∘ (prod-m (id _) (f₁ ∘ f₂))))
     ≈˘⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong id-left ≈-refl))) ⟩
       lambda ((g₁ ∘ g₂) ∘ (eval ∘ (prod-m (id _ ∘ id _) (f₁ ∘ f₂))))
-    ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (pair-functorial _ _ _ _))) ⟩
+    ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-comp _ _ _ _))) ⟩
       lambda ((g₁ ∘ g₂) ∘ (eval ∘ (prod-m (id _) f₁ ∘ prod-m (id _) f₂)))
     ≈⟨ lambda-cong (assoc _ _ _) ⟩
       lambda (g₁ ∘ (g₂ ∘ (eval ∘ (prod-m (id _) f₁ ∘ prod-m (id _) f₂))))
@@ -987,11 +971,11 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
       lambda (g₁ ∘ ((eval ∘ prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (id _)) ∘ prod-m (id _) f₂))
     ≈⟨ lambda-cong (∘-cong ≈-refl (assoc _ _ _)) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (id _) ∘ prod-m (id _) f₂)))
-    ≈˘⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (pair-functorial _ _ _ _))) ⟩
+    ≈˘⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-comp _ _ _ _))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁)) ∘ id _) (id _ ∘ f₂))))
     ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong id-swap' id-swap))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (id _ ∘ lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (f₂ ∘ id _))))
-    ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (pair-functorial _ _ _ _))) ⟩
+    ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-comp _ _ _ _))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (id _) f₂ ∘ prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (id _))))
     ≈˘⟨ lambda-cong (∘-cong ≈-refl (assoc _ _ _)) ⟩
       lambda (g₁ ∘ ((eval ∘ prod-m (id _) f₂) ∘ prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (id _)))

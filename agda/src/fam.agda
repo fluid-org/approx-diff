@@ -519,7 +519,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         prod-m P (X .fam .subst _) (Y .fam .subst _)
       ≈⟨ prod-m-cong P (X .fam .trans* _ _) (Y .fam .trans* _ _) ⟩
         prod-m P (X .fam .subst _ ∘ X .fam .subst _) (Y .fam .subst _ ∘ Y .fam .subst _)
-      ≈⟨ pair-functorial P _ _ _ _ ⟩
+      ≈⟨ prod-m-comp P _ _ _ _ ⟩
         prod-m P (X .fam .subst _) (Y .fam .subst _) ∘ prod-m P (X .fam .subst _) (Y .fam .subst _)
       ∎ where open ≈-Reasoning isEquiv
 
