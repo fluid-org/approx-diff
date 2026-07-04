@@ -652,11 +652,11 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     ∎ where open ≈-Reasoning isEquiv
 
   -- The strong product action is functorial for co-Kleisli composition f ∘ pair p₁ g.
-  strong-prod-m-compose : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (f : prod w y₁ ⇒ z₁) (g : prod w y₂ ⇒ z₂)
+  strong-prod-m-comp : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (f : prod w y₁ ⇒ z₁) (g : prod w y₂ ⇒ z₂)
                           (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
                           (strong-prod-m f g ∘ pair p₁ (strong-prod-m h k))
                             ≈ strong-prod-m (f ∘ pair p₁ h) (g ∘ pair p₁ k)
-  strong-prod-m-compose f g h k =
+  strong-prod-m-comp f g h k =
     begin
       strong-prod-m f g ∘ pair p₁ (strong-prod-m h k)
     ≈⟨ pair-natural _ _ _ ⟩

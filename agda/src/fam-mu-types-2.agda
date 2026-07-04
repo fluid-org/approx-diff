@@ -261,7 +261,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   -- The morphism is first-order data: `base` carries the leaf maps (applied only at
   -- leaves), `bind` records one binder. So `reindex`'s recursive calls are syntactically
   -- direct and structurally terminating — no closure, no fuel.
-  module Reidx {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
+  module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     private
       module TA = Tree δA
       module TB = Tree δB
@@ -279,7 +279,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     -- Index-only reindex: the index action of a context morphism, with no fibre data.
     -- Carries both `MorD`'s index side (via `erase` below) and the fusion morphisms
-    -- (`combine`), whose Γ-dependent fibre action lives externally in `FReidx`.
+    -- (`combine`), whose Γ-dependent fibre action lives externally in `FReindex`.
     data IMorD : ∀ {k} → (Fin k → Fin nA ⊎ Sort nA) → (Fin k → Fin nB ⊎ Sort nB) →
                  Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
       ibase : ∀ {k} {ρA ρB} (f : ∀ v → TA.El (ρA v) → TB.El (ρB v))
@@ -374,34 +374,34 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     -- The fibre reindex commutes with subst (naturality).
     mutual
-      reindex-fam-nat : ∀ {j} (R : Poly j) {ηA ηB} (md : MorD ηA ηB)
+      reindex-fam-natural : ∀ {j} (R : Poly j) {ηA ηB} (md : MorD ηA ηB)
                         {a a' : TA.⟦ R ⟧shape ηA} (p : TA.shape≈ R ηA a a') →
                         (reindex-fam R md {a'} ∘ TA.fib-shape-subst R ηA p)
                           ≈ (TB.fib-shape-subst R ηB (reindex-shape-resp R md p) ∘ reindex-fam R md {a})
-      reindex-fam-nat (const A) md p = ≈-trans id-left (≈-sym id-right)
-      reindex-fam-nat (var v)   md {a} {a'} p = apply-fam-nat md v {a} {a'} p
-      reindex-fam-nat (P + Q) md {inj₁ a} {inj₁ a'} p = reindex-fam-nat P md p
-      reindex-fam-nat (P + Q) md {inj₂ b} {inj₂ b'} p = reindex-fam-nat Q md p
-      reindex-fam-nat (P × Q) md {a , b} {a' , b'} (p₁ , p₂) =
+      reindex-fam-natural (const A) md p = ≈-trans id-left (≈-sym id-right)
+      reindex-fam-natural (var v)   md {a} {a'} p = apply-fam-natural md v {a} {a'} p
+      reindex-fam-natural (P + Q) md {inj₁ a} {inj₁ a'} p = reindex-fam-natural P md p
+      reindex-fam-natural (P + Q) md {inj₂ b} {inj₂ b'} p = reindex-fam-natural Q md p
+      reindex-fam-natural (P × Q) md {a , b} {a' , b'} (p₁ , p₂) =
         ≈-trans (≈-sym (prod-m-comp _ _ _ _))
-        (≈-trans (prod-m-cong (reindex-fam-nat P md p₁) (reindex-fam-nat Q md p₂))
+        (≈-trans (prod-m-cong (reindex-fam-natural P md p₁) (reindex-fam-natural Q md p₂))
                  (prod-m-comp _ _ _ _))
-      reindex-fam-nat (μ Q') md {t} {t'} p = reindex-fam-W-nat md {t} {t'} p
+      reindex-fam-natural (μ Q') md {t} {t'} p = reindex-fam-W-natural md {t} {t'} p
 
-      reindex-fam-W-nat : ∀ {k} {Q : Poly (suc k)} {ρA ρB} (md : MorD ρA ρB)
+      reindex-fam-W-natural : ∀ {k} {Q : Poly (suc k)} {ρA ρB} (md : MorD ρA ρB)
                           {t t' : TA.W Q ρA} (p : TA.W-≈ t t') →
                           (reindex-fam-W md {t'} ∘ TA.fib-subst {x = t} {y = t'} p)
                             ≈ (TB.fib-subst {x = reindex md t} {y = reindex md t'}
                                             (reindex-resp md {t} {t'} p) ∘ reindex-fam-W md {t})
-      reindex-fam-W-nat {Q = Q} md {TA.sup x} {TA.sup y} p = reindex-fam-nat Q (bind Q md) {x} {y} p
+      reindex-fam-W-natural {Q = Q} md {TA.sup x} {TA.sup y} p = reindex-fam-natural Q (bind Q md) {x} {y} p
 
-      apply-fam-nat : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) {a a'}
+      apply-fam-natural : ∀ {k} {ρA ρB} (md : MorD {k} ρA ρB) (v : Fin k) {a a'}
                       (p : TA.elEq (ρA v) a a') →
                       (apply-fam md v a' ∘ TA.fib-el-subst (ρA v) p)
                         ≈ (TB.fib-el-subst (ρB v) (apply-resp md v p) ∘ apply-fam md v a)
-      apply-fam-nat (base _ _ _ ffam-nat) v p = ffam-nat v p
-      apply-fam-nat (bind Q md) Fin.zero    {a} {a'} p = reindex-fam-W-nat md {a} {a'} p
-      apply-fam-nat (bind Q md) (Fin.suc v) p = apply-fam-nat md v p
+      apply-fam-natural (base _ _ _ ffam-natural) v p = ffam-natural v p
+      apply-fam-natural (bind Q md) Fin.zero    {a} {a'} p = reindex-fam-W-natural md {a} {a'} p
+      apply-fam-natural (bind Q md) (Fin.suc v) p = apply-fam-natural md v p
 
   μObj : ∀ {n} → Poly (suc n) → (Fin n → Obj) → Obj
   μObj P δ .idx = WSetoid δ P (λ i → inj₁ i)
@@ -424,17 +424,17 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       -- the recursion slot carrying the fold itself (inlined, so every call is structural).
       mutual
         fold-idx : Γ .idx .Carrier → Tδ.W P (λ i → inj₁ i) → A .idx .Carrier
-        fold-idx γ (Tδ.sup x) = alg .idxf .PS._⇒_.func (γ , foldShape-idx P γ x)
+        fold-idx γ (Tδ.sup x) = alg .idxf .PS._⇒_.func (γ , fold-shape-idx P γ x)
 
-        foldShape-idx : (Q : Poly (suc n)) → Γ .idx .Carrier → Tδ.⟦ Q ⟧shape (η₀ P) →
+        fold-shape-idx : (Q : Poly (suc n)) → Γ .idx .Carrier → Tδ.⟦ Q ⟧shape (η₀ P) →
                         fobj μObj Q (extend δ A) .idx .Carrier
-        foldShape-idx (const A')        γ a = a
-        foldShape-idx (var Fin.zero)    γ t = fold-idx γ t
-        foldShape-idx (var (Fin.suc i)) γ a = a
-        foldShape-idx (Q₁ + Q₂) γ (inj₁ x) = inj₁ (foldShape-idx Q₁ γ x)
-        foldShape-idx (Q₁ + Q₂) γ (inj₂ y) = inj₂ (foldShape-idx Q₂ γ y)
-        foldShape-idx (Q₁ × Q₂) γ (x , y) = foldShape-idx Q₁ γ x , foldShape-idx Q₂ γ y
-        foldShape-idx (μ Q')    γ t = fold-reindex γ fbase t
+        fold-shape-idx (const A')        γ a = a
+        fold-shape-idx (var Fin.zero)    γ t = fold-idx γ t
+        fold-shape-idx (var (Fin.suc i)) γ a = a
+        fold-shape-idx (Q₁ + Q₂) γ (inj₁ x) = inj₁ (fold-shape-idx Q₁ γ x)
+        fold-shape-idx (Q₁ + Q₂) γ (inj₂ y) = inj₂ (fold-shape-idx Q₂ γ y)
+        fold-shape-idx (Q₁ × Q₂) γ (x , y) = fold-shape-idx Q₁ γ x , fold-shape-idx Q₂ γ y
+        fold-shape-idx (μ Q')    γ t = fold-reindex γ fbase t
 
         fold-reindex : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ') →
                        Tδ.W Q ρ → TA'.W Q ρ'
@@ -460,19 +460,19 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       mutual
         fold-idx-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
                         _≈s_ (A .idx) (fold-idx γ t) (fold-idx γ' t')
-        fold-idx-resp γ≈ {Tδ.sup x} {Tδ.sup y} p = alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , foldShape-idx-resp P γ≈ p)
+        fold-idx-resp γ≈ {Tδ.sup x} {Tδ.sup y} p = alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , fold-shape-idx-resp P γ≈ p)
 
-        foldShape-idx-resp : (Q : Poly (suc n)) → ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {x x'}
+        fold-shape-idx-resp : (Q : Poly (suc n)) → ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {x x'}
                              (p : Tδ.shape≈ Q (η₀ P) x x') →
-                             _≈s_ (fobj μObj Q (extend δ A) .idx) (foldShape-idx Q γ x) (foldShape-idx Q γ' x')
-        foldShape-idx-resp (const A')        γ≈ p = p
-        foldShape-idx-resp (var Fin.zero)    γ≈ {x} {x'} p = fold-idx-resp γ≈ {x} {x'} p
-        foldShape-idx-resp (var (Fin.suc i)) γ≈ p = p
-        foldShape-idx-resp (Q₁ + Q₂) γ≈ {inj₁ _} {inj₁ _} p = foldShape-idx-resp Q₁ γ≈ p
-        foldShape-idx-resp (Q₁ + Q₂) γ≈ {inj₂ _} {inj₂ _} p = foldShape-idx-resp Q₂ γ≈ p
-        foldShape-idx-resp (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (p₁ , p₂) =
-          foldShape-idx-resp Q₁ γ≈ p₁ , foldShape-idx-resp Q₂ γ≈ p₂
-        foldShape-idx-resp (μ Q')    γ≈ {x} {x'} p = fold-reindex-resp γ≈ fbase {x} {x'} p
+                             _≈s_ (fobj μObj Q (extend δ A) .idx) (fold-shape-idx Q γ x) (fold-shape-idx Q γ' x')
+        fold-shape-idx-resp (const A')        γ≈ p = p
+        fold-shape-idx-resp (var Fin.zero)    γ≈ {x} {x'} p = fold-idx-resp γ≈ {x} {x'} p
+        fold-shape-idx-resp (var (Fin.suc i)) γ≈ p = p
+        fold-shape-idx-resp (Q₁ + Q₂) γ≈ {inj₁ _} {inj₁ _} p = fold-shape-idx-resp Q₁ γ≈ p
+        fold-shape-idx-resp (Q₁ + Q₂) γ≈ {inj₂ _} {inj₂ _} p = fold-shape-idx-resp Q₂ γ≈ p
+        fold-shape-idx-resp (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (p₁ , p₂) =
+          fold-shape-idx-resp Q₁ γ≈ p₁ , fold-shape-idx-resp Q₂ γ≈ p₂
+        fold-shape-idx-resp (μ Q')    γ≈ {x} {x'} p = fold-reindex-resp γ≈ fbase {x} {x'} p
 
         fold-reindex-resp : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') (fm : FMor ρ ρ')
                             {t t' : Tδ.W Q ρ} (p : Tδ.W-≈ t t') →
@@ -503,17 +503,17 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         fold-fam : (γ : Γ .idx .Carrier) (t : Tδ.W P (λ i → inj₁ i)) →
                    prod (Γ .fam .fm γ) (Tδ.fib t) ⇒ A .fam .fm (fold-idx γ t)
         fold-fam γ (Tδ.sup x) =
-          alg .famf ._⇒f_.transf (γ , foldShape-idx P γ x) ∘ pair p₁ (foldShape-fam P γ x)
+          alg .famf ._⇒f_.transf (γ , fold-shape-idx P γ x) ∘ pair p₁ (fold-shape-fam P γ x)
 
-        foldShape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ Q ⟧shape (η₀ P)) →
-                        prod (Γ .fam .fm γ) (Tδ.fib-shape Q (η₀ P) x) ⇒ fobj μObj Q (extend δ A) .fam .fm (foldShape-idx Q γ x)
-        foldShape-fam (const A')        γ a = p₂
-        foldShape-fam (var Fin.zero)    γ t = fold-fam γ t
-        foldShape-fam (var (Fin.suc i)) γ a = p₂
-        foldShape-fam (Q₁ + Q₂) γ (inj₁ x) = foldShape-fam Q₁ γ x
-        foldShape-fam (Q₁ + Q₂) γ (inj₂ y) = foldShape-fam Q₂ γ y
-        foldShape-fam (Q₁ × Q₂) γ (x , y) = strong-prod-m (foldShape-fam Q₁ γ x) (foldShape-fam Q₂ γ y)
-        foldShape-fam (μ Q')    γ t = fold-reindex-fam γ fbase t
+        fold-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ Q ⟧shape (η₀ P)) →
+                        prod (Γ .fam .fm γ) (Tδ.fib-shape Q (η₀ P) x) ⇒ fobj μObj Q (extend δ A) .fam .fm (fold-shape-idx Q γ x)
+        fold-shape-fam (const A')        γ a = p₂
+        fold-shape-fam (var Fin.zero)    γ t = fold-fam γ t
+        fold-shape-fam (var (Fin.suc i)) γ a = p₂
+        fold-shape-fam (Q₁ + Q₂) γ (inj₁ x) = fold-shape-fam Q₁ γ x
+        fold-shape-fam (Q₁ + Q₂) γ (inj₂ y) = fold-shape-fam Q₂ γ y
+        fold-shape-fam (Q₁ × Q₂) γ (x , y) = strong-prod-m (fold-shape-fam Q₁ γ x) (fold-shape-fam Q₂ γ y)
+        fold-shape-fam (μ Q')    γ t = fold-reindex-fam γ fbase t
 
         fold-reindex-fam : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} (γ : Γ .idx .Carrier) (md : FMor ρ ρ') (t : Tδ.W Q ρ) →
                            prod (Γ .fam .fm γ) (Tδ.fib t) ⇒ TA'.fib (fold-reindex γ md t)
@@ -540,72 +540,72 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
       -- The fibre fold is natural: it commutes with `subst` (in both Γ and the tree).
       mutual
-        fold-fam-nat : ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {t t'} (p : Tδ.W-≈ t t') →
+        fold-fam-natural : ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {t t'} (p : Tδ.W-≈ t t') →
                        (fold-fam γ₂ t' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-subst {x = t} {y = t'} p))
                          ≈ (A .fam .subst (fold-idx-resp γ≈ {t} {t'} p) ∘ fold-fam γ₁ t)
-        fold-fam-nat {γ₁} {γ₂} γ≈ {Tδ.sup x} {Tδ.sup y} p =
+        fold-fam-natural {γ₁} {γ₂} γ≈ {Tδ.sup x} {Tδ.sup y} p =
           ≈-trans (assoc _ _ _)
           (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
-          (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (foldShape-fam-nat P γ≈ {x} {y} p)))
+          (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (fold-shape-fam-natural P γ≈ {x} {y} p)))
           (≈-trans (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _)))
           (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (alg .famf ._⇒f_.natural (γ≈ , foldShape-idx-resp P γ≈ {x} {y} p)) ≈-refl)
+          (≈-trans (∘-cong (alg .famf ._⇒f_.natural (γ≈ , fold-shape-idx-resp P γ≈ {x} {y} p)) ≈-refl)
                    (assoc _ _ _))))))
 
-        foldShape-fam-nat : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
+        fold-shape-fam-natural : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
                             (p : Tδ.shape≈ Q (η₀ P) x x') →
-                            (foldShape-fam Q γ₂ x' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-shape-subst Q (η₀ P) p))
-                              ≈ (fobj μObj Q (extend δ A) .fam .subst (foldShape-idx-resp Q γ≈ p) ∘ foldShape-fam Q γ₁ x)
-        foldShape-fam-nat (const A')        γ≈ p = pair-p₂ _ _
-        foldShape-fam-nat (var Fin.zero)    γ≈ {x} {x'} p = fold-fam-nat γ≈ {x} {x'} p
-        foldShape-fam-nat (var (Fin.suc i)) γ≈ p = pair-p₂ _ _
-        foldShape-fam-nat (Q₁ + Q₂) γ≈ {inj₁ _} {inj₁ _} p = foldShape-fam-nat Q₁ γ≈ p
-        foldShape-fam-nat (Q₁ + Q₂) γ≈ {inj₂ _} {inj₂ _} p = foldShape-fam-nat Q₂ γ≈ p
-        foldShape-fam-nat (Q₁ × Q₂) γ≈ {x₁ , x₂} {x₁' , x₂'} (p₁p , p₂p) =
-          strong-prod-m-natural (foldShape-fam-nat Q₁ γ≈ p₁p) (foldShape-fam-nat Q₂ γ≈ p₂p)
-        foldShape-fam-nat (μ Q')    γ≈ {x} {x'} p = fold-reindex-fam-nat γ≈ fbase {x} {x'} p
+                            (fold-shape-fam Q γ₂ x' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-shape-subst Q (η₀ P) p))
+                              ≈ (fobj μObj Q (extend δ A) .fam .subst (fold-shape-idx-resp Q γ≈ p) ∘ fold-shape-fam Q γ₁ x)
+        fold-shape-fam-natural (const A')        γ≈ p = pair-p₂ _ _
+        fold-shape-fam-natural (var Fin.zero)    γ≈ {x} {x'} p = fold-fam-natural γ≈ {x} {x'} p
+        fold-shape-fam-natural (var (Fin.suc i)) γ≈ p = pair-p₂ _ _
+        fold-shape-fam-natural (Q₁ + Q₂) γ≈ {inj₁ _} {inj₁ _} p = fold-shape-fam-natural Q₁ γ≈ p
+        fold-shape-fam-natural (Q₁ + Q₂) γ≈ {inj₂ _} {inj₂ _} p = fold-shape-fam-natural Q₂ γ≈ p
+        fold-shape-fam-natural (Q₁ × Q₂) γ≈ {x₁ , x₂} {x₁' , x₂'} (p₁p , p₂p) =
+          strong-prod-m-natural (fold-shape-fam-natural Q₁ γ≈ p₁p) (fold-shape-fam-natural Q₂ γ≈ p₂p)
+        fold-shape-fam-natural (μ Q')    γ≈ {x} {x'} p = fold-reindex-fam-natural γ≈ fbase {x} {x'} p
 
-        fold-reindex-fam-nat : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂)
+        fold-reindex-fam-natural : ∀ {k} {Q : Poly (suc k)} {ρ ρ'} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂)
                                (md : FMor ρ ρ') {t t' : Tδ.W Q ρ} (p : Tδ.W-≈ t t') →
                                (fold-reindex-fam γ₂ md t' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-subst {x = t} {y = t'} p))
                                  ≈ (TA'.fib-subst {x = fold-reindex γ₁ md t} {y = fold-reindex γ₂ md t'}
                                                   (fold-reindex-resp γ≈ md {t} {t'} p) ∘ fold-reindex-fam γ₁ md t)
-        fold-reindex-fam-nat {Q = Q} γ≈ md {Tδ.sup x} {Tδ.sup y} p = fold-reindex-shape-fam-nat γ≈ Q (fbind Q md) {x} {y} p
+        fold-reindex-fam-natural {Q = Q} γ≈ md {Tδ.sup x} {Tδ.sup y} p = fold-reindex-shape-fam-natural γ≈ Q (fbind Q md) {x} {y} p
 
-        fold-reindex-shape-fam-nat : ∀ {j} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) (R : Poly j) {ηA ηB} (md : FMor ηA ηB)
+        fold-reindex-shape-fam-natural : ∀ {j} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) (R : Poly j) {ηA ηB} (md : FMor ηA ηB)
                                      {a a' : Tδ.⟦ R ⟧shape ηA} (p : Tδ.shape≈ R ηA a a') →
                                      (fold-reindex-shape-fam γ₂ R md a' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-shape-subst R ηA p))
                                        ≈ (TA'.fib-shape-subst R ηB (fold-reindex-shape-resp γ≈ R md p) ∘ fold-reindex-shape-fam γ₁ R md a)
-        fold-reindex-shape-fam-nat γ≈ (const A') md p = pair-p₂ _ _
-        fold-reindex-shape-fam-nat γ≈ (var v)    md p = fold-apply-fam-nat γ≈ md v p
-        fold-reindex-shape-fam-nat γ≈ (P' + Q') md {inj₁ _} {inj₁ _} p = fold-reindex-shape-fam-nat γ≈ P' md p
-        fold-reindex-shape-fam-nat γ≈ (P' + Q') md {inj₂ _} {inj₂ _} p = fold-reindex-shape-fam-nat γ≈ Q' md p
-        fold-reindex-shape-fam-nat γ≈ (P' × Q') md {a₁ , a₂} {a₁' , a₂'} (p₁p , p₂p) =
-          strong-prod-m-natural (fold-reindex-shape-fam-nat γ≈ P' md p₁p) (fold-reindex-shape-fam-nat γ≈ Q' md p₂p)
-        fold-reindex-shape-fam-nat γ≈ (μ Q'')   md {a} {a'} p = fold-reindex-fam-nat γ≈ md {a} {a'} p
+        fold-reindex-shape-fam-natural γ≈ (const A') md p = pair-p₂ _ _
+        fold-reindex-shape-fam-natural γ≈ (var v)    md p = fold-apply-fam-natural γ≈ md v p
+        fold-reindex-shape-fam-natural γ≈ (P' + Q') md {inj₁ _} {inj₁ _} p = fold-reindex-shape-fam-natural γ≈ P' md p
+        fold-reindex-shape-fam-natural γ≈ (P' + Q') md {inj₂ _} {inj₂ _} p = fold-reindex-shape-fam-natural γ≈ Q' md p
+        fold-reindex-shape-fam-natural γ≈ (P' × Q') md {a₁ , a₂} {a₁' , a₂'} (p₁p , p₂p) =
+          strong-prod-m-natural (fold-reindex-shape-fam-natural γ≈ P' md p₁p) (fold-reindex-shape-fam-natural γ≈ Q' md p₂p)
+        fold-reindex-shape-fam-natural γ≈ (μ Q'')   md {a} {a'} p = fold-reindex-fam-natural γ≈ md {a} {a'} p
 
-        fold-apply-fam-nat : ∀ {k} {ρ ρ'} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) (md : FMor ρ ρ') (v : Fin k)
+        fold-apply-fam-natural : ∀ {k} {ρ ρ'} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) (md : FMor ρ ρ') (v : Fin k)
                              {a a'} (p : Tδ.elEq (ρ v) a a') →
                              (fold-apply-fam γ₂ md v a' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-el-subst (ρ v) p))
                                ≈ (TA'.fib-el-subst (ρ' v) (fold-apply-resp γ≈ md v p) ∘ fold-apply-fam γ₁ md v a)
-        fold-apply-fam-nat γ≈ fbase        Fin.zero    {a} {a'} p = fold-fam-nat γ≈ {a} {a'} p
-        fold-apply-fam-nat γ≈ fbase        (Fin.suc i) p = pair-p₂ _ _
-        fold-apply-fam-nat γ≈ (fbind Q md) Fin.zero    {a} {a'} p = fold-reindex-fam-nat γ≈ md {a} {a'} p
-        fold-apply-fam-nat γ≈ (fbind Q md) (Fin.suc v) p = fold-apply-fam-nat γ≈ md v p
+        fold-apply-fam-natural γ≈ fbase        Fin.zero    {a} {a'} p = fold-fam-natural γ≈ {a} {a'} p
+        fold-apply-fam-natural γ≈ fbase        (Fin.suc i) p = pair-p₂ _ _
+        fold-apply-fam-natural γ≈ (fbind Q md) Fin.zero    {a} {a'} p = fold-reindex-fam-natural γ≈ md {a} {a'} p
+        fold-apply-fam-natural γ≈ (fbind Q md) (Fin.suc v) p = fold-apply-fam-natural γ≈ md v p
 
       foldMor : Mor (Fam𝒞-P.prod Γ (μObj P δ)) A
       foldMor .idxf .PS._⇒_.func (γ , t) = fold-idx γ t
       foldMor .idxf .PS._⇒_.func-resp-≈ {γ , t} {γ' , t'} (γ≈ , t≈) = fold-idx-resp γ≈ {t} {t'} t≈
       foldMor .famf ._⇒f_.transf (γ , t) = fold-fam γ t
-      foldMor .famf ._⇒f_.natural {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) = fold-fam-nat γ≈ {t₁} {t₂} t≈
+      foldMor .famf ._⇒f_.natural {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) = fold-fam-natural γ≈ {t₁} {t₂} t≈
 
   -- α's reconstruction machinery, lifted to a named module so the β/η laws can
-  -- reference embed-idx / embed-fam / mor₀ (the fold and Reidx are already named).
+  -- reference embed-idx / embed-fam / mor₀ (the fold and Reindex are already named).
   module AlphaDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       δ' = extend δ (μObj P δ)
       module Tδ = Tree δ
       module TX = Tree δ'
-      module R  = Reidx δ' δ
+      module R  = Reindex δ' δ
       -- Bridge `fobj`'s native structure to our `⟦_⟧shape` (identity at leaves and μ).
       embed-idx : (Q : Poly (suc n)) → fobj μObj Q δ' .idx .Carrier → TX.⟦ Q ⟧shape (λ v → inj₁ v)
       embed-idx (const A) a = a
@@ -631,12 +631,12 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       m₀-fam : ∀ v (a : TX.El (inj₁ v)) → TX.fib-el (inj₁ v) a ⇒ Tδ.fib-el (η₀ P v) (m₀ v a)
       m₀-fam Fin.zero    a = id _
       m₀-fam (Fin.suc i) a = id _
-      m₀-fam-nat : ∀ v {a a'} (p : TX.elEq (inj₁ v) a a') →
+      m₀-fam-natural : ∀ v {a a'} (p : TX.elEq (inj₁ v) a a') →
                    (m₀-fam v a' ∘ TX.fib-el-subst (inj₁ v) p) ≈ (Tδ.fib-el-subst (η₀ P v) (m₀-resp v p) ∘ m₀-fam v a)
-      m₀-fam-nat Fin.zero    p = ≈-trans id-left (≈-sym id-right)
-      m₀-fam-nat (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
+      m₀-fam-natural Fin.zero    p = ≈-trans id-left (≈-sym id-right)
+      m₀-fam-natural (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
       mor₀ : R.MorD (λ v → inj₁ v) (η₀ P)
-      mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-nat
+      mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-natural
       -- Fibre bridge: `fobj`'s fibre to our `fib-shape` (identity at leaves, products at ×).
       embed-fam : (Q : Poly (suc n)) (x : fobj μObj Q δ' .idx .Carrier) →
                   fobj μObj Q δ' .fam .fm x ⇒ TX.fib-shape Q (λ v → inj₁ v) (embed-idx Q x)
@@ -646,26 +646,26 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       embed-fam (Q₁ + Q₂) (inj₂ y) = embed-fam Q₂ y
       embed-fam (Q₁ × Q₂) (x , y) = prod-m (embed-fam Q₁ x) (embed-fam Q₂ y)
       embed-fam (μ Q')    t = id _
-      embed-fam-natural : (Q : Poly (suc n)) {x y : fobj μObj Q δ' .idx .Carrier} (e : _≈s_ (fobj μObj Q δ' .idx) x y) →
+      embed-fam-naturalural : (Q : Poly (suc n)) {x y : fobj μObj Q δ' .idx .Carrier} (e : _≈s_ (fobj μObj Q δ' .idx) x y) →
                           (embed-fam Q y ∘ fobj μObj Q δ' .fam .subst e)
                             ≈ (TX.fib-shape-subst Q (λ v → inj₁ v) (embed-idx-resp Q e) ∘ embed-fam Q x)
-      embed-fam-natural (const A) e = ≈-trans id-left (≈-sym id-right)
-      embed-fam-natural (var v)   e = ≈-trans id-left (≈-sym id-right)
-      embed-fam-natural (Q₁ + Q₂) {inj₁ _} {inj₁ _} e = embed-fam-natural Q₁ e
-      embed-fam-natural (Q₁ + Q₂) {inj₂ _} {inj₂ _} e = embed-fam-natural Q₂ e
-      embed-fam-natural (Q₁ × Q₂) {_ , _} {_ , _} (e₁ , e₂) =
+      embed-fam-naturalural (const A) e = ≈-trans id-left (≈-sym id-right)
+      embed-fam-naturalural (var v)   e = ≈-trans id-left (≈-sym id-right)
+      embed-fam-naturalural (Q₁ + Q₂) {inj₁ _} {inj₁ _} e = embed-fam-naturalural Q₁ e
+      embed-fam-naturalural (Q₁ + Q₂) {inj₂ _} {inj₂ _} e = embed-fam-naturalural Q₂ e
+      embed-fam-naturalural (Q₁ × Q₂) {_ , _} {_ , _} (e₁ , e₂) =
         ≈-trans (≈-sym (prod-m-comp _ _ _ _))
-        (≈-trans (prod-m-cong (embed-fam-natural Q₁ e₁) (embed-fam-natural Q₂ e₂)) (prod-m-comp _ _ _ _))
-      embed-fam-natural (μ Q')    e = ≈-trans id-left (≈-sym id-right)
+        (≈-trans (prod-m-cong (embed-fam-naturalural Q₁ e₁) (embed-fam-naturalural Q₂ e₂)) (prod-m-comp _ _ _ _))
+      embed-fam-naturalural (μ Q')    e = ≈-trans id-left (≈-sym id-right)
       αmor : Mor (fobj μObj P δ') (μObj P δ)
       αmor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape P mor₀ (embed-idx P i))
       αmor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp P mor₀ (embed-idx-resp P x≈y)
       αmor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
       αmor .famf ._⇒f_.natural e =
         ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong₂ (embed-fam-natural P e))
+        (≈-trans (∘-cong₂ (embed-fam-naturalural P e))
         (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong₁ (R.reindex-fam-nat P mor₀ (embed-idx-resp P e)))
+        (≈-trans (∘-cong₁ (R.reindex-fam-natural P mor₀ (embed-idx-resp P e)))
                  (assoc _ _ _))))
 
   hasMu : HasMu
@@ -676,11 +676,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
   -- Fibre reindex over an index-only reindex `cmb`, driven by an EXTERNAL per-variable
   -- action `act`: a fold's fibre action is Γ-dependent (`prod Γ -` on the source), so it
   -- cannot live in a reindex morphism and is carried separately. The ambient Γ-fibre is `G`.
-  module FReidx {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj} (G : obj) where
+  module FReindex {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj} (G : obj) where
     private
       module TA = Tree δA
       module TB = Tree δB
-    open Reidx δA δB using (IMorD; ireindex; ireindex-shape; iapply; ibind)
+    open Reindex δA δB using (IMorD; ireindex; ireindex-shape; iapply; ibind)
 
     -- Defunctionalised action: `abase` supplies all var fibres directly (a Γ-dependent fold);
     -- `abind` extends across a binder. Data (not a function) so the recursion stays structural.
@@ -714,8 +714,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
   -- General free-family fusion: a single reindex (the collapsed double-reindex, via combine-lemma)
   -- equals the functorial map. Families sₛ/sₜ are FREE so the nested-μ recursion's family fits.
-  gen-fuse-idx : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
-                 let module Rs = Reidx sₛ sₜ in
+  fuse-idx : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
+                 let module Rs = Reindex sₛ sₜ in
                  (cmb : Γ .idx .Carrier → Rs.IMorD (λ v → inj₁ v) (λ v → inj₁ v))
                  (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
                  (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
@@ -725,8 +725,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                  _≈s_ (μObj Q sₜ .idx)
                    (Rs.ireindex (cmb γ₁) m₁)
                    (HasMu.strong-fmor hasMu (μ Q) fsk .idxf .PS._⇒_.func (γ₂ , m₂))
-  gen-fuse-shape : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
-                   let module Rs = Reidx sₛ sₜ
+  fuse-shape : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
+                   let module Rs = Reindex sₛ sₜ
                        module Ts = Tree sₛ
                        module Tt = Tree sₜ
                        module At = AlphaDef Q sₜ in
@@ -743,17 +743,17 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                      (Rs.ireindex-shape R (Rs.ibind Q (cmb γ₁)) x₁)
                      (At.R.reindex-shape R At.mor₀
                       (At.embed-idx R (HasMu.strong-fmor hasMu R (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func
-                        (γ₂ , Ft.foldShape-idx R γ₂ x₂))))
-  gen-fuse-idx Q cmb fsk corr γ≈ {Tree.sup x₁} {Tree.sup x₂} m≈ = gen-fuse-shape Q cmb fsk corr Q γ≈ {x₁} {x₂} m≈
+                        (γ₂ , Ft.fold-shape-idx R γ₂ x₂))))
+  fuse-idx Q cmb fsk corr γ≈ {Tree.sup x₁} {Tree.sup x₂} m≈ = fuse-shape Q cmb fsk corr Q γ≈ {x₁} {x₂} m≈
 
-  gen-fuse-shape Q cmb fsk corr (const A')                  γ≈ x≈ = x≈
-  gen-fuse-shape Q cmb fsk corr (var Fin.zero)              γ≈ {x₁} {x₂} x≈ = gen-fuse-idx Q cmb fsk corr γ≈ {x₁} {x₂} x≈
-  gen-fuse-shape Q cmb fsk corr (var (Fin.suc i))           γ≈ x≈ = corr i γ≈ x≈
-  gen-fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₁ _} {inj₁ _} x≈ = gen-fuse-shape Q cmb fsk corr R₁ γ≈ x≈
-  gen-fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = gen-fuse-shape Q cmb fsk corr R₂ γ≈ x≈
-  gen-fuse-shape Q cmb fsk corr (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) =
-    gen-fuse-shape Q cmb fsk corr R₁ γ≈ x≈₁ , gen-fuse-shape Q cmb fsk corr R₂ γ≈ x≈₂
-  gen-fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁} {γ₂} γ≈ {x₁} {x₂} x≈ =
+  fuse-shape Q cmb fsk corr (const A')                  γ≈ x≈ = x≈
+  fuse-shape Q cmb fsk corr (var Fin.zero)              γ≈ {x₁} {x₂} x≈ = fuse-idx Q cmb fsk corr γ≈ {x₁} {x₂} x≈
+  fuse-shape Q cmb fsk corr (var (Fin.suc i))           γ≈ x≈ = corr i γ≈ x≈
+  fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₁ _} {inj₁ _} x≈ = fuse-shape Q cmb fsk corr R₁ γ≈ x≈
+  fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = fuse-shape Q cmb fsk corr R₂ γ≈ x≈
+  fuse-shape Q cmb fsk corr (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) =
+    fuse-shape Q cmb fsk corr R₁ γ≈ x≈₁ , fuse-shape Q cmb fsk corr R₂ γ≈ x≈₂
+  fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁} {γ₂} γ≈ {x₁} {x₂} x≈ =
     Tt.W-≈-trans {x = Rs.ireindex-shape (μ R'') (Rs.ibind Q (cmb γ₁)) x₁}
                  {z = At.R.reindex-shape (μ R'') At.mor₀ (At.embed-idx (μ R'')
                         (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
@@ -767,8 +767,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       module Tt = Tree sₜ
       module Ts = Tree sₛ
       module At = AlphaDef Q sₜ
-      module Rs = Reidx sₛ sₜ
-      module Rs' = Reidx (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
+      module Rs = Reindex sₛ sₜ
+      module Rs' = Reindex (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
       module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
                     (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
       wm₁ = Ft.fold-reindex γ₁ Ft.fbase x₁
@@ -779,7 +779,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       rec : _≈s_ (μObj R'' (extend sₜ (μObj Q sₜ)) .idx)
                  (Rs'.ireindex (cmb' γ₁) wm₁)
                  (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func (γ₂ , w))
-      rec = gen-fuse-idx R'' cmb' (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
+      rec = fuse-idx R'' cmb' (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
               (λ { Fin.zero γ≈ a≈ → a≈ ; (Fin.suc j) γ≈ a≈ → corr j γ≈ a≈ })
               γ≈ {m₁ = wm₁} {m₂ = w}
               (Ft.fold-reindex-resp γ≈ Ft.fbase {x₁} {x₂} x≈)
@@ -811,7 +811,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         tele-apply (tbind S' r) Fin.zero    {z} = tele-shape (μ S') r z
         tele-apply (tbind S' r) (Fin.suc v)     = tele-apply r v
         tele-apply tbase Fin.zero    {z} =
-          gen-fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl {γ₁}) {m₁ = z} {m₂ = z}
+          fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl {γ₁}) {m₁ = z} {m₂ = z}
             (μObj Q sₛ .idx .isEquivalence .refl {z})
         tele-apply tbase (Fin.suc i) {z} = Tt.elEq-refl (inj₁ i) (Rs.iapply (cmb γ₁) i z)
 
@@ -819,13 +819,13 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                          (At.R.reindex At.mor₀ (Rs'.ireindex (cmb' γ₁) wm₁))
       telescope = tele-shape (μ R'') tbase x₁
 
-  -- Fibre analogue of `gen-fuse-idx`: the fibre reindex (via the external fold action `act`)
+  -- Fibre analogue of `fuse-idx`: the fibre reindex (via the external fold action `act`)
   -- equals the strong functorial action's fibre, transported along the index fusion.
-  -- Mirrors `gen-fuse-idx`'s interface (function `cmb`, general `corr`) so the μ-recursion can
+  -- Mirrors `fuse-idx`'s interface (function `cmb`, general `corr`) so the μ-recursion can
   -- build nested index equations, plus the fibre `act`/`corr-fam` (at the fixed `γ`).
-  gen-fuse-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
-                 let module Rs = Reidx sₛ sₜ
-                     module FR = FReidx {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
+  fuse-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
+                 let module Rs = Reindex sₛ sₜ
+                     module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
                  (cmb : Γ .idx .Carrier → Rs.IMorD (λ v → inj₁ v) (λ v → inj₁ v))
                  (act : FR.FAct (cmb γ))
                  (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
@@ -839,18 +839,18 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                  ∀ {m} →
                  Category._≈_ 𝒞
                    (μObj Q sₜ .fam .subst {x = Rs.ireindex (cmb γ) m}
-                      (gen-fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl)
+                      (fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl)
                         {m} {m} (μObj Q sₛ .idx .isEquivalence .refl {m}))
                     ∘ FR.freindex-fam act {m})
                    (HasMu.strong-fmor hasMu (μ Q) fsk .famf ._⇒f_.transf (γ , m))
-  -- Shape-level recursion for `gen-fuse-fam` (mirrors `gen-fuse-shape`): the fibre reindex of
+  -- Shape-level recursion for `fuse-fam` (mirrors `fuse-shape`): the fibre reindex of
   -- the μ-body sub-poly `R` equals the embed ∘ reindex ∘ strong ∘ fold fibre composite.
-  gen-fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
-                       let module Rs = Reidx sₛ sₜ
+  fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
+                       let module Rs = Reindex sₛ sₜ
                            module Ts = Tree sₛ
                            module Tt = Tree sₜ
                            module At = AlphaDef Q sₜ
-                           module FR = FReidx {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
+                           module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
                        (cmb : Γ .idx .Carrier → Rs.IMorD (λ v → inj₁ v) (λ v → inj₁ v))
                        (act : FR.FAct (cmb γ))
                        (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
@@ -868,37 +868,37 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                        {x : Ts.⟦ R ⟧shape (η₀ Q)} →
                        Category._≈_ 𝒞
                          (Tt.fib-shape-subst R (η₀ Q)
-                            (gen-fuse-shape Q cmb fsk corr R (Γ .idx .isEquivalence .refl)
+                            (fuse-shape Q cmb fsk corr R (Γ .idx .isEquivalence .refl)
                               (Ts.shape≈-refl R (η₀ Q) x))
                           ∘ FR.freindex-shape-fam R (FR.abind Q (cmb γ) act) {x})
                          (At.R.reindex-fam R At.mor₀
-                          ∘ (At.embed-fam R (HasMu.strong-fmor hasMu R fsk' .idxf .PS._⇒_.func (γ , Ft.foldShape-idx R γ x))
-                             ∘ (HasMu.strong-fmor hasMu R fsk' .famf ._⇒f_.transf (γ , Ft.foldShape-idx R γ x)
-                                ∘ pair p₁ (Ft.foldShape-fam R γ x))))
+                          ∘ (At.embed-fam R (HasMu.strong-fmor hasMu R fsk' .idxf .PS._⇒_.func (γ , Ft.fold-shape-idx R γ x))
+                             ∘ (HasMu.strong-fmor hasMu R fsk' .famf ._⇒f_.transf (γ , Ft.fold-shape-idx R γ x)
+                                ∘ pair p₁ (Ft.fold-shape-fam R γ x))))
 
-  gen-fuse-fam γ Q cmb act fsk corr corr-fam {Tree.sup x} =
-    ≈-trans (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam Q {x})
+  fuse-fam γ Q cmb act fsk corr corr-fam {Tree.sup x} =
+    ≈-trans (fuse-shape-fam γ Q cmb act fsk corr corr-fam Q {x})
       (≈-sym (≈-trans (∘-cong id-left ≈-refl) (≈-trans (assoc _ _ _) (assoc _ _ _))))
-  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (const A') =
+  fuse-shape-fam γ Q cmb act fsk corr corr-fam (const A') =
     ≈-trans (∘-cong (A' .fam .refl*) ≈-refl)
       (≈-trans id-left (≈-sym (≈-trans id-left (≈-trans id-left (pair-p₂ _ _)))))
-  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (var Fin.zero) {x} =
-    ≈-trans (gen-fuse-fam γ Q cmb act fsk corr corr-fam {x})
+  fuse-shape-fam γ Q cmb act fsk corr corr-fam (var Fin.zero) {x} =
+    ≈-trans (fuse-fam γ Q cmb act fsk corr corr-fam {x})
       (≈-sym (≈-trans id-left (≈-trans id-left (pair-p₂ _ _))))
-  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (var (Fin.suc i)) {x} =
+  fuse-shape-fam γ Q cmb act fsk corr corr-fam (var (Fin.suc i)) {x} =
     ≈-trans (corr-fam i)
       (≈-sym (≈-trans id-left (≈-trans id-left (≈-trans (∘-cong ≈-refl pair-ext0) id-right))))
-  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₁ a} =
-    ≈-trans (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a})
+  fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₁ a} =
+    ≈-trans (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a})
       (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (≈-sym (≈-trans id-left id-left)) ≈-refl)))
-  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₂ b} =
-    ≈-trans (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b})
+  fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₂ b} =
+    ≈-trans (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b})
       (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (≈-sym (≈-trans id-left id-left)) ≈-refl)))
-  gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ × R₂) {a , b} =
+  fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ × R₂) {a , b} =
     ≈-trans (pair-compose _ _ _ _)
       (≈-trans (pair-cong
                  (≈-trans (≈-sym (assoc _ _ _))
-                   (≈-trans (∘-cong (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a}) ≈-refl)
+                   (≈-trans (∘-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a}) ≈-refl)
                      (≈-trans (assoc _ _ _)
                        (∘-cong ≈-refl
                          (≈-trans (assoc _ _ _)
@@ -915,7 +915,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                                                (≈-trans (assoc _ _ _)
                                                  (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (pair-p₁ _ _))))))))))))))))))
                  (≈-trans (≈-sym (assoc _ _ _))
-                   (≈-trans (∘-cong (gen-fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b}) ≈-refl)
+                   (≈-trans (∘-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b}) ≈-refl)
                      (≈-trans (assoc _ _ _)
                        (∘-cong ≈-refl
                          (≈-trans (assoc _ _ _)
@@ -934,7 +934,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (pair-natural _ _ _)))
                   (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
                     (pair-compose _ _ _ _)))))
-  gen-fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} =
+  fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} =
     ≈-trans (∘-cong (Tt.fib-trans*
                        {x = Rs.ireindex-shape (μ R'') (Rs.ibind Q (cmb γ)) x}
                        {y = At.R.reindex At.mor₀ (Rs'.ireindex (cmb' γ) wm₁)}
@@ -947,7 +947,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       (≈-trans (assoc _ _ _)
         (≈-trans (∘-cong ≈-refl (tele-shape-fam (μ R'') tbase x))
           (≈-trans (≈-sym (assoc _ _ _))
-            (≈-trans (∘-cong (≈-sym (At.R.reindex-fam-W-nat At.mor₀
+            (≈-trans (∘-cong (≈-sym (At.R.reindex-fam-W-natural At.mor₀
                                        {Rs'.ireindex (cmb' γ) wm₁}
                                        {HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
                                        rec-idx)) ≈-refl)
@@ -959,10 +959,10 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       module Tt = Tree sₜ
       module Ts = Tree sₛ
       module At = AlphaDef Q sₜ
-      module Rs = Reidx sₛ sₜ
-      module Rs' = Reidx (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
-      module FR = FReidx {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ)
-      module FR' = FReidx {δA = extend sₛ (μObj Q sₜ)} {δB = extend sₜ (μObj Q sₜ)} (Γ .fam .fm γ)
+      module Rs = Reindex sₛ sₜ
+      module Rs' = Reindex (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
+      module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ)
+      module FR' = FReindex {δA = extend sₛ (μObj Q sₜ)} {δB = extend sₜ (μObj Q sₜ)} (Γ .fam .fm γ)
       module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
                     (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
       fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂
@@ -985,12 +985,12 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
       corr-fam' (Fin.suc j) = corr-fam j
       rec-fam : Category._≈_ 𝒞
                   (μObj R'' (extend sₜ (μObj Q sₜ)) .fam .subst {x = Rs'.ireindex (cmb' γ) wm₁}
-                     (gen-fuse-idx R'' cmb' fsk' corr' (Γ .idx .isEquivalence .refl)
+                     (fuse-idx R'' cmb' fsk' corr' (Γ .idx .isEquivalence .refl)
                        {wm₁} {wm₁} (μObj R'' (extend sₛ (μObj Q sₜ)) .idx .isEquivalence .refl {wm₁}))
                    ∘ FR'.freindex-fam act' {wm₁})
                   (HasMu.strong-fmor hasMu (μ R'') fsk' .famf ._⇒f_.transf (γ , wm₁))
-      rec-fam = gen-fuse-fam γ R'' cmb' act' fsk' corr' corr-fam' {wm₁}
-      rec-idx = gen-fuse-idx R'' cmb' fsk' corr' (Γ .idx .isEquivalence .refl)
+      rec-fam = fuse-fam γ R'' cmb' act' fsk' corr' corr-fam' {wm₁}
+      rec-idx = fuse-idx R'' cmb' fsk' corr' (Γ .idx .isEquivalence .refl)
                   {wm₁} {wm₁} (μObj R'' (extend sₛ (μObj Q sₜ)) .idx .isEquivalence .refl {wm₁})
       mutual
         data TeleRel : ∀ {j} {ηA ηB ηC ηD}
@@ -1024,7 +1024,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         tele-apply (tbind S' r) Fin.zero    {z} = tele-shape (μ S') r z
         tele-apply (tbind S' r) (Fin.suc v)     = tele-apply r v
         tele-apply tbase Fin.zero    {z} =
-          gen-fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl {γ}) {m₁ = z} {m₂ = z}
+          fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl {γ}) {m₁ = z} {m₂ = z}
             (μObj Q sₛ .idx .isEquivalence .refl {z})
         tele-apply tbase (Fin.suc i) {z} = Tt.elEq-refl (inj₁ i) (Rs.iapply (cmb γ) i z)
 
@@ -1044,7 +1044,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         tele-shape-fam (S₁ × S₂) rel (z₁ , z₂) =
           ≈-trans (strong-prod-m-post _ _ _ _)
             (≈-trans (strong-prod-m-cong (tele-shape-fam S₁ rel z₁) (tele-shape-fam S₂ rel z₂))
-              (≈-sym (≈-trans (∘-cong ≈-refl (strong-prod-m-compose _ _ _ _)) (strong-prod-m-post _ _ _ _))))
+              (≈-sym (≈-trans (∘-cong ≈-refl (strong-prod-m-comp _ _ _ _)) (strong-prod-m-post _ _ _ _))))
         tele-shape-fam (μ S') rel (Ts.sup z') = tele-shape-fam S' (tbind S' rel) z'
 
         tele-apply-fam : ∀ {j} {ηA ηB ηC ηD}
@@ -1058,7 +1058,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
         tele-apply-fam (tbind S' r) Fin.zero    {z} = tele-shape-fam (μ S') r z
         tele-apply-fam (tbind S' r) (Fin.suc v)     = tele-apply-fam r v
         tele-apply-fam tbase Fin.zero    {z} =
-          ≈-trans (gen-fuse-fam γ Q cmb act fsk corr corr-fam {z}) (≈-sym (≈-trans id-left (pair-p₂ _ _)))
+          ≈-trans (fuse-fam γ Q cmb act fsk corr corr-fam {z}) (≈-sym (≈-trans id-left (pair-p₂ _ _)))
         tele-apply-fam tbase (Fin.suc i) {z} =
           ≈-trans (∘-cong (sₜ i .fam .refl*) ≈-refl)
             (≈-trans id-left (≈-sym (≈-trans id-left (≈-trans (∘-cong ≈-refl pair-ext0) id-right))))
@@ -1076,7 +1076,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
 
     -- Collapse the α-reconstruction reindex followed by the fold's reindex into one
     -- index-only reindex, so the fusion lemmas can treat them as a single morphism.
-    module Rcomb = Reidx δ' (extend δ A)
+    module Rcomb = Reindex δ' (extend δ A)
     combine : (γ : Γ .idx .Carrier) → ∀ {k} {ρA ρB ρC} → Aα.R.MorD {k} ρA ρB → Fα.FMor {k} ρB ρC → Rcomb.IMorD {k} ρA ρC
     combine γ md fm = Rcomb.ibase (λ v a → Fα.fold-apply γ fm v (Aα.R.apply md v a))
       (λ v {a} {a'} p → Fα.fold-apply-resp (Γ .idx .isEquivalence .refl) fm v
@@ -1142,8 +1142,8 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     -- Fibre mirror of the collapse, at a fixed γ: `combine-act` is combine's Γ-dependent
     -- fibre action, and the lemmas transport the fibre composites along the corresponding
     -- index proofs, mirroring `Rel`/`reindex-mcong`/`combine-lemma` clause by clause.
-    module CF (γ : Γ .idx .Carrier) where
-      module FR = FReidx {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
+    module CombineFam (γ : Γ .idx .Carrier) where
+      module FR = FReindex {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
 
       combine-act : ∀ {k} {ρA ρB ρC} (md : Aα.R.MorD {k} ρA ρB) (fm : Fα.FMor {k} ρB ρC) →
                     FR.FAct (combine γ md fm)
@@ -1240,7 +1240,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
               (≈-trans (∘-cong ≈-refl (combine-lemma-fam (Aα.R.bind Q md) (Fα.fbind Q fm) x))
                 (reindex-mcong-fam (rcombA Q md fm) x)))
 
-    -- Correspondence hypothesis for the gen-fuse instances: `combine mor₀ fbase` acts as
+    -- Correspondence hypothesis for the fuse instances: `combine mor₀ fbase` acts as
     -- the fold at the recursion slot and as the identity at the parameter slots.
     corr-fs : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (δ' i .idx) a₁ a₂) →
               _≈s_ (extend δ A i .idx)
@@ -1249,11 +1249,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     corr-fs Fin.zero γ≈ {a₁} {a₂} a≈ = Fα.fold-idx-resp γ≈ {a₁} {a₂} a≈
     corr-fs (Fin.suc j) γ≈ a≈ = a≈
 
-    -- foldShape-idx ∘ reindex-shape ∘ embed-idx ≈ strong-fmor's idx action of the fold.
+    -- fold-shape-idx ∘ reindex-shape ∘ embed-idx ≈ strong-fmor's idx action of the fold.
     β-idx : (R : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
             (m≈ : _≈s_ (fobj μObj R δ' .idx) m₁ m₂) →
             _≈s_ (fobj μObj R (extend δ A) .idx)
-                 (Fα.foldShape-idx R γ₁ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m₁)))
+                 (Fα.fold-shape-idx R γ₁ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m₁)))
                  (strong-fmor R fs .idxf .PS._⇒_.func (γ₂ , m₂))
     β-idx (const A')        γ≈ m≈ = m≈
     β-idx (var Fin.zero)    γ≈ {m₁} {m₂} m≈ = Fα.fold-idx-resp γ≈ {m₁} {m₂} m≈
@@ -1263,11 +1263,11 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
     β-idx (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (m≈₁ , m≈₂) = β-idx Q₁ γ≈ m≈₁ , β-idx Q₂ γ≈ m≈₂
     β-idx (μ Q') {γ₁} {γ₂} γ≈ {m₁} {m₂} m≈ =
       Fα.TA'.W-≈-trans
-        {x = Fα.foldShape-idx (μ Q') γ₁ (Aα.R.reindex-shape (μ Q') Aα.mor₀ (Aα.embed-idx (μ Q') m₁))}
+        {x = Fα.fold-shape-idx (μ Q') γ₁ (Aα.R.reindex-shape (μ Q') Aα.mor₀ (Aα.embed-idx (μ Q') m₁))}
         {y = Rcomb.ireindex (combine γ₁ Aα.mor₀ Fα.fbase) m₁}
         {z = strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ₂ , m₂)}
         (combine-lemma γ₁ Aα.mor₀ Fα.fbase m₁)
-        (gen-fuse-idx {n = suc n} {Γ = Γ} {sₛ = δ'} {sₜ = extend δ A} Q'
+        (fuse-idx {n = suc n} {Γ = Γ} {sₛ = δ'} {sₜ = extend δ A} Q'
           (λ γ → combine γ Aα.mor₀ Fα.fbase) fs corr-fs γ≈ {m₁} {m₂} m≈)
 
     -- Fibre analogue of `β-idx`: the fibre transformations agree (modulo transport along β-idx).
@@ -1275,7 +1275,7 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
             Category._≈_ 𝒞
               (fobj μObj R (extend δ A) .fam .subst
                  (β-idx R (Γ .idx .isEquivalence .refl) (fobj μObj R δ' .idx .isEquivalence .refl))
-               ∘ (Fα.foldShape-fam R γ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m))
+               ∘ (Fα.fold-shape-fam R γ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m))
                   ∘ prod-m (id _) (Aα.R.reindex-fam R Aα.mor₀ ∘ Aα.embed-fam R m)))
               (strong-fmor R fs .famf ._⇒f_.transf (γ , m))
     β-fam (const A') = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans (prod-m-cong ≈-refl id-left) prod-m-id)) id-right))
@@ -1311,21 +1311,21 @@ module WFam {o m e} (os es : _) {𝒞 : Category o m e} (T : HasTerminal 𝒞) (
                             {x = Fα.fold-reindex γ Fα.fbase (Aα.R.reindex Aα.mor₀ m)}
                             {y = Rcomb.ireindex (combine γ Aα.mor₀ Fα.fbase) m}
                             {z = strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ , m)}
-                            (gen-fuse-idx {n = suc n} {Γ = Γ} {sₛ = δ'} {sₜ = extend δ A} Q'
+                            (fuse-idx {n = suc n} {Γ = Γ} {sₛ = δ'} {sₜ = extend δ A} Q'
                               (λ γ' → combine γ' Aα.mor₀ Fα.fbase) fs corr-fs
                               (Γ .idx .isEquivalence .refl) {m} {m}
                               (μObj Q' δ' .idx .isEquivalence .refl {m}))
                             (combine-lemma γ Aα.mor₀ Fα.fbase m)) ≈-refl)
           (≈-trans (assoc _ _ _)
-            (≈-trans (∘-cong ≈-refl (CFγ.combine-lemma-fam Aα.mor₀ Fα.fbase m))
-              (gen-fuse-fam γ Q' (λ γ' → combine γ' Aα.mor₀ Fα.fbase)
-                (CFγ.combine-act Aα.mor₀ Fα.fbase) fs corr-fs corr-fs-fam {m}))))
+            (≈-trans (∘-cong ≈-refl (Cγ.combine-lemma-fam Aα.mor₀ Fα.fbase m))
+              (fuse-fam γ Q' (λ γ' → combine γ' Aα.mor₀ Fα.fbase)
+                (Cγ.combine-act Aα.mor₀ Fα.fbase) fs corr-fs corr-fs-fam {m}))))
       where
-        module CFγ = CF γ
+        module Cγ = CombineFam γ
         corr-fs-fam : ∀ i {a} →
                       (extend δ A i .fam .subst
                          (corr-fs i (Γ .idx .isEquivalence .refl) (δ' i .idx .isEquivalence .refl {a}))
-                       ∘ CFγ.FR.aapply (CFγ.combine-act Aα.mor₀ Fα.fbase) i a)
+                       ∘ Cγ.FR.aapply (Cγ.combine-act Aα.mor₀ Fα.fbase) i a)
                       ≈ (fs i .famf ._⇒f_.transf (γ , a))
         corr-fs-fam Fin.zero {a} =
           ≈-trans (∘-cong (A .fam .refl*) ≈-refl)
