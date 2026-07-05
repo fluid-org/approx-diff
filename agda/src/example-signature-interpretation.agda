@@ -101,7 +101,7 @@ binary2 = P.pair P.p₁ (P.p₁ C.∘ P.p₂)
 binary : ∀ {X G} → (simple[ X , G ] × (simple[ X , G ] × 𝟙)) C.⇒ simple[ X ×ₛ X , 𝒞-products .HasProducts.prod G G ]
 binary = simple-monoidal C.∘ binary2
 
-open import example-signature
+open import example-signature (Setoid.Carrier Numₛ)
 open import signature
 import label
 
@@ -119,6 +119,7 @@ BaseInterp0 .Model.⟦sort⟧ number = simple[ Numₛ , 𝟙-base ]
 BaseInterp0 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
 BaseInterp0 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
 BaseInterp0 .Model.⟦op⟧ zero = simplef[ num-zero , 𝒞m.id _ ]
+BaseInterp0 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦op⟧ add = simplef[ num-add , to-𝟙-base ] C.∘ binary
 BaseInterp0 .Model.⟦op⟧ mult = simplef[ num-mult , to-𝟙-base ] C.∘ binary
 BaseInterp0 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
@@ -165,6 +166,7 @@ module BinDeriv
   BaseInterp1 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
   BaseInterp1 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
   BaseInterp1 .Model.⟦op⟧ zero = simplef[ num-zero , unit ]
+  BaseInterp1 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , unit ]
   BaseInterp1 .Model.⟦op⟧ add = add-deriv C.∘ binary
   BaseInterp1 .Model.⟦op⟧ mult = mult-deriv C.∘ binary
   BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]

@@ -26,10 +26,11 @@ open import Data.Integer using (+_; -[1+_])
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_; _≟_)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier)
-open import example-signature using (Sig; number; label; approx)
+open import example-signature ℚ using (Sig; number; label; approx)
 import example
 open import language-syntax Sig hiding (_,_)
-open example.ex using (total)
+module Ex = example ℚ
+open Ex.ex using (total)
 open import label using (a; b)
 open import prop using (liftS; LiftS)
 

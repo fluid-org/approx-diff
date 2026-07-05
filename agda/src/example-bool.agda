@@ -13,7 +13,8 @@ import ho-model-boolalg-sd-semimod
 import indexed-family
 import galois
 import preorder
-open import example-signature using (Sig; number; label; approx) public
+import nat
+open import example-signature nat.ℕ using (Sig; number; label; approx) public
 import example
 
 -- Vocabulary re-exported for tests.
@@ -26,7 +27,8 @@ open import nat using (ℕ) public
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import language-syntax Sig hiding (_,_) public   -- _⊢_, types, first-order-data, unit/base/list/_[×]_
-open example.ex public                                 -- query, mult-ex, cbn-query, sum, …
+module Ex = example nat.ℕ
+open Ex.ex public                                 -- query, mult-ex, cbn-query, sum, …
 open import label using (a; b) public
 
 -- Model instantiation.

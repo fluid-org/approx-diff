@@ -13,7 +13,8 @@ import boolalg-sd-semimodule
 import ho-model-boolalg-sd-semimod
 import galois
 import preorder
-open import example-signature using (Sig; number; label; approx) public
+import nat
+open import example-signature nat.ℕ using (Sig; number; label; approx) public
 import example
 
 open import Level using (lift) public
@@ -25,7 +26,8 @@ open import nat using (ℕ) public
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import language-syntax Sig hiding (_,_) public
-open example.ex public                                 -- cbn-query, Tag, …
+module Ex = example nat.ℕ
+open Ex.ex public                                 -- cbn-query, Tag, …
 open import label using (a; b) public
 
 -- Model instantiation.

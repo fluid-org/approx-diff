@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-module example where
+module example (Num : Set) where
 
 open import Level using (0ℓ; lift)
 open import Data.List using (List; []; _∷_)
@@ -9,7 +9,7 @@ open import signature
 import language-syntax
 import label
 
-open import example-signature
+open import example-signature Num
 
 module L = language-syntax Sig
 

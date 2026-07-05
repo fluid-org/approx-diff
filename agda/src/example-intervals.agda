@@ -24,10 +24,11 @@ open import prop using (liftS)
 open import Data.Integer using (+_)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier)
-open import example-signature using (Sig; number; label; approx)
+open import example-signature ℚ using (Sig; number; label; approx)
 import example
 open import language-syntax Sig hiding (_,_)
-open example.ex using (query)
+module Ex = example ℚ
+open Ex.ex using (query)
 open import label using (a; b)
 open semiring-Q-tropical-add using (∞; fin)
 
