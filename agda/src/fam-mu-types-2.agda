@@ -1,10 +1,12 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- The initial-algebra laws for the Fam μ-types: β (BetaDef, the fold satisfies
--- the algebra square) and η (EtaDef, uniqueness), each by tree induction with
--- the nested-μ cases discharged through fusion. Re-exports the full interface
--- of the construction.
+-- μ-types (parameterised initial algebras of polynomial functors) for the Fam
+-- construction, built as sort-indexed W-types in setoids. This root module
+-- proves the initial-algebra laws — β (BetaDef, the fold satisfies the algebra
+-- square) and η (EtaDef, uniqueness), each by tree induction with the nested-μ
+-- cases discharged through fusion — and re-exports the construction itself
+-- from the layers beneath it.
 ------------------------------------------------------------------------------
 
 open import Level using (Level; _⊔_) renaming (suc to lsuc)
@@ -20,7 +22,7 @@ import indexed-family
 open indexed-family using (Fam; _⇒f_)
 import fam-mu-types-2.fuse
 
-module fam-mu-types-2.laws {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types-2 {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
 open fam-mu-types-2.fuse os es T P public

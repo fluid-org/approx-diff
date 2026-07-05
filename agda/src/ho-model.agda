@@ -14,7 +14,7 @@ import fam
 import polynomial-functor
 import fam-mu-types
 import fam-mu-types-2.carrier
-import fam-mu-types-2.laws
+import fam-mu-types-2
 import indexed-family
 open Category using (opposite)
 
@@ -202,10 +202,10 @@ module Interpretation
     fam-mu-types-2.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMu =
-    fam-mu-types-2.laws.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+    fam-mu-types-2.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMuLaws =
-    fam-mu-types-2.laws.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+    fam-mu-types-2.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   module interp-2 (Sig : Signature 0ℓ)
                   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
