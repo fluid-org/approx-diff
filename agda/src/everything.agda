@@ -14,6 +14,10 @@ import example
 -- examples, with two-valued (Bool) approximation.
 import example-bools
 
+-- Backward (Galois) and forward (Conjugate) analyses of the list example for
+-- the language with general recursive types, with two-valued (Bool) approximation.
+import example-bools-2
+
 -- Backward (Galois) analysis of the examples, with rational-interval
 -- approximation.
 import example-intervals

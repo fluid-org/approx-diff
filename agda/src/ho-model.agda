@@ -13,6 +13,7 @@ import join-semilattice-category
 import fam
 import polynomial-functor
 import fam-mu-types
+import fam-mu-types-2.carrier
 import fam-mu-types-2.laws
 import indexed-family
 open Category using (opposite)
@@ -195,8 +196,11 @@ module Interpretation
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
-  -- Direct interpretation for the n-ary/nested-μ pipeline, using the Fam μ-types
-  -- instance together with its initial-algebra laws.
+  -- Direct interpretation of the language with general recursive types, via the
+  -- W-type μ-instance for Fam together with its initial-algebra laws.
+  module Fam⟨𝒟⟩-μ =
+    fam-mu-types-2.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+
   Fam⟨𝒟⟩-hasMu =
     fam-mu-types-2.laws.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 

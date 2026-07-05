@@ -3,8 +3,8 @@
 ------------------------------------------------------------------------------
 -- The initial-algebra laws for the Fam μ-types: β (BetaDef, the fold satisfies
 -- the algebra square) and η (EtaDef, uniqueness), each by tree induction with
--- the nested-μ cases discharged through fusion. Re-exports the whole
--- fam-mu-types-2 interface; downstream users import this module.
+-- the nested-μ cases discharged through fusion. Re-exports the full interface
+-- of the construction.
 ------------------------------------------------------------------------------
 
 open import Level using (Level; _⊔_) renaming (suc to lsuc)

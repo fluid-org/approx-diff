@@ -3,8 +3,7 @@
 ------------------------------------------------------------------------------
 -- Carrier of μ-types for the Fam construction: nested μ reduced to a single
 -- sort-indexed W-type in setoids, with the fibre family computed by structural
--- recursion over trees. First layer of fam-mu-types-2; the full interface is
--- re-exported by fam-mu-types-2.laws.
+-- recursion over trees.
 --
 -- Abbott, Altenkirch, Ghani. Containers: constructing strictly positive types. TCS 342(1), 2005.
 -- Abbott, Altenkirch, Ghani. Representing nested inductive types using W-types. ICALP 2004.
