@@ -9,6 +9,7 @@ import example-bool-total
 import example-rationals-fwd
 import example-rationals-bwd
 import example-rationals-mavg
+import example-counting-mavg
 import example-rationals-total
 import example-intervals
 import example-intervals-mult

@@ -72,10 +72,12 @@ module ex where
       price label.a = fst (snd (var (succ zero)))
       price _       = snd (snd (var (succ zero)))
 
-  -- Moving average with window two over a triple of inputs; adjacent outputs share the middle
-  -- input. h is the constant 1/2, supplied as a literal.
-  mavg : Num → emp , (base number [×] base number) [×] base number ⊢ base number [×] base number
-  mavg h = pair (avg (fst (fst (var zero))) (snd (fst (var zero))))
+  -- Moving average with window two over four inputs; adjacent outputs share an input, and
+  -- non-adjacent outputs share none. h is the constant 1/2, supplied as a literal.
+  mavg : Num → emp , ((base number [×] base number) [×] base number) [×] base number
+             ⊢ (base number [×] base number) [×] base number
+  mavg h = pair (pair (avg (fst (fst (fst (var zero)))) (snd (fst (fst (var zero)))))
+                      (avg (snd (fst (fst (var zero)))) (snd (fst (var zero)))))
                 (avg (snd (fst (var zero))) (snd (var zero)))
     where
       avg : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ base number → Γ ⊢ base number
