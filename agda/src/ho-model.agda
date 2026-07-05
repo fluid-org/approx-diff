@@ -13,7 +13,7 @@ import join-semilattice-category
 import fam
 import polynomial-functor
 import fam-mu-types
-import fam-mu-types-2
+import fam-mu-types-2.laws
 import indexed-family
 open Category using (opposite)
 
@@ -198,10 +198,10 @@ module Interpretation
   -- Direct interpretation for the n-ary/nested-μ pipeline, using the Fam μ-types
   -- instance together with its initial-algebra laws.
   Fam⟨𝒟⟩-hasMu =
-    fam-mu-types-2.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+    fam-mu-types-2.laws.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMuLaws =
-    fam-mu-types-2.WFam.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+    fam-mu-types-2.laws.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   module interp-2 (Sig : Signature 0ℓ)
                   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
