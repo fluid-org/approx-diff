@@ -72,19 +72,14 @@ module ex where
       price label.a = fst (snd (var (succ zero)))
       price _       = snd (snd (var (succ zero)))
 
-  -- Moving average with window two, as a right fold. The accumulator pairs the most recently seen
-  -- element (initially absent) with the averages so far; h is the constant 1/2, supplied as a
-  -- literal.
-  mavg : Num → emp , list (base number) ⊢ list (base number)
-  mavg h = snd (fold {τ₂ = (unit [+] base number) [×] list (base number)}
-                     (pair (inl unit) nil)
-                     (pair (inr (var (succ zero)))
-                           (case (fst (var zero))
-                                 (snd (var (succ zero)))
-                                 (cons (bop mult (bop (lit h) [] ∷
-                                                  bop add (var (succ (succ zero)) ∷ var zero ∷ []) ∷ []))
-                                       (snd (var (succ zero))))))
-                     (var zero))
+  -- Moving average with window two over a triple of inputs; adjacent outputs share the middle
+  -- input. h is the constant 1/2, supplied as a literal.
+  mavg : Num → emp , (base number [×] base number) [×] base number ⊢ base number [×] base number
+  mavg h = pair (avg (fst (fst (var zero))) (snd (fst (var zero))))
+                (avg (snd (fst (var zero))) (snd (var zero)))
+    where
+      avg : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ base number → Γ ⊢ base number
+      avg x y = bop mult (bop (lit h) [] ∷ bop add (x ∷ y ∷ []) ∷ [])
 
   -- Product of two numbers.
   mult-ex : emp , base number [×] base number ⊢ base number
