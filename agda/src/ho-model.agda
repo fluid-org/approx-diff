@@ -13,6 +13,7 @@ import join-semilattice-category
 import fam
 import polynomial-functor
 import fam-mu-types
+import fam-mu-types-2
 import indexed-family
 open Category using (opposite)
 
@@ -191,6 +192,31 @@ module Interpretation
        Fam⟨𝒟⟩-strongCoproducts
        Fam⟨𝒟⟩-exponentials
        (fam-mu-types.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
+       (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
+       public
+
+  -- Direct interpretation for the n-ary/nested-μ pipeline, using the Fam μ-types
+  -- instance together with its initial-algebra laws.
+  Fam⟨𝒟⟩-hasMu =
+    fam-mu-types-2.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+
+  Fam⟨𝒟⟩-hasMuLaws =
+    fam-mu-types-2.WFam.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+
+  module interp-2 (Sig : Signature 0ℓ)
+                  (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
+     where
+
+     open Fam⟨𝒟⟩.Mor public
+     open Fam⟨𝒟⟩.Obj public
+
+     open import language-interpretation-2 Sig
+       Fam⟨𝒟⟩.cat
+       Fam⟨𝒟⟩-terminal
+       Fam⟨𝒟⟩-products
+       Fam⟨𝒟⟩-strongCoproducts
+       Fam⟨𝒟⟩-exponentials
+       Fam⟨𝒟⟩-hasMu
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
