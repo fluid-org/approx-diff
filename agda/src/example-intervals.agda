@@ -50,17 +50,19 @@ approx-conjunct = HasProducts.p₁ SDSemiMod-ℚ∞.products {Approx} {Approx}
 
 private
   module Num = CommutativeSemiring semiring-Q.semiring
+  open prop-setoid._⇒_
 
   num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → Num.refl }
+  num-zero .func _ = 0ℚ
+  num-zero .func-resp-≈ _ = Num.refl
 
   num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-add = record { func = λ (x , y) → Num._+_ x y
-                   ; func-resp-≈ = λ e → Num.+-cong (prop.proj₁ e) (prop.proj₂ e) }
+  num-add .func (x , y) = x Num.+ y
+  num-add .func-resp-≈ e = Num.+-cong (prop.proj₁ e) (prop.proj₂ e)
 
   num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-mult = record { func = λ (x , y) → Num._·_ x y
-                    ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
+  num-mult .func (x , y) = x Num.· y
+  num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example-signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult

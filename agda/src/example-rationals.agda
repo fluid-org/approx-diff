@@ -48,19 +48,24 @@ approx-conjunct = HasProducts.p₁ SDSemiMod-ℚ.products {Approx} {Approx}
 private
   module Add = CommutativeMonoid semiring-Q.additive
   module Mul = CommutativeMonoid semiring-Q.multiplicative
+  open prop-setoid._⇒_
 
   num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → Scalars.refl }
+  num-zero .func _ = 0ℚ
+  num-zero .func-resp-≈ _ = Scalars.refl
 
   num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-add = record { func = λ (x , y) → Add._+_ x y ; func-resp-≈ = λ e → Add.+-cong (prop.proj₁ e) (prop.proj₂ e) }
+  num-add .func (x , y) = x Add.+ y
+  num-add .func-resp-≈ e = Add.+-cong (prop.proj₁ e) (prop.proj₂ e)
 
   num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-mult = record { func = λ (x , y) → Mul._+_ x y ; func-resp-≈ = λ e → Mul.+-cong (prop.proj₁ e) (prop.proj₂ e) }
+  num-mult .func (x , y) = x Mul.+ y
+  num-mult .func-resp-≈ e = Mul.+-cong (prop.proj₁ e) (prop.proj₂ e)
 
   -- Multiplication by c as a linear endomorphism of the scalars.
   scalar : ℚ → Category._⇒_ SDSemiMod-ℚ.cat Approx Approx
-  scalar c .SemiMod-ℚ._⇒_.*→* = record { func = λ x → c Scalars.· x ; func-resp-≈ = λ e → Scalars.·-cong (Scalars.refl {c}) e }
+  scalar c .SemiMod-ℚ._⇒_.*→* .func x = c Scalars.· x
+  scalar c .SemiMod-ℚ._⇒_.*→* .func-resp-≈ e = Scalars.·-cong (Scalars.refl {c}) e
   scalar c .SemiMod-ℚ._⇒_.preserve-ze = Scalars.ε-annihilᵣ {c}
   scalar c .SemiMod-ℚ._⇒_.preserve-+ {x} {y} = Scalars.·-+-distribₗ {c} {x} {y}
   scalar c .SemiMod-ℚ._⇒_.preserve-· {s} {x} =

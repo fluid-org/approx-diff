@@ -53,18 +53,21 @@ approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
         +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
 
 private
+  open prop-setoid._⇒_
+
   num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → prop-setoid.Setoid.refl semiring-Q.setoid }
+  num-zero .func _ = 0ℚ
+  num-zero .func-resp-≈ _ = prop-setoid.Setoid.refl semiring-Q.setoid
 
   module Scalars = CommutativeSemiring semiring-Q.semiring
 
   num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-add = record { func = λ (x , y) → Scalars._+_ x y
-                   ; func-resp-≈ = λ e → Scalars.+-cong (prop.proj₁ e) (prop.proj₂ e) }
+  num-add .func (x , y) = x Scalars.+ y
+  num-add .func-resp-≈ e = Scalars.+-cong (prop.proj₁ e) (prop.proj₂ e)
 
   num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-mult = record { func = λ (x , y) → Scalars._·_ x y
-                    ; func-resp-≈ = λ e → Scalars.·-cong (prop.proj₁ e) (prop.proj₂ e) }
+  num-mult .func (x , y) = x Scalars.· y
+  num-mult .func-resp-≈ e = Scalars.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
