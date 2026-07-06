@@ -1,34 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Boolean dependency analysis of the moving-average example: adjacent outputs share an input,
--- and composing the backward and forward derivatives sends a selection of outputs to the outputs
+-- Boolean dependency analysis of the moving-average example: adjacent outputs share an input, and
+-- composing the backward and forward derivatives sends a selection of outputs to the outputs
 -- related to it by a shared dependency, as in the cognacy analyses of linked visualisations.
-module example-bool-mavg where
+module example-dependency-mavg where
 
-import sd-semimodule
-import semiring-Q
-
-open import Level using (lift; 0ℓ)
-open import Data.Unit renaming (tt to ·) using ()
-open import Data.Product using (_,_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import two renaming (I to ⊤; O to ⊥) using ()
-open import Data.Integer using (+_; -[1+_])
-open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_; _≟_)
-open import prop-setoid using (Setoid)
-open Setoid using (Carrier)
-open import example-signature ℚ using (Sig; number; label; approx)
-import example
-open import language-syntax Sig hiding (_,_)
-module Ex = example ℚ
-open Ex.ex using (mavg)
-open import label using (a; b)
-
--- Model instantiation: Boolean approximations over rational data, zero-testing coefficients.
-module SDSemiMod-𝟚 = sd-semimodule two.semiring
-open import example-harness using (module BoolAlg-model-nonzero)
-open BoolAlg-model-nonzero two.semiring two.semiring-boolean
-open BoolAlg.SelfDualBooleanAlgebra using (selfDual)
+open import example-dependency
 
 half : ℚ
 half = + 1 / 2

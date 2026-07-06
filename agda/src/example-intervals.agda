@@ -13,82 +13,68 @@ import ho-model-sd-semimod
 import semiring-Q-tropical-add
 import semiring-Q
 
-open import Level using (lift; 0ℓ)
-open import Data.Unit renaming (tt to ·) using ()
-open import Data.Product using (_,_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_)
-open import Data.Integer using (+_; -[1+_])
+open import Level using (lift; 0ℓ) public
+open import Data.Unit renaming (tt to ·) using () public
+open import Data.Product using (_,_) public
+open import Relation.Binary.PropositionalEquality using (_≡_; refl) public
+open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_) public
+open import Data.Nat.Base public using (nonZero)
+open import Data.Integer.Base public using (nonNeg)
+open import Data.Integer using (+_; -[1+_]) public
 open import commutative-semiring using (CommutativeSemiring)
 open import prop using (liftS)
 open import Data.Integer using (+_)
 open import prop-setoid using (Setoid)
-open Setoid using (Carrier)
-open import example-signature ℚ using (Sig; number; label; approx)
+open Setoid using (Carrier) public
+open import example-signature ℚ using (Sig; number; label; approx) public
 import example
-open import language-syntax Sig hiding (_,_)
+open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ
-open Ex.ex using (query)
-open import label using (a; b)
-open semiring-Q-tropical-add using (∞; fin)
+open Ex.ex public
+open import label using (a; b) public
+open semiring-Q-tropical-add public using (∞; fin)
 
--- Model instantiation: bounds for each direction of change, so the approximation object is
--- 𝕀 ⊕ 𝕀. Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞)
--- records the absence of a bound.
+-- Model instantiation.
 module SDSemiMod-ℚ∞ = sd-semimodule semiring-Q-tropical-add.semiring
 module SemiMod-ℚ∞ = semimodule semiring-Q-tropical-add.semiring
-open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (εm)
+open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (_+m_; εm)
+
+Approx : Category.obj SDSemiMod-ℚ∞.cat
+Approx = SDSemiMod-ℚ∞._⊕_ SDSemiMod-ℚ∞.𝕀 SDSemiMod-ℚ∞.𝕀
+
+approx-unit : Category._⇒_ SDSemiMod-ℚ∞.cat (HasTerminal.witness SDSemiMod-ℚ∞.terminal) Approx
+approx-unit = HasInitial.from-initial SDSemiMod-ℚ∞.initial {Approx}
+approx-conjunct : Category._⇒_ SDSemiMod-ℚ∞.cat (HasProducts.prod SDSemiMod-ℚ∞.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ SDSemiMod-ℚ∞.products {Approx} {Approx}
+        +m HasProducts.p₂ SDSemiMod-ℚ∞.products {Approx} {Approx}
 
 private
-  Approx : Category.obj SDSemiMod-ℚ∞.cat
-  Approx = SDSemiMod-ℚ∞._⊕_ SDSemiMod-ℚ∞.𝕀 SDSemiMod-ℚ∞.𝕀
+  module Num = CommutativeSemiring semiring-Q.semiring
 
-  unit-c ∞-c : ℚ → ℚ → Category._⇒_ SDSemiMod-ℚ∞.cat Approx Approx
-  unit-c _ _ = Category.id SDSemiMod-ℚ∞.cat Approx
-  ∞-c _ _ = εm
+  num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
+  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → Num.refl }
 
-  unit-c-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
-                Category._≈_ SemiMod-ℚ∞.cat (unit-c x y) (unit-c x' y')
-  unit-c-cong _ _ = Category.≈-refl SemiMod-ℚ∞.cat {f = unit-c 0ℚ 0ℚ}
+  num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
+  num-add = record { func = λ (x , y) → Num._+_ x y
+                   ; func-resp-≈ = λ e → Num.+-cong (prop.proj₁ e) (prop.proj₂ e) }
 
-  ∞-c-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
-             Category._≈_ SemiMod-ℚ∞.cat (∞-c x y) (∞-c x' y')
-  ∞-c-cong _ _ = Category.≈-refl SemiMod-ℚ∞.cat {f = ∞-c 0ℚ 0ℚ}
+  num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
+  num-mult = record { func = λ (x , y) → Num._·_ x y
+                    ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
 
-open import example-harness using (module SDSemiMod-model; rationals)
-open SDSemiMod-model semiring-Q-tropical-add.semiring Approx rationals unit-c unit-c ∞-c ∞-c
-  unit-c-cong unit-c-cong ∞-c-cong ∞-c-cong
+open import example-signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
 
-input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-input = 3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _
+-- Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞) records
+-- the absence of a bound.
+private
+  coeff-t : ℚ → Category._⇒_ SDSemiMod-ℚ∞.cat Approx Approx
+  coeff-t _ = εm
+  coeff-cong-t : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → Category._≈_ SemiMod-ℚ∞.cat (coeff-t x) (coeff-t y)
+  coeff-cong-t {x} _ = Category.≈-refl SemiMod-ℚ∞.cat {f = coeff-t x}
 
-input-ty : first-order-data (list (base label [×] base number))
-input-ty = list (base label [×] base number)
+module D = Deriv coeff-t coeff-cong-t
+open ho-model-sd-semimod.interp-sd semiring-Q-tropical-add.semiring Sig D.BaseInterp1 public
+open SDSemiMod-ℚ∞ public using (conjugate)
+open SemiMod-ℚ∞._⇒_ public
 
--- An interval [l, u] around q becomes the pair of perturbation bounds (q - l , u - q); ∞ is the
--- absent (bottom) approximation.
--- Query a sums #1 and #3 (values 3 and -3, output 0); the forward derivative combines their
--- perturbation bounds by min:
---   ( min(1/2, 1/5) , min(0, 1/2) ) = (1/5 , 0) = the interval [-1/5, 0] around 0.
-test-addᵀ : fwd (query a) (_ , input)
-              (lift · , (lift · , (fin (+ 1 / 2) , fin 0ℚ))
-                      , (lift · , (∞ , ∞))
-                      , (lift · , (fin (+ 1 / 5) , fin (+ 1 / 2))) , _)
-            ≡ (fin (+ 1 / 5) , fin 0ℚ)
-test-addᵀ = refl
-
-bwd-slice : _ → _
-bwd-slice r =
-  conjugate (ty (unit [×] input-ty) (_ , input)) (ty (base number) 0ℚ)
-            (mor (query a) (_ , input)) .func r
-
--- Feeding back output interval [-1/10, 1/10] around 0 = perturbation bounds (1/10, 1/10). The
--- conjugate copies it to the two label-a inputs (#1, #3) and leaves ∞ elsewhere:
---   #1 around 3:  (1/10, 1/10) = [29/10, 31/10]
---   #2 (label b): (∞, ∞)       = no constraint
---   #3 around -3: (1/10, 1/10) = [-31/10, -29/10]
-test-bwd : bwd-slice (fin (+ 1 / 10) , fin (+ 1 / 10))
-           ≡ (lift · , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10)))
-                     , (lift · , (∞ , ∞))
-                     , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10))) , lift ·)
-test-bwd = refl

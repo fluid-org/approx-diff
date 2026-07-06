@@ -6,6 +6,10 @@
 -- `to-gal … (mor …) …` slices directly.
 module example-bool-cbn where
 
+open import categories using (Category; HasInitial; HasProducts; HasTerminal)
+import cmon-enriched
+import semimodule
+import boolalg-sd-semimodule
 import ho-model-boolalg-sd-semimod
 import galois
 import preorder
@@ -26,13 +30,25 @@ module Ex = example nat.ℕ
 open Ex.ex public                                 -- cbn-query, Tag, …
 open import label using (a; b) public
 
--- Model instantiation: numbers carry trivial fibres (BaseInterp0); dependency is tracked on the
--- value side by the annotations the call-by-name translation threads through the Tag monad.
-open import example-harness using (module BoolAlg-model-base; naturals)
-open BoolAlg-model-base two.semiring two.semiring-boolean naturals public
+-- Model instantiation.
+module BoolAlg-𝟚 = boolalg-sd-semimodule two.semiring two.semiring-boolean
+module SemiMod-𝟚 = semimodule two.semiring
+open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_)
+
+Approx : Category.obj BoolAlg-𝟚.cat
+Approx = BoolAlg-𝟚.𝕀
+
+approx-unit : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approx
+approx-unit = HasInitial.from-initial BoolAlg-𝟚.initial {Approx}
+approx-conjunct : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
+        +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
+
+open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
+  Approx approx-unit approx-conjunct nat.ℕₛ nat.zero-m nat.add nat.mult public
 open ho-model-boolalg-sd-semimod.interp-boolean two.semiring two.semiring-boolean Sig BaseInterp0 public
 
-open SemiMod._⇒_ public
+open SemiMod-𝟚._⇒_ public
 open galois._⇒g_ public
 open preorder._=>_ public
 

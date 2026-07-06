@@ -31,24 +31,39 @@ module Ex = example nat.ℕ
 open Ex.ex public                                 -- query, mult-ex, cbn-query, sum, …
 open import label using (a; b) public
 
--- Model instantiation: Boolean approximations over natural-number data; the derivative
--- coefficient collapses a natural to whether it is nonzero.
+-- Model instantiation.
 
 module BoolAlg-𝟚 = boolalg-sd-semimodule two.semiring two.semiring-boolean
 module SemiMod-𝟚 = semimodule two.semiring
-open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (εm)
+open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_; εm)
 
+Approx : Category.obj BoolAlg-𝟚.cat
+Approx = BoolAlg-𝟚.𝕀
+
+approx-unit : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approx
+approx-unit = HasInitial.from-initial BoolAlg-𝟚.initial {Approx}
+approx-conjunct : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
+        +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
+
+open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
+  Approx approx-unit approx-conjunct nat.ℕₛ nat.zero-m nat.add nat.mult public
+
+-- Boolean-collapse derivative coefficient: zero map vs identity.
 private
-  coeff-b : ℕ → Category._⇒_ BoolAlg-𝟚.cat BoolAlg-𝟚.𝕀 BoolAlg-𝟚.𝕀
+  coeff-b : ℕ → Category._⇒_ BoolAlg-𝟚.cat Approx Approx
   coeff-b nat.zero     = εm
-  coeff-b (nat.succ _) = Category.id BoolAlg-𝟚.cat BoolAlg-𝟚.𝕀
+  coeff-b (nat.succ _) = Category.id BoolAlg-𝟚.cat Approx
   coeff-cong-b : ∀ {x y} → nat._≃_ x y → Category._≈_ SemiMod-𝟚.cat (coeff-b x) (coeff-b y)
   coeff-cong-b {nat.zero}   {nat.zero}   _ = Category.≈-refl SemiMod-𝟚.cat {f = coeff-b nat.zero}
   coeff-cong-b {nat.succ _} {nat.succ _} _ = Category.≈-refl SemiMod-𝟚.cat {f = coeff-b (nat.succ nat.zero)}
   coeff-cong-b {nat.zero}   {nat.succ _} (prop._,_ _ ())
   coeff-cong-b {nat.succ _} {nat.zero}   (prop._,_ () _)
 
-open import example-harness using (module BoolAlg-model-coeff; naturals)
-open BoolAlg-model-coeff two.semiring two.semiring-boolean naturals coeff-b coeff-cong-b public
+module D = Deriv coeff-b coeff-cong-b
+open ho-model-boolalg-sd-semimod.interp-boolean two.semiring two.semiring-boolean Sig D.BaseInterp1 public
+
+open indexed-family._⇒f_ public
+open SemiMod-𝟚._⇒_ public
 open galois._⇒g_ public
 open preorder._=>_ public

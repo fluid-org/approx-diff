@@ -1,33 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Use-counting analysis of the weighted-sum query, at the counting semiring: every operation has
--- unit coefficients, so a Jacobian entry counts the paths from an input to an output. The price of
--- the queried label is used twice, and the count survives the cancellation that zeroes the
--- rational derivative, because nothing cancels in a positive semiring.
+-- Use-counting analysis of the weighted-sum query: the price of the queried label is used twice,
+-- and the count survives the cancellation that zeroes the rational derivative, because nothing
+-- cancels in a positive semiring.
 module example-counting-total where
 
-import semiring-N
-import semiring-Q
-
-open import Level using (lift; 0ℓ)
-open import Data.Unit renaming (tt to ·) using ()
-open import Data.Product using (_,_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import Data.Nat using (ℕ)
-open import Data.Integer using (+_; -[1+_])
-open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_)
-open import prop-setoid using (Setoid)
-open Setoid using (Carrier)
-open import example-signature ℚ using (Sig; number; label; approx)
-import example
-module Ex = example ℚ
-open Ex.ex using (total)
-open import language-syntax Sig hiding (_,_)
-open import label using (a; b)
-
--- Model instantiation: counting approximations over rational data, unit coefficients.
-open import example-harness using (module SDSemiMod-model-unit; rationals)
-open SDSemiMod-model-unit semiring-N.semiring rationals
+open import example-counting
 
 input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
 input = (3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _) , (+ 2 / 1 , + 5 / 1)

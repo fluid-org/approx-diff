@@ -1,42 +1,12 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Linear provenance polynomials for the weighted-sum query, at the free commutative semiring on
--- the input positions (numbered 0-4, in input order; 5 selects the output). Seeding each position
--- with its variable, the forward derivative returns the polynomial x0 + x2 + 2·x3, and evaluating
--- it at the all-ones valuation recovers the counting analysis. Setoid equality of polynomials is
--- the equational theory, so the tests compare renderings under the unverified normaliser.
+-- Linear provenance polynomials for the weighted-sum query: positions 0-4 seeded with their
+-- variables (5 selects the output), the forward derivative returns x0 + x2 + 2·x3, and evaluating
+-- at the all-ones valuation recovers the counting analysis.
 module example-free-total where
 
-import semiring-free
+open import example-free
 import semiring-N
-import semiring-Q
-
-open import Level using (lift; 0ℓ)
-open import Data.Unit renaming (tt to ·) using ()
-open import Data.Product using (_,_)
-open import Data.List using (List; []; _∷_; map)
-open import Data.Nat using (ℕ)
-open import Data.String using (String) renaming (_++_ to _++s_)
-import Data.Nat.Show
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import Data.Integer using (+_; -[1+_])
-open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_)
-open import prop-setoid using (Setoid)
-open Setoid using (Carrier)
-open import example-signature ℚ using (Sig; number; label; approx)
-import example
-module Ex = example ℚ
-open Ex.ex using (total)
-open import language-syntax Sig hiding (_,_)
-open import label using (a; b)
-
-module Free = semiring-free ℕ
-open Free using (Poly; var)
-open Free.Normalise (λ n → n) (λ n → "x" ++s Data.Nat.Show.show n) using (pretty)
-
--- Model instantiation: polynomial approximations over rational data, unit coefficients.
-open import example-harness using (module SDSemiMod-model-unit; rationals)
-open SDSemiMod-model-unit Free.semiring rationals
 
 -- The run of the introduction, with each perturbable position seeded by its variable.
 input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
