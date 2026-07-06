@@ -52,3 +52,6 @@ import matrix-embedding-semimod
 -- Imported by ho-model anyway, but included here for documentation
 -- purposes.
 import conservativity
+
+-- Action of a functor on polynomials.
+import polynomial-functor-2.map
