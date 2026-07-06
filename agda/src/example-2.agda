@@ -3,6 +3,7 @@
 module example-2 where
 
 open import Level using (0ℓ; lift)
+import Data.Fin as Fin
 open import Data.List using (List; []; _∷_)
 open import every using (Every; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (refl)
@@ -58,3 +59,19 @@ module ex where
       (from var zero collect
       when fst (var zero) ≟ (` l) ；
       return (snd (var zero)))
+
+  -- Rose trees of numbers: a nested recursive type (the children list is itself
+  -- a μ-type mentioning the outer recursion variable).
+  rose : type 0
+  rose = μ (base number [×] μ (unit [+] (var (Fin.suc Fin.zero) [×] var Fin.zero)))
+
+  node : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ list rose → Γ ⊢ rose
+  node n ts = roll (pair n ts)
+
+  -- Sum of all numbers in a rose tree: the fold's recursion crosses the inner
+  -- list μ, so the children arrive as a list of subtree sums.
+  rose-sum : ∀ {Γ} → Γ ⊢ rose [→] base number
+  rose-sum = lam (fold (bop add (fst (var zero) ∷ app sum (snd (var zero)) ∷ [])) (var zero))
+
+  rose-query : emp , rose ⊢ base number
+  rose-query = app rose-sum (var zero)

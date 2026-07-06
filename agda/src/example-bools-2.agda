@@ -62,6 +62,20 @@ module backward where
   test2 : bwd-slice label.b ≡ ((· , ⊥) , (· , ⊤) , (· , ⊥) , _)
   test2 = ≡-refl
 
+  -- Rose tree node 1 [node 2 [] , node 3 []]: the children lists are trees of a
+  -- nested μ-type, so folding over the tree exercises the nested recursion.
+  rose-input : ⟦ example-2.ex.rose ⟧ty (λ ()) .idx .Carrier
+  rose-input =
+    T.sup (1 , T.sup (inj₂ (T.sup (2 , T.sup (inj₁ (lift ·))) ,
+               T.sup (inj₂ (T.sup (3 , T.sup (inj₁ (lift ·))) , T.sup (inj₁ (lift ·)))))))
+
+  rose-bwd : _
+  rose-bwd = ⟦ example-2.ex.rose-query ⟧tm .famf .transf (_ , rose-input) .proj₂ .*→* .func .fun ⊤ .proj₂
+
+  -- Summing demands every number in the tree.
+  rose-test : rose-bwd ≡ (⊤ , (⊤ , _) , (⊤ , _) , _)
+  rose-test = ≡-refl
+
 -- Forward analysis (Conjugate).
 module forward where
   open import ho-model
