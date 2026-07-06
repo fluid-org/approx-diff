@@ -40,14 +40,14 @@ module SDSemiMod-𝟚 = sd-semimodule two.semiring
 module SemiMod-𝟚 = semimodule two.semiring
 open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_; εm)
 
-Approxm : Category.obj BoolAlg-𝟚.cat
-Approxm = BoolAlg-𝟚.𝕀
+Approx : Category.obj BoolAlg-𝟚.cat
+Approx = BoolAlg-𝟚.𝕀
 
-unitm : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approxm
-unitm = HasInitial.from-initial BoolAlg-𝟚.initial {Approxm}
-conjunctm : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚.products Approxm Approxm) Approxm
-conjunctm = HasProducts.p₁ BoolAlg-𝟚.products {Approxm} {Approxm}
-        +m HasProducts.p₂ BoolAlg-𝟚.products {Approxm} {Approxm}
+approx-unit : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approx
+approx-unit = HasInitial.from-initial BoolAlg-𝟚.initial {Approx}
+approx-conjunct : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
+        +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
 
 private
   num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
@@ -64,14 +64,14 @@ private
                     ; func-resp-≈ = λ e → Scalars.·-cong (prop.proj₁ e) (prop.proj₂ e) }
 
 open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
-  Approxm unitm conjunctm semiring-Q.setoid num-zero num-add num-mult
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
 
 -- Boolean-collapse derivative coefficient: zero map at 0, identity elsewhere.
 private
-  coeff-b : ℚ → Category._⇒_ BoolAlg-𝟚.cat Approxm Approxm
+  coeff-b : ℚ → Category._⇒_ BoolAlg-𝟚.cat Approx Approx
   coeff-b q with q ≟ 0ℚ
   ... | yes _ = εm
-  ... | no _ = Category.id BoolAlg-𝟚.cat Approxm
+  ... | no _ = Category.id BoolAlg-𝟚.cat Approx
 
   coeff-cong-b : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → Category._≈_ SemiMod-𝟚.cat (coeff-b x) (coeff-b y)
   coeff-cong-b {x} (liftS refl) = Category.≈-refl SemiMod-𝟚.cat {f = coeff-b x}

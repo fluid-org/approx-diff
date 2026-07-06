@@ -36,14 +36,14 @@ module SemiMod-ℚ = semimodule semiring-Q.semiring
 module Scalars = CommutativeSemiring semiring-Q.semiring
 open cmon-enriched.CMonEnriched SemiMod-ℚ.cmon-enriched using (_+m_)
 
-Approxm : Category.obj SDSemiMod-ℚ.cat
-Approxm = SDSemiMod-ℚ.𝕀
+Approx : Category.obj SDSemiMod-ℚ.cat
+Approx = SDSemiMod-ℚ.𝕀
 
-unitm : Category._⇒_ SDSemiMod-ℚ.cat (HasTerminal.witness SDSemiMod-ℚ.terminal) Approxm
-unitm = HasInitial.from-initial SDSemiMod-ℚ.initial {Approxm}
-conjunctm : Category._⇒_ SDSemiMod-ℚ.cat (HasProducts.prod SDSemiMod-ℚ.products Approxm Approxm) Approxm
-conjunctm = HasProducts.p₁ SDSemiMod-ℚ.products {Approxm} {Approxm}
-        +m HasProducts.p₂ SDSemiMod-ℚ.products {Approxm} {Approxm}
+approx-unit : Category._⇒_ SDSemiMod-ℚ.cat (HasTerminal.witness SDSemiMod-ℚ.terminal) Approx
+approx-unit = HasInitial.from-initial SDSemiMod-ℚ.initial {Approx}
+approx-conjunct : Category._⇒_ SDSemiMod-ℚ.cat (HasProducts.prod SDSemiMod-ℚ.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ SDSemiMod-ℚ.products {Approx} {Approx}
+        +m HasProducts.p₂ SDSemiMod-ℚ.products {Approx} {Approx}
 
 private
   module Add = CommutativeMonoid semiring-Q.additive
@@ -59,7 +59,7 @@ private
   num-mult = record { func = λ (x , y) → Mul._+_ x y ; func-resp-≈ = λ e → Mul.+-cong (prop.proj₁ e) (prop.proj₂ e) }
 
   -- Multiplication by c as a linear endomorphism of the scalars.
-  scalar : ℚ → Category._⇒_ SDSemiMod-ℚ.cat Approxm Approxm
+  scalar : ℚ → Category._⇒_ SDSemiMod-ℚ.cat Approx Approx
   scalar c .SemiMod-ℚ._⇒_.*→* = record { func = λ x → c Scalars.· x ; func-resp-≈ = λ e → Scalars.·-cong (Scalars.refl {c}) e }
   scalar c .SemiMod-ℚ._⇒_.preserve-ze = Scalars.ε-annihilᵣ {c}
   scalar c .SemiMod-ℚ._⇒_.preserve-+ {x} {y} = Scalars.·-+-distribₗ {c} {x} {y}
@@ -71,7 +71,7 @@ private
   scalar-cong e = record { *≈* = record { func-eq = λ u≈v → Scalars.·-cong e u≈v } }
 
 open import example-signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
-  Approxm unitm conjunctm semiring-Q.setoid num-zero num-add num-mult public
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult public
 module D = Deriv scalar scalar-cong
 open ho-model-sd-semimod.interp-sd semiring-Q.semiring Sig D.BaseInterp1 public
 open SDSemiMod-ℚ public using (conjugate)

@@ -42,14 +42,14 @@ module SemiMod-Rel = semimodule semiring-Q-tropical-mult.semiring
 module Scalars = CommutativeSemiring semiring-Q-tropical-mult.semiring
 open cmon-enriched.CMonEnriched SemiMod-Rel.cmon-enriched using (_+m_)
 
-Approxm : Category.obj SDSemiMod-Rel.cat
-Approxm = SDSemiMod-Rel.𝕀
+Approx : Category.obj SDSemiMod-Rel.cat
+Approx = SDSemiMod-Rel.𝕀
 
-unitm : Category._⇒_ SDSemiMod-Rel.cat (HasTerminal.witness SDSemiMod-Rel.terminal) Approxm
-unitm = HasInitial.from-initial SDSemiMod-Rel.initial {Approxm}
-conjunctm : Category._⇒_ SDSemiMod-Rel.cat (HasProducts.prod SDSemiMod-Rel.products Approxm Approxm) Approxm
-conjunctm = HasProducts.p₁ SDSemiMod-Rel.products {Approxm} {Approxm}
-        +m HasProducts.p₂ SDSemiMod-Rel.products {Approxm} {Approxm}
+approx-unit : Category._⇒_ SDSemiMod-Rel.cat (HasTerminal.witness SDSemiMod-Rel.terminal) Approx
+approx-unit = HasInitial.from-initial SDSemiMod-Rel.initial {Approx}
+approx-conjunct : Category._⇒_ SDSemiMod-Rel.cat (HasProducts.prod SDSemiMod-Rel.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ SDSemiMod-Rel.products {Approx} {Approx}
+        +m HasProducts.p₂ SDSemiMod-Rel.products {Approx} {Approx}
 
 private
   module Num = CommutativeSemiring semiring-Q.semiring
@@ -66,11 +66,11 @@ private
                     ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
 
 open import example-signature-interpretation SDSemiMod-Rel.cat SDSemiMod-Rel.products SDSemiMod-Rel.terminal
-  Approxm unitm conjunctm semiring-Q.setoid num-zero num-add num-mult
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
 
 private
   -- Multiplication by a scalar as a linear endomorphism of the scalars.
-  scalar : ℚ≥0∞ → Category._⇒_ SDSemiMod-Rel.cat Approxm Approxm
+  scalar : ℚ≥0∞ → Category._⇒_ SDSemiMod-Rel.cat Approx Approx
   scalar c .SemiMod-Rel._⇒_.*→* = record { func = λ x → c Scalars.· x ; func-resp-≈ = λ e → Scalars.·-cong (Scalars.refl {c}) e }
   scalar c .SemiMod-Rel._⇒_.preserve-ze = Scalars.ε-annihilᵣ {c}
   scalar c .SemiMod-Rel._⇒_.preserve-+ {x} {y} = Scalars.·-+-distribₗ {c} {x} {y}
@@ -84,10 +84,10 @@ private
   ... | yes _ = ∞
   ... | no ne = fin ∣ _÷_ x (Num._+_ x y) ⦃ ≢-nonZero ne ⦄ ∣ ⦃ ∣-∣-nonNeg (_÷_ x (Num._+_ x y) ⦃ ≢-nonZero ne ⦄) ⦄
 
-  add-c₁ add-c₂ mult-c : ℚ → ℚ → Category._⇒_ SDSemiMod-Rel.cat Approxm Approxm
+  add-c₁ add-c₂ mult-c : ℚ → ℚ → Category._⇒_ SDSemiMod-Rel.cat Approx Approx
   add-c₁ x y = scalar (relfac x y)
   add-c₂ x y = scalar (relfac y x)
-  mult-c _ _ = Category.id SDSemiMod-Rel.cat Approxm
+  mult-c _ _ = Category.id SDSemiMod-Rel.cat Approx
 
   add-c₁-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
                 Category._≈_ SemiMod-Rel.cat (add-c₁ x y) (add-c₁ x' y')

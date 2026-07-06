@@ -37,14 +37,14 @@ module SDSemiMod-ℚ∞ = sd-semimodule semiring-Q-tropical-add.semiring
 module SemiMod-ℚ∞ = semimodule semiring-Q-tropical-add.semiring
 open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (_+m_; εm)
 
-Approxm : Category.obj SDSemiMod-ℚ∞.cat
-Approxm = SDSemiMod-ℚ∞._⊕_ SDSemiMod-ℚ∞.𝕀 SDSemiMod-ℚ∞.𝕀
+Approx : Category.obj SDSemiMod-ℚ∞.cat
+Approx = SDSemiMod-ℚ∞._⊕_ SDSemiMod-ℚ∞.𝕀 SDSemiMod-ℚ∞.𝕀
 
-unitm : Category._⇒_ SDSemiMod-ℚ∞.cat (HasTerminal.witness SDSemiMod-ℚ∞.terminal) Approxm
-unitm = HasInitial.from-initial SDSemiMod-ℚ∞.initial {Approxm}
-conjunctm : Category._⇒_ SDSemiMod-ℚ∞.cat (HasProducts.prod SDSemiMod-ℚ∞.products Approxm Approxm) Approxm
-conjunctm = HasProducts.p₁ SDSemiMod-ℚ∞.products {Approxm} {Approxm}
-        +m HasProducts.p₂ SDSemiMod-ℚ∞.products {Approxm} {Approxm}
+approx-unit : Category._⇒_ SDSemiMod-ℚ∞.cat (HasTerminal.witness SDSemiMod-ℚ∞.terminal) Approx
+approx-unit = HasInitial.from-initial SDSemiMod-ℚ∞.initial {Approx}
+approx-conjunct : Category._⇒_ SDSemiMod-ℚ∞.cat (HasProducts.prod SDSemiMod-ℚ∞.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ SDSemiMod-ℚ∞.products {Approx} {Approx}
+        +m HasProducts.p₂ SDSemiMod-ℚ∞.products {Approx} {Approx}
 
 private
   module Num = CommutativeSemiring semiring-Q.semiring
@@ -61,12 +61,12 @@ private
                     ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
 
 open import example-signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
-  Approxm unitm conjunctm semiring-Q.setoid num-zero num-add num-mult
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
 
 -- Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞) records
 -- the absence of a bound.
 private
-  coeff-t : ℚ → Category._⇒_ SDSemiMod-ℚ∞.cat Approxm Approxm
+  coeff-t : ℚ → Category._⇒_ SDSemiMod-ℚ∞.cat Approx Approx
   coeff-t _ = εm
   coeff-cong-t : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → Category._≈_ SemiMod-ℚ∞.cat (coeff-t x) (coeff-t y)
   coeff-cong-t {x} _ = Category.≈-refl SemiMod-ℚ∞.cat {f = coeff-t x}

@@ -39,14 +39,14 @@ module SDSemiMod-ℕ = sd-semimodule semiring-N.semiring
 module SemiMod-ℕ = semimodule semiring-N.semiring
 open cmon-enriched.CMonEnriched SemiMod-ℕ.cmon-enriched using (_+m_)
 
-Approxm : Category.obj SDSemiMod-ℕ.cat
-Approxm = SDSemiMod-ℕ.𝕀
+Approx : Category.obj SDSemiMod-ℕ.cat
+Approx = SDSemiMod-ℕ.𝕀
 
-unitm : Category._⇒_ SDSemiMod-ℕ.cat (HasTerminal.witness SDSemiMod-ℕ.terminal) Approxm
-unitm = HasInitial.from-initial SDSemiMod-ℕ.initial {Approxm}
-conjunctm : Category._⇒_ SDSemiMod-ℕ.cat (HasProducts.prod SDSemiMod-ℕ.products Approxm Approxm) Approxm
-conjunctm = HasProducts.p₁ SDSemiMod-ℕ.products {Approxm} {Approxm}
-        +m HasProducts.p₂ SDSemiMod-ℕ.products {Approxm} {Approxm}
+approx-unit : Category._⇒_ SDSemiMod-ℕ.cat (HasTerminal.witness SDSemiMod-ℕ.terminal) Approx
+approx-unit = HasInitial.from-initial SDSemiMod-ℕ.initial {Approx}
+approx-conjunct : Category._⇒_ SDSemiMod-ℕ.cat (HasProducts.prod SDSemiMod-ℕ.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ SDSemiMod-ℕ.products {Approx} {Approx}
+        +m HasProducts.p₂ SDSemiMod-ℕ.products {Approx} {Approx}
 
 private
   module Num = CommutativeSemiring semiring-Q.semiring
@@ -63,12 +63,12 @@ private
                     ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
 
 open import example-signature-interpretation SDSemiMod-ℕ.cat SDSemiMod-ℕ.products SDSemiMod-ℕ.terminal
-  Approxm unitm conjunctm semiring-Q.setoid num-zero num-add num-mult
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
 
 -- Use-counting coefficients: every argument of every operation counts as one use.
 private
-  unit-c : ℚ → ℚ → Category._⇒_ SDSemiMod-ℕ.cat Approxm Approxm
-  unit-c _ _ = Category.id SDSemiMod-ℕ.cat Approxm
+  unit-c : ℚ → ℚ → Category._⇒_ SDSemiMod-ℕ.cat Approx Approx
+  unit-c _ _ = Category.id SDSemiMod-ℕ.cat Approx
 
   unit-c-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
                 Category._≈_ SemiMod-ℕ.cat (unit-c x y) (unit-c x' y')

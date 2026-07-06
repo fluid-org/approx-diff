@@ -39,23 +39,24 @@ open import language-syntax Sig hiding (_,_)
 open import label using (a; b)
 open import prop using (liftS)
 
-module FS = semiring-free ℕ
-open FS using (Poly; var)
-open FS.Normalise (λ n → n) (λ n → "x" ++s Data.Nat.Show.show n) using (pretty)
+module Free = semiring-free ℕ
+open Free using (Poly; var)
+open Free.Normalise (λ n → n) (λ n → "x" ++s Data.Nat.Show.show n) using (pretty)
 
 -- Model instantiation: polynomial approximations over rational data.
-module SDSemiMod-Free = sd-semimodule FS.semiring
-module SemiMod-Free = semimodule FS.semiring
+module SDSemiMod-Free = sd-semimodule Free.semiring
+module SemiMod-Free = semimodule Free.semiring
 open cmon-enriched.CMonEnriched SemiMod-Free.cmon-enriched using (_+m_)
 
-Approxm : Category.obj SDSemiMod-Free.cat
-Approxm = SDSemiMod-Free.𝕀
+Approx : Category.obj SDSemiMod-Free.cat
+Approx = SDSemiMod-Free.𝕀
 
-unitm : Category._⇒_ SDSemiMod-Free.cat (HasTerminal.witness SDSemiMod-Free.terminal) Approxm
-unitm = HasInitial.from-initial SDSemiMod-Free.initial {Approxm}
-conjunctm : Category._⇒_ SDSemiMod-Free.cat (HasProducts.prod SDSemiMod-Free.products Approxm Approxm) Approxm
-conjunctm = HasProducts.p₁ SDSemiMod-Free.products {Approxm} {Approxm}
-        +m HasProducts.p₂ SDSemiMod-Free.products {Approxm} {Approxm}
+approx-unit : Category._⇒_ SDSemiMod-Free.cat (HasTerminal.witness SDSemiMod-Free.terminal) Approx
+approx-unit = HasInitial.from-initial SDSemiMod-Free.initial {Approx}
+
+approx-conjunct : Category._⇒_ SDSemiMod-Free.cat (HasProducts.prod SDSemiMod-Free.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ SDSemiMod-Free.products {Approx} {Approx} +m
+            HasProducts.p₂ SDSemiMod-Free.products {Approx} {Approx}
 
 private
   module Num = CommutativeSemiring semiring-Q.semiring
@@ -72,19 +73,19 @@ private
                     ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
 
 open import example-signature-interpretation SDSemiMod-Free.cat SDSemiMod-Free.products SDSemiMod-Free.terminal
-  Approxm unitm conjunctm semiring-Q.setoid num-zero num-add num-mult
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
 
 -- Unit coefficients: every argument of every operation counts as one use.
 private
-  unit-c : ℚ → ℚ → Category._⇒_ SDSemiMod-Free.cat Approxm Approxm
-  unit-c _ _ = Category.id SDSemiMod-Free.cat Approxm
+  unit-c : ℚ → ℚ → Category._⇒_ SDSemiMod-Free.cat Approx Approx
+  unit-c _ _ = Category.id SDSemiMod-Free.cat Approx
 
   unit-c-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
                 Category._≈_ SemiMod-Free.cat (unit-c x y) (unit-c x' y')
   unit-c-cong _ _ = Category.≈-refl SemiMod-Free.cat {f = unit-c 0ℚ 0ℚ}
 
 module D = BinDeriv unit-c unit-c unit-c unit-c unit-c-cong unit-c-cong unit-c-cong unit-c-cong
-open ho-model-sd-semimod.interp-sd FS.semiring Sig D.BaseInterp1
+open ho-model-sd-semimod.interp-sd Free.semiring Sig D.BaseInterp1
 open SDSemiMod-Free using (conjugate)
 
 open indexed-family._⇒f_
@@ -106,7 +107,7 @@ test-fwd : pretty fwd-poly ≡ "x0 + x2 + 2·x3"
 test-fwd = refl
 
 -- Evaluating the polynomial at the all-ones valuation recovers the counting analysis.
-test-eval-counting : FS.Eval.eval semiring-N.semiring (λ _ → 1) fwd-poly ≡ 4
+test-eval-counting : Free.Eval.eval semiring-N.semiring (λ _ → 1) fwd-poly ≡ 4
 test-eval-counting = refl
 
 bwd-polys : List Poly

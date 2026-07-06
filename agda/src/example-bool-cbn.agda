@@ -35,17 +35,17 @@ module BoolAlg-𝟚 = boolalg-sd-semimodule two.semiring two.semiring-boolean
 module SemiMod-𝟚 = semimodule two.semiring
 open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_)
 
-Approxm : Category.obj BoolAlg-𝟚.cat
-Approxm = BoolAlg-𝟚.𝕀
+Approx : Category.obj BoolAlg-𝟚.cat
+Approx = BoolAlg-𝟚.𝕀
 
-unitm : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approxm
-unitm = HasInitial.from-initial BoolAlg-𝟚.initial {Approxm}
-conjunctm : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚.products Approxm Approxm) Approxm
-conjunctm = HasProducts.p₁ BoolAlg-𝟚.products {Approxm} {Approxm}
-        +m HasProducts.p₂ BoolAlg-𝟚.products {Approxm} {Approxm}
+approx-unit : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approx
+approx-unit = HasInitial.from-initial BoolAlg-𝟚.initial {Approx}
+approx-conjunct : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
+        +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
 
 open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
-  Approxm unitm conjunctm nat.ℕₛ nat.zero-m nat.add nat.mult public
+  Approx approx-unit approx-conjunct nat.ℕₛ nat.zero-m nat.add nat.mult public
 open ho-model-boolalg-sd-semimod.interp-boolean two.semiring two.semiring-boolean Sig BaseInterp0 public
 
 open SemiMod-𝟚._⇒_ public
