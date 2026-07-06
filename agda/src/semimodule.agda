@@ -361,6 +361,8 @@ module JoinSemilattices
   (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
   where
 
+  import commutative-monoid
+
   open import preorder using (Preorder)
   open import basics using (IsPreorder; IsJoin; IsBottom)
   open import join-semilattice using (JoinSemilattice) renaming (_=>_ to _=>J_)
@@ -374,36 +376,17 @@ module JoinSemilattices
         (M.trans (M.sym M.+-distribʳ)
           (M.trans (M.·-cong ⊤-add-top M.refl) M.·-unit))
 
-    infix 4 _≤_
-
-    _≤_ : M.Carrier → M.Carrier → Prop
-    x ≤ y = (x M.+ y) M.≈ y
+    open commutative-monoid.AdditivePreorder (M .Semimodule.additive) +-idem public
+      using (⊑-isPreorder; ∨-isJoin; ⊥-isBottom)
+      renaming (_⊑_ to _≤_; ≈→⊑ to ≈→≤; ⊑-antisym to ≤-antisym)
 
     ≤-isPreorder : IsPreorder _≤_
-    ≤-isPreorder .IsPreorder.refl = +-idem
-    ≤-isPreorder .IsPreorder.trans x≤y y≤z =
-      M.trans (M.+-cong M.refl (M.sym y≤z)) (M.trans (M.sym M.+-assoc) (M.trans (M.+-cong x≤y M.refl) y≤z))
-
-    ≈→≤ : ∀ {x y} → x M.≈ y → x ≤ y
-    ≈→≤ x≈y = M.trans (M.+-cong x≈y M.refl) +-idem
+    ≤-isPreorder = ⊑-isPreorder
 
     preorder : Preorder
     preorder .Preorder.Carrier = M.Carrier
     preorder .Preorder._≤_ = _≤_
     preorder .Preorder.≤-isPreorder = ≤-isPreorder
-
-    ∨-isJoin : IsJoin ≤-isPreorder (M._+_)
-    ∨-isJoin .IsJoin.inl = M.trans (M.sym M.+-assoc) (M.+-cong +-idem M.refl)
-    ∨-isJoin .IsJoin.inr =
-      M.trans (M.+-cong M.refl M.+-comm)
-        (M.trans (M.sym M.+-assoc) (M.trans (M.+-cong +-idem M.refl) M.+-comm))
-    ∨-isJoin .IsJoin.[_,_] x≤z y≤z = M.trans M.+-assoc (M.trans (M.+-cong M.refl y≤z) x≤z)
-
-    ⊥-isBottom : IsBottom ≤-isPreorder (M.ε)
-    ⊥-isBottom .IsBottom.≤-bottom = M.+-lunit
-
-    ≤-antisym : ∀ {x y} → x ≤ y → y ≤ x → x M.≈ y
-    ≤-antisym p q = M.trans (M.sym q) (M.trans M.+-comm p)
 
     joins : JoinSemilattice preorder
     joins .JoinSemilattice._∨_ = M._+_

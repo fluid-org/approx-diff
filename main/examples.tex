@@ -32,7 +32,7 @@ and $1$, as before. The backward derivative at this run is a linear map}
   \partial(\mathrm{query}\,l\,\mathit{db})_r : S^2 \multimap S^2 \times S^2 \times S^2
 \end{displaymath}
 \end{AddedBlock}
-\Added{with one factor for each number in the database (the frozen label positions and the list terminator
+\noindent\Added{with one factor for each number in the database (the frozen label positions and the list terminator
 contribute trivial factors, omitted here). Because the input is a list, the type of the derivative depends on
 the shape of the input.}
 
@@ -73,3 +73,50 @@ as an infinite condition number, in the sense of numerical analysis~\cite{high:A
 accurately through addition but carry no information through multiplication, while relative bounds propagate
 accurately through multiplication but are amplified by addition, and lost entirely where contributions
 cancel. The choice between the two presentations depends on what the analysis is meant to observe.}
+
+\subsection[Linked Inputs and Outputs]{\added{Linked Inputs and Outputs}}
+\label{sec:examples:linked}
+
+\Added{When outputs overlap in their dependencies, the two derivatives compose into a further analysis: a
+map sending a selection of outputs to the outputs related to it by a shared dependency. The
+\emph{moving average} is the standard example of such overlap. With window two and four inputs,}
+\begin{AddedBlock}
+\begin{displaymath}
+  \mathrm{mavg}\,(x_1, x_2, x_3, x_4) =
+  (\tfrac{1}{2} (x_1 + x_2),\; \tfrac{1}{2} (x_2 + x_3),\; \tfrac{1}{2} (x_3 + x_4))
+\end{displaymath}
+\end{AddedBlock}
+\noindent\Added{Each adjacent pair of outputs shares an input, and the
+first and last outputs share none. Running over the Booleans at the input $(1, 2, 4, 8)$, the Jacobian and
+the composite of the backward and forward derivatives are}
+\begin{AddedBlock}
+\begin{displaymath}
+  \partial_{\Two}(\mathrm{mavg}) =
+  \begin{pmatrix} 1 & 1 & 0 & 0 \\ 0 & 1 & 1 & 0 \\ 0 & 0 & 1 & 1 \end{pmatrix}
+  \qquad
+  \partial_{\Two}(\mathrm{mavg}) \comp \transpose{\partial_{\Two}(\mathrm{mavg})} =
+  \begin{pmatrix} 1 & 1 & 0 \\ 1 & 1 & 1 \\ 0 & 1 & 1 \end{pmatrix}
+\end{displaymath}
+\end{AddedBlock}
+\Added{The composite relates each output to the outputs it shares an input with: selecting the first output
+returns the first and second, and the third stays $\bot$ because the two windows are disjoint. This is the
+\emph{cognacy} analysis of linked visualisations~\cite{perera22,bond25,psallidas18}, computed here as a
+composite of the two derivatives of one run.}
+
+\subsection[Counting]{\added{Counting}}
+\label{sec:examples:counting}
+
+\Added{The counting semiring $(\mathbbm{N}, +, 0, \cdot, 1)$ of
+\secref{approx-as-tangents:richer-semirings} refines dependency tracking from whether an input is used to
+how many times. Every argument of every operation is given the coefficient $1$, so a Jacobian entry counts
+the paths from an input position to an output position.}
+
+\Added{On the weighted-sum query of \secref{introduction:galois-slicing}, the backward derivative of the
+output returns a count for every position: $1$ at each selected quantity, $0$ at the unselected row and the
+other price, and $2$ at the price of the queried label, which is used once in each selected row. The count
+of $2$ survives the cancellation that zeroes the rational derivative, because the counting semiring is
+positive and counts cannot cancel. The three instances thus answer three different questions at the same
+position: the rational Jacobian reports sensitivity ($0$), the Boolean Jacobian reports possible dependence
+($1$), and the counting Jacobian reports usage ($2$). Zero-testing sends the count $2$ to the Boolean $1$
+exactly, as \secref{approx-as-tangents:richer-semirings} leads us to expect of a positive semiring, whereas
+the same specialisation applied to the rational entry loses the dependency.}

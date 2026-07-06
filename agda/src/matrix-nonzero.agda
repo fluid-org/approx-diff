@@ -1,7 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Which entries of a rational matrix are nonzero, as a lax functor Mat(ℚ) → Mat(𝟚): identities
--- and transpose preserved on the nose, composition laxly (the chain-rule over-approximation).
+-- Which entries of a rational matrix are nonzero, as the lax entrywise action Mat(ℚ) → Mat(𝟚):
+-- identities and transpose preserved on the nose, composition laxly (the chain-rule
+-- over-approximation).
 -- The tests exercise the Jacobians of the introductory example: a composite can have fewer
 -- nonzero entries than the composite of the nonzero entries suggests, when contributions cancel.
 module matrix-nonzero where
@@ -24,7 +25,8 @@ private
   ∨-idem {two.O} = T.refl {two.O}
   ∨-idem {two.I} = T.refl {two.I}
 
-open import matrix-lax-functor semiring-Q.nonzero ∨-idem
+import matrix-functor
+open matrix-functor.Lax semiring-Q.nonzero ∨-idem
 
 -- The quantities column of the refund example: a purchase and its refund.
 N : QM.Matrix 2 1
