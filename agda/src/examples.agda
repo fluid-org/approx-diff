@@ -11,6 +11,7 @@ import example-rationals-fwd
 import example-rationals-bwd
 import example-rationals-total
 import example-counting-total
+import example-free-total
 import example-intervals
 import example-intervals-mult
 

@@ -58,34 +58,56 @@ private
 open import matrix-embedding SemiMod.cmon-enriched SemiMod.biproduct 𝟘 𝟘-initial 𝟘-terminal 𝕀 (λ {f} {g} → ∘-comm {f} {g}) public
   renaming (S to End𝕀)
 
--- The embedding factors through the self-dual semimodules: each free object X^ n (an iterated
--- biproduct of 𝕀) carries the self-duality built from those of 𝕀 and 𝟘.
+-- The embedding factors through the self-dual semimodules: each free object X^ n is (on the nose) the free
+-- self-dual semimodule S^ n.
 import sd-semimodule
 open import Data.Nat using (ℕ; zero; suc)
 open import functor using (Functor)
 
 module SDSemiMod = sd-semimodule S
+open SDSemiMod using (S^_)
+open import prop-setoid using (module ≈-Reasoning)
 
 private
-  X^-self-dual : ∀ n → Category.Iso SemiMod.cat (X^ n) (SDSemiMod.Dual (X^ n))
-  X^-self-dual zero    = SDSemiMod.𝟘≅𝟘*
-  X^-self-dual (suc n) = SDSemiMod.⊕-self-dual SDSemiMod.𝕀≅𝕀* (X^-self-dual n)
+  module C = Category SemiMod.cat
+  open C.Iso
 
-  X^-pairing-sym : ∀ n {x y} → SDSemiMod.pairing (X^-self-dual n) x y S.≈ SDSemiMod.pairing (X^-self-dual n) y x
-  X^-pairing-sym zero    = S.refl
-  X^-pairing-sym (suc n) =
-    S.trans (SDSemiMod.pairing-⊕ SDSemiMod.𝕀≅𝕀* (X^-self-dual n))
-      (S.trans (S.+-cong S.·-comm (X^-pairing-sym n))
-        (S.sym (SDSemiMod.pairing-⊕ SDSemiMod.𝕀≅𝕀* (X^-self-dual n))))
-
-fobj-sd : ℕ → SDSemiMod.SelfDual
-fobj-sd n .SDSemiMod.SelfDual.obj  = X^ n
-fobj-sd n .SDSemiMod.SelfDual.dual = X^-self-dual n
-fobj-sd n .SDSemiMod.SelfDual.pairing-sym = X^-pairing-sym n
+  X^≅S^ : ∀ n → C.Iso (X^ n) (SDSemiMod.SelfDual.obj (S^ n))
+  X^≅S^ zero = C.Iso-refl
+  X^≅S^ (suc n) = SDSemiMod.⊕-iso C.Iso-refl (X^≅S^ n)
 
 embed : Functor Mat.cat SDSemiMod.cat
-embed .Functor.fobj = fobj-sd
-embed .Functor.fmor {m} {n} = F .Functor.fmor {m} {n}
-embed .Functor.fmor-cong {m} {n} = F .Functor.fmor-cong {m} {n}
-embed .Functor.fmor-id {n} = F .Functor.fmor-id {n}
-embed .Functor.fmor-comp {m} {n} {k} = F .Functor.fmor-comp {m} {n} {k}
+embed .Functor.fobj n = S^ n
+embed .Functor.fmor {m} {n} M = X^≅S^ n .fwd C.∘ (F .Functor.fmor M C.∘ X^≅S^ m .bwd)
+embed .Functor.fmor-cong {m} {n} e =
+  C.∘-cong (C.≈-refl {f = X^≅S^ n .fwd}) (C.∘-cong (F .Functor.fmor-cong e) (C.≈-refl {f = X^≅S^ m .bwd}))
+embed .Functor.fmor-id {n} = begin
+    X^≅S^ n .fwd C.∘ (F .Functor.fmor (Mat.cat .Category.id n) C.∘ X^≅S^ n .bwd)
+  ≈⟨ C.∘-cong (C.≈-refl {f = X^≅S^ n .fwd}) (C.∘-cong (F .Functor.fmor-id {n}) (C.≈-refl {f = X^≅S^ n .bwd})) ⟩
+    X^≅S^ n .fwd C.∘ (C.id _ C.∘ X^≅S^ n .bwd)
+  ≈⟨ C.∘-cong (C.≈-refl {f = X^≅S^ n .fwd}) (C.id-left {f = X^≅S^ n .bwd}) ⟩
+    X^≅S^ n .fwd C.∘ X^≅S^ n .bwd
+  ≈⟨ X^≅S^ n .fwd∘bwd≈id ⟩
+    C.id _
+  ∎
+  where open ≈-Reasoning C.isEquiv
+embed .Functor.fmor-comp {x} {y} {z} f g = begin
+    X^≅S^ z .fwd C.∘ (F .Functor.fmor (Mat.cat .Category._∘_ f g) C.∘ X^≅S^ x .bwd)
+  ≈⟨ C.∘-cong (C.≈-refl {f = X^≅S^ z .fwd}) (C.∘-cong (F .Functor.fmor-comp f g) (C.≈-refl {f = X^≅S^ x .bwd})) ⟩
+    X^≅S^ z .fwd C.∘ ((F .Functor.fmor f C.∘ F .Functor.fmor g) C.∘ X^≅S^ x .bwd)
+  ≈˘⟨ C.∘-cong (C.≈-refl {f = X^≅S^ z .fwd}) (C.∘-cong (C.∘-cong (C.≈-refl {f = F .Functor.fmor f}) (C.id-left {f = F .Functor.fmor g})) (C.≈-refl {f = X^≅S^ x .bwd})) ⟩
+    X^≅S^ z .fwd C.∘ ((F .Functor.fmor f C.∘ (C.id _ C.∘ F .Functor.fmor g)) C.∘ X^≅S^ x .bwd)
+  ≈˘⟨ C.∘-cong (C.≈-refl {f = X^≅S^ z .fwd}) (C.∘-cong (C.∘-cong (C.≈-refl {f = F .Functor.fmor f}) (C.∘-cong (X^≅S^ y .bwd∘fwd≈id) (C.≈-refl {f = F .Functor.fmor g}))) (C.≈-refl {f = X^≅S^ x .bwd})) ⟩
+    X^≅S^ z .fwd C.∘ ((F .Functor.fmor f C.∘ ((X^≅S^ y .bwd C.∘ X^≅S^ y .fwd) C.∘ F .Functor.fmor g)) C.∘ X^≅S^ x .bwd)
+  ≈⟨ C.∘-cong (C.≈-refl {f = X^≅S^ z .fwd}) (C.∘-cong (C.∘-cong (C.≈-refl {f = F .Functor.fmor f}) (C.assoc (X^≅S^ y .bwd) (X^≅S^ y .fwd) (F .Functor.fmor g))) (C.≈-refl {f = X^≅S^ x .bwd})) ⟩
+    X^≅S^ z .fwd C.∘ ((F .Functor.fmor f C.∘ (X^≅S^ y .bwd C.∘ (X^≅S^ y .fwd C.∘ F .Functor.fmor g))) C.∘ X^≅S^ x .bwd)
+  ≈˘⟨ C.∘-cong (C.≈-refl {f = X^≅S^ z .fwd}) (C.∘-cong (C.assoc (F .Functor.fmor f) (X^≅S^ y .bwd) (X^≅S^ y .fwd C.∘ F .Functor.fmor g)) (C.≈-refl {f = X^≅S^ x .bwd})) ⟩
+    X^≅S^ z .fwd C.∘ (((F .Functor.fmor f C.∘ X^≅S^ y .bwd) C.∘ (X^≅S^ y .fwd C.∘ F .Functor.fmor g)) C.∘ X^≅S^ x .bwd)
+  ≈⟨ C.∘-cong (C.≈-refl {f = X^≅S^ z .fwd}) (C.assoc (F .Functor.fmor f C.∘ X^≅S^ y .bwd) (X^≅S^ y .fwd C.∘ F .Functor.fmor g) (X^≅S^ x .bwd)) ⟩
+    X^≅S^ z .fwd C.∘ ((F .Functor.fmor f C.∘ X^≅S^ y .bwd) C.∘ ((X^≅S^ y .fwd C.∘ F .Functor.fmor g) C.∘ X^≅S^ x .bwd))
+  ≈˘⟨ C.assoc (X^≅S^ z .fwd) (F .Functor.fmor f C.∘ X^≅S^ y .bwd) ((X^≅S^ y .fwd C.∘ F .Functor.fmor g) C.∘ X^≅S^ x .bwd) ⟩
+    (X^≅S^ z .fwd C.∘ (F .Functor.fmor f C.∘ X^≅S^ y .bwd)) C.∘ ((X^≅S^ y .fwd C.∘ F .Functor.fmor g) C.∘ X^≅S^ x .bwd)
+  ≈⟨ C.∘-cong (C.≈-refl {f = X^≅S^ z .fwd C.∘ (F .Functor.fmor f C.∘ X^≅S^ y .bwd)}) (C.assoc (X^≅S^ y .fwd) (F .Functor.fmor g) (X^≅S^ x .bwd)) ⟩
+    (X^≅S^ z .fwd C.∘ (F .Functor.fmor f C.∘ X^≅S^ y .bwd)) C.∘ (X^≅S^ y .fwd C.∘ (F .Functor.fmor g C.∘ X^≅S^ x .bwd))
+  ∎
+  where open ≈-Reasoning C.isEquiv

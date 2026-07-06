@@ -178,6 +178,45 @@ products .HasProducts.pair-ext f .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (
 𝟘 .zero-distribʳ = tt
 𝟘 .zero-distribˡ = tt
 
+-- Unit and associativity isomorphisms for the biproduct, constructed concretely on the pair
+-- representation.
+module _ where
+  open Category cat using (Iso)
+  open _⇒_
+  open _≈m_
+  import Level
+  import Agda.Builtin.Unit
+  open import prop-setoid using () renaming (_≃m_ to _≈s_)
+
+  ⊕-lunit-iso : ∀ {N} → Iso (𝟘 ⊕ N) N
+  ⊕-lunit-iso {N} .Iso.fwd .*→* ._⇒s_.func (_ , n) = n
+  ⊕-lunit-iso {N} .Iso.fwd .*→* ._⇒s_.func-resp-≈ (_ , e) = e
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-ze = refl N
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-+ = refl N
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-· = refl N
+  ⊕-lunit-iso {N} .Iso.bwd .*→* ._⇒s_.func n = Level.lift Agda.Builtin.Unit.tt , n
+  ⊕-lunit-iso {N} .Iso.bwd .*→* ._⇒s_.func-resp-≈ e = tt , e
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-ze = tt , refl N
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-+ = tt , refl N
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-· = tt , refl N
+  ⊕-lunit-iso {N} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq e = e
+  ⊕-lunit-iso {N} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq (_ , e) = tt , e
+
+  ⊕-assoc-iso : ∀ {M N P} → Iso ((M ⊕ N) ⊕ P) (M ⊕ (N ⊕ P))
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .*→* ._⇒s_.func ((m , n) , p) = m , (n , p)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .*→* ._⇒s_.func-resp-≈ ((em , en) , ep) = em , (en , ep)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-ze = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-+ = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-· = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .*→* ._⇒s_.func (m , (n , p)) = (m , n) , p
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .*→* ._⇒s_.func-resp-≈ (em , (en , ep)) = (em , en) , ep
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-ze = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-+ = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-· = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq (em , (en , ep)) = em , (en , ep)
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq ((em , en) , ep) = (em , en) , ep
+
+
 terminal : HasTerminal cat
 terminal .HasTerminal.witness = 𝟘
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {M} = ε-map M 𝟘

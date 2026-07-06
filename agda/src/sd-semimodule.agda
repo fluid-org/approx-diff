@@ -8,6 +8,7 @@ open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products;
 open import commutative-monoid using (CommutativeMonoid)
 open import functor using (Functor)
 import finite-product-functor
+open import Data.Nat as Nat using (ℕ)
 import semimodule
 
 -- Category SDSemiMod of self-dual semimodules and linear maps.
@@ -32,7 +33,7 @@ module _ where
   Dual : Semimodule → Semimodule
   Dual M = M SemiMod.⊸ SemiMod.𝕀
 
-  open Category SemiMod.cat using (≈-trans; ≈-sym; ≈-refl; ∘-cong; assoc; id-left; Iso; IsIso→Iso; Iso-trans; Iso-sym)
+  open Category SemiMod.cat using (≈-trans; ≈-sym; ≈-refl; ∘-cong; assoc; id-left; Iso; IsIso→Iso; Iso-refl; Iso-trans; Iso-sym)
 
   -- Pairing ⟨ x , y ⟩ = (d x) y induced by a self-duality; a measure of the extent to which x and y overlap.
   pairing : ∀ {M} → Iso M (Dual M) → M .Carrier → M .Carrier → S.Carrier
@@ -163,11 +164,11 @@ module _ where
   ⊕-self-dual : ∀ {M N} → Iso M (Dual M) → Iso N (Dual N) → Iso (M SemiMod.⊕ N) (Dual (M SemiMod.⊕ N))
   ⊕-self-dual M≅M* N≅N* = Iso-trans (⊕-iso M≅M* N≅N*) (Iso-sym Dual-⊕-iso)
 
-  ⊕-iso-fwd : ∀ {M N} (M≅M* : Iso M (Dual M)) (N≅N* : Iso N (Dual N)) {x : M .Carrier} {y : N .Carrier} →
-              (Dual M SemiMod.⊕ Dual N) ._≈_ (⊕-iso M≅M* N≅N* .Iso.fwd .func (x , y))
-                                     (M≅M* .Iso.fwd .func x , N≅N* .Iso.fwd .func y)
-  ⊕-iso-fwd {M} {N} M≅M* N≅N* .proj₁ = trans (Dual M) (+-comm (Dual M)) (+-lunit (Dual M))
-  ⊕-iso-fwd {M} {N} M≅M* N≅N* .proj₂ = +-lunit (Dual N)
+  ⊕-iso-fwd : ∀ {M M' N N'} (f : Iso M M') (g : Iso N N') {x : M .Carrier} {y : N .Carrier} →
+              (M' SemiMod.⊕ N') ._≈_ (⊕-iso f g .Iso.fwd .func (x , y))
+                                     (f .Iso.fwd .func x , g .Iso.fwd .func y)
+  ⊕-iso-fwd {M} {M'} {N} {N'} f g .proj₁ = trans M' (+-comm M') (+-lunit M')
+  ⊕-iso-fwd {M} {M'} {N} {N'} f g .proj₂ = +-lunit N'
 
   pairing-⊕ : ∀ {M N} (M≅M* : Iso M (Dual M)) (N≅N* : Iso N (Dual N)) {x x' : M .Carrier} {y y' : N .Carrier} →
               pairing (⊕-self-dual M≅M* N≅N*) (x , y) (x' , y') S.≈ ((pairing M≅M* x x') S.+ (pairing N≅N* y y'))
@@ -268,19 +269,73 @@ module _ where
     conjugate-comp : ∀ (X Y Z : SelfDual) (g : Y .obj ⇒ Z .obj) (f : X .obj ⇒ Y .obj) →
                      conjugate X Z (g ∘ f) ≈m (conjugate X Y f ∘ conjugate Y Z g)
     conjugate-comp X Y Z g f =
-      ≈-sym (≈-trans (assoc (i .Iso.bwd) (f ᵀ ∘ j .Iso.fwd) (j .Iso.bwd ∘ (g ᵀ ∘ k .Iso.fwd)))
-        (≈-trans (∘-cong (≈-refl {f = i .Iso.bwd})
-            (≈-trans (assoc (f ᵀ) (j .Iso.fwd) (j .Iso.bwd ∘ (g ᵀ ∘ k .Iso.fwd)))
+      ≈-sym (≈-trans (assoc (X .dual .Iso.bwd) (f ᵀ ∘ Y .dual .Iso.fwd) (Y .dual .Iso.bwd ∘ (g ᵀ ∘ Z .dual .Iso.fwd)))
+        (≈-trans (∘-cong (≈-refl {f = X .dual .Iso.bwd})
+            (≈-trans (assoc (f ᵀ) (Y .dual .Iso.fwd) (Y .dual .Iso.bwd ∘ (g ᵀ ∘ Z .dual .Iso.fwd)))
               (∘-cong (≈-refl {f = f ᵀ})
-                (≈-trans (≈-sym (assoc (j .Iso.fwd) (j .Iso.bwd) (g ᵀ ∘ k .Iso.fwd)))
-                  (≈-trans (∘-cong (j .Iso.fwd∘bwd≈id) (≈-refl {f = g ᵀ ∘ k .Iso.fwd})) (id-left {f = g ᵀ ∘ k .Iso.fwd}))))))
-          (∘-cong (≈-refl {f = i .Iso.bwd})
-            (≈-trans (≈-sym (assoc (f ᵀ) (g ᵀ) (k .Iso.fwd)))
-              (∘-cong (≈-sym (ᵀ-comp g f)) (≈-refl {f = k .Iso.fwd}))))))
-      where
-        i = X .dual
-        j = Y .dual
-        k = Z .dual
+                (≈-trans (≈-sym (assoc (Y .dual .Iso.fwd) (Y .dual .Iso.bwd) (g ᵀ ∘ Z .dual .Iso.fwd)))
+                  (≈-trans (∘-cong (Y .dual .Iso.fwd∘bwd≈id) (≈-refl {f = g ᵀ ∘ Z .dual .Iso.fwd})) (id-left {f = g ᵀ ∘ Z .dual .Iso.fwd}))))))
+          (∘-cong (≈-refl {f = X .dual .Iso.bwd})
+            (≈-trans (≈-sym (assoc (f ᵀ) (g ᵀ) (Z .dual .Iso.fwd)))
+              (∘-cong (≈-sym (ᵀ-comp g f)) (≈-refl {f = Z .dual .Iso.fwd}))))))
+
+    -- Isomorphisms compatible with the chosen self-dualities: the pairing is preserved.
+    record _≅sd_ (X Y : SelfDual) : Set where
+      field
+        iso : Iso (X .obj) (Y .obj)
+        pairing-iso : ∀ {x x'} → pairing (Y .dual) (iso .Iso.fwd .func x) (iso .Iso.fwd .func x')
+                                 S.≈ pairing (X .dual) x x'
+
+    open _≅sd_ public
+
+    private
+      pairing-cong : ∀ {M} (d : Iso M (Dual M)) {x x' y y'} →
+                     Semimodule._≈_ M x x' → Semimodule._≈_ M y y' →
+                     pairing d x y S.≈ pairing d x' y'
+      pairing-cong d ex ey =
+        S.trans (d .Iso.fwd .*→* ._⇒s_.func-resp-≈ ex .*≈* ._≈s_.func-eq ey) S.refl
+
+    ≅sd-refl : ∀ {X} → X ≅sd X
+    ≅sd-refl .iso = Iso-refl
+    ≅sd-refl .pairing-iso = S.refl
+
+    ≅sd-trans : ∀ {X Y Z} → X ≅sd Y → Y ≅sd Z → X ≅sd Z
+    ≅sd-trans e₁ e₂ .iso = Iso-trans (e₁ .iso) (e₂ .iso)
+    ≅sd-trans e₁ e₂ .pairing-iso = S.trans (e₂ .pairing-iso) (e₁ .pairing-iso)
+
+    ⊕-≅sd : ∀ {X X' Y Y'} → X ≅sd X' → Y ≅sd Y' → ⊕-sd X Y ≅sd ⊕-sd X' Y'
+    ⊕-≅sd {X} {X'} {Y} {Y'} e₁ e₂ .iso = ⊕-iso (e₁ .iso) (e₂ .iso)
+    ⊕-≅sd {X} {X'} {Y} {Y'} e₁ e₂ .pairing-iso {x , y} {x' , y'} =
+      S.trans (pairing-cong (⊕-self-dual (X' .dual) (Y' .dual))
+                 (⊕-iso-fwd (e₁ .iso) (e₂ .iso)) (⊕-iso-fwd (e₁ .iso) (e₂ .iso)))
+        (S.trans (pairing-⊕ (X' .dual) (Y' .dual))
+          (S.trans (S.+-cong (e₁ .pairing-iso) (e₂ .pairing-iso))
+            (S.sym (pairing-⊕ (X .dual) (Y .dual)))))
+
+    ⊕-lunit-≅sd : ∀ {Y} → ⊕-sd 𝟘-sd Y ≅sd Y
+    ⊕-lunit-≅sd {Y} .iso = SemiMod.⊕-lunit-iso
+    ⊕-lunit-≅sd {Y} .pairing-iso = S.sym (S.trans (pairing-⊕ (𝟘-sd .dual) (Y .dual)) S.+-lunit)
+
+    ⊕-assoc-≅sd : ∀ {X Y Z} → ⊕-sd (⊕-sd X Y) Z ≅sd ⊕-sd X (⊕-sd Y Z)
+    ⊕-assoc-≅sd {X} {Y} {Z} .iso = SemiMod.⊕-assoc-iso
+    ⊕-assoc-≅sd {X} {Y} {Z} .pairing-iso =
+      S.sym (S.trans (pairing-⊕ (⊕-sd X Y .dual) (Z .dual))
+        (S.trans (S.+-cong (pairing-⊕ (X .dual) (Y .dual)) S.refl)
+          (S.trans S.+-assoc
+            (S.sym (S.trans (pairing-⊕ (X .dual) (⊕-sd Y Z .dual))
+              (S.+-cong S.refl (pairing-⊕ (Y .dual) (Z .dual))))))))
+
+    -- The free self-dual semimodules: iterated biproducts of the scalars.
+    infix 30 S^_
+    S^_ : ℕ → SelfDual
+    S^ Nat.zero = 𝟘-sd
+    S^ (Nat.suc n) = ⊕-sd 𝕀-sd (S^ n)
+
+    -- The biproduct of free objects is free.
+    S^-+ : ∀ m n → ⊕-sd (S^ m) (S^ n) ≅sd (S^ (m Nat.+ n))
+    S^-+ Nat.zero n = ⊕-lunit-≅sd
+    S^-+ (Nat.suc m) n =
+      ≅sd-trans (⊕-assoc-≅sd {𝕀-sd} {S^ m} {S^ n}) (⊕-≅sd (≅sd-refl {𝕀-sd}) (S^-+ m n))
 
 open SelfDual
 
