@@ -2,15 +2,17 @@
 
 module intrinsic-derivative where
 
-open import Data.Nat using (ℕ; zero; suc)
-open import Data.Fin using (Fin; zero; suc; _≟_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _*_)
+open import Data.Nat.Properties using (*-zeroʳ)
+open import Data.Fin using (Fin; zero; suc; _≟_; splitAt; _↑ˡ_; _↑ʳ_)
+open import Data.Fin.Properties using (splitAt-↑ˡ; splitAt-↑ʳ)
 open import Data.Product using (_×_; proj₁; proj₂; _,_; Σ-syntax)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Unit using (⊤; tt)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Relation.Nullary.Decidable
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym; cong₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym; cong₂; subst)
 
 data 𝔹 : Set where
   I O : 𝔹
@@ -100,9 +102,9 @@ antisym : ∀ {x y} → x ⊑ y → y ⊑ x → x ≡ y
 antisym {I} {I} ϕ ψ = refl
 antisym {O} {O} ϕ ψ = refl
 
-∨-∧-distrib : ∀ {x y z} → ((x ∧ y) ∨ (x ∧ z)) ≡ (x ∧ (y ∨ z))
-∨-∧-distrib {I} {y} {z} = refl
-∨-∧-distrib {O} {y} {z} = refl
+∧-∨-distribˡ : ∀ {x y z} → ((x ∧ y) ∨ (x ∧ z)) ≡ (x ∧ (y ∨ z))
+∧-∨-distribˡ {I} {y} {z} = refl
+∧-∨-distribˡ {O} {y} {z} = refl
 
 ------------------------------------------------------------------------------
 module with-booleans where
@@ -111,6 +113,7 @@ module with-booleans where
 
   Vec : ℕ → Set
   Vec n = Fin n → 𝔹
+
 
   _⊔_ : ∀ {n} → Vec n → Vec n → Vec n
   (x ⊔ y) i = x i ∨ y i
@@ -136,7 +139,7 @@ module with-booleans where
   ∙-preserve-∅ M i = antisym (least {f = λ j → M j i ∧ O} (λ j → lower₂)) tt
 
   ∙-preserve-⊔ : ∀ {m n} (M : Matrix m n) (x y : Vec m) → (M ∙ x) ⊔ (M ∙ y) ≈V M ∙ (x ⊔ y)
-  ∙-preserve-⊔ M x y j = trans (⋁-∨ {f = λ k → M k j ∧ x k} {g = λ k → M k j ∧ y k}) (⋁-cong {f = λ i → (M i j ∧ x i) ∨ (M i j ∧ y i)} {g = λ i → M i j ∧ (x i ∨ y i)} λ i → ∨-∧-distrib {M i j} {x i} {y i})
+  ∙-preserve-⊔ M x y j = trans (⋁-∨ {f = λ k → M k j ∧ x k} {g = λ k → M k j ∧ y k}) (⋁-cong {f = λ i → (M i j ∧ x i) ∨ (M i j ∧ y i)} {g = λ i → M i j ∧ (x i ∨ y i)} λ i → ∧-∨-distribˡ {M i j} {x i} {y i})
 
   record Obj : Set₁ where
     field
@@ -147,13 +150,19 @@ module with-booleans where
   El : Obj → Set
   El X = (i : Fin (X .arity)) → X .dom i
 
-  -- Functions that carry correct dependency information
+  postulate
+    El-ext : ∀ {X} {x y : El X} → (∀ i → x i ≡ y i) → x ≡ y
+
+  -- Functions that carry correct but not necessarily complete
+  -- dependency information
   record _⇒_ (X Y : Obj) : Set₁ where
     field
       func : El X → El Y
       deps : El X → Matrix (X .arity) (Y .arity)
       deps-ok : ∀ x x' j → (∀ i → deps x i j ≡ I → x i ≡ x' i) → func x j ≡ func x' j
-        -- More generally: (⋀ λ i → deps x i j ⊸ X i .eq (x i) (x' i)) ⊸ Y j .eq (func x j) (func x' j)
+      -- More generally: (⋀ λ i → deps x i j ⊸ X i .eq (x i) (x' i)) ⊸ Y j .eq (func x j) (func x' j)
+      -- alternative:
+      -- deps-ok2 : ∀ x x' i → (∀ i' → i ≡ i' ⊎ x i' ≡ x' i') → ∀ j → deps x i j ≡ O → func x j ≡ func x' j
   open _⇒_
 
   constant : ∀ {X Y} → El Y → X ⇒ Y
@@ -178,8 +187,118 @@ module with-booleans where
   (f ∘ g) .deps-ok x x' j x₁ = f .deps-ok (g .func x) (g .func x') j
       (λ i f-dep-ij → g .deps-ok x x' i (λ i₁ x₂ → x₁ i₁ (antisym I-top (⊑-trans (greatest (⊑-reflexive (sym f-dep-ij)) (⊑-reflexive (sym x₂))) (upper {f = λ k → f .deps (g .func x) k j ∧ g .deps x i₁ k} i)))))
 
--- This category has products, but not sums and certainly not function
--- spaces.
+  -- Products
+  prod : Obj → Obj → Obj
+  prod X Y .arity = X .arity + Y .arity
+  prod X Y .dom i = [ X .dom , Y .dom ] (splitAt (X .arity) i)
+
+  is-eq : ∀ {n} → Fin n → Fin n → 𝔹
+  is-eq i j with i ≟ j
+  ... | yes _ = I
+  ... | no _ = O
+
+  is-eq-refl : ∀ {n} {i : Fin n} → is-eq i i ≡ I
+  is-eq-refl {n} {i} with i ≟ i
+  ... | yes refl = refl
+  ... | no ¬i≡i with ¬i≡i refl
+  ... | ()
+
+  project₁ : ∀ {X Y} → prod X Y ⇒ X
+  project₁ {X} {Y} .func x i = subst [ X .dom , Y .dom ] (splitAt-↑ˡ (X .arity) i (Y .arity)) (x (i ↑ˡ Y .arity))
+  project₁ {X} {Y} .deps x i j = [ is-eq j , (λ _ → O) ] (splitAt (X .arity) i)
+  project₁ {X} {Y} .deps-ok x x' j x₁ =
+    cong
+     (λ □ →
+        subst [ X .dom , Y .dom ] (splitAt-↑ˡ (X .arity) j (Y .arity)) □)
+     (x₁ (j ↑ˡ Y .arity)
+         (trans (cong [ is-eq j , (λ _ → O) ] (splitAt-↑ˡ (X .arity) j (Y .arity))) is-eq-refl))
+
+  project₂ : ∀ {X Y} → prod X Y ⇒ Y
+  project₂ {X} {Y} .func x i = subst [ X .dom , Y .dom ] (splitAt-↑ʳ (X .arity) (Y .arity) i) (x (X .arity ↑ʳ i))
+  project₂ {X} {Y} .deps x i j = [ (λ _ → O) , is-eq j ] (splitAt (X .arity) i)
+  project₂ {X} {Y} .deps-ok x x' j x₁ =
+    cong
+      (λ □ → subst [ X .dom , Y .dom ] (splitAt-↑ʳ (X .arity) (Y .arity) j) □)
+      (x₁ (X .arity ↑ʳ j)
+          (trans (cong [ (λ _ → O) , is-eq j ] (splitAt-↑ʳ (X .arity) (Y .arity) j)) is-eq-refl))
+
+  pair-func : ∀ {A B : Set} {X : A → Set} {Y : B → Set} →
+              (f : ∀ a → X a) →
+              (g : ∀ b → Y b) →
+              (d : A ⊎ B) → [_,_] {C = λ _ → Set} X Y d
+  pair-func f g (inj₁ x) = f x
+  pair-func f g (inj₂ y) = g y
+
+
+  pair : ∀ {W X Y} → W ⇒ X → W ⇒ Y → W ⇒ prod X Y
+  pair {W} {X} {Y} f g .func w i = pair-func (f .func w) (g .func w) (splitAt (X .arity) i)
+  pair {W} {X} {Y} f g .deps w i j = [ (f .deps w i) , (g .deps w i) ] (splitAt (X .arity) j)
+  pair {W} {X} {Y} f g .deps-ok x x' j x₁ with splitAt (X .arity) j
+  ... | inj₁ j₁ = f .deps-ok x x' j₁ x₁
+  ... | inj₂ j₂ = g .deps-ok x x' j₂ x₁
+
+  ------------------------------------------------------------------------------
+  -- A function with interesting dependency structure
+
+  set : Set → Obj
+  set A .arity = 1
+  set A .dom _ = A
+
+  set-f : ∀ {A B} → (A → B) → set A ⇒ set B
+  set-f f .func x _ = f (x zero)
+  set-f f .deps _ _ _ = I
+  set-f f .deps-ok x x' j ϕ = cong f (ϕ zero refl)
+
+  is-zero : ℕ → 𝔹
+  is-zero zero = I
+  is-zero (suc n) = O
+
+  is-not-zero : ℕ → 𝔹
+  is-not-zero zero = O
+  is-not-zero (suc n) = I
+
+  add : prod (set ℕ) (set ℕ) ⇒ set ℕ
+  add .func xy _ = xy zero + xy (suc zero)
+  add .deps xy _ _ = I -- matrix of all 'I's; this suffices for all functions, but we needn't do that
+  add .deps-ok x x' j ϕ = cong₂ _+_ (ϕ zero refl) (ϕ (suc zero) refl)
+
+  mul : prod (set ℕ) (set ℕ) ⇒ set ℕ
+  mul .func xy _ = xy zero * xy (suc zero)
+  mul .deps xy zero       _ = is-zero (xy zero) ∨ is-not-zero (xy (suc zero))
+  mul .deps xy (suc zero) _ = is-not-zero (xy zero) -- ∨ is-zero (xy (suc zero))
+  mul .deps-ok x x' _ ϕ with ϕ zero
+  mul .deps-ok x x' _ ϕ | ϕ₁ with ϕ (suc zero)
+  mul .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ with x zero
+  mul .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | zero rewrite sym (ϕ₁ refl) = refl
+  mul .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | suc n with x (suc zero)
+  mul .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | suc n | zero rewrite sym (ϕ₂ refl) = trans (*-zeroʳ n) (sym (*-zeroʳ (x' zero)))
+  mul .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | suc n | suc m rewrite sym (ϕ₁ refl) rewrite sym (ϕ₂ refl) = refl
+
+  -- This gives an interesting matrix of dependencies, including the
+  -- forbidden "parallel" one!
+  _ = {!mul .deps (λ { zero → 0 ; (suc zero) → 0 }) zero zero!}
+
+  -- mul (0, 0) = (I O) -- or (O I)
+  -- mul (0, n) = (I O)
+  -- mul (m, 0) = (O I)
+  -- mul (m, n) = (I I)
+
+  ite : ∀ {X : Set} → 𝔹 → X → X → X
+  ite I x y = x
+  ite O x y = y
+
+  ifthenelse : ∀ {X} → prod (set 𝔹) (prod X X) ⇒ X
+  ifthenelse .func x = ite (x zero) (project₁ .func (λ i → x (suc i))) (project₂ .func (λ i → x (suc i)))
+  ifthenelse .deps x zero    j = I
+  ifthenelse .deps x (suc i) j =
+    ite (x zero) (project₁ .deps (λ i → x (suc i)) i j) (project₂ .deps (λ i → x (suc i)) i j)
+  ifthenelse .deps-ok x x' j ϕ with (λ i → ϕ (suc i))
+  ifthenelse .deps-ok x x' j ϕ | ϕ' with ϕ zero refl
+  ifthenelse .deps-ok x x' j ϕ | ϕ' | ψ with x zero
+  ifthenelse .deps-ok x x' j ϕ | ϕ' | ψ | I with x' zero
+  ifthenelse .deps-ok x x' j ϕ | ϕ' | ψ | I | I = project₁ .deps-ok (λ i → x (suc i)) (λ i → x' (suc i)) j ϕ'
+  ifthenelse .deps-ok x x' j ϕ | ϕ' | ψ | O with x' zero
+  ifthenelse .deps-ok x x' j ϕ | ϕ' | ψ | O | O = project₂ .deps-ok (λ i → x (suc i)) (λ i → x' (suc i)) j ϕ'
 
 ------------------------------------------------------------------------------
 module with-sets where
