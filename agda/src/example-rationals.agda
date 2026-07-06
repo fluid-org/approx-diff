@@ -49,6 +49,8 @@ private
   module Add = CommutativeMonoid semiring-Q.additive
   module Mul = CommutativeMonoid semiring-Q.multiplicative
   open prop-setoid._⇒_
+  open prop-setoid._≃m_
+  open SemiMod-ℚ._≈m_ using (*≈*)
 
   num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
   num-zero .func _ = 0ℚ
@@ -73,7 +75,7 @@ private
       (Scalars.trans (Scalars.·-cong (Scalars.·-comm {c} {s}) Scalars.refl) (Scalars.·-assoc {s} {c} {x}))
 
   scalar-cong : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → Category._≈_ SemiMod-ℚ.cat (scalar x) (scalar y)
-  scalar-cong e = record { *≈* = record { func-eq = λ u≈v → Scalars.·-cong e u≈v } }
+  scalar-cong e .*≈* .func-eq u≈v = Scalars.·-cong e u≈v
 
 open import example-signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult public
