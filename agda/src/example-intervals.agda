@@ -32,49 +32,32 @@ open Ex.ex using (query)
 open import label using (a; b)
 open semiring-Q-tropical-add using (∞; fin)
 
--- Model instantiation.
+-- Model instantiation: bounds for each direction of change, so the approximation object is
+-- 𝕀 ⊕ 𝕀. Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞)
+-- records the absence of a bound.
 module SDSemiMod-ℚ∞ = sd-semimodule semiring-Q-tropical-add.semiring
 module SemiMod-ℚ∞ = semimodule semiring-Q-tropical-add.semiring
-open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (_+m_; εm)
-
-Approx : Category.obj SDSemiMod-ℚ∞.cat
-Approx = SDSemiMod-ℚ∞._⊕_ SDSemiMod-ℚ∞.𝕀 SDSemiMod-ℚ∞.𝕀
-
-approx-unit : Category._⇒_ SDSemiMod-ℚ∞.cat (HasTerminal.witness SDSemiMod-ℚ∞.terminal) Approx
-approx-unit = HasInitial.from-initial SDSemiMod-ℚ∞.initial {Approx}
-approx-conjunct : Category._⇒_ SDSemiMod-ℚ∞.cat (HasProducts.prod SDSemiMod-ℚ∞.products Approx Approx) Approx
-approx-conjunct = HasProducts.p₁ SDSemiMod-ℚ∞.products {Approx} {Approx}
-        +m HasProducts.p₂ SDSemiMod-ℚ∞.products {Approx} {Approx}
+open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (εm)
 
 private
-  module Num = CommutativeSemiring semiring-Q.semiring
+  Approx : Category.obj SDSemiMod-ℚ∞.cat
+  Approx = SDSemiMod-ℚ∞._⊕_ SDSemiMod-ℚ∞.𝕀 SDSemiMod-ℚ∞.𝕀
 
-  num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → Num.refl }
+  unit-c ∞-c : ℚ → ℚ → Category._⇒_ SDSemiMod-ℚ∞.cat Approx Approx
+  unit-c _ _ = Category.id SDSemiMod-ℚ∞.cat Approx
+  ∞-c _ _ = εm
 
-  num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-add = record { func = λ (x , y) → Num._+_ x y
-                   ; func-resp-≈ = λ e → Num.+-cong (prop.proj₁ e) (prop.proj₂ e) }
+  unit-c-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
+                Category._≈_ SemiMod-ℚ∞.cat (unit-c x y) (unit-c x' y')
+  unit-c-cong _ _ = Category.≈-refl SemiMod-ℚ∞.cat {f = unit-c 0ℚ 0ℚ}
 
-  num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-mult = record { func = λ (x , y) → Num._·_ x y
-                    ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
+  ∞-c-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
+             Category._≈_ SemiMod-ℚ∞.cat (∞-c x y) (∞-c x' y')
+  ∞-c-cong _ _ = Category.≈-refl SemiMod-ℚ∞.cat {f = ∞-c 0ℚ 0ℚ}
 
-open import example-signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
-
--- Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞) records
--- the absence of a bound.
-private
-  coeff-t : ℚ → Category._⇒_ SDSemiMod-ℚ∞.cat Approx Approx
-  coeff-t _ = εm
-  coeff-cong-t : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → Category._≈_ SemiMod-ℚ∞.cat (coeff-t x) (coeff-t y)
-  coeff-cong-t {x} _ = Category.≈-refl SemiMod-ℚ∞.cat {f = coeff-t x}
-
-module D = Deriv coeff-t coeff-cong-t
-open ho-model-sd-semimod.interp-sd semiring-Q-tropical-add.semiring Sig D.BaseInterp1
-open SDSemiMod-ℚ∞ using (conjugate)
-open SemiMod-ℚ∞._⇒_
+open import example-harness using (module SDSemiMod-model; rationals)
+open SDSemiMod-model semiring-Q-tropical-add.semiring Approx rationals unit-c unit-c ∞-c ∞-c
+  unit-c-cong unit-c-cong ∞-c-cong ∞-c-cong
 
 input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
 input = 3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _

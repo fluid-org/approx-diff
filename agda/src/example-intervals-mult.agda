@@ -40,37 +40,12 @@ open semiring-Q-tropical-mult using (ℚ≥0∞; ∞; fin)
 module SDSemiMod-Rel = sd-semimodule semiring-Q-tropical-mult.semiring
 module SemiMod-Rel = semimodule semiring-Q-tropical-mult.semiring
 module Scalars = CommutativeSemiring semiring-Q-tropical-mult.semiring
-open cmon-enriched.CMonEnriched SemiMod-Rel.cmon-enriched using (_+m_)
-
-Approx : Category.obj SDSemiMod-Rel.cat
-Approx = SDSemiMod-Rel.𝕀
-
-approx-unit : Category._⇒_ SDSemiMod-Rel.cat (HasTerminal.witness SDSemiMod-Rel.terminal) Approx
-approx-unit = HasInitial.from-initial SDSemiMod-Rel.initial {Approx}
-approx-conjunct : Category._⇒_ SDSemiMod-Rel.cat (HasProducts.prod SDSemiMod-Rel.products Approx Approx) Approx
-approx-conjunct = HasProducts.p₁ SDSemiMod-Rel.products {Approx} {Approx}
-        +m HasProducts.p₂ SDSemiMod-Rel.products {Approx} {Approx}
 
 private
   module Num = CommutativeSemiring semiring-Q.semiring
 
-  num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → Num.refl }
-
-  num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-add = record { func = λ (x , y) → Num._+_ x y
-                   ; func-resp-≈ = λ e → Num.+-cong (prop.proj₁ e) (prop.proj₂ e) }
-
-  num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-mult = record { func = λ (x , y) → Num._·_ x y
-                    ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
-
-open import example-signature-interpretation SDSemiMod-Rel.cat SDSemiMod-Rel.products SDSemiMod-Rel.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
-
-private
   -- Multiplication by a scalar as a linear endomorphism of the scalars.
-  scalar : ℚ≥0∞ → Category._⇒_ SDSemiMod-Rel.cat Approx Approx
+  scalar : ℚ≥0∞ → Category._⇒_ SDSemiMod-Rel.cat SDSemiMod-Rel.𝕀 SDSemiMod-Rel.𝕀
   scalar c .SemiMod-Rel._⇒_.*→* = record { func = λ x → c Scalars.· x ; func-resp-≈ = λ e → Scalars.·-cong (Scalars.refl {c}) e }
   scalar c .SemiMod-Rel._⇒_.preserve-ze = Scalars.ε-annihilᵣ {c}
   scalar c .SemiMod-Rel._⇒_.preserve-+ {x} {y} = Scalars.·-+-distribₗ {c} {x} {y}
@@ -84,10 +59,10 @@ private
   ... | yes _ = ∞
   ... | no ne = fin ∣ _÷_ x (Num._+_ x y) ⦃ ≢-nonZero ne ⦄ ∣ ⦃ ∣-∣-nonNeg (_÷_ x (Num._+_ x y) ⦃ ≢-nonZero ne ⦄) ⦄
 
-  add-c₁ add-c₂ mult-c : ℚ → ℚ → Category._⇒_ SDSemiMod-Rel.cat Approx Approx
+  add-c₁ add-c₂ mult-c : ℚ → ℚ → Category._⇒_ SDSemiMod-Rel.cat SDSemiMod-Rel.𝕀 SDSemiMod-Rel.𝕀
   add-c₁ x y = scalar (relfac x y)
   add-c₂ x y = scalar (relfac y x)
-  mult-c _ _ = Category.id SDSemiMod-Rel.cat Approx
+  mult-c _ _ = Category.id SDSemiMod-Rel.cat SDSemiMod-Rel.𝕀
 
   add-c₁-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
                 Category._≈_ SemiMod-Rel.cat (add-c₁ x y) (add-c₁ x' y')
@@ -101,12 +76,9 @@ private
                 Category._≈_ SemiMod-Rel.cat (mult-c x y) (mult-c x' y')
   mult-c-cong _ _ = Category.≈-refl SemiMod-Rel.cat {f = mult-c 0ℚ 0ℚ}
 
-module D = BinDeriv add-c₁ add-c₂ mult-c mult-c add-c₁-cong add-c₂-cong mult-c-cong mult-c-cong
-open ho-model-sd-semimod.interp-sd semiring-Q-tropical-mult.semiring Sig D.BaseInterp1
-open SDSemiMod-Rel using (conjugate)
-
-open indexed-family._⇒f_
-open SemiMod-Rel._⇒_
+open import example-harness using (module SDSemiMod-model; rationals)
+open SDSemiMod-model semiring-Q-tropical-mult.semiring SDSemiMod-Rel.𝕀 rationals
+  add-c₁ add-c₂ mult-c mult-c add-c₁-cong add-c₂-cong mult-c-cong mult-c-cong
 
 input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
 input = (3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _) , (+ 2 / 1 , + 5 / 1)

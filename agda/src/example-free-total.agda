@@ -7,17 +7,9 @@
 -- the equational theory, so the tests compare renderings under the unverified normaliser.
 module example-free-total where
 
-open import categories using (Category; HasInitial; HasProducts; HasTerminal)
-import cmon-enriched
-import prop
-import semimodule
-import sd-semimodule
-import ho-model-sd-semimod
 import semiring-free
 import semiring-N
 import semiring-Q
-import indexed-family
-open import commutative-semiring using (CommutativeSemiring)
 
 open import Level using (lift; 0ℓ)
 open import Data.Unit renaming (tt to ·) using ()
@@ -37,59 +29,14 @@ module Ex = example ℚ
 open Ex.ex using (total)
 open import language-syntax Sig hiding (_,_)
 open import label using (a; b)
-open import prop using (liftS)
 
 module Free = semiring-free ℕ
 open Free using (Poly; var)
 open Free.Normalise (λ n → n) (λ n → "x" ++s Data.Nat.Show.show n) using (pretty)
 
--- Model instantiation: polynomial approximations over rational data.
-module SDSemiMod-Free = sd-semimodule Free.semiring
-module SemiMod-Free = semimodule Free.semiring
-open cmon-enriched.CMonEnriched SemiMod-Free.cmon-enriched using (_+m_)
-
-Approx : Category.obj SDSemiMod-Free.cat
-Approx = SDSemiMod-Free.𝕀
-
-approx-unit : Category._⇒_ SDSemiMod-Free.cat (HasTerminal.witness SDSemiMod-Free.terminal) Approx
-approx-unit = HasInitial.from-initial SDSemiMod-Free.initial {Approx}
-
-approx-conjunct : Category._⇒_ SDSemiMod-Free.cat (HasProducts.prod SDSemiMod-Free.products Approx Approx) Approx
-approx-conjunct = HasProducts.p₁ SDSemiMod-Free.products {Approx} {Approx} +m
-            HasProducts.p₂ SDSemiMod-Free.products {Approx} {Approx}
-
-private
-  module Num = CommutativeSemiring semiring-Q.semiring
-
-  num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero = record { func = λ _ → 0ℚ ; func-resp-≈ = λ _ → Num.refl }
-
-  num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-add = record { func = λ (x , y) → Num._+_ x y
-                   ; func-resp-≈ = λ e → Num.+-cong (prop.proj₁ e) (prop.proj₂ e) }
-
-  num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-mult = record { func = λ (x , y) → Num._·_ x y
-                    ; func-resp-≈ = λ e → Num.·-cong (prop.proj₁ e) (prop.proj₂ e) }
-
-open import example-signature-interpretation SDSemiMod-Free.cat SDSemiMod-Free.products SDSemiMod-Free.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
-
--- Unit coefficients: every argument of every operation counts as one use.
-private
-  unit-c : ℚ → ℚ → Category._⇒_ SDSemiMod-Free.cat Approx Approx
-  unit-c _ _ = Category.id SDSemiMod-Free.cat Approx
-
-  unit-c-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
-                Category._≈_ SemiMod-Free.cat (unit-c x y) (unit-c x' y')
-  unit-c-cong _ _ = Category.≈-refl SemiMod-Free.cat {f = unit-c 0ℚ 0ℚ}
-
-module D = BinDeriv unit-c unit-c unit-c unit-c unit-c-cong unit-c-cong unit-c-cong unit-c-cong
-open ho-model-sd-semimod.interp-sd Free.semiring Sig D.BaseInterp1
-open SDSemiMod-Free using (conjugate)
-
-open indexed-family._⇒f_
-open SemiMod-Free._⇒_
+-- Model instantiation: polynomial approximations over rational data, unit coefficients.
+open import example-harness using (module SDSemiMod-model-unit; rationals)
+open SDSemiMod-model-unit Free.semiring rationals
 
 -- The run of the introduction, with each perturbable position seeded by its variable.
 input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
