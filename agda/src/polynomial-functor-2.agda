@@ -8,6 +8,7 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor)
+open import prop-setoid using (module ≈-Reasoning)
 
 module polynomial-functor-2 where
 
@@ -135,7 +136,7 @@ module MuIso
   open Category 𝒞
   open HasProducts 𝒞P
   open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP) using (in₁; in₂)
-  open HasStrongCoproducts 𝒞SCP using ()
+  open HasStrongCoproducts 𝒞SCP using (copair-in₁; copair-in₂; copair-ext)
     renaming (copair to scopair; copair-cong to scopair-cong)
   open Interp 𝒞T 𝒞P 𝒞SCP
   open HasMu Mu
@@ -199,8 +200,8 @@ module MuIso
                 (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj Q δ'
     pm-μ-fmor {Q = Q} r {δ} {δ'} fs = ⦅ α Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂) ⦆
 
-  -- The fold respects equality of algebras. P and δ are explicit because
-  -- fobj/μ-obj are not injective, so they can't be inferred from the algebras.
+  -- The fold respects equality of algebras. P and δ are explicit because fobj/μ-obj are not injective, so
+  -- can't be inferred from the algebras.
   ⦅⦆-cong : ∀ {n Γ A} (P : Poly 𝒞 (suc n)) (δ : Fin n → obj)
             {alg alg' : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A} →
             alg ≈ alg' → ⦅_⦆ {P = P} {δ = δ} alg ≈ ⦅_⦆ {P = P} {δ = δ} alg'
@@ -247,3 +248,183 @@ module MuIso
           (∀ i → fs i ≈ fs' i) → ∀ i → strong-extend-mor fs x i ≈ strong-extend-mor fs' x i
         strong-extend-mor-cong es Fin.zero    = ≈-refl
         strong-extend-mor-cong es (Fin.suc i) = es i
+
+  ------------------------------------------------------------------------------
+  -- Functor laws for the strong action, derived from the initiality laws.
+
+  private
+    module CoK {Γ : obj} = Category (coKleisli-prod 𝒞P Γ)
+
+  pair-p₁-comp : ∀ {Γ X Y Z} (x : prod Γ X ⇒ Y) (y : prod Γ Z ⇒ X) →
+                 (pair p₁ x ∘ pair p₁ y) ≈ pair p₁ (x ∘ pair p₁ y)
+  pair-p₁-comp x y =
+    begin
+      pair p₁ x ∘ pair p₁ y
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair (p₁ ∘ pair p₁ y) (x ∘ pair p₁ y)
+    ≈⟨ pair-cong (pair-p₁ _ _) ≈-refl ⟩
+      pair p₁ (x ∘ pair p₁ y)
+    ∎ where open ≈-Reasoning isEquiv
+
+  -- Push a plain morphism out of a co-Kleisli composite.
+  ∘co-push : ∀ {Γ W X Y Z} (x : prod Γ Y ⇒ Z) (a : X ⇒ Y) (y : prod Γ W ⇒ X) →
+             ((x ∘co (a ∘ p₂)) ∘co y) ≈ (x ∘co (a ∘ y))
+  ∘co-push x a y =
+    begin
+      (x ∘ pair p₁ (a ∘ p₂)) ∘ pair p₁ y
+    ≈⟨ assoc _ _ _ ⟩
+      x ∘ (pair p₁ (a ∘ p₂) ∘ pair p₁ y)
+    ≈⟨ ∘-cong ≈-refl (pair-p₁-comp _ _) ⟩
+      x ∘ pair p₁ ((a ∘ p₂) ∘ pair p₁ y)
+    ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))) ⟩
+      x ∘ pair p₁ (a ∘ y)
+    ∎ where open ≈-Reasoning isEquiv
+
+  -- The strong action respects equality of environments.
+  mutual
+    strong-fmor-cong : ∀ {n Γ} (P : Poly 𝒞 n) {δ δ' : Fin n → obj}
+                       {fs fs' : ∀ i → prod Γ (δ i) ⇒ δ' i} →
+                       (∀ i → fs i ≈ fs' i) → strong-fmor P fs ≈ strong-fmor P fs'
+    strong-fmor-cong (const A) es = ≈-refl
+    strong-fmor-cong (var i)   es = es i
+    strong-fmor-cong (P + Q)   es =
+      scopair-cong (∘-cong ≈-refl (strong-fmor-cong P es)) (∘-cong ≈-refl (strong-fmor-cong Q es))
+    strong-fmor-cong (P × Q)   es = strong-prod-m-cong (strong-fmor-cong P es) (strong-fmor-cong Q es)
+    strong-fmor-cong (μ P)     es = strong-μ-fmor-cong P es
+
+    strong-μ-fmor-cong : ∀ {n Γ} (P : Poly 𝒞 (suc n)) {δ δ' : Fin n → obj}
+                         {fs fs' : ∀ i → prod Γ (δ i) ⇒ δ' i} →
+                         (∀ i → fs i ≈ fs' i) → strong-μ-fmor P fs ≈ strong-μ-fmor P fs'
+    strong-μ-fmor-cong P {δ} {δ'} {fs} {fs'} es =
+      ⦅⦆-cong P δ (∘-cong ≈-refl (strong-fmor-cong P sem-es))
+      where
+        sem-es : ∀ i → strong-extend-mor fs p₂ i ≈ strong-extend-mor fs' p₂ i
+        sem-es Fin.zero    = ≈-refl
+        sem-es (Fin.suc i) = es i
+
+  -- The strong action is functorial: composites of actions are actions of
+  -- pointwise co-Kleisli composites.
+  mutual
+    strong-fmor-comp : ∀ {n Γ} (P : Poly 𝒞 n) {δ δ' δ'' : Fin n → obj}
+                       (gs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
+                       (strong-fmor P gs ∘co strong-fmor P fs) ≈ strong-fmor P (λ i → gs i ∘co fs i)
+    strong-fmor-comp (const A) gs fs = CoK.id-left
+    strong-fmor-comp (var i)   gs fs = ≈-refl
+    strong-fmor-comp (P + Q)   gs fs =
+      ≈-trans (≈-sym (copair-ext _)) (scopair-cong branch₁ branch₂)
+      where
+        SG = scopair (in₁ ∘ strong-fmor P gs) (in₂ ∘ strong-fmor Q gs)
+        SF = scopair (in₁ ∘ strong-fmor P fs) (in₂ ∘ strong-fmor Q fs)
+
+        branch₁ : ((SG ∘ pair p₁ SF) ∘ pair p₁ (in₁ ∘ p₂)) ≈ (in₁ ∘ strong-fmor P (λ i → gs i ∘co fs i))
+        branch₁ =
+          begin
+            (SG ∘ pair p₁ SF) ∘ pair p₁ (in₁ ∘ p₂)
+          ≈⟨ assoc _ _ _ ⟩
+            SG ∘ (pair p₁ SF ∘ pair p₁ (in₁ ∘ p₂))
+          ≈⟨ ∘-cong ≈-refl (pair-p₁-comp _ _) ⟩
+            SG ∘ pair p₁ (SF ∘ pair p₁ (in₁ ∘ p₂))
+          ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (copair-in₁ _ _)) ⟩
+            SG ∘ pair p₁ (in₁ ∘ strong-fmor P fs)
+          ≈˘⟨ ∘co-push SG in₁ (strong-fmor P fs) ⟩
+            (SG ∘ pair p₁ (in₁ ∘ p₂)) ∘ pair p₁ (strong-fmor P fs)
+          ≈⟨ ∘-cong (copair-in₁ _ _) ≈-refl ⟩
+            (in₁ ∘ strong-fmor P gs) ∘ pair p₁ (strong-fmor P fs)
+          ≈⟨ assoc _ _ _ ⟩
+            in₁ ∘ (strong-fmor P gs ∘ pair p₁ (strong-fmor P fs))
+          ≈⟨ ∘-cong ≈-refl (strong-fmor-comp P gs fs) ⟩
+            in₁ ∘ strong-fmor P (λ i → gs i ∘co fs i)
+          ∎ where open ≈-Reasoning isEquiv
+
+        branch₂ : ((SG ∘ pair p₁ SF) ∘ pair p₁ (in₂ ∘ p₂)) ≈ (in₂ ∘ strong-fmor Q (λ i → gs i ∘co fs i))
+        branch₂ =
+          begin
+            (SG ∘ pair p₁ SF) ∘ pair p₁ (in₂ ∘ p₂)
+          ≈⟨ assoc _ _ _ ⟩
+            SG ∘ (pair p₁ SF ∘ pair p₁ (in₂ ∘ p₂))
+          ≈⟨ ∘-cong ≈-refl (pair-p₁-comp _ _) ⟩
+            SG ∘ pair p₁ (SF ∘ pair p₁ (in₂ ∘ p₂))
+          ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (copair-in₂ _ _)) ⟩
+            SG ∘ pair p₁ (in₂ ∘ strong-fmor Q fs)
+          ≈˘⟨ ∘co-push SG in₂ (strong-fmor Q fs) ⟩
+            (SG ∘ pair p₁ (in₂ ∘ p₂)) ∘ pair p₁ (strong-fmor Q fs)
+          ≈⟨ ∘-cong (copair-in₂ _ _) ≈-refl ⟩
+            (in₂ ∘ strong-fmor Q gs) ∘ pair p₁ (strong-fmor Q fs)
+          ≈⟨ assoc _ _ _ ⟩
+            in₂ ∘ (strong-fmor Q gs ∘ pair p₁ (strong-fmor Q fs))
+          ≈⟨ ∘-cong ≈-refl (strong-fmor-comp Q gs fs) ⟩
+            in₂ ∘ strong-fmor Q (λ i → gs i ∘co fs i)
+          ∎ where open ≈-Reasoning isEquiv
+    strong-fmor-comp (P × Q)   gs fs =
+      ≈-trans (strong-prod-m-comp _ _ _ _)
+              (strong-prod-m-cong (strong-fmor-comp P gs fs) (strong-fmor-comp Q gs fs))
+    strong-fmor-comp (μ P)     gs fs = strong-μ-fmor-comp P gs fs
+
+    strong-μ-fmor-comp : ∀ {n Γ} (P : Poly 𝒞 (suc n)) {δ δ' δ'' : Fin n → obj}
+                         (gs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
+                         (strong-μ-fmor P gs ∘co strong-μ-fmor P fs) ≈ strong-μ-fmor P (λ i → gs i ∘co fs i)
+    strong-μ-fmor-comp P {δ} {δ'} {δ''} gs fs =
+      ⦅⦆-η {P = P} {δ = δ} alg h chain
+      where
+        g' = strong-μ-fmor P gs
+        f' = strong-μ-fmor P fs
+        h = g' ∘co f'
+        alg-f = α P δ' ∘ strong-fmor P (strong-extend-mor fs p₂)
+        alg-g = α P δ'' ∘ strong-fmor P (strong-extend-mor gs p₂)
+        alg = α P δ'' ∘ strong-fmor P (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
+
+        e₁ : ∀ i → (strong-extend-mor (λ _ → p₂) g' i ∘co strong-extend-mor fs p₂ i) ≈ strong-extend-mor fs g' i
+        e₁ Fin.zero    = CoK.id-right
+        e₁ (Fin.suc i) = CoK.id-left
+
+        e₂ : ∀ i → (strong-extend-mor fs g' i ∘co strong-extend-mor (λ _ → p₂) f' i) ≈ strong-extend-mor fs h i
+        e₂ Fin.zero    = ≈-refl
+        e₂ (Fin.suc i) = CoK.id-right
+
+        e₃ : ∀ i → (strong-extend-mor gs p₂ i ∘co strong-extend-mor fs h i) ≈ strong-extend-mor (λ j → gs j ∘co fs j) h i
+        e₃ Fin.zero    = CoK.id-left
+        e₃ (Fin.suc i) = ≈-refl
+
+        e₄ : ∀ i → (strong-extend-mor (λ j → gs j ∘co fs j) p₂ i ∘co strong-extend-mor (λ _ → p₂) h i) ≈ strong-extend-mor (λ j → gs j ∘co fs j) h i
+        e₄ Fin.zero    = CoK.id-left
+        e₄ (Fin.suc i) = CoK.id-right
+
+        head : (g' ∘co alg-f) ≈ (alg-g ∘co strong-fmor P (strong-extend-mor fs g'))
+        head =
+          begin
+            g' ∘co (α P δ' ∘ strong-fmor P (strong-extend-mor fs p₂))
+          ≈˘⟨ ∘co-push g' (α P δ') _ ⟩
+            (g' ∘co (α P δ' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor fs p₂)
+          ≈⟨ CoK.∘-cong (⦅⦆-β {P = P} {δ = δ'} alg-g) ≈-refl ⟩
+            (alg-g ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) g')) ∘co strong-fmor P (strong-extend-mor fs p₂)
+          ≈⟨ CoK.assoc _ _ _ ⟩
+            alg-g ∘co (strong-fmor P (strong-extend-mor (λ _ → p₂) g') ∘co strong-fmor P (strong-extend-mor fs p₂))
+          ≈⟨ CoK.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P e₁)) ⟩
+            alg-g ∘co strong-fmor P (strong-extend-mor fs g')
+          ∎ where open ≈-Reasoning isEquiv
+
+        chain : (h ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) h))
+        chain =
+          begin
+            h ∘co (α P δ ∘ p₂)
+          ≈⟨ CoK.assoc g' f' (α P δ ∘ p₂) ⟩
+            g' ∘co (f' ∘co (α P δ ∘ p₂))
+          ≈⟨ CoK.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} alg-f) ⟩
+            g' ∘co (alg-f ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) f'))
+          ≈˘⟨ CoK.assoc g' alg-f _ ⟩
+            (g' ∘co alg-f) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) f')
+          ≈⟨ CoK.∘-cong head ≈-refl ⟩
+            (alg-g ∘co strong-fmor P (strong-extend-mor fs g')) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) f')
+          ≈⟨ CoK.assoc _ _ _ ⟩
+            alg-g ∘co (strong-fmor P (strong-extend-mor fs g') ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) f'))
+          ≈⟨ CoK.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P e₂)) ⟩
+            alg-g ∘co strong-fmor P (strong-extend-mor fs h)
+          ≈⟨ assoc _ _ _ ⟩
+            α P δ'' ∘ (strong-fmor P (strong-extend-mor gs p₂) ∘co strong-fmor P (strong-extend-mor fs h))
+          ≈⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P e₃)) ⟩
+            α P δ'' ∘ strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) h)
+          ≈˘⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P e₄)) ⟩
+            α P δ'' ∘ (strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) h))
+          ≈˘⟨ assoc _ _ _ ⟩
+            alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) h)
+          ∎ where open ≈-Reasoning isEquiv
