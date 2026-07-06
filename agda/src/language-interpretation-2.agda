@@ -18,7 +18,8 @@ module language-interpretation-2
   (𝒞 : Category o m e)
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
-  (let open polynomial-functor-2 𝒞T 𝒞P 𝒞SC hiding (_+_; _×_))
+  (let open polynomial-functor-2.Interp 𝒞T 𝒞P 𝒞SC)
+  (let open polynomial-functor-2 using (Poly; extend))
   (Mu : HasMu)
   (let Bool = HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
               (HasTerminal.witness 𝒞T) (HasTerminal.witness 𝒞T))
@@ -45,7 +46,7 @@ mutual
   ⟦ σ [→] τ ⟧ty δ = ⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ())
   ⟦ μ τ ⟧ty       δ = μ-obj (as-poly τ δ) (λ ())
 
-  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly n
+  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 n
   as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
   as-poly unit            δ = Poly.const 𝟙
   as-poly (base s)        δ = Poly.const (⟦sort⟧ s)
@@ -79,7 +80,7 @@ ty-cong (base s)  h = refl
 ty-cong (σ [+] τ) h = cong₂ coprod (ty-cong σ h) (ty-cong τ h)
 ty-cong (σ [×] τ) h = cong₂ prod  (ty-cong σ h) (ty-cong τ h)
 ty-cong (σ [→] τ) h = refl
-ty-cong (μ τ)     h = cong (λ (P : Poly 1) → μ-obj P (λ ())) (as-poly-cong τ h)
+ty-cong (μ τ)     h = cong (λ (P : Poly 𝒞 1) → μ-obj P (λ ())) (as-poly-cong τ h)
 
 -- Renaming a type is reindexing its environment. extᵗⁿ leaves the first n (poly) variables alone,
 -- so splitAt commutes with it.
@@ -118,7 +119,7 @@ ty-ren ρ (base s)  δ = refl
 ty-ren ρ (σ [+] τ) δ = cong₂ coprod (ty-ren ρ σ δ) (ty-ren ρ τ δ)
 ty-ren ρ (σ [×] τ) δ = cong₂ prod  (ty-ren ρ σ δ) (ty-ren ρ τ δ)
 ty-ren ρ (σ [→] τ) δ = refl
-ty-ren ρ (μ τ)     δ = cong (λ (P : Poly 1) → μ-obj P (λ ())) (as-poly-ren ρ τ δ)
+ty-ren ρ (μ τ)     δ = cong (λ (P : Poly 𝒞 1) → μ-obj P (λ ())) (as-poly-ren ρ τ δ)
 
 -- Freezing the poly-variables δ₀ into the environment (with X at position 0) reshuffles the
 -- combined context only up to pointwise equality.

@@ -37,8 +37,12 @@ module Fam𝒞 = Category cat
 open products P public  -- Fam-level products
 module Fam𝒞-P = HasProducts products
 open _⇒f_ public
-open polynomial-functor-2 (terminal T) products strongCoproducts public
-  using (Poly; const; var; _+_; _×_; μ; extend; fobj; HasMu; HasMuLaws)
+open polynomial-functor-2 using (extend) public
+open polynomial-functor-2.Poly public
+open polynomial-functor-2.Interp (terminal T) products strongCoproducts public
+  using (fobj; HasMu; HasMuLaws)
+
+Poly = polynomial-functor-2.Poly cat
 open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_) public
 
 open import Data.Sum using (_⊎_) public

@@ -53,5 +53,7 @@ import matrix-embedding-semimod
 -- purposes.
 import conservativity
 
--- Action of a functor on polynomials.
-import polynomial-functor-2.map
+-- Polynomials over a category and their parameterised initial algebras; the
+-- action of a functor on polynomials, and the action of componentwise
+-- morphisms and isomorphisms on μ-objects.
+import polynomial-functor-2
