@@ -9,43 +9,30 @@ module language-syntax {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig
 
-mutual
-  data type : Set ℓ where
-    unit bool : type
-    base : sort → type
-    _[×]_ _[→]_ _[+]_ : type → type → type
-    μ : polynomial → type
-
-  -- Polynomial functors syntactically (cf. Chad §3.6).
-  data polynomial : Set ℓ where
-    const : type → polynomial
-    var : polynomial
-    _[+]_ : polynomial → polynomial → polynomial
-    _[×]_ : polynomial → polynomial → polynomial
-
-apply : polynomial → type → type
-apply (const σ) _   = σ
-apply var τ         = τ
-apply (P [+] Q) τ   = apply P τ [+] apply Q τ
-apply (P [×] Q) τ   = apply P τ [×] apply Q τ
+data type : Set ℓ where
+  unit bool : type
+  base : sort → type
+  _[×]_ _[→]_ _[+]_ : type → type → type
+  list : type → type
 
 infixr 35 _[→]_
 
-mutual
-  data first-order : type → Set ℓ where
-    unit  : first-order unit
-    bool  : first-order bool
-    base  : ∀ s → first-order (base s)
-    _[×]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [×] τ₂)
-    _[+]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [+] τ₂)
-    μ     : ∀ {P} → first-order-poly P → first-order (μ P)
+data first-order : type → Set ℓ where
+  unit  : first-order unit
+  bool  : first-order bool
+  base  : ∀ s → first-order (base s)
+  _[×]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [×] τ₂)
+  _[+]_ : ∀ {τ₁ τ₂} → first-order τ₁ → first-order τ₂ → first-order (τ₁ [+] τ₂)
 
-  -- Polynomials whose const slots only mention first-order types.
-  data first-order-poly : polynomial → Set ℓ where
-    const : ∀ {τ} → first-order τ → first-order-poly (const τ)
-    var   : first-order-poly var
-    _[+]_ : ∀ {P Q} → first-order-poly P → first-order-poly Q → first-order-poly (P [+] Q)
-    _[×]_ : ∀ {P Q} → first-order-poly P → first-order-poly Q → first-order-poly (P [×] Q)
+-- First-order types extended with `list`; not yet supported by conservativity, but useful for deriving
+-- self-dualities for our examples.
+data first-order-data : type → Set ℓ where
+  unit  : first-order-data unit
+  bool  : first-order-data bool
+  base  : ∀ s → first-order-data (base s)
+  _[×]_ : ∀ {τ₁ τ₂} → first-order-data τ₁ → first-order-data τ₂ → first-order-data (τ₁ [×] τ₂)
+  _[+]_ : ∀ {τ₁ τ₂} → first-order-data τ₁ → first-order-data τ₂ → first-order-data (τ₁ [+] τ₂)
+  list  : ∀ {τ} → first-order-data τ → first-order-data (list τ)
 
 infixl 40 _[×]_ _[+]_
 
@@ -56,6 +43,10 @@ data ctxt : Set ℓ where
 data first-order-ctxt : ctxt → Set ℓ where
   emp : first-order-ctxt emp
   _,_ : ∀ {Γ τ} → first-order-ctxt Γ → first-order τ → first-order-ctxt (Γ , τ)
+
+data first-order-data-ctxt : ctxt → Set ℓ where
+  emp : first-order-data-ctxt emp
+  _,_ : ∀ {Γ τ} → first-order-data-ctxt Γ → first-order-data τ → first-order-data-ctxt (Γ , τ)
 
 infixl 30 _,_
 
@@ -115,10 +106,13 @@ data _⊢_ : ctxt → type → Set ℓ where
          Every (λ σ → Γ ⊢ base σ) in-sorts →
          Γ ⊢ bool
 
-  -- inductive types
-  roll : ∀ {Γ P} → Γ ⊢ apply P (μ P) → Γ ⊢ μ P
-  -- Open algebra: term in extended context Γ , apply P τ. Avoids exponentials.
-  fold-μ : ∀ {Γ P τ} → Γ , apply P τ ⊢ τ → Γ ⊢ μ P → Γ ⊢ τ
+  nil  : ∀ {Γ τ} → Γ ⊢ list τ
+  cons : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ → Γ ⊢ list τ
+  fold : ∀ {Γ τ₁ τ₂} →
+         Γ ⊢ τ₂ →
+         Γ , τ₁ , τ₂ ⊢ τ₂ →
+         Γ ⊢ list τ₁ →
+         Γ ⊢ τ₂
 
 -- Applying renamings to terms
 mutual
@@ -138,31 +132,15 @@ mutual
   ρ * brel ω Ms = brel ω (ρ ** Ms)
   ρ * lam M = lam (ext ρ * M)
   ρ * app M N = app (ρ * M) (ρ * N)
-  ρ * roll M = roll (ρ * M)
-  ρ * fold-μ alg M = fold-μ (ext ρ * alg) (ρ * M)
+  ρ * nil = nil
+  ρ * cons M N = cons (ρ * M) (ρ * N)
+  ρ * fold M₁ M₂ M = fold (ρ * M₁) (ext (ext ρ) * M₂) (ρ * M)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
   ρ ** [] = []
   ρ ** (M ∷ Ms) = (ρ * M) ∷ (ρ ** Ms)
 
--- “macros” for lists
-list : type → type
-list τ = μ (const unit [+] (const τ [×] var))
-
-nil : ∀ {Γ τ} → Γ ⊢ list τ
-nil = roll (inl unit)
-
-cons : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ → Γ ⊢ list τ
-cons h t = roll (inr (pair h t))
-
-fold : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
-fold {σ = σ} {τ = τ} nilCase consCase M =
-  fold-μ {P = const unit [+] (const σ [×] var)}
-    (case (var zero)
-          (weaken * (weaken * nilCase))
-          (app (app (weaken * (weaken * (lam (lam consCase)))) (fst (var zero))) (snd (var zero))))
-    M
-
+-- “macros”
 append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
 append xs ys = fold ys (cons (var (succ zero)) (var zero)) xs
 
@@ -175,10 +153,23 @@ from M collect N = fold nil (append (weaken * N) (var zero)) M
 when_；_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ list τ → Γ ⊢ list τ
 when M ； N = if M then N else nil
 
+-- Some useful functions:
 append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
 append-f = lam (lam (fold (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
 
--- Syntactic definition of a monad.
+-- The list monad
+{-
+ret : ∀ {Γ τ} → Γ ⊢ τ [→] list τ
+ret = lam (return (var zero))
+
+bind : ∀ {Γ τ₁ τ₂} → Γ ⊢ list τ₁ [→] (τ₁ [→] list τ₂) [→] list τ₂
+bind = lam (lam (from (var (succ zero)) collect (app (var (succ zero)) (var zero))))
+
+guard : ∀ {Γ} → Γ ⊢ bool [→] list unit
+guard = lam (if (var zero) then (cons unit nil) else nil)
+-}
+
+-- Definition of a syntactically defined monad
 record SynMonad : Set ℓ where
   field
     Mon  : type → type

@@ -147,10 +147,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
     (trans (sym (Σ-·-distribᵣ (λ j → e i j · v j) z))
            (·-cong (Σ-unit i v) refl))
 
-  +-interchange : ∀ {a b c d} → (a + b) + (c + d) ≈ (a + c) + (b + d)
-  +-interchange =
-    trans +-assoc (trans (+-cong refl (trans (sym +-assoc) (trans (+-cong +-comm refl) +-assoc))) (sym +-assoc))
-
   -- Σ distributes over +: Σ g + Σ h ≈ Σ (λ j → g j + h j).
   Σ-+ : ∀ {n} (g h : Fin n → Carrier) → Σ {n} g + Σ {n} h ≈ Σ {n} (λ j → g j + h j)
   Σ-+ {zero} g h = +-lunit

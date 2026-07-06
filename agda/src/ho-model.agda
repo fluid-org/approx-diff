@@ -4,96 +4,18 @@ module ho-model where
 
 open import Level using (Level; 0ℓ; suc)
 open import categories using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial; op-coproducts→products; op-initial→terminal; HasCoproducts)
-open import product-category using (product; product-limit; product-products; product-terminal)
 open import cmon-enriched
   using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
 open import functor using (HasLimits; op-colimit; limits→limits')
-import meet-semilattice-category
-import join-semilattice-category
 import fam
-import polynomial-functor
-import fam-mu-types
 import fam-mu-types-2.carrier
 import fam-mu-types-2
 import indexed-family
-open Category using (opposite)
-
-------------------------------------------------------------------------------
--- Construct Meet × Join^op
-
-M×Jop : Category (suc 0ℓ) 0ℓ 0ℓ
-M×Jop = product meet-semilattice-category.cat (opposite join-semilattice-category.cat)
-
-private
-  module M×Jop = Category M×Jop
-
-M×Jop-cmon-enriched : CMonEnriched M×Jop
-M×Jop-cmon-enriched =
-  product-cmon-enriched
-    meet-semilattice-category.cmon-enriched
-    (op-cmon-enriched join-semilattice-category.cmon-enriched)
-
-M×Jop-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 M×Jop
-M×Jop-limits 𝒮 D =
-  product-limit _ _ 𝒮 D
-    (meet-semilattice-category.limits 𝒮 _)
-    (op-colimit _ (join-semilattice-category.colimits (opposite 𝒮) _))
-
--- We make the products and terminal object "by hand" so that the
--- representations used for programs are nice.
-
-M×Jop-terminal : HasTerminal M×Jop
-M×Jop-terminal =
-  product-terminal _ _ meet-semilattice-category.terminal
-                       (op-initial→terminal join-semilattice-category.initial)
-
-M×Jop-biproducts : ∀ x y → cmon-enriched.Biproduct M×Jop-cmon-enriched x y
-M×Jop-biproducts =
-  cmon-enriched.cmon+products→biproducts M×Jop-cmon-enriched
-    (product-products _ _
-      meet-semilattice-category.products
-      (op-coproducts→products join-semilattice-category.coproducts))
-
-M×Jop-products : HasProducts M×Jop
-M×Jop-products = biproducts→products _ M×Jop-biproducts
-
-------------------------------------------------------------------------------
--- Construct Join × Join^op
-
-J×Jop : Category (suc 0ℓ) 0ℓ 0ℓ
-J×Jop = product join-semilattice-category.cat (opposite join-semilattice-category.cat)
-
-J×Jop-cmon-enriched : CMonEnriched J×Jop
-J×Jop-cmon-enriched =
-  product-cmon-enriched
-    join-semilattice-category.cmon-enriched
-    (op-cmon-enriched join-semilattice-category.cmon-enriched)
-
-J×Jop-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 J×Jop
-J×Jop-limits 𝒮 D =
-  product-limit _ _ 𝒮 D
-    (join-semilattice-category.limits 𝒮 _)
-    (op-colimit _ (join-semilattice-category.colimits (opposite 𝒮) _))
-
-J×Jop-terminal : HasTerminal J×Jop
-J×Jop-terminal =
-  product-terminal _ _ join-semilattice-category.terminal
-                       (op-initial→terminal join-semilattice-category.initial)
-
-J×Jop-biproducts : ∀ x y → cmon-enriched.Biproduct J×Jop-cmon-enriched x y
-J×Jop-biproducts =
-  cmon-enriched.cmon+products→biproducts J×Jop-cmon-enriched
-    (product-products _ _
-      join-semilattice-category.products
-      (op-coproducts→products join-semilattice-category.coproducts))
-
-J×Jop-products : HasProducts J×Jop
-J×Jop-products = biproducts→products _ J×Jop-biproducts
 
 open import functor using (Functor)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 open import prop using (_,_)
-open import prop-setoid using (IsEquivalence)
+open import prop-setoid using (IsEquivalence; Setoid)
 open import finite-product-functor
   using (preserve-chosen-products; preserve-chosen-terminal)
 
@@ -107,6 +29,8 @@ open Functor
 
 open import fam-functor using (FamF)
 open import signature
+import lists
+import language-syntax
 
 module Interpretation
   {o : Level}
@@ -134,13 +58,13 @@ module Interpretation
   open import fam-exponentials 0ℓ 0ℓ
     𝒟 𝒟-cmon 𝒟-biproducts
     (indexed-family.hasSetoidProducts 0ℓ 0ℓ 𝒟 λ A → limits→limits' (𝒟-limits _))
-    renaming ( exponentials    to Fam⟨𝒟⟩-exponentials
-             ; products        to Fam⟨𝒟⟩-products
-             ; strongCoproducts to Fam⟨𝒟⟩-strongCoproducts
+    renaming ( exponentials to Fam⟨𝒟⟩-exponentials
+             ; products     to Fam⟨𝒟⟩-products
              )
     using ()
     public
 
+  Fam⟨𝒟⟩-lists = lists.lists Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
 
   Fam⟨𝒟⟩-bool =
     Fam⟨𝒟⟩-coproducts .HasCoproducts.coprod
@@ -178,26 +102,36 @@ module Interpretation
     Fam⟨𝒟⟩.Mor-∘ (HasCoproducts.coprod-m Fam⟨𝒟⟩-coproducts (Fam⟨𝒟⟩-terminal .HasTerminal.to-terminal) (Fam⟨𝒟⟩-terminal .HasTerminal.to-terminal))
                   (Fam⟨F⟩-preserves-coproducts .Category.IsIso.inverse)
 
-  -- Direct interpretation
+  -- Interpretation
   module interp (Sig : Signature 0ℓ)
                 (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
      where
 
      open Fam⟨𝒟⟩.Mor public
      open Fam⟨𝒟⟩.Obj public
+     open language-syntax Sig using (_⊢_)
+     open indexed-family._⇒f_ using (transf)
+     open Setoid using (Carrier)
 
      open import language-interpretation Sig
        Fam⟨𝒟⟩.cat
        Fam⟨𝒟⟩-terminal
        Fam⟨𝒟⟩-products
-       Fam⟨𝒟⟩-strongCoproducts
+       Fam⟨𝒟⟩-coproducts
        Fam⟨𝒟⟩-exponentials
-       (fam-mu-types.WFam.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts))
+       Fam⟨𝒟⟩-lists
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
+     -- The fibre map of a term at a given environment.
+     mor : ∀ {Γ τ} (M : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
+     mor M env = ⟦ M ⟧tm .famf .transf env
+
   -- Direct interpretation of the language with general recursive types, via the
   -- W-type μ-instance for Fam together with its initial-algebra laws.
+  Fam⟨𝒟⟩-strongCoproducts =
+    Fam⟨𝒟⟩.products.strongCoproducts (biproducts→products _ 𝒟-biproducts)
+
   module Fam⟨𝒟⟩-μ =
     fam-mu-types-2.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
@@ -224,271 +158,11 @@ module Interpretation
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
-------------------------------------------------------------------------------
--- Concrete instantiations
-
-module Galois where
-  import galois
-  import preorder
-  import meet-semilattice
-  import join-semilattice
-  open import prop using (tt; proj₁; proj₂)
-  open meet-semilattice-category._⇒_
-  open join-semilattice-category._⇒_
-  open meet-semilattice-category._≃m_
-  open join-semilattice-category._≃m_
-  open meet-semilattice._≃m_
-  open join-semilattice._≃m_
-  open preorder._≃m_
-  open galois.Obj
-
-  𝓕 : Functor galois.cat M×Jop
-  𝓕 .fobj X .proj₁ = record { carrier = X .galois.Obj.carrier ; meets = X .galois.Obj.meets }
-  𝓕 .fobj X .proj₂ = record { carrier = X .galois.Obj.carrier ; joins = X .galois.Obj.joins }
-  𝓕 .fmor f .proj₁ .*→* = galois._⇒g_.right-∧ f
-  𝓕 .fmor f .proj₂ .*→* = galois._⇒g_.left-∨ f
-  𝓕 .fmor-cong f≃g .proj₁ .f≃f .eqfunc = f≃g .galois._≃g_.right-eq
-  𝓕 .fmor-cong f≃g .proj₂ .f≃f .eqfunc = f≃g .galois._≃g_.left-eq
-  𝓕 .fmor-id .proj₁ .f≃f .eqfunc = preorder.≃m-isEquivalence .IsEquivalence.refl
-  𝓕 .fmor-id .proj₂ .f≃f .eqfunc = preorder.≃m-isEquivalence .IsEquivalence.refl
-  𝓕 .fmor-comp f g .proj₁ .f≃f .eqfunc = preorder.≃m-isEquivalence .IsEquivalence.refl
-  𝓕 .fmor-comp f g .proj₂ .f≃f .eqfunc = preorder.≃m-isEquivalence .IsEquivalence.refl
-
-  private
-    module M×Jop' = Category M×Jop
-
-  open M×Jop'.IsIso
-
-  𝓕-preserve-terminal : preserve-chosen-terminal 𝓕 galois.terminal M×Jop-terminal
-  𝓕-preserve-terminal .inverse .proj₁ .*→* = meet-semilattice.terminal
-  𝓕-preserve-terminal .inverse .proj₂ .*→* = join-semilattice.initial
-  𝓕-preserve-terminal .f∘inverse≈id =
-    HasTerminal.to-terminal-unique M×Jop-terminal _ _
-  𝓕-preserve-terminal .inverse∘f≈id .proj₁ .f≃f .eqfunc .eqfun x = tt , tt
-  𝓕-preserve-terminal .inverse∘f≈id .proj₂ .f≃f .eqfunc .eqfun x = tt , tt
-
-  𝓕-preserve-products : preserve-chosen-products 𝓕 galois.products (biproducts→products _ M×Jop-biproducts)
-  𝓕-preserve-products .inverse .proj₁ .*→* = meet-semilattice.id
-  𝓕-preserve-products .inverse .proj₂ .*→* = join-semilattice.id
-  𝓕-preserve-products {X} {Y} .f∘inverse≈id .proj₁ .f≃f .eqfunc .eqfun (x , y) =
-    (X .π₁ , Y .π₂) ,
-    (X .⟨_∧_⟩ (X .≤-refl) (X .≤-top) , Y .⟨_∧_⟩ (Y .≤-top) (Y .≤-refl))
-  𝓕-preserve-products {X} {Y} .f∘inverse≈id .proj₂ .f≃f .eqfunc .eqfun (x , y) =
-    (X .[_∨_] (X .[_∨_] (X .≤-refl) (X .≤-bottom)) (X .≤-bottom) ,
-     Y .[_∨_] (Y .≤-bottom) (Y .[_∨_] (Y .≤-bottom) (Y .≤-refl))) ,
-    (X .≤-trans (X .inl) (X .inl) , Y .≤-trans (Y .inr) (Y .inr))
-  𝓕-preserve-products {X} {Y} .inverse∘f≈id .proj₁ .f≃f .eqfunc .eqfun (x , y) =
-    (X .π₁ , Y .π₂) ,
-    (X .⟨_∧_⟩ (X .≤-refl) (X .≤-top) , Y .⟨_∧_⟩ (Y .≤-top) (Y .≤-refl))
-  𝓕-preserve-products {X} {Y} .inverse∘f≈id .proj₂ .f≃f .eqfunc .eqfun (x , y) =
-    (X .[_∨_] (X .[_∨_] (X .≤-refl) (X .≤-bottom)) (X .≤-bottom) ,
-     Y .[_∨_] (Y .≤-bottom) (Y .[_∨_] (Y .≤-bottom) (Y .≤-refl))) ,
-    (X .≤-trans (X .inl) (X .inl) , Y .≤-trans (Y .inr) (Y .inr))
-
-  open Interpretation
-    galois.cat galois.terminal galois.products
-    M×Jop M×Jop-cmon-enriched M×Jop-limits M×Jop-terminal M×Jop-biproducts
-    𝓕 𝓕-preserve-terminal (λ {X} {Y} → 𝓕-preserve-products {X} {Y})
-    public
-
-module Conjugate where
-  import preorder
-  import join-semilattice
-  import conjugate
-  open import prop using (tt; proj₁; proj₂)
-  open join-semilattice-category._⇒_
-  open join-semilattice-category._≃m_
-  open join-semilattice._≃m_
-  open preorder._≃m_
-  open conjugate.Obj
-
-  𝓕 : Functor conjugate.cat J×Jop
-  𝓕 .fobj X .proj₁ = record { carrier = X .conjugate.Obj.carrier ; joins = X .conjugate.Obj.joins }
-  𝓕 .fobj X .proj₂ = record { carrier = X .conjugate.Obj.carrier ; joins = X .conjugate.Obj.joins }
-  𝓕 .fmor f .proj₁ .*→* = conjugate._⇒c_.right f
-  𝓕 .fmor f .proj₂ .*→* = conjugate._⇒c_.left f
-  𝓕 .fmor-cong f≃g .proj₁ .f≃f = f≃g .conjugate._≃c_.right-eq
-  𝓕 .fmor-cong f≃g .proj₂ .f≃f = f≃g .conjugate._≃c_.left-eq
-  𝓕 .fmor-id .proj₁ .f≃f .eqfunc = preorder.≃m-isEquivalence .IsEquivalence.refl
-  𝓕 .fmor-id .proj₂ .f≃f .eqfunc = preorder.≃m-isEquivalence .IsEquivalence.refl
-  𝓕 .fmor-comp f g .proj₁ .f≃f .eqfunc = preorder.≃m-isEquivalence .IsEquivalence.refl
-  𝓕 .fmor-comp f g .proj₂ .f≃f .eqfunc = preorder.≃m-isEquivalence .IsEquivalence.refl
-
-  private
-    module J×Jop' = Category J×Jop
-
-  open J×Jop'.IsIso
-
-  𝓕-preserve-terminal : preserve-chosen-terminal 𝓕 conjugate.terminal J×Jop-terminal
-  𝓕-preserve-terminal .inverse .proj₁ .*→* = join-semilattice.terminal
-  𝓕-preserve-terminal .inverse .proj₂ .*→* = join-semilattice.initial
-  𝓕-preserve-terminal .f∘inverse≈id =
-    HasTerminal.to-terminal-unique J×Jop-terminal _ _
-  𝓕-preserve-terminal .inverse∘f≈id .proj₁ .f≃f .eqfunc .eqfun x = tt , tt
-  𝓕-preserve-terminal .inverse∘f≈id .proj₂ .f≃f .eqfunc .eqfun x = tt , tt
-
-  𝓕-preserve-products : preserve-chosen-products 𝓕 conjugate.products (biproducts→products _ J×Jop-biproducts)
-  𝓕-preserve-products .inverse .proj₁ .*→* = join-semilattice.id
-  𝓕-preserve-products .inverse .proj₂ .*→* = join-semilattice.id
-  𝓕-preserve-products {X} {Y} .f∘inverse≈id .proj₁ .f≃f .eqfunc .eqfun (x , y) =
-    (X .[_∨_] (X .≤-refl) (X .≤-bottom) , Y .[_∨_] (Y .≤-bottom) (Y .≤-refl)) ,
-    (X .inl , Y .inr)
-  𝓕-preserve-products {X} {Y} .f∘inverse≈id .proj₂ .f≃f .eqfunc .eqfun (x , y) =
-    (X .[_∨_] (X .[_∨_] (X .≤-refl) (X .≤-bottom)) (X .≤-bottom) ,
-     Y .[_∨_] (Y .≤-bottom) (Y .[_∨_] (Y .≤-bottom) (Y .≤-refl))) ,
-    (X .≤-trans (X .inl) (X .inl) , Y .≤-trans (Y .inr) (Y .inr))
-  𝓕-preserve-products {X} {Y} .inverse∘f≈id .proj₁ .f≃f .eqfunc .eqfun (x , y) =
-    (X .[_∨_] (X .≤-refl) (X .≤-bottom) , Y .[_∨_] (Y .≤-bottom) (Y .≤-refl)) ,
-    (X .inl , Y .inr)
-  𝓕-preserve-products {X} {Y} .inverse∘f≈id .proj₂ .f≃f .eqfunc .eqfun (x , y) =
-    (X .[_∨_] (X .[_∨_] (X .≤-refl) (X .≤-bottom)) (X .≤-bottom) ,
-     Y .[_∨_] (Y .≤-bottom) (Y .[_∨_] (Y .≤-bottom) (Y .≤-refl))) ,
-    (X .≤-trans (X .inl) (X .inl) , Y .≤-trans (Y .inr) (Y .inr))
-
-  open Interpretation
-    conjugate.cat conjugate.terminal conjugate.products
-    J×Jop J×Jop-cmon-enriched J×Jop-limits J×Jop-terminal J×Jop-biproducts
-    𝓕 𝓕-preserve-terminal (λ {X} {Y} → 𝓕-preserve-products {X} {Y})
-    public
-
-module Matrix where
-  import join-semilattice-category as SemiLat
-  import cmon-enriched as CMon
-  open import two using (Two; O; I)
-  open import prop using (tt; proj₁)
-  open import prop-setoid using (module ≈-Reasoning)
-  import join-semilattice
-  import preorder
-  open SemiLat._≃m_
-  open SemiLat._⇒_
-  open join-semilattice._≃m_ using (eqfunc)
-  open preorder._≃m_ using (eqfun)
-
-  open Category SemiLat.cat
-  open CMon.CMonEnriched SemiLat.cmon-enriched using (_+m_; εm; +m-runit; comp-bilinear-ε₁; comp-bilinear-ε₂; comp-bilinear₁; comp-bilinear₂)
-  open import commutative-monoid using (CommutativeMonoid)
-
-  TWO : SemiLat.Obj
-  TWO = SemiLat.TWO
-
-  private
-    module homCM {x y} = CommutativeMonoid (CMon.CMonEnriched.homCM SemiLat.cmon-enriched x y)
-
-  -- Semiring isomorphism Two ↔ End(TWO) in SemiLat. Each End(TWO) preserves ⊥, so is determined by its value
-  -- at I (either εm or id).
-  module scalar where
-    to : Two → TWO ⇒ TWO
-    to O = εm
-    to I = id TWO
-
-    from : TWO ⇒ TWO → Two
-    from f = fun f I
-
-    to-cong : ∀ {a b} → a two.≃ b → to a ≈ to b
-    to-cong {O} {O} _ = ≈-refl
-    to-cong {O} {I} (_ , ())
-    to-cong {I} {O} (() , _)
-    to-cong {I} {I} _ = ≈-refl
-
-    preserves-ε : to O ≈ εm
-    preserves-ε = ≈-refl
-
-    preserves-ι : to I ≈ id TWO
-    preserves-ι = ≈-refl
-
-    preserves-+ : ∀ {a b} → to (a two.⊔ b) ≈ to a +m to b
-    preserves-+ {O} {O} = ≈-sym homCM.+-lunit
-    preserves-+ {O} {I} = ≈-sym homCM.+-lunit
-    preserves-+ {I} {O} = ≈-sym +m-runit
-    preserves-+ {I} {I} = I-idem
-      where
-        I-idem : id TWO ≈ id TWO +m id TWO
-        I-idem .f≃f .eqfunc .eqfun O = two.≤-refl {O} , two.≤-refl {O}
-        I-idem .f≃f .eqfunc .eqfun I = two.≤-refl {I} , two.≤-refl {I}
-
-    preserves-· : ∀ {a b} → to (a two.⊓ b) ≈ to a ∘ to b
-    preserves-· {O} {O} = ≈-sym (comp-bilinear-ε₁ εm)
-    preserves-· {O} {I} = ≈-sym (comp-bilinear-ε₁ (id TWO))
-    preserves-· {I} {O} = ≈-sym id-left
-    preserves-· {I} {I} = ≈-sym id-left
-
-    from-cong : ∀ {f g : TWO ⇒ TWO} → f ≈ g → from f two.≃ from g
-    from-cong p = p .f≃f .eqfunc .eqfun I
-
-    from∘to : ∀ a → from (to a) two.≃ a
-    from∘to O = two.≃-refl {O}
-    from∘to I = two.≃-refl {I}
-
-    -- End(TWO) is determined by f(I).
-    to∘from : ∀ (f : TWO ⇒ TWO) → to (from f) ≈ f
-    to∘from f .f≃f .eqfunc .eqfun O with fun f I
-    ... | O = tt , ⊥-preserving-≃ f .proj₁
-    ... | I = tt , ⊥-preserving-≃ f .proj₁
-    to∘from f .f≃f .eqfunc .eqfun I with fun f I
-    ... | O = two.≃-refl {O}
-    ... | I = two.≃-refl {I}
-
-    open import prop-setoid using () renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_)
-    open import setoid-cat using (SetoidCat)
-    open _⇒s_
-    open _≈s_
-
-    iso : Category.Iso (SetoidCat 0ℓ 0ℓ) two.Two-setoid (Category.hom-setoid SemiLat.cat TWO TWO)
-    iso .Category.Iso.fwd .func = to
-    iso .Category.Iso.fwd .func-resp-≈ = to-cong
-    iso .Category.Iso.bwd .func = from
-    iso .Category.Iso.bwd .func-resp-≈ = from-cong
-    iso .Category.Iso.fwd∘bwd≈id .func-eq {f₁} {f₂} f₁≈f₂ = ≈-trans (to∘from f₁) f₁≈f₂
-    iso .Category.Iso.bwd∘fwd≈id .func-eq {a₁} {a₂} a₁≈a₂ = two.≃-trans (from∘to a₁) a₁≈a₂
-
-    open import commutative-monoid using (_=[_]>_)
-    open import commutative-semiring using (CommutativeSemiring)
-    open CommutativeSemiring two.semiring using (additive)
-    open CMon.CMonEnriched
-
-    cmon-hom : additive =[ iso .Category.Iso.fwd ]> homCM SemiLat.cmon-enriched TWO TWO
-    cmon-hom ._=[_]>_.preserve-ε = preserves-ε
-    cmon-hom ._=[_]>_.preserve-+ {a} {b} = preserves-+ {a} {b}
-
-    comm : ∀ (f g : TWO ⇒ TWO) → (f ∘ g) ≈ (g ∘ f)
-    comm f g =
-      begin
-        f ∘ g
-      ≈˘⟨ ∘-cong (to∘from f) (to∘from g) ⟩
-        to a ∘ to b
-      ≈˘⟨ preserves-· {a} {b} ⟩
-        to (a two.⊓ b)
-      ≈⟨ to-cong (two.⊓-cmon .CommutativeMonoid.+-comm {a} {b}) ⟩
-        to (b two.⊓ a)
-      ≈⟨ preserves-· {b} {a} ⟩
-        to b ∘ to a
-      ≈⟨ ∘-cong (to∘from g) (to∘from f) ⟩
-        g ∘ f
-      ∎ where
-        open ≈-Reasoning isEquiv
-        a = from f
-        b = from g
-
-  private
-    import matrix-embedding
-    module MatRep = matrix-embedding
-      SemiLat.cmon-enriched
-      (CMon.cmon+products→biproducts SemiLat.cmon-enriched SemiLat.products)
-      (HasTerminal.witness SemiLat.terminal)
-      (HasInitial.is-initial SemiLat.initial)
-      (HasTerminal.is-terminal SemiLat.terminal)
-      TWO
-      two.Two-setoid
-      two.semiring
-      scalar.iso
-      scalar.cmon-hom
-      scalar.preserves-ι
-      (λ {a} {b} → scalar.preserves-· {a} {b})
-  open MatRep public
-
-  open Interpretation
-    cat terminal (biproducts→products MatRep.cmon biproduct)
-    SemiLat.cat SemiLat.cmon-enriched SemiLat.limits SemiLat.terminal
-    (CMon.cmon+products→biproducts SemiLat.cmon-enriched SemiLat.products)
-    𝓕 𝓕-preserve-terminal (λ {X} {Y} → 𝓕-preserve-products {X} {Y})
-    public
+  module Conservativity where
+    open import monad using (IdentityMonad; preserve-identity-monad; Identity-monad-preserve-coproducts)
+    open import conservativity
+      Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable (IdentityMonad Fam⟨𝒞⟩.cat)
+      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials (IdentityMonad Fam⟨𝒟⟩.cat) Fam⟨𝒟⟩.bigCoproducts
+      Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
+      (preserve-identity-monad Fam⟨F⟩) (Identity-monad-preserve-coproducts Fam⟨𝒞⟩-coproducts)
+      public

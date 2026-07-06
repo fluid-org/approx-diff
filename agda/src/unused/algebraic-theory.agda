@@ -1,12 +1,12 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-module algebraic-theory where
+module unused.algebraic-theory where
 
 open import Level using (suc; _⊔_)
 open import Data.List using (List; []; _∷_; _++_)
 open import prop using (LiftS; liftS)
 open import prop-setoid using (IsEquivalence)
-open import categories using (Category; HasProducts; IsTerminal)
+open import categories using (Category; HasProducts; IsTerminal; HasTerminal)
 
 -- Multisorted algebraic theories with finitary operations.
 --
@@ -95,7 +95,7 @@ record Equations {o m} (𝕊 : Signature o m) e : Set (suc e ⊔ o ⊔ m) where
     eqn-lhs     : (e : eqn) → Term (eqn-context e) (eqn-sort e)
     eqn-rhs     : (e : eqn) → Term (eqn-context e) (eqn-sort e)
 
-module _ {o m e} (𝕊 : Signature o m) (𝔼 : Equations 𝕊 e) where
+module term-category {o m e} (𝕊 : Signature o m) (𝔼 : Equations 𝕊 e) where
   open Signature 𝕊
   open Terms 𝕊
   open Equations 𝔼
@@ -313,3 +313,55 @@ module _ {o m e} (𝕊 : Signature o m) (𝔼 : Equations 𝕊 e) where
   products .HasProducts.pair-p₁ f g = liftS (pair-p₁ f g)
   products .HasProducts.pair-p₂ f g = liftS (pair-p₂ f g)
   products .HasProducts.pair-ext {Γ} {Δ₁} {Δ₂} f = liftS (pair-ext {Γ} {Δ₁} {Δ₂} f)
+
+module model {o m o' m' e'} (𝕊 : Signature o m) (𝒞 : Category o' m' e') (𝒞P : HasProducts 𝒞) (𝒞T : HasTerminal 𝒞) where
+
+  -- An interpretation is a map of sorts to objects, and operations to
+  -- morphisms, such that the equations hold.
+
+  -- Alternatively: a product preserving functor from the term
+  -- category.
+
+  open Signature 𝕊
+  open Category 𝒞
+  open HasTerminal 𝒞T renaming (witness to 𝟙)
+  open HasProducts 𝒞P renaming (prod to _×_)
+
+  ⟦_⟧* : List sort → (sort → obj) → obj
+  ⟦ [] ⟧* ⟦_⟧ = 𝟙
+  ⟦ σ ∷ σs ⟧* ⟦_⟧ = ⟦ σ ⟧ × ⟦ σs ⟧* ⟦_⟧
+
+  record SignatureModel : Set (o ⊔ o' ⊔ m ⊔ m') where
+    field
+      interpSort : sort → obj
+      interpOp   : ∀ {σs σ} (ω : op σs σ) → ⟦ σs ⟧* interpSort ⇒ interpSort σ
+
+  module TermInterp (𝕊M : SignatureModel) where
+
+    open Terms 𝕊 hiding (p₁; p₂; pair)
+    open SignatureModel 𝕊M
+
+    ⟦_⟧var : ∀ {Γ σ} → Var Γ σ → ⟦ Γ ⟧* interpSort ⇒ interpSort σ
+    ⟦ Terms.zero ⟧var = p₁
+    ⟦ Terms.succ x ⟧var = ⟦ x ⟧var ∘ p₂
+
+    mutual
+      ⟦_⟧tm : ∀ {Γ σ} → Term Γ σ → ⟦ Γ ⟧* interpSort ⇒ interpSort σ
+      ⟦ Terms.var x ⟧tm = ⟦ x ⟧var
+      ⟦ Terms.app ω ts ⟧tm = interpOp ω ∘ ⟦ ts ⟧tms
+
+      ⟦_⟧tms : ∀ {Γ Γ'} → Terms Γ Γ' → ⟦ Γ ⟧* interpSort ⇒ ⟦ Γ' ⟧* interpSort
+      ⟦ [] ⟧tms = to-terminal
+      ⟦ t ∷ ts ⟧tms = pair ⟦ t ⟧tm ⟦ ts ⟧tms
+
+  -- Given some equations, we can now ask whether these are supported
+  -- by the interpretation.
+
+  record Model {e} (𝔼 : Equations 𝕊 e) : Set (o ⊔ m ⊔ e ⊔ o' ⊔ m' ⊔ e') where
+    field
+      sigInterp : SignatureModel
+    open SignatureModel sigInterp public
+    open TermInterp sigInterp public
+    open Equations 𝔼
+    field
+      eqns-satisfied : ∀ e → ⟦ eqn-lhs e ⟧tm ≈ ⟦ eqn-rhs e ⟧tm

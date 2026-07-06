@@ -4,7 +4,9 @@ open import Level using (suc; _⊔_; 0ℓ)
 open import basics
   using (IsPreorder; IsTop; IsMeet; IsResidual; monoidOfMeet; module ≤-Reasoning; IsJoin; IsClosureOp; IsBigJoin)
 open import categories using (Category; HasProducts; HasExponentials)
-open import predicate-system using (PredicateSystem; ClosureOp)
+open import functor using (Functor; NatTrans; Id; _∘F_)
+open import monad using (Monad)
+open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 
 module closure-predicate
     {o m e}
@@ -200,3 +202,46 @@ system .PredicateSystem.⋀-lambda = S.⋀-lambda
 system .PredicateSystem.⋁ = ⋁
 system .PredicateSystem.⋁-isJoin = ⋁-isJoin
 system .PredicateSystem.[]-⋁ {X} {Y} {I} {P} = []-⋁ {X} {Y} {I} {P}
+
+-- If we have a functor lifting, then it also works on the closed predicates
+--
+-- FIXME: we only need the distributivity if we want the functor to
+-- commute laxly with ⟨⟩, which is only needed for it to be a monad.
+module 𝐂Functor (F : Functor 𝒞 𝒞) (FP : FunctorPred _ _ S F)
+       (distrib : ∀ {X} {P : S.Predicate X} → FP .FunctorPred.liftF (𝐂 P) S.⊑ 𝐂 (FP .FunctorPred.liftF P))
+    where
+
+  open FunctorPred
+
+  𝐂FP : FunctorPred _ _ system F
+  𝐂FP .FunctorPred.liftF P = embed (FP .liftF (P .pred))
+  𝐂FP .FunctorPred.liftF-⊑ P⊑Q = 𝐂-isClosure .mono (FP .liftF-⊑ P⊑Q)
+  𝐂FP .FunctorPred.liftF-[] f = S⊑-trans (𝐂-isClosure .mono (FP .liftF-[] f)) 𝐂-[]
+  𝐂FP .FunctorPred.liftF-⟨⟩ f =
+    S⊑-trans (𝐂-isClosure .mono distrib)
+   (S⊑-trans (𝐂-isClosure .mono (𝐂-isClosure .mono (FP .liftF-⟨⟩ f)))
+   (S⊑-trans (𝐂-isClosure .closed)
+             (𝐂-isClosure .mono ((𝐂-isClosure .unit) S.⟨ _ ⟩m))))
+
+-- If we have a Monad that distributes over the closure, then this
+-- also lifts to the closed predicates.
+module 𝐂Monad (M : Monad 𝒞) (MP : MonadPred _ _  S M)
+               (distrib : ∀ {X} {P : S.Predicate X} → MP .MonadPred.liftF (𝐂 P) S.⊑ 𝐂 (MP .MonadPred.liftF P))
+          where
+
+  open FunctorPred
+  open NatTrans
+  open Monad M renaming (funct to Mfunct; unit to Munit)
+  open MonadPred MP
+  open 𝐂Functor _ functP distrib
+
+  𝐂MP : MonadPred _ _ system M
+  𝐂MP .MonadPred.functP = 𝐂FP
+  𝐂MP .MonadPred.unitP {X} {P} = S⊑-trans unitP ((𝐂-isClosure .IsClosureOp.unit) S.[ (Munit .transf X) ]m)
+  𝐂MP .MonadPred.joinP {X} {P} =
+    S⊑-trans (𝐂-isClosure .mono distrib)
+   (S⊑-trans (𝐂-isClosure .closed)
+   (S⊑-trans (𝐂-isClosure .mono joinP)
+             𝐂-[]))
+
+    -- FIXME: strength

@@ -2,21 +2,11 @@
 
 module everything where
 
--- Examples from from Section 1.1 and Section 4.3.
---
--- This formalises Example 1.1 and Section 4.3, part (2), with binary
--- approximated numbers, Section 4.3, part (3), with quantitative
--- approximated numbers, and the CBN translation example in Section
--- 4.4.
-import example
+import examples
 
--- Backward (Galois), forward (Conjugate) and matrix-model analyses of the
--- examples, with two-valued (Bool) approximation.
-import example-bools
-
--- Backward (Galois) and forward (Conjugate) analyses of the list example for
--- the language with general recursive types, with two-valued (Bool) approximation.
-import example-bools-2
+-- Analyses of the list and rose-tree examples for the language with general
+-- recursive types, with two-valued (Bool) approximation.
+-- import example-bools-2 -- pending re-basing onto the self-dual semimodule models
 
 -- Backward (Galois) analysis of the examples, with rational-interval
 -- approximation.
@@ -30,12 +20,22 @@ import bounded-meet
 
 -- Proof from section 3.2 (Theorem 3.6) that Fam(C) is a cartesian
 -- closed if C has biproducts and all small products (Lucatelli Nunes
--- and Vákár 2023).
+-- and Vákár 2023). (Imported by ho-model anyway, but included here
+-- for documentation purposes.)
 import fam-exponentials
 
 -- Construction of the interpretation of the higher-order language in
 -- Section 4
 import ho-model
+
+-- Instantiations of the interpretation, with self-dual semimodules and self-dual Boolean algebras
+-- as the first-order models.
+import ho-model-sd-semimod
+import ho-model-boolalg-sd-semimod
+
+-- Mat(S) embeds in any biproduct category with a chosen object; instantiated at SemiMod(S) and 𝕀,
+-- the embedding factors through the self-dual semimodules.
+import matrix-embedding-semimod
 
 -- Proofs from Section 5 "Definability"
 --
@@ -48,4 +48,7 @@ import ho-model
 --     definable in the first-order language (Theorem 5.2). See the
 --     declaration "syntactic-definability" in the conservativity
 --     module.
+--
+-- Imported by ho-model anyway, but included here for documentation
+-- purposes.
 import conservativity

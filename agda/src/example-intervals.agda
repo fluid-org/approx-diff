@@ -1,196 +1,92 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Examples with rational-interval approximation.
-
+-- Forward and backward analysis of the example query in the perturbation-bound model, over the
+-- self-dual semimodules; numbers approximated by ℚ∞² (left, right perturbation bound).
 module example-intervals where
 
-open import Level using (0ℓ; lift)
-open import Data.List using (List; []; _∷_)
-open import every using (Every; []; _∷_)
-open import signature
-import language-syntax
-import label
-import galois
-import conjugate
+open import categories using (Category; HasInitial; HasProducts; HasTerminal)
+import cmon-enriched
+import prop
+import semimodule
+import sd-semimodule
+import ho-model-sd-semimod
+import semiring-Q-tropical
+import nat
 
-open import example-signature
-
-module L = language-syntax Sig
-
-import indexed-family
-import join-semilattice-category
-import join-semilattice
-import preorder
-import prop-setoid
-
-open import two renaming (I to ⊤; O to ⊥)
-open import Data.Unit renaming (tt to ·; ⊤ to Unit) using ()
-open import Data.Sum using (inj₁; inj₂)
-open import Data.Product using (_,_; _×_; proj₁; proj₂)
-open import fam-mu-types using (inF)
-
-open prop-setoid.Setoid
-
-open L hiding (_,_)
-
+open import Level using (lift; 0ℓ)
+open import Data.Unit renaming (tt to ·) using ()
+open import Data.Product using (_,_)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Data.Rational using (0ℚ; _/_)
+open import Data.Integer using (+_)
+open import prop-setoid using (Setoid)
+open Setoid using (Carrier)
+open import example-signature using (Sig; number; label; approx)
 import example
+open import language-syntax Sig hiding (_,_)
+open example.ex using (query)
+open import label using (a; b)
+open semiring-Q-tropical using (∞; fin)
 
-open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
+-- Model instantiation.
+module SDSemiMod-ℚ∞ = sd-semimodule semiring-Q-tropical.semiring
+module SemiMod-ℚ∞ = semimodule semiring-Q-tropical.semiring
+open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (_+m_; εm)
 
--- Backward analysis (Galois). Example (3) in Section 4.3.
-module backward where
-  open import ho-model
-  open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open import prop-setoid using (idS)
-    renaming (𝟙 to 𝟙ₛ; const to constₛ)
-  open import approx-numbers using (module Galois)
-  open import categories using (Category; HasProducts; HasTerminal)
+Approxm : Category.obj SDSemiMod-ℚ∞.cat
+Approxm = SDSemiMod-ℚ∞._⊕_ SDSemiMod-ℚ∞.𝕀 SDSemiMod-ℚ∞.𝕀
 
-  BaseInterp : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-  BaseInterp .Model.⟦sort⟧ number = Galois.ℚ-intv
-  BaseInterp .Model.⟦sort⟧ label = simple[ label.Label , galois.𝟙 ]
-  BaseInterp .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , galois.TWO ]
-  BaseInterp .Model.⟦op⟧ zero = Galois.zero-mor
-  BaseInterp .Model.⟦op⟧ one = Galois.one-mor
-  BaseInterp .Model.⟦op⟧ add = Galois.add-mor C.∘ binary2
-  BaseInterp .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , galois.cat .Category.id _ ]
-  BaseInterp .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
-  BaseInterp .Model.⟦op⟧ approx-unit = simplef[ idS _ , galois.unit ]
-  BaseInterp .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , galois.conjunct ] C.∘ binary
+unitm : Category._⇒_ SDSemiMod-ℚ∞.cat (HasTerminal.witness SDSemiMod-ℚ∞.terminal) Approxm
+unitm = HasInitial.from-initial SDSemiMod-ℚ∞.initial {Approxm}
+conjunctm : Category._⇒_ SDSemiMod-ℚ∞.cat (HasProducts.prod SDSemiMod-ℚ∞.products Approxm Approxm) Approxm
+conjunctm = HasProducts.p₁ SDSemiMod-ℚ∞.products {Approxm} {Approxm}
+        +m HasProducts.p₂ SDSemiMod-ℚ∞.products {Approxm} {Approxm}
 
-  open Galois.interp Sig BaseInterp
-  open import Data.Nat hiding (_/_)
-  open import Data.Rational renaming (_≤_ to _≤ℚ_; show to ℚ-show)
-  open import Data.Integer hiding (_/_; show; -_)
-  open import preorder using (bottom; <_>; LCarrier)
-  open import approx-numbers using (Intv)
-  open import prop using (liftS)
-  open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
+open import example-signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
+  Approxm unitm conjunctm nat.ℕₛ nat.zero-m nat.add nat.mult
 
-  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = inF (inj₂ ((label.a , 0ℚ) ,
-          inF (inj₂ ((label.b , 1ℚ) ,
-          inF (inj₂ ((label.a , 1ℚ) ,
-          inF (inj₁ (lift ·))))))))
+-- Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞) records
+-- the absence of a bound.
+private
+  coeff-t : nat.ℕ → Category._⇒_ SDSemiMod-ℚ∞.cat Approxm Approxm
+  coeff-t _ = εm
+  coeff-cong-t : ∀ {x y} → nat._≃_ x y → Category._≈_ SemiMod-ℚ∞.cat (coeff-t x) (coeff-t y)
+  coeff-cong-t {x} _ = Category.≈-refl SemiMod-ℚ∞.cat {f = coeff-t x}
 
-  open Intv
+module D = Deriv coeff-t coeff-cong-t
+open ho-model-sd-semimod.interp-sd semiring-Q-tropical.semiring Sig D.BaseInterp1
+open SDSemiMod-ℚ∞ using (conjugate)
+open SemiMod-ℚ∞._⇒_
 
-  interval : Intv 1ℚ
-  interval .lower = + 9 / 10
-  interval .upper = + 11 / 10
-  interval .l≤q = liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s z≤n)))))))))))
-  interval .q≤u = liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s z≤n))))))))))))
+input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
+input = 3 , (a , 0) , (b , 1) , (a , 1) , _
 
-  open import Data.Maybe
+input-ty : first-order-data (list (base label [×] base number))
+input-ty = list (base label [×] base number)
 
-  extract-interval : ∀ {q} → LCarrier (Intv q) → Maybe (ℚ ×ₜ ℚ)
-  extract-interval bottom = nothing
-  extract-interval < x > = just (x .lower , x .upper)
+-- An interval [l, u] around q from the paper becomes the pair of perturbation bounds (q - l , u - q); ∞ is
+-- the absent (bottom) approximation. So [4/5, 3/2] around 1 becomes (1/5, 1/2).
+-- Query a sums #1 and #3; the forward slice combines their perturbation bounds by min:
+--   ( min(1/2, 1/5) , min(0, 1/2) ) = (1/5 , 0) = the interval [4/5, 1] around 1.
+test-addᵀ : fwd (query a) (_ , input)
+              (lift · , (lift · , (fin (+ 1 / 2) , fin 0ℚ))
+                      , (lift · , (∞ , ∞))
+                      , (lift · , (fin (+ 1 / 5) , fin (+ 1 / 2))) , _)
+            ≡ (fin (+ 1 / 5) , fin 0ℚ)
+test-addᵀ = refl
 
-  bwd-slice : _
-  bwd-slice = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun < interval > .proj₂
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
+bwd-slice : _ → _
+bwd-slice r =
+  conjugate (ty (unit [×] input-ty) (_ , input)) (ty (base number) 0)
+            (mor (query a) (_ , input)) .func r
 
-  -- Normalising 'bwd-slice' doesn't seem to work, possibly due to
-  -- the use of records and/or the proofs attached to them. We have to
-  -- project out the relevant bits individually and test them:
-
-  test1 : extract-interval (bwd-slice .proj₁ .proj₂) ≡ just (- (+ 1 / 10) , + 1 / 10)
-  test1 = ≡-refl
-
-  test2 : extract-interval (bwd-slice .proj₂ .proj₁ .proj₂) ≡ nothing
-  test2 = ≡-refl
-
-  test3 : extract-interval (bwd-slice .proj₂ .proj₂ .proj₁ .proj₂) ≡ just (+ 9 / 10 , + 11 / 10)
-  test3 = ≡-refl
-
--- Forward analysis using addᵀ (Tarski conjugate).
-module forward where
-  open import ho-model
-  open import example-signature-interpretation conjugate.cat conjugate.products conjugate.terminal conjugate.TWO conjugate.unit conjugate.conjunct
-  open import prop-setoid using (idS)
-    renaming (𝟙 to 𝟙ₛ; const to constₛ)
-  open import approx-numbers using (module Conjugate; module Galois)
-  open import categories using (Category; HasProducts; HasTerminal)
-
-  BaseInterp : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-  BaseInterp .Model.⟦sort⟧ number = Conjugate.ℚ-intv
-  BaseInterp .Model.⟦sort⟧ label = simple[ label.Label , conjugate.𝟙 ]
-  BaseInterp .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , conjugate.TWO ]
-  BaseInterp .Model.⟦op⟧ zero = Conjugate.zero-mor
-  BaseInterp .Model.⟦op⟧ one = Conjugate.one-mor
-  BaseInterp .Model.⟦op⟧ add = Conjugate.add-mor C.∘ binary2
-  BaseInterp .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , conjugate.cat .Category.id _ ]
-  BaseInterp .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
-  BaseInterp .Model.⟦op⟧ approx-unit = simplef[ idS _ , conjugate.unit ]
-  BaseInterp .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjugate.conjunct ] C.∘ binary
-
-  open Conjugate.interp Sig BaseInterp
-  open import Data.Rational
-  open import Data.Rational.Properties using (≤-refl)
-  open import preorder using (bottom; <_>; LCarrier; Preorder; L)
-  open import approx-numbers using (Intv; IntvPreorder)
-  open import prop using (liftS)
-  open import Data.Nat hiding (_/_)
-  open import Data.Integer hiding (_/_; show; -_)
-
-  input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-  input = inF (inj₂ ((label.a , 0ℚ) ,
-          inF (inj₂ ((label.b , 1ℚ) ,
-          inF (inj₂ ((label.a , 1ℚ) ,
-          inF (inj₁ (lift ·))))))))
-
-  open Intv
-
-  intv1 : Intv 1ℚ
-  intv1 .lower = + 4 / 5
-  intv1 .upper = + 3 / 2
-  intv1 .l≤q = liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s z≤n))))))
-  intv1 .q≤u = liftS (*≤* (+≤+ (s≤s (s≤s z≤n))))
-
-  intv0 : Intv 0ℚ
-  intv0 .lower = - (+ 1 / 2)
-  intv0 .upper = 0ℚ
-  intv0 .l≤q = liftS (*≤* -≤+)
-  intv0 .q≤u = liftS Data.Rational.Properties.≤-refl
-
-  open import Data.Maybe
-  open import Data.Product using (Σ) renaming (_×_ to _×ₜ_)
-
-  extract-interval : ∀ {q} → LCarrier (Intv q) → Maybe (ℚ ×ₜ ℚ)
-  extract-interval bottom = nothing
-  extract-interval < x > = just (x .lower , x .upper)
-
-  -- Unfortunately this is a bit slow to normalise, so not using at the moment; instead have simpler isolated
-  -- tests using the 'add' conjugate pair and Galois connection directly.
-  fwd-slice : _
-  fwd-slice = ⟦ example.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun
-    (_ , (_ , < intv0 >) , (_ , bottom) , (_ , < intv1 >) , _)
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
-
-  fwd-addᵀ : _
-  fwd-addᵀ = Conjugate.add-interval 0ℚ 1ℚ .conjugate._⇒c_.right .join-semilattice._=>_.func .preorder._=>_.fun
-    (< intv0 > , < intv1 >)
-
-  fwd-add⁎ : _
-  fwd-add⁎ = Galois.add-interval 0ℚ 1ℚ .galois._⇒g_.right .preorder._=>_.fun
-    (< intv0 > , < intv1 >)
-
-  test-addᵀ : extract-interval fwd-addᵀ ≡ just (+ 4 / 5 , + 1 / 1)
-  test-addᵀ = ≡-refl
-
-  -- And add⁎ takes the union.
-  test-add⁎ : extract-interval fwd-add⁎ ≡ just (+ 1 / 2 , + 3 / 2)
-  test-add⁎ = ≡-refl
-
-  -- addᵀ here produces a result higher in the information order (tighter bounds) than the adjoint add⁎.
-  addᵀ-tighter : Preorder._≤_ (L (IntvPreorder 1ℚ)) fwd-add⁎ fwd-addᵀ
-  addᵀ-tighter = prop._,_ (liftS (*≤* (+≤+ (s≤s (s≤s (s≤s (s≤s (s≤s z≤n)))))))) (intv1 .q≤u)
+-- Feeding back output interval [9/10, 11/10] around 1 = perturbation bounds (1/10, 1/10). The
+-- conjugate copies it to the two label-a inputs (#1, #3) and leaves ∞ elsewhere:
+--   #1 around 0: (1/10, 1/10) = [-1/10, 1/10]
+--   #2 (label b): (∞, ∞)      = no constraint
+--   #3 around 1: (1/10, 1/10) = [9/10, 11/10]
+test-bwd : bwd-slice (fin (+ 1 / 10) , fin (+ 1 / 10))
+           ≡ (lift · , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10)))
+                     , (lift · , (∞ , ∞))
+                     , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10))) , lift ·)
+test-bwd = refl

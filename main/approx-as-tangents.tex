@@ -1,7 +1,9 @@
 \section{Approximations as Tangents}
 \label{sec:approx-as-tangents}
 
-We motivate our approach by showing how to combine ideas from differential geometry and stable domain theory to reconstruct the ideas of \GPS in a denotational setting.
+We motivate our approach by showing how to combine ideas from differential geometry and
+linear algebra to reconstruct the dependency analyses of
+\secref{introduction} in a denotational setting.
 % From this basis, we apply the CHAD framework of V{\'a}k{\'a}r \etal to obtain a denotational model of automatic differentiation that gives us an effective way to interpret programs as functions along with their forward and backwards approximation maps.
 
 \subsection{Manifolds, Smooth Functions, and Automatic Differentiation}
@@ -51,491 +53,161 @@ Computing the forward and backward derivatives of smooth functions $f$ has many 
 
 Derivatives can be computed numerically by computing $f$ on small perturbations of its input, or symbolically by examining a closed-form representation of $f$. However, a more common and practical technique is to use \emph{automatic differentiation}, where a program computing $f$ is instrumented to produce (a representation of) the forward and/or backward derivative as a side-effect of producing the output~\cite{linnainmaa76}. This has led to the area of differentiable programming, where programming languages and their implementations are specifically designed to admit efficient automatic differentation algorithms~\cite{jax2018github,abadi16,elliott17,sigal24}.
 
-\subsection{Stable Functions as Differentiable Functions}
+\subsection{Derivatives over a Commutative Semiring}
+\label{sec:approx-as-tangents:semiring}
 
-Our thesis is that \GPS is a generalised form of differentiable programming, where tangents are not linear approximations of curves but instead are qualitative information approximations of elements. Smooth functions in this setting are Berry's \emph{stable functions} \cite{berry79,berry82}. We now introduce these concepts and how they relate to \GPS.
+In the Euclidean case, the differential picture above is plain matrix algebra: with a chosen basis,
+tangent and cotangent spaces are both $\RR^n$, the forward derivative at a point is the Jacobian matrix, and
+the backward derivative is its transpose. Once the picture is presented in coordinates like this, the real
+numbers play no further role beyond supplying the scalars; since dependency information is typically indexed
+by positions in a value, which then serve as a coordinate basis, our first move is to keep the matrix algebra
+and change the scalars. Thus throughout this section, we fix a commutative semiring $S = (S, +, 0, \cdot, 1)$,
+whose elements we think of as atoms of dependency information, with $\cdot$ combining information along a path
+from an input to an output and $+$ combining information across parallel paths.
 
-\subsubsection{Domains as a Qualitative Theory of Approximation}
+Our second move is one of abstraction: rather than axiomatise the matrices of \secref{introduction}
+directly, we identify the minimal structure required to capture what made that story work: a space of
+dependency information for each value,
+linear maps between spaces for the forward analysis, and an identification of each space with its dual, the
+extra structure needed to support an analogue of matrix transposition, and hence a backward analysis.
+The role of vector spaces, which are defined over fields, is played by \emph{semimodules}: commutative
+monoids $(M, +, 0)$ equipped with an action $a \cdot x$ of the scalars, satisfying the usual laws. Linear maps
+preserve $+$, $0$ and the action, and form a category $\SemiMod(S)$; pointwise addition of linear maps makes
+each hom-set a commutative monoid, with composition bilinear. Every semimodule has a \emph{dual} $M^* = M
+\linearto S$ of linear maps into the scalars (categorically, the internal hom into the scalars object, which is the
+unit of the tensor product of semimodules), and every
+linear map $f : M \linearto N$ has a \emph{transpose} $\transpose{f} = (- \comp f) : N^* \linearto M^*$,
+contravariantly.
 
-Domain theory is a method for defining the semantics of programs that
-handle infinite data such as functions or infinite streams. Domains
-are certain partially ordered sets where the ordering denotes a
-relationship of qualitative information content: if $x \sqsubseteq y$,
-then $y$ may contain more information than $x$. For example, if $x$
-and $y$ are functions, then $y$ may be defined at more values than
-$x$. Infinite objects are understood in terms of their approximations
-in this sense, and domains are assumed to be closed under least upper
-bounds (lubs) of directed sets, meaning that any internally consistent
-collection of elements has a ``completion'' that contains all the
-information covered by the set. Programs are interpreted as monotone
-functions that preserve directed lubs. Monotonicity captures the idea
-that if the input gets more defined, then the output can get more
-defined. Preservation of lubs, or \emph{continuity}, states that a
-function interpreting a program cannot act inconsistently on
-approximations and their completion, which corresponds to the
-intuitive idea that a function that is computable cannot look at a
-non-finite amount of input to produce a finite output. \citet{abramsky-jung} provide a comprehensive introduction to domain theory.
-
-For the purposes of \GPS, we are interested in using
-approximations not to model computation on infinite objects, but instead
-for revealing how programs explore their inputs when producing parts
-of their output. Therefore, we ignore completeness properties of the
-partially ordered sets we consider.
-
-\subsubsection{Bounded Meets and Conditional Multiplicativity}
-\label{sec:bounded-meets-and-cm}
-
-When giving a denotational semantics for sequential programming
-languages, Scott-continuous functions are too permissive. Famously,
-\citet{plotkin77lcf}'s Parallel OR (\exref{parallel-or}, below) is
-continuous but does not explore its input in a way consistent with a
-sequential implementation. Continuous functions can explore their
-input in a non-deterministic way as long as the result is
-deterministic. This non-determinism results in functions whose
-output cannot be assigned a unique minimal input that accounts for
-it. Therefore, continuous functions are in general incompatible with the central
-idea in \GPS that we should be able to identify a \emph{minimal} part
-of the input that leads to a part of the output.
-
-\emph{Stability} is a property that can be required of monotone functions, that was invented by \citet{berry79} in an attempt to capture sequentiality. This was unsuccessful (see the $\mathrm{gustave}$ function in \exref{parallel-or}), but we will see now how it is closely related to the problem of computing the forward and backwards maps of approximations needed in \GPS. A textbook description of stable functions in the context of domain theory is given by \citet[Chapter 12]{amadio-curien}. We start with a property that is weaker than stability, but easier to motivate in connection with derivatives of smooth functions.
-
-In a partially ordered set $X$, for any $x \in X$ the set of elements below $x$, $\downset{x} = \{ x' \mid x' \sqsubseteq x \}$, is itself a partially ordered set. These approximations of $x$ we will think of as ``tangents'' at $x$, and the whole set $\downset{x}$ as the ``tangent space''. Tangent spaces are vector spaces, so in the partially ordered setting we take elements of $\downset{x}$ to be approximations of processes defined at $x$. As we can add tangents, we assume we can take meets of approximations in $\downset{x}$:
-
-% \footnote{\bob{Is it possible to derive the tangent spaces by
-% thinking about continuous functions passing through $x$?}}
-
-\begin{definition}
-  A \emph{bounded meet poset} is a partially ordered set $X$ where for
-  every $x \in X$, $\downset{x}$ is a meet semilattice, with $x$ as
-  the top element.
+The transpose is almost the backward analysis we are after: it runs in the opposite direction to $f$,
+but between the duals $N^*$ and $M^*$, the cotangent spaces, rather than between the tangent spaces $M$ and
+$N$ themselves. What we want is a map $N \linearto M$, running dependency information back through the same
+spaces the forward map runs it through, as the transposed matrix did in \secref{introduction}. For that, each
+space must be identified with its dual. Whereas a finite-dimensional vector space always admits such an
+identification (choose a basis), a semimodule need not; we therefore make the identification part of the data.
+\begin{definition}[Self-dual semimodule]
+  \label{def:self-dual-semimodule}
+  A \emph{self-dual} semimodule is a pair $\langle M, i \rangle$ of a semimodule and a chosen isomorphism
+  $i : M \cong M^*$. The \emph{pairing} induced by $i$ is $\langle x, y \rangle = i(x)(y)$.
 \end{definition}
-
-For the approximation version of the forward derivative of $f$ at $x$, we take $f$'s restriction to $\downset{x}$, taking approximations of the input to approximations of the output. Matching the linearity of the forward derivative of smooth functions, we require that these restrictions preserve meets. This is exactly the definition of \emph{conditionally multiplicative} function from \citet{berry79}:
-
-\begin{definition}
-  A \emph{conditionally multiplicative} (cm) function $f : X \to Y$ is
-  a monotone function such that for all $x \in X$, the restriction
-  $f_x : \downset{x} \to \downset{f(x)}$ preserves meets.
+The pairing is an $S$-valued measure of the extent to which $x$ and $y$ overlap; its prototype is the
+dot product of vectors (the pairing induced by the self-duality of $S^n$, as we will see below). Extending the
+analogy, we call $x$ and $y$ \emph{orthogonal} when $\langle x, y \rangle = 0$.
+\begin{definition}[Conjugate]
+  \label{def:conjugate}
+  Between self-dual semimodules $\langle M, i \rangle$ and $\langle N, j \rangle$, the \emph{conjugate} of
+  a linear map $f : M \linearto N$ is $\conj{f} = i^{-1} \comp \transpose{f} \comp j : N \linearto M$, the
+  unique linear map satisfying
+  \begin{displaymath}
+    \langle f(x), y \rangle = \langle x, \conj{f}(y) \rangle
+  \end{displaymath}
 \end{definition}
+The conjugate is our backward analysis, and its defining equation makes precise the relationship with
+the forward one alluded to in \secref{introduction}. Self-dual semimodules and linear maps form a category
+$\SDSemiMod(S)$.
 
-\begin{theorem}
-  Bounded meet lattices and conditionally multiplicative functions form
-  a category $\CM$. This category has products, coproducts, and
-  exponentials.
-\end{theorem}
+The matrices of \secref{introduction} now reappear as concrete instances. The \emph{free} semimodule
+$S^n$ on $n$ generators has as elements the $n$-length vectors of scalars, with standard basis vectors $e_i$
+and every $v \in S^n$ decomposing as $v = \sum_i v_i \cdot e_i$. Currying the \emph{dot product} $\langle u, v
+\rangle = \sum_i u_i \cdot v_i$ gives an isomorphism $S^n \cong (S^n)^*$, since pairing with the basis vectors
+extracts components, $\langle e_i, v \rangle = v_i$; so free semimodules are self-dual. By basis
+decomposition, a linear map $S^m \linearto S^n$ is exactly an $n \times m$ matrix over $S$, with composition
+as matrix multiplication and the conjugate as the familiar matrix transpose, $(\conj{M})_{ji} = M_{ij}$.
 
-\begin{proof}
-  \AGDA. See \citet[Theorem 12.1.9]{amadio-curien} for the
-  case when the posets are also cpos. The crucial technical step,
-  identified by \citet{berry79}, is that the ordering on conditionally
-  multiplicative functions is not the extensional ordering
-  ($f \sqsubseteq_{\mathrm{ext}} g$ iff
-  $\forall x. f(x) \sqsubseteq g(x)$) but instead the stable ordering:
-  $f \sqsubseteq_{\mathrm{st}} g$ iff $f \sqsubseteq_{\mathrm{ext}} g$ and
-  $\forall x, x'.\,x \sqsubseteq x' \Rightarrow f(x) = f(x') \land
-  g(x)$.
-\end{proof}
+We write $\Mat(S)$ for the skeletal category whose objects are the natural numbers and whose morphisms
+$m \to n$ are the $n \times m$ matrices. The Boolean Jacobians from \secref{introduction} live here: a
+dependency relation between $m$ input positions and $n$ output positions is exactly a morphism $m \to n$ in
+$\Mat(\Two)$, where $\Two$ is the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule
+for dependencies is composition in $\Mat(\Two)$, or equivalently \emph{relational} composition under the
+equivalence of categories $\Mat(\Two) \simeq \FinRel$. The dot product can be interpreted as ``overlap'',
+becauses $\langle u, v \rangle = \top$ exactly when the selections $u$ and $v$ share a position, i.e.\ are not
+disjoint.
 
-\begin{remark}[Chain Rule]
-  \label{rem:chain-rule-cm}
-  It is almost a triviality at this point, but the crucial point is
-  that, for any cm functions $f : X \to Y$ and $g : Y \to Z$, the
-  restriction maps (``forward derivatives'') compose according to the
-  chain rule from \remref{chain-rule}:
-  \begin{displaymath}
-    (g \circ f)_x = g_{f(x)} \circ f_x
-  \end{displaymath}
-  We will see this phenomenon repeated in the definition of stable
-  functions below.
-\end{remark}
+The trivial semimodule is a zero object in $\SDSemiMod(S)$, and self-dual semimodules are closed under
+the \emph{biproduct} $M \biprod N$, an object which is both a product and a coproduct, with the injections
+conjugate to the projections, $\biinj_i = \conj{\biproj_i}$. The coincidence of products and coproducts is
+characteristic of such linear settings, and means $\SDSemiMod(S)$ on its own cannot interpret programs over
+sum types; we return to this in \secref{models-of-total-gps}.
 
-\begin{example}[Conditionally Multiplicative Functions]
-  \label{ex:strict-short-circuit}
-  To see the effect of conditional multiplicativity, consider several
-  ways of defining the OR on the lifted booleans
-  $\mathbb{B}_\bot$. Two functions that are cm are the strict and
-  left-short-circuiting ORs\footnote{The clauses in these examples are
-    shorthand for the graph of the function. They are not to be
-    understood as pattern matching clauses in a language like Haskell,
-    where it is not possible to match on $\bot$.}:
-  \begin{displaymath}
-    \begin{array}[t]{l@{(}l@{,~}l@{)~}c@{~}l}
-      \mathrm{strictOr}&\mathsf{tt}&\mathsf{tt}&=&\mathsf{tt} \\
-      \mathrm{strictOr}&\mathsf{tt}&\mathsf{ff}&=&\mathsf{tt} \\
-      \mathrm{strictOr}&\mathsf{ff}&\mathsf{tt}&=&\mathsf{tt} \\
-      \mathrm{strictOr}&\mathsf{ff}&\mathsf{ff}&=&\mathsf{ff} \\
-      \mathrm{strictOr}&\bot&\_&=&\bot \\
-      \mathrm{strictOr}&\_&\bot&=&\bot \\
-    \end{array}
-    \qquad
-    \begin{array}[t]{l@{(}l@{,~}l@{)~}c@{~}l}
-      \mathrm{shortCircuitOR}&\mathsf{tt}&\_&=&\mathsf{tt} \\
-      \mathsf{shortCircuitOR}&\mathsf{ff}&x&=&x \\
-      \mathsf{shortCircuitOR}&\bot&\_& =& \bot
-    \end{array}
-    \qquad
-    \raisebox{-15ex}{
-      \begin{tikzpicture}
-        \node (top) at (0,0) {$(\mathsf{tt},\mathsf{ff})$};
-        \node [below of=top,xshift=-0.5cm] (oi) {$(\bot,\mathsf{ff})$};
-        \node [below of=top,xshift=0.5cm] (io) {$(\mathsf{tt},\bot)$};
-        \node [below of=oi,xshift=0.5cm] (oo) {$(\bot,\bot)$};
-        \draw (top) -- (oi);
-        \draw (top) -- (io);
-        \draw (oi) -- (oo);
-        \draw (io) -- (oo);
-      \end{tikzpicture}
-    }
-  \end{displaymath}
-  In the poset $\mathbb{B}_\bot^2$, a typical poset of approximations of a fully defined element is shown to
-  the right. For $\mathrm{strictOr}$, any approximation that isn't the fully defined input is mapped to
-  $\bot$, while $\mathrm{shortCircuitOr}$ maps the partially defined $(\mathsf{tt},\bot)$ to $\mathsf{tt}$.
-  Thus, even though these functions operate identically on fully defined inputs, they differ in their
-  \emph{derivatives} on partially defined input, exposing how they explore their arguments differently. That
-  they are cm can be checked by examining their restrictions' behaviour. If we take the approximations
-  $(\bot,\mathsf{ff})$ and $(\mathsf{tt},\bot)$, then their meet is $(\bot,\bot)$; $\mathrm{strictOr}$ maps
-  all three elements to $\bot$, so is cm here since $\bot \wedge \bot = \bot$; and $\mathrm{shortCircuitOR}$
-  has $(\bot,\mathsf{ff}) \mapsto \bot$ and $(\mathsf{tt},\bot) \mapsto \mathsf{tt}$, the meet of which is
-  $\bot = \mathrm{shortCircuitOR}(\bot,\bot)$. Other combinations can be checked similarly.
-\end{example}
+\subsection[Dependency Structures over Semirings]{\added{Dependency Structures over Semirings}}
+\label{sec:approx-as-tangents:richer-semirings}
 
-\begin{example}[A non-Conditionally Multiplicative Function]
-  \label{ex:parallel-or}
-  A function that is not cm is Plotkin's Parallel OR \cite{lcf77}, which short-circuits in both arguments. It returns $\mathsf{tt}$ if either argment is $\mathsf{tt}$ even if the other argument is not defined:
-  \begin{displaymath}
-    \begin{array}{l@{(}l@{,~}l@{)~}c@{~}l}
-      \mathrm{parallelOR}&\mathsf{tt}&\_&=&\mathsf{tt} \\
-      \mathrm{parallelOR}&\_&\mathsf{tt}&=&\mathsf{tt} \\
-      \mathsf{parallelOR}&\mathsf{ff}&\mathsf{ff}&=&\mathsf{ff} \\
-      \mathsf{parallelOR}&\bot&\bot&=&\bot
-    \end{array}
-  \end{displaymath}
-  We have $\mathrm{parallelOR}(\mathsf{tt}, \bot) \wedge \mathrm{parallelOR}(\bot, \mathsf{tt}) = \mathsf{tt} \wedge \mathsf{tt} = \mathsf{tt}$ but $\mathrm{parallelOR}((\mathsf{tt},\bot) \wedge (\bot, \mathsf{tt})) = \mathrm{parallelOR}(\bot, \bot) = \bot$, so it is not cm.
+\Added{The framework so far only asks for commutativity of the scalars, which makes the dual $M^*$
+an $S$-semimodule again, so that the transpose remains a map between $S$-semimodules.
+Any commutative semiring $S$ thus yields a category
+$\SDSemiMod(S)$ with forward derivatives and their conjugates, related through the pairing. When $S$ is the
+reals, the conjugate is the familiar adjoint of linear algebra. In a dependency-tracking setting, however, the
+relationships of interest are typically granular: we ask whether, or to what degree, an output depends on an
+input, and want to compare one answer with another. This calls for an order on dependency information, which
+additional axioms on $S$ provide.}
 
-  Parallel OR is famous because it is not \emph{sequential}, meaning intuitively that it cannot be implemented without running the two arguments in parallel to see if one of them returns $\mathsf{tt}$. The fact that it exists in the standard domain theoretic semantics of PCF means that this semantics is incomplete for reasoning about observational equivalence in PCF. Since Parallel OR is not cm, one might hope that cm-ness is enough to capture sequentiality, and hence potentially give a fully abstract model of PCF. However, the following ternary function $\mathbb{B}_\bot^3 \to \{\top,\bot\}$ is cm but admits no sequential implementation that fixes an order that the arguments are examined in:
-  \begin{displaymath}
-    \begin{array}{l@{(}l@{,~}l@{,~}l@{)~}c@{~}l}
-      \mathrm{gustave}&\mathsf{tt}&\mathsf{ff}&\_&=&\top \\
-      \mathrm{gustave}&\mathsf{ff}&\_&\mathsf{tt}&=&\top \\
-      \mathrm{gustave}&\_&\mathsf{tt}&\mathsf{ff}&=&\top \\
-      \mathrm{gustave}&\_&\_&\_&=&\bot
-    \end{array}
-  \end{displaymath}
-  Due to the way that the cases are defined, there is no way of constructing a pair of approximations for which preservation of their meet does not hold. In terms of derivatives, this makes sense in that we are only concerned about the intensional behaviour of a function at a point and its approximations. Parallel OR has two incompatible approximation behaviours at the point $(\mathsf{tt},\mathsf{tt})$. The $\mathrm{gustave}$ function does have consistent behaviour at each approximation for each point.
-\end{example}
+\subsubsection[Conjugate pairs and conjugacy analyses]{\added{Conjugate pairs and conjugacy analyses}}
 
-\begin{example}[Intervals and Maximal Elements]
-  \label{ex:intervals-and-maxima-elements}
-  The set of intervals
-  $\{ [l,u] \in \mathbb{R} \times \mathbb{R} \mid l \leq u \}$ ordered
-  by reverse inclusion forms a (Scott) domain
-  \cite{scott-outline}. The set of maximal elements is exactly
-  $\mathbb{R}$. This domain has been proposed as a model of
-  approximate real number computation \cite{escardo-real-pcf}. The
-  information approximation reading is intuitive: as intervals move up
-  the order they become tighter, containing more information about the
-  number they are approximating.
+\Added{Suppose first that $1$ is an additive top in $S$ ($1 + a = 1$). Addition is then
+idempotent, meaning $a + a = a$. Idempotent addition induces an order: $S$ becomes a join-semilattice,
+with $a \leq b$ iff $a + b = b$, joins given by $+$ and least element $0$. This structure lifts pointwise to every semimodule,
+and every linear map automatically preserves joins and $0$. Dependency
+information is now ordered by informativeness: $0$ means ``no dependency'', and the forward and backward
+analyses are monotone, taking more informative inputs to more informative outputs and vice-versa.}
 
-  Given this reading, it makes sense to wonder if we can use interval
-  approximations as ``information tangents'' of real numbers, where
-  derivatives take approximating intervals to approximating
-  intervals. Since intervals form a Scott domain, they are bounded
-  complete and hence have bounded meets. However, the addition
-  function on intervals, $[l_1,u_1] + [l_2,u_2] = [l_1+l_2,u_1+u_2]$,
-  is not conditionally multiplicative, as can be easily checked.
-
-  A solution is to use the set of intervals with nominated points that
-  they are approximating: $\{[l,x,u] \mid l \leq x \leq u\}$. The
-  ordering now is that $[l_1,x_1,u_1] \sqsubseteq [l_2,x_2,u_2]$ iff
-  $x_1 = x_2$ and $l_1 \leq l_2$ and $u_2 \leq u_1$. Consequently, the
-  maximal elements are $[x,x,x]$, recovering $\mathbb{R}$ again, but
-  the approximations of each number all form independent sub-lattices.
-  Addition is defined as
-  $[l_1,x_1,u_1] + [l_2,x_2,u_2] = [(l_1+x_2) \sqcap
-  (l_2+x_1),x_1+x_2,(u_1+x_2)\sqcup(u_2+x_1)]$, which is conditionally
-  multiplicative. Note how this definition bears a resemblance to the
-  product rule for derivatives, with (in the lower end of the
-  interval) $\sqcap$ replacing $+$.
-
-  This example is important to us because it shows that (for total
-  programs) we are separately interested in the maximal elements and
-  their approximations, and that approximations of each maximal
-  element may have to be considered separately.
-
-  Relatedly, \citet{edalat-heckmann98} proposed a Scott domain of
-  formal balls on a metric space, where again the maximal elements are
-  the points of the original space. More generally,
-  \citet[Section V-6]{continuous-lattice-book} describe \emph{domain
-    environments}, which are domains whose maximal elements are
-  exactly the points of a topological space. We are not aware of any
-  work linking domain environments in general to stable functions. It
-  would be interesting to see whether the situation for intervals,
-  where approximations must be relative to a nominated point, repeats
-  in general when considering conditionally multiplicative functions.
-\end{example}
-
-Given these examples, conditional multiplicativity seems to be a
-reasonable analogue to functions with a well-defined notion of
-derivative. For \GPS we also require an analogue to the reverse
-derivative, where we map approximations backwards to give the least
-approximation of the input for a given approximation of the output. In
-the case of smooth functions, we are always guaranteed a reverse
-derivative. However, there is not always a best way to map
-approximations backwards for cm functions, as the following example
-shows.
-
-\begin{example}[Is Conditional Multiplicativity Enough?]
-  \label{ex:non-stable-function}
-  An example that is conditionally multiplicative, but does not admit
-  a backwards map of approximations (from \citet[just before Lemma
-  12.2.3]{amadio-curien}, originally due to Berry) is given by
-  $\mathrm{unstable} : D \to \{\bot \sqsubseteq \top\}$, where
-  $D = \bot \sqsubseteq \cdots \sqsubseteq n \sqsubseteq \cdots
-  \sqsubseteq 1 \sqsubseteq 0$, as $\mathrm{unstable}(\bot) = \bot$
-  and $\mathrm{unstable}(n) = \top$. This is monotone, and preserves
-  meets in every $\downset{x}$. But there is no ``best'' (i.e., least)
-  input that gives us any finite output.
-\end{example}
-
-\subsubsection{Stable functions and L-posets}
-\label{sec:stab}
-
-In light of the \exref{non-stable-function}, we turn to
-\citet{berry79}'s definition of \emph{stable function} that requires
-the existence of a reverse mapping directly, even without assuming
-that any meets exist:
-
-\begin{definition}[Stable function]
-  Let $f : X \to Y$ be a monotone function between posets $X$ and
-  $Y$. The function $f$ is \emph{stable} if for all $x \in X$ and
-  $y \leq f(x)$:
-  \begin{enumerate}
-  \item (\textsc{Existence}) there exists an $x_0 \leq x$ such that $y \leq f(x_0)$, and
-  \item (\textsc{Minimality}) for any $x'_0 \leq x$ such that $y \leq f(x'_0)$ then
-    $x_0 \leq x'_0$ .
-  \end{enumerate}
+\Added{If multiplication is also idempotent ($a \cdot a = a$), then $S$ is a bounded distributive lattice,
+with multiplication as the meet and distributivity given by the semiring. This opens the way to reading the
+two analyses in terms of \emph{disjointness}: where meets exist, define $x \disj y$ when $x \meet y = 0$, and
+if disjointness agrees with the orthogonality given by the pairing, the defining equation of the conjugate
+(\defref{conjugate}) says that $f$ and $\conj{f}$ exchange disjointness: $f(x) \disj y$ iff $x \disj
+\conj{f}(y)$. Let us therefore consider the case where each semimodule has meets, preserved by the scalar action and
+agreeing with orthogonality in this sense; meets, unlike joins, do not lift from $S$, so this is additional
+structure. Maps that exchange disjointness in this way have a standard name.}
+\begin{AddedBlock}
+\begin{definition}[Conjugate pair]
+  \label{def:conjugate-pair}
+  Join-preserving maps $f : L \to M$ and $g : M \to L$ between bounded lattices form a \emph{conjugate
+  pair} when $f(x) \disj y$ iff $x \disj g(y)$ for all $x \in L$ and $y \in M$.
 \end{definition}
+\end{AddedBlock}
+\Added{The notion originates in relation algebra~\cite{jonsson51}, where the conjugate of composition with a
+relation is composition with its converse. The scalars $S$, viewed as a semimodule over itself, qualify
+automatically for this reading, and biproducts (including the empty biproduct $S^0$) inherit the structure
+componentwise, giving the linear maps between free semimodules $S^n$, along with their conjugates, as the canonical
+instances of conjugate pairs.}
 
-\begin{example}\label{ex:stable-functions}
-  \leavevmode\\[-3ex]
-  \begin{enumerate}[leftmargin=\enummargin]
-  \item The function $\mathrm{strictOr}$ is stable. For example, for
-    the input-output pair
-    $(\mathsf{tt},\mathsf{ff}) \mapsto \mathsf{tt}$, the minimal input
-    that gives this output is exactly $(\mathsf{tt}, \mathsf{ff})$. If
-    we take the approximation $\bot \leq \mathsf{tt}$ of the output,
-    then the corresponding minimal input is $(\bot, \bot)$. The
-    function $\mathrm{shortCircuitOR}$ is also stable. For the
-    input-output pair $(\mathsf{tt},\mathsf{ff}) \mapsto \mathsf{tt}$,
-    the minimal input that gives this input is $(\mathsf{tt},\bot)$,
-    indicating that the presence of $\mathsf{ff}$ in the second
-    argument was not necessary to produce this output. As with
-    $\mathrm{strictOr}$, the minimal input required to produce the
-    output $\bot \leq \mathsf{tt}$ is again $(\bot,\bot)$.
+\Added{The relevance to us here is that conjugate pairs also underpin the \emph{cognacy} (common ancestry)
+analyses of work on linked visualisations~\cite{perera22,bond25}. These dependency analyses work by composing
+a join-preserving dependency analysis with its conjugate, yielding a map sending a selection of outputs to its
+\emph{related outputs}, those sharing a dependency on some part of the input; selections in one chart can then
+be linked to ``cognate'' selections in another.}
 
-  \item The $\mathrm{parallelOR}$ function is not stable. For the
-    input-output pair $(\mathsf{tt},\mathsf{tt}) \mapsto \mathsf{tt}$,
-    there is no one minimal input that produces this output. We have
-    both $\mathrm{parallelOR}(\mathsf{tt},\bot) = \mathsf{tt}$ and
-    $\mathrm{parallelOR}(\bot,\mathsf{tt}) = \mathsf{tt}$, which are
-    incomparable and their greatest lower bound $(\bot,\bot)$ gives
-    the output $\bot$.
+\subsubsection[Galois slicing]{\added{Galois slicing}}
 
-  \item The $\mathrm{gustave}$ function is stable. Despite there being
-    no one minimal input that achieves the output $\top$, each of the
-    minimal inputs that can achieve this output are pairwise
-    incomparable, so for each specific input that gets output $\top$
-    there is a unique minimal input that achieves it (listed in the
-    first three lines of the definition). %
-%
-    In terms of \GPS, the $\mathrm{gustave}$ function does not present
-    a problem; for any particular run (i.e., input $\mapsto$ output
-    pair), there is an unambiguous minimal input that achieves the
-    output, no matter that it was not achieved by a sequential
-    processing of the input.
-
-  \item As discussed above, $\mathrm{unstable}$ is not stable, but is
-    conditionally multiplicative.
-
-  \item The addition function on intervals with nominated points in
-    \exref{intervals-and-maxima-elements} is stable. Given the input
-    $[l_1,x_1,u_1], [l_2,x_2,u_2]$ and an approximation
-    $[l,x_1+x_2,u]$ of the output, the minimal approximations of the
-    input are $[l-x_2,x_1,u-x_2], [l-x_1,x_2,u-x_1]$. We can read this
-    as saying if the output was the maximal element $x_1+x_2$ but we
-    only require the output to be in the range $[l,x_1+x_2,u]$, then
-    we can obtain intervals containing the input values that are
-    enough to obtain the desired output approximation \emph{assuming
-      that the other input is kept the same}. Note the analogy to
-    partial derivatives in multi-variable calculus, where the
-    derivative is computed in each variable independently.
-  \end{enumerate}
-\end{example}
-
-% The fact that these two functions' stability witnesses reveal
-% information about how they depend on their input is what we will
-% exploit in order to use the idea of stability for \GPS. It is
-% interesting that sequentiality is not necessarily required in order
-% to obtain backwards maps of approximations, as might be assumed by
-% thinking about how to trace computations for provenance information.
-
-Stability has an alternative definition in terms of Galois
-connections, which will be more useful for what follows. This
-characterisation is due to~\citet{taylor99}. We first define Galois
-connections, which we used informally in \exref{introduction-example}.
-
+\Added{Suppose in addition that every scalar has a complement: an operation $\neg$ with $a \meet \neg a =
+0$ and $a \join \neg a = 1$, making $S$ a Boolean algebra. Negation supports an alternative presentation of
+conjugates as adjoints. Composing a map with complements on either side preserves its direction but exchanges
+join-preservation for meet-preservation; the \emph{De Morgan dual} $\neg \comp \conj{f} \comp \neg$ of
+the conjugate is thus meet-preserving, and is precisely the upper adjoint of $f$ (upper adjoints
+preserve meets, dually to lower adjoints and joins). Forward and backward analysis therefore form a
+\emph{Galois connection} between the lattices of approximations.}
+\begin{AddedBlock}
 \begin{definition}[Galois connection]
   \label{def:galois-connection}
   Suppose $X$ and $Y$ are posets. A \emph{Galois connection} $f \adj g: X \to Y$ is a pair of monotone functions $f: Y \to X$ and $g: X \to Y$ satisfying $y \leq g(x) \iff f(y) \leq x$ for any $x \in X$ and $y \in Y$. Since a Galois connection is also an adjunction, we refer to $f$ as the left adjoint and $g$ as the right adjoint.
 \end{definition}
+\end{AddedBlock}
+\Added{This is precisely the setting of \GPS~\cite{perera12a,perera16d,ricciotti17}, recovered here as the
+Boolean instance of the general semimodule picture. Galois connections as such presuppose none of the
+algebraic structure of this section, being definable between arbitrary posets; De Morgan duality is simply how
+the adjoint presentation arises here, where the conjugate is the primary notion. One orientation to keep
+straight: the conjugate as presented here, $\conj{f}$, runs backwards, whereas the meet-preserving map of \GPS
+runs forwards. The two presentations agree because $\conj{-}$ is involutive: instantiating the construction at
+$\conj{f}$ in place of $f$ gives exactly the connection of \GPS, with meet-preserving forward map $\neg \comp
+f \comp \neg$.}
 
-\begin{lemma}
-  A monotone function $f : X \to Y$ is stable if and only if for all
-  $x \in X$, the restriction of $f_x : \downset{x} \to \downset{f(x)}$
-  has a left Galois adjoint.
-\end{lemma}
+\Added{The join-preserving and meet-preserving maps answer different questions. In the forwards direction, the
+join-preserving map $f$ has a \emph{necessity}-flavoured interpretation: which outputs may depend on a given
+part of the input. Its meet-preserving counterpart $\neg \comp f \comp \neg$ reads as \emph{sufficiency}:
+which outputs a given input selection determines outright. Notably, in the Galois slicing work the
+meet-preserving forward map is only used to establish the existence of the join-preserving backward map; it
+seems to lack any direct dependency analysis applications of its own.}
 
-\begin{proof}
-  If $f$ is stable, then define a left adjoint
-  $f^*_x : \downset{f(x)} \to \downset{x}$ by setting $f^*_x(y)$ to be
-  the minimal $x_0$ required by stability. This is monotone: if
-  $y \leq y'$, then we know that $y \leq y' \leq f(f^*_x(y'))$ by the
-  definition of $f^*_x$, so $f^*_x(y) \leq f^*_x(y')$ by minimality of
-  $f^*_x(y)$. For the adjointness, let $x' \leq x$ and $y \leq
-  f(x)$. Then if $f^*_x(y) \leq x'$, we have
-  $y \leq f(f^*_x(y)) \leq f(x')$ by monotonicity of $f$ and the first
-  part of stability. In the other direction, if we have
-  $y \leq f(x')$, then by uniqueness we have $f^*_x(y) \leq x'$.
-
-  If, for every $x$, $f_x$ has a left adjoint $f^*_x$, then for any
-  $x', y$ we have $y \leq f_x(x') \Leftrightarrow f^*_x(y) \leq
-  x'$. So $f^*_x(y)$ is the element that satisfies
-  $y \leq f(f^*_x(y))$, and it is minimal since if $y \leq f_x(x'_0)$
-  then $f^*_x(y) \leq x'_0$.
-\end{proof}
-
-Even though stable functions can be defined on any partially ordered
-set, in light of the analogy with tangent spaces it makes sense to
-require that meets, preserved by forward approximation maps, and
-joins, preserved by backwards approximation maps, exist:
-
-\begin{definition}
-  An \emph{L-poset} is a partially ordered set $X$ such that for every $x \in X$, the principal downset $\downset{x}$ is a bounded lattice (i.e., have all finite meets and joins).
-\end{definition}
-
-This lemma is an instance of standard facts about Galois connections
-preserving meets and joins:
-
-\begin{lemma}
-  For L-posets $X$ and $Y$, a stable function $f : X \to Y$ preserves
-  meets in its forward part $f_x$ and joins in its reverse part
-  $f^*_x$.
-\end{lemma}
-
-The converse to this lemma (that functions that preserve meets in their forward part have a left Galois adjoint) is not true, as was demonstrated by the non-stable function in \exref{non-stable-function}. In the case when the posets $\downset{x}$ are \emph{complete}, and $f_x$ preserves infinitary meets, then we are guaranteed a left Galois adjoint. In that example, the infinite set $\{0, 1, 2, \dots, n, n-1, \dots\}$ not including $\bot$ of approximations of $0$ does not have a greatest lower bound, so the order is not complete.
-
-\begin{theorem}
-  L-posets and stable functions form a category $\Lposet$ with products
-  and coproducts.
-\end{theorem}
-
-\begin{remark}[Chain Rule]
-  \label{rem:chain-rule-stable}
-  As for the ``forward derivatives'' of conditionally multiplicative
-  functions, the forward and backwards parts of a stable function
-  compose according to the chain rule (c.f. \remref{chain-rule}):
-  \begin{itemize}
-  \item $(g \circ f)_x = g_{f(x)} \circ f_x : \downset{x} \linearto \downset{g(f(x))}$
-  \item $(g \circ f)^*_x = f*_x \circ g^*_{f(x)} : \downset{g(f(x))} \linearto \downset{x}$
-  \end{itemize}
-  We will use this property in \propref{embed-stable} to show that
-  $\Lposet$ embeds into our category of sets-with-approximation.
-\end{remark}
-
-The category of L-posets and stable functions is not cartesian
-closed. To make it so, we would need to require that the principal
-downsets $\downset{x}$ are \emph{complete} lattices. \citet[Theorem
-12.5.10]{amadio-curien} details the proof. Intuitively, to generate
-the best approximation of an input value for a function, we need to
-take the infimum over all possible input values.
-
-Our goal is to model a higher-order language suitable for writing
-queries on databases as in \exref{introduction-example}, so why should
-we not just take complete L-posets and stable functions as our model
-of \GPS?  We have two reasons for moving to a different model in
-\secref{models-of-total-gps}:
-
-\begin{enumerate}[leftmargin=*]
-\item Even without completeness, in bounded meet posets and L-posets
-  values and their approximations live in the same set. However, in
-  the \emph{total} query language we wish to model in
-  \secref{language}, we are not directly interested in the behaviour
-  of programs on approximations as we would be for partial programs
-  with general recursion. (Moreover, in the light of
-  \exref{intervals-and-maxima-elements} it is not clear whether
-  approximations for partiality and approximations for stability ought
-  to be the same thing. We discuss this further in
-  \secref{conclusion}.) In \exref{intervals-and-maxima-elements},
-  maximal elements could be taken to be the ``proper values''. One
-  idea is to restrict to conditionally multiplicative or stable
-  functions that preserve maximal elements. However, this idea fails
-  at higher order: functions that take maximal elements to maximal
-  elements are not themselves maximal elements. We could devise a
-  category of L-posets with totality predicates (which would pick out
-  maximal elements at first-order) and totality preserving functions,
-  but we prefer a more direct method of separating values proper from
-  their approximations using the \emph{Category of Families}
-  construction as we explain in \secref{models-of-total-gps:fam}.
-\item A more practical reason is that we wish to formalise our
-  construction in the proof assistant Agda \cite{agda} in order to get
-  an \emph{executable} model of the language in
-  \secref{language}. Agda's type theory is both predicative and
-  constructive. Predicativity means that it does not have complete
-  lattices in the classical sense: for a type $X$ we can only get
-  suprema and infima of families in a lower universe level than
-  $X$. This is not necessarily a problem, as \citet{dejong21} show how
-  to develop a large amount of domain theory in a predicative
-  setting. However, due to constructivity the lifting construction
-  (due to \citet{escardo-knapp}) requires a proof of definedness to
-  extract a value. Since we are modelling a total language, we prefer
-  to have a model that computes directly.
-\end{enumerate}
-
-\subsection{Summary}
-\label{sec:diff-stab-summary}
-
-We have seen that \citet{berry79}'s theory of stable functions between suitable partial orders can be seen as form of differentiability with forward and reverse derivatives. In the next section, we describe a model based on these ideas suitable for constructing executable models of total higher order languages.
-
-We end this section with a conjecture. Although we have argued above
-that there is an analogy between stable functions and smooth
-functions, we have not stated any mathematical theorems substantiating
-this. \emph{Tangent Categories} \cite{cockett14,cockett18} are a
-categorical axiomatisation of the properties of manifolds and smooth
-functions in terms of the presence of tangent bundles $T(X)$ for every
-object $X$, forward derivatives and additivity of tangents. They
-generalise Cartesian Differential Categories \cite{cdcs}, which are an
-axiomatisation of Euclidean spaces and smooth functions.
-
-\begin{conjecture}
-  \label{con:tangent-stable-fns}
-  (1) Bounded meet posets and conditionally multiplicative functions
-  form a Tangent category where the tangent bundle
-  $T(X) = \{(x,x') \mid x' \leq x\}$ and addition of tangents is given
-  by meets. (2) L-posets and stable functions form a \emph{reverse
-    Tangent category} \cite{reverse-tangents}.
-\end{conjecture}
-
-As well as codifying exactly what we mean by differentiable structure
-on partially ordered sets, proving this conjecture would also tell us
-what higher derivatives mean in this context as well, something that
-we have not considered above. We will extend this conjecture to our
-refined model of lattice approximated sets in \secref{models:summary}.
-
-% Let us summarise our analogy between differentiable functions between manifolds and stable functions between L-posets:
-
-% \begin{itemize}
-% \item For \GPS, we assume that every value has an associated lattice of {\em approximations}. For differentiable programs, every point has an associated vector space of {\em tangents}.
-% \item For \GPS, every program has an associated forward approximation map that takes approximations forward from the input to the output. This map {\em preserves meets}. For differentiable programs, every program has a forward derivative that takes tangents of the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of tangents and the zero tangent.
-% \item For \GPS, every program has an associated backward approximation map that takes approximations of the output back to least approximations of the input. This map {\em preserves joins}. For differentiable programs, every program has a reverse derivative that takes tangents of the output to tangents of the input. This map is again {\em linear}.
-% \item For \GPS, the forward and backward approximation maps are related by being a Galois connection. For differentiable programming, the forward and reverse derivatives are related by being each others' transpose.
-% \end{itemize}
+\begin{DeletedBlock}
+\input{main/stable-functions}
+\end{DeletedBlock}

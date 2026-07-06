@@ -12,6 +12,9 @@ substP _ refl q = q
 
 data ⊥ {ℓ} : Prop ℓ where
 
+⊥-elim : ∀ {ℓ ℓ'} {A : Prop ℓ'} → ⊥ {ℓ} → A
+⊥-elim ()
+
 record ⊤ {ℓ} : Prop ℓ where
   constructor tt
 

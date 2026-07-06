@@ -520,3 +520,13 @@ ceil-lemma (succ (succ n)) = s≤s (s≤s (≤-trans (ceil-lemma n) (+-succ .pro
 
 -- FIXME: ⌊log2'⌋-lower (except for 0), and they are always within 1
 -- of each other
+
+------------------------------------------------------------------------------
+-- Multiplication as a setoid map on indices (for the derivative interpretation of `mult`).
+module _ where
+  open _⇒s_
+  open import basics using (IsMonoid)
+
+  mult : ⊗-setoid ℕₛ ℕₛ ⇒s ℕₛ
+  mult .func (x , y) = x * y
+  mult .func-resp-≈ (x₁≈x₂ , y₁≈y₂) = IsMonoid.cong *-isMonoid x₁≈x₂ y₁≈y₂

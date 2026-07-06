@@ -23,18 +23,11 @@ open import join-semilattice
             _⊕_ to _⊕J_;
             ≃m-isEquivalence to ≃J-isEquivalence)
 open import cmon-enriched
-open import functor using (Functor; StrongFunctor; StrongPointedFunctor)
+import conjugate
+import lattice
 
 -- Category LatGal of bounded lattices and Galois connections between them.
-record Obj : Set (suc 0ℓ) where
-  no-eta-equality
-  field
-    carrier : Preorder
-    meets   : MeetSemilattice carrier
-    joins   : JoinSemilattice carrier
-  open Preorder carrier public
-  open MeetSemilattice meets renaming (idem to ∧-idem; interchange to ∧-interchange) public
-  open JoinSemilattice joins renaming (idem to ∨-idem; interchange to ∨-interchange) public
+open import lattice using () renaming (BoundedLattice to Obj) public
 open Obj
 
 record _⇒g_ (X Y : Obj) : Set where
@@ -70,10 +63,36 @@ record _⇒g_ (X Y : Obj) : Set where
 
 open _⇒g_
 
+-- A Tarski conjugate between Boolean algebras is a Galois connection: the right adjoint is the De Morgan
+-- dual ¬ ∘ conjugate-left ∘ ¬ of the conjugate's left map.
+module _ {X Y : lattice.DistributiveLattice}
+         (Xb : lattice.BooleanAlgebra X) (Yb : lattice.BooleanAlgebra Y) where
+  open _=>J_
+  open preorder._=>_
+  private
+    module DX = lattice.DistributiveLattice X
+    module DY = lattice.DistributiveLattice Y
+    module Xb = lattice.BooleanAlgebra Xb
+    module Yb = lattice.BooleanAlgebra Yb
+
+  conj→gal : conjugate._⇒c_ X Y → (lattice.bounded Y) ⇒g (lattice.bounded X)
+  conj→gal c .left = conjugate._⇒c_.right c .func
+  conj→gal c .right .fun x = Xb.¬ (conjugate._⇒c_.left c .func .fun (Yb.¬ x))
+  conj→gal c .right .mono x≤x' = Xb.¬-antitone (conjugate._⇒c_.left c .func .mono (Yb.¬-antitone x≤x'))
+  conj→gal c .left⊣right =
+    sym-⇔ (trans-⇔ Yb.≤-#-¬
+          (trans-⇔ (record { proj₁ = DY.#-sym ; proj₂ = DY.#-sym })
+          (trans-⇔ (conjugate._⇒c_.conjugate c)
+          (trans-⇔ (record { proj₁ = DX.#-sym ; proj₂ = DX.#-sym }) Xb.#-↔-≤¬))))
+
 record _≃g_ {X Y : Obj} (f g : X ⇒g Y) : Prop where
+  -- FIXME: can deduce left-eq from right-eq and the adjunction?
   field
     right-eq : f .right ≃m g .right
-    left-eq : f .left ≃m g .left
+
+  left-eq : f .left ≃m g .left
+  left-eq ._≃m_.eqfun x .proj₁ = f .left⊣right .proj₁ (Y .≤-trans (g .left⊣right .proj₂ (X .≤-refl)) (right-eq ._≃m_.eqfun _ .proj₂))
+  left-eq ._≃m_.eqfun x .proj₂ = g .left⊣right .proj₁ (Y .≤-trans (f .left⊣right .proj₂ (X .≤-refl)) (right-eq ._≃m_.eqfun _ .proj₁))
 
   left-∨-cong : left-∨ f ≃J left-∨ g
   left-∨-cong ._≃J_.eqfunc = left-eq
@@ -88,11 +107,8 @@ open preorder using (≃m-isEquivalence)
 
 ≃g-isEquivalence : ∀ {X Y} → IsEquivalence (_≃g_ {X} {Y})
 ≃g-isEquivalence .refl .right-eq = ≃m-isEquivalence .refl
-≃g-isEquivalence .refl .left-eq = ≃m-isEquivalence .refl
 ≃g-isEquivalence .sym e .right-eq = ≃m-isEquivalence .sym (e .right-eq)
-≃g-isEquivalence .sym e .left-eq = ≃m-isEquivalence .sym (e .left-eq)
 ≃g-isEquivalence .trans e₁ e₂ .right-eq = ≃m-isEquivalence .trans (e₁ .right-eq) (e₂ .right-eq)
-≃g-isEquivalence .trans e₁ e₂ .left-eq = ≃m-isEquivalence .trans (e₁ .left-eq) (e₂ .left-eq)
 
 idg : (X : Obj) → X ⇒g X
 idg X .right = id
@@ -106,7 +122,6 @@ _∘g_ : ∀ {X Y Z : Obj} → Y ⇒g Z → X ⇒g Y → X ⇒g Z
 
 ∘g-cong : ∀ {X Y Z}{f₁ f₂ : Y ⇒g Z}{g₁ g₂ : X ⇒g Y} → f₁ ≃g f₂ → g₁ ≃g g₂ → (f₁ ∘g g₁) ≃g (f₂ ∘g g₂)
 ∘g-cong f₁≈f₂ g₁≈g₂ .right-eq = ∘-cong (f₁≈f₂ .right-eq) (g₁≈g₂ .right-eq)
-∘g-cong f₁≈f₂ g₁≈g₂ .left-eq = ∘-cong (g₁≈g₂ .left-eq) (f₁≈f₂ .left-eq)
 
 cat : Category (suc 0ℓ) 0ℓ 0ℓ
 cat .Category.obj = Obj
@@ -117,12 +132,8 @@ cat .Category.id = idg
 cat .Category._∘_ = _∘g_
 cat .Category.∘-cong = ∘g-cong
 cat .Category.id-left .right-eq = id-left
-cat .Category.id-left .left-eq = id-right
 cat .Category.id-right .right-eq = id-right
-cat .Category.id-right .left-eq = id-left
 cat .Category.assoc f g h .right-eq = assoc (f .right) (g .right) (h .right)
-cat .Category.assoc f g h .left-eq =
-  ≃m-isEquivalence .sym (assoc (h .left) (g .left) (f .left))
 
 ------------------------------------------------------------------------------
 -- CMon enrichment
@@ -155,20 +166,16 @@ module _ {X Y : Obj} where
 
   +m-cong : ∀ {f₁ f₂ g₁ g₂ : X ⇒g Y} → f₁ ≃g f₂ → g₁ ≃g g₂ → (f₁ +m g₁) ≃g (f₂ +m g₂)
   +m-cong f₁≃f₂ g₁≃g₂ .right-eq = meet-semilattice.+m-cong (right-∧-cong f₁≃f₂) (right-∧-cong g₁≃g₂) ._≃M_.eqfunc
-  +m-cong f₁≃f₂ g₁≃g₂ .left-eq = join-semilattice.+m-cong (left-∨-cong f₁≃f₂) (left-∨-cong g₁≃g₂) ._≃J_.eqfunc
 
   -- Could give more directly rather than factoring through meet-/join-semilattices
   +m-comm : ∀ {f g} → (f +m g) ≃g (g +m f)
   +m-comm {f} {g} .right-eq = meet-semilattice.+m-comm {f = right-∧ f} {right-∧ g} ._≃M_.eqfunc
-  +m-comm {f} {g} .left-eq = join-semilattice.+m-comm {f = left-∨ f} {left-∨ g} ._≃J_.eqfunc
 
   +m-assoc : ∀ {f g h} → ((f +m g) +m h) ≃g (f +m (g +m h))
   +m-assoc {f} {g} {h} .right-eq = meet-semilattice.+m-assoc {f = right-∧ f} {right-∧ g} {right-∧ h} ._≃M_.eqfunc
-  +m-assoc {f} {g} {h} .left-eq = join-semilattice.+m-assoc {f = left-∨ f} {left-∨ g} {left-∨ h} ._≃J_.eqfunc
 
   +m-lunit : ∀ {f} → (εm +m f) ≃g f
   +m-lunit {f} .right-eq = meet-semilattice.+m-lunit {f = right-∧ f} ._≃M_.eqfunc
-  +m-lunit {f} .left-eq = join-semilattice.+m-lunit {f = left-∨ f} ._≃J_.eqfunc
 
 module _ where
   open import commutative-monoid
@@ -184,17 +191,11 @@ module _ where
   cmon-enriched .CMonEnriched.homCM X Y .+-assoc = +m-assoc
   cmon-enriched .CMonEnriched.homCM X Y .+-comm = +m-comm
   cmon-enriched .CMonEnriched.comp-bilinear₁ {Z = Z} f₁ f₂ g .right-eq .eqfun x = Z .≃-refl
-  cmon-enriched .CMonEnriched.comp-bilinear₁ f₁ f₂ g .left-eq .eqfun x =
-    _=>J_.∨-preserving-≃ (left-∨ g)
   cmon-enriched .CMonEnriched.comp-bilinear₂ {Z = Z} f g₁ g₂ .right-eq .eqfun x =
     Z .≃-sym (_=>M_.∧-preserving-≃ (right-∧ f))
-  cmon-enriched .CMonEnriched.comp-bilinear₂ {X = X} f g₁ g₂ .left-eq .eqfun x = X .≃-refl
   cmon-enriched .CMonEnriched.comp-bilinear-ε₁ {Z = Z} f .right-eq .eqfun x = Z .≃-refl
-  cmon-enriched .CMonEnriched.comp-bilinear-ε₁ f .left-eq .eqfun x =
-    _=>J_.⊥-preserving-≃ (left-∨ f)
   cmon-enriched .CMonEnriched.comp-bilinear-ε₂ {Z = Z} f .right-eq .eqfun x =
     Z .≃-sym (_=>M_.⊤-preserving-≃ (right-∧ f))
-  cmon-enriched .CMonEnriched.comp-bilinear-ε₂ {X = X} f .left-eq .eqfun x = X .≃-refl
 
 ------------------------------------------------------------------------------
 -- Terminal (FIXME: and initial)
@@ -219,8 +220,6 @@ module _ where
   terminal .is-terminal .to-terminal = to-𝟙 _
   terminal .is-terminal .to-terminal-ext {X} f .right-eq =
     meet-semilattice.terminal-unique (X .meets) (right-∧ f) _ ._≃M_.eqfunc
-  terminal .is-terminal .to-terminal-ext {X} f .left-eq =
-    join-semilattice.initial-unique (X .joins) (left-∨ (to-𝟙 X)) (left-∨ f) ._≃J_.eqfunc
 
 -- This category has binary products (FIXME: and biproducts)
 module _ where
@@ -263,126 +262,16 @@ module _ where
     where module X = JoinSemilattice (X .joins)
   products .pair-cong f₁≈f₂ g₁≈g₂ .right-eq =
     meet-semilattice.⟨⟩-cong (right-∧-cong f₁≈f₂) (right-∧-cong g₁≈g₂) ._≃M_.eqfunc
-  products .pair-cong f₁≈f₂ g₁≈g₂ .left-eq =
-    join-semilattice.[]-cong (left-∨-cong f₁≈f₂) (left-∨-cong g₁≈g₂) ._≃J_.eqfunc
   products .pair-p₁ f g .right-eq = meet-semilattice.pair-p₁ (right-∧ f) (right-∧ g) ._≃M_.eqfunc
-  products .pair-p₁ f g .left-eq = join-semilattice.inj₁-copair (left-∨ f) (left-∨ g) ._≃J_.eqfunc
   products .pair-p₂ f g .right-eq = meet-semilattice.pair-p₂ (right-∧ f) (right-∧ g) ._≃M_.eqfunc
-  products .pair-p₂ f g .left-eq = join-semilattice.inj₂-copair (left-∨ f) (left-∨ g) ._≃J_.eqfunc
   products .pair-ext f .right-eq = meet-semilattice.pair-ext (right-∧ f) ._≃M_.eqfunc
-  products .pair-ext f .left-eq = join-semilattice.copair-ext (left-∨ f) ._≃J_.eqfunc
-
--- This category has a lifting monad
-module _ where
-
-  𝕃 : Obj → Obj
-  𝕃 X .carrier = L (X .carrier)
-  𝕃 X .meets = meet-semilattice.L (X .meets)
-  𝕃 X .joins = join-semilattice.L (X .joins)
-
-  𝕃-map : ∀ {X Y} → X ⇒g Y → 𝕃 X ⇒g 𝕃 Y
-  𝕃-map f .right = meet-semilattice.L-map (right-∧ f) ._=>M_.func
-  𝕃-map f .left = join-semilattice.L-map (left-∨ f) ._=>J_.func
-  𝕃-map f .left⊣right {bottom} {bottom} .proj₁ y≤Lfx = tt
-  𝕃-map f .left⊣right {< x >} {bottom} .proj₁ y≤Lfx = tt
-  𝕃-map f .left⊣right {< x >} {< y >} .proj₁ y≤Lfx = f .left⊣right .proj₁ y≤Lfx
-  𝕃-map f .left⊣right {bottom} {bottom} .proj₂ Lfy≤x = tt
-  𝕃-map f .left⊣right {< x >} {bottom} .proj₂ Lfy≤x = tt
-  𝕃-map f .left⊣right {< x >} {< y >} .proj₂ Lfy≤x = f .left⊣right .proj₂ Lfy≤x
-
-  𝕃-unit : ∀ {X} → X ⇒g 𝕃 X
-  𝕃-unit {X} .right = meet-semilattice.L-unit {X = X .meets} ._=>M_.func
-  𝕃-unit {X} .left = join-semilattice.L-counit {X = X .joins} ._=>J_.func
-  𝕃-unit {X} .left⊣right {x} {bottom} .proj₁ tt =
-    X .joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom
-  𝕃-unit .left⊣right {x} {< x₁ >} .proj₁ x₁≤x = x₁≤x
-  𝕃-unit .left⊣right {x} {bottom} .proj₂ x₁ = tt
-  𝕃-unit .left⊣right {x} {< x₁ >} .proj₂ x₁≤x = x₁≤x
-
-  𝕃-join : ∀ {X} → 𝕃 (𝕃 X) ⇒g 𝕃 X
-  𝕃-join {X} .right = meet-semilattice.L-join {X = X .meets} ._=>M_.func
-  𝕃-join {X} .left = join-semilattice.L-dup {X = X .joins} ._=>J_.func
-  𝕃-join .left⊣right {bottom} {bottom} .proj₁ e = tt
-  𝕃-join .left⊣right {< bottom >} {bottom} .proj₁ e = tt
-  𝕃-join .left⊣right {< < x > >} {bottom} .proj₁ e = tt
-  𝕃-join .left⊣right {< < x > >} {< x₁ >} .proj₁ e = e
-  𝕃-join .left⊣right {bottom} {bottom} .proj₂ e = tt
-  𝕃-join .left⊣right {< bottom >} {bottom} .proj₂ e = tt
-  𝕃-join .left⊣right {< < x > >} {bottom} .proj₂ e = tt
-  𝕃-join .left⊣right {< < x > >} {< x₁ >} .proj₂ e = e
-
-  𝕃-strength : ∀ {X Y} → (X ⊕ 𝕃 Y) ⇒g 𝕃 (X ⊕ Y)
-  𝕃-strength {X} {Y} .right = meet-semilattice.L-strength {X = X .meets} {Y .meets} ._=>M_.func
-  𝕃-strength {X} {Y} .left = join-semilattice.L-costrength {X = X .joins} {Y .joins} ._=>J_.func
-  𝕃-strength {X} .left⊣right {x , bottom} {bottom} .proj₁ e =
-    X .joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom , tt
-  𝕃-strength {X} .left⊣right {x , < x₁ >} {bottom} .proj₁ e =
-    X .joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom , tt
-  𝕃-strength .left⊣right {x , < x₂ >} {< x₁ >} .proj₁ e = e
-  𝕃-strength .left⊣right {x , bottom} {bottom} .proj₂ e = tt
-  𝕃-strength .left⊣right {x , < x₁ >} {bottom} .proj₂ e = tt
-  𝕃-strength .left⊣right {x , < x₁ >} {< x₂ >} .proj₂ e = e
-
-  open preorder._≃m_ using (eqfun)
-
-  𝕃-functor : Functor cat cat
-  𝕃-functor .Functor.fobj      = 𝕃
-  𝕃-functor .Functor.fmor      = 𝕃-map
-  𝕃-functor .Functor.fmor-cong eq .right-eq .eqfun bottom = tt , tt
-  𝕃-functor .Functor.fmor-cong eq .right-eq .eqfun < x > = eq .right-eq .eqfun x
-  𝕃-functor .Functor.fmor-cong eq .left-eq .eqfun bottom = tt , tt
-  𝕃-functor .Functor.fmor-cong eq .left-eq .eqfun < y > = eq .left-eq .eqfun y
-  𝕃-functor .Functor.fmor-id .right-eq .eqfun bottom = tt , tt
-  𝕃-functor .Functor.fmor-id {X} .right-eq .eqfun < x > = X .carrier .Preorder.≃-refl
-  𝕃-functor .Functor.fmor-id .left-eq .eqfun bottom = tt , tt
-  𝕃-functor .Functor.fmor-id {X} .left-eq .eqfun < y > = X .carrier .Preorder.≃-refl
-  𝕃-functor .Functor.fmor-comp f g .right-eq .eqfun bottom = tt , tt
-  𝕃-functor .Functor.fmor-comp {X} {Y} {Z} f g .right-eq .eqfun < x > = Z .carrier .Preorder.≃-refl
-  𝕃-functor .Functor.fmor-comp f g .left-eq .eqfun bottom = tt , tt
-  𝕃-functor .Functor.fmor-comp {X} {Y} {Z} f g .left-eq .eqfun < z > = X .carrier .Preorder.≃-refl
-
-  open StrongFunctor using (F; strengthᵣ; strengthᵣ-natural; strengthᵣ-p₂; strengthᵣ-assoc)
-  open JoinSemilattice using (⊥-isBottom; ∨-isJoin)
-
-  strongFunctor : StrongFunctor products
-  strongFunctor .F              = 𝕃-functor
-  strongFunctor .strengthᵣ = 𝕃-strength
-  strongFunctor .strengthᵣ-natural f g ._≃g_.right-eq =
-    meet-semilattice.L-strength-natural (_⇒g_.right-∧ f) (_⇒g_.right-∧ g)
-      .meet-semilattice._≃m_.eqfunc
-  strongFunctor .strengthᵣ-natural {x₁} f g ._≃g_.left-eq .eqfun bottom .proj₁ =
-    x₁ .joins .∨-isJoin .IsJoin.inr , tt
-  strongFunctor .strengthᵣ-natural {x₁} f g ._≃g_.left-eq .eqfun bottom .proj₂ =
-    x₁ .joins .∨-isJoin .IsJoin.[_,_]
-      (_⇒g_.left-∨ f .join-semilattice._=>_.⊥-preserving)
-      (x₁ .carrier .Preorder.≤-refl) , tt
-  strongFunctor .strengthᵣ-natural {x₁} {y₁ = y₁} f g ._≃g_.left-eq .eqfun < (a , b) > .proj₁ =
-    x₁ .carrier .Preorder.≤-refl , y₁ .joins .JoinSemilattice.∨-lunit .proj₁
-  strongFunctor .strengthᵣ-natural {x₁} {y₁ = y₁} f g ._≃g_.left-eq .eqfun < (a , b) > .proj₂ =
-    x₁ .carrier .Preorder.≤-refl , y₁ .joins .JoinSemilattice.∨-lunit .proj₂
-  strongFunctor .strengthᵣ-p₂ ._≃g_.right-eq =
-    meet-semilattice.L-strength-p₂ .meet-semilattice._≃m_.eqfunc
-  strongFunctor .strengthᵣ-p₂ {X} ._≃g_.left-eq .eqfun bottom .proj₁ = X .carrier .Preorder.≤-refl , tt
-  strongFunctor .strengthᵣ-p₂ {X} ._≃g_.left-eq .eqfun bottom .proj₂ = X .carrier .Preorder.≤-refl , tt
-  strongFunctor .strengthᵣ-p₂ {X} {Y} ._≃g_.left-eq .eqfun < y > .proj₁ =
-    X .carrier .Preorder.≤-refl , Y .carrier .Preorder.≤-refl
-  strongFunctor .strengthᵣ-p₂ {X} {Y} ._≃g_.left-eq .eqfun < y > .proj₂ =
-    X .carrier .Preorder.≤-refl , Y .carrier .Preorder.≤-refl
-  strongFunctor .strengthᵣ-assoc ._≃g_.right-eq =
-    meet-semilattice.L-strength-assoc .meet-semilattice._≃m_.eqfunc
-  strongFunctor .strengthᵣ-assoc ._≃g_.left-eq =
-    join-semilattice.L-costrength-assoc .join-semilattice._≃m_.eqfunc
-
-  strongPointedFunctor : StrongPointedFunctor products
-  strongPointedFunctor .StrongPointedFunctor.strongFunctor = strongFunctor
-  strongPointedFunctor .StrongPointedFunctor.unit          = 𝕃-unit
 
 module _ where
 
   open import two using (Two; I; O; _⊓_; _⊔_)
 
   TWO : Obj
-  TWO .carrier = two.Two-preorder
+  TWO .carrier = two.preorder
   TWO .meets .MeetSemilattice._∧_ = _⊓_
   TWO .meets .MeetSemilattice.⊤ = I
   TWO .meets .MeetSemilattice.∧-isMeet = two.⊓-isMeet

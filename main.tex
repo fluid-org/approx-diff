@@ -4,11 +4,20 @@
 \usepackage{bbm}
 \usepackage{bbold}
 \usepackage{stmaryrd}
+\usepackage{booktabs}
 \usepackage{enumitem}
 \usepackage{mathpartir}
 \usepackage{subcaption}
 \usepackage{tikz-cd}
 \usepackage{xspace}
+% \finalmode (set by main-final.tex) renders the clean version.
+\ifdefined\finalmode
+  \usepackage[final,commandnameprefix=ifneeded,commentmarkup=footnote]{changes}
+\else
+  \usepackage[commandnameprefix=ifneeded,commentmarkup=footnote]{changes}
+\fi
+\usepackage{changebar}
+\ifdefined\finalmode\nochangebars\fi
 
 %\geometry{paperwidth=8.3in, paperheight=11.7in} % force to A4 for now
 \settopmatter{printacmref=false}
@@ -19,7 +28,7 @@
 
 \begin{document}
 
-\title{Galois Slicing as Automatic Differentiation}
+\title{Data Provenance as Automatic Differentiation}
 
 \author{Robert Atkey}
 \email{robert.atkey@strath.ac.uk}
@@ -44,17 +53,21 @@
 }
 
 \begin{abstract}
-  \GPS is a technique for program slicing for provenance, developed by
-  Perera and collaborators. \GPS aims to explain program executions by
-  demonstrating how to track approximations of the input and output
-  forwards and backwards along a particular execution. In this paper,
-  we explore an analogy between \GPS and differentiable programming,
-  seeing the implementation of forwards and backwards slicing as a kind of automatic
-  differentiation. Using the CHAD approach to automatic differentiation
-  due to V{\'a}k{\'a}r and collaborators, we reformulate \GPS via a
-  categorical semantics. In doing so, we are able to explore
-  extensions of the \GPS idea to quantitative interval analysis, and
-  to clarify the implicit choices made in existing instantiations of this approach.
+  Automatic differentiation (AD) computes the derivative of a program alongside the program itself,
+  as a linear map between tangent spaces, propagated forwards or backwards along an execution. We present a
+  semantic framework that models \emph{data provenance} via the same construction: taking scalars from a
+  commutative semiring of dependency information rather than the real numbers, the derivative of a program
+  becomes a linear map between spaces of approximations of its input and output. The choice of semiring
+  determines the notion of provenance. Over the two-element Boolean algebra, the Jacobian of a program
+  records which input positions each output position may depend on, and composing Jacobians forwards or
+  backwards is \emph{dependency analysis} in the manner of forward- and reverse-mode AD. More generally, over
+  distributive lattices the Jacobian and its transpose propagate dependency information forwards and
+  backwards as a \emph{conjugate pair} of maps; when the lattice is a Boolean algebra, the two directions are
+  moreover related by adjunction, recovering an approach called \emph{\GPS}. We interpret a higher-order total
+  functional language in this framework, prove that every program of first-order type denotes such a Jacobian,
+  and instantiate the semiring to obtain dependency tracking (Booleans), automatic differentiation (reals),
+  and quantitative interval provenance (the tropical semiring) as examples. All results are formalised in
+  Agda.
 \end{abstract}
 \maketitle
 

@@ -50,24 +50,30 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒞 : Category o₁ m₁ e₁) (𝒟 
   product .Category.id-right = 𝒞.id-right , 𝒟.id-right
   product .Category.assoc (f₁ , f₂) (g₁ , g₂) (h₁ , h₂) = 𝒞.assoc f₁ g₁ h₁ , 𝒟.assoc f₂ g₂ h₂
 
+module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} where
+
   open Functor
 
+  private
+    module 𝒞 = Category 𝒞
+    module 𝒟 = Category 𝒟
+
   pairF : ∀ {o₃ m₃ e₃} {ℰ : Category o₃ m₃ e₃} →
-          Functor ℰ 𝒞 → Functor ℰ 𝒟 → Functor ℰ product
+          Functor ℰ 𝒞 → Functor ℰ 𝒟 → Functor ℰ (product 𝒞 𝒟)
   pairF F G .fobj e = (F .fobj e) , (G .fobj e)
   pairF F G .fmor f = (F .fmor f) , (G .fmor f)
   pairF F G .fmor-cong f₁≈f₂ = (F .fmor-cong f₁≈f₂) , (G .fmor-cong f₁≈f₂)
   pairF F G .fmor-id = F .fmor-id , G .fmor-id
   pairF F G .fmor-comp f g = F .fmor-comp f g , G .fmor-comp f g
 
-  project₁ : Functor product 𝒞
+  project₁ : Functor (product 𝒞 𝒟) 𝒞
   project₁ .fobj = proj₁
   project₁ .fmor = proj₁
   project₁ .fmor-cong = proj₁
   project₁ .fmor-id = 𝒞.≈-refl
   project₁ .fmor-comp f g = 𝒞.≈-refl
 
-  project₂ : Functor product 𝒟
+  project₂ : Functor (product 𝒞 𝒟) 𝒟
   project₂ .fobj = proj₂
   project₂ .fmor = proj₂
   project₂ .fmor-cong = proj₂
@@ -86,7 +92,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒞 : Category o₁ m₁ e₁) (𝒟 
     open NatTrans
     open ≃-NatTrans
 
-    product-limit : (D : Functor 𝒮 product) →
+    product-limit : (D : Functor 𝒮 (product 𝒞 𝒟)) →
                     Limit (project₁ ∘F D) → Limit (project₂ ∘F D) → Limit D
     product-limit D limit𝒞 limit𝒟 .apex = limit𝒞 .apex , limit𝒟 .apex
     product-limit D limit𝒞 limit𝒟 .cone .transf s = limit𝒞 .cone .transf s , limit𝒟 .cone .transf s
@@ -108,7 +114,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒞 : Category o₁ m₁ e₁) (𝒟 
        (limit𝒟 .lambda-cong (record { transf-eq = λ _ → 𝒟.≈-refl }))
        (limit𝒟 .lambda-ext (f .proj₂))
 
-    product-colimit : (D : Functor 𝒮 product) →
+    product-colimit : (D : Functor 𝒮 (product 𝒞 𝒟)) →
                       Colimit (project₁ ∘F D) → Colimit (project₂ ∘F D) → Colimit D
     product-colimit D colimit𝒞 colimit𝒟 .apex = colimit𝒞 .apex , colimit𝒟 .apex
     product-colimit D colimit𝒞 colimit𝒟 .cocone .transf s = colimit𝒞 .cocone .transf s , colimit𝒟 .cocone .transf s
@@ -137,7 +143,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒞 : Category o₁ m₁ e₁) (𝒟 
       module 𝒞P = HasProducts 𝒞P
       module 𝒟P = HasProducts 𝒟P
 
-    product-products : HasProducts product
+    product-products : HasProducts (product 𝒞 𝒟)
     product-products .HasProducts.prod (x₁ , y₁) (x₂ , y₂) = 𝒞P.prod x₁ x₂ , 𝒟P.prod y₁ y₂
     product-products .HasProducts.p₁ = 𝒞P.p₁ , 𝒟P.p₁
     product-products .HasProducts.p₂ = 𝒞P.p₂ , 𝒟P.p₂
@@ -154,7 +160,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒞 : Category o₁ m₁ e₁) (𝒟 
       module 𝒞T = HasTerminal 𝒞T
       module 𝒟T = HasTerminal 𝒟T
 
-    product-terminal : HasTerminal product
+    product-terminal : HasTerminal (product 𝒞 𝒟)
     product-terminal .HasTerminal.witness = 𝒞T.witness , 𝒟T.witness
     product-terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal = 𝒞T.to-terminal , 𝒟T.to-terminal
     product-terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal-ext (f , g) = (𝒞T.to-terminal-ext f) , (𝒟T.to-terminal-ext g)

@@ -1,23 +1,51 @@
 \section{Introduction}
 \label{sec:introduction}
 
-To audit any computational process, we need robust and well-founded notions of \emph{provenance} to track how data are used. This allows us to answer questions like ``Where did these data come from?'', ``Why are these data in the output?'' and ``How were these data computed?''. Provenance tracking has a wide range of applications, from debugging and program comprehension~\cite{buneman95,cheney07} to improving reproducibility and transparency in scientific workflows~\cite{kontogiannis08}. \emph{Program slicing}, first proposed by~\citet{weiser81}, is a collection of techniques for provenance tracking that attempts to take a run of a program and areas of interest in the output, and turn them into the subset of the input and the program that were responsible for generating those specific outputs.
+To audit any computational process, we need robust and well-founded notions of \emph{provenance} to track how
+data are used. This allows us to answer questions like ``Where did these data come from?'', ``Why are these
+data in the output?'' and ``How were these data computed?''. Provenance tracking has a wide range of
+applications, from debugging and program comprehension~\cite{buneman95,cheney07} to improving reproducibility
+and transparency in scientific workflows~\cite{kontogiannis08}. \emph{Program slicing}, first proposed
+by~\citet{weiser81}, is a collection of techniques for provenance tracking that attempts to take a run of a
+program and areas of interest in the output, and turn them into the subset of the input and the program that
+were responsible for generating those specific outputs.
+
+Underlying all of these questions is a more basic one: how does the output of a program respond when
+its input changes? For programs that compute with real numbers, calculus provides a canonical answer: the
+derivative, a linear map between tangent spaces describing how the output varies as the input varies, with
+\emph{automatic differentiation} (AD) being a computational technique for computing such derivatives alongside
+the program itself~\cite{siskind08,elliott18,vakar22}. For data provenance and dependency analysis, where the
+inputs are database tuples or elements of a data structure, the question is often framed in a more qualitative
+way: if we perturb the input at a given position, can the output change at all? Posing this question one input
+at a time yields a vector of Boolean partial ``derivatives'', and for a program with several outputs, a
+\emph{Boolean Jacobian}: a matrix whose entry at $(j, i)$ records whether output position $j$ may depend on
+input position $i$. Consider multiplication: at the point $(x, y)$, the usual partial derivative $\partial(x
+\cdot y)/\partial x$ is $y$, and its Boolean counterpart records that the output can vary with $x$ only when
+$y \neq 0$. Like their numerical counterparts, Boolean Jacobians compose by matrix multiplication, with
+conjunction and disjunction playing the role of multiplication and addition. This paper presents an approach
+to dynamic dependency analysis where such Jacobians are evaluated alongside the program, forwards or
+backwards, in the manner of forward- and reverse-mode AD, with the two directions related by matrix
+transposition.
 
 Existing approaches to program slicing are often tied to particular programming languages or implementations.
-In this paper we develop a general categorical approach to program slicing, focusing on a particular technique
-called \GPS, where the set of slices of a given value form a lattice of approximations and the forward and
-backward slicing procedures generate Galois connections between these lattices. Our main contribution is that
-this approach can be seen as a generalised form of automatic differentiation, with slices of values playing
-the role of tangents. Our categorical approach should provide a suitable setting for enabling ``automatic''
+In this paper we develop this analogy into a general categorical approach to data provenance, in
+which the derivative of a program is a linear map between spaces of approximations of its input and output,
+with scalars drawn from a commutative semiring of dependency information. The choice of semiring determines
+the analysis: the reals recover AD itself, while over distributive lattices the derivative and its transpose
+form a \emph{conjugate pair}, propagating dependency information forwards and backwards; when the lattices are
+Boolean algebras, the same maps can instead be presented as an adjunction, recovering the \GPS of Perera and
+collaborators. Our categorical approach should provide a suitable setting for enabling ``automatic''
 data provenance for a variety of programming languages, and is easily configured to use alternative
 approximation strategies, including quantitative forms of slicing.
 
-\subsection{Galois Program Slicing}
+\subsection{Dependencies as Derivatives}
 \label{sec:introduction:galois-slicing}
 
-Perera and collaborators introduced the idea of {\em Galois program slicing} as a particular conception of program slicing for provenance, described in several publications~\cite{perera12a,perera16d,ricciotti17}. Galois program slicing (hereafter simply {\emph \GPS}) forms the basis of the open source data visualisation tool \href{https://f.luid.org/}{Fluid}~\cite{perera2025fluid} that allows interactive exploration of programmatically generated visualisations.
-
-At a high level, \GPS assumes that, for each possible value that may be input or output by a program, there exists a lattice of {\em approximations} of that value. For a particular run of a program that takes input $x$ and produces output $y$, we also get a Galois connection between the lattice of approximations of $x$ and the lattice of approximations of $y$. The right half of the Galois connection is the ``forward direction'' taking approximations of the input to approximations of the output; the left half of the Galois connection is the ``backward direction'' that takes approximations of the output to the least (i.e., most approximate) approximation of the input that gives rise to this output approximation. This becomes {\em program slicing} by including the source code of the program as part of the input; then, in the backward direction, the least approximation of the input required for an output approximation includes the least part of the program required as well.
+Consider a single run of a program on a particular input. Each part of the output is computed from
+certain parts of the input, and recording these facts gives the \emph{dependency relation} of the run,
+relating each output position to the input positions it depends on. This section works through a small example
+showing how dependency relations behave as derivatives: they have a tabular representation as Boolean
+matrices, compose using matrix multiplication, and can be evaluated forwards or backwards.
 
 \begin{example}
   \label{ex:introduction-example}
@@ -30,51 +58,70 @@ At a high level, \GPS assumes that, for each possible value that may be input or
   \end{displaymath}
   With $\mathit{db} = [(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, 1)]$, we will have $\mathit{query}\,\mathsf{a}\,\mathit{db}$ and $\mathit{query}\,\mathsf{b}\,\mathit{db}$ both evaluating to $1$.
 
-  Now suppose that for a given run of the program, we are interested in which of the numerical parts of the input are used to compute the output for the query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. We can use \GPS to do this. We arrange for the approximations of the input to form the following lattice, where the actual piece of data is at the top and information lost by approximation is represented by $\bot$s:
-  \begin{center}
-    \begin{tikzpicture}[node distance=0.75cm]
-      \node (top) at (0,0) {$[(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, 1)]$};
-      % row 2
-      \node [below of=top] (ioi) {$[(\mathsf{a}, 0), (\mathsf{b}, \bot), (\mathsf{a}, 1)]$};
-      \node [left of=ioi,xshift=-3cm] (oii) {$[(\mathsf{a}, \bot), (\mathsf{b}, 1), (\mathsf{a}, 1)]$};
-      \node [right of=ioi,xshift=3cm] (iio) {$[(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, \bot)]$};
-      % row 3
-      \node [below of=ioi] (oio) {$[(\mathsf{a}, \bot), (\mathsf{b}, 1), (\mathsf{a}, \bot)]$};
-      \node [left of=oio,xshift=-3cm] (ooi) {$[(\mathsf{a}, \bot), (\mathsf{b}, \bot), (\mathsf{a}, 1)]$};
-      \node [right of=oio,xshift=3cm] (ioo) {$[(\mathsf{a}, 0), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]$};
-      % row 4
-      \node [below of=oio] (bot) {$[(\mathsf{a}, \bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]$};
-
-      % links
-      \draw (top) -- (ioi);
-      \draw (top) -- (oii);
-      \draw (top) -- (iio);
-      \draw (ioi) -- (ooi);
-      \draw (ioi) -- (ioo);
-      \draw (oii) -- (ooi);
-      \draw (oii) -- (oio);
-      \draw (iio) -- (ioo);
-      \draw (iio) -- (oio);
-      \draw (ooi) -- (bot);
-      \draw (oio) -- (bot);
-      \draw (ioo) -- (bot);
+  Suppose we are interested in how the output depends on the numerical parts of the input, for the
+  query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. The three numbers in $\mathit{db}$
+  occupy three \emph{positions}, and the output a single position. In the run with $l = \mathsf{a}$, the
+  output is computed from the numbers at the first and third positions; in the run with $l = \mathsf{b}$,
+  from the number at the second. We depict each input position pointing to the output positions that depend
+  on it:
+      \begin{center}
+    \begin{tikzpicture}[every node/.style={font=\small}]
+      % query a
+      \node (la) at (0,1.4) {$\mathit{query}\;\mathsf{a}$};
+      \node (a1) at (0,0.8) {$(\mathsf{a},0)$};
+      \node (a2) at (0,0) {$(\mathsf{b},1)$};
+      \node (a3) at (0,-0.8) {$(\mathsf{a},1)$};
+      \node (ao) at (2.4,0) {$1$};
+      \draw[->] (a1) -- (ao);
+      \draw[->] (a3) -- (ao);
+      % query b
+      \node (lb) at (6,1.4) {$\mathit{query}\;\mathsf{b}$};
+      \node (b1) at (6,0.8) {$(\mathsf{a},0)$};
+      \node (b2) at (6,0) {$(\mathsf{b},1)$};
+      \node (b3) at (6,-0.8) {$(\mathsf{a},1)$};
+      \node (bo) at (8.4,0) {$1$};
+      \draw[->] (b2) -- (bo);
     \end{tikzpicture}
   \end{center}
-  In both runs of the program, the output approximation lattice looks like this, where $1$ is the actual data point that was returned, and $\bot$ indicates that we are approximating this piece of data away:
-  \begin{center}
-    \begin{tikzpicture}[node distance=0.75cm]
-      \node (top) at (0,0) {$1$};
-      \node [below of=top] (bot) {$\bot$};
-      \draw (top) -- (bot);
-    \end{tikzpicture}
-  \end{center}
-  These are not the only choices of approximation lattices that we could have made. For the input, we have chosen a lattice that allows us to ``forget'' (approximate away) numbers in the input, but not the labels or the structure of the list itself. However, other choices are also useful. Indeed, one of the aims of this work is to clarify how to choose an approximation structure appropriate for different tasks by use of type information. We elaborate on this further in \secref{semantic-gps}.
+    Tabulating each relation, with a row for each output position and a column for each input position,
+  gives the \emph{Jacobian} of the run:
+    \begin{displaymath}
+    \partial(\mathit{query}\,\mathsf{a}\,\mathit{db}) =
+    \begin{pmatrix} 1 & 0 & 1 \end{pmatrix}
+    \qquad
+    \partial(\mathit{query}\,\mathsf{b}\,\mathit{db}) =
+    \begin{pmatrix} 0 & 1 & 0 \end{pmatrix}
+  \end{displaymath}
+    As in differential calculus, the Jacobian is taken at a point: the two runs of the same program have
+  different Jacobians. And like their numerical counterparts, these matrices compose: $\mathit{query}\,l$ is a
+  sum applied to a selection, and the Jacobian of the run is the product of the Jacobians of those two stages,
+  a chain rule for dependencies.
 
-  \GPS associates with each run of the program a Galois connection telling us how the inputs and outputs are related in that run. The backwards portion $\partial (\mathit{query}\,l)_r$ tells us, given an approximation of the output, what the least approximation of the input is needed to generate that output. In the case of the two runs considered in this example, if we say we are not interested in the output by feeding in the least approximation $\bot$, then we find that we only need the least approximation of the input:
+  In setting up the positions, we chose to make only the numbers perturbable, keeping the labels and
+  the structure of the list itself fixed. Other choices are also useful, and one of the aims of this work is
+  to clarify how to choose a dependency structure appropriate for different tasks by selecting an appropriate
+  semiring of dependency information. We elaborate on this further in
+  \secref{semantic-gps}.
+
+  The Jacobian acting directly evaluates dependencies \emph{forwards}: given a selection of input
+  positions, it returns the output positions that depend on them. A selection of positions can be displayed as
+  an \emph{approximation} of the underlying value, with the numbers at unselected positions replaced by
+  $\bot$. Writing $\partial(\mathit{query}\,l\,\mathit{db})_f$ for this forward action, we have
+  $\partial(\mathit{query}\,\mathsf{a}\,\mathit{db})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) =
+  1$, since the output depends on the entry $(\mathsf{a},0)$, whereas
+  $\partial(\mathit{query}\,\mathsf{b}\,\mathit{db})_f$ applied to the same selection returns $\bot$: that run
+  consulted no $\mathsf{a}$-labelled entries.
+
+  The transpose of the Jacobian evaluates dependencies \emph{backwards}: given a selection of
+  output positions, it returns the input positions on which they depend. Writing
+  $\partial(\mathit{query}\,l\,\mathit{db})_r$ for this reverse action, the fully approximated output $\bot$
+  requires none of the input:
   \begin{displaymath}
     \partial (\mathit{query}\,l\,\mathit{db})_r(\bot) = [(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]
   \end{displaymath}
-  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we take the greatest approximation of the output (i.e., the output ``$1$'' itself), then the two query runs' backwards approximations return different results:
+  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we retain the output ``$1$''
+  unapproximated, then the two
+  query runs' backwards actions return different results:
   \begin{displaymath}
     \begin{array}{l}
       \partial (\mathit{query}\,\mathsf{a}\,\mathit{db})_r(1) = [(\mathsf{a},0), (\mathsf{b},\bot), (\mathsf{a},1)] \\
@@ -83,29 +130,81 @@ At a high level, \GPS assumes that, for each possible value that may be input or
   \end{displaymath}
   Pieces of the input that were {\em not} used are replaced by $\bot$. As we expect, the run of the query with label $\mathsf{a}$ depends on the entries in the database labelled with $\mathsf{a}$, and likewise for the run with label $\mathsf{b}$.
 
-  In this case, the forwards portion of the Galois connection tells us, for each approximation of the input, whether or not it is sufficient to compute the output. If we provide insufficient data to compute the output, then we will get an underapproximated output. Here for example we will find that $\partial (\mathit{query}\, \mathsf{a})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) = \bot$ because we need all the values associated with the label $\mathsf{a}$ to compute their sum.
-
-  In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of \GPS, and other language-based approaches, is that it is {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
+  In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of language-based approaches is that they are {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
 \end{example}
 
 \subsection{Galois Slicing and Automatic Differentiation}
 
-Previous work on \GPS used a special operational semantics to generate a trace of each execution, and then uses that trace to compute the Galois connections described above, by re-running forwards or backwards over the trace. It would be useful to have a denotational account of \GPS as well, especially if we could provide a semantics where the backwards analysis is baked in, rather than provided by a separately defined ``backwards evaluation'' operation. Our thesis, developed in \secref{approx-as-tangents} and \secref{models-of-total-gps} is that there is a close analogy between \GPS and \emph{automatic differentiation} for differentiable programs~\cite{siskind08,elliott18,vakar22}, which points to a way to develop such an approach. We have already hinted at this in the description above, but let us now make it explicit.
+The backward maps of the previous section compute a form of \emph{data provenance}: for each part of
+the output, the part of the input needed to explain it. Dependency information of this kind is the common
+currency of a range of existing techniques, from program slicing~\cite{weiser81} to provenance for database
+queries~\cite{buneman95,cheney07}, including semiring provenance~\cite{green07}. Closest
+to our setting is the \GPS of Perera and
+collaborators~\cite{perera12a,perera16d,ricciotti17}, which organises the forward and backward maps of a run
+into a Galois connection between lattices of approximations.
+
+Many forms of dynamic provenance analysis, \GPS included, work by recording a trace of each
+execution and computing the backwards analysis by re-running over the trace. A denotational account would
+instead bake the analysis into the semantics of the program itself, rather than provide it as a separately
+defined ``backwards evaluation'' operation. 
+The differential reading of dependency analysis, developed in \secref{approx-as-tangents}, points to
+a way to obtain such an account, by analogy with \emph{automatic
+differentiation}~\cite{siskind08,elliott18,vakar22}; let us make the correspondence explicit.
 
 \begin{itemize}[leftmargin=\enummargin]
-\item For \GPS, we assume that every value has an associated lattice of {\em approximations}. For differentiable programs, every point has an associated vector space of {\em tangents}.
-\item For \GPS, every program has an associated forward approximation map that takes approximations forward from the input to the output. This map {\em preserves meets}. For differentiable programs, every program has a forward derivative that takes tangents of the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of tangents and the zero tangent.
-\item For \GPS, every program has an associated backward approximation map that takes approximations of the output back to least approximations of the input. This map {\em preserves joins}. For differentiable programs, every program has a reverse derivative that takes tangents of the output to tangents of the input. This map is again {\em linear}.
-\item For \GPS, the forward and backward approximation maps are related by being a Galois connection. For differentiable programming, the forward and reverse derivatives are related by being each others' transpose.
+\item For dependency analysis, every value has an associated join-semilattice of \emph{approximations}, with least element $\bot$ (the empty selection). For differentiable programs, every point has an associated vector space of {\em tangents}.
+\item For dependency analysis, every program has an associated forward approximation map that takes approximations of the input to the approximations of the output that depend on them. This map {\em preserves joins and $\bot$}. For differentiable programs, every program has a forward derivative that takes tangents of the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of tangents and the zero tangent.
+\item For dependency analysis, every program has an associated backward approximation map that takes approximations of the output back to least approximations of the input that they depend on. This map also {\em preserves joins and $\bot$}. For differentiable programs, every program has a reverse derivative that takes \emph{cotangents} of the output (linear maps from tangents to scalars) to cotangents of the input. This map is again {\em linear}.
+\item In both settings, the forward and backward maps are related by being each other's transpose.
+The transpose makes sense because the spaces are \emph{self-dual}: tangent vectors pair with tangent vectors
+via the dot product, identifying cotangents with tangents, and selections of positions pair by the same dot
+product formula, with joins and meets in place of sums and products.
 \end{itemize}
 
-Given this close connection between \GPS and differentiable programming, we can take structures intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model \GPS. This will enable us to generalise and expand the scope of \GPS to act as a foundation for data provenance in a wider range of computational settings.
+Given this close connection between dependency analysis and differentiable programming, we can take structures intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model dependency analysis. This will enable us to generalise and expand the scope of automatic differentiation to act as a foundation for data provenance in a wider range of computational settings.
 
 \subsection{Outline and Contributions}
 
 %Our primary contribution in this article is to elucidate \GPS by relating it to differentiable programming and automatic differentiation. In doing so, we aim to expand the applicability of program slicing, and to potentially transfer efficient automatic differentiation implementation techniques from automatic differentiation to program slicing and provenance tracking.
 
-\GPS, as any program slicing technique, essentially rests on an analysis of how programs intensionally explore their input, in addition to their extensional behaviour. Such analysis has been carried out over many years in Domain Theory. In \secref{approx-as-tangents}, we use ideas from \citet{berry79}'s \emph{stable domain theory} and develop an analogy between stable functions and smooth functions from mathematical analysis, where stable functions provide a kind of semantic provenance analysis. In \secref{models-of-total-gps}, we abstract from stable functions using V{\'a}k{\'a}r \etal{}'s CHAD framework \cite{vakar22,nunes2023} to build models of a higher-order language that automatically compute slices. We apply this to a concrete higher-order language in \secref{language} and demonstrate the use of the model on variations of \exref{introduction-example}, highlighting the flexibility of our approach. In particular, we show how type structure can be used to control the approximation lattices associated with data points, something that was ``hard coded'' in previous presentations of \GPS. We prove two correctness properties in \secref{definability}, relating the higher-order interpretations to first-order ones, proving the crucial Galois connection property. \secref{related-work} and \secref{conclusion} discuss additional related and future work.
+Our main contribution is to show that data provenance can be understood as differentiation over a
+commutative semiring of dependency information. In \secref{approx-as-tangents} we develop the first-order
+picture, for programs over tuples of atomic data: derivatives as matrices over a semiring $S$, with the
+transpose relating forward and backward dependency analysis, and with successively stronger conditions on $S$ yielding
+join-preserving maps, conjugate pairs and, for Boolean algebras, the Galois connections of \GPS; ordinary AD
+occupies the case $S = \mathbb{R}$. We also relate this picture to \citet{berry79}'s \emph{stable domain
+theory}, where stable functions provide a kind of semantic provenance analysis.
+
+The following table summarises the correspondence developed over the course of the paper:
+\vspace{1.5mm}
+\begin{center}
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    & \textbf{Differentiable programming} & \textbf{Dependency analysis} \\
+    \midrule
+    scalars & real numbers & commutative semiring $S$ \\
+    space at a point & vector space of tangents & semimodule of approximations over $S$ \\
+    identification with the dual & finite dimensionality & chosen self-duality \\
+    derivative at a point & Jacobian matrix & $S$-weighted relation as matrix over $S$ \\
+    chain rule & matrix multiplication & matrix multiplication over $S$ \\
+    forward mode & push tangents forward & propagate dependencies forward \\
+    reverse mode & pull cotangents back & propagate dependencies backwards \\
+    forward/backward relation & transpose & transpose via self-dualities \\
+    \bottomrule
+  \end{tabular}
+\end{center}
+\vspace{1.5mm}
+
+In \secref{models-of-total-gps} we extend to sum types using the category of families construction and,
+following V{\'a}k{\'a}r \etal{}'s CHAD framework~\cite{vakar22,nunes2023}, build models of a higher-order
+language in which every program is interpreted together with its family of derivatives. We apply this to a
+concrete higher-order language in \secref{language} and demonstrate the model on a number of examples, showing
+how parameterising on $S$ controls the dependency structure associated with data, something that was
+``hard-coded'' in previous presentations of \GPS. We prove two correctness properties in
+\secref{definability}: programs of first-order type denote matrices in the sense of
+\secref{approx-as-tangents}, and the higher-order interpretation agrees with the standard set-theoretic
+semantics. \secref{related-work} and \secref{conclusion} discuss additional related and future work.
 
 % \begin{enumerate}[leftmargin=\enummargin]
 % \item We explain how the CHAD framework of Vákár et al. can be adapted to give a general categorical framework for \GPS.
@@ -114,7 +213,6 @@ Given this close connection between \GPS and differentiable programming, we can 
 % \end{enumerate}
 
 We have formalised our major results in Agda, resulting in an executable implementation built directly from the categorical constructions that we have used to compute the examples in \secref{language:examples}. Please consult the file \texttt{everything.agda} in the supplementary material.
-
 
 % \begin{enumerate}
 % \item We explain how the CHAD framework of Vákár et al. can be adapted to give a general categorical framework for \GPS.

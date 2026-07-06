@@ -160,7 +160,7 @@ terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal-ext f .f≃
 --   where open import product-diagram using (limits→products)
 
 TWO : Obj
-TWO .carrier = two.Two-preorder
+TWO .carrier = two.preorder
 TWO .meets .MeetSemilattice._∧_ = two._⊓_
 TWO .meets .MeetSemilattice.⊤ = two.I
 TWO .meets .MeetSemilattice.∧-isMeet = two.⊓-isMeet

@@ -4,6 +4,8 @@ open import Level using (suc; _⊔_; 0ℓ)
 open import basics
   using (IsPreorder; IsTop; IsMeet; IsResidual; monoidOfMeet; module ≤-Reasoning; IsJoin; IsClosureOp; IsBigJoin)
 open import categories using (Category; HasProducts; HasExponentials)
+open import functor using (Functor; NatTrans)
+open import monad using (Monad)
 
 module predicate-system {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) where
 
@@ -48,8 +50,14 @@ record PredicateSystem : Set (suc (suc (o ⊔ m ⊔ e))) where
   ⟨⟩-comp : ∀ {X Y Z} {P : Predicate X} (f : Y 𝒞.⇒ Z) (g : X 𝒞.⇒ Y) → (P ⟨ g ⟩ ⟨ f ⟩) ⊑ (P ⟨ f 𝒞.∘ g ⟩)
   ⟨⟩-comp f g = adjoint₂ (adjoint₂ (⊑-trans (unit _) ([]-comp⁻¹ f g)))
 
+  ⟨⟩-comp⁻¹ : ∀ {X Y Z} {P : Predicate X} (f : Y 𝒞.⇒ Z) (g : X 𝒞.⇒ Y) → (P ⟨ f 𝒞.∘ g ⟩) ⊑ (P ⟨ g ⟩ ⟨ f ⟩)
+  ⟨⟩-comp⁻¹ f g = adjoint₂ (⊑-trans (unit g) (⊑-trans (unit f [ _ ]m) ([]-comp f g)))
+
   ⟨⟩-cong : ∀ {X Y} {P : Predicate X}{f₁ f₂ : X 𝒞.⇒ Y} → f₁ 𝒞.≈ f₂ → (P ⟨ f₁ ⟩) ⊑ (P ⟨ f₂ ⟩)
   ⟨⟩-cong f₁≈f₂ = adjoint₂ (⊑-trans (unit _) ([]-cong (𝒞.≈-sym f₁≈f₂)))
+
+  ⟨⟩-id⁻¹ : ∀ {X} {P : Predicate X} → (P ⟨ 𝒞.id _ ⟩) ⊑ P
+  ⟨⟩-id⁻¹ = adjoint₂ []-id
 
   field
     TT    : ∀ {X} → Predicate X
@@ -128,6 +136,29 @@ record PredicateSystem : Set (suc (suc (o ⊔ m ⊔ e))) where
             P [ P.prod-m f (𝒞.id Y) ]
        ∎
        where open ≤-Reasoning ⊑-isPreorder
+
+-- "Relators", "Predicators"
+record FunctorPred (S : PredicateSystem) (F : Functor 𝒞 𝒞) : Set (suc (o ⊔ m ⊔ e)) where
+  open PredicateSystem S
+  open Functor
+  field
+    liftF : ∀ {X} → Predicate X → Predicate (F .fobj X)
+    liftF-⊑ : ∀ {X} {P Q : Predicate X} → P ⊑ Q → liftF P ⊑ liftF Q
+    liftF-[] : ∀ {X Y P} (f : X 𝒞.⇒ Y) → liftF (P [ f ]) ⊑ liftF P [ F .fmor f ]
+    liftF-⟨⟩ : ∀ {X Y P} (f : X 𝒞.⇒ Y) → liftF (P ⟨ f ⟩) ⊑ liftF P ⟨ F .fmor f ⟩
+
+record MonadPred (S : PredicateSystem) (M : Monad 𝒞) : Set (suc (o ⊔ m ⊔ e)) where
+  open PredicateSystem S
+  open Monad
+  field
+    functP : FunctorPred S (M .funct)
+  open FunctorPred functP public
+  open NatTrans
+  field
+    unitP : ∀ {X} {P : Predicate X} → P ⊑ liftF P [ M .Monad.unit .transf X ]
+    joinP : ∀ {X} {P : Predicate X} → liftF (liftF P) ⊑ liftF P [ M .join .transf X ]
+
+    -- lift-str  : ∀ {X} {P Q : Predicate X} → (liftF P && Q) ⊑ liftF (P && Q) [ str ]
 
 record ClosureOp (S : PredicateSystem) : Set (suc (o ⊔ m ⊔ e)) where
   open PredicateSystem S

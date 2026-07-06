@@ -1,15 +1,16 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import Level using (_⊔_; suc; 0ℓ)
-open import Data.Product using (_,_) renaming (_×_ to _××_)
-open import prop using (_,_; tt; ∃; _∧_; LiftS; liftS)
+open import Data.Product using (_,_; proj₁; proj₂) renaming (_×_ to _××_)
+open import prop using (_,_; tt; ∃; _∧_; LiftS; liftS; proj₁; proj₂)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; module ≤-Reasoning; monoidOfMeet; IsJoin; IsClosureOp; IsBigJoin)
 open import prop-setoid using (Setoid; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_)
 open import categories using (Category; HasProducts; HasTerminal; IsTerminal; HasCoproducts)
 open import setoid-cat using (SetoidCat; Setoid-products; Setoid-coproducts)
-open import functor using (Functor; [_⇒_]; NatTrans; ≃-NatTrans)
-open import predicate-system using (PredicateSystem; ClosureOp)
+open import functor using (Functor; [_⇒_]; NatTrans; ≃-NatTrans; functor-preserve-iso; Id; _∘F_)
+open import monad using (Monad)
+open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 import setoid-predicate
 
 module presheaf-predicate {o m e} os (𝒞 : Category o m e) where
@@ -259,6 +260,60 @@ system .PredicateSystem.⋁-isJoin = ⋁-isJoin
 system .PredicateSystem.[]-⋁ = []-⋁
 
 ------------------------------------------------------------------------------
+-- Endofunctors: for any endofunctor on 𝒞, there is a predicate
+-- lifting on the matching functor on PSh⟨𝒞⟩
+
+module F-hat-pred (F : Functor 𝒞 𝒞) where
+
+  open FunctorPred
+  open UnaryDay F
+
+  endofunctor : FunctorPred _ _ system M-hat
+  endofunctor .liftF {X} P .pred a .pred z-g-Xz = ∃ (M-hat-carrier X a) λ z-g-Xz' → LiftS ℓ (M-hat-eq {X} z-g-Xz z-g-Xz') ∧ P .pred _ .pred (z-g-Xz' .proj₂ .proj₂)
+  endofunctor .liftF {X} P .pred a .pred-≃ {x₁} {x₂} (liftS eq) (x' , liftS ϕ , ψ) = x' , liftS (eq-trans (eq-sym eq) ϕ) , ψ
+  endofunctor .liftF {X} P .pred-mor f .*⊑* (z , g , Xz) (x' , ϕ , ψ) = M-hat-mor X f .func x' , (M-hat-mor X f .func-resp-≈ ϕ) , ψ
+  endofunctor .liftF-⊑ {X} {P} {Q} P⊑Q .*⊑* a .*⊑* (z , g , Xz) ((z' , g' , Xz') , ϕ , ψ) =
+    (z' , g' , Xz') , ϕ , P⊑Q .*⊑* z' .*⊑* Xz' ψ
+  endofunctor .liftF-[] {X} {Y} {P} α .*⊑* a .*⊑* x (x' , ϕ , ψ) =
+    M-hat-nat X Y α .transf a .func x' , M-hat-nat X Y α .transf a .func-resp-≈ ϕ , ψ
+  endofunctor .liftF-⟨⟩ {X} {Y} {P} α .*⊑* a .*⊑* (z , g , Yz) ((z' , g' , Yz') , liftS eq , (Xz' , ϕ , ψ)) =
+    (z' , g' , Xz') , ((z' , g' , Xz') , M-hat-setoid _ _ .refl , ϕ) ,
+    liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl
+                   (Y .fmor-id .func-eq (Y .fobj _ .refl))
+                   (Y .fmor-id .func-eq ψ)
+                   (eq-sym eq))
+
+module Monad-hat-pred (M : Monad 𝒞) where
+
+  open FunctorPred
+  open Monad M renaming (funct to Mfunct)
+  open DayMonad M
+  open UnaryDay Mfunct
+  open F-hat-pred Mfunct
+
+  unitP : ∀ {X} {P : Predicate X} → P ⊑ (endofunctor .liftF P) [ unit-hat .transf X ]
+  unitP .*⊑* x .*⊑* Xx ϕ = (x , unit .transf x , Xx) , M-hat-setoid _ x .refl , ϕ
+
+  joinP : ∀ {X} {P : Predicate X} → endofunctor .liftF (endofunctor .liftF P) ⊑ endofunctor .liftF P [ join-hat .transf X ]
+  joinP {X} .*⊑* x .*⊑* (y , f , z , g , Xz) ((y' , f' , z' , g' , Xz') , eq₁ , (z'' , g'' , Xz'') , liftS eq₂ , ϕ) =
+    join-hat .transf X .transf x .func (y' , f' , z'' , g'' , Xz'') ,
+    join-hat .transf X .transf x .func-resp-≈
+      (M-hat-setoid (M-hat-PSh X) x .trans eq₁
+        (liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl
+        (liftS (eq-trans (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-right) (X .fmor-id .func-eq (X .fobj _ .refl)) (X .fmor-id .func-eq (X .fobj _ .refl)) (eq-stop _)) (eq-stop _)))
+        (liftS (eq-trans (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-right) (X .fmor-id .func-eq (X .fobj _ .refl)) (X .fmor-id .func-eq (X .fobj _ .refl)) (eq-stop _)) eq₂)) (eq-stop _)))) ,
+    ϕ
+
+  MP : MonadPred _ _ system monad-hat
+  MP .MonadPred.functP = endofunctor
+  MP .MonadPred.unitP = unitP
+  MP .MonadPred.joinP = joinP
+
+   -- TODO: strength
+
+-- FIXME: this ought to work for comonads too
+
+------------------------------------------------------------------------------
 -- Coproduct closure. This monad is "sheafification" monad for
 -- Grothendieck logical relations a la Simpson and Fiore for the
 -- “extensive topology” on 𝒞.
@@ -446,3 +501,119 @@ module CoproductMonad (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP) whe
   closureOp .ClosureOp.𝐂-[] = 𝐂-[]
   closureOp .ClosureOp.𝐂-[]⁻¹ = 𝐂-[]⁻¹
   closureOp .ClosureOp.𝐂-strong = 𝐂-strong
+
+  -- Can't do this directly -- need an additional closure operator for
+  -- the monad that interleaves sum closure and functor lifting. Or to
+  -- assume that the functor 'F' preserves coproducts (a la the ◇
+  -- modality). Or we need to assume that it coproducts distribute
+  -- over the monad: M(x + y) → M x + M y, which isn't true for monads
+  -- in general, but is actually true for the lifting monad on Fam?
+
+  -- Given a predicate P on X : PSh, we define a predicate on M-hat F
+  -- P that interleaves binds with
+
+  open import finite-coproduct-functor using (preserve-chosen-coproducts; module preserve-chosen-coproducts-consequences)
+
+  -- If F preserves coproducts, then we get a distributive property
+  --
+  -- Presumably, this needs to also work with the rest of the
+  -- structure, like a real distributive law?
+  --
+  -- But we won't know that M-hat preserves coproducts? But maybe it does?!
+  --
+  -- And the lifting monad on Fam(LatGal) preserves coproducts,
+  -- because it acts component-wise on the lattices. This isn't true
+  -- for the category of Lposets and stable functions.
+  module _ (F : Functor 𝒞 𝒞) (F-preserve-coproducts : preserve-chosen-coproducts F 𝒞CP 𝒞CP) where
+
+    open preserve-chosen-coproducts-consequences F 𝒞CP 𝒞CP F-preserve-coproducts
+
+    open UnaryDay F
+    open F-hat-pred F renaming (endofunctor to FP)
+
+    open FunctorPred
+
+    distrib : ∀ {X} {P : Predicate X} → FP .liftF (𝐂 P) ⊑ 𝐂 (FP .liftF P)
+    distrib {X} {P} .*⊑* c .*⊑* (z , g , Xz) ((z' , g' , Xz') , liftS ϕ , liftS ψ) =
+      liftS (Context-eq (liftS (eq-sym ϕ)) (h c z' g' Xz' ψ))
+      where
+        h : ∀ c z g Xz → Context X P z Xz → Context (M-hat .fobj X) (FP .liftF P) c (z , g , Xz)
+        h c z g Xz (leaf ϕ) = leaf ((z , g , Xz) , M-hat-setoid X _ .refl , ϕ)
+        h c z g Xz (node a b Xa Xb f ctx₁ ctx₂ x₁ x₂) =
+          node (stbl .StableBits.y₁) (stbl .StableBits.y₂)
+               (a , stbl .StableBits.h₁ , Xa)
+               (b , stbl .StableBits.h₂ , Xb)
+               (stbl .StableBits.h)
+               (h _ _ _ _ ctx₁)
+               (h _ _ _ _ ctx₂)
+               (liftS (eq-step {Fy = X .fmor (f .fwd) .func Xz} 𝒞CP.in₁ (f .bwd)
+                               eqn₁
+                               (X .fobj _ .sym (X .fobj _ .trans x₁ (X .fmor-comp _ _ .func-eq (X .fobj _ .refl))))
+                               (X .fobj _ .trans  (X .fobj _ .sym (X .fmor-comp _ _ .func-eq (X .fobj _ .refl)))
+                                (X .fobj _ .trans (X .fmor-cong (f .fwd∘bwd≈id) .func-eq (X .fobj _ .refl))
+                                                  (X .fmor-id .func-eq (X .fobj _ .refl))))
+                               (eq-stop _)))
+               (liftS (eq-step {Fy = X .fmor (f .fwd) .func Xz}
+                               𝒞CP.in₂ (f .bwd)
+                               eqn₂
+                               (X .fobj _ .sym (X .fobj _ .trans x₂ (X .fmor-comp _ _ .func-eq (X .fobj _ .refl))))
+                               (X .fobj _ .trans (X .fobj _ .sym (X .fmor-comp _ _ .func-eq (X .fobj _ .refl)))
+                                (X .fobj _ .trans (X .fmor-cong (f .fwd∘bwd≈id) .func-eq (X .fobj _ .refl))
+                                                  (X .fmor-id .func-eq (X .fobj _ .refl))))
+                               (eq-stop _)))
+          where f' : 𝒞.Iso (𝒞CP.coprod (F .fobj a) (F .fobj b)) (F .fobj z)
+                f' = 𝒞.Iso-trans iso (functor-preserve-iso F f)
+
+                stbl = stable f' g
+
+                eqn₁ : (F .fmor 𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁) 𝒞.≈ (F .fmor (f .bwd) 𝒞.∘ (g 𝒞.∘ (stbl .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₁)))
+                eqn₁ = begin
+                    F .fmor 𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁
+                  ≈˘⟨ 𝒞.∘-cong (𝒞CP.copair-in₁ _ _) 𝒞.≈-refl ⟩
+                    (𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂) 𝒞.∘ 𝒞CP.in₁) 𝒞.∘ stbl .StableBits.h₁
+                  ≈⟨ 𝒞.assoc _ _ _ ⟩
+                    𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂) 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁)
+                  ≈˘⟨ 𝒞.∘-cong 𝒞.id-left 𝒞.≈-refl ⟩
+                    (𝒞.id _ 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁)
+                  ≈˘⟨ 𝒞.∘-cong (𝒞.∘-cong (F .fmor-id) 𝒞.≈-refl) 𝒞.≈-refl ⟩
+                    (F .fmor (𝒞.id _) 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁)
+                  ≈˘⟨ 𝒞.∘-cong (𝒞.∘-cong (F .fmor-cong (f .bwd∘fwd≈id)) 𝒞.≈-refl) 𝒞.≈-refl ⟩
+                    (F .fmor (f .bwd 𝒞.∘ f .fwd) 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁)
+                  ≈⟨ 𝒞.∘-cong (𝒞.∘-cong (F .fmor-comp _ _) 𝒞.≈-refl) 𝒞.≈-refl ⟩
+                    ((F .fmor (f .bwd) 𝒞.∘ F .fmor (f .fwd)) 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁)
+                  ≈⟨ 𝒞.∘-cong (𝒞.assoc _ _ _) 𝒞.≈-refl ⟩
+                    (F .fmor (f .bwd) 𝒞.∘ (F .fmor (f .fwd) 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂))) 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁)
+                  ≡⟨⟩
+                    (F .fmor (f .bwd) 𝒞.∘ f' .fwd) 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁)
+                  ≈⟨ 𝒞.assoc _ _ _ ⟩
+                    F .fmor (f .bwd) 𝒞.∘ (f' .fwd 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stbl .StableBits.h₁))
+                  ≈⟨ 𝒞.∘-cong 𝒞.≈-refl (stbl .StableBits.eq₁) ⟩
+                    F .fmor (f .bwd) 𝒞.∘ (g 𝒞.∘ (stbl .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₁))
+                  ∎
+                  where open ≈-Reasoning 𝒞.isEquiv
+
+                eqn₂ : (F .fmor 𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂) 𝒞.≈ (F .fmor (f .bwd) 𝒞.∘ (g 𝒞.∘ (stbl .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₂)))
+                eqn₂ = begin
+                    F .fmor 𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂
+                  ≈˘⟨ 𝒞.∘-cong (𝒞CP.copair-in₂ _ _) 𝒞.≈-refl ⟩
+                    (𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂) 𝒞.∘ 𝒞CP.in₂) 𝒞.∘ stbl .StableBits.h₂
+                  ≈⟨ 𝒞.assoc _ _ _ ⟩
+                    𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂) 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂)
+                  ≈˘⟨ 𝒞.∘-cong 𝒞.id-left 𝒞.≈-refl ⟩
+                    (𝒞.id _ 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂)
+                  ≈˘⟨ 𝒞.∘-cong (𝒞.∘-cong (F .fmor-id) 𝒞.≈-refl) 𝒞.≈-refl ⟩
+                    (F .fmor (𝒞.id _) 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂)
+                  ≈˘⟨ 𝒞.∘-cong (𝒞.∘-cong (F .fmor-cong (f .bwd∘fwd≈id)) 𝒞.≈-refl) 𝒞.≈-refl ⟩
+                    (F .fmor (f .bwd 𝒞.∘ f .fwd) 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂)
+                  ≈⟨ 𝒞.∘-cong (𝒞.∘-cong (F .fmor-comp _ _) 𝒞.≈-refl) 𝒞.≈-refl ⟩
+                    ((F .fmor (f .bwd) 𝒞.∘ F .fmor (f .fwd)) 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂)
+                  ≈⟨ 𝒞.∘-cong (𝒞.assoc _ _ _) 𝒞.≈-refl ⟩
+                    (F .fmor (f .bwd) 𝒞.∘ (F .fmor (f .fwd) 𝒞.∘ 𝒞CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂))) 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂)
+                  ≡⟨⟩
+                    (F .fmor (f .bwd) 𝒞.∘ f' .fwd) 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂)
+                  ≈⟨ 𝒞.assoc _ _ _ ⟩
+                    F .fmor (f .bwd) 𝒞.∘ (f' .fwd 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stbl .StableBits.h₂))
+                  ≈⟨ 𝒞.∘-cong 𝒞.≈-refl (stbl .StableBits.eq₂) ⟩
+                    F .fmor (f .bwd) 𝒞.∘ (g 𝒞.∘ (stbl .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₂))
+                  ∎
+                  where open ≈-Reasoning 𝒞.isEquiv

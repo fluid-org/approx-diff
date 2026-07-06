@@ -11,24 +11,14 @@ open Signature Sig using (sort)
 open language-syntax Sig
 open SynMonad M
 
-mutual
-  ⟪_⟫ty : type → type
-  ⟪ unit ⟫ty = unit
-  ⟪ bool ⟫ty = bool
-  ⟪ base s ⟫ty = base s
-  ⟪ τ₁ [×] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [×] Mon ⟪ τ₂ ⟫ty
-  ⟪ τ₁ [+] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [+] Mon ⟪ τ₂ ⟫ty
-  ⟪ τ₁ [→] τ₂ ⟫ty = (Mon ⟪ τ₁ ⟫ty) [→] (Mon ⟪ τ₂ ⟫ty)
-  ⟪ μ P ⟫ty = μ ⟪ P ⟫poly
-
-  -- Roughly emulates the previous ⟪list τ⟫ty = list (Mon ⟪τ⟫ty), but isn't compatible with ⟪_⟫ty now that
-  -- list τ is just shorthand for μ (const unit [+] (const τ [×] var)). Need a way to insert composition with
-  -- Mon into a polynomial.
-  ⟪_⟫poly : polynomial → polynomial
-  ⟪ const σ ⟫poly   = const (Mon ⟪ σ ⟫ty)
-  ⟪ var ⟫poly       = var
-  ⟪ P [+] Q ⟫poly   = ⟪ P ⟫poly [+] ⟪ Q ⟫poly
-  ⟪ P [×] Q ⟫poly   = ⟪ P ⟫poly [×] ⟪ Q ⟫poly
+⟪_⟫ty : type → type
+⟪ unit ⟫ty = unit
+⟪ bool ⟫ty = bool
+⟪ base s ⟫ty = base s
+⟪ τ₁ [×] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [×] Mon ⟪ τ₂ ⟫ty
+⟪ τ₁ [+] τ₂ ⟫ty = Mon ⟪ τ₁ ⟫ty [+] Mon ⟪ τ₂ ⟫ty
+⟪ τ₁ [→] τ₂ ⟫ty = (Mon ⟪ τ₁ ⟫ty) [→] (Mon ⟪ τ₂ ⟫ty)
+⟪ list τ ⟫ty = list (Mon ⟪ τ ⟫ty)
 
 ⟪_⟫ctxt : ctxt → ctxt
 ⟪ emp ⟫ctxt = emp
@@ -61,8 +51,10 @@ mutual
   ⟪ app M₁ M₂ ⟫tm = bind $ ⟪ M₁ ⟫tm $ lam ((var zero) $ (weaken * ⟪ M₂ ⟫tm))
   ⟪ bop ω Ms ⟫tm = bindAll Ms (id-ren _) λ ρ Ms' → pure $ bop ω Ms'
   ⟪ brel r Ms ⟫tm = bindAll Ms (id-ren _) λ ρ Ms' → pure $ brel r Ms'
-  ⟪ roll {P = P} M ⟫tm = bind $ ⟪ M ⟫tm $ lam (pure $ roll (var zero))
-  ⟪ fold-μ {P = P} {τ = τ} alg M ⟫tm = bind $ ⟪ M ⟫tm $ lam (fold-μ (ext weaken * ⟪ alg ⟫tm) (var zero))
+  ⟪ nil ⟫tm = pure $ nil
+  ⟪ cons M N ⟫tm = bind $ ⟪ N ⟫tm $ lam (pure $ cons (weaken * ⟪ M ⟫tm) (var zero))
+  ⟪ fold M N L ⟫tm =
+    bind $ ⟪ L ⟫tm $ lam (fold (weaken * ⟪ M ⟫tm) (ext (ext weaken) * ⟪ N ⟫tm) (var zero))
 
   bindAll : ∀ {Γ Γ' σs τ} →
             Every (λ σ → Γ ⊢ base σ) σs →

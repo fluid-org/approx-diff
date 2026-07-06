@@ -48,6 +48,12 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ≈-trans : ∀ {x y} {f g h : x ⇒ y} → f ≈ g → g ≈ h → f ≈ h
   ≈-trans = isEquiv .trans
 
+  ∘-cong₁ : ∀ {x y z} {f₁ f₂ : y ⇒ z} {g : x ⇒ y} → f₁ ≈ f₂ → (f₁ ∘ g) ≈ (f₂ ∘ g)
+  ∘-cong₁ e = ∘-cong e (isEquiv .refl)
+
+  ∘-cong₂ : ∀ {x y z} {f : y ⇒ z} {g₁ g₂ : x ⇒ y} → g₁ ≈ g₂ → (f ∘ g₁) ≈ (f ∘ g₂)
+  ∘-cong₂ e = ∘-cong (isEquiv .refl) e
+
   ≡-to-≈ : ∀ {x y} {f g : x ⇒ y} → f ≡ g → f ≈ g
   ≡-to-≈ ≡.refl = ≈-refl
 
@@ -58,12 +64,6 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   -- A cast and its inverse compose to the identity.
   ≡-to-⇒-sym-l : ∀ {x y} (e : x ≡ y) → (≡-to-⇒ (≡.sym e) ∘ ≡-to-⇒ e) ≈ id x
   ≡-to-⇒-sym-l ≡.refl = id-left
-
-  ∘-cong₁ : ∀ {x y z} {f₁ f₂ : y ⇒ z} {g : x ⇒ y} → f₁ ≈ f₂ → (f₁ ∘ g) ≈ (f₂ ∘ g)
-  ∘-cong₁ f≈ = ∘-cong f≈ ≈-refl
-
-  ∘-cong₂ : ∀ {x y z} {f : y ⇒ z} {g₁ g₂ : x ⇒ y} → g₁ ≈ g₂ → (f ∘ g₁) ≈ (f ∘ g₂)
-  ∘-cong₂ g≈ = ∘-cong ≈-refl g≈
 
   id-swap : ∀ {x y}{f : x ⇒ y} → (id y ∘ f) ≈ (f ∘ id x)
   id-swap = isEquiv .trans id-left (≈-sym id-right)
@@ -84,6 +84,10 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   hom-setoid-l _ _ x y .isEquivalence .refl = lift (isEquiv .refl)
   hom-setoid-l _ _ x y .isEquivalence .sym (lift e) = lift (isEquiv .sym e)
   hom-setoid-l _ _ x y .isEquivalence .trans (lift p) (lift q) = lift (isEquiv .trans p q)
+
+  precompose : ∀ {ℓ₁ ℓ₂} {x y z} (f : y ⇒ x) → hom-setoid-l ℓ₁ ℓ₂ x z ⇒s hom-setoid-l ℓ₁ ℓ₂ y z
+  precompose f ._⇒s_.func (lift g) = lift (g ∘ f)
+  precompose f ._⇒s_.func-resp-≈ (lift eq) = lift (∘-cong eq ≈-refl)
 
   record IsIso {x y} (f : x ⇒ y) : Set (m ⊔ e) where
     field
@@ -1011,21 +1015,6 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
       id _
     ∎ where open ≈-Reasoning isEquiv
 
--- FIXME: separate out 'endofunctor' and 'natural transformation'
-record Monad {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
-  open Category 𝒞
-  field
-    M    : obj → obj
-    map  : ∀ {x y} → x ⇒ y → M x ⇒ M y
-    unit : ∀ {x} → x ⇒ M x
-    join : ∀ {x} → M (M x) ⇒ M x
-    map-cong : ∀ {x y}{f g : x ⇒ y} → f ≈ g → map f ≈ map g
-    map-id   : ∀ {x} → map (id x) ≈ id (M x)
-    map-comp : ∀ {x y z} (f : y ⇒ z) (g : x ⇒ y) → map (f ∘ g) ≈ (map f ∘ map g)
-    unit-natural : ∀ {x y} (f : x ⇒ y) → (unit ∘ f) ≈ (map f ∘ unit)
-    join-natural : ∀ {x y} (f : x ⇒ y) → (join ∘ map (map f)) ≈ (map f ∘ join)
-    -- FIXME: actual monad equations
-
 record HasBooleans {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasTerminal T renaming (witness to terminal)
@@ -1067,6 +1056,22 @@ module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) {P : HasProducts
   coproducts+exp→booleans .False = in₂
   coproducts+exp→booleans .cond f g =
     eval ∘ (prod-m (copair (lambda (f ∘ p₂)) (lambda (g ∘ p₂))) (id _) ∘ pair p₂ p₁)
+
+------------------------------------------------------------------------------
+-- For every object, there is a list object
+record HasLists {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
+  open Category 𝒞
+  open HasTerminal T renaming (witness to terminal)
+  open HasProducts P
+  field
+    list : obj → obj
+    nil  : ∀ {x} → terminal ⇒ list x
+    cons : ∀ {x} → prod x (list x) ⇒ list x
+    fold : ∀ {x y z} →
+           x ⇒ z →
+           prod (prod x y) z ⇒ z →
+           prod x (list y) ⇒ z
+  -- FIXME: equations
 
 -- Any CCC has strong coproducts.
 ccc→strong-coproducts : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞}

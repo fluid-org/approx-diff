@@ -308,13 +308,8 @@ module Galois where
   ℚ-intv .fam .subst eq = subst-Interval _ _ eq
   ℚ-intv .fam .refl* .right-eq .eqfun bottom = tt , tt
   ℚ-intv .fam .refl* .right-eq .eqfun < x > = (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
-  ℚ-intv .fam .refl* .left-eq .eqfun bottom = tt , tt
-  ℚ-intv .fam .refl* .left-eq .eqfun < x > = (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
   ℚ-intv .fam .trans* (liftS ≡-refl) (liftS ≡-refl) .right-eq .eqfun bottom = tt , tt
   ℚ-intv .fam .trans* (liftS ≡-refl) (liftS ≡-refl) .right-eq .eqfun < x > =
-    (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
-  ℚ-intv .fam .trans* (liftS ≡-refl) (liftS ≡-refl) .left-eq .eqfun bottom = tt , tt
-  ℚ-intv .fam .trans* (liftS ≡-refl) (liftS ≡-refl) .left-eq .eqfun < x > =
     (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
 
   add-mor : Fam.Mor (ℚ-intv ⊗ ℚ-intv) ℚ-intv
@@ -326,9 +321,6 @@ module Galois where
   add-mor .famf .natural {q₁ , q₂} {q₁' , q₂'} (liftS ≡-refl , liftS ≡-refl) .right-eq .eqfun (< x > , bottom) = tt , tt
   add-mor .famf .natural {q₁ , q₂} {q₁' , q₂'} (liftS ≡-refl , liftS ≡-refl) .right-eq .eqfun (< x > , < x₁ >) =
     (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
-  add-mor .famf .natural {q₁ , q₂} {q₁' , q₂'} (liftS ≡-refl , liftS ≡-refl) .left-eq .eqfun bottom = (tt , tt) , tt , tt
-  add-mor .famf .natural {q₁ , q₂} {q₁' , q₂'} (liftS ≡-refl , liftS ≡-refl) .left-eq .eqfun < x > =
-    ((liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl) , (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
 
   zero-mor : Fam.Mor 𝟙 ℚ-intv
   zero-mor .idxf .prop-setoid._⇒_.func _ = 0ℚ
@@ -342,7 +334,6 @@ module Galois where
   zero-mor .famf .transf _ ._⇒g_.left⊣right {tt} {bottom} .proj₂ _ = tt
   zero-mor .famf .transf _ ._⇒g_.left⊣right {tt} {< x >} .proj₂ _ = x .l≤q , x .q≤u
   zero-mor .famf .natural e .right-eq .eqfun _ = (liftS ≤-refl , liftS ≤-refl) , liftS ≤-refl , liftS ≤-refl
-  zero-mor .famf .natural e .left-eq .eqfun _ = tt , tt
 
   one-mor : Fam.Mor 𝟙 ℚ-intv
   one-mor .idxf .prop-setoid._⇒_.func _ = 1ℚ

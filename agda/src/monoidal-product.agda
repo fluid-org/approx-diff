@@ -3,8 +3,12 @@
 module monoidal-product where
 
 open import Level using (_⊔_)
+open import prop using (_,_)
+open import Data.Product using (_,_; _×_)
 open import prop-setoid using (module ≈-Reasoning)
 open import categories using (Category)
+open import product-category using (product)
+open import functor using (Functor)
 
 -- FIXME: derive naturality of the inverses:
 --
@@ -56,6 +60,16 @@ record MonoidalProduct {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) whe
                ≈ (((id w ⊗m ⊗-assoc) ∘ ⊗-assoc) ∘ (⊗-assoc ⊗m id z))
 
     triangle : ∀ {x y} → ((id x ⊗m ⊗-lunit) ∘ ⊗-assoc) ≈ (⊗-runit ⊗m id y)
+
+  open Functor
+
+  ⊗-functor : Functor (product 𝒞 𝒞) 𝒞
+  ⊗-functor .fobj (x , y) = x ⊗ y
+  ⊗-functor .fmor (f , g) = f ⊗m g
+  ⊗-functor .fmor-cong (f₁≈f₂ , g₁≈g₂) = ⊗m-cong f₁≈f₂ g₁≈g₂
+  ⊗-functor .fmor-id = ⊗m-id
+  ⊗-functor .fmor-comp (f₁ , g₁) (f₂ , g₂) = ⊗m-comp f₁ g₁ f₂ g₂
+
 
   ⊗-runit⁻¹-natural : ∀ {x₁ x₂} (f : x₁ ⇒ x₂) → (⊗-runit⁻¹ ∘ f) ≈ ((f ⊗m id _) ∘ ⊗-runit⁻¹)
   ⊗-runit⁻¹-natural f = begin
