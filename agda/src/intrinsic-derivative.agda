@@ -107,40 +107,46 @@ antisym {O} {O} ϕ ψ = refl
 ∧-∨-distribˡ {O} {y} {z} = refl
 
 ------------------------------------------------------------------------------
-module with-booleans where
-  Matrix : ℕ → ℕ → Set
-  Matrix m n = Fin m → Fin n → 𝔹
+-- Vectors and Matricies of booleans
+Matrix : ℕ → ℕ → Set
+Matrix m n = Fin m → Fin n → 𝔹
 
-  Vec : ℕ → Set
-  Vec n = Fin n → 𝔹
+Vec : ℕ → Set
+Vec n = Fin n → 𝔹
 
 
-  _⊔_ : ∀ {n} → Vec n → Vec n → Vec n
-  (x ⊔ y) i = x i ∨ y i
+_⊔_ : ∀ {n} → Vec n → Vec n → Vec n
+(x ⊔ y) i = x i ∨ y i
 
-  ∅ : ∀ {n} → Vec n
-  ∅ i = O
+∅ : ∀ {n} → Vec n
+∅ i = O
 
-  _∙_ : ∀ {m n} → Matrix m n → Vec m → Vec n
-  (M ∙ x) i = ⋁ λ j → M j i ∧ x j
+_∙_ : ∀ {m n} → Matrix m n → Vec m → Vec n
+(M ∙ x) i = ⋁ λ j → M j i ∧ x j
 
-  _≈V_ : ∀ {n} → Vec n → Vec n → Set
-  x ≈V y = ∀ i → x i ≡ y i
+_≈V_ : ∀ {n} → Vec n → Vec n → Set
+x ≈V y = ∀ i → x i ≡ y i
 
-  _≈M_ : ∀ {m n} → Matrix m n → Matrix m n → Set
-  M ≈M N = ∀ i j → M i j ≡ N i j
+_≈M_ : ∀ {m n} → Matrix m n → Matrix m n → Set
+M ≈M N = ∀ i j → M i j ≡ N i j
 
-  _∘M_ : ∀ {m n o} → Matrix n o → Matrix m n → Matrix m o
-  (M ∘M N) i j = ⋁ λ k → M k j ∧ N i k
+_∘M_ : ∀ {m n o} → Matrix n o → Matrix m n → Matrix m o
+(M ∘M N) i j = ⋁ λ k → M k j ∧ N i k
 
-  infix 4 _≈V_ _≈M_
+infix 4 _≈V_ _≈M_
 
-  ∙-preserve-∅ : ∀ {m n} (M : Matrix m n) → M ∙ ∅ ≈V ∅
-  ∙-preserve-∅ M i = antisym (least {f = λ j → M j i ∧ O} (λ j → lower₂)) tt
+∙-preserve-∅ : ∀ {m n} (M : Matrix m n) → M ∙ ∅ ≈V ∅
+∙-preserve-∅ M i = antisym (least {f = λ j → M j i ∧ O} (λ j → lower₂)) tt
 
-  ∙-preserve-⊔ : ∀ {m n} (M : Matrix m n) (x y : Vec m) → (M ∙ x) ⊔ (M ∙ y) ≈V M ∙ (x ⊔ y)
-  ∙-preserve-⊔ M x y j = trans (⋁-∨ {f = λ k → M k j ∧ x k} {g = λ k → M k j ∧ y k}) (⋁-cong {f = λ i → (M i j ∧ x i) ∨ (M i j ∧ y i)} {g = λ i → M i j ∧ (x i ∨ y i)} λ i → ∧-∨-distribˡ {M i j} {x i} {y i})
+∙-preserve-⊔ : ∀ {m n} (M : Matrix m n) (x y : Vec m) → (M ∙ x) ⊔ (M ∙ y) ≈V M ∙ (x ⊔ y)
+∙-preserve-⊔ M x y j = trans (⋁-∨ {f = λ k → M k j ∧ x k} {g = λ k → M k j ∧ y k}) (⋁-cong {f = λ i → (M i j ∧ x i) ∨ (M i j ∧ y i)} {g = λ i → M i j ∧ (x i ∨ y i)} λ i → ∧-∨-distribˡ {M i j} {x i} {y i})
 
+postulate
+  f-ext : ∀ {A : Set} {B : A → Set} {f g : ∀ a → B a} → (∀ a → f a ≡ g a) → f ≡ g
+
+
+------------------------------------------------------------------------------
+module version1 where
   record Obj : Set₁ where
     field
       arity : ℕ
@@ -150,9 +156,6 @@ module with-booleans where
   El : Obj → Set
   El X = (i : Fin (X .arity)) → X .dom i
 
-  postulate
-    El-ext : ∀ {X} {x y : El X} → (∀ i → x i ≡ y i) → x ≡ y
-
   -- Functions that carry correct but not necessarily complete
   -- dependency information
   record _⇒_ (X Y : Obj) : Set₁ where
@@ -161,8 +164,6 @@ module with-booleans where
       deps : El X → Matrix (X .arity) (Y .arity)
       deps-ok : ∀ x x' j → (∀ i → deps x i j ≡ I → x i ≡ x' i) → func x j ≡ func x' j
       -- More generally: (⋀ λ i → deps x i j ⊸ X i .eq (x i) (x' i)) ⊸ Y j .eq (func x j) (func x' j)
-      -- alternative:
-      -- deps-ok2 : ∀ x x' i → (∀ i' → i ≡ i' ⊎ x i' ≡ x' i') → ∀ j → deps x i j ≡ O → func x j ≡ func x' j
   open _⇒_
 
   constant : ∀ {X Y} → El Y → X ⇒ Y
@@ -278,7 +279,7 @@ module with-booleans where
   -- forbidden "parallel" one!
   _ = {!mul .deps (λ { zero → 0 ; (suc zero) → 0 }) zero zero!}
 
-  -- mul (0, 0) = (I O) -- or (O I)
+  -- mul (0, 0) = (I O) -- or (O I) or (I I)
   -- mul (0, n) = (I O)
   -- mul (m, 0) = (O I)
   -- mul (m, n) = (I I)
@@ -301,6 +302,81 @@ module with-booleans where
   ifthenelse .deps-ok x x' j ϕ | ϕ' | ψ | O | O = project₂ .deps-ok (λ i → x (suc i)) (λ i → x' (suc i)) j ϕ'
 
 ------------------------------------------------------------------------------
+module version2 where
+  record Obj : Set₁ where
+    field
+      arity : ℕ
+      dom   : Fin arity → Set
+  open Obj
+
+  El : Obj → Set
+  El X = (i : Fin (X .arity)) → X .dom i
+
+  -- Functions that carry correct but not necessarily complete
+  -- dependency information
+  record _⇒_ (X Y : Obj) : Set₁ where
+    field
+      func : El X → El Y
+      deps : El X → Matrix (X .arity) (Y .arity)
+      deps-ok : ∀ x x' i → (∀ i' → i ≡ i' ⊎ x i' ≡ x' i') → ∀ j → deps x i j ≡ O → func x j ≡ func x' j
+      -- deps-ok : ∀ x x' i j → deps x i j ≡ O →
+  open _⇒_
+
+  constant : ∀ {X Y} → El Y → X ⇒ Y
+  constant y .func _ = y
+  constant y .deps _ i j = O
+  constant y .deps-ok = λ x x' i z j z₁ → refl
+
+  id : ∀ X → X ⇒ X
+  id X .func x = x
+  id X .deps x i j with i ≟ j
+  ... | yes _ = I
+  ... | no _ = O
+  id X .deps-ok x x' j ϕ j' x₁ with j ≟ j'
+  ... | no ¬j≡j' with ϕ j'
+  ... | inj₁ j≡j' = ⊥-elim (¬j≡j' j≡j')
+  ... | inj₂ eq = eq
+
+  lemma₀ : ∀ {x y} → x ∨ y ≡ O → x ≡ O
+  lemma₀ {O} eq = refl
+
+  lemma₁ : ∀ {x y} → x ∨ y ≡ O → y ≡ O
+  lemma₁ {O} {y} eq = eq
+
+
+  lemma : ∀ {n} {f : Fin n → 𝔹} → ⋁ f ≡ O → ∀ k → f k ≡ O
+  lemma {zero} {f} eq ()
+  lemma {suc n} {f} eq zero = lemma₀ eq
+  lemma {suc n} {f} eq (suc x) = lemma (lemma₁ eq) x
+
+  ∧-split : ∀ {x y} → (x ∧ y) ≡ O → (x ≡ O × y ≡ I) ⊎ (y ≡ O)
+  ∧-split {I} {y} eq = inj₂ eq
+  ∧-split {O} {I} eq = inj₁ (eq , refl)
+  ∧-split {O} {O} eq = inj₂ eq
+
+  lemma₂ : ∀ {n} {f g : Fin n → 𝔹} → (∀ k → f k ∧ g k ≡ O) → (Σ[ k ∈ Fin n ] f k ≡ O × g k ≡ I) ⊎ (∀ k → g k ≡ O)
+  lemma₂ {zero} {f} {g} ϕ = inj₂ (λ ())
+  lemma₂ {suc n} {f} {g} ϕ with ∧-split {x = f zero} {y = g zero} (ϕ zero)
+  ... | inj₁ eq = inj₁ (zero , eq)
+  ... | inj₂ eq with lemma₂ {f = λ i → f (suc i)} (λ i → ϕ (suc i))
+  ... | inj₁ (k , ψ) = inj₁ (suc k , ψ)
+  ... | inj₂ ψ = inj₂ (λ { zero → eq ; (suc k) → ψ k })
+
+{-
+  -- FIXME: this doesn't work?
+  _∘_ : ∀ {X Y Z} → Y ⇒ Z → X ⇒ Y → X ⇒ Z
+  (f ∘ g) .func x = f .func (g .func x)
+  (f ∘ g) .deps x = f .deps (g .func x) ∘M g .deps x
+  _∘_ {X} {Y} {Z} f g  .deps-ok x x' j x₁ j₁ ϕ with lemma₂ {f = λ k → f .deps (g .func x) k j₁} (lemma ϕ)
+  ... | inj₁ (k , ψ , χ) =
+        f .deps-ok (g .func x) (g .func x') k
+                   (λ k' → {!g .deps-ok x x' j ? k'!})
+                   j₁ ψ
+  ... | inj₂ ψ = cong (λ □ → f .func □ j₁) (f-ext (λ k → g .deps-ok x x' j x₁ k (ψ k)))
+-}
+
+------------------------------------------------------------------------------
+{-
 module with-sets where
   Matrix : ℕ → ℕ → Set₁
   Matrix m n = Fin m → Fin n → Set
@@ -379,7 +455,7 @@ module with-sets where
 
 
 
-
+-}
 
 
 
