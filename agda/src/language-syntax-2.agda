@@ -31,6 +31,16 @@ data type : TyCtxt → Set ℓ where
 infixl 40 _[×]_ _[+]_
 infixr 35 _[→]_
 
+-- First-order types: no function spaces. Used to equip the fibres of a type's
+-- interpretation with approximation structure.
+data first-order : ∀ {Δ} → type Δ → Set ℓ where
+  var   : ∀ {Δ} (i : Fin Δ) → first-order (var i)
+  unit  : ∀ {Δ} → first-order {Δ} unit
+  base  : ∀ {Δ} (s : sort) → first-order {Δ} (base s)
+  _[+]_ : ∀ {Δ} {σ τ : type Δ} → first-order σ → first-order τ → first-order (σ [+] τ)
+  _[×]_ : ∀ {Δ} {σ τ : type Δ} → first-order σ → first-order τ → first-order (σ [×] τ)
+  μ     : ∀ {Δ} {τ : type (suc Δ)} → first-order τ → first-order (μ τ)
+
 TyRen : TyCtxt → TyCtxt → Set
 TyRen Δ Δ' = Fin Δ → Fin Δ'
 

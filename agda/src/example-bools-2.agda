@@ -1,108 +1,75 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Backward and forward analyses of the list example for the language with general
--- recursive types, with two-valued (Bool) approximation.
+-- Backward analyses of the list and rose-tree examples for the language with
+-- general recursive types, over the self-dual Boolean algebras.
 
 module example-bools-2 where
 
-open import Level using (0ℓ; lift)
-open import every using (Every; []; _∷_)
-open import signature
-import language-syntax-2
-import label
-import galois
-import conjugate
-
-open import example-signature
-
-module L = language-syntax-2 Sig
-
-import indexed-family
-import join-semilattice-category
-import join-semilattice
-import preorder
-import prop-setoid
-
-open import two renaming (I to ⊤; O to ⊥)
-open import Data.Unit renaming (tt to ·; ⊤ to Unit) using ()
+open import Level using (lift)
+import Data.Fin as Fin
 open import Data.Sum using (inj₁; inj₂)
-open import Data.Product using (_,_; _×_; proj₁; proj₂)
-
-open prop-setoid.Setoid
-
-open L hiding (_,_)
-
-import example-2
-
+open import Data.Product using (_,_)
+open import Data.Unit renaming (tt to ·) using ()
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
+open import prop-setoid using (Setoid)
+open Setoid using (Carrier)
+open import example-signature using (Sig; number; label)
+open import label using (a; b)
+import two
+open import two renaming (I to ⊤; O to ⊥) using ()
+import example-bool
+import ho-model-boolalg-sd-semimod
+import example-2
+import indexed-family
+import galois
+import preorder
 
--- Backward analysis (Galois).
-module backward where
-  open import ho-model
-  open import example-signature-interpretation galois.cat galois.products galois.terminal galois.TWO galois.unit galois.conjunct
-  open Galois.interp-2 Sig BaseInterp1
-  open indexed-family._⇒f_
-  open join-semilattice-category._⇒_
-  open join-semilattice._=>_
-  open preorder._=>_
+module HB = ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean
 
-  module T = Galois.Fam⟨𝒟⟩-μ.Tree {n = 0} (λ ())
+open HB.interp-boolean-2 Sig example-bool.D.BaseInterp1
+open indexed-family._⇒f_ using (transf)
+open galois._⇒g_ using (right)
+open preorder._=>_ using (fun)
 
-  input : ⟦ list (base label [×] base number) ⟧ty (λ ()) .idx .Carrier
-  input = T.sup (inj₂ ((label.a , 0) , T.sup (inj₂ ((label.b , 1) , T.sup (inj₂ ((label.a , 1) , T.sup (inj₁ (lift ·))))))))
+open example-2.L using (list; base; unit; var; μ; _[×]_; _[+]_; first-order)
+open example-2.ex using (query; rose; rose-query)
 
-  bwd-slice : label.label → _
-  bwd-slice l = ⟦ example-2.ex.query l ⟧tm .famf .transf (_ , input) .proj₂ .*→* .func .fun ⊤ .proj₂
+module T = HB.Fam⟨𝒟⟩-μ.Tree {n = 0} (λ ())
 
-  -- Querying for the 'a' label uses the 1st and 3rd numbers
-  test1 : bwd-slice label.a ≡ ((· , ⊤) , (· , ⊥) , (· , ⊤) , _)
-  test1 = ≡-refl
+input : ⟦ list (base label [×] base number) ⟧ty (λ ()) .idx .Carrier
+input = T.sup (inj₂ ((a , 0) , T.sup (inj₂ ((b , 1) , T.sup (inj₂ ((a , 1) , T.sup (inj₁ (lift ·))))))))
 
-  -- Querying for the 'b' label uses the 2nd number
-  test2 : bwd-slice label.b ≡ ((· , ⊥) , (· , ⊤) , (· , ⊥) , _)
-  test2 = ≡-refl
+list-fo : first-order (list (base label [×] base number))
+list-fo = μ (unit [+] ((base label [×] base number) [×] var Fin.zero))
 
-  -- Rose tree node 1 [node 2 [] , node 3 []]: the children lists are trees of a
-  -- nested μ-type, so folding over the tree exercises the nested recursion.
-  rose-input : ⟦ example-2.ex.rose ⟧ty (λ ()) .idx .Carrier
-  rose-input =
-    T.sup (1 , T.sup (inj₂ (T.sup (2 , T.sup (inj₁ (lift ·))) ,
-               T.sup (inj₂ (T.sup (3 , T.sup (inj₁ (lift ·))) , T.sup (inj₁ (lift ·)))))))
+bwd-slice : label.label → _
+bwd-slice l =
+  to-gal (𝟘 ⊕ ty₀ list-fo input) (ty₀ (base number) 0)
+         (⟦ query l ⟧tm .famf .transf (_ , input)) .right .fun ⊥
 
-  rose-bwd : _
-  rose-bwd = ⟦ example-2.ex.rose-query ⟧tm .famf .transf (_ , rose-input) .proj₂ .*→* .func .fun ⊤ .proj₂
+-- Querying for the 'a' label uses the 1st and 3rd numbers.
+test1 : bwd-slice a ≡ (lift · , (lift · , ⊥) , (lift · , ⊤) , (lift · , ⊥) , _)
+test1 = ≡-refl
 
-  -- Summing demands every number in the tree.
-  rose-test : rose-bwd ≡ (⊤ , (⊤ , _) , (⊤ , _) , _)
-  rose-test = ≡-refl
+-- Querying for the 'b' label uses the 2nd number.
+test2 : bwd-slice b ≡ (lift · , (lift · , ⊤) , (lift · , ⊥) , (lift · , ⊤) , _)
+test2 = ≡-refl
 
--- Forward analysis (Conjugate).
-module forward where
-  open import ho-model
-  open import example-signature-interpretation conjugate.cat conjugate.products conjugate.terminal conjugate.TWO conjugate.unit conjugate.conjunct
-  open Conjugate.interp-2 Sig BaseInterp1
+-- Rose tree node 1 [node 2 [] , node 3 []]: the children lists are trees of a
+-- nested μ-type, so folding over the tree exercises the nested recursion.
+rose-input : ⟦ rose ⟧ty (λ ()) .idx .Carrier
+rose-input =
+  T.sup (1 , T.sup (inj₂ (T.sup (2 , T.sup (inj₁ (lift ·))) ,
+             T.sup (inj₂ (T.sup (3 , T.sup (inj₁ (lift ·))) , T.sup (inj₁ (lift ·)))))))
 
-  module T = Conjugate.Fam⟨𝒟⟩-μ.Tree {n = 0} (λ ())
+rose-fo : first-order rose
+rose-fo = μ (base number [×] μ (unit [+] (var (Fin.suc Fin.zero) [×] var Fin.zero)))
 
-  input : ⟦ list (base label [×] base number) ⟧ty (λ ()) .idx .Carrier
-  input = T.sup (inj₂ ((label.a , 0) , T.sup (inj₂ ((label.b , 1) , T.sup (inj₂ ((label.a , 1) , T.sup (inj₁ (lift ·))))))))
+rose-bwd : _
+rose-bwd =
+  to-gal (𝟘 ⊕ ty₀ rose-fo rose-input) (ty₀ (base number) 0)
+         (⟦ rose-query ⟧tm .famf .transf (_ , rose-input)) .right .fun ⊥
 
-  fwd-slice : _ → _
-  fwd-slice supply = ⟦ example-2.ex.query label.a ⟧tm .famf .transf (_ , input) .proj₁ .*→* .func .fun (· , supply)
-    where
-      open indexed-family._⇒f_
-      open join-semilattice-category._⇒_
-      open join-semilattice._=>_
-      open preorder._=>_
-
-  -- Output depends on 1st label (would be ⊥ in the Galois example)
-  test-1 : fwd-slice ((· , ⊤) , (· , ⊥) , (· , ⊥) , _) ≡ ⊤
-  test-1 = ≡-refl
-
-  -- Output doesn't depend on 2nd label
-  test-2 : fwd-slice ((· , ⊥) , (· , ⊤) , (· , ⊥) , _) ≡ ⊥
-  test-2 = ≡-refl
-
-  -- Output depends on 3rd label (would be ⊥ in the Galois example)
-  test-3 : fwd-slice ((· , ⊥) , (· , ⊥) , (· , ⊤) , _) ≡ ⊤
-  test-3 = ≡-refl
+-- Summing demands every number in the tree.
+rose-test : rose-bwd ≡ (lift · , ⊥ , (⊥ , _) , (⊥ , _) , _)
+rose-test = ≡-refl

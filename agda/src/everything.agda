@@ -4,9 +4,9 @@ module everything where
 
 import examples
 
--- Analyses of the list and rose-tree examples for the language with general
--- recursive types, with two-valued (Bool) approximation.
--- import example-bools-2 -- pending re-basing onto the self-dual semimodule models
+-- Backward analyses of the list and rose-tree examples for the language with
+-- general recursive types, over the self-dual Boolean algebras.
+import example-bools-2
 
 -- Backward (Galois) analysis of the examples, with rational-interval
 -- approximation.
