@@ -25,6 +25,7 @@ import bounded-meet
 import fam-exponentials
 import fam-realisation
 import product-cocontinuity
+import fam-mu-realisation
 
 -- Construction of the interpretation of the higher-order language in
 -- Section 4
