@@ -167,3 +167,43 @@ Composing $\sem{t} : \sem{\Gamma} \to \sem{\tau}$ with the isomorphisms gives a 
 $\GF(\sem{\Gamma}_{\mathit{fo}}) \to \GF(\sem{\tau}_{\mathit{fo}})$ of $\GLR(F)$, to which
 \lemref{conservativity:definability} applies.
 \end{proof}
+
+\subsection{$\Poly$-types in $\GLR(F)$}
+\label{sec:conservativity:glr-poly-types}
+
+The two assumptions of \thmref{conservativity:syntactic-definability} remain: that $\GLR(F)$ has
+$\Poly$-types, and that $\GF$ preserves them. This subsection reduces both to a single obligation on
+the definability predicate.
+
+The starting point is the shape of the construction of \secref{polynomial-types:fam}. In
+$\Fam(\cat{C})$, set-indexed coproducts are computed by disjoint union of index sets, and every
+object is canonically the coproduct of its fibres: $(X, \partial X) \cong \coprod_{x \in X} \partial
+X_x$, with each fibre regarded as an object over a singleton index set. In particular the carrier of
+a $\mu$-type is the coproduct of its fibres over the set of trees at the root sort,
+\[
+  \mu_{\alpha.P}(\delta) \;\cong\; \coprod_{t \in W_{s_0}} \partial W_{s_0}(t),
+\]
+and inspection of \secref{polynomial-types:fam} shows the construction uses only: set-indexed
+coproducts; finite products, distributing over those coproducts (for the strong structure); and the
+canonical presentation of each $\const$-object of the polynomial as a coproduct of its fibres. The
+index-level material --- sorts, trees, the fibre assignment --- is set-theoretic and independent of
+the category.
+
+$\GLR(F)$ has set-indexed coproducts, finite products and exponentials
+(\secref{conservativity:glueing}), and exponentials give the distributivity. What it does not have is
+canonical presentations: an arbitrary closed predicate on $G(X)$ need not be determined by its
+restrictions to the fibres of $X$. Presentations must instead be supplied with the polynomial. For
+the polynomials that actually arise --- interpretations of first-order types, whose $\const$-objects
+are $\GF$-images and previously constructed $\mu$-types --- it suffices that $\GF$ send the canonical
+presentations of $\Fam(\cat{C})$ to presentations in $\GLR(F)$: that is, that $\GF$ preserve
+set-indexed coproducts. The same preservation, applied to the coproduct presentation of a
+$\mu$-object, is exactly what $\GF$ preserving $\Poly$-types asks.
+
+Both assumptions thus reduce to: \emph{the (closure of the) definability predicate is closed
+under set-indexed coproducts}, the infinitary analogue of the finite-coproduct closure already used
+in \secref{conservativity:glueing}. This is also precisely the extension needed to add the built-in
+list types of the $\mu$-free language to \thmref{conservativity:syntactic-definability}, since a list
+object is likewise a set-indexed coproduct. Two steps of the reduction remain to be carried out in
+full: the closure property itself, and the transfer of the construction of
+\secref{polynomial-types:fam} along the supplied presentations, including the catamorphism and its
+laws.
