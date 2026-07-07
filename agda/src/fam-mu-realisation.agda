@@ -44,6 +44,7 @@ module FM = fam-mu-types-2 os es ℰT ℰP
 
 private
   module FMu = FM.HasMu FM.hasMu
+  module FMuI = polynomial-functor-2.MuIso (FM.terminal ℰT) FM.products FM.strongCoproducts FM.hasMu FM.hasMuLaws
 
 module ℰI = polynomial-functor-2.Interp ℰT ℰP ℰSC
 open ℰI using (_∘co_)
@@ -91,15 +92,7 @@ record MuReal {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) : Set (o ⊔ 
     foldR-η : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
               (h ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ h) → h ≈ foldR a
 
--- The collapse isomorphism family: realisation of a polynomial application is
--- invariant under replacing environment entries by families with isomorphic
--- realisations.
-CollapseTy : ∀ n → Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔ Level.suc es)
-CollapseTy n =
-  (P : Poly ℰ n) (δ̂₁ δ̂₂ : Fin n → FM.Obj) →
-  (∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
-  Iso (realise .fobj (FM.fobj FM.μObj (Poly-map η P) δ̂₁))
-      (realise .fobj (FM.fobj FM.μObj (Poly-map η P) δ̂₂))
+
 
 
 -- The co-Kleisli action of realisation: a Fam(ℰ)-morphism from a product with
@@ -356,6 +349,30 @@ pair-p₁p₂-id : ∀ {Γ A : obj} → ℰP.pair (ℰP.p₁ {Γ} {A}) ℰP.p₂
 pair-p₁p₂-id =
   ≈-trans (ℰP.pair-cong (≈-sym id-right) (≈-sym id-right)) (ℰP.pair-ext (id _))
 
+-- The collapse interface for a polynomial: realisation of its application is
+-- invariant under replacing environment entries by families with isomorphic
+-- realisations, naturally in the strong action, and trivially so at identical
+-- environments.
+record CollapseAt {n} (P : Poly ℰ n) : Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔ Level.suc es) where
+  field
+    iso : (δ̂₁ δ̂₂ : Fin n → FM.Obj) →
+          (∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
+          Iso (realise .fobj (FM.fobj FM.μObj (Poly-map η P) δ̂₁))
+              (realise .fobj (FM.fobj FM.μObj (Poly-map η P) δ̂₂))
+    natural : ∀ {Γ : obj} {ε̂₁ ε̂₂ : Fin n → FM.Obj}
+              (δ̂₁ δ̂₂ : Fin n → FM.Obj)
+              (isosδ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+              (isosε : ∀ i → Iso (realise .fobj (ε̂₁ i)) (realise .fobj (ε̂₂ i)))
+              (gs₁ : ∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂₁ i)) (ε̂₁ i))
+              (gs₂ : ∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂₂ i)) (ε̂₂ i)) →
+              (∀ i → (fmorη Γ (δ̂₂ i) (gs₂ i) ∘co (isosδ i .Iso.fwd ∘ ℰP.p₂))
+                     ≈ (isosε i .Iso.fwd ∘ fmorη Γ (δ̂₁ i) (gs₁ i))) →
+              (fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₂) (FMu.strong-fmor (Poly-map η P) gs₂)
+                ∘co (iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂))
+              ≈ (iso _ _ isosε .Iso.fwd ∘ fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₁) (FMu.strong-fmor (Poly-map η P) gs₁))
+    refl-iso : ∀ (δ̂ : Fin n → FM.Obj) →
+               iso δ̂ δ̂ (λ i → Iso-refl) .Iso.fwd ≈ id _
+
 -- The initial-algebra package for a polynomial, against an assumed collapse
 -- family and its naturality with respect to the strong action. The algebra
 -- map realises the Fam(ℰ) algebra map and corrects the bound-variable entry
@@ -363,17 +380,10 @@ pair-p₁p₂-id =
 -- transposes back; β follows from the Fam(ℰ) β law pushed through the
 -- co-Kleisli functoriality of realisation.
 module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
-    (collapseP : CollapseTy (suc n))
-    (collapseNatP : ∀ {Γ : obj} {ε̂ : Fin (suc n) → FM.Obj}
-                    (δ̂₁ δ̂₂ : Fin (suc n) → FM.Obj)
-                    (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
-                    (gs₁ : ∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂₁ i)) (ε̂ i))
-                    (gs₂ : ∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂₂ i)) (ε̂ i)) →
-                    (∀ i → (fmorη Γ (δ̂₂ i) (gs₂ i) ∘co (isos i .Iso.fwd ∘ ℰP.p₂)) ≈ fmorη Γ (δ̂₁ i) (gs₁ i)) →
-                    (fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₂) (FMu.strong-fmor (Poly-map η P) gs₂)
-                      ∘co (collapseP P δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂))
-                    ≈ fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₁) (FMu.strong-fmor (Poly-map η P) gs₁))
+    (CP : CollapseAt P)
   where
+
+  open CollapseAt CP using () renaming (iso to Kiso'; natural to Knat; refl-iso to Krefl)
 
   private
     P̂ = Poly-map η P
@@ -400,7 +410,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
 
   inR : Greal P δ̂ (Creal P δ̂) ⇒ Creal P δ̂
   inR = realise .fmor (FMu.α P̂ δ̂) ∘
-        collapseP P (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd
+        Kiso' (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd
 
   foldR : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) → ℰP.prod Γ (Creal P δ̂) ⇒ A
   foldR {Γ} {A} a = transpose (FMu.⦅_⦆ {P = P̂} {δ = δ̂} (bF a)) ∘ prodη Γ μ̂ .Iso.bwd
@@ -460,18 +470,20 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
           (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
           ((realise-η-iso A .Iso.fwd ∘ fmorη Γ μ̂ u) ≈ h) →
           (fmorη Γ (F^ μ̂) (FMu.strong-fmor P̂ (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) u))
-            ∘co (collapseP P (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd ∘ ℰP.p₂))
+            ∘co (Kiso' (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd ∘ ℰP.p₂))
           ≈ Gmap P δ̂ h
     key {Γ} {A} u h hyp =
-      collapseNatP (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos
-        (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (h~ h))
-        (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) u)
-        compats
+      ≈-trans
+        (Knat (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos (λ i → Iso-refl)
+          (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (h~ h))
+          (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) u)
+          compats)
+        (≈-trans (∘-cong (Krefl (extend δ̂ (η .fobj A))) ≈-refl) id-left)
       where
         compats : ∀ i → (fmorη Γ (extend δ̂ μ̂ i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) u i) ∘co (inIsos i .Iso.fwd ∘ ℰP.p₂))
-                  ≈ fmorη Γ (extend δ̂ (η .fobj (Creal P δ̂)) i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (h~ h) i)
-        compats Fin.zero    = compat-zero u h hyp
-        compats (Fin.suc i) = compat-suc i
+                  ≈ (Iso-refl .Iso.fwd ∘ fmorη Γ (extend δ̂ (η .fobj (Creal P δ̂)) i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (h~ h) i))
+        compats Fin.zero    = ≈-trans (compat-zero u h hyp) (≈-sym id-left)
+        compats (Fin.suc i) = ≈-trans (compat-suc i) (≈-sym id-left)
 
   foldR-β : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) →
             (foldR a ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ (foldR a))
@@ -504,7 +516,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       cA = realise-η-iso A .Iso.fwd
       Φ⦅b⦆ = fmorη Γ μ̂ ⦅b⦆
       Rα = realise .fmor (FMu.α P̂ δ̂)
-      K = collapseP P (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd
+      K = Kiso' (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd
       p₂F = FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = F^ μ̂}
       sfB = FMu.strong-fmor P̂ (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) ⦅b⦆)
 
@@ -529,7 +541,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       ĥ = untranspose (h ∘ prodη Γ μ̂ .Iso.fwd)
       cA = realise-η-iso A .Iso.fwd
       Rα = realise .fmor (FMu.α P̂ δ̂)
-      Kiso = collapseP P (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos
+      Kiso = Kiso' (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos
       p₂F = FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = F^ μ̂}
       sfH = FMu.strong-fmor P̂ (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) ĥ)
 
@@ -578,3 +590,12 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
 
       famSquare' : Category._≈_ FM.cat ĥ (FMu.⦅_⦆ {P = P̂} {δ = δ̂} (bF a))
       famSquare' = FM.hasMuLaws .FM.HasMuLaws.⦅⦆-η (bF a) ĥ famSquare
+
+  foldR-cong : ∀ {Γ A} {a₁ a₂ : ℰP.prod Γ (Greal P δ̂ A) ⇒ A} →
+               a₁ ≈ a₂ → foldR a₁ ≈ foldR a₂
+  foldR-cong {Γ} {A} {a₁} {a₂} e =
+    ∘-cong (FR.transpose-cong (FMuI.⦅⦆-cong P̂ δ̂ (FR.untranspose-cong (∘-cong e ≈-refl)))) ≈-refl
+
+  muReal : MuReal P δ̂
+  muReal = record
+    { inR = inR ; foldR = foldR ; foldR-cong = foldR-cong ; foldR-β = foldR-β ; foldR-η = foldR-η }
