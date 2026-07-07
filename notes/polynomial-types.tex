@@ -125,14 +125,15 @@ objects at the leaves in place of primitive types:
 \]
 where $A = (X, \partial X)$ ranges over objects of $\Fam(\cat{C})$ and $\alpha$ over variables in $\Delta$.
 We identify each $P \in \Poly_\Delta$ with the functor $\Fam(\cat{C})^\Delta \to \Fam(\cat{C})$ it
-presents, writing $P(\delta)$ for its action on an environment $\delta$.
+presents, writing $P(\delta)$ for its action on a \emph{kinding environment} $\delta \in
+\Fam(\cat{C})^\Delta$, an assignment of an object to each variable of $\Delta$.
 
 The fold body of the $\syn{fold}$ rule of \secref{polynomial-types:language} lives in a typing context,
 so the catamorphism interpreting it must too.
 
 \begin{definition}[$\Poly$-types]
 \label{def:polynomial-types:has-poly}
-A category \emph{has $\Poly$-types} if for each $P \in \Poly_{\Delta,\alpha}$ and environment $\delta$
+A category \emph{has $\Poly$-types} if for each $P \in \Poly_{\Delta,\alpha}$ and kinding environment $\delta$
 it provides:
 \begin{itemize}
 \item an object $\mu_{\alpha.P}(\delta)$ and algebra map $\inMap : P(\delta[\alpha \mapsto
@@ -151,11 +152,11 @@ it provides:
 \end{definition}
 
 \noindent Taking $\Gamma = 1$, each $\mu_{\alpha.P}(\delta)$ is in particular an initial algebra in the usual
-sense; in the presence of exponentials the strong form is no extra demand (fold into $Y^\Gamma$),
-but $\Fam(\cat{C})$ need not have exponentials. At the
-term level, $\beta$ reduces $\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each
-$\mu$-child of $t$ before substituting into $s$, and $\eta$ says
-$\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
+sense; in the presence of exponentials the strong form is no extra imposition (fold into $Y^\Gamma$), but
+$\Fam(\cat{C})$ need not have exponentials. \citet[Definition~6]{nunes2023} ask only for initial algebras; in
+their bicartesian closed setting the strong form comes for free. At the term level, $\beta$ reduces
+$\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu$-child of $t$ before
+substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
 
 \begin{proposition}
 \label{prop:polynomial-types:fam-has-poly}
@@ -174,7 +175,7 @@ $\alpha$ will resolve to the sort itself, and $\rho$ records how its remaining v
 it occurred.
 
 \paragraph{Carrier.}
-Fix an environment $\delta \in \Fam(\cat{C})^\Delta$. For each sort $s = (Q, \rho)$, the index set $W_s$
+Fix a kinding environment $\delta$. For each sort $s = (Q, \rho)$, the index set $W_s$
 of \emph{trees of sort $s$} consists of $Q$-shaped well-founded trees: at each $\const(X, \partial X)$
 position an element of $X$; at each variable position, an element of the index set of the corresponding
 parameter if the variable resolves through $\rho$ to a parameter, and a tree of sort $s'$ if it resolves
@@ -204,8 +205,9 @@ over all sorts), on index sets and fibres alike, threading the $\Gamma$ componen
 recursion. The laws $\beta$ and $\eta$ are proved by induction on trees.
 
 \paragraph{The parameterised operator.}
-The construction above is pointwise in the environment $\delta$. As in \citet[Proposition~4]{nunes2023},
-the pointwise data induce the functorial action of $\mu_{\alpha.P}$ on environment morphisms
+The construction above is pointwise in the kinding environment $\delta$. As in
+\citet[Proposition~4]{nunes2023}, the pointwise data induce the functorial action of $\mu_{\alpha.P}$ on
+morphisms of kinding environments
 generically, by folding: for $g : \delta \to \delta'$,
 \[
   \mu_{\alpha.P}(g) \;=\; \cata{\,\inMap \circ P(g[\alpha \mapsto \id])\,},
