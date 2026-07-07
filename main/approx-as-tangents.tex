@@ -208,8 +208,8 @@ seems to lack any direct dependency analysis applications of its own.
 
 \subsubsection[Perturbation bounds]{\added{Perturbation bounds}}
 
-\Added{Dependency analysis over the Booleans records whether an output can change when an input does; the
-refund example of \secref{introduction:galois-slicing} raised the more fine-grained question of how much it
+\Added{Dependency analysis over the Booleans records whether an output can change when an input does;
+\exref{introduction-example} raised the more fine-grained question of how much it
 can change. Numerical analysis studies this question as \emph{propagation of error}: given bounds on how far
 each input may be perturbed, derive a bound on the output~\cite{high:ASNA2}. Propagation of error is again a
 choice of semiring, this time the \emph{tropical semiring} $(\mathbbm{Q}_{\geq 0} \cup \{\infty\}, \min,
@@ -221,25 +221,27 @@ $+$, accumulating bounds along a path. Addition is idempotent, so the analyses a
 $\infty$ means ``no information''.}
 
 \Added{A Jacobian entry $c$ now acts as a translation: if the input at that position changes by at most
-$\delta$, with the others held fixed, the output changes by at most $\delta + c$. Addition has entries $0$: a
+$\delta$, with the others held fixed, the output changes by at most $\delta + c$. Addition's entries are $0$: a
 bound on either argument passes through undisturbed. Multiplication, however, scales perturbations: if $x$
 changes by $\delta$ then $x \cdot y$ changes by $|y|\,\delta$, and no translation bounds a scaling; its
 entries are $\infty$. This is sound, but reports nothing: propagation of absolute error is blind to
 multiplication.}
 
-\Added{Measuring perturbations multiplicatively instead exchanges the two behaviours. Take scalars to be
-factors, with $\min$ as the addition and the numerical product as the multiplication. This is the
+\Added{Measuring perturbations multiplicatively instead keeps $\min$ as the join of bounds but accumulates
+along paths by numerical product: $(\mathbbm{Q}_{\geq 0}
+\cup \{\infty\}, \min, \infty, \times, 1)$, with scalars now read as factors. This is the
 multiplicative counterpart of the previous presentation, related to it by logarithms over the reals, and the
 two are the classical dichotomy between absolute and relative error~\cite[\S\S 1.6--1.7]{high:ASNA2}.
 Multiplication now has unit entries, since relative perturbations pass through a product unchanged, while an
 addition $x + y$ acquires the entry $|x| / |x + y|$: the factor by which it amplifies relative error, its
 (relative) \emph{condition number}.}
 
-\Added{In the refund example the amplification is $|6| / |6 + (-6)|$: division by zero, an infinite condition
-number, the catastrophic cancellation of numerical analysis. Where the Boolean instance could only report a
-dependency that was not really there, this instance says how badly the bound degrades. For non-negative data
-the factors are at most $1$, so the query examples remain exact. The two are simply different semirings, and
-choosing between them is part of specifying what the analysis is to observe.}
+\Added{In the refund example the final sum adds the products $6$ and $-6$, so the amplification is $|6| / |6 +
+(-6)|$: an infinite condition number, known in numerical analysis as catastrophic cancellation. For
+non-negative data the factors are at most $1$, so sums never amplify; the refund's negative entry makes the
+infinite factor possible. Where the Boolean analysis could only report a dependency that was not really
+there, the relative analysis says how badly the bound degrades. The difference between the two is a choice of
+semiring, and making that choice is part of specifying what the analysis is to observe.}
 
 \subsubsection[Provenance semirings]{\added{Provenance semirings}}
 
@@ -265,7 +267,7 @@ dependency tracking. The rationals are not positive, since a number and its nega
 zero-testing $\mathbbm{Q} \to \Two$ preserves multiplication exactly but addition only laxly. It still acts
 entrywise on matrices, preserving identities and transposition, but composition only up to
 over-approximation: composing Boolean Jacobians can record dependencies absent from the Boolean image of
-their composite. The refund example of \secref{introduction:galois-slicing} is a case in point: the price
+their composite. The refund in \exref{introduction-example} is a case in point: the price
 genuinely does not matter to the total, yet the composed dependencies say it might.}
 
 \Added{When exactness fails, the target determines how visible the loss is. The Booleans forget signs, so
