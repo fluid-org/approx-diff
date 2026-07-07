@@ -1,0 +1,169 @@
+\section{Conservativity}
+\label{sec:conservativity}
+
+The interpretation of the language in the higher-order model is \emph{conservative} over the first-order
+model: every term whose context and type are first-order denotes, up to the isomorphisms relating the two
+interpretations, a morphism of the first-order category. The proof is by glueing: the first-order
+category embeds into a category of Grothendieck logical relations \citep{fiore-simpson99} over the
+higher-order one; the language is interpreted there; and at first-order types the interpretation
+collapses back to the first-order category.
+
+\subsection{Predicate systems}
+\label{sec:predicate-system}
+
+\subsubsection{Predicate system over $\cat{C}$}
+
+Suppose $\cat{C}$ a category with finite products. A \emph{predicate system} over $\cat{C}$ consists of the
+following data:
+\begin{itemize}
+\item For every object $X$ of $\cat{C}$, a poset $(\Pred(X), \sqsubseteq)$ of predicates on $X$.
+\item For every $X$, the structure of a Heyting algebra (without $\bot$) on $\Pred(X)$, i.e.~ top element
+   $\top$, meets $\meet$, joins $\join$ and residual $\residual$ satisfying the usual laws.
+\item For every morphism $f: X \to Y$ of $\cat{C}$, a Galois connection $\directImage{-}{f} \dashv
+\reindex{-}{f} : \Pred(Y) \to \Pred(X)$. The right adjoint $\reindex{-}{f}: \Pred(Y) \to \Pred(X)$ computes
+the pullback (reindexing) of a predicate along $f$; the left adjoint $\directImage{-}{f}: \Pred(X) \to
+\Pred(Y)$ computes the pushforward (existential image) of a predicate along $f$, with the adjointness property
+meaning that
+\[\directImage{P}{f} \sqsubseteq Q \iff P \sqsubseteq \reindex{Q}{f} \]
+\item For every $X$ and $Y$, a right adjoint $\forall_Y: \Pred(X \times Y) \to \Pred(X)$ to the monotone map
+$\reindex{-}{\pi_1}$ called \emph{universal quantification}. \roly{Is there a left adjoint $\exists_Y$?}
+\item $\reindex{-}{f}$ is colax (and thus $\directImage{-}{f}$ is lax) with respect to $\top$, $\meet$,
+$\residual$ and $\forall_Y$.
+\item $\reindex{-}{f}$ is lax (and thus $\directImage{-}{f}$ is colax) with respect to $\join$.
+\end{itemize}
+
+\subsubsection{Predicate system over $\Set$}
+
+Suppose $X$ a set. Define a \emph{predicate on $X$} to be a family of (proof-irrelevant) propositions for
+every $x \in X$. For any function $f: X \to Y$, define $\reindex{P}{f}(x)$ iff $P(f(x))$ and
+$\directImage{P}{f}(y)$ iff there exists $x$ such that $f(x) = y$ and $P(x)$. Define $\mathcal{S}$ to be the
+predicate system over $\Set$ which assigns to any set $X$ the set $\Pred(X)$ of propositions on $X$ ordered by
+implication, with $\top, \meet, \join$ and $\residual$ defined pointwise and universal quantification defined
+as $\forall_Y(P)(x)$ iff $P(x,y)$ for all $y \in Y$.
+
+\subsubsection{Predicates on a presheaf}
+
+Suppose $\cat{C}$ a category and $F: \cat{C}^\op \to \Set$ a presheaf. Define a \emph{predicate on $F$} to be
+a family of predicates $P_X \in \Pred_\mathcal{S}(F(X))$ for every object $X$ in $\cat{C}$ such that $P_Y
+\sqsubseteq \reindex{P_X}{F(f)}$ for every $f: X \to Y$ in $\cat{C}$.
+
+Now define the predicate system $\mathcal{S}^{\cat{C}}$ over $\Func{\cat{C}^\op}{\Set}$ which assigns to every
+presheaf $F$ the poset $\Pred(F)$ of predicates on $F$ ordered pointwise, where $\top, \meet, \join,
+\residual$ and $\forall$ in $\Pred(F)$ are all given pointwise, and to every natural transformation $\alpha: F
+\to G$, families of pullback and pushforward maps where $\reindex{P}{\alpha}_X = \reindex{P_X}{\alpha_X}$ and
+$\directImage{P}{\alpha}_X = \directImage{P_X}{\alpha_X}$.
+
+\subsubsection{Closure operator over a predicate system}
+
+A \emph{closure operator} $C$ over a poset $(X, \sqleq)$ is a lax idempotent monad on $X$, with functoriality,
+unit and multiplication given by monotonicity, extensivity ($x \sqleq C(x)$) and idempotence ($C(C(x)) \sqleq
+C(x)$).
+
+Suppose $\mathcal{S} = (\Pred, \top, \meet, \join, \residual, \forall)$ a predicate system over a category
+$\cat{C}$. A closure operator $C$ over $\mathcal{S}$ is a fibred lax idempotent monad $C$ on the fibration
+$\Pred: \cat{C}^\op \to \Poset$ where for every object $X$ the fibre map $C_X: \Pred(X) \to \Pred(X)$ is a
+closure operator, $C$ is lax monoidal with respect to $\meet$ (i.e.~$C(P) \meet C(Q) \sqleq C(P \meet Q)$),
+and $C$ is lax strong, i.e.~$C(P) \meet Q \sqleq C(P \meet Q)$. $C$ being a fibred functor means it commutes
+with any reindexing functor $\reindex{-}{f}$, i.e.~$C_X \comp \reindex{-}{f} \iso \reindex{-}{f} \comp C_Y$.
+
+% Haven't figured this out yet..
+%
+% \subsubsection{Coproduct closure operator}
+%
+% Suppose $\cat{C}$ a category with stable coproducts (\secref{stable-coproducts}). Define the fibred functor
+% $C$ where for every presheaf $F: \cat{C}^\op \to \Set$ the fibre map $C_F: \Pred(F) \to \Pred(F)$ sends every
+% family of predicates $P \in \Pred(F)$ to the family ... for every $X$ in $\cat{C}$
+
+\subsection{The category of logical relations}
+\label{sec:conservativity:glueing}
+
+Fix a category $\cat{C}$ with terminal object, finite products and stable finite coproducts (the
+extensivity of \citet{fiore-simpson99}), in which the first-order fragment of the language is
+interpreted; a category $\cat{D}$ with terminal object,
+finite products and coproducts, exponentials, and set-indexed coproducts, in which the full language is
+interpreted; and a functor $F : \cat{C} \to \cat{D}$ preserving the terminal object, products and
+coproducts.
+
+Predicates live over presheaves on $\cat{C}$: let $G : \cat{D} \to \PSh(\cat{C})$ be the functor
+sending $X$ to the presheaf $\cat{D}(F(-), X)$. A presheaf predicate on $G(X)$ thus
+assigns to each $y \in \cat{C}$ a predicate on the morphisms $F(y) \to X$, compatibly with
+precomposition along $\cat{C}$-morphisms; the predicate system of \secref{predicate-system} provides
+reindexing and the connectives for such predicates.
+
+\begin{definition}[Definability]
+\label{def:conservativity:definable}
+For $x \in \cat{C}$, the predicate $\Definable_x$ on $G(F(x))$ holds at $y \in \cat{C}$ of those $f :
+F(y) \to F(x)$ that are images of first-order morphisms: those with $f = F(g)$ for some $g : y \to x$.
+\end{definition}
+
+Definability is not closed under the reasoning the interpretation requires; in particular, a morphism
+defined by case analysis on a coproduct is definable only up to precomposition with the case split.
+Predicates are therefore taken \emph{closed} with respect to a closure operator $\mathbf{C}$
+(\secref{predicate-system}), generated by the coproduct structure and the stability assumption on
+$\cat{C}$'s coproducts.
+
+The category $\GLR(F)$ of \emph{Grothendieck logical relations} has as objects pairs $(X, \Phi)$ of an
+object $X \in \cat{D}$ and a closed predicate $\Phi$ on $G(X)$, and as morphisms $(X, \Phi) \to (Y,
+\Psi)$ those $f : X \to Y$ with $\Phi \sqsubseteq \Psi[G(f)]$. Theorem~5.1 of the paper, after \citet{fiore-simpson99},
+summarises the structure this category carries: $\GLR(F)$ is bicartesian closed
+(here moreover with set-indexed coproducts), each piece built on the corresponding structure of
+$\cat{D}$ with an appropriate predicate component; the projection $p : \GLR(F) \to \cat{D}$, $(X,
+\Phi) \mapsto X$, strictly preserves it; and the first-order category embeds,
+\[
+  \GF : \cat{C} \to \GLR(F) \qquad \GF(x) = (F(x), \mathbf{C}\,\Definable_x) \qquad \GF(g) = F(g)
+\]
+with $\GF$ preserving the terminal object, products and coproducts.
+
+\subsection{Definability}
+\label{sec:conservativity:definability}
+
+The point of the construction is that $\GF$ is \emph{full}: morphisms between embedded objects are
+already first-order. Fullness is asserted as part of Theorem~5.1 of the paper; here we give the proof.
+
+\begin{lemma}[Fullness]
+\label{lem:conservativity:definability}
+Every morphism $f : \GF(x) \to \GF(y)$ of $\GLR(F)$ is the image of a first-order morphism: $f = F(g)$
+for some $g : x \to y$.
+\end{lemma}
+
+\begin{proof}
+As a morphism of $\GLR$, $f$ maps $\mathbf{C}\,\Definable_x$ into $\mathbf{C}\,\Definable_y$ reindexed along
+$G(f)$; concretely, postcomposition with $f$ sends morphisms satisfying $\mathbf{C}\,\Definable_x$ to
+morphisms satisfying $\mathbf{C}\,\Definable_y$. The identity $F(\id_x)$ satisfies $\Definable_x$, so $f = f
+\circ F(\id_x)$ satisfies $\mathbf{C}\,\Definable_y$. But $\Definable_y$ is itself closed. The stability of
+the coproducts of $\cat{C}$ is used: a morphism definable after case analysis on a coproduct is definable
+outright. So $f$ satisfies $\Definable_y$, that is, $f = F(g)$ for some $g : x \to y$.
+\end{proof}
+
+The lemma applies only to morphisms between embedded objects, so it remains to show that the
+interpretation of every first-order type is isomorphic to one. Interpreting the language in $\GLR(F)$ needs, beyond the structure of
+\secref{conservativity:glueing}, only $\Poly$-types (\defref{polynomial-types:has-poly}), which we
+assume for the remainder of the subsection, together with their preservation by $\GF$. First-order types are also
+interpreted directly in $\cat{C}$, which has $\Poly$-types whenever it is a $\Fam$ category
+(\propref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation. The
+two interpretations agree up to the embedding: for first-order $\tau$,
+\[
+  \sem{\tau} \;\cong\; \GF(\sem{\tau}_{\mathit{fo}})
+\]
+by induction on $\tau$: the unit, product and sum cases follow from $\GF$'s preservation of the
+terminal object, products and coproducts; base types agree by construction, the $\GLR(F)$-model of the
+signature being the transport of the $\cat{C}$-model along $\GF$; and $\mu$-types follow from
+the assumed preservation together with the isomorphism-invariance of the $\mu$-operator
+(\secref{polynomial-types:fam}).
+
+For the $\mu$-free language this is Theorem~5.2 of the paper; the version here adds the
+$\Poly$-types hypotheses.
+
+\begin{theorem}[Syntactic definability]
+\label{thm:conservativity:syntactic-definability}
+Assume $\GLR(F)$ has $\Poly$-types and $\GF$ preserves them. Then for every term $\Gamma \vdash t : \tau$
+with $\Gamma$ and $\tau$ first-order, there is a first-order morphism $g : \sem{\Gamma}_{\mathit{fo}} \to
+\sem{\tau}_{\mathit{fo}}$ with $F(g)$ equal to the underlying $\cat{D}$-morphism of $\sem{t}$, modulo the
+isomorphisms above.
+\end{theorem}
+
+\begin{proof}
+Composing $\sem{t} : \sem{\Gamma} \to \sem{\tau}$ with the isomorphisms gives a morphism
+$\GF(\sem{\Gamma}_{\mathit{fo}}) \to \GF(\sem{\tau}_{\mathit{fo}})$ of $\GLR(F)$, to which
+\lemref{conservativity:definability} applies.
+\end{proof}
