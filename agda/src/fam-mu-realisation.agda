@@ -1509,10 +1509,10 @@ module SμfFold {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
   aStar : ℰP.prod Γ (Greal Q δ̂ (Creal Q ε̂)) ⇒ Creal Q ε̂
   aStar = fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ ε̂))) alg ∘co (KKε .Iso.fwd ∘ ℰP.p₂)
 
-  private
-    A' : ℰP.prod Γ (Creal Q δ̂) ⇒ Creal Q ε̂
-    A' = fmorη Γ (FM.μObj Q̂ δ̂) sμf
+  A' : ℰP.prod Γ (Creal Q δ̂) ⇒ Creal Q ε̂
+  A' = fmorη Γ (FM.μObj (Poly-map η Q) δ̂) (FMu.strong-μ-fmor (Poly-map η Q) gs)
 
+  private
     sμf-square : (A' ∘co (Mδ.inR ∘ ℰP.p₂)) ≈ (aStar ∘co Gmap Q δ̂ A')
     sμf-square =
       begin
@@ -1604,3 +1604,100 @@ plain-β Q δ̂ CQ {D} c =
       ≈-trans (assoc _ _ _)
         (≈-trans (∘-cong ≈-refl (ℰP.pair-natural _ _ _))
           (∘-cong ≈-refl (ℰP.pair-cong (ℰT'.to-terminal-unique _ _) ≈-refl)))
+
+-- Move an isomorphism in context across an equation.
+co-iso-move : ∀ {Γ X Y Z : obj} (I : Iso X Y)
+              {u : ℰP.prod Γ Y ⇒ Z} {v : ℰP.prod Γ X ⇒ Z} →
+              u ≈ (v ∘co (I .Iso.bwd ∘ ℰP.p₂)) → (u ∘co (I .Iso.fwd ∘ ℰP.p₂)) ≈ v
+co-iso-move I {u} {v} eq =
+  ≈-trans (CoK.∘-cong eq ≈-refl)
+    (≈-trans (CoK.assoc _ _ _)
+      (≈-trans (CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (≈-trans (∘-cong (I .Iso.bwd∘fwd≈id) ≈-refl) id-left)))
+        CoK.id-right))
+
+-- The realised algebra map, recovered from the collapse form of inR.
+inR-K : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) (CQ : CollapseAt Q) →
+        realise .fmor (FMu.α (Poly-map η Q) δ̂)
+        ≈ (Initiality.inR Q δ̂ CQ ∘
+           CQ .CollapseAt.iso (extend δ̂ (η .fobj (Creal Q δ̂))) (extend δ̂ (FM.μObj (Poly-map η Q) δ̂)) (Initiality.inIsos Q δ̂ CQ) .Iso.bwd)
+inR-K Q δ̂ CQ =
+  ≈-sym (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (CQ .CollapseAt.iso _ _ (Initiality.inIsos Q δ̂ CQ) .Iso.fwd∘bwd≈id)) id-right))
+
+-- The forward map of the μ-collapse is a morphism of algebras.
+mu-collapse-fwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
+                     (δ̂₁ δ̂₂ : Fin n → FM.Obj)
+                     (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
+                     (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.fwd ∘ Initiality.inR Q δ̂₁ CQ)
+                     ≈ (Initiality.inR Q δ̂₂ CQ ∘
+                        (MuCollapse.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₂) .Iso.fwd ∘
+                         (Gmap Q δ̂₁ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂) ∘ ℰP.pair ℰT'.to-terminal (id _))))
+mu-collapse-fwd-in Q CQ δ̂₁ δ̂₂ isos =
+  ≈-trans (plain-β Q δ̂₁ CQ _)
+    (≈-trans (assoc _ _ _)
+      (∘-cong ≈-refl
+        (≈-trans (≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _)))
+          (∘-cong ≈-refl (∘-cong (Gmap-cong Q δ̂₁ plain-eq) ≈-refl)))))
+  where
+    module MC = MuCollapse Q CQ δ̂₁ δ̂₂ isos
+
+    plain-eq : MC.F' ≈ (MC.mu-collapse .Iso.fwd ∘ ℰP.p₂)
+    plain-eq =
+      ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl sect-p₂) id-right))
+
+-- The backward map of the μ-collapse is a morphism of algebras.
+mu-collapse-bwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
+                     (δ̂₁ δ̂₂ : Fin n → FM.Obj)
+                     (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
+                     (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.bwd ∘ Initiality.inR Q δ̂₂ CQ)
+                     ≈ (Initiality.inR Q δ̂₁ CQ ∘
+                        (MuCollapse.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₁) .Iso.bwd ∘
+                         (Gmap Q δ̂₂ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.bwd ∘ ℰP.p₂) ∘ ℰP.pair ℰT'.to-terminal (id _))))
+mu-collapse-bwd-in Q CQ δ̂₁ δ̂₂ isos =
+  ≈-trans (plain-β Q δ̂₂ CQ _)
+    (≈-trans (assoc _ _ _)
+      (∘-cong ≈-refl
+        (≈-trans (≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _)))
+          (∘-cong ≈-refl (∘-cong (Gmap-cong Q δ̂₂ plain-eq) ≈-refl)))))
+  where
+    module MC = MuCollapse Q CQ δ̂₁ δ̂₂ isos
+
+    plain-eq : MC.G' ≈ (MC.mu-collapse .Iso.bwd ∘ ℰP.p₂)
+    plain-eq =
+      ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl sect-p₂) id-right))
+
+-- Extend an isomorphism family by an isomorphism at the bound entry.
+mixed : ∀ {n} {δ̂₁ δ̂₂ : Fin n → FM.Obj}
+        (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+        {Ŷ₁ Ŷ₂ : FM.Obj} (J : Iso (realise .fobj Ŷ₁) (realise .fobj Ŷ₂)) →
+        ∀ i → Iso (realise .fobj (extend δ̂₁ Ŷ₁ i)) (realise .fobj (extend δ̂₂ Ŷ₂ i))
+mixed isos J Fin.zero    = J
+mixed isos J (Fin.suc i) = isos i
+
+-- The strong action at extended environments commutes with an isomorphism at
+-- the bound entry and the given isomorphisms elsewhere.
+cross-mixed : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
+              {δ̂₁ δ̂₂ ε̂₁ ε̂₂ : Fin n → FM.Obj}
+              (isosδ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+              (isosε : ∀ i → Iso (realise .fobj (ε̂₁ i)) (realise .fobj (ε̂₂ i)))
+              {Ŷ₁ Ŷ₂ : FM.Obj} (J : Iso (realise .fobj Ŷ₁) (realise .fobj Ŷ₂))
+              (gs₁ : ∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂₁ i)) (ε̂₁ i))
+              (gs₂ : ∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂₂ i)) (ε̂₂ i)) →
+              (∀ i → (fmorη Γ (δ̂₂ i) (gs₂ i) ∘co (isosδ i .Iso.fwd ∘ ℰP.p₂))
+                     ≈ (isosε i .Iso.fwd ∘ fmorη Γ (δ̂₁ i) (gs₁ i))) →
+              (fmorη Γ (FM.fobj FM.μObj (Poly-map η Q) (extend δ̂₂ Ŷ₂))
+                 (FMu.strong-fmor (Poly-map η Q) (FMu.strong-extend-mor gs₂ FM.Fam𝒞-P.p₂))
+                ∘co (CQ .CollapseAt.iso (extend δ̂₁ Ŷ₁) (extend δ̂₂ Ŷ₂) (mixed isosδ J) .Iso.fwd ∘ ℰP.p₂))
+              ≈ (CQ .CollapseAt.iso (extend ε̂₁ Ŷ₁) (extend ε̂₂ Ŷ₂) (mixed isosε J) .Iso.fwd
+                 ∘ fmorη Γ (FM.fobj FM.μObj (Poly-map η Q) (extend δ̂₁ Ŷ₁))
+                     (FMu.strong-fmor (Poly-map η Q) (FMu.strong-extend-mor gs₁ FM.Fam𝒞-P.p₂)))
+cross-mixed Q CQ {Γ} {δ̂₁} {δ̂₂} {ε̂₁} {ε̂₂} isosδ isosε {Ŷ₁} {Ŷ₂} J gs₁ gs₂ sqs =
+  CQ .CollapseAt.natural (extend δ̂₁ Ŷ₁) (extend δ̂₂ Ŷ₂) (mixed isosδ J) (mixed isosε J)
+    (FMu.strong-extend-mor gs₁ FM.Fam𝒞-P.p₂)
+    (FMu.strong-extend-mor gs₂ FM.Fam𝒞-P.p₂)
+    compats
+  where
+    compats : ∀ i → (fmorη Γ (extend δ̂₂ Ŷ₂ i) (FMu.strong-extend-mor gs₂ FM.Fam𝒞-P.p₂ i) ∘co (mixed isosδ J i .Iso.fwd ∘ ℰP.p₂))
+              ≈ (mixed isosε J i .Iso.fwd ∘ fmorη Γ (extend δ̂₁ Ŷ₁ i) (FMu.strong-extend-mor gs₁ FM.Fam𝒞-P.p₂ i))
+    compats Fin.zero    = sq-p₂ J
+    compats (Fin.suc i) = sqs i
