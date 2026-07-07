@@ -26,27 +26,27 @@ import fam-realisation
 import polynomial-functor-2
 
 module fam-mu-realisation {o m e} (os es : Level) {ℰ : Category o m e}
-  (EC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
-  (ET : HasTerminal ℰ) (EP : HasProducts ℰ) (EE : HasExponentials ℰ EP)
-  (ESC : HasStrongCoproducts ℰ EP)
+  (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
+  (ℰT : HasTerminal ℰ) (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP)
+  (ℰSC : HasStrongCoproducts ℰ ℰP)
   where
 
 open Category ℰ
 open Functor
 
 private
-  module EP = HasProducts EP
+  module ℰP = HasProducts ℰP
 
-module FR = fam-realisation os (os ⊔ es) EC
+module FR = fam-realisation os (os ⊔ es) ℰC
 open FR using (realise; η; realise-η-iso; transpose; untranspose)
 
-module FM = fam-mu-types-2 os es ET EP
+module FM = fam-mu-types-2 os es ℰT ℰP
 
 private
   module FMu = FM.HasMu FM.hasMu
 
-module EI = polynomial-functor-2.Interp ET EP ESC
-open EI using (_∘co_)
+module ℰI = polynomial-functor-2.Interp ℰT ℰP ℰSC
+open ℰI using (_∘co_)
 
 -- The realised μ-carrier of the η-image polynomial.
 Creal : ∀ {n} → Poly ℰ (suc n) → (Fin n → FM.Obj) → obj
@@ -59,15 +59,15 @@ Greal P δ̂ A = realise .fobj (FM.fobj FM.μObj (Poly-map η P) (extend δ̂ (�
 
 -- A Fam(ℰ)-product with an η-embedded context realises to the ℰ-product.
 prodη : ∀ (Γ : obj) (W : FM.Obj) →
-        Iso (realise .fobj (FM.Fam𝒞-P.prod (η .fobj Γ) W)) (EP.prod Γ (realise .fobj W))
+        Iso (realise .fobj (FM.Fam𝒞-P.prod (η .fobj Γ) W)) (ℰP.prod Γ (realise .fobj W))
 prodη Γ W =
-  Iso-trans (FR.realise-products-iso EP EE (η .fobj Γ) W)
-    (EP.product-preserves-iso (realise-η-iso Γ) Iso-refl)
+  Iso-trans (FR.realise-products-iso ℰP ℰE (η .fobj Γ) W)
+    (ℰP.product-preserves-iso (realise-η-iso Γ) Iso-refl)
 
 -- The strong functorial action of the realised endofunctor: transpose the
 -- context morphism to Fam(ℰ), act there, and realise.
 Gmap : ∀ {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) {Γ A B} →
-       (EP.prod Γ A ⇒ B) → EP.prod Γ (Greal P δ̂ A) ⇒ Greal P δ̂ B
+       (ℰP.prod Γ A ⇒ B) → ℰP.prod Γ (Greal P δ̂ A) ⇒ Greal P δ̂ B
 Gmap P δ̂ {Γ} {A} {B} h =
   realise .fmor
     (FMu.strong-fmor (Poly-map η P) (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) hFam))
@@ -75,21 +75,21 @@ Gmap P δ̂ {Γ} {A} {B} h =
   where
     hFam : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (η .fobj A)) (η .fobj B)
     hFam = untranspose
-      (h ∘ (EP.prod-m (id _) (realise-η-iso A .Iso.fwd) ∘ prodη Γ (η .fobj A) .Iso.fwd))
+      (h ∘ (ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd) ∘ prodη Γ (η .fobj A) .Iso.fwd))
 
 -- The initial-algebra package carried by a realised μ-object: algebra map and
 -- strong catamorphism with the β/η laws, mirroring HasMu/HasMuLaws.
 record MuReal {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) : Set (o ⊔ m ⊔ e) where
   field
     inR    : Greal P δ̂ (Creal P δ̂) ⇒ Creal P δ̂
-    foldR  : ∀ {Γ A} → (EP.prod Γ (Greal P δ̂ A) ⇒ A) → EP.prod Γ (Creal P δ̂) ⇒ A
+    foldR  : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) → ℰP.prod Γ (Creal P δ̂) ⇒ A
 
-    foldR-cong : ∀ {Γ A} {a₁ a₂ : EP.prod Γ (Greal P δ̂ A) ⇒ A} →
+    foldR-cong : ∀ {Γ A} {a₁ a₂ : ℰP.prod Γ (Greal P δ̂ A) ⇒ A} →
                  a₁ ≈ a₂ → foldR a₁ ≈ foldR a₂
-    foldR-β : ∀ {Γ A} (a : EP.prod Γ (Greal P δ̂ A) ⇒ A) →
-              (foldR a ∘co (inR ∘ EP.p₂)) ≈ (a ∘co Gmap P δ̂ (foldR a))
-    foldR-η : ∀ {Γ A} (a : EP.prod Γ (Greal P δ̂ A) ⇒ A) (h : EP.prod Γ (Creal P δ̂) ⇒ A) →
-              (h ∘co (inR ∘ EP.p₂)) ≈ (a ∘co Gmap P δ̂ h) → h ≈ foldR a
+    foldR-β : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) →
+              (foldR a ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ (foldR a))
+    foldR-η : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
+              (h ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ h) → h ≈ foldR a
 
 -- The collapse isomorphism family: realisation of a polynomial application is
 -- invariant under replacing environment entries by families with isomorphic
@@ -100,3 +100,31 @@ CollapseTy n =
   (∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
   Iso (realise .fobj (FM.fobj FM.μObj (Poly-map η P) δ̂₁))
       (realise .fobj (FM.fobj FM.μObj (Poly-map η P) δ̂₂))
+
+-- The operations of the initial-algebra package for a polynomial, against an
+-- assumed collapse family. The algebra map realises the Fam(ℰ) algebra map and
+-- corrects the bound-variable entry by collapse; the fold transposes the
+-- algebra to Fam(ℰ), folds there, and transposes back.
+module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
+    (collapseP : CollapseTy (suc n))
+  where
+
+  private
+    P̂ = Poly-map η P
+
+    inIsos : ∀ i → Iso (realise .fobj (extend δ̂ (η .fobj (Creal P δ̂)) i))
+                       (realise .fobj (extend δ̂ (FM.μObj P̂ δ̂) i))
+    inIsos Fin.zero    = realise-η-iso (Creal P δ̂)
+    inIsos (Fin.suc i) = Iso-refl
+
+  inR : Greal P δ̂ (Creal P δ̂) ⇒ Creal P δ̂
+  inR = realise .fmor (FMu.α P̂ δ̂) ∘
+        collapseP P (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ (FM.μObj P̂ δ̂)) inIsos .Iso.fwd
+
+  foldR : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) → ℰP.prod Γ (Creal P δ̂) ⇒ A
+  foldR {Γ} {A} a =
+    transpose (FMu.⦅_⦆ {P = P̂} {δ = δ̂} bFam) ∘ prodη Γ (FM.μObj P̂ δ̂) .Iso.bwd
+    where
+      bFam : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (FM.fobj FM.μObj P̂ (extend δ̂ (η .fobj A))))
+                    (η .fobj A)
+      bFam = untranspose (a ∘ prodη Γ (FM.fobj FM.μObj P̂ (extend δ̂ (η .fobj A))) .Iso.fwd)
