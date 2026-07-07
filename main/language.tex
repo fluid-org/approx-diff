@@ -111,7 +111,6 @@ $\mathbb{1}$s correspond to the positions of labels in the input, which we are n
 final $\mathbb{1}$ is the terminator of the list. Note how, even if the $\partial\sem{\mathsf{num}}(x)$
 does not depend on $x$ the type of the output is still dependent on the shape of the input list: type
 dependency is used in a fundamental way in our interpretation.}
-\newcommand{\TWO}{\mathbb{2}}
 
 \begin{enumerate}[leftmargin=\enummargin]
 \item If we take $\sem{\mathsf{num}}_{\PrimTy} = \Disc(\mathbb{R})$, with $\sem{\mathrm{zero}}_{\PrimOp}$ and
@@ -121,9 +120,9 @@ dependency is used in a fundamental way in our interpretation.}
 \item We take $\sem{\mathsf{num}}_{\PrimTy} = \Lift(\Disc(\mathbb{R}))$, using the lifting monad from
   \secref{models-of-total-gps:lifting}, with $\sem{\mathrm{zero}}_{\PrimOp}$ and
   $\sem{\mathrm{add}}_{\PrimOp}$ defined from the unlifted interpretations above and the monad structure. The
-  type of the reverse map now becomes, where $\TWO = \{\top.\bot\}$:
+  type of the reverse map now becomes, where $\Two = \{\top, \bot\}$:
   \begin{equation}\label{eqn:reverse-query-approx-1}
-    (\partial \mathrm{query})_r(l, \mathit{db}) : \TWO \multimap \mathbb{1} \times (\mathbb{1} \times \TWO) \times (\mathbb{1} \times \TWO) \times (\mathbb{1} \times \TWO) \times \mathbb{1}
+    (\partial \mathrm{query})_r(l, \mathit{db}) : \Two \multimap \mathbb{1} \times (\mathbb{1} \times \Two) \times (\mathbb{1} \times \Two) \times (\mathbb{1} \times \Two) \times \mathbb{1}
   \end{equation}
   where every position that corresponds to a number has been tagged with $\top$ for ``present'' and $\bot$ for
   ``not present''. This interpretation recovers the behaviour given in \exref{introduction-example}: running
@@ -152,12 +151,13 @@ We have tested these examples on our Agda implementation. See the file \texttt{e
 \subsection{Systematic Insertion of Approximation via Moggi's CBN translation}
 \label{sec:cbn-translation}
 
+\roly{Might be best to deleted too and consider as subsumed into a new future work item on ``shape approximation''.}
 We can now carry out the systematic insertion of approximation points that we foreshadowed in
-\secref{models-of-total-gps:lifting}, using \citet[\S 3.1]{notions-of-computation}'s monadic CBN
-translation. We use the $T$ monad from \secref{tagging-monad} because it can be defined in terms of the
-language constructs we already have. This requires that we have a signature $\Sigma$ that includes a
-primitive type to be interpreted as the approximation object $\mathbb{A}$ and primitive operations to be
-interpreted as the monoid operations on this object.
+\secref{models-of-total-gps:lifting}, using \citet[\S 3.1]{notions-of-computation}'s monadic CBN translation.
+We use the $T$ monad from \secref{tagging-monad} because it can be defined in terms of the language constructs
+we already have. This requires that we have a signature $\Sigma$ that includes a primitive type to be
+interpreted as the approximation object $\mathbb{A}$ and primitive operations to be interpreted as the monoid
+operations on this object.
 
 The monadic CBN translation is standard, and entirely determined by the translation on types, so we only
 define the type translation $\cbn{-}$ here:
@@ -190,7 +190,7 @@ underneath'' every type former. In this case, we are describing the type of data
 level. Note that our lists here are still ``strict'', an alternative approach would be to consider ``lazy''
 lists that wrap the tail of every node in a $T$ as well.
 
-\newcommand{\Element}{(\TWO \times \TWO)}
+\newcommand{\Element}{(\Two \times \Two)}
 
 We illustrate the effect of the CBN translation on the query example from
 \exref{introduction-example}. Applying $\cbn{-}$ to the type of $\mathrm{query}$ yields:
@@ -199,14 +199,17 @@ We illustrate the effect of the CBN translation on the query example from
 \end{displaymath}
 Thus, every substructure of the input and output has been annotated with usage information. Under
 interpretation in $\Fam(\MeetSLat \times \JoinSLat^\op)$, the type of the reverse approximation map as a
-morphism in $\JoinSLat$ at the input $\mathit{db}$ is now (suppressing some ``$\times \mathbb{1}$'' for
-readability):
+morphism in $\JoinSLat$ at the input $\mathit{db}$ is now, where the approximation object for each number is
+the two-point lattice $\Two$ (suppressing some ``$\times \mathbb{1}$'' for readability):
 \begin{displaymath}
-  (\partial \mathrm{query})_r(l, \mathit{db}) : \TWO \multimap \TWO \times (\TWO \times \Element \times \Element \times \Element)
+  (\partial \mathrm{query})_r(l, \mathit{db}) : \Two \multimap \Two \times (\Two \times \Element \times \Element \times \Element)
 \end{displaymath}
-Comparing to the type in (\ref{eqn:reverse-query-approx-1}), we now gain much more fine-grained information on
+\Replaced{Compared to the interpretation of the untranslated query, which carries a single $\Two$ at each
+number position and $\mathbb{1}$ elsewhere}{Comparing to the type in (\ref{eqn:reverse-query-approx-1})}, we
+now gain much more fine-grained information on
 which parts of the input are used. When $l = \mathsf{a}$, we have
 $(\partial \mathrm{query})_r(\mathsf{a},\mathit{db})(\top) = (\top, (\top, (\top, \top), (\top, \bot), (\top,
 \top)))$, indicating that the execution of this query had examined everything except the number in the second
-entry of the database. With the previous interpretation, we did not have confirmation that the labels in each
+entry of the database. \Replaced{Without the translation}{With the previous interpretation}, we did not have
+confirmation that the labels in each
 row were actually required.

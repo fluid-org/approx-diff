@@ -2,16 +2,17 @@
 \label{sec:examples}
 
 \Added{This section runs the interpretation at particular semirings, on particular programs, to show the
-analyses that result. Throughout, we work over the signature $\Sigma_{\mathrm{ex}}$ with sorts $\mathsf{num}$
-and $\mathsf{label}$; operations $\mathrm{zero} : \tyUnit \to \mathsf{num}$, a literal for each element of a
-parameter set of numbers, which the examples instantiate with the rationals,
-$\mathrm{add}, \mathrm{mult} : \mathsf{num} \times \mathsf{num} \to \mathsf{num}$, and a literal for each
-label; and an equality relation on labels, used by the comprehension syntax. The queries of
+analyses that result. Throughout, we work over the signature $\Sigma_{\mathrm{ex}}$, parameterised by a set
+of numbers with a distinguished zero, which the examples instantiate with the rationals. It has sorts
+$\mathsf{num}$ and $\mathsf{label}$; operations $\mathrm{add}, \mathrm{mult} : \mathsf{num} \times
+\mathsf{num} \to \mathsf{num}$, a literal for each number, and a literal for each label; and an equality
+relation on labels, used by the comprehension syntax. In the intended interpretations, the zero literal is a
+unit for $\mathrm{add}$. The queries of
 \secref{introduction:galois-slicing} are terms over $\Sigma_{\mathrm{ex}}$. The semiring alone does not
-determine an instance: an instance must also interpret each operation of the signature, supplying its value
-function together with, at each input value, a linear map between the approximation objects, a semimodule
-morphism giving the operation's derivative at that value. The coefficient choices described in the examples
-below are exactly these derivatives. Each example is mechanised in the accompanying Agda development.}
+determine an instance: an instance must also interpret each operation of the signature, supplying the
+function it computes on values together with, at each input value, a linear map between the approximation
+objects, a semimodule morphism giving the operation's intended derivative at that value. Each example is
+mechanised in the accompanying Agda development.}
 
 \subsection[Perturbation Bounds]{\added{Perturbation Bounds}}
 \label{sec:examples:perturbation-bounds}
