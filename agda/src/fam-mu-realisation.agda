@@ -44,6 +44,8 @@ module FM = fam-mu-types-2 os es ℰT ℰP
 
 private
   module FMu = FM.HasMu FM.hasMu
+  module FamC = Category FM.cat
+  module FamCoK {Γ̂ : FM.Obj} = Category (coKleisli-prod FM.products Γ̂)
   module FMuI = polynomial-functor-2.MuIso (FM.terminal ℰT) FM.products FM.strongCoproducts FM.hasMu FM.hasMuLaws
 
 module ℰI = polynomial-functor-2.Interp ℰT ℰP ℰSC
@@ -64,36 +66,6 @@ prodη : ∀ (Γ : obj) (W : FM.Obj) →
 prodη Γ W =
   Iso-trans (FR.realise-products-iso ℰP ℰE (η .fobj Γ) W)
     (ℰP.product-preserves-iso (realise-η-iso Γ) Iso-refl)
-
--- The strong functorial action of the realised endofunctor: transpose the
--- context morphism to Fam(ℰ), act there, and realise.
-Gmap : ∀ {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) {Γ A B} →
-       (ℰP.prod Γ A ⇒ B) → ℰP.prod Γ (Greal P δ̂ A) ⇒ Greal P δ̂ B
-Gmap P δ̂ {Γ} {A} {B} h =
-  realise .fmor
-    (FMu.strong-fmor (Poly-map η P) (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) hFam))
-    ∘ prodη Γ (FM.fobj FM.μObj (Poly-map η P) (extend δ̂ (η .fobj A))) .Iso.bwd
-  where
-    hFam : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (η .fobj A)) (η .fobj B)
-    hFam = untranspose
-      (h ∘ (ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd) ∘ prodη Γ (η .fobj A) .Iso.fwd))
-
--- The initial-algebra package carried by a realised μ-object: algebra map and
--- strong catamorphism with the β/η laws, mirroring HasMu/HasMuLaws.
-record MuReal {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) : Set (o ⊔ m ⊔ e) where
-  field
-    inR    : Greal P δ̂ (Creal P δ̂) ⇒ Creal P δ̂
-    foldR  : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) → ℰP.prod Γ (Creal P δ̂) ⇒ A
-
-    foldR-cong : ∀ {Γ A} {a₁ a₂ : ℰP.prod Γ (Greal P δ̂ A) ⇒ A} →
-                 a₁ ≈ a₂ → foldR a₁ ≈ foldR a₂
-    foldR-β : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) →
-              (foldR a ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ (foldR a))
-    foldR-η : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
-              (h ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ h) → h ≈ foldR a
-
-
-
 
 -- The co-Kleisli action of realisation: a Fam(ℰ)-morphism from a product with
 -- an η-embedded context acts on realisations in that context.
@@ -349,6 +321,61 @@ pair-p₁p₂-id : ∀ {Γ A : obj} → ℰP.pair (ℰP.p₁ {Γ} {A}) ℰP.p₂
 pair-p₁p₂-id =
   ≈-trans (ℰP.pair-cong (≈-sym id-right) (≈-sym id-right)) (ℰP.pair-ext (id _))
 
+-- Move an isomorphism across an equation, and cancel one.
+iso-mono : ∀ {X Y Z : obj} (I : Iso Y Z) {f g : X ⇒ Y} →
+           (I .Iso.fwd ∘ f) ≈ (I .Iso.fwd ∘ g) → f ≈ g
+iso-mono I {f} {g} eq =
+  ≈-trans (iso-shuffle I _ _ eq)
+    (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (I .Iso.bwd∘fwd≈id) ≈-refl) id-left))
+
+-- Realising a morphism transposed to Fam(ℰ) and collapsing recovers it.
+absorb : ∀ {Γ A : obj} (X : FM.Obj) (g : ℰP.prod Γ (realise .fobj X) ⇒ A) →
+         (realise-η-iso A .Iso.fwd ∘ fmorη Γ X (untranspose (g ∘ prodη Γ X .Iso.fwd))) ≈ g
+absorb {Γ} {A} X g =
+  ≈-trans (counit-fmorη Γ X _)
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (prodη Γ X .Iso.fwd∘bwd≈id)) id-right))
+
+-- Transpose a context morphism between plain objects into Fam(ℰ), correcting
+-- the domain by the counit.
+ctxη : ∀ (Γ A₀ : obj) {A : obj} → (ℰP.prod Γ A₀ ⇒ A) →
+       FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (η .fobj A₀)) (η .fobj A)
+ctxη Γ A₀ h = untranspose
+  (h ∘ (ℰP.prod-m (id _) (realise-η-iso A₀ .Iso.fwd) ∘ prodη Γ (η .fobj A₀) .Iso.fwd))
+
+ctxη-counit : ∀ (Γ A₀ : obj) {A : obj} (h : ℰP.prod Γ A₀ ⇒ A) →
+              (realise-η-iso A .Iso.fwd ∘ fmorη Γ (η .fobj A₀) (ctxη Γ A₀ h))
+              ≈ (h ∘ ℰP.prod-m (id _) (realise-η-iso A₀ .Iso.fwd))
+ctxη-counit Γ A₀ {A} h =
+  ≈-trans (∘-cong ≈-refl (fmorη-cong (FR.untranspose-cong (≈-sym (assoc _ _ _)))))
+    (≈-trans (absorb (η .fobj A₀) (h ∘ ℰP.prod-m (id _) (realise-η-iso A₀ .Iso.fwd))) ≈-refl)
+
+-- The strong functorial action of the realised endofunctor: transpose the
+-- context morphism to Fam(ℰ), act there, and realise.
+Gmap : ∀ {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) {Γ A B} →
+       (ℰP.prod Γ A ⇒ B) → ℰP.prod Γ (Greal P δ̂ A) ⇒ Greal P δ̂ B
+Gmap P δ̂ {Γ} {A} {B} h =
+  realise .fmor
+    (FMu.strong-fmor (Poly-map η P) (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (ctxη Γ A h)))
+    ∘ prodη Γ (FM.fobj FM.μObj (Poly-map η P) (extend δ̂ (η .fobj A))) .Iso.bwd
+
+-- The initial-algebra package carried by a realised μ-object: algebra map and
+-- strong catamorphism with the β/η laws, mirroring HasMu/HasMuLaws.
+record MuReal {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) : Set (o ⊔ m ⊔ e) where
+  field
+    inR    : Greal P δ̂ (Creal P δ̂) ⇒ Creal P δ̂
+    foldR  : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) → ℰP.prod Γ (Creal P δ̂) ⇒ A
+
+    foldR-cong : ∀ {Γ A} {a₁ a₂ : ℰP.prod Γ (Greal P δ̂ A) ⇒ A} →
+                 a₁ ≈ a₂ → foldR a₁ ≈ foldR a₂
+    foldR-β : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) →
+              (foldR a ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ (foldR a))
+    foldR-η : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
+              (h ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ h) → h ≈ foldR a
+
+
+
+
 -- The collapse interface for a polynomial: realisation of its application is
 -- invariant under replacing environment entries by families with isomorphic
 -- realisations, naturally in the strong action, and trivially so at identical
@@ -372,6 +399,85 @@ record CollapseAt {n} (P : Poly ℰ n) : Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔
               ≈ (iso _ _ isosε .Iso.fwd ∘ fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₁) (FMu.strong-fmor (Poly-map η P) gs₁))
     refl-iso : ∀ (δ̂ : Fin n → FM.Obj) →
                iso δ̂ δ̂ (λ i → Iso-refl) .Iso.fwd ≈ id _
+
+-- The realised strong action is a co-Kleisli functor.
+private
+  ctxη-p₂ : ∀ (Γ A : obj) → Category._≈_ FM.cat (ctxη Γ A ℰP.p₂) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = η .fobj A})
+  ctxη-p₂ Γ A = fmorη-inj Γ (η .fobj A) _ _
+    (iso-mono (realise-η-iso A)
+      (≈-trans (ctxη-counit Γ A ℰP.p₂)
+        (≈-trans (ℰP.pair-p₂ _ _)
+          (≈-sym (∘-cong ≈-refl (fmorη-p₂ Γ (η .fobj A)))))))
+
+  ctxη-∘co : ∀ (Γ A B C₀ : obj) (h₂ : ℰP.prod Γ B ⇒ C₀) (h₁ : ℰP.prod Γ A ⇒ B) →
+             Category._≈_ FM.cat (ctxη Γ A (h₂ ∘co h₁))
+               (FM.Mor-∘ (ctxη Γ B h₂) (pairη Γ (η .fobj A) (ctxη Γ A h₁)))
+  ctxη-∘co Γ A B C₀ h₂ h₁ = fmorη-inj Γ (η .fobj A) _ _
+    (iso-mono (realise-η-iso C₀) (≈-trans lhs (≈-sym rhs)))
+    where
+      lhs : (realise-η-iso C₀ .Iso.fwd ∘ fmorη Γ (η .fobj A) (ctxη Γ A (h₂ ∘co h₁)))
+            ≈ (h₂ ∘ ℰP.pair ℰP.p₁ (h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd)))
+      lhs =
+        begin
+          realise-η-iso C₀ .Iso.fwd ∘ fmorη Γ (η .fobj A) (ctxη Γ A (h₂ ∘co h₁))
+        ≈⟨ ctxη-counit Γ A (h₂ ∘co h₁) ⟩
+          (h₂ ∘ ℰP.pair ℰP.p₁ h₁) ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd)
+        ≈⟨ assoc _ _ _ ⟩
+          h₂ ∘ (ℰP.pair ℰP.p₁ h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))
+        ≈⟨ ∘-cong ≈-refl (ℰP.pair-natural _ _ _) ⟩
+          h₂ ∘ ℰP.pair (ℰP.p₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd)) (h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))
+        ≈⟨ ∘-cong ≈-refl (ℰP.pair-cong (≈-trans (ℰP.pair-p₁ _ _) id-left) ≈-refl) ⟩
+          h₂ ∘ ℰP.pair ℰP.p₁ (h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))
+        ∎ where open ≈-Reasoning isEquiv
+
+      rhs : (realise-η-iso C₀ .Iso.fwd ∘ fmorη Γ (η .fobj A) (FM.Mor-∘ (ctxη Γ B h₂) (pairη Γ (η .fobj A) (ctxη Γ A h₁))))
+            ≈ (h₂ ∘ ℰP.pair ℰP.p₁ (h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd)))
+      rhs =
+        begin
+          realise-η-iso C₀ .Iso.fwd ∘ fmorη Γ (η .fobj A) (FM.Mor-∘ (ctxη Γ B h₂) (pairη Γ (η .fobj A) (ctxη Γ A h₁)))
+        ≈⟨ ∘-cong ≈-refl (fmorη-∘co Γ (η .fobj A) (ctxη Γ B h₂) (ctxη Γ A h₁)) ⟩
+          realise-η-iso C₀ .Iso.fwd ∘ (fmorη Γ (η .fobj B) (ctxη Γ B h₂) ∘ ℰP.pair ℰP.p₁ (fmorη Γ (η .fobj A) (ctxη Γ A h₁)))
+        ≈˘⟨ assoc _ _ _ ⟩
+          (realise-η-iso C₀ .Iso.fwd ∘ fmorη Γ (η .fobj B) (ctxη Γ B h₂)) ∘ ℰP.pair ℰP.p₁ (fmorη Γ (η .fobj A) (ctxη Γ A h₁))
+        ≈⟨ ∘-cong (ctxη-counit Γ B h₂) ≈-refl ⟩
+          (h₂ ∘ ℰP.prod-m (id _) (realise-η-iso B .Iso.fwd)) ∘ ℰP.pair ℰP.p₁ (fmorη Γ (η .fobj A) (ctxη Γ A h₁))
+        ≈⟨ assoc _ _ _ ⟩
+          h₂ ∘ (ℰP.prod-m (id _) (realise-η-iso B .Iso.fwd) ∘ ℰP.pair ℰP.p₁ (fmorη Γ (η .fobj A) (ctxη Γ A h₁)))
+        ≈⟨ ∘-cong ≈-refl (ℰP.pair-compose _ _ _ _) ⟩
+          h₂ ∘ ℰP.pair (id _ ∘ ℰP.p₁) (realise-η-iso B .Iso.fwd ∘ fmorη Γ (η .fobj A) (ctxη Γ A h₁))
+        ≈⟨ ∘-cong ≈-refl (ℰP.pair-cong id-left (ctxη-counit Γ A h₁)) ⟩
+          h₂ ∘ ℰP.pair ℰP.p₁ (h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))
+        ∎ where open ≈-Reasoning isEquiv
+
+Gmap-id : ∀ {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) {Γ A : obj} →
+          Gmap P δ̂ {Γ} {A} {A} ℰP.p₂ ≈ ℰP.p₂
+Gmap-id P δ̂ {Γ} {A} =
+  ≈-trans (fmorη-cong (FMuI.strong-fmor-cong (Poly-map η P) eqs))
+    (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η P)))
+      (fmorη-p₂ Γ (FM.fobj FM.μObj (Poly-map η P) (extend δ̂ (η .fobj A)))))
+  where
+    eqs : ∀ i → Category._≈_ FM.cat
+           (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη Γ A ℰP.p₂) i)
+           (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = extend δ̂ (η .fobj A) i})
+    eqs Fin.zero    = ctxη-p₂ Γ A
+    eqs (Fin.suc i) = FamC.≈-refl
+
+Gmap-∘co : ∀ {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) {Γ A B C₀ : obj}
+           (h₂ : ℰP.prod Γ B ⇒ C₀) (h₁ : ℰP.prod Γ A ⇒ B) →
+           Gmap P δ̂ (h₂ ∘co h₁) ≈ (Gmap P δ̂ h₂ ∘co Gmap P δ̂ h₁)
+Gmap-∘co P δ̂ {Γ} {A} {B} {C₀} h₂ h₁ =
+  ≈-trans (fmorη-cong (FMuI.strong-fmor-cong (Poly-map η P) eqs))
+    (≈-trans (fmorη-cong (FamC.≈-sym (FMuI.strong-fmor-comp (Poly-map η P) _ _)))
+      (fmorη-∘co Γ (FM.fobj FM.μObj (Poly-map η P) (extend δ̂ (η .fobj A)))
+        (FMu.strong-fmor (Poly-map η P) (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (ctxη Γ B h₂)))
+        (FMu.strong-fmor (Poly-map η P) (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (ctxη Γ A h₁)))))
+  where
+    eqs : ∀ i → Category._≈_ FM.cat
+           (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη Γ A (h₂ ∘co h₁)) i)
+           (FM.Mor-∘ (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη Γ B h₂) i)
+             (FM.Fam𝒞-P.pair FM.Fam𝒞-P.p₁ (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη Γ A h₁) i)))
+    eqs Fin.zero    = ctxη-∘co Γ A B C₀ h₂ h₁
+    eqs (Fin.suc i) = FamC.≈-sym FamCoK.id-left
 
 -- The initial-algebra package for a polynomial, against an assumed collapse
 -- family and its naturality with respect to the strong action. The algebra
@@ -400,14 +506,6 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     bF : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (F^ (η .fobj A))) (η .fobj A)
     bF {Γ} {A} a = untranspose (a ∘ prodη Γ (F^ (η .fobj A)) .Iso.fwd)
 
-    -- Realising a morphism transposed to Fam(ℰ) and collapsing recovers it.
-    absorb : ∀ {Γ A} (X : FM.Obj) (g : ℰP.prod Γ (realise .fobj X) ⇒ A) →
-             (realise-η-iso A .Iso.fwd ∘ fmorη Γ X (untranspose (g ∘ prodη Γ X .Iso.fwd))) ≈ g
-    absorb {Γ} {A} X g =
-      ≈-trans (counit-fmorη Γ X _)
-        (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (prodη Γ X .Iso.fwd∘bwd≈id)) id-right))
-
   inR : Greal P δ̂ (Creal P δ̂) ⇒ Creal P δ̂
   inR = realise .fmor (FMu.α P̂ δ̂) ∘
         Kiso' (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd
@@ -425,8 +523,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     -- The context morphism Gmap acts with, for a morphism out of the carrier.
     h~ : ∀ {Γ A} → (ℰP.prod Γ (Creal P δ̂) ⇒ A) →
          FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (η .fobj (Creal P δ̂))) (η .fobj A)
-    h~ {Γ} {A} h = untranspose
-      (h ∘ (ℰP.prod-m (id _) (realise-η-iso (Creal P δ̂) .Iso.fwd) ∘ prodη Γ (η .fobj (Creal P δ̂)) .Iso.fwd))
+    h~ {Γ} {A} h = ctxη Γ (Creal P δ̂) h
 
     -- Compatibility of a transposed morphism with the counit component of the
     -- collapse, given its counit form.
