@@ -170,10 +170,43 @@ Derivatives can be computed numerically by computing $f$ on small perturbations 
     morphisms that are functions with dependency correct tangent
     maps. This category has finite products.
   \end{proposition}
+
+  FIXME: finite products is interesting, because it determines the
+  dependency information???
+
+  The fact that dependency correct functions form a category allows us
+  to model a simple programming language with finite product
+  types. Primitive operations can be interpreted a functions that
+  overapproximate their dependency information:
+
+  \begin{proposition}
+    There is a functor $\Set \to \DepCat$ that preserves finite
+    products. FIXME: check!
+  \end{proposition}
+
+  Morphisms in $\DepCat$ constructed from finite product structure and
+  embedded functions will only have trivial tangent maps arising from
+  the use of projections. A generator of non-trivial dependency
+  information is the ability to use parts of the input depending on
+  the input itself, via a condition (if-then-else) map:
+
+  \begin{proposition}
+    Let $\mathbb{B}$ be the object of $\DepCat$ consisting of the set
+    of booleans $\{\mathsf{true}, \mathsf{false}\}$. There are
+    dependency correct maps
+    $\mathrm{true}, \mathrm{false} : 1 \to \mathbb{B}$ and a natural
+    family of maps
+    $\mathrm{cond}_X : \mathbb{B} \times (X \times X) \to X$ such that $\mathrm{cond}_X \circ \langle \mathrm{true} \circ !, \mathrm{id} \rangle = \pi_1$ and $\mathrm{cond}_X \circ \langle \mathrm{false} \circ !, \mathrm{id} \rangle = \pi_2$. FIXME: and extensionality.
+  \end{proposition}
+
+  Thus $\DepCat$ is suitable for modelling a small language with
+  booleans, conditionals, and a collection of primitive types with
+  operations. This setting does not cover our example from the
+  introduction, which used lists and higher-order functions. In
+  Section \ref{sec:models-of-total-gps} we embed $\DepCat$ into
+  categories that account for sum types, some algebraic types and
+  higher-order functions.
 \end{AddedBlock}
-
-
-
 
 \subsection{Derivatives over a Commutative Semiring}
 \label{sec:approx-as-tangents:semiring}
