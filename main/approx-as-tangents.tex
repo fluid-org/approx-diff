@@ -1,31 +1,26 @@
 \section{Approximations as Tangents}
 \label{sec:approx-as-tangents}
 
-We motivate our approach by showing how to combine ideas from differential geometry and
-linear algebra to reconstruct the dependency analyses of
-\secref{introduction} in a denotational setting.
-% From this basis, we apply the CHAD framework of V{\'a}k{\'a}r \etal to obtain a denotational model of automatic differentiation that gives us an effective way to interpret programs as functions along with their forward and backwards approximation maps.
+We motivate our approach by showing how to combine ideas from differential geometry and linear algebra to
+reconstruct the dependency analyses of \secref{introduction} in a denotational setting.
 
 \subsection{Manifolds, Smooth Functions, and Automatic Differentiation}
 \label{sec:approx-as-tangents:autodiff}
 
 % For what follows we do not need to know in detail what a manifold is, or exactly how smooth functions are defined. We only state some definitions in order to fix terminology and to justify our claim of a connection to manifolds and smooth functions. \bob{Need a good reference here.}
 
-The general study of differentiable functions takes place on
-\emph{manifolds}, topological spaces that ``locally'' behave like an
-open subset of the Euclidean space $\RR^n$. The spaces $\RR^n$
-themselves are manifolds, but so are ``non-flat'' examples such as
-$n$-spheres and yet more exotic spaces. Every point $x$ in a manifold
-$M$ has an associated \emph{tangent vector space} $\tangents_x(M)$
-consisting of linear approximations of curves on the manifold passing
-through $x$. Each point also has a \emph{cotangent vector space}
-$\cotangents_x(M) = \tangents_x(M) \linearto \RR$. The tangent and
-cotangent spaces are finite dimensional, so in the presence of a
-chosen basis they are canonically isomorphic. In the case when the
-manifold is $\RR^n$, then every tangent space is isomorphic to $\RR^n$
-as well.
+The general study of differentiable functions takes place on \emph{manifolds}, topological spaces that
+``locally'' behave like an open subset of the Euclidean space $\RR^n$. The spaces $\RR^n$ themselves are
+manifolds, but so are ``non-flat'' examples such as $n$-spheres and yet more exotic spaces. Every point $x$ in
+a manifold $M$ has an associated \emph{tangent vector space} $\tangents_x(M)$ consisting of linear
+approximations of curves on the manifold passing through $x$. Each point also has a \emph{cotangent vector
+space} $\cotangents_x(M) = \tangents_x(M) \linearto \RR$. The tangent and cotangent spaces are finite
+dimensional, so in the presence of a chosen basis they are canonically isomorphic. In the case when the
+manifold is $\RR^n$, then every tangent space is isomorphic to $\RR^n$ as well.
 
-Smooth functions $f$ between manifolds $M$ and $N$ are functions on their points that are locally differentiable on $\RR^n$. Manifolds and smooth functions form a category $\Man$. Each smooth function induces maps of the (co)tangent spaces:
+Smooth functions $f$ between manifolds $M$ and $N$ are functions on their points that are locally
+differentiable on $\RR^n$. Manifolds and smooth functions form a category $\Man$. Each smooth function induces
+maps of the (co)tangent spaces:
 \begin{itemize}[leftmargin=\enummargin]
 \item The \emph{forward derivative} (tangent map, pushforward) $\pushf{f}_x$ is a linear map $\tangents_x(M) \linearto \tangents_{f(x)}(N)$. In the Euclidean case when $M = \RR^m$ and $N = \RR^n$, the tangent map can be represented by the Jacobian matrix of partial derivatives of $f$ at $x$.
 \item The \emph{backward derivative} (cotangent map, pullback) $\pullf{f}_x$ is a linear map $\cotangents_{f(x)}(N) \linearto \cotangents_x(M)$. In the Euclidean case, the backward derivative is represented by the transpose of the Jacobian of $f$ at $x$.
@@ -49,41 +44,47 @@ Smooth functions $f$ between manifolds $M$ and $N$ are functions on their points
   \secref{models-of-total-gps}.
 \end{remark}
 
-Computing the forward and backward derivatives of smooth functions $f$ has many applications of practical interest. For example, computation of the reverse derivative is of central interest in machine learning by gradient descent, the main technique used to train deep neural networks~\cite{rumelhart88,goodfellow16}.
+Computing the forward and backward derivatives of smooth functions $f$ has many applications of practical
+interest. For example, computation of the reverse derivative is of central interest in machine learning by
+gradient descent, the main technique used to train deep neural networks~\cite{rumelhart88,goodfellow16}.
 
-Derivatives can be computed numerically by computing $f$ on small perturbations of its input, or symbolically by examining a closed-form representation of $f$. However, a more common and practical technique is to use \emph{automatic differentiation}, where a program computing $f$ is instrumented to produce (a representation of) the forward and/or backward derivative as a side-effect of producing the output~\cite{linnainmaa76}. This has led to the area of differentiable programming, where programming languages and their implementations are specifically designed to admit efficient automatic differentation algorithms~\cite{jax2018github,abadi16,elliott17,sigal24}.
+Derivatives can be computed numerically by computing $f$ on small perturbations of its input, or symbolically
+by examining a closed-form representation of $f$. However, a more common and practical technique is to use
+\emph{automatic differentiation}, where a program computing $f$ is instrumented to produce (a representation
+of) the forward and/or backward derivative as a side-effect of producing the output~\cite{linnainmaa76}. This
+has led to the area of differentiable programming, where programming languages and their implementations are
+specifically designed to admit efficient automatic differentation
+algorithms~\cite{jax2018github,abadi16,elliott17,sigal24}.
 
 \subsection{Derivatives over a Commutative Semiring}
 \label{sec:approx-as-tangents:semiring}
 
-In the Euclidean case, the differential picture above is plain matrix algebra: with a chosen basis,
-tangent and cotangent spaces are both $\RR^n$, the forward derivative at a point is the Jacobian matrix, and
-the backward derivative is its transpose. Once the picture is presented in coordinates like this, the real
-numbers play no further role beyond supplying the scalars; since dependency information is typically indexed
-by positions in a value, which then serve as a coordinate basis, our first move is to keep the matrix algebra
-and change the scalars. Thus throughout this section, we fix a commutative semiring $S = (S, +, 0, \cdot, 1)$,
+In the Euclidean case, the differential picture above is plain matrix algebra: with a chosen basis, tangent
+and cotangent spaces are both $\RR^n$, the forward derivative at a point is the Jacobian matrix, and the
+backward derivative is its transpose. Once the picture is presented in coordinates like this, the real numbers
+play no further role beyond supplying the scalars; since dependency information is typically indexed by
+positions in a value, which then serve as a coordinate basis, our first move is to keep the matrix algebra and
+change the scalars. Thus throughout this section, we fix a commutative semiring $S = (S, +, 0, \cdot, 1)$,
 whose elements we think of as atoms of dependency information, with $\cdot$ combining information along a path
 from an input to an output and $+$ combining information across parallel paths.
 
-Our second move is one of abstraction: rather than axiomatise the matrices of \secref{introduction}
-directly, we identify the minimal structure required to capture what made that story work: a space of
-dependency information for each value,
-linear maps between spaces for the forward analysis, and an identification of each space with its dual, the
-extra structure needed to support an analogue of matrix transposition, and hence a backward analysis.
-The role of vector spaces, which are defined over fields, is played by \emph{semimodules}: commutative
-monoids $(M, +, 0)$ equipped with an action $a \cdot x$ of the scalars, satisfying the usual laws. Linear maps
-preserve $+$, $0$ and the action, and form a category $\SemiMod(S)$; pointwise addition of linear maps makes
-each hom-set a commutative monoid, with composition bilinear. Every semimodule has a \emph{dual} $M^* = M
-\linearto S$ of linear maps into the scalars (categorically, the internal hom into the scalars object, which is the
-unit of the tensor product of semimodules), and every
-linear map $f : M \linearto N$ has a \emph{transpose} $\transpose{f} = (- \comp f) : N^* \linearto M^*$,
-contravariantly.
+Our second move is one of abstraction: rather than axiomatise the matrices of \secref{introduction} directly,
+we identify the minimal structure required to capture what made that story work: a space of dependency
+information for each value, linear maps between spaces for the forward analysis, and an identification of each
+space with its dual, the extra structure needed to support an analogue of matrix transposition, and hence a
+backward analysis. The role of vector spaces, which are defined over fields, is played by \emph{semimodules}:
+commutative monoids $(M, +, 0)$ equipped with an action $a \cdot x$ of the scalars, satisfying the usual laws.
+Linear maps preserve $+$, $0$ and the action, and form a category $\SemiMod(S)$; pointwise addition of linear
+maps makes each hom-set a commutative monoid, with composition bilinear. Every semimodule has a \emph{dual}
+$M^* = M \linearto S$ of linear maps into the scalars (categorically, the internal hom into the scalars
+object, which is the unit of the tensor product of semimodules), and every linear map $f : M \linearto N$ has
+a \emph{transpose} $\transpose{f} = (- \comp f) : N^* \linearto M^*$, contravariantly.
 
-The transpose is almost the backward analysis we are after: it runs in the opposite direction to $f$,
-but between the duals $N^*$ and $M^*$, the cotangent spaces, rather than between the tangent spaces $M$ and
-$N$ themselves. What we want is a map $N \linearto M$, running dependency information back through the same
-spaces the forward map runs it through, as the transposed matrix did in \secref{introduction}. For that, each
-space must be identified with its dual. Whereas a finite-dimensional vector space always admits such an
+The transpose is almost the backward analysis we are after: it runs in the opposite direction to $f$, but
+between the duals $N^*$ and $M^*$, the cotangent spaces, rather than between the tangent spaces $M$ and $N$
+themselves. What we want is a map $N \linearto M$, running dependency information back through the same spaces
+the forward map runs it through, as the transposed matrix did in \secref{introduction}. For that, each space
+must be identified with its dual. Whereas a finite-dimensional vector space always admits such an
 identification (choose a basis), a semimodule need not; we therefore make the identification part of the data.
 \begin{definition}[Self-dual semimodule]
   \label{def:self-dual-semimodule}
@@ -106,25 +107,24 @@ The conjugate is our backward analysis, and its defining equation makes precise 
 the forward one alluded to in \secref{introduction}. Self-dual semimodules and linear maps form a category
 $\SDSemiMod(S)$.
 
-The matrices of \secref{introduction} now reappear as concrete instances. The \emph{free} semimodule
-$S^n$ on $n$ generators has as elements the $n$-length vectors of scalars, with standard basis vectors $e_i$
-and every $v \in S^n$ decomposing as $v = \sum_i v_i \cdot e_i$. Currying the \emph{dot product} $\langle u, v
-\rangle = \sum_i u_i \cdot v_i$ gives an isomorphism $S^n \cong (S^n)^*$, since pairing with the basis vectors
-extracts components, $\langle e_i, v \rangle = v_i$; so free semimodules are self-dual. By basis
-decomposition, a linear map $S^m \linearto S^n$ is exactly an $n \times m$ matrix over $S$, with composition
-as matrix multiplication and the conjugate as the familiar matrix transpose, $(\conj{M})_{ji} = M_{ij}$.
+The matrices of \secref{introduction} now reappear as concrete instances. The \emph{free} semimodule $S^n$ on
+$n$ generators has as elements the $n$-length vectors of scalars, with standard basis vectors $e_i$ and every
+$v \in S^n$ decomposing as $v = \sum_i v_i \cdot e_i$. Currying the \emph{dot product} $\langle u, v \rangle =
+\sum_i u_i \cdot v_i$ gives an isomorphism $S^n \cong (S^n)^*$, since pairing with the basis vectors extracts
+components, $\langle e_i, v \rangle = v_i$; so free semimodules are self-dual. By basis decomposition, a
+linear map $S^m \linearto S^n$ is exactly an $n \times m$ matrix over $S$, with composition as matrix
+multiplication and the conjugate as the familiar matrix transpose, $(\conj{M})_{ji} = M_{ij}$.
 
-We write $\Mat(S)$ for the skeletal category whose objects are the natural numbers and whose morphisms
-$m \to n$ are the $n \times m$ matrices. The Boolean Jacobians from \secref{introduction} live here: a
-dependency relation between $m$ input positions and $n$ output positions is exactly a morphism $m \to n$ in
-$\Mat(\Two)$, where $\Two$ is the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule
-for dependencies is composition in $\Mat(\Two)$, or equivalently \emph{relational} composition under the
-equivalence of categories $\Mat(\Two) \simeq \FinRel$. The dot product can be interpreted as ``overlap'',
-becauses $\langle u, v \rangle = \top$ exactly when the selections $u$ and $v$ share a position, i.e.\ are not
-disjoint.
+We write $\Mat(S)$ for the skeletal category whose objects are the natural numbers and whose morphisms $m \to
+n$ are the $n \times m$ matrices. The Boolean Jacobians from \secref{introduction} live here: a dependency
+relation between $m$ input positions and $n$ output positions is exactly a morphism $m \to n$ in $\Mat(\Two)$,
+where $\Two$ is the Boolean semiring with $+ = \vee$ and $\cdot = \wedge$, and the chain rule for dependencies
+is composition in $\Mat(\Two)$, or equivalently \emph{relational} composition under the equivalence of
+categories $\Mat(\Two) \simeq \FinRel$. The dot product can be interpreted as ``overlap'', becauses $\langle
+u, v \rangle = \top$ exactly when the selections $u$ and $v$ share a position, i.e.\ are not disjoint.
 
-The trivial semimodule is a zero object in $\SDSemiMod(S)$, and self-dual semimodules are closed under
-the \emph{biproduct} $M \biprod N$, an object which is both a product and a coproduct, with the injections
+The trivial semimodule is a zero object in $\SDSemiMod(S)$, and self-dual semimodules are closed under the
+\emph{biproduct} $M \biprod N$, an object which is both a product and a coproduct, with the injections
 conjugate to the projections, $\biinj_i = \conj{\biproj_i}$. The coincidence of products and coproducts is
 characteristic of such linear settings, and means $\SDSemiMod(S)$ on its own cannot interpret programs over
 sum types; we return to this in \secref{models-of-total-gps}.
@@ -132,14 +132,13 @@ sum types; we return to this in \secref{models-of-total-gps}.
 \subsection{Dependency Structures over Semirings}
 \label{sec:approx-as-tangents:richer-semirings}
 
-The framework so far only asks for commutativity of the scalars, which makes the dual $M^*$
-an $S$-semimodule again, so that the transpose remains a map between $S$-semimodules.
-Any commutative semiring $S$ thus yields a category
-$\SDSemiMod(S)$ with forward derivatives and their conjugates, related through the pairing. When $S$ is the
-reals, the conjugate is the familiar adjoint of linear algebra. In a dependency-tracking setting, however, the
-relationships of interest are typically granular: we ask whether, or to what degree, an output depends on an
-input, and want to compare one answer with another. This calls for an order on dependency information, which
-additional axioms on $S$ provide.
+The framework so far only asks for commutativity of the scalars, which makes the dual $M^*$ an $S$-semimodule
+again, so that the transpose remains a map between $S$-semimodules. Any commutative semiring $S$ thus yields a
+category $\SDSemiMod(S)$ with forward derivatives and their conjugates, related through the pairing. When $S$
+is the reals, the conjugate is the familiar adjoint of linear algebra. In a dependency-tracking setting,
+however, the relationships of interest are typically granular: we ask whether, or to what degree, an output
+depends on an input, and want to compare one answer with another. This calls for an order on dependency
+information, which additional axioms on $S$ provide.
 
 \subsubsection{Conjugate pairs and conjugacy analyses}
 
@@ -209,13 +208,15 @@ seems to lack any direct dependency analysis applications of its own.
 
 \subsubsection[Perturbation bounds]{\added{Perturbation bounds}}
 
-\Added{The Boolean instance answers whether an output can change; the refund example of
-\secref{introduction:galois-slicing} motivated asking how much. To answer the quantitative question, take as
-scalars the nonnegative rationals extended with $\infty$, where a scalar bounds the extent to which a value
-may change from its value in the run, with $\infty$ meaning unconstrained. Semiring addition is $\min$, so
-that combining bounds for parallel paths keeps the tighter bound, and multiplication is numerical $+$,
-accumulating bounds along a path: the \emph{tropical semiring} $(\mathbbm{Q}_{\geq 0} \cup \{\infty\}, \min,
-\infty, +, 0)$~\cite{simon88}. Addition is idempotent, so the analyses are monotone as in
+\Added{Dependency analysis over the Booleans records whether an output can change when an input does; the
+refund example of \secref{introduction:galois-slicing} raised the more fine-grained question of how much it
+can change. Numerical analysis studies this question as \emph{propagation of error}: given bounds on how far
+each input may be perturbed, derive a bound on the output~\cite{high:ASNA2}. Propagation of error is again a
+choice of semiring, this time the \emph{tropical semiring} $(\mathbbm{Q}_{\geq 0} \cup \{\infty\}, \min,
+\infty, +, 0)$~\cite{simon88}. A scalar is a non-negative rational (or $\infty$) bounding the extent to which
+a value may change from its value in the run, with $\infty$ meaning unconstrained. Semiring addition is
+$\min$, so that combining bounds for parallel paths keeps the tighter bound, and multiplication is numerical
+$+$, accumulating bounds along a path. Addition is idempotent, so the analyses are monotone as in
 \secref{approx-as-tangents:richer-semirings}: smaller bounds are more informative, and the semiring zero
 $\infty$ means ``no information''.}
 
@@ -227,17 +228,18 @@ entries are $\infty$. This is sound, but reports nothing: propagation of absolut
 multiplication.}
 
 \Added{Measuring perturbations multiplicatively instead exchanges the two behaviours. Take scalars to be
-factors, with $\min$ as the addition and the numerical product as the multiplication. This is the multiplicative
-counterpart of the previous presentation, related to it by logarithms over the reals, and the two are the
-classical dichotomy between absolute and relative error~\cite{high:ASNA2}. Multiplication now has unit entries, since relative perturbations pass through a
-product unchanged, while an addition $x + y$ acquires the entry $|x| / |x + y|$: the factor by which it
-amplifies relative error, its \emph{condition number}.}
+factors, with $\min$ as the addition and the numerical product as the multiplication. This is the
+multiplicative counterpart of the previous presentation, related to it by logarithms over the reals, and the
+two are the classical dichotomy between absolute and relative error~\cite[\S\S 1.6--1.7]{high:ASNA2}.
+Multiplication now has unit entries, since relative perturbations pass through a product unchanged, while an
+addition $x + y$ acquires the entry $|x| / |x + y|$: the factor by which it amplifies relative error, its
+(relative) \emph{condition number}.}
 
 \Added{In the refund example the amplification is $|6| / |6 + (-6)|$: division by zero, an infinite condition
-number, the catastrophic cancellation of numerical analysis. Where the Boolean instance could only report a dependency that was not really there, this instance says
-how badly the bound degrades. For nonnegative data the factors are at most $1$, so the query examples remain
-exact. The two are simply different semirings, and choosing between them is part of
-specifying what the analysis is to observe.}
+number, the catastrophic cancellation of numerical analysis. Where the Boolean instance could only report a
+dependency that was not really there, this instance says how badly the bound degrades. For non-negative data
+the factors are at most $1$, so the query examples remain exact. The two are simply different semirings, and
+choosing between them is part of specifying what the analysis is to observe.}
 
 \subsubsection[Provenance semirings]{\added{Provenance semirings}}
 
