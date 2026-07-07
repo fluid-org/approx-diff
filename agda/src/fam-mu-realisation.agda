@@ -416,6 +416,11 @@ record CollapseAt {n} (P : Poly ℰ n) : Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔
                (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
                (∀ i → isos i .Iso.fwd ≈ id _) →
                iso δ̂ δ̂ isos .Iso.fwd ≈ id _
+    comp : ∀ (δ̂₁ δ̂₂ δ̂₃ : Fin n → FM.Obj)
+           (isos₁₂ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+           (isos₂₃ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i))) →
+           iso δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
+           ≈ (iso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ iso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
 
 -- The realised strong action is a co-Kleisli functor.
 private
@@ -501,11 +506,13 @@ collapse-const : ∀ {n} (A : Category.obj ℰ) → CollapseAt {n} (polynomial-f
 collapse-const A .CollapseAt.iso δ̂₁ δ̂₂ isos = Iso-refl
 collapse-const A .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sq-refl _
 collapse-const A .CollapseAt.refl-iso δ̂ isos hyps = ≈-refl
+collapse-const A .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-sym id-left
 
 collapse-var : ∀ {n} (i : Fin n) → CollapseAt {n} (polynomial-functor-2.Poly.var i)
 collapse-var i .CollapseAt.iso δ̂₁ δ̂₂ isos = isos i
 collapse-var i .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sqs i
 collapse-var i .CollapseAt.refl-iso δ̂ isos hyps = hyps i
+collapse-var i .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-refl
 
 
 -- Coproduct machinery for the sum case of the collapse.
@@ -665,7 +672,7 @@ fmorη-scopair Γ X̂ Ŷ {Ẑ} u v =
 -- The collapse interface at sums.
 collapse-sum : ∀ {n} {P Q : Poly ℰ n} → CollapseAt P → CollapseAt Q →
                CollapseAt (P polynomial-functor-2.Poly.+ Q)
-collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl-iso = sumRefl }
+collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl-iso = sumRefl ; comp = sumComp }
   where
     X̂ : (Fin n → FM.Obj) → FM.Obj
     X̂ δ̂ = FM.fobj FM.μObj (Poly-map η P) δ̂
@@ -701,6 +708,37 @@ collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl
       ≈⟨ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd∘fwd≈id ⟩
         id _
       ∎ where open ≈-Reasoning isEquiv
+
+    sumComp : ∀ δ̂₁ δ̂₂ δ̂₃ (isos₁₂ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+              (isos₂₃ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i))) →
+              sumIso δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
+              ≈ (sumIso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ sumIso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
+    sumComp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-trans toM (≈-sym fromM)
+      where
+        cm₁₂ = ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
+        cm₂₃ = ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd) (CQ .CollapseAt.iso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd)
+
+        toM : sumIso δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
+              ≈ ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (cm₂₃ ∘ cm₁₂)) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
+        toM =
+          ∘-cong (∘-cong ≈-refl
+            (≈-trans (ℰCPm.coprod-m-cong (CP .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃) (CQ .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃))
+              (ℰCPm.coprod-m-comp _ _ _ _))) ≈-refl
+
+        fromM : (sumIso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ sumIso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
+                ≈ ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (cm₂₃ ∘ cm₁₂)) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
+        fromM =
+          begin
+            ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ cm₂₃) ∘ K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd) ∘ ((K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ cm₁₂) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ cm₂₃) ∘ K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd) ∘ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ cm₁₂)) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
+          ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+            ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ cm₂₃) ∘ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd ∘ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ cm₁₂))) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
+          ≈⟨ ∘-cong (∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd∘bwd≈id) ≈-refl) id-left))) ≈-refl ⟩
+            ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ cm₂₃) ∘ cm₁₂) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
+          ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+            (K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (cm₂₃ ∘ cm₁₂)) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
+          ∎ where open ≈-Reasoning isEquiv
 
     sumNat : ∀ {Γ : obj} {ε̂₁ ε̂₂ : Fin n → FM.Obj}
              (δ̂₁ δ̂₂ : Fin n → FM.Obj)
@@ -899,7 +937,7 @@ fmorη-sprodm Γ X̂ Ŷ {Ẑ₁} {Ẑ₂} u v =
 -- The collapse interface at products.
 collapse-prod : ∀ {n} {P Q : Poly ℰ n} → CollapseAt P → CollapseAt Q →
                 CollapseAt (P polynomial-functor-2.Poly.× Q)
-collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; refl-iso = prodRefl }
+collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; refl-iso = prodRefl ; comp = prodComp }
   where
     X̂ : (Fin n → FM.Obj) → FM.Obj
     X̂ δ̂ = FM.fobj FM.μObj (Poly-map η P) δ̂
@@ -934,6 +972,37 @@ collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; r
       ≈⟨ K× (X̂ δ̂) (Ŷ δ̂) .Iso.bwd∘fwd≈id ⟩
         id _
       ∎ where open ≈-Reasoning isEquiv
+
+    prodComp : ∀ δ̂₁ δ̂₂ δ̂₃ (isos₁₂ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+               (isos₂₃ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i))) →
+               prodIso δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
+               ≈ (prodIso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ prodIso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
+    prodComp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-trans toM (≈-sym fromM)
+      where
+        pm₁₂ = ℰP.prod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
+        pm₂₃ = ℰP.prod-m (CP .CollapseAt.iso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd) (CQ .CollapseAt.iso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd)
+
+        toM : prodIso δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
+              ≈ ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (pm₂₃ ∘ pm₁₂)) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
+        toM =
+          ∘-cong (∘-cong ≈-refl
+            (≈-trans (ℰP.prod-m-cong (CP .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃) (CQ .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃))
+              (ℰP.prod-m-comp _ _ _ _))) ≈-refl
+
+        fromM : (prodIso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ prodIso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
+                ≈ ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (pm₂₃ ∘ pm₁₂)) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
+        fromM =
+          begin
+            ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ pm₂₃) ∘ K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd) ∘ ((K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ pm₁₂) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ pm₂₃) ∘ K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd) ∘ (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ pm₁₂)) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
+          ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+            ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ pm₂₃) ∘ (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd ∘ (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ pm₁₂))) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
+          ≈⟨ ∘-cong (∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd∘bwd≈id) ≈-refl) id-left))) ≈-refl ⟩
+            ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ pm₂₃) ∘ pm₁₂) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
+          ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+            (K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (pm₂₃ ∘ pm₁₂)) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
+          ∎ where open ≈-Reasoning isEquiv
 
     prodNat : ∀ {Γ : obj} {ε̂₁ ε̂₂ : Fin n → FM.Obj}
               (δ̂₁ δ̂₂ : Fin n → FM.Obj)
