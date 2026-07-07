@@ -23,6 +23,7 @@ import bounded-meet
 -- and Vákár 2023). (Imported by ho-model anyway, but included here
 -- for documentation purposes.)
 import fam-exponentials
+import fam-realisation
 
 -- Construction of the interpretation of the higher-order language in
 -- Section 4

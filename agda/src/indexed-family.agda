@@ -427,6 +427,22 @@ record HasSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc 
 
 open import functor
 
+-- A family is a functor from the setoid, viewed as a category.
+module _ {o m e os es} {𝒞 : Category o m e} where
+
+  private
+    module 𝒞C = Category 𝒞
+
+  open Functor
+  open Fam
+
+  fam→functor : ∀ {A : Setoid os es} → Fam A 𝒞 → Functor (setoid→category A) 𝒞
+  fam→functor F .fobj = F .fm
+  fam→functor F .fmor ⟪ eq ⟫ = F .subst eq
+  fam→functor F .fmor-cong _ = 𝒞C.≈-refl
+  fam→functor F .fmor-id = F .refl*
+  fam→functor F .fmor-comp f g = F .trans* _ _
+
 -- If a category has all discrete limits, then it has all setoid
 -- products (almost by definition).
 module _ {o m e} os es (𝒞 : Category o m e)
@@ -444,13 +460,6 @@ module _ {o m e} os es (𝒞 : Category o m e)
   open Fam
 
   open IsEquivalence
-
-  fam→functor : ∀ {A : Setoid os es} → Fam A 𝒞 → Functor (setoid→category A) 𝒞
-  fam→functor F .fobj = F .fm
-  fam→functor F .fmor ⟪ eq ⟫ = F .subst eq
-  fam→functor F .fmor-cong _ = 𝒞.≈-refl
-  fam→functor F .fmor-id = F .refl*
-  fam→functor F .fmor-comp f g = F .trans* _ _
 
   -- FIXME: this is a bit messy
 
