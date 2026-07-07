@@ -804,6 +804,18 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
   copair-ext0 = ≈-trans (copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
                         (copair-ext p₂)
 
+  copair-natural : ∀ {w x y z z'} (h : z ⇒ z') (f : prod w x ⇒ z) (g : prod w y ⇒ z) →
+                   (h ∘ copair f g) ≈ copair (h ∘ f) (h ∘ g)
+  copair-natural h f g = begin
+      h ∘ copair f g
+    ≈˘⟨ copair-ext _ ⟩
+      copair ((h ∘ copair f g) ∘ pair p₁ (in₁ ∘ p₂)) ((h ∘ copair f g) ∘ pair p₁ (in₂ ∘ p₂))
+    ≈⟨ copair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      copair (h ∘ (copair f g ∘ pair p₁ (in₁ ∘ p₂))) (h ∘ (copair f g ∘ pair p₁ (in₂ ∘ p₂)))
+    ≈⟨ copair-cong (∘-cong ≈-refl (copair-in₁ f g)) (∘-cong ≈-refl (copair-in₂ f g)) ⟩
+      copair (h ∘ f) (h ∘ g)
+    ∎ where open ≈-Reasoning isEquiv
+
 -- The section sect = pair to-terminal (id _) : X ⇒ witness × X of p₂ (witness terminal),
 -- i.e. the unitor X ≅ witness × X, and how it interacts with composition.
 module Unitor {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where

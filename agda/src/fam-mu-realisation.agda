@@ -524,6 +524,94 @@ private
   K⊕-in₂ : ∀ (X̂ Ŷ : FM.Obj) → (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰSCm.in₂) ≈ realise .fmor FCP.in₂
   K⊕-in₂ X̂ Ŷ = ℰCPm.copair-in₂ _ _
 
+-- Postcomposition with a pure morphism under realisation in context.
+fmorη-post : ∀ (Γ : obj) (X : FM.Obj) {Y Z : FM.Obj} (w : FM.Mor Y Z)
+             (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X) Y) →
+             fmorη Γ X (FM.Mor-∘ w u) ≈ (realise .fmor w ∘ fmorη Γ X u)
+fmorη-post Γ X w u =
+  ≈-trans (∘-cong (realise .fmor-comp _ _) ≈-refl) (assoc _ _ _)
+
+-- Cancel an isomorphism applied backwards in context on the right.
+co-iso-epi : ∀ {Γ X Y Z : obj} (I : Iso X Y)
+             {u v : ℰP.prod Γ X ⇒ Z} →
+             ((u ∘co (I .Iso.bwd ∘ ℰP.p₂)) ≈ (v ∘co (I .Iso.bwd ∘ ℰP.p₂))) → u ≈ v
+co-iso-epi I {u} {v} eq =
+  begin
+    u
+  ≈˘⟨ CoK.id-right ⟩
+    u ∘co ℰP.p₂
+  ≈˘⟨ CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (≈-trans (∘-cong (I .Iso.bwd∘fwd≈id) ≈-refl) id-left)) ⟩
+    u ∘co ((I .Iso.bwd ∘ ℰP.p₂) ∘co (I .Iso.fwd ∘ ℰP.p₂))
+  ≈˘⟨ CoK.assoc _ _ _ ⟩
+    (u ∘co (I .Iso.bwd ∘ ℰP.p₂)) ∘co (I .Iso.fwd ∘ ℰP.p₂)
+  ≈⟨ CoK.∘-cong eq ≈-refl ⟩
+    (v ∘co (I .Iso.bwd ∘ ℰP.p₂)) ∘co (I .Iso.fwd ∘ ℰP.p₂)
+  ≈⟨ CoK.assoc _ _ _ ⟩
+    v ∘co ((I .Iso.bwd ∘ ℰP.p₂) ∘co (I .Iso.fwd ∘ ℰP.p₂))
+  ≈⟨ CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (≈-trans (∘-cong (I .Iso.bwd∘fwd≈id) ≈-refl) id-left)) ⟩
+    v ∘co ℰP.p₂
+  ≈⟨ CoK.id-right ⟩
+    v
+  ∎ where open ≈-Reasoning isEquiv
+
+private
+  K⊕-in₁' : ∀ (X̂ Ŷ : FM.Obj) → (K⊕ X̂ Ŷ .Iso.fwd ∘ realise .fmor FCP.in₁) ≈ ℰSCm.in₁
+  K⊕-in₁' X̂ Ŷ =
+    ≈-trans (∘-cong ≈-refl (≈-sym (K⊕-in₁ X̂ Ŷ)))
+      (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (K⊕ X̂ Ŷ .Iso.fwd∘bwd≈id) ≈-refl) id-left))
+
+  K⊕-in₂' : ∀ (X̂ Ŷ : FM.Obj) → (K⊕ X̂ Ŷ .Iso.fwd ∘ realise .fmor FCP.in₂) ≈ ℰSCm.in₂
+  K⊕-in₂' X̂ Ŷ =
+    ≈-trans (∘-cong ≈-refl (≈-sym (K⊕-in₂ X̂ Ŷ)))
+      (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (K⊕ X̂ Ŷ .Iso.fwd∘bwd≈id) ≈-refl) id-left))
+
+  -- Strong copair against a coproduct of morphisms, in context.
+  scopair-coprod-m : ∀ {Γ X₁ X₂ Y₁ Y₂ Z : obj}
+                     (a : ℰP.prod Γ Y₁ ⇒ Z) (b : ℰP.prod Γ Y₂ ⇒ Z)
+                     (f : X₁ ⇒ Y₁) (g : X₂ ⇒ Y₂) →
+                     (ℰSCm.copair a b ∘co (ℰCPm.coprod-m f g ∘ ℰP.p₂))
+                     ≈ ℰSCm.copair (a ∘co (f ∘ ℰP.p₂)) (b ∘co (g ∘ ℰP.p₂))
+  scopair-coprod-m {Γ} a b f g =
+    ≈-trans (≈-sym (ℰSCm.copair-ext _)) (ℰSCm.copair-cong c₁ c₂)
+    where
+      c₁ : ((ℰSCm.copair a b ∘co (ℰCPm.coprod-m f g ∘ ℰP.p₂)) ∘ ℰP.pair ℰP.p₁ (ℰSCm.in₁ ∘ ℰP.p₂))
+           ≈ (a ∘co (f ∘ ℰP.p₂))
+      c₁ =
+        begin
+          (ℰSCm.copair a b ∘co (ℰCPm.coprod-m f g ∘ ℰP.p₂)) ∘co (ℰSCm.in₁ ∘ ℰP.p₂)
+        ≈⟨ CoK.assoc _ _ _ ⟩
+          ℰSCm.copair a b ∘co ((ℰCPm.coprod-m f g ∘ ℰP.p₂) ∘co (ℰSCm.in₁ ∘ ℰP.p₂))
+        ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+          ℰSCm.copair a b ∘co ((ℰCPm.coprod-m f g ∘ ℰSCm.in₁) ∘ ℰP.p₂)
+        ≈⟨ CoK.∘-cong ≈-refl (∘-cong (ℰCPm.copair-in₁ _ _) ≈-refl) ⟩
+          ℰSCm.copair a b ∘co ((ℰSCm.in₁ ∘ f) ∘ ℰP.p₂)
+        ≈˘⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+          ℰSCm.copair a b ∘co ((ℰSCm.in₁ ∘ ℰP.p₂) ∘co (f ∘ ℰP.p₂))
+        ≈˘⟨ CoK.assoc _ _ _ ⟩
+          (ℰSCm.copair a b ∘co (ℰSCm.in₁ ∘ ℰP.p₂)) ∘co (f ∘ ℰP.p₂)
+        ≈⟨ CoK.∘-cong (ℰSCm.copair-in₁ a b) ≈-refl ⟩
+          a ∘co (f ∘ ℰP.p₂)
+        ∎ where open ≈-Reasoning isEquiv
+
+      c₂ : ((ℰSCm.copair a b ∘co (ℰCPm.coprod-m f g ∘ ℰP.p₂)) ∘ ℰP.pair ℰP.p₁ (ℰSCm.in₂ ∘ ℰP.p₂))
+           ≈ (b ∘co (g ∘ ℰP.p₂))
+      c₂ =
+        begin
+          (ℰSCm.copair a b ∘co (ℰCPm.coprod-m f g ∘ ℰP.p₂)) ∘co (ℰSCm.in₂ ∘ ℰP.p₂)
+        ≈⟨ CoK.assoc _ _ _ ⟩
+          ℰSCm.copair a b ∘co ((ℰCPm.coprod-m f g ∘ ℰP.p₂) ∘co (ℰSCm.in₂ ∘ ℰP.p₂))
+        ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+          ℰSCm.copair a b ∘co ((ℰCPm.coprod-m f g ∘ ℰSCm.in₂) ∘ ℰP.p₂)
+        ≈⟨ CoK.∘-cong ≈-refl (∘-cong (ℰCPm.copair-in₂ _ _) ≈-refl) ⟩
+          ℰSCm.copair a b ∘co ((ℰSCm.in₂ ∘ g) ∘ ℰP.p₂)
+        ≈˘⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+          ℰSCm.copair a b ∘co ((ℰSCm.in₂ ∘ ℰP.p₂) ∘co (g ∘ ℰP.p₂))
+        ≈˘⟨ CoK.assoc _ _ _ ⟩
+          (ℰSCm.copair a b ∘co (ℰSCm.in₂ ∘ ℰP.p₂)) ∘co (g ∘ ℰP.p₂)
+        ≈⟨ CoK.∘-cong (ℰSCm.copair-in₂ a b) ≈-refl ⟩
+          b ∘co (g ∘ ℰP.p₂)
+        ∎ where open ≈-Reasoning isEquiv
+
 -- Realisation in context sends the strong copair to the strong copair, across
 -- the coproduct comparison iso.
 fmorη-scopair : ∀ (Γ : obj) (X̂ Ŷ : FM.Obj) {Ẑ : FM.Obj}
@@ -571,6 +659,157 @@ fmorη-scopair Γ X̂ Ŷ {Ẑ} u v =
       ≈⟨ fmorη-cong (FSC.copair-in₂ u v) ⟩
         fmorη Γ Ŷ v
       ∎ where open ≈-Reasoning isEquiv
+
+-- The collapse interface at sums.
+collapse-sum : ∀ {n} {P Q : Poly ℰ n} → CollapseAt P → CollapseAt Q →
+               CollapseAt (P polynomial-functor-2.Poly.+ Q)
+collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl-iso = sumRefl }
+  where
+    X̂ : (Fin n → FM.Obj) → FM.Obj
+    X̂ δ̂ = FM.fobj FM.μObj (Poly-map η P) δ̂
+
+    Ŷ : (Fin n → FM.Obj) → FM.Obj
+    Ŷ δ̂ = FM.fobj FM.μObj (Poly-map η Q) δ̂
+
+    sumIso : ∀ δ̂₁ δ̂₂ (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
+             Iso (realise .fobj (FCP.coprod (X̂ δ̂₁) (Ŷ δ̂₁))) (realise .fobj (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)))
+    sumIso δ̂₁ δ̂₂ isos =
+      Iso-trans (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁))
+        (Iso-trans (ℰCPm.coproduct-preserve-iso (CP .CollapseAt.iso δ̂₁ δ̂₂ isos) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isos))
+          (Iso-sym (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂))))
+
+    -- The composite forward map, with the source comparison iso cancelled.
+    sumIso-bwd : ∀ δ̂₁ δ̂₂ isos →
+                 (sumIso δ̂₁ δ̂₂ isos .Iso.fwd ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd)
+                 ≈ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd))
+    sumIso-bwd δ̂₁ δ̂₂ isos =
+      ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd∘bwd≈id)) id-right)
+
+    sumRefl : ∀ δ̂ → sumIso δ̂ δ̂ (λ i → Iso-refl) .Iso.fwd ≈ id _
+    sumRefl δ̂ =
+      begin
+        (K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ ℰCPm.coprod-m (CP .CollapseAt.iso δ̂ δ̂ (λ i → Iso-refl) .Iso.fwd) (CQ .CollapseAt.iso δ̂ δ̂ (λ i → Iso-refl) .Iso.fwd)) ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
+      ≈⟨ ∘-cong (∘-cong ≈-refl (≈-trans (ℰCPm.coprod-m-cong (CP .CollapseAt.refl-iso δ̂) (CQ .CollapseAt.refl-iso δ̂)) ℰCPm.coprod-m-id)) ≈-refl ⟩
+        (K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ id _) ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
+      ≈⟨ ∘-cong id-right ≈-refl ⟩
+        K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
+      ≈⟨ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd∘fwd≈id ⟩
+        id _
+      ∎ where open ≈-Reasoning isEquiv
+
+    sumNat : ∀ {Γ : obj} {ε̂₁ ε̂₂ : Fin n → FM.Obj}
+             (δ̂₁ δ̂₂ : Fin n → FM.Obj)
+             (isosδ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+             (isosε : ∀ i → Iso (realise .fobj (ε̂₁ i)) (realise .fobj (ε̂₂ i)))
+             (gs₁ : ∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂₁ i)) (ε̂₁ i))
+             (gs₂ : ∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂₂ i)) (ε̂₂ i)) →
+             (∀ i → (fmorη Γ (δ̂₂ i) (gs₂ i) ∘co (isosδ i .Iso.fwd ∘ ℰP.p₂))
+                    ≈ (isosε i .Iso.fwd ∘ fmorη Γ (δ̂₁ i) (gs₁ i))) →
+             (fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FMu.strong-fmor (Poly-map η (P polynomial-functor-2.Poly.+ Q)) gs₂)
+               ∘co (sumIso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂))
+             ≈ (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (FCP.coprod (X̂ δ̂₁) (Ŷ δ̂₁)) (FMu.strong-fmor (Poly-map η (P polynomial-functor-2.Poly.+ Q)) gs₁))
+    sumNat {Γ} {ε̂₁} {ε̂₂} δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs =
+      co-iso-epi (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁)) (≈-trans lhs (≈-sym rhs))
+      where
+        sfP : ∀ δ̂ ε̂ → (∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂ i)) (ε̂ i)) → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (X̂ δ̂)) (X̂ ε̂)
+        sfP δ̂ ε̂ gs = FMu.strong-fmor (Poly-map η P) gs
+
+        sfQ : ∀ δ̂ ε̂ → (∀ i → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (δ̂ i)) (ε̂ i)) → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (Ŷ δ̂)) (Ŷ ε̂)
+        sfQ δ̂ ε̂ gs = FMu.strong-fmor (Poly-map η Q) gs
+
+        mid : ℰP.prod Γ (ℰCPm.coprod (realise .fobj (X̂ δ̂₁)) (realise .fobj (Ŷ δ̂₁))) ⇒ realise .fobj (FCP.coprod (X̂ ε̂₂) (Ŷ ε̂₂))
+        mid = ℰSCm.copair
+                (realise .fmor FCP.in₁ ∘ (CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (sfP δ̂₁ ε̂₁ gs₁)))
+                (realise .fmor FCP.in₂ ∘ (CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (sfQ δ̂₁ ε̂₁ gs₁)))
+
+        lhs : ((fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂)))
+                ∘co (sumIso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂)) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂))
+              ≈ mid
+        lhs =
+          begin
+            (fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co (sumIso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂)) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)
+          ≈⟨ CoK.assoc _ _ _ ⟩
+            fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co ((sumIso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂))
+          ≈⟨ CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (∘-cong (sumIso-bwd δ̂₁ δ̂₂ isosδ) ≈-refl)) ⟩
+            fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co ((K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd)) ∘ ℰP.p₂)
+          ≈˘⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+            fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co ((K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰP.p₂) ∘co (ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂))
+          ≈˘⟨ CoK.assoc _ _ _ ⟩
+            (fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰP.p₂)) ∘co (ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂)
+          ≈⟨ CoK.∘-cong (fmorη-scopair Γ (X̂ δ̂₂) (Ŷ δ̂₂) _ _) ≈-refl ⟩
+            ℰSCm.copair (fmorη Γ (X̂ δ̂₂) (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂))) (fmorη Γ (Ŷ δ̂₂) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co (ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂)
+          ≈⟨ scopair-coprod-m _ _ _ _ ⟩
+            ℰSCm.copair (fmorη Γ (X̂ δ̂₂) (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) ∘co (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂)) (fmorη Γ (Ŷ δ̂₂) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂)) ∘co (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂))
+          ≈⟨ ℰSCm.copair-cong comp₁ comp₂ ⟩
+            mid
+          ∎
+          where
+            open ≈-Reasoning isEquiv
+
+            comp₁ : (fmorη Γ (X̂ δ̂₂) (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) ∘co (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂))
+                    ≈ (realise .fmor FCP.in₁ ∘ (CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (sfP δ̂₁ ε̂₁ gs₁)))
+            comp₁ =
+              ≈-trans (CoK.∘-cong (fmorη-post Γ (X̂ δ̂₂) FCP.in₁ _) ≈-refl)
+                (≈-trans (assoc _ _ _)
+                  (∘-cong ≈-refl (CP .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)))
+
+            comp₂ : (fmorη Γ (Ŷ δ̂₂) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂)) ∘co (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂))
+                    ≈ (realise .fmor FCP.in₂ ∘ (CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (sfQ δ̂₁ ε̂₁ gs₁)))
+            comp₂ =
+              ≈-trans (CoK.∘-cong (fmorη-post Γ (Ŷ δ̂₂) FCP.in₂ _) ≈-refl)
+                (≈-trans (assoc _ _ _)
+                  (∘-cong ≈-refl (CQ .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)))
+
+        rhs : (((sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (FCP.coprod (X̂ δ̂₁) (Ŷ δ̂₁)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁))))
+                ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)))
+              ≈ mid
+        rhs =
+          begin
+            (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (FCP.coprod (X̂ δ̂₁) (Ŷ δ̂₁)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁)))) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)
+          ≈⟨ assoc _ _ _ ⟩
+            sumIso _ _ isosε .Iso.fwd ∘ (fmorη Γ (FCP.coprod (X̂ δ̂₁) (Ŷ δ̂₁)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁))) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂))
+          ≈⟨ ∘-cong ≈-refl (fmorη-scopair Γ (X̂ δ̂₁) (Ŷ δ̂₁) _ _) ⟩
+            sumIso _ _ isosε .Iso.fwd ∘ ℰSCm.copair (fmorη Γ (X̂ δ̂₁) (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁))) (fmorη Γ (Ŷ δ̂₁) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁)))
+          ≈⟨ ℰSCm.copair-natural _ _ _ ⟩
+            ℰSCm.copair (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁))) (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁)))
+          ≈⟨ ℰSCm.copair-cong rcomp₁ rcomp₂ ⟩
+            mid
+          ∎
+          where
+            open ≈-Reasoning isEquiv
+
+            push-in₁ : (sumIso _ _ isosε .Iso.fwd ∘ realise .fmor FCP.in₁)
+                       ≈ (realise .fmor FCP.in₁ ∘ CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd)
+            push-in₁ =
+              ≈-trans (assoc _ _ _)
+                (≈-trans (∘-cong ≈-refl (K⊕-in₁' (X̂ ε̂₁) (Ŷ ε̂₁)))
+                  (≈-trans (assoc _ _ _)
+                    (≈-trans (∘-cong ≈-refl (ℰCPm.copair-in₁ _ _))
+                      (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (K⊕-in₁ (X̂ ε̂₂) (Ŷ ε̂₂)) ≈-refl)))))
+
+            push-in₂ : (sumIso _ _ isosε .Iso.fwd ∘ realise .fmor FCP.in₂)
+                       ≈ (realise .fmor FCP.in₂ ∘ CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd)
+            push-in₂ =
+              ≈-trans (assoc _ _ _)
+                (≈-trans (∘-cong ≈-refl (K⊕-in₂' (X̂ ε̂₁) (Ŷ ε̂₁)))
+                  (≈-trans (assoc _ _ _)
+                    (≈-trans (∘-cong ≈-refl (ℰCPm.copair-in₂ _ _))
+                      (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (K⊕-in₂ (X̂ ε̂₂) (Ŷ ε̂₂)) ≈-refl)))))
+
+            rcomp₁ : (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁)))
+                     ≈ (realise .fmor FCP.in₁ ∘ (CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (sfP δ̂₁ ε̂₁ gs₁)))
+            rcomp₁ =
+              ≈-trans (∘-cong ≈-refl (fmorη-post Γ (X̂ δ̂₁) FCP.in₁ _))
+                (≈-trans (≈-sym (assoc _ _ _))
+                  (≈-trans (∘-cong push-in₁ ≈-refl) (assoc _ _ _)))
+
+            rcomp₂ : (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁)))
+                     ≈ (realise .fmor FCP.in₂ ∘ (CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (sfQ δ̂₁ ε̂₁ gs₁)))
+            rcomp₂ =
+              ≈-trans (∘-cong ≈-refl (fmorη-post Γ (Ŷ δ̂₁) FCP.in₂ _))
+                (≈-trans (≈-sym (assoc _ _ _))
+                  (≈-trans (∘-cong push-in₂ ≈-refl) (assoc _ _ _)))
 
 -- The initial-algebra package for a polynomial, against an assumed collapse
 -- family and its naturality with respect to the strong action. The algebra
