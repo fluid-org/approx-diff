@@ -133,6 +133,22 @@ M ≈M N = ∀ i j → M i j ≡ N i j
 _∘M_ : ∀ {m n o} → Matrix n o → Matrix m n → Matrix m o
 (M ∘M N) i j = ⋁ λ k → M k j ∧ N i k
 
+Id : ∀ n → Matrix n n
+Id n i j with i ≟ j
+... | yes _ = I
+... | no _ = O
+
+Id-diag : ∀ {n} {i : Fin n} → Id n i i ≡ I
+Id-diag {n} {i} with i ≟ i
+... | yes refl = refl
+... | no ¬i≡i with ¬i≡i refl
+... | ()
+
+-- M-id-left : ∀ {m n} {M : Matrix m n} → Id n ∘M M ≈M M
+-- M-id-left {m} {n} {M} i j = antisym
+--   (least {f = λ k → Id n k j ∧ M i k} (λ i → {!!}))
+--   (⊑-trans (greatest (⊑-trans I-top (⊑-reflexive (sym (Id-diag {i = j})))) ⊑-refl) (upper {f = λ k → Id n k j ∧ M i k} j))
+
 infix 4 _≈V_ _≈M_
 
 ∙-preserve-∅ : ∀ {m n} (M : Matrix m n) → M ∙ ∅ ≈V ∅
@@ -156,15 +172,22 @@ module version1 where
   El : Obj → Set
   El X = (i : Fin (X .arity)) → X .dom i
 
-  -- Functions that carry correct but not necessarily complete
+  -- Functions that carry correct but not necessarily minimal
   -- dependency information
   record _⇒_ (X Y : Obj) : Set₁ where
     field
       func : El X → El Y
       deps : El X → Matrix (X .arity) (Y .arity)
+      -- for output j, if the inputs are equal on the arguments it depends on, then the outputs are equal.
       deps-ok : ∀ x x' j → (∀ i → deps x i j ≡ I → x i ≡ x' i) → func x j ≡ func x' j
       -- More generally: (⋀ λ i → deps x i j ⊸ X i .eq (x i) (x' i)) ⊸ Y j .eq (func x j) (func x' j)
   open _⇒_
+
+  -- ε ≤ (dep x ⊸ X .eq x x') ⊸ Y .eq (f x) (f x')
+
+  -- if P ⊸ Q is P⁻¹ · Q, this is (dep x) · Y.eq(f x)(f x') / X.eq(x)(x')
+
+  -- i.e. Y.eq(x)(x') / X.eq(x)(x') = (dep x)⁻¹  i.e. the reciprocal of the derivative? why the reciprocal?
 
   constant : ∀ {X Y} → El Y → X ⇒ Y
   constant y .func _ = y
@@ -173,55 +196,39 @@ module version1 where
 
   id : ∀ X → X ⇒ X
   id X .func x = x
-  id X .deps x i j with i ≟ j
-  ... | yes _ = I
-  ... | no _ = O
-  id X .deps-ok x x' j z with z j
-  ... | z' with j ≟ j
-  ... | yes _ = z' refl
-  ... | no ¬j≡j with ¬j≡j refl
-  ... | ()
+  id X .deps x = Id (X .arity)
+  id X .deps-ok x x' j ϕ = ϕ j Id-diag
 
   _∘_ : ∀ {X Y Z} → Y ⇒ Z → X ⇒ Y → X ⇒ Z
   (f ∘ g) .func x = f .func (g .func x)
   (f ∘ g) .deps x = f .deps (g .func x) ∘M g .deps x
-  (f ∘ g) .deps-ok x x' j x₁ = f .deps-ok (g .func x) (g .func x') j
-      (λ i f-dep-ij → g .deps-ok x x' i (λ i₁ x₂ → x₁ i₁ (antisym I-top (⊑-trans (greatest (⊑-reflexive (sym f-dep-ij)) (⊑-reflexive (sym x₂))) (upper {f = λ k → f .deps (g .func x) k j ∧ g .deps x i₁ k} i)))))
+  (f ∘ g) .deps-ok x x' j x₁ =
+    f .deps-ok (g .func x) (g .func x') j
+      (λ i f-dep-ij → g .deps-ok x x' i
+         (λ i₁ x₂ → x₁ i₁ (antisym I-top (⊑-trans (greatest (⊑-reflexive (sym f-dep-ij)) (⊑-reflexive (sym x₂))) (upper {f = λ k → f .deps (g .func x) k j ∧ g .deps x i₁ k} i)))))
 
   -- Products
   prod : Obj → Obj → Obj
   prod X Y .arity = X .arity + Y .arity
   prod X Y .dom i = [ X .dom , Y .dom ] (splitAt (X .arity) i)
 
-  is-eq : ∀ {n} → Fin n → Fin n → 𝔹
-  is-eq i j with i ≟ j
-  ... | yes _ = I
-  ... | no _ = O
-
-  is-eq-refl : ∀ {n} {i : Fin n} → is-eq i i ≡ I
-  is-eq-refl {n} {i} with i ≟ i
-  ... | yes refl = refl
-  ... | no ¬i≡i with ¬i≡i refl
-  ... | ()
-
   project₁ : ∀ {X Y} → prod X Y ⇒ X
   project₁ {X} {Y} .func x i = subst [ X .dom , Y .dom ] (splitAt-↑ˡ (X .arity) i (Y .arity)) (x (i ↑ˡ Y .arity))
-  project₁ {X} {Y} .deps x i j = [ is-eq j , (λ _ → O) ] (splitAt (X .arity) i)
-  project₁ {X} {Y} .deps-ok x x' j x₁ =
+  project₁ {X} {Y} .deps x i j = [ Id _ j , (λ _ → O) ] (splitAt (X .arity) i)
+  project₁ {X} {Y} .deps-ok x x' j ϕ =
     cong
-     (λ □ →
-        subst [ X .dom , Y .dom ] (splitAt-↑ˡ (X .arity) j (Y .arity)) □)
-     (x₁ (j ↑ˡ Y .arity)
-         (trans (cong [ is-eq j , (λ _ → O) ] (splitAt-↑ˡ (X .arity) j (Y .arity))) is-eq-refl))
+     (subst [ X .dom , Y .dom ] (splitAt-↑ˡ (X .arity) j (Y .arity)))
+     (ϕ (j ↑ˡ Y .arity)
+         (trans (cong [ Id _ j , (λ _ → O) ] (splitAt-↑ˡ (X .arity) j (Y .arity))) Id-diag))
 
   project₂ : ∀ {X Y} → prod X Y ⇒ Y
   project₂ {X} {Y} .func x i = subst [ X .dom , Y .dom ] (splitAt-↑ʳ (X .arity) (Y .arity) i) (x (X .arity ↑ʳ i))
-  project₂ {X} {Y} .deps x i j = [ (λ _ → O) , is-eq j ] (splitAt (X .arity) i)
-  project₂ {X} {Y} .deps-ok x x' j x₁ =
+  project₂ {X} {Y} .deps x i j = [ (λ _ → O) , Id _ j ] (splitAt (X .arity) i)
+  project₂ {X} {Y} .deps-ok x x' j ϕ =
     cong
-      (λ □ → subst [ X .dom , Y .dom ] (splitAt-↑ʳ (X .arity) (Y .arity) j) □)
-      (x₁ (X .arity ↑ʳ j)
-          (trans (cong [ (λ _ → O) , is-eq j ] (splitAt-↑ʳ (X .arity) (Y .arity) j)) is-eq-refl))
+      (subst [ X .dom , Y .dom ] (splitAt-↑ʳ (X .arity) (Y .arity) j))
+      (ϕ (X .arity ↑ʳ j)
+          (trans (cong [ (λ _ → O) , Id _ j ] (splitAt-↑ʳ (X .arity) (Y .arity) j)) Id-diag))
 
   pair-func : ∀ {A B : Set} {X : A → Set} {Y : B → Set} →
               (f : ∀ a → X a) →
@@ -230,13 +237,21 @@ module version1 where
   pair-func f g (inj₁ x) = f x
   pair-func f g (inj₂ y) = g y
 
-
   pair : ∀ {W X Y} → W ⇒ X → W ⇒ Y → W ⇒ prod X Y
   pair {W} {X} {Y} f g .func w i = pair-func (f .func w) (g .func w) (splitAt (X .arity) i)
   pair {W} {X} {Y} f g .deps w i j = [ (f .deps w i) , (g .deps w i) ] (splitAt (X .arity) j)
   pair {W} {X} {Y} f g .deps-ok x x' j x₁ with splitAt (X .arity) j
   ... | inj₁ j₁ = f .deps-ok x x' j₁ x₁
   ... | inj₂ j₂ = g .deps-ok x x' j₂ x₁
+
+  -- terminal object
+  terminal : Obj
+  terminal .arity = 0
+
+  to-terminal : ∀ {X} → X ⇒ terminal
+  to-terminal {X} .func x ()
+  to-terminal {X} .deps x _ ()
+  to-terminal {X} .deps-ok x x' ()
 
   ------------------------------------------------------------------------------
   -- A function with interesting dependency structure
@@ -250,6 +265,18 @@ module version1 where
   set-f f .deps _ _ _ = I
   set-f f .deps-ok x x' j ϕ = cong f (ϕ zero refl)
 
+  -- Presumably, set preserves finite products ???
+
+  ×-mul : ∀ {A B} → prod (set A) (set B) ⇒ set (A × B)
+  ×-mul {A} {B} .func ab _ = ab zero , ab (suc zero)
+  ×-mul {A} {B} .deps ab _ _ = I
+  ×-mul {A} {B} .deps-ok x x' j ϕ rewrite ϕ zero refl rewrite ϕ (suc zero) refl = refl
+
+  -- Is this the inverse of pair (set-f proj₁) (set-f proj₂) ?? even
+  -- on the dependency information??
+
+  ------------------------------------------------------------------------------
+  -- Some arithmetic
   is-zero : ℕ → 𝔹
   is-zero zero = I
   is-zero (suc n) = O
@@ -260,9 +287,12 @@ module version1 where
 
   add : prod (set ℕ) (set ℕ) ⇒ set ℕ
   add .func xy _ = xy zero + xy (suc zero)
-  add .deps xy _ _ = I -- matrix of all 'I's; this suffices for all functions, but we needn't do that
+  add .deps xy _ _ = I -- matrix of all 'I's; this suffices for all functions, but we needn't do that in some special cases.
   add .deps-ok x x' j ϕ = cong₂ _+_ (ϕ zero refl) (ϕ (suc zero) refl)
 
+  -- Dependency tracking information is not unique; there are three
+  -- ways of assigning dependency information to the (0,0) point of
+  -- multiplication.
   mul : prod (set ℕ) (set ℕ) ⇒ set ℕ
   mul .func xy _ = xy zero * xy (suc zero)
   mul .deps xy zero       _ = is-zero (xy zero) ∨ is-not-zero (xy (suc zero))
@@ -275,9 +305,23 @@ module version1 where
   mul .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | suc n | zero rewrite sym (ϕ₂ refl) = trans (*-zeroʳ n) (sym (*-zeroʳ (x' zero)))
   mul .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | suc n | suc m rewrite sym (ϕ₁ refl) rewrite sym (ϕ₂ refl) = refl
 
+  mul' : prod (set ℕ) (set ℕ) ⇒ set ℕ
+  mul' .func xy _ = xy zero * xy (suc zero)
+  mul' .deps xy zero       _ = {- is-zero (xy zero) ∨ -} is-not-zero (xy (suc zero))
+  mul' .deps xy (suc zero) _ = is-not-zero (xy zero) ∨ is-zero (xy (suc zero))
+  mul' .deps-ok x x' _ ϕ with ϕ zero
+  mul' .deps-ok x x' _ ϕ | ϕ₁ with ϕ (suc zero)
+  mul' .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ with x zero
+  mul' .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | zero with x (suc zero)
+  mul' .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | zero | zero rewrite sym (ϕ₂ refl) = sym (*-zeroʳ (x' zero)) -- rewrite sym (ϕ₁ refl) = refl
+  mul' .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | zero | suc m rewrite sym (ϕ₁ refl) = refl
+  mul' .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | suc n with x (suc zero)
+  mul' .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | suc n | zero rewrite sym (ϕ₂ refl) = trans (*-zeroʳ n) (sym (*-zeroʳ (x' zero)))
+  mul' .deps-ok x x' _ ϕ | ϕ₁ | ϕ₂ | suc n | suc m rewrite sym (ϕ₁ refl) rewrite sym (ϕ₂ refl) = refl
+
   -- This gives an interesting matrix of dependencies, including the
   -- forbidden "parallel" one!
-  _ = {!mul .deps (λ { zero → 0 ; (suc zero) → 0 }) zero zero!}
+  _ = {!mul' .deps (λ { zero → 0 ; (suc zero) → 0 }) zero zero!}
 
   -- mul (0, 0) = (I O) -- or (O I) or (I I)
   -- mul (0, n) = (I O)
@@ -342,7 +386,6 @@ module version2 where
 
   lemma₁ : ∀ {x y} → x ∨ y ≡ O → y ≡ O
   lemma₁ {O} {y} eq = eq
-
 
   lemma : ∀ {n} {f : Fin n → 𝔹} → ⋁ f ≡ O → ∀ k → f k ≡ O
   lemma {zero} {f} eq ()
