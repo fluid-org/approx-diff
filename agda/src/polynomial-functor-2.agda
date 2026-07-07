@@ -137,7 +137,8 @@ module MuIso
   open HasProducts 𝒞P
   open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SCP) using (in₁; in₂)
   open HasStrongCoproducts 𝒞SCP using (copair-in₁; copair-in₂; copair-ext)
-    renaming (copair to scopair; copair-cong to scopair-cong; copair-ext0 to scopair-ext0)
+    renaming (copair to scopair; copair-cong to scopair-cong; copair-ext0 to scopair-ext0;
+              copair-reindex to scopair-reindex)
   open HasTerminal 𝒞T using (to-terminal)
   open categories.Unitor 𝒞T 𝒞P using (sect; unitor-comp)
   open Interp 𝒞T 𝒞P 𝒞SCP
@@ -755,3 +756,84 @@ module MuIso
   pm-iso-μ r .PolyIso.bwd     = μ (r .PolyIso.bwd)
   pm-iso-μ r .PolyIso.bwd∘fwd = μ (r .PolyIso.bwd∘fwd)
   pm-iso-μ r .PolyIso.fwd∘bwd = μ (r .PolyIso.fwd∘bwd)
+
+  -- Reindexing the context of the strong action and of catamorphisms:
+  -- precomposition with prod-m u id commutes with both.
+  ⦅⦆-reindex : ∀ {n Γ Γ' A} (P : Poly 𝒞 (suc n)) (δ : Fin n → obj) (u : Γ' ⇒ Γ)
+               (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) →
+               (⦅_⦆ {P = P} {δ = δ} alg ∘ prod-m u (id _)) ≈ ⦅_⦆ {P = P} {δ = δ} (alg ∘ prod-m u (id _))
+
+  strong-fmor-reindex : ∀ {n Γ Γ'} (P : Poly 𝒞 n) {δ δ' : Fin n → obj} (u : Γ' ⇒ Γ)
+                        (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
+                        (strong-fmor P fs ∘ prod-m u (id _)) ≈ strong-fmor P (λ i → fs i ∘ prod-m u (id _))
+
+  strong-fmor-reindex (const A) u fs = ≈-trans (pair-p₂ _ _) id-left
+  strong-fmor-reindex (var i)   u fs = ≈-refl
+  strong-fmor-reindex (P + Q)   u fs =
+    ≈-trans (scopair-reindex u _ _)
+      (scopair-cong
+        (≈-trans (assoc _ _ _) (∘-cong ≈-refl (strong-fmor-reindex P u fs)))
+        (≈-trans (assoc _ _ _) (∘-cong ≈-refl (strong-fmor-reindex Q u fs))))
+  strong-fmor-reindex (P × Q)   u fs =
+    ≈-trans (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym prod-m-id)))
+      (≈-trans (strong-prod-m-pre _ _ _ _ _)
+        (strong-prod-m-cong (strong-fmor-reindex P u fs) (strong-fmor-reindex Q u fs)))
+  strong-fmor-reindex (μ P) {δ} {δ'} u fs =
+    ≈-trans (⦅⦆-reindex P δ u _)
+      (⦅⦆-cong P δ
+        (≈-trans (assoc _ _ _)
+          (∘-cong ≈-refl
+            (≈-trans (strong-fmor-reindex P u (strong-extend-mor fs p₂))
+              (strong-fmor-cong P pointwise)))))
+    where
+      pointwise : ∀ i → (strong-extend-mor fs p₂ i ∘ prod-m u (id _))
+                        ≈ strong-extend-mor (λ j → fs j ∘ prod-m u (id _)) p₂ i
+      pointwise Fin.zero    = ≈-trans (pair-p₂ _ _) id-left
+      pointwise (Fin.suc i) = ≈-refl
+
+  ⦅⦆-reindex {n} {Γ} {Γ'} {A} P δ u alg =
+    ⦅⦆-η {P = P} {δ = δ} (alg ∘ prod-m u (id _)) (⦅_⦆ {P = P} {δ = δ} alg ∘ prod-m u (id _)) sq
+    where
+      h = ⦅_⦆ {P = P} {δ = δ} alg ∘ prod-m u (id _)
+
+      pointwise : ∀ i → (strong-extend-mor (λ j → p₂) (⦅_⦆ {P = P} {δ = δ} alg) i ∘ prod-m u (id _))
+                        ≈ strong-extend-mor (λ j → p₂) h i
+      pointwise Fin.zero    = ≈-refl
+      pointwise (Fin.suc i) = ≈-trans (pair-p₂ _ _) id-left
+
+      lhs-chain : (h ∘co (α P δ ∘ p₂)) ≈ (alg ∘ pair (u ∘ p₁) (strong-fmor P (strong-extend-mor (λ i → p₂) h)))
+      lhs-chain =
+        begin
+          (⦅_⦆ {P = P} {δ = δ} alg ∘ prod-m u (id _)) ∘ pair p₁ (α P δ ∘ p₂)
+        ≈⟨ assoc _ _ _ ⟩
+          ⦅_⦆ {P = P} {δ = δ} alg ∘ (prod-m u (id _) ∘ pair p₁ (α P δ ∘ p₂))
+        ≈⟨ ∘-cong ≈-refl (prodm-pair-interchange u (α P δ)) ⟩
+          ⦅_⦆ {P = P} {δ = δ} alg ∘ (pair p₁ (α P δ ∘ p₂) ∘ prod-m u (id _))
+        ≈˘⟨ assoc _ _ _ ⟩
+          (⦅_⦆ {P = P} {δ = δ} alg ∘ pair p₁ (α P δ ∘ p₂)) ∘ prod-m u (id _)
+        ≈⟨ ∘-cong (⦅⦆-β alg) ≈-refl ⟩
+          (alg ∘ pair p₁ (strong-fmor P (strong-extend-mor (λ i → p₂) (⦅_⦆ {P = P} {δ = δ} alg)))) ∘ prod-m u (id _)
+        ≈⟨ assoc _ _ _ ⟩
+          alg ∘ (pair p₁ (strong-fmor P (strong-extend-mor (λ i → p₂) (⦅_⦆ {P = P} {δ = δ} alg))) ∘ prod-m u (id _))
+        ≈⟨ ∘-cong ≈-refl (pair-natural _ _ _) ⟩
+          alg ∘ pair (p₁ ∘ prod-m u (id _)) (strong-fmor P (strong-extend-mor (λ i → p₂) (⦅_⦆ {P = P} {δ = δ} alg)) ∘ prod-m u (id _))
+        ≈⟨ ∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (≈-trans (strong-fmor-reindex P u _) (strong-fmor-cong P pointwise))) ⟩
+          alg ∘ pair (u ∘ p₁) (strong-fmor P (strong-extend-mor (λ i → p₂) h))
+        ∎ where open ≈-Reasoning isEquiv
+
+
+      rhs-chain : ((alg ∘ prod-m u (id _)) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h))
+                  ≈ (alg ∘ pair (u ∘ p₁) (strong-fmor P (strong-extend-mor (λ i → p₂) h)))
+      rhs-chain =
+        begin
+          (alg ∘ prod-m u (id _)) ∘ pair p₁ (strong-fmor P (strong-extend-mor (λ i → p₂) h))
+        ≈⟨ assoc _ _ _ ⟩
+          alg ∘ (prod-m u (id _) ∘ pair p₁ (strong-fmor P (strong-extend-mor (λ i → p₂) h)))
+        ≈⟨ ∘-cong ≈-refl (pair-compose _ _ _ _) ⟩
+          alg ∘ pair (u ∘ p₁) (id _ ∘ strong-fmor P (strong-extend-mor (λ i → p₂) h))
+        ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl id-left) ⟩
+          alg ∘ pair (u ∘ p₁) (strong-fmor P (strong-extend-mor (λ i → p₂) h))
+        ∎ where open ≈-Reasoning isEquiv
+
+      sq : (h ∘co (α P δ ∘ p₂)) ≈ ((alg ∘ prod-m u (id _)) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h))
+      sq = ≈-trans lhs-chain (≈-sym rhs-chain)

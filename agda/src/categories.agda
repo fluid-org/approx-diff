@@ -524,6 +524,21 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
                     id _ ∎
     where open ≈-Reasoning isEquiv
 
+  prodm-pair-interchange : ∀ {w w' x y} (u : w ⇒ w') (v : x ⇒ y) →
+                           (prod-m u (id _) ∘ pair p₁ (v ∘ p₂)) ≈ (pair p₁ (v ∘ p₂) ∘ prod-m u (id _))
+  prodm-pair-interchange u v = begin
+      prod-m u (id _) ∘ pair p₁ (v ∘ p₂)
+    ≈⟨ pair-compose _ _ _ _ ⟩
+      pair (u ∘ p₁) (id _ ∘ (v ∘ p₂))
+    ≈⟨ pair-cong ≈-refl id-left ⟩
+      pair (u ∘ p₁) (v ∘ p₂)
+    ≈˘⟨ pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left))) ⟩
+      pair (p₁ ∘ prod-m u (id _)) ((v ∘ p₂) ∘ prod-m u (id _))
+    ≈˘⟨ pair-natural _ _ _ ⟩
+      pair p₁ (v ∘ p₂) ∘ prod-m u (id _)
+    ∎ where open ≈-Reasoning isEquiv
+
+
   prod-m-id : ∀ {x y} → prod-m (id x) (id y) ≈ id (prod x y)
   prod-m-id =
     begin
@@ -803,6 +818,37 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
   copair-ext0 : ∀ {w x y} → copair (in₁ ∘ p₂ {w} {x}) (in₂ ∘ p₂ {w} {y}) ≈ p₂
   copair-ext0 = ≈-trans (copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
                         (copair-ext p₂)
+
+  copair-reindex : ∀ {w w' x y z} (u : w ⇒ w') (f : prod w' x ⇒ z) (g : prod w' y ⇒ z) →
+                   (copair f g ∘ prod-m u (id _)) ≈ copair (f ∘ prod-m u (id _)) (g ∘ prod-m u (id _))
+  copair-reindex u f g =
+    ≈-trans (≈-sym (copair-ext _)) (copair-cong c₁ c₂)
+    where
+      c₁ : ((copair f g ∘ prod-m u (id _)) ∘ pair p₁ (in₁ ∘ p₂)) ≈ (f ∘ prod-m u (id _))
+      c₁ = begin
+          (copair f g ∘ prod-m u (id _)) ∘ pair p₁ (in₁ ∘ p₂)
+        ≈⟨ assoc _ _ _ ⟩
+          copair f g ∘ (prod-m u (id _) ∘ pair p₁ (in₁ ∘ p₂))
+        ≈⟨ ∘-cong ≈-refl (prodm-pair-interchange u in₁) ⟩
+          copair f g ∘ (pair p₁ (in₁ ∘ p₂) ∘ prod-m u (id _))
+        ≈˘⟨ assoc _ _ _ ⟩
+          (copair f g ∘ pair p₁ (in₁ ∘ p₂)) ∘ prod-m u (id _)
+        ≈⟨ ∘-cong (copair-in₁ f g) ≈-refl ⟩
+          f ∘ prod-m u (id _)
+        ∎ where open ≈-Reasoning isEquiv
+
+      c₂ : ((copair f g ∘ prod-m u (id _)) ∘ pair p₁ (in₂ ∘ p₂)) ≈ (g ∘ prod-m u (id _))
+      c₂ = begin
+          (copair f g ∘ prod-m u (id _)) ∘ pair p₁ (in₂ ∘ p₂)
+        ≈⟨ assoc _ _ _ ⟩
+          copair f g ∘ (prod-m u (id _) ∘ pair p₁ (in₂ ∘ p₂))
+        ≈⟨ ∘-cong ≈-refl (prodm-pair-interchange u in₂) ⟩
+          copair f g ∘ (pair p₁ (in₂ ∘ p₂) ∘ prod-m u (id _))
+        ≈˘⟨ assoc _ _ _ ⟩
+          (copair f g ∘ pair p₁ (in₂ ∘ p₂)) ∘ prod-m u (id _)
+        ≈⟨ ∘-cong (copair-in₂ f g) ≈-refl ⟩
+          g ∘ prod-m u (id _)
+        ∎ where open ≈-Reasoning isEquiv
 
   copair-natural : ∀ {w x y z z'} (h : z ⇒ z') (f : prod w x ⇒ z) (g : prod w y ⇒ z) →
                    (h ∘ copair f g) ≈ copair (h ∘ f) (h ∘ g)
