@@ -6,11 +6,12 @@
 
 open import Level using (Level; lift)
 open import Data.Product using (_,_)
+open import Data.Sum using (inj₁; inj₂)
 open import Data.Unit using (tt)
 open import prop using (⟪_⟫) renaming (_,_ to _,ₚ_)
 open import prop-setoid using (Setoid; IsEquivalence; 𝟙; to-𝟙; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≃s_)
-open import categories using (Category; setoid→category; HasTerminal; IsTerminal; HasProducts; HasExponentials)
+open import categories using (Category; setoid→category; HasTerminal; IsTerminal; HasProducts; HasExponentials; HasCoproducts)
 open import functor
   using (Functor; HasColimits; Colimit; IsColimit; NatTrans; constF; constFmor; ≃-NatTrans)
   renaming (_∘_ to _∘N_; _∘F_ to _∘F_)
@@ -23,7 +24,7 @@ module fam-realisation {o m e} (os es : Level) {ℰ : Category o m e}
   where
 
 open Category ℰ
-open fam.CategoryOfFamilies os es ℰ using (cat; Mor-∘; bigCoproducts; terminal; simple[_,_]; simplef[_,_])
+open fam.CategoryOfFamilies os es ℰ using (cat; Mor-∘; bigCoproducts; terminal; simple[_,_]; simplef[_,_]; coproducts)
 open fam.CategoryOfFamilies.Obj
 open fam.CategoryOfFamilies.Mor
 open fam.CategoryOfFamilies._≃_
@@ -571,3 +572,140 @@ transpose-natural₂ {W} {X} {Y} h f =
       ≈˘⟨ id-left ⟩
         id _ ∘ (h ∘ f .famf .transf i)
       ∎ where open ≈-Reasoning isEquiv
+
+-- Realisation preserves binary coproducts.
+module _ (ECP : HasCoproducts ℰ) where
+
+  private
+    module ECP = HasCoproducts ECP
+    module FC = HasCoproducts coproducts
+
+  module _ (X Y : Category.obj cat) where
+
+    private
+      X⊕Y = FC.coprod X Y
+
+      sumCone : NatTrans (fam→functor (X⊕Y .fam)) (constF (setoid→category (X⊕Y .idx)) (ECP.coprod (realise .fobj X) (realise .fobj Y)))
+      sumCone .transf (inj₁ i) = ECP.in₁ ∘ colim X .cocone .transf i
+      sumCone .transf (inj₂ j) = ECP.in₂ ∘ colim Y .cocone .transf j
+      sumCone .natural {inj₁ i₁} {inj₁ i₂} ⟪ e ⟫ =
+        begin
+          id _ ∘ (ECP.in₁ ∘ colim X .cocone .transf i₁)
+        ≈⟨ id-left ⟩
+          ECP.in₁ ∘ colim X .cocone .transf i₁
+        ≈⟨ ∘-cong ≈-refl (≈-trans (≈-sym id-left) (colim X .cocone .natural ⟪ e ⟫)) ⟩
+          ECP.in₁ ∘ (colim X .cocone .transf i₂ ∘ X .fam .subst e)
+        ≈˘⟨ assoc _ _ _ ⟩
+          (ECP.in₁ ∘ colim X .cocone .transf i₂) ∘ X .fam .subst e
+        ∎ where open ≈-Reasoning isEquiv
+      sumCone .natural {inj₁ i₁} {inj₂ j₂} ⟪ () ⟫
+      sumCone .natural {inj₂ j₁} {inj₁ i₂} ⟪ () ⟫
+      sumCone .natural {inj₂ j₁} {inj₂ j₂} ⟪ e ⟫ =
+        begin
+          id _ ∘ (ECP.in₂ ∘ colim Y .cocone .transf j₁)
+        ≈⟨ id-left ⟩
+          ECP.in₂ ∘ colim Y .cocone .transf j₁
+        ≈⟨ ∘-cong ≈-refl (≈-trans (≈-sym id-left) (colim Y .cocone .natural ⟪ e ⟫)) ⟩
+          ECP.in₂ ∘ (colim Y .cocone .transf j₂ ∘ Y .fam .subst e)
+        ≈˘⟨ assoc _ _ _ ⟩
+          (ECP.in₂ ∘ colim Y .cocone .transf j₂) ∘ Y .fam .subst e
+        ∎ where open ≈-Reasoning isEquiv
+
+      fwd⊕ = colim X⊕Y .isColimit .colambda _ sumCone
+
+      fwd-in₁ : (fwd⊕ ∘ realise .fmor FC.in₁) ≈ ECP.in₁
+      fwd-in₁ =
+        ≈-trans (≈-sym (colim X .isColimit .colambda-ext _ _))
+          (≈-trans (colim X .isColimit .colambda-cong eq₁) (colim X .isColimit .colambda-ext _ ECP.in₁))
+        where
+          eq₁ : ≃-NatTrans _ _
+          eq₁ .transf-eq i =
+            begin
+              (fwd⊕ ∘ realise .fmor FC.in₁) ∘ colim X .cocone .transf i
+            ≈⟨ assoc _ _ _ ⟩
+              fwd⊕ ∘ (realise .fmor FC.in₁ ∘ colim X .cocone .transf i)
+            ≈⟨ ∘-cong ≈-refl (colim X .isColimit .colambda-coeval _ (push FC.in₁) .transf-eq i) ⟩
+              fwd⊕ ∘ (colim X⊕Y .cocone .transf (inj₁ i) ∘ id _)
+            ≈⟨ ∘-cong ≈-refl id-right ⟩
+              fwd⊕ ∘ colim X⊕Y .cocone .transf (inj₁ i)
+            ≈⟨ colim X⊕Y .isColimit .colambda-coeval _ sumCone .transf-eq (inj₁ i) ⟩
+              ECP.in₁ ∘ colim X .cocone .transf i
+            ∎ where open ≈-Reasoning isEquiv
+
+      fwd-in₂ : (fwd⊕ ∘ realise .fmor FC.in₂) ≈ ECP.in₂
+      fwd-in₂ =
+        ≈-trans (≈-sym (colim Y .isColimit .colambda-ext _ _))
+          (≈-trans (colim Y .isColimit .colambda-cong eq₂) (colim Y .isColimit .colambda-ext _ ECP.in₂))
+        where
+          eq₂ : ≃-NatTrans _ _
+          eq₂ .transf-eq j =
+            begin
+              (fwd⊕ ∘ realise .fmor FC.in₂) ∘ colim Y .cocone .transf j
+            ≈⟨ assoc _ _ _ ⟩
+              fwd⊕ ∘ (realise .fmor FC.in₂ ∘ colim Y .cocone .transf j)
+            ≈⟨ ∘-cong ≈-refl (colim Y .isColimit .colambda-coeval _ (push FC.in₂) .transf-eq j) ⟩
+              fwd⊕ ∘ (colim X⊕Y .cocone .transf (inj₂ j) ∘ id _)
+            ≈⟨ ∘-cong ≈-refl id-right ⟩
+              fwd⊕ ∘ colim X⊕Y .cocone .transf (inj₂ j)
+            ≈⟨ colim X⊕Y .isColimit .colambda-coeval _ sumCone .transf-eq (inj₂ j) ⟩
+              ECP.in₂ ∘ colim Y .cocone .transf j
+            ∎ where open ≈-Reasoning isEquiv
+
+    realise-coproducts-iso : Category.Iso ℰ (realise .fobj X⊕Y) (ECP.coprod (realise .fobj X) (realise .fobj Y))
+    realise-coproducts-iso .Category.Iso.fwd = fwd⊕
+    realise-coproducts-iso .Category.Iso.bwd =
+      ECP.copair (realise .fmor FC.in₁) (realise .fmor FC.in₂)
+    realise-coproducts-iso .Category.Iso.fwd∘bwd≈id =
+      begin
+        fwd⊕ ∘ ECP.copair (realise .fmor FC.in₁) (realise .fmor FC.in₂)
+      ≈⟨ ECP.copair-natural _ _ _ ⟩
+        ECP.copair (fwd⊕ ∘ realise .fmor FC.in₁) (fwd⊕ ∘ realise .fmor FC.in₂)
+      ≈⟨ ECP.copair-cong fwd-in₁ fwd-in₂ ⟩
+        ECP.copair ECP.in₁ ECP.in₂
+      ≈⟨ ≈-trans (ECP.copair-cong (≈-sym id-left) (≈-sym id-left)) (ECP.copair-ext (id _)) ⟩
+        id _
+      ∎ where open ≈-Reasoning isEquiv
+    realise-coproducts-iso .Category.Iso.bwd∘fwd≈id =
+      ≈-trans (≈-sym (colim X⊕Y .isColimit .colambda-ext _ _))
+        (≈-trans (colim X⊕Y .isColimit .colambda-cong eq)
+          (colim X⊕Y .isColimit .colambda-ext _ (id _)))
+      where
+        bwd⊕ = ECP.copair (realise .fmor FC.in₁) (realise .fmor FC.in₂)
+
+        eq : ≃-NatTrans _ _
+        eq .transf-eq (inj₁ i) =
+          begin
+            (bwd⊕ ∘ fwd⊕) ∘ colim X⊕Y .cocone .transf (inj₁ i)
+          ≈⟨ assoc _ _ _ ⟩
+            bwd⊕ ∘ (fwd⊕ ∘ colim X⊕Y .cocone .transf (inj₁ i))
+          ≈⟨ ∘-cong ≈-refl (colim X⊕Y .isColimit .colambda-coeval _ sumCone .transf-eq (inj₁ i)) ⟩
+            bwd⊕ ∘ (ECP.in₁ ∘ colim X .cocone .transf i)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (bwd⊕ ∘ ECP.in₁) ∘ colim X .cocone .transf i
+          ≈⟨ ∘-cong (ECP.copair-in₁ _ _) ≈-refl ⟩
+            realise .fmor FC.in₁ ∘ colim X .cocone .transf i
+          ≈⟨ colim X .isColimit .colambda-coeval _ (push FC.in₁) .transf-eq i ⟩
+            colim X⊕Y .cocone .transf (inj₁ i) ∘ id _
+          ≈⟨ id-right ⟩
+            colim X⊕Y .cocone .transf (inj₁ i)
+          ≈˘⟨ id-left ⟩
+            id _ ∘ colim X⊕Y .cocone .transf (inj₁ i)
+          ∎ where open ≈-Reasoning isEquiv
+        eq .transf-eq (inj₂ j) =
+          begin
+            (bwd⊕ ∘ fwd⊕) ∘ colim X⊕Y .cocone .transf (inj₂ j)
+          ≈⟨ assoc _ _ _ ⟩
+            bwd⊕ ∘ (fwd⊕ ∘ colim X⊕Y .cocone .transf (inj₂ j))
+          ≈⟨ ∘-cong ≈-refl (colim X⊕Y .isColimit .colambda-coeval _ sumCone .transf-eq (inj₂ j)) ⟩
+            bwd⊕ ∘ (ECP.in₂ ∘ colim Y .cocone .transf j)
+          ≈˘⟨ assoc _ _ _ ⟩
+            (bwd⊕ ∘ ECP.in₂) ∘ colim Y .cocone .transf j
+          ≈⟨ ∘-cong (ECP.copair-in₂ _ _) ≈-refl ⟩
+            realise .fmor FC.in₂ ∘ colim Y .cocone .transf j
+          ≈⟨ colim Y .isColimit .colambda-coeval _ (push FC.in₂) .transf-eq j ⟩
+            colim X⊕Y .cocone .transf (inj₂ j) ∘ id _
+          ≈⟨ id-right ⟩
+            colim X⊕Y .cocone .transf (inj₂ j)
+          ≈˘⟨ id-left ⟩
+            id _ ∘ colim X⊕Y .cocone .transf (inj₂ j)
+          ∎ where open ≈-Reasoning isEquiv
