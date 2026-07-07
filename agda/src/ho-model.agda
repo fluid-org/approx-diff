@@ -3,7 +3,11 @@
 module ho-model where
 
 open import Level using (Level; 0ℓ; suc)
-open import categories using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial; op-coproducts→products; op-initial→terminal; HasCoproducts)
+open import categories
+  using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial;
+         op-coproducts→products; op-initial→terminal; HasCoproducts;
+         HasStrongCoproducts; strong-coproducts→coproducts; ccc→strong-coproducts)
+import polynomial-functor-2
 open import cmon-enriched
   using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
 open import functor using (HasLimits; op-colimit; limits→limits')
@@ -18,6 +22,7 @@ open import prop using (_,_)
 open import prop-setoid using (IsEquivalence; Setoid)
 open import finite-product-functor
   using (preserve-chosen-products; preserve-chosen-terminal)
+open import finite-coproduct-functor using (preserve-chosen-coproducts)
 
 open Functor
 
@@ -166,3 +171,30 @@ module Interpretation
       Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
       (preserve-identity-monad Fam⟨F⟩) (Identity-monad-preserve-coproducts Fam⟨𝒞⟩-coproducts)
       public
+
+    Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products
+    Fam⟨𝒞⟩-strongCoproducts = Fam⟨𝒞⟩.products.strongCoproducts 𝒞-products
+
+    Fam⟨𝒞⟩-hasMu : polynomial-functor-2.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
+    Fam⟨𝒞⟩-hasMu = fam-mu-types-2.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+
+    -- The embedding preserves the coproducts derived from the strong coproducts
+    -- on either side: the canonical maps differ from those for the chosen
+    -- coproducts only in the copairing, which is unique.
+    GF-preserve-strong-coproducts :
+      preserve-chosen-coproducts GF
+        (strong-coproducts→coproducts Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-strongCoproducts)
+        (strong-coproducts→coproducts GlPE.terminal (ccc→strong-coproducts GlCP.coproducts GlPE.exponentials))
+    GF-preserve-strong-coproducts {x} {y} =
+      Glued.IsIso-cong (Glued.≈-sym map'≈map) GF-preserve-coproducts
+      where
+        module CP' = HasCoproducts
+          (strong-coproducts→coproducts GlPE.terminal (ccc→strong-coproducts GlCP.coproducts GlPE.exponentials))
+        module CPC = HasCoproducts Fam⟨𝒞⟩-coproducts
+
+        map' = CP'.copair (GF .fmor (CPC.in₁ {x} {y})) (GF .fmor (CPC.in₂ {x} {y}))
+
+        map'≈map : map' Glued.≈ GlCPM.copair (GF .fmor (CPC.in₁ {x} {y})) (GF .fmor (CPC.in₂ {x} {y}))
+        map'≈map =
+          Glued.≈-trans (Glued.≈-sym (GlCPM.copair-ext map'))
+            (GlCPM.copair-cong (CP'.copair-in₁ _ _) (CP'.copair-in₂ _ _))

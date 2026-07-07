@@ -95,6 +95,14 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
       f∘inverse≈id : (f ∘ inverse) ≈ id y
       inverse∘f≈id : (inverse ∘ f) ≈ id x
 
+  -- Being an isomorphism respects equality of morphisms.
+  IsIso-cong : ∀ {x y} {f g : x ⇒ y} → f ≈ g → IsIso f → IsIso g
+  IsIso-cong e i .IsIso.inverse = i .IsIso.inverse
+  IsIso-cong e i .IsIso.f∘inverse≈id =
+    isEquiv .trans (∘-cong (isEquiv .sym e) (isEquiv .refl)) (i .IsIso.f∘inverse≈id)
+  IsIso-cong e i .IsIso.inverse∘f≈id =
+    isEquiv .trans (∘-cong (isEquiv .refl) (isEquiv .sym e)) (i .IsIso.inverse∘f≈id)
+
   record Iso (x y : obj) : Set (m ⊔ e) where
     field
       fwd : x ⇒ y
