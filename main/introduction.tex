@@ -248,21 +248,22 @@ matrices, compose using matrix multiplication, and can be evaluated forwards or 
   semiring of dependency information. We elaborate on this further in
   \secref{semantic-gps}.
 
-  The Jacobian acting directly evaluates dependencies \emph{forwards}: given a selection of input
-  positions, it returns the output positions that depend on them. A selection of positions can be displayed as
-  an \emph{approximation} of the underlying value, with the numbers at unselected positions replaced by
-  $\bot$; we write the database first and the pair of prices $\langle \mathit{price}\,\mathsf{a},
-  \mathit{price}\,\mathsf{b} \rangle$ after it. Writing
+  As a matrix, the Boolean Jacobian acts on Boolean vectors indexed by input positions, and this action
+  evaluates dependencies \emph{forwards}: a vector selects input positions, and its image under the Jacobian
+  selects the output positions that depend on them. Such a vector can also be displayed in the shape of the
+  data the program consumes, as an \emph{approximation} of the input, keeping the numbers at selected
+  positions and replacing the rest by $\bot$, with the price function shown as the pair $\langle
+  \mathit{price}\,\mathsf{a}, \mathit{price}\,\mathsf{b} \rangle$. Writing
   $\partial_{\Two}(\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_f$ for this forward action, we have
   $\partial_{\Two}(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a},\bot),(\mathsf{b},1),(\mathsf{a},\bot)],
   \langle \bot, \bot \rangle) = 5$, since the output depends on the entry $(\mathsf{b},1)$, whereas
   $\partial_{\Two}(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_f$ applied to the same selection
-  returns $\bot$: that run consulted no $\mathsf{b}$-labelled entries.
+  returns $\bot$, because that run consulted no $\mathsf{b}$-labelled entries.
 
   The transpose of the Jacobian evaluates dependencies \emph{backwards}: given a selection of
   output positions, it returns the input positions on which they depend. Writing
   $\partial_{\Two}(\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_r$ for this reverse action, the fully
-  approximated output $\bot$ requires none of the input:
+  approximated output $\bot$ depends on none of the input:
   \begin{displaymath}
     \partial_{\Two} (\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_r(\bot) =
     ([(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)], \langle \bot, \bot \rangle)
@@ -277,13 +278,13 @@ matrices, compose using matrix multiplication, and can be evaluated forwards or 
         & (\mathsf{a},\bot) & (\mathsf{b},1) & (\mathsf{a},\bot) & \bot & 5
     \end{array}
   \end{displaymath}
-  Pieces of the input that were {\em not} used are replaced by $\bot$. As we expect, the run
-  with label $\mathsf{a}$ depends on the entries in the database labelled with $\mathsf{a}$, and likewise
-  for the run with label $\mathsf{b}$. Note that the backward action for $\mathsf{a}$ retains
-  $\mathit{price}\,\mathsf{a}$, even though the numerical derivative there is $0$: read backwards, too, the
-  dependency Jacobian cannot see that contributions cancelled. Asking \emph{how much} an output can change as an
-  input varies, rather than whether it can move at all, calls for a more quantitative choice of scalars; we
-  develop this in \secref{approx-as-tangents:richer-semirings}.
+  Pieces of the input that were not used are replaced by $\bot$. As we expect, the run with label $\mathsf{a}$
+  depends on the entries in the database labelled with $\mathsf{a}$, and likewise for the run with label
+  $\mathsf{b}$. Note that the backward action for $\mathsf{a}$ retains $\mathit{price}\,\mathsf{a}$, even
+  though the numerical derivative there is $0$: read backwards, too, the dependency Jacobian cannot see that
+  contributions cancelled. Asking \emph{how much} an output can change as an input varies, rather than whether
+  it can move at all, calls for a more quantitative choice of scalars; we develop this in
+  \secref{approx-as-tangents:richer-semirings}.
 
 \end{example}
 \end{AddedBlock}
