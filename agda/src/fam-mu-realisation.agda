@@ -1936,3 +1936,86 @@ pure-collapse {n} Q CQ' δ̂₁ δ̂₂ ms isos hyps =
         (≈-trans (CoK.id-left {Γ = ℰT'.witness})
           (≈-trans (∘-cong (hyps i) ≈-refl)
             (≈-sym (≈-trans id-left (fmorη-pure ℰT'.witness (δ̂₁ i) (ms i))))))
+
+-- The μ-collapse at a composite isomorphism family is the composite of the
+-- μ-collapses.
+mu-collapse-comp : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
+                   (δ̂₁ δ̂₂ δ̂₃ : Fin n → FM.Obj)
+                   (isos₁₂ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+                   (isos₂₃ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i))) →
+                   MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
+                   ≈ (MuCollapse.mu-collapse Q CQ δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
+mu-collapse-comp {n} Q CQ δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ =
+  ≈-trans (∘-cong (≈-sym (MC₁₃.M₁.foldR-η {Γ = ℰT'.witness} _ (MC₂₃.F' ∘co MC₁₂.F') square)) ≈-refl)
+    (≈-sym (MC₁₂.plait MC₂₃.F' MC₁₂.F'))
+  where
+    module MC₁₂ = MuCollapse Q CQ δ̂₁ δ̂₂ isos₁₂
+    module MC₂₃ = MuCollapse Q CQ δ̂₂ δ̂₃ isos₂₃
+    module MC₁₃ = MuCollapse Q CQ δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i))
+
+    C₃ = Creal Q δ̂₃
+
+    GIcomp : (MC₂₃.GI C₃ .Iso.fwd ∘ MC₁₂.GI C₃ .Iso.fwd) ≈ MC₁₃.GI C₃ .Iso.fwd
+    GIcomp =
+      ≈-sym (≈-trans (collapse-ext Q CQ _ _ (MC₁₃.extIsos C₃) (λ i → Iso-trans (MC₁₂.extIsos C₃ i) (MC₂₃.extIsos C₃ i)) pw)
+        (CQ .CollapseAt.comp _ _ _ (MC₁₂.extIsos C₃) (MC₂₃.extIsos C₃)))
+      where
+        pw : ∀ i → MC₁₃.extIsos C₃ i .Iso.fwd ≈ Iso-trans (MC₁₂.extIsos C₃ i) (MC₂₃.extIsos C₃ i) .Iso.fwd
+        pw Fin.zero    = ≈-sym id-left
+        pw (Fin.suc i) = ≈-refl
+
+    inner-split : ((MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₂₃.F')
+                  ≈ (MC₁₂.GI C₃ .Iso.fwd ∘ Gmap Q δ̂₁ MC₂₃.F')
+    inner-split = ≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _))
+
+    head-comp : ((MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂))
+                ≈ (MC₁₃.M₂.inR ∘ (MC₁₃.GI C₃ .Iso.fwd ∘ ℰP.p₂))
+    head-comp =
+      begin
+        (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂)
+      ≈˘⟨ CoK.∘-cong (assoc _ _ _) ≈-refl ⟩
+        ((MC₂₃.M₂.inR ∘ MC₂₃.GI C₃ .Iso.fwd) ∘ ℰP.p₂) ∘co (MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂)
+      ≈⟨ co-pure _ _ ⟩
+        ((MC₂₃.M₂.inR ∘ MC₂₃.GI C₃ .Iso.fwd) ∘ MC₁₂.GI C₃ .Iso.fwd) ∘ ℰP.p₂
+      ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+        (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ MC₁₂.GI C₃ .Iso.fwd)) ∘ ℰP.p₂
+      ≈⟨ ∘-cong (∘-cong ≈-refl GIcomp) ≈-refl ⟩
+        (MC₁₃.M₂.inR ∘ MC₁₃.GI C₃ .Iso.fwd) ∘ ℰP.p₂
+      ≈⟨ assoc _ _ _ ⟩
+        MC₁₃.M₂.inR ∘ (MC₁₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)
+      ∎ where open ≈-Reasoning isEquiv
+
+    square : ((MC₂₃.F' ∘co MC₁₂.F') ∘co (MC₁₃.M₁.inR ∘ ℰP.p₂))
+             ≈ ((MC₁₃.M₂.inR ∘ (MC₁₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ (MC₂₃.F' ∘co MC₁₂.F'))
+    square =
+      begin
+        (MC₂₃.F' ∘co MC₁₂.F') ∘co (MC₁₃.M₁.inR ∘ ℰP.p₂)
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        MC₂₃.F' ∘co (MC₁₂.F' ∘co (MC₁₂.M₁.inR ∘ ℰP.p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (MC₁₂.M₁.foldR-β _) ⟩
+        MC₂₃.F' ∘co ((MC₁₂.M₂.inR ∘ (MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ MC₁₂.F')
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure _ _))) ≈-refl) ⟩
+        MC₂₃.F' ∘co (((MC₁₂.M₂.inR ∘ ℰP.p₂) ∘co (MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ MC₁₂.F')
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        MC₂₃.F' ∘co ((MC₁₂.M₂.inR ∘ ℰP.p₂) ∘co ((MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₁₂.F'))
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        (MC₂₃.F' ∘co (MC₂₃.M₁.inR ∘ ℰP.p₂)) ∘co ((MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₁₂.F')
+      ≈⟨ CoK.∘-cong (MC₂₃.M₁.foldR-β _) ≈-refl ⟩
+        ((MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ MC₂₃.F') ∘co ((MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₁₂.F')
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (Gmap Q δ̂₂ MC₂₃.F' ∘co ((MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₁₂.F'))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co ((Gmap Q δ̂₂ MC₂₃.F' ∘co (MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ MC₁₂.F')
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (MC₁₂.cross MC₂₃.F') ≈-refl) ⟩
+        (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co ((MC₁₂.GI C₃ .Iso.fwd ∘ Gmap Q δ̂₁ MC₂₃.F') ∘co Gmap Q δ̂₁ MC₁₂.F')
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (≈-sym inner-split) ≈-refl) ⟩
+        (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (((MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₂₃.F') ∘co Gmap Q δ̂₁ MC₁₂.F')
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co ((MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂) ∘co (Gmap Q δ̂₁ MC₂₃.F' ∘co Gmap Q δ̂₁ MC₁₂.F'))
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        ((MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (Gmap Q δ̂₁ MC₂₃.F' ∘co Gmap Q δ̂₁ MC₁₂.F')
+      ≈⟨ CoK.∘-cong head-comp (≈-sym (Gmap-∘co Q δ̂₁ MC₂₃.F' MC₁₂.F')) ⟩
+        (MC₁₃.M₂.inR ∘ (MC₁₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ (MC₂₃.F' ∘co MC₁₂.F')
+      ∎
+      where open ≈-Reasoning isEquiv
+
