@@ -6,7 +6,9 @@ open import prop using (_,_; proj₁; proj₂; ∃; LiftP; lift; lower; liftS; L
 open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet)
 open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
-         HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans; setoid→category)
+         HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans; setoid→category;
+         HasStrongCoproducts; ccc→strong-coproducts; strong-coproducts→coproducts)
+import polynomial-functor-2
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
          interchange; H-id; NT-id-left;
@@ -761,3 +763,37 @@ module syntactic {ℓ}
       F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso .bwd .morph 𝒟.∘ (G⟦ M ⟧tm .morph 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd .morph))
   syntactic-definability {Γ} {τ} Γ-fo τ-fo M =
     definability (⟦ τ-fo ⟧-iso .bwd Glued.∘ (G⟦ M ⟧tm Glued.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
+
+-- Syntactic definability for the language with general recursive types.
+module syntactic-2 {ℓ}
+   (Sig : Signature ℓ)
+   (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
+   (𝒞Mu : polynomial-functor-2.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
+   (let GlSC = ccc→strong-coproducts GlCP.coproducts GlPE.exponentials)
+   (Gl-Mu : polynomial-functor-2.Interp.HasMu GlPE.terminal GlPE.products GlSC)
+   (Gl-MuLaws : polynomial-functor-2.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu)
+   (GFC : preserve-chosen-coproducts GF (strong-coproducts→coproducts 𝒞T 𝒞SC)
+                                        (strong-coproducts→coproducts GlPE.terminal GlSC))
+   (GFμ : polynomial-functor-2.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-Mu GF)
+   (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P ,
+                   HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
+                     (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
+   where
+
+  open import language-syntax-2 Sig using (_⊢_; first-order; first-order-ctxt)
+
+  open import language-fo-interpretation-2 Sig
+         𝒞 𝒞T 𝒞P 𝒞SC 𝒞Mu
+         Gl.cat GlPE.terminal GlPE.products GlSC GlPE.exponentials Gl-Mu Gl-MuLaws
+         GF GF-preserve-terminal GF-preserve-products GFC GFμ
+         𝒞-Sig-Model
+    renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
+
+  open Glued.Iso
+
+  syntactic-definability :
+    ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (τ-fo : first-order τ) (M : Γ ⊢ τ) →
+    ∃ (𝒞⟦ Γ-fo ⟧ctxt 𝒞.⇒ 𝒞⟦ τ-fo ⟧ty (λ ())) λ g →
+      F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso (λ ()) .bwd .morph 𝒟.∘ (G⟦ M ⟧tm .morph 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd .morph))
+  syntactic-definability Γ-fo τ-fo M =
+    definability (⟦ τ-fo ⟧-iso (λ ()) .bwd Glued.∘ (G⟦ M ⟧tm Glued.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
