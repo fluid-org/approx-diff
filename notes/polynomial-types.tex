@@ -139,22 +139,27 @@ it provides:
 \item an object $\mu_{\alpha.P}(\delta)$ and algebra map $\inMap : P(\delta[\alpha \mapsto
   \mu_{\alpha.P}(\delta)]) \to \mu_{\alpha.P}(\delta)$;
 \item for every $\Gamma$ and algebra $a : \Gamma \times P(\delta[\alpha \mapsto Y]) \to Y$, a
-  catamorphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$ satisfying, in the notation $f
-  \circ_\Gamma g = f \circ \prodM{\pi_1}{g}$ of composition in context,
-  \begin{align*}
-  \cata{a} \circ_\Gamma (\inMap \circ \pi_2) &= a \circ_\Gamma F\cata{a} \tag{$\beta$} \\
-  h \circ_\Gamma (\inMap \circ \pi_2) = a \circ_\Gamma F h &\implies h = \cata{a} \tag{$\eta$}
-  \end{align*}
-  where $F\cata{a}$ is the action in context of $P(\delta[\alpha \mapsto -])$ on $\cata{a}$: the
-  \emph{strong} functorial action, which takes a morphism in context $\Gamma \times X_i \to Y_i$ for
-  each variable $i$.
+  catamorphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$. Writing $f \circ_\Gamma g = f
+  \circ \prodM{\pi_1}{g}$ for composition in context and $F = P(\delta[\alpha \mapsto -])$, the map
+  $\cata{a}$ is the unique one making
+  \begin{center}
+  \begin{tikzcd}[row sep=2.2em, column sep=3.2em]
+    F\,\mu_{\alpha.P}(\delta) \arrow[r, "\inMap"] \arrow[d, "F\cata{a}"'] & \mu_{\alpha.P}(\delta)
+      \arrow[d, "\cata{a}"] \\
+    F\,Y \arrow[r, "a"'] & Y
+  \end{tikzcd}
+  \end{center}
+  commute in the co-Kleisli category for $\circ_\Gamma$, that is, $\cata{a} \circ_\Gamma (\inMap \circ
+  \pi_2) = a \circ_\Gamma F\cata{a}$ ($\beta$), uniqueness giving $\eta$. The edge $F\cata{a}$ is the
+  \emph{strong} functorial action of $F$, which takes a morphism in context $\Gamma \times X_i \to Y_i$
+  for each variable $i$.
 \end{itemize}
 \end{definition}
 
 \noindent Taking $\Gamma = 1$, each $\mu_{\alpha.P}(\delta)$ is in particular an initial algebra in the usual
 sense; in the presence of exponentials the strong form is no extra imposition (fold into $Y^\Gamma$), but
-$\Fam(\cat{C})$ need not have exponentials. \citet[Definition~6]{nunes2023} ask only for initial algebras; in
-their bicartesian closed setting the strong form comes for free. At the term level, $\beta$ reduces
+$\Fam(\cat{C})$ need not have exponentials. \citet[Definition~6]{nunes2023} accordingly ask only for
+initial algebras, their semantic categories being bicartesian closed. At the term level, $\beta$ reduces
 $\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu$-child of $t$ before
 substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
 
@@ -163,46 +168,61 @@ substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\
 If $\cat{C}$ has finite products $(\times, 1)$ then $\Fam(\cat{C})$ has $\Poly$-types.
 \end{proposition}
 
-\paragraph{Sorts.}
 Nested $\mu$s make the naive construction circular: when an inner binder's body mentions an outer binder,
 the inner carrier must be instantiated at the outer carrier while the latter is still being defined.
 Following \citet{abbott2004} we instead construct the initial algebras of $P$ and of all its inner
-$\mu$-bodies simultaneously, as a single family of trees indexed by \emph{sorts}. A sort over $\Delta$ is a pair $(Q, \rho)$ of a $\mu$-body $Q \in
-\Poly_{\beta_1, \ldots, \beta_k, \alpha}$ together with a \emph{resolution} $\rho$ assigning to each free
-variable $\beta_i$ either a parameter in $\Delta$ or another sort; the collection of sorts is inductively
-generated. A sort is thus a $\mu$-binder cut loose from its surrounding syntax: the binder's own variable
-$\alpha$ will resolve to the sort itself, and $\rho$ records how its remaining variables were bound where
-it occurred.
+$\mu$-bodies simultaneously, as a single family of trees indexed by sorts.
 
-\paragraph{Carrier.}
-Fix a kinding environment $\delta$. For each sort $s = (Q, \rho)$, the index set $W_s$
-of \emph{trees of sort $s$} consists of $Q$-shaped well-founded trees: at each $\const(X, \partial X)$
-position an element of $X$; at each variable position, an element of the index set of the corresponding
-parameter if the variable resolves through $\rho$ to a parameter, and a tree of sort $s'$ if it resolves
-to a sort $s'$ (in particular a tree of sort $s$ itself at the bound variable $\alpha$); at each $+$
-position a branch choice together with a tree-part for the chosen branch; at each $\times$ position
-tree-parts for both branches; and at each inner $\mu\beta.Q'$ position a tree of the sort $(Q', \rho')$,
-where $\rho'$ extends the resolution in force at that position. The sets $W_s$ form a single simultaneous
-inductive definition, indexed by sorts \citep{abbott2004}.
+\begin{definition}[Sort]
+\label{def:polynomial-types:sort}
+A \emph{sort} over $\Delta$ is a pair $(Q, \rho)$ of a $\mu$-body $Q \in \Poly_{\beta_1, \ldots,
+\beta_k, \alpha}$ and a \emph{resolution} $\rho$ assigning to each free variable $\beta_i$ either a
+parameter in $\Delta$ or another sort. The collection of sorts is inductively generated.
+\end{definition}
 
-The fibre $\partial W_s(t) \in \cat{C}$ of a tree $t \in W_s$ is defined by one structural recursion over
-the same indexed family: $\partial X_x$ at each $\const(X, \partial X)$ position labelled $x$; the parameter's
-fibre at each parameter position; the recursive fibre at each sort position; the chosen branch's fibre at
-each $+$ position; and the product of the branch fibres at each $\times$ position.
+\begin{definition}[Trees of a sort]
+\label{def:polynomial-types:trees}
+Fix a kinding environment $\delta$. For each sort $(Q, \rho)$ the set $W_{(Q,\rho)}$ of \emph{trees of
+sort $(Q, \rho)$}, and for each polynomial $Q'$ with a resolution $\rho'$ of its variables the set of
+\emph{$Q'$-trees}, are defined by a single simultaneous induction \citep{abbott2004}:
+\begin{itemize}
+\item a tree of sort $(Q, \rho)$ is a $Q$-tree, the bound variable $\alpha$ resolving to the sort
+  $(Q, \rho)$ itself;
+\item a $\const(X, \partial X)$-tree is an element of $X$;
+\item a $\beta$-tree is an element of the index set of $\delta(\rho'(\beta))$ if $\rho'(\beta)$ is a
+  parameter, and a tree of sort $\rho'(\beta)$ otherwise;
+\item a $(Q_1 + Q_2)$-tree is a $Q_1$-tree or a $Q_2$-tree, tagged with the summand;
+\item a $(Q_1 \times Q_2)$-tree is a pair of a $Q_1$-tree and a $Q_2$-tree;
+\item a $\mu\beta.Q'$-tree is a tree of sort $(Q', \rho')$.
+\end{itemize}
+\end{definition}
 
-The carrier is the family at the root sort: $\mu_{\alpha.P}(\delta) = (W_{s_0}, \partial W_{s_0})$,
-where $s_0 = (P, \rho_0)$ and $\rho_0$ resolves the free variables of $P$ to the parameters $\Delta$.
+\begin{definition}[Fibres]
+\label{def:polynomial-types:fibres}
+The \emph{fibre} $\partial W_s(t) \in \cat{C}$ of a tree $t \in W_s$ is defined by structural recursion
+on trees:
+\begin{itemize}
+\item the fibre of a tree of sort $(Q, \rho)$ is the fibre of the underlying $Q$-tree;
+\item the fibre of a $\const(X, \partial X)$-tree $x$ is $\partial X_x$;
+\item the fibre of a $\beta$-tree is the corresponding fibre of $\delta(\rho'(\beta))$ if
+  $\rho'(\beta)$ is a parameter, and the fibre of the tree of sort $\rho'(\beta)$ otherwise;
+\item the fibre of a $(Q_1 + Q_2)$-tree is the fibre of the underlying $Q_i$-tree;
+\item the fibre of a $(Q_1 \times Q_2)$-tree is the product of the fibres of its components;
+\item the fibre of a $\mu\beta.Q'$-tree is the fibre of the underlying tree of sort $(Q', \rho')$.
+\end{itemize}
+\end{definition}
 
-\paragraph{Algebra map and catamorphism.}
-The algebra map $\inMap : P(\delta[\alpha \mapsto \mu_{\alpha.P}(\delta)]) \to
-\mu_{\alpha.P}(\delta)$ assembles, on index sets, a single tree from its constituent parts (const
-labels, branch choices, recursive subtrees), and is the identity on fibres, because the fibre of the
-assembled tree is computed by the same recursion as $P$'s action on the parts.
-
-The catamorphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$ for an algebra $a : \Gamma
-\times P(\delta[\alpha \mapsto Y]) \to Y$ is defined by structural recursion over trees (simultaneously
-over all sorts), on index sets and fibres alike, threading the $\Gamma$ component unchanged through the
-recursion. The laws $\beta$ and $\eta$ are proved by induction on trees.
+\begin{proof}[Proof of \propref{polynomial-types:fam-has-poly}]
+Take $\mu_{\alpha.P}(\delta) = (W_{s_0}, \partial W_{s_0})$, the family at the root sort $s_0 = (P,
+\rho_0)$, where $\rho_0$ resolves the free variables of $P$ to the parameters $\Delta$. The algebra map
+$\inMap : P(\delta[\alpha \mapsto \mu_{\alpha.P}(\delta)]) \to \mu_{\alpha.P}(\delta)$ assembles, on
+index sets, a single tree from its constituent parts (const labels, summand tags, subtrees),
+and is the identity on fibres, because the fibre of the assembled tree is computed by the same recursion
+as $P$'s action on the parts. The catamorphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$
+for an algebra $a : \Gamma \times P(\delta[\alpha \mapsto Y]) \to Y$ is defined by structural recursion
+over trees (simultaneously over all sorts), on index sets and fibres alike, threading the $\Gamma$
+component unchanged through the recursion. The laws $\beta$ and $\eta$ are proved by induction on trees.
+\end{proof}
 
 \paragraph{The parameterised operator.}
 The construction above is pointwise in the kinding environment $\delta$. As in
@@ -213,190 +233,11 @@ generically, by folding: for $g : \delta \to \delta'$,
   \mu_{\alpha.P}(g) \;=\; \cata{\,\inMap \circ P(g[\alpha \mapsto \id])\,},
 \]
 here in the strong form, with the algebra built from the strong action of $P$.
-Functoriality, and more generally that componentwise-isomorphic polynomials have isomorphic initial
-algebras, follow from $\beta$ and $\eta$ alone, independently of the construction.
-
-\subsection{Initial algebras from $\omega$-colimits}
-\label{sec:polynomial-types:omega-mu}
-
-The construction of \secref{polynomial-types:fam} is specific to $\Fam(\cat{C})$, and predates two
-extensions now present in the formalisation: polynomials have $n$ free variables with nested $\mu$, and may
-be composed with a strong functor $T$ (the basis for the Galois slicing interpretation of
-\secref{slicing-interpretation}). Here we specify a replacement construction that works in an arbitrary
-category $\cat{D}$ with enough colimits, so that $\Fam(\cat{C})$ and categories of sets become instances
-of a single development.
-
-\paragraph{Polynomials.}
-Syntactic polynomials over $\cat{D}$ are kinded over a context $\Delta$ of type variables, as in
-\secref{polynomial-types:kinding}:
-\[
-  P, Q \in \Poly_\Delta \;::=\; \const(A) \mid \alpha \mid P + Q \mid P \times Q \mid \mu\alpha.P \mid T
-  \circ P
-\]
-where $A$ ranges over objects of $\cat{D}$ and $\alpha$ over $\Delta$; in $\mu\alpha.P$ the body $P \in
-\Poly_{\Delta,\alpha}$ binds $\alpha$. (The formalisation uses de Bruijn indices, with $\Poly_n$ indexed by
-the number of free variables.) Each $P \in \Poly_\Delta$ will denote a functor $\sem{P} : \cat{D}^\Delta
-\to \cat{D}$, with $\sem{\mu\alpha.P}$ the parameterised initial algebra of $\sem{P}$: for an environment
-$\delta \in \cat{D}^\Delta$, the object $\sem{\mu\alpha.P}(\delta)$ carries an initial algebra for the
-endofunctor $X \mapsto \sem{P}(\delta[\alpha \mapsto X])$.
-
-\paragraph{Interface.}
-The construction must provide, for each $P \in \Poly_{\Delta,\alpha}$ and environment $\delta \in
-\cat{D}^\Delta$:
-\begin{itemize}
-\item an object $\mu_{\alpha.P}(\delta)$ and algebra map $\inMap : \sem{P}(\delta[\alpha \mapsto
-  \mu_{\alpha.P}(\delta)]) \to \mu_{\alpha.P}(\delta)$;
-\item a catamorphism in context: for every $\Gamma$ and algebra $a : \Gamma \times \sem{P}(\delta[\alpha
-  \mapsto Y]) \to Y$, a morphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$. Writing $f
-  \circ_\Gamma g = f \circ \prodM{\pi_1}{g}$ for composition in context and $F = \sem{P}(\delta[\alpha
-  \mapsto -])$, the map $\cata{a}$ is the unique one making
-  \begin{center}
-  \begin{tikzcd}[row sep=2.2em, column sep=3.2em]
-    F\,\mu_{\alpha.P}(\delta) \arrow[r, "\inMap"] \arrow[d, "F\cata{a}"'] & \mu_{\alpha.P}(\delta)
-      \arrow[d, "\cata{a}"] \\
-    F\,Y \arrow[r, "a"'] & Y
-  \end{tikzcd}
-  \end{center}
-  commute in the co-Kleisli category for $\circ_\Gamma$, that is, $\cata{a} \circ_\Gamma (\inMap \circ
-  \pi_2) = a \circ_\Gamma F\cata{a}$ ($\beta$), uniqueness giving $\eta$. The edge $F\cata{a} =
-  \sem{P}^{\mathrm{s}}(\cata{a}, \vec{\pi_2})$ is the action of $F$ in context, the \emph{strong} functorial
-  action $\sem{P}^{\mathrm{s}}$, which takes a morphism in context $\Gamma \times X_i \to Y_i$ for each
-  variable $i$.
-\end{itemize}
-The context $\Gamma$ avoids closure conversion (and hence exponentials) in the term semantics, as in
-\secref{polynomial-types:language}; the strong action is needed for the same reason. In the Agda
-formalisation the interface is staged to break an apparent circularity: a first record provides the
-\emph{operations} ($\mu$, $\inMap$, $\cata{-}$) with no laws; the strong action $\sem{P}^{\mathrm{s}}$ is
-then defined by structural recursion on $P$, its $\mu$ case using the catamorphism operation; the laws
-$\beta$/$\eta$, which mention $\sem{P}^{\mathrm{s}}$, form a second record over the first.
-
-\paragraph{Assumptions on $\cat{D}$.}
-The construction requires:
-\begin{enumerate}
-\item an initial object $0$ and colimits of $\omega$-chains;
-\item finite products, and that $\Gamma \times -$ preserves the initial object and $\omega$-colimits (both
-  are automatic when $\cat{D}$ has exponentials, which the interpretation assumes anyway);
-\item strong (stable) finite coproducts, as already assumed by the term semantics; coproducts, being
-  colimits, commute with $\omega$-colimits automatically;
-\item $T$ a strong functor preserving $\omega$-colimits ($T = \mathrm{Id}$ for the standard interpretation,
-  where this is trivial).
-\end{enumerate}
-
-\paragraph{Construction.}
-By structural induction on $P$ we define simultaneously: (i) the object part $\sem{P}$; (ii) the strong
-action $\sem{P}^{\mathrm{s}}$, using pairing for $\times$, strong copairing for $+$, and the strength of
-$T$; (iii) preservation of $\omega$-colimits, jointly in all variables; and (iv) for $\mu\alpha.P$, the
-parameterised initial algebra. For (iv), fix $\delta$ and let $F = \sem{P}(\delta[\alpha \mapsto -])$. Form
-the classical initial-algebra chain
-\[
-  0 \xrightarrow{\;!\;} F0 \xrightarrow{\;F!\;} F^2 0 \to \cdots
-\]
-and set $\mu_{\alpha.P}(\delta) = \mathrm{colim}_n\, F^n 0$. By (iii), $F$ preserves this colimit, so
-$F(\mu_{\alpha.P}(\delta)) \cong \mathrm{colim}_n\, F^{n+1} 0$ and $\inMap$ is the evident comparison map
-(an isomorphism,
-though the interface does not require stating this). For the catamorphism in context, given $a : \Gamma
-\times F Y \to Y$, since $\Gamma \times -$ preserves the chain colimit it suffices to give a cocone
-$g_n : \Gamma \times F^n 0 \to Y$:
-\[
-  g_0 = \mathord{!} \qquad g_{n+1} = a \circ_\Gamma \sem{P}^{\mathrm{s}}(g_n, \vec{\pi_2})
-\]
-using $\Gamma \times 0 \cong 0$ for $g_0$. Cocone compatibility, and the $\beta$/$\eta$ laws, follow from
-the functoriality laws of $\sem{P}^{\mathrm{s}}$ (already established in the formalisation) and uniqueness
-of maps out of the colimit.
-
-\paragraph{Joint cocontinuity and the interchange argument.}
-Clause (iii) must be stated jointly: for an $\omega$-chain of \emph{environments} $\delta_0 \to \delta_1
-\to \cdots$ (a chain in each coordinate) whose coordinatewise colimit is $\delta_\infty$, the canonical
-cocone $\sem{P}(\delta_k) \to \sem{P}(\delta_\infty)$ is colimiting. Preservation in each variable
-separately would not suffice for the $\mu$ case, because the chain defining $\mu_{\alpha.P}$ varies the
-recursion coordinate \emph{together with} the parameters. The non-$\mu$ cases are unaffected: variables
-project the given coordinate colimits, constants are colimits of constant chains, and $+$, $\times$ and $T$
-combine the induction hypotheses (two single image chains) as before.
-
-For the $\mu$ case, fix an environment chain $\delta_k$ with colimit $\delta_\infty$ and form the grid of
-$G_{k,j} = F_k^j\,0$, where $F_k = \sem{P}(\delta_k[\alpha \mapsto -])$, with horizontal maps the mediated
-stage maps (in $k$) and vertical maps the initial-algebra-chain steps (in $j$). Writing the colimits in the
-margins (and omitting the chains' common base $0$):
-\begin{center}
-\begin{tikzcd}[row sep=2em, column sep=2.6em]
-  F_0\,0 \arrow[r] \arrow[d] & F_1\,0 \arrow[r] \arrow[d] & \cdots \arrow[r, dashed]
-    & F_\infty\,0 \arrow[d] \\
-  F_0^2\,0 \arrow[r] \arrow[d] & F_1^2\,0 \arrow[r] \arrow[d] & \cdots \arrow[r, dashed]
-    & F_\infty^2\,0 \arrow[d] \\
-  \vdots \arrow[d, dashed] & \vdots \arrow[d, dashed] & & \vdots \arrow[d, dashed] \\
-  \mu_{\alpha.P}(\delta_0) \arrow[r] & \mu_{\alpha.P}(\delta_1) \arrow[r] & \cdots \arrow[r, dashed]
-    & \mu_{\alpha.P}(\delta_\infty)
-\end{tikzcd}
-\end{center}
-Each column (fixed $k$) is the initial-algebra chain for $F_k$, with colimit $\mu_{\alpha.P}(\delta_k)$ along
-the bottom by construction. By induction on $j$, each row (fixed $j$) has colimit $F_\infty^j\,0$ along the
-right: row $0$ is constantly $0$, and row $j{+}1$ is the $\sem{P}$-image of the environment chain
-$\delta_k[\alpha \mapsto G_{k,j}]$, to which the structural induction hypothesis (joint cocontinuity of
-$\sem{P}$) applies, using the row-$j$ colimit for the $\alpha$ coordinate. A generic \emph{interchange
-lemma}, for an arbitrary commuting grid, identifies the two ways of reaching the corner: given the row and
-column colimits and a colimit of the chain of right-hand apexes, the latter is also a colimit of the chain
-of bottom apexes. Here both are $\mu_{\alpha.P}(\delta_\infty)$, as required. The lemma is generic in the
-grid and belongs with the $\omega$-chain machinery, independent of polynomials.
-
-\paragraph{Fusion for the strong action.}
-The cocone compatibility $g_n = g_{n+1} \circ (\Gamma \times \mathrm{step}_n)$ above rests on a
-functoriality law for the strong action, the analogue of $\sem{P}(g \circ g') = \sem{P}(g) \circ
-\sem{P}(g')$: for a reindexing $g : \delta \to \delta'$ and context maps $f : \Gamma \times \delta' \to
-\delta''$, the triangle
-\begin{center}
-\begin{tikzcd}[row sep=2.6em, column sep=4.5em]
-  \Gamma \times \sem{P}(\delta) \arrow[r, "\Gamma \times \sem{P}(g)"]
-    \arrow[dr, "\sem{P}^{\mathrm{s}}(f \cdot (\Gamma \times g))"']
-  & \Gamma \times \sem{P}(\delta') \arrow[d, "\sem{P}^{\mathrm{s}}(f)"] \\
-  & \sem{P}(\delta'')
-\end{tikzcd}
-\end{center}
-commutes, where $(f \cdot (\Gamma \times g))_i = f_i \circ (\Gamma \times g_i)$. The clean reading is
-functoriality of $\sem{P}^{\mathrm{s}}$ in the co-Kleisli category
-$\cat{D}_\Gamma$ of the reader comonad $\Gamma \times -$ (with $X \to Y$ a morphism $\Gamma \times X \to Y$
-and composition $h \mathbin{\circ_\Gamma} k = h \circ \prodM{\pi_1}{k}$): the action $\sem{P}^{\mathrm{s}}$
-is the morphism part of a functor $(\cat{D}_\Gamma)^\Delta \to \cat{D}_\Gamma$, and fusion is preservation
-of composition, specialised to the case where the second factor $\Gamma \times \sem{P}(g) =
-\prodM{\pi_1}{\sem{P}(g) \circ \pi_2}$ is the pure lift of a context-free reindexing. The plain action
-$\sem{P}(-)$ is $\sem{P}^{\mathrm{s}}$ restricted to such pure morphisms.
-
-The law is proved by induction on $P$. Variables and constants are immediate; $+$, $\times$ and $T$ use
-naturality of strong copairing, pairing and the strength. The $\mu$ case is mutual with the catamorphism.
-Writing
-$\sem{\mu\alpha.P}^{\mathrm{s}}(f) = \cata{a_f}$ for $a_f = \inMap \circ
-\sem{P}^{\mathrm{s}}(f[\alpha \mapsto \pi_2])$, the goal $\cata{a_f} \circ (\Gamma \times
-\sem{\mu\alpha.P}(g)) = \cata{a_{f \cdot g}}$ is a map out of $\Gamma \times \mu_{\alpha.P}(\delta)$, itself
-a colimit; by uniqueness it suffices to agree after each leg $\Gamma \times \mathrm{in}_k$. There the
-$\mu$-map and catamorphism coevaluations rewrite both sides to fold legs, and $g^{a_f}_k \circ (\Gamma
-\times \mathrm{iter}_k) = g^{a_{f \cdot g}}_k$ holds by induction on $k$, from the leg recurrence and
-fusion at the body $P$ (structurally smaller). The compatibility itself is the instance of fusion at the
-body with $g$ the chain step.
-
-\paragraph{Instances.}
-The construction is needed in two places: the higher-order model $\Fam(\cat{D})$ for $\cat{D} =
-\namedcat{Meet} \times \namedcat{Join}^{\mathrm{op}}$ and variants; and eventually the first-order model
-$\Fam(\LatGal)$ and the glued logical-relations category, which the conservativity development takes as
-parameters. (The first-order model must be a $\Fam$ category: conservativity requires strong coproducts,
-and $\LatGal$'s coproducts are biproducts, hence not strong; $\Fam$, the free coproduct completion,
-supplies them.)
-
-For the higher-order model, plain $\omega$-colimits suffice. The semilattice categories are categories of
-finitary algebras, hence cocomplete and complete; completeness gives their opposites $\omega$-colimits as
-well, so $\cat{D}$ has $\omega$-colimits componentwise, and $\Fam(\cat{D})$ inherits them (colimits of
-index sets, fibre colimits along threads).
-
-The first-order model does not have plain $\omega$-colimits: a chain colimit in $\Fam(\cat{C})$ needs, over
-each index, the colimit in $\cat{C}$ of the thread of fibres, and $\LatGal$ lacks $\omega$-colimits (the
-inverse limit of the right adjoints has pointwise meets but in general no joins). However, the chains the
-construction builds have \emph{fibrewise-isomorphism} links: a tree, once formed, keeps the same fibre
-along the chain, which is how the W-type construction of \secref{polynomial-types:fam} works in
-$\Fam(\cat{C})$ for $\cat{C}$ with finite products only. So the colimit assumption should be refined to
-colimits of $\omega$-chains \emph{whose links lie in a designated class} (fibrewise isomorphisms, in the
-$\Fam$ instances), with the construction additionally establishing that its chains remain in the class.
-The refinement is contained: every use of colimits in the development flows through packaged colimiting
-cocones, so only the points where the colimit assumption is invoked, all at initial-algebra chains, need
-accompanying class membership, established by one further induction. We adopt plain $\omega$-colimits
-until the first-order side is instantiated.
+The strong action makes each $P$ the morphism part of a functor $(\cat{C}_\Gamma)^\Delta \to
+\cat{C}_\Gamma$ on co-Kleisli categories, the plain action being its restriction to pure morphisms
+$\prodM{\pi_1}{g \circ \pi_2}$. Functoriality of these actions, and more generally that
+componentwise-isomorphic polynomials have isomorphic initial algebras, follow from $\beta$ and $\eta$
+alone, independently of the construction.
 
 \subsection{Why a syntactic CBN translation does not extend to inductive types}
 \label{sec:polynomial-types:no-cbn}
