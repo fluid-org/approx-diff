@@ -11,24 +11,32 @@ properties of the interpretation. We have focused on constructions that enable a
 Agda in this work, but have conjectured that there are connections to established notions of categorical
 differentiation in \conref{tangent-stable-fns} and \conref{tangent-fam}.
 
-\paragraph{Quantitative slicing and XAI}  Explainable AI (XAI) techniques like Gradient-weighted Class
-Activation Mapping (Grad-CAM)~\cite{selvaraju20} use reverse-mode AD selectively to calculate \emph{heat maps}
-(or \emph{saliency maps}) that highlight input regions contributing to a given classification or other
-outcome. We would like to investigate quantitative approximation structures where $\top$ represents the
-original input image and lower elements represent ``slices'' of the image where individual pixels have been
-ablated to some degree (partly removed or blurred). This might allow for composing some of these techniques
-with Galois slicing, for use in hybrid systems such as physical simulations with ML-based parameterisations.
+\paragraph{Quantitative slicing and XAI}
 
-\paragraph{Refinement of the model} As we discussed in \remref{further-structure}, there are possible ways
-that the model we have proposed here could be refined to both remove nonsensical elements of the model, and to
-augment the model with enough power to prove additional properties such as ``functions are insenstive to
-unused inputs''. We are also planning to explore more examples of approximation along the lines of the
-intervals example in \secref{interval-approx}. One route might be to follow \citet{edalat-heckmann98}'s
-embedding of metric spaces in Scott domains and explore whether metric spaces (which already provide a native
-notion of approximation) can be embedded in $\Fam(\LatGal)$.
+\roly{We can already do this, so perhaps this is more about applications.} Explainable AI (XAI) techniques
+like Gradient-weighted Class Activation Mapping (Grad-CAM)~\cite{selvaraju20} use reverse-mode AD selectively
+to calculate \emph{heat maps} (or \emph{saliency maps}) that highlight input regions contributing to a given
+classification or other outcome. We would like to investigate quantitative approximation structures where
+$\top$ represents the original input image and lower elements represent ``slices'' of the image where
+individual pixels have been ablated to some degree (partly removed or blurred). This might allow for composing
+some of these techniques with Galois slicing, for use in hybrid systems such as physical simulations with
+ML-based parameterisations.
+
+\paragraph{Refinement of the model}
+
+As we discussed in \remref{further-structure}, there are possible ways that the model we have proposed here
+could be refined to both remove nonsensical elements of the model, and to augment the model with enough power
+to prove additional properties such as ``functions are insenstive to unused inputs''. We are also planning to
+explore more examples of approximation along the lines of the intervals example in \secref{interval-approx}.
+One route might be to follow \citet{edalat-heckmann98}'s embedding of metric spaces in Scott domains and
+explore whether metric spaces (which already provide a native notion of approximation) can be embedded in
+$\Fam(\LatGal)$.
 
 % \paragraph{Categorical Models of Differentation} We have already identified \conref{tangent-stable-fns} and
 % \conref{tangent-fam} as potential connections to categorical models of differentation.
+
+\paragraph{\added{Connection to sequentiality and stable functions}} \todo{Summary of current thinking on
+this.}
 
 \paragraph{General Inductive and Coinductive Types}
 
@@ -47,8 +55,8 @@ took stable domain theory as our starting point, we did not make any use of dire
 properties of domains. We expect that an account of recursion in an extension of the framework discussed so
 far would likely involve families of bounded lattices indexed by DCPOs, where the order of the DCPO would be
 reflected in embedding-projection relationships between the lattices. \citet{berry79}'s bidomains and
-\citet{laird07}'s bistable biorders have separate extensional and stable orders on the same set, in a way that
-might be similar to \exref{intervals-and-maxima-elements}.
+\citet{laird07}'s bistable biorders have separate extensional and stable orders on the same set\Deleted{, in a
+way that might be similar to \exref{intervals-and-maxima-elements}}.
 
 \paragraph{Source-To-Source Translation Techniques}
 
