@@ -253,7 +253,7 @@ module _ (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP) where
     module ℰP = HasProducts ℰP
     module PC = product-cocontinuity ℰP ℰE
 
-    open fam.CategoryOfFamilies.products os es ℰ ℰP using (_⊗_)
+    open fam.CategoryOfFamilies.products os es ℰ ℰP using (_⊗_) renaming (products to famProducts)
 
   module _ (X Y : Category.obj cat) where
 
@@ -431,6 +431,53 @@ module _ (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP) where
             id _ ∘ colim (X ⊗ Y) .cocone .transf (i , j)
           ∎ where open ≈-Reasoning isEquiv
 
+    -- The comparison iso commutes with the product projections.
+    private
+      p₁F = famProducts .HasProducts.p₁ {X} {Y}
+      p₂F = famProducts .HasProducts.p₂ {X} {Y}
+
+    realise-products-p₁ : (ℰP.p₁ ∘ realise-products-iso .Category.Iso.fwd) ≈ realise .fmor p₁F
+    realise-products-p₁ =
+      ≈-trans (≈-sym (colim (X ⊗ Y) .isColimit .colambda-ext _ _))
+        (≈-trans (colim (X ⊗ Y) .isColimit .colambda-cong eq)
+          (colim (X ⊗ Y) .isColimit .colambda-ext _ (realise .fmor p₁F)))
+      where
+        eq : ≃-NatTrans (constFmor (ℰP.p₁ ∘ realise-products-iso .Category.Iso.fwd) ∘N colim (X ⊗ Y) .cocone)
+                        (constFmor (realise .fmor p₁F) ∘N colim (X ⊗ Y) .cocone)
+        eq .transf-eq (i , j) =
+          begin
+            (ℰP.p₁ ∘ realise-products-iso .Category.Iso.fwd) ∘ colim (X ⊗ Y) .cocone .transf (i , j)
+          ≈⟨ assoc _ _ _ ⟩
+            ℰP.p₁ ∘ (realise-products-iso .Category.Iso.fwd ∘ colim (X ⊗ Y) .cocone .transf (i , j))
+          ≈⟨ ∘-cong ≈-refl (colim (X ⊗ Y) .isColimit .colambda-coeval _ prodCocone .transf-eq (i , j)) ⟩
+            ℰP.p₁ ∘ ℰP.prod-m (colim X .cocone .transf i) (colim Y .cocone .transf j)
+          ≈⟨ ℰP.pair-p₁ _ _ ⟩
+            colim X .cocone .transf i ∘ ℰP.p₁
+          ≈˘⟨ colim (X ⊗ Y) .isColimit .colambda-coeval _ (push p₁F) .transf-eq (i , j) ⟩
+            realise .fmor p₁F ∘ colim (X ⊗ Y) .cocone .transf (i , j)
+          ∎ where open ≈-Reasoning isEquiv
+
+    realise-products-p₂ : (ℰP.p₂ ∘ realise-products-iso .Category.Iso.fwd) ≈ realise .fmor p₂F
+    realise-products-p₂ =
+      ≈-trans (≈-sym (colim (X ⊗ Y) .isColimit .colambda-ext _ _))
+        (≈-trans (colim (X ⊗ Y) .isColimit .colambda-cong eq)
+          (colim (X ⊗ Y) .isColimit .colambda-ext _ (realise .fmor p₂F)))
+      where
+        eq : ≃-NatTrans (constFmor (ℰP.p₂ ∘ realise-products-iso .Category.Iso.fwd) ∘N colim (X ⊗ Y) .cocone)
+                        (constFmor (realise .fmor p₂F) ∘N colim (X ⊗ Y) .cocone)
+        eq .transf-eq (i , j) =
+          begin
+            (ℰP.p₂ ∘ realise-products-iso .Category.Iso.fwd) ∘ colim (X ⊗ Y) .cocone .transf (i , j)
+          ≈⟨ assoc _ _ _ ⟩
+            ℰP.p₂ ∘ (realise-products-iso .Category.Iso.fwd ∘ colim (X ⊗ Y) .cocone .transf (i , j))
+          ≈⟨ ∘-cong ≈-refl (colim (X ⊗ Y) .isColimit .colambda-coeval _ prodCocone .transf-eq (i , j)) ⟩
+            ℰP.p₂ ∘ ℰP.prod-m (colim X .cocone .transf i) (colim Y .cocone .transf j)
+          ≈⟨ ℰP.pair-p₂ _ _ ⟩
+            colim Y .cocone .transf j ∘ ℰP.p₂
+          ≈˘⟨ colim (X ⊗ Y) .isColimit .colambda-coeval _ (push p₂F) .transf-eq (i , j) ⟩
+            realise .fmor p₂F ∘ colim (X ⊗ Y) .cocone .transf (i , j)
+          ∎ where open ≈-Reasoning isEquiv
+
 -- The singleton embedding, right adjoint to realisation.
 η : Functor ℰ cat
 η .fobj A = simple[ 𝟙 , A ]
@@ -529,6 +576,29 @@ module _ {W : Category.obj cat} {X : Category.obj ℰ} where
   untranspose-transpose f .idxf-eq = prop-setoid.to-𝟙-unique _ _
   untranspose-transpose f .famf-eq .indexed-family._≃f_.transf-eq {i} =
     ≈-trans id-left (colim W .isColimit .colambda-coeval _ _ .transf-eq i)
+
+  -- Transposition factors through realisation and the counit.
+  transpose-realise : ∀ (f : Category._⇒_ cat W (η .fobj X)) →
+                      transpose f ≈ (realise-η-iso X .Category.Iso.fwd ∘ realise .fmor f)
+  transpose-realise f =
+    ≈-sym (≈-trans (≈-sym (colim W .isColimit .colambda-ext _ _))
+      (colim W .isColimit .colambda-cong eq))
+    where
+      eq : ≃-NatTrans (constFmor (realise-η-iso X .Category.Iso.fwd ∘ realise .fmor f) ∘N colim W .cocone) _
+      eq .transf-eq i =
+        begin
+          (realise-η-iso X .Category.Iso.fwd ∘ realise .fmor f) ∘ colim W .cocone .transf i
+        ≈⟨ assoc _ _ _ ⟩
+          realise-η-iso X .Category.Iso.fwd ∘ (realise .fmor f ∘ colim W .cocone .transf i)
+        ≈⟨ ∘-cong ≈-refl (colim W .isColimit .colambda-coeval _ (push f) .transf-eq i) ⟩
+          realise-η-iso X .Category.Iso.fwd ∘ (colim (η .fobj X) .cocone .transf (f .idxf $s i) ∘ f .famf .transf i)
+        ≈˘⟨ assoc _ _ _ ⟩
+          (realise-η-iso X .Category.Iso.fwd ∘ colim (η .fobj X) .cocone .transf (f .idxf $s i)) ∘ f .famf .transf i
+        ≈⟨ ∘-cong (colim (η .fobj X) .isColimit .colambda-coeval _ _ .transf-eq (f .idxf $s i)) ≈-refl ⟩
+          id _ ∘ f .famf .transf i
+        ≈⟨ id-left ⟩
+          f .famf .transf i
+        ∎ where open ≈-Reasoning isEquiv
 
 -- Naturality of transposition in each argument.
 transpose-natural₁ : ∀ {W' W : Category.obj cat} {X : Category.obj ℰ}
