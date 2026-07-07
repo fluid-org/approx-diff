@@ -197,9 +197,18 @@ since $\cat{E}$ has a terminal object and finite products. The candidate $\Poly$
 := \Sigma \circ \mu_{\alpha.\hat{P}}$, where $\hat{P}$ is the polynomial of presentations. For this
 to yield \defref{polynomial-types:has-poly}, $\Sigma$ must preserve what the construction uses:
 set-indexed coproducts (immediate), the terminal object, and finite products, the last requiring
-products to distribute over set-indexed coproducts (a consequence of $\GLR(F)$'s exponentials); and
-the algebra map, catamorphism and $\beta$/$\eta$ laws must be transported along the resulting
-isomorphisms.
+products to distribute over set-indexed coproducts (a consequence of $\GLR(F)$'s exponentials).
+
+\paragraph{Operations and laws.}
+These do not simply transport along the resulting isomorphisms: the algebra map of
+$\mu_{\alpha.\hat{P}}$ lives at an environment containing the $\Fam(\cat{E})$-object
+$\mu_{\alpha.\hat{P}}$ itself, whereas its realisation must live at the presented object $\Sigma\,
+\mu_{\alpha.\hat{P}}$. Two facts close the gap: $\Sigma$ is left adjoint to the embedding $\eta :
+\cat{E} \to \Fam(\cat{E})$ sending an object to the family over a one-element set, so that algebras
+and catamorphisms transpose between $\cat{E}$ and $\Fam(\cat{E})$; and $\Sigma(P(\delta))$ is
+unchanged, up to isomorphism, when an entry of $\delta$ is replaced by $\eta\Sigma$ of itself.
+The latter is proved together with initiality by induction on the polynomial, the $\mu$ case
+following from uniqueness of initial algebras.
 
 \paragraph{Preservation by $\GF$.}
 The polynomials that arise interpret first-order types, so their $\const$-objects are $\GF$-images
