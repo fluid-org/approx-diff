@@ -45,9 +45,7 @@ Consider a single run of a program on a particular input. Each part of the outpu
 certain parts of the input, and recording these facts gives the \emph{dependency relation} of the run,
 relating each output position to the input positions it depends on. This section works through a small example
 showing how dependency relations behave as derivatives: they have a tabular representation as Boolean
-matrices, compose using matrix multiplication, and can be evaluated forwards or backwards\Added{, and how
-they relate to the numerical Jacobians of differential calculus, agreeing except where arithmetic
-cancellation forces the dependency reading to err on the safe side}.
+matrices, compose using matrix multiplication, and can be evaluated forwards or backwards.
 
 \begin{DeletedBlock}
 \begin{example}
@@ -138,18 +136,17 @@ cancellation forces the dependency reading to err on the safe side}.
 \begin{AddedBlock}
 \begin{example}
   \label{ex:introduction-example}
-  The following program is written in Haskell syntax \cite{haskell}. It filters a list of pairs
-  of labels and quantities to those with a given label, and computes the sum of the quantities weighted by a
-  per-label price:
+  The following program is written in Haskell syntax \cite{haskell}. It filters a list of pairs of labels and
+  quantities to those with a given label, and then sums the quantities weighted by a per-label price:
   \begin{displaymath}
     \begin{array}{l}
-      \mathrm{total} :: \mathrm{Label} \to [(\mathrm{Label}, \mathrm{Float})] \to (\mathrm{Label} \to \mathrm{Float}) \to \mathrm{Float} \\
+      \mathrm{total} :: \mathrm{Label} \to [(\mathrm{Label}, \mathrm{Rational})] \to (\mathrm{Label} \to \mathrm{Rational}) \to \mathrm{Rational} \\
       \mathrm{total}\,l\,\mathit{db}\,\mathit{price} = \mathrm{sum}\,[ \mathit{price}\,l \cdot q \mid (l',q) \leftarrow \mathit{db}, l \equiv l' ]
     \end{array}
   \end{displaymath}
-  With $\mathit{db} = [(\mathsf{a}, 3), (\mathsf{b}, 1), (\mathsf{a}, -3)]$, where the third
-  entry is a refund of the first, and prices $\mathit{price}\,\mathsf{a} = 2$ and $\mathit{price}\,\mathsf{b}
-  = 5$, we have $\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price} = 2 \cdot 3 + 2 \cdot (-3) = 0$ and
+  With $\mathit{db} = [(\mathsf{a}, 3), (\mathsf{b}, 1), (\mathsf{a}, -3)]$, where the third entry is a refund
+  of the first, and $\mathit{price}\,\mathsf{a} = 2$ and $\mathit{price}\,\mathsf{b} = 5$, we have
+  $\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price} = 2 \cdot 3 + 2 \cdot (-3) = 0$ and
   $\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price} = 5$.
 
   Suppose we are interested in how the output depends on the numerical parts of the input, for the
@@ -309,7 +306,7 @@ into a Galois connection between lattices of approximations.
 Many forms of dynamic provenance analysis, \GPS included, work by recording a trace of each
 execution and computing the backwards analysis by re-running over the trace. A denotational account would
 instead bake the analysis into the semantics of the program itself, rather than provide it as a separately
-defined ``backwards evaluation'' operation. 
+defined ``backwards evaluation'' operation.
 The differential reading of dependency analysis, developed in \secref{approx-as-tangents}, points to
 a way to obtain such an account, by analogy with \emph{automatic
 differentiation}~\cite{siskind08,elliott18,vakar22}; let us make the correspondence explicit.
