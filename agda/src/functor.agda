@@ -304,6 +304,12 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
   right-unit F .transf x = 𝒟.id _
   right-unit F .natural f = 𝒟.id-swap'
 
+  right-unit-iso : ∀ (F : Functor 𝒞 𝒟) → NatIso (F ∘F Id) F
+  right-unit-iso F .NatIso.transform = right-unit F
+  right-unit-iso F .NatIso.transf-iso x .Category.IsIso.inverse = 𝒟.id _
+  right-unit-iso F .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒟.id-left
+  right-unit-iso F .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒟.id-left
+
   left-unit⁻¹ : ∀ (F : Functor 𝒞 𝒟) → NatTrans F (Id ∘F F)
   left-unit⁻¹ F .transf x = 𝒟.id _
   left-unit⁻¹ F .natural f = 𝒟.id-swap'

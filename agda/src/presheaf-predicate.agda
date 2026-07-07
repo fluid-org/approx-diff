@@ -10,7 +10,7 @@ open import categories using (Category; HasProducts; HasTerminal; IsTerminal; Ha
 open import setoid-cat using (SetoidCat; Setoid-products; Setoid-coproducts)
 open import functor using (Functor; [_⇒_]; NatTrans; ≃-NatTrans; functor-preserve-iso; Id; _∘F_)
 open import monad using (Monad)
-open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred)
+open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 import setoid-predicate
 
 module presheaf-predicate {o m e} os (𝒞 : Category o m e) where
@@ -276,6 +276,12 @@ module F-hat-pred (F : Functor 𝒞 𝒞) where
     (z' , g' , Xz') , ϕ , P⊑Q .*⊑* z' .*⊑* Xz' ψ
   endofunctor .liftF-[] {X} {Y} {P} α .*⊑* a .*⊑* x (x' , ϕ , ψ) =
     M-hat-nat X Y α .transf a .func x' , M-hat-nat X Y α .transf a .func-resp-≈ ϕ , ψ
+  endofunctor .liftF-⟨⟩ {X} {Y} {P} α .*⊑* a .*⊑* (z , g , Yz) ((z' , g' , Yz') , liftS eq , (Xz' , ϕ , ψ)) =
+    (z' , g' , Xz') , ((z' , g' , Xz') , M-hat-setoid _ _ .refl , ϕ) ,
+    liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl
+                   (Y .fmor-id .func-eq (Y .fobj _ .refl))
+                   (Y .fmor-id .func-eq ψ)
+                   (eq-sym eq))
 
 module Monad-hat-pred (M : Monad 𝒞) where
 
@@ -293,10 +299,18 @@ module Monad-hat-pred (M : Monad 𝒞) where
     join-hat .transf X .transf x .func (y' , f' , z'' , g'' , Xz'') ,
     join-hat .transf X .transf x .func-resp-≈
       (M-hat-setoid (M-hat-PSh X) x .trans eq₁
-        (liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl
-        (liftS (eq-trans (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-right) (X .fmor-id .func-eq (X .fobj _ .refl)) (X .fmor-id .func-eq (X .fobj _ .refl)) (eq-stop _)) (eq-stop _)))
-        (liftS (eq-trans (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-right) (X .fmor-id .func-eq (X .fobj _ .refl)) (X .fmor-id .func-eq (X .fobj _ .refl)) (eq-stop _)) eq₂)) (eq-stop _)))) ,
+        (liftS
+         (eq-step
+           (𝒞.id _) (𝒞.id _) 𝒞.≈-refl
+           (liftS (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-right) (X .fmor-id .func-eq (X .fobj _ .refl)) (X .fmor-id .func-eq (X .fobj _ .refl)) (eq-stop _)))
+           (liftS (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl 𝒞.id-right) (X .fmor-id .func-eq (X .fobj _ .refl)) (X .fmor-id .func-eq (X .fobj _ .refl)) eq₂))
+           (eq-stop _)))) ,
     ϕ
+
+  MP : MonadPred _ _ system monad-hat
+  MP .MonadPred.functP = endofunctor
+  MP .MonadPred.unitP = unitP
+  MP .MonadPred.joinP = joinP
 
    -- TODO: strength
 

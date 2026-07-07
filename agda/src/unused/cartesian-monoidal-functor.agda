@@ -8,7 +8,7 @@ open import monoidal-product
 open import functor using (Functor)
 open import finite-product-functor using (FPFunctor)
 
-module cartesian-monoidal-functor
+module unused.cartesian-monoidal-functor
   {o₁ m₁ e₁ o₂ m₂ e₂}
   (𝒞 : Category o₁ m₁ e₁) (𝒞-terminal : HasTerminal 𝒞) (𝒞-products : HasProducts 𝒞)
   (𝒟 : Category o₂ m₂ e₂) (𝒟-terminal : HasTerminal 𝒟) (𝒟-products : HasProducts 𝒟)
@@ -42,7 +42,7 @@ F-monoidal .lax-monoidal .mult {X} {Y} = pair 𝒟P.p₁ 𝒟P.p₂
   where module P = Product (HasProducts.getProduct 𝒞-products X Y)
         open IsProduct (FP .preserve-products _ _ P.prod P.p₁ P.p₂ P.isProduct)
 F-monoidal .lax-monoidal .unit = to-terminal
-  where open IsTerminal (FP .preserve-terminal _ (HasTerminal.isTerminal 𝒞-terminal))
+  where open IsTerminal (FP .preserve-terminal _ (HasTerminal.is-terminal 𝒞-terminal))
 
 F-monoidal .lax-monoidal .mult-natural {x₁} {x₂} {y₁} {y₂} f g = begin
     PFx₂Fy₂.pair 𝒟P.p₁ 𝒟P.p₂ 𝒟.∘ 𝒟P.prod-m (F .fmor f) (F .fmor g)
@@ -179,24 +179,24 @@ F-monoidal .lax-monoidal .mult-lunit {x} = begin
   ≈˘⟨ PFIFx.pair-cong (to-terminal-ext _) 𝒟.≈-refl ⟩
     PFIFx.pair to-terminal (𝒟.id _ 𝒟.∘ 𝒟P.p₂)
   ≈⟨ PFIFx.pair-cong (to-terminal-ext _) (𝒟.∘-cong (𝒟.≈-sym (F .fmor-id)) 𝒟.≈-refl) ⟩
-    PFIFx.pair (F .fmor (𝒞P.p₁ 𝒞.∘ 𝒞P.pair (𝒞T.terminal-mor x) (𝒞.id _)) 𝒟.∘ 𝒟P.p₂)
+    PFIFx.pair (F .fmor (𝒞P.p₁ 𝒞.∘ 𝒞P.pair 𝒞T.to-terminal (𝒞.id _)) 𝒟.∘ 𝒟P.p₂)
                (F .fmor (𝒞.id _) 𝒟.∘ 𝒟P.p₂)
   ≈˘⟨ PFIFx.pair-cong 𝒟.≈-refl (𝒟.∘-cong (F .fmor-cong (𝒞P.pair-p₂ _ _)) 𝒟.≈-refl) ⟩
-    PFIFx.pair (F .fmor (𝒞P.p₁ 𝒞.∘ 𝒞P.pair (𝒞T.terminal-mor x) (𝒞.id _)) 𝒟.∘ 𝒟P.p₂)
-               (F .fmor (𝒞P.p₂ 𝒞.∘ 𝒞P.pair (𝒞T.terminal-mor x) (𝒞.id _)) 𝒟.∘ 𝒟P.p₂)
+    PFIFx.pair (F .fmor (𝒞P.p₁ 𝒞.∘ 𝒞P.pair 𝒞T.to-terminal (𝒞.id _)) 𝒟.∘ 𝒟P.p₂)
+               (F .fmor (𝒞P.p₂ 𝒞.∘ 𝒞P.pair 𝒞T.to-terminal (𝒞.id _)) 𝒟.∘ 𝒟P.p₂)
   ≈⟨ PFIFx.pair-cong (𝒟.∘-cong (F .fmor-comp _ _) 𝒟.≈-refl) (𝒟.∘-cong (F .fmor-comp _ _) 𝒟.≈-refl) ⟩
-    PFIFx.pair ((F .fmor 𝒞P.p₁ 𝒟.∘ F .fmor (𝒞P.pair (𝒞T.terminal-mor x) (𝒞.id _))) 𝒟.∘ 𝒟P.p₂)
-               ((F .fmor 𝒞P.p₂ 𝒟.∘ F .fmor (𝒞P.pair (𝒞T.terminal-mor x) (𝒞.id _))) 𝒟.∘ 𝒟P.p₂)
+    PFIFx.pair ((F .fmor 𝒞P.p₁ 𝒟.∘ F .fmor (𝒞P.pair 𝒞T.to-terminal (𝒞.id _))) 𝒟.∘ 𝒟P.p₂)
+               ((F .fmor 𝒞P.p₂ 𝒟.∘ F .fmor (𝒞P.pair 𝒞T.to-terminal (𝒞.id _))) 𝒟.∘ 𝒟P.p₂)
   ≈⟨ PFIFx.pair-cong (𝒟.assoc _ _ _) (𝒟.assoc _ _ _) ⟩
-    PFIFx.pair (F .fmor 𝒞P.p₁ 𝒟.∘ (F .fmor (𝒞P.pair (𝒞T.terminal-mor x) (𝒞.id _)) 𝒟.∘ 𝒟P.p₂))
-               (F .fmor 𝒞P.p₂ 𝒟.∘ (F .fmor (𝒞P.pair (𝒞T.terminal-mor x) (𝒞.id _)) 𝒟.∘ 𝒟P.p₂))
+    PFIFx.pair (F .fmor 𝒞P.p₁ 𝒟.∘ (F .fmor (𝒞P.pair 𝒞T.to-terminal (𝒞.id _)) 𝒟.∘ 𝒟P.p₂))
+               (F .fmor 𝒞P.p₂ 𝒟.∘ (F .fmor (𝒞P.pair 𝒞T.to-terminal (𝒞.id _)) 𝒟.∘ 𝒟P.p₂))
   ≈⟨ PFIFx.pair-ext _ ⟩
-    F .fmor (𝒞P.pair (𝒞T.terminal-mor x) (𝒞.id _)) 𝒟.∘ 𝒟P.p₂
+    F .fmor (𝒞P.pair 𝒞T.to-terminal (𝒞.id _)) 𝒟.∘ 𝒟P.p₂
   ∎
   where open ≈-Reasoning 𝒟.isEquiv
         module PIx = Product (𝒞P.getProduct (𝒞-monoidal .I⊗) x)
         module PFIFx = IsProduct (FP .preserve-products _ _ PIx.prod PIx.p₁ PIx.p₂ PIx.isProduct)
-        open IsTerminal (FP .preserve-terminal _ (HasTerminal.isTerminal 𝒞-terminal))
+        open IsTerminal (FP .preserve-terminal _ (HasTerminal.is-terminal 𝒞-terminal))
 F-monoidal .lax-monoidal .mult-runit {x} = begin
     PFxFI.pair 𝒟P.p₁ 𝒟P.p₂ 𝒟.∘ 𝒟P.prod-m (𝒟.id _) to-terminal
   ≈⟨ PFxFI.pair-natural _ _ _ ⟩
@@ -206,19 +206,19 @@ F-monoidal .lax-monoidal .mult-runit {x} = begin
   ≈˘⟨ PFxFI.pair-cong (𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl) (to-terminal-ext _) ⟩
     PFxFI.pair (F .fmor (𝒞.id _) 𝒟.∘ 𝒟P.p₁) to-terminal
   ≈˘⟨ PFxFI.pair-cong (𝒟.∘-cong (F .fmor-cong (𝒞P.pair-p₁ _ _)) 𝒟.≈-refl) 𝒟.≈-refl ⟩
-    PFxFI.pair (F .fmor (𝒞P.p₁ 𝒞.∘ 𝒞P.pair (𝒞.id _) (𝒞T.terminal-mor x)) 𝒟.∘ 𝒟P.p₁) to-terminal
+    PFxFI.pair (F .fmor (𝒞P.p₁ 𝒞.∘ 𝒞P.pair (𝒞.id _) 𝒞T.to-terminal) 𝒟.∘ 𝒟P.p₁) to-terminal
   ≈⟨ PFxFI.pair-cong (𝒟.∘-cong (F .fmor-comp _ _) 𝒟.≈-refl) 𝒟.≈-refl ⟩
-    PFxFI.pair ((F .fmor 𝒞P.p₁ 𝒟.∘ F .fmor (𝒞P.pair (𝒞.id _) (𝒞T.terminal-mor x))) 𝒟.∘ 𝒟P.p₁) to-terminal
+    PFxFI.pair ((F .fmor 𝒞P.p₁ 𝒟.∘ F .fmor (𝒞P.pair (𝒞.id _) 𝒞T.to-terminal)) 𝒟.∘ 𝒟P.p₁) to-terminal
   ≈⟨ PFxFI.pair-cong (𝒟.assoc _ _ _) (to-terminal-ext _) ⟩
-    PFxFI.pair (F .fmor 𝒞P.p₁ 𝒟.∘ (F .fmor (𝒞P.pair (𝒞.id _) (𝒞T.terminal-mor x)) 𝒟.∘ 𝒟P.p₁))
-               (F .fmor 𝒞P.p₂ 𝒟.∘ (F .fmor (𝒞P.pair (𝒞.id _) (𝒞T.terminal-mor x)) 𝒟.∘ 𝒟P.p₁))
+    PFxFI.pair (F .fmor 𝒞P.p₁ 𝒟.∘ (F .fmor (𝒞P.pair (𝒞.id _) 𝒞T.to-terminal) 𝒟.∘ 𝒟P.p₁))
+               (F .fmor 𝒞P.p₂ 𝒟.∘ (F .fmor (𝒞P.pair (𝒞.id _) 𝒞T.to-terminal) 𝒟.∘ 𝒟P.p₁))
   ≈⟨ PFxFI.pair-ext _ ⟩
-    F .fmor (𝒞P.pair (𝒞.id _) (𝒞T.terminal-mor x)) 𝒟.∘ 𝒟P.p₁
+    F .fmor (𝒞P.pair (𝒞.id _) 𝒞T.to-terminal) 𝒟.∘ 𝒟P.p₁
   ∎
   where open ≈-Reasoning 𝒟.isEquiv
         module PxI = Product (𝒞P.getProduct x (𝒞-monoidal .I⊗))
         module PFxFI = IsProduct (FP .preserve-products _ _ PxI.prod PxI.p₁ PxI.p₂ PxI.isProduct)
-        open IsTerminal (FP .preserve-terminal _ (HasTerminal.isTerminal 𝒞-terminal))
+        open IsTerminal (FP .preserve-terminal _ (HasTerminal.is-terminal 𝒞-terminal))
 
 F-monoidal .mult-is-iso .inverse =
   𝒟P.pair (F .fmor 𝒞P.p₁) (F .fmor 𝒞P.p₂)
@@ -250,10 +250,10 @@ F-monoidal .mult-is-iso {x} {y} .inverse∘f≈id = begin
         module PFxFy = IsProduct (FP .preserve-products _ _ Pxy.prod Pxy.p₁ Pxy.p₂ Pxy.isProduct)
 
 
-F-monoidal .unit-is-iso .inverse = HasTerminal.terminal-mor 𝒟-terminal _
+F-monoidal .unit-is-iso .inverse = HasTerminal.to-terminal 𝒟-terminal
 F-monoidal .unit-is-iso .f∘inverse≈id =
   𝒟.≈-trans (𝒟.≈-sym (to-terminal-ext _)) (to-terminal-ext _)
-  where open IsTerminal (FP .preserve-terminal _ (HasTerminal.isTerminal 𝒞-terminal))
+  where open IsTerminal (FP .preserve-terminal _ (HasTerminal.is-terminal 𝒞-terminal))
 F-monoidal .unit-is-iso .inverse∘f≈id =
   𝒟.≈-trans (𝒟.≈-sym (to-terminal-ext _)) (to-terminal-ext _)
-  where open IsTerminal (HasTerminal.isTerminal 𝒟-terminal)
+  where open IsTerminal (HasTerminal.is-terminal 𝒟-terminal)

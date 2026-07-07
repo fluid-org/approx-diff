@@ -5,7 +5,8 @@ open import prop-setoid using (module ≈-Reasoning; IsEquivalence)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; module ≤-Reasoning; IsJoin; IsBigJoin)
 open import categories using (Category; HasProducts; HasExponentials; HasCoproducts; HasTerminal; IsTerminal)
 open import functor using (Functor; HasColimits; Colimit; IsColimit; _∘F_; NatTrans; ≃-NatTrans)
-open import predicate-system using (PredicateSystem; FunctorPred)
+open import monad using (Monad; MonadFunctor)
+open import predicate-system using (PredicateSystem; FunctorPred; MonadPred)
 open import finite-product-functor using (preserve-chosen-products; module preserve-chosen-products-consequences)
 
 -- FIXME: refactor this into
@@ -383,11 +384,11 @@ module endofunctor
   open NatTrans
   open FunctorPred
 
-  MM : Functor cat cat
-  MM .fobj X .carrier = 𝒞M .fobj (X .carrier)
-  MM .fobj X .pred = MP .liftF (X .pred) [ α .transf _ ]
-  MM .fmor f .morph = 𝒞M .fmor (f .morph)
-  MM .fmor {X} {Y} f .presv = begin
+  GF : Functor cat cat
+  GF .fobj X .carrier = 𝒞M .fobj (X .carrier)
+  GF .fobj X .pred = MP .liftF (X .pred) [ α .transf _ ]
+  GF .fmor f .morph = 𝒞M .fmor (f .morph)
+  GF .fmor {X} {Y} f .presv = begin
       MP .liftF (X .pred) [ α .transf (X .carrier) ]
     ≤⟨ MP .liftF-⊑ (f .presv) [ _ ]m ⟩
       MP .liftF (Y .pred [ F .fmor (f .morph) ]) [ α .transf (X .carrier) ]
@@ -401,6 +402,115 @@ module endofunctor
       MP .liftF (Y .pred) [ α .transf (Y .carrier) ] [ F .fmor (𝒞M .fmor (f .morph)) ]
     ∎
     where open ≤-Reasoning ⊑-isPreorder
-  MM .fmor-cong f₁≈f₂ .f≃f = 𝒞M .fmor-cong (f₁≈f₂ .f≃f)
-  MM .fmor-id = record { f≃f = 𝒞M .fmor-id }
-  MM .fmor-comp = λ f g → record { f≃f = 𝒞M .fmor-comp (f .morph) (g .morph) }
+  GF .fmor-cong f₁≈f₂ .f≃f = 𝒞M .fmor-cong (f₁≈f₂ .f≃f)
+  GF .fmor-id = record { f≃f = 𝒞M .fmor-id }
+  GF .fmor-comp = λ f g → record { f≃f = 𝒞M .fmor-comp (f .morph) (g .morph) }
+
+-- If the natural transformation goes the other way, we can glue in
+-- the other direction too.
+module endofunctor2
+         (𝒞M : Functor 𝒞 𝒞)
+         (𝒟M : Functor 𝒟 𝒟)
+         (α  : NatTrans (𝒟M ∘F F) (F ∘F 𝒞M))
+         (MP : FunctorPred 𝒟 𝒟P 𝒟-predicates 𝒟M)
+  where
+
+  open NatTrans
+  open FunctorPred
+
+  GF : Functor cat cat
+  GF .fobj X .carrier = 𝒞M .fobj (X .carrier)
+  GF .fobj X .pred = MP .liftF (X .pred) ⟨ α .transf _ ⟩
+  GF .fmor f .morph = 𝒞M .fmor (f .morph)
+  GF .fmor {X} {Y} f .presv = adjoint₂ (begin
+      liftF MP (X .pred)
+    ≤⟨ MP .liftF-⊑ (f .presv) ⟩
+      liftF MP (Y .pred [ F .fmor (f .morph) ])
+    ≤⟨ MP .liftF-[] _ ⟩
+      liftF MP (Y .pred) [ 𝒟M .fmor (F .fmor (f .morph)) ]
+    ≤⟨ (unit _) [ _ ]m ⟩
+      liftF MP (Y .pred) ⟨ α .transf (Y .carrier) ⟩ [ α .transf _ ] [ 𝒟M .fmor (F .fmor (f .morph)) ]
+    ≤⟨ []-comp _ _ ⟩
+      (liftF MP (Y .pred) ⟨ α .transf (Y .carrier) ⟩) [ α .transf _ 𝒟.∘ 𝒟M .fmor (F .fmor (f .morph)) ]
+    ≤⟨ []-cong (𝒟.≈-sym (α .natural (f .morph))) ⟩
+      (liftF MP (Y .pred) ⟨ α .transf (Y .carrier) ⟩) [ F .fmor (𝒞M .fmor (f .morph)) 𝒟.∘ α .transf _ ]
+    ≤⟨ []-comp⁻¹ _ _ ⟩
+      (liftF MP (Y .pred) ⟨ α .transf (Y .carrier) ⟩) [ F .fmor (𝒞M .fmor (f .morph)) ] [ α .transf _ ]
+    ∎)
+    where open ≤-Reasoning ⊑-isPreorder
+  GF .fmor-cong f₁≈f₂ .f≃f = 𝒞M .fmor-cong (f₁≈f₂ .f≃f)
+  GF .fmor-id = record { f≃f = 𝒞M .fmor-id }
+  GF .fmor-comp = λ f g → record { f≃f = 𝒞M .fmor-comp (f .morph) (g .morph) }
+
+module monad-glueing
+  (𝒞M : Monad 𝒞)
+  (𝒟M : Monad 𝒟)
+  (F-preserve-monad : MonadFunctor F 𝒞M 𝒟M)
+  (MP : MonadPred _ _ 𝒟-predicates 𝒟M)
+  where
+
+  open MonadFunctor F-preserve-monad renaming (transform to α)
+  open MonadPred MP
+  open endofunctor2 _ _ α functP
+  open Monad renaming (unit to unitM)
+  open NatTrans
+
+  private
+    module 𝒞M = Monad 𝒞M
+    module 𝒟M = Monad 𝒟M
+
+  GM : Monad cat
+  GM .funct = GF
+  GM .Monad.unit .transf X .morph = 𝒞M.unit .transf _
+  GM .Monad.unit .transf X .presv = begin
+      X .pred
+    ≤⟨ unitP ⟩
+      liftF (X .pred) [ 𝒟M.unit .transf _ ]
+    ≤⟨ unit _ [ _ ]m ⟩
+      liftF (X .pred) ⟨ α .transf _ ⟩ [ α .transf _ ] [ 𝒟M.unit .transf _ ]
+    ≤⟨ []-comp _ _ ⟩
+      liftF (X .pred) ⟨ α .transf _ ⟩ [ α .transf _ 𝒟.∘ 𝒟M.unit .transf _ ]
+    ≤⟨ []-cong preserve-unit ⟩
+      liftF (X .pred) ⟨ α .transf _ ⟩ [ F .fmor (𝒞M.unit .transf _) ]
+    ∎
+    where open ≤-Reasoning ⊑-isPreorder
+  GM .Monad.unit .natural f .f≃f = 𝒞M.unit .natural (f .morph)
+  GM .join .transf X .morph = 𝒞M.join .transf _
+  GM .join .transf X .presv = begin
+      liftF (liftF (X .pred) ⟨ α .transf _ ⟩) ⟨ α .transf _ ⟩
+    ≤⟨ liftF-⟨⟩ _ ⟨ _ ⟩m ⟩
+      liftF (liftF (X .pred)) ⟨ 𝒟M.funct .fmor (α .transf _) ⟩ ⟨ α .transf _ ⟩
+    ≤⟨ ⟨⟩-comp _ _ ⟩
+      liftF (liftF (X .pred)) ⟨ α .transf _ 𝒟.∘ 𝒟M.funct .fmor (α .transf _) ⟩
+    ≤⟨ joinP ⟨ _ ⟩m ⟩
+      liftF (X .pred) [ 𝒟M.join .transf _ ] ⟨ α .transf _ 𝒟.∘ 𝒟M.funct .fmor (α .transf _) ⟩
+    ≤⟨ (unit _) [ _ ]m ⟨ _ ⟩m ⟩
+      liftF (X .pred) ⟨ α .transf _ ⟩ [ α .transf _ ] [ 𝒟M.join .transf _ ] ⟨ α .transf _ 𝒟.∘ 𝒟M.funct .fmor (α .transf _) ⟩
+    ≤⟨ ([]-comp _ _) ⟨ _ ⟩m ⟩
+      liftF (X .pred) ⟨ α .transf _ ⟩ [ α .transf _ 𝒟.∘ 𝒟M.join .transf _ ] ⟨ α .transf _ 𝒟.∘ 𝒟M.funct .fmor (α .transf _) ⟩
+    ≤⟨ ([]-cong preserve-join) ⟨ _ ⟩m ⟩
+      liftF (X .pred) ⟨ α .transf _ ⟩ [ F .fmor (𝒞M.join .transf _) 𝒟.∘ (α .transf _ 𝒟.∘ 𝒟M.funct .fmor (α .transf _)) ] ⟨ α .transf _ 𝒟.∘ 𝒟M.funct .fmor (α .transf _) ⟩
+    ≤⟨ []-comp⁻¹ _ _ ⟨ _ ⟩m ⟩
+      liftF (X .pred) ⟨ α .transf _ ⟩ [ F .fmor (𝒞M.join .transf _) ] [ α .transf _ 𝒟.∘ 𝒟M.funct .fmor (α .transf _) ] ⟨ α .transf _ 𝒟.∘ 𝒟M.funct .fmor (α .transf _) ⟩
+    ≤⟨ counit _ ⟩
+      liftF (X .pred) ⟨ α .transf _ ⟩ [ F .fmor (𝒞M.join .transf _) ]
+    ∎
+
+{-
+   begin
+      liftF (liftF (X .pred) [ α .transf (X .carrier) ]) [ α .transf (𝒞M.funct .fobj (X .carrier)) ]
+    ≤⟨ liftF-[] (α .transf (X .carrier)) [ _ ]m ⟩
+      liftF (liftF (X .pred)) [ 𝒟M.funct .fmor (α .transf (X .carrier)) ] [ α .transf (𝒞M.funct .fobj (X .carrier)) ]
+    ≤⟨ []-comp _ _ ⟩
+      liftF (liftF (X .pred)) [ 𝒟M.funct .fmor (α .transf (X .carrier)) 𝒟.∘ α .transf (𝒞M.funct .fobj (X .carrier)) ]
+    ≤⟨ joinP [ _ ]m ⟩
+      liftF (X .pred) [ 𝒟M.join .transf _ ] [ 𝒟M.funct .fmor (α .transf (X .carrier)) 𝒟.∘ α .transf (𝒞M.funct .fobj (X .carrier)) ]
+    ≤⟨ []-comp _ _ ⟩
+      liftF (X .pred) [ 𝒟M.join .transf _ 𝒟.∘ (𝒟M.funct .fmor (α .transf (X .carrier)) 𝒟.∘ α .transf (𝒞M.funct .fobj (X .carrier))) ]
+    ≤⟨ []-cong (𝒟.≈-sym preserve-join) ⟩
+      liftF (X .pred) [ α .transf (X .carrier) 𝒟.∘ F .fmor (𝒞M.join .transf _) ]
+    ≤⟨ []-comp⁻¹ _ _ ⟩
+      liftF (X .pred) [ α .transf (X .carrier) ] [ F .fmor (𝒞M.join .transf _) ]
+    ∎ -}
+    where open ≤-Reasoning ⊑-isPreorder
+  GM .join .natural f .f≃f = 𝒞M.join .natural (f .morph)

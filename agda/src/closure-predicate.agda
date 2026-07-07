@@ -204,7 +204,12 @@ system .PredicateSystem.⋁-isJoin = ⋁-isJoin
 system .PredicateSystem.[]-⋁ {X} {Y} {I} {P} = []-⋁ {X} {Y} {I} {P}
 
 -- If we have a functor lifting, then it also works on the closed predicates
-module 𝐂Functor (F : Functor 𝒞 𝒞) (FP : FunctorPred _ _ S F) where
+--
+-- FIXME: we only need the distributivity if we want the functor to
+-- commute laxly with ⟨⟩, which is only needed for it to be a monad.
+module 𝐂Functor (F : Functor 𝒞 𝒞) (FP : FunctorPred _ _ S F)
+       (distrib : ∀ {X} {P : S.Predicate X} → FP .FunctorPred.liftF (𝐂 P) S.⊑ 𝐂 (FP .FunctorPred.liftF P))
+    where
 
   open FunctorPred
 
@@ -212,6 +217,11 @@ module 𝐂Functor (F : Functor 𝒞 𝒞) (FP : FunctorPred _ _ S F) where
   𝐂FP .FunctorPred.liftF P = embed (FP .liftF (P .pred))
   𝐂FP .FunctorPred.liftF-⊑ P⊑Q = 𝐂-isClosure .mono (FP .liftF-⊑ P⊑Q)
   𝐂FP .FunctorPred.liftF-[] f = S⊑-trans (𝐂-isClosure .mono (FP .liftF-[] f)) 𝐂-[]
+  𝐂FP .FunctorPred.liftF-⟨⟩ f =
+    S⊑-trans (𝐂-isClosure .mono distrib)
+   (S⊑-trans (𝐂-isClosure .mono (𝐂-isClosure .mono (FP .liftF-⟨⟩ f)))
+   (S⊑-trans (𝐂-isClosure .closed)
+             (𝐂-isClosure .mono ((𝐂-isClosure .unit) S.⟨ _ ⟩m))))
 
 -- If we have a Monad that distributes over the closure, then this
 -- also lifts to the closed predicates.
@@ -223,7 +233,7 @@ module 𝐂Monad (M : Monad 𝒞) (MP : MonadPred _ _  S M)
   open NatTrans
   open Monad M renaming (funct to Mfunct; unit to Munit)
   open MonadPred MP
-  open 𝐂Functor _ functP
+  open 𝐂Functor _ functP distrib
 
   𝐂MP : MonadPred _ _ system M
   𝐂MP .MonadPred.functP = 𝐂FP

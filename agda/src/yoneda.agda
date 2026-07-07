@@ -550,7 +550,38 @@ module UnaryDay (M : Functor 𝒞 𝒞) where
   M-hat .fmor-comp {F} {G} {H} α β .transf-eq x =
     mk-≈s λ { (z , g , Fz) → liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl (H .fmor-id .func-eq (H .fobj z .refl)) (H .fmor-id .func-eq (H .fobj _ .refl)) (eq-stop _)) }
 
-  -- Should also have that yoneda preserves the functor?
+  ------------------------------------------------------------------------------
+  -- Yoneda embedding preserves the functor
+  yoneda-preserve-M : NatTrans (よ ∘F M) (M-hat ∘F よ)
+  yoneda-preserve-M .transf x .transf y .func (lift f) = x , f , lift (𝒞.id _)
+  yoneda-preserve-M .transf x .transf y .func-resp-≈ {lift f₁} {lift f₂} (lift f₁≈f₂) =
+    liftS (eq-step (𝒞.id _) (𝒞.id _) (𝒞.∘-cong 𝒞.≈-refl f₁≈f₂) (lift 𝒞.id-left) (lift 𝒞.id-left) (eq-stop _))
+  yoneda-preserve-M .transf x .natural g = mk-≈s λ (lift f) →
+    liftS (eq-step (𝒞.id _) (𝒞.id _) 𝒞.≈-refl (lift 𝒞.id-left) (lift 𝒞.id-left) (eq-stop _))
+  yoneda-preserve-M .natural {x₁}{x₂} g .transf-eq y = mk-≈s λ (lift f) →
+    liftS (eq-step g (𝒞.id _) (𝒞.≈-trans (𝒞.≈-sym 𝒞.id-left) (𝒞.≈-sym (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl))) (lift 𝒞.id-swap) (lift 𝒞.id-left) (eq-stop _))
+
+  yoneda-preserve-M⁻¹-cw : ∀ x y → Cowedge prop-setoid.𝟙 (M-hat-F (よ₀ x) y) (𝒞.hom-setoid-l ℓ ℓ y (M .fobj x))
+  yoneda-preserve-M⁻¹-cw x y .dtransf z .func (_ , lift f , lift g) = lift (M .fmor g 𝒞.∘ f)
+  yoneda-preserve-M⁻¹-cw x y .dtransf z .func-resp-≈ {_ , lift f₁ , lift g₁} {_ , lift f₂ , lift g₂} (_ , lift f₁≈f₂ , lift g₁≈g₂) = lift (𝒞.∘-cong (M .fmor-cong g₁≈g₂) f₁≈f₂)
+  yoneda-preserve-M⁻¹-cw x y .dinatural {z₁}{z₂} h = mk-≈s λ (_ , lift f , lift g) →
+    lift (begin
+      M .fmor (g 𝒞.∘ h) 𝒞.∘ (M .fmor (𝒞.id z₁) 𝒞.∘ f)
+    ≈⟨ 𝒞.∘-cong (M .fmor-comp _ _) (𝒞.∘-cong (M .fmor-id) 𝒞.≈-refl) ⟩
+      (M .fmor g 𝒞.∘ M .fmor h) 𝒞.∘ (𝒞.id _ 𝒞.∘ f)
+    ≈⟨ 𝒞.∘-cong (𝒞.∘-cong (M .fmor-cong (𝒞.≈-sym 𝒞.id-right)) 𝒞.≈-refl) 𝒞.id-left ⟩
+      (M .fmor (g 𝒞.∘ 𝒞.id _) 𝒞.∘ M .fmor h) 𝒞.∘ f
+    ≈⟨ 𝒞.assoc _ _ _ ⟩
+      M .fmor (g 𝒞.∘ 𝒞.id z₂) 𝒞.∘ (M .fmor h 𝒞.∘ f)
+    ∎)
+    where open ≈-Reasoning 𝒞.isEquiv
+
+  yoneda-preserve-M⁻¹ : NatTrans (M-hat ∘F よ) (よ ∘F M)
+  yoneda-preserve-M⁻¹ .transf x .transf y = M-hat-coend _ _ .coend-ext (yoneda-preserve-M⁻¹-cw x y) ∘S SM.×-lunit⁻¹
+  yoneda-preserve-M⁻¹ .transf x .natural {y₁}{y₂} f = mk-≈s λ (z , g , lift h) →
+    lift (𝒞.assoc _ _ _)
+  yoneda-preserve-M⁻¹ .natural {x₁} {x₂} f .transf-eq x = mk-≈s λ (z , g , lift h) →
+    lift (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _)) (𝒞.∘-cong (𝒞.≈-sym (M .fmor-comp _ _)) 𝒞.≈-refl))
 
 ------------------------------------------------------------------------------
 module DayMonad (M : Monad 𝒞) where
