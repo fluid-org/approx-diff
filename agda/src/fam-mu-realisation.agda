@@ -1819,26 +1819,27 @@ private
 
 -- The Fam(ℰ) strong action at a purely-precomposed family is the plain action
 -- precomposed with the projection.
-sf-pure : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) {Γ : obj} {Â B̂ : FM.Obj} (m̂ : FM.Mor Â B̂) →
+sf-pure : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂₁ δ̂₂ : Fin (suc n) → FM.Obj) {Γ : obj}
+          (ms : ∀ i → FM.Mor (δ̂₁ i) (δ̂₂ i)) →
           Category._≈_ FM.cat
-            (FM.Mor-∘ (FMu.fmor (Poly-map η Q) (pureExt δ̂ m̂)) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = FM.fobj FM.μObj (Poly-map η Q) (extend δ̂ Â)}))
-            (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Mor-∘ (pureExt δ̂ m̂ i) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = extend δ̂ Â i})))
-sf-pure {n} Q δ̂ {Γ} {Â} {B̂} m̂ =
+            (FM.Mor-∘ (FMu.fmor (Poly-map η Q) ms) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = FM.fobj FM.μObj (Poly-map η Q) δ̂₁}))
+            (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = δ̂₁ i})))
+sf-pure {n} Q δ̂₁ δ̂₂ {Γ} ms =
   FamC.≈-trans (FamC.assoc _ _ _)
     (FamC.≈-trans (FamC.∘-cong FamC.≈-refl sect-proj)
       (FamC.≈-trans (FMuI.strong-fmor-reindex (Poly-map η Q) FamT.to-terminal _)
         (FMuI.strong-fmor-cong (Poly-map η Q) pointwise)))
   where
     sect-proj : Category._≈_ FM.cat
-                  (FM.Mor-∘ (FM.Fam𝒞-P.pair FamT.to-terminal (Category.id FM.cat _)) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = FM.fobj FM.μObj (Poly-map η Q) (extend δ̂ Â)}))
+                  (FM.Mor-∘ (FM.Fam𝒞-P.pair FamT.to-terminal (Category.id FM.cat _)) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = FM.fobj FM.μObj (Poly-map η Q) δ̂₁}))
                   (FM.Fam𝒞-P.prod-m FamT.to-terminal (Category.id FM.cat _))
     sect-proj =
       FamC.≈-trans (FM.Fam𝒞-P.pair-natural _ _ _)
         (FM.Fam𝒞-P.pair-cong (FamT.to-terminal-unique _ _) FamC.≈-refl)
 
     pointwise : ∀ i → Category._≈_ FM.cat
-                  (FM.Mor-∘ (FM.Mor-∘ (pureExt δ̂ m̂ i) (FM.Fam𝒞-P.p₂ {x = FamT.witness} {y = extend δ̂ Â i})) (FM.Fam𝒞-P.prod-m FamT.to-terminal (Category.id FM.cat _)))
-                  (FM.Mor-∘ (pureExt δ̂ m̂ i) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = extend δ̂ Â i}))
+                  (FM.Mor-∘ (FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = FamT.witness} {y = δ̂₁ i})) (FM.Fam𝒞-P.prod-m FamT.to-terminal (Category.id FM.cat _)))
+                  (FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = δ̂₁ i}))
     pointwise i =
       FamC.≈-trans (FamC.assoc _ _ _)
         (FamC.∘-cong FamC.≈-refl
@@ -1851,7 +1852,7 @@ Gmap-pure : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) {Γ A B : o
             ≈ (realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂ (untranspose (m ∘ realise-η-iso A .Iso.fwd)))) ∘ ℰP.p₂)
 Gmap-pure {n} Q δ̂ {Γ} {A} {B} m =
   ≈-trans (fmorη-cong (FMuI.strong-fmor-cong (Poly-map η Q) pw))
-    (≈-trans (fmorη-cong (FamC.≈-sym (sf-pure Q δ̂ m̂)))
+    (≈-trans (fmorη-cong (FamC.≈-sym (sf-pure Q (extend δ̂ (η .fobj A)) (extend δ̂ (η .fobj B)) (pureExt δ̂ m̂))))
       (fmorη-pure Γ (FM.fobj FM.μObj (Poly-map η Q) (extend δ̂ (η .fobj A))) (FMu.fmor (Poly-map η Q) (pureExt δ̂ m̂))))
   where
     m̂ = untranspose (m ∘ realise-η-iso A .Iso.fwd)
@@ -1861,3 +1862,77 @@ Gmap-pure {n} Q δ̂ {Γ} {A} {B} m =
            (FM.Mor-∘ (pureExt δ̂ m̂ i) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = extend δ̂ (η .fobj A) i}))
     pw Fin.zero    = ctxη-pure Γ A m
     pw (Fin.suc i) = FamC.≈-sym FamC.id-left
+
+-- Cancel a projection from the terminal context.
+p₂-cancel : ∀ {X Z : obj} {f g : X ⇒ Z} →
+            ((f ∘ ℰP.p₂ {ℰT'.witness} {X}) ≈ (g ∘ ℰP.p₂)) → f ≈ g
+p₂-cancel {X} {Z} {f} {g} eq =
+  ≈-trans (≈-sym id-right)
+    (≈-trans (∘-cong ≈-refl (≈-sym (ℰP.pair-p₂ ℰT'.to-terminal (id _))))
+      (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong eq ≈-refl)
+          (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl (ℰP.pair-p₂ ℰT'.to-terminal (id _))) id-right)))))
+
+-- Collapses at pointwise-equal isomorphism families are equal.
+collapse-ext : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q) (δ̂₁ δ̂₂ : Fin n → FM.Obj)
+               (isos isos' : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
+               (∀ i → isos i .Iso.fwd ≈ isos' i .Iso.fwd) →
+               CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ≈ CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos' .Iso.fwd
+collapse-ext {n} Q CQ' δ̂₁ δ̂₂ isos isos' hyps =
+  p₂-cancel (≈-trans (≈-sym strip₁) (≈-trans (CQ' .CollapseAt.natural δ̂₁ δ̂₂ isos isos' (λ i → FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}) (λ i → FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) sqs) strip₂))
+  where
+    strip₁ : (fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₂) (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}))
+              ∘co (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂))
+             ≈ (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂)
+    strip₁ =
+      ≈-trans (CoK.∘-cong (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _)) ≈-refl)
+        (CoK.id-left {Γ = ℰT'.witness})
+
+    strip₂ : (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos' .Iso.fwd
+              ∘ fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})))
+             ≈ (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos' .Iso.fwd ∘ ℰP.p₂)
+    strip₂ =
+      ∘-cong ≈-refl (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _))
+
+    sqs : ∀ i → (fmorη ℰT'.witness (δ̂₂ i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) ∘co (isos i .Iso.fwd ∘ ℰP.p₂))
+                ≈ (isos' i .Iso.fwd ∘ fmorη ℰT'.witness (δ̂₁ i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}))
+    sqs i =
+      ≈-trans (CoK.∘-cong (fmorη-p₂ ℰT'.witness (δ̂₂ i)) ≈-refl)
+        (≈-trans (CoK.id-left {Γ = ℰT'.witness})
+          (≈-trans (∘-cong (hyps i) ≈-refl)
+            (≈-sym (∘-cong ≈-refl (fmorη-p₂ ℰT'.witness (δ̂₁ i))))))
+
+-- A collapse at realisations of pure Fam(ℰ) morphisms is the realised plain
+-- action.
+pure-collapse : ∀ {n} (Q : Poly ℰ (suc n)) (CQ' : CollapseAt Q) (δ̂₁ δ̂₂ : Fin (suc n) → FM.Obj)
+                (ms : ∀ i → FM.Mor (δ̂₁ i) (δ̂₂ i))
+                (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
+                (∀ i → isos i .Iso.fwd ≈ realise .fmor (ms i)) →
+                CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ≈ realise .fmor (FMu.fmor (Poly-map η Q) ms)
+pure-collapse {n} Q CQ' δ̂₁ δ̂₂ ms isos hyps =
+  p₂-cancel (≈-trans (≈-sym strip₁) (≈-trans (CQ' .CollapseAt.natural δ̂₁ δ̂₂ isos (λ i → Iso-refl) (λ i → FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})) (λ i → FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) sqs) strip₂))
+  where
+    strip₁ : (fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₂) (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}))
+              ∘co (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂))
+             ≈ (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂)
+    strip₁ =
+      ≈-trans (CoK.∘-cong (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _)) ≈-refl)
+        (CoK.id-left {Γ = ℰT'.witness})
+
+    strip₂ : (CQ' .CollapseAt.iso δ̂₂ δ̂₂ (λ i → Iso-refl) .Iso.fwd
+              ∘ fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}))))
+             ≈ (realise .fmor (FMu.fmor (Poly-map η Q) ms) ∘ ℰP.p₂)
+    strip₂ =
+      ≈-trans (∘-cong (CQ' .CollapseAt.refl-iso δ̂₂ (λ i → Iso-refl) (λ i → ≈-refl)) ≈-refl)
+        (≈-trans id-left
+          (≈-trans (fmorη-cong (FamC.≈-sym (sf-pure Q δ̂₁ δ̂₂ ms)))
+            (fmorη-pure ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.fmor (Poly-map η Q) ms))))
+
+    sqs : ∀ i → (fmorη ℰT'.witness (δ̂₂ i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) ∘co (isos i .Iso.fwd ∘ ℰP.p₂))
+                ≈ (Iso-refl .Iso.fwd ∘ fmorη ℰT'.witness (δ̂₁ i) (FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})))
+    sqs i =
+      ≈-trans (CoK.∘-cong (fmorη-p₂ ℰT'.witness (δ̂₂ i)) ≈-refl)
+        (≈-trans (CoK.id-left {Γ = ℰT'.witness})
+          (≈-trans (∘-cong (hyps i) ≈-refl)
+            (≈-sym (≈-trans id-left (fmorη-pure ℰT'.witness (δ̂₁ i) (ms i))))))
