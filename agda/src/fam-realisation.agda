@@ -10,12 +10,13 @@ open import Data.Unit using (tt)
 open import prop using (⟪_⟫) renaming (_,_ to _,ₚ_)
 open import prop-setoid using (Setoid; IsEquivalence; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≃s_)
-open import categories using (Category; setoid→category; HasTerminal; IsTerminal)
+open import categories using (Category; setoid→category; HasTerminal; IsTerminal; HasProducts; HasExponentials)
 open import functor
   using (Functor; HasColimits; Colimit; IsColimit; NatTrans; constF; constFmor; ≃-NatTrans)
   renaming (_∘_ to _∘N_; _∘F_ to _∘F_)
 open import indexed-family using (Fam; _⇒f_; fam→functor)
 import fam
+import product-cocontinuity
 
 module fam-realisation {o m e} (os es : Level) {ℰ : Category o m e}
   (EC : ∀ (A : Setoid os es) → HasColimits (setoid→category A) ℰ)
@@ -242,3 +243,189 @@ module _ (ET : HasTerminal ℰ) where
     ≈⟨ id-left ⟩
       f
     ∎ where open ≈-Reasoning isEquiv
+
+-- Realisation preserves binary products, given products and exponentials on ℰ
+-- (the exponentials supplying distributivity of products over the colimits).
+module _ (EP : HasProducts ℰ) (EE : HasExponentials ℰ EP) where
+
+  private
+    module EP = HasProducts EP
+    module PC = product-cocontinuity EP EE
+
+    open fam.CategoryOfFamilies.products os es ℰ EP using (_⊗_)
+
+  module _ (X Y : Category.obj cat) where
+
+    private
+      DX = fam→functor (X .fam)
+      DY = fam→functor (Y .fam)
+      D⊗ = fam→functor ((X ⊗ Y) .fam)
+      R×R = EP.prod (realise .fobj X) (realise .fobj Y)
+
+    prodCocone : NatTrans D⊗ (constF (setoid→category ((X ⊗ Y) .idx)) R×R)
+    prodCocone .transf (i , j) = EP.prod-m (colim X .cocone .transf i) (colim Y .cocone .transf j)
+    prodCocone .natural {i₁ , j₁} {i₂ , j₂} ⟪ ei ,ₚ ej ⟫ =
+      begin
+        id _ ∘ EP.prod-m (colim X .cocone .transf i₁) (colim Y .cocone .transf j₁)
+      ≈⟨ id-left ⟩
+        EP.prod-m (colim X .cocone .transf i₁) (colim Y .cocone .transf j₁)
+      ≈⟨ EP.prod-m-cong (≈-trans (≈-sym id-left) (colim X .cocone .natural ⟪ ei ⟫))
+                        (≈-trans (≈-sym id-left) (colim Y .cocone .natural ⟪ ej ⟫)) ⟩
+        EP.prod-m (colim X .cocone .transf i₂ ∘ X .fam .subst ei) (colim Y .cocone .transf j₂ ∘ Y .fam .subst ej)
+      ≈⟨ EP.prod-m-comp _ _ _ _ ⟩
+        EP.prod-m (colim X .cocone .transf i₂) (colim Y .cocone .transf j₂) ∘ EP.prod-m (X .fam .subst ei) (Y .fam .subst ej)
+      ∎ where open ≈-Reasoning isEquiv
+
+    private
+      -- Restrict a cocone on the total diagram to the fibre at i.
+      restr : ∀ x (α : NatTrans D⊗ (constF (setoid→category ((X ⊗ Y) .idx)) x)) i →
+              NatTrans (PC.B×D' (X .fam .fm i) DY (colim Y)) (constF (setoid→category (Y .idx)) x)
+      restr x α i .transf j = α .transf (i , j)
+      restr x α i .natural {j₁} {j₂} ⟪ e ⟫ =
+        begin
+          id _ ∘ α .transf (i , j₁)
+        ≈⟨ α .natural ⟪ X .idx .Setoid.refl ,ₚ e ⟫ ⟩
+          α .transf (i , j₂) ∘ EP.prod-m (X .fam .subst (X .idx .Setoid.refl)) (Y .fam .subst e)
+        ≈⟨ ∘-cong ≈-refl (EP.prod-m-cong (X .fam .refl*) ≈-refl) ⟩
+          α .transf (i , j₂) ∘ EP.prod-m (id _) (Y .fam .subst e)
+        ∎ where open ≈-Reasoning isEquiv
+
+      -- Mediate each fibre through the left-handed cocontinuity of the product.
+      inner : ∀ x α i → Category._⇒_ ℰ (EP.prod (X .fam .fm i) (realise .fobj Y)) x
+      inner x α i = PC.B×-preserves-colimit (X .fam .fm i) DY (colim Y) .colambda x (restr x α i)
+
+      eq₁ : ∀ x α i₁ i₂ (e : X .idx .Setoid._≈_ i₁ i₂) →
+            ≃-NatTrans (constFmor (inner x α i₁) ∘N PC.B×-cocone (X .fam .fm i₁) DY (colim Y))
+                       (constFmor (inner x α i₂ ∘ EP.prod-m (X .fam .subst e) (id _)) ∘N PC.B×-cocone (X .fam .fm i₁) DY (colim Y))
+      eq₁ x α i₁ i₂ e .transf-eq j =
+        begin
+          inner x α i₁ ∘ EP.prod-m (id _) (colim Y .cocone .transf j)
+        ≈⟨ PC.B×-preserves-colimit _ DY (colim Y) .colambda-coeval x (restr x α i₁) .transf-eq j ⟩
+          α .transf (i₁ , j)
+        ≈⟨ ≈-trans (≈-sym id-left) (α .natural ⟪ e ,ₚ Y .idx .Setoid.refl ⟫) ⟩
+          α .transf (i₂ , j) ∘ EP.prod-m (X .fam .subst e) (Y .fam .subst (Y .idx .Setoid.refl))
+        ≈⟨ ∘-cong ≈-refl (EP.prod-m-cong ≈-refl (Y .fam .refl*)) ⟩
+          α .transf (i₂ , j) ∘ EP.prod-m (X .fam .subst e) (id _)
+        ≈˘⟨ ∘-cong (PC.B×-preserves-colimit _ DY (colim Y) .colambda-coeval x (restr x α i₂) .transf-eq j) ≈-refl ⟩
+          (inner x α i₂ ∘ EP.prod-m (id _) (colim Y .cocone .transf j)) ∘ EP.prod-m (X .fam .subst e) (id _)
+        ≈⟨ assoc _ _ _ ⟩
+          inner x α i₂ ∘ (EP.prod-m (id _) (colim Y .cocone .transf j) ∘ EP.prod-m (X .fam .subst e) (id _))
+        ≈˘⟨ ∘-cong ≈-refl (EP.prod-m-comp _ _ _ _) ⟩
+          inner x α i₂ ∘ EP.prod-m (id _ ∘ X .fam .subst e) (colim Y .cocone .transf j ∘ id _)
+        ≈⟨ ∘-cong ≈-refl (EP.prod-m-cong (≈-trans id-left (≈-sym id-right)) (≈-trans id-right (≈-sym id-left))) ⟩
+          inner x α i₂ ∘ EP.prod-m (X .fam .subst e ∘ id _) (id _ ∘ colim Y .cocone .transf j)
+        ≈⟨ ∘-cong ≈-refl (EP.prod-m-comp _ _ _ _) ⟩
+          inner x α i₂ ∘ (EP.prod-m (X .fam .subst e) (id _) ∘ EP.prod-m (id _) (colim Y .cocone .transf j))
+        ≈˘⟨ assoc _ _ _ ⟩
+          (inner x α i₂ ∘ EP.prod-m (X .fam .subst e) (id _)) ∘ EP.prod-m (id _) (colim Y .cocone .transf j)
+        ∎ where open ≈-Reasoning isEquiv
+
+      -- The fibrewise mediators form a cocone on the X-side diagram.
+      outer : ∀ x α → NatTrans (PC.D×B DX (realise .fobj Y) (colim X)) (constF (setoid→category (X .idx)) x)
+      outer x α .transf i = inner x α i
+      outer x α .natural {i₁} {i₂} ⟪ e ⟫ =
+        begin
+          id _ ∘ inner x α i₁
+        ≈⟨ id-left ⟩
+          inner x α i₁
+        ≈˘⟨ PC.B×-preserves-colimit _ DY (colim Y) .colambda-ext x (inner x α i₁) ⟩
+          PC.B×-preserves-colimit _ DY (colim Y) .colambda x (constFmor (inner x α i₁) ∘N PC.B×-cocone _ DY (colim Y))
+        ≈⟨ PC.B×-preserves-colimit _ DY (colim Y) .colambda-cong (eq₁ x α i₁ i₂ e) ⟩
+          PC.B×-preserves-colimit _ DY (colim Y) .colambda x
+            (constFmor (inner x α i₂ ∘ EP.prod-m (X .fam .subst e) (id _)) ∘N PC.B×-cocone _ DY (colim Y))
+        ≈⟨ PC.B×-preserves-colimit _ DY (colim Y) .colambda-ext x _ ⟩
+          inner x α i₂ ∘ EP.prod-m (X .fam .subst e) (id _)
+        ∎ where open ≈-Reasoning isEquiv
+
+    realise-preserves-products : IsColimit D⊗ R×R prodCocone
+    realise-preserves-products .colambda x α =
+      PC.×B-preserves-colimit DX (realise .fobj Y) (colim X) .colambda x (outer x α)
+    realise-preserves-products .colambda-cong {x} {α} {β} α≃β =
+      PC.×B-preserves-colimit DX (realise .fobj Y) (colim X) .colambda-cong eq
+      where
+        eq : ≃-NatTrans (outer x α) (outer x β)
+        eq .transf-eq i =
+          PC.B×-preserves-colimit _ DY (colim Y) .colambda-cong eq'
+          where
+            eq' : ≃-NatTrans (restr x α i) (restr x β i)
+            eq' .transf-eq j = α≃β .transf-eq (i , j)
+    realise-preserves-products .colambda-coeval x α .transf-eq (i , j) =
+      begin
+        realise-preserves-products .colambda x α ∘ EP.prod-m (colim X .cocone .transf i) (colim Y .cocone .transf j)
+      ≈⟨ ∘-cong ≈-refl (≈-trans (EP.prod-m-cong (≈-sym id-right) (≈-sym id-left)) (EP.prod-m-comp _ _ _ _)) ⟩
+        realise-preserves-products .colambda x α ∘ (EP.prod-m (colim X .cocone .transf i) (id _) ∘ EP.prod-m (id _) (colim Y .cocone .transf j))
+      ≈˘⟨ assoc _ _ _ ⟩
+        (realise-preserves-products .colambda x α ∘ EP.prod-m (colim X .cocone .transf i) (id _)) ∘ EP.prod-m (id _) (colim Y .cocone .transf j)
+      ≈⟨ ∘-cong (PC.×B-preserves-colimit DX (realise .fobj Y) (colim X) .colambda-coeval x (outer x α) .transf-eq i) ≈-refl ⟩
+        inner x α i ∘ EP.prod-m (id _) (colim Y .cocone .transf j)
+      ≈⟨ PC.B×-preserves-colimit _ DY (colim Y) .colambda-coeval x (restr x α i) .transf-eq j ⟩
+        α .transf (i , j)
+      ∎ where open ≈-Reasoning isEquiv
+    realise-preserves-products .colambda-ext x f =
+      ≈-trans
+        (PC.×B-preserves-colimit DX (realise .fobj Y) (colim X) .colambda-cong eq)
+        (PC.×B-preserves-colimit DX (realise .fobj Y) (colim X) .colambda-ext x f)
+      where
+        eq : ≃-NatTrans (outer x (constFmor f ∘N prodCocone))
+                        (constFmor f ∘N PC.×B-cocone DX (realise .fobj Y) (colim X))
+        eq .transf-eq i =
+          ≈-trans (PC.B×-preserves-colimit _ DY (colim Y) .colambda-cong eq')
+            (PC.B×-preserves-colimit _ DY (colim Y) .colambda-ext x (f ∘ EP.prod-m (colim X .cocone .transf i) (id _)))
+          where
+            eq' : ≃-NatTrans (restr x (constFmor f ∘N prodCocone) i)
+                             (constFmor (f ∘ EP.prod-m (colim X .cocone .transf i) (id _)) ∘N PC.B×-cocone (X .fam .fm i) DY (colim Y))
+            eq' .transf-eq j =
+              begin
+                f ∘ EP.prod-m (colim X .cocone .transf i) (colim Y .cocone .transf j)
+              ≈⟨ ∘-cong ≈-refl (≈-trans (EP.prod-m-cong (≈-sym id-right) (≈-sym id-left)) (EP.prod-m-comp _ _ _ _)) ⟩
+                f ∘ (EP.prod-m (colim X .cocone .transf i) (id _) ∘ EP.prod-m (id _) (colim Y .cocone .transf j))
+              ≈˘⟨ assoc _ _ _ ⟩
+                (f ∘ EP.prod-m (colim X .cocone .transf i) (id _)) ∘ EP.prod-m (id _) (colim Y .cocone .transf j)
+              ∎ where open ≈-Reasoning isEquiv
+
+    -- The two colimits of the total diagram are canonically isomorphic.
+    realise-products-iso : Category.Iso ℰ (realise .fobj (X ⊗ Y)) R×R
+    realise-products-iso .Category.Iso.fwd =
+      colim (X ⊗ Y) .isColimit .colambda _ prodCocone
+    realise-products-iso .Category.Iso.bwd =
+      realise-preserves-products .colambda _ (colim (X ⊗ Y) .cocone)
+    realise-products-iso .Category.Iso.fwd∘bwd≈id =
+      ≈-trans (≈-sym (realise-preserves-products .colambda-ext _ _))
+        (≈-trans (realise-preserves-products .colambda-cong eq)
+          (realise-preserves-products .colambda-ext _ (id _)))
+      where
+        eq : ≃-NatTrans
+               (constFmor (colim (X ⊗ Y) .isColimit .colambda _ prodCocone ∘ realise-preserves-products .colambda _ (colim (X ⊗ Y) .cocone)) ∘N prodCocone)
+               (constFmor (id _) ∘N prodCocone)
+        eq .transf-eq (i , j) =
+          begin
+            (colim (X ⊗ Y) .isColimit .colambda _ prodCocone ∘ realise-preserves-products .colambda _ (colim (X ⊗ Y) .cocone)) ∘ prodCocone .transf (i , j)
+          ≈⟨ assoc _ _ _ ⟩
+            colim (X ⊗ Y) .isColimit .colambda _ prodCocone ∘ (realise-preserves-products .colambda _ (colim (X ⊗ Y) .cocone) ∘ prodCocone .transf (i , j))
+          ≈⟨ ∘-cong ≈-refl (realise-preserves-products .colambda-coeval _ (colim (X ⊗ Y) .cocone) .transf-eq (i , j)) ⟩
+            colim (X ⊗ Y) .isColimit .colambda _ prodCocone ∘ colim (X ⊗ Y) .cocone .transf (i , j)
+          ≈⟨ colim (X ⊗ Y) .isColimit .colambda-coeval _ prodCocone .transf-eq (i , j) ⟩
+            prodCocone .transf (i , j)
+          ≈˘⟨ id-left ⟩
+            id _ ∘ prodCocone .transf (i , j)
+          ∎ where open ≈-Reasoning isEquiv
+    realise-products-iso .Category.Iso.bwd∘fwd≈id =
+      ≈-trans (≈-sym (colim (X ⊗ Y) .isColimit .colambda-ext _ _))
+        (≈-trans (colim (X ⊗ Y) .isColimit .colambda-cong eq)
+          (colim (X ⊗ Y) .isColimit .colambda-ext _ (id _)))
+      where
+        eq : ≃-NatTrans
+               (constFmor (realise-preserves-products .colambda _ (colim (X ⊗ Y) .cocone) ∘ colim (X ⊗ Y) .isColimit .colambda _ prodCocone) ∘N colim (X ⊗ Y) .cocone)
+               (constFmor (id _) ∘N colim (X ⊗ Y) .cocone)
+        eq .transf-eq (i , j) =
+          begin
+            (realise-preserves-products .colambda _ (colim (X ⊗ Y) .cocone) ∘ colim (X ⊗ Y) .isColimit .colambda _ prodCocone) ∘ colim (X ⊗ Y) .cocone .transf (i , j)
+          ≈⟨ assoc _ _ _ ⟩
+            realise-preserves-products .colambda _ (colim (X ⊗ Y) .cocone) ∘ (colim (X ⊗ Y) .isColimit .colambda _ prodCocone ∘ colim (X ⊗ Y) .cocone .transf (i , j))
+          ≈⟨ ∘-cong ≈-refl (colim (X ⊗ Y) .isColimit .colambda-coeval _ prodCocone .transf-eq (i , j)) ⟩
+            realise-preserves-products .colambda _ (colim (X ⊗ Y) .cocone) ∘ prodCocone .transf (i , j)
+          ≈⟨ realise-preserves-products .colambda-coeval _ (colim (X ⊗ Y) .cocone) .transf-eq (i , j) ⟩
+            colim (X ⊗ Y) .cocone .transf (i , j)
+          ≈˘⟨ id-left ⟩
+            id _ ∘ colim (X ⊗ Y) .cocone .transf (i , j)
+          ∎ where open ≈-Reasoning isEquiv
