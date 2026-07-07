@@ -17,7 +17,7 @@ open Fin using (Fin)
 open import prop-setoid using (Setoid; module ≈-Reasoning)
 open import categories
   using (Category; setoid→category; HasTerminal; HasProducts; HasExponentials;
-         HasStrongCoproducts; coKleisli-prod)
+         HasStrongCoproducts; HasCoproducts; strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor; HasColimits)
 open import polynomial-functor-2 using (Poly; extend; Poly-map)
 import fam
@@ -376,6 +376,21 @@ record MuReal {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) : Set (o ⊔ 
 
 
 
+-- Componentwise naturality squares for identity and projection components.
+sq-refl : ∀ {Γ : obj} {X̂ Ŷ : FM.Obj} (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X̂) Ŷ) →
+          (fmorη Γ X̂ u ∘co (Iso-refl .Iso.fwd ∘ ℰP.p₂)) ≈ (Iso-refl .Iso.fwd ∘ fmorη Γ X̂ u)
+sq-refl {Γ} {X̂} u =
+  ≈-trans (∘-cong ≈-refl (ℰP.pair-cong ≈-refl id-left))
+    (≈-trans (∘-cong ≈-refl pair-p₁p₂-id) (≈-trans id-right (≈-sym id-left)))
+
+sq-p₂ : ∀ {Γ : obj} {X̂ Ŷ : FM.Obj} (I : Iso (realise .fobj X̂) (realise .fobj Ŷ)) →
+        (fmorη Γ Ŷ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = Ŷ}) ∘co (I .Iso.fwd ∘ ℰP.p₂))
+        ≈ (I .Iso.fwd ∘ fmorη Γ X̂ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X̂}))
+sq-p₂ {Γ} {X̂} {Ŷ} I =
+  ≈-trans (CoK.∘-cong (fmorη-p₂ Γ Ŷ) ≈-refl)
+    (≈-trans CoK.id-left (≈-sym (∘-cong ≈-refl (fmorη-p₂ Γ X̂))))
+
+
 -- The collapse interface for a polynomial: realisation of its application is
 -- invariant under replacing environment entries by families with isomorphic
 -- realisations, naturally in the strong action, and trivially so at identical
@@ -478,6 +493,84 @@ Gmap-∘co P δ̂ {Γ} {A} {B} {C₀} h₂ h₁ =
              (FM.Fam𝒞-P.pair FM.Fam𝒞-P.p₁ (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη Γ A h₁) i)))
     eqs Fin.zero    = ctxη-∘co Γ A B C₀ h₂ h₁
     eqs (Fin.suc i) = FamC.≈-sym FamCoK.id-left
+
+-- The collapse interface at constants and variables.
+collapse-const : ∀ {n} (A : Category.obj ℰ) → CollapseAt {n} (polynomial-functor-2.Poly.const A)
+collapse-const A .CollapseAt.iso δ̂₁ δ̂₂ isos = Iso-refl
+collapse-const A .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sq-refl _
+collapse-const A .CollapseAt.refl-iso δ̂ = ≈-refl
+
+collapse-var : ∀ {n} (i : Fin n) → CollapseAt {n} (polynomial-functor-2.Poly.var i)
+collapse-var i .CollapseAt.iso δ̂₁ δ̂₂ isos = isos i
+collapse-var i .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sqs i
+collapse-var i .CollapseAt.refl-iso δ̂ = ≈-refl
+
+
+-- Coproduct machinery for the sum case of the collapse.
+private
+  ℰCP = strong-coproducts→coproducts ℰT ℰSC
+  module ℰCPm = HasCoproducts ℰCP
+  module ℰSCm = HasStrongCoproducts ℰSC
+  module FSC = HasStrongCoproducts FM.strongCoproducts
+  module FCP = HasCoproducts FM.coproducts
+
+  K⊕ : ∀ (X̂ Ŷ : FM.Obj) → Iso (realise .fobj (FCP.coprod X̂ Ŷ))
+                              (ℰCPm.coprod (realise .fobj X̂) (realise .fobj Ŷ))
+  K⊕ X̂ Ŷ = FR.realise-coproducts-iso ℰCP X̂ Ŷ
+
+  K⊕-in₁ : ∀ (X̂ Ŷ : FM.Obj) → (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰSCm.in₁) ≈ realise .fmor FCP.in₁
+  K⊕-in₁ X̂ Ŷ = ℰCPm.copair-in₁ _ _
+
+  K⊕-in₂ : ∀ (X̂ Ŷ : FM.Obj) → (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰSCm.in₂) ≈ realise .fmor FCP.in₂
+  K⊕-in₂ X̂ Ŷ = ℰCPm.copair-in₂ _ _
+
+-- Realisation in context sends the strong copair to the strong copair, across
+-- the coproduct comparison iso.
+fmorη-scopair : ∀ (Γ : obj) (X̂ Ŷ : FM.Obj) {Ẑ : FM.Obj}
+                (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X̂) Ẑ)
+                (v : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) Ŷ) Ẑ) →
+                (fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂))
+                ≈ ℰSCm.copair (fmorη Γ X̂ u) (fmorη Γ Ŷ v)
+fmorη-scopair Γ X̂ Ŷ {Ẑ} u v =
+  ≈-trans (≈-sym (ℰSCm.copair-ext _)) (ℰSCm.copair-cong c₁ c₂)
+  where
+    c₁ : ((fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)) ∘ ℰP.pair ℰP.p₁ (ℰSCm.in₁ ∘ ℰP.p₂))
+         ≈ fmorη Γ X̂ u
+    c₁ =
+      begin
+        (fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)) ∘co (ℰSCm.in₁ ∘ ℰP.p₂)
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co ((K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂) ∘co (ℰSCm.in₁ ∘ ℰP.p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+        fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co ((K⊕ X̂ Ŷ .Iso.bwd ∘ ℰSCm.in₁) ∘ ℰP.p₂)
+      ≈⟨ CoK.∘-cong ≈-refl (∘-cong (K⊕-in₁ X̂ Ŷ) ≈-refl) ⟩
+        fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (realise .fmor FCP.in₁ ∘ ℰP.p₂)
+      ≈˘⟨ CoK.∘-cong ≈-refl (fmorη-pure Γ X̂ FCP.in₁) ⟩
+        fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co fmorη Γ X̂ (FM.Mor-∘ FCP.in₁ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X̂}))
+      ≈˘⟨ fmorη-∘co Γ X̂ (FSC.copair u v) _ ⟩
+        fmorη Γ X̂ (FM.Mor-∘ (FSC.copair u v) (pairη Γ X̂ (FM.Mor-∘ FCP.in₁ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X̂}))))
+      ≈⟨ fmorη-cong (FSC.copair-in₁ u v) ⟩
+        fmorη Γ X̂ u
+      ∎ where open ≈-Reasoning isEquiv
+
+    c₂ : ((fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)) ∘ ℰP.pair ℰP.p₁ (ℰSCm.in₂ ∘ ℰP.p₂))
+         ≈ fmorη Γ Ŷ v
+    c₂ =
+      begin
+        (fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)) ∘co (ℰSCm.in₂ ∘ ℰP.p₂)
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co ((K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂) ∘co (ℰSCm.in₂ ∘ ℰP.p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+        fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co ((K⊕ X̂ Ŷ .Iso.bwd ∘ ℰSCm.in₂) ∘ ℰP.p₂)
+      ≈⟨ CoK.∘-cong ≈-refl (∘-cong (K⊕-in₂ X̂ Ŷ) ≈-refl) ⟩
+        fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (realise .fmor FCP.in₂ ∘ ℰP.p₂)
+      ≈˘⟨ CoK.∘-cong ≈-refl (fmorη-pure Γ Ŷ FCP.in₂) ⟩
+        fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co fmorη Γ Ŷ (FM.Mor-∘ FCP.in₂ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = Ŷ}))
+      ≈˘⟨ fmorη-∘co Γ Ŷ (FSC.copair u v) _ ⟩
+        fmorη Γ Ŷ (FM.Mor-∘ (FSC.copair u v) (pairη Γ Ŷ (FM.Mor-∘ FCP.in₂ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = Ŷ}))))
+      ≈⟨ fmorη-cong (FSC.copair-in₂ u v) ⟩
+        fmorη Γ Ŷ v
+      ∎ where open ≈-Reasoning isEquiv
 
 -- The initial-algebra package for a polynomial, against an assumed collapse
 -- family and its naturality with respect to the strong action. The algebra
@@ -726,19 +819,7 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
     G' : ℰP.prod 𝟙 (Creal Q δ̂₂) ⇒ Creal Q δ̂₁
     G' = M₂.foldR (M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂))
 
-    -- Componentwise naturality squares for the crossing argument.
-    sq-refl : ∀ {Γ : obj} {X̂ Ŷ : FM.Obj} (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X̂) Ŷ) →
-              (fmorη Γ X̂ u ∘co (Iso-refl .Iso.fwd ∘ ℰP.p₂)) ≈ (Iso-refl .Iso.fwd ∘ fmorη Γ X̂ u)
-    sq-refl {Γ} {X̂} u =
-      ≈-trans (∘-cong ≈-refl (ℰP.pair-cong ≈-refl id-left))
-        (≈-trans (∘-cong ≈-refl pair-p₁p₂-id) (≈-trans id-right (≈-sym id-left)))
-
-    sq-p₂ : ∀ {Γ : obj} {X̂ Ŷ : FM.Obj} (I : Iso (realise .fobj X̂) (realise .fobj Ŷ)) →
-            (fmorη Γ Ŷ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = Ŷ}) ∘co (I .Iso.fwd ∘ ℰP.p₂))
-            ≈ (I .Iso.fwd ∘ fmorη Γ X̂ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X̂}))
-    sq-p₂ {Γ} {X̂} {Ŷ} I =
-      ≈-trans (CoK.∘-cong (fmorη-p₂ Γ Ŷ) ≈-refl)
-        (≈-trans CoK.id-left (≈-sym (∘-cong ≈-refl (fmorη-p₂ Γ X̂))))
+    -- (componentwise naturality squares hoisted to top level)
 
     -- The crossing square: the strong action commutes with the collapse.
     cross : ∀ {A B : obj} (h : ℰP.prod 𝟙 A ⇒ B) →
