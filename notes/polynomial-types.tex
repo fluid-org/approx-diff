@@ -88,8 +88,6 @@ $(\coprod, 0)$. The category $\Poly_{\cat{C}}$ is the smallest subcategory of $\
   $\mu$-closure: if $H : D \times \cat{C} \to \cat{C}$ is a morphism of $\Poly_{\cat{C}}$ and
   $\mu H : D \to \cat{C}$ exists, then $\mu H$ is also a morphism of $\Poly_{\cat{C}}$.
 \end{itemize}
-We say $\cat{C}$ \emph{has $\Poly$-types} if every endofunctor $E : \cat{C} \to \cat{C}$ in
-$\Poly_{\cat{C}}$ admits an initial algebra.
 \end{definition}
 
 \subsection{Typing rules}
@@ -120,38 +118,101 @@ give a direct construction in $\Fam(\cat{C})$ via Martin-L\"of $W$-types
 \citep[Wellorderings, pp.~43--47]{martinLof1984}, restricted to the finitary fragment (where each shape has
 finite arity), which suffices because our polynomials are built from finite $+$ and $\times$.
 
+Syntactic polynomials over $\Fam(\cat{C})$ mirror the types of \secref{polynomial-types:kinding}, with
+objects at the leaves in place of primitive types:
+\[
+  P, Q \in \Poly_\Delta \;::=\; \const(A) \mid \alpha \mid P + Q \mid P \times Q \mid \mu\alpha.P
+\]
+where $A = (X, \partial X)$ ranges over objects of $\Fam(\cat{C})$ and $\alpha$ over variables in $\Delta$.
+We identify each $P \in \Poly_\Delta$ with the functor $\Fam(\cat{C})^\Delta \to \Fam(\cat{C})$ it
+presents, writing $P(\delta)$ for its action on an environment $\delta$.
+
+The fold body of the $\syn{fold}$ rule of \secref{polynomial-types:language} lives in a typing context,
+so the catamorphism interpreting it must too.
+
+\begin{definition}[$\Poly$-types]
+\label{def:polynomial-types:has-poly}
+A category \emph{has $\Poly$-types} if for each $P \in \Poly_{\Delta,\alpha}$ and environment $\delta$
+it provides:
+\begin{itemize}
+\item an object $\mu_{\alpha.P}(\delta)$ and algebra map $\inMap : P(\delta[\alpha \mapsto
+  \mu_{\alpha.P}(\delta)]) \to \mu_{\alpha.P}(\delta)$;
+\item for every $\Gamma$ and algebra $a : \Gamma \times P(\delta[\alpha \mapsto Y]) \to Y$, a
+  catamorphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$ satisfying, in the notation $f
+  \circ_\Gamma g = f \circ \prodM{\pi_1}{g}$ of composition in context,
+  \begin{align*}
+  \cata{a} \circ_\Gamma (\inMap \circ \pi_2) &= a \circ_\Gamma F\cata{a} \tag{$\beta$} \\
+  h \circ_\Gamma (\inMap \circ \pi_2) = a \circ_\Gamma F h &\implies h = \cata{a} \tag{$\eta$}
+  \end{align*}
+  where $F\cata{a}$ is the action in context of $P(\delta[\alpha \mapsto -])$ on $\cata{a}$: the
+  \emph{strong} functorial action, which takes a morphism in context $\Gamma \times X_i \to Y_i$ for
+  each variable $i$.
+\end{itemize}
+\end{definition}
+
+\noindent Taking $\Gamma = 1$, each $\mu_{\alpha.P}(\delta)$ is in particular an initial algebra in the usual
+sense; in the presence of exponentials the strong form is no extra demand (fold into $Y^\Gamma$),
+but $\Fam(\cat{C})$ need not have exponentials. At the
+term level, $\beta$ reduces $\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each
+$\mu$-child of $t$ before substituting into $s$, and $\eta$ says
+$\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
+
 \begin{proposition}
 \label{prop:polynomial-types:fam-has-poly}
 If $\cat{C}$ has finite products $(\times, 1)$ then $\Fam(\cat{C})$ has $\Poly$-types.
 \end{proposition}
 
-\noindent The construction proceeds by induction on the syntactic polynomial $P$ with $\sem{P} = F$, where
-$\sigma$ in each $\const(\sigma)$ interprets to a pair $(X, \partial X) \in \Fam(\cat{C})$. The carrier
-$\mu F = (W_P, \partial W_P) \in \Fam(\cat{C})$ has:
-\begin{itemize}
-\item index set $W_P$, the set of $P$-shaped well-founded trees: the tree has the shape of $P$, with each
-$\const(\sigma)$ position carrying an element of $X$ and each $\mathsf{var}$ position carrying a recursive
-subtree;
-\item fibre $\partial W_P(t) \in \cat{C}$ for each tree $t \in W_P$, defined by structural recursion on $P$:
-$\partial X_x$ at each $\const(\sigma)$ position labelled $x$; the recursive fibre at each $\mathsf{var}$
-position; the chosen branch's fibre at each $+$ position; and the product of branch fibres at each $\times$
-position.
-\end{itemize}
-The algebra map $(\inMap_F, \partial \inMap_F): F(\mu F) \to \mu F$ has $\inMap_F$ assembling a single tree
-from its constituent parts (const labels, branch choices, recursive subtrees), and $\partial \inMap_F$ the
-identity because the fibre of the assembled tree is computed by the same recursion as $F$'s action on the
-parts.
+\paragraph{Sorts.}
+Nested $\mu$s make the naive construction circular: when an inner binder's body mentions an outer binder,
+the inner carrier must be instantiated at the outer carrier while the latter is still being defined.
+Following \citet{abbott2004} we instead construct the initial algebras of $P$ and of all its inner
+$\mu$-bodies simultaneously, as a single family of trees indexed by \emph{sorts}. A sort over $\Delta$ is a pair $(Q, \rho)$ of a $\mu$-body $Q \in
+\Poly_{\beta_1, \ldots, \beta_k, \alpha}$ together with a \emph{resolution} $\rho$ assigning to each free
+variable $\beta_i$ either a parameter in $\Delta$ or another sort; the collection of sorts is inductively
+generated. A sort is thus a $\mu$-binder cut loose from its surrounding syntax: the binder's own variable
+$\alpha$ will resolve to the sort itself, and $\rho$ records how its remaining variables were bound where
+it occurred.
 
-Initiality (proved by induction on the tree) unpacks as the standard $\beta$ and $\eta$ equations. For any
-$F$-algebra $a: F(Y) \to Y$, write $\cata{a}: \mu F \to Y$ for the unique algebra morphism. Then
-\begin{align*}
-\cata{a} \circ \inMap_F &= a \circ F(\cata{a}) \tag{$\beta$} \\
-\cata{\inMap_F} &= \id_{\mu F} \tag{$\eta$}
-\end{align*}
-where $\beta$ is the algebra-morphism property of $\cata{a}$ and $\eta$ applies uniqueness with $a =
-\inMap_F$, where $\id_{\mu F}$ is trivially an algebra morphism. At the term level, $\beta$ reduces
-$\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu P$-child of $t$
-before substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
+\paragraph{Carrier.}
+Fix an environment $\delta \in \Fam(\cat{C})^\Delta$. For each sort $s = (Q, \rho)$, the index set $W_s$
+of \emph{trees of sort $s$} consists of $Q$-shaped well-founded trees: at each $\const(X, \partial X)$
+position an element of $X$; at each variable position, an element of the index set of the corresponding
+parameter if the variable resolves through $\rho$ to a parameter, and a tree of sort $s'$ if it resolves
+to a sort $s'$ (in particular a tree of sort $s$ itself at the bound variable $\alpha$); at each $+$
+position a branch choice together with a tree-part for the chosen branch; at each $\times$ position
+tree-parts for both branches; and at each inner $\mu\beta.Q'$ position a tree of the sort $(Q', \rho')$,
+where $\rho'$ extends the resolution in force at that position. The sets $W_s$ form a single simultaneous
+inductive definition, indexed by sorts \citep{abbott2004}.
+
+The fibre $\partial W_s(t) \in \cat{C}$ of a tree $t \in W_s$ is defined by one structural recursion over
+the same indexed family: $\partial X_x$ at each $\const(X, \partial X)$ position labelled $x$; the parameter's
+fibre at each parameter position; the recursive fibre at each sort position; the chosen branch's fibre at
+each $+$ position; and the product of the branch fibres at each $\times$ position.
+
+The carrier is the family at the root sort: $\mu_{\alpha.P}(\delta) = (W_{s_0}, \partial W_{s_0})$,
+where $s_0 = (P, \rho_0)$ and $\rho_0$ resolves the free variables of $P$ to the parameters $\Delta$.
+
+\paragraph{Algebra map and catamorphism.}
+The algebra map $\inMap : P(\delta[\alpha \mapsto \mu_{\alpha.P}(\delta)]) \to
+\mu_{\alpha.P}(\delta)$ assembles, on index sets, a single tree from its constituent parts (const
+labels, branch choices, recursive subtrees), and is the identity on fibres, because the fibre of the
+assembled tree is computed by the same recursion as $P$'s action on the parts.
+
+The catamorphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$ for an algebra $a : \Gamma
+\times P(\delta[\alpha \mapsto Y]) \to Y$ is defined by structural recursion over trees (simultaneously
+over all sorts), on index sets and fibres alike, threading the $\Gamma$ component unchanged through the
+recursion. The laws $\beta$ and $\eta$ are proved by induction on trees.
+
+\paragraph{The parameterised operator.}
+The construction above is pointwise in the environment $\delta$. As in \citet[Proposition~4]{nunes2023},
+the pointwise data induce the functorial action of $\mu_{\alpha.P}$ on environment morphisms
+generically, by folding: for $g : \delta \to \delta'$,
+\[
+  \mu_{\alpha.P}(g) \;=\; \cata{\,\inMap \circ P(g[\alpha \mapsto \id])\,},
+\]
+here in the strong form, with the algebra built from the strong action of $P$.
+Functoriality, and more generally that componentwise-isomorphic polynomials have isomorphic initial
+algebras, follow from $\beta$ and $\eta$ alone, independently of the construction.
 
 \subsection{Initial algebras from $\omega$-colimits}
 \label{sec:polynomial-types:omega-mu}
