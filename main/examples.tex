@@ -8,71 +8,83 @@ analyses that result. Each example is mechanised in the accompanying Agda develo
 \label{sec:examples:perturbation-bounds}
 
 \Added{The first two instances demonstrate the perturbation-bound reading of
-\secref{approx-as-tangents:richer-semirings}: the analysis reports how much each output can change, rather
+\secref{approx-as-tangents:perturbation-bounds}: the analysis reports how much each output can change, rather
 than whether it can. Sections \ref{sec:examples:absolute-bounds} and \ref{sec:examples:relative-bounds}
 give the two presentations, absolute and relative, run on the database $\mathit{db} = [(\mathsf{a}, 3),
-(\mathsf{b}, 1), (\mathsf{a}, -3)]$ of \secref{introduction:galois-slicing}. In both, the approximation
-object for a number is the free semimodule $S^2$, one bound for each direction of change.}
+(\mathsf{b}, 1), (\mathsf{a}, -3)]$ of \exref{introduction-example}. In the absolute presentation the
+approximation object for a number is the free semimodule $S^2$, one bound for each direction of change; a
+relative bound constrains both directions at once, so the relative presentation uses a single scalar.}
 
 \subsubsection[Absolute bounds]{\added{Absolute bounds}}
 \label{sec:examples:absolute-bounds}
 
 \Added{At the min-plus semiring, a pair of scalars $(d, u)$ records that a value may fall by at most $d$ and
 rise by at most $u$, so that a number $x$ is known to lie in the interval $[x - d, x + u]$; the pair
-$(\infty, \infty)$ carries no information.}
+$(\infty, \infty)$ carries no information. Multiplication's derivative carries none either, since no
+translation bounds a scaling (\secref{approx-as-tangents:perturbation-bounds}), so we run a query that
+selects and sums without multiplying: $\mathrm{query}\,l\,\mathit{db} = \mathrm{sum}\,[ q \mid (l', q)
+\leftarrow \mathit{db}, l \equiv l' ]$, with $\mathrm{query}\,\mathsf{a}\,\mathit{db} = 0$. Addition's
+derivative entries are translations by $0$, and selection's entries are the semiring's $0$ and $1$, as
+before. The backward derivative at this run is a linear map $\partial(\mathrm{query}\,l\,\mathit{db})_r :
+S^2 \multimap S^2 \times S^2 \times S^2$, one factor for each number in the database; the frozen label
+positions and list terminator contribute trivial factors, omitted here, and because the input is a list, the
+type depends on the input's shape.}
 
-\Added{Multiplication's derivative carries no information at this semiring, since no translation bounds a
-scaling (\secref{approx-as-tangents:richer-semirings}), so we run the additive part of the running example:
-the selection-and-sum query $\mathrm{query}\,l\,\mathit{db} = \mathrm{sum}\,[ q \mid (l', q) \leftarrow
-\mathit{db}, l \equiv l' ]$, with $\mathrm{query}\,\mathsf{a}\,\mathit{db}
-= 0$. Addition's derivative entries are translations by $0$, and selection's entries are the semiring's $0$
-and $1$, as before. The backward derivative at this run is a linear map}
+\Added{Forwards, with the first $\mathsf{a}$-number known to within bounds $(\frac{1}{2}, 0)$ and the second
+to within $(\frac{1}{5}, \frac{1}{2})$:}
 \begin{AddedBlock}
 \begin{displaymath}
-  \partial(\mathrm{query}\,l\,\mathit{db})_r : S^2 \multimap S^2 \times S^2 \times S^2
+  \partial(\mathrm{query}\,\mathsf{a}\,\mathit{db})_f([(\mathsf{a}, (\tfrac{1}{2}, 0)), (\mathsf{b}, (\infty, \infty)), (\mathsf{a}, (\tfrac{1}{5}, \tfrac{1}{2}))]) =
+  (\tfrac{1}{5}, 0)
 \end{displaymath}
 \end{AddedBlock}
-\noindent\Added{with one factor for each number in the database (the frozen label positions and the list terminator
-contribute trivial factors, omitted here). Because the input is a list, the type of the derivative depends on
-the shape of the input.}
-
-\Added{Backwards, asking for the output to lie within $[-\frac{1}{10}, \frac{1}{10}]$, that is, bounds
-$(\frac{1}{10}, \frac{1}{10})$, returns the same bounds at both $\mathsf{a}$-numbers and $(\infty,
-\infty)$ at the $\mathsf{b}$-number: changing either $\mathsf{a}$-number alone by at most $\frac{1}{10}$
-keeps the output within its interval, while the $\mathsf{b}$-number is unconstrained. Forwards, if the first
-$\mathsf{a}$-number is known to within bounds $(\frac{1}{2}, 0)$ and the second to within $(\frac{1}{5},
-\frac{1}{2})$, the output is known to within $(\frac{1}{5}, 0)$: bounds for the same position combine by
-$\min$, reflecting the reading in which one input changes at a time.}
+\noindent\Added{Bounds for the same position combine by $\min$, reflecting the reading in which one input
+changes at a time. Backwards, asking for the output to lie within $[-\frac{1}{10}, \frac{1}{10}]$, that is,
+bounds $(\frac{1}{10}, \frac{1}{10})$:}
+\begin{AddedBlock}
+\begin{displaymath}
+  \partial(\mathrm{query}\,\mathsf{a}\,\mathit{db})_r(\tfrac{1}{10}, \tfrac{1}{10}) =
+  [(\mathsf{a}, (\tfrac{1}{10}, \tfrac{1}{10})), (\mathsf{b}, (\infty, \infty)), (\mathsf{a}, (\tfrac{1}{10}, \tfrac{1}{10}))]
+\end{displaymath}
+\end{AddedBlock}
+\noindent\Added{Changing either $\mathsf{a}$-number alone by at most $\frac{1}{10}$ keeps the output within
+its interval, while the $\mathsf{b}$-number is unconstrained. The backward run here can only route the
+demand to the used positions, since every entry is $0$ or $\infty$; it would become informative given
+operations that loosen a bound by a fixed finite amount, such as rounding, whose entry is the translation
+$1$ ($\delta$ in, $\delta + 1$ out), or several outputs sharing an input, whose demands combine by
+$\min$.}
 
 \subsubsection[Relative bounds]{\added{Relative bounds}}
 \label{sec:examples:relative-bounds}
 
-\Added{In the second presentation a scalar bounds the relative rather than the absolute change of a value,
-and the two readings trade places over the arithmetic operations: relative bounds pass through multiplication
-unchanged, but are amplified by addition. Because the absolute presentation could say nothing about
-multiplication, it exercised only the additive part of the running example. With relative bounds we can run
-the full weighted-sum query $\mathrm{total}$ of \secref{introduction:galois-slicing}, prices included, on
-the same database.}
+\Added{Relative bounds pass through multiplication, so this instance can run the full weighted-sum query
+$\mathrm{total}$ of \exref{introduction-example}, prices included, on the same database. We instantiate at
+the min-times semiring of \secref{approx-as-tangents:perturbation-bounds}: multiplication's derivative has
+unit entries, and addition's entries are condition numbers, infinite at exact cancellation.}
 
-\Added{We instantiate at the min-times semiring. The derivative of multiplication now has entries $1$ on both
-arguments, since a bound on the relative error of either factor is a bound on the relative error of the
-product. The derivative of addition at values $(x, y)$ has entry $|x| / |x + y|$ on its first argument and
-symmetrically on its second: the factor by which the relative error of a summand is amplified in the sum. When
-$x + y = 0$ the factor is infinite, and the entry is the semiring zero $\infty$.}
-
-\Added{In the run of $\mathrm{total}\,\mathsf{b}$, multiplication behaves well: if the price of
-$\mathsf{b}$ is known to within $10\%$, the output is too, and likewise for the selected quantity;
-backwards, an output bound of $10\%$ requires the used inputs to within $10\%$ and constrains nothing else.
-The run of $\mathrm{total}\,\mathsf{a}$ meets the cancellation: its two contributions, $2 \cdot 3$ and $2
-\cdot (-3)$, sum to zero, the amplification factor of the final addition is infinite, and no relative bound
-on either $\mathsf{a}$-quantity, however tight, yields a bound on the output. The cancellation that the
-Boolean instance reported as a spurious dependency in \secref{introduction:galois-slicing} is here reported
-as an infinite condition number, in the sense of numerical analysis~\cite{high:ASNA2}.}
-
-\Added{Neither reading of perturbation bounds is better than the other. Absolute bounds propagate
-accurately through addition but carry no information through multiplication, while relative bounds propagate
-accurately through multiplication but are amplified by addition, and lost entirely where contributions
-cancel. The choice between the two presentations depends on what the analysis is meant to observe.}
+\Added{In the run of $\mathrm{total}\,\mathsf{b}$, multiplication behaves well: a $10\%$ bound on the price
+of $\mathsf{b}$ reaches the output intact, and likewise a bound on the selected quantity:}
+\begin{AddedBlock}
+\begin{displaymath}
+  \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a}, \infty), (\mathsf{b}, \infty), (\mathsf{a}, \infty)], \langle \infty, \tfrac{1}{10} \rangle) = \tfrac{1}{10}
+\end{displaymath}
+\end{AddedBlock}
+\noindent\Added{Backwards, an output bound of $10\%$ constrains the selected quantity and its price and
+nothing else:}
+\begin{AddedBlock}
+\begin{displaymath}
+  \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_r(\tfrac{1}{10}) =
+  ([(\mathsf{a}, \infty), (\mathsf{b}, \tfrac{1}{10}), (\mathsf{a}, \infty)], \langle \infty, \tfrac{1}{10} \rangle)
+\end{displaymath}
+\end{AddedBlock}
+\noindent\Added{The run of $\mathrm{total}\,\mathsf{a}$ meets the cancellation: its two contributions, $2
+\cdot 3$ and $2 \cdot (-3)$, sum to zero, the amplification factor of the final addition is infinite, and no
+relative bound on either $\mathsf{a}$-quantity, however tight, yields a bound on the output:}
+\begin{AddedBlock}
+\begin{displaymath}
+  \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a}, \tfrac{1}{10}), (\mathsf{b}, \infty), (\mathsf{a}, \infty)], \langle \infty, \infty \rangle) = \infty
+\end{displaymath}
+\end{AddedBlock}
 
 \subsection[Linked Inputs and Outputs]{\added{Linked Inputs and Outputs}}
 \label{sec:examples:linked}
