@@ -243,6 +243,17 @@ infinite factor possible. Where the Boolean analysis could only report a depende
 there, the relative analysis says how badly the bound degrades. The difference between the two is a choice of
 semiring, and making that choice is part of specifying what the analysis is to observe.}
 
+\subsubsection[Qualitative derivatives]{\added{Qualitative derivatives}}
+
+\Added{The Boolean analysis reports a dependency at a cancellation because it forgets signs. The \emph{sign
+semiring} $\{+, 0, -, ?\}$, the rule-of-signs domain of abstract interpretation~\cite{cousot77}, retains
+them: multiplication of signs is exact, and the only sum whose sign is not determined is $+$ plus $-$, which
+is $?$. Taking signs as the scalars gives the \emph{qualitative derivatives} of qualitative
+reasoning~\cite{dekleer84,kuipers86}, an entry reading ``increasing this input increases (or decreases, or
+cannot affect) that output'', with $?$ appearing exactly at the potential cancellations: in the refund
+example, the entry for the price becomes $?$. Collapsing $+$, $-$ and $?$ to $1$ recovers the Boolean
+analysis.}
+
 \subsubsection[Provenance semirings]{\added{Provenance semirings}}
 
 \Added{Database provenance has its own semiring tradition: in the framework of
@@ -270,13 +281,7 @@ over-approximation: composing Boolean Jacobians can record dependencies absent f
 their composite. The refund in \exref{introduction-example} is a case in point: the price
 genuinely does not matter to the total, yet the composed dependencies say it might.}
 
-\Added{When exactness fails, the target determines how visible the loss is. The Booleans forget signs, so
-a cancelled dependency is indistinguishable from a real one. The \emph{sign semiring} $\{+, 0, -, ?\}$, the rule-of-signs
-domain of abstract interpretation~\cite{cousot77}, retains them: multiplication of signs is exact, and the
-only sum whose sign is not determined is $+$ plus $-$, which maps to $?$. Translating a numerical Jacobian into signs gives the
-\emph{qualitative derivatives} of qualitative reasoning~\cite{dekleer84,kuipers86}, entries now reading
-``increasing this input increases (or decreases, or cannot affect) that output'', with $?$ appearing exactly
-at the potential cancellations. Signed scalars also arise within provenance itself: negative multiplicities model deletion and
+\Added{Signed scalars also arise within provenance itself: negative multiplicities model deletion and
 update~\cite{green09}, and cancellation is the recognised obstruction to provenance for queries with
 difference~\cite{amsterdamer11,geerts10}.}
 
