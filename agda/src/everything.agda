@@ -24,6 +24,7 @@ import bounded-meet
 -- for documentation purposes.)
 import fam-exponentials
 import fam-realisation
+import product-cocontinuity
 
 -- Construction of the interpretation of the higher-order language in
 -- Section 4

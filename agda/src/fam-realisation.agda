@@ -4,12 +4,13 @@
 -- counit of the free coproduct completion, for a category with setoid-indexed
 -- colimits.
 
-open import Level using (Level)
+open import Level using (Level; lift)
 open import Data.Product using (_,_)
+open import Data.Unit using (tt)
 open import prop using (⟪_⟫) renaming (_,_ to _,ₚ_)
 open import prop-setoid using (Setoid; IsEquivalence; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≃s_)
-open import categories using (Category; setoid→category)
+open import categories using (Category; setoid→category; HasTerminal; IsTerminal)
 open import functor
   using (Functor; HasColimits; Colimit; IsColimit; NatTrans; constF; constFmor; ≃-NatTrans)
   renaming (_∘_ to _∘N_; _∘F_ to _∘F_)
@@ -21,7 +22,7 @@ module fam-realisation {o m e} (os es : Level) {ℰ : Category o m e}
   where
 
 open Category ℰ
-open fam.CategoryOfFamilies os es ℰ using (cat; Mor-∘; bigCoproducts)
+open fam.CategoryOfFamilies os es ℰ using (cat; Mor-∘; bigCoproducts; terminal)
 open fam.CategoryOfFamilies.Obj
 open fam.CategoryOfFamilies.Mor
 open fam.CategoryOfFamilies._≃_
@@ -194,3 +195,50 @@ module _ (S : Setoid os es) (D : Functor (setoid→category S) cat) where
         ≈⟨ ∘-cong ≈-refl id-right ⟩
           f ∘ colim (⨿D .apex) .cocone .transf (s , d)
         ∎ where open ≈-Reasoning isEquiv
+
+-- Realisation preserves the terminal object: the coproduct over the singleton
+-- setoid of the terminal fibre is terminal.
+module _ (ET : HasTerminal ℰ) where
+
+  private
+    module ET = HasTerminal ET
+
+    𝟙F = terminal ET .HasTerminal.witness
+
+    inT = colim 𝟙F .cocone .transf (lift tt)
+
+    roundtrip : (inT ∘ ET.to-terminal) ≈ id (realise .fobj 𝟙F)
+    roundtrip =
+      ≈-trans (≈-sym (colim 𝟙F .isColimit .colambda-ext _ (inT ∘ ET.to-terminal)))
+        (≈-trans (colim 𝟙F .isColimit .colambda-cong eq)
+          (colim 𝟙F .isColimit .colambda-ext _ (id _)))
+      where
+        eq : ≃-NatTrans (constFmor (inT ∘ ET.to-terminal) ∘N colim 𝟙F .cocone)
+                        (constFmor (id _) ∘N colim 𝟙F .cocone)
+        eq .transf-eq u =
+          begin
+            (inT ∘ ET.to-terminal) ∘ colim 𝟙F .cocone .transf u
+          ≈⟨ assoc _ _ _ ⟩
+            inT ∘ (ET.to-terminal ∘ colim 𝟙F .cocone .transf u)
+          ≈⟨ ∘-cong ≈-refl (ET.to-terminal-unique _ (id _)) ⟩
+            inT ∘ id _
+          ≈⟨ id-right ⟩
+            inT
+          ≈˘⟨ id-left ⟩
+            id _ ∘ colim 𝟙F .cocone .transf u
+          ∎ where open ≈-Reasoning isEquiv
+
+  realise-terminal : IsTerminal ℰ (realise .fobj 𝟙F)
+  realise-terminal .IsTerminal.to-terminal = inT ∘ ET.to-terminal
+  realise-terminal .IsTerminal.to-terminal-ext f =
+    begin
+      inT ∘ ET.to-terminal
+    ≈⟨ ∘-cong ≈-refl (ET.to-terminal-ext (ET.to-terminal ∘ f)) ⟩
+      inT ∘ (ET.to-terminal ∘ f)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (inT ∘ ET.to-terminal) ∘ f
+    ≈⟨ ∘-cong roundtrip ≈-refl ⟩
+      id _ ∘ f
+    ≈⟨ id-left ⟩
+      f
+    ∎ where open ≈-Reasoning isEquiv

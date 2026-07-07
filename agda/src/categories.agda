@@ -471,6 +471,22 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       id _
     ∎ where open ≈-Reasoning isEquiv
 
+  swap-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ y₁) (g : x₂ ⇒ y₂) →
+                 (swap ∘ prod-m f g) ≈ (prod-m g f ∘ swap)
+  swap-natural f g = begin
+      swap ∘ prod-m f g
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair (p₂ ∘ prod-m f g) (p₁ ∘ prod-m f g)
+    ≈⟨ pair-cong (pair-p₂ _ _) (pair-p₁ _ _) ⟩
+      pair (g ∘ p₂) (f ∘ p₁)
+    ≈˘⟨ pair-cong (∘-cong ≈-refl (pair-p₁ _ _)) (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+      pair (g ∘ (p₁ ∘ swap)) (f ∘ (p₂ ∘ swap))
+    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      pair ((g ∘ p₁) ∘ swap) ((f ∘ p₂) ∘ swap)
+    ≈˘⟨ pair-natural _ _ _ ⟩
+      prod-m g f ∘ swap
+    ∎ where open ≈-Reasoning isEquiv
+
   pair-compose : ∀ {x y₁ y₂ z₁ z₂} (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x ⇒ y₁) (g₂ : x ⇒ y₂) →
     (prod-m f₁ f₂ ∘ pair g₁ g₂) ≈ pair (f₁ ∘ g₁) (f₂ ∘ g₂)
   pair-compose f₁ f₂ g₁ g₂ =
