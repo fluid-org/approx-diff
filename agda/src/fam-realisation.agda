@@ -8,7 +8,7 @@ open import Level using (Level; lift)
 open import Data.Product using (_,_)
 open import Data.Unit using (tt)
 open import prop using (⟪_⟫) renaming (_,_ to _,ₚ_)
-open import prop-setoid using (Setoid; IsEquivalence; module ≈-Reasoning)
+open import prop-setoid using (Setoid; IsEquivalence; 𝟙; to-𝟙; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≃s_)
 open import categories using (Category; setoid→category; HasTerminal; IsTerminal; HasProducts; HasExponentials)
 open import functor
@@ -23,7 +23,7 @@ module fam-realisation {o m e} (os es : Level) {ℰ : Category o m e}
   where
 
 open Category ℰ
-open fam.CategoryOfFamilies os es ℰ using (cat; Mor-∘; bigCoproducts; terminal)
+open fam.CategoryOfFamilies os es ℰ using (cat; Mor-∘; bigCoproducts; terminal; simple[_,_]; simplef[_,_])
 open fam.CategoryOfFamilies.Obj
 open fam.CategoryOfFamilies.Mor
 open fam.CategoryOfFamilies._≃_
@@ -429,3 +429,145 @@ module _ (EP : HasProducts ℰ) (EE : HasExponentials ℰ EP) where
           ≈˘⟨ id-left ⟩
             id _ ∘ colim (X ⊗ Y) .cocone .transf (i , j)
           ∎ where open ≈-Reasoning isEquiv
+
+-- The singleton embedding, right adjoint to realisation.
+η : Functor ℰ cat
+η .fobj A = simple[ 𝟙 , A ]
+η .fmor f = simplef[ prop-setoid.idS _ , f ]
+η .fmor-cong f₁≈f₂ .idxf-eq = prop-setoid.≃m-isEquivalence .IsEquivalence.refl
+η .fmor-cong f₁≈f₂ .famf-eq .indexed-family._≃f_.transf-eq = ≈-trans id-left f₁≈f₂
+η .fmor-id .idxf-eq = prop-setoid.≃m-isEquivalence .IsEquivalence.refl
+η .fmor-id .famf-eq .indexed-family._≃f_.transf-eq = id-left
+η .fmor-comp f g .idxf-eq = prop-setoid.to-𝟙-unique _ _
+η .fmor-comp f g .famf-eq .indexed-family._≃f_.transf-eq = ≈-trans id-left (≈-sym id-left)
+
+-- The counit: realising a singleton family collapses to the object itself.
+module _ (A : Category.obj ℰ) where
+
+  private
+    ηA = η .fobj A
+
+    flatten : NatTrans (fam→functor (ηA .fam)) (constF (setoid→category 𝟙) A)
+    flatten .transf _ = id A
+    flatten .natural _ = ≈-refl
+
+  realise-η-iso : Category.Iso ℰ (realise .fobj ηA) A
+  realise-η-iso .Category.Iso.fwd = colim ηA .isColimit .colambda A flatten
+  realise-η-iso .Category.Iso.bwd = colim ηA .cocone .transf (lift tt)
+  realise-η-iso .Category.Iso.fwd∘bwd≈id =
+    ≈-trans (colim ηA .isColimit .colambda-coeval A flatten .transf-eq (lift tt)) ≈-refl
+  realise-η-iso .Category.Iso.bwd∘fwd≈id =
+    ≈-trans (≈-sym (colim ηA .isColimit .colambda-ext _ _))
+      (≈-trans (colim ηA .isColimit .colambda-cong eq)
+        (colim ηA .isColimit .colambda-ext _ (id _)))
+    where
+      eq : ≃-NatTrans
+             (constFmor (colim ηA .cocone .transf (lift tt) ∘ colim ηA .isColimit .colambda A flatten) ∘N colim ηA .cocone)
+             (constFmor (id _) ∘N colim ηA .cocone)
+      eq .transf-eq u =
+        begin
+          (colim ηA .cocone .transf (lift tt) ∘ colim ηA .isColimit .colambda A flatten) ∘ colim ηA .cocone .transf u
+        ≈⟨ assoc _ _ _ ⟩
+          colim ηA .cocone .transf (lift tt) ∘ (colim ηA .isColimit .colambda A flatten ∘ colim ηA .cocone .transf u)
+        ≈⟨ ∘-cong ≈-refl (colim ηA .isColimit .colambda-coeval A flatten .transf-eq u) ⟩
+          colim ηA .cocone .transf (lift tt) ∘ id A
+        ≈⟨ id-right ⟩
+          colim ηA .cocone .transf (lift tt)
+        ≈˘⟨ id-left ⟩
+          id _ ∘ colim ηA .cocone .transf u
+        ∎ where open ≈-Reasoning isEquiv
+
+-- The adjunction realise ⊣ η, in transposition form.
+module _ {W : Category.obj cat} {X : Category.obj ℰ} where
+
+  transpose : Category._⇒_ cat W (η .fobj X) → Category._⇒_ ℰ (realise .fobj W) X
+  transpose f = colim W .isColimit .colambda X cone
+    where
+      cone : NatTrans (fam→functor (W .fam)) (constF (setoid→category (W .idx)) X)
+      cone .transf i = f .famf .transf i
+      cone .natural {i₁} {i₂} ⟪ e ⟫ = ≈-sym (f .famf .natural e)
+
+  untranspose : Category._⇒_ ℰ (realise .fobj W) X → Category._⇒_ cat W (η .fobj X)
+  untranspose g .idxf = to-𝟙
+  untranspose g .famf .transf i = g ∘ colim W .cocone .transf i
+  untranspose g .famf .natural {i₁} {i₂} e =
+    begin
+      (g ∘ colim W .cocone .transf i₂) ∘ W .fam .subst e
+    ≈⟨ assoc _ _ _ ⟩
+      g ∘ (colim W .cocone .transf i₂ ∘ W .fam .subst e)
+    ≈⟨ ∘-cong ≈-refl (≈-trans (≈-sym (colim W .cocone .natural ⟪ e ⟫)) id-left) ⟩
+      g ∘ colim W .cocone .transf i₁
+    ≈˘⟨ id-left ⟩
+      id _ ∘ (g ∘ colim W .cocone .transf i₁)
+    ∎ where open ≈-Reasoning isEquiv
+
+  transpose-cong : ∀ {f₁ f₂ : Category._⇒_ cat W (η .fobj X)} →
+                   Category._≈_ cat f₁ f₂ → transpose f₁ ≈ transpose f₂
+  transpose-cong {f₁} {f₂} f₁≃f₂ = colim W .isColimit .colambda-cong eq
+    where
+      eq : ≃-NatTrans _ _
+      eq .transf-eq i =
+        ≈-trans (≈-sym id-left) (f₁≃f₂ .famf-eq .indexed-family._≃f_.transf-eq {i})
+
+  untranspose-cong : ∀ {g₁ g₂ : Category._⇒_ ℰ (realise .fobj W) X} →
+                     g₁ ≈ g₂ → Category._≈_ cat (untranspose g₁) (untranspose g₂)
+  untranspose-cong g₁≈g₂ .idxf-eq = prop-setoid.to-𝟙-unique _ _
+  untranspose-cong g₁≈g₂ .famf-eq .indexed-family._≃f_.transf-eq =
+    ≈-trans id-left (∘-cong g₁≈g₂ ≈-refl)
+
+  transpose-untranspose : ∀ (g : Category._⇒_ ℰ (realise .fobj W) X) →
+                          transpose (untranspose g) ≈ g
+  transpose-untranspose g =
+    ≈-trans (colim W .isColimit .colambda-cong eq) (colim W .isColimit .colambda-ext _ g)
+    where
+      eq : ≃-NatTrans _ (constFmor g ∘N colim W .cocone)
+      eq .transf-eq i = ≈-refl
+
+  untranspose-transpose : ∀ (f : Category._⇒_ cat W (η .fobj X)) →
+                          Category._≈_ cat (untranspose (transpose f)) f
+  untranspose-transpose f .idxf-eq = prop-setoid.to-𝟙-unique _ _
+  untranspose-transpose f .famf-eq .indexed-family._≃f_.transf-eq {i} =
+    ≈-trans id-left (colim W .isColimit .colambda-coeval _ _ .transf-eq i)
+
+-- Naturality of transposition in each argument.
+transpose-natural₁ : ∀ {W' W : Category.obj cat} {X : Category.obj ℰ}
+                     (f : Category._⇒_ cat W (η .fobj X)) (g : Category._⇒_ cat W' W) →
+                     transpose (Mor-∘ f g) ≈ (transpose f ∘ realise .fmor g)
+transpose-natural₁ {W'} {W} {X} f g =
+  ≈-sym (≈-trans (≈-sym (colim W' .isColimit .colambda-ext _ _))
+    (colim W' .isColimit .colambda-cong eq))
+  where
+    eq : ≃-NatTrans (constFmor (transpose f ∘ realise .fmor g) ∘N colim W' .cocone) _
+    eq .transf-eq i =
+      begin
+        (transpose f ∘ realise .fmor g) ∘ colim W' .cocone .transf i
+      ≈⟨ assoc _ _ _ ⟩
+        transpose f ∘ (realise .fmor g ∘ colim W' .cocone .transf i)
+      ≈⟨ ∘-cong ≈-refl (colim W' .isColimit .colambda-coeval _ (push g) .transf-eq i) ⟩
+        transpose f ∘ (colim W .cocone .transf (g .idxf $s i) ∘ g .famf .transf i)
+      ≈˘⟨ assoc _ _ _ ⟩
+        (transpose f ∘ colim W .cocone .transf (g .idxf $s i)) ∘ g .famf .transf i
+      ≈⟨ ∘-cong (colim W .isColimit .colambda-coeval _ _ .transf-eq (g .idxf $s i)) ≈-refl ⟩
+        f .famf .transf (g .idxf $s i) ∘ g .famf .transf i
+      ≈˘⟨ id-left ⟩
+        id _ ∘ (f .famf .transf (g .idxf $s i) ∘ g .famf .transf i)
+      ∎ where open ≈-Reasoning isEquiv
+
+transpose-natural₂ : ∀ {W : Category.obj cat} {X Y : Category.obj ℰ}
+                     (h : Category._⇒_ ℰ X Y) (f : Category._⇒_ cat W (η .fobj X)) →
+                     transpose (Mor-∘ (η .fmor h) f) ≈ (h ∘ transpose f)
+transpose-natural₂ {W} {X} {Y} h f =
+  ≈-sym (≈-trans (≈-sym (colim W .isColimit .colambda-ext _ _))
+    (colim W .isColimit .colambda-cong eq))
+  where
+    eq : ≃-NatTrans (constFmor (h ∘ transpose f) ∘N colim W .cocone) _
+    eq .transf-eq i =
+      begin
+        (h ∘ transpose f) ∘ colim W .cocone .transf i
+      ≈⟨ assoc _ _ _ ⟩
+        h ∘ (transpose f ∘ colim W .cocone .transf i)
+      ≈⟨ ∘-cong ≈-refl (colim W .isColimit .colambda-coeval _ _ .transf-eq i) ⟩
+        h ∘ f .famf .transf i
+      ≈˘⟨ id-left ⟩
+        id _ ∘ (h ∘ f .famf .transf i)
+      ∎ where open ≈-Reasoning isEquiv
