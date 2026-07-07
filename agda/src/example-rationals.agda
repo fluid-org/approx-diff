@@ -26,7 +26,7 @@ open import commutative-semiring using (CommutativeSemiring)
 open import example-signature ℚ using (Sig; number; label; approx) public
 import example
 open import language-syntax Sig hiding (_,_) public
-module Ex = example ℚ
+module Ex = example ℚ 0ℚ
 open Ex.ex public
 
 -- Model instantiation.
@@ -52,10 +52,6 @@ private
   open prop-setoid._≃m_
   open SemiMod-ℚ._≈m_ using (*≈*)
 
-  num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero .func _ = 0ℚ
-  num-zero .func-resp-≈ _ = Scalars.refl
-
   num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
   num-add .func (x , y) = x Add.+ y
   num-add .func-resp-≈ e = Add.+-cong (prop.proj₁ e) (prop.proj₂ e)
@@ -78,7 +74,7 @@ private
   scalar-cong e .*≈* .func-eq u≈v = Scalars.·-cong e u≈v
 
 open import example-signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult public
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult public
 module D = Deriv scalar scalar-cong
 open ho-model-sd-semimod.interp-sd semiring-Q.semiring Sig D.BaseInterp1 public
 open SDSemiMod-ℚ public using (conjugate)

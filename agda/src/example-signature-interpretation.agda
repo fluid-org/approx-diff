@@ -13,9 +13,8 @@ module example-signature-interpretation
   (Approx : Category.obj 𝒞)
   (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) Approx)
   (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products Approx Approx) Approx)
-  -- what a `number` carries, with zero/add/mult on the index side.
+  -- what a `number` carries, with add/mult on the index side.
   (Numₛ : Setoid 0ℓ 0ℓ)
-  (num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) Numₛ)
   (num-add  : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
   (num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
   where
@@ -118,7 +117,6 @@ BaseInterp0 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
 BaseInterp0 .Model.⟦sort⟧ number = simple[ Numₛ , 𝟙-base ]
 BaseInterp0 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
 BaseInterp0 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
-BaseInterp0 .Model.⟦op⟧ zero = simplef[ num-zero , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦op⟧ add = simplef[ num-add , to-𝟙-base ] C.∘ binary
 BaseInterp0 .Model.⟦op⟧ mult = simplef[ num-mult , to-𝟙-base ] C.∘ binary
@@ -165,7 +163,6 @@ module BinDeriv
   BaseInterp1 .Model.⟦sort⟧ number = simple[ Numₛ , Approx ]
   BaseInterp1 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
   BaseInterp1 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
-  BaseInterp1 .Model.⟦op⟧ zero = simplef[ num-zero , unit ]
   BaseInterp1 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , unit ]
   BaseInterp1 .Model.⟦op⟧ add = add-deriv C.∘ binary
   BaseInterp1 .Model.⟦op⟧ mult = mult-deriv C.∘ binary

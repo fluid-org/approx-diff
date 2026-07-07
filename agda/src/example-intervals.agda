@@ -29,7 +29,7 @@ open Setoid using (Carrier) public
 open import example-signature ℚ using (Sig; number; label; approx) public
 import example
 open import language-syntax Sig hiding (_,_) public
-module Ex = example ℚ
+module Ex = example ℚ 0ℚ
 open Ex.ex public
 open import label using (a; b) public
 open semiring-Q-tropical-add public using (∞; fin)
@@ -52,10 +52,6 @@ private
   module Num = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
 
-  num-zero : prop-setoid._⇒_ (prop-setoid.𝟙 {0ℓ} {0ℓ}) semiring-Q.setoid
-  num-zero .func _ = 0ℚ
-  num-zero .func-resp-≈ _ = Num.refl
-
   num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
   num-add .func (x , y) = x Num.+ y
   num-add .func-resp-≈ e = Num.+-cong (prop.proj₁ e) (prop.proj₂ e)
@@ -65,7 +61,7 @@ private
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example-signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-zero num-add num-mult
+  Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 -- Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞) records
 -- the absence of a bound.

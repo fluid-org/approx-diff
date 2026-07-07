@@ -27,7 +27,7 @@ open import nat using (ℕ) public
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import language-syntax Sig hiding (_,_) public   -- _⊢_, types, first-order-data, unit/base/list/_[×]_
-module Ex = example nat.ℕ
+module Ex = example nat.ℕ nat.zero
 open Ex.ex public                                 -- query, mult-ex, cbn-query, sum, …
 open import label using (a; b) public
 
@@ -47,7 +47,7 @@ approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
         +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
 
 open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
-  Approx approx-unit approx-conjunct nat.ℕₛ nat.zero-m nat.add nat.mult public
+  Approx approx-unit approx-conjunct nat.ℕₛ nat.add nat.mult public
 
 -- Boolean-collapse derivative coefficient: zero map vs identity.
 private

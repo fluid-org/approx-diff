@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-module example (Num : Set) where
+module example (Num : Set) (num-zero : Num) where
 
 open import Level using (0ℓ; lift)
 open import Data.List using (List; []; _∷_)
@@ -20,7 +20,7 @@ module L = language-syntax Sig
 --
 --   sum (concatMap x (e. if equal-label 'a' (fst e) then return (snd e) else nil))
 --
---   sum = fold zero (add (var zero) (var (succ zero)))
+--   sum = fold (lit num-zero) (add (var zero) (var (succ zero)))
 
 module ex where
   open L
@@ -43,7 +43,7 @@ module ex where
 
   -- Summation function
   sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
-  sum = lam (fold (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
+  sum = lam (fold (bop (lit num-zero) []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
 
   `_ : ∀ {Γ} → label.label → Γ ⊢ base label
   ` l = bop (lbl l) []
