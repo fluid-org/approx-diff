@@ -182,8 +182,8 @@ matrices, compose using matrix multiplication, and can be evaluated forwards or 
     \end{tikzpicture}
   \end{center}
     Tabulating each relation, with a row for each output position and a column for each input position
-  (ordered as the three quantities and then the two prices), gives the \emph{Jacobian} of the
-  run, shown here beside the numerical Jacobian of differential calculus, taken at the same point:
+  (ordered as the three quantities and then the two prices), gives the \emph{Boolean Jacobian} of the run,
+  shown here beside the numerical Jacobian of differential calculus, taken at the same point:
   \begin{displaymath}
     \partial_{\Two}(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
     \begin{pmatrix} 1 & 0 & 1 & 1 & 0 \end{pmatrix}
@@ -191,10 +191,9 @@ matrices, compose using matrix multiplication, and can be evaluated forwards or 
     \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
     \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
   \end{displaymath}
-  And like their numerical counterparts, these matrices compose: $\mathrm{total}\,l$
-  is a sum applied to per-row products applied to a selection, and the Jacobian of the run is the product of
-  the Jacobians of those stages, a chain rule for dependencies. For the run with $l = \mathsf{a}$, the
-  Boolean pipeline is
+  Like their numerical counterparts, these matrices compose: $\mathrm{total}\,l$ is a sum applied to per-row
+  products applied to a selection, and the Jacobian of the run is the product of the Jacobians of those
+  stages, a chain rule for dependencies. For the run with $l = \mathsf{a}$, the Boolean pipeline is
   \begin{displaymath}
     \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 1 & 1 \end{pmatrix}}_{\text{sum}}
     \;
