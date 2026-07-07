@@ -696,3 +696,205 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
   muReal : MuReal P δ̂
   muReal = record
     { inR = inR ; foldR = foldR ; foldR-cong = foldR-cong ; foldR-β = foldR-β ; foldR-η = foldR-η }
+
+-- Realisations of the μ-object at environments with isomorphic realisations
+-- are isomorphic: fold each carrier into the other through the collapse of
+-- the polynomial's action, with the roundtrips by uniqueness of folds.
+module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
+    (δ̂₁ δ̂₂ : Fin n → FM.Obj)
+    (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+  where
+
+  private
+    module M₁ = Initiality Q δ̂₁ CQ
+    module M₂ = Initiality Q δ̂₂ CQ
+    module ℰTm = HasTerminal ℰT
+
+    𝟙 = ℰTm.witness
+
+    extIsos : ∀ (A : obj) i → Iso (realise .fobj (extend δ̂₁ (η .fobj A) i))
+                                  (realise .fobj (extend δ̂₂ (η .fobj A) i))
+    extIsos A Fin.zero    = Iso-refl
+    extIsos A (Fin.suc i) = isos i
+
+    GI : ∀ (A : obj) → Iso (Greal Q δ̂₁ A) (Greal Q δ̂₂ A)
+    GI A = CQ .CollapseAt.iso (extend δ̂₁ (η .fobj A)) (extend δ̂₂ (η .fobj A)) (extIsos A)
+
+    F' : ℰP.prod 𝟙 (Creal Q δ̂₁) ⇒ Creal Q δ̂₂
+    F' = M₁.foldR (M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂))
+
+    G' : ℰP.prod 𝟙 (Creal Q δ̂₂) ⇒ Creal Q δ̂₁
+    G' = M₂.foldR (M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂))
+
+    -- Componentwise naturality squares for the crossing argument.
+    sq-refl : ∀ {Γ : obj} {X̂ Ŷ : FM.Obj} (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X̂) Ŷ) →
+              (fmorη Γ X̂ u ∘co (Iso-refl .Iso.fwd ∘ ℰP.p₂)) ≈ (Iso-refl .Iso.fwd ∘ fmorη Γ X̂ u)
+    sq-refl {Γ} {X̂} u =
+      ≈-trans (∘-cong ≈-refl (ℰP.pair-cong ≈-refl id-left))
+        (≈-trans (∘-cong ≈-refl pair-p₁p₂-id) (≈-trans id-right (≈-sym id-left)))
+
+    sq-p₂ : ∀ {Γ : obj} {X̂ Ŷ : FM.Obj} (I : Iso (realise .fobj X̂) (realise .fobj Ŷ)) →
+            (fmorη Γ Ŷ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = Ŷ}) ∘co (I .Iso.fwd ∘ ℰP.p₂))
+            ≈ (I .Iso.fwd ∘ fmorη Γ X̂ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X̂}))
+    sq-p₂ {Γ} {X̂} {Ŷ} I =
+      ≈-trans (CoK.∘-cong (fmorη-p₂ Γ Ŷ) ≈-refl)
+        (≈-trans CoK.id-left (≈-sym (∘-cong ≈-refl (fmorη-p₂ Γ X̂))))
+
+    -- The crossing square: the strong action commutes with the collapse.
+    cross : ∀ {A B : obj} (h : ℰP.prod 𝟙 A ⇒ B) →
+            (Gmap Q δ̂₂ h ∘co (GI A .Iso.fwd ∘ ℰP.p₂)) ≈ (GI B .Iso.fwd ∘ Gmap Q δ̂₁ h)
+    cross {A} {B} h =
+      CQ .CollapseAt.natural (extend δ̂₁ (η .fobj A)) (extend δ̂₂ (η .fobj A)) (extIsos A) (extIsos B)
+        (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (ctxη 𝟙 A h))
+        (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (ctxη 𝟙 A h))
+        sqs
+      where
+        sqs : ∀ i → (fmorη 𝟙 (extend δ̂₂ (η .fobj A) i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη 𝟙 A h) i) ∘co (extIsos A i .Iso.fwd ∘ ℰP.p₂))
+              ≈ (extIsos B i .Iso.fwd ∘ fmorη 𝟙 (extend δ̂₁ (η .fobj A) i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη 𝟙 A h) i))
+        sqs Fin.zero    = sq-refl (ctxη 𝟙 A h)
+        sqs (Fin.suc i) = sq-p₂ (isos i)
+
+    -- The crossing square, backwards.
+    cross-flip : ∀ {A B : obj} (h : ℰP.prod 𝟙 A ⇒ B) →
+                 (Gmap Q δ̂₁ h ∘co (GI A .Iso.bwd ∘ ℰP.p₂)) ≈ (GI B .Iso.bwd ∘ Gmap Q δ̂₂ h)
+    cross-flip {A} {B} h =
+      iso-shuffle (GI B) _ _
+        (≈-trans (≈-sym (assoc _ _ _)) (co-iso-cancel (GI A) (cross h)))
+
+    -- Fusion of a fold against a composed algebra morphism, both directions.
+    square-p₂₁ : (ℰP.p₂ ∘co (M₁.inR ∘ ℰP.p₂)) ≈ ((M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ ℰP.p₂)
+    square-p₂₁ =
+      ≈-trans (CoK.id-left {Γ = 𝟙})
+        (≈-sym (≈-trans (CoK.∘-cong ≈-refl (Gmap-id Q δ̂₁)) (CoK.id-right {Γ = 𝟙})))
+
+    square-p₂₂ : (ℰP.p₂ ∘co (M₂.inR ∘ ℰP.p₂)) ≈ ((M₂.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ ℰP.p₂)
+    square-p₂₂ =
+      ≈-trans (CoK.id-left {Γ = 𝟙})
+        (≈-sym (≈-trans (CoK.∘-cong ≈-refl (Gmap-id Q δ̂₂)) (CoK.id-right {Γ = 𝟙})))
+
+    ag-cross : ((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G'))
+               ≈ ((M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ G')
+    ag-cross =
+      begin
+        (M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘ ℰP.pair ℰP.p₁ (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G')
+      ≈⟨ assoc _ _ _ ⟩
+        M₁.inR ∘ ((GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂) ∘ ℰP.pair ℰP.p₁ (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G'))
+      ≈⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _))) ⟩
+        M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G'))
+      ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+        M₁.inR ∘ ((GI (Creal Q δ̂₁) .Iso.bwd ∘ GI (Creal Q δ̂₁) .Iso.fwd) ∘ Gmap Q δ̂₁ G')
+      ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (GI (Creal Q δ̂₁) .Iso.bwd∘fwd≈id) ≈-refl) id-left) ⟩
+        M₁.inR ∘ Gmap Q δ̂₁ G'
+      ≈˘⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) ⟩
+        (M₁.inR ∘ ℰP.p₂) ∘ ℰP.pair ℰP.p₁ (Gmap Q δ̂₁ G')
+      ∎ where open ≈-Reasoning isEquiv
+
+
+    -- The composite G' ∘co F' satisfies the fold square for the algebra of the identity.
+    square-GF : ((G' ∘co F') ∘co (M₁.inR ∘ ℰP.p₂)) ≈ ((M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ (G' ∘co F'))
+    square-GF =
+      begin
+        (G' ∘co F') ∘co (M₁.inR ∘ ℰP.p₂)
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        G' ∘co (F' ∘co (M₁.inR ∘ ℰP.p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (M₁.foldR-β _) ⟩
+        G' ∘co ((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F')
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure M₂.inR (GI (Creal Q δ̂₂) .Iso.fwd)))) ≈-refl) ⟩
+        G' ∘co (((M₂.inR ∘ ℰP.p₂) ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F')
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        (G' ∘co ((M₂.inR ∘ ℰP.p₂) ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂))) ∘co Gmap Q δ̂₁ F'
+      ≈˘⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+        ((G' ∘co (M₂.inR ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F'
+      ≈⟨ CoK.∘-cong (CoK.∘-cong (M₂.foldR-β _) ≈-refl) ≈-refl ⟩
+        (((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G') ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F'
+      ≈⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+        ((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co (Gmap Q δ̂₂ G' ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂))) ∘co Gmap Q δ̂₁ F'
+      ≈⟨ CoK.∘-cong (CoK.∘-cong ≈-refl (cross G')) ≈-refl ⟩
+        ((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G')) ∘co Gmap Q δ̂₁ F'
+      ≈⟨ CoK.∘-cong ag-cross ≈-refl ⟩
+        ((M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ G') ∘co Gmap Q δ̂₁ F'
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        (M₁.inR ∘ ℰP.p₂) ∘co (Gmap Q δ̂₁ G' ∘co Gmap Q δ̂₁ F')
+      ≈˘⟨ CoK.∘-cong ≈-refl (Gmap-∘co Q δ̂₁ G' F') ⟩
+        (M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ (G' ∘co F')
+      ∎
+      where open ≈-Reasoning isEquiv
+
+    af-cross : ((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F'))
+               ≈ ((M₂.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ F')
+    af-cross =
+      begin
+        (M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘ ℰP.pair ℰP.p₁ (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F')
+      ≈⟨ assoc _ _ _ ⟩
+        M₂.inR ∘ ((GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘ ℰP.pair ℰP.p₁ (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F'))
+      ≈⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _))) ⟩
+        M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F'))
+      ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+        M₂.inR ∘ ((GI (Creal Q δ̂₂) .Iso.fwd ∘ GI (Creal Q δ̂₂) .Iso.bwd) ∘ Gmap Q δ̂₂ F')
+      ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (GI (Creal Q δ̂₂) .Iso.fwd∘bwd≈id) ≈-refl) id-left) ⟩
+        M₂.inR ∘ Gmap Q δ̂₂ F'
+      ≈˘⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) ⟩
+        (M₂.inR ∘ ℰP.p₂) ∘ ℰP.pair ℰP.p₁ (Gmap Q δ̂₂ F')
+      ∎ where open ≈-Reasoning isEquiv
+
+
+    -- The composite F' ∘co G' likewise, using the flipped crossing.
+    square-FG : ((F' ∘co G') ∘co (M₂.inR ∘ ℰP.p₂)) ≈ ((M₂.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ (F' ∘co G'))
+    square-FG =
+      begin
+        (F' ∘co G') ∘co (M₂.inR ∘ ℰP.p₂)
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        F' ∘co (G' ∘co (M₂.inR ∘ ℰP.p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (M₂.foldR-β _) ⟩
+        F' ∘co ((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G')
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure M₁.inR (GI (Creal Q δ̂₁) .Iso.bwd)))) ≈-refl) ⟩
+        F' ∘co (((M₁.inR ∘ ℰP.p₂) ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G')
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        (F' ∘co ((M₁.inR ∘ ℰP.p₂) ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂))) ∘co Gmap Q δ̂₂ G'
+      ≈˘⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+        ((F' ∘co (M₁.inR ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G'
+      ≈⟨ CoK.∘-cong (CoK.∘-cong (M₁.foldR-β _) ≈-refl) ≈-refl ⟩
+        (((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F') ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G'
+      ≈⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+        ((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co (Gmap Q δ̂₁ F' ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂))) ∘co Gmap Q δ̂₂ G'
+      ≈⟨ CoK.∘-cong (CoK.∘-cong ≈-refl (cross-flip F')) ≈-refl ⟩
+        ((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F')) ∘co Gmap Q δ̂₂ G'
+      ≈⟨ CoK.∘-cong af-cross ≈-refl ⟩
+        ((M₂.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ F') ∘co Gmap Q δ̂₂ G'
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        (M₂.inR ∘ ℰP.p₂) ∘co (Gmap Q δ̂₂ F' ∘co Gmap Q δ̂₂ G')
+      ≈˘⟨ CoK.∘-cong ≈-refl (Gmap-∘co Q δ̂₂ F' G') ⟩
+        (M₂.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ (F' ∘co G')
+      ∎
+      where open ≈-Reasoning isEquiv
+
+    -- Composites in context agree with plain composites of the induced maps.
+    plait : ∀ {X Y Z : obj} (u : ℰP.prod 𝟙 Y ⇒ Z) (v : ℰP.prod 𝟙 X ⇒ Y) →
+            ((u ∘ ℰP.pair ℰTm.to-terminal (id _)) ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _)))
+            ≈ ((u ∘co v) ∘ ℰP.pair ℰTm.to-terminal (id _))
+    plait u v =
+      begin
+        (u ∘ ℰP.pair ℰTm.to-terminal (id _)) ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _))
+      ≈⟨ assoc _ _ _ ⟩
+        u ∘ (ℰP.pair ℰTm.to-terminal (id _) ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _)))
+      ≈⟨ ∘-cong ≈-refl (ℰP.pair-natural _ _ _) ⟩
+        u ∘ ℰP.pair (ℰTm.to-terminal ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _))) (id _ ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _)))
+      ≈⟨ ∘-cong ≈-refl (ℰP.pair-cong (ℰTm.to-terminal-unique _ _) id-left) ⟩
+        u ∘ ℰP.pair (ℰP.p₁ ∘ ℰP.pair ℰTm.to-terminal (id _)) (v ∘ ℰP.pair ℰTm.to-terminal (id _))
+      ≈˘⟨ ∘-cong ≈-refl (ℰP.pair-natural _ _ _) ⟩
+        u ∘ (ℰP.pair ℰP.p₁ v ∘ ℰP.pair ℰTm.to-terminal (id _))
+      ≈˘⟨ assoc _ _ _ ⟩
+        (u ∘ ℰP.pair ℰP.p₁ v) ∘ ℰP.pair ℰTm.to-terminal (id _)
+      ∎ where open ≈-Reasoning isEquiv
+
+  mu-collapse : Iso (Creal Q δ̂₁) (Creal Q δ̂₂)
+  mu-collapse .Iso.fwd = F' ∘ ℰP.pair ℰTm.to-terminal (id _)
+  mu-collapse .Iso.bwd = G' ∘ ℰP.pair ℰTm.to-terminal (id _)
+  mu-collapse .Iso.bwd∘fwd≈id =
+    ≈-trans (plait G' F')
+      (≈-trans (∘-cong (≈-trans (M₁.foldR-η _ _ square-GF) (≈-sym (M₁.foldR-η {Γ = 𝟙} _ _ square-p₂₁))) ≈-refl)
+        (ℰP.pair-p₂ _ _))
+  mu-collapse .Iso.fwd∘bwd≈id =
+    ≈-trans (plait F' G')
+      (≈-trans (∘-cong (≈-trans (M₂.foldR-η _ _ square-FG) (≈-sym (M₂.foldR-η {Γ = 𝟙} _ _ square-p₂₂))) ≈-refl)
+        (ℰP.pair-p₂ _ _))
