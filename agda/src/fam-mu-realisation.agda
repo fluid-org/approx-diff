@@ -279,6 +279,78 @@ counit-fmorη Γ X {A} g =
     g ∘ prodη Γ X .Iso.bwd
   ∎ where open ≈-Reasoning isEquiv
 
+-- Composition in context of pure morphisms.
+co-pure : ∀ {Γ X Y Z : obj} (x : Y ⇒ Z) (y : X ⇒ Y) →
+          ((x ∘ ℰP.p₂ {Γ} {Y}) ∘co (y ∘ ℰP.p₂)) ≈ ((x ∘ y) ∘ ℰP.p₂)
+co-pure x y =
+  ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) (≈-sym (assoc _ _ _)))
+
+-- Cancel an isomorphism applied in context on the right of a composition.
+co-iso-cancel : ∀ {Γ X Y Z : obj} (I : Iso X Y)
+                {u : ℰP.prod Γ Y ⇒ Z} {v : ℰP.prod Γ X ⇒ Z} →
+                (u ∘co (I .Iso.fwd ∘ ℰP.p₂)) ≈ v → (v ∘co (I .Iso.bwd ∘ ℰP.p₂)) ≈ u
+co-iso-cancel I {u} {v} eq =
+  begin
+    v ∘co (I .Iso.bwd ∘ ℰP.p₂)
+  ≈˘⟨ CoK.∘-cong eq ≈-refl ⟩
+    (u ∘co (I .Iso.fwd ∘ ℰP.p₂)) ∘co (I .Iso.bwd ∘ ℰP.p₂)
+  ≈⟨ CoK.assoc _ _ _ ⟩
+    u ∘co ((I .Iso.fwd ∘ ℰP.p₂) ∘co (I .Iso.bwd ∘ ℰP.p₂))
+  ≈⟨ CoK.∘-cong ≈-refl (co-pure (I .Iso.fwd) (I .Iso.bwd)) ⟩
+    u ∘co ((I .Iso.fwd ∘ I .Iso.bwd) ∘ ℰP.p₂)
+  ≈⟨ CoK.∘-cong ≈-refl (∘-cong (I .Iso.fwd∘bwd≈id) ≈-refl) ⟩
+    u ∘co (id _ ∘ ℰP.p₂)
+  ≈⟨ CoK.∘-cong ≈-refl id-left ⟩
+    u ∘co ℰP.p₂
+  ≈⟨ CoK.id-right ⟩
+    u
+  ∎ where open ≈-Reasoning isEquiv
+
+-- Move an isomorphism across an equation.
+iso-shuffle : ∀ {X Y Z : obj} (I : Iso Y Z) (f : X ⇒ Y) (g : X ⇒ Z) →
+              (I .Iso.fwd ∘ f) ≈ g → f ≈ (I .Iso.bwd ∘ g)
+iso-shuffle I f g eq =
+  ≈-trans (≈-sym id-left)
+    (≈-trans (∘-cong (≈-sym (I .Iso.bwd∘fwd≈id)) ≈-refl)
+      (≈-trans (assoc _ _ _) (∘-cong ≈-refl eq)))
+
+-- Realisation in context is injective on morphisms into embedded objects.
+fmorη-inj : ∀ (Γ : obj) (X : FM.Obj) {A : obj}
+            (u v : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X) (η .fobj A)) →
+            fmorη Γ X u ≈ fmorη Γ X v → Category._≈_ FM.cat u v
+fmorη-inj Γ X {A} u v eq =
+  FM.≃-isEquivalence .prop-setoid.IsEquivalence.trans
+    (FM.≃-isEquivalence .prop-setoid.IsEquivalence.sym (FR.untranspose-transpose u))
+    (FM.≃-isEquivalence .prop-setoid.IsEquivalence.trans
+      (FR.untranspose-cong tr-eq)
+      (FR.untranspose-transpose v))
+  where
+    real-eq : realise .fmor u ≈ realise .fmor v
+    real-eq =
+      begin
+        realise .fmor u
+      ≈˘⟨ id-right ⟩
+        realise .fmor u ∘ id _
+      ≈˘⟨ ∘-cong ≈-refl (prodη Γ X .Iso.bwd∘fwd≈id) ⟩
+        realise .fmor u ∘ (prodη Γ X .Iso.bwd ∘ prodη Γ X .Iso.fwd)
+      ≈˘⟨ assoc _ _ _ ⟩
+        fmorη Γ X u ∘ prodη Γ X .Iso.fwd
+      ≈⟨ ∘-cong eq ≈-refl ⟩
+        fmorη Γ X v ∘ prodη Γ X .Iso.fwd
+      ≈⟨ assoc _ _ _ ⟩
+        realise .fmor v ∘ (prodη Γ X .Iso.bwd ∘ prodη Γ X .Iso.fwd)
+      ≈⟨ ∘-cong ≈-refl (prodη Γ X .Iso.bwd∘fwd≈id) ⟩
+        realise .fmor v ∘ id _
+      ≈⟨ id-right ⟩
+        realise .fmor v
+      ∎ where open ≈-Reasoning isEquiv
+
+    tr-eq : transpose u ≈ transpose v
+    tr-eq =
+      ≈-trans (FR.transpose-realise u)
+        (≈-trans (∘-cong ≈-refl real-eq) (≈-sym (FR.transpose-realise v)))
+
 -- The pairing of the projections is the identity.
 pair-p₁p₂-id : ∀ {Γ A : obj} → ℰP.pair (ℰP.p₁ {Γ} {A}) ℰP.p₂ ≈ id _
 pair-p₁p₂-id =
@@ -318,6 +390,14 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     bF : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) → FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (F^ (η .fobj A))) (η .fobj A)
     bF {Γ} {A} a = untranspose (a ∘ prodη Γ (F^ (η .fobj A)) .Iso.fwd)
 
+    -- Realising a morphism transposed to Fam(ℰ) and collapsing recovers it.
+    absorb : ∀ {Γ A} (X : FM.Obj) (g : ℰP.prod Γ (realise .fobj X) ⇒ A) →
+             (realise-η-iso A .Iso.fwd ∘ fmorη Γ X (untranspose (g ∘ prodη Γ X .Iso.fwd))) ≈ g
+    absorb {Γ} {A} X g =
+      ≈-trans (counit-fmorη Γ X _)
+        (≈-trans (assoc _ _ _)
+          (≈-trans (∘-cong ≈-refl (prodη Γ X .Iso.fwd∘bwd≈id)) id-right))
+
   inR : Greal P δ̂ (Creal P δ̂) ⇒ Creal P δ̂
   inR = realise .fmor (FMu.α P̂ δ̂) ∘
         collapseP P (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd
@@ -332,54 +412,40 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     foldR-real {Γ} {A} a =
       ≈-trans (∘-cong (FR.transpose-realise _) ≈-refl) (assoc _ _ _)
 
-    -- The transposed context morphism that Gmap acts with.
-    h~ : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) →
+    -- The context morphism Gmap acts with, for a morphism out of the carrier.
+    h~ : ∀ {Γ A} → (ℰP.prod Γ (Creal P δ̂) ⇒ A) →
          FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) (η .fobj (Creal P δ̂))) (η .fobj A)
-    h~ {Γ} {A} a = untranspose
-      (foldR a ∘ (ℰP.prod-m (id _) (realise-η-iso (Creal P δ̂) .Iso.fwd) ∘ prodη Γ (η .fobj (Creal P δ̂)) .Iso.fwd))
+    h~ {Γ} {A} h = untranspose
+      (h ∘ (ℰP.prod-m (id _) (realise-η-iso (Creal P δ̂) .Iso.fwd) ∘ prodη Γ (η .fobj (Creal P δ̂)) .Iso.fwd))
 
-    -- Compatibility of the fold's algebra with the collapse isos, componentwise.
-    compat-zero : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) →
-                  (fmorη Γ μ̂ (FMu.⦅_⦆ {P = P̂} {δ = δ̂} (bF a)) ∘co (realise-η-iso (Creal P δ̂) .Iso.fwd ∘ ℰP.p₂))
-                  ≈ fmorη Γ (η .fobj (Creal P δ̂)) (h~ a)
-    compat-zero {Γ} {A} a =
-      begin
-        fmorη Γ μ̂ ⦅b⦆ ∘co (cC ∘ ℰP.p₂)
-      ≈˘⟨ id-left ⟩
-        id _ ∘ (fmorη Γ μ̂ ⦅b⦆ ∘co (cC ∘ ℰP.p₂))
-      ≈˘⟨ ∘-cong (realise-η-iso A .Iso.bwd∘fwd≈id) ≈-refl ⟩
-        (realise-η-iso A .Iso.bwd ∘ cA) ∘ (fmorη Γ μ̂ ⦅b⦆ ∘co (cC ∘ ℰP.p₂))
-      ≈⟨ assoc _ _ _ ⟩
-        realise-η-iso A .Iso.bwd ∘ (cA ∘ (fmorη Γ μ̂ ⦅b⦆ ∘co (cC ∘ ℰP.p₂)))
-      ≈⟨ ∘-cong ≈-refl middle ⟩
-        realise-η-iso A .Iso.bwd ∘ (cA ∘ fmorη Γ (η .fobj (Creal P δ̂)) (h~ a))
-      ≈˘⟨ assoc _ _ _ ⟩
-        (realise-η-iso A .Iso.bwd ∘ cA) ∘ fmorη Γ (η .fobj (Creal P δ̂)) (h~ a)
-      ≈⟨ ∘-cong (realise-η-iso A .Iso.bwd∘fwd≈id) ≈-refl ⟩
-        id _ ∘ fmorη Γ (η .fobj (Creal P δ̂)) (h~ a)
-      ≈⟨ id-left ⟩
-        fmorη Γ (η .fobj (Creal P δ̂)) (h~ a)
-      ∎
+    -- Compatibility of a transposed morphism with the counit component of the
+    -- collapse, given its counit form.
+    compat-zero : ∀ {Γ A} (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) μ̂) (η .fobj A))
+                  (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
+                  ((realise-η-iso A .Iso.fwd ∘ fmorη Γ μ̂ u) ≈ h) →
+                  (fmorη Γ μ̂ u ∘co (realise-η-iso (Creal P δ̂) .Iso.fwd ∘ ℰP.p₂))
+                  ≈ fmorη Γ (η .fobj (Creal P δ̂)) (h~ h)
+    compat-zero {Γ} {A} u h hyp =
+      ≈-trans (iso-shuffle (realise-η-iso A) _ _ middle)
+        (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (realise-η-iso A .Iso.bwd∘fwd≈id) ≈-refl) id-left))
       where
-        open ≈-Reasoning isEquiv
-
-        ⦅b⦆ = FMu.⦅_⦆ {P = P̂} {δ = δ̂} (bF a)
         cA = realise-η-iso A .Iso.fwd
         cC = realise-η-iso (Creal P δ̂) .Iso.fwd
 
-        left : (cA ∘ (fmorη Γ μ̂ ⦅b⦆ ∘co (cC ∘ ℰP.p₂))) ≈ (foldR a ∘ ℰP.prod-m (id _) cC)
+        left : (cA ∘ (fmorη Γ μ̂ u ∘co (cC ∘ ℰP.p₂))) ≈ (h ∘ ℰP.prod-m (id _) cC)
         left =
           ≈-trans (≈-sym (assoc _ _ _))
-            (≈-trans (∘-cong (≈-sym (foldR-real a)) ≈-refl)
+            (≈-trans (∘-cong hyp ≈-refl)
               (∘-cong ≈-refl (ℰP.pair-cong (≈-sym id-left) ≈-refl)))
 
-        right : (cA ∘ fmorη Γ (η .fobj (Creal P δ̂)) (h~ a)) ≈ (foldR a ∘ ℰP.prod-m (id _) cC)
+        right : (cA ∘ fmorη Γ (η .fobj (Creal P δ̂)) (h~ h)) ≈ (h ∘ ℰP.prod-m (id _) cC)
         right =
           ≈-trans (counit-fmorη Γ (η .fobj (Creal P δ̂)) _)
             (≈-trans (assoc _ _ _)
-              (≈-trans (∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (prodη Γ (η .fobj (Creal P δ̂)) .Iso.fwd∘bwd≈id)) id-right))) ≈-refl))
+              (∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (prodη Γ (η .fobj (Creal P δ̂)) .Iso.fwd∘bwd≈id)) id-right))))
 
-        middle : (cA ∘ (fmorη Γ μ̂ ⦅b⦆ ∘co (cC ∘ ℰP.p₂))) ≈ (cA ∘ fmorη Γ (η .fobj (Creal P δ̂)) (h~ a))
+        middle : (cA ∘ (fmorη Γ μ̂ u ∘co (cC ∘ ℰP.p₂))) ≈ (cA ∘ fmorη Γ (η .fobj (Creal P δ̂)) (h~ h))
         middle = ≈-trans left (≈-sym right)
 
     compat-suc : ∀ {Γ : obj} (i : Fin n) →
@@ -388,6 +454,24 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     compat-suc {Γ} i =
       ≈-trans (∘-cong ≈-refl (ℰP.pair-cong ≈-refl id-left))
         (≈-trans (∘-cong ≈-refl pair-p₁p₂-id) id-right)
+
+    -- The collapse-naturality square for a Fam(ℰ) morphism in counit form.
+    key : ∀ {Γ A} (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) μ̂) (η .fobj A))
+          (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
+          ((realise-η-iso A .Iso.fwd ∘ fmorη Γ μ̂ u) ≈ h) →
+          (fmorη Γ (F^ μ̂) (FMu.strong-fmor P̂ (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) u))
+            ∘co (collapseP P (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .Iso.fwd ∘ ℰP.p₂))
+          ≈ Gmap P δ̂ h
+    key {Γ} {A} u h hyp =
+      collapseNatP (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos
+        (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (h~ h))
+        (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) u)
+        compats
+      where
+        compats : ∀ i → (fmorη Γ (extend δ̂ μ̂ i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) u i) ∘co (inIsos i .Iso.fwd ∘ ℰP.p₂))
+                  ≈ fmorη Γ (extend δ̂ (η .fobj (Creal P δ̂)) i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (h~ h) i)
+        compats Fin.zero    = compat-zero u h hyp
+        compats (Fin.suc i) = compat-suc i
 
   foldR-β : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) →
             (foldR a ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ (foldR a))
@@ -406,11 +490,11 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       (cA ∘ (fmorη Γ (F^ (η .fobj A)) (bF a) ∘co fmorη Γ (F^ μ̂) sfB)) ∘co (K ∘ ℰP.p₂)
     ≈˘⟨ CoK.∘-cong (assoc _ _ _) ≈-refl ⟩
       ((cA ∘ fmorη Γ (F^ (η .fobj A)) (bF a)) ∘co fmorη Γ (F^ μ̂) sfB) ∘co (K ∘ ℰP.p₂)
-    ≈⟨ CoK.∘-cong (CoK.∘-cong absorb ≈-refl) ≈-refl ⟩
+    ≈⟨ CoK.∘-cong (CoK.∘-cong (absorb (F^ (η .fobj A)) a) ≈-refl) ≈-refl ⟩
       (a ∘co fmorη Γ (F^ μ̂) sfB) ∘co (K ∘ ℰP.p₂)
     ≈⟨ CoK.assoc _ _ _ ⟩
       a ∘co (fmorη Γ (F^ μ̂) sfB ∘co (K ∘ ℰP.p₂))
-    ≈⟨ CoK.∘-cong ≈-refl key ⟩
+    ≈⟨ CoK.∘-cong ≈-refl (key ⦅b⦆ (foldR a) (≈-sym (foldR-real a))) ⟩
       a ∘co Gmap P δ̂ (foldR a)
     ∎
     where
@@ -425,9 +509,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       sfB = FMu.strong-fmor P̂ (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) ⦅b⦆)
 
       split : (inR ∘ ℰP.p₂) ≈ ((Rα ∘ ℰP.p₂) ∘co (K ∘ ℰP.p₂))
-      split =
-        ≈-sym (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) (≈-sym (assoc _ _ _))))
+      split = ≈-sym (co-pure Rα K)
 
       step₁ : ((cA ∘ Φ⦅b⦆) ∘co (Rα ∘ ℰP.p₂))
               ≈ (cA ∘ fmorη Γ (F^ μ̂) (FM.Mor-∘ ⦅b⦆ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F))))
@@ -437,19 +519,62 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
             (≈-sym (≈-trans (fmorη-∘co Γ (F^ μ̂) ⦅b⦆ (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F))
               (CoK.∘-cong ≈-refl (fmorη-pure Γ (F^ μ̂) (FMu.α P̂ δ̂))))))
 
-      absorb : (cA ∘ fmorη Γ (F^ (η .fobj A)) (bF a)) ≈ a
-      absorb =
-        ≈-trans (counit-fmorη Γ (F^ (η .fobj A)) _)
-          (≈-trans (assoc _ _ _)
-            (≈-trans (∘-cong ≈-refl (prodη Γ (F^ (η .fobj A)) .Iso.fwd∘bwd≈id)) id-right))
+  foldR-η : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
+            ((h ∘co (inR ∘ ℰP.p₂)) ≈ (a ∘co Gmap P δ̂ h)) → h ≈ foldR a
+  foldR-η {Γ} {A} a h square =
+    ≈-trans (≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (prodη Γ μ̂ .Iso.fwd∘bwd≈id)) id-right)))
+      (≈-trans (∘-cong (≈-sym (FR.transpose-untranspose _)) ≈-refl)
+        (∘-cong (FR.transpose-cong famSquare') ≈-refl))
+    where
+      ĥ = untranspose (h ∘ prodη Γ μ̂ .Iso.fwd)
+      cA = realise-η-iso A .Iso.fwd
+      Rα = realise .fmor (FMu.α P̂ δ̂)
+      Kiso = collapseP P (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos
+      p₂F = FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = F^ μ̂}
+      sfH = FMu.strong-fmor P̂ (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) ĥ)
 
-      key : (fmorη Γ (F^ μ̂) sfB ∘co (K ∘ ℰP.p₂)) ≈ Gmap P δ̂ (foldR a)
-      key = collapseNatP (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos
-              (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (h~ a))
-              (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) ⦅b⦆)
-              compats
+      hypĥ : (cA ∘ fmorη Γ μ̂ ĥ) ≈ h
+      hypĥ = absorb μ̂ h
+
+      -- The given square, with the collapse cancelled and the algebra map bare.
+      square' : (h ∘co (Rα ∘ ℰP.p₂)) ≈ (a ∘co fmorη Γ (F^ μ̂) sfH)
+      square' =
+        begin
+          h ∘co (Rα ∘ ℰP.p₂)
+        ≈˘⟨ co-iso-cancel Kiso (≈-trans (≈-trans (CoK.assoc _ _ _) (CoK.∘-cong ≈-refl (co-pure {Γ = Γ} Rα (Kiso .Iso.fwd)))) square) ⟩
+          (a ∘co Gmap P δ̂ h) ∘co (Kiso .Iso.bwd ∘ ℰP.p₂)
+        ≈⟨ CoK.assoc _ _ _ ⟩
+          a ∘co (Gmap P δ̂ h ∘co (Kiso .Iso.bwd ∘ ℰP.p₂))
+        ≈⟨ CoK.∘-cong ≈-refl (co-iso-cancel Kiso (key ĥ h hypĥ)) ⟩
+          a ∘co fmorη Γ (F^ μ̂) sfH
+        ∎ where open ≈-Reasoning isEquiv
+
+      famSquare : Category._≈_ FM.cat
+                    (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F)))
+                    (FM.Mor-∘ (bF a) (pairη Γ (F^ μ̂) sfH))
+      famSquare = fmorη-inj Γ (F^ μ̂) _ _ imgEq
         where
-          compats : ∀ i → (fmorη Γ (extend δ̂ μ̂ i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) ⦅b⦆ i) ∘co (inIsos i .Iso.fwd ∘ ℰP.p₂))
-                    ≈ fmorη Γ (extend δ̂ (η .fobj (Creal P δ̂)) i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (h~ a) i)
-          compats Fin.zero    = compat-zero a
-          compats (Fin.suc i) = compat-suc i
+          inner : (cA ∘ (fmorη Γ μ̂ ĥ ∘co (Rα ∘ ℰP.p₂))) ≈ (a ∘co fmorη Γ (F^ μ̂) sfH)
+          inner =
+            ≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong hypĥ ≈-refl) square')
+
+          imgEq : fmorη Γ (F^ μ̂) (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F)))
+                  ≈ fmorη Γ (F^ μ̂) (FM.Mor-∘ (bF a) (pairη Γ (F^ μ̂) sfH))
+          imgEq =
+            begin
+              fmorη Γ (F^ μ̂) (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F)))
+            ≈⟨ ≈-trans (fmorη-∘co Γ (F^ μ̂) ĥ _) (CoK.∘-cong ≈-refl (fmorη-pure Γ (F^ μ̂) (FMu.α P̂ δ̂))) ⟩
+              fmorη Γ μ̂ ĥ ∘co (Rα ∘ ℰP.p₂)
+            ≈⟨ iso-shuffle (realise-η-iso A) _ _ inner ⟩
+              realise-η-iso A .Iso.bwd ∘ (a ∘co fmorη Γ (F^ μ̂) sfH)
+            ≈˘⟨ assoc _ _ _ ⟩
+              (realise-η-iso A .Iso.bwd ∘ a) ∘co fmorη Γ (F^ μ̂) sfH
+            ≈˘⟨ CoK.∘-cong (iso-shuffle (realise-η-iso A) _ _ (absorb (F^ (η .fobj A)) a)) ≈-refl ⟩
+              fmorη Γ (F^ (η .fobj A)) (bF a) ∘co fmorη Γ (F^ μ̂) sfH
+            ≈˘⟨ fmorη-∘co Γ (F^ μ̂) (bF a) sfH ⟩
+              fmorη Γ (F^ μ̂) (FM.Mor-∘ (bF a) (pairη Γ (F^ μ̂) sfH))
+            ∎ where open ≈-Reasoning isEquiv
+
+      famSquare' : Category._≈_ FM.cat ĥ (FMu.⦅_⦆ {P = P̂} {δ = δ̂} (bF a))
+      famSquare' = FM.hasMuLaws .FM.HasMuLaws.⦅⦆-η (bF a) ĥ famSquare
