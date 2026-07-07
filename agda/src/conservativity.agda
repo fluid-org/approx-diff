@@ -764,7 +764,6 @@ module syntactic {ℓ}
   syntactic-definability {Γ} {τ} Γ-fo τ-fo M =
     definability (⟦ τ-fo ⟧-iso .bwd Glued.∘ (G⟦ M ⟧tm Glued.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
 
--- Syntactic definability for the language with general recursive types.
 module syntactic-2 {ℓ}
    (Sig : Signature ℓ)
    (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
