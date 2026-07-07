@@ -121,6 +121,10 @@ data ctxt : Set ℓ where
 
 infixl 30 _,_
 
+data first-order-ctxt : ctxt → Set ℓ where
+  emp : first-order-ctxt emp
+  _,_ : ∀ {Γ τ} → first-order-ctxt Γ → first-order τ → first-order-ctxt (Γ , τ)
+
 data _∋_ : ctxt → type 0 → Set ℓ where
   zero : ∀ {Γ τ}    → (Γ , τ) ∋ τ
   succ : ∀ {Γ τ τ'} → Γ ∋ τ → (Γ , τ') ∋ τ

@@ -57,3 +57,8 @@ import conservativity
 -- action of a functor on polynomials, and the action of componentwise
 -- morphisms and isomorphisms on μ-objects.
 import polynomial-functor-2
+
+-- For the language with general recursive types: every first-order type's
+-- interpretation in the higher-order model is isomorphic to the image of its
+-- first-order interpretation.
+import language-fo-interpretation-2

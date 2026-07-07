@@ -724,3 +724,34 @@ module MuIso
             ≈⟨ id-left ⟩
               p₂
             ∎ where open ≈-Reasoning isEquiv
+
+  -- Congruences for componentwise isomorphisms.
+  pm-iso-const : ∀ {n A B} → Iso A B → PolyIso {n} (const A) (const B)
+  pm-iso-const i .PolyIso.fwd     = const (i .Iso.fwd)
+  pm-iso-const i .PolyIso.bwd     = const (i .Iso.bwd)
+  pm-iso-const i .PolyIso.bwd∘fwd = const (i .Iso.bwd∘fwd≈id)
+  pm-iso-const i .PolyIso.fwd∘bwd = const (i .Iso.fwd∘bwd≈id)
+
+  pm-iso-var : ∀ {n} (i : Fin n) → PolyIso (var i) (var i)
+  pm-iso-var i .PolyIso.fwd     = var i
+  pm-iso-var i .PolyIso.bwd     = var i
+  pm-iso-var i .PolyIso.bwd∘fwd = var i
+  pm-iso-var i .PolyIso.fwd∘bwd = var i
+
+  pm-iso-sum : ∀ {n} {P P' Q Q' : Poly 𝒞 n} → PolyIso P P' → PolyIso Q Q' → PolyIso (P + Q) (P' + Q')
+  pm-iso-sum r s .PolyIso.fwd     = r .PolyIso.fwd + s .PolyIso.fwd
+  pm-iso-sum r s .PolyIso.bwd     = r .PolyIso.bwd + s .PolyIso.bwd
+  pm-iso-sum r s .PolyIso.bwd∘fwd = r .PolyIso.bwd∘fwd + s .PolyIso.bwd∘fwd
+  pm-iso-sum r s .PolyIso.fwd∘bwd = r .PolyIso.fwd∘bwd + s .PolyIso.fwd∘bwd
+
+  pm-iso-prod : ∀ {n} {P P' Q Q' : Poly 𝒞 n} → PolyIso P P' → PolyIso Q Q' → PolyIso (P × Q) (P' × Q')
+  pm-iso-prod r s .PolyIso.fwd     = r .PolyIso.fwd × s .PolyIso.fwd
+  pm-iso-prod r s .PolyIso.bwd     = r .PolyIso.bwd × s .PolyIso.bwd
+  pm-iso-prod r s .PolyIso.bwd∘fwd = r .PolyIso.bwd∘fwd × s .PolyIso.bwd∘fwd
+  pm-iso-prod r s .PolyIso.fwd∘bwd = r .PolyIso.fwd∘bwd × s .PolyIso.fwd∘bwd
+
+  pm-iso-μ : ∀ {n} {P P' : Poly 𝒞 (suc n)} → PolyIso P P' → PolyIso (μ P) (μ P')
+  pm-iso-μ r .PolyIso.fwd     = μ (r .PolyIso.fwd)
+  pm-iso-μ r .PolyIso.bwd     = μ (r .PolyIso.bwd)
+  pm-iso-μ r .PolyIso.bwd∘fwd = μ (r .PolyIso.bwd∘fwd)
+  pm-iso-μ r .PolyIso.fwd∘bwd = μ (r .PolyIso.fwd∘bwd)
