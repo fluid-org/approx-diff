@@ -430,15 +430,15 @@ variables, with the partial derivative $\partial p / \partial x_i$, evaluated at
 the coefficient of $x_i$. Joint use survives only in the coefficients: an input
 used twice contributes $2x$ where the annotation would record $x^2$.}
 
-\Added{Translation along a homomorphism applies to the present framework as well: a semiring homomorphism
-acts entrywise on Jacobians, and the action is functorial, since matrix composition is built from addition
-and multiplication. The translation of interest for dependency tracking is ``zero-testing'' into the
-Booleans, and whether that is a homomorphism depends on the source semiring. The counting semiring
-$\mathbbm{N}$, itself a provenance semiring recording how many derivations use each input, is
-\emph{positive}: a sum is zero only when both summands are, and a product only when a factor is;
-equivalently, zero-testing is a homomorphism, so counting translates exactly to dependency tracking. The rationals are not positive, since a number and its negation sum to zero, and
-zero-testing $\mathbbm{Q} \to \Two$ preserves multiplication exactly but addition only laxly. It still acts
-entrywise on matrices, preserving identities and transposition, but composition only up to
-over-approximation: composing Boolean Jacobians can record dependencies absent from the Boolean image of
-their composite. The refund in \exref{introduction-example} is a case in point: the price
-genuinely does not matter to the total, yet the composed dependencies say it might.}
+\Added{Translation along a homomorphism applies to the present framework as well: a semiring homomorphism acts
+entrywise on Jacobians, and the action is functorial, since matrix composition is built from addition and
+multiplication. The translation of interest for dependency tracking is ``zero-testing'' into the Booleans, and
+whether that is a homomorphism depends on the source semiring. The counting semiring $\mathbbm{N}$, itself a
+provenance semiring recording how many derivations use each input, is \emph{positive}: a sum is zero only when
+both summands are, and a product only when a factor is; equivalently, zero-testing is a homomorphism, so
+counting translates exactly to dependency tracking. The rationals are not positive, since a number and its
+negation sum to zero, and zero-testing $\mathbbm{Q} \to \Two$ preserves multiplication exactly but addition
+only laxly. It still acts entrywise on matrices, preserving identities and transposition, but composition only
+up to over-approximation: composing Boolean Jacobians can record dependencies absent from the Boolean image of
+their composite. The refund in \exref{introduction-example} is a case in point: the price genuinely does not
+matter to the total, yet the composed dependencies say it might.}
