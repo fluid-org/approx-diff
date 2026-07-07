@@ -5,13 +5,14 @@
 -- colimits.
 
 open import Level using (Level)
-open import prop using (⟪_⟫)
+open import Data.Product using (_,_)
+open import prop using (⟪_⟫) renaming (_,_ to _,ₚ_)
 open import prop-setoid using (Setoid; IsEquivalence; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≃s_)
 open import categories using (Category; setoid→category)
 open import functor
   using (Functor; HasColimits; Colimit; IsColimit; NatTrans; constF; constFmor; ≃-NatTrans)
-  renaming (_∘_ to _∘N_)
+  renaming (_∘_ to _∘N_; _∘F_ to _∘F_)
 open import indexed-family using (Fam; _⇒f_; fam→functor)
 import fam
 
@@ -20,7 +21,7 @@ module fam-realisation {o m e} (os es : Level) {ℰ : Category o m e}
   where
 
 open Category ℰ
-open fam.CategoryOfFamilies os es ℰ using (cat; Mor-∘)
+open fam.CategoryOfFamilies os es ℰ using (cat; Mor-∘; bigCoproducts)
 open fam.CategoryOfFamilies.Obj
 open fam.CategoryOfFamilies.Mor
 open fam.CategoryOfFamilies._≃_
@@ -105,3 +106,91 @@ realise .fmor-comp {X} {Y} {Z} f g =
       ≈˘⟨ assoc _ _ _ ⟩
         (colim Y .isColimit .colambda _ (push f) ∘ colim X .isColimit .colambda _ (push g)) ∘ colim X .cocone .transf x
       ∎ where open ≈-Reasoning isEquiv
+
+-- Realisation preserves setoid-indexed coproducts: the realise-image of the
+-- coproduct cocone in the category of families is a colimit in ℰ.
+module _ (S : Setoid os es) (D : Functor (setoid→category S) cat) where
+
+  private
+    module C = Category cat
+    ⨿D = bigCoproducts S D
+
+    inS : ∀ s → Category._⇒_ cat (D .fobj s) (⨿D .apex)
+    inS s = ⨿D .cocone .transf s
+
+  realiseCocone : NatTrans (realise ∘F D) (constF (setoid→category S) (realise .fobj (⨿D .apex)))
+  realiseCocone .transf s = realise .fmor (inS s)
+  realiseCocone .natural {s₁} {s₂} ⟪ e ⟫ =
+    ≈-trans id-left
+      (≈-trans (realise .fmor-cong (C.≈-trans (C.≈-sym C.id-left) (⨿D .cocone .natural ⟪ e ⟫)))
+        (realise .fmor-comp _ _))
+
+  private
+    -- Flatten a cocone under realise ∘F D to a cocone on the total family.
+    flat : ∀ x (α : NatTrans (realise ∘F D) (constF (setoid→category S) x)) →
+           NatTrans (fam→functor (⨿D .apex .fam)) (constF (setoid→category (⨿D .apex .idx)) x)
+    flat x α .transf (s , d) = α .transf s ∘ colim (D .fobj s) .cocone .transf d
+    flat x α .natural {s₁ , d₁} {s₂ , d₂} ⟪ es ,ₚ ed ⟫ =
+      begin
+        id _ ∘ (α .transf s₁ ∘ colim (D .fobj s₁) .cocone .transf d₁)
+      ≈⟨ id-left ⟩
+        α .transf s₁ ∘ colim (D .fobj s₁) .cocone .transf d₁
+      ≈⟨ ∘-cong (≈-trans (≈-sym id-left) (α .natural ⟪ es ⟫)) ≈-refl ⟩
+        (α .transf s₂ ∘ realise .fmor (D .fmor ⟪ es ⟫)) ∘ colim (D .fobj s₁) .cocone .transf d₁
+      ≈⟨ assoc _ _ _ ⟩
+        α .transf s₂ ∘ (realise .fmor (D .fmor ⟪ es ⟫) ∘ colim (D .fobj s₁) .cocone .transf d₁)
+      ≈⟨ ∘-cong ≈-refl (colim (D .fobj s₁) .isColimit .colambda-coeval _ (push (D .fmor ⟪ es ⟫)) .transf-eq d₁) ⟩
+        α .transf s₂ ∘ (colim (D .fobj s₂) .cocone .transf (D .fmor ⟪ es ⟫ .idxf $s d₁) ∘ D .fmor ⟪ es ⟫ .famf .transf d₁)
+      ≈⟨ ∘-cong ≈-refl (∘-cong (≈-trans (≈-sym id-left) (colim (D .fobj s₂) .cocone .natural ⟪ ed ⟫)) ≈-refl) ⟩
+        α .transf s₂ ∘ ((colim (D .fobj s₂) .cocone .transf d₂ ∘ D .fobj s₂ .fam .subst ed) ∘ D .fmor ⟪ es ⟫ .famf .transf d₁)
+      ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+        α .transf s₂ ∘ (colim (D .fobj s₂) .cocone .transf d₂ ∘ (D .fobj s₂ .fam .subst ed ∘ D .fmor ⟪ es ⟫ .famf .transf d₁))
+      ≈˘⟨ assoc _ _ _ ⟩
+        (α .transf s₂ ∘ colim (D .fobj s₂) .cocone .transf d₂) ∘ (D .fobj s₂ .fam .subst ed ∘ D .fmor ⟪ es ⟫ .famf .transf d₁)
+      ∎ where open ≈-Reasoning isEquiv
+
+  realise-preserves-coproducts : IsColimit (realise ∘F D) (realise .fobj (⨿D .apex)) realiseCocone
+  realise-preserves-coproducts .IsColimit.colambda x α =
+    colim (⨿D .apex) .isColimit .colambda x (flat x α)
+  realise-preserves-coproducts .IsColimit.colambda-cong {x} {α} {β} α≃β =
+    colim (⨿D .apex) .isColimit .colambda-cong eq
+    where
+      eq : ≃-NatTrans (flat x α) (flat x β)
+      eq .transf-eq (s , d) = ∘-cong (α≃β .transf-eq s) ≈-refl
+  realise-preserves-coproducts .IsColimit.colambda-coeval x α .transf-eq s =
+    ≈-trans (≈-sym (colim (D .fobj s) .isColimit .colambda-ext x h))
+      (≈-trans (colim (D .fobj s) .isColimit .colambda-cong eq)
+        (colim (D .fobj s) .isColimit .colambda-ext x (α .transf s)))
+    where
+      h : Category._⇒_ ℰ (realise .fobj (D .fobj s)) x
+      h = colim (⨿D .apex) .isColimit .colambda x (flat x α) ∘ realise .fmor (inS s)
+
+      eq : ≃-NatTrans (constFmor h ∘N colim (D .fobj s) .cocone)
+                      (constFmor (α .transf s) ∘N colim (D .fobj s) .cocone)
+      eq .transf-eq d =
+        begin
+          h ∘ colim (D .fobj s) .cocone .transf d
+        ≈⟨ assoc _ _ _ ⟩
+          colim (⨿D .apex) .isColimit .colambda x (flat x α) ∘ (realise .fmor (inS s) ∘ colim (D .fobj s) .cocone .transf d)
+        ≈⟨ ∘-cong ≈-refl (colim (D .fobj s) .isColimit .colambda-coeval _ (push (inS s)) .transf-eq d) ⟩
+          colim (⨿D .apex) .isColimit .colambda x (flat x α) ∘ (colim (⨿D .apex) .cocone .transf (s , d) ∘ id _)
+        ≈⟨ ∘-cong ≈-refl id-right ⟩
+          colim (⨿D .apex) .isColimit .colambda x (flat x α) ∘ colim (⨿D .apex) .cocone .transf (s , d)
+        ≈⟨ colim (⨿D .apex) .isColimit .colambda-coeval _ (flat x α) .transf-eq (s , d) ⟩
+          α .transf s ∘ colim (D .fobj s) .cocone .transf d
+        ∎ where open ≈-Reasoning isEquiv
+  realise-preserves-coproducts .IsColimit.colambda-ext x f =
+    ≈-trans (colim (⨿D .apex) .isColimit .colambda-cong eq)
+      (colim (⨿D .apex) .isColimit .colambda-ext x f)
+    where
+      eq : ≃-NatTrans _ _
+      eq .transf-eq (s , d) =
+        begin
+          (f ∘ realise .fmor (inS s)) ∘ colim (D .fobj s) .cocone .transf d
+        ≈⟨ assoc _ _ _ ⟩
+          f ∘ (realise .fmor (inS s) ∘ colim (D .fobj s) .cocone .transf d)
+        ≈⟨ ∘-cong ≈-refl (colim (D .fobj s) .isColimit .colambda-coeval _ (push (inS s)) .transf-eq d) ⟩
+          f ∘ (colim (⨿D .apex) .cocone .transf (s , d) ∘ id _)
+        ≈⟨ ∘-cong ≈-refl id-right ⟩
+          f ∘ colim (⨿D .apex) .cocone .transf (s , d)
+        ∎ where open ≈-Reasoning isEquiv
