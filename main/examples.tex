@@ -58,12 +58,11 @@ $\min$.}
 \label{sec:examples:relative-bounds}
 
 \Added{Relative bounds pass through multiplication, so this instance can run the full weighted-sum query
-$\mathrm{total}$ of \exref{introduction-example}, prices included, on the same database. We instantiate at
+of \exref{introduction-example}, prices included, on the same database. We instantiate at
 the min-times semiring of \secref{approx-as-tangents:perturbation-bounds}: multiplication's derivative has
-unit entries, and addition's entries are condition numbers, infinite at exact cancellation.}
-
-\Added{In the run of $\mathrm{total}\,\mathsf{b}$, multiplication behaves well: a $10\%$ bound on the price
-of $\mathsf{b}$ reaches the output intact, and likewise a bound on the selected quantity:}
+unit entries, and addition's entries are condition numbers, infinite at exact cancellation. In the run of
+$\mathrm{total}\,\mathsf{b}$, multiplication behaves well: a $10\%$ bound on the price of $\mathsf{b}$
+reaches the output intact, and likewise a bound on the selected quantity:}
 \begin{AddedBlock}
 \begin{displaymath}
   \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a}, \infty), (\mathsf{b}, \infty), (\mathsf{a}, \infty)], \langle \infty, \tfrac{1}{10} \rangle) = \tfrac{1}{10}
