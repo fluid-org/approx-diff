@@ -85,12 +85,46 @@ relative bound on either $\mathsf{a}$-quantity, however tight, yields a bound on
 \end{displaymath}
 \end{AddedBlock}
 
+\subsection[Linearised provenance]{\added{Linearised provenance}}
+\label{sec:examples:counting}
+
+\Added{At the free semiring $\mathbbm{N}[X]$ the analysis computes the linearised provenance of
+\secref{approx-as-tangents:linearised-provenance}. Each instance chooses the derivative entries of the
+primitive operations; here every entry is $1$, so a Jacobian entry of a run counts the paths from an input
+position to an output position. On the cancellation run of the weighted-sum query
+(\exref{introduction-example}), seeding each input position with a unique variable:}
+\begin{AddedBlock}
+\begin{displaymath}
+  \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a}, x_0), (\mathsf{b}, x_1), (\mathsf{a}, x_2)], \langle x_3, x_4 \rangle) = x_0 + x_2 + 2 x_3
+\end{displaymath}
+\end{AddedBlock}
+\noindent\Added{The output polynomial records each selected quantity once and the queried price twice, once
+per selected row. Backwards, seeding the output with a variable $y$ distributes it by usage:}
+\begin{AddedBlock}
+\begin{displaymath}
+  \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_r(y) =
+  ([(\mathsf{a}, y), (\mathsf{b}, 0), (\mathsf{a}, y)], \langle 2 y, 0 \rangle)
+\end{displaymath}
+\end{AddedBlock}
+\noindent\Added{Other analyses now come by evaluation. Valuing every variable as $1$ specialises to the
+counting semiring $(\mathbbm{N}, +, 0, \cdot, 1)$: the forward polynomial evaluates to $4$, the number of
+paths from perturbable inputs to the output, and the backward polynomials evaluate to per-position use
+counts, $2$ at the queried price. The count survives the cancellation that zeroes the rational derivative,
+because $\mathbbm{N}$ is positive and counts cannot cancel; zero-testing then sends the count $2$ to the
+Boolean $1$ exactly, as positivity guarantees, whereas the same translation applied to the rational entry
+loses the dependency. The three analyses answer three different questions at the same position: the rational
+Jacobian reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and the counting
+Jacobian usage ($2$).}
+
 \subsection[Linked Inputs and Outputs]{\added{Linked Inputs and Outputs}}
 \label{sec:examples:linked}
 
-\Added{When outputs overlap in their dependencies, the two derivatives compose into a further analysis: a
-map sending a selection of outputs to the outputs related to it by a shared dependency. The
-\emph{moving average} is the standard example of such overlap. With window two and four inputs,}
+\Added{The final example introduces no new semiring: it runs over the Booleans, and shows instead how
+composing the two derivatives of a single run recovers an existing dependency analysis. When outputs overlap
+in their dependencies, the composite of the backward and forward derivatives sends a selection of outputs to
+the outputs related to it by a shared dependency: the \emph{cognacy} analysis of linked
+visualisations~\cite{perera22,bond25,psallidas18}. The \emph{moving average} is the standard example of such
+overlap. With window two and four inputs,}
 \begin{AddedBlock}
 \begin{displaymath}
   \mathrm{mavg}\,(x_1, x_2, x_3, x_4) =
@@ -110,24 +144,6 @@ the composite of the backward and forward derivatives are}
 \end{displaymath}
 \end{AddedBlock}
 \Added{The composite relates each output to the outputs it shares an input with: selecting the first output
-returns the first and second, and the third stays $\bot$ because the two windows are disjoint. This is the
-\emph{cognacy} analysis of linked visualisations~\cite{perera22,bond25,psallidas18}, computed here as a
-composite of the two derivatives of one run.}
-
-\subsection[Counting]{\added{Counting}}
-\label{sec:examples:counting}
-
-\Added{The counting semiring $(\mathbbm{N}, +, 0, \cdot, 1)$ of
-\secref{approx-as-tangents:richer-semirings} refines dependency tracking from whether an input is used to
-how many times. Every argument of every operation is given the coefficient $1$, so a Jacobian entry counts
-the paths from an input position to an output position.}
-
-\Added{On the weighted-sum query of \secref{introduction:galois-slicing}, the backward derivative of the
-output returns a count for every position: $1$ at each selected quantity, $0$ at the unselected row and the
-other price, and $2$ at the price of the queried label, which is used once in each selected row. The count
-of $2$ survives the cancellation that zeroes the rational derivative, because the counting semiring is
-positive and counts cannot cancel. The three instances thus answer three different questions at the same
-position: the rational Jacobian reports sensitivity ($0$), the Boolean Jacobian reports possible dependence
-($1$), and the counting Jacobian reports usage ($2$). Zero-testing sends the count $2$ to the Boolean $1$
-exactly, as \secref{approx-as-tangents:richer-semirings} leads us to expect of a positive semiring, whereas
-the same specialisation applied to the rational entry loses the dependency.}
+returns the first and second, while the third stays $\bot$ because the two windows are disjoint. But whereas
+these prior works run queries over an execution record, here the intermediate structure has been folded away
+by the chain rule: each derivative is a relation on its endpoints, input positions to output positions.}
