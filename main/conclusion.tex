@@ -22,6 +22,7 @@ individual pixels have been ablated to some degree (partly removed or blurred). 
 some of these techniques with Galois slicing, for use in hybrid systems such as physical simulations with
 ML-based parameterisations.
 
+\begin{DeletedBlock}
 \paragraph{Refinement of the model}
 
 As we discussed in \remref{further-structure}, there are possible ways that the model we have proposed here
@@ -31,6 +32,18 @@ explore more examples of approximation along the lines of the intervals example 
 One route might be to follow \citet{edalat-heckmann98}'s embedding of metric spaces in Scott domains and
 explore whether metric spaces (which already provide a native notion of approximation) can be embedded in
 $\Fam(\LatGal)$.
+\end{DeletedBlock}
+
+\paragraph{\added{Alternative semiring models}}
+
+\Added{The choice of scalar semiring is the principal degree of freedom in our framework, and choices
+beyond those studied here seem worth pursuing. The perturbation-bound semirings of
+\secref{examples:perturbation-bounds} point towards metric approximation: a Lawvere metric space is a
+category enriched over the min-plus quantale, whose operations are those of our absolute-perturbation
+semiring, so metric spaces provide a native notion of approximation already partly within reach of the
+framework. Relating this to \citet{edalat-heckmann98}'s computational model of metric spaces is one promising
+direction. A second is to replace the setoids carrying values with sets equipped with a semiring-valued
+equality relation, over a partially ordered semiring with a residual for its multiplication.}
 
 % \paragraph{Categorical Models of Differentation} We have already identified \conref{tangent-stable-fns} and
 % \conref{tangent-fam} as potential connections to categorical models of differentation.
@@ -54,17 +67,25 @@ Logic~\cite{ehrhard_differential_2006} and to Crubill\'e's identification of sta
 series~\cite{crubille18}, relating the qualitative derivatives studied here to the analytic derivatives of
 that setting.}
 
-\paragraph{General Inductive and Coinductive Types}
+\paragraph[Shape Approximation]{\replaced{Shape Approximation}{General Inductive and Coinductive Types}}
 
-Lists are the only recursive data type we provided in our source language, so important future work is
+Lists are the only recursive datatype we provided in our source language, so important future work is
 supporting general inductive and coinductive types. \citet{nunes2023} support automatic differentiation for
 datatypes defined as the least or greatest fixed points of $\mu\nu$-polynomial functors; we could potentially
-adopt a similar approach. Full inductive types would allow us to embed an interpreter for a small language;
-combined with the CBN monadic translation described in \secref{cbn-translation} which uniformly inserts
-approximation points, we should be able to obtain the program slicing behaviour of earlier \GPS work ``for
-free''. Coinductive types (e.g.~streams) present additional challenges, especially for defining
+adopt a similar approach. \Deleted{Full inductive types would allow us to embed an interpreter for a small
+language; combined with the CBN monadic translation described in \secref{cbn-translation} which uniformly
+inserts approximation points, we should be able to obtain the program slicing behaviour of earlier \GPS work
+``for free''. Coinductive types (e.g.~streams) present additional challenges, especially for defining
 join-preserving backward maps, but also open the door to slicing (finite prefixes of) infinite data sources,
-with some likely relationship to the problem of dealing with partial or non-terminating computations.
+with some likely relationship to the problem of dealing with partial or non-terminating computations.}
+\Added{Richer datatypes bring the question of \emph{shape approximation}: approximating not only the values
+at the positions of a structure but the structure itself, such as the length of a list or the depth of a
+tree. This was central to the earlier, operational presentations of Galois
+slicing~\cite{perera12a,perera16d,ricciotti17}, whose approximation lattices represent partially erased data,
+but is absent from our model, which approximates only values and holds the shape of each input fixed.
+Bringing it into the present semantic setting would require the approximation object of a value to vary
+with its shape rather than being fixed in advance, and would also let coinductive data such as streams be
+sliced through their finite prefixes.}
 
 \paragraph{Recursion and Partiality} This work has only examined the case for total programs. Even though we
 took stable domain theory as our starting point, we did not make any use of directed completeness or similar
