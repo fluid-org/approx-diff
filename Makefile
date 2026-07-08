@@ -1,4 +1,4 @@
-.PHONY: main notes clean submit # otherwise confused by folders with the same name
+.PHONY: main notes clean submit arxiv # otherwise confused by folders with the same name
 
 default: main
 
@@ -45,9 +45,14 @@ main-submit.pdf: main-submit.tex main.tex $(MAIN_DEPS)
 	latexmk $(LATEXMK_OPTS) -g main-submit
 	cp _latex/main-submit.pdf .
 
+arxiv: main.pdf
+	rm -f arXiv.zip
+	git ls-files | zip arXiv.zip -@
+
 clean:
 	rm -rf _latex
 	rm -f main.pdf
 	rm -f main-submit.pdf
 	rm -f suppl-submit.zip
+	rm -f arXiv.zip
 	rm -f notes.pdf
