@@ -3,13 +3,14 @@
 import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Nat using (ℕ; zero; suc)
+import Data.Nat
+open import Data.Sum using ([_,_])
 open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor)
 open import prop-setoid using (module ≈-Reasoning)
-open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl; sym to ≡-sym)
 
 module polynomial-functor-2 where
 
@@ -107,6 +108,41 @@ Poly-map F (var i)   = var i
 Poly-map F (P + Q)   = Poly-map F P + Poly-map F Q
 Poly-map F (P × Q)   = Poly-map F P × Poly-map F Q
 Poly-map F (μ P)     = μ (Poly-map F P)
+
+-- The constant-free skeleton of a polynomial: constants are replaced by fresh
+-- variables, numbered above the original ones. The traversal carries an
+-- injection of each subterm's constant block into the full block, so no
+-- renaming of polynomials is needed. The skeleton never mentions the constants
+-- and so lives over any category.
+#c : ∀ {o₁ m₁ e₁} {𝒞 : Category o₁ m₁ e₁} {n} → Poly 𝒞 n → ℕ
+#c (const A) = 1
+#c (var i)   = 0
+#c (P + Q)   = #c P Data.Nat.+ #c Q
+#c (P × Q)   = #c P Data.Nat.+ #c Q
+#c (μ P)     = #c P
+
+skeleton-go : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n k}
+              (P : Poly 𝒞 n) → (Fin (#c P) → Fin k) → Poly 𝒟 (n Data.Nat.+ k)
+skeleton-go {n = n} {k} (const A) ι = var (n Fin.↑ʳ ι Fin.zero)
+skeleton-go {k = k} (var i)      ι = var (i Fin.↑ˡ k)
+skeleton-go (P + Q) ι = skeleton-go P (λ c → ι (c Fin.↑ˡ #c Q)) + skeleton-go Q (λ c → ι (#c P Fin.↑ʳ c))
+skeleton-go (P × Q) ι = skeleton-go P (λ c → ι (c Fin.↑ˡ #c Q)) × skeleton-go Q (λ c → ι (#c P Fin.↑ʳ c))
+skeleton-go (μ P)   ι = μ (skeleton-go P ι)
+
+skeleton : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n}
+           (P : Poly 𝒞 n) → Poly 𝒟 (n Data.Nat.+ #c P)
+skeleton P = skeleton-go P (λ c → c)
+
+-- The constants of a polynomial, indexed by its constant block.
+consts : ∀ {o₁ m₁ e₁} {𝒞 : Category o₁ m₁ e₁} {n} (P : Poly 𝒞 n) → Fin (#c P) → Category.obj 𝒞
+consts (const A) _ = A
+consts (P + Q) c = [ consts P , consts Q ] (Fin.splitAt (#c P) c)
+consts (P × Q) c = [ consts P , consts Q ] (Fin.splitAt (#c P) c)
+consts (μ P)   c = consts P c
+
+-- Extend an environment by a constant block.
+_++e_ : ∀ {a} {A : Set a} {n k} → (Fin n → A) → (Fin k → A) → Fin (n Data.Nat.+ k) → A
+_++e_ {n = n} δ cs i = [ δ , cs ] (Fin.splitAt n i)
 
 -- The functor preserves μ-types: each μ-object maps, up to isomorphism, to the
 -- μ-object of the image polynomial in the image environment.
@@ -838,45 +874,3 @@ module MuIso
 
       sq : (h ∘co (α P δ ∘ p₂)) ≈ ((alg ∘ prod-m u (id _)) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h))
       sq = ≈-trans lhs-chain (≈-sym rhs-chain)
-
-  -- Constant abstraction: a rigid correspondence between a polynomial and a
-  -- form of it in which some constants have been replaced by variables (and
-  -- possibly vice versa), over given environments. Rigid: the leaf conditions
-  -- are equalities of objects, so the induced comparisons need no morphism
-  -- families.
-  data Abs : ∀ {n n'} (δ : Fin n → obj) (δ' : Fin n' → obj) →
-             Poly 𝒞 n → Poly 𝒞 n' → Set (o ⊔ m) where
-    var   : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {i j} →
-            δ' j ≡ δ i → Abs δ δ' (var i) (var j)
-    const : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {A} →
-            Abs δ δ' (const A) (const A)
-    cabs  : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {A j} →
-            δ' j ≡ A → Abs δ δ' (const A) (var j)
-    cconc : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {A i} →
-            δ i ≡ A → Abs δ δ' (var i) (const A)
-    _+_   : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {P P' Q Q'} →
-            Abs δ δ' P P' → Abs δ δ' Q Q' → Abs δ δ' (P + Q) (P' + Q')
-    _×_   : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {P P' Q Q'} →
-            Abs δ δ' P P' → Abs δ δ' Q Q' → Abs δ δ' (P × Q) (P' × Q')
-    μ     : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {P P'} →
-            (∀ X → Abs (extend δ X) (extend δ' X) P P') →
-            Abs δ δ' (μ P) (μ P')
-
-  -- The correspondence is symmetric.
-  Abs-sym : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {P P'} →
-            Abs δ δ' P P' → Abs δ' δ P' P
-  Abs-sym (var eq)   = var (≡-sym eq)
-  Abs-sym const      = const
-  Abs-sym (cabs eq)  = cconc eq
-  Abs-sym (cconc eq) = cabs eq
-  Abs-sym (r + s)    = Abs-sym r + Abs-sym s
-  Abs-sym (r × s)    = Abs-sym r × Abs-sym s
-  Abs-sym (μ r)      = μ (λ X → Abs-sym (r X))
-
-  -- Every polynomial corresponds to itself.
-  Abs-refl : ∀ {n} {δ : Fin n → obj} (P : Poly 𝒞 n) → Abs δ δ P P
-  Abs-refl (const A) = const
-  Abs-refl (var i)   = var ≡-refl
-  Abs-refl (P + Q)   = Abs-refl P + Abs-refl Q
-  Abs-refl (P × Q)   = Abs-refl P × Abs-refl Q
-  Abs-refl (μ P)     = μ (λ X → Abs-refl P)

@@ -261,13 +261,21 @@ $\GLR(F)$ has $\Poly$-types.
 \subsection{Preservation of $\Poly$-types by $\GF$}
 \label{sec:conservativity:gf-poly-types}
 
-The polynomials that arise interpret first-order types. Translating type variables as polynomial
-variables, and base sorts as designated environment entries, these polynomials are constant-free;
-we assume this of all polynomials in this subsection. Preservation does not follow from $\GF$'s preservation of
-the finite structure: initial algebras map out of themselves, so finite preservation yields only the
-comparison $\mu_{\alpha.\GF(P)} \to \GF(\mu_{\alpha.P})$, by folding the $\GF$-image of the
-algebra. The converse direction requires $\GF$ to preserve the presentation of
-$\mu_{\alpha.P}$ as a set-indexed coproduct of its fibres. Three ingredients remain, given below.
+Preservation does not follow from $\GF$'s preservation of the finite structure: initial algebras
+map out of themselves, so finite preservation yields only the comparison $\mu_{\alpha.\GF(P)}
+\to \GF(\mu_{\alpha.P})$, by folding the $\GF$-image of the algebra. The converse direction
+requires $\GF$ to preserve the presentation of $\mu_{\alpha.P}$ as a set-indexed coproduct of its
+fibres.
+
+Preservation asks only for an isomorphism of objects, so the comparison can be carried out on the
+concrete carriers of \propref{polynomial-types:fam-has-poly}, where no initiality machinery is
+needed: the tree sorts and fibres of the carrier are computed from the index sets and fibres of the
+environment entries and $\const$-objects alone. In particular a $\const$-object and a variable
+bound to an equal environment entry contribute identical data. Write $P^{*}$ for the constant-free
+skeleton of $P$, with the $\const$-objects $\vec{A}$ of $P$ collected as additional environment
+entries, and $\check{\delta}_i$ for the presentation of $\GF(\delta_i)$ induced by the canonical
+presentation of $\delta_i$: the family over the index set of $\delta_i$ whose fibres are the
+$\GF$-images of its fibres.
 
 \begin{lemma}[TODO]
 \label{lem:conservativity:definable-coproducts}
@@ -280,31 +288,30 @@ This is the infinitary analogue of the finite-coproduct closure of
 \secref{conservativity:glueing}, and is precisely the extension that would admit built-in list
 types. Together with preservation of set-indexed coproducts by $F$ it makes $\GF$ preserve them:
 carriers by assumption, predicates by the lemma, the coproducts of $\GLR(F)$ being computed as
-coproducts of carriers with joined predicates.
-
-\begin{proposition}[TODO]
-\label{prop:conservativity:poly-unique}
-Any two $\Poly$-types structures on a category have componentwise isomorphic $\mu$-objects.
-\end{proposition}
-
-This makes the choice of $\Poly$-types for $\cat{C}$ immaterial; the comparison below uses the
-concrete construction of \propref{polynomial-types:fam-has-poly}, $\cat{C}$ being a $\Fam$
-category.
-
-Finally, the two coproduct presentations must be matched. Write $\check{\delta}_i$ for the
-presentation of $\GF(\delta_i)$ induced by the canonical presentation of $\delta_i$: the family
-over the index set of $\delta_i$ whose fibres are the $\GF$-images of its fibres, with
-$\Sigma\check{\delta}_i \cong \GF(\delta_i)$ since $\GF$ preserves set-indexed coproducts.
+coproducts of carriers with joined predicates. In particular $\Sigma\check{\delta}_i \cong
+\GF(\delta_i)$.
 
 \begin{lemma}[Carrier comparison, TODO]
 \label{lem:conservativity:carrier-comparison}
-$\GF(\mu_{\alpha.P}) \cong \Sigma(\mu_{\alpha.\hat{P}}(\check{\delta}))$.
+$\GF(\mu_{\alpha.P}) \cong \Sigma(\mu_{\alpha.P^{*}}(\check{\delta}, \check{A}))$.
 \end{lemma}
 
 \begin{proof}[Proof sketch]
-The tree sorts of the two carriers coincide, both being determined by the index parts of their
-environments, which agree; the fibres over a common sort are finite products of the same
-$\GF$-images, identified by tree recursion using $\GF$'s preservation of products.
+The tree sorts coincide: both are decorated by the index sets of the environment entries and
+$\const$-objects of $P$, which the presentations preserve. The fibres over a common sort are
+finite products of the same $\GF$-images, identified by tree recursion using $\GF$'s preservation
+of products.
+\end{proof}
+
+\begin{lemma}[Skeleton, TODO]
+\label{lem:conservativity:skeleton}
+$\mu_{\alpha.\hat{P}}(\eta\,\GF\,\delta) \cong
+\mu_{\alpha.P^{*}}(\eta\,\GF\,\delta, \eta\,\GF\,\vec{A})$ in $\Fam(\GLR(F))$.
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+A $\const$-object and a variable bound to an equal environment entry give the same carrier data,
+so the two carriers agree up to renaming of tree constructors, by tree recursion.
 \end{proof}
 
 \begin{proposition}[TODO]
@@ -314,11 +321,17 @@ $\GF$ preserves $\Poly$-types.
 
 \begin{proof}[Proof sketch]
 Compose \lemref{conservativity:carrier-comparison} with collapse
-(\lemref{conservativity:collapse}) at the isomorphism family $\Sigma\check{\delta}_i \cong
-\Sigma(\eta\,\GF\,\delta_i)$:
+(\lemref{conservativity:collapse}) at the constant-free $P^{*}$, at the isomorphism family given
+by $\Sigma\check{\delta}_i \cong \GF(\delta_i) \cong \Sigma(\eta\,\GF\,\delta_i)$ and
+likewise at the entries for $\vec{A}$, and finally with the realisation of
+\lemref{conservativity:skeleton}:
 \[
-  \GF(\mu_{\alpha.P}) \;\cong\; \Sigma(\mu_{\alpha.\hat{P}}(\check{\delta}))
+  \GF(\mu_{\alpha.P})
+  \;\cong\; \Sigma(\mu_{\alpha.P^{*}}(\check{\delta}, \check{A}))
+  \;\cong\; \Sigma(\mu_{\alpha.P^{*}}(\eta\,\GF\,\delta, \eta\,\GF\,\vec{A}))
   \;\cong\; \Sigma(\mu_{\alpha.\hat{P}}(\eta\,\GF\,\delta))
   \;=\; \mu_{\alpha.\GF(P)}.
 \]
+The choice of $\Poly$-types for $\cat{C}$ is immaterial: any two structures have componentwise
+isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms.
 \end{proof}
