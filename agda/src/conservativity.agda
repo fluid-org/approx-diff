@@ -1,8 +1,8 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-open import Level using (Lift; lift; lower; _⊔_; 0ℓ)
+open import Level using (Level; Lift; lift; lower; _⊔_; 0ℓ) renaming (suc to lsuc)
 open import Data.Product using (_,_)
-open import prop using (_,_; proj₁; proj₂; ∃; LiftP; lift; lower; liftS; LiftS; inj₁; inj₂)
+open import prop using (_,_; proj₁; proj₂; ∃; ∃ₛ; Prf; ⟪_⟫; LiftP; lift; lower; liftS; LiftS; inj₁; inj₂)
 open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet)
 open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
@@ -12,7 +12,7 @@ import polynomial-functor-2
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
          interchange; H-id; NT-id-left;
-         HasColimits; NatIso; functor-preserve-iso)
+         HasColimits; Colimit; IsColimit; colambda-unique; constF; NatIso; functor-preserve-iso)
 open import prop-setoid using (module ≈-Reasoning; IsEquivalence; Setoid)
 open import setoid-cat using (SetoidCat)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
@@ -20,6 +20,7 @@ open import stable-coproducts using (StableBits; Stable)
 import fam-mu-realisation
 import glueing-simple
 import setoid-predicate
+import stable-coproducts-indexed
 open import finite-product-functor
   using ( preserve-chosen-products
         ; preserve-chosen-terminal
@@ -54,6 +55,9 @@ module conservativity
   {o₁ o₂ m e}
   -- Category for interpreting first-order things
   (𝒞 : Category o₁ m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP) (𝒞M : Monad 𝒞)
+  -- Set-indexed coproducts of 𝒞, and their stability
+  (𝒞DC : ∀ (S : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category S) 𝒞)
+  (𝒞istable : stable-coproducts-indexed.IdxStable 𝒞DC)
   -- A higher order model
   (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
   (𝒟DC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) 𝒟)
@@ -64,6 +68,28 @@ module conservativity
   (FC : preserve-chosen-coproducts F 𝒞CP 𝒟CP)
   (FM : preserve-monad F 𝒞M 𝒟M)
   (FM-C : preserve-chosen-coproducts (Monad.funct 𝒞M) 𝒞CP 𝒞CP)
+  -- The monad functor preserves set-indexed coproducts (an iso commuting with
+  -- the injections)
+  (FM-DC : ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) 𝒞) →
+           ∃ₛ (Category.Iso 𝒞 (Colimit.apex (𝒞DC S (Monad.funct 𝒞M ∘F D)))
+                              (Monad.funct 𝒞M .fobj (Colimit.apex (𝒞DC S D))))
+              (λ i → ∀ s → Category._≈_ 𝒞
+                            (Category._∘_ 𝒞 (Category.Iso.fwd i)
+                               (Colimit.cocone (𝒞DC S (Monad.funct 𝒞M ∘F D)) .transf s))
+                            (Monad.funct 𝒞M .fmor (Colimit.cocone (𝒞DC S D) .transf s))))
+  -- F preserves set-indexed coproducts (an iso commuting with the injections)
+  (F-DC : ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) 𝒞) →
+          ∃ₛ (Category.Iso 𝒟 (Colimit.apex (𝒟DC S (F ∘F D)))
+                             (F .fobj (Colimit.apex (𝒞DC S D))))
+             (λ i → ∀ s → Category._≈_ 𝒟
+                           (Category._∘_ 𝒟 (Category.Iso.fwd i)
+                              (Colimit.cocone (𝒟DC S (F ∘F D)) .transf s))
+                           (F .fmor (Colimit.cocone (𝒞DC S D) .transf s))))
+  -- F reflects equality, and picks a definability witness uniformly
+  (F-faithful : ∀ {a b} {g₁ g₂ : Category._⇒_ 𝒞 a b} → Category._≈_ 𝒟 (F .fmor g₁) (F .fmor g₂) → Category._≈_ 𝒞 g₁ g₂)
+  (Fdef : ∀ {a b} (h : Category._⇒_ 𝒟 (F .fobj a) (F .fobj b)) →
+          Prf (∃ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h) →
+          ∃ₛ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h)
   where
 
 private
@@ -81,8 +107,8 @@ private
 
 ------------------------------------------------------------------------------
 -- Kripke Predicates “of varying arity”
-open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞 renaming (PSh to PSh⟨𝒞⟩; products to PSh⟨𝒞⟩-products) using (module DayMonad; module UnaryDay; Coend; Cowedge)
-open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒟 renaming (よ to 𝒟よ) using ()
+open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒞 renaming (PSh to PSh⟨𝒞⟩; products to PSh⟨𝒞⟩-products) using (module DayMonad; module UnaryDay; Coend; Cowedge)
+open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒟 renaming (よ to 𝒟よ) using ()
 
 open DayMonad 𝒞M using (monad-hat)
 
@@ -150,7 +176,7 @@ module _ where
   open Coend
   open Cowedge
 
-  G-monad-cw : ∀ x y → Cowedge 𝟙 (M-hat-F (𝒟よ .fobj x ∘F opF F) y) (𝒟.hom-setoid-l (o₁ ⊔ o₂ ⊔ m ⊔ e) (o₁ ⊔ o₂ ⊔ m ⊔ e) (F .fobj y) (𝒟M.funct .fobj x))
+  G-monad-cw : ∀ x y → Cowedge 𝟙 (M-hat-F (𝒟よ .fobj x ∘F opF F) y) (𝒟.hom-setoid-l (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) (F .fobj y) (𝒟M.funct .fobj x))
   G-monad-cw x y .dtransf z .func (_ , lift g , lift h) =
     lift (𝒟M.funct .fmor h 𝒟.∘ (FM.transform .transf z 𝒟.∘ F .fmor g))
   G-monad-cw x y .dtransf z .func-resp-≈ (_ , lift g₁≈g₂ , lift h₁≈h₂) =
@@ -257,7 +283,7 @@ module _ where
 
 ------------------------------------------------------------------------------
 -- Presheaf predicates
-open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞
+open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒞
   renaming (system to PSh⟨𝒞⟩-system; Predicate to PShPredicate)
   using (_⊑_; module CoverMonad;
          _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop;
@@ -274,7 +300,7 @@ open _⊑_
 
 -- The “𝒞 definability” predicate.
 Definable : ∀ x → PShPredicate (G .fobj (F .fobj x))
-Definable x .pred y .pred (lift f) = LiftP (o₁ ⊔ o₂) (∃ (y 𝒞.⇒ x) λ g → F .fmor g 𝒟.≈ f)
+Definable x .pred y .pred (lift f) = LiftP (o₁ ⊔ o₂ ⊔ lsuc 0ℓ) (∃ (y 𝒞.⇒ x) λ g → F .fmor g 𝒟.≈ f)
 Definable x .pred y .pred-≃ {lift f₁} {lift f₂} (lift f₁≈f₂) (lift (g , eq)) = lift (g , 𝒟.≈-trans eq f₁≈f₂)
 Definable x .pred-mor h .*⊑* (lift f) (lift (g , eq)) =
    lift (g 𝒞.∘ h , 𝒟.≈-trans (F .fmor-comp g h) (𝒟.∘-cong eq 𝒟.≈-refl))
@@ -323,85 +349,134 @@ Definable-products {x} {y} .*⊑* a .*⊑* (lift f) (lift (g₁ , eq₁) , lift 
         open preserve-chosen-products-consequences F 𝒞P 𝒟P FP
 
 ------------------------------------------------------------------------------
--- The coverage generating the closure: binary coproduct decompositions of
--- the stage.
-data Side : Set (o₁ ⊔ o₂ ⊔ m ⊔ e) where
+-- The coverage generating the closure: coproduct decompositions of the stage,
+-- binary or set-indexed.
+module SI = stable-coproducts-indexed 𝒞DC
+
+private
+  Levℓ : Level
+  Levℓ = o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ
+
+data Side : Set Levℓ where
   inl inr : Side
 
-record BinCover (y : 𝒞.obj) : Set (o₁ ⊔ o₂ ⊔ m ⊔ e) where
+record BinCover (y : 𝒞.obj) : Set Levℓ where
   field
     y₁  : 𝒞.obj
     y₂  : 𝒞.obj
     iso : 𝒞.Iso (𝒞CP.coprod y₁ y₂) y
 
-binDom : ∀ {y} → BinCover y → Side → 𝒞.obj
-binDom c inl = c .BinCover.y₁
-binDom c inr = c .BinCover.y₂
+record IdxCover (y : 𝒞.obj) : Set Levℓ where
+  field
+    S   : Setoid 0ℓ 0ℓ
+    D   : Functor (setoid→category S) 𝒞
+    iso : 𝒞.Iso (SI.∐ S D) y
 
-binInj : ∀ {y} (c : BinCover y) (s : Side) → binDom c s 𝒞.⇒ y
-binInj c inl = c .BinCover.iso .𝒞.Iso.fwd 𝒞.∘ 𝒞CP.in₁
-binInj c inr = c .BinCover.iso .𝒞.Iso.fwd 𝒞.∘ 𝒞CP.in₂
+data Cover (y : 𝒞.obj) : Set Levℓ where
+  bin : BinCover y → Cover y
+  idx : IdxCover y → Cover y
 
-module CvM = CoverMonad BinCover (λ _ → Side) binDom binInj
+CIx : ∀ {y} → Cover y → Set Levℓ
+CIx (bin _) = Side
+CIx (idx c) = Lift Levℓ (c .IdxCover.S .Setoid.Carrier)
 
--- Covers pull back along any morphism, by stability of the binary coproducts.
-binPull : ∀ {x y} (c : BinCover x) (g : y 𝒞.⇒ x) → CvM.CoverPullback c g
-binPull c g = pb
+cDom : ∀ {y} (c : Cover y) → CIx c → 𝒞.obj
+cDom (bin c) inl = c .BinCover.y₁
+cDom (bin c) inr = c .BinCover.y₂
+cDom (idx c) (lift s) = c .IdxCover.D .fobj s
+
+cInj : ∀ {y} (c : Cover y) (s : CIx c) → cDom c s 𝒞.⇒ y
+cInj (bin c) inl = c .BinCover.iso .𝒞.Iso.fwd 𝒞.∘ 𝒞CP.in₁
+cInj (bin c) inr = c .BinCover.iso .𝒞.Iso.fwd 𝒞.∘ 𝒞CP.in₂
+cInj (idx c) (lift s) = c .IdxCover.iso .𝒞.Iso.fwd 𝒞.∘ SI.inj (c .IdxCover.D) s
+
+module CvM = CoverMonad Cover CIx cDom cInj
+
+-- Covers pull back along any morphism: binary by stability of the finite
+-- coproducts, set-indexed by stability of the set-indexed ones.
+covPull : ∀ {x y} (c : Cover x) (g : y 𝒞.⇒ x) → CvM.CoverPullback c g
+covPull (bin c) g = pb
   where
     open CvM.CoverPullback
-
     stb = stable (c .BinCover.iso) g
 
-    pb : CvM.CoverPullback c g
-    pb .cover .BinCover.y₁ = stb .StableBits.y₁
-    pb .cover .BinCover.y₂ = stb .StableBits.y₂
-    pb .cover .BinCover.iso = stb .StableBits.h
+    pb : CvM.CoverPullback (bin c) g
+    pb .cover = bin (record { y₁ = stb .StableBits.y₁ ; y₂ = stb .StableBits.y₂ ; iso = stb .StableBits.h })
     pb .reix s = s
     pb .leg inl = stb .StableBits.h₁
     pb .leg inr = stb .StableBits.h₂
     pb .eq inl = 𝒞.≈-trans (𝒞.assoc _ _ _) (stb .StableBits.eq₁)
     pb .eq inr = 𝒞.≈-trans (𝒞.assoc _ _ _) (stb .StableBits.eq₂)
+covPull (idx c) g = pb
+  where
+    open CvM.CoverPullback
+    stb = 𝒞istable (c .IdxCover.iso) g
+
+    pb : CvM.CoverPullback (idx c) g
+    pb .cover = idx (record { S = c .IdxCover.S ; D = stb .SI.IdxStableBits.E ; iso = stb .SI.IdxStableBits.h })
+    pb .reix (lift s) = lift s
+    pb .leg (lift s) = stb .SI.IdxStableBits.leg s
+    pb .eq (lift s) = 𝒞.≈-trans (𝒞.assoc _ _ _) (stb .SI.IdxStableBits.eq s)
 
 open CvM
-open CvM.Closure binPull
+open CvM.Closure covPull
 
 module MDistrib = Distrib 𝒞M.funct
 
--- The monad functor preserves binary coproducts, so covers pull back along
--- morphisms into its images: pull back the functor image of the cover.
-FMpull : ∀ {x y} (c : BinCover x) (g : y 𝒞.⇒ 𝒞M.funct .fobj x) → MDistrib.FCoverPullback c g
-FMpull {x} c g = fp
+-- Covers pull back along morphisms into the monad functor's images, using its
+-- preservation of finite and set-indexed coproducts: pull back the functor
+-- image of the cover, and correct the injections.
+FMpull : ∀ {x y} (c : Cover x) (g : y 𝒞.⇒ 𝒞M.funct .fobj x) → MDistrib.FCoverPullback c g
+FMpull (bin c) g = fp
   where
     open MDistrib.FCoverPullback
     open preserve-chosen-coproducts-consequences 𝒞M.funct 𝒞CP 𝒞CP FM-C using (iso)
 
-    Mc : BinCover (𝒞M.funct .fobj x)
+    Mc : BinCover (𝒞M.funct .fobj _)
     Mc .BinCover.y₁ = 𝒞M.funct .fobj (c .BinCover.y₁)
     Mc .BinCover.y₂ = 𝒞M.funct .fobj (c .BinCover.y₂)
     Mc .BinCover.iso = 𝒞.Iso-trans iso (functor-preserve-iso 𝒞M.funct (c .BinCover.iso))
 
-    pb = binPull Mc g
+    pb = covPull (bin Mc) g
 
-    -- The functor image of an injection agrees with the image cover's.
-    bridge₁ : 𝒞M.funct .fmor (binInj c inl) 𝒞.≈ binInj Mc inl
+    bridge₁ : 𝒞M.funct .fmor (cInj (bin c) inl) 𝒞.≈ cInj (bin Mc) inl
     bridge₁ =
       𝒞.≈-trans (𝒞M.funct .fmor-comp _ _)
-        (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (𝒞CP.copair-in₁ _ _)))
-          (𝒞.≈-sym (𝒞.assoc _ _ _)))
-
-    bridge₂ : 𝒞M.funct .fmor (binInj c inr) 𝒞.≈ binInj Mc inr
+        (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (𝒞CP.copair-in₁ _ _))) (𝒞.≈-sym (𝒞.assoc _ _ _)))
+    bridge₂ : 𝒞M.funct .fmor (cInj (bin c) inr) 𝒞.≈ cInj (bin Mc) inr
     bridge₂ =
       𝒞.≈-trans (𝒞M.funct .fmor-comp _ _)
-        (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (𝒞CP.copair-in₂ _ _)))
-          (𝒞.≈-sym (𝒞.assoc _ _ _)))
+        (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (𝒞CP.copair-in₂ _ _))) (𝒞.≈-sym (𝒞.assoc _ _ _)))
 
-    fp : MDistrib.FCoverPullback c g
+    fp : MDistrib.FCoverPullback (bin c) g
     fp .cover = pb .CoverPullback.cover
     fp .reix s = s
     fp .leg inl = pb .CoverPullback.leg inl
     fp .leg inr = pb .CoverPullback.leg inr
     fp .eq inl = 𝒞.≈-trans (𝒞.∘-cong bridge₁ 𝒞.≈-refl) (pb .CoverPullback.eq inl)
     fp .eq inr = 𝒞.≈-trans (𝒞.∘-cong bridge₂ 𝒞.≈-refl) (pb .CoverPullback.eq inr)
+FMpull (idx c) g with FM-DC (c .IdxCover.S) (c .IdxCover.D)
+... | Miso , Mcompat = fp
+  where
+    open MDistrib.FCoverPullback
+
+    Mc : IdxCover (𝒞M.funct .fobj _)
+    Mc .IdxCover.S = c .IdxCover.S
+    Mc .IdxCover.D = 𝒞M.funct ∘F (c .IdxCover.D)
+    Mc .IdxCover.iso = 𝒞.Iso-trans Miso (functor-preserve-iso 𝒞M.funct (c .IdxCover.iso))
+
+    pb = covPull (idx Mc) g
+
+    bridge : ∀ s → 𝒞M.funct .fmor (cInj (idx c) (lift s)) 𝒞.≈ cInj (idx Mc) (lift s)
+    bridge s =
+      𝒞.≈-trans (𝒞M.funct .fmor-comp _ _)
+        (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (Mcompat s))) (𝒞.≈-sym (𝒞.assoc _ _ _)))
+
+    fp : MDistrib.FCoverPullback (idx c) g
+    fp .cover = pb .CoverPullback.cover
+    fp .reix (lift s) = lift s
+    fp .leg (lift s) = pb .CoverPullback.leg (lift s)
+    fp .eq (lift s) = 𝒞.≈-trans (𝒞.∘-cong (bridge s) 𝒞.≈-refl) (pb .CoverPullback.eq (lift s))
 
 Definable-coproducts : ∀ {x y} →
                 Definable (𝒞CP.coprod x y) ⊑
@@ -414,49 +489,49 @@ Definable-coproducts {x} {y} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
     c₀ .BinCover.y₂ = y
     c₀ .BinCover.iso = 𝒞.Iso-refl
 
-    pb = binPull c₀ f
+    pb = covPull (bin c₀) f
 
     h₁ = pb .CoverPullback.leg inl
     h₂ = pb .CoverPullback.leg inr
 
-    xs : ∀ s → Setoid.Carrier (G .fobj (F .fobj (𝒞CP.coprod x y)) .fobj (binDom (pb .CoverPullback.cover) s))
+    xs : ∀ s → Setoid.Carrier (G .fobj (F .fobj (𝒞CP.coprod x y)) .fobj (cDom (pb .CoverPullback.cover) s))
     xs inl = lift (F .fmor (𝒞CP.in₁ 𝒞.∘ h₁))
     xs inr = lift (F .fmor (𝒞CP.in₂ 𝒞.∘ h₂))
 
-    step : ∀ s → (binInj c₀ s 𝒞.∘ pb .CoverPullback.leg s) 𝒞.≈ (f 𝒞.∘ binInj (pb .CoverPullback.cover) s)
+    step : ∀ s → (cInj (bin c₀) s 𝒞.∘ pb .CoverPullback.leg s) 𝒞.≈ (f 𝒞.∘ cInj (pb .CoverPullback.cover) s)
     step = pb .CoverPullback.eq
 
     -- The summand restriction agrees with the reindexed witness.
-    eq' : ∀ s → F .fmor (binInj c₀ s 𝒞.∘ pb .CoverPullback.leg s) 𝒟.≈ (g 𝒟.∘ F .fmor (binInj (pb .CoverPullback.cover) s))
+    eq' : ∀ s → F .fmor (cInj (bin c₀) s 𝒞.∘ pb .CoverPullback.leg s) 𝒟.≈ (g 𝒟.∘ F .fmor (cInj (pb .CoverPullback.cover) s))
     eq' s = begin
-        F .fmor (binInj c₀ s 𝒞.∘ pb .CoverPullback.leg s)
+        F .fmor (cInj (bin c₀) s 𝒞.∘ pb .CoverPullback.leg s)
       ≈⟨ F .fmor-cong (step s) ⟩
-        F .fmor (f 𝒞.∘ binInj (pb .CoverPullback.cover) s)
+        F .fmor (f 𝒞.∘ cInj (pb .CoverPullback.cover) s)
       ≈⟨ F .fmor-comp _ _ ⟩
-        F .fmor f 𝒟.∘ F .fmor (binInj (pb .CoverPullback.cover) s)
+        F .fmor f 𝒟.∘ F .fmor (cInj (pb .CoverPullback.cover) s)
       ≈⟨ 𝒟.∘-cong eq 𝒟.≈-refl ⟩
-        g 𝒟.∘ F .fmor (binInj (pb .CoverPullback.cover) s)
+        g 𝒟.∘ F .fmor (cInj (pb .CoverPullback.cover) s)
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
 
-    -- inl/inr injections differ from binInj c₀ only by the identity iso.
-    inj₁≈ : F .fmor (𝒞CP.in₁ 𝒞.∘ h₁) 𝒟.≈ F .fmor (binInj c₀ inl 𝒞.∘ h₁)
+    -- inl/inr injections differ from cInj (bin c₀) only by the identity iso.
+    inj₁≈ : F .fmor (𝒞CP.in₁ 𝒞.∘ h₁) 𝒟.≈ F .fmor (cInj (bin c₀) inl 𝒞.∘ h₁)
     inj₁≈ = F .fmor-cong (𝒞.∘-cong (𝒞.≈-sym 𝒞.id-left) 𝒞.≈-refl)
 
-    inj₂≈ : F .fmor (𝒞CP.in₂ 𝒞.∘ h₂) 𝒟.≈ F .fmor (binInj c₀ inr 𝒞.∘ h₂)
+    inj₂≈ : F .fmor (𝒞CP.in₂ 𝒞.∘ h₂) 𝒟.≈ F .fmor (cInj (bin c₀) inr 𝒞.∘ h₂)
     inj₂≈ = F .fmor-cong (𝒞.∘-cong (𝒞.≈-sym 𝒞.id-left) 𝒞.≈-refl)
 
     ts : ∀ s → Context (G .fobj (F .fobj (𝒞CP.coprod x y)))
                  ((Definable x ⟨ G .fmor (F .fmor 𝒞CP.in₁) ⟩) ++ (Definable y ⟨ G .fmor (F .fmor 𝒞CP.in₂) ⟩))
-                 (binDom (pb .CoverPullback.cover) s) (xs s)
+                 (cDom (pb .CoverPullback.cover) s) (xs s)
     ts inl = leaf (inj₁ (lift (F .fmor h₁) , lift (h₁ , 𝒟.≈-refl) ,
                          lift (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟.≈-sym (F .fmor-comp _ _)))))
     ts inr = leaf (inj₂ (lift (F .fmor h₂) , lift (h₂ , 𝒟.≈-refl) ,
                          lift (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟.≈-sym (F .fmor-comp _ _)))))
 
-    eqs : ∀ s → Setoid._≈_ (G .fobj (F .fobj (𝒞CP.coprod x y)) .fobj (binDom (pb .CoverPullback.cover) s))
+    eqs : ∀ s → Setoid._≈_ (G .fobj (F .fobj (𝒞CP.coprod x y)) .fobj (cDom (pb .CoverPullback.cover) s))
                   (xs s)
-                  (G .fobj (F .fobj (𝒞CP.coprod x y)) .fmor (binInj (pb .CoverPullback.cover) s) .prop-setoid._⇒_.func (lift g))
+                  (G .fobj (F .fobj (𝒞CP.coprod x y)) .fmor (cInj (pb .CoverPullback.cover) s) .prop-setoid._⇒_.func (lift g))
     eqs inl = lift (𝒟.≈-trans inj₁≈ (eq' inl))
     eqs inr = lift (𝒟.≈-trans inj₂≈ (eq' inr))
 
@@ -563,7 +638,7 @@ Definable-closed : ∀ {X Y} (f : F .fobj X 𝒟.⇒ F .fobj Y) →
        Context (G .fobj (F .fobj Y)) (Definable Y) X (lift f) →
        ∃ (X 𝒞.⇒ Y) (λ g → F .fmor g 𝒟.≈ f)
 Definable-closed f (leaf (lift p)) = p
-Definable-closed f (node c xs ts eqs) with xs inl | xs inr | eqs inl | eqs inr | ts inl | ts inr
+Definable-closed f (node (bin c) xs ts eqs) with xs inl | xs inr | eqs inl | eqs inr | ts inl | ts inr
 ... | lift f₁ | lift f₂ | lift eq₁ | lift eq₂ | t₁ | t₂ with Definable-closed f₁ t₁
 ... | (g₁ , eq₃) with Definable-closed f₂ t₂
 ... | (g₂ , eq₄) = 𝒞CP.copair g₁ g₂ 𝒞.∘ i₀ .bwd ,
@@ -608,6 +683,146 @@ Definable-closed f (node c xs ts eqs) with xs inl | xs inr | eqs inl | eqs inr |
         i₀ = c .BinCover.iso
         open preserve-chosen-coproducts-consequences F 𝒞CP 𝒟CP FC
         open 𝒞.Iso
+Definable-closed {X} {Y} f (node (idx c) xs ts eqs) = g , Fg≈f
+  where
+    open NatTrans
+    open ≃-NatTrans
+    S = c .IdxCover.S
+    D = c .IdxCover.D
+    iso = c .IdxCover.iso
+    module DC = Colimit (𝒞DC S D)
+
+    inj : (s : S .Setoid.Carrier) → D .fobj s 𝒞.⇒ DC.apex
+    inj s = DC.cocone .transf s
+
+    fs : (s : S .Setoid.Carrier) → F .fobj (D .fobj s) 𝒟.⇒ F .fobj Y
+    fs s = lower (xs (lift s))
+
+    fs-eq : (s : S .Setoid.Carrier) → fs s 𝒟.≈ (f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd 𝒞.∘ inj s))
+    fs-eq s = lower (eqs (lift s))
+
+    -- The summand restrictions are definable; pick their witnesses uniformly.
+    gs : (s : S .Setoid.Carrier) → D .fobj s 𝒞.⇒ Y
+    gs s = ∃ₛ.fst (Fdef (fs s) ⟪ Definable-closed (fs s) (ts (lift s)) ⟫)
+
+    Fgs : (s : S .Setoid.Carrier) → F .fmor (gs s) 𝒟.≈ fs s
+    Fgs s = ∃ₛ.snd (Fdef (fs s) ⟪ Definable-closed (fs s) (ts (lift s)) ⟫)
+
+    -- The witnesses form a cocone, faithfulness reflecting the naturality
+    -- squares that hold after applying F.
+    gs-cocone : NatTrans D (constF (setoid→category S) Y)
+    gs-cocone .transf = gs
+    gs-cocone .natural {s} {s'} ⟪ e ⟫ = 𝒞.≈-trans 𝒞.id-left (𝒞.≈-sym (F-faithful faith))
+      where
+        faith : F .fmor (gs s' 𝒞.∘ D .fmor ⟪ e ⟫) 𝒟.≈ F .fmor (gs s)
+        faith = begin
+            F .fmor (gs s' 𝒞.∘ D .fmor ⟪ e ⟫)
+          ≈⟨ F .fmor-comp _ _ ⟩
+            F .fmor (gs s') 𝒟.∘ F .fmor (D .fmor ⟪ e ⟫)
+          ≈⟨ 𝒟.∘-cong (Fgs s') 𝒟.≈-refl ⟩
+            fs s' 𝒟.∘ F .fmor (D .fmor ⟪ e ⟫)
+          ≈⟨ 𝒟.∘-cong (fs-eq s') 𝒟.≈-refl ⟩
+            (f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd 𝒞.∘ inj s')) 𝒟.∘ F .fmor (D .fmor ⟪ e ⟫)
+          ≈⟨ 𝒟.assoc _ _ _ ⟩
+            f 𝒟.∘ (F .fmor (iso .𝒞.Iso.fwd 𝒞.∘ inj s') 𝒟.∘ F .fmor (D .fmor ⟪ e ⟫))
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _) ⟩
+            f 𝒟.∘ F .fmor ((iso .𝒞.Iso.fwd 𝒞.∘ inj s') 𝒞.∘ D .fmor ⟪ e ⟫)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong (𝒞.assoc _ _ _)) ⟩
+            f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd 𝒞.∘ (inj s' 𝒞.∘ D .fmor ⟪ e ⟫))
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-trans (𝒞.≈-sym (DC.cocone .natural ⟪ e ⟫)) 𝒞.id-left))) ⟩
+            f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd 𝒞.∘ inj s)
+          ≈˘⟨ fs-eq s ⟩
+            fs s
+          ≈˘⟨ Fgs s ⟩
+            F .fmor (gs s)
+          ∎
+          where open ≈-Reasoning 𝒟.isEquiv
+
+    g₀ : DC.apex 𝒞.⇒ Y
+    g₀ = DC.colambda Y gs-cocone
+
+    g : X 𝒞.⇒ Y
+    g = g₀ 𝒞.∘ iso .𝒞.Iso.bwd
+
+    -- F takes the injections to a jointly-epic family (F preserves the
+    -- coproduct), so agreement on injections gives equality.
+    module DCF = Colimit (𝒟DC S (F ∘F D))
+    Fiso    = ∃ₛ.fst (F-DC S D)
+    Fcompat = ∃ₛ.snd (F-DC S D)
+
+    F-epi : ∀ {Z} {h₁ h₂ : F .fobj DC.apex 𝒟.⇒ Z} →
+            (∀ s → (h₁ 𝒟.∘ F .fmor (inj s)) 𝒟.≈ (h₂ 𝒟.∘ F .fmor (inj s))) → h₁ 𝒟.≈ h₂
+    F-epi {Z} {h₁} {h₂} hyp = outer
+      where
+        uni : ∀ s → ((h₁ 𝒟.∘ Fiso .𝒟.Iso.fwd) 𝒟.∘ DCF.cocone .transf s)
+                    𝒟.≈ ((h₂ 𝒟.∘ Fiso .𝒟.Iso.fwd) 𝒟.∘ DCF.cocone .transf s)
+        uni s = begin
+            (h₁ 𝒟.∘ Fiso .𝒟.Iso.fwd) 𝒟.∘ DCF.cocone .transf s
+          ≈⟨ 𝒟.assoc _ _ _ ⟩
+            h₁ 𝒟.∘ (Fiso .𝒟.Iso.fwd 𝒟.∘ DCF.cocone .transf s)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (Fcompat s) ⟩
+            h₁ 𝒟.∘ F .fmor (inj s)
+          ≈⟨ hyp s ⟩
+            h₂ 𝒟.∘ F .fmor (inj s)
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (Fcompat s) ⟩
+            h₂ 𝒟.∘ (Fiso .𝒟.Iso.fwd 𝒟.∘ DCF.cocone .transf s)
+          ≈˘⟨ 𝒟.assoc _ _ _ ⟩
+            (h₂ 𝒟.∘ Fiso .𝒟.Iso.fwd) 𝒟.∘ DCF.cocone .transf s
+          ∎
+          where open ≈-Reasoning 𝒟.isEquiv
+
+        outer : h₁ 𝒟.≈ h₂
+        outer = begin
+            h₁
+          ≈˘⟨ 𝒟.id-right ⟩
+            h₁ 𝒟.∘ 𝒟.id _
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (Fiso .𝒟.Iso.fwd∘bwd≈id) ⟩
+            h₁ 𝒟.∘ (Fiso .𝒟.Iso.fwd 𝒟.∘ Fiso .𝒟.Iso.bwd)
+          ≈˘⟨ 𝒟.assoc _ _ _ ⟩
+            (h₁ 𝒟.∘ Fiso .𝒟.Iso.fwd) 𝒟.∘ Fiso .𝒟.Iso.bwd
+          ≈⟨ 𝒟.∘-cong (colambda-unique (DCF.isColimit) uni) 𝒟.≈-refl ⟩
+            (h₂ 𝒟.∘ Fiso .𝒟.Iso.fwd) 𝒟.∘ Fiso .𝒟.Iso.bwd
+          ≈⟨ 𝒟.assoc _ _ _ ⟩
+            h₂ 𝒟.∘ (Fiso .𝒟.Iso.fwd 𝒟.∘ Fiso .𝒟.Iso.bwd)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (Fiso .𝒟.Iso.fwd∘bwd≈id) ⟩
+            h₂ 𝒟.∘ 𝒟.id _
+          ≈⟨ 𝒟.id-right ⟩
+            h₂
+          ∎
+          where open ≈-Reasoning 𝒟.isEquiv
+
+    Fg₀ : F .fmor g₀ 𝒟.≈ (f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd))
+    Fg₀ = F-epi coeval-step
+      where
+        coeval-step : ∀ s → (F .fmor g₀ 𝒟.∘ F .fmor (inj s))
+                            𝒟.≈ ((f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd)) 𝒟.∘ F .fmor (inj s))
+        coeval-step s =
+          𝒟.≈-trans (𝒟.≈-sym (F .fmor-comp g₀ (inj s)))
+          (𝒟.≈-trans (F .fmor-cong (DC.colambda-coeval Y gs-cocone .transf-eq s))
+          (𝒟.≈-trans (Fgs s)
+          (𝒟.≈-trans (fs-eq s)
+          (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp (iso .𝒞.Iso.fwd) (inj s)))
+                     (𝒟.≈-sym (𝒟.assoc _ _ _))))))
+
+    Fg≈f : F .fmor g 𝒟.≈ f
+    Fg≈f = begin
+        F .fmor (g₀ 𝒞.∘ iso .𝒞.Iso.bwd)
+      ≈⟨ F .fmor-comp _ _ ⟩
+        F .fmor g₀ 𝒟.∘ F .fmor (iso .𝒞.Iso.bwd)
+      ≈⟨ 𝒟.∘-cong Fg₀ 𝒟.≈-refl ⟩
+        (f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd)) 𝒟.∘ F .fmor (iso .𝒞.Iso.bwd)
+      ≈⟨ 𝒟.assoc _ _ _ ⟩
+        f 𝒟.∘ (F .fmor (iso .𝒞.Iso.fwd) 𝒟.∘ F .fmor (iso .𝒞.Iso.bwd))
+      ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _) ⟩
+        f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd 𝒞.∘ iso .𝒞.Iso.bwd)
+      ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong (iso .𝒞.Iso.fwd∘bwd≈id)) ⟩
+        f 𝒟.∘ F .fmor (𝒞.id _)
+      ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-id) ⟩
+        f 𝒟.∘ 𝒟.id _
+      ≈⟨ 𝒟.id-right ⟩
+        f
+      ∎
+      where open ≈-Reasoning 𝒟.isEquiv
 
 ------------------------------------------------------------------------------
 -- Now construct the category of Grothendieck Logical Relations
