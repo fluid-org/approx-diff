@@ -1,7 +1,21 @@
-\section{Models of Galois Slicing for a Total Language} % \GPS doesn't use title caps
+\section{Models of Semiring Dependency} % \GPS doesn't use title caps
 \label{sec:models-of-total-gps}
 
-The previous section concluded that L-posets and stable functions give
+\Added{In the previous section, we saw several examples of commutative
+  semirings that capture different ways of tracking how programs'
+  outputs depend on their inputs. To apply these settings to a
+  programming language we need an interpretation that attaches
+  semimodules over our chosen semiring to types' interpretations, and
+  linear maps to the interpretations of terms. Given the similarities
+  noted in the introduction between provenance tracking and automatic
+  differentiation, we follow V{\'a}k{\'a}r and collaborators
+  \cite{vakar22,nunes2023} who used the \emph{Category of Families} to
+  build denotational models of automatic differentiation over the
+  reals. All of the results of this section have been mechanised in
+  Agda %\footnote{Please refer to the supplementary material.}
+  .}
+
+\Deleted{The previous section concluded that L-posets and stable functions give
 a model of \GPS analogous to manifolds and smooth functions. However,
 we noted a conceptual shortcoming of this model, for the purposes of
 modelling total computations, that proper values and their
@@ -11,19 +25,28 @@ construction. This construction, and the more general Grothendieck
 construction, has been previously used by V{\'a}k{\'a}r and
 collaborators \cite{vakar22} to model automatic differentiation for
 higher-order programs on the reals. We reuse some of their results,
-and discuss the commonalities as we go.
+and discuss the commonalities as we go.}
 
 \subsection{The Category of Families Construction}
 \label{sec:models-of-total-gps:fam}
 
-L-posets are partially ordered sets where every principal downset
+\Added{As explained in \autoref{sec:approx-as-tangents:autodiff}, every point
+in a manifold has an associated vector space of \emph{tangents} at
+that point, and every smooth function has an associated function
+mapping points to linear maps between tangent spaces. The
+\emph{Category of Families} construction abstracts this situation,
+forgetting any additional structure such as the topology or higher
+derivatives and replacing the category of real finite-dimensional
+vector spaces with an arbitrary category:}
+
+\Deleted{L-posets are partially ordered sets where every principal downset
 $\downset{x}$ is a bounded lattice of approximations/tangents. As we
 explained in \secref{stab}, the shortcoming of this setup is that
 proper values and their approximations live in the same set. We fix
 this by changing our model to one where we have sets $X$ of values,
 and for each $x \in X$, a bounded lattice $\partial X(x)$ of
 approximations of $x$. This construction is an instance of the general
-\emph{Category of Families} construction:
+\emph{Category of Families} construction:}
 
 \begin{definition}
   Let $\cat{C}$ be a category. The \emph{Category of Families} over
@@ -37,8 +60,8 @@ approximations of $x$. This construction is an instance of the general
 
 The reason for choosing the $\Fam$ construction is that composition in
 this category is an abstract version of the chain rule that we have
-seen in \remref{chain-rule}, \remref{chain-rule-cm}, and
-\remref{chain-rule-stable}. Composition $f \circ g $ of morphisms
+seen in \remref{chain-rule}\Deleted{, \remref{chain-rule-cm}, and
+\remref{chain-rule-stable}}. Composition $f \circ g $ of morphisms
 $f : (Y, \partial Y) \to (Z, \partial Z)$ and
 $g : (X, \partial X) \to (Y, \partial Y)$ in this category is given by
 normal function composition on the set components, and
@@ -66,9 +89,10 @@ points and their forward/reverse tangent maps for the purposes of
 implementation of automatic differentiation. In the case of smooth
 maps, this process throws away information on higher derivatives by
 turning smooth maps into pairs of plain functions and linear
-functions. We conjecture at the end of this section that the analogous
-construction in our partially ordered setting does not.
+functions. \Deleted{We conjecture at the end of this section that the analogous
+construction in our partially ordered setting does not.}
 
+\begin{DeletedBlock}
 For the categories $\CM$ and $\Lposet$, we pick the appropriate
 categories of partial orders and monotone maps:
 
@@ -113,6 +137,20 @@ semantic \GPS in a total setting, though we note some shortcomings in
 \remref{further-structure}. We now investigate some categorical
 properties of this category, with a view to modelling a higher-order
 total programming language in \secref{language}.
+\end{DeletedBlock}
+
+\Added{We will use the categories $\Fam(\SDSemiMod(S))$ as our model of
+semiring tracking data provenance, analogous to V{\'a}k{\'a}r \emph{et
+  al.}'s use of $\Fam(\FinVect)$. The self-duality of objects in
+$\SDSemiMod(S)$ means that we can take transposes of tangent maps to
+track reverse provenance. To interpret expressive languages in this
+setting, we need to ensure it has sufficient categorical
+structure. Unfortunately, it is the case that $\Fam(\SDSemiMod(S))$ is
+not cartesian closed, and so cannot support an interpretation of
+higher order functions. This is because $\SDSemiMod(S)$ does not have
+infinite products, as we explain below. This motivates the use of the
+more liberal category $\Fam(\SemiMod(S))$ to interpret higher order
+programs. We relate the two categories at first order type in \autoref{sec:correctness}, which ensures that we will be able to derive reverse dependency maps even for programs that use higher order functions internally.}
 
 \subsection{Categorical Properties of $\Fam(\cat{C})$}
 
@@ -154,11 +192,14 @@ $\Fam(\cat{C})$. For example, lists can be constructed as a coproduct
 \end{equation}
 where $X^0 = 1$ (the terminal object) and $X^{n+1} = X \times X^n$.
 
-Our category of interest, $\Fam(\LatGal)$ has coproducts and finite
+\Added{Our category of interest, $\Fam(\SDSemiMod(S))$ has coproducts and finite
+products, because $\SDSemiMod(S)$ has products.}
+
+\Deleted{Our category of interest, $\Fam(\LatGal)$ has coproducts and finite
 products, because $\LatGal$ has products. Similarly for
 $\Fam(\MeetSLat)$. As we shall see below, the products in $\LatGal$
 (and $\MeetSLat$ and $\JoinSLat)$ are also coproducts, which is
-essential to obtaining cartesian closure.
+essential to obtaining cartesian closure.}
 
 \subsubsection{Cartesian Closure}
 
@@ -189,15 +230,21 @@ these are functions with an associated Galois connection at every
 point. A tangent to a function is then defined to be a mapping from
 points in the domain to tangents in the codomain along the function.
 
-The category $\MeetSLat$ satisfies the hypotheses of
+The category \Replaced{$\SemiMod(S)$}{$\MeetSLat$} satisfies the hypotheses of
 \thmref{fam-closed}, so:
 \begin{corollary}
-  $\Fam(\MeetSLat)$ is cartesian closed and has all coproducts.
+  \Replaced{$\SemiMod(S)$}{$\Fam(\MeetSLat)$} is cartesian closed and has all coproducts.
 \end{corollary}
-Unfortunately, neither $\LatGal$ nor $\FinVect$ satisfy the
-hypotheses of this theorem, because neither of them have infinite
-products. We will consider ways to rectify this below in
-\secref{fixing-completeness}.
+Unfortunately, neither \Replaced{$\SDSemiMod(S)$}{$\LatGal$} nor
+$\FinVect$ satisfy the hypotheses of this theorem, because neither of
+them have infinite products. \todo{cite: Adamek paper}. \Deleted{We
+  will consider ways to rectify this below in
+  \secref{fixing-completeness}.} \Added{So we are forced to use
+  $\Fam{\SemiMod(S)}$ to interpret higher order functions, which
+  appears to forego the ability to obtain reverse derivatives by
+  transpose of linear maps afforded by $\Fam(\SDSemiMod(S))$. As we
+  will see in \autoref{sec:correctness}, this is no problem for
+  programs of first order type.}
 
 \begin{remark}
   \label{rem:hermida-exponentials}
@@ -322,6 +369,7 @@ coproducts:
   \remref{hermida-exponentials}.
 \end{remark}
 
+\begin{DeletedBlock}
 \subsubsection{Discrete Completeness}
 \label{sec:fixing-completeness}
 
@@ -695,3 +743,4 @@ conjecture holds, then contrary to the $\Fam(\FinVect)$ representation
 of manifolds and differentiable maps, we do not throw away information
 about higher derivatives. It is retained in the order structure of the
 tangent fibres.
+\end{DeletedBlock}
