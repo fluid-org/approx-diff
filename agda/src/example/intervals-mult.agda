@@ -4,7 +4,7 @@
 -- bounds the relative error of a value, so multiplication passes bounds through unchanged (unit
 -- coefficients) while addition scales them by the condition factor |x| / |x + y|, infinite at
 -- exact cancellation.
-module example-intervals-mult where
+module example.intervals-mult where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
@@ -29,7 +29,7 @@ open import Data.Integer.Base public using (nonNeg)
 open import Data.Rational.Properties using (∣-∣-nonNeg)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
-open import example-signature ℚ using (Sig; number; label; approx) public
+open import example.signature ℚ using (Sig; number; label; approx) public
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ 0ℚ
@@ -66,7 +66,7 @@ private
   num-mult .func (x , y) = x Num.· y
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
-open import example-signature-interpretation SDSemiMod-Rel.cat SDSemiMod-Rel.products SDSemiMod-Rel.terminal
+open import example.signature-interpretation SDSemiMod-Rel.cat SDSemiMod-Rel.products SDSemiMod-Rel.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 private

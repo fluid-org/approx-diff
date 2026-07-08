@@ -2,7 +2,7 @@
 
 -- Test harness for the rationals (AD) model with the value-carrying base interpretation
 -- (BaseInterp1), over the self-dual semimodules as first-order model.
-module example-rationals where
+module example.rationals where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
@@ -23,7 +23,7 @@ open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
-open import example-signature ℚ using (Sig; number; label; approx) public
+open import example.signature ℚ using (Sig; number; label; approx) public
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ 0ℚ
@@ -73,7 +73,7 @@ private
   scalar-cong : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → Category._≈_ SemiMod-ℚ.cat (scalar x) (scalar y)
   scalar-cong e .*≈* .func-eq u≈v = Scalars.·-cong e u≈v
 
-open import example-signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
+open import example.signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult public
 module D = Deriv scalar scalar-cong
 open ho-model-sd-semimod.interp-sd semiring-Q.semiring Sig D.BaseInterp1 public

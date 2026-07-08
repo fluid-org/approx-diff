@@ -3,9 +3,9 @@
 -- Boolean dependency analysis of the weighted-sum query from the introduction. Where the rational
 -- derivative of the price entry cancels to 0, the Boolean analysis reports ⊤, because disjunction
 -- can't cancel.
-module example-dependency-total where
+module example.dependency-total where
 
-open import example-dependency
+open import example.dependency
 
 input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
 input = (3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _) , (+ 2 / 1 , + 5 / 1)

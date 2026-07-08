@@ -2,7 +2,7 @@
 
 module everything where
 
-import examples
+import example.all
 
 -- Proof from Section 2.2 (Theorem 2.3) that CM (category of bounded
 -- meet semilattices and conditionally multiplicative functions) is

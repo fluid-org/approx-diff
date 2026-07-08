@@ -3,9 +3,9 @@
 -- Use-counting analysis of the weighted-sum query: the price of the queried label is used twice,
 -- and the count survives the cancellation that zeroes the rational derivative, because nothing
 -- cancels in a positive semiring.
-module example-counting-total where
+module example.counting-total where
 
-open import example-counting
+open import example.counting
 
 input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
 input = (3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _) , (+ 2 / 1 , + 5 / 1)

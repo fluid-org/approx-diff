@@ -2,9 +2,9 @@
 
 -- Test harness for the two-valued (Bool) model with the call-by-name base interpretation
 -- (BaseInterp0: `number` carries no approximation; demand flows through the `Tag` wrapper), over the
--- self-dual Boolean algebras as first-order model.  As with example-bool, open this and write
+-- self-dual Boolean algebras as first-order model.  As with example.bool, open this and write
 -- `to-gal … (mor …) …` slices directly.
-module example-bool-cbn where
+module example.bool-cbn where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
@@ -14,7 +14,7 @@ import ho-model-boolalg-sd-semimod
 import galois
 import preorder
 import nat
-open import example-signature nat.ℕ using (Sig; number; label; approx) public
+open import example.signature nat.ℕ using (Sig; number; label; approx) public
 import example
 
 open import Level using (lift) public
@@ -44,7 +44,7 @@ approx-conjunct : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚
 approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
         +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
 
-open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
+open import example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
   Approx approx-unit approx-conjunct nat.ℕₛ nat.add nat.mult public
 open ho-model-boolalg-sd-semimod.interp-boolean two.semiring two.semiring-boolean Sig BaseInterp0 public
 

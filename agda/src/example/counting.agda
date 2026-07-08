@@ -2,7 +2,7 @@
 
 -- Test harness for the counting semiring: rational data, with unit coefficients, so a Jacobian
 -- entry counts the paths from an input to an output.
-module example-counting where
+module example.counting where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
@@ -25,7 +25,7 @@ open import Data.Integer using (+_; -[1+_]) public
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_) public
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
-open import example-signature ℚ using (Sig; number; label; approx) public
+open import example.signature ℚ using (Sig; number; label; approx) public
 import example
 module Ex = example ℚ 0ℚ
 open Ex.ex public
@@ -59,7 +59,7 @@ private
   num-mult .func (x , y) = x Num.· y
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
-open import example-signature-interpretation SDSemiMod-ℕ.cat SDSemiMod-ℕ.products SDSemiMod-ℕ.terminal
+open import example.signature-interpretation SDSemiMod-ℕ.cat SDSemiMod-ℕ.products SDSemiMod-ℕ.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 -- Use-counting coefficients: every argument of every operation counts as one use.

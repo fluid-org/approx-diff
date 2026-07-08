@@ -2,7 +2,7 @@
 
 -- Forward and backward analysis of the example query in the perturbation-bound model, over the
 -- self-dual semimodules; numbers approximated by ℚ∞² (left, right perturbation bound).
-module example-intervals where
+module example.intervals where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
@@ -26,7 +26,7 @@ open import prop using (liftS)
 open import Data.Integer using (+_)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
-open import example-signature ℚ using (Sig; number; label; approx) public
+open import example.signature ℚ using (Sig; number; label; approx) public
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ 0ℚ
@@ -60,7 +60,7 @@ private
   num-mult .func (x , y) = x Num.· y
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
-open import example-signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
+open import example.signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 -- Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞) records

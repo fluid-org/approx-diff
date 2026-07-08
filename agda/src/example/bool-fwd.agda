@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Forward analysis over the SDSemiMod first-order model.
-module example-bool-fwd where
+module example.bool-fwd where
 
-open import example-bool
+open import example.bool
 
 input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
 input = 3 , (a , 0) , (b , 1) , (a , 1) , _

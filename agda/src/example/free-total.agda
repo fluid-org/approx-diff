@@ -3,9 +3,9 @@
 -- Linear provenance polynomials for the weighted-sum query: positions 0-4 seeded with their
 -- variables (5 selects the output), the forward derivative returns x0 + x2 + 2·x3, and evaluating
 -- at the all-ones valuation recovers the counting analysis.
-module example-free-total where
+module example.free-total where
 
-open import example-free
+open import example.free
 import semiring-N
 
 -- The run of the introduction, with each perturbable position seeded by its variable.

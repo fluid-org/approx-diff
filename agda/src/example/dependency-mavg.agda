@@ -3,9 +3,9 @@
 -- Boolean dependency analysis of the moving-average example: adjacent outputs share an input, and
 -- composing the backward and forward derivatives sends a selection of outputs to the outputs
 -- related to it by a shared dependency, as in the cognacy analyses of linked visualisations.
-module example-dependency-mavg where
+module example.dependency-mavg where
 
-open import example-dependency
+open import example.dependency
 
 half : ℚ
 half = + 1 / 2

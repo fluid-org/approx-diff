@@ -4,7 +4,7 @@ open import Level using (Level; 0ℓ; suc)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts)
 open import prop-setoid using (Setoid)
 
-module example-signature-interpretation
+module example.signature-interpretation
   {o : Level}
   (𝒞 : Category o 0ℓ 0ℓ)
   (𝒞-products : HasProducts 𝒞)
@@ -100,7 +100,7 @@ binary2 = P.pair P.p₁ (P.p₁ C.∘ P.p₂)
 binary : ∀ {X G} → (simple[ X , G ] × (simple[ X , G ] × 𝟙)) C.⇒ simple[ X ×ₛ X , 𝒞-products .HasProducts.prod G G ]
 binary = simple-monoidal C.∘ binary2
 
-open import example-signature (Setoid.Carrier Numₛ)
+open import example.signature (Setoid.Carrier Numₛ)
 open import signature
 import label
 

@@ -9,7 +9,7 @@ open import signature
 import language-syntax
 import label
 
-open import example-signature Num
+open import example.signature Num
 
 module L = language-syntax Sig
 

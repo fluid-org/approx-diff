@@ -2,9 +2,9 @@
 
 -- Relative perturbation bounds for the weighted-sum query: multiplication passes bounds through
 -- unchanged, and the refund's exact cancellation makes the condition factor infinite.
-module example-intervals-mult-total where
+module example.intervals-mult-total where
 
-open import example-intervals-mult
+open import example.intervals-mult
 
 input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
 input = (3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _) , (+ 2 / 1 , + 5 / 1)

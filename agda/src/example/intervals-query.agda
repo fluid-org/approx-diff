@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Absolute perturbation bounds for the selection-and-sum query, forwards and backwards.
-module example-intervals-query where
+module example.intervals-query where
 
-open import example-intervals
+open import example.intervals
 
 input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
 input = 3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _

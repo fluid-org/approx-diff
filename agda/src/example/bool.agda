@@ -2,7 +2,7 @@
 
 -- Test harness for the two-valued (Bool) model with the value-carrying base interpretation
 -- (BaseInterp1), over the self-dual Boolean algebras as first-order model.
-module example-bool where
+module example.bool where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
@@ -14,7 +14,7 @@ import indexed-family
 import galois
 import preorder
 import nat
-open import example-signature nat.ℕ using (Sig; number; label; approx) public
+open import example.signature nat.ℕ using (Sig; number; label; approx) public
 import example
 
 -- Vocabulary re-exported for tests.
@@ -46,7 +46,7 @@ approx-conjunct : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚
 approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
         +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
 
-open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
+open import example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
   Approx approx-unit approx-conjunct nat.ℕₛ nat.add nat.mult public
 
 -- Boolean-collapse derivative coefficient: zero map vs identity.

@@ -4,7 +4,7 @@
 -- a value is the zero map when the value is 0 and the identity otherwise, so the Jacobian entries
 -- agree with the nonzero entries of the rational Jacobian, up to the chain rule's
 -- over-approximation.
-module example-dependency where
+module example.dependency where
 
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
@@ -29,7 +29,7 @@ open import Data.Rational using () renaming (_≟_ to _≟ℚ_)
 open import Data.Nat.Base public using (nonZero)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
-open import example-signature ℚ using (Sig; number; label; approx) public
+open import example.signature ℚ using (Sig; number; label; approx) public
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ 0ℚ
@@ -65,7 +65,7 @@ private
   num-mult .func (x , y) = x Scalars.· y
   num-mult .func-resp-≈ e = Scalars.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
-open import example-signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
+open import example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 -- Boolean-collapse derivative coefficient: zero map at 0, identity elsewhere.
