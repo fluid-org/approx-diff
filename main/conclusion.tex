@@ -67,25 +67,34 @@ Logic~\cite{ehrhard_differential_2006} and to Crubill\'e's identification of sta
 series~\cite{crubille18}, relating the qualitative derivatives studied here to the analytic derivatives of
 that setting.}
 
-\paragraph[Shape Approximation]{\replaced{Shape Approximation}{General Inductive and Coinductive Types}}
+\begin{DeletedBlock}
+\paragraph{General Inductive and Coinductive Types}
 
 Lists are the only recursive datatype we provided in our source language, so important future work is
 supporting general inductive and coinductive types. \citet{nunes2023} support automatic differentiation for
 datatypes defined as the least or greatest fixed points of $\mu\nu$-polynomial functors; we could potentially
-adopt a similar approach. \Deleted{Full inductive types would allow us to embed an interpreter for a small
-language; combined with the CBN monadic translation described in \secref{cbn-translation} which uniformly
-inserts approximation points, we should be able to obtain the program slicing behaviour of earlier \GPS work
-``for free''. Coinductive types (e.g.~streams) present additional challenges, especially for defining
+adopt a similar approach. Full inductive types would allow us to embed an interpreter for a small language;
+combined with the CBN monadic translation described in \secref{cbn-translation} which uniformly inserts
+approximation points, we should be able to obtain the program slicing behaviour of earlier \GPS work ``for
+free''. Coinductive types (e.g.~streams) present additional challenges, especially for defining
 join-preserving backward maps, but also open the door to slicing (finite prefixes of) infinite data sources,
-with some likely relationship to the problem of dealing with partial or non-terminating computations.}
-\Added{Richer datatypes bring the question of \emph{shape approximation}: approximating not only the values
-at the positions of a structure but the structure itself, such as the length of a list or the depth of a
-tree. This was central to the earlier, operational presentations of Galois
+with some likely relationship to the problem of dealing with partial or non-terminating computations.
+\end{DeletedBlock}
+
+\paragraph{\added{Shape Approximation}}
+
+\Added{Lists are the only recursive datatype in our source language, so supporting general inductive and
+coinductive types is important future work, perhaps adapting \posscite{nunes2023} automatic differentiation
+for $\mu\nu$-polynomial functors. Richer datatypes bring the question of \emph{shape approximation}:
+approximating not only the values at the positions of a structure but the structure itself, such as the
+length of a list or the depth of a tree. Shape approximation features in earlier work on Galois
 slicing~\cite{perera12a,perera16d,ricciotti17}, whose approximation lattices represent partially erased data,
-but is absent from our model, which approximates only values and holds the shape of each input fixed.
-Bringing it into the present semantic setting would require the approximation object of a value to vary
-with its shape rather than being fixed in advance, and would also let coinductive data such as streams be
-sliced through their finite prefixes.}
+whereas our model holds the shape of each input fixed. Our Jacobians are spans, and polynomial functors are
+the shape-dependent generalisation of spans~\cite{gambino-kock}; the finite polynomials form the Lawvere
+theory for commutative semirings, the algebra of our scalars. The corresponding datatypes are containers,
+whose derivative is the type of one-hole contexts, carrying a notion of linear map and a chain rule for both
+inductive and coinductive types~\cite{abbott05}. This already gives a set-theoretic account of shape
+approximation; weighting positions with our semiring scalars would extend our analyses to varying shapes.}
 
 \paragraph{Recursion and Partiality} This work has only examined the case for total programs. Even though we
 took stable domain theory as our starting point, we did not make any use of directed completeness or similar
