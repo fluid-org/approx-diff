@@ -384,3 +384,83 @@ sim (var i)   = sim-var i
 sim (P + Q)   = sim-sum P Q (sim P) (sim Q)
 sim (P × Q)   = sim-prod P Q (sim P) (sim Q)
 sim (μ P)     = sim-mu P (sim P)
+
+-- The initiality laws for ℰ: the β and η laws of the Fam(ℰ) fold, conjugated
+-- through the interpretation isomorphism by the simulation.
+private
+  module ⦅⦆Laws {n} {Γ A : obj} {P : Poly ℰ (suc n)} {δ : Fin n → obj}
+      (alg : ℰP.prod Γ (ℰI.fobj μ-objℰ P (extend δ A)) ⇒ A)
+    where
+
+    δ̂η : Fin n → FM.Obj
+    δ̂η i = η .fobj (δ i)
+
+    module M = Initiality P δ̂η (collapseAt P)
+
+    μℰ = μ-objℰ P δ
+    SIμ = fobj-realise-iso P (extend δ μℰ) (extend δ̂η (η .fobj μℰ)) (ηjs δ μℰ)
+    SIA = fobj-realise-iso P (extend δ A) (extend δ̂η (η .fobj A)) (ηjs δ A)
+
+    a : ℰP.prod Γ (Greal P δ̂η A) ⇒ A
+    a = alg ∘ ℰP.prod-m (id _) (SIA .bwd)
+
+    -- The realised strong action of a fold candidate simulates ℰ's action at
+    -- the extended environments.
+    GM : (h : ℰP.prod Γ μℰ ⇒ A) →
+         Gmap P δ̂η h ∘co (SIμ .fwd ∘ ℰP.p₂)
+         ≈ SIA .fwd ∘ ℰMu.strong-fmor P (ℰMu.strong-extend-mor (λ i → ℰP.p₂) h)
+    GM h =
+      sim P (extend δ μℰ) (extend δ A) (extend δ̂η (η .fobj μℰ)) (extend δ̂η (η .fobj A))
+        (ηjs δ μℰ) (ηjs δ A)
+        (ℰMu.strong-extend-mor (λ i → ℰP.p₂) h)
+        (FMu.strong-extend-mor (λ i → FamP.p₂) (ctxη Γ μℰ h))
+        sqs
+      where
+        sqs : ∀ i → fmorη Γ (extend δ̂η (η .fobj μℰ) i) (FMu.strong-extend-mor (λ j → FamP.p₂) (ctxη Γ μℰ h) i) ∘co (ηjs δ μℰ i .fwd ∘ ℰP.p₂)
+                    ≈ ηjs δ A i .fwd ∘ ℰMu.strong-extend-mor (λ j → ℰP.p₂) h i
+        sqs Fin.zero    = ctxη-counit-sq Γ μℰ h
+        sqs (Fin.suc i) = ≈-trans (CoK.∘-cong₁ (fmorη-p₂ Γ (η .fobj (δ i)))) CoK.id-left
+
+    -- The corrected algebra absorbs the interpretation isomorphism.
+    absorb-a : ∀ {W : obj} (X : ℰP.prod Γ W ⇒ ℰI.fobj μ-objℰ P (extend δ A)) →
+               a ∘co (SIA .fwd ∘ X) ≈ alg ∘co X
+    absorb-a X =
+      ≈-trans (assoc _ _ _)
+        (∘-cong₂ (≈-trans (ℰP.pair-compose _ _ _ _)
+          (ℰP.pair-cong id-left
+            (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (SIA .bwd∘fwd≈id)) id-left)))))
+
+    β : ⦅⦆ℰ {P = P} {δ = δ} alg ∘co (αℰ P δ ∘ ℰP.p₂)
+        ≈ alg ∘co ℰMu.strong-fmor P (ℰMu.strong-extend-mor (λ i → ℰP.p₂) (⦅⦆ℰ {P = P} {δ = δ} alg))
+    β =
+      ≈-trans (CoK.∘-cong₂ (≈-sym (co-pure _ _)))
+        (≈-trans (≈-sym (CoK.assoc _ _ _))
+          (≈-trans (CoK.∘-cong₁ (M.foldR-β a))
+            (≈-trans (CoK.assoc _ _ _)
+              (≈-trans (CoK.∘-cong₂ (GM (M.foldR a)))
+                (absorb-a _)))))
+
+    η' : (h : ℰP.prod Γ (μ-objℰ P δ) ⇒ A) →
+         h ∘co (αℰ P δ ∘ ℰP.p₂) ≈ alg ∘co ℰMu.strong-fmor P (ℰMu.strong-extend-mor (λ i → ℰP.p₂) h) →
+         h ≈ ⦅⦆ℰ {P = P} {δ = δ} alg
+    η' h hyp = M.foldR-η a h sq
+      where
+        inR-split : M.inR ≈ αℰ P δ ∘ SIμ .bwd
+        inR-split =
+          ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (SIμ .fwd∘bwd≈id)) id-right))
+
+        sq : h ∘co (M.inR ∘ ℰP.p₂) ≈ a ∘co Gmap P δ̂η h
+        sq =
+          ≈-trans (CoK.∘-cong₂ (∘-cong₁ inR-split))
+            (≈-trans (CoK.∘-cong₂ (≈-sym (co-pure _ _)))
+              (≈-trans (≈-sym (CoK.assoc _ _ _))
+                (≈-trans (CoK.∘-cong₁ hyp)
+                  (≈-sym
+                    (≈-trans (CoK.∘-cong₂ (≈-sym (co-iso-cancel SIμ (GM h))))
+                      (≈-trans (≈-sym (CoK.assoc _ _ _))
+                        (CoK.∘-cong₁ (absorb-a _))))))))
+
+-- ℰ satisfies the initiality laws.
+MuLawsℰ : ℰI.HasMuLaws Muℰ
+MuLawsℰ .ℰI.HasMuLaws.⦅⦆-β = ⦅⦆Laws.β
+MuLawsℰ .ℰI.HasMuLaws.⦅⦆-η alg = ⦅⦆Laws.η' alg

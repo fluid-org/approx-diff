@@ -405,8 +405,6 @@ collapse-sum {n} {P} {Q} CP CQ .iso = SumCase.sumIso CP CQ
 collapse-sum {n} {P} {Q} CP CQ .natural = SumCase.sumNat CP CQ
 collapse-sum {n} {P} {Q} CP CQ .comp = SumCase.sumComp CP CQ
 
-
-
 -- Product machinery for the product case of the collapse.
 K× : ∀ (X̂ Ŷ : FM.Obj) → Iso (realise .fobj (FamP.prod X̂ Ŷ))
                             (ℰP.prod (realise .fobj X̂) (realise .fobj Ŷ))
