@@ -55,16 +55,21 @@ preserving functors:
   $F(\sem{\tau}_{\mathit{fo}}) \cong \sem{\tau}$, and similar for contexts only containing first-order types.
 \end{lemma}
 
-\subsubsection{Interpretation for Higher-Order \GPS}
+\subsubsection[Interpretation in the Semimodule Model]{\replaced{Interpretation in the Semimodule Model}{Interpretation for Higher-Order \GPS}}
 \label{sec:language:gps-interpretation}
 
 Given the above, we can now interpret the language in any of the bicartesian closed categories with list
 objects we constructed in \secref{models-of-total-gps}. Specifically, we assume that we have an interpretation
-of our chosen signature in $\Fam(\LatGal)$. Signatures are first-order, so it does not matter that
-$\Fam(\LatGal)$ is not closed. Any such interpretation can be transported to
-$\Fam(\MeetSLat \times \JoinSLat^\op)$ along the functor $H$ from \propref{ho-embedding} because it preserves
-finite products. We can then interpret the whole language in $\Fam(\MeetSLat \times \JoinSLat^\op)$.
+of our chosen signature in \Replaced{$\Fam(\SDSemiMod(S))$}{$\Fam(\LatGal)$}. \Added{Each base type is
+assigned a self-dual approximation object, and the first-order type formers preserve self-duality, so every
+first-order type denotes a self-dual semimodule.} Signatures are
+first-order, so it does not matter that \Replaced{$\Fam(\SDSemiMod(S))$}{$\Fam(\LatGal)$} is not closed. Any
+such interpretation can be transported to \Replaced{$\Fam(\SemiMod(S))$}{$\Fam(\MeetSLat \times
+\JoinSLat^\op)$} along the functor $H$ from \propref{ho-embedding} because it preserves finite products. We
+can then interpret the whole language in \Replaced{$\Fam(\SemiMod(S))$}{$\Fam(\MeetSLat \times
+\JoinSLat^\op)$}.
 
+\begin{DeletedBlock}
 Interpreting a whole program $\Gamma \vdash t : \tau$ yield morphisms in
 $\Fam(\MeetSLat \times \JoinSLat^\op)$ which, as in \secref{semantic-gps}, are triples
 $(f, \partial f_f, \partial f_r)$ of the underlying function and the forward and backward approximation
@@ -72,6 +77,15 @@ maps. However, unlike in $\Fam(\LatGal)$, it is not guaranteed that the forward 
 the same lattices, let alone form a Galois connection. \lemref{first-order-agreement-types} guarantees that
 the lattices agree, but the fact that the pair form a Galois connection is less trivial. We will prove this
 property in \secref{definability}.
+\end{DeletedBlock}
+
+\Added{Interpreting a program $\Gamma \vdash t : \tau$ yields a morphism of $\Fam(\SemiMod(S))$, the
+underlying function together with its forward derivative. In contrast to many other bidirectional program
+analysis techniques, a single morphism is enough, because a linear map has a transpose for free. At first-order types, \lemref{first-order-agreement-types} identifies the
+interpretation with that of the first-order model $\Fam(\SDSemiMod(S))$, whose objects are self-dual, so the
+forward derivative is a morphism of $\Fam(\SDSemiMod(S))$ whose conjugate $\conj{f}$ is the backward map
+between the same semimodules. We establish this correspondence with the first-order model in
+\secref{definability}.}
 
 % Given a model of $\Sigma$ in $\Fam(\LatGal)$, the category $\Fam(\MeetSLat \times \JoinSLat^\op)$ can
 % implement $\Sem$. It is bicartesian closed by \corref{mslat-jslat-bcc}, and can model $\tyList$ using infinite
@@ -146,10 +160,10 @@ dependency is used in a fundamental way in our interpretation.
 We have tested these examples on our Agda implementation. See the file \texttt{example.agda}.
 \end{DeletedBlock}
 
+\begin{DeletedBlock}
 \subsection{Systematic Insertion of Approximation via Moggi's CBN translation}
 \label{sec:cbn-translation}
 
-\roly{Probably best to delete too and consider as subsumed into a new future work item on ``shape approximation''.}
 We can now carry out the systematic insertion of approximation points that we foreshadowed in
 \secref{models-of-total-gps:lifting}, using \citet[\S 3.1]{notions-of-computation}'s monadic CBN translation.
 We use the $T$ monad from \secref{tagging-monad} because it can be defined in terms of the language constructs
@@ -202,12 +216,13 @@ the two-point lattice $\Two$ (suppressing some ``$\times \mathbb{1}$'' for reada
 \begin{displaymath}
   (\partial \mathrm{query})_r(l, \mathit{db}) : \Two \multimap \Two \times (\Two \times \Element \times \Element \times \Element)
 \end{displaymath}
-\Replaced{Compared to the interpretation of the untranslated query, which carries a single $\Two$ at each
-number position and $\mathbb{1}$ elsewhere}{Comparing to the type in (\ref{eqn:reverse-query-approx-1})}, we
+Compared to the interpretation of the untranslated query, which carries a single $\Two$ at each
+number position and $\mathbb{1}$ elsewhere, we
 now gain much more fine-grained information on
 which parts of the input are used. When $l = \mathsf{a}$, we have
 $(\partial \mathrm{query})_r(\mathsf{a},\mathit{db})(\top) = (\top, (\top, (\top, \top), (\top, \bot), (\top,
 \top)))$, indicating that the execution of this query had examined everything except the number in the second
-entry of the database. \Replaced{Without the translation}{With the previous interpretation}, we did not have
+entry of the database. Without the translation, we did not have
 confirmation that the labels in each
 row were actually required.
+\end{DeletedBlock}
