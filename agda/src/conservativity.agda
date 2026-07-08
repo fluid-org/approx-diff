@@ -12,7 +12,7 @@ import polynomial-functor-2
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
          interchange; H-id; NT-id-left;
-         HasColimits; NatIso)
+         HasColimits; NatIso; functor-preserve-iso)
 open import prop-setoid using (module ≈-Reasoning; IsEquivalence; Setoid)
 open import setoid-cat using (SetoidCat)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
@@ -259,7 +259,7 @@ module _ where
 -- Presheaf predicates
 open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞
   renaming (system to PSh⟨𝒞⟩-system; Predicate to PShPredicate)
-  using (_⊑_; module CoproductMonad; module CoverMonad;
+  using (_⊑_; module CoverMonad;
          _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop;
          module Monad-hat-pred)
 
@@ -322,8 +322,6 @@ Definable-products {x} {y} .*⊑* a .*⊑* (lift f) (lift (g₁ , eq₁) , lift 
   where open ≈-Reasoning 𝒟.isEquiv
         open preserve-chosen-products-consequences F 𝒞P 𝒟P FP
 
-open CoproductMonad 𝒞CP stable
-
 ------------------------------------------------------------------------------
 -- The coverage generating the closure: binary coproduct decompositions of
 -- the stage.
@@ -364,48 +362,103 @@ binPull c g = pb
     pb .eq inl = 𝒞.≈-trans (𝒞.assoc _ _ _) (stb .StableBits.eq₁)
     pb .eq inr = 𝒞.≈-trans (𝒞.assoc _ _ _) (stb .StableBits.eq₂)
 
+open CvM
+open CvM.Closure binPull
+
+module MDistrib = Distrib 𝒞M.funct
+
+-- The monad functor preserves binary coproducts, so covers pull back along
+-- morphisms into its images: pull back the functor image of the cover.
+FMpull : ∀ {x y} (c : BinCover x) (g : y 𝒞.⇒ 𝒞M.funct .fobj x) → MDistrib.FCoverPullback c g
+FMpull {x} c g = fp
+  where
+    open MDistrib.FCoverPullback
+    open preserve-chosen-coproducts-consequences 𝒞M.funct 𝒞CP 𝒞CP FM-C using (iso)
+
+    Mc : BinCover (𝒞M.funct .fobj x)
+    Mc .BinCover.y₁ = 𝒞M.funct .fobj (c .BinCover.y₁)
+    Mc .BinCover.y₂ = 𝒞M.funct .fobj (c .BinCover.y₂)
+    Mc .BinCover.iso = 𝒞.Iso-trans iso (functor-preserve-iso 𝒞M.funct (c .BinCover.iso))
+
+    pb = binPull Mc g
+
+    -- The functor image of an injection agrees with the image cover's.
+    bridge₁ : 𝒞M.funct .fmor (binInj c inl) 𝒞.≈ binInj Mc inl
+    bridge₁ =
+      𝒞.≈-trans (𝒞M.funct .fmor-comp _ _)
+        (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (𝒞CP.copair-in₁ _ _)))
+          (𝒞.≈-sym (𝒞.assoc _ _ _)))
+
+    bridge₂ : 𝒞M.funct .fmor (binInj c inr) 𝒞.≈ binInj Mc inr
+    bridge₂ =
+      𝒞.≈-trans (𝒞M.funct .fmor-comp _ _)
+        (𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (𝒞CP.copair-in₂ _ _)))
+          (𝒞.≈-sym (𝒞.assoc _ _ _)))
+
+    fp : MDistrib.FCoverPullback c g
+    fp .cover = pb .CoverPullback.cover
+    fp .reix s = s
+    fp .leg inl = pb .CoverPullback.leg inl
+    fp .leg inr = pb .CoverPullback.leg inr
+    fp .eq inl = 𝒞.≈-trans (𝒞.∘-cong bridge₁ 𝒞.≈-refl) (pb .CoverPullback.eq inl)
+    fp .eq inr = 𝒞.≈-trans (𝒞.∘-cong bridge₂ 𝒞.≈-refl) (pb .CoverPullback.eq inr)
+
 Definable-coproducts : ∀ {x y} →
                 Definable (𝒞CP.coprod x y) ⊑
                 𝐂 ((Definable x ⟨ G .fmor (F .fmor 𝒞CP.in₁) ⟩) ++ (Definable y ⟨ G .fmor (F .fmor 𝒞CP.in₂) ⟩))
-Definable-coproducts .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
-  liftS (node (stb .StableBits.y₁) (stb .StableBits.y₂)
-              (lift (F .fmor (𝒞CP.in₁ 𝒞.∘ stb .StableBits.h₁)))
-              (lift (F .fmor (𝒞CP.in₂ 𝒞.∘ stb .StableBits.h₂)))
-              (stb .StableBits.h)
-              (leaf (inj₁ (lift (F .fmor (stb .StableBits.h₁)) , lift (stb .StableBits.h₁ , 𝒟.≈-refl) , lift (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟.≈-sym (F .fmor-comp _ _))))))
-              (leaf (inj₂ (lift (F .fmor (stb .StableBits.h₂)) , lift (stb .StableBits.h₂ , 𝒟.≈-refl) , lift (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟.≈-sym (F .fmor-comp _ _))))))
-              (lift eq₁)
-              (lift eq₂))
-  where stb = stable 𝒞.Iso-refl f
-        open 𝒞.Iso
+Definable-coproducts {x} {y} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
+  node (pb .CoverPullback.cover) xs ts eqs
+  where
+    c₀ : BinCover (𝒞CP.coprod x y)
+    c₀ .BinCover.y₁ = x
+    c₀ .BinCover.y₂ = y
+    c₀ .BinCover.iso = 𝒞.Iso-refl
 
-        eq₁ : F .fmor (𝒞CP.in₁ 𝒞.∘ stb .StableBits.h₁) 𝒟.≈ (g 𝒟.∘ F .fmor (stb .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₁))
-        eq₁ = begin
-            F .fmor (𝒞CP.in₁ 𝒞.∘ stb .StableBits.h₁)
-          ≈˘⟨ F .fmor-cong 𝒞.id-left ⟩
-            F .fmor (𝒞.id _ 𝒞.∘ (𝒞CP.in₁ 𝒞.∘ stb .StableBits.h₁))
-          ≈⟨ F .fmor-cong (stb .StableBits.eq₁) ⟩
-            F .fmor (f 𝒞.∘ (stb .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₁))
-          ≈⟨ F .fmor-comp _ _ ⟩
-            F .fmor f 𝒟.∘ F .fmor (stb .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₁)
-          ≈⟨ 𝒟.∘-cong eq 𝒟.≈-refl ⟩
-            g 𝒟.∘ F .fmor (stb .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₁)
-          ∎
-          where open ≈-Reasoning 𝒟.isEquiv
+    pb = binPull c₀ f
 
-        eq₂ : F .fmor (𝒞CP.in₂ 𝒞.∘ stb .StableBits.h₂) 𝒟.≈ (g 𝒟.∘ F .fmor (stb .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₂))
-        eq₂ = begin
-            F .fmor (𝒞CP.in₂ 𝒞.∘ stb .StableBits.h₂)
-          ≈˘⟨ F .fmor-cong 𝒞.id-left ⟩
-            F .fmor (𝒞.id _ 𝒞.∘ (𝒞CP.in₂ 𝒞.∘ stb .StableBits.h₂))
-          ≈⟨ F .fmor-cong (stb .StableBits.eq₂) ⟩
-            F .fmor (f 𝒞.∘ (stb .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₂))
-          ≈⟨ F .fmor-comp _ _ ⟩
-            F .fmor f 𝒟.∘ F .fmor (stb .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₂)
-          ≈⟨ 𝒟.∘-cong eq 𝒟.≈-refl ⟩
-            g 𝒟.∘ F .fmor (stb .StableBits.h .fwd 𝒞.∘ 𝒞CP.in₂)
-          ∎
-          where open ≈-Reasoning 𝒟.isEquiv
+    h₁ = pb .CoverPullback.leg inl
+    h₂ = pb .CoverPullback.leg inr
+
+    xs : ∀ s → Setoid.Carrier (G .fobj (F .fobj (𝒞CP.coprod x y)) .fobj (binDom (pb .CoverPullback.cover) s))
+    xs inl = lift (F .fmor (𝒞CP.in₁ 𝒞.∘ h₁))
+    xs inr = lift (F .fmor (𝒞CP.in₂ 𝒞.∘ h₂))
+
+    step : ∀ s → (binInj c₀ s 𝒞.∘ pb .CoverPullback.leg s) 𝒞.≈ (f 𝒞.∘ binInj (pb .CoverPullback.cover) s)
+    step = pb .CoverPullback.eq
+
+    -- The summand restriction agrees with the reindexed witness.
+    eq' : ∀ s → F .fmor (binInj c₀ s 𝒞.∘ pb .CoverPullback.leg s) 𝒟.≈ (g 𝒟.∘ F .fmor (binInj (pb .CoverPullback.cover) s))
+    eq' s = begin
+        F .fmor (binInj c₀ s 𝒞.∘ pb .CoverPullback.leg s)
+      ≈⟨ F .fmor-cong (step s) ⟩
+        F .fmor (f 𝒞.∘ binInj (pb .CoverPullback.cover) s)
+      ≈⟨ F .fmor-comp _ _ ⟩
+        F .fmor f 𝒟.∘ F .fmor (binInj (pb .CoverPullback.cover) s)
+      ≈⟨ 𝒟.∘-cong eq 𝒟.≈-refl ⟩
+        g 𝒟.∘ F .fmor (binInj (pb .CoverPullback.cover) s)
+      ∎
+      where open ≈-Reasoning 𝒟.isEquiv
+
+    -- inl/inr injections differ from binInj c₀ only by the identity iso.
+    inj₁≈ : F .fmor (𝒞CP.in₁ 𝒞.∘ h₁) 𝒟.≈ F .fmor (binInj c₀ inl 𝒞.∘ h₁)
+    inj₁≈ = F .fmor-cong (𝒞.∘-cong (𝒞.≈-sym 𝒞.id-left) 𝒞.≈-refl)
+
+    inj₂≈ : F .fmor (𝒞CP.in₂ 𝒞.∘ h₂) 𝒟.≈ F .fmor (binInj c₀ inr 𝒞.∘ h₂)
+    inj₂≈ = F .fmor-cong (𝒞.∘-cong (𝒞.≈-sym 𝒞.id-left) 𝒞.≈-refl)
+
+    ts : ∀ s → Context (G .fobj (F .fobj (𝒞CP.coprod x y)))
+                 ((Definable x ⟨ G .fmor (F .fmor 𝒞CP.in₁) ⟩) ++ (Definable y ⟨ G .fmor (F .fmor 𝒞CP.in₂) ⟩))
+                 (binDom (pb .CoverPullback.cover) s) (xs s)
+    ts inl = leaf (inj₁ (lift (F .fmor h₁) , lift (h₁ , 𝒟.≈-refl) ,
+                         lift (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟.≈-sym (F .fmor-comp _ _)))))
+    ts inr = leaf (inj₂ (lift (F .fmor h₂) , lift (h₂ , 𝒟.≈-refl) ,
+                         lift (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟.≈-sym (F .fmor-comp _ _)))))
+
+    eqs : ∀ s → Setoid._≈_ (G .fobj (F .fobj (𝒞CP.coprod x y)) .fobj (binDom (pb .CoverPullback.cover) s))
+                  (xs s)
+                  (G .fobj (F .fobj (𝒞CP.coprod x y)) .fmor (binInj (pb .CoverPullback.cover) s) .prop-setoid._⇒_.func (lift g))
+    eqs inl = lift (𝒟.≈-trans inj₁≈ (eq' inl))
+    eqs inr = lift (𝒟.≈-trans inj₂≈ (eq' inr))
 
 open FunctorPred
 open MonadPred
@@ -510,40 +563,41 @@ Definable-closed : ∀ {X Y} (f : F .fobj X 𝒟.⇒ F .fobj Y) →
        Context (G .fobj (F .fobj Y)) (Definable Y) X (lift f) →
        ∃ (X 𝒞.⇒ Y) (λ g → F .fmor g 𝒟.≈ f)
 Definable-closed f (leaf (lift p)) = p
-Definable-closed f (node X₁ X₂ (lift f₁) (lift f₂) g t₁ t₂ (lift eq₁) (lift eq₂)) with Definable-closed f₁ t₁
+Definable-closed f (node c xs ts eqs) with xs inl | xs inr | eqs inl | eqs inr | ts inl | ts inr
+... | lift f₁ | lift f₂ | lift eq₁ | lift eq₂ | t₁ | t₂ with Definable-closed f₁ t₁
 ... | (g₁ , eq₃) with Definable-closed f₂ t₂
-... | (g₂ , eq₄) = 𝒞CP.copair g₁ g₂ 𝒞.∘ g .bwd ,
+... | (g₂ , eq₄) = 𝒞CP.copair g₁ g₂ 𝒞.∘ i₀ .bwd ,
       (begin
-        F .fmor (𝒞CP.copair g₁ g₂ 𝒞.∘ g .bwd)
+        F .fmor (𝒞CP.copair g₁ g₂ 𝒞.∘ i₀ .bwd)
       ≈⟨ F .fmor-comp _ _ ⟩
-        F .fmor (𝒞CP.copair g₁ g₂) 𝒟.∘ F .fmor (g .bwd)
+        F .fmor (𝒞CP.copair g₁ g₂) 𝒟.∘ F .fmor (i₀ .bwd)
       ≈˘⟨ 𝒟.∘-cong F-copair 𝒟.≈-refl ⟩
-        (𝒟CP.copair (F .fmor g₁) (F .fmor g₂) 𝒟.∘ mul) 𝒟.∘ F .fmor (g .bwd)
+        (𝒟CP.copair (F .fmor g₁) (F .fmor g₂) 𝒟.∘ mul) 𝒟.∘ F .fmor (i₀ .bwd)
       ≈⟨ 𝒟.assoc _ _ _ ⟩
-        𝒟CP.copair (F .fmor g₁) (F .fmor g₂) 𝒟.∘ (mul 𝒟.∘ F .fmor (g .bwd))
+        𝒟CP.copair (F .fmor g₁) (F .fmor g₂) 𝒟.∘ (mul 𝒟.∘ F .fmor (i₀ .bwd))
       ≈⟨ 𝒟.∘-cong (𝒟CP.copair-cong eq₃ eq₄) 𝒟.≈-refl ⟩
-        𝒟CP.copair f₁ f₂ 𝒟.∘ (mul 𝒟.∘ F .fmor (g .bwd))
+        𝒟CP.copair f₁ f₂ 𝒟.∘ (mul 𝒟.∘ F .fmor (i₀ .bwd))
       ≈⟨ 𝒟.∘-cong (𝒟CP.copair-cong eq₁ eq₂ ) 𝒟.≈-refl ⟩
-        𝒟CP.copair (f 𝒟.∘ F .fmor (g .fwd 𝒞.∘ 𝒞CP.in₁)) (f 𝒟.∘ F .fmor (g .fwd 𝒞.∘ 𝒞CP.in₂)) 𝒟.∘ (mul 𝒟.∘ F .fmor (g .bwd))
+        𝒟CP.copair (f 𝒟.∘ F .fmor (i₀ .fwd 𝒞.∘ 𝒞CP.in₁)) (f 𝒟.∘ F .fmor (i₀ .fwd 𝒞.∘ 𝒞CP.in₂)) 𝒟.∘ (mul 𝒟.∘ F .fmor (i₀ .bwd))
       ≈⟨ 𝒟.∘-cong (𝒟CP.copair-cong (𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _)) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _))) 𝒟.≈-refl ⟩
-        𝒟CP.copair (f 𝒟.∘ (F .fmor (g .fwd) 𝒟.∘ F .fmor 𝒞CP.in₁)) (f 𝒟.∘ (F .fmor (g .fwd) 𝒟.∘ F .fmor 𝒞CP.in₂)) 𝒟.∘ (mul 𝒟.∘ F .fmor (g .bwd))
+        𝒟CP.copair (f 𝒟.∘ (F .fmor (i₀ .fwd) 𝒟.∘ F .fmor 𝒞CP.in₁)) (f 𝒟.∘ (F .fmor (i₀ .fwd) 𝒟.∘ F .fmor 𝒞CP.in₂)) 𝒟.∘ (mul 𝒟.∘ F .fmor (i₀ .bwd))
       ≈˘⟨ 𝒟.∘-cong (𝒟CP.copair-cong (𝒟.assoc _ _ _) (𝒟.assoc _ _ _)) 𝒟.≈-refl ⟩
-        𝒟CP.copair ((f 𝒟.∘ F .fmor (g .fwd)) 𝒟.∘ F .fmor 𝒞CP.in₁) ((f 𝒟.∘ F .fmor (g .fwd)) 𝒟.∘ F .fmor 𝒞CP.in₂) 𝒟.∘ (mul 𝒟.∘ F .fmor (g .bwd))
+        𝒟CP.copair ((f 𝒟.∘ F .fmor (i₀ .fwd)) 𝒟.∘ F .fmor 𝒞CP.in₁) ((f 𝒟.∘ F .fmor (i₀ .fwd)) 𝒟.∘ F .fmor 𝒞CP.in₂) 𝒟.∘ (mul 𝒟.∘ F .fmor (i₀ .bwd))
       ≈˘⟨ 𝒟.∘-cong (𝒟CP.copair-natural _ _ _) 𝒟.≈-refl ⟩
-        ((f 𝒟.∘ F .fmor (g .fwd)) 𝒟.∘ 𝒟CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒟.∘ (mul 𝒟.∘ F .fmor (g .bwd))
+        ((f 𝒟.∘ F .fmor (i₀ .fwd)) 𝒟.∘ 𝒟CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂)) 𝒟.∘ (mul 𝒟.∘ F .fmor (i₀ .bwd))
       ≈⟨ 𝒟.assoc _ _ _ ⟩
-        (f 𝒟.∘ F .fmor (g .fwd)) 𝒟.∘ (𝒟CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂) 𝒟.∘ (mul 𝒟.∘ F .fmor (g .bwd)))
+        (f 𝒟.∘ F .fmor (i₀ .fwd)) 𝒟.∘ (𝒟CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂) 𝒟.∘ (mul 𝒟.∘ F .fmor (i₀ .bwd)))
       ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.assoc _ _ _) ⟩
-        (f 𝒟.∘ F .fmor (g .fwd)) 𝒟.∘ ((𝒟CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂) 𝒟.∘ mul) 𝒟.∘ F .fmor (g .bwd))
+        (f 𝒟.∘ F .fmor (i₀ .fwd)) 𝒟.∘ ((𝒟CP.copair (F .fmor 𝒞CP.in₁) (F .fmor 𝒞CP.in₂) 𝒟.∘ mul) 𝒟.∘ F .fmor (i₀ .bwd))
       ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟.∘-cong (Category.IsIso.f∘inverse≈id FC) 𝒟.≈-refl) ⟩
-        (f 𝒟.∘ F .fmor (g .fwd)) 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (g .bwd))
+        (f 𝒟.∘ F .fmor (i₀ .fwd)) 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (i₀ .bwd))
       ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-left ⟩
-        (f 𝒟.∘ F .fmor (g .fwd)) 𝒟.∘ F .fmor (g .bwd)
+        (f 𝒟.∘ F .fmor (i₀ .fwd)) 𝒟.∘ F .fmor (i₀ .bwd)
       ≈⟨ 𝒟.assoc _ _ _ ⟩
-        f 𝒟.∘ (F .fmor (g .fwd) 𝒟.∘ F .fmor (g .bwd))
+        f 𝒟.∘ (F .fmor (i₀ .fwd) 𝒟.∘ F .fmor (i₀ .bwd))
       ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-comp _ _) ⟩
-        f 𝒟.∘ F .fmor (g .fwd 𝒞.∘ g .bwd)
-      ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong (g .fwd∘bwd≈id)) ⟩
+        f 𝒟.∘ F .fmor (i₀ .fwd 𝒞.∘ i₀ .bwd)
+      ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-cong (i₀ .fwd∘bwd≈id)) ⟩
         f 𝒟.∘ F .fmor (𝒞.id _)
       ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (F .fmor-id) ⟩
         f 𝒟.∘ 𝒟.id _
@@ -551,6 +605,7 @@ Definable-closed f (node X₁ X₂ (lift f₁) (lift f₂) g t₁ t₂ (lift eq�
         f
       ∎)
   where open ≈-Reasoning 𝒟.isEquiv
+        i₀ = c .BinCover.iso
         open preserve-chosen-coproducts-consequences F 𝒞CP 𝒟CP FC
         open 𝒞.Iso
 
@@ -560,7 +615,7 @@ Definable-closed f (node X₁ X₂ (lift f₁) (lift f₂) g t₁ t₂ (lift eq�
 open import closure-predicate PSh⟨𝒞⟩-system closureOp
   using (system; embed; module 𝐂Monad)
 
-open 𝐂Monad _ MP (distrib _ FM-C)
+open 𝐂Monad _ MP (MDistrib.distrib FMpull)
 
 module Gl = glueing-simple 𝒟 PSh⟨𝒞⟩ _ system G
 
@@ -746,7 +801,7 @@ GF-preserve-monad .iso .NatIso.transform .natural f .f≃f = FM.transform .natur
 GF-preserve-monad .iso .NatIso.transf-iso x .Category.IsIso.inverse .morph = FM.transform⁻¹ .transf x
 GF-preserve-monad .iso .NatIso.transf-iso x .Category.IsIso.inverse .presv = begin
     𝐂 (𝐂 (MP .liftF (𝐂 (Definable x))) ⟨ G-monad .transf (F .fobj x) ⟩)
-  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (𝐂-isClosure .IsClosureOp.mono (distrib _ FM-C) PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
+  ≤⟨ 𝐂-isClosure .IsClosureOp.mono (𝐂-isClosure .IsClosureOp.mono (MDistrib.distrib FMpull) PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
     𝐂 (𝐂 (𝐂 (MP .liftF (Definable x))) ⟨ G-monad .transf (F .fobj x) ⟩)
   ≤⟨ 𝐂-isClosure .IsClosureOp.mono (𝐂-isClosure .IsClosureOp.closed PSh⟨𝒞⟩-system.⟨ _ ⟩m) ⟩
     𝐂 (𝐂 (MP .liftF (Definable x)) ⟨ G-monad .transf (F .fobj x) ⟩)
@@ -774,8 +829,7 @@ GF-preserve-monad .preserve-join .f≃f = FM.preserve-join
 -- morphism in the GLR category whose domain and codomain are from
 -- 𝒞, then it is really a 𝒞 morphism.
 definability : ∀ {X Y} → (f : GF .fobj X Glued.⇒ GF .fobj Y) → ∃ (X 𝒞.⇒ Y) (λ g → F .fmor g 𝒟.≈ f .morph)
-definability {X} {Y} f with f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))) (liftS (leaf (lift (𝒞.id _ , 𝒟.≈-refl))))
-... | liftS t with Definable-closed _ t
+definability {X} {Y} f with Definable-closed _ (f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))) (leaf (lift (𝒞.id _ , 𝒟.≈-refl))))
 ... | g , eq = g , (begin
                       F .fmor g
                     ≈⟨ eq ⟩
