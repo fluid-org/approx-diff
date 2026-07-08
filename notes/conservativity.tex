@@ -291,27 +291,30 @@ carriers by assumption, predicates by the lemma, the coproducts of $\GLR(F)$ bei
 coproducts of carriers with joined predicates. In particular $\Sigma\check{\delta}_i \cong
 \GF(\delta_i)$.
 
-\begin{lemma}[Carrier comparison, TODO]
-\label{lem:conservativity:carrier-comparison}
-$\GF(\mu_{\alpha.P}) \cong \Sigma(\mu_{\alpha.P^{*}}(\check{\delta}, \check{A}))$.
-\end{lemma}
-
-\begin{proof}[Proof sketch]
-The tree sorts coincide: both are decorated by the index sets of the environment entries and
-$\const$-objects of $P$, which the presentations preserve. The fibres over a common sort are
-finite products of the same $\GF$-images, identified by tree recursion using $\GF$'s preservation
-of products.
-\end{proof}
-
 \begin{lemma}[Skeleton, TODO]
 \label{lem:conservativity:skeleton}
-$\mu_{\alpha.\hat{P}}(\eta\,\GF\,\delta) \cong
-\mu_{\alpha.P^{*}}(\eta\,\GF\,\delta, \eta\,\GF\,\vec{A})$ in $\Fam(\GLR(F))$.
+In a $\Fam$ category, $\mu_{\alpha.Q}(\delta) \cong \mu_{\alpha.Q^{*}}(\delta, \vec{A})$,
+where $\vec{A}$ are the $\const$-objects of $Q$.
 \end{lemma}
 
 \begin{proof}[Proof sketch]
 A $\const$-object and a variable bound to an equal environment entry give the same carrier data,
 so the two carriers agree up to renaming of tree constructors, by tree recursion.
+\end{proof}
+
+\begin{lemma}[Carrier comparison, TODO]
+\label{lem:conservativity:carrier-comparison}
+$\GF(\mu_{\alpha.P^{*}}(\delta, \vec{A})) \cong \Sigma(\mu_{\alpha.P^{*}}(\check{\delta},
+\check{A}))$.
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+The two sides interpret the same constant-free polynomial, and the tree sorts coincide: both are
+decorated by the index sets of the environment entries, which the presentations preserve. The
+carriers of the fibres over a common sort are finite products of the same $F$-images, identified by
+tree recursion using $F$'s preservation of products; the predicate components are compared
+sort-wise using \lemref{conservativity:definable-coproducts}, the realisation being computed as a
+set-indexed coproduct in $\GLR(F)$.
 \end{proof}
 
 \begin{proposition}[TODO]
@@ -320,13 +323,15 @@ $\GF$ preserves $\Poly$-types.
 \end{proposition}
 
 \begin{proof}[Proof sketch]
-Compose \lemref{conservativity:carrier-comparison} with collapse
-(\lemref{conservativity:collapse}) at the constant-free $P^{*}$, at the isomorphism family given
-by $\Sigma\check{\delta}_i \cong \GF(\delta_i) \cong \Sigma(\eta\,\GF\,\delta_i)$ and
-likewise at the entries for $\vec{A}$, and finally with the realisation of
-\lemref{conservativity:skeleton}:
+Apply \lemref{conservativity:skeleton} in $\cat{C}$, then
+\lemref{conservativity:carrier-comparison}, then collapse (\lemref{conservativity:collapse}) at
+the constant-free $P^{*}$, at the isomorphism family given by $\Sigma\check{\delta}_i \cong
+\GF(\delta_i) \cong \Sigma(\eta\,\GF\,\delta_i)$ and likewise at the entries for
+$\vec{A}$, and finally the realisation of \lemref{conservativity:skeleton} in $\Fam(\GLR(F))$,
+backwards:
 \[
   \GF(\mu_{\alpha.P})
+  \;\cong\; \GF(\mu_{\alpha.P^{*}}(\delta, \vec{A}))
   \;\cong\; \Sigma(\mu_{\alpha.P^{*}}(\check{\delta}, \check{A}))
   \;\cong\; \Sigma(\mu_{\alpha.P^{*}}(\eta\,\GF\,\delta, \eta\,\GF\,\vec{A}))
   \;\cong\; \Sigma(\mu_{\alpha.\hat{P}}(\eta\,\GF\,\delta))
