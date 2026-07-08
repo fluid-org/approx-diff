@@ -281,7 +281,7 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
     head-eq =
       ≈-trans (∘-cong₂ (inR-K Q ε̂₁ CQ))
         (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong₁ (mu-collapse-fwd-in' Q CQ ε̂₁ ε̂₂ isosε))
+          (≈-trans (∘-cong₁ (mu-collapse-fwd-in Q CQ ε̂₁ ε̂₂ isosε))
             (≈-trans (assoc _ _ _) (∘-cong₂ counit-collapse-bwd))))
 
     -- Gmap of the composite, decomposed into pure lifts around the crossing.
@@ -425,7 +425,7 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
             (muε .fwd ∘ A₁) ∘co ((muδ .bwd ∘ ℰP.p₂) ∘co (Mδ₂.inR ∘ ℰP.p₂))
           ≈⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
             (muε .fwd ∘ A₁) ∘co ((muδ .bwd ∘ Mδ₂.inR) ∘ ℰP.p₂)
-          ≈⟨ CoK.∘-cong₂ (∘-cong₁ (mu-collapse-bwd-in' Q CQ δ̂₁ δ̂₂ isosδ)) ⟩
+          ≈⟨ CoK.∘-cong₂ (∘-cong₁ (mu-collapse-bwd-in Q CQ δ̂₁ δ̂₂ isosδ)) ⟩
             (muε .fwd ∘ A₁) ∘co ((Mδ₁.inR ∘ (MCδ.GI (Creal Q δ̂₁) .bwd ∘ realise .fmor NB₂)) ∘ ℰP.p₂)
           ≈˘⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
             (muε .fwd ∘ A₁) ∘co ((Mδ₁.inR ∘ ℰP.p₂) ∘co ((MCδ.GI (Creal Q δ̂₁) .bwd ∘ realise .fmor NB₂) ∘ ℰP.p₂))
@@ -447,7 +447,6 @@ collapse-mu : ∀ {n} {P : Poly ℰ (suc n)} → CollapseAt P → CollapseAt (μ
 collapse-mu {n} {P} CP .iso = MuCollapse.mu-collapse P CP
 collapse-mu {n} {P} CP .natural {Γ} {ε̂₁} {ε̂₂} δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs =
   MuNat.mu-natural P CP δ̂₁ δ̂₂ ε̂₁ ε̂₂ isosδ isosε gs₁ gs₂ sqs
-collapse-mu {n} {P} CP .refl-iso = mu-collapse-refl P CP
 collapse-mu {n} {P} CP .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = mu-collapse-comp P CP δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃
 
 -- Every polynomial admits environment collapse.

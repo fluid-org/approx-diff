@@ -216,38 +216,6 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
       (≈-trans (∘-cong₁ (≈-trans (M₂.foldR-η _ _ square-FG) (≈-sym (M₂.foldR-η {Γ = 𝟙} _ _ square-p₂₂))))
         (ℰP.pair-p₂ _ _))
 
--- The μ-collapse at pointwise-identity isomorphisms is the identity.
-mu-collapse-refl : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) (δ̂ : Fin n → FM.Obj)
-                   (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
-                   (∀ i → isos i .fwd ≈ id _) →
-                   MuCollapse.mu-collapse Q CQ δ̂ δ̂ isos .fwd ≈ id _
-mu-collapse-refl {n} Q CQ δ̂ isos hyps =
-  begin
-    MC.F' ∘ ℰP.pair MC.ℰTm.to-terminal (id _)
-  ≈⟨ ∘-cong₁ F'-id ⟩
-    ℰP.p₂ ∘ ℰP.pair MC.ℰTm.to-terminal (id _)
-  ≈⟨ ℰP.pair-p₂ _ _ ⟩
-    id _
-  ∎
-  where
-    open ≈-Reasoning isEquiv
-
-    module MC = MuCollapse Q CQ δ̂ δ̂ isos
-
-    GI-id : ∀ (A : obj) → MC.GI A .fwd ≈ id _
-    GI-id A = CQ .refl-iso (extend δ̂ (η .fobj A)) (MC.extIsos A) exthyps
-      where
-        exthyps : ∀ i → MC.extIsos A i .fwd ≈ id _
-        exthyps Fin.zero    = ≈-refl
-        exthyps (Fin.suc i) = hyps i
-
-    F'-id : MC.F' ≈ ℰP.p₂
-    F'-id =
-      ≈-trans
-        (MC.M₁.foldR-cong
-          (∘-cong₂ (≈-trans (∘-cong₁ (GI-id (Creal Q δ̂))) id-left)))
-        (≈-sym (MC.M₁.foldR-η {Γ = MC.𝟙} _ ℰP.p₂ MC.square-p₂₁))
-
 -- The forward map of the μ-collapse is a morphism of algebras.
 mu-collapse-fwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
                      (δ̂₁ δ̂₂ : Fin n → FM.Obj)
@@ -255,13 +223,16 @@ mu-collapse-fwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
                      MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .fwd ∘ Initiality.inR Q δ̂₁ CQ
                      ≈ Initiality.inR Q δ̂₂ CQ ∘
                         (MuCollapse.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₂) .fwd ∘
-                         (Gmap Q δ̂₁ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .fwd ∘ ℰP.p₂) ∘ ℰP.pair ℰT'.to-terminal (id _)))
+                         realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₁ (untranspose (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .fwd ∘ realise-η-iso (Creal Q δ̂₁) .fwd)))))
 mu-collapse-fwd-in Q CQ δ̂₁ δ̂₂ isos =
   ≈-trans (plain-β Q δ̂₁ CQ _)
     (≈-trans (assoc _ _ _)
       (∘-cong₂
         (≈-trans (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _)))
-          (∘-cong₂ (∘-cong₁ (Gmap-cong Q δ̂₁ plain-eq))))))
+          (∘-cong₂ (≈-trans (∘-cong₁ (Gmap-cong Q δ̂₁ plain-eq))
+            (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₁ (MC.mu-collapse .fwd)))
+              (≈-trans (assoc _ _ _)
+                (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) id-right))))))))
   where
     module MC = MuCollapse Q CQ δ̂₁ δ̂₂ isos
 
@@ -276,13 +247,16 @@ mu-collapse-bwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
                      MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .bwd ∘ Initiality.inR Q δ̂₂ CQ
                      ≈ Initiality.inR Q δ̂₁ CQ ∘
                         (MuCollapse.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₁) .bwd ∘
-                         (Gmap Q δ̂₂ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .bwd ∘ ℰP.p₂) ∘ ℰP.pair ℰT'.to-terminal (id _)))
+                         realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₂ (untranspose (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .bwd ∘ realise-η-iso (Creal Q δ̂₂) .fwd)))))
 mu-collapse-bwd-in Q CQ δ̂₁ δ̂₂ isos =
   ≈-trans (plain-β Q δ̂₂ CQ _)
     (≈-trans (assoc _ _ _)
       (∘-cong₂
         (≈-trans (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _)))
-          (∘-cong₂ (∘-cong₁ (Gmap-cong Q δ̂₂ plain-eq))))))
+          (∘-cong₂ (≈-trans (∘-cong₁ (Gmap-cong Q δ̂₂ plain-eq))
+            (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₂ (MC.mu-collapse .bwd)))
+              (≈-trans (assoc _ _ _)
+                (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) id-right))))))))
   where
     module MC = MuCollapse Q CQ δ̂₁ δ̂₂ isos
 
@@ -368,33 +342,3 @@ mu-collapse-comp {n} Q CQ δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ =
         (MC₁₃.M₂.inR ∘ (MC₁₃.GI C₃ .fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ (MC₂₃.F' ∘co MC₁₂.F')
       ∎
       where open ≈-Reasoning isEquiv
-
--- The algebra-map squares for the μ-collapse, with the strong action in its
--- realised plain form.
-mu-collapse-fwd-in' : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
-                      (δ̂₁ δ̂₂ : Fin n → FM.Obj)
-                      (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
-                      MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .fwd ∘ Initiality.inR Q δ̂₁ CQ
-                      ≈ Initiality.inR Q δ̂₂ CQ ∘
-                         (MuCollapse.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₂) .fwd ∘
-                          realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₁ (untranspose (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .fwd ∘ realise-η-iso (Creal Q δ̂₁) .fwd)))))
-mu-collapse-fwd-in' Q CQ δ̂₁ δ̂₂ isos =
-  ≈-trans (mu-collapse-fwd-in Q CQ δ̂₁ δ̂₂ isos)
-    (∘-cong₂ (∘-cong₂
-      (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₁ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .fwd)))
-        (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) id-right)))))
-
-mu-collapse-bwd-in' : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
-                      (δ̂₁ δ̂₂ : Fin n → FM.Obj)
-                      (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
-                      MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .bwd ∘ Initiality.inR Q δ̂₂ CQ
-                      ≈ Initiality.inR Q δ̂₁ CQ ∘
-                         (MuCollapse.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₁) .bwd ∘
-                          realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₂ (untranspose (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .bwd ∘ realise-η-iso (Creal Q δ̂₂) .fwd)))))
-mu-collapse-bwd-in' Q CQ δ̂₁ δ̂₂ isos =
-  ≈-trans (mu-collapse-bwd-in Q CQ δ̂₁ δ̂₂ isos)
-    (∘-cong₂ (∘-cong₂
-      (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₂ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .bwd)))
-        (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) id-right)))))

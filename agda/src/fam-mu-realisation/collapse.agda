@@ -50,10 +50,6 @@ record CollapseAt {n} (P : Poly ℰ n) : Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔
               fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₂) (FMu.strong-fmor (Poly-map η P) gs₂)
                 ∘co (iso δ̂₁ δ̂₂ isosδ .fwd ∘ ℰP.p₂)
               ≈ iso _ _ isosε .fwd ∘ fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₁) (FMu.strong-fmor (Poly-map η P) gs₁)
-    refl-iso : ∀ (δ̂ : Fin n → FM.Obj)
-               (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
-               (∀ i → isos i .fwd ≈ id _) →
-               iso δ̂ δ̂ isos .fwd ≈ id _
     comp : ∀ (δ̂₁ δ̂₂ δ̂₃ : Fin n → FM.Obj)
            (isos₁₂ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
            (isos₂₃ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i))) →
@@ -66,14 +62,62 @@ open CollapseAt public
 collapse-const : ∀ {n} (A : obj) → CollapseAt {n} (const A)
 collapse-const A .iso δ̂₁ δ̂₂ isos = Iso-refl
 collapse-const A .natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sq-refl _
-collapse-const A .refl-iso δ̂ isos hyps = ≈-refl
 collapse-const A .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-sym id-left
 
 collapse-var : ∀ {n} (i : Fin n) → CollapseAt {n} (var i)
 collapse-var i .iso δ̂₁ δ̂₂ isos = isos i
 collapse-var i .natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sqs i
-collapse-var i .refl-iso δ̂ isos hyps = hyps i
 collapse-var i .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-refl
+
+-- Collapses at pointwise-equal isomorphism families are equal.
+collapse-ext : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q) (δ̂₁ δ̂₂ : Fin n → FM.Obj)
+               (isos isos' : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
+               (∀ i → isos i .fwd ≈ isos' i .fwd) →
+               CQ' .iso δ̂₁ δ̂₂ isos .fwd ≈ CQ' .iso δ̂₁ δ̂₂ isos' .fwd
+collapse-ext {n} Q CQ' δ̂₁ δ̂₂ isos isos' hyps =
+  p₂-cancel (≈-trans (≈-sym strip₁) (≈-trans (CQ' .natural δ̂₁ δ̂₂ isos isos' (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) sqs) strip₂))
+  where
+    strip₁ : fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₂) (FMu.strong-fmor (Poly-map η Q) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}))
+              ∘co (CQ' .iso δ̂₁ δ̂₂ isos .fwd ∘ ℰP.p₂)
+             ≈ CQ' .iso δ̂₁ δ̂₂ isos .fwd ∘ ℰP.p₂
+    strip₁ =
+      ≈-trans (CoK.∘-cong₁ (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _)))
+        (CoK.id-left {Γ = ℰT'.witness})
+
+    strip₂ : CQ' .iso δ̂₁ δ̂₂ isos' .fwd
+              ∘ fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.strong-fmor (Poly-map η Q) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}))
+             ≈ CQ' .iso δ̂₁ δ̂₂ isos' .fwd ∘ ℰP.p₂
+    strip₂ =
+      ∘-cong₂ (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _))
+
+    sqs : ∀ i → fmorη ℰT'.witness (δ̂₂ i) (FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) ∘co (isos i .fwd ∘ ℰP.p₂)
+                ≈ isos' i .fwd ∘ fmorη ℰT'.witness (δ̂₁ i) (FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})
+    sqs i =
+      ≈-trans (CoK.∘-cong₁ (fmorη-p₂ ℰT'.witness (δ̂₂ i)))
+        (≈-trans (CoK.id-left {Γ = ℰT'.witness})
+          (≈-trans (∘-cong₁ (hyps i))
+            (≈-sym (∘-cong₂ (fmorη-p₂ ℰT'.witness (δ̂₁ i))))))
+
+-- Collapse at pointwise-identity isomorphisms is the identity: by
+-- extensionality it is the collapse at reflexivity families, which is
+-- idempotent by composition coherence, and an idempotent isomorphism is the
+-- identity.
+collapse-refl : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q) (δ̂ : Fin n → FM.Obj)
+                (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
+                (∀ i → isos i .fwd ≈ id _) →
+                CQ' .iso δ̂ δ̂ isos .fwd ≈ id _
+collapse-refl Q CQ' δ̂ isos hyps =
+  ≈-trans (collapse-ext Q CQ' δ̂ δ̂ isos (λ i → Iso-refl) hyps)
+    (≈-trans (≈-sym id-right)
+      (≈-trans (∘-cong₂ (≈-sym (CQ' .iso δ̂ δ̂ (λ i → Iso-refl) .fwd∘bwd≈id)))
+        (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong₁ idem) (CQ' .iso δ̂ δ̂ (λ i → Iso-refl) .fwd∘bwd≈id)))))
+  where
+    idem : CQ' .iso δ̂ δ̂ (λ i → Iso-refl) .fwd ∘ CQ' .iso δ̂ δ̂ (λ i → Iso-refl) .fwd
+           ≈ CQ' .iso δ̂ δ̂ (λ i → Iso-refl) .fwd
+    idem =
+      ≈-trans (≈-sym (CQ' .comp δ̂ δ̂ δ̂ (λ i → Iso-refl) (λ i → Iso-refl)))
+        (collapse-ext Q CQ' δ̂ δ̂ (λ i → Iso-trans Iso-refl Iso-refl) (λ i → Iso-refl) (λ i → id-left))
 
 -- Coproduct machinery for the sum case of the collapse.
 ℰCP = strong-coproducts→coproducts ℰT ℰSC
@@ -223,19 +267,6 @@ private
       ≈-trans (assoc _ _ _)
         (≈-trans (∘-cong₂ (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .fwd∘bwd≈id)) id-right)
 
-    sumRefl : ∀ δ̂ (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
-              (∀ i → isos i .fwd ≈ id _) →
-              sumIso δ̂ δ̂ isos .fwd ≈ id _
-    sumRefl δ̂ isos hyps =
-      begin
-        (K⊕ (X̂ δ̂) (Ŷ δ̂) .bwd ∘ ℰCPm.coprod-m (CP .iso δ̂ δ̂ isos .fwd) (CQ .iso δ̂ δ̂ isos .fwd)) ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .fwd
-      ≈⟨ ∘-cong₁ (∘-cong₂ (≈-trans (ℰCPm.coprod-m-cong (CP .refl-iso δ̂ isos hyps) (CQ .refl-iso δ̂ isos hyps)) ℰCPm.coprod-m-id)) ⟩
-        (K⊕ (X̂ δ̂) (Ŷ δ̂) .bwd ∘ id _) ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .fwd
-      ≈⟨ ∘-cong₁ id-right ⟩
-        K⊕ (X̂ δ̂) (Ŷ δ̂) .bwd ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .fwd
-      ≈⟨ K⊕ (X̂ δ̂) (Ŷ δ̂) .bwd∘fwd≈id ⟩
-        id _
-      ∎ where open ≈-Reasoning isEquiv
 
     sumComp : ∀ δ̂₁ δ̂₂ δ̂₃ (isos₁₂ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
               (isos₂₃ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i))) →
@@ -357,7 +388,6 @@ private
 
 collapse-sum {n} {P} {Q} CP CQ .iso = SumCase.sumIso CP CQ
 collapse-sum {n} {P} {Q} CP CQ .natural = SumCase.sumNat CP CQ
-collapse-sum {n} {P} {Q} CP CQ .refl-iso = SumCase.sumRefl CP CQ
 collapse-sum {n} {P} {Q} CP CQ .comp = SumCase.sumComp CP CQ
 
 
@@ -467,19 +497,6 @@ private
       ≈-trans (assoc _ _ _)
         (≈-trans (∘-cong₂ (K× (X̂ δ̂₁) (Ŷ δ̂₁) .fwd∘bwd≈id)) id-right)
 
-    prodRefl : ∀ δ̂ (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
-               (∀ i → isos i .fwd ≈ id _) →
-               prodIso δ̂ δ̂ isos .fwd ≈ id _
-    prodRefl δ̂ isos hyps =
-      begin
-        (K× (X̂ δ̂) (Ŷ δ̂) .bwd ∘ ℰP.prod-m (CP .iso δ̂ δ̂ isos .fwd) (CQ .iso δ̂ δ̂ isos .fwd)) ∘ K× (X̂ δ̂) (Ŷ δ̂) .fwd
-      ≈⟨ ∘-cong₁ (∘-cong₂ (≈-trans (ℰP.prod-m-cong (CP .refl-iso δ̂ isos hyps) (CQ .refl-iso δ̂ isos hyps)) ℰP.prod-m-id)) ⟩
-        (K× (X̂ δ̂) (Ŷ δ̂) .bwd ∘ id _) ∘ K× (X̂ δ̂) (Ŷ δ̂) .fwd
-      ≈⟨ ∘-cong₁ id-right ⟩
-        K× (X̂ δ̂) (Ŷ δ̂) .bwd ∘ K× (X̂ δ̂) (Ŷ δ̂) .fwd
-      ≈⟨ K× (X̂ δ̂) (Ŷ δ̂) .bwd∘fwd≈id ⟩
-        id _
-      ∎ where open ≈-Reasoning isEquiv
 
     prodComp : ∀ δ̂₁ δ̂₂ δ̂₃ (isos₁₂ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
                (isos₂₃ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i))) →
@@ -587,7 +604,6 @@ private
 
 collapse-prod {n} {P} {Q} CP CQ .iso = ProdCase.prodIso CP CQ
 collapse-prod {n} {P} {Q} CP CQ .natural = ProdCase.prodNat CP CQ
-collapse-prod {n} {P} {Q} CP CQ .refl-iso = ProdCase.prodRefl CP CQ
 collapse-prod {n} {P} {Q} CP CQ .comp = ProdCase.prodComp CP CQ
 
 -- Extend an isomorphism family by an isomorphism at the bound entry.
@@ -626,35 +642,6 @@ cross-mixed Q CQ {Γ} {δ̂₁} {δ̂₂} {ε̂₁} {ε̂₂} isosδ isosε {Ŷ�
     compats Fin.zero    = sq-p₂ J
     compats (Fin.suc i) = sqs i
 
--- Collapses at pointwise-equal isomorphism families are equal.
-collapse-ext : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q) (δ̂₁ δ̂₂ : Fin n → FM.Obj)
-               (isos isos' : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
-               (∀ i → isos i .fwd ≈ isos' i .fwd) →
-               CQ' .iso δ̂₁ δ̂₂ isos .fwd ≈ CQ' .iso δ̂₁ δ̂₂ isos' .fwd
-collapse-ext {n} Q CQ' δ̂₁ δ̂₂ isos isos' hyps =
-  p₂-cancel (≈-trans (≈-sym strip₁) (≈-trans (CQ' .natural δ̂₁ δ̂₂ isos isos' (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) sqs) strip₂))
-  where
-    strip₁ : fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₂) (FMu.strong-fmor (Poly-map η Q) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}))
-              ∘co (CQ' .iso δ̂₁ δ̂₂ isos .fwd ∘ ℰP.p₂)
-             ≈ CQ' .iso δ̂₁ δ̂₂ isos .fwd ∘ ℰP.p₂
-    strip₁ =
-      ≈-trans (CoK.∘-cong₁ (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _)))
-        (CoK.id-left {Γ = ℰT'.witness})
-
-    strip₂ : CQ' .iso δ̂₁ δ̂₂ isos' .fwd
-              ∘ fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.strong-fmor (Poly-map η Q) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}))
-             ≈ CQ' .iso δ̂₁ δ̂₂ isos' .fwd ∘ ℰP.p₂
-    strip₂ =
-      ∘-cong₂ (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _))
-
-    sqs : ∀ i → fmorη ℰT'.witness (δ̂₂ i) (FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) ∘co (isos i .fwd ∘ ℰP.p₂)
-                ≈ isos' i .fwd ∘ fmorη ℰT'.witness (δ̂₁ i) (FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})
-    sqs i =
-      ≈-trans (CoK.∘-cong₁ (fmorη-p₂ ℰT'.witness (δ̂₂ i)))
-        (≈-trans (CoK.id-left {Γ = ℰT'.witness})
-          (≈-trans (∘-cong₁ (hyps i))
-            (≈-sym (∘-cong₂ (fmorη-p₂ ℰT'.witness (δ̂₁ i))))))
-
 -- A collapse at realisations of pure Fam(ℰ) morphisms is the realised plain
 -- action.
 pure-collapse : ∀ {n} (Q : Poly ℰ (suc n)) (CQ' : CollapseAt Q) (δ̂₁ δ̂₂ : Fin (suc n) → FM.Obj)
@@ -676,7 +663,7 @@ pure-collapse {n} Q CQ' δ̂₁ δ̂₂ ms isos hyps =
               ∘ fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Mor-∘ (ms i) (FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})))
              ≈ realise .fmor (FMu.fmor (Poly-map η Q) ms) ∘ ℰP.p₂
     strip₂ =
-      ≈-trans (∘-cong₁ (CQ' .refl-iso δ̂₂ (λ i → Iso-refl) (λ i → ≈-refl)))
+      ≈-trans (∘-cong₁ (collapse-refl Q CQ' δ̂₂ (λ i → Iso-refl) (λ i → ≈-refl)))
         (≈-trans id-left
           (≈-trans (fmorη-cong (FamC.≈-sym (sf-pure Q δ̂₁ δ̂₂ ms)))
             (fmorη-pure ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.fmor (Poly-map η Q) ms))))

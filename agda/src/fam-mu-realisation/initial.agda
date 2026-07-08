@@ -37,7 +37,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     (CP : CollapseAt P)
   where
 
-  open CollapseAt CP using () renaming (iso to Kiso'; natural to Knat; refl-iso to Krefl)
+  open CollapseAt CP using () renaming (iso to Kiso'; natural to Knat)
 
   private
     P̂ = Poly-map η P
@@ -125,7 +125,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
           (FMu.strong-extend-mor (λ i → FamP.p₂) (h~ h))
           (FMu.strong-extend-mor (λ i → FamP.p₂) u)
           compats)
-        (≈-trans (∘-cong₁ (Krefl (extend δ̂ (η .fobj A)) (λ i → Iso-refl) (λ i → ≈-refl))) id-left)
+        (≈-trans (∘-cong₁ (collapse-refl P CP (extend δ̂ (η .fobj A)) (λ i → Iso-refl) (λ i → ≈-refl))) id-left)
       where
         compats : ∀ i → fmorη Γ (extend δ̂ μ̂ i) (FMu.strong-extend-mor (λ j → FamP.p₂) u i) ∘co (inIsos i .fwd ∘ ℰP.p₂)
                   ≈ Iso-refl .fwd ∘ fmorη Γ (extend δ̂ (η .fobj (Creal P δ̂)) i) (FMu.strong-extend-mor (λ j → FamP.p₂) (h~ h) i)
