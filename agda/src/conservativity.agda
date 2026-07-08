@@ -259,7 +259,7 @@ module _ where
 -- Presheaf predicates
 open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e) 𝒞
   renaming (system to PSh⟨𝒞⟩-system; Predicate to PShPredicate)
-  using (_⊑_; module CoproductMonad;
+  using (_⊑_; module CoproductMonad; module CoverMonad;
          _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop;
          module Monad-hat-pred)
 
@@ -323,6 +323,46 @@ Definable-products {x} {y} .*⊑* a .*⊑* (lift f) (lift (g₁ , eq₁) , lift 
         open preserve-chosen-products-consequences F 𝒞P 𝒟P FP
 
 open CoproductMonad 𝒞CP stable
+
+------------------------------------------------------------------------------
+-- The coverage generating the closure: binary coproduct decompositions of
+-- the stage.
+data Side : Set (o₁ ⊔ o₂ ⊔ m ⊔ e) where
+  inl inr : Side
+
+record BinCover (y : 𝒞.obj) : Set (o₁ ⊔ o₂ ⊔ m ⊔ e) where
+  field
+    y₁  : 𝒞.obj
+    y₂  : 𝒞.obj
+    iso : 𝒞.Iso (𝒞CP.coprod y₁ y₂) y
+
+binDom : ∀ {y} → BinCover y → Side → 𝒞.obj
+binDom c inl = c .BinCover.y₁
+binDom c inr = c .BinCover.y₂
+
+binInj : ∀ {y} (c : BinCover y) (s : Side) → binDom c s 𝒞.⇒ y
+binInj c inl = c .BinCover.iso .𝒞.Iso.fwd 𝒞.∘ 𝒞CP.in₁
+binInj c inr = c .BinCover.iso .𝒞.Iso.fwd 𝒞.∘ 𝒞CP.in₂
+
+module CvM = CoverMonad BinCover (λ _ → Side) binDom binInj
+
+-- Covers pull back along any morphism, by stability of the binary coproducts.
+binPull : ∀ {x y} (c : BinCover x) (g : y 𝒞.⇒ x) → CvM.CoverPullback c g
+binPull c g = pb
+  where
+    open CvM.CoverPullback
+
+    stb = stable (c .BinCover.iso) g
+
+    pb : CvM.CoverPullback c g
+    pb .cover .BinCover.y₁ = stb .StableBits.y₁
+    pb .cover .BinCover.y₂ = stb .StableBits.y₂
+    pb .cover .BinCover.iso = stb .StableBits.h
+    pb .reix s = s
+    pb .leg inl = stb .StableBits.h₁
+    pb .leg inr = stb .StableBits.h₂
+    pb .eq inl = 𝒞.≈-trans (𝒞.assoc _ _ _) (stb .StableBits.eq₁)
+    pb .eq inr = 𝒞.≈-trans (𝒞.assoc _ _ _) (stb .StableBits.eq₂)
 
 Definable-coproducts : ∀ {x y} →
                 Definable (𝒞CP.coprod x y) ⊑

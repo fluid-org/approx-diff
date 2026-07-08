@@ -706,7 +706,7 @@ module CoverMonad
                   (Y .fobj (dom c s) .sym (f .natural _ .func-eq (X .fobj a .refl))))
 
   -- The closure operator, for a coverage whose covers pull back.
-  module _ (stable : ∀ {x y} (c : Cover x) (g : y 𝒞.⇒ x) → CoverPullback c g) where
+  module Closure (stable : ∀ {x y} (c : Cover x) (g : y 𝒞.⇒ x) → CoverPullback c g) where
 
     Context-reindex : ∀ {X : PSh.obj} (P : Predicate X) →
                       ∀ {a b} {x} (f : b 𝒞.⇒ a) → Context X P a x → Context X P b (X .fmor f .func x)
