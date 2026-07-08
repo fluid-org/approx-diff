@@ -1,6 +1,7 @@
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 
+\begin{DeletedBlock}
 We have presented a semantic version of \GPS, inspired by connections to differentiable programming and
 automatic differentation, and shown that it can be used to interpret an expressive higher-order language
 suitable for writing simple queries and data manipulation. Our model elucidates some of the decisions
@@ -10,6 +11,16 @@ our model, and the use of general theorems, such as Fiore and Simpson's \thmref{
 properties of the interpretation. We have focused on constructions that enable an executable implementation in
 Agda in this work, but have conjectured that there are connections to established notions of categorical
 differentiation in \conref{tangent-stable-fns} and \conref{tangent-fam}.
+\end{DeletedBlock}
+
+\Added{We have presented a semantic account of data provenance as a form of automatic differentiation,
+representing the dependency of outputs on inputs as a derivative whose Jacobian is a matrix over a commutative
+semiring. Traditional automatic differentiation, and various program analysis techniques such as \GPS, arise
+as instances. The model interprets an expressive higher-order language for querying and manipulating data, and
+reveals new applications such as approximation by intervals~(\secref{interval-approx}). Our categorical
+approach admits a modular construction of the model, and the use of general theorems, such as Fiore and
+Simpson's \thmref{glr-definability}, to prove properties of the interpretation. We have focused on
+constructions that enable an executable implementation in Agda.}
 
 \paragraph{Quantitative slicing and XAI}
 
