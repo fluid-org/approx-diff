@@ -1,4 +1,10 @@
-\documentclass[acmsmall,screen,nonacm]{acmart}
+% Submission mode (main-submit.tex) builds the anonymous, review-mode PDF for
+% peer review; the default is the non-anonymous working copy with change markup.
+\ifdefined\submissionmode
+  \documentclass[acmsmall,screen,review,anonymous]{acmart}
+\else
+  \documentclass[acmsmall,screen,nonacm]{acmart}
+\fi
 
 \usepackage{tabularx}
 \usepackage{bbm}
