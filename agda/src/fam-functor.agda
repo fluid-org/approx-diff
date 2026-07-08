@@ -3,7 +3,7 @@
 open import Level using (lift)
 open import Data.Unit using (tt)
 open import Data.Product using (_,_)
-open import prop using (_,_)
+open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫)
 open import prop-setoid
   using (IsEquivalence; module ≈-Reasoning; idS)
   renaming (≃m-isEquivalence to ≈s-isEquivalence; _⇒_ to _⇒s_)
@@ -238,6 +238,53 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
         𝒟.id _
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
+
+
+  -- FamF is faithful when the base functor is.
+  FamF-faithful : (∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.≈ F .fmor g₂ → g₁ 𝒞.≈ g₂) →
+                  ∀ {X Y} {φ₁ φ₂ : Category._⇒_ Fam𝒞.cat X Y} →
+                  Category._≈_ Fam𝒟.cat (FamF .fmor φ₁) (FamF .fmor φ₂) →
+                  Category._≈_ Fam𝒞.cat φ₁ φ₂
+  FamF-faithful faith p .idxf-eq = p .idxf-eq
+  FamF-faithful faith p .famf-eq .transf-eq {x} =
+    faith (𝒟.≈-trans (F .fmor-comp _ _) (p .famf-eq .transf-eq {x}))
+
+  -- FamF admits a uniform choice of definability witnesses when the base
+  -- functor does (and is faithful, for the reconstructed naturality).
+  FamF-def : (∀ {a b} (h : F .fobj a 𝒟.⇒ F .fobj b) →
+                Prf (∃ (a 𝒞.⇒ b) λ g → F .fmor g 𝒟.≈ h) → ∃ₛ (a 𝒞.⇒ b) λ g → F .fmor g 𝒟.≈ h) →
+             (∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.≈ F .fmor g₂ → g₁ 𝒞.≈ g₂) →
+             ∀ {X Y} (H : Category._⇒_ Fam𝒟.cat (FamF .fobj X) (FamF .fobj Y)) →
+             Prf (∃ (Category._⇒_ Fam𝒞.cat X Y) λ Φ → Category._≈_ Fam𝒟.cat (FamF .fmor Φ) H) →
+             ∃ₛ (Category._⇒_ Fam𝒞.cat X Y) λ Φ → Category._≈_ Fam𝒟.cat (FamF .fmor Φ) H
+  FamF-def def₀ faith {X} {Y} H pr = Φ , eqΦ
+    where
+      open _⇒s_
+
+      wit : ∀ x → ∃ₛ (X .fam .fm x 𝒞.⇒ Y .fam .fm (H .idxf .func x)) λ g → F .fmor g 𝒟.≈ H .famf .transf x
+      wit x = def₀ (H .famf .transf x) ⟪ mapPrf (Prf.prf pr) ⟫
+        where
+          mapPrf : (∃ (Category._⇒_ Fam𝒞.cat X Y) λ Φ → Category._≈_ Fam𝒟.cat (FamF .fmor Φ) H) →
+                   ∃ (X .fam .fm x 𝒞.⇒ Y .fam .fm (H .idxf .func x)) λ g → F .fmor g 𝒟.≈ H .famf .transf x
+          mapPrf (Φ , eq) =
+            (Y .fam .subst (eq .idxf-eq .prop-setoid._≃m_.func-eq (prop-setoid.Setoid.isEquivalence (X .idx) .IsEquivalence.refl)) 𝒞.∘ Φ .famf .transf x)
+            , 𝒟.≈-trans (F .fmor-comp _ _) (eq .famf-eq .transf-eq {x})
+
+      Φ : Category._⇒_ Fam𝒞.cat X Y
+      Φ .idxf = H .idxf
+      Φ .famf .transf x = ∃ₛ.fst (wit x)
+      Φ .famf .natural {x₁} {x₂} e =
+        faith (𝒟.≈-trans (F .fmor-comp _ _)
+              (𝒟.≈-trans (𝒟.∘-cong (∃ₛ.snd (wit x₂)) 𝒟.≈-refl)
+              (𝒟.≈-trans (H .famf .natural e)
+              (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl (𝒟.≈-sym (∃ₛ.snd (wit x₁))))
+                         (𝒟.≈-sym (F .fmor-comp _ _))))))
+
+      eqΦ : Category._≈_ Fam𝒟.cat (FamF .fmor Φ) H
+      eqΦ .idxf-eq = ≈s-isEquivalence .IsEquivalence.refl
+      eqΦ .famf-eq .transf-eq {x} =
+        𝒟.≈-trans (𝒟.∘-cong (FamF .fobj Y .fam .refl*) 𝒟.≈-refl)
+          (𝒟.≈-trans 𝒟.id-left (∃ₛ.snd (wit x)))
 
 
 

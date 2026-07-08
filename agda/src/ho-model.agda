@@ -10,7 +10,8 @@ open import categories
 import polynomial-functor-2
 open import cmon-enriched
   using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
-open import functor using (HasLimits; op-colimit; limits→limits')
+open import functor using (HasLimits; op-colimit; limits→limits'; Colimit; _∘F_; NatTrans; colambda-unique; constF)
+open import categories using (setoid→category)
 import fam
 import fam-mu-types-2.carrier
 import fam-mu-types-2
