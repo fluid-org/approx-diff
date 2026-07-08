@@ -91,24 +91,40 @@ fam-stable-indexed {S} {D} {x} {y} f g = record { E = E ; leg = leg ; h = h ; eq
           (D .fmor ⟪ pf' ⟫ .idxf .func-resp-≈ (p .func-resp-≈ i≈j .snd)))
     leg s .famf .transf (i , pf) =
       D .fmor ⟪ pf ⟫ .famf .transf (dOf i) ∘C pfam .transf i
-    leg s .famf .natural {i , pf} {j , pf'} i≈j = begin
-        (D .fmor ⟪ pf' ⟫ .famf .transf (dOf j) ∘C pfam .transf j) ∘C y .fam .indexed-family.Fam.subst i≈j
-      ≈⟨ assocC _ _ _ ⟩
-        D .fmor ⟪ pf' ⟫ .famf .transf (dOf j) ∘C (pfam .transf j ∘C y .fam .indexed-family.Fam.subst i≈j)
-      ≈⟨ ∘-cong₂C (pfam .natural i≈j) ⟩
-        D .fmor ⟪ pf' ⟫ .famf .transf (dOf j) ∘C ((∐ S D) .fam .indexed-family.Fam.subst (p .func-resp-≈ i≈j) ∘C pfam .transf i)
-      ≈⟨ ≈-symC (assocC _ _ _) ⟩
-        (D .fmor ⟪ pf' ⟫ .famf .transf (dOf j) ∘C (∐ S D) .fam .indexed-family.Fam.subst (p .func-resp-≈ i≈j)) ∘C pfam .transf i
-      ≈⟨ ∘-cong₁C core' ⟩
-        (D .fobj s .fam .indexed-family.Fam.subst (leg s .idxf .func-resp-≈ i≈j) ∘C D .fmor ⟪ pf ⟫ .famf .transf (dOf i)) ∘C pfam .transf i
-      ≈⟨ assocC _ _ _ ⟩
-        D .fobj s .fam .indexed-family.Fam.subst (leg s .idxf .func-resp-≈ i≈j) ∘C (D .fmor ⟪ pf ⟫ .famf .transf (dOf i) ∘C pfam .transf i)
-      ∎
+    leg s .famf .natural {i , pf} {j , pf'} i≈j =
+      ≈-transC (assocC _ _ _)
+        (≈-transC (∘-cong₂C (pfam .natural i≈j))
+          (≈-transC (≈-symC (assocC _ _ _))
+            (≈-transC (∘-cong₁C core)
+              (assocC _ _ _))))
       where
-        open ≈-Reasoning (Category.isEquiv 𝒞)
-        core' : (D .fmor ⟪ pf' ⟫ .famf .transf (dOf j) ∘C (∐ S D) .fam .indexed-family.Fam.subst (p .func-resp-≈ i≈j))
-                ≈C (D .fobj s .fam .indexed-family.Fam.subst (leg s .idxf .func-resp-≈ i≈j) ∘C D .fmor ⟪ pf ⟫ .famf .transf (dOf i))
-        core' = {!!}
+        e₀ : S ._≈_ (sOf i) (sOf j)
+        e₀ = p .func-resp-≈ i≈j .fst
+
+        e₁ : D .fobj (sOf j) .idx ._≈_ (D .fmor ⟪ e₀ ⟫ .idxf .func (dOf i)) (dOf j)
+        e₁ = p .func-resp-≈ i≈j .snd
+
+        legresp : D .fobj s .idx ._≈_ (D .fmor ⟪ pf ⟫ .idxf .func (dOf i)) (D .fmor ⟪ pf' ⟫ .idxf .func (dOf j))
+        legresp = leg s .idxf .func-resp-≈ {i , pf} {j , pf'} i≈j
+
+        -- ⟪_⟫ proofs are definitionally interchangeable, so fmor-comp relates
+        -- the transport at pf to the two-step transport through e₀ and pf'.
+        q₂ : D .fobj s .idx ._≈_ (D .fmor ⟪ pf' ⟫ .idxf .func (D .fmor ⟪ e₀ ⟫ .idxf .func (dOf i))) (D .fmor ⟪ pf ⟫ .idxf .func (dOf i))
+        q₂ = D .fobj s .idx .sym (D .fmor-comp ⟪ pf' ⟫ ⟪ e₀ ⟫ .idxf-eq .func-eq (D .fobj (sOf i) .idx .refl))
+
+        Dcomp : Category._≈_ cat (D .fmor ⟪ pf' ⟫ ∘cat D .fmor ⟪ e₀ ⟫) (D .fmor ⟪ pf ⟫)
+        Dcomp = ≃-symC (D .fmor-comp ⟪ pf' ⟫ ⟪ e₀ ⟫)
+
+        core : (D .fmor ⟪ pf' ⟫ .famf .transf (dOf j) ∘C (∐ S D) .fam .indexed-family.Fam.subst (p .func-resp-≈ i≈j))
+               ≈C (D .fobj s .fam .indexed-family.Fam.subst legresp ∘C D .fmor ⟪ pf ⟫ .famf .transf (dOf i))
+        core =
+          ≈-transC (≈-symC (assocC _ _ _))
+            (≈-transC (∘-cong₁C (D .fmor ⟪ pf' ⟫ .famf .natural e₁))
+              (≈-transC (assocC _ _ _)
+                (≈-transC (∘-cong₂C (≈-symC id-leftC))
+                  (≈-transC (∘-cong₁C (D .fobj s .fam .indexed-family.Fam.trans* legresp q₂))
+                    (≈-transC (assocC _ _ _)
+                      (∘-cong₂C (Dcomp .famf-eq .transf-eq {dOf i})))))))
 
     -- y is the coproduct of its summands.
     fwd-h : Mor (∐ S E) y
@@ -144,4 +160,47 @@ fam-stable-indexed {S} {D} {x} {y} f g = record { E = E ; leg = leg ; h = h ; eq
             (D .fobj (sOf i) .idx .trans
               (D .fmor-cong {f₁ = ⟪ S .trans pf (S .sym pf) ⟫} {f₂ = ⟪ S .refl ⟫} tt .idxf-eq .func-eq (D .fobj (sOf i) .idx .refl))
               (D .fmor-id .idxf-eq .func-eq (D .fobj (sOf i) .idx .refl)))
-    eq s .famf-eq .transf-eq = {!!}
+    eq s .famf-eq .transf-eq {i , pf} =
+      ≈-transC (∘-cong₂C (≈-transC id-leftC (∘-cong₂C (≈-transC id-leftC (≈-transC id-leftC (∘-cong₂C id-leftC))))))
+        (≈-transC (∘-cong₂C (∘-cong₂C (≈-symC (assocC _ _ _))))
+          (≈-transC (∘-cong₂C (≈-symC (assocC _ _ _)))
+            (≈-transC (≈-symC (assocC _ _ _))
+              (≈-transC (∘-cong₁C roundtrip)
+                (≈-transC id-leftC
+                  (≈-symC (≈-transC id-leftC (≈-transC (∘-cong₂C (≈-transC id-leftC id-leftC)) id-rightC))))))))
+      where
+        w : x .idx .Carrier
+        w = g .idxf .func i
+
+        ŝ : (∐ S D) .idx .Carrier
+        ŝ = s , D .fmor ⟪ pf ⟫ .idxf .func (dOf i)
+
+        symapex : (∐ S D) .idx ._≈_ (p .func i) ŝ
+        symapex = pf , D .fobj s .idx .refl
+
+        q₃ : x .idx ._≈_ (f .fwd .idxf .func (p .func i)) (f .fwd .idxf .func ŝ)
+        q₃ = f .fwd .idxf .func-resp-≈ symapex
+
+        EQ : x .idx ._≈_ (f .fwd .idxf .func ŝ) w
+        EQ = x .idx .trans (x .idx .sym q₃) (f .fwd∘bwd≈id .idxf-eq .func-eq (x .idx .refl {w}))
+
+        -- The leg's transport is the coproduct's subst along symapex, up to a
+        -- vanishing refl-subst.
+        insert : D .fmor ⟪ pf ⟫ .famf .transf (dOf i) ≈C (∐ S D) .fam .indexed-family.Fam.subst symapex
+        insert = ≈-symC (≈-transC (∘-cong₁C (D .fobj s .fam .indexed-family.Fam.refl*)) id-leftC)
+
+        -- Sending the summand back through the decomposition and out along the
+        -- iso is the identity, by naturality and the iso's roundtrip.
+        roundtrip : (x .fam .indexed-family.Fam.subst EQ
+                      ∘C (f .fwd .famf .transf ŝ
+                        ∘C (D .fmor ⟪ pf ⟫ .famf .transf (dOf i) ∘C f .bwd .famf .transf w)))
+                    ≈C idC (x .fam .indexed-family.Fam.fm w)
+        roundtrip =
+          ≈-transC (∘-cong₂C (∘-cong₂C (∘-cong₁C insert)))
+            (≈-transC (∘-cong₂C (≈-symC (assocC _ _ _)))
+              (≈-transC (∘-cong₂C (∘-cong₁C (f .fwd .famf .natural symapex)))
+                (≈-transC (∘-cong₂C (assocC _ _ _))
+                  (≈-transC (≈-symC (assocC _ _ _))
+                    (≈-transC (∘-cong₁C (≈-symC (x .fam .indexed-family.Fam.trans* EQ q₃)))
+                      (≈-transC (∘-cong₂C (≈-symC id-leftC))
+                        (f .fwd∘bwd≈id .famf-eq .transf-eq {w})))))))
