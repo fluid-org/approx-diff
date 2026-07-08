@@ -138,7 +138,8 @@ outright. So $f$ satisfies $\Definable_y$, that is, $f = F(g)$ for some $g : x \
 The lemma applies only to morphisms between embedded objects, so it remains to show that the
 interpretation of every first-order type is isomorphic to one. Interpreting the language in $\GLR(F)$ needs, beyond the structure of
 \secref{conservativity:glueing}, only $\Poly$-types (\defref{polynomial-types:has-poly}), which we
-assume for the remainder of the subsection, together with their preservation by $\GF$. First-order types are also
+construct in \secref{conservativity:glr-poly-types}; their preservation by $\GF$ is assumed here and
+analysed in \secref{conservativity:gf-poly-types}. First-order types are also
 interpreted directly in $\cat{C}$, which has $\Poly$-types whenever it is a $\Fam$ category
 (\propref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation. The
 two interpretations agree up to the embedding: for first-order $\tau$,
@@ -156,7 +157,7 @@ $\Poly$-types hypotheses.
 
 \begin{theorem}[Syntactic definability]
 \label{thm:conservativity:syntactic-definability}
-Assume $\GLR(F)$ has $\Poly$-types and $\GF$ preserves them. Then for every term $\Gamma \vdash t : \tau$
+Assume $\GF$ preserves $\Poly$-types. Then for every term $\Gamma \vdash t : \tau$
 with $\Gamma$ and $\tau$ first-order, there is a first-order morphism $g : \sem{\Gamma}_{\mathit{fo}} \to
 \sem{\tau}_{\mathit{fo}}$ with $F(g)$ equal to the underlying $\cat{D}$-morphism of $\sem{t}$, modulo the
 isomorphisms above.
@@ -171,11 +172,12 @@ $\GF(\sem{\Gamma}_{\mathit{fo}}) \to \GF(\sem{\tau}_{\mathit{fo}})$ of $\GLR(F)$
 \subsection{$\Poly$-types in $\GLR(F)$}
 \label{sec:conservativity:glr-poly-types}
 
-The two assumptions of \thmref{conservativity:syntactic-definability} remain: that $\GLR(F)$ has
-$\Poly$-types, and that $\GF$ preserves them. We discharge both by transferring the construction of
-\secref{polynomial-types:fam} to $\GLR(F)$, in three steps: realise families of $\GLR(F)$-objects as
-set-indexed coproducts; obtain $\Poly$-types for $\GLR(F)$ from those of $\Fam(\GLR(F))$; and reduce
-preservation by $\GF$ to preservation of set-indexed coproducts.
+$\GLR(F)$ has $\Poly$-types. We prove this by transferring the construction of
+\secref{polynomial-types:fam}: realise families of $\GLR(F)$-objects as set-indexed coproducts, and
+obtain $\Poly$-types for $\GLR(F)$ from those of $\Fam(\GLR(F))$. The construction is formalised
+(\texttt{fam-mu-realisation}), for any category with the structure listed in
+\thmref{conservativity:transfer}; preservation by $\GF$ is the subject of
+\secref{conservativity:gf-poly-types}.
 
 \paragraph{Realisation.}
 Let $\cat{E}$ be a category with set-indexed coproducts. The functor
@@ -190,33 +192,146 @@ $\GLR(F)$ presentations are genuine data, since a closed predicate on $G(X)$ nee
 by its restrictions to the fibres of $X$.
 
 \paragraph{$\Poly$-types via realisation.}
-A polynomial over $\cat{E}$ whose $\const$-objects are presented is precisely a polynomial over
-$\Fam(\cat{E})$, and $\Fam(\cat{E})$ has $\Poly$-types by \propref{polynomial-types:fam-has-poly},
-since $\cat{E}$ has a terminal object and finite products. The candidate $\Poly$-types for $\cat{E} =
-\GLR(F)$ are the realisations of those of $\Fam(\GLR(F))$: on presented polynomials, $\mu_{\alpha.P}
-:= \Sigma \circ \mu_{\alpha.\hat{P}}$, where $\hat{P}$ is the polynomial of presentations. For this
-to yield \defref{polynomial-types:has-poly}, $\Sigma$ must preserve what the construction uses:
+A polynomial $P$ over $\cat{E}$ embeds as a polynomial $\hat{P}$ over $\Fam(\cat{E})$, each
+$\const$-object replaced by its $\eta$-image, and $\Fam(\cat{E})$ has $\Poly$-types by
+\propref{polynomial-types:fam-has-poly}, since $\cat{E}$ has a terminal object and finite
+products. The $\Poly$-types for $\cat{E}$ are the realisations: $\mu_{\alpha.P}(\delta) :=
+\Sigma\, \mu_{\alpha.\hat{P}}(\eta\,\delta)$. For this to yield
+\defref{polynomial-types:has-poly}, $\Sigma$ must preserve what the construction uses:
 set-indexed coproducts (immediate), the terminal object, and finite products, the last requiring
-products to distribute over set-indexed coproducts (a consequence of $\GLR(F)$'s exponentials).
+products to distribute over set-indexed coproducts (a consequence of the exponentials).
 
 \paragraph{Operations and laws.}
 These do not simply transport along the resulting isomorphisms: the algebra map of
 $\mu_{\alpha.\hat{P}}$ lives at an environment containing the $\Fam(\cat{E})$-object
-$\mu_{\alpha.\hat{P}}$ itself, whereas its realisation must live at the presented object $\Sigma\,
-\mu_{\alpha.\hat{P}}$. Two facts close the gap: $\Sigma$ is left adjoint to the embedding $\eta :
-\cat{E} \to \Fam(\cat{E})$ sending an object to the family over a one-element set, so that algebras
-and catamorphisms transpose between $\cat{E}$ and $\Fam(\cat{E})$; and $\Sigma(P(\delta))$ is
-unchanged, up to isomorphism, when an entry of $\delta$ is replaced by $\eta\Sigma$ of itself.
-The latter is proved together with initiality by induction on the polynomial, the $\mu$ case
-following from uniqueness of initial algebras.
+$\mu_{\alpha.\hat{P}}$ itself, whereas its realisation must live at the presented object
+$\Sigma\, \mu_{\alpha.\hat{P}}$. The adjunction $\Sigma \dashv \eta$, where $\eta : \cat{E}
+\to \Fam(\cat{E})$ embeds an object as a family over a one-element set, transposes algebras and
+catamorphisms between the two categories; what remains is that realisation is invariant under
+replacing environment entries by families with isomorphic realisations. We package this as a
+property of the polynomial, established by induction.
 
-\paragraph{Preservation by $\GF$.}
+\begin{definition}[Collapse]
+\label{def:conservativity:collapse}
+A polynomial $P$ over $\cat{E}$ \emph{collapses} if every family of isomorphisms $\Sigma\,
+\hat{\delta}_i \cong \Sigma\, \hat{\delta}'_i$ between the realisations of two environments
+induces an isomorphism $\Sigma(\hat{P}(\hat{\delta})) \cong \Sigma(\hat{P}(\hat{\delta}'))$,
+compatibly with composition of such families, and naturally with respect to the strong action of
+$\hat{P}$.
+\end{definition}
+
+\begin{remark}
+Compatibility with identities is derivable: naturality at projection families gives an
+extensionality principle (collapse depends only on the underlying isomorphisms), extensionality
+makes the collapse at identity families idempotent via compatibility with composition, and an
+idempotent isomorphism is the identity. Compatibility with composition is not derivable from
+naturality: the naturality squares require morphisms of $\Fam(\cat{E})$ along the environment
+directions, and none exist along a family of mere isomorphisms of realisations.
+\end{remark}
+
+\begin{lemma}
+\label{lem:conservativity:collapse}
+Every polynomial collapses. For $\mu$-polynomials the induced isomorphism is a morphism of
+algebras, and the laws of \defref{conservativity:collapse} follow from uniqueness of
+catamorphisms.
+\end{lemma}
+
+\begin{theorem}[Transfer]
+\label{thm:conservativity:transfer}
+Let $\cat{E}$ have set-indexed coproducts, a terminal object, finite products, exponentials and
+strong coproducts. Then $\cat{E}$ has $\Poly$-types (\defref{polynomial-types:has-poly}).
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Take $\mu_{\alpha.P} := \Sigma\, \mu_{\alpha.\hat{P}}$ at singleton environments. The algebra
+map is the realised $\Fam(\cat{E})$ algebra map corrected by collapse
+(\lemref{conservativity:collapse}) at the bound entry; the catamorphism transposes the
+$\Fam(\cat{E})$ catamorphism along $\Sigma \dashv \eta$. For the $\beta$ and $\eta$ laws, the
+interpretations agree across a comparison isomorphism $\Sigma(\hat{P}(\hat{\delta})) \cong
+P(\delta)$, and the realised strong action of $\hat{P}$ simulates the strong action that $\cat{E}$
+derives from the new structure, naturally in this comparison (induction on $P$; the $\mu$ case is
+naturality of collapse). The laws are then the $\Fam(\cat{E})$ laws conjugated by the simulation.
+\end{proof}
+
+\begin{corollary}
+\label{cor:conservativity:glr-poly}
+$\GLR(F)$ has $\Poly$-types.
+\end{corollary}
+
+\subsection{Preservation of $\Poly$-types by $\GF$}
+\label{sec:conservativity:gf-poly-types}
+
 The polynomials that arise interpret first-order types, so their $\const$-objects are $\GF$-images
-and previously constructed $\mu$-types. The latter are presented by construction; a $\GF$-image
-$\GF(x)$ is presented exactly when $\GF$ sends the canonical presentation of $x$ to a presentation in
-$\GLR(F)$: that is, when $\GF$ preserves set-indexed coproducts, which applied to $\mu$-objects
-(themselves realisations) is also what preservation of $\Poly$-types asks. Both assumptions thus
-reduce to: \emph{the (closure of the) definability predicate is closed under set-indexed coproducts},
-the infinitary analogue of the finite-coproduct closure of \secref{conservativity:glueing}. This is
-also precisely the extension that would admit built-in list types, a list object being likewise a
-set-indexed coproduct.
+and previously constructed $\mu$-types. Preservation does not follow from $\GF$'s preservation of
+the finite structure: initial algebras map out of themselves, so finite preservation yields only the
+comparison $\mu_{\alpha.\GF(P)} \to \GF(\mu_{\alpha.P})$, by folding the $\GF$-image of the
+algebra. The converse direction requires $\GF$ to preserve the presentation of
+$\mu_{\alpha.P}$ as a set-indexed coproduct of its fibres. Four ingredients remain, given below.
+
+\begin{lemma}[TODO]
+\label{lem:conservativity:definable-coproducts}
+If the set-indexed coproducts of $\cat{C}$ are stable then
+$\Definable_{\coprod_i x_i} \sqsubseteq \mathbf{C}\,(\bigvee_i \Definable_{x_i}\langle
+\mathsf{in}_i \rangle)$.
+\end{lemma}
+
+This is the infinitary analogue of the finite-coproduct closure of
+\secref{conservativity:glueing}, and is precisely the extension that would admit built-in list
+types. Together with preservation of set-indexed coproducts by $F$ it makes $\GF$ preserve them:
+carriers by assumption, predicates by the lemma, the coproducts of $\GLR(F)$ being computed as
+coproducts of carriers with joined predicates.
+
+\begin{proposition}[TODO]
+\label{prop:conservativity:poly-unique}
+Any two $\Poly$-types structures on a category have componentwise isomorphic $\mu$-objects.
+\end{proposition}
+
+This makes the choice of $\Poly$-types for $\cat{C}$ immaterial; the comparison below uses the
+concrete construction of \propref{polynomial-types:fam-has-poly}, $\cat{C}$ being a $\Fam$
+category.
+
+\begin{lemma}[Constant abstraction, TODO]
+\label{lem:conservativity:const-abstraction}
+In any category with $\Poly$-types, $\mu_{\alpha.P}(\delta) \cong
+\mu_{\alpha.P'}(\delta, \vec{A})$, where $P'$ replaces the $\const$-objects $\vec{A}$ of $P$
+by fresh variables.
+\end{lemma}
+
+The two sides fold into one another, with the roundtrips by uniqueness of catamorphisms. The lemma
+is needed because the polynomials on the two sides of the comparison below differ at $\const$
+entries (presentations against $\eta$-embeddings), a variation that collapse, which fixes the
+polynomial and varies only the environment, cannot absorb.
+
+Finally, the two coproduct presentations must be matched. Write $\check{\delta}_i$ for the
+presentation of $\GF(\delta_i)$ induced by the canonical presentation of $\delta_i$: the family
+over the index set of $\delta_i$ whose fibres are the $\GF$-images of its fibres, with
+$\Sigma\check{\delta}_i \cong \GF(\delta_i)$ by
+\lemref{conservativity:definable-coproducts}.
+
+\begin{lemma}[Carrier comparison, TODO]
+\label{lem:conservativity:carrier-comparison}
+$\GF(\mu_{\alpha.P}) \cong \Sigma(\mu_{\alpha.\hat{P}}(\check{\delta}))$.
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+The tree sorts of the two carriers coincide, both being determined by the index parts of their
+environments, which agree; the fibres over a common sort are finite products of the same
+$\GF$-images, identified by tree recursion using $\GF$'s preservation of products.
+\end{proof}
+
+\begin{proposition}[TODO]
+\label{prop:conservativity:gf-preserves-poly}
+$\GF$ preserves $\Poly$-types.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+By \lemref{conservativity:const-abstraction}, applied on both sides, assume $P$ has no constants.
+Compose \lemref{conservativity:carrier-comparison} with collapse
+(\lemref{conservativity:collapse}) at the isomorphism family $\Sigma\check{\delta}_i \cong
+\Sigma(\eta\,\GF\,\delta_i)$:
+\[
+  \GF(\mu_{\alpha.P}) \;\cong\; \Sigma(\mu_{\alpha.\hat{P}}(\check{\delta}))
+  \;\cong\; \Sigma(\mu_{\alpha.\hat{P}}(\eta\,\GF\,\delta))
+  \;=\; \mu_{\alpha.\GF(P)}.
+\]
+\end{proof}
