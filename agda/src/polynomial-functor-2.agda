@@ -9,6 +9,7 @@ open import categories
          strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor)
 open import prop-setoid using (module ≈-Reasoning)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl; sym to ≡-sym)
 
 module polynomial-functor-2 where
 
@@ -837,3 +838,45 @@ module MuIso
 
       sq : (h ∘co (α P δ ∘ p₂)) ≈ ((alg ∘ prod-m u (id _)) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h))
       sq = ≈-trans lhs-chain (≈-sym rhs-chain)
+
+  -- Constant abstraction: a rigid correspondence between a polynomial and a
+  -- form of it in which some constants have been replaced by variables (and
+  -- possibly vice versa), over given environments. Rigid: the leaf conditions
+  -- are equalities of objects, so the induced comparisons need no morphism
+  -- families.
+  data Abs : ∀ {n n'} (δ : Fin n → obj) (δ' : Fin n' → obj) →
+             Poly 𝒞 n → Poly 𝒞 n' → Set (o ⊔ m) where
+    var   : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {i j} →
+            δ' j ≡ δ i → Abs δ δ' (var i) (var j)
+    const : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {A} →
+            Abs δ δ' (const A) (const A)
+    cabs  : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {A j} →
+            δ' j ≡ A → Abs δ δ' (const A) (var j)
+    cconc : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {A i} →
+            δ i ≡ A → Abs δ δ' (var i) (const A)
+    _+_   : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {P P' Q Q'} →
+            Abs δ δ' P P' → Abs δ δ' Q Q' → Abs δ δ' (P + Q) (P' + Q')
+    _×_   : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {P P' Q Q'} →
+            Abs δ δ' P P' → Abs δ δ' Q Q' → Abs δ δ' (P × Q) (P' × Q')
+    μ     : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {P P'} →
+            (∀ X → Abs (extend δ X) (extend δ' X) P P') →
+            Abs δ δ' (μ P) (μ P')
+
+  -- The correspondence is symmetric.
+  Abs-sym : ∀ {n n'} {δ : Fin n → obj} {δ' : Fin n' → obj} {P P'} →
+            Abs δ δ' P P' → Abs δ' δ P' P
+  Abs-sym (var eq)   = var (≡-sym eq)
+  Abs-sym const      = const
+  Abs-sym (cabs eq)  = cconc eq
+  Abs-sym (cconc eq) = cabs eq
+  Abs-sym (r + s)    = Abs-sym r + Abs-sym s
+  Abs-sym (r × s)    = Abs-sym r × Abs-sym s
+  Abs-sym (μ r)      = μ (λ X → Abs-sym (r X))
+
+  -- Every polynomial corresponds to itself.
+  Abs-refl : ∀ {n} {δ : Fin n → obj} (P : Poly 𝒞 n) → Abs δ δ P P
+  Abs-refl (const A) = const
+  Abs-refl (var i)   = var ≡-refl
+  Abs-refl (P + Q)   = Abs-refl P + Abs-refl Q
+  Abs-refl (P × Q)   = Abs-refl P × Abs-refl Q
+  Abs-refl (μ P)     = μ (λ X → Abs-refl P)
