@@ -159,24 +159,10 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
     counit-collapse-square : Kε₂ .fwd ∘ (MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁)
                              ≈ Mεμ .fwd ∘ Kε₁ .fwd
     counit-collapse-square =
-      begin
-        Kε₂ .fwd ∘ (MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁)
-      ≈˘⟨ ∘-cong₂ (∘-cong₂ Pc-real) ⟩
-        Kε₂ .fwd ∘ (MCε.GI C₂ε .fwd ∘ CQ .iso _ _ Pc-isos .fwd)
-      ≈˘⟨ ∘-cong₂ (CQ .comp _ _ _ Pc-isos (MCε.extIsos C₂ε)) ⟩
-        Kε₂ .fwd ∘ CQ .iso _ _ (λ i → Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) .fwd
-      ≈˘⟨ CQ .comp _ _ _ (λ i → Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) Mε₂.inIsos ⟩
-        CQ .iso _ _ (λ i → Iso-trans (Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) (Mε₂.inIsos i)) .fwd
-      ≈⟨ collapse-ext Q CQ (extend ε̂₁ (η .fobj C₁ε)) (extend ε̂₂ (FM.μObj Q̂ ε̂₂))
-           (λ i → Iso-trans (Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) (Mε₂.inIsos i))
-           (λ i → Iso-trans (Mε₁.inIsos i) (mixed isosε muε i)) pointwise ⟩
-        CQ .iso _ _ (λ i → Iso-trans (Mε₁.inIsos i) (mixed isosε muε i)) .fwd
-      ≈⟨ CQ .comp _ _ _ Mε₁.inIsos (mixed isosε muε) ⟩
-        Mεμ .fwd ∘ Kε₁ .fwd
-      ∎
+      ≈-trans (∘-cong₂ (∘-cong₂ (≈-sym Pc-real)))
+        (≈-trans (∘-cong₂ (≈-sym (CQ .comp _ _ _ Pc-isos (MCε.extIsos C₂ε))))
+          (collapse-path-eq Q CQ (extend ε̂₁ (η .fobj C₁ε)) (extend ε̂₂ (η .fobj C₂ε)) (extend ε̂₁ (FM.μObj Q̂ ε̂₁)) (extend ε̂₂ (FM.μObj Q̂ ε̂₂)) (λ i → Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) Mε₂.inIsos Mε₁.inIsos (mixed isosε muε) pointwise))
       where
-        open ≈-Reasoning isEquiv
-
         pointwise : ∀ i → Iso-trans (Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) (Mε₂.inIsos i) .fwd
                           ≈ Iso-trans (Mε₁.inIsos i) (mixed isosε muε i) .fwd
         pointwise Fin.zero =
@@ -207,24 +193,9 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
     env-collapse-square : Mδμ .fwd ∘ KK₁ .fwd
                           ≈ (KK₂ .fwd ∘ realise .fmor NF₂) ∘ MCδ.GI C₁ε .fwd
     env-collapse-square =
-      begin
-        Mδμ .fwd ∘ KK₁ .fwd
-      ≈˘⟨ CQ .comp _ _ _ Sδ₁.KKisos (mixed isosδ muε) ⟩
-        CQ .iso _ _ (λ i → Iso-trans (Sδ₁.KKisos i) (mixed isosδ muε i)) .fwd
-      ≈⟨ collapse-ext Q CQ (extend δ̂₁ (η .fobj C₁ε)) (extend δ̂₂ (FM.μObj Q̂ ε̂₂))
-           (λ i → Iso-trans (Sδ₁.KKisos i) (mixed isosδ muε i))
-           (λ i → Iso-trans (MCδ.extIsos C₁ε i) (Iso-trans (Pc2-isos i) (Sδ₂.KKisos i))) pointwise ⟩
-        CQ .iso _ _ (λ i → Iso-trans (MCδ.extIsos C₁ε i) (Iso-trans (Pc2-isos i) (Sδ₂.KKisos i))) .fwd
-      ≈⟨ CQ .comp _ _ _ (MCδ.extIsos C₁ε) (λ i → Iso-trans (Pc2-isos i) (Sδ₂.KKisos i)) ⟩
-        CQ .iso _ _ (λ i → Iso-trans (Pc2-isos i) (Sδ₂.KKisos i)) .fwd ∘ MCδ.GI C₁ε .fwd
-      ≈⟨ ∘-cong₁ (CQ .comp _ _ _ Pc2-isos Sδ₂.KKisos) ⟩
-        (KK₂ .fwd ∘ CQ .iso _ _ Pc2-isos .fwd) ∘ MCδ.GI C₁ε .fwd
-      ≈⟨ ∘-cong₁ (∘-cong₂ Pc2-real) ⟩
-        (KK₂ .fwd ∘ realise .fmor NF₂) ∘ MCδ.GI C₁ε .fwd
-      ∎
+      ≈-trans (collapse-path-eq Q CQ (extend δ̂₁ (η .fobj C₁ε)) (extend δ̂₁ (FM.μObj Q̂ ε̂₁)) (extend δ̂₂ (η .fobj C₁ε)) (extend δ̂₂ (FM.μObj Q̂ ε̂₂)) Sδ₁.KKisos (mixed isosδ muε) (MCδ.extIsos C₁ε) (λ i → Iso-trans (Pc2-isos i) (Sδ₂.KKisos i)) pointwise)
+        (∘-cong₁ (≈-trans (CQ .comp _ _ _ Pc2-isos Sδ₂.KKisos) (∘-cong₂ Pc2-real)))
       where
-        open ≈-Reasoning isEquiv
-
         pointwise : ∀ i → Iso-trans (Sδ₁.KKisos i) (mixed isosδ muε i) .fwd
                           ≈ Iso-trans (MCδ.extIsos C₁ε i) (Iso-trans (Pc2-isos i) (Sδ₂.KKisos i)) .fwd
         pointwise Fin.zero =

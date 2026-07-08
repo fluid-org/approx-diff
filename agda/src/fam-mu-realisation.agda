@@ -209,30 +209,17 @@ sim-prod {n} P Q simP simQ {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
       ≈-trans (assoc _ _ _)
         (∘-cong₂ (ℰP.strong-prod-m-post _ _ _ _))
 
--- The interpretation isomorphism respects pointwise-equal agreements.
-SI-ext : ∀ {n} (P : Poly ℰ n) (δ : Fin n → obj) (δ̂ : Fin n → FM.Obj)
-         (js js' : ∀ i → Iso (δ i) (realise .fobj (δ̂ i))) →
-         (∀ i → js i .fwd ≈ js' i .fwd) →
-         fobj-realise-iso P δ δ̂ js .fwd ≈ fobj-realise-iso P δ δ̂ js' .fwd
-SI-ext (const A) δ δ̂ js js' hyps = ≈-refl
-SI-ext (var i)   δ δ̂ js js' hyps = hyps i
-SI-ext (P + Q)   δ δ̂ js js' hyps =
-  ∘-cong₂ (ℰCoprod.coprod-m-cong (SI-ext P δ δ̂ js js' hyps) (SI-ext Q δ δ̂ js js' hyps))
-SI-ext (P × Q)   δ δ̂ js js' hyps =
-  ∘-cong₂ (ℰP.prod-m-cong (SI-ext P δ δ̂ js js' hyps) (SI-ext Q δ δ̂ js js' hyps))
-SI-ext (μ P)     δ δ̂ js js' hyps =
-  collapse-ext (μ P) (collapseAt (μ P)) _ _ _ _
-    (λ i → ∘-cong₁ (hyps i))
-
 -- A collapse after the interpretation isomorphism fuses into the agreement.
 SI-collapse : ∀ {n} (P : Poly ℰ n) (δ : Fin n → obj) (δ̂ δ̂'' : Fin n → FM.Obj)
               (js : ∀ i → Iso (δ i) (realise .fobj (δ̂ i)))
-              (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂'' i))) →
+              (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂'' i)))
+              (js'' : ∀ i → Iso (δ i) (realise .fobj (δ̂'' i))) →
+              (∀ i → Iso-trans (js i) (isos i) .fwd ≈ js'' i .fwd) →
               collapseAt P .iso δ̂ δ̂'' isos .fwd ∘ fobj-realise-iso P δ δ̂ js .fwd
-              ≈ fobj-realise-iso P δ δ̂'' (λ i → Iso-trans (js i) (isos i)) .fwd
-SI-collapse (const A) δ δ̂ δ̂'' js isos = id-left
-SI-collapse (var i)   δ δ̂ δ̂'' js isos = ≈-refl
-SI-collapse (P + Q)   δ δ̂ δ̂'' js isos =
+              ≈ fobj-realise-iso P δ δ̂'' js'' .fwd
+SI-collapse (const A) δ δ̂ δ̂'' js isos js'' pw = id-left
+SI-collapse (var i)   δ δ̂ δ̂'' js isos js'' pw = pw i
+SI-collapse (P + Q)   δ δ̂ δ̂'' js isos js'' pw =
   begin
     ((K⊕ (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ ℰCoprod.coprod-m (collapseAt P .iso δ̂ δ̂'' isos .fwd) (collapseAt Q .iso δ̂ δ̂'' isos .fwd)) ∘ K⊕ (FM.fobj FM.μObj (Poly-map η P) δ̂) (FM.fobj FM.μObj (Poly-map η Q) δ̂) .fwd) ∘ (K⊕ (FM.fobj FM.μObj (Poly-map η P) δ̂) (FM.fobj FM.μObj (Poly-map η Q) δ̂) .bwd ∘ ℰCoprod.coprod-m (fobj-realise-iso P δ δ̂ js .fwd) (fobj-realise-iso Q δ δ̂ js .fwd))
   ≈⟨ assoc _ _ _ ⟩
@@ -243,10 +230,10 @@ SI-collapse (P + Q)   δ δ̂ δ̂'' js isos =
     K⊕ (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ (ℰCoprod.coprod-m (collapseAt P .iso δ̂ δ̂'' isos .fwd) (collapseAt Q .iso δ̂ δ̂'' isos .fwd) ∘ ℰCoprod.coprod-m (fobj-realise-iso P δ δ̂ js .fwd) (fobj-realise-iso Q δ δ̂ js .fwd))
   ≈˘⟨ ∘-cong₂ (ℰCoprod.coprod-m-comp _ _ _ _) ⟩
     K⊕ (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ ℰCoprod.coprod-m (collapseAt P .iso δ̂ δ̂'' isos .fwd ∘ fobj-realise-iso P δ δ̂ js .fwd) (collapseAt Q .iso δ̂ δ̂'' isos .fwd ∘ fobj-realise-iso Q δ δ̂ js .fwd)
-  ≈⟨ ∘-cong₂ (ℰCoprod.coprod-m-cong (SI-collapse P δ δ̂ δ̂'' js isos) (SI-collapse Q δ δ̂ δ̂'' js isos)) ⟩
-    K⊕ (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ ℰCoprod.coprod-m (fobj-realise-iso P δ δ̂'' (λ i → Iso-trans (js i) (isos i)) .fwd) (fobj-realise-iso Q δ δ̂'' (λ i → Iso-trans (js i) (isos i)) .fwd)
+  ≈⟨ ∘-cong₂ (ℰCoprod.coprod-m-cong (SI-collapse P δ δ̂ δ̂'' js isos js'' pw) (SI-collapse Q δ δ̂ δ̂'' js isos js'' pw)) ⟩
+    K⊕ (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ ℰCoprod.coprod-m (fobj-realise-iso P δ δ̂'' js'' .fwd) (fobj-realise-iso Q δ δ̂'' js'' .fwd)
   ∎ where open ≈-Reasoning isEquiv
-SI-collapse (P × Q)   δ δ̂ δ̂'' js isos =
+SI-collapse (P × Q)   δ δ̂ δ̂'' js isos js'' pw =
   begin
     ((K× (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ ℰP.prod-m (collapseAt P .iso δ̂ δ̂'' isos .fwd) (collapseAt Q .iso δ̂ δ̂'' isos .fwd)) ∘ K× (FM.fobj FM.μObj (Poly-map η P) δ̂) (FM.fobj FM.μObj (Poly-map η Q) δ̂) .fwd) ∘ (K× (FM.fobj FM.μObj (Poly-map η P) δ̂) (FM.fobj FM.μObj (Poly-map η Q) δ̂) .bwd ∘ ℰP.prod-m (fobj-realise-iso P δ δ̂ js .fwd) (fobj-realise-iso Q δ δ̂ js .fwd))
   ≈⟨ assoc _ _ _ ⟩
@@ -257,17 +244,13 @@ SI-collapse (P × Q)   δ δ̂ δ̂'' js isos =
     K× (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ (ℰP.prod-m (collapseAt P .iso δ̂ δ̂'' isos .fwd) (collapseAt Q .iso δ̂ δ̂'' isos .fwd) ∘ ℰP.prod-m (fobj-realise-iso P δ δ̂ js .fwd) (fobj-realise-iso Q δ δ̂ js .fwd))
   ≈˘⟨ ∘-cong₂ (ℰP.prod-m-comp _ _ _ _) ⟩
     K× (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ ℰP.prod-m (collapseAt P .iso δ̂ δ̂'' isos .fwd ∘ fobj-realise-iso P δ δ̂ js .fwd) (collapseAt Q .iso δ̂ δ̂'' isos .fwd ∘ fobj-realise-iso Q δ δ̂ js .fwd)
-  ≈⟨ ∘-cong₂ (ℰP.prod-m-cong (SI-collapse P δ δ̂ δ̂'' js isos) (SI-collapse Q δ δ̂ δ̂'' js isos)) ⟩
-    K× (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ ℰP.prod-m (fobj-realise-iso P δ δ̂'' (λ i → Iso-trans (js i) (isos i)) .fwd) (fobj-realise-iso Q δ δ̂'' (λ i → Iso-trans (js i) (isos i)) .fwd)
+  ≈⟨ ∘-cong₂ (ℰP.prod-m-cong (SI-collapse P δ δ̂ δ̂'' js isos js'' pw) (SI-collapse Q δ δ̂ δ̂'' js isos js'' pw)) ⟩
+    K× (FM.fobj FM.μObj (Poly-map η P) δ̂'') (FM.fobj FM.μObj (Poly-map η Q) δ̂'') .bwd ∘ ℰP.prod-m (fobj-realise-iso P δ δ̂'' js'' .fwd) (fobj-realise-iso Q δ δ̂'' js'' .fwd)
   ∎ where open ≈-Reasoning isEquiv
-SI-collapse (μ P)     δ δ̂ δ̂'' js isos =
+SI-collapse (μ P)     δ δ̂ δ̂'' js isos js'' pw =
   ≈-trans (≈-sym (mu-collapse-comp P (collapseAt P) _ δ̂ δ̂'' _ isos))
-    (collapse-ext-μ)
-  where
-    collapse-ext-μ : MuCollapse.mu-collapse P (collapseAt P) (λ i → η .fobj (δ i)) δ̂'' (λ i → Iso-trans (Iso-trans (realise-η-iso (δ i)) (js i)) (isos i)) .fwd
-                     ≈ MuCollapse.mu-collapse P (collapseAt P) (λ i → η .fobj (δ i)) δ̂'' (λ i → Iso-trans (realise-η-iso (δ i)) (Iso-trans (js i) (isos i))) .fwd
-    collapse-ext-μ = collapse-ext (μ P) (collapseAt (μ P)) _ _ _ _
-      (λ i → ≈-sym (assoc _ _ _))
+    (collapse-ext (μ P) (collapseAt (μ P)) _ _ _ _
+      (λ i → ≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (pw i))))
 
 sim-mu : ∀ {n} (P : Poly ℰ (suc n)) → SimStmt P → SimStmt (μ P)
 sim-mu {n} P simP {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
@@ -336,8 +319,7 @@ sim-mu {n} P simP {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
 
     fuseA : Sd.KKε .fwd ∘ SIA .fwd ≈ SIE .fwd
     fuseA =
-      ≈-trans (SI-collapse P (extend δ μℰ') (extend δ̂η (η .fobj μℰ')) (extend δ̂η μ̂') (ηjs δ μℰ') Sd.KKisos)
-        (SI-ext P (extend δ μℰ') (extend δ̂η μ̂') _ jsE pw)
+      SI-collapse P (extend δ μℰ') (extend δ̂η (η .fobj μℰ')) (extend δ̂η μ̂') (ηjs δ μℰ') Sd.KKisos jsE pw
       where
         pw : ∀ i → Iso-trans (ηjs δ μℰ' i) (Sd.KKisos i) .fwd ≈ jsE i .fwd
         pw Fin.zero    = realise-η-iso μℰ' .fwd∘bwd≈id
@@ -345,8 +327,7 @@ sim-mu {n} P simP {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
 
     fuseM : CP .iso (extend δ̂η' (η .fobj (Creal P δ̂η'))) (extend δ̂η' μ̂') M'.inIsos .fwd ∘ SIμext .fwd ≈ SIE' .fwd
     fuseM =
-      ≈-trans (SI-collapse P (extend δ' μℰ') (extend δ̂η' (η .fobj μℰ')) (extend δ̂η' μ̂') (ηjs δ' μℰ') M'.inIsos)
-        (SI-ext P (extend δ' μℰ') (extend δ̂η' μ̂') _ jsE' pw)
+      SI-collapse P (extend δ' μℰ') (extend δ̂η' (η .fobj μℰ')) (extend δ̂η' μ̂') (ηjs δ' μℰ') M'.inIsos jsE' pw
       where
         pw : ∀ i → Iso-trans (ηjs δ' μℰ' i) (M'.inIsos i) .fwd ≈ jsE' i .fwd
         pw Fin.zero    = realise-η-iso μℰ' .fwd∘bwd≈id

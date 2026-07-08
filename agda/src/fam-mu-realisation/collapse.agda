@@ -119,6 +119,21 @@ collapse-refl Q CQ' δ̂ isos hyps =
       ≈-trans (≈-sym (CQ' .comp δ̂ δ̂ δ̂ (λ i → Iso-refl) (λ i → Iso-refl)))
         (collapse-ext Q CQ' δ̂ δ̂ (λ i → Iso-trans Iso-refl Iso-refl) (λ i → Iso-refl) (λ i → id-left))
 
+-- Two composite collapse paths with pointwise-equal composite agreements
+-- coincide.
+collapse-path-eq : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q)
+                   (δ̂₁ δ̂₂ δ̂₂' δ̂₃ : Fin n → FM.Obj)
+                   (as₁ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
+                   (as₂ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i)))
+                   (bs₁ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂' i)))
+                   (bs₂ : ∀ i → Iso (realise .fobj (δ̂₂' i)) (realise .fobj (δ̂₃ i))) →
+                   (∀ i → Iso-trans (as₁ i) (as₂ i) .fwd ≈ Iso-trans (bs₁ i) (bs₂ i) .fwd) →
+                   CQ' .iso _ _ as₂ .fwd ∘ CQ' .iso _ _ as₁ .fwd
+                   ≈ CQ' .iso _ _ bs₂ .fwd ∘ CQ' .iso _ _ bs₁ .fwd
+collapse-path-eq Q CQ' δ̂₁ δ̂₂ δ̂₂' δ̂₃ as₁ as₂ bs₁ bs₂ pw =
+  ≈-trans (≈-sym (CQ' .comp δ̂₁ δ̂₂ δ̂₃ as₁ as₂))
+    (≈-trans (collapse-ext Q CQ' δ̂₁ δ̂₃ _ _ pw) (CQ' .comp δ̂₁ δ̂₂' δ̂₃ bs₁ bs₂))
+
 -- Coproduct machinery for the sum case of the collapse.
 ℰCP = strong-coproducts→coproducts ℰT ℰSC
 module ℰCPm = HasCoproducts ℰCP
