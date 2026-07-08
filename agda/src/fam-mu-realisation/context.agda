@@ -70,7 +70,7 @@ fmorη Γ X u = realise .fmor u ∘ prodη Γ X .Iso.bwd
 
 fmorη-cong : ∀ {Γ X Y} {u₁ u₂ : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X) Y} →
              Category._≈_ FM.cat u₁ u₂ → fmorη Γ X u₁ ≈ fmorη Γ X u₂
-fmorη-cong u₁≃u₂ = ∘-cong (realise .fmor-cong u₁≃u₂) ≈-refl
+fmorη-cong u₁≃u₂ = ∘-cong₁ (realise .fmor-cong u₁≃u₂)
 
 -- Pair a context-preserving morphism with the context projection, with the
 -- projection pinned (prod is not injective, so it cannot be inferred).
@@ -87,11 +87,11 @@ prodη-p₁ Γ X =
     ℰP.p₁ ∘ (ℰP.prod-m (realise-η-iso Γ .Iso.fwd) (id _) ∘ FR.realise-products-iso ℰP ℰE (η .fobj Γ) X .Iso.fwd)
   ≈˘⟨ assoc _ _ _ ⟩
     (ℰP.p₁ ∘ ℰP.prod-m (realise-η-iso Γ .Iso.fwd) (id _)) ∘ FR.realise-products-iso ℰP ℰE (η .fobj Γ) X .Iso.fwd
-  ≈⟨ ∘-cong (ℰP.pair-p₁ _ _) ≈-refl ⟩
+  ≈⟨ ∘-cong₁ (ℰP.pair-p₁ _ _) ⟩
     (realise-η-iso Γ .Iso.fwd ∘ ℰP.p₁) ∘ FR.realise-products-iso ℰP ℰE (η .fobj Γ) X .Iso.fwd
   ≈⟨ assoc _ _ _ ⟩
     realise-η-iso Γ .Iso.fwd ∘ (ℰP.p₁ ∘ FR.realise-products-iso ℰP ℰE (η .fobj Γ) X .Iso.fwd)
-  ≈⟨ ∘-cong ≈-refl (FR.realise-products-p₁ ℰP ℰE (η .fobj Γ) X) ⟩
+  ≈⟨ ∘-cong₂ (FR.realise-products-p₁ ℰP ℰE (η .fobj Γ) X) ⟩
     realise-η-iso Γ .Iso.fwd ∘ realise .fmor FM.Fam𝒞-P.p₁
   ∎ where open ≈-Reasoning isEquiv
 
@@ -102,9 +102,9 @@ prodη-p₂ Γ X =
     ℰP.p₂ ∘ (ℰP.prod-m (realise-η-iso Γ .Iso.fwd) (id _) ∘ FR.realise-products-iso ℰP ℰE (η .fobj Γ) X .Iso.fwd)
   ≈˘⟨ assoc _ _ _ ⟩
     (ℰP.p₂ ∘ ℰP.prod-m (realise-η-iso Γ .Iso.fwd) (id _)) ∘ FR.realise-products-iso ℰP ℰE (η .fobj Γ) X .Iso.fwd
-  ≈⟨ ∘-cong (ℰP.pair-p₂ _ _) ≈-refl ⟩
+  ≈⟨ ∘-cong₁ (ℰP.pair-p₂ _ _) ⟩
     (id _ ∘ ℰP.p₂) ∘ FR.realise-products-iso ℰP ℰE (η .fobj Γ) X .Iso.fwd
-  ≈⟨ ∘-cong id-left ≈-refl ⟩
+  ≈⟨ ∘-cong₁ id-left ⟩
     ℰP.p₂ ∘ FR.realise-products-iso ℰP ℰE (η .fobj Γ) X .Iso.fwd
   ≈⟨ FR.realise-products-p₂ ℰP ℰE (η .fobj Γ) X ⟩
     realise .fmor FM.Fam𝒞-P.p₂
@@ -116,8 +116,8 @@ prodη-pair : ∀ (Γ : obj) (X : FM.Obj) {Y : FM.Obj} (v : FM.Mor (FM.Fam𝒞-P
              ≈ (prodη Γ Y .Iso.bwd ∘ ℰP.pair (ℰP.p₁ {Γ} {realise .fobj X}) (fmorη Γ X v))
 prodη-pair Γ X {Y} v =
   ≈-trans (≈-sym id-left)
-    (≈-trans (∘-cong (≈-sym (prodη Γ Y .Iso.bwd∘fwd≈id)) ≈-refl)
-      (≈-trans (assoc _ _ _) (∘-cong ≈-refl core)))
+    (≈-trans (∘-cong₁ (≈-sym (prodη Γ Y .Iso.bwd∘fwd≈id)))
+      (≈-trans (assoc _ _ _) (∘-cong₂ core)))
   where
     core : (prodη Γ Y .Iso.fwd ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd))
            ≈ ℰP.pair (ℰP.p₁ {Γ} {realise .fobj X}) (fmorη Γ X v)
@@ -131,23 +131,23 @@ prodη-pair Γ X {Y} v =
             ℰP.p₁ {Γ} {realise .fobj Y} ∘ (prodη Γ Y .Iso.fwd ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd))
           ≈˘⟨ assoc _ _ _ ⟩
             (ℰP.p₁ {Γ} {realise .fobj Y} ∘ prodη Γ Y .Iso.fwd) ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd)
-          ≈⟨ ∘-cong (prodη-p₁ Γ Y) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (prodη-p₁ Γ Y) ⟩
             (realise-η-iso Γ .Iso.fwd ∘ realise .fmor FM.Fam𝒞-P.p₁) ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd)
           ≈⟨ assoc _ _ _ ⟩
             realise-η-iso Γ .Iso.fwd ∘ (realise .fmor FM.Fam𝒞-P.p₁ ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd))
-          ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+          ≈˘⟨ ∘-cong₂ (assoc _ _ _) ⟩
             realise-η-iso Γ .Iso.fwd ∘ ((realise .fmor FM.Fam𝒞-P.p₁ ∘ realise .fmor (pairη Γ X v)) ∘ prodη Γ X .Iso.bwd)
-          ≈˘⟨ ∘-cong ≈-refl (∘-cong (realise .fmor-comp _ _) ≈-refl) ⟩
+          ≈˘⟨ ∘-cong₂ (∘-cong₁ (realise .fmor-comp _ _)) ⟩
             realise-η-iso Γ .Iso.fwd ∘ (realise .fmor (FM.Mor-∘ FM.Fam𝒞-P.p₁ (pairη Γ X v)) ∘ prodη Γ X .Iso.bwd)
-          ≈⟨ ∘-cong ≈-refl (∘-cong (realise .fmor-cong (FM.Fam𝒞-P.pair-p₁ _ _)) ≈-refl) ⟩
+          ≈⟨ ∘-cong₂ (∘-cong₁ (realise .fmor-cong (FM.Fam𝒞-P.pair-p₁ _ _))) ⟩
             realise-η-iso Γ .Iso.fwd ∘ (realise .fmor (FM.Fam𝒞-P.p₁ {x = η .fobj Γ} {y = X}) ∘ prodη Γ X .Iso.bwd)
           ≈˘⟨ assoc _ _ _ ⟩
             (realise-η-iso Γ .Iso.fwd ∘ realise .fmor (FM.Fam𝒞-P.p₁ {x = η .fobj Γ} {y = X})) ∘ prodη Γ X .Iso.bwd
-          ≈˘⟨ ∘-cong (prodη-p₁ Γ X) ≈-refl ⟩
+          ≈˘⟨ ∘-cong₁ (prodη-p₁ Γ X) ⟩
             (ℰP.p₁ {Γ} {realise .fobj X} ∘ prodη Γ X .Iso.fwd) ∘ prodη Γ X .Iso.bwd
           ≈⟨ assoc _ _ _ ⟩
             ℰP.p₁ {Γ} {realise .fobj X} ∘ (prodη Γ X .Iso.fwd ∘ prodη Γ X .Iso.bwd)
-          ≈⟨ ∘-cong ≈-refl (prodη Γ X .Iso.fwd∘bwd≈id) ⟩
+          ≈⟨ ∘-cong₂ (prodη Γ X .Iso.fwd∘bwd≈id) ⟩
             ℰP.p₁ {Γ} {realise .fobj X} ∘ id _
           ≈⟨ id-right ⟩
             ℰP.p₁ {Γ} {realise .fobj X}
@@ -160,13 +160,13 @@ prodη-pair Γ X {Y} v =
             ℰP.p₂ {Γ} {realise .fobj Y} ∘ (prodη Γ Y .Iso.fwd ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd))
           ≈˘⟨ assoc _ _ _ ⟩
             (ℰP.p₂ {Γ} {realise .fobj Y} ∘ prodη Γ Y .Iso.fwd) ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd)
-          ≈⟨ ∘-cong (prodη-p₂ Γ Y) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (prodη-p₂ Γ Y) ⟩
             realise .fmor FM.Fam𝒞-P.p₂ ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd)
           ≈˘⟨ assoc _ _ _ ⟩
             (realise .fmor FM.Fam𝒞-P.p₂ ∘ realise .fmor (pairη Γ X v)) ∘ prodη Γ X .Iso.bwd
-          ≈˘⟨ ∘-cong (realise .fmor-comp _ _) ≈-refl ⟩
+          ≈˘⟨ ∘-cong₁ (realise .fmor-comp _ _) ⟩
             realise .fmor (FM.Mor-∘ FM.Fam𝒞-P.p₂ (pairη Γ X v)) ∘ prodη Γ X .Iso.bwd
-          ≈⟨ ∘-cong (realise .fmor-cong (FM.Fam𝒞-P.pair-p₂ _ _)) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (realise .fmor-cong (FM.Fam𝒞-P.pair-p₂ _ _)) ⟩
             realise .fmor v ∘ prodη Γ X .Iso.bwd
           ∎ where open ≈-Reasoning isEquiv
 
@@ -179,11 +179,11 @@ fmorη-∘co : ∀ (Γ : obj) (X : FM.Obj) {Y Z : FM.Obj}
 fmorη-∘co Γ X {Y} {Z} u v =
   begin
     realise .fmor (FM.Mor-∘ u (pairη Γ X v)) ∘ prodη Γ X .Iso.bwd
-  ≈⟨ ∘-cong (realise .fmor-comp _ _) ≈-refl ⟩
+  ≈⟨ ∘-cong₁ (realise .fmor-comp _ _) ⟩
     (realise .fmor u ∘ realise .fmor (pairη Γ X v)) ∘ prodη Γ X .Iso.bwd
   ≈⟨ assoc _ _ _ ⟩
     realise .fmor u ∘ (realise .fmor (pairη Γ X v) ∘ prodη Γ X .Iso.bwd)
-  ≈⟨ ∘-cong ≈-refl (prodη-pair Γ X v) ⟩
+  ≈⟨ ∘-cong₂ (prodη-pair Γ X v) ⟩
     realise .fmor u ∘ (prodη Γ Y .Iso.bwd ∘ ℰP.pair (ℰP.p₁ {Γ} {realise .fobj X}) (fmorη Γ X v))
   ≈˘⟨ assoc _ _ _ ⟩
     (realise .fmor u ∘ prodη Γ Y .Iso.bwd) ∘ ℰP.pair (ℰP.p₁ {Γ} {realise .fobj X}) (fmorη Γ X v)
@@ -195,11 +195,11 @@ fmorη-p₂ : ∀ (Γ : obj) (X : FM.Obj) →
 fmorη-p₂ Γ X =
   begin
     realise .fmor (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X}) ∘ prodη Γ X .Iso.bwd
-  ≈˘⟨ ∘-cong (prodη-p₂ Γ X) ≈-refl ⟩
+  ≈˘⟨ ∘-cong₁ (prodη-p₂ Γ X) ⟩
     (ℰP.p₂ ∘ prodη Γ X .Iso.fwd) ∘ prodη Γ X .Iso.bwd
   ≈⟨ assoc _ _ _ ⟩
     ℰP.p₂ ∘ (prodη Γ X .Iso.fwd ∘ prodη Γ X .Iso.bwd)
-  ≈⟨ ∘-cong ≈-refl (prodη Γ X .Iso.fwd∘bwd≈id) ⟩
+  ≈⟨ ∘-cong₂ (prodη Γ X .Iso.fwd∘bwd≈id) ⟩
     ℰP.p₂ ∘ id _
   ≈⟨ id-right ⟩
     ℰP.p₂
@@ -212,11 +212,11 @@ fmorη-pure : ∀ (Γ : obj) (X : FM.Obj) {Y : FM.Obj} (w : FM.Mor X Y) →
 fmorη-pure Γ X w =
   begin
     realise .fmor (FM.Mor-∘ w (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X})) ∘ prodη Γ X .Iso.bwd
-  ≈⟨ ∘-cong (realise .fmor-comp _ _) ≈-refl ⟩
+  ≈⟨ ∘-cong₁ (realise .fmor-comp _ _) ⟩
     (realise .fmor w ∘ realise .fmor (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X})) ∘ prodη Γ X .Iso.bwd
   ≈⟨ assoc _ _ _ ⟩
     realise .fmor w ∘ (realise .fmor (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X}) ∘ prodη Γ X .Iso.bwd)
-  ≈⟨ ∘-cong ≈-refl (fmorη-p₂ Γ X) ⟩
+  ≈⟨ ∘-cong₂ (fmorη-p₂ Γ X) ⟩
     realise .fmor w ∘ ℰP.p₂
   ∎ where open ≈-Reasoning isEquiv
 
@@ -230,9 +230,9 @@ counit-fmorη Γ X {A} g =
     realise-η-iso A .Iso.fwd ∘ (realise .fmor (untranspose g) ∘ prodη Γ X .Iso.bwd)
   ≈˘⟨ assoc _ _ _ ⟩
     (realise-η-iso A .Iso.fwd ∘ realise .fmor (untranspose g)) ∘ prodη Γ X .Iso.bwd
-  ≈˘⟨ ∘-cong (FR.transpose-realise (untranspose g)) ≈-refl ⟩
+  ≈˘⟨ ∘-cong₁ (FR.transpose-realise (untranspose g)) ⟩
     transpose (untranspose g) ∘ prodη Γ X .Iso.bwd
-  ≈⟨ ∘-cong (FR.transpose-untranspose g) ≈-refl ⟩
+  ≈⟨ ∘-cong₁ (FR.transpose-untranspose g) ⟩
     g ∘ prodη Γ X .Iso.bwd
   ∎ where open ≈-Reasoning isEquiv
 
@@ -241,7 +241,7 @@ co-pure : ∀ {Γ X Y Z : obj} (x : Y ⇒ Z) (y : X ⇒ Y) →
           ((x ∘ ℰP.p₂ {Γ} {Y}) ∘co (y ∘ ℰP.p₂)) ≈ ((x ∘ y) ∘ ℰP.p₂)
 co-pure x y =
   ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) (≈-sym (assoc _ _ _)))
+    (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) (≈-sym (assoc _ _ _)))
 
 -- Cancel an isomorphism applied in context on the right of a composition.
 co-iso-cancel : ∀ {Γ X Y Z : obj} (I : Iso X Y)
@@ -250,15 +250,15 @@ co-iso-cancel : ∀ {Γ X Y Z : obj} (I : Iso X Y)
 co-iso-cancel I {u} {v} eq =
   begin
     v ∘co (I .Iso.bwd ∘ ℰP.p₂)
-  ≈˘⟨ CoK.∘-cong eq ≈-refl ⟩
+  ≈˘⟨ CoK.∘-cong₁ eq ⟩
     (u ∘co (I .Iso.fwd ∘ ℰP.p₂)) ∘co (I .Iso.bwd ∘ ℰP.p₂)
   ≈⟨ CoK.assoc _ _ _ ⟩
     u ∘co ((I .Iso.fwd ∘ ℰP.p₂) ∘co (I .Iso.bwd ∘ ℰP.p₂))
-  ≈⟨ CoK.∘-cong ≈-refl (co-pure (I .Iso.fwd) (I .Iso.bwd)) ⟩
+  ≈⟨ CoK.∘-cong₂ (co-pure (I .Iso.fwd) (I .Iso.bwd)) ⟩
     u ∘co ((I .Iso.fwd ∘ I .Iso.bwd) ∘ ℰP.p₂)
-  ≈⟨ CoK.∘-cong ≈-refl (∘-cong (I .Iso.fwd∘bwd≈id) ≈-refl) ⟩
+  ≈⟨ CoK.∘-cong₂ (∘-cong₁ (I .Iso.fwd∘bwd≈id)) ⟩
     u ∘co (id _ ∘ ℰP.p₂)
-  ≈⟨ CoK.∘-cong ≈-refl id-left ⟩
+  ≈⟨ CoK.∘-cong₂ id-left ⟩
     u ∘co ℰP.p₂
   ≈⟨ CoK.id-right ⟩
     u
@@ -269,8 +269,8 @@ iso-shuffle : ∀ {X Y Z : obj} (I : Iso Y Z) (f : X ⇒ Y) (g : X ⇒ Z) →
               (I .Iso.fwd ∘ f) ≈ g → f ≈ (I .Iso.bwd ∘ g)
 iso-shuffle I f g eq =
   ≈-trans (≈-sym id-left)
-    (≈-trans (∘-cong (≈-sym (I .Iso.bwd∘fwd≈id)) ≈-refl)
-      (≈-trans (assoc _ _ _) (∘-cong ≈-refl eq)))
+    (≈-trans (∘-cong₁ (≈-sym (I .Iso.bwd∘fwd≈id)))
+      (≈-trans (assoc _ _ _) (∘-cong₂ eq)))
 
 -- Realisation in context is injective on morphisms into embedded objects.
 fmorη-inj : ∀ (Γ : obj) (X : FM.Obj) {A : obj}
@@ -289,15 +289,15 @@ fmorη-inj Γ X {A} u v eq =
         realise .fmor u
       ≈˘⟨ id-right ⟩
         realise .fmor u ∘ id _
-      ≈˘⟨ ∘-cong ≈-refl (prodη Γ X .Iso.bwd∘fwd≈id) ⟩
+      ≈˘⟨ ∘-cong₂ (prodη Γ X .Iso.bwd∘fwd≈id) ⟩
         realise .fmor u ∘ (prodη Γ X .Iso.bwd ∘ prodη Γ X .Iso.fwd)
       ≈˘⟨ assoc _ _ _ ⟩
         fmorη Γ X u ∘ prodη Γ X .Iso.fwd
-      ≈⟨ ∘-cong eq ≈-refl ⟩
+      ≈⟨ ∘-cong₁ eq ⟩
         fmorη Γ X v ∘ prodη Γ X .Iso.fwd
       ≈⟨ assoc _ _ _ ⟩
         realise .fmor v ∘ (prodη Γ X .Iso.bwd ∘ prodη Γ X .Iso.fwd)
-      ≈⟨ ∘-cong ≈-refl (prodη Γ X .Iso.bwd∘fwd≈id) ⟩
+      ≈⟨ ∘-cong₂ (prodη Γ X .Iso.bwd∘fwd≈id) ⟩
         realise .fmor v ∘ id _
       ≈⟨ id-right ⟩
         realise .fmor v
@@ -306,7 +306,7 @@ fmorη-inj Γ X {A} u v eq =
     tr-eq : transpose u ≈ transpose v
     tr-eq =
       ≈-trans (FR.transpose-realise u)
-        (≈-trans (∘-cong ≈-refl real-eq) (≈-sym (FR.transpose-realise v)))
+        (≈-trans (∘-cong₂ real-eq) (≈-sym (FR.transpose-realise v)))
 
 -- The pairing of the projections is the identity.
 pair-p₁p₂-id : ∀ {Γ A : obj} → ℰP.pair (ℰP.p₁ {Γ} {A}) ℰP.p₂ ≈ id _
@@ -318,7 +318,7 @@ iso-mono : ∀ {X Y Z : obj} (I : Iso Y Z) {f g : X ⇒ Y} →
            (I .Iso.fwd ∘ f) ≈ (I .Iso.fwd ∘ g) → f ≈ g
 iso-mono I {f} {g} eq =
   ≈-trans (iso-shuffle I _ _ eq)
-    (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (I .Iso.bwd∘fwd≈id) ≈-refl) id-left))
+    (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (I .Iso.bwd∘fwd≈id)) id-left))
 
 -- Realising a morphism transposed to Fam(ℰ) and collapsing recovers it.
 absorb : ∀ {Γ A : obj} (X : FM.Obj) (g : ℰP.prod Γ (realise .fobj X) ⇒ A) →
@@ -326,7 +326,7 @@ absorb : ∀ {Γ A : obj} (X : FM.Obj) (g : ℰP.prod Γ (realise .fobj X) ⇒ A
 absorb {Γ} {A} X g =
   ≈-trans (counit-fmorη Γ X _)
     (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (prodη Γ X .Iso.fwd∘bwd≈id)) id-right))
+      (≈-trans (∘-cong₂ (prodη Γ X .Iso.fwd∘bwd≈id)) id-right))
 
 -- Transpose a context morphism between plain objects into Fam(ℰ), correcting
 -- the domain by the counit.
@@ -339,7 +339,7 @@ ctxη-counit : ∀ (Γ A₀ : obj) {A : obj} (h : ℰP.prod Γ A₀ ⇒ A) →
               (realise-η-iso A .Iso.fwd ∘ fmorη Γ (η .fobj A₀) (ctxη Γ A₀ h))
               ≈ (h ∘ ℰP.prod-m (id _) (realise-η-iso A₀ .Iso.fwd))
 ctxη-counit Γ A₀ {A} h =
-  ≈-trans (∘-cong ≈-refl (fmorη-cong (FR.untranspose-cong (≈-sym (assoc _ _ _)))))
+  ≈-trans (∘-cong₂ (fmorη-cong (FR.untranspose-cong (≈-sym (assoc _ _ _)))))
     (≈-trans (absorb (η .fobj A₀) (h ∘ ℰP.prod-m (id _) (realise-η-iso A₀ .Iso.fwd))) ≈-refl)
 
 -- The transposed context morphism against the counit inverses.
@@ -349,17 +349,17 @@ ctxη-counit-sq : ∀ (Γ A₀ : obj) {A : obj} (h : ℰP.prod Γ A₀ ⇒ A) �
 ctxη-counit-sq Γ A₀ {A} h =
   begin
     fmorη Γ (η .fobj A₀) (ctxη Γ A₀ h) ∘co (realise-η-iso A₀ .Iso.bwd ∘ ℰP.p₂)
-  ≈⟨ CoK.∘-cong (iso-shuffle (realise-η-iso A) _ _ (ctxη-counit Γ A₀ h)) ≈-refl ⟩
+  ≈⟨ CoK.∘-cong₁ (iso-shuffle (realise-η-iso A) _ _ (ctxη-counit Γ A₀ h)) ⟩
     (realise-η-iso A .Iso.bwd ∘ (h ∘ ℰP.prod-m (id _) (realise-η-iso A₀ .Iso.fwd))) ∘co (realise-η-iso A₀ .Iso.bwd ∘ ℰP.p₂)
   ≈⟨ assoc _ _ _ ⟩
     realise-η-iso A .Iso.bwd ∘ ((h ∘ ℰP.prod-m (id _) (realise-η-iso A₀ .Iso.fwd)) ∘ ℰP.pair ℰP.p₁ (realise-η-iso A₀ .Iso.bwd ∘ ℰP.p₂))
-  ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+  ≈⟨ ∘-cong₂ (assoc _ _ _) ⟩
     realise-η-iso A .Iso.bwd ∘ (h ∘ (ℰP.prod-m (id _) (realise-η-iso A₀ .Iso.fwd) ∘ ℰP.pair ℰP.p₁ (realise-η-iso A₀ .Iso.bwd ∘ ℰP.p₂)))
-  ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (ℰP.pair-compose _ _ _ _)) ⟩
+  ≈⟨ ∘-cong₂ (∘-cong₂ (ℰP.pair-compose _ _ _ _)) ⟩
     realise-η-iso A .Iso.bwd ∘ (h ∘ ℰP.pair (id _ ∘ ℰP.p₁) (realise-η-iso A₀ .Iso.fwd ∘ (realise-η-iso A₀ .Iso.bwd ∘ ℰP.p₂)))
-  ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (ℰP.pair-cong id-left (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (realise-η-iso A₀ .Iso.fwd∘bwd≈id) ≈-refl) id-left)))) ⟩
+  ≈⟨ ∘-cong₂ (∘-cong₂ (ℰP.pair-cong id-left (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (realise-η-iso A₀ .Iso.fwd∘bwd≈id)) id-left)))) ⟩
     realise-η-iso A .Iso.bwd ∘ (h ∘ ℰP.pair ℰP.p₁ ℰP.p₂)
-  ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong ≈-refl pair-p₁p₂-id) id-right) ⟩
+  ≈⟨ ∘-cong₂ (≈-trans (∘-cong₂ pair-p₁p₂-id) id-right) ⟩
     realise-η-iso A .Iso.bwd ∘ h
   ∎ where open ≈-Reasoning isEquiv
 
@@ -376,15 +376,15 @@ Gmap P δ̂ {Γ} {A} {B} h =
 sq-refl : ∀ {Γ : obj} {X̂ Ŷ : FM.Obj} (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X̂) Ŷ) →
           (fmorη Γ X̂ u ∘co (Iso-refl .Iso.fwd ∘ ℰP.p₂)) ≈ (Iso-refl .Iso.fwd ∘ fmorη Γ X̂ u)
 sq-refl {Γ} {X̂} u =
-  ≈-trans (∘-cong ≈-refl (ℰP.pair-cong ≈-refl id-left))
-    (≈-trans (∘-cong ≈-refl pair-p₁p₂-id) (≈-trans id-right (≈-sym id-left)))
+  ≈-trans (∘-cong₂ (ℰP.pair-cong ≈-refl id-left))
+    (≈-trans (∘-cong₂ pair-p₁p₂-id) (≈-trans id-right (≈-sym id-left)))
 
 sq-p₂ : ∀ {Γ : obj} {X̂ Ŷ : FM.Obj} (I : Iso (realise .fobj X̂) (realise .fobj Ŷ)) →
         (fmorη Γ Ŷ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = Ŷ}) ∘co (I .Iso.fwd ∘ ℰP.p₂))
         ≈ (I .Iso.fwd ∘ fmorη Γ X̂ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X̂}))
 sq-p₂ {Γ} {X̂} {Ŷ} I =
-  ≈-trans (CoK.∘-cong (fmorη-p₂ Γ Ŷ) ≈-refl)
-    (≈-trans CoK.id-left (≈-sym (∘-cong ≈-refl (fmorη-p₂ Γ X̂))))
+  ≈-trans (CoK.∘-cong₁ (fmorη-p₂ Γ Ŷ))
+    (≈-trans CoK.id-left (≈-sym (∘-cong₂ (fmorη-p₂ Γ X̂))))
 
 -- The realised strong action is a co-Kleisli functor.
 private
@@ -393,7 +393,7 @@ private
     (iso-mono (realise-η-iso A)
       (≈-trans (ctxη-counit Γ A ℰP.p₂)
         (≈-trans (ℰP.pair-p₂ _ _)
-          (≈-sym (∘-cong ≈-refl (fmorη-p₂ Γ (η .fobj A)))))))
+          (≈-sym (∘-cong₂ (fmorη-p₂ Γ (η .fobj A)))))))
 
   ctxη-∘co : ∀ (Γ A B C₀ : obj) (h₂ : ℰP.prod Γ B ⇒ C₀) (h₁ : ℰP.prod Γ A ⇒ B) →
              Category._≈_ FM.cat (ctxη Γ A (h₂ ∘co h₁))
@@ -410,9 +410,9 @@ private
           (h₂ ∘ ℰP.pair ℰP.p₁ h₁) ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd)
         ≈⟨ assoc _ _ _ ⟩
           h₂ ∘ (ℰP.pair ℰP.p₁ h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))
-        ≈⟨ ∘-cong ≈-refl (ℰP.pair-natural _ _ _) ⟩
+        ≈⟨ ∘-cong₂ (ℰP.pair-natural _ _ _) ⟩
           h₂ ∘ ℰP.pair (ℰP.p₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd)) (h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))
-        ≈⟨ ∘-cong ≈-refl (ℰP.pair-cong (≈-trans (ℰP.pair-p₁ _ _) id-left) ≈-refl) ⟩
+        ≈⟨ ∘-cong₂ (ℰP.pair-cong (≈-trans (ℰP.pair-p₁ _ _) id-left) ≈-refl) ⟩
           h₂ ∘ ℰP.pair ℰP.p₁ (h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))
         ∎ where open ≈-Reasoning isEquiv
 
@@ -421,17 +421,17 @@ private
       rhs =
         begin
           realise-η-iso C₀ .Iso.fwd ∘ fmorη Γ (η .fobj A) (FM.Mor-∘ (ctxη Γ B h₂) (pairη Γ (η .fobj A) (ctxη Γ A h₁)))
-        ≈⟨ ∘-cong ≈-refl (fmorη-∘co Γ (η .fobj A) (ctxη Γ B h₂) (ctxη Γ A h₁)) ⟩
+        ≈⟨ ∘-cong₂ (fmorη-∘co Γ (η .fobj A) (ctxη Γ B h₂) (ctxη Γ A h₁)) ⟩
           realise-η-iso C₀ .Iso.fwd ∘ (fmorη Γ (η .fobj B) (ctxη Γ B h₂) ∘ ℰP.pair ℰP.p₁ (fmorη Γ (η .fobj A) (ctxη Γ A h₁)))
         ≈˘⟨ assoc _ _ _ ⟩
           (realise-η-iso C₀ .Iso.fwd ∘ fmorη Γ (η .fobj B) (ctxη Γ B h₂)) ∘ ℰP.pair ℰP.p₁ (fmorη Γ (η .fobj A) (ctxη Γ A h₁))
-        ≈⟨ ∘-cong (ctxη-counit Γ B h₂) ≈-refl ⟩
+        ≈⟨ ∘-cong₁ (ctxη-counit Γ B h₂) ⟩
           (h₂ ∘ ℰP.prod-m (id _) (realise-η-iso B .Iso.fwd)) ∘ ℰP.pair ℰP.p₁ (fmorη Γ (η .fobj A) (ctxη Γ A h₁))
         ≈⟨ assoc _ _ _ ⟩
           h₂ ∘ (ℰP.prod-m (id _) (realise-η-iso B .Iso.fwd) ∘ ℰP.pair ℰP.p₁ (fmorη Γ (η .fobj A) (ctxη Γ A h₁)))
-        ≈⟨ ∘-cong ≈-refl (ℰP.pair-compose _ _ _ _) ⟩
+        ≈⟨ ∘-cong₂ (ℰP.pair-compose _ _ _ _) ⟩
           h₂ ∘ ℰP.pair (id _ ∘ ℰP.p₁) (realise-η-iso B .Iso.fwd ∘ fmorη Γ (η .fobj A) (ctxη Γ A h₁))
-        ≈⟨ ∘-cong ≈-refl (ℰP.pair-cong id-left (ctxη-counit Γ A h₁)) ⟩
+        ≈⟨ ∘-cong₂ (ℰP.pair-cong id-left (ctxη-counit Γ A h₁)) ⟩
           h₂ ∘ ℰP.pair ℰP.p₁ (h₁ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))
         ∎ where open ≈-Reasoning isEquiv
 
@@ -469,12 +469,12 @@ Gmap-∘co P δ̂ {Γ} {A} {B} {C₀} h₂ h₁ =
 Gmap-cong : ∀ {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) {Γ A B : obj}
             {h₁ h₂ : ℰP.prod Γ A ⇒ B} → h₁ ≈ h₂ → Gmap P δ̂ h₁ ≈ Gmap P δ̂ h₂
 Gmap-cong P δ̂ {Γ} {A} {B} {h₁} {h₂} e =
-  ∘-cong (realise .fmor-cong (FMuI.strong-fmor-cong (Poly-map η P) eqs)) ≈-refl
+  ∘-cong₁ (realise .fmor-cong (FMuI.strong-fmor-cong (Poly-map η P) eqs))
   where
     eqs : ∀ i → Category._≈_ FM.cat
             (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη Γ A h₁) i)
             (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη Γ A h₂) i)
-    eqs Fin.zero    = FR.untranspose-cong (∘-cong e ≈-refl)
+    eqs Fin.zero    = FR.untranspose-cong (∘-cong₁ e)
     eqs (Fin.suc i) = FamC.≈-refl
 
 -- A transposed morphism squares with the counits against its own counit form.
@@ -483,14 +483,14 @@ fmorη-ctxη-square : ∀ (Γ : obj) (X̂ Ŷ : FM.Obj) (w : FM.Mor (FM.Fam𝒞-P
                     ≈ (realise-η-iso (realise .fobj Ŷ) .Iso.fwd ∘ fmorη Γ (η .fobj (realise .fobj X̂)) (ctxη Γ (realise .fobj X̂) (fmorη Γ X̂ w)))
 fmorη-ctxη-square Γ X̂ Ŷ w =
   ≈-sym (≈-trans (ctxη-counit Γ (realise .fobj X̂) (fmorη Γ X̂ w))
-    (∘-cong ≈-refl (ℰP.pair-cong id-left ≈-refl)))
+    (∘-cong₂ (ℰP.pair-cong id-left ≈-refl)))
 
 -- Postcomposition with a pure morphism under realisation in context.
 fmorη-post : ∀ (Γ : obj) (X : FM.Obj) {Y Z : FM.Obj} (w : FM.Mor Y Z)
              (u : FM.Mor (FM.Fam𝒞-P.prod (η .fobj Γ) X) Y) →
              fmorη Γ X (FM.Mor-∘ w u) ≈ (realise .fmor w ∘ fmorη Γ X u)
 fmorη-post Γ X w u =
-  ≈-trans (∘-cong (realise .fmor-comp _ _) ≈-refl) (assoc _ _ _)
+  ≈-trans (∘-cong₁ (realise .fmor-comp _ _)) (assoc _ _ _)
 
 -- Cancel an isomorphism applied backwards in context on the right.
 co-iso-epi : ∀ {Γ X Y Z : obj} (I : Iso X Y)
@@ -501,15 +501,15 @@ co-iso-epi I {u} {v} eq =
     u
   ≈˘⟨ CoK.id-right ⟩
     u ∘co ℰP.p₂
-  ≈˘⟨ CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (≈-trans (∘-cong (I .Iso.bwd∘fwd≈id) ≈-refl) id-left)) ⟩
+  ≈˘⟨ CoK.∘-cong₂ (≈-trans (co-pure _ _) (≈-trans (∘-cong₁ (I .Iso.bwd∘fwd≈id)) id-left)) ⟩
     u ∘co ((I .Iso.bwd ∘ ℰP.p₂) ∘co (I .Iso.fwd ∘ ℰP.p₂))
   ≈˘⟨ CoK.assoc _ _ _ ⟩
     (u ∘co (I .Iso.bwd ∘ ℰP.p₂)) ∘co (I .Iso.fwd ∘ ℰP.p₂)
-  ≈⟨ CoK.∘-cong eq ≈-refl ⟩
+  ≈⟨ CoK.∘-cong₁ eq ⟩
     (v ∘co (I .Iso.bwd ∘ ℰP.p₂)) ∘co (I .Iso.fwd ∘ ℰP.p₂)
   ≈⟨ CoK.assoc _ _ _ ⟩
     v ∘co ((I .Iso.bwd ∘ ℰP.p₂) ∘co (I .Iso.fwd ∘ ℰP.p₂))
-  ≈⟨ CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (≈-trans (∘-cong (I .Iso.bwd∘fwd≈id) ≈-refl) id-left)) ⟩
+  ≈⟨ CoK.∘-cong₂ (≈-trans (co-pure _ _) (≈-trans (∘-cong₁ (I .Iso.bwd∘fwd≈id)) id-left)) ⟩
     v ∘co ℰP.p₂
   ≈⟨ CoK.id-right ⟩
     v
@@ -520,9 +520,9 @@ co-iso-move : ∀ {Γ X Y Z : obj} (I : Iso X Y)
               {u : ℰP.prod Γ Y ⇒ Z} {v : ℰP.prod Γ X ⇒ Z} →
               u ≈ (v ∘co (I .Iso.bwd ∘ ℰP.p₂)) → (u ∘co (I .Iso.fwd ∘ ℰP.p₂)) ≈ v
 co-iso-move I {u} {v} eq =
-  ≈-trans (CoK.∘-cong eq ≈-refl)
+  ≈-trans (CoK.∘-cong₁ eq)
     (≈-trans (CoK.assoc _ _ _)
-      (≈-trans (CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (≈-trans (∘-cong (I .Iso.bwd∘fwd≈id) ≈-refl) id-left)))
+      (≈-trans (CoK.∘-cong₂ (≈-trans (co-pure _ _) (≈-trans (∘-cong₁ (I .Iso.bwd∘fwd≈id)) id-left)))
         CoK.id-right))
 
 -- Cancel a projection from the terminal context.
@@ -530,8 +530,8 @@ p₂-cancel : ∀ {X Z : obj} {f g : X ⇒ Z} →
             ((f ∘ ℰP.p₂ {ℰT'.witness} {X}) ≈ (g ∘ ℰP.p₂)) → f ≈ g
 p₂-cancel {X} {Z} {f} {g} eq =
   ≈-trans (≈-sym id-right)
-    (≈-trans (∘-cong ≈-refl (≈-sym (ℰP.pair-p₂ ℰT'.to-terminal (id _))))
+    (≈-trans (∘-cong₂ (≈-sym (ℰP.pair-p₂ ℰT'.to-terminal (id _))))
       (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong eq ≈-refl)
+        (≈-trans (∘-cong₁ eq)
           (≈-trans (assoc _ _ _)
-            (≈-trans (∘-cong ≈-refl (ℰP.pair-p₂ ℰT'.to-terminal (id _))) id-right)))))
+            (≈-trans (∘-cong₂ (ℰP.pair-p₂ ℰT'.to-terminal (id _))) id-right)))))

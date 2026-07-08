@@ -57,20 +57,6 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
 
   -- (componentwise naturality squares hoisted to top level)
 
-  -- The crossing square: the strong action commutes with the collapse.
-  cross : ∀ {A B : obj} (h : ℰP.prod 𝟙 A ⇒ B) →
-          (Gmap Q δ̂₂ h ∘co (GI A .Iso.fwd ∘ ℰP.p₂)) ≈ (GI B .Iso.fwd ∘ Gmap Q δ̂₁ h)
-  cross {A} {B} h =
-    CQ .CollapseAt.natural (extend δ̂₁ (η .fobj A)) (extend δ̂₂ (η .fobj A)) (extIsos A) (extIsos B)
-      (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (ctxη 𝟙 A h))
-      (FMu.strong-extend-mor (λ i → FM.Fam𝒞-P.p₂) (ctxη 𝟙 A h))
-      sqs
-    where
-      sqs : ∀ i → (fmorη 𝟙 (extend δ̂₂ (η .fobj A) i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη 𝟙 A h) i) ∘co (extIsos A i .Iso.fwd ∘ ℰP.p₂))
-            ≈ (extIsos B i .Iso.fwd ∘ fmorη 𝟙 (extend δ̂₁ (η .fobj A) i) (FMu.strong-extend-mor (λ j → FM.Fam𝒞-P.p₂) (ctxη 𝟙 A h) i))
-      sqs Fin.zero    = sq-refl (ctxη 𝟙 A h)
-      sqs (Fin.suc i) = sq-p₂ (isos i)
-
   -- The crossing square over an arbitrary context.
   crossΓ : ∀ {Γ' A B : obj} (h : ℰP.prod Γ' A ⇒ B) →
            (Gmap Q δ̂₂ h ∘co (GI A .Iso.fwd ∘ ℰP.p₂)) ≈ (GI B .Iso.fwd ∘ Gmap Q δ̂₁ h)
@@ -90,18 +76,18 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
                (Gmap Q δ̂₁ h ∘co (GI A .Iso.bwd ∘ ℰP.p₂)) ≈ (GI B .Iso.bwd ∘ Gmap Q δ̂₂ h)
   cross-flip {A} {B} h =
     iso-shuffle (GI B) _ _
-      (≈-trans (≈-sym (assoc _ _ _)) (co-iso-cancel (GI A) (cross h)))
+      (≈-trans (≈-sym (assoc _ _ _)) (co-iso-cancel (GI A) (crossΓ h)))
 
   -- Fusion of a fold against a composed algebra morphism, both directions.
   square-p₂₁ : (ℰP.p₂ ∘co (M₁.inR ∘ ℰP.p₂)) ≈ ((M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ ℰP.p₂)
   square-p₂₁ =
     ≈-trans (CoK.id-left {Γ = 𝟙})
-      (≈-sym (≈-trans (CoK.∘-cong ≈-refl (Gmap-id Q δ̂₁)) (CoK.id-right {Γ = 𝟙})))
+      (≈-sym (≈-trans (CoK.∘-cong₂ (Gmap-id Q δ̂₁)) (CoK.id-right {Γ = 𝟙})))
 
   square-p₂₂ : (ℰP.p₂ ∘co (M₂.inR ∘ ℰP.p₂)) ≈ ((M₂.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ ℰP.p₂)
   square-p₂₂ =
     ≈-trans (CoK.id-left {Γ = 𝟙})
-      (≈-sym (≈-trans (CoK.∘-cong ≈-refl (Gmap-id Q δ̂₂)) (CoK.id-right {Γ = 𝟙})))
+      (≈-sym (≈-trans (CoK.∘-cong₂ (Gmap-id Q δ̂₂)) (CoK.id-right {Γ = 𝟙})))
 
   ag-cross : ((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G'))
              ≈ ((M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ G')
@@ -110,13 +96,13 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
       (M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘ ℰP.pair ℰP.p₁ (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G')
     ≈⟨ assoc _ _ _ ⟩
       M₁.inR ∘ ((GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂) ∘ ℰP.pair ℰP.p₁ (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G'))
-    ≈⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _))) ⟩
+    ≈⟨ ∘-cong₂ (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _))) ⟩
       M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G'))
-    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+    ≈˘⟨ ∘-cong₂ (assoc _ _ _) ⟩
       M₁.inR ∘ ((GI (Creal Q δ̂₁) .Iso.bwd ∘ GI (Creal Q δ̂₁) .Iso.fwd) ∘ Gmap Q δ̂₁ G')
-    ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (GI (Creal Q δ̂₁) .Iso.bwd∘fwd≈id) ≈-refl) id-left) ⟩
+    ≈⟨ ∘-cong₂ (≈-trans (∘-cong₁ (GI (Creal Q δ̂₁) .Iso.bwd∘fwd≈id)) id-left) ⟩
       M₁.inR ∘ Gmap Q δ̂₁ G'
-    ≈˘⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) ⟩
+    ≈˘⟨ ≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _)) ⟩
       (M₁.inR ∘ ℰP.p₂) ∘ ℰP.pair ℰP.p₁ (Gmap Q δ̂₁ G')
     ∎ where open ≈-Reasoning isEquiv
 
@@ -128,25 +114,25 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
       (G' ∘co F') ∘co (M₁.inR ∘ ℰP.p₂)
     ≈⟨ CoK.assoc _ _ _ ⟩
       G' ∘co (F' ∘co (M₁.inR ∘ ℰP.p₂))
-    ≈⟨ CoK.∘-cong ≈-refl (M₁.foldR-β _) ⟩
+    ≈⟨ CoK.∘-cong₂ (M₁.foldR-β _) ⟩
       G' ∘co ((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F')
-    ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure M₂.inR (GI (Creal Q δ̂₂) .Iso.fwd)))) ≈-refl) ⟩
+    ≈⟨ CoK.∘-cong₂ (CoK.∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure M₂.inR (GI (Creal Q δ̂₂) .Iso.fwd))))) ⟩
       G' ∘co (((M₂.inR ∘ ℰP.p₂) ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F')
     ≈˘⟨ CoK.assoc _ _ _ ⟩
       (G' ∘co ((M₂.inR ∘ ℰP.p₂) ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂))) ∘co Gmap Q δ̂₁ F'
-    ≈˘⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+    ≈˘⟨ CoK.∘-cong₁ (CoK.assoc _ _ _) ⟩
       ((G' ∘co (M₂.inR ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F'
-    ≈⟨ CoK.∘-cong (CoK.∘-cong (M₂.foldR-β _) ≈-refl) ≈-refl ⟩
+    ≈⟨ CoK.∘-cong₁ (CoK.∘-cong₁ (M₂.foldR-β _)) ⟩
       (((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G') ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F'
-    ≈⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+    ≈⟨ CoK.∘-cong₁ (CoK.assoc _ _ _) ⟩
       ((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co (Gmap Q δ̂₂ G' ∘co (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂))) ∘co Gmap Q δ̂₁ F'
-    ≈⟨ CoK.∘-cong (CoK.∘-cong ≈-refl (cross G')) ≈-refl ⟩
+    ≈⟨ CoK.∘-cong₁ (CoK.∘-cong₂ (crossΓ G')) ⟩
       ((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₁) .Iso.fwd ∘ Gmap Q δ̂₁ G')) ∘co Gmap Q δ̂₁ F'
-    ≈⟨ CoK.∘-cong ag-cross ≈-refl ⟩
+    ≈⟨ CoK.∘-cong₁ ag-cross ⟩
       ((M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ G') ∘co Gmap Q δ̂₁ F'
     ≈⟨ CoK.assoc _ _ _ ⟩
       (M₁.inR ∘ ℰP.p₂) ∘co (Gmap Q δ̂₁ G' ∘co Gmap Q δ̂₁ F')
-    ≈˘⟨ CoK.∘-cong ≈-refl (Gmap-∘co Q δ̂₁ G' F') ⟩
+    ≈˘⟨ CoK.∘-cong₂ (Gmap-∘co Q δ̂₁ G' F') ⟩
       (M₁.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ (G' ∘co F')
     ∎
     where open ≈-Reasoning isEquiv
@@ -158,13 +144,13 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
       (M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘ ℰP.pair ℰP.p₁ (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F')
     ≈⟨ assoc _ _ _ ⟩
       M₂.inR ∘ ((GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘ ℰP.pair ℰP.p₁ (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F'))
-    ≈⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _))) ⟩
+    ≈⟨ ∘-cong₂ (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _))) ⟩
       M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F'))
-    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+    ≈˘⟨ ∘-cong₂ (assoc _ _ _) ⟩
       M₂.inR ∘ ((GI (Creal Q δ̂₂) .Iso.fwd ∘ GI (Creal Q δ̂₂) .Iso.bwd) ∘ Gmap Q δ̂₂ F')
-    ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (GI (Creal Q δ̂₂) .Iso.fwd∘bwd≈id) ≈-refl) id-left) ⟩
+    ≈⟨ ∘-cong₂ (≈-trans (∘-cong₁ (GI (Creal Q δ̂₂) .Iso.fwd∘bwd≈id)) id-left) ⟩
       M₂.inR ∘ Gmap Q δ̂₂ F'
-    ≈˘⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) ⟩
+    ≈˘⟨ ≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _)) ⟩
       (M₂.inR ∘ ℰP.p₂) ∘ ℰP.pair ℰP.p₁ (Gmap Q δ̂₂ F')
     ∎ where open ≈-Reasoning isEquiv
 
@@ -176,25 +162,25 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
       (F' ∘co G') ∘co (M₂.inR ∘ ℰP.p₂)
     ≈⟨ CoK.assoc _ _ _ ⟩
       F' ∘co (G' ∘co (M₂.inR ∘ ℰP.p₂))
-    ≈⟨ CoK.∘-cong ≈-refl (M₂.foldR-β _) ⟩
+    ≈⟨ CoK.∘-cong₂ (M₂.foldR-β _) ⟩
       F' ∘co ((M₁.inR ∘ (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G')
-    ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure M₁.inR (GI (Creal Q δ̂₁) .Iso.bwd)))) ≈-refl) ⟩
+    ≈⟨ CoK.∘-cong₂ (CoK.∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure M₁.inR (GI (Creal Q δ̂₁) .Iso.bwd))))) ⟩
       F' ∘co (((M₁.inR ∘ ℰP.p₂) ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G')
     ≈˘⟨ CoK.assoc _ _ _ ⟩
       (F' ∘co ((M₁.inR ∘ ℰP.p₂) ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂))) ∘co Gmap Q δ̂₂ G'
-    ≈˘⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+    ≈˘⟨ CoK.∘-cong₁ (CoK.assoc _ _ _) ⟩
       ((F' ∘co (M₁.inR ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G'
-    ≈⟨ CoK.∘-cong (CoK.∘-cong (M₁.foldR-β _) ≈-refl) ≈-refl ⟩
+    ≈⟨ CoK.∘-cong₁ (CoK.∘-cong₁ (M₁.foldR-β _)) ⟩
       (((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ F') ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ G'
-    ≈⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+    ≈⟨ CoK.∘-cong₁ (CoK.assoc _ _ _) ⟩
       ((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co (Gmap Q δ̂₁ F' ∘co (GI (Creal Q δ̂₁) .Iso.bwd ∘ ℰP.p₂))) ∘co Gmap Q δ̂₂ G'
-    ≈⟨ CoK.∘-cong (CoK.∘-cong ≈-refl (cross-flip F')) ≈-refl ⟩
+    ≈⟨ CoK.∘-cong₁ (CoK.∘-cong₂ (cross-flip F')) ⟩
       ((M₂.inR ∘ (GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co (GI (Creal Q δ̂₂) .Iso.bwd ∘ Gmap Q δ̂₂ F')) ∘co Gmap Q δ̂₂ G'
-    ≈⟨ CoK.∘-cong af-cross ≈-refl ⟩
+    ≈⟨ CoK.∘-cong₁ af-cross ⟩
       ((M₂.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ F') ∘co Gmap Q δ̂₂ G'
     ≈⟨ CoK.assoc _ _ _ ⟩
       (M₂.inR ∘ ℰP.p₂) ∘co (Gmap Q δ̂₂ F' ∘co Gmap Q δ̂₂ G')
-    ≈˘⟨ CoK.∘-cong ≈-refl (Gmap-∘co Q δ̂₂ F' G') ⟩
+    ≈˘⟨ CoK.∘-cong₂ (Gmap-∘co Q δ̂₂ F' G') ⟩
       (M₂.inR ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ (F' ∘co G')
     ∎
     where open ≈-Reasoning isEquiv
@@ -208,11 +194,11 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
       (u ∘ ℰP.pair ℰTm.to-terminal (id _)) ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _))
     ≈⟨ assoc _ _ _ ⟩
       u ∘ (ℰP.pair ℰTm.to-terminal (id _) ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _)))
-    ≈⟨ ∘-cong ≈-refl (ℰP.pair-natural _ _ _) ⟩
+    ≈⟨ ∘-cong₂ (ℰP.pair-natural _ _ _) ⟩
       u ∘ ℰP.pair (ℰTm.to-terminal ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _))) (id _ ∘ (v ∘ ℰP.pair ℰTm.to-terminal (id _)))
-    ≈⟨ ∘-cong ≈-refl (ℰP.pair-cong (ℰTm.to-terminal-unique _ _) id-left) ⟩
+    ≈⟨ ∘-cong₂ (ℰP.pair-cong (ℰTm.to-terminal-unique _ _) id-left) ⟩
       u ∘ ℰP.pair (ℰP.p₁ ∘ ℰP.pair ℰTm.to-terminal (id _)) (v ∘ ℰP.pair ℰTm.to-terminal (id _))
-    ≈˘⟨ ∘-cong ≈-refl (ℰP.pair-natural _ _ _) ⟩
+    ≈˘⟨ ∘-cong₂ (ℰP.pair-natural _ _ _) ⟩
       u ∘ (ℰP.pair ℰP.p₁ v ∘ ℰP.pair ℰTm.to-terminal (id _))
     ≈˘⟨ assoc _ _ _ ⟩
       (u ∘ ℰP.pair ℰP.p₁ v) ∘ ℰP.pair ℰTm.to-terminal (id _)
@@ -223,11 +209,11 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
   mu-collapse .Iso.bwd = G' ∘ ℰP.pair ℰTm.to-terminal (id _)
   mu-collapse .Iso.bwd∘fwd≈id =
     ≈-trans (plait G' F')
-      (≈-trans (∘-cong (≈-trans (M₁.foldR-η _ _ square-GF) (≈-sym (M₁.foldR-η {Γ = 𝟙} _ _ square-p₂₁))) ≈-refl)
+      (≈-trans (∘-cong₁ (≈-trans (M₁.foldR-η _ _ square-GF) (≈-sym (M₁.foldR-η {Γ = 𝟙} _ _ square-p₂₁))))
         (ℰP.pair-p₂ _ _))
   mu-collapse .Iso.fwd∘bwd≈id =
     ≈-trans (plait F' G')
-      (≈-trans (∘-cong (≈-trans (M₂.foldR-η _ _ square-FG) (≈-sym (M₂.foldR-η {Γ = 𝟙} _ _ square-p₂₂))) ≈-refl)
+      (≈-trans (∘-cong₁ (≈-trans (M₂.foldR-η _ _ square-FG) (≈-sym (M₂.foldR-η {Γ = 𝟙} _ _ square-p₂₂))))
         (ℰP.pair-p₂ _ _))
 
 -- The μ-collapse at pointwise-identity isomorphisms is the identity.
@@ -238,7 +224,7 @@ mu-collapse-refl : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) (δ̂ : Fi
 mu-collapse-refl {n} Q CQ δ̂ isos hyps =
   begin
     MC.F' ∘ ℰP.pair MC.ℰTm.to-terminal (id _)
-  ≈⟨ ∘-cong F'-id ≈-refl ⟩
+  ≈⟨ ∘-cong₁ F'-id ⟩
     ℰP.p₂ ∘ ℰP.pair MC.ℰTm.to-terminal (id _)
   ≈⟨ ℰP.pair-p₂ _ _ ⟩
     id _
@@ -259,7 +245,7 @@ mu-collapse-refl {n} Q CQ δ̂ isos hyps =
     F'-id =
       ≈-trans
         (MC.M₁.foldR-cong
-          (∘-cong ≈-refl (≈-trans (∘-cong (GI-id (Creal Q δ̂)) ≈-refl) id-left)))
+          (∘-cong₂ (≈-trans (∘-cong₁ (GI-id (Creal Q δ̂))) id-left)))
         (≈-sym (MC.M₁.foldR-η {Γ = MC.𝟙} _ ℰP.p₂ MC.square-p₂₁))
 
 -- The forward map of the μ-collapse is a morphism of algebras.
@@ -273,15 +259,15 @@ mu-collapse-fwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
 mu-collapse-fwd-in Q CQ δ̂₁ δ̂₂ isos =
   ≈-trans (plain-β Q δ̂₁ CQ _)
     (≈-trans (assoc _ _ _)
-      (∘-cong ≈-refl
-        (≈-trans (≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _)))
-          (∘-cong ≈-refl (∘-cong (Gmap-cong Q δ̂₁ plain-eq) ≈-refl)))))
+      (∘-cong₂
+        (≈-trans (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _)))
+          (∘-cong₂ (∘-cong₁ (Gmap-cong Q δ̂₁ plain-eq))))))
   where
     module MC = MuCollapse Q CQ δ̂₁ δ̂₂ isos
 
     plain-eq : MC.F' ≈ (MC.mu-collapse .Iso.fwd ∘ ℰP.p₂)
     plain-eq =
-      ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl sect-p₂) id-right))
+      ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ sect-p₂) id-right))
 
 -- The backward map of the μ-collapse is a morphism of algebras.
 mu-collapse-bwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
@@ -294,15 +280,15 @@ mu-collapse-bwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
 mu-collapse-bwd-in Q CQ δ̂₁ δ̂₂ isos =
   ≈-trans (plain-β Q δ̂₂ CQ _)
     (≈-trans (assoc _ _ _)
-      (∘-cong ≈-refl
-        (≈-trans (≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _)))
-          (∘-cong ≈-refl (∘-cong (Gmap-cong Q δ̂₂ plain-eq) ≈-refl)))))
+      (∘-cong₂
+        (≈-trans (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _)))
+          (∘-cong₂ (∘-cong₁ (Gmap-cong Q δ̂₂ plain-eq))))))
   where
     module MC = MuCollapse Q CQ δ̂₁ δ̂₂ isos
 
     plain-eq : MC.G' ≈ (MC.mu-collapse .Iso.bwd ∘ ℰP.p₂)
     plain-eq =
-      ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl sect-p₂) id-right))
+      ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ sect-p₂) id-right))
 
 -- The μ-collapse at a composite isomorphism family is the composite of the
 -- μ-collapses.
@@ -313,7 +299,7 @@ mu-collapse-comp : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
                    MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
                    ≈ (MuCollapse.mu-collapse Q CQ δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
 mu-collapse-comp {n} Q CQ δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ =
-  ≈-trans (∘-cong (≈-sym (MC₁₃.M₁.foldR-η {Γ = ℰT'.witness} _ (MC₂₃.F' ∘co MC₁₂.F') square)) ≈-refl)
+  ≈-trans (∘-cong₁ (≈-sym (MC₁₃.M₁.foldR-η {Γ = ℰT'.witness} _ (MC₂₃.F' ∘co MC₁₂.F') square)))
     (≈-sym (MC₁₂.plait MC₂₃.F' MC₁₂.F'))
   where
     module MC₁₂ = MuCollapse Q CQ δ̂₁ δ̂₂ isos₁₂
@@ -331,22 +317,19 @@ mu-collapse-comp {n} Q CQ δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ =
         pw Fin.zero    = ≈-sym id-left
         pw (Fin.suc i) = ≈-refl
 
-    inner-split : ((MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₂₃.F')
-                  ≈ (MC₁₂.GI C₃ .Iso.fwd ∘ Gmap Q δ̂₁ MC₂₃.F')
-    inner-split = ≈-trans (assoc _ _ _) (∘-cong ≈-refl (ℰP.pair-p₂ _ _))
 
     head-comp : ((MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂))
                 ≈ (MC₁₃.M₂.inR ∘ (MC₁₃.GI C₃ .Iso.fwd ∘ ℰP.p₂))
     head-comp =
       begin
         (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂)
-      ≈˘⟨ CoK.∘-cong (assoc _ _ _) ≈-refl ⟩
+      ≈˘⟨ CoK.∘-cong₁ (assoc _ _ _) ⟩
         ((MC₂₃.M₂.inR ∘ MC₂₃.GI C₃ .Iso.fwd) ∘ ℰP.p₂) ∘co (MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂)
       ≈⟨ co-pure _ _ ⟩
         ((MC₂₃.M₂.inR ∘ MC₂₃.GI C₃ .Iso.fwd) ∘ MC₁₂.GI C₃ .Iso.fwd) ∘ ℰP.p₂
-      ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
         (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ MC₁₂.GI C₃ .Iso.fwd)) ∘ ℰP.p₂
-      ≈⟨ ∘-cong (∘-cong ≈-refl GIcomp) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (∘-cong₂ GIcomp) ⟩
         (MC₁₃.M₂.inR ∘ MC₁₃.GI C₃ .Iso.fwd) ∘ ℰP.p₂
       ≈⟨ assoc _ _ _ ⟩
         MC₁₃.M₂.inR ∘ (MC₁₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)
@@ -359,25 +342,25 @@ mu-collapse-comp {n} Q CQ δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ =
         (MC₂₃.F' ∘co MC₁₂.F') ∘co (MC₁₃.M₁.inR ∘ ℰP.p₂)
       ≈⟨ CoK.assoc _ _ _ ⟩
         MC₂₃.F' ∘co (MC₁₂.F' ∘co (MC₁₂.M₁.inR ∘ ℰP.p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (MC₁₂.M₁.foldR-β _) ⟩
+      ≈⟨ CoK.∘-cong₂ (MC₁₂.M₁.foldR-β _) ⟩
         MC₂₃.F' ∘co ((MC₁₂.M₂.inR ∘ (MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ MC₁₂.F')
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure _ _))) ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (CoK.∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (≈-sym (co-pure _ _)))) ⟩
         MC₂₃.F' ∘co (((MC₁₂.M₂.inR ∘ ℰP.p₂) ∘co (MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ MC₁₂.F')
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+      ≈⟨ CoK.∘-cong₂ (CoK.assoc _ _ _) ⟩
         MC₂₃.F' ∘co ((MC₁₂.M₂.inR ∘ ℰP.p₂) ∘co ((MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₁₂.F'))
       ≈˘⟨ CoK.assoc _ _ _ ⟩
         (MC₂₃.F' ∘co (MC₂₃.M₁.inR ∘ ℰP.p₂)) ∘co ((MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₁₂.F')
-      ≈⟨ CoK.∘-cong (MC₂₃.M₁.foldR-β _) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (MC₂₃.M₁.foldR-β _) ⟩
         ((MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₂ MC₂₃.F') ∘co ((MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₁₂.F')
       ≈⟨ CoK.assoc _ _ _ ⟩
         (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (Gmap Q δ̂₂ MC₂₃.F' ∘co ((MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₁₂.F'))
-      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+      ≈˘⟨ CoK.∘-cong₂ (CoK.assoc _ _ _) ⟩
         (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co ((Gmap Q δ̂₂ MC₂₃.F' ∘co (MC₁₂.GI (Creal Q δ̂₂) .Iso.fwd ∘ ℰP.p₂)) ∘co Gmap Q δ̂₁ MC₁₂.F')
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (MC₁₂.cross MC₂₃.F') ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (CoK.∘-cong₁ (MC₁₂.crossΓ MC₂₃.F')) ⟩
         (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co ((MC₁₂.GI C₃ .Iso.fwd ∘ Gmap Q δ̂₁ MC₂₃.F') ∘co Gmap Q δ̂₁ MC₁₂.F')
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (≈-sym inner-split) ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (CoK.∘-cong₁ (≈-sym (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _))))) ⟩
         (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (((MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂) ∘co Gmap Q δ̂₁ MC₂₃.F') ∘co Gmap Q δ̂₁ MC₁₂.F')
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+      ≈⟨ CoK.∘-cong₂ (CoK.assoc _ _ _) ⟩
         (MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co ((MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂) ∘co (Gmap Q δ̂₁ MC₂₃.F' ∘co Gmap Q δ̂₁ MC₁₂.F'))
       ≈˘⟨ CoK.assoc _ _ _ ⟩
         ((MC₂₃.M₂.inR ∘ (MC₂₃.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (MC₁₂.GI C₃ .Iso.fwd ∘ ℰP.p₂)) ∘co (Gmap Q δ̂₁ MC₂₃.F' ∘co Gmap Q δ̂₁ MC₁₂.F')
@@ -397,10 +380,10 @@ mu-collapse-fwd-in' : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
                           realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₁ (untranspose (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.fwd ∘ realise-η-iso (Creal Q δ̂₁) .Iso.fwd))))))
 mu-collapse-fwd-in' Q CQ δ̂₁ δ̂₂ isos =
   ≈-trans (mu-collapse-fwd-in Q CQ δ̂₁ δ̂₂ isos)
-    (∘-cong ≈-refl (∘-cong ≈-refl
-      (≈-trans (∘-cong (Gmap-pure Q δ̂₁ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.fwd)) ≈-refl)
+    (∘-cong₂ (∘-cong₂
+      (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₁ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.fwd)))
         (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) id-right)))))
+          (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) id-right)))))
 
 mu-collapse-bwd-in' : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
                       (δ̂₁ δ̂₂ : Fin n → FM.Obj)
@@ -411,7 +394,7 @@ mu-collapse-bwd-in' : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
                           realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₂ (untranspose (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.bwd ∘ realise-η-iso (Creal Q δ̂₂) .Iso.fwd))))))
 mu-collapse-bwd-in' Q CQ δ̂₁ δ̂₂ isos =
   ≈-trans (mu-collapse-bwd-in Q CQ δ̂₁ δ̂₂ isos)
-    (∘-cong ≈-refl (∘-cong ≈-refl
-      (≈-trans (∘-cong (Gmap-pure Q δ̂₂ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.bwd)) ≈-refl)
+    (∘-cong₂ (∘-cong₂
+      (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₂ (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .Iso.bwd)))
         (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) id-right)))))
+          (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) id-right)))))

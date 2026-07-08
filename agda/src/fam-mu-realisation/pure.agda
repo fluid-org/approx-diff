@@ -36,7 +36,7 @@ untranspose-pre {V} {W} {X} g w =
     (FamC.≈-trans (FamC.≈-sym (FR.untranspose-transpose (FM.Mor-∘ (untranspose g) w)))
       (FR.untranspose-cong
         (≈-trans (FR.transpose-natural₁ (untranspose g) w)
-          (∘-cong (FR.transpose-untranspose g) ≈-refl))))
+          (∘-cong₁ (FR.transpose-untranspose g)))))
 
 -- The transposed form of a pure context morphism.
 ctxη-pure : ∀ (Γ A : obj) {B : obj} (m : A ⇒ B) →
@@ -52,15 +52,15 @@ ctxη-pure Γ A {B} m =
         (m ∘ ℰP.p₂) ∘ (ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd) ∘ prodη Γ (η .fobj A) .Iso.fwd)
       ≈˘⟨ assoc _ _ _ ⟩
         ((m ∘ ℰP.p₂) ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd)) ∘ prodη Γ (η .fobj A) .Iso.fwd
-      ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
         (m ∘ (ℰP.p₂ ∘ ℰP.prod-m (id _) (realise-η-iso A .Iso.fwd))) ∘ prodη Γ (η .fobj A) .Iso.fwd
-      ≈⟨ ∘-cong (∘-cong ≈-refl (ℰP.pair-p₂ _ _)) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (∘-cong₂ (ℰP.pair-p₂ _ _)) ⟩
         (m ∘ (realise-η-iso A .Iso.fwd ∘ ℰP.p₂)) ∘ prodη Γ (η .fobj A) .Iso.fwd
-      ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ≈˘⟨ ∘-cong₁ (assoc _ _ _) ⟩
         ((m ∘ realise-η-iso A .Iso.fwd) ∘ ℰP.p₂) ∘ prodη Γ (η .fobj A) .Iso.fwd
       ≈⟨ assoc _ _ _ ⟩
         (m ∘ realise-η-iso A .Iso.fwd) ∘ (ℰP.p₂ ∘ prodη Γ (η .fobj A) .Iso.fwd)
-      ≈⟨ ∘-cong ≈-refl (prodη-p₂ Γ (η .fobj A)) ⟩
+      ≈⟨ ∘-cong₂ (prodη-p₂ Γ (η .fobj A)) ⟩
         (m ∘ realise-η-iso A .Iso.fwd) ∘ realise .fmor (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = η .fobj A})
       ∎ where open ≈-Reasoning isEquiv
 
@@ -81,7 +81,7 @@ sf-pure : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂₁ δ̂₂ : Fin (suc n) → FM.O
             (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = δ̂₁ i})))
 sf-pure {n} Q δ̂₁ δ̂₂ {Γ} ms =
   FamC.≈-trans (FamC.assoc _ _ _)
-    (FamC.≈-trans (FamC.∘-cong FamC.≈-refl sect-proj)
+    (FamC.≈-trans (FamC.∘-cong₂ sect-proj)
       (FamC.≈-trans (FMuI.strong-fmor-reindex (Poly-map η Q) FamT.to-terminal _)
         (FMuI.strong-fmor-cong (Poly-map η Q) pointwise)))
   where
@@ -97,7 +97,7 @@ sf-pure {n} Q δ̂₁ δ̂₂ {Γ} ms =
                   (FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = δ̂₁ i}))
     pointwise i =
       FamC.≈-trans (FamC.assoc _ _ _)
-        (FamC.∘-cong FamC.≈-refl
+        (FamC.∘-cong₂
           (FamC.≈-trans (FM.Fam𝒞-P.pair-p₂ _ _) FamC.id-left))
 
 -- The realised strong action on a pure morphism is a pure lift of the

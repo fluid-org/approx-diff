@@ -92,13 +92,13 @@ K⊕-in₂ X̂ Ŷ = ℰCPm.copair-in₂ _ _
 
 K⊕-in₁' : ∀ (X̂ Ŷ : FM.Obj) → (K⊕ X̂ Ŷ .Iso.fwd ∘ realise .fmor FCP.in₁) ≈ ℰSCm.in₁
 K⊕-in₁' X̂ Ŷ =
-  ≈-trans (∘-cong ≈-refl (≈-sym (K⊕-in₁ X̂ Ŷ)))
-    (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (K⊕ X̂ Ŷ .Iso.fwd∘bwd≈id) ≈-refl) id-left))
+  ≈-trans (∘-cong₂ (≈-sym (K⊕-in₁ X̂ Ŷ)))
+    (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (K⊕ X̂ Ŷ .Iso.fwd∘bwd≈id)) id-left))
 
 K⊕-in₂' : ∀ (X̂ Ŷ : FM.Obj) → (K⊕ X̂ Ŷ .Iso.fwd ∘ realise .fmor FCP.in₂) ≈ ℰSCm.in₂
 K⊕-in₂' X̂ Ŷ =
-  ≈-trans (∘-cong ≈-refl (≈-sym (K⊕-in₂ X̂ Ŷ)))
-    (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (K⊕ X̂ Ŷ .Iso.fwd∘bwd≈id) ≈-refl) id-left))
+  ≈-trans (∘-cong₂ (≈-sym (K⊕-in₂ X̂ Ŷ)))
+    (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (K⊕ X̂ Ŷ .Iso.fwd∘bwd≈id)) id-left))
 
 -- Strong copair against a coproduct of morphisms, in context.
 scopair-coprod-m : ∀ {Γ X₁ X₂ Y₁ Y₂ Z : obj}
@@ -116,15 +116,15 @@ scopair-coprod-m {Γ} a b f g =
         (ℰSCm.copair a b ∘co (ℰCPm.coprod-m f g ∘ ℰP.p₂)) ∘co (ℰSCm.in₁ ∘ ℰP.p₂)
       ≈⟨ CoK.assoc _ _ _ ⟩
         ℰSCm.copair a b ∘co ((ℰCPm.coprod-m f g ∘ ℰP.p₂) ∘co (ℰSCm.in₁ ∘ ℰP.p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+      ≈⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
         ℰSCm.copair a b ∘co ((ℰCPm.coprod-m f g ∘ ℰSCm.in₁) ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong ≈-refl (∘-cong (ℰCPm.copair-in₁ _ _) ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (∘-cong₁ (ℰCPm.copair-in₁ _ _)) ⟩
         ℰSCm.copair a b ∘co ((ℰSCm.in₁ ∘ f) ∘ ℰP.p₂)
-      ≈˘⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+      ≈˘⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
         ℰSCm.copair a b ∘co ((ℰSCm.in₁ ∘ ℰP.p₂) ∘co (f ∘ ℰP.p₂))
       ≈˘⟨ CoK.assoc _ _ _ ⟩
         (ℰSCm.copair a b ∘co (ℰSCm.in₁ ∘ ℰP.p₂)) ∘co (f ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong (ℰSCm.copair-in₁ a b) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (ℰSCm.copair-in₁ a b) ⟩
         a ∘co (f ∘ ℰP.p₂)
       ∎ where open ≈-Reasoning isEquiv
 
@@ -135,15 +135,15 @@ scopair-coprod-m {Γ} a b f g =
         (ℰSCm.copair a b ∘co (ℰCPm.coprod-m f g ∘ ℰP.p₂)) ∘co (ℰSCm.in₂ ∘ ℰP.p₂)
       ≈⟨ CoK.assoc _ _ _ ⟩
         ℰSCm.copair a b ∘co ((ℰCPm.coprod-m f g ∘ ℰP.p₂) ∘co (ℰSCm.in₂ ∘ ℰP.p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+      ≈⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
         ℰSCm.copair a b ∘co ((ℰCPm.coprod-m f g ∘ ℰSCm.in₂) ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong ≈-refl (∘-cong (ℰCPm.copair-in₂ _ _) ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (∘-cong₁ (ℰCPm.copair-in₂ _ _)) ⟩
         ℰSCm.copair a b ∘co ((ℰSCm.in₂ ∘ g) ∘ ℰP.p₂)
-      ≈˘⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+      ≈˘⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
         ℰSCm.copair a b ∘co ((ℰSCm.in₂ ∘ ℰP.p₂) ∘co (g ∘ ℰP.p₂))
       ≈˘⟨ CoK.assoc _ _ _ ⟩
         (ℰSCm.copair a b ∘co (ℰSCm.in₂ ∘ ℰP.p₂)) ∘co (g ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong (ℰSCm.copair-in₂ a b) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (ℰSCm.copair-in₂ a b) ⟩
         b ∘co (g ∘ ℰP.p₂)
       ∎ where open ≈-Reasoning isEquiv
 
@@ -164,11 +164,11 @@ fmorη-scopair Γ X̂ Ŷ {Ẑ} u v =
         (fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)) ∘co (ℰSCm.in₁ ∘ ℰP.p₂)
       ≈⟨ CoK.assoc _ _ _ ⟩
         fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co ((K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂) ∘co (ℰSCm.in₁ ∘ ℰP.p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+      ≈⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
         fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co ((K⊕ X̂ Ŷ .Iso.bwd ∘ ℰSCm.in₁) ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong ≈-refl (∘-cong (K⊕-in₁ X̂ Ŷ) ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (∘-cong₁ (K⊕-in₁ X̂ Ŷ)) ⟩
         fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (realise .fmor FCP.in₁ ∘ ℰP.p₂)
-      ≈˘⟨ CoK.∘-cong ≈-refl (fmorη-pure Γ X̂ FCP.in₁) ⟩
+      ≈˘⟨ CoK.∘-cong₂ (fmorη-pure Γ X̂ FCP.in₁) ⟩
         fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co fmorη Γ X̂ (FM.Mor-∘ FCP.in₁ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X̂}))
       ≈˘⟨ fmorη-∘co Γ X̂ (FSC.copair u v) _ ⟩
         fmorη Γ X̂ (FM.Mor-∘ (FSC.copair u v) (pairη Γ X̂ (FM.Mor-∘ FCP.in₁ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = X̂}))))
@@ -183,11 +183,11 @@ fmorη-scopair Γ X̂ Ŷ {Ẑ} u v =
         (fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)) ∘co (ℰSCm.in₂ ∘ ℰP.p₂)
       ≈⟨ CoK.assoc _ _ _ ⟩
         fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co ((K⊕ X̂ Ŷ .Iso.bwd ∘ ℰP.p₂) ∘co (ℰSCm.in₂ ∘ ℰP.p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+      ≈⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
         fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co ((K⊕ X̂ Ŷ .Iso.bwd ∘ ℰSCm.in₂) ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong ≈-refl (∘-cong (K⊕-in₂ X̂ Ŷ) ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (∘-cong₁ (K⊕-in₂ X̂ Ŷ)) ⟩
         fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co (realise .fmor FCP.in₂ ∘ ℰP.p₂)
-      ≈˘⟨ CoK.∘-cong ≈-refl (fmorη-pure Γ Ŷ FCP.in₂) ⟩
+      ≈˘⟨ CoK.∘-cong₂ (fmorη-pure Γ Ŷ FCP.in₂) ⟩
         fmorη Γ (FCP.coprod X̂ Ŷ) (FSC.copair u v) ∘co fmorη Γ Ŷ (FM.Mor-∘ FCP.in₂ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = Ŷ}))
       ≈˘⟨ fmorη-∘co Γ Ŷ (FSC.copair u v) _ ⟩
         fmorη Γ Ŷ (FM.Mor-∘ (FSC.copair u v) (pairη Γ Ŷ (FM.Mor-∘ FCP.in₂ (FM.Fam𝒞-P.p₂ {x = η .fobj Γ} {y = Ŷ}))))
@@ -219,7 +219,7 @@ collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl
                  ≈ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd))
     sumIso-bwd δ̂₁ δ̂₂ isos =
       ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd∘bwd≈id)) id-right)
+        (≈-trans (∘-cong₂ (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd∘bwd≈id)) id-right)
 
     sumRefl : ∀ δ̂ (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
               (∀ i → isos i .Iso.fwd ≈ id _) →
@@ -227,9 +227,9 @@ collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl
     sumRefl δ̂ isos hyps =
       begin
         (K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ ℰCPm.coprod-m (CP .CollapseAt.iso δ̂ δ̂ isos .Iso.fwd) (CQ .CollapseAt.iso δ̂ δ̂ isos .Iso.fwd)) ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
-      ≈⟨ ∘-cong (∘-cong ≈-refl (≈-trans (ℰCPm.coprod-m-cong (CP .CollapseAt.refl-iso δ̂ isos hyps) (CQ .CollapseAt.refl-iso δ̂ isos hyps)) ℰCPm.coprod-m-id)) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (∘-cong₂ (≈-trans (ℰCPm.coprod-m-cong (CP .CollapseAt.refl-iso δ̂ isos hyps) (CQ .CollapseAt.refl-iso δ̂ isos hyps)) ℰCPm.coprod-m-id)) ⟩
         (K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ id _) ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
-      ≈⟨ ∘-cong id-right ≈-refl ⟩
+      ≈⟨ ∘-cong₁ id-right ⟩
         K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
       ≈⟨ K⊕ (X̂ δ̂) (Ŷ δ̂) .Iso.bwd∘fwd≈id ⟩
         id _
@@ -247,9 +247,9 @@ collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl
         toM : sumIso δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
               ≈ ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (cm₂₃ ∘ cm₁₂)) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
         toM =
-          ∘-cong (∘-cong ≈-refl
+          ∘-cong₁ (∘-cong₂
             (≈-trans (ℰCPm.coprod-m-cong (CP .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃) (CQ .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃))
-              (ℰCPm.coprod-m-comp _ _ _ _))) ≈-refl
+              (ℰCPm.coprod-m-comp _ _ _ _)))
 
         fromM : (sumIso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ sumIso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
                 ≈ ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (cm₂₃ ∘ cm₁₂)) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
@@ -258,11 +258,11 @@ collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl
             ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ cm₂₃) ∘ K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd) ∘ ((K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ cm₁₂) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
           ≈˘⟨ assoc _ _ _ ⟩
             (((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ cm₂₃) ∘ K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd) ∘ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ cm₁₂)) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
-          ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
             ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ cm₂₃) ∘ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd ∘ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ cm₁₂))) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
-          ≈⟨ ∘-cong (∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd∘bwd≈id) ≈-refl) id-left))) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (∘-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd∘bwd≈id)) id-left))) ⟩
             ((K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ cm₂₃) ∘ cm₁₂) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
-          ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
             (K⊕ (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (cm₂₃ ∘ cm₁₂)) ∘ K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
           ∎ where open ≈-Reasoning isEquiv
 
@@ -299,35 +299,23 @@ collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl
             (fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co (sumIso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂)) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)
           ≈⟨ CoK.assoc _ _ _ ⟩
             fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co ((sumIso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂))
-          ≈⟨ CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (∘-cong (sumIso-bwd δ̂₁ δ̂₂ isosδ) ≈-refl)) ⟩
+          ≈⟨ CoK.∘-cong₂ (≈-trans (co-pure _ _) (∘-cong₁ (sumIso-bwd δ̂₁ δ̂₂ isosδ))) ⟩
             fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co ((K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd)) ∘ ℰP.p₂)
-          ≈˘⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+          ≈˘⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
             fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co ((K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰP.p₂) ∘co (ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂))
           ≈˘⟨ CoK.assoc _ _ _ ⟩
             (fmorη Γ (FCP.coprod (X̂ δ̂₂) (Ŷ δ̂₂)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co (K⊕ (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰP.p₂)) ∘co (ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂)
-          ≈⟨ CoK.∘-cong (fmorη-scopair Γ (X̂ δ̂₂) (Ŷ δ̂₂) _ _) ≈-refl ⟩
+          ≈⟨ CoK.∘-cong₁ (fmorη-scopair Γ (X̂ δ̂₂) (Ŷ δ̂₂) _ _) ⟩
             ℰSCm.copair (fmorη Γ (X̂ δ̂₂) (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂))) (fmorη Γ (Ŷ δ̂₂) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂))) ∘co (ℰCPm.coprod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂)
           ≈⟨ scopair-coprod-m _ _ _ _ ⟩
             ℰSCm.copair (fmorη Γ (X̂ δ̂₂) (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) ∘co (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂)) (fmorη Γ (Ŷ δ̂₂) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂)) ∘co (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂))
-          ≈⟨ ℰSCm.copair-cong comp₁ comp₂ ⟩
+          ≈⟨ ℰSCm.copair-cong (≈-trans (CoK.∘-cong₁ (fmorη-post Γ (X̂ δ̂₂) FCP.in₁ _)) (≈-trans (assoc _ _ _) (∘-cong₂ (CP .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)))) (≈-trans (CoK.∘-cong₁ (fmorη-post Γ (Ŷ δ̂₂) FCP.in₂ _)) (≈-trans (assoc _ _ _) (∘-cong₂ (CQ .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)))) ⟩
             mid
           ∎
           where
             open ≈-Reasoning isEquiv
 
-            comp₁ : (fmorη Γ (X̂ δ̂₂) (FM.Mor-∘ FCP.in₁ (sfP δ̂₂ ε̂₂ gs₂)) ∘co (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂))
-                    ≈ (realise .fmor FCP.in₁ ∘ (CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (sfP δ̂₁ ε̂₁ gs₁)))
-            comp₁ =
-              ≈-trans (CoK.∘-cong (fmorη-post Γ (X̂ δ̂₂) FCP.in₁ _) ≈-refl)
-                (≈-trans (assoc _ _ _)
-                  (∘-cong ≈-refl (CP .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)))
 
-            comp₂ : (fmorη Γ (Ŷ δ̂₂) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₂ ε̂₂ gs₂)) ∘co (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂))
-                    ≈ (realise .fmor FCP.in₂ ∘ (CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (sfQ δ̂₁ ε̂₁ gs₁)))
-            comp₂ =
-              ≈-trans (CoK.∘-cong (fmorη-post Γ (Ŷ δ̂₂) FCP.in₂ _) ≈-refl)
-                (≈-trans (assoc _ _ _)
-                  (∘-cong ≈-refl (CQ .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)))
 
         rhs : (((sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (FCP.coprod (X̂ δ̂₁) (Ŷ δ̂₁)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁))))
                 ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)))
@@ -337,11 +325,11 @@ collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl
             (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (FCP.coprod (X̂ δ̂₁) (Ŷ δ̂₁)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁)))) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)
           ≈⟨ assoc _ _ _ ⟩
             sumIso _ _ isosε .Iso.fwd ∘ (fmorη Γ (FCP.coprod (X̂ δ̂₁) (Ŷ δ̂₁)) (FSC.copair (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁)) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁))) ∘co (K⊕ (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂))
-          ≈⟨ ∘-cong ≈-refl (fmorη-scopair Γ (X̂ δ̂₁) (Ŷ δ̂₁) _ _) ⟩
+          ≈⟨ ∘-cong₂ (fmorη-scopair Γ (X̂ δ̂₁) (Ŷ δ̂₁) _ _) ⟩
             sumIso _ _ isosε .Iso.fwd ∘ ℰSCm.copair (fmorη Γ (X̂ δ̂₁) (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁))) (fmorη Γ (Ŷ δ̂₁) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁)))
           ≈⟨ ℰSCm.copair-natural _ _ _ ⟩
             ℰSCm.copair (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁))) (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁)))
-          ≈⟨ ℰSCm.copair-cong rcomp₁ rcomp₂ ⟩
+          ≈⟨ ℰSCm.copair-cong (≈-trans (∘-cong₂ (fmorη-post Γ (X̂ δ̂₁) FCP.in₁ _)) (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ push-in₁) (assoc _ _ _)))) (≈-trans (∘-cong₂ (fmorη-post Γ (Ŷ δ̂₁) FCP.in₂ _)) (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ push-in₂) (assoc _ _ _)))) ⟩
             mid
           ∎
           where
@@ -351,33 +339,21 @@ collapse-sum {n} {P} {Q} CP CQ = record { iso = sumIso ; natural = sumNat ; refl
                        ≈ (realise .fmor FCP.in₁ ∘ CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd)
             push-in₁ =
               ≈-trans (assoc _ _ _)
-                (≈-trans (∘-cong ≈-refl (K⊕-in₁' (X̂ ε̂₁) (Ŷ ε̂₁)))
+                (≈-trans (∘-cong₂ (K⊕-in₁' (X̂ ε̂₁) (Ŷ ε̂₁)))
                   (≈-trans (assoc _ _ _)
-                    (≈-trans (∘-cong ≈-refl (ℰCPm.copair-in₁ _ _))
-                      (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (K⊕-in₁ (X̂ ε̂₂) (Ŷ ε̂₂)) ≈-refl)))))
+                    (≈-trans (∘-cong₂ (ℰCPm.copair-in₁ _ _))
+                      (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (K⊕-in₁ (X̂ ε̂₂) (Ŷ ε̂₂)))))))
 
             push-in₂ : (sumIso _ _ isosε .Iso.fwd ∘ realise .fmor FCP.in₂)
                        ≈ (realise .fmor FCP.in₂ ∘ CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd)
             push-in₂ =
               ≈-trans (assoc _ _ _)
-                (≈-trans (∘-cong ≈-refl (K⊕-in₂' (X̂ ε̂₁) (Ŷ ε̂₁)))
+                (≈-trans (∘-cong₂ (K⊕-in₂' (X̂ ε̂₁) (Ŷ ε̂₁)))
                   (≈-trans (assoc _ _ _)
-                    (≈-trans (∘-cong ≈-refl (ℰCPm.copair-in₂ _ _))
-                      (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (K⊕-in₂ (X̂ ε̂₂) (Ŷ ε̂₂)) ≈-refl)))))
+                    (≈-trans (∘-cong₂ (ℰCPm.copair-in₂ _ _))
+                      (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (K⊕-in₂ (X̂ ε̂₂) (Ŷ ε̂₂)))))))
 
-            rcomp₁ : (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (FM.Mor-∘ FCP.in₁ (sfP δ̂₁ ε̂₁ gs₁)))
-                     ≈ (realise .fmor FCP.in₁ ∘ (CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (sfP δ̂₁ ε̂₁ gs₁)))
-            rcomp₁ =
-              ≈-trans (∘-cong ≈-refl (fmorη-post Γ (X̂ δ̂₁) FCP.in₁ _))
-                (≈-trans (≈-sym (assoc _ _ _))
-                  (≈-trans (∘-cong push-in₁ ≈-refl) (assoc _ _ _)))
 
-            rcomp₂ : (sumIso _ _ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (FM.Mor-∘ FCP.in₂ (sfQ δ̂₁ ε̂₁ gs₁)))
-                     ≈ (realise .fmor FCP.in₂ ∘ (CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (sfQ δ̂₁ ε̂₁ gs₁)))
-            rcomp₂ =
-              ≈-trans (∘-cong ≈-refl (fmorη-post Γ (Ŷ δ̂₁) FCP.in₂ _))
-                (≈-trans (≈-sym (assoc _ _ _))
-                  (≈-trans (∘-cong push-in₂ ≈-refl) (assoc _ _ _)))
 
 -- Product machinery for the product case of the collapse.
 K× : ∀ (X̂ Ŷ : FM.Obj) → Iso (realise .fobj (FM.Fam𝒞-P.prod X̂ Ŷ))
@@ -386,13 +362,13 @@ K× X̂ Ŷ = FR.realise-products-iso ℰP ℰE X̂ Ŷ
 
 K×-p₁ : ∀ (X̂ Ŷ : FM.Obj) → (realise .fmor (FM.Fam𝒞-P.p₁ {x = X̂} {y = Ŷ}) ∘ K× X̂ Ŷ .Iso.bwd) ≈ ℰP.p₁
 K×-p₁ X̂ Ŷ =
-  ≈-trans (∘-cong (≈-sym (FR.realise-products-p₁ ℰP ℰE X̂ Ŷ)) ≈-refl)
-    (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (K× X̂ Ŷ .Iso.fwd∘bwd≈id)) id-right))
+  ≈-trans (∘-cong₁ (≈-sym (FR.realise-products-p₁ ℰP ℰE X̂ Ŷ)))
+    (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (K× X̂ Ŷ .Iso.fwd∘bwd≈id)) id-right))
 
 K×-p₂ : ∀ (X̂ Ŷ : FM.Obj) → (realise .fmor (FM.Fam𝒞-P.p₂ {x = X̂} {y = Ŷ}) ∘ K× X̂ Ŷ .Iso.bwd) ≈ ℰP.p₂
 K×-p₂ X̂ Ŷ =
-  ≈-trans (∘-cong (≈-sym (FR.realise-products-p₂ ℰP ℰE X̂ Ŷ)) ≈-refl)
-    (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (K× X̂ Ŷ .Iso.fwd∘bwd≈id)) id-right))
+  ≈-trans (∘-cong₁ (≈-sym (FR.realise-products-p₂ ℰP ℰE X̂ Ŷ)))
+    (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (K× X̂ Ŷ .Iso.fwd∘bwd≈id)) id-right))
 
 -- Realisation in context sends the strong product action to the strong
 -- product action, across the product comparison isos.
@@ -412,23 +388,23 @@ fmorη-sprodm Γ X̂ Ŷ {Ẑ₁} {Ẑ₂} u v =
         ℰP.p₁ ∘ (K× Ẑ₁ Ẑ₂ .Iso.fwd ∘ (fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.strong-prod-m u v) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)))
       ≈˘⟨ assoc _ _ _ ⟩
         (ℰP.p₁ ∘ K× Ẑ₁ Ẑ₂ .Iso.fwd) ∘ (fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.strong-prod-m u v) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂))
-      ≈⟨ ∘-cong (FR.realise-products-p₁ ℰP ℰE Ẑ₁ Ẑ₂) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (FR.realise-products-p₁ ℰP ℰE Ẑ₁ Ẑ₂) ⟩
         realise .fmor (FM.Fam𝒞-P.p₁ {x = Ẑ₁} {y = Ẑ₂}) ∘ (fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.strong-prod-m u v) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂))
       ≈˘⟨ assoc _ _ _ ⟩
         (realise .fmor (FM.Fam𝒞-P.p₁ {x = Ẑ₁} {y = Ẑ₂}) ∘ fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.strong-prod-m u v)) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
-      ≈˘⟨ CoK.∘-cong (fmorη-post Γ (FM.Fam𝒞-P.prod X̂ Ŷ) _ _) ≈-refl ⟩
+      ≈˘⟨ CoK.∘-cong₁ (fmorη-post Γ (FM.Fam𝒞-P.prod X̂ Ŷ) _ _) ⟩
         fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Mor-∘ (FM.Fam𝒞-P.p₁ {x = Ẑ₁} {y = Ẑ₂}) (FM.Fam𝒞-P.strong-prod-m u v)) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong (fmorη-cong (FM.Fam𝒞-P.pair-p₁ _ _)) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (fmorη-cong (FM.Fam𝒞-P.pair-p₁ _ _)) ⟩
         fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Mor-∘ u FM.Fam𝒞-P.strong-p₁) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong (fmorη-∘co Γ (FM.Fam𝒞-P.prod X̂ Ŷ) u _) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (fmorη-∘co Γ (FM.Fam𝒞-P.prod X̂ Ŷ) u _) ⟩
         (fmorη Γ X̂ u ∘co fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Mor-∘ (FM.Fam𝒞-P.p₁ {x = X̂} {y = Ŷ}) FM.Fam𝒞-P.p₂)) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong (CoK.∘-cong ≈-refl (fmorη-pure Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.p₁ {x = X̂} {y = Ŷ}))) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (CoK.∘-cong₂ (fmorη-pure Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.p₁ {x = X̂} {y = Ŷ}))) ⟩
         (fmorη Γ X̂ u ∘co (realise .fmor (FM.Fam𝒞-P.p₁ {x = X̂} {y = Ŷ}) ∘ ℰP.p₂)) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
       ≈⟨ CoK.assoc _ _ _ ⟩
         fmorη Γ X̂ u ∘co ((realise .fmor (FM.Fam𝒞-P.p₁ {x = X̂} {y = Ŷ}) ∘ ℰP.p₂) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+      ≈⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
         fmorη Γ X̂ u ∘co ((realise .fmor (FM.Fam𝒞-P.p₁ {x = X̂} {y = Ŷ}) ∘ K× X̂ Ŷ .Iso.bwd) ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong ≈-refl (∘-cong (K×-p₁ X̂ Ŷ) ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (∘-cong₁ (K×-p₁ X̂ Ŷ)) ⟩
         fmorη Γ X̂ u ∘co (ℰP.p₁ ∘ ℰP.p₂)
       ∎ where open ≈-Reasoning isEquiv
 
@@ -439,23 +415,23 @@ fmorη-sprodm Γ X̂ Ŷ {Ẑ₁} {Ẑ₂} u v =
         ℰP.p₂ ∘ (K× Ẑ₁ Ẑ₂ .Iso.fwd ∘ (fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.strong-prod-m u v) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)))
       ≈˘⟨ assoc _ _ _ ⟩
         (ℰP.p₂ ∘ K× Ẑ₁ Ẑ₂ .Iso.fwd) ∘ (fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.strong-prod-m u v) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂))
-      ≈⟨ ∘-cong (FR.realise-products-p₂ ℰP ℰE Ẑ₁ Ẑ₂) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (FR.realise-products-p₂ ℰP ℰE Ẑ₁ Ẑ₂) ⟩
         realise .fmor (FM.Fam𝒞-P.p₂ {x = Ẑ₁} {y = Ẑ₂}) ∘ (fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.strong-prod-m u v) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂))
       ≈˘⟨ assoc _ _ _ ⟩
         (realise .fmor (FM.Fam𝒞-P.p₂ {x = Ẑ₁} {y = Ẑ₂}) ∘ fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.strong-prod-m u v)) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
-      ≈˘⟨ CoK.∘-cong (fmorη-post Γ (FM.Fam𝒞-P.prod X̂ Ŷ) _ _) ≈-refl ⟩
+      ≈˘⟨ CoK.∘-cong₁ (fmorη-post Γ (FM.Fam𝒞-P.prod X̂ Ŷ) _ _) ⟩
         fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Mor-∘ (FM.Fam𝒞-P.p₂ {x = Ẑ₁} {y = Ẑ₂}) (FM.Fam𝒞-P.strong-prod-m u v)) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong (fmorη-cong (FM.Fam𝒞-P.pair-p₂ _ _)) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (fmorη-cong (FM.Fam𝒞-P.pair-p₂ _ _)) ⟩
         fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Mor-∘ v FM.Fam𝒞-P.strong-p₂) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong (fmorη-∘co Γ (FM.Fam𝒞-P.prod X̂ Ŷ) v _) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (fmorη-∘co Γ (FM.Fam𝒞-P.prod X̂ Ŷ) v _) ⟩
         (fmorη Γ Ŷ v ∘co fmorη Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Mor-∘ (FM.Fam𝒞-P.p₂ {x = X̂} {y = Ŷ}) FM.Fam𝒞-P.p₂)) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong (CoK.∘-cong ≈-refl (fmorη-pure Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.p₂ {x = X̂} {y = Ŷ}))) ≈-refl ⟩
+      ≈⟨ CoK.∘-cong₁ (CoK.∘-cong₂ (fmorη-pure Γ (FM.Fam𝒞-P.prod X̂ Ŷ) (FM.Fam𝒞-P.p₂ {x = X̂} {y = Ŷ}))) ⟩
         (fmorη Γ Ŷ v ∘co (realise .fmor (FM.Fam𝒞-P.p₂ {x = X̂} {y = Ŷ}) ∘ ℰP.p₂)) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂)
       ≈⟨ CoK.assoc _ _ _ ⟩
         fmorη Γ Ŷ v ∘co ((realise .fmor (FM.Fam𝒞-P.p₂ {x = X̂} {y = Ŷ}) ∘ ℰP.p₂) ∘co (K× X̂ Ŷ .Iso.bwd ∘ ℰP.p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+      ≈⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
         fmorη Γ Ŷ v ∘co ((realise .fmor (FM.Fam𝒞-P.p₂ {x = X̂} {y = Ŷ}) ∘ K× X̂ Ŷ .Iso.bwd) ∘ ℰP.p₂)
-      ≈⟨ CoK.∘-cong ≈-refl (∘-cong (K×-p₂ X̂ Ŷ) ≈-refl) ⟩
+      ≈⟨ CoK.∘-cong₂ (∘-cong₁ (K×-p₂ X̂ Ŷ)) ⟩
         fmorη Γ Ŷ v ∘co (ℰP.p₂ ∘ ℰP.p₂)
       ∎ where open ≈-Reasoning isEquiv
 
@@ -482,7 +458,7 @@ collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; r
                   ≈ (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰP.prod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd))
     prodIso-bwd δ̂₁ δ̂₂ isos =
       ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd∘bwd≈id)) id-right)
+        (≈-trans (∘-cong₂ (K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd∘bwd≈id)) id-right)
 
     prodRefl : ∀ δ̂ (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
                (∀ i → isos i .Iso.fwd ≈ id _) →
@@ -490,9 +466,9 @@ collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; r
     prodRefl δ̂ isos hyps =
       begin
         (K× (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ ℰP.prod-m (CP .CollapseAt.iso δ̂ δ̂ isos .Iso.fwd) (CQ .CollapseAt.iso δ̂ δ̂ isos .Iso.fwd)) ∘ K× (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
-      ≈⟨ ∘-cong (∘-cong ≈-refl (≈-trans (ℰP.prod-m-cong (CP .CollapseAt.refl-iso δ̂ isos hyps) (CQ .CollapseAt.refl-iso δ̂ isos hyps)) ℰP.prod-m-id)) ≈-refl ⟩
+      ≈⟨ ∘-cong₁ (∘-cong₂ (≈-trans (ℰP.prod-m-cong (CP .CollapseAt.refl-iso δ̂ isos hyps) (CQ .CollapseAt.refl-iso δ̂ isos hyps)) ℰP.prod-m-id)) ⟩
         (K× (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ id _) ∘ K× (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
-      ≈⟨ ∘-cong id-right ≈-refl ⟩
+      ≈⟨ ∘-cong₁ id-right ⟩
         K× (X̂ δ̂) (Ŷ δ̂) .Iso.bwd ∘ K× (X̂ δ̂) (Ŷ δ̂) .Iso.fwd
       ≈⟨ K× (X̂ δ̂) (Ŷ δ̂) .Iso.bwd∘fwd≈id ⟩
         id _
@@ -510,9 +486,9 @@ collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; r
         toM : prodIso δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .Iso.fwd
               ≈ ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (pm₂₃ ∘ pm₁₂)) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
         toM =
-          ∘-cong (∘-cong ≈-refl
+          ∘-cong₁ (∘-cong₂
             (≈-trans (ℰP.prod-m-cong (CP .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃) (CQ .CollapseAt.comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃))
-              (ℰP.prod-m-comp _ _ _ _))) ≈-refl
+              (ℰP.prod-m-comp _ _ _ _)))
 
         fromM : (prodIso δ̂₂ δ̂₃ isos₂₃ .Iso.fwd ∘ prodIso δ̂₁ δ̂₂ isos₁₂ .Iso.fwd)
                 ≈ ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (pm₂₃ ∘ pm₁₂)) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
@@ -521,11 +497,11 @@ collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; r
             ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ pm₂₃) ∘ K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd) ∘ ((K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ pm₁₂) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd)
           ≈˘⟨ assoc _ _ _ ⟩
             (((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ pm₂₃) ∘ K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd) ∘ (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ pm₁₂)) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
-          ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
             ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ pm₂₃) ∘ (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd ∘ (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ pm₁₂))) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
-          ≈⟨ ∘-cong (∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd∘bwd≈id) ≈-refl) id-left))) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (∘-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.fwd∘bwd≈id)) id-left))) ⟩
             ((K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ pm₂₃) ∘ pm₁₂) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
-          ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
             (K× (X̂ δ̂₃) (Ŷ δ̂₃) .Iso.bwd ∘ (pm₂₃ ∘ pm₁₂)) ∘ K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.fwd
           ∎ where open ≈-Reasoning isEquiv
 
@@ -560,37 +536,27 @@ collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; r
             (fmorη Γ (FM.Fam𝒞-P.prod (X̂ δ̂₂) (Ŷ δ̂₂)) (FM.Fam𝒞-P.strong-prod-m (sfP gs₂) (sfQ gs₂)) ∘co (prodIso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂)) ∘co (K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)
           ≈⟨ CoK.assoc _ _ _ ⟩
             fmorη Γ (FM.Fam𝒞-P.prod (X̂ δ̂₂) (Ŷ δ̂₂)) (FM.Fam𝒞-P.strong-prod-m (sfP gs₂) (sfQ gs₂)) ∘co ((prodIso δ̂₁ δ̂₂ isosδ .Iso.fwd ∘ ℰP.p₂) ∘co (K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂))
-          ≈⟨ CoK.∘-cong ≈-refl (≈-trans (co-pure _ _) (∘-cong (prodIso-bwd δ̂₁ δ̂₂ isosδ) ≈-refl)) ⟩
+          ≈⟨ CoK.∘-cong₂ (≈-trans (co-pure _ _) (∘-cong₁ (prodIso-bwd δ̂₁ δ̂₂ isosδ))) ⟩
             fmorη Γ (FM.Fam𝒞-P.prod (X̂ δ̂₂) (Ŷ δ̂₂)) (FM.Fam𝒞-P.strong-prod-m (sfP gs₂) (sfQ gs₂)) ∘co ((K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰP.prod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd)) ∘ ℰP.p₂)
-          ≈˘⟨ CoK.∘-cong ≈-refl (co-pure _ _) ⟩
+          ≈˘⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
             fmorη Γ (FM.Fam𝒞-P.prod (X̂ δ̂₂) (Ŷ δ̂₂)) (FM.Fam𝒞-P.strong-prod-m (sfP gs₂) (sfQ gs₂)) ∘co ((K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰP.p₂) ∘co (ℰP.prod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂))
           ≈˘⟨ CoK.assoc _ _ _ ⟩
             (fmorη Γ (FM.Fam𝒞-P.prod (X̂ δ̂₂) (Ŷ δ̂₂)) (FM.Fam𝒞-P.strong-prod-m (sfP gs₂) (sfQ gs₂)) ∘co (K× (X̂ δ̂₂) (Ŷ δ̂₂) .Iso.bwd ∘ ℰP.p₂)) ∘co (ℰP.prod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂)
-          ≈⟨ CoK.∘-cong (fmorη-sprodm Γ (X̂ δ̂₂) (Ŷ δ̂₂) _ _) ≈-refl ⟩
+          ≈⟨ CoK.∘-cong₁ (fmorη-sprodm Γ (X̂ δ̂₂) (Ŷ δ̂₂) _ _) ⟩
             (K× (X̂ ε̂₂) (Ŷ ε̂₂) .Iso.bwd ∘ ℰP.strong-prod-m (fmorη Γ (X̂ δ̂₂) (sfP gs₂)) (fmorη Γ (Ŷ δ̂₂) (sfQ gs₂))) ∘co (ℰP.prod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂)
           ≈⟨ assoc _ _ _ ⟩
             K× (X̂ ε̂₂) (Ŷ ε̂₂) .Iso.bwd ∘ (ℰP.strong-prod-m (fmorη Γ (X̂ δ̂₂) (sfP gs₂)) (fmorη Γ (Ŷ δ̂₂) (sfQ gs₂)) ∘co (ℰP.prod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) ∘ ℰP.p₂))
-          ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (ℰP.pair-cong (≈-sym id-left) ≈-refl)) ⟩
+          ≈⟨ ∘-cong₂ (∘-cong₂ (ℰP.pair-cong (≈-sym id-left) ≈-refl)) ⟩
             K× (X̂ ε̂₂) (Ŷ ε̂₂) .Iso.bwd ∘ (ℰP.strong-prod-m (fmorη Γ (X̂ δ̂₂) (sfP gs₂)) (fmorη Γ (Ŷ δ̂₂) (sfQ gs₂)) ∘ ℰP.prod-m (id _) (ℰP.prod-m (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd)))
-          ≈⟨ ∘-cong ≈-refl (ℰP.strong-prod-m-pre _ _ _ _ _) ⟩
+          ≈⟨ ∘-cong₂ (ℰP.strong-prod-m-pre _ _ _ _ _) ⟩
             K× (X̂ ε̂₂) (Ŷ ε̂₂) .Iso.bwd ∘ ℰP.strong-prod-m (fmorη Γ (X̂ δ̂₂) (sfP gs₂) ∘ ℰP.prod-m (id _) (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd)) (fmorη Γ (Ŷ δ̂₂) (sfQ gs₂) ∘ ℰP.prod-m (id _) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd))
-          ≈⟨ ∘-cong ≈-refl (ℰP.strong-prod-m-cong comp₁ comp₂) ⟩
+          ≈⟨ ∘-cong₂ (ℰP.strong-prod-m-cong (≈-trans (∘-cong₂ (ℰP.pair-cong id-left ≈-refl)) (CP .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)) (≈-trans (∘-cong₂ (ℰP.pair-cong id-left ≈-refl)) (CQ .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs))) ⟩
             mid
           ∎
           where
             open ≈-Reasoning isEquiv
 
-            comp₁ : (fmorη Γ (X̂ δ̂₂) (sfP gs₂) ∘ ℰP.prod-m (id _) (CP .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd))
-                    ≈ (CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (X̂ δ̂₁) (sfP gs₁))
-            comp₁ =
-              ≈-trans (∘-cong ≈-refl (ℰP.pair-cong id-left ≈-refl))
-                (CP .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)
 
-            comp₂ : (fmorη Γ (Ŷ δ̂₂) (sfQ gs₂) ∘ ℰP.prod-m (id _) (CQ .CollapseAt.iso δ̂₁ δ̂₂ isosδ .Iso.fwd))
-                    ≈ (CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd ∘ fmorη Γ (Ŷ δ̂₁) (sfQ gs₁))
-            comp₂ =
-              ≈-trans (∘-cong ≈-refl (ℰP.pair-cong id-left ≈-refl))
-                (CQ .CollapseAt.natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)
 
         rhs : (((prodIso _ _ isosε .Iso.fwd ∘ fmorη Γ (FM.Fam𝒞-P.prod (X̂ δ̂₁) (Ŷ δ̂₁)) (FM.Fam𝒞-P.strong-prod-m (sfP gs₁) (sfQ gs₁)))
                 ∘co (K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)))
@@ -600,15 +566,15 @@ collapse-prod {n} {P} {Q} CP CQ = record { iso = prodIso ; natural = prodNat ; r
             (prodIso _ _ isosε .Iso.fwd ∘ fmorη Γ (FM.Fam𝒞-P.prod (X̂ δ̂₁) (Ŷ δ̂₁)) (FM.Fam𝒞-P.strong-prod-m (sfP gs₁) (sfQ gs₁))) ∘co (K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂)
           ≈⟨ assoc _ _ _ ⟩
             prodIso _ _ isosε .Iso.fwd ∘ (fmorη Γ (FM.Fam𝒞-P.prod (X̂ δ̂₁) (Ŷ δ̂₁)) (FM.Fam𝒞-P.strong-prod-m (sfP gs₁) (sfQ gs₁)) ∘co (K× (X̂ δ̂₁) (Ŷ δ̂₁) .Iso.bwd ∘ ℰP.p₂))
-          ≈⟨ ∘-cong ≈-refl (fmorη-sprodm Γ (X̂ δ̂₁) (Ŷ δ̂₁) _ _) ⟩
+          ≈⟨ ∘-cong₂ (fmorη-sprodm Γ (X̂ δ̂₁) (Ŷ δ̂₁) _ _) ⟩
             prodIso _ _ isosε .Iso.fwd ∘ (K× (X̂ ε̂₁) (Ŷ ε̂₁) .Iso.bwd ∘ ℰP.strong-prod-m (fmorη Γ (X̂ δ̂₁) (sfP gs₁)) (fmorη Γ (Ŷ δ̂₁) (sfQ gs₁)))
           ≈˘⟨ assoc _ _ _ ⟩
             (prodIso _ _ isosε .Iso.fwd ∘ K× (X̂ ε̂₁) (Ŷ ε̂₁) .Iso.bwd) ∘ ℰP.strong-prod-m (fmorη Γ (X̂ δ̂₁) (sfP gs₁)) (fmorη Γ (Ŷ δ̂₁) (sfQ gs₁))
-          ≈⟨ ∘-cong (prodIso-bwd ε̂₁ ε̂₂ isosε) ≈-refl ⟩
+          ≈⟨ ∘-cong₁ (prodIso-bwd ε̂₁ ε̂₂ isosε) ⟩
             (K× (X̂ ε̂₂) (Ŷ ε̂₂) .Iso.bwd ∘ ℰP.prod-m (CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd) (CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd)) ∘ ℰP.strong-prod-m (fmorη Γ (X̂ δ̂₁) (sfP gs₁)) (fmorη Γ (Ŷ δ̂₁) (sfQ gs₁))
           ≈⟨ assoc _ _ _ ⟩
             K× (X̂ ε̂₂) (Ŷ ε̂₂) .Iso.bwd ∘ (ℰP.prod-m (CP .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd) (CQ .CollapseAt.iso ε̂₁ ε̂₂ isosε .Iso.fwd) ∘ ℰP.strong-prod-m (fmorη Γ (X̂ δ̂₁) (sfP gs₁)) (fmorη Γ (Ŷ δ̂₁) (sfQ gs₁)))
-          ≈⟨ ∘-cong ≈-refl (ℰP.strong-prod-m-post _ _ _ _) ⟩
+          ≈⟨ ∘-cong₂ (ℰP.strong-prod-m-post _ _ _ _) ⟩
             mid
           ∎ where open ≈-Reasoning isEquiv
 
@@ -660,22 +626,22 @@ collapse-ext {n} Q CQ' δ̂₁ δ̂₂ isos isos' hyps =
               ∘co (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂))
              ≈ (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂)
     strip₁ =
-      ≈-trans (CoK.∘-cong (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _)) ≈-refl)
+      ≈-trans (CoK.∘-cong₁ (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _)))
         (CoK.id-left {Γ = ℰT'.witness})
 
     strip₂ : (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos' .Iso.fwd
               ∘ fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})))
              ≈ (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos' .Iso.fwd ∘ ℰP.p₂)
     strip₂ =
-      ∘-cong ≈-refl (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _))
+      ∘-cong₂ (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _))
 
     sqs : ∀ i → (fmorη ℰT'.witness (δ̂₂ i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) ∘co (isos i .Iso.fwd ∘ ℰP.p₂))
                 ≈ (isos' i .Iso.fwd ∘ fmorη ℰT'.witness (δ̂₁ i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}))
     sqs i =
-      ≈-trans (CoK.∘-cong (fmorη-p₂ ℰT'.witness (δ̂₂ i)) ≈-refl)
+      ≈-trans (CoK.∘-cong₁ (fmorη-p₂ ℰT'.witness (δ̂₂ i)))
         (≈-trans (CoK.id-left {Γ = ℰT'.witness})
-          (≈-trans (∘-cong (hyps i) ≈-refl)
-            (≈-sym (∘-cong ≈-refl (fmorη-p₂ ℰT'.witness (δ̂₁ i))))))
+          (≈-trans (∘-cong₁ (hyps i))
+            (≈-sym (∘-cong₂ (fmorη-p₂ ℰT'.witness (δ̂₁ i))))))
 
 -- A collapse at realisations of pure Fam(ℰ) morphisms is the realised plain
 -- action.
@@ -691,14 +657,14 @@ pure-collapse {n} Q CQ' δ̂₁ δ̂₂ ms isos hyps =
               ∘co (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂))
              ≈ (CQ' .CollapseAt.iso δ̂₁ δ̂₂ isos .Iso.fwd ∘ ℰP.p₂)
     strip₁ =
-      ≈-trans (CoK.∘-cong (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _)) ≈-refl)
+      ≈-trans (CoK.∘-cong₁ (≈-trans (fmorη-cong (FMuI.strong-fmor-p₂ (Poly-map η Q))) (fmorη-p₂ ℰT'.witness _)))
         (CoK.id-left {Γ = ℰT'.witness})
 
     strip₂ : (CQ' .CollapseAt.iso δ̂₂ δ̂₂ (λ i → Iso-refl) .Iso.fwd
               ∘ fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}))))
              ≈ (realise .fmor (FMu.fmor (Poly-map η Q) ms) ∘ ℰP.p₂)
     strip₂ =
-      ≈-trans (∘-cong (CQ' .CollapseAt.refl-iso δ̂₂ (λ i → Iso-refl) (λ i → ≈-refl)) ≈-refl)
+      ≈-trans (∘-cong₁ (CQ' .CollapseAt.refl-iso δ̂₂ (λ i → Iso-refl) (λ i → ≈-refl)))
         (≈-trans id-left
           (≈-trans (fmorη-cong (FamC.≈-sym (sf-pure Q δ̂₁ δ̂₂ ms)))
             (fmorη-pure ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.fmor (Poly-map η Q) ms))))
@@ -706,7 +672,7 @@ pure-collapse {n} Q CQ' δ̂₁ δ̂₂ ms isos hyps =
     sqs : ∀ i → (fmorη ℰT'.witness (δ̂₂ i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) ∘co (isos i .Iso.fwd ∘ ℰP.p₂))
                 ≈ (Iso-refl .Iso.fwd ∘ fmorη ℰT'.witness (δ̂₁ i) (FM.Mor-∘ (ms i) (FM.Fam𝒞-P.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})))
     sqs i =
-      ≈-trans (CoK.∘-cong (fmorη-p₂ ℰT'.witness (δ̂₂ i)) ≈-refl)
+      ≈-trans (CoK.∘-cong₁ (fmorη-p₂ ℰT'.witness (δ̂₂ i)))
         (≈-trans (CoK.id-left {Γ = ℰT'.witness})
-          (≈-trans (∘-cong (hyps i) ≈-refl)
+          (≈-trans (∘-cong₁ (hyps i))
             (≈-sym (≈-trans id-left (fmorη-pure ℰT'.witness (δ̂₁ i) (ms i))))))
