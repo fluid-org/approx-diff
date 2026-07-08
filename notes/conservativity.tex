@@ -77,11 +77,18 @@ products, and set-indexed coproducts. The paper, after the extensivity of \citet
 assumes only stable \emph{finite} coproducts; recursive types force the set-indexed strengthening
 (\secref{conservativity:gf-poly-types}).
 
-\begin{lemma}[TODO]
+\begin{lemma}
 \label{lem:conservativity:fam-stable-coproducts}
 In a $\Fam$ category the set-indexed coproducts are stable, and a functor acting fibrewise
 preserves them.
 \end{lemma}
+
+\begin{proof}[Proof sketch]
+A cover $\coprod_i y_i \cong y$ presents each index of $y$ as lying in a unique summand; pulling
+back along $g$ retags the indices of the source, splitting it over the same index set, which gives
+stability. A fibrewise functor leaves index sets untouched and acts on fibres alone, so it carries
+the disjoint union of index sets to the disjoint union of their images.
+\end{proof}
 
 Predicates live over presheaves on $\cat{C}$: let $G : \cat{D} \to \PSh(\cat{C})$ be the functor
 sending $X$ to the presheaf $\cat{D}(F(-), X)$. A presheaf predicate on $G(X)$ thus
@@ -103,11 +110,17 @@ set-indexed coproduct decomposition $\coprod_i y_i \cong y$; $\mathbf{C}\,\Phi$ 
 inductively, holding at $f : F(y) \to X$ if $\Phi$ does, or if some cover of $y$ has
 $\mathbf{C}\,\Phi$ holding at each restriction of $f$.
 
-\begin{lemma}[TODO]
+\begin{lemma}
 \label{lem:conservativity:indexed-closure}
 $\mathbf{C}$ is a strong closure operator on predicates (\secref{predicate-system}), its
 reindexing law using the stability of $\cat{C}$'s set-indexed coproducts.
 \end{lemma}
+
+\begin{proof}[Proof sketch]
+Monotonicity, extensivity, idempotence, and strength are structural recursions on cover trees.
+The reindexing law transports a cover tree along a morphism by pulling each cover back
+(\lemref{conservativity:fam-stable-coproducts}) and recurring on the summands.
+\end{proof}
 
 The category $\GLR(F)$ of \emph{Grothendieck logical relations} has as objects pairs $(X, \Phi)$ of an
 object $X \in \cat{D}$ and a closed predicate $\Phi$ on $G(X)$, and as morphisms $(X, \Phi) \to (Y,
