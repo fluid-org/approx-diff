@@ -17,6 +17,7 @@ open import prop-setoid using (module ≈-Reasoning; IsEquivalence; Setoid)
 open import setoid-cat using (SetoidCat)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 open import stable-coproducts using (StableBits; Stable)
+import fam-mu-realisation
 import glueing-simple
 import setoid-predicate
 open import finite-product-functor
@@ -538,6 +539,17 @@ open import lists Gl.cat GlPE.terminal GlPE.products GlPE.exponentials GDC
   using ()
   renaming (lists to Gl-lists)
 
+-- Poly-types for the glued category, realised from the μ-types of Fam(Gl).
+GlSC : HasStrongCoproducts Gl.cat GlPE.products
+GlSC = ccc→strong-coproducts GlCP.coproducts GlPE.exponentials
+
+abstract
+  Gl-Mu : polynomial-functor-2.Interp.HasMu GlPE.terminal GlPE.products GlSC
+  Gl-Mu = fam-mu-realisation.Muℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
+
+  Gl-MuLaws : polynomial-functor-2.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu
+  Gl-MuLaws = fam-mu-realisation.MuLawsℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
+
 module Glued = Category Gl.cat
 open Gl.Obj
 open Gl._=>_
@@ -768,9 +780,6 @@ module syntactic-2 {ℓ}
    (Sig : Signature ℓ)
    (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
    (𝒞Mu : polynomial-functor-2.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
-   (let GlSC = ccc→strong-coproducts GlCP.coproducts GlPE.exponentials)
-   (Gl-Mu : polynomial-functor-2.Interp.HasMu GlPE.terminal GlPE.products GlSC)
-   (Gl-MuLaws : polynomial-functor-2.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu)
    (GFC : preserve-chosen-coproducts GF (strong-coproducts→coproducts 𝒞T 𝒞SC)
                                         (strong-coproducts→coproducts GlPE.terminal GlSC))
    (GFμ : polynomial-functor-2.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-Mu GF)
