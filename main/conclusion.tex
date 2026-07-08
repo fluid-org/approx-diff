@@ -17,14 +17,17 @@ differentiation in \conref{tangent-stable-fns} and \conref{tangent-fam}.
 representing the dependency of outputs on inputs as a derivative whose Jacobian is a matrix over a commutative
 semiring. Traditional automatic differentiation, and various program analysis techniques such as \GPS, arise
 as instances. The model interprets an expressive higher-order language for querying and manipulating data, and
-reveals new applications such as approximation by intervals~(\secref{interval-approx}). Our categorical
+reveals new applications such as approximation by intervals~(\secref{interval-approx}). It also opens up the
+opportunity to integrate traditional symbolic data provenance techniques with the AD-based methods used in
+explainable AI, such as the saliency maps of Grad-CAM~\cite{selvaraju20}. Our categorical
 approach admits a modular construction of the model, and the use of general theorems, such as Fiore and
 Simpson's \thmref{glr-definability}, to prove properties of the interpretation. We have focused on
 constructions that enable an executable implementation in Agda.}
 
+\begin{DeletedBlock}
 \paragraph{Quantitative slicing and XAI}
 
-\roly{We can already do this, so perhaps this is more about applications.} Explainable AI (XAI) techniques
+Explainable AI (XAI) techniques
 like Gradient-weighted Class Activation Mapping (Grad-CAM)~\cite{selvaraju20} use reverse-mode AD selectively
 to calculate \emph{heat maps} (or \emph{saliency maps}) that highlight input regions contributing to a given
 classification or other outcome. We would like to investigate quantitative approximation structures where
@@ -32,6 +35,7 @@ $\top$ represents the original input image and lower elements represent ``slices
 individual pixels have been ablated to some degree (partly removed or blurred). This might allow for composing
 some of these techniques with Galois slicing, for use in hybrid systems such as physical simulations with
 ML-based parameterisations.
+\end{DeletedBlock}
 
 \begin{DeletedBlock}
 \paragraph{Refinement of the model}
