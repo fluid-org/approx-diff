@@ -96,13 +96,21 @@ whose derivative is the type of one-hole contexts, carrying a notion of linear m
 inductive and coinductive types~\cite{abbott05}. This already gives a set-theoretic account of shape
 approximation; weighting positions with our semiring scalars would extend our analyses to varying shapes.}
 
-\paragraph{Recursion and Partiality} This work has only examined the case for total programs. Even though we
-took stable domain theory as our starting point, we did not make any use of directed completeness or similar
-properties of domains. We expect that an account of recursion in an extension of the framework discussed so
-far would likely involve families of bounded lattices indexed by DCPOs, where the order of the DCPO would be
-reflected in embedding-projection relationships between the lattices. \citet{berry79}'s bidomains and
-\citet{laird07}'s bistable biorders have separate extensional and stable orders on the same set\Deleted{, in a
-way that might be similar to \exref{intervals-and-maxima-elements}}.
+\paragraph{Recursion and Partiality}
+\begin{DeletedBlock}
+This work has only examined the case for total programs. Even though we took stable domain theory as our
+starting point, we did not make any use of directed completeness or similar properties of domains. We expect
+that an account of recursion in an extension of the framework discussed so far would likely involve families
+of bounded lattices indexed by DCPOs, where the order of the DCPO would be reflected in embedding-projection
+relationships between the lattices. \citet{berry79}'s bidomains and \citet{laird07}'s bistable biorders have
+separate extensional and stable orders on the same set.
+\end{DeletedBlock}
+
+\Added{This work treats only total programs, and makes no use of directed completeness or similar properties
+of domains. An account of recursion would likely index our approximation objects by DCPOs, with the order of
+the DCPO reflected in embedding-projection relationships between them. \posscite{berry79} bidomains and
+\posscite{laird07} bistable biorders, which carry separate extensional and stable orders on the same set,
+suggest one route.}
 
 \paragraph{Source-To-Source Translation Techniques}
 
