@@ -261,12 +261,13 @@ $\GLR(F)$ has $\Poly$-types.
 \subsection{Preservation of $\Poly$-types by $\GF$}
 \label{sec:conservativity:gf-poly-types}
 
-The polynomials that arise interpret first-order types, so their $\const$-objects are $\GF$-images
-and previously constructed $\mu$-types. Preservation does not follow from $\GF$'s preservation of
+The polynomials that arise interpret first-order types. Translating type variables as polynomial
+variables, and base sorts as designated environment entries, these polynomials are constant-free;
+we assume this of all polynomials in this subsection. Preservation does not follow from $\GF$'s preservation of
 the finite structure: initial algebras map out of themselves, so finite preservation yields only the
 comparison $\mu_{\alpha.\GF(P)} \to \GF(\mu_{\alpha.P})$, by folding the $\GF$-image of the
 algebra. The converse direction requires $\GF$ to preserve the presentation of
-$\mu_{\alpha.P}$ as a set-indexed coproduct of its fibres. Four ingredients remain, given below.
+$\mu_{\alpha.P}$ as a set-indexed coproduct of its fibres. Three ingredients remain, given below.
 
 \begin{lemma}[TODO]
 \label{lem:conservativity:definable-coproducts}
@@ -290,23 +291,10 @@ This makes the choice of $\Poly$-types for $\cat{C}$ immaterial; the comparison 
 concrete construction of \propref{polynomial-types:fam-has-poly}, $\cat{C}$ being a $\Fam$
 category.
 
-\begin{lemma}[Constant abstraction, TODO]
-\label{lem:conservativity:const-abstraction}
-In any category with $\Poly$-types, $\mu_{\alpha.P}(\delta) \cong
-\mu_{\alpha.P'}(\delta, \vec{A})$, where $P'$ replaces the $\const$-objects $\vec{A}$ of $P$
-by fresh variables.
-\end{lemma}
-
-The two sides fold into one another, with the roundtrips by uniqueness of catamorphisms. The lemma
-is needed because the polynomials on the two sides of the comparison below differ at $\const$
-entries (presentations against $\eta$-embeddings), a variation that collapse, which fixes the
-polynomial and varies only the environment, cannot absorb.
-
 Finally, the two coproduct presentations must be matched. Write $\check{\delta}_i$ for the
 presentation of $\GF(\delta_i)$ induced by the canonical presentation of $\delta_i$: the family
 over the index set of $\delta_i$ whose fibres are the $\GF$-images of its fibres, with
-$\Sigma\check{\delta}_i \cong \GF(\delta_i)$ by
-\lemref{conservativity:definable-coproducts}.
+$\Sigma\check{\delta}_i \cong \GF(\delta_i)$ since $\GF$ preserves set-indexed coproducts.
 
 \begin{lemma}[Carrier comparison, TODO]
 \label{lem:conservativity:carrier-comparison}
@@ -325,7 +313,6 @@ $\GF$ preserves $\Poly$-types.
 \end{proposition}
 
 \begin{proof}[Proof sketch]
-By \lemref{conservativity:const-abstraction}, applied on both sides, assume $P$ has no constants.
 Compose \lemref{conservativity:carrier-comparison} with collapse
 (\lemref{conservativity:collapse}) at the isomorphism family $\Sigma\check{\delta}_i \cong
 \Sigma(\eta\,\GF\,\delta_i)$:
