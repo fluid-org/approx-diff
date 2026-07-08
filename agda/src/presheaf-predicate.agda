@@ -767,3 +767,42 @@ module CoverMonad
     closureOp .ClosureOp.𝐂-[] = 𝐂-[]
     closureOp .ClosureOp.𝐂-[]⁻¹ = 𝐂-[]⁻¹
     closureOp .ClosureOp.𝐂-strong = 𝐂-strong
+
+    -- Lifting a predicate along an endofunctor distributes over the closure,
+    -- for endofunctors along whose images the covers pull back.
+    module Distrib (F : Functor 𝒞 𝒞) where
+
+      -- A cover of x pulls back along any morphism into the F-image of x,
+      -- one leg per index, each leg landing in the F-image of a summand.
+      record FCoverPullback {x y} (c : Cover x) (g : y 𝒞.⇒ F .fobj x) : Set ℓ where
+        field
+          cover : Cover y
+          reix  : Ix cover → Ix c
+          leg   : ∀ s → dom cover s 𝒞.⇒ F .fobj (dom c (reix s))
+          eq    : ∀ s → (F .fmor (inj c (reix s)) 𝒞.∘ leg s) 𝒞.≈ (g 𝒞.∘ inj cover s)
+      open FCoverPullback
+
+      module _ (Fpull : ∀ {x y} (c : Cover x) (g : y 𝒞.⇒ F .fobj x) → FCoverPullback c g) where
+
+        open UnaryDay F
+        open F-hat-pred F renaming (endofunctor to FP)
+        open FunctorPred
+
+        distrib : ∀ {X} {P : Predicate X} → FP .liftF (𝐂 P) ⊑ 𝐂 (FP .liftF P)
+        distrib {X} {P} .*⊑* a .*⊑* (z , g , Xz) ((z' , g' , Xz') , liftS ϕ , ψ) =
+          Context-eq (liftS (eq-sym ϕ)) (h a z' g' Xz' ψ)
+          where
+            h : ∀ a z (g : a 𝒞.⇒ F .fobj z) Xz →
+                Context X P z Xz → Context (M-hat .fobj X) (FP .liftF P) a (z , g , Xz)
+            h a z g Xz (leaf ϕ') = leaf ((z , g , Xz) , M-hat-setoid X _ .refl , ϕ')
+            h a z g Xz (node c xs ts eqs) =
+              node (fp .cover)
+                   (λ s → (dom c (fp .reix s) , fp .leg s , xs (fp .reix s)))
+                   (λ s → h _ _ _ _ (ts (fp .reix s)))
+                   (λ s → liftS (eq-step {Fy = Xz} (inj c (fp .reix s)) (𝒞.id z)
+                            (𝒞.≈-trans (fp .eq s)
+                              (𝒞.≈-sym (𝒞.≈-trans (𝒞.∘-cong (F .fmor-id) 𝒞.≈-refl) 𝒞.id-left)))
+                            (X .fobj _ .sym (eqs (fp .reix s)))
+                            (X .fmor-id .func-eq (X .fobj z .refl))
+                            (eq-stop _)))
+              where fp = Fpull c g
