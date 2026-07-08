@@ -172,9 +172,67 @@ module Interpretation
        public
 
   module Conservativity where
-    open import monad using (IdentityMonad; preserve-identity-monad; Identity-monad-preserve-coproducts)
+    open import monad using (Monad; IdentityMonad; preserve-identity-monad; Identity-monad-preserve-coproducts)
+    open import functor using (Id; Colimit; _∘F_; NatTrans)
+    open import prop using (∃ₛ)
+    open fam.CategoryOfFamilies.Obj
+    open fam.CategoryOfFamilies.Mor
+    open fam.CategoryOfFamilies._≃_
+    open indexed-family._⇒f_
+    open indexed-family._≃f_
+    open indexed-family.Fam
+    open prop-setoid._⇒_
+    open prop-setoid._≃m_
+    private module 𝒞C = Category 𝒞
 
     𝒞istable = fam-stable-indexed.fam-stable-indexed {os = 0ℓ} 𝒞
+
+    private M = Monad.funct (IdentityMonad Fam⟨𝒞⟩.cat)
+
+    -- The identity monad functor preserves set-indexed coproducts: Id ∘F D and
+    -- D have the same action, so the two coproducts have identical data.
+    FM-DC : ∀ (S : Setoid 0ℓ 0ℓ) (D : functor.Functor (categories.setoid→category S) Fam⟨𝒞⟩.cat) →
+            ∃ₛ (Category.Iso Fam⟨𝒞⟩.cat
+                  (Colimit.apex (Fam⟨𝒞⟩.bigCoproducts S (M ∘F D)))
+                  (M .Functor.fobj (Colimit.apex (Fam⟨𝒞⟩.bigCoproducts S D))))
+               (λ i → ∀ s → Category._≈_ Fam⟨𝒞⟩.cat
+                             (Category._∘_ Fam⟨𝒞⟩.cat (Category.Iso.fwd i)
+                                (Colimit.cocone (Fam⟨𝒞⟩.bigCoproducts S (M ∘F D)) .NatTrans.transf s))
+                             (M .Functor.fmor (Colimit.cocone (Fam⟨𝒞⟩.bigCoproducts S D) .NatTrans.transf s)))
+    FM-DC S D = theIso , compat
+      where
+        Lo = Colimit.apex (Fam⟨𝒞⟩.bigCoproducts S (M ∘F D))
+        Ro = M .Functor.fobj (Colimit.apex (Fam⟨𝒞⟩.bigCoproducts S D))
+
+        fwd : Category._⇒_ Fam⟨𝒞⟩.cat Lo Ro
+        fwd .idxf .func p = p
+        fwd .idxf .func-resp-≈ e = e
+        fwd .famf .transf p = 𝒞C.id _
+        fwd .famf .natural e = 𝒞C.≈-trans 𝒞C.id-left (𝒞C.≈-sym 𝒞C.id-right)
+
+        bwd : Category._⇒_ Fam⟨𝒞⟩.cat Ro Lo
+        bwd .idxf .func p = p
+        bwd .idxf .func-resp-≈ e = e
+        bwd .famf .transf p = 𝒞C.id _
+        bwd .famf .natural e = 𝒞C.≈-trans 𝒞C.id-left (𝒞C.≈-sym 𝒞C.id-right)
+
+        theIso : Category.Iso Fam⟨𝒞⟩.cat Lo Ro
+        theIso .Category.Iso.fwd = fwd
+        theIso .Category.Iso.bwd = bwd
+        theIso .Category.Iso.fwd∘bwd≈id .idxf-eq .func-eq e = e
+        theIso .Category.Iso.fwd∘bwd≈id .famf-eq .transf-eq {p} =
+          𝒞C.≈-trans (𝒞C.∘-cong (Ro .fam .refl*) (𝒞C.≈-trans 𝒞C.id-left 𝒞C.id-left)) 𝒞C.id-left
+        theIso .Category.Iso.bwd∘fwd≈id .idxf-eq .func-eq e = e
+        theIso .Category.Iso.bwd∘fwd≈id .famf-eq .transf-eq {p} =
+          𝒞C.≈-trans (𝒞C.∘-cong (Lo .fam .refl*) (𝒞C.≈-trans 𝒞C.id-left 𝒞C.id-left)) 𝒞C.id-left
+
+        compat : ∀ s → Category._≈_ Fam⟨𝒞⟩.cat
+                        (Category._∘_ Fam⟨𝒞⟩.cat fwd (Colimit.cocone (Fam⟨𝒞⟩.bigCoproducts S (M ∘F D)) .NatTrans.transf s))
+                        (M .Functor.fmor (Colimit.cocone (Fam⟨𝒞⟩.bigCoproducts S D) .NatTrans.transf s))
+        compat s .idxf-eq .func-eq e =
+          Colimit.cocone (Fam⟨𝒞⟩.bigCoproducts S D) .NatTrans.transf s .idxf .func-resp-≈ e
+        compat s .famf-eq .transf-eq {d} =
+          𝒞C.≈-trans (𝒞C.∘-cong (Ro .fam .refl*) (𝒞C.≈-trans 𝒞C.id-left 𝒞C.id-left)) 𝒞C.id-left
 
     open import conservativity
       Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable (IdentityMonad Fam⟨𝒞⟩.cat)
@@ -182,7 +240,10 @@ module Interpretation
       Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials (IdentityMonad Fam⟨𝒟⟩.cat) Fam⟨𝒟⟩.bigCoproducts
       Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
       (preserve-identity-monad Fam⟨F⟩) (Identity-monad-preserve-coproducts Fam⟨𝒞⟩-coproducts)
-      {!FM-DC!} {!F-DC!} {!FamF-faithful!} {!FamF-def!}
+      FM-DC
+      (fam-functor.FamF-preserve-bigCopro 0ℓ 0ℓ F)
+      (fam-functor.FamF-faithful 0ℓ 0ℓ F F-faithful)
+      (fam-functor.FamF-def 0ℓ 0ℓ F F-def F-faithful)
       public
 
     Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products

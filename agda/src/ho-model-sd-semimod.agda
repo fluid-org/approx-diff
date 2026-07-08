@@ -6,6 +6,8 @@ open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
+open import categories using (Category)
+open import prop using (_,_)
 open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
 import nat
@@ -24,6 +26,7 @@ open ho-model.Interpretation
   SDSemiMod.cat SDSemiMod.terminal SDSemiMod.products
   SemiMod.cat SemiMod.cmon-enriched SemiMod.limits SemiMod.terminal SemiMod.biproduct
   SDSemiMod.U SDSemiMod.U-preserve-terminal (λ {X} {Y} → SDSemiMod.U-preserve-products {X} {Y})
+  (λ e → e) (λ h _ → h , Category.≈-refl SemiMod.cat)
   public
 
 -- Self-dualities on first-order-data types.

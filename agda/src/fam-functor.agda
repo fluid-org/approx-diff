@@ -5,11 +5,11 @@ open import Data.Unit using (tt)
 open import Data.Product using (_,_)
 open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫)
 open import prop-setoid
-  using (IsEquivalence; module ≈-Reasoning; idS)
+  using (IsEquivalence; module ≈-Reasoning; idS; Setoid)
   renaming (≃m-isEquivalence to ≈s-isEquivalence; _⇒_ to _⇒s_)
-open import categories using (Category; HasTerminal; HasCoproducts; HasProducts)
+open import categories using (Category; HasTerminal; HasCoproducts; HasProducts; setoid→category)
 open import setoid-cat using (SetoidCat; Setoid-coproducts; Setoid-products; Setoid-terminal)
-open import functor using (Functor; NatTrans)
+open import functor using (Functor; NatTrans; Colimit; _∘F_)
 open import fam using (module CategoryOfFamilies)
 open import finite-product-functor
   using (preserve-chosen-products; preserve-chosen-terminal; module preserve-chosen-products-consequences)
@@ -285,6 +285,54 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       eqΦ .famf-eq .transf-eq {x} =
         𝒟.≈-trans (𝒟.∘-cong (FamF .fobj Y .fam .refl*) 𝒟.≈-refl)
           (𝒟.≈-trans 𝒟.id-left (∃ₛ.snd (wit x)))
+
+  -- FamF preserves set-indexed coproducts: index sets and fibres are unchanged,
+  -- so the comparison is the identity up to the fibrewise fmor-comp bridge.
+  FamF-preserve-bigCopro : ∀ (S : Setoid os es) (D : Functor (setoid→category S) Fam𝒞.cat) →
+    ∃ₛ (Category.Iso Fam𝒟.cat
+          (Colimit.apex (Fam𝒟.bigCoproducts S (FamF ∘F D)))
+          (FamF .fobj (Colimit.apex (Fam𝒞.bigCoproducts S D))))
+       (λ i → ∀ s → Category._≈_ Fam𝒟.cat
+                     (Category._∘_ Fam𝒟.cat (Category.Iso.fwd i)
+                        (Colimit.cocone (Fam𝒟.bigCoproducts S (FamF ∘F D)) .NatTrans.transf s))
+                     (FamF .fmor (Colimit.cocone (Fam𝒞.bigCoproducts S D) .NatTrans.transf s)))
+  FamF-preserve-bigCopro S D = theIso , compat
+    where
+      Lo = Colimit.apex (Fam𝒟.bigCoproducts S (FamF ∘F D))
+      Ro = FamF .fobj (Colimit.apex (Fam𝒞.bigCoproducts S D))
+
+      fwd : Category._⇒_ Fam𝒟.cat Lo Ro
+      fwd .idxf .prop-setoid._⇒_.func p = p
+      fwd .idxf .prop-setoid._⇒_.func-resp-≈ e = e
+      fwd .famf .transf p = 𝒟.id _
+      fwd .famf .natural {s₁ , x₁} {s₂ , x₂} (s₁≈s₂ , x₁≈x₂) =
+        𝒟.≈-trans 𝒟.id-left (𝒟.≈-trans (𝒟.≈-sym (F .fmor-comp _ _)) (𝒟.≈-sym 𝒟.id-right))
+
+      bwd : Category._⇒_ Fam𝒟.cat Ro Lo
+      bwd .idxf .prop-setoid._⇒_.func p = p
+      bwd .idxf .prop-setoid._⇒_.func-resp-≈ e = e
+      bwd .famf .transf p = 𝒟.id _
+      bwd .famf .natural {s₁ , x₁} {s₂ , x₂} (s₁≈s₂ , x₁≈x₂) =
+        𝒟.≈-trans 𝒟.id-left (𝒟.≈-trans (F .fmor-comp _ _) (𝒟.≈-sym 𝒟.id-right))
+
+      theIso : Category.Iso Fam𝒟.cat Lo Ro
+      theIso .Category.Iso.fwd = fwd
+      theIso .Category.Iso.bwd = bwd
+      theIso .Category.Iso.fwd∘bwd≈id .idxf-eq .prop-setoid._≃m_.func-eq e = e
+      theIso .Category.Iso.fwd∘bwd≈id .famf-eq .transf-eq {p} =
+        𝒟.≈-trans (𝒟.∘-cong (Ro .fam .refl*) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left)) 𝒟.id-left
+      theIso .Category.Iso.bwd∘fwd≈id .idxf-eq .prop-setoid._≃m_.func-eq e = e
+      theIso .Category.Iso.bwd∘fwd≈id .famf-eq .transf-eq {p} =
+        𝒟.≈-trans (𝒟.∘-cong (Lo .fam .refl*) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left)) 𝒟.id-left
+
+      compat : ∀ s → Category._≈_ Fam𝒟.cat
+                      (Category._∘_ Fam𝒟.cat fwd (Colimit.cocone (Fam𝒟.bigCoproducts S (FamF ∘F D)) .NatTrans.transf s))
+                      (FamF .fmor (Colimit.cocone (Fam𝒞.bigCoproducts S D) .NatTrans.transf s))
+      compat s .idxf-eq .prop-setoid._≃m_.func-eq e =
+        Colimit.cocone (Fam𝒞.bigCoproducts S D) .NatTrans.transf s .idxf .prop-setoid._⇒_.func-resp-≈ e
+      compat s .famf-eq .transf-eq {d} =
+        𝒟.≈-trans (𝒟.∘-cong (Ro .fam .refl*) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left))
+          (𝒟.≈-trans 𝒟.id-left (𝒟.≈-sym (F .fmor-id)))
 
 
 

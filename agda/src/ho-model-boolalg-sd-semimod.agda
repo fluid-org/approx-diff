@@ -6,6 +6,8 @@ open import Level using (0ℓ; Lift; lift) renaming (suc to lsuc)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring; BooleanAlgebra)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
+open import categories using (Category)
+open import prop using (_,_)
 open import Data.Nat using (suc)
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
@@ -29,6 +31,7 @@ open ho-model.Interpretation
   BoolAlg.cat BoolAlg.terminal BoolAlg.products
   SemiMod.cat SemiMod.cmon-enriched SemiMod.limits SemiMod.terminal SemiMod.biproduct
   BoolAlg.U BoolAlg.U-preserve-terminal (λ {X} {Y} → BoolAlg.U-preserve-products {X} {Y})
+  (λ e → e) (λ h _ → h , Category.≈-refl SemiMod.cat)
   public
 
 -- Self-dual Boolean algebras on first-order-data types.
