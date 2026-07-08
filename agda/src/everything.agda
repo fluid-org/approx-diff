@@ -26,6 +26,7 @@ import fam-exponentials
 import fam-realisation
 import product-cocontinuity
 import fam-mu-realisation
+import fam-mu-types-2.skeleton
 
 -- Construction of the interpretation of the higher-order language in
 -- Section 4

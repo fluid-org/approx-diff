@@ -20,6 +20,7 @@ open import Relation.Binary.PropositionalEquality
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; subst to ≡-subst)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid using (Setoid)
+open import indexed-family using (_≃f_)
 import polynomial-functor-2
 import fam-mu-types-2.carrier
 
@@ -409,3 +410,203 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
                T₂.fib-el r₂ (el-fwd r x) ≡ T₁.fib-el r₁ x
     fib-el-≡ (env {p}) x = fib-castE (cong [ δ , cs ]′ (splitAt-↑ˡ n p k)) x
     fib-el-≡ (srt (mk Q ρ₁ ι ρ₂ vars fresh csok)) x = fib-fwd-≡ Q ρ₁ ι ρ₂ vars fresh csok x
+
+  -- Object equalities induce morphisms; the casts commute with the fibre
+  -- transports.
+  private
+    ≡-mor : ∀ {A B : obj} → A ≡ B → A ⇒ B
+    ≡-mor ≡-refl = id _
+
+    -- Leaf square: a cast built from a reference equality and an object
+    -- equality commutes with the underlying family's transport.
+    leaf-compat : ∀ {r q} (F : r ≡ inj₁ q) {B} (E : δ⁺ q ≡ B)
+                  {x y : B .idx .Carrier} (p : B .idx ._≈s_ x y) →
+                  (≡-mor (≡-sym (≡-trans (fib-el-castF F (≡-subst Car (≡-sym E) y)) (fib-castE E y)))
+                    ∘ B .fam .subst p)
+                  ≈ (T₂.fib-el-subst r (el-cast-≈ (≡-sym F) (cast-≈ (≡-sym E) p))
+                    ∘ ≡-mor (≡-sym (≡-trans (fib-el-castF F (≡-subst Car (≡-sym E) x)) (fib-castE E x))))
+    leaf-compat ≡-refl ≡-refl p = ≈-trans id-left (≈-sym id-right)
+
+    env-compat : ∀ {B B'} (E : B' ≡ B) {x y : B .idx .Carrier} (p : B .idx ._≈s_ x y) →
+                 (≡-mor (≡-sym (fib-castE E y)) ∘ B .fam .subst p)
+                 ≈ (B' .fam .subst (cast-≈ (≡-sym E) p) ∘ ≡-mor (≡-sym (fib-castE E x)))
+    env-compat ≡-refl p = ≈-trans id-left (≈-sym id-right)
+
+    prod-sq : ∀ {A₁ A₂ B₁ B₂ A₁' A₂' B₁' B₂' : obj}
+              (ey₁ : A₁' ≡ A₁) (ey₂ : A₂' ≡ A₂) (ex₁ : B₁' ≡ B₁) (ex₂ : B₂' ≡ B₂)
+              {s₁ : B₁ ⇒ A₁} {s₂ : B₂ ⇒ A₂} {s₁' : B₁' ⇒ A₁'} {s₂' : B₂' ⇒ A₂'} →
+              (≡-mor (≡-sym ey₁) ∘ s₁) ≈ (s₁' ∘ ≡-mor (≡-sym ex₁)) →
+              (≡-mor (≡-sym ey₂) ∘ s₂) ≈ (s₂' ∘ ≡-mor (≡-sym ex₂)) →
+              (≡-mor (≡-sym (cong₂ prod ey₁ ey₂)) ∘ prod-m s₁ s₂)
+              ≈ (prod-m s₁' s₂' ∘ ≡-mor (≡-sym (cong₂ prod ex₁ ex₂)))
+    prod-sq ≡-refl ≡-refl ≡-refl ≡-refl h₁ h₂ =
+      ≈-trans id-left
+        (≈-trans (prod-m-cong (≈-trans (≈-sym id-left) (≈-trans h₁ id-right))
+                              (≈-trans (≈-sym id-left) (≈-trans h₂ id-right)))
+          (≈-sym id-right))
+
+  mutual
+    w-compat : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
+               (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)) →
+               (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k))) →
+               (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
+               (csok : ∀ c → cs (ι c) ≡ consts Q c) →
+               {x y : T₁.W Q ρ₁} (e : T₁.W-≈ x y) →
+               (≡-mor (≡-sym (fib-fwd-≡ Q ρ₁ ι ρ₂ vars fresh csok y)) ∘ T₁.fib-subst {x = x} {y = y} e)
+               ≈ (T₂.fib-subst {x = wfwd Q ρ₁ ι ρ₂ vars fresh csok x} {y = wfwd Q ρ₁ ι ρ₂ vars fresh csok y}
+                    (w≈-fwd Q ρ₁ ι ρ₂ vars fresh csok {x} {y} e)
+                  ∘ ≡-mor (≡-sym (fib-fwd-≡ Q ρ₁ ι ρ₂ vars fresh csok x)))
+    w-compat Q ρ₁ ι ρ₂ vars fresh csok {T₁.sup x} {T₁.sup y} e =
+      shape-compat Q (extend ρ₁ (inj₂ (mkSort Q ρ₁))) ι (extend ρ₂ (inj₂ (mkSort (skeleton-go Q ι) ρ₂)))
+        (extend-vars Q ρ₁ ι ρ₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok e
+
+    shape-compat : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
+                   (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)) →
+                   (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k))) →
+                   (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
+                   (csok : ∀ c → cs (ι c) ≡ consts Q c) →
+                   {x y : T₁.⟦ Q ⟧shape η₁} (e : T₁.shape≈ Q η₁ x y) →
+                   (≡-mor (≡-sym (fib-shape-≡ Q η₁ ι η₂ vars fresh csok y)) ∘ T₁.fib-shape-subst Q η₁ e)
+                   ≈ (T₂.fib-shape-subst (skeleton-go Q ι) η₂ (shape≈-fwd Q η₁ ι η₂ vars fresh csok {x} {y} e)
+                      ∘ ≡-mor (≡-sym (fib-shape-≡ Q η₁ ι η₂ vars fresh csok x)))
+    shape-compat {jv} (const A) η₁ ι η₂ vars fresh csok e =
+      leaf-compat (fresh (ι Fin.zero))
+        (≡-trans (cong [ δ , cs ]′ (splitAt-↑ʳ n k (ι Fin.zero))) (csok Fin.zero)) e
+    shape-compat (var i)   η₁ ι η₂ vars fresh csok e = el-compat (vars i) e
+    shape-compat (Q + R)   η₁ ι η₂ vars fresh csok {inj₁ _} {inj₁ _} e =
+      shape-compat Q η₁ (λ c → ι (c ↑ˡ #c R)) η₂ vars fresh
+        (λ c → ≡-trans (csok (c ↑ˡ #c R)) (cong [ consts Q , consts R ]′ (splitAt-↑ˡ (#c Q) c (#c R)))) e
+    shape-compat (Q + R)   η₁ ι η₂ vars fresh csok {inj₂ _} {inj₂ _} e =
+      shape-compat R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ vars fresh
+        (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) e
+    shape-compat (Q × R)   η₁ ι η₂ vars fresh csok {x₁ , x₂} {y₁ , y₂} (e₁ ,ₚ e₂) =
+      prod-sq (fib-shape-≡ Q η₁ ιQ η₂ vars fresh csokQ y₁) (fib-shape-≡ R η₁ ιR η₂ vars fresh csokR y₂)
+              (fib-shape-≡ Q η₁ ιQ η₂ vars fresh csokQ x₁) (fib-shape-≡ R η₁ ιR η₂ vars fresh csokR x₂)
+              (shape-compat Q η₁ ιQ η₂ vars fresh csokQ e₁)
+              (shape-compat R η₁ ιR η₂ vars fresh csokR e₂)
+      where
+        ιQ = λ c → ι (c ↑ˡ #c R)
+        ιR = λ c → ι (#c Q ↑ʳ c)
+        csokQ = λ c → ≡-trans (csok (c ↑ˡ #c R)) (cong [ consts Q , consts R ]′ (splitAt-↑ˡ (#c Q) c (#c R)))
+        csokR = λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))
+    shape-compat (μ Q')    η₁ ι η₂ vars fresh csok {x} {y} e =
+      w-compat Q' η₁ ι η₂ vars fresh csok {x} {y} e
+
+    el-compat : ∀ {r₁ r₂} (r : RefRel r₁ r₂) {x y : T₁.El r₁} (e : T₁.elEq r₁ x y) →
+                (≡-mor (≡-sym (fib-el-≡ r y)) ∘ T₁.fib-el-subst r₁ e)
+                ≈ (T₂.fib-el-subst r₂ (elEq-fwd r {x} {y} e) ∘ ≡-mor (≡-sym (fib-el-≡ r x)))
+    el-compat (env {p}) e = env-compat (cong [ δ , cs ]′ (splitAt-↑ˡ n p k)) e
+    el-compat (srt (mk Q ρ₁ ι ρ₂ vars fresh csok)) {x} {y} e =
+      w-compat Q ρ₁ ι ρ₂ vars fresh csok {x} {y} e
+
+  -- Helper kit for the isomorphism assembly.
+  private
+    ≡-mor-cancel : ∀ {A B : obj} (e : A ≡ B) → (≡-mor e ∘ ≡-mor (≡-sym e)) ≈ id B
+    ≡-mor-cancel ≡-refl = id-left
+
+    ≡-mor-cancel' : ∀ {A B : obj} (e : A ≡ B) → (≡-mor (≡-sym e) ∘ ≡-mor e) ≈ id A
+    ≡-mor-cancel' ≡-refl = id-left
+
+    flip-compat : ∀ {A A' B B' : obj} (eA : A' ≡ A) (eB : B' ≡ B)
+                  {f : A ⇒ B} {g : A' ⇒ B'} →
+                  (≡-mor (≡-sym eB) ∘ f) ≈ (g ∘ ≡-mor (≡-sym eA)) →
+                  (f ∘ ≡-mor eA) ≈ (≡-mor eB ∘ g)
+    flip-compat ≡-refl ≡-refl h =
+      ≈-trans id-right (≈-trans (≈-sym id-left) (≈-trans h (≈-trans id-right (≈-sym id-left))))
+
+  -- A polynomial against its skeleton, at the extended environment.
+  module Inst (P : Poly (suc n)) (ι : Fin (#c P) → Fin k)
+              (csok : ∀ c → cs (ι c) ≡ consts P c) where
+
+    private
+      ρ₀ : Fin n → Fin n ⊎ Sort n
+      ρ₀ i = inj₁ i
+
+      ρ₀' : Fin (n +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)
+      ρ₀' i = inj₁ i
+
+      v₀ : ∀ i → RefRel (ρ₀ i) (ρ₀' (i ↑ˡ k))
+      v₀ i = env
+
+      f₀ : ∀ (c : Fin k) → ρ₀' (n ↑ʳ c) ≡ inj₁ (n ↑ʳ c)
+      f₀ c = ≡-refl
+
+      Fw : T₁.W P ρ₀ → T₂.W (skeleton-go P ι) ρ₀'
+      Fw = wfwd P ρ₀ ι ρ₀' v₀ f₀ csok
+
+      Bw : T₂.W (skeleton-go P ι) ρ₀' → T₁.W P ρ₀
+      Bw = wbwd P ρ₀ ι ρ₀' v₀ f₀ csok
+
+      fibeq : ∀ t → T₂.fib (Fw t) ≡ T₁.fib t
+      fibeq = fib-fwd-≡ P ρ₀ ι ρ₀' v₀ f₀ csok
+
+    fwd-mor : Mor (μObj P δ) (μObj (skeleton-go P ι) δ⁺)
+    fwd-mor .idxf .prop-setoid._⇒_.func = Fw
+    fwd-mor .idxf .prop-setoid._⇒_.func-resp-≈ {x₁} {x₂} = w≈-fwd P ρ₀ ι ρ₀' v₀ f₀ csok {x₁} {x₂}
+    fwd-mor .famf .transf t = ≡-mor (≡-sym (fibeq t))
+    fwd-mor .famf .natural {t₁} {t₂} e = w-compat P ρ₀ ι ρ₀' v₀ f₀ csok {x = t₁} {y = t₂} e
+
+    bwd-mor : Mor (μObj (skeleton-go P ι) δ⁺) (μObj P δ)
+    bwd-mor .idxf .prop-setoid._⇒_.func = Bw
+    bwd-mor .idxf .prop-setoid._⇒_.func-resp-≈ {x₁} {x₂} = w≈-bwd P ρ₀ ι ρ₀' v₀ f₀ csok {x₁} {x₂}
+    bwd-mor .famf .transf s =
+      ≡-mor (fibeq (Bw s)) ∘
+      T₂.fib-subst {x = s} {y = Fw (Bw s)}
+        (T₂.W-≈-sym {x = Fw (Bw s)} {y = s} (w-bf P ρ₀ ι ρ₀' v₀ f₀ csok s))
+    bwd-mor .famf .natural {s₁} {s₂} e =
+      ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (≈-sym (T₂.fib-trans* {x = s₁} {y = s₂} {z = Fw (Bw s₂)} _ _)))
+          (≈-sym
+            (≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong₁ (flip-compat (fibeq (Bw s₁)) (fibeq (Bw s₂))
+                          (w-compat P ρ₀ ι ρ₀' v₀ f₀ csok {x = Bw s₁} {y = Bw s₂}
+                            (w≈-bwd P ρ₀ ι ρ₀' v₀ f₀ csok {s₁} {s₂} e))))
+                (≈-trans (assoc _ _ _)
+                  (∘-cong₂ (≈-sym (T₂.fib-trans* {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _))))))))
+
+    private
+      st-collapse₁ : ∀ {j} {Q : Poly (suc j)} {ρ} {a b : T₁.W Q ρ}
+                     (p : T₁.W-≈ a b) (q : T₁.W-≈ b a) →
+                     (T₁.fib-subst {x = b} {y = a} q ∘ T₁.fib-subst {x = a} {y = b} p) ≈ id (T₁.fib a)
+      st-collapse₁ {a = a} {b} p q =
+        ≈-trans (≈-sym (T₁.fib-trans* {x = a} {y = b} {z = a} q p)) (T₁.fib-refl* a)
+
+      st-collapse₂ : ∀ {j} {Q : Poly (suc j)} {ρ} {a b : T₂.W Q ρ}
+                     (p : T₂.W-≈ a b) (q : T₂.W-≈ b a) →
+                     (T₂.fib-subst {x = b} {y = a} q ∘ T₂.fib-subst {x = a} {y = b} p) ≈ id (T₂.fib a)
+      st-collapse₂ {a = a} {b} p q =
+        ≈-trans (≈-sym (T₂.fib-trans* {x = a} {y = b} {z = a} q p)) (T₂.fib-refl* a)
+
+    fb-≃ : Fam𝒞._≈_ (Mor-∘ fwd-mor bwd-mor) (Mor-id _)
+    fb-≃ ._≃_.idxf-eq = prop-setoid.mk-≃m (λ s → w-bf P ρ₀ ι ρ₀' v₀ f₀ csok s)
+    fb-≃ ._≃_.famf-eq ._≃f_.transf-eq {s} =
+      ≈-trans (∘-cong₂ id-left)
+        (≈-trans (∘-cong₂ (≈-trans (≈-sym (assoc _ _ _))
+            (≈-trans (∘-cong₁ (≡-mor-cancel' (fibeq (Bw s)))) id-left)))
+          (st-collapse₂ {a = s} {b = Fw (Bw s)} _ _))
+
+    bf-≃ : Fam𝒞._≈_ (Mor-∘ bwd-mor fwd-mor) (Mor-id _)
+    bf-≃ ._≃_.idxf-eq = prop-setoid.mk-≃m (λ t → w-fb P ρ₀ ι ρ₀' v₀ f₀ csok t)
+    bf-≃ ._≃_.famf-eq ._≃f_.transf-eq {t} =
+      ≈-trans (∘-cong₂ id-left)
+        (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong₂ (≈-sym (w-compat P ρ₀ ι ρ₀' v₀ f₀ csok
+                {x = t} {y = Bw (Fw t)}
+                (T₁.W-≈-sym {x = Bw (Fw t)} {y = t} (w-fb P ρ₀ ι ρ₀' v₀ f₀ csok t)))))
+              (≈-trans (≈-sym (assoc _ _ _))
+                (≈-trans (∘-cong₁ (≡-mor-cancel (fibeq (Bw (Fw t))))) id-left)))))
+          (st-collapse₁ {a = t} {b = Bw (Fw t)} _ _))
+
+    skeleton-inst-iso : Fam𝒞.Iso (μObj P δ) (μObj (skeleton-go P ι) δ⁺)
+    skeleton-inst-iso .Fam𝒞.Iso.fwd = fwd-mor
+    skeleton-inst-iso .Fam𝒞.Iso.bwd = bwd-mor
+    skeleton-inst-iso .Fam𝒞.Iso.fwd∘bwd≈id = fb-≃
+    skeleton-inst-iso .Fam𝒞.Iso.bwd∘fwd≈id = bf-≃
+
+-- The μ-carrier of a polynomial coincides with that of its constant-free
+-- skeleton at the environment extended by its constants.
+skeleton-μ-iso : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj) →
+                 Fam𝒞.Iso (μObj P δ) (μObj (skeleton P) (δ ++e consts P))
+skeleton-μ-iso P δ = skeleton-inst-iso
+  where open Skeleton δ (consts P)
+        open Inst P (λ c → c) (λ c → ≡-refl)
