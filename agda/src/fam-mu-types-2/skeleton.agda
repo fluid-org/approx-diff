@@ -16,7 +16,7 @@ open import Data.Sum using (inj₁; inj₂; [_,_]′)
 open import Data.Product using (_,_)
 open import prop using () renaming (_,_ to _,ₚ_)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_; cong; subst-subst-sym; subst-sym-subst)
+  using (_≡_; cong; cong₂; subst-subst-sym; subst-sym-subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; subst to ≡-subst)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid using (Setoid)
@@ -312,3 +312,100 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
             T₂.elEq r₂ (el-fwd r (el-bwd r y)) y
     el-bf (env {p}) y = obj-≡-to-≈ {B = δ⁺ (p ↑ˡ k)} (subst-sym-subst {P = Car} (cong [ δ , cs ]′ (splitAt-↑ˡ n p k)))
     el-bf (srt (mk Q ρ₁ ι ρ₂ vars fresh csok)) y = w-bf Q ρ₁ ι ρ₂ vars fresh csok y
+
+  -- The backward map preserves bisimilarity.
+  mutual
+    w≈-bwd : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
+             (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)) →
+             (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k))) →
+             (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
+             (csok : ∀ c → cs (ι c) ≡ consts Q c) →
+             {x y : T₂.W (skeleton-go Q ι) ρ₂} → T₂.W-≈ x y →
+             T₁.W-≈ (wbwd Q ρ₁ ι ρ₂ vars fresh csok x) (wbwd Q ρ₁ ι ρ₂ vars fresh csok y)
+    w≈-bwd Q ρ₁ ι ρ₂ vars fresh csok {T₂.sup x} {T₂.sup y} p =
+      shape≈-bwd Q (extend ρ₁ (inj₂ (mkSort Q ρ₁))) ι (extend ρ₂ (inj₂ (mkSort (skeleton-go Q ι) ρ₂)))
+        (extend-vars Q ρ₁ ι ρ₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok p
+
+    shape≈-bwd : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
+                 (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)) →
+                 (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k))) →
+                 (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
+                 (csok : ∀ c → cs (ι c) ≡ consts Q c) →
+                 {x y : T₂.⟦ skeleton-go Q ι ⟧shape η₂} → T₂.shape≈ (skeleton-go Q ι) η₂ x y →
+                 T₁.shape≈ Q η₁ (shape-bwd Q η₁ ι η₂ vars fresh csok x) (shape-bwd Q η₁ ι η₂ vars fresh csok y)
+    shape≈-bwd {jv} (const A) η₁ ι η₂ vars fresh csok p =
+      cast-≈ (≡-trans (cong [ δ , cs ]′ (splitAt-↑ʳ n k (ι Fin.zero))) (csok Fin.zero))
+        (el-cast-≈ (fresh (ι Fin.zero)) p)
+    shape≈-bwd (var i)   η₁ ι η₂ vars fresh csok p = elEq-bwd (vars i) p
+    shape≈-bwd (Q + R)   η₁ ι η₂ vars fresh csok {inj₁ _} {inj₁ _} p =
+      shape≈-bwd Q η₁ (λ c → ι (c ↑ˡ #c R)) η₂ vars fresh
+        (λ c → ≡-trans (csok (c ↑ˡ #c R)) (cong [ consts Q , consts R ]′ (splitAt-↑ˡ (#c Q) c (#c R)))) p
+    shape≈-bwd (Q + R)   η₁ ι η₂ vars fresh csok {inj₂ _} {inj₂ _} p =
+      shape≈-bwd R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ vars fresh
+        (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) p
+    shape≈-bwd (Q × R)   η₁ ι η₂ vars fresh csok {_ , _} {_ , _} (p ,ₚ q) =
+      shape≈-bwd Q η₁ (λ c → ι (c ↑ˡ #c R)) η₂ vars fresh
+        (λ c → ≡-trans (csok (c ↑ˡ #c R)) (cong [ consts Q , consts R ]′ (splitAt-↑ˡ (#c Q) c (#c R)))) p
+      ,ₚ shape≈-bwd R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ vars fresh
+          (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) q
+    shape≈-bwd (μ Q')    η₁ ι η₂ vars fresh csok {x} {y} p =
+      w≈-bwd Q' η₁ ι η₂ vars fresh csok {x} {y} p
+
+    elEq-bwd : ∀ {r₁ r₂} (r : RefRel r₁ r₂) {x y : T₂.El r₂} →
+               T₂.elEq r₂ x y → T₁.elEq r₁ (el-bwd r x) (el-bwd r y)
+    elEq-bwd (env {p}) q =
+      cast-≈ (cong [ δ , cs ]′ (splitAt-↑ˡ n p k)) q
+    elEq-bwd (srt (mk Q ρ₁ ι ρ₂ vars fresh csok)) {x} {y} q =
+      w≈-bwd Q ρ₁ ι ρ₂ vars fresh csok {x} {y} q
+
+  -- The fibres of matched trees are equal objects.
+  private
+    fib-el-castF : ∀ {r r'} (F : r ≡ r') (z : T₂.El r') →
+                   T₂.fib-el r (≡-subst T₂.El (≡-sym F) z) ≡ T₂.fib-el r' z
+    fib-el-castF ≡-refl z = ≡-refl
+
+    fib-castE : ∀ {B B'} (E : B ≡ B') (x : B' .idx .Carrier) →
+                B .fam .fm (≡-subst Car (≡-sym E) x) ≡ B' .fam .fm x
+    fib-castE ≡-refl x = ≡-refl
+
+  mutual
+    fib-fwd-≡ : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
+                (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)) →
+                (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k))) →
+                (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
+                (csok : ∀ c → cs (ι c) ≡ consts Q c) →
+                (x : T₁.W Q ρ₁) →
+                T₂.fib (wfwd Q ρ₁ ι ρ₂ vars fresh csok x) ≡ T₁.fib x
+    fib-fwd-≡ Q ρ₁ ι ρ₂ vars fresh csok (T₁.sup x) =
+      fib-shape-≡ Q (extend ρ₁ (inj₂ (mkSort Q ρ₁))) ι (extend ρ₂ (inj₂ (mkSort (skeleton-go Q ι) ρ₂)))
+        (extend-vars Q ρ₁ ι ρ₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok x
+
+    fib-shape-≡ : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
+                  (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)) →
+                  (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k))) →
+                  (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
+                  (csok : ∀ c → cs (ι c) ≡ consts Q c) →
+                  (x : T₁.⟦ Q ⟧shape η₁) →
+                  T₂.fib-shape (skeleton-go Q ι) η₂ (shape-fwd Q η₁ ι η₂ vars fresh csok x) ≡ T₁.fib-shape Q η₁ x
+    fib-shape-≡ {jv} (const A) η₁ ι η₂ vars fresh csok x =
+      ≡-trans (fib-el-castF (fresh (ι Fin.zero)) _)
+        (fib-castE (≡-trans (cong [ δ , cs ]′ (splitAt-↑ʳ n k (ι Fin.zero))) (csok Fin.zero)) x)
+    fib-shape-≡ (var i)   η₁ ι η₂ vars fresh csok x = fib-el-≡ (vars i) x
+    fib-shape-≡ (Q + R)   η₁ ι η₂ vars fresh csok (inj₁ x) =
+      fib-shape-≡ Q η₁ (λ c → ι (c ↑ˡ #c R)) η₂ vars fresh
+        (λ c → ≡-trans (csok (c ↑ˡ #c R)) (cong [ consts Q , consts R ]′ (splitAt-↑ˡ (#c Q) c (#c R)))) x
+    fib-shape-≡ (Q + R)   η₁ ι η₂ vars fresh csok (inj₂ y) =
+      fib-shape-≡ R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ vars fresh
+        (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) y
+    fib-shape-≡ (Q × R)   η₁ ι η₂ vars fresh csok (x , y) =
+      cong₂ prod
+        (fib-shape-≡ Q η₁ (λ c → ι (c ↑ˡ #c R)) η₂ vars fresh
+          (λ c → ≡-trans (csok (c ↑ˡ #c R)) (cong [ consts Q , consts R ]′ (splitAt-↑ˡ (#c Q) c (#c R)))) x)
+        (fib-shape-≡ R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ vars fresh
+          (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) y)
+    fib-shape-≡ (μ Q')    η₁ ι η₂ vars fresh csok x = fib-fwd-≡ Q' η₁ ι η₂ vars fresh csok x
+
+    fib-el-≡ : ∀ {r₁ r₂} (r : RefRel r₁ r₂) (x : T₁.El r₁) →
+               T₂.fib-el r₂ (el-fwd r x) ≡ T₁.fib-el r₁ x
+    fib-el-≡ (env {p}) x = fib-castE (cong [ δ , cs ]′ (splitAt-↑ˡ n p k)) x
+    fib-el-≡ (srt (mk Q ρ₁ ι ρ₂ vars fresh csok)) x = fib-fwd-≡ Q ρ₁ ι ρ₂ vars fresh csok x
