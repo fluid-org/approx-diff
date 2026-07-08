@@ -46,6 +46,11 @@ main-submit.pdf: main-submit.tex main.tex $(MAIN_DEPS)
 	cp _latex/main-submit.pdf .
 
 arxiv: main.pdf
+	@if grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/main.log; then \
+		echo "arxiv: main.pdf has undefined references/citations; not building arXiv.zip:" >&2; \
+		grep -aE "undefined" _latex/main.log | grep -aoE "(Reference|Citation) .[^']*'" | sort -u >&2; \
+		exit 1; \
+	fi
 	rm -f arXiv.zip
 	git ls-files | zip arXiv.zip -@
 
