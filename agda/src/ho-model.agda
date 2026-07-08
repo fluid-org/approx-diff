@@ -14,11 +14,12 @@ open import functor using (HasLimits; op-colimit; limits→limits')
 import fam
 import fam-mu-types-2.carrier
 import fam-mu-types-2
+import fam-stable-indexed
 import indexed-family
 
 open import functor using (Functor)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
-open import prop using (_,_)
+open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫)
 open import prop-setoid using (IsEquivalence; Setoid)
 open import finite-product-functor
   using (preserve-chosen-products; preserve-chosen-terminal)
@@ -50,6 +51,12 @@ module Interpretation
   (F : Functor 𝒞 𝒟)
   (F-preserve-terminal : preserve-chosen-terminal F 𝒞-terminal 𝒟-terminal)
   (F-preserve-products : preserve-chosen-products F 𝒞-products (biproducts→products _ 𝒟-biproducts))
+  -- For the conservativity theorem: F is faithful and picks definability
+  -- witnesses uniformly (both hold when F is full and faithful)
+  (F-faithful : ∀ {a b} {g₁ g₂ : Category._⇒_ 𝒞 a b} → Category._≈_ 𝒟 (F .fmor g₁) (F .fmor g₂) → Category._≈_ 𝒞 g₁ g₂)
+  (F-def : ∀ {a b} (h : Category._⇒_ 𝒟 (F .fobj a) (F .fobj b)) →
+           Prf (∃ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h) →
+           ∃ₛ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h)
   where
 
   -- Target: Fam⟨𝒟⟩
@@ -165,11 +172,16 @@ module Interpretation
 
   module Conservativity where
     open import monad using (IdentityMonad; preserve-identity-monad; Identity-monad-preserve-coproducts)
+
+    𝒞istable = fam-stable-indexed.fam-stable-indexed {os = 0ℓ} 𝒞
+
     open import conservativity
       Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable (IdentityMonad Fam⟨𝒞⟩.cat)
+      Fam⟨𝒞⟩.bigCoproducts 𝒞istable
       Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials (IdentityMonad Fam⟨𝒟⟩.cat) Fam⟨𝒟⟩.bigCoproducts
       Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
       (preserve-identity-monad Fam⟨F⟩) (Identity-monad-preserve-coproducts Fam⟨𝒞⟩-coproducts)
+      {!FM-DC!} {!F-DC!} {!FamF-faithful!} {!FamF-def!}
       public
 
     Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products
