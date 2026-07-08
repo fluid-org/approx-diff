@@ -255,7 +255,9 @@ naturality of collapse). The laws are then the $\Fam(\cat{E})$ laws conjugated b
 
 \begin{corollary}
 \label{cor:conservativity:glr-poly}
-$\GLR(F)$ has $\Poly$-types.
+$\GLR(F)$ has $\Poly$-types, its structure being that of
+\secref{conservativity:glueing}, with set-indexed coproducts computed as coproducts of carriers
+with joined predicates.
 \end{corollary}
 
 \subsection{Preservation of $\Poly$-types by $\GF$}
@@ -265,7 +267,9 @@ Preservation does not follow from $\GF$'s preservation of the finite structure: 
 map out of themselves, so finite preservation yields only the comparison $\mu_{\alpha.\GF(P)}
 \to \GF(\mu_{\alpha.P})$, by folding the $\GF$-image of the algebra. The converse direction
 requires $\GF$ to preserve the presentation of $\mu_{\alpha.P}$ as a set-indexed coproduct of its
-fibres.
+fibres. We accordingly assume, beyond \secref{conservativity:glueing}, that $\cat{C}$ has stable
+set-indexed coproducts and that $F$ preserves them; both hold in the intended instance, $\cat{C}$
+being a $\Fam$ category and $F$ acting fibrewise.
 
 Preservation asks only for an isomorphism of objects, so the comparison can be carried out on the
 concrete carriers of \propref{polynomial-types:fam-has-poly}, where no initiality machinery is
@@ -291,7 +295,7 @@ carriers by assumption, predicates by the lemma, the coproducts of $\GLR(F)$ bei
 coproducts of carriers with joined predicates. In particular $\Sigma\check{\delta}_i \cong
 \GF(\delta_i)$.
 
-\begin{lemma}[Skeleton, TODO]
+\begin{lemma}[Skeleton; formalised as \texttt{fam-mu-types-2/skeleton}]
 \label{lem:conservativity:skeleton}
 In a $\Fam$ category, $\mu_{\alpha.Q}(\delta) \cong \mu_{\alpha.Q^{*}}(\delta, \vec{A})$,
 where $\vec{A}$ are the $\const$-objects of $Q$.
