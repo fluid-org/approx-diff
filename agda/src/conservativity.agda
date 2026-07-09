@@ -1018,6 +1018,22 @@ GF-preserve-coproducts .Category.IsIso.inverse = presv-cp
 GF-preserve-coproducts .Category.IsIso.f∘inverse≈id .f≃f = Category.IsIso.f∘inverse≈id FC
 GF-preserve-coproducts .Category.IsIso.inverse∘f≈id .f≃f = Category.IsIso.inverse∘f≈id FC
 
+-- GF preserves set-indexed coproducts: carrier by F-DC, predicate by
+-- Definable-coproducts-indexed. The set-indexed twin of GF-preserve-coproducts.
+GF-preserve-coproducts-indexed : ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) 𝒞) →
+  Glued.Iso (GDC S (GF ∘F D) .Colimit.apex) (GF .fobj (SI.∐ S D))
+GF-preserve-coproducts-indexed S D = iso
+  where
+    module FI = ∃ₛ (F-DC S D)
+
+    iso : Glued.Iso (GDC S (GF ∘F D) .Colimit.apex) (GF .fobj (SI.∐ S D))
+    iso .Glued.Iso.fwd .morph = FI.fst .Category.Iso.fwd
+    iso .Glued.Iso.fwd .presv = {!!}
+    iso .Glued.Iso.bwd .morph = FI.fst .Category.Iso.bwd
+    iso .Glued.Iso.bwd .presv = {!!}
+    iso .Glued.Iso.fwd∘bwd≈id .f≃f = FI.fst .Category.Iso.fwd∘bwd≈id
+    iso .Glued.Iso.bwd∘fwd≈id .f≃f = FI.fst .Category.Iso.bwd∘fwd≈id
+
 -- FIXME: If 𝒞 has exponentials, then GF preserves them as well.
 
 open preserve-monad
