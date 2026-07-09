@@ -145,7 +145,7 @@ $\SDSemiMod(S)$ means that we can take transposes of tangent maps to
 track reverse provenance. To interpret expressive languages in this
 setting, we need to ensure it has sufficient categorical
 structure. Unfortunately, it is the case that $\Fam(\SDSemiMod(S))$ is
-not cartesian closed, and so cannot support an interpretation of
+not Cartesian closed, and so cannot support an interpretation of
 higher order functions. This is because $\SDSemiMod(S)$ does not have
 infinite products, as we explain below. This motivates the use of the
 more liberal category $\Fam(\SemiMod(S))$ to interpret higher order
@@ -196,11 +196,11 @@ products, because $\SDSemiMod(S)$ has products.} \Deleted{Our category of intere
 products, because $\LatGal$ has products. Similarly for
 $\Fam(\MeetSLat)$. As we shall see below, the products in $\LatGal$
 (and $\MeetSLat$ and $\JoinSLat)$ are also coproducts, which is
-essential to obtaining cartesian closure.}
+essential to obtaining Cartesian closure.}
 
 \subsubsection{Cartesian Closure}
 
-For cartesian closure of the categories $\Fam(C)$ that we are
+For Cartesian closure of the categories $\Fam(C)$ that we are
 interested in, we rely on the following theorem of \citet{nunes2023},
 specialised from their setting with the general Grothendieck
 construction to $\Fam(\cat{C})$. This relies on the definition of
@@ -209,11 +209,11 @@ construction to $\Fam(\cat{C})$. This relies on the definition of
 \begin{theorem}[\cite{nunes2023}]
   \label{thm:fam-closed}
   \AGDA.  If $\cat{C}$ has biproducts (\defref{biproducts}) and all
-  products, then $\Fam(\cat{C})$ is cartesian closed\footnote{More
+  products, then $\Fam(\cat{C})$ is Cartesian closed\footnote{More
     precisely, if $\cat{C}$ has coproducts then we have a monoidal
     product on $\Fam(\cat{C})$ which is closed by this
     construction. When these coproducts are in fact biproducts, we get
-    cartesian closure.}. On objects, the internal hom can be given by:
+    Cartesian closure.}. On objects, the internal hom can be given by:
   \begin{displaymath}
     (X, \partial X) \to (Y, \partial Y) = (\Pi_{x : X}. \Sigma_{y : Y}. \cat{C}(\partial X(x), \partial Y(y)), \lambda f. \Pi_{x : X}. \partial Y(\pi_1(f\, x)))
   \end{displaymath}
@@ -230,7 +230,7 @@ points in the domain to tangents in the codomain along the function.
 The category \Replaced{$\SemiMod(S)$}{$\MeetSLat$} satisfies the hypotheses of
 \thmref{fam-closed}, so:
 \begin{corollary}
-  \Replaced{$\SemiMod(S)$}{$\Fam(\MeetSLat)$} is cartesian closed and has all coproducts.
+  \Replaced{$\SemiMod(S)$}{$\Fam(\MeetSLat)$} is Cartesian closed and has all coproducts.
 \end{corollary}
 Unfortunately, neither \Replaced{$\SDSemiMod(S)$}{$\LatGal$} nor
 $\FinVect$ satisfy the hypotheses of this theorem, because neither of
@@ -248,14 +248,14 @@ them have infinite products. \todo{cite: Adamek paper}. \Deleted{We
   There is another construction of internal homs on $\Fam(\cat{C})$
   arising from the use of fibrations for categorical logical
   relations, due to \citet[Corollary 4.12]{hermida99}. If we assume
-  that $\cat{C}$ is itself cartesian closed and has all products, then
+  that $\cat{C}$ is itself Cartesian closed and has all products, then
   we could construct an internal hom as:
   \begin{displaymath}
     (X, \partial X) \to (Y, \partial Y) = (X \to Y, \lambda f. \Pi_{x : X}.\,\partial X(x) \to \partial Y(f\,x))
   \end{displaymath}
   However, for the purposes of modelling differentiable programs, this
   is fatally flawed in that neither $\LatGal$ nor $\FinVect$ are
-  cartesian closed, and there is no way of making them so without
+  Cartesian closed, and there is no way of making them so without
   losing the property of being able to conjunct or add tangents, as we
   shall see below. We will implicitly use Hermida's construction in
   our definability proof in \secref{definability}, where we use a
@@ -342,13 +342,13 @@ coproducts:
   hence biproducts:
   \begin{enumerate}[leftmargin=\enummargin]
   \item In $\FinVect$, morphisms are linear maps and so can be added
-    and have a zero map. Finite products are given by cartesian
+    and have a zero map. Finite products are given by Cartesian
     products of the underlying sets, with the vector operations
     defined pointwise.
   \item In $\LatGal$, right adjoints are summed using meets and left
     adjoints are summed using joins. The zero maps are given by the
     constantly $\top$ and constantly $\bot$ functions
-    respectively. Products are given by the cartesian product of the
+    respectively. Products are given by the Cartesian product of the
     underlying set and the one-element lattice for the
     terminal/initial/zero object.
   \item $\MeetSLat$ and $\JoinSLat$ are both $\CMon$-enriched and have
@@ -357,7 +357,7 @@ coproducts:
 \end{example}
 
 \begin{remark}
-  Categories with zero objects cannot be cartesian closed without
+  Categories with zero objects cannot be Cartesian closed without
   being trivial in the sense of having exactly one morphism between
   every pair of objects because
   $\cat{C}(X, Y) \cong \cat{C}(1 \times X,Y) \cong \cat{C}(0 \times
@@ -435,7 +435,7 @@ check that this category satisfies the hypotheses of
 
 \begin{corollary}
   \label{cor:mslat-jslat-bcc}
-  $\Fam(\MeetSLat \times \JoinSLat^\op)$ is cartesian closed and has
+  $\Fam(\MeetSLat \times \JoinSLat^\op)$ is Cartesian closed and has
   all coproducts.
 \end{corollary}
 
@@ -711,7 +711,7 @@ see an example of the use of these operations in
 
 We have seen that the category $\Fam(\LatGal)$ has enough structure to
 express useful approximation maps at first-order and that
-$\Fam(\MeetSLat \times \JoinSLat^\op)$, which is a cartesian closed
+$\Fam(\MeetSLat \times \JoinSLat^\op)$, which is a Cartesian closed
 category with all coproducts, is enough to interpret the total
 higher-order language we define in the next section with primitive
 types and operations defined in $\Fam(\LatGal)$. However, we are not
