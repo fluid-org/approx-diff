@@ -83,6 +83,41 @@ module ex where
       avg : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ base number → Γ ⊢ base number
       avg x y = bop mult (bop (lit h) [] ∷ bop add (x ∷ y ∷ []) ∷ [])
 
+  -- 3x3 grid scorer for the signed-saliency reading: a centre-surround linear filter (centre
+  -- positive, corners negative) plus two adjacent-cell interaction products. Unlike the linear
+  -- mavg, the products make the Jacobian, and hence the saliency, depend on the input. `neg` is
+  -- the -1 weight literal; positive weights are implicit. The bottom-middle cell is absent from
+  -- the score, so masked.
+  Row Grid : type
+  Row  = (base number [×] base number) [×] base number
+  Grid = (Row [×] Row) [×] Row
+
+  score : Num → emp , Grid ⊢ base number
+  score neg =
+    plus (plus x5 (minus (plus (plus x1 x3) (plus x7 x9))))
+         (plus (times x4 x6) (minus (times x5 x2)))
+    where
+      plus times : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ base number → Γ ⊢ base number
+      plus  a b = bop add  (a ∷ b ∷ [])
+      times a b = bop mult (a ∷ b ∷ [])
+      minus : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ base number
+      minus a = bop mult (bop (lit neg) [] ∷ a ∷ [])
+      g : emp , Grid ⊢ Grid
+      g = var zero
+      r1 r2 r3 : emp , Grid ⊢ Row
+      r1 = fst (fst g)
+      r2 = snd (fst g)
+      r3 = snd g
+      x1 x2 x3 x4 x5 x6 x7 x9 : emp , Grid ⊢ base number
+      x1 = fst (fst r1)
+      x2 = snd (fst r1)
+      x3 = snd r1
+      x4 = fst (fst r2)
+      x5 = snd (fst r2)
+      x6 = snd r2
+      x7 = fst (fst r3)
+      x9 = snd r3
+
   -- Product of two numbers.
   mult-ex : emp , base number [×] base number ⊢ base number
   mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])
