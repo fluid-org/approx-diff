@@ -1026,13 +1026,25 @@ GF-preserve-coproducts-indexed S D = iso
   where
     module FI = ∃ₛ (F-DC S D)
 
+    -- project ∘F GF and F agree on objects and morphisms, but not as no-eta
+    -- functor records, so the Gl coproduct's carrier 𝒟DC S (project ∘F GF ∘F D)
+    -- is bridged to F-DC's 𝒟DC S (F ∘F D) by the identity natural iso.
+    D-eq : NatIso (Gl.project ∘F (GF ∘F D)) (F ∘F D)
+    D-eq .NatIso.transform .transf s = 𝒟.id _
+    D-eq .NatIso.transform .natural {s} {s'} _ = 𝒟.≈-trans 𝒟.id-right (𝒟.≈-sym 𝒟.id-left)
+    D-eq .NatIso.transf-iso s .Category.IsIso.inverse = 𝒟.id _
+    D-eq .NatIso.transf-iso s .Category.IsIso.f∘inverse≈id = 𝒟.id-left
+    D-eq .NatIso.transf-iso s .Category.IsIso.inverse∘f≈id = 𝒟.id-left
+
+    carrierIso = 𝒟.Iso-trans (𝒟d.∐-iso D-eq) FI.fst
+
     iso : Glued.Iso (GDC S (GF ∘F D) .Colimit.apex) (GF .fobj (SI.∐ S D))
-    iso .Glued.Iso.fwd .morph = FI.fst .Category.Iso.fwd
+    iso .Glued.Iso.fwd .morph = carrierIso .Category.Iso.fwd
     iso .Glued.Iso.fwd .presv = {!!}
-    iso .Glued.Iso.bwd .morph = FI.fst .Category.Iso.bwd
+    iso .Glued.Iso.bwd .morph = carrierIso .Category.Iso.bwd
     iso .Glued.Iso.bwd .presv = {!!}
-    iso .Glued.Iso.fwd∘bwd≈id .f≃f = FI.fst .Category.Iso.fwd∘bwd≈id
-    iso .Glued.Iso.bwd∘fwd≈id .f≃f = FI.fst .Category.Iso.bwd∘fwd≈id
+    iso .Glued.Iso.fwd∘bwd≈id .f≃f = carrierIso .Category.Iso.fwd∘bwd≈id
+    iso .Glued.Iso.bwd∘fwd≈id .f≃f = carrierIso .Category.Iso.bwd∘fwd≈id
 
 -- FIXME: If 𝒞 has exponentials, then GF preserves them as well.
 
