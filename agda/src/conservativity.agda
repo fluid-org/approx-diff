@@ -3,7 +3,7 @@
 open import Level using (Level; Lift; lift; lower; _⊔_; 0ℓ) renaming (suc to lsuc)
 open import Data.Product using (_,_)
 open import prop using (_,_; proj₁; proj₂; ∃; ∃ₛ; Prf; ⟪_⟫; LiftP; lift; lower; liftS; LiftS; inj₁; inj₂)
-open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet)
+open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet; IsBigJoin)
 open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
          HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans; setoid→category;
@@ -1042,7 +1042,19 @@ GF-preserve-coproducts-indexed S D = iso
     iso .Glued.Iso.fwd .morph = carrierIso .Category.Iso.fwd
     iso .Glued.Iso.fwd .presv = {!!}
     iso .Glued.Iso.bwd .morph = carrierIso .Category.Iso.bwd
-    iso .Glued.Iso.bwd .presv = {!!}
+    iso .Glued.Iso.bwd .presv = begin
+        𝐂 (Definable (SI.∐ S D))
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono Definable-coproducts-indexed ⟩
+        𝐂 (𝐂 (⋁ (S .Setoid.Carrier) (λ s → Definable (D .fobj s) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩)))
+      ≤⟨ 𝐂-isClosure .IsClosureOp.closed ⟩
+        𝐂 (⋁ (S .Setoid.Carrier) (λ s → Definable (D .fobj s) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩))
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono
+           (IsBigJoin.mono PSh⟨𝒞⟩-system.⋁-isJoin (λ s → (𝐂-isClosure .IsClosureOp.unit) PSh⟨𝒞⟩-system.⟨ _ ⟩m)) ⟩
+        𝐂 (⋁ (S .Setoid.Carrier) (λ s → 𝐂 (Definable (D .fobj s)) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩))
+      ≤⟨ {!!} ⟩
+        {!!}
+      ∎
+      where open ≤-Reasoning ⊑-isPreorder
     iso .Glued.Iso.fwd∘bwd≈id .f≃f = carrierIso .Category.Iso.fwd∘bwd≈id
     iso .Glued.Iso.bwd∘fwd≈id .f≃f = carrierIso .Category.Iso.bwd∘fwd≈id
 
