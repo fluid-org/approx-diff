@@ -43,10 +43,10 @@ of the context and type, as defined in \figref{semantics:terms}. We have used th
 projections, $\prodM{f}{g}$ for pairing, $\coprodM{f}{g}$ for (parameterised) copairing, $!_X$ for morphisms
 to the terminal object, and $\lambda$ and $\eval$ for currying and evaluation for exponentials.
 
-For the first-order definability result in \secref{definability}, we will need another interpretation
-$\sem{-}_{\mathit{fo}}$ of the first-order types (those constructed from primitive types, sums, unit and
-products) in any bicartesian category. Such interpretations are preserved by finite coproduct and coproduct
-preserving functors:
+We have another interpretation $\sem{-}_{\mathit{fo}}$ of the
+first-order types (those constructed from primitive types, sums, unit
+and products) in any bicartesian category. Such interpretations are
+preserved by finite coproduct and coproduct preserving functors:
 
 \begin{lemma}\label{lem:first-order-agreement-types}
   If $\cat{C}$ and $\cat{D}$ are bicartesian and bicartesian closed categories with interpretations of the
@@ -84,8 +84,7 @@ underlying function together with its forward derivative. In contrast to many ot
 analysis techniques, a single morphism is enough, because a linear map has a transpose for free. At first-order types, \lemref{first-order-agreement-types} identifies the
 interpretation with that of the first-order model $\Fam(\SDSemiMod(S))$, whose objects are self-dual, so the
 forward derivative is a morphism of $\Fam(\SDSemiMod(S))$ whose conjugate $\conj{f}$ is the backward map
-between the same semimodules. We establish this correspondence with the first-order model in
-\secref{definability}.}
+between the same semimodules. }
 
 % Given a model of $\Sigma$ in $\Fam(\LatGal)$, the category $\Fam(\MeetSLat \times \JoinSLat^\op)$ can
 % implement $\Sem$. It is bicartesian closed by \corref{mslat-jslat-bcc}, and can model $\tyList$ using infinite

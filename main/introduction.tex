@@ -245,8 +245,8 @@ commutative semiring of dependency information. In \secref{approx-as-tangents} w
 picture, for programs over tuples of atomic data: derivatives as matrices over a semiring $S$, with the
 transpose relating forward and backward dependency analysis, and with successively stronger conditions on $S$ yielding
 join-preserving maps, conjugate pairs and, for Boolean algebras, the Galois connections of \GPS; ordinary AD
-occupies the case $S = \mathbb{R}$. We also relate this picture to \citet{berry79}'s \emph{stable domain
-theory}, where stable functions provide a kind of semantic provenance analysis.
+occupies the case $S = \mathbb{R}$. \Deleted{We also relate this picture to \citet{berry79}'s \emph{stable domain
+theory}, where stable functions provide a kind of semantic provenance analysis.}
 
 The following table summarises the correspondence developed over the course of the paper:
 \vspace{1.5mm}
@@ -272,12 +272,10 @@ The following table summarises the correspondence developed over the course of t
 In \secref{models-of-total-gps} we extend to sum types using the category of families construction and,
 following V{\'a}k{\'a}r \etal{}'s CHAD framework~\cite{vakar22,nunes2023}, build models of a higher-order
 language in which every program is interpreted together with its family of derivatives. We apply this to a
-concrete higher-order language in \secref{language} and demonstrate the model on a number of examples, showing
+concrete higher-order language in \secref{language} and demonstrate the model on a number of examples in \secref{examples}, showing
 how parameterising on $S$ controls the dependency structure associated with data, something that was
-``hard-coded'' in previous presentations of \GPS. We prove two correctness properties in
-\secref{definability}: programs of first-order type denote matrices in the sense of
-\secref{approx-as-tangents}, and the higher-order interpretation agrees with the standard set-theoretic
-semantics. \secref{related-work} and \secref{conclusion} discuss additional related and future work.
+``hard-coded'' in previous presentations of \GPS. We prove a correctness property in
+\secref{definability}: programs of first-order type have equal interpretations in standard semantics and a dependency tracking semantics, even when they use higher-order functions internally. \secref{related-work} and \secref{conclusion} discuss additional related and future work.
 
 % \begin{enumerate}[leftmargin=\enummargin]
 % \item We explain how the CHAD framework of Vákár et al. can be adapted to give a general categorical framework for \GPS.
