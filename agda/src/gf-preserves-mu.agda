@@ -8,7 +8,7 @@ open import Level using (Level; 0ℓ; suc)
 open import Data.Fin using (Fin)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; strong-coproducts→coproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import functor using (Functor; HasLimits; functor-preserve-iso; _∘F_)
+open import functor using (Functor; HasLimits; functor-preserve-iso; _∘F_; Colimit)
 open import prop using (∃; ∃ₛ; Prf)
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map)
@@ -16,6 +16,7 @@ import fam-mu-types-2
 import fam-mu-types-2.skeleton
 import fam-mu-realisation
 import fam-realisation
+import fam-presentation
 import ho-model
 
 open Functor
@@ -53,7 +54,19 @@ module gf-preserves-mu
     GlCoprodStruct = strong-coproducts→coproducts GlPE.terminal GlSC
     module GlCoprod = HasCoproducts GlCoprodStruct
     module GlProd = HasProducts GlPE.products
+    module Pres = fam-presentation 0ℓ 0ℓ {𝒞}
   open RGl using (realise; η)
+
+  -- Source side of the carrier comparison: GF of a Fam W-tree is the Gl
+  -- set-indexed coproduct of the GF-images of its singleton fibres, via the
+  -- canonical presentation and GF's preservation of set-indexed coproducts.
+  source-iso : (M : Fam⟨𝒞⟩.Obj) →
+    Glued.Iso (GF .fobj M)
+              (GDC (M .Fam⟨𝒞⟩.Obj.idx) (GF ∘F Pres.singletons M) .Colimit.apex)
+  source-iso M =
+    Glued.Iso-trans
+      (Glued.Iso-sym (functor-preserve-iso GF (Pres.present M)))
+      (Glued.Iso-sym (GF-preserve-coproducts-indexed (M .Fam⟨𝒞⟩.Obj.idx) (Pres.singletons M)))
 
   -- Cross-category realisation comparison: GF of the Fam(𝒞) interpretation agrees
   -- with the realised Fam(Gl) interpretation, over any pointwise agreement of the

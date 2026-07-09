@@ -7,7 +7,7 @@
 -- lemmas can consume.
 
 open import Level using (Level; lift)
-open import Data.Product using () renaming (_,_ to _,,_)
+import Data.Product as Prod
 open import categories using (Category; setoid→category)
 open import functor using (Functor; Colimit)
 open import prop using (_,_; ⟪_⟫)
@@ -47,12 +47,12 @@ singletons X .fmor-comp ⟪ p ⟫ ⟪ q ⟫ .famf-eq .transf-eq =
 
 -- A family is the set-indexed coproduct of its singleton fibres.
 present : (X : Obj) → Iso (bigCoproducts (X .idx) (singletons X) .apex) X
-present X .Iso.fwd .idxf .prop-setoid._⇒_.func (s ,, _) = s
+present X .Iso.fwd .idxf .prop-setoid._⇒_.func (s Prod., _) = s
 present X .Iso.fwd .idxf .prop-setoid._⇒_.func-resp-≈ (e , _) = e
 present X .Iso.fwd .famf .transf _ = 𝒞.id _
 present X .Iso.fwd .famf .natural _ =
   𝒞.≈-trans 𝒞.id-left (𝒞.≈-trans 𝒞.id-left (𝒞.≈-sym 𝒞.id-right))
-present X .Iso.bwd .idxf .prop-setoid._⇒_.func s = s ,, lift tt
+present X .Iso.bwd .idxf .prop-setoid._⇒_.func s = s Prod., lift tt
 present X .Iso.bwd .idxf .prop-setoid._⇒_.func-resp-≈ e = e , _
 present X .Iso.bwd .famf .transf _ = 𝒞.id _
 present X .Iso.bwd .famf .natural _ =
