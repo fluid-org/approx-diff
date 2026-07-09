@@ -6,7 +6,7 @@
 
 open import Level using (Level; 0ℓ; suc)
 open import Data.Fin using (Fin)
-open import categories using (Category; HasProducts; HasTerminal)
+open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; strong-coproducts→coproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import functor using (Functor; HasLimits; functor-preserve-iso; _∘F_)
 open import prop using (∃; ∃ₛ; Prf)
@@ -15,6 +15,7 @@ open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map)
 import fam-mu-types-2
 import fam-mu-types-2.skeleton
 import fam-mu-realisation
+import fam-realisation
 import ho-model
 
 open Functor
@@ -48,6 +49,10 @@ module gf-preserves-mu
     module FMc = fam-mu-types-2 0ℓ 0ℓ 𝒞-terminal 𝒞-products
     module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
     module FMg = RGl.FM
+    module FRg = fam-realisation 0ℓ 0ℓ GDC
+    GlCoprodStruct = strong-coproducts→coproducts GlPE.terminal GlSC
+    module GlCoprod = HasCoproducts GlCoprodStruct
+    module GlProd = HasProducts GlPE.products
   open RGl using (realise; η)
 
   -- Cross-category realisation comparison: GF of the Fam(𝒞) interpretation agrees
@@ -61,8 +66,22 @@ module gf-preserves-mu
                                  (realise .fobj (FMg.fobj FMg.μObj (Poly-map (η ∘F GF) Q) env̌))
   carrier-comparison (Poly.const A) env env̌ js = Glued.Iso-sym (RGl.realise-η-iso (GF .fobj A))
   carrier-comparison (Poly.var i)   env env̌ js = js i
-  carrier-comparison (P Poly.+ Q)   env env̌ js = Glued.Iso-refl
-  carrier-comparison (P Poly.× Q)   env env̌ js = {!!}
+  carrier-comparison (P Poly.+ Q)   env env̌ js =
+    Glued.Iso-trans
+      (Glued.Iso-sym (Glued.IsIso→Iso GF-preserve-strong-coproducts))
+      (Glued.Iso-trans
+        (GlCoprod.coproduct-preserve-iso
+          (carrier-comparison P env env̌ js)
+          (carrier-comparison Q env env̌ js))
+        (Glued.Iso-sym (FRg.realise-coproducts-iso GlCoprodStruct _ _)))
+  carrier-comparison (P Poly.× Q)   env env̌ js =
+    Glued.Iso-trans
+      (Glued.IsIso→Iso GF-preserve-products)
+      (Glued.Iso-trans
+        (GlProd.product-preserves-iso
+          (carrier-comparison P env env̌ js)
+          (carrier-comparison Q env env̌ js))
+        (Glued.Iso-sym (FRg.realise-products-iso GlPE.products GlPE.exponentials _ _)))
   carrier-comparison (Poly.μ Q)     env env̌ js = {!!}
 
   -- Step 1: strip constants in 𝒞. The remaining chain compares the constant-free
