@@ -1,7 +1,7 @@
 \section{Higher-Order Language}
 \label{sec:language}
 
-To \Replaced{demonstrate semiring provenance tracking via automatic differentiation}{model Galois slicing semantically} for higher-order programs, we define a simple total functional
+To demonstrate semiring provenance tracking via automatic differentiation for higher-order programs, we define a simple total functional
 programming language, extending the simply-typed lambda calculus. The language is parameterised by a signature
 $\Sigma = (\PrimTy, \PrimOp)$ consisting of a set $\PrimTy$ of base types $\rho$ and a family of sets
 $\PrimOp^\rho_{\rho_1,\ldots,\rho_n}$ of primitive operations $\phi$ of arity $n$ over those base types.
@@ -55,36 +55,24 @@ preserved by finite coproduct and coproduct preserving functors:
   $F(\sem{\tau}_{\mathit{fo}}) \cong \sem{\tau}$, and similar for contexts only containing first-order types.
 \end{lemma}
 
-\subsubsection[Interpretation in the Semimodule Model]{\replaced{Interpretation in the Semimodule Model}{Interpretation for Higher-Order \GPS}}
+\subsubsection{Interpretation in the Semimodule Model}
 \label{sec:language:gps-interpretation}
 
 Given the above, we can now interpret the language in any of the bicartesian closed categories with list
 objects we constructed in \secref{models-of-total-gps}. Specifically, we assume that we have an interpretation
-of our chosen signature in \Replaced{$\Fam(\SDSemiMod(S))$}{$\Fam(\LatGal)$}. \Added{Each base type is
+of our chosen signature in $\Fam(\SDSemiMod(S))$. Each base type is
 assigned a self-dual approximation object, and the first-order type formers preserve self-duality, so every
-first-order type denotes a self-dual semimodule.} Signatures are
-first-order, so it does not matter that \Replaced{$\Fam(\SDSemiMod(S))$}{$\Fam(\LatGal)$} is not closed. Any
-such interpretation can be transported to \Replaced{$\Fam(\SemiMod(S))$}{$\Fam(\MeetSLat \times
-\JoinSLat^\op)$} along the functor $H$ from \propref{ho-embedding} because it preserves finite products. We
-can then interpret the whole language in \Replaced{$\Fam(\SemiMod(S))$}{$\Fam(\MeetSLat \times
-\JoinSLat^\op)$}.
+first-order type denotes a self-dual semimodule. Signatures are
+first-order, so it does not matter that $\Fam(\SDSemiMod(S))$ is not closed. Any
+such interpretation can be transported to $\Fam(\SemiMod(S))$ along the functor $H$ from \propref{ho-embedding} because it preserves finite products. We
+can then interpret the whole language in $\Fam(\SemiMod(S))$.
 
-\begin{DeletedBlock}
-Interpreting a whole program $\Gamma \vdash t : \tau$ yield morphisms in
-$\Fam(\MeetSLat \times \JoinSLat^\op)$ which, as in \secref{semantic-gps}, are triples
-$(f, \partial f_f, \partial f_r)$ of the underlying function and the forward and backward approximation
-maps. However, unlike in $\Fam(\LatGal)$, it is not guaranteed that the forward and backward maps even operate on
-the same lattices, let alone form a Galois connection. \lemref{first-order-agreement-types} guarantees that
-the lattices agree, but the fact that the pair form a Galois connection is less trivial. We will prove this
-property in \secref{definability}.
-\end{DeletedBlock}
-
-\Added{Interpreting a program $\Gamma \vdash t : \tau$ yields a morphism of $\Fam(\SemiMod(S))$, the
+Interpreting a program $\Gamma \vdash t : \tau$ yields a morphism of $\Fam(\SemiMod(S))$, the
 underlying function together with its forward derivative. In contrast to many other bidirectional program
 analysis techniques, a single morphism is enough, because a linear map has a transpose for free. At first-order types, \lemref{first-order-agreement-types} identifies the
 interpretation with that of the first-order model $\Fam(\SDSemiMod(S))$, whose objects are self-dual, so the
 forward derivative is a morphism of $\Fam(\SDSemiMod(S))$ whose conjugate $\conj{f}$ is the backward map
-between the same semimodules. }
+between the same semimodules. 
 
 % Given a model of $\Sigma$ in $\Fam(\LatGal)$, the category $\Fam(\MeetSLat \times \JoinSLat^\op)$ can
 % implement $\Sem$. It is bicartesian closed by \corref{mslat-jslat-bcc}, and can model $\tyList$ using infinite
@@ -96,132 +84,3 @@ between the same semimodules. }
 
 % The correctness of this interpretation is considered in the next section.
 
-\begin{DeletedBlock}
-\subsection{Examples}
-\label{sec:language:examples}
-
-Let the signature
-$\Sigma_{\mathsf{num}} = (\{\mathsf{num}\}, \{\mathrm{zero} : \tyUnit \to \mathsf{num}, \mathrm{add} :
-\mathsf{num} \times \mathsf{num} \to \mathsf{num}\})$. This signature suffices to write the simple query
-function in \exref{introduction-example}, where we interpret the $\mathrm{Label}$ type as the sum
-$\tyUnit \tySum \tyUnit$ and the labels $\mathsf{a}$ and $\mathsf{b}$ as $\tmInl{\tmUnit}$ and
-$\tmInr{\tmUnit}$. We consider several interpretations of $\Sigma_{\mathsf{num}}$ in $\Fam(\LatGal)$ and their
-behaviour on the selection-and-sum query from \exref{introduction-example}.
-First, we note the type of the reverse approximation map in this case. The type of the approximation
-maps depends on the input value. Our example input database was $\mathit{db} = [(\mathsf{a}, 0), (\mathsf{b},
-1), (\mathsf{a}, 1)]$, meaning that the type of the reverse approximation map for this database and any label
-$l$ is:
-\begin{displaymath}
-  \begin{array}{l}
-    (\partial \mathrm{query})_r(l, \mathit{db}) : \\
-    \quad \partial\sem{\mathsf{num}}(\mathrm{query}\,(l,\mathit{db})) \multimap \mathbb{1} \times (\mathbb{1} \times \partial\sem{\mathsf{num}}(0)) \times (\mathbb{1} \times \partial\sem{\mathsf{num}}(1)) \times (\mathbb{1} \times \partial\sem{\mathsf{num}}(1)) \times \mathbb{1}
-  \end{array}
-\end{displaymath}
-in the category $\JoinSLat$, where $\partial\sem{\mathsf{num}}(x)$ is the lattice of
-approximations of the number $x$ determined by our interpretation. In the codomain, the first four
-$\mathbb{1}$s correspond to the positions of labels in the input, which we are not approximating, and the
-final $\mathbb{1}$ is the terminator of the list. Note how, even if the $\partial\sem{\mathsf{num}}(x)$
-does not depend on $x$ the type of the output is still dependent on the shape of the input list: type
-dependency is used in a fundamental way in our interpretation.
-
-\begin{enumerate}[leftmargin=\enummargin]
-\item If we take $\sem{\mathsf{num}}_{\PrimTy} = \Disc(\mathbb{R})$, with $\sem{\mathrm{zero}}_{\PrimOp}$ and
-  $\sem{\mathrm{add}}_{\PrimOp}$ the embeddings of the usual zero and addition functions via $\Disc$, then the
-  resulting interpretation contains no approximation information. We have
-  $\partial\sem{\mathsf{num}}(x) = \mathbb{1}$ so the type of $(\partial \mathrm{query})_r$ is trivial.
-\item We take $\sem{\mathsf{num}}_{\PrimTy} = \Lift(\Disc(\mathbb{R}))$, using the lifting monad from
-  \secref{models-of-total-gps:lifting}, with $\sem{\mathrm{zero}}_{\PrimOp}$ and
-  $\sem{\mathrm{add}}_{\PrimOp}$ defined from the unlifted interpretations above and the monad structure. The
-  type of the reverse map now becomes, where $\Two = \{\top, \bot\}$:
-  \begin{equation}\label{eqn:reverse-query-approx-1}
-    (\partial \mathrm{query})_r(l, \mathit{db}) : \Two \multimap \mathbb{1} \times (\mathbb{1} \times \Two) \times (\mathbb{1} \times \Two) \times (\mathbb{1} \times \Two) \times \mathbb{1}
-  \end{equation}
-  where every position that corresponds to a number has been tagged with $\top$ for ``present'' and $\bot$ for
-  ``not present''. This interpretation recovers the behaviour given in \exref{introduction-example}: running
-  the reverse approximation map at the input ``$\mathsf{a}$'' at approximation $\top$ reveals that only the
-  numbers in the rows tagged with ``$\mathsf{a}$'' in the input are used, and likewise for ``$\mathsf{b}$''.
-\item Quantitative approximation information with non-trivial dependency can be obtained by using
-  the interval approximation interpretation from \exref{intervals-and-maxima-elements} and
-  \secref{interval-approx}. We let $\sem{\mathsf{num}}_{\PrimTy} = \mathbb{R}_{\mathit{intv}}$ and
-  interpret addition using the morphism given in \secref{interval-approx}. Recall that
-  $\mathrm{query}\,(\mathsf{a},\mathit{db}) = 1$, so in the reverse direction we must choose an interval
-  containing $1$ to discover the largest (i.e. least in the order) intervals that will give rise to this
-  output as \emph{independent} changes to the input. For example, if we pick
-  $[\frac{9}{10},\frac{11}{10}]$ as the interval, then:
-  \begin{displaymath}
-    (\partial\mathrm{query})_r(\mathsf{a},\mathit{db})([\frac{9}{10},\frac{11}{10}]) = \cdot, (\cdot,[-\frac{1}{10},\frac{1}{10}]),(\cdot,\bot),(\cdot,[\frac{9}{10},\frac{11}{10}]), \cdot
-  \end{displaymath}
-  Thus, to achieve an output within $[\frac{9}{10},\frac{11}{10}]$, either the first
-  ``$\mathsf{a}$'' row could be in $[-\frac{1}{10},\frac{1}{10}]$ or the second one could be in
-  $[\frac{9}{10},\frac{11}{10}]$, and the number in the ``$\mathsf{b}$'' row is not relevant.
-\end{enumerate}
-
-We have tested these examples on our Agda implementation. See the file \texttt{example.agda}.
-\end{DeletedBlock}
-
-\begin{DeletedBlock}
-\subsection{Systematic Insertion of Approximation via Moggi's CBN translation}
-\label{sec:cbn-translation}
-
-We can now carry out the systematic insertion of approximation points that we foreshadowed in
-\secref{models-of-total-gps:lifting}, using \citet[\S 3.1]{notions-of-computation}'s monadic CBN translation.
-We use the $T$ monad from \secref{tagging-monad} because it can be defined in terms of the language constructs
-we already have. This requires that we have a signature $\Sigma$ that includes a primitive type to be
-interpreted as the approximation object $\mathbb{A}$ and primitive operations to be interpreted as the monoid
-operations on this object.
-
-The monadic CBN translation is standard, and entirely determined by the translation on types, so we only
-define the type translation $\cbn{-}$ here:
-%\begin{mathpar}
-%  \cbn{\rho} = \rho
-%
-%  \cbn{\sigma \tySum \tau} = T(\cbn{\sigma}) \tySum T(\cbn{\tau})
-%
-%  \cbn{\tyUnit} = \tyUnit
-%
-%  \cbn{\sigma \tyProd \tau} = T(\cbn{\sigma}) \tyProd T(\cbn{\tau})
-%
-%  \cbn{\sigma \tyFun \tau} = T(\cbn{\sigma}) \tyFun T(\cbn{\tau})
-%
-%  \cbn{\tyList\;\tau} = \tyList\,(T(\cbn{\tau}))
-%\end{mathpar}
-\[
-\renewcommand{\arraystretch}{1.1}
-\begin{array}{r@{\;=\;}l@{\qquad}r@{\;=\;}l@{\qquad}r@{\;=\;}l}
-\cbn{\rho} & \rho &
-\cbn{\sigma \tySum \tau} & T(\cbn{\sigma}) \tySum T(\cbn{\tau}) &
-\cbn{\sigma \tyProd \tau} & T(\cbn{\sigma}) \tyProd T(\cbn{\tau}) \\
-\cbn{\tyUnit} & \tyUnit &
-\cbn{\sigma \tyFun \tau} & T(\cbn{\sigma}) \tyFun T(\cbn{\tau}) &
-\cbn{\tyList\;\tau} & \tyList\,(T(\cbn{\tau}))
-\end{array}
-\]
-Thus, the CBN translation on types inserts a use of the monad $T(X) = \mathbb{A} \times X$ at the point ``just
-underneath'' every type former. In this case, we are describing the type of data annotated at every
-level. Note that our lists here are still ``strict'', an alternative approach would be to consider ``lazy''
-lists that wrap the tail of every node in a $T$ as well.
-
-\newcommand{\Element}{(\Two \times \Two)}
-
-We illustrate the effect of the CBN translation on the query example from
-\exref{introduction-example}. Applying $\cbn{-}$ to the type of $\mathrm{query}$ yields:
-\begin{displaymath}
-  T(\mathrm{Label}) \times T(\tyList(T(T(\mathrm{Label}) \tyProd T(\mathsf{num})))) \to T(\mathsf{num})
-\end{displaymath}
-Thus, every substructure of the input and output has been annotated with usage information. Under
-interpretation in $\Fam(\MeetSLat \times \JoinSLat^\op)$, the type of the reverse approximation map as a
-morphism in $\JoinSLat$ at the input $\mathit{db}$ is now, where the approximation object for each number is
-the two-point lattice $\Two$ (suppressing some ``$\times \mathbb{1}$'' for readability):
-\begin{displaymath}
-  (\partial \mathrm{query})_r(l, \mathit{db}) : \Two \multimap \Two \times (\Two \times \Element \times \Element \times \Element)
-\end{displaymath}
-Compared to the interpretation of the untranslated query, which carries a single $\Two$ at each
-number position and $\mathbb{1}$ elsewhere, we
-now gain much more fine-grained information on
-which parts of the input are used. When $l = \mathsf{a}$, we have
-$(\partial \mathrm{query})_r(\mathsf{a},\mathit{db})(\top) = (\top, (\top, (\top, \top), (\top, \bot), (\top,
-\top)))$, indicating that the execution of this query had examined everything except the number in the second
-entry of the database. Without the translation, we did not have
-confirmation that the labels in each
-row were actually required.
-\end{DeletedBlock}
