@@ -8,7 +8,7 @@
 
 open import Level using (Level; lift)
 import Data.Product as Prod
-open import categories using (Category; setoid→category)
+open import categories using (Category; setoid→category; HasProducts)
 open import functor using (Functor; Colimit)
 open import prop using (_,_; ⟪_⟫)
 open import Data.Unit using (tt)
@@ -65,3 +65,29 @@ present X .Iso.bwd∘fwd≈id .famf-eq .transf-eq =
   𝒞.≈-trans
     (𝒞.∘-cong (𝒞.≈-trans 𝒞.id-left (X .fam .refl*)) (𝒞.≈-trans 𝒞.id-left 𝒞.id-left))
     𝒞.id-left
+
+-- simple preserves finite products: a singleton on a product is the product of
+-- the singletons. Lets the fibrewise carrier comparison move a product past GF.
+module _ (Prods : HasProducts 𝒞) where
+  private
+    module ⊗M = products Prods
+    module PH = HasProducts Prods
+  open ⊗M using (_⊗_)
+
+  simple-⊗ : ∀ {a b} → Iso simple[ 𝟙 , PH.prod a b ] (simple[ 𝟙 , a ] ⊗ simple[ 𝟙 , b ])
+  simple-⊗ .Iso.fwd .idxf .prop-setoid._⇒_.func _ = lift tt Prod., lift tt
+  simple-⊗ .Iso.fwd .idxf .prop-setoid._⇒_.func-resp-≈ _ = _
+  simple-⊗ .Iso.fwd .famf .transf _ = 𝒞.id _
+  simple-⊗ .Iso.fwd .famf .natural _ =
+    𝒞.≈-trans 𝒞.id-left (𝒞.≈-sym (𝒞.≈-trans 𝒞.id-right PH.prod-m-id))
+  simple-⊗ .Iso.bwd .idxf .prop-setoid._⇒_.func _ = lift tt
+  simple-⊗ .Iso.bwd .idxf .prop-setoid._⇒_.func-resp-≈ _ = _
+  simple-⊗ .Iso.bwd .famf .transf _ = 𝒞.id _
+  simple-⊗ .Iso.bwd .famf .natural _ =
+    𝒞.≈-trans (𝒞.≈-trans 𝒞.id-left PH.prod-m-id) (𝒞.≈-sym 𝒞.id-left)
+  simple-⊗ .Iso.fwd∘bwd≈id .idxf-eq .prop-setoid._≃m_.func-eq _ = _ , _
+  simple-⊗ .Iso.fwd∘bwd≈id .famf-eq .transf-eq =
+    𝒞.≈-trans (𝒞.∘-cong PH.prod-m-id (𝒞.≈-trans 𝒞.id-left 𝒞.id-left)) 𝒞.id-left
+  simple-⊗ .Iso.bwd∘fwd≈id .idxf-eq .prop-setoid._≃m_.func-eq _ = _
+  simple-⊗ .Iso.bwd∘fwd≈id .famf-eq .transf-eq =
+    𝒞.≈-trans 𝒞.id-left (𝒞.≈-trans 𝒞.id-left 𝒞.id-left)
