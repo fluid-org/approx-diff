@@ -3,7 +3,7 @@
 open import Level using (_⊔_; suc)
 open import categories using (Category; setoid→category)
 open import prop-setoid using (Setoid)
-open import functor using (Functor; HasColimits; Colimit; NatTrans; constF)
+open import functor using (Functor; HasColimits; Colimit; NatTrans)
 
 -- Stability of set-indexed coproducts: pulling a coproduct decomposition back
 -- along a morphism yields a decomposition over the same index, one summand
