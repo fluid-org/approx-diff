@@ -61,7 +61,7 @@ module gf-preserves-mu
                                  (realise .fobj (FMg.fobj FMg.μObj (Poly-map (η ∘F GF) Q) env̌))
   carrier-comparison (Poly.const A) env env̌ js = Glued.Iso-sym (RGl.realise-η-iso (GF .fobj A))
   carrier-comparison (Poly.var i)   env env̌ js = js i
-  carrier-comparison (P Poly.+ Q)   env env̌ js = {!!}
+  carrier-comparison (P Poly.+ Q)   env env̌ js = Glued.Iso-refl
   carrier-comparison (P Poly.× Q)   env env̌ js = {!!}
   carrier-comparison (Poly.μ Q)     env env̌ js = {!!}
 
