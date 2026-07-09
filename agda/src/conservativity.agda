@@ -3,7 +3,7 @@
 open import Level using (Level; Lift; lift; lower; _⊔_; 0ℓ) renaming (suc to lsuc)
 open import Data.Product using (_,_)
 open import prop using (_,_; proj₁; proj₂; ∃; ∃ₛ; Prf; ⟪_⟫; LiftP; lift; lower; liftS; LiftS; inj₁; inj₂)
-open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet; IsBigJoin)
+open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet; IsBigJoin; IsPreorder)
 open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
          HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans; setoid→category;
@@ -1056,7 +1056,46 @@ GF-preserve-coproducts-indexed S D = iso
 
     iso : Glued.Iso (GDC S (GF ∘F D) .Colimit.apex) (GF .fobj (SI.∐ S D))
     iso .Glued.Iso.fwd .morph = carrierIso .Category.Iso.fwd
-    iso .Glued.Iso.fwd .presv = {!!}
+    iso .Glued.Iso.fwd .presv =
+      IsPreorder.trans ⊑-isPreorder
+        (𝐂-isClosure .IsClosureOp.mono (IsBigJoin.least PSh⟨𝒞⟩-system.⋁-isJoin _ _ _ per-s))
+        target-closed
+      where
+        ι : ∀ s → _
+        ι s = GDC S (GF ∘F D) .Colimit.cocone .transf s .morph
+
+        fwd-inⱼ : ∀ s → (carrierIso .Category.Iso.fwd 𝒟.∘ ι s) 𝒟.≈ F .fmor (SI.inj D s)
+        fwd-inⱼ s =
+          𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl (𝒟.≈-sym (F-inⱼ s)))
+            (𝒟.≈-trans (𝒟.≈-sym (𝒟.assoc _ _ _))
+              (𝒟.≈-trans (𝒟.∘-cong (carrierIso .Category.Iso.fwd∘bwd≈id) 𝒟.≈-refl) 𝒟.id-left))
+
+        target-closed :
+          𝐂 (𝐂 (Definable (SI.∐ S D)) [ G .fmor (carrierIso .Category.Iso.fwd) ]) ⊑
+          (𝐂 (Definable (SI.∐ S D)) [ G .fmor (carrierIso .Category.Iso.fwd) ])
+        target-closed =
+          IsPreorder.trans ⊑-isPreorder 𝐂-[]
+            (𝐂-isClosure .IsClosureOp.closed PSh⟨𝒞⟩-system.[ _ ]m)
+
+        inner-s : ∀ s →
+          𝐂 (Definable (D .fobj s)) ⟨ G .fmor (ι s) ⟩ ⊑
+          (𝐂 (Definable (SI.∐ S D)) [ G .fmor (carrierIso .Category.Iso.fwd) ])
+        inner-s s =
+          PSh⟨𝒞⟩-system.adjoint₂
+            (IsPreorder.trans ⊑-isPreorder (GF .fmor (SI.inj D s) .presv)
+              (IsPreorder.trans ⊑-isPreorder
+                (PSh⟨𝒞⟩-system.[]-cong (G .fmor-cong (𝒟.≈-sym (fwd-inⱼ s))))
+                (IsPreorder.trans ⊑-isPreorder
+                  (PSh⟨𝒞⟩-system.[]-cong (G .fmor-comp _ _))
+                  (PSh⟨𝒞⟩-system.[]-comp⁻¹ _ _))))
+
+        per-s : ∀ s →
+          𝐂 (𝐂 (Definable (D .fobj s)) ⟨ G .fmor (ι s) ⟩) ⊑
+          (𝐂 (Definable (SI.∐ S D)) [ G .fmor (carrierIso .Category.Iso.fwd) ])
+        per-s s =
+          IsPreorder.trans ⊑-isPreorder
+            (𝐂-isClosure .IsClosureOp.mono (inner-s s))
+            target-closed
     iso .Glued.Iso.bwd .morph = carrierIso .Category.Iso.bwd
     iso .Glued.Iso.bwd .presv = begin
         𝐂 (Definable (SI.∐ S D))
