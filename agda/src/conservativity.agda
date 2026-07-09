@@ -548,8 +548,8 @@ Definable-coproducts {x} {y} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
 
 -- Set-indexed form.
 Definable-coproducts-indexed : ∀ {S : Setoid 0ℓ 0ℓ} {D : Functor (setoid→category S) 𝒞} →
-                Definable (SI.∐ S D) ⊑
-                𝐂 (⋁ (S .Setoid.Carrier) (λ s → Definable (D .fobj s) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩))
+                               Definable (SI.∐ S D) ⊑
+                               𝐂 (⋁ (S .Setoid.Carrier) (λ s → Definable (D .fobj s) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩))
 Definable-coproducts-indexed {S} {D} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
   node (pb .CoverPullback.cover) xs ts eqs
   where
