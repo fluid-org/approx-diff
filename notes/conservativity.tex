@@ -357,13 +357,12 @@ $\GF(\mu_{\alpha.P^{*}}(\delta, \vec{A})) \cong \Sigma(\mu_{\alpha.P^{*}}(\check
 \end{lemma}
 
 \begin{proof}[Proof sketch]
-The two sides interpret the same constant-free polynomial, and the tree sorts correspond: both are
-decorated by the index sets of the environment entries, which the presentations preserve. The
-carriers of the fibres over a common sort are finite products of the same $F$-images, identified by
-tree recursion using $F$'s preservation of products; the predicate components are compared
-sort-wise using \lemref{conservativity:definable-coproducts} and the closure operator's reindexing
-law (\lemref{conservativity:indexed-closure}), the realisation being computed as a set-indexed
-coproduct in $\GLR(F)$.
+Both carriers are set-indexed coproducts over the shared sort set, the left by the canonical
+presentation of the $\Fam$ $\mu$-object and the right by realisation. Since $\GF$ preserves
+set-indexed coproducts, the comparison reduces to the fibres over a common sort. Their carriers are
+finite products of the same $F$-images, identified by tree recursion using $F$'s preservation of
+products, and their predicate components agree by \lemref{conservativity:definable-coproducts} and
+the closure operator's reindexing law (\lemref{conservativity:indexed-closure}).
 \end{proof}
 
 \begin{proposition}[TODO]
