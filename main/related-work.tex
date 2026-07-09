@@ -51,27 +51,35 @@ and slicing explored in this paper.
 \paragraph{\GPS}
 \label{sec:related-work:galois-slicing}
 
-Galois slicing was introduced by \citet{perera12a} as an operational approach to program slicing for pure
-functional programs, based on Galois connections between lattices of input and output approximations. A
-connection to stable functions in relation to minimal slices for short-circuiting operations was alluded to
-in~\citet{perera13}, but not explored. Subsequent work extended the approach to languages with assignment and
-exceptions~\cite{ricciotti17} and concurrent systems, applying Galois slicing to the
-$\pi$-calculus~\cite{perera16d}. For the $\pi$-calculus the analysis shifted from functions to transition
-relations, considering individual transitions $P \longrightarrow Q$ between configurations $P$ and $Q$ as
-analogous to the edge between $x$ and $f(x)$ in the graph of $f$, and building Galois connections between
-$\downset{P}$ and $\downset{Q}$. The main difference with the approach presented here is that the earlier work
-also computes \emph{program slices}, using approximation lattices that represent partially erased programs; we
-discuss this further in \secref{conclusion} below.
-
-More recent work explored Galois slicing for interactive visualisations. \citet{perera22} presented an
-approach where slicing operates over Boolean algebras rather than plain lattices. In this setting every Galois
-connection $f \dashv g: A \to B$ has a conjugate $g^\circ \dashv f^\circ: B \to A$, where $f^\circ$ denotes
-the De Morgan dual $\neg \comp f \comp \neg$~\cite{jonsson51}. The provenance analysis can then be composed
-with its own conjugate to obtain a Galois connection which computes \emph{related outputs} (e.g., selecting a
-region of a chart and observing the regions of other charts which share data dependencies). \citet{bond25}
-revisited this approach using \emph{dynamic dependence graphs} to decouple the derivation of dependency
-information from the analyses that make use of it, and observing that to compute the conjugate analysis one
-can just use the opposite graph.
+Galois slicing was introduced by Perera and collaborators~\cite{perera12a,perera13} as an operational approach
+to program slicing for pure functional programs, based on Galois connections between lattices of input and
+output approximations. \Deleted{A connection to stable functions in relation to minimal slices for
+short-circuiting operations was alluded to in~\citet{perera13}, but not explored.} Subsequent work extended
+the approach to languages with assignment and exceptions~\cite{ricciotti17} and
+\Replaced{concurrency}{concurrent systems, applying Galois slicing to the $\pi$-calculus}~\cite{perera16d}.
+\Deleted{For the $\pi$-calculus the analysis shifted from functions to transition relations, considering
+individual transitions $P \longrightarrow Q$ between configurations $P$ and $Q$ as analogous to the edge
+between $x$ and $f(x)$ in the graph of $f$, and building Galois connections between $\downset{P}$ and
+$\downset{Q}$.} \Replaced{The present work is instead denotational, recasting Galois slicing as
+differentiation over a semiring; the Boolean case recovers it, and other semirings give further analyses.
+Galois slicing is also more general than our framework in two respects that we plan to consider in future work
+(\secref{conclusion}): it computes \emph{program slices} from approximation lattices representing partially
+erased programs, and it approximates the \emph{shape} of data rather than only the values at fixed
+positions.}{The main difference with the approach presented here is that the earlier work also computes
+\emph{program slices}, using approximation lattices that represent partially erased programs; we discuss this
+further in \secref{conclusion} below.} More recently, \citet{perera22} presented a variant of Galois slicing
+over Boolean algebras\Replaced{, which unlike plain lattices are complemented, giving each analysis a
+conjugate}{ rather than plain lattices}. \Replaced{Composing an analysis with its conjugate computes
+\emph{related outputs}, which they used to support interactive visualisations with linked selections.
+\citet{bond25} revisited this using \emph{dynamic dependence graphs}, computing the conjugate from the
+opposite graph.}{In this setting every Galois connection $f \dashv g: A \to B$ has a conjugate $g^\circ \dashv
+f^\circ: B \to A$, where $f^\circ$ denotes the De Morgan dual $\neg \comp f \comp \neg$~\cite{jonsson51}. The
+provenance analysis can then be composed with its own conjugate to obtain a Galois connection which computes
+\emph{related outputs} (e.g., selecting a region of a chart and observing the regions of other charts which
+share data dependencies). \citet{bond25} revisited this approach using \emph{dynamic dependence graphs} to
+decouple the derivation of dependency information from the analyses that make use of it, and observing that to
+compute the conjugate analysis one can just use the opposite graph.} \Added{The related-outputs analysis is
+the cognacy of \secref{examples:linked}, computed here by composing a Boolean Jacobian with its transpose.}
 
 \paragraph{\added{Semiring Provenance}}
 
@@ -84,8 +92,8 @@ attached to the output. A derivative is a linear map, so the provenance it recor
 (\secref{approx-as-tangents:linearised-provenance}), and joint use appears as a coefficient rather than the
 degree of a polynomial. Over a non-positive semiring, the Boolean dependency our framework reports is a sound
 over-approximation, since the exact analysis can cancel a contribution to zero where the Boolean composite
-still records a dependency. This is the same non-positivity that annotation-based approaches must confront in
-extending to deletion and difference~\cite{green09,amsterdamer11,geerts10}.}
+still records a dependency. Extending provenance to deletion and difference likewise calls for non-positive
+annotations~\cite{green09,amsterdamer11,geerts10}.}
 
 \paragraph{Tangent Categories and Differential Linear Logic}
 
