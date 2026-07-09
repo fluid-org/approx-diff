@@ -5,13 +5,16 @@
 -- Fam(𝒞) W-tree, compared under GF against the realised Fam(Gl) W-tree.
 
 open import Level using (Level; 0ℓ; suc)
+open import Data.Fin using (Fin)
 open import categories using (Category; HasProducts; HasTerminal)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import functor using (Functor; HasLimits; functor-preserve-iso)
+open import functor using (Functor; HasLimits; functor-preserve-iso; _∘F_)
 open import prop using (∃; ∃ₛ; Prf)
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
-import polynomial-functor-2
+open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map)
+import fam-mu-types-2
 import fam-mu-types-2.skeleton
+import fam-mu-realisation
 import ho-model
 
 open Functor
@@ -40,7 +43,23 @@ module gf-preserves-mu
   open I
   open I.Conservativity
 
-  private module Sk = fam-mu-types-2.skeleton 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+  private
+    module Sk  = fam-mu-types-2.skeleton 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    module FMc = fam-mu-types-2 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
+    module FMg = RGl.FM
+  open RGl using (realise; η)
+
+  -- Cross-category realisation comparison: GF of the Fam(𝒞) interpretation agrees
+  -- with the realised Fam(Gl) interpretation, over any pointwise agreement of the
+  -- environments up to realisation. The template is fam-mu-realisation's
+  -- single-category fobj-realise-iso.
+  carrier-comparison : ∀ {n} (Q : Poly Fam⟨𝒞⟩.cat n)
+                       (env : Fin n → Fam⟨𝒞⟩.Obj) (env̌ : Fin n → FMg.Obj) →
+                       (∀ i → Glued.Iso (GF .fobj (env i)) (realise .fobj (env̌ i))) →
+                       Glued.Iso (GF .fobj (FMc.fobj FMc.μObj Q env))
+                                 (realise .fobj (FMg.fobj FMg.μObj (Poly-map (η ∘F GF) Q) env̌))
+  carrier-comparison Q env env̌ js = {!!}
 
   -- Step 1: strip constants in 𝒞. The remaining chain compares the constant-free
   -- skeleton W-tree under GF against the realised Fam(Gl) W-tree.
