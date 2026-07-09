@@ -7,10 +7,11 @@
 open import Level using (Level; 0ℓ; suc)
 open import categories using (Category; HasProducts; HasTerminal)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import functor using (Functor; HasLimits)
+open import functor using (Functor; HasLimits; functor-preserve-iso)
 open import prop using (∃; ∃ₛ; Prf)
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 import polynomial-functor-2
+import fam-mu-types-2.skeleton
 import ho-model
 
 open Functor
@@ -39,7 +40,11 @@ module gf-preserves-mu
   open I
   open I.Conservativity
 
+  private module Sk = fam-mu-types-2.skeleton 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+
+  -- Step 1: strip constants in 𝒞. The remaining chain compares the constant-free
+  -- skeleton W-tree under GF against the realised Fam(Gl) W-tree.
   GFμ : polynomial-functor-2.Preserves-μ
           Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
           GlPE.terminal GlPE.products GlSC Fam⟨𝒞⟩-hasMu Gl-Mu GF
-  GFμ P δ = {!!}
+  GFμ P δ = Glued.Iso-trans (functor-preserve-iso GF (Sk.skeleton-μ-iso P δ)) {!!}
