@@ -4,15 +4,15 @@
 \begin{DeletedBlock}
 \paragraph{Stable Domain Theory}
 
-\roly{Now covered in Future Work.} Stable Domain Theory was originally proposed by \citet{berry79} as a refinement of domain theory aimed at
-capturing the intensional behaviour of sequential programs, and elaborated on subsequently by \citet{berry82}
-and \citet{amadio-curien}. Standard domain-theoretic models interpret programs as continuous functions,
-preserving directed joins; Berry observed that this continuity condition alone is too permissive to model
-sequentiality. Stability imposes additional constraints to reflect how functions preserve bounded meets of
-approximants, effectively requiring that the evaluation of a function respect a specific computational order.
-Though stable functions do not fully characterise sequentiality, because they admit $\mathrm{gustave}$-style
-counterexamples (\exref{parallel-or}), they remain an appropriate notion for studying the sensitivity of a
-program to partial data at a specific point.
+\roly{Now covered in Future Work.} Stable Domain Theory was originally proposed by \citet{berry79} as a
+refinement of domain theory aimed at capturing the intensional behaviour of sequential programs, and
+elaborated on subsequently by \citet{berry82} and \citet{amadio-curien}. Standard domain-theoretic models
+interpret programs as continuous functions, preserving directed joins; Berry observed that this continuity
+condition alone is too permissive to model sequentiality. Stability imposes additional constraints to reflect
+how functions preserve bounded meets of approximants, effectively requiring that the evaluation of a function
+respect a specific computational order. Though stable functions do not fully characterise sequentiality,
+because they admit $\mathrm{gustave}$-style counterexamples (\exref{parallel-or}), they remain an appropriate
+notion for studying the sensitivity of a program to partial data at a specific point.
 
 Our use of Stable Domain Theory diverges from the traditional aim of modelling infinite or partial data,
 however. Instead, we follow a line of work that uses partiality as a qualitative notion of approximation
@@ -75,10 +75,17 @@ can just use the opposite graph.
 
 \paragraph{\added{Semiring Provenance}}
 
-\Added{\todo{Write this section.} Negative multiplicities model deletion and update in the semiring
-framework~\cite{green09}, and cancellation is the recognised obstruction to provenance for queries with
-difference~\cite{amsterdamer11,geerts10}: the same failure of positivity that makes zero-testing lax in
-\secref{approx-as-tangents:linearised-provenance}.}
+\Added{Provenance for database queries has its own semiring tradition, originating with the \emph{provenance
+semirings} of \citet{green07}: a query result carries an annotation from a commutative semiring, and the free
+semiring $\mathbbm{N}[X]$ of provenance polynomials is universal, specialising to other semirings by
+evaluation. Our framework draws on the same semirings but computes a \emph{derivative} rather than an
+annotation: a Jacobian over the semiring relating input positions to output positions, in place of a value
+attached to the output. A derivative is a linear map, so the provenance it records is \emph{linearised}
+(\secref{approx-as-tangents:linearised-provenance}), and joint use appears as a coefficient rather than the
+degree of a polynomial. Over a non-positive semiring, the Boolean dependency our framework reports is a sound
+over-approximation, since the exact analysis can cancel a contribution to zero where the Boolean composite
+still records a dependency. This is the same non-positivity that annotation-based approaches must confront in
+extending to deletion and difference~\cite{green09,amsterdamer11,geerts10}.}
 
 \paragraph{Tangent Categories and Differential Linear Logic}
 
