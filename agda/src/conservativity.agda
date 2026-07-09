@@ -1038,6 +1038,22 @@ GF-preserve-coproducts-indexed S D = iso
 
     carrierIso = 𝒟.Iso-trans (𝒟d.∐-iso D-eq) FI.fst
 
+    -- Under the coproduct comparison each 𝒞-injection maps to the Gl carrier's
+    -- colimit injection: F-DC's compat, then the D-eq bridge.
+    F-inⱼ : ∀ s → (carrierIso .Category.Iso.bwd 𝒟.∘ F .fmor (SI.inj D s)) 𝒟.≈
+                  (GDC S (GF ∘F D) .Colimit.cocone .transf s .morph)
+    F-inⱼ s =
+      𝒟.≈-trans (𝒟.assoc _ _ _)
+        (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl bwd-inj)
+          (𝒟.≈-trans (𝒟d.∐-map-coeval (NatIso.transform⁻¹ D-eq) s) 𝒟.id-right))
+      where
+        bwd-inj : (FI.fst .Category.Iso.bwd 𝒟.∘ F .fmor (SI.inj D s)) 𝒟.≈
+                  (𝒟DC S (F ∘F D) .Colimit.cocone .transf s)
+        bwd-inj =
+          𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl (𝒟.≈-sym (FI.snd s)))
+            (𝒟.≈-trans (𝒟.≈-sym (𝒟.assoc _ _ _))
+              (𝒟.≈-trans (𝒟.∘-cong (FI.fst .Category.Iso.bwd∘fwd≈id) 𝒟.≈-refl) 𝒟.id-left))
+
     iso : Glued.Iso (GDC S (GF ∘F D) .Colimit.apex) (GF .fobj (SI.∐ S D))
     iso .Glued.Iso.fwd .morph = carrierIso .Category.Iso.fwd
     iso .Glued.Iso.fwd .presv = {!!}
@@ -1051,8 +1067,23 @@ GF-preserve-coproducts-indexed S D = iso
       ≤⟨ 𝐂-isClosure .IsClosureOp.mono
            (IsBigJoin.mono PSh⟨𝒞⟩-system.⋁-isJoin (λ s → (𝐂-isClosure .IsClosureOp.unit) PSh⟨𝒞⟩-system.⟨ _ ⟩m)) ⟩
         𝐂 (⋁ (S .Setoid.Carrier) (λ s → 𝐂 (Definable (D .fobj s)) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩))
-      ≤⟨ {!!} ⟩
-        {!!}
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono (IsBigJoin.mono PSh⟨𝒞⟩-system.⋁-isJoin (λ s → 𝐂-isClosure .IsClosureOp.unit)) ⟩
+        _
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono (IsBigJoin.mono PSh⟨𝒞⟩-system.⋁-isJoin (λ s → 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.unit _))) ⟩
+        _
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono (IsBigJoin.mono PSh⟨𝒞⟩-system.⋁-isJoin (λ s → 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.⟨⟩-comp _ _ PSh⟨𝒞⟩-system.[ _ ]m))) ⟩
+        _
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono (IsBigJoin.mono PSh⟨𝒞⟩-system.⋁-isJoin (λ s → 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.⟨⟩-cong (PSh⟨𝒞⟩.≈-sym (G .fmor-comp _ _)) PSh⟨𝒞⟩-system.[ _ ]m))) ⟩
+        _
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono (IsBigJoin.mono PSh⟨𝒞⟩-system.⋁-isJoin (λ s → 𝐂-isClosure .IsClosureOp.mono (PSh⟨𝒞⟩-system.⟨⟩-cong (G .fmor-cong (F-inⱼ s)) PSh⟨𝒞⟩-system.[ _ ]m))) ⟩
+        _
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono (IsBigJoin.mono PSh⟨𝒞⟩-system.⋁-isJoin (λ s → 𝐂-[])) ⟩
+        _
+      ≤⟨ 𝐂-isClosure .IsClosureOp.mono (IsBigJoin.least PSh⟨𝒞⟩-system.⋁-isJoin _ _ _ (λ s → (IsBigJoin.upper PSh⟨𝒞⟩-system.⋁-isJoin _ _ s) PSh⟨𝒞⟩-system.[ _ ]m)) ⟩
+        _
+      ≤⟨ 𝐂-[] ⟩
+        𝐂 (⋁ (S .Setoid.Carrier) (λ s → 𝐂 (𝐂 (Definable (D .fobj s)) ⟨ G .fmor (GDC S (GF ∘F D) .Colimit.cocone .transf s .morph) ⟩)))
+          [ G .fmor (carrierIso .Category.Iso.bwd) ]
       ∎
       where open ≤-Reasoning ⊑-isPreorder
     iso .Glued.Iso.fwd∘bwd≈id .f≃f = carrierIso .Category.Iso.fwd∘bwd≈id

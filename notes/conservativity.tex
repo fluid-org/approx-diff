@@ -332,8 +332,9 @@ $\coprod_i x_i$ along $g$, by stability; each restriction factors definably thro
 \end{proof}
 
 Built-in list types would need the same extension. Together with preservation of set-indexed
-coproducts by $F$ it makes $\GF$ preserve them: carriers by assumption, predicates by the lemma,
-the coproducts of $\GLR(F)$ being computed as in \corref{conservativity:glr-poly}. In particular
+coproducts by $F$ it makes $\GF$ preserve them: carriers by assumption, predicates by the lemma and
+the closure operator's reindexing law (\lemref{conservativity:indexed-closure}), the coproducts of
+$\GLR(F)$ being computed as in \corref{conservativity:glr-poly}. In particular
 $\Sigma\check{\delta}_i \cong \GF(\delta_i)$.
 
 \begin{lemma}[Skeleton]
@@ -360,8 +361,9 @@ The two sides interpret the same constant-free polynomial, and the tree sorts co
 decorated by the index sets of the environment entries, which the presentations preserve. The
 carriers of the fibres over a common sort are finite products of the same $F$-images, identified by
 tree recursion using $F$'s preservation of products; the predicate components are compared
-sort-wise using \lemref{conservativity:definable-coproducts}, the realisation being computed as a
-set-indexed coproduct in $\GLR(F)$.
+sort-wise using \lemref{conservativity:definable-coproducts} and the closure operator's reindexing
+law (\lemref{conservativity:indexed-closure}), the realisation being computed as a set-indexed
+coproduct in $\GLR(F)$.
 \end{proof}
 
 \begin{proposition}[TODO]
