@@ -1,7 +1,7 @@
-\section[Examples]{\added{Examples}}
+\section{Examples}
 \label{sec:examples}
 
-\Added{This section runs the interpretation at particular semirings, on particular programs, to show the
+This section runs the interpretation at particular semirings, on particular programs, to show the
 analyses that result. Throughout, we work over the signature $\Sigma_{\mathrm{ex}}$, parameterised by a set
 of numbers with a distinguished zero, which the examples instantiate with the rationals. It has sorts
 $\mathsf{num}$ and $\mathsf{label}$; operations $\mathrm{add}, \mathrm{mult} : \mathsf{num} \times
@@ -12,23 +12,23 @@ unit for $\mathrm{add}$. The queries of
 determine an instance: an instance must also interpret each operation of the signature, supplying the
 function it computes on values together with, at each input value, a linear map between the approximation
 objects, a semimodule morphism giving the operation's intended derivative at that value. Each example is
-mechanised in the accompanying Agda development.}
+mechanised in the accompanying Agda development.
 
-\subsection[Perturbation Bounds]{\added{Perturbation Bounds}}
+\subsection{Perturbation Bounds}
 \label{sec:examples:perturbation-bounds}
 
-\Added{The first two instances demonstrate the perturbation-bound reading of
+The first two instances demonstrate the perturbation-bound reading of
 \secref{approx-as-tangents:perturbation-bounds}: the analysis reports how much each output can change, rather
 than whether it can. Sections \ref{sec:examples:absolute-bounds} and \ref{sec:examples:relative-bounds}
 give the two presentations, absolute and relative, run on the database $\mathit{db} = [(\mathsf{a}, 3),
 (\mathsf{b}, 1), (\mathsf{a}, -3)]$ of \exref{introduction-example}. In the absolute presentation the
 approximation object for a number is the free semimodule $S^2$, one bound for each direction of change; a
-relative bound constrains both directions at once, so the relative presentation uses a single scalar.}
+relative bound constrains both directions at once, so the relative presentation uses a single scalar.
 
-\subsubsection[Absolute bounds]{\added{Absolute bounds}}
+\subsubsection{Absolute bounds}
 \label{sec:examples:absolute-bounds}
 
-\Added{At the min-plus semiring, a pair of scalars $(d, u)$ records that a value may fall by at most $d$ and
+At the min-plus semiring, a pair of scalars $(d, u)$ records that a value may fall by at most $d$ and
 rise by at most $u$, so that a number $x$ is known to lie in the interval $[x - d, x + u]$; the pair
 $(\infty, \infty)$ carries no information. Multiplication's derivative carries none either, since no
 translation bounds a scaling (\secref{approx-as-tangents:perturbation-bounds}), so we run a query that
@@ -38,85 +38,71 @@ derivative entries are translations by $0$, and selection's entries are the semi
 before. The backward derivative at this run is a linear map $\partial(\mathrm{query}\,l\,\mathit{db})_r :
 S^2 \multimap S^2 \times S^2 \times S^2$, one factor for each number in the database; the frozen label
 positions and list terminator contribute trivial factors, omitted here, and because the input is a list, the
-type depends on the input's shape.}
+type depends on the input's shape.
 
-\Added{Forwards, with the first $\mathsf{a}$-number known to within bounds $(\frac{1}{2}, 0)$ and the second
-to within $(\frac{1}{5}, \frac{1}{2})$:}
-\begin{AddedBlock}
+Forwards, with the first $\mathsf{a}$-number known to within bounds $(\frac{1}{2}, 0)$ and the second
+to within $(\frac{1}{5}, \frac{1}{2})$:
 \begin{displaymath}
   \partial(\mathrm{query}\,\mathsf{a}\,\mathit{db})_f([(\mathsf{a}, (\tfrac{1}{2}, 0)), (\mathsf{b}, (\infty, \infty)), (\mathsf{a}, (\tfrac{1}{5}, \tfrac{1}{2}))]) =
   (\tfrac{1}{5}, 0)
 \end{displaymath}
-\end{AddedBlock}
-\noindent\Added{Bounds for the same position combine by $\min$, reflecting the reading in which one input
+\noindent Bounds for the same position combine by $\min$, reflecting the reading in which one input
 changes at a time. Backwards, asking for the output to lie within $[-\frac{1}{10}, \frac{1}{10}]$, that is,
-bounds $(\frac{1}{10}, \frac{1}{10})$:}
-\begin{AddedBlock}
+bounds $(\frac{1}{10}, \frac{1}{10})$:
 \begin{displaymath}
   \partial(\mathrm{query}\,\mathsf{a}\,\mathit{db})_r(\tfrac{1}{10}, \tfrac{1}{10}) =
   [(\mathsf{a}, (\tfrac{1}{10}, \tfrac{1}{10})), (\mathsf{b}, (\infty, \infty)), (\mathsf{a}, (\tfrac{1}{10}, \tfrac{1}{10}))]
 \end{displaymath}
-\end{AddedBlock}
-\noindent\Added{Changing either $\mathsf{a}$-number alone by at most $\frac{1}{10}$ keeps the output within
+\noindent Changing either $\mathsf{a}$-number alone by at most $\frac{1}{10}$ keeps the output within
 its interval, while the $\mathsf{b}$-number is unconstrained. The backward run here can only route the
 demand to the used positions, since every entry is $0$ or $\infty$; it would become informative given
 operations that loosen a bound by a fixed finite amount, such as rounding, whose entry is the translation
 $1$ ($\delta$ in, $\delta + 1$ out), or several outputs sharing an input, whose demands combine by
-$\min$.}
+$\min$.
 
-\subsubsection[Relative bounds]{\added{Relative bounds}}
+\subsubsection{Relative bounds}
 \label{sec:examples:relative-bounds}
 
-\Added{Relative bounds pass through multiplication, so this instance can run the full weighted-sum query
+Relative bounds pass through multiplication, so this instance can run the full weighted-sum query
 of \exref{introduction-example}, prices included, on the same database. We instantiate at
 the min-times semiring of \secref{approx-as-tangents:perturbation-bounds}: multiplication's derivative has
 unit entries, and addition's entries are condition numbers, infinite at exact cancellation. In the run of
 $\mathrm{total}\,\mathsf{b}$, multiplication behaves well: a $10\%$ bound on the price of $\mathsf{b}$
-reaches the output intact, and likewise a bound on the selected quantity:}
-\begin{AddedBlock}
+reaches the output intact, and likewise a bound on the selected quantity:
 \begin{displaymath}
   \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a}, \infty), (\mathsf{b}, \infty), (\mathsf{a}, \infty)], \langle \infty, \tfrac{1}{10} \rangle) = \tfrac{1}{10}
 \end{displaymath}
-\end{AddedBlock}
-\noindent\Added{Backwards, an output bound of $10\%$ constrains the selected quantity and its price and
-nothing else:}
-\begin{AddedBlock}
+\noindent Backwards, an output bound of $10\%$ constrains the selected quantity and its price and
+nothing else:
 \begin{displaymath}
   \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_r(\tfrac{1}{10}) =
   ([(\mathsf{a}, \infty), (\mathsf{b}, \tfrac{1}{10}), (\mathsf{a}, \infty)], \langle \infty, \tfrac{1}{10} \rangle)
 \end{displaymath}
-\end{AddedBlock}
-\noindent\Added{The forward run of $\mathrm{total}\,\mathsf{a}$ meets the cancellation: its two contributions,
+\noindent The forward run of $\mathrm{total}\,\mathsf{a}$ meets the cancellation: its two contributions,
 $2 \cdot 3$ and $2 \cdot (-3)$, sum to zero, the amplification factor of the final addition is infinite, and
-no relative bound on either $\mathsf{a}$-quantity, however tight, yields a bound on the output:}
-\begin{AddedBlock}
+no relative bound on either $\mathsf{a}$-quantity, however tight, yields a bound on the output:
 \begin{displaymath}
   \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a}, \tfrac{1}{10}), (\mathsf{b}, \infty), (\mathsf{a}, \infty)], \langle \infty, \infty \rangle) = \infty
 \end{displaymath}
-\end{AddedBlock}
 
-\subsection[Linearised provenance]{\added{Linearised provenance}}
+\subsection{Linearised provenance}
 \label{sec:examples:counting}
 
-\Added{At the free semiring $\mathbbm{N}[X]$ the analysis computes the linearised provenance of
+At the free semiring $\mathbbm{N}[X]$ the analysis computes the linearised provenance of
 \secref{approx-as-tangents:linearised-provenance}. Each instance must specify the derivative entries of the
 primitive operations; here every entry is $1$, so a Jacobian entry of a run counts the paths from an input
 position to an output position. On the cancellation run of the weighted-sum query
-(\exref{introduction-example}), seeding each input position with a unique variable:}
-\begin{AddedBlock}
+(\exref{introduction-example}), seeding each input position with a unique variable:
 \begin{displaymath}
   \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a}, x_0), (\mathsf{b}, x_1), (\mathsf{a}, x_2)], \langle x_3, x_4 \rangle) = x_0 + x_2 + 2 x_3
 \end{displaymath}
-\end{AddedBlock}
-\noindent\Added{The output polynomial records each selected quantity once and the queried price twice, once
-per selected row. Backwards, seeding the output with a variable $y$ distributes it by usage:}
-\begin{AddedBlock}
+\noindent The output polynomial records each selected quantity once and the queried price twice, once
+per selected row. Backwards, seeding the output with a variable $y$ distributes it by usage:
 \begin{displaymath}
   \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_r(y) =
   ([(\mathsf{a}, y), (\mathsf{b}, 0), (\mathsf{a}, y)], \langle 2 y, 0 \rangle)
 \end{displaymath}
-\end{AddedBlock}
-\noindent\Added{Other analyses now come by evaluation. Setting every variable to $1$ specialises to the
+\noindent Other analyses now come by evaluation. Setting every variable to $1$ specialises to the
 counting semiring $(\mathbbm{N}, +, 0, \cdot, 1)$: the forward polynomial evaluates to $4$, the number of
 paths from perturbable inputs to the output, and the backward polynomials evaluate to per-position use counts,
 $2$ at the queried price. The count survives the cancellation that zeroes the rational derivative, because
@@ -124,28 +110,25 @@ $\mathbbm{N}$ is positive and counts cannot cancel; zero-testing then sends the 
 exactly, as positivity guarantees, whereas the same translation applied to the rational entry loses the
 dependency. The three analyses answer three different questions at the same position: the rational Jacobian
 reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and the counting Jacobian usage
-($2$).}
+($2$).
 
-\subsection[Cognacy Queries]{\added{Cognacy Queries}}
+\subsection{Cognacy Queries}
 \label{sec:examples:linked}
 
-\Added{The final example introduces no new semiring: it runs over the Booleans, and shows instead how
+The final example introduces no new semiring: it runs over the Booleans, and shows instead how
 composing the two derivatives of a single run recovers an existing dependency analysis. When outputs overlap
 in their dependencies, the composite of the backward and forward derivatives sends a selection of outputs to
 the outputs related to it by a shared dependency: the \emph{cognacy} analysis of linked
 visualisations~\cite{perera22,bond25,psallidas18}. The \emph{moving average} is the standard example of such
-overlap. With window two and four inputs,}
-\begin{AddedBlock}
+overlap. With window two and four inputs,
 \begin{displaymath}
   \mathrm{mavg}\,(x_1, x_2, x_3, x_4) =
   (\tfrac{1}{2} (x_1 + x_2),\; \tfrac{1}{2} (x_2 + x_3),\; \tfrac{1}{2} (x_3 + x_4))
 \end{displaymath}
-\end{AddedBlock}
-\noindent\Added{Each adjacent pair of outputs shares an input, and the
+\noindent Each adjacent pair of outputs shares an input, and the
 first and last outputs share none. The cognacy analysis is a \emph{relation} on the outputs, derived from the
 map's input-output relation, so it is useful to present the matrices involved. Running over the Booleans, the
-forward derivative and its composite with the backward derivative are}
-\begin{AddedBlock}
+forward derivative and its composite with the backward derivative are
 \begin{displaymath}
   \partial_{\Two}(\mathrm{mavg}) =
   \begin{pmatrix} 1 & 1 & 0 & 0 \\ 0 & 1 & 1 & 0 \\ 0 & 0 & 1 & 1 \end{pmatrix}
@@ -153,10 +136,9 @@ forward derivative and its composite with the backward derivative are}
   \partial_{\Two}(\mathrm{mavg}) \comp \transpose{\partial_{\Two}(\mathrm{mavg})} =
   \begin{pmatrix} 1 & 1 & 0 \\ 1 & 1 & 1 \\ 0 & 1 & 1 \end{pmatrix}
 \end{displaymath}
-\end{AddedBlock}
-\Added{The composite relates each output to the outputs it shares an input with. At the input $(1, 2, 4, 8)$
+The composite relates each output to the outputs it shares an input with. At the input $(1, 2, 4, 8)$
 the outputs are $(1.5, 3, 6)$, and applying the composite to the output selection $(1.5, \bot, \bot)$ returns
 $(1.5, 3, \bot)$, highlighting that $1.5$ shares an input with $3$; the third output stays $\bot$ because its
 window is disjoint. But whereas in these prior works, cognacy queries like these run over an execution record,
 here the intermediate structure has been folded away by the chain rule: each derivative is a direct relation
-on endpoints.}
+on endpoints.

@@ -361,10 +361,10 @@ which outputs a given input selection determines outright. Notably, in the Galoi
 meet-preserving forward map is only used to establish the existence of the join-preserving backward map; it
 seems to lack any direct dependency analysis applications of its own.
 
-\subsubsection[Perturbation bounds]{\added{Perturbation bounds}}
+\subsubsection{Perturbation bounds}
 \label{sec:approx-as-tangents:perturbation-bounds}
 
-\Added{Dependency analysis over the Booleans records whether an output can change when an input does;
+Dependency analysis over the Booleans records whether an output can change when an input does;
 \exref{introduction-example} raised the more fine-grained question of how much it
 can change. Numerical analysis studies this question as \emph{propagation of error}: given bounds on how far
 each input may be perturbed, derive a bound on the output~\cite{high:ASNA2}. Propagation of error is again a
@@ -374,63 +374,63 @@ a value may change from its value in the run, with $\infty$ meaning unconstraine
 $\min$, so that combining bounds for parallel paths keeps the tighter bound, and multiplication is numerical
 $+$, accumulating bounds along a path. Addition is idempotent, so the analyses are monotone as in
 \secref{approx-as-tangents:richer-semirings}: smaller bounds are more informative, and the semiring zero
-$\infty$ means ``no information''.}
+$\infty$ means ``no information''.
 
-\Added{A Jacobian entry $c$ now acts as a translation: if the input at that position changes by at most
+A Jacobian entry $c$ now acts as a translation: if the input at that position changes by at most
 $\delta$, with the others held fixed, the output changes by at most $\delta + c$. Addition's entries are $0$: a
 bound on either argument passes through undisturbed. Multiplication, however, scales perturbations: if $x$
 changes by $\delta$ then $x \cdot y$ changes by $|y|\,\delta$, and no translation bounds a scaling; its
 entries are $\infty$. This is sound, but reports nothing: propagation of absolute error is blind to
-multiplication.}
+multiplication.
 
-\Added{Measuring perturbations multiplicatively instead keeps $\min$ as the join of bounds but accumulates
+Measuring perturbations multiplicatively instead keeps $\min$ as the join of bounds but accumulates
 along paths by numerical product: $(\mathbbm{Q}_{\geq 0}
 \cup \{\infty\}, \min, \infty, \times, 1)$, with scalars now read as factors. This is the
 multiplicative counterpart of the previous presentation, related to it by logarithms over the reals, and the
 two are the classical dichotomy between absolute and relative error~\cite[\S\S 1.6--1.7]{high:ASNA2}.
 Multiplication now has unit entries, since relative perturbations pass through a product unchanged, while an
 addition $x + y$ acquires the entry $|x| / |x + y|$: the factor by which it amplifies relative error, its
-(relative) \emph{condition number}.}
+(relative) \emph{condition number}.
 
-\Added{In the refund example the final sum adds the products $6$ and $-6$, so the amplification is $|6| / |6 +
+In the refund example the final sum adds the products $6$ and $-6$, so the amplification is $|6| / |6 +
 (-6)|$: an infinite condition number, known in numerical analysis as catastrophic cancellation. For
 non-negative data the factors are at most $1$, so sums never amplify; the refund's negative entry makes the
 infinite factor possible. Where the Boolean analysis could only report a dependency that was not really
 there, the relative analysis says how badly the bound degrades. The difference between the two is a choice of
-semiring, and making that choice is part of specifying what the analysis is to observe.}
+semiring, and making that choice is part of specifying what the analysis is to observe.
 
-\subsubsection[Qualitative derivatives]{\added{Qualitative derivatives}}
+\subsubsection{Qualitative derivatives}
 
-\Added{The Boolean analysis reports a dependency at a cancellation because it forgets signs. The \emph{sign
+The Boolean analysis reports a dependency at a cancellation because it forgets signs. The \emph{sign
 semiring} $\{+, 0, -, ?\}$, the rule-of-signs domain of abstract interpretation~\cite{cousot77}, retains
 them: multiplication of signs is exact, and the only sum whose sign is not determined is $+$ plus $-$, which
 is $?$. Taking signs as the scalars gives the \emph{qualitative derivatives} of qualitative
 reasoning~\cite{dekleer84,kuipers86}, an entry reading ``increasing this input increases (or decreases, or
 cannot affect) that output'', with $?$ appearing exactly at the potential cancellations: in the refund
 example, the entry for the price becomes $?$. Collapsing $+$, $-$ and $?$ to $1$ recovers the Boolean
-analysis.}
+analysis.
 
-\subsubsection[Linearised provenance]{\added{Linearised provenance}}
+\subsubsection{Linearised provenance}
 \label{sec:approx-as-tangents:linearised-provenance}
 
-\Added{Database provenance has its own semiring tradition: in the framework of
+Database provenance has its own semiring tradition: in the framework of
 \citet{green07}, query results carry annotations from a commutative semiring, with the \emph{free}
 commutative semiring $\mathbbm{N}[X]$ of \emph{provenance polynomials} playing a universal role: its
 variables name the input tuples, multiplication records their joint use in a derivation, and addition
 collects the alternative derivations. By freeness, assigning a value to each variable extends uniquely to a
 semiring homomorphism out of $\mathbbm{N}[X]$, so provenance computed once as polynomials determines, by
-evaluation, the annotation in every other semiring.}
+evaluation, the annotation in every other semiring.
 
-\Added{Provenance semirings can serve as the scalars of the present framework, but with a limitation: a
+Provenance semirings can serve as the scalars of the present framework, but with a limitation: a
 derivative is linear, so the framework captures \emph{linearised} provenance. Taking $S = \mathbbm{N}[X]$, a
 Jacobian entry is a polynomial recording symbolically how an input position contributes to an output position.
 Green's semantics assigns an output a polynomial $p$ whose degree records joint use; seeding each input
 position with a unique variable, our forward analysis instead returns a polynomial linear in the position
 variables, with the partial derivative $\partial p / \partial x_i$, evaluated at the run's input values, as
 the coefficient of $x_i$. Joint use survives only in the coefficients: an input
-used twice contributes $2x$ where the annotation would record $x^2$.}
+used twice contributes $2x$ where the annotation would record $x^2$.
 
-\Added{Translation along a homomorphism applies to the present framework as well: a semiring homomorphism acts
+Translation along a homomorphism applies to the present framework as well: a semiring homomorphism acts
 entrywise on Jacobians, and the action is functorial, since matrix composition is built from addition and
 multiplication. The translation of interest for dependency tracking is ``zero-testing'' into the Booleans, and
 whether that is a homomorphism depends on the source semiring. The counting semiring $\mathbbm{N}$, itself a
@@ -441,4 +441,4 @@ negation sum to zero, and zero-testing $\mathbbm{Q} \to \Two$ preserves multipli
 only laxly. It still acts entrywise on matrices, preserving identities and transposition, but composition only
 up to over-approximation: composing Boolean Jacobians can record dependencies absent from the Boolean image of
 their composite. The refund in \exref{introduction-example} is a case in point: the price genuinely does not
-matter to the total, yet the composed dependencies say it might.}
+matter to the total, yet the composed dependencies say it might.
