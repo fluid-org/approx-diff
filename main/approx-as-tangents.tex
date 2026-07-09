@@ -1,4 +1,4 @@
-\section{Approximations as Tangents}
+\section{\Replaced{Tangent Spaces as Semimodules}{Approximations as Tangents}}
 \label{sec:approx-as-tangents}
 
 We motivate our approach by showing how to combine ideas from differential geometry and linear algebra to
@@ -6,8 +6,6 @@ reconstruct the dependency analyses of \secref{introduction} in a denotational s
 
 \subsection{Manifolds, Smooth Functions, and Automatic Differentiation}
 \label{sec:approx-as-tangents:autodiff}
-
-% For what follows we do not need to know in detail what a manifold is, or exactly how smooth functions are defined. We only state some definitions in order to fix terminology and to justify our claim of a connection to manifolds and smooth functions. \bob{Need a good reference here.}
 
 The general study of differentiable functions takes place on \emph{manifolds}, topological spaces that
 ``locally'' behave like an open subset of the Euclidean space $\RR^n$. The spaces $\RR^n$ themselves are
@@ -22,8 +20,12 @@ Smooth functions $f$ between manifolds $M$ and $N$ are functions on their points
 differentiable on $\RR^n$. Manifolds and smooth functions form a category $\Man$. Each smooth function induces
 maps of the (co)tangent spaces:
 \begin{itemize}[leftmargin=\enummargin]
-\item The \emph{forward derivative} (tangent map, pushforward) $\pushf{f}_x$ is a linear map $\tangents_x(M) \linearto \tangents_{f(x)}(N)$. In the Euclidean case when $M = \RR^m$ and $N = \RR^n$, the tangent map can be represented by the Jacobian matrix of partial derivatives of $f$ at $x$.
-\item The \emph{backward derivative} (cotangent map, pullback) $\pullf{f}_x$ is a linear map $\cotangents_{f(x)}(N) \linearto \cotangents_x(M)$. In the Euclidean case, the backward derivative is represented by the transpose of the Jacobian of $f$ at $x$.
+\item The \emph{forward derivative} (tangent map, pushforward) $\pushf{f}_x$ is a linear map $\tangents_x(M)
+\linearto \tangents_{f(x)}(N)$. In the Euclidean case when $M = \RR^m$ and $N = \RR^n$, the tangent map can be
+represented by the Jacobian matrix of partial derivatives of $f$ at $x$.
+\item The \emph{backward derivative} (cotangent map, pullback) $\pullf{f}_x$ is a linear map
+$\cotangents_{f(x)}(N) \linearto \cotangents_x(M)$. In the Euclidean case, the backward derivative is
+represented by the transpose of the Jacobian of $f$ at $x$.
 \end{itemize}
 
 \begin{remark}[Chain Rule]
