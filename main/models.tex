@@ -1,21 +1,26 @@
 \section{Models of Semiring Dependency} % \GPS doesn't use title caps
 \label{sec:models-of-total-gps}
 
-\Added{In the previous section, we saw several examples of commutative
-  semirings that capture different ways of tracking how programs'
-  outputs depend on their inputs. To apply these settings to a
-  programming language we need an interpretation that attaches
+\Added{For basic differentiable programming, inputs and outputs are
+  over Euclidean spaces where the tangent spaces are uniform and
+  always isomorphic to the original space. It is then possible to, for
+  first order programs at least, to identify a space and its
+  tangents. For semiring dependency analysis we cannot do this. It is
+  not often the case that the types of data the programs operate will
+  be the same as the semiings used for dependency tracking. To apply
+  the semiring settings identified in \secref{sec:approx-as-tangents}
+  to a programming language we need an interpretation that attaches
   semimodules over our chosen semiring to types' interpretations, and
   linear maps to the interpretations of terms. Given the similarities
   noted in the introduction between provenance tracking and automatic
   differentiation, we follow V{\'a}k{\'a}r and collaborators
   \cite{vakar22,nunes2023} who used the \emph{Category of Families} to
   build denotational models of automatic differentiation over the
-  reals. All of the results of this section have been mechanised in
-  Agda %\footnote{Please refer to the supplementary material.}
-  .}
+  reals. We start by recalling the definition of biproducts in
+  categories enriched over commutative monoids, which will be the
+  essential property of modules over semirings that we need.}
 
-\Deleted{The previous section concluded that L-posets and stable functions give
+  \Deleted{The previous section concluded that L-posets and stable functions give
 a model of \GPS analogous to manifolds and smooth functions. However,
 we noted a conceptual shortcoming of this model, for the purposes of
 modelling total computations, that proper values and their
@@ -27,10 +32,141 @@ collaborators \cite{vakar22} to model automatic differentiation for
 higher-order programs on the reals. We reuse some of their results,
 and discuss the commonalities as we go.}
 
+\Added{
+  All of the results of this section have been mechanised in
+  Agda %\footnote{Please refer to the supplementary material.}
+  .}
+
+\begin{AddedBlock}
+\subsection{CMon-Categories and Biproducts}
+\label{sec:biproducts}
+
+As we noted at the end of \secref{sec:approx-as-tangents:semiring},
+categories of semirings and semimodules have
+\emph{biproducts}. Loosely stated, biproducts are objects that are
+both products and coproducts. The concept can be defined in any
+category, as shown by \citet{karvonen20}, but for our purposes it will
+be more convenient to use the more concise definition in categories
+enriched in commutative monoids:
+\begin{definition}
+  A category $\cat{C}$ is enriched in $\CMon$, the category of
+  commutative monoids, if every homset $\cat{C}(X,Y)$ is a commutative
+  monoid with $(+,0)$ and composition is bilinear:
+  \begin{displaymath}
+    f \comp \zero = 0 = \zero \comp f
+  \end{displaymath}
+  \begin{displaymath}
+    (f + g) \comp h = (f \comp h) + (g \comp h) \qquad
+    h \comp (f + g) = (h \comp f) + (h \comp g)
+  \end{displaymath}
+\end{definition}
+In any $\CMon$-category we can define what it means to be the
+biproduct of two objects:
+\begin{definition}
+  \label{def:biproducts}
+  In a $\CMon$-category a biproduct is an object $X \biprod Y$
+  together with morphisms
+
+  \begin{center}
+    \begin{tikzcd}
+      X \arrow[r, "\biinj_X", shift left] &
+      X \biprod Y \arrow[l, "\biproj_X", shift left] \arrow[r, "\biproj_Y"', shift right] &
+      Y \arrow[l, "\biinj_Y"', shift right]
+    \end{tikzcd}
+  \end{center}
+
+  \vspace{-1mm}
+  \noindent satisfying
+
+  \vspace{-5mm}
+  \begin{minipage}[t]{0.45\textwidth}
+    \begin{center}
+      \begin{salign*}
+        \biproj_X \comp \biinj_X &= \id_X \\
+        \biproj_Y \comp \biinj_X &= \zero_{X,Y}
+      \end{salign*}
+    \end{center}
+  \end{minipage}%
+  \begin{minipage}[t]{0.45\textwidth}
+    \begin{center}
+      \begin{salign*}
+        \biproj_Y \comp \biinj_Y &= \id_Y \\
+        \biproj_X \comp \biinj_Y &= \zero_{Y,X}
+      \end{salign*}
+    \end{center}
+  \end{minipage}
+
+  \begin{salign*}
+    (\biinj_X \comp \biproj_X) + (\biinj_Y \comp \biproj_Y) &= \id_{X \biprod Y}
+  \end{salign*}
+  A zero object is an object that is both initial and terminal.
+\end{definition}
+As the name suggests, biproducts in a category are both products and
+coproducts:
+\begin{proposition}
+  \item
+  \begin{enumerate}[leftmargin=\enummargin]
+  \item A $\CMon$-category that has biproducts $X \oplus Y$ for all
+    $X$ and $Y$ also has products and coproducts with
+    $X \times Y = X + Y = X \oplus Y$.
+  \item A $\CMon$-category with (co)products also has biproducts, and
+    any initial or terminal object is a zero object.
+  \end{enumerate}
+\end{proposition}
+
+\begin{example}
+  The following are $\CMon$-enriched and have finite products, and
+  hence biproducts:
+  \begin{enumerate}[leftmargin=\enummargin]
+  \item In $\FinVect$, morphisms are linear maps and so can be added
+    and have a zero map. Finite products are given by cartesian
+    products of the underlying sets, with the vector operations
+    defined pointwise.
+  \item In $\SDSemiMod(S)$ and $\SemiMod(S)$ morphisms can be added
+    and have a zero map. Biproducts are also given by cartesian
+    product of the underlying sets. The chosen self-duality is
+    preserved because we always have $(M \oplus N)^*$ is a biproduct
+    of $\cong M^*$ and $N^*$.
+
+  \item \Deleted{In $\LatGal$, right adjoints are summed using meets and left
+    adjoints are summed using joins. The zero maps are given by the
+    constantly $\top$ and constantly $\bot$ functions
+    respectively. Products are given by the cartesian product of the
+    underlying set and the one-element lattice for the
+    terminal/initial/zero object.}
+  \item \Deleted{$\MeetSLat$ and $\JoinSLat$ are both $\CMon$-enriched and have
+    finite products similar to $\LatGal$.}
+  \end{enumerate}
+\end{example}
+
+\begin{remark}
+  A $\CMon$-category having biproducts means that its finite products
+  and coproducts coincide, but this does not necessarily extend to
+  infinite products and coproducts. $\SemiMod(S)$ has infinite
+  products and coproducts, but these do not coincide. For this reason,
+  $\SDSemiMod(S)$ does not have infinite products because the dual of
+  an infinite product is no longer uniquely isomorphic to an infinite
+  product of duals. This will become relevant when we consider
+  cartesian closure in \secref{sec:models:cartesian-closure}.
+\end{remark}
+
+\begin{remark}
+  \label{remark:biproduct-not-closed}
+  Categories with zero objects cannot be cartesian closed without
+  being trivial in the sense of having exactly one morphism between
+  every pair of objects because
+  $\cat{C}(X, Y) \cong \cat{C}(1 \times X,Y) \cong \cat{C}(0 \times
+  X,Y) \cong \cat{C}(0,X \to Y) \cong 1$. Consequently, we cannot
+  apply the alternative construction of exponentials described in
+  \remref{hermida-exponentials}.
+\end{remark}
+
+\end{AddedBlock}
+
 \subsection{The Category of Families Construction}
 \label{sec:models-of-total-gps:fam}
 
-\Added{As explained in \autoref{sec:approx-as-tangents:autodiff}, every point
+\Added{As explained in \secref{sec:approx-as-tangents:autodiff}, every point
 in a manifold has an associated vector space of \emph{tangents} at
 that point, and every smooth function has an associated function
 mapping points to linear maps between tangent spaces. The
@@ -139,18 +275,20 @@ properties of this category, with a view to modelling a higher-order
 total programming language in \secref{language}.
 \end{DeletedBlock}
 
-\Added{We will use the categories $\Fam(\SDSemiMod(S))$ as our model of
-semiring tracking data provenance, analogous to V{\'a}k{\'a}r \emph{et
-  al.}'s use of $\Fam(\FinVect)$. The self-duality of objects in
-$\SDSemiMod(S)$ means that we can take transposes of tangent maps to
-track reverse provenance. To interpret expressive languages in this
-setting, we need to ensure it has sufficient categorical
-structure. Unfortunately, it is the case that $\Fam(\SDSemiMod(S))$ is
-not cartesian closed, and so cannot support an interpretation of
-higher order functions. This is because $\SDSemiMod(S)$ does not have
-infinite products, as we explain below. This motivates the use of the
-more liberal category $\Fam(\SemiMod(S))$ to interpret higher order
-programs. We relate the two categories at first order type in \autoref{sec:correctness}, which ensures that we will be able to derive reverse dependency maps even for programs that use higher order functions internally.}
+\Added{We will use the categories $\Fam(\SDSemiMod(S))$ as our model
+  of semiring tracking data provenance, analogous to V{\'a}k{\'a}r
+  \emph{et al.}'s use of $\Fam(\FinVect)$. The self-duality of objects
+  in $\SDSemiMod(S)$ means that we can take transposes of tangent maps
+  to track reverse provenance. To interpret expressive languages in
+  this setting, we need to ensure it has sufficient categorical
+  structure. Unfortunately, it is the case that $\Fam(\SDSemiMod(S))$
+  is not cartesian closed, and so cannot support an interpretation of
+  higher order functions. This motivates the use of the more liberal
+  category $\Fam(\SemiMod(S))$ to interpret higher order programs. We
+  relate the two categories at first order type in
+  \secref{sec:definability}, which ensures that we will be able to
+  derive reverse dependency maps even for programs that use higher
+  order functions internally.}
 
 \subsection{Categorical Properties of $\Fam(\cat{C})$}
 
@@ -192,8 +330,9 @@ $\Fam(\cat{C})$. For example, lists can be constructed as a coproduct
 \end{equation}
 where $X^0 = 1$ (the terminal object) and $X^{n+1} = X \times X^n$.
 
-\Added{Our category of interest, $\Fam(\SDSemiMod(S))$ has coproducts and finite
-products, because $\SDSemiMod(S)$ has products.}
+\Added{Our category of interest, $\Fam(\SDSemiMod(S))$ has coproducts
+  and finite products, because $\SDSemiMod(S)$ has
+  (bi)products. Similarly for $\Fam(\SemiMod(S))$.}
 
 \Deleted{Our category of interest, $\Fam(\LatGal)$ has coproducts and finite
 products, because $\LatGal$ has products. Similarly for
@@ -202,12 +341,14 @@ $\Fam(\MeetSLat)$. As we shall see below, the products in $\LatGal$
 essential to obtaining cartesian closure.}
 
 \subsubsection{Cartesian Closure}
+\label{sec:models:cartesian-closure}
 
 For cartesian closure of the categories $\Fam(C)$ that we are
 interested in, we rely on the following theorem of \citet{nunes2023},
 specialised from their setting with the general Grothendieck
-construction to $\Fam(\cat{C})$. This relies on the definition of
-\emph{biproducts}, which we discuss below in \secref{biproducts}.
+construction to $\Fam(\cat{C})$. \Deleted{This relies on the
+  definition of \emph{biproducts}, which we discuss below in
+  \secref{biproducts}.}
 
 \begin{theorem}[\cite{nunes2023}]
   \label{thm:fam-closed}
@@ -236,14 +377,14 @@ The category \Replaced{$\SemiMod(S)$}{$\MeetSLat$} satisfies the hypotheses of
   \Replaced{$\SemiMod(S)$}{$\Fam(\MeetSLat)$} is cartesian closed and has all coproducts.
 \end{corollary}
 Unfortunately, neither \Replaced{$\SDSemiMod(S)$}{$\LatGal$} nor
-$\FinVect$ satisfy the hypotheses of this theorem, because neither of
-them have infinite products. \todo{cite: Adamek paper}. \Deleted{We
-  will consider ways to rectify this below in
+$\FinVect$ satisfy the hypotheses of this theorem, because as we noted
+above, neither of them have infinite products. \todo{cite: Adamek
+  paper}. \Deleted{We will consider ways to rectify this below in
   \secref{fixing-completeness}.} \Added{So we are forced to use
   $\Fam{\SemiMod(S)}$ to interpret higher order functions, which
   appears to forego the ability to obtain reverse derivatives by
   transpose of linear maps afforded by $\Fam(\SDSemiMod(S))$. As we
-  will see in \autoref{sec:correctness}, this is no problem for
+  will see in \secref{sec:definability}, this is no problem for
   programs of first order type.}
 
 \begin{remark}
@@ -259,13 +400,15 @@ them have infinite products. \todo{cite: Adamek paper}. \Deleted{We
   However, for the purposes of modelling differentiable programs, this
   is fatally flawed in that neither $\LatGal$ nor $\FinVect$ are
   cartesian closed, and there is no way of making them so without
-  losing the property of being able to conjunct or add tangents, as we
-  shall see below. We will implicitly use Hermida's construction in
-  our definability proof in \secref{definability}, where we use a
-  logical relations argument to show that every morphism definable in
-  the higher order language is also first-order definable.
+  losing the property of being able to conjunct or add tangents
+  (\remref{remark:biproduct-not-closed}). We will implicitly use
+  Hermida's construction in our definability proof in
+  \secref{definability}, where we use a logical relations argument to
+  show that every morphism definable in the higher order language is
+  also first-order definable.
 \end{remark}
 
+\begin{DeletedBlock}
 \subsubsection{CMon-Categories and Biproducts}
 \label{sec:biproducts}
 
@@ -348,14 +491,15 @@ coproducts:
     and have a zero map. Finite products are given by cartesian
     products of the underlying sets, with the vector operations
     defined pointwise.
-  \item In $\LatGal$, right adjoints are summed using meets and left
+
+  \item \Deleted{In $\LatGal$, right adjoints are summed using meets and left
     adjoints are summed using joins. The zero maps are given by the
     constantly $\top$ and constantly $\bot$ functions
     respectively. Products are given by the cartesian product of the
     underlying set and the one-element lattice for the
-    terminal/initial/zero object.
-  \item $\MeetSLat$ and $\JoinSLat$ are both $\CMon$-enriched and have
-    finite products similar to $\LatGal$.
+    terminal/initial/zero object.}
+  \item \Deleted{$\MeetSLat$ and $\JoinSLat$ are both $\CMon$-enriched and have
+    finite products similar to $\LatGal$.}
   \end{enumerate}
 \end{example}
 
@@ -369,7 +513,6 @@ coproducts:
   \remref{hermida-exponentials}.
 \end{remark}
 
-\begin{DeletedBlock}
 \subsubsection{Discrete Completeness}
 \label{sec:fixing-completeness}
 
