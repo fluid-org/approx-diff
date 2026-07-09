@@ -154,12 +154,10 @@ matrices, compose using matrix multiplication, and can be evaluated forwards or 
   \end{displaymath}
   At this point nothing cancels, and the two Jacobians agree on which entries are nonzero.
 
-  In setting up the positions, we chose to let only the numbers (quantities and prices)
-  vary, keeping the labels and
-  the structure of the list itself fixed. Other choices are also useful, and one of the aims of this work is
-  to clarify how to choose a dependency structure appropriate for different tasks by selecting an appropriate
-  semiring of dependency information. We elaborate on this further in
-  \secref{semantic-gps}.
+  In setting up the positions, we chose to let only the numbers (quantities and prices) vary, keeping the
+  labels and the structure of the list itself fixed. Other choices are also useful, and one of the aims of
+  this work is to clarify how to choose a dependency structure appropriate for different tasks by selecting an
+  appropriate semiring of dependency information. We elaborate on this further in \secref{approx-as-tangents}.
 
   As a matrix, the Boolean Jacobian acts on Boolean vectors indexed by input positions, and this action
   evaluates dependencies \emph{forwards}: a vector selects input positions, and its image under the Jacobian
@@ -225,28 +223,39 @@ a way to obtain such an account, by analogy with \emph{automatic
 differentiation}~\cite{siskind08,elliott18,vakar22}; let us make the correspondence explicit.
 
 \begin{itemize}[leftmargin=\enummargin]
-\item For dependency analysis, every value has an associated join-semilattice of \emph{approximations}, with least element $\bot$ (the empty selection). For differentiable programs, every point has an associated vector space of {\em tangents}.
-\item For dependency analysis, every program has an associated forward approximation map that takes approximations of the input to the approximations of the output that depend on them. This map {\em preserves joins and $\bot$}. For differentiable programs, every program has a forward derivative that takes tangents of the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of tangents and the zero tangent.
-\item For dependency analysis, every program has an associated backward approximation map that takes approximations of the output back to least approximations of the input that they depend on. This map also {\em preserves joins and $\bot$}. For differentiable programs, every program has a reverse derivative that takes \emph{cotangents} of the output (linear maps from tangents to scalars) to cotangents of the input. This map is again {\em linear}.
-\item In both settings, the forward and backward maps are related by being each other's transpose.
-The transpose makes sense because the spaces are \emph{self-dual}: tangent vectors pair with tangent vectors
-via the dot product, identifying cotangents with tangents, and selections of positions pair by the same dot
+\item For dependency analysis, every value has an associated join-semilattice of \emph{approximations}, with
+least element $\bot$ (the empty selection). For differentiable programs, every point has an associated vector
+space of {\em tangents}.
+\item For dependency analysis, every program has an associated forward approximation map that takes
+approximations of the input to the approximations of the output that depend on them. This map {\em preserves
+joins and $\bot$}. For differentiable programs, every program has a forward derivative that takes tangents of
+the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of
+tangents and the zero tangent.
+\item For dependency analysis, every program has an associated backward approximation map that takes
+approximations of the output back to least approximations of the input that they depend on. This map also {\em
+preserves joins and $\bot$}. For differentiable programs, every program has a reverse derivative that takes
+\emph{cotangents} of the output (linear maps from tangents to scalars) to cotangents of the input. This map is
+again {\em linear}.
+\item In both settings, the forward and backward maps are related by being each other's transpose. The
+transpose makes sense because the spaces are \emph{self-dual}: tangent vectors pair with tangent vectors via
+the dot product, identifying cotangents with tangents, and selections of positions pair by the same dot
 product formula, with joins and meets in place of sums and products.
 \end{itemize}
 
-Given this close connection between dependency analysis and differentiable programming, we can take structures intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model dependency analysis. This will enable us to generalise and expand the scope of automatic differentiation to act as a foundation for data provenance in a wider range of computational settings.
+Given this close connection between dependency analysis and differentiable programming, we can take structures
+intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model
+dependency analysis. This will enable us to generalise and expand the scope of automatic differentiation to
+act as a foundation for data provenance in a wider range of computational settings.
 
 \subsection{Outline and Contributions}
 
-%Our primary contribution in this article is to elucidate \GPS by relating it to differentiable programming and automatic differentiation. In doing so, we aim to expand the applicability of program slicing, and to potentially transfer efficient automatic differentiation implementation techniques from automatic differentiation to program slicing and provenance tracking.
-
-Our main contribution is to show that data provenance can be understood as differentiation over a
-commutative semiring of dependency information. In \secref{approx-as-tangents} we develop the first-order
-picture, for programs over tuples of atomic data: derivatives as matrices over a semiring $S$, with the
-transpose relating forward and backward dependency analysis, and with successively stronger conditions on $S$ yielding
+Our main contribution is to show that data provenance can be understood as differentiation over a commutative
+semiring of dependency information. In \secref{approx-as-tangents} we develop the first-order picture, for
+programs over tuples of atomic data: derivatives as matrices over a semiring $S$, with the transpose relating
+forward and backward dependency analysis, and with successively stronger conditions on $S$ yielding
 join-preserving maps, conjugate pairs and, for Boolean algebras, the Galois connections of \GPS; ordinary AD
-occupies the case $S = \mathbb{R}$. \Deleted{We also relate this picture to \citet{berry79}'s \emph{stable domain
-theory}, where stable functions provide a kind of semantic provenance analysis.}
+occupies the case $S = \mathbb{R}$. We also relate this picture to \citet{berry79}'s \emph{stable domain
+theory}, where stable functions provide a kind of semantic provenance analysis.
 
 The following table summarises the correspondence developed over the course of the paper:
 \vspace{1.5mm}
