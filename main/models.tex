@@ -383,9 +383,23 @@ above, neither of them have infinite products. \todo{cite: Adamek
   \secref{fixing-completeness}.} \Added{So we are forced to use
   $\Fam{\SemiMod(S)}$ to interpret higher order functions, which
   appears to forego the ability to obtain reverse derivatives by
-  transpose of linear maps afforded by $\Fam(\SDSemiMod(S))$. As we
-  will see in \secref{sec:definability}, this is no problem for
-  programs of first order type.}
+  transpose of linear maps afforded by $\Fam(\SDSemiMod(S))$. We can
+  always embed interpretations of first-order programs in
+  $\Fam(\SDSemiMod(S))$ into $\Fam(\SemiMod(S))$ via a functor:}
+
+\begin{proposition}
+  \label{prop:ho-embedding}
+  There is a functor $H : \Fam(\SDSemiMod(S)) \to \Fam(\SemiMod(S)$
+  defined on objects as
+  $H(X, \partial X) = (X, \lambda x. U(\partial X(x)))$, where
+  $U : \SDSemiMod(S) \to \SemiMod(S)$ is the functor that forgets the
+  self-dual data. The functor $H$ preserves products (because $U$
+  does) and all coproducts.
+\end{proposition}
+
+\Added{The
+  As we will see in \secref{sec:definability}, this is no problem
+  for programs of first order type.}
 
 \begin{remark}
   \label{rem:hermida-exponentials}
@@ -403,7 +417,7 @@ above, neither of them have infinite products. \todo{cite: Adamek
   losing the property of being able to conjunct or add tangents
   (\remref{remark:biproduct-not-closed}). We will implicitly use
   Hermida's construction in our definability proof in
-  \secref{definability}, where we use a logical relations argument to
+  \secref{sec:definability}, where we use a logical relations argument to
   show that every morphism definable in the higher order language is
   also first-order definable.
 \end{remark}
@@ -597,7 +611,7 @@ interpretations of first-order types and primitive operations, we can
 embed $\Fam(\LatGal)$ into $\Fam(\MeetSLat \times \JoinSLat^\op)$:
 
 \begin{proposition}
-  \label{prop:ho-embedding}
+%  \label{prop:ho-embedding}
   The functor
   $\HoEmbed : \Fam(\LatGal) \to \Fam(\MeetSLat \times \JoinSLat^\op)$ is defined
   on objects as
