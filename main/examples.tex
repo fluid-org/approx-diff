@@ -99,7 +99,7 @@ no relative bound on either $\mathsf{a}$-quantity, however tight, yields a bound
 \label{sec:examples:counting}
 
 \Added{At the free semiring $\mathbbm{N}[X]$ the analysis computes the linearised provenance of
-\secref{approx-as-tangents:linearised-provenance}. Each instance chooses the derivative entries of the
+\secref{approx-as-tangents:linearised-provenance}. Each instance must specify the derivative entries of the
 primitive operations; here every entry is $1$, so a Jacobian entry of a run counts the paths from an input
 position to an output position. On the cancellation run of the weighted-sum query
 (\exref{introduction-example}), seeding each input position with a unique variable:}
@@ -116,15 +116,15 @@ per selected row. Backwards, seeding the output with a variable $y$ distributes 
   ([(\mathsf{a}, y), (\mathsf{b}, 0), (\mathsf{a}, y)], \langle 2 y, 0 \rangle)
 \end{displaymath}
 \end{AddedBlock}
-\noindent\Added{Other analyses now come by evaluation. Valuing every variable as $1$ specialises to the
+\noindent\Added{Other analyses now come by evaluation. Setting every variable to $1$ specialises to the
 counting semiring $(\mathbbm{N}, +, 0, \cdot, 1)$: the forward polynomial evaluates to $4$, the number of
-paths from perturbable inputs to the output, and the backward polynomials evaluate to per-position use
-counts, $2$ at the queried price. The count survives the cancellation that zeroes the rational derivative,
-because $\mathbbm{N}$ is positive and counts cannot cancel; zero-testing then sends the count $2$ to the
-Boolean $1$ exactly, as positivity guarantees, whereas the same translation applied to the rational entry
-loses the dependency. The three analyses answer three different questions at the same position: the rational
-Jacobian reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and the counting
-Jacobian usage ($2$).}
+paths from perturbable inputs to the output, and the backward polynomials evaluate to per-position use counts,
+$2$ at the queried price. The count survives the cancellation that zeroes the rational derivative, because
+$\mathbbm{N}$ is positive and counts cannot cancel; zero-testing then sends the count $2$ to the Boolean $1$
+exactly, as positivity guarantees, whereas the same translation applied to the rational entry loses the
+dependency. The three analyses answer three different questions at the same position: the rational Jacobian
+reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and the counting Jacobian usage
+($2$).}
 
 \subsection[Linked Inputs and Outputs]{\added{Linked Inputs and Outputs}}
 \label{sec:examples:linked}
