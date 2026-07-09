@@ -126,7 +126,7 @@ dependency. The three analyses answer three different questions at the same posi
 reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and the counting Jacobian usage
 ($2$).}
 
-\subsection[Linked Inputs and Outputs]{\added{Linked Inputs and Outputs}}
+\subsection[Cognacy Queries]{\added{Cognacy Queries}}
 \label{sec:examples:linked}
 
 \Added{The final example introduces no new semiring: it runs over the Booleans, and shows instead how
@@ -142,8 +142,9 @@ overlap. With window two and four inputs,}
 \end{displaymath}
 \end{AddedBlock}
 \noindent\Added{Each adjacent pair of outputs shares an input, and the
-first and last outputs share none. Running over the Booleans at the input $(1, 2, 4, 8)$, the Jacobian and
-the composite of the backward and forward derivatives are}
+first and last outputs share none. The cognacy analysis is a \emph{relation} on the outputs, derived from the
+map's input-output relation, so it is useful to present the matrices involved. Running over the Booleans, the
+forward derivative and its composite with the backward derivative are}
 \begin{AddedBlock}
 \begin{displaymath}
   \partial_{\Two}(\mathrm{mavg}) =
@@ -153,7 +154,9 @@ the composite of the backward and forward derivatives are}
   \begin{pmatrix} 1 & 1 & 0 \\ 1 & 1 & 1 \\ 0 & 1 & 1 \end{pmatrix}
 \end{displaymath}
 \end{AddedBlock}
-\Added{The composite relates each output to the outputs it shares an input with: selecting the first output
-returns the first and second, while the third stays $\bot$ because the two windows are disjoint. But whereas
-these prior works run queries over an execution record, here the intermediate structure has been folded away
-by the chain rule: each derivative is a relation on its endpoints, input positions to output positions.}
+\Added{The composite relates each output to the outputs it shares an input with. At the input $(1, 2, 4, 8)$
+the outputs are $(1.5, 3, 6)$, and applying the composite to the output selection $(1.5, \bot, \bot)$ returns
+$(1.5, 3, \bot)$, highlighting that $1.5$ shares an input with $3$; the third output stays $\bot$ because its
+window is disjoint. But whereas in these prior works, cognacy queries like these run over an execution record,
+here the intermediate structure has been folded away by the chain rule: each derivative is a direct relation
+on endpoints.}
