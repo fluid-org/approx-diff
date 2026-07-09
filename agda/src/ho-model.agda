@@ -174,7 +174,7 @@ module Interpretation
        public
 
   module Conservativity where
-    open import monad using (Monad; IdentityMonad; preserve-identity-monad; Identity-monad-preserve-coproducts)
+    open import monad using (Monad; IdentityMonad; preserve-identity-monad)
     open import functor using (Id; Colimit; _∘F_; NatTrans)
     open import prop using (∃ₛ)
     open fam.CategoryOfFamilies.Obj

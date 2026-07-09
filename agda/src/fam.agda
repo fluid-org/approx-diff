@@ -266,6 +266,8 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     open _⇒f_
     open _≃f_
 
+    -- The two-element instance of the set-indexed coproducts below, kept as the
+    -- ⊎-indexed substrate for the (currently finite-only) HasStrongCoproducts.
     coproducts : HasCoproducts cat
     coproducts .coprod X Y .idx = +-setoid (X .idx) (Y .idx)
     coproducts .coprod X Y .fam .fm (inj₁ x) = X .fam .fm x

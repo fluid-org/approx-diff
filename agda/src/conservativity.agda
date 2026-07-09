@@ -16,7 +16,7 @@ open import functor
 open import prop-setoid using (module ≈-Reasoning; IsEquivalence; Setoid)
 open import setoid-cat using (SetoidCat)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
-open import stable-coproducts using (StableBits; Stable)
+open import stable-coproducts using (StableBits)
 import fam-mu-realisation
 import glueing-simple
 import setoid-predicate
@@ -298,7 +298,7 @@ open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒞
   renaming (system to PSh⟨𝒞⟩-system; Predicate to PShPredicate)
   using (_⊑_; module CoverMonad;
          _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop;
-         module Monad-hat-pred)
+         ⋁; module Monad-hat-pred)
 
 module PSh⟨𝒞⟩-system = PredicateSystem PSh⟨𝒞⟩-system
 
@@ -545,6 +545,47 @@ Definable-coproducts {x} {y} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
                   (G .fobj (F .fobj (𝒞CP.coprod x y)) .fmor (cInj (pb .CoverPullback.cover) s) .prop-setoid._⇒_.func (lift g))
     eqs inl = lift (𝒟.≈-trans inj₁≈ (eq' inl))
     eqs inr = lift (𝒟.≈-trans inj₂≈ (eq' inr))
+
+-- Set-indexed form.
+Definable-coproducts-indexed : ∀ {S : Setoid 0ℓ 0ℓ} {D : Functor (setoid→category S) 𝒞} →
+                Definable (SI.∐ S D) ⊑
+                𝐂 (⋁ (S .Setoid.Carrier) (λ s → Definable (D .fobj s) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩))
+Definable-coproducts-indexed {S} {D} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
+  node (pb .CoverPullback.cover) xs ts eqs
+  where
+    c₀ : IdxCover (SI.∐ S D)
+    c₀ .IdxCover.S = S
+    c₀ .IdxCover.D = D
+    c₀ .IdxCover.iso = 𝒞.Iso-refl
+
+    pb = covPull (idx c₀) f
+
+    xs : ∀ s → Setoid.Carrier (G .fobj (F .fobj (SI.∐ S D)) .fobj (cDom (pb .CoverPullback.cover) s))
+    xs (lift s) = lift (F .fmor (SI.inj D s 𝒞.∘ pb .CoverPullback.leg (lift s)))
+
+    -- The summand restriction agrees with the reindexed witness.
+    eq' : ∀ s → F .fmor (cInj (idx c₀) s 𝒞.∘ pb .CoverPullback.leg s) 𝒟.≈ (g 𝒟.∘ F .fmor (cInj (pb .CoverPullback.cover) s))
+    eq' s = begin
+        F .fmor (cInj (idx c₀) s 𝒞.∘ pb .CoverPullback.leg s)
+      ≈⟨ F .fmor-cong (pb .CoverPullback.eq s) ⟩
+        F .fmor (f 𝒞.∘ cInj (pb .CoverPullback.cover) s)
+      ≈⟨ F .fmor-comp _ _ ⟩
+        F .fmor f 𝒟.∘ F .fmor (cInj (pb .CoverPullback.cover) s)
+      ≈⟨ 𝒟.∘-cong eq 𝒟.≈-refl ⟩
+        g 𝒟.∘ F .fmor (cInj (pb .CoverPullback.cover) s)
+      ∎
+      where open ≈-Reasoning 𝒟.isEquiv
+
+    ts : ∀ s → Context (G .fobj (F .fobj (SI.∐ S D)))
+                 (⋁ (S .Setoid.Carrier) (λ s → Definable (D .fobj s) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩))
+                 (cDom (pb .CoverPullback.cover) s) (xs s)
+    ts (lift s) = leaf (s , (lift (F .fmor (pb .CoverPullback.leg (lift s))) , lift (pb .CoverPullback.leg (lift s) , 𝒟.≈-refl) ,
+                        lift (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟.≈-sym (F .fmor-comp _ _)))))
+
+    eqs : ∀ s → Setoid._≈_ (G .fobj (F .fobj (SI.∐ S D)) .fobj (cDom (pb .CoverPullback.cover) s))
+                  (xs s)
+                  (G .fobj (F .fobj (SI.∐ S D)) .fmor (cInj (pb .CoverPullback.cover) s) .prop-setoid._⇒_.func (lift g))
+    eqs (lift s) = lift (𝒟.≈-trans (F .fmor-cong (𝒞.∘-cong (𝒞.≈-sym 𝒞.id-left) 𝒞.≈-refl)) (eq' (lift s)))
 
 open FunctorPred
 open MonadPred
