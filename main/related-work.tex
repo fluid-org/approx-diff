@@ -1,28 +1,6 @@
 \section{Related Work}
 \label{sec:related-work}
 
-\begin{DeletedBlock}
-\paragraph{Stable Domain Theory}
-
-\roly{Now covered in Future Work.} Stable Domain Theory was originally proposed by \citet{berry79} as a
-refinement of domain theory aimed at capturing the intensional behaviour of sequential programs, and
-elaborated on subsequently by \citet{berry82} and \citet{amadio-curien}. Standard domain-theoretic models
-interpret programs as continuous functions, preserving directed joins; Berry observed that this continuity
-condition alone is too permissive to model sequentiality. Stability imposes additional constraints to reflect
-how functions preserve bounded meets of approximants, effectively requiring that the evaluation of a function
-respect a specific computational order. Though stable functions do not fully characterise sequentiality,
-because they admit $\mathrm{gustave}$-style counterexamples (\exref{parallel-or}), they remain an appropriate
-notion for studying the sensitivity of a program to partial data at a specific point.
-
-Our use of Stable Domain Theory diverges from the traditional aim of modelling infinite or partial data,
-however. Instead, we follow a line of work that uses partiality as a qualitative notion of approximation
-suitable for provenance and program slicing (discussed in more detail in \secref{related-work:galois-slicing}
-below). Paul Taylor’s characterisation of stable functions via local Galois connections on principle downsets
-provides the semantic underpinning for the reverse maps used in Galois slicing~\cite{taylor99}. Our work
-builds on these ideas by interpreting Galois slicing as a form of differentiable programming, using the
-machinery of CHAD to present Galois slicing in a denotational style.
-\end{DeletedBlock}
-
 \paragraph{Automatic Differentiation}
 
 Automatic differentiation (AD), discussed in \secref{approx-as-tangents:autodiff}, is the idea of computing
@@ -53,38 +31,26 @@ and slicing explored in this paper.
 
 Galois slicing was introduced by Perera and collaborators~\cite{perera12a,perera13} as an operational approach
 to program slicing for pure functional programs, based on Galois connections between lattices of input and
-output approximations. \Deleted{A connection to stable functions in relation to minimal slices for
-short-circuiting operations was alluded to in~\citet{perera13}, but not explored.} Subsequent work extended
+output approximations.  Subsequent work extended
 the approach to languages with assignment and exceptions~\cite{ricciotti17} and
-\Replaced{concurrency}{concurrent systems, applying Galois slicing to the $\pi$-calculus}~\cite{perera16d}.
-\Deleted{For the $\pi$-calculus the analysis shifted from functions to transition relations, considering
-individual transitions $P \longrightarrow Q$ between configurations $P$ and $Q$ as analogous to the edge
-between $x$ and $f(x)$ in the graph of $f$, and building Galois connections between $\downset{P}$ and
-$\downset{Q}$.} \Replaced{The present work is instead denotational, recasting dependency analysis as
+concurrency~\cite{perera16d}.
+ The present work is instead denotational, recasting dependency analysis as
 differentiation over a semiring; the Boolean case recovers Galois slicing, and other semirings give further
 analyses. Galois slicing is also more general than our framework in two respects that we plan to consider in
 future work (\secref{conclusion}): it computes \emph{program slices} from approximation lattices representing
 partially erased programs, and it approximates the \emph{shape} of data rather than only the values at fixed
-positions.}{The main difference with the approach presented here is that the earlier work also computes
-\emph{program slices}, using approximation lattices that represent partially erased programs; we discuss this
-further in \secref{conclusion} below.} More recently, \citet{perera22} presented a variant of Galois slicing
-over Boolean algebras\Replaced{, which unlike plain lattices are complemented, giving each analysis a
-conjugate}{ rather than plain lattices}. \Replaced{Composing an analysis with its conjugate computes
+positions. More recently, \citet{perera22} presented a variant of Galois slicing
+over Boolean algebras, which unlike plain lattices are complemented, giving each analysis a
+conjugate. Composing an analysis with its conjugate computes
 \emph{related outputs}, which they used to support interactive visualisations with linked selections.
 \citet{bond25} revisited this using \emph{dynamic dependence graphs}, computing the conjugate from the
-opposite graph.}{In this setting every Galois connection $f \dashv g: A \to B$ has a conjugate $g^\circ \dashv
-f^\circ: B \to A$, where $f^\circ$ denotes the De Morgan dual $\neg \comp f \comp \neg$~\cite{jonsson51}. The
-provenance analysis can then be composed with its own conjugate to obtain a Galois connection which computes
-\emph{related outputs} (e.g., selecting a region of a chart and observing the regions of other charts which
-share data dependencies). \citet{bond25} revisited this approach using \emph{dynamic dependence graphs} to
-decouple the derivation of dependency information from the analyses that make use of it, and observing that to
-compute the conjugate analysis one can just use the opposite graph.} \Added{The related-outputs analysis is
+opposite graph. The related-outputs analysis is
 the cognacy relation shown in \secref{examples:linked}, computed here by composing a Boolean Jacobian with its
-transpose.}
+transpose.
 
-\paragraph{\added{Semiring Provenance}}
+\paragraph{Semiring Provenance}
 
-\Added{Provenance for database queries has its own semiring tradition, originating with the \emph{provenance
+Provenance for database queries has its own semiring tradition, originating with the \emph{provenance
 semirings} of \citet{green07}: a query result carries an annotation from a commutative semiring, and the free
 semiring $\mathbbm{N}[X]$ of provenance polynomials is universal, specialising to other semirings by
 evaluation. Our framework draws on the same semirings but computes a \emph{derivative} rather than an
@@ -94,7 +60,7 @@ attached to the output. A derivative is a linear map, so the provenance it recor
 degree of a polynomial. Over a non-positive semiring, the Boolean dependency our framework reports is a sound
 over-approximation, since the exact analysis can cancel a contribution to zero where the Boolean composite
 still records a dependency. Extending provenance to deletion and difference likewise calls for non-positive
-annotations~\cite{green09,amsterdamer11,geerts10}.}
+annotations~\cite{green09,amsterdamer11,geerts10}.
 
 \paragraph{\added{Discrete and Qualitative Derivatives}}
 
@@ -122,15 +88,11 @@ bundle $T(X)$, and each morphism $f: X \to Y$ has a corresponding differential m
 satisfying axioms analogous to the chain rule and linearity of differentiation. Tangent categories generalise
 Cartesian differential categories \cite{cdcs}, which model differentiation over Cartesian closed categories
 using a syntactic derivative operator. Reverse Tangent categories \cite{reverse-tangents} further axiomatise
-the existence of reverse derivatives. \Replaced{Our construction realises differentiation of this kind concretely, over an arbitrary commutative
+the existence of reverse derivatives. Our construction realises differentiation of this kind concretely, over an arbitrary commutative
 semiring, and we conjecture that the categories underlying it are examples of tangent, or reverse tangent,
-categories.}{In \conref{tangent-stable-fns} and
-\conref{tangent-fam}, we have conjectured that the categories we have identified in this paper as models of
-\GPS are Tangent categories. This would clarify the role of higher derivatives in \GPS, which we conjecture
-are related to \emph{program differencing}.} There are likely links to Differential Linear Logic
+categories. There are likely links to Differential Linear Logic
 \cite{ehrhard_differential_2006}. Differential Linear Logic and the Dialectica translation have been used to
 model reverse differentiation by \citet{kerjean-pedrot2024}.
-
 
 % \paragraph{Lens Categories}
 
