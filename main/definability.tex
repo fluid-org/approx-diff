@@ -144,10 +144,14 @@ not interfere.
 
 \begin{proof}
   Instantiate \thmref{glr-definability} with the functor
-  $\langle \mathrm{Id} , \pi_1 \rangle : \Fam(\SemiMod(S)) \to
-  \Fam(\SemiMod(S)) \times \Set$ that is the identity in the first
-  component and projects out the underlying function in the
-  second. For each $\Gamma \vdash M : \tau$, we obtain a $g$ such that
+  \begin{displaymath}
+    \langle \mathrm{Id} , \pi_1 \rangle : \Fam(\SemiMod(S)) \to \Fam(\SemiMod(S)) \times \Set
+  \end{displaymath}
+  that is the identity in the first component and projects out the
+  underlying function in the second. By
+  \lemref{pi1-preserve-products-and-coproducts}, this functor
+  preserves products and coproducts. For each
+  $\Gamma \vdash M : \tau$, we obtain a $g$ such that
   $g = \sem{\Gamma \vdash M : \tau}_{\Fam(\SemiMod(S))}$ and
   $\pi_1(g) = \sem{\Gamma \vdash M : \tau}_\Set$. Substituting $g$
   yields the result.
