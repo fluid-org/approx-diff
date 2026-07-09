@@ -173,47 +173,62 @@ the inner carrier must be instantiated at the outer carrier while the latter is 
 Following \citet{abbott2004} we instead construct the initial algebras of $P$ and of all its inner
 $\mu$-bodies simultaneously, as a single family of trees indexed by sorts.
 
+The construction separates into two layers, and the first uses index data only. Write $|A|$ for the
+index set of a $\Fam(\cat{C})$-object $A$. The \emph{index erasure} $|Q|$ of a polynomial replaces
+each constant $\const(X, \partial X)$ by the constant on its index set $X$ and fixes the variable,
+sum, product and $\mu$ structure. The erasure $|\delta|$ of a kinding environment replaces each entry
+by its index set.
+
+The sorts and trees below are defined over $|Q|$ and $|\delta|$, so they make no reference to
+$\cat{C}$. The fibres form the second layer, assigning to each tree an object of $\cat{C}$. Two
+presentations agreeing on all index sets, even over different categories, therefore determine the
+same sorts and trees.
+
 \begin{definition}[Sort]
 \label{def:polynomial-types:sort}
-A \emph{sort} over $\Delta$ is a pair $(Q, \rho)$ of a $\mu$-body $Q \in \Poly_{\beta_1, \ldots,
-\beta_k, \alpha}$ and a \emph{resolution} $\rho$ assigning to each free variable $\beta_i$ either a
-parameter in $\Delta$ or another sort. The collection of sorts is inductively generated.
+A \emph{sort} over $\Delta$ is a pair $(R, \rho)$ of an index-erased $\mu$-body $R$, that is a
+$\mu$-body whose constants are index sets, and a \emph{resolution} $\rho$ assigning to each free
+variable either a parameter in $\Delta$ or another sort. The collection of sorts is inductively
+generated; those of $P$ are the sorts reachable from $|P|$.
 \end{definition}
 
 \begin{definition}[Trees of a sort]
 \label{def:polynomial-types:trees}
-Fix a kinding environment $\delta$. For each sort $(Q, \rho)$ the set $W_{(Q,\rho)}$ of \emph{trees of
-sort $(Q, \rho)$}, and for each polynomial $Q'$ with a resolution $\rho'$ of its variables the set of
-\emph{$Q'$-trees}, are defined by a single simultaneous induction \citep{abbott2004}:
+Work over the erased environment $|\delta|$. For each sort $(R, \rho)$ the set $W_{(R,\rho)}$ of
+\emph{trees of sort $(R, \rho)$}, and for each index-erased polynomial $R'$ with a resolution $\rho'$
+of its variables the set of \emph{$R'$-trees}, are defined by a single simultaneous induction
+\citep{abbott2004}:
 \begin{itemize}
-\item a tree of sort $(Q, \rho)$ is a $Q$-tree, the bound variable $\alpha$ resolving to the sort
-  $(Q, \rho)$ itself;
-\item a $\const(X, \partial X)$-tree is an element of $X$;
-\item a $\beta$-tree is an element of the index set of $\delta(\rho'(\beta))$ if $\rho'(\beta)$ is a
-  parameter, and a tree of sort $\rho'(\beta)$ otherwise;
-\item a $(Q_1 + Q_2)$-tree is a $Q_1$-tree or a $Q_2$-tree, tagged with the summand;
-\item a $(Q_1 \times Q_2)$-tree is a pair of a $Q_1$-tree and a $Q_2$-tree;
-\item a $\mu\beta.Q'$-tree is a tree of sort $(Q', \rho')$.
+\item a tree of sort $(R, \rho)$ is an $R$-tree, the bound variable $\alpha$ resolving to the sort
+  $(R, \rho)$ itself;
+\item a $\const X$-tree is an element of $X$;
+\item a $\beta$-tree is an element of $|\delta|(\rho'(\beta))$ if $\rho'(\beta)$ is a parameter, and a
+  tree of sort $\rho'(\beta)$ otherwise;
+\item a $(R_1 + R_2)$-tree is an $R_1$-tree or an $R_2$-tree, tagged with the summand;
+\item a $(R_1 \times R_2)$-tree is a pair of an $R_1$-tree and an $R_2$-tree;
+\item a $\mu\beta.R'$-tree is a tree of sort $(R', \rho')$.
 \end{itemize}
 \end{definition}
 
 \begin{definition}[Fibres]
 \label{def:polynomial-types:fibres}
-The \emph{fibre} $\partial W_s(t) \in \cat{C}$ of a tree $t \in W_s$ is defined by structural recursion
-on trees:
+The \emph{fibre} $\partial W_s(t) \in \cat{C}$ of a tree $t \in W_s$ recovers the erased objects, by
+structural recursion on $t$ that reads the constants of $P$ and the entries of $\delta$ at the
+positions where their erasures produced the tree:
 \begin{itemize}
-\item the fibre of a tree of sort $(Q, \rho)$ is the fibre of the underlying $Q$-tree;
-\item the fibre of a $\const(X, \partial X)$-tree $x$ is $\partial X_x$;
+\item the fibre of a tree of sort $(R, \rho)$ is the fibre of the underlying $R$-tree;
+\item the fibre of a $\const X$-tree $x$, whose $\const X$ is the erasure of a constant
+  $\const(X, \partial X)$ of $P$, is $\partial X_x$;
 \item the fibre of a $\beta$-tree is the corresponding fibre of $\delta(\rho'(\beta))$ if
   $\rho'(\beta)$ is a parameter, and the fibre of the tree of sort $\rho'(\beta)$ otherwise;
-\item the fibre of a $(Q_1 + Q_2)$-tree is the fibre of the underlying $Q_i$-tree;
-\item the fibre of a $(Q_1 \times Q_2)$-tree is the product of the fibres of its components;
-\item the fibre of a $\mu\beta.Q'$-tree is the fibre of the underlying tree of sort $(Q', \rho')$.
+\item the fibre of a $(R_1 + R_2)$-tree is the fibre of the underlying $R_i$-tree;
+\item the fibre of a $(R_1 \times R_2)$-tree is the product of the fibres of its components;
+\item the fibre of a $\mu\beta.R'$-tree is the fibre of the underlying tree of sort $(R', \rho')$.
 \end{itemize}
 \end{definition}
 
 \begin{proof}[Proof of \propref{polynomial-types:fam-has-poly}]
-Take $\mu_{\alpha.P}(\delta) = (W_{s_0}, \partial W_{s_0})$, the family at the root sort $s_0 = (P,
+Take $\mu_{\alpha.P}(\delta) = (W_{s_0}, \partial W_{s_0})$, the family at the root sort $s_0 = (|P|,
 \rho_0)$, where $\rho_0$ resolves the free variables of $P$ to the parameters $\Delta$. The algebra map
 $\inMap : P(\delta[\alpha \mapsto \mu_{\alpha.P}(\delta)]) \to \mu_{\alpha.P}(\delta)$ assembles, on
 index sets, a single tree from its constituent parts (const labels, summand tags, subtrees),
