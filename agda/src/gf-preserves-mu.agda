@@ -59,7 +59,11 @@ module gf-preserves-mu
                        (∀ i → Glued.Iso (GF .fobj (env i)) (realise .fobj (env̌ i))) →
                        Glued.Iso (GF .fobj (FMc.fobj FMc.μObj Q env))
                                  (realise .fobj (FMg.fobj FMg.μObj (Poly-map (η ∘F GF) Q) env̌))
-  carrier-comparison Q env env̌ js = {!!}
+  carrier-comparison (Poly.const A) env env̌ js = Glued.Iso-sym (RGl.realise-η-iso (GF .fobj A))
+  carrier-comparison (Poly.var i)   env env̌ js = js i
+  carrier-comparison (P Poly.+ Q)   env env̌ js = {!!}
+  carrier-comparison (P Poly.× Q)   env env̌ js = {!!}
+  carrier-comparison (Poly.μ Q)     env env̌ js = {!!}
 
   -- Step 1: strip constants in 𝒞. The remaining chain compares the constant-free
   -- skeleton W-tree under GF against the realised Fam(Gl) W-tree.
