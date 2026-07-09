@@ -6,13 +6,15 @@ open import Level using (Level; 0ℓ; suc)
 open import categories
   using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial;
          op-coproducts→products; op-initial→terminal; HasCoproducts;
-         HasStrongCoproducts; strong-coproducts→coproducts; ccc→strong-coproducts)
+         HasStrongCoproducts; strong-coproducts→coproducts; ccc→strong-coproducts;
+         coproducts-canonical-iso)
 import polynomial-functor-2
 open import cmon-enriched
   using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
-open import functor using (HasLimits; op-colimit; limits→limits'; Colimit; _∘F_; NatTrans; colambda-unique; constF)
+open import functor using (HasLimits; op-colimit; limits→limits'; Colimit; _∘F_; NatTrans; colambda-unique; constF; functor-preserve-iso)
 open import categories using (setoid→category)
 import fam
+import finite-coproducts-from-indexed
 import fam-mu-types-2.carrier
 import fam-mu-types-2
 import fam-stable-indexed
@@ -235,11 +237,11 @@ module Interpretation
           𝒞C.≈-trans (𝒞C.∘-cong (Ro .fam .refl*) (𝒞C.≈-trans 𝒞C.id-left 𝒞C.id-left)) 𝒞C.id-left
 
     open import conservativity
-      Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts Fam⟨𝒞⟩.fam-stable (IdentityMonad Fam⟨𝒞⟩.cat)
+      Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products (IdentityMonad Fam⟨𝒞⟩.cat)
       Fam⟨𝒞⟩.bigCoproducts 𝒞istable
-      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials (IdentityMonad Fam⟨𝒟⟩.cat) Fam⟨𝒟⟩.bigCoproducts
-      Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-coproducts
-      (preserve-identity-monad Fam⟨F⟩) (Identity-monad-preserve-coproducts Fam⟨𝒞⟩-coproducts)
+      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials (IdentityMonad Fam⟨𝒟⟩.cat) Fam⟨𝒟⟩.bigCoproducts
+      Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products
+      (preserve-identity-monad Fam⟨F⟩)
       FM-DC
       (fam-functor.FamF-preserve-bigCopro 0ℓ 0ℓ F)
       (fam-functor.FamF-faithful 0ℓ 0ℓ F F-faithful)
@@ -259,16 +261,41 @@ module Interpretation
       preserve-chosen-coproducts GF
         (strong-coproducts→coproducts Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-strongCoproducts)
         (strong-coproducts→coproducts GlPE.terminal (ccc→strong-coproducts GlCP.coproducts GlPE.exponentials))
-    GF-preserve-strong-coproducts {x} {y} =
-      Glued.IsIso-cong (Glued.≈-sym map'≈map) GF-preserve-coproducts
+    GF-preserve-strong-coproducts {x} {y} = Glued.IsIso-cong comp≈n comp-isIso
       where
+        open Glued.Iso
+        open Glued.IsIso
         module CP' = HasCoproducts
           (strong-coproducts→coproducts GlPE.terminal (ccc→strong-coproducts GlCP.coproducts GlPE.exponentials))
         module CPC = HasCoproducts Fam⟨𝒞⟩-coproducts
+        module B-derive = finite-coproducts-from-indexed.derive Fam⟨𝒞⟩.bigCoproducts
+        module B = HasCoproducts B-derive.coproducts-from-indexed
 
-        map' = CP'.copair (GF .fmor (CPC.in₁ {x} {y})) (GF .fmor (CPC.in₂ {x} {y}))
+        -- The goal's chosen coproduct differs from the one conservativity uses
+        -- (the two-element instance of Fam⟨𝒞⟩'s set-indexed coproducts) only by
+        -- the canonical iso, which GF preserves.
+        ρ = coproducts-canonical-iso Fam⟨𝒞⟩-coproducts B-derive.coproducts-from-indexed x y
 
-        map'≈map : map' Glued.≈ GlCPM.copair (GF .fmor (CPC.in₁ {x} {y})) (GF .fmor (CPC.in₂ {x} {y}))
-        map'≈map =
-          Glued.≈-trans (Glued.≈-sym (GlCPM.copair-ext map'))
-            (GlCPM.copair-cong (CP'.copair-in₁ _ _) (CP'.copair-in₂ _ _))
+        theIso : Glued.Iso (GlCPM.coprod (GF .fobj x) (GF .fobj y)) (GF .fobj (CPC.coprod x y))
+        theIso = Glued.Iso-trans (Glued.IsIso→Iso GF-preserve-coproducts)
+                                 (Glued.Iso-sym (functor-preserve-iso GF ρ))
+
+        comp-isIso : Glued.IsIso (theIso .fwd)
+        comp-isIso .inverse = theIso .bwd
+        comp-isIso .f∘inverse≈id = theIso .fwd∘bwd≈id
+        comp-isIso .inverse∘f≈id = theIso .bwd∘fwd≈id
+
+        n = CP'.copair (GF .fmor (CPC.in₁ {x} {y})) (GF .fmor (CPC.in₂ {x} {y}))
+
+        comp≈n : theIso .fwd Glued.≈ n
+        comp≈n = Glued.≈-trans (Glued.≈-sym (CP'.copair-ext (theIso .fwd)))
+                   (CP'.copair-cong onIn₁ onIn₂)
+          where
+            onIn₁ : (theIso .fwd Glued.∘ CP'.in₁) Glued.≈ GF .fmor (CPC.in₁ {x} {y})
+            onIn₁ = Glued.≈-trans (Glued.assoc _ _ _)
+                      (Glued.≈-trans (Glued.∘-cong Glued.≈-refl (GlCPM.copair-in₁ _ _))
+                        (Glued.≈-trans (Glued.≈-sym (GF .fmor-comp _ _)) (GF .fmor-cong (B.copair-in₁ _ _))))
+            onIn₂ : (theIso .fwd Glued.∘ CP'.in₂) Glued.≈ GF .fmor (CPC.in₂ {x} {y})
+            onIn₂ = Glued.≈-trans (Glued.assoc _ _ _)
+                      (Glued.≈-trans (Glued.∘-cong Glued.≈-refl (GlCPM.copair-in₂ _ _))
+                        (Glued.≈-trans (Glued.≈-sym (GF .fmor-comp _ _)) (GF .fmor-cong (B.copair-in₂ _ _))))

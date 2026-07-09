@@ -71,11 +71,13 @@ with any reindexing functor $\reindex{-}{f}$, i.e.~$C_X \comp \reindex{-}{f} \is
 
 Fix a category $\cat{C}$ with terminal object, finite products and stable set-indexed coproducts,
 in which the first-order fragment of the language is interpreted; a category $\cat{D}$ with terminal
-object, finite products and coproducts, exponentials, and set-indexed coproducts, in which the full
+object, finite products, exponentials, and set-indexed coproducts, in which the full
 language is interpreted; and a functor $F : \cat{C} \to \cat{D}$ preserving the terminal object,
-products, and set-indexed coproducts. The paper, after the extensivity of \citet{fiore-simpson99},
-assumes only stable \emph{finite} coproducts; recursive types force the set-indexed strengthening
-(\secref{conservativity:gf-poly-types}).
+products, and set-indexed coproducts. The finite coproducts both interpretations need for sum types
+are the two-element instance of the set-indexed ones, so they are not assumed separately; likewise
+their stability and preservation by $F$ follow from the set-indexed versions. The paper, after the
+extensivity of \citet{fiore-simpson99}, assumes only stable \emph{finite} coproducts; recursive
+types force the set-indexed strengthening (\secref{conservativity:gf-poly-types}).
 
 \begin{lemma}
 \label{lem:conservativity:fam-stable-coproducts}

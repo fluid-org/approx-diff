@@ -21,6 +21,7 @@ import fam-mu-realisation
 import glueing-simple
 import setoid-predicate
 import stable-coproducts-indexed
+import finite-coproducts-from-indexed
 open import finite-product-functor
   using ( preserve-chosen-products
         ; preserve-chosen-terminal
@@ -53,21 +54,19 @@ open ≃-NatTrans
 
 module conservativity
   {o₁ o₂ m e}
-  -- Category for interpreting first-order things
-  (𝒞 : Category o₁ m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞CP : HasCoproducts 𝒞) (stable : Stable 𝒞CP) (𝒞M : Monad 𝒞)
-  -- Set-indexed coproducts of 𝒞, and their stability
+  -- Category for interpreting first-order things, with stable set-indexed
+  -- coproducts (the finite coproducts used below are their two-element instance)
+  (𝒞 : Category o₁ m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞M : Monad 𝒞)
   (𝒞DC : ∀ (S : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category S) 𝒞)
   (𝒞istable : stable-coproducts-indexed.IdxStable 𝒞DC)
   -- A higher order model
-  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟CP : HasCoproducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
+  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
   (𝒟DC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) 𝒟)
-  -- A functor which preserves terminal, products, and coproducts
+  -- A functor which preserves terminal and products
   (F  : Functor 𝒞 𝒟)
   (FT : preserve-chosen-terminal F 𝒞T 𝒟T)
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
-  (FC : preserve-chosen-coproducts F 𝒞CP 𝒟CP)
   (FM : preserve-monad F 𝒞M 𝒟M)
-  (FM-C : preserve-chosen-coproducts (Monad.funct 𝒞M) 𝒞CP 𝒞CP)
   -- The monad functor preserves set-indexed coproducts (an iso commuting with
   -- the injections)
   (FM-DC : ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) 𝒞) →
@@ -91,6 +90,18 @@ module conservativity
           Prf (∃ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h) →
           ∃ₛ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h)
   where
+
+-- The finite coproducts and their preservation are the two-element instance of
+-- the set-indexed structure.
+private
+  module 𝒞d = finite-coproducts-from-indexed.derive 𝒞DC
+  module 𝒟d = finite-coproducts-from-indexed.derive 𝒟DC
+
+  𝒞CP = 𝒞d.coproducts-from-indexed
+  𝒟CP = 𝒟d.coproducts-from-indexed
+  stable = 𝒞d.stable-from-indexed 𝒞istable
+  FC = finite-coproducts-from-indexed.preserve.preserve-from-indexed 𝒞DC 𝒟DC F F-DC
+  FM-C = finite-coproducts-from-indexed.preserve.preserve-from-indexed 𝒞DC 𝒞DC (Monad.funct 𝒞M) FM-DC
 
 private
   module 𝒞 = Category 𝒞

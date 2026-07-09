@@ -341,6 +341,35 @@ record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       id _
     ∎ where open ≈-Reasoning isEquiv
 
+-- Two coproduct structures on the same category give isomorphic coproducts.
+coproducts-canonical-iso : ∀ {o m e} {𝒞 : Category o m e}
+  (CP₁ CP₂ : HasCoproducts 𝒞) →
+  ∀ x y → Category.Iso 𝒞 (HasCoproducts.coprod CP₁ x y) (HasCoproducts.coprod CP₂ x y)
+coproducts-canonical-iso {𝒞 = 𝒞} CP₁ CP₂ x y = iso
+  where
+    open Category 𝒞
+    open Iso
+    module P = HasCoproducts CP₁
+    module Q = HasCoproducts CP₂
+
+    iso : Iso (P.coprod x y) (Q.coprod x y)
+    iso .fwd = P.copair Q.in₁ Q.in₂
+    iso .bwd = Q.copair P.in₁ P.in₂
+    iso .fwd∘bwd≈id =
+      isEquiv .trans (isEquiv .sym (Q.copair-ext _))
+        (isEquiv .trans
+          (Q.copair-cong
+            (isEquiv .trans (assoc _ _ _) (isEquiv .trans (∘-cong ≈-refl (Q.copair-in₁ _ _)) (isEquiv .trans (P.copair-in₁ _ _) (isEquiv .sym id-left))))
+            (isEquiv .trans (assoc _ _ _) (isEquiv .trans (∘-cong ≈-refl (Q.copair-in₂ _ _)) (isEquiv .trans (P.copair-in₂ _ _) (isEquiv .sym id-left)))))
+          (Q.copair-ext _))
+    iso .bwd∘fwd≈id =
+      isEquiv .trans (isEquiv .sym (P.copair-ext _))
+        (isEquiv .trans
+          (P.copair-cong
+            (isEquiv .trans (assoc _ _ _) (isEquiv .trans (∘-cong ≈-refl (P.copair-in₁ _ _)) (isEquiv .trans (Q.copair-in₁ _ _) (isEquiv .sym id-left))))
+            (isEquiv .trans (assoc _ _ _) (isEquiv .trans (∘-cong ≈-refl (P.copair-in₂ _ _)) (isEquiv .trans (Q.copair-in₂ _ _) (isEquiv .sym id-left)))))
+          (P.copair-ext _))
+
 
 module _ {o m e} (𝒞 : Category o m e) where
 
