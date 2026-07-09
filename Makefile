@@ -31,13 +31,13 @@ AGDA_EXCLUDES:=-x "agda/_build/*" -x "agda/src/unused/*" -x "agda/src/incomplete
 
 submit: main-submit.pdf
 	cd agda && agda src/everything.agda
+	rm -f suppl-submit.zip
+	zip -r suppl-submit.zip agda $(AGDA_EXCLUDES)
 	@if grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/main-submit.log; then \
-		echo "submit: main-submit.pdf has undefined references/citations; not building suppl-submit.zip:" >&2; \
+		echo "submit: main-submit.pdf has undefined references/citations (suppl-submit.zip still built):" >&2; \
 		grep -aE "undefined" _latex/main-submit.log | grep -aoE "(Reference|Citation) .[^']*'" | sort -u >&2; \
 		exit 1; \
 	fi
-	rm -f suppl-submit.zip
-	zip -r suppl-submit.zip agda $(AGDA_EXCLUDES)
 
 main-submit.pdf: main-submit.tex main.tex $(MAIN_DEPS)
 	latexmk $(LATEXMK_OPTS) main-submit
