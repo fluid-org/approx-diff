@@ -10,10 +10,11 @@ open import categories using (Category; HasProducts; HasTerminal; HasCoproducts;
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import functor using (Functor; HasLimits; functor-preserve-iso; _∘F_; Colimit; NatIso)
 open import prop using (∃; ∃ₛ; Prf)
-open import indexed-family using (Fam; fam→functor; functor→fam)
+open import indexed-family using (Fam; fam→functor; functor→fam; fam→functor-eta)
 import finite-coproducts-from-indexed
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
-open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map; skeleton; Poly-map-skeleton-go)
+import Data.Nat
+open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map; skeleton; Poly-map-skeleton-go; #c)
 open import Relation.Binary.PropositionalEquality
   using (_≡_) renaming (sym to ≡-sym; trans to ≡-trans)
 import fam-mu-types-2
@@ -60,6 +61,7 @@ module gf-preserves-mu
     module GlProd = HasProducts GlPE.products
     module Pres = fam-presentation 0ℓ 0ℓ {𝒞}
     module Gld = finite-coproducts-from-indexed.derive GDC
+    module FamGl = FMg.Fam𝒞
   open RGl using (realise; η)
 
   -- Source side of the carrier comparison: GF of a Fam W-tree is the Gl
@@ -94,6 +96,19 @@ module gf-preserves-mu
   skel-align P =
     ≡-trans (Poly-map-skeleton-go FMc.Idx P (λ c → c))
             (≡-sym (Poly-map-skeleton-go FMg.Idx P (λ c → c)))
+
+  -- GF of a family is the realisation of its checked presentation.
+  check-iso : (M : Fam⟨𝒞⟩.Obj) → Glued.Iso (GF .fobj M) (realise .fobj (check M))
+  check-iso M =
+    presented-iso M (functor→fam (GF ∘F Pres.singletons M)) (fam→functor-eta (GF ∘F Pres.singletons M))
+
+  -- check commutes with μ at the constant-free skeleton, as an iso in Fam(Gl):
+  -- the shared shapes make the index setoids agree up to the erasure alignment,
+  -- and the fibres are products of GF-images compared by tree recursion.
+  check-μ : ∀ {n} (P : Poly Fam⟨𝒞⟩.cat (Data.Nat.suc n))
+            (ε : Fin (n Data.Nat.+ #c P) → Fam⟨𝒞⟩.Obj) →
+            FamGl.Iso (check (FMc.μObj (skeleton P) ε)) (FMg.μObj (skeleton P) (λ i → check (ε i)))
+  check-μ P ε = {!!}
 
   -- Cross-category realisation comparison: GF of the Fam(𝒞) interpretation agrees
   -- with the realised Fam(Gl) interpretation, over any pointwise agreement of the

@@ -449,6 +449,15 @@ module _ {o m e os es} {𝒞 : Category o m e} where
   functor→fam D .refl* = D .fmor-id
   functor→fam D .trans* e₁ e₂ = D .fmor-comp ⟪ e₁ ⟫ ⟪ e₂ ⟫
 
+  fam→functor-eta : ∀ {A : Setoid os es} (D : Functor (setoid→category A) 𝒞) →
+                    NatIso D (fam→functor (functor→fam D))
+  fam→functor-eta D .NatIso.transform .NatTrans.transf x = 𝒞C.id _
+  fam→functor-eta D .NatIso.transform .NatTrans.natural ⟪ p ⟫ =
+    𝒞C.≈-trans 𝒞C.id-right (𝒞C.≈-sym 𝒞C.id-left)
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse = 𝒞C.id _
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒞C.id-left
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒞C.id-left
+
 -- If a category has all discrete limits, then it has all setoid
 -- products (almost by definition).
 module _ {o m e} os es (𝒞 : Category o m e)
