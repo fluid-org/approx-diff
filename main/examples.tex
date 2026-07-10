@@ -118,19 +118,17 @@ reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and t
 \label{sec:examples:saliency}
 
 \begin{AddedBlock}
-At the sign semiring of \secref{approx-as-tangents:qualitative}, taking the integers as the numbers, the
-backward derivative of a numeric score is a \emph{signed saliency map}: for each input, whether increasing
-it raises or lowers the score, the qualitative counterpart of the gradient-based saliency maps used to
-explain model predictions~\cite{selvaraju20}. We could simply compute the rational derivative and then
-forget the magnitudes, but the resulting map would be valid only at the particular magnitudes of the run.
-An alternative is to compute with signs as the derivatives instead: addition's entries are $+$, and
-multiplication's entry for each argument is the sign of the other. Every verdict then rests only on signs,
-so a definite entry holds under any sign-preserving change of magnitude, with $?$ where the signs alone are
-insufficient to determine the direction.
+Consider a program that condenses many numeric inputs into a single score, such as a model whose
+predictions we want to explain. A \emph{saliency map} records the influence of each input on the score;
+gradient-based explanation methods obtain one from the model's derivative~\cite{selvaraju20}. Here we
+compute a \emph{signed} saliency map, recording whether increasing each input raises or lowers the score, by running
+the backward derivative at the sign semiring of \secref{approx-as-tangents:qualitative} with the integers
+as the numbers. For addition, the derivative entries are $+$; for multiplication, the entry for each
+argument is the sign of the other.
 
 Our example scores a $3 \times 3$ grid of numbers against a fixed pattern, in the manner of a small
-image filter applied to one patch of a larger image: the centre weighted positively, the corners
-negatively, plus two products that mean the derivative varies with the input:
+image filter applied to one patch of a larger image. The pattern weights the centre positively and the
+corners negatively, and includes two products that mean the derivative varies with the input:
 \begin{displaymath}
   \mathrm{score}
   \begin{pmatrix} x_1 & x_2 & x_3 \\ x_4 & x_5 & x_6 \\ x_7 & x_8 & x_9 \end{pmatrix}
@@ -142,13 +140,11 @@ the backward derivative at this run with $+$ distributes it to the inputs:
   \partial(\mathrm{score})_r(+) =
   \begin{pmatrix} - & - & - \\ + & ? & + \\ - & 0 & - \end{pmatrix}
 \end{displaymath}
-\noindent The corners lower the score; the two mid-edge cells raise it, each entry the sign of its
-partner in the product $x_4 x_6$; and the cell the score never inspects gets $0$. The centre receives
-$?$: its two contributions, the positive linear term and the negatively weighted product $x_5 x_2$, pull
-in opposite directions, so the direction of its effect depends on the other inputs. Signs of the rational
-derivative would instead report $-$ for the centre, a verdict owed to $x_2 = 2$ rather than to its sign.
-Collapsing the signs to the Booleans (\secref{approx-as-tangents:qualitative}) reports mere dependence,
-losing direction.
+\noindent The four corners lower the score and the two mid-edge cells raise it, via the product
+$x_4 x_6$; the bottom-middle cell, which the score ignores, gets $0$. At the centre the linear term and
+the product $-x_5 x_2$ pull in opposite directions, so its entry is $?$. The rational derivative would
+report $-$ here instead, but only because $x_2 = 2$: the sign map's definite entries hold for any
+magnitudes with these signs, and $?$ marks where the signs alone are insufficient.
 \end{AddedBlock}
 
 \subsection{Cognacy Queries}
