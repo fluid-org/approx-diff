@@ -8,7 +8,8 @@ open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import categories using (Category)
 open import prop using (_,_)
-open import Data.Product using (_,_)
+open import Data.Product using (_,_; Σ-syntax)
+open import Data.Nat using (ℕ; _+_)
 open import Data.Sum using (inj₁; inj₂)
 import nat
 import lists
@@ -36,13 +37,19 @@ module interp-sd (Sig : Signature 0ℓ)
 
   open interp Sig Impl public
   open language-syntax Sig using (_⊢_; first-order-data; unit; bool; base; _[×]_; _[+]_; list)
-  open SDSemiMod using (SelfDual; 𝟘; _⊕_) public
+  open SDSemiMod using (SelfDual; 𝟘; _⊕_; _≅sd_; ≅sd-refl; ≅sd-trans; ⊕-≅sd; S^_; S^-+) public
   open Setoid using (Carrier)
   open Fam⟨𝒞⟩ using (fm)
   open Fam⟨𝒞⟩.Obj using (fam)
   open Model Impl using (⟦sort⟧)
   open lists Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
     using (_^_)
+
+  -- Fam(U) is the functor H in the paper.
+  open FirstOrderConservativity
+    (λ {X} {Y} → SDSemiMod.U-full {X} {Y})
+    (λ {X} {Y} {f} {g} → SDSemiMod.U-faithful {X} {Y} {f} {g})
+    Sig Impl public
 
   ty  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → SelfDual
   pow : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (⟦ τ ⟧ty ^ n) .idx .Carrier) → SelfDual
@@ -57,6 +64,31 @@ module interp-sd (Sig : Signature 0ℓ)
 
   pow a nat.zero     _        = 𝟘
   pow a (nat.succ n) (i , is) = ty a i ⊕ pow a n is
+
+  -- Given tower isomorphisms for the base sorts, every first-order fibre is isomorphic,
+  -- compatibly with the self-dualities, to a free semimodule S^n.
+  module FreeFibres
+    (base-free : ∀ s (i : ⟦ base s ⟧ty .idx .Carrier) →
+                 Σ[ n ∈ ℕ ] (ty (base s) i ≅sd (S^ n)))
+    where
+
+    ty-free : ∀ {τ} (a : first-order-data τ) (i : ⟦ τ ⟧ty .idx .Carrier) →
+              Σ[ n ∈ ℕ ] (ty a i ≅sd (S^ n))
+    pow-free : ∀ {τ} (a : first-order-data τ) (n : nat.ℕ) (i : (⟦ τ ⟧ty ^ n) .idx .Carrier) →
+               Σ[ m ∈ ℕ ] (pow a n i ≅sd (S^ m))
+
+    ty-free unit _ = 0 , ≅sd-refl
+    ty-free bool _ = 0 , ≅sd-refl
+    ty-free (base s) i = base-free s i
+    ty-free (a [×] b) (i , j) with ty-free a i | ty-free b j
+    ... | m , em | n , en = m + n , ≅sd-trans (⊕-≅sd em en) (S^-+ m n)
+    ty-free (a [+] b) (inj₁ i) = ty-free a i
+    ty-free (a [+] b) (inj₂ j) = ty-free b j
+    ty-free (list a) (n , i) = pow-free a n i
+
+    pow-free a nat.zero _ = 0 , ≅sd-refl
+    pow-free a (nat.succ n) (i , is) with ty-free a i | pow-free a n is
+    ... | m , em | k , ek = m + k , ≅sd-trans (⊕-≅sd em ek) (S^-+ m k)
 
   open SemiMod._⇒_ using (func)
 

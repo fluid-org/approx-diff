@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- CBN backward slice, label.b (split out so each heavy slice compiles on its own).
-module example-bool-cbn-2 where
+module example.bool-cbn-2 where
 
-open import example-bool-cbn
+open import example.bool-cbn
 
 input : ⟦ Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⟧ty .idx .Carrier
 input = _ , 2 , (_ , (_ , a) , (_ , 0)) , (_ , (_ , b) , (_ , 1)) , _

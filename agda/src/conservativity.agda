@@ -39,21 +39,12 @@ open Functor
 open NatTrans
 open ≃-NatTrans
 
--- Let Sig be a signature
--- Let M be a model of Sig in 𝒞, and F be a finite product and infinite coproduct preserving functor
--- Then:
---   1. Can interpret the whole language in Glued
---   2. Every first order type is isomorphic to its interpretation in 𝒞
---   3. So every judgement x : A ⊢ M : B, with A, B first-order, has a morphism g : A 𝒞.⇒ B such that F(g) = ⟦ M ⟧
-
--- For the actual language:
---  1. 𝒞 = Fam⟨LatGal⟩ which has finite products and infinite coproducts
---  2. 𝒟 = Fam⟨M×J^op⟩ which is a BiCCC
---  3. F  = Fam⟨𝓖⟩ which preserves products and infinite coproducts
--- Could also replay the whole thing with `Stable` instead of Fam⟨LatGal⟩ ??
-
--- TODO:
---   7. Stability: prove it for Fam⟨𝒞⟩ (!!!)
+-- The Grothendieck Logical Relations construction of Fiore and Simpson (1999): for a functor
+-- F : 𝒞 → 𝒟 preserving finite products and coproducts, with 𝒞 bicartesian with stable
+-- coproducts and 𝒟 bicartesian closed, there is a bicartesian closed category of glued
+-- predicates through which F factors, with the factor out of 𝒞 full: every glued morphism
+-- between objects from 𝒞 is the image of a morphism of 𝒞 (the `definability` declaration
+-- below).
 
 module conservativity
   {o₁ o₂ m e}
@@ -1235,28 +1226,6 @@ definability {X} {Y} f with Definable-closed _ (f .presv .*⊑* X .*⊑* (lift (
 -- The morphisms in the logical relations category that we are
 -- interested are the ones that come from interpretations of the
 -- language.
-
-module syntactic {ℓ}
-   (Sig : Signature ℓ)
-   (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig) where
-
-  open import language-syntax Sig
-
-  open import language-fo-interpretation Sig
-         𝒞 𝒞T 𝒞P 𝒞CP
-         Gl.cat GlPE.terminal GlPE.products GlCP.coproducts GlPE.exponentials Gl-lists
-         GF GF-preserve-terminal GF-preserve-products GF-preserve-coproducts
-         𝒞-Sig-Model
-    renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
-
-  open Glued.Iso
-
-  syntactic-definability :
-    ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (τ-fo : first-order τ) (M : Γ ⊢ τ) →
-    ∃ (𝒞⟦ Γ-fo ⟧ctxt 𝒞.⇒ 𝒞⟦ τ-fo ⟧ty) λ g →
-      F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso .bwd .morph 𝒟.∘ (G⟦ M ⟧tm .morph 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd .morph))
-  syntactic-definability {Γ} {τ} Γ-fo τ-fo M =
-    definability (⟦ τ-fo ⟧-iso .bwd Glued.∘ (G⟦ M ⟧tm Glued.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
 
 module syntactic-2 {ℓ}
    (Sig : Signature ℓ)

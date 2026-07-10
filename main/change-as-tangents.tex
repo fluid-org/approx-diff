@@ -1,0 +1,146 @@
+\subsection{Potential Change as Tangents}
+
+Differential Calculus tracks how functions adapt to changes in
+their inputs. The tangent space at a point is the vector space of
+all potential changes applicable at that point. The forward and
+reverse derivatives transport changes forward and back. We track
+data provenance using a simplification of this idea where tangents
+are taken from the Boolean semiring $\{0,1\}$ where $0$ represents
+``no change'' and $1$ represents ``possible change''. Potential
+change to an $n$-tuple of data is represented as an $n$-vector of
+$\{0,1\}$ values. These vectors form a semimodule over the semiring
+structure on $\{0,1\}$ with maximum (join) as addition and minimum
+(meet) as multiplication. Thus ``no change'' is represented as the
+$0$ vector $(0 \dots 0)$.
+
+With this definition of ``tangent'', the derivative of a
+function
+$f : A_1 \times \cdots \times A_m \to B_1 \times \cdots \times B_n$
+ought to map tangent vectors in $\{0,1\}^m$ to tangent vectors in
+$\{0,1\}^n$, describing how potential changes in the input are
+reflected in the output. Differentiable functions on manifolds have
+an intrinsic notion of derivative, but for plain functions $f$ we
+require that they are paired with a tangent map that describes the
+intensional information about how they depend on their
+arguments. For $f$, the tangent map $\partial f$ has type
+$A_1 \times \cdots \times A_n \to \{0,1\}^{m\times n}$, mapping
+points to matrices representing linear maps: the ``Jacobian'' for
+this function. We are not free to choose an arbitrary linear map for
+$\partial f(a_1, \dots, a_m)$, but must choose one that satisfies
+the following \emph{dependency correctness} property:
+
+\begin{definition}[Dependency Correctness] A tangent map
+  $\partial f : \overrightarrow{A_i} \to \{0,1\}^{m \times n}$ is
+  \emph{dependency correct} for a function
+  $f : \overrightarrow{A_i} \to \overrightarrow{B_j}$ if for all
+  $a, a' \in \overrightarrow{A_i}$ and $0 \leq j < m$, if $a$ and
+  $a'$ are equal on all components $i$ such that
+  $\partial f(a)_{i,j} = 1$, then $f(a)_j = f(a')_j$.
+\end{definition}
+
+Reading the definition backwards, this says that $f$ is
+constant at component $j$ on inputs that differ only at components
+$i$ where the tangent map matrix says $0$. Thus we read the entry at
+$(i,j)$ of the tangent matrix as capturing the dependency of output
+$j$ on input $i$. We illustrate this with an example:
+
+\begin{example}
+  Let $\pi_1 : A_1 \times A_2 \to A_1$ be first projection. At all
+  points $(a_1, a_2)$, the tangent matrix is $(1\;0)$ indicating
+  that the output depends on the first argument but not the
+  second. This is justified by observing how it acts on tangent
+  vectors. Representing no change in the first argument and
+  potential change in the second as
+  $\left(\begin{array}{c} 0 \\ 1 \end{array}\right)$, applying the
+  tangent map gives $0$ indicating no change in the output. Swapping
+  the potential change to
+  $\left(\begin{array}{c} 1 \\ 0 \end{array}\right)$ yields the
+  output tangent $1$ indicating that changing the first argument
+  changes the output. By linearity, all other potential changes are
+  derivable from these. In particular, for all tangent maps, no
+  change in the input ($\overrightarrow{0}$) is always mapped to no
+  change in the output.
+\end{example}
+
+Note that dependency correct tangent maps for a function are
+not unique. We can always overapproximate the dependency of a
+function on its input. In the case of a binary function like first
+projection, $\partial\pi_1(a_1,a_2) = (1\;1)$ is also permissble.
+
+\begin{example}
+  Multiplication $(*) : \mathbb{N} \times \mathbb{N} \to \mathbb{N}$
+  is an example of a function that has tangent maps that depend on
+  the input. Dependency correct tangent maps can be defined as:
+  \begin{displaymath}
+    \begin{array}{lcl}
+      \partial(*)(0,0)&=&(1\;1) \\
+      \partial(*)(0,n)&=&(1\;0) \\
+      \partial(*)(m,0)&=&(0\;1) \\
+      \partial(*)(m,n)&=&(1\;1)
+    \end{array}
+  \end{displaymath}
+  These maps indicate that the dependency of multiplication on an
+  input depends on whether or not other other input is $0$. If the
+  first argument is zero, then changing the second will have no
+  effect and vice versa. If both arguments are $0$, then a change in
+  both will change the output. However, since tangent maps are
+  componentwise we have no way of saying change in both, so we
+  overapproximate by saying that a change in either \emph{may}
+  change the output. Again, this choice is not unique. We could also
+  use $(1\;0)$ or $(0\;1)$ and still be dependency correct,
+  indicating a choice to be left- or right-biased.
+\end{example}
+
+Functions with dependency correct tangent maps have an identity
+and compose according to the chain rule, so they form a category.
+
+\newcommand{\DepCat}{\mathbf{DepCat}}
+
+\begin{proposition}
+  The identity tangent map is dependency correct for the identity
+  function. Composable functions $f, g$ with dependency correct
+  tangent maps $\partial f$ and $\partial g$ are closed under
+  composition, with the tangent map being
+  $\partial(f \circ g)(x) = \partial f (g(x)) \circ \partial g(x)$.
+
+  The category $\DepCat$ of functions with dependency information
+  has objects that are tuples of sets $\overrightarrow{A_i}$ and
+  morphisms that are functions with dependency correct tangent
+  maps. This category has finite products.
+\end{proposition}
+
+FIXME: finite products is interesting, because it determines the
+dependency information???
+
+The fact that dependency correct functions form a category allows us
+to model a simple programming language with finite product
+types. Primitive operations can be interpreted a functions that
+overapproximate their dependency information:
+
+\begin{proposition}
+  There is a functor $\Set \to \DepCat$ that preserves finite
+  products. FIXME: check!
+\end{proposition}
+
+Morphisms in $\DepCat$ constructed from finite product structure and
+embedded functions will only have trivial tangent maps arising from
+the use of projections. A generator of non-trivial dependency
+information is the ability to use parts of the input depending on
+the input itself, via a condition (if-then-else) map:
+
+\begin{proposition}
+  Let $\mathbb{B}$ be the object of $\DepCat$ consisting of the set
+  of booleans $\{\mathsf{true}, \mathsf{false}\}$. There are
+  dependency correct maps
+  $\mathrm{true}, \mathrm{false} : 1 \to \mathbb{B}$ and a natural
+  family of maps
+  $\mathrm{cond}_X : \mathbb{B} \times (X \times X) \to X$ such that $\mathrm{cond}_X \circ \langle \mathrm{true} \circ !, \mathrm{id} \rangle = \pi_1$ and $\mathrm{cond}_X \circ \langle \mathrm{false} \circ !, \mathrm{id} \rangle = \pi_2$. FIXME: and extensionality.
+\end{proposition}
+
+Thus $\DepCat$ is suitable for modelling a small language with
+booleans, conditionals, and a collection of primitive types with
+operations. This setting does not cover our example from the
+introduction, which used lists and higher-order functions. In
+\secref{models-of-total-gps} we embed $\DepCat$ into
+categories that account for sum types, some algebraic types and
+higher-order functions.

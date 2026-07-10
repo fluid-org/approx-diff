@@ -1,4 +1,8 @@
-\documentclass[acmsmall,screen,nonacm]{acmart}
+\ifdefined\submissionmode
+  \documentclass[acmsmall,screen,review,anonymous]{acmart}
+\else
+  \documentclass[acmsmall,screen,nonacm]{acmart}
+\fi
 
 \usepackage{tabularx}
 \usepackage{bbm}
@@ -75,6 +79,7 @@
 \input{main/approx-as-tangents}
 \input{main/models}
 \input{main/language}
+\input{main/examples}
 \input{main/definability}
 \input{main/related-work}
 \input{main/conclusion}

@@ -1,8 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-module example-bool-mult where
+module example.bool-mult where
 
-open import example-bool
+open import example.bool
 
 -- At (0,5): first factor matters (∂/∂x = 5 ≠ 0), second does not (∂/∂y = 0).
 test-x : fwd mult-ex (_ , (0 , 5)) (lift · , (⊤ , ⊥)) ≡ ⊤

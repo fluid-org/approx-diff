@@ -11,7 +11,8 @@ open import signature
 import language-syntax-2
 import label
 
-open import example-signature
+import nat
+open import example.signature nat.ℕ
 
 module L = language-syntax-2 Sig
 
@@ -44,7 +45,7 @@ module ex where
   M ≟ N = brel equal-label (M ∷ N ∷ [])
 
   sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
-  sum = lam (foldr (bop zero []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
+  sum = lam (foldr (bop (lit 0) []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
 
   some-eq : ∀ {Γ} → Γ ⊢ base label [→] list (base label) [→] bool
   some-eq = lam (lam

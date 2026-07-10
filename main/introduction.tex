@@ -49,91 +49,162 @@ matrices, compose using matrix multiplication, and can be evaluated forwards or 
 
 \begin{example}
   \label{ex:introduction-example}
-  The following program is written in Haskell syntax \cite{haskell}, using a list comprehension to filter a list of pairs of labels and numbers to those numbers with a given label, and then computing the sum of the numbers:
+  The following program is written in Haskell syntax \cite{haskell}. It filters a list of pairs of labels and
+  quantities to those with a given label, and then sums the quantities weighted by a per-label price:
   \begin{displaymath}
     \begin{array}{l}
-      \mathrm{query} :: \mathrm{Label} \to [(\mathrm{Label}, \mathrm{Int})] \to \mathrm{Int} \\
-      \mathrm{query}\,l\,\mathit{db} = \mathrm{sum}\,[ n \mid (l',n) \leftarrow \mathit{db}, l \equiv l' ]
+      \mathrm{total} :: \mathrm{Label} \to [(\mathrm{Label}, \mathrm{Rational})] \to (\mathrm{Label} \to \mathrm{Rational}) \to \mathrm{Rational} \\
+      \mathrm{total}\,l\,\mathit{db}\,\mathit{price} = \mathrm{sum}\,[ \mathit{price}\,l \cdot q \mid (l',q) \leftarrow \mathit{db}, l \equiv l' ]
     \end{array}
   \end{displaymath}
-  With $\mathit{db} = [(\mathsf{a}, 0), (\mathsf{b}, 1), (\mathsf{a}, 1)]$, we will have $\mathit{query}\,\mathsf{a}\,\mathit{db}$ and $\mathit{query}\,\mathsf{b}\,\mathit{db}$ both evaluating to $1$.
+  With $\mathit{db} = [(\mathsf{a}, 3), (\mathsf{b}, 1), (\mathsf{a}, -3)]$, where the third entry is a refund
+  of the first, and $\mathit{price}\,\mathsf{a} = 2$ and $\mathit{price}\,\mathsf{b} = 5$, we have
+  $\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price} = 2 \cdot 3 + 2 \cdot (-3) = 0$ and
+  $\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price} = 5$.
 
   Suppose we are interested in how the output depends on the numerical parts of the input, for the
-  query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. The three numbers in $\mathit{db}$
-  occupy three \emph{positions}, and the output a single position. In the run with $l = \mathsf{a}$, the
-  output is computed from the numbers at the first and third positions; in the run with $l = \mathsf{b}$,
-  from the number at the second. We depict each input position pointing to the output positions that depend
-  on it:
-      \begin{center}
+  query parameters $l = \mathsf{a}$ and $l = \mathsf{b}$. The three quantities in $\mathit{db}$
+  and the two prices occupy five \emph{positions}, and the output a single position. In the run with $l =
+  \mathsf{a}$, the output is computed from the quantities at the first and third positions and the price of
+  $\mathsf{a}$; in the run with $l = \mathsf{b}$, from the second quantity and the price of
+  $\mathsf{b}$. We depict each input position
+  pointing to the output positions that depend on it:
+  \begin{center}
     \begin{tikzpicture}[every node/.style={font=\small}]
-      % query a
-      \node (la) at (0,1.4) {$\mathit{query}\;\mathsf{a}$};
-      \node (a1) at (0,0.8) {$(\mathsf{a},0)$};
-      \node (a2) at (0,0) {$(\mathsf{b},1)$};
-      \node (a3) at (0,-0.8) {$(\mathsf{a},1)$};
-      \node (ao) at (2.4,0) {$1$};
-      \draw[->] (a1) -- (ao);
-      \draw[->] (a3) -- (ao);
-      % query b
-      \node (lb) at (6,1.4) {$\mathit{query}\;\mathsf{b}$};
-      \node (b1) at (6,0.8) {$(\mathsf{a},0)$};
-      \node (b2) at (6,0) {$(\mathsf{b},1)$};
-      \node (b3) at (6,-0.8) {$(\mathsf{a},1)$};
-      \node (bo) at (8.4,0) {$1$};
-      \draw[->] (b2) -- (bo);
+      % total a
+      \node (la) at (0,2.2) {$\mathrm{total}\;\mathsf{a}$};
+      \node[anchor=east] (a1) at (1.0,1.6) {$(\mathsf{a},3)$};
+      \node[anchor=east] (a2) at (1.0,0.8) {$(\mathsf{b},1)$};
+      \node[anchor=east] (a3) at (1.0,0) {$(\mathsf{a},-3)$};
+      \node[anchor=east] (a4) at (1.0,-0.8) {$\mathit{price}\,\mathsf{a} = 2$};
+      \node[anchor=east] (a5) at (1.0,-1.6) {$\mathit{price}\,\mathsf{b} = 5$};
+      \node (ao) at (2.8,0.3) {$0$};
+      \draw[->] (a1.east) -- (ao);
+      \draw[->] (a3.east) -- (ao);
+      \draw[->] (a4.east) -- (ao);
+      % total b
+      \node (lb) at (6,2.2) {$\mathrm{total}\;\mathsf{b}$};
+      \node[anchor=east] (b1) at (7.0,1.6) {$(\mathsf{a},3)$};
+      \node[anchor=east] (b2) at (7.0,0.8) {$(\mathsf{b},1)$};
+      \node[anchor=east] (b3) at (7.0,0) {$(\mathsf{a},-3)$};
+      \node[anchor=east] (b4) at (7.0,-0.8) {$\mathit{price}\,\mathsf{a} = 2$};
+      \node[anchor=east] (b5) at (7.0,-1.6) {$\mathit{price}\,\mathsf{b} = 5$};
+      \node (bo) at (8.8,-0.4) {$5$};
+      \draw[->] (b2.east) -- (bo);
+      \draw[->] (b5.east) -- (bo);
     \end{tikzpicture}
   \end{center}
-    Tabulating each relation, with a row for each output position and a column for each input position,
-  gives the \emph{Jacobian} of the run:
-    \begin{displaymath}
-    \partial(\mathit{query}\,\mathsf{a}\,\mathit{db}) =
-    \begin{pmatrix} 1 & 0 & 1 \end{pmatrix}
+    Tabulating each relation, with a row for each output position and a column for each input position
+  (ordered as the three quantities and then the two prices), gives the \emph{Boolean Jacobian} of the run,
+  shown here beside the numerical Jacobian of differential calculus, taken at the same point:
+  \begin{displaymath}
+    \partial_{\Two}(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
+    \begin{pmatrix} 1 & 0 & 1 & 1 & 0 \end{pmatrix}
     \qquad
-    \partial(\mathit{query}\,\mathsf{b}\,\mathit{db}) =
-    \begin{pmatrix} 0 & 1 & 0 \end{pmatrix}
+    \partial(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price}) =
+    \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
   \end{displaymath}
-    As in differential calculus, the Jacobian is taken at a point: the two runs of the same program have
-  different Jacobians. And like their numerical counterparts, these matrices compose: $\mathit{query}\,l$ is a
-  sum applied to a selection, and the Jacobian of the run is the product of the Jacobians of those two stages,
-  a chain rule for dependencies.
+  Like their numerical counterparts, these matrices compose. Extensionally, we can think of
+  $\mathrm{total}\,l$ as a sum applied to per-row products applied to a selection, and the Jacobian of the run
+  as the product of the Jacobians of those stages: a chain rule for dependencies. For the run with $l =
+  \mathsf{a}$, the Boolean pipeline is
+  \begin{displaymath}
+    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 1 & 1 \end{pmatrix}}_{\text{sum}}
+    \;
+    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 1 & 0 & 1 \\ 0 & 1 & 1 \end{pmatrix}}_{\text{multiply}}
+    \;
+    \underbrace{\begin{pmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \end{pmatrix}}_{\text{select}}
+    \;=\;
+    \begin{pmatrix} 1 & 0 & 1 & 1 & 0 \end{pmatrix}
+  \end{displaymath}
+  and the numerical pipeline is
+  \begin{displaymath}
+    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 1 & 1 \end{pmatrix}}_{\text{sum}}
+    \;
+    \underbrace{\vphantom{\begin{pmatrix} 0 \\ 0 \\ 0 \end{pmatrix}}\begin{pmatrix} 2 & 0 & 3 \\ 0 & 2 & -3 \end{pmatrix}}_{\text{multiply}}
+    \;
+    \underbrace{\begin{pmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \end{pmatrix}}_{\text{select}}
+    \;=\;
+    \begin{pmatrix} 2 & 0 & 2 & 0 & 0 \end{pmatrix}
+  \end{displaymath}
+  Reading right to left: selection maps the five input positions to the three inputs used on this run (the two
+  $\mathsf{a}$-quantities and $\mathit{price}\,\mathsf{a}$); the multiply stage computes the two per-row
+  products, each depending on its quantity (with price as coefficient) and on the price (with quantity as
+  coefficient); and the sum merges the two products. The two pipelines differ in the price column of the
+  multiply stage, where the numerical coefficients $3$ and $-3$ cancel through the sum while their Boolean
+  counterparts join as $1 \vee 1 = 1$.
 
-  In setting up the positions, we chose to make only the numbers perturbable, keeping the labels and
-  the structure of the list itself fixed. Other choices are also useful, and one of the aims of this work is
-  to clarify how to choose a dependency structure appropriate for different tasks by selecting an appropriate
-  semiring of dependency information. We elaborate on this further in
-  \secref{semantic-gps}.
+  In the composite Jacobians, the quantity entries of $\partial$ are the relevant price, since the derivative
+  of a product is the other factor, and the corresponding $\partial_{\Two}$-entries record which of them are
+  nonzero, so on multiplication the two Jacobians agree. At the entry for $\mathit{price}\,\mathsf{a}$ they
+  differ: $\partial\,\mathrm{total}\,\mathsf{a} / \partial\,\mathit{price}\,\mathsf{a} = 3 + (-3) = 0$, since
+  the refund cancels the purchase and the total genuinely does not depend on that price; the Boolean Jacobian
+  records $1$, because dependency information combines by disjunction and there is no negative dependency to
+  cancel with. Boolean Jacobians can thus report more nonzero entries than their numerical counterparts, but
+  never fewer; this over-approximation is inherent to tracking binary dependence.
 
-  The Jacobian acting directly evaluates dependencies \emph{forwards}: given a selection of input
-  positions, it returns the output positions that depend on them. A selection of positions can be displayed as
-  an \emph{approximation} of the underlying value, with the numbers at unselected positions replaced by
-  $\bot$. Writing $\partial(\mathit{query}\,l\,\mathit{db})_f$ for this forward action, we have
-  $\partial(\mathit{query}\,\mathsf{a}\,\mathit{db})_f([(\mathsf{a},0),(\mathsf{b},\bot),(\mathsf{a},\bot)]) =
-  1$, since the output depends on the entry $(\mathsf{a},0)$, whereas
-  $\partial(\mathit{query}\,\mathsf{b}\,\mathit{db})_f$ applied to the same selection returns $\bot$: that run
-  consulted no $\mathsf{a}$-labelled entries.
+  As in differential calculus, the Jacobian is taken at a point; the run with $l = \mathsf{b}$, a different
+  point, has its own pipeline of stage Jacobians, with composites:
+  \begin{displaymath}
+    \partial_{\Two}(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
+    \begin{pmatrix} 0 & 1 & 0 & 0 & 1 \end{pmatrix}
+    \qquad
+    \partial(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price}) =
+    \begin{pmatrix} 0 & 5 & 0 & 0 & 1 \end{pmatrix}
+  \end{displaymath}
+  At this point nothing cancels, and the two Jacobians agree on which entries are nonzero.
+
+  In setting up the positions, we chose to let only the numbers (quantities and prices) vary, keeping the
+  labels and the structure of the list itself fixed. Other choices are also useful, and one of the aims of
+  this work is to clarify how to choose a dependency structure appropriate for different tasks by selecting an
+  appropriate semiring of dependency information. We elaborate on this further in \secref{approx-as-tangents}.
+
+  As a matrix, the Boolean Jacobian acts on Boolean vectors indexed by input positions, and this action
+  evaluates dependencies \emph{forwards}: a vector selects input positions, and its image under the Jacobian
+  selects the output positions that depend on them. Such a vector can also be displayed in the shape of the
+  data the program consumes, as an \emph{approximation} of the input, keeping the numbers at selected
+  positions and replacing the rest by $\bot$, with the price function shown as the pair $\langle
+  \mathit{price}\,\mathsf{a}, \mathit{price}\,\mathsf{b} \rangle$. Writing
+  $\partial_{\Two}(\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_f$ for this forward action, we have
+  $\partial_{\Two}(\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_f([(\mathsf{a},\bot),(\mathsf{b},1),(\mathsf{a},\bot)],
+  \langle \bot, \bot \rangle) = 5$, since the output depends on the entry $(\mathsf{b},1)$, whereas
+  $\partial_{\Two}(\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_f$ applied to the same selection
+  returns $\bot$, because that run consulted no $\mathsf{b}$-labelled entries.
 
   The transpose of the Jacobian evaluates dependencies \emph{backwards}: given a selection of
   output positions, it returns the input positions on which they depend. Writing
-  $\partial(\mathit{query}\,l\,\mathit{db})_r$ for this reverse action, the fully approximated output $\bot$
-  requires none of the input:
+  $\partial_{\Two}(\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_r$ for this reverse action, the fully
+  approximated output $\bot$ depends on none of the input:
   \begin{displaymath}
-    \partial (\mathit{query}\,l\,\mathit{db})_r(\bot) = [(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)]
+    \partial_{\Two} (\mathrm{total}\,l\,\mathit{db}\,\mathit{price})_r(\bot) =
+    ([(\mathsf{a},\bot), (\mathsf{b}, \bot), (\mathsf{a}, \bot)], \langle \bot, \bot \rangle)
   \end{displaymath}
-  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we retain the output ``$1$''
-  unapproximated, then the two
-  query runs' backwards actions return different results:
+  for both $l = \mathsf{a}$ and $l = \mathsf{b}$. If instead we keep the output unapproximated, then the two
+  runs' backwards actions return different results:
   \begin{displaymath}
-    \begin{array}{l}
-      \partial (\mathit{query}\,\mathsf{a}\,\mathit{db})_r(1) = [(\mathsf{a},0), (\mathsf{b},\bot), (\mathsf{a},1)] \\
-      \partial (\mathit{query}\,\mathsf{b}\,\mathit{db})_r(1) = [(\mathsf{a},\bot), (\mathsf{b},1), (\mathsf{a},\bot)]
+    \begin{array}{r@{\;=\;([\,}c@{,\;}c@{,\;}c@{\,],\;\langle\,}c@{,\;}c@{\,\rangle)}}
+      \partial_{\Two} (\mathrm{total}\,\mathsf{a}\,\mathit{db}\,\mathit{price})_r(0)
+        & (\mathsf{a},3) & (\mathsf{b},\bot) & (\mathsf{a},-3) & 2 & \bot \\
+      \partial_{\Two} (\mathrm{total}\,\mathsf{b}\,\mathit{db}\,\mathit{price})_r(5)
+        & (\mathsf{a},\bot) & (\mathsf{b},1) & (\mathsf{a},\bot) & \bot & 5
     \end{array}
   \end{displaymath}
-  Pieces of the input that were {\em not} used are replaced by $\bot$. As we expect, the run of the query with label $\mathsf{a}$ depends on the entries in the database labelled with $\mathsf{a}$, and likewise for the run with label $\mathsf{b}$.
+  Pieces of the input that were not used are replaced by $\bot$. As we expect, the run with label $\mathsf{a}$
+  depends on the entries in the database labelled with $\mathsf{a}$, and likewise for the run with label
+  $\mathsf{b}$. Note that the backward action for $\mathsf{a}$ retains $\mathit{price}\,\mathsf{a}$, even
+  though the numerical derivative there is $0$: read backwards, too, the dependency Jacobian cannot see that
+  contributions cancelled. Asking \emph{how much} an output can change as an input varies, rather than whether
+  it can move at all, calls for a more quantitative choice of scalars; we develop this in
+  \secref{approx-as-tangents:richer-semirings}.
 
-  In a simple query like this, it is easy to work out the dependency relationship between the input and output. However, the benefit of language-based approaches is that they are {\em automatic} for all programs, no matter how complex the relationship between input and output. Moreover, by changing what we mean by ``approximation'' we can compute a range of different information about a program.
 \end{example}
 
-\subsection{Galois Slicing and Automatic Differentiation}
+In a simple query like this, it is easy to work out the dependency relationship between the input and output.
+However, the benefit of language-based approaches is that they are {\em automatic} for all programs, no
+matter how complex the relationship between input and output. Moreover, by changing what we mean by
+``approximation'' we can compute a range of different information about a program.
+
+\subsection{Dependency Analysis and Automatic Differentiation}
 
 The backward maps of the previous section compute a form of \emph{data provenance}: for each part of
 the output, the part of the input needed to explain it. Dependency information of this kind is the common
@@ -146,34 +217,44 @@ into a Galois connection between lattices of approximations.
 Many forms of dynamic provenance analysis, \GPS included, work by recording a trace of each
 execution and computing the backwards analysis by re-running over the trace. A denotational account would
 instead bake the analysis into the semantics of the program itself, rather than provide it as a separately
-defined ``backwards evaluation'' operation. 
+defined ``backwards evaluation'' operation.
 The differential reading of dependency analysis, developed in \secref{approx-as-tangents}, points to
 a way to obtain such an account, by analogy with \emph{automatic
 differentiation}~\cite{siskind08,elliott18,vakar22}; let us make the correspondence explicit.
 
 \begin{itemize}[leftmargin=\enummargin]
-\item For dependency analysis, every value has an associated join-semilattice of \emph{approximations}, with least element $\bot$ (the empty selection). For differentiable programs, every point has an associated vector space of {\em tangents}.
-\item For dependency analysis, every program has an associated forward approximation map that takes approximations of the input to the approximations of the output that depend on them. This map {\em preserves joins and $\bot$}. For differentiable programs, every program has a forward derivative that takes tangents of the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of tangents and the zero tangent.
-\item For dependency analysis, every program has an associated backward approximation map that takes approximations of the output back to least approximations of the input that they depend on. This map also {\em preserves joins and $\bot$}. For differentiable programs, every program has a reverse derivative that takes \emph{cotangents} of the output (linear maps from tangents to scalars) to cotangents of the input. This map is again {\em linear}.
-\item In both settings, the forward and backward maps are related by being each other's transpose.
-The transpose makes sense because the spaces are \emph{self-dual}: tangent vectors pair with tangent vectors
-via the dot product, identifying cotangents with tangents, and selections of positions pair by the same dot
+\item For dependency analysis, every value has an associated join-semilattice of \emph{approximations}, with
+least element $\bot$ (the empty selection). For differentiable programs, every point has an associated vector
+space of {\em tangents}.
+\item For dependency analysis, every program has an associated forward approximation map that takes
+approximations of the input to the approximations of the output that depend on them. This map {\em preserves
+joins and $\bot$}. For differentiable programs, every program has a forward derivative that takes tangents of
+the input to tangents of the output. The forward derivative map is {\em linear}, so it preserves addition of
+tangents and the zero tangent.
+\item For dependency analysis, every program has an associated backward approximation map that takes
+approximations of the output back to least approximations of the input that they depend on. This map also {\em
+preserves joins and $\bot$}. For differentiable programs, every program has a reverse derivative that takes
+\emph{cotangents} of the output (linear maps from tangents to scalars) to cotangents of the input. This map is
+again {\em linear}.
+\item In both settings, the forward and backward maps are related by being each other's transpose. The
+transpose makes sense because the spaces are \emph{self-dual}: tangent vectors pair with tangent vectors via
+the dot product, identifying cotangents with tangents, and selections of positions pair by the same dot
 product formula, with joins and meets in place of sums and products.
 \end{itemize}
 
-Given this close connection between dependency analysis and differentiable programming, we can take structures intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model dependency analysis. This will enable us to generalise and expand the scope of automatic differentiation to act as a foundation for data provenance in a wider range of computational settings.
+Given this close connection between dependency analysis and differentiable programming, we can take structures
+intended for modelling automatic differentiation, such as V{\'a}k{\'a}r's CHAD framework and use them to model
+dependency analysis. This will enable us to generalise and expand the scope of automatic differentiation to
+act as a foundation for data provenance in a wider range of computational settings.
 
 \subsection{Outline and Contributions}
 
-%Our primary contribution in this article is to elucidate \GPS by relating it to differentiable programming and automatic differentiation. In doing so, we aim to expand the applicability of program slicing, and to potentially transfer efficient automatic differentiation implementation techniques from automatic differentiation to program slicing and provenance tracking.
-
-Our main contribution is to show that data provenance can be understood as differentiation over a
-commutative semiring of dependency information. In \secref{approx-as-tangents} we develop the first-order
-picture, for programs over tuples of atomic data: derivatives as matrices over a semiring $S$, with the
-transpose relating forward and backward dependency analysis, and with successively stronger conditions on $S$ yielding
+Our main contribution is to show that data provenance can be understood as differentiation over a commutative
+semiring of dependency information. In \secref{approx-as-tangents} we develop the first-order picture, for
+programs over tuples of atomic data: derivatives as matrices over a semiring $S$, with the transpose relating
+forward and backward dependency analysis, and with successively stronger conditions on $S$ yielding
 join-preserving maps, conjugate pairs and, for Boolean algebras, the Galois connections of \GPS; ordinary AD
-occupies the case $S = \mathbb{R}$. We also relate this picture to \citet{berry79}'s \emph{stable domain
-theory}, where stable functions provide a kind of semantic provenance analysis.
+occupies the case $S = \mathbb{R}$.
 
 The following table summarises the correspondence developed over the course of the paper:
 \vspace{1.5mm}
@@ -199,12 +280,10 @@ The following table summarises the correspondence developed over the course of t
 In \secref{models-of-total-gps} we extend to sum types using the category of families construction and,
 following V{\'a}k{\'a}r \etal{}'s CHAD framework~\cite{vakar22,nunes2023}, build models of a higher-order
 language in which every program is interpreted together with its family of derivatives. We apply this to a
-concrete higher-order language in \secref{language} and demonstrate the model on a number of examples, showing
+concrete higher-order language in \secref{language} and demonstrate the model on a number of examples in \secref{examples}, showing
 how parameterising on $S$ controls the dependency structure associated with data, something that was
-``hard-coded'' in previous presentations of \GPS. We prove two correctness properties in
-\secref{definability}: programs of first-order type denote matrices in the sense of
-\secref{approx-as-tangents}, and the higher-order interpretation agrees with the standard set-theoretic
-semantics. \secref{related-work} and \secref{conclusion} discuss additional related and future work.
+``hard-coded'' in previous presentations of \GPS. We prove a correctness property in
+\secref{definability}: programs of first-order type have equal interpretations in standard semantics and a dependency tracking semantics, even when they use higher-order functions internally. \secref{related-work} and \secref{conclusion} discuss additional related and future work.
 
 % \begin{enumerate}[leftmargin=\enummargin]
 % \item We explain how the CHAD framework of Vákár et al. can be adapted to give a general categorical framework for \GPS.
@@ -212,7 +291,7 @@ semantics. \secref{related-work} and \secref{conclusion} discuss additional rela
 % \item With the benefit of our abstract setting, we can relate \GPS to other parts of denotational semantics. In particular, we show that there is a close connection with Stable Domain Theory, a proposed solution to capturing sequentiality by recording more intensional information about programs' sensitivity to approximations.
 % \end{enumerate}
 
-We have formalised our major results in Agda, resulting in an executable implementation built directly from the categorical constructions that we have used to compute the examples in \secref{language:examples}. Please consult the file \texttt{everything.agda} in the supplementary material.
+We have formalised our major results in Agda, resulting in an executable implementation built directly from the categorical constructions that we have used to compute the examples in \secref{examples}. Please consult the file \texttt{everything.agda} in the supplementary material.
 
 % \begin{enumerate}
 % \item We explain how the CHAD framework of Vákár et al. can be adapted to give a general categorical framework for \GPS.

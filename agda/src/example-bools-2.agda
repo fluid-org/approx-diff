@@ -13,11 +13,12 @@ open import Data.Unit renaming (tt to ·) using ()
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier)
-open import example-signature using (Sig; number; label)
+import nat
+open import example.signature nat.ℕ using (Sig; number; label)
 open import label using (a; b)
 import two
 open import two renaming (I to ⊤; O to ⊥) using ()
-import example-bool
+import example.bool
 import ho-model-boolalg-sd-semimod
 import example-2
 import indexed-family
@@ -26,7 +27,7 @@ import preorder
 
 module HB = ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean
 
-open HB.interp-boolean-2 Sig example-bool.D.BaseInterp1
+open HB.interp-boolean-2 Sig example.bool.D.BaseInterp1
 open indexed-family._⇒f_ using (transf)
 open galois._⇒g_ using (right)
 open preorder._=>_ using (fun)

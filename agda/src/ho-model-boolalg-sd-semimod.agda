@@ -49,6 +49,11 @@ module interp-boolean (Sig : Signature 0ℓ)
   open lists Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
     using (_^_)
 
+  open FirstOrderConservativity
+    (λ {X} {Y} → BoolAlg.U-full {X} {Y})
+    (λ {X} {Y} {f} {g} → BoolAlg.U-faithful {X} {Y} {f} {g})
+    Sig Impl public
+
   ty  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → SelfDualBooleanAlgebra
   pow : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (⟦ τ ⟧ty ^ n) .idx .Carrier) → SelfDualBooleanAlgebra
 

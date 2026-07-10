@@ -1,12 +1,15 @@
 \section{Correctness of the Higher-Order Interpretation}
 \label{sec:definability}
 
-As we noted at the end of \secref{language:gps-interpretation}, our
-interpretation of the higher-order language is in the category
-$\Fam(\MeetSLat \times \JoinSLat^\op)$, so it is not a priori evident
-that we get a Galois connection from the interpretation of a program
-with first-order type (that may use higher-order functions
-internally). \citet{vakar22} and \citet{nunes2023} construct custom
+The interpretation of the higher-order language at higher types mixes
+the interpretation of the underlying computation with the
+interpretation of the semiring dependency matrices
+(c.f. \thmref{fam-closed}). It is therefore not immediate that
+intepreting a program in $\Fam(\SemiMod(S))$ will give us the expected
+interpretation purely on first order data. Note that the fullness of
+the functor $H : \Fam(\SDSemiMod(S)) \to \Fam(\SemiMod(S))$ does mean
+that we are guaranteed that the tangent maps are correctly computed.
+\citet{vakar22} and \citet{nunes2023} construct custom
 instances of categorical sconing arguments to prove correctness of
 their higher-order interpretation with respect to normal
 differentiation. Instead of doing this, we make use of a general
@@ -15,12 +18,7 @@ of this depends on the construction of a Grothendieck Logical Relation
 over the extensive topology on the category $\cat{C}$, but the
 statement of the theorem does not rely on this. We have formalised
 this proof in Agda (see \texttt{conservativity.agda} in the
-supplementary material\footnote{Our Agda development is complete
-  except for a proof that $\Fam(C)$ has extensive coproducts. We plan
-  to complete this part of the proof before any final
-  version. Moreover, this result does not yet apply to infinitary
-  coproducts, though we believe it is a relatively minor extension to
-  the proof to do so.}).
+supplementary material).
 
 \begin{theorem}[\citet{fiore-simpson99}]
   \label{thm:glr-definability}
@@ -41,7 +39,7 @@ supplementary material\footnote{Our Agda development is complete
   Compared to the exact result stated at the end of
   \citet{fiore-simpson99}'s paper, we have made two modifications,
   justified by our Agda proof. First, we generalise to the case where
-  $\cat{C}$ is not cartesian closed, and the functor $F$ does not
+  $\cat{C}$ is not Cartesian closed, and the functor $F$ does not
   preserve exponentials. Examination of the proof reveals that if this
   is the case, then $\hat{F}$ also preserves exponentials, but it is
   not needed for the result stated. Second, Fiore and Simpson restrict
@@ -51,49 +49,10 @@ supplementary material\footnote{Our Agda development is complete
   appropriate universe level.
 \end{remark}
 
-\begin{theorem}
-  \label{thm:language-definability}
-  For all $\Gamma \vdash M : \tau$, with $\Gamma, \tau$ first-order,
-  there exists
-  $g \in \Fam(\LatGal)(\sem{\Gamma}_{\mathit{fo}},
-  \sem{\tau}_{\mathit{fo}})$ such that
-  $H(g) = (\cong) \circ \sem{\Gamma \vdash M : \tau} \circ (\cong)$,
-  with the isomorphisms from \lemref{first-order-agreement-types}.
-\end{theorem}
-
-\begin{proof}
-  Instantiate \thmref{glr-definability} with
-  $\HoEmbed : \Fam(\LatGal) \to \Fam(\MeetSLat \times
-  \JoinSLat^\op)$. By \propref{ho-embedding} we know that $F$
-  preserves finite products and coproducts. The fullness of
-  $\hat{\HoEmbed}$ means that for any morphism
-  $f : \hat{\HoEmbed}(\sem{\Gamma}_{\mathit{fo}}) \to
-  \hat{H}(\sem{\tau}_{\mathit{fo}})$ in $\GLR(\HoEmbed)$ there exists
-  a $g : \sem{\Gamma}_{\mathit{fo}} \to \sem{\tau}_{\mathit{fo}}$ in
-  $\Fam(\LatGal)$ such that $H(g) = f$. Since $\GLR(\HoEmbed)$ has
-  enough structure, we can interpret the term $M$ in it to get a
-  morphism
-  $\sem{\Gamma \vdash M : \tau}_{\GLR(\HoEmbed)} : \sem{\Gamma} \to
-  \sem{\tau}$ in $\GLR(\HoEmbed)$. Applying
-  \lemref{first-order-agreement-types} and the fact that the
-  strictness of $p$ means that
-  $p(\sem{\Gamma \vdash M : \tau}_{\GLR(\HoEmbed)}) = \sem{\Gamma
-    \vdash M : \tau}_{\Fam(\MeetSLat \times \JoinSLat^\op)}$ yields
-  the result.
-\end{proof}
-
-\begin{remark}
-  If we modified our base interpretation of semantic \GPS as suggested
-  in \remref{further-structure} to give a refined version $\cat{G}$ of
-  $\Fam(\LatGal)$, then if there is a finite bicartesian functor
-  $\cat{G} \to \Fam(\MeetSLat \times \JoinSLat^\op)$, an analogous
-  result to \thmref{language-definability} still holds.
-\end{remark}
-
-We can also use \thmref{glr-definability} to show that the
+We use \thmref{glr-definability} to show that the
 interpretation of the language in the category $\Set$ agrees with the
-higher-order interpretation in $\Fam(\MeetSLat \times \JoinSLat^\op)$
-on the underlying function at first order. This shows that the
+higher-order interpretation in $\Fam(\SemiMod(S))$
+on the underlying function at first order, as required. This shows that the
 higher-order interpretation does what we expect in the underlying
 interpretation of terms, and that the approximation information does
 not interfere.
@@ -102,20 +61,22 @@ not interfere.
   \label{thm:underlying-interp-equal} For all
   $\Gamma \vdash M : \tau$, where $\Gamma$ and $\tau$ are first-order,
   the underlying function in the interpretation
-  $\sem{\Gamma \vdash M : \tau}_{\Fam(\MeetSLat \times
-    \JoinSLat^\op)}$ is equal to the interpretation
-  $\sem{\Gamma \vdash M : \tau}_{\Set}$ in $\Set$.
+  $\sem{\Gamma \vdash M : \tau}_{\Fam(\SemiMod(S))}$ is equal to the
+  interpretation $\sem{\Gamma \vdash M : \tau}_{\Set}$ in $\Set$.
 \end{theorem}
 
 \begin{proof}
   Instantiate \thmref{glr-definability} with the functor
-  $\langle \mathrm{Id} , \pi_1 \rangle : \Fam(\MeetSLat \times
-  \JoinSLat^\op) \to \Fam(\MeetSLat \times \JoinSLat^\op) \times \Set$
+  \begin{displaymath}
+    \langle \mathrm{Id} , \pi_1 \rangle : \Fam(\SemiMod(S)) \to \Fam(\SemiMod(S)) \times \Set
+  \end{displaymath}
   that is the identity in the first component and projects out the
-  underlying function in the second. For each
+  underlying function in the second. By
+  \lemref{pi1-preserve-products-and-coproducts}, this functor
+  preserves products and coproducts. For each
   $\Gamma \vdash M : \tau$, we obtain a $g$ such that
-  $g = \sem{\Gamma \vdash M : \tau}_{\Fam(\MeetSLat \times
-    \JoinSLat^\op)}$ and
+  $g = \sem{\Gamma \vdash M : \tau}_{\Fam(\SemiMod(S))}$ and
   $\pi_1(g) = \sem{\Gamma \vdash M : \tau}_\Set$. Substituting $g$
   yields the result.
 \end{proof}
+

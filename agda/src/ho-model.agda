@@ -20,7 +20,7 @@ import fam-mu-types-2
 import fam-stable-indexed
 import indexed-family
 
-open import functor using (Functor)
+open import functor using (Functor; Full; Faithful)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫)
 open import prop-setoid using (IsEquivalence; Setoid)
@@ -37,6 +37,7 @@ open Functor
 -- interpretation in Fam⟨𝒟⟩ from a model in Fam⟨𝒞⟩.
 
 open import fam-functor using (FamF)
+import language-fo-interpretation
 open import signature
 import lists
 import language-syntax
@@ -172,6 +173,27 @@ module Interpretation
        Fam⟨𝒟⟩-hasMu
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
+
+  -- Conservativity at first-order types: when the first-order functor F is full and faithful, so
+  -- is Fam⟨F⟩, and the interpretation of a term of first-order type comes from Fam⟨𝒞⟩.
+  module FirstOrderConservativity
+      (F-full : Full F) (F-faithful : Faithful F)
+      (Sig : Signature 0ℓ)
+      (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
+    where
+
+    private
+      module LFI = language-fo-interpretation Sig
+        Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts
+        Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩-lists
+        Fam⟨F⟩ Fam⟨F⟩-preserves-terminal
+        (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y}) Fam⟨F⟩-preserves-coproducts
+        Impl
+
+    first-order-conservativity = LFI.first-order-conservativity
+      (fam-functor.FamF-full 0ℓ 0ℓ F
+        (λ {x} {y} → F-full {x} {y})
+        (λ {x} {y} {f} {g} → F-faithful {x} {y} {f} {g}))
 
   module Conservativity where
     open import monad using (Monad; IdentityMonad; preserve-identity-monad)

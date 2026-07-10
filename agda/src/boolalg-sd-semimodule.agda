@@ -6,7 +6,8 @@ open import categories using (Category; HasTerminal; IsTerminal; HasInitial; IsI
 open import commutative-semiring using (CommutativeSemiring; BooleanAlgebra)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import commutative-monoid using (CommutativeMonoid)
-open import functor using (Functor)
+open import functor using (Functor; Full; Faithful)
+open import prop using (∃ₛ)
 import finite-product-functor
 import lattice
 import semimodule
@@ -114,6 +115,15 @@ U .Functor.fmor f = f
 U .Functor.fmor-cong f₁≈f₂ = f₁≈f₂
 U .Functor.fmor-id = SemiMod.cat .Category.isEquiv .IsEquivalence.refl
 U .Functor.fmor-comp f g = SemiMod.cat .Category.isEquiv .IsEquivalence.refl
+
+-- Both hold definitionally: a morphism of self-dual Boolean algebras is a linear map of the
+-- underlying semimodules, with no compatibility condition on the Boolean structure.
+U-faithful : Faithful U
+U-faithful eq = eq
+
+U-full : Full U
+U-full h .∃ₛ.fst = h
+U-full h .∃ₛ.snd = Category.≈-refl SemiMod.cat {f = h}
 
 private
   SemiMod-products : HasProducts SemiMod.cat

@@ -178,6 +178,45 @@ products .HasProducts.pair-ext f .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (
 𝟘 .zero-distribʳ = tt
 𝟘 .zero-distribˡ = tt
 
+-- Unit and associativity isomorphisms for the biproduct, constructed concretely on the pair
+-- representation.
+module _ where
+  open Category cat using (Iso)
+  open _⇒_
+  open _≈m_
+  import Level
+  import Agda.Builtin.Unit
+  open import prop-setoid using () renaming (_≃m_ to _≈s_)
+
+  ⊕-lunit-iso : ∀ {N} → Iso (𝟘 ⊕ N) N
+  ⊕-lunit-iso {N} .Iso.fwd .*→* ._⇒s_.func (_ , n) = n
+  ⊕-lunit-iso {N} .Iso.fwd .*→* ._⇒s_.func-resp-≈ (_ , e) = e
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-ze = refl N
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-+ = refl N
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-· = refl N
+  ⊕-lunit-iso {N} .Iso.bwd .*→* ._⇒s_.func n = Level.lift Agda.Builtin.Unit.tt , n
+  ⊕-lunit-iso {N} .Iso.bwd .*→* ._⇒s_.func-resp-≈ e = tt , e
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-ze = tt , refl N
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-+ = tt , refl N
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-· = tt , refl N
+  ⊕-lunit-iso {N} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq e = e
+  ⊕-lunit-iso {N} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq (_ , e) = tt , e
+
+  ⊕-assoc-iso : ∀ {M N P} → Iso ((M ⊕ N) ⊕ P) (M ⊕ (N ⊕ P))
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .*→* ._⇒s_.func ((m , n) , p) = m , (n , p)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .*→* ._⇒s_.func-resp-≈ ((em , en) , ep) = em , (en , ep)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-ze = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-+ = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-· = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .*→* ._⇒s_.func (m , (n , p)) = (m , n) , p
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .*→* ._⇒s_.func-resp-≈ (em , (en , ep)) = (em , en) , ep
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-ze = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-+ = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-· = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq (em , (en , ep)) = em , (en , ep)
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq ((em , en) , ep) = (em , en) , ep
+
+
 terminal : HasTerminal cat
 terminal .HasTerminal.witness = 𝟘
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {M} = ε-map M 𝟘
@@ -361,6 +400,8 @@ module JoinSemilattices
   (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
   where
 
+  import commutative-monoid
+
   open import preorder using (Preorder)
   open import basics using (IsPreorder; IsJoin; IsBottom)
   open import join-semilattice using (JoinSemilattice) renaming (_=>_ to _=>J_)
@@ -374,36 +415,17 @@ module JoinSemilattices
         (M.trans (M.sym M.+-distribʳ)
           (M.trans (M.·-cong ⊤-add-top M.refl) M.·-unit))
 
-    infix 4 _≤_
-
-    _≤_ : M.Carrier → M.Carrier → Prop
-    x ≤ y = (x M.+ y) M.≈ y
+    open commutative-monoid.AdditivePreorder (M .Semimodule.additive) +-idem public
+      using (⊑-isPreorder; ∨-isJoin; ⊥-isBottom)
+      renaming (_⊑_ to _≤_; ≈→⊑ to ≈→≤; ⊑-antisym to ≤-antisym)
 
     ≤-isPreorder : IsPreorder _≤_
-    ≤-isPreorder .IsPreorder.refl = +-idem
-    ≤-isPreorder .IsPreorder.trans x≤y y≤z =
-      M.trans (M.+-cong M.refl (M.sym y≤z)) (M.trans (M.sym M.+-assoc) (M.trans (M.+-cong x≤y M.refl) y≤z))
-
-    ≈→≤ : ∀ {x y} → x M.≈ y → x ≤ y
-    ≈→≤ x≈y = M.trans (M.+-cong x≈y M.refl) +-idem
+    ≤-isPreorder = ⊑-isPreorder
 
     preorder : Preorder
     preorder .Preorder.Carrier = M.Carrier
     preorder .Preorder._≤_ = _≤_
     preorder .Preorder.≤-isPreorder = ≤-isPreorder
-
-    ∨-isJoin : IsJoin ≤-isPreorder (M._+_)
-    ∨-isJoin .IsJoin.inl = M.trans (M.sym M.+-assoc) (M.+-cong +-idem M.refl)
-    ∨-isJoin .IsJoin.inr =
-      M.trans (M.+-cong M.refl M.+-comm)
-        (M.trans (M.sym M.+-assoc) (M.trans (M.+-cong +-idem M.refl) M.+-comm))
-    ∨-isJoin .IsJoin.[_,_] x≤z y≤z = M.trans M.+-assoc (M.trans (M.+-cong M.refl y≤z) x≤z)
-
-    ⊥-isBottom : IsBottom ≤-isPreorder (M.ε)
-    ⊥-isBottom .IsBottom.≤-bottom = M.+-lunit
-
-    ≤-antisym : ∀ {x y} → x ≤ y → y ≤ x → x M.≈ y
-    ≤-antisym p q = M.trans (M.sym q) (M.trans M.+-comm p)
 
     joins : JoinSemilattice preorder
     joins .JoinSemilattice._∨_ = M._+_

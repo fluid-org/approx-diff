@@ -9,7 +9,7 @@ open import prop-setoid
   renaming (≃m-isEquivalence to ≈s-isEquivalence; _⇒_ to _⇒s_)
 open import categories using (Category; HasTerminal; HasCoproducts; HasProducts; setoid→category)
 open import setoid-cat using (SetoidCat; Setoid-coproducts; Setoid-products; Setoid-terminal)
-open import functor using (Functor; NatTrans; Colimit; _∘F_)
+open import functor using (Functor; NatTrans; Colimit; _∘F_; Full; Faithful)
 open import fam using (module CategoryOfFamilies)
 open import finite-product-functor
   using (preserve-chosen-products; preserve-chosen-terminal; module preserve-chosen-products-consequences)
@@ -85,6 +85,70 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       𝒟.id _ 𝒟.∘ (F .fmor (f .famf .transf _) 𝒟.∘ F .fmor (g .famf .transf x))
     ∎
     where open ≈-Reasoning 𝒟.isEquiv
+
+  ------------------------------------------------------------------------------
+  -- Fam preserves faithfulness, and fullness in the presence of faithfulness (naturality of the
+  -- assembled family of preimages is reflected along F).
+
+  FamF-faithful : Faithful F → Faithful FamF
+  FamF-faithful F-faithful eq .idxf-eq = eq .idxf-eq
+  FamF-faithful F-faithful {X} {Y} {f} {g} eq .famf-eq .transf-eq {x} =
+    F-faithful
+      (begin
+        F .fmor (Y .fam .subst _ 𝒞.∘ f .famf .transf x)
+      ≈⟨ F .fmor-comp _ _ ⟩
+        F .fmor (Y .fam .subst _) 𝒟.∘ F .fmor (f .famf .transf x)
+      ≈⟨ eq .famf-eq .transf-eq ⟩
+        F .fmor (g .famf .transf x)
+      ∎)
+    where open ≈-Reasoning 𝒟.isEquiv
+
+  module _ (F-full : Full F) (F-faithful : Faithful F) where
+    open ∃ₛ
+
+    private
+      ψ : ∀ {X Y} (h : Fam𝒟.Mor (FamF .fobj X) (FamF .fobj Y)) →
+          ∀ x → X .fam .fm x 𝒞.⇒ Y .fam .fm (h .idxf ._⇒s_.func x)
+      ψ h x = F-full (h .famf .transf x) .fst
+
+      ψ-eq : ∀ {X Y} (h : Fam𝒟.Mor (FamF .fobj X) (FamF .fobj Y)) →
+             ∀ x → F .fmor (ψ h x) 𝒟.≈ h .famf .transf x
+      ψ-eq h x = F-full (h .famf .transf x) .snd
+
+      preimage : ∀ {X Y} → Fam𝒟.Mor (FamF .fobj X) (FamF .fobj Y) → Fam𝒞.Mor X Y
+      preimage h .idxf = h .idxf
+      preimage {X} {Y} h .famf .transf x = ψ h x
+      preimage {X} {Y} h .famf .natural {x₁} {x₂} e =
+        F-faithful
+          (begin
+            F .fmor (ψ h x₂ 𝒞.∘ X .fam .subst e)
+          ≈⟨ F .fmor-comp _ _ ⟩
+            F .fmor (ψ h x₂) 𝒟.∘ F .fmor (X .fam .subst e)
+          ≈⟨ 𝒟.∘-cong (ψ-eq h x₂) 𝒟.≈-refl ⟩
+            h .famf .transf x₂ 𝒟.∘ F .fmor (X .fam .subst e)
+          ≈⟨ h .famf .natural e ⟩
+            F .fmor (Y .fam .subst _) 𝒟.∘ h .famf .transf x₁
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl (ψ-eq h x₁) ⟩
+            F .fmor (Y .fam .subst _) 𝒟.∘ F .fmor (ψ h x₁)
+          ≈˘⟨ F .fmor-comp _ _ ⟩
+            F .fmor (Y .fam .subst _ 𝒞.∘ ψ h x₁)
+          ∎)
+        where open ≈-Reasoning 𝒟.isEquiv
+
+    FamF-full : Full FamF
+    FamF-full h .fst = preimage h
+    FamF-full h .snd .idxf-eq = ≈s-isEquivalence .refl
+    FamF-full {X} {Y} h .snd .famf-eq .transf-eq {x} =
+      begin
+        F .fmor (Y .fam .subst _) 𝒟.∘ F .fmor (ψ h x)
+      ≈⟨ 𝒟.∘-cong (F .fmor-cong (Y .fam .refl*)) (ψ-eq h x) ⟩
+        F .fmor (𝒞.id _) 𝒟.∘ h .famf .transf x
+      ≈⟨ 𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl ⟩
+        𝒟.id _ 𝒟.∘ h .famf .transf x
+      ≈⟨ 𝒟.id-left ⟩
+        h .famf .transf x
+      ∎
+      where open ≈-Reasoning 𝒟.isEquiv
 
   ------------------------------------------------------------------------------
   -- Preservation of coproducts.
@@ -238,16 +302,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
         𝒟.id _
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
-
-
-  -- FamF is faithful when the base functor is.
-  FamF-faithful : (∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.≈ F .fmor g₂ → g₁ 𝒞.≈ g₂) →
-                  ∀ {X Y} {φ₁ φ₂ : Category._⇒_ Fam𝒞.cat X Y} →
-                  Category._≈_ Fam𝒟.cat (FamF .fmor φ₁) (FamF .fmor φ₂) →
-                  Category._≈_ Fam𝒞.cat φ₁ φ₂
-  FamF-faithful faith p .idxf-eq = p .idxf-eq
-  FamF-faithful faith p .famf-eq .transf-eq {x} =
-    faith (𝒟.≈-trans (F .fmor-comp _ _) (p .famf-eq .transf-eq {x}))
 
   -- FamF admits a uniform choice of definability witnesses when the base
   -- functor does (and is faithful, for the reconstructed naturality).
