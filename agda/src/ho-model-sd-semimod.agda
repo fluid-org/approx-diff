@@ -96,3 +96,21 @@ module interp-sd (Sig : Signature 0ℓ)
   -- Forward analysis: feed an input tangent, read the output tangent.
   fwd : ∀ {Γ τ} (M : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
   fwd M env = mor M env .func
+
+-- Self-dualities on the first-order types of the language with general
+-- recursive types: instantiate the generic fibre-object machinery at the
+-- self-dual semimodules.
+module interp-sd-2 (Sig : Signature 0ℓ)
+                   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
+   where
+
+  open interp-2 Sig Impl public
+  open language-syntax-2 Sig using (_⊢_)
+  open SDSemiMod using (SelfDual; 𝟘; _⊕_) public
+  open Setoid using (Carrier)
+
+  open SemiMod._⇒_ using (func)
+
+  -- Forward analysis: feed an input tangent, read the output tangent.
+  fwd : ∀ {Γ τ} (M : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
+  fwd M env = mor M env .func
