@@ -12,3 +12,4 @@ README.md export-ignore
 *.pdf export-ignore
 *.sh export-ignore
 main-submit.tex export-ignore
+CITATION.cff export-ignore
