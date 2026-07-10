@@ -88,11 +88,11 @@ module interp-boolean-2 (Sig : Signature 0ℓ)
   module Pm = Fam⟨𝒟⟩-μ
   module T0 = Pm.Tree {n = 0} (λ ())
 
-  -- For each const leaf of a polynomial, an assignment of an algebra to each of
-  -- its fibres. This is the only input needed to determine an algebra at every
-  -- fibre of the polynomial's μ-type.
-  FibAlg : ∀ {k} → Pm.Poly k → Set (lsuc 0ℓ)
-  FibAlg (Pm.const A) = (x : A .idx .Carrier) → SelfDualBooleanAlgebra
+  -- For each const leaf of an index-erased polynomial, an assignment of an
+  -- algebra to each element of its index set. This is the only input needed to
+  -- determine an algebra at every fibre of the polynomial's μ-type.
+  FibAlg : ∀ {k} → Pm.Sh.Poly k → Set (lsuc 0ℓ)
+  FibAlg (Pm.const S) = (x : S .Carrier) → SelfDualBooleanAlgebra
   FibAlg (Pm.var j)   = Lift (lsuc 0ℓ) ⊤
   FibAlg (P Pm.+ Q)   = FibAlg P × FibAlg Q
   FibAlg (P Pm.× Q)   = FibAlg P × FibAlg Q
@@ -114,11 +114,11 @@ module interp-boolean-2 (Sig : Signature 0ℓ)
   -- Assign an algebra to the fibre at each element of a μ-type, by the same
   -- recursion that computes the fibre.
   mutual
-    mu : ∀ {k} {Q : Pm.Poly (suc k)} {ρ} → SortAlg (Pm.mkSort Q ρ) → T0.W Q ρ → SelfDualBooleanAlgebra
+    mu : ∀ {k} {Q : Pm.Sh.Poly (suc k)} {ρ} → SortAlg (Pm.mkSort Q ρ) → T0.W Q ρ → SelfDualBooleanAlgebra
     mu {Q = Q} {ρ = ρ} (fa , ca) (T0.sup x) =
       mu-shape Q (Pm.extend ρ (inj₂ (Pm.mkSort Q ρ))) fa (extAlg ca (fa , ca)) x
 
-    mu-shape : ∀ {j} (Q : Pm.Poly j) (η : Fin j → Fin 0 ⊎ Pm.Sort 0) →
+    mu-shape : ∀ {j} (Q : Pm.Sh.Poly j) (η : Fin j → Fin 0 ⊎ Pm.Sort 0) →
                  FibAlg Q → (∀ i → CtxAlg (η i)) → T0.⟦_⟧shape Q η → SelfDualBooleanAlgebra
     mu-shape (Pm.const A) η fa ca x = fa x
     mu-shape (Pm.var j)   η fa ca x = mu-el (η j) (ca j) x
@@ -133,7 +133,7 @@ module interp-boolean-2 (Sig : Signature 0ℓ)
 
   -- Algebra data for the polynomial translation of a first-order type.
   polyAlg : ∀ {Δ n} {δ : Fin Δ → Fam⟨𝒟⟩.Obj} {τ : type (n Data.Nat.+ Δ)} → first-order τ →
-            (∀ j (x : δ j .idx .Carrier) → SelfDualBooleanAlgebra) → FibAlg (as-poly {Δ} {n} τ δ)
+            (∀ j (x : δ j .idx .Carrier) → SelfDualBooleanAlgebra) → FibAlg Pm.∣ as-poly {Δ} {n} τ δ ∣
   polyAlg {n = n} (var i) δᵃ with splitAt n i
   ... | inj₁ k = lift tt
   ... | inj₂ j = δᵃ j
