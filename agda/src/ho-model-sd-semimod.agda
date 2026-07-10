@@ -14,6 +14,7 @@ open import Data.Sum using (inj₁; inj₂)
 import nat
 import lists
 import language-syntax
+import language-syntax-2
 import semimodule
 import sd-semimodule
 import ho-model
