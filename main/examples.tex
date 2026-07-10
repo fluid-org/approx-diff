@@ -1,26 +1,28 @@
 \section{Examples}
 \label{sec:examples}
 
-This section runs the interpretation at particular semirings, on particular programs, to show the
-analyses that result. Throughout, we work over the signature $\Sigma_{\mathrm{ex}}$, parameterised by a set
-of numbers with a distinguished zero, which the examples instantiate with the rationals. It has sorts
+We now run the interpretation on a range of example programs, over various semirings\Added{, with the aim
+of illustrating the different flavours of analysis the framework supports}. \Added{The examples are kept
+small so that each can be mechanised in the accompanying Agda development, with the programs and their
+derivatives run inside the type checker and the results checked against the expected values by decidable
+equality.}
+
+Throughout, we work over the signature $\Sigma_{\mathrm{ex}}$, parameterised by a set
+of numbers with a distinguished zero, which the examples instantiate with the rationals or the integers. It has sorts
 $\mathsf{num}$ and $\mathsf{label}$; operations $\mathrm{add}, \mathrm{mult} : \mathsf{num} \times
 \mathsf{num} \to \mathsf{num}$, a literal for each number, and a literal for each label; and an equality
 relation on labels, used by the comprehension syntax. In the intended interpretations, the zero literal is a
-unit for $\mathrm{add}$. The queries of
-\secref{introduction:galois-slicing} are terms over $\Sigma_{\mathrm{ex}}$. The semiring alone does not
-determine an instance: an instance must also interpret each operation of the signature, supplying the
+unit for $\mathrm{add}$. Each instance must also interpret each operation of the signature, supplying the
 function it computes on values together with, at each input value, a linear map between the approximation
-objects, a semimodule morphism giving the operation's intended derivative at that value. Each example is
-mechanised in the accompanying Agda development.
+objects, a semimodule morphism giving the operation's intended derivative at that value.
 
 \subsection{Perturbation Bounds}
 \label{sec:examples:perturbation-bounds}
 
 The first two instances demonstrate the perturbation-bound reading of
 \secref{approx-as-tangents:perturbation-bounds}: the analysis reports how much each output can change, rather
-than whether it can. Sections \ref{sec:examples:absolute-bounds} and \ref{sec:examples:relative-bounds}
-give the two presentations, absolute and relative, run on the database $\mathit{db} = [(\mathsf{a}, 3),
+than whether it can. The two presentations, absolute (\secref{examples:absolute-bounds}) and relative
+(\secref{examples:relative-bounds}), run on the database $\mathit{db} = [(\mathsf{a}, 3),
 (\mathsf{b}, 1), (\mathsf{a}, -3)]$ of \exref{introduction-example}. In the absolute presentation the
 approximation object for a number is the free semimodule $S^2$, one bound for each direction of change; a
 relative bound constrains both directions at once, so the relative presentation uses a single scalar.
@@ -111,6 +113,43 @@ exactly, as positivity guarantees, whereas the same translation applied to the r
 dependency. The three analyses answer three different questions at the same position: the rational Jacobian
 reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and the counting Jacobian usage
 ($2$).
+
+\subsection{\added{Signed Saliency}}
+\label{sec:examples:saliency}
+
+\begin{AddedBlock}
+At the sign semiring of \secref{approx-as-tangents:qualitative}, taking the integers as the numbers, the
+backward derivative of a numeric score is a \emph{signed saliency map}: for each input, whether increasing
+it raises or lowers the score, the qualitative counterpart of the gradient-based saliency maps used to
+explain model predictions~\cite{selvaraju20}. We could simply compute the rational derivative and then
+forget the magnitudes, but the resulting map would be valid only at the particular magnitudes of the run.
+An alternative is to compute with signs as the derivatives instead: addition's entries are $+$, and
+multiplication's entry for each argument is the sign of the other. Every verdict then rests only on signs,
+so a definite entry holds under any sign-preserving change of magnitude, with $?$ where the signs alone are
+insufficient to determine the direction.
+
+Our example scores a $3 \times 3$ grid of numbers against a fixed pattern, in the manner of a small
+image filter applied to one patch of a larger image: the centre weighted positively, the corners
+negatively, plus two products that mean the derivative varies with the input:
+\begin{displaymath}
+  \mathrm{score}
+  \begin{pmatrix} x_1 & x_2 & x_3 \\ x_4 & x_5 & x_6 \\ x_7 & x_8 & x_9 \end{pmatrix}
+  = x_5 - (x_1 + x_3 + x_7 + x_9) + x_4 x_6 - x_5 x_2
+\end{displaymath}
+Running on the grid with rows $(1, 2, 1)$, $(3, 5, 4)$ and $(1, 7, 1)$ gives the score $3$. Seeding
+the backward derivative at this run with $+$ distributes it to the inputs:
+\begin{displaymath}
+  \partial(\mathrm{score})_r(+) =
+  \begin{pmatrix} - & - & - \\ + & ? & + \\ - & 0 & - \end{pmatrix}
+\end{displaymath}
+\noindent The corners lower the score; the two mid-edge cells raise it, each entry the sign of its
+partner in the product $x_4 x_6$; and the cell the score never inspects gets $0$. The centre receives
+$?$: its two contributions, the positive linear term and the negatively weighted product $x_5 x_2$, pull
+in opposite directions, so the direction of its effect depends on the other inputs. Signs of the rational
+derivative would instead report $-$ for the centre, a verdict owed to $x_2 = 2$ rather than to its sign.
+Collapsing the signs to the Booleans (\secref{approx-as-tangents:qualitative}) reports mere dependence,
+losing direction.
+\end{AddedBlock}
 
 \subsection{Cognacy Queries}
 \label{sec:examples:linked}
