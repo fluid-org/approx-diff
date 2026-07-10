@@ -27,7 +27,7 @@ notes.pdf: notes.tex $(NOTES_DEPS)
 	cp _latex/notes.pdf .
 	@! grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/notes.log
 
-AGDA_EXCLUDES:=-x "agda/_build/*" -x "agda/src/unused/*" -x "agda/src/incomplete/*"
+AGDA_EXCLUDES:=-x "agda/_build/*" -x "agda/src/unused/*" -x "agda/src/incomplete/*" -x "agda/src/*~"
 
 submit: main-submit.pdf
 	cd agda && agda src/everything.agda
