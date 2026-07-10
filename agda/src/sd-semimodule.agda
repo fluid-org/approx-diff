@@ -6,7 +6,8 @@ open import categories using (Category; HasTerminal; IsTerminal; HasInitial; IsI
 open import commutative-semiring using (CommutativeSemiring)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products; biproduct-iso; biproducts→coproducts)
 open import commutative-monoid using (CommutativeMonoid)
-open import functor using (Functor)
+open import functor using (Functor; Full; Faithful)
+open import prop using (∃ₛ)
 import finite-product-functor
 open import Data.Nat as Nat using (ℕ)
 import semimodule
@@ -415,6 +416,15 @@ open Category SemiMod.cat using (IsIso; ≈-refl; ≈-trans; ≈-sym; id-left; i
 open IsTerminal (SemiMod.terminal .HasTerminal.is-terminal) using (to-terminal; to-terminal-unique)
 open HasProducts SemiMod-products using (pair; p₁; p₂; pair-natural; pair-ext)
 open finite-product-functor U using (preserve-chosen-terminal; preserve-chosen-products)
+
+-- Both hold definitionally: a morphism of self-dual semimodules is a linear map of the
+-- underlying semimodules, with no compatibility condition on the chosen self-dualities.
+U-faithful : Faithful U
+U-faithful eq = eq
+
+U-full : Full U
+U-full h .∃ₛ.fst = h
+U-full h .∃ₛ.snd = ≈-refl {f = h}
 
 U-preserve-terminal : preserve-chosen-terminal terminal SemiMod.terminal
 U-preserve-terminal .IsIso.inverse = to-terminal

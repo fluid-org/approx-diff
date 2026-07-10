@@ -15,7 +15,3 @@ import example.free-total
 import example.intervals-query
 import example.intervals-mult-total
 import example.signs-score
-
--- Slow (several minutes each):
--- import example.bool-cbn-1
--- import example.bool-cbn-2

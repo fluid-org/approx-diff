@@ -15,6 +15,8 @@ import language-syntax
 import semimodule
 import sd-semimodule
 import ho-model
+import fam-functor
+open import functor using (Full; Faithful)
 
 module ho-model-sd-semimod {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
@@ -26,6 +28,17 @@ open ho-model.Interpretation
   SemiMod.cat SemiMod.cmon-enriched SemiMod.limits SemiMod.terminal SemiMod.biproduct
   SDSemiMod.U SDSemiMod.U-preserve-terminal (λ {X} {Y} → SDSemiMod.U-preserve-products {X} {Y})
   public
+
+-- The interpretation functor Fam(U) (H in the paper) is full and faithful, since U is: morphisms
+-- of the higher-order model between first-order objects come from unique first-order morphisms.
+Fam⟨U⟩-faithful : Faithful Fam⟨F⟩
+Fam⟨U⟩-faithful = fam-functor.FamF-faithful 0ℓ 0ℓ SDSemiMod.U
+                    (λ {X} {Y} {f} {g} → SDSemiMod.U-faithful {X} {Y} {f} {g})
+
+Fam⟨U⟩-full : Full Fam⟨F⟩
+Fam⟨U⟩-full = fam-functor.FamF-full 0ℓ 0ℓ SDSemiMod.U
+                (λ {X} {Y} → SDSemiMod.U-full {X} {Y})
+                (λ {X} {Y} {f} {g} → SDSemiMod.U-faithful {X} {Y} {f} {g})
 
 -- Self-dualities on first-order-data types.
 module interp-sd (Sig : Signature 0ℓ)

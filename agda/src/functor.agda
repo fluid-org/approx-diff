@@ -3,7 +3,7 @@
 module functor where
 
 open import Level using (_⊔_)
-open import prop using (tt; ⟪_⟫) -- only needed for setoid-functor
+open import prop using (tt; ⟪_⟫; ∃ₛ)
 open import categories using (Category; setoid→category)
 open import prop-setoid using (Setoid; IsEquivalence; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_)
@@ -65,6 +65,14 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
       𝒟.id _
     ∎
     where open ≈-Reasoning 𝒟.isEquiv
+
+  -- Fullness and faithfulness. Fullness uses the Set-level existential, so the preimage of a
+  -- morphism can be projected out.
+  Faithful : Functor 𝒞 𝒟 → Prop (o₁ ⊔ m₁ ⊔ e₁ ⊔ e₂)
+  Faithful F = ∀ {x y} {f g : x 𝒞.⇒ y} → F .fmor f 𝒟.≈ F .fmor g → f 𝒞.≈ g
+
+  Full : Functor 𝒞 𝒟 → Set (o₁ ⊔ m₁ ⊔ m₂ ⊔ e₂)
+  Full F = ∀ {x y} (h : F .fobj x 𝒟.⇒ F .fobj y) → ∃ₛ (x 𝒞.⇒ y) (λ g → F .fmor g 𝒟.≈ h)
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} where
 
