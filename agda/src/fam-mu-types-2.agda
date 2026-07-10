@@ -9,12 +9,13 @@
 -- from the layers beneath it.
 ------------------------------------------------------------------------------
 
-open import Level using (Level; _⊔_) renaming (suc to lsuc)
+open import Level using (Level; _⊔_; lift) renaming (suc to lsuc)
 open import Data.Nat using (ℕ; suc)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
+open import Data.Unit using (tt)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
@@ -41,7 +42,8 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   -- Collapse the α-reconstruction reindex followed by the fold's reindex into one
   -- index-only reindex, so the fusion lemmas can treat them as a single morphism.
   module Rcomb = Reindex δ' (extend δ A)
-  combine : (γ : Γ .idx .Carrier) → ∀ {k} {ρA ρB ρC} → Aα.R.MorD {k} ρA ρB → Fα.FMor {k} ρB ρC → Rcomb.IMorD {k} ρA ρC
+  combine : (γ : Γ .idx .Carrier) → ∀ {k} {ρA ρB ρC} {dA dB dC} →
+            Aα.R.MorD {k} ρA ρB dA dB → Fα.FMor {k} ρB ρC dB dC → Rcomb.IMorD {k} ρA ρC
   combine γ md fm = Rcomb.ibase (λ v a → Fα.fold-apply γ fm v (Aα.R.apply md v a))
     (λ v {a} {a'} p → Fα.fold-apply-resp (Γ .idx .isEquivalence .refl) fm v
       (Aα.R.apply-resp md v {a} {a'} p))
@@ -50,21 +52,21 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     -- Defunctionalised relation "these two Rcomb.IMorDs are combine-lemma-related under binders".
     data Rel : ∀ {k} {ρA ρB} → Rcomb.IMorD {k} ρA ρB → Rcomb.IMorD {k} ρA ρB →
                Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
-      rcomb : ∀ {k} {ρA ρB ρC} (γ : Γ .idx .Carrier) (Q : Poly (suc k))
-              (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) →
-              Rel (combine γ (Aα.R.bind Q md) (Fα.fbind Q fm)) (Rcomb.ibind Q (combine γ md fm))
-      rbind : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB} (Q : Poly (suc k)) →
-              Rel md₁ md₂ → Rel (Rcomb.ibind Q md₁) (Rcomb.ibind Q md₂)
+      rcomb : ∀ {k} {ρA ρB ρC} {dA dB dC} (γ : Γ .idx .Carrier) (Q : Poly (suc k))
+              (md : Aα.R.MorD ρA ρB dA dB) (fm : Fα.FMor ρB ρC dB dC) →
+              Rel (combine γ (Aα.R.bind Q md) (Fα.fbind Q fm)) (Rcomb.ibind ∣ Q ∣ (combine γ md fm))
+      rbind : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB} (R : Sh.Poly (suc k)) →
+              Rel md₁ md₂ → Rel (Rcomb.ibind R md₁) (Rcomb.ibind R md₂)
 
     -- reindex respects Rel-related morphisms; the binder recursion is structural on Rel.
-    reindex-mcong : ∀ {k} {Q : Poly (suc k)} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
-                    (r : Rel md₁ md₂) (t : Aα.TX.W Q ρA) → Fα.TA'.W-≈ (Rcomb.ireindex md₁ t) (Rcomb.ireindex md₂ t)
-    reindex-mcong {Q = Q} r (Aα.TX.sup y) = reindex-mcong-shape Q (rbind Q r) y
+    reindex-mcong : ∀ {k} {R : Sh.Poly (suc k)} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
+                    (r : Rel md₁ md₂) (t : Aα.TX.W R ρA) → Fα.TA'.W-≈ (Rcomb.ireindex md₁ t) (Rcomb.ireindex md₂ t)
+    reindex-mcong {R = R} r (Aα.TX.sup y) = reindex-mcong-shape R (rbind R r) y
 
-    reindex-mcong-shape : ∀ {j} (R : Poly j) {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
+    reindex-mcong-shape : ∀ {j} (R : Sh.Poly j) {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
                           (r : Rel md₁ md₂) (y : Aα.TX.⟦ R ⟧shape ρA) →
                           Fα.TA'.shape≈ R ρB (Rcomb.ireindex-shape R md₁ y) (Rcomb.ireindex-shape R md₂ y)
-    reindex-mcong-shape (const A') r y = A' .idx .isEquivalence .refl
+    reindex-mcong-shape (const S) r y = S .isEquivalence .refl
     reindex-mcong-shape (var v)    r y = mrel-apply r v
     reindex-mcong-shape (P + P') r (inj₁ y) = reindex-mcong-shape P r y
     reindex-mcong-shape (P + P') r (inj₂ z) = reindex-mcong-shape P' r z
@@ -75,20 +77,20 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                  Fα.TA'.elEq (ρB v) (Rcomb.iapply md₁ v a) (Rcomb.iapply md₂ v a)
     mrel-apply (rcomb γ Q md fm)            Fin.zero     {a} = combine-lemma γ md fm a
     mrel-apply (rcomb {ρC = ρC} γ Q md fm) (Fin.suc v')      = Fα.TA'.elEq-refl (ρC v') _
-    mrel-apply (rbind Q r)                  Fin.zero     {a} = reindex-mcong r a
-    mrel-apply (rbind Q r)                 (Fin.suc v')      = mrel-apply r v'
+    mrel-apply (rbind R r)                  Fin.zero     {a} = reindex-mcong r a
+    mrel-apply (rbind R r)                 (Fin.suc v')      = mrel-apply r v'
 
-    combine-lemma : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC} (γ : Γ .idx .Carrier)
-                    (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) (t : Aα.TX.W Q ρA) →
+    combine-lemma : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC} {dA dB dC} (γ : Γ .idx .Carrier)
+                    (md : Aα.R.MorD ρA ρB dA dB) (fm : Fα.FMor ρB ρC dB dC) (t : Aα.TX.W ∣ Q ∣ ρA) →
                     Fα.TA'.W-≈ (Fα.fold-reindex γ fm (Aα.R.reindex md t)) (Rcomb.ireindex (combine γ md fm) t)
     combine-lemma {Q = Q} γ md fm (Aα.TX.sup x) = combine-lemma-shape Q Q γ md fm x
 
-    combine-lemma-shape : ∀ {k} (Q : Poly (suc k)) (R : Poly (suc k)) {ρA ρB ρC} (γ : Γ .idx .Carrier)
-                          (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC)
-                          (x : Aα.TX.⟦ R ⟧shape (extend ρA (inj₂ (mkSort Q ρA)))) →
-                          Fα.TA'.shape≈ R (extend ρC (inj₂ (mkSort Q ρC)))
-                            (Fα.fold-reindex-shape γ R (Fα.fbind Q fm) (Aα.R.reindex-shape R (Aα.R.bind Q md) x))
-                            (Rcomb.ireindex-shape R (Rcomb.ibind Q (combine γ md fm)) x)
+    combine-lemma-shape : ∀ {k} (Q : Poly (suc k)) (R : Poly (suc k)) {ρA ρB ρC} {dA dB dC} (γ : Γ .idx .Carrier)
+                          (md : Aα.R.MorD ρA ρB dA dB) (fm : Fα.FMor ρB ρC dB dC)
+                          (x : Aα.TX.⟦ ∣ R ∣ ⟧shape (extend ρA (inj₂ (mkSort ∣ Q ∣ ρA)))) →
+                          Fα.TA'.shape≈ ∣ R ∣ (extend ρC (inj₂ (mkSort ∣ Q ∣ ρC)))
+                            (Fα.fold-reindex-shape γ R (Fα.fbind Q fm) (Aα.R.reindex-shape ∣ R ∣ (Aα.R.bind Q md) x))
+                            (Rcomb.ireindex-shape ∣ R ∣ (Rcomb.ibind ∣ Q ∣ (combine γ md fm)) x)
     combine-lemma-shape Q (const A')              γ md fm x = A' .idx .isEquivalence .refl
     combine-lemma-shape Q (var Fin.zero)          γ md fm x = combine-lemma γ md fm x
     combine-lemma-shape Q (var (Fin.suc v)) {ρC = ρC} γ md fm x = Fα.TA'.elEq-refl (ρC v) _
@@ -108,35 +110,37 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   module CombineFam (γ : Γ .idx .Carrier) where
     module FR = FReindex {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
 
-    combine-act : ∀ {k} {ρA ρB ρC} (md : Aα.R.MorD {k} ρA ρB) (fm : Fα.FMor {k} ρB ρC) →
-                  FR.FAct (combine γ md fm)
+    combine-act : ∀ {k} {ρA ρB ρC} {dA dB dC} (md : Aα.R.MorD {k} ρA ρB dA dB) (fm : Fα.FMor {k} ρB ρC dB dC) →
+                  FR.FAct (combine γ md fm) dA dC
     combine-act md fm =
       FR.abase (λ v a → Fα.fold-apply-fam γ fm v (Aα.R.apply md v a)
                         ∘ prod-m (id (Fam.fm (Γ .fam) γ)) (Aα.R.apply-fam md v a))
 
     mutual
       -- Fibre actions over Rel-related morphisms, related constructor by constructor.
-      data RelAct : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.IMorD {k} ρA ρB} →
-                    Rel md₁ md₂ → FR.FAct md₁ → FR.FAct md₂ → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
-        rcombA : ∀ {k} {ρA ρB ρC} (Q : Poly (suc k)) (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) →
+      data RelAct : ∀ {k} {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD {k} ρA ρB} →
+                    Rel md₁ md₂ → FR.FAct md₁ dA dB → FR.FAct md₂ dA dB →
+                    Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+        rcombA : ∀ {k} {ρA ρB ρC} {dA dB dC} (Q : Poly (suc k))
+                 (md : Aα.R.MorD ρA ρB dA dB) (fm : Fα.FMor ρB ρC dB dC) →
                  RelAct (rcomb γ Q md fm) (combine-act (Aα.R.bind Q md) (Fα.fbind Q fm))
                         (FR.abind Q (combine γ md fm) (combine-act md fm))
-        rbindA : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB} {r : Rel md₁ md₂}
-                 {a₁ : FR.FAct md₁} {a₂ : FR.FAct md₂} (Q : Poly (suc k)) →
-                 RelAct r a₁ a₂ → RelAct (rbind Q r) (FR.abind Q md₁ a₁) (FR.abind Q md₂ a₂)
+        rbindA : ∀ {k} {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB} {r : Rel md₁ md₂}
+                 {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB} (Q : Poly (suc k)) →
+                 RelAct r a₁ a₂ → RelAct (rbind ∣ Q ∣ r) (FR.abind Q md₁ a₁) (FR.abind Q md₂ a₂)
 
-      reindex-mcong-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
-                          {r : Rel md₁ md₂} {a₁ : FR.FAct md₁} {a₂ : FR.FAct md₂}
-                          (ra : RelAct r a₁ a₂) (t : Aα.TX.W Q ρA) →
-                          Fα.TA'.fib-subst {x = Rcomb.ireindex md₁ t} {y = Rcomb.ireindex md₂ t}
+      reindex-mcong-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
+                          {r : Rel md₁ md₂} {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB}
+                          (ra : RelAct r a₁ a₂) (t : Aα.TX.W ∣ Q ∣ ρA) →
+                          Fα.TA'.fib-subst Q dB {x = Rcomb.ireindex md₁ t} {y = Rcomb.ireindex md₂ t}
                              (reindex-mcong r t) ∘ FR.freindex-fam a₁ {t} ≈
                           FR.freindex-fam a₂ {t}
       reindex-mcong-fam {Q = Q} ra (Aα.TX.sup y) = reindex-mcong-shape-fam Q (rbindA Q ra) y
 
-      reindex-mcong-shape-fam : ∀ {j} (R : Poly j) {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
-                                {r : Rel md₁ md₂} {a₁ : FR.FAct md₁} {a₂ : FR.FAct md₂}
-                                (ra : RelAct r a₁ a₂) (y : Aα.TX.⟦ R ⟧shape ρA) →
-                                (Fα.TA'.fib-shape-subst R ρB (reindex-mcong-shape R r y) ∘ FR.freindex-shape-fam R a₁ {y})
+      reindex-mcong-shape-fam : ∀ {j} (R : Poly j) {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
+                                {r : Rel md₁ md₂} {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB}
+                                (ra : RelAct r a₁ a₂) (y : Aα.TX.⟦ ∣ R ∣ ⟧shape ρA) →
+                                (Fα.TA'.fib-shape-subst R dB (reindex-mcong-shape ∣ R ∣ r y) ∘ FR.freindex-shape-fam R a₁ {y})
                                 ≈ FR.freindex-shape-fam R a₂ {y}
       reindex-mcong-shape-fam (const A') ra y =
         ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
@@ -146,35 +150,35 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       reindex-mcong-shape-fam (P × P') ra (y , z) =
         ≈-trans (strong-prod-m-post _ _ _ _)
           (strong-prod-m-cong (reindex-mcong-shape-fam P ra y) (reindex-mcong-shape-fam P' ra z))
-      reindex-mcong-shape-fam (μ R'') ra y = reindex-mcong-fam ra y
+      reindex-mcong-shape-fam (μ R'') ra y = reindex-mcong-fam {Q = R''} ra y
 
-      mrel-apply-fam : ∀ {k} {ρA ρB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
-                       {r : Rel md₁ md₂} {a₁ : FR.FAct md₁} {a₂ : FR.FAct md₂}
+      mrel-apply-fam : ∀ {k} {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
+                       {r : Rel md₁ md₂} {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB}
                        (ra : RelAct r a₁ a₂) (v : Fin k) {z} →
-                       Fα.TA'.fib-el-subst (ρB v) (mrel-apply r v {z}) ∘ FR.aapply a₁ v z ≈ FR.aapply a₂ v z
+                       Fα.TA'.fib-el-subst (ρB v) (dB v) (mrel-apply r v {z}) ∘ FR.aapply a₁ v z ≈ FR.aapply a₂ v z
       mrel-apply-fam (rcombA Q md fm) Fin.zero {z} = combine-lemma-fam md fm z
       mrel-apply-fam (rcombA {ρC = ρC} Q md fm) (Fin.suc v') {z} =
-        ≈-trans (∘-cong (Fα.TA'.fib-el-refl* (ρC v') _) ≈-refl) id-left
-      mrel-apply-fam (rbindA Q ra) Fin.zero {z} = reindex-mcong-fam ra z
+        ≈-trans (∘-cong (Fα.TA'.fib-el-refl* (ρC v') _ _) ≈-refl) id-left
+      mrel-apply-fam (rbindA Q ra) Fin.zero {z} = reindex-mcong-fam {Q = Q} ra z
       mrel-apply-fam (rbindA Q ra) (Fin.suc v') = mrel-apply-fam ra v'
 
-      combine-lemma-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC}
-                          (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC) (t : Aα.TX.W Q ρA) →
-                          (Fα.TA'.fib-subst {x = Fα.fold-reindex γ fm (Aα.R.reindex md t)}
+      combine-lemma-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB ρC} {dA dB dC}
+                          (md : Aα.R.MorD ρA ρB dA dB) (fm : Fα.FMor ρB ρC dB dC) (t : Aα.TX.W ∣ Q ∣ ρA) →
+                          (Fα.TA'.fib-subst Q dC {x = Fα.fold-reindex γ fm (Aα.R.reindex md t)}
                                             {y = Rcomb.ireindex (combine γ md fm) t}
                              (combine-lemma γ md fm t)
                            ∘ (Fα.fold-reindex-fam γ fm (Aα.R.reindex md t)
-                              ∘ prod-m (id _) (Aα.R.reindex-fam-W md {t})))
+                              ∘ prod-m (id _) (Aα.R.reindex-fam-W {Q = Q} md {t})))
                           ≈ FR.freindex-fam (combine-act md fm) {t}
       combine-lemma-fam {Q = Q} md fm (Aα.TX.sup x) = combine-lemma-shape-fam Q Q md fm x
 
-      combine-lemma-shape-fam : ∀ {k} (Q : Poly (suc k)) (R : Poly (suc k)) {ρA ρB ρC}
-                                (md : Aα.R.MorD ρA ρB) (fm : Fα.FMor ρB ρC)
-                                (x : Aα.TX.⟦ R ⟧shape (extend ρA (inj₂ (mkSort Q ρA)))) →
-                                Fα.TA'.fib-shape-subst R (extend ρC (inj₂ (mkSort Q ρC)))
+      combine-lemma-shape-fam : ∀ {k} (Q : Poly (suc k)) (R : Poly (suc k)) {ρA ρB ρC} {dA dB dC}
+                                (md : Aα.R.MorD ρA ρB dA dB) (fm : Fα.FMor ρB ρC dB dC)
+                                (x : Aα.TX.⟦ ∣ R ∣ ⟧shape (extend ρA (inj₂ (mkSort ∣ Q ∣ ρA)))) →
+                                Fα.TA'.fib-shape-subst R (Fα.TA'.deco-ext Q dC)
                                    (combine-lemma-shape Q R γ md fm x)
                                  ∘ (Fα.fold-reindex-shape-fam γ R (Fα.fbind Q fm)
-                                      (Aα.R.reindex-shape R (Aα.R.bind Q md) x)
+                                      (Aα.R.reindex-shape ∣ R ∣ (Aα.R.bind Q md) x)
                                     ∘ prod-m (id _) (Aα.R.reindex-fam R (Aα.R.bind Q md) {x}))
                                 ≈ FR.freindex-shape-fam R (FR.abind Q (combine γ md fm) (combine-act md fm)) {x}
       combine-lemma-shape-fam Q (const A') md fm x =
@@ -182,7 +186,7 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           (≈-trans id-left (≈-trans (pair-p₂ _ _) id-left))
       combine-lemma-shape-fam Q (var Fin.zero) md fm x = combine-lemma-fam md fm x
       combine-lemma-shape-fam Q (var (Fin.suc v)) {ρC = ρC} md fm x =
-        ≈-trans (∘-cong (Fα.TA'.fib-el-refl* (ρC v) _) ≈-refl) id-left
+        ≈-trans (∘-cong (Fα.TA'.fib-el-refl* (ρC v) _ _) ≈-refl) id-left
       combine-lemma-shape-fam Q (P + Q') md fm (inj₁ x) = combine-lemma-shape-fam Q P md fm x
       combine-lemma-shape-fam Q (P + Q') md fm (inj₂ y) = combine-lemma-shape-fam Q Q' md fm y
       combine-lemma-shape-fam Q (P × Q') md fm (x , y) =
@@ -190,15 +194,15 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           (≈-trans (strong-prod-m-post _ _ _ _)
             (strong-prod-m-cong (combine-lemma-shape-fam Q P md fm x) (combine-lemma-shape-fam Q Q' md fm y)))
       combine-lemma-shape-fam Q (μ R'') md fm x =
-        ≈-trans (∘-cong (Fα.TA'.fib-trans*
+        ≈-trans (∘-cong (Fα.TA'.fib-trans* R'' _
                            {x = Fα.fold-reindex γ (Fα.fbind Q fm) (Aα.R.reindex (Aα.R.bind Q md) x)}
                            {y = Rcomb.ireindex (combine γ (Aα.R.bind Q md) (Fα.fbind Q fm)) x}
-                           {z = Rcomb.ireindex (Rcomb.ibind Q (combine γ md fm)) x}
+                           {z = Rcomb.ireindex (Rcomb.ibind ∣ Q ∣ (combine γ md fm)) x}
                            (reindex-mcong (rcomb γ Q md fm) x)
                            (combine-lemma γ (Aα.R.bind Q md) (Fα.fbind Q fm) x)) ≈-refl)
           (≈-trans (assoc _ _ _)
             (≈-trans (∘-cong ≈-refl (combine-lemma-fam (Aα.R.bind Q md) (Fα.fbind Q fm) x))
-              (reindex-mcong-fam (rcombA Q md fm) x)))
+              (reindex-mcong-fam {Q = R''} (rcombA Q md fm) x)))
 
   -- Correspondence hypothesis for the fuse instances: `combine mor₀ fbase` acts as the fold at the
   -- recursion slot and as the identity at the parameter slots.
@@ -213,7 +217,7 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   β-idx : (R : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
           (m≈ : _≈s_ (fobj μObj R δ' .idx) m₁ m₂) →
           _≈s_ (fobj μObj R (extend δ A) .idx)
-               (Fα.fold-shape-idx R γ₁ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m₁)))
+               (Fα.fold-shape-idx R γ₁ (Aα.R.reindex-shape ∣ R ∣ Aα.mor₀ (Aα.embed-idx R m₁)))
                (strong-fmor R fs .idxf .PS._⇒_.func (γ₂ , m₂))
   β-idx (const A')        γ≈ m≈ = m≈
   β-idx (var Fin.zero)    γ≈ {m₁} {m₂} m≈ = Fα.fold-idx-resp γ≈ {m₁} {m₂} m≈
@@ -223,10 +227,10 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   β-idx (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (m≈₁ , m≈₂) = β-idx Q₁ γ≈ m≈₁ , β-idx Q₂ γ≈ m≈₂
   β-idx (μ Q') {γ₁} {γ₂} γ≈ {m₁} {m₂} m≈ =
     Fα.TA'.W-≈-trans
-      {x = Fα.fold-shape-idx (μ Q') γ₁ (Aα.R.reindex-shape (μ Q') Aα.mor₀ (Aα.embed-idx (μ Q') m₁))}
+      {x = Fα.fold-shape-idx (μ Q') γ₁ (Aα.R.reindex-shape ∣ μ Q' ∣ Aα.mor₀ (Aα.embed-idx (μ Q') m₁))}
       {y = Rcomb.ireindex (combine γ₁ Aα.mor₀ Fα.fbase) m₁}
       {z = strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ₂ , m₂)}
-      (combine-lemma γ₁ Aα.mor₀ Fα.fbase m₁)
+      (combine-lemma {Q = Q'} γ₁ Aα.mor₀ Fα.fbase m₁)
       (fuse-idx {n = suc n} {Γ = Γ} {sₛ = δ'} {sₜ = extend δ A} Q'
         (λ γ → combine γ Aα.mor₀ Fα.fbase) fs corr-fs γ≈ {m₁} {m₂} m≈)
 
@@ -235,7 +239,7 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           Category._≈_ 𝒞
             (fobj μObj R (extend δ A) .fam .subst
                (β-idx R (Γ .idx .isEquivalence .refl) (fobj μObj R δ' .idx .isEquivalence .refl))
-             ∘ (Fα.fold-shape-fam R γ (Aα.R.reindex-shape R Aα.mor₀ (Aα.embed-idx R m))
+             ∘ (Fα.fold-shape-fam R γ (Aα.R.reindex-shape ∣ R ∣ Aα.mor₀ (Aα.embed-idx R m))
                 ∘ prod-m (id _) (Aα.R.reindex-fam R Aα.mor₀ ∘ Aα.embed-fam R m)))
             (strong-fmor R fs .famf ._⇒f_.transf (γ , m))
   β-fam (const A') = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans (prod-m-cong ≈-refl id-left) prod-m-id)) id-right))
@@ -267,7 +271,7 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                 (≈-trans (∘-cong ≈-refl (pair-cong ≈-refl (≈-sym id-left))) (≈-sym id-left)))))))
   β-fam (μ Q') {γ} {m} =
     ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl id-right)))
-      (≈-trans (∘-cong (Fα.TA'.fib-trans*
+      (≈-trans (∘-cong (Fα.TA'.fib-trans* Q' _
                           {x = Fα.fold-reindex γ Fα.fbase (Aα.R.reindex Aα.mor₀ m)}
                           {y = Rcomb.ireindex (combine γ Aα.mor₀ Fα.fbase) m}
                           {z = strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ , m)}
@@ -275,9 +279,9 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                             (λ γ' → combine γ' Aα.mor₀ Fα.fbase) fs corr-fs
                             (Γ .idx .isEquivalence .refl) {m} {m}
                             (μObj Q' δ' .idx .isEquivalence .refl {m}))
-                          (combine-lemma γ Aα.mor₀ Fα.fbase m)) ≈-refl)
+                          (combine-lemma {Q = Q'} γ Aα.mor₀ Fα.fbase m)) ≈-refl)
         (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (Cγ.combine-lemma-fam Aα.mor₀ Fα.fbase m))
+          (≈-trans (∘-cong ≈-refl (Cγ.combine-lemma-fam {Q = Q'} Aα.mor₀ Fα.fbase m))
             (fuse-fam γ Q' (λ γ' → combine γ' Aα.mor₀ Fα.fbase)
               (Cγ.combine-act Aα.mor₀ Fα.fbase) fs corr-fs corr-fs-fam {m}))))
     where
@@ -311,10 +315,12 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   hs : ∀ i → Mor (Fam𝒞-P.prod Γ (δ' i)) (extend δ A i)
   hs = strong-extend-mor (λ i → Fam𝒞-P.p₂) h
 
-  -- Context shift δ → δ': the μ-binder slot of `η₀ P` is exactly the fresh δ' slot (identity on indices and fibres).
+  -- Context shift δ → δ': the μ-binder slot of the body environment is exactly the
+  -- fresh δ' slot (identity on indices and fibres).
   module Rδ = Reindex δ δ'
 
-  mor₀δ : Rδ.MorD (η₀ P) (λ v → inj₁ v)
+  mor₀δ : Rδ.MorD (Sh.η₀ ∣ P ∣) (λ v → inj₁ v)
+                  (Fα.Tδ.deco-ext P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)) (λ v → lift tt)
   mor₀δ = Rδ.base (λ { Fin.zero a → a ; (Fin.suc i) a → a })
                   (λ { Fin.zero p → p ; (Fin.suc i) p → p })
                   (λ { Fin.zero a → id _ ; (Fin.suc i) a → id _ })
@@ -322,25 +328,26 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                      ; (Fin.suc i) p → ≈-trans id-left (≈-sym id-right) })
 
   -- Shift a shape over the μ-binder environment into `fobj`'s native form over δ'.
-  shift : (R : Poly (suc n)) → Fα.Tδ.⟦ R ⟧shape (η₀ P) → fobj μObj R δ' .idx .Carrier
-  shift R x = Aα.unembed-idx R (Rδ.reindex-shape R mor₀δ x)
+  shift : (R : Poly (suc n)) → Fα.Tδ.⟦ ∣ R ∣ ⟧shape (Sh.η₀ ∣ P ∣) → fobj μObj R δ' .idx .Carrier
+  shift R x = Aα.unembed-idx R (Rδ.reindex-shape ∣ R ∣ mor₀δ x)
 
-  shift-resp : (R : Poly (suc n)) {x y : Fα.Tδ.⟦ R ⟧shape (η₀ P)} →
-               Fα.Tδ.shape≈ R (η₀ P) x y → _≈s_ (fobj μObj R δ' .idx) (shift R x) (shift R y)
-  shift-resp R p = Aα.unembed-idx-resp R (Rδ.reindex-shape-resp R mor₀δ p)
+  shift-resp : (R : Poly (suc n)) {x y : Fα.Tδ.⟦ ∣ R ∣ ⟧shape (Sh.η₀ ∣ P ∣)} →
+               Fα.Tδ.shape≈ ∣ R ∣ (Sh.η₀ ∣ P ∣) x y → _≈s_ (fobj μObj R δ' .idx) (shift R x) (shift R y)
+  shift-resp R p = Aα.unembed-idx-resp R (Rδ.reindex-shape-resp ∣ R ∣ mor₀δ p)
 
   -- Round trip: shifting into δ' and reindexing back along mor₀ is the identity,
   -- on indices and fibres.
   mutual
-    data RT : ∀ {j} {ρD : Fin j → Fin n ⊎ Sort n} {ρX : Fin j → Fin (suc n) ⊎ Sort (suc n)} →
-              Rδ.MorD ρD ρX → Aα.R.MorD ρX ρD → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+    data RT : ∀ {j} {ρD : Fin j → Fin n ⊎ Sort n} {ρX : Fin j → Fin (suc n) ⊎ Sort (suc n)}
+              {dD : ∀ v → Fα.Tδ.DecoRes (ρD v)} {dX : ∀ v → Aα.TX.DecoRes (ρX v)} →
+              Rδ.MorD ρD ρX dD dX → Aα.R.MorD ρX ρD dX dD → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
       rtbase : RT mor₀δ Aα.mor₀
-      rtbind : ∀ {j} {ρD ρX} {md : Rδ.MorD {j} ρD ρX} {md' : Aα.R.MorD ρX ρD} (Q : Poly (suc j)) →
+      rtbind : ∀ {j} {ρD ρX dD dX} {md : Rδ.MorD {j} ρD ρX dD dX} {md' : Aα.R.MorD ρX ρD dX dD} (Q : Poly (suc j)) →
                RT md md' → RT (Rδ.bind Q md) (Aα.R.bind Q md')
 
-    rt-shape : ∀ {j} (S : Poly j) {ρD ρX} {md : Rδ.MorD ρD ρX} {md' : Aα.R.MorD ρX ρD}
-               (rt : RT md md') (z : Fα.Tδ.⟦ S ⟧shape ρD) →
-               Fα.Tδ.shape≈ S ρD (Aα.R.reindex-shape S md' (Rδ.reindex-shape S md z)) z
+    rt-shape : ∀ {j} (S : Poly j) {ρD ρX dD dX} {md : Rδ.MorD ρD ρX dD dX} {md' : Aα.R.MorD ρX ρD dX dD}
+               (rt : RT md md') (z : Fα.Tδ.⟦ ∣ S ∣ ⟧shape ρD) →
+               Fα.Tδ.shape≈ ∣ S ∣ ρD (Aα.R.reindex-shape ∣ S ∣ md' (Rδ.reindex-shape ∣ S ∣ md z)) z
     rt-shape (const A') rt z = A' .idx .isEquivalence .refl
     rt-shape (var v) rt z = rt-apply rt v
     rt-shape (S₁ + S₂) rt (inj₁ z) = rt-shape S₁ rt z
@@ -348,17 +355,17 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     rt-shape (S₁ × S₂) rt (z₁ , z₂) = rt-shape S₁ rt z₁ , rt-shape S₂ rt z₂
     rt-shape (μ S') rt (Fα.Tδ.sup z) = rt-shape S' (rtbind S' rt) z
 
-    rt-apply : ∀ {j} {ρD ρX} {md : Rδ.MorD {j} ρD ρX} {md' : Aα.R.MorD ρX ρD}
+    rt-apply : ∀ {j} {ρD ρX dD dX} {md : Rδ.MorD {j} ρD ρX dD dX} {md' : Aα.R.MorD ρX ρD dX dD}
                (rt : RT md md') (v : Fin j) {z} → Fα.Tδ.elEq (ρD v) (Aα.R.apply md' v (Rδ.apply md v z)) z
     rt-apply rtbase Fin.zero {z} = Fα.Tδ.W-≈-refl z
     rt-apply rtbase (Fin.suc i) {z} = δ i .idx .isEquivalence .refl
     rt-apply (rtbind S' rt) Fin.zero {z} = rt-shape (μ S') rt z
     rt-apply (rtbind S' rt) (Fin.suc v) = rt-apply rt v
 
-    rtf-shape : ∀ {j} (S : Poly j) {ρD ρX} {md : Rδ.MorD ρD ρX} {md' : Aα.R.MorD ρX ρD}
-                (rt : RT md md') (z : Fα.Tδ.⟦ S ⟧shape ρD) →
-                Fα.Tδ.fib-shape-subst S ρD (rt-shape S rt z)
-                 ∘ (Aα.R.reindex-fam S md' {Rδ.reindex-shape S md z} ∘ Rδ.reindex-fam S md {z}) ≈ id _
+    rtf-shape : ∀ {j} (S : Poly j) {ρD ρX dD dX} {md : Rδ.MorD ρD ρX dD dX} {md' : Aα.R.MorD ρX ρD dX dD}
+                (rt : RT md md') (z : Fα.Tδ.⟦ ∣ S ∣ ⟧shape ρD) →
+                Fα.Tδ.fib-shape-subst S dD (rt-shape S rt z)
+                 ∘ (Aα.R.reindex-fam S md' {Rδ.reindex-shape ∣ S ∣ md z} ∘ Rδ.reindex-fam S md {z}) ≈ id _
     rtf-shape (const A') rt z =
       ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left id-left)
     rtf-shape (var v) rt z = rtf-apply rt v
@@ -370,34 +377,34 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           (≈-trans (prod-m-cong (rtf-shape S₁ rt z₁) (rtf-shape S₂ rt z₂)) prod-m-id))
     rtf-shape (μ S') rt (Fα.Tδ.sup z) = rtf-shape S' (rtbind S' rt) z
 
-    rtf-apply : ∀ {j} {ρD ρX} {md : Rδ.MorD {j} ρD ρX} {md' : Aα.R.MorD ρX ρD}
+    rtf-apply : ∀ {j} {ρD ρX dD dX} {md : Rδ.MorD {j} ρD ρX dD dX} {md' : Aα.R.MorD ρX ρD dX dD}
                 (rt : RT md md') (v : Fin j) {z} →
-                Fα.Tδ.fib-el-subst (ρD v) (rt-apply rt v {z})
+                Fα.Tδ.fib-el-subst (ρD v) (dD v) (rt-apply rt v {z})
                  ∘ (Aα.R.apply-fam md' v (Rδ.apply md v z) ∘ Rδ.apply-fam md v z) ≈ id _
     rtf-apply rtbase Fin.zero {z} =
-      ≈-trans (∘-cong (Fα.Tδ.fib-refl* z) ≈-refl) (≈-trans id-left id-left)
+      ≈-trans (∘-cong (Fα.Tδ.fib-refl* P _ z) ≈-refl) (≈-trans id-left id-left)
     rtf-apply rtbase (Fin.suc i) {z} =
       ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) (≈-trans id-left id-left)
     rtf-apply (rtbind S' rt) Fin.zero {z} = rtf-shape (μ S') rt z
     rtf-apply (rtbind S' rt) (Fin.suc v) = rtf-apply rt v
 
   -- α reconstructs the shifted shape.
-  roundtrip : (x : Fα.Tδ.⟦ P ⟧shape (η₀ P)) →
+  roundtrip : (x : Fα.Tδ.⟦ ∣ P ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
               Fα.Tδ.W-≈ (Aα.αmor .idxf .PS._⇒_.func (shift P x)) (Fα.Tδ.sup x)
   roundtrip x =
-    Fα.Tδ.shape≈-trans P (η₀ P)
-      (Aα.R.reindex-shape-resp P Aα.mor₀ (Aα.embed-unembed P (Rδ.reindex-shape P mor₀δ x))) (rt-shape P rtbase x)
+    Fα.Tδ.shape≈-trans ∣ P ∣ (Sh.η₀ ∣ P ∣)
+      (Aα.R.reindex-shape-resp ∣ P ∣ Aα.mor₀ (Aα.embed-unembed P (Rδ.reindex-shape ∣ P ∣ mor₀δ x))) (rt-shape P rtbase x)
 
-  shift-fam : (R : Poly (suc n)) (x : Fα.Tδ.⟦ R ⟧shape (η₀ P)) →
-              Fα.Tδ.fib-shape R (η₀ P) x ⇒ fobj μObj R δ' .fam .fm (shift R x)
-  shift-fam R x = Aα.unembed-fam R (Rδ.reindex-shape R mor₀δ x) ∘ Rδ.reindex-fam R mor₀δ {x}
+  shift-fam : (R : Poly (suc n)) (x : Fα.Tδ.⟦ ∣ R ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
+              Fα.Tδ.fib-shape R (Fα.Tδ.deco-ext P (λ i → lift tt)) x ⇒ fobj μObj R δ' .fam .fm (shift R x)
+  shift-fam R x = Aα.unembed-fam R (Rδ.reindex-shape ∣ R ∣ mor₀δ x) ∘ Rδ.reindex-fam R mor₀δ {x}
 
-  roundtrip-fam : (x : Fα.Tδ.⟦ P ⟧shape (η₀ P)) →
+  roundtrip-fam : (x : Fα.Tδ.⟦ ∣ P ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
                   μObj P δ .fam .subst (roundtrip x) ∘ (Aα.αmor .famf ._⇒f_.transf (shift P x) ∘ shift-fam P x) ≈ id _
   roundtrip-fam x =
-    ≈-trans (∘-cong (Fα.Tδ.fib-shape-trans* P (η₀ P)
+    ≈-trans (∘-cong (Fα.Tδ.fib-shape-trans* P _
                        (rt-shape P rtbase x)
-                       (Aα.R.reindex-shape-resp P Aα.mor₀ (Aα.embed-unembed P y'))) ≈-refl)
+                       (Aα.R.reindex-shape-resp ∣ P ∣ Aα.mor₀ (Aα.embed-unembed P y'))) ≈-refl)
       (≈-trans (assoc _ _ _)
         (≈-trans (∘-cong ≈-refl
                    (≈-trans (∘-cong ≈-refl (assoc _ _ _))
@@ -410,10 +417,10 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                                (≈-trans (≈-sym (assoc _ _ _))
                                  (≈-trans (∘-cong (Aα.embed-unembed-fam P y') ≈-refl) id-left)))))))))
           (rtf-shape P rtbase x)))
-    where y' = Rδ.reindex-shape P mor₀δ x
+    where y' = Rδ.reindex-shape ∣ P ∣ mor₀δ x
 
   -- Transport along the inverted round trip is α's fibre action after the shift.
-  shift-subst : (x : Fα.Tδ.⟦ P ⟧shape (η₀ P)) →
+  shift-subst : (x : Fα.Tδ.⟦ ∣ P ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
                 μObj P δ .fam .subst
                   (Fα.Tδ.W-≈-sym {x = Aα.αmor .idxf .PS._⇒_.func (shift P x)} {y = Fα.Tδ.sup x}
                     (roundtrip x))
@@ -444,7 +451,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   mutual
     -- h agrees with the fold, pointwise. At sup, round-trip through α's reconstruction so the β square
     -- `eq` applies, then push through the shape.
-    η-idx : ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {t₁ t₂ : Fα.Tδ.W P (λ i → inj₁ i)}
+    η-idx : ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {t₁ t₂ : Fα.Tδ.W ∣ P ∣ (λ i → inj₁ i)}
             (t≈ : Fα.Tδ.W-≈ t₁ t₂) → _≈s_ (A .idx) (h .idxf .PS._⇒_.func (γ₁ , t₁)) (Fα.fold-idx γ₂ t₂)
     η-idx {γ₁} {γ₂} γ≈ {Fα.Tδ.sup x₁} {Fα.Tδ.sup x₂} t≈ =
       A .idx .isEquivalence .trans
@@ -458,7 +465,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           (alg .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl {γ₂} , η-shape P γ₂ x₂)))
 
     -- h's strong action at the unembedded shift agrees with the fold's shape action.
-    η-shape : (R : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Fα.Tδ.⟦ R ⟧shape (η₀ P)) →
+    η-shape : (R : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Fα.Tδ.⟦ ∣ R ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
               _≈s_ (fobj μObj R (extend δ A) .idx)
                    (strong-fmor R hs .idxf .PS._⇒_.func (γ , shift R x))
                    (Fα.fold-shape-idx R γ x)
@@ -472,7 +479,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       Fα.TA'.W-≈-trans
         {x = strong-fmor (μ Q') hs .idxf .PS._⇒_.func (γ , Rδ.reindex mor₀δ x)}
         {y = Rcomb.ireindex (cmb-hs γ) (Rδ.reindex mor₀δ x)}
-        {z = Fα.fold-reindex γ Fα.fbase x}
+        {z = Fα.fold-reindex {Q = Q'} γ Fα.fbase x}
         (Fα.TA'.W-≈-sym
           {x = Rcomb.ireindex (cmb-hs γ) (Rδ.reindex mor₀δ x)}
           {y = strong-fmor (μ Q') hs .idxf .PS._⇒_.func (γ , Rδ.reindex mor₀δ x)}
@@ -484,17 +491,19 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       mutual
         -- Telescope: reindexing by h after the context shift is the fold's reindex,  by the outer induction
         -- at the recursion slots.
-        data HRel : ∀ {j} {ρD : Fin j → Fin n ⊎ Sort n} {ρX ρC : Fin j → Fin (suc n) ⊎ Sort (suc n)} →
-                    Rδ.MorD ρD ρX → Rcomb.IMorD ρX ρC → Fα.FMor ρD ρC →
+        data HRel : ∀ {j} {ρD : Fin j → Fin n ⊎ Sort n} {ρX ρC : Fin j → Fin (suc n) ⊎ Sort (suc n)}
+                    {dD : ∀ v → Fα.Tδ.DecoRes (ρD v)} {dX : ∀ v → Aα.TX.DecoRes (ρX v)}
+                    {dC : ∀ v → Fα.TA'.DecoRes (ρC v)} →
+                    Rδ.MorD ρD ρX dD dX → Rcomb.IMorD ρX ρC → Fα.FMor ρD ρC dD dC →
                     Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
           hbase : HRel mor₀δ (cmb-hs γ) Fα.fbase
-          hbind : ∀ {j} {ρD ρX ρC} {md : Rδ.MorD {j} ρD ρX} {mdc : Rcomb.IMorD ρX ρC}
-                  {fm : Fα.FMor ρD ρC} (S' : Poly (suc j)) → HRel md mdc fm →
-                  HRel (Rδ.bind S' md) (Rcomb.ibind S' mdc) (Fα.fbind S' fm)
+          hbind : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
+                  {fm : Fα.FMor ρD ρC dD dC} (S' : Poly (suc j)) → HRel md mdc fm →
+                  HRel (Rδ.bind S' md) (Rcomb.ibind ∣ S' ∣ mdc) (Fα.fbind S' fm)
 
-        htele-shape : ∀ {j} (S : Poly j) {ρD ρX ρC} {md : Rδ.MorD ρD ρX} {mdc : Rcomb.IMorD ρX ρC}
-                      {fm : Fα.FMor ρD ρC} (rel : HRel md mdc fm) (z : Fα.Tδ.⟦ S ⟧shape ρD) →
-                      Fα.TA'.shape≈ S ρC (Rcomb.ireindex-shape S mdc (Rδ.reindex-shape S md z))
+        htele-shape : ∀ {j} (S : Poly j) {ρD ρX ρC dD dX dC} {md : Rδ.MorD ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
+                      {fm : Fα.FMor ρD ρC dD dC} (rel : HRel md mdc fm) (z : Fα.Tδ.⟦ ∣ S ∣ ⟧shape ρD) →
+                      Fα.TA'.shape≈ ∣ S ∣ ρC (Rcomb.ireindex-shape ∣ S ∣ mdc (Rδ.reindex-shape ∣ S ∣ md z))
                         (Fα.fold-reindex-shape γ S fm z)
         htele-shape (const A') rel z = A' .idx .isEquivalence .refl
         htele-shape (var v) rel z = htele-apply rel v
@@ -503,8 +512,8 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
         htele-shape (S₁ × S₂) rel (z₁ , z₂) = htele-shape S₁ rel z₁ , htele-shape S₂ rel z₂
         htele-shape (μ S') rel (Fα.Tδ.sup z) = htele-shape S' (hbind S' rel) z
 
-        htele-apply : ∀ {j} {ρD ρX ρC} {md : Rδ.MorD {j} ρD ρX} {mdc : Rcomb.IMorD ρX ρC}
-                      {fm : Fα.FMor ρD ρC} (rel : HRel md mdc fm) (v : Fin j) {z} →
+        htele-apply : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
+                      {fm : Fα.FMor ρD ρC dD dC} (rel : HRel md mdc fm) (v : Fin j) {z} →
                       Fα.TA'.elEq (ρC v) (Rcomb.iapply mdc v (Rδ.apply md v z)) (Fα.fold-apply γ fm v z)
         htele-apply hbase Fin.zero {z} = η-idx (Γ .idx .isEquivalence .refl {γ}) (Fα.Tδ.W-≈-refl z)
         htele-apply hbase (Fin.suc i) {z} = δ i .idx .isEquivalence .refl
@@ -516,7 +525,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   module EtaFam (γ : Γ .idx .Carrier) where
     module FR = FReindex {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
 
-    act-hs : FR.FAct (cmb-hs γ)
+    act-hs : FR.FAct (cmb-hs γ) (λ v → lift tt) (λ v → lift tt)
     act-hs = FR.abase (λ { Fin.zero a → h .famf ._⇒f_.transf (γ , a) ; (Fin.suc i) a → p₂ })
 
     corr-hs-fam : ∀ i {a} →
@@ -528,7 +537,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     corr-hs-fam (Fin.suc j) {a} = ≈-trans (∘-cong (δ j .fam .refl*) ≈-refl) id-left
 
     mutual
-      η-fam : (t : Fα.Tδ.W P (λ i → inj₁ i)) →
+      η-fam : (t : Fα.Tδ.W ∣ P ∣ (λ i → inj₁ i)) →
               A .fam .subst (η-idx (Γ .idx .isEquivalence .refl {γ}) {t} {t} (Fα.Tδ.W-≈-refl t))
                ∘ h .famf ._⇒f_.transf (γ , t)
               ≈ Fα.fold-fam γ t
@@ -561,7 +570,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
         rt⁻ = Fα.Tδ.W-≈-sym {x = Aα.αmor .idxf .PS._⇒_.func (shift P x)} {y = Fα.Tδ.sup x} (roundtrip x)
         q₁ = h .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl {γ} , rt⁻)
         q₂ = eq ._≃_.idxf-eq .PS._≃m_.func-eq
-               (Γ .idx .isEquivalence .refl {γ} , shift-resp P (Fα.Tδ.shape≈-refl P (η₀ P) x))
+               (Γ .idx .isEquivalence .refl {γ} , shift-resp P (Fα.Tδ.shape≈-refl ∣ P ∣ (Sh.η₀ ∣ P ∣) x))
         q₃ = alg .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl {γ} , η-shape P γ x)
         q₂₃ = A .idx .isEquivalence .trans q₂ q₃
 
@@ -583,7 +592,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                 (≈-trans (assoc _ _ _)
                   (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))))
 
-      η-shape-fam : (R : Poly (suc n)) (x : Fα.Tδ.⟦ R ⟧shape (η₀ P)) →
+      η-shape-fam : (R : Poly (suc n)) (x : Fα.Tδ.⟦ ∣ R ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
                     fobj μObj R (extend δ A) .fam .subst (η-shape R γ x)
                      ∘ (strong-fmor R hs .famf ._⇒f_.transf (γ , shift R x) ∘ prod-m (id _) (shift-fam R x)) ≈
                     Fα.fold-shape-fam R γ x
@@ -609,10 +618,10 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
             (≈-trans (strong-prod-m-post _ _ _ _)
               (strong-prod-m-cong (η-shape-fam R₁ x) (η-shape-fam R₂ y))))
       η-shape-fam (μ Q') x =
-        ≈-trans (∘-cong (Fα.TA'.fib-trans*
+        ≈-trans (∘-cong (Fα.TA'.fib-trans* Q' _
                            {x = strong-fmor (μ Q') hs .idxf .PS._⇒_.func (γ , m')}
                            {y = Rcomb.ireindex (cmb-hs γ) m'}
-                           {z = Fα.fold-reindex γ Fα.fbase x}
+                           {z = Fα.fold-reindex {Q = Q'} γ Fα.fbase x}
                            (htele-shape' (μ Q') hbase' x)
                            sym-fuse) ≈-refl)
           (≈-trans (assoc _ _ _)
@@ -647,19 +656,21 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
         mutual
           -- Telescope with the fibre action carried alongside, mirroring the index telescope in η-shape's
           -- μ case clause by clause.
-          data HRel' : ∀ {j} {ρD : Fin j → Fin n ⊎ Sort n} {ρX ρC : Fin j → Fin (suc n) ⊎ Sort (suc n)} →
-                       Rδ.MorD ρD ρX → (mdc : Rcomb.IMorD ρX ρC) → Fα.FMor ρD ρC → FR.FAct mdc →
-                       Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+          data HRel' : ∀ {j} {ρD : Fin j → Fin n ⊎ Sort n} {ρX ρC : Fin j → Fin (suc n) ⊎ Sort (suc n)}
+                       {dD : ∀ v → Fα.Tδ.DecoRes (ρD v)} {dX : ∀ v → Aα.TX.DecoRes (ρX v)}
+                       {dC : ∀ v → Fα.TA'.DecoRes (ρC v)} →
+                       Rδ.MorD ρD ρX dD dX → (mdc : Rcomb.IMorD ρX ρC) → Fα.FMor ρD ρC dD dC →
+                       FR.FAct mdc dX dC → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
             hbase' : HRel' mor₀δ (cmb-hs γ) Fα.fbase act-hs
-            hbind' : ∀ {j} {ρD ρX ρC} {md : Rδ.MorD {j} ρD ρX} {mdc : Rcomb.IMorD ρX ρC}
-                     {fm : Fα.FMor ρD ρC} {am : FR.FAct mdc} (S' : Poly (suc j)) →
+            hbind' : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
+                     {fm : Fα.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC} (S' : Poly (suc j)) →
                      HRel' md mdc fm am →
-                     HRel' (Rδ.bind S' md) (Rcomb.ibind S' mdc) (Fα.fbind S' fm) (FR.abind S' mdc am)
+                     HRel' (Rδ.bind S' md) (Rcomb.ibind ∣ S' ∣ mdc) (Fα.fbind S' fm) (FR.abind S' mdc am)
 
-          htele-shape' : ∀ {j} (S : Poly j) {ρD ρX ρC} {md : Rδ.MorD ρD ρX} {mdc : Rcomb.IMorD ρX ρC}
-                         {fm : Fα.FMor ρD ρC} {am : FR.FAct mdc}
-                         (rel : HRel' md mdc fm am) (z : Fα.Tδ.⟦ S ⟧shape ρD) →
-                         Fα.TA'.shape≈ S ρC (Rcomb.ireindex-shape S mdc (Rδ.reindex-shape S md z))
+          htele-shape' : ∀ {j} (S : Poly j) {ρD ρX ρC dD dX dC} {md : Rδ.MorD ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
+                         {fm : Fα.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
+                         (rel : HRel' md mdc fm am) (z : Fα.Tδ.⟦ ∣ S ∣ ⟧shape ρD) →
+                         Fα.TA'.shape≈ ∣ S ∣ ρC (Rcomb.ireindex-shape ∣ S ∣ mdc (Rδ.reindex-shape ∣ S ∣ md z))
                            (Fα.fold-reindex-shape γ S fm z)
           htele-shape' (const A') rel z = A' .idx .isEquivalence .refl
           htele-shape' (var v) rel z = htele-apply' rel v
@@ -668,8 +679,8 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           htele-shape' (S₁ × S₂) rel (z₁ , z₂) = htele-shape' S₁ rel z₁ , htele-shape' S₂ rel z₂
           htele-shape' (μ S') rel (Fα.Tδ.sup z) = htele-shape' S' (hbind' S' rel) z
 
-          htele-apply' : ∀ {j} {ρD ρX ρC} {md : Rδ.MorD {j} ρD ρX} {mdc : Rcomb.IMorD ρX ρC}
-                         {fm : Fα.FMor ρD ρC} {am : FR.FAct mdc}
+          htele-apply' : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
+                         {fm : Fα.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
                          (rel : HRel' md mdc fm am) (v : Fin j) {z} →
                          Fα.TA'.elEq (ρC v) (Rcomb.iapply mdc v (Rδ.apply md v z)) (Fα.fold-apply γ fm v z)
           htele-apply' hbase' Fin.zero {z} = η-idx (Γ .idx .isEquivalence .refl {γ}) (Fα.Tδ.W-≈-refl z)
@@ -677,11 +688,11 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           htele-apply' (hbind' S' rel) Fin.zero {z} = htele-shape' (μ S') rel z
           htele-apply' (hbind' S' rel) (Fin.suc v) = htele-apply' rel v
 
-          htelef-shape : ∀ {j} (S : Poly j) {ρD ρX ρC} {md : Rδ.MorD ρD ρX} {mdc : Rcomb.IMorD ρX ρC}
-                         {fm : Fα.FMor ρD ρC} {am : FR.FAct mdc}
-                         (rel : HRel' md mdc fm am) (z : Fα.Tδ.⟦ S ⟧shape ρD) →
-                         Fα.TA'.fib-shape-subst S ρC (htele-shape' S rel z)
-                          ∘ (FR.freindex-shape-fam S am {Rδ.reindex-shape S md z}
+          htelef-shape : ∀ {j} (S : Poly j) {ρD ρX ρC dD dX dC} {md : Rδ.MorD ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
+                         {fm : Fα.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
+                         (rel : HRel' md mdc fm am) (z : Fα.Tδ.⟦ ∣ S ∣ ⟧shape ρD) →
+                         Fα.TA'.fib-shape-subst S dC (htele-shape' S rel z)
+                          ∘ (FR.freindex-shape-fam S am {Rδ.reindex-shape ∣ S ∣ md z}
                              ∘ prod-m (id _) (Rδ.reindex-fam S md {z})) ≈
                          Fα.fold-reindex-shape-fam γ S fm z
           htelef-shape (const A') rel z =
@@ -696,10 +707,10 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                 (strong-prod-m-cong (htelef-shape S₁ rel z₁) (htelef-shape S₂ rel z₂)))
           htelef-shape (μ S') rel (Fα.Tδ.sup z) = htelef-shape S' (hbind' S' rel) z
 
-          htelef-apply : ∀ {j} {ρD ρX ρC} {md : Rδ.MorD {j} ρD ρX} {mdc : Rcomb.IMorD ρX ρC}
-                         {fm : Fα.FMor ρD ρC} {am : FR.FAct mdc}
+          htelef-apply : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
+                         {fm : Fα.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
                          (rel : HRel' md mdc fm am) (v : Fin j) {z} →
-                         (Fα.TA'.fib-el-subst (ρC v) (htele-apply' rel v {z})
+                         (Fα.TA'.fib-el-subst (ρC v) (dC v) (htele-apply' rel v {z})
                           ∘ (FR.aapply am v (Rδ.apply md v z) ∘ prod-m (id _) (Rδ.apply-fam md v z)))
                          ≈ Fα.fold-apply-fam γ fm v z
           htelef-apply hbase' Fin.zero {z} =
