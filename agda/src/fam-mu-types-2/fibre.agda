@@ -29,6 +29,7 @@ module fam-mu-types-2.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
 open Category 𝒞
+open Functor
 open HasProducts P
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞
 open Obj
@@ -46,11 +47,11 @@ private module SC = Category (setoid-cat.SetoidCat os (os ⊔ es))
 
 -- The index functor: a family to its index setoid, a morphism to its index map.
 Idx : Functor cat (setoid-cat.SetoidCat os (os ⊔ es))
-Idx .Functor.fobj X = X .idx
-Idx .Functor.fmor f = f .idxf
-Idx .Functor.fmor-cong e = e .idxf-eq
-Idx .Functor.fmor-id = SC.≈-refl
-Idx .Functor.fmor-comp f g = SC.≈-refl
+Idx .fobj X = X .idx
+Idx .fmor f = f .idxf
+Idx .fmor-cong e = e .idxf-eq
+Idx .fmor-id = SC.≈-refl
+Idx .fmor-comp f g = SC.≈-refl
 
 ∣_∣ : ∀ {n} → Poly-C n → Sh.Poly n
 ∣_∣ = Poly-map Idx
