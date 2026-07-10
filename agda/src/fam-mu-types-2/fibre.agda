@@ -1,13 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Fibre layer of the Fam μ-type construction. The shape layer
--- (fam-mu-types-2.shape) is category-free, built over index-erased polynomials.
--- A decoration of a sort is a μ-body erasing to it, together with decorations of
--- the sorts in its resolution; the fibre of a tree reads the decoration's
--- constants and the environment's fibres by structural recursion on the tree.
---
--- Objects only; transport and its laws are added separately.
+-- Fibre layer of the Fam μ-type construction, over the category-free shape
+-- layer. A decoration of a sort is a μ-body erasing to it, together with
+-- decorations of the sorts in its resolution; the fibre of a tree reads the
+-- decoration's constants and the environment's fibres by structural recursion
+-- on the tree.
 ------------------------------------------------------------------------------
 
 open import Level using (Level; _⊔_; Lift; lift) renaming (suc to lsuc)
@@ -17,6 +15,7 @@ open Fin using (Fin)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_,_)
 open import Data.Unit using (⊤)
+open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import functor using (Functor)
 open import indexed-family using (Fam; _⇒f_)
@@ -102,3 +101,87 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-el : (r : Fin n ⊎ Sh.Sort n) → DecoRes r → El r → obj
     fib-el (inj₁ p) _ x = δ p .fam .fm x
     fib-el (inj₂ _) (mkDeco Q ρd) x = fib Q ρd x
+
+  -- Transport of fibres along bisimilarity, by recursion on the W-≈ proof.
+  mutual
+    fib-subst : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+                (d : ∀ i → DecoRes (ρ̄ i)) {x y : W ∣ Q ∣ ρ̄} →
+                W-≈ x y → fib Q d x ⇒ fib Q d y
+    fib-subst Q d {sup x} {sup y} p = fib-shape-subst Q (deco-ext Q d) p
+
+    fib-shape-subst : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+                      (d : ∀ i → DecoRes (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄} →
+                      shape≈ ∣ Q ∣ η̄ x y → fib-shape Q d x ⇒ fib-shape Q d y
+    fib-shape-subst (const A) d p = A .fam .subst p
+    fib-shape-subst (var i)   d p = fib-el-subst _ (d i) p
+    fib-shape-subst (P + Q) d {inj₁ _} {inj₁ _} p = fib-shape-subst P d p
+    fib-shape-subst (P + Q) d {inj₂ _} {inj₂ _} p = fib-shape-subst Q d p
+    fib-shape-subst (P × Q) d {_ , _} {_ , _} (p₁ , p₂) =
+      prod-m (fib-shape-subst P d p₁) (fib-shape-subst Q d p₂)
+    fib-shape-subst (μ Q') d {x} {y} p = fib-subst Q' d {x = x} {y = y} p
+
+    fib-el-subst : (r : Fin n ⊎ Sh.Sort n) (dr : DecoRes r) {x y : El r} →
+                   elEq r x y → fib-el r dr x ⇒ fib-el r dr y
+    fib-el-subst (inj₁ p) _ e = δ p .fam .subst e
+    fib-el-subst (inj₂ _) (mkDeco Q ρd) {x} {y} e = fib-subst Q ρd {x = x} {y = y} e
+
+  -- Transport along reflexivity is the identity.
+  mutual
+    fib-refl* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+                (d : ∀ i → DecoRes (ρ̄ i)) (x : W ∣ Q ∣ ρ̄) →
+                fib-subst Q d {x = x} {y = x} (W-≈-refl x) ≈ id (fib Q d x)
+    fib-refl* Q d (sup x) = fib-shape-refl* Q (deco-ext Q d) x
+
+    fib-shape-refl* : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+                      (d : ∀ i → DecoRes (η̄ i)) (x : ⟦ ∣ Q ∣ ⟧shape η̄) →
+                      fib-shape-subst Q d (shape≈-refl ∣ Q ∣ η̄ x) ≈ id (fib-shape Q d x)
+    fib-shape-refl* (const A) d x = A .fam .refl*
+    fib-shape-refl* (var i)   d x = fib-el-refl* _ (d i) x
+    fib-shape-refl* (P + Q) d (inj₁ x) = fib-shape-refl* P d x
+    fib-shape-refl* (P + Q) d (inj₂ y) = fib-shape-refl* Q d y
+    fib-shape-refl* (P × Q) d (x , y) =
+      ≈-trans (prod-m-cong (fib-shape-refl* P d x) (fib-shape-refl* Q d y)) prod-m-id
+    fib-shape-refl* (μ Q') d x = fib-refl* Q' d x
+
+    fib-el-refl* : (r : Fin n ⊎ Sh.Sort n) (dr : DecoRes r) (x : El r) →
+                   fib-el-subst r dr (elEq-refl r x) ≈ id (fib-el r dr x)
+    fib-el-refl* (inj₁ p) _ x = δ p .fam .refl*
+    fib-el-refl* (inj₂ _) (mkDeco Q ρd) x = fib-refl* Q ρd x
+
+  -- Transport is functorial: a composite is the composite of the transports.
+  mutual
+    fib-trans* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+                 (d : ∀ i → DecoRes (ρ̄ i)) {x y z : W ∣ Q ∣ ρ̄}
+                 (q : W-≈ y z) (p : W-≈ x y) →
+                 fib-subst Q d {x = x} {y = z} (W-≈-trans {x = x} {y = y} {z = z} p q)
+                   ≈ (fib-subst Q d {x = y} {y = z} q ∘ fib-subst Q d {x = x} {y = y} p)
+    fib-trans* Q d {sup x} {sup y} {sup z} q p = fib-shape-trans* Q (deco-ext Q d) q p
+
+    fib-shape-trans* : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+                       (d : ∀ i → DecoRes (η̄ i)) {x y z : ⟦ ∣ Q ∣ ⟧shape η̄}
+                       (q : shape≈ ∣ Q ∣ η̄ y z) (p : shape≈ ∣ Q ∣ η̄ x y) →
+                       fib-shape-subst Q d (shape≈-trans ∣ Q ∣ η̄ p q)
+                         ≈ (fib-shape-subst Q d q ∘ fib-shape-subst Q d p)
+    fib-shape-trans* (const A) d q p = A .fam .trans* q p
+    fib-shape-trans* (var i)   d q p = fib-el-trans* _ (d i) q p
+    fib-shape-trans* (P + Q) d {inj₁ _} {inj₁ _} {inj₁ _} q p = fib-shape-trans* P d q p
+    fib-shape-trans* (P + Q) d {inj₂ _} {inj₂ _} {inj₂ _} q p = fib-shape-trans* Q d q p
+    fib-shape-trans* (P × Q) d {_ , _} {_ , _} {_ , _} (q₁ , q₂) (p₁ , p₂) =
+      ≈-trans (prod-m-cong (fib-shape-trans* P d q₁ p₁) (fib-shape-trans* Q d q₂ p₂))
+              (prod-m-comp _ _ _ _)
+    fib-shape-trans* (μ Q') d {x} {y} {z} q p = fib-trans* Q' d {x = x} {y = y} {z = z} q p
+
+    fib-el-trans* : (r : Fin n ⊎ Sh.Sort n) (dr : DecoRes r) {x y z : El r}
+                    (q : elEq r y z) (p : elEq r x y) →
+                    fib-el-subst r dr (elEq-trans r p q)
+                      ≈ (fib-el-subst r dr q ∘ fib-el-subst r dr p)
+    fib-el-trans* (inj₁ i) _ q p = δ i .fam .trans* q p
+    fib-el-trans* (inj₂ _) (mkDeco Q ρd) {x} {y} {z} q p = fib-trans* Q ρd {x = x} {y = y} {z = z} q p
+
+  -- The fibre family of the μ-type at a decorated sort.
+  WFam : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+         (d : ∀ i → DecoRes (ρ̄ i)) → Fam (WSetoid ∣ Q ∣ ρ̄) 𝒞
+  WFam Q d .fm = fib Q d
+  WFam Q d .subst {x} {y} = fib-subst Q d {x = x} {y = y}
+  WFam Q d .refl* {x} = fib-refl* Q d x
+  WFam Q d .trans* {x} {y} {z} e₁ e₂ = fib-trans* Q d {x = x} {y = y} {z = z} e₁ e₂
