@@ -15,8 +15,6 @@ import language-syntax
 import semimodule
 import sd-semimodule
 import ho-model
-import fam-functor
-import language-fo-interpretation
 
 module ho-model-sd-semimod {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
@@ -44,19 +42,11 @@ module interp-sd (Sig : Signature 0ℓ)
   open lists Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
     using (_^_)
 
-  private
-    module LFI = language-fo-interpretation Sig
-      Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts
-      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩-lists
-      Fam⟨F⟩ Fam⟨F⟩-preserves-terminal
-      (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y}) Fam⟨F⟩-preserves-coproducts
-      Impl
-
-  -- Conservativity at first-order types, from fullness of Fam(U) (the functor H in the paper).
-  first-order-conservativity = LFI.first-order-conservativity
-    (fam-functor.FamF-full 0ℓ 0ℓ SDSemiMod.U
-      (λ {X} {Y} → SDSemiMod.U-full {X} {Y})
-      (λ {X} {Y} {f} {g} → SDSemiMod.U-faithful {X} {Y} {f} {g}))
+  -- Fam(U) is the functor H in the paper.
+  open FirstOrderConservativity
+    (λ {X} {Y} → SDSemiMod.U-full {X} {Y})
+    (λ {X} {Y} {f} {g} → SDSemiMod.U-faithful {X} {Y} {f} {g})
+    Sig Impl public
 
   ty  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → SelfDual
   pow : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (⟦ τ ⟧ty ^ n) .idx .Carrier) → SelfDual
