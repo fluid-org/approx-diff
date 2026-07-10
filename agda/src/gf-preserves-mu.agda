@@ -16,7 +16,7 @@ open import finite-product-functor using (preserve-chosen-products; preserve-cho
 import Data.Nat
 open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map; skeleton; Poly-map-skeleton-go; #c)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_) renaming (sym to ≡-sym; trans to ≡-trans)
+  using (_≡_) renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans)
 import fam-mu-types-2
 import fam-mu-types-2.skeleton
 import fam-mu-realisation
@@ -115,37 +115,42 @@ module gf-preserves-mu
   check-μ P ε = Chk.ChkMu.check-μ-iso P ε
 
   -- Cross-category realisation comparison: GF of the Fam(𝒞) interpretation agrees
-  -- with the realised Fam(Gl) interpretation, over any pointwise agreement of the
-  -- environments up to realisation. The template is fam-mu-realisation's
-  -- single-category fobj-realise-iso.
-  carrier-comparison : ∀ {n} (Q : Poly Fam⟨𝒞⟩.cat n)
-                       (env : Fin n → Fam⟨𝒞⟩.Obj) (env̌ : Fin n → FMg.Obj) →
-                       (∀ i → Glued.Iso (GF .fobj (env i)) (realise .fobj (env̌ i))) →
-                       Glued.Iso (GF .fobj (FMc.fobj FMc.μObj Q env))
-                                 (realise .fobj (FMg.fobj FMg.μObj (Poly-map (η ∘F GF) Q) env̌))
-  carrier-comparison (Poly.const A) env env̌ js = Glued.Iso-sym (RGl.realise-η-iso (GF .fobj A))
-  carrier-comparison (Poly.var i)   env env̌ js = js i
-  carrier-comparison (P Poly.+ Q)   env env̌ js =
-    Glued.Iso-trans
-      (Glued.Iso-sym (Glued.IsIso→Iso GF-preserve-strong-coproducts))
-      (Glued.Iso-trans
-        (GlCoprod.coproduct-preserve-iso
-          (carrier-comparison P env env̌ js)
-          (carrier-comparison Q env env̌ js))
-        (Glued.Iso-sym (FRg.realise-coproducts-iso GlCoprodStruct _ _)))
-  carrier-comparison (P Poly.× Q)   env env̌ js =
-    Glued.Iso-trans
-      (Glued.IsIso→Iso GF-preserve-products)
-      (Glued.Iso-trans
-        (GlProd.product-preserves-iso
-          (carrier-comparison P env env̌ js)
-          (carrier-comparison Q env env̌ js))
-        (Glued.Iso-sym (FRg.realise-products-iso GlPE.products GlPE.exponentials _ _)))
-  carrier-comparison (Poly.μ Q)     env env̌ js = {!!}
+  -- Realised μ-objects along an equality of polynomials.
+  μObj-≡-iso : ∀ {k} {Q₁ Q₂ : Poly FMg.cat (Data.Nat.suc k)} (e : Q₁ ≡ Q₂)
+               (δ̂ : Fin k → FMg.Obj) →
+               Glued.Iso (realise .fobj (FMg.μObj Q₁ δ̂)) (realise .fobj (FMg.μObj Q₂ δ̂))
+  μObj-≡-iso ≡-refl δ̂ = Glued.Iso-refl
 
-  -- Step 1: strip constants in 𝒞. The remaining chain compares the constant-free
-  -- skeleton W-tree under GF against the realised Fam(Gl) W-tree.
+  obj-≡-iso : ∀ {X Y : Glued.obj} → X ≡ Y → Glued.Iso X Y
+  obj-≡-iso ≡-refl = Glued.Iso-refl
+
+  -- GF preserves μ-types: skeleton in Fam(𝒞), carrier comparison, collapse at
+  -- the checked-versus-embedded environments, and the realised skeleton in
+  -- Fam(Gl), backwards.
   GFμ : polynomial-functor-2.Preserves-μ
           Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
           GlPE.terminal GlPE.products GlSC Fam⟨𝒞⟩-hasMu Gl-Mu GF
-  GFμ P δ = Glued.Iso-trans (functor-preserve-iso GF (Sk.skeleton-μ-iso P δ)) {!!}
+  GFμ {n} P δ =
+    Glued.Iso-trans (functor-preserve-iso GF (Sk.skeleton-μ-iso P δ))
+    (Glued.Iso-trans (check-iso (FMc.μObj (skeleton P) ε))
+    (Glued.Iso-trans (functor-preserve-iso realise (check-μ P ε))
+    (Glued.Iso-trans (μObj-≡-iso (≡-sym (Poly-map-skeleton-go η P (λ c → c))) (λ i → check (ε i)))
+    (Glued.Iso-trans (RGl.MuCollapse.mu-collapse SKg (RGl.collapseAt SKg)
+                       (λ i → check (ε i)) (λ i → η .fobj (GF .fobj (ε i))) isos)
+    (Glued.Iso-trans step₆
+      (obj-≡-iso (≡-sym (Gl-Mu-obj (Poly-map GF P) (λ i → GF .fobj (δ i))))))))))
+    where
+      ε : Fin (n Data.Nat.+ #c P) → Fam⟨𝒞⟩.Obj
+      ε = δ polynomial-functor-2.++e polynomial-functor-2.consts P
+
+      SKg : Poly Gl.cat (Data.Nat.suc (n Data.Nat.+ #c P))
+      SKg = skeleton P
+
+      isos : ∀ i → Glued.Iso (realise .fobj (check (ε i)))
+                             (realise .fobj (η .fobj (GF .fobj (ε i))))
+      isos i = Glued.Iso-trans (Glued.Iso-sym (check-iso (ε i)))
+                 (Glued.Iso-sym (RGl.realise-η-iso (GF .fobj (ε i))))
+
+      step₆ : Glued.Iso (RGl.Creal SKg (λ i → η .fobj (GF .fobj (ε i))))
+                        (RGl.μ-objℰ (Poly-map GF P) (λ i → GF .fobj (δ i)))
+      step₆ = {!!}

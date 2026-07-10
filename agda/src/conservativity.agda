@@ -8,6 +8,9 @@ open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
          HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans; setoid→category;
          HasStrongCoproducts; ccc→strong-coproducts; strong-coproducts→coproducts)
+import Data.Nat
+import Data.Fin
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 import polynomial-functor-2
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
@@ -911,6 +914,14 @@ abstract
 
   Gl-MuLaws : polynomial-functor-2.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu
   Gl-MuLaws = fam-mu-realisation.MuLawsℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
+
+  -- Expose the μ-objects behind the abstraction: they are the realised
+  -- μ-objects of the construction above.
+  Gl-Mu-obj : ∀ {n} (Q : polynomial-functor-2.Poly Gl.cat (Data.Nat.suc n))
+              (δ : Data.Fin.Fin n → Category.obj Gl.cat) →
+              polynomial-functor-2.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
+              fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC Q δ
+  Gl-Mu-obj Q δ = ≡-refl
 
 module Glued = Category Gl.cat
 open Gl.Obj
