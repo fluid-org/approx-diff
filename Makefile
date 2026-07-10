@@ -1,4 +1,4 @@
-.PHONY: main notes clean submit arxiv # otherwise confused by folders with the same name
+.PHONY: main notes clean submit arXiv # otherwise confused by folders with the same name
 
 default: main
 
@@ -45,14 +45,19 @@ main-submit.pdf: main-submit.tex main.tex $(MAIN_DEPS)
 	latexmk $(LATEXMK_OPTS) -g main-submit
 	cp _latex/main-submit.pdf .
 
-arxiv: main.pdf
+arXiv: main.pdf
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "arXiv: uncommitted changes; arXiv.zip is built from HEAD, so commit (or stash) first:" >&2; \
+		git status --short >&2; \
+		exit 1; \
+	fi
 	@if grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/main.log; then \
-		echo "arxiv: main.pdf has undefined references/citations; not building arXiv.zip:" >&2; \
+		echo "arXiv: main.pdf has undefined references/citations; not building arXiv.zip:" >&2; \
 		grep -aE "undefined" _latex/main.log | grep -aoE "(Reference|Citation) .[^']*'" | sort -u >&2; \
 		exit 1; \
 	fi
 	rm -f arXiv.zip
-	git ls-files | zip arXiv.zip -@
+	git archive --format=zip HEAD -o arXiv.zip
 
 clean:
 	rm -rf _latex
