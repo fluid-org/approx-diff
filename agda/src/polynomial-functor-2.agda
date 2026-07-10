@@ -11,6 +11,7 @@ open import categories
          strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor)
 open import prop-setoid using (module ≈-Reasoning)
+open import Relation.Binary.PropositionalEquality using (_≡_; cong; cong₂) renaming (refl to ≡-refl)
 
 module polynomial-functor-2 where
 
@@ -132,6 +133,22 @@ skeleton-go (μ P)   ι = μ (skeleton-go P ι)
 skeleton : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n}
            (P : Poly 𝒞 n) → Poly 𝒟 (n Data.Nat.+ #c P)
 skeleton P = skeleton-go P (λ c → c)
+
+-- The skeleton never mentions the constants, so transporting it along a functor
+-- gives the skeleton again: the two instantiations coincide.
+Poly-map-skeleton-go : ∀ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
+                       {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {ℰ : Category o₃ m₃ e₃}
+                       (G : Functor 𝒟 ℰ) {n k} (P : Poly 𝒞 n) (ι : Fin (#c P) → Fin k) →
+                       Poly-map G (skeleton-go {𝒟 = 𝒟} P ι) ≡ skeleton-go {𝒟 = ℰ} P ι
+Poly-map-skeleton-go G (const A) ι = ≡-refl
+Poly-map-skeleton-go G (var i)   ι = ≡-refl
+Poly-map-skeleton-go G (P + Q) ι =
+  cong₂ _+_ (Poly-map-skeleton-go G P (λ c → ι (c Fin.↑ˡ #c Q)))
+            (Poly-map-skeleton-go G Q (λ c → ι (#c P Fin.↑ʳ c)))
+Poly-map-skeleton-go G (P × Q) ι =
+  cong₂ _×_ (Poly-map-skeleton-go G P (λ c → ι (c Fin.↑ˡ #c Q)))
+            (Poly-map-skeleton-go G Q (λ c → ι (#c P Fin.↑ʳ c)))
+Poly-map-skeleton-go G (μ P) ι = cong μ (Poly-map-skeleton-go G P ι)
 
 -- The constants of a polynomial, indexed by its constant block.
 consts : ∀ {o₁ m₁ e₁} {𝒞 : Category o₁ m₁ e₁} {n} (P : Poly 𝒞 n) → Fin (#c P) → Category.obj 𝒞

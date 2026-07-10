@@ -443,6 +443,12 @@ module _ {o m e os es} {𝒞 : Category o m e} where
   fam→functor F .fmor-id = F .refl*
   fam→functor F .fmor-comp f g = F .trans* _ _
 
+  functor→fam : ∀ {A : Setoid os es} → Functor (setoid→category A) 𝒞 → Fam A 𝒞
+  functor→fam D .fm = D .fobj
+  functor→fam D .subst eq = D .fmor ⟪ eq ⟫
+  functor→fam D .refl* = D .fmor-id
+  functor→fam D .trans* e₁ e₂ = D .fmor-comp ⟪ e₁ ⟫ ⟪ e₂ ⟫
+
 -- If a category has all discrete limits, then it has all setoid
 -- products (almost by definition).
 module _ {o m e} os es (𝒞 : Category o m e)

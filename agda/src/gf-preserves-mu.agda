@@ -8,8 +8,10 @@ open import Level using (Level; 0ℓ; suc)
 open import Data.Fin using (Fin)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; strong-coproducts→coproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import functor using (Functor; HasLimits; functor-preserve-iso; _∘F_; Colimit)
+open import functor using (Functor; HasLimits; functor-preserve-iso; _∘F_; Colimit; NatIso)
 open import prop using (∃; ∃ₛ; Prf)
+open import indexed-family using (Fam; fam→functor; functor→fam)
+import finite-coproducts-from-indexed
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map)
 import fam-mu-types-2
@@ -55,6 +57,7 @@ module gf-preserves-mu
     module GlCoprod = HasCoproducts GlCoprodStruct
     module GlProd = HasProducts GlPE.products
     module Pres = fam-presentation 0ℓ 0ℓ {𝒞}
+    module Gld = finite-coproducts-from-indexed.derive GDC
   open RGl using (realise; η)
 
   -- Source side of the carrier comparison: GF of a Fam W-tree is the Gl
@@ -67,6 +70,20 @@ module gf-preserves-mu
     Glued.Iso-trans
       (Glued.Iso-sym (functor-preserve-iso GF (Pres.present M)))
       (Glued.Iso-sym (GF-preserve-coproducts-indexed (M .Fam⟨𝒞⟩.Obj.idx) (Pres.singletons M)))
+
+  -- The checked presentation of a Fam(𝒞)-object: the Fam(Gl)-family over the
+  -- same index setoid whose fibres are the GF-images of the singleton fibres.
+  check : Fam⟨𝒞⟩.Obj → FMg.Obj
+  check X .FMg.Obj.idx = X .Fam⟨𝒞⟩.Obj.idx
+  check X .FMg.Obj.fam = functor→fam (GF ∘F Pres.singletons X)
+
+  -- Compare GF of a family against the realisation of a Gl-family over the same
+  -- index setoid, given a pointwise isomorphism of the fibre diagrams.
+  presented-iso : (M : Fam⟨𝒞⟩.Obj) (Nf : Fam (M .Fam⟨𝒞⟩.Obj.idx) Gl.cat) →
+                  NatIso (GF ∘F Pres.singletons M) (fam→functor Nf) →
+                  Glued.Iso (GF .fobj M)
+                            (realise .fobj (record { idx = M .Fam⟨𝒞⟩.Obj.idx ; fam = Nf }))
+  presented-iso M Nf α = Glued.Iso-trans (source-iso M) (Gld.∐-iso α)
 
   -- Cross-category realisation comparison: GF of the Fam(𝒞) interpretation agrees
   -- with the realised Fam(Gl) interpretation, over any pointwise agreement of the
