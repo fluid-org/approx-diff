@@ -14,6 +14,7 @@ open import prop using (∃; ∃ₛ; Prf)
 open import indexed-family using (Fam; fam→functor; functor→fam; fam→functor-eta)
 import finite-coproducts-from-indexed
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
+open import signature using (Signature)
 open import polynomial-functor-2
   using (Preserves-μ; Poly; Poly-map; skeleton; skeleton-go; Poly-map-skeleton-go;
          skeleton-go-Poly-map; #c; #c-Poly-map; consts; consts-Poly-map; _++e_; ++e-map)
@@ -173,3 +174,9 @@ module gf-preserves-mu
             ≡-trans (skeleton-go-Poly-map η (Poly-map GF P) (λ c → ≡-subst Fin (#c-Poly-map GF P) c))
               (≡-trans (skeleton-go-Poly-map GF P (λ c → c))
                 (≡-sym (Poly-map-skeleton-go η P (λ c → c))))
+
+  -- Syntactic definability for the recursive-types language: higher-order terms
+  -- at first-order types collapse to Fam(𝒞) morphisms, for any signature and
+  -- model of it in Fam(𝒞).
+  module syntactic-μ {ℓ} (Sig : Signature ℓ) =
+    syntactic-2 Sig Fam⟨𝒞⟩-strongCoproducts Fam⟨𝒞⟩-hasMu GF-preserve-strong-coproducts GFμ

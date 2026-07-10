@@ -367,7 +367,7 @@ the construction of $\check{\delta}$ and $\check{A}$, and at products they agree
 preservation of products.
 \end{proof}
 
-\begin{proposition}[TODO]
+\begin{proposition}[Preservation]
 \label{prop:conservativity:gf-preserves-poly}
 $\GF$ preserves $\Poly$-types.
 \end{proposition}
@@ -378,7 +378,9 @@ Apply \lemref{conservativity:skeleton} in $\cat{C}$, then
 the constant-free $P^{*}$, at the isomorphism family given by $\Sigma\check{\delta}_i \cong
 \GF(\delta_i) \cong \Sigma(\eta\,\GF\,\delta_i)$ and likewise at the entries for
 $\vec{A}$, and finally the realisation of \lemref{conservativity:skeleton} in $\Fam(\GLR(F))$,
-backwards:
+backwards, at $\hat{P} = \eta\,\GF\,P$. The skeleton discards the $\const$-objects, so
+$\hat{P}^{*} = P^{*}$, with the $\const$-objects of $\hat{P}$ the $\eta\,\GF$-images of
+$\vec{A}$:
 \[
   \GF(\mu_{\alpha.P})
   \;\cong\; \GF(\mu_{\alpha.P^{*}}(\delta, \vec{A}))
