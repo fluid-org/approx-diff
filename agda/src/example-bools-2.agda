@@ -26,14 +26,15 @@ import galois
 import preorder
 
 module HB = ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean
+module Ex2 = example-2 nat.ℕ nat.zero
 
 open HB.interp-boolean-2 Sig example.bool.D.BaseInterp1
 open indexed-family._⇒f_ using (transf)
 open galois._⇒g_ using (right)
 open preorder._=>_ using (fun)
 
-open example-2.L using (list; base; unit; var; μ; _[×]_; _[+]_; first-order)
-open example-2.ex using (query; rose; rose-query)
+open Ex2.L using (list; base; unit; var; μ; _[×]_; _[+]_; first-order)
+open Ex2.ex using (query; rose; rose-query)
 
 module T = HB.Fam⟨𝒟⟩-μ.Tree {n = 0} (λ ())
 
