@@ -76,18 +76,19 @@ open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟CP 𝒟E 𝒟L 𝒟
 ⟦ Γ , τ ⟧ctxt-iso = 𝒟.Iso-trans (𝒟.IsIso→Iso FP) (𝒟P.product-preserves-iso ⟦ Γ ⟧ctxt-iso ⟦ τ ⟧-iso)
 
 ------------------------------------------------------------------------------
--- When F is additionally full, every morphism definable in the higher-order language at
--- first-order types comes from a morphism of 𝒞.
-module _ (F-full : Full F) where
+-- When F is additionally full, the interpretation of the higher-order language is conservative
+-- at first-order types: the interpretation of a term of first-order type, in a first-order
+-- context, is the F-image of a morphism of 𝒞, up to the isomorphisms above.
 
-  private
-    module 𝒞 = Category 𝒞
+private
+  module 𝒞 = Category 𝒞
 
-  open 𝒟.Iso
+open 𝒟.Iso
 
-  fullness-definability :
-    ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (τ-fo : first-order τ) (M : Γ ⊢ τ) →
-    ∃ₛ (𝒞⟦ Γ-fo ⟧ctxt 𝒞.⇒ 𝒞⟦ τ-fo ⟧ty) λ g →
-      F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso .bwd 𝒟.∘ (𝒟⟦ M ⟧tm 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
-  fullness-definability Γ-fo τ-fo M =
-    F-full (⟦ τ-fo ⟧-iso .bwd 𝒟.∘ (𝒟⟦ M ⟧tm 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
+first-order-conservativity :
+  Full F →
+  ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (τ-fo : first-order τ) (M : Γ ⊢ τ) →
+  ∃ₛ (𝒞⟦ Γ-fo ⟧ctxt 𝒞.⇒ 𝒞⟦ τ-fo ⟧ty) λ g →
+    F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso .bwd 𝒟.∘ (𝒟⟦ M ⟧tm 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
+first-order-conservativity F-full Γ-fo τ-fo M =
+  F-full (⟦ τ-fo ⟧-iso .bwd 𝒟.∘ (𝒟⟦ M ⟧tm 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
