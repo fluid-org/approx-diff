@@ -318,9 +318,9 @@ for its constant-free \emph{skeleton}: each $\const$-object replaced by a fresh 
 $\const$-objects $\vec{A}$ of $Q$ collected as additional environment entries. Having no constants,
 $Q^{*}$ is a polynomial over any category; below it is interpreted over both $\Fam(\cat{C})$ and
 $\Fam(\GLR(F))$, with the same sorts and trees on each side. Write
-$\check{\delta}_i$ for the presentation of $\GF(\delta_i)$ induced by the canonical
-presentation of $\delta_i$: the family over the index set of $\delta_i$ whose fibres are the
-$\GF$-images of its fibres.
+$\check{\delta}_i$ for the $\GF$-image of the canonical presentation of $\delta_i$: the family
+over the index set of $\delta_i$ obtained by applying $\GF$ to the components of the
+presentation.
 
 \begin{lemma}
 \label{lem:conservativity:definable-coproducts}
@@ -352,7 +352,7 @@ leaves. The constant/variable distinction is thus invisible to it, and the two c
 the renaming of tree constructors induced by the skeleton, by tree recursion.
 \end{proof}
 
-\begin{lemma}[Carrier comparison, TODO]
+\begin{lemma}[Carrier comparison]
 \label{lem:conservativity:carrier-comparison}
 $\GF(\mu_{\alpha.P^{*}}(\delta, \vec{A})) \cong \Sigma(\mu_{\alpha.P^{*}}(\check{\delta},
 \check{A}))$.
@@ -361,10 +361,10 @@ $\GF(\mu_{\alpha.P^{*}}(\delta, \vec{A})) \cong \Sigma(\mu_{\alpha.P^{*}}(\check
 \begin{proof}[Proof sketch]
 Both carriers are set-indexed coproducts over the shared sort set, the left by the canonical
 presentation of the $\Fam$ $\mu$-object and the right by realisation. Since $\GF$ preserves
-set-indexed coproducts, the comparison reduces to the fibres over a common sort. Their carriers are
-finite products of the same $F$-images, identified by tree recursion using $F$'s preservation of
-products, and their predicate components agree by \lemref{conservativity:definable-coproducts} and
-the closure operator's reindexing law (\lemref{conservativity:indexed-closure}).
+set-indexed coproducts, the comparison reduces to the fibres over a common sort, by tree
+recursion: at the leaves the two fibres are the same $\GF$-image of a presentation component, by
+the construction of $\check{\delta}$ and $\check{A}$, and at products they agree by $\GF$'s
+preservation of products.
 \end{proof}
 
 \begin{proposition}[TODO]
