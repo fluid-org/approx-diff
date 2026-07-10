@@ -28,7 +28,7 @@ open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import language-syntax Sig hiding (_,_) public   -- _⊢_, types, first-order-data, unit/base/list/_[×]_
 module Ex = example nat.ℕ nat.zero
-open Ex.ex public                                 -- query, mult-ex, cbn-query, sum, …
+open Ex.ex public                                 -- query, mult-ex, sum, …
 open import label using (a; b) public
 
 -- Model instantiation.

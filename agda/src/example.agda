@@ -125,8 +125,3 @@ module ex where
   -- Sum of a list of numbers, multiplied by another number.
   sum-mul : emp , list (base number) [×] base number ⊢ base number
   sum-mul = bop mult (app sum (fst (var zero)) ∷ snd (var zero) ∷ [])
-
-  open import cbn-translation Sig Tag-monad
-
-  cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
-  cbn-query l = ⟪ query l ⟫tm
