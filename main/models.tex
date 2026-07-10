@@ -20,7 +20,7 @@ For basic differentiable programming, inputs and outputs are
   categories enriched over commutative monoids, which will be the
   essential property of modules over semirings that we need.
 
-  
+
 
   All of the results of this section have been mechanised in
   Agda %\footnote{Please refer to the supplementary material.}
@@ -120,14 +120,13 @@ coproducts:
 \end{example}
 
 \begin{remark}
-  A $\CMon$-category having biproducts means that its finite products
-  and coproducts coincide, but this does not necessarily extend to
-  infinite products and coproducts. $\SemiMod(S)$ has infinite
-  products and coproducts, but these do not coincide. For this reason,
-  $\SDSemiMod(S)$ does not have infinite products because the dual of
-  an infinite product is no longer uniquely isomorphic to an infinite
-  product of duals. This will become relevant when we consider
-  Cartesian closure in \secref{models:Cartesian-closure}.
+  A $\CMon$-category having biproducts means that its finite products and coproducts coincide, but this does
+  not necessarily extend to infinite products and coproducts. $\SemiMod(S)$ has infinite products and
+  coproducts, but these do not coincide. For this reason, $\SDSemiMod(S)$ does not have infinite products
+  because the dual of an infinite product is no longer uniquely isomorphic to an infinite product of duals.
+  \Added{$\FinVect$ also lacks infinite products: the points of a product are tuples of points of the factors,
+  so a product of countably many copies of $\RR$ would be infinite-dimensional.} This will become
+  relevant when we consider Cartesian closure in \secref{models:Cartesian-closure}.
 \end{remark}
 
 \begin{remark}
@@ -193,7 +192,7 @@ points and their forward/reverse tangent maps for the purposes of
 implementation of automatic differentiation. In the case of smooth
 maps, this process throws away information on higher derivatives by
 turning smooth maps into pairs of plain functions and linear
-functions. 
+functions.
 
 We will use the categories $\Fam(\SDSemiMod(S))$ as our model
   of semiring-tracking data provenance, analogous to V{\'a}k{\'a}r
@@ -265,7 +264,7 @@ coproducts in $\Fam(C)$ is:
 For Cartesian closure of the categories $\Fam(C)$ that we are
 interested in, we rely on the following theorem of \citet{nunes2023},
 specialised from their setting with the general Grothendieck
-construction to $\Fam(\cat{C})$. 
+construction to $\Fam(\cat{C})$.
 
 \begin{theorem}[\cite{nunes2023}]
   \label{thm:fam-closed}
@@ -293,8 +292,7 @@ The category $\SemiMod(S)$ satisfies the hypotheses of
 \end{corollary}
 Unfortunately, neither $\SDSemiMod(S)$ nor
 $\FinVect$ satisfy the hypotheses of this theorem, because as we noted
-above, neither of them have infinite products. \todo{cite: Adamek
-  paper}.  So we are forced to use
+above, neither of them have infinite products. So we are forced to use
   $\Fam(\SemiMod(S))$ to interpret higher order functions, which
   appears to forego the ability to obtain reverse derivatives by
   transpose of linear maps afforded by $\Fam(\SDSemiMod(S))$. However,
@@ -329,6 +327,6 @@ As we will see in \secref{definability}, this is no problem
   is fatally flawed in that neither $\SemiMod(S)$ nor $\FinVect$ are
   Cartesian closed, and there is no way of making them so without
   losing the property of being able to conjunct or add tangents
-  (\remref{biproduct-not-closed}). 
+  (\remref{biproduct-not-closed}).
 \end{remark}
 
