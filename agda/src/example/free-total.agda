@@ -7,13 +7,15 @@ module example.free-total where
 
 open import example.free
 import semiring-N
+import Data.Fin as Fin
 
 -- The run of the introduction, with each perturbable position seeded by its variable.
-input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
-input = (3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _) , (+ 2 / 1 , + 5 / 1)
+input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty (λ ()) .idx .Carrier
+input = T.sup (inj₂ ((a , + 3 / 1) , T.sup (inj₂ ((b , 1ℚ) , T.sup (inj₂ ((a , -[1+ 2 ] / 1) , T.sup (inj₁ (lift ·))))))))
+        , (+ 2 / 1 , + 5 / 1)
 
-input-ty : first-order-data ((list (base label [×] base number)) [×] (base number [×] base number))
-input-ty = list (base label [×] base number) [×] (base number [×] base number)
+input-ty : first-order ((list (base label [×] base number)) [×] (base number [×] base number))
+input-ty = μ (unit [+] ((base label [×] base number) [×] var Fin.zero)) [×] (base number [×] base number)
 
 fwd-poly : Poly
 fwd-poly = fwd (total a) (_ , input)
@@ -30,7 +32,7 @@ test-eval-counting = refl
 bwd-polys : List Poly
 bwd-polys =
   let (_ , ((_ , p₁) , (_ , p₂) , (_ , p₃) , _) , (ppa , ppb)) =
-        conjugate (ty (unit [×] input-ty) (_ , input)) (ty (base number) 0ℚ)
+        conjugate (ty₀ (unit [×] input-ty) (_ , input)) (ty₀ (base number) 0ℚ)
           (mor (total a) (_ , input)) .func (var 5)
   in p₁ ∷ p₂ ∷ p₃ ∷ ppa ∷ ppb ∷ []
 

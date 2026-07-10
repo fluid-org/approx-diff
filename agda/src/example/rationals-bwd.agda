@@ -13,8 +13,8 @@ open import Data.Rational using (_/_)
 
 bwd-mult : ℚ → ℚ → ℚ → _
 bwd-mult a b w =
-  conjugate (ty (unit [×] (base number [×] base number)) (_ , (a , b)))
-            (ty (base number) (Q._*_ a b))
+  conjugate (ty₀ (unit [×] (base number [×] base number)) (_ , (a , b)))
+            (ty₀ (base number) (Q._*_ a b))
             (mor mult-ex (_ , (a , b))) .func w
 
 -- Reverse mode: the gradient of x × y at (2, 3) is (∂/∂x, ∂/∂y) = (y, x) = (3, 2).

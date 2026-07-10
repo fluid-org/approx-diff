@@ -4,12 +4,13 @@
 module example.intervals-query where
 
 open import example.intervals
+import Data.Fin as Fin
 
-input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-input = 3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _
+input : ⟦ list (base label [×] base number) ⟧ty (λ ()) .idx .Carrier
+input = T.sup (inj₂ ((a , + 3 / 1) , T.sup (inj₂ ((b , 1ℚ) , T.sup (inj₂ ((a , -[1+ 2 ] / 1) , T.sup (inj₁ (lift ·))))))))
 
-input-ty : first-order-data (list (base label [×] base number))
-input-ty = list (base label [×] base number)
+input-ty : first-order (list (base label [×] base number))
+input-ty = μ (unit [+] ((base label [×] base number) [×] var Fin.zero))
 
 -- An interval [l, u] around q becomes the pair of perturbation bounds (q - l , u - q); ∞ is the
 -- absent (bottom) approximation.
@@ -25,7 +26,7 @@ test-addᵀ = refl
 
 bwd-slice : _ → _
 bwd-slice r =
-  conjugate (ty (unit [×] input-ty) (_ , input)) (ty (base number) 0ℚ)
+  conjugate (ty₀ (unit [×] input-ty) (_ , input)) (ty₀ (base number) 0ℚ)
             (mor (query a) (_ , input)) .func r
 
 -- Feeding back output interval [-1/10, 1/10] around 0 = perturbation bounds (1/10, 1/10). The
@@ -36,5 +37,5 @@ bwd-slice r =
 test-bwd : bwd-slice (fin (+ 1 / 10) , fin (+ 1 / 10))
            ≡ (lift · , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10)))
                      , (lift · , (∞ , ∞))
-                     , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10))) , lift ·)
+                     , (lift · , (fin (+ 1 / 10) , fin (+ 1 / 10))) , _)
 test-bwd = refl

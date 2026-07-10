@@ -28,9 +28,12 @@ test-cancel = refl
 
 8ℚ = (+ 8) / 1
 
+xs-in : ⟦ list (base number) ⟧ty (λ ()) .idx .Carrier
+xs-in = T.sup (inj₂ (3ℚ , T.sup (inj₂ (5ℚ , T.sup (inj₁ (lift ·))))))
+
 -- (sum xs) × y at xs = [3, 5], y = 2: ∂/∂x = y = 2, ∂/∂y = sum xs = 8.
-test-sum-v : fwd sum-mul (_ , ((2 , 3ℚ , 5ℚ , _) , 2ℚ)) (lift · , ((1ℚ , 0ℚ , _) , 0ℚ)) ≡ 2ℚ
+test-sum-v : fwd sum-mul (_ , (xs-in , 2ℚ)) (lift · , ((1ℚ , 0ℚ , _) , 0ℚ)) ≡ 2ℚ
 test-sum-v = refl
 
-test-sum-y : fwd sum-mul (_ , ((2 , 3ℚ , 5ℚ , _) , 2ℚ)) (lift · , ((0ℚ , 0ℚ , _) , 1ℚ)) ≡ 8ℚ
+test-sum-y : fwd sum-mul (_ , (xs-in , 2ℚ)) (lift · , ((0ℚ , 0ℚ , _) , 1ℚ)) ≡ 8ℚ
 test-sum-y = refl

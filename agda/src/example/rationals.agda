@@ -16,6 +16,7 @@ import semiring-Q
 open import Level using (lift; 0ℓ) public
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
+open import Data.Sum using (inj₁; inj₂) public
 open import Relation.Binary.PropositionalEquality using (_≡_; refl) public
 open import prop using (liftS) public
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ) public
@@ -24,9 +25,9 @@ open Setoid using (Carrier) public
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import example.signature ℚ using (Sig; number; label; approx) public
-import example
-open import language-syntax Sig hiding (_,_) public
-module Ex = example ℚ 0ℚ
+import example-2
+open import language-syntax-2 Sig hiding (_,_) public
+module Ex = example-2 ℚ 0ℚ
 open Ex.ex public
 
 -- Model instantiation.
@@ -76,8 +77,11 @@ private
 open import example.signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult public
 module D = Deriv scalar scalar-cong
-open ho-model-sd-semimod.interp-sd semiring-Q.semiring Sig D.BaseInterp1 public
+open ho-model-sd-semimod.interp-sd-2 semiring-Q.semiring Sig D.BaseInterp1 public
 open SDSemiMod-ℚ public using (conjugate)
+
+-- W-trees indexing the fibres of closed μ-types, for writing inputs.
+module T = Pm.Tree {n = 0} (λ ())
 
 open indexed-family._⇒f_ public
 open SemiMod-ℚ._⇒_ public

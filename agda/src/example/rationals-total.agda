@@ -8,12 +8,14 @@ open import example.rationals
 open import Data.Integer using (+_; -[1+_])
 open import Data.Rational using (_/_)
 open import label using (a; b)
+import Data.Fin as Fin
 
-input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
-input = (3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _) , (+ 2 / 1 , + 5 / 1)
+input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty (λ ()) .idx .Carrier
+input = T.sup (inj₂ ((a , + 3 / 1) , T.sup (inj₂ ((b , 1ℚ) , T.sup (inj₂ ((a , -[1+ 2 ] / 1) , T.sup (inj₁ (lift ·))))))))
+        , (+ 2 / 1 , + 5 / 1)
 
-input-ty : first-order-data ((list (base label [×] base number)) [×] (base number [×] base number))
-input-ty = list (base label [×] base number) [×] (base number [×] base number)
+input-ty : first-order ((list (base label [×] base number)) [×] (base number [×] base number))
+input-ty = μ (unit [+] ((base label [×] base number) [×] var Fin.zero)) [×] (base number [×] base number)
 
 -- ∂/∂q₁ is the price, 2.
 test-q₁ : fwd (total a) (_ , input)
@@ -28,7 +30,7 @@ test-price-a : fwd (total a) (_ , input)
 test-price-a = refl
 
 -- The full backward derivative: (2 0 2 0 0), the price entries zero.
-test-bwd : conjugate (ty (unit [×] input-ty) (_ , input)) (ty (base number) 0ℚ)
+test-bwd : conjugate (ty₀ (unit [×] input-ty) (_ , input)) (ty₀ (base number) 0ℚ)
              (mor (total a) (_ , input)) .func 1ℚ
-           ≡ (lift · , ((lift · , + 2 / 1) , (lift · , 0ℚ) , (lift · , + 2 / 1) , lift ·) , (0ℚ , 0ℚ))
+           ≡ (lift · , ((lift · , + 2 / 1) , (lift · , 0ℚ) , (lift · , + 2 / 1) , _) , (0ℚ , 0ℚ))
 test-bwd = refl

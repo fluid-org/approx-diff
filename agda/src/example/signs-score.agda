@@ -12,11 +12,11 @@ open import example.signs
 --   1 2 1
 --   3 5 4
 --   1 7 1
-gval : ⟦ Grid ⟧ty .idx .Carrier
+gval : ⟦ Grid ⟧ty (λ ()) .idx .Carrier
 gval = (((+ 1 , + 2) , + 1) , ((+ 3 , + 5) , + 4)) , ((+ 1 , + 7) , + 1)
 
 -- Grid as first-order data (the Row/Grid synonyms are plain types, so spell it out here).
-grid-fo : first-order-data Grid
+grid-fo : first-order Grid
 grid-fo = (((base number [×] base number) [×] base number) [×] ((base number [×] base number) [×] base number))
             [×] ((base number [×] base number) [×] base number)
 
@@ -24,8 +24,8 @@ grid-fo = (((base number [×] base number) [×] base number) [×] ((base number 
 -- raise it through their interaction, the centre is ambiguous (its linear and interaction
 -- contributions pull in opposite directions), and the bottom-middle cell is ignored.
 saliency :
-  conjugate (ty (unit [×] grid-fo) (_ , gval))
-            (ty (base number) (+ 3))
+  conjugate (ty₀ (unit [×] grid-fo) (_ , gval))
+            (ty₀ (base number) (+ 3))
             (mor (score -[1+ 0 ]) (_ , gval)) .func pos
   ≡ (lift · , ((((neg , neg) , neg) , ((pos , unk) , pos)) , ((neg , zer) , neg)))
 saliency = refl

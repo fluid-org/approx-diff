@@ -18,6 +18,7 @@ open import commutative-semiring using (CommutativeSemiring)
 open import Level using (lift; 0ℓ) public
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
+open import Data.Sum using (inj₁; inj₂) public
 open import Relation.Binary.PropositionalEquality using (_≡_; refl) public
 open import Data.Nat using (ℕ) public
 open import Data.Nat.Base public using (nonZero)
@@ -26,10 +27,10 @@ open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_) public
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import example.signature ℚ using (Sig; number; label; approx) public
-import example
-module Ex = example ℚ 0ℚ
+import example-2
+module Ex = example-2 ℚ 0ℚ
 open Ex.ex public
-open import language-syntax Sig hiding (_,_) public
+open import language-syntax-2 Sig hiding (_,_) public
 open import label using (a; b) public
 open import prop using (liftS)
 
@@ -72,8 +73,11 @@ private
   unit-c-cong _ _ = Category.≈-refl SemiMod-ℕ.cat {f = unit-c 0ℚ 0ℚ}
 
 module D = BinDeriv unit-c unit-c unit-c unit-c unit-c-cong unit-c-cong unit-c-cong unit-c-cong
-open ho-model-sd-semimod.interp-sd semiring-N.semiring Sig D.BaseInterp1 public
+open ho-model-sd-semimod.interp-sd-2 semiring-N.semiring Sig D.BaseInterp1 public
 open SDSemiMod-ℕ public using (conjugate)
+
+-- W-trees indexing the fibres of closed μ-types, for writing inputs.
+module T = Pm.Tree {n = 0} (λ ())
 
 open indexed-family._⇒f_ public
 open SemiMod-ℕ._⇒_ public

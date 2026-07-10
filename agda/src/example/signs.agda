@@ -28,9 +28,9 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open Setoid using (Carrier) public
 open import commutative-semiring using (CommutativeSemiring)
 open import example.signature ℤ using (Sig; number; label; approx) public
-import example
-open import language-syntax Sig hiding (_,_) public
-module Ex = example ℤ (+ 0)
+import example-2
+open import language-syntax-2 Sig hiding (_,_) public
+module Ex = example-2 ℤ (+ 0)
 open Ex.ex public
 
 -- Model instantiation: sign approximations over integer data.
@@ -99,7 +99,7 @@ private
 open import example.signature-interpretation SDSemiMod-S.cat SDSemiMod-S.products SDSemiMod-S.terminal
   Approx approx-unit approx-conjunct ℤ-setoid num-add num-mult public
 module D = Deriv coeff coeff-cong
-open ho-model-sd-semimod.interp-sd semiring-sign.semiring Sig D.BaseInterp1 public
+open ho-model-sd-semimod.interp-sd-2 semiring-sign.semiring Sig D.BaseInterp1 public
 open SDSemiMod-S public using (conjugate)
 
 open indexed-family._⇒f_ public

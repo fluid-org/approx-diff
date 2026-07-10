@@ -20,6 +20,7 @@ open import commutative-semiring using (CommutativeSemiring)
 open import Level using (lift; 0ℓ) public
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
+open import Data.Sum using (inj₁; inj₂) public
 open import Relation.Binary.PropositionalEquality using (_≡_; refl) public
 open import Relation.Nullary using (yes; no)
 open import two renaming (I to ⊤; O to ⊥) using () public
@@ -30,9 +31,9 @@ open import Data.Nat.Base public using (nonZero)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import example.signature ℚ using (Sig; number; label; approx) public
-import example
-open import language-syntax Sig hiding (_,_) public
-module Ex = example ℚ 0ℚ
+import example-2
+open import language-syntax-2 Sig hiding (_,_) public
+module Ex = example-2 ℚ 0ℚ
 open Ex.ex public
 open import label using (a; b) public
 open import prop using (liftS; LiftS)
@@ -79,7 +80,10 @@ private
   coeff-cong-b {x} (liftS refl) = Category.≈-refl SemiMod-𝟚.cat {f = coeff-b x}
 
 module D = Deriv coeff-b coeff-cong-b
-open ho-model-boolalg-sd-semimod.interp-boolean two.semiring two.semiring-boolean Sig D.BaseInterp1 public
+open ho-model-boolalg-sd-semimod.interp-boolean-2 two.semiring two.semiring-boolean Sig D.BaseInterp1 public
+
+-- W-trees indexing the fibres of closed μ-types, for writing inputs.
+module T = Pm.Tree {n = 0} (λ ())
 
 open indexed-family._⇒f_ public
 open SemiMod-𝟚._⇒_ public

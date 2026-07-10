@@ -4,16 +4,17 @@
 module example.bool-bwd where
 
 open import example.bool
+import Data.Fin as Fin
 
-input : ⟦ list (base label [×] base number) ⟧ty .idx .Carrier
-input = 3 , (a , 0) , (b , 1) , (a , 1) , _
+input : ⟦ list (base label [×] base number) ⟧ty (λ ()) .idx .Carrier
+input = T.sup (inj₂ ((a , 0) , T.sup (inj₂ ((b , 1) , T.sup (inj₂ ((a , 1) , T.sup (inj₁ (lift ·))))))))
 
-input-ty : first-order-data (list (base label [×] base number))
-input-ty = list (base label [×] base number)
+input-ty : first-order (list (base label [×] base number))
+input-ty = μ (unit [+] ((base label [×] base number) [×] var Fin.zero))
 
 bwd-slice : _ → _
 bwd-slice l =
-  to-gal (ty (unit [×] input-ty) (_ , input)) (ty (base number) 0)
+  to-gal (𝟘 ⊕ ty₀ input-ty input) (ty₀ (base number) 0)
          (mor (query l) (_ , input)) .right .fun ⊥
 
 -- Querying 'a' needs the 1st and 3rd numbers; querying 'b' needs the 2nd.

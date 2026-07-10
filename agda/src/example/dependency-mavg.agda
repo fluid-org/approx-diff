@@ -10,13 +10,13 @@ open import example.dependency
 half : ℚ
 half = + 1 / 2
 
-input : ⟦ ((base number [×] base number) [×] base number) [×] base number ⟧ty .idx .Carrier
+input : ⟦ ((base number [×] base number) [×] base number) [×] base number ⟧ty (λ ()) .idx .Carrier
 input = ((1ℚ , + 2 / 1) , + 4 / 1) , + 8 / 1
 
-input-ty : first-order-data (((base number [×] base number) [×] base number) [×] base number)
+input-ty : first-order (((base number [×] base number) [×] base number) [×] base number)
 input-ty = ((base number [×] base number) [×] base number) [×] base number
 
-output-ty : first-order-data ((base number [×] base number) [×] base number)
+output-ty : first-order ((base number [×] base number) [×] base number)
 output-ty = (base number [×] base number) [×] base number
 
 -- The first input reaches only the first output ...
@@ -30,8 +30,8 @@ test-fwd-shared : fwd (mavg half) (_ , input) (lift · , (((⊥ , ⊤) , ⊥) , 
 test-fwd-shared = refl
 
 -- Backward derivative of the full output: every input is used.
-test-bwd : SDSemiMod-𝟚.conjugate (selfDual (ty (unit [×] input-ty) (_ , input)))
-             (selfDual (ty output-ty ((+ 3 / 2 , + 3 / 1) , + 6 / 1)))
+test-bwd : SDSemiMod-𝟚.conjugate (selfDual (ty₀ (unit [×] input-ty) (_ , input)))
+             (selfDual (ty₀ output-ty ((+ 3 / 2 , + 3 / 1) , + 6 / 1)))
              (mor (mavg half) (_ , input)) .func ((⊤ , ⊤) , ⊤)
            ≡ (lift · , (((⊤ , ⊤) , ⊤) , ⊤))
 test-bwd = refl
@@ -39,8 +39,8 @@ test-bwd = refl
 -- Related outputs: backwards from the first output and forwards again. The second output shares
 -- an input with the first; the third shares nothing and stays ⊥.
 test-related : fwd (mavg half) (_ , input)
-                 (SDSemiMod-𝟚.conjugate (selfDual (ty (unit [×] input-ty) (_ , input)))
-                    (selfDual (ty output-ty ((+ 3 / 2 , + 3 / 1) , + 6 / 1)))
+                 (SDSemiMod-𝟚.conjugate (selfDual (ty₀ (unit [×] input-ty) (_ , input)))
+                    (selfDual (ty₀ output-ty ((+ 3 / 2 , + 3 / 1) , + 6 / 1)))
                     (mor (mavg half) (_ , input)) .func ((⊤ , ⊥) , ⊥))
                ≡ ((⊤ , ⊤) , ⊥)
 test-related = refl

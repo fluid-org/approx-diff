@@ -5,12 +5,14 @@
 module example.intervals-mult-total where
 
 open import example.intervals-mult
+import Data.Fin as Fin
 
-input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty .idx .Carrier
-input = (3 , (a , + 3 / 1) , (b , 1ℚ) , (a , -[1+ 2 ] / 1) , _) , (+ 2 / 1 , + 5 / 1)
+input : ⟦ (list (base label [×] base number)) [×] (base number [×] base number) ⟧ty (λ ()) .idx .Carrier
+input = T.sup (inj₂ ((a , + 3 / 1) , T.sup (inj₂ ((b , 1ℚ) , T.sup (inj₂ ((a , -[1+ 2 ] / 1) , T.sup (inj₁ (lift ·))))))))
+        , (+ 2 / 1 , + 5 / 1)
 
-input-ty : first-order-data ((list (base label [×] base number)) [×] (base number [×] base number))
-input-ty = list (base label [×] base number) [×] (base number [×] base number)
+input-ty : first-order ((list (base label [×] base number)) [×] (base number [×] base number))
+input-ty = μ (unit [+] ((base label [×] base number) [×] var Fin.zero)) [×] (base number [×] base number)
 
 -- Multiplication passes relative bounds through unchanged: a bound on price b reaches the output
 -- of total b intact.
@@ -34,7 +36,7 @@ test-cancel = refl
 
 -- The backward derivative of total b: the bound propagates to the selected quantity and its
 -- price, and nothing else is constrained.
-test-bwd : conjugate (ty (unit [×] input-ty) (_ , input)) (ty (base number) (+ 5 / 1))
+test-bwd : conjugate (ty₀ (unit [×] input-ty) (_ , input)) (ty₀ (base number) (+ 5 / 1))
              (mor (total b) (_ , input)) .func (fin (+ 1 / 10))
-           ≡ (lift · , ((lift · , ∞) , (lift · , fin (+ 1 / 10)) , (lift · , ∞) , lift ·) , (∞ , fin (+ 1 / 10)))
+           ≡ (lift · , ((lift · , ∞) , (lift · , fin (+ 1 / 10)) , (lift · , ∞) , _) , (∞ , fin (+ 1 / 10)))
 test-bwd = refl
