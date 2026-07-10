@@ -290,3 +290,19 @@ only laxly. It still acts entrywise on matrices, preserving identities and trans
 up to over-approximation: composing Boolean Jacobians can record dependencies absent from the Boolean image of
 their composite. The refund in \exref{introduction-example} is a case in point: the price genuinely does not
 matter to the total, yet the composed dependencies say it might.
+
+\begin{AddedBlock}
+\begin{remark}
+  \label{rem:jacobian-translation}
+  For most of the semirings in this section the analysis is plainly different in kind from numeric
+  differentiation: it reports use counts, symbolic polynomials or perturbation bounds rather than rates of
+  change. Over the Booleans, however, one might hope for a shortcut: compute the rational Jacobian and then
+  record, for each entry, only whether it is zero. Indeed, there is a potential gain in accuracy: composing
+  Boolean Jacobians may record dependencies that the zero-tested rational Jacobian omits, never the reverse,
+  so the shortcut sometimes gives a sharper answer at the given run. But it also answers a different
+  question. Zero-testing certifies that the output is insensitive to the input at this run, and for a
+  nonlinear operation that is a weaker property than the input being unnecessary: squaring has derivative
+  zero at zero although its output is not constant. The Boolean analysis instead soundly approximates the
+  inputs needed to recompute the output, the guarantee that \GPS relies on.
+\end{remark}
+\end{AddedBlock}
