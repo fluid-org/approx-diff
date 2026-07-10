@@ -7,12 +7,13 @@
 -- both initial-algebra laws.
 ------------------------------------------------------------------------------
 
-open import Level using (Level; _⊔_) renaming (suc to lsuc)
+open import Level using (Level; _⊔_; lift) renaming (suc to lsuc)
 open import Data.Nat using (ℕ; suc)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
+open import Data.Unit using (tt)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
@@ -48,10 +49,10 @@ fuse-shape : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) �
                                    (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))) in
                  (R : Poly (suc n)) →
                  ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x₁ x₂}
-                 (x≈ : Ts.shape≈ R (η₀ Q) x₁ x₂) →
-                 Tt.shape≈ R (η₀ Q)
-                   (Rs.ireindex-shape R (Rs.ibind Q (cmb γ₁)) x₁)
-                   (At.R.reindex-shape R At.mor₀
+                 (x≈ : Ts.shape≈ ∣ R ∣ (Sh.η₀ ∣ Q ∣) x₁ x₂) →
+                 Tt.shape≈ ∣ R ∣ (Sh.η₀ ∣ Q ∣)
+                   (Rs.ireindex-shape ∣ R ∣ (Rs.ibind ∣ Q ∣ (cmb γ₁)) x₁)
+                   (At.R.reindex-shape ∣ R ∣ At.mor₀
                     (At.embed-idx R (HasMu.strong-fmor hasMu R (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func
                       (γ₂ , Ft.fold-shape-idx R γ₂ x₂))))
 
@@ -65,8 +66,8 @@ fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = fuse-
 fuse-shape Q cmb fsk corr (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) =
   fuse-shape Q cmb fsk corr R₁ γ≈ x≈₁ , fuse-shape Q cmb fsk corr R₂ γ≈ x≈₂
 fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁} {γ₂} γ≈ {x₁} {x₂} x≈ =
-  Tt.W-≈-trans {x = Rs.ireindex-shape (μ R'') (Rs.ibind Q (cmb γ₁)) x₁}
-               {z = At.R.reindex-shape (μ R'') At.mor₀ (At.embed-idx (μ R'')
+  Tt.W-≈-trans {x = Rs.ireindex-shape ∣ μ R'' ∣ (Rs.ibind ∣ Q ∣ (cmb γ₁)) x₁}
+               {z = At.R.reindex-shape ∣ μ R'' ∣ At.mor₀ (At.embed-idx (μ R'')
                       (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
                         .idxf .PS._⇒_.func (γ₂ , w)))}
                telescope
@@ -82,8 +83,8 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
     module Rs' = Reindex (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
     module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
                   (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
-    wm₁ = Ft.fold-reindex γ₁ Ft.fbase x₁
-    w   = Ft.fold-reindex γ₂ Ft.fbase x₂
+    wm₁ = Ft.fold-reindex {Q = R''} γ₁ Ft.fbase x₁
+    w   = Ft.fold-reindex {Q = R''} γ₂ Ft.fbase x₂
     cmb' : Γ .idx .Carrier → Rs'.IMorD (λ v → inj₁ v) (λ v → inj₁ v)
     cmb' γ = Rs'.ibase (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.iapply (cmb γ) i a })
                        (λ { Fin.zero p → p ; (Fin.suc i) p → Rs.iapply-resp (cmb γ) i p })
@@ -92,22 +93,24 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
                (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .PS._⇒_.func (γ₂ , w))
     rec = fuse-idx R'' cmb' (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
             (λ { Fin.zero γ≈ a≈ → a≈ ; (Fin.suc j) γ≈ a≈ → corr j γ≈ a≈ })
-            γ≈ {m₁ = wm₁} {m₂ = w}  (Ft.fold-reindex-resp γ≈ Ft.fbase {x₁} {x₂} x≈)
+            γ≈ {m₁ = wm₁} {m₂ = w}  (Ft.fold-reindex-resp {Q = R''} γ≈ Ft.fbase {x₁} {x₂} x≈)
     mutual
-      data TeleRel : ∀ {j} {ηA ηB ηC ηD} →
-                     Rs.IMorD {j} ηA ηB → At.R.MorD {j} ηC ηB → Rs'.IMorD {j} ηD ηC → Ft.FMor {j} ηA ηD →
+      data TeleRel : ∀ {j} {ηA ηB ηC ηD}
+                     {dA : ∀ v → Ts.DecoRes (ηA v)} {dB : ∀ v → Tt.DecoRes (ηB v)}
+                     {dC : ∀ v → At.TX.DecoRes (ηC v)} {dD : ∀ v → Ft.TA'.DecoRes (ηD v)} →
+                     Rs.IMorD {j} ηA ηB → At.R.MorD {j} ηC ηB dC dB → Rs'.IMorD {j} ηD ηC → Ft.FMor {j} ηA ηD dA dD →
                      Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
-        tbase : TeleRel (Rs.ibind Q (cmb γ₁)) At.mor₀ (cmb' γ₁) Ft.fbase
-        tbind : ∀ {j} {ηA ηB ηC ηD} {md mdA md' fm} (S' : Poly (suc j)) →
-                TeleRel {j} {ηA} {ηB} {ηC} {ηD} md mdA md' fm →
-                TeleRel (Rs.ibind S' md) (At.R.bind S' mdA) (Rs'.ibind S' md') (Ft.fbind S' fm)
+        tbase : TeleRel (Rs.ibind ∣ Q ∣ (cmb γ₁)) At.mor₀ (cmb' γ₁) Ft.fbase
+        tbind : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD} {md mdA md' fm} (S' : Poly (suc j)) →
+                TeleRel {j} {ηA} {ηB} {ηC} {ηD} {dA} {dB} {dC} {dD} md mdA md' fm →
+                TeleRel (Rs.ibind ∣ S' ∣ md) (At.R.bind S' mdA) (Rs'.ibind ∣ S' ∣ md') (Ft.fbind S' fm)
 
-      tele-shape : ∀ {j} (S : Poly j) {ηA ηB ηC ηD}
-                   {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD}
-                   (rel : TeleRel md mdA md' fm) (z : Ft.Tδ.⟦ S ⟧shape ηA) →
-                   Tt.shape≈ S ηB
-                     (Rs.ireindex-shape S md z)
-                     (At.R.reindex-shape S mdA (Rs'.ireindex-shape S md' (Ft.fold-reindex-shape γ₁ S fm z)))
+      tele-shape : ∀ {j} (S : Poly j) {ηA ηB ηC ηD} {dA dB dC dD}
+                   {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
+                   (rel : TeleRel md mdA md' fm) (z : Ft.Tδ.⟦ ∣ S ∣ ⟧shape ηA) →
+                   Tt.shape≈ ∣ S ∣ ηB
+                     (Rs.ireindex-shape ∣ S ∣ md z)
+                     (At.R.reindex-shape ∣ S ∣ mdA (Rs'.ireindex-shape ∣ S ∣ md' (Ft.fold-reindex-shape γ₁ S fm z)))
       tele-shape (const A') rel z = A' .idx .isEquivalence .refl
       tele-shape (var v) rel z = tele-apply rel v
       tele-shape (S₁ + S₂) rel (inj₁ z) = tele-shape S₁ rel z
@@ -115,7 +118,8 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
       tele-shape (S₁ × S₂) rel (z₁ , z₂) = tele-shape S₁ rel z₁ , tele-shape S₂ rel z₂
       tele-shape (μ S') rel (Ts.sup z') = tele-shape S' (tbind S' rel) z'
 
-      tele-apply : ∀ {j} {ηA ηB ηC ηD} {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD}
+      tele-apply : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
+                   {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
                    (rel : TeleRel md mdA md' fm) (v : Fin j) {z} →
                    Tt.elEq (ηB v) (Rs.iapply md v z) (At.R.apply mdA v (Rs'.iapply md' v (Ft.fold-apply γ₁ fm v z)))
       tele-apply (tbind S' r) Fin.zero    {z} = tele-shape (μ S') r z
@@ -125,7 +129,7 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
           (μObj Q sₛ .idx .isEquivalence .refl {z})
       tele-apply tbase (Fin.suc i) {z} = Tt.elEq-refl (inj₁ i) (Rs.iapply (cmb γ₁) i z)
 
-    telescope : Tt.W-≈ (Rs.ireindex-shape (μ R'') (Rs.ibind Q (cmb γ₁)) x₁)
+    telescope : Tt.W-≈ (Rs.ireindex-shape ∣ μ R'' ∣ (Rs.ibind ∣ Q ∣ (cmb γ₁)) x₁)
                        (At.R.reindex At.mor₀ (Rs'.ireindex (cmb' γ₁) wm₁))
     telescope = tele-shape (μ R'') tbase x₁
 
@@ -136,7 +140,7 @@ fuse-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj
                let module Rs = Reindex sₛ sₜ
                    module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
                (cmb : Γ .idx .Carrier → Rs.IMorD (λ v → inj₁ v) (λ v → inj₁ v))
-               (act : FR.FAct (cmb γ))
+               (act : FR.FAct (cmb γ) (λ v → lift tt) (λ v → lift tt))
                (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
                (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
                        _≈s_ (sₜ i .idx) (Rs.iapply (cmb γ₁) i a₁) (fsk i .idxf .PS._⇒_.func (γ₂ , a₂)))
@@ -162,7 +166,7 @@ fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n �
                          module At = AlphaDef Q sₜ
                          module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
                      (cmb : Γ .idx .Carrier → Rs.IMorD (λ v → inj₁ v) (λ v → inj₁ v))
-                     (act : FR.FAct (cmb γ))
+                     (act : FR.FAct (cmb γ) (λ v → lift tt) (λ v → lift tt))
                      (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
                      (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
                              _≈s_ (sₜ i .idx) (Rs.iapply (cmb γ₁) i a₁) (fsk i .idxf .PS._⇒_.func (γ₂ , a₂)))
@@ -175,10 +179,10 @@ fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n �
                                        (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
                          fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂ in
                      (R : Poly (suc n))
-                     {x : Ts.⟦ R ⟧shape (η₀ Q)} →
+                     {x : Ts.⟦ ∣ R ∣ ⟧shape (Sh.η₀ ∣ Q ∣)} →
                      Category._≈_ 𝒞
-                       (Tt.fib-shape-subst R (η₀ Q)
-                          (fuse-shape Q cmb fsk corr R (Γ .idx .isEquivalence .refl) (Ts.shape≈-refl R (η₀ Q) x))
+                       (Tt.fib-shape-subst R (Tt.deco-ext Q (λ i → lift tt))
+                          (fuse-shape Q cmb fsk corr R (Γ .idx .isEquivalence .refl) (Ts.shape≈-refl ∣ R ∣ (Sh.η₀ ∣ Q ∣) x))
                         ∘ FR.freindex-shape-fam R (FR.abind Q (cmb γ) act) {x})
                        (At.R.reindex-fam R At.mor₀
                         ∘ (At.embed-fam R (HasMu.strong-fmor hasMu R fsk' .idxf .PS._⇒_.func (γ , Ft.fold-shape-idx R γ x))
@@ -244,21 +248,21 @@ fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ × R₂) {a , b} =
                 (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
                   (pair-compose _ _ _ _)))))
 fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} =
-  ≈-trans (∘-cong (Tt.fib-trans*
-                     {x = Rs.ireindex-shape (μ R'') (Rs.ibind Q (cmb γ)) x}
+  ≈-trans (∘-cong (Tt.fib-trans* R'' (Tt.deco-ext Q (λ i → lift tt))
+                     {x = Rs.ireindex-shape ∣ μ R'' ∣ (Rs.ibind ∣ Q ∣ (cmb γ)) x}
                      {y = At.R.reindex At.mor₀ (Rs'.ireindex (cmb' γ) wm₁)}
                      {z = At.R.reindex At.mor₀ (HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁))}
                      (At.R.reindex-resp At.mor₀
-                        {Rs'.ireindex (cmb' γ) wm₁}
-                        {HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
+                        {t = Rs'.ireindex (cmb' γ) wm₁}
+                        {t' = HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
                         rec-idx)
                      (tele-shape (μ R'') tbase x)) ≈-refl)
     (≈-trans (assoc _ _ _)
       (≈-trans (∘-cong ≈-refl (tele-shape-fam (μ R'') tbase x))
         (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (≈-sym (At.R.reindex-fam-W-natural At.mor₀
-                                     {Rs'.ireindex (cmb' γ) wm₁}
-                                     {HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
+          (≈-trans (∘-cong (≈-sym (At.R.reindex-fam-W-natural {Q = R''} At.mor₀
+                                     {t = Rs'.ireindex (cmb' γ) wm₁}
+                                     {t' = HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
                                      rec-idx)) ≈-refl)
             (≈-trans (assoc _ _ _)
               (∘-cong ≈-refl
@@ -275,11 +279,11 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
     module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
                   (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
     fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂
-    wm₁ = Ft.fold-reindex γ Ft.fbase x
+    wm₁ = Ft.fold-reindex {Q = R''} γ Ft.fbase x
     cmb' : Γ .idx .Carrier → Rs'.IMorD (λ v → inj₁ v) (λ v → inj₁ v)
     cmb' γ' = Rs'.ibase (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.iapply (cmb γ') i a })
                         (λ { Fin.zero p → p ; (Fin.suc i) p → Rs.iapply-resp (cmb γ') i p })
-    act' : FR'.FAct (cmb' γ)
+    act' : FR'.FAct (cmb' γ) (λ v → lift tt) (λ v → lift tt)
     act' = FR'.abase (λ { Fin.zero a → p₂ ; (Fin.suc i) a → FR.aapply act i a })
     corr' : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (extend sₛ (μObj Q sₜ) i .idx) a₁ a₂) →
             _≈s_ (extend sₜ (μObj Q sₜ) i .idx) (Rs'.iapply (cmb' γ₁) i a₁) (fsk' i .idxf .PS._⇒_.func (γ₂ , a₂))
@@ -303,22 +307,24 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
                 {wm₁} {wm₁} (μObj R'' (extend sₛ (μObj Q sₜ)) .idx .isEquivalence .refl {wm₁})
     mutual
       data TeleRel : ∀ {j} {ηA ηB ηC ηD}
-                     (md : Rs.IMorD {j} ηA ηB) (mdA : At.R.MorD {j} ηC ηB) (md' : Rs'.IMorD {j} ηD ηC) (fm : Ft.FMor {j} ηA ηD) →
-                     FR.FAct md → FR'.FAct md' → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
-        tbase : TeleRel (Rs.ibind Q (cmb γ)) At.mor₀ (cmb' γ) Ft.fbase (FR.abind Q (cmb γ) act) act'
-        tbind : ∀ {j} {ηA ηB ηC ηD} {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD}
-                {am : FR.FAct md} {am' : FR'.FAct md'} (S' : Poly (suc j)) →
+                     {dA : ∀ v → Ts.DecoRes (ηA v)} {dB : ∀ v → Tt.DecoRes (ηB v)}
+                     {dC : ∀ v → At.TX.DecoRes (ηC v)} {dD : ∀ v → Ft.TA'.DecoRes (ηD v)}
+                     (md : Rs.IMorD {j} ηA ηB) (mdA : At.R.MorD {j} ηC ηB dC dB) (md' : Rs'.IMorD {j} ηD ηC) (fm : Ft.FMor {j} ηA ηD dA dD) →
+                     FR.FAct md dA dB → FR'.FAct md' dD dC → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+        tbase : TeleRel (Rs.ibind ∣ Q ∣ (cmb γ)) At.mor₀ (cmb' γ) Ft.fbase (FR.abind Q (cmb γ) act) act'
+        tbind : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD} {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
+                {am : FR.FAct md dA dB} {am' : FR'.FAct md' dD dC} (S' : Poly (suc j)) →
                 TeleRel md mdA md' fm am am' →
-                TeleRel (Rs.ibind S' md) (At.R.bind S' mdA) (Rs'.ibind S' md') (Ft.fbind S' fm)
+                TeleRel (Rs.ibind ∣ S' ∣ md) (At.R.bind S' mdA) (Rs'.ibind ∣ S' ∣ md') (Ft.fbind S' fm)
                         (FR.abind S' md am) (FR'.abind S' md' am')
 
-      tele-shape : ∀ {j} (S : Poly j) {ηA ηB ηC ηD}
-                   {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD}
-                   {am : FR.FAct md} {am' : FR'.FAct md'}
-                   (rel : TeleRel md mdA md' fm am am') (z : Ft.Tδ.⟦ S ⟧shape ηA) →
-                   Tt.shape≈ S ηB
-                     (Rs.ireindex-shape S md z)
-                     (At.R.reindex-shape S mdA (Rs'.ireindex-shape S md' (Ft.fold-reindex-shape γ S fm z)))
+      tele-shape : ∀ {j} (S : Poly j) {ηA ηB ηC ηD} {dA dB dC dD}
+                   {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
+                   {am : FR.FAct md dA dB} {am' : FR'.FAct md' dD dC}
+                   (rel : TeleRel md mdA md' fm am am') (z : Ft.Tδ.⟦ ∣ S ∣ ⟧shape ηA) →
+                   Tt.shape≈ ∣ S ∣ ηB
+                     (Rs.ireindex-shape ∣ S ∣ md z)
+                     (At.R.reindex-shape ∣ S ∣ mdA (Rs'.ireindex-shape ∣ S ∣ md' (Ft.fold-reindex-shape γ S fm z)))
       tele-shape (const A') rel z = A' .idx .isEquivalence .refl
       tele-shape (var v) rel z = tele-apply rel v
       tele-shape (S₁ + S₂) rel (inj₁ z) = tele-shape S₁ rel z
@@ -326,8 +332,9 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
       tele-shape (S₁ × S₂) rel (z₁ , z₂) = tele-shape S₁ rel z₁ , tele-shape S₂ rel z₂
       tele-shape (μ S') rel (Ts.sup z') = tele-shape S' (tbind S' rel) z'
 
-      tele-apply : ∀ {j} {ηA ηB ηC ηD} {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD}
-                   {am : FR.FAct md} {am' : FR'.FAct md'}
+      tele-apply : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
+                   {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
+                   {am : FR.FAct md dA dB} {am' : FR'.FAct md' dD dC}
                    (rel : TeleRel md mdA md' fm am am') (v : Fin j) {z} →
                    Tt.elEq (ηB v) (Rs.iapply md v z) (At.R.apply mdA v (Rs'.iapply md' v (Ft.fold-apply γ fm v z)))
       tele-apply (tbind S' r) Fin.zero    {z} = tele-shape (μ S') r z
@@ -337,11 +344,11 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
           (μObj Q sₛ .idx .isEquivalence .refl {z})
       tele-apply tbase (Fin.suc i) {z} = Tt.elEq-refl (inj₁ i) (Rs.iapply (cmb γ) i z)
 
-      tele-shape-fam : ∀ {j} (S : Poly j) {ηA ηB ηC ηD}
-                       {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD}
-                       {am : FR.FAct md} {am' : FR'.FAct md'}
-                       (rel : TeleRel md mdA md' fm am am') (z : Ft.Tδ.⟦ S ⟧shape ηA) →
-                       (Tt.fib-shape-subst S ηB (tele-shape S rel z) ∘ FR.freindex-shape-fam S am {z})
+      tele-shape-fam : ∀ {j} (S : Poly j) {ηA ηB ηC ηD} {dA dB dC dD}
+                       {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
+                       {am : FR.FAct md dA dB} {am' : FR'.FAct md' dD dC}
+                       (rel : TeleRel md mdA md' fm am am') (z : Ft.Tδ.⟦ ∣ S ∣ ⟧shape ηA) →
+                       (Tt.fib-shape-subst S dB (tele-shape S rel z) ∘ FR.freindex-shape-fam S am {z})
                        ≈ (At.R.reindex-fam S mdA
                           ∘ (FR'.freindex-shape-fam S am' {Ft.fold-reindex-shape γ S fm z}
                              ∘ pair p₁ (Ft.fold-reindex-shape-fam γ S fm z)))
@@ -356,11 +363,11 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
             (≈-sym (≈-trans (∘-cong ≈-refl (strong-prod-m-comp _ _ _ _)) (strong-prod-m-post _ _ _ _))))
       tele-shape-fam (μ S') rel (Ts.sup z') = tele-shape-fam S' (tbind S' rel) z'
 
-      tele-apply-fam : ∀ {j} {ηA ηB ηC ηD}
-                       {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD}
-                       {am : FR.FAct md} {am' : FR'.FAct md'}
+      tele-apply-fam : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
+                       {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
+                       {am : FR.FAct md dA dB} {am' : FR'.FAct md' dD dC}
                        (rel : TeleRel md mdA md' fm am am') (v : Fin j) {z} →
-                       (Tt.fib-el-subst (ηB v) (tele-apply rel v {z}) ∘ FR.aapply am v z)
+                       (Tt.fib-el-subst (ηB v) (dB v) (tele-apply rel v {z}) ∘ FR.aapply am v z)
                        ≈ (At.R.apply-fam mdA v (Rs'.iapply md' v (Ft.fold-apply γ fm v z))
                           ∘ (FR'.aapply am' v (Ft.fold-apply γ fm v z)
                              ∘ pair p₁ (Ft.fold-apply-fam γ fm v z)))
