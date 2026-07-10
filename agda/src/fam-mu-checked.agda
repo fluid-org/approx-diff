@@ -20,8 +20,9 @@ open import Data.Unit using (⊤; tt)
 open import prop using () renaming (_,_ to _,ₚ_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import functor using (Functor; _∘F_; functor-preserve-iso)
-open import finite-product-functor using (preserve-chosen-products)
-open import prop-setoid using (Setoid; 𝟙)
+open import finite-product-functor
+  using (preserve-chosen-products; module preserve-chosen-products-consequences)
+open import prop-setoid using (Setoid; 𝟙; idS; module ≈-Reasoning)
 open import indexed-family using (functor→fam)
 import fam
 import fam-presentation
@@ -46,6 +47,7 @@ private
   module PresC = fam-presentation os (os ⊔ es) {𝒞}
   module 𝒢C = Category 𝒢
   module 𝒢Pm = HasProducts 𝒢P
+  module Gm = Functor G
 
 open Sh using (Sort; mkSort)
 open polynomial-functor-2 using (Poly; #c; skeleton-go; extend)
@@ -353,3 +355,76 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
                          (Gd.fib-el r₂ e₂ (el-cfwd r x))
     fib-el-ciso (env {p}) x = 𝒢C.Iso-refl
     fib-el-ciso (srt (mk Q ι ρ₁ ρ₂ d₁ d₂ rel)) x = fib-ciso Q ι ρ₁ ρ₂ d₁ d₂ rel x
+
+  open preserve-chosen-products-consequences G (F𝒞.products.products 𝒞P) 𝒢P G-prod
+    using (mul⁻¹-natural)
+
+  -- The fibre isomorphisms commute with transport along bisimilarity.
+  mutual
+    fib-cnat : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
+               (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
+               (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+               (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i))
+               {w w' : T.W Fc.∣ skC Q ι ∣ ρ₁} (p : T.W-≈ w w') →
+               ((fib-ciso Q ι ρ₁ ρ₂ d₁ d₂ rel w' .𝒢C.Iso.fwd)
+                 𝒢C.∘ G .Functor.fmor F𝒞.simplef[ idS 𝟙 , C.fib-subst (skC Q ι) d₁ {x = w} {y = w'} p ])
+               𝒢C.≈ ((Gd.fib-subst (skG Q ι) d₂
+                        {x = cfwd Q ι ρ₁ ρ₂ d₁ d₂ rel w} {y = cfwd Q ι ρ₁ ρ₂ d₁ d₂ rel w'}
+                        (c≈fwd Q ι ρ₁ ρ₂ d₁ d₂ rel {w} {w'} p))
+                     𝒢C.∘ (fib-ciso Q ι ρ₁ ρ₂ d₁ d₂ rel w .𝒢C.Iso.fwd))
+    fib-cnat Q ι ρ₁ ρ₂ d₁ d₂ rel {T.sup x} {T.sup x'} p =
+      fib-shape-cnat Q ι (extend ρ₁ (inj₂ (mkSort Fc.∣ skC Q ι ∣ ρ₁)))
+        (extend ρ₂ (inj₂ (mkSort Fg.∣ skG Q ι ∣ ρ₂)))
+        (C.deco-ext (skC Q ι) d₁) (Gd.deco-ext (skG Q ι) d₂)
+        (extend-rel Q ι ρ₁ ρ₂ d₁ d₂ rel) {x} {x'} p
+
+    fib-shape-cnat : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
+                     (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
+                     (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                     (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i))
+                     {x x' : T.⟦ Fc.∣ skC Q ι ∣ ⟧shape η₁} (p : T.shape≈ Fc.∣ skC Q ι ∣ η₁ x x') →
+                     ((fib-shape-ciso Q ι η₁ η₂ d₁ d₂ rel x' .𝒢C.Iso.fwd)
+                       𝒢C.∘ G .Functor.fmor F𝒞.simplef[ idS 𝟙 , C.fib-shape-subst (skC Q ι) d₁ p ])
+                     𝒢C.≈ ((Gd.fib-shape-subst (skG Q ι) d₂ (shape≈-cfwd Q ι η₁ η₂ d₁ d₂ rel {x} {x'} p))
+                           𝒢C.∘ (fib-shape-ciso Q ι η₁ η₂ d₁ d₂ rel x .𝒢C.Iso.fwd))
+    fib-shape-cnat {jv} (Poly.const A) ι η₁ η₂ d₁ d₂ rel p = fib-el-cnat (rel (jv ↑ʳ ι Fin.zero)) p
+    fib-shape-cnat (Poly.var i)   ι η₁ η₂ d₁ d₂ rel p = fib-el-cnat (rel (i ↑ˡ k)) p
+    fib-shape-cnat (Q Poly.+ R) ι η₁ η₂ d₁ d₂ rel {inj₁ _} {inj₁ _} p =
+      fib-shape-cnat Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel p
+    fib-shape-cnat (Q Poly.+ R) ι η₁ η₂ d₁ d₂ rel {inj₂ _} {inj₂ _} p =
+      fib-shape-cnat R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel p
+    fib-shape-cnat (Q Poly.× R) ι η₁ η₂ d₁ d₂ rel {x₁ , x₂} {x₁' , x₂'} (p₁ ,ₚ p₂) =
+      𝒢C.≈-trans (𝒢C.assoc _ _ _)
+        (𝒢C.≈-trans (𝒢C.∘-cong 𝒢C.≈-refl
+            (𝒢C.≈-trans (𝒢C.≈-sym (Gm.fmor-comp _ _))
+              (𝒢C.≈-trans (Gm.fmor-cong (PresC.simple-⊗-natural 𝒞P s₁ s₂))
+                (Gm.fmor-comp _ _))))
+          (𝒢C.≈-trans (𝒢C.≈-sym (𝒢C.assoc _ _ _))
+            (𝒢C.≈-trans (𝒢C.∘-cong (𝒢C.assoc _ _ _) 𝒢C.≈-refl)
+              (𝒢C.≈-trans (𝒢C.∘-cong (𝒢C.∘-cong 𝒢C.≈-refl
+                  (mul⁻¹-natural {f = smp s₁} {g = smp s₂})) 𝒢C.≈-refl)
+                (𝒢C.≈-trans (𝒢C.∘-cong (𝒢C.≈-sym (𝒢C.assoc _ _ _)) 𝒢C.≈-refl)
+                  (𝒢C.≈-trans (𝒢C.∘-cong (𝒢C.∘-cong
+                      (𝒢C.≈-trans (𝒢C.≈-sym (𝒢Pm.prod-m-comp _ _ _ _))
+                        (𝒢C.≈-trans
+                          (𝒢Pm.prod-m-cong
+                            (fib-shape-cnat Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel {x₁} {x₁'} p₁)
+                            (fib-shape-cnat R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel {x₂} {x₂'} p₂))
+                          (𝒢Pm.prod-m-comp _ _ _ _))) 𝒢C.≈-refl) 𝒢C.≈-refl)
+                    (𝒢C.≈-trans (𝒢C.∘-cong (𝒢C.assoc _ _ _) 𝒢C.≈-refl)
+                      (𝒢C.assoc _ _ _))))))))
+      where
+        s₁ = C.fib-shape-subst (skC Q (λ c → ι (c ↑ˡ #c R))) d₁ p₁
+        s₂ = C.fib-shape-subst (skC R (λ c → ι (#c Q ↑ʳ c))) d₁ p₂
+
+        smp : ∀ {a b} → Category._⇒_ 𝒞 a b → F𝒞.Mor F𝒞.simple[ 𝟙 , a ] F𝒞.simple[ 𝟙 , b ]
+        smp h = F𝒞.simplef[ idS 𝟙 , h ]
+    fib-shape-cnat (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel {t} {t'} p = fib-cnat Q' ι η₁ η₂ d₁ d₂ rel {t} {t'} p
+
+    fib-el-cnat : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x x' : T.El r₁} (p : T.elEq r₁ x x') →
+                  ((fib-el-ciso r x' .𝒢C.Iso.fwd)
+                    𝒢C.∘ G .Functor.fmor F𝒞.simplef[ idS 𝟙 , C.fib-el-subst r₁ e₁ p ])
+                  𝒢C.≈ ((Gd.fib-el-subst r₂ e₂ (elEq-cfwd r {x} {x'} p))
+                        𝒢C.∘ (fib-el-ciso r x .𝒢C.Iso.fwd))
+    fib-el-cnat (env {p}) q = 𝒢C.≈-trans 𝒢C.id-left (𝒢C.≈-sym 𝒢C.id-right)
+    fib-el-cnat (srt (mk Q ι ρ₁ ρ₂ d₁ d₂ rel)) {x} {x'} q = fib-cnat Q ι ρ₁ ρ₂ d₁ d₂ rel {x} {x'} q
