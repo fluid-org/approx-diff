@@ -1,11 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Category-free shape layer of the Fam μ-type construction. Sorts and trees are
--- built from index sets alone (notes §3.5): the construction is parameterised by
--- the index setoids of the kinding environment, and constants enter as their
--- index setoids, so the layer mentions no category. The fibre layer over a
--- specific category is added by fam-mu-types-2.carrier.
+-- Category-free shape layer of the Fam μ-type construction. Sorts and trees
+-- are built from index sets alone: the construction is parameterised by the
+-- index setoids of the kinding environment, and constants enter as their index
+-- setoids, so the layer mentions no category. The fibre layer over a specific
+-- category is built separately on top.
 ------------------------------------------------------------------------------
 
 open import Level using (Level; _⊔_) renaming (suc to lsuc)

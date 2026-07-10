@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Fibre layer of the Fam μ-type construction (notes §3.5). The shape layer
+-- Fibre layer of the Fam μ-type construction. The shape layer
 -- (fam-mu-types-2.shape) is category-free, built over index-erased polynomials.
 -- A decoration of a sort is a μ-body erasing to it, together with decorations of
 -- the sorts in its resolution; the fibre of a tree reads the decoration's
