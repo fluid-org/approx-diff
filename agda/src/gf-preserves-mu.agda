@@ -3,18 +3,23 @@
 -- The glueing embedding preserves μ-types. Discharges the GFμ hypothesis of
 -- the conservativity theorem at the Fam instance: the source μ-object is the
 -- Fam(𝒞) W-tree, compared under GF against the realised Fam(Gl) W-tree.
+--
+-- Parameterised over the glued category and the embedding rather than the
+-- data they are built from, so checking this file does not rebuild the
+-- interpretation; gf-preserves-mu-instance supplies the pieces.
 
-open import Level using (Level; 0ℓ; suc)
+open import Level using (Level; 0ℓ)
 open import Data.Nat using () renaming (suc to sucℕ; _+_ to _+ℕ_)
 open import Data.Fin using (Fin)
-open import categories using (Category; HasProducts; HasTerminal)
-open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import functor using (Functor; HasLimits; functor-preserve-iso; _∘F_; Colimit; NatIso)
-open import prop using (∃; ∃ₛ; Prf)
+open import categories
+  using (Category; HasProducts; HasTerminal; HasExponentials; HasStrongCoproducts;
+         setoid→category)
+open import prop-setoid using (Setoid)
+open import functor using (Functor; HasColimits; functor-preserve-iso; _∘F_; Colimit; NatIso)
 open import indexed-family using (Fam; fam→functor; functor→fam; fam→functor-eta)
+import fam
 import finite-coproducts-from-indexed
-open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
-open import signature using (Signature)
+open import finite-product-functor using (preserve-chosen-products)
 open import polynomial-functor-2
   using (Preserves-μ; Poly; Poly-map; skeleton; skeleton-go; Poly-map-skeleton-go;
          skeleton-go-Poly-map; #c; #c-Poly-map; consts; consts-Poly-map; _++e_; ++e-map)
@@ -26,47 +31,60 @@ import fam-mu-types-2.skeleton
 import fam-mu-realisation
 import fam-presentation
 import fam-mu-checked
-import ho-model
 
 open Functor
 open Colimit
 
 module gf-preserves-mu
-  {o : Level}
+  {o o' m' e' : Level}
   (𝒞 : Category o 0ℓ 0ℓ)
   (𝒞-terminal : HasTerminal 𝒞)
   (𝒞-products : HasProducts 𝒞)
-  (𝒟 : Category (suc 0ℓ) 0ℓ 0ℓ)
-  (𝒟-cmon : CMonEnriched 𝒟)
-  (𝒟-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 𝒟)
-  (𝒟-terminal : HasTerminal 𝒟)
-  (𝒟-biproducts : ∀ x y → Biproduct 𝒟-cmon x y)
-  (F : Functor 𝒞 𝒟)
-  (F-preserve-terminal : preserve-chosen-terminal F 𝒞-terminal 𝒟-terminal)
-  (F-preserve-products : preserve-chosen-products F 𝒞-products (biproducts→products _ 𝒟-biproducts))
-  (F-faithful : ∀ {a b} {g₁ g₂ : Category._⇒_ 𝒞 a b} → Category._≈_ 𝒟 (F .fmor g₁) (F .fmor g₂) → Category._≈_ 𝒞 g₁ g₂)
-  (F-def : ∀ {a b} (h : Category._⇒_ 𝒟 (F .fobj a) (F .fobj b)) →
-           Prf (∃ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h) →
-           ∃ₛ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h)
+  (Gl : Category o' m' e')
+  (GlT : HasTerminal Gl)
+  (GlP : HasProducts Gl)
+  (GlE : HasExponentials Gl GlP)
+  (GlSC : HasStrongCoproducts Gl GlP)
+  (GDC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) Gl)
+  (GF : Functor (fam.CategoryOfFamilies.cat 0ℓ 0ℓ 𝒞) Gl)
+  (GF-preserve-products :
+     preserve-chosen-products GF (fam.CategoryOfFamilies.products.products 0ℓ 0ℓ 𝒞 𝒞-products) GlP)
+  (GF-preserve-coproducts-indexed :
+     ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) (fam.CategoryOfFamilies.cat 0ℓ 0ℓ 𝒞)) →
+     Category.Iso Gl (GDC S (GF ∘F D) .apex)
+                     (GF .fobj (fam.CategoryOfFamilies.bigCoproducts 0ℓ 0ℓ 𝒞 S D .apex)))
+  (Gl-Mu : polynomial-functor-2.Interp.HasMu GlT GlP GlSC)
+  (Gl-Mu-obj : ∀ {n} (Q : Poly Gl (sucℕ n)) (δ : Fin n → Category.obj Gl) →
+     polynomial-functor-2.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
+     fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlT GlP GlE GlSC Q δ)
   where
 
-  module I = ho-model.Interpretation 𝒞 𝒞-terminal 𝒞-products 𝒟 𝒟-cmon 𝒟-limits
-               𝒟-terminal 𝒟-biproducts F F-preserve-terminal F-preserve-products F-faithful F-def
-  open I
-  open I.Conservativity
-
   private
+    module Glued = Category Gl
     module Sk  = fam-mu-types-2.skeleton 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-    module SkGl = fam-mu-types-2.skeleton 0ℓ 0ℓ GlPE.terminal GlPE.products
+    module SkGl = fam-mu-types-2.skeleton 0ℓ 0ℓ GlT GlP
     module FMc = fam-mu-types-2 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-    module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
+    module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlT GlP GlE GlSC
     module FMg = RGl.FM
     module Pres = fam-presentation 0ℓ 0ℓ {𝒞}
     module Gld = finite-coproducts-from-indexed.derive GDC
     module FamGl = FMg.Fam𝒞
-    module Chk = fam-mu-checked 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-                   GlPE.terminal GlPE.products GF GF-preserve-products
+    module Chk = fam-mu-checked 0ℓ 0ℓ 𝒞-terminal 𝒞-products GlT GlP GF GF-preserve-products
   open RGl using (realise; η)
+
+  module Fam⟨𝒞⟩ = fam.CategoryOfFamilies 0ℓ 0ℓ 𝒞
+
+  Fam⟨𝒞⟩-terminal : HasTerminal Fam⟨𝒞⟩.cat
+  Fam⟨𝒞⟩-terminal = Fam⟨𝒞⟩.terminal 𝒞-terminal
+
+  Fam⟨𝒞⟩-products : HasProducts Fam⟨𝒞⟩.cat
+  Fam⟨𝒞⟩-products = Fam⟨𝒞⟩.products.products 𝒞-products
+
+  Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products
+  Fam⟨𝒞⟩-strongCoproducts = Fam⟨𝒞⟩.products.strongCoproducts 𝒞-products
+
+  Fam⟨𝒞⟩-hasMu : polynomial-functor-2.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
+  Fam⟨𝒞⟩-hasMu = fam-mu-types-2.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
 
   -- Source side of the carrier comparison: GF of a Fam W-tree is the Gl
   -- set-indexed coproduct of the GF-images of its singleton fibres, via the
@@ -85,7 +103,7 @@ module gf-preserves-mu
 
   -- Compare GF of a family against the realisation of a Gl-family over the same
   -- index setoid, given a pointwise isomorphism of the fibre diagrams.
-  presented-iso : (M : Fam⟨𝒞⟩.Obj) (Nf : Fam (M .Fam⟨𝒞⟩.Obj.idx) Gl.cat) →
+  presented-iso : (M : Fam⟨𝒞⟩.Obj) (Nf : Fam (M .Fam⟨𝒞⟩.Obj.idx) Gl) →
                   NatIso (GF ∘F Pres.singletons M) (fam→functor Nf) →
                   Glued.Iso (GF .fobj M) (realise .fobj (record { idx = M .Fam⟨𝒞⟩.Obj.idx ; fam = Nf }))
   presented-iso M Nf α = Glued.Iso-trans (source-iso M) (Gld.∐-iso α)
@@ -114,7 +132,7 @@ module gf-preserves-mu
   -- the checked-versus-embedded environments, and the realised skeleton in
   -- Fam(Gl), backwards.
   GFμ : Preserves-μ Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
-          GlPE.terminal GlPE.products GlSC Fam⟨𝒞⟩-hasMu Gl-Mu GF
+          GlT GlP GlSC Fam⟨𝒞⟩-hasMu Gl-Mu GF
   GFμ {n} P δ =
     Glued.Iso-trans (functor-preserve-iso GF (Sk.skeleton-μ-iso P δ))
     (Glued.Iso-trans (check-iso (FMc.μObj (skeleton P) ε))
@@ -128,7 +146,7 @@ module gf-preserves-mu
       ε : Fin (n +ℕ #c P) → Fam⟨𝒞⟩.Obj
       ε = δ ++e consts P
 
-      SKg : Poly Gl.cat (sucℕ (n +ℕ #c P))
+      SKg : Poly Gl (sucℕ (n +ℕ #c P))
       SKg = skeleton P
 
       isos : ∀ i → Glued.Iso (realise .fobj (check (ε i)))
@@ -174,9 +192,3 @@ module gf-preserves-mu
             ≡-trans (skeleton-go-Poly-map η (Poly-map GF P) (λ c → ≡-subst Fin (#c-Poly-map GF P) c))
               (≡-trans (skeleton-go-Poly-map GF P (λ c → c))
                 (≡-sym (Poly-map-skeleton-go η P (λ c → c))))
-
-  -- Syntactic definability for the recursive-types language: higher-order terms
-  -- at first-order types collapse to Fam(𝒞) morphisms, for any signature and
-  -- model of it in Fam(𝒞).
-  module syntactic-μ {ℓ} (Sig : Signature ℓ) =
-    syntactic-2 Sig Fam⟨𝒞⟩-strongCoproducts Fam⟨𝒞⟩-hasMu GF-preserve-strong-coproducts GFμ
