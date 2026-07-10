@@ -17,12 +17,12 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
-import fam-mu-types-2.reindex
+import fam-mu-types.reindex
 
-module fam-mu-types-2.fold {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.fold {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types-2.reindex os es T P public
+open fam-mu-types.reindex os es T P public
 
 -- The fold (catamorphism) for the μ-type, lifted to a standalone module so its
 -- mutual recursion is termination-checked independently of the `hasMu` copattern.

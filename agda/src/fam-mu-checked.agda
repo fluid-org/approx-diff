@@ -26,9 +26,9 @@ open import prop-setoid using (Setoid; 𝟙; idS; module ≈-Reasoning)
 open import indexed-family using (functor→fam; Fam)
 import fam
 import fam-presentation
-import polynomial-functor-2
-import fam-mu-types-2.shape
-import fam-mu-types-2.fibre
+import polynomial-functor
+import fam-mu-types.shape
+import fam-mu-types.fibre
 
 module fam-mu-checked {o m e o₂ m₂ e₂} (os es : Level)
     {𝒞 : Category o m e} (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞)
@@ -41,15 +41,15 @@ module fam-mu-checked {o m e o₂ m₂ e₂} (os es : Level)
 private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒢 = fam.CategoryOfFamilies os (os ⊔ es) 𝒢
-  module Sh = fam-mu-types-2.shape os es
-  module Fc = fam-mu-types-2.fibre os es 𝒞T 𝒞P
-  module Fg = fam-mu-types-2.fibre os es 𝒢T 𝒢P
+  module Sh = fam-mu-types.shape os es
+  module Fc = fam-mu-types.fibre os es 𝒞T 𝒞P
+  module Fg = fam-mu-types.fibre os es 𝒢T 𝒢P
   module PresC = fam-presentation os (os ⊔ es) {𝒞}
   module 𝒢C = Category 𝒢
   module 𝒢Pm = HasProducts 𝒢P
 
 open Sh using (Sort; mkSort)
-open polynomial-functor-2 using (Poly; #c; skeleton; skeleton-go; extend)
+open polynomial-functor using (Poly; #c; skeleton; skeleton-go; extend)
 open prop-setoid using (mk-≃m)
 open prop-setoid._⇒_
 open Functor

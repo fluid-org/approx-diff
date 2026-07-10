@@ -11,7 +11,7 @@ open import categories
 import Data.Nat
 import Data.Fin
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
-import polynomial-functor-2
+import polynomial-functor
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
          interchange; H-id; NT-id-left;
@@ -900,17 +900,17 @@ GlSC : HasStrongCoproducts Gl.cat GlPE.products
 GlSC = ccc→strong-coproducts GlCP.coproducts GlPE.exponentials
 
 abstract
-  Gl-Mu : polynomial-functor-2.Interp.HasMu GlPE.terminal GlPE.products GlSC
+  Gl-Mu : polynomial-functor.Interp.HasMu GlPE.terminal GlPE.products GlSC
   Gl-Mu = fam-mu-realisation.Muℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
 
-  Gl-MuLaws : polynomial-functor-2.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu
+  Gl-MuLaws : polynomial-functor.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu
   Gl-MuLaws = fam-mu-realisation.MuLawsℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
 
   -- Expose the μ-objects behind the abstraction: they are the realised
   -- μ-objects of the construction above.
-  Gl-Mu-obj : ∀ {n} (Q : polynomial-functor-2.Poly Gl.cat (Data.Nat.suc n))
+  Gl-Mu-obj : ∀ {n} (Q : polynomial-functor.Poly Gl.cat (Data.Nat.suc n))
               (δ : Data.Fin.Fin n → Category.obj Gl.cat) →
-              polynomial-functor-2.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
+              polynomial-functor.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
               fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC Q δ
   Gl-Mu-obj Q δ = ≡-refl
 
@@ -1227,21 +1227,21 @@ definability {X} {Y} f with Definable-closed _ (f .presv .*⊑* X .*⊑* (lift (
 -- interested are the ones that come from interpretations of the
 -- language.
 
-module syntactic-2 {ℓ}
+module syntactic {ℓ}
    (Sig : Signature ℓ)
    (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
-   (𝒞Mu : polynomial-functor-2.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
+   (𝒞Mu : polynomial-functor.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
    (GFC : preserve-chosen-coproducts GF (strong-coproducts→coproducts 𝒞T 𝒞SC)
                                         (strong-coproducts→coproducts GlPE.terminal GlSC))
-   (GFμ : polynomial-functor-2.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-Mu GF)
+   (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-Mu GF)
    (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P ,
                    HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
                      (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
    where
 
-  open import language-syntax-2 Sig using (_⊢_; first-order; first-order-ctxt)
+  open import language-syntax Sig using (_⊢_; first-order; first-order-ctxt)
 
-  open import language-fo-interpretation-2 Sig
+  open import language-fo-interpretation Sig
          𝒞 𝒞T 𝒞P 𝒞SC 𝒞Mu
          Gl.cat GlPE.terminal GlPE.products GlSC GlPE.exponentials Gl-Mu Gl-MuLaws
          GF GF-preserve-terminal GF-preserve-products GFC GFμ

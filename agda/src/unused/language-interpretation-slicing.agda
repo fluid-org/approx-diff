@@ -10,8 +10,8 @@ open import categories
          strong-coproducts→coproducts; HasExponentials)
 open import functor using (Functor; StrongFunctor)
 open import signature using (Signature)
-import polynomial-functor-2
-import language-syntax-2
+import polynomial-functor
+import language-syntax
 
 module language-interpretation-slicing
   {ℓ} (Sig : Signature ℓ)
@@ -20,7 +20,7 @@ module language-interpretation-slicing
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
   (T  : StrongFunctor 𝒞P)
-  (let open polynomial-functor-2 𝒞T 𝒞P 𝒞SC T hiding (_+_; _×_))
+  (let open polynomial-functor 𝒞T 𝒞P 𝒞SC T hiding (_+_; _×_))
   (Mu : HasMu)
   (⟦sort⟧ : Signature.sort Sig → Category.obj 𝒞)
   where
@@ -30,7 +30,7 @@ open HasTerminal 𝒞T renaming (witness to 𝟙)
 open HasProducts 𝒞P
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
 open HasExponentials 𝒞E renaming (exp to _⟦→⟧_)
-open language-syntax-2 Sig
+open language-syntax Sig
 open HasMu Mu
 
 T-obj : obj → obj

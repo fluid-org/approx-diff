@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-module example-2 (Num : Set) (num-zero : Num) where
+module example (Num : Set) (num-zero : Num) where
 
 open import Level using (0ℓ; lift)
 import Data.Fin as Fin
@@ -8,12 +8,12 @@ open import Data.List using (List; []; _∷_)
 open import every using (Every; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (refl)
 open import signature
-import language-syntax-2
+import language-syntax
 import label
 
 open import example.signature Num
 
-module L = language-syntax-2 Sig
+module L = language-syntax Sig
 
 -- example query. Given `List (label [×] nat)`, add up all the
 -- elements labelled with a specific label:

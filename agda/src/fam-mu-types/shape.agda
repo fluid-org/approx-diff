@@ -17,18 +17,18 @@ open import Data.Product using (_,_) renaming (_×_ to _×T_)
 open import prop using (_∧_; _,_; ⊥)
 open import prop-setoid using (Setoid; IsEquivalence)
 import setoid-cat
-import polynomial-functor-2
+import polynomial-functor
 
-module fam-mu-types-2.shape (os es : Level) where
+module fam-mu-types.shape (os es : Level) where
 
 open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 open IsEquivalence
 
 -- Index-erased polynomials: constants are index setoids.
 𝒮 = setoid-cat.SetoidCat os (os ⊔ es)
-Poly = polynomial-functor-2.Poly 𝒮
-open polynomial-functor-2.Poly
-open polynomial-functor-2 using (extend)
+Poly = polynomial-functor.Poly 𝒮
+open polynomial-functor.Poly
+open polynomial-functor using (extend)
 
 -- A sort is an index-erased μ-body together with a resolution of its free
 -- variables to parameters or other sorts.

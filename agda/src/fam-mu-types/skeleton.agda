@@ -24,14 +24,14 @@ open import Relation.Binary.PropositionalEquality
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid using (Setoid)
 open import indexed-family using (_≃f_)
-import polynomial-functor-2
-import fam-mu-types-2.carrier
+import polynomial-functor
+import fam-mu-types.carrier
 
-module fam-mu-types-2.skeleton {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.skeleton {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types-2.carrier os es T P
-open polynomial-functor-2 using (#c; skeleton; skeleton-go; consts; _++e_)
+open fam-mu-types.carrier os es T P
+open polynomial-functor using (#c; skeleton; skeleton-go; consts; _++e_)
 
 -- Fixed data for one instance of the lemma: an environment and a constant
 -- block over the Fam category.

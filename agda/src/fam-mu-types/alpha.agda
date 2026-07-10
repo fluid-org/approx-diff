@@ -17,12 +17,12 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
-import fam-mu-types-2.fold
+import fam-mu-types.fold
 
-module fam-mu-types-2.alpha {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.alpha {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types-2.fold os es T P public
+open fam-mu-types.fold os es T P public
 
 -- α's reconstruction machinery.
 module AlphaDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where

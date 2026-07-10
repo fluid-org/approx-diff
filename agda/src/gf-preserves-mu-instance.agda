@@ -49,4 +49,4 @@ module gf-preserves-mu-instance
   -- at first-order types collapse to Fam(𝒞) morphisms, for any signature and
   -- model of it in Fam(𝒞).
   module syntactic-μ {ℓ} (Sig : Signature ℓ) =
-    syntactic-2 Sig Fam⟨𝒞⟩-strongCoproducts Fam⟨𝒞⟩-hasMu GF-preserve-strong-coproducts GFμ
+    syntactic Sig Fam⟨𝒞⟩-strongCoproducts Fam⟨𝒞⟩-hasMu GF-preserve-strong-coproducts GFμ

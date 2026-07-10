@@ -10,32 +10,32 @@ open import categories
 open import functor using (Functor)
 open import finite-product-functor using (preserve-chosen-products)
 open import finite-coproduct-functor using (preserve-chosen-coproducts)
-import polynomial-functor-2
-import language-syntax-2
+import polynomial-functor
+import language-syntax
 open import signature
 
 open Functor
 
-module language-fo-interpretation-2 {ℓ} (Sig : Signature ℓ)
+module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o₁ m₁ e₁ o₂ m₂ e₂}
   (𝒞 : Category o₁ m₁ e₁) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
-  (𝒞Mu : polynomial-functor-2.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
+  (𝒞Mu : polynomial-functor.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
   (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SC : HasStrongCoproducts 𝒟 𝒟P)
   (𝒟E : HasExponentials 𝒟 𝒟P)
-  (𝒟Mu : polynomial-functor-2.Interp.HasMu 𝒟T 𝒟P 𝒟SC)
-  (𝒟MuLaws : polynomial-functor-2.Interp.HasMuLaws 𝒟T 𝒟P 𝒟SC 𝒟Mu)
+  (𝒟Mu : polynomial-functor.Interp.HasMu 𝒟T 𝒟P 𝒟SC)
+  (𝒟MuLaws : polynomial-functor.Interp.HasMuLaws 𝒟T 𝒟P 𝒟SC 𝒟Mu)
   (F : Functor 𝒞 𝒟)
   (FT : Category.IsIso 𝒟 (HasTerminal.to-terminal 𝒟T {F .fobj (𝒞T .HasTerminal.witness)}))
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
   (FC : preserve-chosen-coproducts F (strong-coproducts→coproducts 𝒞T 𝒞SC) (strong-coproducts→coproducts 𝒟T 𝒟SC))
-  (Fμ : polynomial-functor-2.Preserves-μ 𝒞T 𝒞P 𝒞SC 𝒟T 𝒟P 𝒟SC 𝒞Mu 𝒟Mu F)
+  (Fμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC 𝒟T 𝒟P 𝒟SC 𝒞Mu 𝒟Mu F)
   (𝒞-Sig-model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P ,
                   HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
                     (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
   where
 
-open language-syntax-2 Sig
-open polynomial-functor-2 using (Poly; Poly-map; extend)
+open language-syntax Sig
+open polynomial-functor using (Poly; Poly-map; extend)
 
 -- Interpretation of the first-order types in 𝒞, with μ-types via the
 -- polynomial translation of the first-order witness.
@@ -45,7 +45,7 @@ module _ where
   open HasProducts 𝒞P
   open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
 
-  module CMu = polynomial-functor-2.Interp.HasMu 𝒞Mu
+  module CMu = polynomial-functor.Interp.HasMu 𝒞Mu
 
   fo-as-poly : ∀ {Δ n} {τ : type (n + Δ)} → first-order τ → (Fin Δ → obj) → Poly 𝒞 n
   fo-as-poly {n = n} (var i)   δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
@@ -72,7 +72,7 @@ private
   module 𝒞CPm = HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
   module 𝒟CPm = HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
   module 𝒟Pm = HasProducts 𝒟P
-  module PM = polynomial-functor-2.MuIso 𝒟T 𝒟P 𝒟SC 𝒟Mu 𝒟MuLaws
+  module PM = polynomial-functor.MuIso 𝒟T 𝒟P 𝒟SC 𝒟Mu 𝒟MuLaws
 
 𝒞Bool = 𝒞CPm.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness)
 𝒟Bool = 𝒟CPm.coprod (𝒟T .HasTerminal.witness) (𝒟T .HasTerminal.witness)
@@ -85,7 +85,7 @@ Bool-iso =
 𝒟-Sig-model : Model PFPC[ 𝒟 , 𝒟T , 𝒟P , 𝒟Bool ] Sig
 𝒟-Sig-model = transport-model Sig F FT FP (Bool-iso .𝒟.Iso.fwd) 𝒞-Sig-model
 
-open import language-interpretation-2 Sig 𝒟 𝒟T 𝒟P 𝒟SC 𝒟E 𝒟Mu 𝒟-Sig-model
+open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟SC 𝒟E 𝒟Mu 𝒟-Sig-model
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly)
   using ()
   public

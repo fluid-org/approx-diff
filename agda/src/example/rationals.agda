@@ -25,9 +25,9 @@ open Setoid using (Carrier) public
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import example.signature ℚ using (Sig; number; label; approx) public
-import example-2
-open import language-syntax-2 Sig hiding (_,_) public
-module Ex = example-2 ℚ 0ℚ
+import example
+open import language-syntax Sig hiding (_,_) public
+module Ex = example ℚ 0ℚ
 open Ex.ex public
 
 -- Model instantiation.
@@ -77,7 +77,7 @@ private
 open import example.signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult public
 module D = Deriv scalar scalar-cong
-open ho-model-sd-semimod.interp-sd-2 semiring-Q.semiring Sig D.BaseInterp1 public
+open ho-model-sd-semimod.interp-sd semiring-Q.semiring Sig D.BaseInterp1 public
 open SDSemiMod-ℚ public using (conjugate)
 
 -- W-trees indexing the fibres of closed μ-types, for writing inputs.

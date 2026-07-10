@@ -17,12 +17,12 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
-import fam-mu-types-2.carrier
+import fam-mu-types.carrier
 
-module fam-mu-types-2.reindex {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.reindex {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types-2.carrier os es T P public
+open fam-mu-types.carrier os es T P public
 
 -- Reindex a tree from one parameter context to another along a context morphism.
 -- The morphism is first-order data: `base` carries the leaf maps (applied only at

@@ -20,14 +20,14 @@ open import indexed-family using (Fam; fam→functor; functor→fam; fam→funct
 import fam
 import finite-coproducts-from-indexed
 open import finite-product-functor using (preserve-chosen-products)
-open import polynomial-functor-2
+open import polynomial-functor
   using (Preserves-μ; Poly; Poly-map; skeleton; skeleton-go; Poly-map-skeleton-go;
          skeleton-go-Poly-map; #c; #c-Poly-map; consts; consts-Poly-map; _++e_; ++e-map)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; cong)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; subst to ≡-subst)
-import fam-mu-types-2
-import fam-mu-types-2.skeleton
+import fam-mu-types
+import fam-mu-types.skeleton
 import fam-mu-realisation
 import fam-presentation
 import fam-mu-checked
@@ -53,17 +53,17 @@ module gf-preserves-mu
      ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) (fam.CategoryOfFamilies.cat 0ℓ 0ℓ 𝒞)) →
      Category.Iso Gl (GDC S (GF ∘F D) .apex)
                      (GF .fobj (fam.CategoryOfFamilies.bigCoproducts 0ℓ 0ℓ 𝒞 S D .apex)))
-  (Gl-Mu : polynomial-functor-2.Interp.HasMu GlT GlP GlSC)
+  (Gl-Mu : polynomial-functor.Interp.HasMu GlT GlP GlSC)
   (Gl-Mu-obj : ∀ {n} (Q : Poly Gl (sucℕ n)) (δ : Fin n → Category.obj Gl) →
-     polynomial-functor-2.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
+     polynomial-functor.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
      fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlT GlP GlE GlSC Q δ)
   where
 
   private
     module Glued = Category Gl
-    module Sk  = fam-mu-types-2.skeleton 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-    module SkGl = fam-mu-types-2.skeleton 0ℓ 0ℓ GlT GlP
-    module FMc = fam-mu-types-2 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    module Sk  = fam-mu-types.skeleton 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    module SkGl = fam-mu-types.skeleton 0ℓ 0ℓ GlT GlP
+    module FMc = fam-mu-types 0ℓ 0ℓ 𝒞-terminal 𝒞-products
     module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlT GlP GlE GlSC
     module FMg = RGl.FM
     module Pres = fam-presentation 0ℓ 0ℓ {𝒞}
@@ -83,8 +83,8 @@ module gf-preserves-mu
   Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products
   Fam⟨𝒞⟩-strongCoproducts = Fam⟨𝒞⟩.products.strongCoproducts 𝒞-products
 
-  Fam⟨𝒞⟩-hasMu : polynomial-functor-2.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
-  Fam⟨𝒞⟩-hasMu = fam-mu-types-2.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+  Fam⟨𝒞⟩-hasMu : polynomial-functor.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
+  Fam⟨𝒞⟩-hasMu = fam-mu-types.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
 
   -- Source side of the carrier comparison: GF of a Fam W-tree is the Gl
   -- set-indexed coproduct of the GF-images of its singleton fibres, via the

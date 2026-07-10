@@ -31,9 +31,9 @@ open import Data.Rational.Properties using (∣-∣-nonNeg)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import example.signature ℚ using (Sig; number; label; approx) public
-import example-2
-open import language-syntax-2 Sig hiding (_,_) public
-module Ex = example-2 ℚ 0ℚ
+import example
+open import language-syntax Sig hiding (_,_) public
+module Ex = example ℚ 0ℚ
 open Ex.ex public
 open import label using (a; b) public
 open import prop using (liftS)
@@ -105,7 +105,7 @@ private
   mult-c-cong _ _ = Category.≈-refl SemiMod-Rel.cat {f = mult-c 0ℚ 0ℚ}
 
 module D = BinDeriv add-c₁ add-c₂ mult-c mult-c add-c₁-cong add-c₂-cong mult-c-cong mult-c-cong
-open ho-model-sd-semimod.interp-sd-2 semiring-Q-tropical-mult.semiring Sig D.BaseInterp1 public
+open ho-model-sd-semimod.interp-sd semiring-Q-tropical-mult.semiring Sig D.BaseInterp1 public
 open SDSemiMod-Rel public using (conjugate)
 
 -- W-trees indexing the fibres of closed μ-types, for writing inputs.

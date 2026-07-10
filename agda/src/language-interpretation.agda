@@ -9,17 +9,17 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; HasExponentials)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
-import polynomial-functor-2
-import language-syntax-2
+import polynomial-functor
+import language-syntax
 
-module language-interpretation-2
+module language-interpretation
   {ℓ} (Sig : Signature ℓ)
   {o m e}
   (𝒞 : Category o m e)
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
-  (let open polynomial-functor-2.Interp 𝒞T 𝒞P 𝒞SC)
-  (let open polynomial-functor-2 using (Poly; extend))
+  (let open polynomial-functor.Interp 𝒞T 𝒞P 𝒞SC)
+  (let open polynomial-functor using (Poly; extend))
   (Mu : HasMu)
   (let Bool = HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
               (HasTerminal.witness 𝒞T) (HasTerminal.witness 𝒞T))
@@ -32,7 +32,7 @@ open HasProducts 𝒞P renaming (pair to ⟨_,_⟩)
 open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC) using (coprod; coprod-m; in₁; in₂)
 open HasStrongCoproducts 𝒞SC using () renaming (copair to scopair)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
-open language-syntax-2 Sig
+open language-syntax Sig
 open HasMu Mu
 open Model Int
 

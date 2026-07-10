@@ -8,7 +8,7 @@ open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import categories using (Category)
 open import prop using (_,_)
-import language-syntax-2
+import language-syntax
 import semimodule
 import sd-semimodule
 import ho-model
@@ -28,12 +28,12 @@ open ho-model.Interpretation
 -- Self-dualities on the first-order types of the language with general
 -- recursive types: instantiate the generic fibre-object machinery at the
 -- self-dual semimodules.
-module interp-sd-2 (Sig : Signature 0ℓ)
+module interp-sd (Sig : Signature 0ℓ)
                    (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
    where
 
-  open interp-2 Sig Impl public
-  open language-syntax-2 Sig using (_⊢_)
+  open interp Sig Impl public
+  open language-syntax Sig using (_⊢_)
   open SDSemiMod using (SelfDual; 𝟘; _⊕_) public
   open Setoid using (Carrier)
 

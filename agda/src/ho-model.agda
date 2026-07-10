@@ -8,15 +8,15 @@ open import categories
          op-coproducts→products; op-initial→terminal; HasCoproducts;
          HasStrongCoproducts; strong-coproducts→coproducts; ccc→strong-coproducts;
          coproducts-canonical-iso)
-import polynomial-functor-2
+import polynomial-functor
 open import cmon-enriched
   using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
 open import functor using (HasLimits; op-colimit; limits→limits'; Colimit; _∘F_; NatTrans; colambda-unique; constF; functor-preserve-iso)
 open import categories using (setoid→category)
 import fam
 import finite-coproducts-from-indexed
-import fam-mu-types-2.carrier
-import fam-mu-types-2
+import fam-mu-types.carrier
+import fam-mu-types
 import fam-stable-indexed
 import indexed-family
 
@@ -43,7 +43,7 @@ open Functor
 
 open import fam-functor using (FamF)
 open import signature
-import language-syntax-2
+import language-syntax
 
 module Interpretation
   {o : Level}
@@ -125,22 +125,22 @@ module Interpretation
     Fam⟨𝒟⟩.products.strongCoproducts (biproducts→products _ 𝒟-biproducts)
 
   module Fam⟨𝒟⟩-μ =
-    fam-mu-types-2.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+    fam-mu-types.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMu =
-    fam-mu-types-2.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+    fam-mu-types.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMuLaws =
-    fam-mu-types-2.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
+    fam-mu-types.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
-  module interp-2 (Sig : Signature 0ℓ)
+  module interp (Sig : Signature 0ℓ)
                   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
      where
 
      open Fam⟨𝒟⟩.Mor public
      open Fam⟨𝒟⟩.Obj public
 
-     open import language-interpretation-2 Sig
+     open import language-interpretation Sig
        Fam⟨𝒟⟩.cat
        Fam⟨𝒟⟩-terminal
        Fam⟨𝒟⟩-products
@@ -150,7 +150,7 @@ module Interpretation
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 
-     open language-syntax-2 Sig using (_⊢_; type; first-order; var; unit; base; _[+]_; _[×]_; μ)
+     open language-syntax Sig using (_⊢_; type; first-order; var; unit; base; _[+]_; _[×]_; μ)
      open indexed-family._⇒f_ using (transf)
      open Setoid using (Carrier)
      open Model Impl using (⟦sort⟧)
@@ -329,8 +329,8 @@ module Interpretation
     Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products
     Fam⟨𝒞⟩-strongCoproducts = Fam⟨𝒞⟩.products.strongCoproducts 𝒞-products
 
-    Fam⟨𝒞⟩-hasMu : polynomial-functor-2.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
-    Fam⟨𝒞⟩-hasMu = fam-mu-types-2.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    Fam⟨𝒞⟩-hasMu : polynomial-functor.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
+    Fam⟨𝒞⟩-hasMu = fam-mu-types.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
 
     -- The embedding preserves the coproducts derived from the strong coproducts
     -- on either side: the canonical maps differ from those for the chosen

@@ -12,7 +12,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
 
-module language-syntax-2 {ℓ} (Sig : Signature ℓ) where
+module language-syntax {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig
 

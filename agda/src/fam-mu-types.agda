@@ -21,12 +21,12 @@ open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 import indexed-family
 open indexed-family using (Fam; _⇒f_)
-import fam-mu-types-2.fuse
+import fam-mu-types.fuse
 
-module fam-mu-types-2 {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types-2.fuse os es T P public
+open fam-mu-types.fuse os es T P public
 
 -- β/η proof machinery: the fusion of α's reconstruction with the fold equals the strong functorial action
 -- of `⦅ alg ⦆`.

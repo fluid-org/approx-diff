@@ -15,7 +15,7 @@ import galois
 import preorder
 import nat
 open import example.signature nat.ℕ using (Sig; number; label; approx) public
-import example-2
+import example
 
 -- Vocabulary re-exported for tests.
 open import Level using (lift) public
@@ -27,8 +27,8 @@ open import two renaming (I to ⊤; O to ⊥) using () public
 open import nat using (ℕ) public
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
-open import language-syntax-2 Sig hiding (_,_) public   -- _⊢_, types, first-order, unit/base/list/_[×]_
-module Ex = example-2 nat.ℕ nat.zero
+open import language-syntax Sig hiding (_,_) public   -- _⊢_, types, first-order, unit/base/list/_[×]_
+module Ex = example nat.ℕ nat.zero
 open Ex.ex public                                 -- query, mult-ex, sum, …
 open import label using (a; b) public
 
@@ -62,7 +62,7 @@ private
   coeff-cong-b {nat.succ _} {nat.zero}   (prop._,_ () _)
 
 module D = Deriv coeff-b coeff-cong-b
-open ho-model-boolalg-sd-semimod.interp-boolean-2 two.semiring two.semiring-boolean Sig D.BaseInterp1 public
+open ho-model-boolalg-sd-semimod.interp-boolean two.semiring two.semiring-boolean Sig D.BaseInterp1 public
 
 -- W-trees indexing the fibres of closed μ-types, for writing inputs.
 module T = Pm.Tree {n = 0} (λ ())

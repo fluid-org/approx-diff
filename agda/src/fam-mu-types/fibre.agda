@@ -22,10 +22,10 @@ open import indexed-family using (Fam; _⇒f_)
 open import prop-setoid using (Setoid)
 import setoid-cat
 import fam
-import polynomial-functor-2
-import fam-mu-types-2.shape
+import polynomial-functor
+import fam-mu-types.shape
 
-module fam-mu-types-2.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
 open Category 𝒞
@@ -36,12 +36,12 @@ open Obj
 open Mor
 open Fam
 open _≃_
-module Sh = fam-mu-types-2.shape os es
+module Sh = fam-mu-types.shape os es
 open Sh using (mkSort)
 
-Poly-C = polynomial-functor-2.Poly cat
-open polynomial-functor-2.Poly
-open polynomial-functor-2 using (extend; Poly-map)
+Poly-C = polynomial-functor.Poly cat
+open polynomial-functor.Poly
+open polynomial-functor using (extend; Poly-map)
 
 private module SC = Category (setoid-cat.SetoidCat os (os ⊔ es))
 

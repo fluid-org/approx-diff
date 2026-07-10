@@ -7,7 +7,7 @@ import example.all
 
 -- Backward analyses of the list and rose-tree examples for the language with
 -- general recursive types, over the self-dual Boolean algebras.
-import example-bools-2
+import example-bools
 
 -- Section 3 "Models of Semiring Dependency": Fam(C) is bicartesian closed when C has biproducts
 -- and all small products (Lucatelli Nunes and Vákár 2023).
@@ -26,9 +26,9 @@ import conservativity
 -- Polynomials over a category and their parameterised initial algebras; the
 -- action of a functor on polynomials, and the action of componentwise
 -- morphisms and isomorphisms on μ-objects.
-import polynomial-functor-2
+import polynomial-functor
 
 -- For the language with general recursive types: every first-order type's
 -- interpretation in the higher-order model is isomorphic to the image of its
 -- first-order interpretation.
-import language-fo-interpretation-2
+import language-fo-interpretation

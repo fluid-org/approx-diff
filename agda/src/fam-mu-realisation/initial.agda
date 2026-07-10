@@ -12,11 +12,11 @@ open import categories
   using (Category; setoid→category; HasTerminal; HasProducts; HasExponentials;
          HasStrongCoproducts; HasCoproducts; strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor; HasColimits)
-open import polynomial-functor-2 using (Poly; extend; Poly-map)
+open import polynomial-functor using (Poly; extend; Poly-map)
 import fam
-import fam-mu-types-2
+import fam-mu-types
 import fam-realisation
-import polynomial-functor-2
+import polynomial-functor
 import fam-mu-realisation.collapse
 
 module fam-mu-realisation.initial {o m e} (os es : Level) {ℰ : Category o m e}

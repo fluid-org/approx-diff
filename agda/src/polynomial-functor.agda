@@ -14,7 +14,7 @@ open import prop-setoid using (module ≈-Reasoning)
 open import Relation.Binary.PropositionalEquality using (_≡_; cong; cong₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; subst to ≡-subst)
 
-module polynomial-functor-2 where
+module polynomial-functor where
 
 data Poly {o m e} (𝒞 : Category o m e) (n : ℕ) : Set o where
   const : Category.obj 𝒞 → Poly 𝒞 n

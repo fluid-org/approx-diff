@@ -18,12 +18,12 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
-import fam-mu-types-2.alpha
+import fam-mu-types.alpha
 
-module fam-mu-types-2.fuse {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.fuse {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types-2.alpha os es T P public
+open fam-mu-types.alpha os es T P public
 
 -- General free-family fusion: a single reindex (the collapsed double-reindex, via combine-lemma)
 -- equals the functorial map. Families sₛ/sₜ are FREE so the nested-μ recursion's family fits.
