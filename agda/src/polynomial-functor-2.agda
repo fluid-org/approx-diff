@@ -4,14 +4,15 @@ import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Nat using (ℕ; zero; suc)
 import Data.Nat
-open import Data.Sum using ([_,_])
+open import Data.Sum using ([_,_]; inj₁; inj₂) renaming (map to ⊎-map)
 open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; coKleisli-prod)
 open import functor using (Functor)
 open import prop-setoid using (module ≈-Reasoning)
-open import Relation.Binary.PropositionalEquality using (_≡_; cong; cong₂) renaming (refl to ≡-refl)
+open import Relation.Binary.PropositionalEquality using (_≡_; cong; cong₂)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; subst to ≡-subst)
 
 module polynomial-functor-2 where
 
@@ -160,6 +161,99 @@ consts (μ P)   c = consts P c
 -- Extend an environment by a constant block.
 _++e_ : ∀ {a} {A : Set a} {n k} → (Fin n → A) → (Fin k → A) → Fin (n Data.Nat.+ k) → A
 _++e_ {n = n} δ cs i = [ δ , cs ] (Fin.splitAt n i)
+
+-- Extension commutes with pointwise application.
+++e-map : ∀ {a b} {A : Set a} {B : Set b} (f : A → B) {n k}
+          (δ : Fin n → A) (cs : Fin k → A) (i : Fin (n Data.Nat.+ k)) →
+          f ((δ ++e cs) i) ≡ ((λ j → f (δ j)) ++e (λ c → f (cs c))) i
+++e-map f {n} δ cs i with Fin.splitAt n i
+... | inj₁ _ = ≡-refl
+... | inj₂ _ = ≡-refl
+
+-- Transporting a polynomial along a functor preserves the constant count, the
+-- constants themselves up to the functor, and the skeleton.
+#c-Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
+              (G : Functor 𝒞 𝒟) {n} (P : Poly 𝒞 n) → #c (Poly-map G P) ≡ #c P
+#c-Poly-map G (const A) = ≡-refl
+#c-Poly-map G (var i)   = ≡-refl
+#c-Poly-map G (P + Q)   = cong₂ Data.Nat._+_ (#c-Poly-map G P) (#c-Poly-map G Q)
+#c-Poly-map G (P × Q)   = cong₂ Data.Nat._+_ (#c-Poly-map G P) (#c-Poly-map G Q)
+#c-Poly-map G (μ P)     = #c-Poly-map G P
+
+private
+  subst-↑ˡ : ∀ {m m' n n'} (p : m' ≡ m) (q : n' ≡ n) (c : Fin m') →
+             ≡-subst Fin (cong₂ Data.Nat._+_ p q) (c Fin.↑ˡ n') ≡ (≡-subst Fin p c) Fin.↑ˡ n
+  subst-↑ˡ ≡-refl ≡-refl c = ≡-refl
+
+  subst-↑ʳ : ∀ {m m' n n'} (p : m' ≡ m) (q : n' ≡ n) (c : Fin n') →
+             ≡-subst Fin (cong₂ Data.Nat._+_ p q) (m' Fin.↑ʳ c) ≡ m Fin.↑ʳ (≡-subst Fin q c)
+  subst-↑ʳ ≡-refl ≡-refl c = ≡-refl
+
+  splitAt-subst : ∀ {m m' n n'} (p : m' ≡ m) (q : n' ≡ n) (c : Fin (m' Data.Nat.+ n')) →
+                  Fin.splitAt m (≡-subst Fin (cong₂ Data.Nat._+_ p q) c) ≡
+                  ⊎-map (≡-subst Fin p) (≡-subst Fin q) (Fin.splitAt m' c)
+  splitAt-subst {m} ≡-refl ≡-refl c with Fin.splitAt m c
+  ... | inj₁ _ = ≡-refl
+  ... | inj₂ _ = ≡-refl
+
+consts-Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
+                  (G : Functor 𝒞 𝒟) {n} (P : Poly 𝒞 n) (c : Fin (#c (Poly-map G P))) →
+                  consts (Poly-map G P) c ≡
+                  G .Functor.fobj (consts P (≡-subst Fin (#c-Poly-map G P) c))
+consts-Poly-map G (const A) c = ≡-refl
+consts-Poly-map G (P + Q) c
+  rewrite splitAt-subst (#c-Poly-map G P) (#c-Poly-map G Q) c
+  with Fin.splitAt (#c (Poly-map G P)) c
+... | inj₁ c₁ = consts-Poly-map G P c₁
+... | inj₂ c₂ = consts-Poly-map G Q c₂
+consts-Poly-map G (P × Q) c
+  rewrite splitAt-subst (#c-Poly-map G P) (#c-Poly-map G Q) c
+  with Fin.splitAt (#c (Poly-map G P)) c
+... | inj₁ c₁ = consts-Poly-map G P c₁
+... | inj₂ c₂ = consts-Poly-map G Q c₂
+consts-Poly-map G (μ P) c = consts-Poly-map G P c
+
+-- The skeleton is unchanged by renaming the constant block pointwise.
+skeleton-go-cong : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
+                   {n k} (P : Poly 𝒞 n) {ι₁ ι₂ : Fin (#c P) → Fin k} →
+                   (∀ c → ι₁ c ≡ ι₂ c) →
+                   skeleton-go {𝒟 = 𝒟} P ι₁ ≡ skeleton-go {𝒟 = 𝒟} P ι₂
+skeleton-go-cong {n = n} (const A) eq = cong (λ t → var (n Fin.↑ʳ t)) (eq Fin.zero)
+skeleton-go-cong (var i)   eq = ≡-refl
+skeleton-go-cong (P + Q) eq =
+  cong₂ _+_ (skeleton-go-cong P (λ c → eq (c Fin.↑ˡ #c Q)))
+            (skeleton-go-cong Q (λ c → eq (#c P Fin.↑ʳ c)))
+skeleton-go-cong (P × Q) eq =
+  cong₂ _×_ (skeleton-go-cong P (λ c → eq (c Fin.↑ˡ #c Q)))
+            (skeleton-go-cong Q (λ c → eq (#c P Fin.↑ʳ c)))
+skeleton-go-cong (μ P) eq = cong μ (skeleton-go-cong P eq)
+
+-- The skeleton never mentions the constants, so transporting its source along
+-- a functor gives the skeleton again, up to the cast of the constant block.
+skeleton-go-Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
+                       {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {ℰ : Category o₃ m₃ e₃}
+                       (G : Functor 𝒞 𝒟) {n k} (P : Poly 𝒞 n) (ι : Fin (#c P) → Fin k) →
+                       skeleton-go {𝒟 = ℰ} (Poly-map G P) (λ c → ι (≡-subst Fin (#c-Poly-map G P) c)) ≡
+                       skeleton-go {𝒟 = ℰ} P ι
+skeleton-go-Poly-map G (const A) ι = ≡-refl
+skeleton-go-Poly-map G (var i)   ι = ≡-refl
+skeleton-go-Poly-map G (P + Q) ι =
+  cong₂ _+_
+    (≡-trans (skeleton-go-cong (Poly-map G P)
+               (λ c → cong ι (subst-↑ˡ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
+             (skeleton-go-Poly-map G P (λ c → ι (c Fin.↑ˡ #c Q))))
+    (≡-trans (skeleton-go-cong (Poly-map G Q)
+               (λ c → cong ι (subst-↑ʳ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
+             (skeleton-go-Poly-map G Q (λ c → ι (#c P Fin.↑ʳ c))))
+skeleton-go-Poly-map G (P × Q) ι =
+  cong₂ _×_
+    (≡-trans (skeleton-go-cong (Poly-map G P)
+               (λ c → cong ι (subst-↑ˡ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
+             (skeleton-go-Poly-map G P (λ c → ι (c Fin.↑ˡ #c Q))))
+    (≡-trans (skeleton-go-cong (Poly-map G Q)
+               (λ c → cong ι (subst-↑ʳ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
+             (skeleton-go-Poly-map G Q (λ c → ι (#c P Fin.↑ʳ c))))
+skeleton-go-Poly-map G (μ P) ι = cong μ (skeleton-go-Poly-map G P ι)
 
 -- The functor preserves μ-types: each μ-object maps, up to isomorphism, to the
 -- μ-object of the image polynomial in the image environment.

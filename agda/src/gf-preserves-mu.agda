@@ -15,9 +15,11 @@ open import indexed-family using (Fam; fam→functor; functor→fam; fam→funct
 import finite-coproducts-from-indexed
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 open import polynomial-functor-2
-  using (Preserves-μ; Poly; Poly-map; skeleton; Poly-map-skeleton-go; #c; consts; _++e_)
+  using (Preserves-μ; Poly; Poly-map; skeleton; skeleton-go; Poly-map-skeleton-go;
+         skeleton-go-Poly-map; #c; #c-Poly-map; consts; consts-Poly-map; _++e_; ++e-map)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_) renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans)
+  using (_≡_; cong)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; subst to ≡-subst)
 import fam-mu-types-2
 import fam-mu-types-2.skeleton
 import fam-mu-realisation
@@ -54,6 +56,7 @@ module gf-preserves-mu
 
   private
     module Sk  = fam-mu-types-2.skeleton 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    module SkGl = fam-mu-types-2.skeleton 0ℓ 0ℓ GlPE.terminal GlPE.products
     module FMc = fam-mu-types-2 0ℓ 0ℓ 𝒞-terminal 𝒞-products
     module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
     module FMg = RGl.FM
@@ -132,6 +135,41 @@ module gf-preserves-mu
       isos i = Glued.Iso-trans (Glued.Iso-sym (check-iso (ε i)))
                  (Glued.Iso-sym (RGl.realise-η-iso (GF .fobj (ε i))))
 
+      -- The realised skeleton in Fam(Gl), backwards: collapse the embedded
+      -- environment onto the extended one, share the skeleton between P and its
+      -- GF-image, and apply the Fam(Gl) skeleton lemma at the image polynomial.
       realised-skeleton : Glued.Iso (RGl.Creal SKg (λ i → η .fobj (GF .fobj (ε i))))
                                     (RGl.μ-objℰ (Poly-map GF P) (λ i → GF .fobj (δ i)))
-      realised-skeleton = {!!}
+      realised-skeleton =
+        Glued.Iso-trans
+          (RGl.MuCollapse.mu-collapse SKg (RGl.collapseAt SKg)
+            (λ i → η .fobj (GF .fobj (ε i))) (δ̂ ++e cs̄)
+            (λ i → obj-≡-iso (cong (realise .fobj)
+                     (++e-map (λ X → η .fobj (GF .fobj X)) δ (consts P) i))))
+        (Glued.Iso-trans (Glued.Iso-sym (μObj-≡-iso skeletons-agree (δ̂ ++e cs̄)))
+          (Glued.Iso-sym (functor-preserve-iso realise SkI.skeleton-inst-iso)))
+        where
+          δ̂ : Fin n → FMg.Obj
+          δ̂ i = η .fobj (GF .fobj (δ i))
+
+          cs̄ : Fin (#c P) → FMg.Obj
+          cs̄ c = η .fobj (GF .fobj (consts P c))
+
+          P̂ : Poly FMg.cat (sucℕ n)
+          P̂ = Poly-map η (Poly-map GF P)
+
+          ι̂ : Fin (#c P̂) → Fin (#c P)
+          ι̂ c = ≡-subst Fin (#c-Poly-map GF P) (≡-subst Fin (#c-Poly-map η (Poly-map GF P)) c)
+
+          csok : ∀ c → cs̄ (ι̂ c) ≡ consts P̂ c
+          csok c =
+            ≡-sym (≡-trans (consts-Poly-map η (Poly-map GF P) c)
+              (cong (η .fobj) (consts-Poly-map GF P (≡-subst Fin (#c-Poly-map η (Poly-map GF P)) c))))
+
+          module SkI = SkGl.Skeleton.Inst δ̂ cs̄ P̂ ι̂ csok
+
+          skeletons-agree : skeleton-go P̂ ι̂ ≡ Poly-map η SKg
+          skeletons-agree =
+            ≡-trans (skeleton-go-Poly-map η (Poly-map GF P) (λ c → ≡-subst Fin (#c-Poly-map GF P) c))
+              (≡-trans (skeleton-go-Poly-map GF P (λ c → c))
+                (≡-sym (Poly-map-skeleton-go η P (λ c → c))))
