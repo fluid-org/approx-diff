@@ -121,10 +121,14 @@ reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and t
 Consider a program that condenses many numeric inputs into a single score, such as a model whose
 predictions we want to explain. A \emph{saliency map} records the influence of each input on the score;
 gradient-based explanation methods obtain one from the model's derivative~\cite{selvaraju20}. Here we
-compute a \emph{signed} saliency map, recording whether increasing each input raises or lowers the score, by running
-the backward derivative at the sign semiring of \secref{approx-as-tangents:qualitative} with the integers
-as the numbers. For addition, the derivative entries are $+$; for multiplication, the entry for each
-argument is the sign of the other.
+compute a \emph{signed} saliency map, recording whether increasing each input raises or lowers the score.
+The signs could be read off the rational derivative, but each verdict would then hold only at the
+particular magnitudes of the run. Computing with signs as the derivatives instead gives verdicts that rest
+on signs alone, so a definite entry holds under any sign-preserving change of magnitude, and $?$ marks an
+input whose direction of influence the signs are insufficient to determine. We therefore run the backward
+derivative at the sign semiring of \secref{approx-as-tangents:qualitative}, with the integers as the
+numbers. For addition, the derivative entries are $+$; for multiplication, the entry for each argument is
+the sign of the other.
 
 Our example scores a $3 \times 3$ grid of numbers against a fixed pattern, in the manner of a small
 image filter applied to one patch of a larger image. The pattern weights the centre positively and the
@@ -142,9 +146,8 @@ the backward derivative at this run with $+$ distributes it to the inputs:
 \end{displaymath}
 \noindent The four corners lower the score and the two mid-edge cells raise it, via the product
 $x_4 x_6$; the bottom-middle cell, which the score ignores, gets $0$. At the centre the linear term and
-the product $-x_5 x_2$ pull in opposite directions, so its entry is $?$. The rational derivative would
-report $-$ here instead, but only because $x_2 = 2$: the sign map's definite entries hold for any
-magnitudes with these signs, and $?$ marks where the signs alone are insufficient.
+the product $-x_5 x_2$ pull in opposite directions, so its entry is $?$. The rational derivative would instead report a negative
+entry for the centre, a verdict that depends on the magnitude $x_2 = 2$ rather than on its sign.
 \end{AddedBlock}
 
 \subsection{Cognacy Queries}
