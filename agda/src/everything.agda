@@ -1,15 +1,20 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Integration point for the paper's mechanised claims.
 module everything where
 
--- The examples of Section 5, one interpretation instance per semiring. Each instance pulls in
--- the interpretation of the higher-order language (Section 4) over the self-dual semimodule
--- models (Section 3), and with them the supporting theory: the category of families and its
--- exponentials, and the definability results of Section 6 in the conservativity module.
+-- The examples of Section 5, one interpretation instance per semiring.
 import example.all
 
+-- Section 3 "Models of Semiring Dependency": Fam(C) is bicartesian closed when C has biproducts
+-- and all small products (Lucatelli Nunes and Vákár 2023).
+import fam-exponentials
+
+-- The first-order models (Section 3): self-dual semimodules over a commutative semiring, and the
+-- Boolean special case, self-dual Boolean algebras.
+import ho-model-sd-semimod
+import ho-model-boolalg-sd-semimod
+
 -- Section 6 "Correctness of the Higher-Order Interpretation": the Fiore and Simpson 1999
--- definability theorem and its consequences. Also reached via ho-model; imported directly so the
--- gate does not depend on that.
+-- definability theorem, in the conservativity module, gives agreement of the underlying function
+-- with the Set interpretation at first order.
 import conservativity
