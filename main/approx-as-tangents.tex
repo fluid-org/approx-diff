@@ -1,4 +1,4 @@
-\section{\Replaced{Tangent Spaces as Semimodules}{Approximations as Tangents}}
+\section{Tangent Spaces as Semimodules}
 \label{sec:approx-as-tangents}
 
 We motivate our approach by showing how to combine ideas from differential geometry and linear algebra to
@@ -106,13 +106,13 @@ analogy, we call $x$ and $y$ \emph{orthogonal} when $\langle x, y \rangle = 0$.
   \end{displaymath}
 \end{definition}
 The conjugate is our backward analysis, and its defining equation makes precise the relationship with
-the forward one alluded to in \secref{introduction}. \Added{Conjugation preserves identities, reverses
+the forward one alluded to in \secref{introduction}. Conjugation preserves identities, reverses
 composition ($\conj{g \comp f} = \conj{f} \comp \conj{g}$) and is involutive, so backward analyses compose
-according to the chain rule run in reverse, just as reverse derivatives do (\remref{chain-rule}).} Self-dual
-semimodules and linear maps form a \Added{dagger} category $\SDSemiMod(S)$. \Added{A morphism is not
+according to the chain rule run in reverse, just as reverse derivatives do (\remref{chain-rule}). Self-dual
+semimodules and linear maps form a dagger category $\SDSemiMod(S)$. A morphism is not
 required to relate the chosen self-dualities of its domain and codomain; the choice determines the
 conjugate, not which maps exist. $\SDSemiMod(S)$ is thus equivalent to the full subcategory of
-$\SemiMod(S)$ on the semimodules that admit a self-duality.}
+$\SemiMod(S)$ on the semimodules that admit a self-duality.
 
 The matrices of \secref{introduction} now reappear as concrete instances. The \emph{free} semimodule $S^n$ on
 $n$ generators has as elements the $n$-length vectors of scalars, with standard basis vectors $e_i$ and every
@@ -296,7 +296,6 @@ up to over-approximation: composing Boolean Jacobians can record dependencies ab
 their composite. The refund in \exref{introduction-example} is a case in point: the price genuinely does not
 matter to the total, yet the composed dependencies say it might.
 
-\begin{AddedBlock}
 \begin{remark}
   \label{rem:jacobian-translation}
   For most of the semirings in this section the analysis is plainly different in kind from numeric
@@ -310,4 +309,4 @@ matter to the total, yet the composed dependencies say it might.
   zero at zero although its output is not constant. The Boolean analysis instead soundly approximates the
   inputs needed to recompute the output, the guarantee that \GPS relies on.
 \end{remark}
-\end{AddedBlock}
+

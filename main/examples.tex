@@ -1,11 +1,11 @@
 \section{Examples}
 \label{sec:examples}
 
-We now run the interpretation on a range of example programs, over various semirings\Added{, with the aim
-of illustrating the different flavours of analysis the framework supports}. \Added{The examples are kept
+We now run the interpretation on a range of example programs, over various semirings, with the aim
+of illustrating the different flavours of analysis the framework supports. The examples are kept
 small so that each can be mechanised in the accompanying Agda development, with the programs and their
 derivatives run inside the type checker and the results checked against the expected values by decidable
-equality.}
+equality.
 
 Throughout, we work over the signature $\Sigma_{\mathrm{ex}}$, parameterised by a set
 of numbers with a distinguished zero, which the examples instantiate with the rationals or the integers. It has sorts
@@ -114,10 +114,9 @@ dependency. The three analyses answer three different questions at the same posi
 reports sensitivity ($0$), the Boolean Jacobian possible dependence ($1$), and the counting Jacobian usage
 ($2$).
 
-\subsection{\added{Signed Saliency}}
+\subsection{Signed Saliency}
 \label{sec:examples:saliency}
 
-\begin{AddedBlock}
 Consider a program that condenses many numeric inputs into a single score, such as a model whose
 predictions we want to explain. Ours scores a $3 \times 3$ grid of numbers against a fixed pattern,
 like a small image filter applied to one patch of a larger image. The pattern weights the
@@ -147,7 +146,6 @@ the backward derivative at this run with $+$ distributes it to the inputs:
 $x_4 x_6$; the bottom-middle cell, which the score ignores, gets $0$. At the centre the linear term and
 the product $-x_5 x_2$ pull in opposite directions, so the entry is $?$. The rational derivative would instead report a negative
 entry for the centre, a verdict that depends on the magnitude $x_2 = 2$ rather than on its sign.
-\end{AddedBlock}
 
 \subsection{Cognacy Queries}
 \label{sec:examples:linked}

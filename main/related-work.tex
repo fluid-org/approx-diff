@@ -62,9 +62,9 @@ over-approximation, since the exact analysis can cancel a contribution to zero w
 still records a dependency. Extending provenance to deletion and difference likewise calls for non-positive
 annotations~\cite{green09,amsterdamer11,geerts10}.
 
-\paragraph{\added{Discrete and Qualitative Derivatives}}
+\paragraph{Discrete and Qualitative Derivatives}
 
-\Added{Discrete data has its own differential calculi, developed independently of numerical differentiation.
+Discrete data has its own differential calculi, developed independently of numerical differentiation.
 The \emph{Boolean differential calculus} of \citet{steinbach17} arose in the 1950s from the detection of
 faults in digital circuits; its \emph{simple derivative} $\partial f / \partial x_i = f|_{x_i = 0} \veebar
 f|_{x_i = 1}$, the exclusive-or of $f$ with the input $x_i$ set to $0$ and to $1$, is $1$ exactly when
@@ -77,7 +77,7 @@ abstract interpretation~\cite{cousot77} and the \emph{qualitative derivatives} o
 physics~\cite{dekleer84,kuipers86} ask whether increasing an input increases, decreases, or cannot affect an
 output; see the sign semiring of \secref{approx-as-tangents:qualitative}. Our account treats the semiring as a
 parameter, relating these calculi to automatic differentiation and provenance through the choice of
-scalars.}
+scalars.
 
 \paragraph{Tangent Categories and Differential Linear Logic}
 
