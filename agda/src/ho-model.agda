@@ -2,7 +2,7 @@
 
 module ho-model where
 
-open import Level using (Level; 0ℓ; suc)
+open import Level using (Level; 0ℓ; suc; Lift; lift)
 open import categories
   using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial;
          op-coproducts→products; op-initial→terminal; HasCoproducts;
@@ -22,6 +22,11 @@ import indexed-family
 
 open import functor using (Functor; Full; Faithful)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
+import Data.Nat
+import Data.Fin as Fin
+open Fin using (Fin; splitAt)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Unit using (⊤; tt)
 open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫)
 open import prop-setoid using (IsEquivalence; Setoid)
 open import finite-product-functor
@@ -41,6 +46,7 @@ import language-fo-interpretation
 open import signature
 import lists
 import language-syntax
+import language-syntax-2
 
 module Interpretation
   {o : Level}
@@ -173,6 +179,107 @@ module Interpretation
        Fam⟨𝒟⟩-hasMu
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
+
+     open language-syntax-2 Sig using (_⊢_; type; first-order; var; unit; base; _[+]_; _[×]_; μ)
+     open indexed-family._⇒f_ using (transf)
+     open Setoid using (Carrier)
+     open Model Impl using (⟦sort⟧)
+     open Fam⟨𝒞⟩ using (fm)
+     open Fam⟨𝒞⟩.Obj using (fam)
+
+     -- The fibre map of a term at a given environment.
+     mor : ∀ {Γ τ} (M : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
+     mor M env = ⟦ M ⟧tm .famf .transf env
+
+     -- Approximation structure on the fibres of first-order types: an object of
+     -- 𝒞 over each fibre of the interpretation, with 𝒞's terminal object at unit
+     -- and product at pairs. At μ the fibres are indexed by W-trees, so the
+     -- object at each fibre is computed by the same recursion that computes the
+     -- fibre, from objects given at the polynomial's const leaves.
+     private
+       Fib : Set o
+       Fib = Category.obj 𝒞
+
+       𝟘 : Fib
+       𝟘 = HasTerminal.witness 𝒞-terminal
+
+       _⊕_ : Fib → Fib → Fib
+       _⊕_ = HasProducts.prod 𝒞-products
+
+     module Pm = Fam⟨𝒟⟩-μ
+     module T0 = Pm.Tree {n = 0} (λ ())
+
+     -- For each const leaf of an index-erased polynomial, an assignment of a
+     -- fibre object to each element of its index set. This is the only input
+     -- needed to determine a fibre object at every element of the polynomial's
+     -- μ-type.
+     FibAlg : ∀ {k} → Pm.Sh.Poly k → Set o
+     FibAlg (Pm.const S) = (x : S .Carrier) → Fib
+     FibAlg (Pm.var j)   = Lift o ⊤
+     FibAlg (P Pm.+ Q)   = FibAlg P × FibAlg Q
+     FibAlg (P Pm.× Q)   = FibAlg P × FibAlg Q
+     FibAlg (Pm.μ Q)     = FibAlg Q
+
+     mutual
+       SortAlg : Pm.Sort 0 → Set o
+       SortAlg (Pm.mkSort Q ρ) = FibAlg Q × (∀ i → CtxAlg (ρ i))
+
+       CtxAlg : Fin 0 ⊎ Pm.Sort 0 → Set o
+       CtxAlg (inj₁ ())
+       CtxAlg (inj₂ s) = SortAlg s
+
+     extAlg : ∀ {k} {ρ : Fin k → Fin 0 ⊎ Pm.Sort 0} {v} →
+              (∀ i → CtxAlg (ρ i)) → CtxAlg v → ∀ i → CtxAlg (Pm.extend ρ v i)
+     extAlg ca va Fin.zero    = va
+     extAlg ca va (Fin.suc i) = ca i
+
+     -- Assign a fibre object to each element of a μ-type, by the same recursion
+     -- that computes the fibre.
+     mutual
+       mu : ∀ {k} {Q : Pm.Sh.Poly (Data.Nat.suc k)} {ρ} → SortAlg (Pm.mkSort Q ρ) → T0.W Q ρ → Fib
+       mu {Q = Q} {ρ = ρ} (fa , ca) (T0.sup x) =
+         mu-shape Q (Pm.extend ρ (inj₂ (Pm.mkSort Q ρ))) fa (extAlg ca (fa , ca)) x
+
+       mu-shape : ∀ {j} (Q : Pm.Sh.Poly j) (η : Fin j → Fin 0 ⊎ Pm.Sort 0) →
+                    FibAlg Q → (∀ i → CtxAlg (η i)) → T0.⟦_⟧shape Q η → Fib
+       mu-shape (Pm.const A) η fa ca x = fa x
+       mu-shape (Pm.var j)   η fa ca x = mu-el (η j) (ca j) x
+       mu-shape (P Pm.+ Q) η (fp , fq) ca (inj₁ x) = mu-shape P η fp ca x
+       mu-shape (P Pm.+ Q) η (fp , fq) ca (inj₂ y) = mu-shape Q η fq ca y
+       mu-shape (P Pm.× Q) η (fp , fq) ca (x , y) = mu-shape P η fp ca x ⊕ mu-shape Q η fq ca y
+       mu-shape (Pm.μ Q)   η fa ca x = mu (fa , ca) x
+
+       mu-el : (r : Fin 0 ⊎ Pm.Sort 0) → CtxAlg r → T0.El r → Fib
+       mu-el (inj₁ ()) ca x
+       mu-el (inj₂ (Pm.mkSort Q ρ)) sa x = mu sa x
+
+     -- Fibre-object data for the polynomial translation of a first-order type.
+     polyAlg : ∀ {Δ n} {δ : Fin Δ → Fam⟨𝒟⟩.Obj} {τ : type (n Data.Nat.+ Δ)} → first-order τ →
+               (∀ j (x : δ j .idx .Carrier) → Fib) → FibAlg Pm.∣ as-poly {Δ} {n} τ δ ∣
+     polyAlg {n = n} (var i) δᵃ with splitAt n i
+     ... | inj₁ k = lift tt
+     ... | inj₂ j = δᵃ j
+     polyAlg unit      δᵃ = λ x → 𝟘
+     polyAlg (base s)  δᵃ = λ i → ⟦sort⟧ s .fam .fm i
+     polyAlg (f [+] g) δᵃ = polyAlg f δᵃ , polyAlg g δᵃ
+     polyAlg (f [×] g) δᵃ = polyAlg f δᵃ , polyAlg g δᵃ
+     polyAlg (μ f)     δᵃ = polyAlg f δᵃ
+
+     -- Fibre object at each element of a first-order type's interpretation.
+     ty : ∀ {Δ} {δ : Fin Δ → Fam⟨𝒟⟩.Obj} {τ : type Δ} → first-order τ →
+          (∀ j (x : δ j .idx .Carrier) → Fib) →
+          (i : ⟦ τ ⟧ty δ .idx .Carrier) → Fib
+     ty (var i)   δᵃ x        = δᵃ i x
+     ty unit      δᵃ x        = 𝟘
+     ty (base s)  δᵃ i        = ⟦sort⟧ s .fam .fm i
+     ty (f [+] g) δᵃ (inj₁ i) = ty f δᵃ i
+     ty (f [+] g) δᵃ (inj₂ j) = ty g δᵃ j
+     ty (f [×] g) δᵃ (i , j)  = ty f δᵃ i ⊕ ty g δᵃ j
+     ty (μ f)     δᵃ t        = mu (polyAlg f δᵃ , (λ ())) t
+
+     -- Closed types have no environment to pin down.
+     ty₀ : ∀ {τ : type 0} → first-order τ → (i : ⟦ τ ⟧ty (λ ()) .idx .Carrier) → Fib
+     ty₀ fo = ty {Δ = 0} {δ = λ ()} fo (λ ())
 
   -- Conservativity at first-order types: when the first-order functor F is full and faithful, so
   -- is Fam⟨F⟩, and the interpretation of a term of first-order type comes from Fam⟨𝒞⟩.
