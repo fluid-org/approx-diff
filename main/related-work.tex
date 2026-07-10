@@ -69,15 +69,15 @@ The \emph{Boolean differential calculus} of \citet{steinbach17} arose in the 195
 faults in digital circuits; its \emph{simple derivative} $\partial f / \partial x_i = f|_{x_i = 0} \veebar
 f|_{x_i = 1}$, the exclusive-or of $f$ with the input $x_i$ set to $0$ and to $1$, is $1$ exactly when
 flipping that input flips the output. Exclusive-or and conjunction make the Booleans a \emph{ring} rather than
-a lattice, so this is a derivative over the two-element field, the instance $S = \mathbbm{F}_2$ of our
-construction. It differs from the Boolean case of Galois slicing (\secref{related-work:galois-slicing}) only
-in the semiring. Because exclusive-or cancels, the derivative is exact, whereas the join of the Boolean
-lattice only reports a possible dependency. The sign domain gives a second such calculus. The rule of signs of
+a lattice, so this is a derivative over the two-element field. Because exclusive-or cancels, the derivative is
+exact, whereas the join of the Boolean lattice underlying Galois slicing
+(\secref{related-work:galois-slicing}) cannot cancel and only reports a possible dependency. The sign domain
+gives a second such calculus. The rule of signs of
 abstract interpretation~\cite{cousot77} and the \emph{qualitative derivatives} of qualitative
 physics~\cite{dekleer84,kuipers86} ask whether increasing an input increases, decreases, or cannot affect an
 output; see the sign semiring of \secref{approx-as-tangents:qualitative}. Our account treats the semiring as a
-parameter, placing these calculi alongside automatic differentiation and provenance as instances of a single
-construction.}
+parameter, relating these calculi to automatic differentiation and provenance through the choice of
+scalars.}
 
 \paragraph{Tangent Categories and Differential Linear Logic}
 
