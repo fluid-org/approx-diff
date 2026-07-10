@@ -14,7 +14,7 @@ import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_,_)
-open import Data.Unit using (⊤)
+open import Data.Unit using (⊤; tt)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import functor using (Functor)
@@ -185,3 +185,10 @@ module Fibre {n} (δ : Fin n → Obj) where
   WFam Q d .subst {x} {y} = fib-subst Q d {x = x} {y = y}
   WFam Q d .refl* {x} = fib-refl* Q d x
   WFam Q d .trans* {x} {y} {z} e₁ e₂ = fib-trans* Q d {x = x} {y = y} {z = z} e₁ e₂
+
+-- The μ-type at the root sort: index by the category-free shape layer, fibres
+-- by the canonical decoration, which resolves the μ-body's free variables to
+-- the parameters.
+μObj : ∀ {n} → Poly-C (suc n) → (Fin n → Obj) → Obj
+μObj P δ .idx = Sh.Tree.WSetoid (λ i → δ i .idx) ∣ P ∣ (λ i → inj₁ i)
+μObj P δ .fam = Fibre.WFam δ P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)
