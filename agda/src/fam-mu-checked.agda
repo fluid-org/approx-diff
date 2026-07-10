@@ -19,9 +19,9 @@ open import Data.Product using (_,_)
 open import Data.Unit using (⊤; tt)
 open import prop using () renaming (_,_ to _,ₚ_)
 open import categories using (Category; HasTerminal; HasProducts)
-open import functor using (Functor; _∘F_)
+open import functor using (Functor; _∘F_; functor-preserve-iso)
 open import finite-product-functor using (preserve-chosen-products)
-open import prop-setoid using (Setoid)
+open import prop-setoid using (Setoid; 𝟙)
 open import indexed-family using (functor→fam)
 import fam
 import fam-presentation
@@ -44,6 +44,8 @@ private
   module Fc = fam-mu-types-2.fibre os es 𝒞T 𝒞P
   module Fg = fam-mu-types-2.fibre os es 𝒢T 𝒢P
   module PresC = fam-presentation os (os ⊔ es) {𝒞}
+  module 𝒢C = Category 𝒢
+  module 𝒢Pm = HasProducts 𝒢P
 
 open Sh using (Sort; mkSort)
 open polynomial-functor-2 using (Poly; #c; skeleton-go; extend)
@@ -306,3 +308,48 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
              T.elEq r₂ (el-cfwd r (el-cbwd r y)) y
     el-cbf (env {p}) y = T.elEq-refl (inj₁ p) y
     el-cbf (srt (mk Q ι ρ₁ ρ₂ d₁ d₂ rel)) y = c-bf Q ι ρ₁ ρ₂ d₁ d₂ rel y
+
+  -- The fibre isomorphisms: G of the checked singleton fibre at a tree against
+  -- the 𝒢-side μ-fibre at the transported tree. The leaves are identities by
+  -- the construction of check; products go through simple-⊗ and G's
+  -- preservation of products.
+  mutual
+    fib-ciso : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
+               (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
+               (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+               (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i))
+               (w : T.W Fc.∣ skC Q ι ∣ ρ₁) →
+               𝒢C.Iso (G .Functor.fobj F𝒞.simple[ 𝟙 , C.fib (skC Q ι) d₁ w ])
+                      (Gd.fib (skG Q ι) d₂ (cfwd Q ι ρ₁ ρ₂ d₁ d₂ rel w))
+    fib-ciso Q ι ρ₁ ρ₂ d₁ d₂ rel (T.sup x) =
+      fib-shape-ciso Q ι (extend ρ₁ (inj₂ (mkSort Fc.∣ skC Q ι ∣ ρ₁)))
+        (extend ρ₂ (inj₂ (mkSort Fg.∣ skG Q ι ∣ ρ₂)))
+        (C.deco-ext (skC Q ι) d₁) (Gd.deco-ext (skG Q ι) d₂)
+        (extend-rel Q ι ρ₁ ρ₂ d₁ d₂ rel) x
+
+    fib-shape-ciso : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
+                     (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
+                     (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                     (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i))
+                     (x : T.⟦ Fc.∣ skC Q ι ∣ ⟧shape η₁) →
+                     𝒢C.Iso (G .Functor.fobj F𝒞.simple[ 𝟙 , C.fib-shape (skC Q ι) d₁ x ])
+                            (Gd.fib-shape (skG Q ι) d₂ (shape-cfwd Q ι η₁ η₂ d₁ d₂ rel x))
+    fib-shape-ciso {jv} (Poly.const A) ι η₁ η₂ d₁ d₂ rel x = fib-el-ciso (rel (jv ↑ʳ ι Fin.zero)) x
+    fib-shape-ciso (Poly.var i)   ι η₁ η₂ d₁ d₂ rel x = fib-el-ciso (rel (i ↑ˡ k)) x
+    fib-shape-ciso (Q Poly.+ R) ι η₁ η₂ d₁ d₂ rel (inj₁ x) =
+      fib-shape-ciso Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel x
+    fib-shape-ciso (Q Poly.+ R) ι η₁ η₂ d₁ d₂ rel (inj₂ y) =
+      fib-shape-ciso R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel y
+    fib-shape-ciso (Q Poly.× R) ι η₁ η₂ d₁ d₂ rel (x , y) =
+      𝒢C.Iso-trans (functor-preserve-iso G (PresC.simple-⊗ 𝒞P))
+        (𝒢C.Iso-trans (𝒢C.IsIso→Iso G-prod)
+          (𝒢Pm.product-preserves-iso
+            (fib-shape-ciso Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel x)
+            (fib-shape-ciso R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel y)))
+    fib-shape-ciso (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel t = fib-ciso Q' ι η₁ η₂ d₁ d₂ rel t
+
+    fib-el-ciso : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) →
+                  𝒢C.Iso (G .Functor.fobj F𝒞.simple[ 𝟙 , C.fib-el r₁ e₁ x ])
+                         (Gd.fib-el r₂ e₂ (el-cfwd r x))
+    fib-el-ciso (env {p}) x = 𝒢C.Iso-refl
+    fib-el-ciso (srt (mk Q ι ρ₁ ρ₂ d₁ d₂ rel)) x = fib-ciso Q ι ρ₁ ρ₂ d₁ d₂ rel x

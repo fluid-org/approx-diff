@@ -91,3 +91,19 @@ module _ (Prods : HasProducts 𝒞) where
   simple-⊗ .Iso.bwd∘fwd≈id .idxf-eq .prop-setoid._≃m_.func-eq _ = _
   simple-⊗ .Iso.bwd∘fwd≈id .famf-eq .transf-eq =
     𝒞.≈-trans 𝒞.id-left (𝒞.≈-trans 𝒞.id-left 𝒞.id-left)
+
+  private module FPH = HasProducts ⊗M.products
+
+  -- The product comparison is natural in both fibres.
+  simple-⊗-natural : ∀ {a a' b b'} (f : a 𝒞.⇒ a') (g : b 𝒞.⇒ b') →
+    Category._≈_ cat
+      (Category._∘_ cat (simple-⊗ .Iso.fwd) simplef[ idS 𝟙 , PH.prod-m f g ])
+      (Category._∘_ cat (FPH.prod-m simplef[ idS 𝟙 , f ] simplef[ idS 𝟙 , g ]) (simple-⊗ .Iso.fwd))
+  simple-⊗-natural f g .idxf-eq .prop-setoid._≃m_.func-eq _ = _
+  simple-⊗-natural f g .famf-eq .transf-eq =
+    𝒞.≈-trans (𝒞.∘-cong PH.prod-m-id 𝒞.≈-refl)
+      (𝒞.≈-trans 𝒞.id-left
+        (𝒞.≈-trans 𝒞.id-left
+          (𝒞.≈-trans 𝒞.id-left
+            (𝒞.≈-sym (𝒞.≈-trans 𝒞.id-left
+              (𝒞.≈-trans 𝒞.id-right (PH.pair-cong 𝒞.id-left 𝒞.id-left)))))))
