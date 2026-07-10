@@ -13,7 +13,9 @@ open import prop using (∃; ∃ₛ; Prf)
 open import indexed-family using (Fam; fam→functor; functor→fam)
 import finite-coproducts-from-indexed
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
-open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map)
+open import polynomial-functor-2 using (Preserves-μ; Poly; Poly-map; skeleton; Poly-map-skeleton-go)
+open import Relation.Binary.PropositionalEquality
+  using (_≡_) renaming (sym to ≡-sym; trans to ≡-trans)
 import fam-mu-types-2
 import fam-mu-types-2.skeleton
 import fam-mu-realisation
@@ -84,6 +86,14 @@ module gf-preserves-mu
                   Glued.Iso (GF .fobj M)
                             (realise .fobj (record { idx = M .Fam⟨𝒞⟩.Obj.idx ; fam = Nf }))
   presented-iso M Nf α = Glued.Iso-trans (source-iso M) (Gld.∐-iso α)
+
+  -- The two skeletons of a polynomial, over Fam(𝒞) and over Fam(Gl), share
+  -- their erasure: both erase to the skeleton over the setoid category.
+  skel-align : ∀ {n} (P : Poly Fam⟨𝒞⟩.cat n) →
+               FMc.∣ skeleton P ∣ ≡ FMg.∣ skeleton P ∣
+  skel-align P =
+    ≡-trans (Poly-map-skeleton-go FMc.Idx P (λ c → c))
+            (≡-sym (Poly-map-skeleton-go FMg.Idx P (λ c → c)))
 
   -- Cross-category realisation comparison: GF of the Fam(𝒞) interpretation agrees
   -- with the realised Fam(Gl) interpretation, over any pointwise agreement of the
