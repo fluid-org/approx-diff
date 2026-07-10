@@ -55,6 +55,17 @@ module interp-sd (Sig : Signature 0ℓ)
   open lists Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
     using (_^_)
 
+  open import language-fo-interpretation Sig
+    Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts
+    Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩-lists
+    Fam⟨F⟩ Fam⟨F⟩-preserves-terminal
+    (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y}) Fam⟨F⟩-preserves-coproducts
+    Impl
+    using (fullness-definability)
+
+  -- Conservativity at first-order types, from fullness of Fam(U).
+  first-order-definability = fullness-definability (λ {X} {Y} → Fam⟨U⟩-full {X} {Y})
+
   ty  : ∀ {τ} → first-order-data τ → (i : ⟦ τ ⟧ty .idx .Carrier) → SelfDual
   pow : ∀ {τ} → first-order-data τ → (n : nat.ℕ) → (i : (⟦ τ ⟧ty ^ n) .idx .Carrier) → SelfDual
 

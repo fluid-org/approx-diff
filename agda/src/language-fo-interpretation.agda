@@ -1,7 +1,8 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials; HasBooleans; coproducts+exp→booleans; HasLists)
-open import functor using (Functor)
+open import functor using (Functor; Full)
+open import prop using (∃ₛ)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
 open import finite-coproduct-functor
@@ -73,3 +74,20 @@ open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟CP 𝒟E 𝒟L 𝒟
 ⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → 𝒟.Iso (F .fobj 𝒞⟦ Γ-fo ⟧ctxt) 𝒟⟦ Γ ⟧ctxt
 ⟦ emp ⟧ctxt-iso   = 𝒟.IsIso→Iso FT
 ⟦ Γ , τ ⟧ctxt-iso = 𝒟.Iso-trans (𝒟.IsIso→Iso FP) (𝒟P.product-preserves-iso ⟦ Γ ⟧ctxt-iso ⟦ τ ⟧-iso)
+
+------------------------------------------------------------------------------
+-- When F is additionally full, every morphism definable in the higher-order language at
+-- first-order types comes from a morphism of 𝒞.
+module _ (F-full : Full F) where
+
+  private
+    module 𝒞 = Category 𝒞
+
+  open 𝒟.Iso
+
+  fullness-definability :
+    ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (τ-fo : first-order τ) (M : Γ ⊢ τ) →
+    ∃ₛ (𝒞⟦ Γ-fo ⟧ctxt 𝒞.⇒ 𝒞⟦ τ-fo ⟧ty) λ g →
+      F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso .bwd 𝒟.∘ (𝒟⟦ M ⟧tm 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
+  fullness-definability Γ-fo τ-fo M =
+    F-full (⟦ τ-fo ⟧-iso .bwd 𝒟.∘ (𝒟⟦ M ⟧tm 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))

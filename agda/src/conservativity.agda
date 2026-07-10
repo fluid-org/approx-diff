@@ -734,30 +734,3 @@ definability {X} {Y} f with f .presv .*⊑* X .*⊑* (lift (F .fmor (𝒞.id _))
                       f .morph
                     ∎)
     where open ≈-Reasoning 𝒟.isEquiv
-
-------------------------------------------------------------------------------
--- The morphisms in the logical relations category that we are
--- interested are the ones that come from interpretations of the
--- language.
-
-module syntactic {ℓ}
-   (Sig : Signature ℓ)
-   (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , 𝒞CP .HasCoproducts.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig) where
-
-  open import language-syntax Sig
-
-  open import language-fo-interpretation Sig
-         𝒞 𝒞T 𝒞P 𝒞CP
-         Gl.cat GlPE.terminal GlPE.products GlCP.coproducts GlPE.exponentials Gl-lists
-         GF GF-preserve-terminal GF-preserve-products GF-preserve-coproducts
-         𝒞-Sig-Model
-    renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
-
-  open Glued.Iso
-
-  syntactic-definability :
-    ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (τ-fo : first-order τ) (M : Γ ⊢ τ) →
-    ∃ (𝒞⟦ Γ-fo ⟧ctxt 𝒞.⇒ 𝒞⟦ τ-fo ⟧ty) λ g →
-      F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso .bwd .morph 𝒟.∘ (G⟦ M ⟧tm .morph 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd .morph))
-  syntactic-definability {Γ} {τ} Γ-fo τ-fo M =
-    definability (⟦ τ-fo ⟧-iso .bwd Glued.∘ (G⟦ M ⟧tm Glued.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
