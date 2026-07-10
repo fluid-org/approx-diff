@@ -20,7 +20,7 @@ import fam-mu-types-2
 import fam-stable-indexed
 import indexed-family
 
-open import functor using (Functor; Full; Faithful)
+open import functor using (Functor)
 open import Data.Product using (_,_; _×_; proj₁; proj₂)
 import Data.Nat
 import Data.Fin as Fin
@@ -42,10 +42,7 @@ open Functor
 -- interpretation in Fam⟨𝒟⟩ from a model in Fam⟨𝒞⟩.
 
 open import fam-functor using (FamF)
-import language-fo-interpretation
 open import signature
-import lists
-import language-syntax
 import language-syntax-2
 
 module Interpretation
@@ -86,8 +83,6 @@ module Interpretation
     using ()
     public
 
-  Fam⟨𝒟⟩-lists = lists.lists Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩.bigCoproducts
-
   Fam⟨𝒟⟩-bool =
     Fam⟨𝒟⟩-coproducts .HasCoproducts.coprod
       (Fam⟨𝒟⟩-terminal .HasTerminal.witness)
@@ -123,31 +118,6 @@ module Interpretation
   Fam⟨F⟩-preserves-bool =
     Fam⟨𝒟⟩.Mor-∘ (HasCoproducts.coprod-m Fam⟨𝒟⟩-coproducts (Fam⟨𝒟⟩-terminal .HasTerminal.to-terminal) (Fam⟨𝒟⟩-terminal .HasTerminal.to-terminal))
                   (Fam⟨F⟩-preserves-coproducts .Category.IsIso.inverse)
-
-  -- Interpretation
-  module interp (Sig : Signature 0ℓ)
-                (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
-     where
-
-     open Fam⟨𝒟⟩.Mor public
-     open Fam⟨𝒟⟩.Obj public
-     open language-syntax Sig using (_⊢_)
-     open indexed-family._⇒f_ using (transf)
-     open Setoid using (Carrier)
-
-     open import language-interpretation Sig
-       Fam⟨𝒟⟩.cat
-       Fam⟨𝒟⟩-terminal
-       Fam⟨𝒟⟩-products
-       Fam⟨𝒟⟩-coproducts
-       Fam⟨𝒟⟩-exponentials
-       Fam⟨𝒟⟩-lists
-       (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
-       public
-
-     -- The fibre map of a term at a given environment.
-     mor : ∀ {Γ τ} (M : Γ ⊢ τ) (env : ⟦ Γ ⟧ctxt .idx .Carrier) → _
-     mor M env = ⟦ M ⟧tm .famf .transf env
 
   -- Direct interpretation of the language with general recursive types, via the
   -- W-type μ-instance for Fam together with its initial-algebra laws.
@@ -280,27 +250,6 @@ module Interpretation
      -- Closed types have no environment to pin down.
      ty₀ : ∀ {τ : type 0} → first-order τ → (i : ⟦ τ ⟧ty (λ ()) .idx .Carrier) → Fib
      ty₀ fo = ty {Δ = 0} {δ = λ ()} fo (λ ())
-
-  -- Conservativity at first-order types: when the first-order functor F is full and faithful, so
-  -- is Fam⟨F⟩, and the interpretation of a term of first-order type comes from Fam⟨𝒞⟩.
-  module FirstOrderConservativity
-      (F-full : Full F) (F-faithful : Faithful F)
-      (Sig : Signature 0ℓ)
-      (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
-    where
-
-    private
-      module LFI = language-fo-interpretation Sig
-        Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-coproducts
-        Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-coproducts Fam⟨𝒟⟩-exponentials Fam⟨𝒟⟩-lists
-        Fam⟨F⟩ Fam⟨F⟩-preserves-terminal
-        (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y}) Fam⟨F⟩-preserves-coproducts
-        Impl
-
-    first-order-conservativity = LFI.first-order-conservativity
-      (fam-functor.FamF-full 0ℓ 0ℓ F
-        (λ {x} {y} → F-full {x} {y})
-        (λ {x} {y} {f} {g} → F-faithful {x} {y} {f} {g}))
 
   module Conservativity where
     open import monad using (Monad; IdentityMonad; preserve-identity-monad)
