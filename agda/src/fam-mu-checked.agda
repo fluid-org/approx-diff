@@ -23,7 +23,7 @@ open import functor using (Functor; _∘F_; functor-preserve-iso)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
 open import prop-setoid using (Setoid; 𝟙; idS; module ≈-Reasoning)
-open import indexed-family using (functor→fam)
+open import indexed-family using (functor→fam; Fam)
 import fam
 import fam-presentation
 import polynomial-functor-2
@@ -50,8 +50,25 @@ private
   module Gm = Functor G
 
 open Sh using (Sort; mkSort)
-open polynomial-functor-2 using (Poly; #c; skeleton-go; extend)
+open polynomial-functor-2 using (Poly; #c; skeleton; skeleton-go; extend)
 open F𝒞.Obj
+
+private
+  -- Conjugating a commuting square by isomorphisms on both sides.
+  iso-flip : ∀ {a b c d} (i : 𝒢C.Iso a b) (j : 𝒢C.Iso c d)
+             {f : a 𝒢C.⇒ c} {g : b 𝒢C.⇒ d} →
+             (j .𝒢C.Iso.fwd 𝒢C.∘ f) 𝒢C.≈ (g 𝒢C.∘ i .𝒢C.Iso.fwd) →
+             (f 𝒢C.∘ i .𝒢C.Iso.bwd) 𝒢C.≈ (j .𝒢C.Iso.bwd 𝒢C.∘ g)
+  iso-flip i j {f} {g} sq =
+    𝒢C.≈-trans (𝒢C.≈-sym 𝒢C.id-left)
+      (𝒢C.≈-trans (𝒢C.∘-cong (𝒢C.≈-sym (j .𝒢C.Iso.bwd∘fwd≈id)) 𝒢C.≈-refl)
+        (𝒢C.≈-trans (𝒢C.assoc _ _ _)
+          (𝒢C.≈-trans (𝒢C.∘-cong 𝒢C.≈-refl (𝒢C.≈-sym (𝒢C.assoc _ _ _)))
+            (𝒢C.≈-trans (𝒢C.∘-cong 𝒢C.≈-refl (𝒢C.∘-cong sq 𝒢C.≈-refl))
+              (𝒢C.≈-trans (𝒢C.∘-cong 𝒢C.≈-refl (𝒢C.assoc _ _ _))
+                (𝒢C.≈-trans (𝒢C.∘-cong 𝒢C.≈-refl
+                    (𝒢C.∘-cong 𝒢C.≈-refl (i .𝒢C.Iso.fwd∘bwd≈id)))
+                  (𝒢C.∘-cong 𝒢C.≈-refl 𝒢C.id-right)))))))
 
 ℓk : Level
 ℓk = o ⊔ m ⊔ e ⊔ o₂ ⊔ m₂ ⊔ e₂ ⊔ lsuc os ⊔ lsuc es
@@ -428,3 +445,91 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
                         𝒢C.∘ (fib-el-ciso r x .𝒢C.Iso.fwd))
     fib-el-cnat (env {p}) q = 𝒢C.≈-trans 𝒢C.id-left (𝒢C.≈-sym 𝒢C.id-right)
     fib-el-cnat (srt (mk Q ι ρ₁ ρ₂ d₁ d₂ rel)) {x} {x'} q = fib-cnat Q ι ρ₁ ρ₂ d₁ d₂ rel {x} {x'} q
+
+-- The assembled comparison: check commutes with μ at the constant-free
+-- skeleton, as an isomorphism of Fam(𝒢)-objects.
+module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) → F𝒞.Obj) where
+  open Checked (#c P) ε
+  open Fam
+  open 𝒢C.Iso
+
+  private
+    ρ₀ : Fin (n +ℕ #c P) → Fin (n +ℕ #c P) ⊎ Sort (n +ℕ #c P)
+    ρ₀ i = inj₁ i
+
+    d₁₀ : ∀ i → C.DecoRes (ρ₀ i)
+    d₁₀ i = lift tt
+
+    d₂₀ : ∀ i → Gd.DecoRes (ρ₀ i)
+    d₂₀ i = lift tt
+
+    rel₀ : ∀ i → SRel (ρ₀ i) (ρ₀ i) (d₁₀ i) (d₂₀ i)
+    rel₀ i = env
+
+    Fw = cfwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀
+    Bw = cbwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀
+    ci = fib-ciso P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀
+
+  fwd-mor : F𝒢.Mor (check (Fc.μObj (skeleton P) ε)) (Fg.μObj (skeleton P) (λ i → check (ε i)))
+  fwd-mor .F𝒢.Mor.idxf .prop-setoid._⇒_.func = Fw
+  fwd-mor .F𝒢.Mor.idxf .prop-setoid._⇒_.func-resp-≈ {w} {w'} =
+    c≈fwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'}
+  fwd-mor .F𝒢.Mor.famf .indexed-family._⇒f_.transf w = ci w .fwd
+  fwd-mor .F𝒢.Mor.famf .indexed-family._⇒f_.natural {w} {w'} q =
+    fib-cnat P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'} q
+
+  bwd-mor : F𝒢.Mor (Fg.μObj (skeleton P) (λ i → check (ε i))) (check (Fc.μObj (skeleton P) ε))
+  bwd-mor .F𝒢.Mor.idxf .prop-setoid._⇒_.func = Bw
+  bwd-mor .F𝒢.Mor.idxf .prop-setoid._⇒_.func-resp-≈ {s} {s'} =
+    c≈bwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {s} {s'}
+  bwd-mor .F𝒢.Mor.famf .indexed-family._⇒f_.transf s =
+    ci (Bw s) .bwd 𝒢C.∘
+    Gd.fib-subst (skeleton P) d₂₀ {x = s} {y = Fw (Bw s)}
+      (T.W-≈-sym {x = Fw (Bw s)} {y = s} (c-bf P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ s))
+  bwd-mor .F𝒢.Mor.famf .indexed-family._⇒f_.natural {s₁} {s₂} q =
+    𝒢C.≈-trans (𝒢C.assoc _ _ _)
+      (𝒢C.≈-trans (𝒢C.∘-cong₂ (𝒢C.≈-sym (Gd.fib-trans* (skeleton P) d₂₀
+                                           {x = s₁} {y = s₂} {z = Fw (Bw s₂)} _ q)))
+        (𝒢C.≈-sym
+          (𝒢C.≈-trans (𝒢C.≈-sym (𝒢C.assoc _ _ _))
+            (𝒢C.≈-trans (𝒢C.∘-cong₁ (iso-flip (ci (Bw s₁)) (ci (Bw s₂))
+                (fib-cnat P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {Bw s₁} {Bw s₂}
+                  (c≈bwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {s₁} {s₂} q))))
+              (𝒢C.≈-trans (𝒢C.assoc _ _ _)
+                (𝒢C.∘-cong₂ (𝒢C.≈-sym (Gd.fib-trans* (skeleton P) d₂₀
+                                          {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _))))))))
+
+  fb-≃ : Category._≈_ F𝒢.cat
+           (Category._∘_ F𝒢.cat fwd-mor bwd-mor) (Category.id F𝒢.cat _)
+  fb-≃ .F𝒢._≃_.idxf-eq =
+    prop-setoid.mk-≃m (λ s → c-bf P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ s)
+  fb-≃ .F𝒢._≃_.famf-eq .indexed-family._≃f_.transf-eq {s} =
+    𝒢C.≈-trans (𝒢C.∘-cong₂ 𝒢C.id-left)
+      (𝒢C.≈-trans (𝒢C.∘-cong₂ (𝒢C.≈-trans (𝒢C.≈-sym (𝒢C.assoc _ _ _))
+          (𝒢C.≈-trans (𝒢C.∘-cong₁ (ci (Bw s) .fwd∘bwd≈id)) 𝒢C.id-left)))
+        (𝒢C.≈-trans (𝒢C.≈-sym (Gd.fib-trans* (skeleton P) d₂₀
+                                  {x = s} {y = Fw (Bw s)} {z = s} _ _))
+          (Gd.fib-refl* (skeleton P) d₂₀ s)))
+
+  bf-≃ : Category._≈_ F𝒢.cat
+           (Category._∘_ F𝒢.cat bwd-mor fwd-mor) (Category.id F𝒢.cat _)
+  bf-≃ .F𝒢._≃_.idxf-eq =
+    prop-setoid.mk-≃m (λ w → c-fb P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ w)
+  bf-≃ .F𝒢._≃_.famf-eq .indexed-family._≃f_.transf-eq {w} =
+    𝒢C.≈-trans (𝒢C.∘-cong₂ 𝒢C.id-left)
+      (𝒢C.≈-trans (𝒢C.∘-cong₂ (𝒢C.≈-trans (𝒢C.assoc _ _ _)
+          (𝒢C.≈-trans (𝒢C.∘-cong₂ (𝒢C.≈-sym
+              (fib-cnat P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {Bw (Fw w)}
+                (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ w)))))
+            (𝒢C.≈-trans (𝒢C.≈-sym (𝒢C.assoc _ _ _))
+              (𝒢C.≈-trans (𝒢C.∘-cong₁ (ci (Bw (Fw w)) .bwd∘fwd≈id)) 𝒢C.id-left)))))
+        (𝒢C.≈-trans (𝒢C.≈-sym (check (Fc.μObj (skeleton P) ε) .F𝒢.Obj.fam .trans*
+                                  {x = w} {y = Bw (Fw w)} {z = w} _ _))
+          (check (Fc.μObj (skeleton P) ε) .F𝒢.Obj.fam .refl* {x = w})))
+
+  check-μ-iso : Category.Iso F𝒢.cat
+                  (check (Fc.μObj (skeleton P) ε)) (Fg.μObj (skeleton P) (λ i → check (ε i)))
+  check-μ-iso .Category.Iso.fwd = fwd-mor
+  check-μ-iso .Category.Iso.bwd = bwd-mor
+  check-μ-iso .Category.Iso.fwd∘bwd≈id = fb-≃
+  check-μ-iso .Category.Iso.bwd∘fwd≈id = bf-≃

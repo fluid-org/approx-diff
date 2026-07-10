@@ -22,6 +22,7 @@ import fam-mu-types-2.skeleton
 import fam-mu-realisation
 import fam-realisation
 import fam-presentation
+import fam-mu-checked
 import ho-model
 
 open Functor
@@ -77,9 +78,12 @@ module gf-preserves-mu
 
   -- The checked presentation of a Fam(𝒞)-object: the Fam(Gl)-family over the
   -- same index setoid whose fibres are the GF-images of the singleton fibres.
+  private
+    module Chk = fam-mu-checked 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+                   GlPE.terminal GlPE.products GF GF-preserve-products
+
   check : Fam⟨𝒞⟩.Obj → FMg.Obj
-  check X .FMg.Obj.idx = X .Fam⟨𝒞⟩.Obj.idx
-  check X .FMg.Obj.fam = functor→fam (GF ∘F Pres.singletons X)
+  check = Chk.check
 
   -- Compare GF of a family against the realisation of a Gl-family over the same
   -- index setoid, given a pointwise isomorphism of the fibre diagrams.
@@ -108,7 +112,7 @@ module gf-preserves-mu
   check-μ : ∀ {n} (P : Poly Fam⟨𝒞⟩.cat (Data.Nat.suc n))
             (ε : Fin (n Data.Nat.+ #c P) → Fam⟨𝒞⟩.Obj) →
             FamGl.Iso (check (FMc.μObj (skeleton P) ε)) (FMg.μObj (skeleton P) (λ i → check (ε i)))
-  check-μ P ε = {!!}
+  check-μ P ε = Chk.ChkMu.check-μ-iso P ε
 
   -- Cross-category realisation comparison: GF of the Fam(𝒞) interpretation agrees
   -- with the realised Fam(Gl) interpretation, over any pointwise agreement of the
