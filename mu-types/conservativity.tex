@@ -414,34 +414,56 @@ $\Fam(\cat{E})$ laws transported across these isomorphisms.
 
 \begin{corollary}
 \label{cor:conservativity:glr-poly}
-$\GLR(F)$ has $\Poly$-types, its structure being that of
-\secref{conservativity:glueing}, with set-indexed coproducts computed as coproducts of carriers
-with joined predicates.
+\Replaced{$\GLR(F)$ has $\Poly$-types.}{$\GLR(F)$ has $\Poly$-types, its
+structure being that of \secref{conservativity:glueing}, with set-indexed coproducts computed as
+coproducts of carriers with joined predicates.}
 \end{corollary}
+
+\begin{proof}
+\Added{$\GLR(F)$ satisfies the hypotheses of \thmref{conservativity:transfer} by
+\thmref{conservativity:glr}, with its set-indexed coproducts computed as coproducts of carriers
+with joined predicates.}
+\end{proof}
 
 \subsection{Preservation of $\Poly$-types by $\GF$}
 \label{sec:conservativity:gf-poly-types}
 
 Preservation does not follow from $\GF$'s preservation of the finite structure: initial algebras
-map out of themselves, so finite preservation yields only the comparison $\mu_{\alpha.\GF(P)}
-\to \GF(\mu_{\alpha.P})$, by folding the $\GF$-image of the algebra. The converse direction
+map out of themselves, so finite preservation yields \Replaced{only a morphism $\mu_{\alpha.\GF(P)}
+\to \GF(\mu_{\alpha.P})$, obtained by folding the $\GF$-image of the algebra, and not its
+inverse}{only the comparison $\mu_{\alpha.\GF(P)}
+\to \GF(\mu_{\alpha.P})$, by folding the $\GF$-image of the algebra}. The converse direction
 requires $\GF$ to preserve the presentation of $\mu_{\alpha.P}$ as a set-indexed coproduct of its
 fibres.
 
-Preservation asks only for an isomorphism of objects, so the comparison can be carried out on the
+\subsubsection{Strategy}
+
+Preservation asks only for an isomorphism of objects, so \Replaced{the required isomorphism can
+be constructed}{the comparison can be carried out} on the
 concrete carriers of \propref{polynomial-types:fam-has-poly}, taking $\cat{C}$ to be a $\Fam$
 category with those $\Poly$-types; which $\Poly$-types structure is immaterial, any two having
 componentwise isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms. On the
-carriers no initiality machinery is needed: the tree sorts and fibres of the carrier are computed from the index sets and fibres of the
+carriers no initiality machinery is needed: the tree sorts and fibres of the carrier are computed
+from the index sets and fibres of the
 environment entries and $\const$-objects alone. In particular a $\const$-object and a variable
-bound to an equal environment entry contribute identical data. For a polynomial $Q$, write $Q^{*}$
-for its constant-free \emph{skeleton}: each $\const$-object replaced by a fresh variable, the
-$\const$-objects $\vec{A}$ of $Q$ collected as additional environment entries. Having no constants,
+bound to an equal environment entry contribute identical data.
+
+\begin{definition}[Skeleton]
+\label{def:conservativity:skeleton}
+The \emph{skeleton} $Q^{*}$ of a polynomial $Q$ is the constant-free polynomial obtained by
+replacing each $\const$-object with a fresh variable, the $\const$-objects $\vec{A}$ of $Q$
+collected as additional environment entries.
+\end{definition}
+
+\noindent
+Having no constants,
 $Q^{*}$ is a polynomial over any category; below it is interpreted over both $\Fam(\cat{C})$ and
 $\Fam(\GLR(F))$, with the same sorts and trees on each side. Write
 $\check{\delta}_i$ for the $\GF$-image of the canonical presentation of $\delta_i$: the family
 over the index set of $\delta_i$ obtained by applying $\GF$ to the components of the
 presentation.
+
+\subsubsection{Set-indexed coproducts}
 
 \begin{lemma}
 \label{lem:conservativity:definable-coproducts}
@@ -454,11 +476,18 @@ A definable $f = F(g)$ into the coproduct decomposes along the pullback of the c
 $\coprod_i x_i$ along $g$, by stability; each restriction factors definably through a summand.
 \end{proof}
 
-Built-in list types would need the same extension. Together with preservation of set-indexed
+\Replaced{Together with $F$'s preservation of set-indexed coproducts, the lemma makes $\GF$
+preserve them: carriers by assumption, predicates by the lemma and the closure operator's
+reindexing law (\lemref{conservativity:indexed-closure}), with the coproducts of $\GLR(F)$
+computed as in \corref{conservativity:glr-poly}. In particular $\Sigma\check{\delta}_i \cong
+\GF(\delta_i)$. Inductive types force this lemma; built-in list types would already require
+it.}{Built-in list types would need the same extension. Together with preservation of set-indexed
 coproducts by $F$ it makes $\GF$ preserve them: carriers by assumption, predicates by the lemma and
 the closure operator's reindexing law (\lemref{conservativity:indexed-closure}), the coproducts of
 $\GLR(F)$ being computed as in \corref{conservativity:glr-poly}. In particular
-$\Sigma\check{\delta}_i \cong \GF(\delta_i)$.
+$\Sigma\check{\delta}_i \cong \GF(\delta_i)$.}
+
+\subsubsection{Carrier comparison}
 
 \begin{lemma}[Skeleton]
 \label{lem:conservativity:skeleton}
@@ -488,27 +517,30 @@ the construction of $\check{\delta}$ and $\check{A}$, and at products they agree
 preservation of products.
 \end{proof}
 
+\subsubsection{Preservation}
+
 \begin{proposition}[Preservation]
 \label{prop:conservativity:gf-preserves-poly}
 $\GF$ preserves $\Poly$-types.
 \end{proposition}
 
 \begin{proof}[Proof sketch]
-Apply \lemref{conservativity:skeleton} in $\cat{C}$, then
-\lemref{conservativity:carrier-comparison}, then realisation invariance
-(\lemref{conservativity:realisation-invariance}) at
-the constant-free $P^{*}$, at the isomorphism family given by $\Sigma\check{\delta}_i \cong
-\GF(\delta_i) \cong \Sigma(\eta\,\GF\,\delta_i)$ and likewise at the entries for
-$\vec{A}$, and finally the realisation of \lemref{conservativity:skeleton} in $\Fam(\GLR(F))$,
-backwards, at $\hat{P} = \eta\,\GF\,P$. The skeleton discards the $\const$-objects, so
-$\hat{P}^{*} = P^{*}$, with the $\const$-objects of $\hat{P}$ the $\eta\,\GF$-images of
-$\vec{A}$:
+\Added{Write $\hat{P} = \eta\,\GF\,P$ for the polynomial over $\Fam(\GLR(F))$ whose realised
+initial algebra is $\mu_{\alpha.\GF(P)}$ (\secref{conservativity:glr-poly-types}). The skeleton
+discards the $\const$-objects, so $\hat{P}^{*} = P^{*}$, with the $\const$-objects of $\hat{P}$
+the $\eta\,\GF$-images of $\vec{A}$. Then}
 \[
   \GF(\mu_{\alpha.P})
-  \;\cong\; \GF(\mu_{\alpha.P^{*}}(\delta, \vec{A}))
-  \;\cong\; \Sigma(\mu_{\alpha.P^{*}}(\check{\delta}, \check{A}))
-  \;\cong\; \Sigma(\mu_{\alpha.P^{*}}(\eta\,\GF\,\delta, \eta\,\GF\,\vec{A}))
-  \;\cong\; \Sigma(\mu_{\alpha.\hat{P}}(\eta\,\GF\,\delta))
-  \;=\; \mu_{\alpha.\GF(P)}.
+  \;\overset{(1)}{\cong}\; \GF(\mu_{\alpha.P^{*}}(\delta, \vec{A}))
+  \;\overset{(2)}{\cong}\; \Sigma(\mu_{\alpha.P^{*}}(\check{\delta}, \check{A}))
+  \;\overset{(3)}{\cong}\; \Sigma(\mu_{\alpha.P^{*}}(\eta\,\GF\,\delta, \eta\,\GF\,\vec{A}))
+  \;\overset{(4)}{\cong}\; \Sigma(\mu_{\alpha.\hat{P}}(\eta\,\GF\,\delta))
+  \;=\; \mu_{\alpha.\GF(P)}
 \]
+\Added{where (1) is \lemref{conservativity:skeleton} in $\cat{C}$, under $\GF$; (2) is
+\lemref{conservativity:carrier-comparison}; (3) is realisation invariance
+(\lemref{conservativity:realisation-invariance}) at the constant-free $P^{*}$, along the
+isomorphism family $\Sigma\check{\delta}_i \cong \GF(\delta_i) \cong
+\Sigma(\eta\,\GF\,\delta_i)$ and likewise at the entries for $\vec{A}$; and (4) is
+\lemref{conservativity:skeleton} again, interpreted in $\Fam(\GLR(F))$ and realised, backwards.}
 \end{proof}
