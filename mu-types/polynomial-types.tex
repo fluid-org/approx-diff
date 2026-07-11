@@ -70,9 +70,41 @@ polarity tracking.
 \label{fig:polynomial-types:kinding}
 \end{figure}
 
-\subsection{The category $\Poly_{\cat{C}}$ of polynomial endofunctors}
+\subsection{Syntactic polynomials}
 \label{sec:polynomial-types:poly}
 
+\Added{Let $\cat{C}$ be a category with finite products $(\times, \One)$ and finite coproducts
+$(\coprod, 0)$. The \emph{polynomials} over $\cat{C}$ are functor expressions in a kinding context
+$\Delta$:}
+\begin{AddedBlock}
+\[
+  P, Q \in \Poly_\Delta \;::=\; \const(A) \mid \alpha \mid P + Q \mid P \times Q \mid \mu\alpha.P
+\]
+\end{AddedBlock}
+\noindent
+\Added{where $A$ ranges over objects of $\cat{C}$ and $\alpha$ over the variables of $\Delta$.
+Polynomials mirror the types of \secref{polynomial-types:kinding}, with constants in place of primitive
+types. Function space is absent because function types are closed (\figref{polynomial-types:kinding}),
+so a function type denotes a fixed object and enters a polynomial as a constant. We identify each $P
+\in \Poly_\Delta$ with the functor $\cat{C}^\Delta \to \cat{C}$ it presents, writing $P(\delta)$ for
+its action on a \emph{kinding environment} $\delta \in \cat{C}^\Delta$, an assignment of an object to
+each variable of $\Delta$; the $\mu$ clause presupposes initial algebras, supplied as structure on
+$\cat{C}$ by \defref{polynomial-types:has-poly} below. Presenting functors by a syntax of signatures,
+interpreted afterwards, is standard in the literature on containers and strictly positive types
+\citep{abbott2005}; \citet{gambino-kock} treat polynomial functors as a categorical subject in their
+own right.}
+
+\Added{\citet[Definition~6]{nunes2023} work instead with a semantic notion (here restricted to
+inductive types): the polynomial endofunctors on $\cat{C}$ form the smallest subcategory of $\Cat$
+containing the product and coproduct functors, projections, pairing and constants, and closed under
+forming $\mu H$ whenever it exists. We prefer the syntax because our constructions recurse on the
+polynomial expression, which a functor in the semantic class does not retain. The initial-algebra
+construction of \secref{polynomial-types:fam} recurses on $\mu$-subexpressions, and moves a polynomial
+from $\Fam(\cat{C})$ to sets by substituting at its constants. The definition of $\Poly$-types must
+also quantify over expressions, because the semantic class admits $\mu H$ only once the initial
+algebra exists, so quantifying over the class cannot demand that it exist.}
+
+\begin{DeletedBlock}
 Following \citet[Definition~6]{nunes2023} (restricted to inductive types), the polynomial
 endofunctors on $\cat{C}$ form a subcategory $\Poly_{\cat{C}}$ of $\Cat$.
 
@@ -89,6 +121,7 @@ $(\coprod, 0)$. The category $\Poly_{\cat{C}}$ is the smallest subcategory of $\
   $\mu H : D \to \cat{C}$ exists, then $\mu H$ is also a morphism of $\Poly_{\cat{C}}$.
 \end{itemize}
 \end{definition}
+\end{DeletedBlock}
 
 \subsection{Typing rules}
 \label{sec:polynomial-types:language}
@@ -117,7 +150,12 @@ semantic category.
 give a direct construction in $\Fam(\cat{C})$ via Martin-L\"of $W$-types
 \citep[Wellorderings, pp.~43--47]{martinLof1984}, restricted to the finitary fragment (where each shape has
 finite arity), which suffices because our polynomials are built from finite $+$ and $\times$.
+\Added{\citet{moerdijk-palmgren00} study $W$-types categorically, as initial algebras of polynomial
+endofunctors.}
 
+\Added{We take polynomials (\secref{polynomial-types:poly}) over $\Fam(\cat{C})$, so each constant
+$\const(A)$ carries a family $A = (X, \partial X)$.}
+\begin{DeletedBlock}
 Syntactic polynomials over $\Fam(\cat{C})$ mirror the types of \secref{polynomial-types:kinding}, with
 objects at the leaves in place of primitive types:
 \[
@@ -127,6 +165,7 @@ where $A = (X, \partial X)$ ranges over objects of $\Fam(\cat{C})$ and $\alpha$ 
 We identify each $P \in \Poly_\Delta$ with the functor $\Fam(\cat{C})^\Delta \to \Fam(\cat{C})$ it
 presents, writing $P(\delta)$ for its action on a \emph{kinding environment} $\delta \in
 \Fam(\cat{C})^\Delta$, an assignment of an object to each variable of $\Delta$.
+\end{DeletedBlock}
 
 The fold body of the $\syn{fold}$ rule of \secref{polynomial-types:language} lives in a typing context,
 so the catamorphism interpreting it must too.
@@ -150,7 +189,10 @@ it provides:
   \end{tikzcd}
   \end{center}
   commute in the co-Kleisli category for $\circ_\Gamma$, that is, $\cata{a} \circ_\Gamma (\inMap \circ
-  \pi_2) = a \circ_\Gamma F\cata{a}$ ($\beta$), uniqueness giving $\eta$. The edge $F\cata{a}$ is the
+  \pi_2) = a \circ_\Gamma F\cata{a}$ ($\beta$), uniqueness giving $\eta$. \Added{The co-Kleisli
+  category for the comonad $\Gamma \times -$ has as its maps $X \to Y$ the maps $\Gamma \times X \to
+  Y$ of the underlying category, so it is the category of morphisms in context $\Gamma$, with
+  $\circ_\Gamma$ as composition.} The edge $F\cata{a}$ is the
   \emph{strong} functorial action of $F$, which takes a morphism in context $\Gamma \times X_i \to Y_i$
   for each variable $i$.
 \end{itemize}
@@ -158,7 +200,9 @@ it provides:
 
 \noindent Taking $\Gamma = 1$, each $\mu_{\alpha.P}(\delta)$ is in particular an initial algebra in the usual
 sense; in the presence of exponentials the strong form is no extra imposition (fold into $Y^\Gamma$), but
-$\Fam(\cat{C})$ need not have exponentials. \citet[Definition~6]{nunes2023} accordingly ask only for
+$\Fam(\cat{C})$ need not have exponentials. \Added{Initial algebras equipped with catamorphisms in
+context are the strong datatypes of \citet{cockett-spencer92}, developed for categories with finite
+products but not necessarily exponentials.} \citet[Definition~6]{nunes2023} accordingly ask only for
 initial algebras, their semantic categories being bicartesian closed. At the term level, $\beta$ reduces
 $\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu$-child of $t$ before
 substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
@@ -173,7 +217,9 @@ the inner carrier must be instantiated at the outer carrier while the latter is 
 Following \citet{abbott2004} we instead construct the initial algebras of $P$ and of all its inner
 $\mu$-bodies simultaneously, as a single family of trees indexed by sorts.
 
-The construction separates into two layers, and the first uses index data only. Write $|A|$ for the
+The construction separates into two layers, and the first uses index data only. \Added{The separation
+is possible because $\Fam(\cat{C})$ is the free coproduct completion of $\cat{C}$, so an object is a
+set-indexed collection of $\cat{C}$-objects and nothing more.} Write $|A|$ for the
 index set of a $\Fam(\cat{C})$-object $A$. The \emph{index erasure} $|Q|$ of a polynomial replaces
 each constant $\const(X, \partial X)$ by the constant on its index set $X$ and fixes the variable,
 sum, product and $\mu$ structure. The erasure $|\delta|$ of a kinding environment replaces each entry
