@@ -1,7 +1,7 @@
 \section{Correctness of the higher-order interpretation}
 \label{sec:conservativity}
 
-\Replaced{Two facts certify that the higher-order interpretation behaves correctly at first-order
+Two facts certify that the higher-order interpretation behaves correctly at first-order
 types: every term of first-order type denotes, up to the isomorphisms relating the two
 interpretations, a morphism of the first-order category; and the underlying function of the
 interpretation agrees with the plain set-level interpretation of the term. The first is immediate,
@@ -10,21 +10,15 @@ because the embedding of the first-order model into the higher-order one is full
 proved by glueing: the interpreting category embeds into a category of Grothendieck logical
 relations \citep{fiore-simpson99}, the language is interpreted there, and at first-order types the
 interpretation is isomorphic to an embedded object, so by fullness of the embedding every term
-denotes the image of a morphism of the embedded category (\thmref{conservativity:underlying}).}{The interpretation of the
-language in the higher-order model is \emph{conservative} over the first-order model: every term
-whose context and type are first-order denotes, up to the isomorphisms relating the two
-interpretations, a morphism of the first-order category. The proof is by glueing: the first-order
-category embeds into a category of Grothendieck logical relations \citep{fiore-simpson99} over the
-higher-order one; the language is interpreted there; and at first-order types the interpretation
-collapses back to the first-order category.}
+denotes the image of a morphism of the embedded category (\thmref{conservativity:underlying}).
 
 Glueing along a functor is the standard method for definability results, also known as
 sconing \citep{mitchell-scedrov92}; \citet{fiore-simpson99} refine it with \emph{covers},
 decompositions of an object as a coproduct (\secref{conservativity:glueing}), which sum types make
 necessary. \secref{predicate-system} sets up the calculus of predicates the construction uses,
 \secref{conservativity:glueing} builds the glued category, and \secref{conservativity:definability}
-proves the embedding full and derives the \Replaced{agreement of the underlying
-interpretation}{conservativity theorem}. The two remaining subsections
+proves the embedding full and derives the agreement of the underlying
+interpretation. The two remaining subsections
 supply the ingredients specific to inductive types: $\Poly$-types for the glued category
 (\secref{conservativity:glr-poly-types}) and their preservation by the embedding
 (\secref{conservativity:gf-poly-types}), which the theorem assumes.
@@ -157,18 +151,13 @@ The reindexing law transports a cover tree along a morphism by pulling each cove
 
 The category $\GLR(F)$ of \emph{Grothendieck logical relations} has as objects pairs $(X, \Phi)$ of an
 object $X \in \cat{D}$ and a closed predicate $\Phi$ on $G(X)$, and as morphisms $(X, \Phi) \to (Y,
-\Psi)$ those $f : X \to Y$ with $\Phi \sqsubseteq \Psi[G(f)]$. \Replaced{The first-order category
-embeds by}{Theorem~5.1 of the paper, after \citet{fiore-simpson99},
-summarises the structure this category carries: $\GLR(F)$ is bicartesian closed
-(here moreover with set-indexed coproducts), each piece built on the corresponding structure of
-$\cat{D}$ with an appropriate predicate component; the projection $p : \GLR(F) \to \cat{D}$, $(X,
-\Phi) \mapsto X$, strictly preserves it; and the first-order category embeds,}
+\Psi)$ those $f : X \to Y$ with $\Phi \sqsubseteq \Psi[G(f)]$. The first-order category
+embeds by
 \[
   \GF : \cat{C} \to \GLR(F) \qquad \GF(x) = (F(x), \mathbf{C}(\Definable_x)) \qquad \GF(g) = F(g)
 \]
-\Added{and the whole construction is summarised by the following theorem.}
+and the whole construction is summarised by the following theorem.
 
-\begin{AddedBlock}
 \begin{theorem}[after \citet{fiore-simpson99}]
 \label{thm:conservativity:glr}
 $\GLR(F)$ is bicartesian closed, with set-indexed coproducts, each deriving from the
@@ -188,7 +177,6 @@ strengthens the closure condition, so fewer predicates are closed and the catego
 the theorem carries over because its proof uses only the closure laws of
 \secref{predicate-system}, not the choice of generating covers.
 \end{remark}
-\end{AddedBlock}
 \noindent
 The functors assemble as
 \begin{center}
@@ -202,21 +190,12 @@ with $p \circ \GF = F$: an object of $\GLR(F)$ is a $\cat{D}$-object together wi
 predicate on the presheaf that $G$ assigns to it, and $\GF$ equips each $F(x)$ with the closure of
 its definability predicate.
 
-\begin{DeletedBlock}
-For the language without inductive types, binary case splits, the two-element instance
-of the covers above, suffice to generate the closure operator. Enlarging the class of covers
-strengthens the closure condition, so fewer predicates are closed and the two glued categories
-differ. The structure summarised above nevertheless carries over unchanged, because its proofs use
-only the closure laws of \secref{predicate-system} and not the choice of generating
-covers.
-\end{DeletedBlock}
-
 \subsection{Definability}
 \label{sec:conservativity:definability}
 
 The glueing construction makes $\GF$ \emph{full}: morphisms between embedded objects are
-already first-order. Fullness is \Replaced{the last clause of \thmref{conservativity:glr}; here we
-give the proof}{asserted as part of Theorem~5.1 of the paper; here we give the proof}.
+already first-order. Fullness is the last clause of \thmref{conservativity:glr}; here we
+give the proof.
 
 \begin{lemma}[Fullness of $\GF$]
 \label{lem:conservativity:definability}
@@ -241,11 +220,9 @@ for each morphism $h : F(a) \to F(b)$ in the image of $F$, yields a $g$ with $F(
 $F$ is a fibrewise functor between $\Fam$ categories and is faithful, the assumption reduces to
 its fibre functor: the index part of a witness is determined by $h$, the fibre parts are given
 by the fibre functor's witness function, and faithfulness supplies the naturality of the
-assembled family. \Replaced{At the pairing functor of \thmref{conservativity:underlying} below, a
+assembled family. At the pairing functor of \thmref{conservativity:underlying} below, a
 morphism in the image is a pair whose second component is determined by the first, so the witness
-is the first component itself.}{At the current instances the fibre functor is full by construction,
-morphisms of the self-dual category being morphisms of the underlying one, so the witness is $h$
-itself.}
+is the first component itself.
 
 Fullness of $\GF$ (\lemref{conservativity:definability}) applies only to morphisms between embedded
 objects, so it remains to show that the interpretation of every first-order type is isomorphic to
@@ -256,7 +233,6 @@ proved in \secref{conservativity:gf-poly-types}. First-order types are also
 interpreted directly in $\cat{C}$, which has $\Poly$-types whenever it is a $\Fam$ category
 (\propref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation.
 
-\begin{AddedBlock}
 \begin{lemma}[Type agreement]
 \label{lem:conservativity:comparison}
 For first-order $\tau$, $\sem{\tau} \cong \GF(\sem{\tau}_{\mathit{fo}})$.
@@ -269,9 +245,7 @@ the signature being the transport of the $\cat{C}$-model along $\GF$; and $\mu$-
 the assumed preservation together with the isomorphism-invariance of the $\mu$-operator
 (\secref{polynomial-types:fam}).
 \end{proof}
-\end{AddedBlock}
 
-\begin{AddedBlock}
 \begin{remark}[Full embeddings]
 \label{rem:conservativity:full-F}
 When $F$ is full (for example the embedding $\Fam(\SDSemiMod(S)) \to \Fam(\SemiMod(S))$), every
@@ -280,14 +254,12 @@ $\cat{C}$ follows from the isomorphisms $\sem{\tau}_{\cat{D}} \cong F(\sem{\tau}
 alone, with no glueing; these arise as in \lemref{conservativity:comparison}, with
 $F$ in place of $\GF$.
 \end{remark}
-\end{AddedBlock}
 
-\Added{The glueing machinery is needed for the following theorem, whose pairing functor
+The glueing machinery is needed for the following theorem, whose pairing functor
 $\langle \mathrm{Id}, U \rangle$ is not full: the language is interpreted twice, in the
 higher-order category and in a set-level category, and fullness of the glued embedding ensures
-the two agree.}
+the two agree.
 
-\begin{AddedBlock}
 \begin{theorem}[Term agreement]
 \label{thm:conservativity:underlying}
 Suppose the set-indexed coproducts of $\cat{D}$ are stable. Let $\cat{E}$ be a further category with the
@@ -313,21 +285,20 @@ pair as a morphism between $\GF$-images, so by \lemref{conservativity:definabili
 $(g, U(g))$ for some $g$; the first component gives $g = \sem{t}_{\cat{D}}$, and the second then
 gives $U(\sem{t}_{\cat{D}}) = \sem{t}_{\cat{E}}$.
 \end{proof}
-\end{AddedBlock}
 
-\Added{For the canonical models, $U : \Fam(\SemiMod(S)) \to \Set$ sends a family to its index set
+For the canonical models, $U : \Fam(\SemiMod(S)) \to \Set$ sends a family to its index set
 and a morphism to its index function; the stability hypothesis holds in any $\Fam$ category
 (\lemref{conservativity:fam-stable-coproducts}), and $\GF$ preserves $\Poly$-types by
 \propref{conservativity:gf-preserves-poly}, the first-order role being played by a $\Fam$
 category. The theorem then says that the underlying function of the
 higher-order interpretation is the plain set-theoretic interpretation of the term: the dependency
 data does not interfere. $U$ does not preserve exponentials, which is why
-\remref{conservativity:glr-deltas}'s weakening of the hypotheses on $F$ matters.}
+\remref{conservativity:glr-deltas}'s weakening of the hypotheses on $F$ matters.
 
 \subsection{$\Poly$-types in $\GLR(F)$}
 \label{sec:conservativity:glr-poly-types}
 
-\Replaced{$\GLR(F)$ has $\Poly$-types. The category $\Fam(\GLR(F))$ has them already
+$\GLR(F)$ has $\Poly$-types. The category $\Fam(\GLR(F))$ has them already
 (\propref{polynomial-types:fam-has-poly}), so the task is to move the structure from the free
 coproduct completion (\secref{polynomial-types:fam}) back to $\GLR(F)$ itself: each family of
 $\GLR(F)$-objects can be \emph{realised} as an actual object, its set-indexed coproduct, and the
@@ -335,13 +306,8 @@ initial algebras of $\GLR(F)$ are obtained as realisations of those of $\Fam(\GL
 construction works for any category with the structure listed in
 \thmref{conservativity:transfer}; preservation by $\GF$ is the subject of
 \secref{conservativity:gf-poly-types}. Realisation supplies the carriers; the operations and laws transpose along an
-adjunction, at the price of a coherence property of realisation, \emph{collapse}
-(\lemref{conservativity:collapse}).}{$\GLR(F)$ has $\Poly$-types. We prove this by
-transferring the construction of \secref{polynomial-types:fam}: realise families of
-$\GLR(F)$-objects as set-indexed coproducts, and obtain $\Poly$-types for $\GLR(F)$ from those
-of $\Fam(\GLR(F))$. The construction works for any category with the structure listed in
-\thmref{conservativity:transfer}; preservation by $\GF$ is the subject of
-\secref{conservativity:gf-poly-types}.}
+adjunction, at the price of a coherence property, \emph{realisation invariance}
+(\lemref{conservativity:realisation-invariance}).
 
 \subsubsection{Realisation}
 Let $\cat{E}$ be a category with set-indexed coproducts. The functor
@@ -349,7 +315,8 @@ Let $\cat{E}$ be a category with set-indexed coproducts. The functor
   \Sigma : \Fam(\cat{E}) \to \cat{E} \qquad \Sigma(X, \partial X) = \coprod_{x \in X} \partial X_x
 \]
 sends a family to the coproduct of its fibres and a morphism to the copairing of its fibre maps (the
-counit of the free coproduct completion).
+counit of the free coproduct completion). \Added{We call $\Sigma(X, \partial X)$ the
+\emph{realisation} of the family $(X, \partial X)$.}
 
 \begin{definition}[Presentation]
 \label{def:conservativity:presentation}
@@ -378,11 +345,11 @@ products. The $\Poly$-types for $\cat{E}$ are the realisations: $\mu_{\alpha.P}(
 \noindent
 which routes an environment through $\Fam(\cat{E})$, where the initial algebras exist by
 construction, and realises the result back in $\cat{E}$. For this to yield
-\defref{polynomial-types:has-poly}, $\Sigma$ must preserve \Replaced{the structure from which
-the initial algebras of $\Fam(\cat{E})$ are built}{what the construction uses}:
+\defref{polynomial-types:has-poly}, $\Sigma$ must preserve the structure from which
+the initial algebras of $\Fam(\cat{E})$ are built:
 set-indexed coproducts (immediate), the terminal object, and finite products, the last requiring
-products to distribute over set-indexed coproducts (a consequence of the exponentials). \Added{These
-requirements reappear as hypotheses of \thmref{conservativity:transfer}.}
+products to distribute over set-indexed coproducts (a consequence of the exponentials). These
+requirements reappear as hypotheses of \thmref{conservativity:transfer}.
 
 \subsubsection{Operations and laws}
 The algebra map and catamorphism do not simply transport along the resulting isomorphisms: the algebra map of
@@ -392,15 +359,18 @@ $\Sigma\, \mu_{\alpha.\hat{P}}$. The adjunction $\Sigma \dashv \eta$, where $\et
 \to \Fam(\cat{E})$ embeds an object as a family over a one-element set, transposes algebras and
 catamorphisms between the two categories\Added{, an instance of adjoint folds \citep{hinze13};
 computing a fixed point through an adjunction goes back to the categorical fixed-point calculus
-\citep{backhouse95}}. What remains is that realisation is invariant under
-replacing environment entries by families with isomorphic realisations. We package this as a
-property of the polynomial, established by induction. \Added{This property, \emph{collapse} below,
-does not to our knowledge appear in the literature; a standard replacement, if one exists, would
-simplify the transfer.}
+\citep{backhouse95}}. \Replaced{It remains to establish a fact about environments: the transposed operations are formed at
+environments of $\Fam(\cat{E})$-objects, and must instead be available at any environment
+whose entries merely have the right realisations, so $\Sigma(\hat{P}(-))$ must be unchanged,
+coherently, when each environment entry is replaced by a family with isomorphic realisation. We
+package this as a property of the polynomial, established by induction.}{What remains is that
+realisation is invariant under replacing environment entries by families with isomorphic
+realisations. We package this as a property of the polynomial, established by induction.} \Added{We are not sure whether something similar exists in the literature; a standard
+replacement would simplify the transfer.}
 
-\begin{definition}[Collapse]
-\label{def:conservativity:collapse}
-A polynomial $P$ over $\cat{E}$ \emph{collapses} if every family of isomorphisms $\Sigma\,
+\begin{definition}[Realisation invariance]
+\label{def:conservativity:realisation-invariance}
+A polynomial $P$ over $\cat{E}$ is \emph{realisation-invariant} if every family of isomorphisms $\Sigma\,
 \hat{\delta}_i \cong \Sigma\, \hat{\delta}'_i$ between the realisations of two environments
 induces an isomorphism $\Sigma(\hat{P}(\hat{\delta})) \cong \Sigma(\hat{P}(\hat{\delta}'))$,
 compatibly with composition of such families, and naturally with respect to the strong action of
@@ -409,17 +379,19 @@ $\hat{P}$.
 
 \begin{remark}
 Compatibility with identities is derivable: naturality at projection families gives an
-extensionality principle (collapse depends only on the underlying isomorphisms), extensionality
-makes the collapse at identity families idempotent via compatibility with composition, and an
+extensionality principle (the induced isomorphism depends only on the underlying isomorphisms),
+extensionality makes the induced isomorphism at identity families idempotent via compatibility
+with composition, and an
 idempotent isomorphism is the identity. Compatibility with composition is not derivable from
 naturality: the naturality squares require morphisms of $\Fam(\cat{E})$ along the environment
 directions, and none exist along a family of mere isomorphisms of realisations.
 \end{remark}
 
 \begin{lemma}
-\label{lem:conservativity:collapse}
-Every polynomial collapses. For $\mu$-polynomials the induced isomorphism is a morphism of
-algebras, and the laws of \defref{conservativity:collapse} follow from uniqueness of
+\label{lem:conservativity:realisation-invariance}
+Every polynomial is realisation-invariant. For $\mu$-polynomials the induced isomorphism is a
+morphism of algebras, and the laws of \defref{conservativity:realisation-invariance} follow from
+uniqueness of
 catamorphisms.
 \end{lemma}
 
@@ -431,13 +403,14 @@ strong coproducts. Then $\cat{E}$ has $\Poly$-types (\defref{polynomial-types:ha
 
 \begin{proof}[Proof sketch]
 Take $\mu_{\alpha.P} := \Sigma\, \mu_{\alpha.\hat{P}}$ at singleton environments. The algebra
-map is the realised $\Fam(\cat{E})$ algebra map corrected by collapse
-(\lemref{conservativity:collapse}) at the bound entry; the catamorphism transposes the
+map is the realised $\Fam(\cat{E})$ algebra map corrected by realisation invariance
+(\lemref{conservativity:realisation-invariance}) at the bound entry; the catamorphism transposes the
 $\Fam(\cat{E})$ catamorphism along $\Sigma \dashv \eta$. For the $\beta$ and $\eta$ laws, the
 interpretations agree across a comparison isomorphism $\Sigma(\hat{P}(\hat{\delta})) \cong
 P(\delta)$, and the realised strong action of $\hat{P}$ simulates the strong action that $\cat{E}$
 derives from the new structure, naturally in this comparison (induction on $P$; the $\mu$ case is
-naturality of collapse). The laws are then the $\Fam(\cat{E})$ laws conjugated by the simulation.
+naturality of the invariance isomorphism). The laws are then the $\Fam(\cat{E})$ laws conjugated
+by the simulation.
 \end{proof}
 
 \begin{corollary}
@@ -523,7 +496,8 @@ $\GF$ preserves $\Poly$-types.
 
 \begin{proof}[Proof sketch]
 Apply \lemref{conservativity:skeleton} in $\cat{C}$, then
-\lemref{conservativity:carrier-comparison}, then collapse (\lemref{conservativity:collapse}) at
+\lemref{conservativity:carrier-comparison}, then realisation invariance
+(\lemref{conservativity:realisation-invariance}) at
 the constant-free $P^{*}$, at the isomorphism family given by $\Sigma\check{\delta}_i \cong
 \GF(\delta_i) \cong \Sigma(\eta\,\GF\,\delta_i)$ and likewise at the entries for
 $\vec{A}$, and finally the realisation of \lemref{conservativity:skeleton} in $\Fam(\GLR(F))$,
