@@ -218,7 +218,7 @@ The glueing construction makes $\GF$ \emph{full}: morphisms between embedded obj
 already first-order. Fullness is \Replaced{the last clause of \thmref{conservativity:glr}; here we
 give the proof}{asserted as part of Theorem~5.1 of the paper; here we give the proof}.
 
-\begin{lemma}[Fullness]
+\begin{lemma}[Fullness of $\GF$]
 \label{lem:conservativity:definability}
 Every morphism $f : \GF(x) \to \GF(y)$ of $\GLR(F)$ is the image of a first-order morphism: $f = F(g)$
 for some $g : x \to y$.
@@ -247,22 +247,29 @@ is the first component itself.}{At the current instances the fibre functor is fu
 morphisms of the self-dual category being morphisms of the underlying one, so the witness is $h$
 itself.}
 
-The lemma applies only to morphisms between embedded objects, so it remains to show that the
-interpretation of every first-order type is isomorphic to one. Interpreting the language in $\GLR(F)$ needs, beyond the structure of
+Fullness of $\GF$ (\lemref{conservativity:definability}) applies only to morphisms between embedded
+objects, so it remains to show that the interpretation of every first-order type is isomorphic to
+one. Interpreting the language in $\GLR(F)$ needs, beyond the structure of
 \secref{conservativity:glueing}, only $\Poly$-types (\defref{polynomial-types:has-poly}), which we
 construct in \secref{conservativity:glr-poly-types}; their preservation by $\GF$ is assumed here and
-analysed in \secref{conservativity:gf-poly-types}. First-order types are also
+proved in \secref{conservativity:gf-poly-types}. First-order types are also
 interpreted directly in $\cat{C}$, which has $\Poly$-types whenever it is a $\Fam$ category
-(\propref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation. The
-two interpretations agree up to the embedding: for first-order $\tau$,
-\[
-  \sem{\tau} \;\cong\; \GF(\sem{\tau}_{\mathit{fo}})
-\]
-by induction on $\tau$: the unit, product and sum cases follow from $\GF$'s preservation of the
-terminal object, products and coproducts; base types agree by construction, the $\GLR(F)$-model of the
-signature being the transport of the $\cat{C}$-model along $\GF$; and $\mu$-types follow from
+(\propref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation.
+
+\begin{AddedBlock}
+\begin{lemma}[Agreement]
+\label{lem:conservativity:comparison}
+For first-order $\tau$, $\sem{\tau} \cong \GF(\sem{\tau}_{\mathit{fo}})$.
+\end{lemma}
+
+\begin{proof}
+By induction on $\tau$. The unit, product and sum cases follow from $\GF$'s preservation of the
+terminal object, products and coproducts; base types agree by construction, the $\GLR(F)$-model of
+the signature being the transport of the $\cat{C}$-model along $\GF$; and $\mu$-types follow from
 the assumed preservation together with the isomorphism-invariance of the $\mu$-operator
 (\secref{polynomial-types:fam}).
+\end{proof}
+\end{AddedBlock}
 
 \begin{AddedBlock}
 \begin{remark}[Full embeddings]
@@ -270,29 +277,30 @@ the assumed preservation together with the isomorphism-invariance of the $\mu$-o
 When $F$ is full (for example the embedding $\Fam(\SDSemiMod(S)) \to \Fam(\SemiMod(S))$), every
 $\cat{D}$-morphism between embedded objects is an $F$-image outright, so conservativity over
 $\cat{C}$ follows from the isomorphisms $\sem{\tau}_{\cat{D}} \cong F(\sem{\tau}_{\mathit{fo}})$
-alone, with no glueing.
+alone, with no glueing; these arise as in \lemref{conservativity:comparison}, with
+$F$ in place of $\GF$.
 \end{remark}
 \end{AddedBlock}
 
 \Added{The glueing machinery is needed for the following theorem, whose pairing functor
 $\langle \mathrm{Id}, U \rangle$ is not full: the language is interpreted twice, in the
-higher-order category and in a set-level category, and fullness of the glued embedding compares
-the two.}
+higher-order category and in a set-level category, and fullness of the glued embedding ensures
+the two agree.}
 
 \begin{AddedBlock}
 \begin{theorem}[Underlying interpretation]
 \label{thm:conservativity:underlying}
-Let $\cat{E}$ be a further category with the structure of $\cat{D}$
-(\secref{conservativity:glueing}) and $\Poly$-types, and $U : \cat{D} \to \cat{E}$ a functor
-preserving the terminal object, products and set-indexed coproducts. Instantiate
-\secref{conservativity:glueing} with the first-order category taken to be $\cat{D}$ itself (whose
-set-indexed coproducts we assume stable), the higher-order category $\cat{D} \times \cat{E}$, and
+Suppose the set-indexed coproducts of $\cat{D}$ are stable. Let $\cat{E}$ be a further category with the
+structure of $\cat{D}$ (\secref{conservativity:glueing}) and $\Poly$-types, and $U : \cat{D} \to
+\cat{E}$ a functor preserving the terminal object, products and set-indexed coproducts.
+Instantiate \secref{conservativity:glueing} with the first-order category taken to be $\cat{D}$
+itself, the higher-order category $\cat{D} \times \cat{E}$, and
 $F = \langle \mathrm{Id}, U \rangle$, and assume $\GF$ preserves $\Poly$-types. Then for every term
 $\Gamma \vdash t : \tau$ with $\Gamma$ and $\tau$ first-order,
 \[
   U(\sem{t}_{\cat{D}}) \;=\; \sem{t}_{\cat{E}},
 \]
-modulo the comparison isomorphisms.
+modulo the isomorphisms of \lemref{conservativity:comparison}.
 \end{theorem}
 
 \begin{proof}
@@ -300,7 +308,8 @@ A morphism $F(x) \to F(y)$ of $\cat{D} \times \cat{E}$ is a pair $(h, k)$ with $
 unrelated, whereas an $F$-image is constrained to $(g, U(g))$; so $F$ is not full and
 \lemref{conservativity:definability} does real work. The interpretation of the language in
 $\cat{D} \times \cat{E}$ is computed componentwise, so it is the pair $(\sem{t}_{\cat{D}},
-\sem{t}_{\cat{E}})$. At first-order $\Gamma$ and $\tau$ the comparison isomorphisms exhibit this
+\sem{t}_{\cat{E}})$. At first-order $\Gamma$ and $\tau$ the isomorphisms of
+\lemref{conservativity:comparison} exhibit this
 pair as a morphism between $\GF$-images, so by \lemref{conservativity:definability} it equals
 $(g, U(g))$ for some $g$; the first component forces $g = \sem{t}_{\cat{D}}$, and the second then
 reads $U(\sem{t}_{\cat{D}}) = \sem{t}_{\cat{E}}$.
@@ -308,7 +317,8 @@ reads $U(\sem{t}_{\cat{D}}) = \sem{t}_{\cat{E}}$.
 \end{AddedBlock}
 
 \Added{For the canonical models, $U : \Fam(\SemiMod(S)) \to \Set$ sends a family to its index set
-and a morphism to its index function. The theorem then says that the underlying function of the
+and a morphism to its index function; the stability hypothesis holds in any $\Fam$ category
+(\lemref{conservativity:fam-stable-coproducts}). The theorem then says that the underlying function of the
 higher-order interpretation is the plain set-theoretic interpretation of the term: the dependency
 data does not interfere. $U$ does not preserve exponentials, which is why
 \remref{conservativity:glr-deltas}'s weakening of the hypotheses on $F$ matters.}
