@@ -315,8 +315,8 @@ Let $\cat{E}$ be a category with set-indexed coproducts. The functor
   \Sigma : \Fam(\cat{E}) \to \cat{E} \qquad \Sigma(X, \partial X) = \coprod_{x \in X} \partial X_x
 \]
 sends a family to the coproduct of its fibres and a morphism to the copairing of its fibre maps (the
-counit of the free coproduct completion). \Added{We call $\Sigma(X, \partial X)$ the
-\emph{realisation} of the family $(X, \partial X)$.}
+counit of the free coproduct completion). We call $\Sigma(X, \partial X)$ the
+\emph{realisation} of the family $(X, \partial X)$.
 
 \begin{definition}[Presentation]
 \label{def:conservativity:presentation}
@@ -357,45 +357,38 @@ $\mu_{\alpha.\hat{P}}$ lives at an environment containing the $\Fam(\cat{E})$-ob
 $\mu_{\alpha.\hat{P}}$ itself, whereas its realisation must live at the presented object
 $\Sigma\, \mu_{\alpha.\hat{P}}$. The adjunction $\Sigma \dashv \eta$, where $\eta : \cat{E}
 \to \Fam(\cat{E})$ embeds an object as a family over a one-element set, transposes algebras and
-catamorphisms between the two categories\Added{, an instance of adjoint folds \citep{hinze13};
+catamorphisms between the two categories, an instance of adjoint folds \citep{hinze13};
 computing a fixed point through an adjunction goes back to the categorical fixed-point calculus
-\citep{backhouse95}}. \Replaced{It remains to establish a fact about environments: the transposed operations are formed at
+\citep{backhouse95}. It remains to establish a fact about environments: the transposed operations are formed at
 environments of $\Fam(\cat{E})$-objects, and must instead be available at any environment
 whose entries merely have the right realisations, so $\Sigma(\hat{P}(-))$ must be unchanged,
 coherently, when each environment entry is replaced by a family with isomorphic realisation. We
-package this as a property of the polynomial, established by induction.}{What remains is that
-realisation is invariant under replacing environment entries by families with isomorphic
-realisations. We package this as a property of the polynomial, established by induction.} \Added{We are not sure whether something similar exists in the literature.}
+package this as a property of the polynomial, established by induction. We are not sure whether something similar exists in the literature.
 
 \begin{definition}[Realisation invariance]
 \label{def:conservativity:realisation-invariance}
 A polynomial $P$ over $\cat{E}$ is \emph{realisation-invariant} if every family of isomorphisms $\Sigma\,
 \hat{\delta}_i \cong \Sigma\, \hat{\delta}'_i$ between the realisations of two environments
 induces an isomorphism $\Sigma(\hat{P}(\hat{\delta})) \cong \Sigma(\hat{P}(\hat{\delta}'))$
-\Replaced{which is compatible with composition of such families and natural with respect to the
-strong action of $\hat{P}$}{, compatibly with composition of such families, and naturally with
-respect to the strong action of $\hat{P}$}.
+which is compatible with composition of such families and natural with respect to the
+strong action of $\hat{P}$.
 \end{definition}
 
 \begin{remark}
-\Replaced{Compatibility with identities is derivable, because naturality at projection families
+Compatibility with identities is derivable, because naturality at projection families
 gives an extensionality principle (the induced isomorphism depends only on the underlying
 isomorphisms), extensionality then makes the induced isomorphism at identity families idempotent
 by compatibility with composition, and an idempotent isomorphism is the
-identity}{Compatibility with identities is derivable: naturality at projection families gives an
-extensionality principle (collapse depends only on the underlying isomorphisms), extensionality
-makes the collapse at identity families idempotent via compatibility with composition, and an
-idempotent isomorphism is the identity}. Compatibility with composition is not derivable from
-naturality: \Replaced{a naturality square can be formed only at $\Fam(\cat{E})$-morphisms
+identity. Compatibility with composition is not derivable from
+naturality: a naturality square can be formed only at $\Fam(\cat{E})$-morphisms
 between the environment entries, and a family of mere isomorphisms between their realisations
-supplies none}{the naturality squares require morphisms of $\Fam(\cat{E})$ along the environment
-directions, and none exist along a family of mere isomorphisms of realisations}.
+supplies none.
 \end{remark}
 
 \begin{lemma}
 \label{lem:conservativity:realisation-invariance}
 Every polynomial is realisation-invariant. For $\mu$-polynomials the induced isomorphism is
-\Added{moreover} a morphism of algebras, and the laws of \defref{conservativity:realisation-invariance} follow from
+moreover a morphism of algebras, and the laws of \defref{conservativity:realisation-invariance} follow from
 uniqueness of
 catamorphisms.
 \end{lemma}
@@ -408,19 +401,15 @@ strong coproducts. Then $\cat{E}$ has $\Poly$-types (\defref{polynomial-types:ha
 
 \begin{proof}[Proof sketch]
 Take $\mu_{\alpha.P} := \Sigma\, \mu_{\alpha.\hat{P}}$ at singleton environments. The algebra
-map is the realised $\Fam(\cat{E})$ algebra map \Replaced{composed with the invariance
+map is the realised $\Fam(\cat{E})$ algebra map composed with the invariance
 isomorphism (\lemref{conservativity:realisation-invariance}) at the entry for the bound variable
-$\alpha$}{corrected by realisation invariance (\lemref{conservativity:realisation-invariance}) at
-the bound entry}; the catamorphism transposes the
+$\alpha$; the catamorphism transposes the
 $\Fam(\cat{E})$ catamorphism along $\Sigma \dashv \eta$. For the $\beta$ and $\eta$ laws, the
-interpretations agree across \Replaced{an}{a comparison} isomorphism $\Sigma(\hat{P}(\hat{\delta})) \cong
-P(\delta)$, and \Replaced{this isomorphism commutes with the two strong actions, the realised
+interpretations agree across an isomorphism $\Sigma(\hat{P}(\hat{\delta})) \cong
+P(\delta)$, and this isomorphism commutes with the two strong actions, the realised
 action of $\hat{P}$ and the action $\cat{E}$ derives from the new structure (induction on $P$;
 the $\mu$ case is naturality of the invariance isomorphism). The laws are then the
-$\Fam(\cat{E})$ laws transported across these isomorphisms}{the realised strong action of $\hat{P}$
-simulates the strong action that $\cat{E}$ derives from the new structure, naturally in this
-comparison (induction on $P$; the $\mu$ case is naturality of the invariance isomorphism). The
-laws are then the $\Fam(\cat{E})$ laws conjugated by the simulation}.
+$\Fam(\cat{E})$ laws transported across these isomorphisms.
 \end{proof}
 
 \begin{corollary}
