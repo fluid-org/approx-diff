@@ -176,11 +176,11 @@ of the self-dual category being morphisms of the underlying one, so the witness 
 
 The lemma applies only to morphisms between embedded objects, so it remains to show that the
 interpretation of every first-order type is isomorphic to one. Interpreting the language in $\GLR(F)$ needs, beyond the structure of
-\secref{conservativity:glueing}, only $\Poly$-types (\defref{polynomial-types:has-poly}), which we
+\secref{conservativity:glueing}, only $\Poly$-types (\muDefref{polynomial-types:has-poly}), which we
 construct in \secref{conservativity:glr-poly-types}; their preservation by $\GF$ is assumed here and
 analysed in \secref{conservativity:gf-poly-types}. First-order types are also
 interpreted directly in $\cat{C}$, which has $\Poly$-types whenever it is a $\Fam$ category
-(\propref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation. The
+(\muPropref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation. The
 two interpretations agree up to the embedding: for first-order $\tau$,
 \[
   \sem{\tau} \;\cong\; \GF(\sem{\tau}_{\mathit{fo}})
@@ -189,7 +189,7 @@ by induction on $\tau$: the unit, product and sum cases follow from $\GF$'s pres
 terminal object, products and coproducts; base types agree by construction, the $\GLR(F)$-model of the
 signature being the transport of the $\cat{C}$-model along $\GF$; and $\mu$-types follow from
 the assumed preservation together with the isomorphism-invariance of the $\mu$-operator
-(\secref{polynomial-types:fam}).
+(\muSecref{polynomial-types:fam}).
 
 For the $\mu$-free language this is Theorem~5.2 of the paper; the version here adds the
 $\Poly$-types hypotheses.
@@ -212,7 +212,7 @@ $\GF(\sem{\Gamma}_{\mathit{fo}}) \to \GF(\sem{\tau}_{\mathit{fo}})$ of $\GLR(F)$
 \label{sec:conservativity:glr-poly-types}
 
 $\GLR(F)$ has $\Poly$-types. We prove this by transferring the construction of
-\secref{polynomial-types:fam}: realise families of $\GLR(F)$-objects as set-indexed coproducts, and
+\muSecref{polynomial-types:fam}: realise families of $\GLR(F)$-objects as set-indexed coproducts, and
 obtain $\Poly$-types for $\GLR(F)$ from those of $\Fam(\GLR(F))$. The construction works for
 any category with the structure listed in \thmref{conservativity:transfer}; preservation by $\GF$
 is the subject of \secref{conservativity:gf-poly-types}.
@@ -232,10 +232,10 @@ by its restrictions to the fibres of $X$.
 \paragraph{$\Poly$-types via realisation.}
 A polynomial $P$ over $\cat{E}$ embeds as a polynomial $\hat{P}$ over $\Fam(\cat{E})$, each
 $\const$-object replaced by its $\eta$-image, and $\Fam(\cat{E})$ has $\Poly$-types by
-\propref{polynomial-types:fam-has-poly}, since $\cat{E}$ has a terminal object and finite
+\muPropref{polynomial-types:fam-has-poly}, since $\cat{E}$ has a terminal object and finite
 products. The $\Poly$-types for $\cat{E}$ are the realisations: $\mu_{\alpha.P}(\delta) :=
 \Sigma\, \mu_{\alpha.\hat{P}}(\eta\,\delta)$. For this to yield
-\defref{polynomial-types:has-poly}, $\Sigma$ must preserve what the construction uses:
+\muDefref{polynomial-types:has-poly}, $\Sigma$ must preserve what the construction uses:
 set-indexed coproducts (immediate), the terminal object, and finite products, the last requiring
 products to distribute over set-indexed coproducts (a consequence of the exponentials).
 
@@ -277,7 +277,7 @@ catamorphisms.
 \begin{theorem}[Transfer]
 \label{thm:conservativity:transfer}
 Let $\cat{E}$ have set-indexed coproducts, a terminal object, finite products, exponentials and
-strong coproducts. Then $\cat{E}$ has $\Poly$-types (\defref{polynomial-types:has-poly}).
+strong coproducts. Then $\cat{E}$ has $\Poly$-types (\muDefref{polynomial-types:has-poly}).
 \end{theorem}
 
 \begin{proof}[Proof sketch]
@@ -308,7 +308,7 @@ requires $\GF$ to preserve the presentation of $\mu_{\alpha.P}$ as a set-indexed
 fibres.
 
 Preservation asks only for an isomorphism of objects, so the comparison can be carried out on the
-concrete carriers of \propref{polynomial-types:fam-has-poly}, taking $\cat{C}$ to be a $\Fam$
+concrete carriers of \muPropref{polynomial-types:fam-has-poly}, taking $\cat{C}$ to be a $\Fam$
 category with those $\Poly$-types; which $\Poly$-types structure is immaterial, any two having
 componentwise isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms. On the
 carriers no initiality machinery is needed: the tree sorts and fibres of the carrier are computed from the index sets and fibres of the

@@ -1,9 +1,10 @@
-.PHONY: main notes clean submit arXiv # otherwise confused by folders with the same name
+.PHONY: main notes mu-types clean submit arXiv # otherwise confused by folders with the same name
 
 default: main
 
 main: main.pdf
 notes: notes.pdf
+mu-types: mu-types.pdf
 
 # -out2dir unsupported on default Mac installation
 LATEXMK_OPTS:=-output-format=pdf -outdir=_latex
@@ -18,9 +19,19 @@ main.pdf: main.tex $(MAIN_DEPS)
 	cp _latex/main.pdf .
 	@! grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/main.log
 
+MU_TYPES_DEPS:=$(wildcard mu-types/*.tex) $(wildcard fig/*.tex) macros.tex bib.bib
+
+mu-types.pdf: mu-types.tex $(MU_TYPES_DEPS)
+	latexmk $(LATEXMK_OPTS) mu-types
+	cd _latex && bibtex mu-types
+	latexmk $(LATEXMK_OPTS) -g mu-types
+	cp _latex/mu-types.pdf .
+	@! grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/mu-types.log
+
 NOTES_DEPS:=$(wildcard notes/*.tex) $(wildcard fig/*.tex) macros.tex bib.bib
 
-notes.pdf: notes.tex $(NOTES_DEPS)
+# mu-types.pdf first: notes resolves references into _latex/mu-types.aux
+notes.pdf: notes.tex $(NOTES_DEPS) mu-types.pdf
 	latexmk $(LATEXMK_OPTS) notes
 	cd _latex && bibtex notes
 	latexmk $(LATEXMK_OPTS) -g notes
@@ -66,3 +77,4 @@ clean:
 	rm -f suppl-submit.zip
 	rm -f arXiv.zip
 	rm -f notes.pdf
+	rm -f mu-types.pdf
