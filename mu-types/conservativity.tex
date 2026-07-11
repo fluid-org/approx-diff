@@ -8,21 +8,22 @@ category embeds into a category of Grothendieck logical relations \citep{fiore-s
 higher-order one; the language is interpreted there; and at first-order types the interpretation
 collapses back to the first-order category.
 
-\Added{Glueing along a functor is the standard method for definability results, also known as
-sconing \citep{mitchell-scedrov92}; \citet{fiore-simpson99} refine it with covers, which are needed
-for sum types. \secref{predicate-system} sets up the calculus of predicates the construction uses,
+Glueing along a functor is the standard method for definability results, also known as
+sconing \citep{mitchell-scedrov92}; \citet{fiore-simpson99} refine it with \Replaced{\emph{covers},
+decompositions of an object as a coproduct (\secref{conservativity:glueing}), which sum types make
+necessary}{covers, which are needed for sum types}. \secref{predicate-system} sets up the calculus of predicates the construction uses,
 \secref{conservativity:glueing} builds the glued category, and \secref{conservativity:definability}
 proves the embedding full and derives the conservativity theorem. The two remaining subsections
 supply the ingredients specific to inductive types: $\Poly$-types for the glued category
 (\secref{conservativity:glr-poly-types}) and their preservation by the embedding
-(\secref{conservativity:gf-poly-types}), which the theorem assumes.}
+(\secref{conservativity:gf-poly-types}), which the theorem assumes.
 
 \subsection{Predicate systems}
 \label{sec:predicate-system}
 
 \subsubsection{Predicate system over $\cat{C}$}
 
-Suppose $\cat{C}$ a category with finite products. A \emph{predicate system} over $\cat{C}$ consists of the
+Let $\cat{C}$ be a category with finite products. A \emph{predicate system} over $\cat{C}$ consists of the
 following data:
 \begin{itemize}
 \item For every object $X$ of $\cat{C}$, a poset $(\Pred(X), \sqsubseteq)$ of predicates on $X$.
@@ -42,16 +43,16 @@ $\residual$ and $\forall_Y$.
 \end{itemize}
 
 \noindent
-\Added{A predicate system is a first-order hyperdoctrine, with posets of predicates in place of
+A predicate system is a first-order hyperdoctrine, with posets of predicates in place of
 categories: predicates are indexed by the objects of $\cat{C}$, substitution along a morphism acts
 on them by reindexing, and the quantifiers are the adjoints to substitution, existential on the
 left and universal on the right, which is the shape of the definition above. The reading of
 quantifiers as adjoints originates with \citet{lawvere69}; \citet{pitts01} surveys the resulting
-notion and its laws.}
+notion and its laws.
 
 \subsubsection{Predicate system over $\Set$}
 
-Suppose $X$ a set. Define a \emph{predicate on $X$} to be a family of (proof-irrelevant) propositions for
+Let $X$ be a set. Define a \emph{predicate on $X$} to be a family of (proof-irrelevant) propositions for
 every $x \in X$. For any function $f: X \to Y$, define $\reindex{P}{f}(x)$ iff $P(f(x))$ and
 $\directImage{P}{f}(y)$ iff there exists $x$ such that $f(x) = y$ and $P(x)$. Define $\mathcal{S}$ to be the
 predicate system over $\Set$ which assigns to any set $X$ the set $\Pred(X)$ of propositions on $X$ ordered by
@@ -60,7 +61,7 @@ as $\forall_Y(P)(x)$ iff $P(x,y)$ for all $y \in Y$.
 
 \subsubsection{Predicates on a presheaf}
 
-Suppose $\cat{C}$ a category and $F: \cat{C}^\op \to \Set$ a presheaf. Define a \emph{predicate on $F$} to be
+Let $\cat{C}$ be a category and $F: \cat{C}^\op \to \Set$ a presheaf. Define a \emph{predicate on $F$} to be
 a family of predicates $P_X \in \Pred_\mathcal{S}(F(X))$ for every object $X$ in $\cat{C}$ such that $P_Y
 \sqsubseteq \reindex{P_X}{F(f)}$ for every $f: X \to Y$ in $\cat{C}$.
 
@@ -76,7 +77,7 @@ A \emph{closure operator} $C$ over a poset $(X, \sqleq)$ is a lax idempotent mon
 unit and multiplication given by monotonicity, extensivity ($x \sqleq C(x)$) and idempotence ($C(C(x)) \sqleq
 C(x)$).
 
-Suppose $\mathcal{S} = (\Pred, \top, \meet, \join, \residual, \forall)$ a predicate system over a category
+Let $\mathcal{S} = (\Pred, \top, \meet, \join, \residual, \forall)$ be a predicate system over a category
 $\cat{C}$. A closure operator $C$ over $\mathcal{S}$ is a fibred lax idempotent monad $C$ on the fibration
 $\Pred: \cat{C}^\op \to \Poset$ where for every object $X$ the fibre map $C_X: \Pred(X) \to \Pred(X)$ is a
 closure operator, $C$ is lax monoidal with respect to $\meet$ (i.e.~$C(P) \meet C(Q) \sqleq C(P \meet Q)$),
@@ -92,9 +93,14 @@ object, finite products, exponentials, and set-indexed coproducts, in which the 
 language is interpreted; and a functor $F : \cat{C} \to \cat{D}$ preserving the terminal object,
 products, and set-indexed coproducts. The finite coproducts both interpretations need for sum types
 are the two-element instance of the set-indexed ones, so they are not assumed separately; likewise
-their stability and preservation by $F$ follow from the set-indexed versions. The paper, after the
-extensivity of \citet{fiore-simpson99}, assumes only stable \emph{finite} coproducts; recursive
-types force the set-indexed strengthening (\secref{conservativity:gf-poly-types}).
+their stability and preservation by $F$ follow from the set-indexed versions. \Replaced{For the
+language without inductive types it suffices to assume stable \emph{finite} coproducts, as in the
+extensive categories of \citet{fiore-simpson99}; recursive types force the set-indexed
+strengthening (\secref{conservativity:gf-poly-types}). Call a set-indexed coproduct decomposition
+$\coprod_i y_i \cong y$ a \emph{cover} of the object $y$; covers generate the closure operator
+introduced below.}{The paper, after the extensivity of \citet{fiore-simpson99}, assumes only stable
+\emph{finite} coproducts; recursive types force the set-indexed strengthening
+(\secref{conservativity:gf-poly-types}).}
 
 \begin{lemma}
 \label{lem:conservativity:fam-stable-coproducts}
@@ -111,7 +117,7 @@ the disjoint union of index sets to the disjoint union of their images.
 
 Predicates live over presheaves on $\cat{C}$: let $G : \cat{D} \to \PSh(\cat{C})$ be the functor
 sending $X$ to the presheaf $\cat{D}(F(-), X)$. A presheaf predicate on $G(X)$ thus
-assigns to each $y \in \cat{C}$ a predicate on the morphisms $F(y) \to X$, compatibly with
+assigns to each $y \in \cat{C}$\Added{, called the \emph{stage},} a predicate on the morphisms $F(y) \to X$, compatibly with
 precomposition along $\cat{C}$-morphisms; the predicate system of \secref{predicate-system} provides
 reindexing and the connectives for such predicates.
 
@@ -124,10 +130,12 @@ F(y) \to F(x)$ that are images of first-order morphisms: those with $f = F(g)$ f
 Definability is not closed under the reasoning the interpretation requires; in particular, a morphism
 defined by case analysis on a coproduct is definable only up to precomposition with the case split.
 Predicates are therefore taken \emph{closed} with respect to a closure operator $\mathbf{C}$,
-generated by coproduct decompositions of the stage. A \emph{cover} of $y \in \cat{C}$ is a
-set-indexed coproduct decomposition $\coprod_i y_i \cong y$; $\mathbf{C}\,\Phi$ is generated
+generated by \Replaced{covers of the stage: $\mathbf{C}\,\Phi$ is defined
 inductively, holding at $f : F(y) \to X$ if $\Phi$ does, or if some cover of $y$ has
-$\mathbf{C}\,\Phi$ holding at each restriction of $f$.
+$\mathbf{C}\,\Phi$ holding at each restriction of $f$}{coproduct decompositions of the stage. A
+\emph{cover} of $y \in \cat{C}$ is a set-indexed coproduct decomposition $\coprod_i y_i \cong y$;
+$\mathbf{C}\,\Phi$ is generated inductively, holding at $f : F(y) \to X$ if $\Phi$ does, or if some
+cover of $y$ has $\mathbf{C}\,\Phi$ holding at each restriction of $f$}.
 
 \begin{lemma}
 \label{lem:conservativity:indexed-closure}
@@ -152,25 +160,28 @@ $\cat{D}$ with an appropriate predicate component; the projection $p : \GLR(F) \
   \GF : \cat{C} \to \GLR(F) \qquad \GF(x) = (F(x), \mathbf{C}\,\Definable_x) \qquad \GF(g) = F(g)
 \]
 with $\GF$ preserving the terminal object, products and coproducts.
-\Added{The functors assemble as}
-\begin{AddedBlock}
+The functors assemble as
 \begin{center}
 \begin{tikzcd}[row sep=2.4em, column sep=3.2em]
   \cat{C} \arrow[r, "\GF"] \arrow[dr, "F"'] & \GLR(F) \arrow[d, "p"] & \\
   & \cat{D} \arrow[r, "G"'] & \PSh(\cat{C})
 \end{tikzcd}
 \end{center}
-\end{AddedBlock}
 \noindent
-\Added{with $p \circ \GF = F$: an object of $\GLR(F)$ is a $\cat{D}$-object together with a closed
+with $p \circ \GF = F$: an object of $\GLR(F)$ is a $\cat{D}$-object together with a closed
 predicate on the presheaf that $G$ assigns to it, and $\GF$ equips each $F(x)$ with the closure of
-its definability predicate.}
+its definability predicate.
 
-The paper's closure operator is generated by binary case splits, the two-element instance of
-the covers above. Enlarging the class of covers strengthens the closure condition, so fewer
+\Replaced{For the language without inductive types, binary case splits, the two-element instance
+of the covers above, suffice to generate the closure operator. Enlarging the class of covers
+strengthens the closure condition, so fewer predicates are closed and the two glued categories
+differ. The structure summarised above nevertheless carries over unchanged, because its proofs use
+only the closure laws of \secref{predicate-system} and not the choice of generating
+covers.}{The paper's closure operator is generated by binary case splits, the two-element instance
+of the covers above. Enlarging the class of covers strengthens the closure condition, so fewer
 predicates are closed and $\GLR(F)$ is not literally the category of the paper. Theorem~5.1
 nevertheless applies unchanged, because its proofs use only the closure laws of
-\secref{predicate-system} and not the choice of generating covers.
+\secref{predicate-system} and not the choice of generating covers.}
 
 \subsection{Definability}
 \label{sec:conservativity:definability}
@@ -264,18 +275,16 @@ A polynomial $P$ over $\cat{E}$ embeds as a polynomial $\hat{P}$ over $\Fam(\cat
 $\const$-object replaced by its $\eta$-image, and $\Fam(\cat{E})$ has $\Poly$-types by
 \propref{polynomial-types:fam-has-poly}, since $\cat{E}$ has a terminal object and finite
 products. The $\Poly$-types for $\cat{E}$ are the realisations: $\mu_{\alpha.P}(\delta) :=
-\Sigma\, \mu_{\alpha.\hat{P}}(\eta\,\delta)$\Added{, that is, the composite}
-\begin{AddedBlock}
+\Sigma\, \mu_{\alpha.\hat{P}}(\eta\,\delta)$, that is, the composite
 \begin{center}
 \begin{tikzcd}[row sep=2.4em, column sep=4.5em]
   \Fam(\cat{E})^{\Delta} \arrow[r, "\mu_{\alpha.\hat{P}}"] & \Fam(\cat{E}) \arrow[d, "\Sigma"] \\
   \cat{E}^{\Delta} \arrow[u, "\eta^{\Delta}"] \arrow[r, dashed, "\mu_{\alpha.P}"'] & \cat{E}
 \end{tikzcd}
 \end{center}
-\end{AddedBlock}
 \noindent
-\Added{which routes an environment through $\Fam(\cat{E})$, where the initial algebras exist by
-construction, and realises the result back in $\cat{E}$.} For this to yield
+which routes an environment through $\Fam(\cat{E})$, where the initial algebras exist by
+construction, and realises the result back in $\cat{E}$. For this to yield
 \defref{polynomial-types:has-poly}, $\Sigma$ must preserve what the construction uses:
 set-indexed coproducts (immediate), the terminal object, and finite products, the last requiring
 products to distribute over set-indexed coproducts (a consequence of the exponentials).
