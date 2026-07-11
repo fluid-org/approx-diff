@@ -334,26 +334,36 @@ $\GLR(F)$-objects can be \emph{realised} as an actual object, its set-indexed co
 initial algebras of $\GLR(F)$ are obtained as realisations of those of $\Fam(\GLR(F))$. The
 construction works for any category with the structure listed in
 \thmref{conservativity:transfer}; preservation by $\GF$ is the subject of
-\secref{conservativity:gf-poly-types}.}{$\GLR(F)$ has $\Poly$-types. We prove this by
+\secref{conservativity:gf-poly-types}. Realisation supplies the carriers; the operations and laws transpose along an
+adjunction, at the price of a coherence property of realisation, \emph{collapse}
+(\lemref{conservativity:collapse}).}{$\GLR(F)$ has $\Poly$-types. We prove this by
 transferring the construction of \secref{polynomial-types:fam}: realise families of
 $\GLR(F)$-objects as set-indexed coproducts, and obtain $\Poly$-types for $\GLR(F)$ from those
 of $\Fam(\GLR(F))$. The construction works for any category with the structure listed in
 \thmref{conservativity:transfer}; preservation by $\GF$ is the subject of
 \secref{conservativity:gf-poly-types}.}
 
-\paragraph{Realisation.}
+\subsubsection{Realisation}
 Let $\cat{E}$ be a category with set-indexed coproducts. The functor
 \[
   \Sigma : \Fam(\cat{E}) \to \cat{E} \qquad \Sigma(X, \partial X) = \coprod_{x \in X} \partial X_x
 \]
 sends a family to the coproduct of its fibres and a morphism to the copairing of its fibre maps (the
-counit of the free coproduct completion). A \emph{presentation} of an object $Z \in \cat{E}$ is a
-family together with an isomorphism $\Sigma(X, \partial X) \cong Z$. In a $\Fam$ category every
+counit of the free coproduct completion).
+
+\begin{definition}[Presentation]
+\label{def:conservativity:presentation}
+A \emph{presentation} of an object $Z \in \cat{E}$ is a family $(X, \partial X) \in
+\Fam(\cat{E})$ together with an isomorphism $\Sigma(X, \partial X) \cong Z$.
+\end{definition}
+
+\noindent
+In a $\Fam$ category every
 object is canonically presented, set-indexed coproducts being disjoint unions of index sets; in
 $\GLR(F)$ presentations are genuine data, since a closed predicate on the carrier of $Z$ need not
 be determined by its restrictions to the fibres of a presenting family.
 
-\paragraph{$\Poly$-types via realisation.}
+\subsubsection{Carriers}
 A polynomial $P$ over $\cat{E}$ embeds as a polynomial $\hat{P}$ over $\Fam(\cat{E})$, each
 $\const$-object replaced by its $\eta$-image, and $\Fam(\cat{E})$ has $\Poly$-types by
 \propref{polynomial-types:fam-has-poly}, since $\cat{E}$ has a terminal object and finite
@@ -368,12 +378,14 @@ products. The $\Poly$-types for $\cat{E}$ are the realisations: $\mu_{\alpha.P}(
 \noindent
 which routes an environment through $\Fam(\cat{E})$, where the initial algebras exist by
 construction, and realises the result back in $\cat{E}$. For this to yield
-\defref{polynomial-types:has-poly}, $\Sigma$ must preserve what the construction uses:
+\defref{polynomial-types:has-poly}, $\Sigma$ must preserve \Replaced{the structure from which
+the initial algebras of $\Fam(\cat{E})$ are built}{what the construction uses}:
 set-indexed coproducts (immediate), the terminal object, and finite products, the last requiring
-products to distribute over set-indexed coproducts (a consequence of the exponentials).
+products to distribute over set-indexed coproducts (a consequence of the exponentials). \Added{These
+requirements reappear as hypotheses of \thmref{conservativity:transfer}.}
 
-\paragraph{Operations and laws.}
-These do not simply transport along the resulting isomorphisms: the algebra map of
+\subsubsection{Operations and laws}
+The algebra map and catamorphism do not simply transport along the resulting isomorphisms: the algebra map of
 $\mu_{\alpha.\hat{P}}$ lives at an environment containing the $\Fam(\cat{E})$-object
 $\mu_{\alpha.\hat{P}}$ itself, whereas its realisation must live at the presented object
 $\Sigma\, \mu_{\alpha.\hat{P}}$. The adjunction $\Sigma \dashv \eta$, where $\eta : \cat{E}
