@@ -327,11 +327,19 @@ data does not interfere. $U$ does not preserve exponentials, which is why
 \subsection{$\Poly$-types in $\GLR(F)$}
 \label{sec:conservativity:glr-poly-types}
 
-$\GLR(F)$ has $\Poly$-types. We prove this by transferring the construction of
-\secref{polynomial-types:fam}: realise families of $\GLR(F)$-objects as set-indexed coproducts, and
-obtain $\Poly$-types for $\GLR(F)$ from those of $\Fam(\GLR(F))$. The construction works for
-any category with the structure listed in \thmref{conservativity:transfer}; preservation by $\GF$
-is the subject of \secref{conservativity:gf-poly-types}.
+\Replaced{$\GLR(F)$ has $\Poly$-types. The category $\Fam(\GLR(F))$ has them already
+(\propref{polynomial-types:fam-has-poly}), so the task is to move the structure from the free
+coproduct completion (\secref{polynomial-types:fam}) back to $\GLR(F)$ itself: each family of
+$\GLR(F)$-objects can be \emph{realised} as an actual object, its set-indexed coproduct, and the
+initial algebras of $\GLR(F)$ are obtained as realisations of those of $\Fam(\GLR(F))$. The
+construction works for any category with the structure listed in
+\thmref{conservativity:transfer}; preservation by $\GF$ is the subject of
+\secref{conservativity:gf-poly-types}.}{$\GLR(F)$ has $\Poly$-types. We prove this by
+transferring the construction of \secref{polynomial-types:fam}: realise families of
+$\GLR(F)$-objects as set-indexed coproducts, and obtain $\Poly$-types for $\GLR(F)$ from those
+of $\Fam(\GLR(F))$. The construction works for any category with the structure listed in
+\thmref{conservativity:transfer}; preservation by $\GF$ is the subject of
+\secref{conservativity:gf-poly-types}.}
 
 \paragraph{Realisation.}
 Let $\cat{E}$ be a category with set-indexed coproducts. The functor
@@ -370,9 +378,13 @@ $\mu_{\alpha.\hat{P}}$ lives at an environment containing the $\Fam(\cat{E})$-ob
 $\mu_{\alpha.\hat{P}}$ itself, whereas its realisation must live at the presented object
 $\Sigma\, \mu_{\alpha.\hat{P}}$. The adjunction $\Sigma \dashv \eta$, where $\eta : \cat{E}
 \to \Fam(\cat{E})$ embeds an object as a family over a one-element set, transposes algebras and
-catamorphisms between the two categories; what remains is that realisation is invariant under
+catamorphisms between the two categories\Added{, an instance of adjoint folds \citep{hinze13};
+computing a fixed point through an adjunction goes back to the categorical fixed-point calculus
+\citep{backhouse95}}. What remains is that realisation is invariant under
 replacing environment entries by families with isomorphic realisations. We package this as a
-property of the polynomial, established by induction.
+property of the polynomial, established by induction. \Added{This property, \emph{collapse} below,
+does not to our knowledge appear in the literature; a standard replacement, if one exists, would
+simplify the transfer.}
 
 \begin{definition}[Collapse]
 \label{def:conservativity:collapse}
