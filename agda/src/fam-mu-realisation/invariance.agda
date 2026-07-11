@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The collapse interface: realisation of the polynomial interpretation is
+-- The invariance interface: realisation of the polynomial interpretation is
 -- invariant under replacing environment entries by families with isomorphic
 -- realisations, naturally in the strong action, compatibly with identities
 -- and composition. Cases: constants, variables, sums and products.
@@ -21,7 +21,7 @@ import fam-realisation
 import polynomial-functor
 import fam-mu-realisation.pure
 
-module fam-mu-realisation.collapse {o m e} (os es : Level) {ℰ : Category o m e}
+module fam-mu-realisation.invariance {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
   (ℰT : HasTerminal ℰ) (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP)
   (ℰSC : HasStrongCoproducts ℰ ℰP)
@@ -29,11 +29,11 @@ module fam-mu-realisation.collapse {o m e} (os es : Level) {ℰ : Category o m e
 
 open fam-mu-realisation.pure os es ℰC ℰT ℰP ℰE ℰSC public
 
--- The collapse interface for a polynomial: realisation of its application is
+-- The invariance interface for a polynomial: realisation of its application is
 -- invariant under replacing environment entries by families with isomorphic
 -- realisations, naturally in the strong action, and trivially so at identical
 -- environments.
-record CollapseAt {n} (P : Poly ℰ n) : Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔ Level.suc es) where
+record InvarianceAt {n} (P : Poly ℰ n) : Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔ Level.suc es) where
   field
     iso : (δ̂₁ δ̂₂ : Fin n → FM.Obj) →
           (∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
@@ -56,25 +56,25 @@ record CollapseAt {n} (P : Poly ℰ n) : Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔
            iso δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .fwd
            ≈ iso δ̂₂ δ̂₃ isos₂₃ .fwd ∘ iso δ̂₁ δ̂₂ isos₁₂ .fwd
 
-open CollapseAt public
+open InvarianceAt public
 
--- The collapse interface at constants and variables.
-collapse-const : ∀ {n} (A : obj) → CollapseAt {n} (const A)
-collapse-const A .iso δ̂₁ δ̂₂ isos = Iso-refl
-collapse-const A .natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sq-refl _
-collapse-const A .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-sym id-left
+-- The invariance interface at constants and variables.
+invariance-const : ∀ {n} (A : obj) → InvarianceAt {n} (const A)
+invariance-const A .iso δ̂₁ δ̂₂ isos = Iso-refl
+invariance-const A .natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sq-refl _
+invariance-const A .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-sym id-left
 
-collapse-var : ∀ {n} (i : Fin n) → CollapseAt {n} (var i)
-collapse-var i .iso δ̂₁ δ̂₂ isos = isos i
-collapse-var i .natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sqs i
-collapse-var i .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-refl
+invariance-var : ∀ {n} (i : Fin n) → InvarianceAt {n} (var i)
+invariance-var i .iso δ̂₁ δ̂₂ isos = isos i
+invariance-var i .natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sqs i
+invariance-var i .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-refl
 
--- Collapses at pointwise-equal isomorphism families are equal.
-collapse-ext : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q) (δ̂₁ δ̂₂ : Fin n → FM.Obj)
+-- Invariance isomorphisms at pointwise-equal isomorphism families are equal.
+invariance-ext : ∀ {n} (Q : Poly ℰ n) (CQ' : InvarianceAt Q) (δ̂₁ δ̂₂ : Fin n → FM.Obj)
                (isos isos' : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
                (∀ i → isos i .fwd ≈ isos' i .fwd) →
                CQ' .iso δ̂₁ δ̂₂ isos .fwd ≈ CQ' .iso δ̂₁ δ̂₂ isos' .fwd
-collapse-ext {n} Q CQ' δ̂₁ δ̂₂ isos isos' hyps =
+invariance-ext {n} Q CQ' δ̂₁ δ̂₂ isos isos' hyps =
   p₂-cancel (≈-trans (≈-sym strip₁) (≈-trans (CQ' .natural δ̂₁ δ̂₂ isos isos' (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i}) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) sqs) strip₂))
   where
     strip₁ : fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₂) (FMu.strong-fmor (Poly-map η Q) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}))
@@ -98,16 +98,16 @@ collapse-ext {n} Q CQ' δ̂₁ δ̂₂ isos isos' hyps =
           (≈-trans (∘-cong₁ (hyps i))
             (≈-sym (∘-cong₂ (fmorη-p₂ ℰT'.witness (δ̂₁ i))))))
 
--- Collapse at pointwise-identity isomorphisms is the identity: by
--- extensionality it is the collapse at reflexivity families, which is
+-- Invariance at pointwise-identity isomorphisms is the identity: by
+-- extensionality it is the invariance at reflexivity families, which is
 -- idempotent by composition coherence, and an idempotent isomorphism is the
 -- identity.
-collapse-refl : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q) (δ̂ : Fin n → FM.Obj)
+invariance-refl : ∀ {n} (Q : Poly ℰ n) (CQ' : InvarianceAt Q) (δ̂ : Fin n → FM.Obj)
                 (isos : ∀ i → Iso (realise .fobj (δ̂ i)) (realise .fobj (δ̂ i))) →
                 (∀ i → isos i .fwd ≈ id _) →
                 CQ' .iso δ̂ δ̂ isos .fwd ≈ id _
-collapse-refl Q CQ' δ̂ isos hyps =
-  ≈-trans (collapse-ext Q CQ' δ̂ δ̂ isos (λ i → Iso-refl) hyps)
+invariance-refl Q CQ' δ̂ isos hyps =
+  ≈-trans (invariance-ext Q CQ' δ̂ δ̂ isos (λ i → Iso-refl) hyps)
     (≈-trans (≈-sym id-right)
       (≈-trans (∘-cong₂ (≈-sym (CQ' .iso δ̂ δ̂ (λ i → Iso-refl) .fwd∘bwd≈id)))
         (≈-trans (≈-sym (assoc _ _ _))
@@ -117,11 +117,11 @@ collapse-refl Q CQ' δ̂ isos hyps =
            ≈ CQ' .iso δ̂ δ̂ (λ i → Iso-refl) .fwd
     idem =
       ≈-trans (≈-sym (CQ' .comp δ̂ δ̂ δ̂ (λ i → Iso-refl) (λ i → Iso-refl)))
-        (collapse-ext Q CQ' δ̂ δ̂ (λ i → Iso-trans Iso-refl Iso-refl) (λ i → Iso-refl) (λ i → id-left))
+        (invariance-ext Q CQ' δ̂ δ̂ (λ i → Iso-trans Iso-refl Iso-refl) (λ i → Iso-refl) (λ i → id-left))
 
--- Two composite collapse paths with pointwise-equal composite agreements
+-- Two composite invariance paths with pointwise-equal composite agreements
 -- coincide.
-collapse-path-eq : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q)
+invariance-path-eq : ∀ {n} (Q : Poly ℰ n) (CQ' : InvarianceAt Q)
                    (δ̂₁ δ̂₂ δ̂₂' δ̂₃ : Fin n → FM.Obj)
                    (as₁ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
                    (as₂ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i)))
@@ -130,11 +130,11 @@ collapse-path-eq : ∀ {n} (Q : Poly ℰ n) (CQ' : CollapseAt Q)
                    (∀ i → Iso-trans (as₁ i) (as₂ i) .fwd ≈ Iso-trans (bs₁ i) (bs₂ i) .fwd) →
                    CQ' .iso _ _ as₂ .fwd ∘ CQ' .iso _ _ as₁ .fwd
                    ≈ CQ' .iso _ _ bs₂ .fwd ∘ CQ' .iso _ _ bs₁ .fwd
-collapse-path-eq Q CQ' δ̂₁ δ̂₂ δ̂₂' δ̂₃ as₁ as₂ bs₁ bs₂ pw =
+invariance-path-eq Q CQ' δ̂₁ δ̂₂ δ̂₂' δ̂₃ as₁ as₂ bs₁ bs₂ pw =
   ≈-trans (≈-sym (CQ' .comp δ̂₁ δ̂₂ δ̂₃ as₁ as₂))
-    (≈-trans (collapse-ext Q CQ' δ̂₁ δ̂₃ _ _ pw) (CQ' .comp δ̂₁ δ̂₂' δ̂₃ bs₁ bs₂))
+    (≈-trans (invariance-ext Q CQ' δ̂₁ δ̂₃ _ _ pw) (CQ' .comp δ̂₁ δ̂₂' δ̂₃ bs₁ bs₂))
 
--- Coproduct machinery for the sum case of the collapse.
+-- Coproduct machinery for the sum case of the invariance.
 ℰCP = strong-coproducts→coproducts ℰT ℰSC
 module ℰCPm = HasCoproducts ℰCP
 module ℰSCm = HasStrongCoproducts ℰSC
@@ -256,11 +256,11 @@ fmorη-scopair Γ X̂ Ŷ {Ẑ} u v =
         fmorη Γ Ŷ v
       ∎ where open ≈-Reasoning isEquiv
 
--- The collapse interface at sums.
-collapse-sum : ∀ {n} {P Q : Poly ℰ n} → CollapseAt P → CollapseAt Q →
-               CollapseAt (P + Q)
+-- The invariance interface at sums.
+invariance-sum : ∀ {n} {P Q : Poly ℰ n} → InvarianceAt P → InvarianceAt Q →
+               InvarianceAt (P + Q)
 private
-  module SumCase {n} {P Q : Poly ℰ n} (CP : CollapseAt P) (CQ : CollapseAt Q) where
+  module SumCase {n} {P Q : Poly ℰ n} (CP : InvarianceAt P) (CQ : InvarianceAt Q) where
     X̂ : (Fin n → FM.Obj) → FM.Obj
     X̂ δ̂ = FM.fobj FM.μObj (Poly-map η P) δ̂
 
@@ -401,11 +401,11 @@ private
                     (≈-trans (∘-cong₂ (ℰCPm.copair-in₂ _ _))
                       (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (K⊕-in₂ (X̂ ε̂₂) (Ŷ ε̂₂)))))))
 
-collapse-sum {n} {P} {Q} CP CQ .iso = SumCase.sumIso CP CQ
-collapse-sum {n} {P} {Q} CP CQ .natural = SumCase.sumNat CP CQ
-collapse-sum {n} {P} {Q} CP CQ .comp = SumCase.sumComp CP CQ
+invariance-sum {n} {P} {Q} CP CQ .iso = SumCase.sumIso CP CQ
+invariance-sum {n} {P} {Q} CP CQ .natural = SumCase.sumNat CP CQ
+invariance-sum {n} {P} {Q} CP CQ .comp = SumCase.sumComp CP CQ
 
--- Product machinery for the product case of the collapse.
+-- Product machinery for the product case of the invariance.
 K× : ∀ (X̂ Ŷ : FM.Obj) → Iso (realise .fobj (FamP.prod X̂ Ŷ))
                             (ℰP.prod (realise .fobj X̂) (realise .fobj Ŷ))
 K× X̂ Ŷ = FR.realise-products-iso ℰP ℰE X̂ Ŷ
@@ -485,11 +485,11 @@ fmorη-sprodm Γ X̂ Ŷ {Ẑ₁} {Ẑ₂} u v =
         fmorη Γ Ŷ v ∘co (ℰP.p₂ ∘ ℰP.p₂)
       ∎ where open ≈-Reasoning isEquiv
 
--- The collapse interface at products.
-collapse-prod : ∀ {n} {P Q : Poly ℰ n} → CollapseAt P → CollapseAt Q →
-                CollapseAt (P × Q)
+-- The invariance interface at products.
+invariance-prod : ∀ {n} {P Q : Poly ℰ n} → InvarianceAt P → InvarianceAt Q →
+                InvarianceAt (P × Q)
 private
-  module ProdCase {n} {P Q : Poly ℰ n} (CP : CollapseAt P) (CQ : CollapseAt Q) where
+  module ProdCase {n} {P Q : Poly ℰ n} (CP : InvarianceAt P) (CQ : InvarianceAt Q) where
     X̂ : (Fin n → FM.Obj) → FM.Obj
     X̂ δ̂ = FM.fobj FM.μObj (Poly-map η P) δ̂
 
@@ -615,9 +615,9 @@ private
             mid
           ∎ where open ≈-Reasoning isEquiv
 
-collapse-prod {n} {P} {Q} CP CQ .iso = ProdCase.prodIso CP CQ
-collapse-prod {n} {P} {Q} CP CQ .natural = ProdCase.prodNat CP CQ
-collapse-prod {n} {P} {Q} CP CQ .comp = ProdCase.prodComp CP CQ
+invariance-prod {n} {P} {Q} CP CQ .iso = ProdCase.prodIso CP CQ
+invariance-prod {n} {P} {Q} CP CQ .natural = ProdCase.prodNat CP CQ
+invariance-prod {n} {P} {Q} CP CQ .comp = ProdCase.prodComp CP CQ
 
 -- Extend an isomorphism family by an isomorphism at the bound entry.
 mixed : ∀ {n} {δ̂₁ δ̂₂ : Fin n → FM.Obj}
@@ -629,7 +629,7 @@ mixed isos J (Fin.suc i) = isos i
 
 -- The strong action at extended environments commutes with an isomorphism at
 -- the bound entry and the given isomorphisms elsewhere.
-cross-mixed : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
+cross-mixed : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
               {δ̂₁ δ̂₂ ε̂₁ ε̂₂ : Fin n → FM.Obj}
               (isosδ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
               (isosε : ∀ i → Iso (realise .fobj (ε̂₁ i)) (realise .fobj (ε̂₂ i)))
@@ -655,14 +655,14 @@ cross-mixed Q CQ {Γ} {δ̂₁} {δ̂₂} {ε̂₁} {ε̂₂} isosδ isosε {Ŷ�
     compats Fin.zero    = sq-p₂ J
     compats (Fin.suc i) = sqs i
 
--- A collapse at realisations of pure Fam(ℰ) morphisms is the realised plain
+-- A invariance at realisations of pure Fam(ℰ) morphisms is the realised plain
 -- action.
-pure-collapse : ∀ {n} (Q : Poly ℰ (suc n)) (CQ' : CollapseAt Q) (δ̂₁ δ̂₂ : Fin (suc n) → FM.Obj)
+pure-invariance : ∀ {n} (Q : Poly ℰ (suc n)) (CQ' : InvarianceAt Q) (δ̂₁ δ̂₂ : Fin (suc n) → FM.Obj)
                 (ms : ∀ i → FM.Mor (δ̂₁ i) (δ̂₂ i))
                 (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
                 (∀ i → isos i .fwd ≈ realise .fmor (ms i)) →
                 CQ' .iso δ̂₁ δ̂₂ isos .fwd ≈ realise .fmor (FMu.fmor (Poly-map η Q) ms)
-pure-collapse {n} Q CQ' δ̂₁ δ̂₂ ms isos hyps =
+pure-invariance {n} Q CQ' δ̂₁ δ̂₂ ms isos hyps =
   p₂-cancel (≈-trans (≈-sym strip₁) (≈-trans (CQ' .natural δ̂₁ δ̂₂ isos (λ i → Iso-refl) (λ i → FM.Mor-∘ (ms i) (FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}) sqs) strip₂))
   where
     strip₁ : fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₂) (FMu.strong-fmor (Poly-map η Q) (λ i → FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₂ i}))
@@ -676,7 +676,7 @@ pure-collapse {n} Q CQ' δ̂₁ δ̂₂ ms isos hyps =
               ∘ fmorη ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.strong-fmor (Poly-map η Q) (λ i → FM.Mor-∘ (ms i) (FamP.p₂ {x = η .fobj ℰT'.witness} {y = δ̂₁ i})))
              ≈ realise .fmor (FMu.fmor (Poly-map η Q) ms) ∘ ℰP.p₂
     strip₂ =
-      ≈-trans (∘-cong₁ (collapse-refl Q CQ' δ̂₂ (λ i → Iso-refl) (λ i → ≈-refl)))
+      ≈-trans (∘-cong₁ (invariance-refl Q CQ' δ̂₂ (λ i → Iso-refl) (λ i → ≈-refl)))
         (≈-trans id-left
           (≈-trans (fmorη-cong (FamC.≈-sym (sf-pure Q δ̂₁ δ̂₂ ms)))
             (fmorη-pure ℰT'.witness (FM.fobj FM.μObj (Poly-map η Q) δ̂₁) (FMu.fmor (Poly-map η Q) ms))))

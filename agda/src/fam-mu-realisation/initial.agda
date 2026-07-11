@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- The initial-algebra package carried by a realised μ-object, against an
--- assumed collapse family for its polynomial.
+-- assumed invariance family for its polynomial.
 
 open import Level using (Level; _⊔_)
 open import Data.Nat using (ℕ; suc)
@@ -17,7 +17,7 @@ import fam
 import fam-mu-types
 import fam-realisation
 import polynomial-functor
-import fam-mu-realisation.collapse
+import fam-mu-realisation.invariance
 
 module fam-mu-realisation.initial {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
@@ -25,19 +25,19 @@ module fam-mu-realisation.initial {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰSC : HasStrongCoproducts ℰ ℰP)
   where
 
-open fam-mu-realisation.collapse os es ℰC ℰT ℰP ℰE ℰSC public
+open fam-mu-realisation.invariance os es ℰC ℰT ℰP ℰE ℰSC public
 
--- The initial-algebra package for a polynomial, against an assumed collapse
+-- The initial-algebra package for a polynomial, against an assumed invariance
 -- family and its naturality with respect to the strong action. The algebra
 -- map realises the Fam(ℰ) algebra map and corrects the bound-variable entry
--- by collapse; the fold transposes the algebra to Fam(ℰ), folds there, and
+-- by invariance; the fold transposes the algebra to Fam(ℰ), folds there, and
 -- transposes back; β follows from the Fam(ℰ) β law pushed through the
 -- co-Kleisli functoriality of realisation.
 module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
-    (CP : CollapseAt P)
+    (CP : InvarianceAt P)
   where
 
-  open CollapseAt CP using () renaming (iso to Kiso'; natural to Knat)
+  open InvarianceAt CP using () renaming (iso to Kiso'; natural to Knat)
 
   private
     P̂ = Poly-map η P
@@ -76,7 +76,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     h~ {Γ} {A} h = ctxη Γ (Creal P δ̂) h
 
     -- Compatibility of a transposed morphism with the counit component of the
-    -- collapse, given its counit form.
+    -- invariance, given its counit form.
     compat-zero : ∀ {Γ A} (u : FM.Mor (FamP.prod (η .fobj Γ) μ̂) (η .fobj A))
                   (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
                   (realise-η-iso A .fwd ∘ fmorη Γ μ̂ u ≈ h) →
@@ -112,7 +112,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       ≈-trans (∘-cong₂ (ℰP.pair-cong ≈-refl id-left))
         (≈-trans (∘-cong₂ pair-p₁p₂-id) id-right)
 
-    -- The collapse-naturality square for a Fam(ℰ) morphism in counit form.
+    -- The invariance-naturality square for a Fam(ℰ) morphism in counit form.
     key : ∀ {Γ A} (u : FM.Mor (FamP.prod (η .fobj Γ) μ̂) (η .fobj A))
           (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
           (realise-η-iso A .fwd ∘ fmorη Γ μ̂ u ≈ h) →
@@ -125,7 +125,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
           (FMu.strong-extend-mor (λ i → FamP.p₂) (h~ h))
           (FMu.strong-extend-mor (λ i → FamP.p₂) u)
           compats)
-        (≈-trans (∘-cong₁ (collapse-refl P CP (extend δ̂ (η .fobj A)) (λ i → Iso-refl) (λ i → ≈-refl))) id-left)
+        (≈-trans (∘-cong₁ (invariance-refl P CP (extend δ̂ (η .fobj A)) (λ i → Iso-refl) (λ i → ≈-refl))) id-left)
       where
         compats : ∀ i → fmorη Γ (extend δ̂ μ̂ i) (FMu.strong-extend-mor (λ j → FamP.p₂) u i) ∘co (inIsos i .fwd ∘ ℰP.p₂)
                   ≈ Iso-refl .fwd ∘ fmorη Γ (extend δ̂ (η .fobj (Creal P δ̂)) i) (FMu.strong-extend-mor (λ j → FamP.p₂) (h~ h) i)
@@ -195,7 +195,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       hypĥ : cA ∘ fmorη Γ μ̂ ĥ ≈ h
       hypĥ = absorb μ̂ h
 
-      -- The given square, with the collapse cancelled and the algebra map bare.
+      -- The given square, with the invariance cancelled and the algebra map bare.
       square' : h ∘co (Rα ∘ ℰP.p₂) ≈ a ∘co fmorη Γ (F^ μ̂) sfH
       square' =
         begin
@@ -253,7 +253,7 @@ sect-p₂ {X} =
 
 -- The plain form of a fold in the terminal context commutes with the algebra
 -- map, against the plain form of the realised strong action.
-plain-β : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) (CQ : CollapseAt Q) {D : obj}
+plain-β : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) (CQ : InvarianceAt Q) {D : obj}
           (c : ℰP.prod ℰT'.witness (Greal Q δ̂ D) ⇒ D) →
           (Initiality.foldR Q δ̂ CQ c ∘ ℰP.pair ℰT'.to-terminal (id _)) ∘ Initiality.inR Q δ̂ CQ
           ≈ c ∘ ℰP.pair ℰT'.to-terminal (Gmap Q δ̂ (Initiality.foldR Q δ̂ CQ c) ∘ ℰP.pair ℰT'.to-terminal (id _))
@@ -286,8 +286,8 @@ plain-β Q δ̂ CQ {D} c =
         (≈-trans (∘-cong₂ (ℰP.pair-natural _ _ _))
           (∘-cong₂ (ℰP.pair-cong (ℰT'.to-terminal-unique _ _) ≈-refl)))
 
--- The realised algebra map, recovered from the collapse form of inR.
-inR-K : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) (CQ : CollapseAt Q) →
+-- The realised algebra map, recovered from the invariance form of inR.
+inR-K : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) (CQ : InvarianceAt Q) →
         realise .fmor (FMu.α (Poly-map η Q) δ̂)
         ≈ Initiality.inR Q δ̂ CQ ∘
            CQ .iso (extend δ̂ (η .fobj (Creal Q δ̂))) (extend δ̂ (FM.μObj (Poly-map η Q) δ̂)) (Initiality.inIsos Q δ̂ CQ) .bwd

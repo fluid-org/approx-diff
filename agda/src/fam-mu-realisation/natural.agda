@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Naturality of the μ-collapse in the strong action, closing the collapse
--- induction: every polynomial admits environment collapse.
+-- Naturality of the μ-invariance in the strong action, closing the invariance
+-- induction: every polynomial admits environment invariance.
 
 open import Level using (Level; _⊔_)
 open import Data.Nat using (ℕ; suc)
@@ -28,8 +28,8 @@ module fam-mu-realisation.natural {o m e} (os es : Level) {ℰ : Category o m e}
 open fam-mu-realisation.mu-iso os es ℰC ℰT ℰP ℰE ℰSC public
 
 -- The realised strong μ-action is the fold of the realised algebra, corrected
--- by the collapse at the bound-variable entry.
-module SμfFold {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
+-- by the invariance at the bound-variable entry.
+module SμfFold {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
     (δ̂ ε̂ : Fin n → FM.Obj)
     (gs : ∀ i → FM.Mor (FamP.prod (η .fobj Γ) (δ̂ i)) (ε̂ i))
   where
@@ -107,10 +107,10 @@ module SμfFold {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
   sμf-fold : fmorη Γ (FM.μObj Q̂ δ̂) (FMu.strong-μ-fmor Q̂ gs) ≈ Mδ.foldR aStar
   sμf-fold = Mδ.foldR-η aStar A' sμf-square
 
--- The naturality of the μ-collapse: the last field of the collapse interface
--- at μ. Established by fold uniqueness, with the collapse paths identified
+-- The naturality of the μ-invariance: the last field of the invariance interface
+-- at μ. Established by fold uniqueness, with the invariance paths identified
 -- through composition coherence and extensionality.
-module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
+module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
     (δ̂₁ δ̂₂ ε̂₁ ε̂₂ : Fin n → FM.Obj)
     (isosδ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
     (isosε : ∀ i → Iso (realise .fobj (ε̂₁ i)) (realise .fobj (ε̂₂ i)))
@@ -129,11 +129,11 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
     module Mε₂ = Initiality Q ε̂₂ CQ
     module Sδ₁ = SμfFold Q CQ δ̂₁ ε̂₁ gs₁
     module Sδ₂ = SμfFold Q CQ δ̂₂ ε̂₂ gs₂
-    module MCδ = MuCollapse Q CQ δ̂₁ δ̂₂ isosδ
-    module MCε = MuCollapse Q CQ ε̂₁ ε̂₂ isosε
+    module MCδ = MuInvariance Q CQ δ̂₁ δ̂₂ isosδ
+    module MCε = MuInvariance Q CQ ε̂₁ ε̂₂ isosε
 
-    muδ = MCδ.mu-collapse
-    muε = MCε.mu-collapse
+    muδ = MCδ.mu-invariance
+    muε = MCε.mu-invariance
     C₁ε = Creal Q ε̂₁
     C₂ε = Creal Q ε̂₂
 
@@ -150,18 +150,18 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
 
     Pc-real : CQ .iso (extend ε̂₁ (η .fobj C₁ε)) (extend ε̂₁ (η .fobj C₂ε)) Pc-isos .fwd
               ≈ realise .fmor NFε₁
-    Pc-real = pure-collapse Q CQ _ _ (pureExt ε̂₁ f̂ε) Pc-isos hyps
+    Pc-real = pure-invariance Q CQ _ _ (pureExt ε̂₁ f̂ε) Pc-isos hyps
       where
         hyps : ∀ i → Pc-isos i .fwd ≈ realise .fmor (pureExt ε̂₁ f̂ε i)
         hyps Fin.zero    = pureJ-fwd muε
         hyps (Fin.suc i) = ≈-sym (realise .fmor-id)
 
-    counit-collapse-square : Kε₂ .fwd ∘ (MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁)
+    counit-invariance-square : Kε₂ .fwd ∘ (MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁)
                              ≈ Mεμ .fwd ∘ Kε₁ .fwd
-    counit-collapse-square =
+    counit-invariance-square =
       ≈-trans (∘-cong₂ (∘-cong₂ (≈-sym Pc-real)))
         (≈-trans (∘-cong₂ (≈-sym (CQ .comp _ _ _ Pc-isos (MCε.extIsos C₂ε))))
-          (collapse-path-eq Q CQ (extend ε̂₁ (η .fobj C₁ε)) (extend ε̂₂ (η .fobj C₂ε)) (extend ε̂₁ (FM.μObj Q̂ ε̂₁)) (extend ε̂₂ (FM.μObj Q̂ ε̂₂)) (λ i → Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) Mε₂.inIsos Mε₁.inIsos (mixed isosε muε) pointwise))
+          (invariance-path-eq Q CQ (extend ε̂₁ (η .fobj C₁ε)) (extend ε̂₂ (η .fobj C₂ε)) (extend ε̂₁ (FM.μObj Q̂ ε̂₁)) (extend ε̂₂ (FM.μObj Q̂ ε̂₂)) (λ i → Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) Mε₂.inIsos Mε₁.inIsos (mixed isosε muε) pointwise))
       where
         pointwise : ∀ i → Iso-trans (Iso-trans (Pc-isos i) (MCε.extIsos C₂ε i)) (Mε₂.inIsos i) .fwd
                           ≈ Iso-trans (Mε₁.inIsos i) (mixed isosε muε i) .fwd
@@ -172,7 +172,7 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
                 (∘-cong₁ (≈-trans (∘-cong₁ (realise-η-iso C₂ε .fwd∘bwd≈id)) id-left))))
         pointwise (Fin.suc i) = id-left
 
-    -- Abbreviations for the δ̂-side collapse paths.
+    -- Abbreviations for the δ̂-side invariance paths.
     KK₁ = Sδ₁.KKε
     KK₂ = Sδ₂.KKε
     Mδμ = CQ .iso (extend δ̂₁ (FM.μObj Q̂ ε̂₁)) (extend δ̂₂ (FM.μObj Q̂ ε̂₂)) (mixed isosδ muε)
@@ -183,17 +183,17 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
 
     Pc2-real : CQ .iso (extend δ̂₂ (η .fobj C₁ε)) (extend δ̂₂ (η .fobj C₂ε)) Pc2-isos .fwd
                ≈ realise .fmor NF₂
-    Pc2-real = pure-collapse Q CQ _ _ (pureExt δ̂₂ f̂ε) Pc2-isos hyps
+    Pc2-real = pure-invariance Q CQ _ _ (pureExt δ̂₂ f̂ε) Pc2-isos hyps
       where
         hyps : ∀ i → Pc2-isos i .fwd ≈ realise .fmor (pureExt δ̂₂ f̂ε i)
         hyps Fin.zero    = pureJ-fwd muε
         hyps (Fin.suc i) = ≈-sym (realise .fmor-id)
 
-    -- The δ̂-side collapse paths from the fold algebra's environment agree.
-    env-collapse-square : Mδμ .fwd ∘ KK₁ .fwd
+    -- The δ̂-side invariance paths from the fold algebra's environment agree.
+    env-invariance-square : Mδμ .fwd ∘ KK₁ .fwd
                           ≈ (KK₂ .fwd ∘ realise .fmor NF₂) ∘ MCδ.GI C₁ε .fwd
-    env-collapse-square =
-      ≈-trans (collapse-path-eq Q CQ (extend δ̂₁ (η .fobj C₁ε)) (extend δ̂₁ (FM.μObj Q̂ ε̂₁)) (extend δ̂₂ (η .fobj C₁ε)) (extend δ̂₂ (FM.μObj Q̂ ε̂₂)) Sδ₁.KKisos (mixed isosδ muε) (MCδ.extIsos C₁ε) (λ i → Iso-trans (Pc2-isos i) (Sδ₂.KKisos i)) pointwise)
+    env-invariance-square =
+      ≈-trans (invariance-path-eq Q CQ (extend δ̂₁ (η .fobj C₁ε)) (extend δ̂₁ (FM.μObj Q̂ ε̂₁)) (extend δ̂₂ (η .fobj C₁ε)) (extend δ̂₂ (FM.μObj Q̂ ε̂₂)) Sδ₁.KKisos (mixed isosδ muε) (MCδ.extIsos C₁ε) (λ i → Iso-trans (Pc2-isos i) (Sδ₂.KKisos i)) pointwise)
         (∘-cong₁ (≈-trans (CQ .comp _ _ _ Pc2-isos Sδ₂.KKisos) (∘-cong₂ Pc2-real)))
       where
         pointwise : ∀ i → Iso-trans (Sδ₁.KKisos i) (mixed isosδ muε i) .fwd
@@ -226,10 +226,10 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
     B' : ℰP.prod Γ (Creal Q δ̂₂) ⇒ Creal Q ε̂₂
     B' = (muε .fwd ∘ A₁) ∘co (muδ .bwd ∘ ℰP.p₂)
 
-    -- The backward form of the counit collapse square.
-    counit-collapse-bwd : (MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁) ∘ Kε₁ .bwd
+    -- The backward form of the counit invariance square.
+    counit-invariance-bwd : (MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁) ∘ Kε₁ .bwd
                           ≈ Kε₂ .bwd ∘ Mεμ .fwd
-    counit-collapse-bwd =
+    counit-invariance-bwd =
       begin
         (MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁) ∘ Kε₁ .bwd
       ≈˘⟨ id-left ⟩
@@ -240,20 +240,20 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
         Kε₂ .bwd ∘ (Kε₂ .fwd ∘ ((MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁) ∘ Kε₁ .bwd))
       ≈˘⟨ ∘-cong₂ (assoc _ _ _) ⟩
         Kε₂ .bwd ∘ ((Kε₂ .fwd ∘ (MCε.GI C₂ε .fwd ∘ realise .fmor NFε₁)) ∘ Kε₁ .bwd)
-      ≈⟨ ∘-cong₂ (∘-cong₁ counit-collapse-square) ⟩
+      ≈⟨ ∘-cong₂ (∘-cong₁ counit-invariance-square) ⟩
         Kε₂ .bwd ∘ ((Mεμ .fwd ∘ Kε₁ .fwd) ∘ Kε₁ .bwd)
       ≈⟨ ∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (Kε₁ .fwd∘bwd≈id)) id-right)) ⟩
         Kε₂ .bwd ∘ Mεμ .fwd
       ∎ where open ≈-Reasoning isEquiv
 
-    -- The μ-collapse against the realised algebra map, in collapse form.
+    -- The μ-invariance against the realised algebra map, in invariance form.
     head-eq : muε .fwd ∘ realise .fmor (FMu.α Q̂ ε̂₁)
               ≈ Mε₂.inR ∘ (Kε₂ .bwd ∘ Mεμ .fwd)
     head-eq =
       ≈-trans (∘-cong₂ (inR-K Q ε̂₁ CQ))
         (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong₁ (mu-collapse-fwd-in Q CQ ε̂₁ ε̂₂ isosε))
-            (≈-trans (assoc _ _ _) (∘-cong₂ counit-collapse-bwd))))
+          (≈-trans (∘-cong₁ (mu-invariance-fwd-in Q CQ ε̂₁ ε̂₂ isosε))
+            (≈-trans (assoc _ _ _) (∘-cong₂ counit-invariance-bwd))))
 
     -- Gmap of the composite, decomposed into pure lifts around the crossing.
     gmapB' : Gmap Q δ̂₂ B' ≈ ((realise .fmor NF₂ ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ A₁) ∘co (realise .fmor NB₂ ∘ ℰP.p₂)
@@ -308,7 +308,7 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
         k₁-split =
           begin
             KK₁ .fwd ∘ ℰP.p₂
-          ≈⟨ ∘-cong₁ (iso-shuffle Mδμ _ _ env-collapse-square) ⟩
+          ≈⟨ ∘-cong₁ (iso-shuffle Mδμ _ _ env-invariance-square) ⟩
             (Mδμ .bwd ∘ ((KK₂ .fwd ∘ realise .fmor NF₂) ∘ MCδ.GI C₁ε .fwd)) ∘ ℰP.p₂
           ≈˘⟨ co-pure _ _ ⟩
             mδ ∘co (((KK₂ .fwd ∘ realise .fmor NF₂) ∘ MCδ.GI C₁ε .fwd) ∘ ℰP.p₂)
@@ -366,7 +366,7 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
           (≈-trans (∘-cong₂ (≈-sym (co-iso-cancel Mδμ (cross-mixed Q CQ isosδ isosε {Ŷ₁ = FM.μObj Q̂ ε̂₁} {Ŷ₂ = FM.μObj Q̂ ε̂₂} muε gs₁ gs₂ sqs))))
             (≈-trans (≈-sym (assoc _ _ _)) (CoK.∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (assoc _ _ _)))))))
 
-    -- The δ̂₁-side fold algebra, pushed under the ε̂-collapse.
+    -- The δ̂₁-side fold algebra, pushed under the ε̂-invariance.
     head₁-eq : muε .fwd ∘ Sδ₁.aStar ≈ HEAD ∘co (KK₁ .fwd ∘ ℰP.p₂)
     head₁-eq =
       ≈-trans (≈-sym (assoc _ _ _)) (CoK.∘-cong₁ head-inner)
@@ -396,7 +396,7 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
             (muε .fwd ∘ A₁) ∘co ((muδ .bwd ∘ ℰP.p₂) ∘co (Mδ₂.inR ∘ ℰP.p₂))
           ≈⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
             (muε .fwd ∘ A₁) ∘co ((muδ .bwd ∘ Mδ₂.inR) ∘ ℰP.p₂)
-          ≈⟨ CoK.∘-cong₂ (∘-cong₁ (mu-collapse-bwd-in Q CQ δ̂₁ δ̂₂ isosδ)) ⟩
+          ≈⟨ CoK.∘-cong₂ (∘-cong₁ (mu-invariance-bwd-in Q CQ δ̂₁ δ̂₂ isosδ)) ⟩
             (muε .fwd ∘ A₁) ∘co ((Mδ₁.inR ∘ (MCδ.GI (Creal Q δ̂₁) .bwd ∘ realise .fmor NB₂)) ∘ ℰP.p₂)
           ≈˘⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
             (muε .fwd ∘ A₁) ∘co ((Mδ₁.inR ∘ ℰP.p₂) ∘co ((MCδ.GI (Creal Q δ̂₁) .bwd ∘ realise .fmor NB₂) ∘ ℰP.p₂))
@@ -408,22 +408,22 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q) {Γ : obj}
             ((HEAD ∘co (Mδμ .bwd ∘ ℰP.p₂)) ∘co (KK₂ .fwd ∘ ℰP.p₂)) ∘co (((realise .fmor NF₂ ∘ ℰP.p₂) ∘co Gmap Q δ̂₂ A₁) ∘co (realise .fmor NB₂ ∘ ℰP.p₂))
           ∎ where open ≈-Reasoning isEquiv
 
-  -- The naturality square of the μ-collapse.
+  -- The naturality square of the μ-invariance.
   mu-natural : Sδ₂.A' ∘co (muδ .fwd ∘ ℰP.p₂) ≈ muε .fwd ∘ Sδ₁.A'
   mu-natural =
     co-iso-move muδ (≈-trans Sδ₂.sμf-fold (≈-sym (Mδ₂.foldR-η Sδ₂.aStar B' B-square)))
 
--- The μ case of the collapse interface.
-collapse-mu : ∀ {n} {P : Poly ℰ (suc n)} → CollapseAt P → CollapseAt (μ P)
-collapse-mu {n} {P} CP .iso = MuCollapse.mu-collapse P CP
-collapse-mu {n} {P} CP .natural {Γ} {ε̂₁} {ε̂₂} δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs =
+-- The μ case of the invariance interface.
+invariance-mu : ∀ {n} {P : Poly ℰ (suc n)} → InvarianceAt P → InvarianceAt (μ P)
+invariance-mu {n} {P} CP .iso = MuInvariance.mu-invariance P CP
+invariance-mu {n} {P} CP .natural {Γ} {ε̂₁} {ε̂₂} δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs =
   MuNat.mu-natural P CP δ̂₁ δ̂₂ ε̂₁ ε̂₂ isosδ isosε gs₁ gs₂ sqs
-collapse-mu {n} {P} CP .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = mu-collapse-comp P CP δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃
+invariance-mu {n} {P} CP .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = mu-invariance-comp P CP δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃
 
--- Every polynomial admits environment collapse.
-collapseAt : ∀ {n} (P : Poly ℰ n) → CollapseAt P
-collapseAt (const A) = collapse-const A
-collapseAt (var i)   = collapse-var i
-collapseAt (P + Q)   = collapse-sum (collapseAt P) (collapseAt Q)
-collapseAt (P × Q)   = collapse-prod (collapseAt P) (collapseAt Q)
-collapseAt (μ P)     = collapse-mu (collapseAt P)
+-- Every polynomial admits environment invariance.
+invarianceAt : ∀ {n} (P : Poly ℰ n) → InvarianceAt P
+invarianceAt (const A) = invariance-const A
+invarianceAt (var i)   = invariance-var i
+invarianceAt (P + Q)   = invariance-sum (invarianceAt P) (invarianceAt Q)
+invarianceAt (P × Q)   = invariance-prod (invarianceAt P) (invarianceAt Q)
+invarianceAt (μ P)     = invariance-mu (invarianceAt P)

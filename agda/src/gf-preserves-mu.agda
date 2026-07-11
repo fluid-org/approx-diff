@@ -128,7 +128,7 @@ module gf-preserves-mu
   obj-≡-iso : ∀ {X Y : Glued.obj} → X ≡ Y → Glued.Iso X Y
   obj-≡-iso ≡-refl = Glued.Iso-refl
 
-  -- GF preserves μ-types: skeleton in Fam(𝒞), carrier comparison, collapse at
+  -- GF preserves μ-types: skeleton in Fam(𝒞), carrier comparison, invariance at
   -- the checked-versus-embedded environments, and the realised skeleton in
   -- Fam(Gl), backwards.
   GFμ : Preserves-μ Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
@@ -138,7 +138,7 @@ module gf-preserves-mu
     (Glued.Iso-trans (check-iso (FMc.μObj (skeleton P) ε))
     (Glued.Iso-trans (functor-preserve-iso realise (check-μ P ε))
     (Glued.Iso-trans (μObj-≡-iso (≡-sym (Poly-map-skeleton-go η P (λ c → c))) (λ i → check (ε i)))
-    (Glued.Iso-trans (RGl.MuCollapse.mu-collapse SKg (RGl.collapseAt SKg)
+    (Glued.Iso-trans (RGl.MuInvariance.mu-invariance SKg (RGl.invarianceAt SKg)
                        (λ i → check (ε i)) (λ i → η .fobj (GF .fobj (ε i))) isos)
     (Glued.Iso-trans realised-skeleton
       (obj-≡-iso (≡-sym (Gl-Mu-obj (Poly-map GF P) (λ i → GF .fobj (δ i))))))))))
@@ -154,14 +154,14 @@ module gf-preserves-mu
       isos i = Glued.Iso-trans (Glued.Iso-sym (check-iso (ε i)))
                  (Glued.Iso-sym (RGl.realise-η-iso (GF .fobj (ε i))))
 
-      -- The realised skeleton in Fam(Gl), backwards: collapse the embedded
+      -- The realised skeleton in Fam(Gl), backwards: invariance the embedded
       -- environment onto the extended one, share the skeleton between P and its
       -- GF-image, and apply the Fam(Gl) skeleton lemma at the image polynomial.
       realised-skeleton : Glued.Iso (RGl.Creal SKg (λ i → η .fobj (GF .fobj (ε i))))
                                     (RGl.μ-objℰ (Poly-map GF P) (λ i → GF .fobj (δ i)))
       realised-skeleton =
         Glued.Iso-trans
-          (RGl.MuCollapse.mu-collapse SKg (RGl.collapseAt SKg)
+          (RGl.MuInvariance.mu-invariance SKg (RGl.invarianceAt SKg)
             (λ i → η .fobj (GF .fobj (ε i))) (δ̂ ++e cs̄)
             (λ i → obj-≡-iso (cong (realise .fobj)
                      (++e-map (λ X → η .fobj (GF .fobj X)) δ (consts P) i))))

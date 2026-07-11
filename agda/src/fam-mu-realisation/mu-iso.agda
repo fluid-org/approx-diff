@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The μ-collapse: environment collapse at μ-polynomials, by uniqueness of
+-- The μ-invariance: environment invariance at μ-polynomials, by uniqueness of
 -- folds; its identity and composition coherences and algebra-map squares.
 
 open import Level using (Level; _⊔_)
@@ -28,9 +28,9 @@ module fam-mu-realisation.mu-iso {o m e} (os es : Level) {ℰ : Category o m e}
 open fam-mu-realisation.initial os es ℰC ℰT ℰP ℰE ℰSC public
 
 -- Realisations of the μ-object at environments with isomorphic realisations
--- are isomorphic: fold each carrier into the other through the collapse of
+-- are isomorphic: fold each carrier into the other through the invariance of
 -- the polynomial's action, with the roundtrips by uniqueness of folds.
-module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
+module MuInvariance {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q)
     (δ̂₁ δ̂₂ : Fin n → FM.Obj)
     (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
   where
@@ -204,87 +204,87 @@ module MuCollapse {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
       (u ∘ ℰP.pair ℰP.p₁ v) ∘ ℰP.pair ℰTm.to-terminal (id _)
     ∎ where open ≈-Reasoning isEquiv
 
-  mu-collapse : Iso (Creal Q δ̂₁) (Creal Q δ̂₂)
-  mu-collapse .fwd = F' ∘ ℰP.pair ℰTm.to-terminal (id _)
-  mu-collapse .bwd = G' ∘ ℰP.pair ℰTm.to-terminal (id _)
-  mu-collapse .bwd∘fwd≈id =
+  mu-invariance : Iso (Creal Q δ̂₁) (Creal Q δ̂₂)
+  mu-invariance .fwd = F' ∘ ℰP.pair ℰTm.to-terminal (id _)
+  mu-invariance .bwd = G' ∘ ℰP.pair ℰTm.to-terminal (id _)
+  mu-invariance .bwd∘fwd≈id =
     ≈-trans (plait G' F')
       (≈-trans (∘-cong₁ (≈-trans (M₁.foldR-η _ _ square-GF) (≈-sym (M₁.foldR-η {Γ = 𝟙} _ _ square-p₂₁))))
         (ℰP.pair-p₂ _ _))
-  mu-collapse .fwd∘bwd≈id =
+  mu-invariance .fwd∘bwd≈id =
     ≈-trans (plait F' G')
       (≈-trans (∘-cong₁ (≈-trans (M₂.foldR-η _ _ square-FG) (≈-sym (M₂.foldR-η {Γ = 𝟙} _ _ square-p₂₂))))
         (ℰP.pair-p₂ _ _))
 
--- The forward map of the μ-collapse is a morphism of algebras.
-mu-collapse-fwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
+-- The forward map of the μ-invariance is a morphism of algebras.
+mu-invariance-fwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q)
                      (δ̂₁ δ̂₂ : Fin n → FM.Obj)
                      (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
-                     MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .fwd ∘ Initiality.inR Q δ̂₁ CQ
+                     MuInvariance.mu-invariance Q CQ δ̂₁ δ̂₂ isos .fwd ∘ Initiality.inR Q δ̂₁ CQ
                      ≈ Initiality.inR Q δ̂₂ CQ ∘
-                        (MuCollapse.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₂) .fwd ∘
-                         realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₁ (untranspose (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .fwd ∘ realise-η-iso (Creal Q δ̂₁) .fwd)))))
-mu-collapse-fwd-in Q CQ δ̂₁ δ̂₂ isos =
+                        (MuInvariance.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₂) .fwd ∘
+                         realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₁ (untranspose (MuInvariance.mu-invariance Q CQ δ̂₁ δ̂₂ isos .fwd ∘ realise-η-iso (Creal Q δ̂₁) .fwd)))))
+mu-invariance-fwd-in Q CQ δ̂₁ δ̂₂ isos =
   ≈-trans (plain-β Q δ̂₁ CQ _)
     (≈-trans (assoc _ _ _)
       (∘-cong₂
         (≈-trans (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _)))
           (∘-cong₂ (≈-trans (∘-cong₁ (Gmap-cong Q δ̂₁ plain-eq))
-            (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₁ (MC.mu-collapse .fwd)))
+            (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₁ (MC.mu-invariance .fwd)))
               (≈-trans (assoc _ _ _)
                 (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) id-right))))))))
   where
-    module MC = MuCollapse Q CQ δ̂₁ δ̂₂ isos
+    module MC = MuInvariance Q CQ δ̂₁ δ̂₂ isos
 
-    plain-eq : MC.F' ≈ MC.mu-collapse .fwd ∘ ℰP.p₂
+    plain-eq : MC.F' ≈ MC.mu-invariance .fwd ∘ ℰP.p₂
     plain-eq =
       ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ sect-p₂) id-right))
 
--- The backward map of the μ-collapse is a morphism of algebras.
-mu-collapse-bwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
+-- The backward map of the μ-invariance is a morphism of algebras.
+mu-invariance-bwd-in : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q)
                      (δ̂₁ δ̂₂ : Fin n → FM.Obj)
                      (isos : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i))) →
-                     MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .bwd ∘ Initiality.inR Q δ̂₂ CQ
+                     MuInvariance.mu-invariance Q CQ δ̂₁ δ̂₂ isos .bwd ∘ Initiality.inR Q δ̂₂ CQ
                      ≈ Initiality.inR Q δ̂₁ CQ ∘
-                        (MuCollapse.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₁) .bwd ∘
-                         realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₂ (untranspose (MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos .bwd ∘ realise-η-iso (Creal Q δ̂₂) .fwd)))))
-mu-collapse-bwd-in Q CQ δ̂₁ δ̂₂ isos =
+                        (MuInvariance.GI Q CQ δ̂₁ δ̂₂ isos (Creal Q δ̂₁) .bwd ∘
+                         realise .fmor (FMu.fmor (Poly-map η Q) (pureExt δ̂₂ (untranspose (MuInvariance.mu-invariance Q CQ δ̂₁ δ̂₂ isos .bwd ∘ realise-η-iso (Creal Q δ̂₂) .fwd)))))
+mu-invariance-bwd-in Q CQ δ̂₁ δ̂₂ isos =
   ≈-trans (plain-β Q δ̂₂ CQ _)
     (≈-trans (assoc _ _ _)
       (∘-cong₂
         (≈-trans (≈-trans (assoc _ _ _) (∘-cong₂ (ℰP.pair-p₂ _ _)))
           (∘-cong₂ (≈-trans (∘-cong₁ (Gmap-cong Q δ̂₂ plain-eq))
-            (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₂ (MC.mu-collapse .bwd)))
+            (≈-trans (∘-cong₁ (Gmap-pure Q δ̂₂ (MC.mu-invariance .bwd)))
               (≈-trans (assoc _ _ _)
                 (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) id-right))))))))
   where
-    module MC = MuCollapse Q CQ δ̂₁ δ̂₂ isos
+    module MC = MuInvariance Q CQ δ̂₁ δ̂₂ isos
 
-    plain-eq : MC.G' ≈ MC.mu-collapse .bwd ∘ ℰP.p₂
+    plain-eq : MC.G' ≈ MC.mu-invariance .bwd ∘ ℰP.p₂
     plain-eq =
       ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ sect-p₂) id-right))
 
--- The μ-collapse at a composite isomorphism family is the composite of the
--- μ-collapses.
-mu-collapse-comp : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : CollapseAt Q)
+-- The μ-invariance at a composite isomorphism family is the composite of the
+-- μ-invariances.
+mu-invariance-comp : ∀ {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q)
                    (δ̂₁ δ̂₂ δ̂₃ : Fin n → FM.Obj)
                    (isos₁₂ : ∀ i → Iso (realise .fobj (δ̂₁ i)) (realise .fobj (δ̂₂ i)))
                    (isos₂₃ : ∀ i → Iso (realise .fobj (δ̂₂ i)) (realise .fobj (δ̂₃ i))) →
-                   MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .fwd
-                   ≈ MuCollapse.mu-collapse Q CQ δ̂₂ δ̂₃ isos₂₃ .fwd ∘ MuCollapse.mu-collapse Q CQ δ̂₁ δ̂₂ isos₁₂ .fwd
-mu-collapse-comp {n} Q CQ δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ =
+                   MuInvariance.mu-invariance Q CQ δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i)) .fwd
+                   ≈ MuInvariance.mu-invariance Q CQ δ̂₂ δ̂₃ isos₂₃ .fwd ∘ MuInvariance.mu-invariance Q CQ δ̂₁ δ̂₂ isos₁₂ .fwd
+mu-invariance-comp {n} Q CQ δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ =
   ≈-trans (∘-cong₁ (≈-sym (MC₁₃.M₁.foldR-η {Γ = ℰT'.witness} _ (MC₂₃.F' ∘co MC₁₂.F') square)))
     (≈-sym (MC₁₂.plait MC₂₃.F' MC₁₂.F'))
   where
-    module MC₁₂ = MuCollapse Q CQ δ̂₁ δ̂₂ isos₁₂
-    module MC₂₃ = MuCollapse Q CQ δ̂₂ δ̂₃ isos₂₃
-    module MC₁₃ = MuCollapse Q CQ δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i))
+    module MC₁₂ = MuInvariance Q CQ δ̂₁ δ̂₂ isos₁₂
+    module MC₂₃ = MuInvariance Q CQ δ̂₂ δ̂₃ isos₂₃
+    module MC₁₃ = MuInvariance Q CQ δ̂₁ δ̂₃ (λ i → Iso-trans (isos₁₂ i) (isos₂₃ i))
 
     C₃ = Creal Q δ̂₃
 
     GIcomp : MC₂₃.GI C₃ .fwd ∘ MC₁₂.GI C₃ .fwd ≈ MC₁₃.GI C₃ .fwd
     GIcomp =
-      ≈-sym (≈-trans (collapse-ext Q CQ _ _ (MC₁₃.extIsos C₃) (λ i → Iso-trans (MC₁₂.extIsos C₃ i) (MC₂₃.extIsos C₃ i)) pw)
+      ≈-sym (≈-trans (invariance-ext Q CQ _ _ (MC₁₃.extIsos C₃) (λ i → Iso-trans (MC₁₂.extIsos C₃ i) (MC₂₃.extIsos C₃ i)) pw)
         (CQ .comp _ _ _ (MC₁₂.extIsos C₃) (MC₂₃.extIsos C₃)))
       where
         pw : ∀ i → MC₁₃.extIsos C₃ i .fwd ≈ Iso-trans (MC₁₂.extIsos C₃ i) (MC₂₃.extIsos C₃ i) .fwd
