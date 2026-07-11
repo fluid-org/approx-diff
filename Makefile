@@ -30,8 +30,7 @@ mu-types.pdf: mu-types.tex $(MU_TYPES_DEPS)
 
 NOTES_DEPS:=$(wildcard notes/*.tex) $(wildcard fig/*.tex) macros.tex bib.bib
 
-# mu-types.pdf first: notes resolves references into _latex/mu-types.aux
-notes.pdf: notes.tex $(NOTES_DEPS) mu-types.pdf
+notes.pdf: notes.tex $(NOTES_DEPS)
 	latexmk $(LATEXMK_OPTS) notes
 	cd _latex && bibtex notes
 	latexmk $(LATEXMK_OPTS) -g notes

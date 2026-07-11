@@ -1,4 +1,3 @@
-\RequirePackage{xr-hyper} % must precede hyperref (loaded by acmart)
 \documentclass[acmsmall,screen]{acmart}
 
 \usepackage{tabularx}
@@ -17,12 +16,6 @@
 
 \usepackage[commandnameprefix=ifneeded,commentmarkup=footnote]{changes}
 \input{macros}
-
-% Resolve references into the companion document on inductive types
-\externaldocument[mu:]{_latex/mu-types}[mu-types.pdf]
-\newcommand*{\muSecref}[1]{\S\ref{mu:sec:#1}}
-\newcommand*{\muDefref}[1]{Definition~\ref{mu:def:#1}}
-\newcommand*{\muPropref}[1]{Proposition~\ref{mu:prop:#1}}
 
 \begin{document}
 
@@ -59,12 +52,12 @@ Covered here:
    \end{itemize}
 \item matrices over a commutative semiring; $\Mat(\Two)$ as worked example (\secref{matrix})
 \item stable coproducts (\secref{stable-coproducts})
-\item predicate systems (\secref{predicate-system})
 % \item slicing interpretation of the source language via a strong monad on the semantic category
 \end{itemize}
 
-\noindent Inductive types from polynomial endofunctors, previously covered here, now have their own
-document (\texttt{mu-types.pdf}); references to that material resolve into it.
+\noindent Inductive types from polynomial endofunctors, and the conservativity development that
+depends on them (predicate systems, glueing, syntactic definability), previously covered here, now
+have their own document (\texttt{mu-types.pdf}).
 
 \noindent $\Set$ will usually be $\Setoid$ in the Agda implementation but we will gloss that detail for now.
 
@@ -81,7 +74,6 @@ document (\texttt{mu-types.pdf}); references to that material resolve into it.
 \input{notes/auto-diff-galois-slicing-via-fam}
 \input{notes/matrix}
 \input{notes/stable-coproducts}
-\input{notes/conservativity}
 % \input{notes/slicing-interpretation}  % moved to unused: monadic slicing not load-bearing (see git history)
 
 \bibliographystyle{ACM-Reference-Format}

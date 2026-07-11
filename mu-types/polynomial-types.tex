@@ -73,16 +73,13 @@ polarity tracking.
 \subsection{Syntactic polynomials}
 \label{sec:polynomial-types:poly}
 
-\Added{Let $\cat{C}$ be a category with finite products $(\times, \One)$ and finite coproducts
+Let $\cat{C}$ be a category with finite products $(\times, \One)$ and finite coproducts
 $(\coprod, 0)$. The \emph{polynomials} over $\cat{C}$ are functor expressions in a kinding context
-$\Delta$:}
-\begin{AddedBlock}
+$\Delta$:
 \[
   P, Q \in \Poly_\Delta \;::=\; \const(A) \mid \alpha \mid P + Q \mid P \times Q \mid \mu\alpha.P
 \]
-\end{AddedBlock}
-\noindent
-\Added{where $A$ ranges over objects of $\cat{C}$ and $\alpha$ over the variables of $\Delta$.
+where $A$ ranges over objects of $\cat{C}$ and $\alpha$ over the variables of $\Delta$.
 Polynomials mirror the types of \secref{polynomial-types:kinding}, with constants in place of primitive
 types. Function space is absent because function types are closed (\figref{polynomial-types:kinding}),
 so a function type denotes a fixed object and enters a polynomial as a constant. We identify each $P
@@ -92,36 +89,15 @@ each variable of $\Delta$; the $\mu$ clause presupposes initial algebras, suppli
 $\cat{C}$ by \defref{polynomial-types:has-poly} below. Presenting functors by a syntax of signatures,
 interpreted afterwards, is standard in the literature on containers and strictly positive types
 \citep{abbott2005}; \citet{gambino-kock} treat polynomial functors as a categorical subject in their
-own right.}
+own right.
 
-\Added{\citet[Definition~6]{nunes2023} work instead with a semantic notion (here restricted to
-inductive types): the polynomial endofunctors on $\cat{C}$ form the smallest subcategory of $\Cat$
-containing the product and coproduct functors, projections, pairing and constants, and closed under
-forming $\mu H$ whenever it exists. We prefer the syntax because our constructions recurse on the
-polynomial expression, which a functor in the semantic class does not retain. The initial-algebra
-construction of \secref{polynomial-types:fam} recurses on $\mu$-subexpressions, and moves a polynomial
-from $\Fam(\cat{C})$ to sets by substituting at its constants. The definition of $\Poly$-types must
-also quantify over expressions, because the semantic class admits $\mu H$ only once the initial
-algebra exists, so quantifying over the class cannot demand that it exist.}
-
-\begin{DeletedBlock}
-Following \citet[Definition~6]{nunes2023} (restricted to inductive types), the polynomial
-endofunctors on $\cat{C}$ form a subcategory $\Poly_{\cat{C}}$ of $\Cat$.
-
-\begin{definition}[Polynomial endofunctors]
-\label{def:polynomial-types:Poly}
-Let $\cat{C}$ be a category with finite products $(\times, \One)$ and finite coproducts
-$(\coprod, 0)$. The category $\Poly_{\cat{C}}$ is the smallest subcategory of $\Cat$ with:
-\begin{itemize}
-\item objects: the terminal category $\One$, $\cat{C}$ itself, and binary products of objects;
-\item morphisms closed under projections and pairing, the terminal map $!_D : D \to \One$,
-  constants $\One \to D$, the binary product functor $\times : \cat{C} \times \cat{C} \to \cat{C}$,
-  the binary coproduct functor $\coprod : \cat{C} \times \cat{C} \to \cat{C}$, and
-  $\mu$-closure: if $H : D \times \cat{C} \to \cat{C}$ is a morphism of $\Poly_{\cat{C}}$ and
-  $\mu H : D \to \cat{C}$ exists, then $\mu H$ is also a morphism of $\Poly_{\cat{C}}$.
-\end{itemize}
-\end{definition}
-\end{DeletedBlock}
+\citet[Definition~6]{nunes2023} instead define the polynomial endofunctors on $\cat{C}$
+semantically, as the smallest subcategory of $\Cat$ containing the product and coproduct functors,
+projections, pairing and constants, and closed under forming $\mu H$ whenever it exists. An expression
+of type $\Poly_\Delta$ is in effect a derivation of membership in this class, detached from its side
+conditions, so it exists whether or not the initial algebras do. The construction of
+\secref{polynomial-types:fam} recurses on the expression to establish that the initial algebras exist,
+and, by substituting at the constants, interprets the same expression in both $\Fam(\cat{C})$ and sets.
 
 \subsection{Typing rules}
 \label{sec:polynomial-types:language}
@@ -150,25 +126,18 @@ semantic category.
 give a direct construction in $\Fam(\cat{C})$ via Martin-L\"of $W$-types
 \citep[Wellorderings, pp.~43--47]{martinLof1984}, restricted to the finitary fragment (where each shape has
 finite arity), which suffices because our polynomials are built from finite $+$ and $\times$.
-\Added{\citet{moerdijk-palmgren00} study $W$-types categorically, as initial algebras of polynomial
-endofunctors.}
+\citet{moerdijk-palmgren00} study $W$-types categorically, as initial algebras of polynomial
+endofunctors.
 
-\Added{We take polynomials (\secref{polynomial-types:poly}) over $\Fam(\cat{C})$, so each constant
-$\const(A)$ carries a family $A = (X, \partial X)$.}
-\begin{DeletedBlock}
-Syntactic polynomials over $\Fam(\cat{C})$ mirror the types of \secref{polynomial-types:kinding}, with
-objects at the leaves in place of primitive types:
-\[
-  P, Q \in \Poly_\Delta \;::=\; \const(A) \mid \alpha \mid P + Q \mid P \times Q \mid \mu\alpha.P
-\]
-where $A = (X, \partial X)$ ranges over objects of $\Fam(\cat{C})$ and $\alpha$ over variables in $\Delta$.
-We identify each $P \in \Poly_\Delta$ with the functor $\Fam(\cat{C})^\Delta \to \Fam(\cat{C})$ it
-presents, writing $P(\delta)$ for its action on a \emph{kinding environment} $\delta \in
-\Fam(\cat{C})^\Delta$, an assignment of an object to each variable of $\Delta$.
-\end{DeletedBlock}
+We take polynomials (\secref{polynomial-types:poly}) over $\Fam(\cat{C})$, so each constant
+$\const(A)$ carries a family $A = (X, \partial X)$.
 
 The fold body of the $\syn{fold}$ rule of \secref{polynomial-types:language} lives in a typing context,
-so the catamorphism interpreting it must too.
+so the catamorphism interpreting it must too. A \emph{morphism in context $\Gamma$} from $X$ to $Y$ is
+a map $\Gamma \times X \to Y$, composed by $f \circ_\Gamma g = f \circ \prodM{\pi_1}{g}$; these are
+the maps of the co-Kleisli category for the comonad $\Gamma \times -$. Each polynomial acts on
+morphisms in context through the \emph{strong} functorial action, which takes a morphism in context
+$\Gamma \times X_i \to Y_i$ for each variable $i$. Below, $F = P(\delta[\alpha \mapsto -])$.
 
 \begin{definition}[$\Poly$-types]
 \label{def:polynomial-types:has-poly}
@@ -177,32 +146,44 @@ it provides:
 \begin{itemize}
 \item an object $\mu_{\alpha.P}(\delta)$ and algebra map $\inMap : P(\delta[\alpha \mapsto
   \mu_{\alpha.P}(\delta)]) \to \mu_{\alpha.P}(\delta)$;
-\item for every $\Gamma$ and algebra $a : \Gamma \times P(\delta[\alpha \mapsto Y]) \to Y$, a
-  catamorphism $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$. Writing $f \circ_\Gamma g = f
-  \circ \prodM{\pi_1}{g}$ for composition in context and $F = P(\delta[\alpha \mapsto -])$, the map
-  $\cata{a}$ is the unique one making
+\item for every $\Gamma$ and algebra $a : \Gamma \times P(\delta[\alpha \mapsto Y]) \to Y$, a map
+  $\cata{a} : \Gamma \times \mu_{\alpha.P}(\delta) \to Y$, its \emph{catamorphism}, the unique
+  morphism in context making
   \begin{center}
   \begin{tikzcd}[row sep=2.2em, column sep=3.2em]
-    F\,\mu_{\alpha.P}(\delta) \arrow[r, "\inMap"] \arrow[d, "F\cata{a}"'] & \mu_{\alpha.P}(\delta)
-      \arrow[d, "\cata{a}"] \\
+    F\,\mu_{\alpha.P}(\delta) \arrow[r, "\inMap"] \arrow[d, dashed, "F\cata{a}"'] &
+      \mu_{\alpha.P}(\delta) \arrow[d, dashed, "\cata{a}"] \\
     F\,Y \arrow[r, "a"'] & Y
   \end{tikzcd}
   \end{center}
-  commute in the co-Kleisli category for $\circ_\Gamma$, that is, $\cata{a} \circ_\Gamma (\inMap \circ
-  \pi_2) = a \circ_\Gamma F\cata{a}$ ($\beta$), uniqueness giving $\eta$. \Added{The co-Kleisli
-  category for the comonad $\Gamma \times -$ has as its maps $X \to Y$ the maps $\Gamma \times X \to
-  Y$ of the underlying category, so it is the category of morphisms in context $\Gamma$, with
-  $\circ_\Gamma$ as composition.} The edge $F\cata{a}$ is the
-  \emph{strong} functorial action of $F$, which takes a morphism in context $\Gamma \times X_i \to Y_i$
-  for each variable $i$.
+  commute in the co-Kleisli category: commutation of the square is the law $\beta$, and uniqueness
+  of $\cata{a}$ the law $\eta$.
 \end{itemize}
 \end{definition}
 
-\noindent Taking $\Gamma = 1$, each $\mu_{\alpha.P}(\delta)$ is in particular an initial algebra in the usual
+\noindent
+\Added{Unfolding $\circ_\Gamma$, the initiality square commutes in the underlying category as}
+\begin{AddedBlock}
+\begin{center}
+\begin{tikzcd}[row sep=2.4em, column sep=5em]
+  \Gamma \times F\,\mu_{\alpha.P}(\delta) \arrow[r, "\id \times \inMap"]
+    \arrow[d, "{\prodM{\pi_1}{F\cata{a}}}"'] &
+    \Gamma \times \mu_{\alpha.P}(\delta) \arrow[d, "\cata{a}"] \\
+  \Gamma \times F\,Y \arrow[r, "a"'] & Y
+\end{tikzcd}
+\end{center}
+\end{AddedBlock}
+\noindent
+\Added{where the left edge duplicates the context, retaining $\Gamma$ for $a$ while also feeding it
+to the strong action $F\cata{a}$. In element notation, for the polynomial $\const(A) \times \alpha$
+the strong action sends $h : \Gamma \times X \to Y$ to $(\gamma, (a, x)) \mapsto (a, h(\gamma, x))$:
+the context reaches each variable position, and constants pass through.}
+
+Taking $\Gamma = 1$, each $\mu_{\alpha.P}(\delta)$ is in particular an initial algebra in the usual
 sense; in the presence of exponentials the strong form is no extra imposition (fold into $Y^\Gamma$), but
-$\Fam(\cat{C})$ need not have exponentials. \Added{Initial algebras equipped with catamorphisms in
+$\Fam(\cat{C})$ need not have exponentials. Initial algebras equipped with catamorphisms in
 context are the strong datatypes of \citet{cockett-spencer92}, developed for categories with finite
-products but not necessarily exponentials.} \citet[Definition~6]{nunes2023} accordingly ask only for
+products but not necessarily exponentials. \citet[Definition~6]{nunes2023} accordingly ask only for
 initial algebras, their semantic categories being bicartesian closed. At the term level, $\beta$ reduces
 $\syn{fold}\,(\syn{roll}\,t)\,\syn{with}\,x.s$ by recursively folding each $\mu$-child of $t$ before
 substituting into $s$, and $\eta$ says $\syn{fold}\,t\,\syn{with}\,x.\syn{roll}\,x = t$.
@@ -217,9 +198,9 @@ the inner carrier must be instantiated at the outer carrier while the latter is 
 Following \citet{abbott2004} we instead construct the initial algebras of $P$ and of all its inner
 $\mu$-bodies simultaneously, as a single family of trees indexed by sorts.
 
-The construction separates into two layers, and the first uses index data only. \Added{The separation
+The construction separates into two layers, and the first uses index data only. The separation
 is possible because $\Fam(\cat{C})$ is the free coproduct completion of $\cat{C}$, so an object is a
-set-indexed collection of $\cat{C}$-objects and nothing more.} Write $|A|$ for the
+set-indexed collection of $\cat{C}$-objects and nothing more. Write $|A|$ for the
 index set of a $\Fam(\cat{C})$-object $A$. The \emph{index erasure} $|Q|$ of a polynomial replaces
 each constant $\const(X, \partial X)$ by the constant on its index set $X$ and fixes the variable,
 sum, product and $\mu$ structure. The erasure $|\delta|$ of a kinding environment replaces each entry
@@ -295,20 +276,67 @@ over trees (simultaneously over all sorts), on index sets and fibres alike, thre
 component unchanged through the recursion. The laws $\beta$ and $\eta$ are proved by induction on trees.
 \end{proof}
 
-\paragraph{The $\mu$-operator.}
-The construction above is pointwise in the kinding environment $\delta$. As in
-\citet[Proposition~4]{nunes2023}, the pointwise data induce the functorial action of $\mu_{\alpha.P}$ on
-morphisms of kinding environments
-generically, by folding: for $g : \delta \to \delta'$,
-\[
-  \mu_{\alpha.P}(g) \;=\; \cata{\,\inMap \circ P(g[\alpha \mapsto \id])\,},
-\]
-here in the strong form, with the algebra built from the strong action of $P$.
+\subsection{The $\mu$-operator}
+\label{sec:polynomial-types:mu-operator}
+
+The construction of \secref{polynomial-types:fam} is pointwise in the kinding environment
+$\delta$. This subsection derives the remaining structure, the action of $\mu_{\alpha.P}$ on morphisms
+of environments and its laws, from $\beta$ and $\eta$ alone, so everything here holds in any category
+with $\Poly$-types, independently of the construction. Fix $P \in \Poly_{\Delta,\alpha}$, write
+$\inMap_\delta$ for the algebra map at $\delta$, and $F = P(\delta[\alpha \mapsto -])$. All diagrams
+are squares of morphisms in context $\Gamma$, composed by $\circ_\Gamma$.
+
+As in \citet[Proposition~4]{nunes2023}, the action on a morphism $g : \delta \to \delta'$ is
+given by folding: $\mu_{\alpha.P}(g) = \cata{\,\inMap_{\delta'} \circ P(g[\alpha \mapsto \id])\,}$,
+the algebra built from the strong action of $P$. By $\beta$ and $\eta$, $\mu_{\alpha.P}(g)$ is the
+unique map making
+\begin{center}
+\begin{tikzcd}[row sep=2.2em, column sep=5em]
+  P(\delta[\alpha \mapsto \mu_{\alpha.P}(\delta)]) \arrow[r, "\inMap_\delta"]
+    \arrow[d, "{P(g[\alpha \mapsto \mu_{\alpha.P}(g)])}"'] &
+    \mu_{\alpha.P}(\delta) \arrow[d, "\mu_{\alpha.P}(g)"] \\
+  P(\delta'[\alpha \mapsto \mu_{\alpha.P}(\delta')]) \arrow[r, "\inMap_{\delta'}"'] &
+    \mu_{\alpha.P}(\delta')
+\end{tikzcd}
+\end{center}
+commute: the algebra maps are natural in the environment.
+
+The laws of this action follow from one standard consequence of initiality.
+
+\begin{lemma}[Fusion]
+\label{lem:polynomial-types:fusion}
+Let $a : \Gamma \times FY \to Y$ and $b : \Gamma \times FZ \to Z$ be algebras and $h : \Gamma \times
+Y \to Z$. If $h \circ_\Gamma a = b \circ_\Gamma Fh$ then $h \circ_\Gamma \cata{a} = \cata{b}$.
+\end{lemma}
+\begin{center}
+\begin{tikzcd}[row sep=2.2em, column sep=3.2em]
+  F\,\mu_{\alpha.P}(\delta) \arrow[r, "\inMap_\delta"] \arrow[d, "F\cata{a}"'] &
+    \mu_{\alpha.P}(\delta) \arrow[d, "\cata{a}"] \\
+  F\,Y \arrow[r, "a"] \arrow[d, "Fh"'] & Y \arrow[d, "h"] \\
+  F\,Z \arrow[r, "b"'] & Z
+\end{tikzcd}
+\end{center}
+\noindent
+The upper square is $\beta$; when the lower square commutes, the outer rectangle states that
+$h \circ_\Gamma \cata{a}$ satisfies the $\beta$-law characterising $\cata{b}$ (this uses that $F$
+preserves $\circ_\Gamma$), so the two are equal by uniqueness. Fusion gives the functor laws directly:
+$\mu_{\alpha.P}(\id) = \id$ is $\eta$, and pasting the naturality square of $g$ above that of $g'$
+exhibits $\mu_{\alpha.P}(g') \circ_\Gamma \mu_{\alpha.P}(g)$ as a fold of the algebra defining
+$\mu_{\alpha.P}(g' \circ g)$.
+
+Uniqueness also shows the initial algebra is determined by the polynomial up to isomorphism:
+if $\varphi : P(\delta) \cong Q(\delta)$ naturally in $\delta$, the folds
+$\cata{\inMap^Q \circ \varphi}$ and $\cata{\inMap^P \circ \varphi^{-1}}$ compose, by fusion, to folds
+of $\inMap^P$ and $\inMap^Q$, which are identities by $\eta$; so $\mu_{\alpha.P}(\delta) \cong
+\mu_{\alpha.Q}(\delta)$. The same pattern at $\Gamma = 1$ gives Lambek's lemma \citep{lambek68}:
+$\inMap_\delta$ is itself an isomorphism, with inverse $\cata{F\,\inMap_\delta}$, so
+$\mu_{\alpha.P}(\delta)$ is a fixed point of $F$.
+
 The strong action makes each $P$ the morphism part of a functor $(\cat{C}_\Gamma)^\Delta \to
 \cat{C}_\Gamma$ on co-Kleisli categories, the plain action being its restriction to pure morphisms
-$\prodM{\pi_1}{g \circ \pi_2}$. Functoriality of these actions, and more generally that
-componentwise-isomorphic polynomials have isomorphic initial algebras, follow from $\beta$ and $\eta$
-alone, independently of the construction.
+$\prodM{\pi_1}{g \circ \pi_2}$. For a $\mu$-subexpression the functoriality that fusion assumes of
+$F$ is the functoriality being proved, at the inner binder; the two are established together by
+induction on the polynomial expression.
 
 \subsection{Why a syntactic CBN translation does not extend to inductive types}
 \label{sec:polynomial-types:no-cbn}
