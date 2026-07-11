@@ -257,7 +257,7 @@ interpreted directly in $\cat{C}$, which has $\Poly$-types whenever it is a $\Fa
 (\propref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation.
 
 \begin{AddedBlock}
-\begin{lemma}[Agreement]
+\begin{lemma}[Type agreement]
 \label{lem:conservativity:comparison}
 For first-order $\tau$, $\sem{\tau} \cong \GF(\sem{\tau}_{\mathit{fo}})$.
 \end{lemma}
@@ -288,7 +288,7 @@ higher-order category and in a set-level category, and fullness of the glued emb
 the two agree.}
 
 \begin{AddedBlock}
-\begin{theorem}[Underlying interpretation]
+\begin{theorem}[Term agreement]
 \label{thm:conservativity:underlying}
 Suppose the set-indexed coproducts of $\cat{D}$ are stable. Let $\cat{E}$ be a further category with the
 structure of $\cat{D}$ (\secref{conservativity:glueing}) and $\Poly$-types, and $U : \cat{D} \to
@@ -305,20 +305,21 @@ modulo the isomorphisms of \lemref{conservativity:comparison}.
 
 \begin{proof}
 A morphism $F(x) \to F(y)$ of $\cat{D} \times \cat{E}$ is a pair $(h, k)$ with $h$ and $k$
-unrelated, whereas an $F$-image is constrained to $(g, U(g))$; so $F$ is not full and
-\lemref{conservativity:definability} does real work. The interpretation of the language in
+unrelated, whereas an $F$-image is constrained to $(g, U(g))$; in particular $F$ is not full. The interpretation of the language in
 $\cat{D} \times \cat{E}$ is computed componentwise, so it is the pair $(\sem{t}_{\cat{D}},
 \sem{t}_{\cat{E}})$. At first-order $\Gamma$ and $\tau$ the isomorphisms of
 \lemref{conservativity:comparison} exhibit this
 pair as a morphism between $\GF$-images, so by \lemref{conservativity:definability} it equals
-$(g, U(g))$ for some $g$; the first component forces $g = \sem{t}_{\cat{D}}$, and the second then
-reads $U(\sem{t}_{\cat{D}}) = \sem{t}_{\cat{E}}$.
+$(g, U(g))$ for some $g$; the first component gives $g = \sem{t}_{\cat{D}}$, and the second then
+gives $U(\sem{t}_{\cat{D}}) = \sem{t}_{\cat{E}}$.
 \end{proof}
 \end{AddedBlock}
 
 \Added{For the canonical models, $U : \Fam(\SemiMod(S)) \to \Set$ sends a family to its index set
 and a morphism to its index function; the stability hypothesis holds in any $\Fam$ category
-(\lemref{conservativity:fam-stable-coproducts}). The theorem then says that the underlying function of the
+(\lemref{conservativity:fam-stable-coproducts}), and $\GF$ preserves $\Poly$-types by
+\propref{conservativity:gf-preserves-poly}, the first-order role being played by a $\Fam$
+category. The theorem then says that the underlying function of the
 higher-order interpretation is the plain set-theoretic interpretation of the term: the dependency
 data does not interfere. $U$ does not preserve exponentials, which is why
 \remref{conservativity:glr-deltas}'s weakening of the hypotheses on $F$ matters.}
