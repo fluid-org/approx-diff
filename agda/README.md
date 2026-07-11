@@ -1,4 +1,4 @@
-# Agda supplementary material accompanying "Approximation as Automatic Differentiation"
+# Agda supplementary material accompanying "Data Provenance as Automatic Differentiation"
 
 ## Notes
 
