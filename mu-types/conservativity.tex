@@ -1,19 +1,30 @@
-\section{Conservativity}
+\section{Correctness of the higher-order interpretation}
 \label{sec:conservativity}
 
-The interpretation of the language in the higher-order model is \emph{conservative} over the first-order
-model: every term whose context and type are first-order denotes, up to the isomorphisms relating the two
+\Replaced{Two facts certify that the higher-order interpretation behaves correctly at first-order
+types: every term of first-order type denotes, up to the isomorphisms relating the two
+interpretations, a morphism of the first-order category; and the underlying function of the
+interpretation agrees with the plain set-level interpretation of the term. The first is immediate,
+because the embedding of the first-order model into the higher-order one is full (canonically,
+$\Fam(\SDSemiMod(S))$ into $\Fam(\SemiMod(S))$; \remref{conservativity:full-F}). The second is
+proved by glueing: the interpreting category embeds into a category of Grothendieck logical
+relations \citep{fiore-simpson99}, the language is interpreted there, and at first-order types the
+interpretation is isomorphic to an embedded object, so by fullness of the embedding every term
+denotes the image of a morphism of the embedded category (\thmref{conservativity:underlying}).}{The interpretation of the
+language in the higher-order model is \emph{conservative} over the first-order model: every term
+whose context and type are first-order denotes, up to the isomorphisms relating the two
 interpretations, a morphism of the first-order category. The proof is by glueing: the first-order
 category embeds into a category of Grothendieck logical relations \citep{fiore-simpson99} over the
 higher-order one; the language is interpreted there; and at first-order types the interpretation
-collapses back to the first-order category.
+collapses back to the first-order category.}
 
 Glueing along a functor is the standard method for definability results, also known as
-sconing \citep{mitchell-scedrov92}; \citet{fiore-simpson99} refine it with \Replaced{\emph{covers},
+sconing \citep{mitchell-scedrov92}; \citet{fiore-simpson99} refine it with \emph{covers},
 decompositions of an object as a coproduct (\secref{conservativity:glueing}), which sum types make
-necessary}{covers, which are needed for sum types}. \secref{predicate-system} sets up the calculus of predicates the construction uses,
+necessary. \secref{predicate-system} sets up the calculus of predicates the construction uses,
 \secref{conservativity:glueing} builds the glued category, and \secref{conservativity:definability}
-proves the embedding full and derives the conservativity theorem. The two remaining subsections
+proves the embedding full and derives the \Replaced{agreement of the underlying
+interpretation}{conservativity theorem}. The two remaining subsections
 supply the ingredients specific to inductive types: $\Poly$-types for the glued category
 (\secref{conservativity:glr-poly-types}) and their preservation by the embedding
 (\secref{conservativity:gf-poly-types}), which the theorem assumes.
@@ -34,7 +45,7 @@ following data:
 the pullback (reindexing) of a predicate along $f$; the left adjoint $\directImage{-}{f}: \Pred(X) \to
 \Pred(Y)$ computes the pushforward (existential image) of a predicate along $f$, with the adjointness property
 meaning that
-\[\directImage{P}{f} \sqsubseteq Q \iff P \sqsubseteq \reindex{Q}{f} \]
+\[\directImage{\varphi}{f} \sqsubseteq \psi \iff \varphi \sqsubseteq \reindex{\psi}{f} \]
 \item For every $X$ and $Y$, a right adjoint $\forall_Y: \Pred(X \times Y) \to \Pred(X)$ to the monotone map
 $\reindex{-}{\pi_1}$ called \emph{universal quantification}.
 \item $\reindex{-}{f}$ is colax (and thus $\directImage{-}{f}$ is lax) with respect to $\top$, $\meet$,
@@ -53,35 +64,35 @@ notion and its laws.
 \subsubsection{Predicate system over $\Set$}
 
 Let $X$ be a set. Define a \emph{predicate on $X$} to be a family of (proof-irrelevant) propositions for
-every $x \in X$. For any function $f: X \to Y$, define $\reindex{P}{f}(x)$ iff $P(f(x))$ and
-$\directImage{P}{f}(y)$ iff there exists $x$ such that $f(x) = y$ and $P(x)$. Define $\mathcal{S}$ to be the
+every $x \in X$. For any function $f: X \to Y$, define $\reindex{\varphi}{f}(x)$ iff $\varphi(f(x))$ and
+$\directImage{\varphi}{f}(y)$ iff there exists $x$ such that $f(x) = y$ and $\varphi(x)$. Define $\mathcal{S}$ to be the
 predicate system over $\Set$ which assigns to any set $X$ the set $\Pred(X)$ of propositions on $X$ ordered by
 implication, with $\top, \meet, \join$ and $\residual$ defined pointwise and universal quantification defined
-as $\forall_Y(P)(x)$ iff $P(x,y)$ for all $y \in Y$.
+as $\forall_Y(\varphi)(x)$ iff $\varphi(x,y)$ for all $y \in Y$.
 
 \subsubsection{Predicates on a presheaf}
 
-Let $\cat{C}$ be a category and $F: \cat{C}^\op \to \Set$ a presheaf. Define a \emph{predicate on $F$} to be
-a family of predicates $P_X \in \Pred_\mathcal{S}(F(X))$ for every object $X$ in $\cat{C}$ such that $P_Y
-\sqsubseteq \reindex{P_X}{F(f)}$ for every $f: X \to Y$ in $\cat{C}$.
+Let $\cat{C}$ be a category and $H: \cat{C}^\op \to \Set$ a presheaf. Define a \emph{predicate on $H$} to be
+a family of predicates $\varphi_X \in \Pred_\mathcal{S}(H(X))$ for every object $X$ in $\cat{C}$ such that $\varphi_Y
+\sqsubseteq \reindex{\varphi_X}{H(f)}$ for every $f: X \to Y$ in $\cat{C}$.
 
 Now define the predicate system $\mathcal{S}^{\cat{C}}$ over $\Func{\cat{C}^\op}{\Set}$ which assigns to every
-presheaf $F$ the poset $\Pred(F)$ of predicates on $F$ ordered pointwise, where $\top, \meet, \join,
-\residual$ and $\forall$ in $\Pred(F)$ are all given pointwise, and to every natural transformation $\alpha: F
-\to G$, families of pullback and pushforward maps where $\reindex{P}{\alpha}_X = \reindex{P_X}{\alpha_X}$ and
-$\directImage{P}{\alpha}_X = \directImage{P_X}{\alpha_X}$.
+presheaf $H$ the poset $\Pred(H)$ of predicates on $H$ ordered pointwise, where $\top, \meet, \join,
+\residual$ and $\forall$ in $\Pred(H)$ are all given pointwise, and to every natural transformation $\theta: H
+\to K$, families of pullback and pushforward maps where $\reindex{\varphi}{\theta}_X = \reindex{\varphi_X}{\theta_X}$ and
+$\directImage{\varphi}{\theta}_X = \directImage{\varphi_X}{\theta_X}$.
 
 \subsubsection{Closure operator over a predicate system}
 
-A \emph{closure operator} $C$ over a poset $(X, \sqleq)$ is a lax idempotent monad on $X$, with functoriality,
-unit and multiplication given by monotonicity, extensivity ($x \sqleq C(x)$) and idempotence ($C(C(x)) \sqleq
-C(x)$).
+A \emph{closure operator} $C$ over a poset $(L, \sqleq)$ is a lax idempotent monad on $L$, with functoriality,
+unit and multiplication given by monotonicity, extensivity ($p \sqleq C(p)$) and idempotence ($C(C(p)) \sqleq
+C(p)$).
 
 Let $\mathcal{S} = (\Pred, \top, \meet, \join, \residual, \forall)$ be a predicate system over a category
 $\cat{C}$. A closure operator $C$ over $\mathcal{S}$ is a fibred lax idempotent monad $C$ on the fibration
 $\Pred: \cat{C}^\op \to \Poset$ where for every object $X$ the fibre map $C_X: \Pred(X) \to \Pred(X)$ is a
-closure operator, $C$ is lax monoidal with respect to $\meet$ (i.e.~$C(P) \meet C(Q) \sqleq C(P \meet Q)$),
-and $C$ is lax strong, i.e.~$C(P) \meet Q \sqleq C(P \meet Q)$. $C$ being a fibred functor means it commutes
+closure operator, $C$ is lax monoidal with respect to $\meet$ (i.e.~$C(\varphi) \meet C(\psi) \sqleq C(\varphi \meet \psi)$),
+and $C$ is lax strong, i.e.~$C(\varphi) \meet \psi \sqleq C(\varphi \meet \psi)$. $C$ being a fibred functor means it commutes
 with any reindexing functor $\reindex{-}{f}$, i.e.~$C_X \comp \reindex{-}{f} \iso \reindex{-}{f} \comp C_Y$.
 
 \subsection{The category of logical relations}
@@ -93,14 +104,12 @@ object, finite products, exponentials, and set-indexed coproducts, in which the 
 language is interpreted; and a functor $F : \cat{C} \to \cat{D}$ preserving the terminal object,
 products, and set-indexed coproducts. The finite coproducts both interpretations need for sum types
 are the two-element instance of the set-indexed ones, so they are not assumed separately; likewise
-their stability and preservation by $F$ follow from the set-indexed versions. \Replaced{For the
+their stability and preservation by $F$ follow from the set-indexed versions. For the
 language without inductive types it suffices to assume stable \emph{finite} coproducts, as in the
 extensive categories of \citet{fiore-simpson99}; recursive types force the set-indexed
 strengthening (\secref{conservativity:gf-poly-types}). Call a set-indexed coproduct decomposition
 $\coprod_i y_i \cong y$ a \emph{cover} of the object $y$; covers generate the closure operator
-introduced below.}{The paper, after the extensivity of \citet{fiore-simpson99}, assumes only stable
-\emph{finite} coproducts; recursive types force the set-indexed strengthening
-(\secref{conservativity:gf-poly-types}).}
+introduced below.
 
 \begin{lemma}
 \label{lem:conservativity:fam-stable-coproducts}
@@ -117,7 +126,7 @@ the disjoint union of index sets to the disjoint union of their images.
 
 Predicates live over presheaves on $\cat{C}$: let $G : \cat{D} \to \PSh(\cat{C})$ be the functor
 sending $X$ to the presheaf $\cat{D}(F(-), X)$. A presheaf predicate on $G(X)$ thus
-assigns to each $y \in \cat{C}$\Added{, called the \emph{stage},} a predicate on the morphisms $F(y) \to X$, compatibly with
+assigns to each $y \in \cat{C}$, called the \emph{stage}, a predicate on the morphisms $F(y) \to X$, compatibly with
 precomposition along $\cat{C}$-morphisms; the predicate system of \secref{predicate-system} provides
 reindexing and the connectives for such predicates.
 
@@ -130,12 +139,9 @@ F(y) \to F(x)$ that are images of first-order morphisms: those with $f = F(g)$ f
 Definability is not closed under the reasoning the interpretation requires; in particular, a morphism
 defined by case analysis on a coproduct is definable only up to precomposition with the case split.
 Predicates are therefore taken \emph{closed} with respect to a closure operator $\mathbf{C}$,
-generated by \Replaced{covers of the stage: $\mathbf{C}\,\Phi$ is defined
+generated by covers of the stage: $\mathbf{C}(\Phi)$ is defined
 inductively, holding at $f : F(y) \to X$ if $\Phi$ does, or if some cover of $y$ has
-$\mathbf{C}\,\Phi$ holding at each restriction of $f$}{coproduct decompositions of the stage. A
-\emph{cover} of $y \in \cat{C}$ is a set-indexed coproduct decomposition $\coprod_i y_i \cong y$;
-$\mathbf{C}\,\Phi$ is generated inductively, holding at $f : F(y) \to X$ if $\Phi$ does, or if some
-cover of $y$ has $\mathbf{C}\,\Phi$ holding at each restriction of $f$}.
+$\mathbf{C}(\Phi)$ holding at each restriction of $f$.
 
 \begin{lemma}
 \label{lem:conservativity:indexed-closure}
@@ -151,15 +157,39 @@ The reindexing law transports a cover tree along a morphism by pulling each cove
 
 The category $\GLR(F)$ of \emph{Grothendieck logical relations} has as objects pairs $(X, \Phi)$ of an
 object $X \in \cat{D}$ and a closed predicate $\Phi$ on $G(X)$, and as morphisms $(X, \Phi) \to (Y,
-\Psi)$ those $f : X \to Y$ with $\Phi \sqsubseteq \Psi[G(f)]$. Theorem~5.1 of the paper, after \citet{fiore-simpson99},
+\Psi)$ those $f : X \to Y$ with $\Phi \sqsubseteq \Psi[G(f)]$. \Replaced{The first-order category
+embeds by}{Theorem~5.1 of the paper, after \citet{fiore-simpson99},
 summarises the structure this category carries: $\GLR(F)$ is bicartesian closed
 (here moreover with set-indexed coproducts), each piece built on the corresponding structure of
 $\cat{D}$ with an appropriate predicate component; the projection $p : \GLR(F) \to \cat{D}$, $(X,
-\Phi) \mapsto X$, strictly preserves it; and the first-order category embeds,
+\Phi) \mapsto X$, strictly preserves it; and the first-order category embeds,}
 \[
-  \GF : \cat{C} \to \GLR(F) \qquad \GF(x) = (F(x), \mathbf{C}\,\Definable_x) \qquad \GF(g) = F(g)
+  \GF : \cat{C} \to \GLR(F) \qquad \GF(x) = (F(x), \mathbf{C}(\Definable_x)) \qquad \GF(g) = F(g)
 \]
-with $\GF$ preserving the terminal object, products and coproducts.
+\Added{and the whole construction is summarised by the following theorem.}
+
+\begin{AddedBlock}
+\begin{theorem}[after \citet{fiore-simpson99}]
+\label{thm:conservativity:glr}
+$\GLR(F)$ is bicartesian closed, with set-indexed coproducts, each deriving from the
+corresponding structure of $\cat{D}$ with an appropriate predicate component. The projection $p :
+\GLR(F) \to \cat{D}$, $(X, \Phi) \mapsto X$, strictly preserves this structure, and $p \circ \GF =
+F$. The embedding $\GF$ is full and preserves the terminal object, products and coproducts.
+\end{theorem}
+
+\begin{remark}
+\label{rem:conservativity:glr-deltas}
+Relative to the statement of \citet{fiore-simpson99}: $\cat{C}$ need not be cartesian closed, nor
+$F$ preserve exponentials (when they are and it does, $\GF$ preserves exponentials too, but nothing
+below needs this); the smallness of $\cat{C}$ is replaced, in the formalisation, by an appropriate
+universe level; and the covers generating the closure operator are set-indexed rather than binary,
+a strengthening required for inductive types (\secref{conservativity:gf-poly-types}). Enlarging the covers
+strengthens the closure condition, so fewer predicates are closed and the category itself changes;
+the theorem carries over because its proof uses only the closure laws of
+\secref{predicate-system}, not the choice of generating covers.
+\end{remark}
+\end{AddedBlock}
+\noindent
 The functors assemble as
 \begin{center}
 \begin{tikzcd}[row sep=2.4em, column sep=3.2em]
@@ -172,22 +202,21 @@ with $p \circ \GF = F$: an object of $\GLR(F)$ is a $\cat{D}$-object together wi
 predicate on the presheaf that $G$ assigns to it, and $\GF$ equips each $F(x)$ with the closure of
 its definability predicate.
 
-\Replaced{For the language without inductive types, binary case splits, the two-element instance
+\begin{DeletedBlock}
+For the language without inductive types, binary case splits, the two-element instance
 of the covers above, suffice to generate the closure operator. Enlarging the class of covers
 strengthens the closure condition, so fewer predicates are closed and the two glued categories
 differ. The structure summarised above nevertheless carries over unchanged, because its proofs use
 only the closure laws of \secref{predicate-system} and not the choice of generating
-covers.}{The paper's closure operator is generated by binary case splits, the two-element instance
-of the covers above. Enlarging the class of covers strengthens the closure condition, so fewer
-predicates are closed and $\GLR(F)$ is not literally the category of the paper. Theorem~5.1
-nevertheless applies unchanged, because its proofs use only the closure laws of
-\secref{predicate-system} and not the choice of generating covers.}
+covers.
+\end{DeletedBlock}
 
 \subsection{Definability}
 \label{sec:conservativity:definability}
 
 The glueing construction makes $\GF$ \emph{full}: morphisms between embedded objects are
-already first-order. Fullness is asserted as part of Theorem~5.1 of the paper; here we give the proof.
+already first-order. Fullness is \Replaced{the last clause of \thmref{conservativity:glr}; here we
+give the proof}{asserted as part of Theorem~5.1 of the paper; here we give the proof}.
 
 \begin{lemma}[Fullness]
 \label{lem:conservativity:definability}
@@ -196,10 +225,10 @@ for some $g : x \to y$.
 \end{lemma}
 
 \begin{proof}
-As a morphism of $\GLR$, $f$ maps $\mathbf{C}\,\Definable_x$ into $\mathbf{C}\,\Definable_y$ reindexed along
-$G(f)$; concretely, postcomposition with $f$ sends morphisms satisfying $\mathbf{C}\,\Definable_x$ to
-morphisms satisfying $\mathbf{C}\,\Definable_y$. The identity $F(\id_x)$ satisfies $\Definable_x$, so $f = f
-\circ F(\id_x)$ satisfies $\mathbf{C}\,\Definable_y$. But $\Definable_y$ is itself closed, because, node by
+As a morphism of $\GLR$, $f$ maps $\mathbf{C}(\Definable_x)$ into $\mathbf{C}(\Definable_y)$ reindexed along
+$G(f)$; concretely, postcomposition with $f$ sends morphisms satisfying $\mathbf{C}(\Definable_x)$ to
+morphisms satisfying $\mathbf{C}(\Definable_y)$. The identity $F(\id_x)$ satisfies $\Definable_x$, so $f = f
+\circ F(\id_x)$ satisfies $\mathbf{C}(\Definable_y)$. But $\Definable_y$ is itself closed, because, node by
 node in a cover tree, witnesses for the summand restrictions copair along the decomposition to a witness
 for the covered morphism. So $f$ satisfies $\Definable_y$, that is, $f = F(g)$ for some $g : x \to y$.
 \end{proof}
@@ -212,8 +241,11 @@ for each morphism $h : F(a) \to F(b)$ in the image of $F$, yields a $g$ with $F(
 $F$ is a fibrewise functor between $\Fam$ categories and is faithful, the assumption reduces to
 its fibre functor: the index part of a witness is determined by $h$, the fibre parts are given
 by the fibre functor's witness function, and faithfulness supplies the naturality of the
-assembled family. At the current instances the fibre functor is full by construction, morphisms
-of the self-dual category being morphisms of the underlying one, so the witness is $h$ itself.
+assembled family. \Replaced{At the pairing functor of \thmref{conservativity:underlying} below, a
+morphism in the image is a pair whose second component is determined by the first, so the witness
+is the first component itself.}{At the current instances the fibre functor is full by construction,
+morphisms of the self-dual category being morphisms of the underlying one, so the witness is $h$
+itself.}
 
 The lemma applies only to morphisms between embedded objects, so it remains to show that the
 interpretation of every first-order type is isomorphic to one. Interpreting the language in $\GLR(F)$ needs, beyond the structure of
@@ -232,22 +264,54 @@ signature being the transport of the $\cat{C}$-model along $\GF$; and $\mu$-type
 the assumed preservation together with the isomorphism-invariance of the $\mu$-operator
 (\secref{polynomial-types:fam}).
 
-For the $\mu$-free language this is Theorem~5.2 of the paper; the version here adds the
-$\Poly$-types hypotheses.
+\begin{AddedBlock}
+\begin{remark}[Full embeddings]
+\label{rem:conservativity:full-F}
+When $F$ is full (for example the embedding $\Fam(\SDSemiMod(S)) \to \Fam(\SemiMod(S))$), every
+$\cat{D}$-morphism between embedded objects is an $F$-image outright, so conservativity over
+$\cat{C}$ follows from the isomorphisms $\sem{\tau}_{\cat{D}} \cong F(\sem{\tau}_{\mathit{fo}})$
+alone, with no glueing.
+\end{remark}
+\end{AddedBlock}
 
-\begin{theorem}[Syntactic definability]
-\label{thm:conservativity:syntactic-definability}
-Assume $\GF$ preserves $\Poly$-types. Then for every term $\Gamma \vdash t : \tau$
-with $\Gamma$ and $\tau$ first-order, there is a first-order morphism $g : \sem{\Gamma}_{\mathit{fo}} \to
-\sem{\tau}_{\mathit{fo}}$ with $F(g)$ equal to the underlying $\cat{D}$-morphism of $\sem{t}$, modulo the
-isomorphisms above.
+\Added{The glueing machinery is needed for the following theorem, whose pairing functor
+$\langle \mathrm{Id}, U \rangle$ is not full: the language is interpreted twice, in the
+higher-order category and in a set-level category, and fullness of the glued embedding compares
+the two.}
+
+\begin{AddedBlock}
+\begin{theorem}[Underlying interpretation]
+\label{thm:conservativity:underlying}
+Let $\cat{E}$ be a further category with the structure of $\cat{D}$
+(\secref{conservativity:glueing}) and $\Poly$-types, and $U : \cat{D} \to \cat{E}$ a functor
+preserving the terminal object, products and set-indexed coproducts. Instantiate
+\secref{conservativity:glueing} with the first-order category taken to be $\cat{D}$ itself (whose
+set-indexed coproducts we assume stable), the higher-order category $\cat{D} \times \cat{E}$, and
+$F = \langle \mathrm{Id}, U \rangle$, and assume $\GF$ preserves $\Poly$-types. Then for every term
+$\Gamma \vdash t : \tau$ with $\Gamma$ and $\tau$ first-order,
+\[
+  U(\sem{t}_{\cat{D}}) \;=\; \sem{t}_{\cat{E}},
+\]
+modulo the comparison isomorphisms.
 \end{theorem}
 
 \begin{proof}
-Composing $\sem{t} : \sem{\Gamma} \to \sem{\tau}$ with the isomorphisms gives a morphism
-$\GF(\sem{\Gamma}_{\mathit{fo}}) \to \GF(\sem{\tau}_{\mathit{fo}})$ of $\GLR(F)$, to which
-\lemref{conservativity:definability} applies.
+A morphism $F(x) \to F(y)$ of $\cat{D} \times \cat{E}$ is a pair $(h, k)$ with $h$ and $k$
+unrelated, whereas an $F$-image is constrained to $(g, U(g))$; so $F$ is not full and
+\lemref{conservativity:definability} does real work. The interpretation of the language in
+$\cat{D} \times \cat{E}$ is computed componentwise, so it is the pair $(\sem{t}_{\cat{D}},
+\sem{t}_{\cat{E}})$. At first-order $\Gamma$ and $\tau$ the comparison isomorphisms exhibit this
+pair as a morphism between $\GF$-images, so by \lemref{conservativity:definability} it equals
+$(g, U(g))$ for some $g$; the first component forces $g = \sem{t}_{\cat{D}}$, and the second then
+reads $U(\sem{t}_{\cat{D}}) = \sem{t}_{\cat{E}}$.
 \end{proof}
+\end{AddedBlock}
+
+\Added{For the canonical models, $U : \Fam(\SemiMod(S)) \to \Set$ sends a family to its index set
+and a morphism to its index function. The theorem then says that the underlying function of the
+higher-order interpretation is the plain set-theoretic interpretation of the term: the dependency
+data does not interfere. $U$ does not preserve exponentials, which is why
+\remref{conservativity:glr-deltas}'s weakening of the hypotheses on $F$ matters.}
 
 \subsection{$\Poly$-types in $\GLR(F)$}
 \label{sec:conservativity:glr-poly-types}
@@ -264,11 +328,11 @@ Let $\cat{E}$ be a category with set-indexed coproducts. The functor
   \Sigma : \Fam(\cat{E}) \to \cat{E} \qquad \Sigma(X, \partial X) = \coprod_{x \in X} \partial X_x
 \]
 sends a family to the coproduct of its fibres and a morphism to the copairing of its fibre maps (the
-counit of the free coproduct completion). A \emph{presentation} of an object $E \in \cat{E}$ is a
-family together with an isomorphism $\Sigma(X, \partial X) \cong E$. In a $\Fam$ category every
+counit of the free coproduct completion). A \emph{presentation} of an object $Z \in \cat{E}$ is a
+family together with an isomorphism $\Sigma(X, \partial X) \cong Z$. In a $\Fam$ category every
 object is canonically presented, set-indexed coproducts being disjoint unions of index sets; in
-$\GLR(F)$ presentations are genuine data, since a closed predicate on $G(X)$ need not be determined
-by its restrictions to the fibres of $X$.
+$\GLR(F)$ presentations are genuine data, since a closed predicate on the carrier of $Z$ need not
+be determined by its restrictions to the fibres of a presenting family.
 
 \paragraph{$\Poly$-types via realisation.}
 A polynomial $P$ over $\cat{E}$ embeds as a polynomial $\hat{P}$ over $\Fam(\cat{E})$, each
@@ -374,7 +438,7 @@ presentation.
 
 \begin{lemma}
 \label{lem:conservativity:definable-coproducts}
-$\Definable_{\coprod_i x_i} \sqsubseteq \mathbf{C}\,(\bigvee_i \Definable_{x_i}\langle
+$\Definable_{\coprod_i x_i} \sqsubseteq \mathbf{C}(\bigvee_i \Definable_{x_i}\langle
 \mathsf{in}_i \rangle)$.
 \end{lemma}
 
