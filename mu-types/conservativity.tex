@@ -140,7 +140,7 @@ $\mathbf{C}(\Phi)$ holding at each restriction of $f$.
 \begin{lemma}
 \label{lem:conservativity:indexed-closure}
 $\mathbf{C}$ is a strong closure operator on predicates (\secref{predicate-system}), its
-reindexing law using the stability of $\cat{C}$'s set-indexed coproducts.
+reindexing law using the stability of the set-indexed coproducts of $\cat{C}$.
 \end{lemma}
 
 \begin{proof}[Proof sketch]
@@ -239,8 +239,8 @@ For first-order $\tau$, $\sem{\tau} \cong \GF(\sem{\tau}_{\mathit{fo}})$.
 \end{lemma}
 
 \begin{proof}
-By induction on $\tau$. The unit, product and sum cases follow from $\GF$'s preservation of the
-terminal object, products and coproducts; base types agree by construction, the $\GLR(F)$-model of
+By induction on $\tau$. The unit, product and sum cases follow from the fact that $\GF$ preserves
+the terminal object, products and coproducts; base types agree by construction, the $\GLR(F)$-model of
 the signature being the transport of the $\cat{C}$-model along $\GF$; and $\mu$-types follow from
 the assumed preservation together with the isomorphism-invariance of the $\mu$-operator
 (\secref{polynomial-types:fam}).
@@ -293,7 +293,7 @@ and a morphism to its index function; the stability hypothesis holds in any $\Fa
 category. The theorem then says that the underlying function of the
 higher-order interpretation is the plain set-theoretic interpretation of the term: the dependency
 data does not interfere. $U$ does not preserve exponentials, which is why
-\remref{conservativity:glr-deltas}'s weakening of the hypotheses on $F$ matters.
+the weakening of the hypotheses on $F$ in \remref{conservativity:glr-deltas} matters.
 
 \subsection{$\Poly$-types in $\GLR(F)$}
 \label{sec:conservativity:glr-poly-types}
@@ -428,21 +428,37 @@ with joined predicates.}
 \subsection{Preservation of $\Poly$-types by $\GF$}
 \label{sec:conservativity:gf-poly-types}
 
-Preservation does not follow from $\GF$'s preservation of the finite structure: initial algebras
+\begin{AddedBlock}
+\begin{definition}[Preservation of $\Poly$-types]
+\label{def:conservativity:preserves-poly}
+Write $\GF(P)$ for the polynomial over $\GLR(F)$ obtained by applying $\GF$ to the constants of
+$P$. Then $\GF$ \emph{preserves $\Poly$-types} if for every $P \in \Poly_{\Delta,\alpha}$ over
+$\cat{C}$ and kinding environment $\delta$ there is an isomorphism
+$\mu_{\alpha.\GF(P)}(\GF \circ \delta) \cong \GF(\mu_{\alpha.P}(\delta))$.
+\end{definition}
+\end{AddedBlock}
+\noindent
+\Added{For the remainder of this subsection, suppose $\cat{C}$ is a $\Fam$ category.}
+Preservation fails to follow simply from the fact that $\GF$ preserves the finite
+structure\Added{ of $\cat{C}$}: initial algebras
 map out of themselves, so finite preservation yields \Replaced{only a morphism $\mu_{\alpha.\GF(P)}
-\to \GF(\mu_{\alpha.P})$, obtained by folding the $\GF$-image of the algebra, and not its
-inverse}{only the comparison $\mu_{\alpha.\GF(P)}
+\to \GF(\mu_{\alpha.P})$, obtained by folding the $\GF$-image of the algebra}{only the comparison $\mu_{\alpha.\GF(P)}
 \to \GF(\mu_{\alpha.P})$, by folding the $\GF$-image of the algebra}. The converse direction
 requires $\GF$ to preserve the presentation of $\mu_{\alpha.P}$ as a set-indexed coproduct of its
 fibres.
 
-\subsubsection{Strategy}
+\subsubsection{Concrete carriers}
 
-Preservation asks only for an isomorphism of objects, so \Replaced{the required isomorphism can
-be constructed}{the comparison can be carried out} on the
-concrete carriers of \propref{polynomial-types:fam-has-poly}, taking $\cat{C}$ to be a $\Fam$
-category with those $\Poly$-types; which $\Poly$-types structure is immaterial, any two having
-componentwise isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms. On the
+\Replaced{Preservation asks only for an
+isomorphism of objects, so we may take the $\Poly$-types of $\cat{C}$ to be the concrete
+construction of \propref{polynomial-types:fam-has-poly}, whose carriers are the families of
+sort-indexed trees with node-wise product fibres, and build the required isomorphism on those
+carriers; the choice of $\Poly$-types structure is immaterial, any two having componentwise
+isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms.}{Preservation asks
+only for an isomorphism of objects, so the comparison can be carried out on the concrete carriers
+of \propref{polynomial-types:fam-has-poly}, taking $\cat{C}$ to be a $\Fam$ category with those
+$\Poly$-types; which $\Poly$-types structure is immaterial, any two having componentwise
+isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms.} On the
 carriers no initiality machinery is needed: the tree sorts and fibres of the carrier are computed
 from the index sets and fibres of the
 environment entries and $\const$-objects alone. In particular a $\const$-object and a variable
@@ -476,7 +492,7 @@ A definable $f = F(g)$ into the coproduct decomposes along the pullback of the c
 $\coprod_i x_i$ along $g$, by stability; each restriction factors definably through a summand.
 \end{proof}
 
-\Replaced{Together with $F$'s preservation of set-indexed coproducts, the lemma makes $\GF$
+\Replaced{Together with the fact that $F$ preserves set-indexed coproducts, the lemma makes $\GF$
 preserve them: carriers by assumption, predicates by the lemma and the closure operator's
 reindexing law (\lemref{conservativity:indexed-closure}), with the coproducts of $\GLR(F)$
 computed as in \corref{conservativity:glr-poly}. In particular $\Sigma\check{\delta}_i \cong
@@ -513,15 +529,15 @@ Both carriers are set-indexed coproducts over the shared sort set, the left by t
 presentation of the $\Fam$ $\mu$-object and the right by realisation. Since $\GF$ preserves
 set-indexed coproducts, the comparison reduces to the fibres over a common sort, by tree
 recursion: at the leaves the two fibres are the same $\GF$-image of a presentation component, by
-the construction of $\check{\delta}$ and $\check{A}$, and at products they agree by $\GF$'s
-preservation of products.
+the construction of $\check{\delta}$ and $\check{A}$, and at products they agree because $\GF$
+preserves products.
 \end{proof}
 
 \subsubsection{Preservation}
 
 \begin{proposition}[Preservation]
 \label{prop:conservativity:gf-preserves-poly}
-$\GF$ preserves $\Poly$-types.
+\Added{Let $\cat{C}$ be a $\Fam$ category. Then} $\GF$ preserves $\Poly$-types.
 \end{proposition}
 
 \begin{proof}[Proof sketch]
