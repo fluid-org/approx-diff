@@ -212,19 +212,19 @@ same sorts and trees.
 \begin{definition}[Sort]
 \label{def:polynomial-types:sort}
 A \emph{sort} over $\Delta$ is a pair $(R, \rho)$ of an index-erased $\mu$-body $R$, that is a
-$\mu$-body whose constants are index sets, and a \emph{resolution} $\rho$ assigning to each free
-variable either a parameter in $\Delta$ or another sort. The collection of sorts is inductively
+$\mu$-body whose constants are index sets, and an \emph{assignment} $\rho$ taking each free
+variable to either a parameter in $\Delta$ or another sort. The collection of sorts is inductively
 generated; those of $P$ are the sorts reachable from $|P|$.
 \end{definition}
 
 \begin{definition}[Trees of a sort]
 \label{def:polynomial-types:trees}
 Work over the erased environment $|\delta|$. For each sort $(R, \rho)$ the set $W_{(R,\rho)}$ of
-\emph{trees of sort $(R, \rho)$}, and for each index-erased polynomial $R'$ with a resolution $\rho'$
+\emph{trees of sort $(R, \rho)$}, and for each index-erased polynomial $R'$ with an assignment $\rho'$
 of its variables the set of \emph{$R'$-trees}, are defined by a single simultaneous induction
 \citep{abbott2004}:
 \begin{itemize}
-\item a tree of sort $(R, \rho)$ is an $R$-tree, the bound variable $\alpha$ resolving to the sort
+\item a tree of sort $(R, \rho)$ is an $R$-tree, the bound variable $\alpha$ assigned the sort
   $(R, \rho)$ itself;
 \item a $\const X$-tree is an element of $X$;
 \item a $\beta$-tree is an element of $|\delta|(\rho'(\beta))$ if $\rho'(\beta)$ is a parameter, and a
@@ -298,7 +298,7 @@ fibres it is the identity, both sides being the same node-wise product.
 
 \begin{proof}[Proof of \propref{polynomial-types:fam-has-poly}]
 Take $\mu_{\alpha.P}(\delta) = (W_{s_0}, \partial W_{s_0})$, the family at the root sort $s_0 = (|P|,
-\rho_0)$ decorated by $P$, where $\rho_0$ resolves the free variables of $P$ to the parameters
+\rho_0)$ decorated by $P$, where $\rho_0$ takes the free variables of $P$ to the parameters
 $\Delta$.
 
 For the algebra map $\inMap : P(\delta[\alpha \mapsto \mu_{\alpha.P}(\delta)]) \to
