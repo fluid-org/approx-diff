@@ -234,7 +234,7 @@ interpreted directly in $\cat{C}$, which has $\Poly$-types whenever it is a $\Fa
 (\propref{polynomial-types:fam-has-poly}); write $\sem{\tau}_{\mathit{fo}}$ for this interpretation.
 
 \begin{lemma}[Type agreement]
-\label{lem:conservativity:comparison}
+\label{lem:conservativity:type-agreement}
 For first-order $\tau$, $\sem{\tau} \cong \GF(\sem{\tau}_{\mathit{fo}})$.
 \end{lemma}
 
@@ -251,7 +251,7 @@ the assumed preservation together with the isomorphism-invariance of the $\mu$-o
 When $F$ is full (for example the embedding $\Fam(\SDSemiMod(S)) \to \Fam(\SemiMod(S))$), every
 $\cat{D}$-morphism between embedded objects is an $F$-image outright, so conservativity over
 $\cat{C}$ follows from the isomorphisms $\sem{\tau}_{\cat{D}} \cong F(\sem{\tau}_{\mathit{fo}})$
-alone, with no glueing; these arise as in \lemref{conservativity:comparison}, with
+alone, with no glueing; these arise as in \lemref{conservativity:type-agreement}, with
 $F$ in place of $\GF$.
 \end{remark}
 
@@ -272,7 +272,7 @@ $\Gamma \vdash t : \tau$ with $\Gamma$ and $\tau$ first-order,
 \[
   U(\sem{t}_{\cat{D}}) \;=\; \sem{t}_{\cat{E}},
 \]
-modulo the isomorphisms of \lemref{conservativity:comparison}.
+modulo the isomorphisms of \lemref{conservativity:type-agreement}.
 \end{theorem}
 
 \begin{proof}
@@ -280,7 +280,7 @@ A morphism $F(x) \to F(y)$ of $\cat{D} \times \cat{E}$ is a pair $(h, k)$ with $
 unrelated, whereas an $F$-image is constrained to $(g, U(g))$; in particular $F$ is not full. The interpretation of the language in
 $\cat{D} \times \cat{E}$ is computed componentwise, so it is the pair $(\sem{t}_{\cat{D}},
 \sem{t}_{\cat{E}})$. At first-order $\Gamma$ and $\tau$ the isomorphisms of
-\lemref{conservativity:comparison} exhibit this
+\lemref{conservativity:type-agreement} exhibit this
 pair as a morphism between $\GF$-images, so by \lemref{conservativity:definability} it equals
 $(g, U(g))$ for some $g$; the first component gives $g = \sem{t}_{\cat{D}}$, and the second then
 gives $U(\sem{t}_{\cat{D}}) = \sem{t}_{\cat{E}}$.
@@ -483,7 +483,7 @@ $\check{\delta}_i$ for the $\GF$-image of the canonical presentation of $\delta_
 over the index set of $\delta_i$ obtained by applying $\GF$ to the components of the
 presentation.
 
-\subsubsection{Set-indexed coproducts}
+\subsubsection{Preservation of set-indexed coproducts}
 
 \begin{lemma}
 \label{lem:conservativity:definable-coproducts}
@@ -507,7 +507,7 @@ the closure operator's reindexing law (\lemref{conservativity:indexed-closure}),
 $\GLR(F)$ being computed as in \corref{conservativity:glr-poly}. In particular
 $\Sigma\check{\delta}_i \cong \GF(\delta_i)$.}
 
-\subsubsection{Carrier comparison}
+\subsubsection{Carrier isomorphism}
 
 \begin{lemma}[Skeleton]
 \label{lem:conservativity:skeleton}
@@ -522,8 +522,8 @@ leaves. The constant/variable distinction is thus invisible to it, and the two c
 the renaming of tree constructors induced by the skeleton, by tree recursion.
 \end{proof}
 
-\begin{lemma}[Carrier comparison]
-\label{lem:conservativity:carrier-comparison}
+\begin{lemma}[Carrier isomorphism]
+\label{lem:conservativity:carrier-isomorphism}
 $\GF(\mu_{\alpha.P^{*}}(\delta, \vec{A})) \cong \Sigma(\mu_{\alpha.P^{*}}(\check{\delta},
 \check{A}))$.
 \end{lemma}
@@ -531,8 +531,8 @@ $\GF(\mu_{\alpha.P^{*}}(\delta, \vec{A})) \cong \Sigma(\mu_{\alpha.P^{*}}(\check
 \begin{proof}[Proof sketch]
 Both carriers are set-indexed coproducts over the shared sort set, the left by the canonical
 presentation of the $\Fam$ $\mu$-object and the right by realisation. Since $\GF$ preserves
-set-indexed coproducts, the comparison reduces to the fibres over a common sort, by tree
-recursion: at the leaves the two fibres are the same $\GF$-image of a presentation component, by
+set-indexed coproducts, it suffices to construct the isomorphism fibrewise, over a common sort, by
+tree recursion: at the leaves the two fibres are the same $\GF$-image of a presentation component, by
 the construction of $\check{\delta}$ and $\check{A}$, and at products they agree because $\GF$
 preserves products.
 \end{proof}
@@ -541,26 +541,31 @@ preserves products.
 
 \begin{proposition}[Preservation]
 \label{prop:conservativity:gf-preserves-poly}
-\Added{Let $\cat{C}$ be a $\Fam$ category. Then} $\GF$ preserves $\Poly$-types.
+\Added{Suppose $\cat{C}$ is a $\Fam$ category. Then} $\GF$ preserves $\Poly$-types.
 \end{proposition}
 
 \begin{proof}[Proof sketch]
-\Added{Write $\hat{P} = \eta\,\GF\,P$ for the polynomial over $\Fam(\GLR(F))$ whose realised
-initial algebra is $\mu_{\alpha.\GF(P)}$ (\secref{conservativity:glr-poly-types}). The skeleton
-discards the $\const$-objects, so $\hat{P}^{*} = P^{*}$, with the $\const$-objects of $\hat{P}$
-the $\eta\,\GF$-images of $\vec{A}$. Then}
+\Added{The $\Poly$-types of $\GLR(F)$ (\corref{conservativity:glr-poly}) are realisations:
+$\mu_{\alpha.\GF(P)}(\GF \circ \delta) = \Sigma(\mu_{\alpha.\widehat{\GF(P)}}(\eta \circ \GF
+\circ \delta))$, where $\widehat{\GF(P)}$ is the embedding of \secref{conservativity:glr-poly-types}
+applied to $\GF(P)$ and the environment composites are entry-wise. The skeleton discards
+$\const$-objects, so $\widehat{\GF(P)}{}^{*} = P^{*}$, and the displaced $\const$-objects of
+$\widehat{\GF(P)}$ are the $\eta(\GF(A_j))$. Then}
 \[
-  \GF(\mu_{\alpha.P})
-  \;\overset{(1)}{\cong}\; \GF(\mu_{\alpha.P^{*}}(\delta, \vec{A}))
+\begin{aligned}
+  \GF(\mu_{\alpha.P}(\delta))
+  &\;\overset{(1)}{\cong}\; \GF(\mu_{\alpha.P^{*}}(\delta, \vec{A}))
   \;\overset{(2)}{\cong}\; \Sigma(\mu_{\alpha.P^{*}}(\check{\delta}, \check{A}))
-  \;\overset{(3)}{\cong}\; \Sigma(\mu_{\alpha.P^{*}}(\eta\,\GF\,\delta, \eta\,\GF\,\vec{A}))
-  \;\overset{(4)}{\cong}\; \Sigma(\mu_{\alpha.\hat{P}}(\eta\,\GF\,\delta))
-  \;=\; \mu_{\alpha.\GF(P)}
+  \;\overset{(3)}{\cong}\; \Sigma(\mu_{\alpha.P^{*}}(\eta \circ \GF \circ \delta,
+    (\eta(\GF(A_j)))_j)) \\
+  &\;\overset{(4)}{\cong}\; \Sigma(\mu_{\alpha.\widehat{\GF(P)}}(\eta \circ \GF \circ \delta))
+  \;=\; \mu_{\alpha.\GF(P)}(\GF \circ \delta)
+\end{aligned}
 \]
 \Added{where (1) is \lemref{conservativity:skeleton} in $\cat{C}$, under $\GF$; (2) is
-\lemref{conservativity:carrier-comparison}; (3) is realisation invariance
+\lemref{conservativity:carrier-isomorphism}; (3) is realisation invariance
 (\lemref{conservativity:realisation-invariance}) at the constant-free $P^{*}$, along the
 isomorphism family $\Sigma\check{\delta}_i \cong \GF(\delta_i) \cong
-\Sigma(\eta\,\GF\,\delta_i)$ and likewise at the entries for $\vec{A}$; and (4) is
+\Sigma(\eta(\GF(\delta_i)))$ and likewise at the entries for $\vec{A}$; and (4) is
 \lemref{conservativity:skeleton} again, interpreted in $\Fam(\GLR(F))$ and realised, backwards.}
 \end{proof}
