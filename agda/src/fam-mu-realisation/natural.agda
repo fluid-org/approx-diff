@@ -42,7 +42,7 @@ module SμfFold {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
     sμf = FMu.strong-μ-fmor Q̂ gs
 
     alg : FM.Mor (FamP.prod (η .fobj Γ) (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ ε̂)))) (FM.μObj Q̂ ε̂)
-    alg = FM.Mor-∘ (FMu.α Q̂ ε̂) (FMu.strong-fmor Q̂ (FMu.strong-extend-mor gs FamP.p₂))
+    alg = FM.Mor-∘ (FMu.inMap Q̂ ε̂) (FMu.strong-fmor Q̂ (FMu.strong-extend-mor gs FamP.p₂))
 
   KKisos : ∀ i → Iso (realise .fobj (extend δ̂ (η .fobj (Creal Q ε̂)) i))
                      (realise .fobj (extend δ̂ (FM.μObj Q̂ ε̂) i))
@@ -64,9 +64,9 @@ module SμfFold {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
     begin
       A' ∘co (Mδ.inR ∘ ℰP.p₂)
     ≈˘⟨ CoK.∘-cong₂ (co-pure _ _) ⟩
-      A' ∘co ((realise .fmor (FMu.α Q̂ δ̂) ∘ ℰP.p₂) ∘co (CQ .iso (extend δ̂ (η .fobj (Creal Q δ̂))) (extend δ̂ (FM.μObj Q̂ δ̂)) Mδ.inIsos .fwd ∘ ℰP.p₂))
+      A' ∘co ((realise .fmor (FMu.inMap Q̂ δ̂) ∘ ℰP.p₂) ∘co (CQ .iso (extend δ̂ (η .fobj (Creal Q δ̂))) (extend δ̂ (FM.μObj Q̂ δ̂)) Mδ.inIsos .fwd ∘ ℰP.p₂))
     ≈˘⟨ CoK.assoc _ _ _ ⟩
-      (A' ∘co (realise .fmor (FMu.α Q̂ δ̂) ∘ ℰP.p₂)) ∘co (CQ .iso (extend δ̂ (η .fobj (Creal Q δ̂))) (extend δ̂ (FM.μObj Q̂ δ̂)) Mδ.inIsos .fwd ∘ ℰP.p₂)
+      (A' ∘co (realise .fmor (FMu.inMap Q̂ δ̂) ∘ ℰP.p₂)) ∘co (CQ .iso (extend δ̂ (η .fobj (Creal Q δ̂))) (extend δ̂ (FM.μObj Q̂ δ̂)) Mδ.inIsos .fwd ∘ ℰP.p₂)
     ≈⟨ CoK.∘-cong₁ step-β ⟩
       (fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ ε̂))) alg ∘co fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) (FMu.strong-fmor Q̂ (FMu.strong-extend-mor (λ i → FamP.p₂) sμf))) ∘co (CQ .iso (extend δ̂ (η .fobj (Creal Q δ̂))) (extend δ̂ (FM.μObj Q̂ δ̂)) Mδ.inIsos .fwd ∘ ℰP.p₂)
     ≈⟨ CoK.assoc _ _ _ ⟩
@@ -81,10 +81,10 @@ module SμfFold {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
     where
       open ≈-Reasoning isEquiv
 
-      step-β : A' ∘co (realise .fmor (FMu.α Q̂ δ̂) ∘ ℰP.p₂)
+      step-β : A' ∘co (realise .fmor (FMu.inMap Q̂ δ̂) ∘ ℰP.p₂)
                ≈ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ ε̂))) alg ∘co fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) (FMu.strong-fmor Q̂ (FMu.strong-extend-mor (λ i → FamP.p₂) sμf))
       step-β =
-        ≈-trans (CoK.∘-cong₂ (≈-sym (fmorη-pure Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) (FMu.α Q̂ δ̂))))
+        ≈-trans (CoK.∘-cong₂ (≈-sym (fmorη-pure Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) (FMu.inMap Q̂ δ̂))))
           (≈-trans (≈-sym (fmorη-∘co Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) sμf _))
             (≈-trans (fmorη-cong (FM.hasMuLaws .FM.HasMuLaws.⦅⦆-β {P = Q̂} {δ = δ̂} _))
               (fmorη-∘co Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) alg _)))
@@ -247,7 +247,7 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
       ∎ where open ≈-Reasoning isEquiv
 
     -- The μ-invariance against the realised algebra map, in invariance form.
-    head-eq : muε .fwd ∘ realise .fmor (FMu.α Q̂ ε̂₁)
+    head-eq : muε .fwd ∘ realise .fmor (FMu.inMap Q̂ ε̂₁)
               ≈ Mε₂.inR ∘ (Kε₂ .bwd ∘ Mεμ .fwd)
     head-eq =
       ≈-trans (∘-cong₂ (inR-K Q ε̂₁ CQ))
@@ -358,10 +358,10 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
 
     -- The δ̂₂-side fold algebra, in composite form.
     head₂-eq : fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂₂ (FM.μObj Q̂ ε̂₂)))
-                 (FM.Mor-∘ (FMu.α Q̂ ε̂₂) sfp₂)
+                 (FM.Mor-∘ (FMu.inMap Q̂ ε̂₂) sfp₂)
                ≈ HEAD ∘co (Mδμ .bwd ∘ ℰP.p₂)
     head₂-eq =
-      ≈-trans (fmorη-post Γ _ (FMu.α Q̂ ε̂₂) sfp₂)
+      ≈-trans (fmorη-post Γ _ (FMu.inMap Q̂ ε̂₂) sfp₂)
         (≈-trans (∘-cong₁ (inR-K Q ε̂₂ CQ))
           (≈-trans (∘-cong₂ (≈-sym (co-iso-cancel Mδμ (cross-mixed Q CQ isosδ isosε {Ŷ₁ = FM.μObj Q̂ ε̂₁} {Ŷ₂ = FM.μObj Q̂ ε̂₂} muε gs₁ gs₂ sqs))))
             (≈-trans (≈-sym (assoc _ _ _)) (CoK.∘-cong₁ (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (assoc _ _ _)))))))
@@ -371,9 +371,9 @@ module MuNat {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
     head₁-eq =
       ≈-trans (≈-sym (assoc _ _ _)) (CoK.∘-cong₁ head-inner)
       where
-        head-inner : muε .fwd ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂₁ (FM.μObj Q̂ ε̂₁))) (FM.Mor-∘ (FMu.α Q̂ ε̂₁) sfp₁) ≈ HEAD
+        head-inner : muε .fwd ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂₁ (FM.μObj Q̂ ε̂₁))) (FM.Mor-∘ (FMu.inMap Q̂ ε̂₁) sfp₁) ≈ HEAD
         head-inner =
-          ≈-trans (∘-cong₂ (fmorη-post Γ _ (FMu.α Q̂ ε̂₁) sfp₁))
+          ≈-trans (∘-cong₂ (fmorη-post Γ _ (FMu.inMap Q̂ ε̂₁) sfp₁))
             (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ head-eq))
 
     -- The fold square for the composite candidate.

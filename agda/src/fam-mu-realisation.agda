@@ -69,9 +69,9 @@ fobj-realise-iso (μ P)     δ δ̂ js =
 ηjs δ X (Fin.suc i) = Iso-sym (realise-η-iso (δ i))
 
 -- The initial-algebra structure for ℰ.
-αℰ : ∀ {n} (P : Poly ℰ (suc n)) (δ : Fin n → obj) →
+inMapℰ : ∀ {n} (P : Poly ℰ (suc n)) (δ : Fin n → obj) →
      ℰI.fobj μ-objℰ P (extend δ (μ-objℰ P δ)) ⇒ μ-objℰ P δ
-αℰ {n} P δ =
+inMapℰ {n} P δ =
   Initiality.inR P (λ i → η .fobj (δ i)) (invarianceAt P) ∘
   fobj-realise-iso P (extend δ (μ-objℰ P δ)) (extend (λ i → η .fobj (δ i)) (η .fobj (μ-objℰ P δ))) (ηjs δ (μ-objℰ P δ)) .fwd
 
@@ -84,7 +84,7 @@ fobj-realise-iso (μ P)     δ δ̂ js =
 -- ℰ has Poly-types.
 Muℰ : ℰI.HasMu
 Muℰ .ℰI.HasMu.μ-obj = μ-objℰ
-Muℰ .ℰI.HasMu.α = αℰ
+Muℰ .ℰI.HasMu.inMap = inMapℰ
 Muℰ .ℰI.HasMu.⦅_⦆ = ⦅⦆ℰ
 
 private
@@ -333,11 +333,11 @@ sim-mu {n} P simP {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
         pw Fin.zero    = realise-η-iso μℰ' .fwd∘bwd≈id
         pw (Fin.suc i) = id-left
 
-    inR-decomp : M'.inR ∘ SIμext .fwd ≈ realise .fmor (FMu.α Q̂ δ̂η') ∘ SIE' .fwd
+    inR-decomp : M'.inR ∘ SIμext .fwd ≈ realise .fmor (FMu.inMap Q̂ δ̂η') ∘ SIE' .fwd
     inR-decomp =
       ≈-trans (∘-cong₁ inRK') (≈-trans (assoc _ _ _) (∘-cong₂ fuseM))
       where
-        inRK' : M'.inR ≈ realise .fmor (FMu.α Q̂ δ̂η') ∘ CP .iso (extend δ̂η' (η .fobj (Creal P δ̂η'))) (extend δ̂η' μ̂') M'.inIsos .fwd
+        inRK' : M'.inR ≈ realise .fmor (FMu.inMap Q̂ δ̂η') ∘ CP .iso (extend δ̂η' (η .fobj (Creal P δ̂η'))) (extend δ̂η' μ̂') M'.inIsos .fwd
         inRK' =
           ≈-sym (≈-trans (∘-cong₁ (inR-K P δ̂η' CP))
             (≈-trans (assoc _ _ _)
@@ -348,26 +348,26 @@ sim-mu {n} P simP {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
       ≈-trans (∘-cong₁ (≈-sym fuseA))
         (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (SIA .fwd∘bwd≈id)) id-right))
 
-    C : (αℰ P δ' ∘ ℰMu.strong-fmor P (ℰMu.strong-extend-mor fs ℰP.p₂)) ∘ ℰP.prod-m (id _) (SIA .bwd) ≈ Sd.aStar
+    C : (inMapℰ P δ' ∘ ℰMu.strong-fmor P (ℰMu.strong-extend-mor fs ℰP.p₂)) ∘ ℰP.prod-m (id _) (SIA .bwd) ≈ Sd.aStar
     C =
       begin
         ((M'.inR ∘ SIμext .fwd) ∘ ℰMu.strong-fmor P (ℰMu.strong-extend-mor fs ℰP.p₂)) ∘ ℰP.prod-m (id _) (SIA .bwd)
       ≈⟨ ∘-cong₁ (∘-cong₁ inR-decomp) ⟩
-        ((realise .fmor (FMu.α Q̂ δ̂η') ∘ SIE' .fwd) ∘ ℰMu.strong-fmor P (ℰMu.strong-extend-mor fs ℰP.p₂)) ∘ ℰP.prod-m (id _) (SIA .bwd)
+        ((realise .fmor (FMu.inMap Q̂ δ̂η') ∘ SIE' .fwd) ∘ ℰMu.strong-fmor P (ℰMu.strong-extend-mor fs ℰP.p₂)) ∘ ℰP.prod-m (id _) (SIA .bwd)
       ≈⟨ ∘-cong₁ (assoc _ _ _) ⟩
-        (realise .fmor (FMu.α Q̂ δ̂η') ∘ (SIE' .fwd ∘ ℰMu.strong-fmor P (ℰMu.strong-extend-mor fs ℰP.p₂))) ∘ ℰP.prod-m (id _) (SIA .bwd)
+        (realise .fmor (FMu.inMap Q̂ δ̂η') ∘ (SIE' .fwd ∘ ℰMu.strong-fmor P (ℰMu.strong-extend-mor fs ℰP.p₂))) ∘ ℰP.prod-m (id _) (SIA .bwd)
       ≈˘⟨ ∘-cong₁ (∘-cong₂ ihE) ⟩
-        (realise .fmor (FMu.α Q̂ δ̂η') ∘ (fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF ∘co (SIE .fwd ∘ ℰP.p₂))) ∘ ℰP.prod-m (id _) (SIA .bwd)
+        (realise .fmor (FMu.inMap Q̂ δ̂η') ∘ (fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF ∘co (SIE .fwd ∘ ℰP.p₂))) ∘ ℰP.prod-m (id _) (SIA .bwd)
       ≈˘⟨ ∘-cong₁ (assoc _ _ _) ⟩
-        ((realise .fmor (FMu.α Q̂ δ̂η') ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF) ∘co (SIE .fwd ∘ ℰP.p₂)) ∘ ℰP.prod-m (id _) (SIA .bwd)
+        ((realise .fmor (FMu.inMap Q̂ δ̂η') ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF) ∘co (SIE .fwd ∘ ℰP.p₂)) ∘ ℰP.prod-m (id _) (SIA .bwd)
       ≈⟨ assoc _ _ _ ⟩
-        (realise .fmor (FMu.α Q̂ δ̂η') ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF) ∘ (ℰP.pair ℰP.p₁ (SIE .fwd ∘ ℰP.p₂) ∘ ℰP.prod-m (id _) (SIA .bwd))
+        (realise .fmor (FMu.inMap Q̂ δ̂η') ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF) ∘ (ℰP.pair ℰP.p₁ (SIE .fwd ∘ ℰP.p₂) ∘ ℰP.prod-m (id _) (SIA .bwd))
       ≈⟨ ∘-cong₂ (ℰP.pair-natural _ _ _) ⟩
-        (realise .fmor (FMu.α Q̂ δ̂η') ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF) ∘ ℰP.pair (ℰP.p₁ ∘ ℰP.prod-m (id _) (SIA .bwd)) ((SIE .fwd ∘ ℰP.p₂) ∘ ℰP.prod-m (id _) (SIA .bwd))
+        (realise .fmor (FMu.inMap Q̂ δ̂η') ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF) ∘ ℰP.pair (ℰP.p₁ ∘ ℰP.prod-m (id _) (SIA .bwd)) ((SIE .fwd ∘ ℰP.p₂) ∘ ℰP.prod-m (id _) (SIA .bwd))
       ≈⟨ ∘-cong₂ (ℰP.pair-cong (≈-trans (ℰP.pair-p₁ _ _) id-left) (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (ℰP.pair-p₂ _ _)) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ cancelSIE))))) ⟩
-        (realise .fmor (FMu.α Q̂ δ̂η') ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF) ∘co (Sd.KKε .fwd ∘ ℰP.p₂)
-      ≈˘⟨ CoK.∘-cong₁ (fmorη-post Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) (FMu.α Q̂ δ̂η') sfF) ⟩
-        fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) (FM.Mor-∘ (FMu.α Q̂ δ̂η') sfF) ∘co (Sd.KKε .fwd ∘ ℰP.p₂)
+        (realise .fmor (FMu.inMap Q̂ δ̂η') ∘ fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) sfF) ∘co (Sd.KKε .fwd ∘ ℰP.p₂)
+      ≈˘⟨ CoK.∘-cong₁ (fmorη-post Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) (FMu.inMap Q̂ δ̂η') sfF) ⟩
+        fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂η μ̂')) (FM.Mor-∘ (FMu.inMap Q̂ δ̂η') sfF) ∘co (Sd.KKε .fwd ∘ ℰP.p₂)
       ∎
       where
         open ≈-Reasoning isEquiv
@@ -430,7 +430,7 @@ private
           (ℰP.pair-cong id-left
             (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong₁ (SIA .bwd∘fwd≈id)) id-left)))))
 
-    β : ⦅⦆ℰ {P = P} {δ = δ} alg ∘co (αℰ P δ ∘ ℰP.p₂)
+    β : ⦅⦆ℰ {P = P} {δ = δ} alg ∘co (inMapℰ P δ ∘ ℰP.p₂)
         ≈ alg ∘co ℰMu.strong-fmor P (ℰMu.strong-extend-mor (λ i → ℰP.p₂) (⦅⦆ℰ {P = P} {δ = δ} alg))
     β =
       ≈-trans (CoK.∘-cong₂ (≈-sym (co-pure _ _)))
@@ -441,11 +441,11 @@ private
                 (absorb-a _)))))
 
     η' : (h : ℰP.prod Γ (μ-objℰ P δ) ⇒ A) →
-         h ∘co (αℰ P δ ∘ ℰP.p₂) ≈ alg ∘co ℰMu.strong-fmor P (ℰMu.strong-extend-mor (λ i → ℰP.p₂) h) →
+         h ∘co (inMapℰ P δ ∘ ℰP.p₂) ≈ alg ∘co ℰMu.strong-fmor P (ℰMu.strong-extend-mor (λ i → ℰP.p₂) h) →
          h ≈ ⦅⦆ℰ {P = P} {δ = δ} alg
     η' h hyp = M.foldR-η a h sq
       where
-        inR-split : M.inR ≈ αℰ P δ ∘ SIμ .bwd
+        inR-split : M.inR ≈ inMapℰ P δ ∘ SIμ .bwd
         inR-split =
           ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (SIμ .fwd∘bwd≈id)) id-right))
 

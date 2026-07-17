@@ -34,7 +34,7 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     module TB = Tree δB
 
   data MorD : ∀ {k} (ρA : Fin k → Fin nA ⊎ Sort nA) (ρB : Fin k → Fin nB ⊎ Sort nB) →
-              (∀ v → TA.DecoRes (ρA v)) → (∀ v → TB.DecoRes (ρB v)) →
+              (∀ v → TA.DecoAssign (ρA v)) → (∀ v → TB.DecoAssign (ρB v)) →
               Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     base : ∀ {k} {ρA ρB dA dB} (f : ∀ v → TA.El (ρA v) → TB.El (ρB v))
            (f-resp : ∀ v {a a'} → TA.elEq (ρA v) a a' → TB.elEq (ρB v) (f v a) (f v a'))
@@ -185,7 +185,7 @@ module FReindex {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj} (G : obj) 
   -- Defunctionalised action: `abase` supplies all var fibres directly (a Γ-dependent fold);
   -- `abind` extends across a binder. Data (not a function) so the recursion stays structural.
   data FAct : ∀ {k} {ρA : Fin k → Fin nA ⊎ Sort nA} {ρB : Fin k → Fin nB ⊎ Sort nB} →
-              IMorD ρA ρB → (∀ v → TA.DecoRes (ρA v)) → (∀ v → TB.DecoRes (ρB v)) →
+              IMorD ρA ρB → (∀ v → TA.DecoAssign (ρA v)) → (∀ v → TB.DecoAssign (ρB v)) →
               Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     abase : ∀ {k} {ρA ρB} {cmb : IMorD {k} ρA ρB} {dA dB}
             (afib : ∀ v (a : TA.El (ρA v)) → prod G (TA.fib-el (ρA v) (dA v) a) ⇒ TB.fib-el (ρB v) (dB v) (iapply cmb v a)) →

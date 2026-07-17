@@ -1,8 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- The μ-carrier of a polynomial coincides with that of its constant-free
--- skeleton at the environment extended by the constants: a constant and a
+-- The μ-carrier of a polynomial coincides with its constant-free
+-- form at the environment extended by the constants: a constant and a
 -- variable bound to an equal environment entry contribute the same carrier
 -- data, so the two W-types agree up to renaming of tree constructors.
 -- Decorations are passed explicitly: the T₂-side decoration is consumed at
@@ -27,15 +27,15 @@ open import indexed-family using (_≃f_)
 import polynomial-functor
 import fam-mu-types.carrier
 
-module fam-mu-types.skeleton {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.constant-free {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
 open fam-mu-types.carrier os es T P
-open polynomial-functor using (#c; skeleton; skeleton-go; consts; _++e_)
+open polynomial-functor using (#c; constant-free; constant-free-go; consts; _++e_)
 
 -- Fixed data for one instance of the lemma: an environment and a constant
 -- block over the Fam category.
-module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
+module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
 
   δ⁺ : Fin (n +ℕ k) → Obj
   δ⁺ = δ ++e cs
@@ -49,7 +49,7 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   -- pointing at the constant entries of the extended environment.
   mutual
     data RefRel : (r₁ : Fin n ⊎ Sort n) (r₂ : Fin (n +ℕ k) ⊎ Sort (n +ℕ k)) →
-                  T₁.DecoRes r₁ → T₂.DecoRes r₂ → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+                  T₁.DecoAssign r₁ → T₂.DecoAssign r₂ → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
       env : ∀ {p} → RefRel (inj₁ p) (inj₁ (p ↑ˡ k)) (lift tt) (lift tt)
       srt : ∀ {s₁ s₂ e₁ e₂} → SortRel s₁ s₂ e₁ e₂ → RefRel (inj₂ s₁) (inj₂ s₂) e₁ e₂
 
@@ -57,54 +57,54 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
                    T₁.Deco s₁ → T₂.Deco s₂ → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
       mk : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
            (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-           (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i)) →
+           (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i)) →
            (∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
            (∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
            (∀ c → cs (ι c) ≡ consts Q c) →
-           SortRel (mkSort ∣ Q ∣ ρ₁) (mkSort ∣ skeleton-go Q ι ∣ ρ₂)
-                   (T₁.mkDeco Q d₁) (T₂.mkDeco (skeleton-go Q ι) d₂)
+           SortRel (mkSort ∣ Q ∣ ρ₁) (mkSort ∣ constant-free-go Q ι ∣ ρ₂)
+                   (T₁.mkDeco Q d₁) (T₂.mkDeco (constant-free-go Q ι) d₂)
 
   -- The forward tree map: rename constant leaves to their variable images.
   mutual
     wfwd : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
            (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-           (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i)) →
+           (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i)) →
            (∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
            (∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
            (∀ c → cs (ι c) ≡ consts Q c) →
-           T₁.W ∣ Q ∣ ρ₁ → T₂.W ∣ skeleton-go Q ι ∣ ρ₂
+           T₁.W ∣ Q ∣ ρ₁ → T₂.W ∣ constant-free-go Q ι ∣ ρ₂
     wfwd {j} Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (T₁.sup x) =
-      T₂.sup (shape-fwd Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)))
-                (T₁.deco-ext Q d₁) (T₂.deco-ext (skeleton-go Q ι) d₂)
+      T₂.sup (shape-fwd Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+                (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
                 (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok x)
 
     -- The extended environments stay related when entering a binder.
     extend-vars : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
                   (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-                  (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i)) →
+                  (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i)) →
                   (∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                   (∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                   (∀ c → cs (ι c) ≡ consts Q c) →
                   ∀ i → RefRel (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁)) i)
-                               (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)) (i ↑ˡ k))
+                               (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)) (i ↑ˡ k))
                                (T₁.deco-ext Q d₁ i)
-                               (T₂.deco-ext (skeleton-go Q ι) d₂ (i ↑ˡ k))
+                               (T₂.deco-ext (constant-free-go Q ι) d₂ (i ↑ˡ k))
     extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok Fin.zero    = srt (mk Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok)
     extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (Fin.suc i) = vars i
 
     extend-fresh : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
                    (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)) →
                    (∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
-                   ∀ (c : Fin k) → extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)) (suc j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)
+                   ∀ (c : Fin k) → extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)) (suc j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)
     extend-fresh Q ρ₁ ι ρ₂ fresh c = fresh c
 
     shape-fwd : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                 (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-                (d₁ : ∀ i → T₁.DecoRes (η₁ i)) (d₂ : ∀ i → T₂.DecoRes (η₂ i)) →
+                (d₁ : ∀ i → T₁.DecoAssign (η₁ i)) (d₂ : ∀ i → T₂.DecoAssign (η₂ i)) →
                 (∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                 (∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                 (∀ c → cs (ι c) ≡ consts Q c) →
-                T₁.⟦ ∣ Q ∣ ⟧shape η₁ → T₂.⟦ ∣ skeleton-go Q ι ∣ ⟧shape η₂
+                T₁.⟦ ∣ Q ∣ ⟧shape η₁ → T₂.⟦ ∣ constant-free-go Q ι ∣ ⟧shape η₂
     shape-fwd {jv} (const A) η₁ ι η₂ d₁ d₂ vars fresh csok x =
       ≡-subst T₂.El (≡-sym (fresh (ι Fin.zero)))
         (≡-subst (λ B → B .idx .Carrier)
@@ -144,25 +144,25 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   mutual
     w≈-fwd : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
              (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-             (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i))
+             (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i))
              (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
              (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
              (csok : ∀ c → cs (ι c) ≡ consts Q c) →
              {x y : T₁.W ∣ Q ∣ ρ₁} → T₁.W-≈ x y →
              T₂.W-≈ (wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x) (wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok y)
     w≈-fwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok {T₁.sup x} {T₁.sup y} p =
-      shape≈-fwd Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)))
-        (T₁.deco-ext Q d₁) (T₂.deco-ext (skeleton-go Q ι) d₂)
+      shape≈-fwd Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+        (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
         (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok p
 
     shape≈-fwd : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                  (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-                 (d₁ : ∀ i → T₁.DecoRes (η₁ i)) (d₂ : ∀ i → T₂.DecoRes (η₂ i))
+                 (d₁ : ∀ i → T₁.DecoAssign (η₁ i)) (d₂ : ∀ i → T₂.DecoAssign (η₂ i))
                  (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                  (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                  (csok : ∀ c → cs (ι c) ≡ consts Q c) →
                  {x y : T₁.⟦ ∣ Q ∣ ⟧shape η₁} → T₁.shape≈ ∣ Q ∣ η₁ x y →
-                 T₂.shape≈ ∣ skeleton-go Q ι ∣ η₂ (shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok x) (shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok y)
+                 T₂.shape≈ ∣ constant-free-go Q ι ∣ η₂ (shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok x) (shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok y)
     shape≈-fwd {jv} (const A) η₁ ι η₂ d₁ d₂ vars fresh csok p =
       el-cast-≈ (≡-sym (fresh (ι Fin.zero)))
         (cast-≈ (≡-sym (≡-trans (cong [ δ , cs ]′ (splitAt-↑ʳ n k (ι Fin.zero))) (csok Fin.zero))) p)
@@ -192,23 +192,23 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   mutual
     wbwd : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
            (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-           (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i)) →
+           (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i)) →
            (∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
            (∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
            (∀ c → cs (ι c) ≡ consts Q c) →
-           T₂.W ∣ skeleton-go Q ι ∣ ρ₂ → T₁.W ∣ Q ∣ ρ₁
+           T₂.W ∣ constant-free-go Q ι ∣ ρ₂ → T₁.W ∣ Q ∣ ρ₁
     wbwd {j} Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (T₂.sup x) =
-      T₁.sup (shape-bwd Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)))
-                (T₁.deco-ext Q d₁) (T₂.deco-ext (skeleton-go Q ι) d₂)
+      T₁.sup (shape-bwd Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+                (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
                 (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok x)
 
     shape-bwd : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                 (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-                (d₁ : ∀ i → T₁.DecoRes (η₁ i)) (d₂ : ∀ i → T₂.DecoRes (η₂ i)) →
+                (d₁ : ∀ i → T₁.DecoAssign (η₁ i)) (d₂ : ∀ i → T₂.DecoAssign (η₂ i)) →
                 (∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                 (∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                 (∀ c → cs (ι c) ≡ consts Q c) →
-                T₂.⟦ ∣ skeleton-go Q ι ∣ ⟧shape η₂ → T₁.⟦ ∣ Q ∣ ⟧shape η₁
+                T₂.⟦ ∣ constant-free-go Q ι ∣ ⟧shape η₂ → T₁.⟦ ∣ Q ∣ ⟧shape η₁
     shape-bwd {jv} (const A) η₁ ι η₂ d₁ d₂ vars fresh csok x =
       ≡-subst (λ B → B .idx .Carrier)
         (≡-trans (cong [ δ , cs ]′ (splitAt-↑ʳ n k (ι Fin.zero))) (csok Fin.zero))
@@ -250,20 +250,20 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   mutual
     w-fb : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
            (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-           (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i))
+           (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i))
            (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
            (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
            (csok : ∀ c → cs (ι c) ≡ consts Q c) →
            (x : T₁.W ∣ Q ∣ ρ₁) →
            T₁.W-≈ (wbwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x)) x
     w-fb Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (T₁.sup x) =
-      shape-fb Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)))
-        (T₁.deco-ext Q d₁) (T₂.deco-ext (skeleton-go Q ι) d₂)
+      shape-fb Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+        (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
         (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok x
 
     shape-fb : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-               (d₁ : ∀ i → T₁.DecoRes (η₁ i)) (d₂ : ∀ i → T₂.DecoRes (η₂ i))
+               (d₁ : ∀ i → T₁.DecoAssign (η₁ i)) (d₂ : ∀ i → T₂.DecoAssign (η₂ i))
                (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                (csok : ∀ c → cs (ι c) ≡ consts Q c) →
@@ -296,25 +296,25 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   mutual
     w-bf : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
            (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-           (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i))
+           (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i))
            (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
            (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
            (csok : ∀ c → cs (ι c) ≡ consts Q c) →
-           (y : T₂.W ∣ skeleton-go Q ι ∣ ρ₂) →
+           (y : T₂.W ∣ constant-free-go Q ι ∣ ρ₂) →
            T₂.W-≈ (wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (wbwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok y)) y
     w-bf Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (T₂.sup y) =
-      shape-bf Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)))
-        (T₁.deco-ext Q d₁) (T₂.deco-ext (skeleton-go Q ι) d₂)
+      shape-bf Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+        (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
         (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok y
 
     shape-bf : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-               (d₁ : ∀ i → T₁.DecoRes (η₁ i)) (d₂ : ∀ i → T₂.DecoRes (η₂ i))
+               (d₁ : ∀ i → T₁.DecoAssign (η₁ i)) (d₂ : ∀ i → T₂.DecoAssign (η₂ i))
                (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                (csok : ∀ c → cs (ι c) ≡ consts Q c) →
-               (y : T₂.⟦ ∣ skeleton-go Q ι ∣ ⟧shape η₂) →
-               T₂.shape≈ ∣ skeleton-go Q ι ∣ η₂ (shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok (shape-bwd Q η₁ ι η₂ d₁ d₂ vars fresh csok y)) y
+               (y : T₂.⟦ ∣ constant-free-go Q ι ∣ ⟧shape η₂) →
+               T₂.shape≈ ∣ constant-free-go Q ι ∣ η₂ (shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok (shape-bwd Q η₁ ι η₂ d₁ d₂ vars fresh csok y)) y
     shape-bf {jv} (const A) η₁ ι η₂ d₁ d₂ vars fresh csok y =
       ≡-to-≈₂ {r = η₂ (jv ↑ʳ ι Fin.zero)} (≡-trans (cong (≡-subst T₂.El (≡-sym F)) (subst-sym-subst {P = Car} E)) (subst-sym-subst {P = T₂.El} F))
       where
@@ -343,24 +343,24 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   mutual
     w≈-bwd : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
              (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-             (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i))
+             (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i))
              (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
              (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
              (csok : ∀ c → cs (ι c) ≡ consts Q c) →
-             {x y : T₂.W ∣ skeleton-go Q ι ∣ ρ₂} → T₂.W-≈ x y →
+             {x y : T₂.W ∣ constant-free-go Q ι ∣ ρ₂} → T₂.W-≈ x y →
              T₁.W-≈ (wbwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x) (wbwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok y)
     w≈-bwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok {T₂.sup x} {T₂.sup y} p =
-      shape≈-bwd Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)))
-        (T₁.deco-ext Q d₁) (T₂.deco-ext (skeleton-go Q ι) d₂)
+      shape≈-bwd Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+        (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
         (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok p
 
     shape≈-bwd : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                  (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-                 (d₁ : ∀ i → T₁.DecoRes (η₁ i)) (d₂ : ∀ i → T₂.DecoRes (η₂ i))
+                 (d₁ : ∀ i → T₁.DecoAssign (η₁ i)) (d₂ : ∀ i → T₂.DecoAssign (η₂ i))
                  (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                  (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                  (csok : ∀ c → cs (ι c) ≡ consts Q c) →
-                 {x y : T₂.⟦ ∣ skeleton-go Q ι ∣ ⟧shape η₂} → T₂.shape≈ ∣ skeleton-go Q ι ∣ η₂ x y →
+                 {x y : T₂.⟦ ∣ constant-free-go Q ι ∣ ⟧shape η₂} → T₂.shape≈ ∣ constant-free-go Q ι ∣ η₂ x y →
                  T₁.shape≈ ∣ Q ∣ η₁ (shape-bwd Q η₁ ι η₂ d₁ d₂ vars fresh csok x) (shape-bwd Q η₁ ι η₂ d₁ d₂ vars fresh csok y)
     shape≈-bwd {jv} (const A) η₁ ι η₂ d₁ d₂ vars fresh csok p =
       cast-≈ (≡-trans (cong [ δ , cs ]′ (splitAt-↑ʳ n k (ι Fin.zero))) (csok Fin.zero))
@@ -389,7 +389,7 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
 
   -- The fibres of matched trees are equal objects.
   private
-    fib-el-castF : ∀ {r q} (F : r ≡ inj₁ q) {dr : T₂.DecoRes r} (z : T₂.El (inj₁ q)) →
+    fib-el-castF : ∀ {r q} (F : r ≡ inj₁ q) {dr : T₂.DecoAssign r} (z : T₂.El (inj₁ q)) →
                    T₂.fib-el r dr (≡-subst T₂.El (≡-sym F) z) ≡ T₂.fib-el (inj₁ q) (lift tt) z
     fib-el-castF ≡-refl z = ≡-refl
 
@@ -400,25 +400,25 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   mutual
     fib-fwd-≡ : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
                 (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-                (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i))
+                (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i))
                 (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                 (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                 (csok : ∀ c → cs (ι c) ≡ consts Q c) →
                 (x : T₁.W ∣ Q ∣ ρ₁) →
-                T₂.fib (skeleton-go Q ι) d₂ (wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x) ≡ T₁.fib Q d₁ x
+                T₂.fib (constant-free-go Q ι) d₂ (wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x) ≡ T₁.fib Q d₁ x
     fib-fwd-≡ Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (T₁.sup x) =
-      fib-shape-≡ Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)))
-        (T₁.deco-ext Q d₁) (T₂.deco-ext (skeleton-go Q ι) d₂)
+      fib-shape-≡ Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+        (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
         (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok x
 
     fib-shape-≡ : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                   (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-                  (d₁ : ∀ i → T₁.DecoRes (η₁ i)) (d₂ : ∀ i → T₂.DecoRes (η₂ i))
+                  (d₁ : ∀ i → T₁.DecoAssign (η₁ i)) (d₂ : ∀ i → T₂.DecoAssign (η₂ i))
                   (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                   (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                   (csok : ∀ c → cs (ι c) ≡ consts Q c) →
                   (x : T₁.⟦ ∣ Q ∣ ⟧shape η₁) →
-                  T₂.fib-shape (skeleton-go Q ι) d₂ (shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok x) ≡ T₁.fib-shape Q d₁ x
+                  T₂.fib-shape (constant-free-go Q ι) d₂ (shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok x) ≡ T₁.fib-shape Q d₁ x
     fib-shape-≡ {jv} (const A) η₁ ι η₂ d₁ d₂ vars fresh csok x =
       ≡-trans (fib-el-castF (fresh (ι Fin.zero)) _)
         (fib-castE (≡-trans (cong [ δ , cs ]′ (splitAt-↑ʳ n k (ι Fin.zero))) (csok Fin.zero)) x)
@@ -450,7 +450,7 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
 
     -- Leaf square: a cast built from a reference equality and an object
     -- equality commutes with the underlying family's transport.
-    leaf-compat : ∀ {r q} (F : r ≡ inj₁ q) {dr : T₂.DecoRes r} {B} (E : δ⁺ q ≡ B)
+    leaf-compat : ∀ {r q} (F : r ≡ inj₁ q) {dr : T₂.DecoAssign r} {B} (E : δ⁺ q ≡ B)
                   {x y : B .idx .Carrier} (p : B .idx ._≈s_ x y) →
                   (≡-mor (≡-sym (≡-trans (fib-el-castF F {dr} (≡-subst Car (≡-sym E) y)) (fib-castE E y)))
                     ∘ B .fam .subst p)
@@ -479,30 +479,30 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   mutual
     w-compat : ∀ {j} (Q : Poly (suc j)) (ρ₁ : Fin j → Fin n ⊎ Sort n)
                (ι : Fin (#c Q) → Fin k) (ρ₂ : Fin (j +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-               (d₁ : ∀ i → T₁.DecoRes (ρ₁ i)) (d₂ : ∀ i → T₂.DecoRes (ρ₂ i))
+               (d₁ : ∀ i → T₁.DecoAssign (ρ₁ i)) (d₂ : ∀ i → T₂.DecoAssign (ρ₂ i))
                (vars : ∀ i → RefRel (ρ₁ i) (ρ₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                (fresh : ∀ (c : Fin k) → ρ₂ (j ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                (csok : ∀ c → cs (ι c) ≡ consts Q c) →
                {x y : T₁.W ∣ Q ∣ ρ₁} (e : T₁.W-≈ x y) →
                (≡-mor (≡-sym (fib-fwd-≡ Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok y)) ∘ T₁.fib-subst Q d₁ {x = x} {y = y} e)
-               ≈ (T₂.fib-subst (skeleton-go Q ι) d₂
+               ≈ (T₂.fib-subst (constant-free-go Q ι) d₂
                     {x = wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x} {y = wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok y}
                     (w≈-fwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok {x} {y} e)
                   ∘ ≡-mor (≡-sym (fib-fwd-≡ Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x)))
     w-compat Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok {T₁.sup x} {T₁.sup y} e =
-      shape-compat Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ skeleton-go Q ι ∣ ρ₂)))
-        (T₁.deco-ext Q d₁) (T₂.deco-ext (skeleton-go Q ι) d₂)
+      shape-compat Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+        (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
         (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok e
 
     shape-compat : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                    (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
-                   (d₁ : ∀ i → T₁.DecoRes (η₁ i)) (d₂ : ∀ i → T₂.DecoRes (η₂ i))
+                   (d₁ : ∀ i → T₁.DecoAssign (η₁ i)) (d₂ : ∀ i → T₂.DecoAssign (η₂ i))
                    (vars : ∀ i → RefRel (η₁ i) (η₂ (i ↑ˡ k)) (d₁ i) (d₂ (i ↑ˡ k))) →
                    (fresh : ∀ (c : Fin k) → η₂ (jv ↑ʳ c) ≡ inj₁ (n ↑ʳ c)) →
                    (csok : ∀ c → cs (ι c) ≡ consts Q c) →
                    {x y : T₁.⟦ ∣ Q ∣ ⟧shape η₁} (e : T₁.shape≈ ∣ Q ∣ η₁ x y) →
                    (≡-mor (≡-sym (fib-shape-≡ Q η₁ ι η₂ d₁ d₂ vars fresh csok y)) ∘ T₁.fib-shape-subst Q d₁ e)
-                   ≈ (T₂.fib-shape-subst (skeleton-go Q ι) d₂ (shape≈-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok {x} {y} e)
+                   ≈ (T₂.fib-shape-subst (constant-free-go Q ι) d₂ (shape≈-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok {x} {y} e)
                       ∘ ≡-mor (≡-sym (fib-shape-≡ Q η₁ ι η₂ d₁ d₂ vars fresh csok x)))
     shape-compat {jv} (const A) η₁ ι η₂ d₁ d₂ vars fresh csok e =
       leaf-compat (fresh (ι Fin.zero))
@@ -549,7 +549,7 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
     flip-compat ≡-refl ≡-refl h =
       ≈-trans id-right (≈-trans (≈-sym id-left) (≈-trans h (≈-trans id-right (≈-sym id-left))))
 
-  -- A polynomial against its skeleton, at the extended environment.
+  -- A polynomial against its constant-free form, at the extended environment.
   module Inst (P : Poly (suc n)) (ι : Fin (#c P) → Fin k)
               (csok : ∀ c → cs (ι c) ≡ consts P c) where
 
@@ -560,10 +560,10 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
       ρ₀' : Fin (n +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k)
       ρ₀' i = inj₁ i
 
-      d₁₀ : ∀ i → T₁.DecoRes (ρ₀ i)
+      d₁₀ : ∀ i → T₁.DecoAssign (ρ₀ i)
       d₁₀ i = lift tt
 
-      d₂₀ : ∀ i → T₂.DecoRes (ρ₀' i)
+      d₂₀ : ∀ i → T₂.DecoAssign (ρ₀' i)
       d₂₀ i = lift tt
 
       v₀ : ∀ i → RefRel (ρ₀ i) (ρ₀' (i ↑ˡ k)) (d₁₀ i) (d₂₀ (i ↑ˡ k))
@@ -572,31 +572,31 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
       f₀ : ∀ (c : Fin k) → ρ₀' (n ↑ʳ c) ≡ inj₁ (n ↑ʳ c)
       f₀ c = ≡-refl
 
-      Fw : T₁.W ∣ P ∣ ρ₀ → T₂.W ∣ skeleton-go P ι ∣ ρ₀'
+      Fw : T₁.W ∣ P ∣ ρ₀ → T₂.W ∣ constant-free-go P ι ∣ ρ₀'
       Fw = wfwd P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok
 
-      Bw : T₂.W ∣ skeleton-go P ι ∣ ρ₀' → T₁.W ∣ P ∣ ρ₀
+      Bw : T₂.W ∣ constant-free-go P ι ∣ ρ₀' → T₁.W ∣ P ∣ ρ₀
       Bw = wbwd P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok
 
-      fibeq : ∀ t → T₂.fib (skeleton-go P ι) d₂₀ (Fw t) ≡ T₁.fib P d₁₀ t
+      fibeq : ∀ t → T₂.fib (constant-free-go P ι) d₂₀ (Fw t) ≡ T₁.fib P d₁₀ t
       fibeq = fib-fwd-≡ P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok
 
-    fwd-mor : Mor (μObj P δ) (μObj (skeleton-go P ι) δ⁺)
+    fwd-mor : Mor (μObj P δ) (μObj (constant-free-go P ι) δ⁺)
     fwd-mor .idxf .prop-setoid._⇒_.func = Fw
     fwd-mor .idxf .prop-setoid._⇒_.func-resp-≈ {x₁} {x₂} = w≈-fwd P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok {x₁} {x₂}
     fwd-mor .famf .transf t = ≡-mor (≡-sym (fibeq t))
     fwd-mor .famf .natural {t₁} {t₂} e = w-compat P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok {x = t₁} {y = t₂} e
 
-    bwd-mor : Mor (μObj (skeleton-go P ι) δ⁺) (μObj P δ)
+    bwd-mor : Mor (μObj (constant-free-go P ι) δ⁺) (μObj P δ)
     bwd-mor .idxf .prop-setoid._⇒_.func = Bw
     bwd-mor .idxf .prop-setoid._⇒_.func-resp-≈ {x₁} {x₂} = w≈-bwd P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok {x₁} {x₂}
     bwd-mor .famf .transf s =
       ≡-mor (fibeq (Bw s)) ∘
-      T₂.fib-subst (skeleton-go P ι) d₂₀ {x = s} {y = Fw (Bw s)}
+      T₂.fib-subst (constant-free-go P ι) d₂₀ {x = s} {y = Fw (Bw s)}
         (T₂.W-≈-sym {x = Fw (Bw s)} {y = s} (w-bf P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok s))
     bwd-mor .famf .natural {s₁} {s₂} e =
       ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong₂ (≈-sym (T₂.fib-trans* (skeleton-go P ι) d₂₀
+        (≈-trans (∘-cong₂ (≈-sym (T₂.fib-trans* (constant-free-go P ι) d₂₀
                                     {x = s₁} {y = s₂} {z = Fw (Bw s₂)} _ _)))
           (≈-sym
             (≈-trans (≈-sym (assoc _ _ _))
@@ -604,17 +604,17 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
                           (w-compat P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok {x = Bw s₁} {y = Bw s₂}
                             (w≈-bwd P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok {s₁} {s₂} e))))
                 (≈-trans (assoc _ _ _)
-                  (∘-cong₂ (≈-sym (T₂.fib-trans* (skeleton-go P ι) d₂₀
+                  (∘-cong₂ (≈-sym (T₂.fib-trans* (constant-free-go P ι) d₂₀
                                      {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _))))))))
 
     private
-      st-collapse₁ : ∀ {j} (Q : Poly (suc j)) {ρ} (d : ∀ i → T₁.DecoRes (ρ i)) {a b : T₁.W ∣ Q ∣ ρ}
+      st-collapse₁ : ∀ {j} (Q : Poly (suc j)) {ρ} (d : ∀ i → T₁.DecoAssign (ρ i)) {a b : T₁.W ∣ Q ∣ ρ}
                      (p : T₁.W-≈ a b) (q : T₁.W-≈ b a) →
                      (T₁.fib-subst Q d {x = b} {y = a} q ∘ T₁.fib-subst Q d {x = a} {y = b} p) ≈ id (T₁.fib Q d a)
       st-collapse₁ Q d {a} {b} p q =
         ≈-trans (≈-sym (T₁.fib-trans* Q d {x = a} {y = b} {z = a} q p)) (T₁.fib-refl* Q d a)
 
-      st-collapse₂ : ∀ {j} (Q : Poly (suc j)) {ρ} (d : ∀ i → T₂.DecoRes (ρ i)) {a b : T₂.W ∣ Q ∣ ρ}
+      st-collapse₂ : ∀ {j} (Q : Poly (suc j)) {ρ} (d : ∀ i → T₂.DecoAssign (ρ i)) {a b : T₂.W ∣ Q ∣ ρ}
                      (p : T₂.W-≈ a b) (q : T₂.W-≈ b a) →
                      (T₂.fib-subst Q d {x = b} {y = a} q ∘ T₂.fib-subst Q d {x = a} {y = b} p) ≈ id (T₂.fib Q d a)
       st-collapse₂ Q d {a} {b} p q =
@@ -626,7 +626,7 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
       ≈-trans (∘-cong₂ id-left)
         (≈-trans (∘-cong₂ (≈-trans (≈-sym (assoc _ _ _))
             (≈-trans (∘-cong₁ (≡-mor-cancel' (fibeq (Bw s)))) id-left)))
-          (st-collapse₂ (skeleton-go P ι) d₂₀ {a = s} {b = Fw (Bw s)} _ _))
+          (st-collapse₂ (constant-free-go P ι) d₂₀ {a = s} {b = Fw (Bw s)} _ _))
 
     bf-≃ : Fam𝒞._≈_ (Mor-∘ bwd-mor fwd-mor) (Mor-id _)
     bf-≃ ._≃_.idxf-eq = prop-setoid.mk-≃m (λ t → w-fb P ρ₀ ι ρ₀' d₁₀ d₂₀ v₀ f₀ csok t)
@@ -640,16 +640,16 @@ module Skeleton {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
                 (≈-trans (∘-cong₁ (≡-mor-cancel (fibeq (Bw (Fw t))))) id-left)))))
           (st-collapse₁ P d₁₀ {a = t} {b = Bw (Fw t)} _ _))
 
-    skeleton-inst-iso : Fam𝒞.Iso (μObj P δ) (μObj (skeleton-go P ι) δ⁺)
-    skeleton-inst-iso .Fam𝒞.Iso.fwd = fwd-mor
-    skeleton-inst-iso .Fam𝒞.Iso.bwd = bwd-mor
-    skeleton-inst-iso .Fam𝒞.Iso.fwd∘bwd≈id = fb-≃
-    skeleton-inst-iso .Fam𝒞.Iso.bwd∘fwd≈id = bf-≃
+    constant-free-inst-iso : Fam𝒞.Iso (μObj P δ) (μObj (constant-free-go P ι) δ⁺)
+    constant-free-inst-iso .Fam𝒞.Iso.fwd = fwd-mor
+    constant-free-inst-iso .Fam𝒞.Iso.bwd = bwd-mor
+    constant-free-inst-iso .Fam𝒞.Iso.fwd∘bwd≈id = fb-≃
+    constant-free-inst-iso .Fam𝒞.Iso.bwd∘fwd≈id = bf-≃
 
--- The μ-carrier of a polynomial coincides with that of its constant-free
--- skeleton at the environment extended by its constants.
-skeleton-μ-iso : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj) →
-                 Fam𝒞.Iso (μObj P δ) (μObj (skeleton P) (δ ++e consts P))
-skeleton-μ-iso P δ = skeleton-inst-iso
-  where open Skeleton δ (consts P)
+-- The μ-carrier of a polynomial coincides with its constant-free
+-- form at the environment extended by its constants.
+constant-free-μ-iso : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj) →
+                 Fam𝒞.Iso (μObj P δ) (μObj (constant-free P) (δ ++e consts P))
+constant-free-μ-iso P δ = constant-free-inst-iso
+  where open ConstantFree δ (consts P)
         open Inst P (λ c → c) (λ c → ≡-refl)

@@ -57,7 +57,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     bF {Γ} {A} a = untranspose (a ∘ prodη Γ (F^ (η .fobj A)) .fwd)
 
   inR : Greal P δ̂ (Creal P δ̂) ⇒ Creal P δ̂
-  inR = realise .fmor (FMu.α P̂ δ̂) ∘
+  inR = realise .fmor (FMu.inMap P̂ δ̂) ∘
         Kiso' (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .fwd
 
   foldR : ∀ {Γ A} → (ℰP.prod Γ (Greal P δ̂ A) ⇒ A) → ℰP.prod Γ (Creal P δ̂) ⇒ A
@@ -138,11 +138,11 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     begin
       foldR a ∘co (inR ∘ ℰP.p₂)
     ≈⟨ CoK.∘-cong (foldR-real a) split ⟩
-      (cA ∘ Φ⦅b⦆) ∘co ((Rα ∘ ℰP.p₂) ∘co (K ∘ ℰP.p₂))
+      (cA ∘ Φ⦅b⦆) ∘co ((Rin ∘ ℰP.p₂) ∘co (K ∘ ℰP.p₂))
     ≈˘⟨ CoK.assoc _ _ _ ⟩
-      ((cA ∘ Φ⦅b⦆) ∘co (Rα ∘ ℰP.p₂)) ∘co (K ∘ ℰP.p₂)
+      ((cA ∘ Φ⦅b⦆) ∘co (Rin ∘ ℰP.p₂)) ∘co (K ∘ ℰP.p₂)
     ≈⟨ CoK.∘-cong₁ step₁ ⟩
-      (cA ∘ fmorη Γ (F^ μ̂) (FM.Mor-∘ ⦅b⦆ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F)))) ∘co (K ∘ ℰP.p₂)
+      (cA ∘ fmorη Γ (F^ μ̂) (FM.Mor-∘ ⦅b⦆ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.inMap P̂ δ̂) p₂F)))) ∘co (K ∘ ℰP.p₂)
     ≈⟨ CoK.∘-cong₁ (∘-cong₂ (fmorη-cong (FM.hasMuLaws .FM.HasMuLaws.⦅⦆-β (bF a)))) ⟩
       (cA ∘ fmorη Γ (F^ μ̂) (FM.Mor-∘ (bF a) (pairη Γ (F^ μ̂) sfB))) ∘co (K ∘ ℰP.p₂)
     ≈⟨ CoK.∘-cong₁ (∘-cong₂ (fmorη-∘co Γ (F^ μ̂) (bF a) sfB)) ⟩
@@ -162,21 +162,21 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       ⦅b⦆ = FMu.⦅_⦆ {P = P̂} {δ = δ̂} (bF a)
       cA = realise-η-iso A .fwd
       Φ⦅b⦆ = fmorη Γ μ̂ ⦅b⦆
-      Rα = realise .fmor (FMu.α P̂ δ̂)
+      Rin = realise .fmor (FMu.inMap P̂ δ̂)
       K = Kiso' (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos .fwd
       p₂F = FamP.p₂ {x = η .fobj Γ} {y = F^ μ̂}
       sfB = FMu.strong-fmor P̂ (FMu.strong-extend-mor (λ i → FamP.p₂) ⦅b⦆)
 
-      split : inR ∘ ℰP.p₂ ≈ (Rα ∘ ℰP.p₂) ∘co (K ∘ ℰP.p₂)
-      split = ≈-sym (co-pure Rα K)
+      split : inR ∘ ℰP.p₂ ≈ (Rin ∘ ℰP.p₂) ∘co (K ∘ ℰP.p₂)
+      split = ≈-sym (co-pure Rin K)
 
-      step₁ : (cA ∘ Φ⦅b⦆) ∘co (Rα ∘ ℰP.p₂)
-              ≈ cA ∘ fmorη Γ (F^ μ̂) (FM.Mor-∘ ⦅b⦆ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F)))
+      step₁ : (cA ∘ Φ⦅b⦆) ∘co (Rin ∘ ℰP.p₂)
+              ≈ cA ∘ fmorη Γ (F^ μ̂) (FM.Mor-∘ ⦅b⦆ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.inMap P̂ δ̂) p₂F)))
       step₁ =
         ≈-trans (assoc _ _ _)
           (∘-cong₂
-            (≈-sym (≈-trans (fmorη-∘co Γ (F^ μ̂) ⦅b⦆ (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F))
-              (CoK.∘-cong₂ (fmorη-pure Γ (F^ μ̂) (FMu.α P̂ δ̂))))))
+            (≈-sym (≈-trans (fmorη-∘co Γ (F^ μ̂) ⦅b⦆ (FM.Mor-∘ (FMu.inMap P̂ δ̂) p₂F))
+              (CoK.∘-cong₂ (fmorη-pure Γ (F^ μ̂) (FMu.inMap P̂ δ̂))))))
 
   foldR-η : ∀ {Γ A} (a : ℰP.prod Γ (Greal P δ̂ A) ⇒ A) (h : ℰP.prod Γ (Creal P δ̂) ⇒ A) →
             (h ∘co (inR ∘ ℰP.p₂) ≈ a ∘co Gmap P δ̂ h) → h ≈ foldR a
@@ -187,7 +187,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
     where
       ĥ = untranspose (h ∘ prodη Γ μ̂ .fwd)
       cA = realise-η-iso A .fwd
-      Rα = realise .fmor (FMu.α P̂ δ̂)
+      Rin = realise .fmor (FMu.inMap P̂ δ̂)
       Kiso = Kiso' (extend δ̂ (η .fobj (Creal P δ̂))) (extend δ̂ μ̂) inIsos
       p₂F = FamP.p₂ {x = η .fobj Γ} {y = F^ μ̂}
       sfH = FMu.strong-fmor P̂ (FMu.strong-extend-mor (λ i → FamP.p₂) ĥ)
@@ -196,11 +196,11 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       hypĥ = absorb μ̂ h
 
       -- The given square, with the invariance cancelled and the algebra map bare.
-      square' : h ∘co (Rα ∘ ℰP.p₂) ≈ a ∘co fmorη Γ (F^ μ̂) sfH
+      square' : h ∘co (Rin ∘ ℰP.p₂) ≈ a ∘co fmorη Γ (F^ μ̂) sfH
       square' =
         begin
-          h ∘co (Rα ∘ ℰP.p₂)
-        ≈˘⟨ co-iso-cancel Kiso (≈-trans (≈-trans (CoK.assoc _ _ _) (CoK.∘-cong₂ (co-pure {Γ = Γ} Rα (Kiso .fwd)))) square) ⟩
+          h ∘co (Rin ∘ ℰP.p₂)
+        ≈˘⟨ co-iso-cancel Kiso (≈-trans (≈-trans (CoK.assoc _ _ _) (CoK.∘-cong₂ (co-pure {Γ = Γ} Rin (Kiso .fwd)))) square) ⟩
           (a ∘co Gmap P δ̂ h) ∘co (Kiso .bwd ∘ ℰP.p₂)
         ≈⟨ CoK.assoc _ _ _ ⟩
           a ∘co (Gmap P δ̂ h ∘co (Kiso .bwd ∘ ℰP.p₂))
@@ -209,22 +209,22 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
         ∎ where open ≈-Reasoning isEquiv
 
       famSquare : FamC._≈_
-                    (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F)))
+                    (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.inMap P̂ δ̂) p₂F)))
                     (FM.Mor-∘ (bF a) (pairη Γ (F^ μ̂) sfH))
       famSquare = fmorη-inj Γ (F^ μ̂) _ _ imgEq
         where
-          inner : cA ∘ (fmorη Γ μ̂ ĥ ∘co (Rα ∘ ℰP.p₂)) ≈ a ∘co fmorη Γ (F^ μ̂) sfH
+          inner : cA ∘ (fmorη Γ μ̂ ĥ ∘co (Rin ∘ ℰP.p₂)) ≈ a ∘co fmorη Γ (F^ μ̂) sfH
           inner =
             ≈-trans (≈-sym (assoc _ _ _))
               (≈-trans (∘-cong₁ hypĥ) square')
 
-          imgEq : fmorη Γ (F^ μ̂) (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F)))
+          imgEq : fmorη Γ (F^ μ̂) (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.inMap P̂ δ̂) p₂F)))
                   ≈ fmorη Γ (F^ μ̂) (FM.Mor-∘ (bF a) (pairη Γ (F^ μ̂) sfH))
           imgEq =
             begin
-              fmorη Γ (F^ μ̂) (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.α P̂ δ̂) p₂F)))
-            ≈⟨ ≈-trans (fmorη-∘co Γ (F^ μ̂) ĥ _) (CoK.∘-cong₂ (fmorη-pure Γ (F^ μ̂) (FMu.α P̂ δ̂))) ⟩
-              fmorη Γ μ̂ ĥ ∘co (Rα ∘ ℰP.p₂)
+              fmorη Γ (F^ μ̂) (FM.Mor-∘ ĥ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.inMap P̂ δ̂) p₂F)))
+            ≈⟨ ≈-trans (fmorη-∘co Γ (F^ μ̂) ĥ _) (CoK.∘-cong₂ (fmorη-pure Γ (F^ μ̂) (FMu.inMap P̂ δ̂))) ⟩
+              fmorη Γ μ̂ ĥ ∘co (Rin ∘ ℰP.p₂)
             ≈⟨ iso-shuffle (realise-η-iso A) _ _ inner ⟩
               realise-η-iso A .bwd ∘ (a ∘co fmorη Γ (F^ μ̂) sfH)
             ≈˘⟨ assoc _ _ _ ⟩
@@ -288,7 +288,7 @@ plain-β Q δ̂ CQ {D} c =
 
 -- The realised algebra map, recovered from the invariance form of inR.
 inR-K : ∀ {n} (Q : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj) (CQ : InvarianceAt Q) →
-        realise .fmor (FMu.α (Poly-map η Q) δ̂)
+        realise .fmor (FMu.inMap (Poly-map η Q) δ̂)
         ≈ Initiality.inR Q δ̂ CQ ∘
            CQ .iso (extend δ̂ (η .fobj (Creal Q δ̂))) (extend δ̂ (FM.μObj (Poly-map η Q) δ̂)) (Initiality.inIsos Q δ̂ CQ) .bwd
 inR-K Q δ̂ CQ =

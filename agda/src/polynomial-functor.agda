@@ -57,7 +57,7 @@ module Interp
   record HasMu : Set (o ⊔ m ⊔ e) where
     field
       μ-obj : ∀ {n} → Poly 𝒞 (suc n) → (Fin n → obj) → obj
-      α     : ∀ {n} (P : Poly 𝒞 (suc n)) (δ : Fin n → obj) → fobj μ-obj P (extend δ (μ-obj P δ)) ⇒ μ-obj P δ
+      inMap     : ∀ {n} (P : Poly 𝒞 (suc n)) (δ : Fin n → obj) → fobj μ-obj P (extend δ (μ-obj P δ)) ⇒ μ-obj P δ
       ⦅_⦆  : ∀ {n Γ A} {P : Poly 𝒞 (suc n)} {δ : Fin n → obj} →
              (prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) → prod Γ (μ-obj P δ) ⇒ A
 
@@ -79,7 +79,7 @@ module Interp
 
       strong-μ-fmor : ∀ {n Γ} (P : Poly 𝒞 (suc n)) {δ δ' : Fin n → obj} →
                       (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj P δ'
-      strong-μ-fmor P {δ} {δ'} fs = ⦅ α P δ' ∘ strong-fmor P (strong-extend-mor fs p₂) ⦆
+      strong-μ-fmor P {δ} {δ'} fs = ⦅ inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂) ⦆
 
     fmor : ∀ {n} (P : Poly 𝒞 n) {δ δ' : Fin n → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
     fmor P fs = strong-fmor P (λ i → fs i ∘ p₂) ∘ pair to-terminal (id _)
@@ -89,7 +89,7 @@ module Interp
     μ-map : ∀ {m n} (P : Poly 𝒞 (suc m)) (δ : Fin m → obj) (Q : Poly 𝒞 (suc n)) (δ' : Fin n → obj) →
             (fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
             μ-obj P δ ⇒ μ-obj Q δ'
-    μ-map P δ Q δ' unfold = ⦅_⦆ {P = P} {δ = δ} ((α Q δ' ∘ unfold) ∘ p₂) ∘ pair to-terminal (id _)
+    μ-map P δ Q δ' unfold = ⦅_⦆ {P = P} {δ = δ} ((inMap Q δ' ∘ unfold) ∘ p₂) ∘ pair to-terminal (id _)
 
   -- The initiality laws for HasMu, stated via the strong functorial action derived from its operations.
   record HasMuLaws (Mu : HasMu) : Set (o ⊔ m ⊔ e) where
@@ -97,10 +97,10 @@ module Interp
     field
       ⦅⦆-β : ∀ {n Γ A} {P : Poly 𝒞 (suc n)} {δ : Fin n → obj}
              (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) →
-             (⦅ alg ⦆ ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) ⦅ alg ⦆))
+             (⦅ alg ⦆ ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) ⦅ alg ⦆))
       ⦅⦆-η : ∀ {n Γ A} {P : Poly 𝒞 (suc n)} {δ : Fin n → obj}
              (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) (h : prod Γ (μ-obj P δ) ⇒ A) →
-             (h ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h)) → h ≈ ⦅ alg ⦆
+             (h ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h)) → h ≈ ⦅ alg ⦆
 
 -- Action of a functor on polynomials: apply the functor at the const leaves.
 Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} →
@@ -111,10 +111,10 @@ Poly-map F (P + Q)   = Poly-map F P + Poly-map F Q
 Poly-map F (P × Q)   = Poly-map F P × Poly-map F Q
 Poly-map F (μ P)     = μ (Poly-map F P)
 
--- The constant-free skeleton of a polynomial: constants are replaced by fresh
+-- The constant-free form of a polynomial: constants are replaced by fresh
 -- variables, numbered above the original ones. The traversal carries an
 -- injection of each subterm's constant block into the full block, so no
--- renaming of polynomials is needed. The skeleton never mentions the constants
+-- renaming of polynomials is needed. The constant-free never mentions the constants
 -- and so lives over any category.
 #c : ∀ {o₁ m₁ e₁} {𝒞 : Category o₁ m₁ e₁} {n} → Poly 𝒞 n → ℕ
 #c (const A) = 1
@@ -123,33 +123,33 @@ Poly-map F (μ P)     = μ (Poly-map F P)
 #c (P × Q)   = #c P Data.Nat.+ #c Q
 #c (μ P)     = #c P
 
-skeleton-go : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n k}
+constant-free-go : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n k}
               (P : Poly 𝒞 n) → (Fin (#c P) → Fin k) → Poly 𝒟 (n Data.Nat.+ k)
-skeleton-go {n = n} {k} (const A) ι = var (n Fin.↑ʳ ι Fin.zero)
-skeleton-go {k = k} (var i)      ι = var (i Fin.↑ˡ k)
-skeleton-go (P + Q) ι = skeleton-go P (λ c → ι (c Fin.↑ˡ #c Q)) + skeleton-go Q (λ c → ι (#c P Fin.↑ʳ c))
-skeleton-go (P × Q) ι = skeleton-go P (λ c → ι (c Fin.↑ˡ #c Q)) × skeleton-go Q (λ c → ι (#c P Fin.↑ʳ c))
-skeleton-go (μ P)   ι = μ (skeleton-go P ι)
+constant-free-go {n = n} {k} (const A) ι = var (n Fin.↑ʳ ι Fin.zero)
+constant-free-go {k = k} (var i)      ι = var (i Fin.↑ˡ k)
+constant-free-go (P + Q) ι = constant-free-go P (λ c → ι (c Fin.↑ˡ #c Q)) + constant-free-go Q (λ c → ι (#c P Fin.↑ʳ c))
+constant-free-go (P × Q) ι = constant-free-go P (λ c → ι (c Fin.↑ˡ #c Q)) × constant-free-go Q (λ c → ι (#c P Fin.↑ʳ c))
+constant-free-go (μ P)   ι = μ (constant-free-go P ι)
 
-skeleton : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n}
+constant-free : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n}
            (P : Poly 𝒞 n) → Poly 𝒟 (n Data.Nat.+ #c P)
-skeleton P = skeleton-go P (λ c → c)
+constant-free P = constant-free-go P (λ c → c)
 
--- The skeleton never mentions the constants, so transporting it along a functor
--- gives the skeleton again: the two instantiations coincide.
-Poly-map-skeleton-go : ∀ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
+-- The constant-free never mentions the constants, so transporting it along a functor
+-- gives the constant-free form again: the two instantiations coincide.
+Poly-map-constant-free-go : ∀ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
                        {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {ℰ : Category o₃ m₃ e₃}
                        (G : Functor 𝒟 ℰ) {n k} (P : Poly 𝒞 n) (ι : Fin (#c P) → Fin k) →
-                       Poly-map G (skeleton-go {𝒟 = 𝒟} P ι) ≡ skeleton-go {𝒟 = ℰ} P ι
-Poly-map-skeleton-go G (const A) ι = ≡-refl
-Poly-map-skeleton-go G (var i)   ι = ≡-refl
-Poly-map-skeleton-go G (P + Q) ι =
-  cong₂ _+_ (Poly-map-skeleton-go G P (λ c → ι (c Fin.↑ˡ #c Q)))
-            (Poly-map-skeleton-go G Q (λ c → ι (#c P Fin.↑ʳ c)))
-Poly-map-skeleton-go G (P × Q) ι =
-  cong₂ _×_ (Poly-map-skeleton-go G P (λ c → ι (c Fin.↑ˡ #c Q)))
-            (Poly-map-skeleton-go G Q (λ c → ι (#c P Fin.↑ʳ c)))
-Poly-map-skeleton-go G (μ P) ι = cong μ (Poly-map-skeleton-go G P ι)
+                       Poly-map G (constant-free-go {𝒟 = 𝒟} P ι) ≡ constant-free-go {𝒟 = ℰ} P ι
+Poly-map-constant-free-go G (const A) ι = ≡-refl
+Poly-map-constant-free-go G (var i)   ι = ≡-refl
+Poly-map-constant-free-go G (P + Q) ι =
+  cong₂ _+_ (Poly-map-constant-free-go G P (λ c → ι (c Fin.↑ˡ #c Q)))
+            (Poly-map-constant-free-go G Q (λ c → ι (#c P Fin.↑ʳ c)))
+Poly-map-constant-free-go G (P × Q) ι =
+  cong₂ _×_ (Poly-map-constant-free-go G P (λ c → ι (c Fin.↑ˡ #c Q)))
+            (Poly-map-constant-free-go G Q (λ c → ι (#c P Fin.↑ʳ c)))
+Poly-map-constant-free-go G (μ P) ι = cong μ (Poly-map-constant-free-go G P ι)
 
 -- The constants of a polynomial, indexed by its constant block.
 consts : ∀ {o₁ m₁ e₁} {𝒞 : Category o₁ m₁ e₁} {n} (P : Poly 𝒞 n) → Fin (#c P) → Category.obj 𝒞
@@ -171,7 +171,7 @@ _++e_ {n = n} δ cs i = [ δ , cs ] (Fin.splitAt n i)
 ... | inj₂ _ = ≡-refl
 
 -- Transporting a polynomial along a functor preserves the constant count, the
--- constants themselves up to the functor, and the skeleton.
+-- constants themselves up to the functor, and the constant-free form.
 #c-Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
               (G : Functor 𝒞 𝒟) {n} (P : Poly 𝒞 n) → #c (Poly-map G P) ≡ #c P
 #c-Poly-map G (const A) = ≡-refl
@@ -213,47 +213,47 @@ consts-Poly-map G (P × Q) c
 ... | inj₂ c₂ = consts-Poly-map G Q c₂
 consts-Poly-map G (μ P) c = consts-Poly-map G P c
 
--- The skeleton is unchanged by renaming the constant block pointwise.
-skeleton-go-cong : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
+-- The constant-free is unchanged by renaming the constant block pointwise.
+constant-free-go-cong : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
                    {n k} (P : Poly 𝒞 n) {ι₁ ι₂ : Fin (#c P) → Fin k} →
                    (∀ c → ι₁ c ≡ ι₂ c) →
-                   skeleton-go {𝒟 = 𝒟} P ι₁ ≡ skeleton-go {𝒟 = 𝒟} P ι₂
-skeleton-go-cong {n = n} (const A) eq = cong (λ t → var (n Fin.↑ʳ t)) (eq Fin.zero)
-skeleton-go-cong (var i)   eq = ≡-refl
-skeleton-go-cong (P + Q) eq =
-  cong₂ _+_ (skeleton-go-cong P (λ c → eq (c Fin.↑ˡ #c Q)))
-            (skeleton-go-cong Q (λ c → eq (#c P Fin.↑ʳ c)))
-skeleton-go-cong (P × Q) eq =
-  cong₂ _×_ (skeleton-go-cong P (λ c → eq (c Fin.↑ˡ #c Q)))
-            (skeleton-go-cong Q (λ c → eq (#c P Fin.↑ʳ c)))
-skeleton-go-cong (μ P) eq = cong μ (skeleton-go-cong P eq)
+                   constant-free-go {𝒟 = 𝒟} P ι₁ ≡ constant-free-go {𝒟 = 𝒟} P ι₂
+constant-free-go-cong {n = n} (const A) eq = cong (λ t → var (n Fin.↑ʳ t)) (eq Fin.zero)
+constant-free-go-cong (var i)   eq = ≡-refl
+constant-free-go-cong (P + Q) eq =
+  cong₂ _+_ (constant-free-go-cong P (λ c → eq (c Fin.↑ˡ #c Q)))
+            (constant-free-go-cong Q (λ c → eq (#c P Fin.↑ʳ c)))
+constant-free-go-cong (P × Q) eq =
+  cong₂ _×_ (constant-free-go-cong P (λ c → eq (c Fin.↑ˡ #c Q)))
+            (constant-free-go-cong Q (λ c → eq (#c P Fin.↑ʳ c)))
+constant-free-go-cong (μ P) eq = cong μ (constant-free-go-cong P eq)
 
--- The skeleton never mentions the constants, so transporting its source along
--- a functor gives the skeleton again, up to the cast of the constant block.
-skeleton-go-Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
+-- The constant-free never mentions the constants, so transporting its source along
+-- a functor gives the constant-free form again, up to the cast of the constant block.
+constant-free-go-Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
                        {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {ℰ : Category o₃ m₃ e₃}
                        (G : Functor 𝒞 𝒟) {n k} (P : Poly 𝒞 n) (ι : Fin (#c P) → Fin k) →
-                       skeleton-go {𝒟 = ℰ} (Poly-map G P) (λ c → ι (≡-subst Fin (#c-Poly-map G P) c)) ≡
-                       skeleton-go {𝒟 = ℰ} P ι
-skeleton-go-Poly-map G (const A) ι = ≡-refl
-skeleton-go-Poly-map G (var i)   ι = ≡-refl
-skeleton-go-Poly-map G (P + Q) ι =
+                       constant-free-go {𝒟 = ℰ} (Poly-map G P) (λ c → ι (≡-subst Fin (#c-Poly-map G P) c)) ≡
+                       constant-free-go {𝒟 = ℰ} P ι
+constant-free-go-Poly-map G (const A) ι = ≡-refl
+constant-free-go-Poly-map G (var i)   ι = ≡-refl
+constant-free-go-Poly-map G (P + Q) ι =
   cong₂ _+_
-    (≡-trans (skeleton-go-cong (Poly-map G P)
+    (≡-trans (constant-free-go-cong (Poly-map G P)
                (λ c → cong ι (subst-↑ˡ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
-             (skeleton-go-Poly-map G P (λ c → ι (c Fin.↑ˡ #c Q))))
-    (≡-trans (skeleton-go-cong (Poly-map G Q)
+             (constant-free-go-Poly-map G P (λ c → ι (c Fin.↑ˡ #c Q))))
+    (≡-trans (constant-free-go-cong (Poly-map G Q)
                (λ c → cong ι (subst-↑ʳ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
-             (skeleton-go-Poly-map G Q (λ c → ι (#c P Fin.↑ʳ c))))
-skeleton-go-Poly-map G (P × Q) ι =
+             (constant-free-go-Poly-map G Q (λ c → ι (#c P Fin.↑ʳ c))))
+constant-free-go-Poly-map G (P × Q) ι =
   cong₂ _×_
-    (≡-trans (skeleton-go-cong (Poly-map G P)
+    (≡-trans (constant-free-go-cong (Poly-map G P)
                (λ c → cong ι (subst-↑ˡ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
-             (skeleton-go-Poly-map G P (λ c → ι (c Fin.↑ˡ #c Q))))
-    (≡-trans (skeleton-go-cong (Poly-map G Q)
+             (constant-free-go-Poly-map G P (λ c → ι (c Fin.↑ˡ #c Q))))
+    (≡-trans (constant-free-go-cong (Poly-map G Q)
                (λ c → cong ι (subst-↑ʳ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
-             (skeleton-go-Poly-map G Q (λ c → ι (#c P Fin.↑ʳ c))))
-skeleton-go-Poly-map G (μ P) ι = cong μ (skeleton-go-Poly-map G P ι)
+             (constant-free-go-Poly-map G Q (λ c → ι (#c P Fin.↑ʳ c))))
+constant-free-go-Poly-map G (μ P) ι = cong μ (constant-free-go-Poly-map G P ι)
 
 -- The functor preserves μ-types: each μ-object maps, up to isomorphism, to the
 -- μ-object of the image polynomial in the image environment.
@@ -349,7 +349,7 @@ module MuIso
 
     pm-μ-fmor : ∀ {n Γ} {P Q : Poly 𝒞 (suc n)} → PolyMor P Q → {δ δ' : Fin n → obj} →
                 (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj Q δ'
-    pm-μ-fmor {Q = Q} r {δ} {δ'} fs = ⦅ α Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂) ⦆
+    pm-μ-fmor {Q = Q} r {δ} {δ'} fs = ⦅ inMap Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂) ⦆
 
   -- The fold respects equality of algebras. P and δ are explicit because fobj/μ-obj are not injective, so
   -- can't be inferred from the algebras.
@@ -542,16 +542,16 @@ module MuIso
       where
         μ-gs = strong-μ-fmor P gs
         μ-fs = strong-μ-fmor P fs
-        alg-f = α P δ' ∘ strong-fmor P (strong-extend-mor fs p₂)
-        alg-g = α P δ'' ∘ strong-fmor P (strong-extend-mor gs p₂)
-        alg = α P δ'' ∘ strong-fmor P (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
+        alg-f = inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂)
+        alg-g = inMap P δ'' ∘ strong-fmor P (strong-extend-mor gs p₂)
+        alg = inMap P δ'' ∘ strong-fmor P (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
 
         head : (μ-gs ∘co alg-f) ≈ (alg-g ∘co strong-fmor P (strong-extend-mor fs μ-gs))
         head =
           begin
-            μ-gs ∘co (α P δ' ∘ strong-fmor P (strong-extend-mor fs p₂))
-          ≈˘⟨ ∘co-push μ-gs (α P δ') _ ⟩
-            (μ-gs ∘co (α P δ' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor fs p₂)
+            μ-gs ∘co (inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂))
+          ≈˘⟨ ∘co-push μ-gs (inMap P δ') _ ⟩
+            (μ-gs ∘co (inMap P δ' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor fs p₂)
           ≈⟨ CoK.∘-cong (⦅⦆-β {P = P} {δ = δ'} alg-g) ≈-refl ⟩
             (alg-g ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs)) ∘co strong-fmor P (strong-extend-mor fs p₂)
           ≈⟨ CoK.assoc _ _ _ ⟩
@@ -560,12 +560,12 @@ module MuIso
             alg-g ∘co strong-fmor P (strong-extend-mor fs μ-gs)
           ∎ where open ≈-Reasoning isEquiv
 
-        chain : ((μ-gs ∘co μ-fs) ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-fs)))
+        chain : ((μ-gs ∘co μ-fs) ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-fs)))
         chain =
           begin
-            (μ-gs ∘co μ-fs) ∘co (α P δ ∘ p₂)
-          ≈⟨ CoK.assoc μ-gs μ-fs (α P δ ∘ p₂) ⟩
-            μ-gs ∘co (μ-fs ∘co (α P δ ∘ p₂))
+            (μ-gs ∘co μ-fs) ∘co (inMap P δ ∘ p₂)
+          ≈⟨ CoK.assoc μ-gs μ-fs (inMap P δ ∘ p₂) ⟩
+            μ-gs ∘co (μ-fs ∘co (inMap P δ ∘ p₂))
           ≈⟨ CoK.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} alg-f) ⟩
             μ-gs ∘co (alg-f ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-fs))
           ≈˘⟨ CoK.assoc μ-gs alg-f _ ⟩
@@ -577,11 +577,11 @@ module MuIso
           ≈⟨ CoK.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-right) ≈-refl))) ⟩
             alg-g ∘co strong-fmor P (strong-extend-mor fs (μ-gs ∘co μ-fs))
           ≈⟨ assoc _ _ _ ⟩
-            α P δ'' ∘ (strong-fmor P (strong-extend-mor gs p₂) ∘co strong-fmor P (strong-extend-mor fs (μ-gs ∘co μ-fs)))
+            inMap P δ'' ∘ (strong-fmor P (strong-extend-mor gs p₂) ∘co strong-fmor P (strong-extend-mor fs (μ-gs ∘co μ-fs)))
           ≈⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P (strong-extend-mor-comp (λ _ → ≈-refl) CoK.id-left))) ⟩
-            α P δ'' ∘ strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) (μ-gs ∘co μ-fs))
+            inMap P δ'' ∘ strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) (μ-gs ∘co μ-fs))
           ≈˘⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-right) CoK.id-left))) ⟩
-            α P δ'' ∘ (strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-fs)))
+            inMap P δ'' ∘ (strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-fs)))
           ≈˘⟨ assoc _ _ _ ⟩
             alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-fs))
           ∎ where open ≈-Reasoning isEquiv
@@ -625,16 +625,16 @@ module MuIso
       where
         μ-gs = strong-μ-fmor Q gs
         μ-r = pm-μ-fmor r fs
-        alg-r = α Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂)
-        alg-g = α Q δ'' ∘ strong-fmor Q (strong-extend-mor gs p₂)
-        alg = α Q δ'' ∘ pm-fmor r (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
+        alg-r = inMap Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂)
+        alg-g = inMap Q δ'' ∘ strong-fmor Q (strong-extend-mor gs p₂)
+        alg = inMap Q δ'' ∘ pm-fmor r (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
 
         head : (μ-gs ∘co alg-r) ≈ (alg-g ∘co pm-fmor r (strong-extend-mor fs μ-gs))
         head =
           begin
-            μ-gs ∘co (α Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂))
-          ≈˘⟨ ∘co-push μ-gs (α Q δ') _ ⟩
-            (μ-gs ∘co (α Q δ' ∘ p₂)) ∘co pm-fmor r (strong-extend-mor fs p₂)
+            μ-gs ∘co (inMap Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂))
+          ≈˘⟨ ∘co-push μ-gs (inMap Q δ') _ ⟩
+            (μ-gs ∘co (inMap Q δ' ∘ p₂)) ∘co pm-fmor r (strong-extend-mor fs p₂)
           ≈⟨ CoK.∘-cong (⦅⦆-β {P = Q} {δ = δ'} alg-g) ≈-refl ⟩
             (alg-g ∘co strong-fmor Q (strong-extend-mor (λ _ → p₂) μ-gs)) ∘co pm-fmor r (strong-extend-mor fs p₂)
           ≈⟨ CoK.assoc _ _ _ ⟩
@@ -643,12 +643,12 @@ module MuIso
             alg-g ∘co pm-fmor r (strong-extend-mor fs μ-gs)
           ∎ where open ≈-Reasoning isEquiv
 
-        chain : ((μ-gs ∘co μ-r) ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-r)))
+        chain : ((μ-gs ∘co μ-r) ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-r)))
         chain =
           begin
-            (μ-gs ∘co μ-r) ∘co (α P δ ∘ p₂)
-          ≈⟨ CoK.assoc μ-gs μ-r (α P δ ∘ p₂) ⟩
-            μ-gs ∘co (μ-r ∘co (α P δ ∘ p₂))
+            (μ-gs ∘co μ-r) ∘co (inMap P δ ∘ p₂)
+          ≈⟨ CoK.assoc μ-gs μ-r (inMap P δ ∘ p₂) ⟩
+            μ-gs ∘co (μ-r ∘co (inMap P δ ∘ p₂))
           ≈⟨ CoK.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} alg-r) ⟩
             μ-gs ∘co (alg-r ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-r))
           ≈˘⟨ CoK.assoc μ-gs alg-r _ ⟩
@@ -660,11 +660,11 @@ module MuIso
           ≈⟨ CoK.∘-cong ≈-refl (≈-trans (pm-fmor-pre r _ _) (pm-fmor-cong (pm-≈-refl r) (strong-extend-mor-comp (λ _ → CoK.id-right) ≈-refl))) ⟩
             alg-g ∘co pm-fmor r (strong-extend-mor fs (μ-gs ∘co μ-r))
           ≈⟨ assoc _ _ _ ⟩
-            α Q δ'' ∘ (strong-fmor Q (strong-extend-mor gs p₂) ∘co pm-fmor r (strong-extend-mor fs (μ-gs ∘co μ-r)))
+            inMap Q δ'' ∘ (strong-fmor Q (strong-extend-mor gs p₂) ∘co pm-fmor r (strong-extend-mor fs (μ-gs ∘co μ-r)))
           ≈⟨ ∘-cong ≈-refl (≈-trans (pm-fmor-post r _ _) (pm-fmor-cong (pm-≈-refl r) (strong-extend-mor-comp (λ _ → ≈-refl) CoK.id-left))) ⟩
-            α Q δ'' ∘ pm-fmor r (strong-extend-mor (λ j → gs j ∘co fs j) (μ-gs ∘co μ-r))
+            inMap Q δ'' ∘ pm-fmor r (strong-extend-mor (λ j → gs j ∘co fs j) (μ-gs ∘co μ-r))
           ≈˘⟨ ∘-cong ≈-refl (≈-trans (pm-fmor-pre r _ _) (pm-fmor-cong (pm-≈-refl r) (strong-extend-mor-comp (λ _ → CoK.id-right) CoK.id-left))) ⟩
-            α Q δ'' ∘ (pm-fmor r (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-r)))
+            inMap Q δ'' ∘ (pm-fmor r (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-r)))
           ≈˘⟨ assoc _ _ _ ⟩
             alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-gs ∘co μ-r))
           ∎ where open ≈-Reasoning isEquiv
@@ -677,16 +677,16 @@ module MuIso
       where
         μ-r = pm-μ-fmor r gs
         μ-fs = strong-μ-fmor P fs
-        alg-f = α P δ' ∘ strong-fmor P (strong-extend-mor fs p₂)
-        alg-r = α Q δ'' ∘ pm-fmor r (strong-extend-mor gs p₂)
-        alg = α Q δ'' ∘ pm-fmor r (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
+        alg-f = inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂)
+        alg-r = inMap Q δ'' ∘ pm-fmor r (strong-extend-mor gs p₂)
+        alg = inMap Q δ'' ∘ pm-fmor r (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
 
         head : (μ-r ∘co alg-f) ≈ (alg-r ∘co strong-fmor P (strong-extend-mor fs μ-r))
         head =
           begin
-            μ-r ∘co (α P δ' ∘ strong-fmor P (strong-extend-mor fs p₂))
-          ≈˘⟨ ∘co-push μ-r (α P δ') _ ⟩
-            (μ-r ∘co (α P δ' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor fs p₂)
+            μ-r ∘co (inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂))
+          ≈˘⟨ ∘co-push μ-r (inMap P δ') _ ⟩
+            (μ-r ∘co (inMap P δ' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor fs p₂)
           ≈⟨ CoK.∘-cong (⦅⦆-β {P = P} {δ = δ'} alg-r) ≈-refl ⟩
             (alg-r ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-r)) ∘co strong-fmor P (strong-extend-mor fs p₂)
           ≈⟨ CoK.assoc _ _ _ ⟩
@@ -695,12 +695,12 @@ module MuIso
             alg-r ∘co strong-fmor P (strong-extend-mor fs μ-r)
           ∎ where open ≈-Reasoning isEquiv
 
-        chain : ((μ-r ∘co μ-fs) ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-r ∘co μ-fs)))
+        chain : ((μ-r ∘co μ-fs) ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-r ∘co μ-fs)))
         chain =
           begin
-            (μ-r ∘co μ-fs) ∘co (α P δ ∘ p₂)
-          ≈⟨ CoK.assoc μ-r μ-fs (α P δ ∘ p₂) ⟩
-            μ-r ∘co (μ-fs ∘co (α P δ ∘ p₂))
+            (μ-r ∘co μ-fs) ∘co (inMap P δ ∘ p₂)
+          ≈⟨ CoK.assoc μ-r μ-fs (inMap P δ ∘ p₂) ⟩
+            μ-r ∘co (μ-fs ∘co (inMap P δ ∘ p₂))
           ≈⟨ CoK.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} alg-f) ⟩
             μ-r ∘co (alg-f ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-fs))
           ≈˘⟨ CoK.assoc μ-r alg-f _ ⟩
@@ -712,11 +712,11 @@ module MuIso
           ≈⟨ CoK.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-right) ≈-refl))) ⟩
             alg-r ∘co strong-fmor P (strong-extend-mor fs (μ-r ∘co μ-fs))
           ≈⟨ assoc _ _ _ ⟩
-            α Q δ'' ∘ (pm-fmor r (strong-extend-mor gs p₂) ∘co strong-fmor P (strong-extend-mor fs (μ-r ∘co μ-fs)))
+            inMap Q δ'' ∘ (pm-fmor r (strong-extend-mor gs p₂) ∘co strong-fmor P (strong-extend-mor fs (μ-r ∘co μ-fs)))
           ≈⟨ ∘-cong ≈-refl (≈-trans (pm-fmor-pre r _ _) (pm-fmor-cong (pm-≈-refl r) (strong-extend-mor-comp (λ _ → ≈-refl) CoK.id-left))) ⟩
-            α Q δ'' ∘ pm-fmor r (strong-extend-mor (λ j → gs j ∘co fs j) (μ-r ∘co μ-fs))
+            inMap Q δ'' ∘ pm-fmor r (strong-extend-mor (λ j → gs j ∘co fs j) (μ-r ∘co μ-fs))
           ≈˘⟨ ∘-cong ≈-refl (≈-trans (pm-fmor-pre r _ _) (pm-fmor-cong (pm-≈-refl r) (strong-extend-mor-comp (λ _ → CoK.id-right) CoK.id-left))) ⟩
-            α Q δ'' ∘ (pm-fmor r (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-r ∘co μ-fs)))
+            inMap Q δ'' ∘ (pm-fmor r (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-r ∘co μ-fs)))
           ≈˘⟨ assoc _ _ _ ⟩
             alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-r ∘co μ-fs))
           ∎ where open ≈-Reasoning isEquiv
@@ -747,16 +747,16 @@ module MuIso
       where
         μ-s = pm-μ-fmor s gs
         μ-r = pm-μ-fmor r fs
-        alg-r = α Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂)
-        alg-s = α R δ'' ∘ pm-fmor s (strong-extend-mor gs p₂)
-        alg = α R δ'' ∘ pm-fmor (s ∙ r) (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
+        alg-r = inMap Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂)
+        alg-s = inMap R δ'' ∘ pm-fmor s (strong-extend-mor gs p₂)
+        alg = inMap R δ'' ∘ pm-fmor (s ∙ r) (strong-extend-mor (λ i → gs i ∘co fs i) p₂)
 
         head : (μ-s ∘co alg-r) ≈ (alg-s ∘co pm-fmor r (strong-extend-mor fs μ-s))
         head =
           begin
-            μ-s ∘co (α Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂))
-          ≈˘⟨ ∘co-push μ-s (α Q δ') _ ⟩
-            (μ-s ∘co (α Q δ' ∘ p₂)) ∘co pm-fmor r (strong-extend-mor fs p₂)
+            μ-s ∘co (inMap Q δ' ∘ pm-fmor r (strong-extend-mor fs p₂))
+          ≈˘⟨ ∘co-push μ-s (inMap Q δ') _ ⟩
+            (μ-s ∘co (inMap Q δ' ∘ p₂)) ∘co pm-fmor r (strong-extend-mor fs p₂)
           ≈⟨ CoK.∘-cong (⦅⦆-β {P = Q} {δ = δ'} alg-s) ≈-refl ⟩
             (alg-s ∘co strong-fmor Q (strong-extend-mor (λ _ → p₂) μ-s)) ∘co pm-fmor r (strong-extend-mor fs p₂)
           ≈⟨ CoK.assoc _ _ _ ⟩
@@ -765,12 +765,12 @@ module MuIso
             alg-s ∘co pm-fmor r (strong-extend-mor fs μ-s)
           ∎ where open ≈-Reasoning isEquiv
 
-        chain : ((μ-s ∘co μ-r) ∘co (α P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-s ∘co μ-r)))
+        chain : ((μ-s ∘co μ-r) ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-s ∘co μ-r)))
         chain =
           begin
-            (μ-s ∘co μ-r) ∘co (α P δ ∘ p₂)
-          ≈⟨ CoK.assoc μ-s μ-r (α P δ ∘ p₂) ⟩
-            μ-s ∘co (μ-r ∘co (α P δ ∘ p₂))
+            (μ-s ∘co μ-r) ∘co (inMap P δ ∘ p₂)
+          ≈⟨ CoK.assoc μ-s μ-r (inMap P δ ∘ p₂) ⟩
+            μ-s ∘co (μ-r ∘co (inMap P δ ∘ p₂))
           ≈⟨ CoK.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} alg-r) ⟩
             μ-s ∘co (alg-r ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-r))
           ≈˘⟨ CoK.assoc μ-s alg-r _ ⟩
@@ -782,11 +782,11 @@ module MuIso
           ≈⟨ CoK.∘-cong ≈-refl (≈-trans (pm-fmor-pre r _ _) (pm-fmor-cong (pm-≈-refl r) (strong-extend-mor-comp (λ _ → CoK.id-right) ≈-refl))) ⟩
             alg-s ∘co pm-fmor r (strong-extend-mor fs (μ-s ∘co μ-r))
           ≈⟨ assoc _ _ _ ⟩
-            α R δ'' ∘ (pm-fmor s (strong-extend-mor gs p₂) ∘co pm-fmor r (strong-extend-mor fs (μ-s ∘co μ-r)))
+            inMap R δ'' ∘ (pm-fmor s (strong-extend-mor gs p₂) ∘co pm-fmor r (strong-extend-mor fs (μ-s ∘co μ-r)))
           ≈⟨ ∘-cong ≈-refl (≈-trans (pm-fmor-comp s r _ _) (pm-fmor-cong (pm-≈-refl (s ∙ r)) (strong-extend-mor-comp (λ _ → ≈-refl) CoK.id-left))) ⟩
-            α R δ'' ∘ pm-fmor (s ∙ r) (strong-extend-mor (λ j → gs j ∘co fs j) (μ-s ∘co μ-r))
+            inMap R δ'' ∘ pm-fmor (s ∙ r) (strong-extend-mor (λ j → gs j ∘co fs j) (μ-s ∘co μ-r))
           ≈˘⟨ ∘-cong ≈-refl (≈-trans (pm-fmor-pre (s ∙ r) _ _) (pm-fmor-cong (pm-≈-refl (s ∙ r)) (strong-extend-mor-comp (λ _ → CoK.id-right) CoK.id-left))) ⟩
-            α R δ'' ∘ (pm-fmor (s ∙ r) (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-s ∘co μ-r)))
+            inMap R δ'' ∘ (pm-fmor (s ∙ r) (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-s ∘co μ-r)))
           ≈˘⟨ assoc _ _ _ ⟩
             alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (μ-s ∘co μ-r))
           ∎ where open ≈-Reasoning isEquiv
@@ -811,27 +811,27 @@ module MuIso
       ≈-sym (⦅⦆-η {P = P} {δ = δ} alg₀ p₂ premise)
       where
         alg₀ : prod _ (fobj μ-obj P (extend δ (μ-obj P δ))) ⇒ μ-obj P δ
-        alg₀ = α P δ ∘ strong-fmor P (strong-extend-mor {X = μ-obj P δ} {Y = μ-obj P δ} (λ _ → p₂) p₂)
+        alg₀ = inMap P δ ∘ strong-fmor P (strong-extend-mor {X = μ-obj P δ} {Y = μ-obj P δ} (λ _ → p₂) p₂)
 
         es₀ : ∀ i → strong-extend-mor {X = μ-obj P δ} {Y = μ-obj P δ} (λ _ → p₂) p₂ i ≈ p₂
         es₀ Fin.zero    = ≈-refl
         es₀ (Fin.suc i) = ≈-refl
 
-        rhs : (alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂)) ≈ (α P δ ∘ p₂)
+        rhs : (alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂)) ≈ (inMap P δ ∘ p₂)
         rhs =
           begin
             alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂)
           ≈⟨ assoc _ _ _ ⟩
-            α P δ ∘ (strong-fmor P (strong-extend-mor (λ _ → p₂) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂))
+            inMap P δ ∘ (strong-fmor P (strong-extend-mor (λ _ → p₂) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂))
           ≈⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _) (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-left) CoK.id-left))) ⟩
-            α P δ ∘ strong-fmor P (strong-extend-mor (λ _ → p₂) p₂)
+            inMap P δ ∘ strong-fmor P (strong-extend-mor (λ _ → p₂) p₂)
           ≈⟨ ∘-cong ≈-refl (strong-fmor-cong P es₀) ⟩
-            α P δ ∘ strong-fmor P (λ i → p₂)
+            inMap P δ ∘ strong-fmor P (λ i → p₂)
           ≈⟨ ∘-cong ≈-refl (strong-fmor-p₂ P) ⟩
-            α P δ ∘ p₂
+            inMap P δ ∘ p₂
           ∎ where open ≈-Reasoning isEquiv
 
-        premise : (p₂ ∘co (α P δ ∘ p₂)) ≈ (alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂))
+        premise : (p₂ ∘co (inMap P δ ∘ p₂)) ≈ (alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂))
         premise = ≈-trans CoK.id-left (≈-sym rhs)
 
   -- Componentwise isomorphic polynomials have isomorphic μ-objects.
@@ -949,16 +949,16 @@ module MuIso
       pointwise Fin.zero    = ≈-refl
       pointwise (Fin.suc i) = ≈-trans (pair-p₂ _ _) id-left
 
-      lhs-chain : (h ∘co (α P δ ∘ p₂)) ≈ (alg ∘ pair (u ∘ p₁) (strong-fmor P (strong-extend-mor (λ i → p₂) h)))
+      lhs-chain : (h ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘ pair (u ∘ p₁) (strong-fmor P (strong-extend-mor (λ i → p₂) h)))
       lhs-chain =
         begin
-          (⦅_⦆ {P = P} {δ = δ} alg ∘ prod-m u (id _)) ∘ pair p₁ (α P δ ∘ p₂)
+          (⦅_⦆ {P = P} {δ = δ} alg ∘ prod-m u (id _)) ∘ pair p₁ (inMap P δ ∘ p₂)
         ≈⟨ assoc _ _ _ ⟩
-          ⦅_⦆ {P = P} {δ = δ} alg ∘ (prod-m u (id _) ∘ pair p₁ (α P δ ∘ p₂))
-        ≈⟨ ∘-cong ≈-refl (prodm-pair-interchange u (α P δ)) ⟩
-          ⦅_⦆ {P = P} {δ = δ} alg ∘ (pair p₁ (α P δ ∘ p₂) ∘ prod-m u (id _))
+          ⦅_⦆ {P = P} {δ = δ} alg ∘ (prod-m u (id _) ∘ pair p₁ (inMap P δ ∘ p₂))
+        ≈⟨ ∘-cong ≈-refl (prodm-pair-interchange u (inMap P δ)) ⟩
+          ⦅_⦆ {P = P} {δ = δ} alg ∘ (pair p₁ (inMap P δ ∘ p₂) ∘ prod-m u (id _))
         ≈˘⟨ assoc _ _ _ ⟩
-          (⦅_⦆ {P = P} {δ = δ} alg ∘ pair p₁ (α P δ ∘ p₂)) ∘ prod-m u (id _)
+          (⦅_⦆ {P = P} {δ = δ} alg ∘ pair p₁ (inMap P δ ∘ p₂)) ∘ prod-m u (id _)
         ≈⟨ ∘-cong (⦅⦆-β alg) ≈-refl ⟩
           (alg ∘ pair p₁ (strong-fmor P (strong-extend-mor (λ i → p₂) (⦅_⦆ {P = P} {δ = δ} alg)))) ∘ prod-m u (id _)
         ≈⟨ assoc _ _ _ ⟩
@@ -983,5 +983,5 @@ module MuIso
           alg ∘ pair (u ∘ p₁) (strong-fmor P (strong-extend-mor (λ i → p₂) h))
         ∎ where open ≈-Reasoning isEquiv
 
-      sq : (h ∘co (α P δ ∘ p₂)) ≈ ((alg ∘ prod-m u (id _)) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h))
+      sq : (h ∘co (inMap P δ ∘ p₂)) ≈ ((alg ∘ prod-m u (id _)) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h))
       sq = ≈-trans lhs-chain (≈-sym rhs-chain)

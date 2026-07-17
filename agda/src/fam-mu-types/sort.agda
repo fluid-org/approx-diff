@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Category-free shape layer of the Fam μ-type construction. Sorts and trees
+-- Category-free sort layer of the Fam μ-type construction. Sorts and trees
 -- are built from index sets alone: the construction is parameterised by the
 -- index setoids of the kinding environment, and constants enter as their index
 -- setoids, so the layer mentions no category. The fibre layer over a specific
@@ -19,7 +19,7 @@ open import prop-setoid using (Setoid; IsEquivalence)
 import setoid-cat
 import polynomial-functor
 
-module fam-mu-types.shape (os es : Level) where
+module fam-mu-types.sort (os es : Level) where
 
 open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 open IsEquivalence
@@ -30,7 +30,7 @@ Poly = polynomial-functor.Poly 𝒮
 open polynomial-functor.Poly
 open polynomial-functor using (extend)
 
--- A sort is an index-erased μ-body together with a resolution of its free
+-- A sort is an index-erased μ-body together with a assignment of its free
 -- variables to parameters or other sorts.
 data Sort (n : ℕ) : Set (lsuc os ⊔ lsuc es) where
   mkSort : ∀ {k} → Poly (suc k) → (Fin k → Fin n ⊎ Sort n) → Sort n

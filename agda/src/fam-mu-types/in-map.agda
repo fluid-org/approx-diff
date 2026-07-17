@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- α, the canonical iso between the categorical one-step unfolding
+-- inMap, the canonical iso between the categorical one-step unfolding
 -- fobj P (δ, μ P δ) and the concrete carrier, via the embed/unembed bridges;
 -- packaged with the fold as the HasMu instance.
 ------------------------------------------------------------------------------
@@ -19,13 +19,13 @@ open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
 import fam-mu-types.fold
 
-module fam-mu-types.alpha {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.in-map {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
 open fam-mu-types.fold os es T P public
 
 -- α's reconstruction machinery.
-module AlphaDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
+module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     δ' = extend δ (μObj P δ)
     module Tδ = Tree δ
     module TX = Tree δ'
@@ -143,11 +143,11 @@ module AlphaDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     embed-unembed-fam (μ Q') t =
       ≈-trans (∘-cong (TX.fib-refl* Q' (λ v → lift tt) t) ≈-refl) (≈-trans id-left id-left)
 
-    αmor : Mor (fobj μObj P δ') (μObj P δ)
-    αmor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape ∣ P ∣ mor₀ (embed-idx P i))
-    αmor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp ∣ P ∣ mor₀ (embed-idx-resp P x≈y)
-    αmor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
-    αmor .famf ._⇒f_.natural e =
+    inMor : Mor (fobj μObj P δ') (μObj P δ)
+    inMor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape ∣ P ∣ mor₀ (embed-idx P i))
+    inMor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp ∣ P ∣ mor₀ (embed-idx-resp P x≈y)
+    inMor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
+    inMor .famf ._⇒f_.natural e =
       ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong₂ (embed-fam-natural P e))
       (≈-trans (≈-sym (assoc _ _ _))
@@ -156,5 +156,5 @@ module AlphaDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
 
 hasMu : HasMu
 hasMu .HasMu.μ-obj = μObj
-hasMu .HasMu.α P δ = AlphaDef.αmor P δ
+hasMu .HasMu.inMap P δ = InMapDef.inMor P δ
 hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg

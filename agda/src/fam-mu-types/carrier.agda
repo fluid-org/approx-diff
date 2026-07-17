@@ -24,7 +24,7 @@ open import prop-setoid using (IsEquivalence; Setoid)
 open import indexed-family using (Fam; _⇒f_)
 import fam
 import polynomial-functor
-import fam-mu-types.shape
+import fam-mu-types.sort
 import fam-mu-types.fibre
 
 module fam-mu-types.carrier {o m e} (os es : Level) {𝒞 : Category o m e}
@@ -53,9 +53,9 @@ open import Data.Sum using (_⊎_) public
 open import Data.Product using () renaming (_×_ to _×T_) public
 open import prop using (_∧_; ⊥) public
 
--- The category-free shape layer, shared by every base category, and the
+-- The category-free sort layer, shared by every base category, and the
 -- decorated fibre layer over this one.
-module Sh = fam-mu-types.shape os es
+module Sh = fam-mu-types.sort os es
 open Sh public using (Sort; mkSort)
 open fam-mu-types.fibre os es T P public using (Idx; ∣_∣; module Fibre; μObj)
 

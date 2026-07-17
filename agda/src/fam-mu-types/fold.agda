@@ -33,7 +33,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     -- Fold-specific reindex morphism (first-order, like `MorD`): `fbase` sends the outer
     -- recursion slot to the fold and parameters to themselves; `fbind` records a binder.
     data FMor : ∀ {k} (ρ : Fin k → Fin n ⊎ Sort n) (ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)) →
-                (∀ v → Tδ.DecoRes (ρ v)) → (∀ v → TA'.DecoRes (ρ' v)) →
+                (∀ v → Tδ.DecoAssign (ρ v)) → (∀ v → TA'.DecoAssign (ρ' v)) →
                 Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
       fbase : FMor (Sh.η₀ ∣ P ∣) (λ v → inj₁ v)
                    (Tδ.deco-ext P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)) (λ v → lift tt)

@@ -18,12 +18,12 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
-import fam-mu-types.alpha
+import fam-mu-types.in-map
 
-module fam-mu-types.fuse {o m e} (os es : Level) {𝒞 : Category o m e}
+module fam-mu-types.reindex-fusion {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types.alpha os es T P public
+open fam-mu-types.in-map os es T P public
 
 -- General free-family fusion: a single reindex (the collapsed double-reindex, via combine-lemma)
 -- equals the functorial map. Families sₛ/sₜ are FREE so the nested-μ recursion's family fits.
@@ -40,13 +40,13 @@ fuse-shape : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) �
                  let module Rs = Reindex sₛ sₜ
                      module Ts = Tree sₛ
                      module Tt = Tree sₜ
-                     module At = AlphaDef Q sₜ in
+                     module At = InMapDef Q sₜ in
                  (cmb : Γ .idx .Carrier → Rs.IMorD (λ v → inj₁ v) (λ v → inj₁ v))
                  (fsk : ∀ i → Mor (Fam𝒞-P.prod Γ (sₛ i)) (sₜ i))
                  (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
                          _≈s_ (sₜ i .idx) (Rs.iapply (cmb γ₁) i a₁) (fsk i .idxf .PS._⇒_.func (γ₂ , a₂))) →
                  let module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
-                                   (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))) in
+                                   (Mor-∘ At.inMor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))) in
                  (R : Poly (suc n)) →
                  ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x₁ x₂}
                  (x≈ : Ts.shape≈ ∣ R ∣ (Sh.η₀ ∣ Q ∣) x₁ x₂) →
@@ -78,11 +78,11 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
   where
     module Tt = Tree sₜ
     module Ts = Tree sₛ
-    module At = AlphaDef Q sₜ
+    module At = InMapDef Q sₜ
     module Rs = Reindex sₛ sₜ
     module Rs' = Reindex (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
     module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
-                  (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
+                  (Mor-∘ At.inMor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
     wm₁ = Ft.fold-reindex {Q = R''} γ₁ Ft.fbase x₁
     w   = Ft.fold-reindex {Q = R''} γ₂ Ft.fbase x₂
     cmb' : Γ .idx .Carrier → Rs'.IMorD (λ v → inj₁ v) (λ v → inj₁ v)
@@ -96,8 +96,8 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
             γ≈ {m₁ = wm₁} {m₂ = w}  (Ft.fold-reindex-resp {Q = R''} γ≈ Ft.fbase {x₁} {x₂} x≈)
     mutual
       data TeleRel : ∀ {j} {ηA ηB ηC ηD}
-                     {dA : ∀ v → Ts.DecoRes (ηA v)} {dB : ∀ v → Tt.DecoRes (ηB v)}
-                     {dC : ∀ v → At.TX.DecoRes (ηC v)} {dD : ∀ v → Ft.TA'.DecoRes (ηD v)} →
+                     {dA : ∀ v → Ts.DecoAssign (ηA v)} {dB : ∀ v → Tt.DecoAssign (ηB v)}
+                     {dC : ∀ v → At.TX.DecoAssign (ηC v)} {dD : ∀ v → Ft.TA'.DecoAssign (ηD v)} →
                      Rs.IMorD {j} ηA ηB → At.R.MorD {j} ηC ηB dC dB → Rs'.IMorD {j} ηD ηC → Ft.FMor {j} ηA ηD dA dD →
                      Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
         tbase : TeleRel (Rs.ibind ∣ Q ∣ (cmb γ₁)) At.mor₀ (cmb' γ₁) Ft.fbase
@@ -163,7 +163,7 @@ fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n �
                      let module Rs = Reindex sₛ sₜ
                          module Ts = Tree sₛ
                          module Tt = Tree sₜ
-                         module At = AlphaDef Q sₜ
+                         module At = InMapDef Q sₜ
                          module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
                      (cmb : Γ .idx .Carrier → Rs.IMorD (λ v → inj₁ v) (λ v → inj₁ v))
                      (act : FR.FAct (cmb γ) (λ v → lift tt) (λ v → lift tt))
@@ -176,7 +176,7 @@ fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n �
                            ∘ FR.aapply act i a)
                           (fsk i .famf ._⇒f_.transf (γ , a))) →
                      let module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
-                                       (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
+                                       (Mor-∘ At.inMor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
                          fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂ in
                      (R : Poly (suc n))
                      {x : Ts.⟦ ∣ R ∣ ⟧shape (Sh.η₀ ∣ Q ∣)} →
@@ -271,13 +271,13 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
   where
     module Tt = Tree sₜ
     module Ts = Tree sₛ
-    module At = AlphaDef Q sₜ
+    module At = InMapDef Q sₜ
     module Rs = Reindex sₛ sₜ
     module Rs' = Reindex (extend sₛ (μObj Q sₜ)) (extend sₜ (μObj Q sₜ))
     module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ)
     module FR' = FReindex {δA = extend sₛ (μObj Q sₜ)} {δB = extend sₜ (μObj Q sₜ)} (Γ .fam .fm γ)
     module Ft = FoldDef {Γ = Γ} {A = μObj Q sₜ} {P = Q} {δ = sₛ}
-                  (Mor-∘ At.αmor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
+                  (Mor-∘ At.inMor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
     fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂
     wm₁ = Ft.fold-reindex {Q = R''} γ Ft.fbase x
     cmb' : Γ .idx .Carrier → Rs'.IMorD (λ v → inj₁ v) (λ v → inj₁ v)
@@ -307,8 +307,8 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
                 {wm₁} {wm₁} (μObj R'' (extend sₛ (μObj Q sₜ)) .idx .isEquivalence .refl {wm₁})
     mutual
       data TeleRel : ∀ {j} {ηA ηB ηC ηD}
-                     {dA : ∀ v → Ts.DecoRes (ηA v)} {dB : ∀ v → Tt.DecoRes (ηB v)}
-                     {dC : ∀ v → At.TX.DecoRes (ηC v)} {dD : ∀ v → Ft.TA'.DecoRes (ηD v)}
+                     {dA : ∀ v → Ts.DecoAssign (ηA v)} {dB : ∀ v → Tt.DecoAssign (ηB v)}
+                     {dC : ∀ v → At.TX.DecoAssign (ηC v)} {dD : ∀ v → Ft.TA'.DecoAssign (ηD v)}
                      (md : Rs.IMorD {j} ηA ηB) (mdA : At.R.MorD {j} ηC ηB dC dB) (md' : Rs'.IMorD {j} ηD ηC) (fm : Ft.FMor {j} ηA ηD dA dD) →
                      FR.FAct md dA dB → FR'.FAct md' dD dC → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
         tbase : TeleRel (Rs.ibind ∣ Q ∣ (cmb γ)) At.mor₀ (cmb' γ) Ft.fbase (FR.abind Q (cmb γ) act) act'

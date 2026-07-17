@@ -1,10 +1,10 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Checking commutes with μ at constant-free skeletons. A family is "checked"
--- by applying a functor G to its singleton fibres; the μ-carrier of a skeleton
--- over an environment then agrees with the μ-carrier of the same skeleton over
--- the checked environment. The two skeletons live over the two Fam categories
+-- Checking commutes with μ at constant-free forms. A family is "checked"
+-- by applying a functor G to its singleton fibres; the μ-carrier of a constant-free form
+-- over an environment then agrees with the μ-carrier of the same constant-free over
+-- the checked environment. The two constant-free forms live over the two Fam categories
 -- but share their sorts and trees, which are built from index setoids alone;
 -- the transports below relate the two erasures by recursion on the polynomial,
 -- with identities at the leaves.
@@ -27,7 +27,7 @@ open import indexed-family using (functor→fam; Fam)
 import fam
 import fam-presentation
 import polynomial-functor
-import fam-mu-types.shape
+import fam-mu-types.sort
 import fam-mu-types.fibre
 
 module fam-mu-checked {o m e o₂ m₂ e₂} (os es : Level)
@@ -41,7 +41,7 @@ module fam-mu-checked {o m e o₂ m₂ e₂} (os es : Level)
 private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒢 = fam.CategoryOfFamilies os (os ⊔ es) 𝒢
-  module Sh = fam-mu-types.shape os es
+  module Sh = fam-mu-types.sort os es
   module Fc = fam-mu-types.fibre os es 𝒞T 𝒞P
   module Fg = fam-mu-types.fibre os es 𝒢T 𝒢P
   module PresC = fam-presentation os (os ⊔ es) {𝒞}
@@ -49,7 +49,7 @@ private
   module 𝒢Pm = HasProducts 𝒢P
 
 open Sh using (Sort; mkSort)
-open polynomial-functor using (Poly; #c; skeleton; skeleton-go; extend)
+open polynomial-functor using (Poly; #c; constant-free; constant-free-go; extend)
 open prop-setoid using (mk-≃m)
 open prop-setoid._⇒_
 open Functor
@@ -93,25 +93,25 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   module C  = Fc.Fibre δ
   module Gd = Fg.Fibre (λ i → check (δ i))
 
-  -- The same polynomial skeletonised into either Fam category.
+  -- The same polynomial in constant-free form over either Fam category.
   skC : ∀ {j} (Q : Poly F𝒞.cat j) → (Fin (#c Q) → Fin k) → Poly F𝒞.cat (j +ℕ k)
-  skC = skeleton-go
+  skC = constant-free-go
 
   skG : ∀ {j} (Q : Poly F𝒞.cat j) → (Fin (#c Q) → Fin k) → Poly F𝒢.cat (j +ℕ k)
-  skG = skeleton-go
+  skG = constant-free-go
 
-  -- Relate references and decorated sorts of the two skeletons: environment
-  -- positions coincide, and sorts relate recursively through the μ-body they
-  -- both skeletonise.
+  -- Relate references and decorated sorts of the two constant-free forms:
+  -- environment positions coincide, and sorts relate recursively through the
+  -- μ-body from which both are formed.
   mutual
-    data SRel : (r₁ r₂ : Fin N ⊎ Sort N) → C.DecoRes r₁ → Gd.DecoRes r₂ → Set ℓk where
+    data SRel : (r₁ r₂ : Fin N ⊎ Sort N) → C.DecoAssign r₁ → Gd.DecoAssign r₂ → Set ℓk where
       env : ∀ {p} → SRel (inj₁ p) (inj₁ p) (lift tt) (lift tt)
       srt : ∀ {s₁ s₂ e₁ e₂} → SortChk s₁ s₂ e₁ e₂ → SRel (inj₂ s₁) (inj₂ s₂) e₁ e₂
 
     data SortChk : (s₁ s₂ : Sort N) → C.Deco s₁ → Gd.Deco s₂ → Set ℓk where
       mk : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
            (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i)) →
+           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i)) →
            (∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
            SortChk (mkSort Fc.∣ skC Q ι ∣ ρ₁) (mkSort Fg.∣ skG Q ι ∣ ρ₂)
                    (C.mkDeco (skC Q ι) d₁) (Gd.mkDeco (skG Q ι) d₂)
@@ -121,7 +121,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     cfwd : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
            (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
            (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
            T.W Fc.∣ skC Q ι ∣ ρ₁ → T.W Fg.∣ skG Q ι ∣ ρ₂
     cfwd Q ι ρ₁ ρ₂ d₁ d₂ rel (T.sup x) =
@@ -132,7 +132,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     extend-rel : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
                  (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-                 (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+                 (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
                  (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
                  ∀ i → SRel (extend ρ₁ (inj₂ (mkSort Fc.∣ skC Q ι ∣ ρ₁)) i)
                             (extend ρ₂ (inj₂ (mkSort Fg.∣ skG Q ι ∣ ρ₂)) i)
@@ -143,7 +143,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     shape-cfwd : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
                  (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
-                 (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                 (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → Gd.DecoAssign (η₂ i))
                  (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
                  T.⟦ Fc.∣ skC Q ι ∣ ⟧shape η₁ → T.⟦ Fg.∣ skG Q ι ∣ ⟧shape η₂
     shape-cfwd {jv} (Poly.const A) ι η₁ η₂ d₁ d₂ rel x = el-cfwd (rel (jv ↑ʳ ι Fin.zero)) x
@@ -165,7 +165,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     c≈fwd : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
             (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-            (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+            (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
             (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
             {x y : T.W Fc.∣ skC Q ι ∣ ρ₁} → T.W-≈ x y →
             T.W-≈ (cfwd Q ι ρ₁ ρ₂ d₁ d₂ rel x) (cfwd Q ι ρ₁ ρ₂ d₁ d₂ rel y)
@@ -177,7 +177,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     shape≈-cfwd : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
                   (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
-                  (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                  (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → Gd.DecoAssign (η₂ i))
                   (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
                   {x y : T.⟦ Fc.∣ skC Q ι ∣ ⟧shape η₁} → T.shape≈ Fc.∣ skC Q ι ∣ η₁ x y →
                   T.shape≈ Fg.∣ skG Q ι ∣ η₂ (shape-cfwd Q ι η₁ η₂ d₁ d₂ rel x) (shape-cfwd Q ι η₁ η₂ d₁ d₂ rel y)
@@ -201,7 +201,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     cbwd : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
            (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
            (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
            T.W Fg.∣ skG Q ι ∣ ρ₂ → T.W Fc.∣ skC Q ι ∣ ρ₁
     cbwd Q ι ρ₁ ρ₂ d₁ d₂ rel (T.sup x) =
@@ -212,7 +212,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     shape-cbwd : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
                  (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
-                 (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                 (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → Gd.DecoAssign (η₂ i))
                  (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
                  T.⟦ Fg.∣ skG Q ι ∣ ⟧shape η₂ → T.⟦ Fc.∣ skC Q ι ∣ ⟧shape η₁
     shape-cbwd {jv} (Poly.const A) ι η₁ η₂ d₁ d₂ rel x = el-cbwd (rel (jv ↑ʳ ι Fin.zero)) x
@@ -234,7 +234,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     c≈bwd : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
             (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-            (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+            (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
             (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
             {x y : T.W Fg.∣ skG Q ι ∣ ρ₂} → T.W-≈ x y →
             T.W-≈ (cbwd Q ι ρ₁ ρ₂ d₁ d₂ rel x) (cbwd Q ι ρ₁ ρ₂ d₁ d₂ rel y)
@@ -246,7 +246,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     shape≈-cbwd : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
                   (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
-                  (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                  (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → Gd.DecoAssign (η₂ i))
                   (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
                   {x y : T.⟦ Fg.∣ skG Q ι ∣ ⟧shape η₂} → T.shape≈ Fg.∣ skG Q ι ∣ η₂ x y →
                   T.shape≈ Fc.∣ skC Q ι ∣ η₁ (shape-cbwd Q ι η₁ η₂ d₁ d₂ rel x) (shape-cbwd Q ι η₁ η₂ d₁ d₂ rel y)
@@ -270,7 +270,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     c-fb : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
            (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
            (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
            (x : T.W Fc.∣ skC Q ι ∣ ρ₁) →
            T.W-≈ (cbwd Q ι ρ₁ ρ₂ d₁ d₂ rel (cfwd Q ι ρ₁ ρ₂ d₁ d₂ rel x)) x
@@ -282,7 +282,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     shape-cfb : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
                 (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
-                (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → Gd.DecoAssign (η₂ i))
                 (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
                 (x : T.⟦ Fc.∣ skC Q ι ∣ ⟧shape η₁) →
                 T.shape≈ Fc.∣ skC Q ι ∣ η₁ (shape-cbwd Q ι η₁ η₂ d₁ d₂ rel (shape-cfwd Q ι η₁ η₂ d₁ d₂ rel x)) x
@@ -305,7 +305,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     c-bf : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
            (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
            (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
            (y : T.W Fg.∣ skG Q ι ∣ ρ₂) →
            T.W-≈ (cfwd Q ι ρ₁ ρ₂ d₁ d₂ rel (cbwd Q ι ρ₁ ρ₂ d₁ d₂ rel y)) y
@@ -317,7 +317,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     shape-cbf : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
                 (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
-                (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → Gd.DecoAssign (η₂ i))
                 (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
                 (y : T.⟦ Fg.∣ skG Q ι ∣ ⟧shape η₂) →
                 T.shape≈ Fg.∣ skG Q ι ∣ η₂ (shape-cfwd Q ι η₁ η₂ d₁ d₂ rel (shape-cbwd Q ι η₁ η₂ d₁ d₂ rel y)) y
@@ -344,7 +344,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     fib-ciso : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
                (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-               (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+               (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
                (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i))
                (w : T.W Fc.∣ skC Q ι ∣ ρ₁) →
                Iso (G .fobj F𝒞.simple[ 𝟙 , C.fib (skC Q ι) d₁ w ])
@@ -357,7 +357,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     fib-shape-ciso : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
                      (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
-                     (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                     (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → Gd.DecoAssign (η₂ i))
                      (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i))
                      (x : T.⟦ Fc.∣ skC Q ι ∣ ⟧shape η₁) →
                      Iso (G .fobj F𝒞.simple[ 𝟙 , C.fib-shape (skC Q ι) d₁ x ])
@@ -389,7 +389,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     fib-cnat : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
                (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
-               (d₁ : ∀ i → C.DecoRes (ρ₁ i)) (d₂ : ∀ i → Gd.DecoRes (ρ₂ i))
+               (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i))
                (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i))
                {w w' : T.W Fc.∣ skC Q ι ∣ ρ₁} (p : T.W-≈ w w') →
                ((fib-ciso Q ι ρ₁ ρ₂ d₁ d₂ rel w' .fwd)
@@ -406,7 +406,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
 
     fib-shape-cnat : ∀ {jv} (Q : Poly F𝒞.cat jv) (ι : Fin (#c Q) → Fin k)
                      (η₁ η₂ : Fin (jv +ℕ k) → Fin N ⊎ Sort N)
-                     (d₁ : ∀ i → C.DecoRes (η₁ i)) (d₂ : ∀ i → Gd.DecoRes (η₂ i))
+                     (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → Gd.DecoAssign (η₂ i))
                      (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i))
                      {x x' : T.⟦ Fc.∣ skC Q ι ∣ ⟧shape η₁} (p : T.shape≈ Fc.∣ skC Q ι ∣ η₁ x x') →
                      ((fib-shape-ciso Q ι η₁ η₂ d₁ d₂ rel x' .fwd)
@@ -455,8 +455,8 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
     fib-el-cnat (env {p}) q = ≈-trans id-left (≈-sym id-right)
     fib-el-cnat (srt (mk Q ι ρ₁ ρ₂ d₁ d₂ rel)) {x} {x'} q = fib-cnat Q ι ρ₁ ρ₂ d₁ d₂ rel {x} {x'} q
 
--- The assembled comparison: check commutes with μ at the constant-free
--- skeleton, as an isomorphism of Fam(𝒢)-objects.
+-- The assembled comparison: check commutes with μ at the constant-free form,
+-- as an isomorphism of Fam(𝒢)-objects.
 module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) → F𝒞.Obj) where
   open Checked (#c P) ε
   open Fam
@@ -465,10 +465,10 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
     ρ₀ : Fin (n +ℕ #c P) → Fin (n +ℕ #c P) ⊎ Sort (n +ℕ #c P)
     ρ₀ i = inj₁ i
 
-    d₁₀ : ∀ i → C.DecoRes (ρ₀ i)
+    d₁₀ : ∀ i → C.DecoAssign (ρ₀ i)
     d₁₀ i = lift tt
 
-    d₂₀ : ∀ i → Gd.DecoRes (ρ₀ i)
+    d₂₀ : ∀ i → Gd.DecoAssign (ρ₀ i)
     d₂₀ i = lift tt
 
     rel₀ : ∀ i → SRel (ρ₀ i) (ρ₀ i) (d₁₀ i) (d₂₀ i)
@@ -478,7 +478,7 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
     Bw = cbwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀
     ci = fib-ciso P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀
 
-  fwd-mor : F𝒢.Mor (check (Fc.μObj (skeleton P) ε)) (Fg.μObj (skeleton P) (λ i → check (ε i)))
+  fwd-mor : F𝒢.Mor (check (Fc.μObj (constant-free P) ε)) (Fg.μObj (constant-free P) (λ i → check (ε i)))
   fwd-mor .idxf .func = Fw
   fwd-mor .idxf .func-resp-≈ {w} {w'} =
     c≈fwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'}
@@ -486,17 +486,17 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
   fwd-mor .famf .natural {w} {w'} q =
     fib-cnat P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'} q
 
-  bwd-mor : F𝒢.Mor (Fg.μObj (skeleton P) (λ i → check (ε i))) (check (Fc.μObj (skeleton P) ε))
+  bwd-mor : F𝒢.Mor (Fg.μObj (constant-free P) (λ i → check (ε i))) (check (Fc.μObj (constant-free P) ε))
   bwd-mor .idxf .func = Bw
   bwd-mor .idxf .func-resp-≈ {s} {s'} =
     c≈bwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {s} {s'}
   bwd-mor .famf .transf s =
     ci (Bw s) .bwd ∘
-    Gd.fib-subst (skeleton P) d₂₀ {x = s} {y = Fw (Bw s)}
+    Gd.fib-subst (constant-free P) d₂₀ {x = s} {y = Fw (Bw s)}
       (T.W-≈-sym {x = Fw (Bw s)} {y = s} (c-bf P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ s))
   bwd-mor .famf .natural {s₁} {s₂} q =
     ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (≈-sym (Gd.fib-trans* (skeleton P) d₂₀
+      (≈-trans (∘-cong₂ (≈-sym (Gd.fib-trans* (constant-free P) d₂₀
                                            {x = s₁} {y = s₂} {z = Fw (Bw s₂)} _ q)))
         (≈-sym
           (≈-trans (≈-sym (assoc _ _ _))
@@ -504,7 +504,7 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
                 (fib-cnat P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {Bw s₁} {Bw s₂}
                   (c≈bwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {s₁} {s₂} q))))
               (≈-trans (assoc _ _ _)
-                (∘-cong₂ (≈-sym (Gd.fib-trans* (skeleton P) d₂₀
+                (∘-cong₂ (≈-sym (Gd.fib-trans* (constant-free P) d₂₀
                                           {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _))))))))
 
   fb-≃ : Category._≈_ F𝒢.cat
@@ -515,9 +515,9 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
     ≈-trans (∘-cong₂ id-left)
       (≈-trans (∘-cong₂ (≈-trans (≈-sym (assoc _ _ _))
           (≈-trans (∘-cong₁ (ci (Bw s) .fwd∘bwd≈id)) id-left)))
-        (≈-trans (≈-sym (Gd.fib-trans* (skeleton P) d₂₀
+        (≈-trans (≈-sym (Gd.fib-trans* (constant-free P) d₂₀
                                   {x = s} {y = Fw (Bw s)} {z = s} _ _))
-          (Gd.fib-refl* (skeleton P) d₂₀ s)))
+          (Gd.fib-refl* (constant-free P) d₂₀ s)))
 
   bf-≃ : Category._≈_ F𝒢.cat
            (Category._∘_ F𝒢.cat bwd-mor fwd-mor) (Category.id F𝒢.cat _)
@@ -531,12 +531,12 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
                 (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ w)))))
             (≈-trans (≈-sym (assoc _ _ _))
               (≈-trans (∘-cong₁ (ci (Bw (Fw w)) .bwd∘fwd≈id)) id-left)))))
-        (≈-trans (≈-sym (check (Fc.μObj (skeleton P) ε) .fam .trans*
+        (≈-trans (≈-sym (check (Fc.μObj (constant-free P) ε) .fam .trans*
                                   {x = w} {y = Bw (Fw w)} {z = w} _ _))
-          (check (Fc.μObj (skeleton P) ε) .fam .refl* {x = w})))
+          (check (Fc.μObj (constant-free P) ε) .fam .refl* {x = w})))
 
   check-μ-iso : Category.Iso F𝒢.cat
-                  (check (Fc.μObj (skeleton P) ε)) (Fg.μObj (skeleton P) (λ i → check (ε i)))
+                  (check (Fc.μObj (constant-free P) ε)) (Fg.μObj (constant-free P) (λ i → check (ε i)))
   check-μ-iso .Category.Iso.fwd = fwd-mor
   check-μ-iso .Category.Iso.bwd = bwd-mor
   check-μ-iso .Category.Iso.fwd∘bwd≈id = fb-≃

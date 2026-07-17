@@ -21,13 +21,13 @@ import fam
 import finite-coproducts-from-indexed
 open import finite-product-functor using (preserve-chosen-products)
 open import polynomial-functor
-  using (Preserves-μ; Poly; Poly-map; skeleton; skeleton-go; Poly-map-skeleton-go;
-         skeleton-go-Poly-map; #c; #c-Poly-map; consts; consts-Poly-map; _++e_; ++e-map)
+  using (Preserves-μ; Poly; Poly-map; constant-free; constant-free-go; Poly-map-constant-free-go;
+         constant-free-go-Poly-map; #c; #c-Poly-map; consts; consts-Poly-map; _++e_; ++e-map)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; cong)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; subst to ≡-subst)
 import fam-mu-types
-import fam-mu-types.skeleton
+import fam-mu-types.constant-free
 import fam-mu-realisation
 import fam-presentation
 import fam-mu-checked
@@ -61,8 +61,8 @@ module gf-preserves-mu
 
   private
     module Glued = Category Gl
-    module Sk  = fam-mu-types.skeleton 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-    module SkGl = fam-mu-types.skeleton 0ℓ 0ℓ GlT GlP
+    module Sk  = fam-mu-types.constant-free 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    module SkGl = fam-mu-types.constant-free 0ℓ 0ℓ GlT GlP
     module FMc = fam-mu-types 0ℓ 0ℓ 𝒞-terminal 𝒞-products
     module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlT GlP GlE GlSC
     module FMg = RGl.FM
@@ -113,11 +113,11 @@ module gf-preserves-mu
   check-iso M =
     presented-iso M (functor→fam (GF ∘F Pres.singletons M)) (fam→functor-eta (GF ∘F Pres.singletons M))
 
-  -- check commutes with μ at the constant-free skeleton, as an iso in Fam(Gl):
+  -- check commutes with μ at the constant-free form, as an iso in Fam(Gl):
   -- the shared shapes make the index setoids agree, and the fibres are products
   -- of GF-images compared by tree recursion.
   check-μ : ∀ {n} (P : Poly Fam⟨𝒞⟩.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) → Fam⟨𝒞⟩.Obj) →
-            FamGl.Iso (check (FMc.μObj (skeleton P) ε)) (FMg.μObj (skeleton P) (λ i → check (ε i)))
+            FamGl.Iso (check (FMc.μObj (constant-free P) ε)) (FMg.μObj (constant-free P) (λ i → check (ε i)))
   check-μ P ε = Chk.ChkMu.check-μ-iso P ε
 
   -- Realised μ-objects along an equality of polynomials.
@@ -128,45 +128,45 @@ module gf-preserves-mu
   obj-≡-iso : ∀ {X Y : Glued.obj} → X ≡ Y → Glued.Iso X Y
   obj-≡-iso ≡-refl = Glued.Iso-refl
 
-  -- GF preserves μ-types: skeleton in Fam(𝒞), carrier comparison, invariance at
-  -- the checked-versus-embedded environments, and the realised skeleton in
+  -- GF preserves μ-types: constant-free in Fam(𝒞), carrier comparison, invariance at
+  -- the checked-versus-embedded environments, and the realised constant-free in
   -- Fam(Gl), backwards.
   GFμ : Preserves-μ Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
           GlT GlP GlSC Fam⟨𝒞⟩-hasMu Gl-Mu GF
   GFμ {n} P δ =
-    Glued.Iso-trans (functor-preserve-iso GF (Sk.skeleton-μ-iso P δ))
-    (Glued.Iso-trans (check-iso (FMc.μObj (skeleton P) ε))
+    Glued.Iso-trans (functor-preserve-iso GF (Sk.constant-free-μ-iso P δ))
+    (Glued.Iso-trans (check-iso (FMc.μObj (constant-free P) ε))
     (Glued.Iso-trans (functor-preserve-iso realise (check-μ P ε))
-    (Glued.Iso-trans (μObj-≡-iso (≡-sym (Poly-map-skeleton-go η P (λ c → c))) (λ i → check (ε i)))
+    (Glued.Iso-trans (μObj-≡-iso (≡-sym (Poly-map-constant-free-go η P (λ c → c))) (λ i → check (ε i)))
     (Glued.Iso-trans (RGl.MuInvariance.mu-invariance SKg (RGl.invarianceAt SKg)
                        (λ i → check (ε i)) (λ i → η .fobj (GF .fobj (ε i))) isos)
-    (Glued.Iso-trans realised-skeleton
+    (Glued.Iso-trans realised-constant-free
       (obj-≡-iso (≡-sym (Gl-Mu-obj (Poly-map GF P) (λ i → GF .fobj (δ i))))))))))
     where
       ε : Fin (n +ℕ #c P) → Fam⟨𝒞⟩.Obj
       ε = δ ++e consts P
 
       SKg : Poly Gl (sucℕ (n +ℕ #c P))
-      SKg = skeleton P
+      SKg = constant-free P
 
       isos : ∀ i → Glued.Iso (realise .fobj (check (ε i)))
                              (realise .fobj (η .fobj (GF .fobj (ε i))))
       isos i = Glued.Iso-trans (Glued.Iso-sym (check-iso (ε i)))
                  (Glued.Iso-sym (RGl.realise-η-iso (GF .fobj (ε i))))
 
-      -- The realised skeleton in Fam(Gl), backwards: invariance the embedded
-      -- environment onto the extended one, share the skeleton between P and its
-      -- GF-image, and apply the Fam(Gl) skeleton lemma at the image polynomial.
-      realised-skeleton : Glued.Iso (RGl.Creal SKg (λ i → η .fobj (GF .fobj (ε i))))
+      -- The realised constant-free in Fam(Gl), backwards: invariance the embedded
+      -- environment onto the extended one, share the constant-free form between P and its
+      -- GF-image, and apply the Fam(Gl) constant-free lemma at the image polynomial.
+      realised-constant-free : Glued.Iso (RGl.Creal SKg (λ i → η .fobj (GF .fobj (ε i))))
                                     (RGl.μ-objℰ (Poly-map GF P) (λ i → GF .fobj (δ i)))
-      realised-skeleton =
+      realised-constant-free =
         Glued.Iso-trans
           (RGl.MuInvariance.mu-invariance SKg (RGl.invarianceAt SKg)
             (λ i → η .fobj (GF .fobj (ε i))) (δ̂ ++e cs̄)
             (λ i → obj-≡-iso (cong (realise .fobj)
                      (++e-map (λ X → η .fobj (GF .fobj X)) δ (consts P) i))))
-        (Glued.Iso-trans (Glued.Iso-sym (μObj-≡-iso skeletons-agree (δ̂ ++e cs̄)))
-          (Glued.Iso-sym (functor-preserve-iso realise SkI.skeleton-inst-iso)))
+        (Glued.Iso-trans (Glued.Iso-sym (μObj-≡-iso constant-free-forms-agree (δ̂ ++e cs̄)))
+          (Glued.Iso-sym (functor-preserve-iso realise SkI.constant-free-inst-iso)))
         where
           δ̂ : Fin n → FMg.Obj
           δ̂ i = η .fobj (GF .fobj (δ i))
@@ -185,10 +185,10 @@ module gf-preserves-mu
             ≡-sym (≡-trans (consts-Poly-map η (Poly-map GF P) c)
               (cong (η .fobj) (consts-Poly-map GF P (≡-subst Fin (#c-Poly-map η (Poly-map GF P)) c))))
 
-          module SkI = SkGl.Skeleton.Inst δ̂ cs̄ P̂ ι̂ csok
+          module SkI = SkGl.ConstantFree.Inst δ̂ cs̄ P̂ ι̂ csok
 
-          skeletons-agree : skeleton-go P̂ ι̂ ≡ Poly-map η SKg
-          skeletons-agree =
-            ≡-trans (skeleton-go-Poly-map η (Poly-map GF P) (λ c → ≡-subst Fin (#c-Poly-map GF P) c))
-              (≡-trans (skeleton-go-Poly-map GF P (λ c → c))
-                (≡-sym (Poly-map-skeleton-go η P (λ c → c))))
+          constant-free-forms-agree : constant-free-go P̂ ι̂ ≡ Poly-map η SKg
+          constant-free-forms-agree =
+            ≡-trans (constant-free-go-Poly-map η (Poly-map GF P) (λ c → ≡-subst Fin (#c-Poly-map GF P) c))
+              (≡-trans (constant-free-go-Poly-map GF P (λ c → c))
+                (≡-sym (Poly-map-constant-free-go η P (λ c → c))))
