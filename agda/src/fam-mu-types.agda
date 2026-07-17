@@ -22,13 +22,11 @@ open import prop-setoid as PS using ()
 import indexed-family
 open indexed-family using (Fam; _⇒f_)
 import fam-mu-types.reindex-fusion
-import fam-mu-types.action
 
 module fam-mu-types {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
 open fam-mu-types.reindex-fusion os es T P public
-open fam-mu-types.action os es T P using (module Action)
 
 -- β/η proof machinery: the fusion of α's reconstruction with the fold equals the strong functorial action
 -- of `⦅ alg ⦆`.
@@ -110,52 +108,40 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   -- fibre action, and the lemmas transport the fibre composites along the corresponding
   -- index proofs, mirroring `Rel`/`reindex-mcong`/`combine-lemma` clause by clause.
   module CombineFam (γ : Γ .idx .Carrier) where
-    module FR = Action {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
+    module FR = FReindex {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
 
     combine-act : ∀ {k} {ρA ρB ρC} {dA dB dC} (md : AM.R.MorD {k} ρA ρB dA dB) (fm : FD.FMor {k} ρB ρC dB dC) →
-                  FR.Act (combine γ md fm) dA dC
+                  FR.FAct (combine γ md fm) dA dC
     combine-act md fm =
       FR.abase (λ v a → FD.fold-apply-fam γ fm v (AM.R.apply md v a)
                         ∘ prod-m (id (Fam.fm (Γ .fam) γ)) (AM.R.apply-fam md v a))
-        (λ v {a} {a'} p →
-          ≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl
-            (≈-trans (≈-sym (prod-m-comp _ _ _ _))
-            (≈-trans (prod-m-cong id-left (AM.R.apply-fam-natural md v {a} {a'} p))
-            (≈-trans (prod-m-cong (≈-sym id-left) ≈-refl)
-                     (prod-m-comp _ _ _ _)))))
-          (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (≈-trans (∘-cong ≈-refl (prod-m-cong (≈-sym (Γ .fam .refl*)) ≈-refl))
-                                    (FD.fold-apply-fam-natural (Γ .idx .isEquivalence .refl) fm v
-                                       (AM.R.apply-resp md v {a} {a'} p))) ≈-refl)
-                   (assoc _ _ _)))))
 
     mutual
       -- Fibre actions over Rel-related morphisms, related constructor by constructor.
       data RelAct : ∀ {k} {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD {k} ρA ρB} →
-                    Rel md₁ md₂ → FR.Act md₁ dA dB → FR.Act md₂ dA dB →
+                    Rel md₁ md₂ → FR.FAct md₁ dA dB → FR.FAct md₂ dA dB →
                     Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
         rcombA : ∀ {k} {ρA ρB ρC} {dA dB dC} (Q : Poly (suc k))
                  (md : AM.R.MorD ρA ρB dA dB) (fm : FD.FMor ρB ρC dB dC) →
                  RelAct (rcomb γ Q md fm) (combine-act (AM.R.bind Q md) (FD.fbind Q fm))
                         (FR.abind Q (combine γ md fm) (combine-act md fm))
         rbindA : ∀ {k} {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB} {r : Rel md₁ md₂}
-                 {a₁ : FR.Act md₁ dA dB} {a₂ : FR.Act md₂ dA dB} (Q : Poly (suc k)) →
+                 {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB} (Q : Poly (suc k)) →
                  RelAct r a₁ a₂ → RelAct (rbind ∣ Q ∣ r) (FR.abind Q md₁ a₁) (FR.abind Q md₂ a₂)
 
       reindex-mcong-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
-                          {r : Rel md₁ md₂} {a₁ : FR.Act md₁ dA dB} {a₂ : FR.Act md₂ dA dB}
+                          {r : Rel md₁ md₂} {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB}
                           (ra : RelAct r a₁ a₂) (t : AM.TX.W ∣ Q ∣ ρA) →
                           FD.TA'.fib-subst Q dB {x = Rcomb.ireindex md₁ t} {y = Rcomb.ireindex md₂ t}
-                             (reindex-mcong r t) ∘ FR.act-fam a₁ {t} ≈
-                          FR.act-fam a₂ {t}
+                             (reindex-mcong r t) ∘ FR.freindex-fam a₁ {t} ≈
+                          FR.freindex-fam a₂ {t}
       reindex-mcong-fam {Q = Q} ra (AM.TX.sup y) = reindex-mcong-shape-fam Q (rbindA Q ra) y
 
       reindex-mcong-shape-fam : ∀ {j} (R : Poly j) {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
-                                {r : Rel md₁ md₂} {a₁ : FR.Act md₁ dA dB} {a₂ : FR.Act md₂ dA dB}
+                                {r : Rel md₁ md₂} {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB}
                                 (ra : RelAct r a₁ a₂) (y : AM.TX.⟦ ∣ R ∣ ⟧shape ρA) →
-                                (FD.TA'.fib-shape-subst R dB (reindex-mcong-shape ∣ R ∣ r y) ∘ FR.act-shape-fam R a₁ {y})
-                                ≈ FR.act-shape-fam R a₂ {y}
+                                (FD.TA'.fib-shape-subst R dB (reindex-mcong-shape ∣ R ∣ r y) ∘ FR.freindex-shape-fam R a₁ {y})
+                                ≈ FR.freindex-shape-fam R a₂ {y}
       reindex-mcong-shape-fam (const A') ra y =
         ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
       reindex-mcong-shape-fam (var v) ra y = mrel-apply-fam ra v
@@ -167,9 +153,9 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       reindex-mcong-shape-fam (μ R'') ra y = reindex-mcong-fam {Q = R''} ra y
 
       mrel-apply-fam : ∀ {k} {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
-                       {r : Rel md₁ md₂} {a₁ : FR.Act md₁ dA dB} {a₂ : FR.Act md₂ dA dB}
+                       {r : Rel md₁ md₂} {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB}
                        (ra : RelAct r a₁ a₂) (v : Fin k) {z} →
-                       FD.TA'.fib-el-subst (ρB v) (dB v) (mrel-apply r v {z}) ∘ FR.act-apply a₁ v z ≈ FR.act-apply a₂ v z
+                       FD.TA'.fib-el-subst (ρB v) (dB v) (mrel-apply r v {z}) ∘ FR.aapply a₁ v z ≈ FR.aapply a₂ v z
       mrel-apply-fam (rcombA Q md fm) Fin.zero {z} = combine-lemma-fam md fm z
       mrel-apply-fam (rcombA {ρC = ρC} Q md fm) (Fin.suc v') {z} =
         ≈-trans (∘-cong (FD.TA'.fib-el-refl* (ρC v') _ _) ≈-refl) id-left
@@ -183,7 +169,7 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                              (combine-lemma γ md fm t)
                            ∘ (FD.fold-reindex-fam γ fm (AM.R.reindex md t)
                               ∘ prod-m (id _) (AM.R.reindex-fam-W {Q = Q} md {t})))
-                          ≈ FR.act-fam (combine-act md fm) {t}
+                          ≈ FR.freindex-fam (combine-act md fm) {t}
       combine-lemma-fam {Q = Q} md fm (AM.TX.sup x) = combine-lemma-shape-fam Q Q md fm x
 
       combine-lemma-shape-fam : ∀ {k} (Q : Poly (suc k)) (R : Poly (suc k)) {ρA ρB ρC} {dA dB dC}
@@ -194,7 +180,7 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                                  ∘ (FD.fold-reindex-shape-fam γ R (FD.fbind Q fm)
                                       (AM.R.reindex-shape ∣ R ∣ (AM.R.bind Q md) x)
                                     ∘ prod-m (id _) (AM.R.reindex-fam R (AM.R.bind Q md) {x}))
-                                ≈ FR.act-shape-fam R (FR.abind Q (combine γ md fm) (combine-act md fm)) {x}
+                                ≈ FR.freindex-shape-fam R (FR.abind Q (combine γ md fm) (combine-act md fm)) {x}
       combine-lemma-shape-fam Q (const A') md fm x =
         ≈-trans (∘-cong (A' .fam .refl*) ≈-refl)
           (≈-trans id-left (≈-trans (pair-p₂ _ _) id-left))
@@ -303,7 +289,7 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       corr-fs-fam : ∀ i {a} →
                     (extend δ A i .fam .subst
                        (corr-fs i (Γ .idx .isEquivalence .refl) (δ' i .idx .isEquivalence .refl {a}))
-                     ∘ Cγ.FR.act-apply (Cγ.combine-act AM.mor₀ FD.fbase) i a)
+                     ∘ Cγ.FR.aapply (Cγ.combine-act AM.mor₀ FD.fbase) i a)
                     ≈ (fs i .famf ._⇒f_.transf (γ , a))
       corr-fs-fam Fin.zero {a} =
         ≈-trans (∘-cong (A .fam .refl*) ≈-refl)
@@ -537,19 +523,15 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   -- Fibre side, at a fixed γ: h's fibre action agrees with the fold's, transported
   -- along the pointwise index agreement.
   module EtaFam (γ : Γ .idx .Carrier) where
-    module FR = Action {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
+    module FR = FReindex {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
 
-    act-hs : FR.Act (cmb-hs γ) (λ v → lift tt) (λ v → lift tt)
+    act-hs : FR.FAct (cmb-hs γ) (λ v → lift tt) (λ v → lift tt)
     act-hs = FR.abase (λ { Fin.zero a → h .famf ._⇒f_.transf (γ , a) ; (Fin.suc i) a → p₂ })
-      (λ { Fin.zero {a} {a'} p →
-             ≈-trans (∘-cong ≈-refl (prod-m-cong (≈-sym (Γ .fam .refl*)) ≈-refl))
-                     (h .famf ._⇒f_.natural (Γ .idx .isEquivalence .refl , p))
-         ; (Fin.suc i) {a} {a'} p → pair-p₂ _ _ })
 
     corr-hs-fam : ∀ i {a} →
                   extend δ A i .fam .subst
                      (corr-hs i (Γ .idx .isEquivalence .refl) (δ' i .idx .isEquivalence .refl {a}))
-                   ∘ FR.act-apply act-hs i a ≈
+                   ∘ FR.aapply act-hs i a ≈
                   hs i .famf ._⇒f_.transf (γ , a)
     corr-hs-fam Fin.zero {a} = ≈-trans (∘-cong (A .fam .refl*) ≈-refl) id-left
     corr-hs-fam (Fin.suc j) {a} = ≈-trans (∘-cong (δ j .fam .refl*) ≈-refl) id-left
@@ -659,7 +641,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
         fuse-inv : μObj Q' (extend δ A) .fam .subst
                       {x = strong-fmor (μ Q') hs .idxf .PS._⇒_.func (γ , m')}
                       {y = Rcomb.ireindex (cmb-hs γ) m'} sym-fuse
-                    ∘ strong-fmor (μ Q') hs .famf ._⇒f_.transf (γ , m') ≈ FR.act-fam act-hs {m'}
+                    ∘ strong-fmor (μ Q') hs .famf ._⇒f_.transf (γ , m') ≈ FR.freindex-fam act-hs {m'}
         fuse-inv =
           ≈-trans (∘-cong ≈-refl (≈-sym (fuse-fam γ Q' cmb-hs act-hs hs corr-hs corr-hs-fam {m'})))
             (≈-trans (≈-sym (assoc _ _ _))
@@ -678,15 +660,15 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                        {dD : ∀ v → FD.Tδ.DecoAssign (ρD v)} {dX : ∀ v → AM.TX.DecoAssign (ρX v)}
                        {dC : ∀ v → FD.TA'.DecoAssign (ρC v)} →
                        Rδ.MorD ρD ρX dD dX → (mdc : Rcomb.IMorD ρX ρC) → FD.FMor ρD ρC dD dC →
-                       FR.Act mdc dX dC → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+                       FR.FAct mdc dX dC → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
             hbase' : HRel' mor₀δ (cmb-hs γ) FD.fbase act-hs
             hbind' : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
-                     {fm : FD.FMor ρD ρC dD dC} {am : FR.Act mdc dX dC} (S' : Poly (suc j)) →
+                     {fm : FD.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC} (S' : Poly (suc j)) →
                      HRel' md mdc fm am →
                      HRel' (Rδ.bind S' md) (Rcomb.ibind ∣ S' ∣ mdc) (FD.fbind S' fm) (FR.abind S' mdc am)
 
           htele-shape' : ∀ {j} (S : Poly j) {ρD ρX ρC dD dX dC} {md : Rδ.MorD ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
-                         {fm : FD.FMor ρD ρC dD dC} {am : FR.Act mdc dX dC}
+                         {fm : FD.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
                          (rel : HRel' md mdc fm am) (z : FD.Tδ.⟦ ∣ S ∣ ⟧shape ρD) →
                          FD.TA'.shape≈ ∣ S ∣ ρC (Rcomb.ireindex-shape ∣ S ∣ mdc (Rδ.reindex-shape ∣ S ∣ md z))
                            (FD.fold-reindex-shape γ S fm z)
@@ -698,7 +680,7 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           htele-shape' (μ S') rel (FD.Tδ.sup z) = htele-shape' S' (hbind' S' rel) z
 
           htele-apply' : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
-                         {fm : FD.FMor ρD ρC dD dC} {am : FR.Act mdc dX dC}
+                         {fm : FD.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
                          (rel : HRel' md mdc fm am) (v : Fin j) {z} →
                          FD.TA'.elEq (ρC v) (Rcomb.iapply mdc v (Rδ.apply md v z)) (FD.fold-apply γ fm v z)
           htele-apply' hbase' Fin.zero {z} = η-idx (Γ .idx .isEquivalence .refl {γ}) (FD.Tδ.W-≈-refl z)
@@ -707,10 +689,10 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           htele-apply' (hbind' S' rel) (Fin.suc v) = htele-apply' rel v
 
           htelef-shape : ∀ {j} (S : Poly j) {ρD ρX ρC dD dX dC} {md : Rδ.MorD ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
-                         {fm : FD.FMor ρD ρC dD dC} {am : FR.Act mdc dX dC}
+                         {fm : FD.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
                          (rel : HRel' md mdc fm am) (z : FD.Tδ.⟦ ∣ S ∣ ⟧shape ρD) →
                          FD.TA'.fib-shape-subst S dC (htele-shape' S rel z)
-                          ∘ (FR.act-shape-fam S am {Rδ.reindex-shape ∣ S ∣ md z}
+                          ∘ (FR.freindex-shape-fam S am {Rδ.reindex-shape ∣ S ∣ md z}
                              ∘ prod-m (id _) (Rδ.reindex-fam S md {z})) ≈
                          FD.fold-reindex-shape-fam γ S fm z
           htelef-shape (const A') rel z =
@@ -726,10 +708,10 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           htelef-shape (μ S') rel (FD.Tδ.sup z) = htelef-shape S' (hbind' S' rel) z
 
           htelef-apply : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
-                         {fm : FD.FMor ρD ρC dD dC} {am : FR.Act mdc dX dC}
+                         {fm : FD.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
                          (rel : HRel' md mdc fm am) (v : Fin j) {z} →
                          (FD.TA'.fib-el-subst (ρC v) (dC v) (htele-apply' rel v {z})
-                          ∘ (FR.act-apply am v (Rδ.apply md v z) ∘ prod-m (id _) (Rδ.apply-fam md v z)))
+                          ∘ (FR.aapply am v (Rδ.apply md v z) ∘ prod-m (id _) (Rδ.apply-fam md v z)))
                          ≈ FD.fold-apply-fam γ fm v z
           htelef-apply hbase' Fin.zero {z} =
             ≈-trans (∘-cong ≈-refl (≈-trans (∘-cong ≈-refl prod-m-id) id-right)) (η-fam z)
