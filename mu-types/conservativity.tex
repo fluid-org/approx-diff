@@ -451,24 +451,28 @@ fibres.
 
 \Replaced{Preservation asks only for an
 isomorphism of objects, so we may take the $\Poly$-types of $\cat{C}$ to be the concrete
-construction of \propref{polynomial-types:fam-has-poly}, whose carriers are the families of
-sort-indexed trees with node-wise product fibres, and build the required isomorphism on those
-carriers; the choice of $\Poly$-types structure is immaterial, any two having componentwise
+construction of \propref{polynomial-types:fam-has-poly}, with carriers the sort-indexed tree
+families $(W_{s_0}, \partial W_{s_0})$, and build the isomorphism of
+\defref{conservativity:preserves-poly} on those carriers; the choice of $\Poly$-types structure is immaterial, any two having componentwise
 isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms.}{Preservation asks
 only for an isomorphism of objects, so the comparison can be carried out on the concrete carriers
 of \propref{polynomial-types:fam-has-poly}, taking $\cat{C}$ to be a $\Fam$ category with those
 $\Poly$-types; which $\Poly$-types structure is immaterial, any two having componentwise
-isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms.} On the
-carriers no initiality machinery is needed: the tree sorts and fibres of the carrier are computed
-from the index sets and fibres of the
-environment entries and $\const$-objects alone. In particular a $\const$-object and a variable
-bound to an equal environment entry contribute identical data.
+isomorphic $\mu$-objects, by folds both ways and uniqueness of catamorphisms.} Working on the
+carriers avoids any appeal to initiality: sorts, trees and fibres are computed by recursion from
+the index sets $|A|$ and fibres $\partial A$ of the $\const$-objects and environment entries
+alone, so isomorphisms between carriers can be built directly. In particular $\const(A)$ and a
+variable $\beta$ with $\delta(\beta) = A$ contribute identical data.
 
 \begin{definition}[Skeleton]
 \label{def:conservativity:skeleton}
-The \emph{skeleton} $Q^{*}$ of a polynomial $Q$ is the constant-free polynomial obtained by
-replacing each $\const$-object with a fresh variable, the $\const$-objects $\vec{A}$ of $Q$
-collected as additional environment entries.
+\Replaced{The \emph{skeleton} $Q^{*}$ of a polynomial $Q$ replaces each occurrence of a
+$\const$-object with a fresh variable, giving a constant-free polynomial over the kinding context
+of $Q$ extended by those variables; an environment $\delta$ for $Q$ extends to the environment
+$(\delta, \vec{A})$ for $Q^{*}$ by assigning the displaced $\const$-objects $\vec{A}$ to the
+fresh variables.}{The \emph{skeleton} $Q^{*}$ of a polynomial $Q$
+is the constant-free polynomial obtained by replacing each $\const$-object with a fresh variable,
+the $\const$-objects $\vec{A}$ of $Q$ collected as additional environment entries.}
 \end{definition}
 
 \noindent
@@ -483,6 +487,7 @@ presentation.
 
 \begin{lemma}
 \label{lem:conservativity:definable-coproducts}
+\Added{As predicates on $G(F(\coprod_i x_i))$, we have that}
 $\Definable_{\coprod_i x_i} \sqsubseteq \mathbf{C}(\bigvee_i \Definable_{x_i}\langle
 \mathsf{in}_i \rangle)$.
 \end{lemma}
@@ -496,8 +501,7 @@ $\coprod_i x_i$ along $g$, by stability; each restriction factors definably thro
 preserve them: carriers by assumption, predicates by the lemma and the closure operator's
 reindexing law (\lemref{conservativity:indexed-closure}), with the coproducts of $\GLR(F)$
 computed as in \corref{conservativity:glr-poly}. In particular $\Sigma\check{\delta}_i \cong
-\GF(\delta_i)$. Inductive types force this lemma; built-in list types would already require
-it.}{Built-in list types would need the same extension. Together with preservation of set-indexed
+\GF(\delta_i)$.}{Built-in list types would need the same extension. Together with preservation of set-indexed
 coproducts by $F$ it makes $\GF$ preserve them: carriers by assumption, predicates by the lemma and
 the closure operator's reindexing law (\lemref{conservativity:indexed-closure}), the coproducts of
 $\GLR(F)$ being computed as in \corref{conservativity:glr-poly}. In particular
