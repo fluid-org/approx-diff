@@ -3,12 +3,13 @@
 open import Level using (_⊔_) renaming (suc to lsuc)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ; suc; _+_; _<_; s≤s)
-open import Data.Nat.Properties using (m≤m+n; m≤n+m)
+open import Data.Nat.Properties using (m≤m+n; m≤n+m; n<1+n)
 open import Data.Nat.Induction using (<-wellFounded)
 open import Induction.WellFounded using (Acc; acc)
 open import Data.Product using (Σ; _×_; _,_)
-open import Data.Unit.Polymorphic using () renaming (⊤ to ⊤ₛ)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl) renaming (subst to ≡-subst)
+open import Data.Unit.Polymorphic using (tt) renaming (⊤ to ⊤ₛ)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
+open import Relation.Binary.PropositionalEquality.Properties using (subst-subst-sym)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category)
@@ -28,7 +29,7 @@ module language-totality
 open Signature Sig
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
+open import type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
 open import language-evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_)
 open import language-evaluation-mat Sig 𝒜 S sort-width
@@ -131,3 +132,113 @@ module WithOp
   total-irr : ∀ τ {ac ac' : Acc _<_ (size τ)} {v} →
               Total-acc τ ac v → Total-acc τ ac' v
   total-irr τ = total-irr-acc τ (<-wellFounded (size τ))
+
+  -- Canonical mu family, with the totality predicate itself at arrow leaves.
+  MuT : (τ₀ : type 1) (σ' : type 1) → Val (σ' [ μ τ₀ ]) → Set ℓT
+  MuT τ₀ = MuTotal τ₀ (λ σ p → Total σ)
+
+  -- Introduction and elimination for Total at each connective.
+  sum-out₁ : ∀ {σ τ v} → Total (σ [+] τ) (inl v) → Total σ v
+  sum-out₁ {σ} t = total-irr σ t
+
+  sum-out₂ : ∀ {σ τ v} → Total (σ [+] τ) (inr v) → Total τ v
+  sum-out₂ {σ} {τ} t = total-irr τ t
+
+  sum-in₁ : ∀ {σ τ v} → Total σ v → Total (σ [+] τ) (inl v)
+  sum-in₁ {σ} t = total-irr σ t
+
+  sum-in₂ : ∀ {σ τ v} → Total τ v → Total (σ [+] τ) (inr v)
+  sum-in₂ {σ} {τ} t = total-irr τ t
+
+  prod-out : ∀ {σ τ v u} → Total (σ [×] τ) (pair v u) → Total σ v × Total τ u
+  prod-out {σ} {τ} (t , t') = total-irr σ t , total-irr τ t'
+
+  prod-in : ∀ {σ τ v u} → Total σ v → Total τ u → Total (σ [×] τ) (pair v u)
+  prod-in {σ} {τ} t t' = total-irr σ t , total-irr τ t'
+
+  mu-out : ∀ {τ₀ v} → Total (μ τ₀) v → MuT τ₀ (var Fin.zero) v
+  mu-out m = mu-total-map (λ σ p t → total-irr σ t) m
+
+  mu-in : ∀ {τ₀ v} → MuT τ₀ (var Fin.zero) v → Total (μ τ₀) v
+  mu-in m = mu-total-map (λ σ p t → total-irr σ t) m
+
+  -- Value size, invariant under transport; drives the mutual recursion below.
+  vsize : ∀ {τ : type 0} → Val τ → ℕ
+  vsize unit       = 1
+  vsize (const c)  = 1
+  vsize (clo γ t)  = 1
+  vsize (inl v)    = suc (vsize v)
+  vsize (inr v)    = suc (vsize v)
+  vsize (pair v u) = suc (vsize v + vsize u)
+  vsize (roll v)   = suc (vsize v)
+
+  vsize-subst : ∀ {σ σ' : type 0} (e : σ ≡ σ') (w : Val σ) → vsize (≡-subst Val e w) ≡ vsize w
+  vsize-subst refl w = refl
+
+  total-coerce : ∀ {σ σ' : type 0} (e : σ ≡ σ') {v : Val σ} →
+                 Total σ v → Total σ' (≡-subst Val e v)
+  total-coerce refl t = t
+
+  -- Totality at a substituted type versus membership of the mu family. The
+  -- nested case crosses between the outer family and the family of the inner
+  -- body through Total at the propositionally equal type.
+  fold-tot-acc : ∀ (τ₀ σ' : type 1) → arr-bound (size (μ τ₀)) σ' →
+                 ∀ {v : Val (σ' [ μ τ₀ ])} → Acc _<_ (vsize v) →
+                 Total (σ' [ μ τ₀ ]) v → MuT τ₀ σ' v
+  unfold-tot-acc : ∀ (τ₀ σ' : type 1) →
+                   ∀ {v : Val (σ' [ μ τ₀ ])} → Acc _<_ (vsize v) →
+                   MuT τ₀ σ' v → Total (σ' [ μ τ₀ ]) v
+
+  fold-tot-acc τ₀ (var Fin.zero) b av t = mu-out t
+  fold-tot-acc τ₀ unit b {unit} av t = mt-unit
+  fold-tot-acc τ₀ (base s) b {const c} av t = mt-base
+  fold-tot-acc τ₀ (σ₁ [+] σ₂) (b₁ , b₂) {inl v₁} (acc ra) t =
+    mt-inl (fold-tot-acc τ₀ σ₁ b₁ (ra (n<1+n _)) (sum-out₁ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} t))
+  fold-tot-acc τ₀ (σ₁ [+] σ₂) (b₁ , b₂) {inr v₂} (acc ra) t =
+    mt-inr (fold-tot-acc τ₀ σ₂ b₂ (ra (n<1+n _)) (sum-out₂ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} t))
+  fold-tot-acc τ₀ (σ₁ [×] σ₂) (b₁ , b₂) {pair v₁ v₂} (acc ra) t =
+    mt-pair (fold-tot-acc τ₀ σ₁ b₁ (ra (s≤s (m≤m+n (vsize v₁) (vsize v₂)))) (Data.Product.proj₁ (prod-out {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} t)))
+            (fold-tot-acc τ₀ σ₂ b₂ (ra (s≤s (m≤n+m (vsize v₂) (vsize v₁)))) (Data.Product.proj₂ (prod-out {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} t)))
+    where import Data.Product
+  fold-tot-acc τ₀ (σ₁ [→] σ₂) b av t = mt-arrow b t
+  fold-tot-acc τ₀ (μ τ') b {roll w₂} (acc ra) t
+    with mu-out {τ₀ = sub (sub-lift (push (μ τ₀))) τ'} t
+  ... | mt-roll m₂ =
+    ≡-subst (λ x → MuT τ₀ (μ τ') (roll x)) (subst-subst-sym (unfold₁-inst τ' (μ τ₀)))
+      (mt-mu (fold-tot-acc τ₀ (unfold₁ τ') (unfold₁-arr τ' b)
+               (ra (≡-subst (λ n → n < suc (vsize w₂))
+                            (sym (vsize-subst (sym (unfold₁-inst τ' (μ τ₀))) w₂))
+                            (n<1+n _)))
+               (total-coerce (sym (unfold₁-inst τ' (μ τ₀)))
+                 (unfold-tot-acc (sub (sub-lift (push (μ τ₀))) τ')
+                                 (sub (sub-lift (push (μ τ₀))) τ')
+                                 (ra (n<1+n _)) m₂))))
+
+  unfold-tot-acc τ₀ (var Fin.zero) av m = mu-in m
+  unfold-tot-acc τ₀ unit av m = tt
+  unfold-tot-acc τ₀ (base s) av m = tt
+  unfold-tot-acc τ₀ (σ₁ [+] σ₂) (acc ra) (mt-inl m) =
+    sum-in₁ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} (unfold-tot-acc τ₀ σ₁ (ra (n<1+n _)) m)
+  unfold-tot-acc τ₀ (σ₁ [+] σ₂) (acc ra) (mt-inr m) =
+    sum-in₂ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} (unfold-tot-acc τ₀ σ₂ (ra (n<1+n _)) m)
+  unfold-tot-acc τ₀ (σ₁ [×] σ₂) (acc ra) (mt-pair {v₁ = v₁} {v₂ = v₂} m₁ m₂) =
+    prod-in {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} (unfold-tot-acc τ₀ σ₁ (ra (s≤s (m≤m+n (vsize v₁) (vsize v₂)))) m₁)
+      (unfold-tot-acc τ₀ σ₂ (ra (s≤s (m≤n+m (vsize v₂) (vsize v₁)))) m₂)
+  unfold-tot-acc τ₀ (σ₁ [→] σ₂) av (mt-arrow p t) = t
+  unfold-tot-acc τ₀ (μ τ') (acc ra) (mt-mu {w = w} m) =
+    mu-in (mt-roll (fold-tot-acc B B (arr-self B) (ra (n<1+n _))
+             (total-coerce E (unfold-tot-acc τ₀ (unfold₁ τ')
+                (ra (≡-subst (λ n → n < suc (vsize (≡-subst Val E w))) (vsize-subst E w) (n<1+n _)))
+                m))))
+    where
+    B : type 1
+    B = sub (sub-lift (push (μ τ₀))) τ'
+    E : (unfold₁ τ' [ μ τ₀ ]) ≡ (B [ μ B ])
+    E = unfold₁-inst τ' (μ τ₀)
+
+  fold-tot : ∀ (τ₀ σ' : type 1) → arr-bound (size (μ τ₀)) σ' →
+             ∀ {v} → Total (σ' [ μ τ₀ ]) v → MuT τ₀ σ' v
+  fold-tot τ₀ σ' b {v} = fold-tot-acc τ₀ σ' b (<-wellFounded (vsize v))
+
+  unfold-tot : ∀ (τ₀ σ' : type 1) → ∀ {v} → MuT τ₀ σ' v → Total (σ' [ μ τ₀ ]) v
+  unfold-tot τ₀ σ' {v} = unfold-tot-acc τ₀ σ' (<-wellFounded (vsize v))
