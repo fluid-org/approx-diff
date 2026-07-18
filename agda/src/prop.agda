@@ -6,14 +6,11 @@ open import Level
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
--- Prop-variant of Relation.Binary.PropositionalEquality.subst (which requires a Set-valued motive).
-substP : ∀ {a b} {A : Set a} (Q : A → Prop b) {x y : A} → x ≡ y → Q x → Q y
-substP _ refl q = q
+-- Prop-valued analog of stdlib's `subst`, which lands in `Set`.
+substP : ∀ {ℓ ℓ'} {A : Set ℓ} {x y : A} (P : A → Prop ℓ') → x ≡ y → P x → P y
+substP P refl x = x
 
 data ⊥ {ℓ} : Prop ℓ where
-
-⊥-elim : ∀ {ℓ ℓ'} {A : Prop ℓ'} → ⊥ {ℓ} → A
-⊥-elim ()
 
 record ⊤ {ℓ} : Prop ℓ where
   constructor tt
@@ -39,11 +36,6 @@ infixr 4 _∧_ _,_
 data _∨_ {a b} (P : Prop a) (Q : Prop b) : Prop (a ⊔ b) where
   inj₁ : P → P ∨ Q
   inj₂ : Q → P ∨ Q
-
--- Decidability of a Prop. Set-level so it can be branched on; proofs inside are Prop.
-data Dec {ℓ} (P : Prop ℓ) : Set ℓ where
-  yes : P → Dec P
-  no  : (P → ⊥ {ℓ}) → Dec P
 
 record ∃ₚ {a b} (A : Prop a)(B : A → Prop b) : Prop (a ⊔ b) where
   constructor _,_

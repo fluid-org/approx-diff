@@ -556,40 +556,6 @@ module _ where
     A .≤-refl , B .≤-refl
   L-costrength {A} .⊥-preserving = A .≤-refl , tt
 
-  -- Naturality of L-costrength: commutes with the bifunctorial action of L
-  -- combined with the product on the first arg.
-  L-costrength-natural : ∀ {A₁ A₂ B₁ B₂}
-                         {X₁ : JoinSemilattice A₁} {X₂ : JoinSemilattice A₂}
-                         {Y₁ : JoinSemilattice B₁} {Y₂ : JoinSemilattice B₂}
-                         (f : X₁ => X₂) (g : Y₁ => Y₂) →
-                         (⟨ f ∘ project₁ , L-map g ∘ project₂ ⟩ ∘ L-costrength {X = X₁} {Y = Y₁}) ≃m
-                         (L-costrength {X = X₂} {Y = Y₂} ∘ L-map ⟨ f ∘ project₁ , g ∘ project₂ ⟩)
-  L-costrength-natural {X₂ = X₂} f g .eqfunc .eqfun bottom .proj₁ =
-    f .⊥-preserving , tt
-  L-costrength-natural {X₂ = X₂} f g .eqfunc .eqfun bottom .proj₂ =
-    X₂ .⊥-isBottom .IsBottom.≤-bottom , tt
-  L-costrength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun < x , y > =
-    (A₂ × B₂) .≃-refl
-
-  L-costrength-p₂ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
-                    (project₂ {X = X} {Y = L Y} ∘ L-costrength {X = X} {Y = Y}) ≃m L-map (project₂ {X = X} {Y = Y})
-  L-costrength-p₂ .eqfunc .eqfun bottom = tt , tt
-  L-costrength-p₂ {B = B} .eqfunc .eqfun < x , y > = B .≃-refl
-
-  -- Associativity coherence dual to meet-semilattice.L-strength-assoc: L-costrength commutes
-  -- with the codiagonal [ inject₁ , id ].
-  L-costrength-assoc : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
-                       ([ inject₁ {X = X} {Y = L Y} , L-costrength {X = X} {Y = Y} ] ∘ L-costrength {X = X} {Y = X ⊕ Y}) ≃m
-                       (L-costrength {X = X} {Y = Y} ∘ L-map [ inject₁ {X = X} {Y = Y} , id {X = X ⊕ Y} ])
-  L-costrength-assoc {A = A} {B = B} {X = X} {Y = Y} .eqfunc .eqfun bottom .proj₁ =
-    X .∨-isJoin .IsJoin.[_,_] (A .≤-refl) (A .≤-refl) , tt
-  L-costrength-assoc {A = A} {B = B} {X = X} {Y = Y} .eqfunc .eqfun bottom .proj₂ =
-    X .∨-isJoin .IsJoin.inl , tt
-  L-costrength-assoc {A = A} {B = B} {X = X} {Y = Y} .eqfunc .eqfun < x , (x' , y) > .proj₁ =
-    A .≤-refl , Y .∨-isJoin .IsJoin.inr
-  L-costrength-assoc {A = A} {B = B} {X = X} {Y = Y} .eqfunc .eqfun < x , (x' , y) > .proj₂ =
-    A .≤-refl , Y .∨-isJoin .IsJoin.[_,_] (Y .⊥-isBottom .IsBottom.≤-bottom) (B .≤-refl)
-
 {-
   L-coassoc : ∀ {A}{X : JoinSemilattice A} → (L-map L-dup ∘ L-dup) ≃m (L-dup ∘ L-dup {X = X})
   L-coassoc .eqfunc .eqfun bottom .proj₁ = tt

@@ -7,7 +7,7 @@ open import prop using (⟪_⟫)
 open import prop-setoid
   using (IsEquivalence; Setoid; 𝟙; +-setoid; ⊗-setoid; idS; _∘S_; ∘S-cong; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence)
-open import categories using (Category; setoid→category)
+open import categories using (Category)
 
 -- Families of objects over a setoid
 --
@@ -123,7 +123,7 @@ module _ {o m e} {os es} {𝒞 : Category o m e} {A : Setoid os es} where
 
 ------------------------------------------------------------------------------
 -- Change of indexed category (post composition)
-open import functor hiding (id; _∘_; constF)
+open import functor using (Functor)
 
 module _ {o m e o' m' e' os es}
          {𝒞 : Category o m e}
@@ -180,14 +180,6 @@ module _ {o m e o' m' e' os es}
   preserveConst⁻¹ x .natural a₁≈a₂ = 𝒟.∘-cong (𝒟.≈-sym (F .fmor-id)) (𝒟.isEquiv .refl)
 
   -- FIXME: preserves id and composition, and preserveConst is a natural isomorphism
-
-module _ {o m e o' m' e'} os es
-         {𝒞 : Category o m e}
-         {𝒟 : Category o' m' e'}
-         (A : Setoid os es)
-         {F G : Functor 𝒞 𝒟}
-         (α : NatTrans F G)
-  where
 
 ------------------------------------------------------------------------------
 -- reindexing of families (so that Fam is an indexed category)
@@ -425,44 +417,16 @@ record HasSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc 
     ∎
     where open ≈-Reasoning isEquiv
 
-open import functor
+------------------------------------------------------------------------------
+-- A category with all discrete limits has all setoid-indexed products.
 
--- A family is a functor from the setoid, viewed as a category.
-module _ {o m e os es} {𝒞 : Category o m e} where
+open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimits'; module ≃-NatTrans)
+open import categories using (setoid→category)
+open import prop using (⟪_⟫)
 
-  private
-    module 𝒞C = Category 𝒞
-
-  open Functor
-  open Fam
-
-  fam→functor : ∀ {A : Setoid os es} → Fam A 𝒞 → Functor (setoid→category A) 𝒞
-  fam→functor F .fobj = F .fm
-  fam→functor F .fmor ⟪ eq ⟫ = F .subst eq
-  fam→functor F .fmor-cong _ = 𝒞C.≈-refl
-  fam→functor F .fmor-id = F .refl*
-  fam→functor F .fmor-comp f g = F .trans* _ _
-
-  functor→fam : ∀ {A : Setoid os es} → Functor (setoid→category A) 𝒞 → Fam A 𝒞
-  functor→fam D .fm = D .fobj
-  functor→fam D .subst eq = D .fmor ⟪ eq ⟫
-  functor→fam D .refl* = D .fmor-id
-  functor→fam D .trans* e₁ e₂ = D .fmor-comp ⟪ e₁ ⟫ ⟪ e₂ ⟫
-
-  fam→functor-eta : ∀ {A : Setoid os es} (D : Functor (setoid→category A) 𝒞) →
-                    NatIso D (fam→functor (functor→fam D))
-  fam→functor-eta D .NatIso.transform .NatTrans.transf x = 𝒞C.id _
-  fam→functor-eta D .NatIso.transform .NatTrans.natural ⟪ p ⟫ =
-    𝒞C.≈-trans 𝒞C.id-right (𝒞C.≈-sym 𝒞C.id-left)
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse = 𝒞C.id _
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒞C.id-left
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒞C.id-left
-
--- If a category has all discrete limits, then it has all setoid
--- products (almost by definition).
 module _ {o m e} os es (𝒞 : Category o m e)
          (hasDiscreteLimits : ∀ (A : Setoid os es) → HasLimits' (setoid→category A) 𝒞)
-  where
+       where
 
   private
     module 𝒞 = Category 𝒞
@@ -473,23 +437,29 @@ module _ {o m e} os es (𝒞 : Category o m e)
   open NatTrans
   open ≃-NatTrans
   open Fam
-
   open IsEquivalence
 
-  -- FIXME: this is a bit messy
+  fam→functor : ∀ {A : Setoid os es} → Fam A 𝒞 → Functor (setoid→category A) 𝒞
+  fam→functor F .fobj = F .fm
+  fam→functor F .fmor ⟪ eq ⟫ = F .subst eq
+  fam→functor F .fmor-cong _ = 𝒞.≈-refl
+  fam→functor F .fmor-id = F .refl*
+  fam→functor F .fmor-comp f g = F .trans* _ _
 
   hasSetoidProducts : HasSetoidProducts os es 𝒞
   hasSetoidProducts .Π A F = hasDiscreteLimits A .Π (fam→functor F)
   hasSetoidProducts .lambdaΠ {A} x F f =
     hasDiscreteLimits A .lambdaΠ x _
-      (record { natural = λ { ⟪ e ⟫ → 𝒞.≈-sym (f ._⇒f_.natural e) }  })
+      (record { transf = f ._⇒f_.transf
+              ; natural = λ { ⟪ e ⟫ → 𝒞.≈-sym (f ._⇒f_.natural e) } })
   hasSetoidProducts .lambdaΠ-cong {A} f₁≃f₂ =
     hasDiscreteLimits A .lambda-cong (record { transf-eq = λ _ → f₁≃f₂ ._≃f_.transf-eq })
   hasSetoidProducts .evalΠ {A} P a = hasDiscreteLimits A .evalΠ _ .transf a
   hasSetoidProducts .evalΠ-cong {A} a₁≈a₂ =
-     𝒞.isEquiv .trans (hasDiscreteLimits A .evalΠ _ .natural ⟪ a₁≈a₂ ⟫) 𝒞.id-right
+    𝒞.isEquiv .trans (hasDiscreteLimits A .evalΠ _ .natural ⟪ a₁≈a₂ ⟫) 𝒞.id-right
   hasSetoidProducts .lambda-eval {A} a = hasDiscreteLimits A .lambda-eval _ .transf-eq a
   hasSetoidProducts .lambda-ext {A} =
     𝒞.isEquiv .trans
       (hasDiscreteLimits A .lambda-cong (record { transf-eq = λ x → 𝒞.≈-refl }))
       (hasDiscreteLimits A .lambda-ext _)
+

@@ -15,7 +15,7 @@ open import join-semilattice
             _⊕_ to _⊕J_;
             ≃m-isEquivalence to ≃J-isEquivalence)
 open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; HasInitial)
-open import functor using (IsColimit; Colimit; HasColimits; IsLimit; Limit; HasLimits; Functor; NatTrans; ≃-NatTrans)
+open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimits; Limit; IsLimit; module Functor; module NatTrans; module ≃-NatTrans)
 import two
 
 record Obj : Set (suc 0ℓ) where
@@ -77,8 +77,47 @@ cmon-enriched .CMonEnriched.comp-bilinear-ε₁ f .f≃f = comp-bilinear-ε₁ (
 cmon-enriched .CMonEnriched.comp-bilinear-ε₂ f .f≃f = comp-bilinear-ε₂ (f .*→*)
 
 
+coproducts : HasCoproducts cat
+coproducts .HasCoproducts.coprod X Y .carrier = X .carrier × Y .carrier
+coproducts .HasCoproducts.coprod X Y .joins = X .joins ⊕J Y .joins
+coproducts .HasCoproducts.in₁ .*→* = join-semilattice.inject₁
+coproducts .HasCoproducts.in₂ .*→* = join-semilattice.inject₂
+coproducts .HasCoproducts.copair f g .*→* = join-semilattice.[ (f .*→*) , (g .*→*) ]
+coproducts .HasCoproducts.copair-cong eq₁ eq₂ .f≃f = join-semilattice.[]-cong (eq₁ .f≃f) (eq₂ .f≃f)
+coproducts .HasCoproducts.copair-in₁ f g .f≃f = join-semilattice.inj₁-copair (f .*→*) (g .*→*)
+coproducts .HasCoproducts.copair-in₂ f g .f≃f = join-semilattice.inj₂-copair (f .*→*) (g .*→*)
+coproducts .HasCoproducts.copair-ext f .f≃f = join-semilattice.copair-ext (f .*→*)
+
+products : HasProducts cat
+products .HasProducts.prod X Y .carrier = X .carrier × Y .carrier
+products .HasProducts.prod X Y .joins = X .joins ⊕J Y .joins
+products .HasProducts.p₁ .*→* = join-semilattice.project₁
+products .HasProducts.p₂ .*→* = join-semilattice.project₂
+products .HasProducts.pair f g .*→* = join-semilattice.⟨ (f .*→*) , (g .*→*) ⟩
+products .HasProducts.pair-cong eq₁ eq₂ .f≃f = join-semilattice.⟨⟩-cong (eq₁ .f≃f) (eq₂ .f≃f)
+products .HasProducts.pair-p₁ f g .f≃f = join-semilattice.pair-p₁ (f .*→*) (g .*→*)
+products .HasProducts.pair-p₂ f g .f≃f = join-semilattice.pair-p₂ (f .*→*) (g .*→*)
+products .HasProducts.pair-ext f .f≃f = join-semilattice.pair-ext (f .*→*)
+
+initial : HasInitial cat
+initial .HasInitial.witness = record { carrier = preorder.𝟙 ; joins = 𝟙 }
+initial .HasInitial.is-initial .categories.IsInitial.from-initial .*→* = join-semilattice.initial
+initial .HasInitial.is-initial .categories.IsInitial.from-initial-ext f .f≃f = join-semilattice.initial-unique _ _ _
+
+terminal : HasTerminal cat
+terminal .HasTerminal.witness = record { carrier = preorder.𝟙 ; joins = 𝟙 }
+terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal .*→* = join-semilattice.terminal
+terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal-ext f .f≃f = join-semilattice.terminal-unique _ _ _
+
+TWO : Obj
+TWO .carrier = two.Two-preorder
+TWO .joins .JoinSemilattice._∨_ = two._⊔_
+TWO .joins .JoinSemilattice.⊥ = two.O
+TWO .joins .JoinSemilattice.∨-isJoin = two.⊔-isJoin
+TWO .joins .JoinSemilattice.⊥-isBottom = two.O-isBottom
+
 ------------------------------------------------------------------------------
--- Colimits
+-- Limits.
 
 module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
 
@@ -92,105 +131,11 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   open preorder._=>_
   open preorder._≃m_
 
-  data ∐-carrier (D : Functor 𝒮 cat) : Set where
-    bot  : ∐-carrier D
-    join : ∐-carrier D → ∐-carrier D → ∐-carrier D
-    elt  : (s : 𝒮.obj) → D .fobj s .Carrier → ∐-carrier D
-
-  data le (D : Functor 𝒮 cat) : ∐-carrier D → ∐-carrier D → Set where
-    le-refl     : ∀ {t} → le D t t
-    le-trans    : ∀ {r s t} → le D r s → le D s t → le D r t
-    le-bot      : ∀ {t} → le D bot t
-    le-upper₁   : ∀ {t₁ t₂} → le D t₁ (join t₁ t₂)
-    le-upper₂   : ∀ {t₁ t₂} → le D t₂ (join t₁ t₂)
-    le-least    : ∀ {t₁ t₂ u} → le D t₁ u → le D t₂ u → le D (join t₁ t₂) u
-    le-mono     : ∀ s {t u} → D .fobj s ._≤_ t u → le D (elt s t) (elt s u)
-    le-elt-bot  : ∀ s → le D (elt s (D .fobj s .⊥)) bot
-    le-elt-join : ∀ s {x₁ x₂} → le D (elt s (D .fobj s ._∨_ x₁ x₂)) (join (elt s x₁) (elt s x₂))
-    le-nat₁     : ∀ {s₁ s₂ x} (f : s₁ 𝒮.⇒ s₂) → le D (elt s₁ x) (elt s₂ (D .fmor f .fun x))
-    le-nat₂     : ∀ {s₁ s₂ x} (f : s₁ 𝒮.⇒ s₂) → le D (elt s₂ (D .fmor f .fun x)) (elt s₁ x)
-
-  ∐ : Functor 𝒮 cat → Obj
-  ∐ D .carrier .Preorder.Carrier = ∐-carrier D
-  ∐ D .carrier .Preorder._≤_ s t = LiftS 0ℓ (le D s t)
-  ∐ D .carrier .Preorder.≤-isPreorder .IsPreorder.refl = liftS le-refl
-  ∐ D .carrier .Preorder.≤-isPreorder .IsPreorder.trans (liftS ϕ₁) (liftS ϕ₂) = liftS (le-trans ϕ₁ ϕ₂)
-  ∐ D .joins .JoinSemilattice._∨_ = join
-  ∐ D .joins .JoinSemilattice.⊥ = bot
-  ∐ D .joins .JoinSemilattice.∨-isJoin .IsJoin.inl = liftS le-upper₁
-  ∐ D .joins .JoinSemilattice.∨-isJoin .IsJoin.inr = liftS le-upper₂
-  ∐ D .joins .JoinSemilattice.∨-isJoin .IsJoin.[_,_] (liftS ϕ₁) (liftS ϕ₂) = liftS (le-least ϕ₁ ϕ₂)
-  ∐ D .joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom = liftS le-bot
-
-  colambda-fun : (D : Functor 𝒮 cat) (X : Obj) → NatTrans D (functor.constF 𝒮 X) → ∐ D .Carrier → X .Carrier
-  colambda-fun D X α bot = X .⊥
-  colambda-fun D X α (join t₁ t₂) = X ._∨_ (colambda-fun D X α t₁) (colambda-fun D X α t₂)
-  colambda-fun D X α (elt s x) = α .transf s .fun x
-
-  colambda-mono : ∀ (D : Functor 𝒮 cat) (X : Obj) (α : NatTrans D (functor.constF 𝒮 X)) {t₁ t₂} →
-                  le D t₁ t₂ → X ._≤_ (colambda-fun D X α t₁) (colambda-fun D X α t₂)
-  colambda-mono D X α le-refl = X .≤-refl
-  colambda-mono D X α (le-trans t₁≤t₂ t₂≤t₃) = X .≤-trans (colambda-mono D X α t₁≤t₂) (colambda-mono D X α t₂≤t₃)
-  colambda-mono D X α le-bot = X .≤-bottom
-  colambda-mono D X α le-upper₁ = X .inl
-  colambda-mono D X α le-upper₂ = X .inr
-  colambda-mono D X α (le-least t₁≤t₃ t₂≤t₃) = X.[ colambda-mono D X α t₁≤t₃ ∨ colambda-mono D X α t₂≤t₃ ]
-    where module X = Obj X
-  colambda-mono D X α (le-mono s x₁≤x₂) = α .transf s .mono x₁≤x₂
-  colambda-mono D X α (le-elt-bot s) = α .transf s .⊥-preserving
-  colambda-mono D X α (le-elt-join s) = α .transf s .∨-preserving
-  colambda-mono D X α (le-nat₁ {x = x} f) = α .natural f .eqfun x .proj₁
-  colambda-mono D X α (le-nat₂ {x = x} f) = α .natural f .eqfun x .proj₂
-
-  colambda-cong : ∀ (D : Functor 𝒮 cat) {X : Obj} {α β} →
-                  ≃-NatTrans α β → ∀ t → _≃_ X (colambda-fun D X α t) (colambda-fun D X β t)
-  colambda-cong D {X} α≃β bot = X .≃-refl
-  colambda-cong D {X} α≃β (join t₁ t₂) = ∨-cong X (colambda-cong D α≃β t₁) (colambda-cong D α≃β t₂)
-  colambda-cong D {X} α≃β (elt s x) = α≃β .transf-eq s .eqfun x
-
-  colambda : (D : Functor 𝒮 cat) (x : Obj) → NatTrans D (functor.constF 𝒮 x) → ∐ D ⇒ x
-  colambda D X α .*→* ._=>J_.func .fun = colambda-fun D X α
-  colambda D X α .*→* ._=>J_.func .mono (liftS t₁≤t₂) = colambda-mono D X α t₁≤t₂
-  colambda D X α .*→* ._=>J_.∨-preserving = X .≤-refl
-  colambda D X α .*→* ._=>J_.⊥-preserving = X .≤-refl
-
-  cocone : (D : Functor 𝒮 cat) → NatTrans D (functor.constF 𝒮 (∐ D))
-  cocone D .transf s .*→* ._=>J_.func .fun x = elt s x
-  cocone D .transf s .*→* ._=>J_.func .mono x₁≤x₂ = liftS (le-mono s x₁≤x₂)
-  cocone D .transf s .*→* ._=>J_.∨-preserving = liftS (le-elt-join s)
-  cocone D .transf s .*→* ._=>J_.⊥-preserving = liftS (le-elt-bot s)
-  cocone D .natural {s₁} {s₂} f .f≃f .eqfunc .eqfun x .proj₁ = liftS (le-nat₁ f)
-  cocone D .natural {s₁} {s₂} f .f≃f .eqfunc .eqfun x .proj₂ = liftS (le-nat₂ f)
-
-  colambda-ext : ∀ D X f (x : ∐-carrier D) →
-      _≃_ X (colambda-fun D X (functor.constFmor f functor.∘ cocone D) x) (f .fun x)
-  colambda-ext D X f bot = X .≃-sym (⊥-preserving-≃ f)
-  colambda-ext D X f (join t₁ t₂) = begin
-      X ._∨_ (colambda-fun D X (functor.constFmor f functor.∘ cocone D) t₁) (colambda-fun D X (functor.constFmor f functor.∘ cocone D) t₂)
-    ≈⟨ ∨-cong X (colambda-ext D X f t₁) (colambda-ext D X f t₂) ⟩
-      X ._∨_ (f .fun t₁) (f .fun t₂)
-    ≈˘⟨ ∨-preserving-≃ f ⟩
-      f .fun (join t₁ t₂)
-    ∎
-    where open ≈-Reasoning (isEquivalence X)
-  colambda-ext D X f (elt s x) = X .≃-refl
-
-
-  colimits : HasColimits 𝒮 cat
-  colimits D .Colimit.apex = ∐ D
-  colimits D .Colimit.cocone = cocone D
-  colimits D .Colimit.isColimit .IsColimit.colambda = colambda D
-  colimits D .Colimit.isColimit .IsColimit.colambda-cong α≃β .f≃f .eqfunc .eqfun = colambda-cong D α≃β
-  colimits D .Colimit.isColimit .IsColimit.colambda-coeval X α .transf-eq s .f≃f .eqfunc .eqfun x = X .≃-refl
-  colimits D .Colimit.isColimit .IsColimit.colambda-ext X f .f≃f .eqfunc .eqfun = colambda-ext D X f
-
-  ------------------------------------------------------------------------------
-  -- Limits
-
   record Π-Carrier (D : Functor 𝒮 cat) : Set where
     field
       Π-func    : (x : 𝒮.obj) → D .fobj x .Carrier
-      Π-natural : ∀ {x₁ x₂} (f : x₁ 𝒮.⇒ x₂) → _≃_ (D .fobj x₂) (D .fmor f .fun (Π-func x₁)) (Π-func x₂)
+      Π-natural : ∀ {x₁ x₂} (f : x₁ 𝒮.⇒ x₂) →
+                  _≃_ (D .fobj x₂) (D .fmor f .fun (Π-func x₁)) (Π-func x₂)
   open Π-Carrier
 
   Π : Functor 𝒮 cat → Obj
@@ -231,41 +176,13 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .Limit.isLimit .IsLimit.lambda-ext {X} f .f≃f .eqfunc .eqfun x .proj₁ s = D .fobj s .≤-refl
   limits D .Limit.isLimit .IsLimit.lambda-ext {X} f .f≃f .eqfunc .eqfun x .proj₂ s = D .fobj s .≤-refl
 
-coproducts : HasCoproducts cat
-coproducts .HasCoproducts.coprod X Y .carrier = X .carrier × Y .carrier
-coproducts .HasCoproducts.coprod X Y .joins = X .joins ⊕J Y .joins
-coproducts .HasCoproducts.in₁ .*→* = join-semilattice.inject₁
-coproducts .HasCoproducts.in₂ .*→* = join-semilattice.inject₂
-coproducts .HasCoproducts.copair f g .*→* = join-semilattice.[ (f .*→*) , (g .*→*) ]
-coproducts .HasCoproducts.copair-cong eq₁ eq₂ .f≃f = join-semilattice.[]-cong (eq₁ .f≃f) (eq₂ .f≃f)
-coproducts .HasCoproducts.copair-in₁ f g .f≃f = join-semilattice.inj₁-copair (f .*→*) (g .*→*)
-coproducts .HasCoproducts.copair-in₂ f g .f≃f = join-semilattice.inj₂-copair (f .*→*) (g .*→*)
-coproducts .HasCoproducts.copair-ext f .f≃f = join-semilattice.copair-ext (f .*→*)
+------------------------------------------------------------------------------
+-- HasSetoidProducts derived from limits.
 
-products : HasProducts cat
-products .HasProducts.prod X Y .carrier = X .carrier × Y .carrier
-products .HasProducts.prod X Y .joins = X .joins ⊕J Y .joins
-products .HasProducts.p₁ .*→* = join-semilattice.project₁
-products .HasProducts.p₂ .*→* = join-semilattice.project₂
-products .HasProducts.pair f g .*→* = join-semilattice.⟨ (f .*→*) , (g .*→*) ⟩
-products .HasProducts.pair-cong eq₁ eq₂ .f≃f = join-semilattice.⟨⟩-cong (eq₁ .f≃f) (eq₂ .f≃f)
-products .HasProducts.pair-p₁ f g .f≃f = join-semilattice.pair-p₁ (f .*→*) (g .*→*)
-products .HasProducts.pair-p₂ f g .f≃f = join-semilattice.pair-p₂ (f .*→*) (g .*→*)
-products .HasProducts.pair-ext f .f≃f = join-semilattice.pair-ext (f .*→*)
+open import indexed-family using (HasSetoidProducts)
+open import functor using (limits→limits')
 
-initial : HasInitial cat
-initial .HasInitial.witness = record { carrier = preorder.𝟙 ; joins = 𝟙 }
-initial .HasInitial.is-initial .categories.IsInitial.from-initial .*→* = join-semilattice.initial
-initial .HasInitial.is-initial .categories.IsInitial.from-initial-ext f .f≃f = join-semilattice.initial-unique _ _ _
-
-terminal : HasTerminal cat
-terminal .HasTerminal.witness = record { carrier = preorder.𝟙 ; joins = 𝟙 }
-terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal .*→* = join-semilattice.terminal
-terminal .HasTerminal.is-terminal .categories.IsTerminal.to-terminal-ext f .f≃f = join-semilattice.terminal-unique _ _ _
-
-TWO : Obj
-TWO .carrier = two.preorder
-TWO .joins .JoinSemilattice._∨_ = two._⊔_
-TWO .joins .JoinSemilattice.⊥ = two.O
-TWO .joins .JoinSemilattice.∨-isJoin = two.⊔-isJoin
-TWO .joins .JoinSemilattice.⊥-isBottom = two.O-isBottom
+hasSetoidProducts : HasSetoidProducts 0ℓ 0ℓ cat
+hasSetoidProducts =
+  indexed-family.hasSetoidProducts 0ℓ 0ℓ cat
+    (λ A → limits→limits' (limits (categories.setoid→category A)))

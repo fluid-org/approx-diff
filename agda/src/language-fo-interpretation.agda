@@ -1,129 +1,84 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-open import Data.Nat using (ℕ; suc; _+_)
-import Data.Fin as Fin
-open Fin using (Fin; splitAt)
-open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
-open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
-         strong-coproducts→coproducts; HasExponentials)
-open import functor using (Functor)
-open import finite-product-functor using (preserve-chosen-products)
-open import finite-coproduct-functor using (preserve-chosen-coproducts)
-import polynomial-functor
+open import Level using (Level)
+open import Data.List using (List)
+open import prop-setoid using (𝟙)
+open import every using (Every; []; _∷_)
+open import signature using (Signature; FPC[_,_,_]; PointedFPCat; PFPC[_,_]; Model)
+  renaming (module PointedFPCat to PFPC)
+open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; HasStrongCoproducts; HasLists)
+import fam
 import language-syntax
-open import signature
 
-open Functor
-
-module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
-  {o₁ m₁ e₁ o₂ m₂ e₂}
-  (𝒞 : Category o₁ m₁ e₁) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
-  (𝒞Mu : polynomial-functor.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
-  (𝒟 : Category o₂ m₂ e₂) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SC : HasStrongCoproducts 𝒟 𝒟P)
-  (𝒟E : HasExponentials 𝒟 𝒟P)
-  (𝒟Mu : polynomial-functor.Interp.HasMu 𝒟T 𝒟P 𝒟SC)
-  (𝒟MuLaws : polynomial-functor.Interp.HasMuLaws 𝒟T 𝒟P 𝒟SC 𝒟Mu)
-  (F : Functor 𝒞 𝒟)
-  (FT : Category.IsIso 𝒟 (HasTerminal.to-terminal 𝒟T {F .fobj (𝒞T .HasTerminal.witness)}))
-  (FP : preserve-chosen-products F 𝒞P 𝒟P)
-  (FC : preserve-chosen-coproducts F (strong-coproducts→coproducts 𝒞T 𝒞SC) (strong-coproducts→coproducts 𝒟T 𝒟SC))
-  (Fμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC 𝒟T 𝒟P 𝒟SC 𝒞Mu 𝒟Mu F)
-  (𝒞-Sig-model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P ,
-                  HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
-                    (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
+module language-fo-interpretation
+  {o m e ℓ} (Sig : Signature ℓ)
+  (os es : Level)
+  (𝒞 : Category o m e)
+  (𝒞-terminal : HasTerminal 𝒞)
+  (𝒞-products : HasProducts 𝒞)
   where
 
-open language-syntax Sig
-open polynomial-functor using (Poly; Poly-map; extend)
+open Signature Sig public
+open language-syntax Sig public
+module Fam⟨𝒞⟩ = fam.CategoryOfFamilies os es 𝒞
+open Category Fam⟨𝒞⟩.cat using (_⇒_; _∘_; id) public
+-- HasTerminal's `to-terminal` is kept local (not re-exported), so downstream
+-- consumers can open another HasTerminal (e.g. MatRep's) without clashing.
+open HasTerminal (Fam⟨𝒞⟩.terminal 𝒞-terminal) using () renaming (witness to ⟦unit⟧) public
+open HasTerminal (Fam⟨𝒞⟩.terminal 𝒞-terminal) using (to-terminal)
+open HasCoproducts Fam⟨𝒞⟩.coproducts using () renaming (coprod to _⟦+⟧_) public
+open HasCoproducts Fam⟨𝒞⟩.coproducts using (in₁; in₂)
+open HasProducts (Fam⟨𝒞⟩.products.products 𝒞-products)
+  using () renaming (prod to _⟦×⟧_; pair to ⟨_,_⟩) public
+open HasProducts (Fam⟨𝒞⟩.products.products 𝒞-products) using (p₁; p₂)
+open HasStrongCoproducts (Fam⟨𝒞⟩.products.strongCoproducts 𝒞-products)
+  using () renaming (copair to [_,_]) public
+open HasLists (Fam⟨𝒞⟩.lists 𝒞-terminal 𝒞-products)
+  renaming (list to ⟦list⟧; nil to ⟦nil⟧; cons to ⟦cons⟧; fold to ⟦fold⟧) public
 
--- Interpretation of the first-order types in 𝒞, with μ-types via the
--- polynomial translation of the first-order witness.
-module _ where
-  open Category 𝒞
-  open HasTerminal 𝒞T renaming (witness to 𝟙)
-  open HasProducts 𝒞P
-  open HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
+𝟚 : Fam⟨𝒞⟩.Obj
+𝟚 = ⟦unit⟧ ⟦+⟧ ⟦unit⟧
 
-  module CMu = polynomial-functor.Interp.HasMu 𝒞Mu
+PFPC : PointedFPCat _ _ _
+PFPC = PFPC[ FPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩.terminal 𝒞-terminal , Fam⟨𝒞⟩.products.products 𝒞-products ] , 𝟚 ]
 
-  fo-as-poly : ∀ {Δ n} {τ : type (n + Δ)} → first-order τ → (Fin Δ → obj) → Poly 𝒞 n
-  fo-as-poly {n = n} (var i)   δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
-  fo-as-poly unit              δ = Poly.const 𝟙
-  fo-as-poly (base s)          δ = Poly.const (𝒞-Sig-model .Model.⟦sort⟧ s)
-  fo-as-poly (fo₁ [+] fo₂)     δ = fo-as-poly fo₁ δ Poly.+ fo-as-poly fo₂ δ
-  fo-as-poly (fo₁ [×] fo₂)     δ = fo-as-poly fo₁ δ Poly.× fo-as-poly fo₂ δ
-  fo-as-poly (μ fo)            δ = Poly.μ (fo-as-poly fo δ)
+module Interpretation (M : Model PFPC Sig) where
+  open Model M public
 
-  𝒞⟦_⟧ty : ∀ {Δ} {τ : type Δ} → first-order τ → (Fin Δ → obj) → obj
-  𝒞⟦ var i ⟧ty       δ = δ i
-  𝒞⟦ unit ⟧ty        δ = 𝟙
-  𝒞⟦ base s ⟧ty      δ = 𝒞-Sig-model .Model.⟦sort⟧ s
-  𝒞⟦ fo₁ [×] fo₂ ⟧ty δ = prod (𝒞⟦ fo₁ ⟧ty δ) (𝒞⟦ fo₂ ⟧ty δ)
-  𝒞⟦ fo₁ [+] fo₂ ⟧ty δ = coprod (𝒞⟦ fo₁ ⟧ty δ) (𝒞⟦ fo₂ ⟧ty δ)
-  𝒞⟦ μ fo ⟧ty        δ = CMu.μ-obj (fo-as-poly {n = 1} fo δ) (λ ())
+  ⟦_⟧ty : type → Fam⟨𝒞⟩.Obj
+  ⟦ unit ⟧ty = ⟦unit⟧
+  ⟦ base s ⟧ty = ⟦sort⟧ s
+  ⟦ τ₁ [×] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦×⟧ ⟦ τ₂ ⟧ty
+  ⟦ τ₁ [+] τ₂ ⟧ty = ⟦ τ₁ ⟧ty ⟦+⟧ ⟦ τ₂ ⟧ty
+  ⟦ list τ ⟧ty = ⟦list⟧ ⟦ τ ⟧ty
 
-  𝒞⟦_⟧ctxt : ∀ {Γ} → first-order-ctxt Γ → obj
-  𝒞⟦ emp ⟧ctxt    = 𝟙
-  𝒞⟦ Γ , τ ⟧ctxt = prod 𝒞⟦ Γ ⟧ctxt (𝒞⟦ τ ⟧ty (λ ()))
+  ⟦_⟧ctxt : ctxt → Fam⟨𝒞⟩.Obj
+  ⟦ emp ⟧ctxt = ⟦unit⟧
+  ⟦ Γ · τ ⟧ctxt = ⟦ Γ ⟧ctxt ⟦×⟧ ⟦ τ ⟧ty
 
-private
-  module 𝒟 = Category 𝒟
-  module 𝒞CPm = HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
-  module 𝒟CPm = HasCoproducts (strong-coproducts→coproducts 𝒟T 𝒟SC)
-  module 𝒟Pm = HasProducts 𝒟P
-  module PM = polynomial-functor.MuIso 𝒟T 𝒟P 𝒟SC 𝒟Mu 𝒟MuLaws
+  ⟦_⟧bases-list : List sort → Fam⟨𝒞⟩.Obj
+  ⟦_⟧bases-list = PFPC.list→product PFPC ⟦sort⟧
 
-𝒞Bool = 𝒞CPm.coprod (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness)
-𝒟Bool = 𝒟CPm.coprod (𝒟T .HasTerminal.witness) (𝒟T .HasTerminal.witness)
+  ⟦_⟧var : ∀ {Γ τ} → Γ ∋ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
+  ⟦_⟧var {Γ · τ}  zero     = p₂ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty}
+  ⟦_⟧var {Γ · τ'} (succ x) = ⟦ x ⟧var ∘ p₁ {⟦ Γ ⟧ctxt} {⟦ τ' ⟧ty}
 
-Bool-iso : 𝒟.Iso (F .fobj 𝒞Bool) 𝒟Bool
-Bool-iso =
-  𝒟.Iso-trans (𝒟.Iso-sym (𝒟.IsIso→Iso FC))
-              (𝒟CPm.coproduct-preserve-iso (𝒟.IsIso→Iso FT) (𝒟.IsIso→Iso FT))
+  ⟦_⟧tm    : ∀ {Γ τ}  → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty
+  ⟦_⟧bases : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ ⟦ σs ⟧bases-list
 
-𝒟-Sig-model : Model PFPC[ 𝒟 , 𝒟T , 𝒟P , 𝒟Bool ] Sig
-𝒟-Sig-model = transport-model Sig F FT FP (Bool-iso .𝒟.Iso.fwd) 𝒞-Sig-model
+  ⟦ var x ⟧tm = ⟦ x ⟧var
+  ⟦ unit ⟧tm = to-terminal
+  ⟦ inl M ⟧tm = in₁ ∘ ⟦ M ⟧tm
+  ⟦ inr M ⟧tm = in₂ ∘ ⟦ M ⟧tm
+  ⟦ case M N₁ N₂ ⟧tm = [ ⟦ N₁ ⟧tm , ⟦ N₂ ⟧tm ] ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ pair M N ⟧tm = ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ fst M ⟧tm = p₁ ∘ ⟦ M ⟧tm
+  ⟦ snd M ⟧tm = p₂ ∘ ⟦ M ⟧tm
+  ⟦ bop ω Ms ⟧tm = ⟦op⟧ ω ∘ ⟦ Ms ⟧bases
+  ⟦ brel ω Ms ⟧tm = ⟦rel⟧ ω ∘ ⟦ Ms ⟧bases
+  ⟦ nil ⟧tm = ⟦nil⟧ ∘ to-terminal
+  ⟦ cons M N ⟧tm = ⟦cons⟧ ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
+  ⟦ fold M₁ M₂ M ⟧tm = ⟦fold⟧ ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
 
-open import language-interpretation Sig 𝒟 𝒟T 𝒟P 𝒟SC 𝒟E 𝒟Mu 𝒟-Sig-model
-  renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly)
-  using ()
-  public
-
--- The polynomial translations of a first-order type agree componentwise, up to
--- the isomorphisms witnessing that F preserves the first-order structure.
-fo-poly-iso : ∀ {Δ n} {τ : type (n + Δ)} (fo : first-order τ)
-              (δ𝒞 : Fin Δ → Category.obj 𝒞) (δ𝒟 : Fin Δ → Category.obj 𝒟) →
-              (∀ i → 𝒟.Iso (F .fobj (δ𝒞 i)) (δ𝒟 i)) →
-              PM.PolyIso (Poly-map F (fo-as-poly {Δ} {n} fo δ𝒞)) (𝒟-as-poly {Δ} {n} τ δ𝒟)
-fo-poly-iso {n = n} (var i) δ𝒞 δ𝒟 es with splitAt n i
-... | inj₁ k = PM.pm-iso-var k
-... | inj₂ j = PM.pm-iso-const (es j)
-fo-poly-iso unit          δ𝒞 δ𝒟 es = PM.pm-iso-const (𝒟.IsIso→Iso FT)
-fo-poly-iso (base s)      δ𝒞 δ𝒟 es = PM.pm-iso-const 𝒟.Iso-refl
-fo-poly-iso (fo₁ [+] fo₂) δ𝒞 δ𝒟 es = PM.pm-iso-sum (fo-poly-iso fo₁ δ𝒞 δ𝒟 es) (fo-poly-iso fo₂ δ𝒞 δ𝒟 es)
-fo-poly-iso (fo₁ [×] fo₂) δ𝒞 δ𝒟 es = PM.pm-iso-prod (fo-poly-iso fo₁ δ𝒞 δ𝒟 es) (fo-poly-iso fo₂ δ𝒞 δ𝒟 es)
-fo-poly-iso (μ fo)        δ𝒞 δ𝒟 es = PM.pm-iso-μ (fo-poly-iso fo δ𝒞 δ𝒟 es)
-
--- Every first-order type's interpretation in 𝒟 is isomorphic to the image
--- under F of its interpretation in 𝒞; μ-types via preservation of μ and the
--- componentwise isomorphism of the two polynomial translations.
-⟦_⟧-iso : ∀ {Δ} {τ : type Δ} (fo : first-order τ)
-          {δ𝒞 : Fin Δ → Category.obj 𝒞} {δ𝒟 : Fin Δ → Category.obj 𝒟} →
-          (∀ i → 𝒟.Iso (F .fobj (δ𝒞 i)) (δ𝒟 i)) →
-          𝒟.Iso (F .fobj (𝒞⟦ fo ⟧ty δ𝒞)) (𝒟⟦ τ ⟧ty δ𝒟)
-⟦ var i ⟧-iso es       = es i
-⟦ unit ⟧-iso es        = 𝒟.IsIso→Iso FT
-⟦ base s ⟧-iso es      = 𝒟.Iso-refl
-⟦ fo₁ [×] fo₂ ⟧-iso es =
-  𝒟.Iso-trans (𝒟.IsIso→Iso FP) (𝒟Pm.product-preserves-iso (⟦ fo₁ ⟧-iso es) (⟦ fo₂ ⟧-iso es))
-⟦ fo₁ [+] fo₂ ⟧-iso es =
-  𝒟.Iso-trans (𝒟.Iso-sym (𝒟.IsIso→Iso FC)) (𝒟CPm.coproduct-preserve-iso (⟦ fo₁ ⟧-iso es) (⟦ fo₂ ⟧-iso es))
-⟦ μ fo ⟧-iso {δ𝒞} {δ𝒟} es =
-  𝒟.Iso-trans (Fμ (fo-as-poly fo δ𝒞) (λ ()))
-              (PM.pm-μ-iso (fo-poly-iso fo δ𝒞 δ𝒟 es) (λ ()))
-
-⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → 𝒟.Iso (F .fobj 𝒞⟦ Γ-fo ⟧ctxt) 𝒟⟦ Γ ⟧ctxt
-⟦ emp ⟧ctxt-iso    = 𝒟.IsIso→Iso FT
-⟦ Γ , τ ⟧ctxt-iso =
-  𝒟.Iso-trans (𝒟.IsIso→Iso FP) (𝒟Pm.product-preserves-iso ⟦ Γ ⟧ctxt-iso (⟦ τ ⟧-iso (λ ())))
+  ⟦ [] ⟧bases = to-terminal
+  ⟦ M ∷ Ms ⟧bases = ⟨ ⟦ M ⟧tm , ⟦ Ms ⟧bases ⟩

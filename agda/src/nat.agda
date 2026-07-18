@@ -4,7 +4,6 @@ module nat where
 
 open import Level using (0ℓ)
 open import Data.Product using (_,_)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import prop
 open import basics
 open import prop-setoid using (module ≈-Reasoning; Setoid; ⊗-setoid; 𝟙)
@@ -37,13 +36,6 @@ succ-increasing {succ x} = s≤s succ-increasing
 ≤-trans 0≤n       y≤z       = 0≤n
 ≤-trans (s≤s x≤y) (s≤s y≤z) = s≤s (≤-trans x≤y y≤z)
 
-≤-total : ∀ x y → (x ≤ y) ∨ (y ≤ x)
-≤-total zero y = inj₁ 0≤n
-≤-total (succ x) zero = inj₂ 0≤n
-≤-total (succ x) (succ y) with ≤-total x y
-... | inj₁ x≤y = inj₁ (s≤s x≤y)
-... | inj₂ y≤x = inj₂ (s≤s y≤x)
-
 ≤-isPreorder : IsPreorder _≤_
 ≤-isPreorder .IsPreorder.refl = ≤-refl
 ≤-isPreorder .IsPreorder.trans = ≤-trans
@@ -64,119 +56,10 @@ succ-cong : ∀ {x y} → x ≃ y → succ x ≃ succ y
 succ-cong p .proj₁ = s≤s (proj₁ p)
 succ-cong p .proj₂ = s≤s (proj₂ p)
 
-succ-injective : ∀ {x y} → succ x ≃ succ y → x ≃ y
-succ-injective (s≤s p , _) .proj₁ = p
-succ-injective (_ , s≤s p) .proj₂ = p
-
 ℕₛ : Setoid 0ℓ 0ℓ
 ℕₛ .Setoid.Carrier = ℕ
 ℕₛ .Setoid._≈_ = _≃_
 ℕₛ .Setoid.isEquivalence = ≃-isEquivalence
-
-------------------------------------------------------------------------------
--- Strictly less than
-
-data _<_ : ℕ → ℕ → Set where
-  n<s : ∀ {x}   → x < succ x
-  <s : ∀ {x y} → x < y → x < succ y
-
-s<s : ∀ {x y} → x < y → succ x < succ y
-s<s n<s      = n<s
-s<s (<s x<y) = <s (s<s x<y)
-
--- <-trans : ∀ {m n o} → m < n → n < o → m < o
--- <-trans 0<s       (s<s n<o) = 0<s
--- <-trans (s<s m<n) (s<s n<o) = s<s (<-trans m<n n<o)
-
-------------------------------------------------------------------------------
--- Joins and Meets
-
-_⊔_ : ℕ → ℕ → ℕ
-zero   ⊔ y      = y
-succ x ⊔ zero   = succ x
-succ x ⊔ succ y = succ (x ⊔ y)
-
-upper₁ : ∀ {x y} → x ≤ (x ⊔ y)
-upper₁ {zero}   {y}      = 0≤n
-upper₁ {succ x} {zero}   = ≤-refl
-upper₁ {succ x} {succ y} = s≤s upper₁
-
-upper₂ : ∀ {x y} → y ≤ (x ⊔ y)
-upper₂ {zero}   {zero}   = 0≤n
-upper₂ {zero}   {succ y} = ≤-refl
-upper₂ {succ x} {zero}   = 0≤n
-upper₂ {succ x} {succ y} = s≤s upper₂
-
-⊔-least : ∀ {x y z} → x ≤ z → y ≤ z → (x ⊔ y) ≤ z
-⊔-least 0≤n       y≤z       = y≤z
-⊔-least (s≤s x≤z) 0≤n       = s≤s x≤z
-⊔-least (s≤s x≤z) (s≤s y≤z) = s≤s (⊔-least x≤z y≤z)
-
--- FIXME: also have _⊎_ version of this
-⊔-split : ∀ {x y z} → z ≤ (x ⊔ y) → (z ≤ x) ∨ (z ≤ y)
-⊔-split {x} {y} {zero} z≤x⊔y = inj₁ 0≤n
-⊔-split {zero} {y} {succ z} z≤x⊔y = inj₂ z≤x⊔y
-⊔-split {succ x} {zero} {succ z} z≤x⊔y = inj₁ z≤x⊔y
-⊔-split {succ x} {succ y} {succ z} (s≤s z≤x⊔y) with ⊔-split {x} {y} {z} z≤x⊔y
-... | inj₁ x₁ = inj₁ (s≤s x₁)
-... | inj₂ x₁ = inj₂ (s≤s x₁)
-
-⊔-chooses : ∀ x y → (x ⊔ y ≤ x) ∨ (x ⊔ y ≤ y)
-⊔-chooses zero y = inj₂ ≤-refl
-⊔-chooses (succ x) zero = inj₁ ≤-refl
-⊔-chooses (succ x) (succ y) with ⊔-chooses x y
-... | inj₁ p = inj₁ (s≤s p)
-... | inj₂ p = inj₂ (s≤s p)
-
-_⊓_ : ℕ → ℕ → ℕ
-zero   ⊓ y      = zero
-succ x ⊓ zero   = zero
-succ x ⊓ succ y = succ (x ⊓ y)
-
-⊓-greatest : ∀ {x y z} → z ≤ x → z ≤ y → z ≤ (x ⊓ y)
-⊓-greatest 0≤n z≤y = 0≤n
-⊓-greatest (s≤s z≤x) (s≤s z≤y) = s≤s (⊓-greatest z≤x z≤y)
-
-lower₁ : ∀ {x y} → (x ⊓ y) ≤ x
-lower₁ {zero}   {y}      = 0≤n
-lower₁ {succ x} {zero}   = 0≤n
-lower₁ {succ x} {succ y} = s≤s lower₁
-
-lower₂ : ∀ {x y} → (x ⊓ y) ≤ y
-lower₂ {zero}   {y}      = 0≤n
-lower₂ {succ x} {zero}   = 0≤n
-lower₂ {succ x} {succ y} = s≤s lower₂
-
-⊓-isMeet : IsMeet ≤-isPreorder _⊓_
-⊓-isMeet .IsMeet.π₁ = lower₁
-⊓-isMeet .IsMeet.π₂ = lower₂
-⊓-isMeet .IsMeet.⟨_,_⟩ = ⊓-greatest
-
-open IsMeet ⊓-isMeet
-  using ()
-  renaming (mono to ⊓-mono; cong to ⊓-cong; assoc to ⊓-assoc; idem to ⊓-idem)
-
-⊓-chooses : ∀ x y → (x ≤ x ⊓ y) ∨ (y ≤ x ⊓ y)
-⊓-chooses zero     y    = inj₁ 0≤n
-⊓-chooses (succ x) zero = inj₂ 0≤n
-⊓-chooses (succ x) (succ y) with ⊓-chooses x y
-... | inj₁ p = inj₁ (s≤s p)
-... | inj₂ p = inj₂ (s≤s p)
-
--- Distributivity: FIXME: follows from totality and monotonicity
-
-⊓-⊔-distrib : ∀ x y z → x ⊓ (y ⊔ z) ≤ (x ⊓ y) ⊔ (x ⊓ z)
-⊓-⊔-distrib zero     y        z        = ≤-refl
-⊓-⊔-distrib (succ x) zero     z        = ≤-refl
-⊓-⊔-distrib (succ x) (succ y) zero     = ≤-refl
-⊓-⊔-distrib (succ x) (succ y) (succ z) = s≤s (⊓-⊔-distrib x y z)
-
-⊔-⊓-distrib : ∀ x y z → (x ⊔ y) ⊓ (x ⊔ z) ≤ x ⊔ (y ⊓ z)
-⊔-⊓-distrib zero     y        z        = ≤-refl
-⊔-⊓-distrib (succ x) zero     zero     = s≤s lower₁
-⊔-⊓-distrib (succ x) zero     (succ z) = s≤s lower₁
-⊔-⊓-distrib (succ x) (succ y) zero     = s≤s lower₂
-⊔-⊓-distrib (succ x) (succ y) (succ z) = s≤s (⊔-⊓-distrib x y z)
 
 ------------------------------------------------------------------------------
 -- Addition
@@ -219,63 +102,6 @@ open IsMonoid +-isMonoid
 +-comm {zero}   = ≃-sym +-runit
 +-comm {succ x} = ≃-trans (succ-cong (+-comm {x})) (≃-sym +-succ)
 
-+-cancelₗ : ∀ {x y z} → (x + y) ≤ (x + z) → y ≤ z
-+-cancelₗ {zero}   p       = p
-+-cancelₗ {succ x} (s≤s p) = +-cancelₗ p
-
-+-cancelᵣ : ∀ {x y z} → (y + x) ≤ (z + x) → y ≤ z
-+-cancelᵣ {x}{y}{z} p =
-  +-cancelₗ (≤-trans (+-comm {x} {y} .proj₁) (≤-trans p (+-comm {x} {z} .proj₂)))
-
--- Follows from totality and increasingness
-⊓≤+ : ∀ {x y} → x ⊓ y ≤ x + y
-⊓≤+ {zero}   {y}      = 0≤n
-⊓≤+ {succ x} {zero}   = 0≤n
-⊓≤+ {succ x} {succ y} = s≤s (≤-trans ⊓≤+ (+-mono {x} ≤-refl succ-increasing))
-
--- Distributivity with _⊔_ and _⊓_, which follows from monotonicity of
--- _+_ and totality of the order. FIXME: abstract this, so it works
--- for all other distributivity properties.
-
-+-⊓-distribₗ : ∀ x y z → (x + y) ⊓ (x + z) ≤ x + (y ⊓ z)
-+-⊓-distribₗ x y z with ≤-total y z
-... | inj₁ p = ≤-trans lower₁ (+-mono {x} ≤-refl (⊓-greatest ≤-refl p))
-... | inj₂ p = ≤-trans lower₂ (+-mono {x} ≤-refl (⊓-greatest p ≤-refl))
-
-+-⊓-distrib : ∀ x y z → x + (y ⊓ z) ≤ (x + y) ⊓ (x + z)
-+-⊓-distrib x y z = ⊓-greatest (+-mono {x} ≤-refl lower₁) (+-mono {x} ≤-refl lower₂)
-
-+-⊔-distrib : ∀ x y z → x + (y ⊔ z) ≤ (x + y) ⊔ (x + z)
-+-⊔-distrib x y z with ≤-total y z
-... | inj₁ p = ≤-trans (+-mono {x} ≤-refl (⊔-least p ≤-refl)) upper₂
-... | inj₂ p = ≤-trans (+-mono {x} ≤-refl (⊔-least ≤-refl p)) upper₁
-
-------------------------------------------------------------------------------
--- Monus (a residual for + on ℕ^op)
-_∸_ : ℕ → ℕ → ℕ
-x      ∸ zero   = x
-zero   ∸ succ y = zero
-succ x ∸ succ y = x ∸ y
-
-eval : ∀ {x y} → y ≤ (x + (y ∸ x))
-eval {zero}   {y}      = ≤-refl
-eval {succ x} {zero}   = 0≤n
-eval {succ x} {succ y} = s≤s (eval {x} {y})
-
-lambda : ∀ {x y z} → x ≤ (y + z) → (x ∸ y) ≤ z
-lambda {x}      {zero}   f       = f
-lambda {zero}   {succ y} 0≤n     = 0≤n
-lambda {succ x} {succ y} (s≤s f) = lambda f
-
--- Totality means that this is an op-pre-total order
-pre-total : ∀ x y → (x ∸ y) ⊓ (y ∸ x) ≤ zero
-pre-total x y with ≤-total x y
-... | inj₁ x≤y = ≤-trans lower₁ (lambda (≤-trans x≤y (+-runit .proj₂)))
-... | inj₂ y≤x = ≤-trans lower₂ (lambda (≤-trans y≤x (+-runit .proj₂)))
-
----------------------------------------------------------------------------------------
--- FIXME: probably worth making a helper function for
--- nullary/unary/binary operations on setoids.
 module _ where
 
   open _⇒s_
@@ -287,10 +113,6 @@ module _ where
   zero-m : 𝟙 {0ℓ} {0ℓ} ⇒s ℕₛ
   zero-m .func x = zero
   zero-m .func-resp-≈ x = ≃-refl
-
-  one-m : 𝟙 {0ℓ} {0ℓ} ⇒s ℕₛ
-  one-m .func x = succ zero
-  one-m .func-resp-≈ x = ≃-refl
 
 ------------------------------------------------------------------------------
 -- Multiplication: _*_ is defined in Agda.Builtin.Nat
@@ -323,13 +145,6 @@ module _ where
 *-comm : ∀ {x y} → (x * y) ≃ (y * x)
 *-comm {zero}   {y} = ≃-sym (*-zero {y})
 *-comm {succ x} {y} = ≃-trans (+-cong ≃-refl (*-comm {x} {y})) (≃-sym (*-succ {x} {y}))
-
-0-*-distribₗ : ∀ {x} → x * 0 ≃ 0
-0-*-distribₗ {zero} = ≃-refl
-0-*-distribₗ {succ x} = 0-*-distribₗ {x}
-
-0-*-distribᵣ : ∀ {x} → 0 * x ≃ 0
-0-*-distribᵣ {x} = ≃-refl
 
 +-*-distribₗ : ∀ {x y z} → (x * (y + z)) ≃ ((x * y) + (x * z))
 +-*-distribₗ {zero} = ≃-refl
@@ -364,169 +179,12 @@ module _ where
 *-isMonoid .IsMonoid.lunit = *-lunit
 *-isMonoid .IsMonoid.runit = *-runit
 
--- “feedback with an initial state”
-*-cancelᵣ : ∀ {x y z} → 1 ≤ x → (y * x) ≤ (z * x) → y ≤ z
-*-cancelᵣ {succ x} {zero}   {z}      (s≤s p) 0≤n     = 0≤n
-*-cancelᵣ {succ x} {succ y} {succ z} (s≤s p) (s≤s q) = s≤s (*-cancelᵣ (s≤s p) (+-cancelₗ q))
+open IsMonoid *-isMonoid using () renaming (cong to *-cong)
 
-*-cancelₗ : ∀ {x y z} → 1 ≤ x → (x * y) ≤ (x * z) → y ≤ z
-*-cancelₗ {x} {y} {z} one≤x xy≤xz =
-  *-cancelᵣ one≤x (begin y * x ≤⟨ *-comm {y} .proj₁ ⟩
-                         x * y ≤⟨ xy≤xz ⟩
-                         x * z ≤⟨ *-comm {x} .proj₁ ⟩
-                         z * x ∎)
-  where open ≤-Reasoning ≤-isPreorder
-
--- FIXME: _+_ and _*_ form a semiring
-
-------------------------------------------------------------------------------
--- Even/odd
-
-mutual
-  data Even : ℕ → Set where
-    zero : Even 0
-    succ : ∀ {n} → Odd n → Even (succ n)
-
-  data Odd : ℕ → Set where
-    succ : ∀ {n} → Even n → Odd (succ n)
-
-even⊎odd : ∀ n → Even n ⊎ Odd n
-even⊎odd zero = inj₁ zero
-even⊎odd (succ n) with even⊎odd n
-... | inj₁ x = inj₂ (succ x)
-... | inj₂ y = inj₁ (succ y)
-
-------------------------------------------------------------------------------
--- Halving
-
--- Floor of n/2
-⌊_/2⌋ : ℕ → ℕ
-⌊ zero          /2⌋ = 0
-⌊ succ zero     /2⌋ = 0
-⌊ succ (succ n) /2⌋ = succ ⌊ n /2⌋
-
--- Ceiling of n/2
-⌈_/2⌉ : ℕ → ℕ
-⌈ zero          /2⌉ = 0
-⌈ succ zero     /2⌉ = 1
-⌈ succ (succ n) /2⌉ = succ ⌈ n /2⌉
-
-even-agree : ∀ n → Even n → ⌊ n /2⌋ ≃ ⌈ n /2⌉
-even-agree zero            zero            = ≃-refl
-even-agree (succ (succ n)) (succ (succ e)) = succ-cong (even-agree n e)
-
-odd-off-by-one : ∀ n → Odd n → succ ⌊ n /2⌋ ≃ ⌈ n /2⌉
-odd-off-by-one (succ zero)     (succ zero)     = ≃-refl
-odd-off-by-one (succ (succ n)) (succ (succ o)) = succ-cong (odd-off-by-one n o)
-
-even-⌊/2⌋+⌊/2⌋ : ∀ n → Even n → (⌊ n  /2⌋ + ⌊ n  /2⌋) ≃ n
-even-⌊/2⌋+⌊/2⌋ zero            zero            = ≃-refl
-even-⌊/2⌋+⌊/2⌋ (succ (succ n)) (succ (succ e)) = ≃-trans (succ-cong +-succ) (succ-cong (succ-cong (even-⌊/2⌋+⌊/2⌋ n e)))
-
-even-⌈/2⌉+⌈/2⌉ : ∀ n → Even n → (⌈ n  /2⌉ + ⌈ n  /2⌉) ≃ n
-even-⌈/2⌉+⌈/2⌉ .0 zero = ≃-refl
-even-⌈/2⌉+⌈/2⌉ .(succ (succ _)) (succ (succ x)) = ≃-trans (succ-cong +-succ) (succ-cong (succ-cong (even-⌈/2⌉+⌈/2⌉ _ x)))
-
-odd-⌊/2⌋+⌊/2⌋ : ∀ n → Odd n → succ (⌊ n  /2⌋ + ⌊ n  /2⌋) ≃ n
-odd-⌊/2⌋+⌊/2⌋ 1               (succ zero)     = ≃-refl
-odd-⌊/2⌋+⌊/2⌋ (succ (succ _)) (succ (succ x)) = succ-cong (succ-cong (≃-trans +-succ (odd-⌊/2⌋+⌊/2⌋ _ x)))
-
-odd-⌈/2⌉+⌈/2⌉ : ∀ n → Odd n → (⌈ n /2⌉ + ⌈ n /2⌉) ≃ succ n
-odd-⌈/2⌉+⌈/2⌉ .1               (succ zero)     = ≃-refl
-odd-⌈/2⌉+⌈/2⌉ .(succ (succ _)) (succ (succ x)) = succ-cong (≃-trans +-succ (succ-cong (odd-⌈/2⌉+⌈/2⌉ _ x)))
-
-/2-< : ∀ {n} → ⌊ n /2⌋ < succ n
-/2-< {zero}          = n<s
-/2-< {succ zero}     = <s n<s
-/2-< {succ (succ n)} = <s (s<s /2-<)
-
-/2-<' : ∀ {n} → ⌈ n /2⌉ < succ n
-/2-<' {zero}          = n<s
-/2-<' {succ zero}     = n<s
-/2-<' {succ (succ n)} = <s (s<s /2-<')
-
-------------------------------------------------------------------------------
--- Exponentiation by 2
-2^ : ℕ → ℕ
-2^ zero     = 1
-2^ (succ n) = 2 * 2^ n
-
-------------------------------------------------------------------------------
--- Logarithm, using complete induction and repeated halving.
-
-data Acc (n : ℕ) : Set where
-  acc : (∀ {m} → m < n → Acc m) → Acc n
-
-mutual
-  <-acc : ∀ {n} → Acc n
-  <-acc = acc <-acc-helper
-
-  <-acc-helper : ∀ {m n} → m < n → Acc m
-  <-acc-helper {m} {succ m} n<s = <-acc
-  <-acc-helper {m} {succ _} (<s m<n) = <-acc-helper m<n
-
-⌊log2'⌋ : (n : ℕ) → Acc n → ℕ
-⌊log2'⌋ zero            _       = zero
-⌊log2'⌋ (succ zero)     _       = zero
-⌊log2'⌋ (succ (succ n)) (acc r) = succ (⌊log2'⌋ (succ ⌊ n /2⌋) (r (s<s /2-<)))
-
-⌊log2⌋ : ℕ → ℕ
-⌊log2⌋ n = ⌊log2'⌋ n <-acc
-
--- should have 2^ (⌊log2⌋ n) ≤ n ≤ 2^ (⌈log2⌉ n)
--- and they are at most one apart
-⌈log2'⌉ : (n : ℕ) → Acc n → ℕ
-⌈log2'⌉ zero            _       = zero
-⌈log2'⌉ (succ zero)     _       = zero
-⌈log2'⌉ (succ (succ n)) (acc r) = succ (⌈log2'⌉ (succ ⌈ n /2⌉) (r (s<s /2-<')))
-
-⌈log2⌉ : ℕ → ℕ
-⌈log2⌉ n = ⌈log2'⌉ n <-acc
-
-neq-0 : ℕ → Prop
-neq-0 zero     = ⊥
-neq-0 (succ _) = ⊤
-
-n+n≃2*n : ∀ n → n + n ≃ 2 * n
-n+n≃2*n n = +-cong {n} ≃-refl (≃-sym +-runit)
-
--- FIXME: need succ ⌊ n/2⌋ + succ ⌊ n/2⌋ ≤ succ (succ n)
-
--- FIXME: move this up to the halving section
-ceil-lemma : ∀ n → succ (succ n) ≤ succ ⌈ n /2⌉ + succ ⌈ n /2⌉
-ceil-lemma zero = ≤-refl
-ceil-lemma (succ zero) = s≤s (s≤s (s≤s 0≤n))
-ceil-lemma (succ (succ n)) = s≤s (s≤s (≤-trans (ceil-lemma n) (+-succ .proj₂)))
-
-⌈log2'⌉-upper : (n : ℕ) (r : Acc n) → n ≤ 2^ (⌈log2'⌉ n r)
-⌈log2'⌉-upper zero            r = 0≤n
-⌈log2'⌉-upper (succ zero)     r = ≤-refl
-⌈log2'⌉-upper (succ (succ n)) (acc r) = begin
-    succ (succ n)
-  ≤⟨ ceil-lemma n ⟩
-    succ ⌈ n /2⌉ + succ ⌈ n /2⌉
-  ≤⟨ +-mono p p ⟩
-    2^ (⌈log2'⌉ (succ ⌈ n /2⌉) (r (s<s /2-<'))) + 2^ (⌈log2'⌉ (succ ⌈ n /2⌉) (r (s<s /2-<')))
-  ≤⟨ n+n≃2*n (2^ (⌈log2'⌉ (succ ⌈ n /2⌉) (r (s<s /2-<')))) .proj₁ ⟩
-    2 * 2^ (⌈log2'⌉ (succ ⌈ n /2⌉) (r (s<s /2-<')))
-  ∎
-  where p : succ ⌈ n /2⌉ ≤ 2^ (⌈log2'⌉ (succ ⌈ n /2⌉) (r (s<s /2-<')))
-        p = ⌈log2'⌉-upper (succ ⌈ n /2⌉) (r (s<s /2-<'))
-        open ≤-Reasoning ≤-isPreorder
-
-⌈log2⌉-upper : ∀ n → n ≤ 2^ (⌈log2⌉ n)
-⌈log2⌉-upper n = ⌈log2'⌉-upper n <-acc
-
-
--- FIXME: ⌊log2'⌋-lower (except for 0), and they are always within 1
--- of each other
-
-------------------------------------------------------------------------------
--- Multiplication as a setoid map on indices (for the derivative interpretation of `mult`).
 module _ where
+
   open _⇒s_
-  open import basics using (IsMonoid)
 
   mult : ⊗-setoid ℕₛ ℕₛ ⇒s ℕₛ
   mult .func (x , y) = x * y
-  mult .func-resp-≈ (x₁≈x₂ , y₁≈y₂) = IsMonoid.cong *-isMonoid x₁≈x₂ y₁≈y₂
+  mult .func-resp-≈ (x₁≈x₂ , y₁≈y₂) = *-cong x₁≈x₂ y₁≈y₂

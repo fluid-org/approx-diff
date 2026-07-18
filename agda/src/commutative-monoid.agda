@@ -27,62 +27,8 @@ record CommutativeMonoid {o e} (A : Setoid o e) : Set (o ⊔ e) where
     +-assoc : ∀ {x y z} → ((x + y) + z) ≈ (x + (y + z))
     +-comm  : ∀ {x y} → (x + y) ≈ (y + x)
 
-  +-interchange : ∀ {w x y z} → (w + x) + (y + z) ≈ (w + y) + (x + z)
-  +-interchange {w}{x}{y}{z} = begin
-      (w + x) + (y + z)     ≈⟨ +-assoc ⟩
-      w + (x + (y + z))     ≈⟨ +-cong refl (sym +-assoc) ⟩
-      w + ((x + y) + z)     ≈⟨ +-cong refl (+-cong +-comm refl) ⟩
-      w + ((y + x) + z)     ≈⟨ +-cong refl +-assoc ⟩
-      w + (y + (x + z))     ≈⟨ sym +-assoc ⟩
-      (w + y) + (x + z)     ∎
-    where open ≈-Reasoning isEquivalence
-
 ------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------
--- The additive preorder x ⊑ y iff x + y ≈ y. When addition is idempotent this is a preorder with
--- monotone addition, joins given by + and bottom ε.
-module AdditivePreorder {o e} {A : Setoid o e} (M : CommutativeMonoid A)
-  (let open CommutativeMonoid M) (let open Setoid A)
-  (+-idem : ∀ {x} → (x + x) ≈ x)
-  where
-
-  open import basics using (IsPreorder; IsJoin; IsBottom)
-
-  infix 4 _⊑_
-
-  _⊑_ : Carrier → Carrier → Prop e
-  x ⊑ y = (x + y) ≈ y
-
-  ⊑-refl : ∀ {x} → x ⊑ x
-  ⊑-refl = +-idem
-
-  ⊑-trans : ∀ {x y z} → x ⊑ y → y ⊑ z → x ⊑ z
-  ⊑-trans x⊑y y⊑z = trans (+-cong refl (sym y⊑z)) (trans (sym +-assoc) (trans (+-cong x⊑y refl) y⊑z))
-
-  ≈→⊑ : ∀ {x y} → x ≈ y → x ⊑ y
-  ≈→⊑ x≈y = trans (+-cong x≈y refl) +-idem
-
-  ⊑-antisym : ∀ {x y} → x ⊑ y → y ⊑ x → x ≈ y
-  ⊑-antisym x⊑y y⊑x = trans (sym y⊑x) (trans +-comm x⊑y)
-
-  +-mono-⊑ : ∀ {x₁ x₂ y₁ y₂} → x₁ ⊑ y₁ → x₂ ⊑ y₂ → (x₁ + x₂) ⊑ (y₁ + y₂)
-  +-mono-⊑ p q = trans +-interchange (+-cong p q)
-
-  ⊑-isPreorder : IsPreorder _⊑_
-  ⊑-isPreorder .IsPreorder.refl = ⊑-refl
-  ⊑-isPreorder .IsPreorder.trans = ⊑-trans
-
-  ∨-isJoin : IsJoin ⊑-isPreorder _+_
-  ∨-isJoin .IsJoin.inl = trans (sym +-assoc) (+-cong +-idem refl)
-  ∨-isJoin .IsJoin.inr =
-    trans (+-cong refl +-comm) (trans (sym +-assoc) (trans (+-cong +-idem refl) +-comm))
-  ∨-isJoin .IsJoin.[_,_] x⊑z y⊑z = trans +-assoc (trans (+-cong refl y⊑z) x⊑z)
-
-  ⊥-isBottom : IsBottom ⊑-isPreorder ε
-  ⊥-isBottom .IsBottom.≤-bottom = +-lunit
-
-------------------------------------------------------------------------------
 record _=[_]>_ {o e}{A B : Setoid o e}(X : CommutativeMonoid A)(f : A ⇒s B)(Y : CommutativeMonoid B) : Prop (o ⊔ e) where
   private
     module X = CommutativeMonoid X

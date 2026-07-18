@@ -1,134 +1,33 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Syntax of types in the style of Lucatelli Nunes & Vákár: types are kinded over a context Δ of type
--- variables. Strict positivity of μα.τ is enforced by requiring function types to be closed (kinded in
--- the empty context), so type variables cannot occur in function positions.
-
-open import Data.Fin using (Fin; zero; suc)
-open import Data.List using (List; []; _∷_)
-open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
-
-open import every using (Every; []; _∷_)
+open import Data.Nat using (ℕ; zero; suc)
 open import signature using (Signature)
+open import every using (Every; []; _∷_)
 
+-- FO language only for now.
 module language-syntax {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig
 
-TyCtxt : Set
-TyCtxt = ℕ
-
-data type : TyCtxt → Set ℓ where
-  var   : ∀ {Δ} → Fin Δ → type Δ
-  unit  : ∀ {Δ} → type Δ
-  base  : ∀ {Δ} → sort → type Δ
-  _[+]_ : ∀ {Δ} → type Δ → type Δ → type Δ
-  _[×]_ : ∀ {Δ} → type Δ → type Δ → type Δ
-  _[→]_ : ∀ {Δ} → type zero → type zero → type Δ
-  μ     : ∀ {Δ} → type (suc Δ) → type Δ
+data type : Set ℓ where
+  unit : type
+  base : sort → type
+  _[×]_ _[+]_ : type → type → type
+  list : type → type
 
 infixl 40 _[×]_ _[+]_
-infixr 35 _[→]_
-
--- First-order types: no function spaces. Used to equip the fibres of a type's
--- interpretation with approximation structure.
-data first-order : ∀ {Δ} → type Δ → Set ℓ where
-  var   : ∀ {Δ} (i : Fin Δ) → first-order (var i)
-  unit  : ∀ {Δ} → first-order {Δ} unit
-  base  : ∀ {Δ} (s : sort) → first-order {Δ} (base s)
-  _[+]_ : ∀ {Δ} {σ τ : type Δ} → first-order σ → first-order τ → first-order (σ [+] τ)
-  _[×]_ : ∀ {Δ} {σ τ : type Δ} → first-order σ → first-order τ → first-order (σ [×] τ)
-  μ     : ∀ {Δ} {τ : type (suc Δ)} → first-order τ → first-order (μ τ)
-
-TyRen : TyCtxt → TyCtxt → Set
-TyRen Δ Δ' = Fin Δ → Fin Δ'
-
-TySub : TyCtxt → TyCtxt → Set ℓ
-TySub Δ Δ' = Fin Δ → type Δ'
-
-extᵗ : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → TyRen (suc Δ₁) (suc Δ₂)
-extᵗ ρ zero    = zero
-extᵗ ρ (suc i) = suc (ρ i)
-
-extᵗⁿ : ∀ {Δ₁ Δ₂} n → TyRen Δ₁ Δ₂ → TyRen (n + Δ₁) (n + Δ₂)
-extᵗⁿ zero    ρ = ρ
-extᵗⁿ (suc n) ρ = extᵗ (extᵗⁿ n ρ)
-
-_*ᵗ_ : ∀ {Δ₁ Δ₂} → TyRen Δ₁ Δ₂ → type Δ₁ → type Δ₂
-ρ *ᵗ var i       = var (ρ i)
-ρ *ᵗ unit        = unit
-ρ *ᵗ base s      = base s
-ρ *ᵗ (τ₁ [+] τ₂) = (ρ *ᵗ τ₁) [+] (ρ *ᵗ τ₂)
-ρ *ᵗ (τ₁ [×] τ₂) = (ρ *ᵗ τ₁) [×] (ρ *ᵗ τ₂)
-ρ *ᵗ (τ₁ [→] τ₂) = τ₁ [→] τ₂
-ρ *ᵗ μ τ         = μ (extᵗ ρ *ᵗ τ)
-
-infixr 50 _*ᵗ_
-
-sub-lift : ∀ {Δ₁ Δ₂} → TySub Δ₁ Δ₂ → TySub (suc Δ₁) (suc Δ₂)
-sub-lift σ zero    = var zero
-sub-lift σ (suc i) = suc *ᵗ σ i
-
-sub : ∀ {Δ₁ Δ₂} → TySub Δ₁ Δ₂ → type Δ₁ → type Δ₂
-sub σ (var i)     = σ i
-sub σ unit        = unit
-sub σ (base s)    = base s
-sub σ (τ₁ [+] τ₂) = sub σ τ₁ [+] sub σ τ₂
-sub σ (τ₁ [×] τ₂) = sub σ τ₁ [×] sub σ τ₂
-sub σ (τ₁ [→] τ₂) = τ₁ [→] τ₂
-sub σ (μ τ)       = μ (sub (sub-lift σ) τ)
-
-push : ∀ {Δ} → type Δ → TySub (suc Δ) Δ
-push τ zero    = τ
-push τ (suc i) = var i
-
-_[_] : ∀ {Δ} → type (suc Δ) → type Δ → type Δ
-τ [ τ' ] = sub (push τ') τ
-
-infix 50 _[_]
-
-sub-cong : ∀ {Δ Δ'} {σ σ' : TySub Δ Δ'} (τ : type Δ) → (∀ i → σ i ≡ σ' i) → sub σ τ ≡ sub σ' τ
-sub-cong (var i)     σ≡σ' = σ≡σ' i
-sub-cong unit        _    = refl
-sub-cong (base s)    _    = refl
-sub-cong (τ₁ [+] τ₂) σ≡σ' = cong₂ _[+]_ (sub-cong τ₁ σ≡σ') (sub-cong τ₂ σ≡σ')
-sub-cong (τ₁ [×] τ₂) σ≡σ' = cong₂ _[×]_ (sub-cong τ₁ σ≡σ') (sub-cong τ₂ σ≡σ')
-sub-cong (τ₁ [→] τ₂) _ = refl
-sub-cong (μ τ)       σ≡σ' = cong μ (sub-cong τ lifted)
-  where
-    lifted : ∀ i → sub-lift _ i ≡ sub-lift _ i
-    lifted zero    = refl
-    lifted (suc i) = cong (suc *ᵗ_) (σ≡σ' i)
-
-sub-ren-id : ∀ {Δ Δ'} (τ : type Δ) {ρ : TyRen Δ Δ'} {σ : TySub Δ' Δ} →
-             (∀ i → σ (ρ i) ≡ var i) → sub σ (ρ *ᵗ τ) ≡ τ
-sub-ren-id (var i)     σ∘ρ≡id = σ∘ρ≡id i
-sub-ren-id unit        _       = refl
-sub-ren-id (base s)    _       = refl
-sub-ren-id (τ₁ [+] τ₂) σ∘ρ≡id = cong₂ _[+]_ (sub-ren-id τ₁ σ∘ρ≡id) (sub-ren-id τ₂ σ∘ρ≡id)
-sub-ren-id (τ₁ [×] τ₂) σ∘ρ≡id = cong₂ _[×]_ (sub-ren-id τ₁ σ∘ρ≡id) (sub-ren-id τ₂ σ∘ρ≡id)
-sub-ren-id (τ₁ [→] τ₂) _       = refl
-sub-ren-id (μ τ)       σ∘ρ≡id = cong μ (sub-ren-id τ lifted)
-  where
-    lifted : ∀ i → sub-lift _ (extᵗ _ i) ≡ var i
-    lifted zero    = refl
-    lifted (suc i) rewrite σ∘ρ≡id i = refl
 
 data ctxt : Set ℓ where
   emp : ctxt
-  _,_ : ctxt → type 0 → ctxt
+  _·_ : ctxt → type → ctxt
 
-infixl 30 _,_
+infixl 30 _·_
 
-data first-order-ctxt : ctxt → Set ℓ where
-  emp : first-order-ctxt emp
-  _,_ : ∀ {Γ τ} → first-order-ctxt Γ → first-order τ → first-order-ctxt (Γ , τ)
+data _∋_ : ctxt → type → Set ℓ where
+  zero : ∀ {Γ τ} → (Γ · τ) ∋ τ
+  succ : ∀ {Γ τ τ'} → Γ ∋ τ → Γ · τ' ∋ τ
 
-data _∋_ : ctxt → type 0 → Set ℓ where
-  zero : ∀ {Γ τ}    → (Γ , τ) ∋ τ
-  succ : ∀ {Γ τ τ'} → Γ ∋ τ → (Γ , τ') ∋ τ
-
+-- A renaming is a context morphism
 Ren : ctxt → ctxt → Set ℓ
 Ren Γ Γ' = ∀ {τ} → Γ ∋ τ → Γ' ∋ τ
 
@@ -138,108 +37,87 @@ id-ren Γ x = x
 _∘ren_ : ∀ {Γ₁ Γ₂ Γ₃} → Ren Γ₂ Γ₃ → Ren Γ₁ Γ₂ → Ren Γ₁ Γ₃
 ρ₁ ∘ren ρ₂ = λ z → ρ₁ (ρ₂ z)
 
-ext : ∀ {Γ Γ' τ} → Ren Γ Γ' → Ren (Γ , τ) (Γ' , τ)
-ext ρ zero     = zero
+-- Push a renaming under a context extension.
+ext : ∀ {Γ Γ' τ} → Ren Γ Γ' → Ren (Γ · τ) (Γ' · τ)
+ext ρ zero = zero
 ext ρ (succ x) = succ (ρ x)
 
-weaken : ∀ {Γ τ} → Ren Γ (Γ , τ)
-weaken zero     = succ zero
+weaken : ∀ {Γ τ} → Ren Γ (Γ · τ)
+weaken zero = succ zero
 weaken (succ x) = succ (weaken x)
 
-data _⊢_ : ctxt → type 0 → Set ℓ where
-  var  : ∀ {Γ τ}        → Γ ∋ τ → Γ ⊢ τ
-  unit : ∀ {Γ}          → Γ ⊢ unit
-  inl  : ∀ {Γ τ₁ τ₂}    → Γ ⊢ τ₁ → Γ ⊢ τ₁ [+] τ₂
-  inr  : ∀ {Γ τ₁ τ₂}    → Γ ⊢ τ₂ → Γ ⊢ τ₁ [+] τ₂
-  case : ∀ {Γ τ₁ τ₂ τ}  → Γ ⊢ τ₁ [+] τ₂ → Γ , τ₁ ⊢ τ → Γ , τ₂ ⊢ τ → Γ ⊢ τ
-  pair : ∀ {Γ τ₁ τ₂}    → Γ ⊢ τ₁ → Γ ⊢ τ₂ → Γ ⊢ τ₁ [×] τ₂
-  fst  : ∀ {Γ τ₁ τ₂}    → Γ ⊢ τ₁ [×] τ₂ → Γ ⊢ τ₁
-  snd  : ∀ {Γ τ₁ τ₂}    → Γ ⊢ τ₁ [×] τ₂ → Γ ⊢ τ₂
-  lam  : ∀ {Γ σ τ}      → Γ , σ ⊢ τ → Γ ⊢ σ [→] τ
-  app  : ∀ {Γ σ τ}      → Γ ⊢ σ [→] τ → Γ ⊢ σ → Γ ⊢ τ
-  bop  : ∀ {Γ in-sorts out-sort} →
-         op in-sorts out-sort →
-         Every (λ σ → Γ ⊢ base σ) in-sorts →
-         Γ ⊢ base out-sort
+data _⊢_ : ctxt → type → Set ℓ where
+  var : ∀ {Γ τ} → Γ ∋ τ → Γ ⊢ τ
+
+  unit : ∀ {Γ} → Γ ⊢ unit
+
+  -- sums
+  inl  : ∀ {Γ τ₁ τ₂} → Γ ⊢ τ₁ → Γ ⊢ τ₁ [+] τ₂
+  inr  : ∀ {Γ τ₁ τ₂} → Γ ⊢ τ₂ → Γ ⊢ τ₁ [+] τ₂
+  case : ∀ {Γ τ₁ τ₂ τ} → Γ ⊢ τ₁ [+] τ₂ → Γ · τ₁ ⊢ τ → Γ · τ₂ ⊢ τ → Γ ⊢ τ
+
+  -- products
+  pair : ∀ {Γ τ₁ τ₂} → Γ ⊢ τ₁ → Γ ⊢ τ₂ → Γ ⊢ τ₁ [×] τ₂
+  fst  : ∀ {Γ τ₁ τ₂} → Γ ⊢ τ₁ [×] τ₂ → Γ ⊢ τ₁
+  snd  : ∀ {Γ τ₁ τ₂} → Γ ⊢ τ₁ [×] τ₂ → Γ ⊢ τ₂
+
+  -- base operations
+  bop : ∀ {Γ in-sorts out-sort} →
+        op in-sorts out-sort →
+        Every (λ σ → Γ ⊢ base σ) in-sorts →
+        Γ ⊢ base out-sort
   brel : ∀ {Γ in-sorts} →
          rel in-sorts →
          Every (λ σ → Γ ⊢ base σ) in-sorts →
          Γ ⊢ unit [+] unit
-  roll   : ∀ {Γ} {τ : type 1} → Γ ⊢ τ [ μ τ ] → Γ ⊢ μ τ
-  fold : ∀ {Γ} {τ : type 1} {σ : type 0} → Γ , τ [ σ ] ⊢ σ → Γ ⊢ μ τ → Γ ⊢ σ
 
+  -- lists
+  nil  : ∀ {Γ τ} → Γ ⊢ list τ
+  cons : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ → Γ ⊢ list τ
+  fold : ∀ {Γ τ₁ τ₂} →
+         Γ ⊢ τ₂ →
+         Γ · τ₁ · τ₂ ⊢ τ₂ →
+         Γ ⊢ list τ₁ →
+         Γ ⊢ τ₂
+
+-- Applying renamings to terms
 mutual
   _*_ : ∀ {Γ Γ' τ} → Ren Γ Γ' → Γ ⊢ τ → Γ' ⊢ τ
-  ρ * var x        = var (ρ x)
-  ρ * unit         = unit
-  ρ * inl t        = inl (ρ * t)
-  ρ * inr t        = inr (ρ * t)
-  ρ * case s t₁ t₂ = case (ρ * s) (ext ρ * t₁) (ext ρ * t₂)
-  ρ * pair s t     = pair (ρ * s) (ρ * t)
-  ρ * fst t        = fst (ρ * t)
-  ρ * snd t        = snd (ρ * t)
-  ρ * lam t        = lam (ext ρ * t)
-  ρ * app s t      = app (ρ * s) (ρ * t)
-  ρ * bop ω ts     = bop ω (ρ ** ts)
-  ρ * brel ω ts    = brel ω (ρ ** ts)
-  ρ * roll t       = roll (ρ * t)
-  ρ * fold s t     = fold (ext ρ * s) (ρ * t)
+  ρ * var x = var (ρ x)
+  ρ * unit = unit
+  ρ * inl M = inl (ρ * M)
+  ρ * inr M = inr (ρ * M)
+  ρ * case M N₁ N₂ = case (ρ * M) (ext ρ * N₁) (ext ρ * N₂)
+  ρ * pair M N = pair (ρ * M) (ρ * N)
+  ρ * fst M = fst (ρ * M)
+  ρ * snd M = snd (ρ * M)
+  ρ * bop ω Ms = bop ω (ρ ** Ms)
+  ρ * brel ω Ms = brel ω (ρ ** Ms)
+  ρ * nil = nil
+  ρ * cons M N = cons (ρ * M) (ρ * N)
+  ρ * fold M₁ M₂ M = fold (ρ * M₁) (ext (ext ρ) * M₂) (ρ * M)
 
   _**_ : ∀ {Γ Γ' σs} → Ren Γ Γ' → Every (λ σ → Γ ⊢ base σ) σs → Every (λ σ → Γ' ⊢ base σ) σs
-  ρ ** []       = []
-  ρ ** (t ∷ ts) = (ρ * t) ∷ (ρ ** ts)
+  ρ ** [] = []
+  ρ ** (M ∷ Ms) = (ρ * M) ∷ (ρ ** Ms)
 
-list : type 0 → type 0
-list τ = μ (unit [+] (((λ ()) *ᵗ τ) [×] var zero))
 
-nil : ∀ {Γ τ} → Γ ⊢ list τ
-nil = roll (inl unit)
+var-to-ℕ : ∀ {Γ τ} → Γ ∋ τ → ℕ
+var-to-ℕ zero     = zero
+var-to-ℕ (succ x) = suc (var-to-ℕ x)
 
-cons : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ → Γ ⊢ list τ
-cons {_} {τ} h t = roll (inr (pair (subst (λ t → _ ⊢ t) (sym (sub-ren-id τ (λ ()))) h) t))
+------------------------------------------------------------------------
+-- Agda-side syntactic helpers for `bool` / `if`, expressed as the unit-sum.
 
-foldr : ∀ {Γ σ τ} → Γ ⊢ τ → Γ , σ , τ ⊢ τ → Γ ⊢ list σ → Γ ⊢ τ
-foldr {Γ} {σ} {τ} nilCase consCase M =
-  fold {τ = unit [+] (((λ ()) *ᵗ σ) [×] var zero)}
-    (case (var zero)
-          (weaken * (weaken * nilCase))
-          (app (app (weaken * (weaken * (lam (lam consCase))))
-                    (subst (Γ-inr ⊢_) (sub-ren-id σ (λ ())) (fst (var zero))))
-               (snd (var zero))))
-    M
-  where
-    Γ-inr : ctxt
-    Γ-inr = Γ , (unit [+] (((λ ()) *ᵗ σ) [×] var zero)) [ τ ] , ((λ ()) *ᵗ σ) [ τ ] [×] τ
-
-append : ∀ {Γ τ} → Γ ⊢ list τ → Γ ⊢ list τ → Γ ⊢ list τ
-append xs ys = foldr ys (cons (var (succ zero)) (var zero)) xs
-
-return : ∀ {Γ τ} → Γ ⊢ τ → Γ ⊢ list τ
-return x = cons x nil
-
-from_collect_ : ∀ {Γ τ₁ τ₂} → Γ ⊢ list τ₁ → Γ , τ₁ ⊢ list τ₂ → Γ ⊢ list τ₂
-from M collect N = foldr nil (append (weaken * N) (var zero)) M
-
-append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
-append-f = lam (lam (foldr (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
-
-bool : type 0
+bool : type
 bool = unit [+] unit
 
-true false : ∀ {Γ} → Γ ⊢ bool
-true  = inl unit
+true : ∀ {Γ} → Γ ⊢ bool
+true = inl unit
+
+false : ∀ {Γ} → Γ ⊢ bool
 false = inr unit
 
 if_then_else_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ τ → Γ ⊢ τ → Γ ⊢ τ
 if M then N₁ else N₂ = case M (weaken * N₁) (weaken * N₂)
 
-when_；_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ list τ → Γ ⊢ list τ
-when M ； N = if M then N else nil
-
-record SynMonad : Set ℓ where
-  field
-    Mon     : ∀ {Δ} → type Δ → type Δ
-    Mon-ren : ∀ {Δ Δ'} (ρ : TyRen Δ Δ') (τ : type Δ) → (ρ *ᵗ Mon τ) ≡ Mon (ρ *ᵗ τ)
-    Mon-sub : ∀ {Δ Δ'} (σ : Fin Δ → type Δ') (τ : type Δ) → sub σ (Mon τ) ≡ Mon (sub σ τ)
-    pure    : ∀ {Γ τ} → Γ ⊢ τ [→] Mon τ
-    bind    : ∀ {Γ σ τ} → Γ ⊢ Mon σ [→] (σ [→] Mon τ) [→] Mon τ

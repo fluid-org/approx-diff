@@ -7,6 +7,9 @@ open import basics using (IsPreorder; IsMeet; IsJoin; IsBottom; IsTop)
 data Two : Set where
   O I : Two
 
+infix 4 _≤_
+infixl 21 _⊔_ _⊓_
+
 _≤_ : Two → Two → Prop
 O ≤ y = ⊤
 I ≤ O = ⊥
@@ -35,10 +38,10 @@ open IsPreorder ≤-isPreorder public
 
 open import preorder using (Preorder)
 
-preorder : Preorder
-preorder .Preorder.Carrier = Two
-preorder .Preorder._≤_ = _≤_
-preorder .Preorder.≤-isPreorder = ≤-isPreorder
+Two-preorder : Preorder
+Two-preorder .Preorder.Carrier = Two
+Two-preorder .Preorder._≤_ = _≤_
+Two-preorder .Preorder.≤-isPreorder = ≤-isPreorder
 
 ------------------------------------------------------------------------------
 I-isTop : IsTop ≤-isPreorder I
@@ -92,58 +95,44 @@ I ⊔ x = I
 ⊔-isJoin .IsJoin.[_,_] = ⊔-least
 
 ------------------------------------------------------------------------------
-¬ : Two → Two
-¬ O = I
-¬ I = O
+-- Two as a commutative semiring (⊔, O, ⊓, I).
 
-compl-∧ : ∀ {x} → (x ⊓ ¬ x) ≤ O
-compl-∧ {O} = tt
-compl-∧ {I} = tt
+open import prop-setoid using (Setoid; IsEquivalence)
+open import commutative-monoid using (CommutativeMonoid)
+open import commutative-semiring using (CommutativeSemiring)
 
-compl-∨ : ∀ {x} → I ≤ (x ⊔ ¬ x)
-compl-∨ {O} = tt
-compl-∨ {I} = tt
+Two-setoid : Setoid _ _
+Two-setoid .Setoid.Carrier = Two
+Two-setoid .Setoid._≈_ = _≃_
+Two-setoid .Setoid.isEquivalence = isEquivalence
 
-¬-involutive : ∀ {x} → x ≃ ¬ (¬ x)
-¬-involutive {O} = ≃-refl {O}
-¬-involutive {I} = ≃-refl {I}
+open CommutativeMonoid
 
-¬-antitone : ∀ {x y} → x ≤ y → ¬ y ≤ ¬ x
-¬-antitone {O} {O} _ = tt
-¬-antitone {O} {I} _ = tt
-¬-antitone {I} {I} _ = tt
+⊔-cmon : CommutativeMonoid Two-setoid
+⊔-cmon .ε = O
+⊔-cmon ._+_ = _⊔_
+⊔-cmon .+-cong = IsJoin.cong ⊔-isJoin
+⊔-cmon .+-lunit {x} = ≤-refl {x} , ≤-refl {x}
+⊔-cmon .+-assoc {x} {y} {z} = IsJoin.assoc ⊔-isJoin {x} {y} {z}
+⊔-cmon .+-comm {x} {y} = IsJoin.comm ⊔-isJoin {x} {y} , IsJoin.comm ⊔-isJoin {y} {x}
 
--- FIXME: de Morgan, etc., should be derived from the fact that this
--- is a Boolean algebra.
+⊓-cmon : CommutativeMonoid Two-setoid
+⊓-cmon .ε = I
+⊓-cmon ._+_ = _⊓_
+⊓-cmon .+-cong = IsMeet.cong ⊓-isMeet
+⊓-cmon .+-lunit {x} = ≤-refl {x} , ≤-refl {x}
+⊓-cmon .+-assoc {x} {y} {z} = IsMeet.assoc ⊓-isMeet {x} {y} {z}
+⊓-cmon .+-comm {x} {y} = IsMeet.comm ⊓-isMeet {x} {y} , IsMeet.comm ⊓-isMeet {y} {x}
 
-------------------------------------------------------------------------------
--- Two as a distributive lattice with complement.
+⊓-⊔-distribₗ : ∀ {x y z} → (x ⊓ (y ⊔ z)) ≃ ((x ⊓ y) ⊔ (x ⊓ z))
+⊓-⊔-distribₗ {O} {y} {z} = ≤-refl {O} , ≤-refl {O}
+⊓-⊔-distribₗ {I} {y} {z} = ≤-refl {y ⊔ z} , ≤-refl {y ⊔ z}
 
-open import meet-semilattice using (MeetSemilattice)
-open import join-semilattice using (JoinSemilattice)
-open import lattice using (DistributiveLattice; BooleanAlgebra; asSemiring; asBoolean)
-import commutative-semiring as CS
+O-⊓-annihilₗ : ∀ {x} → (O ⊓ x) ≃ O
+O-⊓-annihilₗ = ≤-refl {O} , ≤-refl {O}
 
-lattice : DistributiveLattice
-lattice .DistributiveLattice.carrier = preorder
-lattice .DistributiveLattice.meets .MeetSemilattice._∧_ = _⊓_
-lattice .DistributiveLattice.meets .MeetSemilattice.⊤ = I
-lattice .DistributiveLattice.meets .MeetSemilattice.∧-isMeet = ⊓-isMeet
-lattice .DistributiveLattice.meets .MeetSemilattice.⊤-isTop = I-isTop
-lattice .DistributiveLattice.joins .JoinSemilattice._∨_ = _⊔_
-lattice .DistributiveLattice.joins .JoinSemilattice.⊥ = O
-lattice .DistributiveLattice.joins .JoinSemilattice.∨-isJoin = ⊔-isJoin
-lattice .DistributiveLattice.joins .JoinSemilattice.⊥-isBottom = O-isBottom
-lattice .DistributiveLattice.∧-∨-distrib O y z = ≤-refl {O}
-lattice .DistributiveLattice.∧-∨-distrib I y z = ≤-refl {y ⊔ z}
-
-boolean : BooleanAlgebra lattice
-boolean .BooleanAlgebra.¬ = ¬
-boolean .BooleanAlgebra.compl-∨ {x} = compl-∨ {x}
-boolean .BooleanAlgebra.compl-∧ {x} = compl-∧ {x}
-
-semiring : CS.CommutativeSemiring _
-semiring = asSemiring lattice
-
-semiring-boolean : CS.BooleanAlgebra semiring
-semiring-boolean = asBoolean lattice boolean
+semiring : CommutativeSemiring Two-setoid
+semiring .CommutativeSemiring.additive = ⊔-cmon
+semiring .CommutativeSemiring.multiplicative = ⊓-cmon
+semiring .CommutativeSemiring.·-+-distribₗ {x} {y} {z} = ⊓-⊔-distribₗ {x} {y} {z}
+semiring .CommutativeSemiring.ε-annihilₗ {x} = O-⊓-annihilₗ {x}
