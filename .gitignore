@@ -19,3 +19,4 @@
 
 # Claude Code local state (memory, transcripts, and git worktrees it manages)
 /.claude/
+agda/_build/
