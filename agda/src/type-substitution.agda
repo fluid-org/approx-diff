@@ -1,6 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.Fin using (Fin; zero; suc)
+open import Data.Nat using (ℕ; suc; _+_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import signature using (Signature)
 
@@ -105,3 +106,12 @@ unfold₁-inst τ ρ =
       sym (trans (sub-ren (push (μ A)) suc ρ)
                  (trans (sub-cong ρ λ ()) (sub-id ρ)))
     pw (suc (suc ()))
+
+size : ∀ {Δ} → type Δ → ℕ
+size (var i)   = 1
+size unit      = 1
+size (base s)  = 1
+size (σ [+] τ) = suc (size σ + size τ)
+size (σ [×] τ) = suc (size σ + size τ)
+size (σ [→] τ) = suc (size σ + size τ)
+size (μ τ)     = suc (size τ)

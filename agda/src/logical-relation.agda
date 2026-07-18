@@ -39,7 +39,7 @@ open import language-evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_)
 open import language-evaluation-mat Sig 𝒜 S sort-width
   using (width; width-env; bases-width; width-subst; module WithOpMats)
-open import type-substitution Sig using (unfold₁; unfold₁-inst)
+open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
 
 open interp-sd Sig Impl
 
@@ -69,15 +69,6 @@ Realiser τ v a = SM._⇒_ (X^ (width v)) (Fibre τ a)
 
 RelSpec : type 0 → Set₁
 RelSpec τ = (v : Val τ) (a : Point τ) → Realiser τ v a → Set
-
-size : ∀ {Δ} → type Δ → ℕ
-size (var i)   = 1
-size unit      = 1
-size (base s)  = 1
-size (σ [+] τ) = suc (size σ + size τ)
-size (σ [×] τ) = suc (size σ + size τ)
-size (σ [→] τ) = suc (size σ + size τ)
-size (μ τ)     = suc (size τ)
 
 idx-≈ : (τ : type 0) → Point τ → Point τ → Prop 0ℓ
 idx-≈ τ = Setoid._≈_ ((⟦ τ ⟧ty δ₀) .idx)
