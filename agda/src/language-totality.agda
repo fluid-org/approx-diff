@@ -6,15 +6,17 @@ open import Data.Nat using (ℕ; suc; _+_; _<_; s≤s)
 open import Data.Nat.Properties using (m≤m+n; m≤n+m; n<1+n)
 open import Data.Nat.Induction using (<-wellFounded)
 open import Induction.WellFounded using (Acc; acc)
-open import Data.Product using (Σ; _×_; _,_)
+open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
+open import Data.Sum using (inj₁; inj₂)
+open import every using (Every; []; _∷_)
 open import Data.Unit.Polymorphic using (tt) renaming (⊤ to ⊤ₛ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
-open import Relation.Binary.PropositionalEquality.Properties using (subst-subst-sym)
+open import Relation.Binary.PropositionalEquality.Properties using (subst-subst-sym; subst-sym-subst)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
-open import categories using (Category)
+open import categories using (Category; HasProducts; HasTerminal)
 open import signature using (Signature)
-open import signature-algebra using (Algebra)
+open import signature-algebra using (Algebra; sort-vals)
 import matrix
 
 -- Computability (totality) predicate on values: the existence content of the
@@ -31,12 +33,17 @@ open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
 open import language-evaluation Sig 𝒜
-  using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_)
+  using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
 open import language-evaluation-mat Sig 𝒜 S sort-width
-  using (width; width-env; bases-width; module WithOpMats)
+  using (width; width-env; bases-width; width-subst; proj-var; brel-mat; products;
+         module WithOpMats)
 
 private
   module M = matrix.Mat S
+
+open Category M.cat using (_⇒_; _∘_) renaming (id to idm)
+open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
+open HasTerminal M.terminal using (to-terminal)
 
 module WithOp
   (op-mat : ∀ {is o'} → op is o' → Category._⇒_ M.cat (bases-width is) (sort-width o'))
@@ -242,3 +249,141 @@ module WithOp
 
   unfold-tot : ∀ (τ₀ σ' : type 1) → ∀ {v} → MuT τ₀ σ' v → Total (σ' [ μ τ₀ ]) v
   unfold-tot τ₀ σ' {v} = unfold-tot-acc τ₀ σ' (<-wellFounded (vsize v))
+
+  lookup-total : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} → TotalEnv Γ γ → Total τ (lookup x γ)
+  lookup-total zero     {γ · v} (tγ , tv) = tv
+  lookup-total (succ x) {γ · v} (tγ , tv) = lookup-total x tγ
+
+  bool-total : ∀ (b : _) → Total (unit [+] unit) (bool→val b)
+  bool-total (inj₁ _) = sum-in₁ {unit} {unit} {unit} tt
+  bool-total (inj₂ _) = sum-in₂ {unit} {unit} {unit} tt
+
+  -- The arrow clause of Total, stated with the canonical predicate throughout.
+  ArrTot : (σ τ : type 0) {Γ' : ctxt} (γ' : Env Γ') (t : (Γ' ▸ σ) ⊢ τ) → Set ℓT
+  ArrTot σ τ {Γ'} γ' t =
+    ∀ (v : Val σ) → Total σ v →
+    Σ (Val τ) λ u → Σ ((width-env γ' + width v) ⇒ width u) λ R →
+    ((γ' · v) ,, t ⇓ u [ R ]) × Total τ u
+
+  arr-in : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} →
+           ArrTot σ τ γ' t → Total (σ [→] τ) (clo γ' t)
+  arr-in {σ} {τ} f v tv =
+    let (u , R , D , tu) = f v (total-irr σ tv) in u , R , D , total-irr τ tu
+
+  arr-out : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} →
+            Total (σ [→] τ) (clo γ' t) → ArrTot σ τ γ' t
+  arr-out {σ} {τ} f v tv =
+    let (u , R , D , tu) = f v (total-irr σ tv) in u , R , D , total-irr τ tu
+
+  -- Traversal of a total value by the fold body, producing the Map derivation.
+  map-total : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : (Γ ▸ (τ₀ [ σr ])) ⊢ σr} →
+              (∀ (w' : Val (τ₀ [ σr ])) → Total (τ₀ [ σr ]) w' →
+               Σ (Val σr) λ u → Σ ((width-env γ + width w') ⇒ width u) λ S →
+               ((γ · w') ,, s ⇓ u [ S ]) × Total σr u) →
+              ∀ (σ' : type 1) {v : Val (σ' [ μ τ₀ ])} → MuT τ₀ σ' v →
+              (R : width-env γ ⇒ width v) →
+              Σ (Val (σ' [ σr ])) λ v' → Σ (width-env γ ⇒ width v') λ R' →
+              Map γ s σ' v R v' R' × Total (σ' [ σr ]) v'
+  map-total f (var Fin.zero) (mt-roll m') R =
+    let (w' , R' , Dm , tw') = map-total f _ m' R
+        (u , S , Ds , tu) = f w' tw'
+    in u , (S ∘ ⟨ idm _ , R' ⟩) , m-rec Dm Ds , tu
+  map-total f unit {v} mt-unit R = v , R , m-unit , tt
+  map-total f (base b) {v} mt-base R = v , R , m-base , tt
+  map-total f (σ₁ [→] σ₂) {v} (mt-arrow p tv) R = v , R , m-arrow , tv
+  map-total {σr = σr} f (σ₁ [+] σ₂) (mt-inl m') R =
+    let (v' , R' , Dm , tv') = map-total f σ₁ m' R
+    in inl v' , R' , m-inl Dm , sum-in₁ {σ₁ [ σr ]} {σ₂ [ σr ]} tv'
+  map-total {σr = σr} f (σ₁ [+] σ₂) (mt-inr m') R =
+    let (v' , R' , Dm , tv') = map-total f σ₂ m' R
+    in inr v' , R' , m-inr Dm , sum-in₂ {σ₁ [ σr ]} {σ₂ [ σr ]} tv'
+  map-total {σr = σr} f (σ₁ [×] σ₂) (mt-pair m₁ m₂) R =
+    let (v₁' , S , D₁ , t₁) = map-total f σ₁ m₁ (p₁ ∘ R)
+        (v₂' , T , D₂ , t₂) = map-total f σ₂ m₂ (p₂ ∘ R)
+    in pair v₁' v₂' , ⟨ S , T ⟩ , m-pair D₁ D₂ ,
+       prod-in {σ₁ [ σr ]} {σ₂ [ σr ]} t₁ t₂
+  map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') (mt-mu {τ'} {w} m') R =
+    let (w' , R' , Dm , tw') =
+          map-total f (unfold₁ τ') m'
+            (≡-subst (λ n → width-env γ ⇒ n) (width-subst (unfold₁-inst τ' (μ τ₀)) w) R)
+    in roll (≡-subst Val (unfold₁-inst τ' σr) w') ,
+       ≡-subst (λ n → width-env γ ⇒ n) (sym (width-subst (unfold₁-inst τ' σr) w')) R' ,
+       ≡-subst (λ X → Map γ s (μ τ') (roll (≡-subst Val (unfold₁-inst τ' (μ τ₀)) w)) X
+                          (roll (≡-subst Val (unfold₁-inst τ' σr) w'))
+                          (≡-subst (λ n → width-env γ ⇒ n) (sym (width-subst (unfold₁-inst τ' σr) w')) R'))
+               (subst-sym-subst (width-subst (unfold₁-inst τ' (μ τ₀)) w))
+               (m-mu Dm) ,
+       mu-in (mt-roll (fold-tot (sub (sub-lift (push σr)) τ') (sub (sub-lift (push σr)) τ')
+                        (arr-self (sub (sub-lift (push σr)) τ'))
+                        (total-coerce (unfold₁-inst τ' σr) tw')))
+
+  -- Fundamental lemma: every well-typed term evaluates, with a dependency
+  -- matrix, to a total value.
+  Eval : ∀ {Γ} (γ : Env Γ) {τ} (t : Γ ⊢ τ) → Set ℓT
+  Eval γ {τ} t =
+    Σ (Val τ) λ v → Σ (width-env γ ⇒ width v) λ R → (γ ,, t ⇓ v [ R ]) × Total τ v
+
+  fundamental : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) → TotalEnv Γ γ → Eval γ t
+  fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) (γ : Env Γ) → TotalEnv Γ γ →
+                  Σ (sort-vals sort-val is) λ vs →
+                  Σ (width-env γ ⇒ bases-width is) λ Rs → γ ,, Ms ⇓s vs [ Rs ]
+
+  fundamental (var x) γ tγ = lookup x γ , proj-var x γ , ⇓-var x , lookup-total x tγ
+  fundamental unit γ tγ = unit , to-terminal , ⇓-unit , tt
+  fundamental (inl {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ =
+    let (v , R , D , tv) = fundamental t γ tγ
+    in inl v , R , ⇓-inl D , sum-in₁ {τ₁} {τ₂} tv
+  fundamental (inr {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ =
+    let (v , R , D , tv) = fundamental t γ tγ
+    in inr v , R , ⇓-inr D , sum-in₂ {τ₁} {τ₂} tv
+  fundamental (case {τ₁ = τ₁} {τ₂ = τ₂} s t₁ t₂) γ tγ with fundamental s γ tγ
+  ... | inl v , R , D , ts =
+    let (u , S , D₁ , tu) = fundamental t₁ (γ · v) (tγ , sum-out₁ {τ₁} {τ₂} ts)
+    in u , (S ∘ ⟨ idm _ , R ⟩) , ⇓-case-l D D₁ , tu
+  ... | inr v , R , D , ts =
+    let (u , S , D₂ , tu) = fundamental t₂ (γ · v) (tγ , sum-out₂ {τ₁} {τ₂} ts)
+    in u , (S ∘ ⟨ idm _ , R ⟩) , ⇓-case-r D D₂ , tu
+  fundamental (pair {τ₁ = τ₁} {τ₂ = τ₂} s t) γ tγ =
+    let (v , R , D , tv) = fundamental s γ tγ
+        (u , S , D' , tu) = fundamental t γ tγ
+    in pair v u , ⟨ R , S ⟩ , ⇓-pair D D' , prod-in {τ₁} {τ₂} tv tu
+  fundamental (fst {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
+  ... | pair v u , R , D , tv =
+    v , (p₁ ∘ R) , ⇓-fst D , proj₁ (prod-out {τ₁} {τ₂} tv)
+  fundamental (snd {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
+  ... | pair v u , R , D , tv =
+    u , (p₂ ∘ R) , ⇓-snd D , proj₂ (prod-out {τ₁} {τ₂} tv)
+  fundamental (lam t) γ tγ =
+    clo γ t , idm _ , ⇓-lam , arr-in (λ v tv → fundamental t (γ · v) (tγ , tv))
+  fundamental (app s t) γ tγ with fundamental s γ tγ
+  ... | clo γ' t' , R , Ds , tf =
+    let (v , S , Dt , tv) = fundamental t γ tγ
+        (u , T , D' , tu) = arr-out tf v tv
+    in u , (T ∘ ⟨ R , S ⟩) , ⇓-app Ds Dt D' , tu
+  fundamental (bop ω Ms) γ tγ =
+    let (vs , Rs , Dss) = fundamental-s Ms γ tγ
+    in const (op-fun ω vs) , (op-mat ω ∘ Rs) , ⇓-bop Dss , tt
+  fundamental (brel ω Ms) γ tγ =
+    let (vs , Rs , Dss) = fundamental-s Ms γ tγ
+    in bool→val (rel-pred ω vs) , brel-mat γ (rel-pred ω vs) , ⇓-brel Dss ,
+       bool-total (rel-pred ω vs)
+  fundamental (roll {τ = τ₀} t) γ tγ =
+    let (v , R , D , tv) = fundamental t γ tγ
+    in roll v , R , ⇓-roll D , mu-in (mt-roll (fold-tot τ₀ τ₀ (arr-self τ₀) tv))
+  fundamental (fold s t) γ tγ =
+    let (v , R , D , tv) = fundamental t γ tγ
+        (u , R' , Dm , tu) =
+          map-total (λ w' tw' → fundamental s (γ · w') (tγ , tw'))
+                    (var Fin.zero) (mu-out tv) R
+    in u , R' , ⇓-fold D Dm , tu
+
+  fundamental-s [] γ tγ = _ , _ , []
+  fundamental-s (M ∷ Ms) γ tγ with fundamental M γ tγ
+  ... | const v , R , D , _ =
+    let (vs , Rs , Dss) = fundamental-s Ms γ tγ
+    in (v , vs) , ⟨ R , Rs ⟩ , (D ∷ Dss)
+
+  -- The evaluator: every closed term evaluates, with its dependency matrix.
+  eval : ∀ {τ} (t : emp ⊢ τ) →
+         Σ (Val τ) λ v → Σ (0 ⇒ width v) λ R → emp ,, t ⇓ v [ R ]
+  eval t = let (v , R , D , _) = fundamental t emp tt in v , R , D

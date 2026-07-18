@@ -117,3 +117,8 @@ module Inst = LR.WithAgreement sort-embed sort-can op-mat MSA.mat-mor
 -- The fundamental property, specialised to this instantiation.
 FP : Set
 FP = Inst.FundamentalProperty
+
+-- Totality and the evaluator, instantiated at the same model.
+import language-totality
+module Tot = language-totality Sig Alg-inst.Alg two.semiring sort-width
+module TotOp = Tot.WithOp op-mat
