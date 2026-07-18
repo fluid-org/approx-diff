@@ -14,9 +14,7 @@ open import signature-algebra using (Algebra)
 import two
 import matrix
 
--- Rendering of matrix-decorated evaluation derivations: s-expression and indented
--- traces, and extraction of the dependence graph as an edge list, decoding each
--- step's local matrix into edges between input and output scalar positions.
+-- Rendering of evaluation derivations as traces and dependence-graph edge lists.
 module language-trace
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
   (sort-width : Signature.sort Sig → ℕ)
@@ -119,7 +117,6 @@ private
   _>>_ : ∀ {A B} → GraphWriter A → GraphWriter B → GraphWriter B
   m >> n = m >>= λ _ → n
 
-  -- Allocate n fresh output ports, emit edges for the local matrix, return the ports.
   emit : String → (m n : ℕ) → M.Matrix n m → List ℕ → GraphWriter (List ℕ)
   emit tag m n r ins next =
     let outs = applyUpTo (next +_) n
@@ -127,8 +124,6 @@ private
 
 module _ {op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
 
-  -- Per-node local edges: each step connects the ports of its children's outputs
-  -- to freshly allocated output ports via the constructor's local matrix.
   edges  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,,_⇓_[_] op-mat γ t v R →
            List ℕ → GraphWriter (List ℕ)
   edgess : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
@@ -189,8 +184,8 @@ module _ {op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-
     Esₒ ← edgess Es ctx
     pure (Eₒ ++ Esₒ)
 
-  -- Traversal edges: ctx are the environment ports, ins the ports of the value
-  -- being traversed; returns the ports of the mapped value.
+  -- ctx: environment ports; ins: ports of the traversed value; returns ports of
+  -- the mapped value.
   edgesm (m-rec {u = u} m B) ctx ins = do
     Wₒ ← edgesm m ctx ins
     Bₒ ← edges B (ctx ++ Wₒ)

@@ -7,9 +7,7 @@ open import Data.Unit.Polymorphic using (⊤; tt)
 import label
 import prop-setoid
 
--- Value-level interpretation (Algebra) of the example signature, for the operational
--- semantics. Parameterised like the categorical models: a carrier for `number` with its
--- operations, and a carrier for `approx` with its unit and multiplication.
+-- Value-level interpretation of the example signature.
 module example.algebra
   (Num : Set) (add-fun mult-fun : Num → Num → Num)
   (Approx : Set) (approx-unit-val : Approx) (approx-mult-val : Approx → Approx → Approx)

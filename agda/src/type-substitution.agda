@@ -80,7 +80,6 @@ sub-id (τ₁ [×] τ₂) = cong₂ _[×]_ (sub-id τ₁) (sub-id τ₂)
 sub-id (τ₁ [→] τ₂) = refl
 sub-id (μ τ)       = cong μ (trans (sub-cong τ λ { zero → refl ; (suc i) → refl }) (sub-id τ))
 
--- Unfold the outer μ of a nested inductive type, keeping the remaining variable free.
 unfold₁-sub : type 2 → TySub 2 1
 unfold₁-sub τ zero    = μ τ
 unfold₁-sub τ (suc i) = var i
@@ -88,8 +87,6 @@ unfold₁-sub τ (suc i) = var i
 unfold₁ : type 2 → type 1
 unfold₁ τ = sub (unfold₁-sub τ) τ
 
--- Instantiating the free variable commutes with unfolding: substituting ρ into the
--- unfolded body agrees with unrolling the instantiated μ-type.
 unfold₁-inst : ∀ (τ : type 2) (ρ : type 0) →
                sub (push ρ) (unfold₁ τ) ≡
                sub (sub-lift (push ρ)) τ [ μ (sub (sub-lift (push ρ)) τ) ]

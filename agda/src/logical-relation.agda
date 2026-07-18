@@ -9,12 +9,8 @@ open import signature-algebra using (Algebra)
 
 import ho-model-sd-semimod
 
--- Logical relation between the operational semantics (language-evaluation-mat)
--- and the denotational interpretation in Fam(SemiMod(S)) (interp-sd), in
--- existential (computability) form. Rel is defined by recursion on types, with
--- the μ case an inductive family indexed by subexpressions of the body, as in
--- language-evaluation.Map. Agreement between the algebra and the model at op
--- level is deferred to the fundamental property, which is where it is used.
+-- Logical relation between the operational semantics and the interpretation in
+-- Fam(SemiMod(S)), in existential (computability) form.
 module logical-relation
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (Sig : Signature 0ℓ) (𝒜 : Algebra Sig 0ℓ)

@@ -7,11 +7,9 @@ import Data.Sum as Sum
 open import Data.Unit.Polymorphic using (⊤)
 open import signature using (Signature)
 
--- Value-level interpretation of a signature: per-sort value types and per-op/rel
--- functions. Used by the operational semantics, independently of any categorical model.
+-- Value-level interpretation of a signature, as used by the operational semantics.
 module signature-algebra where
 
--- Per-sort value tuple for a list of sorts, given a value type per sort.
 sort-vals : ∀ {ℓ ℓ'} {sort : Set ℓ} (sort-val : sort → Set ℓ') → List sort → Set ℓ'
 sort-vals sv []       = ⊤
 sort-vals sv (σ ∷ σs) = sv σ Product.× sort-vals sv σs

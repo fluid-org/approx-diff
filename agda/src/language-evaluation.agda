@@ -10,9 +10,8 @@ open import every using (Every; []; _∷_)
 open import signature using (Signature)
 open import signature-algebra using (Algebra; sort-vals)
 
--- Big-step operational semantics for the language, relative to a value-level
--- interpretation (Algebra) of the signature. Values are intrinsically typed;
--- fold is evaluated via the functorial action of the body type (Map below).
+-- Big-step operational semantics, relative to a value-level interpretation of
+-- the signature.
 module language-evaluation {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ') where
 
 open Signature Sig
@@ -80,9 +79,7 @@ mutual
     _∷_ : ∀ {i is v vs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is} →
           γ ,, M ⇓ const v → γ ,, Ms ⇓s vs → γ ,, (M ∷ Ms) ⇓s (v , vs)
 
-  -- The functorial action of σ' (one free type variable) on the fold s for μ τ₀:
-  -- maps a value of σ'[μ τ₀] to a value of σ'[σr], applying the fold at each
-  -- variable position, and traversing nested μ via one layer of unfolding.
+  -- Functorial action of σ' on the fold s.
   data Map {Γ} (γ : Env Γ) {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) :
            (σ' : type 1) → Val (σ' [ μ τ₀ ]) → Val (σ' [ σr ]) → Set (ℓ ⊔ ℓ') where
     m-rec   : ∀ {w w' u} →

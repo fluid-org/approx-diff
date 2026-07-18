@@ -18,9 +18,7 @@ import cmon-enriched
 open import categories using (Category; HasProducts; HasTerminal)
 
 -- Big-step evaluation decorated with dependency matrices over a commutative
--- semiring: each step also computes a matrix from the scalar positions of the
--- environment to those of the result. Positions of a closure are those of its
--- captured environment; positions of a base value are given by sort-width.
+-- semiring.
 module language-evaluation-mat
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
   {o e} {A : Setoid o e} (S : CommutativeSemiring A)
@@ -44,7 +42,6 @@ products = cmon-enriched.biproducts→products M.cmon M.biproduct
 
 open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
 
--- Scalar positions of values and environments.
 mutual
   width : ∀ {τ} → Val τ → ℕ
   width unit        = 0
@@ -59,21 +56,18 @@ mutual
   width-env emp     = 0
   width-env (γ · v) = width-env γ + width v
 
--- Total positions of a tuple of base-sort values.
 bases-width : List sort → ℕ
 bases-width []       = 0
 bases-width (s ∷ ss) = sort-width s + bases-width ss
 
--- Casting a value along a type equality preserves its positions.
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl
 
--- Variable lookup as a projection matrix.
 proj-var : ∀ {Γ τ} (x : Γ ∋ τ) (γ : Env Γ) → width-env γ ⇒ width (lookup x γ)
 proj-var zero     (γ · v) = p₂ {width-env γ} {width v}
 proj-var (succ x) (γ · v) = proj-var x γ ∘ p₁ {width-env γ} {width v}
 
--- Both branches of a Boolean value have zero width.
+-- Case on the branch so that the width computes.
 brel-mat : ∀ {Γ} (γ : Env Γ) (b : ⊤ {ℓ'} ⊎ ⊤ {ℓ'}) → width-env γ ⇒ width (bool→val b)
 brel-mat γ (inj₁ _) = to-terminal {width-env γ}
 brel-mat γ (inj₂ _) = to-terminal {width-env γ}
@@ -126,8 +120,7 @@ module WithOpMats
       _∷_ : ∀ {i is v vs R Rs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is} →
             γ ,, M ⇓ const v [ R ] → γ ,, Ms ⇓s vs [ Rs ] → γ ,, (M ∷ Ms) ⇓s (v , vs) [ ⟨ R , Rs ⟩ ]
 
-    -- Functorial action of σ' on the fold s, threading dependency matrices: the
-    -- input matrix tracks the traversed value, the output matrix the mapped one.
+    -- Functorial action of σ' on the fold s, threading dependency matrices.
     data Map {Γ} (γ : Env Γ) {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) :
              (σ' : type 1) (v : Val (σ' [ μ τ₀ ])) → width-env γ ⇒ width v →
              (v' : Val (σ' [ σr ])) → width-env γ ⇒ width v' →
