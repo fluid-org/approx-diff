@@ -207,19 +207,19 @@ module WithAgreement
                  MuRel τ₀ Rel< σ₂ v₂ (pt-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
                        (fib-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a ∘M r ∘M in-free₂ (width v₁) (width v₂)) →
                  MuRel τ₀ Rel< (σ₁ [×] σ₂) (pair v₁ v₂) a r
-    -- TODO nested inductive types: transported points get stuck under the tree
-    -- fibre, defeating unification; needs a reformulation of the coercions.
-    --mrel-mu    : ∀ {τ' : type 2} {w} (a' : Point (unfold₁ τ' [ μ τ₀ ])) (r' : Realiser (unfold₁ τ' [ μ τ₀ ]) w a') → ∀ {a r} →
-    --             MuRel τ₀ Rel< (unfold₁ τ') w a' r' →
-    --             Prf (∃ₚ (idx-≈ ((μ τ') [ μ τ₀ ])
-    --                        (roll-pt (sub (sub-lift (push (μ τ₀))) τ')
-    --                                 (pt-coerce (unfold₁-inst τ' (μ τ₀)) a')) a) λ e →
-    --                  (r ∘M free-coerce (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w))) ≈M
-    --                  (fibre-subst ((μ τ') [ μ τ₀ ]) e
-    --                     ∘M roll-fib (sub (sub-lift (push (μ τ₀))) τ')
-    --                                 (pt-coerce (unfold₁-inst τ' (μ τ₀)) a')
-    --                     ∘M fib-coerce (unfold₁-inst τ' (μ τ₀)) a' ∘M r')) →
-    --             MuRel τ₀ Rel< (μ τ') (roll (≡-subst Val (unfold₁-inst τ' (μ τ₀)) w)) a r
+    mrel-mu    : ∀ {τ' : type 2} {w} (a' : Point (unfold₁ τ' [ μ τ₀ ])) (r' : Realiser (unfold₁ τ' [ μ τ₀ ]) w a') → ∀ {a r} →
+                 MuRel τ₀ Rel< (unfold₁ τ') w a' r' →
+                 Prf (∃ₚ (idx-≈ ((μ τ') [ μ τ₀ ])
+                            (roll-pt (sub (sub-lift (push (μ τ₀))) τ')
+                                     (pt-coerce (unfold₁-inst τ' (μ τ₀)) a')) a) λ e →
+                      (r ∘M free-coerce (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w))) ≈M
+                      (fibre-subst ((μ τ') [ μ τ₀ ])
+                         {roll-pt (sub (sub-lift (push (μ τ₀))) τ')
+                                  (pt-coerce (unfold₁-inst τ' (μ τ₀)) a')} {a} e
+                         ∘M roll-fib (sub (sub-lift (push (μ τ₀))) τ')
+                                     (pt-coerce (unfold₁-inst τ' (μ τ₀)) a')
+                         ∘M fib-coerce (unfold₁-inst τ' (μ τ₀)) a' ∘M r')) →
+                 MuRel τ₀ Rel< (μ τ') (roll (≡-subst Val (unfold₁-inst τ' (μ τ₀)) w)) a r
 
   Rel-acc : (τ : type 0) → Acc _<_ (size τ) → RelSpec τ
   Rel-acc (var ())
