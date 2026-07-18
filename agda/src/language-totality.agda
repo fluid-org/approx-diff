@@ -96,3 +96,38 @@ module WithOp
   TotalEnv : (Γ : ctxt) → Env Γ → Set ℓT
   TotalEnv emp emp = ⊤ₛ {ℓT}
   TotalEnv (Γ ▸ τ) (γ · v) = TotalEnv Γ γ × Total τ v
+
+  mu-total-map : ∀ {τ₀} {T< T<' : (σ : type 0) → size σ < size (μ τ₀) → TSpec σ} →
+                 (∀ σ p {v} → T< σ p v → T<' σ p v) →
+                 ∀ {σ' v} → MuTotal τ₀ T< σ' v → MuTotal τ₀ T<' σ' v
+  mu-total-map f (mt-roll m)     = mt-roll (mu-total-map f m)
+  mu-total-map f mt-unit         = mt-unit
+  mu-total-map f mt-base         = mt-base
+  mu-total-map f (mt-arrow p t)  = mt-arrow p (f _ p t)
+  mu-total-map f (mt-inl m)      = mt-inl (mu-total-map f m)
+  mu-total-map f (mt-inr m)      = mt-inr (mu-total-map f m)
+  mu-total-map f (mt-pair m m')  = mt-pair (mu-total-map f m) (mu-total-map f m')
+  mu-total-map f (mt-mu m)       = mt-mu (mu-total-map f m)
+
+  -- Total-acc does not depend on the accessibility proof.
+  total-irr-acc : ∀ τ → Acc _<_ (size τ) →
+                  ∀ {ac ac' : Acc _<_ (size τ)} {v} →
+                  Total-acc τ ac v → Total-acc τ ac' v
+  total-irr-acc unit _ t = t
+  total-irr-acc (base s) _ t = t
+  total-irr-acc (σ [+] τ) (acc as) {acc rs} {acc rs'} {inl v} t =
+    total-irr-acc σ (as (s≤s (m≤m+n (size σ) (size τ)))) t
+  total-irr-acc (σ [+] τ) (acc as) {acc rs} {acc rs'} {inr v} t =
+    total-irr-acc τ (as (s≤s (m≤n+m (size τ) (size σ)))) t
+  total-irr-acc (σ [×] τ) (acc as) {acc rs} {acc rs'} {pair v u} (t , t') =
+    total-irr-acc σ (as (s≤s (m≤m+n (size σ) (size τ)))) t ,
+    total-irr-acc τ (as (s≤s (m≤n+m (size τ) (size σ)))) t'
+  total-irr-acc (σ [→] τ) (acc as) {acc rs} {acc rs'} {clo γ' t₀} f = λ v tv →
+    let (u , R , D , tu) = f v (total-irr-acc σ (as (s≤s (m≤m+n (size σ) (size τ)))) tv)
+    in u , R , D , total-irr-acc τ (as (s≤s (m≤n+m (size τ) (size σ)))) tu
+  total-irr-acc (μ τ₀) (acc as) {acc rs} {acc rs'} m =
+    mu-total-map (λ σ p t → total-irr-acc σ (as p) t) m
+
+  total-irr : ∀ τ {ac ac' : Acc _<_ (size τ)} {v} →
+              Total-acc τ ac v → Total-acc τ ac' v
+  total-irr τ = total-irr-acc τ (<-wellFounded (size τ))
