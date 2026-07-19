@@ -25,11 +25,11 @@ record Algebra {ℓ} (Sig : Signature ℓ) ℓ' : Set (ℓ ⊔ suc ℓ') where
     op-fun   : ∀ {is o} → op is o → sort-vals sort-val is → sort-val o
     rel-pred : ∀ {is}   → rel is  → sort-vals sort-val is → ⊤ {ℓ'} Sum.⊎ ⊤ {ℓ'}
 
--- The algebra of points of a family model: a sort's values are the points of its interpretation, and an
+-- The index algebra of a family model: a sort's values are the index elements of its interpretation, and an
 -- operation acts as the index part of its interpreting morphism. Rebuilds the Fam structure by the same
 -- constructions as ho-model.Interpretation, so that instantiating with a host's arguments makes its models
 -- fit definitionally.
-module PointsAlgebra
+module IndexAlgebra
   {o : Level}
   (𝒞 : Category o 0ℓ 0ℓ)
   (𝒞-terminal : HasTerminal 𝒞)
@@ -55,19 +55,19 @@ module PointsAlgebra
       module Impl = Model Impl
       open prop-setoid._⇒_ using (func)
 
-    points-val : sort → Set
-    points-val s = Setoid.Carrier (Fam⟨𝒞⟩.Obj.idx (Impl.⟦sort⟧ s))
+    index-val : sort → Set
+    index-val s = Setoid.Carrier (Fam⟨𝒞⟩.Obj.idx (Impl.⟦sort⟧ s))
 
     private
-      tuple : ∀ is → sort-vals points-val is →
+      tuple : ∀ is → sort-vals index-val is →
               Setoid.Carrier (Fam⟨𝒞⟩.Obj.idx (PointedFPCat.list→product PF Impl.⟦sort⟧ is))
       tuple []       _                  = lift tt
       tuple (s ∷ ss) (v Product., vs) = v Product., tuple ss vs
 
-    points-algebra : Algebra Sig 0ℓ
-    points-algebra .Algebra.sort-val = points-val
-    points-algebra .Algebra.op-fun ω vs = func (Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω)) (tuple _ vs)
-    points-algebra .Algebra.rel-pred ω vs
+    index-algebra : Algebra Sig 0ℓ
+    index-algebra .Algebra.sort-val = index-val
+    index-algebra .Algebra.op-fun ω vs = func (Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω)) (tuple _ vs)
+    index-algebra .Algebra.rel-pred ω vs
       with func (Fam⟨𝒞⟩.Mor.idxf (Impl.⟦rel⟧ ω)) (tuple _ vs)
     ... | Sum.inj₁ _ = Sum.inj₁ (lift tt)
     ... | Sum.inj₂ _ = Sum.inj₂ (lift tt)

@@ -32,10 +32,10 @@ import language-operational.algebra as SA
 
 -- Value-level algebra, by projection from the model.
 module Alg-inst where
-  module PA = SA.PointsAlgebra H.BoolAlg.cat H.BoolAlg.terminal H.BoolAlg.products Sig
+  module PA = SA.IndexAlgebra H.BoolAlg.cat H.BoolAlg.terminal H.BoolAlg.products Sig
 
   Alg : Algebra Sig 0ℓ
-  Alg = PA.points-algebra Dep.D.BaseInterp1
+  Alg = PA.index-algebra Dep.D.BaseInterp1
 
   sort-val : sort → Set
   sort-val = Algebra.sort-val Alg

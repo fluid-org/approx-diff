@@ -34,11 +34,11 @@ module language-operational.logical-relation
 
 open Signature Sig
 private
-  module PA = language-operational.algebra.PointsAlgebra BoolAlg.cat BoolAlg.terminal BoolAlg.products Sig
+  module PA = language-operational.algebra.IndexAlgebra BoolAlg.cat BoolAlg.terminal BoolAlg.products Sig
 
--- The value-level algebra is the model's points, so agreement at base sorts is definitional.
+-- The value-level algebra is the model's index elements, so agreement at base sorts is definitional.
 𝒜 : Algebra Sig 0ℓ
-𝒜 = PA.points-algebra Impl
+𝒜 = PA.index-algebra Impl
 
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
@@ -65,16 +65,16 @@ open MES using (X^; F)
 δ₀ : Fin 0 → Fam⟨𝒟⟩.Obj
 δ₀ = λ ()
 
-Point : type 0 → Set
-Point τ = Setoid.Carrier ((⟦ τ ⟧ty δ₀) .idx)
+Index : type 0 → Set
+Index τ = Setoid.Carrier ((⟦ τ ⟧ty δ₀) .idx)
 
-Fibre : (τ : type 0) → Point τ → SM.obj
+Fibre : (τ : type 0) → Index τ → SM.obj
 Fibre τ a = Fam⟨𝒟⟩.fm ((⟦ τ ⟧ty δ₀) .fam) a
 
-idx-≈ : (τ : type 0) → Point τ → Point τ → Prop 0ℓ
+idx-≈ : (τ : type 0) → Index τ → Index τ → Prop 0ℓ
 idx-≈ τ = Setoid._≈_ ((⟦ τ ⟧ty δ₀) .idx)
 
-fibre-subst : (τ : type 0) {a a' : Point τ} → idx-≈ τ a a' → SM._⇒_ (Fibre τ a) (Fibre τ a')
+fibre-subst : (τ : type 0) {a a' : Index τ} → idx-≈ τ a a' → SM._⇒_ (Fibre τ a) (Fibre τ a')
 fibre-subst τ e = Fam⟨𝒟⟩.subst ((⟦ τ ⟧ty δ₀) .fam) e
 
 -- The denotational roll: ⟦ τ [ μ τ ] ⟧ ⇒ ⟦ μ τ ⟧.
@@ -85,11 +85,11 @@ roll-mor τ =
     (sub-as-apply-fwd τ (μ τ))
   where import polynomial-functor
 
-roll-pt : (τ : type 1) → Point (τ [ μ τ ]) → Point (μ τ)
-roll-pt τ a = roll-mor τ .idxf .prop-setoid._⇒_.func a
+roll-ix : (τ : type 1) → Index (τ [ μ τ ]) → Index (μ τ)
+roll-ix τ a = roll-mor τ .idxf .prop-setoid._⇒_.func a
 
-roll-fib : (τ : type 1) (a : Point (τ [ μ τ ])) →
-           SM._⇒_ (Fibre (τ [ μ τ ]) a) (Fibre (μ τ) (roll-pt τ a))
+roll-fib : (τ : type 1) (a : Index (τ [ μ τ ])) →
+           SM._⇒_ (Fibre (τ [ μ τ ]) a) (Fibre (μ τ) (roll-ix τ a))
 roll-fib τ a = roll-mor τ .famf .indexed-family._⇒f_.transf a
   where import indexed-family
 
@@ -99,54 +99,54 @@ private
   infixr 30 _∘M_
 
 -- Coercions along propositional type equality.
-pt-coerce : ∀ {σ σ' : type 0} → σ ≡ σ' → Point σ → Point σ'
-pt-coerce e = ≡-subst Point e
+ix-coerce : ∀ {σ σ' : type 0} → σ ≡ σ' → Index σ → Index σ'
+ix-coerce e = ≡-subst Index e
 
-fib-coerce : ∀ {σ σ' : type 0} (e : σ ≡ σ') (a : Point σ) →
-             SM._⇒_ (Fibre σ a) (Fibre σ' (pt-coerce e a))
+fib-coerce : ∀ {σ σ' : type 0} (e : σ ≡ σ') (a : Index σ) →
+             SM._⇒_ (Fibre σ a) (Fibre σ' (ix-coerce e a))
 fib-coerce refl a = SM.id _
 
 free-coerce : ∀ {m n : ℕ} → m ≡ n → SM._⇒_ (X^ m) (X^ n)
 free-coerce refl = SM.id _
 
 -- Structure maps at points and fibres.
-pt-in₁ : (σ τ : type 0) → Point σ → Point (σ [+] τ)
-pt-in₁ σ τ a = FamCP.in₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func a
+ix-in₁ : (σ τ : type 0) → Index σ → Index (σ [+] τ)
+ix-in₁ σ τ a = FamCP.in₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func a
 
-pt-in₂ : (σ τ : type 0) → Point τ → Point (σ [+] τ)
-pt-in₂ σ τ a = FamCP.in₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func a
+ix-in₂ : (σ τ : type 0) → Index τ → Index (σ [+] τ)
+ix-in₂ σ τ a = FamCP.in₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func a
 
-fib-in₁ : (σ τ : type 0) (a : Point σ) → SM._⇒_ (Fibre σ a) (Fibre (σ [+] τ) (pt-in₁ σ τ a))
+fib-in₁ : (σ τ : type 0) (a : Index σ) → SM._⇒_ (Fibre σ a) (Fibre (σ [+] τ) (ix-in₁ σ τ a))
 fib-in₁ σ τ a = FamCP.in₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf a
   where import indexed-family
 
-fib-in₂ : (σ τ : type 0) (a : Point τ) → SM._⇒_ (Fibre τ a) (Fibre (σ [+] τ) (pt-in₂ σ τ a))
+fib-in₂ : (σ τ : type 0) (a : Index τ) → SM._⇒_ (Fibre τ a) (Fibre (σ [+] τ) (ix-in₂ σ τ a))
 fib-in₂ σ τ a = FamCP.in₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf a
   where import indexed-family
 
-pt-p₁ : (σ τ : type 0) → Point (σ [×] τ) → Point σ
-pt-p₁ σ τ ab = FamP.p₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func ab
+ix-p₁ : (σ τ : type 0) → Index (σ [×] τ) → Index σ
+ix-p₁ σ τ ab = FamP.p₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func ab
 
-pt-p₂ : (σ τ : type 0) → Point (σ [×] τ) → Point τ
-pt-p₂ σ τ ab = FamP.p₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func ab
+ix-p₂ : (σ τ : type 0) → Index (σ [×] τ) → Index τ
+ix-p₂ σ τ ab = FamP.p₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func ab
 
-fib-p₁ : (σ τ : type 0) (ab : Point (σ [×] τ)) →
-         SM._⇒_ (Fibre (σ [×] τ) ab) (Fibre σ (pt-p₁ σ τ ab))
+fib-p₁ : (σ τ : type 0) (ab : Index (σ [×] τ)) →
+         SM._⇒_ (Fibre (σ [×] τ) ab) (Fibre σ (ix-p₁ σ τ ab))
 fib-p₁ σ τ ab = FamP.p₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf ab
   where import indexed-family
 
-fib-p₂ : (σ τ : type 0) (ab : Point (σ [×] τ)) →
-         SM._⇒_ (Fibre (σ [×] τ) ab) (Fibre τ (pt-p₂ σ τ ab))
+fib-p₂ : (σ τ : type 0) (ab : Index (σ [×] τ)) →
+         SM._⇒_ (Fibre (σ [×] τ) ab) (Fibre τ (ix-p₂ σ τ ab))
 fib-p₂ σ τ ab = FamP.p₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf ab
   where import indexed-family
 
 -- Application at points and the evaluation fibre map.
-app-pt : (σ τ : type 0) → Point (σ [→] τ) → Point σ → Point τ
-app-pt σ τ f a = FamE.eval .idxf .prop-setoid._⇒_.func (f , a)
+app-ix : (σ τ : type 0) → Index (σ [→] τ) → Index σ → Index τ
+app-ix σ τ f a = FamE.eval .idxf .prop-setoid._⇒_.func (f , a)
 
-∂ε : (σ τ : type 0) (f : Point (σ [→] τ)) (a : Point σ) →
+∂ε : (σ τ : type 0) (f : Index (σ [→] τ)) (a : Index σ) →
      SM._⇒_ (Fam⟨𝒟⟩.fm ((FamP.prod (⟦ σ [→] τ ⟧ty δ₀) (⟦ σ ⟧ty δ₀)) .fam) (f , a))
-            (Fibre τ (app-pt σ τ f a))
+            (Fibre τ (app-ix σ τ f a))
 ∂ε σ τ f a = FamE.eval {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf (f , a)
   where import indexed-family
 
@@ -180,11 +180,11 @@ module WithPresentation (P : Presentation) where
   open EM using (width; width-env; width-subst; module WithOpMats)
   open WithOpMats op-mat
 
-  Realiser : (τ : type 0) → Val τ → Point τ → Set
+  Realiser : (τ : type 0) → Val τ → Index τ → Set
   Realiser τ v a = SM._⇒_ (X^ (width v)) (Fibre τ a)
 
   RelSpec : type 0 → Set₁
-  RelSpec τ = (v : Val τ) (a : Point τ) → Realiser τ v a → Set
+  RelSpec τ = (v : Val τ) (a : Index τ) → Realiser τ v a → Set
 
   in-free₁ : (m n : ℕ) → SM._⇒_ (X^ m) (X^ (m + n))
   in-free₁ m n = MSA.mat-mor (M.in₁ {m} {n})
@@ -194,12 +194,12 @@ module WithPresentation (P : Presentation) where
 
   data MuRel (τ₀ : type 1)
              (Rel< : (σ : type 0) → size σ < size (μ τ₀) → RelSpec σ) :
-             (σ' : type 1) (v : Val (σ' [ μ τ₀ ])) (a : Point (σ' [ μ τ₀ ])) →
+             (σ' : type 1) (v : Val (σ' [ μ τ₀ ])) (a : Index (σ' [ μ τ₀ ])) →
              Realiser (σ' [ μ τ₀ ]) v a → Set where
     mrel-roll  : ∀ {w a' r' a r} →
                  MuRel τ₀ Rel< τ₀ w a' r' →
-                 Prf (∃ₚ (idx-≈ (μ τ₀) (roll-pt τ₀ a') a) λ e →
-                      r ≈M (fibre-subst (μ τ₀) {roll-pt τ₀ a'} {a} e ∘M roll-fib τ₀ a' ∘M r')) →
+                 Prf (∃ₚ (idx-≈ (μ τ₀) (roll-ix τ₀ a') a) λ e →
+                      r ≈M (fibre-subst (μ τ₀) {roll-ix τ₀ a'} {a} e ∘M roll-fib τ₀ a' ∘M r')) →
                  MuRel τ₀ Rel< (var Fin.zero) (roll w) a r
     mrel-unit  : ∀ {a r} → MuRel τ₀ Rel< unit unit a r
     mrel-base  : ∀ {s c a r} →
@@ -212,31 +212,31 @@ module WithPresentation (P : Presentation) where
                  MuRel τ₀ Rel< (σ₁ [→] σ₂) v a r
     mrel-inl   : ∀ {σ₁ σ₂ : type 1} {v a' r' a r} →
                  MuRel τ₀ Rel< σ₁ v a' r' →
-                 Prf (∃ₚ (idx-≈ ((σ₁ [+] σ₂) [ μ τ₀ ]) (pt-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a') a) λ e →
-                      r ≈M (fibre-subst ((σ₁ [+] σ₂) [ μ τ₀ ]) {pt-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a'} {a} e ∘M fib-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a' ∘M r')) →
+                 Prf (∃ₚ (idx-≈ ((σ₁ [+] σ₂) [ μ τ₀ ]) (ix-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a') a) λ e →
+                      r ≈M (fibre-subst ((σ₁ [+] σ₂) [ μ τ₀ ]) {ix-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a'} {a} e ∘M fib-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a' ∘M r')) →
                  MuRel τ₀ Rel< (σ₁ [+] σ₂) (inl v) a r
     mrel-inr   : ∀ {σ₁ σ₂ : type 1} {v a' r' a r} →
                  MuRel τ₀ Rel< σ₂ v a' r' →
-                 Prf (∃ₚ (idx-≈ ((σ₁ [+] σ₂) [ μ τ₀ ]) (pt-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a') a) λ e →
-                      r ≈M (fibre-subst ((σ₁ [+] σ₂) [ μ τ₀ ]) {pt-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a'} {a} e ∘M fib-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a' ∘M r')) →
+                 Prf (∃ₚ (idx-≈ ((σ₁ [+] σ₂) [ μ τ₀ ]) (ix-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a') a) λ e →
+                      r ≈M (fibre-subst ((σ₁ [+] σ₂) [ μ τ₀ ]) {ix-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a'} {a} e ∘M fib-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a' ∘M r')) →
                  MuRel τ₀ Rel< (σ₁ [+] σ₂) (inr v) a r
     mrel-pair  : ∀ {σ₁ σ₂ : type 1} {v₁ v₂ a r} →
-                 MuRel τ₀ Rel< σ₁ v₁ (pt-p₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
+                 MuRel τ₀ Rel< σ₁ v₁ (ix-p₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
                        (fib-p₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a ∘M r ∘M in-free₁ (width v₁) (width v₂)) →
-                 MuRel τ₀ Rel< σ₂ v₂ (pt-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
+                 MuRel τ₀ Rel< σ₂ v₂ (ix-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
                        (fib-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a ∘M r ∘M in-free₂ (width v₁) (width v₂)) →
                  MuRel τ₀ Rel< (σ₁ [×] σ₂) (pair v₁ v₂) a r
-    mrel-mu    : ∀ {τ' : type 2} {w} (a' : Point (unfold₁ τ' [ μ τ₀ ])) (r' : Realiser (unfold₁ τ' [ μ τ₀ ]) w a') → ∀ {a r} →
+    mrel-mu    : ∀ {τ' : type 2} {w} (a' : Index (unfold₁ τ' [ μ τ₀ ])) (r' : Realiser (unfold₁ τ' [ μ τ₀ ]) w a') → ∀ {a r} →
                  MuRel τ₀ Rel< (unfold₁ τ') w a' r' →
                  Prf (∃ₚ (idx-≈ ((μ τ') [ μ τ₀ ])
-                            (roll-pt (sub (sub-lift (push (μ τ₀))) τ')
-                                     (pt-coerce (unfold₁-inst τ' (μ τ₀)) a')) a) λ e →
+                            (roll-ix (sub (sub-lift (push (μ τ₀))) τ')
+                                     (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')) a) λ e →
                       (r ∘M free-coerce (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w))) ≈M
                       (fibre-subst ((μ τ') [ μ τ₀ ])
-                         {roll-pt (sub (sub-lift (push (μ τ₀))) τ')
-                                  (pt-coerce (unfold₁-inst τ' (μ τ₀)) a')} {a} e
+                         {roll-ix (sub (sub-lift (push (μ τ₀))) τ')
+                                  (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')} {a} e
                          ∘M roll-fib (sub (sub-lift (push (μ τ₀))) τ')
-                                     (pt-coerce (unfold₁-inst τ' (μ τ₀)) a')
+                                     (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')
                          ∘M fib-coerce (unfold₁-inst τ' (μ τ₀)) a' ∘M r')) →
                  MuRel τ₀ Rel< (μ τ') (roll (≡-subst Val (unfold₁-inst τ' (μ τ₀)) w)) a r
 
@@ -247,28 +247,28 @@ module WithPresentation (P : Presentation) where
     Prf (∃ₚ (idx-≈ (base s) c a) λ e →
          r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c))
   Rel-acc (σ [+] τ) (acc rs) (inl v) a r =
-    Σ (Point σ) λ a' → Σ (Realiser σ v a') λ r' →
+    Σ (Index σ) λ a' → Σ (Realiser σ v a') λ r' →
       Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a' r' ×
-      Prf (∃ₚ (idx-≈ (σ [+] τ) (pt-in₁ σ τ a') a) λ e →
-           r ≈M (fibre-subst (σ [+] τ) {pt-in₁ σ τ a'} {a} e ∘M fib-in₁ σ τ a' ∘M r'))
+      Prf (∃ₚ (idx-≈ (σ [+] τ) (ix-in₁ σ τ a') a) λ e →
+           r ≈M (fibre-subst (σ [+] τ) {ix-in₁ σ τ a'} {a} e ∘M fib-in₁ σ τ a' ∘M r'))
   Rel-acc (σ [+] τ) (acc rs) (inr v) a r =
-    Σ (Point τ) λ a' → Σ (Realiser τ v a') λ r' →
+    Σ (Index τ) λ a' → Σ (Realiser τ v a') λ r' →
       Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) v a' r' ×
-      Prf (∃ₚ (idx-≈ (σ [+] τ) (pt-in₂ σ τ a') a) λ e →
-           r ≈M (fibre-subst (σ [+] τ) {pt-in₂ σ τ a'} {a} e ∘M fib-in₂ σ τ a' ∘M r'))
+      Prf (∃ₚ (idx-≈ (σ [+] τ) (ix-in₂ σ τ a') a) λ e →
+           r ≈M (fibre-subst (σ [+] τ) {ix-in₂ σ τ a'} {a} e ∘M fib-in₂ σ τ a' ∘M r'))
   Rel-acc (σ [×] τ) (acc rs) (pair v u) a r =
-    Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v (pt-p₁ σ τ a)
+    Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v (ix-p₁ σ τ a)
             (fib-p₁ σ τ a ∘M r ∘M in-free₁ (width v) (width u)) ×
-    Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (pt-p₂ σ τ a)
+    Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (ix-p₂ σ τ a)
             (fib-p₂ σ τ a ∘M r ∘M in-free₂ (width v) (width u))
   Rel-acc (σ [→] τ) (acc rs) (clo {Γ'} γ' t) f r =
-    ∀ (v : Val σ) (a : Point σ) (rv : Realiser σ v a) →
+    ∀ (v : Val σ) (a : Index σ) (rv : Realiser σ v a) →
     Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a rv →
     Σ (Val τ) λ u →
     Σ (Category._⇒_ M.cat (width-env γ' + width v) (width u)) λ R →
     Σ (γ' · v , t ⇓ u [ R ]) λ _ →
-    Σ (Realiser τ u (app-pt σ τ f a)) λ q →
-      Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (app-pt σ τ f a) q ×
+    Σ (Realiser τ u (app-ix σ τ f a)) λ q →
+      Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (app-ix σ τ f a) q ×
       Prf (((q ∘M MSA.mat-mor R ∘M in-free₁ (width-env γ') (width v)) ≈M
               (∂ε σ τ f a ∘M i⊕₁ ∘M r))
          ∧ ((q ∘M MSA.mat-mor R ∘M in-free₂ (width-env γ') (width v)) ≈M
@@ -279,13 +279,13 @@ module WithPresentation (P : Presentation) where
   Rel : (τ : type 0) → RelSpec τ
   Rel τ = Rel-acc τ (<-wellFounded (size τ))
 
-  PointC : ctxt → Set
-  PointC Γ = Setoid.Carrier ((⟦ Γ ⟧ctxt) .idx)
+  IndexC : ctxt → Set
+  IndexC Γ = Setoid.Carrier ((⟦ Γ ⟧ctxt) .idx)
 
-  FibreC : (Γ : ctxt) → PointC Γ → SM.obj
+  FibreC : (Γ : ctxt) → IndexC Γ → SM.obj
   FibreC Γ g = Fam⟨𝒟⟩.fm ((⟦ Γ ⟧ctxt) .fam) g
 
-  EnvRel : (Γ : ctxt) (γ : Env Γ) (g : PointC Γ) →
+  EnvRel : (Γ : ctxt) (γ : Env Γ) (g : IndexC Γ) →
            SM._⇒_ (X^ (width-env γ)) (FibreC Γ g) → Set
   EnvRel emp emp g r = ⊤ₛ
   EnvRel (Γ ▸ τ) (γ · v) g r =
@@ -301,7 +301,7 @@ module WithPresentation (P : Presentation) where
   -- the existence half of determinism.
   FundamentalProperty : Set
   FundamentalProperty =
-    ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) (g : PointC Γ)
+    ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) (g : IndexC Γ)
       (rγ : SM._⇒_ (X^ (width-env γ)) (FibreC Γ g)) →
     EnvRel Γ γ g rγ →
     Σ (Val τ) λ v →
