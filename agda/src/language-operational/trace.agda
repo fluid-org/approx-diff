@@ -184,8 +184,7 @@ module _ {op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-
     Esₒ ← edgess Es ctx
     pure (Eₒ ++ Esₒ)
 
-  -- ctx: environment ports; ins: ports of the traversed value; returns ports of
-  -- the mapped value.
+  -- ctx: environment ports; ins: ports of the traversed value; returns ports of the mapped value.
   edgesm (m-rec {u = u} m B) ctx ins = do
     Wₒ ← edgesm m ctx ins
     Bₒ ← edges B (ctx ++ Wₒ)

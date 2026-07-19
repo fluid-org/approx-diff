@@ -4,9 +4,8 @@ open import Data.List using (List)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
 
--- Decorations marking the subterms whose runtime values become intermediates.
--- Indexed by terms, so a marking has exactly the shape of its term; the doc
--- constructor leaves the index unchanged.
+-- Decorations marking the subterms whose runtime values become intermediates. Indexed by terms, so a marking
+-- has exactly the shape of its term; the doc constructor leaves the index unchanged.
 module language-operational.marking {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig

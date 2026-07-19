@@ -19,9 +19,8 @@ open import signature using (Signature)
 open import signature-algebra using (Algebra; sort-vals)
 import matrix
 
--- Computability (totality) predicate on values: the existence content of the
--- logical relation, without the denotational component. Its fundamental lemma
--- is normalisation, yielding a total evaluator.
+-- Computability (totality) predicate on values: the existence content of the logical relation, without the
+-- denotational component. Its fundamental lemma is normalisation, yielding a total evaluator.
 module language-operational.totality
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
   {o e} {A : Setoid o e} (S : CommutativeSemiring A)
@@ -186,9 +185,8 @@ module WithOp
                  Total σ v → Total σ' (≡-subst Val e v)
   total-coerce refl t = t
 
-  -- Totality at a substituted type versus membership of the mu family. The
-  -- nested case crosses between the outer family and the family of the inner
-  -- body through Total at the propositionally equal type.
+  -- Totality at a substituted type versus membership of the mu family. The nested case crosses between the
+  -- outer family and the family of the inner body through Total at the propositionally equal type.
   fold-tot-acc : ∀ (τ₀ σ' : type 1) → arr-bound (size (μ τ₀)) σ' →
                  ∀ {v : Val (σ' [ μ τ₀ ])} → Acc _<_ (vsize v) →
                  Total (σ' [ μ τ₀ ]) v → MuT τ₀ σ' v
@@ -317,8 +315,7 @@ module WithOp
                         (arr-self (sub (sub-lift (push σr)) τ'))
                         (total-coerce (unfold₁-inst τ' σr) tw')))
 
-  -- Fundamental lemma: every well-typed term evaluates, with a dependency
-  -- matrix, to a total value.
+  -- Fundamental lemma: every well-typed term evaluates, with a dependency matrix, to a total value.
   Eval : ∀ {Γ} (γ : Env Γ) {τ} (t : Γ ⊢ τ) → Set ℓT
   Eval γ {τ} t =
     Σ (Val τ) λ v → Σ (width-env γ ⇒ width v) λ R → (γ , t ⇓ v [ R ]) × Total τ v

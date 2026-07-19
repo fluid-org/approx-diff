@@ -57,8 +57,7 @@ run-add = TotOp.fundamental M-add (emp · const 0ℚ · const 1ℚ) ((tt , tt) ,
 D-add = proj₁ (proj₂ (proj₂ run-add))
 
 ------------------------------------------------------------------------
--- Sum the numbers paired with a given label in a list of (label, number)
--- pairs, fused into a single fold.
+-- Sum the numbers paired with a given label in a list of (label, number) pairs, fused into a single fold.
 
 elem : type 0
 elem = base label [×] base number

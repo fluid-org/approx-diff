@@ -1,7 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Writes dot and trace renderings of the harness examples; run from the paper
--- repository root.
+-- Writes dot and trace renderings of the harness examples; run from the paper repository root.
 module example.dump-graphs where
 
 open import IO

@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Instantiation of the logical relation at the example signature: Boolean
--- dependency model over rational data.
+-- Instantiation of the logical relation at the example signature: Boolean dependency model over rational
+-- data.
 module example.relation-boolean where
 
 open import Level using (0ℓ; lift)

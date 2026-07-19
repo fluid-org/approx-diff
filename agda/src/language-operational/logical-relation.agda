@@ -20,10 +20,9 @@ open import categories using (Category; HasProducts; HasTerminal; HasCoproducts;
 import matrix-embedding-semimod
 import ho-model-sd-semimod
 
--- Logical relation between the operational semantics and the interpretation in
--- Fam(SemiMod(𝟚)), in existential (computability) form. Defined by well-founded
--- recursion on type size: at an inductive type the relation is an inductive
--- family that consumes the value, taking the relation at smaller types as a
+-- Logical relation between the operational semantics and the interpretation in Fam(SemiMod(𝟚)), in
+-- existential (computability) form. Defined by well-founded recursion on type size: at an inductive type the
+-- relation is an inductive family that consumes the value, taking the relation at smaller types as a
 -- parameter, with the size bound carried by the arrow-leaf constructor.
 module language-operational.logical-relation
   (Sig : Signature 0ℓ) (𝒜 : Algebra Sig 0ℓ)
@@ -278,8 +277,8 @@ module WithAgreement
            ∘M r ∘M in-free₂ (width-env γ) (width v))
     where import indexed-family
 
-  -- Statement only; the proof is future work and yields eval (totality),
-  -- soundness at first-order types, and the existence half of determinism.
+  -- Statement only; the proof is future work and yields eval (totality), soundness at first-order types, and
+  -- the existence half of determinism.
   FundamentalProperty : Set
   FundamentalProperty =
     ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) (g : PointC Γ)

@@ -17,8 +17,7 @@ import matrix
 import cmon-enriched
 open import categories using (Category; HasProducts; HasTerminal)
 
--- Big-step evaluation decorated with dependency matrices over a commutative
--- semiring.
+-- Big-step evaluation decorated with dependency matrices over a commutative semiring.
 module language-operational.evaluation-mat
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
   {o e} {A : Setoid o e} (S : CommutativeSemiring A)

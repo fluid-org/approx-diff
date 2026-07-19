@@ -16,11 +16,10 @@ open import signature using (Signature)
 open import signature-algebra using (Algebra)
 import matrix
 
--- Instrumentation of evaluation derivations: given a marking of the term,
--- computes the sequence of intermediates and the dependency matrix over the
--- extended domain, the data of the instrumented judgement, by structural
--- recursion on the derivation. Markings flow through values, so that the body
--- run at an application site carries the marking captured by its closure.
+-- Instrumentation of evaluation derivations: given a marking of the term, computes the sequence of
+-- intermediates and the dependency matrix over the extended domain, the data of the instrumented judgement,
+-- by structural recursion on the derivation. Markings flow through values, so that the body run at an
+-- application site carries the marking captured by its closure.
 module language-operational.instrument
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
   {o e} {A : Setoid o e} (S : CommutativeSemiring A)
@@ -72,8 +71,8 @@ inj-last g n w i j with splitAt g j
 ...   | inj₁ _ = CS.ε
 ...   | inj₂ c = M.I i c
 
--- Substitute a frame E for the environment block, passing the k newest
--- intermediates through: the block matrix [E 0; 0 I].
+-- Substitute a frame E for the environment block, passing the k newest intermediates through: the block
+-- matrix [E 0; 0 I].
 frame-emb : ∀ {g'} (g p k : ℕ) → M.Matrix g' (g + p) → M.Matrix (g' + k) (g + (p + k))
 frame-emb {g'} g p k E = stack g' k (widen g p k E) (inj-last g p k)
 
@@ -95,8 +94,7 @@ seq-cast refl Φ = Φ
 mcast : ∀ {t} (g : ℕ) {m n} → m ≡ n → M.Matrix t (g + m) → M.Matrix t (g + n)
 mcast g refl A = A
 
--- Append a sequence produced under environment g', rewriting each entry's
--- environment block by the frame E.
+-- Append a sequence produced under environment g', rewriting each entry's environment block by the frame E.
 append-subst : ∀ {g g' p n} → Seq g p → M.Matrix g' (g + p) → Seq g' n → Seq g (p + n)
 append-subst {p = p} Φ E ∅ = seq-cast (sym (+-identityʳ p)) Φ
 append-subst {g} {g'} {p} Φ E (snoc {n} Ψ w Sm) =

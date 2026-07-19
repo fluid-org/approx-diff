@@ -10,8 +10,8 @@ import matrix-functor
 import matrix-embedding-semimod
 import semimodule
 
--- Action of Mat(S) on the free semimodules X^ n, via the isomorphism of S with
--- the endomorphism semiring of 𝕀 and the embedding of matrices over the latter.
+-- Action of Mat(S) on the free semimodules X^ n, via the isomorphism of S with the endomorphism semiring of 𝕀
+-- and the embedding of matrices over the latter.
 module matrix-semimod-action {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 private

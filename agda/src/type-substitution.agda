@@ -8,8 +8,8 @@ open import Data.Unit using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import signature using (Signature)
 
--- Fusion laws for type-level renaming and substitution, and the unfolding law
--- used to traverse values of nested inductive types.
+-- Fusion laws for type-level renaming and substitution, and the unfolding law used to traverse values of
+-- nested inductive types.
 module type-substitution {ℓ} (Sig : Signature ℓ) where
 
 open import language-syntax Sig hiding (_,_)
@@ -119,8 +119,8 @@ size (σ [×] τ) = suc (size σ + size τ)
 size (σ [→] τ) = suc (size σ + size τ)
 size (μ τ)     = suc (size τ)
 
--- All arrow leaves have size below the bound. Substitution preserves arrow
--- leaves verbatim, so the bound survives renaming, substitution and unfolding.
+-- All arrow leaves have size below the bound. Substitution preserves arrow leaves verbatim, so the bound
+-- survives renaming, substitution and unfolding.
 arr-bound : ∀ {Δ} → ℕ → type Δ → Set
 arr-bound n (var i)     = ⊤
 arr-bound n unit        = ⊤
