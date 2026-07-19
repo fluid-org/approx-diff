@@ -10,29 +10,21 @@ open import Data.Rational using (ℚ)
 open import categories using (Category)
 open import language-operational.algebra using (Algebra)
 import ho-model-boolalg-sd-semimod
-import cmon-enriched
-import semimodule
-import semiring-Q
 import two
 import matrix
-import matrix-embedding-semimod
 import language-operational.logical-relation
-open import example.signature ℚ
-  using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
-         approx-unit; approx-mult)
+open import example.signature ℚ using (Sig; sort; number; label; approx; op)
 import example.dependency
 
-module SemiMod-𝟚 = semimodule two.semiring
 module Dep = example.dependency
 
 private
   module H = ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean
 
-import language-operational.algebra as SA
-
 -- Value-level algebra, by projection from the model.
 module Alg-inst where
-  module PA = SA.IndexAlgebra H.BoolAlg.cat H.BoolAlg.terminal H.BoolAlg.products Sig
+  module PA = language-operational.algebra.IndexAlgebra
+                H.BoolAlg.cat H.BoolAlg.terminal H.BoolAlg.products Sig
 
   Alg : Algebra Sig 0ℓ
   Alg = PA.index-algebra Dep.D.BaseInterp1
