@@ -23,7 +23,7 @@ open import language-evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
 open import language-evaluation-mat Sig Alg-inst.Alg two.semiring sort-width
   using (width-env; module WithOpMats)
-open WithOpMats op-mat using (_,,_⇓_[_])
+open WithOpMats op-mat using (_,_⇓_[_])
 
 show-lbl : L.label → String
 show-lbl L.a = "a"
@@ -42,7 +42,7 @@ show-op approx-mult = "approx-mult"
 open import language-trace Sig Alg-inst.Alg sort-width show-op
 
 dep-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} →
-            γ ,, t ⇓ v [ R ] → List Edge
+            γ , t ⇓ v [ R ] → List Edge
 dep-graph {γ = γ} D =
   proj₂ (proj₂ (edges D (applyUpTo (λ i → i) (width-env γ)) (width-env γ)))
 

@@ -247,7 +247,7 @@ module WithAgreement
     Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a rv →
     Σ (Val τ) λ u →
     Σ (Category._⇒_ M.cat (width-env γ' + width v) (width u)) λ R →
-    Σ (γ' · v ,, t ⇓ u [ R ]) λ _ →
+    Σ (γ' · v , t ⇓ u [ R ]) λ _ →
     Σ (Realiser τ u (app-pt σ τ f a)) λ q →
       Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (app-pt σ τ f a) q ×
       Prf (((q ∘M mat-mor R ∘M in-free₁ (width-env γ') (width v)) ≈M
@@ -287,7 +287,7 @@ module WithAgreement
     EnvRel Γ γ g rγ →
     Σ (Val τ) λ v →
     Σ (Category._⇒_ M.cat (width-env γ) (width v)) λ R →
-    Σ (γ ,, t ⇓ v [ R ]) λ _ →
+    Σ (γ , t ⇓ v [ R ]) λ _ →
     Σ (Realiser τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g)) λ q →
       Rel τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g) q ×
       Prf ((q ∘M mat-mor R) ≈M (mor t g ∘M rγ))
