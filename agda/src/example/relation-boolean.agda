@@ -4,12 +4,19 @@
 -- data.
 module example.relation-boolean where
 
-open import Level using (lift)
+open import Level using (0ℓ; lift)
+open import Data.List using (List; []; _∷_)
+open import Data.Product using (_,_)
+open import Data.Sum using (inj₁; inj₂)
 open import Data.Nat using (ℕ)
 open import Data.Unit using (⊤; tt)
 open import Data.Rational using (ℚ)
 open import categories using (Category)
 open import commutative-semiring using (CommutativeSemiring)
+open import prop-setoid using (Setoid)
+open import signature using (Model; PointedFPCat; PFPC[_,_,_,_])
+open import signature-algebra using (Algebra; sort-vals)
+import ho-model-boolalg-sd-semimod
 import cmon-enriched
 import semimodule
 import semiring-Q
@@ -28,10 +35,32 @@ module SemiMod-𝟚 = semimodule two.semiring
 module Dep = example.dependency
 
 private
-  module Num = CommutativeSemiring semiring-Q.semiring
+  module H = ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean
+  module Impl = Model Dep.D.BaseInterp1
+  open prop-setoid._⇒_ using (func)
 
--- Value-level algebra: rational arithmetic, trivial approx carrier.
-module Alg-inst = example.algebra ℚ Num._+_ Num._·_ ⊤ tt (λ _ _ → tt)
+-- Value-level algebra, by projection from the model: a sort's values are the points of its
+-- interpretation, and an operation acts as the index part of its interpreting morphism.
+module Alg-inst where
+  sort-val : sort → Set
+  sort-val s = Setoid.Carrier (H.Fam⟨𝒞⟩.Obj.idx (Impl.⟦sort⟧ s))
+
+  private
+    PF : PointedFPCat _ _ _
+    PF = PFPC[ H.Fam⟨𝒞⟩.cat , H.Fam⟨𝒞⟩-terminal , H.Fam⟨𝒞⟩-products , H.Fam⟨𝒞⟩-bool ]
+
+    tuple : ∀ is → sort-vals sort-val is →
+            Setoid.Carrier (H.Fam⟨𝒞⟩.Obj.idx (PointedFPCat.list→product PF Impl.⟦sort⟧ is))
+    tuple []       _        = lift tt
+    tuple (s ∷ ss) (v , vs) = v , tuple ss vs
+
+  Alg : Algebra Sig 0ℓ
+  Alg .Algebra.sort-val = sort-val
+  Alg .Algebra.op-fun ω vs = func (H.Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω)) (tuple _ vs)
+  Alg .Algebra.rel-pred ω vs
+    with func (H.Fam⟨𝒞⟩.Mor.idxf (Impl.⟦rel⟧ ω)) (tuple _ vs)
+  ... | inj₁ _ = inj₁ (lift tt)
+  ... | inj₂ _ = inj₂ (lift tt)
 
 sort-width : sort → ℕ
 sort-width number = 1
