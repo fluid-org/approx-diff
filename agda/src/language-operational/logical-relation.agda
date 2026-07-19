@@ -13,6 +13,7 @@ open import prop using (Prf; ∃ₚ; _∧_)
 import matrix
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
+import two
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import signature-algebra using (Algebra)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
@@ -20,14 +21,13 @@ import matrix-embedding-semimod
 import ho-model-sd-semimod
 
 -- Logical relation between the operational semantics and the interpretation in
--- Fam(SemiMod(S)), in existential (computability) form. Defined by well-founded
+-- Fam(SemiMod(𝟚)), in existential (computability) form. Defined by well-founded
 -- recursion on type size: at an inductive type the relation is an inductive
 -- family that consumes the value, taking the relation at smaller types as a
 -- parameter, with the size bound carried by the arrow-leaf constructor.
 module language-operational.logical-relation
-  {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (Sig : Signature 0ℓ) (𝒜 : Algebra Sig 0ℓ)
-  (open ho-model-sd-semimod S)
+  (open ho-model-sd-semimod two.semiring)
   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
   (sort-width : Signature.sort Sig → ℕ)
   where
@@ -37,7 +37,7 @@ open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_)
-open import language-operational.evaluation-mat Sig 𝒜 S sort-width
+open import language-operational.evaluation-mat Sig 𝒜 two.semiring sort-width
   using (width; width-env; bases-width; width-subst; module WithOpMats)
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
 
@@ -49,9 +49,9 @@ private
   module FamE  = HasExponentials Fam⟨𝒟⟩-exponentials
 
 private
-  module MES = matrix-embedding-semimod S
+  module MES = matrix-embedding-semimod two.semiring
   module SM = Category SemiMod.cat
-  module M = matrix.Mat S
+  module M = matrix.Mat two.semiring
 
 open MES using (X^; F)
 

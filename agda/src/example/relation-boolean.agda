@@ -81,7 +81,7 @@ sort-width label  = 0
 sort-width approx = 1
 
 module MSA = matrix-semimod-action two.semiring
-module LR = language-operational.logical-relation two.semiring Sig Alg-inst.Alg D.BaseInterp1 sort-width
+module LR = language-operational.logical-relation Sig Alg-inst.Alg D.BaseInterp1 sort-width
 
 open import language-syntax Sig using (base)
 open import language-operational.evaluation-mat Sig Alg-inst.Alg two.semiring sort-width using (bases-width)
