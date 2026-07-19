@@ -7,7 +7,7 @@ open import signature using (Signature)
 -- Decorations marking the subterms whose runtime values become intermediates.
 -- Indexed by terms, so a marking has exactly the shape of its term; the doc
 -- constructor leaves the index unchanged.
-module operational.marking {ℓ} (Sig : Signature ℓ) where
+module language-operational.marking {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig
 open import language-syntax Sig renaming (_,_ to _▸_)

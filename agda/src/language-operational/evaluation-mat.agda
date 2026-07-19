@@ -19,7 +19,7 @@ open import categories using (Category; HasProducts; HasTerminal)
 
 -- Big-step evaluation decorated with dependency matrices over a commutative
 -- semiring.
-module operational.evaluation-mat
+module language-operational.evaluation-mat
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
   {o e} {A : Setoid o e} (S : CommutativeSemiring A)
   (sort-width : Signature.sort Sig → ℕ)
@@ -29,7 +29,7 @@ open Signature Sig
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import type-substitution Sig using (unfold₁; unfold₁-inst)
-open import operational.evaluation Sig 𝒜 using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
+open import language-operational.evaluation Sig 𝒜 using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
 
 private
   module M = matrix.Mat S

@@ -10,7 +10,7 @@ open import Data.Rational using (ℚ)
 open import example.signature ℚ using (Sig)
 open import example.relation-boolean using (sort-width; module Alg-inst)
 open import example.trace-boolean using (show-op; dep-graph; D-add; D-query)
-open import operational.trace Sig Alg-inst.Alg sort-width show-op
+open import language-operational.trace Sig Alg-inst.Alg sort-width show-op
   using (show-eval; showDot)
 
 main : Main
