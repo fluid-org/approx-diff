@@ -41,38 +41,23 @@ module Alg-inst where
   sort-val = Algebra.sort-val Alg
 
 sort-width : sort → ℕ
-sort-width number = 1
-sort-width label  = 0
-sort-width approx = 1
-
-module LR = language-operational.logical-relation Sig Dep.D.BaseInterp1
-
-open import language-syntax Sig using (base)
-open import language-operational.evaluation-mat Sig Alg-inst.Alg two.semiring sort-width using (bases-width)
+sort-width = Dep.sort-width
 
 private
   module M𝟚 = matrix.Mat two.semiring
-  module MES𝟚 = matrix-embedding-semimod two.semiring
-  open cmon-enriched using (Biproduct)
 
-sort-can : ∀ s (c : Alg-inst.sort-val s) →
-           Category._⇒_ SemiMod-𝟚.cat (MES𝟚.X^ (sort-width s))
-                        (LR.Fibre (base s) c)
-sort-can number _ = Biproduct.p₁ (SemiMod-𝟚.biproduct SemiMod-𝟚.𝕀 SemiMod-𝟚.𝟘)
-sort-can label  _ = SemiMod-𝟚.ε-map _ _
-sort-can approx _ = Biproduct.p₁ (SemiMod-𝟚.biproduct SemiMod-𝟚.𝕀 SemiMod-𝟚.𝟘)
+op-mat : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (Dep.bases-width is) (sort-width o')
+op-mat = Dep.op-mat
 
-op-mat : ∀ {is o'} → op is o' →
-         Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
-op-mat (lit n)     = λ i ()
-op-mat add         = λ i j → two.I
-op-mat mult        = λ i j → two.I
-op-mat (lbl l)     = λ ()
-op-mat approx-unit = λ i ()
-op-mat approx-mult = λ i j → two.I
+module LR = language-operational.logical-relation Sig Dep.D.BaseInterp1
 
 pres : LR.Presentation
 pres = record { sort-width = sort-width ; sort-can = sort-can ; op-mat = op-mat }
+  where
+  sort-can : ∀ s (c : Alg-inst.sort-val s) → _
+  sort-can number _ = Dep.sort-can number
+  sort-can label  _ = Dep.sort-can label
+  sort-can approx _ = Dep.sort-can approx
 
 module Inst = LR.WithPresentation pres
 

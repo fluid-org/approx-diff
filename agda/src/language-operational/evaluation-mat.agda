@@ -56,8 +56,7 @@ mutual
   width-env (γ · v) = width-env γ + width v
 
 bases-width : List sort → ℕ
-bases-width []       = 0
-bases-width (s ∷ ss) = sort-width s + bases-width ss
+bases-width = sorts-width sort-width
 
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl

@@ -11,6 +11,11 @@ import cmon-enriched
 import prop
 import semimodule
 import sd-semimodule
+import matrix
+open import functor using (Functor)
+open import Data.List using (List; []; _∷_)
+import Data.Nat
+open import Data.Nat using (ℕ)
 import boolalg-sd-semimodule
 import ho-model-boolalg-sd-semimod
 import semiring-Q
@@ -30,7 +35,8 @@ open import Data.Rational using () renaming (_≟_ to _≟ℚ_)
 open import Data.Nat.Base public using (nonZero)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
-open import example.signature ℚ using (Sig; number; label; approx) public
+open import example.signature ℚ using (Sig; sort; number; label; approx; op; lit; add; mult; lbl; approx-mult) public
+  renaming (approx-unit to op-approx-unit)
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ 0ℚ
@@ -40,6 +46,7 @@ open import prop using (liftS; LiftS)
 
 -- Model instantiation: Boolean approximations over rational data.
 module BoolAlg-𝟚 = boolalg-sd-semimodule two.semiring two.semiring-boolean
+module FO𝟚 = ho-model-boolalg-sd-semimod.FO two.semiring two.semiring-boolean
 module SDSemiMod-𝟚 = sd-semimodule two.semiring
 module SemiMod-𝟚 = semimodule two.semiring
 open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_; εm)
@@ -89,3 +96,29 @@ open indexed-family._⇒f_ public
 open SemiMod-𝟚._⇒_ public
 open BoolAlg-𝟚.SelfDualBooleanAlgebra public using (selfDual)
 
+-- The per-sort fibre choices; widths and canonical maps are computed from them.
+sort-fibre : sort → FO𝟚.FreeObj
+sort-fibre number = FO𝟚.gen
+sort-fibre label  = FO𝟚.unit
+sort-fibre approx = FO𝟚.gen
+
+sort-width : sort → ℕ
+sort-width s = FO𝟚.fwidth (sort-fibre s)
+
+sort-can : ∀ s → Category._⇒_ SemiMod-𝟚.cat (FO𝟚.X^ᴰ (sort-width s))
+                              (BoolAlg-𝟚.U .Functor.fobj (FO𝟚.⟦ sort-fibre s ⟧f))
+sort-can s = FO𝟚.canonical (sort-fibre s)
+
+private
+  module M𝟚 = matrix.Mat two.semiring
+
+bases-width : List sort → ℕ
+bases-width = sorts-width sort-width
+
+op-mat : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
+op-mat (lit n)     = λ i ()
+op-mat add         = λ i j → two.I
+op-mat mult        = λ i j → two.I
+op-mat (lbl l)     = λ ()
+op-mat op-approx-unit = λ i ()
+op-mat approx-mult = λ i j → two.I

@@ -115,6 +115,11 @@ sub-ren-id (μ τ)       σ∘ρ≡id = cong μ (sub-ren-id τ lifted)
     lifted zero    = refl
     lifted (suc i) rewrite σ∘ρ≡id i = refl
 
+-- Total width of a list of sorts under a per-sort width assignment.
+sorts-width : (sort → ℕ) → List sort → ℕ
+sorts-width w []       = 0
+sorts-width w (s ∷ ss) = w s + sorts-width w ss
+
 data ctxt : Set ℓ where
   emp : ctxt
   _,_ : ctxt → type 0 → ctxt
