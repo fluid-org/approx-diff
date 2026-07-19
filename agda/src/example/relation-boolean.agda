@@ -21,7 +21,6 @@ import language-operational.logical-relation
 open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
          approx-unit; approx-mult)
-import example.algebra
 import example.dependency
 
 module SemiMod-𝟚 = semimodule two.semiring
