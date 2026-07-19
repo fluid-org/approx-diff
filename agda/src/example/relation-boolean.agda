@@ -23,7 +23,7 @@ import prop
 import matrix
 import matrix-semimod-action
 import matrix-embedding-semimod
-import logical-relation
+import language-operational.logical-relation
 open import signature using (Model)
 open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
@@ -81,7 +81,7 @@ sort-width label  = 0
 sort-width approx = 1
 
 module MSA = matrix-semimod-action two.semiring
-module LR = logical-relation two.semiring Sig Alg-inst.Alg D.BaseInterp1 sort-width
+module LR = language-operational.logical-relation two.semiring Sig Alg-inst.Alg D.BaseInterp1 sort-width
 
 open import language-syntax Sig using (base)
 open import language-operational.evaluation-mat Sig Alg-inst.Alg two.semiring sort-width using (bases-width)

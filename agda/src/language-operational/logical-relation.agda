@@ -24,7 +24,7 @@ import ho-model-sd-semimod
 -- recursion on type size: at an inductive type the relation is an inductive
 -- family that consumes the value, taking the relation at smaller types as a
 -- parameter, with the size bound carried by the arrow-leaf constructor.
-module logical-relation
+module language-operational.logical-relation
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (Sig : Signature 0ℓ) (𝒜 : Algebra Sig 0ℓ)
   (open ho-model-sd-semimod S)
