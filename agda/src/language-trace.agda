@@ -41,9 +41,9 @@ var-to-ℕ (succ x) = suc (var-to-ℕ x)
 
 module _ {op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
 
-  show-eval  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _⊢_⇓_[_] op-mat γ t v R → String
+  show-eval  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,,_⇓_[_] op-mat γ t v R → String
   show-evals : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-               _⊢_⇓s_[_] op-mat γ Ms vs R → List String
+               _,,_⇓s_[_] op-mat γ Ms vs R → List String
   show-map   : ∀ {Γ} {γ : Env Γ} {τ₀ σr} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} {σ' v R v' R'} →
                Map op-mat γ {τ₀} {σr} s σ' v R v' R' → String
 
@@ -124,10 +124,10 @@ private
 
 module _ {op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
 
-  edges  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _⊢_⇓_[_] op-mat γ t v R →
+  edges  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,,_⇓_[_] op-mat γ t v R →
            List ℕ → GraphWriter (List ℕ)
   edgess : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-           _⊢_⇓s_[_] op-mat γ Ms vs R → List ℕ → GraphWriter (List ℕ)
+           _,,_⇓s_[_] op-mat γ Ms vs R → List ℕ → GraphWriter (List ℕ)
   edgesm : ∀ {Γ} {γ : Env Γ} {τ₀ σr} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} {σ' v R v' R'} →
            Map op-mat γ {τ₀} {σr} s σ' v R v' R' → List ℕ → List ℕ → GraphWriter (List ℕ)
 
