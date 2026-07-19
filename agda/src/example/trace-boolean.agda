@@ -17,13 +17,14 @@ open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
          approx-unit; approx-mult; rel; equal-label)
 open import example.relation-boolean
-  using (sort-width; op-rel; module Alg-inst; module Tot; module TotOp)
+  using (module Alg-inst; module Tot; module TotOp)
+import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
-open import language-operational.evaluation-mat Sig Alg-inst.Alg sort-width
+open import language-operational.evaluation-mat Sig Alg-inst.Alg (λ s → Dep.FO𝟚.fwidth (Dep.sort-fibre s))
   using (width-env; module WithOpRels)
-open WithOpRels op-rel using (_,_⇓_[_])
+open WithOpRels Dep.op-rel using (_,_⇓_[_])
 
 show-lbl : L.label → String
 show-lbl L.a = "a"
@@ -39,7 +40,7 @@ show-op (lbl l)     = Data.String._++_ "lbl-" (show-lbl l)
 show-op approx-unit = "approx-unit"
 show-op approx-mult = "approx-mult"
 
-open import language-operational.trace Sig Alg-inst.Alg sort-width show-op
+open import language-operational.trace Sig Alg-inst.Alg (λ s → Dep.FO𝟚.fwidth (Dep.sort-fibre s)) show-op
 
 dep-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} →
             γ , t ⇓ v [ R ] → List Edge

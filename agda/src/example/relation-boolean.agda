@@ -32,24 +32,15 @@ module Alg-inst where
   sort-val : sort → Set
   sort-val = Algebra.sort-val Alg
 
-sort-width : sort → ℕ
-sort-width = Dep.sort-width
-
-private
-  module M𝟚 = matrix.Mat two.semiring
-
-op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (Dep.bases-width is) (sort-width o')
-op-rel = Dep.op-rel
-
 module LR = language-operational.logical-relation Sig Dep.D.BaseInterp1
 
 pres : LR.Presentation
-pres = record { sort-width = sort-width ; sort-can = sort-can ; op-rel = op-rel }
+pres = record { sort-fibre = Dep.sort-fibre ; sort-can = sort-can ; op-rel = Dep.op-rel }
   where
   sort-can : ∀ s (c : Alg-inst.sort-val s) → _
-  sort-can number _ = Dep.sort-can number
-  sort-can label  _ = Dep.sort-can label
-  sort-can approx _ = Dep.sort-can approx
+  sort-can number _ = Dep.FO𝟚.canonical (Dep.sort-fibre number)
+  sort-can label  _ = Dep.FO𝟚.canonical (Dep.sort-fibre label)
+  sort-can approx _ = Dep.FO𝟚.canonical (Dep.sort-fibre approx)
 
 module Inst = LR.WithPresentation pres
 
@@ -59,9 +50,9 @@ FP = Inst.FundamentalProperty
 
 -- Totality, the evaluator and the instrumentation, at the same model.
 import language-operational.totality
-module Tot = language-operational.totality Sig Alg-inst.Alg sort-width
-module TotOp = Tot.WithOp op-rel
+module Tot = language-operational.totality Sig Alg-inst.Alg (λ s → H.FO.fwidth (Dep.sort-fibre s))
+module TotOp = Tot.WithOp Dep.op-rel
 
 import language-operational.instrument
-module Instr = language-operational.instrument Sig Alg-inst.Alg sort-width
-module InstrOp = Instr.WithOp op-rel
+module Instr = language-operational.instrument Sig Alg-inst.Alg (λ s → H.FO.fwidth (Dep.sort-fibre s))
+module InstrOp = Instr.WithOp Dep.op-rel

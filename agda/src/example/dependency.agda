@@ -73,8 +73,11 @@ private
   num-mult .func (x , y) = x Scalars.· y
   num-mult .func-resp-≈ e = Scalars.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
-open import example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
+import example.signature-interpretation
+module SI = example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
   Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+open SI
+open SI using (sort-fibre) public
 
 -- Boolean-collapse derivative coefficient: zero map at 0, identity elsewhere.
 private
@@ -96,26 +99,13 @@ open indexed-family._⇒f_ public
 open SemiMod-𝟚._⇒_ public
 open BoolAlg-𝟚.SelfDualBooleanAlgebra public using (selfDual)
 
--- The per-sort fibre choices; widths and canonical maps are computed from them.
-sort-fibre : sort → FO𝟚.FreeObj
-sort-fibre number = FO𝟚.gen
-sort-fibre label  = FO𝟚.unit
-sort-fibre approx = FO𝟚.gen
-
-sort-width : sort → ℕ
-sort-width s = FO𝟚.fwidth (sort-fibre s)
-
-sort-can : ∀ s → Category._⇒_ SemiMod-𝟚.cat (FO𝟚.X^ᴰ (sort-width s))
-                              (BoolAlg-𝟚.U .Functor.fobj (FO𝟚.⟦ sort-fibre s ⟧f))
-sort-can s = FO𝟚.canonical (sort-fibre s)
-
 private
   module M𝟚 = matrix.Mat two.semiring
 
 bases-width : List sort → ℕ
-bases-width = sorts-width sort-width
+bases-width = sorts-width (λ s → FO𝟚.fwidth (sort-fibre s))
 
-op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
+op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (FO𝟚.fwidth (sort-fibre o'))
 op-rel (lit n)     = λ i ()
 op-rel add         = λ i j → two.I
 op-rel mult        = λ i j → two.I

@@ -381,8 +381,9 @@ module Interpretation
                       (Glued.≈-trans (Glued.∘-cong Glued.≈-refl (GlCPM.copair-in₂ _ _))
                         (Glued.≈-trans (Glued.≈-sym (GF .fmor-comp _ _)) (GF .fmor-cong (B.copair-in₂ _ _))))
 
-  -- Fibre objects chosen syntactically, so that widths and canonical maps into the free semimodules are
-  -- computed from the choice rather than restated beside it.
+  -- Fibre objects are chosen syntactically; widths and canonical maps into the free semimodules are
+  -- computed from the choice. The description and its width live in free-object; here we add the free
+  -- 𝒟-object and the canonical map into the F-image of the fibre.
   module FreeObjects where
 
     private
@@ -393,20 +394,7 @@ module Interpretation
       module CP = HasProducts 𝒞-products
       module DP = HasProducts (biproducts→products _ 𝒟-biproducts)
 
-    data FreeObj : Set where
-      gen  : FreeObj
-      unit : FreeObj
-      _×f_ : FreeObj → FreeObj → FreeObj
-
-    ⟦_⟧f : FreeObj → C.obj
-    ⟦ gen ⟧f      = 𝕀ᶜ
-    ⟦ unit ⟧f     = CT.witness
-    ⟦ e₁ ×f e₂ ⟧f = CP.prod ⟦ e₁ ⟧f ⟦ e₂ ⟧f
-
-    fwidth : FreeObj → Data.Nat.ℕ
-    fwidth gen        = 1
-    fwidth unit       = 0
-    fwidth (e₁ ×f e₂) = fwidth e₁ Data.Nat.+ fwidth e₂
+    open import free-object 𝒞 𝒞-terminal 𝒞-products 𝕀ᶜ public
 
     X^ᴰ : Data.Nat.ℕ → D.obj
     X^ᴰ 0              = DT.witness

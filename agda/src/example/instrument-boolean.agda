@@ -20,12 +20,13 @@ open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
          approx-unit; approx-mult; rel; equal-label)
 open import example.relation-boolean
-  using (sort-width; op-rel; module Alg-inst; module Tot; module TotOp;
+  using (module Alg-inst; module Tot; module TotOp;
          module Instr; module InstrOp)
+import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
-open import language-operational.evaluation-mat Sig Alg-inst.Alg sort-width
+open import language-operational.evaluation-mat Sig Alg-inst.Alg (λ s → Dep.FO𝟚.fwidth (Dep.sort-fibre s))
   using (width)
 open import language-operational.marking Sig
 open import example.trace-boolean using (elem; query; input; D-query)
