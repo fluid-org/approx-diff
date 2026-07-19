@@ -84,7 +84,7 @@ module MSA = matrix-semimod-action two.semiring
 module LR = logical-relation two.semiring Sig Alg-inst.Alg D.BaseInterp1 sort-width
 
 open import language-syntax Sig using (base)
-open import language-evaluation-mat Sig Alg-inst.Alg two.semiring sort-width using (bases-width)
+open import operational.evaluation-mat Sig Alg-inst.Alg two.semiring sort-width using (bases-width)
 
 private
   module M𝟚 = matrix.Mat two.semiring
@@ -119,6 +119,6 @@ FP : Set
 FP = Inst.FundamentalProperty
 
 -- Totality and the evaluator, instantiated at the same model.
-import language-totality
-module Tot = language-totality Sig Alg-inst.Alg two.semiring sort-width
+import operational.totality
+module Tot = operational.totality Sig Alg-inst.Alg two.semiring sort-width
 module TotOp = Tot.WithOp op-mat

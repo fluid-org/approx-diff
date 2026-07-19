@@ -12,7 +12,7 @@ open import signature-algebra using (Algebra; sort-vals)
 
 -- Big-step operational semantics, relative to a value-level interpretation of
 -- the signature.
-module language-evaluation {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ') where
+module operational.evaluation {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ') where
 
 open Signature Sig
 open Algebra 𝒜

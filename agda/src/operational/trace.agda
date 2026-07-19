@@ -15,7 +15,7 @@ import two
 import matrix
 
 -- Rendering of evaluation derivations as traces and dependence-graph edge lists.
-module language-trace
+module operational.trace
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
   (sort-width : Signature.sort Sig → ℕ)
   (show-op : ∀ {is o} → Signature.op Sig is o → String)
@@ -24,8 +24,8 @@ module language-trace
 open Signature Sig
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-evaluation Sig 𝒜 using (Val; Env; emp; _·_; lookup)
-open import language-evaluation-mat Sig 𝒜 two.semiring sort-width
+open import operational.evaluation Sig 𝒜 using (Val; Env; emp; _·_; lookup)
+open import operational.evaluation-mat Sig 𝒜 two.semiring sort-width
 open WithOpMats
 
 private

@@ -35,9 +35,9 @@ module logical-relation
 open Signature Sig
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-evaluation Sig 𝒜
+open import operational.evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_)
-open import language-evaluation-mat Sig 𝒜 S sort-width
+open import operational.evaluation-mat Sig 𝒜 S sort-width
   using (width; width-env; bases-width; width-subst; module WithOpMats)
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
 

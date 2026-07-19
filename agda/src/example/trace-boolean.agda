@@ -19,9 +19,9 @@ open import example.signature ℚ
 open import example.relation-boolean
   using (sort-width; op-mat; module Alg-inst; module Tot; module TotOp)
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-evaluation Sig Alg-inst.Alg
+open import operational.evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
-open import language-evaluation-mat Sig Alg-inst.Alg two.semiring sort-width
+open import operational.evaluation-mat Sig Alg-inst.Alg two.semiring sort-width
   using (width-env; module WithOpMats)
 open WithOpMats op-mat using (_,_⇓_[_])
 
@@ -39,7 +39,7 @@ show-op (lbl l)     = Data.String._++_ "lbl-" (show-lbl l)
 show-op approx-unit = "approx-unit"
 show-op approx-mult = "approx-mult"
 
-open import language-trace Sig Alg-inst.Alg sort-width show-op
+open import operational.trace Sig Alg-inst.Alg sort-width show-op
 
 dep-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} →
             γ , t ⇓ v [ R ] → List Edge
