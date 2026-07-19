@@ -18,7 +18,7 @@ open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import signature-algebra using (Algebra)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
 import matrix-embedding-semimod
-import ho-model-sd-semimod
+import ho-model-boolalg-sd-semimod
 
 -- Logical relation between the operational semantics and the interpretation in Fam(SemiMod(𝟚)), in
 -- existential (computability) form. Defined by well-founded recursion on type size: at an inductive type the
@@ -26,7 +26,7 @@ import ho-model-sd-semimod
 -- parameter, with the size bound carried by the arrow-leaf constructor.
 module language-operational.logical-relation
   (Sig : Signature 0ℓ) (𝒜 : Algebra Sig 0ℓ)
-  (open ho-model-sd-semimod two.semiring)
+  (open ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean)
   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
   (sort-width : Signature.sort Sig → ℕ)
   where
@@ -40,7 +40,7 @@ open import language-operational.evaluation-mat Sig 𝒜 two.semiring sort-width
   using (width; width-env; bases-width; width-subst; module WithOpMats)
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
 
-open interp-sd Sig Impl
+open interp-boolean Sig Impl
 
 private
   module FamCP = HasCoproducts (strong-coproducts→coproducts Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-strongCoproducts)

@@ -29,48 +29,13 @@ open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
          approx-unit; approx-mult)
 import example.algebra
-import example.signature-interpretation
-import ho-model-sd-semimod
+import example.dependency
 
-module SDSemiMod-𝟚 = sd-semimodule two.semiring
 module SemiMod-𝟚 = semimodule two.semiring
-open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_)
-
-Approx : Category.obj SDSemiMod-𝟚.cat
-Approx = SDSemiMod-𝟚.𝕀
-
-approx-unitm : Category._⇒_ SDSemiMod-𝟚.cat (HasTerminal.witness SDSemiMod-𝟚.terminal) Approx
-approx-unitm = HasInitial.from-initial SDSemiMod-𝟚.initial {Approx}
-
-approx-conjunctm : Category._⇒_ SDSemiMod-𝟚.cat (HasProducts.prod SDSemiMod-𝟚.products Approx Approx) Approx
-approx-conjunctm =
-  HasProducts.p₁ SDSemiMod-𝟚.products {Approx} {Approx}
-    +m HasProducts.p₂ SDSemiMod-𝟚.products {Approx} {Approx}
+module Dep = example.dependency
 
 private
   module Num = CommutativeSemiring semiring-Q.semiring
-  open prop-setoid._⇒_
-
-  num-add : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-add .func (x , y) = x Num.+ y
-  num-add .func-resp-≈ e = Num.+-cong (prop.proj₁ e) (prop.proj₂ e)
-
-  num-mult : prop-setoid._⇒_ (prop-setoid.⊗-setoid semiring-Q.setoid semiring-Q.setoid) semiring-Q.setoid
-  num-mult .func (x , y) = x Num.· y
-  num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
-
-open example.signature-interpretation SDSemiMod-𝟚.cat SDSemiMod-𝟚.products SDSemiMod-𝟚.terminal
-  Approx approx-unitm approx-conjunctm semiring-Q.setoid num-add num-mult
-
-private
-  unit-c : ℚ → ℚ → Category._⇒_ SDSemiMod-𝟚.cat Approx Approx
-  unit-c _ _ = Category.id SDSemiMod-𝟚.cat Approx
-
-  unit-c-cong : ∀ {x x' y y'} → Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
-                Category._≈_ SemiMod-𝟚.cat (unit-c x y) (unit-c x' y')
-  unit-c-cong _ _ = Category.≈-refl SemiMod-𝟚.cat {f = unit-c 0ℚ 0ℚ}
-
-module D = BinDeriv unit-c unit-c unit-c unit-c unit-c-cong unit-c-cong unit-c-cong unit-c-cong
 
 -- Value-level algebra: rational arithmetic, trivial approx carrier.
 module Alg-inst = example.algebra ℚ Num._+_ Num._·_ ⊤ tt (λ _ _ → tt)
@@ -81,7 +46,7 @@ sort-width label  = 0
 sort-width approx = 1
 
 module MSA = matrix-semimod-action two.semiring
-module LR = language-operational.logical-relation Sig Alg-inst.Alg D.BaseInterp1 sort-width
+module LR = language-operational.logical-relation Sig Alg-inst.Alg Dep.D.BaseInterp1 sort-width
 
 open import language-syntax Sig using (base)
 open import language-operational.evaluation-mat Sig Alg-inst.Alg two.semiring sort-width using (bases-width)
