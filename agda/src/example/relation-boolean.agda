@@ -4,27 +4,20 @@
 -- data.
 module example.relation-boolean where
 
-open import Level using (0ℓ; lift)
+open import Level using (lift)
 open import Data.Nat using (ℕ)
-open import Data.Fin using (Fin)
 open import Data.Unit using (⊤; tt)
-open import Data.Product using (_,_)
-open import Data.Rational using (ℚ; 0ℚ)
-open import categories using (Category; HasInitial; HasProducts; HasTerminal)
+open import Data.Rational using (ℚ)
+open import categories using (Category)
 open import commutative-semiring using (CommutativeSemiring)
-open import prop-setoid using (Setoid)
 import cmon-enriched
-import prop-setoid
 import semimodule
-import sd-semimodule
 import semiring-Q
 import two
-import prop
 import matrix
 import matrix-semimod-action
 import matrix-embedding-semimod
 import language-operational.logical-relation
-open import signature using (Model)
 open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
          approx-unit; approx-mult)
