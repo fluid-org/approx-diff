@@ -8,7 +8,7 @@ open import Data.Unit.Polymorphic using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import signature-algebra using (Algebra; sort-vals)
+open import language-operational.algebra using (Algebra; sort-vals)
 
 -- Big-step operational semantics, relative to a value-level interpretation of the signature.
 module language-operational.evaluation {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ') where

@@ -12,7 +12,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import signature-algebra using (Algebra; sort-vals)
+open import language-operational.algebra using (Algebra; sort-vals)
 import matrix
 import cmon-enriched
 open import categories using (Category; HasProducts; HasTerminal)

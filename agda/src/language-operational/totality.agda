@@ -16,7 +16,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category; HasProducts; HasTerminal)
 open import signature using (Signature)
-open import signature-algebra using (Algebra; sort-vals)
+open import language-operational.algebra using (Algebra; sort-vals)
 import matrix
 
 -- Computability (totality) predicate on values: the existence content of the logical relation, without the

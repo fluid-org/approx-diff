@@ -15,7 +15,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 import two
 open import signature using (Signature; Model; PFPC[_,_,_,_])
-open import signature-algebra using (Algebra)
+open import language-operational.algebra using (Algebra)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
 import matrix-embedding-semimod
 import ho-model-boolalg-sd-semimod
@@ -25,13 +25,20 @@ import ho-model-boolalg-sd-semimod
 -- relation is an inductive family that consumes the value, taking the relation at smaller types as a
 -- parameter, with the size bound carried by the arrow-leaf constructor.
 module language-operational.logical-relation
-  (Sig : Signature 0ℓ) (𝒜 : Algebra Sig 0ℓ)
+  (Sig : Signature 0ℓ)
   (open ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean)
   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
   (sort-width : Signature.sort Sig → ℕ)
   where
 
 open Signature Sig
+private
+  module PA = language-operational.algebra.PointsAlgebra BoolAlg.cat BoolAlg.terminal BoolAlg.products Sig
+
+-- The value-level algebra is the model's points, so agreement at base sorts is definitional.
+𝒜 : Algebra Sig 0ℓ
+𝒜 = PA.points-algebra Impl
+
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒜
@@ -157,9 +164,8 @@ i⊕₂ {X} {Y} = cmon-enriched.Biproduct.in₂ (SemiMod.biproduct X Y)
   where import cmon-enriched
 
 module WithAgreement
-  (sort-embed : ∀ s → sort-val s → Point (base s))
   (sort-can : ∀ s (c : sort-val s) →
-              SM._⇒_ (X^ (sort-width s)) (Fibre (base s) (sort-embed s c)))
+              SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c))
   (op-mat : ∀ {is o'} → op is o' → Category._⇒_ M.cat (bases-width is) (sort-width o'))
   (mat-mor : ∀ {m n} → Category._⇒_ M.cat m n → SM._⇒_ (X^ m) (X^ n))
   where
@@ -183,8 +189,8 @@ module WithAgreement
                  MuRel τ₀ Rel< (var Fin.zero) (roll w) a r
     mrel-unit  : ∀ {a r} → MuRel τ₀ Rel< unit unit a r
     mrel-base  : ∀ {s c a r} →
-                 Prf (∃ₚ (idx-≈ (base s) (sort-embed s c) a) λ e →
-                      r ≈M (fibre-subst (base s) {sort-embed s c} {a} e ∘M sort-can s c)) →
+                 Prf (∃ₚ (idx-≈ (base s) c a) λ e →
+                      r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c)) →
                  MuRel τ₀ Rel< (base s) (const c) a r
     mrel-arrow : ∀ {σ₁ σ₂ : type 0} {v a r} →
                  (p : size {1} (σ₁ [→] σ₂) < size (μ τ₀)) →
@@ -224,8 +230,8 @@ module WithAgreement
   Rel-acc (var ())
   Rel-acc unit _ v a r = ⊤ₛ
   Rel-acc (base s) _ (const c) a r =
-    Prf (∃ₚ (idx-≈ (base s) (sort-embed s c) a) λ e →
-         r ≈M (fibre-subst (base s) {sort-embed s c} {a} e ∘M sort-can s c))
+    Prf (∃ₚ (idx-≈ (base s) c a) λ e →
+         r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c))
   Rel-acc (σ [+] τ) (acc rs) (inl v) a r =
     Σ (Point σ) λ a' → Σ (Realiser σ v a') λ r' →
       Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a' r' ×

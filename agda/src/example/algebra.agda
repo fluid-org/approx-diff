@@ -14,7 +14,7 @@ module example.algebra
   where
 
 open import signature using (Signature)
-open import signature-algebra using (Algebra; sort-vals)
+open import language-operational.algebra using (Algebra; sort-vals)
 open import example.signature Num
 
 sort-val : sort → Set
