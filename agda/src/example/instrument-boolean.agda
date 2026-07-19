@@ -20,7 +20,8 @@ open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
          approx-unit; approx-mult; rel; equal-label)
 open import example.relation-boolean
-  using (sort-width; op-mat; module Alg-inst; module Tot; module TotOp)
+  using (sort-width; op-mat; module Alg-inst; module Tot; module TotOp;
+         module Instr; module InstrOp)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
@@ -28,11 +29,7 @@ open import language-operational.evaluation-mat Sig Alg-inst.Alg two.semiring so
   using (width)
 open import language-operational.marking Sig
 open import example.trace-boolean using (elem; query; input; D-query)
-import language-operational.instrument
-
-module Inst = language-operational.instrument Sig Alg-inst.Alg two.semiring sort-width
-open Inst
-module InstOp = Inst.WithOp op-mat
+open Instr
 
 private
   module M𝟚 = matrix.Mat two.semiring
@@ -76,7 +73,7 @@ m-mm = bop (doc (base number) (unmarked _) ∷ unmarked _ ∷ [])
 
 run-mm = TotOp.fundamental t-mm γ-mm ((tt , tt) , tt)
 
-inst-mm = InstOp.instrument m-mm (emp · const · const)
+inst-mm = InstrOp.instrument m-mm (emp · const · const)
             (proj₁ (proj₂ (proj₂ run-mm))) ∅
 
 flat-mm : ents (collapse (proj₁ (proj₂ (proj₂ inst-mm))) (proj₂ (proj₂ (proj₂ inst-mm))))
@@ -99,12 +96,12 @@ m-input =
 m-query : Marked (query L.a input)
 m-query = fold (doc (base number) (unmarked _)) m-input
 
-inst-query = InstOp.instrument m-query emp D-query ∅
+inst-query = InstrOp.instrument m-query emp D-query ∅
 
 -- Total width of the intermediates: three entries and four fold steps.
 width-query : proj₁ (proj₂ inst-query) ≡ 7
 width-query = refl
 
 -- Erasure: the unmarked run adds no intermediates.
-erasure-query : proj₁ (proj₂ (InstOp.instrument (unmarked _) emp D-query ∅)) ≡ 0
+erasure-query : proj₁ (proj₂ (InstrOp.instrument (unmarked _) emp D-query ∅)) ≡ 0
 erasure-query = refl

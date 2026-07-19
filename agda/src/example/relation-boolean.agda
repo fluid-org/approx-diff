@@ -118,7 +118,11 @@ module Inst = LR.WithAgreement sort-embed sort-can op-mat MSA.mat-mor
 FP : Set
 FP = Inst.FundamentalProperty
 
--- Totality and the evaluator, instantiated at the same model.
+-- Totality, the evaluator and the instrumentation, at the same model.
 import language-operational.totality
 module Tot = language-operational.totality Sig Alg-inst.Alg two.semiring sort-width
 module TotOp = Tot.WithOp op-mat
+
+import language-operational.instrument
+module Instr = language-operational.instrument Sig Alg-inst.Alg two.semiring sort-width
+module InstrOp = Instr.WithOp op-mat
