@@ -3,6 +3,7 @@
 open import Level using (0ℓ)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ; zero; suc; _+_; _<_; s≤s)
+open import Data.List using (List; []; _∷_)
 open import Data.Nat.Properties using (≤-refl; m≤m+n; m≤n+m)
 open import Data.Nat.Induction using (<-wellFounded)
 open import Induction.WellFounded using (Acc; acc)
@@ -18,6 +19,7 @@ open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import language-operational.algebra using (Algebra)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
 import matrix-embedding-semimod
+import matrix-semimod-action
 import ho-model-boolalg-sd-semimod
 
 -- Logical relation between the operational semantics and the interpretation in Fam(SemiMod(𝟚)), in
@@ -28,7 +30,6 @@ module language-operational.logical-relation
   (Sig : Signature 0ℓ)
   (open ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean)
   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
-  (sort-width : Signature.sort Sig → ℕ)
   where
 
 open Signature Sig
@@ -43,8 +44,7 @@ open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_)
-open import language-operational.evaluation-mat Sig 𝒜 two.semiring sort-width
-  using (width; width-env; bases-width; width-subst; module WithOpMats)
+import language-operational.evaluation-mat
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
 
 open interp-boolean Sig Impl
@@ -56,6 +56,7 @@ private
 
 private
   module MES = matrix-embedding-semimod two.semiring
+  module MSA = matrix-semimod-action two.semiring
   module SM = Category SemiMod.cat
   module M = matrix.Mat two.semiring
 
@@ -69,12 +70,6 @@ Point τ = Setoid.Carrier ((⟦ τ ⟧ty δ₀) .idx)
 
 Fibre : (τ : type 0) → Point τ → SM.obj
 Fibre τ a = Fam⟨𝒟⟩.fm ((⟦ τ ⟧ty δ₀) .fam) a
-
-Realiser : (τ : type 0) → Val τ → Point τ → Set
-Realiser τ v a = SM._⇒_ (X^ (width v)) (Fibre τ a)
-
-RelSpec : type 0 → Set₁
-RelSpec τ = (v : Val τ) (a : Point τ) → Realiser τ v a → Set
 
 idx-≈ : (τ : type 0) → Point τ → Point τ → Prop 0ℓ
 idx-≈ τ = Setoid._≈_ ((⟦ τ ⟧ty δ₀) .idx)
@@ -163,20 +158,39 @@ i⊕₂ : ∀ {X Y} → SM._⇒_ Y (SemiMod._⊕_ X Y)
 i⊕₂ {X} {Y} = cmon-enriched.Biproduct.in₂ (SemiMod.biproduct X Y)
   where import cmon-enriched
 
-module WithAgreement
-  (sort-can : ∀ s (c : sort-val s) →
-              SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c))
-  (op-mat : ∀ {is o'} → op is o' → Category._⇒_ M.cat (bases-width is) (sort-width o'))
-  (mat-mor : ∀ {m n} → Category._⇒_ M.cat m n → SM._⇒_ (X^ m) (X^ n))
-  where
+private
+  BW : (sort → ℕ) → List sort → ℕ
+  BW w = language-operational.evaluation-mat.bases-width Sig 𝒜 two.semiring w
 
+-- The witness set relating the operational treatment of primitives to the model: a finite presentation
+-- of the base-sort fibres and the dependency matrix of each operation.
+record Presentation : Set where
+  field
+    sort-width : sort → ℕ
+    sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c)
+    op-mat     : ∀ {is o'} → op is o' →
+                 Category._⇒_ M.cat (BW sort-width is) (sort-width o')
+
+module WithPresentation (P : Presentation) where
+
+  open Presentation P
+
+  private
+    module EM = language-operational.evaluation-mat Sig 𝒜 two.semiring sort-width
+  open EM using (width; width-env; width-subst; module WithOpMats)
   open WithOpMats op-mat
 
+  Realiser : (τ : type 0) → Val τ → Point τ → Set
+  Realiser τ v a = SM._⇒_ (X^ (width v)) (Fibre τ a)
+
+  RelSpec : type 0 → Set₁
+  RelSpec τ = (v : Val τ) (a : Point τ) → Realiser τ v a → Set
+
   in-free₁ : (m n : ℕ) → SM._⇒_ (X^ m) (X^ (m + n))
-  in-free₁ m n = mat-mor (M.in₁ {m} {n})
+  in-free₁ m n = MSA.mat-mor (M.in₁ {m} {n})
 
   in-free₂ : (m n : ℕ) → SM._⇒_ (X^ n) (X^ (m + n))
-  in-free₂ m n = mat-mor (M.in₂ {m} {n})
+  in-free₂ m n = MSA.mat-mor (M.in₂ {m} {n})
 
   data MuRel (τ₀ : type 1)
              (Rel< : (σ : type 0) → size σ < size (μ τ₀) → RelSpec σ) :
@@ -255,9 +269,9 @@ module WithAgreement
     Σ (γ' · v , t ⇓ u [ R ]) λ _ →
     Σ (Realiser τ u (app-pt σ τ f a)) λ q →
       Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (app-pt σ τ f a) q ×
-      Prf (((q ∘M mat-mor R ∘M in-free₁ (width-env γ') (width v)) ≈M
+      Prf (((q ∘M MSA.mat-mor R ∘M in-free₁ (width-env γ') (width v)) ≈M
               (∂ε σ τ f a ∘M i⊕₁ ∘M r))
-         ∧ ((q ∘M mat-mor R ∘M in-free₂ (width-env γ') (width v)) ≈M
+         ∧ ((q ∘M MSA.mat-mor R ∘M in-free₂ (width-env γ') (width v)) ≈M
               (∂ε σ τ f a ∘M i⊕₂ ∘M rv)))
   Rel-acc (μ τ₀) (acc rs) v a r =
     MuRel τ₀ (λ σ p → Rel-acc σ (rs p)) (var Fin.zero) v a r
@@ -295,4 +309,4 @@ module WithAgreement
     Σ (γ , t ⇓ v [ R ]) λ _ →
     Σ (Realiser τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g)) λ q →
       Rel τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g) q ×
-      Prf ((q ∘M mat-mor R) ≈M (mor t g ∘M rγ))
+      Prf ((q ∘M MSA.mat-mor R) ≈M (mor t g ∘M rγ))

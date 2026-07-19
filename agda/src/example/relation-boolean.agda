@@ -15,7 +15,6 @@ import semimodule
 import semiring-Q
 import two
 import matrix
-import matrix-semimod-action
 import matrix-embedding-semimod
 import language-operational.logical-relation
 open import example.signature ℚ
@@ -46,8 +45,7 @@ sort-width number = 1
 sort-width label  = 0
 sort-width approx = 1
 
-module MSA = matrix-semimod-action two.semiring
-module LR = language-operational.logical-relation Sig Dep.D.BaseInterp1 sort-width
+module LR = language-operational.logical-relation Sig Dep.D.BaseInterp1
 
 open import language-syntax Sig using (base)
 open import language-operational.evaluation-mat Sig Alg-inst.Alg two.semiring sort-width using (bases-width)
@@ -73,7 +71,10 @@ op-mat (lbl l)     = λ ()
 op-mat approx-unit = λ i ()
 op-mat approx-mult = λ i j → two.I
 
-module Inst = LR.WithAgreement sort-can op-mat MSA.mat-mor
+pres : LR.Presentation
+pres = record { sort-width = sort-width ; sort-can = sort-can ; op-mat = op-mat }
+
+module Inst = LR.WithPresentation pres
 
 -- The fundamental property, specialised to this instantiation.
 FP : Set
