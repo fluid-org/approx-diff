@@ -77,48 +77,48 @@ module WithOpMats
   where
 
   mutual
-    data _,,_⇓_[_] : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) (v : Val τ) →
+    data _⊢_⇓_[_] : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) (v : Val τ) →
                      width-env γ ⇒ width v → Set (ℓ ⊔ℓ ℓ' ⊔ℓ o ⊔ℓ e) where
-      ⇓-var    : ∀ {Γ τ} {γ : Env Γ} (x : Γ ∋ τ) → γ ,, var x ⇓ lookup x γ [ proj-var x γ ]
-      ⇓-unit   : ∀ {Γ} {γ : Env Γ} → γ ,, unit ⇓ unit [ to-terminal ]
+      ⇓-var    : ∀ {Γ τ} {γ : Env Γ} (x : Γ ∋ τ) → γ ⊢ var x ⇓ lookup x γ [ proj-var x γ ]
+      ⇓-unit   : ∀ {Γ} {γ : Env Γ} → γ ⊢ unit ⇓ unit [ to-terminal ]
       ⇓-inl    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v R} →
-                 γ ,, t ⇓ v [ R ] → γ ,, inl {τ₂ = τ₂} t ⇓ inl v [ R ]
+                 γ ⊢ t ⇓ v [ R ] → γ ⊢ inl {τ₂ = τ₂} t ⇓ inl v [ R ]
       ⇓-inr    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₂} {v R} →
-                 γ ,, t ⇓ v [ R ] → γ ,, inr {τ₁ = τ₁} t ⇓ inr v [ R ]
+                 γ ⊢ t ⇓ v [ R ] → γ ⊢ inr {τ₁ = τ₁} t ⇓ inr v [ R ]
       ⇓-case-l : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                  {v u R S} →
-                 γ ,, s ⇓ inl v [ R ] → γ · v ,, t₁ ⇓ u [ S ] →
-                 γ ,, case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , R ⟩ ]
+                 γ ⊢ s ⇓ inl v [ R ] → γ · v ⊢ t₁ ⇓ u [ S ] →
+                 γ ⊢ case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , R ⟩ ]
       ⇓-case-r : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                  {v u R S} →
-                 γ ,, s ⇓ inr v [ R ] → γ · v ,, t₂ ⇓ u [ S ] →
-                 γ ,, case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , R ⟩ ]
+                 γ ⊢ s ⇓ inr v [ R ] → γ · v ⊢ t₂ ⇓ u [ S ] →
+                 γ ⊢ case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , R ⟩ ]
       ⇓-pair   : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R S} →
-                 γ ,, s ⇓ v [ R ] → γ ,, t ⇓ u [ S ] → γ ,, pair s t ⇓ pair v u [ ⟨ R , S ⟩ ]
+                 γ ⊢ s ⇓ v [ R ] → γ ⊢ t ⇓ u [ S ] → γ ⊢ pair s t ⇓ pair v u [ ⟨ R , S ⟩ ]
       ⇓-fst    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
-                 γ ,, t ⇓ pair v u [ R ] → γ ,, fst t ⇓ v [ p₁ ∘ R ]
+                 γ ⊢ t ⇓ pair v u [ R ] → γ ⊢ fst t ⇓ v [ p₁ ∘ R ]
       ⇓-snd    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
-                 γ ,, t ⇓ pair v u [ R ] → γ ,, snd t ⇓ u [ p₂ ∘ R ]
-      ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} → γ ,, lam t ⇓ clo γ t [ idm _ ]
+                 γ ⊢ t ⇓ pair v u [ R ] → γ ⊢ snd t ⇓ u [ p₂ ∘ R ]
+      ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} → γ ⊢ lam t ⇓ clo γ t [ idm _ ]
       ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T} →
-                 γ ,, s ⇓ clo {Γ'} γ' t' [ R ] → γ ,, t ⇓ v [ S ] → γ' · v ,, t' ⇓ u [ T ] →
-                 γ ,, app s t ⇓ u [ T ∘ ⟨ R , S ⟩ ]
+                 γ ⊢ s ⇓ clo {Γ'} γ' t' [ R ] → γ ⊢ t ⇓ v [ S ] → γ' · v ⊢ t' ⇓ u [ T ] →
+                 γ ⊢ app s t ⇓ u [ T ∘ ⟨ R , S ⟩ ]
       ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-                 γ ,, Ms ⇓s vs [ R ] → γ ,, bop ω Ms ⇓ const (op-fun ω vs) [ op-mat ω ∘ R ]
+                 γ ⊢ Ms ⇓s vs [ R ] → γ ⊢ bop ω Ms ⇓ const (op-fun ω vs) [ op-mat ω ∘ R ]
       ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-                 γ ,, Ms ⇓s vs [ R ] → γ ,, brel ω Ms ⇓ bool→val (rel-pred ω vs) [ brel-mat γ (rel-pred ω vs) ]
+                 γ ⊢ Ms ⇓s vs [ R ] → γ ⊢ brel ω Ms ⇓ bool→val (rel-pred ω vs) [ brel-mat γ (rel-pred ω vs) ]
       ⇓-roll   : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v R} →
-                 γ ,, t ⇓ v [ R ] → γ ,, roll {τ = τ} t ⇓ roll {τ} v [ R ]
+                 γ ⊢ t ⇓ v [ R ] → γ ⊢ roll {τ = τ} t ⇓ roll {τ} v [ R ]
       ⇓-fold   : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
                  {v u R R'} →
-                 γ ,, t ⇓ v [ R ] → Map γ {τ} {σ} s (var zero) v R u R' → γ ,, fold s t ⇓ u [ R' ]
+                 γ ⊢ t ⇓ v [ R ] → Map γ {τ} {σ} s (var zero) v R u R' → γ ⊢ fold s t ⇓ u [ R' ]
 
-    data _,,_⇓s_[_] {Γ} (γ : Env Γ) : ∀ {is} → Every (λ s → Γ ⊢ base s) is →
+    data _⊢_⇓s_[_] {Γ} (γ : Env Γ) : ∀ {is} → Every (λ s → Γ ⊢ base s) is →
                     sort-vals sort-val is → width-env γ ⇒ bases-width is →
                     Set (ℓ ⊔ℓ ℓ' ⊔ℓ o ⊔ℓ e) where
-      []  : γ ,, [] ⇓s tt [ to-terminal ]
+      []  : γ ⊢ [] ⇓s tt [ to-terminal ]
       _∷_ : ∀ {i is v vs R Rs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is} →
-            γ ,, M ⇓ const v [ R ] → γ ,, Ms ⇓s vs [ Rs ] → γ ,, (M ∷ Ms) ⇓s (v , vs) [ ⟨ R , Rs ⟩ ]
+            γ ⊢ M ⇓ const v [ R ] → γ ⊢ Ms ⇓s vs [ Rs ] → γ ⊢ (M ∷ Ms) ⇓s (v , vs) [ ⟨ R , Rs ⟩ ]
 
     -- Functorial action of σ' on the fold s, threading dependency matrices.
     data Map {Γ} (γ : Env Γ) {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) :
@@ -126,7 +126,7 @@ module WithOpMats
              (v' : Val (σ' [ σr ])) → width-env γ ⇒ width v' →
              Set (ℓ ⊔ℓ ℓ' ⊔ℓ o ⊔ℓ e) where
       m-rec   : ∀ {w w' u R R' S} →
-                Map γ s τ₀ w R w' R' → γ · w' ,, s ⇓ u [ S ] →
+                Map γ s τ₀ w R w' R' → γ · w' ⊢ s ⇓ u [ S ] →
                 Map γ s (var zero) (roll w) R u (S ∘ ⟨ idm _ , R' ⟩)
       m-unit  : ∀ {v R} → Map γ s unit v R v R
       m-base  : ∀ {b v R} → Map γ s (base b) v R v R
@@ -146,4 +146,4 @@ module WithOpMats
                     (roll (subst Val (unfold₁-inst τ' σr) w'))
                     (subst (width-env γ ⇒_) (sym (width-subst (unfold₁-inst τ' σr) w')) R')
 
-  infix 25 _,,_⇓_[_] _,,_⇓s_[_]
+  infix 25 _⊢_⇓_[_] _⊢_⇓s_[_]

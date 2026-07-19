@@ -93,7 +93,7 @@ module WithOp
     ∀ (v : Val σ) → Total-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v →
     Σ (Val τ) λ u →
     Σ (Category._⇒_ M.cat (width-env γ' + width v) (width u)) λ R →
-    (γ' · v ,, t ⇓ u [ R ]) ×
+    (γ' · v ⊢ t ⇓ u [ R ]) ×
     Total-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u
   Total-acc (μ τ₀) (acc rs) v =
     MuTotal τ₀ (λ σ p → Total-acc σ (rs p)) (var Fin.zero) v
@@ -263,7 +263,7 @@ module WithOp
   ArrTot σ τ {Γ'} γ' t =
     ∀ (v : Val σ) → Total σ v →
     Σ (Val τ) λ u → Σ ((width-env γ' + width v) ⇒ width u) λ R →
-    ((γ' · v) ,, t ⇓ u [ R ]) × Total τ u
+    ((γ' · v) ⊢ t ⇓ u [ R ]) × Total τ u
 
   arr-in : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} →
            ArrTot σ τ γ' t → Total (σ [→] τ) (clo γ' t)
@@ -279,7 +279,7 @@ module WithOp
   map-total : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : (Γ ▸ (τ₀ [ σr ])) ⊢ σr} →
               (∀ (w' : Val (τ₀ [ σr ])) → Total (τ₀ [ σr ]) w' →
                Σ (Val σr) λ u → Σ ((width-env γ + width w') ⇒ width u) λ S →
-               ((γ · w') ,, s ⇓ u [ S ]) × Total σr u) →
+               ((γ · w') ⊢ s ⇓ u [ S ]) × Total σr u) →
               ∀ (σ' : type 1) {v : Val (σ' [ μ τ₀ ])} → MuT τ₀ σ' v →
               (R : width-env γ ⇒ width v) →
               Σ (Val (σ' [ σr ])) λ v' → Σ (width-env γ ⇒ width v') λ R' →
@@ -321,12 +321,12 @@ module WithOp
   -- matrix, to a total value.
   Eval : ∀ {Γ} (γ : Env Γ) {τ} (t : Γ ⊢ τ) → Set ℓT
   Eval γ {τ} t =
-    Σ (Val τ) λ v → Σ (width-env γ ⇒ width v) λ R → (γ ,, t ⇓ v [ R ]) × Total τ v
+    Σ (Val τ) λ v → Σ (width-env γ ⇒ width v) λ R → (γ ⊢ t ⇓ v [ R ]) × Total τ v
 
   fundamental : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) → TotalEnv Γ γ → Eval γ t
   fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) (γ : Env Γ) → TotalEnv Γ γ →
                   Σ (sort-vals sort-val is) λ vs →
-                  Σ (width-env γ ⇒ bases-width is) λ Rs → γ ,, Ms ⇓s vs [ Rs ]
+                  Σ (width-env γ ⇒ bases-width is) λ Rs → γ ⊢ Ms ⇓s vs [ Rs ]
 
   fundamental (var x) γ tγ = lookup x γ , proj-var x γ , ⇓-var x , lookup-total x tγ
   fundamental unit γ tγ = unit , to-terminal , ⇓-unit , tt
@@ -385,5 +385,5 @@ module WithOp
 
   -- The evaluator: every closed term evaluates, with its dependency matrix.
   eval : ∀ {τ} (t : emp ⊢ τ) →
-         Σ (Val τ) λ v → Σ (0 ⇒ width v) λ R → emp ,, t ⇓ v [ R ]
+         Σ (Val τ) λ v → Σ (0 ⇒ width v) λ R → emp ⊢ t ⇓ v [ R ]
   eval t = let (v , R , D , _) = fundamental t emp tt in v , R , D
