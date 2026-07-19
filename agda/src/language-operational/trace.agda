@@ -26,7 +26,7 @@ open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒜 using (Val; Env; emp; _·_; lookup)
 open import language-operational.evaluation-mat Sig 𝒜 sort-width
-open WithOpMats
+open WithOpRels
 
 private
   module M = matrix.Mat two.semiring
@@ -39,13 +39,13 @@ var-to-ℕ (succ x) = suc (var-to-ℕ x)
 ------------------------------------------------------------------------
 -- Derivation pretty-printing (ignores the matrix indices).
 
-module _ {op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
+module _ {op-rel : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
 
-  show-eval  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] op-mat γ t v R → String
+  show-eval  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] op-rel γ t v R → String
   show-evals : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-               _,_⇓s_[_] op-mat γ Ms vs R → List String
+               _,_⇓s_[_] op-rel γ Ms vs R → List String
   show-map   : ∀ {Γ} {γ : Env Γ} {τ₀ σr} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} {σ' v R v' R'} →
-               Map op-mat γ {τ₀} {σr} s σ' v R v' R' → String
+               Map op-rel γ {τ₀} {σr} s σ' v R v' R' → String
 
   show-eval (⇓-var x)        = "(var " ++ˢ ℕ-Show.show (var-to-ℕ x) ++ˢ ")"
   show-eval ⇓-unit           = "unit"
@@ -122,14 +122,14 @@ private
     let outs = applyUpTo (next +_) n
     in outs , next + n , mat-edges tag m n r ins outs
 
-module _ {op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
+module _ {op-rel : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
 
-  edges  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] op-mat γ t v R →
+  edges  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] op-rel γ t v R →
            List ℕ → GraphWriter (List ℕ)
   edgess : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-           _,_⇓s_[_] op-mat γ Ms vs R → List ℕ → GraphWriter (List ℕ)
+           _,_⇓s_[_] op-rel γ Ms vs R → List ℕ → GraphWriter (List ℕ)
   edgesm : ∀ {Γ} {γ : Env Γ} {τ₀ σr} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} {σ' v R v' R'} →
-           Map op-mat γ {τ₀} {σr} s σ' v R v' R' → List ℕ → List ℕ → GraphWriter (List ℕ)
+           Map op-rel γ {τ₀} {σr} s σ' v R v' R' → List ℕ → List ℕ → GraphWriter (List ℕ)
 
   edges {γ = γ} (⇓-var x) ctx =
     emit "var" (width-env γ) (width (lookup x γ)) (proj-var x γ) ctx
@@ -167,7 +167,7 @@ module _ {op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-
     emit "app" (width u) (width u) M.I Bₒ
   edges (⇓-bop {is = is} {o' = o'} {ω = ω} E) ctx = do
     Eₒ ← edgess E ctx
-    emit (show-op ω) (bases-width is) (sort-width o') (op-mat ω) Eₒ
+    emit (show-op ω) (bases-width is) (sort-width o') (op-rel ω) Eₒ
   edges (⇓-brel {is = is} E) ctx = do
     Eₒ ← edgess E ctx
     emit "brel" (bases-width is) 0 (M.εₘ) Eₒ

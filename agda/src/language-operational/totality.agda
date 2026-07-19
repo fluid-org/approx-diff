@@ -35,7 +35,7 @@ open import language-operational.evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
 open import language-operational.evaluation-mat Sig 𝒜 sort-width
   using (width; width-env; bases-width; width-subst; proj-var; brel-mat; products;
-         module WithOpMats)
+         module WithOpRels)
 
 private
   module M = matrix.Mat two.semiring
@@ -45,10 +45,10 @@ open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
 open HasTerminal M.terminal using (to-terminal)
 
 module WithOp
-  (op-mat : ∀ {is o'} → op is o' → Category._⇒_ M.cat (bases-width is) (sort-width o'))
+  (op-rel : ∀ {is o'} → op is o' → Category._⇒_ M.cat (bases-width is) (sort-width o'))
   where
 
-  open WithOpMats op-mat
+  open WithOpRels op-rel
 
   private
     ℓT = ℓ ⊔ ℓ'
@@ -359,7 +359,7 @@ module WithOp
     in u , (T ∘ ⟨ R , S ⟩) , ⇓-app Ds Dt D' , tu
   fundamental (bop ω Ms) γ tγ =
     let (vs , Rs , Dss) = fundamental-s Ms γ tγ
-    in const (op-fun ω vs) , (op-mat ω ∘ Rs) , ⇓-bop Dss , tt
+    in const (op-fun ω vs) , (op-rel ω ∘ Rs) , ⇓-bop Dss , tt
   fundamental (brel ω Ms) γ tγ =
     let (vs , Rs , Dss) = fundamental-s Ms γ tγ
     in bool→val (rel-pred ω vs) , brel-mat γ (rel-pred ω vs) , ⇓-brel Dss ,

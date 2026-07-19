@@ -32,7 +32,7 @@ open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
 open import language-operational.evaluation-mat Sig 𝒜 sort-width
-  using (width; width-env; bases-width; width-subst; proj-var; brel-mat; module WithOpMats)
+  using (width; width-env; bases-width; width-subst; proj-var; brel-mat; module WithOpRels)
 open import type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.marking Sig
 
@@ -134,10 +134,10 @@ mvcast refl mv = mv
 -- Instrumentation.
 
 module WithOp
-  (op-mat : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is))
+  (op-rel : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is))
   where
 
-  open WithOpMats op-mat
+  open WithOpRels op-rel
 
   Out : (g p t : ℕ) → Set (ℓ Level.⊔ ℓ')
   Out g p t = Σ ℕ λ k → Seq g (p + k) × M.Matrix t (g + (p + k))
@@ -241,7 +241,7 @@ module WithOp
                 (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa)))
   instrument (bop ms) mγ (⇓-bop {ω = ω} Es) Φ
     with instrument-s ms mγ Es Φ
-  ... | (k , Φ' , Rs) = const , (k , Φ' , op-mat ω M.∘ Rs)
+  ... | (k , Φ' , Rs) = const , (k , Φ' , op-rel ω M.∘ Rs)
   instrument {γ = γ} {p = p} (brel ms) mγ (⇓-brel {ω = ω} {vs = vs} Es) Φ
     with instrument-s ms mγ Es Φ
   ... | (k , Φ' , Rs) =

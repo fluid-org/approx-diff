@@ -115,10 +115,10 @@ private
 bases-width : List sort → ℕ
 bases-width = sorts-width sort-width
 
-op-mat : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
-op-mat (lit n)     = λ i ()
-op-mat add         = λ i j → two.I
-op-mat mult        = λ i j → two.I
-op-mat (lbl l)     = λ ()
-op-mat op-approx-unit = λ i ()
-op-mat approx-mult = λ i j → two.I
+op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
+op-rel (lit n)     = λ i ()
+op-rel add         = λ i j → two.I
+op-rel mult        = λ i j → two.I
+op-rel (lbl l)     = λ ()
+op-rel op-approx-unit = λ i ()
+op-rel approx-mult = λ i j → two.I

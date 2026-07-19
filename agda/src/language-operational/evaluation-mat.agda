@@ -70,8 +70,8 @@ brel-mat : ∀ {Γ} (γ : Env Γ) (b : ⊤ {ℓ'} ⊎ ⊤ {ℓ'}) → width-env 
 brel-mat γ (inj₁ _) = to-terminal {width-env γ}
 brel-mat γ (inj₂ _) = to-terminal {width-env γ}
 
-module WithOpMats
-  (op-mat : ∀ {is o'} → op is o' → bases-width is ⇒ sort-width o')
+module WithOpRels
+  (op-rel : ∀ {is o'} → op is o' → bases-width is ⇒ sort-width o')
   where
 
   mutual
@@ -102,7 +102,7 @@ module WithOpMats
                  γ , s ⇓ clo {Γ'} γ' t' [ R ] → γ , t ⇓ v [ S ] → γ' · v , t' ⇓ u [ T ] →
                  γ , app s t ⇓ u [ T ∘ ⟨ R , S ⟩ ]
       ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-                 γ , Ms ⇓s vs [ R ] → γ , bop ω Ms ⇓ const (op-fun ω vs) [ op-mat ω ∘ R ]
+                 γ , Ms ⇓s vs [ R ] → γ , bop ω Ms ⇓ const (op-fun ω vs) [ op-rel ω ∘ R ]
       ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                  γ , Ms ⇓s vs [ R ] → γ , brel ω Ms ⇓ bool→val (rel-pred ω vs) [ brel-mat γ (rel-pred ω vs) ]
       ⇓-roll   : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v R} →

@@ -168,7 +168,7 @@ record Presentation : Set where
   field
     sort-width : sort → ℕ
     sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c)
-    op-mat     : ∀ {is o'} → op is o' →
+    op-rel     : ∀ {is o'} → op is o' →
                  Category._⇒_ M.cat (BW sort-width is) (sort-width o')
 
 module WithPresentation (P : Presentation) where
@@ -177,8 +177,8 @@ module WithPresentation (P : Presentation) where
 
   private
     module EM = language-operational.evaluation-mat Sig 𝒜 sort-width
-  open EM using (width; width-env; width-subst; module WithOpMats)
-  open WithOpMats op-mat
+  open EM using (width; width-env; width-subst; module WithOpRels)
+  open WithOpRels op-rel
 
   Realiser : (τ : type 0) → Val τ → Index τ → Set
   Realiser τ v a = SM._⇒_ (X^ (width v)) (Fibre τ a)

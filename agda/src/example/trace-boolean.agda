@@ -17,13 +17,13 @@ open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
          approx-unit; approx-mult; rel; equal-label)
 open import example.relation-boolean
-  using (sort-width; op-mat; module Alg-inst; module Tot; module TotOp)
+  using (sort-width; op-rel; module Alg-inst; module Tot; module TotOp)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
 open import language-operational.evaluation-mat Sig Alg-inst.Alg sort-width
-  using (width-env; module WithOpMats)
-open WithOpMats op-mat using (_,_⇓_[_])
+  using (width-env; module WithOpRels)
+open WithOpRels op-rel using (_,_⇓_[_])
 
 show-lbl : L.label → String
 show-lbl L.a = "a"

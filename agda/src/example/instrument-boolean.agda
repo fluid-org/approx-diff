@@ -20,7 +20,7 @@ open import example.signature ℚ
   using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
          approx-unit; approx-mult; rel; equal-label)
 open import example.relation-boolean
-  using (sort-width; op-mat; module Alg-inst; module Tot; module TotOp;
+  using (sort-width; op-rel; module Alg-inst; module Tot; module TotOp;
          module Instr; module InstrOp)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Alg-inst.Alg
