@@ -59,9 +59,9 @@ FP = Inst.FundamentalProperty
 
 -- Totality, the evaluator and the instrumentation, at the same model.
 import language-operational.totality
-module Tot = language-operational.totality Sig Alg-inst.Alg two.semiring sort-width
+module Tot = language-operational.totality Sig Alg-inst.Alg sort-width
 module TotOp = Tot.WithOp op-mat
 
 import language-operational.instrument
-module Instr = language-operational.instrument Sig Alg-inst.Alg two.semiring sort-width
+module Instr = language-operational.instrument Sig Alg-inst.Alg sort-width
 module InstrOp = Instr.WithOp op-mat

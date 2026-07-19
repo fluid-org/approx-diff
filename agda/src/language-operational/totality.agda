@@ -18,12 +18,12 @@ open import categories using (Category; HasProducts; HasTerminal)
 open import signature using (Signature)
 open import language-operational.algebra using (Algebra; sort-vals)
 import matrix
+import two
 
 -- Computability (totality) predicate on values: the existence content of the logical relation, without the
 -- denotational component. Its fundamental lemma is normalisation, yielding a total evaluator.
 module language-operational.totality
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
-  {o e} {A : Setoid o e} (S : CommutativeSemiring A)
   (sort-width : Signature.sort Sig → ℕ)
   where
 
@@ -33,12 +33,12 @@ open import language-syntax Sig renaming (_,_ to _▸_)
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
 open import language-operational.evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
-open import language-operational.evaluation-mat Sig 𝒜 S sort-width
+open import language-operational.evaluation-mat Sig 𝒜 sort-width
   using (width; width-env; bases-width; width-subst; proj-var; brel-mat; products;
          module WithOpMats)
 
 private
-  module M = matrix.Mat S
+  module M = matrix.Mat two.semiring
 
 open Category M.cat using (_⇒_; _∘_) renaming (id to idm)
 open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
@@ -51,7 +51,7 @@ module WithOp
   open WithOpMats op-mat
 
   private
-    ℓT = ℓ ⊔ ℓ' ⊔ o ⊔ e
+    ℓT = ℓ ⊔ ℓ'
 
   TSpec : type 0 → Set (lsuc ℓT)
   TSpec τ = Val τ → Set ℓT

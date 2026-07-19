@@ -25,7 +25,7 @@ open Signature Sig
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒜 using (Val; Env; emp; _·_; lookup)
-open import language-operational.evaluation-mat Sig 𝒜 two.semiring sort-width
+open import language-operational.evaluation-mat Sig 𝒜 sort-width
 open WithOpMats
 
 private

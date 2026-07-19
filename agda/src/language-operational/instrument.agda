@@ -15,6 +15,7 @@ open import every using (Every; []; _∷_)
 open import signature using (Signature)
 open import language-operational.algebra using (Algebra)
 import matrix
+import two
 
 -- Instrumentation of evaluation derivations: given a marking of the term, computes the sequence of
 -- intermediates and the dependency matrix over the extended domain, the data of the instrumented judgement,
@@ -22,7 +23,6 @@ import matrix
 -- application site carries the marking captured by its closure.
 module language-operational.instrument
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
-  {o e} {A : Setoid o e} (S : CommutativeSemiring A)
   (sort-width : Signature.sort Sig → ℕ)
   where
 
@@ -31,14 +31,14 @@ open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒜
   using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
-open import language-operational.evaluation-mat Sig 𝒜 S sort-width
+open import language-operational.evaluation-mat Sig 𝒜 sort-width
   using (width; width-env; bases-width; width-subst; proj-var; brel-mat; module WithOpMats)
 open import type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.marking Sig
 
 private
-  module CS = CommutativeSemiring S
-  module M = matrix.Mat S
+  module CS = CommutativeSemiring two.semiring
+  module M = matrix.Mat two.semiring
 
 ------------------------------------------------------------------------
 -- Matrix plumbing over concatenated domains.
@@ -83,7 +83,7 @@ id-frame g p = pad g p M.I
 ------------------------------------------------------------------------
 -- Sequences of intermediates.
 
-data Seq (g : ℕ) : ℕ → Set (o Level.⊔ ℓ Level.⊔ ℓ') where
+data Seq (g : ℕ) : ℕ → Set (ℓ Level.⊔ ℓ') where
   ∅    : Seq g 0
   snoc : ∀ {n} (Φ : Seq g n) {τ : type 0} (w : Val τ) (Sm : M.Matrix (width w) (g + n)) →
          Seq g (n + width w)
@@ -139,7 +139,7 @@ module WithOp
 
   open WithOpMats op-mat
 
-  Out : (g p t : ℕ) → Set (o Level.⊔ ℓ Level.⊔ ℓ')
+  Out : (g p t : ℕ) → Set (ℓ Level.⊔ ℓ')
   Out g p t = Σ ℕ λ k → Seq g (p + k) × M.Matrix t (g + (p + k))
 
   private

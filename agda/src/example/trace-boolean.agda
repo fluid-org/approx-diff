@@ -21,7 +21,7 @@ open import example.relation-boolean
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
-open import language-operational.evaluation-mat Sig Alg-inst.Alg two.semiring sort-width
+open import language-operational.evaluation-mat Sig Alg-inst.Alg sort-width
   using (width-env; module WithOpMats)
 open WithOpMats op-mat using (_,_⇓_[_])
 

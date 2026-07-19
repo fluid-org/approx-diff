@@ -160,7 +160,7 @@ i⊕₂ {X} {Y} = cmon-enriched.Biproduct.in₂ (SemiMod.biproduct X Y)
 
 private
   BW : (sort → ℕ) → List sort → ℕ
-  BW w = language-operational.evaluation-mat.bases-width Sig 𝒜 two.semiring w
+  BW w = language-operational.evaluation-mat.bases-width Sig 𝒜 w
 
 -- The witness set relating the operational treatment of primitives to the model: a finite presentation
 -- of the base-sort fibres and the dependency matrix of each operation.
@@ -176,7 +176,7 @@ module WithPresentation (P : Presentation) where
   open Presentation P
 
   private
-    module EM = language-operational.evaluation-mat Sig 𝒜 two.semiring sort-width
+    module EM = language-operational.evaluation-mat Sig 𝒜 sort-width
   open EM using (width; width-env; width-subst; module WithOpMats)
   open WithOpMats op-mat
 

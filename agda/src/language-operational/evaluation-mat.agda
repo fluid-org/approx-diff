@@ -16,11 +16,11 @@ open import language-operational.algebra using (Algebra; sort-vals)
 import matrix
 import cmon-enriched
 open import categories using (Category; HasProducts; HasTerminal)
+import two
 
--- Big-step evaluation decorated with dependency matrices over a commutative semiring.
+-- Big-step evaluation decorated with Boolean dependency matrices.
 module language-operational.evaluation-mat
   {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
-  {o e} {A : Setoid o e} (S : CommutativeSemiring A)
   (sort-width : Signature.sort Sig → ℕ)
   where
 
@@ -31,7 +31,7 @@ open import type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig 𝒜 using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
 
 private
-  module M = matrix.Mat S
+  module M = matrix.Mat two.semiring
 
 open Category M.cat using (_⇒_; _∘_) renaming (id to idm)
 open HasTerminal M.terminal using (to-terminal)
@@ -76,7 +76,7 @@ module WithOpMats
 
   mutual
     data _,_⇓_[_] : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) (v : Val τ) →
-                     width-env γ ⇒ width v → Set (ℓ ⊔ℓ ℓ' ⊔ℓ o ⊔ℓ e) where
+                     width-env γ ⇒ width v → Set (ℓ ⊔ℓ ℓ') where
       ⇓-var    : ∀ {Γ τ} {γ : Env Γ} (x : Γ ∋ τ) → γ , var x ⇓ lookup x γ [ proj-var x γ ]
       ⇓-unit   : ∀ {Γ} {γ : Env Γ} → γ , unit ⇓ unit [ to-terminal ]
       ⇓-inl    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v R} →
@@ -113,7 +113,7 @@ module WithOpMats
 
     data _,_⇓s_[_] {Γ} (γ : Env Γ) : ∀ {is} → Every (λ s → Γ ⊢ base s) is →
                     sort-vals sort-val is → width-env γ ⇒ bases-width is →
-                    Set (ℓ ⊔ℓ ℓ' ⊔ℓ o ⊔ℓ e) where
+                    Set (ℓ ⊔ℓ ℓ') where
       []  : γ , [] ⇓s tt [ to-terminal ]
       _∷_ : ∀ {i is v vs R Rs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is} →
             γ , M ⇓ const v [ R ] → γ , Ms ⇓s vs [ Rs ] → γ , (M ∷ Ms) ⇓s (v , vs) [ ⟨ R , Rs ⟩ ]
@@ -122,7 +122,7 @@ module WithOpMats
     data Map {Γ} (γ : Env Γ) {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) :
              (σ' : type 1) (v : Val (σ' [ μ τ₀ ])) → width-env γ ⇒ width v →
              (v' : Val (σ' [ σr ])) → width-env γ ⇒ width v' →
-             Set (ℓ ⊔ℓ ℓ' ⊔ℓ o ⊔ℓ e) where
+             Set (ℓ ⊔ℓ ℓ') where
       m-rec   : ∀ {w w' u R R' S} →
                 Map γ s τ₀ w R w' R' → γ · w' , s ⇓ u [ S ] →
                 Map γ s (var zero) (roll w) R u (S ∘ ⟨ idm _ , R' ⟩)
