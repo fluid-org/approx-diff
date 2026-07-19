@@ -7,6 +7,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import categories using (Category)
+open import Relation.Binary.PropositionalEquality using (refl)
 open import prop using (_,_)
 import language-syntax
 import semimodule
@@ -23,6 +24,7 @@ open ho-model.Interpretation
   SemiMod.cat SemiMod.cmon-enriched SemiMod.limits SemiMod.terminal SemiMod.biproduct
   SDSemiMod.U SDSemiMod.U-preserve-terminal (λ {X} {Y} → SDSemiMod.U-preserve-products {X} {Y})
   (λ e → e) (λ h _ → h , Category.≈-refl SemiMod.cat)
+  SDSemiMod.𝕀
   public
 
 -- Self-dualities on the first-order types of the language with general

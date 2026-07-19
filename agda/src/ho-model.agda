@@ -26,6 +26,7 @@ import Data.Nat
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
 open import Data.Unit using (⊤; tt)
 open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫)
 open import prop-setoid using (IsEquivalence; Setoid)
@@ -64,6 +65,8 @@ module Interpretation
   (F-def : ∀ {a b} (h : Category._⇒_ 𝒟 (F .fobj a) (F .fobj b)) →
            Prf (∃ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h) →
            ∃ₛ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h)
+  -- The generator: the 𝒞-object whose image under F is the rank-one free object of 𝒟.
+  (𝕀ᶜ : Category.obj 𝒞)
   where
 
   -- Target: Fam⟨𝒟⟩
@@ -380,7 +383,7 @@ module Interpretation
 
   -- Fibre objects chosen syntactically, so that widths and canonical maps into the free semimodules are
   -- computed from the choice rather than restated beside it.
-  module FreeObjects (𝕀ᶜ : Category.obj 𝒞) where
+  module FreeObjects where
 
     private
       module C = Category 𝒞
