@@ -7,9 +7,9 @@ open import IO
 open import IO.Finite using (writeFile)
 open import Data.Rational using (ℚ)
 open import example.signature ℚ using (Sig)
-open import example.relation-boolean using (sort-width; module Alg-inst)
 open import example.trace-boolean using (show-op; dep-graph; D-add; D-query)
-open import language-operational.trace Sig Alg-inst.Alg sort-width show-op
+import example.dependency as Dep
+open import language-operational.trace Sig Dep.primitives show-op
   using (show-eval; showDot)
 
 main : Main
