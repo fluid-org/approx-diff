@@ -118,7 +118,7 @@ mutual
     ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] → γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ op-rel ω .func vs ∘ R ]
     ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-               γ , Ms ⇓s vs [ R ] → γ , brel ω Ms ⇓ bool→val (rel-pred ω vs) [ brel-mat γ (rel-pred ω vs) ]
+               γ , Ms ⇓s vs [ R ] → γ , brel ω Ms ⇓ bool→val (rel-pred ω .func vs) [ brel-mat γ (rel-pred ω .func vs) ]
     ⇓-roll   : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v R} →
                γ , t ⇓ v [ R ] → γ , roll {τ = τ} t ⇓ roll {τ} v [ R ]
     ⇓-fold   : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}

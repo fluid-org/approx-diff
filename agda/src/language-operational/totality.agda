@@ -351,8 +351,8 @@ fundamental (bop ω Ms) γ tγ =
   in const (op-fun ω .func vs) , (op-rel ω .func vs ∘ Rs) , ⇓-bop Dss , tt
 fundamental (brel ω Ms) γ tγ =
   let (vs , Rs , Dss) = fundamental-s Ms γ tγ
-  in bool→val (rel-pred ω vs) , brel-mat γ (rel-pred ω vs) , ⇓-brel Dss ,
-     bool-total (rel-pred ω vs)
+  in bool→val (rel-pred ω .func vs) , brel-mat γ (rel-pred ω .func vs) , ⇓-brel Dss ,
+     bool-total (rel-pred ω .func vs)
 fundamental (roll {τ = τ₀} t) γ tγ =
   let (v , R , D , tv) = fundamental t γ tγ
   in roll v , R , ⇓-roll D , mu-in (mt-roll (fold-tot τ₀ τ₀ (arr-self τ₀) tv))

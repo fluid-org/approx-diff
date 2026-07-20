@@ -9,7 +9,7 @@ open import Data.Unit using (tt)
 open import Data.Unit.Polymorphic using (⊤)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
 import prop
-open import prop-setoid using (Setoid; ⊗-setoid; ⊤-isEquivalence; _∘S_)
+open import prop-setoid using (Setoid; ⊗-setoid; +-setoid; 𝟙; ⊤-isEquivalence; _∘S_)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 import matrix
 import two
@@ -55,7 +55,8 @@ record Primitives {ℓ} (Sig : Signature ℓ) : Set (ℓ ⊔ suc 0ℓ) where
     op-rel   : ∀ {is o'} → op is o' →
                prop-setoid._⇒_ (sort-vals-setoid sort-index is)
                  (Category.hom-setoid M𝟚.cat (bases-width is) (sort-width o'))
-    rel-pred : ∀ {is} → rel is → sort-vals is → ⊤ {0ℓ} Sum.⊎ ⊤ {0ℓ}
+    rel-pred : ∀ {is} → rel is →
+               prop-setoid._⇒_ (sort-vals-setoid sort-index is) (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙)
 
 -- The index algebra of a family model: a sort's constants are the index elements of its interpretation,
 -- and an operation acts as the index part of its interpreting morphism. Rebuilds the Fam structure by the
@@ -111,7 +112,4 @@ module IndexAlgebra
     index-algebra w r .Primitives.sort-width = w
     index-algebra w r .Primitives.op-fun {is} ω = Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω) ∘S tuple is
     index-algebra w r .Primitives.op-rel = r
-    index-algebra w r .Primitives.rel-pred {is} ω vs
-      with func (Fam⟨𝒞⟩.Mor.idxf (Impl.⟦rel⟧ ω)) (tuple is .func vs)
-    ... | Sum.inj₁ _ = Sum.inj₁ (lift tt)
-    ... | Sum.inj₂ _ = Sum.inj₂ (lift tt)
+    index-algebra w r .Primitives.rel-pred {is} ω = Fam⟨𝒞⟩.Mor.idxf (Impl.⟦rel⟧ ω) ∘S tuple is

@@ -235,8 +235,8 @@ instrument (bop ms) mγ (⇓-bop {ω = ω} {vs = vs} Es) Φ
 instrument {γ = γ} {p = p} (brel ms) mγ (⇓-brel {ω = ω} {vs = vs} Es) Φ
   with instrument-s ms mγ Es Φ
 ... | (k , Φ' , Rs) =
-  boolM (rel-pred ω vs) ,
-  (k , Φ' , pad (width-env γ) (p + k) (brel-mat γ (rel-pred ω vs)))
+  boolM (rel-pred ω .func vs) ,
+  (k , Φ' , pad (width-env γ) (p + k) (brel-mat γ (rel-pred ω .func vs)))
 instrument {γ = γ} {p = p} (fold m-s m-t) mγ (⇓-fold Dt Dm) Φ
   with instrument m-t mγ Dt Φ
 ... | mvV , (k₁ , Φ₁ , R₁)
