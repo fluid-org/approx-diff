@@ -30,7 +30,7 @@ test-fwd-shared : fwd (mavg half) (_ , input) (lift · , (((⊥ , ⊤) , ⊥) , 
 test-fwd-shared = refl
 
 -- Backward derivative of the full output: every input is used.
-test-bwd : SDSemiMod-𝟚.conjugate (ty₀ (unit [×] input-ty) (_ , input))
+test-bwd : HM.SDSemiMod.conjugate (ty₀ (unit [×] input-ty) (_ , input))
              (ty₀ output-ty ((+ 3 / 2 , + 3 / 1) , + 6 / 1))
              (mor (mavg half) (_ , input)) .func ((⊤ , ⊤) , ⊤)
            ≡ (lift · , (((⊤ , ⊤) , ⊤) , ⊤))
@@ -39,7 +39,7 @@ test-bwd = refl
 -- Related outputs: backwards from the first output and forwards again. The second output shares
 -- an input with the first; the third shares nothing and stays ⊥.
 test-related : fwd (mavg half) (_ , input)
-                 (SDSemiMod-𝟚.conjugate (ty₀ (unit [×] input-ty) (_ , input))
+                 (HM.SDSemiMod.conjugate (ty₀ (unit [×] input-ty) (_ , input))
                     (ty₀ output-ty ((+ 3 / 2 , + 3 / 1) , + 6 / 1))
                     (mor (mavg half) (_ , input)) .func ((⊤ , ⊥) , ⊥))
                ≡ ((⊤ , ⊤) , ⊥)
