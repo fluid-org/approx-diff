@@ -10,15 +10,16 @@ module example.signature-interpretation
   (𝒞 : Category o 0ℓ 0ℓ)
   (𝒞-products : HasProducts 𝒞)
   (𝒞-terminal : HasTerminal 𝒞)
-  -- the free objects: 𝕀^ n approximates a value in n dimensions.
-  (𝕀^ : ℕ → Category.obj 𝒞)
-  -- no dimensions of approximation means no information, so 𝕀^ 0 is terminal.
-  (𝕀^0-terminal : IsTerminal 𝒞 (𝕀^ 0))
-  -- how many dimensions of approximation a `number` carries; unit and conjunct give the
-  -- corresponding free object a monoid structure.
+  -- the approximation carried by a value, indexed by how many dimensions it has.
+  (approx : ℕ → Category.obj 𝒞)
+  -- no dimensions means no information, so the width-0 approximation is terminal.
+  (approx-0-terminal : IsTerminal 𝒞 (approx 0))
+  -- how many dimensions a `number` carries; unit and conjunct give its approximation
+  -- a monoid structure.
   (number-width : ℕ)
-  (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) (𝕀^ number-width))
-  (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products (𝕀^ number-width) (𝕀^ number-width)) (𝕀^ number-width))
+  (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) (approx number-width))
+  (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products (approx number-width) (approx number-width))
+                             (approx number-width))
   -- what a `number` carries, with add/mult on the index side.
   (Numₛ : Setoid 0ℓ 0ℓ)
   (num-add  : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
@@ -28,8 +29,8 @@ module example.signature-interpretation
 import fam
 
 -- The 𝒞-object approximating a `number`, computed from its width.
-Num-approx : Category.obj 𝒞
-Num-approx = 𝕀^ number-width
+number-approx : Category.obj 𝒞
+number-approx = approx number-width
 
 private
   module 𝒞m = Category 𝒞
@@ -133,7 +134,7 @@ BaseInterp0 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
 
 -- The approximation attached to each sort in the value-carrying model, given by its width; the
--- model's ⟦sort⟧ is the free object of that width.
+-- model's ⟦sort⟧ is the approximation of that width.
 sort-index : sort → Setoid 0ℓ 0ℓ
 sort-index number = Numₛ
 sort-index label  = label.Label
@@ -147,7 +148,7 @@ sort-width label  = 0
 -- first argument plus c₂ x y on its second. This is the only part of the interpretation that
 -- varies between the models.
 module BinDeriv
-  (add-c₁ add-c₂ mult-c₁ mult-c₂ : Setoid.Carrier Numₛ → Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Num-approx Num-approx)
+  (add-c₁ add-c₂ mult-c₁ mult-c₂ : Setoid.Carrier Numₛ → Setoid.Carrier Numₛ → Category._⇒_ 𝒞 number-approx number-approx)
   (add-c₁-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (add-c₁ x y) (add-c₁ x' y'))
   (add-c₂-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (add-c₂ x y) (add-c₂ x' y'))
   (mult-c₁-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (mult-c₁ x y) (mult-c₁ x' y'))
@@ -156,10 +157,10 @@ module BinDeriv
 
   private
     op-deriv : (g : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
-               (c₁ c₂ : Setoid.Carrier Numₛ → Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Num-approx Num-approx)
+               (c₁ c₂ : Setoid.Carrier Numₛ → Setoid.Carrier Numₛ → Category._⇒_ 𝒞 number-approx number-approx)
                (c₁-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (c₁ x y) (c₁ x' y'))
                (c₂-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (c₂ x y) (c₂ x' y')) →
-               simple[ Numₛ ×ₛ Numₛ , CP.prod Num-approx Num-approx ] C.⇒ simple[ Numₛ , Num-approx ]
+               simple[ Numₛ ×ₛ Numₛ , CP.prod number-approx number-approx ] C.⇒ simple[ Numₛ , number-approx ]
     op-deriv g c₁ c₂ c₁-cong c₂-cong .idxf = g
     op-deriv g c₁ c₂ c₁-cong c₂-cong .famf .transf xy =
       conjunct 𝒞m.∘ CP.pair (c₁ (proj₁ xy) (proj₂ xy) 𝒞m.∘ CP.p₁) (c₂ (proj₁ xy) (proj₂ xy) 𝒞m.∘ CP.p₂)
@@ -170,28 +171,28 @@ module BinDeriv
                         (𝒞m.∘-cong (c₂-cong (num-sym (prop.proj₁ e)) (num-sym (prop.proj₂ e))) 𝒞m.≈-refl)))
         (𝒞m.≈-sym 𝒞m.id-left))
 
-  add-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod Num-approx Num-approx ] C.⇒ simple[ Numₛ , Num-approx ]
+  add-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod number-approx number-approx ] C.⇒ simple[ Numₛ , number-approx ]
   add-deriv = op-deriv num-add add-c₁ add-c₂ add-c₁-cong add-c₂-cong
 
-  mult-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod Num-approx Num-approx ] C.⇒ simple[ Numₛ , Num-approx ]
+  mult-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod number-approx number-approx ] C.⇒ simple[ Numₛ , number-approx ]
   mult-deriv = op-deriv num-mult mult-c₁ mult-c₂ mult-c₁-cong mult-c₂-cong
 
   BaseInterp1 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-  BaseInterp1 .Model.⟦sort⟧ s = simple[ sort-index s , 𝕀^ (sort-width s) ]
+  BaseInterp1 .Model.⟦sort⟧ s = simple[ sort-index s , approx (sort-width s) ]
   BaseInterp1 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , unit ]
   BaseInterp1 .Model.⟦op⟧ add = add-deriv C.∘ binary
   BaseInterp1 .Model.⟦op⟧ mult = mult-deriv C.∘ binary
-  BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , IsTerminal.to-terminal 𝕀^0-terminal ]
+  BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , IsTerminal.to-terminal approx-0-terminal ]
   BaseInterp1 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
 
 -- The special case with addition's coefficients the identity and multiplication's the Jacobian
 -- entries [ ∂/∂x , ∂/∂y ] = [ coeff y , coeff x ].
 module Deriv
-  (coeff : Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Num-approx Num-approx)
+  (coeff : Setoid.Carrier Numₛ → Category._⇒_ 𝒞 number-approx number-approx)
   (coeff-cong : ∀ {x y} → Setoid._≈_ Numₛ x y → Category._≈_ 𝒞 (coeff x) (coeff y))
   where
 
-  open BinDeriv (λ _ _ → 𝒞m.id Num-approx) (λ _ _ → 𝒞m.id Num-approx)
+  open BinDeriv (λ _ _ → 𝒞m.id number-approx) (λ _ _ → 𝒞m.id number-approx)
                 (λ _ y → coeff y) (λ x _ → coeff x)
                 (λ _ _ → 𝒞m.≈-refl) (λ _ _ → 𝒞m.≈-refl)
                 (λ _ e₂ → coeff-cong e₂) (λ e₁ _ → coeff-cong e₁)
