@@ -8,8 +8,6 @@ module example.dependency where
 open import categories using (Category)
 import prop
 import matrix
-import cmon-enriched
-import Data.Nat
 import semimodule
 import ho-model-sd-semimod
 import semiring-Q
@@ -41,17 +39,11 @@ open import label using (a; b) public
 open import prop using (liftS; LiftS)
 
 private
+  open matrix.Mat two.semiring using (_∥_; block)
   module M𝟚 = matrix.Mat two.semiring
-  module BC𝟚 = cmon-enriched.Biproduct
   module Scalars = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
 
-  -- Copairing of blocks in Mat, and a scalar as a 1-by-1 block.
-  _∥_ : ∀ {m n k} → Category._⇒_ M𝟚.cat m k → Category._⇒_ M𝟚.cat n k → Category._⇒_ M𝟚.cat (m Data.Nat.+ n) k
-  _∥_ {m} {n} f g = BC𝟚.copair (M𝟚.biproduct m n) f g
-
-  blk : two.Two → Category._⇒_ M𝟚.cat 1 1
-  blk c _ _ = c
 
 -- Boolean collapse of a rational: ⊥ at 0, ⊤ elsewhere.
 collapse : ℚ → two.Two
@@ -62,7 +54,7 @@ collapse q with q ≟ℚ 0ℚ
 private
   -- The Boolean collapse of the Jacobian of multiplication: [ ∂/∂x , ∂/∂y ] = [ y , x ].
   mult-rel : ℚ → ℚ → Category._⇒_ M𝟚.cat 2 1
-  mult-rel x y = blk (collapse y) ∥ blk (collapse x)
+  mult-rel x y = block (collapse y) ∥ block (collapse x)
 
   mult-rel-resp : ∀ {x x' y y'} →
                   Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →

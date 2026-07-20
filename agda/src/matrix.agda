@@ -340,6 +340,14 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   biproduct m n .Biproduct.zero-2 = zero-2 m n
   biproduct m n .Biproduct.id-+ = id-+ m n
 
+  -- Copairing of blocks: [ f , g ] as a matrix into the summed domain.
+  _∥_ : ∀ {m n k} → Matrix k m → Matrix k n → Matrix k (m +ℕ n)
+  _∥_ {m} {n} f g = Biproduct.copair (biproduct m n) f g
+
+  -- A scalar as a 1-by-1 block.
+  block : Carrier → Matrix 1 1
+  block c _ _ = c
+
   -- Vector concatenation, a monoid homomorphism preserving pointwise additive structure.
   concat : ∀ {x y} → Vec x → Vec y → Vec (x +ℕ y)
   concat {zero} u v = v

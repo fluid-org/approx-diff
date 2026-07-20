@@ -9,8 +9,6 @@ module example.intervals where
 open import categories using (Category)
 import prop
 import matrix
-import cmon-enriched
-import Data.Nat
 import semimodule
 import sd-semimodule
 import ho-model-sd-semimod
@@ -43,8 +41,8 @@ open import label using (a; b) public
 open semiring-Q-tropical-add public using (∞; fin)
 
 private
+  open matrix.Mat semiring-Q-tropical-add.semiring using (_∥_; block)
   module Mℚ∞ = matrix.Mat semiring-Q-tropical-add.semiring
-  module BC∞ = cmon-enriched.Biproduct
   module Num = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
 

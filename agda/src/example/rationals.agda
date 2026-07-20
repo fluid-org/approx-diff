@@ -8,8 +8,6 @@ module example.rationals where
 open import categories using (Category)
 import prop
 import matrix
-import cmon-enriched
-import Data.Nat
 import semimodule
 import sd-semimodule
 import ho-model-sd-semimod
@@ -37,22 +35,16 @@ module Ex = example ℚ 0ℚ
 open Ex.ex public
 
 private
+  open matrix.Mat semiring-Q.semiring using (_∥_; block)
   module Mℚ = matrix.Mat semiring-Q.semiring
-  module BCℚ = cmon-enriched.Biproduct
   module Scalars = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
 
-  -- Copairing of blocks in Mat, and a scalar as a 1-by-1 block.
-  _∥_ : ∀ {m n k} → Category._⇒_ Mℚ.cat m k → Category._⇒_ Mℚ.cat n k → Category._⇒_ Mℚ.cat (m Data.Nat.+ n) k
-  _∥_ {m} {n} f g = BCℚ.copair (Mℚ.biproduct m n) f g
-
-  blk : ℚ → Category._⇒_ Mℚ.cat 1 1
-  blk c _ _ = c
 
 private
   -- The Jacobian of multiplication: [ ∂/∂x , ∂/∂y ] = [ y , x ].
   mult-jac : ℚ → ℚ → Category._⇒_ Mℚ.cat 2 1
-  mult-jac x y = blk y ∥ blk x
+  mult-jac x y = block y ∥ block x
 
   mult-jac-resp : ∀ {x x' y y'} →
                   Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
