@@ -2,9 +2,6 @@
 
 module example.all where
 
-import example.bool-fwd
-import example.bool-bwd
-import example.bool-mult
 -- import example.dependency-mavg  -- typechecks very slowly
 import example.dependency-total
 import example.rationals-fwd
