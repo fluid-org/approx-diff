@@ -23,7 +23,7 @@ import two
 -- Computability (totality) predicate on values: the existence content of the logical relation, without the
 -- denotational component. Its fundamental lemma is normalisation, yielding a total evaluator.
 module language-operational.totality
-  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives Sig) where
+  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫

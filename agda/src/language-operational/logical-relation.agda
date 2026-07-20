@@ -34,7 +34,7 @@ module language-operational.logical-relation
 
 open Signature Sig
 private
-  module PA = primitives.IndexAlgebra SDSemiMod.cat SDSemiMod.terminal SDSemiMod.products Sig
+  module PA = primitives.IndexAlgebra SDSemiMod.cat SDSemiMod.terminal SDSemiMod.products Sig two.semiring
 
 -- The value-level constants are the model's index elements, so agreement at base sorts is definitional.
 sort-val : Signature.sort Sig → Set
@@ -171,7 +171,7 @@ module WithPresentation (P : Presentation) where
   open Presentation P
 
   private
-    𝒫 : Primitives Sig
+    𝒫 : Primitives two.semiring Sig
     𝒫 = PA.index-algebra Impl sort-width op-rel
 
     module EM = language-operational.evaluation Sig 𝒫

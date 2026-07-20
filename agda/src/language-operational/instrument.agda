@@ -22,7 +22,7 @@ import two
 -- by structural recursion on the derivation. Markings flow through values, so that the body run at an
 -- application site carries the marking captured by its closure.
 module language-operational.instrument
-  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives Sig) where
+  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫

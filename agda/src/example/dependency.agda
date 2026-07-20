@@ -105,7 +105,7 @@ open SemiMod-𝟚._⇒_ public
 -- Value-level constants, by projection from the model.
 module Alg-inst where
   module PA = primitives.IndexAlgebra
-                SDSemiMod-𝟚.cat SDSemiMod-𝟚.terminal SDSemiMod-𝟚.products Sig
+                SDSemiMod-𝟚.cat SDSemiMod-𝟚.terminal SDSemiMod-𝟚.products Sig two.semiring
 
   sort-val : sort → Set
   sort-val = PA.index-val D.BaseInterp1
@@ -188,5 +188,5 @@ op-rel mult .prop-setoid._⇒_.func-resp-≈ e = resp₂ mult (prop.proj₁ e) (
 
 -- The primitives: constants and functions from the model's index parts, widths and dependency
 -- relations as above.
-primitives : Primitives Sig
+primitives : Primitives two.semiring Sig
 primitives = Alg-inst.PA.index-algebra D.BaseInterp1 sort-width op-rel

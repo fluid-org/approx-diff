@@ -16,7 +16,7 @@ import matrix
 
 -- Rendering of evaluation derivations as traces and dependence-graph edge lists.
 module language-operational.trace
-  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives Sig)
+  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig)
   (show-op : ∀ {is o} → Signature.op Sig is o → String)
   where
 

@@ -320,6 +320,43 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     coproducts .copair-ext {X} {Y} {Z} f .famf-eq .transf-eq {inj₂ y} =
       isEquiv .trans (∘-cong (Z .fam .refl*) id-left) (isEquiv .trans id-left id-right)
 
+  -- Predicates: a setoid map into 𝟙 + 𝟙 lifts to a morphism into the Boolean object, with trivial
+  -- fibre maps.
+  module predicates (T : HasTerminal 𝒞) where
+
+    open Category 𝒞
+    open HasCoproducts
+    open HasTerminal
+    open _⇒f_
+
+    𝟚 : Obj
+    𝟚 = coproducts .coprod (simple[ 𝟙 , T .witness ]) (simple[ 𝟙 , T .witness ])
+
+    𝟚ₛ : Setoid os es
+    𝟚ₛ = +-setoid 𝟙 𝟙
+
+    private
+      predicate-transf : ∀ (X : Obj) x y → X .fam .Fam.fm x ⇒ 𝟚 .fam .Fam.fm y
+      predicate-transf X x (inj₁ _) = T .is-terminal .IsTerminal.to-terminal
+      predicate-transf X x (inj₂ _) = T .is-terminal .IsTerminal.to-terminal
+
+      predicate-natural : ∀ (X : Obj) {x₁} {x₂} {y₁} {y₂}
+        (x-eq : X .idx .Setoid._≈_ x₁ x₂)
+        (y-eq : 𝟚ₛ .Setoid._≈_ y₁ y₂) →
+        (predicate-transf X x₂ y₂ ∘ X .fam .Fam.subst x-eq) ≈
+          (𝟚 .fam .Fam.subst {y₁} {y₂} y-eq ∘ predicate-transf X x₁ y₁)
+      predicate-natural X {y₁ = inj₁ _} {inj₁ _} x-eq y-eq =
+        IsTerminal.to-terminal-unique (T .is-terminal) _ _
+      predicate-natural X {y₁ = inj₂ _} {inj₂ _} x-eq y-eq =
+        IsTerminal.to-terminal-unique (T .is-terminal) _ _
+
+    predicate : ∀ {X : Obj} → prop-setoid._⇒_ (X .idx) 𝟚ₛ → Mor X 𝟚
+    predicate f .idxf = f
+    predicate {X} f .famf .transf x = predicate-transf X x (f .prop-setoid._⇒_.func x)
+    predicate {X} f .famf .natural {x₁} {x₂} x₁≈x₂ =
+      predicate-natural X {y₁ = f .prop-setoid._⇒_.func x₁} x₁≈x₂
+        (f .prop-setoid._⇒_.func-resp-≈ x₁≈x₂)
+
   -- Fam(𝒞) has stable coproducts (is extensive): anything mapping into a coproduct A + B automatically splits
   -- into the part that lands in A and the part that lands in B.
   module _ where

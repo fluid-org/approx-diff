@@ -19,7 +19,7 @@ open import categories using (Category; HasProducts; HasTerminal)
 import two
 
 -- Values, environments, and big-step evaluation decorated with dependency relations.
-module language-operational.evaluation {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives Sig) where
+module language-operational.evaluation {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫

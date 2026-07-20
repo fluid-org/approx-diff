@@ -8,11 +8,11 @@ import Data.Sum as Sum
 open import Data.Unit using (tt)
 open import Data.Unit.Polymorphic using (⊤)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
+open import commutative-semiring using (CommutativeSemiring)
 import prop
 open import prop-setoid using (Setoid; ⊗-setoid; +-setoid; 𝟙; ⊤-isEquivalence; _∘S_)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 import matrix
-import two
 import fam
 
 -- The primitives of a signature, as assumed by the operational semantics: for each sort a setoid
@@ -31,10 +31,8 @@ sorts-width : ∀ {ℓ} {A : Set ℓ} → (A → ℕ) → List A → ℕ
 sorts-width w []       = 0
 sorts-width w (s ∷ ss) = w s + sorts-width w ss
 
-private
-  module M𝟚 = matrix.Mat two.semiring
-
-record Primitives {ℓ} (Sig : Signature ℓ) : Set (ℓ ⊔ suc 0ℓ) where
+record Primitives {ℓ} {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (Sig : Signature ℓ)
+                  : Set (ℓ ⊔ suc 0ℓ) where
   open Signature Sig
   field
     sort-index : sort → Setoid 0ℓ 0ℓ
@@ -54,7 +52,7 @@ record Primitives {ℓ} (Sig : Signature ℓ) : Set (ℓ ⊔ suc 0ℓ) where
                prop-setoid._⇒_ (sort-vals-setoid sort-index is) (sort-index o)
     op-rel   : ∀ {is o'} → op is o' →
                prop-setoid._⇒_ (sort-vals-setoid sort-index is)
-                 (Category.hom-setoid M𝟚.cat (bases-width is) (sort-width o'))
+                 (Category.hom-setoid (matrix.Mat.cat S) (bases-width is) (sort-width o'))
     rel-pred : ∀ {is} → rel is →
                prop-setoid._⇒_ (sort-vals-setoid sort-index is) (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙)
 
@@ -69,6 +67,7 @@ module IndexAlgebra
   (𝒞-terminal : HasTerminal 𝒞)
   (𝒞-products : HasProducts 𝒞)
   {ℓ} (Sig : Signature ℓ)
+  {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   where
 
   module Fam⟨𝒞⟩ = fam.CategoryOfFamilies 0ℓ 0ℓ 𝒞
@@ -106,8 +105,8 @@ module IndexAlgebra
     index-algebra : (sort-width : sort → ℕ)
                     (op-rel : ∀ {is o'} → op is o' →
                        prop-setoid._⇒_ (sort-vals-setoid index-setoid is)
-                         (Category.hom-setoid M𝟚.cat (sorts-width sort-width is) (sort-width o'))) →
-                    Primitives Sig
+                         (Category.hom-setoid (matrix.Mat.cat S) (sorts-width sort-width is) (sort-width o'))) →
+                    Primitives S Sig
     index-algebra w r .Primitives.sort-index = index-setoid
     index-algebra w r .Primitives.sort-width = w
     index-algebra w r .Primitives.op-fun {is} ω = Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω) ∘S tuple is
