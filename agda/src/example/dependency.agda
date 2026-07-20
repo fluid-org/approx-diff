@@ -8,6 +8,8 @@ module example.dependency where
 open import categories using (Category)
 import prop
 import matrix
+import cmon-enriched
+import Data.Nat
 import semimodule
 import ho-model-sd-semimod
 import semiring-Q
@@ -18,7 +20,6 @@ open import commutative-semiring using (CommutativeSemiring)
 
 open import Level using (lift; 0ℓ) public
 open import Data.Nat using (ℕ)
-open import Data.Fin using () renaming (zero to fzero; suc to fsuc)
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
 open import Data.Sum using (inj₁; inj₂) public
@@ -41,8 +42,16 @@ open import prop using (liftS; LiftS)
 
 private
   module M𝟚 = matrix.Mat two.semiring
+  module BC𝟚 = cmon-enriched.Biproduct
   module Scalars = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
+
+  -- Copairing of blocks in Mat, and a scalar as a 1-by-1 block.
+  _∥_ : ∀ {m n k} → Category._⇒_ M𝟚.cat m k → Category._⇒_ M𝟚.cat n k → Category._⇒_ M𝟚.cat (m Data.Nat.+ n) k
+  _∥_ {m} {n} f g = BC𝟚.copair (M𝟚.biproduct m n) f g
+
+  blk : two.Two → Category._⇒_ M𝟚.cat 1 1
+  blk c _ _ = c
 
 -- Boolean collapse of a rational: ⊥ at 0, ⊤ elsewhere.
 collapse : ℚ → two.Two
@@ -53,8 +62,7 @@ collapse q with q ≟ℚ 0ℚ
 private
   -- The Boolean collapse of the Jacobian of multiplication: [ ∂/∂x , ∂/∂y ] = [ y , x ].
   mult-rel : ℚ → ℚ → Category._⇒_ M𝟚.cat 2 1
-  mult-rel x y _ fzero    = collapse y
-  mult-rel x y _ (fsuc _) = collapse x
+  mult-rel x y = blk (collapse y) ∥ blk (collapse x)
 
   mult-rel-resp : ∀ {x x' y y'} →
                   Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
@@ -77,15 +85,15 @@ primitives .op-fun mult .func-resp-≈ e =
   Scalars.·-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 primitives .op-fun (lbl l) .func-resp-≈ _ =
   Setoid.isEquivalence label.Label .IsEquivalence.refl
-primitives .op-deps (lit n) .func _ = λ _ ()
-primitives .op-deps add .func _ = λ _ _ → ⊤
+primitives .op-deps (lit n) .func _ = M𝟚.εₘ
+primitives .op-deps add .func _ = M𝟚.I ∥ M𝟚.I
 primitives .op-deps mult .func (x , y , _) = mult-rel x y
-primitives .op-deps (lbl l) .func _ = λ ()
-primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ ()}
-primitives .op-deps add .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ _ → ⊤}
+primitives .op-deps (lbl l) .func _ = M𝟚.εₘ
+primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.εₘ}
+primitives .op-deps add .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.I ∥ M𝟚.I}
 primitives .op-deps mult .func-resp-≈ e =
   mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ ()}
+primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.εₘ}
 primitives .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
 primitives .rel-pred equal-label .func-resp-≈ e =
   label.equal-label .func-resp-≈ (prop.proj₁ e prop., prop.proj₁ (prop.proj₂ e))

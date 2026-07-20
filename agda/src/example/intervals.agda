@@ -9,6 +9,8 @@ module example.intervals where
 open import categories using (Category)
 import prop
 import matrix
+import cmon-enriched
+import Data.Nat
 import semimodule
 import sd-semimodule
 import ho-model-sd-semimod
@@ -20,7 +22,6 @@ open Primitives using (sort-index; sort-width; op-fun; op-deps; rel-pred)
 open import commutative-semiring using (CommutativeSemiring)
 
 open import Level using (lift; 0ℓ) public
-open import Data.Fin using () renaming (zero to fzero; suc to fsuc)
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
 open import Data.Sum using (inj₁; inj₂) public
@@ -43,21 +44,18 @@ open semiring-Q-tropical-add public using (∞; fin)
 
 private
   module Mℚ∞ = matrix.Mat semiring-Q-tropical-add.semiring
-  module Bounds = CommutativeSemiring semiring-Q-tropical-add.semiring
+  module BC∞ = cmon-enriched.Biproduct
   module Num = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
+
+  -- Copairing of blocks in Mat.
+  _∥_ : ∀ {m n k} → Category._⇒_ Mℚ∞.cat m k → Category._⇒_ Mℚ∞.cat n k → Category._⇒_ Mℚ∞.cat (m Data.Nat.+ n) k
+  _∥_ {m} {n} f g = BC∞.copair (Mℚ∞.biproduct m n) f g
 
 private
   -- Addition passes each argument's bounds through unchanged: the block matrix [ I₂ , I₂ ].
   add-deps : Category._⇒_ Mℚ∞.cat 4 2
-  add-deps fzero    fzero                     = Bounds.ι
-  add-deps fzero    (fsuc fzero)              = Bounds.ε
-  add-deps fzero    (fsuc (fsuc fzero))       = Bounds.ι
-  add-deps fzero    (fsuc (fsuc (fsuc _)))    = Bounds.ε
-  add-deps (fsuc _) fzero                     = Bounds.ε
-  add-deps (fsuc _) (fsuc fzero)              = Bounds.ι
-  add-deps (fsuc _) (fsuc (fsuc fzero))       = Bounds.ε
-  add-deps (fsuc _) (fsuc (fsuc (fsuc _)))    = Bounds.ι
+  add-deps = Mℚ∞.I ∥ Mℚ∞.I
 
 primitives : Primitives semiring-Q-tropical-add.semiring Sig
 primitives .sort-index number = semiring-Q.setoid
@@ -75,14 +73,14 @@ primitives .op-fun mult .func-resp-≈ e =
   Num.·-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 primitives .op-fun (lbl l) .func-resp-≈ _ =
   Setoid.isEquivalence label.Label .IsEquivalence.refl
-primitives .op-deps (lit n) .func _ = λ _ ()
+primitives .op-deps (lit n) .func _ = Mℚ∞.εₘ
 primitives .op-deps add .func _ = add-deps
-primitives .op-deps mult .func _ = λ _ _ → Bounds.ε
-primitives .op-deps (lbl l) .func _ = λ ()
-primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = λ _ ()}
+primitives .op-deps mult .func _ = Mℚ∞.εₘ
+primitives .op-deps (lbl l) .func _ = Mℚ∞.εₘ
+primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = Mℚ∞.εₘ}
 primitives .op-deps add .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = add-deps}
-primitives .op-deps mult .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = λ _ _ → Bounds.ε}
-primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = λ ()}
+primitives .op-deps mult .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = Mℚ∞.εₘ}
+primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = Mℚ∞.εₘ}
 primitives .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
 primitives .rel-pred equal-label .func-resp-≈ e =
   label.equal-label .func-resp-≈ (prop.proj₁ e prop., prop.proj₁ (prop.proj₂ e))

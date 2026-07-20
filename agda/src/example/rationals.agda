@@ -8,6 +8,8 @@ module example.rationals where
 open import categories using (Category)
 import prop
 import matrix
+import cmon-enriched
+import Data.Nat
 import semimodule
 import sd-semimodule
 import ho-model-sd-semimod
@@ -19,7 +21,6 @@ open Primitives using (sort-index; sort-width; op-fun; op-deps; rel-pred)
 open import commutative-semiring using (CommutativeSemiring)
 
 open import Level using (lift; 0ℓ) public
-open import Data.Fin using () renaming (zero to fzero; suc to fsuc)
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
 open import Data.Sum using (inj₁; inj₂) public
@@ -37,14 +38,21 @@ open Ex.ex public
 
 private
   module Mℚ = matrix.Mat semiring-Q.semiring
+  module BCℚ = cmon-enriched.Biproduct
   module Scalars = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
+
+  -- Copairing of blocks in Mat, and a scalar as a 1-by-1 block.
+  _∥_ : ∀ {m n k} → Category._⇒_ Mℚ.cat m k → Category._⇒_ Mℚ.cat n k → Category._⇒_ Mℚ.cat (m Data.Nat.+ n) k
+  _∥_ {m} {n} f g = BCℚ.copair (Mℚ.biproduct m n) f g
+
+  blk : ℚ → Category._⇒_ Mℚ.cat 1 1
+  blk c _ _ = c
 
 private
   -- The Jacobian of multiplication: [ ∂/∂x , ∂/∂y ] = [ y , x ].
   mult-jac : ℚ → ℚ → Category._⇒_ Mℚ.cat 2 1
-  mult-jac x y _ fzero    = y
-  mult-jac x y _ (fsuc _) = x
+  mult-jac x y = blk y ∥ blk x
 
   mult-jac-resp : ∀ {x x' y y'} →
                   Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
@@ -67,15 +75,15 @@ primitives .op-fun mult .func-resp-≈ e =
   Scalars.·-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 primitives .op-fun (lbl l) .func-resp-≈ _ =
   Setoid.isEquivalence label.Label .IsEquivalence.refl
-primitives .op-deps (lit n) .func _ = λ _ ()
-primitives .op-deps add .func _ = λ _ _ → Scalars.ι
+primitives .op-deps (lit n) .func _ = Mℚ.εₘ
+primitives .op-deps add .func _ = Mℚ.I ∥ Mℚ.I
 primitives .op-deps mult .func (x , y , _) = mult-jac x y
-primitives .op-deps (lbl l) .func _ = λ ()
-primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl Mℚ.cat {f = λ _ ()}
-primitives .op-deps add .func-resp-≈ _ = Category.≈-refl Mℚ.cat {f = λ _ _ → Scalars.ι}
+primitives .op-deps (lbl l) .func _ = Mℚ.εₘ
+primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl Mℚ.cat {f = Mℚ.εₘ}
+primitives .op-deps add .func-resp-≈ _ = Category.≈-refl Mℚ.cat {f = Mℚ.I ∥ Mℚ.I}
 primitives .op-deps mult .func-resp-≈ e =
   mult-jac-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl Mℚ.cat {f = λ ()}
+primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl Mℚ.cat {f = Mℚ.εₘ}
 primitives .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
 primitives .rel-pred equal-label .func-resp-≈ e =
   label.equal-label .func-resp-≈ (prop.proj₁ e prop., prop.proj₁ (prop.proj₂ e))
