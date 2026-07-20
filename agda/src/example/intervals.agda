@@ -46,10 +46,6 @@ private
   module Num = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
 
-  -- Copairing of blocks in Mat.
-  _∥_ : ∀ {m n k} → Category._⇒_ Mℚ∞.cat m k → Category._⇒_ Mℚ∞.cat n k → Category._⇒_ Mℚ∞.cat (m Data.Nat.+ n) k
-  _∥_ {m} {n} f g = BC∞.copair (Mℚ∞.biproduct m n) f g
-
 private
   -- Addition passes each argument's bounds through unchanged: the block matrix [ I₂ , I₂ ].
   add-deps : Category._⇒_ Mℚ∞.cat 4 2
