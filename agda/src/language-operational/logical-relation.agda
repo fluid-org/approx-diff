@@ -35,14 +35,15 @@ module language-operational.logical-relation
 open Signature Sig
 open Primitives 𝒫
 
--- The model is the one determined by the primitives, so agreement with the operational treatment of
--- constants, widths and dependency relations is definitional.
 private
   Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig
   Impl = interp-primitives.model Sig 𝒫
 
 open import language-syntax Sig renaming (_,_ to _▸_)
 import language-operational.evaluation
+import cmon-enriched
+import indexed-family
+import polynomial-functor
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
 
 open interp Sig Impl
@@ -80,7 +81,6 @@ roll-mor τ =
   Category._∘_ Fam⟨𝒟⟩.cat
     (polynomial-functor.Interp.HasMu.inMap Fam⟨𝒟⟩-hasMu (as-poly τ δ₀) δ₀)
     (sub-as-apply-fwd τ (μ τ))
-  where import polynomial-functor
 
 roll-ix : (τ : type 1) → Index (τ [ μ τ ]) → Index (μ τ)
 roll-ix τ a = roll-mor τ .idxf .prop-setoid._⇒_.func a
@@ -88,7 +88,6 @@ roll-ix τ a = roll-mor τ .idxf .prop-setoid._⇒_.func a
 roll-fib : (τ : type 1) (a : Index (τ [ μ τ ])) →
            SM._⇒_ (Fibre (τ [ μ τ ]) a) (Fibre (μ τ) (roll-ix τ a))
 roll-fib τ a = roll-mor τ .famf .indexed-family._⇒f_.transf a
-  where import indexed-family
 
 private
   _∘M_ = SM._∘_
@@ -115,11 +114,9 @@ ix-in₂ σ τ a = FamCP.in₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .
 
 fib-in₁ : (σ τ : type 0) (a : Index σ) → SM._⇒_ (Fibre σ a) (Fibre (σ [+] τ) (ix-in₁ σ τ a))
 fib-in₁ σ τ a = FamCP.in₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf a
-  where import indexed-family
 
 fib-in₂ : (σ τ : type 0) (a : Index τ) → SM._⇒_ (Fibre τ a) (Fibre (σ [+] τ) (ix-in₂ σ τ a))
 fib-in₂ σ τ a = FamCP.in₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf a
-  where import indexed-family
 
 ix-p₁ : (σ τ : type 0) → Index (σ [×] τ) → Index σ
 ix-p₁ σ τ ab = FamP.p₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func ab
@@ -130,12 +127,10 @@ ix-p₂ σ τ ab = FamP.p₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .idxf .pr
 fib-p₁ : (σ τ : type 0) (ab : Index (σ [×] τ)) →
          SM._⇒_ (Fibre (σ [×] τ) ab) (Fibre σ (ix-p₁ σ τ ab))
 fib-p₁ σ τ ab = FamP.p₁ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf ab
-  where import indexed-family
 
 fib-p₂ : (σ τ : type 0) (ab : Index (σ [×] τ)) →
          SM._⇒_ (Fibre (σ [×] τ) ab) (Fibre τ (ix-p₂ σ τ ab))
 fib-p₂ σ τ ab = FamP.p₂ {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf ab
-  where import indexed-family
 
 -- Application at points and the evaluation fibre map.
 app-ix : (σ τ : type 0) → Index (σ [→] τ) → Index σ → Index τ
@@ -145,20 +140,12 @@ app-ix σ τ f a = FamE.eval .idxf .prop-setoid._⇒_.func (f , a)
      SM._⇒_ (Fam⟨𝒟⟩.fm ((FamP.prod (⟦ σ [→] τ ⟧ty δ₀) (⟦ σ ⟧ty δ₀)) .fam) (f , a))
             (Fibre τ (app-ix σ τ f a))
 ∂ε σ τ f a = FamE.eval {⟦ σ ⟧ty δ₀} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf (f , a)
-  where import indexed-family
 
 i⊕₁ : ∀ {X Y} → SM._⇒_ X (SemiMod._⊕_ X Y)
 i⊕₁ {X} {Y} = cmon-enriched.Biproduct.in₁ (SemiMod.biproduct X Y)
-  where import cmon-enriched
 
 i⊕₂ : ∀ {X Y} → SM._⇒_ Y (SemiMod._⊕_ X Y)
 i⊕₂ {X} {Y} = cmon-enriched.Biproduct.in₂ (SemiMod.biproduct X Y)
-  where import cmon-enriched
-
--- Each base fibre is the free object of its width, so the realising map is the iso between the two
--- presentations of that free object.
-sort-can : ∀ s (c : sort-val s) → SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c)
-sort-can s c = MES.X^≅S^ (sort-width s) .Category.Iso.fwd
 
 private
   module EM = language-operational.evaluation Sig 𝒫
@@ -188,7 +175,7 @@ data MuRel (τ₀ : type 1)
   mrel-unit  : ∀ {a r} → MuRel τ₀ Rel< unit unit a r
   mrel-base  : ∀ {s c a r} →
                Prf (∃ₚ (idx-≈ (base s) c a) λ e →
-                    r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c)) →
+                    r ≈M (fibre-subst (base s) {c} {a} e ∘M MES.X^≅S^ (sort-width s) .Category.Iso.fwd)) →
                MuRel τ₀ Rel< (base s) (const c) a r
   mrel-arrow : ∀ {σ₁ σ₂ : type 0} {v a r} →
                (p : size {1} (σ₁ [→] σ₂) < size (μ τ₀)) →
@@ -229,7 +216,7 @@ Rel-acc (var ())
 Rel-acc unit _ v a r = ⊤ₛ
 Rel-acc (base s) _ (const c) a r =
   Prf (∃ₚ (idx-≈ (base s) c a) λ e →
-       r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c))
+       r ≈M (fibre-subst (base s) {c} {a} e ∘M MES.X^≅S^ (sort-width s) .Category.Iso.fwd))
 Rel-acc (σ [+] τ) (acc rs) (inl v) a r =
   Σ (Index σ) λ a' → Σ (Realiser σ v a') λ r' →
     Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a' r' ×
@@ -279,7 +266,6 @@ EnvRel (Γ ▸ τ) (γ · v) g r =
   Rel τ v (FamP.p₂ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func g)
       (FamP.p₂ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf g
          ∘M r ∘M in-free₂ (width-env γ) (width v))
-  where import indexed-family
 
 -- Statement only; the proof is future work and yields eval (totality), soundness at first-order types, and
 -- the existence half of determinism.
