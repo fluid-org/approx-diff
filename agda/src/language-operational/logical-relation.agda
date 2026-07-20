@@ -20,7 +20,7 @@ open import language-operational.algebra using (Algebra; sort-vals)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
 open import functor using (Functor)
 import matrix-embedding-semimod
-import ho-model-boolalg-sd-semimod
+import ho-model-sd-semimod
 
 -- Logical relation between the operational semantics and the interpretation in Fam(SemiMod(𝟚)), in
 -- existential (computability) form. Defined by well-founded recursion on type size: at an inductive type the
@@ -28,13 +28,13 @@ import ho-model-boolalg-sd-semimod
 -- parameter, with the size bound carried by the arrow-leaf constructor.
 module language-operational.logical-relation
   (Sig : Signature 0ℓ)
-  (open ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean)
+  (open ho-model-sd-semimod two.semiring)
   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
   where
 
 open Signature Sig
 private
-  module PA = language-operational.algebra.IndexAlgebra BoolAlg.cat BoolAlg.terminal BoolAlg.products Sig
+  module PA = language-operational.algebra.IndexAlgebra SDSemiMod.cat SDSemiMod.terminal SDSemiMod.products Sig
 
 -- The value-level algebra is the model's index elements, so agreement at base sorts is definitional.
 𝒜 : Algebra Sig 0ℓ
@@ -47,7 +47,7 @@ open import language-operational.evaluation Sig 𝒜
 import language-operational.evaluation-mat
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
 
-open interp-boolean Sig Impl
+open interp Sig Impl
 
 private
   module FamCP = HasCoproducts (strong-coproducts→coproducts Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-strongCoproducts)

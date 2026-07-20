@@ -17,8 +17,7 @@ open import functor using (Functor)
 open import Data.List using (List; []; _∷_)
 import Data.Nat
 open import Data.Nat using (ℕ)
-import boolalg-sd-semimodule
-import ho-model-boolalg-sd-semimod
+import ho-model-sd-semimod
 import semiring-Q
 import indexed-family
 open import language-operational.algebra using (Algebra; sort-vals)
@@ -49,7 +48,6 @@ open import label using (a; b) public
 open import prop using (liftS; LiftS)
 
 -- Model instantiation: Boolean approximations over rational data.
-module BoolAlg-𝟚 = boolalg-sd-semimodule two.semiring two.semiring-boolean
 module SDSemiMod-𝟚 = sd-semimodule two.semiring
 module SemiMod-𝟚 = semimodule two.semiring
 open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_; εm)
@@ -57,14 +55,14 @@ open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_; εm)
 number-width : ℕ
 number-width = 1
 
-Approx : Category.obj BoolAlg-𝟚.cat
-Approx = BoolAlg-𝟚.S^ number-width
+Approx : Category.obj SDSemiMod-𝟚.cat
+Approx = SDSemiMod-𝟚.S^ number-width
 
-approx-unit : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approx
-approx-unit = HasInitial.from-initial BoolAlg-𝟚.initial {Approx}
-approx-conjunct : Category._⇒_ BoolAlg-𝟚.cat (HasProducts.prod BoolAlg-𝟚.products Approx Approx) Approx
-approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
-        +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
+approx-unit : Category._⇒_ SDSemiMod-𝟚.cat (HasTerminal.witness SDSemiMod-𝟚.terminal) Approx
+approx-unit = HasInitial.from-initial SDSemiMod-𝟚.initial {Approx}
+approx-conjunct : Category._⇒_ SDSemiMod-𝟚.cat (HasProducts.prod SDSemiMod-𝟚.products Approx Approx) Approx
+approx-conjunct = HasProducts.p₁ SDSemiMod-𝟚.products {Approx} {Approx}
+        +m HasProducts.p₂ SDSemiMod-𝟚.products {Approx} {Approx}
 
 private
   open prop-setoid._⇒_
@@ -80,35 +78,34 @@ private
   num-mult .func-resp-≈ e = Scalars.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 import example.signature-interpretation
-module SI = example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
-  BoolAlg-𝟚.S^_ (BoolAlg-𝟚.terminal .HasTerminal.is-terminal) number-width approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+module SI = example.signature-interpretation SDSemiMod-𝟚.cat SDSemiMod-𝟚.products SDSemiMod-𝟚.terminal
+  SDSemiMod-𝟚.S^_ (SDSemiMod-𝟚.terminal .HasTerminal.is-terminal) number-width approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 open SI
 open SI using (sort-width) public
 
 -- Boolean-collapse derivative coefficient: zero map at 0, identity elsewhere.
 private
-  coeff-b : ℚ → Category._⇒_ BoolAlg-𝟚.cat Approx Approx
+  coeff-b : ℚ → Category._⇒_ SDSemiMod-𝟚.cat Approx Approx
   coeff-b q with q ≟ℚ 0ℚ
   ... | yes _ = εm
-  ... | no _ = Category.id BoolAlg-𝟚.cat Approx
+  ... | no _ = Category.id SDSemiMod-𝟚.cat Approx
 
   coeff-cong-b : ∀ {x y} → Setoid._≈_ semiring-Q.setoid x y → Category._≈_ SemiMod-𝟚.cat (coeff-b x) (coeff-b y)
   coeff-cong-b {x} (liftS refl) = Category.≈-refl SemiMod-𝟚.cat {f = coeff-b x}
 
 module D = Deriv coeff-b coeff-cong-b
-open ho-model-boolalg-sd-semimod.interp-boolean two.semiring two.semiring-boolean Sig D.BaseInterp1 public
+open ho-model-sd-semimod.interp-sd two.semiring Sig D.BaseInterp1 public
 
 -- W-trees indexing the fibres of closed μ-types, for writing inputs.
 module T = Pm.Tree {n = 0} (λ ())
 
 open indexed-family._⇒f_ public
 open SemiMod-𝟚._⇒_ public
-open BoolAlg-𝟚.SelfDualBooleanAlgebra public using (selfDual)
 
 -- Value-level algebra, by projection from the model.
 module Alg-inst where
   module PA = language-operational.algebra.IndexAlgebra
-                BoolAlg-𝟚.cat BoolAlg-𝟚.terminal BoolAlg-𝟚.products Sig
+                SDSemiMod-𝟚.cat SDSemiMod-𝟚.terminal SDSemiMod-𝟚.products Sig
 
   Alg : Algebra Sig 0ℓ
   Alg = PA.index-algebra D.BaseInterp1
@@ -137,13 +134,13 @@ private
       (Alg-inst.PA.tuple D.BaseInterp1 is vs)
 
   -- The approximation of an operation's arguments: the product of the argument approximations.
-  args-approx : List sort → Category.obj BoolAlg-𝟚.cat
-  args-approx []       = HasTerminal.witness BoolAlg-𝟚.terminal
+  args-approx : List sort → Category.obj SDSemiMod-𝟚.cat
+  args-approx []       = HasTerminal.witness SDSemiMod-𝟚.terminal
   args-approx (i ∷ is) =
-    HasProducts.prod BoolAlg-𝟚.products (BoolAlg-𝟚.S^ (sort-width i)) (args-approx is)
+    HasProducts.prod SDSemiMod-𝟚.products (SDSemiMod-𝟚.S^ (sort-width i)) (args-approx is)
 
   op-fib : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) →
-           Category._⇒_ BoolAlg-𝟚.cat (args-approx is) (BoolAlg-𝟚.S^ (sort-width o'))
+           Category._⇒_ SDSemiMod-𝟚.cat (args-approx is) (SDSemiMod-𝟚.S^ (sort-width o'))
   -- Matching on the operation so that the argument list, and hence both objects, compute.
   op-fib (lit n) vs = fib (lit n) vs
   op-fib add     vs = fib add vs
@@ -152,16 +149,14 @@ private
 
   -- The same map on the underlying semimodules, with both objects pinned.
   U-mor : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) →
-          SMc._⇒_ (BoolAlg-𝟚.U .Functor.fobj (args-approx is))
-                  (BoolAlg-𝟚.U .Functor.fobj (BoolAlg-𝟚.S^ (sort-width o')))
+          SMc._⇒_ (SDSemiMod-𝟚.U .Functor.fobj (args-approx is))
+                  (SDSemiMod-𝟚.U .Functor.fobj (SDSemiMod-𝟚.S^ (sort-width o')))
   U-mor {is} {o'} ω vs =
-    BoolAlg-𝟚.U .Functor.fmor {args-approx is} {BoolAlg-𝟚.S^ (sort-width o')} (op-fib ω vs)
+    SDSemiMod-𝟚.U .Functor.fmor {args-approx is} {SDSemiMod-𝟚.S^ (sort-width o')} (op-fib ω vs)
 
-  -- Move the result out of the Boolean free object of its width and into the semimodule one.
-  out : ∀ n → SMc._⇒_ (BoolAlg-𝟚.U .Functor.fobj (BoolAlg-𝟚.S^ n)) (MES.X^ n)
-  out n = ≡-subst (λ M → SMc._⇒_ (MES.SDSemiMod.SelfDual.obj M) (MES.X^ n))
-                  (sym (BoolAlg-𝟚.selfDual-S^ n))
-                  (MES.X^≅S^ n .Category.Iso.bwd)
+  -- Move the result out of the free object of its width and into the matrix embedding's.
+  out : ∀ n → SMc._⇒_ (SDSemiMod-𝟚.U .Functor.fobj (SDSemiMod-𝟚.S^ n)) (MES.X^ n)
+  out n = MES.X^≅S^ n .Category.Iso.bwd
 
 op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is →
         Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')

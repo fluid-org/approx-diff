@@ -35,8 +35,8 @@ test-q₂ = refl
 
 -- The backward derivative applied to the selected output: the inputs the output may depend on,
 -- (1 0 1 1 0), still including the cancelled price a.
-test-bwd : SDSemiMod-𝟚.conjugate (selfDual (ty₀ (unit [×] input-ty) (_ , input)))
-             (selfDual (ty₀ (base number) 0ℚ))
+test-bwd : SDSemiMod-𝟚.conjugate (ty₀ (unit [×] input-ty) (_ , input))
+             (ty₀ (base number) 0ℚ)
              (mor (total a) (_ , input)) .func ⊤
            ≡ (lift · , ((lift · , ⊤) , (lift · , ⊥) , (lift · , ⊤) , _) , (⊤ , ⊥))
 test-bwd = refl
