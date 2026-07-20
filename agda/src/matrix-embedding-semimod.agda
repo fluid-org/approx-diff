@@ -56,7 +56,6 @@ private
   S.trans (endo-comm f g x₁) (g .func-resp-≈ (f .func-resp-≈ x₁≈x₂))
 
 open import matrix-embedding SemiMod.cmon-enriched SemiMod.biproduct 𝟘 𝟘-initial 𝟘-terminal 𝕀 (λ {f} {g} → ∘-comm {f} {g}) public
-  renaming (S to End𝕀)
 
 -- The embedding factors through the self-dual semimodules: each free object X^ n is isomorphic to the free
 -- self-dual semimodule S^ n. The two differ only by the unit law at width one, where S^ 1 is 𝕀 and X^ 1 is
@@ -68,6 +67,7 @@ open import functor using (Functor)
 module SDSemiMod = sd-semimodule S
 open SDSemiMod using (S^_)
 open import prop-setoid using (module ≈-Reasoning)
+open import commutative-semiring using (_⇒h_)
 
 private
   module C = Category SemiMod.cat
@@ -114,3 +114,42 @@ embed .Functor.fmor-comp {x} {y} {z} f g = begin
     (X^≅S^ z .fwd C.∘ (F .Functor.fmor f C.∘ X^≅S^ y .bwd)) C.∘ (X^≅S^ y .fwd C.∘ (F .Functor.fmor g C.∘ X^≅S^ x .bwd))
   ∎
   where open ≈-Reasoning C.isEquiv
+
+------------------------------------------------------------------------------
+-- The scalars are the 𝕀-endomorphisms, in both directions: a scalar acts by multiplication, and an
+-- endomorphism is recovered as its value at ι. Packaging both as semiring homomorphisms lets the
+-- generic embedding be read at S rather than at EndX.
+
+mult-endo : S.Carrier → SemiMod._⇒_ 𝕀 𝕀
+mult-endo s .SemiMod._⇒_.*→* .prop-setoid._⇒_.func y = y S.· s
+mult-endo s .SemiMod._⇒_.*→* .prop-setoid._⇒_.func-resp-≈ e = S.·-cong e S.refl
+mult-endo s .SemiMod._⇒_.preserve-ze = S.ε-annihilₗ
+mult-endo s .SemiMod._⇒_.preserve-+ = S.·-+-distribᵣ
+mult-endo s .SemiMod._⇒_.preserve-· = S.·-assoc
+
+into : S ⇒h EndX
+into ._⇒h_.f = mult-endo
+into ._⇒h_.f-cong e .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq y≈y' = S.·-cong y≈y' e
+into ._⇒h_.f-+ .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq y≈y' =
+  S.trans (S.·-cong y≈y' S.refl) S.·-+-distribₗ
+into ._⇒h_.f-· .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq y≈y' =
+  S.trans (S.·-cong y≈y' S.refl)
+    (S.trans (S.·-cong S.refl S.·-comm) (S.sym (S.·-assoc)))
+into ._⇒h_.f-ε .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq y≈y' =
+  S.trans (S.·-cong y≈y' S.refl) S.ε-annihilᵣ
+into ._⇒h_.f-ι .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq y≈y' =
+  S.trans (S.·-cong y≈y' S.refl) (S.trans S.·-comm S.·-lunit)
+
+endo-scalar : SemiMod._⇒_ 𝕀 𝕀 → S.Carrier
+endo-scalar h = h .SemiMod._⇒_.*→* .prop-setoid._⇒_.func S.ι
+
+outof : EndX ⇒h S
+outof ._⇒h_.f = endo-scalar
+outof ._⇒h_.f-cong e = e .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq S.refl
+outof ._⇒h_.f-+ = S.refl
+outof ._⇒h_.f-· {a} {b} =
+  S.trans (scalar-endo a (endo-scalar b)) S.·-comm
+outof ._⇒h_.f-ε = S.refl
+outof ._⇒h_.f-ι = S.refl
+
+open AtSemiring S into outof public using (mat→mor; mor→mat; module MatS)

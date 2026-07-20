@@ -10,7 +10,9 @@ open import Level using (Level)
 open import Data.Nat using (ℕ)
 open import Data.Fin using (Fin; zero; suc)
 open import prop-setoid using (Setoid)
+open import categories using (Category)
 open import commutative-semiring using (CommutativeSemiring; _⇒ˡ_; _⇒h_)
+open import functor using (Functor)
 import commutative-monoid
 import matrix
 
@@ -71,6 +73,15 @@ module Strict
   E-∘ : ∀ {m n k} (M : Mat-S.Matrix m n) (N : Mat-S.Matrix n k) →
         E (M Mat-S.∘ N) Mat-T.≈ₘ (E M Mat-T.∘ E N)
   E-∘ M N i j = T.trans (f-Σ (λ l → M i l S.· N l j)) (Σ-preserves (λ l → f-· {M i l} {N l j}))
+
+  -- The entrywise action packaged as a functor, so that composing it with an embedding of matrices
+  -- into a category inherits that embedding's laws instead of restating them.
+  functor : Functor Mat-S.cat Mat-T.cat
+  functor .Functor.fobj n = n
+  functor .Functor.fmor = E
+  functor .Functor.fmor-cong = E-cong
+  functor .Functor.fmor-id = E-I
+  functor .Functor.fmor-comp = E-∘
 
 -- A lax homomorphism into an additively idempotent semiring acts laxly: composition is preserved
 -- up to the additive preorder.

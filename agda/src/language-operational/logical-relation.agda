@@ -18,8 +18,8 @@ import two
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import language-operational.algebra using (Algebra; sort-vals)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
+open import functor using (Functor)
 import matrix-embedding-semimod
-import matrix-semimod-action
 import ho-model-boolalg-sd-semimod
 
 -- Logical relation between the operational semantics and the interpretation in Fam(SemiMod(𝟚)), in
@@ -56,7 +56,6 @@ private
 
 private
   module MES = matrix-embedding-semimod two.semiring
-  module MSA = matrix-semimod-action two.semiring
   module SM = Category SemiMod.cat
   module M = matrix.Mat two.semiring
 
@@ -190,10 +189,10 @@ module WithPresentation (P : Presentation) where
   RelSpec τ = (v : Val τ) (a : Index τ) → Realiser τ v a → Set
 
   in-free₁ : (m n : ℕ) → SM._⇒_ (X^ m) (X^ (m + n))
-  in-free₁ m n = MSA.mat-mor (M.in₁ {m} {n})
+  in-free₁ m n = Functor.fmor MES.mat→mor (M.in₁ {m} {n})
 
   in-free₂ : (m n : ℕ) → SM._⇒_ (X^ n) (X^ (m + n))
-  in-free₂ m n = MSA.mat-mor (M.in₂ {m} {n})
+  in-free₂ m n = Functor.fmor MES.mat→mor (M.in₂ {m} {n})
 
   data MuRel (τ₀ : type 1)
              (Rel< : (σ : type 0) → size σ < size (μ τ₀) → RelSpec σ) :
@@ -272,9 +271,9 @@ module WithPresentation (P : Presentation) where
     Σ (γ' · v , t ⇓ u [ R ]) λ _ →
     Σ (Realiser τ u (app-ix σ τ f a)) λ q →
       Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (app-ix σ τ f a) q ×
-      Prf (((q ∘M MSA.mat-mor R ∘M in-free₁ (width-env γ') (width v)) ≈M
+      Prf (((q ∘M Functor.fmor MES.mat→mor R ∘M in-free₁ (width-env γ') (width v)) ≈M
               (∂ε σ τ f a ∘M i⊕₁ ∘M r))
-         ∧ ((q ∘M MSA.mat-mor R ∘M in-free₂ (width-env γ') (width v)) ≈M
+         ∧ ((q ∘M Functor.fmor MES.mat→mor R ∘M in-free₂ (width-env γ') (width v)) ≈M
               (∂ε σ τ f a ∘M i⊕₂ ∘M rv)))
   Rel-acc (μ τ₀) (acc rs) v a r =
     MuRel τ₀ (λ σ p → Rel-acc σ (rs p)) (var Fin.zero) v a r
@@ -312,4 +311,4 @@ module WithPresentation (P : Presentation) where
     Σ (γ , t ⇓ v [ R ]) λ _ →
     Σ (Realiser τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g)) λ q →
       Rel τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g) q ×
-      Prf ((q ∘M MSA.mat-mor R) ≈M (mor t g ∘M rγ))
+      Prf ((q ∘M Functor.fmor MES.mat→mor R) ≈M (mor t g ∘M rγ))

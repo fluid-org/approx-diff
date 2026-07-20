@@ -13,7 +13,6 @@ import semimodule
 import sd-semimodule
 import matrix
 import matrix-embedding-semimod
-import matrix-semimod-action
 open import functor using (Functor)
 open import Data.List using (List; []; _∷_)
 import Data.Nat
@@ -130,7 +129,6 @@ bases-width = sorts-width sort-width
 -- matrix embedding. Nothing is chosen here; the relation is whatever the model already computes.
 private
   module MES = matrix-embedding-semimod two.semiring
-  module MSA = matrix-semimod-action two.semiring
   module SMc = Category MES.SDSemiMod.SemiMod.cat
 
   fib : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) → _
@@ -167,7 +165,7 @@ private
 
 op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is →
         Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
-op-rel (lit n) vs = MSA.mat-of (out 1 SMc.∘ U-mor (lit n) vs)
-op-rel add vs     = MSA.mat-of (out 1 SMc.∘ U-mor add vs)
-op-rel mult vs    = MSA.mat-of (out 1 SMc.∘ U-mor mult vs)
-op-rel (lbl l) vs = MSA.mat-of (out 0 SMc.∘ U-mor (lbl l) vs)
+op-rel (lit n) vs = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor (lit n) vs)
+op-rel add vs     = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor add vs)
+op-rel mult vs    = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor mult vs)
+op-rel (lbl l) vs = Functor.fmor MES.mor→mat (out 0 SMc.∘ U-mor (lbl l) vs)

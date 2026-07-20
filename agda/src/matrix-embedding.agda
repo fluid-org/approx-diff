@@ -7,8 +7,9 @@ open import categories using (Category; IsInitial; IsTerminal; HasInitial; HasTe
 open import setoid-cat using (SetoidCat)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products; biproduct-iso)
 open import commutative-monoid using (CommutativeMonoid; _=[_]>_)
-open import commutative-semiring using (CommutativeSemiring)
-open import functor using (Functor)
+open import commutative-semiring using (CommutativeSemiring; _⇒h_)
+open import functor using (Functor; _∘F_)
+import matrix-functor
 
 -- Suppose 𝒞 a biproduct category with a chosen object X whose endomorphism hom 𝒞(X, X) is commutative.
 -- Then 𝒞(X, X) is a commutative semiring (composition as multiplication, addition of morphisms as
@@ -48,13 +49,13 @@ module matrix-embedding
   ∘-monoid .CommutativeMonoid.+-assoc = assoc _ _ _
   ∘-monoid .CommutativeMonoid.+-comm = ∘-comm
 
-  S : CommutativeSemiring A
-  S .CommutativeSemiring.additive = homCM X X
-  S .CommutativeSemiring.multiplicative = ∘-monoid
-  S .CommutativeSemiring.·-+-distribₗ {x} {y} {z} = comp-bilinear₂ x y z
-  S .CommutativeSemiring.ε-annihilₗ {x} = comp-bilinear-ε₁ x
+  EndX : CommutativeSemiring A
+  EndX .CommutativeSemiring.additive = homCM X X
+  EndX .CommutativeSemiring.multiplicative = ∘-monoid
+  EndX .CommutativeSemiring.·-+-distribₗ {x} {y} {z} = comp-bilinear₂ x y z
+  EndX .CommutativeSemiring.ε-annihilₗ {x} = comp-bilinear-ε₁ x
 
-  module CS = CommutativeSemiring S
+  module CS = CommutativeSemiring EndX
   open CS using () renaming (_+_ to _+ₛ_; _·_ to _·ₛ_)
 
   -- 𝒞(X, X) IS the scalar carrier, so the embedding's scalar map is the identity and the
@@ -79,7 +80,7 @@ module matrix-embedding
   scalar⁻¹∘scalar≈id = scalar-iso .bwd∘fwd≈id
 
   import matrix
-  module Mat = matrix.Mat S
+  module Mat = matrix.Mat EndX
   open Mat using (Matrix) public
 
   module _ where
@@ -367,7 +368,7 @@ module matrix-embedding
       scalar .func (M i j)
     ∎ where open ≈-Reasoning isEquiv
 
-  -- F : Mat(S) → MatRep(𝒞, X), the "assemble matrix from entries" direction.
+  -- F : Mat(End X) → MatRep(𝒞, X), the "assemble matrix from entries" direction.
   F : Functor Mat.cat cat
   F .fobj n = n
   F .fmor = F-fmor
@@ -399,7 +400,7 @@ module matrix-embedding
       π {k} i ∘ ((F .fmor M ∘ F .fmor N) ∘ ι {m} j)
     ∎) where open ≈-Reasoning isEquiv
 
-  -- F⁻¹ : MatRep(𝒞, X) → Mat(S), the "extract matrix of entries" direction.
+  -- F⁻¹ : MatRep(𝒞, X) → Mat(End X), the "extract matrix of entries" direction.
   F⁻¹ : Functor cat Mat.cat
   F⁻¹ .fobj n = n
   F⁻¹ .fmor {m} {n} f i j = scalar⁻¹ .func (entry {m} {n} f i j)
@@ -413,7 +414,7 @@ module matrix-embedding
       scalar⁻¹ .func (scalar .func (Mat.e i j))
     ≈⟨ scalar⁻¹∘scalar≈id .func-eq (Setoid.refl A) ⟩
       Mat.e i j
-    ∎ where open ≈-Reasoning (CommutativeSemiring.isEquivalence S)
+    ∎ where open ≈-Reasoning (CommutativeSemiring.isEquivalence EndX)
   F⁻¹ .fmor-comp {m} {n} {k} g f i j =
     begin
       scalar⁻¹ .func (entry {m} {k} (g ∘ f) i j)
@@ -429,7 +430,7 @@ module matrix-embedding
         (scalar .func (Mat.Σ {n} (λ l → scalar⁻¹ .func (entry {n} {k} g i l) ·ₛ scalar⁻¹ .func (entry {m} {n} f l j))))
     ≈⟨ scalar⁻¹∘scalar≈id .func-eq (Setoid.refl A) ⟩
       Mat.Σ {n} (λ l → scalar⁻¹ .func (entry {n} {k} g i l) ·ₛ scalar⁻¹ .func (entry {m} {n} f l j))
-    ∎ where open ≈-Reasoning (CommutativeSemiring.isEquivalence S)
+    ∎ where open ≈-Reasoning (CommutativeSemiring.isEquivalence EndX)
 
   F⁻¹∘F : ∀ {m n} (M : Matrix n m) → (F⁻¹ .fmor (F .fmor M)) Mat.≈ₘ M
   F⁻¹∘F {m} {n} M i j =
@@ -439,7 +440,7 @@ module matrix-embedding
       scalar⁻¹ .func (scalar .func (M i j))
     ≈⟨ scalar⁻¹∘scalar≈id .func-eq (Setoid.refl A) ⟩
       M i j
-    ∎ where open ≈-Reasoning (CommutativeSemiring.isEquivalence S)
+    ∎ where open ≈-Reasoning (CommutativeSemiring.isEquivalence EndX)
 
   F∘F⁻¹ : ∀ {m n} (f : X^ m ⇒ X^ n) → F .fmor {m} {n} (F⁻¹ .fmor {m} {n} f) ≈ f
   F∘F⁻¹ {m} {n} f = entry-ext {m} {n} (λ i j →
@@ -481,7 +482,7 @@ module matrix-embedding
       π {n} i ∘ ((F .fmor {m} {n} M +m F .fmor {m} {n} N) ∘ ι {m} j)
     ∎) where open ≈-Reasoning isEquiv
 
-  -- Morphisms in Mat(S) are determined by their F-images.
+  -- Morphisms in Mat(End X) are determined by their F-images.
   F-faithful : ∀ {m n} {M N : Matrix n m} → F .fmor {m} {n} M ≈ F .fmor {m} {n} N → M Mat.≈ₘ N
   F-faithful {m} {n} {M} {N} eq i j =
     begin
@@ -492,7 +493,7 @@ module matrix-embedding
       scalar⁻¹ .func (entry {m} {n} (F .fmor {m} {n} N) i j)
     ≈⟨ F⁻¹∘F {m} {n} N i j ⟩
       N i j
-    ∎ where open ≈-Reasoning (CommutativeSemiring.isEquivalence S)
+    ∎ where open ≈-Reasoning (CommutativeSemiring.isEquivalence EndX)
 
   F⁻¹-εₘ : ∀ {m n} → (F⁻¹ .fmor {m} {n} (εm {X^ m} {X^ n})) Mat.≈ₘ (Mat.εₘ {n} {m})
   F⁻¹-εₘ {m} {n} = F-faithful {m} {n}
@@ -628,3 +629,28 @@ module matrix-embedding
 
   𝓕-preserve-products : preserve-chosen-products 𝓕 (biproducts→products cmon biproduct) (biproducts→products CM BP)
   𝓕-preserve-products {m} {n} = biproduct-iso CM (biproduct𝒞 m n) (BP (X^ m) (X^ n))
+
+  ------------------------------------------------------------------------------
+  -- The embedding for a semiring presented as End X up to isomorphism. Callers hold a semiring S
+  -- of their own rather than End X itself, so matrices over S reach 𝒞 by relabelling entries along
+  -- the isomorphism and then embedding. Both directions are composites of functors, so their laws
+  -- are inherited rather than restated.
+
+  module AtSemiring
+    {o' e'} {B : Setoid o' e'} (S : CommutativeSemiring B)
+    (into : S ⇒h EndX) (outof : EndX ⇒h S)
+    where
+
+    module MatS = matrix.Mat S
+
+    private
+      module In  = matrix-functor.Strict into
+      module Out = matrix-functor.Strict outof
+
+    -- A matrix over S as a morphism between the free objects on its dimensions.
+    mat→mor : Functor MatS.cat cat
+    mat→mor = F ∘F In.functor
+
+    -- And back: the matrix of entries of such a morphism.
+    mor→mat : Functor cat MatS.cat
+    mor→mat = Out.functor ∘F F⁻¹
