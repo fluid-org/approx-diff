@@ -47,16 +47,15 @@ open import prop using (liftS; LiftS)
 
 -- Model instantiation: Boolean approximations over rational data.
 module BoolAlg-𝟚 = boolalg-sd-semimodule two.semiring two.semiring-boolean
-module FO𝟚 = ho-model-boolalg-sd-semimod.FO two.semiring two.semiring-boolean
 module SDSemiMod-𝟚 = sd-semimodule two.semiring
 module SemiMod-𝟚 = semimodule two.semiring
 open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_; εm)
 
-number-approx : FO𝟚.Approx
-number-approx = FO𝟚.gen
+number-width : ℕ
+number-width = 1
 
 Approx : Category.obj BoolAlg-𝟚.cat
-Approx = FO𝟚.⟦ number-approx ⟧
+Approx = BoolAlg-𝟚.S^ number-width
 
 approx-unit : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approx
 approx-unit = HasInitial.from-initial BoolAlg-𝟚.initial {Approx}
@@ -79,9 +78,9 @@ private
 
 import example.signature-interpretation
 module SI = example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
-  BoolAlg-𝟚.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+  BoolAlg-𝟚.S^_ (BoolAlg-𝟚.terminal .HasTerminal.is-terminal) number-width approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 open SI
-open SI using (sort-approx) public
+open SI using (sort-width) public
 
 -- Boolean-collapse derivative coefficient: zero map at 0, identity elsewhere.
 private
@@ -120,10 +119,10 @@ private
   module M𝟚 = matrix.Mat two.semiring
 
 bases-width : List sort → ℕ
-bases-width = sorts-width (λ s → FO𝟚.width (sort-approx s))
+bases-width = sorts-width sort-width
 
 op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is →
-        Category._⇒_ M𝟚.cat (bases-width is) (FO𝟚.width (sort-approx o'))
+        Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
 op-rel (lit n) _   = λ i ()
 op-rel add _       = λ i j → two.I
 op-rel mult _      = λ i j → two.I

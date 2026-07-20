@@ -4,7 +4,7 @@
 -- (BaseInterp1), over the self-dual Boolean algebras as first-order model.
 module example.bool where
 
-import approx
+open import Data.Nat using (ℕ)
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -39,13 +39,11 @@ module BoolAlg-𝟚 = boolalg-sd-semimodule two.semiring two.semiring-boolean
 module SemiMod-𝟚 = semimodule two.semiring
 open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_; εm)
 
-module A = approx BoolAlg-𝟚.cat BoolAlg-𝟚.terminal BoolAlg-𝟚.products BoolAlg-𝟚.𝕀
-
-number-approx : A.Approx
-number-approx = A.gen
+number-width : ℕ
+number-width = 1
 
 Approx : Category.obj BoolAlg-𝟚.cat
-Approx = A.⟦ number-approx ⟧
+Approx = BoolAlg-𝟚.S^ number-width
 
 approx-unit : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approx
 approx-unit = HasInitial.from-initial BoolAlg-𝟚.initial {Approx}
@@ -54,7 +52,7 @@ approx-conjunct = HasProducts.p₁ BoolAlg-𝟚.products {Approx} {Approx}
         +m HasProducts.p₂ BoolAlg-𝟚.products {Approx} {Approx}
 
 open import example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
-  BoolAlg-𝟚.𝕀 number-approx approx-unit approx-conjunct nat.ℕₛ nat.add nat.mult public
+  BoolAlg-𝟚.S^_ (BoolAlg-𝟚.terminal .HasTerminal.is-terminal) number-width approx-unit approx-conjunct nat.ℕₛ nat.add nat.mult public
 
 -- Boolean-collapse derivative coefficient: zero map vs identity.
 private

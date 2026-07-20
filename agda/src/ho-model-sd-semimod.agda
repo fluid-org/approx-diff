@@ -24,7 +24,6 @@ open ho-model.Interpretation
   SemiMod.cat SemiMod.cmon-enriched SemiMod.limits SemiMod.terminal SemiMod.biproduct
   SDSemiMod.U SDSemiMod.U-preserve-terminal (λ {X} {Y} → SDSemiMod.U-preserve-products {X} {Y})
   (λ e → e) (λ h _ → h , Category.≈-refl SemiMod.cat)
-  SDSemiMod.𝕀
   public
 
 -- Self-dualities on the first-order types of the language with general

@@ -4,7 +4,6 @@
 -- self-dual semimodules; numbers approximated by ℚ∞² (left, right perturbation bound).
 module example.intervals where
 
-import approx
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -20,6 +19,7 @@ open import Data.Product using (_,_) public
 open import Data.Sum using (inj₁; inj₂) public
 open import Relation.Binary.PropositionalEquality using (_≡_; refl) public
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_) public
+open import Data.Nat using (ℕ)
 open import Data.Nat.Base public using (nonZero)
 open import Data.Integer.Base public using (nonNeg)
 open import Data.Integer using (+_; -[1+_]) public
@@ -41,13 +41,11 @@ module SDSemiMod-ℚ∞ = sd-semimodule semiring-Q-tropical-add.semiring
 module SemiMod-ℚ∞ = semimodule semiring-Q-tropical-add.semiring
 open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (_+m_; εm)
 
-module A = approx SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.terminal SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.𝕀
-
-number-approx : A.Approx
-number-approx = A.gen A.× A.gen
+number-width : ℕ
+number-width = 2
 
 Approx : Category.obj SDSemiMod-ℚ∞.cat
-Approx = A.⟦ number-approx ⟧
+Approx = SDSemiMod-ℚ∞.S^ number-width
 
 approx-unit : Category._⇒_ SDSemiMod-ℚ∞.cat (HasTerminal.witness SDSemiMod-ℚ∞.terminal) Approx
 approx-unit = HasInitial.from-initial SDSemiMod-ℚ∞.initial {Approx}
@@ -68,7 +66,7 @@ private
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example.signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
-  SDSemiMod-ℚ∞.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+  SDSemiMod-ℚ∞.S^_ (SDSemiMod-ℚ∞.terminal .HasTerminal.is-terminal) number-width approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 -- Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞) records
 -- the absence of a bound.

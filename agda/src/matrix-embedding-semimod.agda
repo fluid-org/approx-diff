@@ -73,10 +73,11 @@ private
   module C = Category SemiMod.cat
   open C.Iso
 
-  X^≅S^ : ∀ n → C.Iso (X^ n) (SDSemiMod.SelfDual.obj (S^ n))
-  X^≅S^ zero = C.Iso-refl
-  X^≅S^ (suc zero) = SemiMod.⊕-runit-iso
-  X^≅S^ (suc (suc n)) = SDSemiMod.⊕-iso C.Iso-refl (X^≅S^ (suc n))
+-- The free object of width n, as a self-dual semimodule.
+X^≅S^ : ∀ n → C.Iso (X^ n) (SDSemiMod.SelfDual.obj (S^ n))
+X^≅S^ zero = C.Iso-refl
+X^≅S^ (suc zero) = SemiMod.⊕-runit-iso
+X^≅S^ (suc (suc n)) = SDSemiMod.⊕-iso C.Iso-refl (X^≅S^ (suc n))
 
 embed : Functor Mat.cat SDSemiMod.cat
 embed .Functor.fobj n = S^ n

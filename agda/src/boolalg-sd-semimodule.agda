@@ -2,6 +2,8 @@
 
 open import Level using (0ℓ; suc)
 open import prop-setoid using (Setoid; IsEquivalence)
+import Data.Nat as Nat
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
 open import categories using (Category; HasTerminal; IsTerminal; HasInitial; IsInitial; HasProducts)
 open import commutative-semiring using (CommutativeSemiring; BooleanAlgebra)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
@@ -58,6 +60,22 @@ _⊕_ : SelfDualBooleanAlgebra → SelfDualBooleanAlgebra → SelfDualBooleanAlg
 (X ⊕ Y) .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.¬ (a , b) = SelfDualBooleanAlgebra.¬ X a , SelfDualBooleanAlgebra.¬ Y b
 (X ⊕ Y) .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.compl-∧ {a , b} = SelfDualBooleanAlgebra.compl-∧ X , SelfDualBooleanAlgebra.compl-∧ Y
 (X ⊕ Y) .SelfDualBooleanAlgebra.boolean .lattice.BooleanAlgebra.compl-∨ {a , b} = SelfDualBooleanAlgebra.compl-∨ X , SelfDualBooleanAlgebra.compl-∨ Y
+
+-- The free self-dual Boolean algebras: iterated biproducts of the scalars, normalised so that the
+-- object of width one is 𝕀 itself.
+infix 30 S^_
+S^_ : Nat.ℕ → SelfDualBooleanAlgebra
+S^ Nat.zero = 𝟘
+S^ (Nat.suc Nat.zero) = 𝕀
+S^ (Nat.suc (Nat.suc n)) = 𝕀 ⊕ S^ (Nat.suc n)
+
+-- The free self-dual Boolean algebra of width n carries the free self-dual semimodule of the same
+-- width, so the two agree wherever the underlying semimodule is what matters.
+selfDual-S^ : ∀ n → SelfDualBooleanAlgebra.selfDual (S^ n) ≡ SDSemiMod.S^ n
+selfDual-S^ Nat.zero = refl
+selfDual-S^ (Nat.suc Nat.zero) = refl
+selfDual-S^ (Nat.suc (Nat.suc n)) =
+  cong (SDSemiMod._⊕_ SDSemiMod.𝕀) (selfDual-S^ (Nat.suc n))
 
 cat : Category (suc 0ℓ) 0ℓ 0ℓ
 cat .Category.obj = SelfDualBooleanAlgebra

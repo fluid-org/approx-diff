@@ -1,23 +1,24 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import Level using (Level; 0ℓ; suc)
-open import categories using (Category; HasProducts; HasTerminal; HasCoproducts)
+open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; IsTerminal)
 open import prop-setoid using (Setoid)
-import approx
+open import Data.Nat using (ℕ)
 
 module example.signature-interpretation
   {o : Level}
   (𝒞 : Category o 0ℓ 0ℓ)
   (𝒞-products : HasProducts 𝒞)
   (𝒞-terminal : HasTerminal 𝒞)
-  -- the generator: the 𝒞-object of width one, from which the approximations are built.
-  (𝕀ᶜ : Category.obj 𝒞)
-  (open approx 𝒞 𝒞-terminal 𝒞-products 𝕀ᶜ using (Approx; ⟦_⟧))
-  -- the approximation attached to the `number` sort; unit and conjunct give the object it
-  -- describes a monoid structure.
-  (number-approx : Approx)
-  (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) ⟦ number-approx ⟧)
-  (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products ⟦ number-approx ⟧ ⟦ number-approx ⟧) ⟦ number-approx ⟧)
+  -- the free objects: 𝕀^ n approximates a value in n dimensions.
+  (𝕀^ : ℕ → Category.obj 𝒞)
+  -- no dimensions of approximation means no information, so 𝕀^ 0 is terminal.
+  (𝕀^0-terminal : IsTerminal 𝒞 (𝕀^ 0))
+  -- how many dimensions of approximation a `number` carries; unit and conjunct give the
+  -- corresponding free object a monoid structure.
+  (number-width : ℕ)
+  (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) (𝕀^ number-width))
+  (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products (𝕀^ number-width) (𝕀^ number-width)) (𝕀^ number-width))
   -- what a `number` carries, with add/mult on the index side.
   (Numₛ : Setoid 0ℓ 0ℓ)
   (num-add  : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
@@ -26,12 +27,9 @@ module example.signature-interpretation
 
 import fam
 
--- Qualified because `unit` names both a constructor of Approx and the monoid unit parameter above.
-module FO = approx 𝒞 𝒞-terminal 𝒞-products 𝕀ᶜ
-
--- The 𝒞-object approximating a `number`, computed from its description.
+-- The 𝒞-object approximating a `number`, computed from its width.
 Num-approx : Category.obj 𝒞
-Num-approx = ⟦ number-approx ⟧
+Num-approx = 𝕀^ number-width
 
 private
   module 𝒞m = Category 𝒞
@@ -134,15 +132,15 @@ BaseInterp0 .Model.⟦op⟧ mult = simplef[ num-mult , to-𝟙-base ] C.∘ bina
 BaseInterp0 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
 
--- The approximation attached to each sort in the value-carrying model; the model's ⟦sort⟧, the
--- widths, and the canonical maps are computed from it.
+-- The approximation attached to each sort in the value-carrying model, given by its width; the
+-- model's ⟦sort⟧ is the free object of that width.
 sort-index : sort → Setoid 0ℓ 0ℓ
 sort-index number = Numₛ
 sort-index label  = label.Label
 
-sort-approx : sort → Approx
-sort-approx number = number-approx
-sort-approx label  = FO.unit
+sort-width : sort → ℕ
+sort-width number = number-width
+sort-width label  = 0
 
 -- The value-carrying model, parameterized by per-argument derivative coefficients for the binary
 -- arithmetic primitives: at run values (x, y), the derivative of an operation is c₁ x y on its
@@ -179,11 +177,11 @@ module BinDeriv
   mult-deriv = op-deriv num-mult mult-c₁ mult-c₂ mult-c₁-cong mult-c₂-cong
 
   BaseInterp1 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-  BaseInterp1 .Model.⟦sort⟧ s = simple[ sort-index s , ⟦ sort-approx s ⟧ ]
+  BaseInterp1 .Model.⟦sort⟧ s = simple[ sort-index s , 𝕀^ (sort-width s) ]
   BaseInterp1 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , unit ]
   BaseInterp1 .Model.⟦op⟧ add = add-deriv C.∘ binary
   BaseInterp1 .Model.⟦op⟧ mult = mult-deriv C.∘ binary
-  BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
+  BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , IsTerminal.to-terminal 𝕀^0-terminal ]
   BaseInterp1 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
 
 -- The special case with addition's coefficients the identity and multiplication's the Jacobian

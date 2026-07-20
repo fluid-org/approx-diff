@@ -24,10 +24,7 @@ open ho-model.Interpretation
   SemiMod.cat SemiMod.cmon-enriched SemiMod.limits SemiMod.terminal SemiMod.biproduct
   BoolAlg.U BoolAlg.U-preserve-terminal (λ {X} {Y} → BoolAlg.U-preserve-products {X} {Y})
   (λ e → e) (λ h _ → h , Category.≈-refl SemiMod.cat)
-  BoolAlg.𝕀
   public
-
-module FO = FreeObjects
 
 -- Self-dual Boolean algebras on the first-order types of the language with
 -- general recursive types: instantiate the generic fibre-object machinery at

@@ -4,7 +4,6 @@
 -- entry counts the paths from an input to an output.
 module example.counting where
 
-import approx
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -40,13 +39,11 @@ module SDSemiMod-ℕ = sd-semimodule semiring-N.semiring
 module SemiMod-ℕ = semimodule semiring-N.semiring
 open cmon-enriched.CMonEnriched SemiMod-ℕ.cmon-enriched using (_+m_)
 
-module A = approx SDSemiMod-ℕ.cat SDSemiMod-ℕ.terminal SDSemiMod-ℕ.products SDSemiMod-ℕ.𝕀
-
-number-approx : A.Approx
-number-approx = A.gen
+number-width : ℕ
+number-width = 1
 
 Approx : Category.obj SDSemiMod-ℕ.cat
-Approx = A.⟦ number-approx ⟧
+Approx = SDSemiMod-ℕ.S^ number-width
 
 approx-unit : Category._⇒_ SDSemiMod-ℕ.cat (HasTerminal.witness SDSemiMod-ℕ.terminal) Approx
 approx-unit = HasInitial.from-initial SDSemiMod-ℕ.initial {Approx}
@@ -67,7 +64,7 @@ private
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example.signature-interpretation SDSemiMod-ℕ.cat SDSemiMod-ℕ.products SDSemiMod-ℕ.terminal
-  SDSemiMod-ℕ.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+  SDSemiMod-ℕ.S^_ (SDSemiMod-ℕ.terminal .HasTerminal.is-terminal) number-width approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 -- Use-counting coefficients: every argument of every operation counts as one use.
 private

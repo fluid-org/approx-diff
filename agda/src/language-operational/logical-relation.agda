@@ -162,24 +162,24 @@ private
   BW : (sort → ℕ) → List sort → ℕ
   BW w = language-operational.evaluation-mat.bases-width Sig 𝒜 w
 
--- The witness set relating the operational treatment of primitives to the model: the fibre description
--- of each base sort and the dependency matrix of each operation. Widths and canonical maps follow from
--- the fibre descriptions.
+-- The witness set relating the operational treatment of primitives to the model: how many dimensions
+-- of approximation each base sort carries, and the dependency relation of each operation.
 record Presentation : Set where
   field
-    sort-approx : sort → FO.Approx
-    -- The canonical map realising each base fibre by the free object of its width. For the model built
-    -- from sort-approx this is FO.canonical, but the relation is generic in the model, so it is supplied.
-    sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (FO.width (sort-approx s))) (Fibre (base s) c)
+    sort-width : sort → ℕ
+    -- The map realising each base fibre by the free object of that width. For a model whose base
+    -- fibres are the free objects this is X^≅S^, but the relation is generic in the model, so it is
+    -- supplied.
+    sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c)
     op-rel     : ∀ {is o'} → op is o' → sort-vals sort-val is →
-                 Category._⇒_ M.cat (BW (λ s → FO.width (sort-approx s)) is) (FO.width (sort-approx o'))
+                 Category._⇒_ M.cat (BW sort-width is) (sort-width o')
 
 module WithPresentation (P : Presentation) where
 
   open Presentation P
 
   private
-    module EM = language-operational.evaluation-mat Sig 𝒜 (λ s → FO.width (sort-approx s))
+    module EM = language-operational.evaluation-mat Sig 𝒜 sort-width
   open EM using (width; width-env; width-subst; module WithOpRels)
   open WithOpRels op-rel
 

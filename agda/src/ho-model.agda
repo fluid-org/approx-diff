@@ -65,8 +65,6 @@ module Interpretation
   (F-def : ∀ {a b} (h : Category._⇒_ 𝒟 (F .fobj a) (F .fobj b)) →
            Prf (∃ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h) →
            ∃ₛ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h)
-  -- The generator: the 𝒞-object whose image under F is the rank-one free object of 𝒟.
-  (𝕀ᶜ : Category.obj 𝒞)
   where
 
   -- Target: Fam⟨𝒟⟩
@@ -380,38 +378,3 @@ module Interpretation
             onIn₂ = Glued.≈-trans (Glued.assoc _ _ _)
                       (Glued.≈-trans (Glued.∘-cong Glued.≈-refl (GlCPM.copair-in₂ _ _))
                         (Glued.≈-trans (Glued.≈-sym (GF .fmor-comp _ _)) (GF .fmor-cong (B.copair-in₂ _ _))))
-
-  -- Fibre objects are chosen syntactically; widths and canonical maps into the free semimodules are
-  -- computed from the choice. The description and its width live in approx; here we add the free
-  -- 𝒟-object and the canonical map into the F-image of the fibre.
-  module FreeObjects where
-
-    private
-      module C = Category 𝒞
-      module D = Category 𝒟
-      module CT = HasTerminal 𝒞-terminal
-      module DT = HasTerminal 𝒟-terminal
-      module CP = HasProducts 𝒞-products
-      module DP = HasProducts (biproducts→products _ 𝒟-biproducts)
-
-    open import approx 𝒞 𝒞-terminal 𝒞-products 𝕀ᶜ public
-
-    X^ᴰ : Data.Nat.ℕ → D.obj
-    X^ᴰ 0              = DT.witness
-    X^ᴰ (Data.Nat.suc n) = DP.prod (F .fobj 𝕀ᶜ) (X^ᴰ n)
-
-    private
-      split : ∀ m n → D._⇒_ (X^ᴰ (m Data.Nat.+ n)) (DP.prod (X^ᴰ m) (X^ᴰ n))
-      split 0              n = DP.pair DT.to-terminal (D.id _)
-      split (Data.Nat.suc m) n =
-        DP.pair (DP.pair DP.p₁ (DP.p₁ D.∘ rest)) (DP.p₂ D.∘ rest)
-        where rest = split m n D.∘ DP.p₂
-
-    canonical : ∀ a → D._⇒_ (X^ᴰ (width a)) (F .fobj ⟦ a ⟧)
-    canonical gen        = DP.p₁
-    canonical unit       = F-preserve-terminal .D.IsIso.inverse
-    canonical (a₁ × a₂)  =
-      F-preserve-products .D.IsIso.inverse
-        D.∘ DP.pair (canonical a₁ D.∘ DP.p₁) (canonical a₂ D.∘ DP.p₂)
-        D.∘ split (width a₁) (width a₂)
-

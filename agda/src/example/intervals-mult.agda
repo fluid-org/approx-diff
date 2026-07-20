@@ -6,7 +6,6 @@
 -- exact cancellation.
 module example.intervals-mult where
 
-import approx
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -17,6 +16,7 @@ import semiring-Q-tropical-mult
 import indexed-family
 open import commutative-semiring using (CommutativeSemiring)
 
+open import Data.Nat using (ℕ)
 open import Level using (lift; 0ℓ) public
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
@@ -47,13 +47,11 @@ module SemiMod-Rel = semimodule semiring-Q-tropical-mult.semiring
 module Scalars = CommutativeSemiring semiring-Q-tropical-mult.semiring
 open cmon-enriched.CMonEnriched SemiMod-Rel.cmon-enriched using (_+m_)
 
-module A = approx SDSemiMod-Rel.cat SDSemiMod-Rel.terminal SDSemiMod-Rel.products SDSemiMod-Rel.𝕀
-
-number-approx : A.Approx
-number-approx = A.gen
+number-width : ℕ
+number-width = 1
 
 Approx : Category.obj SDSemiMod-Rel.cat
-Approx = A.⟦ number-approx ⟧
+Approx = SDSemiMod-Rel.S^ number-width
 
 approx-unit : Category._⇒_ SDSemiMod-Rel.cat (HasTerminal.witness SDSemiMod-Rel.terminal) Approx
 approx-unit = HasInitial.from-initial SDSemiMod-Rel.initial {Approx}
@@ -74,7 +72,7 @@ private
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example.signature-interpretation SDSemiMod-Rel.cat SDSemiMod-Rel.products SDSemiMod-Rel.terminal
-  SDSemiMod-Rel.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+  SDSemiMod-Rel.S^_ (SDSemiMod-Rel.terminal .HasTerminal.is-terminal) number-width approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 private
   -- Multiplication by a scalar as a linear endomorphism of the scalars.

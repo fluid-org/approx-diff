@@ -6,7 +6,6 @@
 -- so the analysis sees only the sign of the data it abstracts.
 module example.signs where
 
-import approx
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -16,6 +15,7 @@ import ho-model-sd-semimod
 import indexed-family
 import semiring-sign
 
+open import Data.Nat using (ℕ)
 open import Level using (lift; 0ℓ) public
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
@@ -41,13 +41,11 @@ module SemiMod-S = semimodule semiring-sign.semiring
 module Scalars = CommutativeSemiring semiring-sign.semiring
 open cmon-enriched.CMonEnriched SemiMod-S.cmon-enriched using (_+m_)
 
-module A = approx SDSemiMod-S.cat SDSemiMod-S.terminal SDSemiMod-S.products SDSemiMod-S.𝕀
-
-number-approx : A.Approx
-number-approx = A.gen
+number-width : ℕ
+number-width = 1
 
 Approx : Category.obj SDSemiMod-S.cat
-Approx = A.⟦ number-approx ⟧
+Approx = SDSemiMod-S.S^ number-width
 
 approx-unit : Category._⇒_ SDSemiMod-S.cat (HasTerminal.witness SDSemiMod-S.terminal) Approx
 approx-unit = HasInitial.from-initial SDSemiMod-S.initial {Approx}
@@ -103,7 +101,7 @@ private
   coeff-cong {x} (liftS refl) = Category.≈-refl SemiMod-S.cat {f = coeff x}
 
 open import example.signature-interpretation SDSemiMod-S.cat SDSemiMod-S.products SDSemiMod-S.terminal
-  SDSemiMod-S.𝕀 number-approx approx-unit approx-conjunct ℤ-setoid num-add num-mult public
+  SDSemiMod-S.S^_ (SDSemiMod-S.terminal .HasTerminal.is-terminal) number-width approx-unit approx-conjunct ℤ-setoid num-add num-mult public
 module D = Deriv coeff coeff-cong
 open ho-model-sd-semimod.interp-sd semiring-sign.semiring Sig D.BaseInterp1 public
 open SDSemiMod-S public using (conjugate)
