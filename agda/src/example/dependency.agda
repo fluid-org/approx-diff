@@ -13,6 +13,7 @@ import ho-model-sd-semimod
 import semiring-Q
 import indexed-family
 open import primitives using (Primitives)
+open Primitives using (sort-index; sort-width; op-fun; op-rel; rel-pred)
 open import commutative-semiring using (CommutativeSemiring)
 
 open import Level using (lift; 0ℓ) public
@@ -43,14 +44,6 @@ private
   module Scalars = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
 
-sort-index : sort → Setoid 0ℓ 0ℓ
-sort-index number = semiring-Q.setoid
-sort-index label  = label.Label
-
-sort-width : sort → ℕ
-sort-width number = 1
-sort-width label  = 0
-
 -- Boolean collapse of a rational: ⊥ at 0, ⊤ elsewhere.
 collapse : ℚ → two.Two
 collapse q with q ≟ℚ 0ℚ
@@ -69,30 +62,32 @@ private
   mult-rel-resp {x} {_} {y} (liftS refl) (liftS refl) = Category.≈-refl M𝟚.cat {f = mult-rel x y}
 
 primitives : Primitives two.semiring Sig
-primitives .Primitives.sort-index = sort-index
-primitives .Primitives.sort-width = sort-width
-primitives .Primitives.op-fun (lit n) .func _ = n
-primitives .Primitives.op-fun add .func (x , y , _) = x Scalars.+ y
-primitives .Primitives.op-fun mult .func (x , y , _) = x Scalars.· y
-primitives .Primitives.op-fun (lbl l) .func _ = l
-primitives .Primitives.op-fun (lit n) .func-resp-≈ _ = liftS refl
-primitives .Primitives.op-fun add .func-resp-≈ e =
+primitives .sort-index number = semiring-Q.setoid
+primitives .sort-index label  = label.Label
+primitives .sort-width number = 1
+primitives .sort-width label  = 0
+primitives .op-fun (lit n) .func _ = n
+primitives .op-fun add .func (x , y , _) = x Scalars.+ y
+primitives .op-fun mult .func (x , y , _) = x Scalars.· y
+primitives .op-fun (lbl l) .func _ = l
+primitives .op-fun (lit n) .func-resp-≈ _ = liftS refl
+primitives .op-fun add .func-resp-≈ e =
   Scalars.+-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .Primitives.op-fun mult .func-resp-≈ e =
+primitives .op-fun mult .func-resp-≈ e =
   Scalars.·-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .Primitives.op-fun (lbl l) .func-resp-≈ _ =
+primitives .op-fun (lbl l) .func-resp-≈ _ =
   Setoid.isEquivalence label.Label .IsEquivalence.refl
-primitives .Primitives.op-rel (lit n) .func _ = λ _ ()
-primitives .Primitives.op-rel add .func _ = λ _ _ → ⊤
-primitives .Primitives.op-rel mult .func (x , y , _) = mult-rel x y
-primitives .Primitives.op-rel (lbl l) .func _ = λ ()
-primitives .Primitives.op-rel (lit n) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ ()}
-primitives .Primitives.op-rel add .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ _ → ⊤}
-primitives .Primitives.op-rel mult .func-resp-≈ e =
+primitives .op-rel (lit n) .func _ = λ _ ()
+primitives .op-rel add .func _ = λ _ _ → ⊤
+primitives .op-rel mult .func (x , y , _) = mult-rel x y
+primitives .op-rel (lbl l) .func _ = λ ()
+primitives .op-rel (lit n) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ ()}
+primitives .op-rel add .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ _ → ⊤}
+primitives .op-rel mult .func-resp-≈ e =
   mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .Primitives.op-rel (lbl l) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ ()}
-primitives .Primitives.rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
-primitives .Primitives.rel-pred equal-label .func-resp-≈ e =
+primitives .op-rel (lbl l) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ ()}
+primitives .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
+primitives .rel-pred equal-label .func-resp-≈ e =
   label.equal-label .func-resp-≈ (prop.proj₁ e prop., prop.proj₁ (prop.proj₂ e))
 
 sort-val : sort → Set
