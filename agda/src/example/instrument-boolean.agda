@@ -4,8 +4,10 @@
 module example.instrument-boolean where
 
 open import Data.Fin using (Fin; splitAt; toℕ)
-open import Data.List using (List; []; _∷_; concatMap; allFin)
-open import Data.Nat using (ℕ; _+_)
+open import Data.List using (List; []; _∷_; _++_; length; concatMap; allFin)
+import Data.Nat
+open import Data.Nat using (ℕ; _+_; _∸_; _<ᵇ_)
+open import Data.Bool using () renaming (if_then_else_ to ifᵇ_then_else_)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import Data.Sum using (inj₁; inj₂)
@@ -78,6 +80,31 @@ flat-mm : ents (collapse (proj₁ (proj₂ (proj₂ inst-mm))) (proj₂ (proj₂
 flat-mm = refl
 
 ------------------------------------------------------------------------
+-- Dependence graph: one vertex per entry of Φ, an edge i → j when the block of S_j at the
+-- positions of entry i is non-empty.
+
+private
+  -- Index of the entry containing an intermediate position, given the widths of the entries.
+  locate : List ℕ → ℕ → ℕ
+  locate []       _ = 0
+  locate (w ∷ ws) p = ifᵇ p <ᵇ w then 0 else Data.Nat.suc (locate ws (p ∸ w))
+
+  entry-ents : ∀ {g n} → Seq g n → List (ℕ × List (ℕ × ℕ))
+  entry-ents ∅             = []
+  entry-ents (snoc Φ w Sm) = entry-ents Φ ++ (width w , ents Sm) ∷ []
+
+dep-edges : ∀ {g n} → Seq g n → List (ℕ × ℕ)
+dep-edges {g} Φ = go [] (entry-ents Φ)
+  where
+  edge : List ℕ → ℕ × ℕ → List (ℕ × ℕ)
+  edge ws (_ , c) =
+    ifᵇ c <ᵇ g then [] else (locate ws (c ∸ g) , length ws) ∷ []
+
+  go : List ℕ → List (ℕ × List (ℕ × ℕ)) → List (ℕ × ℕ)
+  go ws []               = []
+  go ws ((w , es) ∷ Φe) = concatMap (edge ws) es ++ go (ws ++ w ∷ []) Φe
+
+------------------------------------------------------------------------
 -- The query example: mark each input entry and the fold body's result.
 
 m-entry : ∀ {Γ} {t : Γ ⊢ elem} → Marked t
@@ -98,6 +125,11 @@ inst-query = Instr.instrument m-query emp D-query ∅
 -- Total width of the intermediates: three entries and four fold steps.
 width-query : proj₁ (proj₂ inst-query) ≡ 7
 width-query = refl
+
+-- The dependence graph of the marked run.
+dep-graph-query : dep-edges (proj₁ (proj₂ (proj₂ inst-query))) ≡
+  ((2 , 4) ∷ (3 , 4) ∷ (4 , 5) ∷ (0 , 6) ∷ (5 , 6) ∷ [])
+dep-graph-query = refl
 
 -- Erasure: the unmarked run adds no intermediates.
 erasure-query : proj₁ (proj₂ (Instr.instrument (unmarked _) emp D-query ∅)) ≡ 0

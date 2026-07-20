@@ -205,6 +205,16 @@ showGraph es = intersperse ", " (map edge es)
     edge (tag , i , j) =
       "(" ++ˢ tag ++ˢ ": " ++ˢ ℕ-Show.show i ++ˢ ", " ++ˢ ℕ-Show.show j ++ˢ ")"
 
+-- Unlabelled rendering, for dependence graphs over intermediates.
+showDotPlain : List (ℕ × ℕ) → String
+showDotPlain es = "digraph G {\n" ++ˢ go es ++ˢ "}\n"
+  where
+    edge : ℕ × ℕ → String
+    edge (i , j) = "  " ++ˢ ℕ-Show.show i ++ˢ " -> " ++ˢ ℕ-Show.show j ++ˢ ";\n"
+    go : List (ℕ × ℕ) → String
+    go []       = ""
+    go (e ∷ es) = edge e ++ˢ go es
+
 showDot : List Edge → String
 showDot es = "digraph G {\n" ++ˢ go es ++ˢ "}\n"
   where
