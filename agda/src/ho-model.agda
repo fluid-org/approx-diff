@@ -382,7 +382,7 @@ module Interpretation
                         (Glued.≈-trans (Glued.≈-sym (GF .fmor-comp _ _)) (GF .fmor-cong (B.copair-in₂ _ _))))
 
   -- Fibre objects are chosen syntactically; widths and canonical maps into the free semimodules are
-  -- computed from the choice. The description and its width live in free-object; here we add the free
+  -- computed from the choice. The description and its width live in approx; here we add the free
   -- 𝒟-object and the canonical map into the F-image of the fibre.
   module FreeObjects where
 
@@ -394,7 +394,7 @@ module Interpretation
       module CP = HasProducts 𝒞-products
       module DP = HasProducts (biproducts→products _ 𝒟-biproducts)
 
-    open import free-object 𝒞 𝒞-terminal 𝒞-products 𝕀ᶜ public
+    open import approx 𝒞 𝒞-terminal 𝒞-products 𝕀ᶜ public
 
     X^ᴰ : Data.Nat.ℕ → D.obj
     X^ᴰ 0              = DT.witness
@@ -407,11 +407,11 @@ module Interpretation
         DP.pair (DP.pair DP.p₁ (DP.p₁ D.∘ rest)) (DP.p₂ D.∘ rest)
         where rest = split m n D.∘ DP.p₂
 
-    canonical : ∀ e → D._⇒_ (X^ᴰ (fwidth e)) (F .fobj ⟦ e ⟧f)
+    canonical : ∀ a → D._⇒_ (X^ᴰ (width a)) (F .fobj ⟦ a ⟧)
     canonical gen        = DP.p₁
     canonical unit       = F-preserve-terminal .D.IsIso.inverse
-    canonical (e₁ ×f e₂) =
+    canonical (a₁ × a₂)  =
       F-preserve-products .D.IsIso.inverse
-        D.∘ DP.pair (canonical e₁ D.∘ DP.p₁) (canonical e₂ D.∘ DP.p₂)
-        D.∘ split (fwidth e₁) (fwidth e₂)
+        D.∘ DP.pair (canonical a₁ D.∘ DP.p₁) (canonical a₂ D.∘ DP.p₂)
+        D.∘ split (width a₁) (width a₂)
 

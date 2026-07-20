@@ -20,11 +20,11 @@ module example.signature-interpretation
   where
 
 import fam
-import free-object
+import approx
 
--- Fibre descriptions built from Approx as the generator; qualified because `unit`
+-- Approximation descriptions built from Approx as the generator; qualified because `unit`
 -- names both a constructor here and the monoid unit parameter above.
-module FO = free-object 𝒞 𝒞-terminal 𝒞-products Approx
+module FO = approx 𝒞 𝒞-terminal 𝒞-products Approx
 
 private
   module 𝒞m = Category 𝒞
@@ -133,7 +133,7 @@ sort-index : sort → Setoid 0ℓ 0ℓ
 sort-index number = Numₛ
 sort-index label  = label.Label
 
-sort-fibre : sort → FO.FreeObj
+sort-fibre : sort → FO.Approx
 sort-fibre number = FO.gen
 sort-fibre label  = FO.unit
 
@@ -172,7 +172,7 @@ module BinDeriv
   mult-deriv = op-deriv num-mult mult-c₁ mult-c₂ mult-c₁-cong mult-c₂-cong
 
   BaseInterp1 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-  BaseInterp1 .Model.⟦sort⟧ s = simple[ sort-index s , FO.⟦ sort-fibre s ⟧f ]
+  BaseInterp1 .Model.⟦sort⟧ s = simple[ sort-index s , FO.⟦ sort-fibre s ⟧ ]
   BaseInterp1 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , unit ]
   BaseInterp1 .Model.⟦op⟧ add = add-deriv C.∘ binary
   BaseInterp1 .Model.⟦op⟧ mult = mult-deriv C.∘ binary

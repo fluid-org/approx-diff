@@ -102,9 +102,9 @@ private
   module M𝟚 = matrix.Mat two.semiring
 
 bases-width : List sort → ℕ
-bases-width = sorts-width (λ s → FO𝟚.fwidth (sort-fibre s))
+bases-width = sorts-width (λ s → FO𝟚.width (sort-fibre s))
 
-op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (FO𝟚.fwidth (sort-fibre o'))
+op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (FO𝟚.width (sort-fibre o'))
 op-rel (lit n)     = λ i ()
 op-rel add         = λ i j → two.I
 op-rel mult        = λ i j → two.I

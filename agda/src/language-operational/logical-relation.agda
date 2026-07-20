@@ -167,19 +167,19 @@ private
 -- the fibre descriptions.
 record Presentation : Set where
   field
-    sort-fibre : sort → FO.FreeObj
+    sort-fibre : sort → FO.Approx
     -- The canonical map realising each base fibre by the free object of its width. For the model built
     -- from sort-fibre this is FO.canonical, but the relation is generic in the model, so it is supplied.
-    sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (FO.fwidth (sort-fibre s))) (Fibre (base s) c)
+    sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (FO.width (sort-fibre s))) (Fibre (base s) c)
     op-rel     : ∀ {is o'} → op is o' →
-                 Category._⇒_ M.cat (BW (λ s → FO.fwidth (sort-fibre s)) is) (FO.fwidth (sort-fibre o'))
+                 Category._⇒_ M.cat (BW (λ s → FO.width (sort-fibre s)) is) (FO.width (sort-fibre o'))
 
 module WithPresentation (P : Presentation) where
 
   open Presentation P
 
   private
-    module EM = language-operational.evaluation-mat Sig 𝒜 (λ s → FO.fwidth (sort-fibre s))
+    module EM = language-operational.evaluation-mat Sig 𝒜 (λ s → FO.width (sort-fibre s))
   open EM using (width; width-env; width-subst; module WithOpRels)
   open WithOpRels op-rel
 

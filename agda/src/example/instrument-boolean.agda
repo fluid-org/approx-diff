@@ -25,7 +25,7 @@ import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
-open import language-operational.evaluation-mat Sig Alg-inst.Alg (λ s → Dep.FO𝟚.fwidth (Dep.sort-fibre s))
+open import language-operational.evaluation-mat Sig Alg-inst.Alg (λ s → Dep.FO𝟚.width (Dep.sort-fibre s))
   using (width)
 open import language-operational.marking Sig
 open import example.trace-boolean using (elem; query; input; D-query)
