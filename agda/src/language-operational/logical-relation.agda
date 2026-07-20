@@ -16,7 +16,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 import two
 open import signature using (Signature; Model; PFPC[_,_,_,_])
-open import language-operational.primitives using (Primitives; sort-vals-setoid; sorts-width)
+open import primitives using (Primitives; sort-vals-setoid; sorts-width)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
 open import functor using (Functor)
 import matrix-embedding-semimod
@@ -34,7 +34,7 @@ module language-operational.logical-relation
 
 open Signature Sig
 private
-  module PA = language-operational.primitives.IndexAlgebra SDSemiMod.cat SDSemiMod.terminal SDSemiMod.products Sig
+  module PA = primitives.IndexAlgebra SDSemiMod.cat SDSemiMod.terminal SDSemiMod.products Sig
 
 -- The value-level constants are the model's index elements, so agreement at base sorts is definitional.
 sort-val : Signature.sort Sig → Set

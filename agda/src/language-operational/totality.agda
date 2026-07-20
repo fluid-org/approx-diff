@@ -16,7 +16,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category; HasProducts; HasTerminal)
 open import signature using (Signature)
-open import language-operational.primitives using (Primitives)
+open import primitives using (Primitives)
 import matrix
 import two
 

@@ -8,7 +8,7 @@ open import Level using (0ℓ)
 open import Data.Nat using (ℕ)
 open import Data.Rational using (ℚ)
 open import categories using (Category)
-open import language-operational.primitives using (Primitives)
+open import primitives using (Primitives)
 import two
 import matrix
 import matrix-embedding-semimod

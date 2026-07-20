@@ -20,8 +20,8 @@ open import Data.Nat using (ℕ)
 import ho-model-sd-semimod
 import semiring-Q
 import indexed-family
-open import language-operational.primitives using (Primitives; sort-vals-setoid; sorts-width)
-import language-operational.primitives
+open import primitives using (Primitives; sort-vals-setoid; sorts-width)
+import primitives
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Model)
 
@@ -104,7 +104,7 @@ open SemiMod-𝟚._⇒_ public
 
 -- Value-level constants, by projection from the model.
 module Alg-inst where
-  module PA = language-operational.primitives.IndexAlgebra
+  module PA = primitives.IndexAlgebra
                 SDSemiMod-𝟚.cat SDSemiMod-𝟚.terminal SDSemiMod-𝟚.products Sig
 
   sort-val : sort → Set

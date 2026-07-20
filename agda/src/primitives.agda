@@ -18,7 +18,7 @@ import fam
 -- The primitives of a signature, as assumed by the operational semantics: for each sort a setoid
 -- of constants and a width, and for each operation a function on constants together with a dependency
 -- relation at each tuple of constants.
-module language-operational.primitives where
+module primitives where
 
 -- The setoid of tuples of constants.
 sort-vals-setoid : ∀ {ℓ} {sort : Set ℓ} (sort-index : sort → Setoid 0ℓ 0ℓ) → List sort → Setoid 0ℓ 0ℓ

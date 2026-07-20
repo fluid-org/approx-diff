@@ -10,7 +10,7 @@ import Data.Nat.Show as ℕ-Show
 open import prop-setoid using (Setoid)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import language-operational.primitives using (Primitives)
+open import primitives using (Primitives)
 import two
 import matrix
 
