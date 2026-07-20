@@ -58,8 +58,9 @@ private
 open import matrix-embedding SemiMod.cmon-enriched SemiMod.biproduct 𝟘 𝟘-initial 𝟘-terminal 𝕀 (λ {f} {g} → ∘-comm {f} {g}) public
   renaming (S to End𝕀)
 
--- The embedding factors through the self-dual semimodules: each free object X^ n is (on the nose) the free
--- self-dual semimodule S^ n.
+-- The embedding factors through the self-dual semimodules: each free object X^ n is isomorphic to the free
+-- self-dual semimodule S^ n. The two differ only by the unit law at width one, where S^ 1 is 𝕀 and X^ 1 is
+-- 𝕀 ⊕ 𝟘.
 import sd-semimodule
 open import Data.Nat using (ℕ; zero; suc)
 open import functor using (Functor)
@@ -74,7 +75,8 @@ private
 
   X^≅S^ : ∀ n → C.Iso (X^ n) (SDSemiMod.SelfDual.obj (S^ n))
   X^≅S^ zero = C.Iso-refl
-  X^≅S^ (suc n) = SDSemiMod.⊕-iso C.Iso-refl (X^≅S^ n)
+  X^≅S^ (suc zero) = SemiMod.⊕-runit-iso
+  X^≅S^ (suc (suc n)) = SDSemiMod.⊕-iso C.Iso-refl (X^≅S^ (suc n))
 
 embed : Functor Mat.cat SDSemiMod.cat
 embed .Functor.fobj n = S^ n

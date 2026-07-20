@@ -317,6 +317,10 @@ module _ where
     ⊕-lunit-≅sd {Y} .iso = SemiMod.⊕-lunit-iso
     ⊕-lunit-≅sd {Y} .pairing-iso = S.sym (S.trans (pairing-⊕ (𝟘-sd .dual) (Y .dual)) S.+-lunit)
 
+    ⊕-runit-≅sd : ∀ {X} → ⊕-sd X 𝟘-sd ≅sd X
+    ⊕-runit-≅sd {X} .iso = SemiMod.⊕-runit-iso
+    ⊕-runit-≅sd {X} .pairing-iso = S.sym (S.trans (pairing-⊕ (X .dual) (𝟘-sd .dual)) (S.trans S.+-comm S.+-lunit))
+
     ⊕-assoc-≅sd : ∀ {X Y Z} → ⊕-sd (⊕-sd X Y) Z ≅sd ⊕-sd X (⊕-sd Y Z)
     ⊕-assoc-≅sd {X} {Y} {Z} .iso = SemiMod.⊕-assoc-iso
     ⊕-assoc-≅sd {X} {Y} {Z} .pairing-iso =
@@ -330,13 +334,17 @@ module _ where
     infix 30 S^_
     S^_ : ℕ → SelfDual
     S^ Nat.zero = 𝟘-sd
-    S^ (Nat.suc n) = ⊕-sd 𝕀-sd (S^ n)
+    S^ (Nat.suc Nat.zero) = 𝕀-sd
+    S^ (Nat.suc (Nat.suc n)) = ⊕-sd 𝕀-sd (S^ (Nat.suc n))
 
     -- The biproduct of free objects is free.
     S^-+ : ∀ m n → ⊕-sd (S^ m) (S^ n) ≅sd (S^ (m Nat.+ n))
     S^-+ Nat.zero n = ⊕-lunit-≅sd
-    S^-+ (Nat.suc m) n =
-      ≅sd-trans (⊕-assoc-≅sd {𝕀-sd} {S^ m} {S^ n}) (⊕-≅sd (≅sd-refl {𝕀-sd}) (S^-+ m n))
+    S^-+ (Nat.suc Nat.zero) Nat.zero = ⊕-runit-≅sd
+    S^-+ (Nat.suc Nat.zero) (Nat.suc n) = ≅sd-refl
+    S^-+ (Nat.suc (Nat.suc m)) n =
+      ≅sd-trans (⊕-assoc-≅sd {𝕀-sd} {S^ (Nat.suc m)} {S^ n})
+                (⊕-≅sd (≅sd-refl {𝕀-sd}) (S^-+ (Nat.suc m) n))
 
 open SelfDual
 

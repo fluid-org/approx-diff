@@ -202,6 +202,20 @@ module _ where
   ⊕-lunit-iso {N} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq e = e
   ⊕-lunit-iso {N} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq (_ , e) = tt , e
 
+  ⊕-runit-iso : ∀ {M} → Iso (M ⊕ 𝟘) M
+  ⊕-runit-iso {M} .Iso.fwd .*→* ._⇒s_.func (m , _) = m
+  ⊕-runit-iso {M} .Iso.fwd .*→* ._⇒s_.func-resp-≈ (e , _) = e
+  ⊕-runit-iso {M} .Iso.fwd .preserve-ze = refl M
+  ⊕-runit-iso {M} .Iso.fwd .preserve-+ = refl M
+  ⊕-runit-iso {M} .Iso.fwd .preserve-· = refl M
+  ⊕-runit-iso {M} .Iso.bwd .*→* ._⇒s_.func m = m , Level.lift Agda.Builtin.Unit.tt
+  ⊕-runit-iso {M} .Iso.bwd .*→* ._⇒s_.func-resp-≈ e = e , tt
+  ⊕-runit-iso {M} .Iso.bwd .preserve-ze = refl M , tt
+  ⊕-runit-iso {M} .Iso.bwd .preserve-+ = refl M , tt
+  ⊕-runit-iso {M} .Iso.bwd .preserve-· = refl M , tt
+  ⊕-runit-iso {M} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq e = e
+  ⊕-runit-iso {M} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq (e , _) = e , tt
+
   ⊕-assoc-iso : ∀ {M N P} → Iso ((M ⊕ N) ⊕ P) (M ⊕ (N ⊕ P))
   ⊕-assoc-iso {M} {N} {P} .Iso.fwd .*→* ._⇒s_.func ((m , n) , p) = m , (n , p)
   ⊕-assoc-iso {M} {N} {P} .Iso.fwd .*→* ._⇒s_.func-resp-≈ ((em , en) , ep) = em , (en , ep)
