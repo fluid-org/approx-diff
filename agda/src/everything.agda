@@ -2,19 +2,20 @@
 
 module everything where
 
--- The examples of Section 5, one interpretation instance per semiring.
+-- The examples: Boolean dependency, rational AD, and perturbation bounds, each a Primitives record
+-- with its model derived by interp-primitives.
 import example.all
 
--- Section 3 "Models of Semiring Dependency": Fam(C) is bicartesian closed when C has biproducts
--- and all small products (Lucatelli Nunes and Vákár 2023).
+-- Fam(C) is bicartesian closed when C has biproducts and all small products (Lucatelli Nunes and
+-- Vákár 2023).
 import fam-exponentials
 
--- The first-order model (Section 3): self-dual semimodules over a commutative semiring.
+-- The first-order model: self-dual semimodules over a commutative semiring, with the higher-order
+-- model over it and the interpretation of the primitives.
 import ho-model-sd-semimod
 
--- Section 6 "Correctness of the Higher-Order Interpretation": the Fiore and Simpson 1999
--- definability theorem, in the conservativity module, gives agreement of the underlying function
--- with the Set interpretation at first order.
+-- The Fiore and Simpson 1999 definability theorem gives agreement of the underlying function with
+-- the Set interpretation at first order.
 import conservativity
 
 -- Polynomials over a category and their parameterised initial algebras; the
