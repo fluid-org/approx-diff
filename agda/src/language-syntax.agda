@@ -240,11 +240,3 @@ if M then N₁ else N₂ = case M (weaken * N₁) (weaken * N₂)
 
 when_；_ : ∀ {Γ τ} → Γ ⊢ bool → Γ ⊢ list τ → Γ ⊢ list τ
 when M ； N = if M then N else nil
-
-record SynMonad : Set ℓ where
-  field
-    Mon     : ∀ {Δ} → type Δ → type Δ
-    Mon-ren : ∀ {Δ Δ'} (ρ : TyRen Δ Δ') (τ : type Δ) → (ρ *ᵗ Mon τ) ≡ Mon (ρ *ᵗ τ)
-    Mon-sub : ∀ {Δ Δ'} (σ : Fin Δ → type Δ') (τ : type Δ) → sub σ (Mon τ) ≡ Mon (sub σ τ)
-    pure    : ∀ {Γ τ} → Γ ⊢ τ [→] Mon τ
-    bind    : ∀ {Γ σ τ} → Γ ⊢ Mon σ [→] (σ [→] Mon τ) [→] Mon τ
