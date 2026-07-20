@@ -15,6 +15,7 @@ import indexed-family
 import semiring-Q
 import label
 open import primitives using (Primitives)
+import example.values as V
 open Primitives using (sort-index; sort-width; op-fun; op-deps; rel-pred)
 open import commutative-semiring using (CommutativeSemiring)
 
@@ -37,7 +38,6 @@ open Ex.ex public
 private
   open matrix.Mat semiring-Q.semiring using (_∥_; block)
   module Mℚ = matrix.Mat semiring-Q.semiring
-  module Scalars = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
 
 
@@ -52,21 +52,11 @@ private
   mult-jac-resp {x} {_} {y} (liftS refl) (liftS refl) = Category.≈-refl Mℚ.cat {f = mult-jac x y}
 
 primitives : Primitives semiring-Q.semiring Sig
-primitives .sort-index number = semiring-Q.setoid
-primitives .sort-index label  = label.Label
+primitives .sort-index = V.sort-index
 primitives .sort-width number = 1
 primitives .sort-width label  = 0
-primitives .op-fun (lit n) .func _ = n
-primitives .op-fun add .func (x , y , _) = x Scalars.+ y
-primitives .op-fun mult .func (x , y , _) = x Scalars.· y
-primitives .op-fun (lbl l) .func _ = l
-primitives .op-fun (lit n) .func-resp-≈ _ = liftS refl
-primitives .op-fun add .func-resp-≈ e =
-  Scalars.+-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .op-fun mult .func-resp-≈ e =
-  Scalars.·-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .op-fun (lbl l) .func-resp-≈ _ =
-  Setoid.isEquivalence label.Label .IsEquivalence.refl
+primitives .op-fun = V.op-fun
+primitives .rel-pred = V.rel-pred
 primitives .op-deps (lit n) .func _ = Mℚ.εₘ
 primitives .op-deps add .func _ = Mℚ.I ∥ Mℚ.I
 primitives .op-deps mult .func (x , y , _) = mult-jac x y
@@ -76,9 +66,6 @@ primitives .op-deps add .func-resp-≈ _ = Category.≈-refl Mℚ.cat {f = Mℚ.
 primitives .op-deps mult .func-resp-≈ e =
   mult-jac-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl Mℚ.cat {f = Mℚ.εₘ}
-primitives .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
-primitives .rel-pred equal-label .func-resp-≈ e =
-  label.equal-label .func-resp-≈ (prop.proj₁ e prop., prop.proj₁ (prop.proj₂ e))
 
 -- The model determined by the primitives, and the interpretation of the language over it.
 module HM = ho-model-sd-semimod semiring-Q.semiring

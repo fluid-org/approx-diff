@@ -16,6 +16,7 @@ import semiring-Q-tropical-add
 import semiring-Q
 import label
 open import primitives using (Primitives)
+import example.values as V
 open Primitives using (sort-index; sort-width; op-fun; op-deps; rel-pred)
 open import commutative-semiring using (CommutativeSemiring)
 
@@ -28,7 +29,6 @@ open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_) public
 open import Data.Nat.Base public using (nonZero)
 open import Data.Integer.Base public using (nonNeg)
 open import Data.Integer using (+_; -[1+_]) public
-open import prop using (liftS)
 open import prop-setoid using (Setoid; IsEquivalence)
 open Setoid using (Carrier) public
 open import example.signature ℚ
@@ -43,7 +43,6 @@ open semiring-Q-tropical-add public using (∞; fin)
 private
   open matrix.Mat semiring-Q-tropical-add.semiring using (_∥_; block)
   module Mℚ∞ = matrix.Mat semiring-Q-tropical-add.semiring
-  module Num = CommutativeSemiring semiring-Q.semiring
   open prop-setoid._⇒_
 
 private
@@ -52,21 +51,11 @@ private
   add-deps = Mℚ∞.I ∥ Mℚ∞.I
 
 primitives : Primitives semiring-Q-tropical-add.semiring Sig
-primitives .sort-index number = semiring-Q.setoid
-primitives .sort-index label  = label.Label
+primitives .sort-index = V.sort-index
 primitives .sort-width number = 2
 primitives .sort-width label  = 0
-primitives .op-fun (lit n) .func _ = n
-primitives .op-fun add .func (x , y , _) = x Num.+ y
-primitives .op-fun mult .func (x , y , _) = x Num.· y
-primitives .op-fun (lbl l) .func _ = l
-primitives .op-fun (lit n) .func-resp-≈ _ = liftS refl
-primitives .op-fun add .func-resp-≈ e =
-  Num.+-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .op-fun mult .func-resp-≈ e =
-  Num.·-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .op-fun (lbl l) .func-resp-≈ _ =
-  Setoid.isEquivalence label.Label .IsEquivalence.refl
+primitives .op-fun = V.op-fun
+primitives .rel-pred = V.rel-pred
 primitives .op-deps (lit n) .func _ = Mℚ∞.εₘ
 primitives .op-deps add .func _ = add-deps
 primitives .op-deps mult .func _ = Mℚ∞.εₘ
@@ -75,9 +64,6 @@ primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f 
 primitives .op-deps add .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = add-deps}
 primitives .op-deps mult .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = Mℚ∞.εₘ}
 primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl Mℚ∞.cat {f = Mℚ∞.εₘ}
-primitives .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
-primitives .rel-pred equal-label .func-resp-≈ e =
-  label.equal-label .func-resp-≈ (prop.proj₁ e prop., prop.proj₁ (prop.proj₂ e))
 
 -- The model determined by the primitives, and the interpretation of the language over it.
 module HM = ho-model-sd-semimod semiring-Q-tropical-add.semiring
