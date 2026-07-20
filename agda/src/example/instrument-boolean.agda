@@ -27,7 +27,8 @@ open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Dep.primitives
   using (Env; emp; _·_; const; width)
 open import language-operational.marking Sig
-open import example.trace-boolean using (elem; query; input; D-query)
+import label as L
+open import example.trace-boolean using (elem; query; input; D-query; M-add; D-add; M-mult; D-mult)
 open Instr
 
 private
@@ -130,6 +131,22 @@ width-query = refl
 dep-graph-query : dep-edges (proj₁ (proj₂ (proj₂ inst-query))) ≡
   ((2 , 4) ∷ (3 , 4) ∷ (4 , 5) ∷ (0 , 6) ∷ (5 , 6) ∷ [])
 dep-graph-query = refl
+
+-- Full evaluation graphs: the everything-marked instance of the same construction.
+
+inst-add-full = Instr.instrument (marked-all M-add) (emp · const · const) D-add ∅
+
+dep-graph-add-full : dep-edges (proj₁ (proj₂ (proj₂ inst-add-full))) ≡ ((0 , 2) ∷ (1 , 2) ∷ [])
+dep-graph-add-full = refl
+
+-- At (x , y) = (1 , 0) the derivative of x * y is [ 0 , 1 ]: the result depends on the second
+-- argument only.
+inst-mult-full = Instr.instrument (marked-all M-mult) (emp · const · const) D-mult ∅
+
+dep-graph-mult-full : dep-edges (proj₁ (proj₂ (proj₂ inst-mult-full))) ≡ ((1 , 2) ∷ [])
+dep-graph-mult-full = refl
+
+inst-query-full = Instr.instrument (marked-all (query L.a input)) emp D-query ∅
 
 -- Erasure: the unmarked run adds no intermediates.
 erasure-query : proj₁ (proj₂ (Instr.instrument (unmarked _) emp D-query ∅)) ≡ 0

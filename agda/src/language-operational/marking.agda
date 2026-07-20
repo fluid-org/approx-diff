@@ -1,6 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.List using (List)
+open import Data.Maybe using (Maybe; just; nothing)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
 
@@ -61,3 +62,49 @@ mutual
   unmarked-s : ∀ {Γ is} (Ms : Every (λ s → Γ ⊢ base s) is) → MarkedS Ms
   unmarked-s []       = []
   unmarked-s (M ∷ Ms) = unmarked M ∷ unmarked-s Ms
+
+-- Whether a type is first-order, with the witness.
+private
+  first-order? : ∀ {Δ} (τ : type Δ) → Maybe (first-order τ)
+  first-order? (var i)   = just (var i)
+  first-order? unit      = just unit
+  first-order? (base s)  = just (base s)
+  first-order? (σ [+] τ) with first-order? σ | first-order? τ
+  ... | just a  | just b  = just (a [+] b)
+  ... | _       | _       = nothing
+  first-order? (σ [×] τ) with first-order? σ | first-order? τ
+  ... | just a  | just b  = just (a [×] b)
+  ... | _       | _       = nothing
+  first-order? (σ [→] τ) = nothing
+  first-order? (μ τ) with first-order? τ
+  ... | just a  = just (μ a)
+  ... | nothing = nothing
+
+-- The decoration marking every first-order subterm; the full evaluation graph is the dependence
+-- graph of a run so marked.
+mutual
+  marked-all : ∀ {Γ τ} (t : Γ ⊢ τ) → Marked t
+  marked-all {τ = τ} t with first-order? τ
+  ... | just fo = doc fo (marked-all′ t)
+  ... | nothing = marked-all′ t
+
+  private
+    marked-all′ : ∀ {Γ τ} (t : Γ ⊢ τ) → Marked t
+    marked-all′ (var x)        = var x
+    marked-all′ unit           = unit
+    marked-all′ (inl t)        = inl (marked-all t)
+    marked-all′ (inr t)        = inr (marked-all t)
+    marked-all′ (case s t₁ t₂) = case (marked-all s) (marked-all t₁) (marked-all t₂)
+    marked-all′ (pair s t)     = pair (marked-all s) (marked-all t)
+    marked-all′ (fst t)        = fst (marked-all t)
+    marked-all′ (snd t)        = snd (marked-all t)
+    marked-all′ (lam t)        = lam (marked-all t)
+    marked-all′ (app s t)      = app (marked-all s) (marked-all t)
+    marked-all′ (bop ω Ms)     = bop (marked-all-s Ms)
+    marked-all′ (brel ω Ms)    = brel (marked-all-s Ms)
+    marked-all′ (roll t)       = roll (marked-all t)
+    marked-all′ (fold s t)     = fold (marked-all s) (marked-all t)
+
+    marked-all-s : ∀ {Γ is} (Ms : Every (λ s → Γ ⊢ base s) is) → MarkedS Ms
+    marked-all-s []       = []
+    marked-all-s (M ∷ Ms) = marked-all M ∷ marked-all-s Ms
