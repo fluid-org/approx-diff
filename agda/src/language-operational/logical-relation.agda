@@ -42,9 +42,7 @@ private
 
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig 𝒜
-  using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_)
-import language-operational.evaluation-mat
+import language-operational.evaluation
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
 
 open interp Sig Impl
@@ -159,7 +157,7 @@ i⊕₂ {X} {Y} = cmon-enriched.Biproduct.in₂ (SemiMod.biproduct X Y)
 
 private
   BW : (sort → ℕ) → List sort → ℕ
-  BW w = language-operational.evaluation-mat.bases-width Sig 𝒜 w
+  BW w = language-operational.evaluation.bases-width Sig 𝒜 w
 
 -- The witness set relating the operational treatment of primitives to the model: how many dimensions
 -- of approximation each base sort carries, and the dependency relation of each operation.
@@ -178,8 +176,9 @@ module WithPresentation (P : Presentation) where
   open Presentation P
 
   private
-    module EM = language-operational.evaluation-mat Sig 𝒜 sort-width
-  open EM using (width; width-env; width-subst; module WithOpRels)
+    module EM = language-operational.evaluation Sig 𝒜 sort-width
+  open EM using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_;
+                 width; width-env; width-subst; module WithOpRels)
   open WithOpRels op-rel
 
   Realiser : (τ : type 0) → Val τ → Index τ → Set

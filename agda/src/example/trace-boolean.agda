@@ -19,10 +19,8 @@ open import example.relation-boolean
   using (module Alg-inst; module Tot; module TotOp)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig Alg-inst.Alg
-  using (Env; emp; _·_; const)
-open import language-operational.evaluation-mat Sig Alg-inst.Alg Dep.sort-width
-  using (width-env; module WithOpRels)
+open import language-operational.evaluation Sig Alg-inst.Alg Dep.sort-width
+  using (Env; emp; _·_; const; width-env; module WithOpRels)
 open WithOpRels Dep.op-rel using (_,_⇓_[_])
 
 show-lbl : L.label → String

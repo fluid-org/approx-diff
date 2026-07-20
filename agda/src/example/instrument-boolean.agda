@@ -23,10 +23,8 @@ open import example.relation-boolean
          module Instr; module InstrOp)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig Alg-inst.Alg
-  using (Env; emp; _·_; const)
-open import language-operational.evaluation-mat Sig Alg-inst.Alg Dep.sort-width
-  using (width)
+open import language-operational.evaluation Sig Alg-inst.Alg Dep.sort-width
+  using (Env; emp; _·_; const; width)
 open import language-operational.marking Sig
 open import example.trace-boolean using (elem; query; input; D-query)
 open Instr

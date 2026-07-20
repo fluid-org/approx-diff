@@ -31,10 +31,9 @@ open Signature Sig
 open Algebra 𝒜
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
-open import language-operational.evaluation Sig 𝒜
-  using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val)
-open import language-operational.evaluation-mat Sig 𝒜 sort-width
-  using (width; width-env; bases-width; width-subst; proj-var; brel-mat; products;
+open import language-operational.evaluation Sig 𝒜 sort-width
+  using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val;
+         width; width-env; bases-width; width-subst; proj-var; brel-mat; products;
          module WithOpRels)
 
 private
