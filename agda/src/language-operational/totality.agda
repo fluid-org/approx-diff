@@ -16,21 +16,21 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category; HasProducts; HasTerminal)
 open import signature using (Signature)
-open import language-operational.algebra using (Algebra)
+open import language-operational.primitives using (Primitives)
 import matrix
 import two
 
 -- Computability (totality) predicate on values: the existence content of the logical relation, without the
 -- denotational component. Its fundamental lemma is normalisation, yielding a total evaluator.
 module language-operational.totality
-  {ℓ} (Sig : Signature ℓ) (𝒜 : Algebra Sig) where
+  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives Sig) where
 
 open Signature Sig
-open Algebra 𝒜
+open Primitives 𝒫
 open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
-open import language-operational.evaluation Sig 𝒜
+open import language-operational.evaluation Sig 𝒫
 
 private
   module M = matrix.Mat two.semiring

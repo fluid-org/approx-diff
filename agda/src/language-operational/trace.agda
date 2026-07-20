@@ -10,21 +10,21 @@ import Data.Nat.Show as ℕ-Show
 open import prop-setoid using (Setoid)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import language-operational.algebra using (Algebra)
+open import language-operational.primitives using (Primitives)
 import two
 import matrix
 
 -- Rendering of evaluation derivations as traces and dependence-graph edge lists.
 module language-operational.trace
-  {ℓ} (Sig : Signature ℓ) (𝒜 : Algebra Sig)
+  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives Sig)
   (show-op : ∀ {is o} → Signature.op Sig is o → String)
   where
 
 open Signature Sig
-open Algebra 𝒜
+open Primitives 𝒫
 open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig 𝒜
+open import language-operational.evaluation Sig 𝒫
 
 private
   module M = matrix.Mat two.semiring

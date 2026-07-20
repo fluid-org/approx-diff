@@ -20,8 +20,8 @@ open import Data.Nat using (ℕ)
 import ho-model-sd-semimod
 import semiring-Q
 import indexed-family
-open import language-operational.algebra using (Algebra; sort-vals-setoid; sorts-width)
-import language-operational.algebra
+open import language-operational.primitives using (Primitives; sort-vals-setoid; sorts-width)
+import language-operational.primitives
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Model)
 
@@ -104,7 +104,7 @@ open SemiMod-𝟚._⇒_ public
 
 -- Value-level constants, by projection from the model.
 module Alg-inst where
-  module PA = language-operational.algebra.IndexAlgebra
+  module PA = language-operational.primitives.IndexAlgebra
                 SDSemiMod-𝟚.cat SDSemiMod-𝟚.terminal SDSemiMod-𝟚.products Sig
 
   sort-val : sort → Set
@@ -186,7 +186,7 @@ op-rel (lbl l) .prop-setoid._⇒_.func-resp-≈ _ = Category.≈-refl M𝟚.cat
 op-rel add  .prop-setoid._⇒_.func-resp-≈ e = resp₂ add (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 op-rel mult .prop-setoid._⇒_.func-resp-≈ e = resp₂ mult (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 
--- The operational interpretation of the signature: constants and functions from the model's index
--- parts, widths and dependency relations as above.
-Alg : Algebra Sig
-Alg = Alg-inst.PA.index-algebra D.BaseInterp1 sort-width op-rel
+-- The primitives: constants and functions from the model's index parts, widths and dependency
+-- relations as above.
+primitives : Primitives Sig
+primitives = Alg-inst.PA.index-algebra D.BaseInterp1 sort-width op-rel

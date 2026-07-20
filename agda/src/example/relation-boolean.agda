@@ -8,7 +8,7 @@ open import Level using (0ℓ)
 open import Data.Nat using (ℕ)
 open import Data.Rational using (ℚ)
 open import categories using (Category)
-open import language-operational.algebra using (Algebra)
+open import language-operational.primitives using (Primitives)
 import two
 import matrix
 import matrix-embedding-semimod
@@ -41,7 +41,7 @@ FP = Inst.FundamentalProperty
 
 -- Totality, the evaluator and the instrumentation, at the same model.
 import language-operational.totality
-module Tot = language-operational.totality Sig Dep.Alg
+module Tot = language-operational.totality Sig Dep.primitives
 
 import language-operational.instrument
-module Instr = language-operational.instrument Sig Dep.Alg
+module Instr = language-operational.instrument Sig Dep.primitives

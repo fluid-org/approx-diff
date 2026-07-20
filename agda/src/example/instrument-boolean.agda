@@ -22,7 +22,7 @@ open import example.relation-boolean
   using (module Alg-inst; module Tot; module Instr)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig Dep.Alg
+open import language-operational.evaluation Sig Dep.primitives
   using (Env; emp; _·_; const; width)
 open import language-operational.marking Sig
 open import example.trace-boolean using (elem; query; input; D-query)

@@ -15,10 +15,10 @@ import matrix
 import two
 import fam
 
--- Value-level interpretation of a signature, as used by the operational semantics: for each sort a setoid
+-- The primitives of a signature, as assumed by the operational semantics: for each sort a setoid
 -- of constants and a width, and for each operation a function on constants together with a dependency
 -- relation at each tuple of constants.
-module language-operational.algebra where
+module language-operational.primitives where
 
 -- The setoid of tuples of constants.
 sort-vals-setoid : ∀ {ℓ} {sort : Set ℓ} (sort-index : sort → Setoid 0ℓ 0ℓ) → List sort → Setoid 0ℓ 0ℓ
@@ -34,7 +34,7 @@ sorts-width w (s ∷ ss) = w s + sorts-width w ss
 private
   module M𝟚 = matrix.Mat two.semiring
 
-record Algebra {ℓ} (Sig : Signature ℓ) : Set (ℓ ⊔ suc 0ℓ) where
+record Primitives {ℓ} (Sig : Signature ℓ) : Set (ℓ ⊔ suc 0ℓ) where
   open Signature Sig
   field
     sort-index : sort → Setoid 0ℓ 0ℓ
@@ -106,12 +106,12 @@ module IndexAlgebra
                     (op-rel : ∀ {is o'} → op is o' →
                        prop-setoid._⇒_ (sort-vals-setoid index-setoid is)
                          (Category.hom-setoid M𝟚.cat (sorts-width sort-width is) (sort-width o'))) →
-                    Algebra Sig
-    index-algebra w r .Algebra.sort-index = index-setoid
-    index-algebra w r .Algebra.sort-width = w
-    index-algebra w r .Algebra.op-fun {is} ω = Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω) ∘S tuple is
-    index-algebra w r .Algebra.op-rel = r
-    index-algebra w r .Algebra.rel-pred {is} ω vs
+                    Primitives Sig
+    index-algebra w r .Primitives.sort-index = index-setoid
+    index-algebra w r .Primitives.sort-width = w
+    index-algebra w r .Primitives.op-fun {is} ω = Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω) ∘S tuple is
+    index-algebra w r .Primitives.op-rel = r
+    index-algebra w r .Primitives.rel-pred {is} ω vs
       with func (Fam⟨𝒞⟩.Mor.idxf (Impl.⟦rel⟧ ω)) (tuple is .func vs)
     ... | Sum.inj₁ _ = Sum.inj₁ (lift tt)
     ... | Sum.inj₂ _ = Sum.inj₂ (lift tt)

@@ -19,7 +19,7 @@ open import example.relation-boolean
   using (module Alg-inst; module Tot)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig Dep.Alg
+open import language-operational.evaluation Sig Dep.primitives
   using (Env; emp; _·_; const; width-env; _,_⇓_[_])
 
 show-lbl : L.label → String
@@ -34,7 +34,7 @@ show-op add         = "add"
 show-op mult        = "mult"
 show-op (lbl l)     = Data.String._++_ "lbl-" (show-lbl l)
 
-open import language-operational.trace Sig Dep.Alg show-op
+open import language-operational.trace Sig Dep.primitives show-op
 
 dep-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} →
             γ , t ⇓ v [ R ] → List Edge
