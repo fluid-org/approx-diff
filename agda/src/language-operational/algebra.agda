@@ -58,11 +58,11 @@ module IndexAlgebra
     index-val : sort → Set
     index-val s = Setoid.Carrier (Fam⟨𝒞⟩.Obj.idx (Impl.⟦sort⟧ s))
 
-    private
-      tuple : ∀ is → sort-vals index-val is →
+    -- The index of a tuple of values in the product interpreting an operation's argument sorts.
+    tuple : ∀ is → sort-vals index-val is →
               Setoid.Carrier (Fam⟨𝒞⟩.Obj.idx (PointedFPCat.list→product PF Impl.⟦sort⟧ is))
-      tuple []       _                  = lift tt
-      tuple (s ∷ ss) (v Product., vs) = v Product., tuple ss vs
+    tuple []       _                  = lift tt
+    tuple (s ∷ ss) (v Product., vs) = v Product., tuple ss vs
 
     index-algebra : Algebra Sig 0ℓ
     index-algebra .Algebra.sort-val = index-val

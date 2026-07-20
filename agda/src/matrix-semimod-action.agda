@@ -47,6 +47,14 @@ hom ._⇒h_.f-ι .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq y≈y' =
 private
   module EW = matrix-functor.Strict hom
 
+-- Inverse of mult-endo: an endomorphism of 𝕀 is multiplication by its value at ι, so reading a
+-- morphism between free objects as a matrix over S is F⁻¹ followed by evaluation at ι.
+endo-scalar : SemiMod._⇒_ 𝕀 𝕀 → S.Carrier
+endo-scalar h = h .SemiMod._⇒_.*→* .prop-setoid._⇒_.func S.ι
+
+mat-of : ∀ {m n} → SM._⇒_ (X^ m) (X^ n) → Category._⇒_ MS.cat m n
+mat-of {m} {n} f i j = endo-scalar (MES.F⁻¹ .Functor.fmor {m} {n} f i j)
+
 mat-mor : ∀ {m n} → Category._⇒_ MS.cat m n → SM._⇒_ (X^ m) (X^ n)
 mat-mor {m} {n} M = F .Functor.fmor {m} {n} (EW.E M)
 

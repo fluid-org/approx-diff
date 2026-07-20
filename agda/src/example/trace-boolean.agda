@@ -55,6 +55,17 @@ run-add = TotOp.fundamental M-add (emp · const 0ℚ · const 1ℚ) ((tt , tt) ,
 D-add = proj₁ (proj₂ (proj₂ run-add))
 
 ------------------------------------------------------------------------
+-- Multiplication of two variables, at (0, 1). The derivative of x * y is [y, x], so the result
+-- depends on x (whose coefficient is y = 1) and not on y (whose coefficient is x = 0).
+
+M-mult : (emp ▸ base number ▸ base number) ⊢ base number
+M-mult = bop mult (var zero ∷ var (succ zero) ∷ [])
+
+run-mult = TotOp.fundamental M-mult (emp · const 0ℚ · const 1ℚ) ((tt , tt) , tt)
+
+D-mult = proj₁ (proj₂ (proj₂ run-mult))
+
+------------------------------------------------------------------------
 -- Sum the numbers paired with a given label in a list of (label, number) pairs, fused into a single fold.
 
 elem : type 0
@@ -96,3 +107,7 @@ trace-query = refl
 graph-query : showGraph (dep-graph D-query) ≡
   "(pair: 0, 1), (pair: 2, 3), (pair: 4, 5), (pair: 5, 6), (inr: 6, 7), (roll: 7, 8), (pair: 3, 9), (pair: 8, 10), (inr: 9, 11), (inr: 10, 12), (roll: 11, 13), (roll: 12, 14), (pair: 1, 15), (pair: 13, 16), (pair: 14, 17), (inr: 15, 18), (inr: 16, 19), (inr: 17, 20), (roll: 18, 21), (roll: 19, 22), (roll: 20, 23), (case-l: 24, 25), (rec: 25, 26), (var: 23, 27), (var: 26, 28), (var: 27, 29), (var: 28, 30), (fst: 29, 31), (var: 27, 32), (var: 28, 33), (fst: 32, 34), (snd: 34, 35), (var: 27, 36), (var: 28, 37), (snd: 37, 38), (add: 35, 39), (add: 38, 39), (case-l: 39, 40), (case-r: 40, 41), (rec: 41, 42), (var: 22, 43), (var: 42, 44), (var: 43, 45), (var: 44, 46), (fst: 45, 47), (var: 43, 48), (var: 44, 49), (snd: 49, 50), (case-r: 50, 51), (case-r: 51, 52), (rec: 52, 53), (var: 21, 54), (var: 53, 55), (var: 54, 56), (var: 55, 57), (fst: 56, 58), (var: 54, 59), (var: 55, 60), (fst: 59, 61), (snd: 61, 62), (var: 54, 63), (var: 55, 64), (snd: 64, 65), (add: 62, 66), (add: 65, 66), (case-l: 66, 67), (case-r: 67, 68), (rec: 68, 69)"
 graph-query = refl
+
+graph-mult : showGraph (dep-graph D-mult) ≡
+  "(var: 1, 2), (var: 0, 3), (mult: 3, 4)"
+graph-mult = refl

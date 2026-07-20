@@ -12,6 +12,8 @@ import prop
 import semimodule
 import sd-semimodule
 import matrix
+import matrix-embedding-semimod
+import matrix-semimod-action
 open import functor using (Functor)
 open import Data.List using (List; []; _∷_)
 import Data.Nat
@@ -23,12 +25,14 @@ import indexed-family
 open import language-operational.algebra using (Algebra; sort-vals)
 import language-operational.algebra
 open import commutative-semiring using (CommutativeSemiring)
+open import signature using (Model)
 
 open import Level using (lift; 0ℓ) public
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
 open import Data.Sum using (inj₁; inj₂) public
 open import Relation.Binary.PropositionalEquality using (_≡_; refl) public
+open import Relation.Binary.PropositionalEquality using (sym) renaming (subst to ≡-subst)
 open import Relation.Nullary using (yes; no)
 open import two renaming (I to ⊤; O to ⊥) using () public
 open import Data.Integer using (+_; -[1+_]) public
@@ -121,9 +125,49 @@ private
 bases-width : List sort → ℕ
 bases-width = sorts-width sort-width
 
+-- The dependency relation of an operation at the point where it is applied: the fibre component of
+-- the operation's interpretation at those values, read off as a matrix by the inverse of the
+-- matrix embedding. Nothing is chosen here; the relation is whatever the model already computes.
+private
+  module MES = matrix-embedding-semimod two.semiring
+  module MSA = matrix-semimod-action two.semiring
+  module SMc = Category MES.SDSemiMod.SemiMod.cat
+
+  fib : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) → _
+  fib {is} ω vs =
+    Fam⟨𝒞⟩.Mor.famf (Model.⟦op⟧ D.BaseInterp1 ω) .indexed-family._⇒f_.transf
+      (Alg-inst.PA.tuple D.BaseInterp1 is vs)
+
+  -- The approximation of an operation's arguments: the product of the argument approximations.
+  args-approx : List sort → Category.obj BoolAlg-𝟚.cat
+  args-approx []       = HasTerminal.witness BoolAlg-𝟚.terminal
+  args-approx (i ∷ is) =
+    HasProducts.prod BoolAlg-𝟚.products (BoolAlg-𝟚.S^ (sort-width i)) (args-approx is)
+
+  op-fib : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) →
+           Category._⇒_ BoolAlg-𝟚.cat (args-approx is) (BoolAlg-𝟚.S^ (sort-width o'))
+  -- Matching on the operation so that the argument list, and hence both objects, compute.
+  op-fib (lit n) vs = fib (lit n) vs
+  op-fib add     vs = fib add vs
+  op-fib mult    vs = fib mult vs
+  op-fib (lbl l) vs = fib (lbl l) vs
+
+  -- The same map on the underlying semimodules, with both objects pinned.
+  U-mor : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) →
+          SMc._⇒_ (BoolAlg-𝟚.U .Functor.fobj (args-approx is))
+                  (BoolAlg-𝟚.U .Functor.fobj (BoolAlg-𝟚.S^ (sort-width o')))
+  U-mor {is} {o'} ω vs =
+    BoolAlg-𝟚.U .Functor.fmor {args-approx is} {BoolAlg-𝟚.S^ (sort-width o')} (op-fib ω vs)
+
+  -- Move the result out of the Boolean free object of its width and into the semimodule one.
+  out : ∀ n → SMc._⇒_ (BoolAlg-𝟚.U .Functor.fobj (BoolAlg-𝟚.S^ n)) (MES.X^ n)
+  out n = ≡-subst (λ M → SMc._⇒_ (MES.SDSemiMod.SelfDual.obj M) (MES.X^ n))
+                  (sym (BoolAlg-𝟚.selfDual-S^ n))
+                  (MES.X^≅S^ n .Category.Iso.bwd)
+
 op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is →
         Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
-op-rel (lit n) _   = λ i ()
-op-rel add _       = λ i j → two.I
-op-rel mult _      = λ i j → two.I
-op-rel (lbl l) _   = λ ()
+op-rel (lit n) vs = MSA.mat-of (out 1 SMc.∘ U-mor (lit n) vs)
+op-rel add vs     = MSA.mat-of (out 1 SMc.∘ U-mor add vs)
+op-rel mult vs    = MSA.mat-of (out 1 SMc.∘ U-mor mult vs)
+op-rel (lbl l) vs = MSA.mat-of (out 0 SMc.∘ U-mor (lbl l) vs)
