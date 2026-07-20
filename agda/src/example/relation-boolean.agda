@@ -17,9 +17,6 @@ import example.dependency
 
 module Dep = example.dependency
 
--- Value-level algebra, by projection from the model.
-module Alg-inst = Dep.Alg-inst
-
 module LR = language-operational.logical-relation Sig Dep.primitives
 
 -- The fundamental property, specialised to this instantiation.

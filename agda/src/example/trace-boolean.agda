@@ -16,7 +16,7 @@ import two
 open import example.signature ℚ
   using (Sig; sort; number; label; op; lit; add; mult; lbl; rel; equal-label)
 open import example.relation-boolean
-  using (module Alg-inst; module Tot)
+  using (module Tot)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Dep.primitives
