@@ -16,12 +16,11 @@ import two
 open import example.signature ℚ
   using (Sig; sort; number; label; op; lit; add; mult; lbl; rel; equal-label)
 open import example.relation-boolean
-  using (module Alg-inst; module Tot; module TotOp)
+  using (module Alg-inst; module Tot)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig Alg-inst.Alg Dep.sort-width
-  using (Env; emp; _·_; const; width-env; module WithOpRels)
-open WithOpRels Dep.op-rel using (_,_⇓_[_])
+open import language-operational.evaluation Sig Dep.Alg
+  using (Env; emp; _·_; const; width-env; _,_⇓_[_])
 
 show-lbl : L.label → String
 show-lbl L.a = "a"
@@ -35,7 +34,7 @@ show-op add         = "add"
 show-op mult        = "mult"
 show-op (lbl l)     = Data.String._++_ "lbl-" (show-lbl l)
 
-open import language-operational.trace Sig Alg-inst.Alg Dep.sort-width show-op
+open import language-operational.trace Sig Dep.Alg show-op
 
 dep-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} →
             γ , t ⇓ v [ R ] → List Edge
@@ -48,7 +47,7 @@ dep-graph {γ = γ} D =
 M-add : (emp ▸ base number ▸ base number) ⊢ base number
 M-add = bop add (var zero ∷ var (succ zero) ∷ [])
 
-run-add = TotOp.fundamental M-add (emp · const 0ℚ · const 1ℚ) ((tt , tt) , tt)
+run-add = Tot.fundamental M-add (emp · const 0ℚ · const 1ℚ) ((tt , tt) , tt)
 
 D-add = proj₁ (proj₂ (proj₂ run-add))
 
@@ -59,7 +58,7 @@ D-add = proj₁ (proj₂ (proj₂ run-add))
 M-mult : (emp ▸ base number ▸ base number) ⊢ base number
 M-mult = bop mult (var zero ∷ var (succ zero) ∷ [])
 
-run-mult = TotOp.fundamental M-mult (emp · const 0ℚ · const 1ℚ) ((tt , tt) , tt)
+run-mult = Tot.fundamental M-mult (emp · const 0ℚ · const 1ℚ) ((tt , tt) , tt)
 
 D-mult = proj₁ (proj₂ (proj₂ run-mult))
 
@@ -84,7 +83,7 @@ entry l q = pair (bop (lbl l) []) (bop (lit q) [])
 input : emp ⊢ list elem
 input = cons (entry L.a 0ℚ) (cons (entry L.b 1ℚ) (cons (entry L.a 1ℚ) nil))
 
-run-query = TotOp.eval (query L.a input)
+run-query = Tot.eval (query L.a input)
 
 D-query = proj₂ (proj₂ run-query)
 

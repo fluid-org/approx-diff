@@ -2,33 +2,66 @@
 
 open import Level using (Level; 0ℓ; suc; _⊔_; lift)
 open import Data.List using (List; []; _∷_)
+open import Data.Nat using (ℕ; _+_)
 import Data.Product as Product
 import Data.Sum as Sum
 open import Data.Unit using (tt)
 open import Data.Unit.Polymorphic using (⊤)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
-open import prop-setoid using (Setoid)
+import prop
+open import prop-setoid using (Setoid; ⊗-setoid; ⊤-isEquivalence; _∘S_)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
+import matrix
+import two
 import fam
 
--- Value-level interpretation of a signature, as used by the operational semantics.
+-- Value-level interpretation of a signature, as used by the operational semantics: for each sort a setoid
+-- of constants and a width, and for each operation a function on constants together with a dependency
+-- relation at each tuple of constants.
 module language-operational.algebra where
 
-sort-vals : ∀ {ℓ ℓ'} {sort : Set ℓ} (sort-val : sort → Set ℓ') → List sort → Set ℓ'
-sort-vals sv []       = ⊤
-sort-vals sv (σ ∷ σs) = sv σ Product.× sort-vals sv σs
+-- The setoid of tuples of constants.
+sort-vals-setoid : ∀ {ℓ} {sort : Set ℓ} (sort-index : sort → Setoid 0ℓ 0ℓ) → List sort → Setoid 0ℓ 0ℓ
+sort-vals-setoid si [] .Setoid.Carrier = ⊤
+sort-vals-setoid si [] .Setoid._≈_ _ _ = prop.⊤
+sort-vals-setoid si [] .Setoid.isEquivalence = ⊤-isEquivalence
+sort-vals-setoid si (σ ∷ σs) = ⊗-setoid (si σ) (sort-vals-setoid si σs)
 
-record Algebra {ℓ} (Sig : Signature ℓ) ℓ' : Set (ℓ ⊔ suc ℓ') where
+sorts-width : ∀ {ℓ} {A : Set ℓ} → (A → ℕ) → List A → ℕ
+sorts-width w []       = 0
+sorts-width w (s ∷ ss) = w s + sorts-width w ss
+
+private
+  module M𝟚 = matrix.Mat two.semiring
+
+record Algebra {ℓ} (Sig : Signature ℓ) : Set (ℓ ⊔ suc 0ℓ) where
   open Signature Sig
   field
-    sort-val : sort → Set ℓ'
-    op-fun   : ∀ {is o} → op is o → sort-vals sort-val is → sort-val o
-    rel-pred : ∀ {is}   → rel is  → sort-vals sort-val is → ⊤ {ℓ'} Sum.⊎ ⊤ {ℓ'}
+    sort-index : sort → Setoid 0ℓ 0ℓ
+    sort-width : sort → ℕ
 
--- The index algebra of a family model: a sort's values are the index elements of its interpretation, and an
--- operation acts as the index part of its interpreting morphism. Rebuilds the Fam structure by the same
--- constructions as ho-model.Interpretation, so that instantiating with a host's arguments makes its models
--- fit definitionally.
+  sort-val : sort → Set
+  sort-val s = Setoid.Carrier (sort-index s)
+
+  sort-vals : List sort → Set
+  sort-vals is = Setoid.Carrier (sort-vals-setoid sort-index is)
+
+  bases-width : List sort → ℕ
+  bases-width = sorts-width sort-width
+
+  field
+    op-fun   : ∀ {is o} → op is o →
+               prop-setoid._⇒_ (sort-vals-setoid sort-index is) (sort-index o)
+    op-rel   : ∀ {is o'} → op is o' →
+               prop-setoid._⇒_ (sort-vals-setoid sort-index is)
+                 (Category.hom-setoid M𝟚.cat (bases-width is) (sort-width o'))
+    rel-pred : ∀ {is} → rel is → sort-vals is → ⊤ {0ℓ} Sum.⊎ ⊤ {0ℓ}
+
+-- The index algebra of a family model: a sort's constants are the index elements of its interpretation,
+-- and an operation acts as the index part of its interpreting morphism. Rebuilds the Fam structure by the
+-- same constructions as ho-model.Interpretation, so that instantiating with a host's arguments makes its
+-- models fit definitionally. Widths and dependency relations are not determined by an arbitrary model, so
+-- they are supplied.
 module IndexAlgebra
   {o : Level}
   (𝒞 : Category o 0ℓ 0ℓ)
@@ -53,21 +86,32 @@ module IndexAlgebra
     open Signature Sig
     private
       module Impl = Model Impl
-      open prop-setoid._⇒_ using (func)
+      open prop-setoid._⇒_ using (func; func-resp-≈)
+
+    index-setoid : sort → Setoid 0ℓ 0ℓ
+    index-setoid s = Fam⟨𝒞⟩.Obj.idx (Impl.⟦sort⟧ s)
 
     index-val : sort → Set
-    index-val s = Setoid.Carrier (Fam⟨𝒞⟩.Obj.idx (Impl.⟦sort⟧ s))
+    index-val s = Setoid.Carrier (index-setoid s)
 
     -- The index of a tuple of values in the product interpreting an operation's argument sorts.
-    tuple : ∀ is → sort-vals index-val is →
-              Setoid.Carrier (Fam⟨𝒞⟩.Obj.idx (PointedFPCat.list→product PF Impl.⟦sort⟧ is))
-    tuple []       _                  = lift tt
-    tuple (s ∷ ss) (v Product., vs) = v Product., tuple ss vs
+    tuple : ∀ is → prop-setoid._⇒_ (sort-vals-setoid index-setoid is)
+                     (Fam⟨𝒞⟩.Obj.idx (PointedFPCat.list→product PF Impl.⟦sort⟧ is))
+    tuple []       .func _ = lift tt
+    tuple (s ∷ ss) .func (v Product., vs) = v Product., tuple ss .func vs
+    tuple []       .func-resp-≈ _ = prop.tt
+    tuple (s ∷ ss) .func-resp-≈ e = prop.proj₁ e prop., tuple ss .func-resp-≈ (prop.proj₂ e)
 
-    index-algebra : Algebra Sig 0ℓ
-    index-algebra .Algebra.sort-val = index-val
-    index-algebra .Algebra.op-fun ω vs = func (Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω)) (tuple _ vs)
-    index-algebra .Algebra.rel-pred ω vs
-      with func (Fam⟨𝒞⟩.Mor.idxf (Impl.⟦rel⟧ ω)) (tuple _ vs)
+    index-algebra : (sort-width : sort → ℕ)
+                    (op-rel : ∀ {is o'} → op is o' →
+                       prop-setoid._⇒_ (sort-vals-setoid index-setoid is)
+                         (Category.hom-setoid M𝟚.cat (sorts-width sort-width is) (sort-width o'))) →
+                    Algebra Sig
+    index-algebra w r .Algebra.sort-index = index-setoid
+    index-algebra w r .Algebra.sort-width = w
+    index-algebra w r .Algebra.op-fun {is} ω = Fam⟨𝒞⟩.Mor.idxf (Impl.⟦op⟧ ω) ∘S tuple is
+    index-algebra w r .Algebra.op-rel = r
+    index-algebra w r .Algebra.rel-pred {is} ω vs
+      with func (Fam⟨𝒞⟩.Mor.idxf (Impl.⟦rel⟧ ω)) (tuple is .func vs)
     ... | Sum.inj₁ _ = Sum.inj₁ (lift tt)
     ... | Sum.inj₂ _ = Sum.inj₂ (lift tt)

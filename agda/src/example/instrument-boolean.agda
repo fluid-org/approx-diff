@@ -19,11 +19,10 @@ import matrix
 open import example.signature ℚ
   using (Sig; sort; number; label; op; lit; add; mult; lbl; rel; equal-label)
 open import example.relation-boolean
-  using (module Alg-inst; module Tot; module TotOp;
-         module Instr; module InstrOp)
+  using (module Alg-inst; module Tot; module Instr)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig Alg-inst.Alg Dep.sort-width
+open import language-operational.evaluation Sig Dep.Alg
   using (Env; emp; _·_; const; width)
 open import language-operational.marking Sig
 open import example.trace-boolean using (elem; query; input; D-query)
@@ -69,9 +68,9 @@ m-mm = bop (doc (base number) (unmarked _) ∷ unmarked _ ∷ [])
 γ-mm : Env (emp ▸ base number ▸ base number)
 γ-mm = emp · const 0ℚ · const 1ℚ
 
-run-mm = TotOp.fundamental t-mm γ-mm ((tt , tt) , tt)
+run-mm = Tot.fundamental t-mm γ-mm ((tt , tt) , tt)
 
-inst-mm = InstrOp.instrument m-mm (emp · const · const)
+inst-mm = Instr.instrument m-mm (emp · const · const)
             (proj₁ (proj₂ (proj₂ run-mm))) ∅
 
 flat-mm : ents (collapse (proj₁ (proj₂ (proj₂ inst-mm))) (proj₂ (proj₂ (proj₂ inst-mm))))
@@ -94,12 +93,12 @@ m-input =
 m-query : Marked (query L.a input)
 m-query = fold (doc (base number) (unmarked _)) m-input
 
-inst-query = InstrOp.instrument m-query emp D-query ∅
+inst-query = Instr.instrument m-query emp D-query ∅
 
 -- Total width of the intermediates: three entries and four fold steps.
 width-query : proj₁ (proj₂ inst-query) ≡ 7
 width-query = refl
 
 -- Erasure: the unmarked run adds no intermediates.
-erasure-query : proj₁ (proj₂ (InstrOp.instrument (unmarked _) emp D-query ∅)) ≡ 0
+erasure-query : proj₁ (proj₂ (Instr.instrument (unmarked _) emp D-query ∅)) ≡ 0
 erasure-query = refl

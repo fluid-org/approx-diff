@@ -20,7 +20,7 @@ open import Data.Nat using (ℕ)
 import ho-model-sd-semimod
 import semiring-Q
 import indexed-family
-open import language-operational.algebra using (Algebra; sort-vals)
+open import language-operational.algebra using (Algebra; sort-vals-setoid; sorts-width)
 import language-operational.algebra
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Model)
@@ -102,18 +102,23 @@ module T = Pm.Tree {n = 0} (λ ())
 open indexed-family._⇒f_ public
 open SemiMod-𝟚._⇒_ public
 
--- Value-level algebra, by projection from the model.
+-- Value-level constants, by projection from the model.
 module Alg-inst where
   module PA = language-operational.algebra.IndexAlgebra
                 SDSemiMod-𝟚.cat SDSemiMod-𝟚.terminal SDSemiMod-𝟚.products Sig
 
-  Alg : Algebra Sig 0ℓ
-  Alg = PA.index-algebra D.BaseInterp1
-
   sort-val : sort → Set
-  sort-val = Algebra.sort-val Alg
+  sort-val = PA.index-val D.BaseInterp1
 
 open Alg-inst using (sort-val) public
+
+private
+  -- Tuples of constants, as a setoid.
+  SVS : List sort → Setoid 0ℓ 0ℓ
+  SVS = sort-vals-setoid (Alg-inst.PA.index-setoid D.BaseInterp1)
+
+  svals : List sort → Set
+  svals is = Setoid.Carrier (SVS is)
 
 private
   module M𝟚 = matrix.Mat two.semiring
@@ -128,10 +133,10 @@ private
   module MES = matrix-embedding-semimod two.semiring
   module SMc = Category MES.SDSemiMod.SemiMod.cat
 
-  fib : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) → _
+  fib : ∀ {is o'} (ω : op is o') (vs : svals is) → _
   fib {is} ω vs =
     Fam⟨𝒞⟩.Mor.famf (Model.⟦op⟧ D.BaseInterp1 ω) .indexed-family._⇒f_.transf
-      (Alg-inst.PA.tuple D.BaseInterp1 is vs)
+      (Alg-inst.PA.tuple D.BaseInterp1 is .prop-setoid._⇒_.func vs)
 
   -- The approximation of an operation's arguments: the product of the argument approximations.
   args-approx : List sort → Category.obj SDSemiMod-𝟚.cat
@@ -139,7 +144,7 @@ private
   args-approx (i ∷ is) =
     HasProducts.prod SDSemiMod-𝟚.products (SDSemiMod-𝟚.S^ (sort-width i)) (args-approx is)
 
-  op-fib : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) →
+  op-fib : ∀ {is o'} (ω : op is o') (vs : svals is) →
            Category._⇒_ SDSemiMod-𝟚.cat (args-approx is) (SDSemiMod-𝟚.S^ (sort-width o'))
   -- Matching on the operation so that the argument list, and hence both objects, compute.
   op-fib (lit n) vs = fib (lit n) vs
@@ -148,7 +153,7 @@ private
   op-fib (lbl l) vs = fib (lbl l) vs
 
   -- The same map on the underlying semimodules, with both objects pinned.
-  U-mor : ∀ {is o'} (ω : op is o') (vs : sort-vals sort-val is) →
+  U-mor : ∀ {is o'} (ω : op is o') (vs : svals is) →
           SMc._⇒_ (SDSemiMod-𝟚.U .Functor.fobj (args-approx is))
                   (SDSemiMod-𝟚.U .Functor.fobj (SDSemiMod-𝟚.S^ (sort-width o')))
   U-mor {is} {o'} ω vs =
@@ -158,9 +163,30 @@ private
   out : ∀ n → SMc._⇒_ (SDSemiMod-𝟚.U .Functor.fobj (SDSemiMod-𝟚.S^ n)) (MES.X^ n)
   out n = MES.X^≅S^ n .Category.Iso.bwd
 
-op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is →
-        Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
-op-rel (lit n) vs = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor (lit n) vs)
-op-rel add vs     = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor add vs)
-op-rel mult vs    = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor mult vs)
-op-rel (lbl l) vs = Functor.fmor MES.mor→mat (out 0 SMc.∘ U-mor (lbl l) vs)
+private
+  op-rel₀ : ∀ {is o'} → op is o' → svals is →
+            Category._⇒_ M𝟚.cat (bases-width is) (sort-width o')
+  op-rel₀ (lit n) vs = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor (lit n) vs)
+  op-rel₀ add vs     = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor add vs)
+  op-rel₀ mult vs    = Functor.fmor MES.mor→mat (out 1 SMc.∘ U-mor mult vs)
+  op-rel₀ (lbl l) vs = Functor.fmor MES.mor→mat (out 0 SMc.∘ U-mor (lbl l) vs)
+
+  -- Congruence: the argument setoids are propositional equality, so match the proofs down to refl.
+  resp₂ : ∀ {o'} (ω : op (number ∷ number ∷ []) o') {x x' y y' t t'} →
+          Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
+          Category._≈_ M𝟚.cat (op-rel₀ ω (x , y , t)) (op-rel₀ ω (x' , y' , t'))
+  resp₂ ω (liftS refl) (liftS refl) = Category.≈-refl M𝟚.cat
+
+op-rel : ∀ {is o'} (ω : op is o') →
+         prop-setoid._⇒_ (SVS is)
+           (Category.hom-setoid M𝟚.cat (bases-width is) (sort-width o'))
+op-rel ω .prop-setoid._⇒_.func = op-rel₀ ω
+op-rel (lit n) .prop-setoid._⇒_.func-resp-≈ _ = Category.≈-refl M𝟚.cat
+op-rel (lbl l) .prop-setoid._⇒_.func-resp-≈ _ = Category.≈-refl M𝟚.cat
+op-rel add  .prop-setoid._⇒_.func-resp-≈ e = resp₂ add (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
+op-rel mult .prop-setoid._⇒_.func-resp-≈ e = resp₂ mult (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
+
+-- The operational interpretation of the signature: constants and functions from the model's index
+-- parts, widths and dependency relations as above.
+Alg : Algebra Sig
+Alg = Alg-inst.PA.index-algebra D.BaseInterp1 sort-width op-rel

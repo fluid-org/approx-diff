@@ -16,7 +16,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 import two
 open import signature using (Signature; Model; PFPC[_,_,_,_])
-open import language-operational.algebra using (Algebra; sort-vals)
+open import language-operational.algebra using (Algebra; sort-vals-setoid; sorts-width)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
 open import functor using (Functor)
 import matrix-embedding-semimod
@@ -36,11 +36,9 @@ open Signature Sig
 private
   module PA = language-operational.algebra.IndexAlgebra SDSemiMod.cat SDSemiMod.terminal SDSemiMod.products Sig
 
--- The value-level algebra is the model's index elements, so agreement at base sorts is definitional.
-𝒜 : Algebra Sig 0ℓ
-𝒜 = PA.index-algebra Impl
-
-open Algebra 𝒜
+-- The value-level constants are the model's index elements, so agreement at base sorts is definitional.
+sort-val : Signature.sort Sig → Set
+sort-val = PA.index-val Impl
 open import language-syntax Sig renaming (_,_ to _▸_)
 import language-operational.evaluation
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
@@ -155,10 +153,6 @@ i⊕₂ : ∀ {X Y} → SM._⇒_ Y (SemiMod._⊕_ X Y)
 i⊕₂ {X} {Y} = cmon-enriched.Biproduct.in₂ (SemiMod.biproduct X Y)
   where import cmon-enriched
 
-private
-  BW : (sort → ℕ) → List sort → ℕ
-  BW w = language-operational.evaluation.bases-width Sig 𝒜 w
-
 -- The witness set relating the operational treatment of primitives to the model: how many dimensions
 -- of approximation each base sort carries, and the dependency relation of each operation.
 record Presentation : Set where
@@ -168,18 +162,20 @@ record Presentation : Set where
     -- fibres are the free objects this is X^≅S^, but the relation is generic in the model, so it is
     -- supplied.
     sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c)
-    op-rel     : ∀ {is o'} → op is o' → sort-vals sort-val is →
-                 Category._⇒_ M.cat (BW sort-width is) (sort-width o')
+    op-rel     : ∀ {is o'} → op is o' →
+                 prop-setoid._⇒_ (sort-vals-setoid (PA.index-setoid Impl) is)
+                   (Category.hom-setoid M.cat (sorts-width sort-width is) (sort-width o'))
 
 module WithPresentation (P : Presentation) where
 
   open Presentation P
 
   private
-    module EM = language-operational.evaluation Sig 𝒜 sort-width
-  open EM using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_;
-                 width; width-env; width-subst; module WithOpRels)
-  open WithOpRels op-rel
+    𝒜 : Algebra Sig
+    𝒜 = PA.index-algebra Impl sort-width op-rel
+
+    module EM = language-operational.evaluation Sig 𝒜
+  open EM
 
   Realiser : (τ : type 0) → Val τ → Index τ → Set
   Realiser τ v a = SM._⇒_ (X^ (width v)) (Fibre τ a)

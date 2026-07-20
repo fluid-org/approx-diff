@@ -13,7 +13,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import language-operational.algebra using (Algebra; sort-vals)
+open import language-operational.algebra using (Algebra)
 import matrix
 import two
 
@@ -22,16 +22,13 @@ import two
 -- by structural recursion on the derivation. Markings flow through values, so that the body run at an
 -- application site carries the marking captured by its closure.
 module language-operational.instrument
-  {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
-  (sort-width : Signature.sort Sig → ℕ)
-  where
+  {ℓ} (Sig : Signature ℓ) (𝒜 : Algebra Sig) where
 
 open Signature Sig
 open Algebra 𝒜
+open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig 𝒜 sort-width
-  using (Val; Env; unit; const; inl; inr; pair; clo; roll; emp; _·_; lookup; bool→val;
-         width; width-env; bases-width; width-subst; proj-var; brel-mat; module WithOpRels)
+open import language-operational.evaluation Sig 𝒜
 open import type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.marking Sig
 
@@ -82,7 +79,7 @@ id-frame g p = pad g p M.I
 ------------------------------------------------------------------------
 -- Sequences of intermediates.
 
-data Seq (g : ℕ) : ℕ → Set (ℓ Level.⊔ ℓ') where
+data Seq (g : ℕ) : ℕ → Set ℓ where
   ∅    : Seq g 0
   snoc : ∀ {n} (Φ : Seq g n) {τ : type 0} (w : Val τ) (Sm : M.Matrix (width w) (g + n)) →
          Seq g (n + width w)
@@ -104,7 +101,7 @@ append-subst {g} {g'} {p} Φ E (snoc {n} Ψ w Sm) =
 -- Markings of values and environments: closures capture their body's marking.
 
 mutual
-  data MarkedV : ∀ {τ} → Val τ → Set (ℓ Level.⊔ ℓ') where
+  data MarkedV : ∀ {τ} → Val τ → Set ℓ where
     unit  : MarkedV unit
     const : ∀ {s} {c : sort-val s} → MarkedV (const c)
     inl   : ∀ {σ τ} {v : Val σ} → MarkedV v → MarkedV (inl {τ₂ = τ} v)
@@ -114,7 +111,7 @@ mutual
             MarkedE γ → Marked t → MarkedV (clo γ t)
     roll  : ∀ {τ} {v : Val (τ [ μ τ ])} → MarkedV v → MarkedV (roll {τ} v)
 
-  data MarkedE : ∀ {Γ} → Env Γ → Set (ℓ Level.⊔ ℓ') where
+  data MarkedE : ∀ {Γ} → Env Γ → Set ℓ where
     emp : MarkedE emp
     _·_ : ∀ {Γ τ} {γ : Env Γ} {v : Val τ} → MarkedE γ → MarkedV v → MarkedE (γ · v)
 
@@ -132,176 +129,170 @@ mvcast refl mv = mv
 ------------------------------------------------------------------------
 -- Instrumentation.
 
-module WithOp
-  (op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is → M.Matrix (sort-width o') (bases-width is))
-  where
+Out : (g p t : ℕ) → Set ℓ
+Out g p t = Σ ℕ λ k → Seq g (p + k) × M.Matrix t (g + (p + k))
 
-  open WithOpRels op-rel
+private
+  leaf : ∀ {g p t} → Seq g p → M.Matrix t g → Out g p t
+  leaf {g} {p} Φ A = 0 , seq-cast (sym (+-identityʳ p)) Φ , pad g (p + 0) A
 
-  Out : (g p t : ℕ) → Set (ℓ Level.⊔ ℓ')
-  Out g p t = Σ ℕ λ k → Seq g (p + k) × M.Matrix t (g + (p + k))
+instrument :
+  ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} {p} →
+  Marked t → MarkedE γ → γ , t ⇓ v [ R ] → Seq (width-env γ) p →
+  MarkedV v × Out (width-env γ) p (width v)
+instrument-s :
+  ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs} {p} →
+  MarkedS Ms → MarkedE γ → γ , Ms ⇓s vs [ Rs ] → Seq (width-env γ) p →
+  Out (width-env γ) p (bases-width is)
+instrument-map :
+  ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+  {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
+  {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)} {p} →
+  Marked s → MarkedE γ → MarkedV v → Map γ s σ' v R v' R' →
+  Seq (width-env γ) p → M.Matrix (width v) (width-env γ + p) →
+  MarkedV v' × Out (width-env γ) p (width v')
 
-  private
-    leaf : ∀ {g p t} → Seq g p → M.Matrix t g → Out g p t
-    leaf {g} {p} Φ A = 0 , seq-cast (sym (+-identityʳ p)) Φ , pad g (p + 0) A
+private
+  assoc3 : ∀ p a b c → ((p + a) + b) + c ≡ p + ((a + b) + c)
+  assoc3 p a b c = trans (cong (_+ c) (+-assoc p a b)) (+-assoc p (a + b) c)
 
-  instrument :
-    ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} {p} →
-    Marked t → MarkedE γ → γ , t ⇓ v [ R ] → Seq (width-env γ) p →
-    MarkedV v × Out (width-env γ) p (width v)
-  instrument-s :
-    ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs} {p} →
-    MarkedS Ms → MarkedE γ → γ , Ms ⇓s vs [ Rs ] → Seq (width-env γ) p →
-    Out (width-env γ) p (bases-width is)
-  instrument-map :
-    ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
-    {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)} {p} →
-    Marked s → MarkedE γ → MarkedV v → Map γ s σ' v R v' R' →
-    Seq (width-env γ) p → M.Matrix (width v) (width-env γ + p) →
-    MarkedV v' × Out (width-env γ) p (width v')
+  rowcast : ∀ {c m n} → m ≡ n → M.Matrix m c → M.Matrix n c
+  rowcast refl A = A
 
-  private
-    assoc3 : ∀ p a b c → ((p + a) + b) + c ≡ p + ((a + b) + c)
-    assoc3 p a b c = trans (cong (_+ c) (+-assoc p a b)) (+-assoc p (a + b) c)
+  mv-uncast : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} → MarkedV (≡-subst Val e v) → MarkedV v
+  mv-uncast refl mv = mv
 
-    rowcast : ∀ {c m n} → m ≡ n → M.Matrix m c → M.Matrix n c
-    rowcast refl A = A
+instrument {γ = γ} {v = v} {p = p} (doc fo m) mγ D Φ
+  with instrument m mγ D Φ
+... | mv , (k , Φ' , R') =
+  mv , (k + width v
+       , seq-cast (+-assoc p k (width v)) (snoc Φ' v R')
+       , mcast (width-env γ) (+-assoc p k (width v)) (inj-last (width-env γ) (p + k) (width v)))
+instrument {γ = γ} (var x) mγ (⇓-var .x) Φ = lookupM x mγ , leaf Φ (proj-var x γ)
+instrument unit mγ ⇓-unit Φ = unit , leaf Φ M.εₘ
+instrument (lam m) mγ ⇓-lam Φ = clo mγ m , leaf Φ M.I
+instrument (inl m) mγ (⇓-inl D) Φ with instrument m mγ D Φ
+... | mv , out = inl mv , out
+instrument (inr m) mγ (⇓-inr D) Φ with instrument m mγ D Φ
+... | mv , out = inr mv , out
+instrument (roll m) mγ (⇓-roll D) Φ with instrument m mγ D Φ
+... | mv , out = roll mv , out
+instrument (fst m) mγ (⇓-fst D) Φ with instrument m mγ D Φ
+... | pair mv₁ mv₂ , (k , Φ' , R') = mv₁ , (k , Φ' , M.p₁ M.∘ R')
+instrument (snd m) mγ (⇓-snd D) Φ with instrument m mγ D Φ
+... | pair mv₁ mv₂ , (k , Φ' , R') = mv₂ , (k , Φ' , M.p₂ M.∘ R')
+instrument {γ = γ} {p = p} (pair m₁ m₂) mγ (⇓-pair D₁ D₂) Φ
+  with instrument m₁ mγ D₁ Φ
+... | mv₁ , (k₁ , Φ₁ , R₁)
+  with instrument m₂ mγ D₂ Φ₁
+... | mv₂ , (k₂ , Φ₂ , R₂) =
+  pair mv₁ mv₂ ,
+  (k₁ + k₂
+  , seq-cast (+-assoc p k₁ k₂) Φ₂
+  , mcast (width-env γ) (+-assoc p k₁ k₂)
+      (stack _ _ (widen (width-env γ) (p + k₁) k₂ R₁) R₂))
+instrument {γ = γ} {p = p} (case ms m₁ m₂) mγ (⇓-case-l Ds D₁) Φ
+  with instrument ms mγ Ds Φ
+... | inl mv , (k₁ , Φ₁ , R₁)
+  with instrument m₁ (mγ · mv) D₁ ∅
+... | mvU , (k₂ , Φ₂ , Sb) =
+  mvU ,
+  (k₁ + k₂
+  , seq-cast (+-assoc p k₁ k₂)
+      (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
+  , mcast (width-env γ) (+-assoc p k₁ k₂)
+      (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
+              (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁)))
+instrument {γ = γ} {p = p} (case ms m₁ m₂) mγ (⇓-case-r Ds D₂) Φ
+  with instrument ms mγ Ds Φ
+... | inr mv , (k₁ , Φ₁ , R₁)
+  with instrument m₂ (mγ · mv) D₂ ∅
+... | mvU , (k₂ , Φ₂ , Sb) =
+  mvU ,
+  (k₁ + k₂
+  , seq-cast (+-assoc p k₁ k₂)
+      (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
+  , mcast (width-env γ) (+-assoc p k₁ k₂)
+      (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
+              (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁)))
+instrument {γ = γ} {p = p} (app ms mt) mγ (⇓-app Ds Dt Db) Φ
+  with instrument ms mγ Ds Φ
+... | clo mE mt' , (k₁ , Φ₁ , R)
+  with instrument mt mγ Dt Φ₁
+... | mvA , (k₂ , Φ₂ , Sa)
+  with instrument mt' (mE · mvA) Db ∅
+... | mvU , (k₃ , Φ₃ , Tb) =
+  mvU ,
+  ((k₁ + k₂) + k₃
+  , seq-cast (assoc3 p k₁ k₂ k₃)
+      (append-subst Φ₂ (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa) Φ₃)
+  , mcast (width-env γ) (assoc3 p k₁ k₂ k₃)
+      (Tb M.∘ frame-emb (width-env γ) ((p + k₁) + k₂) k₃
+              (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa)))
+instrument (bop ms) mγ (⇓-bop {ω = ω} {vs = vs} Es) Φ
+  with instrument-s ms mγ Es Φ
+... | (k , Φ' , Rs) = const , (k , Φ' , op-rel ω .func vs M.∘ Rs)
+instrument {γ = γ} {p = p} (brel ms) mγ (⇓-brel {ω = ω} {vs = vs} Es) Φ
+  with instrument-s ms mγ Es Φ
+... | (k , Φ' , Rs) =
+  boolM (rel-pred ω vs) ,
+  (k , Φ' , pad (width-env γ) (p + k) (brel-mat γ (rel-pred ω vs)))
+instrument {γ = γ} {p = p} (fold m-s m-t) mγ (⇓-fold Dt Dm) Φ
+  with instrument m-t mγ Dt Φ
+... | mvV , (k₁ , Φ₁ , R₁)
+  with instrument-map m-s mγ mvV Dm Φ₁ R₁
+... | mvU , (k₂ , Φ₂ , R₂) =
+  mvU , (k₁ + k₂ , seq-cast (+-assoc p k₁ k₂) Φ₂ , mcast (width-env γ) (+-assoc p k₁ k₂) R₂)
 
-    mv-uncast : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} → MarkedV (≡-subst Val e v) → MarkedV v
-    mv-uncast refl mv = mv
+instrument-s [] mγ [] Φ = leaf Φ M.εₘ
+instrument-s {γ = γ} {p = p} (m ∷ ms) mγ (E ∷ Es) Φ
+  with instrument m mγ E Φ
+... | _ , (k₁ , Φ₁ , R₁)
+  with instrument-s ms mγ Es Φ₁
+... | (k₂ , Φ₂ , Rs) =
+  (k₁ + k₂
+  , seq-cast (+-assoc p k₁ k₂) Φ₂
+  , mcast (width-env γ) (+-assoc p k₁ k₂)
+      (stack _ _ (widen (width-env γ) (p + k₁) k₂ R₁) Rs))
 
-  instrument {γ = γ} {v = v} {p = p} (doc fo m) mγ D Φ
-    with instrument m mγ D Φ
-  ... | mv , (k , Φ' , R') =
-    mv , (k + width v
-         , seq-cast (+-assoc p k (width v)) (snoc Φ' v R')
-         , mcast (width-env γ) (+-assoc p k (width v)) (inj-last (width-env γ) (p + k) (width v)))
-  instrument {γ = γ} (var x) mγ (⇓-var .x) Φ = lookupM x mγ , leaf Φ (proj-var x γ)
-  instrument unit mγ ⇓-unit Φ = unit , leaf Φ M.εₘ
-  instrument (lam m) mγ ⇓-lam Φ = clo mγ m , leaf Φ M.I
-  instrument (inl m) mγ (⇓-inl D) Φ with instrument m mγ D Φ
-  ... | mv , out = inl mv , out
-  instrument (inr m) mγ (⇓-inr D) Φ with instrument m mγ D Φ
-  ... | mv , out = inr mv , out
-  instrument (roll m) mγ (⇓-roll D) Φ with instrument m mγ D Φ
-  ... | mv , out = roll mv , out
-  instrument (fst m) mγ (⇓-fst D) Φ with instrument m mγ D Φ
-  ... | pair mv₁ mv₂ , (k , Φ' , R') = mv₁ , (k , Φ' , M.p₁ M.∘ R')
-  instrument (snd m) mγ (⇓-snd D) Φ with instrument m mγ D Φ
-  ... | pair mv₁ mv₂ , (k , Φ' , R') = mv₂ , (k , Φ' , M.p₂ M.∘ R')
-  instrument {γ = γ} {p = p} (pair m₁ m₂) mγ (⇓-pair D₁ D₂) Φ
-    with instrument m₁ mγ D₁ Φ
-  ... | mv₁ , (k₁ , Φ₁ , R₁)
-    with instrument m₂ mγ D₂ Φ₁
-  ... | mv₂ , (k₂ , Φ₂ , R₂) =
-    pair mv₁ mv₂ ,
-    (k₁ + k₂
-    , seq-cast (+-assoc p k₁ k₂) Φ₂
-    , mcast (width-env γ) (+-assoc p k₁ k₂)
-        (stack _ _ (widen (width-env γ) (p + k₁) k₂ R₁) R₂))
-  instrument {γ = γ} {p = p} (case ms m₁ m₂) mγ (⇓-case-l Ds D₁) Φ
-    with instrument ms mγ Ds Φ
-  ... | inl mv , (k₁ , Φ₁ , R₁)
-    with instrument m₁ (mγ · mv) D₁ ∅
-  ... | mvU , (k₂ , Φ₂ , Sb) =
-    mvU ,
-    (k₁ + k₂
-    , seq-cast (+-assoc p k₁ k₂)
-        (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
-    , mcast (width-env γ) (+-assoc p k₁ k₂)
-        (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
-                (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁)))
-  instrument {γ = γ} {p = p} (case ms m₁ m₂) mγ (⇓-case-r Ds D₂) Φ
-    with instrument ms mγ Ds Φ
-  ... | inr mv , (k₁ , Φ₁ , R₁)
-    with instrument m₂ (mγ · mv) D₂ ∅
-  ... | mvU , (k₂ , Φ₂ , Sb) =
-    mvU ,
-    (k₁ + k₂
-    , seq-cast (+-assoc p k₁ k₂)
-        (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
-    , mcast (width-env γ) (+-assoc p k₁ k₂)
-        (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
-                (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁)))
-  instrument {γ = γ} {p = p} (app ms mt) mγ (⇓-app Ds Dt Db) Φ
-    with instrument ms mγ Ds Φ
-  ... | clo mE mt' , (k₁ , Φ₁ , R)
-    with instrument mt mγ Dt Φ₁
-  ... | mvA , (k₂ , Φ₂ , Sa)
-    with instrument mt' (mE · mvA) Db ∅
-  ... | mvU , (k₃ , Φ₃ , Tb) =
-    mvU ,
-    ((k₁ + k₂) + k₃
-    , seq-cast (assoc3 p k₁ k₂ k₃)
-        (append-subst Φ₂ (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa) Φ₃)
-    , mcast (width-env γ) (assoc3 p k₁ k₂ k₃)
-        (Tb M.∘ frame-emb (width-env γ) ((p + k₁) + k₂) k₃
-                (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa)))
-  instrument (bop ms) mγ (⇓-bop {ω = ω} {vs = vs} Es) Φ
-    with instrument-s ms mγ Es Φ
-  ... | (k , Φ' , Rs) = const , (k , Φ' , op-rel ω vs M.∘ Rs)
-  instrument {γ = γ} {p = p} (brel ms) mγ (⇓-brel {ω = ω} {vs = vs} Es) Φ
-    with instrument-s ms mγ Es Φ
-  ... | (k , Φ' , Rs) =
-    boolM (rel-pred ω vs) ,
-    (k , Φ' , pad (width-env γ) (p + k) (brel-mat γ (rel-pred ω vs)))
-  instrument {γ = γ} {p = p} (fold m-s m-t) mγ (⇓-fold Dt Dm) Φ
-    with instrument m-t mγ Dt Φ
-  ... | mvV , (k₁ , Φ₁ , R₁)
-    with instrument-map m-s mγ mvV Dm Φ₁ R₁
-  ... | mvU , (k₂ , Φ₂ , R₂) =
-    mvU , (k₁ + k₂ , seq-cast (+-assoc p k₁ k₂) Φ₂ , mcast (width-env γ) (+-assoc p k₁ k₂) R₂)
-
-  instrument-s [] mγ [] Φ = leaf Φ M.εₘ
-  instrument-s {γ = γ} {p = p} (m ∷ ms) mγ (E ∷ Es) Φ
-    with instrument m mγ E Φ
-  ... | _ , (k₁ , Φ₁ , R₁)
-    with instrument-s ms mγ Es Φ₁
-  ... | (k₂ , Φ₂ , Rs) =
-    (k₁ + k₂
-    , seq-cast (+-assoc p k₁ k₂) Φ₂
-    , mcast (width-env γ) (+-assoc p k₁ k₂)
-        (stack _ _ (widen (width-env γ) (p + k₁) k₂ R₁) Rs))
-
-  instrument-map {γ = γ} {v = v} {R = R} {p = p} m-s mγ mv m-unit Φ Rin =
-    mv , (0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin)
-  instrument-map {γ = γ} {v = v} {R = R} {p = p} m-s mγ mv m-base Φ Rin =
-    mv , (0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin)
-  instrument-map {γ = γ} {v = v} {R = R} {p = p} m-s mγ mv m-arrow Φ Rin =
-    mv , (0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin)
-  instrument-map m-s mγ (inl mv) (m-inl Dm) Φ Rin
-    with instrument-map m-s mγ mv Dm Φ Rin
-  ... | mvO , out = inl mvO , out
-  instrument-map m-s mγ (inr mv) (m-inr Dm) Φ Rin
-    with instrument-map m-s mγ mv Dm Φ Rin
-  ... | mvO , out = inr mvO , out
-  instrument-map {γ = γ} {p = p} m-s mγ (pair mv₁ mv₂) (m-pair Dm₁ Dm₂) Φ Rin
-    with instrument-map m-s mγ mv₁ Dm₁ Φ (M.p₁ M.∘ Rin)
-  ... | mvO₁ , (k₁ , Φ₁ , S₁)
-    with instrument-map m-s mγ mv₂ Dm₂ Φ₁ (widen (width-env γ) p k₁ (M.p₂ M.∘ Rin))
-  ... | mvO₂ , (k₂ , Φ₂ , S₂) =
-    pair mvO₁ mvO₂ ,
-    (k₁ + k₂
-    , seq-cast (+-assoc p k₁ k₂) Φ₂
-    , mcast (width-env γ) (+-assoc p k₁ k₂)
-        (stack _ _ (widen (width-env γ) (p + k₁) k₂ S₁) S₂))
-  instrument-map {γ = γ} {p = p} m-s mγ (roll mv) (m-rec Dm Db) Φ Rin
-    with instrument-map m-s mγ mv Dm Φ Rin
-  ... | mvW , (k₁ , Φ₁ , R₁)
-    with instrument m-s (mγ · mvW) Db ∅
-  ... | mvU , (k₂ , Φ₂ , Sb) =
-    mvU ,
-    (k₁ + k₂
-    , seq-cast (+-assoc p k₁ k₂)
-        (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
-    , mcast (width-env γ) (+-assoc p k₁ k₂)
-        (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
-                (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁)))
-  instrument-map {γ = γ} {τ₀ = τ₀} {σr = σr} m-s mγ (roll mv)
-    (m-mu {τ' = τ'} {w = w} {w' = w'} Dm) Φ Rin
-    with instrument-map m-s mγ (mv-uncast (unfold₁-inst τ' (μ τ₀)) mv) Dm Φ
-           (rowcast (width-subst (unfold₁-inst τ' (μ τ₀)) w) Rin)
-  ... | mvO , (k , Φ' , S') =
-    roll (mvcast (unfold₁-inst τ' σr) mvO) ,
-    (k , Φ' , rowcast (sym (width-subst (unfold₁-inst τ' σr) w')) S')
+instrument-map {γ = γ} {v = v} {R = R} {p = p} m-s mγ mv m-unit Φ Rin =
+  mv , (0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin)
+instrument-map {γ = γ} {v = v} {R = R} {p = p} m-s mγ mv m-base Φ Rin =
+  mv , (0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin)
+instrument-map {γ = γ} {v = v} {R = R} {p = p} m-s mγ mv m-arrow Φ Rin =
+  mv , (0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin)
+instrument-map m-s mγ (inl mv) (m-inl Dm) Φ Rin
+  with instrument-map m-s mγ mv Dm Φ Rin
+... | mvO , out = inl mvO , out
+instrument-map m-s mγ (inr mv) (m-inr Dm) Φ Rin
+  with instrument-map m-s mγ mv Dm Φ Rin
+... | mvO , out = inr mvO , out
+instrument-map {γ = γ} {p = p} m-s mγ (pair mv₁ mv₂) (m-pair Dm₁ Dm₂) Φ Rin
+  with instrument-map m-s mγ mv₁ Dm₁ Φ (M.p₁ M.∘ Rin)
+... | mvO₁ , (k₁ , Φ₁ , S₁)
+  with instrument-map m-s mγ mv₂ Dm₂ Φ₁ (widen (width-env γ) p k₁ (M.p₂ M.∘ Rin))
+... | mvO₂ , (k₂ , Φ₂ , S₂) =
+  pair mvO₁ mvO₂ ,
+  (k₁ + k₂
+  , seq-cast (+-assoc p k₁ k₂) Φ₂
+  , mcast (width-env γ) (+-assoc p k₁ k₂)
+      (stack _ _ (widen (width-env γ) (p + k₁) k₂ S₁) S₂))
+instrument-map {γ = γ} {p = p} m-s mγ (roll mv) (m-rec Dm Db) Φ Rin
+  with instrument-map m-s mγ mv Dm Φ Rin
+... | mvW , (k₁ , Φ₁ , R₁)
+  with instrument m-s (mγ · mvW) Db ∅
+... | mvU , (k₂ , Φ₂ , Sb) =
+  mvU ,
+  (k₁ + k₂
+  , seq-cast (+-assoc p k₁ k₂)
+      (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
+  , mcast (width-env γ) (+-assoc p k₁ k₂)
+      (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
+              (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁)))
+instrument-map {γ = γ} {τ₀ = τ₀} {σr = σr} m-s mγ (roll mv)
+  (m-mu {τ' = τ'} {w = w} {w' = w'} Dm) Φ Rin
+  with instrument-map m-s mγ (mv-uncast (unfold₁-inst τ' (μ τ₀)) mv) Dm Φ
+         (rowcast (width-subst (unfold₁-inst τ' (μ τ₀)) w) Rin)
+... | mvO , (k , Φ' , S') =
+  roll (mvcast (unfold₁-inst τ' σr) mvO) ,
+  (k , Φ' , rowcast (sym (width-subst (unfold₁-inst τ' σr) w')) S')

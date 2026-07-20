@@ -10,22 +10,21 @@ import Data.Nat.Show as ℕ-Show
 open import prop-setoid using (Setoid)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import language-operational.algebra using (Algebra; sort-vals)
+open import language-operational.algebra using (Algebra)
 import two
 import matrix
 
 -- Rendering of evaluation derivations as traces and dependence-graph edge lists.
 module language-operational.trace
-  {ℓ ℓ'} (Sig : Signature ℓ) (𝒜 : Algebra Sig ℓ')
-  (sort-width : Signature.sort Sig → ℕ)
+  {ℓ} (Sig : Signature ℓ) (𝒜 : Algebra Sig)
   (show-op : ∀ {is o} → Signature.op Sig is o → String)
   where
 
 open Signature Sig
 open Algebra 𝒜
+open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig 𝒜 sort-width
-open WithOpRels
+open import language-operational.evaluation Sig 𝒜
 
 private
   module M = matrix.Mat two.semiring
@@ -38,41 +37,39 @@ var-to-ℕ (succ x) = suc (var-to-ℕ x)
 ------------------------------------------------------------------------
 -- Derivation pretty-printing (ignores the matrix indices).
 
-module _ {op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is → M.Matrix (sort-width o') (bases-width is)} where
+show-eval  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] γ t v R → String
+show-evals : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
+             _,_⇓s_[_] γ Ms vs R → List String
+show-map   : ∀ {Γ} {γ : Env Γ} {τ₀ σr} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} {σ' v R v' R'} →
+             Map γ {τ₀} {σr} s σ' v R v' R' → String
 
-  show-eval  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] op-rel γ t v R → String
-  show-evals : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-               _,_⇓s_[_] op-rel γ Ms vs R → List String
-  show-map   : ∀ {Γ} {γ : Env Γ} {τ₀ σr} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} {σ' v R v' R'} →
-               Map op-rel γ {τ₀} {σr} s σ' v R v' R' → String
+show-eval (⇓-var x)        = "(var " ++ˢ ℕ-Show.show (var-to-ℕ x) ++ˢ ")"
+show-eval ⇓-unit           = "unit"
+show-eval (⇓-inl t)        = "(inl " ++ˢ show-eval t ++ˢ ")"
+show-eval (⇓-inr t)        = "(inr " ++ˢ show-eval t ++ˢ ")"
+show-eval (⇓-case-l s b)   = "(case-l " ++ˢ show-eval s ++ˢ " " ++ˢ show-eval b ++ˢ ")"
+show-eval (⇓-case-r s b)   = "(case-r " ++ˢ show-eval s ++ˢ " " ++ˢ show-eval b ++ˢ ")"
+show-eval (⇓-pair a b)     = "(pair " ++ˢ show-eval a ++ˢ " " ++ˢ show-eval b ++ˢ ")"
+show-eval (⇓-fst t)        = "(fst " ++ˢ show-eval t ++ˢ ")"
+show-eval (⇓-snd t)        = "(snd " ++ˢ show-eval t ++ˢ ")"
+show-eval ⇓-lam            = "lam"
+show-eval (⇓-app f a b)    = "(app " ++ˢ show-eval f ++ˢ " " ++ˢ show-eval a ++ˢ " " ++ˢ show-eval b ++ˢ ")"
+show-eval (⇓-bop {ω = ω} ts) = "(bop " ++ˢ show-op ω ++ˢ " (" ++ˢ intersperse " " (show-evals ts) ++ˢ "))"
+show-eval (⇓-brel ts)      = "(brel (" ++ˢ intersperse " " (show-evals ts) ++ˢ "))"
+show-eval (⇓-roll t)       = "(roll " ++ˢ show-eval t ++ˢ ")"
+show-eval (⇓-fold t m)     = "(fold " ++ˢ show-eval t ++ˢ " " ++ˢ show-map m ++ˢ ")"
 
-  show-eval (⇓-var x)        = "(var " ++ˢ ℕ-Show.show (var-to-ℕ x) ++ˢ ")"
-  show-eval ⇓-unit           = "unit"
-  show-eval (⇓-inl t)        = "(inl " ++ˢ show-eval t ++ˢ ")"
-  show-eval (⇓-inr t)        = "(inr " ++ˢ show-eval t ++ˢ ")"
-  show-eval (⇓-case-l s b)   = "(case-l " ++ˢ show-eval s ++ˢ " " ++ˢ show-eval b ++ˢ ")"
-  show-eval (⇓-case-r s b)   = "(case-r " ++ˢ show-eval s ++ˢ " " ++ˢ show-eval b ++ˢ ")"
-  show-eval (⇓-pair a b)     = "(pair " ++ˢ show-eval a ++ˢ " " ++ˢ show-eval b ++ˢ ")"
-  show-eval (⇓-fst t)        = "(fst " ++ˢ show-eval t ++ˢ ")"
-  show-eval (⇓-snd t)        = "(snd " ++ˢ show-eval t ++ˢ ")"
-  show-eval ⇓-lam            = "lam"
-  show-eval (⇓-app f a b)    = "(app " ++ˢ show-eval f ++ˢ " " ++ˢ show-eval a ++ˢ " " ++ˢ show-eval b ++ˢ ")"
-  show-eval (⇓-bop {ω = ω} ts) = "(bop " ++ˢ show-op ω ++ˢ " (" ++ˢ intersperse " " (show-evals ts) ++ˢ "))"
-  show-eval (⇓-brel ts)      = "(brel (" ++ˢ intersperse " " (show-evals ts) ++ˢ "))"
-  show-eval (⇓-roll t)       = "(roll " ++ˢ show-eval t ++ˢ ")"
-  show-eval (⇓-fold t m)     = "(fold " ++ˢ show-eval t ++ˢ " " ++ˢ show-map m ++ˢ ")"
+show-evals []       = []
+show-evals (t ∷ ts) = show-eval t ∷ show-evals ts
 
-  show-evals []       = []
-  show-evals (t ∷ ts) = show-eval t ∷ show-evals ts
-
-  show-map (m-rec m b)    = "(rec " ++ˢ show-map m ++ˢ " " ++ˢ show-eval b ++ˢ ")"
-  show-map m-unit         = "-"
-  show-map m-base         = "-"
-  show-map m-arrow        = "-"
-  show-map (m-inl m)      = "(inl " ++ˢ show-map m ++ˢ ")"
-  show-map (m-inr m)      = "(inr " ++ˢ show-map m ++ˢ ")"
-  show-map (m-pair m₁ m₂) = "(pair " ++ˢ show-map m₁ ++ˢ " " ++ˢ show-map m₂ ++ˢ ")"
-  show-map (m-mu m)       = "(mu " ++ˢ show-map m ++ˢ ")"
+show-map (m-rec m b)    = "(rec " ++ˢ show-map m ++ˢ " " ++ˢ show-eval b ++ˢ ")"
+show-map m-unit         = "-"
+show-map m-base         = "-"
+show-map m-arrow        = "-"
+show-map (m-inl m)      = "(inl " ++ˢ show-map m ++ˢ ")"
+show-map (m-inr m)      = "(inr " ++ˢ show-map m ++ˢ ")"
+show-map (m-pair m₁ m₂) = "(pair " ++ˢ show-map m₁ ++ˢ " " ++ˢ show-map m₂ ++ˢ ")"
+show-map (m-mu m)       = "(mu " ++ˢ show-map m ++ˢ ")"
 
 ------------------------------------------------------------------------
 -- Dependence graph extraction.
@@ -121,84 +118,82 @@ private
     let outs = applyUpTo (next +_) n
     in outs , next + n , mat-edges tag m n r ins outs
 
-module _ {op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is → M.Matrix (sort-width o') (bases-width is)} where
+edges  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] γ t v R →
+         List ℕ → GraphWriter (List ℕ)
+edgess : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
+         _,_⇓s_[_] γ Ms vs R → List ℕ → GraphWriter (List ℕ)
+edgesm : ∀ {Γ} {γ : Env Γ} {τ₀ σr} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} {σ' v R v' R'} →
+         Map γ {τ₀} {σr} s σ' v R v' R' → List ℕ → List ℕ → GraphWriter (List ℕ)
 
-  edges  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] op-rel γ t v R →
-           List ℕ → GraphWriter (List ℕ)
-  edgess : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-           _,_⇓s_[_] op-rel γ Ms vs R → List ℕ → GraphWriter (List ℕ)
-  edgesm : ∀ {Γ} {γ : Env Γ} {τ₀ σr} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} {σ' v R v' R'} →
-           Map op-rel γ {τ₀} {σr} s σ' v R v' R' → List ℕ → List ℕ → GraphWriter (List ℕ)
+edges {γ = γ} (⇓-var x) ctx =
+  emit "var" (width-env γ) (width (lookup x γ)) (proj-var x γ) ctx
+edges ⇓-unit _ = emit "unit" 0 0 (M.I) []
+edges (⇓-inl {v = v} E) ctx = do
+  Eₒ ← edges E ctx
+  emit "inl" (width v) (width v) M.I Eₒ
+edges (⇓-inr {v = v} E) ctx = do
+  Eₒ ← edges E ctx
+  emit "inr" (width v) (width v) M.I Eₒ
+edges (⇓-case-l {v = v} {u = u} E F) ctx = do
+  Eₒ ← edges E ctx
+  Fₒ ← edges F (ctx ++ Eₒ)
+  emit "case-l" (width u) (width u) M.I Fₒ
+edges (⇓-case-r {v = v} {u = u} E F) ctx = do
+  Eₒ ← edges E ctx
+  Fₒ ← edges F (ctx ++ Eₒ)
+  emit "case-r" (width u) (width u) M.I Fₒ
+edges (⇓-pair {v = v} {u = u} E F) ctx = do
+  Eₒ ← edges E ctx
+  Fₒ ← edges F ctx
+  emit "pair" (width v + width u) (width v + width u) M.I (Eₒ ++ Fₒ)
+edges (⇓-fst {v = v} {u = u} E) ctx = do
+  Eₒ ← edges E ctx
+  emit "fst" (width v + width u) (width v) (M.p₁ {width v} {width u}) Eₒ
+edges (⇓-snd {v = v} {u = u} E) ctx = do
+  Eₒ ← edges E ctx
+  emit "snd" (width v + width u) (width u) (M.p₂ {width v} {width u}) Eₒ
+edges (⇓-lam {γ = γ}) ctx =
+  emit "lam" (width-env γ) (width-env γ) M.I ctx
+edges (⇓-app {u = u} E F B) ctx = do
+  Eₒ ← edges E ctx
+  Fₒ ← edges F ctx
+  Bₒ ← edges B (Eₒ ++ Fₒ)
+  emit "app" (width u) (width u) M.I Bₒ
+edges (⇓-bop {is = is} {o' = o'} {ω = ω} {vs = vs} E) ctx = do
+  Eₒ ← edgess E ctx
+  emit (show-op ω) (bases-width is) (sort-width o') (op-rel ω .func vs) Eₒ
+edges (⇓-brel {is = is} E) ctx = do
+  Eₒ ← edgess E ctx
+  emit "brel" (bases-width is) 0 (M.εₘ) Eₒ
+edges (⇓-roll {v = v} E) ctx = do
+  Eₒ ← edges E ctx
+  emit "roll" (width v) (width v) M.I Eₒ
+edges (⇓-fold E m) ctx = do
+  Eₒ ← edges E ctx
+  edgesm m ctx Eₒ
 
-  edges {γ = γ} (⇓-var x) ctx =
-    emit "var" (width-env γ) (width (lookup x γ)) (proj-var x γ) ctx
-  edges ⇓-unit _ = emit "unit" 0 0 (M.I) []
-  edges (⇓-inl {v = v} E) ctx = do
-    Eₒ ← edges E ctx
-    emit "inl" (width v) (width v) M.I Eₒ
-  edges (⇓-inr {v = v} E) ctx = do
-    Eₒ ← edges E ctx
-    emit "inr" (width v) (width v) M.I Eₒ
-  edges (⇓-case-l {v = v} {u = u} E F) ctx = do
-    Eₒ ← edges E ctx
-    Fₒ ← edges F (ctx ++ Eₒ)
-    emit "case-l" (width u) (width u) M.I Fₒ
-  edges (⇓-case-r {v = v} {u = u} E F) ctx = do
-    Eₒ ← edges E ctx
-    Fₒ ← edges F (ctx ++ Eₒ)
-    emit "case-r" (width u) (width u) M.I Fₒ
-  edges (⇓-pair {v = v} {u = u} E F) ctx = do
-    Eₒ ← edges E ctx
-    Fₒ ← edges F ctx
-    emit "pair" (width v + width u) (width v + width u) M.I (Eₒ ++ Fₒ)
-  edges (⇓-fst {v = v} {u = u} E) ctx = do
-    Eₒ ← edges E ctx
-    emit "fst" (width v + width u) (width v) (M.p₁ {width v} {width u}) Eₒ
-  edges (⇓-snd {v = v} {u = u} E) ctx = do
-    Eₒ ← edges E ctx
-    emit "snd" (width v + width u) (width u) (M.p₂ {width v} {width u}) Eₒ
-  edges (⇓-lam {γ = γ}) ctx =
-    emit "lam" (width-env γ) (width-env γ) M.I ctx
-  edges (⇓-app {u = u} E F B) ctx = do
-    Eₒ ← edges E ctx
-    Fₒ ← edges F ctx
-    Bₒ ← edges B (Eₒ ++ Fₒ)
-    emit "app" (width u) (width u) M.I Bₒ
-  edges (⇓-bop {is = is} {o' = o'} {ω = ω} {vs = vs} E) ctx = do
-    Eₒ ← edgess E ctx
-    emit (show-op ω) (bases-width is) (sort-width o') (op-rel ω vs) Eₒ
-  edges (⇓-brel {is = is} E) ctx = do
-    Eₒ ← edgess E ctx
-    emit "brel" (bases-width is) 0 (M.εₘ) Eₒ
-  edges (⇓-roll {v = v} E) ctx = do
-    Eₒ ← edges E ctx
-    emit "roll" (width v) (width v) M.I Eₒ
-  edges (⇓-fold E m) ctx = do
-    Eₒ ← edges E ctx
-    edgesm m ctx Eₒ
+edgess [] _ = pure []
+edgess (E ∷ Es) ctx = do
+  Eₒ ← edges E ctx
+  Esₒ ← edgess Es ctx
+  pure (Eₒ ++ Esₒ)
 
-  edgess [] _ = pure []
-  edgess (E ∷ Es) ctx = do
-    Eₒ ← edges E ctx
-    Esₒ ← edgess Es ctx
-    pure (Eₒ ++ Esₒ)
-
-  -- ctx: environment ports; ins: ports of the traversed value; returns ports of the mapped value.
-  edgesm (m-rec {u = u} m B) ctx ins = do
-    Wₒ ← edgesm m ctx ins
-    Bₒ ← edges B (ctx ++ Wₒ)
-    emit "rec" (width u) (width u) M.I Bₒ
-  edgesm m-unit  _ ins = pure ins
-  edgesm m-base  _ ins = pure ins
-  edgesm m-arrow _ ins = pure ins
-  edgesm (m-inl m) ctx ins = edgesm m ctx ins
-  edgesm (m-inr m) ctx ins = edgesm m ctx ins
-  edgesm (m-pair {v = v} m₁ m₂) ctx ins =
-    let vs , us = splitAt (width v) ins in do
-    Vₒ ← edgesm m₁ ctx vs
-    Uₒ ← edgesm m₂ ctx us
-    pure (Vₒ ++ Uₒ)
-  edgesm (m-mu m) ctx ins = edgesm m ctx ins
+-- ctx: environment ports; ins: ports of the traversed value; returns ports of the mapped value.
+edgesm (m-rec {u = u} m B) ctx ins = do
+  Wₒ ← edgesm m ctx ins
+  Bₒ ← edges B (ctx ++ Wₒ)
+  emit "rec" (width u) (width u) M.I Bₒ
+edgesm m-unit  _ ins = pure ins
+edgesm m-base  _ ins = pure ins
+edgesm m-arrow _ ins = pure ins
+edgesm (m-inl m) ctx ins = edgesm m ctx ins
+edgesm (m-inr m) ctx ins = edgesm m ctx ins
+edgesm (m-pair {v = v} m₁ m₂) ctx ins =
+  let vs , us = splitAt (width v) ins in do
+  Vₒ ← edgesm m₁ ctx vs
+  Uₒ ← edgesm m₂ ctx us
+  pure (Vₒ ++ Uₒ)
+edgesm (m-mu m) ctx ins = edgesm m ctx ins
 
 ------------------------------------------------------------------------
 -- Edge-list rendering.
