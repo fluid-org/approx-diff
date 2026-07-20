@@ -29,16 +29,18 @@ import ho-model-sd-semimod
 module language-operational.logical-relation
   (Sig : Signature 0ℓ)
   (open ho-model-sd-semimod two.semiring)
-  (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
+  (𝒫 : Primitives two.semiring Sig)
   where
 
 open Signature Sig
-private
-  module PA = primitives.IndexAlgebra SDSemiMod.cat SDSemiMod.terminal SDSemiMod.products Sig two.semiring
+open Primitives 𝒫
 
--- The value-level constants are the model's index elements, so agreement at base sorts is definitional.
-sort-val : Signature.sort Sig → Set
-sort-val = PA.index-val Impl
+-- The model is the one determined by the primitives, so agreement with the operational treatment of
+-- constants, widths and dependency relations is definitional.
+private
+  Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig
+  Impl = interp-primitives.model Sig 𝒫
+
 open import language-syntax Sig renaming (_,_ to _▸_)
 import language-operational.evaluation
 open import type-substitution Sig using (unfold₁; unfold₁-inst; size)
@@ -153,157 +155,142 @@ i⊕₂ : ∀ {X Y} → SM._⇒_ Y (SemiMod._⊕_ X Y)
 i⊕₂ {X} {Y} = cmon-enriched.Biproduct.in₂ (SemiMod.biproduct X Y)
   where import cmon-enriched
 
--- The witness set relating the operational treatment of primitives to the model: how many dimensions
--- of approximation each base sort carries, and the dependency relation of each operation.
-record Presentation : Set where
-  field
-    sort-width : sort → ℕ
-    -- The map realising each base fibre by the free object of that width. For a model whose base
-    -- fibres are the free objects this is X^≅S^, but the relation is generic in the model, so it is
-    -- supplied.
-    sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c)
-    op-rel     : ∀ {is o'} → op is o' →
-                 prop-setoid._⇒_ (sort-vals-setoid (PA.index-setoid Impl) is)
-                   (Category.hom-setoid M.cat (sorts-width sort-width is) (sort-width o'))
+-- Each base fibre is the free object of its width, so the realising map is the iso between the two
+-- presentations of that free object.
+sort-can : ∀ s (c : sort-val s) → SM._⇒_ (X^ (sort-width s)) (Fibre (base s) c)
+sort-can s c = MES.X^≅S^ (sort-width s) .Category.Iso.fwd
 
-module WithPresentation (P : Presentation) where
+private
+  module EM = language-operational.evaluation Sig 𝒫
+open EM
 
-  open Presentation P
+Realiser : (τ : type 0) → Val τ → Index τ → Set
+Realiser τ v a = SM._⇒_ (X^ (width v)) (Fibre τ a)
 
-  private
-    𝒫 : Primitives two.semiring Sig
-    𝒫 = PA.index-algebra Impl sort-width op-rel
+RelSpec : type 0 → Set₁
+RelSpec τ = (v : Val τ) (a : Index τ) → Realiser τ v a → Set
 
-    module EM = language-operational.evaluation Sig 𝒫
-  open EM
+in-free₁ : (m n : ℕ) → SM._⇒_ (X^ m) (X^ (m + n))
+in-free₁ m n = Functor.fmor MES.mat→mor (M.in₁ {m} {n})
 
-  Realiser : (τ : type 0) → Val τ → Index τ → Set
-  Realiser τ v a = SM._⇒_ (X^ (width v)) (Fibre τ a)
+in-free₂ : (m n : ℕ) → SM._⇒_ (X^ n) (X^ (m + n))
+in-free₂ m n = Functor.fmor MES.mat→mor (M.in₂ {m} {n})
 
-  RelSpec : type 0 → Set₁
-  RelSpec τ = (v : Val τ) (a : Index τ) → Realiser τ v a → Set
+data MuRel (τ₀ : type 1)
+           (Rel< : (σ : type 0) → size σ < size (μ τ₀) → RelSpec σ) :
+           (σ' : type 1) (v : Val (σ' [ μ τ₀ ])) (a : Index (σ' [ μ τ₀ ])) →
+           Realiser (σ' [ μ τ₀ ]) v a → Set where
+  mrel-roll  : ∀ {w a' r' a r} →
+               MuRel τ₀ Rel< τ₀ w a' r' →
+               Prf (∃ₚ (idx-≈ (μ τ₀) (roll-ix τ₀ a') a) λ e →
+                    r ≈M (fibre-subst (μ τ₀) {roll-ix τ₀ a'} {a} e ∘M roll-fib τ₀ a' ∘M r')) →
+               MuRel τ₀ Rel< (var Fin.zero) (roll w) a r
+  mrel-unit  : ∀ {a r} → MuRel τ₀ Rel< unit unit a r
+  mrel-base  : ∀ {s c a r} →
+               Prf (∃ₚ (idx-≈ (base s) c a) λ e →
+                    r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c)) →
+               MuRel τ₀ Rel< (base s) (const c) a r
+  mrel-arrow : ∀ {σ₁ σ₂ : type 0} {v a r} →
+               (p : size {1} (σ₁ [→] σ₂) < size (μ τ₀)) →
+               Rel< (σ₁ [→] σ₂) p v a r →
+               MuRel τ₀ Rel< (σ₁ [→] σ₂) v a r
+  mrel-inl   : ∀ {σ₁ σ₂ : type 1} {v a' r' a r} →
+               MuRel τ₀ Rel< σ₁ v a' r' →
+               Prf (∃ₚ (idx-≈ ((σ₁ [+] σ₂) [ μ τ₀ ]) (ix-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a') a) λ e →
+                    r ≈M (fibre-subst ((σ₁ [+] σ₂) [ μ τ₀ ]) {ix-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a'} {a} e ∘M fib-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a' ∘M r')) →
+               MuRel τ₀ Rel< (σ₁ [+] σ₂) (inl v) a r
+  mrel-inr   : ∀ {σ₁ σ₂ : type 1} {v a' r' a r} →
+               MuRel τ₀ Rel< σ₂ v a' r' →
+               Prf (∃ₚ (idx-≈ ((σ₁ [+] σ₂) [ μ τ₀ ]) (ix-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a') a) λ e →
+                    r ≈M (fibre-subst ((σ₁ [+] σ₂) [ μ τ₀ ]) {ix-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a'} {a} e ∘M fib-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a' ∘M r')) →
+               MuRel τ₀ Rel< (σ₁ [+] σ₂) (inr v) a r
+  mrel-pair  : ∀ {σ₁ σ₂ : type 1} {v₁ v₂ a r} →
+               MuRel τ₀ Rel< σ₁ v₁ (ix-p₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
+                     (fib-p₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a ∘M r ∘M in-free₁ (width v₁) (width v₂)) →
+               MuRel τ₀ Rel< σ₂ v₂ (ix-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
+                     (fib-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a ∘M r ∘M in-free₂ (width v₁) (width v₂)) →
+               MuRel τ₀ Rel< (σ₁ [×] σ₂) (pair v₁ v₂) a r
+  mrel-mu    : ∀ {τ' : type 2} {w} (a' : Index (unfold₁ τ' [ μ τ₀ ])) (r' : Realiser (unfold₁ τ' [ μ τ₀ ]) w a') → ∀ {a r} →
+               MuRel τ₀ Rel< (unfold₁ τ') w a' r' →
+               Prf (∃ₚ (idx-≈ ((μ τ') [ μ τ₀ ])
+                          (roll-ix (sub (sub-lift (push (μ τ₀))) τ')
+                                   (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')) a) λ e →
+                    (r ∘M free-coerce (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w))) ≈M
+                    (fibre-subst ((μ τ') [ μ τ₀ ])
+                       {roll-ix (sub (sub-lift (push (μ τ₀))) τ')
+                                (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')} {a} e
+                       ∘M roll-fib (sub (sub-lift (push (μ τ₀))) τ')
+                                   (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')
+                       ∘M fib-coerce (unfold₁-inst τ' (μ τ₀)) a' ∘M r')) →
+               MuRel τ₀ Rel< (μ τ') (roll (≡-subst Val (unfold₁-inst τ' (μ τ₀)) w)) a r
 
-  in-free₁ : (m n : ℕ) → SM._⇒_ (X^ m) (X^ (m + n))
-  in-free₁ m n = Functor.fmor MES.mat→mor (M.in₁ {m} {n})
+Rel-acc : (τ : type 0) → Acc _<_ (size τ) → RelSpec τ
+Rel-acc (var ())
+Rel-acc unit _ v a r = ⊤ₛ
+Rel-acc (base s) _ (const c) a r =
+  Prf (∃ₚ (idx-≈ (base s) c a) λ e →
+       r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c))
+Rel-acc (σ [+] τ) (acc rs) (inl v) a r =
+  Σ (Index σ) λ a' → Σ (Realiser σ v a') λ r' →
+    Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a' r' ×
+    Prf (∃ₚ (idx-≈ (σ [+] τ) (ix-in₁ σ τ a') a) λ e →
+         r ≈M (fibre-subst (σ [+] τ) {ix-in₁ σ τ a'} {a} e ∘M fib-in₁ σ τ a' ∘M r'))
+Rel-acc (σ [+] τ) (acc rs) (inr v) a r =
+  Σ (Index τ) λ a' → Σ (Realiser τ v a') λ r' →
+    Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) v a' r' ×
+    Prf (∃ₚ (idx-≈ (σ [+] τ) (ix-in₂ σ τ a') a) λ e →
+         r ≈M (fibre-subst (σ [+] τ) {ix-in₂ σ τ a'} {a} e ∘M fib-in₂ σ τ a' ∘M r'))
+Rel-acc (σ [×] τ) (acc rs) (pair v u) a r =
+  Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v (ix-p₁ σ τ a)
+          (fib-p₁ σ τ a ∘M r ∘M in-free₁ (width v) (width u)) ×
+  Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (ix-p₂ σ τ a)
+          (fib-p₂ σ τ a ∘M r ∘M in-free₂ (width v) (width u))
+Rel-acc (σ [→] τ) (acc rs) (clo {Γ'} γ' t) f r =
+  ∀ (v : Val σ) (a : Index σ) (rv : Realiser σ v a) →
+  Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a rv →
+  Σ (Val τ) λ u →
+  Σ (Category._⇒_ M.cat (width-env γ' + width v) (width u)) λ R →
+  Σ (γ' · v , t ⇓ u [ R ]) λ _ →
+  Σ (Realiser τ u (app-ix σ τ f a)) λ q →
+    Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (app-ix σ τ f a) q ×
+    Prf (((q ∘M Functor.fmor MES.mat→mor R ∘M in-free₁ (width-env γ') (width v)) ≈M
+            (∂ε σ τ f a ∘M i⊕₁ ∘M r))
+       ∧ ((q ∘M Functor.fmor MES.mat→mor R ∘M in-free₂ (width-env γ') (width v)) ≈M
+            (∂ε σ τ f a ∘M i⊕₂ ∘M rv)))
+Rel-acc (μ τ₀) (acc rs) v a r =
+  MuRel τ₀ (λ σ p → Rel-acc σ (rs p)) (var Fin.zero) v a r
 
-  in-free₂ : (m n : ℕ) → SM._⇒_ (X^ n) (X^ (m + n))
-  in-free₂ m n = Functor.fmor MES.mat→mor (M.in₂ {m} {n})
+Rel : (τ : type 0) → RelSpec τ
+Rel τ = Rel-acc τ (<-wellFounded (size τ))
 
-  data MuRel (τ₀ : type 1)
-             (Rel< : (σ : type 0) → size σ < size (μ τ₀) → RelSpec σ) :
-             (σ' : type 1) (v : Val (σ' [ μ τ₀ ])) (a : Index (σ' [ μ τ₀ ])) →
-             Realiser (σ' [ μ τ₀ ]) v a → Set where
-    mrel-roll  : ∀ {w a' r' a r} →
-                 MuRel τ₀ Rel< τ₀ w a' r' →
-                 Prf (∃ₚ (idx-≈ (μ τ₀) (roll-ix τ₀ a') a) λ e →
-                      r ≈M (fibre-subst (μ τ₀) {roll-ix τ₀ a'} {a} e ∘M roll-fib τ₀ a' ∘M r')) →
-                 MuRel τ₀ Rel< (var Fin.zero) (roll w) a r
-    mrel-unit  : ∀ {a r} → MuRel τ₀ Rel< unit unit a r
-    mrel-base  : ∀ {s c a r} →
-                 Prf (∃ₚ (idx-≈ (base s) c a) λ e →
-                      r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c)) →
-                 MuRel τ₀ Rel< (base s) (const c) a r
-    mrel-arrow : ∀ {σ₁ σ₂ : type 0} {v a r} →
-                 (p : size {1} (σ₁ [→] σ₂) < size (μ τ₀)) →
-                 Rel< (σ₁ [→] σ₂) p v a r →
-                 MuRel τ₀ Rel< (σ₁ [→] σ₂) v a r
-    mrel-inl   : ∀ {σ₁ σ₂ : type 1} {v a' r' a r} →
-                 MuRel τ₀ Rel< σ₁ v a' r' →
-                 Prf (∃ₚ (idx-≈ ((σ₁ [+] σ₂) [ μ τ₀ ]) (ix-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a') a) λ e →
-                      r ≈M (fibre-subst ((σ₁ [+] σ₂) [ μ τ₀ ]) {ix-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a'} {a} e ∘M fib-in₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a' ∘M r')) →
-                 MuRel τ₀ Rel< (σ₁ [+] σ₂) (inl v) a r
-    mrel-inr   : ∀ {σ₁ σ₂ : type 1} {v a' r' a r} →
-                 MuRel τ₀ Rel< σ₂ v a' r' →
-                 Prf (∃ₚ (idx-≈ ((σ₁ [+] σ₂) [ μ τ₀ ]) (ix-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a') a) λ e →
-                      r ≈M (fibre-subst ((σ₁ [+] σ₂) [ μ τ₀ ]) {ix-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a'} {a} e ∘M fib-in₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a' ∘M r')) →
-                 MuRel τ₀ Rel< (σ₁ [+] σ₂) (inr v) a r
-    mrel-pair  : ∀ {σ₁ σ₂ : type 1} {v₁ v₂ a r} →
-                 MuRel τ₀ Rel< σ₁ v₁ (ix-p₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
-                       (fib-p₁ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a ∘M r ∘M in-free₁ (width v₁) (width v₂)) →
-                 MuRel τ₀ Rel< σ₂ v₂ (ix-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a)
-                       (fib-p₂ (σ₁ [ μ τ₀ ]) (σ₂ [ μ τ₀ ]) a ∘M r ∘M in-free₂ (width v₁) (width v₂)) →
-                 MuRel τ₀ Rel< (σ₁ [×] σ₂) (pair v₁ v₂) a r
-    mrel-mu    : ∀ {τ' : type 2} {w} (a' : Index (unfold₁ τ' [ μ τ₀ ])) (r' : Realiser (unfold₁ τ' [ μ τ₀ ]) w a') → ∀ {a r} →
-                 MuRel τ₀ Rel< (unfold₁ τ') w a' r' →
-                 Prf (∃ₚ (idx-≈ ((μ τ') [ μ τ₀ ])
-                            (roll-ix (sub (sub-lift (push (μ τ₀))) τ')
-                                     (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')) a) λ e →
-                      (r ∘M free-coerce (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w))) ≈M
-                      (fibre-subst ((μ τ') [ μ τ₀ ])
-                         {roll-ix (sub (sub-lift (push (μ τ₀))) τ')
-                                  (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')} {a} e
-                         ∘M roll-fib (sub (sub-lift (push (μ τ₀))) τ')
-                                     (ix-coerce (unfold₁-inst τ' (μ τ₀)) a')
-                         ∘M fib-coerce (unfold₁-inst τ' (μ τ₀)) a' ∘M r')) →
-                 MuRel τ₀ Rel< (μ τ') (roll (≡-subst Val (unfold₁-inst τ' (μ τ₀)) w)) a r
+IndexC : ctxt → Set
+IndexC Γ = Setoid.Carrier ((⟦ Γ ⟧ctxt) .idx)
 
-  Rel-acc : (τ : type 0) → Acc _<_ (size τ) → RelSpec τ
-  Rel-acc (var ())
-  Rel-acc unit _ v a r = ⊤ₛ
-  Rel-acc (base s) _ (const c) a r =
-    Prf (∃ₚ (idx-≈ (base s) c a) λ e →
-         r ≈M (fibre-subst (base s) {c} {a} e ∘M sort-can s c))
-  Rel-acc (σ [+] τ) (acc rs) (inl v) a r =
-    Σ (Index σ) λ a' → Σ (Realiser σ v a') λ r' →
-      Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a' r' ×
-      Prf (∃ₚ (idx-≈ (σ [+] τ) (ix-in₁ σ τ a') a) λ e →
-           r ≈M (fibre-subst (σ [+] τ) {ix-in₁ σ τ a'} {a} e ∘M fib-in₁ σ τ a' ∘M r'))
-  Rel-acc (σ [+] τ) (acc rs) (inr v) a r =
-    Σ (Index τ) λ a' → Σ (Realiser τ v a') λ r' →
-      Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) v a' r' ×
-      Prf (∃ₚ (idx-≈ (σ [+] τ) (ix-in₂ σ τ a') a) λ e →
-           r ≈M (fibre-subst (σ [+] τ) {ix-in₂ σ τ a'} {a} e ∘M fib-in₂ σ τ a' ∘M r'))
-  Rel-acc (σ [×] τ) (acc rs) (pair v u) a r =
-    Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v (ix-p₁ σ τ a)
-            (fib-p₁ σ τ a ∘M r ∘M in-free₁ (width v) (width u)) ×
-    Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (ix-p₂ σ τ a)
-            (fib-p₂ σ τ a ∘M r ∘M in-free₂ (width v) (width u))
-  Rel-acc (σ [→] τ) (acc rs) (clo {Γ'} γ' t) f r =
-    ∀ (v : Val σ) (a : Index σ) (rv : Realiser σ v a) →
-    Rel-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v a rv →
-    Σ (Val τ) λ u →
-    Σ (Category._⇒_ M.cat (width-env γ' + width v) (width u)) λ R →
-    Σ (γ' · v , t ⇓ u [ R ]) λ _ →
-    Σ (Realiser τ u (app-ix σ τ f a)) λ q →
-      Rel-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u (app-ix σ τ f a) q ×
-      Prf (((q ∘M Functor.fmor MES.mat→mor R ∘M in-free₁ (width-env γ') (width v)) ≈M
-              (∂ε σ τ f a ∘M i⊕₁ ∘M r))
-         ∧ ((q ∘M Functor.fmor MES.mat→mor R ∘M in-free₂ (width-env γ') (width v)) ≈M
-              (∂ε σ τ f a ∘M i⊕₂ ∘M rv)))
-  Rel-acc (μ τ₀) (acc rs) v a r =
-    MuRel τ₀ (λ σ p → Rel-acc σ (rs p)) (var Fin.zero) v a r
+FibreC : (Γ : ctxt) → IndexC Γ → SM.obj
+FibreC Γ g = Fam⟨𝒟⟩.fm ((⟦ Γ ⟧ctxt) .fam) g
 
-  Rel : (τ : type 0) → RelSpec τ
-  Rel τ = Rel-acc τ (<-wellFounded (size τ))
+EnvRel : (Γ : ctxt) (γ : Env Γ) (g : IndexC Γ) →
+         SM._⇒_ (X^ (width-env γ)) (FibreC Γ g) → Set
+EnvRel emp emp g r = ⊤ₛ
+EnvRel (Γ ▸ τ) (γ · v) g r =
+  EnvRel Γ γ (FamP.p₁ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func g)
+         (FamP.p₁ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf g
+            ∘M r ∘M in-free₁ (width-env γ) (width v)) ×
+  Rel τ v (FamP.p₂ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func g)
+      (FamP.p₂ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf g
+         ∘M r ∘M in-free₂ (width-env γ) (width v))
+  where import indexed-family
 
-  IndexC : ctxt → Set
-  IndexC Γ = Setoid.Carrier ((⟦ Γ ⟧ctxt) .idx)
-
-  FibreC : (Γ : ctxt) → IndexC Γ → SM.obj
-  FibreC Γ g = Fam⟨𝒟⟩.fm ((⟦ Γ ⟧ctxt) .fam) g
-
-  EnvRel : (Γ : ctxt) (γ : Env Γ) (g : IndexC Γ) →
-           SM._⇒_ (X^ (width-env γ)) (FibreC Γ g) → Set
-  EnvRel emp emp g r = ⊤ₛ
-  EnvRel (Γ ▸ τ) (γ · v) g r =
-    EnvRel Γ γ (FamP.p₁ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func g)
-           (FamP.p₁ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf g
-              ∘M r ∘M in-free₁ (width-env γ) (width v)) ×
-    Rel τ v (FamP.p₂ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .idxf .prop-setoid._⇒_.func g)
-        (FamP.p₂ {⟦ Γ ⟧ctxt} {⟦ τ ⟧ty δ₀} .famf .indexed-family._⇒f_.transf g
-           ∘M r ∘M in-free₂ (width-env γ) (width v))
-    where import indexed-family
-
-  -- Statement only; the proof is future work and yields eval (totality), soundness at first-order types, and
-  -- the existence half of determinism.
-  FundamentalProperty : Set
-  FundamentalProperty =
-    ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) (g : IndexC Γ)
-      (rγ : SM._⇒_ (X^ (width-env γ)) (FibreC Γ g)) →
-    EnvRel Γ γ g rγ →
-    Σ (Val τ) λ v →
-    Σ (Category._⇒_ M.cat (width-env γ) (width v)) λ R →
-    Σ (γ , t ⇓ v [ R ]) λ _ →
-    Σ (Realiser τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g)) λ q →
-      Rel τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g) q ×
-      Prf ((q ∘M Functor.fmor MES.mat→mor R) ≈M (mor t g ∘M rγ))
+-- Statement only; the proof is future work and yields eval (totality), soundness at first-order types, and
+-- the existence half of determinism.
+FundamentalProperty : Set
+FundamentalProperty =
+  ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) (g : IndexC Γ)
+    (rγ : SM._⇒_ (X^ (width-env γ)) (FibreC Γ g)) →
+  EnvRel Γ γ g rγ →
+  Σ (Val τ) λ v →
+  Σ (Category._⇒_ M.cat (width-env γ) (width v)) λ R →
+  Σ (γ , t ⇓ v [ R ]) λ _ →
+  Σ (Realiser τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g)) λ q →
+    Rel τ v (⟦ t ⟧tm .idxf .prop-setoid._⇒_.func g) q ×
+    Prf ((q ∘M Functor.fmor MES.mat→mor R) ≈M (mor t g ∘M rγ))
