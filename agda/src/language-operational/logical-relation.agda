@@ -16,7 +16,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 import two
 open import signature using (Signature; Model; PFPC[_,_,_,_])
-open import language-operational.algebra using (Algebra)
+open import language-operational.algebra using (Algebra; sort-vals)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts; HasExponentials; strong-coproducts→coproducts)
 import matrix-embedding-semimod
 import matrix-semimod-action
@@ -171,7 +171,7 @@ record Presentation : Set where
     -- The canonical map realising each base fibre by the free object of its width. For the model built
     -- from sort-approx this is FO.canonical, but the relation is generic in the model, so it is supplied.
     sort-can   : ∀ s (c : sort-val s) → SM._⇒_ (X^ (FO.width (sort-approx s))) (Fibre (base s) c)
-    op-rel     : ∀ {is o'} → op is o' →
+    op-rel     : ∀ {is o'} → op is o' → sort-vals sort-val is →
                  Category._⇒_ M.cat (BW (λ s → FO.width (sort-approx s)) is) (FO.width (sort-approx o'))
 
 module WithPresentation (P : Presentation) where

@@ -13,7 +13,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import language-operational.algebra using (Algebra)
+open import language-operational.algebra using (Algebra; sort-vals)
 import matrix
 import two
 
@@ -134,7 +134,7 @@ mvcast refl mv = mv
 -- Instrumentation.
 
 module WithOp
-  (op-rel : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is))
+  (op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is → M.Matrix (sort-width o') (bases-width is))
   where
 
   open WithOpRels op-rel
@@ -239,9 +239,9 @@ module WithOp
     , mcast (width-env γ) (assoc3 p k₁ k₂ k₃)
         (Tb M.∘ frame-emb (width-env γ) ((p + k₁) + k₂) k₃
                 (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa)))
-  instrument (bop ms) mγ (⇓-bop {ω = ω} Es) Φ
+  instrument (bop ms) mγ (⇓-bop {ω = ω} {vs = vs} Es) Φ
     with instrument-s ms mγ Es Φ
-  ... | (k , Φ' , Rs) = const , (k , Φ' , op-rel ω M.∘ Rs)
+  ... | (k , Φ' , Rs) = const , (k , Φ' , op-rel ω vs M.∘ Rs)
   instrument {γ = γ} {p = p} (brel ms) mγ (⇓-brel {ω = ω} {vs = vs} Es) Φ
     with instrument-s ms mγ Es Φ
   ... | (k , Φ' , Rs) =

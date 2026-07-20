@@ -20,6 +20,8 @@ import boolalg-sd-semimodule
 import ho-model-boolalg-sd-semimod
 import semiring-Q
 import indexed-family
+open import language-operational.algebra using (Algebra; sort-vals)
+import language-operational.algebra
 open import commutative-semiring using (CommutativeSemiring)
 
 open import Level using (lift; 0ℓ) public
@@ -101,14 +103,28 @@ open indexed-family._⇒f_ public
 open SemiMod-𝟚._⇒_ public
 open BoolAlg-𝟚.SelfDualBooleanAlgebra public using (selfDual)
 
+-- Value-level algebra, by projection from the model.
+module Alg-inst where
+  module PA = language-operational.algebra.IndexAlgebra
+                BoolAlg-𝟚.cat BoolAlg-𝟚.terminal BoolAlg-𝟚.products Sig
+
+  Alg : Algebra Sig 0ℓ
+  Alg = PA.index-algebra D.BaseInterp1
+
+  sort-val : sort → Set
+  sort-val = Algebra.sort-val Alg
+
+open Alg-inst using (sort-val) public
+
 private
   module M𝟚 = matrix.Mat two.semiring
 
 bases-width : List sort → ℕ
 bases-width = sorts-width (λ s → FO𝟚.width (sort-approx s))
 
-op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (FO𝟚.width (sort-approx o'))
-op-rel (lit n)     = λ i ()
-op-rel add         = λ i j → two.I
-op-rel mult        = λ i j → two.I
-op-rel (lbl l)     = λ ()
+op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is →
+        Category._⇒_ M𝟚.cat (bases-width is) (FO𝟚.width (sort-approx o'))
+op-rel (lit n) _   = λ i ()
+op-rel add _       = λ i j → two.I
+op-rel mult _      = λ i j → two.I
+op-rel (lbl l) _   = λ ()

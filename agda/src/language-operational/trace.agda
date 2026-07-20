@@ -10,7 +10,7 @@ import Data.Nat.Show as ℕ-Show
 open import prop-setoid using (Setoid)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import language-operational.algebra using (Algebra)
+open import language-operational.algebra using (Algebra; sort-vals)
 import two
 import matrix
 
@@ -39,7 +39,7 @@ var-to-ℕ (succ x) = suc (var-to-ℕ x)
 ------------------------------------------------------------------------
 -- Derivation pretty-printing (ignores the matrix indices).
 
-module _ {op-rel : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
+module _ {op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is → M.Matrix (sort-width o') (bases-width is)} where
 
   show-eval  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] op-rel γ t v R → String
   show-evals : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
@@ -122,7 +122,7 @@ private
     let outs = applyUpTo (next +_) n
     in outs , next + n , mat-edges tag m n r ins outs
 
-module _ {op-rel : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-width is)} where
+module _ {op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is → M.Matrix (sort-width o') (bases-width is)} where
 
   edges  : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → _,_⇓_[_] op-rel γ t v R →
            List ℕ → GraphWriter (List ℕ)
@@ -165,9 +165,9 @@ module _ {op-rel : ∀ {is o'} → op is o' → M.Matrix (sort-width o') (bases-
     Fₒ ← edges F ctx
     Bₒ ← edges B (Eₒ ++ Fₒ)
     emit "app" (width u) (width u) M.I Bₒ
-  edges (⇓-bop {is = is} {o' = o'} {ω = ω} E) ctx = do
+  edges (⇓-bop {is = is} {o' = o'} {ω = ω} {vs = vs} E) ctx = do
     Eₒ ← edgess E ctx
-    emit (show-op ω) (bases-width is) (sort-width o') (op-rel ω) Eₒ
+    emit (show-op ω) (bases-width is) (sort-width o') (op-rel ω vs) Eₒ
   edges (⇓-brel {is = is} E) ctx = do
     Eₒ ← edgess E ctx
     emit "brel" (bases-width is) 0 (M.εₘ) Eₒ

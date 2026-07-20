@@ -45,7 +45,7 @@ open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
 open HasTerminal M.terminal using (to-terminal)
 
 module WithOp
-  (op-rel : ∀ {is o'} → op is o' → Category._⇒_ M.cat (bases-width is) (sort-width o'))
+  (op-rel : ∀ {is o'} → op is o' → sort-vals sort-val is → Category._⇒_ M.cat (bases-width is) (sort-width o'))
   where
 
   open WithOpRels op-rel
@@ -359,7 +359,7 @@ module WithOp
     in u , (T ∘ ⟨ R , S ⟩) , ⇓-app Ds Dt D' , tu
   fundamental (bop ω Ms) γ tγ =
     let (vs , Rs , Dss) = fundamental-s Ms γ tγ
-    in const (op-fun ω vs) , (op-rel ω ∘ Rs) , ⇓-bop Dss , tt
+    in const (op-fun ω vs) , (op-rel ω vs ∘ Rs) , ⇓-bop Dss , tt
   fundamental (brel ω Ms) γ tγ =
     let (vs , Rs , Dss) = fundamental-s Ms γ tγ
     in bool→val (rel-pred ω vs) , brel-mat γ (rel-pred ω vs) , ⇓-brel Dss ,

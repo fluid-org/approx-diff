@@ -22,15 +22,7 @@ private
   module H = ho-model-boolalg-sd-semimod two.semiring two.semiring-boolean
 
 -- Value-level algebra, by projection from the model.
-module Alg-inst where
-  module PA = language-operational.algebra.IndexAlgebra
-                H.BoolAlg.cat H.BoolAlg.terminal H.BoolAlg.products Sig
-
-  Alg : Algebra Sig 0ℓ
-  Alg = PA.index-algebra Dep.D.BaseInterp1
-
-  sort-val : sort → Set
-  sort-val = Algebra.sort-val Alg
+module Alg-inst = Dep.Alg-inst
 
 module LR = language-operational.logical-relation Sig Dep.D.BaseInterp1
 
