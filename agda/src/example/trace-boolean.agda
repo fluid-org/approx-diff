@@ -21,7 +21,7 @@ import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Alg-inst.Alg
   using (Env; emp; _·_; const)
-open import language-operational.evaluation-mat Sig Alg-inst.Alg (λ s → Dep.FO𝟚.width (Dep.sort-fibre s))
+open import language-operational.evaluation-mat Sig Alg-inst.Alg (λ s → Dep.FO𝟚.width (Dep.sort-approx s))
   using (width-env; module WithOpRels)
 open WithOpRels Dep.op-rel using (_,_⇓_[_])
 
@@ -37,7 +37,7 @@ show-op add         = "add"
 show-op mult        = "mult"
 show-op (lbl l)     = Data.String._++_ "lbl-" (show-lbl l)
 
-open import language-operational.trace Sig Alg-inst.Alg (λ s → Dep.FO𝟚.width (Dep.sort-fibre s)) show-op
+open import language-operational.trace Sig Alg-inst.Alg (λ s → Dep.FO𝟚.width (Dep.sort-approx s)) show-op
 
 dep-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} →
             γ , t ⇓ v [ R ] → List Edge

@@ -6,6 +6,7 @@
 -- normaliser.
 module example.free where
 
+import approx
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -49,8 +50,13 @@ module SDSemiMod-Free = sd-semimodule Free.semiring
 module SemiMod-Free = semimodule Free.semiring
 open cmon-enriched.CMonEnriched SemiMod-Free.cmon-enriched using (_+m_)
 
+module A = approx SDSemiMod-Free.cat SDSemiMod-Free.terminal SDSemiMod-Free.products SDSemiMod-Free.𝕀
+
+number-approx : A.Approx
+number-approx = A.gen
+
 Approx : Category.obj SDSemiMod-Free.cat
-Approx = SDSemiMod-Free.𝕀
+Approx = A.⟦ number-approx ⟧
 
 approx-unit : Category._⇒_ SDSemiMod-Free.cat (HasTerminal.witness SDSemiMod-Free.terminal) Approx
 approx-unit = HasInitial.from-initial SDSemiMod-Free.initial {Approx}
@@ -72,7 +78,7 @@ private
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example.signature-interpretation SDSemiMod-Free.cat SDSemiMod-Free.products SDSemiMod-Free.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+  SDSemiMod-Free.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 -- Unit coefficients: every argument of every operation counts as one use.
 private

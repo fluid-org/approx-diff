@@ -3,16 +3,21 @@
 open import Level using (Level; 0ℓ; suc)
 open import categories using (Category; HasProducts; HasTerminal; HasCoproducts)
 open import prop-setoid using (Setoid)
+import approx
 
 module example.signature-interpretation
   {o : Level}
   (𝒞 : Category o 0ℓ 0ℓ)
   (𝒞-products : HasProducts 𝒞)
   (𝒞-terminal : HasTerminal 𝒞)
-  -- the object approximating the `number` sort; unit and conjunct give it a monoid structure.
-  (Approx : Category.obj 𝒞)
-  (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) Approx)
-  (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products Approx Approx) Approx)
+  -- the generator: the 𝒞-object of width one, from which the approximations are built.
+  (𝕀ᶜ : Category.obj 𝒞)
+  (open approx 𝒞 𝒞-terminal 𝒞-products 𝕀ᶜ using (Approx; ⟦_⟧))
+  -- the approximation attached to the `number` sort; unit and conjunct give the object it
+  -- describes a monoid structure.
+  (number-approx : Approx)
+  (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) ⟦ number-approx ⟧)
+  (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products ⟦ number-approx ⟧ ⟦ number-approx ⟧) ⟦ number-approx ⟧)
   -- what a `number` carries, with add/mult on the index side.
   (Numₛ : Setoid 0ℓ 0ℓ)
   (num-add  : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
@@ -20,11 +25,13 @@ module example.signature-interpretation
   where
 
 import fam
-import approx
 
--- Approximation descriptions built from Approx as the generator; qualified because `unit`
--- names both a constructor here and the monoid unit parameter above.
-module FO = approx 𝒞 𝒞-terminal 𝒞-products Approx
+-- Qualified because `unit` names both a constructor of Approx and the monoid unit parameter above.
+module FO = approx 𝒞 𝒞-terminal 𝒞-products 𝕀ᶜ
+
+-- The 𝒞-object approximating a `number`, computed from its description.
+Num-approx : Category.obj 𝒞
+Num-approx = ⟦ number-approx ⟧
 
 private
   module 𝒞m = Category 𝒞
@@ -127,22 +134,22 @@ BaseInterp0 .Model.⟦op⟧ mult = simplef[ num-mult , to-𝟙-base ] C.∘ bina
 BaseInterp0 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
 
--- The fibre description of each sort in the value-carrying model; the model's ⟦sort⟧, the widths,
--- and the canonical maps are computed from it.
+-- The approximation attached to each sort in the value-carrying model; the model's ⟦sort⟧, the
+-- widths, and the canonical maps are computed from it.
 sort-index : sort → Setoid 0ℓ 0ℓ
 sort-index number = Numₛ
 sort-index label  = label.Label
 
-sort-fibre : sort → FO.Approx
-sort-fibre number = FO.gen
-sort-fibre label  = FO.unit
+sort-approx : sort → Approx
+sort-approx number = number-approx
+sort-approx label  = FO.unit
 
 -- The value-carrying model, parameterized by per-argument derivative coefficients for the binary
 -- arithmetic primitives: at run values (x, y), the derivative of an operation is c₁ x y on its
 -- first argument plus c₂ x y on its second. This is the only part of the interpretation that
 -- varies between the models.
 module BinDeriv
-  (add-c₁ add-c₂ mult-c₁ mult-c₂ : Setoid.Carrier Numₛ → Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Approx Approx)
+  (add-c₁ add-c₂ mult-c₁ mult-c₂ : Setoid.Carrier Numₛ → Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Num-approx Num-approx)
   (add-c₁-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (add-c₁ x y) (add-c₁ x' y'))
   (add-c₂-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (add-c₂ x y) (add-c₂ x' y'))
   (mult-c₁-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (mult-c₁ x y) (mult-c₁ x' y'))
@@ -151,10 +158,10 @@ module BinDeriv
 
   private
     op-deriv : (g : prop-setoid._⇒_ (prop-setoid.⊗-setoid Numₛ Numₛ) Numₛ)
-               (c₁ c₂ : Setoid.Carrier Numₛ → Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Approx Approx)
+               (c₁ c₂ : Setoid.Carrier Numₛ → Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Num-approx Num-approx)
                (c₁-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (c₁ x y) (c₁ x' y'))
                (c₂-cong : ∀ {x x' y y'} → Setoid._≈_ Numₛ x x' → Setoid._≈_ Numₛ y y' → Category._≈_ 𝒞 (c₂ x y) (c₂ x' y')) →
-               simple[ Numₛ ×ₛ Numₛ , CP.prod Approx Approx ] C.⇒ simple[ Numₛ , Approx ]
+               simple[ Numₛ ×ₛ Numₛ , CP.prod Num-approx Num-approx ] C.⇒ simple[ Numₛ , Num-approx ]
     op-deriv g c₁ c₂ c₁-cong c₂-cong .idxf = g
     op-deriv g c₁ c₂ c₁-cong c₂-cong .famf .transf xy =
       conjunct 𝒞m.∘ CP.pair (c₁ (proj₁ xy) (proj₂ xy) 𝒞m.∘ CP.p₁) (c₂ (proj₁ xy) (proj₂ xy) 𝒞m.∘ CP.p₂)
@@ -165,14 +172,14 @@ module BinDeriv
                         (𝒞m.∘-cong (c₂-cong (num-sym (prop.proj₁ e)) (num-sym (prop.proj₂ e))) 𝒞m.≈-refl)))
         (𝒞m.≈-sym 𝒞m.id-left))
 
-  add-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod Approx Approx ] C.⇒ simple[ Numₛ , Approx ]
+  add-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod Num-approx Num-approx ] C.⇒ simple[ Numₛ , Num-approx ]
   add-deriv = op-deriv num-add add-c₁ add-c₂ add-c₁-cong add-c₂-cong
 
-  mult-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod Approx Approx ] C.⇒ simple[ Numₛ , Approx ]
+  mult-deriv : simple[ Numₛ ×ₛ Numₛ , CP.prod Num-approx Num-approx ] C.⇒ simple[ Numₛ , Num-approx ]
   mult-deriv = op-deriv num-mult mult-c₁ mult-c₂ mult-c₁-cong mult-c₂-cong
 
   BaseInterp1 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
-  BaseInterp1 .Model.⟦sort⟧ s = simple[ sort-index s , FO.⟦ sort-fibre s ⟧ ]
+  BaseInterp1 .Model.⟦sort⟧ s = simple[ sort-index s , ⟦ sort-approx s ⟧ ]
   BaseInterp1 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , unit ]
   BaseInterp1 .Model.⟦op⟧ add = add-deriv C.∘ binary
   BaseInterp1 .Model.⟦op⟧ mult = mult-deriv C.∘ binary
@@ -182,11 +189,11 @@ module BinDeriv
 -- The special case with addition's coefficients the identity and multiplication's the Jacobian
 -- entries [ ∂/∂x , ∂/∂y ] = [ coeff y , coeff x ].
 module Deriv
-  (coeff : Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Approx Approx)
+  (coeff : Setoid.Carrier Numₛ → Category._⇒_ 𝒞 Num-approx Num-approx)
   (coeff-cong : ∀ {x y} → Setoid._≈_ Numₛ x y → Category._≈_ 𝒞 (coeff x) (coeff y))
   where
 
-  open BinDeriv (λ _ _ → 𝒞m.id Approx) (λ _ _ → 𝒞m.id Approx)
+  open BinDeriv (λ _ _ → 𝒞m.id Num-approx) (λ _ _ → 𝒞m.id Num-approx)
                 (λ _ y → coeff y) (λ x _ → coeff x)
                 (λ _ _ → 𝒞m.≈-refl) (λ _ _ → 𝒞m.≈-refl)
                 (λ _ e₂ → coeff-cong e₂) (λ e₁ _ → coeff-cong e₁)

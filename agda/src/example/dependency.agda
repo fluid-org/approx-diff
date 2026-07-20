@@ -50,8 +50,11 @@ module SDSemiMod-𝟚 = sd-semimodule two.semiring
 module SemiMod-𝟚 = semimodule two.semiring
 open cmon-enriched.CMonEnriched SemiMod-𝟚.cmon-enriched using (_+m_; εm)
 
+number-approx : FO𝟚.Approx
+number-approx = FO𝟚.gen
+
 Approx : Category.obj BoolAlg-𝟚.cat
-Approx = BoolAlg-𝟚.𝕀
+Approx = FO𝟚.⟦ number-approx ⟧
 
 approx-unit : Category._⇒_ BoolAlg-𝟚.cat (HasTerminal.witness BoolAlg-𝟚.terminal) Approx
 approx-unit = HasInitial.from-initial BoolAlg-𝟚.initial {Approx}
@@ -74,9 +77,9 @@ private
 
 import example.signature-interpretation
 module SI = example.signature-interpretation BoolAlg-𝟚.cat BoolAlg-𝟚.products BoolAlg-𝟚.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+  BoolAlg-𝟚.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 open SI
-open SI using (sort-fibre) public
+open SI using (sort-approx) public
 
 -- Boolean-collapse derivative coefficient: zero map at 0, identity elsewhere.
 private
@@ -102,9 +105,9 @@ private
   module M𝟚 = matrix.Mat two.semiring
 
 bases-width : List sort → ℕ
-bases-width = sorts-width (λ s → FO𝟚.width (sort-fibre s))
+bases-width = sorts-width (λ s → FO𝟚.width (sort-approx s))
 
-op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (FO𝟚.width (sort-fibre o'))
+op-rel : ∀ {is o'} → op is o' → Category._⇒_ M𝟚.cat (bases-width is) (FO𝟚.width (sort-approx o'))
 op-rel (lit n)     = λ i ()
 op-rel add         = λ i j → two.I
 op-rel mult        = λ i j → two.I

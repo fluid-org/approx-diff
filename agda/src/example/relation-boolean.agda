@@ -35,11 +35,11 @@ module Alg-inst where
 module LR = language-operational.logical-relation Sig Dep.D.BaseInterp1
 
 pres : LR.Presentation
-pres = record { sort-fibre = Dep.sort-fibre ; sort-can = sort-can ; op-rel = Dep.op-rel }
+pres = record { sort-approx = Dep.sort-approx ; sort-can = sort-can ; op-rel = Dep.op-rel }
   where
   sort-can : ∀ s (c : Alg-inst.sort-val s) → _
-  sort-can number _ = Dep.FO𝟚.canonical (Dep.sort-fibre number)
-  sort-can label  _ = Dep.FO𝟚.canonical (Dep.sort-fibre label)
+  sort-can number _ = Dep.FO𝟚.canonical (Dep.sort-approx number)
+  sort-can label  _ = Dep.FO𝟚.canonical (Dep.sort-approx label)
 
 module Inst = LR.WithPresentation pres
 
@@ -49,9 +49,9 @@ FP = Inst.FundamentalProperty
 
 -- Totality, the evaluator and the instrumentation, at the same model.
 import language-operational.totality
-module Tot = language-operational.totality Sig Alg-inst.Alg (λ s → H.FO.width (Dep.sort-fibre s))
+module Tot = language-operational.totality Sig Alg-inst.Alg (λ s → H.FO.width (Dep.sort-approx s))
 module TotOp = Tot.WithOp Dep.op-rel
 
 import language-operational.instrument
-module Instr = language-operational.instrument Sig Alg-inst.Alg (λ s → H.FO.width (Dep.sort-fibre s))
+module Instr = language-operational.instrument Sig Alg-inst.Alg (λ s → H.FO.width (Dep.sort-approx s))
 module InstrOp = Instr.WithOp Dep.op-rel

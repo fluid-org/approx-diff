@@ -4,6 +4,7 @@
 -- (BaseInterp1), over the self-dual semimodules as first-order model.
 module example.rationals where
 
+import approx
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -37,8 +38,13 @@ module SemiMod-ℚ = semimodule semiring-Q.semiring
 module Scalars = CommutativeSemiring semiring-Q.semiring
 open cmon-enriched.CMonEnriched SemiMod-ℚ.cmon-enriched using (_+m_)
 
+module A = approx SDSemiMod-ℚ.cat SDSemiMod-ℚ.terminal SDSemiMod-ℚ.products SDSemiMod-ℚ.𝕀
+
+number-approx : A.Approx
+number-approx = A.gen
+
 Approx : Category.obj SDSemiMod-ℚ.cat
-Approx = SDSemiMod-ℚ.𝕀
+Approx = A.⟦ number-approx ⟧
 
 approx-unit : Category._⇒_ SDSemiMod-ℚ.cat (HasTerminal.witness SDSemiMod-ℚ.terminal) Approx
 approx-unit = HasInitial.from-initial SDSemiMod-ℚ.initial {Approx}
@@ -75,7 +81,7 @@ private
   scalar-cong e .*≈* .func-eq u≈v = Scalars.·-cong e u≈v
 
 open import example.signature-interpretation SDSemiMod-ℚ.cat SDSemiMod-ℚ.products SDSemiMod-ℚ.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult public
+  SDSemiMod-ℚ.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult public
 module D = Deriv scalar scalar-cong
 open ho-model-sd-semimod.interp-sd semiring-Q.semiring Sig D.BaseInterp1 public
 open SDSemiMod-ℚ public using (conjugate)

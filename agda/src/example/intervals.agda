@@ -4,6 +4,7 @@
 -- self-dual semimodules; numbers approximated by ℚ∞² (left, right perturbation bound).
 module example.intervals where
 
+import approx
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -40,8 +41,13 @@ module SDSemiMod-ℚ∞ = sd-semimodule semiring-Q-tropical-add.semiring
 module SemiMod-ℚ∞ = semimodule semiring-Q-tropical-add.semiring
 open cmon-enriched.CMonEnriched SemiMod-ℚ∞.cmon-enriched using (_+m_; εm)
 
+module A = approx SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.terminal SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.𝕀
+
+number-approx : A.Approx
+number-approx = A.gen A.× A.gen
+
 Approx : Category.obj SDSemiMod-ℚ∞.cat
-Approx = SDSemiMod-ℚ∞._⊕_ SDSemiMod-ℚ∞.𝕀 SDSemiMod-ℚ∞.𝕀
+Approx = A.⟦ number-approx ⟧
 
 approx-unit : Category._⇒_ SDSemiMod-ℚ∞.cat (HasTerminal.witness SDSemiMod-ℚ∞.terminal) Approx
 approx-unit = HasInitial.from-initial SDSemiMod-ℚ∞.initial {Approx}
@@ -62,7 +68,7 @@ private
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example.signature-interpretation SDSemiMod-ℚ∞.cat SDSemiMod-ℚ∞.products SDSemiMod-ℚ∞.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+  SDSemiMod-ℚ∞.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 -- Multiplication admits no min-plus-linear perturbation bound; the zero map (constantly ∞) records
 -- the absence of a bound.

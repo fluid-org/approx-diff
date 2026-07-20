@@ -6,6 +6,7 @@
 -- exact cancellation.
 module example.intervals-mult where
 
+import approx
 open import categories using (Category; HasInitial; HasProducts; HasTerminal)
 import cmon-enriched
 import prop
@@ -46,8 +47,13 @@ module SemiMod-Rel = semimodule semiring-Q-tropical-mult.semiring
 module Scalars = CommutativeSemiring semiring-Q-tropical-mult.semiring
 open cmon-enriched.CMonEnriched SemiMod-Rel.cmon-enriched using (_+m_)
 
+module A = approx SDSemiMod-Rel.cat SDSemiMod-Rel.terminal SDSemiMod-Rel.products SDSemiMod-Rel.𝕀
+
+number-approx : A.Approx
+number-approx = A.gen
+
 Approx : Category.obj SDSemiMod-Rel.cat
-Approx = SDSemiMod-Rel.𝕀
+Approx = A.⟦ number-approx ⟧
 
 approx-unit : Category._⇒_ SDSemiMod-Rel.cat (HasTerminal.witness SDSemiMod-Rel.terminal) Approx
 approx-unit = HasInitial.from-initial SDSemiMod-Rel.initial {Approx}
@@ -68,7 +74,7 @@ private
   num-mult .func-resp-≈ e = Num.·-cong (prop.proj₁ e) (prop.proj₂ e)
 
 open import example.signature-interpretation SDSemiMod-Rel.cat SDSemiMod-Rel.products SDSemiMod-Rel.terminal
-  Approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
+  SDSemiMod-Rel.𝕀 number-approx approx-unit approx-conjunct semiring-Q.setoid num-add num-mult
 
 private
   -- Multiplication by a scalar as a linear endomorphism of the scalars.
