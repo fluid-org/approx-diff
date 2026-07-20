@@ -116,7 +116,7 @@ mutual
                γ , s ⇓ clo {Γ'} γ' t' [ R ] → γ , t ⇓ v [ S ] → γ' · v , t' ⇓ u [ T ] →
                γ , app s t ⇓ u [ T ∘ ⟨ R , S ⟩ ]
     ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-               γ , Ms ⇓s vs [ R ] → γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ op-rel ω .func vs ∘ R ]
+               γ , Ms ⇓s vs [ R ] → γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ op-deps ω .func vs ∘ R ]
     ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] → γ , brel ω Ms ⇓ bool→val (rel-pred ω .func vs) [ brel-mat γ (rel-pred ω .func vs) ]
     ⇓-roll   : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v R} →

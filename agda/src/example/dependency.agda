@@ -13,7 +13,7 @@ import ho-model-sd-semimod
 import semiring-Q
 import indexed-family
 open import primitives using (Primitives)
-open Primitives using (sort-index; sort-width; op-fun; op-rel; rel-pred)
+open Primitives using (sort-index; sort-width; op-fun; op-deps; rel-pred)
 open import commutative-semiring using (CommutativeSemiring)
 
 open import Level using (lift; 0ℓ) public
@@ -77,15 +77,15 @@ primitives .op-fun mult .func-resp-≈ e =
   Scalars.·-cong (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 primitives .op-fun (lbl l) .func-resp-≈ _ =
   Setoid.isEquivalence label.Label .IsEquivalence.refl
-primitives .op-rel (lit n) .func _ = λ _ ()
-primitives .op-rel add .func _ = λ _ _ → ⊤
-primitives .op-rel mult .func (x , y , _) = mult-rel x y
-primitives .op-rel (lbl l) .func _ = λ ()
-primitives .op-rel (lit n) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ ()}
-primitives .op-rel add .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ _ → ⊤}
-primitives .op-rel mult .func-resp-≈ e =
+primitives .op-deps (lit n) .func _ = λ _ ()
+primitives .op-deps add .func _ = λ _ _ → ⊤
+primitives .op-deps mult .func (x , y , _) = mult-rel x y
+primitives .op-deps (lbl l) .func _ = λ ()
+primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ ()}
+primitives .op-deps add .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ _ _ → ⊤}
+primitives .op-deps mult .func-resp-≈ e =
   mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .op-rel (lbl l) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ ()}
+primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = λ ()}
 primitives .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
 primitives .rel-pred equal-label .func-resp-≈ e =
   label.equal-label .func-resp-≈ (prop.proj₁ e prop., prop.proj₁ (prop.proj₂ e))

@@ -231,7 +231,7 @@ instrument {γ = γ} {p = p} (app ms mt) mγ (⇓-app Ds Dt Db) Φ
               (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa)))
 instrument (bop ms) mγ (⇓-bop {ω = ω} {vs = vs} Es) Φ
   with instrument-s ms mγ Es Φ
-... | (k , Φ' , Rs) = const , (k , Φ' , op-rel ω .func vs M.∘ Rs)
+... | (k , Φ' , Rs) = const , (k , Φ' , op-deps ω .func vs M.∘ Rs)
 instrument {γ = γ} {p = p} (brel ms) mγ (⇓-brel {ω = ω} {vs = vs} Es) Φ
   with instrument-s ms mγ Es Φ
 ... | (k , Φ' , Rs) =

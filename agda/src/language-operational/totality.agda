@@ -348,7 +348,7 @@ fundamental (app s t) γ tγ with fundamental s γ tγ
   in u , (T ∘ ⟨ R , S ⟩) , ⇓-app Ds Dt D' , tu
 fundamental (bop ω Ms) γ tγ =
   let (vs , Rs , Dss) = fundamental-s Ms γ tγ
-  in const (op-fun ω .func vs) , (op-rel ω .func vs ∘ Rs) , ⇓-bop Dss , tt
+  in const (op-fun ω .func vs) , (op-deps ω .func vs ∘ Rs) , ⇓-bop Dss , tt
 fundamental (brel ω Ms) γ tγ =
   let (vs , Rs , Dss) = fundamental-s Ms γ tγ
   in bool→val (rel-pred ω .func vs) , brel-mat γ (rel-pred ω .func vs) , ⇓-brel Dss ,

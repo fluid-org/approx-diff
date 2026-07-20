@@ -47,7 +47,7 @@ record Primitives {ℓ} {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (Sig 
   field
     op-fun   : ∀ {is o} → op is o →
                prop-setoid._⇒_ (sort-vals-setoid sort-index is) (sort-index o)
-    op-rel   : ∀ {is o'} → op is o' →
+    op-deps   : ∀ {is o'} → op is o' →
                prop-setoid._⇒_ (sort-vals-setoid sort-index is)
                  (Category.hom-setoid (matrix.Mat.cat S) (bases-width is) (sort-width o'))
     rel-pred : ∀ {is} → rel is →

@@ -102,10 +102,10 @@ module interp-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
     where
     opω : Mor simple[ sort-vals-setoid sort-index is , SDSemiMod.S^ (bases-width is) ] (⟦sort⟧′ o)
     opω .idxf = op-fun ω
-    opω .famf .transf c = matrix-mor (op-rel ω .func c)
+    opω .famf .transf c = matrix-mor (op-deps ω .func c)
     opω .famf .natural {c} {c'} e =
       SM.≈-trans SM.id-right
-        (SM.≈-trans (matrix-mor-cong (Category.≈-sym M.cat (op-rel ω .func-resp-≈ e)))
+        (SM.≈-trans (matrix-mor-cong (Category.≈-sym M.cat (op-deps ω .func-resp-≈ e)))
                     (SM.≈-sym SM.id-left))
   model .Model.⟦rel⟧ {is} ψ = predicate (rel-pred ψ ∘S untuple is)
 
