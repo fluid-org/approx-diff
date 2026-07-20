@@ -26,25 +26,6 @@ module L = language-syntax Sig
 
 module ex where
   open L
-  open SynMonad
-
-  Tag : ∀ {Δ} → type Δ → type Δ
-  Tag τ = base approx [×] τ
-
-  Tag-pure : ∀ {Γ τ} → Γ ⊢ τ [→] Tag τ
-  Tag-pure = lam (pair (bop approx-unit []) (var zero))
-
-  Tag-bind : ∀ {Γ σ τ} → Γ ⊢ Tag σ [→] (σ [→] Tag τ) [→] Tag τ
-  Tag-bind =
-    lam (lam (pair (bop approx-mult (fst (var (succ zero)) ∷ fst (app (var zero) (snd (var (succ zero)))) ∷ []))
-                   (snd (app (var zero) (snd (var (succ zero)))))))
-
-  Tag-monad : SynMonad
-  Tag-monad .Mon         = Tag
-  Tag-monad .Mon-ren _ _ = refl
-  Tag-monad .Mon-sub _ _ = refl
-  Tag-monad .pure        = Tag-pure
-  Tag-monad .bind        = Tag-bind
 
   `_ : ∀ {Γ} → label.label → Γ ⊢ base label
   ` l = bop (lbl l) []

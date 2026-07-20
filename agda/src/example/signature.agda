@@ -10,15 +10,13 @@ open import Data.List using (List; []; _∷_)
 import label
 
 data sort : Set where
-  number label approx : sort
+  number label : sort
 
 data op : List sort → sort → Set where
   lit  : Num → op [] number
   add  : op (number ∷ number ∷ []) number
   mult : op (number ∷ number ∷ []) number
   lbl  : label.label → op [] label
-  approx-unit : op [] approx
-  approx-mult : op (approx ∷ approx ∷ []) approx
 
 data rel : List sort → Set where
   equal-label : rel (label ∷ label ∷ [])

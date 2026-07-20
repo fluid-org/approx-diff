@@ -24,7 +24,7 @@ open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
-open import example.signature ℚ using (Sig; number; label; approx) public
+open import example.signature ℚ using (Sig; number; label) public
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ 0ℚ

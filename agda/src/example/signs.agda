@@ -27,7 +27,7 @@ import Data.Integer
 open import prop-setoid using (Setoid; IsEquivalence)
 open Setoid using (Carrier) public
 open import commutative-semiring using (CommutativeSemiring)
-open import example.signature ℤ using (Sig; number; label; approx) public
+open import example.signature ℤ using (Sig; number; label) public
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℤ (+ 0)

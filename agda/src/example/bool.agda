@@ -14,7 +14,7 @@ import indexed-family
 import galois
 import preorder
 import nat
-open import example.signature nat.ℕ using (Sig; number; label; approx) public
+open import example.signature nat.ℕ using (Sig; number; label) public
 import example
 
 -- Vocabulary re-exported for tests.

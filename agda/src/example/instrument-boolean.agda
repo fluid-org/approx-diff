@@ -17,8 +17,7 @@ import two
 import matrix
 
 open import example.signature ℚ
-  using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
-         approx-unit; approx-mult; rel; equal-label)
+  using (Sig; sort; number; label; op; lit; add; mult; lbl; rel; equal-label)
 open import example.relation-boolean
   using (module Alg-inst; module Tot; module TotOp;
          module Instr; module InstrOp)

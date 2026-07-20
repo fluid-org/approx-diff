@@ -35,8 +35,7 @@ open import Data.Rational using () renaming (_≟_ to _≟ℚ_)
 open import Data.Nat.Base public using (nonZero)
 open import prop-setoid using (Setoid)
 open Setoid using (Carrier) public
-open import example.signature ℚ using (Sig; sort; number; label; approx; op; lit; add; mult; lbl; approx-mult) public
-  renaming (approx-unit to op-approx-unit)
+open import example.signature ℚ using (Sig; sort; number; label; op; lit; add; mult; lbl) public
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ 0ℚ
@@ -110,5 +109,3 @@ op-rel (lit n)     = λ i ()
 op-rel add         = λ i j → two.I
 op-rel mult        = λ i j → two.I
 op-rel (lbl l)     = λ ()
-op-rel op-approx-unit = λ i ()
-op-rel approx-mult = λ i j → two.I

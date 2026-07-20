@@ -9,7 +9,7 @@ module example.signature-interpretation
   (𝒞 : Category o 0ℓ 0ℓ)
   (𝒞-products : HasProducts 𝒞)
   (𝒞-terminal : HasTerminal 𝒞)
-  -- the object approximating the `number` and `approx` sorts; unit and conjunct give it a monoid structure.
+  -- the object approximating the `number` sort; unit and conjunct give it a monoid structure.
   (Approx : Category.obj 𝒞)
   (unit : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞-terminal) Approx)
   (conjunct : Category._⇒_ 𝒞 (HasProducts.prod 𝒞-products Approx Approx) Approx)
@@ -121,26 +121,21 @@ private
 BaseInterp0 : Model PFPC[ cat , terminal , products , 𝟚 ] Sig
 BaseInterp0 .Model.⟦sort⟧ number = simple[ Numₛ , 𝟙-base ]
 BaseInterp0 .Model.⟦sort⟧ label = simple[ label.Label , 𝟙-base ]
-BaseInterp0 .Model.⟦sort⟧ approx = simple[ 𝟙ₛ , Approx ]
 BaseInterp0 .Model.⟦op⟧ (lit n) = simplef[ constₛ _ n , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦op⟧ add = simplef[ num-add , to-𝟙-base ] C.∘ binary
 BaseInterp0 .Model.⟦op⟧ mult = simplef[ num-mult , to-𝟙-base ] C.∘ binary
 BaseInterp0 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
 BaseInterp0 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
-BaseInterp0 .Model.⟦op⟧ approx-unit = simplef[ idS _ , unit ]
-BaseInterp0 .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjunct ] C.∘ binary
 
 -- The fibre description of each sort in the value-carrying model; the model's ⟦sort⟧, the widths,
 -- and the canonical maps are computed from it.
 sort-index : sort → Setoid 0ℓ 0ℓ
 sort-index number = Numₛ
 sort-index label  = label.Label
-sort-index approx = 𝟙ₛ
 
 sort-fibre : sort → FO.FreeObj
 sort-fibre number = FO.gen
 sort-fibre label  = FO.unit
-sort-fibre approx = FO.gen
 
 -- The value-carrying model, parameterized by per-argument derivative coefficients for the binary
 -- arithmetic primitives: at run values (x, y), the derivative of an operation is c₁ x y on its
@@ -183,8 +178,6 @@ module BinDeriv
   BaseInterp1 .Model.⟦op⟧ mult = mult-deriv C.∘ binary
   BaseInterp1 .Model.⟦op⟧ (lbl l) = simplef[ constₛ _ l , 𝒞m.id _ ]
   BaseInterp1 .Model.⟦rel⟧ equal-label = predicate label.equal-label C.∘ binary
-  BaseInterp1 .Model.⟦op⟧ approx-unit = simplef[ idS _ , unit ]
-  BaseInterp1 .Model.⟦op⟧ approx-mult = simplef[ prop-setoid.to-𝟙 , conjunct ] C.∘ binary
 
 -- The special case with addition's coefficients the identity and multiplication's the Jacobian
 -- entries [ ∂/∂x , ∂/∂y ] = [ coeff y , coeff x ].

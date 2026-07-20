@@ -14,8 +14,7 @@ import label as L
 import two
 
 open import example.signature ℚ
-  using (Sig; sort; number; label; approx; op; lit; add; mult; lbl;
-         approx-unit; approx-mult; rel; equal-label)
+  using (Sig; sort; number; label; op; lit; add; mult; lbl; rel; equal-label)
 open import example.relation-boolean
   using (module Alg-inst; module Tot; module TotOp)
 import example.dependency as Dep
@@ -37,8 +36,6 @@ show-op (lit n)     = "lit"
 show-op add         = "add"
 show-op mult        = "mult"
 show-op (lbl l)     = Data.String._++_ "lbl-" (show-lbl l)
-show-op approx-unit = "approx-unit"
-show-op approx-mult = "approx-mult"
 
 open import language-operational.trace Sig Alg-inst.Alg (λ s → Dep.FO𝟚.fwidth (Dep.sort-fibre s)) show-op
 

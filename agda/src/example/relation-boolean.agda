@@ -13,7 +13,7 @@ import ho-model-boolalg-sd-semimod
 import two
 import matrix
 import language-operational.logical-relation
-open import example.signature ℚ using (Sig; sort; number; label; approx; op)
+open import example.signature ℚ using (Sig; sort; number; label; op)
 import example.dependency
 
 module Dep = example.dependency
@@ -40,7 +40,6 @@ pres = record { sort-fibre = Dep.sort-fibre ; sort-can = sort-can ; op-rel = Dep
   sort-can : ∀ s (c : Alg-inst.sort-val s) → _
   sort-can number _ = Dep.FO𝟚.canonical (Dep.sort-fibre number)
   sort-can label  _ = Dep.FO𝟚.canonical (Dep.sort-fibre label)
-  sort-can approx _ = Dep.FO𝟚.canonical (Dep.sort-fibre approx)
 
 module Inst = LR.WithPresentation pres
 
