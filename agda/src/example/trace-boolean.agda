@@ -13,6 +13,8 @@ open import every using ([]; _∷_)
 import label as L
 import two
 import Data.Rational.Show as ℚ-Show
+import Data.Integer.Show as ℤ-Show
+open import Data.Rational using (↥_; ↧ₙ_)
 open import primitives using (Primitives)
 
 open import example.signature ℚ
@@ -30,9 +32,14 @@ show-lbl L.b = "b"
 show-lbl L.c = "c"
 show-lbl L.d = "d"
 
--- Label constants render as quoted strings.
+-- Whole rationals render without the denominator; label constants as quoted strings.
+show-ℚ : ℚ → String
+show-ℚ q with ↧ₙ q
+... | 1 = ℤ-Show.show (↥ q)
+... | _ = ℚ-Show.show q
+
 show-const : ∀ {s} → Primitives.sort-val Dep.primitives s → String
-show-const {number} q = ℚ-Show.show q
+show-const {number} q = show-ℚ q
 show-const {label}  l = "“" Data.String.++ show-lbl l Data.String.++ "”"
 
 show-op : ∀ {is o} → op is o → String
