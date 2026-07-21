@@ -8,6 +8,7 @@ open import Data.Nat.Properties using (+-assoc; +-identityʳ)
 open import Relation.Binary.PropositionalEquality using (trans; cong)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Sum using (inj₁; inj₂)
+open import Data.Maybe using (Maybe; just; nothing)
 import Data.List
 open import Data.List using (List; []; _∷_; _++_; length; concatMap; allFin)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
@@ -282,6 +283,334 @@ mutual
               MarkedM Dm₁ → MarkedM Dm₂ → MarkedM (m-pair Dm₁ Dm₂)
     m-mu    : ∀ {τ' : type 2} {w w' R R'} {Dm : Map γ s (unfold₁ τ') w R w' R'} →
               MarkedM Dm → MarkedM (m-mu {τ' = τ'} Dm)
+
+------------------------------------------------------------------------
+-- Paths addressing the nodes of a derivation.
+
+mutual
+  data Node : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R} →
+              γ , t ⇓ v [ R ] → Set ℓ where
+    here     : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Node D
+    inl      : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v R} {D : γ , t ⇓ v [ R ]} →
+               Node D → Node (⇓-inl {τ₂ = τ₂} D)
+    inr      : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₂} {v R} {D : γ , t ⇓ v [ R ]} →
+               Node D → Node (⇓-inr {τ₁ = τ₁} D)
+    roll     : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v R} {D : γ , t ⇓ v [ R ]} →
+               Node D → Node (⇓-roll {τ = τ} D)
+    fst      : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} {D : γ , t ⇓ pair v u [ R ]} →
+               Node D → Node (⇓-fst D)
+    snd      : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} {D : γ , t ⇓ pair v u [ R ]} →
+               Node D → Node (⇓-snd D)
+    pair₁    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R S}
+               {D₁ : γ , s ⇓ v [ R ]} {D₂ : γ , t ⇓ u [ S ]} →
+               Node D₁ → Node (⇓-pair D₁ D₂)
+    pair₂    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R S}
+               {D₁ : γ , s ⇓ v [ R ]} {D₂ : γ , t ⇓ u [ S ]} →
+               Node D₂ → Node (⇓-pair D₁ D₂)
+    case-l₁  : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
+               {v u R S} {Ds : γ , s ⇓ inl v [ R ]} {D₁ : γ · v , t₁ ⇓ u [ S ]} →
+               Node Ds → Node (⇓-case-l {t₂ = t₂} Ds D₁)
+    case-l₂  : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
+               {v u R S} {Ds : γ , s ⇓ inl v [ R ]} {D₁ : γ · v , t₁ ⇓ u [ S ]} →
+               Node D₁ → Node (⇓-case-l {t₂ = t₂} Ds D₁)
+    case-r₁  : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
+               {v u R S} {Ds : γ , s ⇓ inr v [ R ]} {D₂ : γ · v , t₂ ⇓ u [ S ]} →
+               Node Ds → Node (⇓-case-r {t₁ = t₁} Ds D₂)
+    case-r₂  : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
+               {v u R S} {Ds : γ , s ⇓ inr v [ R ]} {D₂ : γ · v , t₂ ⇓ u [ S ]} →
+               Node D₂ → Node (⇓-case-r {t₁ = t₁} Ds D₂)
+    app₁     : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T}
+               {Ds : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {Dt : γ , t ⇓ v [ S ]}
+               {Db : γ' · v , t' ⇓ u [ T ]} →
+               Node Ds → Node (⇓-app Ds Dt Db)
+    app₂     : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T}
+               {Ds : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {Dt : γ , t ⇓ v [ S ]}
+               {Db : γ' · v , t' ⇓ u [ T ]} →
+               Node Dt → Node (⇓-app Ds Dt Db)
+    app₃     : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T}
+               {Ds : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {Dt : γ , t ⇓ v [ S ]}
+               {Db : γ' · v , t' ⇓ u [ T ]} →
+               Node Db → Node (⇓-app Ds Dt Db)
+    bop      : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+               {Es : γ , Ms ⇓s vs [ R ]} → NodeDs Es → Node (⇓-bop {ω = ω} Es)
+    brel     : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+               {Es : γ , Ms ⇓s vs [ R ]} → NodeDs Es → Node (⇓-brel {ω = ω} Es)
+    fold₁    : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
+               {v u R R'} {Dt : γ , t ⇓ v [ R ]} {Dm : Map γ {τ} {σ} s (var Fin.zero) v R u R'} →
+               Node Dt → Node (⇓-fold Dt Dm)
+    fold₂    : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
+               {v u R R'} {Dt : γ , t ⇓ v [ R ]} {Dm : Map γ {τ} {σ} s (var Fin.zero) v R u R'} →
+               NodeM Dm → Node (⇓-fold Dt Dm)
+
+  data NodeDs {Γ} {γ : Env Γ} : ∀ {is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs Rs} →
+              γ , Ms ⇓s vs [ Rs ] → Set ℓ where
+    hd : ∀ {i is v vs R Rs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is}
+         {E : γ , M ⇓ const v [ R ]} {Es : γ , Ms ⇓s vs [ Rs ]} →
+         Node E → NodeDs (E ∷ Es)
+    tl : ∀ {i is v vs R Rs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is}
+         {E : γ , M ⇓ const v [ R ]} {Es : γ , Ms ⇓s vs [ Rs ]} →
+         NodeDs Es → NodeDs (E ∷ Es)
+
+  data NodeM {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} :
+             ∀ {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
+             {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)} →
+             Map γ s σ' v R v' R' → Set ℓ where
+    rec₁    : ∀ {w w' u R R' S} {Dm : Map γ s τ₀ w R w' R'} {Db : γ · w' , s ⇓ u [ S ]} →
+              NodeM Dm → NodeM (m-rec Dm Db)
+    rec₂    : ∀ {w w' u R R' S} {Dm : Map γ s τ₀ w R w' R'} {Db : γ · w' , s ⇓ u [ S ]} →
+              Node Db → NodeM (m-rec Dm Db)
+    m-inl   : ∀ {σ₁ σ₂ v v' R R'} {Dm : Map γ s σ₁ v R v' R'} →
+              NodeM Dm → NodeM (m-inl {σ₂ = σ₂} Dm)
+    m-inr   : ∀ {σ₁ σ₂ v v' R R'} {Dm : Map γ s σ₂ v R v' R'} →
+              NodeM Dm → NodeM (m-inr {σ₁ = σ₁} Dm)
+    m-pair₁ : ∀ {σ₁ σ₂ v v' u u' R S T}
+              {Dm₁ : Map γ s σ₁ v (p₁ ∘ R) v' S} {Dm₂ : Map γ s σ₂ u (p₂ ∘ R) u' T} →
+              NodeM Dm₁ → NodeM (m-pair Dm₁ Dm₂)
+    m-pair₂ : ∀ {σ₁ σ₂ v v' u u' R S T}
+              {Dm₁ : Map γ s σ₁ v (p₁ ∘ R) v' S} {Dm₂ : Map γ s σ₂ u (p₂ ∘ R) u' T} →
+              NodeM Dm₂ → NodeM (m-pair Dm₁ Dm₂)
+    m-mu    : ∀ {τ' : type 2} {w w' R R'} {Dm : Map γ s (unfold₁ τ') w R w' R'} →
+              NodeM Dm → NodeM (m-mu {τ' = τ'} Dm)
+
+-- The type of the value at a path.
+node-type :
+  ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Node D → type 0
+node-type-s :
+  ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs}
+  {Ds : γ , Ms ⇓s vs [ Rs ]} → NodeDs Ds → type 0
+node-type-m :
+  ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+  {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
+  {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)}
+  {Dm : Map γ s σ' v R v' R'} → NodeM Dm → type 0
+
+node-type {τ = τ} here = τ
+node-type (inl q)     = node-type q
+node-type (inr q)     = node-type q
+node-type (roll q)    = node-type q
+node-type (fst q)     = node-type q
+node-type (snd q)     = node-type q
+node-type (pair₁ q)   = node-type q
+node-type (pair₂ q)   = node-type q
+node-type (case-l₁ q) = node-type q
+node-type (case-l₂ q) = node-type q
+node-type (case-r₁ q) = node-type q
+node-type (case-r₂ q) = node-type q
+node-type (app₁ q)    = node-type q
+node-type (app₂ q)    = node-type q
+node-type (app₃ q)    = node-type q
+node-type (bop qs)    = node-type-s qs
+node-type (brel qs)   = node-type-s qs
+node-type (fold₁ q)   = node-type q
+node-type (fold₂ qm)  = node-type-m qm
+
+node-type-s (hd q)  = node-type q
+node-type-s (tl qs) = node-type-s qs
+
+node-type-m (rec₁ qm)    = node-type-m qm
+node-type-m (rec₂ q)     = node-type q
+node-type-m (m-inl qm)   = node-type-m qm
+node-type-m (m-inr qm)   = node-type-m qm
+node-type-m (m-pair₁ qm) = node-type-m qm
+node-type-m (m-pair₂ qm) = node-type-m qm
+node-type-m (m-mu qm)    = node-type-m qm
+
+------------------------------------------------------------------------
+-- The blank overlay.
+
+mutual
+  unmarked-d : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → MarkedD D
+  unmarked-d (⇓-var x)          = ⇓-var x
+  unmarked-d ⇓-unit             = ⇓-unit
+  unmarked-d ⇓-lam              = ⇓-lam
+  unmarked-d (⇓-inl D)          = ⇓-inl (unmarked-d D)
+  unmarked-d (⇓-inr D)          = ⇓-inr (unmarked-d D)
+  unmarked-d (⇓-roll D)         = ⇓-roll (unmarked-d D)
+  unmarked-d (⇓-fst D)          = ⇓-fst (unmarked-d D)
+  unmarked-d (⇓-snd D)          = ⇓-snd (unmarked-d D)
+  unmarked-d (⇓-pair D₁ D₂)     = ⇓-pair (unmarked-d D₁) (unmarked-d D₂)
+  unmarked-d (⇓-case-l Ds D₁)   = ⇓-case-l (unmarked-d Ds) (unmarked-d D₁)
+  unmarked-d (⇓-case-r Ds D₂)   = ⇓-case-r (unmarked-d Ds) (unmarked-d D₂)
+  unmarked-d (⇓-app Ds Dt Db)   = ⇓-app (unmarked-d Ds) (unmarked-d Dt) (unmarked-d Db)
+  unmarked-d (⇓-bop Es)         = ⇓-bop (unmarked-ds Es)
+  unmarked-d (⇓-brel Es)        = ⇓-brel (unmarked-ds Es)
+  unmarked-d (⇓-fold Dt Dm)     = ⇓-fold (unmarked-d Dt) (unmarked-dm Dm)
+
+  unmarked-ds : ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs}
+                (Ds : γ , Ms ⇓s vs [ Rs ]) → MarkedDs Ds
+  unmarked-ds []       = []
+  unmarked-ds (E ∷ Es) = unmarked-d E ∷ unmarked-ds Es
+
+  unmarked-dm : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
+                {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)}
+                (Dm : Map γ s σ' v R v' R') → MarkedM Dm
+  unmarked-dm (m-rec Dm Db)    = m-rec (unmarked-dm Dm) (unmarked-d Db)
+  unmarked-dm m-unit           = m-unit
+  unmarked-dm m-base           = m-base
+  unmarked-dm m-arrow          = m-arrow
+  unmarked-dm (m-inl Dm)       = m-inl (unmarked-dm Dm)
+  unmarked-dm (m-inr Dm)       = m-inr (unmarked-dm Dm)
+  unmarked-dm (m-pair Dm₁ Dm₂) = m-pair (unmarked-dm Dm₁) (unmarked-dm Dm₂)
+  unmarked-dm (m-mu Dm)        = m-mu (unmarked-dm Dm)
+
+------------------------------------------------------------------------
+-- The overlay marking every first-order node.
+
+private
+  first-order? : ∀ {Δ} (τ : type Δ) → Maybe (first-order τ)
+  first-order? (var i)   = just (var i)
+  first-order? unit      = just unit
+  first-order? (base s)  = just (base s)
+  first-order? (σ [+] τ) with first-order? σ | first-order? τ
+  ... | just a  | just b  = just (a [+] b)
+  ... | _       | _       = nothing
+  first-order? (σ [×] τ) with first-order? σ | first-order? τ
+  ... | just a  | just b  = just (a [×] b)
+  ... | _       | _       = nothing
+  first-order? (σ [→] τ) = nothing
+  first-order? (μ τ) with first-order? τ
+  ... | just a  = just (μ a)
+  ... | nothing = nothing
+
+mutual
+  marked-all-d : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → MarkedD D
+  marked-all-d {τ = τ} D with first-order? τ
+  ... | just fo = doc fo (marked-all-d′ D)
+  ... | nothing = marked-all-d′ D
+
+  private
+    marked-all-d′ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → MarkedD D
+    marked-all-d′ (⇓-var x)        = ⇓-var x
+    marked-all-d′ ⇓-unit           = ⇓-unit
+    marked-all-d′ ⇓-lam            = ⇓-lam
+    marked-all-d′ (⇓-inl D)        = ⇓-inl (marked-all-d D)
+    marked-all-d′ (⇓-inr D)        = ⇓-inr (marked-all-d D)
+    marked-all-d′ (⇓-roll D)       = ⇓-roll (marked-all-d D)
+    marked-all-d′ (⇓-fst D)        = ⇓-fst (marked-all-d D)
+    marked-all-d′ (⇓-snd D)        = ⇓-snd (marked-all-d D)
+    marked-all-d′ (⇓-pair D₁ D₂)   = ⇓-pair (marked-all-d D₁) (marked-all-d D₂)
+    marked-all-d′ (⇓-case-l Ds D₁) = ⇓-case-l (marked-all-d Ds) (marked-all-d D₁)
+    marked-all-d′ (⇓-case-r Ds D₂) = ⇓-case-r (marked-all-d Ds) (marked-all-d D₂)
+    marked-all-d′ (⇓-app Ds Dt Db) = ⇓-app (marked-all-d Ds) (marked-all-d Dt) (marked-all-d Db)
+    marked-all-d′ (⇓-bop Es)       = ⇓-bop (marked-all-ds Es)
+    marked-all-d′ (⇓-brel Es)      = ⇓-brel (marked-all-ds Es)
+    marked-all-d′ (⇓-fold Dt Dm)   = ⇓-fold (marked-all-d Dt) (marked-all-dm Dm)
+
+    marked-all-ds : ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs}
+                    (Ds : γ , Ms ⇓s vs [ Rs ]) → MarkedDs Ds
+    marked-all-ds []       = []
+    marked-all-ds (E ∷ Es) = marked-all-d E ∷ marked-all-ds Es
+
+    marked-all-dm : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
+                    {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)}
+                    (Dm : Map γ s σ' v R v' R') → MarkedM Dm
+    marked-all-dm (m-rec Dm Db)    = m-rec (marked-all-dm Dm) (marked-all-d Db)
+    marked-all-dm m-unit           = m-unit
+    marked-all-dm m-base           = m-base
+    marked-all-dm m-arrow          = m-arrow
+    marked-all-dm (m-inl Dm)       = m-inl (marked-all-dm Dm)
+    marked-all-dm (m-inr Dm)       = m-inr (marked-all-dm Dm)
+    marked-all-dm (m-pair Dm₁ Dm₂) = m-pair (marked-all-dm Dm₁) (marked-all-dm Dm₂)
+    marked-all-dm (m-mu Dm)        = m-mu (marked-all-dm Dm)
+
+------------------------------------------------------------------------
+-- Mark or unmark the node at a path. Marking is idempotent; unmarking strips every mark at the node.
+
+mark-at :
+  ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+  (q : Node D) → first-order (node-type q) → MarkedD D → MarkedD D
+mark-at-s :
+  ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs}
+  {Ds : γ , Ms ⇓s vs [ Rs ]}
+  (qs : NodeDs Ds) → first-order (node-type-s qs) → MarkedDs Ds → MarkedDs Ds
+mark-at-m :
+  ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+  {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
+  {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)}
+  {Dm : Map γ s σ' v R v' R'}
+  (qm : NodeM Dm) → first-order (node-type-m qm) → MarkedM Dm → MarkedM Dm
+
+mark-at here fo (doc f m)                = doc f m
+mark-at here fo m                        = doc fo m
+mark-at q fo (doc f m)                   = doc f (mark-at q fo m)
+mark-at (inl q) fo (⇓-inl mD)            = ⇓-inl (mark-at q fo mD)
+mark-at (inr q) fo (⇓-inr mD)            = ⇓-inr (mark-at q fo mD)
+mark-at (roll q) fo (⇓-roll mD)          = ⇓-roll (mark-at q fo mD)
+mark-at (fst q) fo (⇓-fst mD)            = ⇓-fst (mark-at q fo mD)
+mark-at (snd q) fo (⇓-snd mD)            = ⇓-snd (mark-at q fo mD)
+mark-at (pair₁ q) fo (⇓-pair mD₁ mD₂)    = ⇓-pair (mark-at q fo mD₁) mD₂
+mark-at (pair₂ q) fo (⇓-pair mD₁ mD₂)    = ⇓-pair mD₁ (mark-at q fo mD₂)
+mark-at (case-l₁ q) fo (⇓-case-l mDs mD₁) = ⇓-case-l (mark-at q fo mDs) mD₁
+mark-at (case-l₂ q) fo (⇓-case-l mDs mD₁) = ⇓-case-l mDs (mark-at q fo mD₁)
+mark-at (case-r₁ q) fo (⇓-case-r mDs mD₂) = ⇓-case-r (mark-at q fo mDs) mD₂
+mark-at (case-r₂ q) fo (⇓-case-r mDs mD₂) = ⇓-case-r mDs (mark-at q fo mD₂)
+mark-at (app₁ q) fo (⇓-app mDs mDt mDb)  = ⇓-app (mark-at q fo mDs) mDt mDb
+mark-at (app₂ q) fo (⇓-app mDs mDt mDb)  = ⇓-app mDs (mark-at q fo mDt) mDb
+mark-at (app₃ q) fo (⇓-app mDs mDt mDb)  = ⇓-app mDs mDt (mark-at q fo mDb)
+mark-at (bop qs) fo (⇓-bop mEs)          = ⇓-bop (mark-at-s qs fo mEs)
+mark-at (brel qs) fo (⇓-brel mEs)        = ⇓-brel (mark-at-s qs fo mEs)
+mark-at (fold₁ q) fo (⇓-fold mDt mDm)    = ⇓-fold (mark-at q fo mDt) mDm
+mark-at (fold₂ qm) fo (⇓-fold mDt mDm)   = ⇓-fold mDt (mark-at-m qm fo mDm)
+
+mark-at-s (hd q) fo (mE ∷ mEs)  = mark-at q fo mE ∷ mEs
+mark-at-s (tl qs) fo (mE ∷ mEs) = mE ∷ mark-at-s qs fo mEs
+
+mark-at-m (rec₁ qm) fo (m-rec mDm mDb)    = m-rec (mark-at-m qm fo mDm) mDb
+mark-at-m (rec₂ q) fo (m-rec mDm mDb)     = m-rec mDm (mark-at q fo mDb)
+mark-at-m (m-inl qm) fo (m-inl mDm)       = m-inl (mark-at-m qm fo mDm)
+mark-at-m (m-inr qm) fo (m-inr mDm)       = m-inr (mark-at-m qm fo mDm)
+mark-at-m (m-pair₁ qm) fo (m-pair mDm₁ mDm₂) = m-pair (mark-at-m qm fo mDm₁) mDm₂
+mark-at-m (m-pair₂ qm) fo (m-pair mDm₁ mDm₂) = m-pair mDm₁ (mark-at-m qm fo mDm₂)
+mark-at-m (m-mu qm) fo (m-mu mDm)         = m-mu (mark-at-m qm fo mDm)
+
+unmark-at :
+  ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+  (q : Node D) → MarkedD D → MarkedD D
+unmark-at-s :
+  ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs}
+  {Ds : γ , Ms ⇓s vs [ Rs ]}
+  (qs : NodeDs Ds) → MarkedDs Ds → MarkedDs Ds
+unmark-at-m :
+  ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+  {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
+  {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)}
+  {Dm : Map γ s σ' v R v' R'}
+  (qm : NodeM Dm) → MarkedM Dm → MarkedM Dm
+
+unmark-at here (doc f m)                = unmark-at here m
+unmark-at here m                        = m
+unmark-at q (doc f m)                   = doc f (unmark-at q m)
+unmark-at (inl q) (⇓-inl mD)            = ⇓-inl (unmark-at q mD)
+unmark-at (inr q) (⇓-inr mD)            = ⇓-inr (unmark-at q mD)
+unmark-at (roll q) (⇓-roll mD)          = ⇓-roll (unmark-at q mD)
+unmark-at (fst q) (⇓-fst mD)            = ⇓-fst (unmark-at q mD)
+unmark-at (snd q) (⇓-snd mD)            = ⇓-snd (unmark-at q mD)
+unmark-at (pair₁ q) (⇓-pair mD₁ mD₂)    = ⇓-pair (unmark-at q mD₁) mD₂
+unmark-at (pair₂ q) (⇓-pair mD₁ mD₂)    = ⇓-pair mD₁ (unmark-at q mD₂)
+unmark-at (case-l₁ q) (⇓-case-l mDs mD₁) = ⇓-case-l (unmark-at q mDs) mD₁
+unmark-at (case-l₂ q) (⇓-case-l mDs mD₁) = ⇓-case-l mDs (unmark-at q mD₁)
+unmark-at (case-r₁ q) (⇓-case-r mDs mD₂) = ⇓-case-r (unmark-at q mDs) mD₂
+unmark-at (case-r₂ q) (⇓-case-r mDs mD₂) = ⇓-case-r mDs (unmark-at q mD₂)
+unmark-at (app₁ q) (⇓-app mDs mDt mDb)  = ⇓-app (unmark-at q mDs) mDt mDb
+unmark-at (app₂ q) (⇓-app mDs mDt mDb)  = ⇓-app mDs (unmark-at q mDt) mDb
+unmark-at (app₃ q) (⇓-app mDs mDt mDb)  = ⇓-app mDs mDt (unmark-at q mDb)
+unmark-at (bop qs) (⇓-bop mEs)          = ⇓-bop (unmark-at-s qs mEs)
+unmark-at (brel qs) (⇓-brel mEs)        = ⇓-brel (unmark-at-s qs mEs)
+unmark-at (fold₁ q) (⇓-fold mDt mDm)    = ⇓-fold (unmark-at q mDt) mDm
+unmark-at (fold₂ qm) (⇓-fold mDt mDm)   = ⇓-fold mDt (unmark-at-m qm mDm)
+
+unmark-at-s (hd q) (mE ∷ mEs)  = unmark-at q mE ∷ mEs
+unmark-at-s (tl qs) (mE ∷ mEs) = mE ∷ unmark-at-s qs mEs
+
+unmark-at-m (rec₁ qm) (m-rec mDm mDb)    = m-rec (unmark-at-m qm mDm) mDb
+unmark-at-m (rec₂ q) (m-rec mDm mDb)     = m-rec mDm (unmark-at q mDb)
+unmark-at-m (m-inl qm) (m-inl mDm)       = m-inl (unmark-at-m qm mDm)
+unmark-at-m (m-inr qm) (m-inr mDm)       = m-inr (unmark-at-m qm mDm)
+unmark-at-m (m-pair₁ qm) (m-pair mDm₁ mDm₂) = m-pair (unmark-at-m qm mDm₁) mDm₂
+unmark-at-m (m-pair₂ qm) (m-pair mDm₁ mDm₂) = m-pair mDm₁ (unmark-at-m qm mDm₂)
+unmark-at-m (m-mu qm) (m-mu mDm)         = m-mu (unmark-at-m qm mDm)
 
 ------------------------------------------------------------------------
 -- Instrumentation.
