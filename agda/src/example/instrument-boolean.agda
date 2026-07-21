@@ -4,9 +4,10 @@
 module example.instrument-boolean where
 
 open import Data.Fin using (Fin; splitAt; toℕ)
+import Data.List
 open import Data.List using (List; []; _∷_; _++_; length; concatMap; allFin)
 import Data.Nat
-open import Data.Nat using (ℕ; _+_; _∸_; _<ᵇ_)
+open import Data.Nat using (ℕ; _+_; _∸_; _<ᵇ_; _≡ᵇ_)
 open import Data.Bool using () renaming (if_then_else_ to ifᵇ_then_else_)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
@@ -94,16 +95,46 @@ private
   entry-ents ∅             = []
   entry-ents (snoc Φ w Sm) = entry-ents Φ ++ (width w , ents Sm) ∷ []
 
+-- The intermediates graph: an edge i → j when the block of S_j at entry i is non-empty. A simple
+-- graph, so at most one edge per pair, however many positions relate.
 dep-edges : ∀ {g n} → Seq g n → List (ℕ × ℕ)
 dep-edges {g} Φ = go [] (entry-ents Φ)
   where
-  edge : List ℕ → ℕ × ℕ → List (ℕ × ℕ)
-  edge ws (_ , c) =
-    ifᵇ c <ᵇ g then [] else (locate ws (c ∸ g) , length ws) ∷ []
+  insert : ℕ → List ℕ → List ℕ
+  insert i []       = i ∷ []
+  insert i (k ∷ ks) = ifᵇ i ≡ᵇ k then k ∷ ks else k ∷ insert i ks
+
+  sources : List ℕ → List (ℕ × ℕ) → List ℕ
+  sources ws = go′ []
+    where
+    go′ : List ℕ → List (ℕ × ℕ) → List ℕ
+    go′ acc []             = acc
+    go′ acc ((_ , c) ∷ es) =
+      go′ (ifᵇ c <ᵇ g then acc else insert (locate ws (c ∸ g)) acc) es
 
   go : List ℕ → List (ℕ × List (ℕ × ℕ)) → List (ℕ × ℕ)
   go ws []               = []
-  go ws ((w , es) ∷ Φe) = concatMap (edge ws) es ++ go (ws ++ w ∷ []) Φe
+  go ws ((w , es) ∷ Φe) =
+    Data.List.map (λ i → i , length ws) (sources ws es) ++ go (ws ++ w ∷ []) Φe
+
+-- The relation on positions carried by the edge i → j: pairs (p , q) with position p of entry i
+-- related to position q of entry j.
+edge-rel : ∀ {g n} → Seq g n → ℕ → ℕ → List (ℕ × ℕ)
+edge-rel {g} Φ i j = go 0 [] (entry-ents Φ)
+  where
+  pick : List ℕ → ℕ × ℕ → List (ℕ × ℕ)
+  pick ws (r , c) =
+    ifᵇ c <ᵇ g then [] else
+      (ifᵇ locate ws (c ∸ g) ≡ᵇ i then (offset-in ws (c ∸ g) , r) ∷ [] else [])
+    where
+    offset-in : List ℕ → ℕ → ℕ
+    offset-in []       p = p
+    offset-in (w ∷ ws) p = ifᵇ p <ᵇ w then p else offset-in ws (p ∸ w)
+
+  go : ℕ → List ℕ → List (ℕ × List (ℕ × ℕ)) → List (ℕ × ℕ)
+  go _ ws []               = []
+  go k ws ((w , es) ∷ Φe) =
+    (ifᵇ k ≡ᵇ j then concatMap (pick ws) es else []) ++ go (Data.Nat.suc k) (ws ++ w ∷ []) Φe
 
 ------------------------------------------------------------------------
 -- The query example: mark each input entry and the fold body's result.
@@ -144,6 +175,25 @@ dep-graph-mult-full : dep-edges (proj₁ (proj₂ (proj₂ inst-mult-full))) ≡
 dep-graph-mult-full = refl
 
 inst-query-full = Instr.instrument (marked-all (query L.a input)) emp D-query ∅
+
+------------------------------------------------------------------------
+-- Coarse marking: the input list as a single width-3 intermediate and the query result, with the
+-- fold unmarked. One edge in the intermediates graph; the edge's relation has two pairs, the two
+-- consulted positions.
+
+list-fo : first-order (list elem)
+list-fo = μ (unit [+] ((base label [×] base number) [×] var Fin.zero))
+
+m-query-coarse : Marked (query L.a input)
+m-query-coarse = doc (base number) (fold (unmarked _) (doc list-fo (unmarked _)))
+
+inst-query-coarse = Instr.instrument m-query-coarse emp D-query ∅
+
+coarse-edges : dep-edges (proj₁ (proj₂ (proj₂ inst-query-coarse))) ≡ ((0 , 1) ∷ [])
+coarse-edges = refl
+
+coarse-rel : edge-rel (proj₁ (proj₂ (proj₂ inst-query-coarse))) 0 1 ≡ ((0 , 0) ∷ (2 , 0) ∷ [])
+coarse-rel = refl
 
 -- Erasure: the unmarked run adds no intermediates.
 erasure-query : proj₁ (proj₂ (Instr.instrument (unmarked _) emp D-query ∅)) ≡ 0
