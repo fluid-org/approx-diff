@@ -3,6 +3,7 @@
 open import Level using (0ℓ)
 
 open import Data.List using (List; []; _∷_)
+import Data.Fin
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Product using (_,_; _×_)
 open import Data.String using (String; intersperse) renaming (_++_ to _++ˢ_)
@@ -66,18 +67,25 @@ show-map (m-inr m)      = "(inr " ++ˢ show-map m ++ˢ ")"
 show-map (m-pair m₁ m₂) = "(pair " ++ˢ show-map m₁ ++ˢ " " ++ˢ show-map m₂ ++ˢ ")"
 show-map (m-mu m)       = "(mu " ++ˢ show-map m ++ˢ ")"
 
--- Values as strings, given a shower for the constants. Roll is invisible, so inductive values
--- read as their contents.
+-- Values as strings, given a rendering of the constants. Roll is invisible, so inductive values
+-- read as their contents; values of list type render bracketed.
 module _ (show-const : ∀ {s} → sort-val s → String) where
 
-  show-val : ∀ {τ} → Val τ → String
-  show-val unit       = "()"
-  show-val (const c)  = show-const c
-  show-val (inl v)    = "inl " ++ˢ show-val v
-  show-val (inr v)    = "inr " ++ˢ show-val v
-  show-val (pair v u) = "(" ++ˢ show-val v ++ˢ ", " ++ˢ show-val u ++ˢ ")"
-  show-val (clo _ _)  = "<closure>"
-  show-val (roll v)   = show-val v
+  mutual
+    show-val : ∀ {τ} → Val τ → String
+    show-val {μ (unit [+] (_ [×] var Data.Fin.zero))} v = "[" ++ˢ show-list v ++ˢ "]"
+    show-val unit       = "()"
+    show-val (const c)  = show-const c
+    show-val (inl v)    = "inl " ++ˢ show-val v
+    show-val (inr v)    = "inr " ++ˢ show-val v
+    show-val (pair v u) = "(" ++ˢ show-val v ++ˢ ", " ++ˢ show-val u ++ˢ ")"
+    show-val (clo _ _)  = "<closure>"
+    show-val (roll v)   = show-val v
+
+    show-list : ∀ {σ} → Val (μ (unit [+] (σ [×] var Data.Fin.zero))) → String
+    show-list (roll (inl unit))                       = ""
+    show-list (roll (inr (pair v (roll (inl unit))))) = show-val v
+    show-list (roll (inr (pair v rest)))              = show-val v ++ˢ ", " ++ˢ show-list rest
 
 -- Rendering for dependence graphs over intermediates: one vertex per label, declared so that
 -- isolated vertices are rendered.
