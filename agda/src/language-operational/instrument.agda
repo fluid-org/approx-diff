@@ -1,13 +1,15 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 import Level
-open import Data.Fin using (Fin; splitAt; _↑ˡ_; _↑ʳ_)
-open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Fin using (Fin; splitAt; toℕ; _↑ˡ_; _↑ʳ_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_; _≡ᵇ_)
+open import Data.Bool using () renaming (if_then_else_ to ifᵇ_then_else_)
 open import Data.Nat.Properties using (+-assoc; +-identityʳ)
 open import Relation.Binary.PropositionalEquality using (trans; cong)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.List using (List; []; _∷_; _++_)
+import Data.List
+open import Data.List using (List; []; _∷_; _++_; length; concatMap; allFin)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -88,6 +90,85 @@ data Seq (g : ℕ) : ℕ → Set ℓ where
 seq-vals : ∀ {g n} → Seq g n → List (Σ (type 0) Val)
 seq-vals ∅             = []
 seq-vals (snoc Φ {τ} w _) = seq-vals Φ ++ (τ , w) ∷ []
+
+------------------------------------------------------------------------
+-- Collapse: eliminate the intermediates from the domain, most recent first.
+
+elim-mat : ∀ (g n w : ℕ) → M.Matrix w (g + n) → M.Matrix (g + (n + w)) (g + n)
+elim-mat g n w Sm r c with splitAt g r
+... | inj₁ a = M.I (a ↑ˡ n) c
+... | inj₂ b with splitAt n b
+...   | inj₁ d = M.I (g ↑ʳ d) c
+...   | inj₂ x = Sm x c
+
+collapse : ∀ {g n t} → Seq g n → M.Matrix t (g + n) → M.Matrix t g
+collapse {g} ∅ A i j = A i (j ↑ˡ 0)
+collapse {g} (snoc {n} Φ w Sm) A = collapse Φ (A M.∘ elim-mat g n (width w) Sm)
+
+------------------------------------------------------------------------
+-- Boolean matrices as entry lists, comparable by refl.
+
+ents : ∀ {m n} → M.Matrix m n → List (ℕ × ℕ)
+ents {m} {n} A =
+  concatMap (λ i → concatMap (λ j → keep i j (A i j)) (allFin n)) (allFin m)
+  where
+    keep : ∀ {m n} → Fin m → Fin n → two.Two → List (ℕ × ℕ)
+    keep i j two.I = (toℕ i , toℕ j) ∷ []
+    keep i j two.O = []
+
+------------------------------------------------------------------------
+-- The dependence graph over the intermediates.
+
+private
+  -- Index of the entry containing an intermediate position, given the widths of the entries.
+  locate : List ℕ → ℕ → ℕ
+  locate []       _ = 0
+  locate (w ∷ ws) p = ifᵇ p <ᵇ w then 0 else suc (locate ws (p ∸ w))
+
+  entry-ents : ∀ {g n} → Seq g n → List (ℕ × List (ℕ × ℕ))
+  entry-ents ∅             = []
+  entry-ents (snoc Φ w Sm) = entry-ents Φ ++ (width w , ents Sm) ∷ []
+
+-- The intermediates graph: an edge i → j when the block of S_j at entry i is non-empty. A simple
+-- graph, so at most one edge per pair, however many positions relate.
+dep-edges : ∀ {g n} → Seq g n → List (ℕ × ℕ)
+dep-edges {g} Φ = go [] (entry-ents Φ)
+  where
+  insert : ℕ → List ℕ → List ℕ
+  insert i []       = i ∷ []
+  insert i (k ∷ ks) = ifᵇ i ≡ᵇ k then k ∷ ks else k ∷ insert i ks
+
+  sources : List ℕ → List (ℕ × ℕ) → List ℕ
+  sources ws = go′ []
+    where
+    go′ : List ℕ → List (ℕ × ℕ) → List ℕ
+    go′ acc []             = acc
+    go′ acc ((_ , c) ∷ es) =
+      go′ (ifᵇ c <ᵇ g then acc else insert (locate ws (c ∸ g)) acc) es
+
+  go : List ℕ → List (ℕ × List (ℕ × ℕ)) → List (ℕ × ℕ)
+  go ws []               = []
+  go ws ((w , es) ∷ Φe) =
+    Data.List.map (λ i → i , length ws) (sources ws es) ++ go (ws ++ w ∷ []) Φe
+
+-- The relation on positions carried by the edge i → j: pairs (p , q) with position p of entry i
+-- related to position q of entry j.
+edge-rel : ∀ {g n} → Seq g n → ℕ → ℕ → List (ℕ × ℕ)
+edge-rel {g} Φ i j = go 0 [] (entry-ents Φ)
+  where
+  pick : List ℕ → ℕ × ℕ → List (ℕ × ℕ)
+  pick ws (r , c) =
+    ifᵇ c <ᵇ g then [] else
+      (ifᵇ locate ws (c ∸ g) ≡ᵇ i then (offset-in ws (c ∸ g) , r) ∷ [] else [])
+    where
+    offset-in : List ℕ → ℕ → ℕ
+    offset-in []       p = p
+    offset-in (w ∷ ws) p = ifᵇ p <ᵇ w then p else offset-in ws (p ∸ w)
+
+  go : ℕ → List ℕ → List (ℕ × List (ℕ × ℕ)) → List (ℕ × ℕ)
+  go _ ws []               = []
+  go k ws ((w , es) ∷ Φe) =
+    (ifᵇ k ≡ᵇ j then concatMap (pick ws) es else []) ++ go (suc k) (ws ++ w ∷ []) Φe
 
 seq-cast : ∀ {g m n} → m ≡ n → Seq g m → Seq g n
 seq-cast refl Φ = Φ

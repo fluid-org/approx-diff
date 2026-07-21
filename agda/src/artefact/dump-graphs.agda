@@ -1,7 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Writes dot and trace renderings of the harness examples; run from the paper repository root.
-module example.dump-graphs where
+-- Writes dot renderings of the example runs; run from the paper repository root. The file name is
+-- the run's definition name without its inst- prefix.
+module artefact.dump-graphs where
 
 open import IO
 open import IO.Finite using (writeFile)
@@ -12,19 +13,15 @@ open import Data.List using (List; []; _∷_; map; applyUpTo; foldr)
 open import Data.Bool.ListAction using (any)
 open import Data.Bool using (Bool; if_then_else_; _∧_)
 open import Data.Nat using (ℕ; _+_; _*_; _≡ᵇ_; _<ᵇ_)
-open import Data.Unit using (⊤; tt)
+open import Data.Unit.Polymorphic using (⊤; tt)
 open import Level using (0ℓ)
 open import example.signature ℚ using (Sig)
-open import example.trace using (show-op; show-const; D-add; D-query)
-open import example.instrument
-  using (dep-edges; edge-rel; inst-add-full; inst-mult-full; inst-query-a-full;
-         inst-query-a-marked; inst-query-a-coarse)
+open import example.runs
 import example.dependency as Dep
 open import language-operational.evaluation Sig Dep.primitives using (width)
 import language-operational.instrument as instrument
-open instrument Sig Dep.primitives using (Seq; seq-vals)
-open import language-operational.trace Sig Dep.primitives show-op
-  using (show-eval; show-val; showDotPlain)
+open instrument Sig Dep.primitives using (Seq; seq-vals; dep-edges; edge-rel)
+open import language-operational.render Sig Dep.primitives using (show-val; showDotPlain)
 
 private
   nth : List ℕ → ℕ → ℕ
@@ -65,11 +62,11 @@ private
          Seq g (p + proj₁ (proj₂ r))
   Φ-of r = proj₁ (proj₂ (proj₂ r))
 
--- The file name is the definition name without its inst- prefix.
 targets : List (String × String)
 targets =
   dot-of "add-full"         (Φ-of inst-add-full)
   ∷ dot-of "mult-full"        (Φ-of inst-mult-full)
+  ∷ dot-of "mavg-full"        (Φ-of inst-mavg-full)
   ∷ dot-of "query-a-full"     (Φ-of inst-query-a-full)
   ∷ dot-of "query-a-marked"   (Φ-of inst-query-a-marked)
   ∷ dot-of "query-a-coarse"   (Φ-of inst-query-a-coarse)
@@ -80,7 +77,4 @@ write-all []              = pure tt
 write-all ((p , s) ∷ fs) = writeFile p s >> write-all fs
 
 main : Main
-main = run do
-  write-all targets
-  writeFile "fig/trace/add.trace" (show-eval D-add)
-  writeFile "fig/trace/query-a.trace" (show-eval D-query)
+main = run (write-all targets)

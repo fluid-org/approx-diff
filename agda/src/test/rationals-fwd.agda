@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Forward-mode AD over the self-dual semimodules.
-module example.rationals-fwd where
+module test.rationals-fwd where
 
 open import example.rationals
 open import Data.Integer using (+_)

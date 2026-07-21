@@ -2,9 +2,10 @@
 
 module everything where
 
--- The examples: Boolean dependency, rational AD, and perturbation bounds, each a Primitives record
--- with its model derived by interp-primitives.
-import example.all
+-- Value-level tests of the examples: Boolean dependency, rational AD, and perturbation bounds,
+-- each a Primitives record with its model derived by interp-primitives. Renderings are tested as
+-- artefacts (artefact.dump-graphs and script/check-dot.sh).
+import test.all
 
 -- Fam(C) is bicartesian closed when C has biproducts and all small products (Lucatelli Nunes and
 -- Vákár 2023).

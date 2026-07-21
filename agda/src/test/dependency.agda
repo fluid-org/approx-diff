@@ -3,7 +3,7 @@
 -- Boolean dependency analysis of the weighted-sum query from the introduction. Where the rational
 -- derivative of the price entry cancels to 0, the Boolean analysis reports ⊤, because disjunction
 -- can't cancel.
-module example.dependency-total where
+module test.dependency where
 
 open import example.dependency
 import Data.Fin as Fin

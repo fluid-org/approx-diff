@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Reverse-mode AD over the self-dual semimodules, via the conjugate.
-module example.rationals-bwd where
+module test.rationals-bwd where
 
 open import example.rationals
 import Data.Rational as Q
