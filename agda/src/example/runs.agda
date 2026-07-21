@@ -1,7 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The example terms, their runs, and their markings, shared by the tests and the artefact
--- renderer.
+-- The example terms, their runs, and their markings, shared by the tests and the dot renderer.
 module example.runs where
 
 open import Data.Fin using (Fin)
