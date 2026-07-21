@@ -149,14 +149,14 @@ inst-mm = Instr.instrument m-mm (emp · const · const)
 half : ℚ
 half = + 1 / 2
 
-γ-mavg : Env (emp ▸ ((base number [×] base number) [×] base number) [×] base number)
-γ-mavg = emp · pair (pair (pair (const 1ℚ) (const (+ 2 / 1))) (const (+ 4 / 1))) (const (+ 8 / 1))
+γ-mavg : Env (emp ▸ base number [×] (base number [×] (base number [×] base number)))
+γ-mavg = emp · pair (const 1ℚ) (pair (const (+ 2 / 1)) (pair (const (+ 4 / 1)) (const (+ 8 / 1))))
 
-run-mavg = Tot.fundamental (Dep.mavg half) γ-mavg (tt , ((tt , tt) , tt) , tt)
+run-mavg = Tot.fundamental (Dep.mavg half) γ-mavg (tt , tt , tt , tt , tt)
 
 D-mavg = proj₁ (proj₂ (proj₂ run-mavg))
 
 inst-mavg-full =
   Instr.instrument (marked-all (Dep.mavg half))
-    (emp · pair (pair (pair const const) const) const)
+    (emp · pair const (pair const (pair const const)))
     D-mavg ∅

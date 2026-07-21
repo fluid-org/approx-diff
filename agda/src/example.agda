@@ -67,14 +67,18 @@ module ex where
 
   -- Moving average with window two over four inputs; adjacent outputs share an input, and
   -- non-adjacent outputs share none. h is the constant 1/2, supplied as a literal.
-  mavg : Num → emp , ((base number [×] base number) [×] base number) [×] base number
-             ⊢ (base number [×] base number) [×] base number
-  mavg h = pair (pair (avg (fst (fst (fst (var zero)))) (snd (fst (fst (var zero)))))
-                      (avg (snd (fst (fst (var zero)))) (snd (fst (var zero)))))
-                (avg (snd (fst (var zero))) (snd (var zero)))
+  mavg : Num → emp , base number [×] (base number [×] (base number [×] base number))
+             ⊢ base number [×] (base number [×] base number)
+  mavg h = pair (avg x₁ x₂) (pair (avg x₂ x₃) (avg x₃ x₄))
     where
       avg : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ base number → Γ ⊢ base number
       avg x y = bop mult (bop (lit h) [] ∷ bop add (x ∷ y ∷ []) ∷ [])
+      Γ₄ = emp , base number [×] (base number [×] (base number [×] base number))
+      x₁ x₂ x₃ x₄ : Γ₄ ⊢ base number
+      x₁ = fst (var zero)
+      x₂ = fst (snd (var zero))
+      x₃ = fst (snd (snd (var zero)))
+      x₄ = snd (snd (snd (var zero)))
 
   -- 3x3 grid scorer for the signed-saliency reading: a centre-surround linear filter (centre
   -- positive, corners negative) plus two adjacent-cell interaction products. Unlike the linear
