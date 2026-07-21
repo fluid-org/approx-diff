@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Instrumented runs at the Boolean model: golden and flattening tests.
-module example.instrument-boolean where
+-- Instrumented runs of the example queries, with expected-output and flattening tests.
+module example.instrument where
 
 open import Data.Fin using (Fin; splitAt; toℕ)
 import Data.List
@@ -21,15 +21,14 @@ import matrix
 
 open import example.signature ℚ
   using (Sig; sort; number; label; op; lit; add; mult; lbl; rel; equal-label)
-open import example.relation-boolean
+open import example.relation
   using (module Tot; module Instr)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Dep.primitives
   using (Env; emp; _·_; const; width)
 open import language-operational.marking Sig
-import label as L
-open import example.trace-boolean using (elem; query; input; D-query; M-add; D-add; M-mult; D-mult)
+open import example.trace using (elem; query; input; D-query; M-add; D-add; M-mult; D-mult)
 open Instr
 
 private
@@ -50,7 +49,7 @@ collapse {g} ∅ A i j = A i (j Data.Fin.↑ˡ 0)
 collapse {g} (snoc {n} Φ w Sm) A = collapse Φ (A M𝟚.∘ elim-mat g n (width w) Sm)
 
 ------------------------------------------------------------------------
--- Boolean matrices as entry lists, for refl-comparable goldens.
+-- Boolean matrices as entry lists, comparable by refl.
 
 ents : ∀ {m n} → M𝟚.Matrix m n → List (ℕ × ℕ)
 ents {m} {n} A =
@@ -152,14 +151,16 @@ m-input =
 m-query : Marked (query L.a input)
 m-query = fold (doc (base number) (unmarked _)) m-input
 
-inst-query = Instr.instrument m-query emp D-query ∅
+inst-query-a-marked = Instr.instrument m-query emp D-query ∅
 
 -- Total width of the intermediates: three entries and four fold steps.
-width-query : proj₁ (proj₂ inst-query) ≡ 7
+width-query : proj₁ (proj₂ inst-query-a-marked) ≡ 7
 width-query = refl
 
 -- The dependence graph of the marked run is checked as a dot artefact (dump-graphs), since
 -- normalising Φ's matrices in the typechecker is slow at this size.
+
+------------------------------------------------------------------------
 -- Full evaluation graphs: the everything-marked instance of the same construction.
 
 inst-add-full = Instr.instrument (marked-all M-add) (emp · const · const) D-add ∅
@@ -174,7 +175,7 @@ inst-mult-full = Instr.instrument (marked-all M-mult) (emp · const · const) D-
 dep-graph-mult-full : dep-edges (proj₁ (proj₂ (proj₂ inst-mult-full))) ≡ ((1 , 2) ∷ [])
 dep-graph-mult-full = refl
 
-inst-query-full = Instr.instrument (marked-all (query L.a input)) emp D-query ∅
+inst-query-a-full = Instr.instrument (marked-all (query L.a input)) emp D-query ∅
 
 ------------------------------------------------------------------------
 -- Coarse marking: the input list as a single width-3 intermediate and the query result, with the
@@ -187,12 +188,12 @@ list-fo = μ (unit [+] ((base label [×] base number) [×] var Fin.zero))
 m-query-coarse : Marked (query L.a input)
 m-query-coarse = doc (base number) (fold (unmarked _) (doc list-fo (unmarked _)))
 
-inst-query-coarse = Instr.instrument m-query-coarse emp D-query ∅
+inst-query-a-coarse = Instr.instrument m-query-coarse emp D-query ∅
 
-coarse-edges : dep-edges (proj₁ (proj₂ (proj₂ inst-query-coarse))) ≡ ((0 , 1) ∷ [])
+coarse-edges : dep-edges (proj₁ (proj₂ (proj₂ inst-query-a-coarse))) ≡ ((0 , 1) ∷ [])
 coarse-edges = refl
 
-coarse-rel : edge-rel (proj₁ (proj₂ (proj₂ inst-query-coarse))) 0 1 ≡ ((0 , 0) ∷ (2 , 0) ∷ [])
+coarse-rel : edge-rel (proj₁ (proj₂ (proj₂ inst-query-a-coarse))) 0 1 ≡ ((0 , 0) ∷ (2 , 0) ∷ [])
 coarse-rel = refl
 
 -- Erasure: the unmarked run adds no intermediates.

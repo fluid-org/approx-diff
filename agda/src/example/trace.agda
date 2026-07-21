@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Traces and dependence graphs at the Boolean model, with golden tests.
-module example.trace-boolean where
+-- Traces of the example queries, with expected-output tests.
+module example.trace where
 
 open import Data.List using (List; []; _∷_)
 open import Data.Product using (_,_; proj₁; proj₂)
@@ -19,7 +19,7 @@ open import primitives using (Primitives)
 
 open import example.signature ℚ
   using (Sig; sort; number; label; op; lit; add; mult; lbl; rel; equal-label)
-open import example.relation-boolean
+open import example.relation
   using (module Tot)
 import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
@@ -97,7 +97,7 @@ run-query = Tot.eval (query L.a input)
 D-query = proj₂ (proj₂ run-query)
 
 ------------------------------------------------------------------------
--- Golden tests.
+-- Expected outputs.
 
 trace-add : show-eval D-add ≡ "(bop add ((var 0) (var 1)))"
 trace-add = refl
