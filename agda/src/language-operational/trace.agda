@@ -2,7 +2,7 @@
 
 open import Level using (0ℓ)
 
-open import Data.List using (List; []; _∷_)
+open import Data.List using (List; []; _∷_; applyUpTo)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Product using (_,_; _×_)
 open import Data.String using (String; intersperse) renaming (_++_ to _++ˢ_)
@@ -66,10 +66,14 @@ show-map (m-inr m)      = "(inr " ++ˢ show-map m ++ˢ ")"
 show-map (m-pair m₁ m₂) = "(pair " ++ˢ show-map m₁ ++ˢ " " ++ˢ show-map m₂ ++ˢ ")"
 show-map (m-mu m)       = "(mu " ++ˢ show-map m ++ˢ ")"
 
--- Unlabelled rendering, for dependence graphs over intermediates.
-showDotPlain : List (ℕ × ℕ) → String
-showDotPlain es = "digraph G {\n" ++ˢ go es ++ˢ "}\n"
+-- Unlabelled rendering, for dependence graphs over intermediates. Every vertex is declared, so
+-- isolated ones are rendered.
+showDotPlain : ℕ → List (ℕ × ℕ) → String
+showDotPlain n es = "digraph G {\n" ++ˢ vertices (applyUpTo (λ i → i) n) ++ˢ go es ++ˢ "}\n"
   where
+    vertices : List ℕ → String
+    vertices []       = ""
+    vertices (i ∷ is) = "  " ++ˢ ℕ-Show.show i ++ˢ ";\n" ++ˢ vertices is
     edge : ℕ × ℕ → String
     edge (i , j) = "  " ++ˢ ℕ-Show.show i ++ˢ " -> " ++ˢ ℕ-Show.show j ++ˢ ";\n"
     go : List (ℕ × ℕ) → String
