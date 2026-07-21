@@ -67,6 +67,7 @@ targets =
   dot-of "add-full"         (Φ-of inst-add-full)
   ∷ dot-of "mult-full"        (Φ-of inst-mult-full)
   ∷ dot-of "mavg-full"        (Φ-of inst-mavg-full)
+  ∷ dot-of "mavg-coarse"      (Φ-of inst-mavg-coarse)
   ∷ dot-of "query-a-full"     (Φ-of inst-query-a-full)
   ∷ dot-of "query-a-marked"   (Φ-of inst-query-a-marked)
   ∷ dot-of "query-a-coarse"   (Φ-of inst-query-a-coarse)

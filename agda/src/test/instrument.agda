@@ -44,3 +44,11 @@ coarse-edges = refl
 
 coarse-rel : edge-rel (proj₁ (proj₂ (proj₂ inst-query-a-coarse))) 0 1 ≡ ((0 , 0) ∷ (2 , 0) ∷ [])
 coarse-rel = refl
+
+-- Coarse moving average: one edge carrying the banded window-two relation.
+mavg-coarse-edges : dep-edges (proj₁ (proj₂ (proj₂ inst-mavg-coarse))) ≡ ((0 , 1) ∷ [])
+mavg-coarse-edges = refl
+
+mavg-coarse-rel : edge-rel (proj₁ (proj₂ (proj₂ inst-mavg-coarse))) 0 1 ≡
+  ((0 , 0) ∷ (1 , 0) ∷ (1 , 1) ∷ (2 , 1) ∷ (2 , 2) ∷ (3 , 2) ∷ [])
+mavg-coarse-rel = refl

@@ -67,18 +67,20 @@ module ex where
 
   -- Moving average with window two over four inputs; adjacent outputs share an input, and
   -- non-adjacent outputs share none. h is the constant 1/2, supplied as a literal.
-  mavg : Num → emp , base number [×] (base number [×] (base number [×] base number))
-             ⊢ base number [×] (base number [×] base number)
-  mavg h = pair (avg x₁ x₂) (pair (avg x₂ x₃) (avg x₃ x₄))
+  mavg-body : ∀ {Γ} → Num → Γ ⊢ base number [×] (base number [×] (base number [×] base number))
+            → Γ ⊢ base number [×] (base number [×] base number)
+  mavg-body h v = pair (avg x₁ x₂) (pair (avg x₂ x₃) (avg x₃ x₄))
     where
       avg : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ base number → Γ ⊢ base number
       avg x y = bop mult (bop (lit h) [] ∷ bop add (x ∷ y ∷ []) ∷ [])
-      Γ₄ = emp , base number [×] (base number [×] (base number [×] base number))
-      x₁ x₂ x₃ x₄ : Γ₄ ⊢ base number
-      x₁ = fst (var zero)
-      x₂ = fst (snd (var zero))
-      x₃ = fst (snd (snd (var zero)))
-      x₄ = snd (snd (snd (var zero)))
+      x₁ = fst v
+      x₂ = fst (snd v)
+      x₃ = fst (snd (snd v))
+      x₄ = snd (snd (snd v))
+
+  mavg : Num → emp , base number [×] (base number [×] (base number [×] base number))
+             ⊢ base number [×] (base number [×] base number)
+  mavg h = mavg-body h (var zero)
 
   -- 3x3 grid scorer for the signed-saliency reading: a centre-surround linear filter (centre
   -- positive, corners negative) plus two adjacent-cell interaction products. Unlike the linear

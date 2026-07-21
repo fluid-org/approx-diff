@@ -160,3 +160,22 @@ inst-mavg-full =
   Instr.instrument (marked-all (Dep.mavg half))
     (emp · pair const (pair const (pair const const)))
     D-mavg ∅
+
+-- Coarse marking: eta-expanded so the input is evaluated once, giving a single width-4
+-- intermediate; the one edge to the output carries the full dependency relation.
+mavg-coarse-term : emp ▸ base number [×] (base number [×] (base number [×] base number))
+                   ⊢ base number [×] (base number [×] base number)
+mavg-coarse-term = app (lam (Dep.mavg-body half (var zero))) (var zero)
+
+m-mavg-coarse : Marked mavg-coarse-term
+m-mavg-coarse =
+  doc (base number [×] (base number [×] base number))
+    (app (lam (unmarked _))
+         (doc (base number [×] (base number [×] (base number [×] base number))) (var zero)))
+
+run-mavg-coarse = Tot.fundamental mavg-coarse-term γ-mavg (tt , tt , tt , tt , tt)
+
+inst-mavg-coarse =
+  Instr.instrument m-mavg-coarse
+    (emp · pair const (pair const (pair const const)))
+    (proj₁ (proj₂ (proj₂ run-mavg-coarse))) ∅
