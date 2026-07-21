@@ -11,7 +11,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.List
 open import Data.List using (List; []; _∷_; _++_; length; concatMap; allFin)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import every using (Every; []; _∷_)
@@ -31,7 +31,6 @@ open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒫
 open import type-substitution Sig using (unfold₁; unfold₁-inst)
-open import language-operational.marking Sig
 
 private
   module CS = CommutativeSemiring two.semiring
@@ -185,35 +184,6 @@ append-subst {p = p} Φ E ∅ = seq-cast (sym (+-identityʳ p)) Φ
 append-subst {g} {g'} {p} Φ E (snoc {n} Ψ w Sm) =
   seq-cast (+-assoc p n (width w))
     (snoc (append-subst Φ E Ψ) w (Sm M.∘ frame-emb g p n E))
-
-------------------------------------------------------------------------
--- Markings of values and environments: closures capture their body's marking.
-
-mutual
-  data MarkedV : ∀ {τ} → Val τ → Set ℓ where
-    unit  : MarkedV unit
-    const : ∀ {s} {c : sort-val s} → MarkedV (const c)
-    inl   : ∀ {σ τ} {v : Val σ} → MarkedV v → MarkedV (inl {τ₂ = τ} v)
-    inr   : ∀ {σ τ} {v : Val τ} → MarkedV v → MarkedV (inr {τ₁ = σ} v)
-    pair  : ∀ {σ τ} {v : Val σ} {u : Val τ} → MarkedV v → MarkedV u → MarkedV (pair v u)
-    clo   : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} →
-            MarkedE γ → Marked t → MarkedV (clo γ t)
-    roll  : ∀ {τ} {v : Val (τ [ μ τ ])} → MarkedV v → MarkedV (roll {τ} v)
-
-  data MarkedE : ∀ {Γ} → Env Γ → Set ℓ where
-    emp : MarkedE emp
-    _·_ : ∀ {Γ τ} {γ : Env Γ} {v : Val τ} → MarkedE γ → MarkedV v → MarkedE (γ · v)
-
-lookupM : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} → MarkedE γ → MarkedV (lookup x γ)
-lookupM zero     {γ · v} (mγ · mv) = mv
-lookupM (succ x) {γ · v} (mγ · mv) = lookupM x mγ
-
-boolM : ∀ b → MarkedV (bool→val b)
-boolM (inj₁ _) = inl unit
-boolM (inj₂ _) = inr unit
-
-mvcast : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} → MarkedV v → MarkedV (≡-subst Val e v)
-mvcast refl mv = mv
 
 ------------------------------------------------------------------------
 -- Markings of derivations.
@@ -526,9 +496,6 @@ private
   rowcast : ∀ {c m n} → m ≡ n → M.Matrix m c → M.Matrix n c
   rowcast refl A = A
 
-  mv-uncast : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} → MarkedV (≡-subst Val e v) → MarkedV v
-  mv-uncast refl mv = mv
-
 instrument-d :
   ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} {p} {D : γ , t ⇓ v [ R ]} →
   MarkedD D → Seq (width-env γ) p → Out (width-env γ) p (width v)
@@ -662,95 +629,3 @@ instrument-dm {γ = γ} {τ₀ = τ₀} {σr = σr} (m-mu {τ' = τ'} {w = w} {w
 ... | k , Φ' , S' =
   k , Φ' , rowcast (sym (width-subst (unfold₁-inst τ' σr) w')) S'
 
-------------------------------------------------------------------------
--- Pull a term marking back to a derivation marking.
-
-mark-run :
-  ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} →
-  Marked t → MarkedE γ → (D : γ , t ⇓ v [ R ]) → MarkedD D × MarkedV v
-mark-run-s :
-  ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs} →
-  MarkedS Ms → MarkedE γ → (Ds : γ , Ms ⇓s vs [ Rs ]) → MarkedDs Ds
-mark-run-map :
-  ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-  {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
-  {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)} →
-  Marked s → MarkedE γ → MarkedV v → (Dm : Map γ s σ' v R v' R') →
-  MarkedM Dm × MarkedV v'
-
-mark-run (doc fo m) mγ D with mark-run m mγ D
-... | mD , mv = doc fo mD , mv
-mark-run (var x) mγ (⇓-var .x) = ⇓-var x , lookupM x mγ
-mark-run unit mγ ⇓-unit = ⇓-unit , unit
-mark-run (lam m) mγ ⇓-lam = ⇓-lam , clo mγ m
-mark-run (inl m) mγ (⇓-inl D) with mark-run m mγ D
-... | mD , mv = ⇓-inl mD , inl mv
-mark-run (inr m) mγ (⇓-inr D) with mark-run m mγ D
-... | mD , mv = ⇓-inr mD , inr mv
-mark-run (roll m) mγ (⇓-roll D) with mark-run m mγ D
-... | mD , mv = ⇓-roll mD , roll mv
-mark-run (fst m) mγ (⇓-fst D) with mark-run m mγ D
-... | mD , pair mv₁ mv₂ = ⇓-fst mD , mv₁
-mark-run (snd m) mγ (⇓-snd D) with mark-run m mγ D
-... | mD , pair mv₁ mv₂ = ⇓-snd mD , mv₂
-mark-run (pair m₁ m₂) mγ (⇓-pair D₁ D₂)
-  with mark-run m₁ mγ D₁ | mark-run m₂ mγ D₂
-... | mD₁ , mv₁ | mD₂ , mv₂ = ⇓-pair mD₁ mD₂ , pair mv₁ mv₂
-mark-run (case ms m₁ m₂) mγ (⇓-case-l Ds D₁)
-  with mark-run ms mγ Ds
-... | mDs , inl mv
-  with mark-run m₁ (mγ · mv) D₁
-... | mD₁ , mvU = ⇓-case-l mDs mD₁ , mvU
-mark-run (case ms m₁ m₂) mγ (⇓-case-r Ds D₂)
-  with mark-run ms mγ Ds
-... | mDs , inr mv
-  with mark-run m₂ (mγ · mv) D₂
-... | mD₂ , mvU = ⇓-case-r mDs mD₂ , mvU
-mark-run (app ms mt) mγ (⇓-app Ds Dt Db)
-  with mark-run ms mγ Ds
-... | mDs , clo mE mt'
-  with mark-run mt mγ Dt
-... | mDt , mvA
-  with mark-run mt' (mE · mvA) Db
-... | mDb , mvU = ⇓-app mDs mDt mDb , mvU
-mark-run (bop ms) mγ (⇓-bop Es) = ⇓-bop (mark-run-s ms mγ Es) , const
-mark-run (brel ms) mγ (⇓-brel {ω = ω} {vs = vs} Es) =
-  ⇓-brel (mark-run-s ms mγ Es) , boolM (rel-pred ω .func vs)
-mark-run (fold m-s m-t) mγ (⇓-fold Dt Dm)
-  with mark-run m-t mγ Dt
-... | mDt , mvV
-  with mark-run-map m-s mγ mvV Dm
-... | mDm , mvU = ⇓-fold mDt mDm , mvU
-
-mark-run-s [] mγ [] = []
-mark-run-s (m ∷ ms) mγ (E ∷ Es) with mark-run m mγ E
-... | mE , _ = mE ∷ mark-run-s ms mγ Es
-
-mark-run-map m-s mγ mv m-unit = m-unit , mv
-mark-run-map m-s mγ mv m-base = m-base , mv
-mark-run-map m-s mγ mv m-arrow = m-arrow , mv
-mark-run-map m-s mγ (inl mv) (m-inl Dm) with mark-run-map m-s mγ mv Dm
-... | mDm , mvO = m-inl mDm , inl mvO
-mark-run-map m-s mγ (inr mv) (m-inr Dm) with mark-run-map m-s mγ mv Dm
-... | mDm , mvO = m-inr mDm , inr mvO
-mark-run-map m-s mγ (pair mv₁ mv₂) (m-pair Dm₁ Dm₂)
-  with mark-run-map m-s mγ mv₁ Dm₁ | mark-run-map m-s mγ mv₂ Dm₂
-... | mDm₁ , mvO₁ | mDm₂ , mvO₂ = m-pair mDm₁ mDm₂ , pair mvO₁ mvO₂
-mark-run-map m-s mγ (roll mv) (m-rec Dm Db)
-  with mark-run-map m-s mγ mv Dm
-... | mDm , mvW
-  with mark-run m-s (mγ · mvW) Db
-... | mDb , mvU = m-rec mDm mDb , mvU
-mark-run-map {τ₀ = τ₀} {σr = σr} m-s mγ (roll mv) (m-mu {τ' = τ'} Dm)
-  with mark-run-map m-s mγ (mv-uncast (unfold₁-inst τ' (μ τ₀)) mv) Dm
-... | mDm , mvO = m-mu mDm , roll (mvcast (unfold₁-inst τ' σr) mvO)
-
-------------------------------------------------------------------------
--- Instrumentation of a term marking.
-
-instrument :
-  ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} {p} →
-  Marked t → MarkedE γ → γ , t ⇓ v [ R ] → Seq (width-env γ) p →
-  MarkedV v × Out (width-env γ) p (width v)
-instrument m mγ D Φ with mark-run m mγ D
-... | mD , mv = mv , instrument-d mD Φ
