@@ -88,16 +88,20 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
     show-list (roll (inr (pair v rest)))              = show-val v ++ˢ ", " ++ˢ show-list rest
 
 -- Rendering for dependence graphs over intermediates: one vertex per label, declared so that
--- isolated vertices are rendered.
-showDotPlain : List String → List (ℕ × ℕ) → String
+-- isolated vertices are rendered. An edge with a label aggregates a relation bigger than
+-- Fin 1 → Fin 1, drawn dotted with the relation as its label.
+showDotPlain : List String → List (ℕ × ℕ × String) → String
 showDotPlain ls es = "digraph G {\n" ++ˢ vertices 0 ls ++ˢ go es ++ˢ "}\n"
   where
     vertices : ℕ → List String → String
     vertices _ []       = ""
     vertices i (l ∷ ls) =
       "  " ++ˢ ℕ-Show.show i ++ˢ " [label=\"" ++ˢ l ++ˢ "\"];\n" ++ˢ vertices (suc i) ls
-    edge : ℕ × ℕ → String
-    edge (i , j) = "  " ++ˢ ℕ-Show.show i ++ˢ " -> " ++ˢ ℕ-Show.show j ++ˢ ";\n"
-    go : List (ℕ × ℕ) → String
+    edge : ℕ × ℕ × String → String
+    edge (i , j , "") = "  " ++ˢ ℕ-Show.show i ++ˢ " -> " ++ˢ ℕ-Show.show j ++ˢ ";\n"
+    edge (i , j , l)  =
+      "  " ++ˢ ℕ-Show.show i ++ˢ " -> " ++ˢ ℕ-Show.show j ++ˢ
+      " [label=\"" ++ˢ l ++ˢ "\", style=dotted];\n"
+    go : List (ℕ × ℕ × String) → String
     go []       = ""
     go (e ∷ es) = edge e ++ˢ go es
