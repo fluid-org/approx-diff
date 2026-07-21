@@ -13,18 +13,17 @@ open import example.signature ℚ using (Sig)
 open import example.relation using (module Instr)
 import example.dependency as Dep
 open import example.runs
-open import language-operational.marking Sig using (unmarked)
-open Instr using (∅; emp; ents; collapse)
+open Instr using (∅; ents; collapse; instrument-d; unmarked-d)
 
 -- Flattening: collapsing the instrumented relation gives the plain run's relation.
-flat-mm : ents (collapse (proj₁ (proj₂ (proj₂ inst-mm))) (proj₂ (proj₂ (proj₂ inst-mm))))
+flat-mm : ents (collapse (proj₁ (proj₂ inst-mm)) (proj₂ (proj₂ inst-mm)))
           ≡ ents (proj₁ (proj₂ run-mm))
 flat-mm = refl
 
 -- Total width of the doc-marked query's intermediates: three entries and four fold steps.
-width-query : proj₁ (proj₂ inst-query-a-marked) ≡ 7
+width-query : proj₁ inst-query-a-marked ≡ 7
 width-query = refl
 
 -- Erasure: the unmarked run adds no intermediates.
-erasure-query : proj₁ (proj₂ (Instr.instrument (unmarked _) emp D-query ∅)) ≡ 0
+erasure-query : proj₁ (instrument-d (unmarked-d D-query) ∅) ≡ 0
 erasure-query = refl

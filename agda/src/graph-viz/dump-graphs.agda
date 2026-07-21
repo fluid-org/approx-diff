@@ -58,9 +58,8 @@ private
        then rel-label (edge-rel Φ i j) (nth widths i) (nth widths j)
        else "")
 
-  Φ-of : ∀ {a} {A : Set a} {g p t} (r : A × instrument.Out Sig Dep.primitives g p t) →
-         Seq g (p + proj₁ (proj₂ r))
-  Φ-of r = proj₁ (proj₂ (proj₂ r))
+  Φ-of : ∀ {g p t} (r : instrument.Out Sig Dep.primitives g p t) → Seq g (p + proj₁ r)
+  Φ-of r = proj₁ (proj₂ r)
 
 targets : List (String × String)
 targets =

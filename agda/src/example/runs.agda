@@ -3,7 +3,6 @@
 -- The example terms, their runs, and their markings, shared by the tests and the dot renderer.
 module example.runs where
 
-open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_)
 open import Data.Product using (_,_; proj₁; proj₂)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_; ↥_; ↧ₙ_)
@@ -23,7 +22,6 @@ import example.dependency as Dep
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Dep.primitives
   using (Env; emp; _·_; const; pair)
-open import language-operational.marking Sig
 open Instr
 
 show-lbl : L.label → String
@@ -52,7 +50,7 @@ run-add = Tot.fundamental M-add (emp · const 0ℚ · const 1ℚ) ((tt , tt) , t
 
 D-add = proj₁ (proj₂ (proj₂ run-add))
 
-inst-add-full = Instr.instrument (marked-all M-add) (emp · const · const) D-add ∅
+inst-add-full = instrument-d (marked-all-d D-add) ∅
 
 ------------------------------------------------------------------------
 -- Multiplication of two variables, at (0, 1). The derivative of x * y is [y, x], so the result
@@ -65,7 +63,7 @@ run-mult = Tot.fundamental M-mult (emp · const 0ℚ · const 1ℚ) ((tt , tt) ,
 
 D-mult = proj₁ (proj₂ (proj₂ run-mult))
 
-inst-mult-full = Instr.instrument (marked-all M-mult) (emp · const · const) D-mult ∅
+inst-mult-full = instrument-d (marked-all-d D-mult) ∅
 
 ------------------------------------------------------------------------
 -- Sum the numbers paired with a given label in a list of (label, number) pairs, fused into a
@@ -93,37 +91,33 @@ run-query = Tot.eval (query L.a input)
 
 D-query = proj₂ (proj₂ run-query)
 
-inst-query-a-full = Instr.instrument (marked-all (query L.a input)) emp D-query ∅
+inst-query-a-full = instrument-d (marked-all-d D-query) ∅
 
 ------------------------------------------------------------------------
--- Doc marking: each input entry and the fold body's result.
+-- Marking each input entry and each fold body result.
 
-m-entry : ∀ {Γ} {t : Γ ⊢ elem} → Marked t
-m-entry = doc (base label [×] base number) (unmarked _)
-
-m-input : Marked {emp} input
-m-input =
-  roll (inr (pair m-entry
-    (roll (inr (pair m-entry
-      (roll (inr (pair m-entry
-        (roll (inl unit))))))))))
-
-m-query : Marked (query L.a input)
-m-query = fold (doc (base number) (unmarked _)) m-input
-
-inst-query-a-marked = Instr.instrument m-query emp D-query ∅
+inst-query-a-marked =
+  instrument-d
+    (mark-at (fold₁ ∷ roll ∷ inr ∷ pair₁ ∷ [])
+    (mark-at (fold₁ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₁ ∷ [])
+    (mark-at (fold₁ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₁ ∷ [])
+    (mark-at (fold₂ ∷ rec₂ ∷ [])
+    (mark-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
+    (mark-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
+    (mark-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
+    (unmarked-d D-query))))))))
+    ∅
 
 ------------------------------------------------------------------------
 -- Coarse marking: the input list as a single width-3 intermediate and the query result, with the
 -- fold unmarked.
 
-list-fo : first-order (list elem)
-list-fo = μ (unit [+] ((base label [×] base number) [×] var Fin.zero))
-
-m-query-coarse : Marked (query L.a input)
-m-query-coarse = doc (base number) (fold (unmarked _) (doc list-fo (unmarked _)))
-
-inst-query-a-coarse = Instr.instrument m-query-coarse emp D-query ∅
+inst-query-a-coarse =
+  instrument-d
+    (mark-at (fold₁ ∷ [])
+    (mark-at []
+    (unmarked-d D-query)))
+    ∅
 
 ------------------------------------------------------------------------
 -- Flattening example: y * (x + y) with the sum marked.
@@ -131,16 +125,14 @@ inst-query-a-coarse = Instr.instrument m-query-coarse emp D-query ∅
 t-mm : (emp ▸ base number ▸ base number) ⊢ base number
 t-mm = bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ [])
 
-m-mm : Marked t-mm
-m-mm = bop (doc (base number) (unmarked _) ∷ unmarked _ ∷ [])
-
 γ-mm : Env (emp ▸ base number ▸ base number)
 γ-mm = emp · const 0ℚ · const 1ℚ
 
 run-mm = Tot.fundamental t-mm γ-mm ((tt , tt) , tt)
 
-inst-mm = Instr.instrument m-mm (emp · const · const)
-            (proj₁ (proj₂ (proj₂ run-mm))) ∅
+D-mm = proj₁ (proj₂ (proj₂ run-mm))
+
+inst-mm = instrument-d (mark-at (bop ∷ hd ∷ []) (unmarked-d D-mm)) ∅
 
 ------------------------------------------------------------------------
 -- Moving average with window two: adjacent outputs share an input.
@@ -155,10 +147,7 @@ run-mavg = Tot.fundamental (Dep.mavg half) γ-mavg (tt , tt , tt , tt , tt)
 
 D-mavg = proj₁ (proj₂ (proj₂ run-mavg))
 
-inst-mavg-full =
-  Instr.instrument (marked-all (Dep.mavg half))
-    (emp · pair const (pair const (pair const const)))
-    D-mavg ∅
+inst-mavg-full = instrument-d (marked-all-d D-mavg) ∅
 
 -- Coarse marking: eta-expanded so the input is evaluated once, giving a single width-4
 -- intermediate; the one edge to the output carries the full dependency relation.
@@ -166,15 +155,13 @@ mavg-coarse-term : emp ▸ base number [×] (base number [×] (base number [×] 
                    ⊢ base number [×] (base number [×] base number)
 mavg-coarse-term = app (lam (Dep.mavg-body half (var zero))) (var zero)
 
-m-mavg-coarse : Marked mavg-coarse-term
-m-mavg-coarse =
-  doc (base number [×] (base number [×] base number))
-    (app (lam (unmarked _))
-         (doc (base number [×] (base number [×] (base number [×] base number))) (var zero)))
-
 run-mavg-coarse = Tot.fundamental mavg-coarse-term γ-mavg (tt , tt , tt , tt , tt)
 
+D-mavg-coarse = proj₁ (proj₂ (proj₂ run-mavg-coarse))
+
 inst-mavg-coarse =
-  Instr.instrument m-mavg-coarse
-    (emp · pair const (pair const (pair const const)))
-    (proj₁ (proj₂ (proj₂ run-mavg-coarse))) ∅
+  instrument-d
+    (mark-at (app₂ ∷ [])
+    (mark-at []
+    (unmarked-d D-mavg-coarse)))
+    ∅
