@@ -68,7 +68,7 @@ targets =
   ∷ dot-of "mavg-full"        (Φ-of inst-mavg-full)
   ∷ dot-of "mavg-coarse"      (Φ-of inst-mavg-coarse)
   ∷ dot-of "query-a-full"     (Φ-of inst-query-a-full)
-  ∷ dot-of "query-a-marked"   (Φ-of inst-query-a-marked)
+  ∷ dot-of "query-a-fine"   (Φ-of inst-query-a-fine)
   ∷ dot-of "query-a-coarse"   (Φ-of inst-query-a-coarse)
   ∷ []
 

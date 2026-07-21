@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The example terms, their runs, and their markings, shared by the tests and the dot renderer.
+-- The example terms, their runs, and their visible sets, shared by the tests and the dot renderer.
 module example.runs where
 
 open import Data.List using (List; []; _∷_)
@@ -50,7 +50,7 @@ run-add = Tot.fundamental M-add (emp · const 0ℚ · const 1ℚ) ((tt , tt) , t
 
 D-add = proj₁ (proj₂ (proj₂ run-add))
 
-inst-add-full = instrument-d (marked-all-d D-add) ∅
+inst-add-full = instrument-d (visible-all D-add) ∅
 
 ------------------------------------------------------------------------
 -- Multiplication of two variables, at (0, 1). The derivative of x * y is [y, x], so the result
@@ -63,7 +63,7 @@ run-mult = Tot.fundamental M-mult (emp · const 0ℚ · const 1ℚ) ((tt , tt) ,
 
 D-mult = proj₁ (proj₂ (proj₂ run-mult))
 
-inst-mult-full = instrument-d (marked-all-d D-mult) ∅
+inst-mult-full = instrument-d (visible-all D-mult) ∅
 
 ------------------------------------------------------------------------
 -- Sum the numbers paired with a given label in a list of (label, number) pairs, fused into a
@@ -91,36 +91,36 @@ run-query = Tot.eval (query L.a input)
 
 D-query = proj₂ (proj₂ run-query)
 
-inst-query-a-full = instrument-d (marked-all-d D-query) ∅
+inst-query-a-full = instrument-d (visible-all D-query) ∅
 
 ------------------------------------------------------------------------
--- Marking each input entry and each fold body result.
+-- Revealing each input entry and each fold body result.
 
-inst-query-a-marked =
+inst-query-a-fine =
   instrument-d
-    (mark-at (fold₁ ∷ roll ∷ inr ∷ pair₁ ∷ [])
-    (mark-at (fold₁ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₁ ∷ [])
-    (mark-at (fold₁ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₁ ∷ [])
-    (mark-at (fold₂ ∷ rec₂ ∷ [])
-    (mark-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
-    (mark-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
-    (mark-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
-    (unmarked-d D-query))))))))
+    (reveal-at (fold₁ ∷ roll ∷ inr ∷ pair₁ ∷ [])
+    (reveal-at (fold₁ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₁ ∷ [])
+    (reveal-at (fold₁ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₂ ∷ roll ∷ inr ∷ pair₁ ∷ [])
+    (reveal-at (fold₂ ∷ rec₂ ∷ [])
+    (reveal-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
+    (reveal-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
+    (reveal-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
+    (visible-none D-query))))))))
     ∅
 
 ------------------------------------------------------------------------
--- Coarse marking: the input list as a single width-3 intermediate and the query result, with the
--- fold unmarked.
+-- Coarse visibility: the input list as a single width-3 intermediate and the query result, with the
+-- fold hidden.
 
 inst-query-a-coarse =
   instrument-d
-    (mark-at (fold₁ ∷ [])
-    (mark-at []
-    (unmarked-d D-query)))
+    (reveal-at (fold₁ ∷ [])
+    (reveal-at []
+    (visible-none D-query)))
     ∅
 
 ------------------------------------------------------------------------
--- Flattening example: y * (x + y) with the sum marked.
+-- Flattening example: y * (x + y) with the sum revealed.
 
 t-mm : (emp ▸ base number ▸ base number) ⊢ base number
 t-mm = bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ [])
@@ -132,7 +132,7 @@ run-mm = Tot.fundamental t-mm γ-mm ((tt , tt) , tt)
 
 D-mm = proj₁ (proj₂ (proj₂ run-mm))
 
-inst-mm = instrument-d (mark-at (bop ∷ hd ∷ []) (unmarked-d D-mm)) ∅
+inst-mm = instrument-d (reveal-at (bop ∷ hd ∷ []) (visible-none D-mm)) ∅
 
 ------------------------------------------------------------------------
 -- Moving average with window two: adjacent outputs share an input.
@@ -147,9 +147,9 @@ run-mavg = Tot.fundamental (Dep.mavg half) γ-mavg (tt , tt , tt , tt , tt)
 
 D-mavg = proj₁ (proj₂ (proj₂ run-mavg))
 
-inst-mavg-full = instrument-d (marked-all-d D-mavg) ∅
+inst-mavg-full = instrument-d (visible-all D-mavg) ∅
 
--- Coarse marking: eta-expanded so the input is evaluated once, giving a single width-4
+-- Coarse visibility: eta-expanded so the input is evaluated once, giving a single width-4
 -- intermediate; the one edge to the output carries the full dependency relation.
 mavg-coarse-term : emp ▸ base number [×] (base number [×] (base number [×] base number))
                    ⊢ base number [×] (base number [×] base number)
@@ -161,7 +161,7 @@ D-mavg-coarse = proj₁ (proj₂ (proj₂ run-mavg-coarse))
 
 inst-mavg-coarse =
   instrument-d
-    (mark-at (app₂ ∷ [])
-    (mark-at []
-    (unmarked-d D-mavg-coarse)))
+    (reveal-at (app₂ ∷ [])
+    (reveal-at []
+    (visible-none D-mavg-coarse)))
     ∅
