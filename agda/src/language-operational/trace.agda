@@ -2,7 +2,7 @@
 
 open import Level using (0ℓ)
 
-open import Data.List using (List; []; _∷_; applyUpTo)
+open import Data.List using (List; []; _∷_)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Product using (_,_; _×_)
 open import Data.String using (String; intersperse) renaming (_++_ to _++ˢ_)
@@ -66,14 +66,28 @@ show-map (m-inr m)      = "(inr " ++ˢ show-map m ++ˢ ")"
 show-map (m-pair m₁ m₂) = "(pair " ++ˢ show-map m₁ ++ˢ " " ++ˢ show-map m₂ ++ˢ ")"
 show-map (m-mu m)       = "(mu " ++ˢ show-map m ++ˢ ")"
 
--- Unlabelled rendering, for dependence graphs over intermediates. Every vertex is declared, so
--- isolated ones are rendered.
-showDotPlain : ℕ → List (ℕ × ℕ) → String
-showDotPlain n es = "digraph G {\n" ++ˢ vertices (applyUpTo (λ i → i) n) ++ˢ go es ++ˢ "}\n"
+-- Values as strings, given a shower for the constants. Roll is invisible, so inductive values
+-- read as their contents.
+module _ (show-const : ∀ {s} → sort-val s → String) where
+
+  show-val : ∀ {τ} → Val τ → String
+  show-val unit       = "()"
+  show-val (const c)  = show-const c
+  show-val (inl v)    = "inl " ++ˢ show-val v
+  show-val (inr v)    = "inr " ++ˢ show-val v
+  show-val (pair v u) = "(" ++ˢ show-val v ++ˢ ", " ++ˢ show-val u ++ˢ ")"
+  show-val (clo _ _)  = "<closure>"
+  show-val (roll v)   = show-val v
+
+-- Rendering for dependence graphs over intermediates: one vertex per label, declared so that
+-- isolated vertices are rendered.
+showDotPlain : List String → List (ℕ × ℕ) → String
+showDotPlain ls es = "digraph G {\n" ++ˢ vertices 0 ls ++ˢ go es ++ˢ "}\n"
   where
-    vertices : List ℕ → String
-    vertices []       = ""
-    vertices (i ∷ is) = "  " ++ˢ ℕ-Show.show i ++ˢ ";\n" ++ˢ vertices is
+    vertices : ℕ → List String → String
+    vertices _ []       = ""
+    vertices i (l ∷ ls) =
+      "  " ++ˢ ℕ-Show.show i ++ˢ " [label=\"" ++ˢ l ++ˢ "\"];\n" ++ˢ vertices (suc i) ls
     edge : ℕ × ℕ → String
     edge (i , j) = "  " ++ˢ ℕ-Show.show i ++ˢ " -> " ++ˢ ℕ-Show.show j ++ˢ ";\n"
     go : List (ℕ × ℕ) → String

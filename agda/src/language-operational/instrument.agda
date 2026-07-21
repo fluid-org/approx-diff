@@ -7,7 +7,7 @@ open import Data.Nat.Properties using (+-assoc; +-identityʳ)
 open import Relation.Binary.PropositionalEquality using (trans; cong)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.List using (List)
+open import Data.List using (List; []; _∷_; _++_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -83,6 +83,11 @@ data Seq (g : ℕ) : ℕ → Set ℓ where
   ∅    : Seq g 0
   snoc : ∀ {n} (Φ : Seq g n) {τ : type 0} (w : Val τ) (Sm : M.Matrix (width w) (g + n)) →
          Seq g (n + width w)
+
+-- The values of the intermediates, oldest first.
+seq-vals : ∀ {g n} → Seq g n → List (Σ (type 0) Val)
+seq-vals ∅             = []
+seq-vals (snoc Φ {τ} w _) = seq-vals Φ ++ (τ , w) ∷ []
 
 seq-cast : ∀ {g m n} → m ≡ n → Seq g m → Seq g n
 seq-cast refl Φ = Φ

@@ -94,10 +94,6 @@ private
   entry-ents ∅             = []
   entry-ents (snoc Φ w Sm) = entry-ents Φ ++ (width w , ents Sm) ∷ []
 
-entry-count : ∀ {g n} → Seq g n → ℕ
-entry-count ∅            = 0
-entry-count (snoc Φ _ _) = Data.Nat.suc (entry-count Φ)
-
 dep-edges : ∀ {g n} → Seq g n → List (ℕ × ℕ)
 dep-edges {g} Φ = go [] (entry-ents Φ)
   where

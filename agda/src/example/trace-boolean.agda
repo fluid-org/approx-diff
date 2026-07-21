@@ -12,6 +12,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import every using ([]; _∷_)
 import label as L
 import two
+import Data.Rational.Show as ℚ-Show
+open import primitives using (Primitives)
 
 open import example.signature ℚ
   using (Sig; sort; number; label; op; lit; add; mult; lbl; rel; equal-label)
@@ -27,6 +29,11 @@ show-lbl L.a = "a"
 show-lbl L.b = "b"
 show-lbl L.c = "c"
 show-lbl L.d = "d"
+
+-- Label constants render as quoted strings.
+show-const : ∀ {s} → Primitives.sort-val Dep.primitives s → String
+show-const {number} q = ℚ-Show.show q
+show-const {label}  l = "“" Data.String.++ show-lbl l Data.String.++ "”"
 
 show-op : ∀ {is o} → op is o → String
 show-op (lit n)     = "lit"
