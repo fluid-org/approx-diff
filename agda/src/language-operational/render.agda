@@ -35,9 +35,14 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
     show-val (const c)  = show-const c
     show-val (inl v)    = "inl " ++ˢ show-val v
     show-val (inr v)    = "inr " ++ˢ show-val v
-    show-val (pair v u) = "(" ++ˢ show-val v ++ˢ ", " ++ˢ show-val u ++ˢ ")"
+    show-val (pair v u) = "(" ++ˢ show-flat v ++ˢ ", " ++ˢ show-flat u ++ˢ ")"
     show-val (clo _ _)  = "<closure>"
     show-val (roll v)   = show-val v
+
+    -- Nested pairs render as flat tuples.
+    show-flat : ∀ {τ} → Val τ → String
+    show-flat (pair v u) = show-flat v ++ˢ ", " ++ˢ show-flat u
+    show-flat v          = show-val v
 
     show-list : ∀ {σ} → Val (μ (unit [+] (σ [×] var Data.Fin.zero))) → String
     show-list (roll (inl unit))                       = ""

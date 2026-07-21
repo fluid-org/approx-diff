@@ -2,7 +2,7 @@
 
 -- Writes dot renderings of the example runs; run from the paper repository root. The file name is
 -- the run's definition name without its inst- prefix.
-module artefact.dump-graphs where
+module graph-viz.dump-graphs where
 
 open import IO
 open import IO.Finite using (writeFile)
