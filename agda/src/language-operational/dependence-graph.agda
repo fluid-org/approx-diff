@@ -6,7 +6,7 @@ open import Data.Nat using (ℕ; zero; suc; _+_; _≡ᵇ_)
 open import Data.Nat.Properties using (+-assoc; +-identityʳ)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.List using (List; []; _∷_; _++_; length; concatMap; allFin)
+open import Data.List using (List; []; _∷_; _++_; length; map; concatMap; allFin)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)
 open import signature using (Signature)
 open import primitives using (Primitives)
@@ -155,7 +155,8 @@ seq-vals (snoc G {τ} v _) = seq-vals G ++ (τ , v) ∷ []
 private
   dep-blocks : ∀ {g G n} → Dep g G n → List (ℕ × List (ℕ × ℕ))
   dep-blocks ⟨ _ ∣⟩ = []
-  dep-blocks (D ∣ R′) = let es = dep-blocks D in es ++ (length es , ents R′) ∷ []
+  dep-blocks (D ∣ R′) =
+    let es = dep-blocks D in es ++ (length es , map (λ e → proj₂ e , proj₁ e) (ents R′)) ∷ []
 
   -- Per-vertex edge lists of a graph, newest vertex last, tagged with the vertex index.
   graph-blocks : ∀ {g} → Graph g → List (ℕ × List (ℕ × List (ℕ × ℕ)))
