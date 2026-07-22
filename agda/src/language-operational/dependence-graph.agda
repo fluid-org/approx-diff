@@ -60,6 +60,9 @@ gwidth : ∀ {g} → Graph g → ℕ
 gwidth ∅            = 0
 gwidth (snoc G v _) = gwidth G + width v
 
+dcast : ∀ {g} {G : Graph g} {m n} → m ≡ n → Dep g G m → Dep g G n
+dcast refl D = D
+
 ------------------------------------------------------------------------
 -- Basic operations, mirroring the paper.
 

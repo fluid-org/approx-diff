@@ -20,7 +20,7 @@ open import example.runs
 import example.dependency as Dep
 open import language-operational.evaluation Sig Dep.primitives using (width)
 import language-operational.instrument as instrument
-open instrument Sig Dep.primitives using (Seq; seq-vals; dep-edges; edge-rel)
+open instrument Sig Dep.primitives using (Graph; seq-vals; dep-edges; edge-rel)
 open import language-operational.render Sig Dep.primitives using (show-val; showDotPlain)
 
 private
@@ -42,7 +42,7 @@ private
     rows (q ∷ [])     = row q
     rows (q ∷ qs)     = row q ++ "\\n" ++ rows qs
 
-  dot-of : ∀ {g n} → String → Seq g n → String × String
+  dot-of : ∀ {g} → String → Graph g → String × String
   dot-of name Φ =
     ("fig/dot/" ++ name ++ ".dot") ,
     showDotPlain (map (λ p → show-val (λ {s} → show-const {s}) (proj₂ p)) (seq-vals Φ))
@@ -58,8 +58,8 @@ private
        then rel-label (edge-rel Φ i j) (nth widths i) (nth widths j)
        else "")
 
-  Φ-of : ∀ {g p t} (r : instrument.Out Sig Dep.primitives g p t) → Seq g (p + proj₁ r)
-  Φ-of r = proj₁ (proj₂ r)
+  Φ-of : ∀ {g} {Φ : Graph g} {t} (r : instrument.Out Sig Dep.primitives g Φ t) → Graph g
+  Φ-of r = proj₁ r
 
 targets : List (String × String)
 targets =

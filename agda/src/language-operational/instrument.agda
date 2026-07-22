@@ -40,149 +40,8 @@ open Category M.cat using (_∘_)
 open HasProducts products using (p₁; p₂)
 
 ------------------------------------------------------------------------
--- Matrix plumbing over concatenated domains.
 
--- Zero-pad a matrix over g to g + e.
-pad : ∀ {t} (g e : ℕ) → M.Matrix t g → M.Matrix t (g + e)
-pad g e A i j with splitAt g j
-... | inj₁ a = A i a
-... | inj₂ _ = CS.ε
-
--- Zero-pad a matrix over g + p to g + (p + k).
-widen : ∀ {t} (g p k : ℕ) → M.Matrix t (g + p) → M.Matrix t (g + (p + k))
-widen g p k A i j with splitAt g j
-... | inj₁ a = A i (a ↑ˡ p)
-... | inj₂ b with splitAt p b
-...   | inj₁ c = A i (g ↑ʳ c)
-...   | inj₂ _ = CS.ε
-
--- Stack two matrices with a common domain.
-stack : ∀ {c} (a b : ℕ) → M.Matrix a c → M.Matrix b c → M.Matrix (a + b) c
-stack a b A B i j with splitAt a i
-... | inj₁ x = A x j
-... | inj₂ y = B y j
-
--- Injection of the final w columns of g + (n + w).
-inj-last : ∀ (g n w : ℕ) → M.Matrix w (g + (n + w))
-inj-last g n w i j with splitAt g j
-... | inj₁ _ = CS.ε
-... | inj₂ b with splitAt n b
-...   | inj₁ _ = CS.ε
-...   | inj₂ c = M.I i c
-
--- Substitute a frame E for the environment block, passing the k newest intermediates through: the block
--- matrix [E 0; 0 I].
-frame-emb : ∀ {g'} (g p k : ℕ) → M.Matrix g' (g + p) → M.Matrix (g' + k) (g + (p + k))
-frame-emb {g'} g p k E = stack g' k (widen g p k E) (inj-last g p k)
-
--- The identity frame, for premises under the same environment.
-id-frame : ∀ (g p : ℕ) → M.Matrix g (g + p)
-id-frame g p = pad g p M.I
-
-------------------------------------------------------------------------
--- Sequences of intermediates.
-
-data Seq (g : ℕ) : ℕ → Set ℓ where
-  ∅    : Seq g 0
-  snoc : ∀ {n} (Φ : Seq g n) {τ : type 0} (w : Val τ) (Sm : M.Matrix (width w) (g + n)) →
-         Seq g (n + width w)
-
--- The values of the intermediates, oldest first.
-seq-vals : ∀ {g n} → Seq g n → List (Σ (type 0) Val)
-seq-vals ∅             = []
-seq-vals (snoc Φ {τ} w _) = seq-vals Φ ++ (τ , w) ∷ []
-
-------------------------------------------------------------------------
--- Collapse: eliminate the intermediates from the domain, most recent first.
-
-elim-mat : ∀ (g n w : ℕ) → M.Matrix w (g + n) → M.Matrix (g + (n + w)) (g + n)
-elim-mat g n w Sm r c with splitAt g r
-... | inj₁ a = M.I (a ↑ˡ n) c
-... | inj₂ b with splitAt n b
-...   | inj₁ d = M.I (g ↑ʳ d) c
-...   | inj₂ x = Sm x c
-
-collapse : ∀ {g n t} → Seq g n → M.Matrix t (g + n) → M.Matrix t g
-collapse {g} ∅ A i j = A i (j ↑ˡ 0)
-collapse {g} (snoc {n} Φ w Sm) A = collapse Φ (A M.∘ elim-mat g n (width w) Sm)
-
-------------------------------------------------------------------------
--- Boolean matrices as entry lists, comparable by refl.
-
-ents : ∀ {m n} → M.Matrix m n → List (ℕ × ℕ)
-ents {m} {n} A =
-  concatMap (λ i → concatMap (λ j → keep i j (A i j)) (allFin n)) (allFin m)
-  where
-    keep : ∀ {m n} → Fin m → Fin n → two.Two → List (ℕ × ℕ)
-    keep i j two.I = (toℕ i , toℕ j) ∷ []
-    keep i j two.O = []
-
-------------------------------------------------------------------------
--- The dependence graph over the intermediates.
-
-private
-  -- Index of the entry containing an intermediate position, given the widths of the entries.
-  locate : List ℕ → ℕ → ℕ
-  locate []       _ = 0
-  locate (w ∷ ws) p = ifᵇ p <ᵇ w then 0 else suc (locate ws (p ∸ w))
-
-  entry-ents : ∀ {g n} → Seq g n → List (ℕ × List (ℕ × ℕ))
-  entry-ents ∅             = []
-  entry-ents (snoc Φ w Sm) = entry-ents Φ ++ (width w , ents Sm) ∷ []
-
--- The intermediates graph: an edge i → j when the block of S_j at entry i is non-empty. A simple
--- graph, so at most one edge per pair, however many positions relate.
-dep-edges : ∀ {g n} → Seq g n → List (ℕ × ℕ)
-dep-edges {g} Φ = go [] (entry-ents Φ)
-  where
-  insert : ℕ → List ℕ → List ℕ
-  insert i []       = i ∷ []
-  insert i (k ∷ ks) = ifᵇ i ≡ᵇ k then k ∷ ks else k ∷ insert i ks
-
-  sources : List ℕ → List (ℕ × ℕ) → List ℕ
-  sources ws = go′ []
-    where
-    go′ : List ℕ → List (ℕ × ℕ) → List ℕ
-    go′ acc []             = acc
-    go′ acc ((_ , c) ∷ es) =
-      go′ (ifᵇ c <ᵇ g then acc else insert (locate ws (c ∸ g)) acc) es
-
-  go : List ℕ → List (ℕ × List (ℕ × ℕ)) → List (ℕ × ℕ)
-  go ws []               = []
-  go ws ((w , es) ∷ Φe) =
-    Data.List.map (λ i → i , length ws) (sources ws es) ++ go (ws ++ w ∷ []) Φe
-
--- The relation on positions carried by the edge i → j: pairs (p , q) with position p of entry i
--- related to position q of entry j.
-edge-rel : ∀ {g n} → Seq g n → ℕ → ℕ → List (ℕ × ℕ)
-edge-rel {g} Φ i j = go 0 [] (entry-ents Φ)
-  where
-  pick : List ℕ → ℕ × ℕ → List (ℕ × ℕ)
-  pick ws (r , c) =
-    ifᵇ c <ᵇ g then [] else
-      (ifᵇ locate ws (c ∸ g) ≡ᵇ i then (offset-in ws (c ∸ g) , r) ∷ [] else [])
-    where
-    offset-in : List ℕ → ℕ → ℕ
-    offset-in []       p = p
-    offset-in (w ∷ ws) p = ifᵇ p <ᵇ w then p else offset-in ws (p ∸ w)
-
-  go : ℕ → List ℕ → List (ℕ × List (ℕ × ℕ)) → List (ℕ × ℕ)
-  go _ ws []               = []
-  go k ws ((w , es) ∷ Φe) =
-    (ifᵇ k ≡ᵇ j then concatMap (pick ws) es else []) ++ go (suc k) (ws ++ w ∷ []) Φe
-
-seq-cast : ∀ {g m n} → m ≡ n → Seq g m → Seq g n
-seq-cast refl Φ = Φ
-
-mcast : ∀ {t} (g : ℕ) {m n} → m ≡ n → M.Matrix t (g + m) → M.Matrix t (g + n)
-mcast g refl A = A
-
--- Append a sequence produced under environment g', rewriting each entry's environment block by the frame E.
-append-subst : ∀ {g g' p n} → Seq g p → M.Matrix g' (g + p) → Seq g' n → Seq g (p + n)
-append-subst {p = p} Φ E ∅ = seq-cast (sym (+-identityʳ p)) Φ
-append-subst {g} {g'} {p} Φ E (snoc {n} Ψ w Sm) =
-  seq-cast (+-assoc p n (width w))
-    (snoc (append-subst Φ E Ψ) w (Sm M.∘ frame-emb g p n E))
+open import language-operational.dependence-graph Sig 𝒫 public
 
 ------------------------------------------------------------------------
 -- Visibility of derivation nodes.
@@ -482,149 +341,102 @@ hide-at-m _ mDm = mDm
 ------------------------------------------------------------------------
 -- Instrumentation.
 
-Out : (g p t : ℕ) → Set ℓ
-Out g p t = Σ ℕ λ k → Seq g (p + k) × M.Matrix t (g + (p + k))
-
-private
-  leaf : ∀ {g p t} → Seq g p → M.Matrix t g → Out g p t
-  leaf {g} {p} Φ A = 0 , seq-cast (sym (+-identityʳ p)) Φ , pad g (p + 0) A
-
-  assoc3 : ∀ p a b c → ((p + a) + b) + c ≡ p + ((a + b) + c)
-  assoc3 p a b c = trans (cong (_+ c) (+-assoc p a b)) (+-assoc p (a + b) c)
-
-  rowcast : ∀ {c m n} → m ≡ n → M.Matrix m c → M.Matrix n c
-  rowcast refl A = A
+Out : (g : ℕ) → Graph g → ℕ → Set ℓ
+Out g Φ t = Σ (Graph g) λ Φ′ → (Φ′ ⊒ Φ) × Dep g Φ′ t
 
 instrument-d :
-  ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} {p} {D : γ , t ⇓ v [ R ]} →
-  Visible D → Seq (width-env γ) p → Out (width-env γ) p (width v)
+  ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} {D : γ , t ⇓ v [ R ]} →
+  Visible D → (Φ : Graph (width-env γ)) → Out (width-env γ) Φ (width v)
 instrument-ds :
-  ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs} {p}
+  ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs}
   {Ds : γ , Ms ⇓s vs [ Rs ]} →
-  VisibleS Ds → Seq (width-env γ) p → Out (width-env γ) p (bases-width is)
+  VisibleS Ds → (Φ : Graph (width-env γ)) → Out (width-env γ) Φ (bases-width is)
 instrument-dm :
   ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
   {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
-  {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)} {p}
+  {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)}
   {Dm : Map γ s σ' v R v' R'} →
-  VisibleM Dm → Seq (width-env γ) p → M.Matrix (width v) (width-env γ + p) →
-  Out (width-env γ) p (width v')
+  VisibleM Dm → (Φ : Graph (width-env γ)) → Dep (width-env γ) Φ (width v) →
+  Out (width-env γ) Φ (width v')
 
-instrument-d {γ = γ} {v = v} {p = p} (vis fo mD) Φ
-  with instrument-d mD Φ
-... | k , Φ' , R' =
-  k + width v
-  , seq-cast (+-assoc p k (width v)) (snoc Φ' v R')
-  , mcast (width-env γ) (+-assoc p k (width v)) (inj-last (width-env γ) (p + k) (width v))
-instrument-d {γ = γ} (⇓-var x) Φ = leaf Φ (proj-var x γ)
-instrument-d ⇓-unit Φ = leaf Φ M.εₘ
-instrument-d ⇓-lam Φ = leaf Φ M.I
+instrument-d {v = v} (vis fo mD) Φ with instrument-d mD Φ
+... | Φ′ , e , R = snoc Φ′ v R , more e , constDep Φ′ M.εₘ ∣ M.I
+instrument-d {γ = γ} (⇓-var x) Φ = Φ , done , constDep Φ (proj-var x γ)
+instrument-d ⇓-unit Φ = Φ , done , constDep Φ M.εₘ
+instrument-d ⇓-lam Φ = Φ , done , constDep Φ M.I
 instrument-d (⇓-inl mD) Φ = instrument-d mD Φ
 instrument-d (⇓-inr mD) Φ = instrument-d mD Φ
 instrument-d (⇓-roll mD) Φ = instrument-d mD Φ
 instrument-d (⇓-fst mD) Φ with instrument-d mD Φ
-... | k , Φ' , R' = k , Φ' , M.p₁ M.∘ R'
+... | Φ′ , e , R = Φ′ , e , mapCod M.p₁ R
 instrument-d (⇓-snd mD) Φ with instrument-d mD Φ
-... | k , Φ' , R' = k , Φ' , M.p₂ M.∘ R'
-instrument-d {γ = γ} {p = p} (⇓-pair mD₁ mD₂) Φ
+... | Φ′ , e , R = Φ′ , e , mapCod M.p₂ R
+instrument-d (⇓-pair mD₁ mD₂) Φ
   with instrument-d mD₁ Φ
-... | k₁ , Φ₁ , R₁
+... | Φ₁ , e₁ , R₁
   with instrument-d mD₂ Φ₁
-... | k₂ , Φ₂ , R₂ =
-  k₁ + k₂
-  , seq-cast (+-assoc p k₁ k₂) Φ₂
-  , mcast (width-env γ) (+-assoc p k₁ k₂)
-      (stack _ _ (widen (width-env γ) (p + k₁) k₂ R₁) R₂)
-instrument-d {γ = γ} {p = p} (⇓-case-l mDs mD₁) Φ
+... | Φ₂ , e₂ , R₂ = Φ₂ , ⊒-trans e₂ e₁ , pairDep (widen e₂ R₁) R₂
+instrument-d (⇓-case-l mDs mD₁) Φ
   with instrument-d mDs Φ
-... | k₁ , Φ₁ , R₁
+... | Φ₁ , e₁ , R₁
   with instrument-d mD₁ ∅
-... | k₂ , Φ₂ , Sb =
-  k₁ + k₂
-  , seq-cast (+-assoc p k₁ k₂)
-      (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
-  , mcast (width-env γ) (+-assoc p k₁ k₂)
-      (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
-              (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁))
-instrument-d {γ = γ} {p = p} (⇓-case-r mDs mD₂) Φ
+... | Φ₂ , e₂ , Sb =
+  let E = pairDep (constDep Φ₁ M.I) R₁
+      (Φ′ , e′) = substGraph E Φ₂
+  in Φ′ , ⊒-trans e′ e₁ , substDep E Sb
+instrument-d (⇓-case-r mDs mD₂) Φ
   with instrument-d mDs Φ
-... | k₁ , Φ₁ , R₁
+... | Φ₁ , e₁ , R₁
   with instrument-d mD₂ ∅
-... | k₂ , Φ₂ , Sb =
-  k₁ + k₂
-  , seq-cast (+-assoc p k₁ k₂)
-      (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
-  , mcast (width-env γ) (+-assoc p k₁ k₂)
-      (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
-              (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁))
-instrument-d {γ = γ} {p = p} (⇓-app mDs mDt mDb) Φ
+... | Φ₂ , e₂ , Sb =
+  let E = pairDep (constDep Φ₁ M.I) R₁
+      (Φ′ , e′) = substGraph E Φ₂
+  in Φ′ , ⊒-trans e′ e₁ , substDep E Sb
+instrument-d (⇓-app mDs mDt mDb) Φ
   with instrument-d mDs Φ
-... | k₁ , Φ₁ , R
+... | Φ₁ , e₁ , R
   with instrument-d mDt Φ₁
-... | k₂ , Φ₂ , Sa
+... | Φ₂ , e₂ , Sa
   with instrument-d mDb ∅
-... | k₃ , Φ₃ , Tb =
-  (k₁ + k₂) + k₃
-  , seq-cast (assoc3 p k₁ k₂ k₃)
-      (append-subst Φ₂ (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa) Φ₃)
-  , mcast (width-env γ) (assoc3 p k₁ k₂ k₃)
-      (Tb M.∘ frame-emb (width-env γ) ((p + k₁) + k₂) k₃
-              (stack _ _ (widen (width-env γ) (p + k₁) k₂ R) Sa))
-instrument-d (⇓-bop {ω = ω} {vs = vs} mEs) Φ
-  with instrument-ds mEs Φ
-... | k , Φ' , Rs = k , Φ' , op-deps ω .func vs M.∘ Rs
-instrument-d {γ = γ} {p = p} (⇓-brel {ω = ω} {vs = vs} mEs) Φ
-  with instrument-ds mEs Φ
-... | k , Φ' , Rs =
-  k , Φ' , pad (width-env γ) (p + k) (brel-mat γ (rel-pred ω .func vs))
-instrument-d {γ = γ} {p = p} (⇓-fold mDt mDm) Φ
+... | Φ₃ , e₃ , Tb =
+  let E = pairDep (widen e₂ R) Sa
+      (Φ′ , e′) = substGraph E Φ₃
+  in Φ′ , ⊒-trans e′ (⊒-trans e₂ e₁) , substDep E Tb
+instrument-d (⇓-bop {ω = ω} {vs = vs} mEs) Φ with instrument-ds mEs Φ
+... | Φ′ , e , Rs = Φ′ , e , mapCod (op-deps ω .func vs) Rs
+instrument-d {γ = γ} (⇓-brel {ω = ω} {vs = vs} mEs) Φ with instrument-ds mEs Φ
+... | Φ′ , e , _ = Φ′ , e , constDep Φ′ (brel-mat γ (rel-pred ω .func vs))
+instrument-d (⇓-fold mDt mDm) Φ
   with instrument-d mDt Φ
-... | k₁ , Φ₁ , R₁
+... | Φ₁ , e₁ , R₁
   with instrument-dm mDm Φ₁ R₁
-... | k₂ , Φ₂ , R₂ =
-  k₁ + k₂ , seq-cast (+-assoc p k₁ k₂) Φ₂ , mcast (width-env γ) (+-assoc p k₁ k₂) R₂
+... | Φ₂ , e₂ , R₂ = Φ₂ , ⊒-trans e₂ e₁ , R₂
 
-instrument-ds [] Φ = leaf Φ M.εₘ
-instrument-ds {γ = γ} {p = p} (mE ∷ mEs) Φ
+instrument-ds [] Φ = Φ , done , constDep Φ M.εₘ
+instrument-ds (mE ∷ mEs) Φ
   with instrument-d mE Φ
-... | k₁ , Φ₁ , R₁
+... | Φ₁ , e₁ , R₁
   with instrument-ds mEs Φ₁
-... | k₂ , Φ₂ , Rs =
-  k₁ + k₂
-  , seq-cast (+-assoc p k₁ k₂) Φ₂
-  , mcast (width-env γ) (+-assoc p k₁ k₂)
-      (stack _ _ (widen (width-env γ) (p + k₁) k₂ R₁) Rs)
+... | Φ₂ , e₂ , Rs = Φ₂ , ⊒-trans e₂ e₁ , pairDep (widen e₂ R₁) Rs
 
-instrument-dm {γ = γ} {p = p} m-unit Φ Rin =
-  0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin
-instrument-dm {γ = γ} {p = p} m-base Φ Rin =
-  0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin
-instrument-dm {γ = γ} {p = p} m-arrow Φ Rin =
-  0 , seq-cast (sym (+-identityʳ p)) Φ , widen (width-env γ) p 0 Rin
+instrument-dm m-unit Φ Rin = Φ , done , Rin
+instrument-dm m-base Φ Rin = Φ , done , Rin
+instrument-dm m-arrow Φ Rin = Φ , done , Rin
 instrument-dm (m-inl mDm) Φ Rin = instrument-dm mDm Φ Rin
 instrument-dm (m-inr mDm) Φ Rin = instrument-dm mDm Φ Rin
-instrument-dm {γ = γ} {p = p} (m-pair mDm₁ mDm₂) Φ Rin
-  with instrument-dm mDm₁ Φ (M.p₁ M.∘ Rin)
-... | k₁ , Φ₁ , S₁
-  with instrument-dm mDm₂ Φ₁ (widen (width-env γ) p k₁ (M.p₂ M.∘ Rin))
-... | k₂ , Φ₂ , S₂ =
-  k₁ + k₂
-  , seq-cast (+-assoc p k₁ k₂) Φ₂
-  , mcast (width-env γ) (+-assoc p k₁ k₂)
-      (stack _ _ (widen (width-env γ) (p + k₁) k₂ S₁) S₂)
-instrument-dm {γ = γ} {p = p} (m-rec mDm mDb) Φ Rin
+instrument-dm (m-pair mDm₁ mDm₂) Φ Rin
+  with instrument-dm mDm₁ Φ (mapCod M.p₁ Rin)
+... | Φ₁ , e₁ , S₁
+  with instrument-dm mDm₂ Φ₁ (widen e₁ (mapCod M.p₂ Rin))
+... | Φ₂ , e₂ , S₂ = Φ₂ , ⊒-trans e₂ e₁ , pairDep (widen e₂ S₁) S₂
+instrument-dm (m-rec mDm mDb) Φ Rin
   with instrument-dm mDm Φ Rin
-... | k₁ , Φ₁ , R₁
+... | Φ₁ , e₁ , R₁
   with instrument-d mDb ∅
-... | k₂ , Φ₂ , Sb =
-  k₁ + k₂
-  , seq-cast (+-assoc p k₁ k₂)
-      (append-subst Φ₁ (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁) Φ₂)
-  , mcast (width-env γ) (+-assoc p k₁ k₂)
-      (Sb M.∘ frame-emb (width-env γ) (p + k₁) k₂
-              (stack _ _ (id-frame (width-env γ) (p + k₁)) R₁))
-instrument-dm {γ = γ} {τ₀ = τ₀} {σr = σr} (m-mu {τ' = τ'} {w = w} {w' = w'} mDm) Φ Rin
-  with instrument-dm mDm Φ (rowcast (width-subst (unfold₁-inst τ' (μ τ₀)) w) Rin)
-... | k , Φ' , S' =
-  k , Φ' , rowcast (sym (width-subst (unfold₁-inst τ' σr) w')) S'
-
+... | Φ₂ , e₂ , Sb =
+  let E = pairDep (constDep Φ₁ M.I) R₁
+      (Φ′ , e′) = substGraph E Φ₂
+  in Φ′ , ⊒-trans e′ e₁ , substDep E Sb
+instrument-dm {τ₀ = τ₀} {σr = σr} (m-mu {τ' = τ'} {w = w} {w' = w'} mDm) Φ Rin
+  with instrument-dm mDm Φ (dcast (width-subst (unfold₁-inst τ' (μ τ₀)) w) Rin)
+... | Φ′ , e , S′ = Φ′ , e , dcast (sym (width-subst (unfold₁-inst τ' σr) w')) S′
