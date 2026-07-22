@@ -16,7 +16,7 @@ open import example.runs
 open Instr using (∅; ents; collapse; gwidth; instrument-d; visible-none)
 
 -- Flattening: collapsing the instrumented relation gives the plain run's relation.
-flat-mm : ents (collapse (proj₂ (proj₂ inst-mm)))
+flat-mm : ents (collapse (proj₂ inst-mm))
           ≡ ents (proj₁ (proj₂ run-mm))
 flat-mm = refl
 
@@ -25,5 +25,5 @@ width-query : gwidth (proj₁ inst-query-a-fine) ≡ 7
 width-query = refl
 
 -- The run with nothing visible adds no intermediates.
-nothing-visible-query : proj₁ (instrument-d (visible-none D-query) ∅) ≡ ∅
+nothing-visible-query : proj₁ (instrument-d (visible-none D-query)) ≡ ∅
 nothing-visible-query = refl

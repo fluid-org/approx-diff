@@ -58,7 +58,7 @@ private
        then rel-label (edge-rel Φ i j) (nth widths i) (nth widths j)
        else "")
 
-  Φ-of : ∀ {g} {Φ : Graph g} {t} (r : instrument.Out Sig Dep.primitives g Φ t) → Graph g
+  Φ-of : ∀ {g t} (r : instrument.Res Sig Dep.primitives g t) → Graph g
   Φ-of r = proj₁ r
 
 targets : List (String × String)

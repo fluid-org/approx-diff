@@ -50,7 +50,7 @@ run-add = Tot.fundamental M-add (emp · const 0ℚ · const 1ℚ) ((tt , tt) , t
 
 D-add = proj₁ (proj₂ (proj₂ run-add))
 
-inst-add-full = instrument-d (visible-all D-add) ∅
+inst-add-full = instrument-d (visible-all D-add)
 
 ------------------------------------------------------------------------
 -- Multiplication of two variables, at (0, 1). The derivative of x * y is [y, x], so the result
@@ -63,7 +63,7 @@ run-mult = Tot.fundamental M-mult (emp · const 0ℚ · const 1ℚ) ((tt , tt) ,
 
 D-mult = proj₁ (proj₂ (proj₂ run-mult))
 
-inst-mult-full = instrument-d (visible-all D-mult) ∅
+inst-mult-full = instrument-d (visible-all D-mult)
 
 ------------------------------------------------------------------------
 -- Sum the numbers paired with a given label in a list of (label, number) pairs, fused into a
@@ -91,7 +91,7 @@ run-query = Tot.eval (query L.a input)
 
 D-query = proj₂ (proj₂ run-query)
 
-inst-query-a-full = instrument-d (visible-all D-query) ∅
+inst-query-a-full = instrument-d (visible-all D-query)
 
 ------------------------------------------------------------------------
 -- Revealing each input entry and each fold body result.
@@ -106,7 +106,6 @@ inst-query-a-fine =
     (reveal-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
     (reveal-at (fold₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₁ ∷ m-inj ∷ m-pair₂ ∷ rec₂ ∷ [])
     (visible-none D-query))))))))
-    ∅
 
 ------------------------------------------------------------------------
 -- Coarse visibility: the input list as a single width-3 intermediate and the query result, with the
@@ -117,7 +116,6 @@ inst-query-a-coarse =
     (reveal-at (fold₁ ∷ [])
     (reveal-at []
     (visible-none D-query)))
-    ∅
 
 ------------------------------------------------------------------------
 -- Flattening example: y * (x + y) with the sum revealed.
@@ -132,7 +130,7 @@ run-mm = Tot.fundamental t-mm γ-mm ((tt , tt) , tt)
 
 D-mm = proj₁ (proj₂ (proj₂ run-mm))
 
-inst-mm = instrument-d (reveal-at (bop ∷ hd ∷ []) (visible-none D-mm)) ∅
+inst-mm = instrument-d (reveal-at (bop ∷ hd ∷ []) (visible-none D-mm))
 
 ------------------------------------------------------------------------
 -- Moving average with window two: adjacent outputs share an input.
@@ -147,7 +145,7 @@ run-mavg = Tot.fundamental (Dep.mavg half) γ-mavg (tt , tt , tt , tt , tt)
 
 D-mavg = proj₁ (proj₂ (proj₂ run-mavg))
 
-inst-mavg-full = instrument-d (visible-all D-mavg) ∅
+inst-mavg-full = instrument-d (visible-all D-mavg)
 
 -- Coarse visibility: eta-expanded so the input is evaluated once, giving a single width-4
 -- intermediate; the one edge to the output carries the full dependency relation.
@@ -164,4 +162,3 @@ inst-mavg-coarse =
     (reveal-at (app₂ ∷ [])
     (reveal-at []
     (visible-none D-mavg-coarse)))
-    ∅

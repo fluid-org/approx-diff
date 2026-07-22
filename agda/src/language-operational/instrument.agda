@@ -341,102 +341,99 @@ hide-at-m _ mDm = mDm
 ------------------------------------------------------------------------
 -- Instrumentation.
 
-Out : (g : ℕ) → Graph g → ℕ → Set ℓ
-Out g Φ t = Σ (Graph g) λ Φ′ → (Φ′ ⊒ Φ) × Dep g Φ′ t
+Res : (g : ℕ) → ℕ → Set ℓ
+Res g t = Σ (Graph g) λ G → Dep g G t
+
+Out : (g : ℕ) (G : Graph g) → ℕ → Set ℓ
+Out g G t = Σ (Graph g) λ G′ → (G′ ⊒ G) × Dep g G′ t
 
 instrument-d :
   ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} {D : γ , t ⇓ v [ R ]} →
-  Visible D → (Φ : Graph (width-env γ)) → Out (width-env γ) Φ (width v)
+  Visible D → Res (width-env γ) (width v)
 instrument-ds :
   ∀ {Γ is} {Ms : Every (λ s → Γ ⊢ base s) is} {γ : Env Γ} {vs Rs}
   {Ds : γ , Ms ⇓s vs [ Rs ]} →
-  VisibleS Ds → (Φ : Graph (width-env γ)) → Out (width-env γ) Φ (bases-width is)
+  VisibleS Ds → Res (width-env γ) (bases-width is)
 instrument-dm :
   ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
   {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : M.Matrix (width v) (width-env γ)}
   {v' : Val (σ' [ σr ])} {R' : M.Matrix (width v') (width-env γ)}
   {Dm : Map γ s σ' v R v' R'} →
-  VisibleM Dm → (Φ : Graph (width-env γ)) → Dep (width-env γ) Φ (width v) →
-  Out (width-env γ) Φ (width v')
+  VisibleM Dm → (G : Graph (width-env γ)) → Dep (width-env γ) G (width v) →
+  Out (width-env γ) G (width v')
 
-instrument-d {v = v} (vis fo mD) Φ with instrument-d mD Φ
-... | Φ′ , e , R = snoc Φ′ v R , more e , constDep Φ′ M.εₘ ∣ M.I
-instrument-d {γ = γ} (⇓-var x) Φ = Φ , done , constDep Φ (proj-var x γ)
-instrument-d ⇓-unit Φ = Φ , done , constDep Φ M.εₘ
-instrument-d ⇓-lam Φ = Φ , done , constDep Φ M.I
-instrument-d (⇓-inl mD) Φ = instrument-d mD Φ
-instrument-d (⇓-inr mD) Φ = instrument-d mD Φ
-instrument-d (⇓-roll mD) Φ = instrument-d mD Φ
-instrument-d (⇓-fst mD) Φ with instrument-d mD Φ
-... | Φ′ , e , R = Φ′ , e , mapCod M.p₁ R
-instrument-d (⇓-snd mD) Φ with instrument-d mD Φ
-... | Φ′ , e , R = Φ′ , e , mapCod M.p₂ R
-instrument-d (⇓-pair mD₁ mD₂) Φ
-  with instrument-d mD₁ Φ
-... | Φ₁ , e₁ , R₁
-  with instrument-d mD₂ Φ₁
-... | Φ₂ , e₂ , R₂ = Φ₂ , ⊒-trans e₂ e₁ , pairDep (widen e₂ R₁) R₂
-instrument-d (⇓-case-l mDs mD₁) Φ
-  with instrument-d mDs Φ
-... | Φ₁ , e₁ , R₁
-  with instrument-d mD₁ ∅
-... | Φ₂ , e₂ , Sb =
-  let E = pairDep (constDep Φ₁ M.I) R₁
-      (Φ′ , e′) = substGraph E Φ₂
-  in Φ′ , ⊒-trans e′ e₁ , substDep E Sb
-instrument-d (⇓-case-r mDs mD₂) Φ
-  with instrument-d mDs Φ
-... | Φ₁ , e₁ , R₁
-  with instrument-d mD₂ ∅
-... | Φ₂ , e₂ , Sb =
-  let E = pairDep (constDep Φ₁ M.I) R₁
-      (Φ′ , e′) = substGraph E Φ₂
-  in Φ′ , ⊒-trans e′ e₁ , substDep E Sb
-instrument-d (⇓-app mDs mDt mDb) Φ
-  with instrument-d mDs Φ
-... | Φ₁ , e₁ , R
-  with instrument-d mDt Φ₁
-... | Φ₂ , e₂ , Sa
-  with instrument-d mDb ∅
-... | Φ₃ , e₃ , Tb =
-  let E = pairDep (widen e₂ R) Sa
-      (Φ′ , e′) = substGraph E Φ₃
-  in Φ′ , ⊒-trans e′ (⊒-trans e₂ e₁) , substDep E Tb
-instrument-d (⇓-bop {ω = ω} {vs = vs} mEs) Φ with instrument-ds mEs Φ
-... | Φ′ , e , Rs = Φ′ , e , mapCod (op-deps ω .func vs) Rs
-instrument-d {γ = γ} (⇓-brel {ω = ω} {vs = vs} mEs) Φ with instrument-ds mEs Φ
-... | Φ′ , e , _ = Φ′ , e , constDep Φ′ (brel-mat γ (rel-pred ω .func vs))
-instrument-d (⇓-fold mDt mDm) Φ
-  with instrument-d mDt Φ
-... | Φ₁ , e₁ , R₁
-  with instrument-dm mDm Φ₁ R₁
-... | Φ₂ , e₂ , R₂ = Φ₂ , ⊒-trans e₂ e₁ , R₂
+instrument-d {v = v} (vis fo mD) with instrument-d mD
+... | G , R = snoc G v R , constDep G M.εₘ ∣ M.I
+instrument-d {γ = γ} (⇓-var x) = ∅ , ⟨ proj-var x γ ∣⟩
+instrument-d ⇓-unit = ∅ , ⟨ M.εₘ ∣⟩
+instrument-d ⇓-lam = ∅ , ⟨ M.I ∣⟩
+instrument-d (⇓-inl mD) = instrument-d mD
+instrument-d (⇓-inr mD) = instrument-d mD
+instrument-d (⇓-roll mD) = instrument-d mD
+instrument-d (⇓-fst mD) with instrument-d mD
+... | G , R = G , mapCod M.p₁ R
+instrument-d (⇓-snd mD) with instrument-d mD
+... | G , R = G , mapCod M.p₂ R
+instrument-d (⇓-pair mD₁ mD₂) with instrument-d mD₁
+... | G , R
+  with instrument-d mD₂
+... | H , S = G ++G H , R ⊕ S
+instrument-d (⇓-case-l mDs mD₁) with instrument-d mDs
+... | G , R
+  with instrument-d mD₁
+... | H , Sb =
+  let E = pairDep (constDep G M.I) R
+      (G′ , _) = substGraph E H
+  in G′ , substDep E Sb
+instrument-d (⇓-case-r mDs mD₂) with instrument-d mDs
+... | G , R
+  with instrument-d mD₂
+... | H , Sb =
+  let E = pairDep (constDep G M.I) R
+      (G′ , _) = substGraph E H
+  in G′ , substDep E Sb
+instrument-d (⇓-app mDs mDt mDb) with instrument-d mDs
+... | G , R
+  with instrument-d mDt
+... | H , Sa
+  with instrument-d mDb
+... | K , Tb =
+  let E = R ⊕ Sa
+      (G′ , _) = substGraph E K
+  in G′ , substDep E Tb
+instrument-d (⇓-bop {ω = ω} {vs = vs} mEs) with instrument-ds mEs
+... | G , Rs = G , mapCod (op-deps ω .func vs) Rs
+instrument-d {γ = γ} (⇓-brel {ω = ω} {vs = vs} mEs) with instrument-ds mEs
+... | G , _ = G , constDep G (brel-mat γ (rel-pred ω .func vs))
+instrument-d (⇓-fold mDt mDm) with instrument-d mDt
+... | G , R
+  with instrument-dm mDm G R
+... | G′ , _ , R′ = G′ , R′
 
-instrument-ds [] Φ = Φ , done , constDep Φ M.εₘ
-instrument-ds (mE ∷ mEs) Φ
-  with instrument-d mE Φ
-... | Φ₁ , e₁ , R₁
-  with instrument-ds mEs Φ₁
-... | Φ₂ , e₂ , Rs = Φ₂ , ⊒-trans e₂ e₁ , pairDep (widen e₂ R₁) Rs
+instrument-ds [] = ∅ , ⟨ M.εₘ ∣⟩
+instrument-ds (mE ∷ mEs) with instrument-d mE
+... | G , R
+  with instrument-ds mEs
+... | H , Rs = G ++G H , R ⊕ Rs
 
-instrument-dm m-unit Φ Rin = Φ , done , Rin
-instrument-dm m-base Φ Rin = Φ , done , Rin
-instrument-dm m-arrow Φ Rin = Φ , done , Rin
-instrument-dm (m-inl mDm) Φ Rin = instrument-dm mDm Φ Rin
-instrument-dm (m-inr mDm) Φ Rin = instrument-dm mDm Φ Rin
-instrument-dm (m-pair mDm₁ mDm₂) Φ Rin
-  with instrument-dm mDm₁ Φ (mapCod M.p₁ Rin)
-... | Φ₁ , e₁ , S₁
-  with instrument-dm mDm₂ Φ₁ (widen e₁ (mapCod M.p₂ Rin))
-... | Φ₂ , e₂ , S₂ = Φ₂ , ⊒-trans e₂ e₁ , pairDep (widen e₂ S₁) S₂
-instrument-dm (m-rec mDm mDb) Φ Rin
-  with instrument-dm mDm Φ Rin
-... | Φ₁ , e₁ , R₁
-  with instrument-d mDb ∅
-... | Φ₂ , e₂ , Sb =
-  let E = pairDep (constDep Φ₁ M.I) R₁
-      (Φ′ , e′) = substGraph E Φ₂
-  in Φ′ , ⊒-trans e′ e₁ , substDep E Sb
-instrument-dm {τ₀ = τ₀} {σr = σr} (m-mu {τ' = τ'} {w = w} {w' = w'} mDm) Φ Rin
-  with instrument-dm mDm Φ (dcast (width-subst (unfold₁-inst τ' (μ τ₀)) w) Rin)
-... | Φ′ , e , S′ = Φ′ , e , dcast (sym (width-subst (unfold₁-inst τ' σr) w')) S′
+instrument-dm m-unit G Rin = G , done , Rin
+instrument-dm m-base G Rin = G , done , Rin
+instrument-dm m-arrow G Rin = G , done , Rin
+instrument-dm (m-inl mDm) G Rin = instrument-dm mDm G Rin
+instrument-dm (m-inr mDm) G Rin = instrument-dm mDm G Rin
+instrument-dm (m-pair mDm₁ mDm₂) G Rin
+  with instrument-dm mDm₁ G (mapCod M.p₁ Rin)
+... | G₁ , e₁ , S₁
+  with instrument-dm mDm₂ G₁ (widen e₁ (mapCod M.p₂ Rin))
+... | G₂ , e₂ , S₂ = G₂ , ⊒-trans e₂ e₁ , pairDep (widen e₂ S₁) S₂
+instrument-dm (m-rec mDm mDb) G Rin
+  with instrument-dm mDm G Rin
+... | G₁ , e₁ , R₁
+  with instrument-d mDb
+... | H , Sb =
+  let E = pairDep (constDep G₁ M.I) R₁
+      (G′ , e′) = substGraph E H
+  in G′ , ⊒-trans e′ e₁ , substDep E Sb
+instrument-dm {τ₀ = τ₀} {σr = σr} (m-mu {τ' = τ'} {w = w} {w' = w'} mDm) G Rin
+  with instrument-dm mDm G (dcast (width-subst (unfold₁-inst τ' (μ τ₀)) w) Rin)
+... | G′ , e , S′ = G′ , e , dcast (sym (width-subst (unfold₁-inst τ' σr) w')) S′

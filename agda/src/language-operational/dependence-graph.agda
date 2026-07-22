@@ -66,16 +66,6 @@ dcast refl D = D
 ------------------------------------------------------------------------
 -- Basic operations, mirroring the paper.
 
--- The environment relation R₀.
-env-rel : ∀ {g G n} → Dep g G n → M.Matrix n g
-env-rel ⟨ R₀ ∣⟩ = R₀
-env-rel (D ∣ _)  = env-rel D
-
--- The copair [R₀, R₁, …, Rₖ] over the concatenated domain g + gwidth G.
-copair : ∀ {g G n} → Dep g G n → M.Matrix n (g + gwidth G)
-copair {g} ⟨ R₀ ∣⟩          = ccast (sym (+-identityʳ g)) R₀
-copair {g} (_∣_ {G} {v = v} D R′) = ccast (+-assoc g (gwidth G) (width v)) (copair D M.∥ R′)
-
 -- Post-compose the codomain of every relation.
 mapCod : ∀ {g G m n} → M.Matrix n m → Dep g G m → Dep g G n
 mapCod f ⟨ R₀ ∣⟩ = ⟨ f M.∘ R₀ ∣⟩
@@ -95,6 +85,23 @@ pairDep (D ∣ R) (E ∣ S)  = pairDep D E ∣ ⟨ R , S ⟩
 addDep : ∀ {g G n} → Dep g G n → Dep g G n → Dep g G n
 addDep ⟨ A ∣⟩   ⟨ B ∣⟩   = ⟨ A M.+ₘ B ∣⟩
 addDep (D ∣ R) (E ∣ S)  = addDep D E ∣ (R M.+ₘ S)
+
+mutual
+  _++G_ : ∀ {g} → Graph g → Graph g → Graph g
+  G ++G ∅          = G
+  G ++G snoc H v S = snoc (G ++G H) v (inject G S)
+
+  inject : ∀ {g} (G : Graph g) {H : Graph g} {n} → Dep g H n → Dep g (G ++G H) n
+  inject G ⟨ R₀ ∣⟩  = constDep G R₀
+  inject G (S ∣ Rk) = inject G S ∣ Rk
+
+infixl 25 _++G_
+
+_⊕_ : ∀ {g} {G H : Graph g} {m n} → Dep g G m → Dep g H n → Dep g (G ++G H) (m + n)
+_⊕_ {G = G} R ⟨ S₀ ∣⟩ = pairDep R (constDep G S₀)
+R ⊕ (S ∣ Sk)          = (R ⊕ S) ∣ ⟨ M.εₘ , Sk ⟩
+
+infixl 26 _⊕_
 
 ------------------------------------------------------------------------
 -- Graph extension, for widening a dependence as the graph grows.
