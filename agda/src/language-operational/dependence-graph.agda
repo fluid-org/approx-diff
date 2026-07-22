@@ -97,11 +97,11 @@ mutual
 
 infixl 25 _++G_
 
-_⊕_ : ∀ {g} {G H : Graph g} {m n} → Dep g G m → Dep g H n → Dep g (G ++G H) (m + n)
-_⊕_ {G = G} R ⟨ S₀ ∣⟩ = pairDep R (constDep G S₀)
-R ⊕ (S ∣ Sk)          = (R ⊕ S) ∣ ⟨ M.εₘ , Sk ⟩
+_⊗_ : ∀ {g} {G H : Graph g} {m n} → Dep g G m → Dep g H n → Dep g (G ++G H) (m + n)
+_⊗_ {G = G} R ⟨ S₀ ∣⟩ = pairDep R (constDep G S₀)
+R ⊗ (S ∣ Sk)          = (R ⊗ S) ∣ ⟨ M.εₘ , Sk ⟩
 
-infixl 26 _⊕_
+infixl 26 _⊗_
 
 ------------------------------------------------------------------------
 -- Graph extension, for widening a dependence as the graph grows.

@@ -377,7 +377,7 @@ instrument-d (⇓-snd mD) with instrument-d mD
 instrument-d (⇓-pair mD₁ mD₂) with instrument-d mD₁
 ... | G , R
   with instrument-d mD₂
-... | H , S = G ++G H , R ⊕ S
+... | H , S = G ++G H , R ⊗ S
 instrument-d (⇓-case-l mDs mD₁) with instrument-d mDs
 ... | G , R
   with instrument-d mD₁
@@ -398,7 +398,7 @@ instrument-d (⇓-app mDs mDt mDb) with instrument-d mDs
 ... | H , Sa
   with instrument-d mDb
 ... | K , Tb =
-  let E = R ⊕ Sa
+  let E = R ⊗ Sa
       (G′ , _) = substGraph E K
   in G′ , substDep E Tb
 instrument-d (⇓-bop {ω = ω} {vs = vs} mEs) with instrument-ds mEs
@@ -414,7 +414,7 @@ instrument-ds [] = ∅ , ⟨ M.εₘ ∣⟩
 instrument-ds (mE ∷ mEs) with instrument-d mE
 ... | G , R
   with instrument-ds mEs
-... | H , Rs = G ++G H , R ⊕ Rs
+... | H , Rs = G ++G H , R ⊗ Rs
 
 instrument-dm m-unit G Rin = G , done , Rin
 instrument-dm m-base G Rin = G , done , Rin
