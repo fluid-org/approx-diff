@@ -21,12 +21,18 @@ private
   module M = matrix.Mat two.semiring
 
 open CommutativeSemiring two.semiring using (+-comm; +-cong; refl; trans)
+import Data.Bool
+open import Data.List using (List; []; _∷_; map)
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
+open import Relation.Binary.PropositionalEquality using (_≡_)
+open import prop-setoid using (module ≈-Reasoning)
 open import categories using (Category; HasTerminal)
-open Category M.cat using () renaming (id to idm)
+open Category M.cat using (_⇒_; ∘-cong; assoc; ≈-refl; ≈-sym; ≈-trans; isEquiv) renaming (id to idm)
 open HasTerminal M.terminal using (to-terminal)
 
 +ₘ-runit : ∀ {m n} (R : M.Matrix m n) → (R M.+ₘ M.εₘ) M.≈ₘ R
 +ₘ-runit R i j = +-comm {x = R i j} {y = two.O}
+
 -- The root of a graph is a sink: its row is zero.
 root-sink : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (y : Vertex D) →
             graph D (at ε) y M.≈ₘ M.εₘ
@@ -84,7 +90,6 @@ absorb : ∀ {m n k} (R : M.Matrix m n) (S : M.Matrix k n) → (R M.+ₘ (M.ε�
 absorb R S i j = trans (+-cong (refl {x = R i j}) (M.comp-bilinear-ε₁ S i j))
                        (+-comm {x = R i j} {y = two.O})
 
-
 -- Axiom rules: the only path is the root, and hiding it composes a zero column, so the collapse is
 -- the rule's relation on the nose.
 agree-var : ∀ {Γ τ} {γ : Env Γ} (x : Γ ∋ τ) → collapse (⇓-var x) M.≈ₘ proj-var x γ
@@ -96,3 +101,65 @@ agree-unit () j
 agree-lam : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} →
             collapse (⇓-lam {γ = γ} {t = t}) M.≈ₘ idm (width-env γ)
 agree-lam {γ = γ} = absorb (idm (width-env γ)) (idm (width-env γ))
+
++ₘ-cong : ∀ {m n} {R R' S S' : M.Matrix m n} →
+          R M.≈ₘ R' → S M.≈ₘ S' → (R M.+ₘ S) M.≈ₘ (R' M.+ₘ S')
++ₘ-cong h k i j = +-cong (h i j) (k i j)
+
+-- Hiding the root changes nothing, its row being zero.
+hide-root : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (x y : Vertex D) →
+            hide (graph D) (at ε) x y M.≈ₘ graph D x y
+hide-root D x y =
+  ≈-trans (+ₘ-cong ≈-refl (∘-cong (root-sink D y) ≈-refl))
+          (absorb (graph D x y) (graph D x (at ε)))
+
+-- Simulation of a premise embedded by inl: hiding the embedded copy of a premise path tracks
+-- hiding the path in the premise, with the composite root standing for the premise root through
+-- the root edge P. The premise-root column claim excludes the root itself, whose composite entry
+-- is stale once hidden.
+module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : width-env γ ⇒ width v}
+         {D : γ , t ⇓ v [ R ]} where
+
+  record SimInl (A : Graph (⇓-inl {τ₂ = τ₂} D)) (H : Graph D)
+                (P : M.Matrix (width v) (width v)) : Set ℓ where
+    field
+      s-env  : ∀ q → A env (at (inl q)) M.≈ₘ H env (at q)
+      s-emb  : ∀ p q → A (at (inl p)) (at (inl q)) M.≈ₘ H (at p) (at q)
+      s-envr : A env (at ε) M.≈ₘ (P M.∘ H env (at ε))
+      s-embr : ∀ p → is-ε p ≡ Data.Bool.false →
+               A (at (inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
+
+  open SimInl
+
+  sim-step : ∀ {A H P} (w : Path D) → is-ε w ≡ Data.Bool.false →
+             SimInl A H P → SimInl (hide A (at (inl w))) (hide H (at w)) P
+  sim-step w nw s .s-env q  = +ₘ-cong (s .s-env q) (∘-cong (s .s-emb w q) (s .s-env w))
+  sim-step w nw s .s-emb p q = +ₘ-cong (s .s-emb p q) (∘-cong (s .s-emb w q) (s .s-emb p w))
+  sim-step {A} {H} {P} w nw s .s-envr =
+    begin
+      A env (at ε) M.+ₘ (A (at (inl w)) (at ε) M.∘ A env (at (inl w)))
+        ≈⟨ +ₘ-cong (s .s-envr) (∘-cong (s .s-embr w nw) (s .s-env w)) ⟩
+      (P M.∘ H env (at ε)) M.+ₘ ((P M.∘ H (at w) (at ε)) M.∘ H env (at w))
+        ≈⟨ +ₘ-cong ≈-refl (assoc P (H (at w) (at ε)) (H env (at w))) ⟩
+      (P M.∘ H env (at ε)) M.+ₘ (P M.∘ (H (at w) (at ε) M.∘ H env (at w)))
+        ≈⟨ ≈-sym (M.comp-bilinear₂ P (H env (at ε)) (H (at w) (at ε) M.∘ H env (at w))) ⟩
+      P M.∘ (H env (at ε) M.+ₘ (H (at w) (at ε) M.∘ H env (at w)))
+    ∎
+    where open ≈-Reasoning isEquiv
+  sim-step {A} {H} {P} w nw s .s-embr p np =
+    begin
+      A (at (inl p)) (at ε) M.+ₘ (A (at (inl w)) (at ε) M.∘ A (at (inl p)) (at (inl w)))
+        ≈⟨ +ₘ-cong (s .s-embr p np) (∘-cong (s .s-embr w nw) (s .s-emb p w)) ⟩
+      (P M.∘ H (at p) (at ε)) M.+ₘ ((P M.∘ H (at w) (at ε)) M.∘ H (at p) (at w))
+        ≈⟨ +ₘ-cong ≈-refl (assoc P (H (at w) (at ε)) (H (at p) (at w))) ⟩
+      (P M.∘ H (at p) (at ε)) M.+ₘ (P M.∘ (H (at w) (at ε) M.∘ H (at p) (at w)))
+        ≈⟨ ≈-sym (M.comp-bilinear₂ P (H (at p) (at ε)) (H (at w) (at ε) M.∘ H (at p) (at w))) ⟩
+      P M.∘ (H (at p) (at ε) M.+ₘ (H (at w) (at ε) M.∘ H (at p) (at w)))
+    ∎
+    where open ≈-Reasoning isEquiv
+
+  sim-fold : ∀ {A H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Data.Bool.false) ws →
+             SimInl A H P →
+             SimInl (hide-all A (map (λ w → at (inl w)) ws)) (hide-all H (map at ws)) P
+  sim-fold []       []         s = s
+  sim-fold (w ∷ ws) (nw ∷ nws) s = sim-fold ws nws (sim-step w nw s)
