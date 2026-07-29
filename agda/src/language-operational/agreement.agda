@@ -29,7 +29,7 @@ open import Data.List.Relation.Unary.All.Properties using (map⁺; ++⁺)
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl; cong to ≡-cong; trans to ≡-trans)
 open import prop-setoid using (module ≈-Reasoning)
 open import categories using (Category; HasTerminal)
-open Category M.cat using (_⇒_; ∘-cong; assoc; id-left; ≈-refl; ≈-sym; ≈-trans; isEquiv) renaming (id to idm)
+open Category M.cat using (_⇒_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; ≈-refl; ≈-sym; ≈-trans; isEquiv) renaming (id to idm)
 open HasTerminal M.terminal using (to-terminal)
 
 +ₘ-runit : ∀ {m n} (R : M.Matrix m n) → (R M.+ₘ M.εₘ) M.≈ₘ R
@@ -238,13 +238,13 @@ module Inl {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R 
       ≈-trans (+ₘ-cong (root-noop env (at ε))
                        (∘-cong (root-noop (at (inl ε)) (at ε)) (root-noop env (at (inl ε)))))
       (≈-trans (+ₘ-lunit (M.I M.∘ graph D env (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D env (at ε)))))
+               (∘-cong₂ (≈-sym (hide-root D env (at ε)))))
     embeds₀ .embed-root p np =
       ≈-trans (+ₘ-cong (root-noop (at (inl p)) (at ε))
                        (∘-cong (root-noop (at (inl ε)) (at ε)) (root-noop (at (inl p)) (at (inl ε)))))
       (≈-trans (+ₘ-cong (edge-off M.I p np) ≈-refl)
       (≈-trans (+ₘ-lunit (M.I M.∘ graph D (at p) (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D (at p) (at ε))))))
+               (∘-cong₂ (≈-sym (hide-root D (at p) (at ε))))))
 
   agree-inl : collapse (⇓-inl {τ₂ = τ₂} D) M.≈ₘ collapse D
   agree-inl = ≈-trans (embeds-hide-all (interior D) (interior-not-root D) embeds₀ .env-root) id-left
@@ -298,13 +298,13 @@ module Inr {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₂} {v : Val τ₂} {R 
       ≈-trans (+ₘ-cong (root-noop env (at ε))
                        (∘-cong (root-noop (at (inr ε)) (at ε)) (root-noop env (at (inr ε)))))
       (≈-trans (+ₘ-lunit (M.I M.∘ graph D env (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D env (at ε)))))
+               (∘-cong₂ (≈-sym (hide-root D env (at ε)))))
     embeds₀ .embed-root p np =
       ≈-trans (+ₘ-cong (root-noop (at (inr p)) (at ε))
                        (∘-cong (root-noop (at (inr ε)) (at ε)) (root-noop (at (inr p)) (at (inr ε)))))
       (≈-trans (+ₘ-cong (edge-off M.I p np) ≈-refl)
       (≈-trans (+ₘ-lunit (M.I M.∘ graph D (at p) (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D (at p) (at ε))))))
+               (∘-cong₂ (≈-sym (hide-root D (at p) (at ε))))))
 
   agree-inr : collapse (⇓-inr {τ₁ = τ₁} D) M.≈ₘ collapse D
   agree-inr = ≈-trans (embeds-hide-all (interior D) (interior-not-root D) embeds₀ .env-root) id-left
@@ -337,8 +337,7 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
             (distrib-root P (H (at p) (at ε)) (H (at w) (at ε)) (H (at p) (at w)))
 
   embeds-hide-all : ∀ {G H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Bool.false) ws →
-             Embeds G H P →
-             Embeds (hide-all G (map at (map fst ws))) (hide-all H (map at ws)) P
+                    Embeds G H P → Embeds (hide-all G (map at (map fst ws))) (hide-all H (map at ws)) P
   embeds-hide-all []       []         s = s
   embeds-hide-all (w ∷ ws) (nw ∷ nws) s = embeds-hide-all ws nws (embeds-hide w nw s)
 
@@ -358,13 +357,13 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
       ≈-trans (+ₘ-cong (root-noop env (at ε))
                        (∘-cong (root-noop (at (fst ε)) (at ε)) (root-noop env (at (fst ε)))))
       (≈-trans (+ₘ-lunit (M.p₁ M.∘ graph D env (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D env (at ε)))))
+               (∘-cong₂ (≈-sym (hide-root D env (at ε)))))
     embeds₀ .embed-root p np =
       ≈-trans (+ₘ-cong (root-noop (at (fst p)) (at ε))
                        (∘-cong (root-noop (at (fst ε)) (at ε)) (root-noop (at (fst p)) (at (fst ε)))))
       (≈-trans (+ₘ-cong (edge-off M.p₁ p np) ≈-refl)
       (≈-trans (+ₘ-lunit (M.p₁ M.∘ graph D (at p) (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D (at p) (at ε))))))
+               (∘-cong₂ (≈-sym (hide-root D (at p) (at ε))))))
 
   agree-fst : collapse (⇓-fst D) M.≈ₘ (M.p₁ M.∘ collapse D)
   agree-fst = embeds-hide-all (interior D) (interior-not-root D) embeds₀ .env-root
@@ -418,13 +417,13 @@ module Snd {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
       ≈-trans (+ₘ-cong (root-noop env (at ε))
                        (∘-cong (root-noop (at (snd ε)) (at ε)) (root-noop env (at (snd ε)))))
       (≈-trans (+ₘ-lunit (M.p₂ M.∘ graph D env (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D env (at ε)))))
+               (∘-cong₂ (≈-sym (hide-root D env (at ε)))))
     embeds₀ .embed-root p np =
       ≈-trans (+ₘ-cong (root-noop (at (snd p)) (at ε))
                        (∘-cong (root-noop (at (snd ε)) (at ε)) (root-noop (at (snd p)) (at (snd ε)))))
       (≈-trans (+ₘ-cong (edge-off M.p₂ p np) ≈-refl)
       (≈-trans (+ₘ-lunit (M.p₂ M.∘ graph D (at p) (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D (at p) (at ε))))))
+               (∘-cong₂ (≈-sym (hide-root D (at p) (at ε))))))
 
   agree-snd : collapse (⇓-snd D) M.≈ₘ (M.p₂ M.∘ collapse D)
   agree-snd = embeds-hide-all (interior D) (interior-not-root D) embeds₀ .env-root
@@ -440,13 +439,12 @@ module Roll {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v : Val 
       env-embed  : ∀ q → G env (at (roll q)) M.≈ₘ H env (at q)
       embed-embed : ∀ p q → G (at (roll p)) (at (roll q)) M.≈ₘ H (at p) (at q)
       env-root : G env (at ε) M.≈ₘ (P M.∘ H env (at ε))
-      embed-root : ∀ p → is-ε p ≡ Bool.false →
-               G (at (roll p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
+      embed-root : ∀ p → is-ε p ≡ Bool.false → G (at (roll p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
 
   open Embeds
 
   embeds-hide : ∀ {G H P} (w : Path D) → is-ε w ≡ Bool.false →
-             Embeds G H P → Embeds (hide G (at (roll w))) (hide H (at w)) P
+                Embeds G H P → Embeds (hide G (at (roll w))) (hide H (at w)) P
   embeds-hide w nw s .env-embed q  = +ₘ-cong (s .env-embed q) (∘-cong (s .embed-embed w q) (s .env-embed w))
   embeds-hide w nw s .embed-embed p q = +ₘ-cong (s .embed-embed p q) (∘-cong (s .embed-embed w q) (s .embed-embed p w))
   embeds-hide {H = H} {P} w nw s .env-root =
@@ -478,13 +476,13 @@ module Roll {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v : Val 
       ≈-trans (+ₘ-cong (root-noop env (at ε))
                        (∘-cong (root-noop (at (roll ε)) (at ε)) (root-noop env (at (roll ε)))))
       (≈-trans (+ₘ-lunit (M.I M.∘ graph D env (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D env (at ε)))))
+               (∘-cong₂ (≈-sym (hide-root D env (at ε)))))
     embeds₀ .embed-root p np =
       ≈-trans (+ₘ-cong (root-noop (at (roll p)) (at ε))
                        (∘-cong (root-noop (at (roll ε)) (at ε)) (root-noop (at (roll p)) (at (roll ε)))))
       (≈-trans (+ₘ-cong (edge-off M.I p np) ≈-refl)
       (≈-trans (+ₘ-lunit (M.I M.∘ graph D (at p) (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root D (at p) (at ε))))))
+               (∘-cong₂ (≈-sym (hide-root D (at p) (at ε))))))
 
   agree-roll : collapse (⇓-roll {τ = τ} D) M.≈ₘ collapse D
   agree-roll = ≈-trans (embeds-hide-all (interior D) (interior-not-root D) embeds₀ .env-root) id-left
@@ -523,23 +521,23 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
             (distrib-root M.in₁ (H (at p) (at ε)) (H (at w) (at ε)) (H (at p) (at w)))
   stepₗ {G} {H} w nw r .env-right q =
     ≈-trans (+ₘ-cong (r .env-right q)
-                     (∘-cong (r .left-right w q) (≈-refl {f = G env (at (pair₁ w))})))
+                     (∘-cong₁ (r .left-right w q)))
             (absorb (graph Dt env (at q)) (G env (at (pair₁ w))))
   stepₗ {G} {H} w nw r .right-right p q =
     ≈-trans (+ₘ-cong (r .right-right p q)
-                     (∘-cong (r .left-right w q) (≈-refl {f = G (at (pair₂ p)) (at (pair₁ w))})))
+                     (∘-cong₁ (r .left-right w q)))
             (absorb (graph Dt (at p) (at q)) (G (at (pair₂ p)) (at (pair₁ w))))
   stepₗ {G} {H} w nw r .right-root p =
     ≈-trans (+ₘ-cong (r .right-root p)
-                     (∘-cong (≈-refl {f = G (at (pair₁ w)) (at ε)}) (r .right-left p w)))
+                     (∘-cong₂ (r .right-left p w)))
             (absorb-r (edge M.in₂ p) (G (at (pair₁ w)) (at ε)))
   stepₗ {G} {H} w nw r .left-right p q =
     ≈-trans (+ₘ-cong (r .left-right p q)
-                     (∘-cong (r .left-right w q) (≈-refl {f = G (at (pair₁ p)) (at (pair₁ w))})))
+                     (∘-cong₁ (r .left-right w q)))
             (absorb M.εₘ (G (at (pair₁ p)) (at (pair₁ w))))
   stepₗ {G} {H} w nw r .right-left p q =
     ≈-trans (+ₘ-cong (r .right-left p q)
-                     (∘-cong (≈-refl {f = G (at (pair₁ w)) (at (pair₁ q))}) (r .right-left p w)))
+                     (∘-cong₂ (r .right-left p w)))
             (absorb-r M.εₘ (G (at (pair₁ w)) (at (pair₁ q))))
 
   foldₗ : ∀ {G H} (ws : List (Path Ds)) → All (λ w → is-ε w ≡ Bool.false) ws →
@@ -562,13 +560,13 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
     base₁ .env-root =
       ≈-trans (+ₘ-cong (rn env (at ε)) (∘-cong (rn (at (pair₁ ε)) (at ε)) (rn env (at (pair₁ ε)))))
       (≈-trans (+ₘ-lunit (M.in₁ M.∘ graph Ds env (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root Ds env (at ε)))))
+               (∘-cong₂ (≈-sym (hide-root Ds env (at ε)))))
     base₁ .left-root p np =
       ≈-trans (+ₘ-cong (rn (at (pair₁ p)) (at ε))
                        (∘-cong (rn (at (pair₁ ε)) (at ε)) (rn (at (pair₁ p)) (at (pair₁ ε)))))
       (≈-trans (+ₘ-cong (edge-off M.in₁ p np) ≈-refl)
       (≈-trans (+ₘ-lunit (M.in₁ M.∘ graph Ds (at p) (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root Ds (at p) (at ε))))))
+               (∘-cong₂ (≈-sym (hide-root Ds (at p) (at ε))))))
     base₁ .env-right q =
       ≈-trans (+ₘ-cong (rn env (at (pair₂ q)))
                        (∘-cong (rn (at (pair₁ ε)) (at (pair₂ q))) (rn env (at (pair₁ ε)))))
@@ -634,12 +632,12 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
       +ₘ-cong (r1 .right-right p q) (∘-cong (r1 .right-right ε q) (r1 .right-right p ε))
     base₂ .env-root =
       ≈-trans (+ₘ-cong (r1 .env-root) (∘-cong (r1 .right-root ε) (r1 .env-right ε)))
-              (+ₘ-cong ≈-refl (∘-cong ≈-refl (≈-sym (hide-root Dt env (at ε)))))
+              (+ₘ-cong ≈-refl (∘-cong₂ (≈-sym (hide-root Dt env (at ε)))))
     base₂ .right-root p np =
       ≈-trans (+ₘ-cong (r1 .right-root p) (∘-cong (r1 .right-root ε) (r1 .right-right p ε)))
       (≈-trans (+ₘ-cong (edge-off M.in₂ p np) ≈-refl)
       (≈-trans (+ₘ-lunit (M.in₂ M.∘ graph Dt (at p) (at ε)))
-               (∘-cong ≈-refl (≈-sym (hide-root Dt (at p) (at ε))))))
+               (∘-cong₂ (≈-sym (hide-root Dt (at p) (at ε))))))
 
   -- Collapsing a pair derivation pairs its premises' collapses.
   agree-pair : collapse (⇓-pair Ds Dt)
