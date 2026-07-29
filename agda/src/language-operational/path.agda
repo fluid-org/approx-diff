@@ -2,6 +2,7 @@
 
 open import Data.Fin using (zero)
 open import Data.Bool using (Bool; not; _∧_)
+open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; _++_; map; filterᵇ)
 open import Data.Nat using (ℕ)
 open import every using (Every; []; _∷_)
@@ -273,3 +274,53 @@ is-ε _ = Data.Bool.false
 -- The non-empty paths whose values are first-order: the vertices an interaction may reveal.
 FO : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
 FO D = filterᵇ (λ p → not (is-ε p) ∧ fo-at p) (paths D)
+
+-- Equality of paths of the same derivation.
+mutual
+  eq-path : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → Path D → Bool
+  eq-path ε ε = Data.Bool.true
+  eq-path (inl p)     (inl q)     = eq-path p q
+  eq-path (inr p)     (inr q)     = eq-path p q
+  eq-path (case-l₁ p) (case-l₁ q) = eq-path p q
+  eq-path (case-l₂ p) (case-l₂ q) = eq-path p q
+  eq-path (case-r₁ p) (case-r₁ q) = eq-path p q
+  eq-path (case-r₂ p) (case-r₂ q) = eq-path p q
+  eq-path (pair₁ p)   (pair₁ q)   = eq-path p q
+  eq-path (pair₂ p)   (pair₂ q)   = eq-path p q
+  eq-path (fst p)     (fst q)     = eq-path p q
+  eq-path (snd p)     (snd q)     = eq-path p q
+  eq-path (app₁ p)    (app₁ q)    = eq-path p q
+  eq-path (app₂ p)    (app₂ q)    = eq-path p q
+  eq-path (app₃ p)    (app₃ q)    = eq-path p q
+  eq-path (bop p)     (bop q)     = eq-path-s p q
+  eq-path (brel p)    (brel q)    = eq-path-s p q
+  eq-path (roll p)    (roll q)    = eq-path p q
+  eq-path (fold₁ p)   (fold₁ q)   = eq-path p q
+  eq-path (fold₂ p)   (fold₂ q)   = eq-path-m p q
+  eq-path _ _ = Data.Bool.false
+
+  eq-path-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+              {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → PathS Ds → Bool
+  eq-path-s ε ε = Data.Bool.true
+  eq-path-s (hd p) (hd q) = eq-path p q
+  eq-path-s (tl p) (tl q) = eq-path-s p q
+  eq-path-s _ _ = Data.Bool.false
+
+  eq-path-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+              {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+              {Dm : Map γ s σ' v R v' R'} → PathM Dm → PathM Dm → Bool
+  eq-path-m ε ε = Data.Bool.true
+  eq-path-m (m-rec₁ p)  (m-rec₁ q)  = eq-path-m p q
+  eq-path-m (m-rec₂ p)  (m-rec₂ q)  = eq-path p q
+  eq-path-m (m-inl p)   (m-inl q)   = eq-path-m p q
+  eq-path-m (m-inr p)   (m-inr q)   = eq-path-m p q
+  eq-path-m (m-pair₁ p) (m-pair₁ q) = eq-path-m p q
+  eq-path-m (m-pair₂ p) (m-pair₂ q) = eq-path-m p q
+  eq-path-m (m-mu p)    (m-mu q)    = eq-path-m p q
+  eq-path-m _ _ = Data.Bool.false
+
+-- Membership of a path in a list of paths of the same derivation.
+member : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+         Path D → List (Path D) → Bool
+member p = any (eq-path p)
