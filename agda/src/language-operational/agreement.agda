@@ -21,7 +21,7 @@ private
   module M = matrix.Mat two.semiring
 
 open CommutativeSemiring two.semiring using (+-comm; +-cong; +-lunit; refl; trans)
-import Data.Bool
+import Data.Bool as Bool
 open import Data.List using (List; []; _∷_; map)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
 open import Data.List.Relation.Unary.All.Properties using (map⁺; ++⁺)
@@ -120,7 +120,7 @@ hide-root D x y =
 
 -- Off the root, a root edge contributes nothing.
 edge-off : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {m}
-           (S : M.Matrix m (width v)) (p : Path D) → is-ε p ≡ Data.Bool.false →
+           (S : M.Matrix m (width v)) (p : Path D) → is-ε p ≡ Bool.false →
            edge S p M.≈ₘ M.εₘ
 edge-off S ε ()
 edge-off S (inl p) np i j = refl {x = two.O}
@@ -144,7 +144,7 @@ edge-off S (fold₂ p) np i j = refl {x = two.O}
 
 -- Interior paths are never the root.
 interior-not-root : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
-                    All (λ p → is-ε p ≡ Data.Bool.false) (interior D)
+                    All (λ p → is-ε p ≡ Bool.false) (interior D)
 interior-not-root (⇓-var x) = []
 interior-not-root ⇓-unit = []
 interior-not-root ⇓-lam = []
@@ -179,11 +179,11 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
       env-embed : ∀ q → G env (at (inl q)) M.≈ₘ H env (at q)
       embed-embed : ∀ p q → G (at (inl p)) (at (inl q)) M.≈ₘ H (at p) (at q)
       env-root : G env (at ε) M.≈ₘ (P M.∘ H env (at ε))
-      embed-root : ∀ p → is-ε p ≡ Data.Bool.false → G (at (inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
+      embed-root : ∀ p → is-ε p ≡ Bool.false → G (at (inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
 
   open Embeds
 
-  embeds-hide : ∀ {G H P} (w : Path D) → is-ε w ≡ Data.Bool.false →
+  embeds-hide : ∀ {G H P} (w : Path D) → is-ε w ≡ Bool.false →
                 Embeds G H P → Embeds (hide G (at (inl w))) (hide H (at w)) P
   embeds-hide w nw s .env-embed q  = +ₘ-cong (s .env-embed q) (∘-cong (s .embed-embed w q) (s .env-embed w))
   embeds-hide w nw s .embed-embed p q = +ₘ-cong (s .embed-embed p q) (∘-cong (s .embed-embed w q) (s .embed-embed p w))
@@ -194,7 +194,7 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
     ≈-trans (+ₘ-cong (s .embed-root p np) (∘-cong (s .embed-root w nw) (s .embed-embed p w)))
             (distrib-root P (H (at p) (at ε)) (H (at w) (at ε)) (H (at p) (at w)))
 
-  embeds-hide-all : ∀ {G H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Data.Bool.false) ws →
+  embeds-hide-all : ∀ {G H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Bool.false) ws →
                     Embeds G H P →
                     Embeds (hide-all G (map at (map inl ws))) (hide-all H (map at ws)) P
   embeds-hide-all []       []         s = s

@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool using (Bool; not; _∧_; _∨_; if_then_else_)
+open import Data.Bool as Bool using (Bool; not; _∧_; _∨_; if_then_else_)
 open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; foldl; foldr; concat; partitionᵇ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -41,8 +41,8 @@ private
   nonzero {m} {n} R = any (λ i → any (λ j → is-I (R i j)) (allFin n)) (allFin m)
     where
       is-I : two.Two → Bool
-      is-I two.I = Data.Bool.true
-      is-I two.O = Data.Bool.false
+      is-I two.I = Bool.true
+      is-I two.O = Bool.false
 
 -- Vertices sharing an incident edge, in either direction.
 adjacent : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
@@ -60,13 +60,13 @@ regions G (w ∷ ws) = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
 
 member-vertex : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
                 Vertex D → List (Path D) → Bool
-member-vertex env    C = Data.Bool.false
+member-vertex env    C = Bool.false
 member-vertex (at p) C = member p C
 
 private
   when : ∀ {m n} → Bool → M.Matrix m n → M.Matrix m n
-  when Data.Bool.true  R = R
-  when Data.Bool.false R = M.εₘ
+  when Bool.true  R = R
+  when Bool.false R = M.εₘ
 
 -- The entries with an endpoint in the given region, zero elsewhere.
 restrict : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
