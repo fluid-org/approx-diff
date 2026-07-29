@@ -1563,3 +1563,74 @@ interior-not-root-m (m-inl Dm)      = map⁺ (universal (λ _ → ≡-refl) (pat
 interior-not-root-m (m-inr Dm)      = map⁺ (universal (λ _ → ≡-refl) (paths-m Dm))
 interior-not-root-m (m-pair Dm Dm') = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths-m Dm))) (map⁺ (universal (λ _ → ≡-refl) (paths-m Dm')))
 interior-not-root-m (m-mu Dm)       = map⁺ (universal (λ _ → ≡-refl) (paths-m Dm))
+
+-- Casts along width equalities, and their interaction with the matrix algebra. Each is proved by
+-- matching the equality, so they apply at neutral width proofs.
+ccast-∘ : ∀ {m k n n'} (e : n ≡ n') (X : M.Matrix m k) (Y : M.Matrix k n) →
+          (X M.∘ ccast e Y) M.≈ₘ ccast e (X M.∘ Y)
+ccast-∘ ≡-refl X Y = ≈-refl
+
++ₘ-ccast : ∀ {m n n'} (e : n ≡ n') (X Y : M.Matrix m n) →
+           (ccast e X M.+ₘ ccast e Y) M.≈ₘ ccast e (X M.+ₘ Y)
++ₘ-ccast ≡-refl X Y = ≈-refl
+
+rcast-∘ : ∀ {m m' k n} (e : m ≡ m') (X : M.Matrix m k) (Y : M.Matrix k n) →
+          (rcast e X M.∘ Y) M.≈ₘ rcast e (X M.∘ Y)
+rcast-∘ ≡-refl X Y = ≈-refl
+
+ccast-rcast-∘ : ∀ {m n n' k} (e : n ≡ n') (X : M.Matrix m n) (Y : M.Matrix n k) →
+                (ccast e X M.∘ rcast e Y) M.≈ₘ (X M.∘ Y)
+ccast-rcast-∘ ≡-refl X Y = ≈-refl
+
+rcast-cong : ∀ {m m' n} (e : m ≡ m') {X Y : M.Matrix m n} → X M.≈ₘ Y → rcast e X M.≈ₘ rcast e Y
+rcast-cong ≡-refl h = h
+
++ₘ-rcast : ∀ {m m' n} (e : m ≡ m') (X Y : M.Matrix m n) →
+           (rcast e X M.+ₘ rcast e Y) M.≈ₘ rcast e (X M.+ₘ Y)
++ₘ-rcast ≡-refl X Y = ≈-refl
+
+ccast-step : ∀ {m k n n'} (e : n ≡ n') {G₁ : M.Matrix m n'} {X : M.Matrix m n}
+             {G₂ Y : M.Matrix m k} {G₃ : M.Matrix k n'} {Z : M.Matrix k n} →
+             G₁ M.≈ₘ ccast e X → G₂ M.≈ₘ Y → G₃ M.≈ₘ ccast e Z →
+             (G₁ M.+ₘ (G₂ M.∘ G₃)) M.≈ₘ ccast e (X M.+ₘ (Y M.∘ Z))
+ccast-step e {X = X} {Y = Y} {Z = Z} a b c =
+  ≈-trans (+ₘ-cong a (≈-trans (∘-cong b c) (ccast-∘ e Y Z))) (+ₘ-ccast e X (Y M.∘ Z))
+
+root-step-cast : ∀ {m l g n n'} (e : n ≡ n') (P : M.Matrix m l)
+                 {G₁ : M.Matrix m n'} {X : M.Matrix l n} {G₂ : M.Matrix m g} {Y : M.Matrix l g}
+                 {G₃ : M.Matrix g n'} {Z : M.Matrix g n} →
+                 G₁ M.≈ₘ (P M.∘ ccast e X) → G₂ M.≈ₘ (P M.∘ Y) → G₃ M.≈ₘ ccast e Z →
+                 (G₁ M.+ₘ (G₂ M.∘ G₃)) M.≈ₘ (P M.∘ ccast e (X M.+ₘ (Y M.∘ Z)))
+root-step-cast e P {X = X} {Y = Y} {Z = Z} a b c =
+  ≈-trans (+ₘ-cong a (∘-cong b c))
+  (≈-trans (+ₘ-cong ≈-refl (≈-trans (assoc P Y (ccast e Z)) (∘-cong₂ (ccast-∘ e Y Z))))
+  (≈-trans (≈-sym (M.comp-bilinear₂ P (ccast e X) (ccast e (Y M.∘ Z))))
+           (∘-cong₂ (+ₘ-ccast e X (Y M.∘ Z)))))
+
+-- Leaf fold actions: the output is the input, so the collapse pair is (zero, identity).
+agree-m-unit : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+               {v : Val (unit [ μ τ₀ ])} {R : width-env γ ⇒ width v} →
+               (collapse-m-env (m-unit {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R})
+                M.+ₘ (collapse-m-in (m-unit {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) M.∘ R)) M.≈ₘ R
+agree-m-unit {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R} =
+  ≈-trans (+ₘ-cong (absorb M.εₘ (graphM (m-unit {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) env (at ε)))
+                   (∘-cong₁ (absorb M.I (graphM (m-unit {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) input (at ε)))))
+  (≈-trans (+ₘ-lunit (M.I M.∘ R)) id-left)
+
+agree-m-base : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+               {b} {v : Val (base b [ μ τ₀ ])} {R : width-env γ ⇒ width v} →
+               (collapse-m-env (m-base {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R})
+                M.+ₘ (collapse-m-in (m-base {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) M.∘ R)) M.≈ₘ R
+agree-m-base {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R} =
+  ≈-trans (+ₘ-cong (absorb M.εₘ (graphM (m-base {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) env (at ε)))
+                   (∘-cong₁ (absorb M.I (graphM (m-base {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) input (at ε)))))
+  (≈-trans (+ₘ-lunit (M.I M.∘ R)) id-left)
+
+agree-m-arrow : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                {σ₁ σ₂ : type 0} {v : Val ((σ₁ [→] σ₂) [ μ τ₀ ])} {R : width-env γ ⇒ width v} →
+                (collapse-m-env (m-arrow {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R})
+                 M.+ₘ (collapse-m-in (m-arrow {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) M.∘ R)) M.≈ₘ R
+agree-m-arrow {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R} =
+  ≈-trans (+ₘ-cong (absorb M.εₘ (graphM (m-arrow {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) env (at ε)))
+                   (∘-cong₁ (absorb M.I (graphM (m-arrow {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) input (at ε)))))
+  (≈-trans (+ₘ-lunit (M.I M.∘ R)) id-left)
