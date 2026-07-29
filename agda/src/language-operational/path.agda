@@ -1,9 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.Fin using (zero)
-open import Data.List using (List; []; _∷_; _++_; map)
+import Data.Bool as B
+open import Data.List using (List; []; _∷_; _++_; map; filterᵇ)
 open import Data.Nat using (ℕ)
 open import every using (Every; []; _∷_)
+open import Relation.Nullary.Decidable using (⌊_⌋)
 open import signature using (Signature)
 open import primitives using (Primitives)
 import matrix
@@ -221,3 +223,53 @@ mutual
   paths-m (m-inr Dm)       = ε ∷ map m-inr (paths-m Dm)
   paths-m (m-pair Dm Dm')  = ε ∷ map m-pair₁ (paths-m Dm) ++ map m-pair₂ (paths-m Dm')
   paths-m (m-mu Dm)        = ε ∷ map m-mu (paths-m Dm)
+
+-- Whether the value at a path is first-order, by the type of the subderivation's conclusion.
+-- Operand-list vertices hold tuples of constants, so they are always first-order.
+mutual
+  fo-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → B.Bool
+  fo-at (ε {τ = τ}) = ⌊ first-order? τ ⌋
+  fo-at (inl p)     = fo-at p
+  fo-at (inr p)     = fo-at p
+  fo-at (case-l₁ p) = fo-at p
+  fo-at (case-l₂ p) = fo-at p
+  fo-at (case-r₁ p) = fo-at p
+  fo-at (case-r₂ p) = fo-at p
+  fo-at (pair₁ p)   = fo-at p
+  fo-at (pair₂ p)   = fo-at p
+  fo-at (fst p)     = fo-at p
+  fo-at (snd p)     = fo-at p
+  fo-at (app₁ p)    = fo-at p
+  fo-at (app₂ p)    = fo-at p
+  fo-at (app₃ p)    = fo-at p
+  fo-at (bop p)     = fo-at-s p
+  fo-at (brel p)    = fo-at-s p
+  fo-at (roll p)    = fo-at p
+  fo-at (fold₁ p)   = fo-at p
+  fo-at (fold₂ p)   = fo-at-m p
+
+  fo-at-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+            {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → B.Bool
+  fo-at-s _ = B.true
+
+  fo-at-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+            {Dm : Map γ s σ' v R v' R'} → PathM Dm → B.Bool
+  fo-at-m (ε {σr = σr} {σ' = σ'}) = ⌊ first-order? (σ' [ σr ]) ⌋
+  fo-at-m (m-rec₁ p)  = fo-at-m p
+  fo-at-m (m-rec₂ p)  = fo-at p
+  fo-at-m (m-inl p)   = fo-at-m p
+  fo-at-m (m-inr p)   = fo-at-m p
+  fo-at-m (m-pair₁ p) = fo-at-m p
+  fo-at-m (m-pair₂ p) = fo-at-m p
+  fo-at-m (m-mu p)    = fo-at-m p
+
+-- Whether a path is the root.
+is-ε : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → B.Bool
+is-ε ε = B.true
+is-ε _ = B.false
+
+-- The non-empty paths whose values are first-order: the vertices an interaction may reveal.
+FO : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
+FO D = filterᵇ (λ p → B.not (is-ε p) B.∧ fo-at p) (paths D)
