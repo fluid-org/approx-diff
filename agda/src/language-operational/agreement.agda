@@ -1461,3 +1461,105 @@ agree-brel : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ �
 agree-brel {γ = γ} {ω = ω} {vs = vs} {Ds = Ds} =
   rows-zero (sum-width (rel-pred ω .func vs)) (collapse (⇓-brel {ω = ω} Ds))
             (brel-mat γ (rel-pred ω .func vs))
+
+-- One summand survives because a factor of the other is zero.
+keep-l : ∀ {m n k} {G₁ C : M.Matrix m n} {G₂ : M.Matrix m k} {G₃ : M.Matrix k n} →
+         G₁ M.≈ₘ C → G₂ M.≈ₘ M.εₘ → (G₁ M.+ₘ (G₂ M.∘ G₃)) M.≈ₘ C
+keep-l {C = C} {G₃ = G₃} a b = ≈-trans (+ₘ-cong a (∘-cong₁ b)) (absorb C G₃)
+
+keep-r : ∀ {m n k} {G₁ C : M.Matrix m n} {G₂ : M.Matrix m k} {G₃ : M.Matrix k n} →
+         G₁ M.≈ₘ C → G₃ M.≈ₘ M.εₘ → (G₁ M.+ₘ (G₂ M.∘ G₃)) M.≈ₘ C
+keep-r {C = C} {G₂ = G₂} a c = ≈-trans (+ₘ-cong a (∘-cong₂ c)) (absorb-r C G₂)
+
+-- The fold-action family: mirrors of the root and edge lemmas.
+root-sink-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+    {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+              (Dm : Map γ s σ' v R v' R') (y : VertexM Dm) → graphM Dm (at ε) y M.≈ₘ M.εₘ
+root-sink-m (m-rec Dm De) env i j = refl {x = two.O}
+root-sink-m (m-rec Dm De) input i j = refl {x = two.O}
+root-sink-m (m-rec Dm De) (at ε) i j = refl {x = two.O}
+root-sink-m (m-rec Dm De) (at (m-rec₁ q)) i j = refl {x = two.O}
+root-sink-m (m-rec Dm De) (at (m-rec₂ q)) i j = refl {x = two.O}
+root-sink-m m-unit env i j = refl {x = two.O}
+root-sink-m m-unit input i j = refl {x = two.O}
+root-sink-m m-unit (at ε) i j = refl {x = two.O}
+root-sink-m m-base env i j = refl {x = two.O}
+root-sink-m m-base input i j = refl {x = two.O}
+root-sink-m m-base (at ε) i j = refl {x = two.O}
+root-sink-m m-arrow env i j = refl {x = two.O}
+root-sink-m m-arrow input i j = refl {x = two.O}
+root-sink-m m-arrow (at ε) i j = refl {x = two.O}
+root-sink-m (m-inl Dm) env i j = refl {x = two.O}
+root-sink-m (m-inl Dm) input i j = refl {x = two.O}
+root-sink-m (m-inl Dm) (at ε) i j = refl {x = two.O}
+root-sink-m (m-inl Dm) (at (m-inl q)) i j = refl {x = two.O}
+root-sink-m (m-inr Dm) env i j = refl {x = two.O}
+root-sink-m (m-inr Dm) input i j = refl {x = two.O}
+root-sink-m (m-inr Dm) (at ε) i j = refl {x = two.O}
+root-sink-m (m-inr Dm) (at (m-inr q)) i j = refl {x = two.O}
+root-sink-m (m-pair Dm Dm') env i j = refl {x = two.O}
+root-sink-m (m-pair Dm Dm') input i j = refl {x = two.O}
+root-sink-m (m-pair Dm Dm') (at ε) i j = refl {x = two.O}
+root-sink-m (m-pair Dm Dm') (at (m-pair₁ q)) i j = refl {x = two.O}
+root-sink-m (m-pair Dm Dm') (at (m-pair₂ q)) i j = refl {x = two.O}
+root-sink-m (m-mu Dm) env i j = refl {x = two.O}
+root-sink-m (m-mu Dm) input i j = refl {x = two.O}
+root-sink-m (m-mu Dm) (at ε) i j = refl {x = two.O}
+root-sink-m (m-mu Dm) (at (m-mu q)) i j = refl {x = two.O}
+
+hide-root-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+    {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+              (Dm : Map γ s σ' v R v' R') (x y : VertexM Dm) →
+              hide-m (graphM Dm) (at ε) x y M.≈ₘ graphM Dm x y
+hide-root-m Dm x y =
+  ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (root-sink-m Dm y)))
+          (absorb (graphM Dm x y) (graphM Dm x (at ε)))
+
+hide-hide-root-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+    {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                   (Dm : Map γ s σ' v R v' R') (r x y : VertexM Dm) →
+                   hide-m (hide-m (graphM Dm) (at ε)) r x y
+                   M.≈ₘ (graphM Dm x y M.+ₘ (graphM Dm r y M.∘ graphM Dm x r))
+hide-hide-root-m Dm r x y =
+  +ₘ-cong (hide-root-m Dm x y) (∘-cong (hide-root-m Dm r y) (hide-root-m Dm x r))
+
+edge-off-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+    {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'} {Dm : Map γ s σ' v R v' R'} {m}
+             (S : M.Matrix m (width v')) (p : PathM Dm) → is-ε-m p ≡ Bool.false →
+             edge-m S p M.≈ₘ M.εₘ
+edge-off-m S ε ()
+edge-off-m S (m-rec₁ p) np i j = refl {x = two.O}
+edge-off-m S (m-rec₂ p) np i j = refl {x = two.O}
+edge-off-m S (m-inl p) np i j = refl {x = two.O}
+edge-off-m S (m-inr p) np i j = refl {x = two.O}
+edge-off-m S (m-pair₁ p) np i j = refl {x = two.O}
+edge-off-m S (m-pair₂ p) np i j = refl {x = two.O}
+edge-off-m S (m-mu p) np i j = refl {x = two.O}
+
+into-hidden-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+    {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                (Dm : Map γ s σ' v R v' R') {m}
+                (P : M.Matrix m (width v')) (x : VertexM Dm) →
+                (M.εₘ M.+ₘ (P M.∘ graphM Dm x (at ε)))
+                M.≈ₘ (P M.∘ hide-m (graphM Dm) (at ε) x (at ε))
+into-hidden-m Dm P x =
+  ≈-trans (+ₘ-lunit (P M.∘ graphM Dm x (at ε))) (∘-cong₂ (≈-sym (hide-root-m Dm x (at ε))))
+
+interior-not-root-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+    {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                      (Dm : Map γ s σ' v R v' R') →
+                      All (λ p → is-ε-m p ≡ Bool.false) (interior-m Dm)
+interior-not-root-m (m-rec Dm De)   = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths-m Dm))) (map⁺ (universal (λ _ → ≡-refl) (paths De)))
+interior-not-root-m m-unit          = []
+interior-not-root-m m-base          = []
+interior-not-root-m m-arrow         = []
+interior-not-root-m (m-inl Dm)      = map⁺ (universal (λ _ → ≡-refl) (paths-m Dm))
+interior-not-root-m (m-inr Dm)      = map⁺ (universal (λ _ → ≡-refl) (paths-m Dm))
+interior-not-root-m (m-pair Dm Dm') = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths-m Dm))) (map⁺ (universal (λ _ → ≡-refl) (paths-m Dm')))
+interior-not-root-m (m-mu Dm)       = map⁺ (universal (λ _ → ≡-refl) (paths-m Dm))
