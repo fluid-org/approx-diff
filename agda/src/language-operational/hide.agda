@@ -2,7 +2,7 @@
 
 open import Data.Bool using (Bool; not; _∧_; _∨_)
 open import Data.Bool.ListAction using (any)
-open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; foldl; concat; partitionᵇ)
+open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; foldl; foldr; concat; partitionᵇ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import signature using (Signature)
 open import primitives using (Primitives)
@@ -15,7 +15,7 @@ import two
 module language-operational.hide {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
-open import language-syntax Sig renaming (_,_ to _▸_)
+open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr)
 open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
@@ -96,8 +96,7 @@ initial D .visible = []
 initial D .hidden  = map (λ C → C , summary D C) (regions (fo-graph D) (FO D))
 
 -- The union of a configuration's hidden regions.
-hidden-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
-             Config D → List (Path D)
+hidden-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Config D → List (Path D)
 hidden-set K = concat (map proj₁ (K .hidden))
 
 -- The visible graph: the entries of the first-order graph with neither endpoint hidden, together
@@ -105,7 +104,7 @@ hidden-set K = concat (map proj₁ (K .hidden))
 visible-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
                 Config D → Graph D
 visible-graph D K x y =
-  Data.List.foldr M._+ₘ_
+  foldr M._+ₘ_
         (when (not (member-vertex x hs) ∧ not (member-vertex y hs)) (fo-graph D x y))
         (map (λ CH → proj₂ CH x y) (K .hidden))
   where hs = hidden-set K
