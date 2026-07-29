@@ -113,13 +113,13 @@ hide-root D x y =
   ≈-trans (+ₘ-cong ≈-refl (∘-cong (root-sink D y) ≈-refl))
           (absorb (graph D x y) (graph D x (at ε)))
 
--- Entries of a graph over ⇓-inl D against a graph over D: agreement across the embedding, root
--- columns related through the root edge P. Preserved as both sides hide corresponding paths; the
+-- A embeds H when A's entries at inl-embedded vertices are H's, and A's root column is H's root
+-- column through the root edge P. Hiding corresponding paths on both sides preserves this; the
 -- root-column claim excludes the premise root, whose entry is stale once hidden.
 module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : width-env γ ⇒ width v}
          {D : γ , t ⇓ v [ R ]} where
 
-  record SimInl (A : Graph (⇓-inl {τ₂ = τ₂} D)) (H : Graph D)
+  record Embeds (A : Graph (⇓-inl {τ₂ = τ₂} D)) (H : Graph D)
                 (P : M.Matrix (width v) (width v)) : Set ℓ where
     field
       s-env  : ∀ q → A env (at (inl q)) M.≈ₘ H env (at q)
@@ -128,13 +128,13 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
       s-embr : ∀ p → is-ε p ≡ Data.Bool.false →
                A (at (inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
 
-  open SimInl
+  open Embeds
 
-  sim-step : ∀ {A H P} (w : Path D) → is-ε w ≡ Data.Bool.false →
-             SimInl A H P → SimInl (hide A (at (inl w))) (hide H (at w)) P
-  sim-step w nw s .s-env q  = +ₘ-cong (s .s-env q) (∘-cong (s .s-emb w q) (s .s-env w))
-  sim-step w nw s .s-emb p q = +ₘ-cong (s .s-emb p q) (∘-cong (s .s-emb w q) (s .s-emb p w))
-  sim-step {A} {H} {P} w nw s .s-envr =
+  embeds-hide : ∀ {A H P} (w : Path D) → is-ε w ≡ Data.Bool.false →
+             Embeds A H P → Embeds (hide A (at (inl w))) (hide H (at w)) P
+  embeds-hide w nw s .s-env q  = +ₘ-cong (s .s-env q) (∘-cong (s .s-emb w q) (s .s-env w))
+  embeds-hide w nw s .s-emb p q = +ₘ-cong (s .s-emb p q) (∘-cong (s .s-emb w q) (s .s-emb p w))
+  embeds-hide {A} {H} {P} w nw s .s-envr =
     begin
       A env (at ε) M.+ₘ (A (at (inl w)) (at ε) M.∘ A env (at (inl w)))
         ≈⟨ +ₘ-cong (s .s-envr) (∘-cong (s .s-embr w nw) (s .s-env w)) ⟩
@@ -145,7 +145,7 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
       P M.∘ (H env (at ε) M.+ₘ (H (at w) (at ε) M.∘ H env (at w)))
     ∎
     where open ≈-Reasoning isEquiv
-  sim-step {A} {H} {P} w nw s .s-embr p np =
+  embeds-hide {A} {H} {P} w nw s .s-embr p np =
     begin
       A (at (inl p)) (at ε) M.+ₘ (A (at (inl w)) (at ε) M.∘ A (at (inl p)) (at (inl w)))
         ≈⟨ +ₘ-cong (s .s-embr p np) (∘-cong (s .s-embr w nw) (s .s-emb p w)) ⟩
@@ -157,8 +157,8 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
     ∎
     where open ≈-Reasoning isEquiv
 
-  sim-fold : ∀ {A H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Data.Bool.false) ws →
-             SimInl A H P →
-             SimInl (hide-all A (map (λ w → at (inl w)) ws)) (hide-all H (map at ws)) P
-  sim-fold []       []         s = s
-  sim-fold (w ∷ ws) (nw ∷ nws) s = sim-fold ws nws (sim-step w nw s)
+  embeds-hide-all : ∀ {A H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Data.Bool.false) ws →
+             Embeds A H P →
+             Embeds (hide-all A (map (λ w → at (inl w)) ws)) (hide-all H (map at ws)) P
+  embeds-hide-all []       []         s = s
+  embeds-hide-all (w ∷ ws) (nw ∷ nws) s = embeds-hide-all ws nws (embeds-hide w nw s)
