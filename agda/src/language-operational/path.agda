@@ -191,39 +191,52 @@ mutual
 -- which sets of vertices are enumerated and hidden.
 mutual
   paths : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
-  paths (⇓-var x)        = ε ∷ []
-  paths ⇓-unit           = ε ∷ []
-  paths (⇓-inl D)        = ε ∷ map inl (paths D)
-  paths (⇓-inr D)        = ε ∷ map inr (paths D)
-  paths (⇓-case-l Ds D₁) = ε ∷ map case-l₁ (paths Ds) ++ map case-l₂ (paths D₁)
-  paths (⇓-case-r Ds D₂) = ε ∷ map case-r₁ (paths Ds) ++ map case-r₂ (paths D₂)
-  paths (⇓-pair Ds Dt)   = ε ∷ map pair₁ (paths Ds) ++ map pair₂ (paths Dt)
-  paths (⇓-fst D)        = ε ∷ map fst (paths D)
-  paths (⇓-snd D)        = ε ∷ map snd (paths D)
-  paths ⇓-lam            = ε ∷ []
-  paths (⇓-app Ds Dt Db) = ε ∷ map app₁ (paths Ds) ++ map app₂ (paths Dt) ++ map app₃ (paths Db)
-  paths (⇓-bop Ds)       = ε ∷ map bop (paths-s Ds)
-  paths (⇓-brel Ds)      = ε ∷ map brel (paths-s Ds)
-  paths (⇓-roll D)       = ε ∷ map roll (paths D)
-  paths (⇓-fold Dt Dm)   = ε ∷ map fold₁ (paths Dt) ++ map fold₂ (paths-m Dm)
+  paths D = ε ∷ interior D
 
   paths-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
             (Ds : γ , Ms ⇓s vs [ R ]) → List (PathS Ds)
-  paths-s []       = ε ∷ []
-  paths-s (D ∷ Ds) = ε ∷ map hd (paths D) ++ map tl (paths-s Ds)
+  paths-s Ds = ε ∷ interior-s Ds
 
   paths-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
             {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
             (Dm : Map γ s σ' v R v' R') → List (PathM Dm)
-  paths-m (m-rec Dm De)    = ε ∷ map m-rec₁ (paths-m Dm) ++ map m-rec₂ (paths De)
-  paths-m m-unit           = ε ∷ []
-  paths-m m-base           = ε ∷ []
-  paths-m m-arrow          = ε ∷ []
-  paths-m (m-inl Dm)       = ε ∷ map m-inl (paths-m Dm)
-  paths-m (m-inr Dm)       = ε ∷ map m-inr (paths-m Dm)
-  paths-m (m-pair Dm Dm')  = ε ∷ map m-pair₁ (paths-m Dm) ++ map m-pair₂ (paths-m Dm')
-  paths-m (m-mu Dm)        = ε ∷ map m-mu (paths-m Dm)
+  paths-m Dm = ε ∷ interior-m Dm
+
+  interior : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
+  interior (⇓-var x)        = []
+  interior ⇓-unit           = []
+  interior (⇓-inl D)        = map inl (paths D)
+  interior (⇓-inr D)        = map inr (paths D)
+  interior (⇓-case-l Ds D₁) = map case-l₁ (paths Ds) ++ map case-l₂ (paths D₁)
+  interior (⇓-case-r Ds D₂) = map case-r₁ (paths Ds) ++ map case-r₂ (paths D₂)
+  interior (⇓-pair Ds Dt)   = map pair₁ (paths Ds) ++ map pair₂ (paths Dt)
+  interior (⇓-fst D)        = map fst (paths D)
+  interior (⇓-snd D)        = map snd (paths D)
+  interior ⇓-lam            = []
+  interior (⇓-app Ds Dt Db) = map app₁ (paths Ds) ++ map app₂ (paths Dt) ++ map app₃ (paths Db)
+  interior (⇓-bop Ds)       = map bop (paths-s Ds)
+  interior (⇓-brel Ds)      = map brel (paths-s Ds)
+  interior (⇓-roll D)       = map roll (paths D)
+  interior (⇓-fold Dt Dm)   = map fold₁ (paths Dt) ++ map fold₂ (paths-m Dm)
+
+  interior-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+               (Ds : γ , Ms ⇓s vs [ R ]) → List (PathS Ds)
+  interior-s []       = []
+  interior-s (D ∷ Ds) = map hd (paths D) ++ map tl (paths-s Ds)
+
+  interior-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+               {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+               {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+               (Dm : Map γ s σ' v R v' R') → List (PathM Dm)
+  interior-m (m-rec Dm De)    = map m-rec₁ (paths-m Dm) ++ map m-rec₂ (paths De)
+  interior-m m-unit           = []
+  interior-m m-base           = []
+  interior-m m-arrow          = []
+  interior-m (m-inl Dm)       = map m-inl (paths-m Dm)
+  interior-m (m-inr Dm)       = map m-inr (paths-m Dm)
+  interior-m (m-pair Dm Dm')  = map m-pair₁ (paths-m Dm) ++ map m-pair₂ (paths-m Dm')
+  interior-m (m-mu Dm)        = map m-mu (paths-m Dm)
 
 -- Whether the value at a path is first-order, by the type of the subderivation's conclusion.
 -- Operand-list vertices hold tuples of constants, so they are always first-order.
