@@ -2082,3 +2082,185 @@ module MPair {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ�
                          M.+ₘ ((i₂ M.∘ collapse-m-in D₂) M.∘ pʳ))
   agree-mpair-in =
     ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg input (at ε)) plumbG)) (rfin .input-root)
+
+-- The recursion action: a fold-action premise, then the body evaluated under the extended
+-- environment, its rewired columns fed by both of the premise's collapses.
+module MRec {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {w : Val (τ₀ [ μ τ₀ ])} {R : width-env γ ⇒ width w}
+            {w' : Val (τ₀ [ σr ])} {R' : width-env γ ⇒ width w'}
+            {u : Val σr} {S : width-env (γ · w') ⇒ width u}
+            {D₁ : Map γ s τ₀ w R w' R'} {D₂ : γ · w' , s ⇓ u [ S ]} where
+
+  private
+    C = m-rec D₁ D₂
+
+    iₗ = M.in₁ {width-env γ} {width w'}
+    iᵣ = M.in₂ {width-env γ} {width w'}
+
+    B : (q : Path D₂) → M.Matrix (width-at q) (width-env (γ · w'))
+    B q = graph D₂ env (at q)
+
+    Wₑ : M.Matrix (width-env (γ · w')) (width-env γ)
+    Wₑ = iₗ M.+ₘ (iᵣ M.∘ collapse-m-env D₁)
+
+    Wᵢ : M.Matrix (width-env (γ · w')) (width w)
+    Wᵢ = iᵣ M.∘ collapse-m-in D₁
+
+  record Phase₁ (G : GraphM C) (H : GraphM D₁) : Set ℓ where
+    field
+      env-map    : ∀ q → G env (at (m-rec₁ q)) M.≈ₘ H env (at q)
+      input-map  : ∀ q → G input (at (m-rec₁ q)) M.≈ₘ H input (at q)
+      map-map    : ∀ p q → G (at (m-rec₁ p)) (at (m-rec₁ q)) M.≈ₘ H (at p) (at q)
+      env-body   : ∀ q → G env (at (m-rec₂ q))
+                   M.≈ₘ ((B q M.∘ iₗ) M.+ₘ ((B q M.∘ iᵣ) M.∘ H env (at ε)))
+      input-body : ∀ q → G input (at (m-rec₂ q)) M.≈ₘ ((B q M.∘ iᵣ) M.∘ H input (at ε))
+      map-body   : ∀ p → is-ε-m p ≡ Bool.false → ∀ q →
+                   G (at (m-rec₁ p)) (at (m-rec₂ q)) M.≈ₘ ((B q M.∘ iᵣ) M.∘ H (at p) (at ε))
+      body-body  : ∀ p q → G (at (m-rec₂ p)) (at (m-rec₂ q)) M.≈ₘ graph D₂ (at p) (at q)
+      body-map   : ∀ p q → G (at (m-rec₂ p)) (at (m-rec₁ q)) M.≈ₘ M.εₘ
+      env-root   : G env (at ε) M.≈ₘ M.εₘ
+      input-root : G input (at ε) M.≈ₘ M.εₘ
+      map-root   : ∀ p → G (at (m-rec₁ p)) (at ε) M.≈ₘ M.εₘ
+      body-root  : ∀ p → G (at (m-rec₂ p)) (at ε) M.≈ₘ edge M.I p
+
+  open Phase₁
+
+  step₁' : ∀ {G H} (v : PathM D₁) → is-ε-m v ≡ Bool.false →
+           Phase₁ G H → Phase₁ (hide-m G (at (m-rec₁ v))) (hide-m H (at v))
+  step₁' v nv r .env-map q  = +ₘ-cong (r .env-map q) (∘-cong (r .map-map v q) (r .env-map v))
+  step₁' v nv r .input-map q = +ₘ-cong (r .input-map q) (∘-cong (r .map-map v q) (r .input-map v))
+  step₁' v nv r .map-map p q = +ₘ-cong (r .map-map p q) (∘-cong (r .map-map v q) (r .map-map p v))
+  step₁' v nv r .env-body q =
+    offset-step {K = B q M.∘ iₗ} {P = B q M.∘ iᵣ} (r .env-body q) (r .map-body v nv q) (r .env-map v)
+  step₁' v nv r .input-body q =
+    root-step {P = B q M.∘ iᵣ} (r .input-body q) (r .map-body v nv q) (r .input-map v)
+  step₁' v nv r .map-body p np q =
+    root-step {P = B q M.∘ iᵣ} (r .map-body p np q) (r .map-body v nv q) (r .map-map p v)
+  step₁' v nv r .body-body p q = keep-r (r .body-body p q) (r .body-map p v)
+  step₁' v nv r .body-map p q = keep-r (r .body-map p q) (r .body-map p v)
+  step₁' v nv r .env-root = keep-l (r .env-root) (r .map-root v)
+  step₁' v nv r .input-root = keep-l (r .input-root) (r .map-root v)
+  step₁' v nv r .map-root p = keep-l (r .map-root p) (r .map-root v)
+  step₁' v nv r .body-root p = keep-l (r .body-root p) (r .map-root v)
+
+  fold₁' : ∀ {G H} (ws : List (PathM D₁)) → All (λ v → is-ε-m v ≡ Bool.false) ws →
+           Phase₁ G H → Phase₁ (hide-all-m G (map at (map m-rec₁ ws))) (hide-all-m H (map at ws))
+  fold₁' []       []         r = r
+  fold₁' (v ∷ ws) (nv ∷ nws) r = fold₁' ws nws (step₁' v nv r)
+
+  private
+    hh : ∀ x y → hide-m (hide-m (graphM C) (at ε)) (at (m-rec₁ ε)) x y
+         M.≈ₘ (graphM C x y M.+ₘ (graphM C (at (m-rec₁ ε)) y M.∘ graphM C x (at (m-rec₁ ε))))
+    hh = hide-hide-root-m C (at (m-rec₁ ε))
+
+    base₁ : Phase₁ (hide-m (hide-m (graphM C) (at ε)) (at (m-rec₁ ε))) (hide-m (graphM D₁) (at ε))
+    base₁ .env-map q  = hh env (at (m-rec₁ q))
+    base₁ .input-map q = hh input (at (m-rec₁ q))
+    base₁ .map-map p q = hh (at (m-rec₁ p)) (at (m-rec₁ q))
+    base₁ .env-body q =
+      ≈-trans (hh env (at (m-rec₂ q)))
+              (+ₘ-cong (≈-refl {f = B q M.∘ iₗ}) (∘-cong₂ (≈-sym (hide-root-m D₁ env (at ε)))))
+    base₁ .input-body q =
+      ≈-trans (hh input (at (m-rec₂ q))) (into-hidden-m D₁ (B q M.∘ iᵣ) input)
+    base₁ .map-body p np q =
+      ≈-trans (hh (at (m-rec₁ p)) (at (m-rec₂ q)))
+      (≈-trans (+ₘ-cong (edge-off-m (B q M.∘ iᵣ) p np) ≈-refl)
+               (into-hidden-m D₁ (B q M.∘ iᵣ) (at p)))
+    base₁ .body-body p q =
+      ≈-trans (hh (at (m-rec₂ p)) (at (m-rec₂ q)))
+              (zap-r (graph D₂ (at p) (at q)) (graphM C (at (m-rec₁ ε)) (at (m-rec₂ q))))
+    base₁ .body-map p q =
+      ≈-trans (hh (at (m-rec₂ p)) (at (m-rec₁ q)))
+              (zap-r M.εₘ (graphM C (at (m-rec₁ ε)) (at (m-rec₁ q))))
+    base₁ .env-root = ≈-trans (hh env (at ε)) (zap-l M.εₘ (graphM C env (at (m-rec₁ ε))))
+    base₁ .input-root = ≈-trans (hh input (at ε)) (zap-l M.εₘ (graphM C input (at (m-rec₁ ε))))
+    base₁ .map-root p =
+      ≈-trans (hh (at (m-rec₁ p)) (at ε)) (zap-l M.εₘ (graphM C (at (m-rec₁ p)) (at (m-rec₁ ε))))
+    base₁ .body-root p =
+      ≈-trans (hh (at (m-rec₂ p)) (at ε))
+              (zap-l (edge M.I p) (graphM C (at (m-rec₂ p)) (at (m-rec₁ ε))))
+
+  record Phase₂ (G : GraphM C) (H : Graph D₂) : Set ℓ where
+    field
+      env-body   : ∀ q → G env (at (m-rec₂ q)) M.≈ₘ (H env (at q) M.∘ Wₑ)
+      input-body : ∀ q → G input (at (m-rec₂ q)) M.≈ₘ (H env (at q) M.∘ Wᵢ)
+      body-body  : ∀ p q → G (at (m-rec₂ p)) (at (m-rec₂ q)) M.≈ₘ H (at p) (at q)
+      env-root   : G env (at ε) M.≈ₘ (H env (at ε) M.∘ Wₑ)
+      input-root : G input (at ε) M.≈ₘ (H env (at ε) M.∘ Wᵢ)
+      body-root  : ∀ p → is-ε p ≡ Bool.false → G (at (m-rec₂ p)) (at ε) M.≈ₘ H (at p) (at ε)
+
+  open Phase₂
+
+  step₂' : ∀ {G H} (v : Path D₂) → is-ε v ≡ Bool.false →
+           Phase₂ G H → Phase₂ (hide-m G (at (m-rec₂ v))) (hide H (at v))
+  step₂' v nv r .env-body q = step-under {W = Wₑ} (r .env-body q) (r .body-body v q) (r .env-body v)
+  step₂' v nv r .input-body q = step-under {W = Wᵢ} (r .input-body q) (r .body-body v q) (r .input-body v)
+  step₂' v nv r .body-body p q = +ₘ-cong (r .body-body p q) (∘-cong (r .body-body v q) (r .body-body p v))
+  step₂' v nv r .env-root = step-under {W = Wₑ} (r .env-root) (r .body-root v nv) (r .env-body v)
+  step₂' v nv r .input-root = step-under {W = Wᵢ} (r .input-root) (r .body-root v nv) (r .input-body v)
+  step₂' v nv r .body-root p np = +ₘ-cong (r .body-root p np) (∘-cong (r .body-root v nv) (r .body-body p v))
+
+  fold₂'' : ∀ {G H} (ws : List (Path D₂)) → All (λ v → is-ε v ≡ Bool.false) ws →
+            Phase₂ G H → Phase₂ (hide-all-m G (map at (map m-rec₂ ws))) (hide-all H (map at ws))
+  fold₂'' []       []         r = r
+  fold₂'' (v ∷ ws) (nv ∷ nws) r = fold₂'' ws nws (step₂' v nv r)
+
+  private
+    PA : GraphM C
+    PA = hide-all-m (hide-m (hide-m (graphM C) (at ε)) (at (m-rec₁ ε)))
+                    (map at (map m-rec₁ (interior-m D₁)))
+
+    r1 : Phase₁ PA (hide-all-m (hide-m (graphM D₁) (at ε)) (map at (interior-m D₁)))
+    r1 = fold₁' (interior-m D₁) (interior-not-root-m D₁) base₁
+
+    base₂ : Phase₂ (hide-m PA (at (m-rec₂ ε))) (hide (graph D₂) (at ε))
+    base₂ .env-body q =
+      ≈-trans (+ₘ-cong (≈-trans (r1 .env-body q) (factor (B q) (collapse-m-env D₁)))
+                       (∘-cong₁ (≈-trans (r1 .body-body ε q) (root-sink D₂ (at q)))))
+      (≈-trans (absorb (B q M.∘ Wₑ) (PA env (at (m-rec₂ ε))))
+               (≈-sym (∘-cong₁ (hide-root D₂ env (at q)))))
+    base₂ .input-body q =
+      ≈-trans (+ₘ-cong (≈-trans (r1 .input-body q) (assoc (B q) iᵣ (collapse-m-in D₁)))
+                       (∘-cong₁ (≈-trans (r1 .body-body ε q) (root-sink D₂ (at q)))))
+      (≈-trans (absorb (B q M.∘ Wᵢ) (PA input (at (m-rec₂ ε))))
+               (≈-sym (∘-cong₁ (hide-root D₂ env (at q)))))
+    base₂ .body-body p q =
+      +ₘ-cong (r1 .body-body p q) (∘-cong (r1 .body-body ε q) (r1 .body-body p ε))
+    base₂ .env-root =
+      ≈-trans (+ₘ-cong (r1 .env-root)
+                       (∘-cong (r1 .body-root ε)
+                               (≈-trans (r1 .env-body ε) (factor (B ε) (collapse-m-env D₁)))))
+      (≈-trans (+ₘ-lunit (M.I M.∘ (B ε M.∘ Wₑ)))
+      (≈-trans id-left (≈-sym (∘-cong₁ (hide-root D₂ env (at ε))))))
+    base₂ .input-root =
+      ≈-trans (+ₘ-cong (r1 .input-root)
+                       (∘-cong (r1 .body-root ε)
+                               (≈-trans (r1 .input-body ε) (assoc (B ε) iᵣ (collapse-m-in D₁)))))
+      (≈-trans (+ₘ-lunit (M.I M.∘ (B ε M.∘ Wᵢ)))
+      (≈-trans id-left (≈-sym (∘-cong₁ (hide-root D₂ env (at ε))))))
+    base₂ .body-root p np =
+      ≈-trans (+ₘ-cong (≈-trans (r1 .body-root p) (edge-off M.I p np))
+                       (∘-cong (r1 .body-root ε) (r1 .body-body p ε)))
+      (≈-trans (into-hidden D₂ M.I (at p)) id-left)
+
+    rfin = fold₂'' (interior D₂) (interior-not-root D₂) base₂
+
+    plumbG : hide-all-m (hide-m (graphM C) (at ε))
+                        (map at (map m-rec₁ (paths-m D₁) ++ map m-rec₂ (paths D₂)))
+             ≡ hide-all-m (hide-all-m (hide-m (graphM C) (at ε))
+                                      (map at (map m-rec₁ (paths-m D₁))))
+                          (map at (map m-rec₂ (paths D₂)))
+    plumbG =
+      ≡-trans (≡-cong (hide-all-m (hide-m (graphM C) (at ε)))
+                      (map-++ at (map m-rec₁ (paths-m D₁)) (map m-rec₂ (paths D₂))))
+              (hide-all-m-++ (hide-m (graphM C) (at ε))
+                             (map at (map m-rec₁ (paths-m D₁)))
+                             (map at (map m-rec₂ (paths D₂))))
+
+  agree-mrec-env : collapse-m-env C M.≈ₘ (collapse D₂ M.∘ Wₑ)
+  agree-mrec-env =
+    ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg env (at ε)) plumbG)) (rfin .env-root)
+
+  agree-mrec-in : collapse-m-in C M.≈ₘ (collapse D₂ M.∘ Wᵢ)
+  agree-mrec-in =
+    ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg input (at ε)) plumbG)) (rfin .input-root)
