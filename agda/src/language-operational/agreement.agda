@@ -176,50 +176,48 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
   record Embeds (G : Graph (⇓-inl {τ₂ = τ₂} D)) (H : Graph D)
                 (P : M.Matrix (width v) (width v)) : Set ℓ where
     field
-      s-env  : ∀ q → G env (at (inl q)) M.≈ₘ H env (at q)
-      s-emb  : ∀ p q → G (at (inl p)) (at (inl q)) M.≈ₘ H (at p) (at q)
-      s-envr : G env (at ε) M.≈ₘ (P M.∘ H env (at ε))
-      s-embr : ∀ p → is-ε p ≡ Data.Bool.false →
-               G (at (inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
+      env-embed : ∀ q → G env (at (inl q)) M.≈ₘ H env (at q)
+      embed-embed : ∀ p q → G (at (inl p)) (at (inl q)) M.≈ₘ H (at p) (at q)
+      env-root : G env (at ε) M.≈ₘ (P M.∘ H env (at ε))
+      embed-root : ∀ p → is-ε p ≡ Data.Bool.false → G (at (inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
 
   open Embeds
 
   embeds-hide : ∀ {G H P} (w : Path D) → is-ε w ≡ Data.Bool.false →
-             Embeds G H P → Embeds (hide G (at (inl w))) (hide H (at w)) P
-  embeds-hide w nw s .s-env q  = +ₘ-cong (s .s-env q) (∘-cong (s .s-emb w q) (s .s-env w))
-  embeds-hide w nw s .s-emb p q = +ₘ-cong (s .s-emb p q) (∘-cong (s .s-emb w q) (s .s-emb p w))
-  embeds-hide {H = H} {P} w nw s .s-envr =
-    ≈-trans (+ₘ-cong (s .s-envr) (∘-cong (s .s-embr w nw) (s .s-env w)))
+                Embeds G H P → Embeds (hide G (at (inl w))) (hide H (at w)) P
+  embeds-hide w nw s .env-embed q  = +ₘ-cong (s .env-embed q) (∘-cong (s .embed-embed w q) (s .env-embed w))
+  embeds-hide w nw s .embed-embed p q = +ₘ-cong (s .embed-embed p q) (∘-cong (s .embed-embed w q) (s .embed-embed p w))
+  embeds-hide {H = H} {P} w nw s .env-root =
+    ≈-trans (+ₘ-cong (s .env-root) (∘-cong (s .embed-root w nw) (s .env-embed w)))
             (distrib-root P (H env (at ε)) (H (at w) (at ε)) (H env (at w)))
-  embeds-hide {H = H} {P} w nw s .s-embr p np =
-    ≈-trans (+ₘ-cong (s .s-embr p np) (∘-cong (s .s-embr w nw) (s .s-emb p w)))
+  embeds-hide {H = H} {P} w nw s .embed-root p np =
+    ≈-trans (+ₘ-cong (s .embed-root p np) (∘-cong (s .embed-root w nw) (s .embed-embed p w)))
             (distrib-root P (H (at p) (at ε)) (H (at w) (at ε)) (H (at p) (at w)))
 
   embeds-hide-all : ∀ {G H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Data.Bool.false) ws →
-             Embeds G H P →
-             Embeds (hide-all G (map at (map inl ws))) (hide-all H (map at ws)) P
+                    Embeds G H P →
+                    Embeds (hide-all G (map at (map inl ws))) (hide-all H (map at ws)) P
   embeds-hide-all []       []         s = s
   embeds-hide-all (w ∷ ws) (nw ∷ nws) s = embeds-hide-all ws nws (embeds-hide w nw s)
 
   private
-    root-noop : ∀ x y → hide (graph (⇓-inl {τ₂ = τ₂} D)) (at ε) x y
-                        M.≈ₘ graph (⇓-inl D) x y
+    root-noop : ∀ x y → hide (graph (⇓-inl {τ₂ = τ₂} D)) (at ε) x y M.≈ₘ graph (⇓-inl D) x y
     root-noop = hide-root (⇓-inl D)
 
     embeds₀ : Embeds (hide (hide (graph (⇓-inl D)) (at ε)) (at (inl ε)))
                      (hide (graph D) (at ε)) M.I
-    embeds₀ .s-env q =
+    embeds₀ .env-embed q =
       +ₘ-cong (root-noop env (at (inl q)))
               (∘-cong (root-noop (at (inl ε)) (at (inl q))) (root-noop env (at (inl ε))))
-    embeds₀ .s-emb p q =
+    embeds₀ .embed-embed p q =
       +ₘ-cong (root-noop (at (inl p)) (at (inl q)))
               (∘-cong (root-noop (at (inl ε)) (at (inl q))) (root-noop (at (inl p)) (at (inl ε))))
-    embeds₀ .s-envr =
+    embeds₀ .env-root =
       ≈-trans (+ₘ-cong (root-noop env (at ε))
                        (∘-cong (root-noop (at (inl ε)) (at ε)) (root-noop env (at (inl ε)))))
       (≈-trans (+ₘ-lunit (M.I M.∘ graph D env (at ε)))
                (∘-cong ≈-refl (≈-sym (hide-root D env (at ε)))))
-    embeds₀ .s-embr p np =
+    embeds₀ .embed-root p np =
       ≈-trans (+ₘ-cong (root-noop (at (inl p)) (at ε))
                        (∘-cong (root-noop (at (inl ε)) (at ε)) (root-noop (at (inl p)) (at (inl ε)))))
       (≈-trans (+ₘ-cong (edge-off M.I p np) ≈-refl)
@@ -229,4 +227,4 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
   -- Collapsing an inl derivation collapses its premise.
   agree-inl : collapse (⇓-inl {τ₂ = τ₂} D) M.≈ₘ collapse D
   agree-inl =
-    ≈-trans (embeds-hide-all (interior D) (interior-not-root D) embeds₀ .s-envr) id-left
+    ≈-trans (embeds-hide-all (interior D) (interior-not-root D) embeds₀ .env-root) id-left
