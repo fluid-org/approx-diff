@@ -67,3 +67,7 @@ rewired-scrut-branch = refl
 -- Hidden again: the regions merge back and the initial view returns.
 rehide-dep : visible-graph D K₂ env (at ε) zero zero ≡ two.I
 rehide-dep = refl
+
+-- Collapsing the whole derivation recovers the run's dependency relation.
+collapse-agrees : collapse D zero zero ≡ two.I
+collapse-agrees = refl

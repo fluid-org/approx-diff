@@ -138,3 +138,10 @@ reveal-at D p K .hidden  = concat (map step (K .hidden))
       then map (λ C' → C' , summary D C')
                (regions (fo-graph D) (filterᵇ (λ q → not (eq-path p q)) C))
       else (C , H) ∷ []
+
+-- Collapse: hide every path of the derivation and read the remaining dependence from env to the
+-- root. Hiding the root itself is a no-op, since the root has no outgoing edges, so the whole
+-- enumeration can be hidden. Agreement (parked) states that this recovers the run's relation.
+collapse : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+           M.Matrix (width v) (width-env γ)
+collapse D = hide-all (graph D) (map at (paths D)) env (at ε)
