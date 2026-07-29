@@ -1,6 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.Fin using (zero)
+open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.Nat using (ℕ)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
@@ -182,3 +183,41 @@ mutual
   width-at-m (m-pair₁ p)   = width-at-m p
   width-at-m (m-pair₂ p)   = width-at-m p
   width-at-m (m-mu p)      = width-at-m p
+
+-- All paths of a derivation, root first, premises in evaluation order. Fixes the canonical order in
+-- which sets of vertices are enumerated and hidden.
+mutual
+  paths : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
+  paths (⇓-var x)        = ε ∷ []
+  paths ⇓-unit           = ε ∷ []
+  paths (⇓-inl D)        = ε ∷ map inl (paths D)
+  paths (⇓-inr D)        = ε ∷ map inr (paths D)
+  paths (⇓-case-l Ds D₁) = ε ∷ map case-l₁ (paths Ds) ++ map case-l₂ (paths D₁)
+  paths (⇓-case-r Ds D₂) = ε ∷ map case-r₁ (paths Ds) ++ map case-r₂ (paths D₂)
+  paths (⇓-pair Ds Dt)   = ε ∷ map pair₁ (paths Ds) ++ map pair₂ (paths Dt)
+  paths (⇓-fst D)        = ε ∷ map fst (paths D)
+  paths (⇓-snd D)        = ε ∷ map snd (paths D)
+  paths ⇓-lam            = ε ∷ []
+  paths (⇓-app Ds Dt Db) = ε ∷ map app₁ (paths Ds) ++ map app₂ (paths Dt) ++ map app₃ (paths Db)
+  paths (⇓-bop Ds)       = ε ∷ map bop (paths-s Ds)
+  paths (⇓-brel Ds)      = ε ∷ map brel (paths-s Ds)
+  paths (⇓-roll D)       = ε ∷ map roll (paths D)
+  paths (⇓-fold Dt Dm)   = ε ∷ map fold₁ (paths Dt) ++ map fold₂ (paths-m Dm)
+
+  paths-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+            (Ds : γ , Ms ⇓s vs [ R ]) → List (PathS Ds)
+  paths-s []       = ε ∷ []
+  paths-s (D ∷ Ds) = ε ∷ map hd (paths D) ++ map tl (paths-s Ds)
+
+  paths-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+            (Dm : Map γ s σ' v R v' R') → List (PathM Dm)
+  paths-m (m-rec Dm De)    = ε ∷ map m-rec₁ (paths-m Dm) ++ map m-rec₂ (paths De)
+  paths-m m-unit           = ε ∷ []
+  paths-m m-base           = ε ∷ []
+  paths-m m-arrow          = ε ∷ []
+  paths-m (m-inl Dm)       = ε ∷ map m-inl (paths-m Dm)
+  paths-m (m-inr Dm)       = ε ∷ map m-inr (paths-m Dm)
+  paths-m (m-pair Dm Dm')  = ε ∷ map m-pair₁ (paths-m Dm) ++ map m-pair₂ (paths-m Dm')
+  paths-m (m-mu Dm)        = ε ∷ map m-mu (paths-m Dm)
