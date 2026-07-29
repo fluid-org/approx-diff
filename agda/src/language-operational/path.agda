@@ -435,3 +435,10 @@ is-ε-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs
          {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → Bool
 is-ε-s ε = Bool.true
 is-ε-s _ = Bool.false
+
+is-ε-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+         {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+         {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+         {Dm : Map γ s σ' v R v' R'} → PathM Dm → Bool
+is-ε-m ε = Bool.true
+is-ε-m _ = Bool.false

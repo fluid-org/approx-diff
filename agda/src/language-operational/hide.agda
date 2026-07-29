@@ -18,12 +18,16 @@ module language-operational.hide {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives 
 open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr; if_then_else_)
+open import type-substitution Sig using (unfold₁)
 open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
 
 private
   module M = matrix.Mat two.semiring
+
+open import categories using (Category)
+open Category M.cat using (_⇒_)
 
 hide : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Graph D → Vertex D → Graph D
 hide G r x y = G x y M.+ₘ (G r y M.∘ G x r)
@@ -159,3 +163,29 @@ hide-all-s = foldl hide-s
 collapse-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
              (Ds : γ , Ms ⇓s vs [ R ]) → M.Matrix (bases-width is) (width-env γ)
 collapse-s Ds = hide-all-s (graphS Ds) (map at (paths-s Ds)) env (at ε)
+
+hide-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+         {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+         {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+         {Dm : Map γ s σ' v R v' R'} → GraphM Dm → VertexM Dm → GraphM Dm
+hide-m G r x y = G x y M.+ₘ (G r y M.∘ G x r)
+
+hide-all-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+             {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+             {Dm : Map γ s σ' v R v' R'} → GraphM Dm → List (VertexM Dm) → GraphM Dm
+hide-all-m = foldl hide-m
+
+-- The two collapses of a fold-action graph: the dependence of the result on the environment, and
+-- on the input value.
+collapse-m-env : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                 {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                 {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                 (Dm : Map γ s σ' v R v' R') → M.Matrix (width v') (width-env γ)
+collapse-m-env Dm = hide-all-m (graphM Dm) (map at (paths-m Dm)) env (at ε)
+
+collapse-m-in : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                (Dm : Map γ s σ' v R v' R') → M.Matrix (width v') (width v)
+collapse-m-in Dm = hide-all-m (graphM Dm) (map at (paths-m Dm)) input (at ε)
