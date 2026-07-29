@@ -20,14 +20,15 @@ open import language-operational.hide Sig 𝒫
 private
   module M = matrix.Mat two.semiring
 
-open CommutativeSemiring two.semiring using (+-comm; +-cong; refl; trans)
+open CommutativeSemiring two.semiring using (+-comm; +-cong; +-lunit; refl; trans)
 import Data.Bool
 open import Data.List using (List; []; _∷_; map)
-open import Data.List.Relation.Unary.All using (All; []; _∷_)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+open import Data.List.Relation.Unary.All.Properties using (map⁺; ++⁺)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 open import prop-setoid using (module ≈-Reasoning)
 open import categories using (Category; HasTerminal)
-open Category M.cat using (_⇒_; ∘-cong; assoc; ≈-refl; ≈-sym; ≈-trans; isEquiv) renaming (id to idm)
+open Category M.cat using (_⇒_; ∘-cong; assoc; id-left; ≈-refl; ≈-sym; ≈-trans; isEquiv) renaming (id to idm)
 open HasTerminal M.terminal using (to-terminal)
 
 +ₘ-runit : ∀ {m n} (R : M.Matrix m n) → (R M.+ₘ M.εₘ) M.≈ₘ R
@@ -113,6 +114,53 @@ hide-root D x y =
   ≈-trans (+ₘ-cong ≈-refl (∘-cong (root-sink D y) ≈-refl))
           (absorb (graph D x y) (graph D x (at ε)))
 
+
++ₘ-lunit : ∀ {m n} (R : M.Matrix m n) → (M.εₘ M.+ₘ R) M.≈ₘ R
++ₘ-lunit R i j = +-lunit {x = R i j}
+
+-- Off the root, a root edge contributes nothing.
+edge-off : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {m}
+           (S : M.Matrix m (width v)) (p : Path D) → is-ε p ≡ Data.Bool.false →
+           edge S p M.≈ₘ M.εₘ
+edge-off S ε ()
+edge-off S (inl p) np i j = refl {x = two.O}
+edge-off S (inr p) np i j = refl {x = two.O}
+edge-off S (case-l₁ p) np i j = refl {x = two.O}
+edge-off S (case-l₂ p) np i j = refl {x = two.O}
+edge-off S (case-r₁ p) np i j = refl {x = two.O}
+edge-off S (case-r₂ p) np i j = refl {x = two.O}
+edge-off S (pair₁ p) np i j = refl {x = two.O}
+edge-off S (pair₂ p) np i j = refl {x = two.O}
+edge-off S (fst p) np i j = refl {x = two.O}
+edge-off S (snd p) np i j = refl {x = two.O}
+edge-off S (app₁ p) np i j = refl {x = two.O}
+edge-off S (app₂ p) np i j = refl {x = two.O}
+edge-off S (app₃ p) np i j = refl {x = two.O}
+edge-off S (roll p) np i j = refl {x = two.O}
+edge-off S (fold₁ p) np i j = refl {x = two.O}
+edge-off S (bop p) np i j = refl {x = two.O}
+edge-off S (brel p) np i j = refl {x = two.O}
+edge-off S (fold₂ p) np i j = refl {x = two.O}
+
+-- Interior paths are never the root.
+interior-not-root : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+                    All (λ p → is-ε p ≡ Data.Bool.false) (interior D)
+interior-not-root (⇓-var x) = []
+interior-not-root ⇓-unit = []
+interior-not-root ⇓-lam = []
+interior-not-root (⇓-inl D) = map⁺ (universal (λ _ → ≡-refl) (paths D))
+interior-not-root (⇓-inr D) = map⁺ (universal (λ _ → ≡-refl) (paths D))
+interior-not-root (⇓-fst D) = map⁺ (universal (λ _ → ≡-refl) (paths D))
+interior-not-root (⇓-snd D) = map⁺ (universal (λ _ → ≡-refl) (paths D))
+interior-not-root (⇓-roll D) = map⁺ (universal (λ _ → ≡-refl) (paths D))
+interior-not-root (⇓-case-l Ds D₁) = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths Ds))) (map⁺ (universal (λ _ → ≡-refl) (paths D₁)))
+interior-not-root (⇓-case-r Ds D₂) = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths Ds))) (map⁺ (universal (λ _ → ≡-refl) (paths D₂)))
+interior-not-root (⇓-pair Ds Dt) = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths Ds))) (map⁺ (universal (λ _ → ≡-refl) (paths Dt)))
+interior-not-root (⇓-app Ds Dt Db) = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths Ds))) (++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths Dt))) (map⁺ (universal (λ _ → ≡-refl) (paths Db))))
+interior-not-root (⇓-bop Ds) = map⁺ (universal (λ _ → ≡-refl) (paths-s Ds))
+interior-not-root (⇓-brel Ds) = map⁺ (universal (λ _ → ≡-refl) (paths-s Ds))
+interior-not-root (⇓-fold Dt Dm) = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths Dt))) (map⁺ (universal (λ _ → ≡-refl) (paths-m Dm)))
+
 -- A embeds H when A's entries at inl-embedded vertices are H's, and A's root column is H's root
 -- column through the root edge P. Hiding corresponding paths on both sides preserves this; the
 -- root-column claim excludes the premise root, whose entry is stale once hidden.
@@ -159,6 +207,60 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
 
   embeds-hide-all : ∀ {A H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Data.Bool.false) ws →
              Embeds A H P →
-             Embeds (hide-all A (map (λ w → at (inl w)) ws)) (hide-all H (map at ws)) P
+             Embeds (hide-all A (map at (map inl ws))) (hide-all H (map at ws)) P
   embeds-hide-all []       []         s = s
   embeds-hide-all (w ∷ ws) (nw ∷ nws) s = embeds-hide-all ws nws (embeds-hide w nw s)
+
+  private
+    G₀ : Graph (⇓-inl {τ₂ = τ₂} D)
+    G₀ = graph (⇓-inl D)
+
+    A₂ : Graph (⇓-inl {τ₂ = τ₂} D)
+    A₂ = hide (hide G₀ (at ε)) (at (inl ε))
+
+    H₁ : Graph D
+    H₁ = hide (graph D) (at ε)
+
+    A₁-entry : ∀ x y → hide G₀ (at ε) x y M.≈ₘ G₀ x y
+    A₁-entry = hide-root (⇓-inl D)
+
+    embeds₀ : Embeds A₂ H₁ M.I
+    embeds₀ .Embeds.s-env q =
+      +ₘ-cong (A₁-entry env (at (inl q)))
+              (∘-cong (A₁-entry (at (inl ε)) (at (inl q))) (A₁-entry env (at (inl ε))))
+    embeds₀ .Embeds.s-emb p q =
+      +ₘ-cong (A₁-entry (at (inl p)) (at (inl q)))
+              (∘-cong (A₁-entry (at (inl ε)) (at (inl q))) (A₁-entry (at (inl p)) (at (inl ε))))
+    embeds₀ .Embeds.s-envr =
+      begin
+        hide G₀ (at ε) env (at ε) M.+ₘ
+          (hide G₀ (at ε) (at (inl ε)) (at ε) M.∘ hide G₀ (at ε) env (at (inl ε)))
+          ≈⟨ +ₘ-cong (A₁-entry env (at ε))
+                     (∘-cong (A₁-entry (at (inl ε)) (at ε)) (A₁-entry env (at (inl ε)))) ⟩
+        M.εₘ M.+ₘ (M.I M.∘ graph D env (at ε))
+          ≈⟨ +ₘ-lunit (M.I M.∘ graph D env (at ε)) ⟩
+        M.I M.∘ graph D env (at ε)
+          ≈⟨ ∘-cong ≈-refl (≈-sym (hide-root D env (at ε))) ⟩
+        M.I M.∘ H₁ env (at ε)
+      ∎
+      where open ≈-Reasoning isEquiv
+    embeds₀ .Embeds.s-embr p np =
+      begin
+        hide G₀ (at ε) (at (inl p)) (at ε) M.+ₘ
+          (hide G₀ (at ε) (at (inl ε)) (at ε) M.∘ hide G₀ (at ε) (at (inl p)) (at (inl ε)))
+          ≈⟨ +ₘ-cong (A₁-entry (at (inl p)) (at ε))
+                     (∘-cong (A₁-entry (at (inl ε)) (at ε)) (A₁-entry (at (inl p)) (at (inl ε)))) ⟩
+        edge M.I p M.+ₘ (M.I M.∘ graph D (at p) (at ε))
+          ≈⟨ +ₘ-cong (edge-off M.I p np) ≈-refl ⟩
+        M.εₘ M.+ₘ (M.I M.∘ graph D (at p) (at ε))
+          ≈⟨ +ₘ-lunit (M.I M.∘ graph D (at p) (at ε)) ⟩
+        M.I M.∘ graph D (at p) (at ε)
+          ≈⟨ ∘-cong ≈-refl (≈-sym (hide-root D (at p) (at ε))) ⟩
+        M.I M.∘ H₁ (at p) (at ε)
+      ∎
+      where open ≈-Reasoning isEquiv
+
+  -- Collapsing an inl derivation collapses its premise.
+  agree-inl : collapse (⇓-inl {τ₂ = τ₂} D) M.≈ₘ collapse D
+  agree-inl =
+    ≈-trans (embeds-hide-all (interior D) (interior-not-root D) embeds₀ .Embeds.s-envr) id-left
