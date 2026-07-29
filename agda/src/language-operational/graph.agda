@@ -36,9 +36,9 @@ data Vertex {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R : _} (D : γ ,
   at  : Path D → Vertex D
 
 data VertexS {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs} {R : _}
-             (Ds : γ , Ms ⇓s vs [ R ]) : Set ℓ where
-  env : VertexS Ds
-  at  : PathS Ds → VertexS Ds
+             (D : γ , Ms ⇓s vs [ R ]) : Set ℓ where
+  env : VertexS D
+  at  : PathS D → VertexS D
 
 -- A fold-action derivation has a second source alongside env: the input value being folded over.
 -- The fold rule wires it to the root of its first premise, the way a case branch wires its
@@ -46,40 +46,40 @@ data VertexS {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs}
 data VertexM {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
              {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-             (Dm : Map γ s σ' v R v' R') : Set ℓ where
-  env   : VertexM Dm
-  input : VertexM Dm
-  at    : PathM Dm → VertexM Dm
+             (D : Map γ s σ' v R v' R') : Set ℓ where
+  env   : VertexM D
+  input : VertexM D
+  at    : PathM D → VertexM D
 
-vw : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Vertex D → ℕ
-vw {γ = γ} env = width-env γ
-vw (at p)      = width-at p
+vertex-width : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Vertex D → ℕ
+vertex-width {γ = γ} env = width-env γ
+vertex-width (at p)      = width-at p
 
-vws : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-      {Ds : γ , Ms ⇓s vs [ R ]} → VertexS Ds → ℕ
-vws {γ = γ} env = width-env γ
-vws (at p)      = width-at-s p
+vertex-width-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+      {D : γ , Ms ⇓s vs [ R ]} → VertexS D → ℕ
+vertex-width-s {γ = γ} env = width-env γ
+vertex-width-s (at p)      = width-at-s p
 
-vwm : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+vertex-width-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
       {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
       {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-      {Dm : Map γ s σ' v R v' R'} → VertexM Dm → ℕ
-vwm {γ = γ} env     = width-env γ
-vwm {v = v} input   = width v
-vwm (at p)          = width-at-m p
+      {D : Map γ s σ' v R v' R'} → VertexM D → ℕ
+vertex-width-m {γ = γ} env     = width-env γ
+vertex-width-m {v = v} input   = width v
+vertex-width-m (at p)          = width-at-m p
 
 Graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] → Set ℓ
-Graph D = (x y : Vertex D) → M.Matrix (vw y) (vw x)
+Graph D = (x y : Vertex D) → M.Matrix (vertex-width y) (vertex-width x)
 
 GraphS : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
          γ , Ms ⇓s vs [ R ] → Set ℓ
-GraphS Ds = (x y : VertexS Ds) → M.Matrix (vws y) (vws x)
+GraphS D = (x y : VertexS D) → M.Matrix (vertex-width-s y) (vertex-width-s x)
 
 GraphM : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
          {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
       {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'} →
          Map γ s σ' v R v' R' → Set ℓ
-GraphM Dm = (x y : VertexM Dm) → M.Matrix (vwm y) (vwm x)
+GraphM D = (x y : VertexM D) → M.Matrix (vertex-width-m y) (vertex-width-m x)
 
 -- Cast a matrix along equalities of its row and column dimensions.
 rcast : ∀ {m m' n} → m ≡ m' → M.Matrix m n → M.Matrix m' n
@@ -98,16 +98,16 @@ edge R ε = R
 edge R _ = M.εₘ
 
 edge-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            {Ds : γ , Ms ⇓s vs [ R ]} {m} →
-            M.Matrix m (bases-width is) → (p : PathS Ds) → M.Matrix m (width-at-s p)
+            {D : γ , Ms ⇓s vs [ R ]} {m} →
+            M.Matrix m (bases-width is) → (p : PathS D) → M.Matrix m (width-at-s p)
 edge-s R ε = R
 edge-s R _ = M.εₘ
 
 edge-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
             {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-            {Dm : Map γ s σ' v R v' R'} {m} →
-            M.Matrix m (width v') → (p : PathM Dm) → M.Matrix m (width-at-m p)
+            {D : Map γ s σ' v R v' R'} {m} →
+            M.Matrix m (width v') → (p : PathM D) → M.Matrix m (width-at-m p)
 edge-m R ε = R
 edge-m R _ = M.εₘ
 
@@ -123,26 +123,26 @@ mutual
   graph (⇓-inr D) (at (inr p)) (at (inr q)) = graph D (at p) (at q)
   graph (⇓-inr D) (at (inr p)) (at ε) = edge M.I p
 
-  graph (⇓-case-l Ds D₁) env (at (case-l₁ q)) = graph Ds env (at q)
-  graph (⇓-case-l Ds D₁) (at (case-l₁ p)) (at (case-l₁ q)) = graph Ds (at p) (at q)
-  graph (⇓-case-l Ds D₁) env (at (case-l₂ q)) = graph D₁ env (at q) M.∘ M.in₁
-  graph (⇓-case-l Ds D₁) (at (case-l₁ p)) (at (case-l₂ q)) = edge (graph D₁ env (at q) M.∘ M.in₂) p
-  graph (⇓-case-l Ds D₁) (at (case-l₂ p)) (at (case-l₂ q)) = graph D₁ (at p) (at q)
-  graph (⇓-case-l Ds D₁) (at (case-l₂ p)) (at ε) = edge M.I p
+  graph (⇓-case-l D₁ D₂) env (at (case-l₁ q)) = graph D₁ env (at q)
+  graph (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at (case-l₁ q)) = graph D₁ (at p) (at q)
+  graph (⇓-case-l D₁ D₂) env (at (case-l₂ q)) = graph D₂ env (at q) M.∘ M.in₁
+  graph (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at (case-l₂ q)) = edge (graph D₂ env (at q) M.∘ M.in₂) p
+  graph (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at (case-l₂ q)) = graph D₂ (at p) (at q)
+  graph (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at ε) = edge M.I p
 
-  graph (⇓-case-r Ds D₂) env (at (case-r₁ q)) = graph Ds env (at q)
-  graph (⇓-case-r Ds D₂) (at (case-r₁ p)) (at (case-r₁ q)) = graph Ds (at p) (at q)
-  graph (⇓-case-r Ds D₂) env (at (case-r₂ q)) = graph D₂ env (at q) M.∘ M.in₁
-  graph (⇓-case-r Ds D₂) (at (case-r₁ p)) (at (case-r₂ q)) = edge (graph D₂ env (at q) M.∘ M.in₂) p
-  graph (⇓-case-r Ds D₂) (at (case-r₂ p)) (at (case-r₂ q)) = graph D₂ (at p) (at q)
-  graph (⇓-case-r Ds D₂) (at (case-r₂ p)) (at ε) = edge M.I p
+  graph (⇓-case-r D₁ D₂) env (at (case-r₁ q)) = graph D₁ env (at q)
+  graph (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₁ q)) = graph D₁ (at p) (at q)
+  graph (⇓-case-r D₁ D₂) env (at (case-r₂ q)) = graph D₂ env (at q) M.∘ M.in₁
+  graph (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₂ q)) = edge (graph D₂ env (at q) M.∘ M.in₂) p
+  graph (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at (case-r₂ q)) = graph D₂ (at p) (at q)
+  graph (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at ε) = edge M.I p
 
-  graph (⇓-pair Ds Dt) env (at (pair₁ q)) = graph Ds env (at q)
-  graph (⇓-pair Ds Dt) (at (pair₁ p)) (at (pair₁ q)) = graph Ds (at p) (at q)
-  graph (⇓-pair Ds Dt) env (at (pair₂ q)) = graph Dt env (at q)
-  graph (⇓-pair Ds Dt) (at (pair₂ p)) (at (pair₂ q)) = graph Dt (at p) (at q)
-  graph (⇓-pair Ds Dt) (at (pair₁ p)) (at ε) = edge M.in₁ p
-  graph (⇓-pair Ds Dt) (at (pair₂ p)) (at ε) = edge M.in₂ p
+  graph (⇓-pair D₁ D₂) env (at (pair₁ q)) = graph D₁ env (at q)
+  graph (⇓-pair D₁ D₂) (at (pair₁ p)) (at (pair₁ q)) = graph D₁ (at p) (at q)
+  graph (⇓-pair D₁ D₂) env (at (pair₂ q)) = graph D₂ env (at q)
+  graph (⇓-pair D₁ D₂) (at (pair₂ p)) (at (pair₂ q)) = graph D₂ (at p) (at q)
+  graph (⇓-pair D₁ D₂) (at (pair₁ p)) (at ε) = edge M.in₁ p
+  graph (⇓-pair D₁ D₂) (at (pair₂ p)) (at ε) = edge M.in₂ p
 
   graph (⇓-fst D) env (at (fst q)) = graph D env (at q)
   graph (⇓-fst D) (at (fst p)) (at (fst q)) = graph D (at p) (at q)
@@ -154,85 +154,85 @@ mutual
 
   graph ⇓-lam env (at ε) = M.I
 
-  graph (⇓-app Ds Dt Db) env (at (app₁ q)) = graph Ds env (at q)
-  graph (⇓-app Ds Dt Db) (at (app₁ p)) (at (app₁ q)) = graph Ds (at p) (at q)
-  graph (⇓-app Ds Dt Db) env (at (app₂ q)) = graph Dt env (at q)
-  graph (⇓-app Ds Dt Db) (at (app₂ p)) (at (app₂ q)) = graph Dt (at p) (at q)
-  graph (⇓-app Ds Dt Db) (at (app₁ p)) (at (app₃ q)) = edge (graph Db env (at q) M.∘ M.in₁) p
-  graph (⇓-app Ds Dt Db) (at (app₂ p)) (at (app₃ q)) = edge (graph Db env (at q) M.∘ M.in₂) p
-  graph (⇓-app Ds Dt Db) (at (app₃ p)) (at (app₃ q)) = graph Db (at p) (at q)
-  graph (⇓-app Ds Dt Db) (at (app₃ p)) (at ε) = edge M.I p
+  graph (⇓-app D₁ D₂ D₃) env (at (app₁ q)) = graph D₁ env (at q)
+  graph (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at (app₁ q)) = graph D₁ (at p) (at q)
+  graph (⇓-app D₁ D₂ D₃) env (at (app₂ q)) = graph D₂ env (at q)
+  graph (⇓-app D₁ D₂ D₃) (at (app₂ p)) (at (app₂ q)) = graph D₂ (at p) (at q)
+  graph (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at (app₃ q)) = edge (graph D₃ env (at q) M.∘ M.in₁) p
+  graph (⇓-app D₁ D₂ D₃) (at (app₂ p)) (at (app₃ q)) = edge (graph D₃ env (at q) M.∘ M.in₂) p
+  graph (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₃ q)) = graph D₃ (at p) (at q)
+  graph (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at ε) = edge M.I p
 
-  graph (⇓-bop {ω = ω} {vs = vs} Ds) env (at (bop q)) = graphS Ds env (at q)
-  graph (⇓-bop Ds) (at (bop p)) (at (bop q)) = graphS Ds (at p) (at q)
-  graph (⇓-bop {ω = ω} {vs = vs} Ds) (at (bop p)) (at ε) = edge-s (op-deps ω .func vs) p
+  graph (⇓-bop {ω = ω} {vs = vs} D) env (at (bop q)) = graphS D env (at q)
+  graph (⇓-bop D) (at (bop p)) (at (bop q)) = graphS D (at p) (at q)
+  graph (⇓-bop {ω = ω} {vs = vs} D) (at (bop p)) (at ε) = edge-s (op-deps ω .func vs) p
 
-  graph (⇓-brel Ds) env (at (brel q)) = graphS Ds env (at q)
-  graph (⇓-brel Ds) (at (brel p)) (at (brel q)) = graphS Ds (at p) (at q)
+  graph (⇓-brel D) env (at (brel q)) = graphS D env (at q)
+  graph (⇓-brel D) (at (brel p)) (at (brel q)) = graphS D (at p) (at q)
 
   graph (⇓-roll D) env (at (roll q)) = graph D env (at q)
   graph (⇓-roll D) (at (roll p)) (at (roll q)) = graph D (at p) (at q)
   graph (⇓-roll D) (at (roll p)) (at ε) = edge M.I p
 
-  graph (⇓-fold Dt Dm) env (at (fold₁ q)) = graph Dt env (at q)
-  graph (⇓-fold Dt Dm) (at (fold₁ p)) (at (fold₁ q)) = graph Dt (at p) (at q)
-  graph (⇓-fold Dt Dm) env (at (fold₂ q)) = graphM Dm env (at q)
-  graph (⇓-fold Dt Dm) (at (fold₁ p)) (at (fold₂ q)) = edge (graphM Dm input (at q)) p
-  graph (⇓-fold Dt Dm) (at (fold₂ p)) (at (fold₂ q)) = graphM Dm (at p) (at q)
-  graph (⇓-fold Dt Dm) (at (fold₂ p)) (at ε) = edge-m M.I p
+  graph (⇓-fold D₁ D₂) env (at (fold₁ q)) = graph D₁ env (at q)
+  graph (⇓-fold D₁ D₂) (at (fold₁ p)) (at (fold₁ q)) = graph D₁ (at p) (at q)
+  graph (⇓-fold D₁ D₂) env (at (fold₂ q)) = graphM D₂ env (at q)
+  graph (⇓-fold D₁ D₂) (at (fold₁ p)) (at (fold₂ q)) = edge (graphM D₂ input (at q)) p
+  graph (⇓-fold D₁ D₂) (at (fold₂ p)) (at (fold₂ q)) = graphM D₂ (at p) (at q)
+  graph (⇓-fold D₁ D₂) (at (fold₂ p)) (at ε) = edge-m M.I p
 
   graph D _ _ = M.εₘ
 
   graphS : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-           (Ds : γ , Ms ⇓s vs [ R ]) → GraphS Ds
-  graphS (D ∷ Ds) env (at (hd q)) = graph D env (at q)
-  graphS (D ∷ Ds) (at (hd p)) (at (hd q)) = graph D (at p) (at q)
-  graphS (D ∷ Ds) env (at (tl q)) = graphS Ds env (at q)
-  graphS (D ∷ Ds) (at (tl p)) (at (tl q)) = graphS Ds (at p) (at q)
-  graphS (D ∷ Ds) (at (hd p)) (at ε) = edge M.in₁ p
-  graphS (D ∷ Ds) (at (tl p)) (at ε) = edge-s M.in₂ p
-  graphS Ds _ _ = M.εₘ
+           (D : γ , Ms ⇓s vs [ R ]) → GraphS D
+  graphS (D₁ ∷ D₂) env (at (hd q)) = graph D₁ env (at q)
+  graphS (D₁ ∷ D₂) (at (hd p)) (at (hd q)) = graph D₁ (at p) (at q)
+  graphS (D₁ ∷ D₂) env (at (tl q)) = graphS D₂ env (at q)
+  graphS (D₁ ∷ D₂) (at (tl p)) (at (tl q)) = graphS D₂ (at p) (at q)
+  graphS (D₁ ∷ D₂) (at (hd p)) (at ε) = edge M.in₁ p
+  graphS (D₁ ∷ D₂) (at (tl p)) (at ε) = edge-s M.in₂ p
+  graphS D _ _ = M.εₘ
 
   graphM : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
       {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-           (Dm : Map γ s σ' v R v' R') → GraphM Dm
-  graphM (m-rec Dm De) env (at (m-rec₁ q)) = graphM Dm env (at q)
-  graphM (m-rec Dm De) input (at (m-rec₁ q)) = graphM Dm input (at q)
-  graphM (m-rec Dm De) (at (m-rec₁ p)) (at (m-rec₁ q)) = graphM Dm (at p) (at q)
-  graphM (m-rec Dm De) env (at (m-rec₂ q)) = graph De env (at q) M.∘ M.in₁
-  graphM (m-rec Dm De) (at (m-rec₁ p)) (at (m-rec₂ q)) = edge-m (graph De env (at q) M.∘ M.in₂) p
-  graphM (m-rec Dm De) (at (m-rec₂ p)) (at (m-rec₂ q)) = graph De (at p) (at q)
-  graphM (m-rec Dm De) (at (m-rec₂ p)) (at ε) = edge M.I p
+           (D : Map γ s σ' v R v' R') → GraphM D
+  graphM (m-rec D₁ D₂) env (at (m-rec₁ q)) = graphM D₁ env (at q)
+  graphM (m-rec D₁ D₂) input (at (m-rec₁ q)) = graphM D₁ input (at q)
+  graphM (m-rec D₁ D₂) (at (m-rec₁ p)) (at (m-rec₁ q)) = graphM D₁ (at p) (at q)
+  graphM (m-rec D₁ D₂) env (at (m-rec₂ q)) = graph D₂ env (at q) M.∘ M.in₁
+  graphM (m-rec D₁ D₂) (at (m-rec₁ p)) (at (m-rec₂ q)) = edge-m (graph D₂ env (at q) M.∘ M.in₂) p
+  graphM (m-rec D₁ D₂) (at (m-rec₂ p)) (at (m-rec₂ q)) = graph D₂ (at p) (at q)
+  graphM (m-rec D₁ D₂) (at (m-rec₂ p)) (at ε) = edge M.I p
 
   graphM m-unit  input (at ε) = M.I
   graphM m-base  input (at ε) = M.I
   graphM m-arrow input (at ε) = M.I
 
-  graphM (m-inl Dm) env (at (m-inl q)) = graphM Dm env (at q)
-  graphM (m-inl Dm) input (at (m-inl q)) = graphM Dm input (at q)
-  graphM (m-inl Dm) (at (m-inl p)) (at (m-inl q)) = graphM Dm (at p) (at q)
-  graphM (m-inl Dm) (at (m-inl p)) (at ε) = edge-m M.I p
+  graphM (m-inl D) env (at (m-inl q)) = graphM D env (at q)
+  graphM (m-inl D) input (at (m-inl q)) = graphM D input (at q)
+  graphM (m-inl D) (at (m-inl p)) (at (m-inl q)) = graphM D (at p) (at q)
+  graphM (m-inl D) (at (m-inl p)) (at ε) = edge-m M.I p
 
-  graphM (m-inr Dm) env (at (m-inr q)) = graphM Dm env (at q)
-  graphM (m-inr Dm) input (at (m-inr q)) = graphM Dm input (at q)
-  graphM (m-inr Dm) (at (m-inr p)) (at (m-inr q)) = graphM Dm (at p) (at q)
-  graphM (m-inr Dm) (at (m-inr p)) (at ε) = edge-m M.I p
+  graphM (m-inr D) env (at (m-inr q)) = graphM D env (at q)
+  graphM (m-inr D) input (at (m-inr q)) = graphM D input (at q)
+  graphM (m-inr D) (at (m-inr p)) (at (m-inr q)) = graphM D (at p) (at q)
+  graphM (m-inr D) (at (m-inr p)) (at ε) = edge-m M.I p
 
-  graphM (m-pair Dm Dm') env (at (m-pair₁ q)) = graphM Dm env (at q)
-  graphM (m-pair Dm Dm') input (at (m-pair₁ q)) = graphM Dm input (at q) M.∘ M.p₁
-  graphM (m-pair Dm Dm') (at (m-pair₁ p)) (at (m-pair₁ q)) = graphM Dm (at p) (at q)
-  graphM (m-pair Dm Dm') env (at (m-pair₂ q)) = graphM Dm' env (at q)
-  graphM (m-pair Dm Dm') input (at (m-pair₂ q)) = graphM Dm' input (at q) M.∘ M.p₂
-  graphM (m-pair Dm Dm') (at (m-pair₂ p)) (at (m-pair₂ q)) = graphM Dm' (at p) (at q)
-  graphM (m-pair Dm Dm') (at (m-pair₁ p)) (at ε) = edge-m M.in₁ p
-  graphM (m-pair Dm Dm') (at (m-pair₂ p)) (at ε) = edge-m M.in₂ p
+  graphM (m-pair D₁ D₂) env (at (m-pair₁ q)) = graphM D₁ env (at q)
+  graphM (m-pair D₁ D₂) input (at (m-pair₁ q)) = graphM D₁ input (at q) M.∘ M.p₁
+  graphM (m-pair D₁ D₂) (at (m-pair₁ p)) (at (m-pair₁ q)) = graphM D₁ (at p) (at q)
+  graphM (m-pair D₁ D₂) env (at (m-pair₂ q)) = graphM D₂ env (at q)
+  graphM (m-pair D₁ D₂) input (at (m-pair₂ q)) = graphM D₂ input (at q) M.∘ M.p₂
+  graphM (m-pair D₁ D₂) (at (m-pair₂ p)) (at (m-pair₂ q)) = graphM D₂ (at p) (at q)
+  graphM (m-pair D₁ D₂) (at (m-pair₁ p)) (at ε) = edge-m M.in₁ p
+  graphM (m-pair D₁ D₂) (at (m-pair₂ p)) (at ε) = edge-m M.in₂ p
 
-  graphM (m-mu {τ' = τ'} {w = w} Dm) env (at (m-mu q)) = graphM Dm env (at q)
-  graphM (m-mu {τ' = τ'} {w = w} Dm) input (at (m-mu q)) =
-    ccast (sym (width-subst (unfold₁-inst τ' _) w)) (graphM Dm input (at q))
-  graphM (m-mu Dm) (at (m-mu p)) (at (m-mu q)) = graphM Dm (at p) (at q)
-  graphM (m-mu {τ' = τ'} {w' = w'} Dm) (at (m-mu p)) (at ε) =
+  graphM (m-mu {τ' = τ'} {w = w} D) env (at (m-mu q)) = graphM D env (at q)
+  graphM (m-mu {τ' = τ'} {w = w} D) input (at (m-mu q)) =
+    ccast (sym (width-subst (unfold₁-inst τ' _) w)) (graphM D input (at q))
+  graphM (m-mu D) (at (m-mu p)) (at (m-mu q)) = graphM D (at p) (at q)
+  graphM (m-mu {τ' = τ'} {w' = w'} D) (at (m-mu p)) (at ε) =
     edge-m (rcast (sym (width-subst (unfold₁-inst τ' _) w')) M.I) p
 
-  graphM Dm _ _ = M.εₘ
+  graphM D _ _ = M.εₘ

@@ -39,62 +39,62 @@ mutual
     inr     : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₂} {v R} {D : γ , t ⇓ v [ R ]} →
               Path D → Path (⇓-inr {τ₁ = τ₁} D)
     case-l₁ : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
-              {v u R S} {Ds : γ , s ⇓ inl v [ R ]} {D₁ : γ · v , t₁ ⇓ u [ S ]} →
-              Path Ds → Path (⇓-case-l {t₂ = t₂} Ds D₁)
+              {v u R S} {D₁ : γ , s ⇓ inl v [ R ]} {D₂ : γ · v , t₁ ⇓ u [ S ]} →
+              Path D₁ → Path (⇓-case-l {t₂ = t₂} D₁ D₂)
     case-l₂ : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
-              {v u R S} {Ds : γ , s ⇓ inl v [ R ]} {D₁ : γ · v , t₁ ⇓ u [ S ]} →
-              Path D₁ → Path (⇓-case-l {t₂ = t₂} Ds D₁)
+              {v u R S} {D₁ : γ , s ⇓ inl v [ R ]} {D₂ : γ · v , t₁ ⇓ u [ S ]} →
+              Path D₂ → Path (⇓-case-l {t₂ = t₂} D₁ D₂)
     case-r₁ : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
-              {v u R S} {Ds : γ , s ⇓ inr v [ R ]} {D₂ : γ · v , t₂ ⇓ u [ S ]} →
-              Path Ds → Path (⇓-case-r {t₁ = t₁} Ds D₂)
+              {v u R S} {D₁ : γ , s ⇓ inr v [ R ]} {D₂ : γ · v , t₂ ⇓ u [ S ]} →
+              Path D₁ → Path (⇓-case-r {t₁ = t₁} D₁ D₂)
     case-r₂ : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
-              {v u R S} {Ds : γ , s ⇓ inr v [ R ]} {D₂ : γ · v , t₂ ⇓ u [ S ]} →
-              Path D₂ → Path (⇓-case-r {t₁ = t₁} Ds D₂)
+              {v u R S} {D₁ : γ , s ⇓ inr v [ R ]} {D₂ : γ · v , t₂ ⇓ u [ S ]} →
+              Path D₂ → Path (⇓-case-r {t₁ = t₁} D₁ D₂)
     pair₁   : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R S}
-              {Ds : γ , s ⇓ v [ R ]} {Dt : γ , t ⇓ u [ S ]} →
-              Path Ds → Path (⇓-pair Ds Dt)
+              {D₁ : γ , s ⇓ v [ R ]} {D₂ : γ , t ⇓ u [ S ]} →
+              Path D₁ → Path (⇓-pair D₁ D₂)
     pair₂   : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R S}
-              {Ds : γ , s ⇓ v [ R ]} {Dt : γ , t ⇓ u [ S ]} →
-              Path Dt → Path (⇓-pair Ds Dt)
+              {D₁ : γ , s ⇓ v [ R ]} {D₂ : γ , t ⇓ u [ S ]} →
+              Path D₂ → Path (⇓-pair D₁ D₂)
     fst     : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} {D : γ , t ⇓ pair v u [ R ]} →
               Path D → Path (⇓-fst D)
     snd     : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} {D : γ , t ⇓ pair v u [ R ]} →
               Path D → Path (⇓-snd D)
     app₁    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T}
-              {Ds : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {Dt : γ , t ⇓ v [ S ]} {Db : γ' · v , t' ⇓ u [ T ]} →
-              Path Ds → Path (⇓-app Ds Dt Db)
+              {D₁ : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {D₂ : γ , t ⇓ v [ S ]} {D₃ : γ' · v , t' ⇓ u [ T ]} →
+              Path D₁ → Path (⇓-app D₁ D₂ D₃)
     app₂    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T}
-              {Ds : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {Dt : γ , t ⇓ v [ S ]} {Db : γ' · v , t' ⇓ u [ T ]} →
-              Path Dt → Path (⇓-app Ds Dt Db)
+              {D₁ : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {D₂ : γ , t ⇓ v [ S ]} {D₃ : γ' · v , t' ⇓ u [ T ]} →
+              Path D₂ → Path (⇓-app D₁ D₂ D₃)
     app₃    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T}
-              {Ds : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {Dt : γ , t ⇓ v [ S ]} {Db : γ' · v , t' ⇓ u [ T ]} →
-              Path Db → Path (⇓-app Ds Dt Db)
+              {D₁ : γ , s ⇓ clo {Γ'} γ' t' [ R ]} {D₂ : γ , t ⇓ v [ S ]} {D₃ : γ' · v , t' ⇓ u [ T ]} →
+              Path D₃ → Path (⇓-app D₁ D₂ D₃)
     bop     : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-              {Ds : γ , Ms ⇓s vs [ R ]} →
-              PathS Ds → Path (⇓-bop {ω = ω} Ds)
+              {D : γ , Ms ⇓s vs [ R ]} →
+              PathS D → Path (⇓-bop {ω = ω} D)
     brel    : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-              {Ds : γ , Ms ⇓s vs [ R ]} →
-              PathS Ds → Path (⇓-brel {ω = ω} Ds)
+              {D : γ , Ms ⇓s vs [ R ]} →
+              PathS D → Path (⇓-brel {ω = ω} D)
     roll    : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v : Val (τ [ μ τ ])}
               {R : width-env γ ⇒ width v} {D : γ , t ⇓ v [ R ]} →
               Path D → Path (⇓-roll {τ = τ} D)
     fold₁   : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
-              {v u R R'} {Dt : γ , t ⇓ v [ R ]} {Dm : Map γ {τ} {σ} s (var zero) v R u R'} →
-              Path Dt → Path (⇓-fold Dt Dm)
+              {v u R R'} {D₁ : γ , t ⇓ v [ R ]} {D₂ : Map γ {τ} {σ} s (var zero) v R u R'} →
+              Path D₁ → Path (⇓-fold D₁ D₂)
     fold₂   : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
-              {v u R R'} {Dt : γ , t ⇓ v [ R ]} {Dm : Map γ {τ} {σ} s (var zero) v R u R'} →
-              PathM Dm → Path (⇓-fold Dt Dm)
+              {v u R R'} {D₁ : γ , t ⇓ v [ R ]} {D₂ : Map γ {τ} {σ} s (var zero) v R u R'} →
+              PathM D₂ → Path (⇓-fold D₁ D₂)
 
   data PathS : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs}
                {R : width-env γ ⇒ bases-width is} → γ , Ms ⇓s vs [ R ] → Set ℓ where
     ε  : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-         {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds
+         {D : γ , Ms ⇓s vs [ R ]} → PathS D
     hd : ∀ {Γ i is} {γ : Env Γ} {v vs R Rs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is}
-         {D : γ , M ⇓ const v [ R ]} {Ds : γ , Ms ⇓s vs [ Rs ]} →
-         Path D → PathS (D ∷ Ds)
+         {D₁ : γ , M ⇓ const v [ R ]} {D₂ : γ , Ms ⇓s vs [ Rs ]} →
+         Path D₁ → PathS (D₁ ∷ D₂)
     tl : ∀ {Γ i is} {γ : Env Γ} {v vs R Rs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is}
-         {D : γ , M ⇓ const v [ R ]} {Ds : γ , Ms ⇓s vs [ Rs ]} →
-         PathS Ds → PathS (D ∷ Ds)
+         {D₁ : γ , M ⇓ const v [ R ]} {D₂ : γ , Ms ⇓s vs [ Rs ]} →
+         PathS D₂ → PathS (D₁ ∷ D₂)
 
   data PathM : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R} {v' : Val (σ' [ σr ])} {R'} →
@@ -102,48 +102,48 @@ mutual
     ε       : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
               {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-              {Dm : Map γ s σ' v R v' R'} → PathM Dm
+              {D : Map γ s σ' v R v' R'} → PathM D
     m-rec₁  : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {w : Val (τ₀ [ μ τ₀ ])} {R : width-env γ ⇒ width w}
               {w' : Val (τ₀ [ σr ])} {R' : width-env γ ⇒ width w'}
               {u : Val σr} {S : width-env (γ · w') ⇒ width u}
-              {Dm : Map γ s τ₀ w R w' R'} {De : γ · w' , s ⇓ u [ S ]} →
-              PathM Dm → PathM (m-rec Dm De)
+              {D₁ : Map γ s τ₀ w R w' R'} {D₂ : γ · w' , s ⇓ u [ S ]} →
+              PathM D₁ → PathM (m-rec D₁ D₂)
     m-rec₂  : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {w : Val (τ₀ [ μ τ₀ ])} {R : width-env γ ⇒ width w}
               {w' : Val (τ₀ [ σr ])} {R' : width-env γ ⇒ width w'}
               {u : Val σr} {S : width-env (γ · w') ⇒ width u}
-              {Dm : Map γ s τ₀ w R w' R'} {De : γ · w' , s ⇓ u [ S ]} →
-              Path De → PathM (m-rec Dm De)
+              {D₁ : Map γ s τ₀ w R w' R'} {D₂ : γ · w' , s ⇓ u [ S ]} →
+              Path D₂ → PathM (m-rec D₁ D₂)
     m-inl   : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {R : width-env γ ⇒ width v}
               {v' : Val (σ₁ [ σr ])} {R' : width-env γ ⇒ width v'}
-              {Dm : Map γ s σ₁ v R v' R'} →
-              PathM Dm → PathM (m-inl {σ₂ = σ₂} Dm)
+              {D : Map γ s σ₁ v R v' R'} →
+              PathM D → PathM (m-inl {σ₂ = σ₂} D)
     m-inr   : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {σ₁ σ₂ : type 1} {v : Val (σ₂ [ μ τ₀ ])} {R : width-env γ ⇒ width v}
               {v' : Val (σ₂ [ σr ])} {R' : width-env γ ⇒ width v'}
-              {Dm : Map γ s σ₂ v R v' R'} →
-              PathM Dm → PathM (m-inr {σ₁ = σ₁} Dm)
+              {D : Map γ s σ₂ v R v' R'} →
+              PathM D → PathM (m-inr {σ₁ = σ₁} D)
     m-pair₁ : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {u : Val (σ₂ [ μ τ₀ ])}
               {R : width-env γ ⇒ width (pair v u)}
               {v' : Val (σ₁ [ σr ])} {S : width-env γ ⇒ width v'}
               {u' : Val (σ₂ [ σr ])} {T : width-env γ ⇒ width u'}
-              {Dm : Map γ s σ₁ v (p₁ ∘ R) v' S} {Dm' : Map γ s σ₂ u (p₂ ∘ R) u' T} →
-              PathM Dm → PathM (m-pair Dm Dm')
+              {D₁ : Map γ s σ₁ v (p₁ ∘ R) v' S} {D₂ : Map γ s σ₂ u (p₂ ∘ R) u' T} →
+              PathM D₁ → PathM (m-pair D₁ D₂)
     m-pair₂ : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {u : Val (σ₂ [ μ τ₀ ])}
               {R : width-env γ ⇒ width (pair v u)}
               {v' : Val (σ₁ [ σr ])} {S : width-env γ ⇒ width v'}
               {u' : Val (σ₂ [ σr ])} {T : width-env γ ⇒ width u'}
-              {Dm : Map γ s σ₁ v (p₁ ∘ R) v' S} {Dm' : Map γ s σ₂ u (p₂ ∘ R) u' T} →
-              PathM Dm' → PathM (m-pair Dm Dm')
+              {D₁ : Map γ s σ₁ v (p₁ ∘ R) v' S} {D₂ : Map γ s σ₂ u (p₂ ∘ R) u' T} →
+              PathM D₂ → PathM (m-pair D₁ D₂)
     m-mu    : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {τ' : type 2} {w : Val (unfold₁ τ' [ μ τ₀ ])} {R : width-env γ ⇒ width w}
               {w' : Val (unfold₁ τ' [ σr ])} {R' : width-env γ ⇒ width w'}
-              {Dm : Map γ s (unfold₁ τ') w R w' R'} →
-              PathM Dm → PathM (m-mu {τ' = τ'} Dm)
+              {D : Map γ s (unfold₁ τ') w R w' R'} →
+              PathM D → PathM (m-mu {τ' = τ'} D)
 
 -- The width of the vertex a path addresses: the width of the value of the subderivation there.
 mutual
@@ -169,7 +169,7 @@ mutual
   width-at (fold₂ p)    = width-at-m p
 
   width-at-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-               {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → ℕ
+               {D : γ , Ms ⇓s vs [ R ]} → PathS D → ℕ
   width-at-s (ε {is = is}) = bases-width is
   width-at-s (hd p)        = width-at p
   width-at-s (tl p)        = width-at-s p
@@ -177,7 +177,7 @@ mutual
   width-at-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
                {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-               {Dm : Map γ s σ' v R v' R'} → PathM Dm → ℕ
+               {D : Map γ s σ' v R v' R'} → PathM D → ℕ
   width-at-m (ε {v' = v'}) = width v'
   width-at-m (m-rec₁ p)    = width-at-m p
   width-at-m (m-rec₂ p)    = width-at p
@@ -194,49 +194,49 @@ mutual
   paths D = ε ∷ interior D
 
   paths-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            (Ds : γ , Ms ⇓s vs [ R ]) → List (PathS Ds)
-  paths-s Ds = ε ∷ interior-s Ds
+            (D : γ , Ms ⇓s vs [ R ]) → List (PathS D)
+  paths-s D = ε ∷ interior-s D
 
   paths-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
             {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-            (Dm : Map γ s σ' v R v' R') → List (PathM Dm)
-  paths-m Dm = ε ∷ interior-m Dm
+            (D : Map γ s σ' v R v' R') → List (PathM D)
+  paths-m D = ε ∷ interior-m D
 
   interior : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
   interior (⇓-var x)        = []
   interior ⇓-unit           = []
   interior (⇓-inl D)        = map inl (paths D)
   interior (⇓-inr D)        = map inr (paths D)
-  interior (⇓-case-l Ds D₁) = map case-l₁ (paths Ds) ++ map case-l₂ (paths D₁)
-  interior (⇓-case-r Ds D₂) = map case-r₁ (paths Ds) ++ map case-r₂ (paths D₂)
-  interior (⇓-pair Ds Dt)   = map pair₁ (paths Ds) ++ map pair₂ (paths Dt)
+  interior (⇓-case-l D₁ D₂) = map case-l₁ (paths D₁) ++ map case-l₂ (paths D₂)
+  interior (⇓-case-r D₁ D₂) = map case-r₁ (paths D₁) ++ map case-r₂ (paths D₂)
+  interior (⇓-pair D₁ D₂)   = map pair₁ (paths D₁) ++ map pair₂ (paths D₂)
   interior (⇓-fst D)        = map fst (paths D)
   interior (⇓-snd D)        = map snd (paths D)
   interior ⇓-lam            = []
-  interior (⇓-app Ds Dt Db) = map app₁ (paths Ds) ++ map app₂ (paths Dt) ++ map app₃ (paths Db)
-  interior (⇓-bop Ds)       = map bop (paths-s Ds)
-  interior (⇓-brel Ds)      = map brel (paths-s Ds)
+  interior (⇓-app D₁ D₂ D₃) = map app₁ (paths D₁) ++ map app₂ (paths D₂) ++ map app₃ (paths D₃)
+  interior (⇓-bop D)       = map bop (paths-s D)
+  interior (⇓-brel D)      = map brel (paths-s D)
   interior (⇓-roll D)       = map roll (paths D)
-  interior (⇓-fold Dt Dm)   = map fold₁ (paths Dt) ++ map fold₂ (paths-m Dm)
+  interior (⇓-fold D₁ D₂)   = map fold₁ (paths D₁) ++ map fold₂ (paths-m D₂)
 
   interior-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-               (Ds : γ , Ms ⇓s vs [ R ]) → List (PathS Ds)
+               (D : γ , Ms ⇓s vs [ R ]) → List (PathS D)
   interior-s []       = []
-  interior-s (D ∷ Ds) = map hd (paths D) ++ map tl (paths-s Ds)
+  interior-s (D₁ ∷ D₂) = map hd (paths D₁) ++ map tl (paths-s D₂)
 
   interior-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
                {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-               (Dm : Map γ s σ' v R v' R') → List (PathM Dm)
-  interior-m (m-rec Dm De)    = map m-rec₁ (paths-m Dm) ++ map m-rec₂ (paths De)
+               (D : Map γ s σ' v R v' R') → List (PathM D)
+  interior-m (m-rec D₁ D₂)   = map m-rec₁ (paths-m D₁) ++ map m-rec₂ (paths D₂)
   interior-m m-unit           = []
   interior-m m-base           = []
   interior-m m-arrow          = []
-  interior-m (m-inl Dm)       = map m-inl (paths-m Dm)
-  interior-m (m-inr Dm)       = map m-inr (paths-m Dm)
-  interior-m (m-pair Dm Dm')  = map m-pair₁ (paths-m Dm) ++ map m-pair₂ (paths-m Dm')
-  interior-m (m-mu Dm)        = map m-mu (paths-m Dm)
+  interior-m (m-inl D)       = map m-inl (paths-m D)
+  interior-m (m-inr D)       = map m-inr (paths-m D)
+  interior-m (m-pair D₁ D₂)  = map m-pair₁ (paths-m D₁) ++ map m-pair₂ (paths-m D₂)
+  interior-m (m-mu D)        = map m-mu (paths-m D)
 
 -- Whether the value at a path is first-order, by the type of the subderivation's conclusion.
 -- Operand-list vertices hold tuples of constants, so they are always first-order.
@@ -263,13 +263,13 @@ mutual
   fo-at (fold₂ p)   = fo-at-m p
 
   fo-at-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → Bool
+            {D : γ , Ms ⇓s vs [ R ]} → PathS D → Bool
   fo-at-s _ = Bool.true
 
   fo-at-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
             {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-            {Dm : Map γ s σ' v R v' R'} → PathM Dm → Bool
+            {D : Map γ s σ' v R v' R'} → PathM D → Bool
   fo-at-m (ε {σr = σr} {σ' = σ'}) = ⌊ first-order? (σ' [ σr ]) ⌋
   fo-at-m (m-rec₁ p)  = fo-at-m p
   fo-at-m (m-rec₂ p)  = fo-at p
@@ -313,7 +313,7 @@ mutual
   eq-path _ _ = Bool.false
 
   eq-path-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-              {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → PathS Ds → Bool
+              {D : γ , Ms ⇓s vs [ R ]} → PathS D → PathS D → Bool
   eq-path-s ε ε = Bool.true
   eq-path-s (hd p) (hd q) = eq-path p q
   eq-path-s (tl p) (tl q) = eq-path-s p q
@@ -322,7 +322,7 @@ mutual
   eq-path-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
               {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-              {Dm : Map γ s σ' v R v' R'} → PathM Dm → PathM Dm → Bool
+              {D : Map γ s σ' v R v' R'} → PathM D → PathM D → Bool
   eq-path-m ε ε = Bool.true
   eq-path-m (m-rec₁ p)  (m-rec₁ q)  = eq-path-m p q
   eq-path-m (m-rec₂ p)  (m-rec₂ q)  = eq-path p q
@@ -346,49 +346,49 @@ mutual
   size D = suc (psize D)
 
   size-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-           (Ds : γ , Ms ⇓s vs [ R ]) → ℕ
-  size-s Ds = suc (psize-s Ds)
+           (D : γ , Ms ⇓s vs [ R ]) → ℕ
+  size-s D = suc (psize-s D)
 
   size-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-           (Dm : Map γ s σ' v R v' R') → ℕ
-  size-m Dm = suc (psize-m Dm)
+           (D : Map γ s σ' v R v' R') → ℕ
+  size-m D = suc (psize-m D)
 
   psize : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → ℕ
   psize (⇓-var x)        = 0
   psize ⇓-unit           = 0
   psize (⇓-inl D)        = size D
   psize (⇓-inr D)        = size D
-  psize (⇓-case-l Ds D₁) = size Ds + size D₁
-  psize (⇓-case-r Ds D₂) = size Ds + size D₂
-  psize (⇓-pair Ds Dt)   = size Ds + size Dt
+  psize (⇓-case-l D₁ D₂) = size D₁ + size D₂
+  psize (⇓-case-r D₁ D₂) = size D₁ + size D₂
+  psize (⇓-pair D₁ D₂)   = size D₁ + size D₂
   psize (⇓-fst D)        = size D
   psize (⇓-snd D)        = size D
   psize ⇓-lam            = 0
-  psize (⇓-app Ds Dt Db) = size Ds + size Dt + size Db
-  psize (⇓-bop Ds)       = size-s Ds
-  psize (⇓-brel Ds)      = size-s Ds
+  psize (⇓-app D₁ D₂ D₃) = size D₁ + size D₂ + size D₃
+  psize (⇓-bop D)       = size-s D
+  psize (⇓-brel D)      = size-s D
   psize (⇓-roll D)       = size D
-  psize (⇓-fold Dt Dm)   = size Dt + size-m Dm
+  psize (⇓-fold D₁ D₂)   = size D₁ + size-m D₂
 
   psize-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            (Ds : γ , Ms ⇓s vs [ R ]) → ℕ
+            (D : γ , Ms ⇓s vs [ R ]) → ℕ
   psize-s []       = 0
-  psize-s (D ∷ Ds) = size D + size-s Ds
+  psize-s (D₁ ∷ D₂) = size D₁ + size-s D₂
 
   psize-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
             {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-            (Dm : Map γ s σ' v R v' R') → ℕ
-  psize-m (m-rec Dm De)   = size-m Dm + size De
+            (D : Map γ s σ' v R v' R') → ℕ
+  psize-m (m-rec D₁ D₂)  = size-m D₁ + size D₂
   psize-m m-unit          = 0
   psize-m m-base          = 0
   psize-m m-arrow         = 0
-  psize-m (m-inl Dm)      = size-m Dm
-  psize-m (m-inr Dm)      = size-m Dm
-  psize-m (m-pair Dm Dm') = size-m Dm + size-m Dm'
-  psize-m (m-mu Dm)       = size-m Dm
+  psize-m (m-inl D)      = size-m D
+  psize-m (m-inr D)      = size-m D
+  psize-m (m-pair D₁ D₂) = size-m D₁ + size-m D₂
+  psize-m (m-mu D)       = size-m D
 
 mutual
   rank : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → ℕ
@@ -396,49 +396,49 @@ mutual
   rank (inl p)                = rank p
   rank (inr p)                = rank p
   rank (case-l₁ p)            = rank p
-  rank (case-l₂ {Ds = Ds} p)  = size Ds + rank p
+  rank (case-l₂ {D₁ = D₁} p)  = size D₁ + rank p
   rank (case-r₁ p)            = rank p
-  rank (case-r₂ {Ds = Ds} p)  = size Ds + rank p
+  rank (case-r₂ {D₁ = D₁} p)  = size D₁ + rank p
   rank (pair₁ p)              = rank p
-  rank (pair₂ {Ds = Ds} p)    = size Ds + rank p
+  rank (pair₂ {D₁ = D₁} p)    = size D₁ + rank p
   rank (fst p)                = rank p
   rank (snd p)                = rank p
   rank (app₁ p)               = rank p
-  rank (app₂ {Ds = Ds} p)     = size Ds + rank p
-  rank (app₃ {Ds = Ds} {Dt = Dt} p) = size Ds + size Dt + rank p
+  rank (app₂ {D₁ = D₁} p)     = size D₁ + rank p
+  rank (app₃ {D₁ = D₁} {D₂ = D₂} p) = size D₁ + size D₂ + rank p
   rank (bop p)                = rank-s p
   rank (brel p)               = rank-s p
   rank (roll p)               = rank p
   rank (fold₁ p)              = rank p
-  rank (fold₂ {Dt = Dt} p)    = size Dt + rank-m p
+  rank (fold₂ {D₁ = D₁} p)    = size D₁ + rank-m p
 
   rank-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-           {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → ℕ
-  rank-s (ε {Ds = Ds})   = psize-s Ds
+           {D : γ , Ms ⇓s vs [ R ]} → PathS D → ℕ
+  rank-s (ε {D = D})     = psize-s D
   rank-s (hd p)          = rank p
-  rank-s (tl {D = D} p)  = size D + rank-s p
+  rank-s (tl {D₁ = D₁} p) = size D₁ + rank-s p
 
   rank-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-           {Dm : Map γ s σ' v R v' R'} → PathM Dm → ℕ
-  rank-m (ε {Dm = Dm})         = psize-m Dm
+           {D : Map γ s σ' v R v' R'} → PathM D → ℕ
+  rank-m (ε {D = D})           = psize-m D
   rank-m (m-rec₁ p)            = rank-m p
-  rank-m (m-rec₂ {Dm = Dm} p)  = size-m Dm + rank p
+  rank-m (m-rec₂ {D₁ = D₁} p)  = size-m D₁ + rank p
   rank-m (m-inl p)             = rank-m p
   rank-m (m-inr p)             = rank-m p
   rank-m (m-pair₁ p)           = rank-m p
-  rank-m (m-pair₂ {Dm = Dm} p) = size-m Dm + rank-m p
+  rank-m (m-pair₂ {D₁ = D₁} p) = size-m D₁ + rank-m p
   rank-m (m-mu p)              = rank-m p
 
 is-ε-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-         {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → Bool
+         {D : γ , Ms ⇓s vs [ R ]} → PathS D → Bool
 is-ε-s ε = Bool.true
 is-ε-s _ = Bool.false
 
 is-ε-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
          {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
          {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-         {Dm : Map γ s σ' v R v' R'} → PathM Dm → Bool
+         {D : Map γ s σ' v R v' R'} → PathM D → Bool
 is-ε-m ε = Bool.true
 is-ε-m _ = Bool.false
