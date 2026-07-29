@@ -113,10 +113,9 @@ hide-root D x y =
   ≈-trans (+ₘ-cong ≈-refl (∘-cong (root-sink D y) ≈-refl))
           (absorb (graph D x y) (graph D x (at ε)))
 
--- Simulation of a premise embedded by inl: hiding the embedded copy of a premise path tracks
--- hiding the path in the premise, with the composite root standing for the premise root through
--- the root edge P. The premise-root column claim excludes the root itself, whose composite entry
--- is stale once hidden.
+-- Entries of a graph over ⇓-inl D against a graph over D: agreement across the embedding, root
+-- columns related through the root edge P. Preserved as both sides hide corresponding paths; the
+-- root-column claim excludes the premise root, whose entry is stale once hidden.
 module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : width-env γ ⇒ width v}
          {D : γ , t ⇓ v [ R ]} where
 
