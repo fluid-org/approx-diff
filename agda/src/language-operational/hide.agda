@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-import Data.Bool as B
+open import Data.Bool using (Bool; not; _∧_; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; foldl; concat; partitionᵇ)
 open import Data.Product using (proj₁; proj₂)
@@ -34,20 +34,20 @@ hide-all = foldl hide
 -- value is not first-order hidden, so that its live vertices are env, the root, and FO D.
 fo-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Graph D
 fo-graph D =
-  hide-all (graph D) (map at (filterᵇ (λ p → B.not (is-ε p) B.∧ B.not (fo-at p)) (paths D)))
+  hide-all (graph D) (map at (filterᵇ (λ p → not (is-ε p) ∧ not (fo-at p)) (paths D)))
 
 private
-  nonzero : ∀ {m n} → M.Matrix m n → B.Bool
+  nonzero : ∀ {m n} → M.Matrix m n → Bool
   nonzero {m} {n} R = any (λ i → any (λ j → is-I (R i j)) (allFin n)) (allFin m)
     where
-      is-I : two.Two → B.Bool
-      is-I two.I = B.true
-      is-I two.O = B.false
+      is-I : two.Two → Bool
+      is-I two.I = Data.Bool.true
+      is-I two.O = Data.Bool.false
 
 -- Vertices sharing an incident edge, in either direction.
 adjacent : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
-           Graph D → Vertex D → Vertex D → B.Bool
-adjacent G x y = nonzero (G x y) B.∨ nonzero (G y x)
+           Graph D → Vertex D → Vertex D → Bool
+adjacent G x y = nonzero (G x y) ∨ nonzero (G y x)
 
 -- The regions of a list of vertices: the weakly connected components of the subgraph induced by
 -- its members. Each vertex merges the components it is adjacent to, the hide move's merging

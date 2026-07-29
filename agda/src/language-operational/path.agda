@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.Fin using (zero)
-import Data.Bool as B
+open import Data.Bool using (Bool; not; _∧_)
 open import Data.List using (List; []; _∷_; _++_; map; filterᵇ)
 open import Data.Nat using (ℕ)
 open import every using (Every; []; _∷_)
@@ -227,7 +227,7 @@ mutual
 -- Whether the value at a path is first-order, by the type of the subderivation's conclusion.
 -- Operand-list vertices hold tuples of constants, so they are always first-order.
 mutual
-  fo-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → B.Bool
+  fo-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → Bool
   fo-at (ε {τ = τ}) = ⌊ first-order? τ ⌋
   fo-at (inl p)     = fo-at p
   fo-at (inr p)     = fo-at p
@@ -249,13 +249,13 @@ mutual
   fo-at (fold₂ p)   = fo-at-m p
 
   fo-at-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → B.Bool
-  fo-at-s _ = B.true
+            {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → Bool
+  fo-at-s _ = Data.Bool.true
 
   fo-at-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
             {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-            {Dm : Map γ s σ' v R v' R'} → PathM Dm → B.Bool
+            {Dm : Map γ s σ' v R v' R'} → PathM Dm → Bool
   fo-at-m (ε {σr = σr} {σ' = σ'}) = ⌊ first-order? (σ' [ σr ]) ⌋
   fo-at-m (m-rec₁ p)  = fo-at-m p
   fo-at-m (m-rec₂ p)  = fo-at p
@@ -266,10 +266,10 @@ mutual
   fo-at-m (m-mu p)    = fo-at-m p
 
 -- Whether a path is the root.
-is-ε : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → B.Bool
-is-ε ε = B.true
-is-ε _ = B.false
+is-ε : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → Bool
+is-ε ε = Data.Bool.true
+is-ε _ = Data.Bool.false
 
 -- The non-empty paths whose values are first-order: the vertices an interaction may reveal.
 FO : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
-FO D = filterᵇ (λ p → B.not (is-ε p) B.∧ fo-at p) (paths D)
+FO D = filterᵇ (λ p → not (is-ε p) ∧ fo-at p) (paths D)
