@@ -13,6 +13,7 @@ module language-operational.agreement {ℓ} (Sig : Signature ℓ) (𝒫 : Primit
 open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_)
+open import type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
@@ -29,7 +30,8 @@ open import every using (Every; []; _∷_)
 open import Data.List.Properties using (map-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
 open import Data.List.Relation.Unary.All.Properties using (map⁺; ++⁺)
-open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl; cong to ≡-cong; trans to ≡-trans)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl; cong to ≡-cong; trans to ≡-trans; sym to ≡-sym)
+  using (subst)
 open import prop-setoid using (module ≈-Reasoning) renaming (_⇒_ to _⇒ₛ_)
 open _⇒ₛ_ using (func)
 open import Data.Sum using (inj₁; inj₂) renaming (_⊎_ to _⊎'_)
@@ -1596,6 +1598,10 @@ ccast-step : ∀ {m k n n'} (e : n ≡ n') {G₁ : M.Matrix m n'} {X : M.Matrix 
 ccast-step e {X = X} {Y = Y} {Z = Z} a b c =
   ≈-trans (+ₘ-cong a (≈-trans (∘-cong b c) (ccast-∘ e Y Z))) (+ₘ-ccast e X (Y M.∘ Z))
 
+
+ccast-cong : ∀ {m n n'} (e : n ≡ n') {X Y : M.Matrix m n} → X M.≈ₘ Y → ccast e X M.≈ₘ ccast e Y
+ccast-cong ≡-refl h = h
+
 root-step-cast : ∀ {m l g n n'} (e : n ≡ n') (P : M.Matrix m l)
                  {G₁ : M.Matrix m n'} {X : M.Matrix l n} {G₂ : M.Matrix m g} {Y : M.Matrix l g}
                  {G₃ : M.Matrix g n'} {Z : M.Matrix g n} →
@@ -1752,3 +1758,83 @@ module MInr {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀
 
   agree-MInr-in : collapse-m-in C M.≈ₘ collapse-m-in Dm
   agree-MInr-in = ≈-trans (rfin .input-root) id-left
+
+-- The mu action: one premise at the unfolded type, with width casts on the input row and the
+-- root edge.
+module MMu {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+           {τ' : type 2} {w : Val (unfold₁ τ' [ μ τ₀ ])} {R : width-env γ ⇒ width w}
+           {w' : Val (unfold₁ τ' [ σr ])} {R' : width-env γ ⇒ width w'}
+           {Dm : Map γ s (unfold₁ τ') w R w' R'} where
+
+  private
+    C = m-mu {τ' = τ'} Dm
+
+    eᵥ : width w ≡ width (subst Val (unfold₁-inst τ' (μ τ₀)) w)
+    eᵥ = ≡-sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)
+
+    e' : width w' ≡ width (subst Val (unfold₁-inst τ' σr) w')
+    e' = ≡-sym (width-subst (unfold₁-inst τ' σr) w')
+
+    P : M.Matrix (width (subst Val (unfold₁-inst τ' σr) w')) (width w')
+    P = rcast e' M.I
+
+  record Embeds (G : GraphM C) (H : GraphM Dm) : Set ℓ where
+    field
+      env-embed   : ∀ q → G env (at (m-mu q)) M.≈ₘ H env (at q)
+      input-embed : ∀ q → G input (at (m-mu q)) M.≈ₘ ccast eᵥ (H input (at q))
+      embed-embed : ∀ p q → G (at (m-mu p)) (at (m-mu q)) M.≈ₘ H (at p) (at q)
+      env-root    : G env (at ε) M.≈ₘ (P M.∘ H env (at ε))
+      input-root  : G input (at ε) M.≈ₘ (P M.∘ ccast eᵥ (H input (at ε)))
+      embed-root  : ∀ p → is-ε-m p ≡ Bool.false →
+                    G (at (m-mu p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
+
+  open Embeds
+
+  embeds-hide : ∀ {G H} (v : PathM Dm) → is-ε-m v ≡ Bool.false →
+                Embeds G H → Embeds (hide-m G (at (m-mu v))) (hide-m H (at v))
+  embeds-hide v nw r .env-embed q   = +ₘ-cong (r .env-embed q) (∘-cong (r .embed-embed v q) (r .env-embed v))
+  embeds-hide v nw r .input-embed q =
+    ccast-step eᵥ (r .input-embed q) (r .embed-embed v q) (r .input-embed v)
+  embeds-hide v nw r .embed-embed p q = +ₘ-cong (r .embed-embed p q) (∘-cong (r .embed-embed v q) (r .embed-embed p v))
+  embeds-hide v nw r .env-root = root-step {P = P} (r .env-root) (r .embed-root v nw) (r .env-embed v)
+  embeds-hide v nw r .input-root =
+    root-step-cast eᵥ P (r .input-root) (r .embed-root v nw) (r .input-embed v)
+  embeds-hide v nw r .embed-root p np =
+    root-step {P = P} (r .embed-root p np) (r .embed-root v nw) (r .embed-embed p v)
+
+  embeds-hide-all : ∀ {G H} (ws : List (PathM Dm)) → All (λ v → is-ε-m v ≡ Bool.false) ws →
+                    Embeds G H →
+                    Embeds (hide-all-m G (map at (map m-mu ws))) (hide-all-m H (map at ws))
+  embeds-hide-all []       []         r = r
+  embeds-hide-all (v ∷ ws) (nw ∷ nws) r = embeds-hide-all ws nws (embeds-hide v nw r)
+
+  private
+    embeds₀ : Embeds (hide-m (hide-m (graphM C) (at ε)) (at (m-mu ε)))
+                     (hide-m (graphM Dm) (at ε))
+    embeds₀ .env-embed q   = hide-hide-root-m C (at (m-mu ε)) env (at (m-mu q))
+    embeds₀ .input-embed q =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) input (at (m-mu q)))
+              (ccast-step eᵥ {X = graphM Dm input (at q)} {Z = graphM Dm input (at ε)}
+                          ≈-refl ≈-refl ≈-refl)
+    embeds₀ .embed-embed p q = hide-hide-root-m C (at (m-mu ε)) (at (m-mu p)) (at (m-mu q))
+    embeds₀ .env-root =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) env (at ε)) (into-hidden-m Dm P env)
+    embeds₀ .input-root =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) input (at ε))
+      (≈-trans (+ₘ-lunit (P M.∘ ccast eᵥ (graphM Dm input (at ε))))
+               (∘-cong₂ (ccast-cong eᵥ (≈-sym (hide-root-m Dm input (at ε))))))
+    embeds₀ .embed-root p np =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) (at (m-mu p)) (at ε))
+      (≈-trans (+ₘ-cong (edge-off-m P p np) ≈-refl) (into-hidden-m Dm P (at p)))
+
+    rfin = embeds-hide-all (interior-m Dm) (interior-not-root-m Dm) embeds₀
+
+  agree-mu-env : collapse-m-env C M.≈ₘ rcast e' (collapse-m-env Dm)
+  agree-mu-env =
+    ≈-trans (rfin .env-root)
+    (≈-trans (rcast-∘ e' M.I (collapse-m-env Dm)) (rcast-cong e' id-left))
+
+  agree-mu-in : collapse-m-in C M.≈ₘ rcast e' (ccast eᵥ (collapse-m-in Dm))
+  agree-mu-in =
+    ≈-trans (rfin .input-root)
+    (≈-trans (rcast-∘ e' M.I (ccast eᵥ (collapse-m-in Dm))) (rcast-cong e' id-left))
