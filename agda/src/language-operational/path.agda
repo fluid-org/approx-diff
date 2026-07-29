@@ -430,3 +430,8 @@ mutual
   rank-m (m-pair₁ p)           = rank-m p
   rank-m (m-pair₂ {Dm = Dm} p) = size-m Dm + rank-m p
   rank-m (m-mu p)              = rank-m p
+
+is-ε-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+         {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → Bool
+is-ε-s ε = Bool.true
+is-ε-s _ = Bool.false

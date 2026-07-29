@@ -4,6 +4,7 @@ open import Data.Bool as Bool using (Bool; not; _∧_; _∨_; if_then_else_)
 open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; foldl; foldr; concat; partitionᵇ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import every using (Every; []; _∷_)
 open import signature using (Signature)
 open import primitives using (Primitives)
 import matrix
@@ -15,6 +16,7 @@ import two
 module language-operational.hide {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
+open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr; if_then_else_)
 open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
@@ -145,3 +147,15 @@ reveal-at D p K .hidden  = concat (map step (K .hidden))
 collapse : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
            M.Matrix (width v) (width-env γ)
 collapse D = hide-all (graph D) (map at (paths D)) env (at ε)
+
+hide-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+         {Ds : γ , Ms ⇓s vs [ R ]} → GraphS Ds → VertexS Ds → GraphS Ds
+hide-s G r x y = G x y M.+ₘ (G r y M.∘ G x r)
+
+hide-all-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+             {Ds : γ , Ms ⇓s vs [ R ]} → GraphS Ds → List (VertexS Ds) → GraphS Ds
+hide-all-s = foldl hide-s
+
+collapse-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+             (Ds : γ , Ms ⇓s vs [ R ]) → M.Matrix (bases-width is) (width-env γ)
+collapse-s Ds = hide-all-s (graphS Ds) (map at (paths-s Ds)) env (at ε)
