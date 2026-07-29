@@ -161,30 +161,30 @@ interior-not-root (⇓-bop Ds) = map⁺ (universal (λ _ → ≡-refl) (paths-s 
 interior-not-root (⇓-brel Ds) = map⁺ (universal (λ _ → ≡-refl) (paths-s Ds))
 interior-not-root (⇓-fold Dt Dm) = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths Dt))) (map⁺ (universal (λ _ → ≡-refl) (paths-m Dm)))
 
--- A embeds H when A's entries at inl-embedded vertices are H's, and A's root column is H's root
+-- G embeds H when G's entries at inl-embedded vertices are H's, and G's root column is H's root
 -- column through the root edge P. Hiding corresponding paths on both sides preserves this; the
 -- root-column claim excludes the premise root, whose entry is stale once hidden.
 module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : width-env γ ⇒ width v}
          {D : γ , t ⇓ v [ R ]} where
 
-  record Embeds (A : Graph (⇓-inl {τ₂ = τ₂} D)) (H : Graph D)
+  record Embeds (G : Graph (⇓-inl {τ₂ = τ₂} D)) (H : Graph D)
                 (P : M.Matrix (width v) (width v)) : Set ℓ where
     field
-      s-env  : ∀ q → A env (at (inl q)) M.≈ₘ H env (at q)
-      s-emb  : ∀ p q → A (at (inl p)) (at (inl q)) M.≈ₘ H (at p) (at q)
-      s-envr : A env (at ε) M.≈ₘ (P M.∘ H env (at ε))
+      s-env  : ∀ q → G env (at (inl q)) M.≈ₘ H env (at q)
+      s-emb  : ∀ p q → G (at (inl p)) (at (inl q)) M.≈ₘ H (at p) (at q)
+      s-envr : G env (at ε) M.≈ₘ (P M.∘ H env (at ε))
       s-embr : ∀ p → is-ε p ≡ Data.Bool.false →
-               A (at (inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
+               G (at (inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
 
   open Embeds
 
-  embeds-hide : ∀ {A H P} (w : Path D) → is-ε w ≡ Data.Bool.false →
-             Embeds A H P → Embeds (hide A (at (inl w))) (hide H (at w)) P
+  embeds-hide : ∀ {G H P} (w : Path D) → is-ε w ≡ Data.Bool.false →
+             Embeds G H P → Embeds (hide G (at (inl w))) (hide H (at w)) P
   embeds-hide w nw s .s-env q  = +ₘ-cong (s .s-env q) (∘-cong (s .s-emb w q) (s .s-env w))
   embeds-hide w nw s .s-emb p q = +ₘ-cong (s .s-emb p q) (∘-cong (s .s-emb w q) (s .s-emb p w))
-  embeds-hide {A} {H} {P} w nw s .s-envr =
+  embeds-hide {G} {H} {P} w nw s .s-envr =
     begin
-      A env (at ε) M.+ₘ (A (at (inl w)) (at ε) M.∘ A env (at (inl w)))
+      G env (at ε) M.+ₘ (G (at (inl w)) (at ε) M.∘ G env (at (inl w)))
         ≈⟨ +ₘ-cong (s .s-envr) (∘-cong (s .s-embr w nw) (s .s-env w)) ⟩
       (P M.∘ H env (at ε)) M.+ₘ ((P M.∘ H (at w) (at ε)) M.∘ H env (at w))
         ≈⟨ +ₘ-cong ≈-refl (assoc P (H (at w) (at ε)) (H env (at w))) ⟩
@@ -193,9 +193,9 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
       P M.∘ (H env (at ε) M.+ₘ (H (at w) (at ε) M.∘ H env (at w)))
     ∎
     where open ≈-Reasoning isEquiv
-  embeds-hide {A} {H} {P} w nw s .s-embr p np =
+  embeds-hide {G} {H} {P} w nw s .s-embr p np =
     begin
-      A (at (inl p)) (at ε) M.+ₘ (A (at (inl w)) (at ε) M.∘ A (at (inl p)) (at (inl w)))
+      G (at (inl p)) (at ε) M.+ₘ (G (at (inl w)) (at ε) M.∘ G (at (inl p)) (at (inl w)))
         ≈⟨ +ₘ-cong (s .s-embr p np) (∘-cong (s .s-embr w nw) (s .s-emb p w)) ⟩
       (P M.∘ H (at p) (at ε)) M.+ₘ ((P M.∘ H (at w) (at ε)) M.∘ H (at p) (at w))
         ≈⟨ +ₘ-cong ≈-refl (assoc P (H (at w) (at ε)) (H (at p) (at w))) ⟩
@@ -205,9 +205,9 @@ module _ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : 
     ∎
     where open ≈-Reasoning isEquiv
 
-  embeds-hide-all : ∀ {A H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Data.Bool.false) ws →
-             Embeds A H P →
-             Embeds (hide-all A (map at (map inl ws))) (hide-all H (map at ws)) P
+  embeds-hide-all : ∀ {G H P} (ws : List (Path D)) → All (λ w → is-ε w ≡ Data.Bool.false) ws →
+             Embeds G H P →
+             Embeds (hide-all G (map at (map inl ws))) (hide-all H (map at ws)) P
   embeds-hide-all []       []         s = s
   embeds-hide-all (w ∷ ws) (nw ∷ nws) s = embeds-hide-all ws nws (embeds-hide w nw s)
 
