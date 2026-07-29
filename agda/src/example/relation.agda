@@ -23,9 +23,5 @@ module LR = language-operational.logical-relation Sig Dep.primitives
 FP : Set
 FP = LR.FundamentalProperty
 
--- Totality, the evaluator and the instrumentation, at the same model.
 import language-operational.totality
 module Tot = language-operational.totality Sig Dep.primitives
-
-import language-operational.instrument
-module Instr = language-operational.instrument Sig Dep.primitives
