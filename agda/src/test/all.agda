@@ -3,3 +3,4 @@
 module test.all where
 
 import test.dependency
+import test.interaction
