@@ -39,7 +39,7 @@ open import Data.Sum using (inj₁; inj₂) renaming (_⊎_ to _⊎'_)
 open import Data.Unit.Polymorphic using () renaming (⊤ to ⊤')
 import Level
 open import categories using (Category; HasTerminal)
-open Category M.cat using (_⇒_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; ≈-refl; ≈-sym; ≈-trans; isEquiv) renaming (id to idm)
+open Category M.cat using (_⇒_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; isEquiv) renaming (id to idm)
 open HasTerminal M.terminal using (to-terminal)
 
 +ₘ-runit : ∀ {m n} (R : M.Matrix m n) → (R M.+ₘ M.εₘ) M.≈ₘ R
@@ -2084,6 +2084,31 @@ module MPair {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ�
   agree-mpair-in =
     ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg input (at ε)) plumbG)) (rfin .input-root)
 
+  combine : ∀ {Rp : width-env γ ⇒ width v'} {Tp : width-env γ ⇒ width u'} →
+            ((collapse-m-env D₁ M.+ₘ (collapse-m-in D₁ M.∘ (pˡ M.∘ R))) M.≈ₘ Rp) →
+            ((collapse-m-env D₂ M.+ₘ (collapse-m-in D₂ M.∘ (pʳ M.∘ R))) M.≈ₘ Tp) →
+            ((collapse-m-env C M.+ₘ (collapse-m-in C M.∘ R))
+             M.≈ₘ ((i₁ M.∘ Rp) M.+ₘ (i₂ M.∘ Tp)))
+  combine {Rp} {Tp} ihl ihr =
+    ≈-trans (+ₘ-cong agree-mpair-env (∘-cong₁ agree-mpair-in))
+    (≈-trans (+ₘ-cong (≈-refl {f = (i₁ M.∘ collapse-m-env D₁) M.+ₘ (i₂ M.∘ collapse-m-env D₂)})
+                      (M.comp-bilinear₁ ((i₁ M.∘ collapse-m-in D₁) M.∘ pˡ)
+                                        ((i₂ M.∘ collapse-m-in D₂) M.∘ pʳ) R))
+    (≈-trans (+ₘ-interchange (i₁ M.∘ collapse-m-env D₁) (i₂ M.∘ collapse-m-env D₂)
+                             (((i₁ M.∘ collapse-m-in D₁) M.∘ pˡ) M.∘ R)
+                             (((i₂ M.∘ collapse-m-in D₂) M.∘ pʳ) M.∘ R))
+             (+ₘ-cong (half i₁ pˡ ihl) (half i₂ pʳ ihr))))
+    where
+      half : ∀ {m wp} (i : M.Matrix (width (pair v' u')) m) (pr : M.Matrix wp (width (pair v u)))
+             {Cenv : M.Matrix m (width-env γ)} {Cin : M.Matrix m wp} {Out} →
+             ((Cenv M.+ₘ (Cin M.∘ (pr M.∘ R))) M.≈ₘ Out) →
+             (((i M.∘ Cenv) M.+ₘ (((i M.∘ Cin) M.∘ pr) M.∘ R)) M.≈ₘ (i M.∘ Out))
+      half i pr {Cenv} {Cin} {Out} ih =
+        ≈-trans (+ₘ-cong (≈-refl {f = i M.∘ Cenv})
+                         (≈-trans (assoc (i M.∘ Cin) pr R) (assoc i Cin (pr M.∘ R))))
+        (≈-trans (≈-sym (M.comp-bilinear₂ i Cenv (Cin M.∘ (pr M.∘ R)))) (∘-cong₂ ih))
+
+
 -- The recursion action: a fold-action premise, then the body evaluated under the extended
 -- environment, its rewired columns fed by both of the premise's collapses.
 module MRec {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
@@ -2266,6 +2291,23 @@ module MRec {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀
   agree-mrec-in =
     ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg input (at ε)) plumbG)) (rfin .input-root)
 
+  combine : ∀ {Rp : width-env γ ⇒ width w'} {Sp : width-env (γ · w') ⇒ width u} →
+            ((collapse-m-env D₁ M.+ₘ (collapse-m-in D₁ M.∘ R)) M.≈ₘ Rp) →
+            (collapse D₂ M.≈ₘ Sp) →
+            ((collapse-m-env C M.+ₘ (collapse-m-in C M.∘ R))
+             M.≈ₘ (Sp M.∘ ((iₗ M.∘ M.I) M.+ₘ (iᵣ M.∘ Rp))))
+  combine {Rp} {Sp} ihm ihe =
+    ≈-trans (+ₘ-cong agree-mrec-env (∘-cong₁ agree-mrec-in))
+    (≈-trans (+ₘ-cong (≈-refl {f = collapse D₂ M.∘ Wₑ}) (assoc (collapse D₂) Wᵢ R))
+    (≈-trans (≈-sym (M.comp-bilinear₂ (collapse D₂) Wₑ (Wᵢ M.∘ R)))
+    (≈-trans (∘-cong ihe
+              (≈-trans (+ₘ-assoc iₗ (iᵣ M.∘ collapse-m-env D₁) ((iᵣ M.∘ collapse-m-in D₁) M.∘ R))
+              (≈-trans (+ₘ-cong (≈-refl {f = iₗ})
+                                (distrib-root iᵣ (collapse-m-env D₁) (collapse-m-in D₁) R))
+                       (+ₘ-cong (≈-refl {f = iₗ}) (∘-cong₂ ihm)))))
+             (∘-cong₂ (+ₘ-cong (≈-sym (id-right {f = iₗ})) (≈-refl {f = iᵣ M.∘ Rp}))))))
+
+
 -- The fold rule: the subject premise, then the fold action with its input wired to the subject's
 -- root, so the collapse resolves the action's input dependence through the subject's collapse.
 module Fold {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
@@ -2408,3 +2450,126 @@ module Fold {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ]
                M.≈ₘ (collapse-m-env D₂ M.+ₘ (collapse-m-in D₂ M.∘ collapse D₁))
   agree-fold =
     ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg env (at ε)) plumbG)) (rfin .env-root)
+
+
+subst-rcast : ∀ {g m m'} (e : m ≡ m') (X : g ⇒ m) → subst (g ⇒_) e X ≡ rcast e X
+subst-rcast ≡-refl X = ≡-refl
+
+-- The trivial operand list.
+agree-s-nil : ∀ {Γ} {γ : Env Γ} → collapse-s ([] {γ = γ}) M.≈ₘ to-terminal
+agree-s-nil ()
+
+-- Agreement: collapsing a derivation's graph recovers its relation, mutually across the three
+-- judgement forms; the fold-action statement resolves the input dependence through R.
+mutual
+  agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → collapse D M.≈ₘ R
+  agree (⇓-var x)      = agree-var x
+  agree {γ = γ} ⇓-unit = agree-unit {γ = γ}
+  agree {γ = γ} (⇓-inl {τ₂ = τ₂} {t = ti} {v = v} {R = R} D) =
+    ≈-trans (Inl.agree-inl {τ₂ = τ₂} {γ = γ} {t = ti} {v = v} {R = R} {D = D}) (agree D)
+  agree {γ = γ} (⇓-inr {τ₁ = τ₁} {t = ti} {v = v} {R = R} D) =
+    ≈-trans (Inr.agree-inr {τ₁ = τ₁} {γ = γ} {t = ti} {v = v} {R = R} {D = D}) (agree D)
+  agree {γ = γ} (⇓-case-l {s = sc} {t₁ = t₁} {t₂ = t₂} {v = v} {u = u} {R = R} {S = S} D₁ D₂) =
+    ≈-trans (CaseL.agree-case-l {γ = γ} {ts = sc} {t₁ = t₁} {t₂ = t₂} {v = v} {u = u}
+                                {R = R} {S = S} {D₁ = D₁} {D₂ = D₂})
+            (∘-cong (agree D₂)
+                    (+ₘ-cong (≈-sym id-right) (∘-cong₂ (agree D₁))))
+  agree {γ = γ} (⇓-case-r {s = sc} {t₁ = t₁} {t₂ = t₂} {v = v} {u = u} {R = R} {S = S} D₁ D₂) =
+    ≈-trans (CaseR.agree-case-r {γ = γ} {ts = sc} {t₁ = t₁} {t₂ = t₂} {v = v} {u = u}
+                                {R = R} {S = S} {D₁ = D₁} {D₂ = D₂})
+            (∘-cong (agree D₂)
+                    (+ₘ-cong (≈-sym id-right) (∘-cong₂ (agree D₁))))
+  agree {γ = γ} (⇓-pair {s = sp} {t = tp} {v = v} {u = u} {R = R} {S = S} D₁ D₂) =
+    ≈-trans (Pair.agree-pair {γ = γ} {ts = sp} {tt = tp} {v = v} {u = u} {R = R} {S = S}
+                             {D₁ = D₁} {D₂ = D₂})
+            (+ₘ-cong (∘-cong₂ (agree D₁)) (∘-cong₂ (agree D₂)))
+  agree {γ = γ} (⇓-fst {τ₁ = τ₁} {τ₂ = τ₂} {t = tp} {v = v} {u = u} {R = R} D) =
+    ≈-trans (Fst.agree-fst {γ = γ} {t = tp} {v = v} {u = u} {R = R} {D = D}) (∘-cong₂ (agree D))
+  agree {γ = γ} (⇓-snd {τ₁ = τ₁} {τ₂ = τ₂} {t = tp} {v = v} {u = u} {R = R} D) =
+    ≈-trans (Snd.agree-snd {γ = γ} {t = tp} {v = v} {u = u} {R = R} {D = D}) (∘-cong₂ (agree D))
+  agree {γ = γ} (⇓-lam {σ = σl} {τ = τl} {t = tλ}) =
+    agree-lam {σ = σl} {τ = τl} {γ = γ} {t = tλ}
+  agree {γ = γ} (⇓-app {Γ' = Γ'} {σ = σa} {τ = τa} {γ' = γ'} {s = sa} {t = ta} {t' = ta'}
+                       {v = v} {u = u} {R = R} {S = S} {T = T} D₁ D₂ D₃) =
+    ≈-trans (App.agree-app {Γ' = Γ'} {γ = γ} {γ' = γ'} {ts = sa} {tt = ta} {tb = ta'}
+                           {v = v} {u = u} {R = R} {S = S} {T = T}
+                           {D₁ = D₁} {D₂ = D₂} {D₃ = D₃})
+            (∘-cong (agree D₃) (+ₘ-cong (∘-cong₂ (agree D₁)) (∘-cong₂ (agree D₂))))
+  agree {γ = γ} (⇓-bop {ω = ω} {Ms = Ms} {vs = vs} {R = R} D) =
+    ≈-trans (Bop.agree-bop {γ = γ} {ω = ω} {Ms = Ms} {vs = vs} {Rs = R} {D = D})
+            (∘-cong₂ (agree-s D))
+  agree {γ = γ} (⇓-brel {ω = ω} {Ms = Ms} {vs = vs} {R = R} D) =
+    agree-brel {γ = γ} {ω = ω} {Ms = Ms} {vs = vs} {Rs = R} {D = D}
+  agree {γ = γ} (⇓-roll {τ = τr} {t = tr} {v = v} {R = R} D) =
+    ≈-trans (Roll.agree-roll {τ = τr} {γ = γ} {t = tr} {v = v} {R = R} {D = D}) (agree D)
+  agree {γ = γ} (⇓-fold {τ = τf} {σ = σf} {s = sf} {t = tf} {v = v} {u = u} {R = R} {R' = R'}
+                        D₁ D₂) =
+    ≈-trans (Fold.agree-fold {γ = γ} {s = sf} {t = tf} {v = v} {R = R} {u = u} {R' = R'}
+                             {D₁ = D₁} {D₂ = D₂})
+    (≈-trans (+ₘ-cong (≈-refl {f = collapse-m-env D₂}) (∘-cong₂ (agree D₁)))
+             (agree-m D₂))
+
+  agree-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+            (D : γ , Ms ⇓s vs [ R ]) → collapse-s D M.≈ₘ R
+  agree-s {γ = γ} [] = agree-s-nil {γ = γ}
+  agree-s {γ = γ} (_∷_ {i = i} {is = is} {v = v} {vs = vs} {R = R} {Rs = Rs}
+                       {M = Mt} {Ms = Ms} D₁ D₂) =
+    ≈-trans (SCons.agree-s-cons {γ = γ} {M = Mt} {Ms = Ms} {v = v} {vs = vs}
+                                {R = R} {Rs = Rs} {D₁ = D₁} {D₂ = D₂})
+            (+ₘ-cong (∘-cong₂ (agree D₁)) (∘-cong₂ (agree-s D₂)))
+
+  agree-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+            (D : Map γ s σ' v R v' R') →
+            (collapse-m-env D M.+ₘ (collapse-m-in D M.∘ R)) M.≈ₘ R'
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s}
+          (m-rec {w = w} {w' = w'} {u = u} {R = R} {R' = R'} {S = S} D₁ D₂) =
+    MRec.combine {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {w = w} {R = R} {w' = w'} {R' = R'}
+                 {u = u} {S = S} {D₁ = D₁} {D₂ = D₂} (agree-m D₁) (agree D₂)
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} (m-unit {v = v} {R = R}) =
+    agree-m-unit {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {v = v} {R = R}
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} (m-base {b = b} {v = v} {R = R}) =
+    agree-m-base {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {b = b} {v = v} {R = R}
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} (m-arrow {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {R = R}) =
+    agree-m-arrow {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {R = R}
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s}
+          (m-inl {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {v' = v'} {R = R} {R' = R'} D) =
+    ≈-trans (+ₘ-cong (MInl.agree-MInl-env {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {σ₁ = σ₁}
+                                          {σ₂ = σ₂} {v = v} {R = R} {v' = v'} {R' = R'} {D = D})
+                     (∘-cong₁ (MInl.agree-MInl-in {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {σ₁ = σ₁}
+                                                  {σ₂ = σ₂} {v = v} {R = R} {v' = v'} {R' = R'}
+                                                  {D = D})))
+            (agree-m D)
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s}
+          (m-inr {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {v' = v'} {R = R} {R' = R'} D) =
+    ≈-trans (+ₘ-cong (MInr.agree-MInr-env {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {σ₁ = σ₁}
+                                          {σ₂ = σ₂} {v = v} {R = R} {v' = v'} {R' = R'} {D = D})
+                     (∘-cong₁ (MInr.agree-MInr-in {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {σ₁ = σ₁}
+                                                  {σ₂ = σ₂} {v = v} {R = R} {v' = v'} {R' = R'}
+                                                  {D = D})))
+            (agree-m D)
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s}
+          (m-pair {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {v' = v'} {u = u} {u' = u'} {R = R} {S = S} {T = T}
+                  D₁ D₂) =
+    MPair.combine {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {u = u}
+                  {R = R} {v' = v'} {S₁ = S} {u' = u'} {T = T} {D₁ = D₁} {D₂ = D₂}
+                  (agree-m D₁) (agree-m D₂)
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} (m-mu {τ' = τ'} {w = w} {w' = w'} {R = R₀} {R' = R₀'} D) =
+    ≈-trans (+ₘ-cong (MMu.agree-mu-env {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {τ' = τ'}
+                                        {w = w} {R = R₀} {w' = w'} {R' = R₀'} {D = D})
+                     (∘-cong₁ (MMu.agree-mu-in {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {τ' = τ'}
+                                                {w = w} {R = R₀} {w' = w'} {R' = R₀'} {D = D})))
+    (≈-trans (≈-of-≡ (≡-cong
+               (λ Z → rcast e' (collapse-m-env D)
+                      M.+ₘ (rcast e' (ccast eᵥ (collapse-m-in D)) M.∘ Z))
+               (subst-rcast eᵥ R₀)))
+    (≈-trans (+ₘ-cong (≈-refl {f = rcast e' (collapse-m-env D)})
+                      (≈-trans (rcast-∘ e' (ccast eᵥ (collapse-m-in D)) (rcast eᵥ R₀))
+                               (rcast-cong e' (ccast-rcast-∘ eᵥ (collapse-m-in D) R₀))))
+    (≈-trans (+ₘ-rcast e' (collapse-m-env D) (collapse-m-in D M.∘ R₀))
+    (≈-trans (rcast-cong e' (agree-m D))
+             (≈-of-≡ (≡-sym (subst-rcast e' R₀')))))))
+    where
+      eᵥ = ≡-sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)
+      e' = ≡-sym (width-subst (unfold₁-inst τ' σr) w')
