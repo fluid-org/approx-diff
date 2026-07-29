@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool using (Bool; not; _∧_; _∨_)
+open import Data.Bool using (Bool; not; _∧_; _∨_; if_then_else_)
 open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; foldl; foldr; concat; partitionᵇ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -15,7 +15,7 @@ import two
 module language-operational.hide {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
-open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr)
+open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr; if_then_else_)
 open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
@@ -108,3 +108,37 @@ visible-graph D K x y =
         (when (not (member-vertex x hs) ∧ not (member-vertex y hs)) (fo-graph D x y))
         (map (λ CH → proj₂ CH x y) (K .hidden))
   where hs = hidden-set K
+
+private
+  _+G_ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+         Graph D → Graph D → Graph D
+  (G +G H) x y = G x y M.+ₘ H x y
+
+-- The hide move: remove p from the visible set, merge the regions adjacent to p, and hide p in the
+-- graph assembling p's incident entries in the visible graph with the merged regions' summaries.
+hide-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+          Path D → Config D → Config D
+hide-at D p K = record
+  { visible = filterᵇ (λ q → not (eq-path p q)) (K .visible)
+  ; hidden  = (p ∷ concat (map proj₁ (proj₁ tp)) , hide assembled (at p)) ∷ proj₂ tp
+  }
+  where
+    tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
+                    (K .hidden)
+    assembled = foldr _+G_ (restrict (visible-graph D K) (p ∷ [])) (map proj₂ (proj₁ tp))
+
+-- The reveal move: return p to the visible set and split the region containing it, recomputing
+-- regions and summaries within that region alone.
+reveal-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+            Path D → Config D → Config D
+reveal-at D p K = record
+  { visible = p ∷ K .visible
+  ; hidden  = concat (map step (K .hidden))
+  }
+  where
+    step : List (Path D) × Graph D → List (List (Path D) × Graph D)
+    step (C , H) =
+      if member p C
+      then map (λ C' → C' , summary D C')
+               (regions (fo-graph D) (filterᵇ (λ q → not (eq-path p q)) C))
+      else (C , H) ∷ []
