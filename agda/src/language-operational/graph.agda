@@ -83,32 +83,32 @@ GraphM Dm = (x y : VertexM Dm) → M.Matrix (vwm y) (vwm x)
 
 -- Cast a matrix along equalities of its row and column dimensions.
 rcast : ∀ {m m' n} → m ≡ m' → M.Matrix m n → M.Matrix m' n
-rcast refl A = A
+rcast refl R = R
 
 ccast : ∀ {m n n'} → n ≡ n' → M.Matrix m n → M.Matrix m n'
-ccast refl A = A
+ccast refl R = R
 
 -- The given matrix at the root path, zero elsewhere. Defined generically because case-splitting a
 -- premise's path type gets stuck when the premise's indices are function-headed (e.g. a scrutinee
 -- required to evaluate to inl v).
 at-root : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {m} →
           M.Matrix m (width v) → (p : Path D) → M.Matrix m (width-at p)
-at-root A ε = A
-at-root A _ = M.εₘ
+at-root R ε = R
+at-root R _ = M.εₘ
 
 at-root-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
             {Ds : γ , Ms ⇓s vs [ R ]} {m} →
             M.Matrix m (bases-width is) → (p : PathS Ds) → M.Matrix m (width-at-s p)
-at-root-s A ε = A
-at-root-s A _ = M.εₘ
+at-root-s R ε = R
+at-root-s R _ = M.εₘ
 
 at-root-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
       {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
             {Dm : Map γ s σ' v R v' R'} {m} →
             M.Matrix m (width v') → (p : PathM Dm) → M.Matrix m (width-at-m p)
-at-root-m A ε = A
-at-root-m A _ = M.εₘ
+at-root-m R ε = R
+at-root-m R _ = M.εₘ
 
 mutual
   graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Graph D
