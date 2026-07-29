@@ -118,10 +118,8 @@ private
 -- graph assembling p's incident entries in the visible graph with the merged regions' summaries.
 hide-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
           Path D → Config D → Config D
-hide-at D p K = record
-  { visible = filterᵇ (λ q → not (eq-path p q)) (K .visible)
-  ; hidden  = (p ∷ concat (map proj₁ (proj₁ tp)) , hide assembled (at p)) ∷ proj₂ tp
-  }
+hide-at D p K .visible = filterᵇ (λ q → not (eq-path p q)) (K .visible)
+hide-at D p K .hidden  = (p ∷ concat (map proj₁ (proj₁ tp)) , hide assembled (at p)) ∷ proj₂ tp
   where
     tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
                     (K .hidden)
@@ -131,10 +129,8 @@ hide-at D p K = record
 -- regions and summaries within that region alone.
 reveal-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
             Path D → Config D → Config D
-reveal-at D p K = record
-  { visible = p ∷ K .visible
-  ; hidden  = concat (map step (K .hidden))
-  }
+reveal-at D p K .visible = p ∷ K .visible
+reveal-at D p K .hidden  = concat (map step (K .hidden))
   where
     step : List (Path D) × Graph D → List (List (Path D) × Graph D)
     step (C , H) =
