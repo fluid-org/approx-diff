@@ -3,7 +3,7 @@
 open import Data.Bool using (Bool; not; _∧_; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; foldl; concat; partitionᵇ)
-open import Data.Product using (proj₁; proj₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import signature using (Signature)
 open import primitives using (Primitives)
 import matrix
@@ -49,11 +49,48 @@ adjacent : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R
            Graph D → Vertex D → Vertex D → Bool
 adjacent G x y = nonzero (G x y) ∨ nonzero (G y x)
 
--- The regions of a list of vertices: the weakly connected components of the subgraph induced by
--- its members. Each vertex merges the components it is adjacent to, the hide move's merging
--- specialised to singletons.
+-- The regions of a list of paths: the weakly connected components of the subgraph induced by its
+-- members. Each vertex merges the components it is adjacent to, the hide move's merging specialised
+-- to singletons.
 regions : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
-          Graph D → List (Vertex D) → List (List (Vertex D))
+          Graph D → List (Path D) → List (List (Path D))
 regions G []       = []
 regions G (w ∷ ws) = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
-  where tp = partitionᵇ (any (adjacent G w)) (regions G ws)
+  where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) (regions G ws)
+
+member-vertex : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+                Vertex D → List (Path D) → Bool
+member-vertex env    C = Data.Bool.false
+member-vertex (at p) C = member p C
+
+private
+  when : ∀ {m n} → Bool → M.Matrix m n → M.Matrix m n
+  when Data.Bool.true  R = R
+  when Data.Bool.false R = M.εₘ
+
+-- The entries with an endpoint in the given region, zero elsewhere.
+restrict : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+           Graph D → List (Path D) → Graph D
+restrict G C x y = when (member-vertex x C ∨ member-vertex y C) (G x y)
+
+-- The summary of a hidden region: the dependence routed through it, as entries between the
+-- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
+-- carried by the summary.
+summary : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+          List (Path D) → Graph D
+summary D C = hide-all (restrict (fo-graph D) C) (map at C)
+
+-- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
+-- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
+-- summaries is a property the moves preserve.
+record Config {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) : Set ℓ where
+  field
+    visible : List (Path D)
+    hidden  : List (List (Path D) × Graph D)
+
+open Config public
+
+-- The initial configuration: everything hidden, one summary per region of FO D.
+initial : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Config D
+initial D .visible = []
+initial D .hidden  = map (λ C → C , summary D C) (regions (fo-graph D) (FO D))
