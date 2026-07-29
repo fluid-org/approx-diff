@@ -4,7 +4,7 @@ open import Data.Fin using (zero)
 open import Data.Bool using (Bool; not; _∧_)
 open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; _++_; map; filterᵇ)
-open import Data.Nat using (ℕ)
+open import Data.Nat using (ℕ; suc; _+_)
 open import every using (Every; []; _∷_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import signature using (Signature)
@@ -324,3 +324,96 @@ mutual
 member : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
          Path D → List (Path D) → Bool
 member p = any (eq-path p)
+
+-- Completion rank: paths in a premise complete before paths in a later premise, and every path of
+-- a derivation completes before the derivation itself, whose rank is the sum of its premise sizes.
+-- The forward-edge lemma states that entries run strictly upward in rank, giving acyclicity.
+mutual
+  size : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → ℕ
+  size D = suc (psize D)
+
+  size-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+           (Ds : γ , Ms ⇓s vs [ R ]) → ℕ
+  size-s Ds = suc (psize-s Ds)
+
+  size-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+           {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+           {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+           (Dm : Map γ s σ' v R v' R') → ℕ
+  size-m Dm = suc (psize-m Dm)
+
+  psize : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → ℕ
+  psize (⇓-var x)        = 0
+  psize ⇓-unit           = 0
+  psize (⇓-inl D)        = size D
+  psize (⇓-inr D)        = size D
+  psize (⇓-case-l Ds D₁) = size Ds + size D₁
+  psize (⇓-case-r Ds D₂) = size Ds + size D₂
+  psize (⇓-pair Ds Dt)   = size Ds + size Dt
+  psize (⇓-fst D)        = size D
+  psize (⇓-snd D)        = size D
+  psize ⇓-lam            = 0
+  psize (⇓-app Ds Dt Db) = size Ds + size Dt + size Db
+  psize (⇓-bop Ds)       = size-s Ds
+  psize (⇓-brel Ds)      = size-s Ds
+  psize (⇓-roll D)       = size D
+  psize (⇓-fold Dt Dm)   = size Dt + size-m Dm
+
+  psize-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+            (Ds : γ , Ms ⇓s vs [ R ]) → ℕ
+  psize-s []       = 0
+  psize-s (D ∷ Ds) = size D + size-s Ds
+
+  psize-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+            (Dm : Map γ s σ' v R v' R') → ℕ
+  psize-m (m-rec Dm De)   = size-m Dm + size De
+  psize-m m-unit          = 0
+  psize-m m-base          = 0
+  psize-m m-arrow         = 0
+  psize-m (m-inl Dm)      = size-m Dm
+  psize-m (m-inr Dm)      = size-m Dm
+  psize-m (m-pair Dm Dm') = size-m Dm + size-m Dm'
+  psize-m (m-mu Dm)       = size-m Dm
+
+mutual
+  rank : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → ℕ
+  rank (ε {D = D})            = psize D
+  rank (inl p)                = rank p
+  rank (inr p)                = rank p
+  rank (case-l₁ p)            = rank p
+  rank (case-l₂ {Ds = Ds} p)  = size Ds + rank p
+  rank (case-r₁ p)            = rank p
+  rank (case-r₂ {Ds = Ds} p)  = size Ds + rank p
+  rank (pair₁ p)              = rank p
+  rank (pair₂ {Ds = Ds} p)    = size Ds + rank p
+  rank (fst p)                = rank p
+  rank (snd p)                = rank p
+  rank (app₁ p)               = rank p
+  rank (app₂ {Ds = Ds} p)     = size Ds + rank p
+  rank (app₃ {Ds = Ds} {Dt = Dt} p) = size Ds + size Dt + rank p
+  rank (bop p)                = rank-s p
+  rank (brel p)               = rank-s p
+  rank (roll p)               = rank p
+  rank (fold₁ p)              = rank p
+  rank (fold₂ {Dt = Dt} p)    = size Dt + rank-m p
+
+  rank-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+           {Ds : γ , Ms ⇓s vs [ R ]} → PathS Ds → ℕ
+  rank-s (ε {Ds = Ds})   = psize-s Ds
+  rank-s (hd p)          = rank p
+  rank-s (tl {D = D} p)  = size D + rank-s p
+
+  rank-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+           {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+           {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+           {Dm : Map γ s σ' v R v' R'} → PathM Dm → ℕ
+  rank-m (ε {Dm = Dm})         = psize-m Dm
+  rank-m (m-rec₁ p)            = rank-m p
+  rank-m (m-rec₂ {Dm = Dm} p)  = size-m Dm + rank p
+  rank-m (m-inl p)             = rank-m p
+  rank-m (m-inr p)             = rank-m p
+  rank-m (m-pair₁ p)           = rank-m p
+  rank-m (m-pair₂ {Dm = Dm} p) = size-m Dm + rank-m p
+  rank-m (m-mu p)              = rank-m p
