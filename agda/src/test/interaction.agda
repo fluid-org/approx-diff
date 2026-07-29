@@ -1,9 +1,10 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Hide and reveal on a concrete run: a pair of two copies of a rational variable. Initially both
--- components are hidden and the visible graph shows the run's dependence from env to the root;
--- revealing the first component reroutes its half through the revealed vertex, and hiding it again
--- restores the initial view.
+-- Hide and reveal on a run with rewiring: case (inl x) of inl x₁ → x₁ | inr y → y. The branch is
+-- evaluated under the extended environment, so its env edges are redistributed to env and the
+-- scrutinee root, giving the chain env → inl payload → scrutinee root → branch root → root.
+-- Initially the three intermediates form one hidden region; revealing the scrutinee root splits it
+-- in two, and hiding it again merges them back.
 module test.interaction where
 
 open import Data.Fin using (zero; suc)
@@ -14,59 +15,55 @@ import two
 open import example.signature ℚ using (Sig; number)
 import example.dependency as Dep
 
-open import language-syntax Sig using (_⊢_; _∋_; zero; base; var; pair; ctxt; emp)
+open import language-syntax Sig using (_⊢_; _∋_; zero; base; var; inl; case; ctxt; emp)
   renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Dep.primitives
 open import language-operational.path Sig Dep.primitives
 open import language-operational.graph Sig Dep.primitives
 open import language-operational.hide Sig Dep.primitives
 
-open import categories using (HasProducts)
-open HasProducts products using () renaming (pair to ⟨_,_⟩)
-
 γ₀ : Env (emp ▸ base number)
 γ₀ = emp · const 1ℚ
 
-D : γ₀ , pair (var zero) (var zero) ⇓ pair (const 1ℚ) (const 1ℚ)
-      [ ⟨ proj-var zero γ₀ , proj-var zero γ₀ ⟩ ]
-D = ⇓-pair (⇓-var zero) (⇓-var zero)
+D : γ₀ , case (inl (var zero)) (var zero) (var zero) ⇓ const 1ℚ [ _ ]
+D = ⇓-case-l (⇓-inl (⇓-var zero)) (⇓-var zero)
+
+-- The scrutinee root, mid-chain.
+scrut : Path D
+scrut = case-l₁ ε
 
 K₀ : Config D
 K₀ = initial D
 
 K₁ : Config D
-K₁ = reveal-at D (pair₁ ε) K₀
+K₁ = reveal-at D scrut K₀
 
 K₂ : Config D
-K₂ = hide-at D (pair₁ ε) K₁
+K₂ = hide-at D scrut K₁
 
--- Everything hidden: both positions of the root depend on the input.
-init-fst : visible-graph D K₀ env (at ε) zero zero ≡ two.I
-init-fst = refl
+-- Everything hidden: the output depends on the input, through the whole chain.
+init-dep : visible-graph D K₀ env (at ε) zero zero ≡ two.I
+init-dep = refl
 
-init-snd : visible-graph D K₀ env (at ε) (suc zero) zero ≡ two.I
-init-snd = refl
+-- Scrutinee root revealed: its region splits, dependence routes through the revealed vertex, and
+-- the direct env-to-root entry disappears.
+reveal-in : visible-graph D K₁ env (at scrut) zero zero ≡ two.I
+reveal-in = refl
 
--- First component revealed: its dependence routes through the revealed vertex, so the direct
--- env-to-root entry for the first position disappears while the second remains.
-reveal-env-vertex : visible-graph D K₁ env (at (pair₁ ε)) zero zero ≡ two.I
-reveal-env-vertex = refl
+reveal-out : visible-graph D K₁ (at scrut) (at ε) zero zero ≡ two.I
+reveal-out = refl
 
-reveal-vertex-root : visible-graph D K₁ (at (pair₁ ε)) (at ε) zero zero ≡ two.I
-reveal-vertex-root = refl
+reveal-no-direct : visible-graph D K₁ env (at ε) zero zero ≡ two.O
+reveal-no-direct = refl
 
-reveal-vertex-root' : visible-graph D K₁ (at (pair₁ ε)) (at ε) (suc zero) zero ≡ two.O
-reveal-vertex-root' = refl
+-- The rewired env column of the branch is zero: the branch body uses only the bound variable.
+reveal-no-env-branch : fo-graph D env (at (case-l₂ ε)) zero zero ≡ two.O
+reveal-no-env-branch = refl
 
-reveal-fst : visible-graph D K₁ env (at ε) zero zero ≡ two.O
-reveal-fst = refl
+-- The scrutinee slice of the branch environment carries the dependence instead.
+rewired-scrut-branch : fo-graph D (at scrut) (at (case-l₂ ε)) zero zero ≡ two.I
+rewired-scrut-branch = refl
 
-reveal-snd : visible-graph D K₁ env (at ε) (suc zero) zero ≡ two.I
-reveal-snd = refl
-
--- Hidden again: the initial view returns.
-rehide-fst : visible-graph D K₂ env (at ε) zero zero ≡ two.I
-rehide-fst = refl
-
-rehide-snd : visible-graph D K₂ env (at ε) (suc zero) zero ≡ two.I
-rehide-snd = refl
+-- Hidden again: the regions merge back and the initial view returns.
+rehide-dep : visible-graph D K₂ env (at ε) zero zero ≡ two.I
+rehide-dep = refl
