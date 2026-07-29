@@ -94,3 +94,18 @@ open Config public
 initial : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Config D
 initial D .visible = []
 initial D .hidden  = map (λ C → C , summary D C) (regions (fo-graph D) (FO D))
+
+-- The union of a configuration's hidden regions.
+hidden-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+             Config D → List (Path D)
+hidden-set K = concat (map proj₁ (K .hidden))
+
+-- The visible graph: the entries of the first-order graph with neither endpoint hidden, together
+-- with the entries of the region summaries, parallel contributions summed.
+visible-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+                Config D → Graph D
+visible-graph D K x y =
+  Data.List.foldr M._+ₘ_
+        (when (not (member-vertex x hs) ∧ not (member-vertex y hs)) (fo-graph D x y))
+        (map (λ CH → proj₂ CH x y) (K .hidden))
+  where hs = hidden-set K
