@@ -20,12 +20,13 @@ open import language-operational.hide Sig 𝒫
 private
   module M = matrix.Mat two.semiring
 
-open CommutativeSemiring two.semiring using (+-comm; +-cong; +-lunit; refl; trans)
+open CommutativeSemiring two.semiring using (+-comm; +-cong; +-lunit; +-assoc; refl; trans)
 import Data.Bool as Bool
-open import Data.List using (List; []; _∷_; map)
+open import Data.List using (List; []; _∷_; _++_; map)
+open import Data.List.Properties using (map-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
 open import Data.List.Relation.Unary.All.Properties using (map⁺; ++⁺)
-open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl; cong to ≡-cong; trans to ≡-trans)
 open import prop-setoid using (module ≈-Reasoning)
 open import categories using (Category; HasTerminal)
 open Category M.cat using (_⇒_; ∘-cong; assoc; id-left; ≈-refl; ≈-sym; ≈-trans; isEquiv) renaming (id to idm)
@@ -161,6 +162,21 @@ interior-not-root (⇓-bop Ds) = map⁺ (universal (λ _ → ≡-refl) (paths-s 
 interior-not-root (⇓-brel Ds) = map⁺ (universal (λ _ → ≡-refl) (paths-s Ds))
 interior-not-root (⇓-fold Dt Dm) = ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths Dt))) (map⁺ (universal (λ _ → ≡-refl) (paths-m Dm)))
 
++ₘ-assoc : ∀ {m n} (X Y Z : M.Matrix m n) → ((X M.+ₘ Y) M.+ₘ Z) M.≈ₘ (X M.+ₘ (Y M.+ₘ Z))
++ₘ-assoc X Y Z i j = +-assoc {x = X i j} {y = Y i j} {z = Z i j}
+
+absorb-r : ∀ {m n k} (R : M.Matrix m n) (S : M.Matrix m k) → (R M.+ₘ (S M.∘ M.εₘ)) M.≈ₘ R
+absorb-r R S = ≈-trans (+ₘ-cong ≈-refl (M.comp-bilinear-ε₂ S)) (+ₘ-runit R)
+
+≈-of-≡ : ∀ {m n} {X Y : M.Matrix m n} → X ≡ Y → X M.≈ₘ Y
+≈-of-≡ ≡-refl = ≈-refl
+
+hide-all-++ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+              (G : Graph D) (xs ys : List (Vertex D)) →
+              hide-all G (xs ++ ys) ≡ hide-all (hide-all G xs) ys
+hide-all-++ G []       ys = ≡-refl
+hide-all-++ G (x ∷ xs) ys = hide-all-++ (hide G x) xs ys
+
 distrib-root : ∀ {m n k l} (P : M.Matrix m n) (X : M.Matrix n k)
                (Y : M.Matrix n l) (Z : M.Matrix l k) →
                ((P M.∘ X) M.+ₘ ((P M.∘ Y) M.∘ Z)) M.≈ₘ (P M.∘ (X M.+ₘ (Y M.∘ Z)))
@@ -169,6 +185,12 @@ distrib-root P X Y Z =
 
 
 -- Collapsing an inl derivation collapses its premise.
+offset-distrib : ∀ {m n l g} (K : M.Matrix m g) (P : M.Matrix m n) (X : M.Matrix n g)
+                 (Y : M.Matrix n l) (Z : M.Matrix l g) →
+                 ((K M.+ₘ (P M.∘ X)) M.+ₘ ((P M.∘ Y) M.∘ Z)) M.≈ₘ (K M.+ₘ (P M.∘ (X M.+ₘ (Y M.∘ Z))))
+offset-distrib K P X Y Z =
+  ≈-trans (+ₘ-assoc K (P M.∘ X) ((P M.∘ Y) M.∘ Z)) (+ₘ-cong ≈-refl (distrib-root P X Y Z))
+
 module Inl {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v : Val τ₁} {R : width-env γ ⇒ width v}
            {D : γ , t ⇓ v [ R ]} where
 
@@ -466,3 +488,174 @@ module Roll {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v : Val 
 
   agree-roll : collapse (⇓-roll {τ = τ} D) M.≈ₘ collapse D
   agree-roll = ≈-trans (embeds-hide-all (interior D) (interior-not-root D) embeds₀ .env-root) id-left
+
+-- Two same-environment premises: while the first premise folds, the second premise's entries and
+-- the cross entries must be seen undisturbed (nine families); the second phase then folds the
+-- second premise against the finished first contribution as a constant offset K.
+module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ₂} {v : Val τ₁} {u : Val τ₂}
+            {R : width-env γ ⇒ width v} {S : width-env γ ⇒ width u}
+            {Ds : γ , ts ⇓ v [ R ]} {Dt : γ , tt ⇓ u [ S ]} where
+
+  record Phase₁ (G : Graph (⇓-pair Ds Dt)) (H : Graph Ds) : Set ℓ where
+    field
+      env-left    : ∀ q → G env (at (pair₁ q)) M.≈ₘ H env (at q)
+      left-left   : ∀ p q → G (at (pair₁ p)) (at (pair₁ q)) M.≈ₘ H (at p) (at q)
+      env-root    : G env (at ε) M.≈ₘ (M.in₁ M.∘ H env (at ε))
+      left-root   : ∀ p → is-ε p ≡ Bool.false →
+                    G (at (pair₁ p)) (at ε) M.≈ₘ (M.in₁ M.∘ H (at p) (at ε))
+      env-right   : ∀ q → G env (at (pair₂ q)) M.≈ₘ graph Dt env (at q)
+      right-right : ∀ p q → G (at (pair₂ p)) (at (pair₂ q)) M.≈ₘ graph Dt (at p) (at q)
+      right-root  : ∀ p → G (at (pair₂ p)) (at ε) M.≈ₘ edge M.in₂ p
+      left-right  : ∀ p q → G (at (pair₁ p)) (at (pair₂ q)) M.≈ₘ M.εₘ
+      right-left  : ∀ p q → G (at (pair₂ p)) (at (pair₁ q)) M.≈ₘ M.εₘ
+
+  open Phase₁
+
+  stepₗ : ∀ {G H} (w : Path Ds) → is-ε w ≡ Bool.false →
+          Phase₁ G H → Phase₁ (hide G (at (pair₁ w))) (hide H (at w))
+  stepₗ w nw r .env-left q  = +ₘ-cong (r .env-left q) (∘-cong (r .left-left w q) (r .env-left w))
+  stepₗ w nw r .left-left p q = +ₘ-cong (r .left-left p q) (∘-cong (r .left-left w q) (r .left-left p w))
+  stepₗ {G} {H} w nw r .env-root =
+    ≈-trans (+ₘ-cong (r .env-root) (∘-cong (r .left-root w nw) (r .env-left w)))
+            (distrib-root M.in₁ (H env (at ε)) (H (at w) (at ε)) (H env (at w)))
+  stepₗ {G} {H} w nw r .left-root p np =
+    ≈-trans (+ₘ-cong (r .left-root p np) (∘-cong (r .left-root w nw) (r .left-left p w)))
+            (distrib-root M.in₁ (H (at p) (at ε)) (H (at w) (at ε)) (H (at p) (at w)))
+  stepₗ {G} {H} w nw r .env-right q =
+    ≈-trans (+ₘ-cong (r .env-right q)
+                     (∘-cong (r .left-right w q) (≈-refl {f = G env (at (pair₁ w))})))
+            (absorb (graph Dt env (at q)) (G env (at (pair₁ w))))
+  stepₗ {G} {H} w nw r .right-right p q =
+    ≈-trans (+ₘ-cong (r .right-right p q)
+                     (∘-cong (r .left-right w q) (≈-refl {f = G (at (pair₂ p)) (at (pair₁ w))})))
+            (absorb (graph Dt (at p) (at q)) (G (at (pair₂ p)) (at (pair₁ w))))
+  stepₗ {G} {H} w nw r .right-root p =
+    ≈-trans (+ₘ-cong (r .right-root p)
+                     (∘-cong (≈-refl {f = G (at (pair₁ w)) (at ε)}) (r .right-left p w)))
+            (absorb-r (edge M.in₂ p) (G (at (pair₁ w)) (at ε)))
+  stepₗ {G} {H} w nw r .left-right p q =
+    ≈-trans (+ₘ-cong (r .left-right p q)
+                     (∘-cong (r .left-right w q) (≈-refl {f = G (at (pair₁ p)) (at (pair₁ w))})))
+            (absorb M.εₘ (G (at (pair₁ p)) (at (pair₁ w))))
+  stepₗ {G} {H} w nw r .right-left p q =
+    ≈-trans (+ₘ-cong (r .right-left p q)
+                     (∘-cong (≈-refl {f = G (at (pair₁ w)) (at (pair₁ q))}) (r .right-left p w)))
+            (absorb-r M.εₘ (G (at (pair₁ w)) (at (pair₁ q))))
+
+  foldₗ : ∀ {G H} (ws : List (Path Ds)) → All (λ w → is-ε w ≡ Bool.false) ws →
+          Phase₁ G H → Phase₁ (hide-all G (map at (map pair₁ ws))) (hide-all H (map at ws))
+  foldₗ []       []         r = r
+  foldₗ (w ∷ ws) (nw ∷ nws) r = foldₗ ws nws (stepₗ w nw r)
+
+  private
+    rn : ∀ x y → hide (graph (⇓-pair Ds Dt)) (at ε) x y M.≈ₘ graph (⇓-pair Ds Dt) x y
+    rn = hide-root (⇓-pair Ds Dt)
+
+    base₁ : Phase₁ (hide (hide (graph (⇓-pair Ds Dt)) (at ε)) (at (pair₁ ε)))
+                   (hide (graph Ds) (at ε))
+    base₁ .env-left q =
+      +ₘ-cong (rn env (at (pair₁ q)))
+              (∘-cong (rn (at (pair₁ ε)) (at (pair₁ q))) (rn env (at (pair₁ ε))))
+    base₁ .left-left p q =
+      +ₘ-cong (rn (at (pair₁ p)) (at (pair₁ q)))
+              (∘-cong (rn (at (pair₁ ε)) (at (pair₁ q))) (rn (at (pair₁ p)) (at (pair₁ ε))))
+    base₁ .env-root =
+      ≈-trans (+ₘ-cong (rn env (at ε)) (∘-cong (rn (at (pair₁ ε)) (at ε)) (rn env (at (pair₁ ε)))))
+      (≈-trans (+ₘ-lunit (M.in₁ M.∘ graph Ds env (at ε)))
+               (∘-cong ≈-refl (≈-sym (hide-root Ds env (at ε)))))
+    base₁ .left-root p np =
+      ≈-trans (+ₘ-cong (rn (at (pair₁ p)) (at ε))
+                       (∘-cong (rn (at (pair₁ ε)) (at ε)) (rn (at (pair₁ p)) (at (pair₁ ε)))))
+      (≈-trans (+ₘ-cong (edge-off M.in₁ p np) ≈-refl)
+      (≈-trans (+ₘ-lunit (M.in₁ M.∘ graph Ds (at p) (at ε)))
+               (∘-cong ≈-refl (≈-sym (hide-root Ds (at p) (at ε))))))
+    base₁ .env-right q =
+      ≈-trans (+ₘ-cong (rn env (at (pair₂ q)))
+                       (∘-cong (rn (at (pair₁ ε)) (at (pair₂ q))) (rn env (at (pair₁ ε)))))
+              (absorb (graph Dt env (at q)) (graph Ds env (at ε)))
+    base₁ .right-right p q =
+      ≈-trans (+ₘ-cong (rn (at (pair₂ p)) (at (pair₂ q)))
+                       (∘-cong (rn (at (pair₁ ε)) (at (pair₂ q))) (rn (at (pair₂ p)) (at (pair₁ ε)))))
+              (absorb (graph Dt (at p) (at q)) (graph (⇓-pair Ds Dt) (at (pair₂ p)) (at (pair₁ ε))))
+    base₁ .right-root p =
+      ≈-trans (+ₘ-cong (rn (at (pair₂ p)) (at ε))
+                       (∘-cong (rn (at (pair₁ ε)) (at ε)) (rn (at (pair₂ p)) (at (pair₁ ε)))))
+              (absorb-r (edge M.in₂ p) (graph (⇓-pair Ds Dt) (at (pair₁ ε)) (at ε)))
+    base₁ .left-right p q =
+      ≈-trans (+ₘ-cong (rn (at (pair₁ p)) (at (pair₂ q)))
+                       (∘-cong (rn (at (pair₁ ε)) (at (pair₂ q))) (rn (at (pair₁ p)) (at (pair₁ ε)))))
+              (absorb M.εₘ (graph Ds (at p) (at ε)))
+    base₁ .right-left p q =
+      ≈-trans (+ₘ-cong (rn (at (pair₂ p)) (at (pair₁ q)))
+                       (∘-cong (rn (at (pair₁ ε)) (at (pair₁ q))) (rn (at (pair₂ p)) (at (pair₁ ε)))))
+              (absorb-r M.εₘ (graph Ds (at ε) (at q)))
+
+  record Phase₂ (G : Graph (⇓-pair Ds Dt)) (H : Graph Dt)
+                (K : M.Matrix (width (pair v u)) (width-env γ)) : Set ℓ where
+    field
+      env-right   : ∀ q → G env (at (pair₂ q)) M.≈ₘ H env (at q)
+      right-right : ∀ p q → G (at (pair₂ p)) (at (pair₂ q)) M.≈ₘ H (at p) (at q)
+      env-root    : G env (at ε) M.≈ₘ (K M.+ₘ (M.in₂ M.∘ H env (at ε)))
+      right-root  : ∀ p → is-ε p ≡ Bool.false →
+                    G (at (pair₂ p)) (at ε) M.≈ₘ (M.in₂ M.∘ H (at p) (at ε))
+
+  open Phase₂
+
+  stepᵣ : ∀ {G H K} (w : Path Dt) → is-ε w ≡ Bool.false →
+          Phase₂ G H K → Phase₂ (hide G (at (pair₂ w))) (hide H (at w)) K
+  stepᵣ w nw r .env-right q  = +ₘ-cong (r .env-right q) (∘-cong (r .right-right w q) (r .env-right w))
+  stepᵣ w nw r .right-right p q = +ₘ-cong (r .right-right p q) (∘-cong (r .right-right w q) (r .right-right p w))
+  stepᵣ {G} {H} {K} w nw r .env-root =
+    ≈-trans (+ₘ-cong (r .env-root) (∘-cong (r .right-root w nw) (r .env-right w)))
+            (offset-distrib K M.in₂ (H env (at ε)) (H (at w) (at ε)) (H env (at w)))
+  stepᵣ {G} {H} {K} w nw r .right-root p np =
+    ≈-trans (+ₘ-cong (r .right-root p np) (∘-cong (r .right-root w nw) (r .right-right p w)))
+            (distrib-root M.in₂ (H (at p) (at ε)) (H (at w) (at ε)) (H (at p) (at w)))
+
+  foldᵣ : ∀ {G H K} (ws : List (Path Dt)) → All (λ w → is-ε w ≡ Bool.false) ws →
+          Phase₂ G H K → Phase₂ (hide-all G (map at (map pair₂ ws))) (hide-all H (map at ws)) K
+  foldᵣ []       []         r = r
+  foldᵣ (w ∷ ws) (nw ∷ nws) r = foldᵣ ws nws (stepᵣ w nw r)
+
+  private
+    r1 : Phase₁ (hide-all (hide (hide (graph (⇓-pair Ds Dt)) (at ε)) (at (pair₁ ε)))
+                          (map at (map pair₁ (interior Ds))))
+                (hide-all (hide (graph Ds) (at ε)) (map at (interior Ds)))
+    r1 = foldₗ (interior Ds) (interior-not-root Ds) base₁
+
+    base₂ : Phase₂ (hide (hide-all (hide (hide (graph (⇓-pair Ds Dt)) (at ε)) (at (pair₁ ε)))
+                                   (map at (map pair₁ (interior Ds))))
+                         (at (pair₂ ε)))
+                   (hide (graph Dt) (at ε))
+                   (M.in₁ M.∘ collapse Ds)
+    base₂ .env-right q =
+      +ₘ-cong (r1 .env-right q) (∘-cong (r1 .right-right ε q) (r1 .env-right ε))
+    base₂ .right-right p q =
+      +ₘ-cong (r1 .right-right p q) (∘-cong (r1 .right-right ε q) (r1 .right-right p ε))
+    base₂ .env-root =
+      ≈-trans (+ₘ-cong (r1 .env-root) (∘-cong (r1 .right-root ε) (r1 .env-right ε)))
+              (+ₘ-cong ≈-refl (∘-cong ≈-refl (≈-sym (hide-root Dt env (at ε)))))
+    base₂ .right-root p np =
+      ≈-trans (+ₘ-cong (r1 .right-root p) (∘-cong (r1 .right-root ε) (r1 .right-right p ε)))
+      (≈-trans (+ₘ-cong (edge-off M.in₂ p np) ≈-refl)
+      (≈-trans (+ₘ-lunit (M.in₂ M.∘ graph Dt (at p) (at ε)))
+               (∘-cong ≈-refl (≈-sym (hide-root Dt (at p) (at ε))))))
+
+  -- Collapsing a pair derivation pairs its premises' collapses.
+  agree-pair : collapse (⇓-pair Ds Dt)
+               M.≈ₘ ((M.in₁ M.∘ collapse Ds) M.+ₘ (M.in₂ M.∘ collapse Dt))
+  agree-pair =
+    ≈-trans (≈-of-≡ plumb) (foldᵣ (interior Dt) (interior-not-root Dt) base₂ .env-root)
+    where
+      plumb : hide-all (hide (graph (⇓-pair Ds Dt)) (at ε))
+                       (map at (map pair₁ (paths Ds) ++ map pair₂ (paths Dt))) env (at ε)
+              ≡ hide-all (hide-all (hide (graph (⇓-pair Ds Dt)) (at ε))
+                                   (map at (map pair₁ (paths Ds))))
+                         (map at (map pair₂ (paths Dt))) env (at ε)
+      plumb =
+        ≡-trans (≡-cong (λ L → hide-all (hide (graph (⇓-pair Ds Dt)) (at ε)) L env (at ε))
+                        (map-++ at (map pair₁ (paths Ds)) (map pair₂ (paths Dt))))
+                (≡-cong (λ Gg → Gg env (at ε))
+                        (hide-all-++ (hide (graph (⇓-pair Ds Dt)) (at ε))
+                                     (map at (map pair₁ (paths Ds)))
+                                     (map at (map pair₂ (paths Dt)))))
