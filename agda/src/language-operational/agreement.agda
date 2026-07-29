@@ -1634,3 +1634,121 @@ agree-m-arrow {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R} =
   ≈-trans (+ₘ-cong (absorb M.εₘ (graphM (m-arrow {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) env (at ε)))
                    (∘-cong₁ (absorb M.I (graphM (m-arrow {γ = γ} {τ₀ = τ₀} {s = s} {v = v} {R = R}) input (at ε)))))
   (≈-trans (+ₘ-lunit (M.I M.∘ R)) id-left)
+
+-- The m-inl action: one premise, both source rows embedding unchanged.
+module MInl {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+            {v' : Val (σ₁ [ σr ])} {R' : width-env γ ⇒ width v'}
+            {Dm : Map γ s σ₁ v R v' R'} where
+
+  private
+    C : Map γ s (σ₁ [+] σ₂) _ R _ R'
+    C = m-inl {σ₁ = σ₁} {σ₂ = σ₂} Dm
+
+  record Embeds (G : GraphM C) (H : GraphM Dm)
+                (P : M.Matrix (width v') (width v')) : Set ℓ where
+    field
+      env-embed   : ∀ q → G env (at (m-inl q)) M.≈ₘ H env (at q)
+      input-embed : ∀ q → G input (at (m-inl q)) M.≈ₘ H input (at q)
+      embed-embed : ∀ p q → G (at (m-inl p)) (at (m-inl q)) M.≈ₘ H (at p) (at q)
+      env-root    : G env (at ε) M.≈ₘ (P M.∘ H env (at ε))
+      input-root  : G input (at ε) M.≈ₘ (P M.∘ H input (at ε))
+      embed-root  : ∀ p → is-ε-m p ≡ Bool.false →
+                    G (at (m-inl p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
+
+  open Embeds
+
+  embeds-hide : ∀ {G H P} (w : PathM Dm) → is-ε-m w ≡ Bool.false →
+                Embeds G H P → Embeds (hide-m G (at (m-inl w))) (hide-m H (at w)) P
+  embeds-hide w nw r .env-embed q   = +ₘ-cong (r .env-embed q) (∘-cong (r .embed-embed w q) (r .env-embed w))
+  embeds-hide w nw r .input-embed q = +ₘ-cong (r .input-embed q) (∘-cong (r .embed-embed w q) (r .input-embed w))
+  embeds-hide w nw r .embed-embed p q = +ₘ-cong (r .embed-embed p q) (∘-cong (r .embed-embed w q) (r .embed-embed p w))
+  embeds-hide {P = P} w nw r .env-root = root-step {P = P} (r .env-root) (r .embed-root w nw) (r .env-embed w)
+  embeds-hide {P = P} w nw r .input-root = root-step {P = P} (r .input-root) (r .embed-root w nw) (r .input-embed w)
+  embeds-hide {P = P} w nw r .embed-root p np =
+    root-step {P = P} (r .embed-root p np) (r .embed-root w nw) (r .embed-embed p w)
+
+  embeds-hide-all : ∀ {G H P} (ws : List (PathM Dm)) → All (λ w → is-ε-m w ≡ Bool.false) ws →
+                    Embeds G H P →
+                    Embeds (hide-all-m G (map at (map m-inl ws))) (hide-all-m H (map at ws)) P
+  embeds-hide-all []       []         r = r
+  embeds-hide-all (w ∷ ws) (nw ∷ nws) r = embeds-hide-all ws nws (embeds-hide w nw r)
+
+  private
+    embeds₀ : Embeds (hide-m (hide-m (graphM C) (at ε)) (at (m-inl ε)))
+                     (hide-m (graphM Dm) (at ε)) M.I
+    embeds₀ .env-embed q   = hide-hide-root-m C (at (m-inl ε)) env (at (m-inl q))
+    embeds₀ .input-embed q = hide-hide-root-m C (at (m-inl ε)) input (at (m-inl q))
+    embeds₀ .embed-embed p q = hide-hide-root-m C (at (m-inl ε)) (at (m-inl p)) (at (m-inl q))
+    embeds₀ .env-root   = ≈-trans (hide-hide-root-m C (at (m-inl ε)) env (at ε)) (into-hidden-m Dm M.I env)
+    embeds₀ .input-root = ≈-trans (hide-hide-root-m C (at (m-inl ε)) input (at ε)) (into-hidden-m Dm M.I input)
+    embeds₀ .embed-root p np =
+      ≈-trans (hide-hide-root-m C (at (m-inl ε)) (at (m-inl p)) (at ε))
+      (≈-trans (+ₘ-cong (edge-off-m M.I p np) ≈-refl) (into-hidden-m Dm M.I (at p)))
+
+    rfin = embeds-hide-all (interior-m Dm) (interior-not-root-m Dm) embeds₀
+
+  agree-MInl-env : collapse-m-env C M.≈ₘ collapse-m-env Dm
+  agree-MInl-env = ≈-trans (rfin .env-root) id-left
+
+  agree-MInl-in : collapse-m-in C M.≈ₘ collapse-m-in Dm
+  agree-MInl-in = ≈-trans (rfin .input-root) id-left
+
+-- The m-inr action: one premise, both source rows embedding unchanged.
+module MInr {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ₁ σ₂ : type 1} {v : Val (σ₂ [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+            {v' : Val (σ₂ [ σr ])} {R' : width-env γ ⇒ width v'}
+            {Dm : Map γ s σ₂ v R v' R'} where
+
+  private
+    C : Map γ s (σ₁ [+] σ₂) _ R _ R'
+    C = m-inr {σ₁ = σ₁} {σ₂ = σ₂} Dm
+
+  record Embeds (G : GraphM C) (H : GraphM Dm)
+                (P : M.Matrix (width v') (width v')) : Set ℓ where
+    field
+      env-embed   : ∀ q → G env (at (m-inr q)) M.≈ₘ H env (at q)
+      input-embed : ∀ q → G input (at (m-inr q)) M.≈ₘ H input (at q)
+      embed-embed : ∀ p q → G (at (m-inr p)) (at (m-inr q)) M.≈ₘ H (at p) (at q)
+      env-root    : G env (at ε) M.≈ₘ (P M.∘ H env (at ε))
+      input-root  : G input (at ε) M.≈ₘ (P M.∘ H input (at ε))
+      embed-root  : ∀ p → is-ε-m p ≡ Bool.false →
+                    G (at (m-inr p)) (at ε) M.≈ₘ (P M.∘ H (at p) (at ε))
+
+  open Embeds
+
+  embeds-hide : ∀ {G H P} (w : PathM Dm) → is-ε-m w ≡ Bool.false →
+                Embeds G H P → Embeds (hide-m G (at (m-inr w))) (hide-m H (at w)) P
+  embeds-hide w nw r .env-embed q   = +ₘ-cong (r .env-embed q) (∘-cong (r .embed-embed w q) (r .env-embed w))
+  embeds-hide w nw r .input-embed q = +ₘ-cong (r .input-embed q) (∘-cong (r .embed-embed w q) (r .input-embed w))
+  embeds-hide w nw r .embed-embed p q = +ₘ-cong (r .embed-embed p q) (∘-cong (r .embed-embed w q) (r .embed-embed p w))
+  embeds-hide {P = P} w nw r .env-root = root-step {P = P} (r .env-root) (r .embed-root w nw) (r .env-embed w)
+  embeds-hide {P = P} w nw r .input-root = root-step {P = P} (r .input-root) (r .embed-root w nw) (r .input-embed w)
+  embeds-hide {P = P} w nw r .embed-root p np =
+    root-step {P = P} (r .embed-root p np) (r .embed-root w nw) (r .embed-embed p w)
+
+  embeds-hide-all : ∀ {G H P} (ws : List (PathM Dm)) → All (λ w → is-ε-m w ≡ Bool.false) ws →
+                    Embeds G H P →
+                    Embeds (hide-all-m G (map at (map m-inr ws))) (hide-all-m H (map at ws)) P
+  embeds-hide-all []       []         r = r
+  embeds-hide-all (w ∷ ws) (nw ∷ nws) r = embeds-hide-all ws nws (embeds-hide w nw r)
+
+  private
+    embeds₀ : Embeds (hide-m (hide-m (graphM C) (at ε)) (at (m-inr ε)))
+                     (hide-m (graphM Dm) (at ε)) M.I
+    embeds₀ .env-embed q   = hide-hide-root-m C (at (m-inr ε)) env (at (m-inr q))
+    embeds₀ .input-embed q = hide-hide-root-m C (at (m-inr ε)) input (at (m-inr q))
+    embeds₀ .embed-embed p q = hide-hide-root-m C (at (m-inr ε)) (at (m-inr p)) (at (m-inr q))
+    embeds₀ .env-root   = ≈-trans (hide-hide-root-m C (at (m-inr ε)) env (at ε)) (into-hidden-m Dm M.I env)
+    embeds₀ .input-root = ≈-trans (hide-hide-root-m C (at (m-inr ε)) input (at ε)) (into-hidden-m Dm M.I input)
+    embeds₀ .embed-root p np =
+      ≈-trans (hide-hide-root-m C (at (m-inr ε)) (at (m-inr p)) (at ε))
+      (≈-trans (+ₘ-cong (edge-off-m M.I p np) ≈-refl) (into-hidden-m Dm M.I (at p)))
+
+    rfin = embeds-hide-all (interior-m Dm) (interior-not-root-m Dm) embeds₀
+
+  agree-MInr-env : collapse-m-env C M.≈ₘ collapse-m-env Dm
+  agree-MInr-env = ≈-trans (rfin .env-root) id-left
+
+  agree-MInr-in : collapse-m-in C M.≈ₘ collapse-m-in Dm
+  agree-MInr-in = ≈-trans (rfin .input-root) id-left
