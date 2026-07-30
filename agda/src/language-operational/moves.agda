@@ -12,8 +12,8 @@ import Data.List.Relation.Unary.Any.Properties as AnyPr
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Properties using (++-identityʳ; concat-++; foldl-++; map-++; map-∘)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
-open ↭ using (_↭_; ↭-sym; ↭-trans; ↭-reflexive)
-open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift; Any-resp-↭)
+open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift; ++⁺; Any-resp-↭)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
 open import Relation.Binary.PropositionalEquality using (_≡_; subst)
@@ -26,8 +26,8 @@ import matrix
 import two
 
 -- The moves preserve the invariant that the stored regions partition the hidden set into
--- pairwise-apart pieces, each carrying its summary. So far: summaries are stable under
--- permutation, and hiding preserves the partition and apartness.
+-- pairwise-apart pieces, each carrying its summary. The initial configuration satisfies the
+-- invariant, and the hide move preserves it.
 module language-operational.moves {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
@@ -721,3 +721,53 @@ merged-summary D p K S hp dist x y i j =
     (≡-trans (≡-cong (foldr two._⊔_ (B x' y' i' j')) (maps≡ x' y' i' j'))
     (≡-trans (base-swap x' y' i' j')
              (≡-sym (assemble D {C*} Ms monosC* sepsMs x' y' i' j'))))
+
+-- The first-order paths inherit distinctness from the path enumeration.
+FO-distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+              AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (FO D)
+FO-distinct D = filter-AllPairs (λ p → Bool.not (is-ε p) Bool.∧ fo-at p) (paths-distinct D)
+
+private
+  partition-distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                       (K : Config D) → Summarised K →
+                       AllPairs (λ q q' → eq-path q q' ≡ Bool.false)
+                                (K .visible ++ hidden-set K)
+  partition-distinct {D = D} K S =
+    AllPairs-perm (λ {q} {q'} h → eq-path-false-sym {p = q} {q = q'} h)
+                  (↭-sym (S .partition)) (FO-distinct D)
+
+  concat-distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                    (Css : List (List (Path D))) →
+                    AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (concat Css) →
+                    AllPairs Distinct Css
+  concat-distinct []        ps = []
+  concat-distinct (C ∷ Css) ps with AllPairs-++⁻ C (concat Css) ps
+  ... | (_ , aCss , cross) =
+    All-map
+      (λ {C'} a →
+        any-false (All-map (λ {q'} aq' →
+                              any-false (All-map (λ {q} hb → eq-path-false-sym {p = q} {q = q'} hb)
+                                                 aq'))
+                           (AllP.All-swap a)) ,
+        any-false (All-map (λ {q} aq → any-false aq) a))
+      (AllP.All-swap (All-map AllP.concat⁻ cross))
+    ∷ concat-distinct Css aCss
+
+  visible-not-hidden : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                       (K : Config D) → Summarised K → ∀ {p} →
+                       member p (K .visible) ≡ Bool.true →
+                       member p (hidden-set K) ≡ Bool.false
+  visible-not-hidden K S {p} pv =
+    any-false (member-All {eq = eq-path} eq-path-≡ {x = p}
+                (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                            (partition-distinct K S))))
+                pv)
+
+-- A summarised configuration's stored regions are pairwise disjoint: the partition invariant
+-- places them inside the duplicate-free first-order paths.
+summarised-distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                      (K : Config D) → Summarised K →
+                      AllPairs Distinct (map proj₁ (K .hidden))
+summarised-distinct K S =
+  concat-distinct (map proj₁ (K .hidden))
+    (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S))))
