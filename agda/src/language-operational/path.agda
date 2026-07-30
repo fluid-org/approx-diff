@@ -6,6 +6,7 @@ open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; _++_; map; filterᵇ)
 open import Data.Nat using (ℕ; suc; _+_)
 open import every using (Every; []; _∷_)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import signature using (Signature)
 open import primitives using (Primitives)
@@ -332,6 +333,48 @@ mutual
   eq-path-m (m-pair₂ p) (m-pair₂ q) = eq-path-m p q
   eq-path-m (m-mu p)    (m-mu q)    = eq-path-m p q
   eq-path-m _ _ = Bool.false
+
+mutual
+  eq-path-refl : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                 (p : Path D) → eq-path p p ≡ Bool.true
+  eq-path-refl ε           = ≡-refl
+  eq-path-refl (inl p)     = eq-path-refl p
+  eq-path-refl (inr p)     = eq-path-refl p
+  eq-path-refl (case-l₁ p) = eq-path-refl p
+  eq-path-refl (case-l₂ p) = eq-path-refl p
+  eq-path-refl (case-r₁ p) = eq-path-refl p
+  eq-path-refl (case-r₂ p) = eq-path-refl p
+  eq-path-refl (pair₁ p)   = eq-path-refl p
+  eq-path-refl (pair₂ p)   = eq-path-refl p
+  eq-path-refl (fst p)     = eq-path-refl p
+  eq-path-refl (snd p)     = eq-path-refl p
+  eq-path-refl (app₁ p)    = eq-path-refl p
+  eq-path-refl (app₂ p)    = eq-path-refl p
+  eq-path-refl (app₃ p)    = eq-path-refl p
+  eq-path-refl (bop p)     = eq-path-s-refl p
+  eq-path-refl (brel p)    = eq-path-s-refl p
+  eq-path-refl (roll p)    = eq-path-refl p
+  eq-path-refl (fold₁ p)   = eq-path-refl p
+  eq-path-refl (fold₂ p)   = eq-path-m-refl p
+
+  eq-path-s-refl : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                   {D : γ , Ms ⇓s vs [ R ]} (p : PathS D) → eq-path-s p p ≡ Bool.true
+  eq-path-s-refl ε      = ≡-refl
+  eq-path-s-refl (hd p) = eq-path-refl p
+  eq-path-s-refl (tl p) = eq-path-s-refl p
+
+  eq-path-m-refl : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                   {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                   {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                   {D : Map γ s σ' v R v' R'} (p : PathM D) → eq-path-m p p ≡ Bool.true
+  eq-path-m-refl ε           = ≡-refl
+  eq-path-m-refl (m-rec₁ p)  = eq-path-m-refl p
+  eq-path-m-refl (m-rec₂ p)  = eq-path-refl p
+  eq-path-m-refl (m-inl p)   = eq-path-m-refl p
+  eq-path-m-refl (m-inr p)   = eq-path-m-refl p
+  eq-path-m-refl (m-pair₁ p) = eq-path-m-refl p
+  eq-path-m-refl (m-pair₂ p) = eq-path-m-refl p
+  eq-path-m-refl (m-mu p)    = eq-path-m-refl p
 
 -- Membership of a path in a list of paths of the same derivation.
 member : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
