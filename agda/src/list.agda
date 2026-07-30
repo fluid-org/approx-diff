@@ -265,6 +265,10 @@ filter-all-true : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
 filter-all-true []              = ≡-refl
 filter-all-true (_∷_ {x} h hs) rewrite h = ≡-cong (x ∷_) (filter-all-true hs)
 
+filter-head-false : ∀ {a} {A : Set a} {f : A → Bool} {x : A} (xs : List A) →
+                    f x ≡ Bool.false → filterᵇ f (x ∷ xs) ≡ filterᵇ f xs
+filter-head-false xs h rewrite h = ≡-refl
+
 AllPairs-++⁻ : ∀ {a r} {A : Set a} {S : A → A → Set r} (xs ys : List A) →
                AllPairs S (xs ++ ys) →
                AllPairs S xs × AllPairs S ys × All (λ x → All (S x) ys) xs
