@@ -18,7 +18,8 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renam
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (++⁺; ++-comm; shift)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 
 private
@@ -56,6 +57,10 @@ any-cong h (x ∷ xs) = ≡-cong₂ _∨_ (h x) (any-cong h xs)
 ∨-true Bool.false = ≡-refl
 ∨-true Bool.true  = ≡-refl
 
+∨-true-inv : ∀ x y → (x ∨ y) ≡ Bool.true → (x ≡ Bool.true) ⊎ (y ≡ Bool.true)
+∨-true-inv Bool.true  y h = inj₁ ≡-refl
+∨-true-inv Bool.false y h = inj₂ h
+
 any-false : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
             All (λ x → f x ≡ Bool.false) xs → any f xs ≡ Bool.false
 any-false []       = ≡-refl
@@ -80,6 +85,14 @@ any-self     h []       = []
 any-self {f = f} h (x ∷ xs) =
   ≡-cong (_∨ any (f x) xs) (h x) ∷
   All-map (λ {y} prf → ≡-trans (≡-cong (f y x ∨_) prf) (∨-true (f y x))) (any-self h xs)
+
+-- Look up a Boolean membership witness in an All, given that the test is sound for equality.
+member-All : ∀ {a p} {A : Set a} {P : A → Set p} {eq : A → A → Bool} →
+             (∀ {x y} → eq x y ≡ Bool.true → x ≡ y) →
+             ∀ {x xs} → All P xs → any (eq x) xs ≡ Bool.true → P x
+member-All {eq = eq} sound {x} {y ∷ ys} (py ∷ pys) h with ∨-true-inv (eq x y) (any (eq x) ys) h
+... | inj₁ e = subst _ (≡-sym (sound e)) py
+... | inj₂ e = member-All sound pys e
 
 any-or : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
          any (λ x → f x ∨ g x) xs ≡ (any f xs ∨ any g xs)
