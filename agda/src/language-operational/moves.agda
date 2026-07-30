@@ -6,6 +6,7 @@ open import Data.Bool.Properties using (∨-comm; ∧-comm)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Properties using (concat-++; map-++)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
@@ -177,6 +178,45 @@ private
 adjacent-sym : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
                (G : Graph D) (x y : Vertex D) → adjacent G x y ≡ adjacent G y x
 adjacent-sym G x y = ∨-comm (nonzero (G x y)) (nonzero (G y x))
+
+-- Regions with no edge between them; each reads the graph only through its own members, so hiding
+-- either leaves the other's summary alone.
+Apart : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+        Graph D → List (Path D) → List (Path D) → Set
+Apart G C C' = any (λ q → any (λ q' → adjacent G (at q) (at q')) C') C ≡ Bool.false
+
+apart-sym : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+            (G : Graph D) {C C' : List (Path D)} → Apart G C C' → Apart G C' C
+apart-sym G {C} {C'} h =
+  ≡-trans (any-comm (λ q q' → adjacent G (at q) (at q')) C' C)
+  (≡-trans (any-cong (λ q → any-cong (λ q' → adjacent-sym G (at q') (at q)) C') C) h)
+
+-- Adding a vertex and merging the regions adjacent to it preserves pairwise apartness: an
+-- untouched region fails the adjacency test for the vertex and was already apart from each of the
+-- merged regions.
+merge-separated : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                  (G : Graph D) (w : Path D) {rs : List (List (Path D))} →
+                  AllPairs (Apart G) rs →
+                  let tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) rs in
+                  AllPairs (Apart G) ((w ∷ concat (proj₁ tp)) ∷ proj₂ tp)
+merge-separated G w {rs} sep = apart-w ∷ proj₁ (proj₂ pa)
+  where
+  f = any (λ q → adjacent G (at w) (at q))
+  pa = partition-AllPairs {S = Apart G} f (λ {C} {C'} → apart-sym G {C} {C'}) sep
+  tp = partitionᵇ f rs
+  apart-w : All (Apart G (w ∷ concat (proj₁ tp))) (proj₂ tp)
+  apart-w =
+    All-zip (λ {C'} hf hc →
+              ≡-cong₂ _∨_ hf
+                (≡-trans (any-concat (λ q → any (λ q' → adjacent G (at q) (at q')) C') (proj₁ tp))
+                         (any-false hc)))
+            (part₂-false f rs) (proj₂ (proj₂ pa))
+
+-- The regions computation produces pairwise-apart regions.
+regions-separated : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                    (G : Graph D) (ws : List (Path D)) → AllPairs (Apart G) (regions G ws)
+regions-separated G []       = []
+regions-separated G (w ∷ ws) = merge-separated G w (regions-separated G ws)
 
 -- Adding two vertices in either order gives equivalent regions.
 regions-swap : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
