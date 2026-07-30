@@ -1,7 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.List using (List; []; _∷_; map; filterᵇ)
+open import Data.List using (List; []; _∷_; map; filterᵇ; foldl)
+import Data.List.Relation.Binary.Permutation.Propositional as ↭
+open ↭ using (_↭_)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Fin using (Fin)
@@ -11,7 +13,7 @@ open import Data.Nat.Properties
   using (≤-refl; ≤-trans; ≤-reflexive; m≤m+n; +-monoʳ-<; +-suc; <-trans; <-irrefl; <-asym)
 open import every using (Every; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
-  renaming (refl to ≡-refl; sym to ≡-sym; cong to ≡-cong)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import signature using (Signature)
 open import primitives using (Primitives)
 import Data.Bool as Bool
@@ -719,3 +721,61 @@ hide-comm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸
               ForwardM G → ∀ (r r' x y : VertexM D) i j →
               hide-m (hide-m G r) r' x y i j ≡ hide-m (hide-m G r') r x y i j
 hide-comm-m {D = D} {G = G} fwd = Comm.comm (VertexM D) vertex-width-m rank-v-m G fwd
+
+-- Hiding a list of vertices of a forward graph is independent of the order: adjacent swaps are
+-- the commutation lemma, pushed through the rest of the fold by congruence.
+private
+  module Fold (V : Set ℓ) (w : V → ℕ) (rk : V → ℕ) where
+    private
+      Gr : Set ℓ
+      Gr = (x y : V) → M.Matrix (w y) (w x)
+
+      Fwd : Gr → Set ℓ
+      Fwd G = ∀ x y (i : Fin (w y)) (j : Fin (w x)) → G x y i j ≡ two.I → rk x < rk y
+
+      h : Gr → V → Gr
+      h G r x y = G x y M.+ₘ (G r y M.∘ G x r)
+
+      _≈g_ : Gr → Gr → Set ℓ
+      G ≈g G' = ∀ x y (i : Fin (w y)) (j : Fin (w x)) → G x y i j ≡ G' x y i j
+
+    fwd-h : ∀ {G} r → Fwd G → Fwd (h G r)
+    fwd-h {G} r fwd x y i j e with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) e
+    ... | inj₁ a = fwd x y i j a
+    ... | inj₂ a with ∘-I (G r y) (G x r) i j a
+    ...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
+
+    h-cong : ∀ {G G'} r → G ≈g G' → h G r ≈g h G' r
+    h-cong r p x y i j =
+      ≡-cong₂ two._⊔_ (p x y i j) (M.Σ-cong-≡ (λ k → ≡-cong₂ two._⊓_ (p r y i k) (p x r k j)))
+
+    fold-cong : ∀ {G G'} rs → G ≈g G' → foldl h G rs ≈g foldl h G' rs
+    fold-cong []       p = p
+    fold-cong (r ∷ rs) p = fold-cong rs (h-cong r p)
+
+    perm : ∀ {G rs rs'} → Fwd G → rs ↭ rs' → foldl h G rs ≈g foldl h G rs'
+    perm fwd ↭.refl x y i j = ≡-refl
+    perm fwd (↭.prep r p) = perm (fwd-h r fwd) p
+    perm {G} fwd (↭.swap {xs = rs} a b p) x y i j =
+      ≡-trans (fold-cong rs (Comm.comm V w rk G fwd a b) x y i j)
+              (perm (fwd-h a (fwd-h b fwd)) p x y i j)
+    perm fwd (↭.trans p q) x y i j = ≡-trans (perm fwd p x y i j) (perm fwd q x y i j)
+
+hide-all-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
+                Forward G → ∀ {rs rs'} → rs ↭ rs' →
+                ∀ (x y : Vertex D) i j → hide-all G rs x y i j ≡ hide-all G rs' x y i j
+hide-all-perm {D = D} fwd = Fold.perm (Vertex D) vertex-width rank-v fwd
+
+hide-all-perm-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                  {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D} →
+                  ForwardS G → ∀ {rs rs'} → rs ↭ rs' →
+                  ∀ (x y : VertexS D) i j → hide-all-s G rs x y i j ≡ hide-all-s G rs' x y i j
+hide-all-perm-s {D = D} fwd = Fold.perm (VertexS D) vertex-width-s rank-v-s fwd
+
+hide-all-perm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                  {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                  {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                  {D : Map γ s σ' v R v' R'} {G : GraphM D} →
+                  ForwardM G → ∀ {rs rs'} → rs ↭ rs' →
+                  ∀ (x y : VertexM D) i j → hide-all-m G rs x y i j ≡ hide-all-m G rs' x y i j
+hide-all-perm-m {D = D} fwd = Fold.perm (VertexM D) vertex-width-m rank-v-m fwd

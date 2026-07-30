@@ -4,6 +4,7 @@ module matrix where
 
 open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
+import Relation.Binary.PropositionalEquality as ≡
 open import commutative-semiring using (CommutativeSemiring)
 
 -- Matrices over a commutative semiring S. (Commutativity means the dot product is commutative, which means
@@ -81,6 +82,11 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   Σ-cong : ∀ {n} {f g : Fin n → Carrier} → (∀ i → f i ≈ g i) → Σ {n} f ≈ Σ {n} g
   Σ-cong = +-to-Σ.Σ-preserves _≈_ refl +-cong
+
+  -- Equality version; not an instance of Σ-preserves, which takes Prop-valued relations.
+  Σ-cong-≡ : ∀ {n} {f g : Fin n → Carrier} → (∀ i → f i ≡.≡ g i) → Σ {n} f ≡.≡ Σ {n} g
+  Σ-cong-≡ {zero}  p = ≡.refl
+  Σ-cong-≡ {suc n} p = ≡.cong₂ _+_ (p zero) (Σ-cong-≡ {n} (λ i → p (suc i)))
 
   -- Kronecker delta is symmetric.
   e-sym : ∀ {n} (i j : Fin n) → e i j ≈ e j i
