@@ -238,6 +238,14 @@ partition-AllPairs f sym (_∷_ {x} px ps) with partition-AllPairs f sym ps | pa
 ...   | Bool.true  = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
 ...   | Bool.false = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
 
+any-filterᵇ : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+              any f (filterᵇ g xs) ≡ Bool.true → any f xs ≡ Bool.true
+any-filterᵇ f g (x ∷ xs) h with g x
+... | Bool.false = ≡-trans (≡-cong (f x ∨_) (any-filterᵇ f g xs h)) (∨-true (f x))
+... | Bool.true with ∨-true-inv (f x) (any f (filterᵇ g xs)) h
+...   | inj₁ e = ≡-cong (_∨ any f xs) e
+...   | inj₂ e = ≡-trans (≡-cong (f x ∨_) (any-filterᵇ f g xs e)) (∨-true (f x))
+
 filter-All : ∀ {a p} {A : Set a} {P : A → Set p} (f : A → Bool) {xs : List A} →
              All P xs → All P (filterᵇ f xs)
 filter-All f []               = []
