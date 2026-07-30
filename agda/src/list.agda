@@ -4,21 +4,23 @@
 -- at both levels.
 module list where
 
-open import Data.Bool as Bool using (Bool; _∨_)
+open import Data.Bool as Bool using (Bool; not; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Bool.Properties using (∨-assoc)
 open import Data.Fin as Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; map; concat; partitionᵇ; tabulate)
+open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ; tabulate)
 open import Data.List.Properties using (++-assoc)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
+import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there)
-open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (++⁺; ++-comm; shift)
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties
+  using (++⁺; ++-comm; shift; All-resp-↭)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; subst)
@@ -235,6 +237,57 @@ partition-AllPairs f sym (_∷_ {x} px ps) with partition-AllPairs f sym ps | pa
 ... | (a₁ , a₂ , cross) | (px₁ , px₂) with f x
 ...   | Bool.true  = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
 ...   | Bool.false = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
+
+filter-All : ∀ {a p} {A : Set a} {P : A → Set p} (f : A → Bool) {xs : List A} →
+             All P xs → All P (filterᵇ f xs)
+filter-All f []               = []
+filter-All f (_∷_ {x} px pxs) with f x
+... | Bool.true  = px ∷ filter-All f pxs
+... | Bool.false = filter-All f pxs
+
+filter-AllPairs : ∀ {a r} {A : Set a} {S : A → A → Set r} (f : A → Bool) {xs : List A} →
+                  AllPairs S xs → AllPairs S (filterᵇ f xs)
+filter-AllPairs f []               = []
+filter-AllPairs f (_∷_ {x} px ps) with f x
+... | Bool.true  = filter-All f px ∷ filter-AllPairs f ps
+... | Bool.false = filter-AllPairs f ps
+
+filter-all-true : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
+                  All (λ x → f x ≡ Bool.true) xs → filterᵇ f xs ≡ xs
+filter-all-true []              = ≡-refl
+filter-all-true (_∷_ {x} h hs) rewrite h = ≡-cong (x ∷_) (filter-all-true hs)
+
+AllPairs-++⁻ : ∀ {a r} {A : Set a} {S : A → A → Set r} (xs ys : List A) →
+               AllPairs S (xs ++ ys) →
+               AllPairs S xs × AllPairs S ys × All (λ x → All (S x) ys) xs
+AllPairs-++⁻ []       ys ps        = [] , ps , []
+AllPairs-++⁻ (x ∷ xs) ys (px ∷ ps) with AllPairs-++⁻ xs ys ps
+... | (a₁ , a₂ , cross) = (AllP.++⁻ˡ xs px ∷ a₁) , a₂ , (AllP.++⁻ʳ xs px ∷ cross)
+
+-- Pairwise relatedness respects permutation when the relation is symmetric.
+AllPairs-perm : ∀ {a r} {A : Set a} {S : A → A → Set r} →
+                (∀ {x y} → S x y → S y x) →
+                {xs ys : List A} → xs ↭ ys → AllPairs S xs → AllPairs S ys
+AllPairs-perm sym ↭.refl         ps                            = ps
+AllPairs-perm sym (↭.prep x p)   (px ∷ ps)                     =
+  All-resp-↭ p px ∷ AllPairs-perm sym p ps
+AllPairs-perm sym (↭.swap x y p) ((pxy ∷ pxs) ∷ (pys ∷ ps)) =
+  (sym pxy ∷ All-resp-↭ p pys) ∷ (All-resp-↭ p pxs ∷ AllPairs-perm sym p ps)
+AllPairs-perm sym (↭.trans p q)  ps                            =
+  AllPairs-perm sym q (AllPairs-perm sym p ps)
+
+-- On a pairwise-distinct list, filtering out a listed element removes exactly its one occurrence.
+filter-out-↭ : ∀ {a} {A : Set a} {eq : A → A → Bool} →
+               (∀ {x y} → eq x y ≡ Bool.true → x ≡ y) →
+               {x : A} {xs : List A} →
+               AllPairs (λ y z → eq y z ≡ Bool.false) xs →
+               any (eq x) xs ≡ Bool.true →
+               (x ∷ filterᵇ (λ y → not (eq x y)) xs) ↭ xs
+filter-out-↭ {eq = eq} sound {x} {y ∷ xs} (py ∷ ps) h with eq x y in e
+... | Bool.false = ↭-trans (↭.swap x y ↭.refl) (↭.prep y (filter-out-↭ sound ps h))
+... | Bool.true with sound e
+...   | ≡-refl =
+  ↭.prep x (↭-reflexive (filter-all-true (All-map (λ hz → ≡-cong not hz) py)))
 
 map-partition₁ : ∀ {a b} {A : Set a} {B : Set b} (h : A → B) (f : B → Bool) (xs : List A) →
                  proj₁ (partitionᵇ f (map h xs)) ≡ map h (proj₁ (partitionᵇ (λ x → f (h x)) xs))
