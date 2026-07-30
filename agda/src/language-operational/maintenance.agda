@@ -4,8 +4,14 @@ open import Data.Bool as Bool using (Bool; not; _∧_; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.List.Relation.Unary.All using (All; []; _∷_) renaming (map to All-map)
 open import Data.Bool.Properties using (∧-comm)
-open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
-open import Data.List.Properties using (concat-++; ++-identityʳ)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filterᵇ; partitionᵇ)
+open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
+open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
+import Data.List.Relation.Unary.All.Properties as AllP
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (↭-length)
+open import Data.Nat using (_≤_; z≤n; s≤s)
+open import Data.Nat.ListAction using (sum)
+open import Data.List.Properties using (concat-++; ++-identityʳ; length-map; map-∘)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -227,3 +233,74 @@ regions-apart G (b ∷ B) rest ap with ∨-false (any (λ q' → adjacent G (at 
                               (any-false-All _ rest hb) (inc q mq))
                           (any-self eq-path-refl C)))
               (regions-⊆ G rest))))
+
+private
+  apart-concat : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                 {G : Graph D} {C : List (Path D)} {Cs : List (List (Path D))} →
+                 All (Apart G C) Cs → Apart G C (concat Cs)
+  apart-concat {G = G} {C} {Cs} aps =
+    ≡-trans (any-cong (λ q → any-concat (λ q' → adjacent G (at q) (at q')) Cs) C)
+    (≡-trans (any-comm (λ q C' → any (λ q' → adjacent G (at q) (at q')) C') C Cs)
+             (any-false aps))
+
+  regions-nonempty : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                     (G : Graph D) (ws : List (Path D)) →
+                     All (λ C → 1 ≤ length C) (regions G ws)
+  regions-nonempty G []       = []
+  regions-nonempty G (w ∷ ws) =
+    s≤s z≤n ∷ proj₂ (partition-All (adj G w) (regions-nonempty G ws))
+
+-- Regions of a concatenation of pairwise-apart blocks are the blocks' regions.
+regions-apart-concat : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                       {G : Graph D} {Cs : List (List (Path D))} →
+                       AllPairs (Apart G) Cs →
+                       regions G (concat Cs) ↭↭ concat (map (regions G) Cs)
+regions-apart-concat {G = G}           []                    = ↭↭-refl
+regions-apart-concat {G = G} {C ∷ Cs} (aps ∷ pairs) =
+  H.trans (regions-apart G C (concat Cs) (apart-concat {G = G} {C = C} {Cs = Cs} aps))
+          (↭↭-++⁺ ↭↭-refl (regions-apart-concat pairs))
+
+-- Each stored region of a canonical summarised configuration is a single region: distribution
+-- makes the stored list a permutation of the per-block regions, and a permutation preserves
+-- length while every nonempty block contributes at least one region.
+blocks-one-region : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                    (K : Config D) → Summarised K → Maintained K →
+                    All (λ C → regions (fo-graph D) C ↭↭ (C ∷ []))
+                        (map proj₁ (K .hidden))
+blocks-one-region D K S M = All-map (λ {C} e → one {C} e) lens1
+  where
+  G  = fo-graph D
+  Cs = map proj₁ (K .hidden)
+
+  perm2 : Cs ↭↭ concat (map (regions G) Cs)
+  perm2 = H.trans (M .canonical) (regions-apart-concat (S .separated))
+
+  nonempty : All (λ C → 1 ≤ length C) Cs
+  nonempty = perm-All (λ {C} {C'} pc h → subst (1 ≤_) (↭-length pc) h)
+                      (H.sym ↭-sym (M .canonical))
+                      (regions-nonempty G (hidden-set K))
+
+  len-regions : ∀ (C : List (Path D)) → 1 ≤ length C → 1 ≤ length (regions G C)
+  len-regions (q ∷ C') _ = s≤s z≤n
+
+  atleast : All (λ C → 1 ≤ length (regions G C)) Cs
+  atleast = All-map (λ {C} h → len-regions C h) nonempty
+
+  lens-eq : sum (map (λ C → length (regions G C)) Cs) ≡
+            length (map (λ C → length (regions G C)) Cs)
+  lens-eq =
+    ≡-trans (≡-cong sum (map-∘ {g = length} {f = regions G} Cs))
+    (≡-trans (≡-sym (length-concat (map (regions G) Cs)))
+    (≡-trans (≡-sym (perm-length perm2))
+             (≡-sym (length-map (λ C → length (regions G C)) Cs))))
+
+  lens1 : All (λ C → length (regions G C) ≡ 1) Cs
+  lens1 = AllP.map⁻ (sum-ones (AllP.map⁺ atleast) lens-eq)
+
+  one : ∀ {C : List (Path D)} → length (regions G C) ≡ 1 → regions G C ↭↭ (C ∷ [])
+  one {C} e with singleton (regions G C) e
+  ... | (C₀ , eq) =
+    subst (_↭↭ (C ∷ [])) (≡-sym eq)
+          (H.prep (↭-trans (↭-reflexive (≡-sym (++-identityʳ C₀)))
+                           (subst (λ z → concat z ↭ C) eq (regions-concat G C)))
+                  (H.refl []))
