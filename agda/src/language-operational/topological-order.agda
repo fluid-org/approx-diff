@@ -761,6 +761,11 @@ private
               (perm (fwd-h a (fwd-h b fwd)) p x y i j)
     perm fwd (↭.trans p q) x y i j = ≡-trans (perm fwd p x y i j) (perm fwd q x y i j)
 
+hide-all-cong : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G G' : Graph D} →
+                (rs : List (Vertex D)) → (∀ x y i j → G x y i j ≡ G' x y i j) →
+                ∀ (x y : Vertex D) i j → hide-all G rs x y i j ≡ hide-all G' rs x y i j
+hide-all-cong {D = D} = Fold.fold-cong (Vertex D) vertex-width rank-v
+
 hide-all-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
                 Forward G → ∀ {rs rs'} → rs ↭ rs' →
                 ∀ (x y : Vertex D) i j → hide-all G rs x y i j ≡ hide-all G rs' x y i j
