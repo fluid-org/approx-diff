@@ -162,3 +162,19 @@ initial-maintained D .canonical =
   subst (λ z → z ↭↭ regions (fo-graph D) (concat z))
         (≡-sym (map-proj₁-pair (summary D) (regions (fo-graph D) (FO D))))
         (regions-perm (fo-graph D) (↭-sym (regions-concat (fo-graph D) (FO D))))
+
+-- The hide move preserves canonicity: its merge is the merge step of the regions computation.
+hide-at-maintained : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                     (p : Path D) (K : Config D) → Maintained K →
+                     Maintained (hide-at D p K)
+hide-at-maintained D p K M .canonical =
+  subst (λ z → z ↭↭ regions (fo-graph D) (hidden-set (hide-at D p K)))
+        lhs-eq
+        (H.trans (merge-region-resp (fo-graph D) p (M .canonical))
+                 (H.sym ↭-sym (regions-perm (fo-graph D) (hide-at-hidden-set D p K))))
+  where
+  lhs-eq : merge-region (fo-graph D) p (map proj₁ (K .hidden)) ≡
+           map proj₁ (hide-at D p K .hidden)
+  lhs-eq = ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
+             (map-partition₁ proj₁ (adj (fo-graph D) p) (K .hidden))
+             (map-partition₂ proj₁ (adj (fo-graph D) p) (K .hidden))
