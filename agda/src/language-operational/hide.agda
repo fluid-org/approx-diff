@@ -67,14 +67,19 @@ adjacent : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R
            Graph D → Vertex D → Vertex D → Bool
 adjacent G x y = nonzero (G x y) ∨ nonzero (G y x)
 
+-- Merge into one region the regions adjacent to a vertex, the hide move's merging specialised to
+-- singletons.
+merge-region : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+               Graph D → Path D → List (List (Path D)) → List (List (Path D))
+merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
+  where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) rss
+
 -- The regions of a list of paths: the weakly connected components of the subgraph induced by its
--- members. Each vertex merges the components it is adjacent to, the hide move's merging specialised
--- to singletons.
+-- members.
 regions : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
           Graph D → List (Path D) → List (List (Path D))
 regions G []       = []
-regions G (w ∷ ws) = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
-  where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) (regions G ws)
+regions G (w ∷ ws) = merge-region G w (regions G ws)
 
 member-vertex : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
                 Vertex D → List (Path D) → Bool
