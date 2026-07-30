@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Empty using (⊥)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.List using (List; []; _∷_; map; filterᵇ)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -8,7 +8,7 @@ open import Data.Fin using (Fin)
 import Data.Fin as F
 open import Data.Nat using (ℕ; zero; suc; _+_; _<_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties
-  using (≤-refl; ≤-trans; ≤-reflexive; m≤m+n; +-monoʳ-<; +-suc; <-trans; <-irrefl)
+  using (≤-refl; ≤-trans; ≤-reflexive; m≤m+n; +-monoʳ-<; +-suc; <-trans; <-irrefl; <-asym)
 open import every using (Every; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; cong to ≡-cong)
@@ -643,3 +643,79 @@ fo-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [
 fo-forward D =
   hide-all-forward (map at (filterᵇ (λ p → Bool.not (is-ε p) Bool.∧ Bool.not (fo-at p)) (paths D)))
                    (forward D)
+
+private
+  Σ-I-at : ∀ {n} (f : Fin n → two.Two) (k : Fin n) → f k ≡ two.I → M.Σ f ≡ two.I
+  Σ-I-at f F.zero    h = two.⊔-I-inl h
+  Σ-I-at f (F.suc k) h = two.⊔-I-inr (f F.zero) (Σ-I-at (λ i → f (F.suc i)) k h)
+
+  ∘-I-at : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l j →
+           A i j ≡ two.I → B j l ≡ two.I → (A M.∘ B) i l ≡ two.I
+  ∘-I-at A B i l j h₁ h₂ = Σ-I-at (λ j' → A i j' two.⊓ B j' l) j (two.⊓-I-pair h₁ h₂)
+
+-- Hiding two vertices of a forward graph commutes. Proved once over an abstract vertex set: an
+-- entry of one order decomposes into a term also present in the other order, except the residual
+-- routed through an edge in each direction between r and r', which forwardness rules out.
+private
+  module Comm (V : Set ℓ) (w : V → ℕ) (rk : V → ℕ)
+              (G : (x y : V) → M.Matrix (w y) (w x))
+              (fwd : ∀ x y (i : Fin (w y)) (j : Fin (w x)) → G x y i j ≡ two.I → rk x < rk y)
+    where
+    h : V → (x y : V) → M.Matrix (w y) (w x)
+    h r x y = G x y M.+ₘ (G r y M.∘ G x r)
+
+    h₂ : V → V → (x y : V) → M.Matrix (w y) (w x)
+    h₂ r r' x y = h r x y M.+ₘ (h r r' y M.∘ h r x r')
+
+    into : ∀ r r' x y (i : Fin (w y)) (j : Fin (w x)) →
+           h₂ r r' x y i j ≡ two.I → h₂ r' r x y i j ≡ two.I
+    into r r' x y i j e with two.⊔-I (h r x y i j) ((h r r' y M.∘ h r x r') i j) e
+    into r r' x y i j e | inj₁ a with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) a
+    ... | inj₁ a₁ = two.⊔-I-inl (two.⊔-I-inl a₁)
+    ... | inj₂ a₂ with ∘-I (G r y) (G x r) i j a₂
+    ...   | (k , (e₁ , e₂)) =
+      two.⊔-I-inr (h r' x y i j)
+        (∘-I-at (h r' r y) (h r' x r) i j k (two.⊔-I-inl e₁) (two.⊔-I-inl e₂))
+    into r r' x y i j e | inj₂ b with ∘-I (h r r' y) (h r x r') i j b
+    ... | (m , (c , d)) with two.⊔-I (G r' y i m) ((G r y M.∘ G r' r) i m) c
+                           | two.⊔-I (G x r' m j) ((G r r' M.∘ G x r) m j) d
+    ...   | inj₁ c₁ | inj₁ d₁ =
+      two.⊔-I-inl (two.⊔-I-inr (G x y i j) (∘-I-at (G r' y) (G x r') i j m c₁ d₁))
+    ...   | inj₁ c₁ | inj₂ d₂ with ∘-I (G r r') (G x r) m j d₂
+    ...     | (k , (d₁' , d₂')) =
+      two.⊔-I-inr (h r' x y i j)
+        (∘-I-at (h r' r y) (h r' x r) i j k
+          (two.⊔-I-inr (G r y i k) (∘-I-at (G r' y) (G r r') i k m c₁ d₁'))
+          (two.⊔-I-inl d₂'))
+    into r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₁ d₁ with ∘-I (G r y) (G r' r) i m c₂
+    ...     | (k , (c₁' , c₂')) =
+      two.⊔-I-inr (h r' x y i j)
+        (∘-I-at (h r' r y) (h r' x r) i j k
+          (two.⊔-I-inl c₁')
+          (two.⊔-I-inr (G x r k j) (∘-I-at (G r' r) (G x r') k j m c₂' d₁)))
+    into r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₂ d₂
+      with ∘-I (G r y) (G r' r) i m c₂ | ∘-I (G r r') (G x r) m j d₂
+    ...     | (k , (_ , c₂')) | (k' , (d₁' , _)) =
+      ⊥-elim (<-asym (fwd r' r k m c₂') (fwd r r' m k' d₁'))
+
+    comm : ∀ r r' x y (i : Fin (w y)) (j : Fin (w x)) → h₂ r r' x y i j ≡ h₂ r' r x y i j
+    comm r r' x y i j = two.I-antisym (into r r' x y i j) (into r' r x y i j)
+
+hide-comm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
+            Forward G → ∀ (r r' x y : Vertex D) i j →
+            hide (hide G r) r' x y i j ≡ hide (hide G r') r x y i j
+hide-comm {D = D} {G = G} fwd = Comm.comm (Vertex D) vertex-width rank-v G fwd
+
+hide-comm-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+              {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D} →
+              ForwardS G → ∀ (r r' x y : VertexS D) i j →
+              hide-s (hide-s G r) r' x y i j ≡ hide-s (hide-s G r') r x y i j
+hide-comm-s {D = D} {G = G} fwd = Comm.comm (VertexS D) vertex-width-s rank-v-s G fwd
+
+hide-comm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+              {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+              {D : Map γ s σ' v R v' R'} {G : GraphM D} →
+              ForwardM G → ∀ (r r' x y : VertexM D) i j →
+              hide-m (hide-m G r) r' x y i j ≡ hide-m (hide-m G r') r x y i j
+hide-comm-m {D = D} {G = G} fwd = Comm.comm (VertexM D) vertex-width-m rank-v-m G fwd
