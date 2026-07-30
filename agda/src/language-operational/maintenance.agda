@@ -1,13 +1,16 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool as Bool using (Bool)
+open import Data.Bool as Bool using (Bool; not; _∧_; _∨_)
 open import Data.Bool.ListAction using (any)
-open import Data.List using (List; []; _∷_; map; concat; partitionᵇ)
+open import Data.Bool.Properties using (∧-comm)
+open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
+open import Data.List.Properties using (concat-++)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
-open ↭ using (_↭_)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+open ↭ using (_↭_; ↭-sym; ↭-trans; ↭-reflexive)
+open import Relation.Binary.PropositionalEquality using (_≡_; subst; subst₂)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import list
 open import signature using (Signature)
 open import primitives using (Primitives)
@@ -24,6 +27,7 @@ open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
 open import language-operational.hide Sig 𝒫
+open import language-operational.moves Sig 𝒫
 
 merge-region-resp : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
                     (G : Graph D) (w : Path D) {rss rss' : List (List (Path D))} →
@@ -34,3 +38,101 @@ merge-region-resp G w {rss} {rss'} p =
   tp-p = partition-permᴿ (any (λ q → adjacent G (at w) (at q)))
                          (λ {C} {C'} pc → any-perm (λ q → adjacent G (at w) (at q)) pc)
                          p
+
+private
+  adj : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+        (G : Graph D) (w : Path D) → List (Path D) → Bool
+  adj G w C = any (λ q → adjacent G (at w) (at q)) C
+
+  merge-region-filter : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                        (G : Graph D) (w : Path D) (rss : List (List (Path D))) →
+                        merge-region G w rss ≡
+                        ((w ∷ concat (filterᵇ (adj G w) rss)) ∷
+                         filterᵇ (λ C → not (adj G w C)) rss)
+  merge-region-filter G w rss =
+    ≡-cong (λ u → (w ∷ concat (proj₁ u)) ∷ proj₂ u) (partition-filter (adj G w) rss)
+
+-- Merging two vertices commutes: if they are adjacent or share an adjacent region both orders
+-- produce the one merged region, and otherwise the merges are independent.
+merge-region-comm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                    (G : Graph D) (w w' : Path D) (rss : List (List (Path D))) →
+                    merge-region G w (merge-region G w' rss) ↭↭
+                    merge-region G w' (merge-region G w rss)
+merge-region-comm {D = D} G w w' rss =
+  subst₂ _↭↭_
+    (≡-sym (≡-trans (≡-cong (merge-region G w) (merge-region-filter G w' rss))
+                    (merge-region-filter G w ((w' ∷ concat F') ∷ N'))))
+    (≡-sym (≡-trans (≡-cong (merge-region G w') (merge-region-filter G w rss))
+                    (merge-region-filter G w' ((w ∷ concat F) ∷ N))))
+    (bool-case b true-branch false-branch)
+  where
+  A  = adj G w
+  A' = adj G w'
+  F  = filterᵇ A rss
+  F' = filterᵇ A' rss
+  N  = filterᵇ (λ C → not (A C)) rss
+  N' = filterᵇ (λ C → not (A' C)) rss
+
+  b  = A (w' ∷ concat F')
+
+  beq : b ≡ A' (w ∷ concat F)
+  beq =
+    ≡-cong₂ _∨_ (adjacent-sym G (at w) (at w'))
+      (≡-trans (any-concat (λ q → adjacent G (at w) (at q)) F')
+      (≡-trans (any-filterᵇ-∧ A A' rss)
+      (≡-trans (any-cong (λ C → ∧-comm (A' C) (A C)) rss)
+      (≡-sym (≡-trans (any-concat (λ q → adjacent G (at w') (at q)) F)
+                      (any-filterᵇ-∧ A' A rss))))))
+
+  Goal : Set ℓ
+  Goal = ((w ∷ concat (filterᵇ A ((w' ∷ concat F') ∷ N'))) ∷
+          filterᵇ (λ C → not (A C)) ((w' ∷ concat F') ∷ N'))
+         ↭↭
+         ((w' ∷ concat (filterᵇ A' ((w ∷ concat F) ∷ N))) ∷
+          filterᵇ (λ C → not (A' C)) ((w ∷ concat F) ∷ N))
+
+  untouched : filterᵇ (λ C → not (A C)) N' ↭↭ filterᵇ (λ C → not (A' C)) N
+  untouched = subst (λ z → filterᵇ (λ C → not (A C)) N' ↭↭ z)
+                    (filter-comm (λ C → not (A C)) (λ C → not (A' C)) rss)
+                    ↭↭-refl
+
+  true-branch : b ≡ Bool.true → Goal
+  true-branch eb =
+    subst₂ _↭↭_
+      (≡-sym (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
+                (filter-head-true {f = A} {x = w' ∷ concat F'} N' eb)
+                (filter-head-false {x = w' ∷ concat F'} N' (≡-cong not eb))))
+      (≡-sym (≡-cong₂ (λ u v → (w' ∷ concat u) ∷ v)
+                (filter-head-true {f = A'} {x = w ∷ concat F} N (≡-trans (≡-sym beq) eb))
+                (filter-head-false {x = w ∷ concat F} N
+                                   (≡-cong not (≡-trans (≡-sym beq) eb)))))
+      (H.prep
+        (↭.swap w w'
+          (↭-trans (↭-reflexive (concat-++ F' (filterᵇ A N')))
+          (↭-trans (concat-resp (↭↭-of-↭ (filter-exchange A A' rss)))
+                   (↭-reflexive (≡-sym (concat-++ F (filterᵇ A' N)))))))
+        untouched)
+
+  false-branch : b ≡ Bool.false → Goal
+  false-branch eb =
+    subst₂ _↭↭_
+      (≡-sym (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
+                (filter-head-false {f = A} {x = w' ∷ concat F'} N' eb)
+                (filter-head-true {x = w' ∷ concat F'} N' (≡-cong not eb))))
+      (≡-sym (≡-cong₂ (λ u v → (w' ∷ concat u) ∷ v)
+                (filter-head-false {f = A'} {x = w ∷ concat F} N (≡-trans (≡-sym beq) eb))
+                (filter-head-true {x = w ∷ concat F} N
+                                  (≡-cong not (≡-trans (≡-sym beq) eb)))))
+      (H.swap
+        (↭-reflexive (≡-cong (λ z → w ∷ concat z) (filter-avoid A A' rss hb)))
+        (↭-reflexive (≡-cong (λ z → w' ∷ concat z) (≡-sym (filter-avoid A' A rss hb'))))
+        untouched)
+    where
+    hb : any (λ C → A' C ∧ A C) rss ≡ Bool.false
+    hb = ≡-trans (≡-sym (≡-trans (any-concat (λ q → adjacent G (at w) (at q)) F')
+                                 (any-filterᵇ-∧ A A' rss)))
+                 (proj₂ (∨-false (adjacent G (at w) (at w'))
+                                 (any (λ q → adjacent G (at w) (at q)) (concat F')) eb))
+
+    hb' : any (λ C → A C ∧ A' C) rss ≡ Bool.false
+    hb' = ≡-trans (any-cong (λ C → ∧-comm (A C) (A' C)) rss) hb
