@@ -7,13 +7,14 @@ open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; concat; foldr; partitionᵇ)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
+open import Data.List.Relation.Unary.Any using (Any; here; there)
 import Data.List.Relation.Unary.All.Properties as AllP
-open import Data.List.Properties using (concat-++; foldl-++; map-++)
+open import Data.List.Properties using (++-identityʳ; concat-++; foldl-++; map-++; map-∘)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
-open ↭ using (_↭_; ↭-trans; ↭-reflexive)
-open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺)
+open ↭ using (_↭_; ↭-sym; ↭-trans; ↭-reflexive)
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.Sum using (inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import list
@@ -324,3 +325,78 @@ assemble D {E} (C ∷ Cs) (mono ∷ monos) (shead ∷ stail) x y i j =
               All-zip (λ {q} ha hm → summary-zero D {C = C} q hm ha)
                       (any-false-All _ C' ap) (any-false-All _ C' ds))
             shead))
+
+private
+  ⊔-swap : ∀ a b c → (a two.⊔ (b two.⊔ c)) ≡ (b two.⊔ (a two.⊔ c))
+  ⊔-swap two.O b c = ≡-refl
+  ⊔-swap two.I two.O c = ≡-refl
+  ⊔-swap two.I two.I c = ≡-refl
+
+  foldr-⊔-base : ∀ (b : two.Two) (ts : List two.Two) →
+                 foldr two._⊔_ b ts ≡ (b two.⊔ foldr two._⊔_ two.O ts)
+  foldr-⊔-base b []       = ≡-sym two.⊔-runit
+  foldr-⊔-base b (t ∷ ts) =
+    ≡-trans (≡-cong (t two.⊔_) (foldr-⊔-base b ts)) (⊔-swap t b (foldr two._⊔_ two.O ts))
+
+  foldr-⊔-I : ∀ (b : two.Two) (ts : List two.Two) → foldr two._⊔_ b ts ≡ two.I →
+              (b ≡ two.I) ⊎ Any (_≡ two.I) ts
+  foldr-⊔-I b []       h = inj₁ h
+  foldr-⊔-I b (t ∷ ts) h with two.⊔-I t (foldr two._⊔_ b ts) h
+  ... | inj₁ e = inj₂ (here e)
+  ... | inj₂ e with foldr-⊔-I b ts e
+  ...   | inj₁ e' = inj₁ e'
+  ...   | inj₂ a  = inj₂ (there a)
+
+  foldr-⊔-at : ∀ (b : two.Two) {ts : List two.Two} → Any (_≡ two.I) ts →
+               foldr two._⊔_ b ts ≡ two.I
+  foldr-⊔-at b {t ∷ ts} (here e)  = two.⊔-I-inl e
+  foldr-⊔-at b {t ∷ ts} (there a) = two.⊔-I-inr t (foldr-⊔-at b a)
+
+  foldr-⊔-here : ∀ {b : two.Two} (ts : List two.Two) → b ≡ two.I → foldr two._⊔_ b ts ≡ two.I
+  foldr-⊔-here []       e = e
+  foldr-⊔-here (t ∷ ts) e = two.⊔-I-inr t (foldr-⊔-here ts e)
+
+  _⊕G_ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+         Graph D → Graph D → Graph D
+  (G ⊕G H) x y = G x y M.+ₘ H x y
+
+  foldr-entry : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                (B : Graph D) (Gs : List (Graph D)) →
+                ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                foldr _⊕G_ B Gs x y i j ≡
+                foldr two._⊔_ (B x y i j) (map (λ H → H x y i j) Gs)
+  foldr-entry B []       x y i j = ≡-refl
+  foldr-entry B (H ∷ Gs) x y i j = ≡-cong (H x y i j two.⊔_) (foldr-entry B Gs x y i j)
+
+blocks-⊆ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+           (Css : List (List (Path D))) →
+           All (λ C → ∀ q → member q C ≡ Bool.true → member q (concat Css) ≡ Bool.true) Css
+blocks-⊆ []         = []
+blocks-⊆ (C ∷ Css) =
+  (λ q h → ≡-trans (any-++ (eq-path q) C (concat Css)) (≡-cong (_∨ member q (concat Css)) h)) ∷
+  All-map (λ {C'} g q h →
+            ≡-trans (any-++ (eq-path q) C (concat Css))
+            (≡-trans (≡-cong (member q C ∨_) (g q h)) (∨-true (member q C))))
+          (blocks-⊆ Css)
+
+summary-snoc : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+               (p : Path D) (C : List (Path D)) →
+               ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+               summary D (p ∷ C) x y i j ≡
+               hide (hide-all (restrict (fo-graph D) (p ∷ C)) (map at C)) (at p) x y i j
+summary-snoc D p C x y i j =
+  ≡-trans (hide-all-perm (restrict-forward (p ∷ C) (fo-forward D)) perm x y i j)
+          (≡-cong (λ H → H x y i j)
+                  (foldl-++ hide (restrict (fo-graph D) (p ∷ C)) (map at C) (at p ∷ [])))
+  where
+  perm : (at p ∷ map at C) ↭ (map at C ++ (at p ∷ []))
+  perm = ↭-sym (↭-trans (shift (at p) (map at C) [])
+                        (↭-reflexive (≡-cong (at p ∷_) (++-identityʳ (map at C)))))
+
+Distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+           List (Path D) → List (Path D) → Set
+Distinct C C' = (any (λ q → member q C) C' ≡ Bool.false) × (any (λ q → member q C') C ≡ Bool.false)
+
+distinct-sym : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               {C C' : List (Path D)} → Distinct C C' → Distinct C' C
+distinct-sym (a , b) = (b , a)
