@@ -371,10 +371,6 @@ distinct-sym : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v
 distinct-sym (a , b) = (b , a)
 
 private
-  bool-case : ∀ {a} {A : Set a} (b : Bool) → (b ≡ Bool.true → A) → (b ≡ Bool.false → A) → A
-  bool-case Bool.true  t f = t ≡-refl
-  bool-case Bool.false t f = f ≡-refl
-
   when-I : ∀ (b : Bool) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
            when b R i j ≡ two.I → (b ≡ Bool.true) × (R i j ≡ two.I)
   when-I Bool.true  R i j h = ≡-refl , h

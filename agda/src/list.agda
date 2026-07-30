@@ -23,7 +23,7 @@ open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (++⁺; ++-comm; shift; All-resp-↭)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Relation.Binary.PropositionalEquality using (_≡_; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 
 private
@@ -300,6 +300,91 @@ filter-out-↭ {eq = eq} sound {x} {y ∷ xs} (py ∷ ps) h with eq x y in e
 ... | Bool.true with sound e
 ...   | ≡-refl =
   ↭.prep x (↭-reflexive (filter-all-true (All-map (λ hz → ≡-cong not hz) py)))
+
+filter-head-true : ∀ {a} {A : Set a} {f : A → Bool} {x : A} (xs : List A) →
+                   f x ≡ Bool.true → filterᵇ f (x ∷ xs) ≡ x ∷ filterᵇ f xs
+filter-head-true xs h rewrite h = ≡-refl
+
+partition-filter : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
+                   partitionᵇ f xs ≡ (filterᵇ f xs , filterᵇ (λ x → not (f x)) xs)
+partition-filter f []       = ≡-refl
+partition-filter f (x ∷ xs) rewrite partition-filter f xs with f x
+... | Bool.true  = ≡-refl
+... | Bool.false = ≡-refl
+
+bool-case : ∀ {a} {A : Set a} (b : Bool) → (b ≡ Bool.true → A) → (b ≡ Bool.false → A) → A
+bool-case Bool.true  t f = t ≡-refl
+bool-case Bool.false t f = f ≡-refl
+
+filter-permᴿ : ∀ {a r} {A : Set a} {R : A → A → Set r} (f : A → Bool) →
+               (∀ {x y} → R x y → f x ≡ f y) →
+               {xs ys : List A} → H.Permutation R xs ys →
+               H.Permutation R (filterᵇ f xs) (filterᵇ f ys)
+filter-permᴿ f resp (H.refl []) = H.refl []
+filter-permᴿ {R = R} f resp (H.refl (_∷_ {x} {y} {xs} {ys} rxy pw)) =
+  bool-case (f x)
+    (λ ex → subst₂ (H.Permutation R)
+              (≡-sym (filter-head-true {f = f} {x = x} xs ex))
+              (≡-sym (filter-head-true {f = f} {x = y} ys (≡-trans (≡-sym (resp rxy)) ex)))
+              (H.prep rxy (filter-permᴿ f resp (H.refl pw))))
+    (λ ex → subst₂ (H.Permutation R)
+              (≡-sym (filter-head-false {f = f} {x = x} xs ex))
+              (≡-sym (filter-head-false {f = f} {x = y} ys (≡-trans (≡-sym (resp rxy)) ex)))
+              (filter-permᴿ f resp (H.refl pw)))
+filter-permᴿ {R = R} f resp (H.prep {xs} {ys} {x} {y} rxy p) =
+  bool-case (f x)
+    (λ ex → subst₂ (H.Permutation R)
+              (≡-sym (filter-head-true {f = f} {x = x} xs ex))
+              (≡-sym (filter-head-true {f = f} {x = y} ys (≡-trans (≡-sym (resp rxy)) ex)))
+              (H.prep rxy (filter-permᴿ f resp p)))
+    (λ ex → subst₂ (H.Permutation R)
+              (≡-sym (filter-head-false {f = f} {x = x} xs ex))
+              (≡-sym (filter-head-false {f = f} {x = y} ys (≡-trans (≡-sym (resp rxy)) ex)))
+              (filter-permᴿ f resp p))
+filter-permᴿ {R = R} f resp (H.swap {xs} {ys} {x} {y} {x′} {y′} eq₁ eq₂ p) =
+  bool-case (f x)
+    (λ ex → bool-case (f y)
+      (λ ey → subst₂ (H.Permutation R)
+                (≡-sym (≡-trans (filter-head-true {f = f} {x = x} (y ∷ xs) ex)
+                                (≡-cong (x ∷_) (filter-head-true {f = f} {x = y} xs ey))))
+                (≡-sym (≡-trans (filter-head-true {f = f} {x = y′} (x′ ∷ ys) (≡-trans (≡-sym (resp eq₂)) ey))
+                                (≡-cong (y′ ∷_)
+                                        (filter-head-true {f = f} {x = x′} ys (≡-trans (≡-sym (resp eq₁)) ex)))))
+                (H.swap eq₁ eq₂ (filter-permᴿ f resp p)))
+      (λ ey → subst₂ (H.Permutation R)
+                (≡-sym (≡-trans (filter-head-true {f = f} {x = x} (y ∷ xs) ex)
+                                (≡-cong (x ∷_) (filter-head-false {f = f} {x = y} xs ey))))
+                (≡-sym (≡-trans (filter-head-false {f = f} {x = y′} (x′ ∷ ys) (≡-trans (≡-sym (resp eq₂)) ey))
+                                (filter-head-true {f = f} {x = x′} ys (≡-trans (≡-sym (resp eq₁)) ex))))
+                (H.prep eq₁ (filter-permᴿ f resp p))))
+    (λ ex → bool-case (f y)
+      (λ ey → subst₂ (H.Permutation R)
+                (≡-sym (≡-trans (filter-head-false {f = f} {x = x} (y ∷ xs) ex)
+                                (filter-head-true {f = f} {x = y} xs ey)))
+                (≡-sym (≡-trans (filter-head-true {f = f} {x = y′} (x′ ∷ ys) (≡-trans (≡-sym (resp eq₂)) ey))
+                                (≡-cong (y′ ∷_)
+                                        (filter-head-false {f = f} {x = x′} ys (≡-trans (≡-sym (resp eq₁)) ex)))))
+                (H.prep eq₂ (filter-permᴿ f resp p)))
+      (λ ey → subst₂ (H.Permutation R)
+                (≡-sym (≡-trans (filter-head-false {f = f} {x = x} (y ∷ xs) ex)
+                                (filter-head-false {f = f} {x = y} xs ey)))
+                (≡-sym (≡-trans (filter-head-false {f = f} {x = y′} (x′ ∷ ys) (≡-trans (≡-sym (resp eq₂)) ey))
+                                (filter-head-false {f = f} {x = x′} ys (≡-trans (≡-sym (resp eq₁)) ex))))
+                (filter-permᴿ f resp p)))
+filter-permᴿ f resp (H.trans p q) = H.trans (filter-permᴿ f resp p) (filter-permᴿ f resp q)
+
+partition-permᴿ : ∀ {a r} {A : Set a} {R : A → A → Set r} (f : A → Bool) →
+                  (∀ {x y} → R x y → f x ≡ f y) →
+                  {xs ys : List A} → H.Permutation R xs ys →
+                  H.Permutation R (proj₁ (partitionᵇ f xs)) (proj₁ (partitionᵇ f ys))
+                  × H.Permutation R (proj₂ (partitionᵇ f xs)) (proj₂ (partitionᵇ f ys))
+partition-permᴿ {R = R} f resp {xs} {ys} p =
+  subst₂ (λ u v → H.Permutation R (proj₁ u) (proj₁ v))
+         (≡-sym (partition-filter f xs)) (≡-sym (partition-filter f ys))
+         (filter-permᴿ f resp p) ,
+  subst₂ (λ u v → H.Permutation R (proj₂ u) (proj₂ v))
+         (≡-sym (partition-filter f xs)) (≡-sym (partition-filter f ys))
+         (filter-permᴿ (λ x → not (f x)) (λ rxy → ≡-cong not (resp rxy)) p)
 
 map-partition₁ : ∀ {a b} {A : Set a} {B : Set b} (h : A → B) (f : B → Bool) (xs : List A) →
                  proj₁ (partitionᵇ f (map h xs)) ≡ map h (proj₁ (partitionᵇ (λ x → f (h x)) xs))
