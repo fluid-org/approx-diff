@@ -1,8 +1,10 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
+open import Data.Empty using (⊥)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ; zero; suc; _+_; _<_; _≤_; z≤n; s≤s)
-open import Data.Nat.Properties using (≤-refl; ≤-trans; ≤-reflexive; m≤m+n; +-monoʳ-<; +-suc)
+open import Data.Nat.Properties
+  using (≤-refl; ≤-trans; ≤-reflexive; m≤m+n; +-monoʳ-<; +-suc; <-trans; <-irrefl)
 open import every using (Every; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; cong to ≡-cong)
@@ -213,7 +215,8 @@ mutual
   forward (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at ε) i j h with edge-ε p i j h
   forward (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at ε) i j h | ≡-refl = root₂ (size D₁) (psize D₂)
   forward (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at (case-l₁ q)) i j ()
-  forward (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at (case-l₂ q)) i j h = emb (size D₁) (forward D₂ (at p) (at q) i j h)
+  forward (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at (case-l₂ q)) i j h =
+    emb (size D₁) (forward D₂ (at p) (at q) i j h)
 
   forward (⇓-case-r D₁ D₂) env env i j ()
   forward (⇓-case-r D₁ D₂) env (at ε) i j ()
@@ -232,7 +235,8 @@ mutual
   forward (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at ε) i j h with edge-ε p i j h
   forward (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at ε) i j h | ≡-refl = root₂ (size D₁) (psize D₂)
   forward (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at (case-r₁ q)) i j ()
-  forward (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at (case-r₂ q)) i j h = emb (size D₁) (forward D₂ (at p) (at q) i j h)
+  forward (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at (case-r₂ q)) i j h =
+    emb (size D₁) (forward D₂ (at p) (at q) i j h)
 
   forward (⇓-pair D₁ D₂) env env i j ()
   forward (⇓-pair D₁ D₂) env (at ε) i j ()
@@ -280,7 +284,8 @@ mutual
   forward (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at ε) i j h | ≡-refl = root₂ (size D₁ + size D₂) (psize D₃)
   forward (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₁ q)) i j ()
   forward (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₂ q)) i j ()
-  forward (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₃ q)) i j h = emb (size D₁ + size D₂) (forward D₃ (at p) (at q) i j h)
+  forward (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₃ q)) i j h =
+    emb (size D₁ + size D₂) (forward D₃ (at p) (at q) i j h)
 
   forward (⇓-bop D) env env i j ()
   forward (⇓-bop D) env (at ε) i j ()
@@ -320,7 +325,8 @@ mutual
   forward (⇓-fold D₁ D₂) (at (fold₂ p)) (at ε) i j h with edge-ε-m p i j h
   forward (⇓-fold D₁ D₂) (at (fold₂ p)) (at ε) i j h | ≡-refl = root₂ (size D₁) (psize-m D₂)
   forward (⇓-fold D₁ D₂) (at (fold₂ p)) (at (fold₁ q)) i j ()
-  forward (⇓-fold D₁ D₂) (at (fold₂ p)) (at (fold₂ q)) i j h = emb (size D₁) (forward-m D₂ (at p) (at q) i j h)
+  forward (⇓-fold D₁ D₂) (at (fold₂ p)) (at (fold₂ q)) i j h =
+    emb (size D₁) (forward-m D₂ (at p) (at q) i j h)
 
   forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
               (D : γ , Ms ⇓s vs [ R ]) (x y : VertexS D)
@@ -382,7 +388,8 @@ mutual
   forward-m (m-rec D₁ D₂) (at (m-rec₂ p)) (at ε) i j h with edge-ε p i j h
   forward-m (m-rec D₁ D₂) (at (m-rec₂ p)) (at ε) i j h | ≡-refl = root₂ (size-m D₁) (psize D₂)
   forward-m (m-rec D₁ D₂) (at (m-rec₂ p)) (at (m-rec₁ q)) i j ()
-  forward-m (m-rec D₁ D₂) (at (m-rec₂ p)) (at (m-rec₂ q)) i j h = emb (size-m D₁) (forward D₂ (at p) (at q) i j h)
+  forward-m (m-rec D₁ D₂) (at (m-rec₂ p)) (at (m-rec₂ q)) i j h =
+    emb (size-m D₁) (forward D₂ (at p) (at q) i j h)
 
   forward-m m-unit env env i j ()
   forward-m m-unit env input i j ()
@@ -494,5 +501,58 @@ mutual
   forward-m (m-pair D₁ D₂) (at (m-pair₂ p)) (at ε) i j h with edge-ε-m p i j h
   forward-m (m-pair D₁ D₂) (at (m-pair₂ p)) (at ε) i j h | ≡-refl = root₂ (size-m D₁) (psize-m D₂)
   forward-m (m-pair D₁ D₂) (at (m-pair₂ p)) (at (m-pair₁ q)) i j ()
-  forward-m (m-pair D₁ D₂) (at (m-pair₂ p)) (at (m-pair₂ q)) i j h = emb (size-m D₁) (forward-m D₂ (at p) (at q) i j h)
+  forward-m (m-pair D₁ D₂) (at (m-pair₂ p)) (at (m-pair₂ q)) i j h =
+    emb (size-m D₁) (forward-m D₂ (at p) (at q) i j h)
 
+
+-- A chain of one or more edges between vertices.
+data Chain {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} : Vertex D → Vertex D → Set ℓ where
+  step : ∀ {x y} (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+         graph D x y i j ≡ two.I → Chain x y
+  _∷_  : ∀ {x y z} → Chain x y → Chain y z → Chain x z
+
+data ChainS {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+            {D : γ , Ms ⇓s vs [ R ]} : VertexS D → VertexS D → Set ℓ where
+  step : ∀ {x y} (i : Fin (vertex-width-s y)) (j : Fin (vertex-width-s x)) →
+         graphS D x y i j ≡ two.I → ChainS x y
+  _∷_  : ∀ {x y z} → ChainS x y → ChainS y z → ChainS x z
+
+data ChainM {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+            {D : Map γ s σ' v R v' R'} : VertexM D → VertexM D → Set ℓ where
+  step : ∀ {x y} (i : Fin (vertex-width-m y)) (j : Fin (vertex-width-m x)) →
+         graphM D x y i j ≡ two.I → ChainM x y
+  _∷_  : ∀ {x y z} → ChainM x y → ChainM y z → ChainM x z
+
+-- Chains climb strictly in rank, so no chain returns to its start: the graph is acyclic.
+climb : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {x y : Vertex D} →
+        Chain x y → rank-v x < rank-v y
+climb {D = D} {x} {y} (step i j h) = forward D x y i j h
+climb (c ∷ c') = <-trans (climb c) (climb c')
+
+climb-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+          {D : γ , Ms ⇓s vs [ R ]} {x y : VertexS D} → ChainS x y → rank-v-s x < rank-v-s y
+climb-s {D = D} {x} {y} (step i j h) = forward-s D x y i j h
+climb-s (c ∷ c') = <-trans (climb-s c) (climb-s c')
+
+climb-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+          {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+          {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+          {D : Map γ s σ' v R v' R'} {x y : VertexM D} → ChainM x y → rank-v-m x < rank-v-m y
+climb-m {D = D} {x} {y} (step i j h) = forward-m D x y i j h
+climb-m (c ∷ c') = <-trans (climb-m c) (climb-m c')
+
+acyclic : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {x : Vertex D} →
+          Chain x x → ⊥
+acyclic c = <-irrefl ≡-refl (climb c)
+
+acyclic-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+            {D : γ , Ms ⇓s vs [ R ]} {x : VertexS D} → ChainS x x → ⊥
+acyclic-s c = <-irrefl ≡-refl (climb-s c)
+
+acyclic-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+            {D : Map γ s σ' v R v' R'} {x : VertexM D} → ChainM x x → ⊥
+acyclic-m c = <-irrefl ≡-refl (climb-m c)
