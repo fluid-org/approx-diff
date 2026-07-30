@@ -133,10 +133,9 @@ visible-graph D K x y =
         (map (λ CH → proj₂ CH x y) (K .hidden))
   where hs = hidden-set K
 
-private
-  _+G_ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
-         Graph D → Graph D → Graph D
-  (G +G H) x y = G x y M.+ₘ H x y
+_+G_ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
+       Graph D → Graph D → Graph D
+(G +G H) x y = G x y M.+ₘ H x y
 
 -- The hide move: remove p from the visible set, merge the regions adjacent to p, and hide p in the
 -- graph assembling p's incident entries in the visible graph with the merged regions' summaries.

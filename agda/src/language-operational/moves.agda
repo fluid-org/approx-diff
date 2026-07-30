@@ -356,14 +356,10 @@ private
   foldr-⊔-here []       e = e
   foldr-⊔-here (t ∷ ts) e = two.⊔-I-inr t (foldr-⊔-here ts e)
 
-  _⊕G_ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
-         Graph D → Graph D → Graph D
-  (G ⊕G H) x y = G x y M.+ₘ H x y
-
   foldr-entry : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
                 (B : Graph D) (Gs : List (Graph D)) →
                 ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
-                foldr _⊕G_ B Gs x y i j ≡
+                foldr _+G_ B Gs x y i j ≡
                 foldr two._⊔_ (B x y i j) (map (λ H → H x y i j) Gs)
   foldr-entry B []       x y i j = ≡-refl
   foldr-entry B (H ∷ Gs) x y i j = ≡-cong (H x y i j two.⊔_) (foldr-entry B Gs x y i j)
