@@ -406,7 +406,7 @@ private
   -- merged region, modulo the joined summaries of the merged regions: an entry at p is either a
   -- first-order edge whose other end is visible or in a merged region, or a stored summary entry;
   -- an end in an unmerged region is ruled out by non-adjacency.
-  middle : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+  base-agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
            (p : Path D) (K : Config D) → Summarised K →
            member p (hidden-set K) ≡ Bool.false →
            let tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
@@ -416,17 +416,17 @@ private
              foldr two._⊔_ two.O (map (λ C → summary D C x y i j) (map proj₁ (proj₁ tp))))
            ≡ (restrict (fo-graph D) (p ∷ concat (map proj₁ (proj₁ tp))) x y i j two.⊔
              foldr two._⊔_ two.O (map (λ C → summary D C x y i j) (map proj₁ (proj₁ tp))))
-  middle D p K S hp x' y' i' j' =
+  base-agree D p K S hp x' y' i' j' =
     two.I-antisym
-      (λ h → [ fwd-b x' y' i' j' , two.⊔-I-inr _ ]′
-               (two.⊔-I (b₁ x' y' i' j') (foldr two._⊔_ two.O (sumsAt x' y' i' j')) h))
-      (λ h → [ bwd-b x' y' i' j' , two.⊔-I-inr _ ]′
-               (two.⊔-I (restrict G C* x' y' i' j') (foldr two._⊔_ two.O (sumsAt x' y' i' j')) h))
+      (λ h → [ fwd-B x' y' i' j' , two.⊔-I-inr _ ]′
+               (two.⊔-I (B x' y' i' j') (foldr two._⊔_ two.O (sums-at x' y' i' j')) h))
+      (λ h → [ bwd-B x' y' i' j' , two.⊔-I-inr _ ]′
+               (two.⊔-I (restrict G C* x' y' i' j') (foldr two._⊔_ two.O (sums-at x' y' i' j')) h))
     where
     G  = fo-graph D
-    gP : List (Path D) × Graph D → Bool
-    gP CH = any (λ q → adjacent G (at p) (at q)) (proj₁ CH)
-    tp = partitionᵇ gP (K .hidden)
+    adj-p : List (Path D) × Graph D → Bool
+    adj-p CH = any (λ q → adjacent G (at p) (at q)) (proj₁ CH)
+    tp = partitionᵇ adj-p (K .hidden)
     Mp = proj₁ tp
     Up = proj₂ tp
     Ms = map proj₁ Mp
@@ -434,18 +434,18 @@ private
     C* = p ∷ CM
     hs = hidden-set K
     Vis = visible-graph D K
-    b₁ = restrict Vis (p ∷ [])
+    B = restrict Vis (p ∷ [])
 
-    u-adj : All (λ CH → gP CH ≡ Bool.false) Up
-    u-adj = part₂-false gP (K .hidden)
+    u-adj : All (λ CH → adj-p CH ≡ Bool.false) Up
+    u-adj = part₂-false adj-p (K .hidden)
 
     u-szero : All (λ CH →
                 (((z : Vertex D) (i' : Fin (vertex-width z)) (j' : Fin (vertex-width (at p))) →
                   summary D (proj₁ CH) (at p) z i' j' ≡ two.O)
                × ((z : Vertex D) (i' : Fin (vertex-width (at p))) (j' : Fin (vertex-width z)) →
                   summary D (proj₁ CH) z (at p) i' j' ≡ two.O))) Up
-    u-szero = All-zip (λ {CH} adj nom → summary-zero D {C = proj₁ CH} p nom adj) u-adj
-                (proj₂ (partition-All gP (any-false-All _ (K .hidden)
+    u-szero = All-zip (λ {CH} hadj hm → summary-zero D {C = proj₁ CH} p hm hadj) u-adj
+                (proj₂ (partition-All adj-p (any-false-All _ (K .hidden)
                   (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
                            (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ (K .hidden)))) hp)))))
 
@@ -468,24 +468,24 @@ private
                       (any (λ CH → member q (proj₁ CH)) Up)
                       (≡-trans (≡-sym (any-++ (λ CH → member q (proj₁ CH)) Mp Up))
                        (≡-trans (any-perm (λ CH → member q (proj₁ CH))
-                                          (partition-↭ gP (K .hidden)))
+                                          (partition-↭ adj-p (K .hidden)))
                         (≡-trans (≡-sym (any-map (λ C → member q C) proj₁ (K .hidden)))
                                  (≡-trans (≡-sym (any-concat (eq-path q) (map proj₁ (K .hidden)))) h))))
     ... | inj₁ e = inj₁ (any-Any _ Mp e)
     ... | inj₂ e = inj₂ (any-Any _ Up e)
 
-    sumI : ∀ (C : List (Path D)) x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
+    summary-I : ∀ (C : List (Path D)) x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
            (member-vertex x' C ∨ member-vertex y' C) ≡ Bool.true →
            G x' y' i' j' ≡ two.I → summary D C x' y' i' j' ≡ two.I
-    sumI C x' y' i' j' gd ge =
+    summary-I C x' y' i' j' gd ge =
       ≡-trans (HA.increasing D (map at C) x' y' i' j')
               (≡-cong (two._⊔ hide-all (restrict G C) (map at C) x' y' i' j')
                       (≡-trans (≡-cong (λ b → when b (G x' y') i' j') gd) ge))
 
-    T-I : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) (b : two.Two) →
+    sums-I : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) (b : two.Two) →
           Any (λ C → summary D C x' y' i' j' ≡ two.I) Ms →
           foldr two._⊔_ b (map (λ C → summary D C x' y' i' j') Ms) ≡ two.I
-    T-I x' y' i' j' b a = two.foldr-⊔-at b (AnyPr.map⁺ a)
+    sums-I x' y' i' j' b a = two.foldr-⊔-at b (AnyPr.map⁺ a)
 
     mv-p-≡ : ∀ z → member-vertex z (p ∷ []) ≡ Bool.true → z ≡ at p
     mv-p-≡ env ()
@@ -523,16 +523,16 @@ private
               (≡-cong (foldr two._⊔_ _)
                       (≡-sym (map-∘ {g = λ R' → R' i' j'} {f = λ CH → proj₂ CH x' y'} (K .hidden))))
 
-    sumsAt : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) → List two.Two
-    sumsAt x' y' i' j' = map (λ C → summary D C x' y' i' j') Ms
+    sums-at : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) → List two.Two
+    sums-at x' y' i' j' = map (λ C → summary D C x' y' i' j') Ms
 
     stored-or : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
                 (x' ≡ at p) ⊎ (y' ≡ at p) →
                 (Any (λ CH → summary D (proj₁ CH) x' y' i' j' ≡ two.I) Mp
                  ⊎ Any (λ CH → summary D (proj₁ CH) x' y' i' j' ≡ two.I) Up) →
-                (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sumsAt x' y' i' j')) ≡ two.I
+                (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
     stored-or x'      y' i' j' _             (inj₁ aM) =
-      two.⊔-I-inr _ (T-I x' y' i' j' two.O (AnyPr.map⁺ aM))
+      two.⊔-I-inr _ (sums-I x' y' i' j' two.O (AnyPr.map⁺ aM))
     stored-or .(at p) y' i' j' (inj₁ ≡-refl) (inj₂ aU) =
       Any-contra (λ { (sI , (zr , _)) → two.O≢I (≡-trans (≡-sym (zr y' i' j')) sI) })
                  (Any-All aU u-szero)
@@ -540,10 +540,10 @@ private
       Any-contra (λ { (sI , (_ , zc)) → two.O≢I (≡-trans (≡-sym (zc x' i' j')) sI) })
                  (Any-All aU u-szero)
 
-    fwd-b : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
-            b₁ x' y' i' j' ≡ two.I →
-            (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sumsAt x' y' i' j')) ≡ two.I
-    fwd-b x' y' i' j' h with when-I (member-vertex x' (p ∷ []) ∨ member-vertex y' (p ∷ []))
+    fwd-B : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
+            B x' y' i' j' ≡ two.I →
+            (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
+    fwd-B x' y' i' j' h with when-I (member-vertex x' (p ∷ []) ∨ member-vertex y' (p ∷ []))
                                     (Vis x' y') i' j' h
     ... | (pgt , ve)
       with two.foldr-⊔-I (when (Bool.not (member-vertex x' hs) Bool.∧ Bool.not (member-vertex y' hs))
@@ -556,14 +556,14 @@ private
                                      (G x' y') i' j' vb)))
     ...   | inj₂ aS =
       stored-or x' y' i' j' (pguard-≡ x' y' pgt)
-        (AnyPr.++⁻ Mp (Any-resp-↭ (↭-sym (partition-↭ gP (K .hidden)))
+        (AnyPr.++⁻ Mp (Any-resp-↭ (↭-sym (partition-↭ adj-p (K .hidden)))
           (Any-map (λ (eI , inv) → ≡-trans (≡-sym (inv x' y' i' j')) eI)
                    (Any-All (AnyPr.map⁻ aS) (S .summaries)))))
 
-    b₁-visible-x : ∀ y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width (at p))) →
+    B-visible-x : ∀ y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width (at p))) →
                    member-vertex y' hs ≡ Bool.false → G (at p) y' i' j' ≡ two.I →
-                   b₁ (at p) y' i' j' ≡ two.I
-    b₁-visible-x y' i' j' hy ge =
+                   B (at p) y' i' j' ≡ two.I
+    B-visible-x y' i' j' hy ge =
       ≡-trans (≡-cong (λ b → when b (Vis (at p) y') i' j')
                       (or-introl (member p (p ∷ [])) (member-vertex y' (p ∷ []))
                                  (≡-cong (_∨ Bool.false) (eq-path-refl p))))
@@ -573,10 +573,10 @@ private
                                   (∧-intro (not-false hp) (not-false hy)))
                           ge)))
 
-    b₁-visible-y : ∀ x' (i' : Fin (vertex-width (at p))) (j' : Fin (vertex-width x')) →
+    B-visible-y : ∀ x' (i' : Fin (vertex-width (at p))) (j' : Fin (vertex-width x')) →
                    member-vertex x' hs ≡ Bool.false → G x' (at p) i' j' ≡ two.I →
-                   b₁ x' (at p) i' j' ≡ two.I
-    b₁-visible-y x' i' j' hx ge =
+                   B x' (at p) i' j' ≡ two.I
+    B-visible-y x' i' j' hx ge =
       ≡-trans (≡-cong (λ b → when b (Vis x' (at p)) i' j')
                       (or-intror (member-vertex x' (p ∷ [])) (member p (p ∷ []))
                                  (≡-cong (_∨ Bool.false) (eq-path-refl p))))
@@ -588,70 +588,70 @@ private
 
     bwd-px : ∀ y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width (at p))) →
              G (at p) y' i' j' ≡ two.I →
-             (b₁ (at p) y' i' j' two.⊔ foldr two._⊔_ two.O (sumsAt (at p) y' i' j')) ≡ two.I
-    bwd-px env i' j' ge = two.⊔-I-inl (b₁-visible-x env i' j' ≡-refl ge)
+             (B (at p) y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at (at p) y' i' j')) ≡ two.I
+    bwd-px env i' j' ge = two.⊔-I-inl (B-visible-x env i' j' ≡-refl ge)
     bwd-px (at qy) i' j' ge =
       bool-case (member qy hs)
-        (λ hy → [ (λ aM → two.⊔-I-inr _ (T-I (at p) (at qy) i' j' two.O
+        (λ hy → [ (λ aM → two.⊔-I-inr _ (sums-I (at p) (at qy) i' j' two.O
                     (AnyPr.map⁺ (Any-map (λ {CH} mem →
-                      sumI (proj₁ CH) (at p) (at qy) i' j'
+                      summary-I (proj₁ CH) (at p) (at qy) i' j'
                            (or-intror (member p (proj₁ CH)) (member qy (proj₁ CH)) mem) ge) aM))))
                 , (λ aU → Any-contra
                             (λ { {CH} (mem , adj) →
                                  two.O≢I (≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} adj qy mem) i' j'))
                                          ge) })
                             (Any-All aU u-adj)) ]′ (hid-split qy hy))
-        (λ hy → two.⊔-I-inl (b₁-visible-x (at qy) i' j' hy ge))
+        (λ hy → two.⊔-I-inl (B-visible-x (at qy) i' j' hy ge))
 
     bwd-py : ∀ x' (i' : Fin (vertex-width (at p))) (j' : Fin (vertex-width x')) →
              G x' (at p) i' j' ≡ two.I →
-             (b₁ x' (at p) i' j' two.⊔ foldr two._⊔_ two.O (sumsAt x' (at p) i' j')) ≡ two.I
-    bwd-py env i' j' ge = two.⊔-I-inl (b₁-visible-y env i' j' ≡-refl ge)
+             (B x' (at p) i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' (at p) i' j')) ≡ two.I
+    bwd-py env i' j' ge = two.⊔-I-inl (B-visible-y env i' j' ≡-refl ge)
     bwd-py (at qx) i' j' ge =
       bool-case (member qx hs)
-        (λ hx → [ (λ aM → two.⊔-I-inr _ (T-I (at qx) (at p) i' j' two.O
+        (λ hx → [ (λ aM → two.⊔-I-inr _ (sums-I (at qx) (at p) i' j' two.O
                     (AnyPr.map⁺ (Any-map (λ {CH} mem →
-                      sumI (proj₁ CH) (at qx) (at p) i' j'
+                      summary-I (proj₁ CH) (at qx) (at p) i' j'
                            (or-introl (member qx (proj₁ CH)) (member p (proj₁ CH)) mem) ge) aM))))
                 , (λ aU → Any-contra
                             (λ { {CH} (mem , adj) →
                                  two.O≢I (≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} adj qx mem) i' j'))
                                          ge) })
                             (Any-All aU u-adj)) ]′ (hid-split qx hx))
-        (λ hx → two.⊔-I-inl (b₁-visible-y (at qx) i' j' hx ge))
+        (λ hx → two.⊔-I-inl (B-visible-y (at qx) i' j' hx ge))
 
     bwd-l : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
             G x' y' i' j' ≡ two.I → member-vertex x' C* ≡ Bool.true →
-            (b₁ x' y' i' j' two.⊔ foldr two._⊔_ two.O (sumsAt x' y' i' j')) ≡ two.I
+            (B x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
     bwd-l env     y' i' j' ge ()
     bwd-l (at qx) y' i' j' ge hx with ∨-true-inv (eq-path qx p) (member qx CM) hx
     ... | inj₂ m =
       two.⊔-I-inr _
-        (T-I (at qx) y' i' j' two.O
+        (sums-I (at qx) y' i' j' two.O
              (Any-map (λ {C} mem →
-                         sumI C (at qx) y' i' j' (or-introl (member qx C) (member-vertex y' C) mem) ge)
+                         summary-I C (at qx) y' i' j' (or-introl (member qx C) (member-vertex y' C) mem) ge)
                       (block-of qx Ms m)))
     ... | inj₁ ep with eq-path-≡ {p = qx} {q = p} ep
     ...   | ≡-refl = bwd-px y' i' j' ge
 
     bwd-r : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
             G x' y' i' j' ≡ two.I → member-vertex y' C* ≡ Bool.true →
-            (b₁ x' y' i' j' two.⊔ foldr two._⊔_ two.O (sumsAt x' y' i' j')) ≡ two.I
+            (B x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
     bwd-r x' env     i' j' ge ()
     bwd-r x' (at qy) i' j' ge hy with ∨-true-inv (eq-path qy p) (member qy CM) hy
     ... | inj₂ m =
       two.⊔-I-inr _
-        (T-I x' (at qy) i' j' two.O
+        (sums-I x' (at qy) i' j' two.O
              (Any-map (λ {C} mem →
-                         sumI C x' (at qy) i' j' (or-intror (member-vertex x' C) (member qy C) mem) ge)
+                         summary-I C x' (at qy) i' j' (or-intror (member-vertex x' C) (member qy C) mem) ge)
                       (block-of qy Ms m)))
     ... | inj₁ ep with eq-path-≡ {p = qy} {q = p} ep
     ...   | ≡-refl = bwd-py x' i' j' ge
 
-    bwd-b : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
+    bwd-B : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
             restrict G C* x' y' i' j' ≡ two.I →
-            (b₁ x' y' i' j' two.⊔ foldr two._⊔_ two.O (sumsAt x' y' i' j')) ≡ two.I
-    bwd-b x' y' i' j' h with when-I (member-vertex x' C* ∨ member-vertex y' C*) (G x' y') i' j' h
+            (B x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
+    bwd-B x' y' i' j' h with when-I (member-vertex x' C* ∨ member-vertex y' C*) (G x' y') i' j' h
     ... | (gd , ge) with ∨-true-inv (member-vertex x' C*) (member-vertex y' C*) gd
     ...   | inj₁ hx = bwd-l x' y' i' j' ge hx
     ...   | inj₂ hy = bwd-r x' y' i' j' ge hy
@@ -672,32 +672,32 @@ merged-summary D p K S hp dist x y i j =
   ≡-trans (HA.h-cong D (at p) core x y i j) (≡-sym (summary-snoc D p CM x y i j))
   where
   G  = fo-graph D
-  gP : List (Path D) × Graph D → Bool
-  gP CH = any (λ q → adjacent G (at p) (at q)) (proj₁ CH)
-  tp = partitionᵇ gP (K .hidden)
+  adj-p : List (Path D) × Graph D → Bool
+  adj-p CH = any (λ q → adjacent G (at p) (at q)) (proj₁ CH)
+  tp = partitionᵇ adj-p (K .hidden)
   Mp = proj₁ tp
   Ms = map proj₁ Mp
   CM = concat Ms
   C* = p ∷ CM
-  b₁ = restrict (visible-graph D K) (p ∷ [])
+  B = restrict (visible-graph D K) (p ∷ [])
 
-  sumsAt : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) → List two.Two
-  sumsAt x' y' i' j' = map (λ C → summary D C x' y' i' j') Ms
+  sums-at : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) → List two.Two
+  sums-at x' y' i' j' = map (λ C → summary D C x' y' i' j') Ms
 
   base-swap : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
-              foldr two._⊔_ (b₁ x' y' i' j') (sumsAt x' y' i' j') ≡
-              foldr two._⊔_ (restrict G C* x' y' i' j') (sumsAt x' y' i' j')
+              foldr two._⊔_ (B x' y' i' j') (sums-at x' y' i' j') ≡
+              foldr two._⊔_ (restrict G C* x' y' i' j') (sums-at x' y' i' j')
   base-swap x' y' i' j' =
-    ≡-trans (two.foldr-⊔-base (b₁ x' y' i' j') (sumsAt x' y' i' j'))
-    (≡-trans (middle D p K S hp x' y' i' j')
-             (≡-sym (two.foldr-⊔-base (restrict G C* x' y' i' j') (sumsAt x' y' i' j'))))
+    ≡-trans (two.foldr-⊔-base (B x' y' i' j') (sums-at x' y' i' j'))
+    (≡-trans (base-agree D p K S hp x' y' i' j')
+             (≡-sym (two.foldr-⊔-base (restrict G C* x' y' i' j') (sums-at x' y' i' j'))))
 
   maps≡ : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
-          map (λ H → H x' y' i' j') (map proj₂ Mp) ≡ sumsAt x' y' i' j'
+          map (λ H → H x' y' i' j') (map proj₂ Mp) ≡ sums-at x' y' i' j'
   maps≡ x' y' i' j' =
     ≡-trans (≡-sym (map-∘ {g = λ H → H x' y' i' j'} {f = proj₂} Mp))
     (≡-trans (map-All-cong (All-map (λ inv → inv x' y' i' j')
-                                    (proj₁ (partition-All gP (S .summaries)))))
+                                    (proj₁ (partition-All adj-p (S .summaries)))))
              (map-∘ {g = λ C → summary D C x' y' i' j'} {f = proj₁} Mp))
 
   monosC* : All (λ C → ∀ q → member q C ≡ Bool.true → member q C* ≡ Bool.true) Ms
@@ -714,10 +714,10 @@ merged-summary D p K S hp dist x y i j =
                       (AllPairs-zip (S .separated) dist))))
 
   core : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
-         foldr _+G_ b₁ (map proj₂ Mp) x' y' i' j' ≡
+         foldr _+G_ B (map proj₂ Mp) x' y' i' j' ≡
          hide-all (restrict G C*) (map at CM) x' y' i' j'
   core x' y' i' j' =
-    ≡-trans (foldr-entry b₁ (map proj₂ Mp) x' y' i' j')
-    (≡-trans (≡-cong (foldr two._⊔_ (b₁ x' y' i' j')) (maps≡ x' y' i' j'))
+    ≡-trans (foldr-entry B (map proj₂ Mp) x' y' i' j')
+    (≡-trans (≡-cong (foldr two._⊔_ (B x' y' i' j')) (maps≡ x' y' i' j'))
     (≡-trans (base-swap x' y' i' j')
              (≡-sym (assemble D {C*} Ms monosC* sepsMs x' y' i' j'))))
