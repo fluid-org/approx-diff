@@ -13,7 +13,8 @@ import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
-open import Data.List.Relation.Unary.All using (All; []; _∷_)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
+open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (++⁺; ++-comm; shift)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
@@ -24,6 +25,10 @@ private
   ∨-swap Bool.false b c = ≡-refl
   ∨-swap Bool.true Bool.false c = ≡-refl
   ∨-swap Bool.true Bool.true c = ≡-refl
+
+  ∨-interchange : ∀ a b c d → ((a ∨ b) ∨ (c ∨ d)) ≡ ((a ∨ c) ∨ (b ∨ d))
+  ∨-interchange Bool.true  b c d = ≡-refl
+  ∨-interchange Bool.false b c d = ∨-swap b c d
 
 ∨-false : ∀ x y → (x ∨ y) ≡ Bool.false → (x ≡ Bool.false) × (y ≡ Bool.false)
 ∨-false Bool.false y h = ≡-refl , h
@@ -45,6 +50,25 @@ any-cong : ∀ {a} {A : Set a} {f g : A → Bool} → (∀ x → f x ≡ g x) �
            ∀ xs → any f xs ≡ any g xs
 any-cong h []       = ≡-refl
 any-cong h (x ∷ xs) = ≡-cong₂ _∨_ (h x) (any-cong h xs)
+
+any-false : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
+            All (λ x → f x ≡ Bool.false) xs → any f xs ≡ Bool.false
+any-false []       = ≡-refl
+any-false (h ∷ hs) = ≡-cong₂ _∨_ h (any-false hs)
+
+any-or : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+         any (λ x → f x ∨ g x) xs ≡ (any f xs ∨ any g xs)
+any-or f g []       = ≡-refl
+any-or f g (x ∷ xs) =
+  ≡-trans (≡-cong ((f x ∨ g x) ∨_) (any-or f g xs)) (∨-interchange (f x) (g x) (any f xs) (any g xs))
+
+-- Swapping the order of a doubly-nested search.
+any-comm : ∀ {a b} {A : Set a} {B : Set b} (h : A → B → Bool) (xs : List A) (ys : List B) →
+           any (λ x → any (h x) ys) xs ≡ any (λ y → any (λ x → h x y) xs) ys
+any-comm h []       ys = ≡-sym (any-false (universal (λ y → ≡-refl) ys))
+any-comm h (x ∷ xs) ys =
+  ≡-trans (≡-cong (any (h x) ys ∨_) (any-comm h xs ys))
+          (≡-sym (any-or (h x) (λ y → any (λ x' → h x' y) xs) ys))
 
 any-++ : ∀ {a} {A : Set a} (f : A → Bool) (xs ys : List A) →
          any f (xs ++ ys) ≡ (any f xs ∨ any f ys)
@@ -197,6 +221,32 @@ partition-All f (_∷_ {x} px pxs) with partition-All f pxs
 ... | (a₁ , a₂) with f x
 ...   | Bool.true  = px ∷ a₁ , a₂
 ...   | Bool.false = a₁ , px ∷ a₂
+
+part₂-false : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
+              All (λ x → f x ≡ Bool.false) (proj₂ (partitionᵇ f xs))
+part₂-false f []       = []
+part₂-false f (x ∷ xs) with f x in eq
+... | Bool.true  = part₂-false f xs
+... | Bool.false = eq ∷ part₂-false f xs
+
+All-zip : ∀ {a p q r} {A : Set a} {P : A → Set p} {Q : A → Set q} {R : A → Set r} →
+          (∀ {x} → P x → Q x → R x) → ∀ {xs : List A} → All P xs → All Q xs → All R xs
+All-zip h []       []       = []
+All-zip h (p ∷ ps) (q ∷ qs) = h p q ∷ All-zip h ps qs
+
+-- Partitioning preserves pairwise relatedness, and every kept member relates to every dropped one.
+partition-AllPairs : ∀ {a r} {A : Set a} {S : A → A → Set r} (f : A → Bool) →
+                     (∀ {x y} → S x y → S y x) →
+                     ∀ {xs : List A} → AllPairs S xs →
+                     AllPairs S (proj₁ (partitionᵇ f xs))
+                     × AllPairs S (proj₂ (partitionᵇ f xs))
+                     × All (λ y → All (λ x → S x y) (proj₁ (partitionᵇ f xs)))
+                           (proj₂ (partitionᵇ f xs))
+partition-AllPairs f sym [] = [] , [] , []
+partition-AllPairs f sym (_∷_ {x} px ps) with partition-AllPairs f sym ps | partition-All f px
+... | (a₁ , a₂ , cross) | (px₁ , px₂) with f x
+...   | Bool.true  = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
+...   | Bool.false = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
 
 map-partition₁ : ∀ {a b} {A : Set a} {B : Set b} (h : A → B) (f : B → Bool) (xs : List A) →
                  proj₁ (partitionᵇ f (map h xs)) ≡ map h (proj₁ (partitionᵇ (λ x → f (h x)) xs))
