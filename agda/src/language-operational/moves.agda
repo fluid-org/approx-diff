@@ -995,3 +995,46 @@ visible-graph-summary D K S x y i j hx hy =
                                       (map (λ C → summary D C x y i j) Cs))
                     (≡-cong (two._⊔ foldr two._⊔_ two.O (map (λ C → summary D C x y i j) Cs))
                             restrict-O))))
+
+-- Reveal after hide at the same vertex restores the visible set and the hidden set, and hence the
+-- visible graph at entries with no hidden endpoint.
+hide-reveal-visible : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                      (p : Path D) (K : Config D) → Summarised K →
+                      member p (K .visible) ≡ Bool.true →
+                      reveal-at D p (hide-at D p K) .visible ↭ K .visible
+hide-reveal-visible D p K S pv =
+  filter-out-↭ {eq = eq-path} (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
+               (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S))) pv
+
+hide-reveal-hidden-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                         (p : Path D) (K : Config D) → Summarised K →
+                         member p (K .visible) ≡ Bool.true →
+                         hidden-set (reveal-at D p (hide-at D p K)) ↭ hidden-set K
+hide-reveal-hidden-set D p K S pv =
+  drop-∷ (↭-trans (reveal-set D p (hide-at D p K .hidden)
+                    (proj₁ (proj₂ (AllPairs-++⁻ (hide-at D p K .visible)
+                                                (hidden-set (hide-at D p K))
+                                                (partition-distinct (hide-at D p K)
+                                                  (hide-at-summarised D p K S pv)))))
+                    (or-introl _ _ (or-introl (eq-path p p) _ (eq-path-refl p))))
+                  (hide-at-hidden-set D p K))
+
+hide-reveal-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                    (p : Path D) (K : Config D) → Summarised K →
+                    member p (K .visible) ≡ Bool.true →
+                    ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                    member-vertex x (hidden-set K) ≡ Bool.false →
+                    member-vertex y (hidden-set K) ≡ Bool.false →
+                    visible-graph D (reveal-at D p (hide-at D p K)) x y i j ≡
+                    visible-graph D K x y i j
+hide-reveal-graph D p K S pv x y i j hx hy =
+  ≡-trans (visible-graph-summary D (reveal-at D p (hide-at D p K))
+             (reveal-at-summarised D p (hide-at D p K) (hide-at-summarised D p K S pv)
+                (≡-trans (member-perm p (hide-at-hidden-set D p K))
+                         (or-introl (eq-path p p) (member p (hidden-set K)) (eq-path-refl p))))
+             x y i j
+             (≡-trans (member-vertex-perm x (hide-reveal-hidden-set D p K S pv)) hx)
+             (≡-trans (member-vertex-perm y (hide-reveal-hidden-set D p K S pv)) hy))
+  (≡-trans (≡-cong (fo-graph D x y i j two.⊔_)
+                   (summary-perm D (hide-reveal-hidden-set D p K S pv) x y i j))
+           (≡-sym (visible-graph-summary D K S x y i j hx hy)))
