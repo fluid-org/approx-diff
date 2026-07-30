@@ -4,11 +4,11 @@ open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.Bool.Properties using (∨-comm; ∨-identityʳ)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; map; concat; partitionᵇ)
+open import Data.List using (List; []; _∷_; _++_; map; concat; foldr; partitionᵇ)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 import Data.List.Relation.Unary.All.Properties as AllP
-open import Data.List.Properties using (concat-++; map-++)
+open import Data.List.Properties using (concat-++; foldl-++; map-++)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺)
@@ -30,7 +30,7 @@ module language-operational.moves {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives
 
 open Signature Sig
 open Primitives 𝒫
-open import language-syntax Sig renaming (_,_ to _▸_)
+open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr)
 open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
@@ -296,3 +296,31 @@ summary-zero D {C} q hm hadj =
     ≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (fo-graph D z (at q)) i j) hm)
     (≡-trans (≡-cong (λ b → when b (fo-graph D z (at q)) i j) (∨-identityʳ (member-vertex z C)))
              (when-O (member-vertex z C) (fo-graph D z (at q)) i j (λ hz → entry-col z hz i j)))
+
+-- Hiding pairwise-apart, pairwise-disjoint regions inside a common restriction adds exactly
+-- their summaries: each region contributes its summary via localisation, and stays inert while
+-- the remaining regions are hidden.
+assemble : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+           {E : List (Path D)} (Cs : List (List (Path D))) →
+           All (λ C → ∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) Cs →
+           AllPairs (λ C C' → Apart (fo-graph D) C' C
+                            × (any (λ q → member q C) C' ≡ Bool.false)) Cs →
+           ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+           hide-all (restrict (fo-graph D) E) (map at (concat Cs)) x y i j ≡
+           foldr two._⊔_ (restrict (fo-graph D) E x y i j)
+                         (map (λ C → summary D C x y i j) Cs)
+assemble D []       []             []              x y i j = ≡-refl
+assemble D {E} (C ∷ Cs) (mono ∷ monos) (shead ∷ stail) x y i j =
+  ≡-trans (≡-cong (λ ws → hide-all R-E ws x y i j) (map-++ at C (concat Cs)))
+  (≡-trans (≡-cong (λ H → H x y i j) (foldl-++ hide R-E (map at C) (map at (concat Cs))))
+  (≡-trans (HA.fold-cong D (map at (concat Cs)) (localise D {C = C} mono) x y i j)
+  (≡-trans (HA.add-inert D {G = R-E} {S = summary D C} (map at (concat Cs)) inert x y i j)
+  (≡-trans (≡-cong (two._⊔ summary D C x y i j) (assemble D Cs monos stail x y i j))
+           (two.⊔-comm _ (summary D C x y i j))))))
+  where
+  R-E = restrict (fo-graph D) E
+  inert = AllP.map⁺ (AllP.concat⁺ (All-map
+            (λ {C'} (ap , ds) →
+              All-zip (λ {q} ha hm → summary-zero D {C = C} q hm ha)
+                      (any-false-All _ C' ap) (any-false-All _ C' ds))
+            shead))
