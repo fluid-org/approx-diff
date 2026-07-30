@@ -235,3 +235,28 @@ initial-summarised D .regioned =
         (↭↭-sym (regions-perm (fo-graph D) (regions-concat (fo-graph D) (FO D))))
 initial-summarised D .summaries =
   AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph D) (FO D)))
+
+-- Hiding a vertex adds it to the hidden set.
+hide-at-hidden-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                     (p : Path D) (K : Config D) →
+                     hidden-set (hide-at D p K) ↭ (p ∷ hidden-set K)
+hide-at-hidden-set D p K =
+  ↭.prep p
+    (↭-trans (↭-reflexive (concat-++ (map proj₁ (proj₁ tp)) (map proj₁ (proj₂ tp))))
+    (↭-trans (↭-reflexive (≡-cong concat (≡-sym (map-++ proj₁ (proj₁ tp) (proj₂ tp)))))
+             (concat-resp (↭↭-of-↭ (map⁺ proj₁ (partition-↭ _ (K .hidden)))))))
+  where tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
+                        (K .hidden)
+
+-- The merged pair and the untouched pairs are the regions of the enlarged hidden set.
+hide-at-regioned : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                   (p : Path D) (K : Config D) → Summarised K →
+                   map proj₁ (hide-at D p K .hidden) ≈ᵣ
+                   regions (fo-graph D) (hidden-set (hide-at D p K))
+hide-at-regioned D p K S =
+  H.trans (↭↭-of-≡ (≡-cong₂ (λ z₁ z₂ → (p ∷ concat z₁) ∷ z₂)
+                            (≡-sym (map-partition₁ proj₁ g (K .hidden)))
+                            (≡-sym (map-partition₂ proj₁ g (K .hidden)))))
+  (H.trans (step-resp (fo-graph D) p (S .regioned))
+           (regions-perm (fo-graph D) (↭-sym (hide-at-hidden-set D p K))))
+  where g = any (λ q → adjacent (fo-graph D) (at p) (at q))
