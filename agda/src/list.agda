@@ -7,13 +7,13 @@ module list where
 open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.Bool.Properties using (∨-assoc)
-open import Data.List using (List; []; _∷_; _++_; concat; filterᵇ; partitionᵇ)
+open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
 open import Data.List.Properties using (++-assoc)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
-open ↭ using (_↭_; ↭-refl; ↭-trans; ↭-reflexive)
+open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
-open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (++⁺; ++-comm)
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (++⁺; ++-comm; shift)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
@@ -164,3 +164,27 @@ partition-resp f resp (H.swap {x = x} {y} {x′} {y′} s₁ s₂ p) with partit
 ...   | Bool.false | _ | ≡-refl | Bool.false | _ | ≡-refl = p₁ , H.swap s₁ s₂ p₂
 partition-resp f resp (H.trans p q) with partition-resp f resp p | partition-resp f resp q
 ... | (p₁ , p₂) | (q₁ , q₂) = H.trans p₁ q₁ , H.trans p₂ q₂
+
+map-proj₁-pair : ∀ {a b} {A : Set a} {B : Set b} (g : A → B) (xs : List A) →
+                 map proj₁ (map (λ x → (x , g x)) xs) ≡ xs
+map-proj₁-pair g []       = ≡-refl
+map-proj₁-pair g (x ∷ xs) = ≡-cong (x ∷_) (map-proj₁-pair g xs)
+
+-- The two halves of a partition recombine to the original, up to order.
+partition-↭ : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
+              (proj₁ (partitionᵇ f xs) ++ proj₂ (partitionᵇ f xs)) ↭ xs
+partition-↭ f []       = ↭-refl
+partition-↭ f (x ∷ xs) with f x
+... | Bool.true  = ↭.prep x (partition-↭ f xs)
+... | Bool.false =
+  ↭-trans (shift x (proj₁ (partitionᵇ f xs)) (proj₂ (partitionᵇ f xs)))
+          (↭.prep x (partition-↭ f xs))
+
+↭↭-sym : ∀ {a} {A : Set a} {xss yss : List (List A)} → xss ↭↭ yss → yss ↭↭ xss
+↭↭-sym = H.sym ↭-sym
+
+↭↭-of-↭ : ∀ {a} {A : Set a} {xss yss : List (List A)} → xss ↭ yss → xss ↭↭ yss
+↭↭-of-↭ ↭.refl         = ↭↭-refl
+↭↭-of-↭ (↭.prep x p)   = H.prep ↭-refl (↭↭-of-↭ p)
+↭↭-of-↭ (↭.swap x y p) = H.swap ↭-refl ↭-refl (↭↭-of-↭ p)
+↭↭-of-↭ (↭.trans p q)  = H.trans (↭↭-of-↭ p) (↭↭-of-↭ q)
