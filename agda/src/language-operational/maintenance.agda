@@ -136,3 +136,29 @@ merge-region-comm {D = D} G w w' rss =
 
     hb' : any (λ C → A C ∧ A' C) rss ≡ Bool.false
     hb' = ≡-trans (any-cong (λ C → ∧-comm (A C) (A' C)) rss) hb
+
+-- Regions are insensitive to the order in which their vertices are enumerated.
+regions-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               (G : Graph D) {ws ws' : List (Path D)} → ws ↭ ws' →
+               regions G ws ↭↭ regions G ws'
+regions-perm G ↭.refl         = ↭↭-refl
+regions-perm G (↭.prep w p)   = merge-region-resp G w (regions-perm G p)
+regions-perm G (↭.swap {xs = ws₁} {ys = ws₂} w w' p) =
+  H.trans (merge-region-resp G w (merge-region-resp G w' (regions-perm G p)))
+          (merge-region-comm G w w' (regions G ws₂))
+regions-perm G (↭.trans p q)  = H.trans (regions-perm G p) (regions-perm G q)
+
+-- A canonical configuration: the stored regions are the regions of the hidden set.
+record Maintained {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                  (K : Config D) : Set ℓ where
+  field
+    canonical : map proj₁ (K .hidden) ↭↭ regions (fo-graph D) (hidden-set K)
+
+open Maintained public
+
+initial-maintained : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+                     Maintained (initial D)
+initial-maintained D .canonical =
+  subst (λ z → z ↭↭ regions (fo-graph D) (concat z))
+        (≡-sym (map-proj₁-pair (summary D) (regions (fo-graph D) (FO D))))
+        (regions-perm (fo-graph D) (↭-sym (regions-concat (fo-graph D) (FO D))))
