@@ -4,13 +4,14 @@ open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.Bool.Properties using (∨-comm; ∨-identityʳ)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; map; concat; foldr; partitionᵇ)
+open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; foldr; partitionᵇ)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there) renaming (map to Any-map)
 import Data.List.Relation.Unary.Any.Properties as AnyPr
 import Data.List.Relation.Unary.All.Properties as AllP
-open import Data.List.Properties using (++-identityʳ; concat-++; foldl-++; map-++; map-∘)
+import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
+open import Data.List.Properties using (++-identityʳ; concat-++; concat-map; foldl-++; map-++; map-∘)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift; ++⁺; Any-resp-↭)
@@ -790,3 +791,26 @@ hide-at-summarised D p K S pv .summaries =
   merged-summary D p K S (visible-not-hidden K S {p = p} pv) (summarised-distinct K S) ∷
   proj₂ (partition-All (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
                       (S .summaries))
+
+private
+  -- Apart in pointwise form, and its monotonicity under region inclusion.
+  Apart-All : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+              {G : Graph D} {C C' : List (Path D)} → Apart G C C' →
+              All (λ q → All (λ q' → adjacent G (at q) (at q') ≡ Bool.false) C') C
+  Apart-All {C = C} {C'} ap = All-map (λ h → any-false-All _ C' h) (any-false-All _ C ap)
+
+  Apart-mono : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               {G : Graph D} {C₁ C₂ C₁' C₂' : List (Path D)} →
+               (∀ q → member q C₁ ≡ Bool.true → member q C₁' ≡ Bool.true) →
+               (∀ q → member q C₂ ≡ Bool.true → member q C₂' ≡ Bool.true) →
+               Apart G C₁' C₂' → Apart G C₁ C₂
+  Apart-mono {G = G} {C₁ = C₁} {C₂} {C₁'} {C₂'} m₁ m₂ ap =
+    any-false (All-map
+      (λ {q} mq → any-false (All-map
+        (λ {q'} mq' →
+          member-All {eq = eq-path} eq-path-≡ {x = q'}
+            (member-All {eq = eq-path} eq-path-≡ {x = q}
+               (Apart-All {G = G} {C = C₁'} {C' = C₂'} ap) (m₁ q mq))
+            (m₂ q' mq'))
+        (any-self eq-path-refl C₂)))
+      (any-self eq-path-refl C₁))
