@@ -4,10 +4,14 @@ open import Data.Fin using (zero)
 open import Data.Bool as Bool using (Bool; not; _∧_)
 open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; _++_; map; filterᵇ)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
+import Data.List.Relation.Unary.All.Properties as AllP
+import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 open import Data.Nat using (ℕ; suc; _+_)
 open import every using (Every; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
-  renaming (refl to ≡-refl; cong to ≡-cong)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import signature using (Signature)
 open import primitives using (Primitives)
@@ -492,6 +496,147 @@ mutual
   eq-path-m-≡ {p = m-rec₂ _} {m-rec₁ _} ()
   eq-path-m-≡ {p = m-pair₁ _} {m-pair₂ _} ()
   eq-path-m-≡ {p = m-pair₂ _} {m-pair₁ _} ()
+
+private
+  cross-blocks : {A B C : Set ℓ} {S : C → C → Set} (f : A → C) (g : B → C) →
+                 (∀ p q → S (f p) (g q)) → (xs : List A) (ys : List B) →
+                 All (λ x → All (S x) (map g ys)) (map f xs)
+  cross-blocks f g h xs ys =
+    AllP.map⁺ (universal (λ p → AllP.map⁺ (universal (λ q → h p q) ys)) xs)
+
+-- Distinct positions have refuting equality tests: the root differs from every interior path and
+-- premise blocks differ by constructor, so distinctness reduces to the premises.
+mutual
+  paths-distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+                   AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (paths D)
+  paths-distinct D = root-distinct D ∷ interior-distinct D
+
+  paths-s-distinct : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                     (D : γ , Ms ⇓s vs [ R ]) →
+                     AllPairs (λ q q' → eq-path-s q q' ≡ Bool.false) (paths-s D)
+  paths-s-distinct D = root-s-distinct D ∷ interior-s-distinct D
+
+  paths-m-distinct : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                     {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                     {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                     (D : Map γ s σ' v R v' R') →
+                     AllPairs (λ q q' → eq-path-m q q' ≡ Bool.false) (paths-m D)
+  paths-m-distinct D = root-m-distinct D ∷ interior-m-distinct D
+
+  root-distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+                  All (λ q → eq-path ε q ≡ Bool.false) (interior D)
+  root-distinct (⇓-var x)        = []
+  root-distinct ⇓-unit           = []
+  root-distinct ⇓-lam            = []
+  root-distinct (⇓-inl D)        = AllP.map⁺ (universal (λ q → ≡-refl) (paths D))
+  root-distinct (⇓-inr D)        = AllP.map⁺ (universal (λ q → ≡-refl) (paths D))
+  root-distinct (⇓-fst D)        = AllP.map⁺ (universal (λ q → ≡-refl) (paths D))
+  root-distinct (⇓-snd D)        = AllP.map⁺ (universal (λ q → ≡-refl) (paths D))
+  root-distinct (⇓-roll D)       = AllP.map⁺ (universal (λ q → ≡-refl) (paths D))
+  root-distinct (⇓-bop D)        = AllP.map⁺ (universal (λ q → ≡-refl) (paths-s D))
+  root-distinct (⇓-brel D)       = AllP.map⁺ (universal (λ q → ≡-refl) (paths-s D))
+  root-distinct (⇓-case-l D₁ D₂) =
+    AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₁)))
+             (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₂)))
+  root-distinct (⇓-case-r D₁ D₂) =
+    AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₁)))
+             (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₂)))
+  root-distinct (⇓-pair D₁ D₂)   =
+    AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₁)))
+             (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₂)))
+  root-distinct (⇓-fold D₁ D₂)   =
+    AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₁)))
+             (AllP.map⁺ (universal (λ q → ≡-refl) (paths-m D₂)))
+  root-distinct (⇓-app D₁ D₂ D₃) =
+    AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₁)))
+             (AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₂)))
+                       (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₃))))
+
+  root-s-distinct : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                    (D : γ , Ms ⇓s vs [ R ]) →
+                    All (λ q → eq-path-s ε q ≡ Bool.false) (interior-s D)
+  root-s-distinct []        = []
+  root-s-distinct (D₁ ∷ D₂) =
+    AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₁)))
+             (AllP.map⁺ (universal (λ q → ≡-refl) (paths-s D₂)))
+
+  root-m-distinct : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                    {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                    (D : Map γ s σ' v R v' R') →
+                    All (λ q → eq-path-m ε q ≡ Bool.false) (interior-m D)
+  root-m-distinct (m-rec D₁ D₂)  =
+    AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths-m D₁)))
+             (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₂)))
+  root-m-distinct m-unit         = []
+  root-m-distinct m-base         = []
+  root-m-distinct m-arrow        = []
+  root-m-distinct (m-inl D)      = AllP.map⁺ (universal (λ q → ≡-refl) (paths-m D))
+  root-m-distinct (m-inr D)      = AllP.map⁺ (universal (λ q → ≡-refl) (paths-m D))
+  root-m-distinct (m-mu D)       = AllP.map⁺ (universal (λ q → ≡-refl) (paths-m D))
+  root-m-distinct (m-pair D₁ D₂) =
+    AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths-m D₁)))
+             (AllP.map⁺ (universal (λ q → ≡-refl) (paths-m D₂)))
+
+  interior-distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+                      AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (interior D)
+  interior-distinct (⇓-var x)        = []
+  interior-distinct ⇓-unit           = []
+  interior-distinct ⇓-lam            = []
+  interior-distinct (⇓-inl D)        = AllPairsP.map⁺ (paths-distinct D)
+  interior-distinct (⇓-inr D)        = AllPairsP.map⁺ (paths-distinct D)
+  interior-distinct (⇓-fst D)        = AllPairsP.map⁺ (paths-distinct D)
+  interior-distinct (⇓-snd D)        = AllPairsP.map⁺ (paths-distinct D)
+  interior-distinct (⇓-roll D)       = AllPairsP.map⁺ (paths-distinct D)
+  interior-distinct (⇓-bop D)        = AllPairsP.map⁺ (paths-s-distinct D)
+  interior-distinct (⇓-brel D)       = AllPairsP.map⁺ (paths-s-distinct D)
+  interior-distinct (⇓-case-l D₁ D₂) =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (paths-distinct D₁)) (AllPairsP.map⁺ (paths-distinct D₂))
+                  (cross-blocks case-l₁ case-l₂ (λ p q → ≡-refl) (paths D₁) (paths D₂))
+  interior-distinct (⇓-case-r D₁ D₂) =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (paths-distinct D₁)) (AllPairsP.map⁺ (paths-distinct D₂))
+                  (cross-blocks case-r₁ case-r₂ (λ p q → ≡-refl) (paths D₁) (paths D₂))
+  interior-distinct (⇓-pair D₁ D₂)   =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (paths-distinct D₁)) (AllPairsP.map⁺ (paths-distinct D₂))
+                  (cross-blocks pair₁ pair₂ (λ p q → ≡-refl) (paths D₁) (paths D₂))
+  interior-distinct (⇓-fold D₁ D₂)   =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (paths-distinct D₁)) (AllPairsP.map⁺ (paths-m-distinct D₂))
+                  (cross-blocks fold₁ fold₂ (λ p q → ≡-refl) (paths D₁) (paths-m D₂))
+  interior-distinct (⇓-app D₁ D₂ D₃) =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (paths-distinct D₁))
+                  (AllPairsP.++⁺ (AllPairsP.map⁺ (paths-distinct D₂))
+                                 (AllPairsP.map⁺ (paths-distinct D₃))
+                                 (cross-blocks app₂ app₃ (λ p q → ≡-refl) (paths D₂) (paths D₃)))
+                  (AllP.map⁺ (universal
+                    (λ p → AllP.++⁺ (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₂)))
+                                    (AllP.map⁺ (universal (λ q → ≡-refl) (paths D₃))))
+                    (paths D₁)))
+
+  interior-s-distinct : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                        (D : γ , Ms ⇓s vs [ R ]) →
+                        AllPairs (λ q q' → eq-path-s q q' ≡ Bool.false) (interior-s D)
+  interior-s-distinct []        = []
+  interior-s-distinct (D₁ ∷ D₂) =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (paths-distinct D₁)) (AllPairsP.map⁺ (paths-s-distinct D₂))
+                  (cross-blocks hd tl (λ p q → ≡-refl) (paths D₁) (paths-s D₂))
+
+  interior-m-distinct : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                        {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                        {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                        (D : Map γ s σ' v R v' R') →
+                        AllPairs (λ q q' → eq-path-m q q' ≡ Bool.false) (interior-m D)
+  interior-m-distinct (m-rec D₁ D₂)  =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (paths-m-distinct D₁)) (AllPairsP.map⁺ (paths-distinct D₂))
+                  (cross-blocks m-rec₁ m-rec₂ (λ p q → ≡-refl) (paths-m D₁) (paths D₂))
+  interior-m-distinct m-unit         = []
+  interior-m-distinct m-base         = []
+  interior-m-distinct m-arrow        = []
+  interior-m-distinct (m-inl D)      = AllPairsP.map⁺ (paths-m-distinct D)
+  interior-m-distinct (m-inr D)      = AllPairsP.map⁺ (paths-m-distinct D)
+  interior-m-distinct (m-mu D)       = AllPairsP.map⁺ (paths-m-distinct D)
+  interior-m-distinct (m-pair D₁ D₂) =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (paths-m-distinct D₁)) (AllPairsP.map⁺ (paths-m-distinct D₂))
+                  (cross-blocks m-pair₁ m-pair₂ (λ p q → ≡-refl) (paths-m D₁) (paths-m D₂))
 
 -- Membership of a path in a list of paths of the same derivation.
 member : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
