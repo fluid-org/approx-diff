@@ -2,9 +2,10 @@
 
 open import Data.Bool as Bool using (Bool; not; _∧_; _∨_)
 open import Data.Bool.ListAction using (any)
+open import Data.List.Relation.Unary.All using (All; []; _∷_) renaming (map to All-map)
 open import Data.Bool.Properties using (∧-comm)
 open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
-open import Data.List.Properties using (concat-++)
+open import Data.List.Properties using (concat-++; ++-identityʳ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -178,3 +179,51 @@ hide-at-maintained D p K M .canonical =
   lhs-eq = ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
              (map-partition₁ proj₁ (adj (fo-graph D) p) (K .hidden))
              (map-partition₂ proj₁ (adj (fo-graph D) p) (K .hidden))
+
+private
+  ↭↭-of-≡ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+            {xss yss : List (List (Path D))} → xss ≡ yss → xss ↭↭ yss
+  ↭↭-of-≡ ≡-refl = ↭↭-refl
+
+  -- Each region of ws lies inside ws.
+  regions-⊆ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+              (G : Graph D) (ws : List (Path D)) →
+              All (λ C → ∀ q → member q C ≡ Bool.true → member q ws ≡ Bool.true)
+                  (regions G ws)
+  regions-⊆ G ws =
+    All-map (λ {C} inc q h → ≡-trans (≡-sym (member-perm q (regions-concat G ws))) (inc q h))
+            (blocks-⊆ (regions G ws))
+
+  -- Merging a vertex with no adjacency into a suffix of regions leaves the suffix alone.
+  merge-region-inert : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                       (G : Graph D) (w : Path D) (X Y : List (List (Path D))) →
+                       All (λ C → adj G w C ≡ Bool.false) Y →
+                       merge-region G w (X ++ Y) ≡ merge-region G w X ++ Y
+  merge-region-inert G w X Y h =
+    ≡-trans (merge-region-filter G w (X ++ Y))
+    (≡-trans (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
+               (≡-trans (filter-++ (adj G w) X Y)
+               (≡-trans (≡-cong (filterᵇ (adj G w) X ++_) (filter-none h))
+                        (++-identityʳ (filterᵇ (adj G w) X))))
+               (≡-trans (filter-++ (λ C → not (adj G w C)) X Y)
+                        (≡-cong (filterᵇ (λ C → not (adj G w C)) X ++_)
+                                (filter-all-true (All-map (λ e → ≡-cong not e) h)))))
+             (≡-cong (_++ Y) (≡-sym (merge-region-filter G w X))))
+
+-- Regions distribute over a concatenation with an apart suffix: no merge crosses the boundary.
+regions-apart : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                (G : Graph D) (B rest : List (Path D)) → Apart G B rest →
+                regions G (B ++ rest) ↭↭ (regions G B ++ regions G rest)
+regions-apart G []      rest ap = ↭↭-refl
+regions-apart G (b ∷ B) rest ap with ∨-false (any (λ q' → adjacent G (at b) (at q')) rest)
+                                           (any (λ q → any (λ q' → adjacent G (at q) (at q')) rest) B)
+                                           ap
+... | (hb , hB) =
+  H.trans (merge-region-resp G b (regions-apart G B rest hB))
+          (↭↭-of-≡ (merge-region-inert G b (regions G B) (regions G rest)
+            (All-map (λ {C} inc →
+               any-false (All-map (λ {q} mq →
+                            member-All {eq = eq-path} eq-path-≡ {x = q}
+                              (any-false-All _ rest hb) (inc q mq))
+                          (any-self eq-path-refl C)))
+              (regions-⊆ G rest))))
