@@ -22,7 +22,7 @@ import two
 
 -- Every edge of a rule-built graph runs strictly forward in completion rank, so the graphs the
 -- rules produce are acyclic.
-module language-operational.forward {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module language-operational.topological-order {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫
