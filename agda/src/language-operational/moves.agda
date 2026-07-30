@@ -795,22 +795,24 @@ private
               All (λ q → All (λ q' → adjacent G (at q) (at q') ≡ Bool.false) C') C
   Apart-All {C = C} {C'} ap = All-map (λ h → any-false-All _ C' h) (any-false-All _ C ap)
 
-  Apart-mono : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
-               {G : Graph D} {C₁ C₂ C₁' C₂' : List (Path D)} →
-               (∀ q → member q C₁ ≡ Bool.true → member q C₁' ≡ Bool.true) →
-               (∀ q → member q C₂ ≡ Bool.true → member q C₂' ≡ Bool.true) →
-               Apart G C₁' C₂' → Apart G C₁ C₂
-  Apart-mono {G = G} {C₁ = C₁} {C₂} {C₁'} {C₂'} m₁ m₂ ap =
-    any-false (All-map
-      (λ {q} mq → any-false (All-map
-        (λ {q'} mq' →
-          member-All {eq = eq-path} eq-path-≡ {x = q'}
-            (member-All {eq = eq-path} eq-path-≡ {x = q}
-               (Apart-All {G = G} {C = C₁'} {C' = C₂'} ap) (m₁ q mq))
-            (m₂ q' mq'))
-        (any-self eq-path-refl C₂)))
-      (any-self eq-path-refl C₁))
+-- Apartness is monotone under region inclusion.
+Apart-mono : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+             {G : Graph D} {C₁ C₂ C₁' C₂' : List (Path D)} →
+             (∀ q → member q C₁ ≡ Bool.true → member q C₁' ≡ Bool.true) →
+             (∀ q → member q C₂ ≡ Bool.true → member q C₂' ≡ Bool.true) →
+             Apart G C₁' C₂' → Apart G C₁ C₂
+Apart-mono {G = G} {C₁ = C₁} {C₂} {C₁'} {C₂'} m₁ m₂ ap =
+  any-false (All-map
+    (λ {q} mq → any-false (All-map
+      (λ {q'} mq' →
+        member-All {eq = eq-path} eq-path-≡ {x = q'}
+          (member-All {eq = eq-path} eq-path-≡ {x = q}
+             (Apart-All {G = G} {C = C₁'} {C' = C₂'} ap) (m₁ q mq))
+          (m₂ q' mq'))
+      (any-self eq-path-refl C₂)))
+    (any-self eq-path-refl C₁))
 
+private
   -- Each piece of a split region lies inside the region.
   split-⊆ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
             (CH : List (Path D) × Graph D) →
@@ -836,45 +838,46 @@ private
   split-none D p []                     = ≡-refl
   split-none D p (_∷_ {C , H} h hs) rewrite h = ≡-cong ((C , H) ∷_) (split-none D p hs)
 
-  -- Splitting at a hidden vertex removes exactly p from the hidden set.
-  reveal-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
-               (CHs : List (List (Path D) × Graph D)) →
-               AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (concat (map proj₁ CHs)) →
-               any (λ CH → member p (proj₁ CH)) CHs ≡ Bool.true →
-               (p ∷ concat (map proj₁ (concat (map (split-region D p) CHs))))
-               ↭ concat (map proj₁ CHs)
-  reveal-set D p ((C , H) ∷ CHs) ps h
-    with AllPairs-++⁻ C (concat (map proj₁ CHs)) ps
-  ... | (aC , aRest , cross) with member p C in e
-  ...   | Bool.false =
-    ↭-trans (↭-sym (shift p C (concat (map proj₁ (concat (map (split-region D p) CHs))))))
-            (++⁺ ↭-refl (reveal-set D p CHs aRest h))
-  ...   | Bool.true  =
-    ↭-trans (↭-reflexive (≡-cong (λ z → p ∷ concat z) (map-++ proj₁ X Z)))
-    (↭-trans (↭-reflexive (≡-cong (p ∷_) (≡-sym (concat-++ (map proj₁ X) (map proj₁ Z)))))
-    (↭-trans (↭-reflexive (≡-cong₂ (λ u v → p ∷ (concat u ++ concat (map proj₁ v)))
-                                   (map-proj₁-pair (summary D) Regs)
-                                   (split-none D p no-p-tail)))
-             (++⁺ head-perm ↭-refl)))
-    where
-    C∖p  = filterᵇ (λ q → Bool.not (eq-path p q)) C
-    Regs = regions (fo-graph D) C∖p
-    X    = map (λ C' → C' , summary D C') Regs
-    Z    = concat (map (split-region D p) CHs)
+-- Splitting at a hidden vertex removes exactly p from the hidden set.
+reveal-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
+             (CHs : List (List (Path D) × Graph D)) →
+             AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (concat (map proj₁ CHs)) →
+             any (λ CH → member p (proj₁ CH)) CHs ≡ Bool.true →
+             (p ∷ concat (map proj₁ (concat (map (split-region D p) CHs))))
+             ↭ concat (map proj₁ CHs)
+reveal-set D p ((C , H) ∷ CHs) ps h
+  with AllPairs-++⁻ C (concat (map proj₁ CHs)) ps
+... | (aC , aRest , cross) with member p C in e
+...   | Bool.false =
+  ↭-trans (↭-sym (shift p C (concat (map proj₁ (concat (map (split-region D p) CHs))))))
+          (++⁺ ↭-refl (reveal-set D p CHs aRest h))
+...   | Bool.true  =
+  ↭-trans (↭-reflexive (≡-cong (λ z → p ∷ concat z) (map-++ proj₁ X Z)))
+  (↭-trans (↭-reflexive (≡-cong (p ∷_) (≡-sym (concat-++ (map proj₁ X) (map proj₁ Z)))))
+  (↭-trans (↭-reflexive (≡-cong₂ (λ u v → p ∷ (concat u ++ concat (map proj₁ v)))
+                                 (map-proj₁-pair (summary D) Regs)
+                                 (split-none D p no-p-tail)))
+           (++⁺ head-perm ↭-refl)))
+  where
+  C∖p  = filterᵇ (λ q → Bool.not (eq-path p q)) C
+  Regs = regions (fo-graph D) C∖p
+  X    = map (λ C' → C' , summary D C') Regs
+  Z    = concat (map (split-region D p) CHs)
 
-    no-p-tail : All (λ CH → member p (proj₁ CH) ≡ Bool.false) CHs
-    no-p-tail =
-      any-false-All _ CHs
-        (≡-trans (≡-sym (any-map (λ C' → member p C') proj₁ CHs))
-          (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ CHs)))
-                   (any-false (member-All {eq = eq-path} eq-path-≡ {x = p} cross e))))
+  no-p-tail : All (λ CH → member p (proj₁ CH) ≡ Bool.false) CHs
+  no-p-tail =
+    any-false-All _ CHs
+      (≡-trans (≡-sym (any-map (λ C' → member p C') proj₁ CHs))
+        (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ CHs)))
+                 (any-false (member-All {eq = eq-path} eq-path-≡ {x = p} cross e))))
 
-    head-perm : (p ∷ concat Regs) ↭ C
-    head-perm =
-      ↭-trans (↭.prep p (regions-concat (fo-graph D) C∖p))
-              (filter-out-↭ {eq = eq-path} (λ {q} {q'} e' → eq-path-≡ {p = q} {q = q'} e')
-                            aC e)
+  head-perm : (p ∷ concat Regs) ↭ C
+  head-perm =
+    ↭-trans (↭.prep p (regions-concat (fo-graph D) C∖p))
+            (filter-out-↭ {eq = eq-path} (λ {q} {q'} e' → eq-path-≡ {p = q} {q = q'} e')
+                          aC e)
 
+private
   -- The pieces of a split region are pairwise apart, and each pair equals its summary.
   split-separated : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
                     (CH : List (Path D) × Graph D) →
