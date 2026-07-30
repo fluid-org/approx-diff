@@ -1,7 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.Empty using (⊥)
+open import Data.List using (List; []; _∷_; map; filterᵇ)
+open import Data.Product using (Σ; _×_; _,_)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Fin using (Fin)
+import Data.Fin as F
 open import Data.Nat using (ℕ; zero; suc; _+_; _<_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties
   using (≤-refl; ≤-trans; ≤-reflexive; m≤m+n; +-monoʳ-<; +-suc; <-trans; <-irrefl)
@@ -25,6 +29,7 @@ open import type-substitution Sig using (unfold₁)
 open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
+open import language-operational.hide Sig 𝒫
 
 private
   module M = matrix.Mat two.semiring
@@ -556,3 +561,92 @@ acyclic-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ �
             {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
             {D : Map γ s σ' v R v' R'} {x : VertexM D} → ChainM x x → ⊥
 acyclic-m c = <-irrefl ≡-refl (climb-m c)
+
+-- Witnesses for non-zero entries of sums and composites.
+private
+  ⊔-I : ∀ x y → (x two.⊔ y) ≡ two.I → (x ≡ two.I) ⊎ (y ≡ two.I)
+  ⊔-I two.O y h = inj₂ h
+  ⊔-I two.I y h = inj₁ ≡-refl
+
+  ⊓-I : ∀ x y → (x two.⊓ y) ≡ two.I → (x ≡ two.I) × (y ≡ two.I)
+  ⊓-I two.I y h = ≡-refl , h
+
+  Σ-I : ∀ {n} (f : Fin n → two.Two) → M.Σ f ≡ two.I → Σ (Fin n) (λ k → f k ≡ two.I)
+  Σ-I {suc n} f h with ⊔-I (f F.zero) (M.Σ (λ k → f (F.suc k))) h
+  ... | inj₁ e = F.zero , e
+  ... | inj₂ e with Σ-I (λ k → f (F.suc k)) e
+  ...   | (k , e') = F.suc k , e'
+
+  ∘-I : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l → (A M.∘ B) i l ≡ two.I →
+        Σ (Fin n) (λ j → (A i j ≡ two.I) × (B j l ≡ two.I))
+  ∘-I A B i l h with Σ-I (λ j → A i j two.⊓ B j l) h
+  ... | (j , e) with ⊓-I (A i j) (B j l) e
+  ...   | (e₁ , e₂) = j , (e₁ , e₂)
+
+-- The forward-edge property of an arbitrary graph over a derivation, and its preservation by
+-- hiding: a new edge from x to y composes edges from x to r and r to y, so still climbs in rank.
+Forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Graph D → Set ℓ
+Forward {D = D} G = ∀ (x y : Vertex D) (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                    G x y i j ≡ two.I → rank-v x < rank-v y
+
+ForwardS : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+           {D : γ , Ms ⇓s vs [ R ]} → GraphS D → Set ℓ
+ForwardS {D = D} G = ∀ (x y : VertexS D) (i : Fin (vertex-width-s y)) (j : Fin (vertex-width-s x)) →
+                     G x y i j ≡ two.I → rank-v-s x < rank-v-s y
+
+ForwardM : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+           {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+           {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+           {D : Map γ s σ' v R v' R'} → GraphM D → Set ℓ
+ForwardM {D = D} G = ∀ (x y : VertexM D) (i : Fin (vertex-width-m y)) (j : Fin (vertex-width-m x)) →
+                     G x y i j ≡ two.I → rank-v-m x < rank-v-m y
+
+hide-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
+               (r : Vertex D) → Forward G → Forward (hide G r)
+hide-forward {G = G} r fwd x y i j h with ⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
+... | inj₁ e = fwd x y i j e
+... | inj₂ e with ∘-I (G r y) (G x r) i j e
+...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
+
+hide-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                 {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
+                 (r : VertexS D) → ForwardS G → ForwardS (hide-s G r)
+hide-forward-s {G = G} r fwd x y i j h with ⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
+... | inj₁ e = fwd x y i j e
+... | inj₂ e with ∘-I (G r y) (G x r) i j e
+...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
+
+hide-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                 {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                 {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                 {D : Map γ s σ' v R v' R'} {G : GraphM D}
+                 (r : VertexM D) → ForwardM G → ForwardM (hide-m G r)
+hide-forward-m {G = G} r fwd x y i j h with ⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
+... | inj₁ e = fwd x y i j e
+... | inj₂ e with ∘-I (G r y) (G x r) i j e
+...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
+
+hide-all-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
+                   (rs : List (Vertex D)) → Forward G → Forward (hide-all G rs)
+hide-all-forward []       fwd = fwd
+hide-all-forward (r ∷ rs) fwd = hide-all-forward rs (hide-forward r fwd)
+
+hide-all-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                     {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
+                     (rs : List (VertexS D)) → ForwardS G → ForwardS (hide-all-s G rs)
+hide-all-forward-s []       fwd = fwd
+hide-all-forward-s (r ∷ rs) fwd = hide-all-forward-s rs (hide-forward-s r fwd)
+
+hide-all-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                     {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                     {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                     {D : Map γ s σ' v R v' R'} {G : GraphM D}
+                     (rs : List (VertexM D)) → ForwardM G → ForwardM (hide-all-m G rs)
+hide-all-forward-m []       fwd = fwd
+hide-all-forward-m (r ∷ rs) fwd = hide-all-forward-m rs (hide-forward-m r fwd)
+
+-- The first-order dependence graph inherits the property.
+fo-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Forward (fo-graph D)
+fo-forward D =
+  hide-all-forward (map at (filterᵇ (λ p → Bool.not (is-ε p) Bool.∧ Bool.not (fo-at p)) (paths D)))
+                   (forward D)
