@@ -69,10 +69,9 @@ member-vertex : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ 
 member-vertex env    C = Bool.false
 member-vertex (at p) C = member p C
 
-private
-  when : ∀ {m n} → Bool → M.Matrix m n → M.Matrix m n
-  when Bool.true  R = R
-  when Bool.false R = M.εₘ
+when : ∀ {m n} → Bool → M.Matrix m n → M.Matrix m n
+when Bool.true  R = R
+when Bool.false R = M.εₘ
 
 -- The entries with an endpoint in the given region, zero elsewhere.
 restrict : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
