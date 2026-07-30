@@ -7,7 +7,7 @@ open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
 import Data.List.Relation.Unary.All.Properties as AllP
-open import Data.List.Properties using (concat-++)
+open import Data.List.Properties using (concat-++; map-++)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-trans; ↭-sym; ↭-reflexive)
@@ -82,15 +82,22 @@ _≈ᵣ_ = _↭↭_
 -- The congruence step of the regions computation: equivalent prior regions give equivalent
 -- regions after a vertex is added, since adjacency of the vertex reads regions only through
 -- membership and the merged members only through concatenation.
-regions-prep : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
-               (G : Graph D) (w : Path D) {ws ws' : List (Path D)} →
-               regions G ws ≈ᵣ regions G ws' →
-               regions G (w ∷ ws) ≈ᵣ regions G (w ∷ ws')
-regions-prep G w ih =
+step-resp : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+            (G : Graph D) (w : Path D) {rs rs' : List (List (Path D))} → rs ≈ᵣ rs' →
+            let f = any (λ q → adjacent G (at w) (at q)) in
+            ((w ∷ concat (proj₁ (partitionᵇ f rs))) ∷ proj₂ (partitionᵇ f rs)) ≈ᵣ
+            ((w ∷ concat (proj₁ (partitionᵇ f rs'))) ∷ proj₂ (partitionᵇ f rs'))
+step-resp G w ih =
   H.prep (↭.prep w (concat-resp (proj₁ tp))) (proj₂ tp)
   where tp = partition-resp (any (λ q → adjacent G (at w) (at q)))
                             (any-perm (λ q → adjacent G (at w) (at q)))
                             ih
+
+regions-prep : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               (G : Graph D) (w : Path D) {ws ws' : List (Path D)} →
+               regions G ws ≈ᵣ regions G ws' →
+               regions G (w ∷ ws) ≈ᵣ regions G (w ∷ ws')
+regions-prep G w = step-resp G w
 
 -- Adding two vertices to a region list in either order gives equivalent regions. Both orders
 -- merge exactly when the vertices are adjacent or some region is adjacent to both; in that case
