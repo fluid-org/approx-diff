@@ -1092,3 +1092,47 @@ reveal-hide-graph D p K S hp x y i j hx hy =
   (≡-trans (≡-cong (fo-graph D x y i j two.⊔_)
                    (summary-perm D (reveal-hide-hidden-set D p K S hp) x y i j))
            (≡-sym (visible-graph-summary D K S x y i j hx hy)))
+
+private
+  restrict-≤ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               (G : Graph D) (C : List (Path D)) →
+               ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+               (restrict G C x y i j two.⊔ G x y i j) ≡ G x y i j
+  restrict-≤ G C x y i j with member-vertex x C ∨ member-vertex y C
+  ... | Bool.true  = two.⊔-idem
+  ... | Bool.false = ≡-refl
+
+  restrict-hidden-agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                          (G : Graph D) (C : List (Path D)) →
+                          All (λ r → ((z : Vertex D) (i : Fin (vertex-width z))
+                                      (j : Fin (vertex-width r)) →
+                                      G r z i j ≡ restrict G C r z i j)
+                                   × ((z : Vertex D) (i : Fin (vertex-width r))
+                                      (j : Fin (vertex-width z)) →
+                                      G z r i j ≡ restrict G C z r i j))
+                              (map at C)
+  restrict-hidden-agree G C =
+    AllP.map⁺ (All-map (λ {q} hq →
+      (λ z i j → ≡-sym (≡-cong (λ b → when b (G (at q) z) i j)
+                               (or-introl (member q C) (member-vertex z C) hq))) ,
+      (λ z i j → ≡-sym (≡-cong (λ b → when b (G z (at q)) i j)
+                               (or-intror (member-vertex z C) (member q C) hq))))
+      (any-self eq-path-refl C))
+
+-- The paper's assembly lemma: at an entry with no hidden endpoint, the visible graph is the
+-- first-order graph with the whole hidden set hidden. The restriction in the summary is invisible
+-- there, since the full graph and its restriction agree on hidden rows and columns.
+summaries-assemble : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                     (K : Config D) → Summarised K →
+                     ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                     member-vertex x (hidden-set K) ≡ Bool.false →
+                     member-vertex y (hidden-set K) ≡ Bool.false →
+                     visible-graph D K x y i j ≡
+                     hide-all (fo-graph D) (map at (hidden-set K)) x y i j
+summaries-assemble D K S x y i j hx hy =
+  ≡-trans (visible-graph-summary D K S x y i j hx hy)
+          (≡-sym (HA.agree-add D {G = restrict (fo-graph D) (hidden-set K)} {G' = fo-graph D}
+                    (map at (hidden-set K))
+                    (restrict-≤ (fo-graph D) (hidden-set K))
+                    (restrict-hidden-agree (fo-graph D) (hidden-set K))
+                    x y i j))
