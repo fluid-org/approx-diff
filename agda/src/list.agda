@@ -9,19 +9,22 @@ open import Data.Bool.ListAction using (any)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Bool.Properties using (∨-assoc)
 open import Data.Fin as Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ; tabulate)
-open import Data.List.Properties using (++-assoc)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filterᵇ; partitionᵇ; tabulate)
+open import Data.Nat.ListAction using (sum)
+open import Data.List.Properties using (++-assoc; length-++)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
-open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
+open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_; Pointwise-length)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (++⁺; ++-comm; shift; All-resp-↭)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Nat using (ℕ; zero; suc; _+_; _≤_; z≤n; s≤s)
+open import Data.Nat.Properties using (suc-injective; n≤0⇒n≡0; +-cancelʳ-≤; +-mono-≤; ≤-reflexive; ≤-trans)
+open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
@@ -150,6 +153,48 @@ any-concat f []         = ≡-refl
 any-concat f (xs ∷ xss) =
   ≡-trans (any-++ f xs (concat xss)) (≡-cong (any f xs ∨_) (any-concat f xss))
 
+perm-length : ∀ {a r} {A : Set a} {R : A → A → Set r} {xs ys : List A} →
+              H.Permutation R xs ys → length xs ≡ length ys
+perm-length (H.refl pw)      = Pointwise-length pw
+perm-length (H.prep _ p)     = ≡-cong suc (perm-length p)
+perm-length (H.swap _ _ p)   = ≡-cong (λ n → suc (suc n)) (perm-length p)
+perm-length (H.trans p q)    = ≡-trans (perm-length p) (perm-length q)
+
+perm-All : ∀ {a r q} {A : Set a} {R : A → A → Set r} {P : A → Set q} →
+           (∀ {x y} → R x y → P x → P y) →
+           {xs ys : List A} → H.Permutation R xs ys → All P xs → All P ys
+perm-All resp (H.refl [])          []         = []
+perm-All resp (H.refl (r ∷ pw))    (px ∷ pxs) = resp r px ∷ perm-All resp (H.refl pw) pxs
+perm-All resp (H.prep r p)         (px ∷ pxs) = resp r px ∷ perm-All resp p pxs
+perm-All resp (H.swap r₁ r₂ p) (px ∷ py ∷ pxs) = resp r₂ py ∷ resp r₁ px ∷ perm-All resp p pxs
+perm-All resp (H.trans p q)        pxs        = perm-All resp q (perm-All resp p pxs)
+
+length-concat : ∀ {a} {A : Set a} (xss : List (List A)) →
+                length (concat xss) ≡ sum (map length xss)
+length-concat []         = ≡-refl
+length-concat (xs ∷ xss) =
+  ≡-trans (length-++ xs) (≡-cong (length xs +_) (length-concat xss))
+
+sum-≥-length : ∀ {ns : List ℕ} → All (λ n → 1 ≤ n) ns → length ns ≤ sum ns
+sum-≥-length []       = z≤n
+sum-≥-length (h ∷ hs) = +-mono-≤ h (sum-≥-length hs)
+
+sum-ones : ∀ {ns : List ℕ} → All (λ n → 1 ≤ n) ns → sum ns ≡ length ns → All (_≡ 1) ns
+sum-ones []                                  _  = []
+sum-ones {ns = suc m ∷ ns} (s≤s z≤n ∷ hs) eq = ≡-cong suc m≡0 ∷ sum-ones hs rest
+  where
+  eq₂ : m + sum ns ≡ length ns
+  eq₂ = suc-injective eq
+
+  m≡0 : m ≡ 0
+  m≡0 = n≤0⇒n≡0 (+-cancelʳ-≤ (sum ns) m 0 (≤-trans (≤-reflexive eq₂) (sum-≥-length hs)))
+
+  rest : sum ns ≡ length ns
+  rest = ≡-trans (≡-cong (_+ sum ns) (≡-sym m≡0)) eq₂
+
+singleton : ∀ {a} {A : Set a} (l : List A) → length l ≡ 1 → Σ A (λ x → l ≡ x ∷ [])
+singleton (x ∷ []) e = x , ≡-refl
+
 -- Lists of lists compared up to reordering at both levels.
 _↭↭_ : ∀ {a} {A : Set a} → List (List A) → List (List A) → Set a
 _↭↭_ = H.Permutation _↭_
@@ -167,6 +212,14 @@ private
 ↭↭-of-↭ (↭.prep x p)   = H.prep ↭-refl (↭↭-of-↭ p)
 ↭↭-of-↭ (↭.swap x y p) = H.swap ↭-refl ↭-refl (↭↭-of-↭ p)
 ↭↭-of-↭ (↭.trans p q)  = H.trans (↭↭-of-↭ p) (↭↭-of-↭ q)
+
+↭↭-++⁺ : ∀ {a} {A : Set a} {xss yss uss vss : List (List A)} →
+         xss ↭↭ yss → uss ↭↭ vss → (xss ++ uss) ↭↭ (yss ++ vss)
+↭↭-++⁺ (H.refl [])        q = q
+↭↭-++⁺ (H.refl (r ∷ pw))  q = H.prep r (↭↭-++⁺ (H.refl pw) q)
+↭↭-++⁺ (H.prep r p)       q = H.prep r (↭↭-++⁺ p q)
+↭↭-++⁺ (H.swap r₁ r₂ p)   q = H.swap r₁ r₂ (↭↭-++⁺ p q)
+↭↭-++⁺ (H.trans p p')     q = H.trans (↭↭-++⁺ p q) (↭↭-++⁺ p' ↭↭-refl)
 
 concat-resp : ∀ {a} {A : Set a} {rss rss' : List (List A)} →
               rss ↭↭ rss' → concat rss ↭ concat rss'
