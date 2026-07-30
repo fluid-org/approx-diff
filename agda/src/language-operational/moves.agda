@@ -1038,3 +1038,57 @@ hide-reveal-graph D p K S pv x y i j hx hy =
   (≡-trans (≡-cong (fo-graph D x y i j two.⊔_)
                    (summary-perm D (hide-reveal-hidden-set D p K S pv) x y i j))
            (≡-sym (visible-graph-summary D K S x y i j hx hy)))
+
+private
+  hidden-not-visible : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                       (K : Config D) → Summarised K → ∀ {p} →
+                       member p (hidden-set K) ≡ Bool.true →
+                       member p (K .visible) ≡ Bool.false
+  hidden-not-visible K S {p} hp =
+    any-false (All-map
+      (λ {q} cr → eq-path-false-sym {p = q} {q = p}
+                    (member-All {eq = eq-path} eq-path-≡ {x = p} cr hp))
+      (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S)))))
+
+-- Hide after reveal at the same vertex restores the visible set exactly, the hidden set up to
+-- permutation, and the visible graph at entries with no hidden endpoint.
+reveal-hide-visible : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                      (p : Path D) (K : Config D) → Summarised K →
+                      member p (hidden-set K) ≡ Bool.true →
+                      hide-at D p (reveal-at D p K) .visible ≡ K .visible
+reveal-hide-visible D p K S hp =
+  ≡-trans (filter-head-false (K .visible) (≡-cong Bool.not (eq-path-refl p)))
+          (filter-all-true (All-map (λ h → ≡-cong Bool.not h)
+             (any-false-All _ (K .visible) (hidden-not-visible K S {p = p} hp))))
+
+reveal-hide-hidden-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                         (p : Path D) (K : Config D) → Summarised K →
+                         member p (hidden-set K) ≡ Bool.true →
+                         hidden-set (hide-at D p (reveal-at D p K)) ↭ hidden-set K
+reveal-hide-hidden-set D p K S hp =
+  ↭-trans (hide-at-hidden-set D p (reveal-at D p K))
+          (reveal-set D p (K .hidden)
+             (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                         (partition-distinct K S))))
+             (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
+                      (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ (K .hidden)))) hp)))
+
+reveal-hide-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                    (p : Path D) (K : Config D) → Summarised K →
+                    member p (hidden-set K) ≡ Bool.true →
+                    ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                    member-vertex x (hidden-set K) ≡ Bool.false →
+                    member-vertex y (hidden-set K) ≡ Bool.false →
+                    visible-graph D (hide-at D p (reveal-at D p K)) x y i j ≡
+                    visible-graph D K x y i j
+reveal-hide-graph D p K S hp x y i j hx hy =
+  ≡-trans (visible-graph-summary D (hide-at D p (reveal-at D p K))
+             (hide-at-summarised D p (reveal-at D p K)
+                (reveal-at-summarised D p K S hp)
+                (≡-cong (_∨ member p (K .visible)) (eq-path-refl p)))
+             x y i j
+             (≡-trans (member-vertex-perm x (reveal-hide-hidden-set D p K S hp)) hx)
+             (≡-trans (member-vertex-perm y (reveal-hide-hidden-set D p K S hp)) hy))
+  (≡-trans (≡-cong (fo-graph D x y i j two.⊔_)
+                   (summary-perm D (reveal-hide-hidden-set D p K S hp) x y i j))
+           (≡-sym (visible-graph-summary D K S x y i j hx hy)))
