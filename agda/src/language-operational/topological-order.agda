@@ -18,6 +18,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_)
 open import signature using (Signature)
 open import primitives using (Primitives)
 import Data.Bool as Bool
+import hide-algebra
 import matrix
 import two
 
@@ -613,18 +614,11 @@ ForwardM {D = D} G = ∀ (x y : VertexM D) (i : Fin (vertex-width-m y)) (j : Fin
 -- commutation pushed through the rest of the fold by congruence.
 private
   module Ranked (V : Set ℓ) (w : V → ℕ) (rk : V → ℕ) where
-    private
-      Gr : Set ℓ
-      Gr = (x y : V) → M.Matrix (w y) (w x)
+    open hide-algebra.Hide V w using (Gr; h; _≈g_; fold-cong)
 
+    private
       Fwd : Gr → Set ℓ
       Fwd G = ∀ x y (i : Fin (w y)) (j : Fin (w x)) → G x y i j ≡ two.I → rk x < rk y
-
-      h : Gr → V → Gr
-      h G r x y = G x y M.+ₘ (G r y M.∘ G x r)
-
-      _≈g_ : Gr → Gr → Set ℓ
-      G ≈g G' = ∀ x y (i : Fin (w y)) (j : Fin (w x)) → G x y i j ≡ G' x y i j
 
     fwd-h : ∀ {G} r → Fwd G → Fwd (h G r)
     fwd-h {G} r fwd x y i j e with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) e
@@ -672,14 +666,6 @@ private
     comm : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (w y)) (j : Fin (w x)) →
            h (h G r) r' x y i j ≡ h (h G r') r x y i j
     comm fwd r r' x y i j = two.I-antisym (into fwd r r' x y i j) (into fwd r' r x y i j)
-
-    h-cong : ∀ {G G'} r → G ≈g G' → h G r ≈g h G' r
-    h-cong r p x y i j =
-      ≡-cong₂ two._⊔_ (p x y i j) (M.Σ-cong-≡ (λ k → ≡-cong₂ two._⊓_ (p r y i k) (p x r k j)))
-
-    fold-cong : ∀ {G G'} rs → G ≈g G' → foldl h G rs ≈g foldl h G' rs
-    fold-cong []       p = p
-    fold-cong (r ∷ rs) p = fold-cong rs (h-cong r p)
 
     perm : ∀ {G rs rs'} → Fwd G → rs ↭ rs' → foldl h G rs ≈g foldl h G rs'
     perm fwd ↭.refl x y i j = ≡-refl
@@ -745,11 +731,6 @@ hide-comm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸
               ForwardM G → ∀ (r r' x y : VertexM D) i j →
               hide-m (hide-m G r) r' x y i j ≡ hide-m (hide-m G r') r x y i j
 hide-comm-m {D = D} = Ranked.comm (VertexM D) vertex-width-m rank-v-m
-
-hide-all-cong : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G G' : Graph D} →
-                (rs : List (Vertex D)) → (∀ x y i j → G x y i j ≡ G' x y i j) →
-                ∀ (x y : Vertex D) i j → hide-all G rs x y i j ≡ hide-all G' rs x y i j
-hide-all-cong {D = D} = Ranked.fold-cong (Vertex D) vertex-width rank-v
 
 hide-all-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
                 Forward G → ∀ {rs rs'} → rs ↭ rs' →

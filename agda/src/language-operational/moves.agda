@@ -42,6 +42,9 @@ open import language-operational.topological-order Sig 𝒫
 private
   module M = matrix.Mat two.semiring
 
+  module HA {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) =
+    hide-algebra.Hide (Vertex D) vertex-width
+
 member-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
               (q : Path D) {C C' : List (Path D)} → C ↭ C' → member q C ≡ member q C'
 member-perm q = any-perm (eq-path q)
@@ -75,7 +78,7 @@ summary-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v
                ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
                summary D C x y i j ≡ summary D C' x y i j
 summary-perm D {C} {C'} p x y i j =
-  ≡-trans (hide-all-cong (map at C) (restrict-perm (fo-graph D) p) x y i j)
+  ≡-trans (HA.fold-cong D (map at C) (restrict-perm (fo-graph D) p) x y i j)
           (hide-all-perm (restrict-forward C' (fo-forward D)) (map⁺ at p) x y i j)
 
 adjacent-sym : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
@@ -185,9 +188,6 @@ hide-at-separated D p K S =
   where g = any (λ q → adjacent (fo-graph D) (at p) (at q))
 
 private
-  module HA {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) =
-    hide-algebra.Hide (Vertex D) vertex-width
-
   mv-mono : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
             {C E : List (Path D)} →
             (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
