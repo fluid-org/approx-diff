@@ -386,6 +386,23 @@ partition-permᴿ {R = R} f resp {xs} {ys} p =
          (≡-sym (partition-filter f xs)) (≡-sym (partition-filter f ys))
          (filter-permᴿ (λ x → not (f x)) (λ rxy → ≡-cong not (resp rxy)) p)
 
+filter-++ : ∀ {a} {A : Set a} (f : A → Bool) (xs ys : List A) →
+            filterᵇ f (xs ++ ys) ≡ filterᵇ f xs ++ filterᵇ f ys
+filter-++ f []       ys = ≡-refl
+filter-++ f (x ∷ xs) ys =
+  bool-case (f x)
+    (λ ef → ≡-trans (filter-head-true {f = f} {x = x} (xs ++ ys) ef)
+            (≡-trans (≡-cong (x ∷_) (filter-++ f xs ys))
+                     (≡-cong (_++ filterᵇ f ys) (≡-sym (filter-head-true {f = f} {x = x} xs ef)))))
+    (λ ef → ≡-trans (filter-head-false {f = f} {x = x} (xs ++ ys) ef)
+            (≡-trans (filter-++ f xs ys)
+                     (≡-cong (_++ filterᵇ f ys) (≡-sym (filter-head-false {f = f} {x = x} xs ef)))))
+
+filter-none : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
+              All (λ x → f x ≡ Bool.false) xs → filterᵇ f xs ≡ []
+filter-none []              = ≡-refl
+filter-none (_∷_ {x} h hs) rewrite h = filter-none hs
+
 filter-comm : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
               filterᵇ f (filterᵇ g xs) ≡ filterᵇ g (filterᵇ f xs)
 filter-comm f g []       = ≡-refl
