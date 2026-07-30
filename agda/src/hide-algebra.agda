@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Fin using (Fin)
+open import Data.Fin as Fin using (Fin)
 open import Data.List using (List; []; _∷_; foldl)
 open import Data.List.Relation.Unary.All using (All; []; _∷_) renaming (map to All-map)
-open import Data.Nat using (ℕ)
+open import Data.Nat using (ℕ; zero; suc)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
@@ -52,6 +52,38 @@ module Hide {ℓ} (V : Set ℓ) (w : V → ℕ) where
     ⊔-insert O b c q = ≡-refl
     ⊔-insert I O c ()
     ⊔-insert I I c ≡-refl = ≡-refl
+
+  private
+    Σ-O : ∀ {n} (f : Fin n → Two) → (∀ k → f k ≡ O) → M.Σ f ≡ O
+    Σ-O {zero}  f z = ≡-refl
+    Σ-O {suc n} f z =
+      ≡-cong₂ _⊔_ (z Fin.zero) (Σ-O (λ k → f (Fin.suc k)) (λ k → z (Fin.suc k)))
+
+    ⊓-O : ∀ x → (x two.⊓ O) ≡ O
+    ⊓-O O = ≡-refl
+    ⊓-O I = ≡-refl
+
+  -- Zero rows and columns persist under hiding: every new entry into the row or column of r₀
+  -- factors through an entry of that row or column.
+  zero-fold : ∀ {G : Gr} rs r₀ →
+              (((z : V) (i : Fin (w z)) (j : Fin (w r₀)) → G r₀ z i j ≡ O) ×
+               ((z : V) (i : Fin (w r₀)) (j : Fin (w z)) → G z r₀ i j ≡ O)) →
+              (((z : V) (i : Fin (w z)) (j : Fin (w r₀)) → foldl h G rs r₀ z i j ≡ O) ×
+               ((z : V) (i : Fin (w r₀)) (j : Fin (w z)) → foldl h G rs z r₀ i j ≡ O))
+  zero-fold []           r₀ zz        = zz
+  zero-fold {G} (r ∷ rs) r₀ (zr , zc) = zero-fold {h G r} rs r₀ (zr' , zc')
+    where
+    zr' : (z : V) (i : Fin (w z)) (j : Fin (w r₀)) → h G r r₀ z i j ≡ O
+    zr' z i j =
+      ≡-cong₂ _⊔_ (zr z i j)
+        (Σ-O (λ k → G r z i k two.⊓ G r₀ r k j)
+             (λ k → ≡-trans (≡-cong (G r z i k two.⊓_) (zr r k j)) (⊓-O (G r z i k))))
+
+    zc' : (z : V) (i : Fin (w r₀)) (j : Fin (w z)) → h G r z r₀ i j ≡ O
+    zc' z i j =
+      ≡-cong₂ _⊔_ (zc z i j)
+        (Σ-O (λ k → G r r₀ i k two.⊓ G z r k j)
+             (λ k → ≡-cong (two._⊓ G z r k j) (zc r i k)))
 
   -- Hiding only adds entries.
   increasing : ∀ {G : Gr} rs x y (i : Fin (w y)) (j : Fin (w x)) →
