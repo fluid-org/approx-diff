@@ -578,8 +578,15 @@ private
   ... | (j , e) with two.⊓-I (A i j) (B j l) e
   ...   | (e₁ , e₂) = j , (e₁ , e₂)
 
--- The forward-edge property of an arbitrary graph over a derivation, and its preservation by
--- hiding: a new edge from x to y composes edges from x to r and r to y, so still climbs in rank.
+  Σ-I-at : ∀ {n} (f : Fin n → two.Two) (k : Fin n) → f k ≡ two.I → M.Σ f ≡ two.I
+  Σ-I-at f F.zero    h = two.⊔-I-inl h
+  Σ-I-at f (F.suc k) h = two.⊔-I-inr (f F.zero) (Σ-I-at (λ i → f (F.suc i)) k h)
+
+  ∘-I-at : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l j →
+           A i j ≡ two.I → B j l ≡ two.I → (A M.∘ B) i l ≡ two.I
+  ∘-I-at A B i l j h₁ h₂ = Σ-I-at (λ j' → A i j' two.⊓ B j' l) j (two.⊓-I-pair h₁ h₂)
+
+-- The forward-edge property of an arbitrary graph over a derivation.
 Forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Graph D → Set ℓ
 Forward {D = D} G = ∀ (x y : Vertex D) (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
                     G x y i j ≡ two.I → rank-v x < rank-v y
@@ -596,136 +603,15 @@ ForwardM : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ
 ForwardM {D = D} G = ∀ (x y : VertexM D) (i : Fin (vertex-width-m y)) (j : Fin (vertex-width-m x)) →
                      G x y i j ≡ two.I → rank-v-m x < rank-v-m y
 
-hide-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
-               (r : Vertex D) → Forward G → Forward (hide G r)
-hide-forward {G = G} r fwd x y i j h with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
-... | inj₁ e = fwd x y i j e
-... | inj₂ e with ∘-I (G r y) (G x r) i j e
-...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
-
-hide-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-                 {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
-                 (r : VertexS D) → ForwardS G → ForwardS (hide-s G r)
-hide-forward-s {G = G} r fwd x y i j h with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
-... | inj₁ e = fwd x y i j e
-... | inj₂ e with ∘-I (G r y) (G x r) i j e
-...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
-
-hide-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-                 {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-                 {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-                 {D : Map γ s σ' v R v' R'} {G : GraphM D}
-                 (r : VertexM D) → ForwardM G → ForwardM (hide-m G r)
-hide-forward-m {G = G} r fwd x y i j h with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
-... | inj₁ e = fwd x y i j e
-... | inj₂ e with ∘-I (G r y) (G x r) i j e
-...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
-
-hide-all-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
-                   (rs : List (Vertex D)) → Forward G → Forward (hide-all G rs)
-hide-all-forward []       fwd = fwd
-hide-all-forward (r ∷ rs) fwd = hide-all-forward rs (hide-forward r fwd)
-
-hide-all-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-                     {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
-                     (rs : List (VertexS D)) → ForwardS G → ForwardS (hide-all-s G rs)
-hide-all-forward-s []       fwd = fwd
-hide-all-forward-s (r ∷ rs) fwd = hide-all-forward-s rs (hide-forward-s r fwd)
-
-hide-all-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-                     {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-                     {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-                     {D : Map γ s σ' v R v' R'} {G : GraphM D}
-                     (rs : List (VertexM D)) → ForwardM G → ForwardM (hide-all-m G rs)
-hide-all-forward-m []       fwd = fwd
-hide-all-forward-m (r ∷ rs) fwd = hide-all-forward-m rs (hide-forward-m r fwd)
-
--- The first-order dependence graph inherits the property.
-fo-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Forward (fo-graph D)
-fo-forward D =
-  hide-all-forward (map at (filterᵇ (λ p → Bool.not (is-ε p) Bool.∧ Bool.not (fo-at p)) (paths D)))
-                   (forward D)
-
+-- Consequences of forwardness for hiding, proved once over an abstract ranked vertex set and
+-- instantiated to the three graph families. Hiding preserves the property, since a new edge
+-- composes edges through the hidden vertex; hiding two vertices commutes, since an entry of one
+-- order decomposes into a term also present in the other order, except the residual routed
+-- through an edge in each direction between the two hidden vertices, which forwardness rules
+-- out; and hiding a list of vertices is therefore independent of the order, adjacent swaps being
+-- commutation pushed through the rest of the fold by congruence.
 private
-  Σ-I-at : ∀ {n} (f : Fin n → two.Two) (k : Fin n) → f k ≡ two.I → M.Σ f ≡ two.I
-  Σ-I-at f F.zero    h = two.⊔-I-inl h
-  Σ-I-at f (F.suc k) h = two.⊔-I-inr (f F.zero) (Σ-I-at (λ i → f (F.suc i)) k h)
-
-  ∘-I-at : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l j →
-           A i j ≡ two.I → B j l ≡ two.I → (A M.∘ B) i l ≡ two.I
-  ∘-I-at A B i l j h₁ h₂ = Σ-I-at (λ j' → A i j' two.⊓ B j' l) j (two.⊓-I-pair h₁ h₂)
-
--- Hiding two vertices of a forward graph commutes. Proved once over an abstract vertex set: an
--- entry of one order decomposes into a term also present in the other order, except the residual
--- routed through an edge in each direction between r and r', which forwardness rules out.
-private
-  module Comm (V : Set ℓ) (w : V → ℕ) (rk : V → ℕ)
-              (G : (x y : V) → M.Matrix (w y) (w x))
-              (fwd : ∀ x y (i : Fin (w y)) (j : Fin (w x)) → G x y i j ≡ two.I → rk x < rk y)
-    where
-    h : V → (x y : V) → M.Matrix (w y) (w x)
-    h r x y = G x y M.+ₘ (G r y M.∘ G x r)
-
-    h₂ : V → V → (x y : V) → M.Matrix (w y) (w x)
-    h₂ r r' x y = h r x y M.+ₘ (h r r' y M.∘ h r x r')
-
-    into : ∀ r r' x y (i : Fin (w y)) (j : Fin (w x)) →
-           h₂ r r' x y i j ≡ two.I → h₂ r' r x y i j ≡ two.I
-    into r r' x y i j e with two.⊔-I (h r x y i j) ((h r r' y M.∘ h r x r') i j) e
-    into r r' x y i j e | inj₁ a with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) a
-    ... | inj₁ a₁ = two.⊔-I-inl (two.⊔-I-inl a₁)
-    ... | inj₂ a₂ with ∘-I (G r y) (G x r) i j a₂
-    ...   | (k , (e₁ , e₂)) =
-      two.⊔-I-inr (h r' x y i j)
-        (∘-I-at (h r' r y) (h r' x r) i j k (two.⊔-I-inl e₁) (two.⊔-I-inl e₂))
-    into r r' x y i j e | inj₂ b with ∘-I (h r r' y) (h r x r') i j b
-    ... | (m , (c , d)) with two.⊔-I (G r' y i m) ((G r y M.∘ G r' r) i m) c
-                           | two.⊔-I (G x r' m j) ((G r r' M.∘ G x r) m j) d
-    ...   | inj₁ c₁ | inj₁ d₁ =
-      two.⊔-I-inl (two.⊔-I-inr (G x y i j) (∘-I-at (G r' y) (G x r') i j m c₁ d₁))
-    ...   | inj₁ c₁ | inj₂ d₂ with ∘-I (G r r') (G x r) m j d₂
-    ...     | (k , (d₁' , d₂')) =
-      two.⊔-I-inr (h r' x y i j)
-        (∘-I-at (h r' r y) (h r' x r) i j k
-          (two.⊔-I-inr (G r y i k) (∘-I-at (G r' y) (G r r') i k m c₁ d₁'))
-          (two.⊔-I-inl d₂'))
-    into r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₁ d₁ with ∘-I (G r y) (G r' r) i m c₂
-    ...     | (k , (c₁' , c₂')) =
-      two.⊔-I-inr (h r' x y i j)
-        (∘-I-at (h r' r y) (h r' x r) i j k
-          (two.⊔-I-inl c₁')
-          (two.⊔-I-inr (G x r k j) (∘-I-at (G r' r) (G x r') k j m c₂' d₁)))
-    into r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₂ d₂
-      with ∘-I (G r y) (G r' r) i m c₂ | ∘-I (G r r') (G x r) m j d₂
-    ...     | (k , (_ , c₂')) | (k' , (d₁' , _)) =
-      ⊥-elim (<-asym (fwd r' r k m c₂') (fwd r r' m k' d₁'))
-
-    comm : ∀ r r' x y (i : Fin (w y)) (j : Fin (w x)) → h₂ r r' x y i j ≡ h₂ r' r x y i j
-    comm r r' x y i j = two.I-antisym (into r r' x y i j) (into r' r x y i j)
-
-hide-comm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
-            Forward G → ∀ (r r' x y : Vertex D) i j →
-            hide (hide G r) r' x y i j ≡ hide (hide G r') r x y i j
-hide-comm {D = D} {G = G} fwd = Comm.comm (Vertex D) vertex-width rank-v G fwd
-
-hide-comm-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-              {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D} →
-              ForwardS G → ∀ (r r' x y : VertexS D) i j →
-              hide-s (hide-s G r) r' x y i j ≡ hide-s (hide-s G r') r x y i j
-hide-comm-s {D = D} {G = G} fwd = Comm.comm (VertexS D) vertex-width-s rank-v-s G fwd
-
-hide-comm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-              {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-              {D : Map γ s σ' v R v' R'} {G : GraphM D} →
-              ForwardM G → ∀ (r r' x y : VertexM D) i j →
-              hide-m (hide-m G r) r' x y i j ≡ hide-m (hide-m G r') r x y i j
-hide-comm-m {D = D} {G = G} fwd = Comm.comm (VertexM D) vertex-width-m rank-v-m G fwd
-
--- Hiding a list of vertices of a forward graph is independent of the order: adjacent swaps are
--- the commutation lemma, pushed through the rest of the fold by congruence.
-private
-  module Fold (V : Set ℓ) (w : V → ℕ) (rk : V → ℕ) where
+  module Ranked (V : Set ℓ) (w : V → ℕ) (rk : V → ℕ) where
     private
       Gr : Set ℓ
       Gr = (x y : V) → M.Matrix (w y) (w x)
@@ -745,6 +631,47 @@ private
     ... | inj₂ a with ∘-I (G r y) (G x r) i j a
     ...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
 
+    fwd-fold : ∀ {G} rs → Fwd G → Fwd (foldl h G rs)
+    fwd-fold []       fwd = fwd
+    fwd-fold (r ∷ rs) fwd = fwd-fold rs (fwd-h r fwd)
+
+    into : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (w y)) (j : Fin (w x)) →
+           h (h G r) r' x y i j ≡ two.I → h (h G r') r x y i j ≡ two.I
+    into {G} fwd r r' x y i j e
+      with two.⊔-I (h G r x y i j) ((h G r r' y M.∘ h G r x r') i j) e
+    into {G} fwd r r' x y i j e | inj₁ a with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) a
+    ... | inj₁ a₁ = two.⊔-I-inl (two.⊔-I-inl a₁)
+    ... | inj₂ a₂ with ∘-I (G r y) (G x r) i j a₂
+    ...   | (k , (e₁ , e₂)) =
+      two.⊔-I-inr (h G r' x y i j)
+        (∘-I-at (h G r' r y) (h G r' x r) i j k (two.⊔-I-inl e₁) (two.⊔-I-inl e₂))
+    into {G} fwd r r' x y i j e | inj₂ b with ∘-I (h G r r' y) (h G r x r') i j b
+    ... | (m , (c , d)) with two.⊔-I (G r' y i m) ((G r y M.∘ G r' r) i m) c
+                           | two.⊔-I (G x r' m j) ((G r r' M.∘ G x r) m j) d
+    ...   | inj₁ c₁ | inj₁ d₁ =
+      two.⊔-I-inl (two.⊔-I-inr (G x y i j) (∘-I-at (G r' y) (G x r') i j m c₁ d₁))
+    ...   | inj₁ c₁ | inj₂ d₂ with ∘-I (G r r') (G x r) m j d₂
+    ...     | (k , (d₁' , d₂')) =
+      two.⊔-I-inr (h G r' x y i j)
+        (∘-I-at (h G r' r y) (h G r' x r) i j k
+          (two.⊔-I-inr (G r y i k) (∘-I-at (G r' y) (G r r') i k m c₁ d₁'))
+          (two.⊔-I-inl d₂'))
+    into {G} fwd r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₁ d₁
+      with ∘-I (G r y) (G r' r) i m c₂
+    ...     | (k , (c₁' , c₂')) =
+      two.⊔-I-inr (h G r' x y i j)
+        (∘-I-at (h G r' r y) (h G r' x r) i j k
+          (two.⊔-I-inl c₁')
+          (two.⊔-I-inr (G x r k j) (∘-I-at (G r' r) (G x r') k j m c₂' d₁)))
+    into {G} fwd r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₂ d₂
+      with ∘-I (G r y) (G r' r) i m c₂ | ∘-I (G r r') (G x r) m j d₂
+    ...     | (k , (_ , c₂')) | (k' , (d₁' , _)) =
+      ⊥-elim (<-asym (fwd r' r k m c₂') (fwd r r' m k' d₁'))
+
+    comm : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (w y)) (j : Fin (w x)) →
+           h (h G r) r' x y i j ≡ h (h G r') r x y i j
+    comm fwd r r' x y i j = two.I-antisym (into fwd r r' x y i j) (into fwd r' r x y i j)
+
     h-cong : ∀ {G G'} r → G ≈g G' → h G r ≈g h G' r
     h-cong r p x y i j =
       ≡-cong₂ two._⊔_ (p x y i j) (M.Σ-cong-≡ (λ k → ≡-cong₂ two._⊓_ (p r y i k) (p x r k j)))
@@ -756,26 +683,83 @@ private
     perm : ∀ {G rs rs'} → Fwd G → rs ↭ rs' → foldl h G rs ≈g foldl h G rs'
     perm fwd ↭.refl x y i j = ≡-refl
     perm fwd (↭.prep r p) = perm (fwd-h r fwd) p
-    perm {G} fwd (↭.swap {xs = rs} a b p) x y i j =
-      ≡-trans (fold-cong rs (Comm.comm V w rk G fwd a b) x y i j)
+    perm fwd (↭.swap {xs = rs} a b p) x y i j =
+      ≡-trans (fold-cong rs (comm fwd a b) x y i j)
               (perm (fwd-h a (fwd-h b fwd)) p x y i j)
     perm fwd (↭.trans p q) x y i j = ≡-trans (perm fwd p x y i j) (perm fwd q x y i j)
+
+hide-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
+               (r : Vertex D) → Forward G → Forward (hide G r)
+hide-forward {D = D} = Ranked.fwd-h (Vertex D) vertex-width rank-v
+
+hide-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                 {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
+                 (r : VertexS D) → ForwardS G → ForwardS (hide-s G r)
+hide-forward-s {D = D} = Ranked.fwd-h (VertexS D) vertex-width-s rank-v-s
+
+hide-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                 {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                 {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                 {D : Map γ s σ' v R v' R'} {G : GraphM D}
+                 (r : VertexM D) → ForwardM G → ForwardM (hide-m G r)
+hide-forward-m {D = D} = Ranked.fwd-h (VertexM D) vertex-width-m rank-v-m
+
+hide-all-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
+                   (rs : List (Vertex D)) → Forward G → Forward (hide-all G rs)
+hide-all-forward {D = D} = Ranked.fwd-fold (Vertex D) vertex-width rank-v
+
+hide-all-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                     {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
+                     (rs : List (VertexS D)) → ForwardS G → ForwardS (hide-all-s G rs)
+hide-all-forward-s {D = D} = Ranked.fwd-fold (VertexS D) vertex-width-s rank-v-s
+
+hide-all-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                     {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                     {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                     {D : Map γ s σ' v R v' R'} {G : GraphM D}
+                     (rs : List (VertexM D)) → ForwardM G → ForwardM (hide-all-m G rs)
+hide-all-forward-m {D = D} = Ranked.fwd-fold (VertexM D) vertex-width-m rank-v-m
+
+-- The first-order dependence graph inherits the property.
+fo-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Forward (fo-graph D)
+fo-forward D =
+  hide-all-forward (map at (filterᵇ (λ p → Bool.not (is-ε p) Bool.∧ Bool.not (fo-at p)) (paths D)))
+                   (forward D)
+
+hide-comm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
+            Forward G → ∀ (r r' x y : Vertex D) i j →
+            hide (hide G r) r' x y i j ≡ hide (hide G r') r x y i j
+hide-comm {D = D} = Ranked.comm (Vertex D) vertex-width rank-v
+
+hide-comm-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+              {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D} →
+              ForwardS G → ∀ (r r' x y : VertexS D) i j →
+              hide-s (hide-s G r) r' x y i j ≡ hide-s (hide-s G r') r x y i j
+hide-comm-s {D = D} = Ranked.comm (VertexS D) vertex-width-s rank-v-s
+
+hide-comm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+              {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+              {D : Map γ s σ' v R v' R'} {G : GraphM D} →
+              ForwardM G → ∀ (r r' x y : VertexM D) i j →
+              hide-m (hide-m G r) r' x y i j ≡ hide-m (hide-m G r') r x y i j
+hide-comm-m {D = D} = Ranked.comm (VertexM D) vertex-width-m rank-v-m
 
 hide-all-cong : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G G' : Graph D} →
                 (rs : List (Vertex D)) → (∀ x y i j → G x y i j ≡ G' x y i j) →
                 ∀ (x y : Vertex D) i j → hide-all G rs x y i j ≡ hide-all G' rs x y i j
-hide-all-cong {D = D} = Fold.fold-cong (Vertex D) vertex-width rank-v
+hide-all-cong {D = D} = Ranked.fold-cong (Vertex D) vertex-width rank-v
 
 hide-all-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
                 Forward G → ∀ {rs rs'} → rs ↭ rs' →
                 ∀ (x y : Vertex D) i j → hide-all G rs x y i j ≡ hide-all G rs' x y i j
-hide-all-perm {D = D} fwd = Fold.perm (Vertex D) vertex-width rank-v fwd
+hide-all-perm {D = D} fwd = Ranked.perm (Vertex D) vertex-width rank-v fwd
 
 hide-all-perm-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
                   {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D} →
                   ForwardS G → ∀ {rs rs'} → rs ↭ rs' →
                   ∀ (x y : VertexS D) i j → hide-all-s G rs x y i j ≡ hide-all-s G rs' x y i j
-hide-all-perm-s {D = D} fwd = Fold.perm (VertexS D) vertex-width-s rank-v-s fwd
+hide-all-perm-s {D = D} fwd = Ranked.perm (VertexS D) vertex-width-s rank-v-s fwd
 
 hide-all-perm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                   {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
@@ -783,4 +767,4 @@ hide-all-perm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ
                   {D : Map γ s σ' v R v' R'} {G : GraphM D} →
                   ForwardM G → ∀ {rs rs'} → rs ↭ rs' →
                   ∀ (x y : VertexM D) i j → hide-all-m G rs x y i j ≡ hide-all-m G rs' x y i j
-hide-all-perm-m {D = D} fwd = Fold.perm (VertexM D) vertex-width-m rank-v-m fwd
+hide-all-perm-m {D = D} fwd = Ranked.perm (VertexM D) vertex-width-m rank-v-m fwd
