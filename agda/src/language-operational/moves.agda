@@ -28,7 +28,7 @@ import two
 
 -- The moves preserve the invariant that the stored regions partition the hidden set into
 -- pairwise-apart pieces, each carrying its summary. The initial configuration satisfies the
--- invariant, and the hide move preserves it.
+-- invariant, and the hide and reveal moves preserve it.
 module language-operational.moves {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
@@ -814,3 +814,127 @@ private
             (m₂ q' mq'))
         (any-self eq-path-refl C₂)))
       (any-self eq-path-refl C₁))
+
+  -- Each piece of a split region lies inside the region.
+  split-⊆ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
+            (CH : List (Path D) × Graph D) →
+            All (λ C₁ → ∀ q → member q C₁ ≡ Bool.true → member q (proj₁ CH) ≡ Bool.true)
+                (map proj₁ (split-region D p CH))
+  split-⊆ D p (C , H) with member p C
+  ... | Bool.false = (λ q h → h) ∷ []
+  ... | Bool.true  =
+    subst (All (λ C₁ → ∀ q → member q C₁ ≡ Bool.true → member q C ≡ Bool.true))
+          (≡-sym (map-proj₁-pair (summary D) (regions (fo-graph D) C∖p)))
+          (All-map (λ {C₁} inc q h →
+                      any-filterᵇ (eq-path q) (λ q' → Bool.not (eq-path p q')) C
+                        (≡-trans (≡-sym (member-perm q (regions-concat (fo-graph D) C∖p)))
+                                 (inc q h)))
+                   (blocks-⊆ (regions (fo-graph D) C∖p)))
+    where C∖p = filterᵇ (λ q → Bool.not (eq-path p q)) C
+
+  -- Splitting leaves a region without p alone.
+  split-none : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
+               {CHs : List (List (Path D) × Graph D)} →
+               All (λ CH → member p (proj₁ CH) ≡ Bool.false) CHs →
+               concat (map (split-region D p) CHs) ≡ CHs
+  split-none D p []                     = ≡-refl
+  split-none D p (_∷_ {C , H} h hs) rewrite h = ≡-cong ((C , H) ∷_) (split-none D p hs)
+
+  -- Splitting at a hidden vertex removes exactly p from the hidden set.
+  reveal-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
+               (CHs : List (List (Path D) × Graph D)) →
+               AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (concat (map proj₁ CHs)) →
+               any (λ CH → member p (proj₁ CH)) CHs ≡ Bool.true →
+               (p ∷ concat (map proj₁ (concat (map (split-region D p) CHs))))
+               ↭ concat (map proj₁ CHs)
+  reveal-set D p ((C , H) ∷ CHs) ps h
+    with AllPairs-++⁻ C (concat (map proj₁ CHs)) ps
+  ... | (aC , aRest , cross) with member p C in e
+  ...   | Bool.false =
+    ↭-trans (↭-sym (shift p C (concat (map proj₁ (concat (map (split-region D p) CHs))))))
+            (++⁺ ↭-refl (reveal-set D p CHs aRest h))
+  ...   | Bool.true  =
+    ↭-trans (↭-reflexive (≡-cong (λ z → p ∷ concat z) (map-++ proj₁ X Z)))
+    (↭-trans (↭-reflexive (≡-cong (p ∷_) (≡-sym (concat-++ (map proj₁ X) (map proj₁ Z)))))
+    (↭-trans (↭-reflexive (≡-cong₂ (λ u v → p ∷ (concat u ++ concat (map proj₁ v)))
+                                   (map-proj₁-pair (summary D) Regs)
+                                   (split-none D p no-p-tail)))
+             (++⁺ head-perm ↭-refl)))
+    where
+    C∖p  = filterᵇ (λ q → Bool.not (eq-path p q)) C
+    Regs = regions (fo-graph D) C∖p
+    X    = map (λ C' → C' , summary D C') Regs
+    Z    = concat (map (split-region D p) CHs)
+
+    no-p-tail : All (λ CH → member p (proj₁ CH) ≡ Bool.false) CHs
+    no-p-tail =
+      any-false-All _ CHs
+        (≡-trans (≡-sym (any-map (λ C' → member p C') proj₁ CHs))
+          (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ CHs)))
+                   (any-false (member-All {eq = eq-path} eq-path-≡ {x = p} cross e))))
+
+    head-perm : (p ∷ concat Regs) ↭ C
+    head-perm =
+      ↭-trans (↭.prep p (regions-concat (fo-graph D) C∖p))
+              (filter-out-↭ {eq = eq-path} (λ {q} {q'} e' → eq-path-≡ {p = q} {q = q'} e')
+                            aC e)
+
+  -- The pieces of a split region are pairwise apart, and each pair equals its summary.
+  split-separated : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
+                    (CH : List (Path D) × Graph D) →
+                    AllPairs (Apart (fo-graph D)) (map proj₁ (split-region D p CH))
+  split-separated D p (C , H) with member p C
+  ... | Bool.false = [] ∷ []
+  ... | Bool.true  =
+    subst (AllPairs (Apart (fo-graph D)))
+          (≡-sym (map-proj₁-pair (summary D) (regions (fo-graph D) C∖p)))
+          (regions-separated (fo-graph D) C∖p)
+    where C∖p = filterᵇ (λ q → Bool.not (eq-path p q)) C
+
+  split-summaries : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (p : Path D)
+                    (CH : List (Path D) × Graph D) →
+                    (∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                     proj₂ CH x y i j ≡ summary D (proj₁ CH) x y i j) →
+                    All (λ CH' → ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                                 proj₂ CH' x y i j ≡ summary D (proj₁ CH') x y i j)
+                        (split-region D p CH)
+  split-summaries D p (C , H) old with member p C
+  ... | Bool.false = old ∷ []
+  ... | Bool.true  =
+    AllP.map⁺ (universal (λ C' x y i j → ≡-refl)
+                         (regions (fo-graph D) (filterᵇ (λ q → Bool.not (eq-path p q)) C)))
+
+-- Revealing a hidden vertex preserves correct summarisation.
+reveal-at-summarised : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                       (p : Path D) (K : Config D) → Summarised K →
+                       member p (hidden-set K) ≡ Bool.true →
+                       Summarised (reveal-at D p K)
+reveal-at-summarised D p K S hp .partition =
+  ↭-trans (↭-sym (shift p (K .visible) (hidden-set (reveal-at D p K))))
+  (↭-trans (++⁺ ↭-refl
+              (reveal-set D p (K .hidden)
+                 (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                             (partition-distinct K S))))
+                 (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
+                          (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ (K .hidden)))) hp))))
+           (S .partition))
+reveal-at-summarised D p K S hp .separated =
+  subst (AllPairs (Apart (fo-graph D)))
+        (≡-trans (≡-cong concat (map-∘ {g = map proj₁} {f = split-region D p} (K .hidden)))
+                 (concat-map {f = proj₁} (map (split-region D p) (K .hidden))))
+        (AllPairsP.concat⁺
+          (AllP.map⁺ (All-map (λ {CH} _ → split-separated D p CH)
+                              (S .summaries)))
+          (AllPairsP.map⁺
+            (AllPairs-map (λ {CH} {CH'} ap →
+                             All-map (λ {C₁} m₁ →
+                                        All-map (λ {C₂} m₂ →
+                                                   Apart-mono {G = fo-graph D}
+                                                     {C₁ = C₁} {C₂ = C₂}
+                                                     {C₁' = proj₁ CH} {C₂' = proj₁ CH'}
+                                                     m₁ m₂ ap)
+                                                (split-⊆ D p CH'))
+                                     (split-⊆ D p CH))
+                          (AllPairsP.map⁻ (S .separated)))))
+reveal-at-summarised D p K S hp .summaries =
+  AllP.concat⁺ (AllP.map⁺ (All-map (λ {CH} old → split-summaries D p CH old) (S .summaries)))
