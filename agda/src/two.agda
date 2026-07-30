@@ -149,7 +149,6 @@ I-antisym {I} {I} f g = ≡-refl
 -- Folds of joins over lists.
 
 open import Data.List using (List; []; _∷_; foldr)
-open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there)
 
 ⊔-swap : ∀ x y z → (x ⊔ (y ⊔ z)) ≡ (y ⊔ (x ⊔ z))
@@ -178,10 +177,6 @@ foldr-⊔-at b {t ∷ ts} (there a) = ⊔-I-inr t (foldr-⊔-at b a)
 foldr-⊔-here : ∀ {b : Two} (ts : List Two) → b ≡ I → foldr _⊔_ b ts ≡ I
 foldr-⊔-here []       e = e
 foldr-⊔-here (t ∷ ts) e = ⊔-I-inr t (foldr-⊔-here ts e)
-
-foldr-⊔-zeros : ∀ {b : Two} {ts : List Two} → All (_≡ O) ts → foldr _⊔_ b ts ≡ b
-foldr-⊔-zeros []       = ≡-refl
-foldr-⊔-zeros (e ∷ es) = ≡-cong₂ _⊔_ e (foldr-⊔-zeros es)
 
 ------------------------------------------------------------------------------
 ¬ : Two → Two
