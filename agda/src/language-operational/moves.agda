@@ -5,13 +5,15 @@ open import Data.Bool.ListAction using (any)
 open import Data.Bool.Properties using (∨-comm; ∧-comm)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
-open import Data.List.Relation.Unary.All using (All; []; _∷_)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+import Data.List.Relation.Unary.All.Properties as AllP
+open import Data.List.Properties using (concat-++)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-trans; ↭-sym; ↭-reflexive)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺)
 open import Data.Product using (_,_; proj₁; proj₂)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Relation.Binary.PropositionalEquality using (_≡_; subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import list
 open import signature using (Signature)
@@ -200,3 +202,29 @@ record Summarised {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v 
                     (K .hidden)
 
 open Summarised public
+
+-- The regions of a list are made from exactly its members.
+regions-concat : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                 (G : Graph D) (ws : List (Path D)) → concat (regions G ws) ↭ ws
+regions-concat G []       = ↭.refl
+regions-concat G (w ∷ ws) =
+  ↭.prep w (↭-trans (↭-reflexive (concat-++ (proj₁ tp) (proj₂ tp)))
+           (↭-trans (concat-resp (↭↭-of-↭ (partition-↭ _ (regions G ws))))
+                    (regions-concat G ws)))
+  where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) (regions G ws)
+
+private
+  stored≡ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+            map proj₁ (initial D .hidden) ≡ regions (fo-graph D) (FO D)
+  stored≡ D = map-proj₁-pair (summary D) (regions (fo-graph D) (FO D))
+
+-- The initial configuration is correctly summarised.
+initial-summarised : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+                     Summarised (initial D)
+initial-summarised D .partition =
+  subst (λ z → concat z ↭ FO D) (≡-sym (stored≡ D)) (regions-concat (fo-graph D) (FO D))
+initial-summarised D .regioned =
+  subst (λ z → z ≈ᵣ regions (fo-graph D) (concat z)) (≡-sym (stored≡ D))
+        (↭↭-sym (regions-perm (fo-graph D) (regions-concat (fo-graph D) (FO D))))
+initial-summarised D .summaries =
+  AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph D) (FO D)))
