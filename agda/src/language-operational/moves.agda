@@ -18,10 +18,10 @@ open import primitives using (Primitives)
 import matrix
 import two
 
--- Towards the maintenance theorem: the moves preserve the invariant that each hidden pair is a
--- region of the hidden set with its summary. So far: summaries and the regions computation are
--- stable under permutation.
-module language-operational.maintenance {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+-- The moves preserve the invariant that each hidden pair is a region of the hidden set with its
+-- summary, and are mutually inverse. So far: summaries and the regions computation are stable
+-- under permutation.
+module language-operational.moves {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫
