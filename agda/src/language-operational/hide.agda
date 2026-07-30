@@ -42,13 +42,12 @@ fo-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R
 fo-graph D =
   hide-all (graph D) (map at (filterᵇ (λ p → not (is-ε p) ∧ not (fo-at p)) (paths D)))
 
-private
-  nonzero : ∀ {m n} → M.Matrix m n → Bool
-  nonzero {m} {n} R = any (λ i → any (λ j → is-I (R i j)) (allFin n)) (allFin m)
-    where
-      is-I : two.Two → Bool
-      is-I two.I = Bool.true
-      is-I two.O = Bool.false
+nonzero : ∀ {m n} → M.Matrix m n → Bool
+nonzero {m} {n} R = any (λ i → any (λ j → is-I (R i j)) (allFin n)) (allFin m)
+  where
+    is-I : two.Two → Bool
+    is-I two.I = Bool.true
+    is-I two.O = Bool.false
 
 -- Vertices sharing an incident edge, in either direction.
 adjacent : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →

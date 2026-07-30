@@ -3,13 +3,15 @@
 open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; map; concat; partitionᵇ)
+open import Data.Bool.Properties using (∨-comm; ∧-comm; ∨-assoc)
+open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
 open import Data.List.Properties using (++-assoc)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
-open ↭ using (_↭_; ↭-refl; ↭-trans; ↭-reflexive)
+open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; ++⁺; ++-comm)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
+open import Data.Empty using (⊥)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
@@ -140,3 +142,190 @@ regions-prep G w ih =
   where tp = partition-resp (any (λ q → adjacent G (at w) (at q)))
                             (any-perm (λ q → adjacent G (at w) (at q)))
                             ih
+
+private
+  pw-refl : ∀ {a} {A : Set a} (xss : List (List A)) → Pointwise _↭_ xss xss
+  pw-refl []         = []
+  pw-refl (xs ∷ xss) = ↭-refl ∷ pw-refl xss
+
+  perm-of-≡ : ∀ {a} {A : Set a} {xss yss : List (List A)} →
+              xss ≡ yss → H.Permutation _↭_ xss yss
+  perm-of-≡ ≡-refl = H.refl (pw-refl _)
+
+  ∨-false : ∀ x y → (x ∨ y) ≡ Bool.false → (x ≡ Bool.false) × (y ≡ Bool.false)
+  ∨-false Bool.false y h = ≡-refl , h
+
+  any-cong : ∀ {a} {A : Set a} {f g : A → Bool} → (∀ x → f x ≡ g x) →
+             ∀ xs → any f xs ≡ any g xs
+  any-cong h []       = ≡-refl
+  any-cong h (x ∷ xs) = ≡-cong₂ _∨_ (h x) (any-cong h xs)
+
+  any-++ : ∀ {a} {A : Set a} (f : A → Bool) (xs ys : List A) →
+           any f (xs ++ ys) ≡ (any f xs ∨ any f ys)
+  any-++ f []       ys = ≡-refl
+  any-++ f (x ∷ xs) ys = ≡-trans (≡-cong (f x ∨_) (any-++ f xs ys)) (≡-sym (∨-assoc (f x) _ _))
+
+  any-concat : ∀ {a} {A : Set a} (f : A → Bool) (xss : List (List A)) →
+               any f (concat xss) ≡ any (λ xs → any f xs) xss
+  any-concat f []         = ≡-refl
+  any-concat f (xs ∷ xss) =
+    ≡-trans (any-++ f xs (concat xss)) (≡-cong (any f xs ∨_) (any-concat f xss))
+
+  any-filter : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+               any g (filterᵇ f xs) ≡ any (λ x → f x Bool.∧ g x) xs
+  any-filter f g []       = ≡-refl
+  any-filter f g (x ∷ xs) with f x
+  ... | Bool.true  = ≡-cong (g x ∨_) (any-filter f g xs)
+  ... | Bool.false = any-filter f g xs
+
+  part₁-filter : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
+                 proj₁ (partitionᵇ f xs) ≡ filterᵇ f xs
+  part₁-filter f []       = ≡-refl
+  part₁-filter f (x ∷ xs) with f x
+  ... | Bool.true  = ≡-cong (x ∷_) (part₁-filter f xs)
+  ... | Bool.false = part₁-filter f xs
+
+  part₂-filter : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
+                 proj₂ (partitionᵇ f xs) ≡ filterᵇ (λ x → Bool.not (f x)) xs
+  part₂-filter f []       = ≡-refl
+  part₂-filter f (x ∷ xs) with f x
+  ... | Bool.true  = part₂-filter f xs
+  ... | Bool.false = ≡-cong (x ∷_) (part₂-filter f xs)
+
+  filter-cong : ∀ {a} {A : Set a} {f g : A → Bool} → (∀ x → f x ≡ g x) →
+                ∀ xs → filterᵇ f xs ≡ filterᵇ g xs
+  filter-cong h [] = ≡-refl
+  filter-cong {f = f} {g} h (x ∷ xs) with f x | g x | h x
+  ... | Bool.true  | _ | ≡-refl = ≡-cong (x ∷_) (filter-cong h xs)
+  ... | Bool.false | _ | ≡-refl = filter-cong h xs
+
+  filter-filter : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+                  filterᵇ g (filterᵇ f xs) ≡ filterᵇ (λ x → f x Bool.∧ g x) xs
+  filter-filter f g []       = ≡-refl
+  filter-filter f g (x ∷ xs) with f x
+  ... | Bool.false = filter-filter f g xs
+  ... | Bool.true  with g x
+  ...   | Bool.true  = ≡-cong (x ∷_) (filter-filter f g xs)
+  ...   | Bool.false = filter-filter f g xs
+
+  -- Members failing f can be filtered out before filtering by g, when no member passes both.
+  filter-absorb : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+                  any (λ x → f x Bool.∧ g x) xs ≡ Bool.false →
+                  filterᵇ g (filterᵇ (λ x → Bool.not (f x)) xs) ≡ filterᵇ g xs
+  filter-absorb f g []       h = ≡-refl
+  filter-absorb f g (x ∷ xs) h with ∨-false (f x Bool.∧ g x) _ h
+  ... | (hx , hrest) with f x
+  ...   | Bool.true  rewrite hx = filter-absorb f g xs hrest
+  ...   | Bool.false with g x
+  ...     | Bool.true  = ≡-cong (x ∷_) (filter-absorb f g xs hrest)
+  ...     | Bool.false = filter-absorb f g xs hrest
+
+  -- Selecting by f and then by g among the rest is selecting by their disjunction, up to order.
+  concat-select : ∀ {a} {A : Set a} (f g : List A → Bool) (xss : List (List A)) →
+                  concat (filterᵇ f xss) ++ concat (filterᵇ g (filterᵇ (λ C → Bool.not (f C)) xss))
+                  ↭ concat (filterᵇ (λ C → f C ∨ g C) xss)
+  concat-select f g []        = ↭-refl
+  concat-select f g (C ∷ xss) with f C
+  ... | Bool.true  =
+    ↭-trans (↭-reflexive (++-assoc C (concat (filterᵇ f xss)) _)) (++⁺ ↭-refl (concat-select f g xss))
+  ... | Bool.false with g C
+  ...   | Bool.true  =
+    ↭-trans (++-swap (concat (filterᵇ f xss)) C _) (++⁺ ↭-refl (concat-select f g xss))
+  ...   | Bool.false = concat-select f g xss
+
+-- Adding two vertices to a region list in either order gives equivalent regions. Both orders
+-- merge exactly when the vertices are adjacent or some region is adjacent to both; in that case
+-- the merged region collects the regions adjacent to either vertex, and otherwise the two new
+-- regions absorb disjoint groups.
+private
+  module Step {a} (A : Set a) (adjA adjB : A → Bool) (aElt bElt : A)
+              (sym-ab : adjA bElt ≡ adjB aElt) where
+    fA fB : List A → Bool
+    fA = any adjA
+    fB = any adjB
+
+    stepA stepB stepA' stepB' : List (List A) → List (List A)
+    stepA  R = (aElt ∷ concat (proj₁ (partitionᵇ fA R))) ∷ proj₂ (partitionᵇ fA R)
+    stepB  R = (bElt ∷ concat (proj₁ (partitionᵇ fB R))) ∷ proj₂ (partitionᵇ fB R)
+    stepA' R = (aElt ∷ concat (filterᵇ fA R)) ∷ filterᵇ (λ C → Bool.not (fA C)) R
+    stepB' R = (bElt ∷ concat (filterᵇ fB R)) ∷ filterᵇ (λ C → Bool.not (fB C)) R
+
+    stepA≡ : ∀ R → stepA R ≡ stepA' R
+    stepA≡ R = ≡-cong₂ _∷_ (≡-cong (λ z → aElt ∷ concat z) (part₁-filter fA R)) (part₂-filter fA R)
+
+    stepB≡ : ∀ R → stepB R ≡ stepB' R
+    stepB≡ R = ≡-cong₂ _∷_ (≡-cong (λ z → bElt ∷ concat z) (part₁-filter fB R)) (part₂-filter fB R)
+
+    -- The merge test is symmetric: either vertex merges with the other's region exactly when they
+    -- are adjacent or some prior region is adjacent to both.
+    β-sym : ∀ R → fA (bElt ∷ concat (filterᵇ fB R)) ≡ fB (aElt ∷ concat (filterᵇ fA R))
+    β-sym R =
+      ≡-cong₂ _∨_ sym-ab
+        (≡-trans (any-concat adjA (filterᵇ fB R))
+        (≡-trans (any-filter fB fA R)
+        (≡-trans (any-cong (λ C → ∧-comm (fB C) (fA C)) R)
+                 (≡-sym (≡-trans (any-concat adjB (filterᵇ fA R)) (any-filter fA fB R))))))
+
+    tails : ∀ R → filterᵇ (λ C → Bool.not (fA C)) (filterᵇ (λ C → Bool.not (fB C)) R)
+                ≡ filterᵇ (λ C → Bool.not (fB C)) (filterᵇ (λ C → Bool.not (fA C)) R)
+    tails R =
+      ≡-trans (filter-filter (λ C → Bool.not (fB C)) (λ C → Bool.not (fA C)) R)
+      (≡-trans (filter-cong (λ C → ∧-comm (Bool.not (fB C)) (Bool.not (fA C))) R)
+               (≡-sym (filter-filter (λ C → Bool.not (fA C)) (λ C → Bool.not (fB C)) R)))
+
+    step-comm' : ∀ R → H.Permutation _↭_ (stepA' (stepB' R)) (stepB' (stepA' R))
+    step-comm' R with fA (bElt ∷ concat (filterᵇ fB R)) in eqA
+                    | fB (aElt ∷ concat (filterᵇ fA R)) in eqB
+    ... | Bool.true  | Bool.true  =
+      H.prep (↭.swap aElt bElt
+               (↭-trans (concat-select fB fA R)
+                (↭-trans (↭-reflexive (≡-cong concat (filter-cong (λ C → ∨-comm (fB C) (fA C)) R)))
+                         (↭-sym (concat-select fA fB R)))))
+             (perm-of-≡ (tails R))
+    ... | Bool.true  | Bool.false with ≡-trans (≡-sym eqA) (≡-trans (β-sym R) eqB)
+    ...   | ()
+    step-comm' R | Bool.false | Bool.true with ≡-trans (≡-sym eqB) (≡-trans (≡-sym (β-sym R)) eqA)
+    ...   | ()
+    step-comm' R | Bool.false | Bool.false =
+      H.swap (↭-reflexive (≡-cong (λ z → aElt ∷ concat z) absorbA))
+             (↭-reflexive (≡-cong (λ z → bElt ∷ concat z) (≡-sym absorbB)))
+             (perm-of-≡ (tails R))
+      where
+        hAB : any (λ C → fB C Bool.∧ fA C) R ≡ Bool.false
+        hAB = ≡-trans (≡-sym (≡-trans (any-concat adjA (filterᵇ fB R)) (any-filter fB fA R)))
+                      (proj₂ (∨-false (adjA bElt) _ eqA))
+
+        absorbA : filterᵇ fA (filterᵇ (λ C → Bool.not (fB C)) R) ≡ filterᵇ fA R
+        absorbA = filter-absorb fB fA R hAB
+
+        absorbB : filterᵇ fB (filterᵇ (λ C → Bool.not (fA C)) R) ≡ filterᵇ fB R
+        absorbB = filter-absorb fA fB R (≡-trans (any-cong (λ C → ∧-comm (fA C) (fB C)) R) hAB)
+
+    step-comm : ∀ R → H.Permutation _↭_ (stepA (stepB R)) (stepB (stepA R))
+    step-comm R =
+      H.trans (perm-of-≡ (≡-trans (≡-cong stepA (stepB≡ R)) (stepA≡ (stepB' R))))
+      (H.trans (step-comm' R)
+               (perm-of-≡ (≡-sym (≡-trans (≡-cong stepB (stepA≡ R)) (stepB≡ (stepA' R))))))
+
+adjacent-sym : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               (G : Graph D) (x y : Vertex D) → adjacent G x y ≡ adjacent G y x
+adjacent-sym G x y = ∨-comm (nonzero (G x y)) (nonzero (G y x))
+
+-- Adding two vertices in either order gives equivalent regions.
+regions-swap : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               (G : Graph D) (a b : Path D) (ws : List (Path D)) →
+               regions G (a ∷ b ∷ ws) ≈ᵣ regions G (b ∷ a ∷ ws)
+regions-swap G a b ws =
+  Step.step-comm _ (λ q → adjacent G (at a) (at q)) (λ q → adjacent G (at b) (at q))
+                 a b (adjacent-sym G (at a) (at b)) (regions G ws)
+
+-- Order-independence of the regions computation.
+regions-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               (G : Graph D) {ws ws' : List (Path D)} → ws ↭ ws' →
+               regions G ws ≈ᵣ regions G ws'
+regions-perm G ↭.refl       = H.refl (pw-refl _)
+regions-perm G (↭.prep w p) = regions-prep G w (regions-perm G p)
+regions-perm G (↭.swap {xs = ws} {ys = ws'} a b p) =
+  H.trans (regions-swap G a b ws)
+          (regions-prep G b {a ∷ ws} {a ∷ ws'} (regions-prep G a {ws} {ws'} (regions-perm G p)))
+regions-perm G (↭.trans p q) = H.trans (regions-perm G p) (regions-perm G q)
