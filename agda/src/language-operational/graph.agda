@@ -10,8 +10,8 @@ open import primitives using (Primitives)
 import matrix
 import two
 
--- Dependence graphs over a derivation: a graph is its entry function, giving for each pair of
--- vertices a matrix between their widths, the zero matrix meaning no edge. The graph judgement is a
+-- Dependence graphs over a derivation: a graph gives for each pair of vertices a dependence
+-- relation between their widths, the zero relation meaning no edge. The graph judgement is a
 -- function from derivations to graphs, one clause group per rule; unions are pointwise sums
 -- realised by a single final zero clause, prefixing is reindexing by path constructors, and
 -- rewiring redistributes a premise's env column through the biproduct injections.
@@ -88,7 +88,7 @@ rcast refl R = R
 ccast : ∀ {m n n'} → n ≡ n' → M.Matrix m n → M.Matrix m n'
 ccast refl R = R
 
--- The single-edge graph out of a premise's root, read as its column of entries at each source
+-- The single-edge graph out of a premise's root, read as its dependence relation at each source
 -- path: the given relation at the root, zero elsewhere. Defined generically because case-splitting
 -- a premise's path type gets stuck when the premise's indices are function-headed (e.g. a scrutinee
 -- required to evaluate to inl v).

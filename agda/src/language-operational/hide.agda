@@ -12,9 +12,10 @@ open import primitives using (Primitives)
 import matrix
 import two
 
--- Hiding an intermediate: each remaining entry absorbs the dependence routed through the hidden
--- vertex. Hidden vertices stay in the carrier, so hiding transforms the entry function and the
--- caller tracks which vertices are live; entries at a hidden vertex are stale, never read.
+-- Hiding an intermediate: each remaining dependence relation absorbs the dependence routed
+-- through the hidden vertex. Hidden vertices stay in the carrier, so hiding transforms the
+-- relations and the caller tracks which vertices are live; relations at a hidden vertex are
+-- stale, never read.
 module language-operational.hide {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
@@ -84,12 +85,12 @@ when : ∀ {m n} → Bool → M.Matrix m n → M.Matrix m n
 when Bool.true  R = R
 when Bool.false R = M.εₘ
 
--- The entries with an endpoint in the given region, zero elsewhere.
+-- The dependence relations with an endpoint in the given region, zero elsewhere.
 restrict : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
            Graph D → List (Path D) → Graph D
 restrict G C x y = when (member-vertex x C ∨ member-vertex y C) (G x y)
 
--- The summary of a hidden region: the dependence routed through it, as entries between the
+-- The summary of a hidden region: the dependence routed through it, as relations between the
 -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
 -- carried by the summary.
 summary : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
@@ -115,8 +116,8 @@ initial D .hidden  = map (λ C → C , summary D C) (regions (fo-graph D) (FO D)
 hidden-set : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Config D → List (Path D)
 hidden-set K = concat (map proj₁ (K .hidden))
 
--- The visible graph: the entries of the first-order graph with neither endpoint hidden, together
--- with the entries of the region summaries, parallel contributions summed.
+-- The visible graph: the dependence relations of the first-order graph with neither endpoint
+-- hidden, together with those of the region summaries, parallel contributions summed.
 visible-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
                 Config D → Graph D
 visible-graph D K x y =
@@ -130,7 +131,7 @@ _+G_ : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} 
 (G +G H) x y = G x y M.+ₘ H x y
 
 -- The hide move: remove p from the visible set, merge the regions adjacent to p, and hide p in the
--- graph assembling p's incident entries in the visible graph with the merged regions' summaries.
+-- graph assembling p's incident relations in the visible graph with the merged regions' summaries.
 hide-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
           Path D → Config D → Config D
 hide-at D p K .visible = filterᵇ (λ q → not (eq-path p q)) (K .visible)

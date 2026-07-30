@@ -65,7 +65,7 @@ restrict-perm G p x y i j =
   ≡-cong (λ b → when b (G x y) i j)
          (≡-cong₂ _∨_ (member-vertex-perm x p) (member-vertex-perm y p))
 
--- Restriction only zeroes entries, so preserves the forward-edge property.
+-- Restriction only zeroes relations, so preserves the forward-edge property.
 restrict-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
                    {G : Graph D} (C : List (Path D)) → Forward G → Forward (restrict G C)
 restrict-forward C fwd x y i j with member-vertex x C ∨ member-vertex y C
@@ -254,7 +254,7 @@ localise D {C} {E} mono x y i j =
   HA.agree-add D (map at C) (restrict-sub (fo-graph D) mono) (restrict-agree (fo-graph D) mono)
                x y i j
 
--- A region neither containing nor adjacent to a vertex has a summary with no entries at it.
+-- A region neither containing nor adjacent to a vertex has a summary with no dependence at it.
 summary-zero : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
                {C : List (Path D)} (q : Path D) →
                member q C ≡ Bool.false →
@@ -404,8 +404,8 @@ private
 
 private
   -- The base of the assembled graph agrees with the restriction of the first-order graph to the
-  -- merged region, modulo the joined summaries of the merged regions: an entry at p is either a
-  -- first-order edge whose other end is visible or in a merged region, or a stored summary entry;
+  -- merged region, modulo the joined summaries of the merged regions: an edge at p is either a
+  -- first-order edge whose other end is visible or in a merged region, or a stored summary edge;
   -- an end in an unmerged region is ruled out by non-adjacency.
   base-agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
            (p : Path D) (K : Config D) → Summarised K →
@@ -953,8 +953,9 @@ private
             (≡-cong (foldr two._⊔_ _)
                     (≡-sym (map-∘ {g = λ R' → R' i j} {f = λ CH → proj₂ CH x y} (K .hidden))))
 
--- At an entry with no hidden endpoint, the visible graph is the first-order entry joined with the
--- summary of the whole hidden set: the stored summaries assemble to the single-region summary.
+-- At a vertex pair with no hidden endpoint, the visible graph is the first-order relation joined
+-- with the summary of the whole hidden set: the stored summaries assemble to the single-region
+-- summary.
 visible-graph-summary : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
                         (K : Config D) → Summarised K →
                         ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
@@ -997,7 +998,7 @@ visible-graph-summary D K S x y i j hx hy =
                             restrict-O))))
 
 -- Reveal after hide at the same vertex restores the visible set and the hidden set, and hence the
--- visible graph at entries with no hidden endpoint.
+-- visible graph at vertex pairs with no hidden endpoint.
 hide-reveal-visible : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
                       (p : Path D) (K : Config D) → Summarised K →
                       member p (K .visible) ≡ Bool.true →
@@ -1051,7 +1052,7 @@ private
       (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S)))))
 
 -- Hide after reveal at the same vertex restores the visible set exactly, the hidden set up to
--- permutation, and the visible graph at entries with no hidden endpoint.
+-- permutation, and the visible graph at vertex pairs with no hidden endpoint.
 reveal-hide-visible : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
                       (p : Path D) (K : Config D) → Summarised K →
                       member p (hidden-set K) ≡ Bool.true →
@@ -1119,9 +1120,9 @@ private
                                (or-intror (member-vertex z C) (member q C) hq))))
       (any-self eq-path-refl C))
 
--- The paper's assembly lemma: at an entry with no hidden endpoint, the visible graph is the
+-- The paper's assembly lemma: at a vertex pair with no hidden endpoint, the visible graph is the
 -- first-order graph with the whole hidden set hidden. The restriction in the summary is invisible
--- there, since the full graph and its restriction agree on hidden rows and columns.
+-- there, since the two graphs agree on the relations at hidden vertices.
 summaries-assemble : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
                      (K : Config D) → Summarised K →
                      ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
