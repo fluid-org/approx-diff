@@ -16,6 +16,7 @@ open ↭ using (_↭_; ↭-refl; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
+open import Data.List.Relation.Unary.Any using (Any; here; there)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (++⁺; ++-comm; shift)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -85,6 +86,27 @@ any-self     h []       = []
 any-self {f = f} h (x ∷ xs) =
   ≡-cong (_∨ any (f x) xs) (h x) ∷
   All-map (λ {y} prf → ≡-trans (≡-cong (f y x ∨_) prf) (∨-true (f y x))) (any-self h xs)
+
+any-map : ∀ {a b} {A : Set a} {B : Set b} (f : B → Bool) (g : A → B) (xs : List A) →
+          any f (map g xs) ≡ any (λ x → f (g x)) xs
+any-map f g []       = ≡-refl
+any-map f g (x ∷ xs) = ≡-cong (f (g x) ∨_) (any-map f g xs)
+
+any-Any : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
+          any f xs ≡ Bool.true → Any (λ x → f x ≡ Bool.true) xs
+any-Any f (x ∷ xs) h with ∨-true-inv (f x) (any f xs) h
+... | inj₁ e = here e
+... | inj₂ e = there (any-Any f xs e)
+
+Any-All : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q} {xs : List A} →
+          Any P xs → All Q xs → Any (λ x → P x × Q x) xs
+Any-All (here px) (qx ∷ _) = here (px , qx)
+Any-All (there a) (_ ∷ qs) = there (Any-All a qs)
+
+map-All-cong : ∀ {a b} {A : Set a} {B : Set b} {f g : A → B} {xs : List A} →
+               All (λ x → f x ≡ g x) xs → map f xs ≡ map g xs
+map-All-cong []       = ≡-refl
+map-All-cong (h ∷ hs) = ≡-cong₂ _∷_ h (map-All-cong hs)
 
 -- Look up a Boolean membership witness in an All, given that the test is sound for equality.
 member-All : ∀ {a p} {A : Set a} {P : A → Set p} {eq : A → A → Bool} →
