@@ -14,7 +14,7 @@ import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 open import Data.List.Properties using (++-identityʳ; concat-++; concat-map; foldl-++; map-++; map-∘)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
-open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift; ++⁺; Any-resp-↭)
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
 open import Relation.Binary.PropositionalEquality using (_≡_; subst)
@@ -938,3 +938,60 @@ reveal-at-summarised D p K S hp .separated =
                           (AllPairsP.map⁻ (S .separated)))))
 reveal-at-summarised D p K S hp .summaries =
   AllP.concat⁺ (AllP.map⁺ (All-map (λ {CH} old → split-summaries D p CH old) (S .summaries)))
+
+private
+  visible-entry : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (K : Config D) →
+                  ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                  visible-graph D K x y i j ≡
+                  foldr two._⊔_
+                        (when (Bool.not (member-vertex x (hidden-set K)) Bool.∧
+                               Bool.not (member-vertex y (hidden-set K)))
+                              (fo-graph D x y) i j)
+                        (map (λ CH → proj₂ CH x y i j) (K .hidden))
+  visible-entry D K x y i j =
+    ≡-trans (foldr-entryₘ _ (map (λ CH → proj₂ CH x y) (K .hidden)) i j)
+            (≡-cong (foldr two._⊔_ _)
+                    (≡-sym (map-∘ {g = λ R' → R' i j} {f = λ CH → proj₂ CH x y} (K .hidden))))
+
+-- At an entry with no hidden endpoint, the visible graph is the first-order entry joined with the
+-- summary of the whole hidden set: the stored summaries assemble to the single-region summary.
+visible-graph-summary : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                        (K : Config D) → Summarised K →
+                        ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                        member-vertex x (hidden-set K) ≡ Bool.false →
+                        member-vertex y (hidden-set K) ≡ Bool.false →
+                        visible-graph D K x y i j ≡
+                        (fo-graph D x y i j two.⊔ summary D (hidden-set K) x y i j)
+visible-graph-summary D K S x y i j hx hy =
+  ≡-trans (visible-entry D K x y i j)
+  (≡-trans (two.foldr-⊔-base _ (map (λ CH → proj₂ CH x y i j) (K .hidden)))
+           (≡-cong₂ two._⊔_ base-eq Σ-eq))
+  where
+  G  = fo-graph D
+  E  = hidden-set K
+  Cs = map proj₁ (K .hidden)
+
+  base-eq : when (Bool.not (member-vertex x E) Bool.∧ Bool.not (member-vertex y E)) (G x y) i j
+            ≡ G x y i j
+  base-eq = ≡-cong (λ b → when b (G x y) i j) (∧-intro (not-false hx) (not-false hy))
+
+  stored-eq : map (λ CH → proj₂ CH x y i j) (K .hidden) ≡ map (λ C → summary D C x y i j) Cs
+  stored-eq = ≡-trans (map-All-cong (All-map (λ inv → inv x y i j) (S .summaries)))
+                      (map-∘ {g = λ C → summary D C x y i j} {f = proj₁} (K .hidden))
+
+  seps : AllPairs (λ C C' → Apart G C' C × (any (λ q → member q C) C' ≡ Bool.false)) Cs
+  seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , proj₁ d))
+                      (AllPairs-zip (S .separated) (summarised-distinct K S))
+
+  restrict-O : restrict G E x y i j ≡ two.O
+  restrict-O = ≡-cong (λ b → when b (G x y) i j) (≡-cong₂ _∨_ hx hy)
+
+  Σ-eq : foldr two._⊔_ two.O (map (λ CH → proj₂ CH x y i j) (K .hidden))
+         ≡ summary D E x y i j
+  Σ-eq =
+    ≡-trans (≡-cong (foldr two._⊔_ two.O) stored-eq)
+    (≡-sym (≡-trans (assemble D {E} Cs (blocks-⊆ Cs) seps x y i j)
+           (≡-trans (two.foldr-⊔-base (restrict G E x y i j)
+                                      (map (λ C → summary D C x y i j) Cs))
+                    (≡-cong (two._⊔ foldr two._⊔_ two.O (map (λ C → summary D C x y i j) Cs))
+                            restrict-O))))
