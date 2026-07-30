@@ -2,7 +2,7 @@
 
 open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
-open import Data.Bool.Properties using (∨-comm)
+open import Data.Bool.Properties using (∨-comm; ∨-identityʳ)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; concat; partitionᵇ)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
@@ -193,6 +193,11 @@ private
   mv-mono mono env    ()
   mv-mono mono (at q) h = mono q h
 
+  when-O : ∀ (b : Bool) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
+           (b ≡ Bool.true → R i j ≡ two.O) → when b R i j ≡ two.O
+  when-O Bool.false R i j h = ≡-refl
+  when-O Bool.true  R i j h = h ≡-refl
+
   when-sub : ∀ (b₁ b₂ : Bool) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
              (b₁ ≡ Bool.true → b₂ ≡ Bool.true) →
              (when b₁ R i j two.⊔ when b₂ R i j) ≡ when b₂ R i j
@@ -245,3 +250,49 @@ localise : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R
 localise D {C} {E} mono x y i j =
   HA.agree-add D (map at C) (restrict-sub (fo-graph D) mono) (restrict-agree (fo-graph D) mono)
                x y i j
+
+-- A region neither containing nor adjacent to a vertex has a summary with no entries at it.
+summary-zero : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+               {C : List (Path D)} (q : Path D) →
+               member q C ≡ Bool.false →
+               any (λ q' → adjacent (fo-graph D) (at q) (at q')) C ≡ Bool.false →
+               (((z : Vertex D) (i : Fin (vertex-width z)) (j : Fin (vertex-width (at q))) →
+                 summary D C (at q) z i j ≡ two.O) ×
+                ((z : Vertex D) (i : Fin (vertex-width (at q))) (j : Fin (vertex-width z)) →
+                 summary D C z (at q) i j ≡ two.O))
+summary-zero D {C} q hm hadj =
+  HA.zero-fold D (map at C) (at q) (base-row , base-col)
+  where
+  adjs : All (λ q' → adjacent (fo-graph D) (at q) (at q') ≡ Bool.false) C
+  adjs = any-false-All _ C hadj
+
+  entry-row : ∀ z → member-vertex z C ≡ Bool.true →
+              ∀ i j → fo-graph D (at q) z i j ≡ two.O
+  entry-row env     ()
+  entry-row (at q') hz i j =
+    nonzero-O (fo-graph D (at q) (at q'))
+              (proj₁ (∨-false (nonzero (fo-graph D (at q) (at q')))
+                              (nonzero (fo-graph D (at q') (at q)))
+                              (member-All {eq = eq-path} eq-path-≡ {x = q'} adjs hz))) i j
+
+  entry-col : ∀ z → member-vertex z C ≡ Bool.true →
+              ∀ i j → fo-graph D z (at q) i j ≡ two.O
+  entry-col env     ()
+  entry-col (at q') hz i j =
+    nonzero-O (fo-graph D (at q') (at q))
+              (proj₂ (∨-false (nonzero (fo-graph D (at q) (at q')))
+                              (nonzero (fo-graph D (at q') (at q)))
+                              (member-All {eq = eq-path} eq-path-≡ {x = q'} adjs hz))) i j
+
+  base-row : (z : Vertex D) (i : Fin (vertex-width z)) (j : Fin (vertex-width (at q))) →
+             restrict (fo-graph D) C (at q) z i j ≡ two.O
+  base-row z i j =
+    ≡-trans (≡-cong (λ b → when (b ∨ member-vertex z C) (fo-graph D (at q) z) i j) hm)
+            (when-O (member-vertex z C) (fo-graph D (at q) z) i j (λ hz → entry-row z hz i j))
+
+  base-col : (z : Vertex D) (i : Fin (vertex-width (at q))) (j : Fin (vertex-width z)) →
+             restrict (fo-graph D) C z (at q) i j ≡ two.O
+  base-col z i j =
+    ≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (fo-graph D z (at q)) i j) hm)
+    (≡-trans (≡-cong (λ b → when b (fo-graph D z (at q)) i j) (∨-identityʳ (member-vertex z C)))
+             (when-O (member-vertex z C) (fo-graph D z (at q)) i j (λ hz → entry-col z hz i j)))
