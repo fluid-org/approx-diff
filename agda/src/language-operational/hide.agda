@@ -140,19 +140,22 @@ hide-at D p K .hidden  = (p ∷ concat (map proj₁ (proj₁ tp)) , hide assembl
                     (K .hidden)
     assembled = foldr _+G_ (restrict (visible-graph D K) (p ∷ [])) (map proj₂ (proj₁ tp))
 
+-- Split a stored region at p: recompute regions and summaries with p removed if the region
+-- contains p, and leave it alone otherwise.
+split-region : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+               Path D → List (Path D) × Graph D → List (List (Path D) × Graph D)
+split-region D p (C , H) =
+  if member p C
+  then map (λ C' → C' , summary D C')
+           (regions (fo-graph D) (filterᵇ (λ q → not (eq-path p q)) C))
+  else (C , H) ∷ []
+
 -- The reveal move: return p to the visible set and split the region containing it, recomputing
 -- regions and summaries within that region alone.
 reveal-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
             Path D → Config D → Config D
 reveal-at D p K .visible = p ∷ K .visible
-reveal-at D p K .hidden  = concat (map step (K .hidden))
-  where
-    step : List (Path D) × Graph D → List (List (Path D) × Graph D)
-    step (C , H) =
-      if member p C
-      then map (λ C' → C' , summary D C')
-               (regions (fo-graph D) (filterᵇ (λ q → not (eq-path p q)) C))
-      else (C , H) ∷ []
+reveal-at D p K .hidden  = concat (map (split-region D p) (K .hidden))
 
 -- Collapse: hide every path of the derivation and read the remaining dependence from env to the
 -- root. Hiding the root itself is a no-op, since the root has no outgoing edges, so the whole
