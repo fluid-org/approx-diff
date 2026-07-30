@@ -390,6 +390,58 @@ mutual
   psize-m (m-pair D₁ D₂) = size-m D₁ + size-m D₂
   psize-m (m-mu D)       = size-m D
 
+-- The paths in ascending rank order: premise blocks in evaluation order, root last. A companion
+-- to paths, used where the hiding order must follow rank (topological-order).
+mutual
+  asc-paths : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
+  asc-paths D = asc-interior D ++ (ε ∷ [])
+
+  asc-paths-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                (D : γ , Ms ⇓s vs [ R ]) → List (PathS D)
+  asc-paths-s D = asc-interior-s D ++ (ε ∷ [])
+
+  asc-paths-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                (D : Map γ s σ' v R v' R') → List (PathM D)
+  asc-paths-m D = asc-interior-m D ++ (ε ∷ [])
+
+  asc-interior : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
+  asc-interior (⇓-var x)        = []
+  asc-interior ⇓-unit           = []
+  asc-interior (⇓-inl D)        = map inl (asc-paths D)
+  asc-interior (⇓-inr D)        = map inr (asc-paths D)
+  asc-interior (⇓-case-l D₁ D₂) = map case-l₁ (asc-paths D₁) ++ map case-l₂ (asc-paths D₂)
+  asc-interior (⇓-case-r D₁ D₂) = map case-r₁ (asc-paths D₁) ++ map case-r₂ (asc-paths D₂)
+  asc-interior (⇓-pair D₁ D₂)   = map pair₁ (asc-paths D₁) ++ map pair₂ (asc-paths D₂)
+  asc-interior (⇓-fst D)        = map fst (asc-paths D)
+  asc-interior (⇓-snd D)        = map snd (asc-paths D)
+  asc-interior ⇓-lam            = []
+  asc-interior (⇓-app D₁ D₂ D₃) =
+    map app₁ (asc-paths D₁) ++ map app₂ (asc-paths D₂) ++ map app₃ (asc-paths D₃)
+  asc-interior (⇓-bop D)        = map bop (asc-paths-s D)
+  asc-interior (⇓-brel D)       = map brel (asc-paths-s D)
+  asc-interior (⇓-roll D)       = map roll (asc-paths D)
+  asc-interior (⇓-fold D₁ D₂)   = map fold₁ (asc-paths D₁) ++ map fold₂ (asc-paths-m D₂)
+
+  asc-interior-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                   (D : γ , Ms ⇓s vs [ R ]) → List (PathS D)
+  asc-interior-s []        = []
+  asc-interior-s (D₁ ∷ D₂) = map hd (asc-paths D₁) ++ map tl (asc-paths-s D₂)
+
+  asc-interior-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                   {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+                   {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
+                   (D : Map γ s σ' v R v' R') → List (PathM D)
+  asc-interior-m (m-rec D₁ D₂)  = map m-rec₁ (asc-paths-m D₁) ++ map m-rec₂ (asc-paths D₂)
+  asc-interior-m m-unit         = []
+  asc-interior-m m-base         = []
+  asc-interior-m m-arrow        = []
+  asc-interior-m (m-inl D)      = map m-inl (asc-paths-m D)
+  asc-interior-m (m-inr D)      = map m-inr (asc-paths-m D)
+  asc-interior-m (m-pair D₁ D₂) = map m-pair₁ (asc-paths-m D₁) ++ map m-pair₂ (asc-paths-m D₂)
+  asc-interior-m (m-mu D)       = map m-mu (asc-paths-m D)
+
 mutual
   rank : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → ℕ
   rank (ε {D = D})            = psize D
