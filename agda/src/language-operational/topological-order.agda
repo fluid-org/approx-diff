@@ -12,6 +12,7 @@ open import Data.Nat using (ℕ; zero; suc; _+_; _<_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties
   using (≤-refl; ≤-trans; ≤-reflexive; m≤m+n; +-monoʳ-<; +-suc; <-trans; <-irrefl; <-asym)
 open import every using (Every; []; _∷_)
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import signature using (Signature)
@@ -37,7 +38,7 @@ private
   module M = matrix.Mat two.semiring
 
 open import categories using (Category)
-open Category M.cat using (_⇒_)
+open Category M.cat using (_⇒_; ∘-cong; assoc; ≈-refl; ≈-sym; ≈-trans)
 
 -- Vertex rank: env below every path, each path above its premise offsets.
 rank-v : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Vertex D → ℕ
@@ -768,3 +769,87 @@ hide-all-perm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ
                   ForwardM G → ∀ {rs rs'} → rs ↭ rs' →
                   ∀ (x y : VertexM D) i j → hide-all-m G rs x y i j ≡ hide-all-m G rs' x y i j
 hide-all-perm-m {D = D} fwd = Ranked.perm (VertexM D) vertex-width-m rank-v-m fwd
+
+-- A list of vertices in strictly ascending rank order.
+data Ascending {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} :
+               List (Vertex D) → Set ℓ where
+  []  : Ascending []
+  _∷_ : ∀ {r ws} → All (λ s → rank-v r < rank-v s) ws → Ascending ws → Ascending (r ∷ ws)
+
+private
+  +ₘ-cong : ∀ {m n} {R R' S S' : M.Matrix m n} →
+            R M.≈ₘ R' → S M.≈ₘ S' → (R M.+ₘ S) M.≈ₘ (R' M.+ₘ S')
+  +ₘ-cong h k i j = M.+-cong (h i j) (k i j)
+
+  +ₘ-runit : ∀ {m n} (R : M.Matrix m n) → (R M.+ₘ M.εₘ) M.≈ₘ R
+  +ₘ-runit R i j = M.+-comm {x = R i j} {y = two.O}
+
+  +ₘ-interchange : ∀ {m n} (A B C D : M.Matrix m n) →
+                   ((A M.+ₘ B) M.+ₘ (C M.+ₘ D)) M.≈ₘ ((A M.+ₘ C) M.+ₘ (B M.+ₘ D))
+  +ₘ-interchange A B C D i j = M.+-interchange {w = A i j} {x = B i j} {y = C i j} {z = D i j}
+
+  entry-≈-of-≡ : {a b : two.Two} → a ≡ b → M._≈_ a b
+  entry-≈-of-≡ ≡-refl = M.refl
+
+  ≈ₘ-of-≡ : ∀ {m n} {A B : M.Matrix m n} → (∀ i j → A i j ≡ B i j) → A M.≈ₘ B
+  ≈ₘ-of-≡ p i j = entry-≈-of-≡ (p i j)
+
+  -- On a forward graph there is no edge against the rank order.
+  no-back : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
+            Forward G → ∀ {x y} → rank-v y < rank-v x → G x y M.≈ₘ M.εₘ
+  no-back {G = G} fwd {x} {y} h i j with G x y i j in e
+  ... | two.O = M.refl {x = two.O}
+  ... | two.I with <-asym h (fwd x y i j e)
+  ...   | ()
+
+  -- Hiding a vertex of least rank folds into the path-sum: paths either avoid r or leave from it.
+  path-sum-hide : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
+                  Forward G → (r : Vertex D) {ws : List (Vertex D)} →
+                  All (λ s → rank-v r < rank-v s) ws → ∀ x y →
+                  path-sum (hide G r) ws x y M.≈ₘ
+                  (path-sum G ws x y M.+ₘ (path-sum G ws r y M.∘ G x r))
+  path-sum-hide fwd r [] x y = ≈-refl
+  path-sum-hide {G = G} fwd r (_∷_ {s} {ws'} lt lts) x y = ≈-trans e₁ (≈-trans e₂ e₃)
+    where
+      A = path-sum G ws' x y
+      B = path-sum G ws' r y M.∘ G x r
+      C = path-sum G ws' s y M.∘ G x s
+      D₁ = path-sum G ws' s y M.∘ (G r s M.∘ G x r)
+
+      step2 : path-sum (hide G r) ws' s y M.≈ₘ path-sum G ws' s y
+      step2 =
+        ≈-trans (path-sum-hide fwd r lts s y)
+        (≈-trans (+ₘ-cong ≈-refl
+                   (≈-trans (∘-cong ≈-refl (no-back fwd lt))
+                            (M.comp-bilinear-ε₂ {k = vertex-width s} (path-sum G ws' r y))))
+                 (+ₘ-runit (path-sum G ws' s y)))
+
+      e₁ : path-sum (hide G r) (s ∷ ws') x y M.≈ₘ ((A M.+ₘ B) M.+ₘ (C M.+ₘ D₁))
+      e₁ = +ₘ-cong (path-sum-hide fwd r lts x y)
+                   (≈-trans (∘-cong step2 ≈-refl)
+                            (M.comp-bilinear₂ (path-sum G ws' s y) (G x s) (G r s M.∘ G x r)))
+
+      e₂ : ((A M.+ₘ B) M.+ₘ (C M.+ₘ D₁)) M.≈ₘ ((A M.+ₘ C) M.+ₘ (B M.+ₘ D₁))
+      e₂ = +ₘ-interchange A B C D₁
+
+      e₃ : ((A M.+ₘ C) M.+ₘ (B M.+ₘ D₁)) M.≈ₘ
+           (path-sum G (s ∷ ws') x y M.+ₘ (path-sum G (s ∷ ws') r y M.∘ G x r))
+      e₃ = +ₘ-cong ≈-refl
+             (≈-trans (+ₘ-cong ≈-refl (≈-sym (assoc (path-sum G ws' s y) (G r s) (G x r))))
+                      (≈-sym (M.comp-bilinear₁ (path-sum G ws' r y)
+                                               (path-sum G ws' s y M.∘ G r s) (G x r))))
+
+-- Hiding along an ascending list sums the paths through it.
+hidden-paths : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
+               Forward G → {ws : List (Vertex D)} → Ascending ws →
+               ∀ x y → hide-all G ws x y M.≈ₘ path-sum G ws x y
+hidden-paths fwd []                  x y = ≈-refl
+hidden-paths fwd (_∷_ {r} {ws} lt asc) x y =
+  ≈-trans (hidden-paths (hide-forward r fwd) asc x y) (path-sum-hide fwd r lt x y)
+
+-- The same for any hiding order that is a permutation of an ascending one.
+hidden-paths-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
+                    Forward G → {ws ws' : List (Vertex D)} → ws ↭ ws' → Ascending ws' →
+                    ∀ x y → hide-all G ws x y M.≈ₘ path-sum G ws' x y
+hidden-paths-perm fwd p asc x y =
+  ≈-trans (≈ₘ-of-≡ (hide-all-perm fwd p x y)) (hidden-paths fwd asc x y)
