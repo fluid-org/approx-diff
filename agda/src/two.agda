@@ -73,6 +73,9 @@ I ⊓ x = x
 ⊓-I : ∀ x y → (x ⊓ y) ≡ I → (x ≡ I) Product.× (y ≡ I)
 ⊓-I I y h = ≡-refl Product., h
 
+⊓-I-pair : ∀ {x y} → x ≡ I → y ≡ I → (x ⊓ y) ≡ I
+⊓-I-pair ≡-refl h = h
+
 ------------------------------------------------------------------------------
 O-isBottom : IsBottom ≤-isPreorder O
 O-isBottom .IsBottom.≤-bottom = tt
@@ -102,6 +105,22 @@ I ⊔ x = I
 ⊔-I : ∀ x y → (x ⊔ y) ≡ I → (x ≡ I) Sum.⊎ (y ≡ I)
 ⊔-I O y h = Sum.inj₂ h
 ⊔-I I y h = Sum.inj₁ ≡-refl
+
+⊔-I-inl : ∀ {x y} → x ≡ I → (x ⊔ y) ≡ I
+⊔-I-inl ≡-refl = ≡-refl
+
+⊔-I-inr : ∀ x {y} → y ≡ I → (x ⊔ y) ≡ I
+⊔-I-inr O h = h
+⊔-I-inr I h = ≡-refl
+
+-- Antisymmetry at the equality level: mutual implication at I gives equality.
+I-antisym : ∀ {x y} → (x ≡ I → y ≡ I) → (y ≡ I → x ≡ I) → x ≡ y
+I-antisym {O} {O} f g = ≡-refl
+I-antisym {O} {I} f g with g ≡-refl
+... | ()
+I-antisym {I} {O} f g with f ≡-refl
+... | ()
+I-antisym {I} {I} f g = ≡-refl
 
 ------------------------------------------------------------------------------
 ¬ : Two → Two
