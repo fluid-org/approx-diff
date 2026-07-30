@@ -497,6 +497,16 @@ mutual
   eq-path-m-≡ {p = m-pair₁ _} {m-pair₂ _} ()
   eq-path-m-≡ {p = m-pair₂ _} {m-pair₁ _} ()
 
+-- A failing equality test also fails in the flipped order: a successful flipped test would make
+-- the paths equal, contradicting reflexivity.
+eq-path-false-sym : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                    {p q : Path D} → eq-path p q ≡ Bool.false → eq-path q p ≡ Bool.false
+eq-path-false-sym {p = p} {q} h with eq-path q p in e
+... | Bool.false = ≡-refl
+... | Bool.true with eq-path-≡ {p = q} {q = p} e
+...   | ≡-refl with ≡-trans (≡-sym h) (eq-path-refl p)
+...     | ()
+
 private
   cross-blocks : {A B C : Set ℓ} {S : C → C → Set} (f : A → C) (g : B → C) →
                  (∀ p q → S (f p) (g q)) → (xs : List A) (ys : List B) →
