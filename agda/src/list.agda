@@ -7,7 +7,8 @@ module list where
 open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.Bool.Properties using (∨-assoc)
-open import Data.List using (List; []; _∷_; _++_; map; concat; partitionᵇ)
+open import Data.Fin as Fin using (Fin)
+open import Data.List using (List; []; _∷_; _++_; map; concat; partitionᵇ; tabulate)
 open import Data.List.Properties using (++-assoc)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -48,10 +49,37 @@ any-cong : ∀ {a} {A : Set a} {f g : A → Bool} → (∀ x → f x ≡ g x) �
 any-cong h []       = ≡-refl
 any-cong h (x ∷ xs) = ≡-cong₂ _∨_ (h x) (any-cong h xs)
 
+∨-false : ∀ x y → (x ∨ y) ≡ Bool.false → (x ≡ Bool.false) × (y ≡ Bool.false)
+∨-false Bool.false y h = ≡-refl , h
+
+∨-true : ∀ x → (x ∨ Bool.true) ≡ Bool.true
+∨-true Bool.false = ≡-refl
+∨-true Bool.true  = ≡-refl
+
 any-false : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
             All (λ x → f x ≡ Bool.false) xs → any f xs ≡ Bool.false
 any-false []       = ≡-refl
 any-false (h ∷ hs) = ≡-cong₂ _∨_ h (any-false hs)
+
+any-false-All : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
+                any f xs ≡ Bool.false → All (λ x → f x ≡ Bool.false) xs
+any-false-All f []       h = []
+any-false-All f (x ∷ xs) h with ∨-false (f x) (any f xs) h
+... | (hx , hxs) = hx ∷ any-false-All f xs hxs
+
+any-tabulate-false : ∀ {a} {A : Set a} {n} (g : Fin n → A) (f : A → Bool) →
+                     any f (tabulate g) ≡ Bool.false → ∀ i → f (g i) ≡ Bool.false
+any-tabulate-false g f h Fin.zero    = proj₁ (∨-false (f (g Fin.zero)) _ h)
+any-tabulate-false g f h (Fin.suc i) =
+  any-tabulate-false (λ k → g (Fin.suc k)) f (proj₂ (∨-false (f (g Fin.zero)) _ h)) i
+
+-- A reflexive test finds every member of a list within that list.
+any-self : ∀ {a} {A : Set a} {f : A → A → Bool} → (∀ x → f x x ≡ Bool.true) →
+           ∀ xs → All (λ x → any (f x) xs ≡ Bool.true) xs
+any-self     h []       = []
+any-self {f = f} h (x ∷ xs) =
+  ≡-cong (_∨ any (f x) xs) (h x) ∷
+  All-map (λ {y} prf → ≡-trans (≡-cong (f y x ∨_) prf) (∨-true (f y x))) (any-self h xs)
 
 any-or : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
          any (λ x → f x ∨ g x) xs ≡ (any f xs ∨ any g xs)
