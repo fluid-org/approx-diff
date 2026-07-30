@@ -221,6 +221,11 @@ private
 ↭↭-++⁺ (H.swap r₁ r₂ p)   q = H.swap r₁ r₂ (↭↭-++⁺ p q)
 ↭↭-++⁺ (H.trans p p')     q = H.trans (↭↭-++⁺ p q) (↭↭-++⁺ p' ↭↭-refl)
 
+concat-↭↭ : ∀ {a b} {A : Set a} {B : Set b} {f g : A → List (List B)} {xs : List A} →
+            All (λ x → f x ↭↭ g x) xs → concat (map f xs) ↭↭ concat (map g xs)
+concat-↭↭ []         = ↭↭-refl
+concat-↭↭ (px ∷ pxs) = ↭↭-++⁺ px (concat-↭↭ pxs)
+
 concat-resp : ∀ {a} {A : Set a} {rss rss' : List (List A)} →
               rss ↭↭ rss' → concat rss ↭ concat rss'
 concat-resp (H.refl [])       = ↭-refl
@@ -455,6 +460,12 @@ filter-none : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
               All (λ x → f x ≡ Bool.false) xs → filterᵇ f xs ≡ []
 filter-none []              = ≡-refl
 filter-none (_∷_ {x} h hs) rewrite h = filter-none hs
+
+filter-concat : ∀ {a} {A : Set a} (f : A → Bool) (xss : List (List A)) →
+                filterᵇ f (concat xss) ≡ concat (map (filterᵇ f) xss)
+filter-concat f []         = ≡-refl
+filter-concat f (xs ∷ xss) =
+  ≡-trans (filter-++ f xs (concat xss)) (≡-cong (filterᵇ f xs ++_) (filter-concat f xss))
 
 filter-comm : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
               filterᵇ f (filterᵇ g xs) ≡ filterᵇ g (filterᵇ f xs)
