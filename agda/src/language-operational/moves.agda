@@ -5,19 +5,21 @@ open import Data.Bool.ListAction using (any)
 open import Data.Bool.Properties using (∨-comm)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; concat; partitionᵇ)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Properties using (concat-++; map-++)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺)
-open import Data.Product using (_,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Sum using (inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import list
 open import signature using (Signature)
 open import primitives using (Primitives)
+import hide-algebra
 import matrix
 import two
 
@@ -179,3 +181,67 @@ hide-at-separated D p K S =
                  (map-partition₂ proj₁ g (K .hidden)))
         (merge-separated (fo-graph D) p (S .separated))
   where g = any (λ q → adjacent (fo-graph D) (at p) (at q))
+
+private
+  module HA {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) =
+    hide-algebra.Hide (Vertex D) vertex-width
+
+  mv-mono : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+            {C E : List (Path D)} →
+            (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
+            ∀ z → member-vertex z C ≡ Bool.true → member-vertex z E ≡ Bool.true
+  mv-mono mono env    ()
+  mv-mono mono (at q) h = mono q h
+
+  when-sub : ∀ (b₁ b₂ : Bool) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
+             (b₁ ≡ Bool.true → b₂ ≡ Bool.true) →
+             (when b₁ R i j two.⊔ when b₂ R i j) ≡ when b₂ R i j
+  when-sub Bool.false b₂ R i j imp = ≡-refl
+  when-sub Bool.true  b₂ R i j imp with b₂ | imp ≡-refl
+  ... | Bool.true | _ = two.⊔-idem
+
+restrict-sub : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+               (G : Graph D) {C E : List (Path D)} →
+               (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
+               ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+               (restrict G C x y i j two.⊔ restrict G E x y i j) ≡ restrict G E x y i j
+restrict-sub G {C} {E} mono x y i j =
+  when-sub (member-vertex x C ∨ member-vertex y C) (member-vertex x E ∨ member-vertex y E)
+           (G x y) i j imp
+  where
+  imp : (member-vertex x C ∨ member-vertex y C) ≡ Bool.true →
+        (member-vertex x E ∨ member-vertex y E) ≡ Bool.true
+  imp h with ∨-true-inv (member-vertex x C) (member-vertex y C) h
+  ... | inj₁ hx = ≡-cong (_∨ member-vertex y E) (mv-mono mono x hx)
+  ... | inj₂ hy = ≡-trans (≡-cong (member-vertex x E ∨_) (mv-mono mono y hy))
+                          (∨-true (member-vertex x E))
+
+restrict-agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                 (G : Graph D) {C E : List (Path D)} →
+                 (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
+                 All (λ r → ((z : Vertex D) (i : Fin (vertex-width z)) (j : Fin (vertex-width r)) →
+                             restrict G E r z i j ≡ restrict G C r z i j)
+                          × ((z : Vertex D) (i : Fin (vertex-width r)) (j : Fin (vertex-width z)) →
+                             restrict G E z r i j ≡ restrict G C z r i j))
+                     (map at C)
+restrict-agree G {C} {E} mono =
+  AllP.map⁺ (All-map (λ {q} hq →
+    (λ z i j →
+      ≡-trans (≡-cong (λ b → when (b ∨ member-vertex z E) (G (at q) z) i j) (mono q hq))
+              (≡-sym (≡-cong (λ b → when (b ∨ member-vertex z C) (G (at q) z) i j) hq))) ,
+    (λ z i j →
+      ≡-trans (≡-cong (λ b → when (member-vertex z E ∨ b) (G z (at q)) i j) (mono q hq))
+      (≡-trans (≡-cong (λ b → when b (G z (at q)) i j) (∨-true (member-vertex z E)))
+      (≡-sym (≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (G z (at q)) i j) hq)
+                      (≡-cong (λ b → when b (G z (at q)) i j) (∨-true (member-vertex z C))))))))
+    (any-self eq-path-refl C))
+
+localise : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+           {C E : List (Path D)} →
+           (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
+           ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+           hide-all (restrict (fo-graph D) E) (map at C) x y i j ≡
+           (restrict (fo-graph D) E x y i j two.⊔ summary D C x y i j)
+localise D {C} {E} mono x y i j =
+  HA.agree-add D (map at C) (restrict-sub (fo-graph D) mono) (restrict-agree (fo-graph D) mono)
+               x y i j
