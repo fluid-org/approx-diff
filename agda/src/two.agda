@@ -2,6 +2,9 @@
 module two where
 
 open import prop using (⊤; ⊥; tt; _∨_; inj₁; inj₂; _,_)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
+import Data.Product as Product
+import Data.Sum as Sum
 open import basics using (IsPreorder; IsMeet; IsJoin; IsBottom; IsTop)
 
 data Two : Set where
@@ -66,6 +69,10 @@ I ⊓ x = x
 ⊓-isMeet .IsMeet.π₂ = ⊓-lower₂
 ⊓-isMeet .IsMeet.⟨_,_⟩ = ⊓-greatest
 
+-- Equality form of I-isTop: a meet is I only when both parts are.
+⊓-I : ∀ x y → (x ⊓ y) ≡ I → (x ≡ I) Product.× (y ≡ I)
+⊓-I I y h = ≡-refl Product., h
+
 ------------------------------------------------------------------------------
 O-isBottom : IsBottom ≤-isPreorder O
 O-isBottom .IsBottom.≤-bottom = tt
@@ -90,6 +97,11 @@ I ⊔ x = I
 ⊔-isJoin .IsJoin.inl = ⊔-upper₁
 ⊔-isJoin .IsJoin.inr = ⊔-upper₂
 ⊔-isJoin .IsJoin.[_,_] = ⊔-least
+
+-- I is join-prime, so a join is I only when some part is.
+⊔-I : ∀ x y → (x ⊔ y) ≡ I → (x ≡ I) Sum.⊎ (y ≡ I)
+⊔-I O y h = Sum.inj₂ h
+⊔-I I y h = Sum.inj₁ ≡-refl
 
 ------------------------------------------------------------------------------
 ¬ : Two → Two

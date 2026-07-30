@@ -564,15 +564,8 @@ acyclic-m c = <-irrefl ≡-refl (climb-m c)
 
 -- Witnesses for non-zero entries of sums and composites.
 private
-  ⊔-I : ∀ x y → (x two.⊔ y) ≡ two.I → (x ≡ two.I) ⊎ (y ≡ two.I)
-  ⊔-I two.O y h = inj₂ h
-  ⊔-I two.I y h = inj₁ ≡-refl
-
-  ⊓-I : ∀ x y → (x two.⊓ y) ≡ two.I → (x ≡ two.I) × (y ≡ two.I)
-  ⊓-I two.I y h = ≡-refl , h
-
   Σ-I : ∀ {n} (f : Fin n → two.Two) → M.Σ f ≡ two.I → Σ (Fin n) (λ k → f k ≡ two.I)
-  Σ-I {suc n} f h with ⊔-I (f F.zero) (M.Σ (λ k → f (F.suc k))) h
+  Σ-I {suc n} f h with two.⊔-I (f F.zero) (M.Σ (λ k → f (F.suc k))) h
   ... | inj₁ e = F.zero , e
   ... | inj₂ e with Σ-I (λ k → f (F.suc k)) e
   ...   | (k , e') = F.suc k , e'
@@ -580,7 +573,7 @@ private
   ∘-I : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l → (A M.∘ B) i l ≡ two.I →
         Σ (Fin n) (λ j → (A i j ≡ two.I) × (B j l ≡ two.I))
   ∘-I A B i l h with Σ-I (λ j → A i j two.⊓ B j l) h
-  ... | (j , e) with ⊓-I (A i j) (B j l) e
+  ... | (j , e) with two.⊓-I (A i j) (B j l) e
   ...   | (e₁ , e₂) = j , (e₁ , e₂)
 
 -- The forward-edge property of an arbitrary graph over a derivation, and its preservation by
@@ -603,7 +596,7 @@ ForwardM {D = D} G = ∀ (x y : VertexM D) (i : Fin (vertex-width-m y)) (j : Fin
 
 hide-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
                (r : Vertex D) → Forward G → Forward (hide G r)
-hide-forward {G = G} r fwd x y i j h with ⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
+hide-forward {G = G} r fwd x y i j h with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
 ... | inj₁ e = fwd x y i j e
 ... | inj₂ e with ∘-I (G r y) (G x r) i j e
 ...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
@@ -611,7 +604,7 @@ hide-forward {G = G} r fwd x y i j h with ⊔-I (G x y i j) ((G r y M.∘ G x r)
 hide-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
                  {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
                  (r : VertexS D) → ForwardS G → ForwardS (hide-s G r)
-hide-forward-s {G = G} r fwd x y i j h with ⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
+hide-forward-s {G = G} r fwd x y i j h with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
 ... | inj₁ e = fwd x y i j e
 ... | inj₂ e with ∘-I (G r y) (G x r) i j e
 ...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
@@ -621,7 +614,7 @@ hide-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ 
                  {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
                  {D : Map γ s σ' v R v' R'} {G : GraphM D}
                  (r : VertexM D) → ForwardM G → ForwardM (hide-m G r)
-hide-forward-m {G = G} r fwd x y i j h with ⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
+hide-forward-m {G = G} r fwd x y i j h with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) h
 ... | inj₁ e = fwd x y i j e
 ... | inj₂ e with ∘-I (G r y) (G x r) i j e
 ...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
