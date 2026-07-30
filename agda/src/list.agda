@@ -13,7 +13,7 @@ open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; part
 open import Data.List.Properties using (++-assoc)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
-open ↭ using (_↭_; ↭-refl; ↭-trans; ↭-reflexive)
+open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 import Data.List.Relation.Unary.All.Properties as AllP
@@ -385,6 +385,112 @@ partition-permᴿ {R = R} f resp {xs} {ys} p =
   subst₂ (λ u v → H.Permutation R (proj₂ u) (proj₂ v))
          (≡-sym (partition-filter f xs)) (≡-sym (partition-filter f ys))
          (filter-permᴿ (λ x → not (f x)) (λ rxy → ≡-cong not (resp rxy)) p)
+
+filter-comm : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+              filterᵇ f (filterᵇ g xs) ≡ filterᵇ g (filterᵇ f xs)
+filter-comm f g []       = ≡-refl
+filter-comm f g (x ∷ xs) =
+  bool-case (g x)
+    (λ eg → bool-case (f x)
+      (λ ef →
+        ≡-trans (≡-cong (filterᵇ f) (filter-head-true {f = g} {x = x} xs eg))
+        (≡-trans (filter-head-true {f = f} {x = x} (filterᵇ g xs) ef)
+        (≡-trans (≡-cong (x ∷_) (filter-comm f g xs))
+        (≡-sym (≡-trans (≡-cong (filterᵇ g) (filter-head-true {f = f} {x = x} xs ef))
+                        (filter-head-true {f = g} {x = x} (filterᵇ f xs) eg))))))
+      (λ ef →
+        ≡-trans (≡-cong (filterᵇ f) (filter-head-true {f = g} {x = x} xs eg))
+        (≡-trans (filter-head-false {f = f} {x = x} (filterᵇ g xs) ef)
+        (≡-trans (filter-comm f g xs)
+        (≡-sym (≡-cong (filterᵇ g) (filter-head-false {f = f} {x = x} xs ef)))))))
+    (λ eg → bool-case (f x)
+      (λ ef →
+        ≡-trans (≡-cong (filterᵇ f) (filter-head-false {f = g} {x = x} xs eg))
+        (≡-trans (filter-comm f g xs)
+        (≡-sym (≡-trans (≡-cong (filterᵇ g) (filter-head-true {f = f} {x = x} xs ef))
+                        (filter-head-false {f = g} {x = x} (filterᵇ f xs) eg)))))
+      (λ ef →
+        ≡-trans (≡-cong (filterᵇ f) (filter-head-false {f = g} {x = x} xs eg))
+        (≡-trans (filter-comm f g xs)
+        (≡-sym (≡-cong (filterᵇ g) (filter-head-false {f = f} {x = x} xs ef))))))
+
+any-filterᵇ-∧ : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+                any f (filterᵇ g xs) ≡ any (λ x → g x Bool.∧ f x) xs
+any-filterᵇ-∧ f g []       = ≡-refl
+any-filterᵇ-∧ f g (x ∷ xs) =
+  bool-case (g x)
+    (λ eg → ≡-trans (≡-cong (any f) (filter-head-true {f = g} {x = x} xs eg))
+            (≡-trans (≡-cong (f x ∨_) (any-filterᵇ-∧ f g xs))
+                     (≡-sym (≡-cong (λ b → (b Bool.∧ f x) ∨ any (λ x' → g x' Bool.∧ f x') xs) eg))))
+    (λ eg → ≡-trans (≡-cong (any f) (filter-head-false {f = g} {x = x} xs eg))
+            (≡-trans (any-filterᵇ-∧ f g xs)
+                     (≡-sym (≡-cong (λ b → (b Bool.∧ f x) ∨ any (λ x' → g x' Bool.∧ f x') xs) eg))))
+
+filter-avoid : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+               any (λ x → g x Bool.∧ f x) xs ≡ Bool.false →
+               filterᵇ f (filterᵇ (λ x → not (g x)) xs) ≡ filterᵇ f xs
+filter-avoid f g []       h = ≡-refl
+filter-avoid f g (x ∷ xs) h with ∨-false (g x Bool.∧ f x) (any (λ x' → g x' Bool.∧ f x') xs) h
+... | (hx , hxs) =
+  bool-case (g x)
+    (λ eg →
+      ≡-trans (≡-cong (filterᵇ f) (filter-head-false {x = x} xs (≡-cong not eg)))
+      (≡-trans (filter-avoid f g xs hxs)
+               (≡-sym (filter-head-false {f = f} {x = x} xs
+                        (≡-trans (≡-sym (≡-cong (Bool._∧ f x) eg)) hx)))))
+    (λ eg →
+      ≡-trans (≡-cong (filterᵇ f) (filter-head-true {x = x} xs (≡-cong not eg)))
+      (≡-trans (bool-case (f x)
+        (λ ef → ≡-trans (filter-head-true {f = f} {x = x} (filterᵇ (λ x' → not (g x')) xs) ef)
+                (≡-trans (≡-cong (x ∷_) (filter-avoid f g xs hxs))
+                         (≡-sym (filter-head-true {f = f} {x = x} xs ef))))
+        (λ ef → ≡-trans (filter-head-false {f = f} {x = x} (filterᵇ (λ x' → not (g x')) xs) ef)
+                (≡-trans (filter-avoid f g xs hxs)
+                         (≡-sym (filter-head-false {f = f} {x = x} xs ef)))))
+               ≡-refl))
+
+filter-exchange : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
+                  (filterᵇ g xs ++ filterᵇ f (filterᵇ (λ x → not (g x)) xs)) ↭
+                  (filterᵇ f xs ++ filterᵇ g (filterᵇ (λ x → not (f x)) xs))
+filter-exchange f g []       = ↭-refl
+filter-exchange f g (x ∷ xs) =
+  bool-case (g x)
+    (λ eg → bool-case (f x)
+      (λ ef →
+        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-head-true {f = g} {x = x} xs eg)
+                   (≡-cong (filterᵇ f) (filter-head-false {x = x} xs (≡-cong not eg)))))
+        (↭-trans (↭.prep x (filter-exchange f g xs))
+                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-head-true {f = f} {x = x} xs ef)
+                    (≡-cong (filterᵇ g) (filter-head-false {x = x} xs (≡-cong not ef))))))))
+      (λ ef →
+        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-head-true {f = g} {x = x} xs eg)
+                   (≡-cong (filterᵇ f) (filter-head-false {x = x} xs (≡-cong not eg)))))
+        (↭-trans (↭.prep x (filter-exchange f g xs))
+        (↭-trans (↭-sym (shift x (filterᵇ f xs) (filterᵇ g (filterᵇ (λ x' → not (f x')) xs))))
+                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-head-false {f = f} {x = x} xs ef)
+                    (≡-trans (≡-cong (filterᵇ g) (filter-head-true {x = x} xs (≡-cong not ef)))
+                             (filter-head-true {f = g} {x = x}
+                               (filterᵇ (λ x' → not (f x')) xs) eg)))))))))
+    (λ eg → bool-case (f x)
+      (λ ef →
+        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-head-false {f = g} {x = x} xs eg)
+                   (≡-trans (≡-cong (filterᵇ f) (filter-head-true {x = x} xs (≡-cong not eg)))
+                            (filter-head-true {f = f} {x = x}
+                              (filterᵇ (λ x' → not (g x')) xs) ef))))
+        (↭-trans (shift x (filterᵇ g xs) (filterᵇ f (filterᵇ (λ x' → not (g x')) xs)))
+        (↭-trans (↭.prep x (filter-exchange f g xs))
+                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-head-true {f = f} {x = x} xs ef)
+                    (≡-cong (filterᵇ g) (filter-head-false {x = x} xs (≡-cong not ef)))))))))
+      (λ ef →
+        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-head-false {f = g} {x = x} xs eg)
+                   (≡-trans (≡-cong (filterᵇ f) (filter-head-true {x = x} xs (≡-cong not eg)))
+                            (filter-head-false {f = f} {x = x}
+                              (filterᵇ (λ x' → not (g x')) xs) ef))))
+        (↭-trans (filter-exchange f g xs)
+                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-head-false {f = f} {x = x} xs ef)
+                    (≡-trans (≡-cong (filterᵇ g) (filter-head-true {x = x} xs (≡-cong not ef)))
+                             (filter-head-false {f = g} {x = x}
+                               (filterᵇ (λ x' → not (f x')) xs) eg))))))))
 
 map-partition₁ : ∀ {a b} {A : Set a} {B : Set b} (h : A → B) (f : B → Bool) (xs : List A) →
                  proj₁ (partitionᵇ f (map h xs)) ≡ map h (proj₁ (partitionᵇ (λ x → f (h x)) xs))
