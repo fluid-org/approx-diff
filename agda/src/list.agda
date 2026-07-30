@@ -13,6 +13,7 @@ import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (++⁺; ++-comm; shift)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
@@ -188,3 +189,25 @@ partition-↭ f (x ∷ xs) with f x
 ↭↭-of-↭ (↭.prep x p)   = H.prep ↭-refl (↭↭-of-↭ p)
 ↭↭-of-↭ (↭.swap x y p) = H.swap ↭-refl ↭-refl (↭↭-of-↭ p)
 ↭↭-of-↭ (↭.trans p q)  = H.trans (↭↭-of-↭ p) (↭↭-of-↭ q)
+
+partition-All : ∀ {a p} {A : Set a} {P : A → Set p} (f : A → Bool) {xs : List A} → All P xs →
+                All P (proj₁ (partitionᵇ f xs)) × All P (proj₂ (partitionᵇ f xs))
+partition-All f [] = [] , []
+partition-All f (_∷_ {x} px pxs) with partition-All f pxs
+... | (a₁ , a₂) with f x
+...   | Bool.true  = px ∷ a₁ , a₂
+...   | Bool.false = a₁ , px ∷ a₂
+
+map-partition₁ : ∀ {a b} {A : Set a} {B : Set b} (h : A → B) (f : B → Bool) (xs : List A) →
+                 proj₁ (partitionᵇ f (map h xs)) ≡ map h (proj₁ (partitionᵇ (λ x → f (h x)) xs))
+map-partition₁ h f []       = ≡-refl
+map-partition₁ h f (x ∷ xs) with f (h x)
+... | Bool.true  = ≡-cong (h x ∷_) (map-partition₁ h f xs)
+... | Bool.false = map-partition₁ h f xs
+
+map-partition₂ : ∀ {a b} {A : Set a} {B : Set b} (h : A → B) (f : B → Bool) (xs : List A) →
+                 proj₂ (partitionᵇ f (map h xs)) ≡ map h (proj₂ (partitionᵇ (λ x → f (h x)) xs))
+map-partition₂ h f []       = ≡-refl
+map-partition₂ h f (x ∷ xs) with f (h x)
+... | Bool.true  = map-partition₂ h f xs
+... | Bool.false = ≡-cong (h x ∷_) (map-partition₂ h f xs)
