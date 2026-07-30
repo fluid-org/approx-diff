@@ -328,35 +328,6 @@ assemble D {E} (C ∷ Cs) (mono ∷ monos) (shead ∷ stail) x y i j =
             shead))
 
 private
-  ⊔-swap : ∀ a b c → (a two.⊔ (b two.⊔ c)) ≡ (b two.⊔ (a two.⊔ c))
-  ⊔-swap two.O b c = ≡-refl
-  ⊔-swap two.I two.O c = ≡-refl
-  ⊔-swap two.I two.I c = ≡-refl
-
-  foldr-⊔-base : ∀ (b : two.Two) (ts : List two.Two) →
-                 foldr two._⊔_ b ts ≡ (b two.⊔ foldr two._⊔_ two.O ts)
-  foldr-⊔-base b []       = ≡-sym two.⊔-runit
-  foldr-⊔-base b (t ∷ ts) =
-    ≡-trans (≡-cong (t two.⊔_) (foldr-⊔-base b ts)) (⊔-swap t b (foldr two._⊔_ two.O ts))
-
-  foldr-⊔-I : ∀ (b : two.Two) (ts : List two.Two) → foldr two._⊔_ b ts ≡ two.I →
-              (b ≡ two.I) ⊎ Any (_≡ two.I) ts
-  foldr-⊔-I b []       h = inj₁ h
-  foldr-⊔-I b (t ∷ ts) h with two.⊔-I t (foldr two._⊔_ b ts) h
-  ... | inj₁ e = inj₂ (here e)
-  ... | inj₂ e with foldr-⊔-I b ts e
-  ...   | inj₁ e' = inj₁ e'
-  ...   | inj₂ a  = inj₂ (there a)
-
-  foldr-⊔-at : ∀ (b : two.Two) {ts : List two.Two} → Any (_≡ two.I) ts →
-               foldr two._⊔_ b ts ≡ two.I
-  foldr-⊔-at b {t ∷ ts} (here e)  = two.⊔-I-inl e
-  foldr-⊔-at b {t ∷ ts} (there a) = two.⊔-I-inr t (foldr-⊔-at b a)
-
-  foldr-⊔-here : ∀ {b : two.Two} (ts : List two.Two) → b ≡ two.I → foldr two._⊔_ b ts ≡ two.I
-  foldr-⊔-here []       e = e
-  foldr-⊔-here (t ∷ ts) e = two.⊔-I-inr t (foldr-⊔-here ts e)
-
   foldr-entry : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
                 (B : Graph D) (Gs : List (Graph D)) →
                 ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
@@ -418,11 +389,6 @@ private
 
   or-intror : ∀ (a b : Bool) → b ≡ Bool.true → (a ∨ b) ≡ Bool.true
   or-intror a b e = ≡-trans (≡-cong (a ∨_) e) (∨-true a)
-
-  foldr-⊔-zeros : ∀ {b : two.Two} {ts : List two.Two} → All (_≡ two.O) ts →
-                  foldr two._⊔_ b ts ≡ b
-  foldr-⊔-zeros []       = ≡-refl
-  foldr-⊔-zeros (e ∷ es) = ≡-cong₂ two._⊔_ e (foldr-⊔-zeros es)
 
   foldr-entryₘ : ∀ {m n} (B : M.Matrix m n) (Rs : List (M.Matrix m n)) (i : Fin m) (j : Fin n) →
                  foldr M._+ₘ_ B Rs i j ≡ foldr two._⊔_ (B i j) (map (λ R' → R' i j) Rs)
@@ -521,7 +487,7 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
   T-I : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) (b : two.Two) →
         Any (λ C → summary D C x' y' i' j' ≡ two.I) Ms →
         foldr two._⊔_ b (map (λ C → summary D C x' y' i' j') Ms) ≡ two.I
-  T-I x' y' i' j' b a = foldr-⊔-at b (AnyPr.map⁺ a)
+  T-I x' y' i' j' b a = two.foldr-⊔-at b (AnyPr.map⁺ a)
 
   mv-p-C* : ∀ z → member-vertex z (p ∷ []) ≡ Bool.true → member-vertex z C* ≡ Bool.true
   mv-p-C* env ()
@@ -561,28 +527,6 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
   sumsAt : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) → List two.Two
   sumsAt x' y' i' j' = map (λ C → summary D C x' y' i' j') Ms
 
-  scontra-x : ∀ {a} {A : Set a} y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width (at p)))
-              {us : List (List (Path D) × Graph D)} →
-              Any (λ CH → (summary D (proj₁ CH) (at p) y' i' j' ≡ two.I)
-                        × (((z : Vertex D) (i₀ : Fin (vertex-width z)) (j₀ : Fin (vertex-width (at p))) →
-                            summary D (proj₁ CH) (at p) z i₀ j₀ ≡ two.O)
-                         × ((z : Vertex D) (i₀ : Fin (vertex-width (at p))) (j₀ : Fin (vertex-width z)) →
-                            summary D (proj₁ CH) z (at p) i₀ j₀ ≡ two.O))) us → A
-  scontra-x y' i' j' (here (sI , (zr , _))) with ≡-trans (≡-sym (zr y' i' j')) sI
-  ... | ()
-  scontra-x y' i' j' (there a) = scontra-x y' i' j' a
-
-  scontra-y : ∀ {a} {A : Set a} x' (i' : Fin (vertex-width (at p))) (j' : Fin (vertex-width x'))
-              {us : List (List (Path D) × Graph D)} →
-              Any (λ CH → (summary D (proj₁ CH) x' (at p) i' j' ≡ two.I)
-                        × (((z : Vertex D) (i₀ : Fin (vertex-width z)) (j₀ : Fin (vertex-width (at p))) →
-                            summary D (proj₁ CH) (at p) z i₀ j₀ ≡ two.O)
-                         × ((z : Vertex D) (i₀ : Fin (vertex-width (at p))) (j₀ : Fin (vertex-width z)) →
-                            summary D (proj₁ CH) z (at p) i₀ j₀ ≡ two.O))) us → A
-  scontra-y x' i' j' (here (sI , (_ , zc))) with ≡-trans (≡-sym (zc x' i' j')) sI
-  ... | ()
-  scontra-y x' i' j' (there a) = scontra-y x' i' j' a
-
   stored-or : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
               (x' ≡ at p) ⊎ (y' ≡ at p) →
               (Any (λ CH → summary D (proj₁ CH) x' y' i' j' ≡ two.I) Mp
@@ -590,8 +534,12 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
               (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sumsAt x' y' i' j')) ≡ two.I
   stored-or x'      y' i' j' _             (inj₁ aM) =
     two.⊔-I-inr _ (T-I x' y' i' j' two.O (AnyPr.map⁺ aM))
-  stored-or .(at p) y' i' j' (inj₁ ≡-refl) (inj₂ aU) = scontra-x y' i' j' (Any-All aU u-szero)
-  stored-or x' .(at p) i' j' (inj₂ ≡-refl) (inj₂ aU) = scontra-y x' i' j' (Any-All aU u-szero)
+  stored-or .(at p) y' i' j' (inj₁ ≡-refl) (inj₂ aU) =
+    Any-contra (λ { (sI , (zr , _)) → two.O≢I (≡-trans (≡-sym (zr y' i' j')) sI) })
+               (Any-All aU u-szero)
+  stored-or x' .(at p) i' j' (inj₂ ≡-refl) (inj₂ aU) =
+    Any-contra (λ { (sI , (_ , zc)) → two.O≢I (≡-trans (≡-sym (zc x' i' j')) sI) })
+               (Any-All aU u-szero)
 
   fwd-b : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
           b₁ x' y' i' j' ≡ two.I →
@@ -599,7 +547,7 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
   fwd-b x' y' i' j' h with when-I (member-vertex x' (p ∷ []) ∨ member-vertex y' (p ∷ []))
                                   (Vis x' y') i' j' h
   ... | (pgt , ve)
-    with foldr-⊔-I (when (Bool.not (member-vertex x' hs) Bool.∧ Bool.not (member-vertex y' hs))
+    with two.foldr-⊔-I (when (Bool.not (member-vertex x' hs) Bool.∧ Bool.not (member-vertex y' hs))
                          (G x' y') i' j')
                    (map (λ CH → proj₂ CH x' y' i' j') (K .hidden))
                    (≡-trans (≡-sym (vis-entry x' y' i' j')) ve)
@@ -639,7 +587,7 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
                     (or-introl (member p (p ∷ [])) (member-vertex y' (p ∷ []))
                                (≡-cong (_∨ Bool.false) (eq-path-refl p))))
     (≡-trans (vis-entry (at p) y' i' j')
-             (foldr-⊔-here (map (λ CH → proj₂ CH (at p) y' i' j') (K .hidden))
+             (two.foldr-⊔-here (map (λ CH → proj₂ CH (at p) y' i' j') (K .hidden))
                (≡-trans (≡-cong (λ b → when b (G (at p) y') i' j')
                                 (∧-intro (not-false hp) (not-false hy)))
                         ge)))
@@ -652,28 +600,10 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
                     (or-intror (member-vertex x' (p ∷ [])) (member p (p ∷ []))
                                (≡-cong (_∨ Bool.false) (eq-path-refl p))))
     (≡-trans (vis-entry x' (at p) i' j')
-             (foldr-⊔-here (map (λ CH → proj₂ CH x' (at p) i' j') (K .hidden))
+             (two.foldr-⊔-here (map (λ CH → proj₂ CH x' (at p) i' j') (K .hidden))
                (≡-trans (≡-cong (λ b → when b (G x' (at p)) i' j')
                                 (∧-intro (not-false hx) (not-false hp)))
                         ge)))
-
-  refute-x : ∀ {a} {A : Set a} qy (i' : Fin (vertex-width (at qy))) (j' : Fin (vertex-width (at p)))
-             {us : List (List (Path D) × Graph D)} →
-             G (at p) (at qy) i' j' ≡ two.I →
-             Any (λ CH → (member qy (proj₁ CH) ≡ Bool.true) × (gP CH ≡ Bool.false)) us → A
-  refute-x qy i' j' {us = CH ∷ _} ge (here (mem , adj))
-    with ≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} adj qy mem) i' j')) ge
-  ... | ()
-  refute-x qy i' j' ge (there a) = refute-x qy i' j' ge a
-
-  refute-y : ∀ {a} {A : Set a} qx (i' : Fin (vertex-width (at p))) (j' : Fin (vertex-width (at qx)))
-             {us : List (List (Path D) × Graph D)} →
-             G (at qx) (at p) i' j' ≡ two.I →
-             Any (λ CH → (member qx (proj₁ CH) ≡ Bool.true) × (gP CH ≡ Bool.false)) us → A
-  refute-y qx i' j' {us = CH ∷ _} ge (here (mem , adj))
-    with ≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} adj qx mem) i' j')) ge
-  ... | ()
-  refute-y qx i' j' ge (there a) = refute-y qx i' j' ge a
 
   bwd-px : ∀ y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width (at p))) →
            G (at p) y' i' j' ≡ two.I →
@@ -685,7 +615,11 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
                   (AnyPr.map⁺ (Any-map (λ {CH} mem →
                     sumI (proj₁ CH) (at p) (at qy) i' j'
                          (or-intror (member p (proj₁ CH)) (member qy (proj₁ CH)) mem) ge) aM))))
-              , (λ aU → refute-x qy i' j' ge (Any-All aU u-adj)) ]′ (hid-split qy hy))
+              , (λ aU → Any-contra
+                          (λ { {CH} (mem , adj) →
+                               two.O≢I (≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} adj qy mem) i' j'))
+                                       ge) })
+                          (Any-All aU u-adj)) ]′ (hid-split qy hy))
       (λ hy → two.⊔-I-inl (b₁-visible-x (at qy) i' j' hy ge))
 
   bwd-py : ∀ x' (i' : Fin (vertex-width (at p))) (j' : Fin (vertex-width x')) →
@@ -698,7 +632,11 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
                   (AnyPr.map⁺ (Any-map (λ {CH} mem →
                     sumI (proj₁ CH) (at qx) (at p) i' j'
                          (or-introl (member qx (proj₁ CH)) (member p (proj₁ CH)) mem) ge) aM))))
-              , (λ aU → refute-y qx i' j' ge (Any-All aU u-adj)) ]′ (hid-split qx hx))
+              , (λ aU → Any-contra
+                          (λ { {CH} (mem , adj) →
+                               two.O≢I (≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} adj qx mem) i' j'))
+                                       ge) })
+                          (Any-All aU u-adj)) ]′ (hid-split qx hx))
       (λ hx → two.⊔-I-inl (b₁-visible-y (at qx) i' j' hx ge))
 
   bwd-l : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
@@ -748,9 +686,9 @@ merged-summary {Γ} {τ} {γ} {t} {v} {R} D p K S hp dist x y i j =
               foldr two._⊔_ (b₁ x' y' i' j') (sumsAt x' y' i' j') ≡
               foldr two._⊔_ (restrict G C* x' y' i' j') (sumsAt x' y' i' j')
   base-swap x' y' i' j' =
-    ≡-trans (foldr-⊔-base (b₁ x' y' i' j') (sumsAt x' y' i' j'))
+    ≡-trans (two.foldr-⊔-base (b₁ x' y' i' j') (sumsAt x' y' i' j'))
     (≡-trans (middle x' y' i' j')
-             (≡-sym (foldr-⊔-base (restrict G C* x' y' i' j') (sumsAt x' y' i' j'))))
+             (≡-sym (two.foldr-⊔-base (restrict G C* x' y' i' j') (sumsAt x' y' i' j'))))
 
   maps≡ : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
           map (λ H → H x' y' i' j') (map proj₂ Mp) ≡ sumsAt x' y' i' j'

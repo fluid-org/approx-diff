@@ -6,6 +6,7 @@ module list where
 
 open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Bool.Properties using (∨-assoc)
 open import Data.Fin as Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; concat; partitionᵇ; tabulate)
@@ -102,6 +103,12 @@ Any-All : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q} {xs : List
           Any P xs → All Q xs → Any (λ x → P x × Q x) xs
 Any-All (here px) (qx ∷ _) = here (px , qx)
 Any-All (there a) (_ ∷ qs) = there (Any-All a qs)
+
+-- Eliminate an Any whose predicate is refutable.
+Any-contra : ∀ {a p b} {A : Set a} {P : A → Set p} {B : Set b} {xs : List A} →
+             (∀ {x} → P x → ⊥) → Any P xs → B
+Any-contra contra (here px) = ⊥-elim (contra px)
+Any-contra contra (there a) = Any-contra contra a
 
 map-All-cong : ∀ {a b} {A : Set a} {B : Set b} {f g : A → B} {xs : List A} →
                All (λ x → f x ≡ g x) xs → map f xs ≡ map g xs
