@@ -12,7 +12,6 @@ open import Data.Nat using (ℕ; zero; suc; _+_; _<_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties
   using (≤-refl; ≤-trans; ≤-reflexive; m≤m+n; +-monoʳ-<; +-suc; <-trans; <-irrefl; <-asym)
 open import every using (Every; []; _∷_)
-open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import signature using (Signature)
@@ -39,7 +38,7 @@ private
   module M = matrix.Mat two.semiring
 
 open import categories using (Category)
-open Category M.cat using (_⇒_; ∘-cong; assoc; ≈-refl; ≈-sym; ≈-trans)
+open Category M.cat using (_⇒_)
 
 -- Vertex rank: env below every path, each path above its premise offsets.
 rank-v : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Vertex D → ℕ
@@ -520,51 +519,15 @@ data Chain {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} 
          graph D x y i j ≡ two.I → Chain x y
   _∷_  : ∀ {x y z} → Chain x y → Chain y z → Chain x z
 
-data ChainS {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            {D : γ , Ms ⇓s vs [ R ]} : VertexS D → VertexS D → Set ℓ where
-  step : ∀ {x y} (i : Fin (vertex-width-s y)) (j : Fin (vertex-width-s x)) →
-         graphS D x y i j ≡ two.I → ChainS x y
-  _∷_  : ∀ {x y z} → ChainS x y → ChainS y z → ChainS x z
-
-data ChainM {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-            {D : Map γ s σ' v R v' R'} : VertexM D → VertexM D → Set ℓ where
-  step : ∀ {x y} (i : Fin (vertex-width-m y)) (j : Fin (vertex-width-m x)) →
-         graphM D x y i j ≡ two.I → ChainM x y
-  _∷_  : ∀ {x y z} → ChainM x y → ChainM y z → ChainM x z
-
 -- Chains climb strictly in rank, so no chain returns to its start: the graph is acyclic.
 climb : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {x y : Vertex D} →
         Chain x y → rank-v x < rank-v y
 climb {D = D} {x} {y} (step i j h) = forward D x y i j h
 climb (c ∷ c') = <-trans (climb c) (climb c')
 
-climb-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-          {D : γ , Ms ⇓s vs [ R ]} {x y : VertexS D} → ChainS x y → rank-v-s x < rank-v-s y
-climb-s {D = D} {x} {y} (step i j h) = forward-s D x y i j h
-climb-s (c ∷ c') = <-trans (climb-s c) (climb-s c')
-
-climb-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-          {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-          {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-          {D : Map γ s σ' v R v' R'} {x y : VertexM D} → ChainM x y → rank-v-m x < rank-v-m y
-climb-m {D = D} {x} {y} (step i j h) = forward-m D x y i j h
-climb-m (c ∷ c') = <-trans (climb-m c) (climb-m c')
-
 acyclic : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {x : Vertex D} →
           Chain x x → ⊥
 acyclic c = <-irrefl ≡-refl (climb c)
-
-acyclic-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            {D : γ , Ms ⇓s vs [ R ]} {x : VertexS D} → ChainS x x → ⊥
-acyclic-s c = <-irrefl ≡-refl (climb-s c)
-
-acyclic-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-            {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-            {D : Map γ s σ' v R v' R'} {x : VertexM D} → ChainM x x → ⊥
-acyclic-m c = <-irrefl ≡-refl (climb-m c)
 
 -- Witnesses for non-zero entries of sums and composites.
 private
@@ -592,18 +555,6 @@ private
 Forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Graph D → Set ℓ
 Forward {D = D} G = ∀ (x y : Vertex D) (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
                     G x y i j ≡ two.I → rank-v x < rank-v y
-
-ForwardS : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-           {D : γ , Ms ⇓s vs [ R ]} → GraphS D → Set ℓ
-ForwardS {D = D} G = ∀ (x y : VertexS D) (i : Fin (vertex-width-s y)) (j : Fin (vertex-width-s x)) →
-                     G x y i j ≡ two.I → rank-v-s x < rank-v-s y
-
-ForwardM : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-           {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-           {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-           {D : Map γ s σ' v R v' R'} → GraphM D → Set ℓ
-ForwardM {D = D} G = ∀ (x y : VertexM D) (i : Fin (vertex-width-m y)) (j : Fin (vertex-width-m x)) →
-                     G x y i j ≡ two.I → rank-v-m x < rank-v-m y
 
 -- Consequences of forwardness for hiding, proved once over an abstract ranked vertex set and
 -- instantiated to the three graph families. Hiding preserves the property, since a new edge
@@ -675,37 +626,9 @@ private
               (perm (fwd-h a (fwd-h b fwd)) p x y i j)
     perm fwd (↭.trans p q) x y i j = ≡-trans (perm fwd p x y i j) (perm fwd q x y i j)
 
-hide-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
-               (r : Vertex D) → Forward G → Forward (hide G r)
-hide-forward {D = D} = Ranked.fwd-h (Vertex D) vertex-width rank-v
-
-hide-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-                 {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
-                 (r : VertexS D) → ForwardS G → ForwardS (hide-s G r)
-hide-forward-s {D = D} = Ranked.fwd-h (VertexS D) vertex-width-s rank-v-s
-
-hide-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-                 {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-                 {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-                 {D : Map γ s σ' v R v' R'} {G : GraphM D}
-                 (r : VertexM D) → ForwardM G → ForwardM (hide-m G r)
-hide-forward-m {D = D} = Ranked.fwd-h (VertexM D) vertex-width-m rank-v-m
-
 hide-all-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D}
                    (rs : List (Vertex D)) → Forward G → Forward (hide-all G rs)
 hide-all-forward {D = D} = Ranked.fwd-fold (Vertex D) vertex-width rank-v
-
-hide-all-forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-                     {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D}
-                     (rs : List (VertexS D)) → ForwardS G → ForwardS (hide-all-s G rs)
-hide-all-forward-s {D = D} = Ranked.fwd-fold (VertexS D) vertex-width-s rank-v-s
-
-hide-all-forward-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-                     {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-                     {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-                     {D : Map γ s σ' v R v' R'} {G : GraphM D}
-                     (rs : List (VertexM D)) → ForwardM G → ForwardM (hide-all-m G rs)
-hide-all-forward-m {D = D} = Ranked.fwd-fold (VertexM D) vertex-width-m rank-v-m
 
 -- The first-order dependence graph inherits the property.
 fo-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Forward (fo-graph D)
@@ -713,124 +636,8 @@ fo-forward D =
   hide-all-forward (map at (filterᵇ (λ p → Bool.not (is-ε p) Bool.∧ Bool.not (fo-at p)) (paths D)))
                    (forward D)
 
-hide-comm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
-            Forward G → ∀ (r r' x y : Vertex D) i j →
-            hide (hide G r) r' x y i j ≡ hide (hide G r') r x y i j
-hide-comm {D = D} = Ranked.comm (Vertex D) vertex-width rank-v
-
-hide-comm-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-              {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D} →
-              ForwardS G → ∀ (r r' x y : VertexS D) i j →
-              hide-s (hide-s G r) r' x y i j ≡ hide-s (hide-s G r') r x y i j
-hide-comm-s {D = D} = Ranked.comm (VertexS D) vertex-width-s rank-v-s
-
-hide-comm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-              {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-              {D : Map γ s σ' v R v' R'} {G : GraphM D} →
-              ForwardM G → ∀ (r r' x y : VertexM D) i j →
-              hide-m (hide-m G r) r' x y i j ≡ hide-m (hide-m G r') r x y i j
-hide-comm-m {D = D} = Ranked.comm (VertexM D) vertex-width-m rank-v-m
-
 hide-all-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
                 Forward G → ∀ {rs rs'} → rs ↭ rs' →
                 ∀ (x y : Vertex D) i j → hide-all G rs x y i j ≡ hide-all G rs' x y i j
 hide-all-perm {D = D} fwd = Ranked.perm (Vertex D) vertex-width rank-v fwd
 
-hide-all-perm-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-                  {D : γ , Ms ⇓s vs [ R ]} {G : GraphS D} →
-                  ForwardS G → ∀ {rs rs'} → rs ↭ rs' →
-                  ∀ (x y : VertexS D) i j → hide-all-s G rs x y i j ≡ hide-all-s G rs' x y i j
-hide-all-perm-s {D = D} fwd = Ranked.perm (VertexS D) vertex-width-s rank-v-s fwd
-
-hide-all-perm-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-                  {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
-                  {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
-                  {D : Map γ s σ' v R v' R'} {G : GraphM D} →
-                  ForwardM G → ∀ {rs rs'} → rs ↭ rs' →
-                  ∀ (x y : VertexM D) i j → hide-all-m G rs x y i j ≡ hide-all-m G rs' x y i j
-hide-all-perm-m {D = D} fwd = Ranked.perm (VertexM D) vertex-width-m rank-v-m fwd
-
--- A list of vertices in strictly ascending rank order.
-data Ascending {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} :
-               List (Vertex D) → Set ℓ where
-  []  : Ascending []
-  _∷_ : ∀ {r ws} → All (λ s → rank-v r < rank-v s) ws → Ascending ws → Ascending (r ∷ ws)
-
-private
-  +ₘ-cong : ∀ {m n} {R R' S S' : M.Matrix m n} →
-            R M.≈ₘ R' → S M.≈ₘ S' → (R M.+ₘ S) M.≈ₘ (R' M.+ₘ S')
-  +ₘ-cong h k i j = M.+-cong (h i j) (k i j)
-
-  +ₘ-runit : ∀ {m n} (R : M.Matrix m n) → (R M.+ₘ M.εₘ) M.≈ₘ R
-  +ₘ-runit R i j = M.+-comm {x = R i j} {y = two.O}
-
-  +ₘ-interchange : ∀ {m n} (A B C D : M.Matrix m n) →
-                   ((A M.+ₘ B) M.+ₘ (C M.+ₘ D)) M.≈ₘ ((A M.+ₘ C) M.+ₘ (B M.+ₘ D))
-  +ₘ-interchange A B C D i j = M.+-interchange {w = A i j} {x = B i j} {y = C i j} {z = D i j}
-
-  entry-≈-of-≡ : {a b : two.Two} → a ≡ b → M._≈_ a b
-  entry-≈-of-≡ ≡-refl = M.refl
-
-  ≈ₘ-of-≡ : ∀ {m n} {A B : M.Matrix m n} → (∀ i j → A i j ≡ B i j) → A M.≈ₘ B
-  ≈ₘ-of-≡ p i j = entry-≈-of-≡ (p i j)
-
-  -- On a forward graph there is no edge against the rank order.
-  no-back : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
-            Forward G → ∀ {x y} → rank-v y < rank-v x → G x y M.≈ₘ M.εₘ
-  no-back {G = G} fwd {x} {y} h i j with G x y i j in e
-  ... | two.O = M.refl {x = two.O}
-  ... | two.I with <-asym h (fwd x y i j e)
-  ...   | ()
-
-  -- Hiding a vertex of least rank folds into the path-sum: paths either avoid r or leave from it.
-  path-sum-hide : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
-                  Forward G → (r : Vertex D) {ws : List (Vertex D)} →
-                  All (λ s → rank-v r < rank-v s) ws → ∀ x y →
-                  path-sum (hide G r) ws x y M.≈ₘ
-                  (path-sum G ws x y M.+ₘ (path-sum G ws r y M.∘ G x r))
-  path-sum-hide fwd r [] x y = ≈-refl
-  path-sum-hide {G = G} fwd r (_∷_ {s} {ws'} lt lts) x y = ≈-trans e₁ (≈-trans e₂ e₃)
-    where
-      A = path-sum G ws' x y
-      B = path-sum G ws' r y M.∘ G x r
-      C = path-sum G ws' s y M.∘ G x s
-      D₁ = path-sum G ws' s y M.∘ (G r s M.∘ G x r)
-
-      step2 : path-sum (hide G r) ws' s y M.≈ₘ path-sum G ws' s y
-      step2 =
-        ≈-trans (path-sum-hide fwd r lts s y)
-        (≈-trans (+ₘ-cong ≈-refl
-                   (≈-trans (∘-cong ≈-refl (no-back fwd lt))
-                            (M.comp-bilinear-ε₂ {k = vertex-width s} (path-sum G ws' r y))))
-                 (+ₘ-runit (path-sum G ws' s y)))
-
-      e₁ : path-sum (hide G r) (s ∷ ws') x y M.≈ₘ ((A M.+ₘ B) M.+ₘ (C M.+ₘ D₁))
-      e₁ = +ₘ-cong (path-sum-hide fwd r lts x y)
-                   (≈-trans (∘-cong step2 ≈-refl)
-                            (M.comp-bilinear₂ (path-sum G ws' s y) (G x s) (G r s M.∘ G x r)))
-
-      e₂ : ((A M.+ₘ B) M.+ₘ (C M.+ₘ D₁)) M.≈ₘ ((A M.+ₘ C) M.+ₘ (B M.+ₘ D₁))
-      e₂ = +ₘ-interchange A B C D₁
-
-      e₃ : ((A M.+ₘ C) M.+ₘ (B M.+ₘ D₁)) M.≈ₘ
-           (path-sum G (s ∷ ws') x y M.+ₘ (path-sum G (s ∷ ws') r y M.∘ G x r))
-      e₃ = +ₘ-cong ≈-refl
-             (≈-trans (+ₘ-cong ≈-refl (≈-sym (assoc (path-sum G ws' s y) (G r s) (G x r))))
-                      (≈-sym (M.comp-bilinear₁ (path-sum G ws' r y)
-                                               (path-sum G ws' s y M.∘ G r s) (G x r))))
-
--- Hiding along an ascending list sums the paths through it.
-hidden-paths : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
-               Forward G → {ws : List (Vertex D)} → Ascending ws →
-               ∀ x y → hide-all G ws x y M.≈ₘ path-sum G ws x y
-hidden-paths fwd []                  x y = ≈-refl
-hidden-paths fwd (_∷_ {r} {ws} lt asc) x y =
-  ≈-trans (hidden-paths (hide-forward r fwd) asc x y) (path-sum-hide fwd r lt x y)
-
--- The same for any hiding order that is a permutation of an ascending one.
-hidden-paths-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
-                    Forward G → {ws ws' : List (Vertex D)} → ws ↭ ws' → Ascending ws' →
-                    ∀ x y → hide-all G ws x y M.≈ₘ path-sum G ws' x y
-hidden-paths-perm fwd p asc x y =
-  ≈-trans (≈ₘ-of-≡ (hide-all-perm fwd p x y)) (hidden-paths fwd asc x y)

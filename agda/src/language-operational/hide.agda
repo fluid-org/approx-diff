@@ -38,14 +38,6 @@ hide G r x y = G x y M.+ₘ (G r y M.∘ G x r)
 hide-all : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Graph D → List (Vertex D) → Graph D
 hide-all = foldl hide
 
--- The dependence routed through the listed vertices: entries sum the composites along the paths
--- from x to y whose interior vertices form a sublist of ws, taken in list order. When ws ascends
--- in rank this sums exactly the paths through ws, and agrees with hide-all (topological-order).
-path-sum : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
-           Graph D → List (Vertex D) → Graph D
-path-sum G []       x y = G x y
-path-sum G (r ∷ ws) x y = path-sum G ws x y M.+ₘ (path-sum G ws r y M.∘ G x r)
-
 -- The first-order dependence graph: the graph of the derivation with every intermediate whose
 -- value is not first-order hidden, so that its live vertices are env, the root, and FO D.
 fo-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Graph D
