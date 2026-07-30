@@ -1,17 +1,18 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool as Bool using (Bool; not; _∧_; _∨_)
+open import Data.Bool as Bool using (Bool; not; if_then_else_; _∧_; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.List.Relation.Unary.All using (All; []; _∷_) renaming (map to All-map)
 open import Data.Bool.Properties using (∧-comm)
-open import Data.List using (List; []; _∷_; _++_; length; map; concat; filterᵇ; partitionᵇ)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filterᵇ)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
 import Data.List.Relation.Unary.All.Properties as AllP
-open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (↭-length)
+import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (↭-length; drop-∷)
 open import Data.Nat using (_≤_; z≤n; s≤s)
 open import Data.Nat.ListAction using (sum)
-open import Data.List.Properties using (concat-++; ++-identityʳ; length-map; map-∘)
+open import Data.List.Properties using (concat-++; concat-map; ++-identityʳ; length-map; map-∘)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -24,12 +25,12 @@ open import primitives using (Primitives)
 import two
 
 -- The stored regions of a reachable configuration are exactly the regions of its hidden set: the
--- merge step of the regions computation respects reordering of the regions it merges.
+-- initial configuration is canonical, and the hide and reveal moves preserve canonicity.
 module language-operational.maintenance {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫
-open import language-syntax Sig renaming (_,_ to _▸_)
+open import language-syntax Sig renaming (_,_ to _▸_) hiding (if_then_else_)
 open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
@@ -304,3 +305,90 @@ blocks-one-region D K S M = All-map (λ {C} e → one {C} e) lens1
           (H.prep (↭-trans (↭-reflexive (≡-sym (++-identityʳ C₀)))
                            (subst (λ z → concat z ↭ C) eq (regions-concat G C)))
                   (H.refl []))
+
+-- The reveal move preserves canonicity: splitting the region containing p computes the regions of
+-- the hidden set with p removed, block by block.
+reveal-at-maintained : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                       (p : Path D) (K : Config D) → Summarised K → Maintained K →
+                       member p (hidden-set K) ≡ Bool.true →
+                       Maintained (reveal-at D p K)
+reveal-at-maintained D p K S M hp .canonical =
+  subst (λ z → z ↭↭ regions G (hidden-set (reveal-at D p K)))
+        (≡-trans (≡-cong concat (map-∘ {g = map proj₁} {f = split-region D p} (K .hidden)))
+                 (concat-map {f = proj₁} (map (split-region D p) (K .hidden))))
+        (H.trans blocks-part
+        (H.trans (↭↭-of-≡ (≡-cong concat maps-eq))
+        (H.trans (H.sym ↭.↭-sym (regions-apart-concat {G = G} apart-filtered))
+        (H.trans (↭↭-of-≡ (≡-cong (regions G) (≡-sym (filter-concat notp Cs))))
+                 (H.sym ↭.↭-sym (regions-perm G hrev))))))
+  where
+  G    = fo-graph D
+  Cs   = map proj₁ (K .hidden)
+  notp = λ q → not (eq-path p q)
+
+  vis-hid-distinct : AllPairs (λ q q' → eq-path q q' ≡ Bool.false)
+                             (K .visible ++ hidden-set K)
+  vis-hid-distinct =
+    AllPairs-perm (λ {q} {q'} h → eq-path-false-sym {p = q} {q = q'} h)
+                  (↭.↭-sym (S .partition)) (FO-distinct D)
+
+  distinct-hs : AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (hidden-set K)
+  distinct-hs = proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) vis-hid-distinct))
+
+  hrev : hidden-set (reveal-at D p K) ↭ filterᵇ notp (hidden-set K)
+  hrev = drop-∷
+    (↭-trans (reveal-set D p (K .hidden) distinct-hs
+                (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
+                         (≡-trans (≡-sym (any-concat (eq-path p) Cs)) hp)))
+             (↭.↭-sym (filter-out-↭ {eq = eq-path}
+                        (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
+                        distinct-hs hp)))
+
+  apart-filtered : AllPairs (Apart G) (map (filterᵇ notp) Cs)
+  apart-filtered =
+    AllPairsP.map⁺
+      (AllPairs-map (λ {C} {C'} ap →
+                       Apart-mono {G = G} {C₁ = filterᵇ notp C} {C₂ = filterᵇ notp C'}
+                                  {C₁' = C} {C₂' = C'}
+                                  (λ q h → any-filterᵇ (eq-path q) notp C h)
+                                  (λ q h → any-filterᵇ (eq-path q) notp C' h)
+                                  ap)
+                    (S .separated))
+
+  maps-eq : map (λ CH → regions G (filterᵇ notp (proj₁ CH))) (K .hidden) ≡
+            map (regions G) (map (filterᵇ notp) Cs)
+  maps-eq =
+    ≡-trans (map-∘ {g = λ C → regions G (filterᵇ notp C)} {f = proj₁} (K .hidden))
+            (map-∘ {g = regions G} {f = filterᵇ notp} Cs)
+
+  split-true : ∀ C (H' : Graph D) → member p C ≡ Bool.true →
+               split-region D p (C , H') ≡
+               map (λ C' → C' , summary D C') (regions G (filterᵇ notp C))
+  split-true C H' e =
+    ≡-cong (λ b → if b then map (λ C' → C' , summary D C') (regions G (filterᵇ notp C))
+                       else (C , H') ∷ []) e
+
+  split-false : ∀ C (H' : Graph D) → member p C ≡ Bool.false →
+                split-region D p (C , H') ≡ (C , H') ∷ []
+  split-false C H' e =
+    ≡-cong (λ b → if b then map (λ C' → C' , summary D C') (regions G (filterᵇ notp C))
+                       else (C , H') ∷ []) e
+
+  per-block : ∀ CH → regions G (proj₁ CH) ↭↭ (proj₁ CH ∷ []) →
+              map proj₁ (split-region D p CH) ↭↭ regions G (filterᵇ notp (proj₁ CH))
+  per-block (C , H') one =
+    bool-case (member p C)
+      (λ e → ↭↭-of-≡ (≡-trans (≡-cong (map proj₁) (split-true C H' e))
+                              (map-proj₁-pair (summary D) (regions G (filterᵇ notp C)))))
+      (λ e → subst₂ _↭↭_
+               (≡-sym (≡-cong (map proj₁) (split-false C H' e)))
+               (≡-sym (≡-cong (regions G)
+                        (filter-all-true (All-map (λ h → ≡-cong not h)
+                                                  (any-false-All _ C e)))))
+               (H.sym ↭.↭-sym one))
+
+  blocks-part : concat (map (λ CH → map proj₁ (split-region D p CH)) (K .hidden)) ↭↭
+                concat (map (λ CH → regions G (filterᵇ notp (proj₁ CH))) (K .hidden))
+  blocks-part =
+    concat-↭↭ (All-map (λ {CH} one → per-block CH one)
+                       (AllP.map⁻ (blocks-one-region D K S M)))
