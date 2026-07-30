@@ -101,6 +101,24 @@ I ⊔ x = I
 ⊔-isJoin .IsJoin.inr = ⊔-upper₂
 ⊔-isJoin .IsJoin.[_,_] = ⊔-least
 
+⊔-idem : ∀ {x} → (x ⊔ x) ≡ x
+⊔-idem {O} = ≡-refl
+⊔-idem {I} = ≡-refl
+
+⊔-runit : ∀ {x} → (x ⊔ O) ≡ x
+⊔-runit {O} = ≡-refl
+⊔-runit {I} = ≡-refl
+
+⊔-comm : ∀ x y → (x ⊔ y) ≡ (y ⊔ x)
+⊔-comm O O = ≡-refl
+⊔-comm O I = ≡-refl
+⊔-comm I O = ≡-refl
+⊔-comm I I = ≡-refl
+
+⊔-assoc : ∀ x y z → ((x ⊔ y) ⊔ z) ≡ (x ⊔ (y ⊔ z))
+⊔-assoc O y z = ≡-refl
+⊔-assoc I y z = ≡-refl
+
 -- I is join-prime, so a join is I only when some part is.
 ⊔-I : ∀ x y → (x ⊔ y) ≡ I → (x ≡ I) Sum.⊎ (y ≡ I)
 ⊔-I O y h = Sum.inj₂ h
