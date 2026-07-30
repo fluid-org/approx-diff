@@ -4,7 +4,8 @@ open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.Bool.Properties using (∨-comm; ∧-comm)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; map; concat; filterᵇ; partitionᵇ)
+open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; partitionᵇ)
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-trans; ↭-sym; ↭-reflexive)
@@ -186,3 +187,16 @@ regions-perm G (↭.swap {xs = ws} {ys = ws'} a b p) =
   H.trans (regions-swap G a b ws)
           (regions-prep G b {a ∷ ws} {a ∷ ws'} (regions-prep G a {ws} {ws'} (regions-perm G p)))
 regions-perm G (↭.trans p q) = H.trans (regions-perm G p) (regions-perm G q)
+
+-- A correctly summarised configuration: the visible and hidden vertices partition the first-order
+-- paths, the stored regions are the regions of the hidden set, and each carries its summary.
+record Summarised {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+                  (K : Config D) : Set ℓ where
+  field
+    partition : (K .visible ++ hidden-set K) ↭ FO D
+    regioned  : map proj₁ (K .hidden) ≈ᵣ regions (fo-graph D) (hidden-set K)
+    summaries : All (λ CH → ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                            proj₂ CH x y i j ≡ summary D (proj₁ CH) x y i j)
+                    (K .hidden)
+
+open Summarised public
