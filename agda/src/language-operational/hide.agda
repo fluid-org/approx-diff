@@ -4,7 +4,9 @@ open import Data.Bool as Bool using (Bool; not; _∧_; _∨_; if_then_else_)
 open import Data.Bool.ListAction using (any)
 open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; foldl; foldr; concat; partitionᵇ)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 open import every using (Every; []; _∷_)
+open import list using (any-tabulate-false)
 open import signature using (Signature)
 open import primitives using (Primitives)
 import matrix
@@ -50,12 +52,22 @@ fo-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R
 fo-graph D =
   hide-all (graph D) (map at (filterᵇ (λ p → not (is-ε p) ∧ not (fo-at p)) (paths D)))
 
+private
+  is-I : two.Two → Bool
+  is-I two.I = Bool.true
+  is-I two.O = Bool.false
+
 nonzero : ∀ {m n} → M.Matrix m n → Bool
 nonzero {m} {n} R = any (λ i → any (λ j → is-I (R i j)) (allFin n)) (allFin m)
-  where
-    is-I : two.Two → Bool
-    is-I two.I = Bool.true
-    is-I two.O = Bool.false
+
+nonzero-O : ∀ {m n} (R : M.Matrix m n) → nonzero R ≡ Bool.false →
+            ∀ i j → R i j ≡ two.O
+nonzero-O {m} {n} R h i j
+  with R i j
+     | any-tabulate-false (λ j' → j') (λ j' → is-I (R i j'))
+         (any-tabulate-false (λ i' → i') (λ i' → any (λ j' → is-I (R i' j')) (allFin n)) h i) j
+... | two.O | _  = ≡-refl
+... | two.I | ()
 
 -- Vertices sharing an incident edge, in either direction.
 adjacent : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} →
