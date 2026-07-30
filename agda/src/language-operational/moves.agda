@@ -771,3 +771,22 @@ summarised-distinct : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , 
 summarised-distinct K S =
   concat-distinct (map proj₁ (K .hidden))
     (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S))))
+
+-- Hiding a visible vertex preserves correct summarisation.
+hide-at-summarised : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                     (p : Path D) (K : Config D) → Summarised K →
+                     member p (K .visible) ≡ Bool.true →
+                     Summarised (hide-at D p K)
+hide-at-summarised D p K S pv .partition =
+  ↭-trans (++⁺ ↭-refl (hide-at-hidden-set D p K))
+  (↭-trans (shift p (hide-at D p K .visible) (hidden-set K))
+  (↭-trans (++⁺ (filter-out-↭ {eq = eq-path} (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
+                  (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S)))
+                  pv)
+                ↭-refl)
+           (S .partition)))
+hide-at-summarised D p K S pv .separated = hide-at-separated D p K S
+hide-at-summarised D p K S pv .summaries =
+  merged-summary D p K S (visible-not-hidden K S {p = p} pv) (summarised-distinct K S) ∷
+  proj₂ (partition-All (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
+                      (S .summaries))
