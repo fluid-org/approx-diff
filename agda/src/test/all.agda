@@ -8,3 +8,4 @@ import test.rationals-fwd
 import test.rationals-bwd
 import test.rationals-total
 import test.intervals-query
+import test.order-idempotent
