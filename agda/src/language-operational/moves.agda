@@ -1136,3 +1136,59 @@ summaries-assemble D K S x y i j hx hy =
                     (restrict-≤ (fo-graph D) (hidden-set K))
                     (restrict-hidden-agree (fo-graph D) (hidden-set K))
                     x y i j))
+
+-- Configuration equivalence: the same visible set and the same hidden set, up to order. On
+-- summarised configurations these data determine the visible graph wherever it is read, so
+-- equivalent configurations are observationally equal.
+record _≈_ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
+           (K K' : Config D) : Set ℓ where
+  field
+    visible-≈ : K .visible ↭ K' .visible
+    hidden-≈  : hidden-set K ↭ hidden-set K'
+
+open _≈_ public
+
+≈-refl : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {K : Config D} → K ≈ K
+≈-refl .visible-≈ = ↭-refl
+≈-refl .hidden-≈  = ↭-refl
+
+≈-sym : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {K K' : Config D} →
+        K ≈ K' → K' ≈ K
+≈-sym e .visible-≈ = ↭-sym (e .visible-≈)
+≈-sym e .hidden-≈  = ↭-sym (e .hidden-≈)
+
+≈-trans : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {K K' K'' : Config D} →
+          K ≈ K' → K' ≈ K'' → K ≈ K''
+≈-trans e e' .visible-≈ = ↭-trans (e .visible-≈) (e' .visible-≈)
+≈-trans e e' .hidden-≈  = ↭-trans (e .hidden-≈) (e' .hidden-≈)
+
+-- Equivalent summarised configurations have the same visible graph at each vertex pair with no
+-- hidden endpoint.
+≈-visible-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+                  (K K' : Config D) → Summarised K → Summarised K' → K ≈ K' →
+                  ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                  member-vertex x (hidden-set K) ≡ Bool.false →
+                  member-vertex y (hidden-set K) ≡ Bool.false →
+                  visible-graph D K x y i j ≡ visible-graph D K' x y i j
+≈-visible-graph D K K' S S' e x y i j hx hy =
+  ≡-trans (visible-graph-summary D K S x y i j hx hy)
+  (≡-trans (≡-cong (fo-graph D x y i j two.⊔_) (summary-perm D (e .hidden-≈) x y i j))
+           (≡-sym (visible-graph-summary D K' S' x y i j
+                     (≡-trans (member-vertex-perm x (↭-sym (e .hidden-≈))) hx)
+                     (≡-trans (member-vertex-perm y (↭-sym (e .hidden-≈))) hy))))
+
+-- The inversion corollary: on a summarised configuration, revealing a vertex inverts hiding it,
+-- and hiding a vertex inverts revealing it, up to configuration equivalence.
+hide-reveal : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+              (p : Path D) (K : Config D) → Summarised K →
+              member p (K .visible) ≡ Bool.true →
+              reveal-at D p (hide-at D p K) ≈ K
+hide-reveal D p K S pv .visible-≈ = hide-reveal-visible D p K S pv
+hide-reveal D p K S pv .hidden-≈  = hide-reveal-hidden-set D p K S pv
+
+reveal-hide : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
+              (p : Path D) (K : Config D) → Summarised K →
+              member p (hidden-set K) ≡ Bool.true →
+              hide-at D p (reveal-at D p K) ≈ K
+reveal-hide D p K S hp .visible-≈ = ↭-reflexive (reveal-hide-visible D p K S hp)
+reveal-hide D p K S hp .hidden-≈  = reveal-hide-hidden-set D p K S hp
