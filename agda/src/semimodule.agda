@@ -3,11 +3,11 @@
 open import Level using (0ℓ; suc)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_,_; _×_)
-open import prop using (_,_; proj₁; proj₂; LiftS; liftS; tt; _⇔_; sym-⇔; trans-⇔)
+open import prop using (_,_; proj₁; proj₂; ∃ₛ; LiftS; liftS; tt; _⇔_; sym-⇔; trans-⇔)
 open import prop-setoid
   using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂; 𝟙)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
-open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; IsTerminal)
+open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; IsTerminal; Splitting)
 open import commutative-monoid using (CommutativeMonoid; 𝟙cm) renaming (_⊗_ to _×CM_)
 open import commutative-semiring using (CommutativeSemiring)
 open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimits)
@@ -251,6 +251,58 @@ biproduct M N .Biproduct.zero-1 = products .HasProducts.pair-p₁ (ε-map N M) (
 biproduct M N .Biproduct.zero-2 = products .HasProducts.pair-p₂ (id M) (ε-map M N)
 biproduct M N .Biproduct.id-+ .*≈* ._≈s_.func-eq (x₁≈x₂ , y₁≈y₂) =
   M .trans (M .+-comm) (M .trans (M .+-lunit) x₁≈x₂) , N .trans (N .+-lunit) y₁≈y₂
+
+------------------------------------------------------------------------------
+-- Idempotents split: the fixed points of an idempotent endomorphism form a semimodule, with the
+-- inclusion as section and the idempotent itself as retraction.
+
+module _ {M : Semimodule} (h : M ⇒ M) (h-idem : (h ∘ h) ≈m h) where
+  private
+    module M = Semimodule M
+
+  Fix : Semimodule
+  Fix .setoid .Setoid.Carrier = ∃ₛ M.Carrier (λ x → h .func x M.≈ x)
+  Fix .setoid .Setoid._≈_ (x , _) (y , _) = x M.≈ y
+  Fix .setoid .Setoid.isEquivalence .IsEquivalence.refl = M.refl
+  Fix .setoid .Setoid.isEquivalence .IsEquivalence.sym = M.sym
+  Fix .setoid .Setoid.isEquivalence .IsEquivalence.trans = M.trans
+  Fix .additive .CommutativeMonoid.ε = M.ε , h .preserve-ze
+  Fix .additive .CommutativeMonoid._+_ (x , p) (y , q) =
+    (x M.+ y) , M.trans (h .preserve-+) (M.+-cong p q)
+  Fix .additive .CommutativeMonoid.+-cong = M.+-cong
+  Fix .additive .CommutativeMonoid.+-lunit = M.+-lunit
+  Fix .additive .CommutativeMonoid.+-assoc = M.+-assoc
+  Fix .additive .CommutativeMonoid.+-comm = M.+-comm
+  Fix ._·_ s (x , p) = (s M.· x) , M.trans (h .preserve-·) (M.·-cong S.refl p)
+  Fix .·-cong = M.·-cong
+  Fix .·-mul = M.·-mul
+  Fix .·-unit = M.·-unit
+  Fix .+-distribʳ = M.+-distribʳ
+  Fix .+-distribˡ = M.+-distribˡ
+  Fix .zero-distribʳ = M.zero-distribʳ
+  Fix .zero-distribˡ = M.zero-distribˡ
+
+  fix-sect : Fix ⇒ M
+  fix-sect .*→* ._⇒s_.func (x , _) = x
+  fix-sect .*→* ._⇒s_.func-resp-≈ e = e
+  fix-sect .preserve-ze = M.refl
+  fix-sect .preserve-+ = M.refl
+  fix-sect .preserve-· = M.refl
+
+  fix-retr : M ⇒ Fix
+  fix-retr .*→* ._⇒s_.func x = h .func x , h-idem .*≈* ._≈s_.func-eq M.refl
+  fix-retr .*→* ._⇒s_.func-resp-≈ = h .func-resp-≈
+  fix-retr .preserve-ze = h .preserve-ze
+  fix-retr .preserve-+ = h .preserve-+
+  fix-retr .preserve-· = h .preserve-·
+
+  splitting : Splitting cat h
+  splitting .Splitting.witness = Fix
+  splitting .Splitting.sect = fix-sect
+  splitting .Splitting.retr = fix-retr
+  splitting .Splitting.retr-sect .*≈* ._≈s_.func-eq {x , p} {_ , q} x₁≈x₂ =
+    M.trans (h .func-resp-≈ x₁≈x₂) q
+  splitting .Splitting.sect-retr .*≈* ._≈s_.func-eq = h .func-resp-≈
 
 ------------------------------------------------------------------------------
 -- Tensor products
