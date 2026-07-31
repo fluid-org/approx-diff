@@ -1,11 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Level using (0ℓ)
-open import Data.Nat using (ℕ) renaming (_+_ to _+ℕ_)
+open import Data.Nat using (ℕ; suc) renaming (_+_ to _+ℕ_)
 open import Data.Fin using (Fin; zero; suc)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
-open import basics using (IsPreorder; IsJoin; IsBottom)
+open import basics using (IsPreorder; IsJoin; IsBottom; IsTop)
 open import categories using (Category; HasTerminal; IsTerminal)
 open import commutative-monoid using (CommutativeMonoid)
 open import cmon-enriched using (CMonEnriched; Biproduct)
@@ -95,6 +95,26 @@ absorb-right {P} {Q} f =
   (≈ₘ-trans (assoc (Q .ord ∘ₘ f .mat) (P .ord) (P .ord))
   (≈ₘ-trans (∘-cong (≈ₘ-refl {M = Q .ord ∘ₘ f .mat}) (ord-idem P))
             (f .absorbed)))
+
+-- Every matrix induces a morphism by closing under the orders at either end; the result is
+-- absorbed because the orders are idempotent.
+close : ∀ {P Q} → Matrix (Q .dim) (P .dim) → P ⇒ Q
+close {P} {Q} X .mat = (Q .ord ∘ₘ X) ∘ₘ P .ord
+close {P} {Q} X .absorbed = ≈ₘ-trans (∘-cong left (≈ₘ-refl {M = P .ord})) right
+  where
+  left : (Q .ord ∘ₘ ((Q .ord ∘ₘ X) ∘ₘ P .ord)) ≈ₘ ((Q .ord ∘ₘ X) ∘ₘ P .ord)
+  left =
+    ≈ₘ-trans (≈ₘ-sym (assoc (Q .ord) (Q .ord ∘ₘ X) (P .ord)))
+    (≈ₘ-trans (∘-cong (≈ₘ-sym (assoc (Q .ord) (Q .ord) X)) (≈ₘ-refl {M = P .ord}))
+              (∘-cong (∘-cong (ord-idem Q) (≈ₘ-refl {M = X})) (≈ₘ-refl {M = P .ord})))
+
+  right : (((Q .ord ∘ₘ X) ∘ₘ P .ord) ∘ₘ P .ord) ≈ₘ ((Q .ord ∘ₘ X) ∘ₘ P .ord)
+  right = ≈ₘ-trans (assoc (Q .ord ∘ₘ X) (P .ord) (P .ord))
+                   (∘-cong (≈ₘ-refl {M = Q .ord ∘ₘ X}) (ord-idem P))
+
+close-cong : ∀ {P Q} {X Y : Matrix (Q .dim) (P .dim)} → X ≈ₘ Y → close {P} {Q} X ≈p close {P} {Q} Y
+close-cong {P} {Q} X≈Y =
+  ∘-cong (∘-cong (≈ₘ-refl {M = Q .ord}) X≈Y) (≈ₘ-refl {M = P .ord})
 
 id : (P : Pos) → P ⇒ P
 id P .mat = P .ord
@@ -506,3 +526,30 @@ terminal .HasTerminal.witness = 𝟘p
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .mat = εₘ
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .absorbed ()
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f ()
+
+-- Lift a position order by a new root: a fresh position, an ancestor of every position (the
+-- order-theoretic lifting). A down-closed selection that keeps any position keeps the root, so a
+-- constructor cell is the lift of the biproduct of its arguments' orders.
+lift : Pos → Pos
+lift P .dim = suc (P .dim)
+lift P .ord zero    p       = ι
+lift P .ord (suc q) zero    = ε
+lift P .ord (suc q) (suc p) = P .ord q p
+lift P .ord-refl zero    = ≤-refl
+lift P .ord-refl (suc i) = P .ord-refl i
+lift P .ord-trans zero    j k = IsTop.≤-top L.⊤-isTop
+lift P .ord-trans (suc i) zero k =
+  ≤-trans (L.≈→≤ ε-annihilₗ) (IsBottom.≤-bottom L.⊥-isBottom)
+lift P .ord-trans (suc i) (suc j) zero = L.≈→≤ ε-annihilᵣ
+lift P .ord-trans (suc i) (suc j) (suc k) = P .ord-trans i j k
+
+-- The action on morphisms: root tracks root, the inner block tracks the morphism, and closure
+-- under the orders makes the root row dominate its columns.
+lift-block : ∀ {P Q} → P ⇒ Q → Matrix (suc (Q .dim)) (suc (P .dim))
+lift-block f zero    zero    = ι
+lift-block f zero    (suc p) = ε
+lift-block f (suc q) zero    = ε
+lift-block f (suc q) (suc p) = f .mat q p
+
+lift-mor : ∀ {P Q} → P ⇒ Q → lift P ⇒ lift Q
+lift-mor {P} {Q} f = close {lift P} {lift Q} (lift-block f)
