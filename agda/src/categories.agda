@@ -233,6 +233,25 @@ op-initial→terminal i .HasTerminal.is-terminal .IsTerminal.to-terminal = i .Ha
 op-initial→terminal i .HasTerminal.is-terminal .IsTerminal.to-terminal-ext = i .HasInitial.from-initial-ext
 
 ------------------------------------------------------------------------------
+-- Split idempotents
+record Splitting {o m e} (𝒞 : Category o m e) {x : Category.obj 𝒞} (f : Category._⇒_ 𝒞 x x) : Set (o ⊔ m ⊔ e) where
+  open Category 𝒞
+  field
+    witness   : obj
+    sect      : witness ⇒ x
+    retr      : x ⇒ witness
+    retr-sect : (retr ∘ sect) ≈ id witness
+    sect-retr : (sect ∘ retr) ≈ f
+
+  -- A morphism with a splitting is idempotent.
+  split-idem : (f ∘ f) ≈ f
+  split-idem =
+    ≈-trans (∘-cong (≈-sym sect-retr) (≈-sym sect-retr))
+    (≈-trans (assoc sect retr (sect ∘ retr))
+    (≈-trans (∘-cong ≈-refl (≈-trans (≈-sym (assoc retr sect retr)) (∘-cong retr-sect ≈-refl)))
+    (≈-trans (∘-cong ≈-refl id-left) sect-retr)))
+
+------------------------------------------------------------------------------
 -- Coproducts
 record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
