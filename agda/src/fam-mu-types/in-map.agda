@@ -17,12 +17,13 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
+import functor
 import fam-mu-types.fold
 
 module fam-mu-types.in-map {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CL : functor.StrongSplitPointedFunctor P) where
 
-open fam-mu-types.fold os es T P public
+open fam-mu-types.fold os es T P CL public
 
 -- α's reconstruction machinery.
 module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
@@ -146,13 +147,20 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     inMor : Mor (fobj μObj P δ') (μObj P δ)
     inMor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape ∣ P ∣ mor₀ (embed-idx P i))
     inMor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp ∣ P ∣ mor₀ (embed-idx-resp P x≈y)
-    inMor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
+    inMor .famf ._⇒f_.transf x = CL.unit ∘ (R.reindex-fam P mor₀ ∘ embed-fam P x)
     inMor .famf ._⇒f_.natural e =
       ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (embed-fam-natural P e))
+      (≈-trans (∘-cong ≈-refl old)
       (≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong₁ (R.reindex-fam-natural P mor₀ (embed-idx-resp P e)))
+      (≈-trans (∘-cong (≈-sym (CL.unit-natural _)) ≈-refl)
                (assoc _ _ _))))
+      where
+      old =
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong₂ (embed-fam-natural P e))
+        (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong₁ (R.reindex-fam-natural P mor₀ (embed-idx-resp P e)))
+                 (assoc _ _ _))))
 
 hasMu : HasMu
 hasMu .HasMu.μ-obj = μObj

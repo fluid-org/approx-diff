@@ -143,7 +143,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
       ((cA ∘ Φ⦅b⦆) ∘co (Rin ∘ ℰP.p₂)) ∘co (K ∘ ℰP.p₂)
     ≈⟨ CoK.∘-cong₁ step₁ ⟩
       (cA ∘ fmorη Γ (F^ μ̂) (FM.Mor-∘ ⦅b⦆ (pairη Γ (F^ μ̂) (FM.Mor-∘ (FMu.inMap P̂ δ̂) p₂F)))) ∘co (K ∘ ℰP.p₂)
-    ≈⟨ CoK.∘-cong₁ (∘-cong₂ (fmorη-cong (FM.hasMuLaws .FM.HasMuLaws.⦅⦆-β (bF a)))) ⟩
+    ≈⟨ CoK.∘-cong₁ (∘-cong₂ (fmorη-cong (FM-laws .FM.HasMuLaws.⦅⦆-β (bF a)))) ⟩
       (cA ∘ fmorη Γ (F^ μ̂) (FM.Mor-∘ (bF a) (pairη Γ (F^ μ̂) sfB))) ∘co (K ∘ ℰP.p₂)
     ≈⟨ CoK.∘-cong₁ (∘-cong₂ (fmorη-∘co Γ (F^ μ̂) (bF a) sfB)) ⟩
       (cA ∘ (fmorη Γ (F^ (η .fobj A)) (bF a) ∘co fmorη Γ (F^ μ̂) sfB)) ∘co (K ∘ ℰP.p₂)
@@ -236,7 +236,7 @@ module Initiality {n} (P : Poly ℰ (suc n)) (δ̂ : Fin n → FM.Obj)
             ∎ where open ≈-Reasoning isEquiv
 
       famSquare' : FamC._≈_ ĥ (FMu.⦅_⦆ {P = P̂} {δ = δ̂} (bF a))
-      famSquare' = FM.hasMuLaws .FM.HasMuLaws.⦅⦆-η (bF a) ĥ famSquare
+      famSquare' = FM-laws .FM.HasMuLaws.⦅⦆-η (bF a) ĥ famSquare
 
   foldR-cong : ∀ {Γ A} {a₁ a₂ : ℰP.prod Γ (Greal P δ̂ A) ⇒ A} →
                a₁ ≈ a₂ → foldR a₁ ≈ foldR a₂

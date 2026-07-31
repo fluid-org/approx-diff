@@ -6,7 +6,10 @@
 -- proves the initial-algebra laws — β (BetaDef, the fold satisfies the algebra
 -- square) and η (EtaDef, uniqueness), each by tree induction with the nested-μ
 -- cases discharged through fusion — and re-exports the construction itself
--- from the layers beneath it.
+-- from the layers beneath it. β holds for an arbitrary cell functor; η requires
+-- the cell structure to be trivial (unit and counit mutually inverse), since the
+-- fold re-points every cell it traverses while the algebra square pins down a
+-- competing algebra morphism only on the unit's image of each cell.
 ------------------------------------------------------------------------------
 
 open import Level using (Level; _⊔_; lift) renaming (suc to lsuc)
@@ -21,12 +24,13 @@ open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 import indexed-family
 open indexed-family using (Fam; _⇒f_)
+import functor
 import fam-mu-types.reindex-fusion
 
 module fam-mu-types {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CL : functor.StrongSplitPointedFunctor P) where
 
-open fam-mu-types.reindex-fusion os es T P public
+open fam-mu-types.reindex-fusion os es T P CL public
 
 -- β/η proof machinery: the fusion of α's reconstruction with the fold equals the strong functorial action
 -- of `⦅ alg ⦆`.
@@ -135,7 +139,12 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                           FD.TA'.fib-subst Q dB {x = Rcomb.ireindex md₁ t} {y = Rcomb.ireindex md₂ t}
                              (reindex-mcong r t) ∘ FR.freindex-fam a₁ {t} ≈
                           FR.freindex-fam a₂ {t}
-      reindex-mcong-fam {Q = Q} ra (AM.TX.sup y) = reindex-mcong-shape-fam Q (rbindA Q ra) y
+      reindex-mcong-fam {Q = Q} ra (AM.TX.sup y) =
+        ≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong (CL.unit-natural _) ≈-refl)
+        (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+                 (∘-cong ≈-refl (∘-cong (reindex-mcong-shape-fam Q (rbindA Q ra) y) ≈-refl)))))
 
       reindex-mcong-shape-fam : ∀ {j} (R : Poly j) {ρA ρB} {dA dB} {md₁ md₂ : Rcomb.IMorD ρA ρB}
                                 {r : Rel md₁ md₂} {a₁ : FR.FAct md₁ dA dB} {a₂ : FR.FAct md₂ dA dB}
@@ -170,7 +179,22 @@ module BetaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                            ∘ (FD.fold-reindex-fam γ fm (AM.R.reindex md t)
                               ∘ prod-m (id _) (AM.R.reindex-fam-W {Q = Q} md {t})))
                           ≈ FR.freindex-fam (combine-act md fm) {t}
-      combine-lemma-fam {Q = Q} md fm (AM.TX.sup x) = combine-lemma-shape-fam Q Q md fm x
+      combine-lemma-fam {Q = Q} md fm (AM.TX.sup x) =
+        ≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong (≈-trans (≈-sym (assoc _ _ _))
+                          (≈-trans (∘-cong (CL.unit-natural _) ≈-refl) (assoc _ _ _))) ≈-refl)
+        (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+        (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)))
+        (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl swap-counit)))
+        (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-sym (assoc _ _ _))))
+        (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+                 (∘-cong ≈-refl (∘-cong (combine-lemma-shape-fam Q Q md fm x) ≈-refl)))))))))
+        where
+        swap-counit =
+          ≈-trans (≈-sym (prod-m-comp _ _ _ _))
+          (≈-trans (prod-m-cong (≈-trans id-left (≈-sym id-right)) (≈-sym (CL.counit-natural _)))
+                   (prod-m-comp _ _ _ _))
 
       combine-lemma-shape-fam : ∀ {k} (Q : Poly (suc k)) (R : Poly (suc k)) {ρA ρB ρC} {dA dB dC}
                                 (md : AM.R.MorD ρA ρB dA dB) (fm : FD.FMor ρB ρC dB dC)
@@ -375,7 +399,10 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       ≈-trans (∘-cong ≈-refl (≈-sym (prod-m-comp _ _ _ _)))
         (≈-trans (≈-sym (prod-m-comp _ _ _ _))
           (≈-trans (prod-m-cong (rtf-shape S₁ rt z₁) (rtf-shape S₂ rt z₂)) prod-m-id))
-    rtf-shape (μ S') rt (FD.Tδ.sup z) = rtf-shape S' (rtbind S' rt) z
+    rtf-shape (μ S') rt (FD.Tδ.sup z) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (CL.fmor-comp _ _)))
+      (≈-trans (≈-sym (CL.fmor-comp _ _))
+      (≈-trans (CL.fmor-cong (rtf-shape S' (rtbind S' rt) z)) CL.fmor-id))
 
     rtf-apply : ∀ {j} {ρD ρX dD dX} {md : Rδ.MorD {j} ρD ρX dD dX} {md' : AM.R.MorD ρX ρD dX dD}
                 (rt : RT md md') (v : Fin j) {z} →
@@ -400,9 +427,17 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   shift-fam R x = AM.unembed-fam R (Rδ.reindex-shape ∣ R ∣ mor₀δ x) ∘ Rδ.reindex-fam R mor₀δ {x}
 
   roundtrip-fam : (x : FD.Tδ.⟦ ∣ P ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
-                  μObj P δ .fam .subst (roundtrip x) ∘ (AM.inMor .famf ._⇒f_.transf (shift P x) ∘ shift-fam P x) ≈ id _
+                  μObj P δ .fam .subst (roundtrip x) ∘ (AM.inMor .famf ._⇒f_.transf (shift P x) ∘ shift-fam P x) ≈ CL.unit
   roundtrip-fam x =
-    ≈-trans (∘-cong (FD.Tδ.fib-shape-trans* P _
+    ≈-trans (∘-cong ≈-refl (assoc _ _ _))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong (CL.unit-natural _) ≈-refl)
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl old) id-right))))
+    where
+    y' = Rδ.reindex-shape ∣ P ∣ mor₀δ x
+    old =
+      ≈-trans (∘-cong (FD.Tδ.fib-shape-trans* P _
                        (rt-shape P rtbase x)
                        (AM.R.reindex-shape-resp ∣ P ∣ AM.mor₀ (AM.embed-unembed P y'))) ≈-refl)
       (≈-trans (assoc _ _ _)
@@ -417,24 +452,23 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                                (≈-trans (≈-sym (assoc _ _ _))
                                  (≈-trans (∘-cong (AM.embed-unembed-fam P y') ≈-refl) id-left)))))))))
           (rtf-shape P rtbase x)))
-    where y' = Rδ.reindex-shape ∣ P ∣ mor₀δ x
 
   -- Transport along the inverted round trip is α's fibre action after the shift.
   shift-subst : (x : FD.Tδ.⟦ ∣ P ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
-                μObj P δ .fam .subst
+                (μObj P δ .fam .subst
                   (FD.Tδ.W-≈-sym {x = AM.inMor .idxf .PS._⇒_.func (shift P x)} {y = FD.Tδ.sup x}
                     (roundtrip x))
+                 ∘ CL.unit)
                 ≈ AM.inMor .famf ._⇒f_.transf (shift P x) ∘ shift-fam P x
   shift-subst x =
-    ≈-trans (≈-sym id-right)
-      (≈-trans (∘-cong ≈-refl (≈-sym (roundtrip-fam x)))
-        (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (≈-trans (≈-sym (μObj P δ .fam .trans*
-                                              (FD.Tδ.W-≈-sym {x = AM.inMor .idxf .PS._⇒_.func (shift P x)}
-                                                             {y = FD.Tδ.sup x} (roundtrip x))
-                                              (roundtrip x)))
-                             (μObj P δ .fam .refl*)) ≈-refl)
-            id-left)))
+    ≈-trans (∘-cong ≈-refl (≈-sym (roundtrip-fam x)))
+      (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong (≈-trans (≈-sym (μObj P δ .fam .trans*
+                                            (FD.Tδ.W-≈-sym {x = AM.inMor .idxf .PS._⇒_.func (shift P x)}
+                                                           {y = FD.Tδ.sup x} (roundtrip x))
+                                            (roundtrip x)))
+                           (μObj P δ .fam .refl*)) ≈-refl)
+          id-left))
 
   -- h's strong action collapsed to an index-only reindex, and its fuse-idx hypothesis.
   module Rcomb = Reindex δ' (extend δ A)
@@ -522,7 +556,8 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 
   -- Fibre side, at a fixed γ: h's fibre action agrees with the fold's, transported
   -- along the pointwise index agreement.
-  module EtaFam (γ : Γ .idx .Carrier) where
+  module EtaFam (uc : ∀ {x} → (CL.unit {x} ∘ CL.counit {x}) ≈ id (CL.fobj x))
+                (γ : Γ .idx .Carrier) where
     module FR = FReindex {δA = δ'} {δB = extend δ A} (Γ .fam .fm γ)
 
     act-hs : FR.FAct (cmb-hs γ) (λ v → lift tt) (λ v → lift tt)
@@ -546,26 +581,9 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           (≈-trans (assoc _ _ _)
             (≈-trans (∘-cong ≈-refl (≈-sym (h .famf ._⇒f_.natural
                                              (Γ .idx .isEquivalence .refl {γ} , rt⁻))))
-              (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong (Γ .fam .refl*) (shift-subst x))))
-                (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl pairT-intro))
-                  (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
-                    (≈-trans (≈-sym (assoc _ _ _))
-                      (≈-trans (∘-cong (∘-cong (A .fam .trans* q₃ q₂) ≈-refl) ≈-refl)
-                        (≈-trans (∘-cong (assoc _ _ _) ≈-refl)
-                          (≈-trans (∘-cong (∘-cong ≈-refl eq-step) ≈-refl)
-                            (≈-trans (∘-cong (≈-trans (≈-sym (assoc _ _ _))
-                                               (≈-trans (∘-cong (≈-sym (alg .famf ._⇒f_.natural
-                                                                         (Γ .idx .isEquivalence .refl {γ} ,
-                                                                          η-shape P γ x))) ≈-refl)
-                                                 (assoc _ _ _))) ≈-refl)
-                              (≈-trans (assoc _ _ _)
-                                (∘-cong ≈-refl
-                                  (≈-trans (∘-cong (pair-compose _ _ _ _) ≈-refl)
-                                    (≈-trans (pair-natural _ _ _)
-                                      (pair-cong
-                                        (≈-trans (∘-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left) ≈-refl)
-                                          (≈-trans (pair-p₁ _ _) id-left))
-                                        (≈-trans (assoc _ _ _) (η-shape-fam P x)))))))))))))))))
+              (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl split-rt))
+                (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+                  (≈-trans (≈-sym (assoc _ _ _)) (∘-cong core ≈-refl))))))
         where
         rt⁻ = FD.Tδ.W-≈-sym {x = AM.inMor .idxf .PS._⇒_.func (shift P x)} {y = FD.Tδ.sup x} (roundtrip x)
         q₁ = h .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl {γ} , rt⁻)
@@ -573,6 +591,17 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                (Γ .idx .isEquivalence .refl {γ} , shift-resp P (FD.Tδ.shape≈-refl ∣ P ∣ (Sh.η₀ ∣ P ∣) x))
         q₃ = alg .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl {γ} , η-shape P γ x)
         q₂₃ = A .idx .isEquivalence .trans q₂ q₃
+
+        split-rt : prod-m (Γ .fam .subst (Γ .idx .isEquivalence .refl {γ})) (μObj P δ .fam .subst rt⁻)
+                   ≈ (prod-m (id _) (AM.inMor .famf ._⇒f_.transf (shift P x) ∘ shift-fam P x)
+                      ∘ prod-m (id _) CL.counit)
+        split-rt =
+          ≈-trans
+            (prod-m-cong (Γ .fam .refl*)
+              (≈-trans (≈-sym id-right)
+                (≈-trans (∘-cong ≈-refl (≈-sym uc))
+                  (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (shift-subst x) ≈-refl)))))
+            (≈-trans (prod-m-cong (≈-sym id-left) ≈-refl) (prod-m-comp _ _ _ _))
 
         eq-step : A .fam .subst q₂ ∘ (h .famf ._⇒f_.transf (γ , AM.inMor .idxf .PS._⇒_.func (shift P x))
                                         ∘ pair p₁ (id _ ∘ (AM.inMor .famf ._⇒f_.transf (shift P x) ∘ p₂))) ≈
@@ -591,6 +620,31 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
               (≈-trans (∘-cong id-left ≈-refl)
                 (≈-trans (assoc _ _ _)
                   (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))))
+
+        core : (A .fam .subst q₂₃
+                 ∘ (h .famf ._⇒f_.transf (γ , AM.inMor .idxf .PS._⇒_.func (shift P x))
+                    ∘ prod-m (id _) (AM.inMor .famf ._⇒f_.transf (shift P x) ∘ shift-fam P x)))
+               ≈ (alg .famf ._⇒f_.transf (γ , FD.fold-shape-idx P γ x) ∘ pair p₁ (FD.fold-shape-fam P γ x))
+        core =
+          ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl pairT-intro))
+            (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+              (≈-trans (≈-sym (assoc _ _ _))
+                (≈-trans (∘-cong (∘-cong (A .fam .trans* q₃ q₂) ≈-refl) ≈-refl)
+                  (≈-trans (∘-cong (assoc _ _ _) ≈-refl)
+                    (≈-trans (∘-cong (∘-cong ≈-refl eq-step) ≈-refl)
+                      (≈-trans (∘-cong (≈-trans (≈-sym (assoc _ _ _))
+                                         (≈-trans (∘-cong (≈-sym (alg .famf ._⇒f_.natural
+                                                                   (Γ .idx .isEquivalence .refl {γ} ,
+                                                                    η-shape P γ x))) ≈-refl)
+                                           (assoc _ _ _))) ≈-refl)
+                        (≈-trans (assoc _ _ _)
+                          (∘-cong ≈-refl
+                            (≈-trans (∘-cong (pair-compose _ _ _ _) ≈-refl)
+                              (≈-trans (pair-natural _ _ _)
+                                (pair-cong
+                                  (≈-trans (∘-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left) ≈-refl)
+                                    (≈-trans (pair-p₁ _ _) id-left))
+                                  (≈-trans (assoc _ _ _) (η-shape-fam P x)))))))))))))
 
       η-shape-fam : (R : Poly (suc n)) (x : FD.Tδ.⟦ ∣ R ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
                     fobj μObj R (extend δ A) .fam .subst (η-shape R γ x)
@@ -705,7 +759,21 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
             ≈-trans (∘-cong ≈-refl (strong-prod-m-pre _ _ _ _ _))
               (≈-trans (strong-prod-m-post _ _ _ _)
                 (strong-prod-m-cong (htelef-shape S₁ rel z₁) (htelef-shape S₂ rel z₂)))
-          htelef-shape (μ S') rel (FD.Tδ.sup z) = htelef-shape S' (hbind' S' rel) z
+          htelef-shape (μ S') rel (FD.Tδ.sup z) =
+            ≈-trans (∘-cong ≈-refl (assoc _ _ _))
+            (≈-trans (≈-sym (assoc _ _ _))
+            (≈-trans (∘-cong (CL.unit-natural _) ≈-refl)
+            (≈-trans (assoc _ _ _)
+              (∘-cong ≈-refl
+                (≈-trans (∘-cong ≈-refl
+                           (≈-trans (assoc _ _ _)
+                             (≈-trans (∘-cong ≈-refl
+                                        (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                                          (≈-trans (prod-m-cong ≈-refl (≈-sym (CL.counit-natural _)))
+                                            (prod-m-comp _ _ _ _))))
+                               (≈-sym (assoc _ _ _)))))
+                  (≈-trans (≈-sym (assoc _ _ _))
+                    (∘-cong (htelef-shape S' (hbind' S' rel) z) ≈-refl)))))))
 
           htelef-apply : ∀ {j} {ρD ρX ρC dD dX dC} {md : Rδ.MorD {j} ρD ρX dD dX} {mdc : Rcomb.IMorD ρX ρC}
                          {fm : FD.FMor ρD ρC dD dC} {am : FR.FAct mdc dX dC}
@@ -721,16 +789,23 @@ module EtaDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           htelef-apply (hbind' S' rel) Fin.zero {z} = htelef-shape (μ S') rel z
           htelef-apply (hbind' S' rel) (Fin.suc v) = htelef-apply rel v
 
-hasMuLaws : HasMuLaws hasMu
-hasMuLaws .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
+hasMuLaws : (uc : ∀ {x} → (CL.unit {x} ∘ CL.counit {x}) ≈ id (CL.fobj x)) → HasMuLaws hasMu
+hasMuLaws uc .HasMuLaws.⦅⦆-β {P = P} alg ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , m≈) =
   alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , BetaDef.β-idx alg P γ≈ m≈)
-hasMuLaws .HasMuLaws.⦅⦆-β {Γ = Γ} {P = P} {δ = δ} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , m} =
+hasMuLaws uc .HasMuLaws.⦅⦆-β {Γ = Γ} {P = P} {δ = δ} alg ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , m} =
   ≈-trans (∘-cong ≈-refl id-left)
     (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (pair-cong ≈-refl id-left)))
       (≈-trans (∘-cong ≈-refl (assoc _ _ _))
         (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl
+                   (≈-trans (pair-compose _ _ _ _)
+                     (pair-cong ≈-refl
+                       (≈-trans (≈-sym (assoc _ _ _))
+                         (∘-cong (≈-trans (≈-sym (assoc _ _ _))
+                                   (≈-trans (∘-cong CL.counit-unit ≈-refl) id-left)) ≈-refl))))))
+      (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+        (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl
                    (≈-trans (pair-natural _ _ _)
-                     (pair-cong (pair-p₁ _ _) (∘-cong ≈-refl (pair-cong (≈-sym id-left) ≈-refl))))))
+                     (pair-cong (≈-trans (pair-p₁ _ _) id-left) ≈-refl))))
           (≈-trans (≈-sym (assoc _ _ _))
             (≈-trans (∘-cong (≈-sym (alg .famf ._⇒f_.natural
                                        (Γ .idx .isEquivalence .refl ,
@@ -740,10 +815,10 @@ hasMuLaws .HasMuLaws.⦅⦆-β {Γ = Γ} {P = P} {δ = δ} alg ._≃_.famf-eq .i
                 (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
                   (≈-trans (∘-cong ≈-refl
                              (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left) (B.β-fam P)))
-                    (≈-sym id-left)))))))))
+                    (≈-sym id-left)))))))))))
   where
     module B = BetaDef {P = P} {δ = δ} alg
-hasMuLaws .HasMuLaws.⦅⦆-η {Γ = Γ} {P = P} {δ = δ} alg h eq ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , t≈) =
+hasMuLaws uc .HasMuLaws.⦅⦆-η {Γ = Γ} {P = P} {δ = δ} alg h eq ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , t≈) =
   EtaDef.η-idx {P = P} {δ = δ} alg h eq γ≈ t≈
-hasMuLaws .HasMuLaws.⦅⦆-η {Γ = Γ} {P = P} {δ = δ} alg h eq ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , t} =
-  EtaDef.EtaFam.η-fam {P = P} {δ = δ} alg h eq γ t
+hasMuLaws uc .HasMuLaws.⦅⦆-η {Γ = Γ} {P = P} {δ = δ} alg h eq ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , t} =
+  EtaDef.EtaFam.η-fam {P = P} {δ = δ} alg h eq uc γ t

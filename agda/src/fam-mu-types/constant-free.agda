@@ -25,12 +25,13 @@ open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid using (Setoid)
 open import indexed-family using (_≃f_)
 import polynomial-functor
+import functor
 import fam-mu-types.carrier
 
 module fam-mu-types.constant-free {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CL : functor.StrongSplitPointedFunctor P) where
 
-open fam-mu-types.carrier os es T P
+open fam-mu-types.carrier os es T P CL
 open polynomial-functor using (#c; constant-free; constant-free-go; consts; _++e_)
 
 -- Fixed data for one instance of the lemma: an environment and a constant
@@ -407,9 +408,10 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
                 (x : T₁.W ∣ Q ∣ ρ₁) →
                 T₂.fib (constant-free-go Q ι) d₂ (wfwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x) ≡ T₁.fib Q d₁ x
     fib-fwd-≡ Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok (T₁.sup x) =
-      fib-shape-≡ Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
-        (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
-        (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok x
+      cong CL.fobj
+        (fib-shape-≡ Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
+          (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
+          (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok x)
 
     fib-shape-≡ : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                   (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))
@@ -447,6 +449,10 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   private
     ≡-mor : ∀ {A B : obj} → A ≡ B → A ⇒ B
     ≡-mor ≡-refl = id _
+
+    ≡-mor-fobj : ∀ {A B : obj} (E : A ≡ B) →
+                 ≡-mor (≡-sym (cong CL.fobj E)) ≈ CL.fmor (≡-mor (≡-sym E))
+    ≡-mor-fobj ≡-refl = ≈-sym CL.fmor-id
 
     -- Leaf square: a cast built from a reference equality and an object
     -- equality commutes with the underlying family's transport.
@@ -490,9 +496,18 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
                     (w≈-fwd Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok {x} {y} e)
                   ∘ ≡-mor (≡-sym (fib-fwd-≡ Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok x)))
     w-compat Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok {T₁.sup x} {T₁.sup y} e =
-      shape-compat Q (extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))) ι (extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂)))
-        (T₁.deco-ext Q d₁) (T₂.deco-ext (constant-free-go Q ι) d₂)
-        (extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok) (extend-fresh Q ρ₁ ι ρ₂ fresh) csok e
+      ≈-trans (∘-cong (≡-mor-fobj (fib-shape-≡ Q η₁' ι η₂' d₁' d₂' vars' fresh' csok y)) ≈-refl)
+      (≈-trans (≈-sym (CL.fmor-comp _ _))
+      (≈-trans (CL.fmor-cong (shape-compat Q η₁' ι η₂' d₁' d₂' vars' fresh' csok e))
+      (≈-trans (CL.fmor-comp _ _)
+        (∘-cong ≈-refl (≈-sym (≡-mor-fobj (fib-shape-≡ Q η₁' ι η₂' d₁' d₂' vars' fresh' csok x)))))))
+      where
+      η₁' = extend ρ₁ (inj₂ (mkSort ∣ Q ∣ ρ₁))
+      η₂' = extend ρ₂ (inj₂ (mkSort ∣ constant-free-go Q ι ∣ ρ₂))
+      d₁' = T₁.deco-ext Q d₁
+      d₂' = T₂.deco-ext (constant-free-go Q ι) d₂
+      vars' = extend-vars Q ρ₁ ι ρ₂ d₁ d₂ vars fresh csok
+      fresh' = extend-fresh Q ρ₁ ι ρ₂ fresh
 
     shape-compat : ∀ {jv} (Q : Poly jv) (η₁ : Fin jv → Fin n ⊎ Sort n)
                    (ι : Fin (#c Q) → Fin k) (η₂ : Fin (jv +ℕ k) → Fin (n +ℕ k) ⊎ Sort (n +ℕ k))

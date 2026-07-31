@@ -18,12 +18,13 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
+import functor
 import fam-mu-types.in-map
 
 module fam-mu-types.reindex-fusion {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CL : functor.StrongSplitPointedFunctor P) where
 
-open fam-mu-types.in-map os es T P public
+open fam-mu-types.in-map os es T P CL public
 
 -- General free-family fusion: a single reindex (the collapsed double-reindex, via combine-lemma)
 -- equals the functorial map. Families sₛ/sₜ are FREE so the nested-μ recursion's family fits.
@@ -190,8 +191,17 @@ fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n �
                               ∘ pair p₁ (Ft.fold-shape-fam R γ x))))
 
 fuse-fam γ Q cmb act fsk corr corr-fam {Tree.sup x} =
-  ≈-trans (fuse-shape-fam γ Q cmb act fsk corr corr-fam Q {x})
-    (≈-sym (≈-trans (∘-cong id-left ≈-refl) (≈-trans (assoc _ _ _) (assoc _ _ _))))
+  ≈-trans (≈-sym (assoc _ _ _))
+  (≈-trans (∘-cong (CL.unit-natural _) ≈-refl)
+  (≈-trans (assoc _ _ _)
+  (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+  (≈-trans (∘-cong ≈-refl (∘-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam Q {x}) ≈-refl))
+  (≈-sym
+    (≈-trans (∘-cong (∘-cong id-left ≈-refl) ≈-refl)
+    (≈-trans (∘-cong (assoc _ _ _) ≈-refl)
+    (≈-trans (∘-cong (assoc _ _ _) ≈-refl)
+    (≈-trans (assoc _ _ _)
+             (∘-cong ≈-refl (∘-cong (assoc _ _ _) ≈-refl)))))))))))
 fuse-shape-fam γ Q cmb act fsk corr corr-fam (const A') =
   ≈-trans (∘-cong (A' .fam .refl*) ≈-refl)
     (≈-trans id-left (≈-sym (≈-trans id-left (≈-trans id-left (pair-p₂ _ _)))))
@@ -361,7 +371,29 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
         ≈-trans (strong-prod-m-post _ _ _ _)
           (≈-trans (strong-prod-m-cong (tele-shape-fam S₁ rel z₁) (tele-shape-fam S₂ rel z₂))
             (≈-sym (≈-trans (∘-cong ≈-refl (strong-prod-m-comp _ _ _ _)) (strong-prod-m-post _ _ _ _))))
-      tele-shape-fam (μ S') rel (Ts.sup z') = tele-shape-fam S' (tbind S' rel) z'
+      tele-shape-fam (μ S') rel (Ts.sup z') =
+        ≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong (CL.unit-natural _) ≈-refl)
+        (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+        (≈-trans (∘-cong ≈-refl (∘-cong (tele-shape-fam S' (tbind S' rel) z') ≈-refl))
+        (≈-sym
+          (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+          (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)))
+          (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl cu-pair)))
+          (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-sym (assoc _ _ _))))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (CL.unit-natural _) ≈-refl)
+          (≈-trans (assoc _ _ _)
+                   (∘-cong ≈-refl (≈-sym (assoc _ _ _)))))))))))))))
+        where
+        cu-pair =
+          ≈-trans (pair-compose _ _ _ _)
+          (≈-trans (pair-cong id-left
+                     (≈-trans (≈-sym (assoc _ _ _))
+                     (≈-trans (∘-cong CL.counit-unit ≈-refl) id-left)))
+                   (≈-sym (≈-trans (pair-natural _ _ _)
+                                   (pair-cong (≈-trans (pair-p₁ _ _) id-left) ≈-refl))))
 
       tele-apply-fam : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
                        {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}

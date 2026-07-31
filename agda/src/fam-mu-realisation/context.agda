@@ -36,13 +36,16 @@ module ℰT' = HasTerminal ℰT
 module FR = fam-realisation os (os ⊔ es) ℰC
 open FR using (realise; η; realise-η-iso; transpose; untranspose) public
 
-module FM = fam-mu-types os es ℰT ℰP
+module FM = fam-mu-types os es ℰT ℰP (functor.StrongSplitPointedFunctor-Id ℰP)
 module FamP = FM.Fam𝒞-P
+
+FM-laws : FM.HasMuLaws FM.hasMu
+FM-laws = FM.hasMuLaws (λ {x} → id-left)
 
 module FMu = FM.HasMu FM.hasMu
 module FamC = Category FM.cat
 module FamCoK {Γ̂ : FM.Obj} = Category (coKleisli-prod FM.products Γ̂)
-module FMuI = polynomial-functor.MuIso (FM.terminal ℰT) FM.products FM.strongCoproducts FM.hasMu FM.hasMuLaws
+module FMuI = polynomial-functor.MuIso (FM.terminal ℰT) FM.products FM.strongCoproducts FM.hasMu FM-laws
 
 module ℰI = polynomial-functor.Interp ℰT ℰP ℰSC
 open ℰI using (_∘co_) public

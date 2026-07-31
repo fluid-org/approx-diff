@@ -298,6 +298,28 @@ module _ {o₁ m₁ e₁}
   StrongPointedFunctor-Id P .StrongPointedFunctor.strongFunctor = StrongFunctor-Id P
   StrongPointedFunctor-Id P .StrongPointedFunctor.unit {x}      = 𝒞.id x
 
+  record StrongSplitPointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+    field
+      strongPointed : StrongPointedFunctor P
+    open StrongPointedFunctor strongPointed public
+    open Category 𝒞
+    field
+      counit : ∀ {x} → F .Functor.fobj x ⇒ x
+      unit-natural : ∀ {x y} (f : x ⇒ y) →
+                     (F .Functor.fmor f 𝒞.∘ unit) 𝒞.≈ (unit 𝒞.∘ f)
+      counit-natural : ∀ {x y} (f : x ⇒ y) →
+                       (f 𝒞.∘ counit) 𝒞.≈ (counit 𝒞.∘ F .Functor.fmor f)
+      counit-unit : ∀ {x} → (counit 𝒞.∘ unit) 𝒞.≈ 𝒞.id x
+
+  StrongSplitPointedFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongSplitPointedFunctor P
+  StrongSplitPointedFunctor-Id P .StrongSplitPointedFunctor.strongPointed = StrongPointedFunctor-Id P
+  StrongSplitPointedFunctor-Id P .StrongSplitPointedFunctor.counit = 𝒞.id _
+  StrongSplitPointedFunctor-Id P .StrongSplitPointedFunctor.unit-natural f =
+    𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
+  StrongSplitPointedFunctor-Id P .StrongSplitPointedFunctor.counit-natural f =
+    𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
+  StrongSplitPointedFunctor-Id P .StrongSplitPointedFunctor.counit-unit = 𝒞.id-left
+
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}
          {𝒟 : Category o₂ m₂ e₂}
