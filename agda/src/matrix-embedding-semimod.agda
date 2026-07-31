@@ -153,8 +153,13 @@ outof ._⇒h_.f-ε = S.refl
 outof ._⇒h_.f-ι = S.refl
 
 open AtSemiring S into outof public
-  using (mat→mor; mor→mat; mat→mor-εₘ; mat→mor-+ₘ; mat→mor-faithful; module MatS)
+  using (mat→mor; mor→mat; mat→mor-εₘ; mat→mor-+ₘ; mat→mor-faithful; mat→mor-full; module MatS)
 
 -- The scalar embedding is injective: evaluating at ι recovers the scalar.
 into-inj : ∀ {a b} → (mult-endo a) ≈m (mult-endo b) → a S.≈ b
 into-inj h = S.trans (S.sym S.·-lunit) (S.trans (h .*≈* ._≈s_.func-eq S.refl) S.·-lunit)
+
+-- And it retracts: an endomorphism is multiplication by its value at ι.
+into-outof : ∀ (φ : 𝕀 ⇒ 𝕀) → (mult-endo (endo-scalar φ)) ≈m φ
+into-outof φ .*≈* ._≈s_.func-eq {y₁} {y₂} y₁≈y₂ =
+  S.trans (S.sym (scalar-endo φ y₁)) (φ .func-resp-≈ y₁≈y₂)

@@ -2,6 +2,7 @@
 
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Fin using (Fin; zero; suc)
+open import prop using (∃ₛ; _,_)
 open import prop-setoid using (Setoid; module ≈-Reasoning) renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_)
 open import categories using (Category; IsInitial; IsTerminal; HasInitial; HasTerminal; HasProducts)
 open import setoid-cat using (SetoidCat)
@@ -665,6 +666,17 @@ module matrix-embedding
                  mat→mor .fmor (M MatS.+ₘ N) ≈ (mat→mor .fmor M +m mat→mor .fmor N)
     mat→mor-+ₘ M N =
       ≈-trans (F .fmor-cong (λ i j → into ._⇒h_.f-+ {M i j} {N i j})) (F-+ₘ (In.E M) (In.E N))
+
+    -- When the relabelling retracts, mat→mor is full: the preimage of a morphism is its matrix of
+    -- entries, read back through outof.
+    mat→mor-full : (into-outof : ∀ φ → Setoid._≈_ A (into ._⇒h_.f (outof ._⇒h_.f φ)) φ) →
+                   ∀ {m n} (h : X^ m ⇒ X^ n) →
+                   ∃ₛ (MatS.Matrix n m) (λ M → mat→mor .fmor M ≈ h)
+    mat→mor-full into-outof {m} {n} h =
+      mor→mat .fmor h ,
+      ≈-trans (F .fmor-cong {m} {n} {f₁ = In.E (Out.E (F⁻¹ .fmor {m} {n} h))} {f₂ = F⁻¹ .fmor {m} {n} h}
+                 (λ i j → into-outof (F⁻¹ .fmor {m} {n} h i j)))
+              (F∘F⁻¹ {m} {n} h)
 
     -- When the relabelling is injective, mat→mor is faithful: F recovers entries and into-inj
     -- recovers the scalars beneath them.
