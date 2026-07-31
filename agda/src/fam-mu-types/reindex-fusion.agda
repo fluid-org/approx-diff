@@ -20,10 +20,11 @@ open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
 import fam-mu-types.in-map
 
+import functor
 module fam-mu-types.reindex-fusion {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (𝕃 : functor.StrongFunctor P) where
 
-open fam-mu-types.in-map os es T P public
+open fam-mu-types.in-map os es T P 𝕃 public
 
 -- General free-family fusion: a single reindex (the collapsed double-reindex, via combine-lemma)
 -- equals the functorial map. Families sₛ/sₜ are FREE so the nested-μ recursion's family fits.

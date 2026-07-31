@@ -19,10 +19,11 @@ open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
 import fam-mu-types.fold
 
+import functor
 module fam-mu-types.in-map {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (𝕃 : functor.StrongFunctor P) where
 
-open fam-mu-types.fold os es T P public
+open fam-mu-types.fold os es T P 𝕃 public
 
 -- α's reconstruction machinery.
 module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where

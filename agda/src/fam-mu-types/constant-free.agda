@@ -25,12 +25,13 @@ open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid using (Setoid)
 open import indexed-family using (_≃f_)
 import polynomial-functor
+import functor
 import fam-mu-types.carrier
 
 module fam-mu-types.constant-free {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (𝕃 : functor.StrongFunctor P) where
 
-open fam-mu-types.carrier os es T P
+open fam-mu-types.carrier os es T P 𝕃
 open polynomial-functor using (#c; constant-free; constant-free-go; consts; _++e_)
 
 -- Fixed data for one instance of the lemma: an environment and a constant

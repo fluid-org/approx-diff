@@ -51,6 +51,7 @@ module Tree {n} (ι : Fin n → Setoid os (os ⊔ es)) where
     ⟦ P + Q   ⟧shape η = ⟦ P ⟧shape η ⊎ ⟦ Q ⟧shape η
     ⟦ P × Q   ⟧shape η = ⟦ P ⟧shape η ×T ⟦ Q ⟧shape η
     ⟦ μ Q'    ⟧shape η = W Q' η
+    ⟦ lift Q  ⟧shape η = ⟦ Q ⟧shape η
 
     El : Fin n ⊎ Sort n → Set os
     El (inj₁ p)            = ι p .Carrier
@@ -70,6 +71,7 @@ module Tree {n} (ι : Fin n → Setoid os (os ⊔ es)) where
     shape≈ (P + Q) η (inj₂ x) (inj₂ y) = shape≈ Q η x y
     shape≈ (P × Q) η (x₁ , x₂) (y₁ , y₂) = shape≈ P η x₁ y₁ ∧ shape≈ Q η x₂ y₂
     shape≈ (μ Q') η x y = W-≈ x y
+    shape≈ (lift Q) η x y = shape≈ Q η x y
 
     elEq : (r : Fin n ⊎ Sort n) → El r → El r → Prop (os ⊔ es)
     elEq (inj₁ p)            x y = _≈s_ (ι p) x y
@@ -86,6 +88,7 @@ module Tree {n} (ι : Fin n → Setoid os (os ⊔ es)) where
     shape≈-refl (P + Q) η (inj₂ y) = shape≈-refl Q η y
     shape≈-refl (P × Q) η (x₁ , x₂) = shape≈-refl P η x₁ , shape≈-refl Q η x₂
     shape≈-refl (μ Q') η x = W-≈-refl x
+    shape≈-refl (lift Q) η x = shape≈-refl Q η x
 
     elEq-refl : (r : Fin n ⊎ Sort n) (x : El r) → elEq r x x
     elEq-refl (inj₁ p)            x = ι p .isEquivalence .refl
@@ -103,6 +106,7 @@ module Tree {n} (ι : Fin n → Setoid os (os ⊔ es)) where
     shape≈-sym (P + Q) η {inj₂ _} {inj₂ _} p = shape≈-sym Q η p
     shape≈-sym (P × Q) η {_ , _} {_ , _} (p₁ , p₂) = shape≈-sym P η p₁ , shape≈-sym Q η p₂
     shape≈-sym (μ Q') η {x} {y} p = W-≈-sym {x = x} {y = y} p
+    shape≈-sym (lift Q) η p = shape≈-sym Q η p
 
     elEq-sym : (r : Fin n ⊎ Sort n) {x y : El r} → elEq r x y → elEq r y x
     elEq-sym (inj₁ p)            e = ι p .isEquivalence .sym e
@@ -121,6 +125,7 @@ module Tree {n} (ι : Fin n → Setoid os (os ⊔ es)) where
     shape≈-trans (P × Q) η {_ , _} {_ , _} {_ , _} (p₁ , p₂) (q₁ , q₂) =
       shape≈-trans P η p₁ q₁ , shape≈-trans Q η p₂ q₂
     shape≈-trans (μ Q') η {x} {y} {z} p q = W-≈-trans {x = x} {y = y} {z = z} p q
+    shape≈-trans (lift Q) η p q = shape≈-trans Q η p q
 
     elEq-trans : (r : Fin n ⊎ Sort n) {x y z : El r} → elEq r x y → elEq r y z → elEq r x z
     elEq-trans (inj₁ p)            e f = ι p .isEquivalence .trans e f

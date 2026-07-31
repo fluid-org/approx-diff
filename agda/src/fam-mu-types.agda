@@ -23,10 +23,11 @@ import indexed-family
 open indexed-family using (Fam; _⇒f_)
 import fam-mu-types.reindex-fusion
 
+import functor
 module fam-mu-types {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (𝕃 : functor.StrongFunctor P) where
 
-open fam-mu-types.reindex-fusion os es T P public
+open fam-mu-types.reindex-fusion os es T P 𝕃 public
 
 -- β/η proof machinery: the fusion of α's reconstruction with the fold equals the strong functorial action
 -- of `⦅ alg ⦆`.

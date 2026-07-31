@@ -19,10 +19,13 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 import fam-mu-types.carrier
 
+import functor
 module fam-mu-types.reindex {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (𝕃 : functor.StrongFunctor P) where
 
-open fam-mu-types.carrier os es T P public
+open fam-mu-types.carrier os es T P 𝕃 public
+
+module L = functor.StrongFunctor 𝕃
 
 -- Reindex a tree from one parameter context to another along a context morphism.
 -- The morphism is first-order data: `base` carries the leaf maps (applied only at
@@ -69,6 +72,7 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     ireindex-shape (P + Q) md (inj₂ b) = inj₂ (ireindex-shape Q md b)
     ireindex-shape (P × Q) md (a , b) = ireindex-shape P md a , ireindex-shape Q md b
     ireindex-shape (μ Q') md t = ireindex md t
+    ireindex-shape (lift R) md a = ireindex-shape R md a
 
     iapply : ∀ {k} {ρA ρB} (md : IMorD {k} ρA ρB) (v : Fin k) → TA.El (ρA v) → TB.El (ρB v)
     iapply (ibase f _) v a = f v a
@@ -88,6 +92,7 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     ireindex-shape-resp (P + Q) md {inj₂ _} {inj₂ _} p = ireindex-shape-resp Q md p
     ireindex-shape-resp (P × Q) md {_ , _} {_ , _} (p₁ , p₂) = ireindex-shape-resp P md p₁ , ireindex-shape-resp Q md p₂
     ireindex-shape-resp (μ Q') md {a} {a'} p = ireindex-resp md {a} {a'} p
+    ireindex-shape-resp (lift R) md p = ireindex-shape-resp R md p
 
     iapply-resp : ∀ {k} {ρA ρB} (md : IMorD {k} ρA ρB) (v : Fin k) {a a'} →
                   TA.elEq (ρA v) a a' → TB.elEq (ρB v) (iapply md v a) (iapply md v a')
@@ -131,6 +136,7 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     reindex-fam (P + Q) md {inj₂ b} = reindex-fam Q md
     reindex-fam (P × Q) md {a , b} = prod-m (reindex-fam P md) (reindex-fam Q md)
     reindex-fam (μ Q') md {t} = reindex-fam-W md {t}
+    reindex-fam (lift R) md = L.fmor (reindex-fam R md)
 
     reindex-fam-W : ∀ {k} {Q : Poly (suc k)} {ρA ρB dA dB} (md : MorD ρA ρB dA dB) {t : TA.W ∣ Q ∣ ρA} →
                     TA.fib Q dA t ⇒ TB.fib Q dB (reindex md t)
@@ -157,6 +163,9 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
       (≈-trans (prod-m-cong (reindex-fam-natural P md p₁) (reindex-fam-natural Q md p₂))
                (prod-m-comp _ _ _ _))
     reindex-fam-natural (μ Q') md {t} {t'} p = reindex-fam-W-natural md {t} {t'} p
+    reindex-fam-natural (lift R) md p =
+      ≈-trans (≈-sym (L.fmor-comp _ _))
+        (≈-trans (L.fmor-cong (reindex-fam-natural R md p)) (L.fmor-comp _ _))
 
     reindex-fam-W-natural : ∀ {k} {Q : Poly (suc k)} {ρA ρB dA dB} (md : MorD ρA ρB dA dB)
                         {t t' : TA.W ∣ Q ∣ ρA} (p : TA.W-≈ t t') →
@@ -208,6 +217,7 @@ module FReindex {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj} (G : obj) 
     freindex-shape-fam (P × Q) act {a , b} =
       strong-prod-m (freindex-shape-fam P act {a}) (freindex-shape-fam Q act {b})
     freindex-shape-fam (μ Q') act {t} = freindex-fam act {t}
+    freindex-shape-fam (lift R) act {a} = L.fmor (freindex-shape-fam R act {a}) ∘ L.strengthᵣ
 
     aapply : ∀ {k} {ρA ρB} {cmb : IMorD {k} ρA ρB} {dA dB} (act : FAct cmb dA dB) (v : Fin k) (a : TA.El (ρA v)) →
              prod G (TA.fib-el (ρA v) (dA v) a) ⇒ TB.fib-el (ρB v) (dB v) (iapply cmb v a)
