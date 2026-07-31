@@ -43,5 +43,7 @@ open OIE.Embed 𝓖 split public
 open Preserve SemiMod.cmon-enriched SemiMod.biproduct
   (λ {m} {n} → ME.mat→mor-εₘ {m} {n}) ME.mat→mor-+ₘ SemiMod.terminal ME.𝟘-terminal public
 
--- 𝓚 is faithful: the matrix embedding recovers entries, and scalars embed injectively.
+-- 𝓚 is faithful and full: the matrix embedding recovers entries, and the scalar embedding is
+-- injective and retracts.
 open Faithful (ME.mat→mor-faithful ME.into-inj) public
+open Full (ME.mat→mor-full ME.into-outof) public
