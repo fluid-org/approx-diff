@@ -528,42 +528,43 @@ terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .mat = εₘ
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .absorbed ()
 terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f ()
 
--- Lift a position order by a new root: a fresh position, an ancestor of every position (the
--- order-theoretic lifting). A down-closed selection that keeps any position keeps the root, so a
--- constructor cell is the lift of the biproduct of its arguments' orders.
-lift : Pos → Pos
-lift P .dim = suc (P .dim)
-lift P .ord zero    p       = ι
-lift P .ord (suc q) zero    = ε
-lift P .ord (suc q) (suc p) = P .ord q p
-lift P .ord-refl zero    = ≤-refl
-lift P .ord-refl (suc i) = P .ord-refl i
-lift P .ord-trans zero    j k = IsTop.≤-top L.⊤-isTop
-lift P .ord-trans (suc i) zero k =
+-- Lifting: a new root position, an ancestor of every position, so a new global bottom in the
+-- order (cf. L on join semilattices, whose downsets it mirrors: a down-closed selection of the
+-- lifted order is empty or the root plus a down-closed selection). A constructor cell is the
+-- lifting of the biproduct of its arguments' orders.
+Lp : Pos → Pos
+Lp P .dim = suc (P .dim)
+Lp P .ord zero    p       = ι
+Lp P .ord (suc q) zero    = ε
+Lp P .ord (suc q) (suc p) = P .ord q p
+Lp P .ord-refl zero    = ≤-refl
+Lp P .ord-refl (suc i) = P .ord-refl i
+Lp P .ord-trans zero    j k = IsTop.≤-top L.⊤-isTop
+Lp P .ord-trans (suc i) zero k =
   ≤-trans (L.≈→≤ ε-annihilₗ) (IsBottom.≤-bottom L.⊥-isBottom)
-lift P .ord-trans (suc i) (suc j) zero = L.≈→≤ ε-annihilᵣ
-lift P .ord-trans (suc i) (suc j) (suc k) = P .ord-trans i j k
+Lp P .ord-trans (suc i) (suc j) zero = L.≈→≤ ε-annihilᵣ
+Lp P .ord-trans (suc i) (suc j) (suc k) = P .ord-trans i j k
 
 -- The action on morphisms: the inner block tracks the morphism; absorption forces the root row
 -- to be full, since the target root is reachable below every position.
-lift-mat : ∀ {P Q} → P ⇒ Q → Matrix (suc (Q .dim)) (suc (P .dim))
-lift-mat f zero    j       = ι
-lift-mat f (suc q) zero    = ε
-lift-mat f (suc q) (suc p) = f .mat q p
+Lp-mat : ∀ {P Q} → P ⇒ Q → Matrix (suc (Q .dim)) (suc (P .dim))
+Lp-mat f zero    j       = ι
+Lp-mat f (suc q) zero    = ε
+Lp-mat f (suc q) (suc p) = f .mat q p
 
-lift-mor : ∀ {P Q} → P ⇒ Q → lift P ⇒ lift Q
-lift-mor {P} {Q} f .mat = lift-mat f
-lift-mor {P} {Q} f .absorbed =
-  ≈ₘ-trans (∘-cong left-abs (≈ₘ-refl {M = lift P .ord})) right-abs
+Lp-map : ∀ {P Q} → P ⇒ Q → Lp P ⇒ Lp Q
+Lp-map {P} {Q} f .mat = Lp-mat f
+Lp-map {P} {Q} f .absorbed =
+  ≈ₘ-trans (∘-cong left-abs (≈ₘ-refl {M = Lp P .ord})) right-abs
   where
-  left-abs : (lift Q .ord ∘ₘ lift-mat f) ≈ₘ lift-mat f
+  left-abs : (Lp Q .ord ∘ₘ Lp-mat f) ≈ₘ Lp-mat f
   left-abs zero    j       = trans (+-cong ·-lunit refl) ⊤-add-top
   left-abs (suc q) zero    =
     trans (+-cong ε-annihilₗ (trans (Σ-cong (λ k → ε-annihilᵣ {Q .ord q k})) (Σ-ε {Q .dim}))) +-lunit
   left-abs (suc q) (suc p) =
     trans (+-cong ε-annihilₗ refl) (trans +-lunit (absorb-left f q p))
 
-  right-abs : (lift-mat f ∘ₘ lift P .ord) ≈ₘ lift-mat f
+  right-abs : (Lp-mat f ∘ₘ Lp P .ord) ≈ₘ Lp-mat f
   right-abs zero    j       = trans (+-cong ·-lunit refl) ⊤-add-top
   right-abs (suc q) zero    =
     trans (+-cong ε-annihilₗ (trans (Σ-cong (λ k → ε-annihilᵣ {f .mat q k})) (Σ-ε {P .dim}))) +-lunit
@@ -571,27 +572,27 @@ lift-mor {P} {Q} f .absorbed =
     trans (+-cong ε-annihilₗ refl) (trans +-lunit (absorb-right f q p))
 
 -- The lifting is functorial.
-lift-mor-cong : ∀ {P Q} {f g : P ⇒ Q} → f ≈p g → lift-mor f ≈p lift-mor g
-lift-mor-cong h zero    j       = refl
-lift-mor-cong h (suc q) zero    = refl
-lift-mor-cong h (suc q) (suc p) = h q p
+Lp-map-cong : ∀ {P Q} {f g : P ⇒ Q} → f ≈p g → Lp-map f ≈p Lp-map g
+Lp-map-cong h zero    j       = refl
+Lp-map-cong h (suc q) zero    = refl
+Lp-map-cong h (suc q) (suc p) = h q p
 
-lift-mor-id : ∀ (P : Pos) → lift-mor (id P) ≈p id (lift P)
-lift-mor-id P zero    j       = refl
-lift-mor-id P (suc q) zero    = refl
-lift-mor-id P (suc q) (suc p) = refl
+Lp-map-id : ∀ (P : Pos) → Lp-map (id P) ≈p id (Lp P)
+Lp-map-id P zero    j       = refl
+Lp-map-id P (suc q) zero    = refl
+Lp-map-id P (suc q) (suc p) = refl
 
-lift-mor-comp : ∀ {P Q R} (g : Q ⇒ R) (f : P ⇒ Q) →
-                lift-mor (g ∘ f) ≈p (lift-mor g ∘ lift-mor f)
-lift-mor-comp g f zero    j       = sym (trans (+-cong ·-lunit refl) ⊤-add-top)
-lift-mor-comp {P} {Q} {R} g f (suc q) zero    =
+Lp-map-comp : ∀ {P Q R} (g : Q ⇒ R) (f : P ⇒ Q) →
+                Lp-map (g ∘ f) ≈p (Lp-map g ∘ Lp-map f)
+Lp-map-comp g f zero    j       = sym (trans (+-cong ·-lunit refl) ⊤-add-top)
+Lp-map-comp {P} {Q} {R} g f (suc q) zero    =
   sym (trans (+-cong ε-annihilₗ (trans (Σ-cong (λ k → ε-annihilᵣ {g .mat q k})) (Σ-ε {Q .dim}))) +-lunit)
-lift-mor-comp g f (suc q) (suc p) = sym (trans (+-cong ε-annihilₗ refl) +-lunit)
+Lp-map-comp g f (suc q) (suc p) = sym (trans (+-cong ε-annihilₗ refl) +-lunit)
 
 -- The lifting packaged as an endofunctor: the cell structure for inductive types.
-lift-functor : Functor cat cat
-lift-functor .Functor.fobj = lift
-lift-functor .Functor.fmor = lift-mor
-lift-functor .Functor.fmor-cong = lift-mor-cong
-lift-functor .Functor.fmor-id {P} = lift-mor-id P
-lift-functor .Functor.fmor-comp = lift-mor-comp
+Lp-functor : Functor cat cat
+Lp-functor .Functor.fobj = Lp
+Lp-functor .Functor.fmor = Lp-map
+Lp-functor .Functor.fmor-cong = Lp-map-cong
+Lp-functor .Functor.fmor-id {P} = Lp-map-id P
+Lp-functor .Functor.fmor-comp = Lp-map-comp

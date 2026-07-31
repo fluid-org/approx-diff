@@ -128,7 +128,7 @@ test-close-a = refl
 -- The spine order is the iterated lifting: each cons cell lifts the biproduct of its element's
 -- discrete order with the tail.
 spine-lifted : Pos
-spine-lifted = lift (disc 1 ⊕ lift (disc 1 ⊕ 𝟘p))
+spine-lifted = Lp (disc 1 ⊕ Lp (disc 1 ⊕ 𝟘p))
 
 test-spine-lifted : ∀ q p → spine-lifted .ord q p ≡ ord4 q p
 test-spine-lifted c₁ c₁ = refl
