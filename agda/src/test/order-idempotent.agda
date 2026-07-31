@@ -84,8 +84,8 @@ spine .ord-trans b  c₂ k  = O-≤ (ord4 b k)
 spine .ord-trans b  b  k  = L-refl (ord4 b k)
 
 -- Ancestor closure of a selection of positions: the action of the order matrix.
-close : TM.Vec 4 → TM.Vec 4
-close v q = ord4 q TM.⋅ v
+close-sel : TM.Vec 4 → TM.Vec 4
+close-sel v q = ord4 q TM.⋅ v
 
 sel-b : TM.Vec 4
 sel-b b = two.I
@@ -98,7 +98,7 @@ closure-b a  = two.O
 closure-b c₂ = two.I
 closure-b b  = two.I
 
-test-close-b : ∀ q → close sel-b q ≡ closure-b q
+test-close-b : ∀ q → close-sel sel-b q ≡ closure-b q
 test-close-b c₁ = refl
 test-close-b a  = refl
 test-close-b c₂ = refl
@@ -111,7 +111,7 @@ prefix-ca a  = two.I
 prefix-ca c₂ = two.O
 prefix-ca b  = two.O
 
-test-fixed-prefix : ∀ q → close prefix-ca q ≡ prefix-ca q
+test-fixed-prefix : ∀ q → close-sel prefix-ca q ≡ prefix-ca q
 test-fixed-prefix c₁ = refl
 test-fixed-prefix a  = refl
 test-fixed-prefix c₂ = refl
@@ -122,5 +122,28 @@ sel-a : TM.Vec 4
 sel-a a = two.I
 sel-a _ = two.O
 
-test-close-a : close sel-a c₁ ≡ two.I
+test-close-a : close-sel sel-a c₁ ≡ two.I
 test-close-a = refl
+
+-- The spine order is the iterated lifting: each cons cell lifts the biproduct of its element's
+-- discrete order with the tail.
+spine-lifted : Pos
+spine-lifted = lift (disc 1 ⊕ lift (disc 1 ⊕ 𝟘p))
+
+test-spine-lifted : ∀ q p → spine-lifted .ord q p ≡ ord4 q p
+test-spine-lifted c₁ c₁ = refl
+test-spine-lifted c₁ a  = refl
+test-spine-lifted c₁ c₂ = refl
+test-spine-lifted c₁ b  = refl
+test-spine-lifted a  c₁ = refl
+test-spine-lifted a  a  = refl
+test-spine-lifted a  c₂ = refl
+test-spine-lifted a  b  = refl
+test-spine-lifted c₂ c₁ = refl
+test-spine-lifted c₂ a  = refl
+test-spine-lifted c₂ c₂ = refl
+test-spine-lifted c₂ b  = refl
+test-spine-lifted b  c₁ = refl
+test-spine-lifted b  a  = refl
+test-spine-lifted b  c₂ = refl
+test-spine-lifted b  b  = refl
