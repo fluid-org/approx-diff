@@ -239,6 +239,24 @@ module _ {o₁ m₁ e₁}
   Id .fmor-id = 𝒞.≈-refl
   Id .fmor-comp f g = 𝒞.≈-refl
 
+  -- Product with a fixed object, as an endofunctor.
+  module _ (P : HasProducts 𝒞) (w : Category.obj 𝒞) where
+    open Category 𝒞
+    open HasProducts P
+
+    prod-functor : Functor 𝒞 𝒞
+    prod-functor .fobj x = prod w x
+    prod-functor .fmor f = prod-m (𝒞.id w) f
+    prod-functor .fmor-cong e = pair-cong ≈-refl (∘-cong e ≈-refl)
+    prod-functor .fmor-id =
+      ≈-trans (pair-cong id-left id-left)
+      (≈-trans (pair-cong (≈-sym id-right) (≈-sym id-right)) (pair-ext (𝒞.id _)))
+    prod-functor .fmor-comp f g =
+      ≈-sym (≈-trans (pair-natural _ _ _)
+             (pair-cong (≈-trans (∘-cong id-left ≈-refl) (pair-p₁ _ _))
+                        (≈-trans (assoc _ _ _)
+                        (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _))))))
+
   record StrongFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
     open Category 𝒞
     open HasProducts P
