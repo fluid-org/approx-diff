@@ -167,6 +167,17 @@ affine-inj {P} {C} c M q p =
   (trans (+-cong refl (+-cong (const-col P (c .mat q zero) p) (absorb-right M q p)))
          (trans (sym +-assoc) (+-cong ∨-idem refl))))
 
+tag-of-cong : ∀ {P C} {h k : Lp P ⇒ C} → h ≈p k → tag-of h ≈p tag-of k
+tag-of-cong e q j = e q zero
+
+body-of-cong : ∀ {P C} {h k : Lp P ⇒ C} → h ≈p k → body-of h ≈p body-of k
+body-of-cong e q p = e q (suc p)
+
+affine-cong : ∀ {P C} {c c' : 𝟙p ⇒ C} {M M' : P ⇒ C} →
+              c ≈p c' → M ≈p M' → affine c M ≈p affine c' M'
+affine-cong ec eM q zero    = ec q zero
+affine-cong ec eM q (suc p) = +-cong (ec q zero) (eM q p)
+
 -- Selecting the root alone. Composing with it reads off the constant, so a morphism out of a
 -- lifting is determined by its behaviour on the root and on the payload.
 root-mat : ∀ (P : Pos) → Matrix (suc (P .dim)) 1
