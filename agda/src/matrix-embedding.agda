@@ -654,3 +654,14 @@ module matrix-embedding
     -- And back: the matrix of entries of such a morphism.
     mor→mat : Functor cat MatS.cat
     mor→mat = Out.functor ∘F F⁻¹
+
+    -- mat→mor is additive: relabelling along `into` is entrywise, so the zero matrix and matrix
+    -- sums pass through to the additive structure of 𝒞.
+    mat→mor-εₘ : ∀ {m n} → mat→mor .fmor (MatS.εₘ {m} {n}) ≈ εm {X^ n} {X^ m}
+    mat→mor-εₘ {m} {n} =
+      ≈-trans (F .fmor-cong {f₂ = Mat.εₘ {m} {n}} (λ i j → into ._⇒h_.f-ε)) (F-εₘ {m} {n})
+
+    mat→mor-+ₘ : ∀ {m n} (M N : MatS.Matrix m n) →
+                 mat→mor .fmor (M MatS.+ₘ N) ≈ (mat→mor .fmor M +m mat→mor .fmor N)
+    mat→mor-+ₘ M N =
+      ≈-trans (F .fmor-cong (λ i j → into ._⇒h_.f-+ {M i j} {N i j})) (F-+ₘ (In.E M) (In.E N))

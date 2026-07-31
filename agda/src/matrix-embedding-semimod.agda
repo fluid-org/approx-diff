@@ -152,4 +152,5 @@ outof ._⇒h_.f-· {a} {b} =
 outof ._⇒h_.f-ε = S.refl
 outof ._⇒h_.f-ι = S.refl
 
-open AtSemiring S into outof public using (mat→mor; mor→mat; module MatS)
+open AtSemiring S into outof public
+  using (mat→mor; mor→mat; mat→mor-εₘ; mat→mor-+ₘ; module MatS)
