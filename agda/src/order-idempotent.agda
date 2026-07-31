@@ -26,7 +26,7 @@ module order-idempotent
   where
 
 open matrix.Mat S
-  using (Matrix; I; _ᵀ; _≈ₘ_; ∘-cong; assoc; id-left; id-right; Σ-cong; _+ₘ_; εₘ;
+  using (Matrix; I; _ᵀ; _≈ₘ_; ∘-cong; assoc; id-left; id-right; Σ-cong; Σ-ε; _+ₘ_; εₘ;
          comp-bilinear₁; comp-bilinear₂; comp-bilinear-ε₁; comp-bilinear-ε₂;
          p₁; p₂; in₁; in₂; id-1; id-2; zero-1; zero-2; id-+)
   renaming (_∘_ to _∘ₘ_)
@@ -543,13 +543,46 @@ lift P .ord-trans (suc i) zero k =
 lift P .ord-trans (suc i) (suc j) zero = L.≈→≤ ε-annihilᵣ
 lift P .ord-trans (suc i) (suc j) (suc k) = P .ord-trans i j k
 
--- The action on morphisms: root tracks root, the inner block tracks the morphism, and closure
--- under the orders makes the root row dominate its columns.
-lift-block : ∀ {P Q} → P ⇒ Q → Matrix (suc (Q .dim)) (suc (P .dim))
-lift-block f zero    zero    = ι
-lift-block f zero    (suc p) = ε
-lift-block f (suc q) zero    = ε
-lift-block f (suc q) (suc p) = f .mat q p
+-- The action on morphisms: the inner block tracks the morphism; absorption forces the root row
+-- to be full, since the target root is reachable below every position.
+lift-mat : ∀ {P Q} → P ⇒ Q → Matrix (suc (Q .dim)) (suc (P .dim))
+lift-mat f zero    j       = ι
+lift-mat f (suc q) zero    = ε
+lift-mat f (suc q) (suc p) = f .mat q p
 
 lift-mor : ∀ {P Q} → P ⇒ Q → lift P ⇒ lift Q
-lift-mor {P} {Q} f = close {lift P} {lift Q} (lift-block f)
+lift-mor {P} {Q} f .mat = lift-mat f
+lift-mor {P} {Q} f .absorbed =
+  ≈ₘ-trans (∘-cong left-abs (≈ₘ-refl {M = lift P .ord})) right-abs
+  where
+  left-abs : (lift Q .ord ∘ₘ lift-mat f) ≈ₘ lift-mat f
+  left-abs zero    j       = trans (+-cong ·-lunit refl) ⊤-add-top
+  left-abs (suc q) zero    =
+    trans (+-cong ε-annihilₗ (trans (Σ-cong (λ k → ε-annihilᵣ {Q .ord q k})) (Σ-ε {Q .dim}))) +-lunit
+  left-abs (suc q) (suc p) =
+    trans (+-cong ε-annihilₗ refl) (trans +-lunit (absorb-left f q p))
+
+  right-abs : (lift-mat f ∘ₘ lift P .ord) ≈ₘ lift-mat f
+  right-abs zero    j       = trans (+-cong ·-lunit refl) ⊤-add-top
+  right-abs (suc q) zero    =
+    trans (+-cong ε-annihilₗ (trans (Σ-cong (λ k → ε-annihilᵣ {f .mat q k})) (Σ-ε {P .dim}))) +-lunit
+  right-abs (suc q) (suc p) =
+    trans (+-cong ε-annihilₗ refl) (trans +-lunit (absorb-right f q p))
+
+-- The lifting is functorial.
+lift-mor-cong : ∀ {P Q} {f g : P ⇒ Q} → f ≈p g → lift-mor f ≈p lift-mor g
+lift-mor-cong h zero    j       = refl
+lift-mor-cong h (suc q) zero    = refl
+lift-mor-cong h (suc q) (suc p) = h q p
+
+lift-mor-id : ∀ (P : Pos) → lift-mor (id P) ≈p id (lift P)
+lift-mor-id P zero    j       = refl
+lift-mor-id P (suc q) zero    = refl
+lift-mor-id P (suc q) (suc p) = refl
+
+lift-mor-comp : ∀ {P Q R} (g : Q ⇒ R) (f : P ⇒ Q) →
+                lift-mor (g ∘ f) ≈p (lift-mor g ∘ lift-mor f)
+lift-mor-comp g f zero    j       = sym (trans (+-cong ·-lunit refl) ⊤-add-top)
+lift-mor-comp {P} {Q} {R} g f (suc q) zero    =
+  sym (trans (+-cong ε-annihilₗ (trans (Σ-cong (λ k → ε-annihilᵣ {g .mat q k})) (Σ-ε {Q .dim}))) +-lunit)
+lift-mor-comp g f (suc q) (suc p) = sym (trans (+-cong ε-annihilₗ refl) +-lunit)
