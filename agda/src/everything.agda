@@ -19,6 +19,10 @@ import ho-model-sd-semimod
 -- the Set interpretation at first order.
 import conservativity
 
+-- Shape approximation: the Karoubi envelope of Mat(S) at the order idempotents, realised in
+-- SemiMod by splitting each order idempotent at its sub-semimodule of down-closed vectors.
+import order-idempotent-embedding-semimod
+
 -- Polynomials over a category and their parameterised initial algebras; the
 -- action of a functor on polynomials, and the action of componentwise
 -- morphisms and isomorphisms on μ-objects.
