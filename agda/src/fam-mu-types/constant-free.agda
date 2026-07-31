@@ -32,6 +32,8 @@ module fam-mu-types.constant-free {o m e} (os es : Level) {𝒞 : Category o m e
     (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (𝕃 : functor.StrongFunctor P) where
 
 open fam-mu-types.carrier os es T P 𝕃
+
+module L = functor.StrongFunctor 𝕃
 open polynomial-functor using (#c; constant-free; constant-free-go; consts; _++e_)
 
 -- Fixed data for one instance of the lemma: an environment and a constant
@@ -123,6 +125,7 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
       , shape-fwd R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ d₁ d₂ vars fresh
           (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) y
     shape-fwd (μ Q')    η₁ ι η₂ d₁ d₂ vars fresh csok x = wfwd Q' η₁ ι η₂ d₁ d₂ vars fresh csok x
+    shape-fwd (lift Q) η₁ ι η₂ d₁ d₂ vars fresh csok x = shape-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok x
 
     -- References transport elements.
     el-fwd : ∀ {r₁ r₂ dr₁ dr₂} → RefRel r₁ r₂ dr₁ dr₂ → T₁.El r₁ → T₂.El r₂
@@ -181,6 +184,7 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
           (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) q
     shape≈-fwd (μ Q')    η₁ ι η₂ d₁ d₂ vars fresh csok {x} {y} p =
       w≈-fwd Q' η₁ ι η₂ d₁ d₂ vars fresh csok {x} {y} p
+    shape≈-fwd (lift Q) η₁ ι η₂ d₁ d₂ vars fresh csok p = shape≈-fwd Q η₁ ι η₂ d₁ d₂ vars fresh csok p
 
     elEq-fwd : ∀ {r₁ r₂ dr₁ dr₂} (r : RefRel r₁ r₂ dr₁ dr₂) {x y : T₁.El r₁} →
                T₁.elEq r₁ x y → T₂.elEq r₂ (el-fwd r x) (el-fwd r y)
@@ -227,6 +231,7 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
       , shape-bwd R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ d₁ d₂ vars fresh
           (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) y
     shape-bwd (μ Q')    η₁ ι η₂ d₁ d₂ vars fresh csok x = wbwd Q' η₁ ι η₂ d₁ d₂ vars fresh csok x
+    shape-bwd (lift Q) η₁ ι η₂ d₁ d₂ vars fresh csok x = shape-bwd Q η₁ ι η₂ d₁ d₂ vars fresh csok x
 
     el-bwd : ∀ {r₁ r₂ dr₁ dr₂} → RefRel r₁ r₂ dr₁ dr₂ → T₂.El r₂ → T₁.El r₁
     el-bwd (env {p}) x =
@@ -288,6 +293,7 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
       ,ₚ shape-fb R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ d₁ d₂ vars fresh
           (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) y
     shape-fb (μ Q')    η₁ ι η₂ d₁ d₂ vars fresh csok x = w-fb Q' η₁ ι η₂ d₁ d₂ vars fresh csok x
+    shape-fb (lift Q) η₁ ι η₂ d₁ d₂ vars fresh csok x = shape-fb Q η₁ ι η₂ d₁ d₂ vars fresh csok x
 
     el-fb : ∀ {r₁ r₂ dr₁ dr₂} (r : RefRel r₁ r₂ dr₁ dr₂) (x : T₁.El r₁) →
             T₁.elEq r₁ (el-bwd r (el-fwd r x)) x
@@ -334,6 +340,7 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
       ,ₚ shape-bf R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ d₁ d₂ vars fresh
           (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) y
     shape-bf (μ Q')    η₁ ι η₂ d₁ d₂ vars fresh csok y = w-bf Q' η₁ ι η₂ d₁ d₂ vars fresh csok y
+    shape-bf (lift Q) η₁ ι η₂ d₁ d₂ vars fresh csok y = shape-bf Q η₁ ι η₂ d₁ d₂ vars fresh csok y
 
     el-bf : ∀ {r₁ r₂ dr₁ dr₂} (r : RefRel r₁ r₂ dr₁ dr₂) (y : T₂.El r₂) →
             T₂.elEq r₂ (el-fwd r (el-bwd r y)) y
@@ -380,6 +387,7 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
           (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) q
     shape≈-bwd (μ Q')    η₁ ι η₂ d₁ d₂ vars fresh csok {x} {y} p =
       w≈-bwd Q' η₁ ι η₂ d₁ d₂ vars fresh csok {x} {y} p
+    shape≈-bwd (lift Q) η₁ ι η₂ d₁ d₂ vars fresh csok p = shape≈-bwd Q η₁ ι η₂ d₁ d₂ vars fresh csok p
 
     elEq-bwd : ∀ {r₁ r₂ dr₁ dr₂} (r : RefRel r₁ r₂ dr₁ dr₂) {x y : T₂.El r₂} →
                T₂.elEq r₂ x y → T₁.elEq r₁ (el-bwd r x) (el-bwd r y)
@@ -437,6 +445,7 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
         (fib-shape-≡ R η₁ (λ c → ι (#c Q ↑ʳ c)) η₂ d₁ d₂ vars fresh
           (λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))) y)
     fib-shape-≡ (μ Q')    η₁ ι η₂ d₁ d₂ vars fresh csok x = fib-fwd-≡ Q' η₁ ι η₂ d₁ d₂ vars fresh csok x
+    fib-shape-≡ (lift Q) η₁ ι η₂ d₁ d₂ vars fresh csok x = cong L.fobj (fib-shape-≡ Q η₁ ι η₂ d₁ d₂ vars fresh csok x)
 
     fib-el-≡ : ∀ {r₁ r₂ dr₁ dr₂} (r : RefRel r₁ r₂ dr₁ dr₂) (x : T₁.El r₁) →
                T₂.fib-el r₂ dr₂ (el-fwd r x) ≡ T₁.fib-el r₁ dr₁ x
@@ -448,6 +457,10 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
   private
     ≡-mor : ∀ {A B : obj} → A ≡ B → A ⇒ B
     ≡-mor ≡-refl = id _
+
+    ≡-mor-fobj : ∀ {A B : obj} (E : A ≡ B) →
+                 ≡-mor (≡-sym (cong L.fobj E)) ≈ L.fmor (≡-mor (≡-sym E))
+    ≡-mor-fobj ≡-refl = ≈-sym L.fmor-id
 
     -- Leaf square: a cast built from a reference equality and an object
     -- equality commutes with the underlying family's transport.
@@ -527,6 +540,12 @@ module ConstantFree {n k : ℕ} (δ : Fin n → Obj) (cs : Fin k → Obj) where
         csokR = λ c → ≡-trans (csok (#c Q ↑ʳ c)) (cong [ consts Q , consts R ]′ (splitAt-↑ʳ (#c Q) (#c R) c))
     shape-compat (μ Q')    η₁ ι η₂ d₁ d₂ vars fresh csok {x} {y} e =
       w-compat Q' η₁ ι η₂ d₁ d₂ vars fresh csok {x} {y} e
+    shape-compat (lift Q) η₁ ι η₂ d₁ d₂ vars fresh csok e =
+      ≈-trans (∘-cong (≡-mor-fobj (fib-shape-≡ Q η₁ ι η₂ d₁ d₂ vars fresh csok _)) ≈-refl)
+        (≈-trans (≈-sym (L.fmor-comp _ _))
+          (≈-trans (L.fmor-cong (shape-compat Q η₁ ι η₂ d₁ d₂ vars fresh csok e))
+            (≈-trans (L.fmor-comp _ _)
+              (∘-cong ≈-refl (≈-sym (≡-mor-fobj (fib-shape-≡ Q η₁ ι η₂ d₁ d₂ vars fresh csok _)))))))
 
     el-compat : ∀ {r₁ r₂ dr₁ dr₂} (r : RefRel r₁ r₂ dr₁ dr₂) {x y : T₁.El r₁} (e : T₁.elEq r₁ x y) →
                 (≡-mor (≡-sym (fib-el-≡ r y)) ∘ T₁.fib-el-subst r₁ dr₁ e)
