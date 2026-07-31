@@ -1,6 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Level using (0ℓ)
+open import prop using (∃ₛ; _,_)
 open import prop-setoid using (Setoid; module ≈-Reasoning)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category; Splitting; HasTerminal; IsTerminal)
@@ -117,6 +118,82 @@ module Embed
     𝓚-faithful {P} {Q} {f} {g} h =
       𝓖-faithful (≈-trans (≈-sym (sandwich f))
                  (≈-trans (∘-cong ≈-refl (∘-cong h ≈-refl)) (sandwich g)))
+
+  -- 𝓚 inherits fullness from 𝓖: the preimage of h is the realised matrix of the sandwiched
+  -- morphism, corrected by the order matrices to be absorbed.
+  module Full
+    (𝓖-full : ∀ {m n} (h : 𝓖 .fobj m 𝒞.⇒ 𝓖 .fobj n) →
+              ∃ₛ (MatS.Matrix n m) (λ M → 𝓖 .fmor M 𝒞.≈ h))
+    where
+
+    𝓚-full : ∀ {P Q} (h : 𝓚 .fobj P 𝒞.⇒ 𝓚 .fobj Q) →
+             ∃ₛ (OI._⇒_ P Q) (λ f → 𝓚 .fmor f 𝒞.≈ h)
+    𝓚-full {P} {Q} h = f , 𝓚f≈h
+      where
+      Nfull = 𝓖-full (split Q .sect ∘ (h ∘ split P .retr))
+      N = Nfull .∃ₛ.fst
+
+      𝓖N≈ : 𝓖 .fmor N 𝒞.≈ (split Q .sect ∘ (h ∘ split P .retr))
+      𝓖N≈ = Nfull .∃ₛ.snd
+
+      f : OI._⇒_ P Q
+      f .mat = (Q .ord MatS.∘ N) MatS.∘ P .ord
+      f .absorbed = OI.≈ₘ-trans (MatS.∘-cong left (OI.≈ₘ-refl {M = P .ord})) right
+        where
+        left : (Q .ord MatS.∘ ((Q .ord MatS.∘ N) MatS.∘ P .ord)) MatS.≈ₘ ((Q .ord MatS.∘ N) MatS.∘ P .ord)
+        left =
+          OI.≈ₘ-trans (OI.≈ₘ-sym (MatS.assoc (Q .ord) (Q .ord MatS.∘ N) (P .ord)))
+          (OI.≈ₘ-trans (MatS.∘-cong (OI.≈ₘ-sym (MatS.assoc (Q .ord) (Q .ord) N)) (OI.≈ₘ-refl {M = P .ord}))
+                       (MatS.∘-cong (MatS.∘-cong (OI.ord-idem Q) (OI.≈ₘ-refl {M = N})) (OI.≈ₘ-refl {M = P .ord})))
+
+        right : (((Q .ord MatS.∘ N) MatS.∘ P .ord) MatS.∘ P .ord) MatS.≈ₘ ((Q .ord MatS.∘ N) MatS.∘ P .ord)
+        right =
+          OI.≈ₘ-trans (MatS.assoc (Q .ord MatS.∘ N) (P .ord) (P .ord))
+                      (MatS.∘-cong (OI.≈ₘ-refl {M = Q .ord MatS.∘ N}) (OI.ord-idem P))
+
+      𝓚f≈h : 𝓚 .fmor f 𝒞.≈ h
+      𝓚f≈h =
+        begin
+          split Q .retr ∘ (𝓖 .fmor ((Q .ord MatS.∘ N) MatS.∘ P .ord) ∘ split P .sect)
+        ≈⟨ ∘-cong ≈-refl (∘-cong (𝓖 .fmor-comp (Q .ord MatS.∘ N) (P .ord)) ≈-refl) ⟩
+          split Q .retr ∘ ((𝓖 .fmor (Q .ord MatS.∘ N) ∘ 𝓖 .fmor (P .ord)) ∘ split P .sect)
+        ≈⟨ ∘-cong ≈-refl (∘-cong (∘-cong (𝓖 .fmor-comp (Q .ord) N) ≈-refl) ≈-refl) ⟩
+          split Q .retr ∘ (((𝓖 .fmor (Q .ord) ∘ 𝓖 .fmor N) ∘ 𝓖 .fmor (P .ord)) ∘ split P .sect)
+        ≈˘⟨ ∘-cong ≈-refl (∘-cong (∘-cong (∘-cong (split Q .sect-retr) ≈-refl) (split P .sect-retr)) ≈-refl) ⟩
+          split Q .retr ∘ ((((split Q .sect ∘ split Q .retr) ∘ 𝓖 .fmor N) ∘ (split P .sect ∘ split P .retr)) ∘ split P .sect)
+        ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+          split Q .retr ∘ (((split Q .sect ∘ split Q .retr) ∘ 𝓖 .fmor N) ∘ ((split P .sect ∘ split P .retr) ∘ split P .sect))
+        ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
+          split Q .retr ∘ (((split Q .sect ∘ split Q .retr) ∘ 𝓖 .fmor N) ∘ (split P .sect ∘ (split P .retr ∘ split P .sect)))
+        ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (split P .retr-sect))) ⟩
+          split Q .retr ∘ (((split Q .sect ∘ split Q .retr) ∘ 𝓖 .fmor N) ∘ (split P .sect ∘ id _))
+        ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl id-right) ⟩
+          split Q .retr ∘ (((split Q .sect ∘ split Q .retr) ∘ 𝓖 .fmor N) ∘ split P .sect)
+        ≈⟨ ∘-cong ≈-refl (∘-cong (assoc _ _ _) ≈-refl) ⟩
+          split Q .retr ∘ ((split Q .sect ∘ (split Q .retr ∘ 𝓖 .fmor N)) ∘ split P .sect)
+        ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+          split Q .retr ∘ (split Q .sect ∘ ((split Q .retr ∘ 𝓖 .fmor N) ∘ split P .sect))
+        ≈˘⟨ assoc _ _ _ ⟩
+          (split Q .retr ∘ split Q .sect) ∘ ((split Q .retr ∘ 𝓖 .fmor N) ∘ split P .sect)
+        ≈⟨ ∘-cong (split Q .retr-sect) ≈-refl ⟩
+          id _ ∘ ((split Q .retr ∘ 𝓖 .fmor N) ∘ split P .sect)
+        ≈⟨ id-left ⟩
+          (split Q .retr ∘ 𝓖 .fmor N) ∘ split P .sect
+        ≈⟨ ∘-cong (∘-cong ≈-refl 𝓖N≈) ≈-refl ⟩
+          (split Q .retr ∘ (split Q .sect ∘ (h ∘ split P .retr))) ∘ split P .sect
+        ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+          ((split Q .retr ∘ split Q .sect) ∘ (h ∘ split P .retr)) ∘ split P .sect
+        ≈⟨ ∘-cong (∘-cong (split Q .retr-sect) ≈-refl) ≈-refl ⟩
+          (id _ ∘ (h ∘ split P .retr)) ∘ split P .sect
+        ≈⟨ ∘-cong id-left ≈-refl ⟩
+          (h ∘ split P .retr) ∘ split P .sect
+        ≈⟨ assoc _ _ _ ⟩
+          h ∘ (split P .retr ∘ split P .sect)
+        ≈⟨ ∘-cong ≈-refl (split P .retr-sect) ⟩
+          h ∘ id _
+        ≈⟨ id-right ⟩
+          h
+        ∎ where open ≈-Reasoning isEquiv
 
   -- With 𝒞 CMon-enriched and 𝓖 additive, the images of the block-order biproduct assemble a
   -- biproduct on the split objects, and a terminal realisation of dimension zero splits to a
