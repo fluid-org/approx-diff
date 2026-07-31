@@ -17,13 +17,12 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
-import functor
 import fam-mu-types.reindex
 
 module fam-mu-types.fold {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CL : functor.StrongSplitPointedFunctor P) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types.reindex os es T P CL public
+open fam-mu-types.reindex os es T P public
 
 -- The fold (catamorphism) for the μ-type, lifted to a standalone module so its
 -- mutual recursion is termination-checked independently of the `hasMu` copattern.
@@ -124,8 +123,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-fam : (γ : Γ .idx .Carrier) (t : Tδ.W ∣ P ∣ (λ i → inj₁ i)) →
                  prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (fold-idx γ t)
       fold-fam γ (Tδ.sup x) =
-        (alg .famf ._⇒f_.transf (γ , fold-shape-idx P γ x) ∘ pair p₁ (fold-shape-fam P γ x))
-          ∘ prod-m (id _) CL.counit
+        alg .famf ._⇒f_.transf (γ , fold-shape-idx P γ x) ∘ pair p₁ (fold-shape-fam P γ x)
 
       fold-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
                        prod (Γ .fam .fm γ) (Tδ.fib-shape Q (Tδ.deco-ext P (λ i → lift tt)) x)
@@ -140,7 +138,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 
       fold-reindex-fam : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (md : FMor ρ ρ' d d') (t : Tδ.W ∣ Q ∣ ρ) →
                          prod (Γ .fam .fm γ) (Tδ.fib Q d t) ⇒ TA'.fib Q d' (fold-reindex γ md t)
-      fold-reindex-fam {Q = Q} γ md (Tδ.sup x) = CL.unit ∘ (fold-reindex-shape-fam γ Q (fbind Q md) x ∘ prod-m (id _) CL.counit)
+      fold-reindex-fam {Q = Q} γ md (Tδ.sup x) = fold-reindex-shape-fam γ Q (fbind Q md) x
 
       fold-reindex-shape-fam : ∀ {j} (γ : Γ .idx .Carrier) (R : Poly j) {ηA ηB dA dB} (md : FMor ηA ηB dA dB) (a : Tδ.⟦ ∣ R ∣ ⟧shape ηA) →
                                prod (Γ .fam .fm γ) (Tδ.fib-shape R dA a) ⇒ TA'.fib-shape R dB (fold-reindex-shape γ R md a)
@@ -166,29 +164,12 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                          A .fam .subst (fold-idx-resp γ≈ {t} {t'} p) ∘ fold-fam γ₁ t
       fold-fam-natural {γ₁} {γ₂} γ≈ {Tδ.sup x} {Tδ.sup y} p =
         ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl swap-counit)
+        (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
+        (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (fold-shape-fam-natural P γ≈ {x} {y} p)))
+        (≈-trans (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _)))
         (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong inner ≈-refl)
-                 (assoc _ _ _))))
-        where
-        swap-counit :
-          (prod-m (id _) CL.counit
-            ∘ prod-m (Γ .fam .subst γ≈) (CL.fmor (Tδ.fib-shape-subst P (Tδ.deco-ext P (λ i → lift tt)) p)))
-          ≈ (prod-m (Γ .fam .subst γ≈) (Tδ.fib-shape-subst P (Tδ.deco-ext P (λ i → lift tt)) p)
-            ∘ prod-m (id _) CL.counit)
-        swap-counit =
-          ≈-trans (≈-sym (prod-m-comp _ _ _ _))
-          (≈-trans (prod-m-cong (≈-trans id-left (≈-sym id-right)) (≈-sym (CL.counit-natural _)))
-                   (prod-m-comp _ _ _ _))
-
-        inner =
-          ≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
-          (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (fold-shape-fam-natural P γ≈ {x} {y} p)))
-          (≈-trans (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _)))
-          (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (alg .famf ._⇒f_.natural (γ≈ , fold-shape-idx-resp P γ≈ {x} {y} p)) ≈-refl)
-                   (assoc _ _ _))))))
+        (≈-trans (∘-cong (alg .famf ._⇒f_.natural (γ≈ , fold-shape-idx-resp P γ≈ {x} {y} p)) ≈-refl)
+                 (assoc _ _ _))))))
 
       fold-shape-fam-natural : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
                                (p : Tδ.shape≈ ∣ Q ∣ (Sh.η₀ ∣ P ∣) x x') →
@@ -208,21 +189,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                              (fold-reindex-fam γ₂ md t' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-subst Q d {x = t} {y = t'} p))
                                ≈ (TA'.fib-subst Q d' {x = fold-reindex γ₁ md t} {y = fold-reindex γ₂ md t'}
                                                 (fold-reindex-resp γ≈ md {t} {t'} p) ∘ fold-reindex-fam γ₁ md t)
-      fold-reindex-fam-natural {Q = Q} γ≈ md {Tδ.sup x} {Tδ.sup y} p =
-        ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-        (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl swap-counit'))
-        (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
-        (≈-trans (∘-cong ≈-refl (∘-cong (fold-reindex-shape-fam-natural γ≈ Q (fbind Q md) {x} {y} p) ≈-refl))
-        (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-        (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong (≈-sym (CL.unit-natural _)) ≈-refl)
-                 (assoc _ _ _))))))))
-        where
-        swap-counit' =
-          ≈-trans (≈-sym (prod-m-comp _ _ _ _))
-          (≈-trans (prod-m-cong (≈-trans id-left (≈-sym id-right)) (≈-sym (CL.counit-natural _)))
-                   (prod-m-comp _ _ _ _))
+      fold-reindex-fam-natural {Q = Q} γ≈ md {Tδ.sup x} {Tδ.sup y} p = fold-reindex-shape-fam-natural γ≈ Q (fbind Q md) {x} {y} p
 
       fold-reindex-shape-fam-natural : ∀ {j} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) (R : Poly j) {ηA ηB dA dB} (md : FMor ηA ηB dA dB)
                                    {a a' : Tδ.⟦ ∣ R ∣ ⟧shape ηA} (p : Tδ.shape≈ ∣ R ∣ ηA a a') →

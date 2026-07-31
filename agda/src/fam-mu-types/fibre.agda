@@ -26,7 +26,7 @@ import polynomial-functor
 import fam-mu-types.sort
 
 module fam-mu-types.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (C : Functor 𝒞 𝒞) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
 open Category 𝒞
 open Functor
@@ -88,7 +88,7 @@ module Fibre {n} (δ : Fin n → Obj) where
   mutual
     fib : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
           (d : ∀ i → DecoAssign (ρ̄ i)) → W ∣ Q ∣ ρ̄ → obj
-    fib Q d (sup x) = C .fobj (fib-shape Q (deco-ext Q d) x)
+    fib Q d (sup x) = fib-shape Q (deco-ext Q d) x
 
     fib-shape : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
                 (d : ∀ i → DecoAssign (η̄ i)) → ⟦ ∣ Q ∣ ⟧shape η̄ → obj
@@ -108,7 +108,7 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-subst : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
                 (d : ∀ i → DecoAssign (ρ̄ i)) {x y : W ∣ Q ∣ ρ̄} →
                 W-≈ x y → fib Q d x ⇒ fib Q d y
-    fib-subst Q d {sup x} {sup y} p = C .fmor (fib-shape-subst Q (deco-ext Q d) p)
+    fib-subst Q d {sup x} {sup y} p = fib-shape-subst Q (deco-ext Q d) p
 
     fib-shape-subst : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
                       (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄} →
@@ -131,8 +131,7 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-refl* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
                 (d : ∀ i → DecoAssign (ρ̄ i)) (x : W ∣ Q ∣ ρ̄) →
                 fib-subst Q d {x = x} {y = x} (W-≈-refl x) ≈ id (fib Q d x)
-    fib-refl* Q d (sup x) =
-      ≈-trans (C .fmor-cong (fib-shape-refl* Q (deco-ext Q d) x)) (C .fmor-id)
+    fib-refl* Q d (sup x) = fib-shape-refl* Q (deco-ext Q d) x
 
     fib-shape-refl* : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
                       (d : ∀ i → DecoAssign (η̄ i)) (x : ⟦ ∣ Q ∣ ⟧shape η̄) →
@@ -157,8 +156,7 @@ module Fibre {n} (δ : Fin n → Obj) where
                  (q : W-≈ y z) (p : W-≈ x y) →
                  fib-subst Q d {x = x} {y = z} (W-≈-trans {x = x} {y = y} {z = z} p q)
                    ≈ (fib-subst Q d {x = y} {y = z} q ∘ fib-subst Q d {x = x} {y = y} p)
-    fib-trans* Q d {sup x} {sup y} {sup z} q p =
-      ≈-trans (C .fmor-cong (fib-shape-trans* Q (deco-ext Q d) q p)) (C .fmor-comp _ _)
+    fib-trans* Q d {sup x} {sup y} {sup z} q p = fib-shape-trans* Q (deco-ext Q d) q p
 
     fib-shape-trans* : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
                        (d : ∀ i → DecoAssign (η̄ i)) {x y z : ⟦ ∣ Q ∣ ⟧shape η̄}

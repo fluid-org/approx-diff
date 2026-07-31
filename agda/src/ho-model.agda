@@ -125,18 +125,14 @@ module Interpretation
   Fam⟨𝒟⟩-strongCoproducts =
     Fam⟨𝒟⟩.products.strongCoproducts (biproducts→products _ 𝒟-biproducts)
 
-  Fam⟨𝒟⟩-cells =
-    functor.StrongSplitPointedFunctor-Id (biproducts→products _ 𝒟-biproducts)
-
   module Fam⟨𝒟⟩-μ =
-    fam-mu-types.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts) Fam⟨𝒟⟩-cells
+    fam-mu-types.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMu =
-    fam-mu-types.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts) Fam⟨𝒟⟩-cells
+    fam-mu-types.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMuLaws =
-    fam-mu-types.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts) Fam⟨𝒟⟩-cells
-      (λ {x} → Category.id-left 𝒟)
+    fam-mu-types.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   module interp (Sig : Signature 0ℓ)
                   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
@@ -336,7 +332,6 @@ module Interpretation
 
     Fam⟨𝒞⟩-hasMu : polynomial-functor.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
     Fam⟨𝒞⟩-hasMu = fam-mu-types.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-                     (functor.StrongSplitPointedFunctor-Id 𝒞-products)
 
     -- The embedding preserves the coproducts derived from the strong coproducts
     -- on either side: the canonical maps differ from those for the chosen

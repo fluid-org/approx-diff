@@ -62,11 +62,8 @@ module gf-preserves-mu
   private
     module Glued = Category Gl
     module Sk  = fam-mu-types.constant-free 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-                   (functor.StrongSplitPointedFunctor-Id 𝒞-products)
     module SkGl = fam-mu-types.constant-free 0ℓ 0ℓ GlT GlP
-                    (functor.StrongSplitPointedFunctor-Id GlP)
     module FMc = fam-mu-types 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-                   (functor.StrongSplitPointedFunctor-Id 𝒞-products)
     module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlT GlP GlE GlSC
     module FMg = RGl.FM
     module Pres = fam-presentation 0ℓ 0ℓ {𝒞}
@@ -88,7 +85,6 @@ module gf-preserves-mu
 
   Fam⟨𝒞⟩-hasMu : polynomial-functor.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
   Fam⟨𝒞⟩-hasMu = fam-mu-types.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
-                   (functor.StrongSplitPointedFunctor-Id 𝒞-products)
 
   -- Source side of the carrier comparison: GF of a Fam W-tree is the Gl
   -- set-indexed coproduct of the GF-images of its singleton fibres, via the

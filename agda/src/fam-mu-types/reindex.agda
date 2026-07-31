@@ -17,13 +17,12 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
-import functor
 import fam-mu-types.carrier
 
 module fam-mu-types.reindex {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (CL : functor.StrongSplitPointedFunctor P) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types.carrier os es T P CL public
+open fam-mu-types.carrier os es T P public
 
 -- Reindex a tree from one parameter context to another along a context morphism.
 -- The morphism is first-order data: `base` carries the leaf maps (applied only at
@@ -135,7 +134,7 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
 
     reindex-fam-W : ∀ {k} {Q : Poly (suc k)} {ρA ρB dA dB} (md : MorD ρA ρB dA dB) {t : TA.W ∣ Q ∣ ρA} →
                     TA.fib Q dA t ⇒ TB.fib Q dB (reindex md t)
-    reindex-fam-W {Q = Q} md {TA.sup x} = CL.fmor (reindex-fam Q (bind Q md))
+    reindex-fam-W {Q = Q} md {TA.sup x} = reindex-fam Q (bind Q md)
 
     apply-fam : ∀ {k} {ρA ρB dA dB} (md : MorD {k} ρA ρB dA dB) (v : Fin k) (a : TA.El (ρA v)) →
                 TA.fib-el (ρA v) (dA v) a ⇒ TB.fib-el (ρB v) (dB v) (apply md v a)
@@ -164,9 +163,7 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
                         (reindex-fam-W md {t'} ∘ TA.fib-subst Q dA {x = t} {y = t'} p)
                           ≈ (TB.fib-subst Q dB {x = reindex md t} {y = reindex md t'}
                                           (reindex-resp md {t} {t'} p) ∘ reindex-fam-W md {t})
-    reindex-fam-W-natural {Q = Q} md {TA.sup x} {TA.sup y} p =
-      ≈-trans (≈-sym (CL.fmor-comp _ _))
-      (≈-trans (CL.fmor-cong (reindex-fam-natural Q (bind Q md) {x} {y} p)) (CL.fmor-comp _ _))
+    reindex-fam-W-natural {Q = Q} md {TA.sup x} {TA.sup y} p = reindex-fam-natural Q (bind Q md) {x} {y} p
 
     apply-fam-natural : ∀ {k} {ρA ρB dA dB} (md : MorD {k} ρA ρB dA dB) (v : Fin k) {a a'}
                     (p : TA.elEq (ρA v) a a') →
@@ -199,8 +196,7 @@ module FReindex {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj} (G : obj) 
   mutual
     freindex-fam : ∀ {k} {Q : Poly (suc k)} {ρA ρB} {cmb : IMorD ρA ρB} {dA dB} (act : FAct cmb dA dB)
                    {t : TA.W ∣ Q ∣ ρA} → prod G (TA.fib Q dA t) ⇒ TB.fib Q dB (ireindex cmb t)
-    freindex-fam {Q = Q} {cmb = cmb} act {TA.sup x} =
-      CL.unit ∘ (freindex-shape-fam Q (abind Q cmb act) {x} ∘ prod-m (id _) CL.counit)
+    freindex-fam {Q = Q} {cmb = cmb} act {TA.sup x} = freindex-shape-fam Q (abind Q cmb act) {x}
 
     freindex-shape-fam : ∀ {j} (R : Poly j) {ηA ηB} {cmb : IMorD ηA ηB} {dA dB} (act : FAct cmb dA dB)
                          {a : TA.⟦ ∣ R ∣ ⟧shape ηA} →

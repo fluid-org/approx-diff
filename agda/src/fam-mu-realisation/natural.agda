@@ -86,7 +86,7 @@ module SμfFold {n} (Q : Poly ℰ (suc n)) (CQ : InvarianceAt Q) {Γ : obj}
       step-β =
         ≈-trans (CoK.∘-cong₂ (≈-sym (fmorη-pure Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) (FMu.inMap Q̂ δ̂))))
           (≈-trans (≈-sym (fmorη-∘co Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) sμf _))
-            (≈-trans (fmorη-cong (FM-laws .FM.HasMuLaws.⦅⦆-β {P = Q̂} {δ = δ̂} _))
+            (≈-trans (fmorη-cong (FM.hasMuLaws .FM.HasMuLaws.⦅⦆-β {P = Q̂} {δ = δ̂} _))
               (fmorη-∘co Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) alg _)))
 
       inner-nat : fmorη Γ (FM.fobj FM.μObj Q̂ (extend δ̂ (FM.μObj Q̂ δ̂))) (FMu.strong-fmor Q̂ (FMu.strong-extend-mor (λ i → FamP.p₂) sμf))
