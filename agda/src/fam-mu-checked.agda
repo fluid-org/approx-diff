@@ -29,6 +29,8 @@ import fam-presentation
 import polynomial-functor
 import fam-mu-types.sort
 import fam-mu-types.fibre
+import functor
+import fam-functor
 
 module fam-mu-checked {o m e o₂ m₂ e₂} (os es : Level)
     {𝒞 : Category o m e} (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞)
@@ -36,17 +38,36 @@ module fam-mu-checked {o m e o₂ m₂ e₂} (os es : Level)
     (G : Functor (fam.CategoryOfFamilies.cat os (os ⊔ es) 𝒞) 𝒢)
     (G-prod : preserve-chosen-products G
                 (fam.CategoryOfFamilies.products.products os (os ⊔ es) 𝒞 𝒞P) 𝒢P)
+    (𝒞L : functor.StrongFunctor 𝒞P) (𝒢L : functor.StrongFunctor 𝒢P)
+    -- The glueing functor commutes with the two lifts on singleton families. Products and terminal
+    -- alone no longer suffice to compare the fibre recursions once μ-nodes carry a lift.
+    (G-lift : ∀ (A : Category.obj 𝒞) →
+              Category.Iso 𝒢
+                (G .Functor.fobj (fam.CategoryOfFamilies.simple[_,_] os (os ⊔ es) 𝒞 𝟙
+                   (functor.StrongFunctor.F 𝒞L .Functor.fobj A)))
+                (functor.StrongFunctor.F 𝒢L .Functor.fobj
+                   (G .Functor.fobj (fam.CategoryOfFamilies.simple[_,_] os (os ⊔ es) 𝒞 𝟙 A))))
+    (G-lift-natural : ∀ {A B} (g : Category._⇒_ 𝒞 A B) →
+              Category._≈_ 𝒢
+                (Category._∘_ 𝒢 (G-lift B .Category.Iso.fwd)
+                   (G .Functor.fmor (fam.CategoryOfFamilies.simplef[_,_] os (os ⊔ es) 𝒞 (idS 𝟙)
+                      (functor.StrongFunctor.F 𝒞L .Functor.fmor g))))
+                (Category._∘_ 𝒢
+                   (functor.StrongFunctor.F 𝒢L .Functor.fmor
+                      (G .Functor.fmor (fam.CategoryOfFamilies.simplef[_,_] os (os ⊔ es) 𝒞 (idS 𝟙) g)))
+                   (G-lift A .Category.Iso.fwd)))
     where
 
 private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒢 = fam.CategoryOfFamilies os (os ⊔ es) 𝒢
   module Sh = fam-mu-types.sort os es
-  module Fc = fam-mu-types.fibre os es 𝒞T 𝒞P
-  module Fg = fam-mu-types.fibre os es 𝒢T 𝒢P
+  module Fc = fam-mu-types.fibre os es 𝒞T 𝒞P 𝒞L
+  module Fg = fam-mu-types.fibre os es 𝒢T 𝒢P 𝒢L
   module PresC = fam-presentation os (os ⊔ es) {𝒞}
   module 𝒢C = Category 𝒢
   module 𝒢Pm = HasProducts 𝒢P
+  module 𝒢Lf = Functor (functor.StrongFunctor.F 𝒢L)
 
 open Sh using (Sort; mkSort)
 open polynomial-functor using (Poly; #c; constant-free; constant-free-go; extend)
@@ -156,6 +177,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
       shape-cfwd Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel x
       , shape-cfwd R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel y
     shape-cfwd (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel t = cfwd Q' ι η₁ η₂ d₁ d₂ rel t
+    shape-cfwd (Poly.lift Q) ι η₁ η₂ d₁ d₂ rel x = shape-cfwd Q ι η₁ η₂ d₁ d₂ rel x
 
     el-cfwd : ∀ {r₁ r₂ e₁ e₂} → SRel r₁ r₂ e₁ e₂ → T.El r₁ → T.El r₂
     el-cfwd env x = x
@@ -191,6 +213,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
       shape≈-cfwd Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel p
       ,ₚ shape≈-cfwd R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel q
     shape≈-cfwd (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel {x} {y} p = c≈fwd Q' ι η₁ η₂ d₁ d₂ rel {x} {y} p
+    shape≈-cfwd (Poly.lift Q) ι η₁ η₂ d₁ d₂ rel p = shape≈-cfwd Q ι η₁ η₂ d₁ d₂ rel p
 
     elEq-cfwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : T.El r₁} →
                 T.elEq r₁ x y → T.elEq r₂ (el-cfwd r x) (el-cfwd r y)
@@ -225,6 +248,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
       shape-cbwd Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel x
       , shape-cbwd R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel y
     shape-cbwd (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel t = cbwd Q' ι η₁ η₂ d₁ d₂ rel t
+    shape-cbwd (Poly.lift Q) ι η₁ η₂ d₁ d₂ rel x = shape-cbwd Q ι η₁ η₂ d₁ d₂ rel x
 
     el-cbwd : ∀ {r₁ r₂ e₁ e₂} → SRel r₁ r₂ e₁ e₂ → T.El r₂ → T.El r₁
     el-cbwd env x = x
@@ -260,6 +284,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
       shape≈-cbwd Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel p
       ,ₚ shape≈-cbwd R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel q
     shape≈-cbwd (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel {x} {y} p = c≈bwd Q' ι η₁ η₂ d₁ d₂ rel {x} {y} p
+    shape≈-cbwd (Poly.lift Q) ι η₁ η₂ d₁ d₂ rel p = shape≈-cbwd Q ι η₁ η₂ d₁ d₂ rel p
 
     elEq-cbwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : T.El r₂} →
                 T.elEq r₂ x y → T.elEq r₁ (el-cbwd r x) (el-cbwd r y)
@@ -296,6 +321,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
       shape-cfb Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel x
       ,ₚ shape-cfb R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel y
     shape-cfb (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel t = c-fb Q' ι η₁ η₂ d₁ d₂ rel t
+    shape-cfb (Poly.lift Q) ι η₁ η₂ d₁ d₂ rel x = shape-cfb Q ι η₁ η₂ d₁ d₂ rel x
 
     el-cfb : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) →
              T.elEq r₁ (el-cbwd r (el-cfwd r x)) x
@@ -331,6 +357,7 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
       shape-cbf Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel x
       ,ₚ shape-cbf R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel y
     shape-cbf (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel t = c-bf Q' ι η₁ η₂ d₁ d₂ rel t
+    shape-cbf (Poly.lift Q) ι η₁ η₂ d₁ d₂ rel x = shape-cbf Q ι η₁ η₂ d₁ d₂ rel x
 
     el-cbf : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (y : T.El r₂) →
              T.elEq r₂ (el-cfwd r (el-cbwd r y)) y
@@ -375,6 +402,9 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
             (fib-shape-ciso Q (λ c → ι (c ↑ˡ #c R)) η₁ η₂ d₁ d₂ rel x)
             (fib-shape-ciso R (λ c → ι (#c Q ↑ʳ c)) η₁ η₂ d₁ d₂ rel y)))
     fib-shape-ciso (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel t = fib-ciso Q' ι η₁ η₂ d₁ d₂ rel t
+    fib-shape-ciso (Poly.lift Q) ι η₁ η₂ d₁ d₂ rel x =
+      Iso-trans (G-lift (C.fib-shape (skC Q ι) d₁ x))
+        (functor-preserve-iso (functor.StrongFunctor.F 𝒢L) (fib-shape-ciso Q ι η₁ η₂ d₁ d₂ rel x))
 
     fib-el-ciso : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) →
                   Iso (G .fobj F𝒞.simple[ 𝟙 , C.fib-el r₁ e₁ x ])
@@ -446,6 +476,14 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
         smp : ∀ {a b} → Category._⇒_ 𝒞 a b → F𝒞.Mor F𝒞.simple[ 𝟙 , a ] F𝒞.simple[ 𝟙 , b ]
         smp h = F𝒞.simplef[ idS 𝟙 , h ]
     fib-shape-cnat (Poly.μ Q')  ι η₁ η₂ d₁ d₂ rel {t} {t'} p = fib-cnat Q' ι η₁ η₂ d₁ d₂ rel {t} {t'} p
+    fib-shape-cnat (Poly.lift Q) ι η₁ η₂ d₁ d₂ rel {x} {x'} p =
+      ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (G-lift-natural _))
+          (≈-trans (≈-sym (assoc _ _ _))
+            (≈-trans (∘-cong (≈-trans (≈-sym (𝒢Lf.fmor-comp _ _))
+                               (≈-trans (𝒢Lf.fmor-cong (fib-shape-cnat Q ι η₁ η₂ d₁ d₂ rel {x} {x'} p))
+                                 (𝒢Lf.fmor-comp _ _))) ≈-refl)
+              (assoc _ _ _))))
 
     fib-el-cnat : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x x' : T.El r₁} (p : T.elEq r₁ x x') →
                   ((fib-el-ciso r x' .fwd)
