@@ -467,13 +467,39 @@ biproduct P Q .Biproduct.id-+ = +ₘ-cong first second
     (≈ₘ-trans (∘-cong (assoc (in₂ {P .dim} {Q .dim}) (Q .ord) (Q .ord)) (≈ₘ-refl {M = (p₂ {P .dim} {Q .dim})}))
               (∘-cong (∘-cong (≈ₘ-refl {M = (in₂ {P .dim} {Q .dim})}) (ord-idem Q)) (≈ₘ-refl {M = (p₂ {P .dim} {Q .dim})})))
 
+-- The discrete order: the identity matrix, so every matrix between discrete orders is absorbed
+-- and the free first-order model is the special case at discrete orders.
+disc : ℕ → Pos
+disc n .dim = n
+disc n .ord = I
+disc n .ord-refl i = L.≈→≤ (sym (I-diag i))
+disc n .ord-trans = idem-trans (id-left {M = I})
+
+-- The block order on two discrete orders is discrete.
+B-disc : ∀ m n → B (disc m) (disc n) ≈ₘ I
+B-disc m n =
+  ≈ₘ-trans (+ₘ-cong (∘-cong (id-right {M = in₁ {m} {n}}) (≈ₘ-refl {M = p₁ {m} {n}}))
+                    (∘-cong (id-right {M = in₂ {m} {n}}) (≈ₘ-refl {M = p₂ {m} {n}})))
+           (id-+ m n)
+
+-- So the identity matrix mediates an isomorphism between the biproduct of discrete orders and the
+-- discrete order on the sum.
+disc-⊕ : ∀ m n → Category.Iso cat (disc m ⊕ disc n) (disc (m +ℕ n))
+disc-⊕ m n .Category.Iso.fwd .mat = I
+disc-⊕ m n .Category.Iso.fwd .absorbed =
+  ≈ₘ-trans (∘-cong (id-left {M = I}) (≈ₘ-refl {M = B (disc m) (disc n)}))
+           (≈ₘ-trans (id-left {M = B (disc m) (disc n)}) (B-disc m n))
+disc-⊕ m n .Category.Iso.bwd .mat = I
+disc-⊕ m n .Category.Iso.bwd .absorbed =
+  ≈ₘ-trans (id-right {M = B (disc m) (disc n) ∘ₘ I})
+           (≈ₘ-trans (id-right {M = B (disc m) (disc n)}) (B-disc m n))
+disc-⊕ m n .Category.Iso.fwd∘bwd≈id = id-left {M = I}
+disc-⊕ m n .Category.Iso.bwd∘fwd≈id = ≈ₘ-trans (id-left {M = I}) (≈ₘ-sym (B-disc m n))
+
 -- The empty position order is terminal: a morphism into it is a matrix with no rows, so any two
 -- agree vacuously.
 𝟘p : Pos
-𝟘p .dim = 0
-𝟘p .ord = εₘ
-𝟘p .ord-refl ()
-𝟘p .ord-trans ()
+𝟘p = disc 0
 
 terminal : HasTerminal cat
 terminal .HasTerminal.witness = 𝟘p
