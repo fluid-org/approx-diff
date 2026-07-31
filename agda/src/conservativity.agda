@@ -12,6 +12,7 @@ import Data.Nat
 import Data.Fin
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 import polynomial-functor
+import functor
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
          interchange; H-id; NT-id-left;
@@ -21,6 +22,7 @@ open import setoid-cat using (SetoidCat)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 open import stable-coproducts using (StableBits)
 import fam-mu-realisation
+import fam-mu-realisation.context
 import glueing-simple
 import setoid-predicate
 import stable-coproducts-indexed
@@ -899,20 +901,22 @@ open import lists Gl.cat GlPE.terminal GlPE.products GlPE.exponentials GDC
 GlSC : HasStrongCoproducts Gl.cat GlPE.products
 GlSC = ccc→strong-coproducts GlCP.coproducts GlPE.exponentials
 
-abstract
-  Gl-Mu : polynomial-functor.Interp.HasMu GlPE.terminal GlPE.products GlSC
-  Gl-Mu = fam-mu-realisation.Muℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
+module GlMu (GlL : functor.StrongFunctor GlPE.products)
+            (GlLC : fam-mu-realisation.context.LiftCoherence 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC GlL) where
+  abstract
+    Gl-Mu : polynomial-functor.Interp.HasMu GlPE.terminal GlPE.products GlSC GlL
+    Gl-Mu = fam-mu-realisation.Muℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC GlL GlLC
 
-  Gl-MuLaws : polynomial-functor.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu
-  Gl-MuLaws = fam-mu-realisation.MuLawsℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
+    Gl-MuLaws : polynomial-functor.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC GlL Gl-Mu
+    Gl-MuLaws = fam-mu-realisation.MuLawsℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC GlL GlLC
 
-  -- Expose the μ-objects behind the abstraction: they are the realised
-  -- μ-objects of the construction above.
-  Gl-Mu-obj : ∀ {n} (Q : polynomial-functor.Poly Gl.cat (Data.Nat.suc n))
-              (δ : Data.Fin.Fin n → Category.obj Gl.cat) →
-              polynomial-functor.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
-              fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC Q δ
-  Gl-Mu-obj Q δ = ≡-refl
+    -- Expose the μ-objects behind the abstraction: they are the realised
+    -- μ-objects of the construction above.
+    Gl-Mu-obj : ∀ {n} (Q : polynomial-functor.Poly Gl.cat (Data.Nat.suc n))
+                (δ : Data.Fin.Fin n → Category.obj Gl.cat) →
+                polynomial-functor.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
+                fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC GlL GlLC Q δ
+    Gl-Mu-obj Q δ = ≡-refl
 
 module Glued = Category Gl.cat
 open Gl.Obj
@@ -1230,10 +1234,14 @@ definability {X} {Y} f with Definable-closed _ (f .presv .*⊑* X .*⊑* (lift (
 module syntactic {ℓ}
    (Sig : Signature ℓ)
    (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
-   (𝒞Mu : polynomial-functor.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
+   (𝒞L : functor.StrongFunctor 𝒞P)
+   (𝒞Mu : polynomial-functor.Interp.HasMu 𝒞T 𝒞P 𝒞SC 𝒞L)
+   (GlL : functor.StrongFunctor GlPE.products)
+   (GlLC : fam-mu-realisation.context.LiftCoherence 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC GlL)
+   (let open GlMu GlL GlLC)
    (GFC : preserve-chosen-coproducts GF (strong-coproducts→coproducts 𝒞T 𝒞SC)
                                         (strong-coproducts→coproducts GlPE.terminal GlSC))
-   (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-Mu GF)
+   (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC 𝒞L GlPE.terminal GlPE.products GlSC GlL 𝒞Mu Gl-Mu GF)
    (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P ,
                    HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
                      (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
@@ -1242,8 +1250,8 @@ module syntactic {ℓ}
   open import language-syntax Sig using (_⊢_; first-order; first-order-ctxt)
 
   open import language-fo-interpretation Sig
-         𝒞 𝒞T 𝒞P 𝒞SC 𝒞Mu
-         Gl.cat GlPE.terminal GlPE.products GlSC GlPE.exponentials Gl-Mu Gl-MuLaws
+         𝒞 𝒞T 𝒞P 𝒞SC 𝒞L 𝒞Mu
+         Gl.cat GlPE.terminal GlPE.products GlSC GlPE.exponentials GlL Gl-Mu Gl-MuLaws
          GF GF-preserve-terminal GF-preserve-products GFC GFμ
          𝒞-Sig-Model
     renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
