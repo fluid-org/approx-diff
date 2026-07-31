@@ -37,3 +37,8 @@ split P = SemiMod.splitting (𝓖 .fmor (P .ord))
             (≈-trans (≈-sym (𝓖 .fmor-comp (P .ord) (P .ord))) (𝓖 .fmor-cong (ord-idem P)))
 
 open OIE.Embed 𝓖 split public
+
+-- SemiMod is CMon-enriched with biproducts, 𝓖 is additive, and the free object of width zero is
+-- terminal, so 𝓚 preserves the chosen terminal and products.
+open Preserve SemiMod.cmon-enriched SemiMod.biproduct
+  (λ {m} {n} → ME.mat→mor-εₘ {m} {n}) ME.mat→mor-+ₘ SemiMod.terminal ME.𝟘-terminal public
