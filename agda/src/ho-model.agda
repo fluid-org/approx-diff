@@ -17,7 +17,6 @@ import fam
 import finite-coproducts-from-indexed
 import fam-mu-types.carrier
 import fam-mu-types
-import functor
 import fam-stable-indexed
 import indexed-family
 
@@ -57,8 +56,6 @@ module Interpretation
   (𝒟-limits : ∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → HasLimits 𝒮 𝒟)
   (𝒟-terminal : HasTerminal 𝒟)
   (𝒟-biproducts : ∀ x y → Biproduct 𝒟-cmon x y)
-  (𝒞L : functor.StrongFunctor 𝒞-products)
-  (𝒟L : functor.StrongFunctor (biproducts→products _ 𝒟-biproducts))
   (F : Functor 𝒞 𝒟)
   (F-preserve-terminal : preserve-chosen-terminal F 𝒞-terminal 𝒟-terminal)
   (F-preserve-products : preserve-chosen-products F 𝒞-products (biproducts→products _ 𝒟-biproducts))
@@ -129,13 +126,13 @@ module Interpretation
     Fam⟨𝒟⟩.products.strongCoproducts (biproducts→products _ 𝒟-biproducts)
 
   module Fam⟨𝒟⟩-μ =
-    fam-mu-types.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts) 𝒟L
+    fam-mu-types.carrier 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMu =
-    fam-mu-types.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts) 𝒟L
+    fam-mu-types.hasMu 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   Fam⟨𝒟⟩-hasMuLaws =
-    fam-mu-types.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts) 𝒟L
+    fam-mu-types.hasMuLaws 0ℓ 0ℓ 𝒟-terminal (biproducts→products _ 𝒟-biproducts)
 
   module interp (Sig : Signature 0ℓ)
                   (Impl : Model PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Fam⟨𝒞⟩-bool ] Sig)
@@ -150,7 +147,6 @@ module Interpretation
        Fam⟨𝒟⟩-products
        Fam⟨𝒟⟩-strongCoproducts
        Fam⟨𝒟⟩-exponentials
-       (fam-functor.FamF-strong 0ℓ 0ℓ (biproducts→products _ 𝒟-biproducts) 𝒟L)
        Fam⟨𝒟⟩-hasMu
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
@@ -194,7 +190,6 @@ module Interpretation
      FibAlg (P Pm.+ Q)   = FibAlg P × FibAlg Q
      FibAlg (P Pm.× Q)   = FibAlg P × FibAlg Q
      FibAlg (Pm.μ Q)     = FibAlg Q
-     FibAlg (Pm.lift Q)  = FibAlg Q
 
      mutual
        SortAlg : Pm.Sort 0 → Set o
@@ -224,7 +219,6 @@ module Interpretation
        mu-shape (P Pm.+ Q) η (fp , fq) ca (inj₂ y) = mu-shape Q η fq ca y
        mu-shape (P Pm.× Q) η (fp , fq) ca (x , y) = mu-shape P η fp ca x ⊕ mu-shape Q η fq ca y
        mu-shape (Pm.μ Q)   η fa ca x = mu (fa , ca) x
-       mu-shape (Pm.lift Q) η fa ca x = functor.StrongFunctor.F 𝒞L .Functor.fobj (mu-shape Q η fa ca x)
 
        mu-el : (r : Fin 0 ⊎ Pm.Sort 0) → CtxAlg r → T0.El r → Fib
        mu-el (inj₁ ()) ca x
@@ -336,11 +330,8 @@ module Interpretation
     Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products
     Fam⟨𝒞⟩-strongCoproducts = Fam⟨𝒞⟩.products.strongCoproducts 𝒞-products
 
-    Fam⟨𝒞⟩-lift = fam-functor.FamF-strong 0ℓ 0ℓ 𝒞-products 𝒞L
-
     Fam⟨𝒞⟩-hasMu : polynomial-functor.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
-                     Fam⟨𝒞⟩-lift
-    Fam⟨𝒞⟩-hasMu = fam-mu-types.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products 𝒞L
+    Fam⟨𝒞⟩-hasMu = fam-mu-types.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
 
     -- The embedding preserves the coproducts derived from the strong coproducts
     -- on either side: the canonical maps differ from those for the chosen

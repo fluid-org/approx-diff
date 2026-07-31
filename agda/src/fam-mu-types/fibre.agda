@@ -17,7 +17,7 @@ open import Data.Product using (_,_)
 open import Data.Unit using (⊤; tt)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
-open import functor using (Functor; StrongFunctor)
+open import functor using (Functor)
 open import indexed-family using (Fam; _⇒f_)
 open import prop-setoid using (Setoid)
 import setoid-cat
@@ -26,9 +26,7 @@ import polynomial-functor
 import fam-mu-types.sort
 
 module fam-mu-types.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (𝕃 : StrongFunctor P) where
-
-module L = StrongFunctor 𝕃
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
 open Category 𝒞
 open Functor
@@ -100,7 +98,6 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-shape (P + Q) d (inj₂ y) = fib-shape Q d y
     fib-shape (P × Q) d (x , y) = prod (fib-shape P d x) (fib-shape Q d y)
     fib-shape (μ Q') d x = fib Q' d x
-    fib-shape (lift Q) d x = L.fobj (fib-shape Q d x)
 
     fib-el : (r : Fin n ⊎ Sh.Sort n) → DecoAssign r → El r → obj
     fib-el (inj₁ p) _ x = δ p .fam .fm x
@@ -123,7 +120,6 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-shape-subst (P × Q) d {_ , _} {_ , _} (p₁ , p₂) =
       prod-m (fib-shape-subst P d p₁) (fib-shape-subst Q d p₂)
     fib-shape-subst (μ Q') d {x} {y} p = fib-subst Q' d {x = x} {y = y} p
-    fib-shape-subst (lift Q) d p = L.fmor (fib-shape-subst Q d p)
 
     fib-el-subst : (r : Fin n ⊎ Sh.Sort n) (dr : DecoAssign r) {x y : El r} →
                    elEq r x y → fib-el r dr x ⇒ fib-el r dr y
@@ -147,8 +143,6 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-shape-refl* (P × Q) d (x , y) =
       ≈-trans (prod-m-cong (fib-shape-refl* P d x) (fib-shape-refl* Q d y)) prod-m-id
     fib-shape-refl* (μ Q') d x = fib-refl* Q' d x
-    fib-shape-refl* (lift Q) d x =
-      ≈-trans (L.fmor-cong (fib-shape-refl* Q d x)) L.fmor-id
 
     fib-el-refl* : (r : Fin n ⊎ Sh.Sort n) (dr : DecoAssign r) (x : El r) →
                    fib-el-subst r dr (elEq-refl r x) ≈ id (fib-el r dr x)
@@ -177,8 +171,6 @@ module Fibre {n} (δ : Fin n → Obj) where
       ≈-trans (prod-m-cong (fib-shape-trans* P d q₁ p₁) (fib-shape-trans* Q d q₂ p₂))
               (prod-m-comp _ _ _ _)
     fib-shape-trans* (μ Q') d {x} {y} {z} q p = fib-trans* Q' d {x = x} {y = y} {z = z} q p
-    fib-shape-trans* (lift Q) d q p =
-      ≈-trans (L.fmor-cong (fib-shape-trans* Q d q p)) (L.fmor-comp _ _)
 
     fib-el-trans* : (r : Fin n ⊎ Sh.Sort n) (dr : DecoAssign r) {x y z : El r}
                     (q : elEq r y z) (p : elEq r x y) →

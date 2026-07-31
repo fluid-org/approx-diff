@@ -9,22 +9,19 @@ open import Level using (_⊔_)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          strong-coproducts→coproducts; coKleisli-prod)
-open import functor using (Functor; StrongFunctor)
+open import functor using (Functor)
 open import prop-setoid using (module ≈-Reasoning)
 open import Relation.Binary.PropositionalEquality using (_≡_; cong; cong₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; subst to ≡-subst)
 
 module polynomial-functor where
 
--- `lift` marks a position that the interpretation adjoins to its argument. Giving each μ-node one,
--- via the transform μ P ↦ μ (lift P), is what makes a constructor visible to a selection.
 data Poly {o m e} (𝒞 : Category o m e) (n : ℕ) : Set o where
   const : Category.obj 𝒞 → Poly 𝒞 n
   var   : Fin n → Poly 𝒞 n
   _+_   : Poly 𝒞 n → Poly 𝒞 n → Poly 𝒞 n
   _×_   : Poly 𝒞 n → Poly 𝒞 n → Poly 𝒞 n
   μ     : Poly 𝒞 (suc n) → Poly 𝒞 n
-  lift  : Poly 𝒞 n → Poly 𝒞 n
 
 extend : ∀ {n} {ℓ} {A : Set ℓ} → (Fin n → A) → A → Fin (suc n) → A
 extend δ x Fin.zero    = x
@@ -34,10 +31,7 @@ extend δ x (Fin.suc i) = δ i
 module Interp
   {o m e} {𝒞 : Category o m e}
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P)
-  (𝒞L : StrongFunctor 𝒞P)
   where
-
-  module L = StrongFunctor 𝒞L
 
   open Category 𝒞
   open HasProducts 𝒞P
@@ -55,7 +49,6 @@ module Interp
   fobj μ-obj (P + Q)   δ = coprod (fobj μ-obj P δ) (fobj μ-obj Q δ)
   fobj μ-obj (P × Q)   δ = prod (fobj μ-obj P δ) (fobj μ-obj Q δ)
   fobj μ-obj (μ P)     δ = μ-obj P δ
-  fobj μ-obj (lift P)  δ = L.fobj (fobj μ-obj P δ)
 
   -- Parameterised initial algebras for the polynomials: carrier, algebra map and catamorphism, as
   -- operations only. The catamorphism is in context Γ (the open form avoids closure conversion, hence
@@ -83,7 +76,6 @@ module Interp
       strong-fmor (P + Q)   fs = scopair (in₁ ∘ strong-fmor P fs) (in₂ ∘ strong-fmor Q fs)
       strong-fmor (P × Q)   fs = strong-prod-m (strong-fmor P fs) (strong-fmor Q fs)
       strong-fmor (μ P)     fs = strong-μ-fmor P fs
-      strong-fmor (lift P)  fs = L.fmor (strong-fmor P fs) ∘ L.strengthᵣ
 
       strong-μ-fmor : ∀ {n Γ} (P : Poly 𝒞 (suc n)) {δ δ' : Fin n → obj} →
                       (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj P δ'
@@ -118,7 +110,6 @@ Poly-map F (var i)   = var i
 Poly-map F (P + Q)   = Poly-map F P + Poly-map F Q
 Poly-map F (P × Q)   = Poly-map F P × Poly-map F Q
 Poly-map F (μ P)     = μ (Poly-map F P)
-Poly-map F (lift P)  = lift (Poly-map F P)
 
 -- The constant-free form of a polynomial: constants are replaced by fresh
 -- variables, numbered above the original ones. The traversal carries an
@@ -131,7 +122,6 @@ Poly-map F (lift P)  = lift (Poly-map F P)
 #c (P + Q)   = #c P Data.Nat.+ #c Q
 #c (P × Q)   = #c P Data.Nat.+ #c Q
 #c (μ P)     = #c P
-#c (lift P)  = #c P
 
 constant-free-go : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n k}
               (P : Poly 𝒞 n) → (Fin (#c P) → Fin k) → Poly 𝒟 (n Data.Nat.+ k)
@@ -140,7 +130,6 @@ constant-free-go {k = k} (var i)      ι = var (i Fin.↑ˡ k)
 constant-free-go (P + Q) ι = constant-free-go P (λ c → ι (c Fin.↑ˡ #c Q)) + constant-free-go Q (λ c → ι (#c P Fin.↑ʳ c))
 constant-free-go (P × Q) ι = constant-free-go P (λ c → ι (c Fin.↑ˡ #c Q)) × constant-free-go Q (λ c → ι (#c P Fin.↑ʳ c))
 constant-free-go (μ P)   ι = μ (constant-free-go P ι)
-constant-free-go (lift P) ι = lift (constant-free-go P ι)
 
 constant-free : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} {n}
            (P : Poly 𝒞 n) → Poly 𝒟 (n Data.Nat.+ #c P)
@@ -161,7 +150,6 @@ Poly-map-constant-free-go G (P × Q) ι =
   cong₂ _×_ (Poly-map-constant-free-go G P (λ c → ι (c Fin.↑ˡ #c Q)))
             (Poly-map-constant-free-go G Q (λ c → ι (#c P Fin.↑ʳ c)))
 Poly-map-constant-free-go G (μ P) ι = cong μ (Poly-map-constant-free-go G P ι)
-Poly-map-constant-free-go G (lift P) ι = cong lift (Poly-map-constant-free-go G P ι)
 
 -- The constants of a polynomial, indexed by its constant block.
 consts : ∀ {o₁ m₁ e₁} {𝒞 : Category o₁ m₁ e₁} {n} (P : Poly 𝒞 n) → Fin (#c P) → Category.obj 𝒞
@@ -169,7 +157,6 @@ consts (const A) _ = A
 consts (P + Q) c = [ consts P , consts Q ] (Fin.splitAt (#c P) c)
 consts (P × Q) c = [ consts P , consts Q ] (Fin.splitAt (#c P) c)
 consts (μ P)   c = consts P c
-consts (lift P) c = consts P c
 
 -- Extend an environment by a constant block.
 _++e_ : ∀ {a} {A : Set a} {n k} → (Fin n → A) → (Fin k → A) → Fin (n Data.Nat.+ k) → A
@@ -192,7 +179,6 @@ _++e_ {n = n} δ cs i = [ δ , cs ] (Fin.splitAt n i)
 #c-Poly-map G (P + Q)   = cong₂ Data.Nat._+_ (#c-Poly-map G P) (#c-Poly-map G Q)
 #c-Poly-map G (P × Q)   = cong₂ Data.Nat._+_ (#c-Poly-map G P) (#c-Poly-map G Q)
 #c-Poly-map G (μ P)     = #c-Poly-map G P
-#c-Poly-map G (lift P)  = #c-Poly-map G P
 
 private
   subst-↑ˡ : ∀ {m m' n n'} (p : m' ≡ m) (q : n' ≡ n) (c : Fin m') →
@@ -226,7 +212,6 @@ consts-Poly-map G (P × Q) c
 ... | inj₁ c₁ = consts-Poly-map G P c₁
 ... | inj₂ c₂ = consts-Poly-map G Q c₂
 consts-Poly-map G (μ P) c = consts-Poly-map G P c
-consts-Poly-map G (lift P) c = consts-Poly-map G P c
 
 -- The constant-free is unchanged by renaming the constant block pointwise.
 constant-free-go-cong : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
@@ -242,7 +227,6 @@ constant-free-go-cong (P × Q) eq =
   cong₂ _×_ (constant-free-go-cong P (λ c → eq (c Fin.↑ˡ #c Q)))
             (constant-free-go-cong Q (λ c → eq (#c P Fin.↑ʳ c)))
 constant-free-go-cong (μ P) eq = cong μ (constant-free-go-cong P eq)
-constant-free-go-cong (lift P) eq = cong lift (constant-free-go-cong P eq)
 
 -- The constant-free never mentions the constants, so transporting its source along
 -- a functor gives the constant-free form again, up to the cast of the constant block.
@@ -270,18 +254,15 @@ constant-free-go-Poly-map G (P × Q) ι =
                (λ c → cong ι (subst-↑ʳ (#c-Poly-map G P) (#c-Poly-map G Q) c)))
              (constant-free-go-Poly-map G Q (λ c → ι (#c P Fin.↑ʳ c))))
 constant-free-go-Poly-map G (μ P) ι = cong μ (constant-free-go-Poly-map G P ι)
-constant-free-go-Poly-map G (lift P) ι = cong lift (constant-free-go-Poly-map G P ι)
 
 -- The functor preserves μ-types: each μ-object maps, up to isomorphism, to the
 -- μ-object of the image polynomial in the image environment.
 Preserves-μ : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
               (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P)
-              (𝒞L : StrongFunctor 𝒞P)
-              (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SCP : HasStrongCoproducts 𝒟 𝒟P)
-              (𝒟L : StrongFunctor 𝒟P) →
-              Interp.HasMu 𝒞T 𝒞P 𝒞SCP 𝒞L → Interp.HasMu 𝒟T 𝒟P 𝒟SCP 𝒟L → Functor 𝒞 𝒟 →
+              (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟SCP : HasStrongCoproducts 𝒟 𝒟P) →
+              Interp.HasMu 𝒞T 𝒞P 𝒞SCP → Interp.HasMu 𝒟T 𝒟P 𝒟SCP → Functor 𝒞 𝒟 →
               Set (o₁ ⊔ m₂ ⊔ e₂)
-Preserves-μ {𝒞 = 𝒞} {𝒟 = 𝒟} 𝒞T 𝒞P 𝒞SCP 𝒞L 𝒟T 𝒟P 𝒟SCP 𝒟L 𝒞Mu 𝒟Mu F =
+Preserves-μ {𝒞 = 𝒞} {𝒟 = 𝒟} 𝒞T 𝒞P 𝒞SCP 𝒟T 𝒟P 𝒟SCP 𝒞Mu 𝒟Mu F =
   ∀ {n} (P : Poly 𝒞 (suc n)) (δ : Fin n → Category.obj 𝒞) →
   Category.Iso 𝒟 (F .Functor.fobj (CM.μ-obj P δ))
                  (DM.μ-obj (Poly-map F P) (λ i → F .Functor.fobj (δ i)))
@@ -296,9 +277,8 @@ Preserves-μ {𝒞 = 𝒞} {𝒟 = 𝒟} 𝒞T 𝒞P 𝒞SCP 𝒞L 𝒟T 𝒟P �
 module MuIso
   {o m e} {𝒞 : Category o m e}
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SCP : HasStrongCoproducts 𝒞 𝒞P)
-  (𝒞L : StrongFunctor 𝒞P)
-  (Mu : Interp.HasMu 𝒞T 𝒞P 𝒞SCP 𝒞L)
-  (Laws : Interp.HasMuLaws 𝒞T 𝒞P 𝒞SCP 𝒞L Mu)
+  (Mu : Interp.HasMu 𝒞T 𝒞P 𝒞SCP)
+  (Laws : Interp.HasMuLaws 𝒞T 𝒞P 𝒞SCP Mu)
   where
 
   open Category 𝒞
@@ -309,7 +289,7 @@ module MuIso
               copair-reindex to scopair-reindex)
   open HasTerminal 𝒞T using (to-terminal)
   open categories.Unitor 𝒞T 𝒞P using (sect; unitor-comp)
-  open Interp 𝒞T 𝒞P 𝒞SCP 𝒞L
+  open Interp 𝒞T 𝒞P 𝒞SCP
   open HasMu Mu
   open HasMuLaws Laws
 
@@ -321,7 +301,6 @@ module MuIso
     _+_   : ∀ {n} {P P' Q Q' : Poly 𝒞 n} → PolyMor P P' → PolyMor Q Q' → PolyMor (P + Q) (P' + Q')
     _×_   : ∀ {n} {P P' Q Q' : Poly 𝒞 n} → PolyMor P P' → PolyMor Q Q' → PolyMor (P × Q) (P' × Q')
     μ     : ∀ {n} {P P' : Poly 𝒞 (suc n)} → PolyMor P P' → PolyMor (μ P) (μ P')
-    lift  : ∀ {n} {P P' : Poly 𝒞 n} → PolyMor P P' → PolyMor (lift P) (lift P')
 
   -- Label composition and identity.
   _∙_ : ∀ {n} {P Q R : Poly 𝒞 n} → PolyMor Q R → PolyMor P Q → PolyMor P R
@@ -330,7 +309,6 @@ module MuIso
   (s + t) ∙ (r + u) = (s ∙ r) + (t ∙ u)
   (s × t) ∙ (r × u) = (s ∙ r) × (t ∙ u)
   μ s     ∙ μ r     = μ (s ∙ r)
-  lift s  ∙ lift r  = lift (s ∙ r)
 
   pm-id : ∀ {n} (P : Poly 𝒞 n) → PolyMor P P
   pm-id (const A) = const (id A)
@@ -338,7 +316,6 @@ module MuIso
   pm-id (P + Q)   = pm-id P + pm-id Q
   pm-id (P × Q)   = pm-id P × pm-id Q
   pm-id (μ P)     = μ (pm-id P)
-  pm-id (lift P)  = lift (pm-id P)
 
   -- Pointwise equality of componentwise morphisms.
   data PolyMor-≈ : ∀ {n} {P Q : Poly 𝒞 n} → PolyMor P Q → PolyMor P Q → Prop (o ⊔ m ⊔ e) where
@@ -350,8 +327,6 @@ module MuIso
             PolyMor-≈ r r' → PolyMor-≈ s s' → PolyMor-≈ (r × s) (r' × s')
     μ     : ∀ {n} {P P' : Poly 𝒞 (suc n)} {r r' : PolyMor P P'} →
             PolyMor-≈ r r' → PolyMor-≈ (μ r) (μ r')
-    lift  : ∀ {n} {P P' : Poly 𝒞 n} {r r' : PolyMor P P'} →
-            PolyMor-≈ r r' → PolyMor-≈ (lift r) (lift r')
 
   -- Componentwise isomorphism.
   record PolyIso {n} (P Q : Poly 𝒞 n) : Set (o ⊔ m ⊔ e) where
@@ -371,7 +346,6 @@ module MuIso
     pm-fmor (r + s)   fs = scopair (in₁ ∘ pm-fmor r fs) (in₂ ∘ pm-fmor s fs)
     pm-fmor (r × s)   fs = strong-prod-m (pm-fmor r fs) (pm-fmor s fs)
     pm-fmor (μ r)     fs = pm-μ-fmor r fs
-    pm-fmor (lift r)  fs = L.fmor (pm-fmor r fs) ∘ L.strengthᵣ
 
     pm-μ-fmor : ∀ {n Γ} {P Q : Poly 𝒞 (suc n)} → PolyMor P Q → {δ δ' : Fin n → obj} →
                 (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj Q δ'
@@ -397,7 +371,6 @@ module MuIso
       scopair-cong (∘-cong ≈-refl (pm-fmor-id P fs)) (∘-cong ≈-refl (pm-fmor-id Q fs))
     pm-fmor-id (P × Q)   fs = strong-prod-m-cong (pm-fmor-id P fs) (pm-fmor-id Q fs)
     pm-fmor-id (μ P)     fs = pm-μ-fmor-id P fs
-    pm-fmor-id (lift P)  fs = ∘-cong (L.fmor-cong (pm-fmor-id P fs)) ≈-refl
 
     pm-μ-fmor-id : ∀ {n Γ} (P : Poly 𝒞 (suc n)) {δ δ' : Fin n → obj} (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
                    pm-μ-fmor (pm-id P) fs ≈ strong-μ-fmor P fs
@@ -414,7 +387,6 @@ module MuIso
       scopair-cong (∘-cong ≈-refl (pm-fmor-cong e es)) (∘-cong ≈-refl (pm-fmor-cong e' es))
     pm-fmor-cong (e × e')  es = strong-prod-m-cong (pm-fmor-cong e es) (pm-fmor-cong e' es)
     pm-fmor-cong (μ e)     es = pm-μ-fmor-cong e es
-    pm-fmor-cong (lift e)  es = ∘-cong (L.fmor-cong (pm-fmor-cong e es)) ≈-refl
 
     pm-μ-fmor-cong : ∀ {n Γ} {P Q : Poly 𝒞 (suc n)} {r r' : PolyMor P Q} → PolyMor-≈ r r' →
                      {δ δ' : Fin n → obj} {fs fs' : ∀ i → prod Γ (δ i) ⇒ δ' i} →
@@ -434,7 +406,6 @@ module MuIso
   pm-≈-refl (r + s)   = pm-≈-refl r + pm-≈-refl s
   pm-≈-refl (r × s)   = pm-≈-refl r × pm-≈-refl s
   pm-≈-refl (μ r)     = μ (pm-≈-refl r)
-  pm-≈-refl (lift r)  = lift (pm-≈-refl r)
 
   ------------------------------------------------------------------------------
   -- Functor laws for the strong action, derived from the initiality laws.
@@ -525,7 +496,6 @@ module MuIso
       scopair-cong (∘-cong ≈-refl (strong-fmor-cong P es)) (∘-cong ≈-refl (strong-fmor-cong Q es))
     strong-fmor-cong (P × Q)   es = strong-prod-m-cong (strong-fmor-cong P es) (strong-fmor-cong Q es)
     strong-fmor-cong (μ P)     es = strong-μ-fmor-cong P es
-    strong-fmor-cong (lift P)  es = ∘-cong (L.fmor-cong (strong-fmor-cong P es)) ≈-refl
 
     strong-μ-fmor-cong : ∀ {n Γ} (P : Poly 𝒞 (suc n)) {δ δ' : Fin n → obj}
                          {fs fs' : ∀ i → prod Γ (δ i) ⇒ δ' i} →
@@ -563,12 +533,6 @@ module MuIso
       ≈-trans (strong-prod-m-comp _ _ _ _)
               (strong-prod-m-cong (strong-fmor-comp P gs fs) (strong-fmor-comp Q gs fs))
     strong-fmor-comp (μ P)     gs fs = strong-μ-fmor-comp P gs fs
-    strong-fmor-comp (lift P)  gs fs =
-      ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (L.str-co (strong-fmor P fs)))
-          (≈-trans (≈-sym (assoc _ _ _))
-            (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
-                      (L.fmor-cong (strong-fmor-comp P gs fs))) ≈-refl)))
 
     -- Fusion: postcomposition with an algebra morphism takes folds to folds.
     fusion : ∀ {n Γ A B} {P : Poly 𝒞 (suc n)} {δ : Fin n → obj}
@@ -653,12 +617,6 @@ module MuIso
       ≈-trans (strong-prod-m-comp _ _ _ _)
               (strong-prod-m-cong (pm-fmor-post r gs fs) (pm-fmor-post s gs fs))
     pm-fmor-post (μ r)     gs fs = pm-μ-fmor-post r gs fs
-    pm-fmor-post (lift r)  gs fs =
-      ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (L.str-co (pm-fmor r fs)))
-          (≈-trans (≈-sym (assoc _ _ _))
-            (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
-                      (L.fmor-cong (pm-fmor-post r gs fs))) ≈-refl)))
 
     pm-fmor-pre : ∀ {n Γ} {P Q : Poly 𝒞 n} (r : PolyMor P Q) {δ δ' δ'' : Fin n → obj}
                   (gs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
@@ -673,12 +631,6 @@ module MuIso
       ≈-trans (strong-prod-m-comp _ _ _ _)
               (strong-prod-m-cong (pm-fmor-pre r gs fs) (pm-fmor-pre s gs fs))
     pm-fmor-pre (μ r)     gs fs = pm-μ-fmor-pre r gs fs
-    pm-fmor-pre {P = lift P} (lift r)  gs fs =
-      ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (L.str-co (strong-fmor P fs)))
-          (≈-trans (≈-sym (assoc _ _ _))
-            (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
-                      (L.fmor-cong (pm-fmor-pre r gs fs))) ≈-refl)))
 
     pm-μ-fmor-post : ∀ {n Γ} {P Q : Poly 𝒞 (suc n)} (r : PolyMor P Q) {δ δ' δ'' : Fin n → obj}
                      (gs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
@@ -801,12 +753,6 @@ module MuIso
       ≈-trans (strong-prod-m-comp _ _ _ _)
               (strong-prod-m-cong (pm-fmor-comp s r gs fs) (pm-fmor-comp t u gs fs))
     pm-fmor-comp (μ s)     (μ r)     gs fs = pm-μ-fmor-comp s r gs fs
-    pm-fmor-comp (lift s)  (lift r)  gs fs =
-      ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (L.str-co (pm-fmor r fs)))
-          (≈-trans (≈-sym (assoc _ _ _))
-            (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
-                      (L.fmor-cong (pm-fmor-comp s r gs fs))) ≈-refl)))
 
     pm-μ-fmor-comp : ∀ {n Γ} {P Q R : Poly 𝒞 (suc n)} (s : PolyMor Q R) (r : PolyMor P Q) {δ δ' δ'' : Fin n → obj}
                      (gs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
@@ -863,8 +809,6 @@ module MuIso
       ≈-trans (strong-prod-m-cong (strong-fmor-p₂ P) (strong-fmor-p₂ Q))
               (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext _))
     strong-fmor-p₂ (μ P)     = strong-μ-fmor-p₂ P
-    strong-fmor-p₂ (lift P)  =
-      ≈-trans (∘-cong (L.fmor-cong (strong-fmor-p₂ P)) ≈-refl) L.strengthᵣ-p₂
 
     strong-μ-fmor-p₂ : ∀ {n Γ} (P : Poly 𝒞 (suc n)) {δ : Fin n → obj} →
                        strong-μ-fmor {Γ = Γ} P {δ} {δ} (λ i → p₂) ≈ p₂
@@ -966,12 +910,6 @@ module MuIso
   pm-iso-μ r .PolyIso.bwd∘fwd = μ (r .PolyIso.bwd∘fwd)
   pm-iso-μ r .PolyIso.fwd∘bwd = μ (r .PolyIso.fwd∘bwd)
 
-  pm-iso-lift : ∀ {n} {P P' : Poly 𝒞 n} → PolyIso P P' → PolyIso (lift P) (lift P')
-  pm-iso-lift r .PolyIso.fwd     = lift (r .PolyIso.fwd)
-  pm-iso-lift r .PolyIso.bwd     = lift (r .PolyIso.bwd)
-  pm-iso-lift r .PolyIso.bwd∘fwd = lift (r .PolyIso.bwd∘fwd)
-  pm-iso-lift r .PolyIso.fwd∘bwd = lift (r .PolyIso.fwd∘bwd)
-
   -- Reindexing the context of the strong action and of catamorphisms:
   -- precomposition with prod-m u id commutes with both.
   ⦅⦆-reindex : ∀ {n Γ Γ' A} (P : Poly 𝒞 (suc n)) (δ : Fin n → obj) (u : Γ' ⇒ Γ)
@@ -993,14 +931,6 @@ module MuIso
     ≈-trans (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym prod-m-id)))
       (≈-trans (strong-prod-m-pre _ _ _ _ _)
         (strong-prod-m-cong (strong-fmor-reindex P u fs) (strong-fmor-reindex Q u fs)))
-  strong-fmor-reindex (lift P) u fs =
-    ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl
-                 (≈-trans (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym L.fmor-id)))
-                   (≈-sym (L.strengthᵣ-natural u (id _)))))
-        (≈-trans (≈-sym (assoc _ _ _))
-          (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
-                    (L.fmor-cong (strong-fmor-reindex P u fs))) ≈-refl)))
   strong-fmor-reindex (μ P) {δ} {δ'} u fs =
     ≈-trans (⦅⦆-reindex P δ u _)
       (⦅⦆-cong P δ

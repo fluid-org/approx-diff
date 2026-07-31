@@ -13,25 +13,21 @@ open import prop-setoid using (Setoid; module ≈-Reasoning)
 open import categories
   using (Category; setoid→category; HasTerminal; HasProducts; HasExponentials;
          HasStrongCoproducts; HasCoproducts; strong-coproducts→coproducts; coKleisli-prod)
-open import functor using (Functor; HasColimits; _∘F_)
+open import functor using (Functor; HasColimits)
 open import polynomial-functor using (Poly; extend; Poly-map)
 import fam
 import fam-mu-types
-import functor
 import fam-realisation
-import fam-mu-realisation.context
-import fam-functor
 import polynomial-functor
 import fam-mu-realisation.pure
 
 module fam-mu-realisation.invariance {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
   (ℰT : HasTerminal ℰ) (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP)
-  (ℰSC : HasStrongCoproducts ℰ ℰP) (ℰL : functor.StrongFunctor ℰP)
-  (LC : fam-mu-realisation.context.LiftCoherence os es ℰC ℰT ℰP ℰE ℰSC ℰL)
+  (ℰSC : HasStrongCoproducts ℰ ℰP)
   where
 
-open fam-mu-realisation.pure os es ℰC ℰT ℰP ℰE ℰSC ℰL LC public
+open fam-mu-realisation.pure os es ℰC ℰT ℰP ℰE ℰSC public
 
 -- The invariance interface for a polynomial: realisation of its application is
 -- invariant under replacing environment entries by families with isomorphic
@@ -72,122 +68,6 @@ invariance-var : ∀ {n} (i : Fin n) → InvarianceAt {n} (var i)
 invariance-var i .iso δ̂₁ δ̂₂ isos = isos i
 invariance-var i .natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs = sqs i
 invariance-var i .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ = ≈-refl
-
-module LCo = LiftCoherence LC
-
-rl : ∀ (X : FM.Obj) → Iso (realise .fobj (FamL .fobj X)) (ℰLf.fobj (realise .fobj X))
-rl = LCo.iso
-
-lift-iso : ∀ (X Y : FM.Obj) → Iso (realise .fobj X) (realise .fobj Y) →
-           Iso (realise .fobj (FamL .fobj X)) (realise .fobj (FamL .fobj Y))
-lift-iso X Y i =
-  Iso-trans (rl X) (Iso-trans (functor.functor-preserve-iso (functor.StrongFunctor.F ℰL) i) (Iso-sym (rl Y)))
-
-fmorη-lift : ∀ (Γ : obj) {X Y : FM.Obj} (u : FM.Mor (FamP.prod (η .fobj Γ) X) Y) →
-             fmorη Γ (FamL .fobj X) (FM.Mor-∘ (FamL .fmor u) (FamLs.strengthᵣ {η .fobj Γ} {X}))
-             ≈ (LCo.iso Y .bwd
-                ∘ (ℰLf.fmor (fmorη Γ X u) ∘ (ℰLs.strengthᵣ ∘ ℰP.prod-m (id Γ) (LCo.iso X .fwd))))
-fmorη-lift Γ {X} {Y} u =
-  ≈-trans (∘-cong₁ (realise .fmor-comp _ _))
-    (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₁ nat-inv)
-        (≈-trans (assoc _ _ _)
-          (∘-cong₂
-            (≈-trans (assoc _ _ _)
-              (≈-trans (∘-cong₂ B-eq)
-                (≈-trans (≈-sym (assoc _ _ _))
-                  (∘-cong₁ (≈-sym (ℰLf.fmor-comp _ _))))))))))
-  where
-  Γ̂X = FamP.prod (η .fobj Γ) X
-
-  nat-inv : realise .fmor (FamL .fmor u)
-            ≈ (LCo.iso Y .bwd ∘ (ℰLf.fmor (realise .fmor u) ∘ LCo.iso Γ̂X .fwd))
-  nat-inv =
-    ≈-sym (≈-trans (∘-cong₂ (LCo.natural u))
-            (≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (LCo.iso Y .bwd∘fwd≈id)) id-left)))
-
-  B-eq : (LCo.iso Γ̂X .fwd
-          ∘ (realise .fmor (FamLs.strengthᵣ {η .fobj Γ} {X}) ∘ prodη Γ (FamL .fobj X) .bwd))
-         ≈ (ℰLf.fmor (prodη Γ X .bwd) ∘ (ℰLs.strengthᵣ ∘ ℰP.prod-m (id Γ) (LCo.iso X .fwd)))
-  B-eq =
-    ≈-trans (≈-sym id-left)
-      (≈-trans (∘-cong₁ (≈-sym (≈-trans (≈-sym (ℰLf.fmor-comp _ _))
-                                 (≈-trans (ℰLf.fmor-cong (prodη Γ X .bwd∘fwd≈id)) ℰLf.fmor-id))))
-        (≈-trans (assoc _ _ _) (∘-cong₂ (LCo.strength Γ X))))
-
-invariance-lift : ∀ {n} {P : Poly ℰ n} → InvarianceAt P → InvarianceAt (lift P)
-invariance-lift {P = P} CP .iso δ̂₁ δ̂₂ isos =
-  lift-iso (FM.fobj FM.μObj (Poly-map η P) δ̂₁) (FM.fobj FM.μObj (Poly-map η P) δ̂₂) (CP .iso δ̂₁ δ̂₂ isos)
-invariance-lift {P = P} CP .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃ =
-  ≈-trans (∘-cong₁ (∘-cong₂ (≈-trans (ℰLf.fmor-cong (CP .comp δ̂₁ δ̂₂ δ̂₃ isos₁₂ isos₂₃))
-                              (ℰLf.fmor-comp _ _))))
-    (≈-sym
-      (≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong₂ (≈-sym (assoc _ _ _)))
-          (≈-trans (∘-cong₂ (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _))
-                                       (≈-trans (∘-cong₁ (rl _ .fwd∘bwd≈id)) id-left))))
-            (≈-trans (≈-sym (assoc _ _ _))
-              (∘-cong₁ (assoc _ _ _)))))))
-invariance-lift {P = P} CP .natural {Γ} {ε̂₁} {ε̂₂} δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs =
-  ≈-trans (∘-cong₁ (fmorη-lift Γ _))
-    (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (assoc _ _ _))
-        (≈-trans (∘-cong₂ (∘-cong₂ (str-pre (CP .iso δ̂₁ δ̂₂ isosδ))))
-          (≈-trans (∘-cong₂ (≈-sym (assoc _ _ _)))
-            (≈-trans (∘-cong₂ (∘-cong₁ (≈-sym (ℰLf.fmor-comp _ _))))
-              (≈-trans (∘-cong₂ (∘-cong₁ (ℰLf.fmor-cong inner)))
-                (≈-trans (∘-cong₂ (∘-cong₁ (ℰLf.fmor-comp _ _)))
-                  (≈-trans (∘-cong₂ (assoc _ _ _))
-                    (≈-sym
-                      (≈-trans (∘-cong₂ (fmorη-lift Γ _))
-                        (≈-trans (assoc _ _ _)
-                          (≈-trans (∘-cong₂ (≈-sym (assoc _ _ _)))
-                            (≈-trans (∘-cong₂ (∘-cong₁ (LCo.iso _ .fwd∘bwd≈id)))
-                              (≈-trans (∘-cong₂ id-left)
-                                (assoc _ _ _)))))))))))))))
-  where
-  -- The lifted invariance isomorphism, pushed through the product and across the strength.
-  str-pre : ∀ {W₁ W₂ : FM.Obj} (j : Iso (realise .fobj W₁) (realise .fobj W₂)) →
-            ((ℰLs.strengthᵣ ∘ ℰP.prod-m (id Γ) (LCo.iso W₂ .fwd))
-             ∘ ℰP.pair ℰP.p₁ (lift-iso W₁ W₂ j .fwd ∘ ℰP.p₂))
-            ≈ (ℰLf.fmor (ℰP.prod-m (id Γ) (j .fwd))
-               ∘ (ℰLs.strengthᵣ ∘ ℰP.prod-m (id Γ) (LCo.iso W₁ .fwd)))
-  str-pre {W₁} {W₂} j =
-    ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (≈-trans (ℰP.pair-compose _ _ _ _) (ℰP.pair-cong ≈-refl simplify)))
-        (≈-trans (∘-cong₂ (ℰP.prod-m-cong (≈-sym id-left) ≈-refl))
-          (≈-trans (∘-cong₂ (ℰP.prod-m-comp _ _ _ _))
-            (≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (≈-sym (ℰLs.strengthᵣ-natural (id Γ) (j .fwd))))
-                (assoc _ _ _))))))
-    where
-    simplify : (LCo.iso W₂ .fwd ∘ (lift-iso W₁ W₂ j .fwd ∘ ℰP.p₂))
-               ≈ ((ℰLf.fmor (j .fwd) ∘ LCo.iso W₁ .fwd) ∘ ℰP.p₂)
-    simplify =
-      ≈-trans (≈-sym (assoc _ _ _))
-        (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _))
-                   (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _))
-                              (≈-trans (∘-cong₁ (LCo.iso W₂ .fwd∘bwd≈id)) id-left)))))
-
-  inner : (fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₂)
-             (FMu.strong-fmor (Poly-map η P) gs₂)
-           ∘ ℰP.prod-m (id Γ) (CP .iso δ̂₁ δ̂₂ isosδ .fwd))
-          ≈ (CP .iso ε̂₁ ε̂₂ isosε .fwd
-             ∘ fmorη Γ (FM.fobj FM.μObj (Poly-map η P) δ̂₁) (FMu.strong-fmor (Poly-map η P) gs₁))
-  inner =
-    ≈-trans (∘-cong₂ (ℰP.pair-cong id-left ≈-refl))
-      (CP .natural δ̂₁ δ̂₂ isosδ isosε gs₁ gs₂ sqs)
-
-
-  iδ = CP .iso δ̂₁ δ̂₂ isosδ
-  iε = CP .iso ε̂₁ ε̂₂ isosε
-
-  lhs-shape : _
-  lhs-shape = ≈-refl
-
-  rhs-shape : _
-  rhs-shape = ≈-refl
 
 -- Invariance isomorphisms at pointwise-equal isomorphism families are equal.
 invariance-ext : ∀ {n} (Q : Poly ℰ n) (CQ' : InvarianceAt Q) (δ̂₁ δ̂₂ : Fin n → FM.Obj)

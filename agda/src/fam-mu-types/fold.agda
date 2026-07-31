@@ -19,11 +19,10 @@ open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
 import fam-mu-types.reindex
 
-import functor
 module fam-mu-types.fold {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (𝕃 : functor.StrongFunctor P) where
+    (T : HasTerminal 𝒞) (P : HasProducts 𝒞) where
 
-open fam-mu-types.reindex os es T P 𝕃 public
+open fam-mu-types.reindex os es T P public
 
 -- The fold (catamorphism) for the μ-type, lifted to a standalone module so its
 -- mutual recursion is termination-checked independently of the `hasMu` copattern.
@@ -56,7 +55,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-shape-idx (Q₁ + Q₂) γ (inj₂ y) = inj₂ (fold-shape-idx Q₂ γ y)
       fold-shape-idx (Q₁ × Q₂) γ (x , y) = fold-shape-idx Q₁ γ x , fold-shape-idx Q₂ γ y
       fold-shape-idx (μ Q')    γ t = fold-reindex {Q = Q'} γ fbase t
-      fold-shape-idx (lift Q)  γ x = fold-shape-idx Q γ x
 
       fold-reindex : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ' d d') →
                      Tδ.W ∣ Q ∣ ρ → TA'.W ∣ Q ∣ ρ'
@@ -70,7 +68,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-reindex-shape γ (P' + Q') fm (inj₂ b) = inj₂ (fold-reindex-shape γ Q' fm b)
       fold-reindex-shape γ (P' × Q') fm (a , b) = fold-reindex-shape γ P' fm a , fold-reindex-shape γ Q' fm b
       fold-reindex-shape γ (μ Q'')   fm t = fold-reindex {Q = Q''} γ fm t
-      fold-reindex-shape γ (lift R)  fm a = fold-reindex-shape γ R fm a
 
       fold-apply : ∀ {k} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ' d d') (v : Fin k) →
                    Tδ.El (ρ v) → TA'.El (ρ' v)
@@ -96,7 +93,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-shape-idx-resp (Q₁ × Q₂) γ≈ {_ , _} {_ , _} (p₁ , p₂) =
         fold-shape-idx-resp Q₁ γ≈ p₁ , fold-shape-idx-resp Q₂ γ≈ p₂
       fold-shape-idx-resp (μ Q')    γ≈ {x} {x'} p = fold-reindex-resp {Q = Q'} γ≈ fbase {x} {x'} p
-      fold-shape-idx-resp (lift Q)  γ≈ p = fold-shape-idx-resp Q γ≈ p
 
       fold-reindex-resp : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') (fm : FMor ρ ρ' d d')
                           {t t' : Tδ.W ∣ Q ∣ ρ} (p : Tδ.W-≈ t t') →
@@ -113,7 +109,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-reindex-shape-resp γ≈ (P' × Q') fm {_ , _} {_ , _} (p₁ , p₂) =
         fold-reindex-shape-resp γ≈ P' fm p₁ , fold-reindex-shape-resp γ≈ Q' fm p₂
       fold-reindex-shape-resp γ≈ (μ Q'')   fm {a} {a'} p = fold-reindex-resp {Q = Q''} γ≈ fm {a} {a'} p
-      fold-reindex-shape-resp γ≈ (lift R)  fm p = fold-reindex-shape-resp γ≈ R fm p
 
       fold-apply-resp : ∀ {k} {ρ ρ' d d'} {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') (fm : FMor ρ ρ' d d') (v : Fin k)
                         {a a'} (p : Tδ.elEq (ρ v) a a') →
@@ -140,7 +135,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-shape-fam (Q₁ + Q₂) γ (inj₂ y) = fold-shape-fam Q₂ γ y
       fold-shape-fam (Q₁ × Q₂) γ (x , y) = strong-prod-m (fold-shape-fam Q₁ γ x) (fold-shape-fam Q₂ γ y)
       fold-shape-fam (μ Q')    γ t = fold-reindex-fam {Q = Q'} γ fbase t
-      fold-shape-fam (lift Q)  γ x = L.fmor (fold-shape-fam Q γ x) ∘ L.strengthᵣ
 
       fold-reindex-fam : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (md : FMor ρ ρ' d d') (t : Tδ.W ∣ Q ∣ ρ) →
                          prod (Γ .fam .fm γ) (Tδ.fib Q d t) ⇒ TA'.fib Q d' (fold-reindex γ md t)
@@ -155,7 +149,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-reindex-shape-fam γ (P' × Q') md (a , b) =
         strong-prod-m (fold-reindex-shape-fam γ P' md a) (fold-reindex-shape-fam γ Q' md b)
       fold-reindex-shape-fam γ (μ Q'')   md t = fold-reindex-fam {Q = Q''} γ md t
-      fold-reindex-shape-fam γ (lift R)  md a = L.fmor (fold-reindex-shape-fam γ R md a) ∘ L.strengthᵣ
 
       fold-apply-fam : ∀ {k} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (md : FMor ρ ρ' d d') (v : Fin k) (a : Tδ.El (ρ v)) →
                        prod (Γ .fam .fm γ) (Tδ.fib-el (ρ v) (d v) a) ⇒ TA'.fib-el (ρ' v) (d' v) (fold-apply γ md v a)
@@ -190,13 +183,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-shape-fam-natural (Q₁ × Q₂) γ≈ {x₁ , x₂} {x₁' , x₂'} (p₁p , p₂p) =
         strong-prod-m-natural (fold-shape-fam-natural Q₁ γ≈ p₁p) (fold-shape-fam-natural Q₂ γ≈ p₂p)
       fold-shape-fam-natural (μ Q')    γ≈ {x} {x'} p = fold-reindex-fam-natural {Q = Q'} γ≈ fbase {x} {x'} p
-      fold-shape-fam-natural (lift Q)  γ≈ p =
-        ≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (≈-sym (L.strengthᵣ-natural _ _)))
-            (≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
-                                 (≈-trans (L.fmor-cong (fold-shape-fam-natural Q γ≈ p)) (L.fmor-comp _ _))) ≈-refl)
-                (assoc _ _ _))))
 
       fold-reindex-fam-natural : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂)
                              (md : FMor ρ ρ' d d') {t t' : Tδ.W ∣ Q ∣ ρ} (p : Tδ.W-≈ t t') →
@@ -216,13 +202,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-reindex-shape-fam-natural γ≈ (P' × Q') md {a₁ , a₂} {a₁' , a₂'} (p₁p , p₂p) =
         strong-prod-m-natural (fold-reindex-shape-fam-natural γ≈ P' md p₁p) (fold-reindex-shape-fam-natural γ≈ Q' md p₂p)
       fold-reindex-shape-fam-natural γ≈ (μ Q'')   md {a} {a'} p = fold-reindex-fam-natural {Q = Q''} γ≈ md {a} {a'} p
-      fold-reindex-shape-fam-natural γ≈ (lift R)  md p =
-        ≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (≈-sym (L.strengthᵣ-natural _ _)))
-            (≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
-                                 (≈-trans (L.fmor-cong (fold-reindex-shape-fam-natural γ≈ R md p)) (L.fmor-comp _ _))) ≈-refl)
-                (assoc _ _ _))))
 
       fold-apply-fam-natural : ∀ {k} {ρ ρ' d d'} {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) (md : FMor ρ ρ' d d') (v : Fin k)
                                {a a'} (p : Tδ.elEq (ρ v) a a') →

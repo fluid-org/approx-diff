@@ -4,14 +4,12 @@ open import Level using (lift)
 open import Data.Unit using (tt)
 open import Data.Product using (_,_)
 open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫)
-import prop-setoid
 open import prop-setoid
   using (IsEquivalence; module ≈-Reasoning; idS; Setoid)
   renaming (≃m-isEquivalence to ≈s-isEquivalence; _⇒_ to _⇒s_)
 open import categories using (Category; HasTerminal; HasCoproducts; HasProducts; setoid→category)
 open import setoid-cat using (SetoidCat; Setoid-coproducts; Setoid-products; Setoid-terminal)
 open import functor using (Functor; NatTrans; Colimit; _∘F_; Full; Faithful)
-import functor
 open import fam using (module CategoryOfFamilies)
 open import finite-product-functor
   using (preserve-chosen-products; preserve-chosen-terminal; module preserve-chosen-products-consequences)
@@ -423,64 +421,3 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
       𝒟.id _ 𝒟.∘ (α .transf (Y .fam .fm (f .idxf ._⇒s_.func x)) 𝒟.∘ F .fmor (f .famf .transf x))
     ∎
     where open ≈-Reasoning 𝒟.isEquiv
-
--- Interprets the polynomial grammar's `lift` in Fam.
-module _ {o m e} {𝒞 : Category o m e} os es
-         (𝒞P : HasProducts 𝒞) (𝕃 : functor.StrongFunctor 𝒞P) where
-
-  private
-    module 𝒞 = Category 𝒞
-    module Fam𝒞 = CategoryOfFamilies os es 𝒞
-    module L = functor.StrongFunctor 𝕃
-    module FP = HasProducts 𝒞P
-    module FamP = HasProducts (Fam𝒞.products.products 𝒞P)
-
-  open Fam
-  open _⇒f_
-  open _≃f_
-  open IsEquivalence
-  open CategoryOfFamilies.Obj
-  open CategoryOfFamilies.Mor
-  open CategoryOfFamilies._≃_
-  open Functor
-
-  FamF-strong : functor.StrongFunctor (Fam𝒞.products.products 𝒞P)
-  FamF-strong .functor.StrongFunctor.F = FamF os es (L.F)
-  FamF-strong .functor.StrongFunctor.strengthᵣ .idxf = idS _
-  FamF-strong .functor.StrongFunctor.strengthᵣ .famf .transf (x , y) = L.strengthᵣ
-  FamF-strong .functor.StrongFunctor.strengthᵣ {X} {Y} .famf .natural (e₁ , e₂) =
-    𝒞.≈-sym (L.strengthᵣ-natural (X .fam .subst e₁) (Y .fam .subst e₂))
-  FamF-strong .functor.StrongFunctor.strengthᵣ-natural f g .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) =
-    f .idxf ._⇒s_.func-resp-≈ e₁ , g .idxf ._⇒s_.func-resp-≈ e₂
-  FamF-strong .functor.StrongFunctor.strengthᵣ-natural {x₂ = X₂} {y₂ = Y₂} f g .famf-eq .transf-eq {x , y} =
-    𝒞.≈-trans (𝒞.∘-cong₂ 𝒞.id-left)
-      (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _))
-        (𝒞.≈-trans
-          (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (L.fmor-comp _ _))
-            (L.fmor-cong
-              (𝒞.≈-trans (𝒞.∘-cong₂ (FP.pair-cong 𝒞.id-left 𝒞.id-left))
-                (𝒞.≈-trans (𝒞.≈-sym (FP.prod-m-comp _ _ _ _))
-                  (FP.prod-m-cong
-                    (𝒞.≈-trans (𝒞.∘-cong₁ (X₂ .fam .refl*)) 𝒞.id-left)
-                    (𝒞.≈-trans (𝒞.∘-cong₁ (Y₂ .fam .refl*)) 𝒞.id-left)))))))
-          (𝒞.≈-trans (L.strengthᵣ-natural (f .famf .transf x) (g .famf .transf y))
-            (𝒞.≈-sym (𝒞.≈-trans 𝒞.id-left
-              (𝒞.∘-cong₂ (FP.pair-cong 𝒞.id-left 𝒞.id-left)))))))
-  FamF-strong .functor.StrongFunctor.strengthᵣ-p₂ .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) = e₂
-  FamF-strong .functor.StrongFunctor.strengthᵣ-p₂ {y = Y} .famf-eq .transf-eq =
-    𝒞.≈-trans (𝒞.∘-cong₂ 𝒞.id-left)
-      (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _))
-        (𝒞.≈-trans (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (L.fmor-comp _ _))
-                                (L.fmor-cong (𝒞.≈-trans (𝒞.∘-cong₁ (Y .fam .refl*)) 𝒞.id-left))))
-          L.strengthᵣ-p₂))
-  FamF-strong .functor.StrongFunctor.strengthᵣ-assoc .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) =
-    e₁ , (e₁ , e₂)
-  FamF-strong .functor.StrongFunctor.strengthᵣ-assoc {x = X} {y = Y} .famf-eq .transf-eq =
-    𝒞.≈-trans
-      (𝒞.∘-cong₁ (𝒞.≈-trans
-        (L.fmor-cong (𝒞.≈-trans (FP.prod-m-cong (X .fam .refl*) (FP.prod-m-cong (X .fam .refl*) (Y .fam .refl*)))
-                       (𝒞.≈-trans (FP.prod-m-cong 𝒞.≈-refl FP.prod-m-id) FP.prod-m-id)))
-        L.fmor-id))
-      (𝒞.≈-trans 𝒞.id-left
-        (𝒞.≈-trans 𝒞.id-left
-          (𝒞.≈-trans L.strengthᵣ-assoc (𝒞.≈-sym 𝒞.id-left))))

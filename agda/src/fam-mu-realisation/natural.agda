@@ -11,25 +11,21 @@ open import prop-setoid using (Setoid; module ≈-Reasoning)
 open import categories
   using (Category; setoid→category; HasTerminal; HasProducts; HasExponentials;
          HasStrongCoproducts; HasCoproducts; strong-coproducts→coproducts; coKleisli-prod)
-open import functor using (Functor; HasColimits; _∘F_)
+open import functor using (Functor; HasColimits)
 open import polynomial-functor using (Poly; extend; Poly-map)
 import fam
 import fam-mu-types
-import functor
 import fam-realisation
-import fam-mu-realisation.context
-import fam-functor
 import polynomial-functor
 import fam-mu-realisation.mu-iso
 
 module fam-mu-realisation.natural {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
   (ℰT : HasTerminal ℰ) (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP)
-  (ℰSC : HasStrongCoproducts ℰ ℰP) (ℰL : functor.StrongFunctor ℰP)
-  (LC : fam-mu-realisation.context.LiftCoherence os es ℰC ℰT ℰP ℰE ℰSC ℰL)
+  (ℰSC : HasStrongCoproducts ℰ ℰP)
   where
 
-open fam-mu-realisation.mu-iso os es ℰC ℰT ℰP ℰE ℰSC ℰL LC public
+open fam-mu-realisation.mu-iso os es ℰC ℰT ℰP ℰE ℰSC public
 
 -- The realised strong μ-action is the fold of the realised algebra, corrected
 -- by the invariance at the bound-variable entry.
@@ -431,4 +427,3 @@ invarianceAt (var i)   = invariance-var i
 invarianceAt (P + Q)   = invariance-sum (invarianceAt P) (invarianceAt Q)
 invarianceAt (P × Q)   = invariance-prod (invarianceAt P) (invarianceAt Q)
 invarianceAt (μ P)     = invariance-mu (invarianceAt P)
-invarianceAt (lift P)  = invariance-lift (invarianceAt P)

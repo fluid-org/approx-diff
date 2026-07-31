@@ -29,10 +29,6 @@ open import Relation.Binary.PropositionalEquality
 import fam-mu-types
 import fam-mu-types.constant-free
 import fam-mu-realisation
-import fam-mu-realisation.context
-import fam-functor
-import functor
-import prop-setoid
 import fam-presentation
 import fam-mu-types.fibrewise-preserves-mu
 
@@ -57,42 +53,23 @@ module gf-preserves-mu
      ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) (fam.CategoryOfFamilies.cat 0ℓ 0ℓ 𝒞)) →
      Category.Iso Gl (GDC S (GF ∘F D) .apex)
                      (GF .fobj (fam.CategoryOfFamilies.bigCoproducts 0ℓ 0ℓ 𝒞 S D .apex)))
-  (𝒞L : functor.StrongFunctor 𝒞-products)
-  (GlL : functor.StrongFunctor GlP)
-  (GlLC : fam-mu-realisation.context.LiftCoherence 0ℓ 0ℓ GDC GlT GlP GlE GlSC GlL)
-  (GF-lift : ∀ (A : Category.obj 𝒞) →
-             Category.Iso Gl
-               (GF .fobj (fam.CategoryOfFamilies.simple[_,_] 0ℓ 0ℓ 𝒞 prop-setoid.𝟙
-                  (functor.StrongFunctor.F 𝒞L .Functor.fobj A)))
-               (functor.StrongFunctor.F GlL .Functor.fobj
-                  (GF .fobj (fam.CategoryOfFamilies.simple[_,_] 0ℓ 0ℓ 𝒞 prop-setoid.𝟙 A))))
-  (GF-lift-natural : ∀ {A B} (g : Category._⇒_ 𝒞 A B) →
-             Category._≈_ Gl
-               (Category._∘_ Gl (GF-lift B .Category.Iso.fwd)
-                  (GF .fmor (fam.CategoryOfFamilies.simplef[_,_] 0ℓ 0ℓ 𝒞 (prop-setoid.idS prop-setoid.𝟙)
-                     (functor.StrongFunctor.F 𝒞L .Functor.fmor g))))
-               (Category._∘_ Gl
-                  (functor.StrongFunctor.F GlL .Functor.fmor
-                     (GF .fmor (fam.CategoryOfFamilies.simplef[_,_] 0ℓ 0ℓ 𝒞 (prop-setoid.idS prop-setoid.𝟙) g)))
-                  (GF-lift A .Category.Iso.fwd)))
-  (Gl-Mu : polynomial-functor.Interp.HasMu GlT GlP GlSC GlL)
+  (Gl-Mu : polynomial-functor.Interp.HasMu GlT GlP GlSC)
   (Gl-Mu-obj : ∀ {n} (Q : Poly Gl (sucℕ n)) (δ : Fin n → Category.obj Gl) →
      polynomial-functor.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
-     fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlT GlP GlE GlSC GlL GlLC Q δ)
+     fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlT GlP GlE GlSC Q δ)
   where
 
   private
     module Glued = Category Gl
-    module Sk  = fam-mu-types.constant-free 0ℓ 0ℓ 𝒞-terminal 𝒞-products 𝒞L
-    module SkGl = fam-mu-types.constant-free 0ℓ 0ℓ GlT GlP GlL
-    module FMc = fam-mu-types 0ℓ 0ℓ 𝒞-terminal 𝒞-products 𝒞L
-    module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlT GlP GlE GlSC GlL GlLC
+    module Sk  = fam-mu-types.constant-free 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    module SkGl = fam-mu-types.constant-free 0ℓ 0ℓ GlT GlP
+    module FMc = fam-mu-types 0ℓ 0ℓ 𝒞-terminal 𝒞-products
+    module RGl = fam-mu-realisation 0ℓ 0ℓ GDC GlT GlP GlE GlSC
     module FMg = RGl.FM
     module Pres = fam-presentation 0ℓ 0ℓ {𝒞}
     module Gld = finite-coproducts-from-indexed.derive GDC
     module FamGl = FMg.Fam𝒞
     module Fbw = fam-mu-types.fibrewise-preserves-mu 0ℓ 0ℓ 𝒞-terminal 𝒞-products GlT GlP GF GF-preserve-products
-                   𝒞L GlL GF-lift GF-lift-natural
   open RGl using (realise; η)
 
   module Fam⟨𝒞⟩ = fam.CategoryOfFamilies 0ℓ 0ℓ 𝒞
@@ -106,11 +83,8 @@ module gf-preserves-mu
   Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products
   Fam⟨𝒞⟩-strongCoproducts = Fam⟨𝒞⟩.products.strongCoproducts 𝒞-products
 
-  Fam⟨𝒞⟩-lift = fam-functor.FamF-strong 0ℓ 0ℓ 𝒞-products 𝒞L
-
   Fam⟨𝒞⟩-hasMu : polynomial-functor.Interp.HasMu Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
-                   Fam⟨𝒞⟩-lift
-  Fam⟨𝒞⟩-hasMu = fam-mu-types.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products 𝒞L
+  Fam⟨𝒞⟩-hasMu = fam-mu-types.hasMu 0ℓ 0ℓ 𝒞-terminal 𝒞-products
 
   -- Source side of the carrier comparison: GF of a Fam W-tree is the Gl
   -- set-indexed coproduct of the GF-images of its singleton fibres, via the
@@ -143,7 +117,7 @@ module gf-preserves-mu
   -- the shared shapes make the index setoids agree, and the fibres are products
   -- of GF-images compared by tree recursion.
   fibrewise-μ : ∀ {n} (P : Poly Fam⟨𝒞⟩.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) → Fam⟨𝒞⟩.Obj) →
-                FamGl.Iso (fibrewise (FMc.μObj (constant-free P) ε)) (FMg.μObj (constant-free P) (λ i → fibrewise (ε i)))
+            FamGl.Iso (fibrewise (FMc.μObj (constant-free P) ε)) (FMg.μObj (constant-free P) (λ i → fibrewise (ε i)))
   fibrewise-μ P ε = Fbw.FibrewiseMu.fibrewise-μ-iso P ε
 
   -- Realised μ-objects along an equality of polynomials.
@@ -157,8 +131,8 @@ module gf-preserves-mu
   -- GF preserves μ-types: constant-free in Fam(𝒞), carrier comparison, invariance at
   -- the fibrewise-image-versus-embedded environments, and the realised constant-free in
   -- Fam(Gl), backwards.
-  GFμ : Preserves-μ Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts Fam⟨𝒞⟩-lift
-          GlT GlP GlSC GlL Fam⟨𝒞⟩-hasMu Gl-Mu GF
+  GFμ : Preserves-μ Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts
+          GlT GlP GlSC Fam⟨𝒞⟩-hasMu Gl-Mu GF
   GFμ {n} P δ =
     Glued.Iso-trans (functor-preserve-iso GF (Sk.constant-free-μ-iso P δ))
     (Glued.Iso-trans (fibrewise-iso (FMc.μObj (constant-free P) ε))

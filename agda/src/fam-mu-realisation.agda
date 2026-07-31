@@ -18,25 +18,21 @@ open import prop-setoid using (Setoid; module ≈-Reasoning)
 open import categories
   using (Category; setoid→category; HasTerminal; HasProducts; HasExponentials;
          HasStrongCoproducts; HasCoproducts; strong-coproducts→coproducts; coKleisli-prod)
-open import functor using (Functor; HasColimits; _∘F_)
+open import functor using (Functor; HasColimits)
 open import polynomial-functor using (Poly; extend; Poly-map)
 import fam
 import fam-mu-types
-import functor
 import fam-realisation
-import fam-mu-realisation.context
-import fam-functor
 import polynomial-functor
 import fam-mu-realisation.natural
 
 module fam-mu-realisation {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
   (ℰT : HasTerminal ℰ) (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP)
-  (ℰSC : HasStrongCoproducts ℰ ℰP) (ℰL : functor.StrongFunctor ℰP)
-  (LC : fam-mu-realisation.context.LiftCoherence os es ℰC ℰT ℰP ℰE ℰSC ℰL)
+  (ℰSC : HasStrongCoproducts ℰ ℰP)
   where
 
-open fam-mu-realisation.natural os es ℰC ℰT ℰP ℰE ℰSC ℰL LC public
+open fam-mu-realisation.natural os es ℰC ℰT ℰP ℰE ℰSC public
 
 -- The μ-objects for ℰ itself, via realisation of the Fam(ℰ) μ-objects at
 -- singleton-embedded environments.
@@ -64,9 +60,6 @@ fobj-realise-iso (P × Q)   δ δ̂ js =
 fobj-realise-iso (μ P)     δ δ̂ js =
   MuInvariance.mu-invariance P (invarianceAt P) (λ i → η .fobj (δ i)) δ̂
     (λ i → Iso-trans (realise-η-iso (δ i)) (js i))
-fobj-realise-iso (lift P)  δ δ̂ js =
-  Iso-trans (functor.functor-preserve-iso ℰLs.F (fobj-realise-iso P δ δ̂ js))
-    (Iso-sym (LCo.iso (FM.fobj FM.μObj (Poly-map η P) δ̂)))
 
 -- Pointwise agreement between an extended ℰ-environment and its embedded
 -- Fam(ℰ) counterpart.
@@ -258,13 +251,6 @@ SI-invariance (μ P)     δ δ̂ δ̂'' js isos js'' pw =
   ≈-trans (≈-sym (mu-invariance-comp P (invarianceAt P) _ δ̂ δ̂'' _ isos))
     (invariance-ext (μ P) (invarianceAt (μ P)) _ _ _ _
       (λ i → ≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ (pw i))))
-SI-invariance (lift P)  δ δ̂ δ̂'' js isos js'' pw =
-  ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong₂ (≈-trans (≈-sym (assoc _ _ _))
-                        (≈-trans (∘-cong₁ (LCo.iso _ .fwd∘bwd≈id)) id-left)))
-      (≈-trans (assoc _ _ _)
-        (∘-cong₂ (≈-trans (≈-sym (ℰLf.fmor-comp _ _))
-                   (ℰLf.fmor-cong (SI-invariance P δ δ̂ δ̂'' js isos js'' pw))))))
 
 sim-mu : ∀ {n} (P : Poly ℰ (suc n)) → SimStmt P → SimStmt (μ P)
 sim-mu {n} P simP {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
@@ -393,48 +379,11 @@ sim-mu {n} P simP {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
 
 -- The simulation, tied over all polynomials.
 sim : ∀ {n} (P : Poly ℰ n) → SimStmt P
-sim-lift : ∀ {n} (P : Poly ℰ n) → SimStmt P → SimStmt (lift P)
-sim-lift {n} P simP {Γ} δ δ' δ̂ δ̂' js js' fs ĝs sqs =
-  ≈-trans (∘-cong₁ (fmorη-lift Γ _))
-    (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (assoc _ _ _))
-        (≈-trans (∘-cong₂ (∘-cong₂ push))
-          (≈-trans (∘-cong₂ (≈-sym (assoc _ _ _)))
-            (≈-trans (∘-cong₂ (∘-cong₁ (≈-sym (ℰLf.fmor-comp _ _))))
-              (≈-trans (∘-cong₂ (∘-cong₁ (ℰLf.fmor-cong inner)))
-                (≈-trans (∘-cong₂ (∘-cong₁ (ℰLf.fmor-comp _ _)))
-                  (≈-trans (∘-cong₂ (assoc _ _ _))
-                    (≈-sym (assoc _ _ _))))))))))
-  where
-  B = FM.fobj FM.μObj (Poly-map η P) δ̂
-
-  simplify : (LCo.iso B .fwd ∘ (fobj-realise-iso (lift P) δ δ̂ js .fwd ∘ ℰP.p₂))
-             ≈ (ℰLf.fmor (fobj-realise-iso P δ δ̂ js .fwd) ∘ ℰP.p₂)
-  simplify =
-    ≈-trans (≈-sym (assoc _ _ _))
-      (∘-cong₁ (≈-trans (≈-sym (assoc _ _ _))
-                 (≈-trans (∘-cong₁ (LCo.iso B .fwd∘bwd≈id)) id-left)))
-
-  push : ((ℰLs.strengthᵣ ∘ ℰP.prod-m (id Γ) (LCo.iso B .fwd))
-          ∘ ℰP.pair ℰP.p₁ (fobj-realise-iso (lift P) δ δ̂ js .fwd ∘ ℰP.p₂))
-         ≈ (ℰLf.fmor (ℰP.prod-m (id Γ) (fobj-realise-iso P δ δ̂ js .fwd)) ∘ ℰLs.strengthᵣ)
-  push =
-    ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (≈-trans (ℰP.pair-compose _ _ _ _) (ℰP.pair-cong ≈-refl simplify)))
-        (≈-sym (ℰLs.strengthᵣ-natural (id Γ) _)))
-
-  inner : (fmorη Γ B (FMu.strong-fmor (Poly-map η P) ĝs)
-           ∘ ℰP.prod-m (id Γ) (fobj-realise-iso P δ δ̂ js .fwd))
-          ≈ (fobj-realise-iso P δ' δ̂' js' .fwd ∘ ℰMu.strong-fmor P fs)
-  inner =
-    ≈-trans (∘-cong₂ (ℰP.pair-cong id-left ≈-refl)) (simP δ δ' δ̂ δ̂' js js' fs ĝs sqs)
-
 sim (const A) = sim-const A
 sim (var i)   = sim-var i
 sim (P + Q)   = sim-sum P Q (sim P) (sim Q)
 sim (P × Q)   = sim-prod P Q (sim P) (sim Q)
 sim (μ P)     = sim-mu P (sim P)
-sim (lift P)  = sim-lift P (sim P)
 
 -- The initiality laws for ℰ: the β and η laws of the Fam(ℰ) fold, conjugated
 -- through the interpretation isomorphism by the simulation.
