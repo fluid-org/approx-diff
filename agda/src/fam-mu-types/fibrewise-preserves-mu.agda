@@ -1,10 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Checking commutes with μ at constant-free forms. A family is "checked"
--- by applying a functor G to its singleton fibres; the μ-carrier of a constant-free form
--- over an environment then agrees with the μ-carrier of the same constant-free over
--- the checked environment. The two constant-free forms live over the two Fam categories
+-- The fibrewise image under a functor commutes with μ at constant-free forms. The
+-- fibrewise image of a family applies a functor G to its singleton fibres; the μ-carrier
+-- of a constant-free form over an environment then agrees with the μ-carrier of the same
+-- constant-free form over the fibrewise image of that environment. The two constant-free
+-- forms live over the two Fam categories
 -- but share their sorts and trees, which are built from index setoids alone;
 -- the transports below relate the two erasures by recursion on the polynomial,
 -- with identities at the leaves.
@@ -32,7 +33,7 @@ import fam-mu-types.fibre
 import functor
 import fam-functor
 
-module fam-mu-checked {o m e o₂ m₂ e₂} (os es : Level)
+module fam-mu-types.fibrewise-preserves-mu {o m e o₂ m₂ e₂} (os es : Level)
     {𝒞 : Category o m e} (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞)
     {𝒢 : Category o₂ m₂ e₂} (𝒢T : HasTerminal 𝒢) (𝒢P : HasProducts 𝒢)
     (G : Functor (fam.CategoryOfFamilies.cat os (os ⊔ es) 𝒞) 𝒢)
@@ -103,16 +104,16 @@ private
 ℓk : Level
 ℓk = o ⊔ m ⊔ e ⊔ o₂ ⊔ m₂ ⊔ e₂ ⊔ lsuc os ⊔ lsuc es
 
--- The checked family: G applied to the singleton fibres, over the same index
--- setoid.
-check : F𝒞.Obj → F𝒢.Obj
-check X .idx = X .idx
-check X .fam = functor→fam (G ∘F PresC.singletons X)
+-- The fibrewise image of a family: G applied to the singleton fibres, over the same
+-- index setoid.
+fibrewise : F𝒞.Obj → F𝒢.Obj
+fibrewise X .idx = X .idx
+fibrewise X .fam = functor→fam (G ∘F PresC.singletons X)
 
-module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
+module Fibrewise {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   module T  = Sh.Tree (λ i → δ i .idx)
   module C  = Fc.Fibre δ
-  module Gd = Fg.Fibre (λ i → check (δ i))
+  module Gd = Fg.Fibre (λ i → fibrewise (δ i))
 
   -- The same polynomial in constant-free form over either Fam category.
   skC : ∀ {j} (Q : Poly F𝒞.cat j) → (Fin (#c Q) → Fin k) → Poly F𝒞.cat (j +ℕ k)
@@ -127,14 +128,14 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
   mutual
     data SRel : (r₁ r₂ : Fin N ⊎ Sort N) → C.DecoAssign r₁ → Gd.DecoAssign r₂ → Set ℓk where
       env : ∀ {p} → SRel (inj₁ p) (inj₁ p) (lift tt) (lift tt)
-      srt : ∀ {s₁ s₂ e₁ e₂} → SortChk s₁ s₂ e₁ e₂ → SRel (inj₂ s₁) (inj₂ s₂) e₁ e₂
+      srt : ∀ {s₁ s₂ e₁ e₂} → SortRel s₁ s₂ e₁ e₂ → SRel (inj₂ s₁) (inj₂ s₂) e₁ e₂
 
-    data SortChk : (s₁ s₂ : Sort N) → C.Deco s₁ → Gd.Deco s₂ → Set ℓk where
+    data SortRel : (s₁ s₂ : Sort N) → C.Deco s₁ → Gd.Deco s₂ → Set ℓk where
       mk : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
            (ρ₁ ρ₂ : Fin (j +ℕ k) → Fin N ⊎ Sort N)
            (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → Gd.DecoAssign (ρ₂ i)) →
            (∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-           SortChk (mkSort Fc.∣ skC Q ι ∣ ρ₁) (mkSort Fg.∣ skG Q ι ∣ ρ₂)
+           SortRel (mkSort Fc.∣ skC Q ι ∣ ρ₁) (mkSort Fg.∣ skG Q ι ∣ ρ₂)
                    (C.mkDeco (skC Q ι) d₁) (Gd.mkDeco (skG Q ι) d₂)
 
   -- Forward tree transport, by recursion on the polynomial; the leaves are
@@ -364,9 +365,9 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
     el-cbf (env {p}) y = T.elEq-refl (inj₁ p) y
     el-cbf (srt (mk Q ι ρ₁ ρ₂ d₁ d₂ rel)) y = c-bf Q ι ρ₁ ρ₂ d₁ d₂ rel y
 
-  -- The fibre isomorphisms: G of the checked singleton fibre at a tree against
+  -- The fibre isomorphisms: G of the singleton fibre at a tree against
   -- the 𝒢-side μ-fibre at the transported tree. The leaves are identities by
-  -- the construction of check; products go through simple-⊗ and G's
+  -- the construction of fibrewise; products go through simple-⊗ and G's
   -- preservation of products.
   mutual
     fib-ciso : ∀ {j} (Q : Poly F𝒞.cat (sucℕ j)) (ι : Fin (#c Q) → Fin k)
@@ -493,10 +494,10 @@ module Checked {N : ℕ} (k : ℕ) (δ : Fin N → F𝒞.Obj) where
     fib-el-cnat (env {p}) q = ≈-trans id-left (≈-sym id-right)
     fib-el-cnat (srt (mk Q ι ρ₁ ρ₂ d₁ d₂ rel)) {x} {x'} q = fib-cnat Q ι ρ₁ ρ₂ d₁ d₂ rel {x} {x'} q
 
--- The assembled comparison: check commutes with μ at the constant-free form,
+-- The assembled comparison: fibrewise commutes with μ at the constant-free form,
 -- as an isomorphism of Fam(𝒢)-objects.
-module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) → F𝒞.Obj) where
-  open Checked (#c P) ε
+module FibrewiseMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) → F𝒞.Obj) where
+  open Fibrewise (#c P) ε
   open Fam
 
   private
@@ -516,7 +517,7 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
     Bw = cbwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀
     ci = fib-ciso P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀
 
-  fwd-mor : F𝒢.Mor (check (Fc.μObj (constant-free P) ε)) (Fg.μObj (constant-free P) (λ i → check (ε i)))
+  fwd-mor : F𝒢.Mor (fibrewise (Fc.μObj (constant-free P) ε)) (Fg.μObj (constant-free P) (λ i → fibrewise (ε i)))
   fwd-mor .idxf .func = Fw
   fwd-mor .idxf .func-resp-≈ {w} {w'} =
     c≈fwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'}
@@ -524,7 +525,7 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
   fwd-mor .famf .natural {w} {w'} q =
     fib-cnat P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'} q
 
-  bwd-mor : F𝒢.Mor (Fg.μObj (constant-free P) (λ i → check (ε i))) (check (Fc.μObj (constant-free P) ε))
+  bwd-mor : F𝒢.Mor (Fg.μObj (constant-free P) (λ i → fibrewise (ε i))) (fibrewise (Fc.μObj (constant-free P) ε))
   bwd-mor .idxf .func = Bw
   bwd-mor .idxf .func-resp-≈ {s} {s'} =
     c≈bwd P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {s} {s'}
@@ -569,13 +570,13 @@ module ChkMu {n : ℕ} (P : Poly F𝒞.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) �
                 (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P (λ c → c) ρ₀ ρ₀ d₁₀ d₂₀ rel₀ w)))))
             (≈-trans (≈-sym (assoc _ _ _))
               (≈-trans (∘-cong₁ (ci (Bw (Fw w)) .bwd∘fwd≈id)) id-left)))))
-        (≈-trans (≈-sym (check (Fc.μObj (constant-free P) ε) .fam .trans*
+        (≈-trans (≈-sym (fibrewise (Fc.μObj (constant-free P) ε) .fam .trans*
                                   {x = w} {y = Bw (Fw w)} {z = w} _ _))
-          (check (Fc.μObj (constant-free P) ε) .fam .refl* {x = w})))
+          (fibrewise (Fc.μObj (constant-free P) ε) .fam .refl* {x = w})))
 
-  check-μ-iso : Category.Iso F𝒢.cat
-                  (check (Fc.μObj (constant-free P) ε)) (Fg.μObj (constant-free P) (λ i → check (ε i)))
-  check-μ-iso .Category.Iso.fwd = fwd-mor
-  check-μ-iso .Category.Iso.bwd = bwd-mor
-  check-μ-iso .Category.Iso.fwd∘bwd≈id = fb-≃
-  check-μ-iso .Category.Iso.bwd∘fwd≈id = bf-≃
+  fibrewise-μ-iso : Category.Iso F𝒢.cat
+                  (fibrewise (Fc.μObj (constant-free P) ε)) (Fg.μObj (constant-free P) (λ i → fibrewise (ε i)))
+  fibrewise-μ-iso .Category.Iso.fwd = fwd-mor
+  fibrewise-μ-iso .Category.Iso.bwd = bwd-mor
+  fibrewise-μ-iso .Category.Iso.fwd∘bwd≈id = fb-≃
+  fibrewise-μ-iso .Category.Iso.bwd∘fwd≈id = bf-≃

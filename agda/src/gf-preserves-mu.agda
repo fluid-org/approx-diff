@@ -34,7 +34,7 @@ import fam-functor
 import functor
 import prop-setoid
 import fam-presentation
-import fam-mu-checked
+import fam-mu-types.fibrewise-preserves-mu
 
 open Functor
 open Colimit
@@ -91,7 +91,7 @@ module gf-preserves-mu
     module Pres = fam-presentation 0ℓ 0ℓ {𝒞}
     module Gld = finite-coproducts-from-indexed.derive GDC
     module FamGl = FMg.Fam𝒞
-    module Chk = fam-mu-checked 0ℓ 0ℓ 𝒞-terminal 𝒞-products GlT GlP GF GF-preserve-products
+    module Fbw = fam-mu-types.fibrewise-preserves-mu 0ℓ 0ℓ 𝒞-terminal 𝒞-products GlT GlP GF GF-preserve-products
                    𝒞L GlL GF-lift GF-lift-natural
   open RGl using (realise; η)
 
@@ -122,10 +122,10 @@ module gf-preserves-mu
       (Glued.Iso-sym (functor-preserve-iso GF (Pres.present M)))
       (Glued.Iso-sym (GF-preserve-coproducts-indexed (M .Fam⟨𝒞⟩.Obj.idx) (Pres.singletons M)))
 
-  -- The checked presentation of a Fam(𝒞)-object: the Fam(Gl)-family over the
+  -- The fibrewise image of a Fam(𝒞)-object: the Fam(Gl)-family over the
   -- same index setoid, obtained by applying GF to the singleton fibres.
-  check : Fam⟨𝒞⟩.Obj → FMg.Obj
-  check = Chk.check
+  fibrewise : Fam⟨𝒞⟩.Obj → FMg.Obj
+  fibrewise = Fbw.fibrewise
 
   -- Compare GF of a family against the realisation of a Gl-family over the same
   -- index setoid, given a pointwise isomorphism of the fibre diagrams.
@@ -134,17 +134,17 @@ module gf-preserves-mu
                   Glued.Iso (GF .fobj M) (realise .fobj (record { idx = M .Fam⟨𝒞⟩.Obj.idx ; fam = Nf }))
   presented-iso M Nf α = Glued.Iso-trans (source-iso M) (Gld.∐-iso α)
 
-  -- GF of a family is the realisation of its checked presentation.
-  check-iso : (M : Fam⟨𝒞⟩.Obj) → Glued.Iso (GF .fobj M) (realise .fobj (check M))
-  check-iso M =
+  -- GF of a family is the realisation of its fibrewise image.
+  fibrewise-iso : (M : Fam⟨𝒞⟩.Obj) → Glued.Iso (GF .fobj M) (realise .fobj (fibrewise M))
+  fibrewise-iso M =
     presented-iso M (functor→fam (GF ∘F Pres.singletons M)) (fam→functor-eta (GF ∘F Pres.singletons M))
 
-  -- check commutes with μ at the constant-free form, as an iso in Fam(Gl):
+  -- fibrewise commutes with μ at the constant-free form, as an iso in Fam(Gl):
   -- the shared shapes make the index setoids agree, and the fibres are products
   -- of GF-images compared by tree recursion.
-  check-μ : ∀ {n} (P : Poly Fam⟨𝒞⟩.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) → Fam⟨𝒞⟩.Obj) →
-            FamGl.Iso (check (FMc.μObj (constant-free P) ε)) (FMg.μObj (constant-free P) (λ i → check (ε i)))
-  check-μ P ε = Chk.ChkMu.check-μ-iso P ε
+  fibrewise-μ : ∀ {n} (P : Poly Fam⟨𝒞⟩.cat (sucℕ n)) (ε : Fin (n +ℕ #c P) → Fam⟨𝒞⟩.Obj) →
+                FamGl.Iso (fibrewise (FMc.μObj (constant-free P) ε)) (FMg.μObj (constant-free P) (λ i → fibrewise (ε i)))
+  fibrewise-μ P ε = Fbw.FibrewiseMu.fibrewise-μ-iso P ε
 
   -- Realised μ-objects along an equality of polynomials.
   μObj-≡-iso : ∀ {k} {Q₁ Q₂ : Poly FMg.cat (sucℕ k)} (e : Q₁ ≡ Q₂) (δ̂ : Fin k → FMg.Obj) →
@@ -155,17 +155,17 @@ module gf-preserves-mu
   obj-≡-iso ≡-refl = Glued.Iso-refl
 
   -- GF preserves μ-types: constant-free in Fam(𝒞), carrier comparison, invariance at
-  -- the checked-versus-embedded environments, and the realised constant-free in
+  -- the fibrewise-image-versus-embedded environments, and the realised constant-free in
   -- Fam(Gl), backwards.
   GFμ : Preserves-μ Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products Fam⟨𝒞⟩-strongCoproducts Fam⟨𝒞⟩-lift
           GlT GlP GlSC GlL Fam⟨𝒞⟩-hasMu Gl-Mu GF
   GFμ {n} P δ =
     Glued.Iso-trans (functor-preserve-iso GF (Sk.constant-free-μ-iso P δ))
-    (Glued.Iso-trans (check-iso (FMc.μObj (constant-free P) ε))
-    (Glued.Iso-trans (functor-preserve-iso realise (check-μ P ε))
-    (Glued.Iso-trans (μObj-≡-iso (≡-sym (Poly-map-constant-free-go η P (λ c → c))) (λ i → check (ε i)))
+    (Glued.Iso-trans (fibrewise-iso (FMc.μObj (constant-free P) ε))
+    (Glued.Iso-trans (functor-preserve-iso realise (fibrewise-μ P ε))
+    (Glued.Iso-trans (μObj-≡-iso (≡-sym (Poly-map-constant-free-go η P (λ c → c))) (λ i → fibrewise (ε i)))
     (Glued.Iso-trans (RGl.MuInvariance.mu-invariance SKg (RGl.invarianceAt SKg)
-                       (λ i → check (ε i)) (λ i → η .fobj (GF .fobj (ε i))) isos)
+                       (λ i → fibrewise (ε i)) (λ i → η .fobj (GF .fobj (ε i))) isos)
     (Glued.Iso-trans realised-constant-free
       (obj-≡-iso (≡-sym (Gl-Mu-obj (Poly-map GF P) (λ i → GF .fobj (δ i))))))))))
     where
@@ -175,9 +175,9 @@ module gf-preserves-mu
       SKg : Poly Gl (sucℕ (n +ℕ #c P))
       SKg = constant-free P
 
-      isos : ∀ i → Glued.Iso (realise .fobj (check (ε i)))
+      isos : ∀ i → Glued.Iso (realise .fobj (fibrewise (ε i)))
                              (realise .fobj (η .fobj (GF .fobj (ε i))))
-      isos i = Glued.Iso-trans (Glued.Iso-sym (check-iso (ε i)))
+      isos i = Glued.Iso-trans (Glued.Iso-sym (fibrewise-iso (ε i)))
                  (Glued.Iso-sym (RGl.realise-η-iso (GF .fobj (ε i))))
 
       -- The realised constant-free in Fam(Gl), backwards: invariance the embedded
