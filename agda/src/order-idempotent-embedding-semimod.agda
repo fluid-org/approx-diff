@@ -42,3 +42,6 @@ open OIE.Embed 𝓖 split public
 -- terminal, so 𝓚 preserves the chosen terminal and products.
 open Preserve SemiMod.cmon-enriched SemiMod.biproduct
   (λ {m} {n} → ME.mat→mor-εₘ {m} {n}) ME.mat→mor-+ₘ SemiMod.terminal ME.𝟘-terminal public
+
+-- 𝓚 is faithful: the matrix embedding recovers entries, and scalars embed injectively.
+open Faithful (ME.mat→mor-faithful ME.into-inj) public
