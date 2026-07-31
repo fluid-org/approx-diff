@@ -66,6 +66,7 @@ fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₁ _} {inj₁ _} x≈ = fuse-
 fuse-shape Q cmb fsk corr (R₁ + R₂) γ≈ {inj₂ _} {inj₂ _} x≈ = fuse-shape Q cmb fsk corr R₂ γ≈ x≈
 fuse-shape Q cmb fsk corr (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈₂) =
   fuse-shape Q cmb fsk corr R₁ γ≈ x≈₁ , fuse-shape Q cmb fsk corr R₂ γ≈ x≈₂
+fuse-shape Q cmb fsk corr (lift R) γ≈ x≈ = fuse-shape Q cmb fsk corr R γ≈ x≈
 fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁} {γ₂} γ≈ {x₁} {x₂} x≈ =
   Tt.W-≈-trans {x = Rs.ireindex-shape ∣ μ R'' ∣ (Rs.ibind ∣ Q ∣ (cmb γ₁)) x₁}
                {z = At.R.reindex-shape ∣ μ R'' ∣ At.mor₀ (At.embed-idx (μ R'')
@@ -118,6 +119,7 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
       tele-shape (S₁ + S₂) rel (inj₂ z) = tele-shape S₂ rel z
       tele-shape (S₁ × S₂) rel (z₁ , z₂) = tele-shape S₁ rel z₁ , tele-shape S₂ rel z₂
       tele-shape (μ S') rel (Ts.sup z') = tele-shape S' (tbind S' rel) z'
+      tele-shape (lift S) rel z = tele-shape S rel z
 
       tele-apply : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
                    {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
@@ -248,6 +250,21 @@ fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ × R₂) {a , b} =
       (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (pair-natural _ _ _)))
                 (≈-trans (∘-cong ≈-refl (pair-compose _ _ _ _))
                   (pair-compose _ _ _ _)))))
+fuse-shape-fam γ Q cmb act fsk corr corr-fam (lift R) {x} =
+  ≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong (≈-sym (L.fmor-comp _ _)) ≈-refl)
+      (≈-trans (∘-cong (L.fmor-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R {x})) ≈-refl)
+        (≈-trans (∘-cong (L.fmor-comp _ _) ≈-refl)
+          (≈-trans (assoc _ _ _)
+            (∘-cong ≈-refl
+              (≈-trans (∘-cong (L.fmor-comp _ _) ≈-refl)
+                (≈-trans (assoc _ _ _)
+                  (∘-cong ≈-refl
+                    (≈-trans (∘-cong (L.fmor-comp _ _) ≈-refl)
+                      (≈-trans (assoc _ _ _)
+                        (≈-trans (∘-cong ≈-refl (≈-sym (L.str-co _)))
+                          (≈-trans (≈-sym (assoc _ _ _))
+                            (∘-cong (≈-sym id-left) ≈-refl)))))))))))))
 fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} =
   ≈-trans (∘-cong (Tt.fib-trans* R'' (Tt.deco-ext Q (λ i → lift tt))
                      {x = Rs.ireindex-shape ∣ μ R'' ∣ (Rs.ibind ∣ Q ∣ (cmb γ)) x}
@@ -332,6 +349,7 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
       tele-shape (S₁ + S₂) rel (inj₂ z) = tele-shape S₂ rel z
       tele-shape (S₁ × S₂) rel (z₁ , z₂) = tele-shape S₁ rel z₁ , tele-shape S₂ rel z₂
       tele-shape (μ S') rel (Ts.sup z') = tele-shape S' (tbind S' rel) z'
+      tele-shape (lift S) rel z = tele-shape S rel z
 
       tele-apply : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
                    {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}
@@ -363,6 +381,17 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
           (≈-trans (strong-prod-m-cong (tele-shape-fam S₁ rel z₁) (tele-shape-fam S₂ rel z₂))
             (≈-sym (≈-trans (∘-cong ≈-refl (strong-prod-m-comp _ _ _ _)) (strong-prod-m-post _ _ _ _))))
       tele-shape-fam (μ S') rel (Ts.sup z') = tele-shape-fam S' (tbind S' rel) z'
+      tele-shape-fam (lift S) rel z =
+        ≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (≈-sym (L.fmor-comp _ _)) ≈-refl)
+            (≈-trans (∘-cong (L.fmor-cong (tele-shape-fam S rel z)) ≈-refl)
+              (≈-trans (∘-cong (L.fmor-comp _ _) ≈-refl)
+                (≈-trans (assoc _ _ _)
+                  (∘-cong ≈-refl
+                    (≈-trans (∘-cong (L.fmor-comp _ _) ≈-refl)
+                      (≈-trans (assoc _ _ _)
+                        (≈-trans (∘-cong ≈-refl (≈-sym (L.str-co _)))
+                          (≈-sym (assoc _ _ _))))))))))
 
       tele-apply-fam : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
                        {md : Rs.IMorD ηA ηB} {mdA : At.R.MorD ηC ηB dC dB} {md' : Rs'.IMorD ηD ηC} {fm : Ft.FMor ηA ηD dA dD}

@@ -403,22 +403,6 @@ module MuIso
                    pm-μ-fmor (pm-id P) fs ≈ strong-μ-fmor P fs
     pm-μ-fmor-id P {δ} fs = ⦅⦆-cong P δ (∘-cong ≈-refl (pm-fmor-id P _))
 
-  -- Co-Kleisli composition at a lift is the lift of the composite: the strength absorbs the
-  -- context on the way in. This is what makes all the lift clauses below one-liners.
-  str-co : ∀ {Γ X Y} (f : prod Γ X ⇒ Y) →
-           (L.strengthᵣ ∘ pair (p₁ {x = Γ} {y = L.fobj X}) (L.fmor f ∘ L.strengthᵣ))
-           ≈ (L.fmor (pair p₁ f) ∘ L.strengthᵣ)
-  str-co {Γ} {X} {Y} f =
-    ≈-trans (∘-cong ≈-refl (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong id-left ≈-refl))))
-      (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong (≈-sym (L.strengthᵣ-natural (id Γ) f)) ≈-refl)
-          (≈-trans (assoc _ _ _)
-            (≈-trans (∘-cong ≈-refl L.strengthᵣ-assoc)
-              (≈-trans (≈-sym (assoc _ _ _))
-                (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
-                          (L.fmor-cong (≈-trans (pair-compose _ _ _ _)
-                                         (pair-cong id-left id-right)))) ≈-refl))))))
-
   -- The action respects equality of labels and environments.
   mutual
     pm-fmor-cong : ∀ {n Γ} {P Q : Poly 𝒞 n} {r r' : PolyMor P Q} → PolyMor-≈ r r' →
@@ -581,7 +565,7 @@ module MuIso
     strong-fmor-comp (μ P)     gs fs = strong-μ-fmor-comp P gs fs
     strong-fmor-comp (lift P)  gs fs =
       ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (str-co (strong-fmor P fs)))
+        (≈-trans (∘-cong ≈-refl (L.str-co (strong-fmor P fs)))
           (≈-trans (≈-sym (assoc _ _ _))
             (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
                       (L.fmor-cong (strong-fmor-comp P gs fs))) ≈-refl)))
@@ -671,7 +655,7 @@ module MuIso
     pm-fmor-post (μ r)     gs fs = pm-μ-fmor-post r gs fs
     pm-fmor-post (lift r)  gs fs =
       ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (str-co (pm-fmor r fs)))
+        (≈-trans (∘-cong ≈-refl (L.str-co (pm-fmor r fs)))
           (≈-trans (≈-sym (assoc _ _ _))
             (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
                       (L.fmor-cong (pm-fmor-post r gs fs))) ≈-refl)))
@@ -691,7 +675,7 @@ module MuIso
     pm-fmor-pre (μ r)     gs fs = pm-μ-fmor-pre r gs fs
     pm-fmor-pre {P = lift P} (lift r)  gs fs =
       ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (str-co (strong-fmor P fs)))
+        (≈-trans (∘-cong ≈-refl (L.str-co (strong-fmor P fs)))
           (≈-trans (≈-sym (assoc _ _ _))
             (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
                       (L.fmor-cong (pm-fmor-pre r gs fs))) ≈-refl)))
@@ -819,7 +803,7 @@ module MuIso
     pm-fmor-comp (μ s)     (μ r)     gs fs = pm-μ-fmor-comp s r gs fs
     pm-fmor-comp (lift s)  (lift r)  gs fs =
       ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (str-co (pm-fmor r fs)))
+        (≈-trans (∘-cong ≈-refl (L.str-co (pm-fmor r fs)))
           (≈-trans (≈-sym (assoc _ _ _))
             (∘-cong (≈-trans (≈-sym (L.fmor-comp _ _))
                       (L.fmor-cong (pm-fmor-comp s r gs fs))) ≈-refl)))

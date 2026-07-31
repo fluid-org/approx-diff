@@ -278,6 +278,24 @@ module _ {o₁ m₁ e₁}
     strengthₗ : ∀ {x y} → prod (F .fobj x) y ⇒ F .fobj (prod x y)
     strengthₗ = F .Functor.fmor (pair p₂ p₁) 𝒞.∘ strengthᵣ 𝒞.∘ pair p₂ p₁
 
+    -- Co-Kleisli composition under the functor: the strength absorbs the context, so a composite
+    -- in context is the image of the composite. Every clause for a lifted polynomial reduces to this.
+    str-co : ∀ {w x y} (f : prod w x ⇒ y) →
+             (strengthᵣ 𝒞.∘ pair (p₁ {x = w} {y = F .fobj x}) (F .Functor.fmor f 𝒞.∘ strengthᵣ))
+             𝒞.≈ (F .Functor.fmor (pair p₁ f) 𝒞.∘ strengthᵣ)
+    str-co {w} f =
+      𝒞.≈-trans (𝒞.∘-cong₂ (𝒞.≈-sym (𝒞.isEquiv .IsEquivalence.trans (pair-compose _ _ _ _)
+                                       (pair-cong 𝒞.id-left 𝒞.≈-refl))))
+        (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _))
+          (𝒞.≈-trans (𝒞.∘-cong₁ (𝒞.≈-sym (strengthᵣ-natural (𝒞.id w) f)))
+            (𝒞.≈-trans (𝒞.assoc _ _ _)
+              (𝒞.≈-trans (𝒞.∘-cong₂ strengthᵣ-assoc)
+                (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _))
+                  (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (F .Functor.fmor-comp _ _))
+                               (F .Functor.fmor-cong
+                                 (𝒞.isEquiv .IsEquivalence.trans (pair-compose _ _ _ _)
+                                   (pair-cong 𝒞.id-left 𝒞.id-right))))))))))
+
   -- Strong endofunctor with a unit.
   record StrongPointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
     field
