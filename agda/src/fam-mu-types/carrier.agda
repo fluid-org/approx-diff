@@ -25,6 +25,7 @@ open import indexed-family using (Fam; _⇒f_)
 import fam
 import polynomial-functor
 import fam-mu-types.sort
+import functor
 import fam-mu-types.fibre
 
 module fam-mu-types.carrier {o m e} (os es : Level) {𝒞 : Category o m e}
@@ -57,7 +58,7 @@ open import prop using (_∧_; ⊥) public
 -- decorated fibre layer over this one.
 module Sh = fam-mu-types.sort os es
 open Sh public using (Sort; mkSort)
-open fam-mu-types.fibre os es T P public using (Idx; ∣_∣; module Fibre; μObj)
+open fam-mu-types.fibre os es T P functor.Id public using (Idx; ∣_∣; module Fibre; μObj)
 
 -- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where

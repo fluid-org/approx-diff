@@ -42,8 +42,8 @@ private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒢 = fam.CategoryOfFamilies os (os ⊔ es) 𝒢
   module Sh = fam-mu-types.sort os es
-  module Fc = fam-mu-types.fibre os es 𝒞T 𝒞P
-  module Fg = fam-mu-types.fibre os es 𝒢T 𝒢P
+  module Fc = fam-mu-types.fibre os es 𝒞T 𝒞P functor.Id
+  module Fg = fam-mu-types.fibre os es 𝒢T 𝒢P functor.Id
   module PresC = fam-presentation os (os ⊔ es) {𝒞}
   module 𝒢C = Category 𝒢
   module 𝒢Pm = HasProducts 𝒢P
