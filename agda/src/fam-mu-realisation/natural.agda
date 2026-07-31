@@ -431,3 +431,4 @@ invarianceAt (var i)   = invariance-var i
 invarianceAt (P + Q)   = invariance-sum (invarianceAt P) (invarianceAt Q)
 invarianceAt (P × Q)   = invariance-prod (invarianceAt P) (invarianceAt Q)
 invarianceAt (μ P)     = invariance-mu (invarianceAt P)
+invarianceAt (lift P)  = invariance-lift (invarianceAt P)
