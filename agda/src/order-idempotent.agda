@@ -9,6 +9,7 @@ open import basics using (IsPreorder; IsJoin; IsBottom; IsTop)
 open import categories using (Category; HasTerminal; IsTerminal)
 open import commutative-monoid using (CommutativeMonoid)
 open import cmon-enriched using (CMonEnriched; Biproduct)
+open import functor using (Functor)
 import matrix
 
 -- Position orders as matrices. Over a commutative semiring whose addition is idempotent, the matrix of
@@ -586,3 +587,11 @@ lift-mor-comp g f zero    j       = sym (trans (+-cong ·-lunit refl) ⊤-add-to
 lift-mor-comp {P} {Q} {R} g f (suc q) zero    =
   sym (trans (+-cong ε-annihilₗ (trans (Σ-cong (λ k → ε-annihilᵣ {g .mat q k})) (Σ-ε {Q .dim}))) +-lunit)
 lift-mor-comp g f (suc q) (suc p) = sym (trans (+-cong ε-annihilₗ refl) +-lunit)
+
+-- The lifting packaged as an endofunctor: the cell structure for inductive types.
+lift-functor : Functor cat cat
+lift-functor .Functor.fobj = lift
+lift-functor .Functor.fmor = lift-mor
+lift-functor .Functor.fmor-cong = lift-mor-cong
+lift-functor .Functor.fmor-id {P} = lift-mor-id P
+lift-functor .Functor.fmor-comp = lift-mor-comp
