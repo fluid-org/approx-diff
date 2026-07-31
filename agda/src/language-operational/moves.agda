@@ -443,8 +443,7 @@ private
 
     edge-O : ∀ {C : List (Path D)} → any (λ q → adjacent G (at p) (at q)) C ≡ Bool.false →
              ∀ q' → member q' C ≡ Bool.true →
-             ((∀ i' j' → G (at p) (at q') i' j' ≡ two.O) ×
-              (∀ i' j' → G (at q') (at p) i' j' ≡ two.O))
+             ((∀ i' j' → G (at p) (at q') i' j' ≡ two.O) × (∀ i' j' → G (at q') (at p) i' j' ≡ two.O))
     edge-O {C} hadj q' hq =
       (λ i' j' → nonzero-O (G (at p) (at q')) (proj₁ spl) i' j') ,
       (λ i' j' → nonzero-O (G (at q') (at p)) (proj₂ spl) i' j')
