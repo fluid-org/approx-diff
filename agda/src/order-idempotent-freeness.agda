@@ -167,8 +167,47 @@ affine-inj {P} {C} c M q p =
   (trans (+-cong refl (+-cong (const-col P (c .mat q zero) p) (absorb-right M q p)))
          (trans (sym +-assoc) (+-cong ∨-idem refl))))
 
--- Branch data for a case: a context part, a constant, and a linear part. The context enters through
--- the biproduct, so it never passes under the root.
+-- Selecting the root alone. Composing with it reads off the constant, so a morphism out of a
+-- lifting is determined by its behaviour on the root and on the payload.
+root-mat : ∀ (P : Pos) → Matrix (suc (P .dim)) 1
+root-mat P zero    _ = ι
+root-mat P (suc q) _ = ε
+
+root : ∀ {P} → 𝟙p ⇒ Lp P
+root {P} .mat = root-mat P
+root {P} .absorbed = ≈ₘ-trans (id-right {M = Lp P .ord ∘ₘ root-mat P}) left
+  where
+  left : (Lp P .ord ∘ₘ root-mat P) ≈ₘ root-mat P
+  left zero    j = trans (+-cong ·-lunit refl) ⊤-add-top
+  left (suc q) j =
+    trans (+-cong ε-annihilₗ
+            (trans (Σ-cong {P .dim} (λ q' → ε-annihilᵣ)) (Σ-ε {P .dim})))
+          +-lunit
+
+root-tag : ∀ {P C} (h : Lp P ⇒ C) → (h ∘ root {P}) ≈p tag-of h
+root-tag {P} h q j =
+  trans (+-cong (trans ·-comm ·-lunit)
+                (trans (Σ-cong {P .dim} (λ p → ε-annihilᵣ)) (Σ-ε {P .dim})))
+        (trans +-comm +-lunit)
+
+inj-body : ∀ {P C} (h : Lp P ⇒ C) → (h ∘ inj {P}) ≈p body-of h
+inj-body {P} h q p =
+  trans (+-cong (trans ·-comm ·-lunit) (absorb-right (body-of h) q p)) (tag-below h q p)
+
+-- Two restrictions determine a morphism out of a lifting: the root gives the constant, the payload
+-- gives the linear part with the constant joined in. This is the uniqueness principle a fused
+-- initial-algebra law needs, and it is why one clause along the payload alone does not suffice.
+lifting-ext : ∀ {P C} (h k : Lp P ⇒ C) →
+              (h ∘ root {P}) ≈p (k ∘ root {P}) → (h ∘ inj {P}) ≈p (k ∘ inj {P}) → h ≈p k
+lifting-ext h k re ie q zero =
+  trans (sym (root-tag h q zero)) (trans (re q zero) (root-tag k q zero))
+lifting-ext h k re ie q (suc p) =
+  trans (sym (inj-body h q p)) (trans (ie q p) (inj-body k q p))
+
+-- Branch data for a case: a context part, a constant, and a linear part. The constant carries no
+-- context, which is forced rather than a restriction: what the root determines with nothing of the
+-- context selected cannot mention the context, and context-dependence arrives through the separate
+-- context factor of the biproduct.
 branch : ∀ {W P C} → W ⇒ C → 𝟙p ⇒ C → P ⇒ C → (W ⊕ Lp P) ⇒ C
 branch {W} {P} u c M = Biproduct.copair (biproduct W (Lp P)) u (affine c M)
 
