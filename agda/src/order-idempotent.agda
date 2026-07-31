@@ -6,7 +6,7 @@ open import Data.Fin using (Fin; zero; suc)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import basics using (IsPreorder; IsJoin; IsBottom)
-open import categories using (Category)
+open import categories using (Category; HasTerminal; IsTerminal)
 open import commutative-monoid using (CommutativeMonoid)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 import matrix
@@ -466,3 +466,17 @@ biproduct P Q .Biproduct.id-+ = +ₘ-cong first second
     ≈ₘ-trans (≈ₘ-sym (assoc ((in₂ {P .dim} {Q .dim}) ∘ₘ Q .ord) (Q .ord) (p₂ {P .dim} {Q .dim})))
     (≈ₘ-trans (∘-cong (assoc (in₂ {P .dim} {Q .dim}) (Q .ord) (Q .ord)) (≈ₘ-refl {M = (p₂ {P .dim} {Q .dim})}))
               (∘-cong (∘-cong (≈ₘ-refl {M = (in₂ {P .dim} {Q .dim})}) (ord-idem Q)) (≈ₘ-refl {M = (p₂ {P .dim} {Q .dim})})))
+
+-- The empty position order is terminal: a morphism into it is a matrix with no rows, so any two
+-- agree vacuously.
+𝟘p : Pos
+𝟘p .dim = 0
+𝟘p .ord = εₘ
+𝟘p .ord-refl ()
+𝟘p .ord-trans ()
+
+terminal : HasTerminal cat
+terminal .HasTerminal.witness = 𝟘p
+terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .mat = εₘ
+terminal .HasTerminal.is-terminal .IsTerminal.to-terminal .absorbed ()
+terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f ()
