@@ -12,7 +12,7 @@ open import prop-setoid using (Setoid; module ≈-Reasoning)
 open import categories
   using (Category; setoid→category; HasTerminal; HasProducts; HasExponentials;
          HasStrongCoproducts; HasCoproducts; strong-coproducts→coproducts; coKleisli-prod)
-open import functor using (Functor; HasColimits)
+open import functor using (Functor; HasColimits; _∘F_)
 open import polynomial-functor using (Poly; extend; Poly-map)
 import fam
 import fam-mu-types
@@ -67,6 +67,27 @@ prodη : ∀ (Γ : obj) (W : FM.Obj) →
 prodη Γ W =
   Iso-trans (FR.realise-products-iso ℰP ℰE (η .fobj Γ) W)
     (ℰP.product-preserves-iso (realise-η-iso Γ) Iso-refl)
+
+module ℰLs = functor.StrongFunctor ℰL
+module ℰLf = Functor ℰLs.F
+
+FamL : Functor FM.cat FM.cat
+FamL = fam-functor.FamF os (os ⊔ es) ℰLs.F
+
+module FamLs = functor.StrongFunctor (fam-functor.FamF-strong os (os ⊔ es) ℰP ℰL)
+
+record LiftCoherence : Set (o ⊔ m ⊔ e ⊔ Level.suc os ⊔ Level.suc es) where
+  field
+    iso : ∀ (X : FM.Obj) → Iso (realise .fobj (FamL .fobj X)) (ℰLf.fobj (realise .fobj X))
+    natural : ∀ {X Y : FM.Obj} (f : FM.Mor X Y) →
+              (ℰLf.fmor (realise .fmor f) ∘ iso X .fwd)
+              ≈ (iso Y .fwd ∘ realise .fmor (FamL .fmor f))
+    strength : ∀ (Γ : obj) (X : FM.Obj) →
+               (ℰLf.fmor (prodη Γ X .fwd)
+                 ∘ (iso (FamP.prod (η .fobj Γ) X) .fwd
+                    ∘ (realise .fmor (FamLs.strengthᵣ {η .fobj Γ} {X})
+                       ∘ prodη Γ (FamL .fobj X) .bwd)))
+               ≈ (ℰLs.strengthᵣ ∘ ℰP.prod-m (id Γ) (iso X .fwd))
 
 -- The co-Kleisli action of realisation: a Fam(ℰ)-morphism from a product with
 -- an η-embedded context acts on realisations in that context.

@@ -18,12 +18,14 @@ open import prop-setoid using (Setoid; module ≈-Reasoning)
 open import categories
   using (Category; setoid→category; HasTerminal; HasProducts; HasExponentials;
          HasStrongCoproducts; HasCoproducts; strong-coproducts→coproducts; coKleisli-prod)
-open import functor using (Functor; HasColimits)
+open import functor using (Functor; HasColimits; _∘F_)
 open import polynomial-functor using (Poly; extend; Poly-map)
 import fam
 import fam-mu-types
 import functor
 import fam-realisation
+import fam-mu-realisation.context
+import fam-functor
 import polynomial-functor
 import fam-mu-realisation.natural
 
@@ -31,9 +33,10 @@ module fam-mu-realisation {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
   (ℰT : HasTerminal ℰ) (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP)
   (ℰSC : HasStrongCoproducts ℰ ℰP) (ℰL : functor.StrongFunctor ℰP)
+  (LC : fam-mu-realisation.context.LiftCoherence os es ℰC ℰT ℰP ℰE ℰSC ℰL)
   where
 
-open fam-mu-realisation.natural os es ℰC ℰT ℰP ℰE ℰSC ℰL public
+open fam-mu-realisation.natural os es ℰC ℰT ℰP ℰE ℰSC ℰL LC public
 
 -- The μ-objects for ℰ itself, via realisation of the Fam(ℰ) μ-objects at
 -- singleton-embedded environments.
