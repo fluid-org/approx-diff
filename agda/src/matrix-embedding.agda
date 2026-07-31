@@ -665,3 +665,12 @@ module matrix-embedding
                  mat→mor .fmor (M MatS.+ₘ N) ≈ (mat→mor .fmor M +m mat→mor .fmor N)
     mat→mor-+ₘ M N =
       ≈-trans (F .fmor-cong (λ i j → into ._⇒h_.f-+ {M i j} {N i j})) (F-+ₘ (In.E M) (In.E N))
+
+    -- When the relabelling is injective, mat→mor is faithful: F recovers entries and into-inj
+    -- recovers the scalars beneath them.
+    mat→mor-faithful : (into-inj : ∀ {a b} → Setoid._≈_ A (into ._⇒h_.f a) (into ._⇒h_.f b) →
+                                   Setoid._≈_ B a b) →
+                       ∀ {m n} {M N : MatS.Matrix n m} →
+                       mat→mor .fmor M ≈ mat→mor .fmor N → M MatS.≈ₘ N
+    mat→mor-faithful into-inj {M = M} {N} h i j =
+      into-inj (F-faithful {M = In.E M} {N = In.E N} h i j)

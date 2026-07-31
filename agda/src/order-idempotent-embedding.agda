@@ -81,6 +81,43 @@ module Embed
       (split R .retr ∘ (𝓖 .fmor (g .mat) ∘ split Q .sect)) ∘ (split Q .retr ∘ (𝓖 .fmor (f .mat) ∘ split P .sect))
     ∎ where open ≈-Reasoning isEquiv
 
+  -- Sandwiching between the section and retraction recovers the realised matrix, by absorption.
+  sandwich : ∀ {P Q} (f : OI._⇒_ P Q) →
+             (split Q .sect ∘ (𝓚 .fmor f ∘ split P .retr)) 𝒞.≈ 𝓖 .fmor (f .mat)
+  sandwich {P} {Q} f =
+    begin
+      split Q .sect ∘ (𝓚 .fmor f ∘ split P .retr)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (split Q .sect ∘ 𝓚 .fmor f) ∘ split P .retr
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ((split Q .sect ∘ split Q .retr) ∘ (𝓖 .fmor (f .mat) ∘ split P .sect)) ∘ split P .retr
+    ≈⟨ ∘-cong (∘-cong (split Q .sect-retr) ≈-refl) ≈-refl ⟩
+      (𝓖 .fmor (Q .ord) ∘ (𝓖 .fmor (f .mat) ∘ split P .sect)) ∘ split P .retr
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ((𝓖 .fmor (Q .ord) ∘ 𝓖 .fmor (f .mat)) ∘ split P .sect) ∘ split P .retr
+    ≈⟨ assoc _ _ _ ⟩
+      (𝓖 .fmor (Q .ord) ∘ 𝓖 .fmor (f .mat)) ∘ (split P .sect ∘ split P .retr)
+    ≈⟨ ∘-cong ≈-refl (split P .sect-retr) ⟩
+      (𝓖 .fmor (Q .ord) ∘ 𝓖 .fmor (f .mat)) ∘ 𝓖 .fmor (P .ord)
+    ≈˘⟨ ∘-cong (𝓖 .fmor-comp (Q .ord) (f .mat)) ≈-refl ⟩
+      𝓖 .fmor (Q .ord MatS.∘ f .mat) ∘ 𝓖 .fmor (P .ord)
+    ≈˘⟨ 𝓖 .fmor-comp (Q .ord MatS.∘ f .mat) (P .ord) ⟩
+      𝓖 .fmor ((Q .ord MatS.∘ f .mat) MatS.∘ P .ord)
+    ≈⟨ 𝓖 .fmor-cong (f .absorbed) ⟩
+      𝓖 .fmor (f .mat)
+    ∎ where open ≈-Reasoning isEquiv
+
+  -- 𝓚 inherits faithfulness from 𝓖.
+  module Faithful
+    (𝓖-faithful : ∀ {m n} {M N : MatS.Matrix n m} →
+                  𝓖 .fmor M 𝒞.≈ 𝓖 .fmor N → M MatS.≈ₘ N)
+    where
+
+    𝓚-faithful : ∀ {P Q} {f g : OI._⇒_ P Q} → 𝓚 .fmor f 𝒞.≈ 𝓚 .fmor g → OI._≈p_ f g
+    𝓚-faithful {P} {Q} {f} {g} h =
+      𝓖-faithful (≈-trans (≈-sym (sandwich f))
+                 (≈-trans (∘-cong ≈-refl (∘-cong h ≈-refl)) (sandwich g)))
+
   -- With 𝒞 CMon-enriched and 𝓖 additive, the images of the block-order biproduct assemble a
   -- biproduct on the split objects, and a terminal realisation of dimension zero splits to a
   -- terminal object; 𝓚 then preserves the chosen terminal and products.
