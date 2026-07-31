@@ -1,9 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The fused initial-algebra laws over a grammar of shapes, generalising the list case. Sums are
--- tagged: the fibre of a value puts a root above the branch it took, so a selection of positions is
--- a prefix of the value. The carrier interpretation is tagged in the same way, so an algebra is an
--- ordinary morphism out of it, which by freeness is branch data at each sum.
+-- The fused initial-algebra laws over a grammar of shapes, generalising the list case. Every value
+-- former carries a root position: the fibre of a value puts a root above each product and each
+-- injection, so a selection of positions is a prefix of the value, and the bottom of a former is
+-- distinct from the former applied to bottoms. The carrier interpretation carries the same roots,
+-- so an algebra is an ordinary morphism out of it, which by freeness is a constant together with a
+-- linear part at every node.
 --
 -- The fold never maps a tagged cell in context, the map the lifting does not admit. Instead it
 -- applies the algebra to a payload whose recursive positions are already folded, splitting the
@@ -59,7 +61,7 @@ mutual
   fibS : ∀ {B Q} → Shape B Q → Pos
   fibS (kon {K})   = K
   fibS (rec v)     = fibV v
-  fibS (prd s₁ s₂) = fibS s₁ ⊕ fibS s₂
+  fibS (prd s₁ s₂) = Lp (fibS s₁ ⊕ fibS s₂)
   fibS (inl s)     = Lp (fibS s)
   fibS (inr s)     = Lp (fibS s)
 
@@ -80,7 +82,7 @@ module _ (W R : Pos) where
   ⟦_⟧ : ∀ {B Q} → Shape B Q → Pos
   ⟦ kon {K} ⟧   = K
   ⟦ rec v ⟧     = R
-  ⟦ prd s₁ s₂ ⟧ = ⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧
+  ⟦ prd s₁ s₂ ⟧ = Lp (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧)
   ⟦ inl s ⟧     = Lp ⟦ s ⟧
   ⟦ inr s ⟧     = Lp ⟦ s ⟧
 
@@ -97,8 +99,8 @@ module _ (W R : Pos) where
               {f₁ = π₁ W X} {f₂ = π₁ W X} {g₁ = g} {g₂ = g'}
               (≈ₘ-refl {M = π₁ W X .mat}) e)
 
-  -- At a product the continuation is split additively, the context going to the first component
-  -- only, so that it is not counted twice.
+  -- Under a root, a product splits the continuation additively, the context going to the first
+  -- component only, so that it is not counted twice.
   prodCont₁ : ∀ (X₁ X₂ : Pos) → (W ⊕ (X₁ ⊕ X₂)) ⇒ R → (W ⊕ X₁) ⇒ R
   prodCont₁ X₁ X₂ k = cop (k ∘ ι₁ W (X₁ ⊕ X₂)) (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₁ X₁ X₂)
 
@@ -121,19 +123,19 @@ module _ (W R : Pos) where
         (∘-cong e₁ (≈ₘ-refl {M = ι₂ W F₁ .mat}))
         (∘-cong e₂ (≈ₘ-refl {M = ι₂ W F₂ .mat})))
 
-  -- At a sum the continuation is split by freeness into its constant and its linear part. The
-  -- constant is the branch's control dependence and passes through untouched; the linear part
-  -- becomes the continuation of the branch. No cell is rebuilt.
-  sumCont : ∀ (X : Pos) → (W ⊕ Lp X) ⇒ R → (W ⊕ X) ⇒ R
-  sumCont X k = cop (k ∘ ι₁ W (Lp X)) (body-of {P = X} (k ∘ ι₂ W (Lp X)))
+  -- At a root the continuation is split by freeness into its constant and its linear part. The
+  -- constant is what the former alone determines and passes through untouched; the linear part
+  -- becomes the continuation of the payload. No cell is rebuilt.
+  rootCont : ∀ (X : Pos) → (W ⊕ Lp X) ⇒ R → (W ⊕ X) ⇒ R
+  rootCont X k = cop (k ∘ ι₁ W (Lp X)) (body-of {P = X} (k ∘ ι₂ W (Lp X)))
 
-  sumStep : ∀ (X F : Pos) → (W ⊕ Lp X) ⇒ R → (W ⊕ F) ⇒ R → (W ⊕ Lp F) ⇒ R
-  sumStep X F k r =
+  rootStep : ∀ (X F : Pos) → (W ⊕ Lp X) ⇒ R → (W ⊕ F) ⇒ R → (W ⊕ Lp F) ⇒ R
+  rootStep X F k r =
     cop (r ∘ ι₁ W F) (affine {P = F} (tag-of {P = X} (k ∘ ι₂ W (Lp X))) (r ∘ ι₂ W F))
 
-  sumStep-cong : ∀ (X F : Pos) (k : (W ⊕ Lp X) ⇒ R) (r r' : (W ⊕ F) ⇒ R) →
-                 r ≈p r' → sumStep X F k r ≈p sumStep X F k r'
-  sumStep-cong X F k r r' e =
+  rootStep-cong : ∀ (X F : Pos) (k : (W ⊕ Lp X) ⇒ R) (r r' : (W ⊕ F) ⇒ R) →
+                 r ≈p r' → rootStep X F k r ≈p rootStep X F k r'
+  rootStep-cong X F k r r' e =
     cop-cong W (Lp F) R (r ∘ ι₁ W F) (r' ∘ ι₁ W F)
       (affine {P = F} (tag-of {P = X} (k ∘ ι₂ W (Lp X))) (r ∘ ι₂ W F))
       (affine {P = F} (tag-of {P = X} (k ∘ ι₂ W (Lp X))) (r' ∘ ι₂ W F))
@@ -149,11 +151,12 @@ module _ (W R : Pos) where
   applyG f kon         k = k
   applyG f (rec v)     k = varStep (fibV v) k (f v)
   applyG f (prd s₁ s₂) k =
-    prodStep (fibS s₁) (fibS s₂)
-      (applyG f s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-      (applyG f s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-  applyG f (inl s) k = sumStep ⟦ s ⟧ (fibS s) k (applyG f s (sumCont ⟦ s ⟧ k))
-  applyG f (inr s) k = sumStep ⟦ s ⟧ (fibS s) k (applyG f s (sumCont ⟦ s ⟧ k))
+    rootStep (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) (fibS s₁ ⊕ fibS s₂) k
+      (prodStep (fibS s₁) (fibS s₂)
+        (applyG f s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+        (applyG f s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k))))
+  applyG f (inl s) k = rootStep ⟦ s ⟧ (fibS s) k (applyG f s (rootCont ⟦ s ⟧ k))
+  applyG f (inr s) k = rootStep ⟦ s ⟧ (fibS s) k (applyG f s (rootCont ⟦ s ⟧ k))
 
   module _ {B : Poly} (alg : (s : Shape B B) → (W ⊕ ⟦ s ⟧) ⇒ R) where
 
@@ -167,11 +170,12 @@ module _ (W R : Pos) where
       foldS kon         k = k
       foldS (rec v)     k = varStep (fibV v) k (fold v)
       foldS (prd s₁ s₂) k =
-        prodStep (fibS s₁) (fibS s₂)
-          (foldS s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-          (foldS s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-      foldS (inl s) k = sumStep ⟦ s ⟧ (fibS s) k (foldS s (sumCont ⟦ s ⟧ k))
-      foldS (inr s) k = sumStep ⟦ s ⟧ (fibS s) k (foldS s (sumCont ⟦ s ⟧ k))
+        rootStep (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) (fibS s₁ ⊕ fibS s₂) k
+          (prodStep (fibS s₁) (fibS s₂)
+            (foldS s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+            (foldS s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k))))
+      foldS (inl s) k = rootStep ⟦ s ⟧ (fibS s) k (foldS s (rootCont ⟦ s ⟧ k))
+      foldS (inr s) k = rootStep ⟦ s ⟧ (fibS s) k (foldS s (rootCont ⟦ s ⟧ k))
 
     -- The fused law: one equation per value, with the algebra applied to the folded payload.
     IsFold : Cand B → Prop
@@ -182,18 +186,28 @@ module _ (W R : Pos) where
     foldS-applyG kon k = ≈ₘ-refl {M = k .mat}
     foldS-applyG (rec v) k = ≈ₘ-refl {M = varStep (fibV v) k (fold v) .mat}
     foldS-applyG (prd s₁ s₂) k =
-      prodStep-cong (fibS s₁) (fibS s₂)
-        (foldS s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k)) (applyG fold s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-        (foldS s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k)) (applyG fold s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-        (foldS-applyG s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k)) (foldS-applyG s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
+      rootStep-cong (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) (fibS s₁ ⊕ fibS s₂) k
+        (prodStep (fibS s₁) (fibS s₂)
+          (foldS s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+          (foldS s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k))))
+        (prodStep (fibS s₁) (fibS s₂)
+          (applyG fold s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+          (applyG fold s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k))))
+        (prodStep-cong (fibS s₁) (fibS s₂)
+          (foldS s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+          (applyG fold s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+          (foldS s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+          (applyG fold s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+          (foldS-applyG s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+          (foldS-applyG s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k))))
     foldS-applyG (inl s) k =
-      sumStep-cong ⟦ s ⟧ (fibS s) k
-        (foldS s (sumCont ⟦ s ⟧ k)) (applyG fold s (sumCont ⟦ s ⟧ k))
-        (foldS-applyG s (sumCont ⟦ s ⟧ k))
+      rootStep-cong ⟦ s ⟧ (fibS s) k
+        (foldS s (rootCont ⟦ s ⟧ k)) (applyG fold s (rootCont ⟦ s ⟧ k))
+        (foldS-applyG s (rootCont ⟦ s ⟧ k))
     foldS-applyG (inr s) k =
-      sumStep-cong ⟦ s ⟧ (fibS s) k
-        (foldS s (sumCont ⟦ s ⟧ k)) (applyG fold s (sumCont ⟦ s ⟧ k))
-        (foldS-applyG s (sumCont ⟦ s ⟧ k))
+      rootStep-cong ⟦ s ⟧ (fibS s) k
+        (foldS s (rootCont ⟦ s ⟧ k)) (applyG fold s (rootCont ⟦ s ⟧ k))
+        (foldS-applyG s (rootCont ⟦ s ⟧ k))
 
     fold-is-fold : IsFold fold
     fold-is-fold s = foldS-applyG s (alg s)
@@ -209,16 +223,25 @@ module _ (W R : Pos) where
       fold-uniqueS h H kon k = ≈ₘ-refl {M = k .mat}
       fold-uniqueS h H (rec v) k = varStep-cong (fibV v) k (h v) (fold v) (fold-unique h H v)
       fold-uniqueS h H (prd s₁ s₂) k =
-        prodStep-cong (fibS s₁) (fibS s₂)
-          (applyG h s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k)) (foldS s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-          (applyG h s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k)) (foldS s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-          (fold-uniqueS h H s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
-          (fold-uniqueS h H s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ k))
+        rootStep-cong (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) (fibS s₁ ⊕ fibS s₂) k
+          (prodStep (fibS s₁) (fibS s₂)
+            (applyG h s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+            (applyG h s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k))))
+          (prodStep (fibS s₁) (fibS s₂)
+            (foldS s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+            (foldS s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k))))
+          (prodStep-cong (fibS s₁) (fibS s₂)
+            (applyG h s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+            (foldS s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+            (applyG h s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+            (foldS s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+            (fold-uniqueS h H s₁ (prodCont₁ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k)))
+            (fold-uniqueS h H s₂ (prodCont₂ ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) k))))
       fold-uniqueS h H (inl s) k =
-        sumStep-cong ⟦ s ⟧ (fibS s) k
-          (applyG h s (sumCont ⟦ s ⟧ k)) (foldS s (sumCont ⟦ s ⟧ k))
-          (fold-uniqueS h H s (sumCont ⟦ s ⟧ k))
+        rootStep-cong ⟦ s ⟧ (fibS s) k
+          (applyG h s (rootCont ⟦ s ⟧ k)) (foldS s (rootCont ⟦ s ⟧ k))
+          (fold-uniqueS h H s (rootCont ⟦ s ⟧ k))
       fold-uniqueS h H (inr s) k =
-        sumStep-cong ⟦ s ⟧ (fibS s) k
-          (applyG h s (sumCont ⟦ s ⟧ k)) (foldS s (sumCont ⟦ s ⟧ k))
-          (fold-uniqueS h H s (sumCont ⟦ s ⟧ k))
+        rootStep-cong ⟦ s ⟧ (fibS s) k
+          (applyG h s (rootCont ⟦ s ⟧ k)) (foldS s (rootCont ⟦ s ⟧ k))
+          (fold-uniqueS h H s (rootCont ⟦ s ⟧ k))
