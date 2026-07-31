@@ -16,13 +16,15 @@ open import functor using (Functor; HasColimits)
 open import polynomial-functor using (Poly; extend; Poly-map)
 import fam
 import fam-mu-types
+import fam-functor
+import functor
 import fam-realisation
 import polynomial-functor
 
 module fam-mu-realisation.context {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
   (ℰT : HasTerminal ℰ) (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP)
-  (ℰSC : HasStrongCoproducts ℰ ℰP)
+  (ℰSC : HasStrongCoproducts ℰ ℰP) (ℰL : functor.StrongFunctor ℰP)
   where
 
 open Category ℰ public
@@ -36,15 +38,16 @@ module ℰT' = HasTerminal ℰT
 module FR = fam-realisation os (os ⊔ es) ℰC
 open FR using (realise; η; realise-η-iso; transpose; untranspose) public
 
-module FM = fam-mu-types os es ℰT ℰP
+module FM = fam-mu-types os es ℰT ℰP ℰL
 module FamP = FM.Fam𝒞-P
 
 module FMu = FM.HasMu FM.hasMu
 module FamC = Category FM.cat
 module FamCoK {Γ̂ : FM.Obj} = Category (coKleisli-prod FM.products Γ̂)
-module FMuI = polynomial-functor.MuIso (FM.terminal ℰT) FM.products FM.strongCoproducts FM.hasMu FM.hasMuLaws
+module FMuI = polynomial-functor.MuIso (FM.terminal ℰT) FM.products FM.strongCoproducts
+             (fam-functor.FamF-strong os (os ⊔ es) ℰP ℰL) FM.hasMu FM.hasMuLaws
 
-module ℰI = polynomial-functor.Interp ℰT ℰP ℰSC
+module ℰI = polynomial-functor.Interp ℰT ℰP ℰSC ℰL
 open ℰI using (_∘co_) public
 
 module CoK {Γ : obj} = Category (coKleisli-prod ℰP Γ)

@@ -10,6 +10,7 @@ open import categories
          strong-coproducts→coproducts; HasExponentials)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 import polynomial-functor
+import functor
 import language-syntax
 
 module language-interpretation
@@ -18,7 +19,8 @@ module language-interpretation
   (𝒞 : Category o m e)
   (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
   (𝒞E : HasExponentials 𝒞 𝒞P)
-  (let open polynomial-functor.Interp 𝒞T 𝒞P 𝒞SC)
+  (𝒞L : functor.StrongFunctor 𝒞P)
+  (let open polynomial-functor.Interp 𝒞T 𝒞P 𝒞SC 𝒞L)
   (let open polynomial-functor using (Poly; extend))
   (Mu : HasMu)
   (let Bool = HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)

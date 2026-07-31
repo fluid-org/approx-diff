@@ -22,6 +22,7 @@ open import functor using (Functor; HasColimits)
 open import polynomial-functor using (Poly; extend; Poly-map)
 import fam
 import fam-mu-types
+import functor
 import fam-realisation
 import polynomial-functor
 import fam-mu-realisation.natural
@@ -29,10 +30,10 @@ import fam-mu-realisation.natural
 module fam-mu-realisation {o m e} (os es : Level) {ℰ : Category o m e}
   (ℰC : ∀ (A : Setoid os (os ⊔ es)) → HasColimits (setoid→category A) ℰ)
   (ℰT : HasTerminal ℰ) (ℰP : HasProducts ℰ) (ℰE : HasExponentials ℰ ℰP)
-  (ℰSC : HasStrongCoproducts ℰ ℰP)
+  (ℰSC : HasStrongCoproducts ℰ ℰP) (ℰL : functor.StrongFunctor ℰP)
   where
 
-open fam-mu-realisation.natural os es ℰC ℰT ℰP ℰE ℰSC public
+open fam-mu-realisation.natural os es ℰC ℰT ℰP ℰE ℰSC ℰL public
 
 -- The μ-objects for ℰ itself, via realisation of the Fam(ℰ) μ-objects at
 -- singleton-embedded environments.
