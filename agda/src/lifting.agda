@@ -28,6 +28,14 @@ record Lifting {o m e} (𝒞 : Category o m e) (𝟙 : Category.obj 𝒞) : Set 
     -- Every map out of a lifted object is assembled from its own two restrictions.
     affine-η    : ∀ {P C} (h : L P ⇒ C) → affine (h ∘ root) (h ∘ inj) ≈ h
 
+    -- The action on morphisms, which transport along bisimilarity of trees needs. The root is
+    -- natural for it; the injection is not, which is why there is no unit and no strength.
+    Lmap      : ∀ {P Q} → P ⇒ Q → L P ⇒ L Q
+    Lmap-cong : ∀ {P Q} {f g : P ⇒ Q} → f ≈ g → Lmap f ≈ Lmap g
+    Lmap-id   : ∀ {P} → Lmap (id P) ≈ id (L P)
+    Lmap-comp : ∀ {P Q R} (g : Q ⇒ R) (f : P ⇒ Q) → Lmap (g ∘ f) ≈ (Lmap g ∘ Lmap f)
+    Lmap-root : ∀ {P Q} (f : P ⇒ Q) → (Lmap f ∘ root) ≈ root
+
   -- Two maps out of a lifted object agreeing on the root and on the payload are equal, which is the
   -- uniqueness principle the initial-algebra laws use.
   lifting-ext : ∀ {P C} (h k : L P ⇒ C) →
@@ -51,3 +59,8 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) (T : HasTermin
   trivial .Lifting.affine-root c M =
     ≈-trans (comp-bilinear-ε₂ M) (≈-sym (zero-out c))
   trivial .Lifting.affine-η h = id-right
+  trivial .Lifting.Lmap f = f
+  trivial .Lifting.Lmap-cong e = e
+  trivial .Lifting.Lmap-id = ≈-refl
+  trivial .Lifting.Lmap-comp g f = ≈-refl
+  trivial .Lifting.Lmap-root f = comp-bilinear-ε₂ f

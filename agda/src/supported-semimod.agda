@@ -148,6 +148,22 @@ affine-s {X} {C} c M .bound .*≈* .prop-setoid._≃m_.func-eq {(a₁ , u₁) ,�
                      (c .bound .*≈* .prop-setoid._≃m_.func-eq e₁))
            p₂)))
 
+-- The lifted action leaves the scalar alone and applies the morphism to the payload, which stays
+-- dominated because the morphism does not increase supports.
+Lmap-s : ∀ {X Y} → Mor X Y → Mor (Ls X) (Ls Y)
+Lmap-s {X} {Y} f .mor .*→* .prop-setoid._⇒_.func ((a , u) ,ₚ d) =
+  (a , f .mor .func u) ,ₚ
+  S.trans (S.+-cong S.refl (S.sym d))
+  (S.trans (S.sym S.+-assoc)
+  (S.trans (S.+-cong (f .bound .*≈* .prop-setoid._≃m_.func-eq (Semimodule.refl (X .carrier))) S.refl)
+           d))
+Lmap-s {X} {Y} f .mor .*→* .prop-setoid._⇒_.func-resp-≈ (e₁ ,ₚ e₂) =
+  e₁ ,ₚ f .mor .*→* .prop-setoid._⇒_.func-resp-≈ e₂
+Lmap-s {X} {Y} f .mor .preserve-ze = S.refl ,ₚ f .mor .preserve-ze
+Lmap-s {X} {Y} f .mor .preserve-+ = S.refl ,ₚ f .mor .preserve-+
+Lmap-s {X} {Y} f .mor .preserve-· = S.refl ,ₚ f .mor .preserve-·
+Lmap-s {X} {Y} f .bound .*≈* .prop-setoid._≃m_.func-eq (e₁ ,ₚ e₂) = S.trans ∨-idem e₁
+
 -- The lifting instance: every map out of a lift is the sum of its behaviour on the root and on the
 -- injected payload, since (a, u) = (a, 0) + (supp u, u) when the support is dominated.
 supported-lifting : Lifting Sup.cat 𝟙s
@@ -173,3 +189,11 @@ supported-lifting .Lifting.affine-η {X} {C} h
   where
   module Cm = Semimodule (C .carrier)
   module Xm = Semimodule (X .carrier)
+supported-lifting .Lifting.Lmap = Lmap-s
+supported-lifting .Lifting.Lmap-cong {X} {Y} {f} {g} ec .*≈* .prop-setoid._≃m_.func-eq (e₁ ,ₚ e₂) =
+  e₁ ,ₚ ec .*≈* .prop-setoid._≃m_.func-eq e₂
+supported-lifting .Lifting.Lmap-id {X} .*≈* .prop-setoid._≃m_.func-eq (e₁ ,ₚ e₂) = e₁ ,ₚ e₂
+supported-lifting .Lifting.Lmap-comp {X} {Y} {Z} g f .*≈* .prop-setoid._≃m_.func-eq (e₁ ,ₚ e₂) =
+  e₁ ,ₚ g .mor .*→* .prop-setoid._⇒_.func-resp-≈ (f .mor .*→* .prop-setoid._⇒_.func-resp-≈ e₂)
+supported-lifting .Lifting.Lmap-root {X} {Y} f .*≈* .prop-setoid._≃m_.func-eq e =
+  e ,ₚ f .mor .preserve-ze

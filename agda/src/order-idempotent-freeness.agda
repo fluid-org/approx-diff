@@ -257,6 +257,18 @@ branch-η {W} {P} h = ≈ₘ-trans step (Biproduct.copair-ext (biproduct W (Lp P
            {g₂ = h ∘ ι₂ W (Lp P)}
            (≈ₘ-refl {M = (h ∘ ι₁ W (Lp P)) .mat}) (affine-η (h ∘ ι₂ W (Lp P)))
 
+-- The lifted action fixes the root: composing with the root selection reads the tag column of the
+-- lifted morphism, which is the root again.
+Lp-map-root : ∀ {P Q} (f : P ⇒ Q) → ((Lp-map f) ∘ root {P}) ≈p root {Q}
+Lp-map-root {P} {Q} f zero j =
+  trans (+-cong ·-lunit
+           (trans (Σ-cong {P .dim} (λ p → ε-annihilᵣ)) (Σ-ε {P .dim})))
+        (trans +-comm +-lunit)
+Lp-map-root {P} {Q} f (suc q) j =
+  trans (+-cong ε-annihilₗ
+           (trans (Σ-cong {P .dim} (λ p → ε-annihilᵣ)) (Σ-ε {P .dim})))
+        +-lunit
+
 -- The lifting as the interpretation needs it: the root supplies the constant, the injection the
 -- payload, and every map out of a lifted order is its own assembly.
 Lp-lifting : Lifting cat 𝟙p
@@ -273,3 +285,8 @@ Lp-lifting .Lifting.affine-η {P} {C} h =
               {M = h ∘ inj {P}} {M' = body-of {P} h}
               (root-tag {P} h) (inj-body {P} h))
            (affine-η h)
+Lp-lifting .Lifting.Lmap = Lp-map
+Lp-lifting .Lifting.Lmap-cong {P} {Q} {f} {g} = Lp-map-cong {P} {Q} {f} {g}
+Lp-lifting .Lifting.Lmap-id {P} = Lp-map-id P
+Lp-lifting .Lifting.Lmap-comp = Lp-map-comp
+Lp-lifting .Lifting.Lmap-root {P} {Q} f = Lp-map-root {P} {Q} f
