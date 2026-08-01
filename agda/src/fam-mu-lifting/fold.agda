@@ -29,12 +29,12 @@ open fam-mu-lifting.reindex os es T CM BP Lft public
 
 -- The fold (catamorphism) for the μ-type, lifted to a standalone module so its
 -- mutual recursion is termination-checked independently of the `hasMu` copattern.
-module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
-               (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A) where
+-- The fold-specific reindex morphism, shared by the fold and by the application of an algebra to a
+-- candidate: `fbase` sends the outer recursion slot to the recursive map and parameters to
+-- themselves; `fbind` records a binder.
+module FoldBase {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj} where
     module Tδ = Tree δ
     module TA' = Tree (extend δ A)
-    -- Fold-specific reindex morphism (first-order, like `MorD`): `fbase` sends the outer
-    -- recursion slot to the fold and parameters to themselves; `fbind` records a binder.
     data FMor : ∀ {k} (ρ : Fin k → Fin n ⊎ Sort n) (ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)) →
                 (∀ v → Tδ.DecoAssign (ρ v)) → (∀ v → TA'.DecoAssign (ρ' v)) →
                 Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
@@ -43,6 +43,10 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fbind : ∀ {k} {ρ ρ' d d'} (Q : Poly (suc k)) → FMor ρ ρ' d d' →
               FMor (extend ρ (inj₂ (mkSort ∣ Q ∣ ρ))) (extend ρ' (inj₂ (mkSort ∣ Q ∣ ρ')))
                    (Tδ.deco-ext Q d) (TA'.deco-ext Q d')
+
+module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+               (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A) where
+    open FoldBase {n} {Γ} {A} {P} {δ} public
     -- Fold the outer μ via `alg`; nested μ are reindexed into the `extend δ A` context,
     -- the recursion slot carrying the fold itself (inlined, so every call is structural).
     mutual
