@@ -48,6 +48,9 @@ private
   π₁ : ∀ {x y} → (x ⊕ y) ⇒ x
   π₁ {x} {y} = Biproduct.p₁ (BP x y)
 
+  π₂ : ∀ {x y} → (x ⊕ y) ⇒ y
+  π₂ {x} {y} = Biproduct.p₂ (BP x y)
+
   ι₁ : ∀ {x y} → x ⇒ (x ⊕ y)
   ι₁ {x} {y} = Biproduct.in₁ (BP x y)
 
@@ -141,6 +144,30 @@ module _ (W R : obj) where
   rootStep-cong X F k er =
     cop-cong (∘-cong er ≈-refl) (affine-cong ≈-refl (∘-cong er ≈-refl))
 
+  -- Full congruences, in the continuation as well, which the substitution lemma threads.
+  varStep-cong₂ : ∀ (X : obj) {k k' : (W ⊕ R) ⇒ R} {g g' : (W ⊕ X) ⇒ R} →
+                  k ≈ k' → g ≈ g' → varStep X k g ≈ varStep X k' g'
+  varStep-cong₂ X ek eg = ∘-cong ek (pairb-cong ≈-refl eg)
+
+  rootStep-cong₂ : ∀ (X F : obj) {k k' : (W ⊕ L X) ⇒ R} {r r' : (W ⊕ F) ⇒ R} →
+                   k ≈ k' → r ≈ r' → rootStep X F k r ≈ rootStep X F k' r'
+  rootStep-cong₂ X F ek er =
+    cop-cong (∘-cong er ≈-refl)
+             (affine-cong (∘-cong (∘-cong ek ≈-refl) ≈-refl) (∘-cong er ≈-refl))
+
+  prodCont₁-cong : ∀ (X₁ X₂ : obj) {k k' : (W ⊕ (X₁ ⊕ X₂)) ⇒ R} →
+                   k ≈ k' → prodCont₁ X₁ X₂ k ≈ prodCont₁ X₁ X₂ k'
+  prodCont₁-cong X₁ X₂ ek =
+    cop-cong (∘-cong ek ≈-refl) (∘-cong (∘-cong ek ≈-refl) ≈-refl)
+
+  prodCont₂-cong : ∀ (X₁ X₂ : obj) {k k' : (W ⊕ (X₁ ⊕ X₂)) ⇒ R} →
+                   k ≈ k' → prodCont₂ X₁ X₂ k ≈ prodCont₂ X₁ X₂ k'
+  prodCont₂-cong X₁ X₂ ek = cop-cong ≈-refl (∘-cong (∘-cong ek ≈-refl) ≈-refl)
+
+  rootCont-cong : ∀ (X : obj) {k k' : (W ⊕ L X) ⇒ R} →
+                  k ≈ k' → rootCont X k ≈ rootCont X k'
+  rootCont-cong X ek = cop-cong (∘-cong ek ≈-refl) (∘-cong (∘-cong ek ≈-refl) ≈-refl)
+
   Cand : Poly → Set (o ⊔ m)
   Cand B = (v : Val B) → (W ⊕ fibV v) ⇒ R
 
@@ -195,6 +222,21 @@ module _ (W R : obj) where
     fold-is-fold : IsFold fold
     fold-is-fold s = foldS-applyG s (alg s)
 
+    -- The fold is congruent in its continuation.
+    foldS-cong : ∀ {Q} (s : Shape B Q) {k k' : (W ⊕ ⟦ s ⟧) ⇒ R} →
+                 k ≈ k' → foldS s k ≈ foldS s k'
+    foldS-cong kon ek = ek
+    foldS-cong (rec v) ek = varStep-cong₂ (fibV v) ek ≈-refl
+    foldS-cong (prd s₁ s₂) ek =
+      rootStep-cong₂ (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) (fibS s₁ ⊕ fibS s₂) ek
+        (prodStep-cong (fibS s₁) (fibS s₂)
+          (foldS-cong s₁ (prodCont₁-cong ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont-cong (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) ek)))
+          (foldS-cong s₂ (prodCont₂-cong ⟦ s₁ ⟧ ⟦ s₂ ⟧ (rootCont-cong (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) ek))))
+    foldS-cong (inl s) ek =
+      rootStep-cong₂ ⟦ s ⟧ (fibS s) ek (foldS-cong s (rootCont-cong ⟦ s ⟧ ek))
+    foldS-cong (inr s) ek =
+      rootStep-cong₂ ⟦ s ⟧ (fibS s) ek (foldS-cong s (rootCont-cong ⟦ s ⟧ ek))
+
     -- The law determines the fold, by induction on the value together with its shape.
     mutual
       fold-unique : (h : Cand B) → IsFold h → ∀ v → h v ≈ fold v
@@ -213,3 +255,163 @@ module _ (W R : obj) where
         rootStep-cong ⟦ s ⟧ (fibS s) k (fold-uniqueS h H s (rootCont ⟦ s ⟧ k))
       fold-uniqueS h H (inr s) k =
         rootStep-cong ⟦ s ⟧ (fibS s) k (fold-uniqueS h H s (rootCont ⟦ s ⟧ k))
+
+-- Substitution: changing the context commutes with the fold, the reindexed fold being the fold of
+-- the reindexed algebra. The constant consumed at each root is the continuation's root column,
+-- which a change of context does not touch.
+module Reindex (W W' R : obj) (u : W' ⇒ W) where
+
+  private
+    ctx-map : ∀ (F : obj) → (W' ⊕ F) ⇒ (W ⊕ F)
+    ctx-map F = pairb (u ∘ π₁) π₂
+
+    bp-pair-ι₁ : ∀ {x y z} (f : x ⇒ y) → pairb f (εm {x} {z}) ≈ (ι₁ ∘ f)
+    bp-pair-ι₁ f = ≈-trans (+m-cong ≈-refl (comp-bilinear-ε₂ ι₂)) +m-runit
+
+    bp-pair-ι₂ : ∀ {x y z} (g : x ⇒ z) → pairb (εm {x} {y}) g ≈ (ι₂ ∘ g)
+    bp-pair-ι₂ {x} {y} {z} g =
+      ≈-trans (+m-cong (comp-bilinear-ε₂ ι₁) ≈-refl)
+              (homCM _ _ .CommutativeMonoid.+-lunit)
+
+    ctx-map-ι₁ : ∀ (F : obj) → (ctx-map F ∘ ι₁) ≈ (ι₁ ∘ u)
+    ctx-map-ι₁ F =
+      ≈-trans (Biproduct.pair-natural (BP W F) _ _ _)
+      (≈-trans (pairb-cong
+                 (≈-trans (assoc _ _ _)
+                   (≈-trans (∘-cong ≈-refl (Biproduct.id-1 (BP W' F))) id-right))
+                 (Biproduct.zero-2 (BP W' F)))
+               (bp-pair-ι₁ u))
+
+    ctx-map-ι₂ : ∀ (F : obj) → (ctx-map F ∘ ι₂) ≈ ι₂
+    ctx-map-ι₂ F =
+      ≈-trans (Biproduct.pair-natural (BP W F) _ _ _)
+      (≈-trans (pairb-cong
+                 (≈-trans (assoc _ _ _)
+                   (≈-trans (∘-cong ≈-refl (Biproduct.zero-1 (BP W' F)))
+                            (comp-bilinear-ε₂ u)))
+                 (Biproduct.id-2 (BP W' F)))
+               (≈-trans (bp-pair-ι₂ (id F)) id-right))
+
+    push-ι₁ : ∀ (F : obj) {T} (f : (W ⊕ F) ⇒ T) → ((f ∘ ι₁) ∘ u) ≈ ((f ∘ ctx-map F) ∘ ι₁)
+    push-ι₁ F f =
+      ≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (≈-sym (ctx-map-ι₁ F))) (≈-sym (assoc _ _ _)))
+
+    push-ι₂ : ∀ (F : obj) {T} (f : (W ⊕ F) ⇒ T) → (f ∘ ι₂) ≈ ((f ∘ ctx-map F) ∘ ι₂)
+    push-ι₂ F f =
+      ≈-trans (∘-cong ≈-refl (≈-sym (ctx-map-ι₂ F))) (≈-sym (assoc _ _ _))
+
+    biproduct-ext : ∀ {x y z} {h k : (x ⊕ y) ⇒ z} →
+                    (h ∘ ι₁) ≈ (k ∘ ι₁) → (h ∘ ι₂) ≈ (k ∘ ι₂) → h ≈ k
+    biproduct-ext {x} {y} {z} {h} {k} e₁ e₂ =
+      ≈-trans (≈-sym (Biproduct.copair-ext (BP x y) h))
+      (≈-trans (cop-cong e₁ e₂) (Biproduct.copair-ext (BP x y) k))
+
+    cop-ctx : ∀ {F T} (f : W ⇒ T) (g : F ⇒ T) → (cop f g ∘ ctx-map F) ≈ cop (f ∘ u) g
+    cop-ctx {F} {T} f g =
+      biproduct-ext
+        (≈-trans (assoc _ _ _)
+         (≈-trans (∘-cong ≈-refl (ctx-map-ι₁ F))
+          (≈-trans (≈-sym (assoc _ _ _))
+           (≈-trans (∘-cong (Biproduct.copair-in₁ (BP W F) f g) ≈-refl)
+                    (≈-sym (Biproduct.copair-in₁ (BP W' F) (f ∘ u) g))))))
+        (≈-trans (assoc _ _ _)
+         (≈-trans (∘-cong ≈-refl (ctx-map-ι₂ F))
+          (≈-trans (Biproduct.copair-in₂ (BP W F) f g)
+                   (≈-sym (Biproduct.copair-in₂ (BP W' F) (f ∘ u) g)))))
+
+    varStep-ctx : ∀ (X : obj) (k : (W ⊕ R) ⇒ R) (g : (W ⊕ X) ⇒ R) →
+                  (varStep W R X k g ∘ ctx-map X)
+                  ≈ varStep W' R X (k ∘ ctx-map R) (g ∘ ctx-map X)
+    varStep-ctx X k g =
+      ≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl inner) (≈-sym (assoc _ _ _)))
+      where
+      inner : (pairb π₁ g ∘ ctx-map X) ≈ (ctx-map R ∘ pairb π₁ (g ∘ ctx-map X))
+      inner =
+        ≈-trans (Biproduct.pair-natural (BP W R) _ _ _)
+        (≈-trans (pairb-cong (Biproduct.pair-p₁ (BP W X) _ _) ≈-refl)
+        (≈-sym (≈-trans (Biproduct.pair-natural (BP W R) _ _ _)
+                (pairb-cong
+                  (≈-trans (assoc _ _ _)
+                           (∘-cong ≈-refl (Biproduct.pair-p₁ (BP W' R) _ _)))
+                  (Biproduct.pair-p₂ (BP W' R) _ _)))))
+
+    prodCont₁-ctx : ∀ (X₁ X₂ : obj) (k : (W ⊕ (X₁ ⊕ X₂)) ⇒ R) →
+                    (prodCont₁ W R X₁ X₂ k ∘ ctx-map X₁)
+                    ≈ prodCont₁ W' R X₁ X₂ (k ∘ ctx-map (X₁ ⊕ X₂))
+    prodCont₁-ctx X₁ X₂ k =
+      ≈-trans (cop-ctx _ _)
+              (cop-cong (push-ι₁ (X₁ ⊕ X₂) k) (∘-cong (push-ι₂ (X₁ ⊕ X₂) k) ≈-refl))
+
+    prodCont₂-ctx : ∀ (X₁ X₂ : obj) (k : (W ⊕ (X₁ ⊕ X₂)) ⇒ R) →
+                    (prodCont₂ W R X₁ X₂ k ∘ ctx-map X₂)
+                    ≈ prodCont₂ W' R X₁ X₂ (k ∘ ctx-map (X₁ ⊕ X₂))
+    prodCont₂-ctx X₁ X₂ k =
+      ≈-trans (cop-ctx _ _)
+              (cop-cong (comp-bilinear-ε₁ u) (∘-cong (push-ι₂ (X₁ ⊕ X₂) k) ≈-refl))
+
+    rootCont-ctx : ∀ (X : obj) (k : (W ⊕ L X) ⇒ R) →
+                   (rootCont W R X k ∘ ctx-map X) ≈ rootCont W' R X (k ∘ ctx-map (L X))
+    rootCont-ctx X k =
+      ≈-trans (cop-ctx _ _)
+              (cop-cong (push-ι₁ (L X) k) (∘-cong (push-ι₂ (L X) k) ≈-refl))
+
+    prodStep-ctx : ∀ (F₁ F₂ : obj) (r₁ : (W ⊕ F₁) ⇒ R) (r₂ : (W ⊕ F₂) ⇒ R) →
+                   (prodStep W R F₁ F₂ r₁ r₂ ∘ ctx-map (F₁ ⊕ F₂))
+                   ≈ prodStep W' R F₁ F₂ (r₁ ∘ ctx-map F₁) (r₂ ∘ ctx-map F₂)
+    prodStep-ctx F₁ F₂ r₁ r₂ =
+      ≈-trans (cop-ctx _ _)
+        (cop-cong (≈-trans (comp-bilinear₁ _ _ u)
+                           (+m-cong (push-ι₁ F₁ r₁) (push-ι₁ F₂ r₂)))
+                  (cop-cong (push-ι₂ F₁ r₁) (push-ι₂ F₂ r₂)))
+
+    rootStep-ctx : ∀ (X F : obj) (k : (W ⊕ L X) ⇒ R) (r : (W ⊕ F) ⇒ R) →
+                   (rootStep W R X F k r ∘ ctx-map (L F))
+                   ≈ rootStep W' R X F (k ∘ ctx-map (L X)) (r ∘ ctx-map F)
+    rootStep-ctx X F k r =
+      ≈-trans (cop-ctx _ _)
+        (cop-cong (push-ι₁ F r)
+                  (affine-cong (∘-cong (push-ι₂ (L X) k) ≈-refl) (push-ι₂ F r)))
+
+  module _ {B : Poly} (alg : (s : Shape B B) → (W ⊕ sh R s) ⇒ R) where
+
+    alg-ctx : (s : Shape B B) → (W' ⊕ sh R s) ⇒ R
+    alg-ctx s = alg s ∘ ctx-map (sh R s)
+
+    mutual
+      fold-ctx : ∀ (v : Val B) →
+                 (fold W R alg v ∘ ctx-map (fibV v)) ≈ fold W' R alg-ctx v
+      fold-ctx (sup s) = foldS-ctx s (alg s)
+
+      foldS-ctx : ∀ {Q} (s : Shape B Q) (k : (W ⊕ sh R s) ⇒ R) →
+                  (foldS W R alg s k ∘ ctx-map (fibS s))
+                  ≈ foldS W' R alg-ctx s (k ∘ ctx-map (sh R s))
+      foldS-ctx kon k = ≈-refl
+      foldS-ctx (rec v) k =
+        ≈-trans (varStep-ctx (fibV v) k (fold W R alg v))
+                (varStep-cong₂ W' R (fibV v) ≈-refl (fold-ctx v))
+      foldS-ctx (prd s₁ s₂) k =
+        ≈-trans (rootStep-ctx (sh R s₁ ⊕ sh R s₂) (fibS s₁ ⊕ fibS s₂) k _)
+        (rootStep-cong₂ W' R (sh R s₁ ⊕ sh R s₂) (fibS s₁ ⊕ fibS s₂) ≈-refl
+          (≈-trans (prodStep-ctx (fibS s₁) (fibS s₂) _ _)
+           (prodStep-cong W' R (fibS s₁) (fibS s₂)
+             (≈-trans (foldS-ctx s₁ _)
+              (foldS-cong W' R alg-ctx s₁
+                (≈-trans (prodCont₁-ctx (sh R s₁) (sh R s₂) _)
+                  (prodCont₁-cong W' R (sh R s₁) (sh R s₂)
+                    (rootCont-ctx (sh R s₁ ⊕ sh R s₂) k)))))
+             (≈-trans (foldS-ctx s₂ _)
+              (foldS-cong W' R alg-ctx s₂
+                (≈-trans (prodCont₂-ctx (sh R s₁) (sh R s₂) _)
+                  (prodCont₂-cong W' R (sh R s₁) (sh R s₂)
+                    (rootCont-ctx (sh R s₁ ⊕ sh R s₂) k))))))))
+      foldS-ctx (inl s) k =
+        ≈-trans (rootStep-ctx (sh R s) (fibS s) k _)
+        (rootStep-cong₂ W' R (sh R s) (fibS s) ≈-refl
+          (≈-trans (foldS-ctx s _)
+                   (foldS-cong W' R alg-ctx s (rootCont-ctx (sh R s) k))))
+      foldS-ctx (inr s) k =
+        ≈-trans (rootStep-ctx (sh R s) (fibS s) k _)
+        (rootStep-cong₂ W' R (sh R s) (fibS s) ≈-refl
+          (≈-trans (foldS-ctx s _)
+                   (foldS-cong W' R alg-ctx s (rootCont-ctx (sh R s) k))))
