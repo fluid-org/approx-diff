@@ -19,6 +19,7 @@ open import primitives using (Primitives)
 import two
 import matrix
 import order-idempotent
+import order-idempotent-freeness
 
 module language-operational.value-fibre {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
@@ -46,6 +47,8 @@ private
   ⊤-add-top {two.I} = T.refl {two.I}
 
 open order-idempotent two.semiring (λ {x} → ∨-idem {x}) (λ {x} → ∧-idem {x}) (λ {x} → ⊤-add-top {x})
+open order-idempotent-freeness two.semiring
+  (λ {x} → ∨-idem {x}) (λ {x} → ∧-idem {x}) (λ {x} → ⊤-add-top {x})
 
 mutual
   pos : ∀ {τ} → Val τ → Pos
@@ -89,6 +92,42 @@ mutual
   pos-env-dim : ∀ {Γ} (γ : Env Γ) → pos-env γ .dim ≡ width-env′ γ
   pos-env-dim emp     = refl
   pos-env-dim (γ · v) = cong₂ _+_ (pos-env-dim γ) (pos-dim v)
+
+-- The positions of a part of a value sit inside those of the whole, under its root. These replace
+-- the injections into a free semimodule on a width.
+into-inl : ∀ {τ₁ τ₂} (v : Val τ₁) → pos v ⇒ pos (inl {τ₁} {τ₂} v)
+into-inl v = inj
+
+into-inr : ∀ {τ₁ τ₂} (v : Val τ₂) → pos v ⇒ pos (inr {τ₁} {τ₂} v)
+into-inr v = inj
+
+into-fst : ∀ {τ₁ τ₂} (v : Val τ₁) (u : Val τ₂) → pos v ⇒ pos (pair v u)
+into-fst v u = inj ∘ ι₁ (pos v) (pos u)
+
+into-snd : ∀ {τ₁ τ₂} (v : Val τ₁) (u : Val τ₂) → pos u ⇒ pos (pair v u)
+into-snd v u = inj ∘ ι₂ (pos v) (pos u)
+
+into-clo : ∀ {Γ σ τ} (γ : Env Γ) (t : (Γ Syn., σ) Syn.⊢ τ) → pos-env γ ⇒ pos (clo γ t)
+into-clo γ t = inj
+
+into-env-tail : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) → pos-env γ ⇒ pos-env (γ · v)
+into-env-tail γ v = ι₁ (pos-env γ) (pos v)
+
+into-env-head : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) → pos v ⇒ pos-env (γ · v)
+into-env-head γ v = ι₂ (pos-env γ) (pos v)
+
+-- Selecting a former's root alone, which is what an elimination reads.
+root-inl : ∀ {τ₁ τ₂} (v : Val τ₁) → 𝟙p ⇒ pos (inl {τ₁} {τ₂} v)
+root-inl v = root
+
+root-inr : ∀ {τ₁ τ₂} (v : Val τ₂) → 𝟙p ⇒ pos (inr {τ₁} {τ₂} v)
+root-inr v = root
+
+root-pair : ∀ {τ₁ τ₂} (v : Val τ₁) (u : Val τ₂) → 𝟙p ⇒ pos (pair v u)
+root-pair v u = root
+
+root-clo : ∀ {Γ σ τ} (γ : Env Γ) (t : (Γ Syn., σ) Syn.⊢ τ) → 𝟙p ⇒ pos (clo γ t)
+root-clo γ t = root
 
 private
   table : ∀ {m n} → TM.Matrix m n → Vec (Vec two.Two n) m
