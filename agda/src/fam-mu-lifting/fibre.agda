@@ -194,6 +194,24 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-el-trans* (inj₁ i) _ q p = δ i .fam .trans* q p
     fib-el-trans* (inj₂ _) (mkDeco Q ρd) {x} {y} {z} q p = fib-trans* Q ρd {x = x} {y = y} {z = z} q p
 
+  -- Transports are isomorphisms, inverted by transport along the symmetric proof; the equality
+  -- proofs are propositions, so the round trip is transport along reflexivity.
+  fib-shape-iso₁ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+                   (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄}
+                   (p : shape≈ ∣ Q ∣ η̄ x y) →
+                   (fib-shape-subst Q d p ∘ fib-shape-subst Q d (shape≈-sym ∣ Q ∣ η̄ p))
+                     ≈ id (fib-shape Q d y)
+  fib-shape-iso₁ Q d {x} {y} p =
+    ≈-trans (≈-sym (fib-shape-trans* Q d p (shape≈-sym ∣ Q ∣ _ p))) (fib-shape-refl* Q d y)
+
+  fib-shape-iso₂ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+                   (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄}
+                   (p : shape≈ ∣ Q ∣ η̄ x y) →
+                   (fib-shape-subst Q d (shape≈-sym ∣ Q ∣ η̄ p) ∘ fib-shape-subst Q d p)
+                     ≈ id (fib-shape Q d x)
+  fib-shape-iso₂ Q d {x} {y} p =
+    ≈-trans (≈-sym (fib-shape-trans* Q d (shape≈-sym ∣ Q ∣ _ p) p)) (fib-shape-refl* Q d x)
+
   -- The fibre family of the μ-type at a decorated sort.
   WFam : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
          (d : ∀ i → DecoAssign (ρ̄ i)) → Fam (WSetoid ∣ Q ∣ ρ̄) 𝒞

@@ -88,6 +88,24 @@ import lifting-fold
 open lifting-fold CM BP Lft public
   using (under-root; under-root-cong; under-root-natural; pm; pm-in₁; pm-in₂; bp-ext)
 
+-- A family's transports are isomorphisms, inverted along the symmetric proof.
+fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
+                 {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
+                 (F .subst e ∘ F .subst (I .Setoid.isEquivalence .sym e)) ≈ id _
+fam-subst-iso₁ {I} F e =
+  ≈-trans (≈-sym (F .trans* e (I .Setoid.isEquivalence .sym e))) (F .refl*)
+
+fam-subst-iso₂ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
+                 {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
+                 (F .subst (I .Setoid.isEquivalence .sym e) ∘ F .subst e) ≈ id _
+fam-subst-iso₂ {I} F e =
+  ≈-trans (≈-sym (F .trans* (I .Setoid.isEquivalence .sym e) e)) (F .refl*)
+
+pm-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} {h : b₁ ⇒ b₂} {h' : b₂ ⇒ b₁} →
+         (f ∘ f') ≈ id a₂ → (h ∘ h') ≈ id b₂ →
+         (prod-m f h ∘ prod-m f' h') ≈ id (prod a₂ b₂)
+pm-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
+
 -- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where
   open Sh.Tree (λ i → δ i .idx) public
