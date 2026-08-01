@@ -6,7 +6,7 @@
 -- supported lift. This is the object-level comparison between the lifting on position orders and
 -- the lifting on supported semimodules.
 open import Level using (0ℓ)
-open import Data.Nat using (ℕ; suc)
+open import Data.Nat using (ℕ; zero; suc)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (_,_; _×_)
 open import prop using (_∧_; ∃ₛ) renaming (_,_ to _,ₚ_)
@@ -243,9 +243,8 @@ affine-intertwine {P} {C} c Mm .*≈* .prop-setoid._≃m_.func-eq
 
 -- The down-closure of a basis vector is fixed, and morphisms are determined by their action on
 -- those closures, since absorption reads the matrix back off them.
-private
-  colv : ∀ (P : Pos) (p : Fin (P .dim)) → ∃ₛ (M.Vec (P .dim)) (OS.Fixed P)
-  colv P p = (λ i → P .ord i p) ,ₚ λ i → OI.ord-idem P i p
+colv : ∀ (P : Pos) (p : Fin (P .dim)) → ∃ₛ (M.Vec (P .dim)) (OS.Fixed P)
+colv P p = (λ i → P .ord i p) ,ₚ λ i → OI.ord-idem P i p
 
 𝓥-faithful : ∀ {P Q} {f g : P OI.⇒ Q} → SC._≈_ (𝓥₁ f) (𝓥₁ g) → OI._≈p_ f g
 𝓥-faithful {P} {Q} {f} {g} h q p =
@@ -358,3 +357,71 @@ Sup-biproduct = SS.Sup.biproduct-s SemiMod.biproduct
                     (Biproduct.prod (Sup-biproduct (𝓥 P) (𝓥 Q)))
 𝓥-⊕-iso P Q =
   SC.IsIso→Iso (biproduct-iso SS.Sup.cmon (𝓥-image-biproduct P Q) (Sup-biproduct (𝓥 P) (𝓥 Q)))
+
+-- Fullness: a supported morphism between realisations is determined by its values on the closed
+-- basis columns, since every fixed vector is the finite sum of its scaled closed columns and
+-- morphisms preserve finite sums.
+vec : ∀ (P : Pos) → ∃ₛ (M.Vec (P .dim)) (OS.Fixed P) → M.Vec (P .dim)
+vec P (u ,ₚ _) = u
+
+fxd : ∀ (P : Pos) (x : ∃ₛ (M.Vec (P .dim)) (OS.Fixed P)) → OS.Fixed P (vec P x)
+fxd P (u ,ₚ p) = p
+
+msum : ∀ (X : Semimodule) {n} → (Fin n → X .Carrier) → X .Carrier
+msum X {zero}  f = X .additive .CommutativeMonoid.ε
+msum X {suc n} f = X ._+_ (f Fin.zero) (msum X (λ i → f (Fin.suc i)))
+
+mor-msum : ∀ {X Y : Semimodule} (h : X ⇒ Y) {n} (f : Fin n → X .Carrier) →
+           Y ._≈_ (h .func (msum X f)) (msum Y (λ i → h .func (f i)))
+mor-msum {X} {Y} h {zero}  f = h .preserve-ze
+mor-msum {X} {Y} h {suc n} f =
+  Y .trans (h .preserve-+) (Y .+-cong (Y .refl) (mor-msum h (λ i → f (Fin.suc i))))
+
+𝓥-msum-vec : ∀ (P : Pos) {n} (f : Fin n → ∃ₛ (M.Vec (P .dim)) (OS.Fixed P)) (q : Fin (P .dim)) →
+             vec P (msum (𝓥sm P) f) q S.≈ M.Σ {n} (λ p → vec P (f p) q)
+𝓥-msum-vec P {zero}  f q = S.refl
+𝓥-msum-vec P {suc n} f q = S.+-cong S.refl (𝓥-msum-vec P (λ i → f (Fin.suc i)) q)
+
+-- A fixed vector is the sum of its scaled closed columns, and so is each closed column against the
+-- order, which is what absorption of the recovered matrix needs.
+decomp : ∀ (P : Pos) (v : M.Vec (P .dim)) (fx : OS.Fixed P v) (q : Fin (P .dim)) →
+         v q S.≈ vec P (msum (𝓥sm P) (λ p → 𝓥sm P ._·_ (v p) (colv P p))) q
+decomp P v fx q =
+  S.trans (S.sym (fx q))
+  (S.trans (M.Σ-cong {P .dim} (λ p → S.·-comm))
+           (S.sym (𝓥-msum-vec P (λ p → 𝓥sm P ._·_ (v p) (colv P p)) q)))
+
+decomp-col : ∀ (P : Pos) (p : Fin (P .dim)) (q : Fin (P .dim)) →
+             P .ord q p S.≈ vec P (msum (𝓥sm P) (λ j → 𝓥sm P ._·_ (P .ord j p) (colv P j))) q
+decomp-col P p q =
+  S.trans (S.sym (OI.ord-idem P q p))
+  (S.trans (M.Σ-cong {P .dim} (λ j → S.·-comm))
+           (S.sym (𝓥-msum-vec P (λ j → 𝓥sm P ._·_ (P .ord j p) (colv P j)) q)))
+
+full-mor : ∀ {P Q} → SS.Sup.Mor (𝓥 P) (𝓥 Q) → P OI.⇒ Q
+full-mor {P} {Q} h .OI.mat q p = vec Q (h .SS.Sup.mor .func (colv P p)) q
+full-mor {P} {Q} h .OI.absorbed =
+  OI.≈ₘ-trans (M.∘-cong left (OI.≈ₘ-refl {M = P .ord})) right
+  where
+  left : (Q .ord M.∘ (λ q p → vec Q (h .SS.Sup.mor .func (colv P p)) q))
+         M.≈ₘ (λ q p → vec Q (h .SS.Sup.mor .func (colv P p)) q)
+  left q p = fxd Q (h .SS.Sup.mor .func (colv P p)) q
+
+  right : ((λ q p → vec Q (h .SS.Sup.mor .func (colv P p)) q) M.∘ P .ord)
+          M.≈ₘ (λ q p → vec Q (h .SS.Sup.mor .func (colv P p)) q)
+  right q p =
+    S.sym
+      (S.trans (h .SS.Sup.mor .*→* .prop-setoid._⇒_.func-resp-≈ (decomp-col P p) q)
+      (S.trans (mor-msum (h .SS.Sup.mor) (λ j → 𝓥sm P ._·_ (P .ord j p) (colv P j)) q)
+      (S.trans (𝓥-msum-vec Q (λ j → h .SS.Sup.mor .func (𝓥sm P ._·_ (P .ord j p) (colv P j))) q)
+      (S.trans (M.Σ-cong {P .dim} (λ j → h .SS.Sup.mor .preserve-· {P .ord j p} {colv P j} q))
+               (M.Σ-cong {P .dim} (λ j → S.·-comm))))))
+
+𝓥-full : ∀ {P Q} (h : SS.Sup.Mor (𝓥 P) (𝓥 Q)) → SC._≈_ (𝓥₁ (full-mor h)) h
+𝓥-full {P} {Q} h .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ fx₁} {v₂ ,ₚ _} e q =
+  S.trans (M.Σ-cong {P .dim} (λ p → S.·-comm))
+  (S.trans (M.Σ-cong {P .dim} (λ p → S.sym (h .SS.Sup.mor .preserve-· {v₁ p} {colv P p} q)))
+  (S.trans (S.sym (𝓥-msum-vec Q (λ p → h .SS.Sup.mor .func (𝓥sm P ._·_ (v₁ p) (colv P p))) q))
+  (S.trans (S.sym (mor-msum (h .SS.Sup.mor) (λ p → 𝓥sm P ._·_ (v₁ p) (colv P p)) q))
+           (h .SS.Sup.mor .*→* .prop-setoid._⇒_.func-resp-≈
+             (λ q' → S.trans (S.sym (decomp P v₁ fx₁ q')) (e q')) q))))
