@@ -83,19 +83,10 @@ fobj μ-obj (P' + Q') δ =
 fobj μ-obj (P' × Q') δ = Lf (Fam𝒞-P.prod (fobj μ-obj P' δ) (fobj μ-obj Q' δ))
 fobj μ-obj (μ P')    δ = μ-obj P' δ
 
--- Reindexing a context-paired morphism under a root: the root passes through, the context enters
--- the payload, and absorption records under the target root whatever the context contributes.
-under-root : ∀ {G X Y} → (prod G X ⇒ Y) → (prod G (L X) ⇒ L Y)
-under-root {G} {X} {Y} r =
-  Biproduct.copair (BP G (L X))
-    (inj ∘ (r ∘ Biproduct.in₁ (BP G X)))
-    (affine root (inj ∘ (r ∘ Biproduct.in₂ (BP G X))))
-
-under-root-cong : ∀ {G X Y} {r r' : prod G X ⇒ Y} → r ≈ r' → under-root r ≈ under-root r'
-under-root-cong {G} {X} {Y} er =
-  Biproduct.copair-cong (BP G (L X))
-    (∘-cong ≈-refl (∘-cong er ≈-refl))
-    (affine-cong ≈-refl (∘-cong ≈-refl (∘-cong er ≈-refl)))
+-- The context-paired transport across the lifting and its laws, from the engine.
+import lifting-fold
+open lifting-fold CM BP Lft public
+  using (under-root; under-root-cong; under-root-natural; pm; pm-in₁; pm-in₂; bp-ext)
 
 -- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where

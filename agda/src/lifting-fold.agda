@@ -29,36 +29,166 @@ open Lifting Lft
 infixr 30 _⊗_
 infixr 25 _⊞_
 
-private
-  _⊕_ : obj → obj → obj
-  x ⊕ y = Biproduct.prod (BP x y)
+_⊕_ : obj → obj → obj
+x ⊕ y = Biproduct.prod (BP x y)
 
-  cop : ∀ {x y z} → x ⇒ z → y ⇒ z → (x ⊕ y) ⇒ z
-  cop {x} {y} f g = Biproduct.copair (BP x y) f g
+cop : ∀ {x y z} → x ⇒ z → y ⇒ z → (x ⊕ y) ⇒ z
+cop {x} {y} f g = Biproduct.copair (BP x y) f g
 
-  cop-cong : ∀ {x y z} {f f' : x ⇒ z} {g g' : y ⇒ z} → f ≈ f' → g ≈ g' → cop f g ≈ cop f' g'
-  cop-cong {x} {y} = Biproduct.copair-cong (BP x y)
+cop-cong : ∀ {x y z} {f f' : x ⇒ z} {g g' : y ⇒ z} → f ≈ f' → g ≈ g' → cop f g ≈ cop f' g'
+cop-cong {x} {y} = Biproduct.copair-cong (BP x y)
 
-  pairb : ∀ {x y z} → x ⇒ y → x ⇒ z → x ⇒ (y ⊕ z)
-  pairb {x} {y} {z} f g = Biproduct.pair (BP y z) f g
+pairb : ∀ {x y z} → x ⇒ y → x ⇒ z → x ⇒ (y ⊕ z)
+pairb {x} {y} {z} f g = Biproduct.pair (BP y z) f g
 
-  pairb-cong : ∀ {x y z} {f f' : x ⇒ y} {g g' : x ⇒ z} → f ≈ f' → g ≈ g' → pairb f g ≈ pairb f' g'
-  pairb-cong {x} {y} {z} = Biproduct.pair-cong (BP y z)
+pairb-cong : ∀ {x y z} {f f' : x ⇒ y} {g g' : x ⇒ z} → f ≈ f' → g ≈ g' → pairb f g ≈ pairb f' g'
+pairb-cong {x} {y} {z} = Biproduct.pair-cong (BP y z)
 
-  π₁ : ∀ {x y} → (x ⊕ y) ⇒ x
-  π₁ {x} {y} = Biproduct.p₁ (BP x y)
+π₁ : ∀ {x y} → (x ⊕ y) ⇒ x
+π₁ {x} {y} = Biproduct.p₁ (BP x y)
 
-  π₂ : ∀ {x y} → (x ⊕ y) ⇒ y
-  π₂ {x} {y} = Biproduct.p₂ (BP x y)
+π₂ : ∀ {x y} → (x ⊕ y) ⇒ y
+π₂ {x} {y} = Biproduct.p₂ (BP x y)
 
-  ι₁ : ∀ {x y} → x ⇒ (x ⊕ y)
-  ι₁ {x} {y} = Biproduct.in₁ (BP x y)
+ι₁ : ∀ {x y} → x ⇒ (x ⊕ y)
+ι₁ {x} {y} = Biproduct.in₁ (BP x y)
 
-  ι₂ : ∀ {x y} → y ⇒ (x ⊕ y)
-  ι₂ {x} {y} = Biproduct.in₂ (BP x y)
+ι₂ : ∀ {x y} → y ⇒ (x ⊕ y)
+ι₂ {x} {y} = Biproduct.in₂ (BP x y)
 
-  +m-cong : ∀ {x y} {f f' g g' : x ⇒ y} → f ≈ f' → g ≈ g' → (f +m g) ≈ (f' +m g')
-  +m-cong = homCM _ _ .CommutativeMonoid.+-cong
++m-cong : ∀ {x y} {f f' g g' : x ⇒ y} → f ≈ f' → g ≈ g' → (f +m g) ≈ (f' +m g')
++m-cong = homCM _ _ .CommutativeMonoid.+-cong
+
+-- Generic biproduct consequences the rooted machinery threads.
+pm : ∀ {a₁ a₂ b₁ b₂} → a₁ ⇒ a₂ → b₁ ⇒ b₂ → (a₁ ⊕ b₁) ⇒ (a₂ ⊕ b₂)
+pm g h = pairb (g ∘ π₁) (h ∘ π₂)
+
+pm-in₁ : ∀ {a₁ a₂ b₁ b₂} (g : a₁ ⇒ a₂) (h : b₁ ⇒ b₂) → (pm g h ∘ ι₁) ≈ (ι₁ ∘ g)
+pm-in₁ {a₁} {a₂} {b₁} {b₂} g h =
+  ≈-trans (Biproduct.pair-natural (BP a₂ b₂) _ _ _)
+  (≈-trans (pairb-cong
+             (≈-trans (assoc _ _ _)
+               (≈-trans (∘-cong ≈-refl (Biproduct.id-1 (BP a₁ b₁))) id-right))
+             (≈-trans (assoc _ _ _)
+               (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 (BP a₁ b₁))) (comp-bilinear-ε₂ h))))
+           (≈-trans (+m-cong ≈-refl (comp-bilinear-ε₂ ι₂)) +m-runit))
+
+pm-in₂ : ∀ {a₁ a₂ b₁ b₂} (g : a₁ ⇒ a₂) (h : b₁ ⇒ b₂) → (pm g h ∘ ι₂) ≈ (ι₂ ∘ h)
+pm-in₂ {a₁} {a₂} {b₁} {b₂} g h =
+  ≈-trans (Biproduct.pair-natural (BP a₂ b₂) _ _ _)
+  (≈-trans (pairb-cong
+             (≈-trans (assoc _ _ _)
+               (≈-trans (∘-cong ≈-refl (Biproduct.zero-1 (BP a₁ b₁))) (comp-bilinear-ε₂ g)))
+             (≈-trans (assoc _ _ _)
+               (≈-trans (∘-cong ≈-refl (Biproduct.id-2 (BP a₁ b₁))) id-right)))
+           (≈-trans (+m-cong (comp-bilinear-ε₂ ι₁) ≈-refl)
+                    (homCM _ _ .CommutativeMonoid.+-lunit)))
+
+bp-ext : ∀ {a b c} {h k : (a ⊕ b) ⇒ c} → (h ∘ ι₁) ≈ (k ∘ ι₁) → (h ∘ ι₂) ≈ (k ∘ ι₂) → h ≈ k
+bp-ext {a} {b} {c} {h} {k} e₁ e₂ =
+  ≈-trans (≈-sym (Biproduct.copair-ext (BP a b) h))
+  (≈-trans (cop-cong e₁ e₂) (Biproduct.copair-ext (BP a b) k))
+
+-- Reindexing a context-paired morphism under a root: the root passes through, the context enters
+-- the payload, and absorption records under the target root whatever the context contributes.
+under-root : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
+under-root r = cop (inj ∘ (r ∘ ι₁)) (affine root (inj ∘ (r ∘ ι₂)))
+
+under-root-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → under-root r ≈ under-root r'
+under-root-cong er =
+  cop-cong (∘-cong ≈-refl (∘-cong er ≈-refl))
+           (affine-cong ≈-refl (∘-cong ≈-refl (∘-cong er ≈-refl)))
+
+-- Reindexing under a root commutes with transports along isomorphisms, which is what naturality of
+-- the fold and of reindexing in the tree demands. The context map is arbitrary; the payload and
+-- result maps must be isomorphisms, since the injection and the support are natural only there.
+under-root-natural :
+  ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂)
+    {x : X₁ ⇒ X₂} {x' : X₂ ⇒ X₁} (xi₁ : (x ∘ x') ≈ id X₂) (xi₂ : (x' ∘ x) ≈ id X₁)
+    {y : Y₁ ⇒ Y₂} {y' : Y₂ ⇒ Y₁} (yi₁ : (y ∘ y') ≈ id Y₂) (yi₂ : (y' ∘ y) ≈ id Y₁)
+    (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
+    (f₂ ∘ pm g x) ≈ (y ∘ f₁) →
+    (under-root f₂ ∘ pm g (Lmap x)) ≈ (Lmap y ∘ under-root f₁)
+under-root-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi₁ xi₂ {y} {y'} yi₁ yi₂ f₁ f₂ sq =
+  bp-ext side₁ side₂
+  where
+  square-ι₁ : ((f₂ ∘ ι₁) ∘ g) ≈ (y ∘ (f₁ ∘ ι₁))
+  square-ι₁ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (≈-sym (pm-in₁ g x)))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong sq ≈-refl) (assoc _ _ _))))
+
+  square-ι₂ : ((f₂ ∘ ι₂) ∘ x) ≈ (y ∘ (f₁ ∘ ι₂))
+  square-ι₂ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (≈-sym (pm-in₂ g x)))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong sq ≈-refl) (assoc _ _ _))))
+
+  side₁ : ((under-root f₂ ∘ pm g (Lmap x)) ∘ ι₁) ≈ ((Lmap y ∘ under-root f₁) ∘ ι₁)
+  side₁ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (pm-in₁ g (Lmap x)))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong (Biproduct.copair-in₁ (BP G₂ (L X₂)) _ _) ≈-refl)
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl square-ι₁)
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong (≈-sym (Lmap-inj yi₁ yi₂)) ≈-refl)
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (≈-sym (Biproduct.copair-in₁ (BP G₁ (L X₁)) _ _)))
+             (≈-sym (assoc _ _ _)))))))))))
+
+  lift-part : (affine root (inj ∘ (f₂ ∘ ι₂)) ∘ Lmap x) ≈ (Lmap y ∘ affine root (inj ∘ (f₁ ∘ ι₂)))
+  lift-part = lifting-ext _ _ root-side inj-side
+    where
+    root-side : ((affine root (inj ∘ (f₂ ∘ ι₂)) ∘ Lmap x) ∘ root)
+                ≈ ((Lmap y ∘ affine root (inj ∘ (f₁ ∘ ι₂))) ∘ root)
+    root-side =
+      ≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (Lmap-root x))
+      (≈-trans (affine-root _ _)
+      (≈-sym
+        (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (affine-root _ _)) (Lmap-root y))))))
+
+    left-inj : ((affine root (inj ∘ (f₂ ∘ ι₂)) ∘ Lmap x) ∘ inj)
+               ≈ ((root ∘ spt) +m (Lmap y ∘ (inj ∘ (f₁ ∘ ι₂))))
+    left-inj =
+      ≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (Lmap-inj xi₁ xi₂))
+      (≈-trans (≈-sym (assoc _ _ _))
+      (≈-trans (∘-cong (affine-inj _ _) ≈-refl)
+      (≈-trans (comp-bilinear₁ _ _ _)
+        (+m-cong
+          (≈-trans (assoc _ _ _) (∘-cong ≈-refl (spt-natural xi₁ xi₂)))
+          (≈-trans (assoc _ _ _)
+          (≈-trans (∘-cong ≈-refl square-ι₂)
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (≈-sym (Lmap-inj yi₁ yi₂)) ≈-refl) (assoc _ _ _))))))))))
+
+    right-inj : ((Lmap y ∘ affine root (inj ∘ (f₁ ∘ ι₂))) ∘ inj)
+                ≈ ((root ∘ spt) +m (Lmap y ∘ (inj ∘ (f₁ ∘ ι₂))))
+    right-inj =
+      ≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (affine-inj _ _))
+      (≈-trans (comp-bilinear₂ _ _ _)
+        (+m-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (Lmap-root y) ≈-refl)) ≈-refl)))
+
+    inj-side : ((affine root (inj ∘ (f₂ ∘ ι₂)) ∘ Lmap x) ∘ inj)
+               ≈ ((Lmap y ∘ affine root (inj ∘ (f₁ ∘ ι₂))) ∘ inj)
+    inj-side = ≈-trans left-inj (≈-sym right-inj)
+
+  side₂ : ((under-root f₂ ∘ pm g (Lmap x)) ∘ ι₂) ≈ ((Lmap y ∘ under-root f₁) ∘ ι₂)
+  side₂ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (pm-in₂ g (Lmap x)))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong (Biproduct.copair-in₂ (BP G₂ (L X₂)) _ _) ≈-refl)
+    (≈-trans lift-part
+    (≈-trans (∘-cong ≈-refl (≈-sym (Biproduct.copair-in₂ (BP G₁ (L X₁)) _ _)))
+             (≈-sym (assoc _ _ _)))))))
 
 data Poly : Set o where
   konst : obj → Poly
