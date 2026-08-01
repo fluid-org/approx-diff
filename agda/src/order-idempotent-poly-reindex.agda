@@ -21,7 +21,7 @@ module order-idempotent-poly-reindex
   (⊤-add-top : ∀ {x} → ι + x ≈ ι)
   where
 
-open matrix.Mat S using (_≈ₘ_; ∘-cong; assoc; comp-bilinear-ε₂)
+open matrix.Mat S using (_≈ₘ_; ∘-cong; assoc; comp-bilinear₁; comp-bilinear-ε₁; comp-bilinear-ε₂)
 open order-idempotent S ∨-idem ∧-idem ⊤-add-top
 open order-idempotent-freeness S ∨-idem ∧-idem ⊤-add-top
 open order-idempotent-poly-fold S ∨-idem ∧-idem ⊤-add-top
@@ -136,3 +136,118 @@ module _ (W W' R : Pos) (u : W' ⇒ W) where
         (tag-of-cong {P = X} {C = R}
           {h = k ∘ ι₂ W (Lp X)} {k = (k ∘ ctx-map (Lp X)) ∘ ι₂ W' (Lp X)} constant)
         payload
+
+  -- The projections of a change of context.
+  ctx-map-π₁ : ∀ (F : Pos) → (π₁ W F ∘ ctx-map F) ≈p (u ∘ π₁ W' F)
+  ctx-map-π₁ F = Biproduct.pair-p₁ (biproduct W F) (u ∘ π₁ W' F) (π₂ W' F)
+
+  ctx-map-π₂ : ∀ (F : Pos) → (π₂ W F ∘ ctx-map F) ≈p π₂ W' F
+  ctx-map-π₂ F = Biproduct.pair-p₂ (biproduct W F) (u ∘ π₁ W' F) (π₂ W' F)
+
+  -- Feeding a folded sub-value commutes with a change of context.
+  varStep-ctx : ∀ (X : Pos) (k : (W ⊕ R) ⇒ R) (g : (W ⊕ X) ⇒ R) →
+                (varStep W R X k g ∘ ctx-map X)
+                ≈p varStep W' R X (k ∘ ctx-map R) (g ∘ ctx-map X)
+  varStep-ctx X k g =
+    ≈ₘ-trans (assoc (k .mat) (Biproduct.pair (biproduct W R) (π₁ W X) g .mat) (ctx-map X .mat))
+    (≈ₘ-trans (∘-cong (≈ₘ-refl {M = k .mat}) inner)
+              (≈ₘ-sym (assoc (k .mat) (ctx-map R .mat)
+                             (Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X) .mat))))
+    where
+    -- Both sides pair the context, changed by u, with the folded sub-value.
+    inner : (Biproduct.pair (biproduct W R) (π₁ W X) g ∘ ctx-map X)
+            ≈p (ctx-map R ∘ Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X))
+    inner =
+      ≈ₘ-trans (Biproduct.pair-natural (biproduct W R) (π₁ W X) g (ctx-map X))
+      (≈ₘ-trans (Biproduct.pair-cong (biproduct W R)
+                   {f₁ = π₁ W X ∘ ctx-map X} {f₂ = u ∘ π₁ W' X}
+                   {g₁ = g ∘ ctx-map X} {g₂ = g ∘ ctx-map X}
+                   (Biproduct.pair-p₁ (biproduct W X) (u ∘ π₁ W' X) (π₂ W' X))
+                   (≈ₘ-refl {M = (g ∘ ctx-map X) .mat}))
+                (≈ₘ-sym right))
+      where
+      right : (ctx-map R ∘ Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X))
+              ≈p Biproduct.pair (biproduct W R) (u ∘ π₁ W' X) (g ∘ ctx-map X)
+      right =
+        ≈ₘ-trans (Biproduct.pair-natural (biproduct W R) (u ∘ π₁ W' R) (π₂ W' R)
+                    (Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)))
+                 (Biproduct.pair-cong (biproduct W R)
+                    {f₁ = (u ∘ π₁ W' R) ∘ Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)}
+                    {f₂ = u ∘ π₁ W' X}
+                    {g₁ = π₂ W' R ∘ Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)}
+                    {g₂ = g ∘ ctx-map X}
+                    (≈ₘ-trans (assoc (u .mat) (π₁ W' R .mat)
+                                 (Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X) .mat))
+                              (∘-cong (≈ₘ-refl {M = u .mat})
+                                 (Biproduct.pair-p₁ (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X))))
+                    (Biproduct.pair-p₂ (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)))
+
+  -- Pushing a change of context through the injections.
+  push-ι₁ : ∀ (F : Pos) {T} (f : (W ⊕ F) ⇒ T) → ((f ∘ ι₁ W F) ∘ u) ≈p ((f ∘ ctx-map F) ∘ ι₁ W' F)
+  push-ι₁ F f =
+    ≈ₘ-trans (assoc (f .mat) (ι₁ W F .mat) (u .mat))
+    (≈ₘ-trans (∘-cong (≈ₘ-refl {M = f .mat}) (≈ₘ-sym (ctx-map-ι₁ F)))
+              (≈ₘ-sym (assoc (f .mat) (ctx-map F .mat) (ι₁ W' F .mat))))
+
+  push-ι₂ : ∀ (F : Pos) {T} (f : (W ⊕ F) ⇒ T) → (f ∘ ι₂ W F) ≈p ((f ∘ ctx-map F) ∘ ι₂ W' F)
+  push-ι₂ F f =
+    ≈ₘ-trans (∘-cong (≈ₘ-refl {M = f .mat}) (≈ₘ-sym (ctx-map-ι₂ F)))
+             (≈ₘ-sym (assoc (f .mat) (ctx-map F .mat) (ι₂ W' F .mat)))
+
+  -- The continuations at a product and at a root commute with a change of context.
+  prodCont₁-ctx : ∀ (X₁ X₂ : Pos) (k : (W ⊕ (X₁ ⊕ X₂)) ⇒ R) →
+                  (prodCont₁ W R X₁ X₂ k ∘ ctx-map X₁)
+                  ≈p prodCont₁ W' R X₁ X₂ (k ∘ ctx-map (X₁ ⊕ X₂))
+  prodCont₁-ctx X₁ X₂ k =
+    ≈ₘ-trans (cop-ctx (k ∘ ι₁ W (X₁ ⊕ X₂)) (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₁ X₁ X₂))
+             (cop-cong W' X₁ R
+               ((k ∘ ι₁ W (X₁ ⊕ X₂)) ∘ u) ((k ∘ ctx-map (X₁ ⊕ X₂)) ∘ ι₁ W' (X₁ ⊕ X₂))
+               (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₁ X₁ X₂)
+               ((k ∘ ctx-map (X₁ ⊕ X₂)) ∘ ι₂ W' (X₁ ⊕ X₂) ∘ ι₁ X₁ X₂)
+               (push-ι₁ (X₁ ⊕ X₂) k)
+               (∘-cong (push-ι₂ (X₁ ⊕ X₂) k) (≈ₘ-refl {M = ι₁ X₁ X₂ .mat})))
+
+  prodCont₂-ctx : ∀ (X₁ X₂ : Pos) (k : (W ⊕ (X₁ ⊕ X₂)) ⇒ R) →
+                  (prodCont₂ W R X₁ X₂ k ∘ ctx-map X₂)
+                  ≈p prodCont₂ W' R X₁ X₂ (k ∘ ctx-map (X₁ ⊕ X₂))
+  prodCont₂-ctx X₁ X₂ k =
+    ≈ₘ-trans (cop-ctx (εp {W} {R}) (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₂ X₁ X₂))
+             (cop-cong W' X₂ R
+               (εp {W} {R} ∘ u) (εp {W'} {R})
+               (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₂ X₁ X₂)
+               ((k ∘ ctx-map (X₁ ⊕ X₂)) ∘ ι₂ W' (X₁ ⊕ X₂) ∘ ι₂ X₁ X₂)
+               (comp-bilinear-ε₁ (u .mat))
+               (∘-cong (push-ι₂ (X₁ ⊕ X₂) k) (≈ₘ-refl {M = ι₂ X₁ X₂ .mat})))
+
+  rootCont-ctx : ∀ (X : Pos) (k : (W ⊕ Lp X) ⇒ R) →
+                 (rootCont W R X k ∘ ctx-map X) ≈p rootCont W' R X (k ∘ ctx-map (Lp X))
+  rootCont-ctx X k =
+    ≈ₘ-trans (cop-ctx (k ∘ ι₁ W (Lp X)) (body-of {P = X} (k ∘ ι₂ W (Lp X))))
+             (cop-cong W' X R
+               ((k ∘ ι₁ W (Lp X)) ∘ u) ((k ∘ ctx-map (Lp X)) ∘ ι₁ W' (Lp X))
+               (body-of {P = X} (k ∘ ι₂ W (Lp X)))
+               (body-of {P = X} ((k ∘ ctx-map (Lp X)) ∘ ι₂ W' (Lp X)))
+               (push-ι₁ (Lp X) k)
+               (body-of-cong {P = X} {C = R}
+                 {h = k ∘ ι₂ W (Lp X)} {k = (k ∘ ctx-map (Lp X)) ∘ ι₂ W' (Lp X)}
+                 (push-ι₂ (Lp X) k)))
+
+  -- The additive split at a product commutes with a change of context, the context reaching the
+  -- first component only, as it does on both sides.
+  prodStep-ctx : ∀ (F₁ F₂ : Pos) (r₁ : (W ⊕ F₁) ⇒ R) (r₂ : (W ⊕ F₂) ⇒ R) →
+                 (prodStep W R F₁ F₂ r₁ r₂ ∘ ctx-map (F₁ ⊕ F₂))
+                 ≈p prodStep W' R F₁ F₂ (r₁ ∘ ctx-map F₁) (r₂ ∘ ctx-map F₂)
+  prodStep-ctx F₁ F₂ r₁ r₂ =
+    ≈ₘ-trans (cop-ctx ((r₁ ∘ ι₁ W F₁) +p (r₂ ∘ ι₁ W F₂))
+                      (cop (r₁ ∘ ι₂ W F₁) (r₂ ∘ ι₂ W F₂)))
+             (cop-cong W' (F₁ ⊕ F₂) R
+               (((r₁ ∘ ι₁ W F₁) +p (r₂ ∘ ι₁ W F₂)) ∘ u)
+               (((r₁ ∘ ctx-map F₁) ∘ ι₁ W' F₁) +p ((r₂ ∘ ctx-map F₂) ∘ ι₁ W' F₂))
+               (cop (r₁ ∘ ι₂ W F₁) (r₂ ∘ ι₂ W F₂))
+               (cop ((r₁ ∘ ctx-map F₁) ∘ ι₂ W' F₁) ((r₂ ∘ ctx-map F₂) ∘ ι₂ W' F₂))
+               (≈ₘ-trans (comp-bilinear₁ ((r₁ ∘ ι₁ W F₁) .mat) ((r₂ ∘ ι₁ W F₂) .mat) (u .mat))
+                         (+ₘ-cong (push-ι₁ F₁ r₁) (push-ι₁ F₂ r₂)))
+               (cop-cong F₁ F₂ R
+                 (r₁ ∘ ι₂ W F₁) ((r₁ ∘ ctx-map F₁) ∘ ι₂ W' F₁)
+                 (r₂ ∘ ι₂ W F₂) ((r₂ ∘ ctx-map F₂) ∘ ι₂ W' F₂)
+                 (push-ι₂ F₁ r₁) (push-ι₂ F₂ r₂)))

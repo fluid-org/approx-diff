@@ -75,16 +75,19 @@ cop-cong : ∀ (P Q R : Pos) (f f' : P ⇒ R) (g g' : Q ⇒ R) →
 cop-cong P Q R f f' g g' ef eg =
   Biproduct.copair-cong (biproduct P Q) {f₁ = f} {f₂ = f'} {g₁ = g} {g₂ = g'} ef eg
 
+-- The carrier interpretation of a layer: the same structure, with the carrier at the recursive
+-- positions and the roots kept.
+sh : ∀ (R : Pos) {B Q} → Shape B Q → Pos
+sh R (kon {K})   = K
+sh R (rec v)     = R
+sh R (prd s₁ s₂) = Lp (sh R s₁ ⊕ sh R s₂)
+sh R (inl s)     = Lp (sh R s)
+sh R (inr s)     = Lp (sh R s)
+
 module _ (W R : Pos) where
 
-  -- The carrier interpretation of a layer: the same structure, with the carrier at the recursive
-  -- positions and the tags kept.
   ⟦_⟧ : ∀ {B Q} → Shape B Q → Pos
-  ⟦ kon {K} ⟧   = K
-  ⟦ rec v ⟧     = R
-  ⟦ prd s₁ s₂ ⟧ = Lp (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧)
-  ⟦ inl s ⟧     = Lp ⟦ s ⟧
-  ⟦ inr s ⟧     = Lp ⟦ s ⟧
+  ⟦_⟧ = sh R
 
   -- One step of the recursion at each node. At a recursive position the folded sub-value is fed to
   -- the continuation with the context retained.
