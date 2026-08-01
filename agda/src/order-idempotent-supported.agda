@@ -18,6 +18,7 @@ import matrix
 import semimodule
 import order-idempotent
 import order-idempotent-support
+import order-idempotent-freeness
 import supported-semimod
 
 module order-idempotent-supported
@@ -31,6 +32,7 @@ module order-idempotent-supported
 module M = matrix.Mat S
 module OI = order-idempotent S ∨-idem ∧-idem ⊤-add-top
 module OS = order-idempotent-support S ∨-idem ∧-idem ⊤-add-top
+module OF = order-idempotent-freeness S ∨-idem ∧-idem ⊤-add-top
 module SemiMod = semimodule S
 module SS = supported-semimod S ∨-idem
 
@@ -139,3 +141,86 @@ private
 𝓥-Lp-iso P .Category.Iso.bwd∘fwd≈id .*≈* .prop-setoid._≃m_.func-eq e = λ where
   zero    → e zero
   (suc i) → e (suc i)
+
+-- The action of a position-order morphism on fixed vectors, which no morphism unfixes since the
+-- target order is absorbed.
+app-congₘ : ∀ {m n} {R R' : M.Matrix m n} → R M.≈ₘ R' →
+            ∀ (v : M.Vec n) (i : Fin m) → OS.app R v i S.≈ OS.app R' v i
+app-congₘ {m} {n} h v i = M.Σ-cong {n} (λ j → S.·-cong (h i j) S.refl)
+
+app-∘ : ∀ {m n k} (R : M.Matrix m n) (T : M.Matrix n k) (v : M.Vec k) (i : Fin m) →
+        OS.app (R M.∘ T) v i S.≈ OS.app R (OS.app T v) i
+app-∘ {m} {n} {k} R T v i =
+  S.trans (M.Σ-cong {k} (λ j → M.Σ-·-distribᵣ (λ l → R i l S.· T l j) (v j)))
+  (S.trans (M.Σ-cong {k} (λ j → M.Σ-cong {n} (λ l → S.·-assoc)))
+  (S.trans (M.Σ-interchange {k} {n} (λ j l → R i l S.· (T l j S.· v j)))
+           (M.Σ-cong {n} (λ l → S.sym (M.Σ-·-distribₗ (R i l) (λ j → T l j S.· v j))))))
+
+𝓥₁ : ∀ {P Q} → P OI.⇒ Q → SS.Sup.Mor (𝓥 P) (𝓥 Q)
+𝓥₁ {P} {Q} f .SS.Sup.mor .*→* .prop-setoid._⇒_.func (v ,ₚ fx) =
+  OS.app (f .OI.mat) v ,ₚ λ i →
+    S.trans (S.sym (app-∘ (Q .ord) (f .OI.mat) v i)) (app-congₘ (OI.absorb-left f) v i)
+𝓥₁ {P} {Q} f .SS.Sup.mor .*→* .prop-setoid._⇒_.func-resp-≈ e i =
+  M.Σ-cong {P .dim} (λ j → S.·-cong S.refl (e j))
+𝓥₁ {P} {Q} f .SS.Sup.mor .preserve-ze i = app-ε (f .OI.mat) i
+𝓥₁ {P} {Q} f .SS.Sup.mor .preserve-+ {u ,ₚ _} {v ,ₚ _} i = app-+ (f .OI.mat) u v i
+𝓥₁ {P} {Q} f .SS.Sup.mor .preserve-· {s'} {u ,ₚ _} i = app-· (f .OI.mat) s' u i
+𝓥₁ {P} {Q} f .SS.Sup.bound .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ _} {v₂ ,ₚ _} e =
+  S.trans (OS.mor-supp f v₁) (M.Σ-cong e)
+
+-- The one-position order realises as the scalars.
+ι1-fwd : SS.Sup.Mor (𝓥 OF.𝟙p) SS.𝟙s
+ι1-fwd .SS.Sup.mor .*→* .prop-setoid._⇒_.func (v ,ₚ _) = v zero
+ι1-fwd .SS.Sup.mor .*→* .prop-setoid._⇒_.func-resp-≈ e = e zero
+ι1-fwd .SS.Sup.mor .preserve-ze = S.refl
+ι1-fwd .SS.Sup.mor .preserve-+ = S.refl
+ι1-fwd .SS.Sup.mor .preserve-· = S.refl
+ι1-fwd .SS.Sup.bound .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ _} {v₂ ,ₚ _} e =
+  S.trans (S.sym S.+-assoc)
+          (S.trans (S.+-cong ∨-idem S.refl) (S.+-cong (e zero) S.refl))
+
+ι1-bwd : SS.Sup.Mor SS.𝟙s (𝓥 OF.𝟙p)
+ι1-bwd .SS.Sup.mor .*→* .prop-setoid._⇒_.func s = (λ _ → s) ,ₚ λ i → M.Σ-unit i (λ _ → s)
+ι1-bwd .SS.Sup.mor .*→* .prop-setoid._⇒_.func-resp-≈ e i = e
+ι1-bwd .SS.Sup.mor .preserve-ze i = S.refl
+ι1-bwd .SS.Sup.mor .preserve-+ i = S.refl
+ι1-bwd .SS.Sup.mor .preserve-· i = S.refl
+ι1-bwd .SS.Sup.bound .*≈* .prop-setoid._≃m_.func-eq e =
+  S.trans (S.+-cong (S.trans (S.+-cong S.refl (M.Σ-ε {0})) (S.trans S.+-comm S.+-lunit)) S.refl)
+          (S.trans ∨-idem e)
+
+private
+  module SC = Category SS.Sup.cat
+
+-- The comparison intertwines the two liftings: the root, the injection and the assembly on
+-- position orders realise as those of the supported lift.
+root-intertwine : ∀ P →
+  SC._≈_ (SC._∘_ (𝓥-Lp-iso P .Category.Iso.fwd) (𝓥₁ (OF.root {P})))
+         (SC._∘_ (SS.root-s {𝓥 P}) ι1-fwd)
+root-intertwine P .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ _} {v₂ ,ₚ _} e =
+  S.trans (S.+-cong S.·-lunit (M.Σ-ε {0}))
+          (S.trans S.+-comm (S.trans S.+-lunit (e zero)))
+  ,ₚ λ i → S.trans (S.+-cong S.ε-annihilₗ (M.Σ-ε {0})) S.+-lunit
+
+inj-intertwine : ∀ P →
+  SC._≈_ (SC._∘_ (𝓥-Lp-iso P .Category.Iso.fwd) (𝓥₁ (OF.inj {P})))
+         (SS.inj-s {𝓥 P})
+inj-intertwine P .*≈* .prop-setoid._≃m_.func-eq {u₁ ,ₚ fu₁} {u₂ ,ₚ _} e =
+  S.trans (M.Σ-cong {P .dim} (λ j → S.·-lunit)) (M.Σ-cong e)
+  ,ₚ λ i → S.trans (fu₁ i) (e i)
+
+affine-intertwine : ∀ {P C} (c : OF.𝟙p OI.⇒ C) (Mm : P OI.⇒ C) →
+  SC._≈_ (SC._∘_ (𝓥₁ (OF.affine {P} {C} c Mm)) (𝓥-Lp-iso P .Category.Iso.bwd))
+         (SS.affine-s (SC._∘_ (𝓥₁ c) ι1-bwd) (𝓥₁ Mm))
+affine-intertwine {P} {C} c Mm .*≈* .prop-setoid._≃m_.func-eq
+    {(a₁ , (u₁ ,ₚ _)) ,ₚ d₁} {(a₂ , (u₂ ,ₚ _)) ,ₚ _} (e₁ ,ₚ e₂) q =
+  S.trans (S.+-cong S.refl (M.Σ-cong {P .dim} (λ p → S.·-+-distribᵣ)))
+  (S.trans (S.+-cong S.refl (S.sym (M.Σ-+ {P .dim} (λ p → c .OI.mat q zero S.· u₁ p)
+                                                    (λ p → Mm .OI.mat q p S.· u₁ p))))
+  (S.trans (S.+-cong S.refl (S.+-cong (S.sym (M.Σ-·-distribₗ (c .OI.mat q zero) u₁)) S.refl))
+  (S.trans (S.sym S.+-assoc)
+  (S.trans (S.+-cong (S.sym S.·-+-distribₗ) S.refl)
+  (S.trans (S.+-cong (S.·-cong S.refl (S.trans S.+-comm d₁)) S.refl)
+  (S.trans (S.+-cong (S.·-cong S.refl e₁)
+                     (M.Σ-cong {P .dim} (λ j → S.·-cong S.refl (e₂ j))))
+           (S.+-cong (S.sym (S.trans S.+-comm S.+-lunit)) S.refl)))))))
