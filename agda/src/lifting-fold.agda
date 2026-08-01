@@ -99,6 +99,40 @@ under-root-cong er =
   cop-cong (∘-cong ≈-refl (∘-cong er ≈-refl))
            (affine-cong ≈-refl (∘-cong ≈-refl (∘-cong er ≈-refl)))
 
+-- Transport across the lifting fuses with composition on either side: with an isomorphism after,
+-- through the action, and with a context-paired map before.
+under-root-post : ∀ {G X Y₁ Y₂} {h : Y₁ ⇒ Y₂} {h' : Y₂ ⇒ Y₁} →
+                  (h ∘ h') ≈ id Y₂ → (h' ∘ h) ≈ id Y₁ →
+                  (r : (G ⊕ X) ⇒ Y₁) → (Lmap h ∘ under-root r) ≈ under-root (h ∘ r)
+under-root-post {G} {X} {Y₁} {Y₂} {h} {h'} hi₁ hi₂ r =
+  bp-ext {h = Lmap h ∘ under-root r} {k = under-root (h ∘ r)}
+    (≈-trans (assoc _ _ _)
+     (≈-trans (∘-cong ≈-refl (Biproduct.copair-in₁ (BP G (L X)) _ _))
+      (≈-trans (≈-sym (assoc _ _ _))
+       (≈-trans (∘-cong (Lmap-inj hi₁ hi₂) ≈-refl)
+        (≈-trans (assoc _ _ _)
+         (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+          (≈-sym (Biproduct.copair-in₁ (BP G (L X)) _ _))))))))
+    (≈-trans (assoc _ _ _)
+     (≈-trans (∘-cong ≈-refl (Biproduct.copair-in₂ (BP G (L X)) _ _))
+      (≈-trans part₂ (≈-sym (Biproduct.copair-in₂ (BP G (L X)) _ _)))))
+  where
+  part₂ : (Lmap h ∘ affine root (inj ∘ (r ∘ ι₂))) ≈ affine root (inj ∘ ((h ∘ r) ∘ ι₂))
+  part₂ = lifting-ext _ _
+    (≈-trans (assoc _ _ _)
+     (≈-trans (∘-cong ≈-refl (affine-root _ _))
+      (≈-trans (Lmap-root h) (≈-sym (affine-root _ _)))))
+    (≈-trans (assoc _ _ _)
+     (≈-trans (∘-cong ≈-refl (affine-inj _ _))
+      (≈-trans (comp-bilinear₂ _ _ _)
+       (≈-trans (+m-cong
+                  (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (Lmap-root h) ≈-refl))
+                  (≈-trans (≈-sym (assoc _ _ _))
+                   (≈-trans (∘-cong (Lmap-inj hi₁ hi₂) ≈-refl)
+                    (≈-trans (assoc _ _ _)
+                     (∘-cong ≈-refl (≈-sym (assoc _ _ _)))))))
+        (≈-sym (affine-inj _ _))))))
+
 -- Reindexing under a root commutes with transports along isomorphisms, which is what naturality of
 -- the fold and of reindexing in the tree demands. The context map is arbitrary; the payload and
 -- result maps must be isomorphisms, since the injection and the support are natural only there.
@@ -189,6 +223,16 @@ under-root-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi₁ xi
     (≈-trans lift-part
     (≈-trans (∘-cong ≈-refl (≈-sym (Biproduct.copair-in₂ (BP G₁ (L X₁)) _ _)))
              (≈-sym (assoc _ _ _)))))))
+
+under-root-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂)
+                 {x : X₁ ⇒ X₂} {x' : X₂ ⇒ X₁} (xi₁ : (x ∘ x') ≈ id X₂) (xi₂ : (x' ∘ x) ≈ id X₁)
+                 (r : (G₂ ⊕ X₂) ⇒ Y) →
+                 (under-root r ∘ pm g (Lmap x)) ≈ under-root (r ∘ pm g x)
+under-root-pre {G₁} {G₂} {X₁} {X₂} {Y} g {x} {x'} xi₁ xi₂ r =
+  ≈-trans (under-root-natural g xi₁ xi₂ {y = id Y} {y' = id Y} id-left id-left
+            (r ∘ pm g x) r (≈-sym id-left))
+          (≈-trans (∘-cong Lmap-id ≈-refl) id-left)
+
 
 data Poly : Set o where
   konst : obj → Poly
