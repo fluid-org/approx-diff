@@ -13,6 +13,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import basics using (IsPreorder; IsTop)
 open import cmon-enriched using (Biproduct)
+open import lifting using (Lifting)
 import matrix
 import order-idempotent
 
@@ -255,3 +256,20 @@ branch-η {W} {P} h = ≈ₘ-trans step (Biproduct.copair-ext (biproduct W (Lp P
            {g₁ = affine (tag-of (h ∘ ι₂ W (Lp P))) (body-of (h ∘ ι₂ W (Lp P)))}
            {g₂ = h ∘ ι₂ W (Lp P)}
            (≈ₘ-refl {M = (h ∘ ι₁ W (Lp P)) .mat}) (affine-η (h ∘ ι₂ W (Lp P)))
+
+-- The lifting as the interpretation needs it: the root supplies the constant, the injection the
+-- payload, and every map out of a lifted order is its own assembly.
+Lp-lifting : Lifting cat 𝟙p
+Lp-lifting .Lifting.L = Lp
+Lp-lifting .Lifting.root = root
+Lp-lifting .Lifting.inj = inj
+Lp-lifting .Lifting.affine = affine
+Lp-lifting .Lifting.affine-cong {P} {C} {c} {c'} {M} {M'} = affine-cong {P} {C} {c} {c'} {M} {M'}
+Lp-lifting .Lifting.affine-root {P} {C} c M =
+  ≈ₘ-trans (root-tag {P} (affine {P} c M)) (affine-tag {P} c M)
+Lp-lifting .Lifting.affine-η {P} {C} h =
+  ≈ₘ-trans (affine-cong {P} {C}
+              {c = h ∘ root {P}} {c' = tag-of {P} h}
+              {M = h ∘ inj {P}} {M' = body-of {P} h}
+              (root-tag {P} h) (inj-body {P} h))
+           (affine-η h)
