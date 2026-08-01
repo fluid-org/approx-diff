@@ -13,7 +13,8 @@ open import prop using (_∧_; ∃ₛ) renaming (_,_ to _,ₚ_)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
-open import categories using (Category)
+open import categories using (Category; HasTerminal; IsTerminal)
+open import functor using (Functor)
 import matrix
 import semimodule
 import order-idempotent
@@ -224,3 +225,59 @@ affine-intertwine {P} {C} c Mm .*≈* .prop-setoid._≃m_.func-eq
   (S.trans (S.+-cong (S.·-cong S.refl e₁)
                      (M.Σ-cong {P .dim} (λ j → S.·-cong S.refl (e₂ j))))
            (S.+-cong (S.sym (S.trans S.+-comm S.+-lunit)) S.refl)))))))
+
+-- The realisation packaged as a functor: identities act as the order, which fixes exactly the
+-- realised vectors, and composition is composition of matrix actions.
+𝓥F : Functor OI.cat SS.Sup.cat
+𝓥F .Functor.fobj = 𝓥
+𝓥F .Functor.fmor = 𝓥₁
+𝓥F .Functor.fmor-cong {P} {Q} {f} {g} h .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ _} {v₂ ,ₚ _} e i =
+  M.Σ-cong {P .dim} (λ j → S.·-cong (h i j) (e j))
+𝓥F .Functor.fmor-id {P} .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ fx₁} {v₂ ,ₚ _} e i =
+  S.trans (fx₁ i) (e i)
+𝓥F .Functor.fmor-comp {P} {Q} {R} f g .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ _} {v₂ ,ₚ _} e i =
+  S.trans (app-∘ (f .OI.mat) (g .OI.mat) v₁ i)
+          (M.Σ-cong {Q .dim} (λ j → S.·-cong S.refl
+            (M.Σ-cong {P .dim} (λ k → S.·-cong S.refl (e k)))))
+
+-- The down-closure of a basis vector is fixed, and morphisms are determined by their action on
+-- those closures, since absorption reads the matrix back off them.
+private
+  colv : ∀ (P : Pos) (p : Fin (P .dim)) → ∃ₛ (M.Vec (P .dim)) (OS.Fixed P)
+  colv P p = (λ i → P .ord i p) ,ₚ λ i → OI.ord-idem P i p
+
+𝓥-faithful : ∀ {P Q} {f g : P OI.⇒ Q} → SC._≈_ (𝓥₁ f) (𝓥₁ g) → OI._≈p_ f g
+𝓥-faithful {P} {Q} {f} {g} h q p =
+  S.trans (S.sym (OI.absorb-right f q p))
+  (S.trans (h .*≈* .prop-setoid._≃m_.func-eq {colv P p} {colv P p} (λ i → S.refl) q)
+           (OI.absorb-right g q p))
+
+-- The empty order realises as the terminal supported object.
+Sup-terminal : HasTerminal SS.Sup.cat
+Sup-terminal = SS.Sup.terminal-s SemiMod.terminal
+
+private
+  module MC = Category SemiMod.cat
+  T𝟘 = SemiMod.terminal .HasTerminal.witness
+  to-T : ∀ (X : Semimodule) → X ⇒ T𝟘
+  to-T X = SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal {X}
+
+𝓥-𝟘-fwd : SS.Sup.Mor (𝓥 OI.𝟘p) (Sup-terminal .HasTerminal.witness)
+𝓥-𝟘-fwd .SS.Sup.mor = to-T (𝓥sm OI.𝟘p)
+𝓥-𝟘-fwd .SS.Sup.bound .*≈* .prop-setoid._≃m_.func-eq e = S.+-lunit
+
+𝓥-𝟘-bwd : SS.Sup.Mor (Sup-terminal .HasTerminal.witness) (𝓥 OI.𝟘p)
+𝓥-𝟘-bwd .SS.Sup.mor .*→* .prop-setoid._⇒_.func _ = (λ ()) ,ₚ λ ()
+𝓥-𝟘-bwd .SS.Sup.mor .*→* .prop-setoid._⇒_.func-resp-≈ _ = λ ()
+𝓥-𝟘-bwd .SS.Sup.mor .preserve-ze = λ ()
+𝓥-𝟘-bwd .SS.Sup.mor .preserve-+ = λ ()
+𝓥-𝟘-bwd .SS.Sup.mor .preserve-· = λ ()
+𝓥-𝟘-bwd .SS.Sup.bound .*≈* .prop-setoid._≃m_.func-eq e = S.+-lunit
+
+𝓥-𝟘-iso : Category.Iso SS.Sup.cat (𝓥 OI.𝟘p) (Sup-terminal .HasTerminal.witness)
+𝓥-𝟘-iso .Category.Iso.fwd = 𝓥-𝟘-fwd
+𝓥-𝟘-iso .Category.Iso.bwd = 𝓥-𝟘-bwd
+𝓥-𝟘-iso .Category.Iso.fwd∘bwd≈id =
+  MC.≈-trans (MC.≈-sym (SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext _))
+             (SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext _)
+𝓥-𝟘-iso .Category.Iso.bwd∘fwd≈id .*≈* .prop-setoid._≃m_.func-eq e = λ ()
