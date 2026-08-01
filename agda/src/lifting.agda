@@ -10,11 +10,14 @@
 open import Level using (_⊔_)
 open import categories using (Category; HasTerminal; IsTerminal)
 open import cmon-enriched using (CMonEnriched)
+open import commutative-monoid using (CommutativeMonoid)
 
 module lifting where
 
-record Lifting {o m e} (𝒞 : Category o m e) (𝟙 : Category.obj 𝒞) : Set (o ⊔ m ⊔ e) where
+record Lifting {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) (𝟙 : Category.obj 𝒞) :
+    Set (o ⊔ m ⊔ e) where
   open Category 𝒞
+  open CMonEnriched CM
   field
     L      : obj → obj
     root   : ∀ {P} → 𝟙 ⇒ L P
@@ -36,6 +39,17 @@ record Lifting {o m e} (𝒞 : Category o m e) (𝟙 : Category.obj 𝒞) : Set 
     Lmap-comp : ∀ {P Q R} (g : Q ⇒ R) (f : P ⇒ Q) → Lmap (g ∘ f) ≈ (Lmap g ∘ Lmap f)
     Lmap-root : ∀ {P Q} (f : P ⇒ Q) → (Lmap f ∘ root) ≈ root
 
+    -- The support: what an object contributes to a constant. Restricting an assembly along the
+    -- injection joins the constant in over the support; the injection and the support are natural
+    -- only at isomorphisms, which is all the transports along bisimilarity need.
+    spt         : ∀ {P} → P ⇒ 𝟙
+    affine-inj  : ∀ {P C} (c : 𝟙 ⇒ C) (M : P ⇒ C) →
+                  (affine c M ∘ inj) ≈ ((c ∘ spt) +m M)
+    Lmap-inj    : ∀ {P Q} {f : P ⇒ Q} {g : Q ⇒ P} →
+                  (f ∘ g) ≈ id Q → (g ∘ f) ≈ id P → (Lmap f ∘ inj) ≈ (inj ∘ f)
+    spt-natural : ∀ {P Q} {f : P ⇒ Q} {g : Q ⇒ P} →
+                  (f ∘ g) ≈ id Q → (g ∘ f) ≈ id P → (spt ∘ f) ≈ spt
+
   -- Two maps out of a lifted object agreeing on the root and on the payload are equal, which is the
   -- uniqueness principle the initial-algebra laws use.
   lifting-ext : ∀ {P C} (h k : L P ⇒ C) →
@@ -50,7 +64,7 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) (T : HasTermin
   (zero-out : ∀ {C} (c : witness ⇒ C) → c ≈ εm)
   where
 
-  trivial : Lifting 𝒞 witness
+  trivial : Lifting CM witness
   trivial .Lifting.L P = P
   trivial .Lifting.root = εm
   trivial .Lifting.inj = id _
@@ -64,3 +78,12 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) (T : HasTermin
   trivial .Lifting.Lmap-id = ≈-refl
   trivial .Lifting.Lmap-comp g f = ≈-refl
   trivial .Lifting.Lmap-root f = comp-bilinear-ε₂ f
+  trivial .Lifting.spt = is-terminal .IsTerminal.to-terminal
+  trivial .Lifting.affine-inj c M =
+    ≈-trans id-right
+      (≈-sym (≈-trans (homCM _ _ .CommutativeMonoid.+-cong
+                        (≈-trans (∘-cong (zero-out c) ≈-refl) (comp-bilinear-ε₁ _)) ≈-refl)
+                      (homCM _ _ .CommutativeMonoid.+-lunit)))
+  trivial .Lifting.Lmap-inj e₁ e₂ = ≈-trans id-right (≈-sym id-left)
+  trivial .Lifting.spt-natural e₁ e₂ =
+    ≈-sym (is-terminal .IsTerminal.to-terminal-ext _)

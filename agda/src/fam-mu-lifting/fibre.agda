@@ -31,7 +31,7 @@ import fam-mu-types.sort
 
 module fam-mu-lifting.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting 𝒞 𝟙c) where
+    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
 
 open Category 𝒞
 open Functor

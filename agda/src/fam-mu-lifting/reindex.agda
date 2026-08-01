@@ -23,7 +23,7 @@ import fam-mu-lifting.carrier
 
 module fam-mu-lifting.reindex {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting 𝒞 𝟙c) where
+    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
 
 open fam-mu-lifting.carrier os es T CM BP Lft public
 

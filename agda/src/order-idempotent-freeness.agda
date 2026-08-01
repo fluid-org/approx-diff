@@ -269,9 +269,27 @@ Lp-map-root {P} {Q} f (suc q) j =
            (trans (Σ-cong {P .dim} (λ p → ε-annihilᵣ)) (Σ-ε {P .dim})))
         +-lunit
 
+-- The support of a position order: every position contributes to the single position.
+spt-p : ∀ {P} → P ⇒ 𝟙p
+spt-p {P} .mat _ _ = ι
+spt-p {P} .absorbed zero p =
+  trans (Σ-cong {P .dim} (λ j →
+          trans (·-cong (trans (+-cong ·-lunit refl) (trans +-comm +-lunit)) refl) ·-lunit))
+        (col-ι P p)
+
+-- For an isomorphism the columns join to the top: the inverse recovers the diagonal through them.
+iso-col-ι : ∀ {P Q} (f : P ⇒ Q) (g : Q ⇒ P) → (g ∘ f) ≈p id P →
+            ∀ p → Σ {Q .dim} (λ q → f .mat q p) ≈ ι
+iso-col-ι {P} {Q} f g e p =
+  ≤-antisym (IsTop.≤-top L.⊤-isTop)
+    (≤-trans (P .ord-refl p)
+      (≤-trans (L.≈→≤ (sym (e p p)))
+        (L.Σ-mono {Q .dim} (λ q →
+          ≤-trans (L.∧-monoˡ (IsTop.≤-top L.⊤-isTop)) (L.≈→≤ ·-lunit)))))
+
 -- The lifting as the interpretation needs it: the root supplies the constant, the injection the
 -- payload, and every map out of a lifted order is its own assembly.
-Lp-lifting : Lifting cat 𝟙p
+Lp-lifting : Lifting cmon 𝟙p
 Lp-lifting .Lifting.L = Lp
 Lp-lifting .Lifting.root = root
 Lp-lifting .Lifting.inj = inj
@@ -290,3 +308,17 @@ Lp-lifting .Lifting.Lmap-cong {P} {Q} {f} {g} = Lp-map-cong {P} {Q} {f} {g}
 Lp-lifting .Lifting.Lmap-id {P} = Lp-map-id P
 Lp-lifting .Lifting.Lmap-comp = Lp-map-comp
 Lp-lifting .Lifting.Lmap-root {P} {Q} f = Lp-map-root {P} {Q} f
+Lp-lifting .Lifting.spt {P} = spt-p {P}
+Lp-lifting .Lifting.affine-inj {P} {C} c M q p =
+  trans (inj-body {P} (affine {P} c M) q p)
+        (sym (+-cong (trans (+-cong (trans ·-comm ·-lunit) refl)
+                            (trans +-comm +-lunit))
+                     refl))
+Lp-lifting .Lifting.Lmap-inj {P} {Q} {f} {g} e₁ e₂ zero c =
+  trans (trans (+-cong ·-lunit refl) ⊤-add-top)
+        (sym (trans (Σ-cong {Q .dim} (λ k → ·-lunit)) (iso-col-ι f g e₂ c)))
+Lp-lifting .Lifting.Lmap-inj {P} {Q} {f} {g} e₁ e₂ (suc q) c =
+  trans (trans (+-cong ε-annihilₗ refl) (trans +-lunit (absorb-right f q c)))
+        (sym (absorb-left f q c))
+Lp-lifting .Lifting.spt-natural {P} {Q} {f} {g} e₁ e₂ zero c =
+  trans (Σ-cong {Q .dim} (λ k → ·-lunit)) (iso-col-ι f g e₂ c)

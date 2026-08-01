@@ -164,9 +164,26 @@ Lmap-s {X} {Y} f .mor .preserve-+ = S.refl ,ₚ f .mor .preserve-+
 Lmap-s {X} {Y} f .mor .preserve-· = S.refl ,ₚ f .mor .preserve-·
 Lmap-s {X} {Y} f .bound .*≈* .prop-setoid._≃m_.func-eq (e₁ ,ₚ e₂) = S.trans ∨-idem e₁
 
+-- An isomorphism preserves supports exactly: each bound gives one inequality, and the inverse
+-- carries the second across.
+supp-iso : ∀ {X Y} {f : Mor X Y} {g : Mor Y X} →
+           Sup._≈s_ (Sup.∘-s g f) (Sup.id-s X) →
+           ∀ (u : Semimodule.Carrier (X .carrier)) →
+           X .supp .func u S.≈ Y .supp .func (f .mor .func u)
+supp-iso {X} {Y} {f} {g} e₂ u =
+  S.trans (S.sym (f .bound .*≈* .prop-setoid._≃m_.func-eq Xm.refl))
+  (S.trans S.+-comm
+  (S.trans (S.+-cong (X .supp .*→* .prop-setoid._⇒_.func-resp-≈
+                       (Xm.sym (e₂ .*≈* .prop-setoid._≃m_.func-eq (Xm.refl {u}))))
+                     S.refl)
+           (g .bound .*≈* .prop-setoid._≃m_.func-eq Ym.refl)))
+  where
+  module Xm = Semimodule (X .carrier)
+  module Ym = Semimodule (Y .carrier)
+
 -- The lifting instance: every map out of a lift is the sum of its behaviour on the root and on the
 -- injected payload, since (a, u) = (a, 0) + (supp u, u) when the support is dominated.
-supported-lifting : Lifting Sup.cat 𝟙s
+supported-lifting : Lifting Sup.cmon 𝟙s
 supported-lifting .Lifting.L = Ls
 supported-lifting .Lifting.root {X} = root-s {X}
 supported-lifting .Lifting.inj {X} = inj-s {X}
@@ -197,3 +214,19 @@ supported-lifting .Lifting.Lmap-comp {X} {Y} {Z} g f .*≈* .prop-setoid._≃m_.
   e₁ ,ₚ g .mor .*→* .prop-setoid._⇒_.func-resp-≈ (f .mor .*→* .prop-setoid._⇒_.func-resp-≈ e₂)
 supported-lifting .Lifting.Lmap-root {X} {Y} f .*≈* .prop-setoid._≃m_.func-eq e =
   e ,ₚ f .mor .preserve-ze
+supported-lifting .Lifting.spt {X} .mor = X .supp
+supported-lifting .Lifting.spt {X} .bound .*≈* .prop-setoid._≃m_.func-eq e =
+  S.trans ∨-idem (X .supp .*→* .prop-setoid._⇒_.func-resp-≈ e)
+supported-lifting .Lifting.affine-inj {X} {C} c M .*≈* .prop-setoid._≃m_.func-eq e =
+  Cm.+-cong
+    (c .mor .*→* .prop-setoid._⇒_.func-resp-≈ (X .supp .*→* .prop-setoid._⇒_.func-resp-≈ e))
+    (M .mor .*→* .prop-setoid._⇒_.func-resp-≈ e)
+  where module Cm = Semimodule (C .carrier)
+supported-lifting .Lifting.Lmap-inj {X} {Y} {f} {g} e₁ e₂ .*≈* .prop-setoid._≃m_.func-eq {u₁} {u₂} e =
+  S.trans (supp-iso {X} {Y} {f} {g} e₂ u₁)
+          (Y .supp .*→* .prop-setoid._⇒_.func-resp-≈
+            (f .mor .*→* .prop-setoid._⇒_.func-resp-≈ e))
+  ,ₚ f .mor .*→* .prop-setoid._⇒_.func-resp-≈ e
+supported-lifting .Lifting.spt-natural {X} {Y} {f} {g} e₁ e₂ .*≈* .prop-setoid._≃m_.func-eq {u₁} {u₂} e =
+  S.trans (S.sym (supp-iso {X} {Y} {f} {g} e₂ u₁))
+          (X .supp .*→* .prop-setoid._⇒_.func-resp-≈ e)
