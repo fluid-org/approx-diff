@@ -16,7 +16,6 @@ record Signature ℓ : Set (suc ℓ) where
 -- Models of signatures live in finite product (FIXME: monoidal?)
 -- categories with a specified object of truth values.
 record PointedFPCat o m e : Set (suc (o ⊔ m ⊔ e)) where
-  constructor PFPC[_,_,_,_]
   field
     cat      : Category o m e
     terminal : HasTerminal cat
@@ -27,9 +26,25 @@ record PointedFPCat o m e : Set (suc (o ⊔ m ⊔ e)) where
   open HasTerminal terminal renaming (witness to 𝟙) public
   open HasProducts products renaming (pair to ⟨_,_⟩; prod to _×_) public
 
+  field
+    -- The object interpreting the unit type, with its point. It is the terminal object when the
+    -- unit type has no positions of its own, and a larger object when it has.
+    𝟙ty     : obj
+    unit-pt : 𝟙 ⇒ 𝟙ty
+
   list→product : ∀ {ℓ} {A : Set ℓ} → (A → obj) → List A → obj
   list→product i []       = 𝟙
   list→product i (x ∷ xs) = i x × list→product i xs
+
+-- A category whose unit type has no positions of its own.
+PFPC[_,_,_,_] : ∀ {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞)
+                (Ω : Category.obj 𝒞) → PointedFPCat o m e
+PFPC[ 𝒞 , T , P , Ω ] .PointedFPCat.cat = 𝒞
+PFPC[ 𝒞 , T , P , Ω ] .PointedFPCat.terminal = T
+PFPC[ 𝒞 , T , P , Ω ] .PointedFPCat.products = P
+PFPC[ 𝒞 , T , P , Ω ] .PointedFPCat.Ω = Ω
+PFPC[ 𝒞 , T , P , Ω ] .PointedFPCat.𝟙ty = HasTerminal.witness T
+PFPC[ 𝒞 , T , P , Ω ] .PointedFPCat.unit-pt = Category.id 𝒞 _
 
 record Model {ℓ o m e} (𝒞 : PointedFPCat o m e) (Sig : Signature ℓ) : Set (ℓ ⊔ o ⊔ m) where
   open PointedFPCat 𝒞
