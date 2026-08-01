@@ -425,3 +425,9 @@ full-mor {P} {Q} h .OI.absorbed =
   (S.trans (S.sym (mor-msum (h .SS.Sup.mor) (λ p → 𝓥sm P ._·_ (v₁ p) (colv P p)) q))
            (h .SS.Sup.mor .*→* .prop-setoid._⇒_.func-resp-≈
              (λ q' → S.trans (S.sym (decomp P v₁ fx₁ q')) (e q')) q))))
+
+-- Both sides of the model carry the fused fold: the position orders and their supported
+-- realisations instantiate the engine.
+import lifting-fold
+module PosFold = lifting-fold OI.cmon OI.biproduct OF.Lp-lifting
+module SupFold = lifting-fold SS.Sup.cmon Sup-biproduct SS.supported-lifting
