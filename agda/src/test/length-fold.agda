@@ -11,6 +11,7 @@
 module test.length-fold where
 
 open import Data.Fin using (Fin; zero; suc)
+open import Data.Vec using (Vec; []; _∷_; tabulate)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import commutative-semiring using (CommutativeSemiring)
 import two
@@ -85,23 +86,12 @@ pattern c = zero
 pattern p = suc zero
 pattern n = suc (suc zero)
 
--- The cons tag determines the successor and not the zero.
-test-cons-suc : len .mat s c ≡ two.I
-test-cons-suc = refl
+-- Reading the whole relation as data, computed once.
+table : ∀ {m n} → TM.Matrix m n → Vec (Vec two.Two n) m
+table M = tabulate (λ i → tabulate (λ j → M i j))
 
-test-cons-zero : len .mat z c ≡ two.O
-test-cons-zero = refl
-
--- The nil tag determines the zero, and the successor too, since the cons root is above it.
-test-nil-zero : len .mat z n ≡ two.I
-test-nil-zero = refl
-
-test-nil-suc : len .mat s n ≡ two.I
-test-nil-suc = refl
-
--- The pair root behaves as the cons root does.
-test-pair-suc : len .mat s p ≡ two.I
-test-pair-suc = refl
-
-test-pair-zero : len .mat z p ≡ two.O
-test-pair-zero = refl
+-- Columns are the cons root, the pair root and the nil root. The cons root determines the successor
+-- and not the zero; the nil root determines the zero, and the successor by monotonicity.
+len-table : table (len .mat)
+            ≡ ((two.I ∷ two.I ∷ two.I ∷ []) ∷ (two.O ∷ two.O ∷ two.I ∷ []) ∷ [])
+len-table = refl
