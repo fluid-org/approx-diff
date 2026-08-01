@@ -14,6 +14,7 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category; HasTerminal; IsTerminal)
+open import cmon-enriched using (CMonEnriched; Biproduct; biproduct-iso)
 open import functor using (Functor)
 import matrix
 import semimodule
@@ -281,3 +282,79 @@ private
   MC.≈-trans (MC.≈-sym (SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext _))
              (SemiMod.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext _)
 𝓥-𝟘-iso .Category.Iso.bwd∘fwd≈id .*≈* .prop-setoid._≃m_.func-eq e = λ ()
+
+-- The action of a sum of matrices is the sum of the actions, so the realisation is additive and
+-- carries biproducts to biproducts.
+app-+ₘ : ∀ {m n} (R T : M.Matrix m n) (v : M.Vec n) (i : Fin m) →
+         OS.app (R M.+ₘ T) v i S.≈ (OS.app R v i S.+ OS.app T v i)
+app-+ₘ {m} {n} R T v i =
+  S.trans (M.Σ-cong {n} (λ j → S.·-+-distribᵣ))
+          (S.sym (M.Σ-+ {n} (λ j → R i j S.· v j) (λ j → T i j S.· v j)))
+
+private
+  module SCM = CMonEnriched SS.Sup.cmon
+
+𝓥-additive : ∀ {P Q} (f g : P OI.⇒ Q) →
+             SC._≈_ (𝓥₁ (OI._+p_ f g)) (SCM._+m_ (𝓥₁ f) (𝓥₁ g))
+𝓥-additive {P} {Q} f g .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ _} {v₂ ,ₚ _} e i =
+  S.trans (app-+ₘ (f .OI.mat) (g .OI.mat) v₁ i)
+          (S.+-cong (M.Σ-cong {P .dim} (λ j → S.·-cong S.refl (e j)))
+                    (M.Σ-cong {P .dim} (λ j → S.·-cong S.refl (e j))))
+
+𝓥-zero : ∀ {P Q} → SC._≈_ (𝓥₁ (OI.εp {P} {Q})) (SCM.εm {𝓥 P} {𝓥 Q})
+𝓥-zero {P} {Q} .*≈* .prop-setoid._≃m_.func-eq e i =
+  S.trans (M.Σ-cong {P .dim} (λ j → S.ε-annihilₗ)) (M.Σ-ε {P .dim})
+
+-- The realised biproduct structure on the realisation of a block order: the laws are the images of
+-- the position-order laws under the functor, using additivity.
+𝓥-image-biproduct : ∀ P Q → Biproduct SS.Sup.cmon (𝓥 P) (𝓥 Q)
+𝓥-image-biproduct P Q .Biproduct.prod = 𝓥 (P OI.⊕ Q)
+𝓥-image-biproduct P Q .Biproduct.p₁ = 𝓥₁ (OI.π₁ P Q)
+𝓥-image-biproduct P Q .Biproduct.p₂ = 𝓥₁ (OI.π₂ P Q)
+𝓥-image-biproduct P Q .Biproduct.in₁ = 𝓥₁ (OI.ι₁ P Q)
+𝓥-image-biproduct P Q .Biproduct.in₂ = 𝓥₁ (OI.ι₂ P Q)
+𝓥-image-biproduct P Q .Biproduct.id-1 =
+  MC.≈-trans (MC.≈-sym (𝓥F .Functor.fmor-comp (OI.π₁ P Q) (OI.ι₁ P Q)))
+  (MC.≈-trans (𝓥F .Functor.fmor-cong
+                {f₁ = OI._∘_ (OI.π₁ P Q) (OI.ι₁ P Q)} {f₂ = OI.id P}
+                (OI.biproduct P Q .Biproduct.id-1))
+              (𝓥F .Functor.fmor-id {P}))
+𝓥-image-biproduct P Q .Biproduct.id-2 =
+  MC.≈-trans (MC.≈-sym (𝓥F .Functor.fmor-comp (OI.π₂ P Q) (OI.ι₂ P Q)))
+  (MC.≈-trans (𝓥F .Functor.fmor-cong
+                {f₁ = OI._∘_ (OI.π₂ P Q) (OI.ι₂ P Q)} {f₂ = OI.id Q}
+                (OI.biproduct P Q .Biproduct.id-2))
+              (𝓥F .Functor.fmor-id {Q}))
+𝓥-image-biproduct P Q .Biproduct.zero-1 =
+  MC.≈-trans (MC.≈-sym (𝓥F .Functor.fmor-comp (OI.π₁ P Q) (OI.ι₂ P Q)))
+  (MC.≈-trans (𝓥F .Functor.fmor-cong
+                {f₁ = OI._∘_ (OI.π₁ P Q) (OI.ι₂ P Q)} {f₂ = OI.εp {Q} {P}}
+                (OI.biproduct P Q .Biproduct.zero-1))
+              (𝓥-zero {Q} {P}))
+𝓥-image-biproduct P Q .Biproduct.zero-2 =
+  MC.≈-trans (MC.≈-sym (𝓥F .Functor.fmor-comp (OI.π₂ P Q) (OI.ι₁ P Q)))
+  (MC.≈-trans (𝓥F .Functor.fmor-cong
+                {f₁ = OI._∘_ (OI.π₂ P Q) (OI.ι₁ P Q)} {f₂ = OI.εp {P} {Q}}
+                (OI.biproduct P Q .Biproduct.zero-2))
+              (𝓥-zero {P} {Q}))
+𝓥-image-biproduct P Q .Biproduct.id-+ =
+  MC.≈-trans (CommutativeMonoid.+-cong (CMonEnriched.homCM SemiMod.cmon-enriched _ _)
+               (MC.≈-sym (𝓥F .Functor.fmor-comp (OI.ι₁ P Q) (OI.π₁ P Q)))
+               (MC.≈-sym (𝓥F .Functor.fmor-comp (OI.ι₂ P Q) (OI.π₂ P Q))))
+  (MC.≈-trans (MC.≈-sym (𝓥-additive (OI._∘_ (OI.ι₁ P Q) (OI.π₁ P Q))
+                                    (OI._∘_ (OI.ι₂ P Q) (OI.π₂ P Q))))
+  (MC.≈-trans (𝓥F .Functor.fmor-cong
+                {f₁ = OI._+p_ (OI._∘_ (OI.ι₁ P Q) (OI.π₁ P Q))
+                              (OI._∘_ (OI.ι₂ P Q) (OI.π₂ P Q))}
+                {f₂ = OI.id (P OI.⊕ Q)}
+                (OI.biproduct P Q .Biproduct.id-+))
+              (𝓥F .Functor.fmor-id {P OI.⊕ Q})))
+
+-- The chosen supported biproducts, and the canonical comparison with the realised structure.
+Sup-biproduct : ∀ X Y → Biproduct SS.Sup.cmon X Y
+Sup-biproduct = SS.Sup.biproduct-s SemiMod.biproduct
+
+𝓥-⊕-iso : ∀ P Q → Category.Iso SS.Sup.cat (𝓥 (P OI.⊕ Q))
+                    (Biproduct.prod (Sup-biproduct (𝓥 P) (𝓥 Q)))
+𝓥-⊕-iso P Q =
+  SC.IsIso→Iso (biproduct-iso SS.Sup.cmon (𝓥-image-biproduct P Q) (Sup-biproduct (𝓥 P) (𝓥 Q)))
