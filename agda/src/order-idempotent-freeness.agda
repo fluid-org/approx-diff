@@ -178,6 +178,18 @@ affine-cong : ∀ {P C} {c c' : 𝟙p ⇒ C} {M M' : P ⇒ C} →
 affine-cong ec eM q zero    = ec q zero
 affine-cong ec eM q (suc p) = +-cong (ec q zero) (eM q p)
 
+-- A map out of a lifting whose constant vanishes is the assembly of its linear part alone, so the
+-- root then determines nothing on its own. An evaluation map is of this kind: applying a function
+-- determines only what the function and the argument determine, the function's own constant being
+-- carried by its denotation rather than by the application.
+constant-free : ∀ {P C} (h : Lp P ⇒ C) → tag-of h ≈p εp {𝟙p} {C} →
+                affine (εp {𝟙p} {C}) (body-of h) ≈p h
+constant-free h e =
+  ≈ₘ-trans (affine-cong {c = εp {𝟙p} {_}} {c' = tag-of h}
+              {M = body-of h} {M' = body-of h}
+              (≈ₘ-sym e) (≈ₘ-refl {M = body-of h .mat}))
+           (affine-η h)
+
 -- Selecting the root alone. Composing with it reads off the constant, so a morphism out of a
 -- lifting is determined by its behaviour on the root and on the payload.
 root-mat : ∀ (P : Pos) → Matrix (suc (P .dim)) 1
