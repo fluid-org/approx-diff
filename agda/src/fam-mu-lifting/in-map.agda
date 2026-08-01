@@ -14,7 +14,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import Data.Unit using (tt)
 open import prop using (_,_)
-open import categories using (Category; HasTerminal; HasProducts)
+open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 open import lifting using (Lifting)
 open import prop-setoid as PS using ()
@@ -37,6 +37,35 @@ record HasMu : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     ⦅_⦆   : ∀ {k} {Γ A : Obj} {P : Poly (suc k)} {δ : Fin k → Obj} →
             Mor (Fam𝒞-P.prod Γ (fobj μ-obj P (extend δ A))) A →
             Mor (Fam𝒞-P.prod Γ (μ-obj P δ)) A
+
+  -- The strong actions, derived as in the unrooted interpretation but with the transport across
+  -- the lifting at each rooted former.
+  strong-extend-mor : ∀ {k} {Γ : Obj} {δ δ' : Fin k → Obj} {X Y : Obj} →
+                      (∀ i → Mor (Fam𝒞-P.prod Γ (δ i)) (δ' i)) →
+                      Mor (Fam𝒞-P.prod Γ X) Y →
+                      ∀ i → Mor (Fam𝒞-P.prod Γ (extend δ X i)) (extend δ' Y i)
+  strong-extend-mor fs xy Fin.zero    = xy
+  strong-extend-mor fs xy (Fin.suc i) = fs i
+
+  mutual
+    strong-fmor : ∀ {k} {Γ : Obj} (P : Poly k) {δ δ' : Fin k → Obj} →
+                  (∀ i → Mor (Fam𝒞-P.prod Γ (δ i)) (δ' i)) →
+                  Mor (Fam𝒞-P.prod Γ (fobj μ-obj P δ)) (fobj μ-obj P δ')
+    strong-fmor (const A) fs = Fam𝒞-P.p₂
+    strong-fmor (var i)   fs = fs i
+    strong-fmor (P' + Q') fs =
+      HasStrongCoproducts.copair strongCoproducts
+        (Fam𝒞._∘_ (HasCoproducts.in₁ coproducts) (under-rootF (strong-fmor P' fs)))
+        (Fam𝒞._∘_ (HasCoproducts.in₂ coproducts) (under-rootF (strong-fmor Q' fs)))
+    strong-fmor (P' × Q') fs =
+      under-rootF (Fam𝒞-P.strong-prod-m (strong-fmor P' fs) (strong-fmor Q' fs))
+    strong-fmor (μ P')    fs = strong-μ-fmor P' fs
+
+    strong-μ-fmor : ∀ {k} {Γ : Obj} (P : Poly (suc k)) {δ δ' : Fin k → Obj} →
+                    (∀ i → Mor (Fam𝒞-P.prod Γ (δ i)) (δ' i)) →
+                    Mor (Fam𝒞-P.prod Γ (μ-obj P δ)) (μ-obj P δ')
+    strong-μ-fmor P' {δ} {δ'} fs =
+      ⦅ Fam𝒞._∘_ (inMap P' δ') (strong-fmor P' (strong-extend-mor fs Fam𝒞-P.p₂)) ⦆
 
 -- α's reconstruction machinery.
 module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where

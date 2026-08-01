@@ -106,6 +106,19 @@ pm-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} {h :
          (prod-m f h ∘ prod-m f' h') ≈ id (prod a₂ b₂)
 pm-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
 
+-- The transport across the lifting as a family morphism: fibrewise under-root, natural because
+-- transports are isomorphisms.
+under-rootF : ∀ {Γ X Y : Obj} → Mor (Fam𝒞-P.prod Γ X) Y → Mor (Fam𝒞-P.prod Γ (Lf X)) (Lf Y)
+under-rootF f .idxf = f .idxf
+under-rootF f .famf ._⇒f_.transf (γ , x) = under-root (f .famf ._⇒f_.transf (γ , x))
+under-rootF {Γ} {X} {Y} f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
+  under-root-natural (Γ .fam .subst γ≈)
+    (fam-subst-iso₁ (X .fam) x≈) (fam-subst-iso₂ (X .fam) x≈)
+    (fam-subst-iso₁ (Y .fam) (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
+    (fam-subst-iso₂ (Y .fam) (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
+    (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
+    (f .famf ._⇒f_.natural (γ≈ , x≈))
+
 -- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where
   open Sh.Tree (λ i → δ i .idx) public
