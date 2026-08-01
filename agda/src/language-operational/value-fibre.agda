@@ -3,8 +3,8 @@
 -- The ordered fibre of a value: the positions of a value together with the order that makes a
 -- selection of them a prefix. Every value former contributes a root above its payload, so the
 -- bottom of a former is distinct from the former applied to bottoms. Rolling contributes nothing of
--- its own, since the sum and product inside the body already carry roots, and a closure is left
--- with the fibre of its environment for now.
+-- its own, since the sum and product inside the body already carry roots. A closure carries a root
+-- above its environment, so that a function position can be sliced away on its own.
 --
 -- The dimension is the width the operational semantics would have to use, which differs from the
 -- present one at the unit, the injections and the pair.
@@ -54,7 +54,7 @@ mutual
   pos (inl v)         = Lp (pos v)
   pos (inr v)         = Lp (pos v)
   pos (pair v u)      = Lp (pos v ⊕ pos u)
-  pos (clo γ _)       = pos-env γ
+  pos (clo γ _)       = Lp (pos-env γ)
   pos (roll v)        = pos v
 
   pos-env : ∀ {Γ} → Env Γ → Pos
@@ -69,7 +69,7 @@ mutual
   width′ (inl v)       = suc (width′ v)
   width′ (inr v)       = suc (width′ v)
   width′ (pair v u)    = suc (width′ v + width′ u)
-  width′ (clo γ _)     = width-env′ γ
+  width′ (clo γ _)     = suc (width-env′ γ)
   width′ (roll v)      = width′ v
 
   width-env′ : ∀ {Γ} → Env Γ → ℕ
@@ -83,7 +83,7 @@ mutual
   pos-dim (inl v)     = cong suc (pos-dim v)
   pos-dim (inr v)     = cong suc (pos-dim v)
   pos-dim (pair v u)  = cong suc (cong₂ _+_ (pos-dim v) (pos-dim u))
-  pos-dim (clo γ _)   = pos-env-dim γ
+  pos-dim (clo γ _)   = cong suc (pos-env-dim γ)
   pos-dim (roll v)    = pos-dim v
 
   pos-env-dim : ∀ {Γ} (γ : Env Γ) → pos-env γ .dim ≡ width-env′ γ
@@ -108,3 +108,8 @@ private
 
   test-pair-units : table (pos (pair {Syn.unit} {Syn.unit} unit unit) .ord) ≡ pair-units
   test-pair-units = refl
+
+  -- A closure over the empty environment is a single root, so it can be sliced away entire.
+  test-closure : table (pos (clo {Syn.emp} {Syn.unit} {Syn.unit} emp (Syn.var Syn.zero)) .ord)
+                 ≡ ((two.I ∷ []) ∷ [])
+  test-closure = refl
