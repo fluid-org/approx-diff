@@ -67,6 +67,17 @@ record HasMu : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     strong-μ-fmor P' {δ} {δ'} fs =
       ⦅ Fam𝒞._∘_ (inMap P' δ') (strong-fmor P' (strong-extend-mor fs Fam𝒞-P.p₂)) ⦆
 
+  -- The parameterised map between μ-carriers, as in the unrooted interpretation: fold the source
+  -- against the target's algebra map after the given unfolding step. P and δ are explicit because
+  -- fobj and μ-obj are not injective.
+  μ-map : ∀ {j k} (P : Poly (suc j)) (δ : Fin j → Obj) (Q : Poly (suc k)) (δ' : Fin k → Obj) →
+          Mor (fobj μ-obj P (extend δ (μ-obj Q δ')))
+              (fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
+          Mor (μ-obj P δ) (μ-obj Q δ')
+  μ-map P δ Q δ' unfold =
+    Fam𝒞._∘_ (⦅_⦆ {P = P} {δ = δ} (Fam𝒞._∘_ (Fam𝒞._∘_ (inMap Q δ') unfold) Fam𝒞-P.p₂))
+             (Fam𝒞-P.pair (HasTerminal.to-terminal (terminal T)) (Fam𝒞.id _))
+
 -- α's reconstruction machinery.
 module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     δ' = extend δ (μObj P δ)
