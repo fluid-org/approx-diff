@@ -6,7 +6,7 @@
 -- the lift of the realisation: a selection of Lp P is exactly a scalar dominating a selection,
 -- which is an element of the supported lift. This is the object-level comparison between the
 -- lifting on position orders and the lifting on supported semimodules.
-open import Level using (0ℓ)
+open import Level using (0ℓ; Level)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (_,_; _×_)
@@ -15,13 +15,15 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category; HasTerminal; IsTerminal)
-open import cmon-enriched using (CMonEnriched; Biproduct; biproduct-iso)
+open import cmon-enriched using (CMonEnriched; Biproduct; biproduct-iso; biproducts→products)
 open import functor using (Functor)
+open import finite-product-functor using (preserve-chosen-products)
 import matrix
 import semimodule
 import order-idempotent
 import order-idempotent-freeness
 import supported-semimod
+import fam-mu-lifting.fibrewise
 
 module order-idempotent-supported
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
@@ -238,3 +240,17 @@ Sup-biproduct = SS.Sup.biproduct-s SemiMod.biproduct
 import lifting-fold
 module PosFold = lifting-fold OI.cmon OI.biproduct OF.Lp-lifting
 module SupFold = lifting-fold SS.Sup.cmon Sup-biproduct SS.supported-lifting
+
+-- The realisation preserves the chosen products, via the image biproducts.
+𝓥F-preserve-products :
+  preserve-chosen-products 𝓥F (biproducts→products OI.cmon OI.biproduct)
+    (biproducts→products SS.Sup.cmon Sup-biproduct)
+𝓥F-preserve-products {P} {Q} =
+  biproduct-iso SS.Sup.cmon (𝓥-image-biproduct P Q) (Sup-biproduct (𝓥 P) (𝓥 Q))
+
+-- The realisation carries the rooted μ across, fibrewise: position-order μ-carriers realise as the
+-- supported μ-carriers over the same trees.
+module 𝓥Fibrewise (os es : Level) =
+  fam-mu-lifting.fibrewise os es OI.cmon OI.biproduct OF.Lp-lifting
+    SS.Sup.cmon Sup-biproduct SS.supported-lifting
+    𝓥F (λ {P} {Q} → 𝓥F-preserve-products {P} {Q}) 𝓥-Lp-iso (λ {P} {Q} f → Lmap-intertwine {P} {Q} f)
