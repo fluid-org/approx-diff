@@ -21,6 +21,7 @@ open import Data.Product using (_,_)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
+open import commutative-monoid using (CommutativeMonoid)
 open import lifting using (Lifting)
 open import prop-setoid using (IsEquivalence; Setoid)
 open import indexed-family using (Fam; _⇒f_)
@@ -144,6 +145,49 @@ under-rootF-p₂ {Γ} {X} ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x�
 under-rootF-p₂ {Γ} {X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
   ≈-trans (∘-cong (≈-trans (Lmap-cong (X .fam .refl*)) Lmap-id) ≈-refl)
           (≈-trans id-left under-root-p₂)
+
+private
+  module CME = CMonEnriched CM
+
+-- The fibrewise action of the lifting on a family morphism.
+Lf-map : ∀ {X Y : Obj} → Mor X Y → Mor (Lf X) (Lf Y)
+Lf-map f .idxf = f .idxf
+Lf-map f .famf ._⇒f_.transf x = Lmap (f .famf ._⇒f_.transf x)
+Lf-map f .famf ._⇒f_.natural e =
+  ≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong (f .famf ._⇒f_.natural e)) (Lmap-comp _ _))
+
+-- The payload injection, fibrewise; natural because transports are isomorphisms.
+injF : ∀ {X : Obj} → Mor X (Lf X)
+injF .idxf = prop-setoid.idS _
+injF {X} .famf ._⇒f_.transf x = inj
+injF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
+  ≈-sym (Lmap-inj (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e))
+
+-- Dropping the root: the assembly at the zero constant, so the root's contribution vanishes.
+payloadF : ∀ {X : Obj} → Mor (Lf X) X
+payloadF .idxf = prop-setoid.idS _
+payloadF {X} .famf ._⇒f_.transf x = affine CME.εm (id _)
+payloadF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
+  lifting-ext _ _
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong₂ (Lmap-root s))
+        (≈-trans (affine-root _ _)
+          (≈-sym (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong₂ (affine-root _ _)) (CME.comp-bilinear-ε₂ s)))))))
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong₂ (Lmap-inj (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e)))
+        (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong₁ payload-inj)
+            (≈-trans id-left
+              (≈-sym (≈-trans (assoc _ _ _)
+                (≈-trans (∘-cong₂ payload-inj) id-right))))))))
+  where
+    s = X .fam .subst e
+    payload-inj : ∀ {c} → (affine CME.εm (id c) ∘ inj) ≈ id c
+    payload-inj =
+      ≈-trans (affine-inj CME.εm (id _))
+        (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong (CME.comp-bilinear-ε₁ spt) ≈-refl)
+          (CME.homCM _ _ .CommutativeMonoid.+-lunit))
 
 -- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where
