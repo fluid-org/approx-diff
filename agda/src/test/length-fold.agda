@@ -59,12 +59,12 @@ cons v = sup (inr (prd kon (rec v)))
 -- The algebra. The constants are the parts of the result each branch builds: the zero for nil, the
 -- successor for cons. The cons branch reads the tail's result through the zero position.
 alg : (s : Shape Lst Lst) → (𝟘p ⊕ ⟦_⟧ 𝟘p R s) ⇒ R
-alg (inl kon) = close raw
+alg (inl kon) = mat→mor (close raw)
   where
   raw : TM.Matrix 2 1
   raw zero    _ = two.O
   raw (suc _) _ = two.I
-alg (inr (prd kon (rec v))) = close raw
+alg (inr (prd kon (rec v))) = mat→mor (close raw)
   where
   -- Columns: the injection root, the pair root, the element, then the tail's result.
   raw : TM.Matrix 2 4
@@ -92,6 +92,6 @@ table M = tabulate (λ i → tabulate (λ j → M i j))
 
 -- Columns are the cons root, the pair root and the nil root. The cons root determines the successor
 -- and not the zero; the nil root determines the zero, and the successor by monotonicity.
-len-table : table (len .mat)
+len-table : table (mor→mat len .mat)
             ≡ ((two.I ∷ two.I ∷ two.I ∷ []) ∷ (two.O ∷ two.O ∷ two.I ∷ []) ∷ [])
 len-table = refl
