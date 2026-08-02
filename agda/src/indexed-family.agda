@@ -425,6 +425,50 @@ record HasSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc 
     ∎
     where open ≈-Reasoning isEquiv
 
+-- Setoid-indexed products without uniqueness of pairing: the operations, their congruences, the
+-- computation law, and the functoriality laws that uniqueness would otherwise supply. A chosen
+-- pairing can carry structure the projections do not see (such as a root), satisfying these laws
+-- while the extensionality law fails.
+record HasWeakSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc m ⊔ suc e ⊔ suc os ⊔ suc es) where
+  open Category 𝒞
+  field
+    Π : (A : Setoid os es) → Fam A 𝒞 → obj
+    lambdaΠ : ∀ {A} (x : obj) (P : Fam A 𝒞) → (constantFam A 𝒞 x ⇒f P) → (x ⇒ Π A P)
+    lambdaΠ-cong : ∀ {A x P} {f₁ f₂ : constantFam A 𝒞 x ⇒f P} → f₁ ≃f f₂ → lambdaΠ x P f₁ ≈ lambdaΠ x P f₂
+    evalΠ : ∀ {A} P (a : A .Setoid.Carrier) → Π A P ⇒ P .Fam.fm a
+    evalΠ-cong : ∀ {A} {P : Fam A 𝒞} {a₁ a₂ : A .Setoid.Carrier} →
+      (e : A .Setoid._≈_ a₁ a₂) → (P .Fam.subst e ∘ evalΠ P a₁) ≈ evalΠ P a₂
+
+  open IsEquivalence
+
+  evalΠf : ∀ {A} P → constantFam _ _ (Π A P) ⇒f P
+  evalΠf P = record { transf = evalΠ P
+                    ; natural = λ x₁≈x₂ →
+                       isEquiv .trans id-right (≈-sym (evalΠ-cong x₁≈x₂)) }
+
+  field
+    lambda-eval : ∀ {A} {P : Fam A 𝒞} {x} {f} a →
+      (evalΠ P a ∘ lambdaΠ x P f) ≈ f ._⇒f_.transf a
+
+  Π-map : ∀ {A} {P Q : Fam A 𝒞} → P ⇒f Q → Π A P ⇒ Π A Q
+  Π-map {A} {P} {Q} f = lambdaΠ (Π A P) Q (f ∘f evalΠf P)
+
+  Π-map-cong : ∀ {A} {P Q : Fam A 𝒞}
+               {f₁ f₂ : P ⇒f Q} → f₁ ≃f f₂ → Π-map f₁ ≈ Π-map f₂
+  Π-map-cong f₁≃f₂ = lambdaΠ-cong (∘f-cong f₁≃f₂ (≃f-isEquivalence .refl))
+
+  -- With extensionality gone, these are laws of the chosen structure.
+  field
+    Π-map-id : ∀ {A} {P : Fam A 𝒞} → Π-map {A} {P} {P} (idf _) ≈ id (Π A P)
+    Π-map-comp : ∀ {A} {P Q R : Fam A 𝒞} (f : Q ⇒f R) (g : P ⇒f Q) →
+                 Π-map (f ∘f g) ≈ (Π-map f ∘ Π-map g)
+    lambda-compose : ∀ {A} {Q R : Fam A 𝒞} {x}
+      (f : Q ⇒f R) (g : constantFam A 𝒞 x ⇒f Q) →
+      lambdaΠ _ _ (f ∘f g) ≈ (Π-map f ∘ lambdaΠ _ _ g)
+
+  lambda-evalf : ∀ {A} {P : Fam A 𝒞} {x} f → (evalΠf P ∘f constF (lambdaΠ x P f)) ≃f f
+  lambda-evalf f ._≃f_.transf-eq {a} = lambda-eval a
+
 open import functor
 
 -- A family is a functor from the setoid, viewed as a category.
