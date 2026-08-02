@@ -86,7 +86,8 @@ fobj μ-obj (μ P')    δ = μ-obj P' δ
 -- The context-paired transport across the lifting and its laws, from the engine.
 import lifting-fold
 open lifting-fold CM BP Lft public
-  using (under-root; under-root-cong; under-root-natural; pm; pm-in₁; pm-in₂; bp-ext)
+  using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
+         pm; pm-in₁; pm-in₂; bp-ext)
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)

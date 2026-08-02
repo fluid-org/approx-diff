@@ -210,3 +210,108 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     agree-apply γ fbase        (Fin.suc i) a = TA'.elEq-refl (inj₁ (Fin.suc i)) a
     agree-apply γ (fbind Q fm) Fin.zero    a = agree-reindex {Q = Q} γ fm a
     agree-apply γ (fbind Q fm) (Fin.suc v) a = agree-apply γ fm v a
+
+  -- Fibre agreement: the fold's fibre transported along the index agreement is the application's
+  -- fibre. At the rooted formers the transport passes across the lifting and the congruence closes
+  -- on the branch, exactly as in the fold's naturality.
+  mutual
+    agree-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
+                      (fobj μObj Q (extend δ A) .fam .subst (agree-shape Q γ x) ∘ Ft.fold-shape-fam Q γ x)
+                        ≈ Af.apply-shape-fam Q γ x
+    agree-shape-fam (const A')        γ a = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
+    agree-shape-fam (var Fin.zero)    γ t = ≈-trans (∘-cong (A .fam .refl*) ≈-refl) id-left
+    agree-shape-fam (var (Fin.suc i)) γ a = ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) id-left
+    agree-shape-fam (Q₁ + Q₂) γ (inj₁ x) =
+      ≈-trans (under-root-post
+                (fam-subst-iso₁ (fobj μObj Q₁ (extend δ A) .fam) (agree-shape Q₁ γ x))
+                (fam-subst-iso₂ (fobj μObj Q₁ (extend δ A) .fam) (agree-shape Q₁ γ x))
+                (Ft.fold-shape-fam Q₁ γ x))
+              (under-root-cong (agree-shape-fam Q₁ γ x))
+    agree-shape-fam (Q₁ + Q₂) γ (inj₂ y) =
+      ≈-trans (under-root-post
+                (fam-subst-iso₁ (fobj μObj Q₂ (extend δ A) .fam) (agree-shape Q₂ γ y))
+                (fam-subst-iso₂ (fobj μObj Q₂ (extend δ A) .fam) (agree-shape Q₂ γ y))
+                (Ft.fold-shape-fam Q₂ γ y))
+              (under-root-cong (agree-shape-fam Q₂ γ y))
+    agree-shape-fam (Q₁ × Q₂) γ (x , y) =
+      ≈-trans (under-root-post
+                (pm-iso (fam-subst-iso₁ (fobj μObj Q₁ (extend δ A) .fam) (agree-shape Q₁ γ x))
+                        (fam-subst-iso₁ (fobj μObj Q₂ (extend δ A) .fam) (agree-shape Q₂ γ y)))
+                (pm-iso (fam-subst-iso₂ (fobj μObj Q₁ (extend δ A) .fam) (agree-shape Q₁ γ x))
+                        (fam-subst-iso₂ (fobj μObj Q₂ (extend δ A) .fam) (agree-shape Q₂ γ y)))
+                (strong-prod-m (Ft.fold-shape-fam Q₁ γ x) (Ft.fold-shape-fam Q₂ γ y)))
+              (under-root-cong
+                (≈-trans (strong-prod-m-post _ _ _ _)
+                         (strong-prod-m-cong (agree-shape-fam Q₁ γ x) (agree-shape-fam Q₂ γ y))))
+    agree-shape-fam (μ Q') γ t = agree-reindex-fam {Q = Q'} γ fbase t
+
+    agree-reindex-fam : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} (γ : Γ .idx .Carrier)
+                        (fm : FMor ρ ρ' d d') (t : Tδ.W ∣ Q ∣ ρ) →
+                        (TA'.fib-subst Q d' {x = Ft.fold-reindex γ fm t} {y = Af.apply-reindex γ fm t}
+                           (agree-reindex {Q = Q} γ fm t)
+                         ∘ Ft.fold-reindex-fam γ fm t)
+                          ≈ Af.apply-reindex-fam γ fm t
+    agree-reindex-fam {Q = Q} γ fm (Tδ.sup x) = agree-reindex-shape-fam γ Q (fbind Q fm) x
+
+    agree-reindex-shape-fam : ∀ {j} (γ : Γ .idx .Carrier) (R : Poly j) {ηA ηB dA dB}
+                              (fm : FMor ηA ηB dA dB) (a : Tδ.⟦ ∣ R ∣ ⟧shape ηA) →
+                              (TA'.fib-shape-subst R dB (agree-reindex-shape γ R fm a)
+                               ∘ Ft.fold-reindex-shape-fam γ R fm a)
+                                ≈ Af.apply-reindex-shape-fam γ R fm a
+    agree-reindex-shape-fam γ (const A') fm a = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
+    agree-reindex-shape-fam γ (var v)    fm a = agree-apply-fam γ fm v a
+    agree-reindex-shape-fam γ (P' + Q') {dA = dA} {dB} fm (inj₁ a) =
+      ≈-trans (under-root-post
+                (TA'.fib-shape-iso₁ P' dB (agree-reindex-shape γ P' fm a))
+                (TA'.fib-shape-iso₂ P' dB (agree-reindex-shape γ P' fm a))
+                (Ft.fold-reindex-shape-fam γ P' fm a))
+              (under-root-cong (agree-reindex-shape-fam γ P' fm a))
+    agree-reindex-shape-fam γ (P' + Q') {dA = dA} {dB} fm (inj₂ b) =
+      ≈-trans (under-root-post
+                (TA'.fib-shape-iso₁ Q' dB (agree-reindex-shape γ Q' fm b))
+                (TA'.fib-shape-iso₂ Q' dB (agree-reindex-shape γ Q' fm b))
+                (Ft.fold-reindex-shape-fam γ Q' fm b))
+              (under-root-cong (agree-reindex-shape-fam γ Q' fm b))
+    agree-reindex-shape-fam γ (P' × Q') {dA = dA} {dB} fm (a , b) =
+      ≈-trans (under-root-post
+                (pm-iso (TA'.fib-shape-iso₁ P' dB (agree-reindex-shape γ P' fm a))
+                        (TA'.fib-shape-iso₁ Q' dB (agree-reindex-shape γ Q' fm b)))
+                (pm-iso (TA'.fib-shape-iso₂ P' dB (agree-reindex-shape γ P' fm a))
+                        (TA'.fib-shape-iso₂ Q' dB (agree-reindex-shape γ Q' fm b)))
+                (strong-prod-m (Ft.fold-reindex-shape-fam γ P' fm a) (Ft.fold-reindex-shape-fam γ Q' fm b)))
+              (under-root-cong
+                (≈-trans (strong-prod-m-post _ _ _ _)
+                         (strong-prod-m-cong (agree-reindex-shape-fam γ P' fm a)
+                                             (agree-reindex-shape-fam γ Q' fm b))))
+    agree-reindex-shape-fam γ (μ Q'')   fm t = agree-reindex-fam {Q = Q''} γ fm t
+
+    agree-apply-fam : ∀ {k} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ' d d') (v : Fin k)
+                      (a : Tδ.El (ρ v)) →
+                      (TA'.fib-el-subst (ρ' v) (d' v) (agree-apply γ fm v a)
+                       ∘ Ft.fold-apply-fam γ fm v a)
+                        ≈ Af.apply-apply-fam γ fm v a
+    agree-apply-fam γ fbase        Fin.zero    t = ≈-trans (∘-cong (A .fam .refl*) ≈-refl) id-left
+    agree-apply-fam γ fbase        (Fin.suc i) a =
+      ≈-trans (∘-cong (TA'.fib-el-refl* (inj₁ (Fin.suc i)) (lift tt) a) ≈-refl) id-left
+    agree-apply-fam γ (fbind Q fm) Fin.zero    a = agree-reindex-fam {Q = Q} γ fm a
+    agree-apply-fam γ (fbind Q fm) (Fin.suc v) a = agree-apply-fam γ fm v a
+
+  -- The fold satisfies the fused law.
+  fold-is-fold : IsFold Ft.fold-idx Ft.fold-idx-resp Ft.fold-fam
+  fold-is-fold .IsFold.is-idx γ x =
+    alg .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl , agree-shape P γ x)
+  fold-is-fold .IsFold.is-fam γ x =
+    ≈-trans (≈-sym id-left)
+    (≈-trans (∘-cong (≈-sym (fam-subst-iso₂ (A .fam)
+                              (alg .idxf .PS._⇒_.func-resp-≈
+                                (Γ .idx .isEquivalence .refl , agree-shape P γ x)))) ≈-refl)
+    (≈-trans (assoc _ _ _)
+    (∘-cong ≈-refl
+      (≈-trans (≈-sym (assoc _ _ _))
+      (≈-trans (∘-cong (≈-sym (alg .famf ._⇒f_.natural
+                         (Γ .idx .isEquivalence .refl , agree-shape P γ x))) ≈-refl)
+      (≈-trans (assoc _ _ _)
+      (∘-cong ≈-refl
+        (≈-trans (pair-compose _ _ _ _)
+                 (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
+                            (agree-shape-fam P γ x))))))))))
