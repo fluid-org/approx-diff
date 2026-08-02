@@ -154,6 +154,13 @@ affine-intertwine {P} {C} c Mm .*≈* .prop-setoid._≃m_.func-eq
     {(a₁ , (u₁ ,ₚ _)) ,ₚ _} {(a₂ , (u₂ ,ₚ _)) ,ₚ _} (e₁ ,ₚ e₂) q =
   S.+-cong (c .func-resp-≈ (λ i → e₁) q) (Mm .func-resp-≈ e₂ q)
 
+-- The lifted action also intertwines: both sides keep the root and map the payload.
+Lmap-intertwine : ∀ {P Q} (f : P OI.⇒ Q) →
+  SC._≈_ (SC._∘_ (𝓥-Lp-iso Q .Category.Iso.fwd) (𝓥₁ (OI.Lp-map f)))
+         (SC._∘_ (SS.Lmap-s (𝓥₁ f)) (𝓥-Lp-iso P .Category.Iso.fwd))
+Lmap-intertwine {P} {Q} f .*≈* .prop-setoid._≃m_.func-eq {v₁ ,ₚ _} {v₂ ,ₚ _} e =
+  e zero ,ₚ f .func-resp-≈ (λ i → e (suc i))
+
 -- The realisation packaged as a functor: the identity on morphisms.
 𝓥F : Functor OI.cat SS.Sup.cat
 𝓥F .Functor.fobj = 𝓥
