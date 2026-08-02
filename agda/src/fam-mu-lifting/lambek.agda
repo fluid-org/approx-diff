@@ -116,3 +116,104 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     drt'-el dbase          (Fin.suc i) a = TX.elEq-refl (inj₁ (Fin.suc i)) a
     drt'-el (dbind Q' rel) Fin.zero    a = drt'-W {Q̂ = Q'} rel a
     drt'-el (dbind Q' rel) (Fin.suc v) a = drt'-el rel v a
+
+  -- Fibre halves of the round trips: the fibre composites, transported along the index round
+  -- trips, are the identity. Pure Lmap and prod-m algebra; no isomorphisms are needed.
+  mutual
+    drt-fam-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
+                (rel : DRel md' md) (t : Tδ.W ∣ Q̂ ∣ ρ) →
+                (Tδ.fib-subst Q̂ d {x = R.reindex md (R'.reindex md' t)} {y = t} (drt-W rel t)
+                  ∘ (R.reindex-fam-W md {t = R'.reindex md' t} ∘ R'.reindex-fam-W md' {t = t}))
+                  ≈ id (Tδ.fib Q̂ d t)
+    drt-fam-W {Q̂ = Q̂} rel (Tδ.sup x) = drt-shape-fam Q̂ (dbind Q̂ rel) x
+
+    drt-shape-fam : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
+                    (rel : DRel md' md) (a : Tδ.⟦ ∣ S ∣ ⟧shape ρ) →
+                    (Tδ.fib-shape-subst S d (drt-shape S rel a)
+                      ∘ (R.reindex-fam S md {a = R'.reindex-shape ∣ S ∣ md' a} ∘ R'.reindex-fam S md' {a = a}))
+                      ≈ id (Tδ.fib-shape S d a)
+    drt-shape-fam (const A') rel a =
+      ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left id-left)
+    drt-shape-fam (var v) rel a = drt-el-fam rel v a
+    drt-shape-fam (P' + Q') rel (inj₁ a) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (drt-shape-fam P' rel a)) Lmap-id))
+    drt-shape-fam (P' + Q') rel (inj₂ b) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (drt-shape-fam Q' rel b)) Lmap-id))
+    drt-shape-fam (P' × Q') rel (a , b) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong
+                   (≈-trans (∘-cong ≈-refl (≈-sym (prod-m-comp _ _ _ _)))
+                     (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                       (≈-trans (prod-m-cong (drt-shape-fam P' rel a) (drt-shape-fam Q' rel b))
+                                prod-m-id))))
+                 Lmap-id))
+    drt-shape-fam (μ Q'') rel t = drt-fam-W {Q̂ = Q''} rel t
+
+    drt-el-fam : ∀ {j} {ρ ρ' d d'} {md' : R'.MorD {j} ρ ρ' d d'} {md}
+                 (rel : DRel md' md) (v : Fin j) (a : Tδ.El (ρ v)) →
+                 (Tδ.fib-el-subst (ρ v) (d v) (drt-el rel v a)
+                   ∘ (R.apply-fam md v (R'.apply md' v a) ∘ R'.apply-fam md' v a))
+                   ≈ id (Tδ.fib-el (ρ v) (d v) a)
+    drt-el-fam dbase Fin.zero t =
+      ≈-trans (∘-cong (Tδ.fib-el-refl* (Sh.η₀ ∣ P ∣ Fin.zero) (Tδ.deco-ext P (λ i → lift tt) Fin.zero) t)
+                      ≈-refl)
+              (≈-trans id-left id-left)
+    drt-el-fam dbase (Fin.suc i) a =
+      ≈-trans (∘-cong (Tδ.fib-el-refl* (Sh.η₀ ∣ P ∣ (Fin.suc i))
+                                       (Tδ.deco-ext P {ρ̄ = λ v → inj₁ v} (λ _ → lift tt) (Fin.suc i)) a)
+                      ≈-refl)
+              (≈-trans id-left id-left)
+    drt-el-fam (dbind Q' rel) Fin.zero    a = drt-fam-W {Q̂ = Q'} rel a
+    drt-el-fam (dbind Q' rel) (Fin.suc v) a = drt-el-fam rel v a
+
+  mutual
+    drt'-fam-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
+                 (rel : DRel md' md) (u : TX.W ∣ Q̂ ∣ ρ') →
+                 (TX.fib-subst Q̂ d' {x = R'.reindex md' (R.reindex md u)} {y = u} (drt'-W rel u)
+                   ∘ (R'.reindex-fam-W md' {t = R.reindex md u} ∘ R.reindex-fam-W md {t = u}))
+                   ≈ id (TX.fib Q̂ d' u)
+    drt'-fam-W {Q̂ = Q̂} rel (TX.sup x) = drt'-shape-fam Q̂ (dbind Q̂ rel) x
+
+    drt'-shape-fam : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
+                     (rel : DRel md' md) (a : TX.⟦ ∣ S ∣ ⟧shape ρ') →
+                     (TX.fib-shape-subst S d' (drt'-shape S rel a)
+                       ∘ (R'.reindex-fam S md' {a = R.reindex-shape ∣ S ∣ md a} ∘ R.reindex-fam S md {a = a}))
+                       ≈ id (TX.fib-shape S d' a)
+    drt'-shape-fam (const A') rel a =
+      ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left id-left)
+    drt'-shape-fam (var v) rel a = drt'-el-fam rel v a
+    drt'-shape-fam (P' + Q') rel (inj₁ a) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (drt'-shape-fam P' rel a)) Lmap-id))
+    drt'-shape-fam (P' + Q') rel (inj₂ b) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (drt'-shape-fam Q' rel b)) Lmap-id))
+    drt'-shape-fam (P' × Q') rel (a , b) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong
+                   (≈-trans (∘-cong ≈-refl (≈-sym (prod-m-comp _ _ _ _)))
+                     (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                       (≈-trans (prod-m-cong (drt'-shape-fam P' rel a) (drt'-shape-fam Q' rel b))
+                                prod-m-id))))
+                 Lmap-id))
+    drt'-shape-fam (μ Q'') rel t = drt'-fam-W {Q̂ = Q''} rel t
+
+    drt'-el-fam : ∀ {j} {ρ ρ' d d'} {md' : R'.MorD {j} ρ ρ' d d'} {md}
+                  (rel : DRel md' md) (v : Fin j) (a : TX.El (ρ' v)) →
+                  (TX.fib-el-subst (ρ' v) (d' v) (drt'-el rel v a)
+                    ∘ (R'.apply-fam md' v (R.apply md v a) ∘ R.apply-fam md v a))
+                    ≈ id (TX.fib-el (ρ' v) (d' v) a)
+    drt'-el-fam dbase Fin.zero t =
+      ≈-trans (∘-cong (TX.fib-el-refl* (inj₁ Fin.zero) (lift tt) t) ≈-refl) (≈-trans id-left id-left)
+    drt'-el-fam dbase (Fin.suc i) a =
+      ≈-trans (∘-cong (TX.fib-el-refl* (inj₁ (Fin.suc i)) (lift tt) a) ≈-refl) (≈-trans id-left id-left)
+    drt'-el-fam (dbind Q' rel) Fin.zero    a = drt'-fam-W {Q̂ = Q'} rel a
+    drt'-el-fam (dbind Q' rel) (Fin.suc v) a = drt'-el-fam rel v a
