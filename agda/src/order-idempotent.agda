@@ -280,30 +280,36 @@ compₘ {P} {Q} {R} g f .absorbed =
 _⇒_ : Pos → Pos → Set
 P ⇒ Q = SemiMod._⇒_ (𝒟 P) (𝒟 Q)
 
+-- The equality, composition and additive structure are stated over the underlying semimodules, so
+-- that implicit arguments are recovered from morphism types rather than through 𝒟.
 infix 4 _≈p_
 
-_≈p_ : ∀ {P Q} → P ⇒ Q → P ⇒ Q → Prop 0ℓ
-_≈p_ f g = SemiMod._≈m_ f g
+_≈p_ : ∀ {M N : Semimodule} → SemiMod._⇒_ M N → SemiMod._⇒_ M N → Prop 0ℓ
+_≈p_ = SemiMod._≈m_
 
 private
   module SMC = Category SemiMod.cat
 
-≈p-refl : ∀ {P Q} {f : P ⇒ Q} → f ≈p f
-≈p-refl {P} {Q} {f} = SMC.≈-refl {𝒟 P} {𝒟 Q} {f}
+≈p-refl : ∀ {M N} {f : SemiMod._⇒_ M N} → f ≈p f
+≈p-refl {M} {N} {f} = SMC.≈-refl {M} {N} {f}
 
-≈p-sym : ∀ {P Q} {f g : P ⇒ Q} → f ≈p g → g ≈p f
-≈p-sym {P} {Q} = SMC.≈-sym {𝒟 P} {𝒟 Q}
+≈p-sym : ∀ {M N} {f g : SemiMod._⇒_ M N} → f ≈p g → g ≈p f
+≈p-sym {M} {N} = SMC.≈-sym {M} {N}
 
-≈p-trans : ∀ {P Q} {f g h : P ⇒ Q} → f ≈p g → g ≈p h → f ≈p h
-≈p-trans {P} {Q} = SMC.≈-trans {𝒟 P} {𝒟 Q}
+≈p-trans : ∀ {M N} {f g h : SemiMod._⇒_ M N} → f ≈p g → g ≈p h → f ≈p h
+≈p-trans {M} {N} = SMC.≈-trans {M} {N}
 
 id : (P : Pos) → P ⇒ P
 id P = SemiMod.id (𝒟 P)
 
-_∘_ : ∀ {P Q R} → Q ⇒ R → P ⇒ Q → P ⇒ R
-g ∘ f = SemiMod._∘_ g f
+_∘_ : ∀ {M N O : Semimodule} → SemiMod._⇒_ N O → SemiMod._⇒_ M N → SemiMod._⇒_ M O
+_∘_ = SemiMod._∘_
 
 infixl 21 _∘_
+
+∘p-cong : ∀ {M N O} {f₁ f₂ : SemiMod._⇒_ N O} {g₁ g₂ : SemiMod._⇒_ M N} →
+          f₁ ≈p f₂ → g₁ ≈p g₂ → (f₁ ∘ g₁) ≈p (f₂ ∘ g₂)
+∘p-cong = SMC.∘-cong
 
 cat : Category 0ℓ 0ℓ 0ℓ
 cat .Category.obj = Pos
@@ -321,14 +327,15 @@ cat .Category.assoc f g h = Category.assoc SemiMod.cat f g h
 εp : ∀ {P Q} → P ⇒ Q
 εp {P} {Q} = SemiMod.ε-map (𝒟 P) (𝒟 Q)
 
-_+p_ : ∀ {P Q} → P ⇒ Q → P ⇒ Q → P ⇒ Q
-_+p_ {P} {Q} = SemiMod.+-map (𝒟 P) (𝒟 Q)
+_+p_ : ∀ {M N : Semimodule} → SemiMod._⇒_ M N → SemiMod._⇒_ M N → SemiMod._⇒_ M N
+_+p_ {M} {N} = SemiMod.+-map M N
 
 infixl 21 _+p_
 
-+p-cong : ∀ {P Q} {f₁ f₂ g₁ g₂ : P ⇒ Q} → f₁ ≈p f₂ → g₁ ≈p g₂ → (f₁ +p g₁) ≈p (f₂ +p g₂)
-+p-cong {P} {Q} =
-  CommutativeMonoid.+-cong (CMonEnriched.homCM SemiMod.cmon-enriched (𝒟 P) (𝒟 Q))
++p-cong : ∀ {M N} {f₁ f₂ g₁ g₂ : SemiMod._⇒_ M N} →
+          f₁ ≈p f₂ → g₁ ≈p g₂ → (f₁ +p g₁) ≈p (f₂ +p g₂)
++p-cong {M} {N} =
+  CommutativeMonoid.+-cong (CMonEnriched.homCM SemiMod.cmon-enriched M N)
 
 private
   homCM𝒟 : ∀ P Q → CommutativeMonoid (Category.hom-setoid SemiMod.cat (𝒟 P) (𝒟 Q))
