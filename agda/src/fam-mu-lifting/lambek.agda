@@ -217,3 +217,85 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       ≈-trans (∘-cong (TX.fib-el-refl* (inj₁ (Fin.suc i)) (lift tt) a) ≈-refl) (≈-trans id-left id-left)
     drt'-el-fam (dbind Q' rel) Fin.zero    a = drt'-fam-W {Q̂ = Q'} rel a
     drt'-el-fam (dbind Q' rel) (Fin.suc v) a = drt'-el-fam rel v a
+
+  -- The inverse of inMor: strip the root, reindex back to the fresh context, unembed.
+  u-idx : Tδ.W ∣ P ∣ (λ i → inj₁ i) → fobj μObj P At.δ' .idx .Carrier
+  u-idx (Tδ.sup x) = unembed-idx P (R'.reindex-shape ∣ P ∣ mor₀⁻ x)
+
+  u-resp : {t t' : Tδ.W ∣ P ∣ (λ i → inj₁ i)} → Tδ.W-≈ t t' →
+           _≈s_ (fobj μObj P At.δ' .idx) (u-idx t) (u-idx t')
+  u-resp {Tδ.sup x} {Tδ.sup y} p =
+    At.unembed-idx-resp P (R'.reindex-shape-resp ∣ P ∣ mor₀⁻ p)
+
+  u-fam : (t : Tδ.W ∣ P ∣ (λ i → inj₁ i)) →
+          μObj P δ .fam .fm t ⇒ fobj μObj P At.δ' .fam .fm (u-idx t)
+  u-fam (Tδ.sup x) =
+    At.unembed-fam P (R'.reindex-shape ∣ P ∣ mor₀⁻ x) ∘ R'.reindex-fam P mor₀⁻ {a = x}
+
+  unMor : Mor (μObj P δ) (fobj μObj P At.δ')
+  unMor .idxf .PS._⇒_.func = u-idx
+  unMor .idxf .PS._⇒_.func-resp-≈ {t} {t'} = u-resp {t} {t'}
+  unMor .famf ._⇒f_.transf = u-fam
+  unMor .famf ._⇒f_.natural {Tδ.sup x} {Tδ.sup y} e =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong₂ (R'.reindex-fam-natural P mor₀⁻ e))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong₁ (At.unembed-fam-natural P (R'.reindex-shape-resp ∣ P ∣ mor₀⁻ e)))
+             (assoc _ _ _))))
+
+  -- The triangle identities: inMor is an isomorphism (Lambek), with unMor the inverse. The index
+  -- halves compose the bridges' round trips with the reindex round trips; the fibre halves push
+  -- the transports through the fibre actions by naturality and close with the fibre round trips.
+  inMor-unMor : Fam𝒞._∘_ At.inMor unMor ≃ Fam𝒞.id (μObj P δ)
+  inMor-unMor ._≃_.idxf-eq .PS._≃m_.func-eq {Tδ.sup x} {Tδ.sup y} e =
+    Tδ.shape≈-trans ∣ P ∣ (Sh.η₀ ∣ P ∣)
+      (Tδ.shape≈-trans ∣ P ∣ (Sh.η₀ ∣ P ∣)
+        (R.reindex-shape-resp ∣ P ∣ mor₀ (At.embed-unembed P (R'.reindex-shape ∣ P ∣ mor₀⁻ x)))
+        (drt-shape P dbase x))
+      e
+  inMor-unMor ._≃_.famf-eq .indexed-family._≃f_.transf-eq {Tδ.sup x} =
+    ≈-trans (∘-cong (Tδ.fib-shape-trans* P (Tδ.deco-ext P {ρ̄ = λ v → inj₁ v} (λ _ → lift tt))
+                       (drt-shape P dbase x)
+                       (R.reindex-shape-resp ∣ P ∣ mor₀ (At.embed-unembed P z)))
+                    id-left)
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong₂ step₂) (drt-shape-fam P dbase x)))
+    where
+      z = R'.reindex-shape ∣ P ∣ mor₀⁻ x
+
+      step₃ = ≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong₁ (≈-sym (R.reindex-fam-natural P mor₀ (At.embed-unembed P z))))
+                       (assoc _ _ _))
+      step₄ = ≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong₁ (≈-trans (assoc _ _ _) (At.embed-unembed-fam P z)))
+                       id-left)
+      step₂ = ≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong₁ step₃)
+              (≈-trans (assoc _ _ _)
+                       (∘-cong₂ step₄)))
+
+  unMor-inMor : Fam𝒞._∘_ unMor At.inMor ≃ Fam𝒞.id (fobj μObj P At.δ')
+  unMor-inMor ._≃_.idxf-eq .PS._≃m_.func-eq {i} {i'} e =
+    fobj μObj P At.δ' .idx .isEquivalence .trans
+      (fobj μObj P At.δ' .idx .isEquivalence .trans
+        (At.unembed-idx-resp P (drt'-shape P dbase (At.embed-idx P i)))
+        (At.unembed-embed P i))
+      e
+  unMor-inMor ._≃_.famf-eq .indexed-family._≃f_.transf-eq {i} =
+    ≈-trans (∘-cong (fobj μObj P At.δ' .fam .trans*
+                       (At.unembed-embed P i)
+                       (At.unembed-idx-resp P (drt'-shape P dbase (At.embed-idx P i))))
+                    id-left)
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong₂ step₂) (At.unembed-embed-fam P i)))
+    where
+      step₃ = ≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong₁ (≈-sym (At.unembed-fam-natural P (drt'-shape P dbase (At.embed-idx P i)))))
+                       (assoc _ _ _))
+      step₄ = ≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong₁ (≈-trans (assoc _ _ _) (drt'-shape-fam P dbase (At.embed-idx P i))))
+                       id-left)
+      step₂ = ≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong₁ step₃)
+              (≈-trans (assoc _ _ _)
+                       (∘-cong₂ step₄)))
