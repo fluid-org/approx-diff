@@ -10,10 +10,10 @@
 -- the payload, and those two clauses pin the fold down.
 open import Level using (0ℓ)
 open import Data.Nat using (ℕ; zero; suc)
-open import prop-setoid using (Setoid)
+open import prop-setoid using (Setoid) renaming (_⇒_ to _⇒s_; _≃m_ to _≃s_)
 open import commutative-semiring using (CommutativeSemiring)
+open import commutative-monoid using (CommutativeMonoid)
 open import cmon-enriched using (Biproduct)
-import matrix
 import order-idempotent
 import order-idempotent-freeness
 
@@ -25,9 +25,11 @@ module order-idempotent-list-fold
   (⊤-add-top : ∀ {x} → ι + x ≈ ι)
   where
 
-open matrix.Mat S using (_≈ₘ_; ∘-cong)
 open order-idempotent S ∨-idem ∧-idem ⊤-add-top
-open order-idempotent-freeness S ∨-idem ∧-idem ⊤-add-top
+open order-idempotent-freeness S ∨-idem ∧-idem ⊤-add-top hiding (payload)
+open SemiMod using (Semimodule)
+open SemiMod._⇒_
+open SemiMod._≈m_
 
 -- The spine order of a list value of a given length.
 Fib : Pos → ℕ → Pos
@@ -45,21 +47,27 @@ cop {P} {Q} f g = Biproduct.copair (biproduct P Q) f g
 ⊕-map-cong {P} {Q} {P'} {Q'} f f' g g' ef eg =
   Biproduct.pair-cong (biproduct P' Q')
     {f₁ = f ∘ π₁ P Q} {f₂ = f' ∘ π₁ P Q} {g₁ = g ∘ π₂ P Q} {g₂ = g' ∘ π₂ P Q}
-    (∘-cong ef (≈ₘ-refl {M = π₁ P Q .mat}))
-    (∘-cong eg (≈ₘ-refl {M = π₂ P Q .mat}))
+    (∘p-cong ef (≈p-refl {f = π₁ P Q}))
+    (∘p-cong eg (≈p-refl {f = π₂ P Q}))
 
 -- Two morphisms out of a biproduct agreeing on both injections are equal.
 biproduct-ext : ∀ {P Q R} (f g : (P ⊕ Q) ⇒ R) →
                 (f ∘ ι₁ P Q) ≈p (g ∘ ι₁ P Q) → (f ∘ ι₂ P Q) ≈p (g ∘ ι₂ P Q) → f ≈p g
 biproduct-ext {P} {Q} f g e₁ e₂ =
-  ≈ₘ-trans (≈ₘ-sym (Biproduct.copair-ext (biproduct P Q) f))
-  (≈ₘ-trans (Biproduct.copair-cong (biproduct P Q)
+  ≈p-trans (≈p-sym (Biproduct.copair-ext (biproduct P Q) f))
+  (≈p-trans (Biproduct.copair-cong (biproduct P Q)
                {f₁ = f ∘ ι₁ P Q} {f₂ = g ∘ ι₁ P Q} {g₁ = f ∘ ι₂ P Q} {g₂ = g ∘ ι₂ P Q} e₁ e₂)
             (Biproduct.copair-ext (biproduct P Q) g))
 
--- The empty order has no positions, so any two morphisms out of it agree.
+-- The empty order has one selection, so any two morphisms out of it agree.
 𝟘p-ext : ∀ {R} (f g : 𝟘p ⇒ R) → f ≈p g
-𝟘p-ext f g q ()
+𝟘p-ext {R} f g .*≈* ._≃s_.func-eq {x₁} {x₂} e i =
+  trans (f .func-resp-≈ {x₁} {εsel} (λ ()) i)
+  (trans (f .preserve-ze i)
+  (trans (sym (g .preserve-ze i))
+         (g .func-resp-≈ {εsel} {x₂} (λ ()) i)))
+  where
+  εsel = 𝒟 𝟘p .Semimodule.additive .CommutativeMonoid.ε
 
 record ListAlg (W E R : Pos) : Set where
   field
@@ -77,14 +85,14 @@ module _ {W E R : Pos} (alg : ListAlg W E R) where
 
   -- What the cons branch determines from the payload, once the tail is folded, with the branch's
   -- constant joined in as absorption requires.
-  payload : ∀ n → (Fib E n ⇒ R) → (E ⊕ Fib E n) ⇒ R
-  payload n X = body-of (affine cons-tag (cons-arg ∘ ⊕-map (id E) X))
+  cons-payload : ∀ n → (Fib E n ⇒ R) → (E ⊕ Fib E n) ⇒ R
+  cons-payload n X = body-of (affine cons-tag (cons-arg ∘ ⊕-map (id E) X))
 
-  payload-cong : ∀ n (X Y : Fib E n ⇒ R) → X ≈p Y → payload n X ≈p payload n Y
-  payload-cong n X Y e q p =
-    +-cong refl
-      (∘-cong (≈ₘ-refl {M = cons-arg .mat})
-              (⊕-map-cong (id E) (id E) X Y (≈ₘ-refl {M = id E .mat}) e) q p)
+  cons-payload-cong : ∀ n (X Y : Fib E n ⇒ R) → X ≈p Y → cons-payload n X ≈p cons-payload n Y
+  cons-payload-cong n X Y e =
+    body-of-cong
+      (affine-cong (≈p-refl {f = cons-tag})
+        (∘p-cong (≈p-refl {f = cons-arg}) (⊕-map-cong (id E) (id E) X Y (≈p-refl {f = id E}) e)))
 
   -- The fold, in two components: what the context determines and what the value determines.
   cellf : ∀ n → Fib E n ⇒ R
@@ -108,18 +116,18 @@ module _ {W E R : Pos} (alg : ListAlg W E R) where
       nil-cxt   : hc 0 ≈p nil-ctx
       cons-root : ∀ n → (hf (suc n) ∘ root {E ⊕ Fib E n}) ≈p cons-tag
       cons-cxt  : ∀ n → hc (suc n) ≈p (cons-ctx +p (cons-arg ∘ ι₂ E R ∘ hc n))
-      cons-arg-law : ∀ n → (hf (suc n) ∘ inj {E ⊕ Fib E n}) ≈p payload n (hf n)
+      cons-arg-law : ∀ n → (hf (suc n) ∘ inj {E ⊕ Fib E n}) ≈p cons-payload n (hf n)
 
   open IsFold
 
   fold-is-fold : IsFold ctxf cellf
   fold-is-fold .nil-root =
-    ≈ₘ-trans (root-tag {P = 𝟘p} (cellf 0)) (affine-tag {P = 𝟘p} nil-tag (εp {𝟘p} {R}))
-  fold-is-fold .nil-cxt = ≈ₘ-refl {M = nil-ctx .mat}
+    ≈p-trans (root-tag {P = 𝟘p} (cellf 0)) (affine-tag {P = 𝟘p} nil-tag (εp {𝟘p} {R}))
+  fold-is-fold .nil-cxt = ≈p-refl {f = nil-ctx}
   fold-is-fold .cons-root n =
-    ≈ₘ-trans (root-tag {P = E ⊕ Fib E n} (cellf (suc n)))
+    ≈p-trans (root-tag {P = E ⊕ Fib E n} (cellf (suc n)))
              (affine-tag {P = E ⊕ Fib E n} cons-tag (cons-arg ∘ ⊕-map (id E) (cellf n)))
-  fold-is-fold .cons-cxt n = ≈ₘ-refl {M = ctxf (suc n) .mat}
+  fold-is-fold .cons-cxt n = ≈p-refl {f = ctxf (suc n)}
   fold-is-fold .cons-arg-law n = inj-body {P = E ⊕ Fib E n} (cellf (suc n))
 
   -- The decisive statement: the fused laws determine the fold. The value component of a candidate
@@ -128,23 +136,23 @@ module _ {W E R : Pos} (alg : ListAlg W E R) where
                 IsFold hc hf → IsFold kc kf → ∀ n → hf n ≈p kf n
   cell-unique {hf = hf} {kf} H K zero =
     lifting-ext {P = 𝟘p} (hf 0) (kf 0)
-      (≈ₘ-trans (H .nil-root) (≈ₘ-sym (K .nil-root)))
+      (≈p-trans (H .nil-root) (≈p-sym (K .nil-root)))
       (𝟘p-ext (hf 0 ∘ inj {𝟘p}) (kf 0 ∘ inj {𝟘p}))
   cell-unique {hf = hf} {kf} H K (suc n) =
     lifting-ext {P = E ⊕ Fib E n} (hf (suc n)) (kf (suc n))
-      (≈ₘ-trans (H .cons-root n) (≈ₘ-sym (K .cons-root n)))
-      (≈ₘ-trans (H .cons-arg-law n)
-        (≈ₘ-trans (payload-cong n (hf n) (kf n) (cell-unique H K n))
-                  (≈ₘ-sym (K .cons-arg-law n))))
+      (≈p-trans (H .cons-root n) (≈p-sym (K .cons-root n)))
+      (≈p-trans (H .cons-arg-law n)
+        (≈p-trans (cons-payload-cong n (hf n) (kf n) (cell-unique H K n))
+                  (≈p-sym (K .cons-arg-law n))))
 
   ctx-unique : ∀ {hc kc : ℕ → W ⇒ R} {hf kf : ∀ n → Fib E n ⇒ R} →
                IsFold hc hf → IsFold kc kf → ∀ n → hc n ≈p kc n
-  ctx-unique H K zero = ≈ₘ-trans (H .nil-cxt) (≈ₘ-sym (K .nil-cxt))
+  ctx-unique H K zero = ≈p-trans (H .nil-cxt) (≈p-sym (K .nil-cxt))
   ctx-unique {hc = hc} {kc} H K (suc n) =
-    ≈ₘ-trans (H .cons-cxt n)
-    (≈ₘ-trans (+ₘ-cong (≈ₘ-refl {M = cons-ctx .mat})
-                (∘-cong (≈ₘ-refl {M = (cons-arg ∘ ι₂ E R) .mat}) (ctx-unique H K n)))
-              (≈ₘ-sym (K .cons-cxt n)))
+    ≈p-trans (H .cons-cxt n)
+    (≈p-trans (+p-cong (≈p-refl {f = cons-ctx})
+                (∘p-cong (≈p-refl {f = cons-arg ∘ ι₂ E R}) (ctx-unique H K n)))
+              (≈p-sym (K .cons-cxt n)))
 
   -- So any two candidates assemble to the same morphism out of the context paired with the value.
   fold-unique : ∀ {hc kc : ℕ → W ⇒ R} {hf kf : ∀ n → Fib E n ⇒ R} →
