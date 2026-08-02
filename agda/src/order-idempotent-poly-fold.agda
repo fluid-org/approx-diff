@@ -15,7 +15,6 @@ open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import cmon-enriched using (Biproduct)
-import matrix
 import order-idempotent
 import order-idempotent-freeness
 
@@ -27,7 +26,6 @@ module order-idempotent-poly-fold
   (⊤-add-top : ∀ {x} → ι + x ≈ ι)
   where
 
-open matrix.Mat S using (_≈ₘ_; ∘-cong)
 open order-idempotent S ∨-idem ∧-idem ⊤-add-top
 open order-idempotent-freeness S ∨-idem ∧-idem ⊤-add-top
 
@@ -97,10 +95,10 @@ module _ (W R : Pos) where
   varStep-cong : ∀ (X : Pos) (k : (W ⊕ R) ⇒ R) (g g' : (W ⊕ X) ⇒ R) →
                  g ≈p g' → varStep X k g ≈p varStep X k g'
   varStep-cong X k g g' e =
-    ∘-cong (≈ₘ-refl {M = k .mat})
-           (Biproduct.pair-cong (biproduct W R)
-              {f₁ = π₁ W X} {f₂ = π₁ W X} {g₁ = g} {g₂ = g'}
-              (≈ₘ-refl {M = π₁ W X .mat}) e)
+    ∘p-cong (≈p-refl {f = k})
+            (Biproduct.pair-cong (biproduct W R)
+               {f₁ = π₁ W X} {f₂ = π₁ W X} {g₁ = g} {g₂ = g'}
+               (≈p-refl {f = π₁ W X}) e)
 
   -- Under a root, a product splits the continuation additively, the context going to the first
   -- component only, so that it is not counted twice.
@@ -120,11 +118,11 @@ module _ (W R : Pos) where
     cop-cong W (F₁ ⊕ F₂) R
       ((r₁ ∘ ι₁ W F₁) +p (r₂ ∘ ι₁ W F₂)) ((r₁' ∘ ι₁ W F₁) +p (r₂' ∘ ι₁ W F₂))
       (cop (r₁ ∘ ι₂ W F₁) (r₂ ∘ ι₂ W F₂)) (cop (r₁' ∘ ι₂ W F₁) (r₂' ∘ ι₂ W F₂))
-      (+ₘ-cong (∘-cong e₁ (≈ₘ-refl {M = ι₁ W F₁ .mat}))
-               (∘-cong e₂ (≈ₘ-refl {M = ι₁ W F₂ .mat})))
+      (+p-cong (∘p-cong e₁ (≈p-refl {f = ι₁ W F₁}))
+               (∘p-cong e₂ (≈p-refl {f = ι₁ W F₂})))
       (cop-cong F₁ F₂ R (r₁ ∘ ι₂ W F₁) (r₁' ∘ ι₂ W F₁) (r₂ ∘ ι₂ W F₂) (r₂' ∘ ι₂ W F₂)
-        (∘-cong e₁ (≈ₘ-refl {M = ι₂ W F₁ .mat}))
-        (∘-cong e₂ (≈ₘ-refl {M = ι₂ W F₂ .mat})))
+        (∘p-cong e₁ (≈p-refl {f = ι₂ W F₁}))
+        (∘p-cong e₂ (≈p-refl {f = ι₂ W F₂})))
 
   -- At a root the continuation is split by freeness into its constant and its linear part. The
   -- constant is what the former alone determines and passes through untouched; the linear part
@@ -142,9 +140,9 @@ module _ (W R : Pos) where
     cop-cong W (Lp F) R (r ∘ ι₁ W F) (r' ∘ ι₁ W F)
       (affine {P = F} (tag-of {P = X} (k ∘ ι₂ W (Lp X))) (r ∘ ι₂ W F))
       (affine {P = F} (tag-of {P = X} (k ∘ ι₂ W (Lp X))) (r' ∘ ι₂ W F))
-      (∘-cong e (≈ₘ-refl {M = ι₁ W F .mat}))
-      (affine-cong {P = F} (≈ₘ-refl {M = tag-of {P = X} (k ∘ ι₂ W (Lp X)) .mat})
-                   (∘-cong e (≈ₘ-refl {M = ι₂ W F .mat})))
+      (∘p-cong e (≈p-refl {f = ι₁ W F}))
+      (affine-cong {P = F} (≈p-refl {f = tag-of {P = X} (k ∘ ι₂ W (Lp X))})
+                   (∘p-cong e (≈p-refl {f = ι₂ W F})))
 
   Cand : Poly → Set
   Cand B = (v : Val B) → (W ⊕ fibV v) ⇒ R
@@ -186,8 +184,8 @@ module _ (W R : Pos) where
 
     -- The two shape recursions agree, so the fold satisfies the law.
     foldS-applyG : ∀ {Q} (s : Shape B Q) (k : (W ⊕ ⟦ s ⟧) ⇒ R) → foldS s k ≈p applyG fold s k
-    foldS-applyG kon k = ≈ₘ-refl {M = k .mat}
-    foldS-applyG (rec v) k = ≈ₘ-refl {M = varStep (fibV v) k (fold v) .mat}
+    foldS-applyG kon k = ≈p-refl {f = k}
+    foldS-applyG (rec v) k = ≈p-refl {f = varStep (fibV v) k (fold v)}
     foldS-applyG (prd s₁ s₂) k =
       rootStep-cong (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) (fibS s₁ ⊕ fibS s₂) k
         (prodStep (fibS s₁) (fibS s₂)
@@ -219,11 +217,11 @@ module _ (W R : Pos) where
     -- strength anywhere, and no separate extensionality law.
     mutual
       fold-unique : (h : Cand B) → IsFold h → ∀ v → h v ≈p fold v
-      fold-unique h H (sup s) = ≈ₘ-trans (H s) (fold-uniqueS h H s (alg s))
+      fold-unique h H (sup s) = ≈p-trans (H s) (fold-uniqueS h H s (alg s))
 
       fold-uniqueS : (h : Cand B) → IsFold h → ∀ {Q} (s : Shape B Q) (k : (W ⊕ ⟦ s ⟧) ⇒ R) →
                      applyG h s k ≈p foldS s k
-      fold-uniqueS h H kon k = ≈ₘ-refl {M = k .mat}
+      fold-uniqueS h H kon k = ≈p-refl {f = k}
       fold-uniqueS h H (rec v) k = varStep-cong (fibV v) k (h v) (fold v) (fold-unique h H v)
       fold-uniqueS h H (prd s₁ s₂) k =
         rootStep-cong (⟦ s₁ ⟧ ⊕ ⟦ s₂ ⟧) (fibS s₁ ⊕ fibS s₂) k
