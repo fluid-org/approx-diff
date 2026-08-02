@@ -464,3 +464,29 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       compare-apply-fam γ (fbind Q fm) Fin.zero    a = compare-reindex-fam {Q = Q} γ fm a
       compare-apply-fam γ (fbind Q fm) (Fin.suc v) a = compare-apply-fam γ fm v a
 
+
+  -- Morphism-level packaging: the fused law for a candidate given as a family morphism, the fold
+  -- satisfying it and being the only solution. The transports in the morphism equality carry
+  -- proposition-valued proofs, so the pointwise statements apply directly.
+  IsFoldMor : (h : Mor (Fam𝒞-P.prod Γ (μObj P δ)) A) → Prop (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es)
+  IsFoldMor h =
+    IsFold (λ γ t → h .idxf .PS._⇒_.func (γ , t))
+           (λ γ≈ p → h .idxf .PS._⇒_.func-resp-≈ (γ≈ , p))
+           (λ γ t → h .famf ._⇒f_.transf (γ , t))
+
+  ⦅⦆-β : IsFoldMor (FoldDef.foldMor {n} {Γ} {A} {P} {δ} alg)
+  ⦅⦆-β .IsFold.is-idx = fold-is-fold .IsFold.is-idx
+  ⦅⦆-β .IsFold.is-fam = fold-is-fold .IsFold.is-fam
+
+  ⦅⦆-η : (h : Mor (Fam𝒞-P.prod Γ (μObj P δ)) A) → IsFoldMor h →
+         h ≃ FoldDef.foldMor {n} {Γ} {A} {P} {δ} alg
+  ⦅⦆-η h H = go
+    where
+    module E = Eta (λ γ t → h .idxf .PS._⇒_.func (γ , t))
+                   (λ γ≈ p → h .idxf .PS._⇒_.func-resp-≈ (γ≈ , p))
+                   (λ γ t → h .famf ._⇒f_.transf (γ , t)) H
+
+    go : h ≃ FoldDef.foldMor {n} {Γ} {A} {P} {δ} alg
+    go ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) =
+      A .idx .isEquivalence .trans (E.uniq-idx γ₁ t₁) (Ft.fold-idx-resp γ≈ {t₁} {t₂} t≈)
+    go ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , t} = E.uniq-fam γ t
