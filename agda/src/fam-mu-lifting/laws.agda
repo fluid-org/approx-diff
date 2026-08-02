@@ -490,3 +490,154 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     go ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) =
       A .idx .isEquivalence .trans (E.uniq-idx γ₁ t₁) (Ft.fold-idx-resp γ≈ {t₁} {t₂} t≈)
     go ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , t} = E.uniq-fam γ t
+
+  -- The fold is congruent in its algebra, the congruence entering at the top of every node.
+  module FoldCong (alg' : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A) (E : alg ≃ alg') where
+    module Ft' = FoldDef {n} {Γ} {A} {P} {δ} alg'
+
+    mutual
+      fc-idx : ∀ γ t → _≈s_ (A .idx) (Ft.fold-idx γ t) (Ft'.fold-idx γ t)
+      fc-idx γ (Tδ.sup x) =
+        E ._≃_.idxf-eq .PS._≃m_.func-eq (Γ .idx .isEquivalence .refl , fc-shape P γ x)
+
+      fc-shape : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
+                    _≈s_ (fobj μObj Q (extend δ A) .idx) (Ft.fold-shape-idx Q γ x) (Ft'.fold-shape-idx Q γ x)
+      fc-shape (const A')        γ a = A' .idx .isEquivalence .refl
+      fc-shape (var Fin.zero)    γ t = fc-idx γ t
+      fc-shape (var (Fin.suc i)) γ a = δ i .idx .isEquivalence .refl
+      fc-shape (Q₁ + Q₂) γ (inj₁ x) = fc-shape Q₁ γ x
+      fc-shape (Q₁ + Q₂) γ (inj₂ y) = fc-shape Q₂ γ y
+      fc-shape (Q₁ × Q₂) γ (x , y) = fc-shape Q₁ γ x , fc-shape Q₂ γ y
+      fc-shape (μ Q')    γ t = fc-reindex {Q = Q'} γ fbase t
+
+      fc-reindex : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ' d d')
+                      (t : Tδ.W ∣ Q ∣ ρ) →
+                      TA'.W-≈ (Ft.fold-reindex γ fm t) (Ft'.fold-reindex γ fm t)
+      fc-reindex {Q = Q} γ fm (Tδ.sup x) = fc-reindex-shape γ Q (fbind Q fm) x
+
+      fc-reindex-shape : ∀ {j} (γ : Γ .idx .Carrier) (R : Poly j) {ηA ηB dA dB} (fm : FMor ηA ηB dA dB)
+                            (a : Tδ.⟦ ∣ R ∣ ⟧shape ηA) →
+                            TA'.shape≈ ∣ R ∣ ηB (Ft.fold-reindex-shape γ R fm a) (Ft'.fold-reindex-shape γ R fm a)
+      fc-reindex-shape γ (const A') fm a = A' .idx .isEquivalence .refl
+      fc-reindex-shape γ (var v)    fm a = fc-apply γ fm v a
+      fc-reindex-shape γ (P' + Q') fm (inj₁ a) = fc-reindex-shape γ P' fm a
+      fc-reindex-shape γ (P' + Q') fm (inj₂ b) = fc-reindex-shape γ Q' fm b
+      fc-reindex-shape γ (P' × Q') fm (a , b) = fc-reindex-shape γ P' fm a , fc-reindex-shape γ Q' fm b
+      fc-reindex-shape γ (μ Q'')   fm t = fc-reindex {Q = Q''} γ fm t
+
+      fc-apply : ∀ {k} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ' d d') (v : Fin k)
+                    (a : Tδ.El (ρ v)) →
+                    TA'.elEq (ρ' v) (Ft.fold-apply γ fm v a) (Ft'.fold-apply γ fm v a)
+      fc-apply γ fbase        Fin.zero    t = fc-idx γ t
+      fc-apply γ fbase        (Fin.suc i) a = TA'.elEq-refl (inj₁ (Fin.suc i)) a
+      fc-apply γ (fbind Q fm) Fin.zero    a = fc-reindex {Q = Q} γ fm a
+      fc-apply γ (fbind Q fm) (Fin.suc v) a = fc-apply γ fm v a
+
+    mutual
+      fc-fam : ∀ γ t → (A .fam .subst (fc-idx γ t) ∘ Ft.fold-fam γ t) ≈ Ft'.fold-fam γ t
+      fc-fam γ (Tδ.sup x) =
+        ≈-trans (∘-cong (A .fam .trans*
+                  (alg' .idxf .PS._⇒_.func-resp-≈
+                    (Γ .idx .isEquivalence .refl , fc-shape P γ x))
+                  (E ._≃_.idxf-eq .PS._≃m_.func-eq
+                    (Γ .idx .isEquivalence .refl ,
+                     fobj μObj P (extend δ A) .idx .isEquivalence .refl))) ≈-refl)
+        (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl
+                   (≈-trans (≈-sym (assoc _ _ _))
+                    (∘-cong (E ._≃_.famf-eq .indexed-family._≃f_.transf-eq) ≈-refl)))
+        (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong (≈-sym (alg' .famf ._⇒f_.natural
+                   (Γ .idx .isEquivalence .refl , fc-shape P γ x))) ≈-refl)
+        (≈-trans (assoc _ _ _)
+        (∘-cong ≈-refl
+          (≈-trans (pair-compose _ _ _ _)
+                   (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
+                              (fc-shape-fam P γ x)))))))))
+
+      fc-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
+                        (fobj μObj Q (extend δ A) .fam .subst (fc-shape Q γ x) ∘ Ft.fold-shape-fam Q γ x)
+                          ≈ Ft'.fold-shape-fam Q γ x
+      fc-shape-fam (const A')        γ a = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
+      fc-shape-fam (var Fin.zero)    γ t = fc-fam γ t
+      fc-shape-fam (var (Fin.suc i)) γ a = ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) id-left
+      fc-shape-fam (Q₁ + Q₂) γ (inj₁ x) =
+        ≈-trans (under-root-post
+                  (fam-subst-iso₁ (fobj μObj Q₁ (extend δ A) .fam) (fc-shape Q₁ γ x))
+                  (fam-subst-iso₂ (fobj μObj Q₁ (extend δ A) .fam) (fc-shape Q₁ γ x))
+                  (Ft.fold-shape-fam Q₁ γ x))
+                (under-root-cong (fc-shape-fam Q₁ γ x))
+      fc-shape-fam (Q₁ + Q₂) γ (inj₂ y) =
+        ≈-trans (under-root-post
+                  (fam-subst-iso₁ (fobj μObj Q₂ (extend δ A) .fam) (fc-shape Q₂ γ y))
+                  (fam-subst-iso₂ (fobj μObj Q₂ (extend δ A) .fam) (fc-shape Q₂ γ y))
+                  (Ft.fold-shape-fam Q₂ γ y))
+                (under-root-cong (fc-shape-fam Q₂ γ y))
+      fc-shape-fam (Q₁ × Q₂) γ (x , y) =
+        ≈-trans (under-root-post
+                  (pm-iso (fam-subst-iso₁ (fobj μObj Q₁ (extend δ A) .fam) (fc-shape Q₁ γ x))
+                          (fam-subst-iso₁ (fobj μObj Q₂ (extend δ A) .fam) (fc-shape Q₂ γ y)))
+                  (pm-iso (fam-subst-iso₂ (fobj μObj Q₁ (extend δ A) .fam) (fc-shape Q₁ γ x))
+                          (fam-subst-iso₂ (fobj μObj Q₂ (extend δ A) .fam) (fc-shape Q₂ γ y)))
+                  (strong-prod-m (Ft.fold-shape-fam Q₁ γ x) (Ft.fold-shape-fam Q₂ γ y)))
+                (under-root-cong
+                  (≈-trans (strong-prod-m-post _ _ _ _)
+                           (strong-prod-m-cong (fc-shape-fam Q₁ γ x) (fc-shape-fam Q₂ γ y))))
+      fc-shape-fam (μ Q') γ t = fc-reindex-fam {Q = Q'} γ fbase t
+
+      fc-reindex-fam : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} (γ : Γ .idx .Carrier)
+                          (fm : FMor ρ ρ' d d') (t : Tδ.W ∣ Q ∣ ρ) →
+                          (TA'.fib-subst Q d' {x = Ft.fold-reindex γ fm t} {y = Ft'.fold-reindex γ fm t}
+                             (fc-reindex {Q = Q} γ fm t)
+                           ∘ Ft.fold-reindex-fam γ fm t)
+                            ≈ Ft'.fold-reindex-fam γ fm t
+      fc-reindex-fam {Q = Q} γ fm (Tδ.sup x) = fc-reindex-shape-fam γ Q (fbind Q fm) x
+
+      fc-reindex-shape-fam : ∀ {j} (γ : Γ .idx .Carrier) (R : Poly j) {ηA ηB dA dB}
+                                (fm : FMor ηA ηB dA dB) (a : Tδ.⟦ ∣ R ∣ ⟧shape ηA) →
+                                (TA'.fib-shape-subst R dB (fc-reindex-shape γ R fm a)
+                                 ∘ Ft.fold-reindex-shape-fam γ R fm a)
+                                  ≈ Ft'.fold-reindex-shape-fam γ R fm a
+      fc-reindex-shape-fam γ (const A') fm a = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
+      fc-reindex-shape-fam γ (var v)    fm a = fc-apply-fam γ fm v a
+      fc-reindex-shape-fam γ (P' + Q') {dA = dA} {dB} fm (inj₁ a) =
+        ≈-trans (under-root-post
+                  (TA'.fib-shape-iso₁ P' dB (fc-reindex-shape γ P' fm a))
+                  (TA'.fib-shape-iso₂ P' dB (fc-reindex-shape γ P' fm a))
+                  (Ft.fold-reindex-shape-fam γ P' fm a))
+                (under-root-cong (fc-reindex-shape-fam γ P' fm a))
+      fc-reindex-shape-fam γ (P' + Q') {dA = dA} {dB} fm (inj₂ b) =
+        ≈-trans (under-root-post
+                  (TA'.fib-shape-iso₁ Q' dB (fc-reindex-shape γ Q' fm b))
+                  (TA'.fib-shape-iso₂ Q' dB (fc-reindex-shape γ Q' fm b))
+                  (Ft.fold-reindex-shape-fam γ Q' fm b))
+                (under-root-cong (fc-reindex-shape-fam γ Q' fm b))
+      fc-reindex-shape-fam γ (P' × Q') {dA = dA} {dB} fm (a , b) =
+        ≈-trans (under-root-post
+                  (pm-iso (TA'.fib-shape-iso₁ P' dB (fc-reindex-shape γ P' fm a))
+                          (TA'.fib-shape-iso₁ Q' dB (fc-reindex-shape γ Q' fm b)))
+                  (pm-iso (TA'.fib-shape-iso₂ P' dB (fc-reindex-shape γ P' fm a))
+                          (TA'.fib-shape-iso₂ Q' dB (fc-reindex-shape γ Q' fm b)))
+                  (strong-prod-m (Ft.fold-reindex-shape-fam γ P' fm a) (Ft.fold-reindex-shape-fam γ Q' fm b)))
+                (under-root-cong
+                  (≈-trans (strong-prod-m-post _ _ _ _)
+                           (strong-prod-m-cong (fc-reindex-shape-fam γ P' fm a)
+                                               (fc-reindex-shape-fam γ Q' fm b))))
+      fc-reindex-shape-fam γ (μ Q'')   fm t = fc-reindex-fam {Q = Q''} γ fm t
+
+      fc-apply-fam : ∀ {k} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (fm : FMor ρ ρ' d d') (v : Fin k)
+                        (a : Tδ.El (ρ v)) →
+                        (TA'.fib-el-subst (ρ' v) (d' v) (fc-apply γ fm v a)
+                         ∘ Ft.fold-apply-fam γ fm v a)
+                          ≈ Ft'.fold-apply-fam γ fm v a
+      fc-apply-fam γ fbase        Fin.zero    t = fc-fam γ t
+      fc-apply-fam γ fbase        (Fin.suc i) a =
+        ≈-trans (∘-cong (TA'.fib-el-refl* (inj₁ (Fin.suc i)) (lift tt) a) ≈-refl) id-left
+      fc-apply-fam γ (fbind Q fm) Fin.zero    a = fc-reindex-fam {Q = Q} γ fm a
+      fc-apply-fam γ (fbind Q fm) (Fin.suc v) a = fc-apply-fam γ fm v a
+
+
+    ⦅⦆-cong : FoldDef.foldMor {n} {Γ} {A} {P} {δ} alg ≃ FoldDef.foldMor {n} {Γ} {A} {P} {δ} alg'
+    ⦅⦆-cong ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) =
+      A .idx .isEquivalence .trans (fc-idx γ₁ t₁) (Ft'.fold-idx-resp γ≈ {t₁} {t₂} t≈)
+    ⦅⦆-cong ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , t} = fc-fam γ t
