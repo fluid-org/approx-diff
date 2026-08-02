@@ -205,6 +205,44 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     embed-unembed-fam (μ Q') t =
       ≈-trans (∘-cong (TX.fib-refl* Q' (λ v → lift tt) t) ≈-refl) (≈-trans id-left id-left)
 
+    -- Unembedding after embedding is the identity, on indexes and on fibres.
+    unembed-embed : (Q : Poly (suc n)) (x : fobj μObj Q δ' .idx .Carrier) →
+                    _≈s_ (fobj μObj Q δ' .idx) (unembed-idx Q (embed-idx Q x)) x
+    unembed-embed (const A) a = A .idx .isEquivalence .refl
+    unembed-embed (var v)   a = TX.elEq-refl (inj₁ v) a
+    unembed-embed (Q₁ + Q₂) (inj₁ x) = unembed-embed Q₁ x
+    unembed-embed (Q₁ + Q₂) (inj₂ y) = unembed-embed Q₂ y
+    unembed-embed (Q₁ × Q₂) (x , y) = unembed-embed Q₁ x , unembed-embed Q₂ y
+    unembed-embed (μ Q')    t = TX.W-≈-refl t
+
+    unembed-embed-fam : (Q : Poly (suc n)) (x : fobj μObj Q δ' .idx .Carrier) →
+                        (fobj μObj Q δ' .fam .subst (unembed-embed Q x)
+                         ∘ (unembed-fam Q (embed-idx Q x) ∘ embed-fam Q x))
+                        ≈ id _
+    unembed-embed-fam (const A) a =
+      ≈-trans (∘-cong (A .fam .refl*) ≈-refl) (≈-trans id-left id-left)
+    unembed-embed-fam (var v) a =
+      ≈-trans (∘-cong (TX.fib-el-refl* (inj₁ v) (lift tt) a) ≈-refl) (≈-trans id-left id-left)
+    unembed-embed-fam (Q₁ + Q₂) (inj₁ x) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (unembed-embed-fam Q₁ x)) Lmap-id))
+    unembed-embed-fam (Q₁ + Q₂) (inj₂ y) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (unembed-embed-fam Q₂ y)) Lmap-id))
+    unembed-embed-fam (Q₁ × Q₂) (x , y) =
+      ≈-trans (∘-cong ≈-refl (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong
+                   (≈-trans (∘-cong ≈-refl (≈-sym (prod-m-comp _ _ _ _)))
+                     (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                       (≈-trans (prod-m-cong (unembed-embed-fam Q₁ x) (unembed-embed-fam Q₂ y))
+                                prod-m-id))))
+                 Lmap-id))
+    unembed-embed-fam (μ Q') t =
+      ≈-trans (∘-cong (TX.fib-refl* Q' (λ v → lift tt) t) ≈-refl) (≈-trans id-left id-left)
+
     inMor : Mor (fobj μObj P δ') (μObj P δ)
     inMor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape ∣ P ∣ mor₀ (embed-idx P i))
     inMor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp ∣ P ∣ mor₀ (embed-idx-resp P x≈y)
