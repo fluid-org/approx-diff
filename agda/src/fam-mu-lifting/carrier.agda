@@ -87,7 +87,7 @@ fobj μ-obj (μ P')    δ = μ-obj P' δ
 import lifting-fold
 open lifting-fold CM BP Lft public
   using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
-         pm; pm-in₁; pm-in₂; bp-ext)
+         under-root-p₂; pm; pm-in₁; pm-in₂; bp-ext)
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
@@ -119,6 +119,31 @@ under-rootF {Γ} {X} {Y} f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (
     (fam-subst-iso₂ (Y .fam) (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
     (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
     (f .famf ._⇒f_.natural (γ≈ , x≈))
+
+-- The family-level transport across the lifting is congruent and carries the projection to the
+-- projection.
+under-rootF-cong : ∀ {Γ X Y : Obj} {f g : Mor (Fam𝒞-P.prod Γ X) Y} →
+                   f ≃ g → under-rootF f ≃ under-rootF g
+under-rootF-cong {Γ} {X} {Y} {f} {g} E ._≃_.idxf-eq = E ._≃_.idxf-eq
+under-rootF-cong {Γ} {X} {Y} {f} {g} E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+  ≈-trans (under-root-post
+            (fam-subst-iso₁ (Y .fam)
+              (E ._≃_.idxf-eq .prop-setoid._≃m_.func-eq
+                (Γ .idx .Setoid.isEquivalence .sym (Γ .idx .Setoid.isEquivalence .refl) ,
+                 X .idx .Setoid.isEquivalence .refl)))
+            (fam-subst-iso₂ (Y .fam)
+              (E ._≃_.idxf-eq .prop-setoid._≃m_.func-eq
+                (Γ .idx .Setoid.isEquivalence .sym (Γ .idx .Setoid.isEquivalence .refl) ,
+                 X .idx .Setoid.isEquivalence .refl)))
+            (f .famf ._⇒f_.transf (γ , x)))
+          (under-root-cong (E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x}))
+
+under-rootF-p₂ : ∀ {Γ X : Obj} →
+                 under-rootF (Fam𝒞-P.p₂ {Γ} {X}) ≃ Fam𝒞-P.p₂ {Γ} {Lf X}
+under-rootF-p₂ {Γ} {X} ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) = x≈
+under-rootF-p₂ {Γ} {X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+  ≈-trans (∘-cong (≈-trans (Lmap-cong (X .fam .refl*)) Lmap-id) ≈-refl)
+          (≈-trans id-left under-root-p₂)
 
 -- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where

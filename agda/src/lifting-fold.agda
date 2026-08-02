@@ -133,6 +133,18 @@ under-root-post {G} {X} {Y₁} {Y₂} {h} {h'} hi₁ hi₂ r =
                      (∘-cong ≈-refl (≈-sym (assoc _ _ _)))))))
         (≈-sym (affine-inj _ _))))))
 
+-- Transporting the projection across the lifting is the projection: the context part vanishes and
+-- the assembly of the root with the injection is the identity.
+under-root-p₂ : ∀ {G X} → under-root (π₂ {G} {X}) ≈ π₂ {G} {L X}
+under-root-p₂ {G} {X} =
+  ≈-trans (cop-cong
+            (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 (BP G X))) (comp-bilinear-ε₂ inj))
+            (≈-trans (affine-cong ≈-refl
+                       (≈-trans (∘-cong ≈-refl (Biproduct.id-2 (BP G X))) id-right))
+             (≈-trans (affine-cong (≈-sym id-left) (≈-sym id-left)) (affine-η (id (L X))))))
+  (≈-trans (+m-cong (comp-bilinear-ε₁ π₁) id-left)
+           (homCM _ _ .CommutativeMonoid.+-lunit))
+
 -- Reindexing under a root commutes with transports along isomorphisms, which is what naturality of
 -- the fold and of reindexing in the tree demands. The context map is arbitrary; the payload and
 -- result maps must be isomorphisms, since the injection and the support are natural only there.

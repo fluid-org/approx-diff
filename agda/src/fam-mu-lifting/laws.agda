@@ -16,7 +16,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import Data.Unit using (tt)
 open import prop using (_,_)
-open import categories using (Category; HasTerminal; HasProducts)
+open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 open import lifting using (Lifting)
 open import prop-setoid as PS using ()
@@ -641,3 +641,33 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     ⦅⦆-cong ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) =
       A .idx .isEquivalence .trans (fc-idx γ₁ t₁) (Ft'.fold-idx-resp γ≈ {t₁} {t₂} t≈)
     ⦅⦆-cong ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , t} = fc-fam γ t
+
+-- The strong actions are congruent in the environment maps, the μ-case through the fold's
+-- congruence in its algebra.
+private module FMuC = HasMu hasMu
+
+mutual
+  strong-fmor-cong : ∀ {k} {Γ : Obj} (P : Poly k) {δ δ' : Fin k → Obj}
+                     {fs gs : ∀ i → Mor (Fam𝒞-P.prod Γ (δ i)) (δ' i)} →
+                     (∀ i → fs i ≃ gs i) →
+                     FMuC.strong-fmor P fs ≃ FMuC.strong-fmor P gs
+  strong-fmor-cong (const A) es = Fam𝒞.≈-refl
+  strong-fmor-cong (var i)   es = es i
+  strong-fmor-cong (P' + Q') es =
+    HasStrongCoproducts.copair-cong strongCoproducts
+      (Fam𝒞.∘-cong Fam𝒞.≈-refl (under-rootF-cong (strong-fmor-cong P' es)))
+      (Fam𝒞.∘-cong Fam𝒞.≈-refl (under-rootF-cong (strong-fmor-cong Q' es)))
+  strong-fmor-cong (P' × Q') es =
+    under-rootF-cong (Fam𝒞-P.strong-prod-m-cong (strong-fmor-cong P' es) (strong-fmor-cong Q' es))
+  strong-fmor-cong (μ P')    es = strong-μ-fmor-cong P' es
+
+  strong-μ-fmor-cong : ∀ {k} {Γ : Obj} (P : Poly (suc k)) {δ δ' : Fin k → Obj}
+                       {fs gs : ∀ i → Mor (Fam𝒞-P.prod Γ (δ i)) (δ' i)} →
+                       (∀ i → fs i ≃ gs i) →
+                       FMuC.strong-μ-fmor P fs ≃ FMuC.strong-μ-fmor P gs
+  strong-μ-fmor-cong {k} {Γ} P {δ} {δ'} {fs} {gs} es =
+    Laws.FoldCong.⦅⦆-cong {k} {Γ} {FMuC.μ-obj P δ'} {P} {δ}
+      (Fam𝒞._∘_ (FMuC.inMap P δ') (FMuC.strong-fmor P (FMuC.strong-extend-mor fs Fam𝒞-P.p₂)))
+      (Fam𝒞._∘_ (FMuC.inMap P δ') (FMuC.strong-fmor P (FMuC.strong-extend-mor gs Fam𝒞-P.p₂)))
+      (Fam𝒞.∘-cong Fam𝒞.≈-refl
+        (strong-fmor-cong P (λ { Fin.zero → Fam𝒞.≈-refl ; (Fin.suc i) → es i })))
