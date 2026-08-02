@@ -1242,9 +1242,11 @@ module syntactic {ℓ}
   open import language-syntax Sig using (_⊢_; first-order; first-order-ctxt)
 
   open import language-fo-interpretation Sig
-         𝒞 𝒞T 𝒞P 𝒞SC 𝒞Mu
+         𝒞 𝒞T 𝒞P 𝒞SC 𝒞Mu (𝒞T .HasTerminal.witness)
          Gl.cat GlPE.terminal GlPE.products GlSC GlPE.exponentials Gl-Mu Gl-MuLaws
+         (GlPE.terminal .HasTerminal.witness) (Glued.id _)
          GF GF-preserve-terminal GF-preserve-products GFC GFμ
+         (Glued.IsIso→Iso GF-preserve-terminal)
          𝒞-Sig-Model
     renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
 

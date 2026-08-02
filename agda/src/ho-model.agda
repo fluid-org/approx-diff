@@ -148,6 +148,8 @@ module Interpretation
        Fam⟨𝒟⟩-strongCoproducts
        Fam⟨𝒟⟩-exponentials
        Fam⟨𝒟⟩-hasMu
+       (HasTerminal.witness Fam⟨𝒟⟩-terminal)
+       (Category.id Fam⟨𝒟⟩.cat _)
        (transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products Fam⟨F⟩-preserves-bool Impl)
        public
 

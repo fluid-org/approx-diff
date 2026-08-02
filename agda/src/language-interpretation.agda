@@ -21,8 +21,9 @@ module language-interpretation
   (let open polynomial-functor.Interp 𝒞T 𝒞P 𝒞SC)
   (let open polynomial-functor using (Poly; extend))
   (Mu : HasMu)
-  (let Bool = HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
-              (HasTerminal.witness 𝒞T) (HasTerminal.witness 𝒞T))
+  (𝟙ty : Category.obj 𝒞)
+  (unit-pt : Category._⇒_ 𝒞 (HasTerminal.witness 𝒞T) 𝟙ty)
+  (let Bool = HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC) 𝟙ty 𝟙ty)
   (Int : Model PFPC[ 𝒞 , 𝒞T , 𝒞P , Bool ] Sig)
   where
 
@@ -39,7 +40,7 @@ open Model Int
 mutual
   ⟦_⟧ty : ∀ {Δ} → type Δ → (Fin Δ → obj) → obj
   ⟦ var i ⟧ty     δ = δ i
-  ⟦ unit ⟧ty      δ = 𝟙
+  ⟦ unit ⟧ty      δ = 𝟙ty
   ⟦ base s ⟧ty    δ = ⟦sort⟧ s
   ⟦ σ [+] τ ⟧ty δ = coprod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ)
   ⟦ σ [×] τ ⟧ty δ = prod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ)
@@ -48,7 +49,7 @@ mutual
 
   as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly 𝒞 n
   as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
-  as-poly unit            δ = Poly.const 𝟙
+  as-poly unit            δ = Poly.const 𝟙ty
   as-poly (base s)        δ = Poly.const (⟦sort⟧ s)
   as-poly (σ [+] τ)       δ = as-poly σ δ Poly.+ as-poly τ δ
   as-poly (σ [×] τ)       δ = as-poly σ δ Poly.× as-poly τ δ
@@ -235,7 +236,7 @@ open PointedFPCat PFPC[ 𝒞 , 𝒞T , 𝒞P , Bool ] using (list→product)
 mutual
   ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty (λ ())
   ⟦ var x ⟧tm           = ⟦ x ⟧var
-  ⟦ unit ⟧tm            = to-terminal
+  ⟦ unit ⟧tm            = unit-pt ∘ to-terminal
   ⟦ inl M ⟧tm           = in₁ ∘ ⟦ M ⟧tm
   ⟦ inr M ⟧tm           = in₂ ∘ ⟦ M ⟧tm
   ⟦ case M M₁ M₂ ⟧tm    = scopair ⟦ M₁ ⟧tm ⟦ M₂ ⟧tm ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
