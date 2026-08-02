@@ -287,8 +287,7 @@ infix 4 _≈p_
 _≈p_ : ∀ {M N : Semimodule} → SemiMod._⇒_ M N → SemiMod._⇒_ M N → Prop 0ℓ
 _≈p_ = SemiMod._≈m_
 
-private
-  module SMC = Category SemiMod.cat
+module SMC = Category SemiMod.cat
 
 ≈p-refl : ∀ {M N} {f : SemiMod._⇒_ M N} → f ≈p f
 ≈p-refl {M} {N} {f} = SMC.≈-refl {M} {N} {f}
@@ -336,6 +335,17 @@ infixl 21 _+p_
           f₁ ≈p f₂ → g₁ ≈p g₂ → (f₁ +p g₁) ≈p (f₂ +p g₂)
 +p-cong {M} {N} =
   CommutativeMonoid.+-cong (CMonEnriched.homCM SemiMod.cmon-enriched M N)
+
++p-lunit : ∀ {M N} {f : SemiMod._⇒_ M N} → (SemiMod.ε-map M N +p f) ≈p f
++p-lunit {M} {N} {f} =
+  CommutativeMonoid.+-lunit (CMonEnriched.homCM SemiMod.cmon-enriched M N) {f}
+
++p-runit : ∀ {M N} {f : SemiMod._⇒_ M N} → (f +p SemiMod.ε-map M N) ≈p f
++p-runit {M} {N} {f} =
+  ≈p-trans
+    (CommutativeMonoid.+-comm (CMonEnriched.homCM SemiMod.cmon-enriched M N)
+      {f} {SemiMod.ε-map M N})
+    (+p-lunit {M} {N} {f})
 
 private
   homCM𝒟 : ∀ P Q → CommutativeMonoid (Category.hom-setoid SemiMod.cat (𝒟 P) (𝒟 Q))

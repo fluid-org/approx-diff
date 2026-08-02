@@ -7,8 +7,7 @@
 open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
-open import cmon-enriched using (Biproduct)
-import matrix
+open import cmon-enriched using (Biproduct; CMonEnriched)
 import order-idempotent
 import order-idempotent-freeness
 import order-idempotent-poly-fold
@@ -21,7 +20,6 @@ module order-idempotent-poly-reindex
   (⊤-add-top : ∀ {x} → ι + x ≈ ι)
   where
 
-open matrix.Mat S using (_≈ₘ_; ∘-cong; assoc; comp-bilinear₁; comp-bilinear-ε₁; comp-bilinear-ε₂)
 open order-idempotent S ∨-idem ∧-idem ⊤-add-top
 open order-idempotent-freeness S ∨-idem ∧-idem ⊤-add-top
 open order-idempotent-poly-fold S ∨-idem ∧-idem ⊤-add-top
@@ -34,47 +32,50 @@ module _ (W W' R : Pos) (u : W' ⇒ W) where
 
   ctx-map-ι₁ : ∀ (F : Pos) → (ctx-map F ∘ ι₁ W' F) ≈p (ι₁ W F ∘ u)
   ctx-map-ι₁ F =
-    ≈ₘ-trans (Biproduct.pair-natural (biproduct W F) (u ∘ π₁ W' F) (π₂ W' F) (ι₁ W' F))
-    (≈ₘ-trans (Biproduct.pair-cong (biproduct W F)
+    ≈p-trans (Biproduct.pair-natural (biproduct W F) (u ∘ π₁ W' F) (π₂ W' F) (ι₁ W' F))
+    (≈p-trans (Biproduct.pair-cong (biproduct W F)
                  {f₁ = (u ∘ π₁ W' F) ∘ ι₁ W' F} {f₂ = u}
                  {g₁ = π₂ W' F ∘ ι₁ W' F} {g₂ = εp {W'} {F}}
-                 (≈ₘ-trans (assoc (u .mat) (π₁ W' F .mat) (ι₁ W' F .mat))
-                           (≈ₘ-trans (∘-cong (≈ₘ-refl {M = u .mat})
+                 (≈p-trans (SMC.assoc u (π₁ W' F) (ι₁ W' F))
+                           (≈p-trans (∘p-cong (≈p-refl {f = u})
                                              (Biproduct.id-1 (biproduct W' F)))
-                                     (absorb-right u)))
+                                     (SMC.id-right {f = u})))
                  (Biproduct.zero-2 (biproduct W' F)))
               (bp-ι₁ W F u))
     where
     -- Pairing a morphism with the zero morphism is the first injection after it.
     bp-ι₁ : ∀ (X Y : Pos) {Z} (f : Z ⇒ X) →
             Biproduct.pair (biproduct X Y) f (εp {Z} {Y}) ≈p (ι₁ X Y ∘ f)
-    bp-ι₁ X Y f q p =
-      trans (+-cong refl (comp-bilinear-ε₂ (ι₂ X Y .mat) q p)) (trans +-comm +-lunit)
+    bp-ι₁ X Y {Z} f =
+      ≈p-trans (+p-cong (≈p-refl {f = ι₁ X Y ∘ f})
+                        (CMonEnriched.comp-bilinear-ε₂ SemiMod.cmon-enriched (ι₂ X Y)))
+               (+p-runit {f = ι₁ X Y ∘ f})
 
   ctx-map-ι₂ : ∀ (F : Pos) → (ctx-map F ∘ ι₂ W' F) ≈p ι₂ W F
   ctx-map-ι₂ F =
-    ≈ₘ-trans (Biproduct.pair-natural (biproduct W F) (u ∘ π₁ W' F) (π₂ W' F) (ι₂ W' F))
-    (≈ₘ-trans (Biproduct.pair-cong (biproduct W F)
+    ≈p-trans (Biproduct.pair-natural (biproduct W F) (u ∘ π₁ W' F) (π₂ W' F) (ι₂ W' F))
+    (≈p-trans (Biproduct.pair-cong (biproduct W F)
                  {f₁ = (u ∘ π₁ W' F) ∘ ι₂ W' F} {f₂ = εp {F} {W}}
                  {g₁ = π₂ W' F ∘ ι₂ W' F} {g₂ = id F}
-                 (≈ₘ-trans (assoc (u .mat) (π₁ W' F .mat) (ι₂ W' F .mat))
-                           (≈ₘ-trans (∘-cong (≈ₘ-refl {M = u .mat})
+                 (≈p-trans (SMC.assoc u (π₁ W' F) (ι₂ W' F))
+                           (≈p-trans (∘p-cong (≈p-refl {f = u})
                                              (Biproduct.zero-1 (biproduct W' F)))
-                                     (comp-bilinear-ε₂ (u .mat))))
+                                     (CMonEnriched.comp-bilinear-ε₂ SemiMod.cmon-enriched u)))
                  (Biproduct.id-2 (biproduct W' F)))
               (bp-ι₂ W F))
     where
     bp-ι₂ : ∀ (X Y : Pos) → Biproduct.pair (biproduct X Y) (εp {Y} {X}) (id Y) ≈p ι₂ X Y
     bp-ι₂ X Y =
-      ≈ₘ-trans (λ q p → trans (+-cong (comp-bilinear-ε₂ (ι₁ X Y .mat) q p) refl) +-lunit)
-               (absorb-right (ι₂ X Y))
+      ≈p-trans (+p-cong (CMonEnriched.comp-bilinear-ε₂ SemiMod.cmon-enriched (ι₁ X Y))
+                        (SMC.id-right {f = ι₂ X Y}))
+               (+p-lunit {f = ι₂ X Y})
 
   -- Two morphisms out of a biproduct agreeing on the injections are equal.
   biproduct-ext : ∀ (P Q : Pos) {T} (f g : (P ⊕ Q) ⇒ T) →
                   (f ∘ ι₁ P Q) ≈p (g ∘ ι₁ P Q) → (f ∘ ι₂ P Q) ≈p (g ∘ ι₂ P Q) → f ≈p g
   biproduct-ext P Q f g e₁ e₂ =
-    ≈ₘ-trans (≈ₘ-sym (Biproduct.copair-ext (biproduct P Q) f))
-    (≈ₘ-trans (Biproduct.copair-cong (biproduct P Q)
+    ≈p-trans (≈p-sym (Biproduct.copair-ext (biproduct P Q) f))
+    (≈p-trans (Biproduct.copair-cong (biproduct P Q)
                  {f₁ = f ∘ ι₁ P Q} {f₂ = g ∘ ι₁ P Q} {g₁ = f ∘ ι₂ P Q} {g₂ = g ∘ ι₂ P Q} e₁ e₂)
               (Biproduct.copair-ext (biproduct P Q) g))
 
@@ -83,15 +84,15 @@ module _ (W W' R : Pos) (u : W' ⇒ W) where
             (cop f g ∘ ctx-map F) ≈p cop (f ∘ u) g
   cop-ctx {F} f g =
     biproduct-ext W' F (cop f g ∘ ctx-map F) (cop (f ∘ u) g)
-      (≈ₘ-trans (assoc (cop f g .mat) (ctx-map F .mat) (ι₁ W' F .mat))
-      (≈ₘ-trans (∘-cong (≈ₘ-refl {M = cop f g .mat}) (ctx-map-ι₁ F))
-      (≈ₘ-trans (≈ₘ-sym (assoc (cop f g .mat) (ι₁ W F .mat) (u .mat)))
-      (≈ₘ-trans (∘-cong (Biproduct.copair-in₁ (biproduct W F) f g) (≈ₘ-refl {M = u .mat}))
-                (≈ₘ-sym (Biproduct.copair-in₁ (biproduct W' F) (f ∘ u) g))))))
-      (≈ₘ-trans (assoc (cop f g .mat) (ctx-map F .mat) (ι₂ W' F .mat))
-      (≈ₘ-trans (∘-cong (≈ₘ-refl {M = cop f g .mat}) (ctx-map-ι₂ F))
-      (≈ₘ-trans (Biproduct.copair-in₂ (biproduct W F) f g)
-                (≈ₘ-sym (Biproduct.copair-in₂ (biproduct W' F) (f ∘ u) g)))))
+      (≈p-trans (SMC.assoc (cop f g) (ctx-map F) (ι₁ W' F))
+      (≈p-trans (∘p-cong (≈p-refl {f = cop f g}) (ctx-map-ι₁ F))
+      (≈p-trans (≈p-sym (SMC.assoc (cop f g) (ι₁ W F) u))
+      (≈p-trans (∘p-cong (Biproduct.copair-in₁ (biproduct W F) f g) (≈p-refl {f = u}))
+                (≈p-sym (Biproduct.copair-in₁ (biproduct W' F) (f ∘ u) g))))))
+      (≈p-trans (SMC.assoc (cop f g) (ctx-map F) (ι₂ W' F))
+      (≈p-trans (∘p-cong (≈p-refl {f = cop f g}) (ctx-map-ι₂ F))
+      (≈p-trans (Biproduct.copair-in₂ (biproduct W F) f g)
+                (≈p-sym (Biproduct.copair-in₂ (biproduct W' F) (f ∘ u) g)))))
 
   -- The step that consumes a root commutes with a change of context: the constant it installs comes
   -- from the continuation's root column, which the change of context does not touch.
@@ -99,7 +100,7 @@ module _ (W W' R : Pos) (u : W' ⇒ W) where
                  (rootStep W R X F k r ∘ ctx-map (Lp F))
                  ≈p rootStep W' R X F (k ∘ ctx-map (Lp X)) (r ∘ ctx-map F)
   rootStep-ctx X F k r =
-    ≈ₘ-trans (cop-ctx (r ∘ ι₁ W F)
+    ≈p-trans (cop-ctx (r ∘ ι₁ W F)
                       (affine {P = F} (tag-of {P = X} (k ∘ ι₂ W (Lp X))) (r ∘ ι₂ W F)))
              (cop-cong W' (Lp F) R
                ((r ∘ ι₁ W F) ∘ u) ((r ∘ ctx-map F) ∘ ι₁ W' F)
@@ -110,20 +111,20 @@ module _ (W W' R : Pos) (u : W' ⇒ W) where
     where
     ctx-part : ((r ∘ ι₁ W F) ∘ u) ≈p ((r ∘ ctx-map F) ∘ ι₁ W' F)
     ctx-part =
-      ≈ₘ-trans (assoc (r .mat) (ι₁ W F .mat) (u .mat))
-      (≈ₘ-trans (∘-cong (≈ₘ-refl {M = r .mat}) (≈ₘ-sym (ctx-map-ι₁ F)))
-                (≈ₘ-sym (assoc (r .mat) (ctx-map F .mat) (ι₁ W' F .mat))))
+      ≈p-trans (SMC.assoc r (ι₁ W F) u)
+      (≈p-trans (∘p-cong (≈p-refl {f = r}) (≈p-sym (ctx-map-ι₁ F)))
+                (≈p-sym (SMC.assoc r (ctx-map F) (ι₁ W' F))))
 
     -- The payload component, and with it the constant, is unchanged.
-    payload : (r ∘ ι₂ W F) ≈p ((r ∘ ctx-map F) ∘ ι₂ W' F)
-    payload =
-      ≈ₘ-trans (∘-cong (≈ₘ-refl {M = r .mat}) (≈ₘ-sym (ctx-map-ι₂ F)))
-               (≈ₘ-sym (assoc (r .mat) (ctx-map F .mat) (ι₂ W' F .mat)))
+    payload-eq : (r ∘ ι₂ W F) ≈p ((r ∘ ctx-map F) ∘ ι₂ W' F)
+    payload-eq =
+      ≈p-trans (∘p-cong (≈p-refl {f = r}) (≈p-sym (ctx-map-ι₂ F)))
+               (≈p-sym (SMC.assoc r (ctx-map F) (ι₂ W' F)))
 
     constant : (k ∘ ι₂ W (Lp X)) ≈p ((k ∘ ctx-map (Lp X)) ∘ ι₂ W' (Lp X))
     constant =
-      ≈ₘ-trans (∘-cong (≈ₘ-refl {M = k .mat}) (≈ₘ-sym (ctx-map-ι₂ (Lp X))))
-               (≈ₘ-sym (assoc (k .mat) (ctx-map (Lp X) .mat) (ι₂ W' (Lp X) .mat)))
+      ≈p-trans (∘p-cong (≈p-refl {f = k}) (≈p-sym (ctx-map-ι₂ (Lp X))))
+               (≈p-sym (SMC.assoc k (ctx-map (Lp X)) (ι₂ W' (Lp X))))
 
     cell-part : affine {P = F} (tag-of {P = X} (k ∘ ι₂ W (Lp X))) (r ∘ ι₂ W F)
                 ≈p affine {P = F} (tag-of {P = X} ((k ∘ ctx-map (Lp X)) ∘ ι₂ W' (Lp X)))
@@ -135,7 +136,7 @@ module _ (W W' R : Pos) (u : W' ⇒ W) where
         {M = r ∘ ι₂ W F} {M' = (r ∘ ctx-map F) ∘ ι₂ W' F}
         (tag-of-cong {P = X} {C = R}
           {h = k ∘ ι₂ W (Lp X)} {k = (k ∘ ctx-map (Lp X)) ∘ ι₂ W' (Lp X)} constant)
-        payload
+        payload-eq
 
   -- The projections of a change of context.
   ctx-map-π₁ : ∀ (F : Pos) → (π₁ W F ∘ ctx-map F) ≈p (u ∘ π₁ W' F)
@@ -149,80 +150,80 @@ module _ (W W' R : Pos) (u : W' ⇒ W) where
                 (varStep W R X k g ∘ ctx-map X)
                 ≈p varStep W' R X (k ∘ ctx-map R) (g ∘ ctx-map X)
   varStep-ctx X k g =
-    ≈ₘ-trans (assoc (k .mat) (Biproduct.pair (biproduct W R) (π₁ W X) g .mat) (ctx-map X .mat))
-    (≈ₘ-trans (∘-cong (≈ₘ-refl {M = k .mat}) inner)
-              (≈ₘ-sym (assoc (k .mat) (ctx-map R .mat)
-                             (Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X) .mat))))
+    ≈p-trans (SMC.assoc k (Biproduct.pair (biproduct W R) (π₁ W X) g) (ctx-map X))
+    (≈p-trans (∘p-cong (≈p-refl {f = k}) inner)
+              (≈p-sym (SMC.assoc k (ctx-map R)
+                             (Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)))))
     where
     -- Both sides pair the context, changed by u, with the folded sub-value.
     inner : (Biproduct.pair (biproduct W R) (π₁ W X) g ∘ ctx-map X)
             ≈p (ctx-map R ∘ Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X))
     inner =
-      ≈ₘ-trans (Biproduct.pair-natural (biproduct W R) (π₁ W X) g (ctx-map X))
-      (≈ₘ-trans (Biproduct.pair-cong (biproduct W R)
+      ≈p-trans (Biproduct.pair-natural (biproduct W R) (π₁ W X) g (ctx-map X))
+      (≈p-trans (Biproduct.pair-cong (biproduct W R)
                    {f₁ = π₁ W X ∘ ctx-map X} {f₂ = u ∘ π₁ W' X}
                    {g₁ = g ∘ ctx-map X} {g₂ = g ∘ ctx-map X}
                    (Biproduct.pair-p₁ (biproduct W X) (u ∘ π₁ W' X) (π₂ W' X))
-                   (≈ₘ-refl {M = (g ∘ ctx-map X) .mat}))
-                (≈ₘ-sym right))
+                   (≈p-refl {f = g ∘ ctx-map X}))
+                (≈p-sym right))
       where
       right : (ctx-map R ∘ Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X))
               ≈p Biproduct.pair (biproduct W R) (u ∘ π₁ W' X) (g ∘ ctx-map X)
       right =
-        ≈ₘ-trans (Biproduct.pair-natural (biproduct W R) (u ∘ π₁ W' R) (π₂ W' R)
+        ≈p-trans (Biproduct.pair-natural (biproduct W R) (u ∘ π₁ W' R) (π₂ W' R)
                     (Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)))
                  (Biproduct.pair-cong (biproduct W R)
                     {f₁ = (u ∘ π₁ W' R) ∘ Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)}
                     {f₂ = u ∘ π₁ W' X}
                     {g₁ = π₂ W' R ∘ Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)}
                     {g₂ = g ∘ ctx-map X}
-                    (≈ₘ-trans (assoc (u .mat) (π₁ W' R .mat)
-                                 (Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X) .mat))
-                              (∘-cong (≈ₘ-refl {M = u .mat})
+                    (≈p-trans (SMC.assoc u (π₁ W' R)
+                                 (Biproduct.pair (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)))
+                              (∘p-cong (≈p-refl {f = u})
                                  (Biproduct.pair-p₁ (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X))))
                     (Biproduct.pair-p₂ (biproduct W' R) (π₁ W' X) (g ∘ ctx-map X)))
 
   -- Pushing a change of context through the injections.
   push-ι₁ : ∀ (F : Pos) {T} (f : (W ⊕ F) ⇒ T) → ((f ∘ ι₁ W F) ∘ u) ≈p ((f ∘ ctx-map F) ∘ ι₁ W' F)
   push-ι₁ F f =
-    ≈ₘ-trans (assoc (f .mat) (ι₁ W F .mat) (u .mat))
-    (≈ₘ-trans (∘-cong (≈ₘ-refl {M = f .mat}) (≈ₘ-sym (ctx-map-ι₁ F)))
-              (≈ₘ-sym (assoc (f .mat) (ctx-map F .mat) (ι₁ W' F .mat))))
+    ≈p-trans (SMC.assoc f (ι₁ W F) u)
+    (≈p-trans (∘p-cong (≈p-refl {f = f}) (≈p-sym (ctx-map-ι₁ F)))
+              (≈p-sym (SMC.assoc f (ctx-map F) (ι₁ W' F))))
 
   push-ι₂ : ∀ (F : Pos) {T} (f : (W ⊕ F) ⇒ T) → (f ∘ ι₂ W F) ≈p ((f ∘ ctx-map F) ∘ ι₂ W' F)
   push-ι₂ F f =
-    ≈ₘ-trans (∘-cong (≈ₘ-refl {M = f .mat}) (≈ₘ-sym (ctx-map-ι₂ F)))
-             (≈ₘ-sym (assoc (f .mat) (ctx-map F .mat) (ι₂ W' F .mat)))
+    ≈p-trans (∘p-cong (≈p-refl {f = f}) (≈p-sym (ctx-map-ι₂ F)))
+             (≈p-sym (SMC.assoc f (ctx-map F) (ι₂ W' F)))
 
   -- The continuations at a product and at a root commute with a change of context.
   prodCont₁-ctx : ∀ (X₁ X₂ : Pos) (k : (W ⊕ (X₁ ⊕ X₂)) ⇒ R) →
                   (prodCont₁ W R X₁ X₂ k ∘ ctx-map X₁)
                   ≈p prodCont₁ W' R X₁ X₂ (k ∘ ctx-map (X₁ ⊕ X₂))
   prodCont₁-ctx X₁ X₂ k =
-    ≈ₘ-trans (cop-ctx (k ∘ ι₁ W (X₁ ⊕ X₂)) (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₁ X₁ X₂))
+    ≈p-trans (cop-ctx (k ∘ ι₁ W (X₁ ⊕ X₂)) (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₁ X₁ X₂))
              (cop-cong W' X₁ R
                ((k ∘ ι₁ W (X₁ ⊕ X₂)) ∘ u) ((k ∘ ctx-map (X₁ ⊕ X₂)) ∘ ι₁ W' (X₁ ⊕ X₂))
                (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₁ X₁ X₂)
                ((k ∘ ctx-map (X₁ ⊕ X₂)) ∘ ι₂ W' (X₁ ⊕ X₂) ∘ ι₁ X₁ X₂)
                (push-ι₁ (X₁ ⊕ X₂) k)
-               (∘-cong (push-ι₂ (X₁ ⊕ X₂) k) (≈ₘ-refl {M = ι₁ X₁ X₂ .mat})))
+               (∘p-cong (push-ι₂ (X₁ ⊕ X₂) k) (≈p-refl {f = ι₁ X₁ X₂})))
 
   prodCont₂-ctx : ∀ (X₁ X₂ : Pos) (k : (W ⊕ (X₁ ⊕ X₂)) ⇒ R) →
                   (prodCont₂ W R X₁ X₂ k ∘ ctx-map X₂)
                   ≈p prodCont₂ W' R X₁ X₂ (k ∘ ctx-map (X₁ ⊕ X₂))
   prodCont₂-ctx X₁ X₂ k =
-    ≈ₘ-trans (cop-ctx (εp {W} {R}) (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₂ X₁ X₂))
+    ≈p-trans (cop-ctx (εp {W} {R}) (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₂ X₁ X₂))
              (cop-cong W' X₂ R
                (εp {W} {R} ∘ u) (εp {W'} {R})
                (k ∘ ι₂ W (X₁ ⊕ X₂) ∘ ι₂ X₁ X₂)
                ((k ∘ ctx-map (X₁ ⊕ X₂)) ∘ ι₂ W' (X₁ ⊕ X₂) ∘ ι₂ X₁ X₂)
-               (comp-bilinear-ε₁ (u .mat))
-               (∘-cong (push-ι₂ (X₁ ⊕ X₂) k) (≈ₘ-refl {M = ι₂ X₁ X₂ .mat})))
+               (CMonEnriched.comp-bilinear-ε₁ SemiMod.cmon-enriched u)
+               (∘p-cong (push-ι₂ (X₁ ⊕ X₂) k) (≈p-refl {f = ι₂ X₁ X₂})))
 
   rootCont-ctx : ∀ (X : Pos) (k : (W ⊕ Lp X) ⇒ R) →
                  (rootCont W R X k ∘ ctx-map X) ≈p rootCont W' R X (k ∘ ctx-map (Lp X))
   rootCont-ctx X k =
-    ≈ₘ-trans (cop-ctx (k ∘ ι₁ W (Lp X)) (body-of {P = X} (k ∘ ι₂ W (Lp X))))
+    ≈p-trans (cop-ctx (k ∘ ι₁ W (Lp X)) (body-of {P = X} (k ∘ ι₂ W (Lp X))))
              (cop-cong W' X R
                ((k ∘ ι₁ W (Lp X)) ∘ u) ((k ∘ ctx-map (Lp X)) ∘ ι₁ W' (Lp X))
                (body-of {P = X} (k ∘ ι₂ W (Lp X)))
@@ -238,15 +239,15 @@ module _ (W W' R : Pos) (u : W' ⇒ W) where
                  (prodStep W R F₁ F₂ r₁ r₂ ∘ ctx-map (F₁ ⊕ F₂))
                  ≈p prodStep W' R F₁ F₂ (r₁ ∘ ctx-map F₁) (r₂ ∘ ctx-map F₂)
   prodStep-ctx F₁ F₂ r₁ r₂ =
-    ≈ₘ-trans (cop-ctx ((r₁ ∘ ι₁ W F₁) +p (r₂ ∘ ι₁ W F₂))
+    ≈p-trans (cop-ctx ((r₁ ∘ ι₁ W F₁) +p (r₂ ∘ ι₁ W F₂))
                       (cop (r₁ ∘ ι₂ W F₁) (r₂ ∘ ι₂ W F₂)))
              (cop-cong W' (F₁ ⊕ F₂) R
                (((r₁ ∘ ι₁ W F₁) +p (r₂ ∘ ι₁ W F₂)) ∘ u)
                (((r₁ ∘ ctx-map F₁) ∘ ι₁ W' F₁) +p ((r₂ ∘ ctx-map F₂) ∘ ι₁ W' F₂))
                (cop (r₁ ∘ ι₂ W F₁) (r₂ ∘ ι₂ W F₂))
                (cop ((r₁ ∘ ctx-map F₁) ∘ ι₂ W' F₁) ((r₂ ∘ ctx-map F₂) ∘ ι₂ W' F₂))
-               (≈ₘ-trans (comp-bilinear₁ ((r₁ ∘ ι₁ W F₁) .mat) ((r₂ ∘ ι₁ W F₂) .mat) (u .mat))
-                         (+ₘ-cong (push-ι₁ F₁ r₁) (push-ι₁ F₂ r₂)))
+               (≈p-trans (CMonEnriched.comp-bilinear₁ SemiMod.cmon-enriched (r₁ ∘ ι₁ W F₁) (r₂ ∘ ι₁ W F₂) u)
+                         (+p-cong (push-ι₁ F₁ r₁) (push-ι₁ F₂ r₂)))
                (cop-cong F₁ F₂ R
                  (r₁ ∘ ι₂ W F₁) ((r₁ ∘ ctx-map F₁) ∘ ι₂ W' F₁)
                  (r₂ ∘ ι₂ W F₂) ((r₂ ∘ ctx-map F₂) ∘ ι₂ W' F₂)
