@@ -176,6 +176,27 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     unembed-fam (Q₁ × Q₂) (x , y) = Lmap (prod-m (unembed-fam Q₁ x) (unembed-fam Q₂ y))
     unembed-fam (μ Q')    t = id _
 
+    unembed-fam-natural : (Q : Poly (suc n)) {x y : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)}
+                          (e : TX.shape≈ ∣ Q ∣ (λ v → inj₁ v) x y) →
+                          (unembed-fam Q y ∘ TX.fib-shape-subst Q (λ v → lift tt) e)
+                            ≈ (fobj μObj Q δ' .fam .subst (unembed-idx-resp Q e) ∘ unembed-fam Q x)
+    unembed-fam-natural (const A) e = ≈-trans id-left (≈-sym id-right)
+    unembed-fam-natural (var v)   e = ≈-trans id-left (≈-sym id-right)
+    unembed-fam-natural (Q₁ + Q₂) {inj₁ _} {inj₁ _} e =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+      (≈-trans (Lmap-cong (unembed-fam-natural Q₁ e)) (Lmap-comp _ _))
+    unembed-fam-natural (Q₁ + Q₂) {inj₂ _} {inj₂ _} e =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+      (≈-trans (Lmap-cong (unembed-fam-natural Q₂ e)) (Lmap-comp _ _))
+    unembed-fam-natural (Q₁ × Q₂) {_ , _} {_ , _} (e₁ , e₂) =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+      (≈-trans (Lmap-cong
+                 (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                  (≈-trans (prod-m-cong (unembed-fam-natural Q₁ e₁) (unembed-fam-natural Q₂ e₂))
+                           (prod-m-comp _ _ _ _))))
+               (Lmap-comp _ _))
+    unembed-fam-natural (μ Q')    e = ≈-trans id-left (≈-sym id-right)
+
     -- Embedding after unembedding is the identity on fibres too.
     embed-unembed-fam : (Q : Poly (suc n)) (y : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)) →
                         (TX.fib-shape-subst Q (λ v → lift tt) (embed-unembed Q y)
