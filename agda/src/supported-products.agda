@@ -183,3 +183,23 @@ supported-setoid-products .HasWeakSetoidProducts.Π-map-comp {A} {P} {Q} {R} f g
 supported-setoid-products .HasWeakSetoidProducts.lambda-compose {A} {Q} {R} {x} f g
   .*≈* ._≃s_.func-eq e =
   x .supp .func-resp-≈ e ,ₚ (λ a → f .transf a .mor .func-resp-≈ (g .transf a .mor .func-resp-≈ e))
+supported-setoid-products .HasWeakSetoidProducts.lambdaΠ-natural-iso {A} {P} {x} {y} f {h} {h⁻¹} e₁ e₂
+  .*≈* ._≃s_.func-eq {u₁} {u₂} e =
+  S.trans iso-supp (x .supp .func-resp-≈ e)
+  ,ₚ (λ a → f .transf a .mor .func-resp-≈ (h .mor .func-resp-≈ e))
+  where
+  -- An isomorphism preserves the support: one bound each way, closed by antisymmetry.
+  ≤-antisym : ∀ {a b} → (a S.+ b) S.≈ b → (b S.+ a) S.≈ a → a S.≈ b
+  ≤-antisym p q = S.trans (S.sym q) (S.trans S.+-comm p)
+
+  reflE : ∀ (z : Obj) {u : Setoid.Carrier (Semimodule.setoid (z .carrier))} →
+          Semimodule.setoid (z .carrier) .Setoid._≈_ u u
+  reflE z = Semimodule.refl (z .carrier)
+
+  iso-supp : (y .supp .func (h .mor .func u₁)) S.≈ (x .supp .func u₁)
+  iso-supp =
+    ≤-antisym
+      (h .bound .*≈* ._≃s_.func-eq (reflE x))
+      (S.trans
+        (S.+-cong (S.sym (x .supp .func-resp-≈ (e₂ .*≈* ._≃s_.func-eq (reflE x)))) S.refl)
+        (h⁻¹ .bound .*≈* ._≃s_.func-eq (reflE y)))

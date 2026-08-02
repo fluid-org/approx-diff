@@ -465,6 +465,11 @@ record HasWeakSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ 
     lambda-compose : ∀ {A} {Q R : Fam A 𝒞} {x}
       (f : Q ⇒f R) (g : constantFam A 𝒞 x ⇒f Q) →
       lambdaΠ _ _ (f ∘f g) ≈ (Π-map f ∘ lambdaΠ _ _ g)
+    -- Naturality of the pairing at isomorphisms only, which is all a transport needs.
+    lambdaΠ-natural-iso : ∀ {A} {P : Fam A 𝒞} {x y}
+      (f : constantFam A 𝒞 y ⇒f P) {h : x ⇒ y} {h⁻¹ : y ⇒ x} →
+      (h ∘ h⁻¹) ≈ id y → (h⁻¹ ∘ h) ≈ id x →
+      (lambdaΠ y P f ∘ h) ≈ lambdaΠ x P (f ∘f constF h)
 
   lambda-evalf : ∀ {A} {P : Fam A 𝒞} {x} f → (evalΠf P ∘f constF (lambdaΠ x P f)) ≃f f
   lambda-evalf f ._≃f_.transf-eq {a} = lambda-eval a

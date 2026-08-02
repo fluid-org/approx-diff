@@ -1037,6 +1037,21 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
         h
       ∎ where open ≈-Reasoning isEquiv
 
+-- Exponential structure without the extensionality law: a chosen currying and its computation
+-- rule. A currying that carries structure evaluation does not see can satisfy these while the
+-- extensionality law fails.
+record HasWeakExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
+  open Category 𝒞
+  open HasProducts P
+  field
+    exp    : obj → obj → obj
+    eval   : ∀ {x y} → prod (exp x y) x ⇒ y
+    lambda : ∀ {x y z} → prod x y ⇒ z → x ⇒ exp y z
+
+    lambda-cong : ∀ {x y z} {f₁ f₂ : prod x y ⇒ z} → f₁ ≈ f₂ → lambda f₁ ≈ lambda f₂
+    eval-lambda : ∀ {x y z} (f : prod x y ⇒ z) →
+                  (eval ∘ prod-m (lambda f) (id _)) ≈ f
+
 record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasProducts P

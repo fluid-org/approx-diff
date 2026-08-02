@@ -254,3 +254,12 @@ module 𝓥Fibrewise (os es : Level) =
   fam-mu-lifting.fibrewise os es OI.cmon OI.biproduct OF.Lp-lifting
     SS.Sup.cmon Sup-biproduct SS.supported-lifting
     𝓥F (λ {P} {Q} → 𝓥F-preserve-products {P} {Q}) 𝓥-Lp-iso (λ {P} {Q} f → Lmap-intertwine {P} {Q} f)
+
+-- The rooted model's function spaces: weak exponentials on Fam(Sup), fibres the dominated
+-- products.
+import supported-products
+import fam-exponentials-weak
+module SupProducts = supported-products S ∨-idem
+module SupExp =
+  fam-exponentials-weak 0ℓ 0ℓ SS.Sup.cat SS.Sup.cmon Sup-biproduct
+    SupProducts.supported-setoid-products
