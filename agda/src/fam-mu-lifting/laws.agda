@@ -671,3 +671,68 @@ mutual
       (Fam𝒞._∘_ (FMuC.inMap P δ') (FMuC.strong-fmor P (FMuC.strong-extend-mor gs Fam𝒞-P.p₂)))
       (Fam𝒞.∘-cong Fam𝒞.≈-refl
         (strong-fmor-cong P (λ { Fin.zero → Fam𝒞.≈-refl ; (Fin.suc i) → es i })))
+
+-- Reflection, index half: applying the intro algebra's data at the projection candidate and
+-- carrying the result back through the bridges is the identity on trees. The relation pairs each
+-- fold-reindex morphism with the bridge reindex that undoes it.
+module Reflection {n} {Γ : Obj} {P : Poly (suc n)} {δ : Fin n → Obj} where
+  private module At = InMapDef P δ
+  open FoldBase {n} {Γ} {μObj P δ} {P} {δ}
+
+  algR : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ (μObj P δ)))) (μObj P δ)
+  algR = Fam𝒞._∘_ At.inMor (Fam𝒞-P.p₂ {Γ} {fobj μObj P (extend δ (μObj P δ))})
+
+  module L' = Laws {n} {Γ} {μObj P δ} {P} {δ} algR
+  module Ah = L'.Ap (λ γ t → t) (λ γ≈ p → p)
+                (λ γ t → Fam𝒞-P.p₂ {Γ} {μObj P δ} .famf ._⇒f_.transf (γ , t))
+
+  data RRel : ∀ {j} {ρ : Fin j → Fin n ⊎ Sort n} {ρ' : Fin j → Fin (suc n) ⊎ Sort (suc n)}
+              {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → TA'.DecoAssign (ρ' v)} →
+              FMor ρ ρ' d d' → At.R.MorD ρ' ρ d' d →
+              Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+    rbase : RRel fbase At.mor₀
+    rbind : ∀ {j} {ρ ρ' d d'} {fm : FMor {j} ρ ρ' d d'} {md} (Q' : Poly (suc j)) →
+            RRel fm md → RRel (fbind Q' fm) (At.R.bind Q' md)
+
+  mutual
+    ra-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {fm : FMor ρ ρ' d d'} {md} → RRel fm md →
+           (γ : Γ .idx .Carrier) (t : Tδ.W ∣ Q̂ ∣ ρ) →
+           Tδ.W-≈ (At.R.reindex md (Ah.apply-reindex γ fm t)) t
+    ra-W {Q̂ = Q̂} rel γ (Tδ.sup x) = ra-shape Q̂ (rbind Q̂ rel) γ x
+
+    ra-shape : ∀ {j} (R : Poly j) {ρ : Fin j → Fin n ⊎ Sort n} {ρ'} {d d'}
+               {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρ' ρ d' d} → RRel fm md →
+               (γ : Γ .idx .Carrier) (a : Tδ.⟦ ∣ R ∣ ⟧shape ρ) →
+               Tδ.shape≈ ∣ R ∣ ρ (At.R.reindex-shape ∣ R ∣ md (Ah.apply-reindex-shape γ R fm a)) a
+    ra-shape (const A') rel γ a = A' .idx .isEquivalence .refl
+    ra-shape (var v)    rel γ a = ra-el rel γ v a
+    ra-shape (P' + Q') rel γ (inj₁ a) = ra-shape P' rel γ a
+    ra-shape (P' + Q') rel γ (inj₂ b) = ra-shape Q' rel γ b
+    ra-shape (P' × Q') rel γ (a , b) = ra-shape P' rel γ a , ra-shape Q' rel γ b
+    ra-shape (μ Q'')   rel γ t = ra-W {Q̂ = Q''} rel γ t
+
+    ra-el : ∀ {j} {ρ ρ' d d'} {fm : FMor {j} ρ ρ' d d'} {md} → RRel fm md →
+            (γ : Γ .idx .Carrier) (v : Fin j) (a : Tδ.El (ρ v)) →
+            Tδ.elEq (ρ v) (At.R.apply md v (Ah.apply-apply γ fm v a)) a
+    ra-el rbase          γ Fin.zero    t = Tδ.elEq-refl (Sh.η₀ ∣ P ∣ Fin.zero) t
+    ra-el rbase          γ (Fin.suc i) a = Tδ.elEq-refl (Sh.η₀ ∣ P ∣ (Fin.suc i)) a
+    ra-el (rbind Q' rel) γ Fin.zero    a = ra-W {Q̂ = Q'} rel γ a
+    ra-el (rbind Q' rel) γ (Fin.suc v) a = ra-el rel γ v a
+
+  -- The top-level round trip through the embed bridge.
+  ra-top : ∀ (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
+           Tδ.shape≈ ∣ Q ∣ (Sh.η₀ ∣ P ∣)
+             (At.R.reindex-shape ∣ Q ∣ At.mor₀ (At.embed-idx Q (Ah.apply-shape-idx Q γ x))) x
+  ra-top (const A')        γ a = A' .idx .isEquivalence .refl
+  ra-top (var Fin.zero)    γ t = Tδ.elEq-refl (Sh.η₀ ∣ P ∣ Fin.zero) t
+  ra-top (var (Fin.suc i)) γ a = Tδ.elEq-refl (Sh.η₀ ∣ P ∣ (Fin.suc i)) a
+  ra-top (Q₁ + Q₂) γ (inj₁ x) = ra-top Q₁ γ x
+  ra-top (Q₁ + Q₂) γ (inj₂ y) = ra-top Q₂ γ y
+  ra-top (Q₁ × Q₂) γ (x , y) = ra-top Q₁ γ x , ra-top Q₂ γ y
+  ra-top (μ Q')    γ t = ra-W {Q̂ = Q'} rbase γ t
+
+  -- The projection's index component satisfies the fused law's index half at the intro algebra.
+  reflection-idx : ∀ (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ P ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
+                   _≈s_ (μObj P δ .idx) (Tδ.sup x)
+                        (algR .idxf .PS._⇒_.func (γ , Ah.apply-shape-idx P γ x))
+  reflection-idx γ x = Tδ.shape≈-sym ∣ P ∣ (Sh.η₀ ∣ P ∣) (ra-top P γ x)
