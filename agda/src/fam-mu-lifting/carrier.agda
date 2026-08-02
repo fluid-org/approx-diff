@@ -189,6 +189,31 @@ payloadF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
         (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong (CME.comp-bilinear-ε₁ spt) ≈-refl)
           (CME.homCM _ _ .CommutativeMonoid.+-lunit))
 
+-- The lift of an isomorphism of families.
+Lf-iso : ∀ {X Y : Obj} → Fam𝒞.Iso X Y → Fam𝒞.Iso (Lf X) (Lf Y)
+Lf-iso i .Fam𝒞.Iso.fwd = Lf-map (i .Fam𝒞.Iso.fwd)
+Lf-iso i .Fam𝒞.Iso.bwd = Lf-map (i .Fam𝒞.Iso.bwd)
+Lf-iso {X} {Y} i .Fam𝒞.Iso.fwd∘bwd≈id ._≃_.idxf-eq =
+  i .Fam𝒞.Iso.fwd∘bwd≈id ._≃_.idxf-eq
+Lf-iso {X} {Y} i .Fam𝒞.Iso.fwd∘bwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {y} =
+  ≈-trans (∘-cong₂ id-left)
+    (≈-trans (∘-cong₂ (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong
+            (≈-trans (∘-cong₂ (≈-sym id-left))
+              (i .Fam𝒞.Iso.fwd∘bwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {y})))
+          Lmap-id)))
+Lf-iso {X} {Y} i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.idxf-eq =
+  i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.idxf-eq
+Lf-iso {X} {Y} i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} =
+  ≈-trans (∘-cong₂ id-left)
+    (≈-trans (∘-cong₂ (≈-sym (Lmap-comp _ _)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong
+            (≈-trans (∘-cong₂ (≈-sym id-left))
+              (i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x})))
+          Lmap-id)))
+
 -- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where
   open Sh.Tree (λ i → δ i .idx) public
