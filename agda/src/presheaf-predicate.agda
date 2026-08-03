@@ -165,6 +165,17 @@ _++_ {X} P Q .pred-mor {a} {b} f = begin
                   (P && (Q ⟨ α ⟩)) ⊑ (((P [ α ]) && Q) ⟨ α ⟩)
 &&-⟨⟩-frobenius .*⊑* a = setoid-predicate.&&-⟨⟩-frobenius
 
+-- Beck-Chevalley for a square with a stagewise lifting of agreeing corners.
+⟨⟩-[]-BC : ∀ {W X Y Z : PSh.obj} {P : Predicate X}
+           {α : X PSh.⇒ Z} {β : Y PSh.⇒ Z} {γ : W PSh.⇒ X} {δ : W PSh.⇒ Y} →
+           (∀ a (y : Setoid.Carrier (Y .fobj a)) (x : Setoid.Carrier (X .fobj a)) →
+              Setoid._≈_ (Z .fobj a) (α .transf a ._⇒s_.func x) (β .transf a ._⇒s_.func y) →
+              ∃ (Setoid.Carrier (W .fobj a)) λ w →
+                Setoid._≈_ (X .fobj a) (γ .transf a ._⇒s_.func w) x
+                  ∧ Setoid._≈_ (Y .fobj a) (δ .transf a ._⇒s_.func w) y) →
+           ((P ⟨ α ⟩) [ β ]) ⊑ ((P [ γ ]) ⟨ δ ⟩)
+⟨⟩-[]-BC lft .*⊑* a = setoid-predicate.⟨⟩-[]-BC (lft a)
+
 ⋁ : ∀ {X} (I : Set 0ℓ) → (I → Predicate X) → Predicate X
 ⋁ I P .pred a = P.⋁ I λ i → P i .pred a
 ⋁ {X} I P .pred-mor {a} {b} f = begin

@@ -178,6 +178,20 @@ module distributive
     ∎
     where open ≤-Reasoning S.⊑-isPreorder
 
+-- Beck-Chevalley squares transport from the underlying system to the closed one.
+⟨⟩-[]-transport : ∀ {W X Y Z : 𝒞.obj} {P : Predicate X}
+                  {α : X 𝒞.⇒ Z} {β : Y 𝒞.⇒ Z} {γ : W 𝒞.⇒ X} {δ : W 𝒞.⇒ Y} →
+                  ((P .pred S.⟨ α ⟩) S.[ β ]) S.⊑ ((P .pred S.[ γ ]) S.⟨ δ ⟩) →
+                  ((P ⟨ α ⟩) [ β ]) ⊑ ((P [ γ ]) ⟨ δ ⟩)
+⟨⟩-[]-transport {W} {X} {Y} {Z} {P} {α} {β} {γ} {δ} raw = begin
+    𝐂 (P .pred S.⟨ α ⟩) S.[ β ]
+  ≤⟨ 𝐂-[]⁻¹ ⟩
+    𝐂 ((P .pred S.⟨ α ⟩) S.[ β ])
+  ≤⟨ 𝐂-isClosure .mono raw ⟩
+    𝐂 ((P .pred S.[ γ ]) S.⟨ δ ⟩)
+  ∎
+  where open ≤-Reasoning S.⊑-isPreorder
+
 ⋁ : ∀ {X} (I : Set 0ℓ) → (I → Predicate X) → Predicate X
 ⋁ I P .pred = 𝐂 (S.⋁ I (λ i → P i .pred))
 ⋁ I P .closed = 𝐂-isClosure .closed

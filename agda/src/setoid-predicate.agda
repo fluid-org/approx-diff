@@ -186,6 +186,22 @@ _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
 &&-⟨⟩-frobenius {X} {Y} {P} {Q} {f} .*⊑* y (p , (x , q , e)) =
   x , (P .Predicate.pred-≃ (Y .Setoid.sym e) p , q) , e
 
+-- Beck-Chevalley for a square with a pointwise lifting: reindexing a direct image is the direct
+-- image of a reindexing whenever agreeing corners lift to the fourth object.
+⟨⟩-[]-BC : ∀ {W X Y Z : Setoid o e} {P : Predicate X}
+           {f : X ⇒s Z} {g : Y ⇒s Z} {h : W ⇒s X} {k : W ⇒s Y} →
+           (∀ (y : Y .Setoid.Carrier) (x : X .Setoid.Carrier) →
+              Z .Setoid._≈_ (f .func x) (g .func y) →
+              ∃ (W .Setoid.Carrier) λ w →
+                X .Setoid._≈_ (h .func w) x ∧ Y .Setoid._≈_ (k .func w) y) →
+           ((P ⟨ f ⟩) [ g ]) ⊑ ((P [ h ]) ⟨ k ⟩)
+⟨⟩-[]-BC {W} {X} {Y} {Z} {P} {f} {g} {h} {k} lft .*⊑* y (x , p , e) = go (lft y x e)
+  where
+    go : ∃ (W .Setoid.Carrier)
+           (λ w → X .Setoid._≈_ (h .func w) x ∧ Y .Setoid._≈_ (k .func w) y) →
+         ((P [ h ]) ⟨ k ⟩) .Predicate.pred y
+    go (w , hx , ky) = w , P .Predicate.pred-≃ (X .Setoid.sym hx) p , ky
+
 -- Big joins
 ⋁ : ∀ {X} (I : Set 0ℓ) → (I → Predicate X) → Predicate X
 ⋁ I P .Predicate.pred x = ∃ I λ i → P i .Predicate.pred x
