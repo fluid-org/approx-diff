@@ -404,6 +404,22 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
     out-in-el (inj₁ p) _ _ x ι = id-left
     out-in-el (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x ι = out-in-fib Q ρd pQ pρ x ι
 
+  -- Reverse-inclusion naturality, derived from the inverse laws.
+  out-fib-natural : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+                    (d : ∀ i → DecoAssign (ρ̄ i))
+                    (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+                    (t : W ∣ Q ∣ ρ̄) {ι₁ ι₂ : fib-Gl Q d pQ pd t .carrier .idx .Carrier}
+                    (e : _≈s_ (fib-Gl Q d pQ pd t .carrier .idx) ι₁ ι₂) →
+                    (fib-Gl Q d pQ pd t .carrier .fam .subst e ∘ out-fib Q d pQ pd t ι₁)
+                      ≈ out-fib Q d pQ pd t ι₂
+  out-fib-natural Q d pQ pd t {ι₁} {ι₂} e =
+    ≈-sym (≈-trans (≈-sym id-right)
+          (≈-trans (∘-cong ≈-refl (≈-sym (in-out-fib Q d pQ pd t ι₁)))
+          (≈-trans (∘-cong ≈-refl (∘-cong (≈-sym (in-fib-natural Q d pQ pd t e)) ≈-refl))
+          (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (out-in-fib Q d pQ pd t ι₂) ≈-refl) id-left))))))
+
   -- The inclusion of a fibre's carrier at its tree, over the constant index map.
   tree-in : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
             Mor (fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier) (μObj P' δ)
@@ -413,6 +429,30 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
   tree-in P' pP t .famf ._⇒f_.natural {ι₁} {ι₂} e =
     ≈-trans (in-fib-natural P' (λ i → lift tt) pP (λ i → lift tt) t e)
             (≈-sym (≈-trans (∘-cong (fib-refl* P' (λ i → lift tt) t) ≈-refl) id-left))
+
+  -- The reverse of tree-in over the singleton at a tree, landing at the canonical index.
+  tree-out : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
+             Mor simple[ PS.𝟙 , μObj P' δ .fam .fm t ]
+                 (fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier)
+  tree-out P' pP t .idxf .PS._⇒_.func _ = fib-ix P' (λ i → lift tt) pP (λ i → lift tt) t
+  tree-out P' pP t .idxf .PS._⇒_.func-resp-≈ _ =
+    fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier .idx .isEquivalence .refl
+  tree-out P' pP t .famf ._⇒f_.transf _ =
+    out-fib P' (λ i → lift tt) pP (λ i → lift tt) t
+            (fib-ix P' (λ i → lift tt) pP (λ i → lift tt) t)
+  tree-out P' pP t .famf ._⇒f_.natural _ =
+    ≈-trans id-right (≈-sym (out-fib-natural P' (λ i → lift tt) pP (λ i → lift tt) t _))
+
+  -- tree-in after tree-out is the singleton inclusion at the tree.
+  tree-in-out : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
+                Fam𝒞._≈_ (Fam𝒞._∘_ (tree-in P' pP t) (tree-out P' pP t))
+                         (elem-in (μObj P' δ) t)
+  tree-in-out P' pP t ._≃_.idxf-eq .PS._≃m_.func-eq _ = W-≈-refl t
+  tree-in-out P' pP t ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+    ≈-trans (∘-cong (fib-refl* P' (λ i → lift tt) t)
+                    (≈-trans id-left
+                             (in-out-fib P' (λ i → lift tt) pP (λ i → lift tt) t _)))
+            id-left
 
   -- The μ-carrier decorated with the closed join over trees of the fibre predicates. The closure
   -- is needed because an element of the carrier factors through a single tree's inclusion only
