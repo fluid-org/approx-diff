@@ -445,3 +445,641 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
                (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
                (⊑-trans ([]-cong (G .fmor-cong (Fam𝒞.≈-sym (Fam𝒞-P.pair-p₂ _ _))))
                (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))))))
+
+    -- A parallel action after the strong action fuses componentwise.
+    pm-spm : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (h : y₁ ⇒ z₁) (k : y₂ ⇒ z₂)
+             (u : prod w x₁ ⇒ y₁) (v : prod w x₂ ⇒ y₂) →
+             (prod-m h k ∘ strong-prod-m u v) ≈ strong-prod-m (h ∘ u) (k ∘ v)
+    pm-spm h k u v =
+      ≈-trans (pair-natural _ _ _)
+      (pair-cong
+        (≈-trans (assoc _ _ _)
+                 (≈-trans (∘-cong ≈-refl (pair-p₁ _ _)) (≈-sym (assoc _ _ _))))
+        (≈-trans (assoc _ _ _)
+                 (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))
+
+    module GlCP = Gl.coproducts coproducts
+    module CP = HasCoproducts coproducts
+
+  -- The singleton fold preservation: five mutually recursive inclusions,
+  -- mirroring the fold's own recursion, each at a fixed index of the paired
+  -- carrier so that the γ-dependent targets of the reindexing layer are fixed.
+  module presv
+      (algP : (Γg [×] fobj-Gl P pP δA' δPA⁺) .pred ⊑ (Ag .pred [ G .fmor alg ]))
+      where
+
+    fold-sing : ∀ (t : Tδ.W ∣ P ∣ (λ i → inj₁ i)) (γ : Γc .idx .Carrier)
+                (ι : Mδ.fib-Gl P (λ i → lift tt) pP (λ i → lift tt) t .carrier .idx .Carrier) →
+                ((Γg [×] Mδ.fib-Gl P (λ i → lift tt) pP (λ i → lift tt) t) .pred
+                   [ G .fmor (elem-in (prodC (Mδ.fib-Gl P (λ i → lift tt) pP (λ i → lift tt) t
+                                                .carrier)) (γ , ι)) ])
+                ⊑ (Ag .pred
+                     [ G .fmor (Fam𝒞._∘_ (fold-mor t)
+                                 (elem-in (prodC (Mδ.fib-Gl P (λ i → lift tt) pP
+                                                    (λ i → lift tt) t .carrier)) (γ , ι))) ])
+
+    fold-shape-sing : ∀ (Q : Poly (suc n)) (pQ : PolyPred Q)
+                      (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) (γ : Γc .idx .Carrier)
+                      (ι : Mδ.fib-shape-Gl Q dP pQ pdP x .carrier .idx .Carrier) →
+                      ((Γg [×] Mδ.fib-shape-Gl Q dP pQ pdP x) .pred
+                         [ G .fmor (elem-in (prodC (Mδ.fib-shape-Gl Q dP pQ pdP x .carrier))
+                                            (γ , ι)) ])
+                      ⊑ (fobj-Gl Q pQ δA' δPA⁺ .pred
+                           [ G .fmor (Fam𝒞._∘_ (fold-shape-mor Q pQ x)
+                                       (elem-in (prodC (Mδ.fib-shape-Gl Q dP pQ pdP x .carrier))
+                                                (γ , ι))) ])
+
+    fold-reindex-sing : ∀ {k} (Q : Poly (suc k)) {ρ : Fin k → Fin n ⊎ Sort n}
+                        {ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)}
+                        {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → FD.TA'.DecoAssign (ρ' v)}
+                        {fm : FD.FMor ρ ρ' d d'} (pQ : PolyPred Q) {pd pd'}
+                        (pmf : PredF fm pd pd') (t : Tδ.W ∣ Q ∣ ρ) (γ : Γc .idx .Carrier)
+                        (ι : Mδ.fib-Gl Q d pQ pd t .carrier .idx .Carrier) →
+                        ((Γg [×] Mδ.fib-Gl Q d pQ pd t) .pred
+                           [ G .fmor (elem-in (prodC (Mδ.fib-Gl Q d pQ pd t .carrier)) (γ , ι)) ])
+                        ⊑ (MA'.fib-Gl Q d' pQ pd' (FD.fold-reindex γ fm t) .pred
+                             [ G .fmor (Fam𝒞._∘_
+                                 (MA'.fib-out Q d' pQ pd' (FD.fold-reindex γ fm t))
+                                 simplef[ PS.idS PS.𝟙 ,
+                                          FD.fold-reindex-fam γ fm t
+                                            ∘ prod-m (id _) (Mδ.in-fib Q d pQ pd t ι) ]) ])
+
+    fold-reindex-shape-sing : ∀ {j} (R : Poly j) {ηA : Fin j → Fin n ⊎ Sort n}
+                              {ηB : Fin j → Fin (suc n) ⊎ Sort (suc n)}
+                              {dA : ∀ v → Tδ.DecoAssign (ηA v)}
+                              {dB : ∀ v → FD.TA'.DecoAssign (ηB v)}
+                              {fm : FD.FMor ηA ηB dA dB} (pR : PolyPred R) {pdA pdB}
+                              (pmf : PredF fm pdA pdB) (a : Tδ.⟦ ∣ R ∣ ⟧shape ηA)
+                              (γ : Γc .idx .Carrier)
+                              (ι : Mδ.fib-shape-Gl R dA pR pdA a .carrier .idx .Carrier) →
+                              ((Γg [×] Mδ.fib-shape-Gl R dA pR pdA a) .pred
+                                 [ G .fmor (elem-in (prodC (Mδ.fib-shape-Gl R dA pR pdA a
+                                                              .carrier)) (γ , ι)) ])
+                              ⊑ (MA'.fib-shape-Gl R dB pR pdB (FD.fold-reindex-shape γ R fm a)
+                                   .pred
+                                   [ G .fmor (Fam𝒞._∘_
+                                       (MA'.shape-out R dB pR pdB
+                                         (FD.fold-reindex-shape γ R fm a))
+                                       simplef[ PS.idS PS.𝟙 ,
+                                                FD.fold-reindex-shape-fam γ R fm a
+                                                  ∘ prod-m (id _)
+                                                      (Mδ.in-shape R dA pR pdA a ι) ]) ])
+
+    fold-apply-sing : ∀ {k} {ρ : Fin k → Fin n ⊎ Sort n}
+                      {ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)}
+                      {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → FD.TA'.DecoAssign (ρ' v)}
+                      {fm : FD.FMor ρ ρ' d d'} {pd pd'}
+                      (pmf : PredF fm pd pd') (v : Fin k) (a : Tδ.El (ρ v))
+                      (γ : Γc .idx .Carrier)
+                      (ι : Mδ.fib-el-Gl (ρ v) (d v) (pd v) a .carrier .idx .Carrier) →
+                      ((Γg [×] Mδ.fib-el-Gl (ρ v) (d v) (pd v) a) .pred
+                         [ G .fmor (elem-in (prodC (Mδ.fib-el-Gl (ρ v) (d v) (pd v) a
+                                                      .carrier)) (γ , ι)) ])
+                      ⊑ (MA'.fib-el-Gl (ρ' v) (d' v) (pd' v) (FD.fold-apply γ fm v a) .pred
+                           [ G .fmor (Fam𝒞._∘_
+                               (MA'.el-out (ρ' v) (d' v) (pd' v) (FD.fold-apply γ fm v a))
+                               simplef[ PS.idS PS.𝟙 ,
+                                        FD.fold-apply-fam γ fm v a
+                                          ∘ prod-m (id _) (Mδ.in-el (ρ v) (d v) (pd v) a ι) ]) ])
+
+    fold-sing (Tδ.sup x) γ ι =
+      ⊑-trans (&&-isMeet .IsMeet.⟨_,_⟩ legΓ legF)
+      (⊑-trans []-&&
+      (⊑-trans (algP [ G .fmor pe ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               ([]-cong (G .fmor-cong finsq))))))
+      where
+        esing = elem-in (prodC (Mδ.fib-Gl P (λ i → lift tt) pP (λ i → lift tt) (Tδ.sup x)
+                                  .carrier)) (γ , ι)
+        pe = Fam𝒞._∘_ (Fam𝒞-P.pair Fam𝒞-P.p₁ (fold-shape-mor P pP x)) esing
+        legΓ = ⊑-trans []-&&-dist
+               (⊑-trans (&&-isMeet .IsMeet.π₁)
+               (⊑-trans ([]-comp _ _)
+               (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               (⊑-trans ([]-cong (G .fmor-cong
+                           (Fam𝒞.≈-trans
+                             (Fam𝒞.∘-cong (Fam𝒞.≈-sym (Fam𝒞-P.pair-p₁ _ _)) Fam𝒞.≈-refl)
+                             (Fam𝒞.assoc _ _ _))))
+               (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))))
+        legF = ⊑-trans (fold-shape-sing P pP x γ ι)
+               (⊑-trans ([]-cong (G .fmor-cong
+                           (Fam𝒞.≈-trans
+                             (Fam𝒞.∘-cong (Fam𝒞.≈-sym (Fam𝒞-P.pair-p₂ _ _)) Fam𝒞.≈-refl)
+                             (Fam𝒞.assoc _ _ _))))
+               (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _)))
+        sup-sq : Fam𝒞._≈_ (Fam𝒞._∘_ alg (Fam𝒞-P.pair Fam𝒞-P.p₁ (fold-shape-mor P pP x)))
+                          (fold-mor (Tδ.sup x))
+        sup-sq ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , ι≈) =
+          FD.fold-idx-resp γ≈ {Tδ.sup x} {Tδ.sup x}
+            (Tδ.W-≈-refl {Q = ∣ P ∣} {ρ = λ i → inj₁ i} (Tδ.sup x))
+        sup-sq ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (Ag .carrier .fam .refl*) id-left)
+          (≈-trans id-left
+          (≈-sym (≈-trans (assoc _ _ _)
+                 (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
+                          (∘-cong ≈-refl
+                            (pair-cong (≈-trans (pair-p₁ _ _) id-left) ≈-refl))))))
+        finsq = Fam𝒞.≈-trans (Fam𝒞.≈-sym (Fam𝒞.assoc _ _ _)) (Fam𝒞.∘-cong sup-sq Fam𝒞.≈-refl)
+
+    fold-shape-sing (const A') pA' a γ ι =
+      ⊑-trans ((&&-isMeet .IsMeet.π₂)
+                 [ G .fmor (elem-in (prodC (Mδ.fib-shape-Gl (const A') dP pA' pdP a .carrier))
+                                    (γ , ι)) ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               ([]-cong (G .fmor-cong SQc))))))
+      where
+        SQc : Fam𝒞._≈_ (Fam𝒞._∘_ (elem-in A' a)
+                          (Fam𝒞._∘_ Fam𝒞-P.p₂
+                            (elem-in (prodC (Mδ.fib-shape-Gl (const A') dP pA' pdP a .carrier))
+                                     (γ , ι))))
+                       (Fam𝒞._∘_ (fold-shape-mor (const A') pA' a)
+                          (elem-in (prodC (Mδ.fib-shape-Gl (const A') dP pA' pdP a .carrier))
+                                   (γ , ι)))
+        SQc ._≃_.idxf-eq .PS._≃m_.func-eq _ = A' .idx .isEquivalence .refl
+        SQc ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (A' .fam .refl*)
+                          (≈-trans id-left (≈-trans id-left (≈-trans id-left id-right))))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans id-right (≈-trans (∘-cong ≈-refl prod-m-id) id-right)))))
+
+    fold-shape-sing (var Fin.zero) pQ t' γ ι =
+      ⊑-trans (fold-sing t' γ ι)
+              ([]-cong (G .fmor-cong
+                (Fam𝒞.∘-cong (Fam𝒞.≈-sym (vz-mor pQ t')) Fam𝒞.≈-refl)))
+
+    fold-shape-sing (var (Fin.suc i)) pQ a γ ι =
+      ⊑-trans ((&&-isMeet .IsMeet.π₂)
+                 [ G .fmor (elem-in (prodC (Mδ.fib-shape-Gl (var (Fin.suc i)) dP pQ pdP a
+                                              .carrier)) (γ , ι)) ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               ([]-cong (G .fmor-cong SQvs))))))
+      where
+        SQvs : Fam𝒞._≈_ (Fam𝒞._∘_ (elem-in (δ i) a)
+                           (Fam𝒞._∘_ Fam𝒞-P.p₂
+                             (elem-in (prodC (Mδ.fib-shape-Gl (var (Fin.suc i)) dP pQ pdP a
+                                                .carrier)) (γ , ι))))
+                        (Fam𝒞._∘_ (fold-shape-mor (var (Fin.suc i)) pQ a)
+                           (elem-in (prodC (Mδ.fib-shape-Gl (var (Fin.suc i)) dP pQ pdP a
+                                              .carrier)) (γ , ι)))
+        SQvs ._≃_.idxf-eq .PS._≃m_.func-eq _ = δ i .idx .isEquivalence .refl
+        SQvs ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (δ i .fam .refl*)
+                          (≈-trans id-left (≈-trans id-left (≈-trans id-left id-right))))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans id-right (≈-trans (∘-cong ≈-refl prod-m-id) id-right)))))
+
+    fold-shape-sing (Q₁ + Q₂) (pQ₁ , pQ₂) (inj₁ x) γ ι =
+      ⊑-trans (node-sing (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x) (fobj-Gl Q₁ pQ₁ δA' δPA⁺) γ ι
+                 (Fam𝒞._∘_ (fold-shape-mor Q₁ pQ₁ x)
+                    (elem-in (prodC (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x .carrier)) (γ , ι)))
+                 (fold-shape-sing Q₁ pQ₁ x γ ι))
+      (⊑-trans ((GlCP.in₁ {Lf-Gl (fobj-Gl Q₁ pQ₁ δA' δPA⁺)} {Lf-Gl (fobj-Gl Q₂ pQ₂ δA' δPA⁺)}
+                   .presv)
+                  [ G .fmor (sing-under-root
+                      (Fam𝒞._∘_ (fold-shape-mor Q₁ pQ₁ x)
+                         (elem-in (prodC (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x .carrier))
+                                  (γ , ι)))) ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               ([]-cong (G .fmor-cong SQp₁)))))
+      where
+        SQp₁ : Fam𝒞._≈_ (Fam𝒞._∘_ CP.in₁
+                           (sing-under-root
+                             (Fam𝒞._∘_ (fold-shape-mor Q₁ pQ₁ x)
+                                (elem-in (prodC (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x .carrier))
+                                         (γ , ι)))))
+                        (Fam𝒞._∘_ (fold-shape-mor (Q₁ + Q₂) (pQ₁ , pQ₂) (inj₁ x))
+                           (elem-in (prodC (Mδ.fib-shape-Gl (Q₁ + Q₂) dP (pQ₁ , pQ₂) pdP
+                                              (inj₁ x) .carrier)) (γ , ι)))
+        SQp₁ ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+          R.fobj μObj Q₁ (extend δ (Ag .carrier)) .idx .isEquivalence .refl
+        SQp₁ ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (≈-trans (Lmap-cong (R.fobj μObj Q₁ (extend δ (Ag .carrier))
+                                                 .fam .refl*)) Lmap-id)
+                          (≈-trans id-left id-left))
+          (≈-trans id-left
+          (≈-trans (under-root-cong (≈-trans id-left id-right))
+          (≈-sym (≈-trans id-left
+                 (≈-trans id-right
+                          (under-root-pre (id _)
+                            (Mδ.in-out-shape Q₁ dP pQ₁ pdP x ι)
+                            (Mδ.out-in-shape Q₁ dP pQ₁ pdP x ι)
+                            (FD.fold-shape-fam Q₁ γ x)))))))
+
+    fold-shape-sing (Q₁ + Q₂) (pQ₁ , pQ₂) (inj₂ y) γ ι =
+      ⊑-trans (node-sing (Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y) (fobj-Gl Q₂ pQ₂ δA' δPA⁺) γ ι
+                 (Fam𝒞._∘_ (fold-shape-mor Q₂ pQ₂ y)
+                    (elem-in (prodC (Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y .carrier)) (γ , ι)))
+                 (fold-shape-sing Q₂ pQ₂ y γ ι))
+      (⊑-trans ((GlCP.in₂ {Lf-Gl (fobj-Gl Q₁ pQ₁ δA' δPA⁺)} {Lf-Gl (fobj-Gl Q₂ pQ₂ δA' δPA⁺)}
+                   .presv)
+                  [ G .fmor (sing-under-root
+                      (Fam𝒞._∘_ (fold-shape-mor Q₂ pQ₂ y)
+                         (elem-in (prodC (Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y .carrier))
+                                  (γ , ι)))) ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               ([]-cong (G .fmor-cong SQp₂)))))
+      where
+        SQp₂ : Fam𝒞._≈_ (Fam𝒞._∘_ CP.in₂
+                           (sing-under-root
+                             (Fam𝒞._∘_ (fold-shape-mor Q₂ pQ₂ y)
+                                (elem-in (prodC (Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y .carrier))
+                                         (γ , ι)))))
+                        (Fam𝒞._∘_ (fold-shape-mor (Q₁ + Q₂) (pQ₁ , pQ₂) (inj₂ y))
+                           (elem-in (prodC (Mδ.fib-shape-Gl (Q₁ + Q₂) dP (pQ₁ , pQ₂) pdP
+                                              (inj₂ y) .carrier)) (γ , ι)))
+        SQp₂ ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+          R.fobj μObj Q₂ (extend δ (Ag .carrier)) .idx .isEquivalence .refl
+        SQp₂ ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (≈-trans (Lmap-cong (R.fobj μObj Q₂ (extend δ (Ag .carrier))
+                                                 .fam .refl*)) Lmap-id)
+                          (≈-trans id-left id-left))
+          (≈-trans id-left
+          (≈-trans (under-root-cong (≈-trans id-left id-right))
+          (≈-sym (≈-trans id-left
+                 (≈-trans id-right
+                          (under-root-pre (id _)
+                            (Mδ.in-out-shape Q₂ dP pQ₂ pdP y ι)
+                            (Mδ.out-in-shape Q₂ dP pQ₂ pdP y ι)
+                            (FD.fold-shape-fam Q₂ γ y)))))))
+
+    fold-shape-sing (Q₁ × Q₂) (pQ₁ , pQ₂) (x , y) γ (ι₁ , ι₂) =
+      ⊑-trans (node-sing (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x [×] Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y)
+                 (fobj-Gl Q₁ pQ₁ δA' δPA⁺ [×] fobj-Gl Q₂ pQ₂ δA' δPA⁺) γ (ι₁ , ι₂) hs×
+                 (strong-pair-sing (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x)
+                                   (Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y)
+                                   (fobj-Gl Q₁ pQ₁ δA' δPA⁺) (fobj-Gl Q₂ pQ₂ δA' δPA⁺)
+                                   γ ι₁ ι₂ hs₁ hs₂
+                                   (fold-shape-sing Q₁ pQ₁ x γ ι₁)
+                                   (fold-shape-sing Q₂ pQ₂ y γ ι₂)))
+              ([]-cong (G .fmor-cong SQ×))
+      where
+        hs₁ = Fam𝒞._∘_ (fold-shape-mor Q₁ pQ₁ x)
+                       (elem-in (prodC (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x .carrier)) (γ , ι₁))
+        hs₂ = Fam𝒞._∘_ (fold-shape-mor Q₂ pQ₂ y)
+                       (elem-in (prodC (Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y .carrier)) (γ , ι₂))
+        hs× = Fam𝒞-P.pair (Fam𝒞._∘_ hs₁ simplef[ PS.idS PS.𝟙 , prod-m (id _) p₁ ])
+                          (Fam𝒞._∘_ hs₂ simplef[ PS.idS PS.𝟙 , prod-m (id _) p₂ ])
+        SQ× : Fam𝒞._≈_ (sing-under-root hs×)
+                       (Fam𝒞._∘_ (fold-shape-mor (Q₁ × Q₂) (pQ₁ , pQ₂) (x , y))
+                          (elem-in (prodC (Mδ.fib-shape-Gl (Q₁ × Q₂) dP (pQ₁ , pQ₂) pdP
+                                             (x , y) .carrier)) (γ , (ι₁ , ι₂))))
+        SQ× ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+          R.fobj μObj Q₁ (extend δ (Ag .carrier)) .idx .isEquivalence .refl ,
+          R.fobj μObj Q₂ (extend δ (Ag .carrier)) .idx .isEquivalence .refl
+        SQ× ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong
+                    (≈-trans (Lmap-cong
+                       (≈-trans (prod-m-cong
+                                  (R.fobj μObj Q₁ (extend δ (Ag .carrier)) .fam .refl*)
+                                  (R.fobj μObj Q₂ (extend δ (Ag .carrier)) .fam .refl*))
+                                prod-m-id))
+                       Lmap-id)
+                    (under-root-cong
+                      (pair-cong
+                        (≈-trans id-left (∘-cong (≈-trans id-left id-right)
+                                                 (pair-cong id-left ≈-refl)))
+                        (≈-trans id-left (∘-cong (≈-trans id-left id-right)
+                                                 (pair-cong id-left ≈-refl))))))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans id-right
+                 (≈-trans (under-root-pre (id _)
+                            (pm-iso (Mδ.in-out-shape Q₁ dP pQ₁ pdP x ι₁)
+                                    (Mδ.in-out-shape Q₂ dP pQ₂ pdP y ι₂))
+                            (pm-iso (Mδ.out-in-shape Q₁ dP pQ₁ pdP x ι₁)
+                                    (Mδ.out-in-shape Q₂ dP pQ₂ pdP y ι₂))
+                            (strong-prod-m (FD.fold-shape-fam Q₁ γ x)
+                                           (FD.fold-shape-fam Q₂ γ y)))
+                          (under-root-cong
+                            (spm-fusion (FD.fold-shape-fam Q₁ γ x) (FD.fold-shape-fam Q₂ γ y)
+                                        (Mδ.in-shape Q₁ dP pQ₁ pdP x ι₁)
+                                        (Mδ.in-shape Q₂ dP pQ₂ pdP y ι₂))))))))
+
+    fold-shape-sing (μ Q'') pQ'' t γ ι =
+      ⊑-trans (fold-reindex-sing Q'' pQ'' pfbase t γ ι)
+      (⊑-trans ((unit (G .fmor (MA'.tree-in Q'' pQ'' (FD.fold-reindex γ FD.fbase t))))
+                  [ G .fmor u3 ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ((⊑-trans (⋁-isJoin .IsBigJoin.upper _ _ (FD.fold-reindex γ FD.fbase t))
+                         (𝐂-isClosure .IsClosureOp.unit))
+                  [ G .fmor (Fam𝒞._∘_ (MA'.tree-in Q'' pQ'' (FD.fold-reindex γ FD.fbase t))
+                                      u3) ]m)
+               ([]-cong (G .fmor-cong SQμ))))))
+      where
+        u3 = Fam𝒞._∘_ (MA'.fib-out Q'' (λ v → lift tt) pQ'' (λ v → lift tt)
+                         (FD.fold-reindex γ FD.fbase t))
+                      simplef[ PS.idS PS.𝟙 ,
+                               FD.fold-reindex-fam γ FD.fbase t
+                                 ∘ prod-m (id _)
+                                     (Mδ.in-fib Q'' dP pQ'' pdP t ι) ]
+        SQμ : Fam𝒞._≈_ (Fam𝒞._∘_ (MA'.tree-in Q'' pQ'' (FD.fold-reindex γ FD.fbase t)) u3)
+                       (Fam𝒞._∘_ (fold-shape-mor (μ Q'') pQ'' t)
+                          (elem-in (prodC (Mδ.fib-shape-Gl (μ Q'') dP pQ'' pdP t .carrier))
+                                   (γ , ι)))
+        SQμ ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+          FD.TA'.W-≈-refl (FD.fold-reindex γ FD.fbase t)
+        SQμ ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (FD.TA'.fib-refl* Q'' (λ v → lift tt) (FD.fold-reindex γ FD.fbase t))
+                          (≈-trans id-left
+                          (≈-trans (∘-cong ≈-refl id-left)
+                          (≈-trans (≈-sym (assoc _ _ _))
+                          (≈-trans (∘-cong (MA'.in-out-fib Q'' (λ v → lift tt) pQ''
+                                             (λ v → lift tt) (FD.fold-reindex γ FD.fbase t) _)
+                                           ≈-refl)
+                                   id-left)))))
+          (≈-trans id-left (≈-sym (≈-trans id-left id-right)))
+
+    fold-reindex-sing Q {d' = d'} {fm = fm} pQ {pd' = pd'} pmf (Tδ.sup x) γ ι =
+      ⊑-trans (fold-reindex-shape-sing Q pQ (pfbind Q pQ pmf) x γ ι)
+              ([]-cong (G .fmor-cong
+                (Fam𝒞.∘-cong
+                  (Fam𝒞.≈-sym (MA'.fib-shape-out Q d' pQ pd'
+                                 (FD.fold-reindex-shape γ Q (FD.fbind Q fm) x)))
+                  Fam𝒞.≈-refl)))
+
+    fold-reindex-shape-sing (const A') {dA = dA} {dB = dB} {fm = fm} pA'
+                            {pdA = pdA} {pdB = pdB} pmf a γ ι =
+      ⊑-trans ((&&-isMeet .IsMeet.π₂)
+                 [ G .fmor (elem-in (prodC (Mδ.fib-shape-Gl (const A') dA pA' pdA a .carrier))
+                                    (γ , ι)) ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               ([]-cong (G .fmor-cong SQ4c))))
+      where
+        SQ4c : Fam𝒞._≈_ (Fam𝒞._∘_ Fam𝒞-P.p₂
+                           (elem-in (prodC (Mδ.fib-shape-Gl (const A') dA pA' pdA a .carrier))
+                                    (γ , ι)))
+                        (Fam𝒞._∘_ (MA'.shape-out (const A') dB pA' pdB a)
+                           simplef[ PS.idS PS.𝟙 ,
+                                    FD.fold-reindex-shape-fam γ (const A') fm a
+                                      ∘ prod-m (id _)
+                                          (Mδ.in-shape (const A') dA pA' pdA a ι) ])
+        SQ4c ._≃_.idxf-eq .PS._≃m_.func-eq e = e
+        SQ4c ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (≈-trans id-left (≈-trans id-left id-right))
+          (≈-sym (≈-trans id-left
+                 (≈-trans id-left (≈-trans (∘-cong ≈-refl prod-m-id) id-right))))
+
+    fold-reindex-shape-sing (var v) {dB = dB} {fm = fm} pR {pdB = pdB} pmf a γ ι =
+      ⊑-trans (fold-apply-sing pmf v a γ ι)
+              ([]-cong (G .fmor-cong
+                (Fam𝒞.∘-cong
+                  (Fam𝒞.≈-sym (MA'.shape-el-out v dB pR pdB (FD.fold-apply γ fm v a)))
+                  Fam𝒞.≈-refl)))
+
+    fold-reindex-shape-sing (P' + Q') {dA = dA} {dB = dB} {fm = fm} (pP' , pQ')
+                            {pdA = pdA} {pdB = pdB} pmf (inj₁ a) γ ι =
+      ⊑-trans (node-sing (Mδ.fib-shape-Gl P' dA pP' pdA a)
+                 (MA'.fib-shape-Gl P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a)) γ ι hs
+                 (fold-reindex-shape-sing P' pP' pmf a γ ι))
+              ([]-cong (G .fmor-cong SQ4p₁))
+      where
+        hs = Fam𝒞._∘_ (MA'.shape-out P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a))
+                      simplef[ PS.idS PS.𝟙 ,
+                               FD.fold-reindex-shape-fam γ P' fm a
+                                 ∘ prod-m (id _) (Mδ.in-shape P' dA pP' pdA a ι) ]
+        SQ4p₁ : Fam𝒞._≈_ (sing-under-root hs)
+                         (Fam𝒞._∘_ (MA'.shape-out (P' + Q') dB (pP' , pQ') pdB
+                                      (inj₁ (FD.fold-reindex-shape γ P' fm a)))
+                            simplef[ PS.idS PS.𝟙 ,
+                                     FD.fold-reindex-shape-fam γ (P' + Q') fm (inj₁ a)
+                                       ∘ prod-m (id _)
+                                           (Mδ.in-shape (P' + Q') dA (pP' , pQ') pdA
+                                              (inj₁ a) ι) ])
+        SQ4p₁ ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+          MA'.fib-shape-Gl P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a)
+            .carrier .idx .isEquivalence .refl
+        SQ4p₁ ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (≈-trans (Lmap-cong (MA'.fib-shape-Gl P' dB pP' pdB
+                                                 (FD.fold-reindex-shape γ P' fm a)
+                                                 .carrier .fam .refl*))
+                                   Lmap-id)
+                          (under-root-cong id-left))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans (∘-cong ≈-refl
+                            (under-root-pre (id _)
+                              (Mδ.in-out-shape P' dA pP' pdA a ι)
+                              (Mδ.out-in-shape P' dA pP' pdA a ι)
+                              (FD.fold-reindex-shape-fam γ P' fm a)))
+                          (under-root-post
+                            (MA'.out-in-shape P' dB pP' pdB
+                              (FD.fold-reindex-shape γ P' fm a)
+                              (MA'.shape-ix P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a)))
+                            (MA'.in-out-shape P' dB pP' pdB
+                              (FD.fold-reindex-shape γ P' fm a)
+                              (MA'.shape-ix P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a)))
+                            _)))))
+
+    fold-reindex-shape-sing (P' + Q') {dA = dA} {dB = dB} {fm = fm} (pP' , pQ')
+                            {pdA = pdA} {pdB = pdB} pmf (inj₂ b) γ ι =
+      ⊑-trans (node-sing (Mδ.fib-shape-Gl Q' dA pQ' pdA b)
+                 (MA'.fib-shape-Gl Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b)) γ ι hs
+                 (fold-reindex-shape-sing Q' pQ' pmf b γ ι))
+              ([]-cong (G .fmor-cong SQ4p₂))
+      where
+        hs = Fam𝒞._∘_ (MA'.shape-out Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b))
+                      simplef[ PS.idS PS.𝟙 ,
+                               FD.fold-reindex-shape-fam γ Q' fm b
+                                 ∘ prod-m (id _) (Mδ.in-shape Q' dA pQ' pdA b ι) ]
+        SQ4p₂ : Fam𝒞._≈_ (sing-under-root hs)
+                         (Fam𝒞._∘_ (MA'.shape-out (P' + Q') dB (pP' , pQ') pdB
+                                      (inj₂ (FD.fold-reindex-shape γ Q' fm b)))
+                            simplef[ PS.idS PS.𝟙 ,
+                                     FD.fold-reindex-shape-fam γ (P' + Q') fm (inj₂ b)
+                                       ∘ prod-m (id _)
+                                           (Mδ.in-shape (P' + Q') dA (pP' , pQ') pdA
+                                              (inj₂ b) ι) ])
+        SQ4p₂ ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+          MA'.fib-shape-Gl Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b)
+            .carrier .idx .isEquivalence .refl
+        SQ4p₂ ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (≈-trans (Lmap-cong (MA'.fib-shape-Gl Q' dB pQ' pdB
+                                                 (FD.fold-reindex-shape γ Q' fm b)
+                                                 .carrier .fam .refl*))
+                                   Lmap-id)
+                          (under-root-cong id-left))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans (∘-cong ≈-refl
+                            (under-root-pre (id _)
+                              (Mδ.in-out-shape Q' dA pQ' pdA b ι)
+                              (Mδ.out-in-shape Q' dA pQ' pdA b ι)
+                              (FD.fold-reindex-shape-fam γ Q' fm b)))
+                          (under-root-post
+                            (MA'.out-in-shape Q' dB pQ' pdB
+                              (FD.fold-reindex-shape γ Q' fm b)
+                              (MA'.shape-ix Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b)))
+                            (MA'.in-out-shape Q' dB pQ' pdB
+                              (FD.fold-reindex-shape γ Q' fm b)
+                              (MA'.shape-ix Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b)))
+                            _)))))
+
+    fold-reindex-shape-sing (P' × Q') {dA = dA} {dB = dB} {fm = fm} (pP' , pQ')
+                            {pdA = pdA} {pdB = pdB} pmf (a , b) γ (ι₁ , ι₂) =
+      ⊑-trans (node-sing (Mδ.fib-shape-Gl P' dA pP' pdA a [×] Mδ.fib-shape-Gl Q' dA pQ' pdA b)
+                 (MA'.fib-shape-Gl P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a)
+                    [×] MA'.fib-shape-Gl Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b))
+                 γ (ι₁ , ι₂) hs×
+                 (strong-pair-sing (Mδ.fib-shape-Gl P' dA pP' pdA a)
+                                   (Mδ.fib-shape-Gl Q' dA pQ' pdA b)
+                                   (MA'.fib-shape-Gl P' dB pP' pdB
+                                      (FD.fold-reindex-shape γ P' fm a))
+                                   (MA'.fib-shape-Gl Q' dB pQ' pdB
+                                      (FD.fold-reindex-shape γ Q' fm b))
+                                   γ ι₁ ι₂ hsP hsQ
+                                   (fold-reindex-shape-sing P' pP' pmf a γ ι₁)
+                                   (fold-reindex-shape-sing Q' pQ' pmf b γ ι₂)))
+              ([]-cong (G .fmor-cong SQ4×))
+      where
+        hsP = Fam𝒞._∘_ (MA'.shape-out P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a))
+                       simplef[ PS.idS PS.𝟙 ,
+                                FD.fold-reindex-shape-fam γ P' fm a
+                                  ∘ prod-m (id _) (Mδ.in-shape P' dA pP' pdA a ι₁) ]
+        hsQ = Fam𝒞._∘_ (MA'.shape-out Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b))
+                       simplef[ PS.idS PS.𝟙 ,
+                                FD.fold-reindex-shape-fam γ Q' fm b
+                                  ∘ prod-m (id _) (Mδ.in-shape Q' dA pQ' pdA b ι₂) ]
+        hs× = Fam𝒞-P.pair (Fam𝒞._∘_ hsP simplef[ PS.idS PS.𝟙 , prod-m (id _) p₁ ])
+                          (Fam𝒞._∘_ hsQ simplef[ PS.idS PS.𝟙 , prod-m (id _) p₂ ])
+        SQ4× : Fam𝒞._≈_ (sing-under-root hs×)
+                        (Fam𝒞._∘_ (MA'.shape-out (P' × Q') dB (pP' , pQ') pdB
+                                     (FD.fold-reindex-shape γ P' fm a ,
+                                      FD.fold-reindex-shape γ Q' fm b))
+                           simplef[ PS.idS PS.𝟙 ,
+                                    FD.fold-reindex-shape-fam γ (P' × Q') fm (a , b)
+                                      ∘ prod-m (id _)
+                                          (Mδ.in-shape (P' × Q') dA (pP' , pQ') pdA
+                                             (a , b) (ι₁ , ι₂)) ])
+        SQ4× ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+          MA'.fib-shape-Gl P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a)
+            .carrier .idx .isEquivalence .refl ,
+          MA'.fib-shape-Gl Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b)
+            .carrier .idx .isEquivalence .refl
+        SQ4× ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (≈-trans (Lmap-cong
+                             (≈-trans (prod-m-cong
+                                        (MA'.fib-shape-Gl P' dB pP' pdB
+                                           (FD.fold-reindex-shape γ P' fm a)
+                                           .carrier .fam .refl*)
+                                        (MA'.fib-shape-Gl Q' dB pQ' pdB
+                                           (FD.fold-reindex-shape γ Q' fm b)
+                                           .carrier .fam .refl*))
+                                      prod-m-id))
+                             Lmap-id)
+                          (under-root-cong
+                            (pair-cong
+                              (≈-trans id-left (∘-cong id-left (pair-cong id-left ≈-refl)))
+                              (≈-trans id-left (∘-cong id-left (pair-cong id-left ≈-refl))))))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans (∘-cong ≈-refl
+                            (under-root-pre (id _)
+                              (pm-iso (Mδ.in-out-shape P' dA pP' pdA a ι₁)
+                                      (Mδ.in-out-shape Q' dA pQ' pdA b ι₂))
+                              (pm-iso (Mδ.out-in-shape P' dA pP' pdA a ι₁)
+                                      (Mδ.out-in-shape Q' dA pQ' pdA b ι₂))
+                              (strong-prod-m (FD.fold-reindex-shape-fam γ P' fm a)
+                                             (FD.fold-reindex-shape-fam γ Q' fm b))))
+                 (≈-trans (under-root-post
+                            (pm-iso (MA'.out-in-shape P' dB pP' pdB
+                                       (FD.fold-reindex-shape γ P' fm a)
+                                       (MA'.shape-ix P' dB pP' pdB
+                                          (FD.fold-reindex-shape γ P' fm a)))
+                                    (MA'.out-in-shape Q' dB pQ' pdB
+                                       (FD.fold-reindex-shape γ Q' fm b)
+                                       (MA'.shape-ix Q' dB pQ' pdB
+                                          (FD.fold-reindex-shape γ Q' fm b))))
+                            (pm-iso (MA'.in-out-shape P' dB pP' pdB
+                                       (FD.fold-reindex-shape γ P' fm a)
+                                       (MA'.shape-ix P' dB pP' pdB
+                                          (FD.fold-reindex-shape γ P' fm a)))
+                                    (MA'.in-out-shape Q' dB pQ' pdB
+                                       (FD.fold-reindex-shape γ Q' fm b)
+                                       (MA'.shape-ix Q' dB pQ' pdB
+                                          (FD.fold-reindex-shape γ Q' fm b))))
+                            _)
+                 (under-root-cong
+                   (≈-trans (∘-cong ≈-refl
+                              (spm-fusion (FD.fold-reindex-shape-fam γ P' fm a)
+                                          (FD.fold-reindex-shape-fam γ Q' fm b)
+                                          (Mδ.in-shape P' dA pP' pdA a ι₁)
+                                          (Mδ.in-shape Q' dA pQ' pdA b ι₂)))
+                            (pm-spm _ _ _ _))))))))
+
+    fold-reindex-shape-sing (μ Q₀) {dB = dB} {fm = fm} pQ₀ {pdB = pdB} pmf t γ ι =
+      ⊑-trans (fold-reindex-sing Q₀ pQ₀ pmf t γ ι)
+              ([]-cong (G .fmor-cong
+                (Fam𝒞.∘-cong
+                  (Fam𝒞.≈-sym (MA'.shape-fib-out Q₀ dB pQ₀ pdB (FD.fold-reindex γ fm t)))
+                  Fam𝒞.≈-refl)))
+
+    fold-apply-sing pfbase Fin.zero a γ ι =
+      ⊑-trans (fold-sing a γ ι)
+      (⊑-trans ([]-cong (G .fmor-cong (Fam𝒞.≈-sym SQ50)))
+      (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _)))
+      where
+        uE = Fam𝒞._∘_ (MA'.el-out (inj₁ Fin.zero) (lift tt) (lift tt) (FD.fold-idx γ a))
+                      simplef[ PS.idS PS.𝟙 ,
+                               FD.fold-apply-fam γ FD.fbase Fin.zero a
+                                 ∘ prod-m (id _)
+                                     (Mδ.in-el (Sh.η₀ ∣ P ∣ Fin.zero) (dP Fin.zero)
+                                        (pdP Fin.zero) a ι) ]
+        SQ50 : Fam𝒞._≈_ (Fam𝒞._∘_ (elem-in (Ag .carrier) (FD.fold-idx γ a)) uE)
+                        (Fam𝒞._∘_ (fold-mor a)
+                           (elem-in (prodC (Mδ.fib-Gl P (λ i → lift tt) pP (λ i → lift tt) a
+                                              .carrier)) (γ , ι)))
+        SQ50 ._≃_.idxf-eq .PS._≃m_.func-eq _ = Ag .carrier .idx .isEquivalence .refl
+        SQ50 ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (Ag .carrier .fam .refl*)
+                          (≈-trans id-left (≈-trans id-left (≈-trans id-left id-left))))
+          (≈-trans id-left (≈-sym (≈-trans id-left id-right)))
+
+    fold-apply-sing pfbase (Fin.suc i) a γ ι =
+      ⊑-trans ((&&-isMeet .IsMeet.π₂)
+                 [ G .fmor (elem-in (prodC (Mδ.fib-el-Gl (Sh.η₀ ∣ P ∣ (Fin.suc i))
+                                              (dP (Fin.suc i)) (pdP (Fin.suc i)) a
+                                              .carrier)) (γ , ι)) ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ([]-cong (G .fmor-cong (Fam𝒞.∘-cong Fam𝒞.≈-refl SQ5s)))
+      (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _)))))))
+      where
+        SQ5s : Fam𝒞._≈_ (Fam𝒞._∘_ Fam𝒞-P.p₂
+                           (elem-in (prodC (Mδ.fib-el-Gl (Sh.η₀ ∣ P ∣ (Fin.suc i))
+                                              (dP (Fin.suc i)) (pdP (Fin.suc i)) a
+                                              .carrier)) (γ , ι)))
+                        (Fam𝒞._∘_ (MA'.el-out (inj₁ (Fin.suc i)) (lift tt) (lift tt) a)
+                           simplef[ PS.idS PS.𝟙 ,
+                                    FD.fold-apply-fam γ FD.fbase (Fin.suc i) a
+                                      ∘ prod-m (id _)
+                                          (Mδ.in-el (Sh.η₀ ∣ P ∣ (Fin.suc i))
+                                             (dP (Fin.suc i)) (pdP (Fin.suc i)) a ι) ])
+        SQ5s ._≃_.idxf-eq .PS._≃m_.func-eq e = e
+        SQ5s ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (≈-trans id-left (≈-trans id-left id-right))
+          (≈-sym (≈-trans id-left
+                 (≈-trans id-left (≈-trans (∘-cong ≈-refl prod-m-id) id-right))))
+
+    fold-apply-sing (pfbind {d' = d'i} {fm = fm'} {pd' = pd'i} Q pQ' pmf) Fin.zero a γ ι =
+      ⊑-trans (fold-reindex-sing Q pQ' pmf a γ ι)
+              ([]-cong (G .fmor-cong
+                (Fam𝒞.∘-cong
+                  (Fam𝒞.≈-sym (MA'.el-fib-out Q d'i pQ' pd'i (FD.fold-reindex γ fm' a)))
+                  Fam𝒞.≈-refl)))
+
+    fold-apply-sing (pfbind Q pQ' pmf) (Fin.suc v) a γ ι = fold-apply-sing pmf v a γ ι
