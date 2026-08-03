@@ -15,6 +15,7 @@ open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import primitives using (Primitives)
 open import finite-product-functor using (preserve-chosen-terminal)
 open import indexed-family using (_[_])
+import language-syntax
 import fam
 import fam-mu-lifting.in-map
 import order-idempotent-supported
@@ -157,3 +158,26 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
     SupExp.exponentials (λ {X} {Y} pY → SupExp-pointed {X} {Y} pY)
     𝒞𝟙ty 𝒞unit-pt 𝒞𝟙ty-pt model sort-pt
     public
+
+  open language-syntax Sig using (ctxt; type; _⊢_; first-order; first-order-ctxt)
+  open Category.Iso
+  open indexed-family._⇒f_ using (transf)
+
+  -- Reading a first-order term's dependency relation back as a matrix: conjugate the fibre map at
+  -- an input through the comparison isomorphisms. The realisation is full, so the conjugate's
+  -- underlying map is a morphism of position orders, presented by its matrix.
+  module readback {Γ : ctxt} {τ : type 0} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ)
+                  (t : Γ ⊢ τ) (γ : Setoid.Carrier (𝒞⟦ Γ-fo ⟧ctxt .Fam⟨𝒞⟩μ.idx)) where
+
+    γ𝒟 = ⟦ Γ-fo ⟧ctxt-iso .fwd .Fam⟨𝒟⟩μ.idxf .func γ
+    out𝒟 = 𝒟⟦ t ⟧tm .Fam⟨𝒟⟩μ.idxf .func γ𝒟
+    out = closed-iso fo .bwd .Fam⟨𝒟⟩μ.idxf .func out𝒟
+
+    dep : (𝒞⟦ Γ-fo ⟧ctxt .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm γ) OI.⇒
+          (𝒞⟦ fo ⟧ty ∅𝒞 .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm out)
+    dep = SC._∘_ (closed-iso fo .bwd .Fam⟨𝒟⟩μ.famf .transf out𝒟)
+           (SC._∘_ (𝒟⟦ t ⟧tm .Fam⟨𝒟⟩μ.famf .transf γ𝒟)
+                   (⟦ Γ-fo ⟧ctxt-iso .fwd .Fam⟨𝒟⟩μ.famf .transf γ))
+          .mor
+
+    dep-mat = OI.mor→mat dep .OI._⇒ₘ_.mat
