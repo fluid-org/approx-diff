@@ -191,6 +191,10 @@ _++_ {X} P Q .pred-mor {a} {b} f = begin
 ⋁-isJoin .IsBigJoin.upper I P i .*⊑* a = IsBigJoin.upper P.⋁-isJoin _ _ i
 ⋁-isJoin .IsBigJoin.least I P Q ϕ .*⊑* a = IsBigJoin.least P.⋁-isJoin I _ _ (λ i → ϕ i .*⊑* a)
 
+&&-⋁-distrib : ∀ {X} {I : Set 0ℓ} {P : Predicate X} {Q : I → Predicate X} →
+               (P && ⋁ I Q) ⊑ ⋁ I (λ i → P && Q i)
+&&-⋁-distrib .*⊑* a = setoid-predicate.&&-⋁-distrib
+
 []-⋁ : ∀ {X Y I} {P : I → Predicate Y} {f : X PSh.⇒ Y} → (⋁ I P [ f ]) ⊑ ⋁ I (λ i → P i [ f ])
 []-⋁ .*⊑* a = P.[]-⋁
 

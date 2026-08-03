@@ -214,6 +214,11 @@ _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
 []-⋁ : ∀ {X Y I} {P : I → Predicate Y} {f : X ⇒s Y} → (⋁ I P [ f ]) ⊑ ⋁ I (λ i → P i [ f ])
 []-⋁ .*⊑* x (i , p) = i , p
 
+-- Meets distribute over the big joins too.
+&&-⋁-distrib : ∀ {X} {I : Set 0ℓ} {P : Predicate X} {Q : I → Predicate X} →
+               (P && ⋁ I Q) ⊑ ⋁ I (λ i → P && Q i)
+&&-⋁-distrib .*⊑* x (p , (i , q)) = i , (p , q)
+
 -- Equality (experimental)
 Eq : ∀ X → Predicate (⊗-setoid X X)
 Eq X .Predicate.pred (x , x') = LiftP o (X .Setoid._≈_ x x')
