@@ -1083,3 +1083,71 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
                   Fam𝒞.≈-refl)))
 
     fold-apply-sing (pfbind Q pQ' pmf) (Fin.suc v) a γ ι = fold-apply-sing pmf v a γ ι
+
+    -- The glued catamorphism: the closed join splits into its trees, each
+    -- tree into its singletons, and each singleton folds by the recursion;
+    -- the closure collapses into the closed target.
+    fold-Gl : (Γg [×] Mδ.μ-Gl P pP) .pred ⊑ (Ag .pred [ G .fmor FD.foldMor ])
+    fold-Gl =
+      ⊑-trans (IsMeet.mono &&-isMeet (IsPreorder.refl ⊑-isPreorder) 𝐂-[]⁻¹)
+      (⊑-trans (IsMeet.comm &&-isMeet)
+      (⊑-trans 𝐂-strong
+      (⊑-trans (𝐂-isClosure .IsClosureOp.mono
+                 (⊑-trans (IsMeet.comm &&-isMeet)
+                 (⊑-trans (IsMeet.mono &&-isMeet (IsPreorder.refl ⊑-isPreorder) []-⋁)
+                 (⊑-trans dist-⋁ (⋁-isJoin .IsBigJoin.least _ _ _ perT)))))
+      (⊑-trans 𝐂-[] (A-closed [ G .fmor FD.foldMor ]m)))))
+      where
+        perT : ∀ (t : Tδ.W ∣ P ∣ (λ i → inj₁ i)) →
+               ((Γg .pred [ G .fmor Fam𝒞-P.p₁ ])
+                 && ((Mδ.fib-Gl P (λ i → lift tt) pP (λ i → lift tt) t .pred
+                        ⟨ G .fmor (Mδ.tree-in P pP t) ⟩) [ G .fmor Fam𝒞-P.p₂ ]))
+               ⊑ (Ag .pred [ G .fmor FD.foldMor ])
+        perT t =
+          ⊑-trans (IsMeet.mono &&-isMeet (IsPreorder.refl ⊑-isPreorder)
+                    (BC (Mδ.tree-in P pP t)))
+          (⊑-trans frob
+          (⊑-trans ((IsMeet.mono &&-isMeet ΓFIX (IsPreorder.refl ⊑-isPreorder))
+                      ⟨ G .fmor w ⟩m)
+                   (adjoint₂ INNER)))
+          where
+            w = Fam𝒞-P.pair Fam𝒞-P.p₁ (Fam𝒞._∘_ (Mδ.tree-in P pP t) Fam𝒞-P.p₂)
+            ΓFIX = ⊑-trans ([]-comp _ _)
+                   (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+                            ([]-cong (G .fmor-cong (Fam𝒞-P.pair-p₁ _ _))))
+            SQw : Fam𝒞._≈_ (Fam𝒞._∘_ FD.foldMor w) (fold-mor t)
+            SQw ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , ι≈) =
+              FD.fold-idx-resp γ≈ {t} {t}
+                (Tδ.W-≈-refl {Q = ∣ P ∣} {ρ = λ i → inj₁ i} t)
+            SQw ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+              ≈-trans (∘-cong (Ag .carrier .fam .refl*) id-left)
+              (≈-trans id-left
+                       (∘-cong ≈-refl (pair-cong (≈-sym id-left) id-left)))
+            perS : ∀ (q : prodC (Mδ.fib-Gl P (λ i → lift tt) pP (λ i → lift tt) t .carrier)
+                            .idx .Carrier) →
+                   (((Γg [×] Mδ.fib-Gl P (λ i → lift tt) pP (λ i → lift tt) t) .pred
+                       [ G .fmor (elem-in (prodC (Mδ.fib-Gl P (λ i → lift tt) pP
+                                                    (λ i → lift tt) t .carrier)) q) ])
+                     ⟨ G .fmor (elem-in (prodC (Mδ.fib-Gl P (λ i → lift tt) pP
+                                                  (λ i → lift tt) t .carrier)) q) ⟩)
+                   ⊑ ((Ag .pred [ G .fmor FD.foldMor ]) [ G .fmor w ])
+            perS (γ , ι) =
+              ⊑-trans ((⊑-trans (fold-sing t γ ι)
+                       (⊑-trans ([]-cong (G .fmor-cong
+                                   (Fam𝒞.∘-cong (Fam𝒞.≈-sym SQw) Fam𝒞.≈-refl)))
+                       (⊑-trans ([]-cong (G .fmor-comp _ _))
+                       (⊑-trans ([]-comp⁻¹ _ _)
+                                ((⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))
+                                   [ G .fmor (elem-in (prodC (Mδ.fib-Gl P (λ i → lift tt) pP
+                                                                (λ i → lift tt) t .carrier))
+                                                      (γ , ι)) ]m)))))
+                         ⟨ G .fmor (elem-in (prodC (Mδ.fib-Gl P (λ i → lift tt) pP
+                                                      (λ i → lift tt) t .carrier))
+                                            (γ , ι)) ⟩m)
+                      (counit _)
+            INNER = ⊑-trans sing-split
+                    (⊑-trans (𝐂-isClosure .IsClosureOp.mono
+                               (⋁-isJoin .IsBigJoin.least _ _ _ perS))
+                    (⊑-trans 𝐂-[]
+                             ((⊑-trans 𝐂-[] (A-closed [ G .fmor FD.foldMor ]m))
+                                [ G .fmor w ]m)))
