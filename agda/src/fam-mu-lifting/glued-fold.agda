@@ -17,7 +17,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import Data.Unit using (⊤; tt)
 open import prop using (_,_)
-open import basics using (IsJoin; IsMeet; IsBigJoin; IsClosureOp)
+open import basics using (IsPreorder; IsJoin; IsMeet; IsBigJoin; IsClosureOp)
 open import prop-setoid as PS using ()
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
@@ -189,3 +189,67 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
     (≈-trans (≈-sym (assoc _ _ _))
     (≈-trans (∘-cong (FD.fold-fam-natural γ≈ {t} {t} (Tδ.W-≈-refl t)) ≈-refl)
              (assoc _ _ _)))))))
+
+  private
+    δA' : Fin (suc n) → Obj
+    δA' = extend δ (Ag .carrier)
+
+    module MA' = MuPred δA' δPA⁺
+
+    Γc : Obj
+    Γc = Γg .carrier
+
+    prodC : Obj → Obj
+    prodC Z = Fam𝒞-P.prod Γc Z
+
+    ℓF : Level
+    ℓF = o ⊔ m ⊔ e ⊔ lsuc 0ℓ ⊔ lsuc o₂ ⊔ lsuc m₂ ⊔ lsuc e₂
+
+  -- Predicate decorations tracking the fold's reindex morphism.
+  data PredF : ∀ {k} {ρ : Fin k → Fin n ⊎ Sort n}
+               {ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)}
+               {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → FD.TA'.DecoAssign (ρ' v)} →
+               FD.FMor ρ ρ' d d' →
+               (∀ v → Mδ.DecoAssignPred (ρ v) (d v)) →
+               (∀ v → MA'.DecoAssignPred (ρ' v) (d' v)) → Set ℓF where
+    pfbase : PredF FD.fbase pdP (λ v → lift tt)
+    pfbind : ∀ {k} {ρ : Fin k → Fin n ⊎ Sort n}
+             {ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)}
+             {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → FD.TA'.DecoAssign (ρ' v)}
+             {fm : FD.FMor ρ ρ' d d'} {pd pd'}
+             (Q : Poly (suc k)) (pQ : PolyPred Q) →
+             PredF fm pd pd' →
+             PredF (FD.fbind Q fm) (Mδ.deco-ext-pred Q pQ pd) (MA'.deco-ext-pred Q pQ pd')
+
+  private
+    -- Reindexing distributes over the meet.
+    []-&&-dist : ∀ {V V'} {A B : Predicate V'} {f : V 𝒫C'.⇒ V'} →
+                 ((A && B) [ f ]) ⊑ ((A [ f ]) && (B [ f ]))
+    []-&&-dist {f = f} =
+      &&-isMeet .IsMeet.⟨_,_⟩ ((&&-isMeet .IsMeet.π₁) [ f ]m)
+                              ((&&-isMeet .IsMeet.π₂) [ f ]m)
+
+    -- The node step at a lifted glued object, per singleton: split into the
+    -- payload and root branches and discharge each by its obligation.
+    node-sing : ∀ (Xg Yg : Gl.Obj) (γ : Γc .idx .Carrier) (ι : Xg .carrier .idx .Carrier)
+                (hs : Mor simple[ PS.𝟙 , prod (Γc .fam .fm γ) (Xg .carrier .fam .fm ι) ]
+                          (Yg .carrier)) →
+                (((Γg [×] Xg) .pred [ G .fmor (elem-in (prodC (Xg .carrier)) (γ , ι)) ])
+                  ⊑ (Yg .pred [ G .fmor hs ])) →
+                (((Γg [×] Lf-Gl Xg) .pred
+                    [ G .fmor (elem-in (prodC (Lf (Xg .carrier))) (γ , ι)) ])
+                  ⊑ (Lf-Gl Yg .pred [ G .fmor (sing-under-root hs) ]))
+    node-sing Xg Yg γ ι hs HYP =
+      ⊑-trans ((⊑-trans (IsMeet.mono &&-isMeet (IsPreorder.refl ⊑-isPreorder) []-++) dist)
+                 [ G .fmor (elem-in (prodC (Lf (Xg .carrier))) (γ , ι)) ]m)
+      (⊑-trans []-++
+               (++-isJoin .IsJoin.[_,_] (payload-sing Xg Yg γ ι hs HYP)
+                                        (root-sing Xg Yg γ ι hs HYP)))
+
+    -- At the recursion slot the packaged shape morphism is the tree fold.
+    vz-mor : ∀ (pQ : PolyPred {suc n} (var Fin.zero)) (t' : Tδ.W ∣ P ∣ (λ i → inj₁ i)) →
+             Fam𝒞._≈_ (fold-shape-mor (var Fin.zero) pQ t') (fold-mor t')
+    vz-mor pQ t' ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , ι≈) =
+      FD.fold-idx-resp γ≈ {t'} {t'} (Tδ.W-≈-refl t')
+    vz-mor pQ t' ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+      ≈-trans (∘-cong (Ag .carrier .fam .refl*) ≈-refl) id-left
