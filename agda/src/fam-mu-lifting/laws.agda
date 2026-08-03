@@ -18,6 +18,7 @@ open import Data.Unit using (tt)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
+open import commutative-monoid using (CommutativeMonoid)
 open import lifting using (Lifting)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
@@ -28,6 +29,85 @@ module fam-mu-lifting.laws {o m e} (os es : Level) {𝒞 : Category o m e}
     {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
 
 open fam-mu-lifting.in-map os es T CM BP Lft public
+
+private module CME = CMonEnriched CM
+open CME using (_+m_)
+
+-- Restricting an eliminator along the payload injection. The injection roots a payload at its own
+-- support, so the eliminator does not restrict to the underlying map: the target's constant, read
+-- at that support, joins in. This is the closed form of the restriction; only a trivial constant
+-- collapses it to the underlying map.
+elim-inj : ∀ {Γ X C : Obj} → Pointed C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ X) C
+elim-inj ptC f .idxf = f .idxf
+elim-inj ptC f .famf ._⇒f_.transf (γ , x) =
+  ((ptC .pt (f .idxf .PS._⇒_.func (γ , x)) ∘ spt) ∘ p₂) +m f .famf ._⇒f_.transf (γ , x)
+elim-inj {Γ} {X} {C} ptC f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
+  ≈-trans (CME.comp-bilinear₁ _ _ _)
+  (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong
+             (≈-trans (assoc _ _ _)
+             (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+             (≈-trans (≈-sym (assoc _ _ _))
+             (≈-trans (∘-cong (≈-trans (assoc _ _ _)
+                                (≈-trans (∘-cong ≈-refl
+                                           (spt-natural (fam-subst-iso₁ (X .fam) x≈)
+                                                        (fam-subst-iso₂ (X .fam) x≈)))
+                                         (≈-sym (≈-trans (≈-sym (assoc _ _ _))
+                                                  (∘-cong (ptC .pt-natural
+                                                            (f .idxf .PS._⇒_.func-resp-≈ (γ≈ , x≈)))
+                                                          ≈-refl)))))
+                              ≈-refl)
+                      (assoc _ _ _)))))
+             (f .famf ._⇒f_.natural (γ≈ , x≈)))
+           (≈-sym (CME.comp-bilinear₂ _ _ _)))
+
+-- The restriction law: eliminating an injected payload in context is the underlying map joined
+-- with the constant at the payload's support. Componentwise by joint epicity of the biproduct
+-- injections: the context leg passes straight through, the payload leg is `affine-inj`.
+elimF-inj : ∀ {Γ X C : Obj} (ptC : Pointed C) (f : Mor (Fam𝒞-P.prod Γ X) C) →
+            Fam𝒞._∘_ (elimF ptC f) (Fam𝒞-P.prod-m (Fam𝒞.id Γ) (injF {X})) ≃ elim-inj ptC f
+elimF-inj ptC f ._≃_.idxf-eq .PS._≃m_.func-eq (γ≈ , x≈) =
+  f .idxf .PS._⇒_.func-resp-≈ (γ≈ , x≈)
+elimF-inj {Γ} {X} {C} ptC f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+  ≈-trans (∘-cong (C .fam .refl*) ≈-refl)
+  (≈-trans id-left
+  (≈-trans id-left
+  (≈-trans (∘-cong ≈-refl (pair-cong id-left id-left))
+           (bp-ext side₁ side₂))))
+  where
+  c = ptC .pt (f .idxf .PS._⇒_.func (γ , x))
+  r = f .famf ._⇒f_.transf (γ , x)
+  bp  = BP (Γ .fam .fm γ) (X .fam .fm x)
+  bpL = BP (Γ .fam .fm γ) (L (X .fam .fm x))
+
+  side₁ : ((strip-root c r ∘ pm (id _) inj) ∘ Biproduct.in₁ bp)
+          ≈ ((((c ∘ spt) ∘ p₂) +m r) ∘ Biproduct.in₁ bp)
+  side₁ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (pm-in₁ (id _) inj))
+    (≈-trans (∘-cong ≈-refl id-right)
+    (≈-trans (Biproduct.copair-in₁ bpL _ _)
+    (≈-sym
+      (≈-trans (CME.comp-bilinear₁ _ _ _)
+      (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong
+                 (≈-trans (assoc _ _ _)
+                   (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 bp)) (CME.comp-bilinear-ε₂ _)))
+                 ≈-refl)
+               (CME.homCM _ _ .CommutativeMonoid.+-lunit)))))))
+
+  side₂ : ((strip-root c r ∘ pm (id _) inj) ∘ Biproduct.in₂ bp)
+          ≈ ((((c ∘ spt) ∘ p₂) +m r) ∘ Biproduct.in₂ bp)
+  side₂ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (pm-in₂ (id _) inj))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong (Biproduct.copair-in₂ bpL _ _) ≈-refl)
+    (≈-trans (affine-inj c _)
+    (≈-sym
+      (≈-trans (CME.comp-bilinear₁ _ _ _)
+               (CME.homCM _ _ .CommutativeMonoid.+-cong
+                 (≈-trans (assoc _ _ _)
+                   (≈-trans (∘-cong ≈-refl (Biproduct.id-2 bp)) id-right))
+                 ≈-refl)))))))
 
 -- One application of the algebra against a candidate at the recursive positions: the same
 -- recursion as the fold, with the candidate at the slot.
