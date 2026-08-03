@@ -420,6 +420,19 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
           (≈-trans (≈-sym (assoc _ _ _))
           (≈-trans (∘-cong (out-in-fib Q d pQ pd t ι₂) ≈-refl) id-left))))))
 
+  -- The singleton at a fibre includes into the fibre's glued carrier at the canonical index.
+  fib-out : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+            (d : ∀ i → DecoAssign (ρ̄ i))
+            (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+            (t : W ∣ Q ∣ ρ̄) →
+            Mor simple[ PS.𝟙 , fib Q d t ] (fib-Gl Q d pQ pd t .carrier)
+  fib-out Q d pQ pd t .idxf .PS._⇒_.func _ = fib-ix Q d pQ pd t
+  fib-out Q d pQ pd t .idxf .PS._⇒_.func-resp-≈ _ =
+    fib-Gl Q d pQ pd t .carrier .idx .isEquivalence .refl
+  fib-out Q d pQ pd t .famf ._⇒f_.transf _ = out-fib Q d pQ pd t (fib-ix Q d pQ pd t)
+  fib-out Q d pQ pd t .famf ._⇒f_.natural _ =
+    ≈-trans id-right (≈-sym (out-fib-natural Q d pQ pd t _))
+
   -- The inclusion of a fibre's carrier at its tree, over the constant index map.
   tree-in : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
             Mor (fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier) (μObj P' δ)
