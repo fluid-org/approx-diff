@@ -47,6 +47,7 @@ open fam-mu-lifting.glued 0ℓ 0ℓ T CM BP Lft 𝒫 𝒫P system G Rt public
 
 open R hiding (fobj)
 open Gl.Obj
+open Gl._=>_
 
 private
   ℓpred : Level
@@ -64,6 +65,37 @@ elem-in X x .idxf .PS._⇒_.func-resp-≈ _ = X .idx .isEquivalence .refl
 elem-in X x .famf ._⇒f_.transf _ = id _
 elem-in X x .famf ._⇒f_.natural _ =
   ≈-trans id-left (≈-sym (≈-trans id-right (X .fam .refl*)))
+
+-- Glued morphisms with fibrewise inverses: what the lifted and product formers act on, the
+-- inverses feeding the injection's naturality square and the root transport.
+record _=>ᵢ_ (X Y : Gl.Obj) : Set (o ⊔ m ⊔ e ⊔ lsuc 0ℓ ⊔ o₂ ⊔ m₂ ⊔ e₂) where
+  field
+    mor  : X Gl.=> Y
+    inv  : ∀ x → Y .carrier .fam .fm (mor .morph .idxf .PS._⇒_.func x) ⇒ X .carrier .fam .fm x
+    inv₁ : ∀ x → (mor .morph .famf ._⇒f_.transf x ∘ inv x) ≈ id _
+    inv₂ : ∀ x → (inv x ∘ mor .morph .famf ._⇒f_.transf x) ≈ id _
+
+open _=>ᵢ_ public
+
+-- The functorial actions extend to the inverses.
+Lf-Glᵢ : ∀ {X Y} (f : X =>ᵢ Y) →
+         (Rt (X .carrier) ⊑ (Rt (Y .carrier) [ G .fmor (Lf-map (f .mor .morph)) ])) →
+         Lf-Gl X =>ᵢ Lf-Gl Y
+Lf-Glᵢ f rt .mor =
+  Lf-Gl-map (f .mor) (injF-natural (f .mor .morph) (f .inv) (f .inv₁) (f .inv₂)) rt
+Lf-Glᵢ f rt .inv x = Lmap (f .inv x)
+Lf-Glᵢ f rt .inv₁ x =
+  ≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong (f .inv₁ x)) Lmap-id)
+Lf-Glᵢ f rt .inv₂ x =
+  ≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong (f .inv₂ x)) Lmap-id)
+
+[×]ᵢ : ∀ {X X' Y Y'} → X =>ᵢ X' → Y =>ᵢ Y' → (X [×] Y) =>ᵢ (X' [×] Y')
+[×]ᵢ f g .mor = [×]-map (f .mor) (g .mor)
+[×]ᵢ f g .inv (x , y) = prod-m (f .inv x) (g .inv y)
+[×]ᵢ f g .inv₁ (x , y) =
+  ≈-trans (∘-cong (pair-cong id-left id-left) ≈-refl) (pm-iso (f .inv₁ x) (g .inv₁ y))
+[×]ᵢ f g .inv₂ (x , y) =
+  ≈-trans (∘-cong ≈-refl (pair-cong id-left id-left)) (pm-iso (f .inv₂ x) (g .inv₂ y))
 
 -- A predicate assignment for a polynomial: a predicate on the image of each const leaf.
 PolyPred : ∀ {j} → Poly j → Set ℓpred
