@@ -109,6 +109,22 @@ elimF-inj {Γ} {X} {C} ptC f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ
                    (≈-trans (∘-cong ≈-refl (Biproduct.id-2 bp)) id-right))
                  ≈-refl)))))))
 
+-- The payload injection is natural at morphisms whose fibre maps are isomorphisms, which is all
+-- the lifting's action admits.
+injF-natural : ∀ {X Y : Obj} (f : Mor X Y)
+               (finv : ∀ x → Y .fam .fm (f .idxf .PS._⇒_.func x) ⇒ X .fam .fm x) →
+               (∀ x → (f .famf ._⇒f_.transf x ∘ finv x) ≈ id _) →
+               (∀ x → (finv x ∘ f .famf ._⇒f_.transf x) ≈ id _) →
+               Fam𝒞._∘_ (Lf-map f) (injF {X}) ≃ Fam𝒞._∘_ (injF {Y}) f
+injF-natural f finv e₁ e₂ ._≃_.idxf-eq .PS._≃m_.func-eq x≈ =
+  f .idxf .PS._⇒_.func-resp-≈ x≈
+injF-natural {X} {Y} f finv e₁ e₂ ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} =
+  ≈-trans (∘-cong (≈-trans (Lmap-cong (Y .fam .refl*)) Lmap-id) ≈-refl)
+  (≈-trans id-left
+  (≈-trans id-left
+  (≈-trans (Lmap-inj (e₁ x) (e₂ x))
+           (≈-sym id-left))))
+
 -- One application of the algebra against a candidate at the recursive positions: the same
 -- recursion as the fold, with the candidate at the slot.
 module ApplyDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}

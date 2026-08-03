@@ -54,6 +54,48 @@ _[×]_ : Gl.Obj → Gl.Obj → Gl.Obj
 (X [×] Y) .carrier = R.Fam𝒞-P.prod (X .carrier) (Y .carrier)
 (X [×] Y) .pred = (X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) && (Y .pred [ G .fmor R.Fam𝒞-P.p₂ ])
 
+-- The glued product is functorial.
+[×]-map : ∀ {X X' Y Y'} → X Gl.=> X' → Y Gl.=> Y' →
+          (X [×] Y) Gl.=> (X' [×] Y')
+[×]-map f g .morph = R.Fam𝒞-P.prod-m (f .morph) (g .morph)
+[×]-map {X} {X'} {Y} {Y'} f g .presv =
+  ⊑-trans
+    (IsMeet.mono &&-isMeet
+      (⊑-trans ((f .presv) [ G .fmor R.Fam𝒞-P.p₁ ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ([]-cong (G .fmor-cong (R.Fam𝒞.≈-sym (R.Fam𝒞-P.pair-p₁ _ _))))
+      (⊑-trans ([]-cong (G .fmor-comp _ _))
+               ([]-comp⁻¹ _ _))))))
+      (⊑-trans ((g .presv) [ G .fmor R.Fam𝒞-P.p₂ ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ([]-cong (G .fmor-cong (R.Fam𝒞.≈-sym (R.Fam𝒞-P.pair-p₂ _ _))))
+      (⊑-trans ([]-cong (G .fmor-comp _ _))
+               ([]-comp⁻¹ _ _)))))))
+    []-&&
+
+-- The glued lifting is functorial at morphisms whose payload square with the injection holds,
+-- which the lifting grants at fibrewise isomorphisms; the root part is supplied by the caller,
+-- being knowledge about the root predicate.
+Lf-Gl-map : ∀ {X Y} (f : X Gl.=> Y) →
+            R.Fam𝒞._≈_ (R.Fam𝒞._∘_ (R.Lf-map (f .morph)) R.injF)
+                        (R.Fam𝒞._∘_ R.injF (f .morph)) →
+            (Rt (X .carrier) ⊑ (Rt (Y .carrier) [ G .fmor (R.Lf-map (f .morph)) ])) →
+            Lf-Gl X Gl.=> Lf-Gl Y
+Lf-Gl-map f sq rt .morph = R.Lf-map (f .morph)
+Lf-Gl-map {X} {Y} f sq rt .presv =
+  ++-isJoin .IsJoin.[_,_]
+    (adjoint₂
+      (⊑-trans (f .presv)
+      (⊑-trans ((injF-Gl {Y} .presv) [ G .fmor (f .morph) ]m)
+      (⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ([]-cong (G .fmor-cong (R.Fam𝒞.≈-sym sq)))
+      (⊑-trans ([]-cong (G .fmor-comp _ _))
+               ([]-comp⁻¹ _ _))))))))
+    (⊑-trans rt ((++-isJoin .IsJoin.inr) [ G .fmor (R.Lf-map (f .morph)) ]m))
+
 -- The eliminator on glued objects, over the underlying eliminator. The lifted predicate splits
 -- into its payload and root parts and each branch is a parameter: the root branch is instance
 -- knowledge about the eliminator's constant at bare roots, and the payload branch is predicate
