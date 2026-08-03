@@ -293,7 +293,7 @@ open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒞
   renaming (system to PSh⟨𝒞⟩-system; Predicate to PShPredicate)
   using (_⊑_; module CoverMonad;
          _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop;
-         ⋁; module Monad-hat-pred)
+         ⋁; module Monad-hat-pred; &&-++-distrib; &&-⟨⟩-frobenius; ⟨⟩-[]-BC)
 
 module PSh⟨𝒞⟩-system = PredicateSystem PSh⟨𝒞⟩-system
 
@@ -874,8 +874,9 @@ Definable-closed {X} {Y} f (node (idx c) xs ts eqs) = g , Fg≈f
 ------------------------------------------------------------------------------
 -- Now construct the category of Grothendieck Logical Relations
 
-open import closure-predicate PSh⟨𝒞⟩-system closureOp
-  using (system; embed; module 𝐂Monad)
+import closure-predicate
+module CP = closure-predicate PSh⟨𝒞⟩-system closureOp
+open CP using (system; embed; module 𝐂Monad)
 
 open 𝐂Monad _ MP (MDistrib.distrib FMpull)
 
@@ -1277,3 +1278,135 @@ module strong-exponentials
         F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso (λ ()) .bwd .morph 𝒟.∘ (G⟦ M ⟧tm .morph 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd .morph))
     syntactic-definability Γ-fo τ-fo M =
       definability (⟦ τ-fo ⟧-iso (λ ()) .bwd Glued.∘ (G⟦ M ⟧tm Glued.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
+
+------------------------------------------------------------------------------
+-- Native strong coproducts on the glued category: each Beck-Chevalley square holds stagewise,
+-- because a nerve element whose sum component factors through an injection is the pairing of its
+-- context part with the factorisation witness.
+module rooted-tail (𝒟SC : HasStrongCoproducts 𝒟 𝒟P) where
+
+  private
+    module 𝒟SCm = HasStrongCoproducts 𝒟SC
+    module GlS = PredicateSystem system
+    module Dist = CP.distributive &&-++-distrib &&-⟨⟩-frobenius
+
+    BC₁ : ∀ {W X Y : 𝒟.obj} {Q : GlS.Predicate (G .fobj X)} →
+          ((Q GlS.⟨ G .fmor (𝒟SCm.in₁ {X} {Y}) ⟩) GlS.[ G .fmor (𝒟P.p₂ {W}) ])
+            GlS.⊑ ((Q GlS.[ G .fmor (𝒟P.p₂ {W} {X}) ])
+                     GlS.⟨ G .fmor (𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₁ 𝒟.∘ 𝒟P.p₂)) ⟩)
+    BC₁ {W} {X} {Y} {Q} = CP.⟨⟩-[]-transport {P = Q} (⟨⟩-[]-BC lft)
+      where
+      lft : ∀ a (v* : Setoid.Carrier ((G .fobj (𝒟P.prod W (𝒟SCm.coprod X Y))) .fobj a))
+              (u* : Setoid.Carrier ((G .fobj X) .fobj a)) →
+            Setoid._≈_ ((G .fobj (𝒟SCm.coprod X Y)) .fobj a)
+              (prop-setoid._⇒_.func (G .fmor (𝒟SCm.in₁ {X} {Y}) .transf a) u*)
+              (prop-setoid._⇒_.func (G .fmor (𝒟P.p₂ {W}) .transf a) v*) →
+            ∃ (Setoid.Carrier ((G .fobj (𝒟P.prod W X)) .fobj a)) λ w* →
+              prop._∧_
+                (Setoid._≈_ ((G .fobj X) .fobj a)
+                  (prop-setoid._⇒_.func (G .fmor (𝒟P.p₂ {W} {X}) .transf a) w*) u*)
+                (Setoid._≈_ ((G .fobj (𝒟P.prod W (𝒟SCm.coprod X Y))) .fobj a)
+                  (prop-setoid._⇒_.func
+                    (G .fmor (𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₁ 𝒟.∘ 𝒟P.p₂)) .transf a) w*) v*)
+      lft a (lift v) (lift u) (lift e) =
+        lift w , (lift eq₁ , lift eq₂)
+        where
+        w = 𝒟P.pair (𝒟P.p₁ 𝒟.∘ v) u
+
+        eq₁ : (𝒟P.p₂ 𝒟.∘ (w 𝒟.∘ 𝒟.id _)) 𝒟.≈ u
+        eq₁ = 𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟P.pair-p₂ _ _)
+
+        side : ((𝒟SCm.in₁ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w) 𝒟.≈ (𝒟P.p₂ 𝒟.∘ v)
+        side = begin
+            (𝒟SCm.in₁ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w
+          ≈⟨ 𝒟.assoc _ _ _ ⟩
+            𝒟SCm.in₁ 𝒟.∘ (𝒟P.p₂ 𝒟.∘ w)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟P.pair-p₂ _ _) ⟩
+            𝒟SCm.in₁ 𝒟.∘ u
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+            𝒟SCm.in₁ 𝒟.∘ (u 𝒟.∘ 𝒟.id _)
+          ≈⟨ e ⟩
+            𝒟P.p₂ 𝒟.∘ (v 𝒟.∘ 𝒟.id _)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+            𝒟P.p₂ 𝒟.∘ v
+          ∎
+          where open ≈-Reasoning 𝒟.isEquiv
+
+        eq₂ : ((𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₁ 𝒟.∘ 𝒟P.p₂)) 𝒟.∘ (w 𝒟.∘ 𝒟.id _)) 𝒟.≈ v
+        eq₂ = begin
+            𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₁ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ (w 𝒟.∘ 𝒟.id _)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+            𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₁ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w
+          ≈⟨ 𝒟P.pair-natural _ _ _ ⟩
+            𝒟P.pair (𝒟P.p₁ 𝒟.∘ w) ((𝒟SCm.in₁ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w)
+          ≈⟨ 𝒟P.pair-cong (𝒟P.pair-p₁ _ _) side ⟩
+            𝒟P.pair (𝒟P.p₁ 𝒟.∘ v) (𝒟P.p₂ 𝒟.∘ v)
+          ≈⟨ 𝒟P.pair-ext v ⟩
+            v
+          ∎
+          where open ≈-Reasoning 𝒟.isEquiv
+
+    BC₂ : ∀ {W X Y : 𝒟.obj} {Q : GlS.Predicate (G .fobj Y)} →
+          ((Q GlS.⟨ G .fmor (𝒟SCm.in₂ {X} {Y}) ⟩) GlS.[ G .fmor (𝒟P.p₂ {W}) ])
+            GlS.⊑ ((Q GlS.[ G .fmor (𝒟P.p₂ {W} {Y}) ])
+                     GlS.⟨ G .fmor (𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₂ 𝒟.∘ 𝒟P.p₂)) ⟩)
+    BC₂ {W} {X} {Y} {Q} = CP.⟨⟩-[]-transport {P = Q} (⟨⟩-[]-BC lft)
+      where
+      lft : ∀ a (v* : Setoid.Carrier ((G .fobj (𝒟P.prod W (𝒟SCm.coprod X Y))) .fobj a))
+              (u* : Setoid.Carrier ((G .fobj Y) .fobj a)) →
+            Setoid._≈_ ((G .fobj (𝒟SCm.coprod X Y)) .fobj a)
+              (prop-setoid._⇒_.func (G .fmor (𝒟SCm.in₂ {X} {Y}) .transf a) u*)
+              (prop-setoid._⇒_.func (G .fmor (𝒟P.p₂ {W}) .transf a) v*) →
+            ∃ (Setoid.Carrier ((G .fobj (𝒟P.prod W Y)) .fobj a)) λ w* →
+              prop._∧_
+                (Setoid._≈_ ((G .fobj Y) .fobj a)
+                  (prop-setoid._⇒_.func (G .fmor (𝒟P.p₂ {W} {Y}) .transf a) w*) u*)
+                (Setoid._≈_ ((G .fobj (𝒟P.prod W (𝒟SCm.coprod X Y))) .fobj a)
+                  (prop-setoid._⇒_.func
+                    (G .fmor (𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₂ 𝒟.∘ 𝒟P.p₂)) .transf a) w*) v*)
+      lft a (lift v) (lift u) (lift e) =
+        lift w , (lift eq₁ , lift eq₂)
+        where
+        w = 𝒟P.pair (𝒟P.p₁ 𝒟.∘ v) u
+
+        eq₁ : (𝒟P.p₂ 𝒟.∘ (w 𝒟.∘ 𝒟.id _)) 𝒟.≈ u
+        eq₁ = 𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟P.pair-p₂ _ _)
+
+        side : ((𝒟SCm.in₂ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w) 𝒟.≈ (𝒟P.p₂ 𝒟.∘ v)
+        side = begin
+            (𝒟SCm.in₂ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w
+          ≈⟨ 𝒟.assoc _ _ _ ⟩
+            𝒟SCm.in₂ 𝒟.∘ (𝒟P.p₂ 𝒟.∘ w)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟P.pair-p₂ _ _) ⟩
+            𝒟SCm.in₂ 𝒟.∘ u
+          ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+            𝒟SCm.in₂ 𝒟.∘ (u 𝒟.∘ 𝒟.id _)
+          ≈⟨ e ⟩
+            𝒟P.p₂ 𝒟.∘ (v 𝒟.∘ 𝒟.id _)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+            𝒟P.p₂ 𝒟.∘ v
+          ∎
+          where open ≈-Reasoning 𝒟.isEquiv
+
+        eq₂ : ((𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₂ 𝒟.∘ 𝒟P.p₂)) 𝒟.∘ (w 𝒟.∘ 𝒟.id _)) 𝒟.≈ v
+        eq₂ = begin
+            𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₂ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ (w 𝒟.∘ 𝒟.id _)
+          ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+            𝒟P.pair 𝒟P.p₁ (𝒟SCm.in₂ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w
+          ≈⟨ 𝒟P.pair-natural _ _ _ ⟩
+            𝒟P.pair (𝒟P.p₁ 𝒟.∘ w) ((𝒟SCm.in₂ 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w)
+          ≈⟨ 𝒟P.pair-cong (𝒟P.pair-p₁ _ _) side ⟩
+            𝒟P.pair (𝒟P.p₁ 𝒟.∘ v) (𝒟P.p₂ 𝒟.∘ v)
+          ≈⟨ 𝒟P.pair-ext v ⟩
+            v
+          ∎
+          where open ≈-Reasoning 𝒟.isEquiv
+
+  module GlSCn = GlPE.strong-coproducts 𝒟SC
+                   (λ {V} {P'} {Q'} {R'} → Dist.&&-++-distrib {V} {P'} {Q'} {R'})
+                   (λ {V} {V'} {P'} {Q'} {h} → Dist.&&-⟨⟩-frobenius {V} {V'} {P'} {Q'} {h})
+                   (λ {W} {X} {Y} {Q} → BC₁ {W} {X} {Y} {Q})
+                   (λ {W} {X} {Y} {Q} → BC₂ {W} {X} {Y} {Q})
+
+  GlSC-native : HasStrongCoproducts Gl.cat GlPE.products
+  GlSC-native = GlSCn.strongCoproducts
