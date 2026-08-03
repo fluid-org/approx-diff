@@ -6,8 +6,9 @@ open import prop using (_,_; proj₁; proj₂; ∃; ∃ₛ; Prf; ⟪_⟫; LiftP;
 open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet; IsBigJoin; IsPreorder)
 open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
-         HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans; setoid→category;
-         HasStrongCoproducts; ccc→strong-coproducts; strong-coproducts→coproducts)
+         HasWeakExponentials; HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans;
+         setoid→category; HasStrongCoproducts; ccc→strong-coproducts;
+         strong-coproducts→coproducts)
 import Data.Nat
 import Data.Fin
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
@@ -54,7 +55,7 @@ module conservativity
   (𝒞DC : ∀ (S : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category S) 𝒞)
   (𝒞istable : stable-coproducts-indexed.IdxStable 𝒞DC)
   -- A higher order model
-  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
+  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟E : HasWeakExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
   (𝒟DC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) 𝒟)
   -- A functor which preserves terminal and products
   (F  : Functor 𝒞 𝒟)
@@ -883,36 +884,13 @@ module Gl = glueing-simple 𝒟 PSh⟨𝒞⟩ _ system G
 -- This category has all the structure we need:
 module GlCP = Gl.coproducts 𝒟CP
 module GlCPM = HasCoproducts GlCP.coproducts
-module GlPE = Gl.products-and-exponentials 𝒟T 𝒟P 𝒟E G-preserve-products
+module GlPE = Gl.products-and-weak-exponentials 𝒟T 𝒟P 𝒟E G-preserve-products
 module GlPM = HasProducts GlPE.products
 module GlT = HasTerminal GlPE.terminal
 module GlM = Gl.monad-glueing 𝒟M _ G-MonadFunctor 𝐂MP
 
 GDC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) Gl.cat
 GDC A = colimits where open Gl.colimits (setoid→category A) (𝒟DC A)
-
-open import lists Gl.cat GlPE.terminal GlPE.products GlPE.exponentials GDC
-  using ()
-  renaming (lists to Gl-lists)
-
--- Poly-types for the glued category, realised from the μ-types of Fam(Gl).
-GlSC : HasStrongCoproducts Gl.cat GlPE.products
-GlSC = ccc→strong-coproducts GlCP.coproducts GlPE.exponentials
-
-abstract
-  Gl-Mu : polynomial-functor.Interp.HasMu GlPE.terminal GlPE.products GlSC
-  Gl-Mu = fam-mu-realisation.Muℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
-
-  Gl-MuLaws : polynomial-functor.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu
-  Gl-MuLaws = fam-mu-realisation.MuLawsℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC
-
-  -- Expose the μ-objects behind the abstraction: they are the realised
-  -- μ-objects of the construction above.
-  Gl-Mu-obj : ∀ {n} (Q : polynomial-functor.Poly Gl.cat (Data.Nat.suc n))
-              (δ : Data.Fin.Fin n → Category.obj Gl.cat) →
-              polynomial-functor.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
-              fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products GlPE.exponentials GlSC Q δ
-  Gl-Mu-obj Q δ = ≡-refl
 
 module Glued = Category Gl.cat
 open Gl.Obj
@@ -1223,38 +1201,79 @@ definability {X} {Y} f with Definable-closed _ (f .presv .*⊑* X .*⊑* (lift (
     where open ≈-Reasoning 𝒟.isEquiv
 
 ------------------------------------------------------------------------------
--- The morphisms in the logical relations category that we are
--- interested are the ones that come from interpretations of the
--- language.
+-- The strong-exponential tail: the closure-derived strong coproducts, the realised μ-types, and
+-- the syntactic interpretation, all of which need the extensionality law of the base
+-- exponentials. The weak core above does not.
 
-module syntactic {ℓ}
-   (Sig : Signature ℓ)
-   (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
-   (𝒞Mu : polynomial-functor.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
-   (GFC : preserve-chosen-coproducts GF (strong-coproducts→coproducts 𝒞T 𝒞SC)
-                                        (strong-coproducts→coproducts GlPE.terminal GlSC))
-   (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-Mu GF)
-   (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P ,
-                   HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
-                     (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
-   where
+module strong-exponentials
+  (𝒟E-ext : ∀ {x y z} (f : Category._⇒_ 𝒟 x (HasWeakExponentials.exp 𝒟E y z)) →
+            Category._≈_ 𝒟
+              (HasWeakExponentials.lambda 𝒟E
+                (Category._∘_ 𝒟 (HasWeakExponentials.eval 𝒟E)
+                  (HasProducts.prod-m 𝒟P f (Category.id 𝒟 _))))
+              f)
+  where
 
-  open import language-syntax Sig using (_⊢_; first-order; first-order-ctxt)
+  -- The glued exponentials are the weak ones; the extensionality law lifts from the base's.
+  Gl-exponentials : HasExponentials Gl.cat GlPE.products
+  Gl-exponentials .HasExponentials.exp = GlPE._[→]_
+  Gl-exponentials .HasExponentials.eval = GlPE.eval
+  Gl-exponentials .HasExponentials.lambda = GlPE.lambda
+  Gl-exponentials .HasExponentials.lambda-cong =
+    GlPE.weak-exponentials .HasWeakExponentials.lambda-cong
+  Gl-exponentials .HasExponentials.eval-lambda =
+    GlPE.weak-exponentials .HasWeakExponentials.eval-lambda
+  Gl-exponentials .HasExponentials.lambda-ext f .f≃f = 𝒟E-ext (f .morph)
 
-  open import language-fo-interpretation Sig
-         𝒞 𝒞T 𝒞P 𝒞SC 𝒞Mu (𝒞T .HasTerminal.witness)
-         Gl.cat GlPE.terminal GlPE.products GlSC GlPE.exponentials Gl-Mu Gl-MuLaws
-         (GlPE.terminal .HasTerminal.witness) (Glued.id _)
-         GF GF-preserve-terminal GF-preserve-products GFC GFμ
-         (Glued.IsIso→Iso GF-preserve-terminal)
-         𝒞-Sig-Model
-    renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
+  GlSC : HasStrongCoproducts Gl.cat GlPE.products
+  GlSC = ccc→strong-coproducts GlCP.coproducts Gl-exponentials
 
-  open Glued.Iso
+  abstract
+    Gl-Mu : polynomial-functor.Interp.HasMu GlPE.terminal GlPE.products GlSC
+    Gl-Mu = fam-mu-realisation.Muℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products Gl-exponentials GlSC
 
-  syntactic-definability :
-    ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (τ-fo : first-order τ) (M : Γ ⊢ τ) →
-    ∃ (𝒞⟦ Γ-fo ⟧ctxt 𝒞.⇒ 𝒞⟦ τ-fo ⟧ty (λ ())) λ g →
-      F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso (λ ()) .bwd .morph 𝒟.∘ (G⟦ M ⟧tm .morph 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd .morph))
-  syntactic-definability Γ-fo τ-fo M =
-    definability (⟦ τ-fo ⟧-iso (λ ()) .bwd Glued.∘ (G⟦ M ⟧tm Glued.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))
+    Gl-MuLaws : polynomial-functor.Interp.HasMuLaws GlPE.terminal GlPE.products GlSC Gl-Mu
+    Gl-MuLaws = fam-mu-realisation.MuLawsℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products Gl-exponentials GlSC
+
+    -- Expose the μ-objects behind the abstraction: they are the realised
+    -- μ-objects of the construction above.
+    Gl-Mu-obj : ∀ {n} (Q : polynomial-functor.Poly Gl.cat (Data.Nat.suc n))
+                (δ : Data.Fin.Fin n → Category.obj Gl.cat) →
+                polynomial-functor.Interp.HasMu.μ-obj Gl-Mu Q δ ≡
+                fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products Gl-exponentials GlSC Q δ
+    Gl-Mu-obj Q δ = ≡-refl
+
+  -- The morphisms in the logical relations category that we are
+  -- interested are the ones that come from interpretations of the
+  -- language.
+  module syntactic {ℓ}
+     (Sig : Signature ℓ)
+     (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
+     (𝒞Mu : polynomial-functor.Interp.HasMu 𝒞T 𝒞P 𝒞SC)
+     (GFC : preserve-chosen-coproducts GF (strong-coproducts→coproducts 𝒞T 𝒞SC)
+                                          (strong-coproducts→coproducts GlPE.terminal GlSC))
+     (GFμ : polynomial-functor.Preserves-μ 𝒞T 𝒞P 𝒞SC GlPE.terminal GlPE.products GlSC 𝒞Mu Gl-Mu GF)
+     (𝒞-Sig-Model : Model PFPC[ 𝒞 , 𝒞T , 𝒞P ,
+                     HasCoproducts.coprod (strong-coproducts→coproducts 𝒞T 𝒞SC)
+                       (𝒞T .HasTerminal.witness) (𝒞T .HasTerminal.witness) ] Sig)
+     where
+
+    open import language-syntax Sig using (_⊢_; first-order; first-order-ctxt)
+
+    open import language-fo-interpretation Sig
+           𝒞 𝒞T 𝒞P 𝒞SC 𝒞Mu (𝒞T .HasTerminal.witness)
+           Gl.cat GlPE.terminal GlPE.products GlSC Gl-exponentials Gl-Mu Gl-MuLaws
+           (GlPE.terminal .HasTerminal.witness) (Glued.id _)
+           GF GF-preserve-terminal GF-preserve-products GFC GFμ
+           (Glued.IsIso→Iso GF-preserve-terminal)
+           𝒞-Sig-Model
+      renaming (𝒟⟦_⟧ty to G⟦_⟧ty; 𝒟⟦_⟧ctxt to G⟦_⟧ctxt; 𝒟⟦_⟧tm to G⟦_⟧tm)
+
+    open Glued.Iso
+
+    syntactic-definability :
+      ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (τ-fo : first-order τ) (M : Γ ⊢ τ) →
+      ∃ (𝒞⟦ Γ-fo ⟧ctxt 𝒞.⇒ 𝒞⟦ τ-fo ⟧ty (λ ())) λ g →
+        F .fmor g 𝒟.≈ (⟦ τ-fo ⟧-iso (λ ()) .bwd .morph 𝒟.∘ (G⟦ M ⟧tm .morph 𝒟.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd .morph))
+    syntactic-definability Γ-fo τ-fo M =
+      definability (⟦ τ-fo ⟧-iso (λ ()) .bwd Glued.∘ (G⟦ M ⟧tm Glued.∘ ⟦ Γ-fo ⟧ctxt-iso .fwd))

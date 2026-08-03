@@ -1160,6 +1160,15 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
       id _
     ∎ where open ≈-Reasoning isEquiv
 
+-- Exponential structure with the extensionality law forgotten.
+exponentials→weak : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞} →
+                    HasExponentials 𝒞 P → HasWeakExponentials 𝒞 P
+exponentials→weak E .HasWeakExponentials.exp = HasExponentials.exp E
+exponentials→weak E .HasWeakExponentials.eval = HasExponentials.eval E
+exponentials→weak E .HasWeakExponentials.lambda = HasExponentials.lambda E
+exponentials→weak E .HasWeakExponentials.lambda-cong = HasExponentials.lambda-cong E
+exponentials→weak E .HasWeakExponentials.eval-lambda = HasExponentials.eval-lambda E
+
 record HasBooleans {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
   open Category 𝒞
   open HasTerminal T renaming (witness to terminal)

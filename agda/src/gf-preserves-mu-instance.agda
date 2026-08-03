@@ -40,7 +40,7 @@ module gf-preserves-mu-instance
   open I.Conservativity
 
   module GFM = gf-preserves-mu 𝒞 𝒞-terminal 𝒞-products
-                 Gl.cat GlPE.terminal GlPE.products GlPE.exponentials GlSC GDC
+                 Gl.cat GlPE.terminal GlPE.products Gl-exponentials GlSC GDC
                  GF GF-preserve-products GF-preserve-coproducts-indexed Gl-Mu Gl-Mu-obj
 
   open GFM public using (GFμ)

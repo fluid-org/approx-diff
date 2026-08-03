@@ -3,7 +3,8 @@
 open import Level using (suc; _⊔_; 0ℓ)
 open import prop-setoid using (module ≈-Reasoning; IsEquivalence)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; module ≤-Reasoning; IsJoin; IsBigJoin)
-open import categories using (Category; HasProducts; HasExponentials; HasCoproducts; HasTerminal; IsTerminal)
+open import categories using (Category; HasProducts; HasExponentials; HasWeakExponentials;
+                              exponentials→weak; HasCoproducts; HasTerminal; IsTerminal)
 open import functor using (Functor; HasColimits; Colimit; IsColimit; _∘F_; NatTrans; ≃-NatTrans)
 open import monad using (Monad; MonadFunctor)
 open import predicate-system using (PredicateSystem; FunctorPred; MonadPred)
@@ -157,16 +158,18 @@ module coproducts (CP : HasCoproducts 𝒞) where
   coproducts .HasCoproducts.copair-in₂ f g .f≃f = CP.copair-in₂ (f .morph) (g .morph)
   coproducts .HasCoproducts.copair-ext f .f≃f = CP.copair-ext (f .morph)
 
--- products and exponentials
-module products-and-exponentials
-         (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (E : HasExponentials 𝒞 P)
+-- Products and exponentials. The construction consumes only the weak exponential structure of the
+-- base (the one law used is the computation rule, in lambda's preservation proof), so it is stated
+-- weakly; the strong wrapper below copies the base's remaining laws across.
+module products-and-weak-exponentials
+         (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (E : HasWeakExponentials 𝒞 P)
          (FP : preserve-chosen-products F P 𝒟P)
      where
 
   private
     module T = HasTerminal T
     module P = HasProducts P
-    module E = HasExponentials E
+    module E = HasWeakExponentials E
 
   open preserve-chosen-products-consequences F P 𝒟P FP
 
@@ -299,6 +302,23 @@ module products-and-exponentials
         ∎
         where open ≤-Reasoning ⊑-isPreorder
       open ≤-Reasoning ⊑-isPreorder
+
+  weak-exponentials : HasWeakExponentials cat products
+  weak-exponentials .HasWeakExponentials.exp = _[→]_
+  weak-exponentials .HasWeakExponentials.eval = eval
+  weak-exponentials .HasWeakExponentials.lambda = lambda
+  weak-exponentials .HasWeakExponentials.lambda-cong e .f≃f = E.lambda-cong (e .f≃f)
+  weak-exponentials .HasWeakExponentials.eval-lambda f .f≃f = E.eval-lambda (f .morph)
+
+module products-and-exponentials
+         (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (E : HasExponentials 𝒞 P)
+         (FP : preserve-chosen-products F P 𝒟P)
+     where
+
+  open products-and-weak-exponentials T P (exponentials→weak E) FP public
+
+  private
+    module E = HasExponentials E
 
   exponentials : HasExponentials cat products
   exponentials .HasExponentials.exp = _[→]_

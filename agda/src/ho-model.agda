@@ -7,7 +7,7 @@ open import categories
   using (Category; HasProducts; HasTerminal; HasInitial; IsTerminal; IsInitial;
          op-coproducts→products; op-initial→terminal; HasCoproducts;
          HasStrongCoproducts; strong-coproducts→coproducts; ccc→strong-coproducts;
-         coproducts-canonical-iso)
+         coproducts-canonical-iso; exponentials→weak; HasExponentials)
 import polynomial-functor
 open import cmon-enriched
   using (CMonEnriched; product-cmon-enriched; op-cmon-enriched; Biproduct; biproducts→products)
@@ -320,7 +320,7 @@ module Interpretation
     open import conservativity
       Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-products (IdentityMonad Fam⟨𝒞⟩.cat)
       Fam⟨𝒞⟩.bigCoproducts 𝒞istable
-      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products Fam⟨𝒟⟩-exponentials (IdentityMonad Fam⟨𝒟⟩.cat) Fam⟨𝒟⟩.bigCoproducts
+      Fam⟨𝒟⟩.cat Fam⟨𝒟⟩-terminal Fam⟨𝒟⟩-products (exponentials→weak Fam⟨𝒟⟩-exponentials) (IdentityMonad Fam⟨𝒟⟩.cat) Fam⟨𝒟⟩.bigCoproducts
       Fam⟨F⟩ Fam⟨F⟩-preserves-terminal Fam⟨F⟩-preserves-products
       (preserve-identity-monad Fam⟨F⟩)
       FM-DC
@@ -328,6 +328,8 @@ module Interpretation
       (fam-functor.FamF-faithful 0ℓ 0ℓ F F-faithful)
       (fam-functor.FamF-def 0ℓ 0ℓ F F-def F-faithful)
       public
+
+    open strong-exponentials (λ f → HasExponentials.lambda-ext Fam⟨𝒟⟩-exponentials f) public
 
     Fam⟨𝒞⟩-strongCoproducts : HasStrongCoproducts Fam⟨𝒞⟩.cat Fam⟨𝒞⟩-products
     Fam⟨𝒞⟩-strongCoproducts = Fam⟨𝒞⟩.products.strongCoproducts 𝒞-products
@@ -341,13 +343,13 @@ module Interpretation
     GF-preserve-strong-coproducts :
       preserve-chosen-coproducts GF
         (strong-coproducts→coproducts Fam⟨𝒞⟩-terminal Fam⟨𝒞⟩-strongCoproducts)
-        (strong-coproducts→coproducts GlPE.terminal (ccc→strong-coproducts GlCP.coproducts GlPE.exponentials))
+        (strong-coproducts→coproducts GlPE.terminal (ccc→strong-coproducts GlCP.coproducts Gl-exponentials))
     GF-preserve-strong-coproducts {x} {y} = Glued.IsIso-cong comp≈n comp-isIso
       where
         open Glued.Iso
         open Glued.IsIso
         module CP' = HasCoproducts
-          (strong-coproducts→coproducts GlPE.terminal (ccc→strong-coproducts GlCP.coproducts GlPE.exponentials))
+          (strong-coproducts→coproducts GlPE.terminal (ccc→strong-coproducts GlCP.coproducts Gl-exponentials))
         module CPC = HasCoproducts Fam⟨𝒞⟩-coproducts
         module B-derive = finite-coproducts-from-indexed.derive Fam⟨𝒞⟩.bigCoproducts
         module B = HasCoproducts B-derive.coproducts-from-indexed
