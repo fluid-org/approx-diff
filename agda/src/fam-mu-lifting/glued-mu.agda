@@ -103,6 +103,24 @@ idᵢ .inv x = id _
 idᵢ .inv₁ x = id-left
 idᵢ .inv₂ x = id-left
 
+_∘ᵢ_ : ∀ {X Y Z} → Y =>ᵢ Z → X =>ᵢ Y → X =>ᵢ Z
+(f ∘ᵢ g) .mor = Gl._∘_ (f .mor) (g .mor)
+(f ∘ᵢ g) .inv x = g .inv x ∘ f .inv (g .mor .morph .idxf .PS._⇒_.func x)
+(f ∘ᵢ g) .inv₁ x =
+  ≈-trans (∘-cong id-left ≈-refl)
+  (≈-trans (assoc _ _ _)
+  (≈-trans (∘-cong ≈-refl
+             (≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong (g .inv₁ x) ≈-refl) id-left)))
+           (f .inv₁ _)))
+(f ∘ᵢ g) .inv₂ x =
+  ≈-trans (∘-cong ≈-refl id-left)
+  (≈-trans (assoc _ _ _)
+  (≈-trans (∘-cong ≈-refl
+             (≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong (f .inv₂ _) ≈-refl) id-left)))
+           (g .inv₂ x)))
+
 [×]ᵢ : ∀ {X X' Y Y'} → X =>ᵢ X' → Y =>ᵢ Y' → (X [×] Y) =>ᵢ (X' [×] Y')
 [×]ᵢ f g .mor = [×]-map (f .mor) (g .mor)
 [×]ᵢ f g .inv (x , y) = prod-m (f .inv x) (g .inv y)
