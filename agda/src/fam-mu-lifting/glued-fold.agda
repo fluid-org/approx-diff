@@ -59,6 +59,22 @@ extend-pred : ∀ {k} (δ₀ : Fin k → Obj) (δP₀ : ∀ i → Predicate (G .
 extend-pred δ₀ δP₀ A Ap Fin.zero    = Ap
 extend-pred δ₀ δP₀ A Ap (Fin.suc i) = δP₀ i
 
+-- Transport of a singleton morphism across the lifting: the context-paired
+-- fibre map passes under the root.
+sing-under-root : ∀ {Gf Xf : obj} {Y : Obj}
+                  (hs : Mor simple[ PS.𝟙 , prod Gf Xf ] Y) →
+                  Mor simple[ PS.𝟙 , prod Gf (L Xf) ] (Lf Y)
+sing-under-root hs .idxf = hs .idxf
+sing-under-root hs .famf ._⇒f_.transf t = under-root (hs .famf ._⇒f_.transf t)
+sing-under-root {Y = Y} hs .famf ._⇒f_.natural {t₁} {t₂} e =
+  ≈-trans id-right
+    (≈-sym (≈-trans (under-root-post
+                      (fam-subst-iso₁ (Y .fam) (hs .idxf .PS._⇒_.func-resp-≈ e))
+                      (fam-subst-iso₂ (Y .fam) (hs .idxf .PS._⇒_.func-resp-≈ e))
+                      (hs .famf ._⇒f_.transf t₁))
+             (under-root-cong
+               (≈-trans (≈-sym (hs .famf ._⇒f_.natural e)) id-right))))
+
 -- The glued fold, at a fixed μ-polynomial, environment, glued context and
 -- glued target with a closed predicate. The additive instance obligations
 -- are quantified over the recursive morphism and its preservation.
@@ -67,19 +83,38 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
     (Γg Ag : Gl.Obj)
     (alg : Mor (Fam𝒞-P.prod (Γg .carrier) (R.fobj μObj P (extend δ (Ag .carrier))))
                (Ag .carrier))
-    (payload-absorb : ∀ {X Yg : Gl.Obj}
-                      (h : Mor (Fam𝒞-P.prod (Γg .carrier) (X .carrier)) (Yg .carrier)) →
-                      ((Γg [×] X) .pred ⊑ (Yg .pred [ G .fmor h ])) →
-                      ((Γg [×] X) .pred
-                        ⊑ (Lf-Gl Yg .pred
-                             [ G .fmor (elim-inj root-pointed (Fam𝒞._∘_ injF h)) ])))
-    (root-under : ∀ {X Yg : Gl.Obj}
-                  (h : Mor (Fam𝒞-P.prod (Γg .carrier) (X .carrier)) (Yg .carrier)) →
-                  ((Γg [×] X) .pred ⊑ (Yg .pred [ G .fmor h ])) →
-                  (((Γg .pred [ G .fmor Fam𝒞-P.p₁ ])
-                     && (Rt (X .carrier) [ G .fmor Fam𝒞-P.p₂ ]))
-                    ⊑ (Lf-Gl Yg .pred
-                         [ G .fmor (elimF root-pointed (Fam𝒞._∘_ injF h)) ])))
+    (payload-sing : ∀ (Xg Yg : Gl.Obj) (γ : Γg .carrier .idx .Carrier)
+                    (ι : Xg .carrier .idx .Carrier)
+                    (hs : Mor simple[ PS.𝟙 , prod (Γg .carrier .fam .fm γ)
+                                              (Xg .carrier .fam .fm ι) ]
+                              (Yg .carrier)) →
+                    (((Γg [×] Xg) .pred
+                        [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Xg .carrier))
+                                           (γ , ι)) ])
+                      ⊑ (Yg .pred [ G .fmor hs ])) →
+                    ((((Γg .pred [ G .fmor Fam𝒞-P.p₁ ])
+                        && ((Xg .pred ⟨ G .fmor (injF {Xg .carrier}) ⟩)
+                              [ G .fmor Fam𝒞-P.p₂ ]))
+                        [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Lf (Xg .carrier)))
+                                           (γ , ι)) ])
+                      ⊑ (Lf-Gl Yg .pred [ G .fmor (sing-under-root hs) ])))
+    (root-sing : ∀ (Xg Yg : Gl.Obj) (γ : Γg .carrier .idx .Carrier)
+                 (ι : Xg .carrier .idx .Carrier)
+                 (hs : Mor simple[ PS.𝟙 , prod (Γg .carrier .fam .fm γ)
+                                           (Xg .carrier .fam .fm ι) ]
+                           (Yg .carrier)) →
+                 (((Γg [×] Xg) .pred
+                     [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Xg .carrier))
+                                        (γ , ι)) ])
+                   ⊑ (Yg .pred [ G .fmor hs ])) →
+                 ((((Γg .pred [ G .fmor Fam𝒞-P.p₁ ])
+                     && (Rt (Xg .carrier) [ G .fmor Fam𝒞-P.p₂ ]))
+                     [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Lf (Xg .carrier)))
+                                        (γ , ι)) ])
+                   ⊑ (Lf-Gl Yg .pred [ G .fmor (sing-under-root hs) ])))
+    (sing-split : ∀ {X : Obj} {Q : Predicate (G .fobj X)} →
+                  Q ⊑ 𝐂 (⋁ (X .idx .Carrier)
+                          (λ x → (Q [ G .fmor (elem-in X x) ]) ⟨ G .fmor (elem-in X x) ⟩)))
     (dist : ∀ {V} {Pp Q S : Predicate V} → (Pp && (Q ++ S)) ⊑ ((Pp && Q) ++ (Pp && S)))
     (dist-⋁ : ∀ {V} {I : Set 0ℓ} {Pp : Predicate V} {Qs : I → Predicate V} →
               (Pp && ⋁ I Qs) ⊑ ⋁ I (λ i → Pp && Qs i))
