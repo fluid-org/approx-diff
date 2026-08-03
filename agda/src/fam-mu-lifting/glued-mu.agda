@@ -194,6 +194,138 @@ module MuPred {n} (δGl : Fin n → Gl.Obj) where
     in-el-natural (inj₁ p) _ _ x e = id-left
     in-el-natural (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x e = in-fib-natural Q ρd pQ pρ x e
 
+  -- The canonical index of a fibre carrier: trivial at every component.
+  mutual
+    fib-ix : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+             (d : ∀ i → DecoAssign (ρ̄ i))
+             (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+             (t : W ∣ Q ∣ ρ̄) → fib-Gl Q d pQ pd t .carrier .idx .Carrier
+    fib-ix Q d pQ pd (sup x) = shape-ix Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x
+
+    shape-ix : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+               (d : ∀ i → DecoAssign (η̄ i))
+               (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+               (x : ⟦ ∣ Q ∣ ⟧shape η̄) → fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier
+    shape-ix (const A) d pA pd x = lift tt
+    shape-ix (var i)   d pQ pd x = el-ix _ (d i) (pd i) x
+    shape-ix (P' + Q') d (pP , pQ) pd (inj₁ x) = shape-ix P' d pP pd x
+    shape-ix (P' + Q') d (pP , pQ) pd (inj₂ y) = shape-ix Q' d pQ pd y
+    shape-ix (P' × Q') d (pP , pQ) pd (x , y) = shape-ix P' d pP pd x , shape-ix Q' d pQ pd y
+    shape-ix (μ Q')    d pQ' pd t = fib-ix Q' d pQ' pd t
+
+    el-ix : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+            (x : El r) → fib-el-Gl r dr pr x .carrier .idx .Carrier
+    el-ix (inj₁ p) _ _ x = lift tt
+    el-ix (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x = fib-ix Q ρd pQ pρ x
+
+  -- The reverse inclusions, from the fibre back onto the carrier's fibre at any index.
+  mutual
+    out-fib : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+              (d : ∀ i → DecoAssign (ρ̄ i))
+              (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+              (t : W ∣ Q ∣ ρ̄) (ι : fib-Gl Q d pQ pd t .carrier .idx .Carrier) →
+              fib Q d t ⇒ fib-Gl Q d pQ pd t .carrier .fam .fm ι
+    out-fib Q d pQ pd (sup x) ι = out-shape Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x ι
+
+    out-shape : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+                (d : ∀ i → DecoAssign (η̄ i))
+                (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+                (x : ⟦ ∣ Q ∣ ⟧shape η̄) (ι : fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier) →
+                fib-shape Q d x ⇒ fib-shape-Gl Q d pQ pd x .carrier .fam .fm ι
+    out-shape (const A) d pA pd x ι = id _
+    out-shape (var i)   d pQ pd x ι = out-el _ (d i) (pd i) x ι
+    out-shape (P' + Q') d (pP , pQ) pd (inj₁ x) ι = Lmap (out-shape P' d pP pd x ι)
+    out-shape (P' + Q') d (pP , pQ) pd (inj₂ y) ι = Lmap (out-shape Q' d pQ pd y ι)
+    out-shape (P' × Q') d (pP , pQ) pd (x , y) (ι₁ , ι₂) =
+      Lmap (prod-m (out-shape P' d pP pd x ι₁) (out-shape Q' d pQ pd y ι₂))
+    out-shape (μ Q')    d pQ' pd t ι = out-fib Q' d pQ' pd t ι
+
+    out-el : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+             (x : El r) (ι : fib-el-Gl r dr pr x .carrier .idx .Carrier) →
+             fib-el r dr x ⇒ fib-el-Gl r dr pr x .carrier .fam .fm ι
+    out-el (inj₁ p) _ _ x ι = id _
+    out-el (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x ι = out-fib Q ρd pQ pρ x ι
+
+  -- The inclusions are two-sided inverses.
+  mutual
+    in-out-fib : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+                 (d : ∀ i → DecoAssign (ρ̄ i))
+                 (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+                 (t : W ∣ Q ∣ ρ̄) (ι : fib-Gl Q d pQ pd t .carrier .idx .Carrier) →
+                 (in-fib Q d pQ pd t ι ∘ out-fib Q d pQ pd t ι) ≈ id (fib Q d t)
+    in-out-fib Q d pQ pd (sup x) ι =
+      in-out-shape Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x ι
+
+    in-out-shape : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+                   (d : ∀ i → DecoAssign (η̄ i))
+                   (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+                   (x : ⟦ ∣ Q ∣ ⟧shape η̄) (ι : fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier) →
+                   (in-shape Q d pQ pd x ι ∘ out-shape Q d pQ pd x ι) ≈ id (fib-shape Q d x)
+    in-out-shape (const A) d pA pd x ι = id-left
+    in-out-shape (var i)   d pQ pd x ι = in-out-el _ (d i) (pd i) x ι
+    in-out-shape (P' + Q') d (pP , pQ) pd (inj₁ x) ι =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (in-out-shape P' d pP pd x ι)) Lmap-id)
+    in-out-shape (P' + Q') d (pP , pQ) pd (inj₂ y) ι =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (in-out-shape Q' d pQ pd y ι)) Lmap-id)
+    in-out-shape (P' × Q') d (pP , pQ) pd (x , y) (ι₁ , ι₂) =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong
+                   (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                     (≈-trans (prod-m-cong (in-out-shape P' d pP pd x ι₁)
+                                           (in-out-shape Q' d pQ pd y ι₂))
+                              prod-m-id)))
+                 Lmap-id)
+    in-out-shape (μ Q')    d pQ' pd t ι = in-out-fib Q' d pQ' pd t ι
+
+    in-out-el : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+                (x : El r) (ι : fib-el-Gl r dr pr x .carrier .idx .Carrier) →
+                (in-el r dr pr x ι ∘ out-el r dr pr x ι) ≈ id (fib-el r dr x)
+    in-out-el (inj₁ p) _ _ x ι = id-left
+    in-out-el (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x ι = in-out-fib Q ρd pQ pρ x ι
+
+  mutual
+    out-in-fib : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+                 (d : ∀ i → DecoAssign (ρ̄ i))
+                 (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+                 (t : W ∣ Q ∣ ρ̄) (ι : fib-Gl Q d pQ pd t .carrier .idx .Carrier) →
+                 (out-fib Q d pQ pd t ι ∘ in-fib Q d pQ pd t ι)
+                   ≈ id (fib-Gl Q d pQ pd t .carrier .fam .fm ι)
+    out-in-fib Q d pQ pd (sup x) ι =
+      out-in-shape Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x ι
+
+    out-in-shape : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+                   (d : ∀ i → DecoAssign (η̄ i))
+                   (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+                   (x : ⟦ ∣ Q ∣ ⟧shape η̄) (ι : fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier) →
+                   (out-shape Q d pQ pd x ι ∘ in-shape Q d pQ pd x ι)
+                     ≈ id (fib-shape-Gl Q d pQ pd x .carrier .fam .fm ι)
+    out-in-shape (const A) d pA pd x ι = id-left
+    out-in-shape (var i)   d pQ pd x ι = out-in-el _ (d i) (pd i) x ι
+    out-in-shape (P' + Q') d (pP , pQ) pd (inj₁ x) ι =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (out-in-shape P' d pP pd x ι)) Lmap-id)
+    out-in-shape (P' + Q') d (pP , pQ) pd (inj₂ y) ι =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (out-in-shape Q' d pQ pd y ι)) Lmap-id)
+    out-in-shape (P' × Q') d (pP , pQ) pd (x , y) (ι₁ , ι₂) =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong
+                   (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                     (≈-trans (prod-m-cong (out-in-shape P' d pP pd x ι₁)
+                                           (out-in-shape Q' d pQ pd y ι₂))
+                              prod-m-id)))
+                 Lmap-id)
+    out-in-shape (μ Q')    d pQ' pd t ι = out-in-fib Q' d pQ' pd t ι
+
+    out-in-el : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+                (x : El r) (ι : fib-el-Gl r dr pr x .carrier .idx .Carrier) →
+                (out-el r dr pr x ι ∘ in-el r dr pr x ι)
+                  ≈ id (fib-el-Gl r dr pr x .carrier .fam .fm ι)
+    out-in-el (inj₁ p) _ _ x ι = id-left
+    out-in-el (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x ι = out-in-fib Q ρd pQ pρ x ι
+
   -- The inclusion of a fibre's carrier at its tree, over the constant index map.
   tree-in : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
             Mor (fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier) (μObj P' δc)
