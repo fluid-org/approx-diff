@@ -157,6 +157,14 @@ _++_ {X} P Q .pred-mor {a} {b} f = begin
 []-++ : ∀ {X Y} {P Q : Predicate Y} {f : X PSh.⇒ Y} → ((P ++ Q) [ f ]) ⊑ ((P [ f ]) ++ (Q [ f ]))
 []-++ .*⊑* a = record { *⊑* = λ x z → z }
 
+-- Meets distribute over joins, and satisfy Frobenius reciprocity with direct images, stagewise.
+&&-++-distrib : ∀ {X} {P Q R : Predicate X} → (P && (Q ++ R)) ⊑ ((P && Q) ++ (P && R))
+&&-++-distrib .*⊑* a = setoid-predicate.&&-++-distrib
+
+&&-⟨⟩-frobenius : ∀ {X Y} {P : Predicate Y} {Q : Predicate X} {α : X PSh.⇒ Y} →
+                  (P && (Q ⟨ α ⟩)) ⊑ (((P [ α ]) && Q) ⟨ α ⟩)
+&&-⟨⟩-frobenius .*⊑* a = setoid-predicate.&&-⟨⟩-frobenius
+
 ⋁ : ∀ {X} (I : Set 0ℓ) → (I → Predicate X) → Predicate X
 ⋁ I P .pred a = P.⋁ I λ i → P i .pred a
 ⋁ {X} I P .pred-mor {a} {b} f = begin

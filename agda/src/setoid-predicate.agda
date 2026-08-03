@@ -175,6 +175,17 @@ _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
 []-++ : ∀ {X Y} {P Q : Predicate Y} {f : X ⇒s Y} → ((P ++ Q) [ f ]) ⊑ ((P [ f ]) ++ (Q [ f ]))
 []-++ .*⊑* x p = p
 
+-- Meets distribute over joins, pointwise.
+&&-++-distrib : ∀ {X} {P Q R : Predicate X} → (P && (Q ++ R)) ⊑ ((P && Q) ++ ((P && R)))
+&&-++-distrib .*⊑* x (p , inj₁ q) = inj₁ (p , q)
+&&-++-distrib .*⊑* x (p , inj₂ r) = inj₂ (p , r)
+
+-- Frobenius: a meet with a direct image is the direct image of the reindexed meet.
+&&-⟨⟩-frobenius : ∀ {X Y} {P : Predicate Y} {Q : Predicate X} {f : X ⇒s Y} →
+                  (P && (Q ⟨ f ⟩)) ⊑ (((P [ f ]) && Q) ⟨ f ⟩)
+&&-⟨⟩-frobenius {X} {Y} {P} {Q} {f} .*⊑* y (p , (x , q , e)) =
+  x , (P .Predicate.pred-≃ (Y .Setoid.sym e) p , q) , e
+
 -- Big joins
 ⋁ : ∀ {X} (I : Set 0ℓ) → (I → Predicate X) → Predicate X
 ⋁ I P .Predicate.pred x = ∃ I λ i → P i .Predicate.pred x
