@@ -3,15 +3,20 @@
 -- The rooted interpretation of the language in a category of families: sums are coproducts of
 -- lifted summands and products are lifted products, matching the rooted interpretation of
 -- polynomials, with μ-types the rooted carriers and function spaces the chosen weak exponentials.
--- Constructors inject their payload under a fresh root; eliminators drop the root, whose
--- contribution is the zero constant. The empty environment for the μ-carriers is a parameter
--- because functions out of Fin 0 agree only propositionally, and the comparison with a change of
--- base needs the μ-carriers' environment to be the image environment definitionally.
+-- Constructors inject their payload under a fresh root; eliminators read the root into the result
+-- type's chosen constant, so a selected tag reaches everything the branch computes. Every type
+-- carries such a constant, given ones for the sorts, the unit object and the exponentials; the
+-- zero constants recover the reading in which eliminators discard the root. The empty environment
+-- for the μ-carriers is a parameter because functions out of Fin 0 agree only propositionally, and
+-- the comparison with a change of base needs the μ-carriers' environment to be the image
+-- environment definitionally.
 
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
-open import Level using (Level)
+open import Level using (Level; lift)
 open import Data.Nat using (zero; suc; _+_)
+open import Data.Unit using (tt)
+import Data.Product as DP
 open import Data.Sum using (_⊎_; [_,_]; inj₁; inj₂; map₁)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import categories
@@ -22,6 +27,7 @@ open import lifting using (Lifting)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 open import polynomial-functor using (Poly)
 import fam-mu-lifting.in-map
+import fam-mu-lifting.point
 import language-syntax
 
 module language-rooted-interpretation
@@ -31,14 +37,20 @@ module language-rooted-interpretation
   {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
   (let module R = fam-mu-lifting.in-map os es T CM BP Lft)
   (𝒞E : HasWeakExponentials R.cat R.products)
+  (exp-pt : ∀ {X Y : R.Obj} → R.Pointed Y → R.Pointed (HasWeakExponentials.exp 𝒞E X Y))
   (δ∅ : Fin 0 → R.Obj)
   (𝟙ty : R.Obj)
   (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
+  (𝟙ty-pt : R.Pointed 𝟙ty)
   (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
   (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
+  (Int-pt : ∀ (s : Signature.sort Sig) → R.Pointed (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; injF; payloadF; extend; fobj; HasMu; hasMu)
+open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu;
+              Pointed; Lf-pointed; prod-pointed; coprod-pointed; elimF)
+module Rpt = fam-mu-lifting.point os es T CM BP Lft
+open Rpt using (PolyPt; μObj-pointed)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
@@ -67,6 +79,34 @@ mutual
   as-poly (σ [×] τ)       δ = as-poly σ δ Poly.× as-poly τ δ
   as-poly (σ [→] τ)       δ = Poly.const (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
+
+-- Every type's interpretation carries a chosen constant, given constants for the sorts, the unit
+-- object and the exponentials: the eliminators read a root into the result type's constant.
+mutual
+  ty-pt : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Pointed (δ i)) → Pointed (⟦ τ ⟧ty δ)
+  ty-pt (var i)   δ δp = δp i
+  ty-pt unit      δ δp = 𝟙ty-pt
+  ty-pt (base s)  δ δp = Int-pt s
+  ty-pt (σ [+] τ) δ δp = coprod-pointed (Lf-pointed (ty-pt σ δ δp)) (Lf-pointed (ty-pt τ δ δp))
+  ty-pt (σ [×] τ) δ δp = Lf-pointed (prod-pointed (ty-pt σ δ δp) (ty-pt τ δ δp))
+  ty-pt (σ [→] τ) δ δp = exp-pt (ty-pt τ (λ ()) (λ ()))
+  ty-pt (μ τ)     δ δp = μObj-pointed {δ = δ∅} (as-poly τ δ) (λ ()) (poly-pt τ δ δp)
+
+  poly-pt : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Pointed (δ i)) →
+            PolyPt (as-poly {Δ} {n} τ δ)
+  poly-pt {Δ} {n} (var i) δ δp = go (splitAt n i)
+    where
+      P∨ : Fin n ⊎ Fin Δ → Poly R.cat n
+      P∨ = [ Poly.var , (λ j → Poly.const (δ j)) ]
+      go : (s : Fin n ⊎ Fin Δ) → PolyPt (P∨ s)
+      go (inj₁ k) = lift tt
+      go (inj₂ j) = δp j
+  poly-pt unit      δ δp = 𝟙ty-pt
+  poly-pt (base s)  δ δp = Int-pt s
+  poly-pt (σ [+] τ) δ δp = DP._,_ (poly-pt σ δ δp) (poly-pt τ δ δp)
+  poly-pt (σ [×] τ) δ δp = DP._,_ (poly-pt σ δ δp) (poly-pt τ δ δp)
+  poly-pt (σ [→] τ) δ δp = exp-pt (ty-pt τ (λ ()) (λ ()))
+  poly-pt (μ τ)     δ δp = poly-pt τ δ δp
 
 -- Combined context: the first n variables from δ₀ (the Poly variables), the rest from δ.
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
@@ -251,12 +291,12 @@ mutual
   ⟦ unit ⟧tm            = unit-pt ∘ to-terminal
   ⟦ inl M ⟧tm           = in₁ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ inr M ⟧tm           = in₂ ∘ injF ∘ ⟦ M ⟧tm
-  ⟦ case M M₁ M₂ ⟧tm    =
-    scopair (⟦ M₁ ⟧tm ∘ prod-m (id _) payloadF) (⟦ M₂ ⟧tm ∘ prod-m (id _) payloadF)
+  ⟦ case {τ = τ} M M₁ M₂ ⟧tm =
+    scopair (elimF (ty-pt τ (λ ()) (λ ())) ⟦ M₁ ⟧tm) (elimF (ty-pt τ (λ ()) (λ ())) ⟦ M₂ ⟧tm)
       ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ pair M N ⟧tm        = injF ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ fst M ⟧tm           = p₁ ∘ payloadF ∘ ⟦ M ⟧tm
-  ⟦ snd M ⟧tm           = p₂ ∘ payloadF ∘ ⟦ M ⟧tm
+  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (ty-pt τ₁ (λ ()) (λ ())) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (ty-pt τ₂ (λ ()) (λ ())) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ lam M ⟧tm           = lambda ⟦ M ⟧tm
   ⟦ app M N ⟧tm         = eval ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm        = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms

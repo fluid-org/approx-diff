@@ -37,6 +37,7 @@ module ho-model-rooted {o m e o₂ m₂ e₂} (os es : Level)
        Category._≈_ 𝒟
          (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (Lifting.Lmap Lft f)))
          (Category._∘_ 𝒟 (Lifting.Lmap Lft' (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
+    (F-pt : Category._⇒_ 𝒟 𝟙d (Functor.fobj F 𝟙c))
     where
 
 -- The rooted μ machinery on each side.
@@ -122,6 +123,16 @@ Fam⟨F⟩-L X .bwd∘fwd≈id .famf-eq .transf-eq {x} =
     (𝒟C.∘-cong (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X) .fam .refl*)
                (𝒟C.≈-trans 𝒟C.id-left (F-L (X .fam .fm x) .bwd∘fwd≈id)))
     𝒟C.id-left
+
+-- Chosen constants are carried across the change of base through the comparison of the constants
+-- objects.
+Fam⟨F⟩-pointed : ∀ {X} → Fam⟨𝒞⟩μ.Pointed X → Fam⟨𝒟⟩μ.Pointed (Fam⟨F⟩ .fobj X)
+Fam⟨F⟩-pointed p .Fam⟨𝒟⟩μ.pt x = 𝒟C._∘_ (F .fmor (p .Fam⟨𝒞⟩μ.pt x)) F-pt
+Fam⟨F⟩-pointed {X} p .Fam⟨𝒟⟩μ.pt-natural {x₁} {x₂} e =
+  𝒟C.≈-trans (𝒟C.≈-sym (𝒟C.assoc _ _ _))
+    (𝒟C.∘-cong₁
+      (𝒟C.≈-trans (𝒟C.≈-sym (F .fmor-comp _ _))
+        (F .fmor-cong (p .Fam⟨𝒞⟩μ.pt-natural e))))
 
 -- The booleans follow the unit object: the change of base carries the rooted booleans over a
 -- chosen unit object to the rooted booleans over its image.

@@ -44,20 +44,25 @@ module language-rooted-fo-interpretation {ℓ} (Sig : Signature ℓ)
      Category._≈_ 𝒟
        (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (Lifting.Lmap Lft f)))
        (Category._∘_ 𝒟 (Lifting.Lmap Lft' (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
+  (F-pt : Category._⇒_ 𝒟 𝟙d (Functor.fobj F 𝟙c))
   (let module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es T CM BP Lft)
   (let module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es T' CM' BP' Lft')
   (𝒟E : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products)
+  (𝒟E-pt : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Pointed Y →
+           Fam⟨𝒟⟩μ.Pointed (HasWeakExponentials.exp 𝒟E X Y))
   (𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj)
   (𝒞unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T)) 𝒞𝟙ty)
+  (𝒞𝟙ty-pt : Fam⟨𝒞⟩μ.Pointed 𝒞𝟙ty)
   (let 𝒞Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty))
   (𝒞-Sig-model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig)
+  (𝒞-sort-pt : ∀ (s : Signature.sort Sig) → Fam⟨𝒞⟩μ.Pointed (Model.⟦sort⟧ 𝒞-Sig-model s))
   where
 
 open language-syntax Sig
 
-module HR = ho-model-rooted os es T CM BP Lft T' CM' BP' Lft' F F-terminal F-prod F-L F-L-natural
+module HR = ho-model-rooted os es T CM BP Lft T' CM' BP' Lft' F F-terminal F-prod F-L F-L-natural F-pt
 open HR using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-products;
-               Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L)
+               Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L; Fam⟨F⟩-pointed)
 
 private
   module FD = Category Fam⟨𝒟⟩μ.cat
@@ -117,7 +122,8 @@ module _ where
     (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
     𝒞-Sig-model
 
-open import language-rooted-interpretation Sig os es T' CM' BP' Lft' 𝒟E δ∅𝒟 𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model
+open import language-rooted-interpretation Sig os es T' CM' BP' Lft' 𝒟E 𝒟E-pt δ∅𝒟
+  𝒟𝟙ty 𝒟unit-pt (Fam⟨F⟩-pointed 𝒞𝟙ty-pt) 𝒟-Sig-model (λ s → Fam⟨F⟩-pointed (𝒞-sort-pt s))
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
             ty-cong to 𝒟-ty-cong)
   using ()
