@@ -157,3 +157,55 @@ module _ (S : Setoid os es) (D : Functor (setoid→category S) Fam𝒞.cat) wher
     𝒟C.≈-trans (𝒟C.∘-cong (𝒟C.≈-trans (F .fmor-cong (CD .apex .fam .refl*)) (F .fmor-id))
                           (𝒟C.≈-trans 𝒟C.id-left 𝒟C.id-left))
                (𝒟C.≈-trans 𝒟C.id-left (𝒟C.≈-sym (F .fmor-id)))
+
+-- The definability witness picker passes to families: a family morphism is an
+-- index map together with a fibre map at each index, and the change of base
+-- leaves the index map alone, so the fibres can be chosen one at a time. The
+-- chosen fibres are natural because the base functor is faithful.
+module _ (faithful : ∀ {a b} {g₁ g₂ : a 𝒞C.⇒ b} → F .fmor g₁ 𝒟C.≈ F .fmor g₂ → g₁ 𝒞C.≈ g₂)
+         (Fdef : ∀ {a b} (k : F .fobj a 𝒟C.⇒ F .fobj b) →
+                 Prf (∃ (a 𝒞C.⇒ b) λ g → F .fmor g 𝒟C.≈ k) →
+                 ∃ₛ (a 𝒞C.⇒ b) λ g → F .fmor g 𝒟C.≈ k)
+         where
+
+  FamF-def : ∀ {a b : Fam𝒞.Obj} (h : Fam𝒟.Mor (FamF .fobj a) (FamF .fobj b)) →
+             Prf (∃ (Fam𝒞.Mor a b) λ g → Fam𝒟.cat .Category._≈_ (FamF .fmor g) h) →
+             ∃ₛ (Fam𝒞.Mor a b) λ g → Fam𝒟.cat .Category._≈_ (FamF .fmor g) h
+  FamF-def {a} {b} h ⟪ def ⟫ = g , g-eq
+    where
+      -- Each fibre of h is definable, by restricting the given witness.
+      fibre-def : ∀ i → Prf (∃ (a .fam .fm i 𝒞C.⇒ b .fam .fm (h .idxf .PS._⇒_.func i))
+                               λ k → F .fmor k 𝒟C.≈ h .famf ._⇒f_.transf i)
+      fibre-def i = ⟪ go def ⟫
+        where
+          go : (∃ (Fam𝒞.Mor a b) λ g₀ → Fam𝒟.cat .Category._≈_ (FamF .fmor g₀) h) →
+               ∃ (a .fam .fm i 𝒞C.⇒ b .fam .fm (h .idxf .PS._⇒_.func i))
+                 λ k → F .fmor k 𝒟C.≈ h .famf ._⇒f_.transf i
+          go (g₀ , eq) =
+            (b .fam .subst (eq .idxf-eq .PS._≃m_.func-eq (a .idx .Setoid.refl))
+               𝒞C.∘ g₀ .famf ._⇒f_.transf i) ,
+            𝒟C.≈-trans (F .fmor-comp _ _) (eq .famf-eq ._≃f_.transf-eq {i})
+
+      pick : ∀ i → a .fam .fm i 𝒞C.⇒ b .fam .fm (h .idxf .PS._⇒_.func i)
+      pick i = ∃ₛ.fst (Fdef (h .famf ._⇒f_.transf i) (fibre-def i))
+
+      pick-eq : ∀ i → F .fmor (pick i) 𝒟C.≈ h .famf ._⇒f_.transf i
+      pick-eq i = ∃ₛ.snd (Fdef (h .famf ._⇒f_.transf i) (fibre-def i))
+
+      g : Fam𝒞.Mor a b
+      g .idxf = h .idxf
+      g .famf ._⇒f_.transf = pick
+      g .famf ._⇒f_.natural {i₁} {i₂} e =
+        faithful
+          (𝒟C.≈-trans (F .fmor-comp _ _)
+          (𝒟C.≈-trans (𝒟C.∘-cong (pick-eq i₂) 𝒟C.≈-refl)
+          (𝒟C.≈-trans (h .famf ._⇒f_.natural e)
+          (𝒟C.≈-trans (𝒟C.∘-cong 𝒟C.≈-refl (𝒟C.≈-sym (pick-eq i₁)))
+                      (𝒟C.≈-sym (F .fmor-comp _ _))))))
+
+      g-eq : Fam𝒟.cat .Category._≈_ (FamF .fmor g) h
+      g-eq .idxf-eq .PS._≃m_.func-eq e = h .idxf .PS._⇒_.func-resp-≈ e
+      g-eq .famf-eq ._≃f_.transf-eq {i} =
+        𝒟C.≈-trans (𝒟C.∘-cong (𝒟C.≈-trans (F .fmor-cong (b .fam .refl*)) (F .fmor-id))
+                              𝒟C.≈-refl)
+                   (𝒟C.≈-trans 𝒟C.id-left (pick-eq i))
