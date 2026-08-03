@@ -139,3 +139,57 @@ module GlReindex {nA nB}
     papply (pbase pel pel-in)  v           a = pel v a
     papply (pbind Q pQ pmd)    Fin.zero    a = reindex-Gl Q pQ pmd a
     papply (pbind Q pQ pmd)    (Fin.suc v) a = papply pmd v a
+
+  -- The comparison intertwines the carrier inclusions with the fibre reindex.
+  mutual
+    reindex-Gl-in : ∀ {k} (Q : Poly (suc k)) {ρA ρB}
+                    {dA : ∀ v → TA.DecoAssign (ρA v)} {dB : ∀ v → TB.DecoAssign (ρB v)}
+                    {md : MorD ρA ρB dA dB} (pQ : PolyPred Q) {pdA pdB}
+                    (pmd : PredD md pdA pdB) (t : TA.W ∣ Q ∣ ρA)
+                    (ι : MA.fib-Gl Q dA pQ pdA t .carrier .idx .Carrier) →
+                    (MB.in-fib Q dB pQ pdB (reindex md t)
+                       (reindex-Gl Q pQ pmd t .mor .morph .idxf .PS._⇒_.func ι)
+                      ∘ reindex-Gl Q pQ pmd t .mor .morph .famf ._⇒f_.transf ι)
+                    ≈ (reindex-fam-W md {t = t} ∘ MA.in-fib Q dA pQ pdA t ι)
+    reindex-Gl-in Q pQ pmd (TA.sup x) ι = reindex-shape-Gl-in Q pQ (pbind Q pQ pmd) x ι
+
+    reindex-shape-Gl-in : ∀ {j} (Q : Poly j) {ηA ηB}
+                          {dA : ∀ v → TA.DecoAssign (ηA v)} {dB : ∀ v → TB.DecoAssign (ηB v)}
+                          {md : MorD ηA ηB dA dB} (pQ : PolyPred Q) {pdA pdB}
+                          (pmd : PredD md pdA pdB) (a : TA.⟦ ∣ Q ∣ ⟧shape ηA)
+                          (ι : MA.fib-shape-Gl Q dA pQ pdA a .carrier .idx .Carrier) →
+                          (MB.in-shape Q dB pQ pdB (reindex-shape ∣ Q ∣ md a)
+                             (reindex-shape-Gl Q pQ pmd a .mor .morph .idxf .PS._⇒_.func ι)
+                            ∘ reindex-shape-Gl Q pQ pmd a .mor .morph .famf ._⇒f_.transf ι)
+                          ≈ (reindex-fam Q md {a = a} ∘ MA.in-shape Q dA pQ pdA a ι)
+    reindex-shape-Gl-in (const A) pA pmd a ι = ≈-refl
+    reindex-shape-Gl-in (var i)   pQ pmd a ι = papply-in pmd i a ι
+    reindex-shape-Gl-in (P' + Q') (pP , pQ) pmd (inj₁ x) ι =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+      (≈-trans (Lmap-cong (reindex-shape-Gl-in P' pP pmd x ι)) (Lmap-comp _ _))
+    reindex-shape-Gl-in (P' + Q') (pP , pQ) pmd (inj₂ y) ι =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+      (≈-trans (Lmap-cong (reindex-shape-Gl-in Q' pQ pmd y ι)) (Lmap-comp _ _))
+    reindex-shape-Gl-in (P' × Q') (pP , pQ) pmd (x , y) (ι₁ , ι₂) =
+      ≈-trans (∘-cong ≈-refl (Lmap-cong (pair-cong id-left id-left)))
+      (≈-trans (≈-sym (Lmap-comp _ _))
+      (≈-trans (Lmap-cong
+                 (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                  (≈-trans (prod-m-cong (reindex-shape-Gl-in P' pP pmd x ι₁)
+                                        (reindex-shape-Gl-in Q' pQ pmd y ι₂))
+                           (prod-m-comp _ _ _ _))))
+               (Lmap-comp _ _)))
+    reindex-shape-Gl-in (μ Q')    pQ' pmd t ι = reindex-Gl-in Q' pQ' pmd t ι
+
+    papply-in : ∀ {k} {ρA ρB}
+                {dA : ∀ v → TA.DecoAssign (ρA v)} {dB : ∀ v → TB.DecoAssign (ρB v)}
+                {md : MorD {k} ρA ρB dA dB} {pdA pdB}
+                (pmd : PredD md pdA pdB) (v : Fin k) (a : TA.El (ρA v))
+                (ι : MA.fib-el-Gl (ρA v) (dA v) (pdA v) a .carrier .idx .Carrier) →
+                (MB.in-el (ρB v) (dB v) (pdB v) (apply md v a)
+                   (papply pmd v a .mor .morph .idxf .PS._⇒_.func ι)
+                  ∘ papply pmd v a .mor .morph .famf ._⇒f_.transf ι)
+                ≈ (apply-fam md v a ∘ MA.in-el (ρA v) (dA v) (pdA v) a ι)
+    papply-in (pbase pel pel-in)  v           a ι = pel-in v a ι
+    papply-in (pbind Q pQ pmd)    Fin.zero    a ι = reindex-Gl-in Q pQ pmd a ι
+    papply-in (pbind Q pQ pmd)    (Fin.suc v) a ι = papply-in pmd v a ι
