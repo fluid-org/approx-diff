@@ -488,3 +488,32 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
     Lf-Glᵢ' ([×]ᵢ (embed-Gl Q₁ pQ₁ x) (embed-Gl Q₂ pQ₂ y))
       ∘ᵢ node-pair (fobj-Gl Q₁ pQ₁ δ' δP⁺) (fobj-Gl Q₂ pQ₂ δ' δP⁺) x y
   embed-Gl (μ Q')    pQ' t = sing-μ δ' δP⁺ Q' pQ' t
+
+  -- The singleton embedding intertwines the carrier inclusions with the fibre
+  -- bridge of the algebra map.
+  embed-Gl-in : ∀ (Q : Poly (suc n)) (pQ : PolyPred Q)
+                (i : R.fobj μObj Q δ' .idx .Carrier) (ι : PS.𝟙 {0ℓ} {0ℓ} .Carrier) →
+                (M⁺.in-shape Q (λ v → lift tt) pQ (λ v → lift tt) (embed-idx Q i)
+                   (embed-Gl Q pQ i .mor .morph .idxf .PS._⇒_.func ι)
+                  ∘ embed-Gl Q pQ i .mor .morph .famf ._⇒f_.transf ι)
+                ≈ embed-fam Q i
+  embed-Gl-in (const A) pA i ι = id-left
+  embed-Gl-in (var v)   pQ i ι = id-left
+  embed-Gl-in (Q₁ + Q₂) (pQ₁ , pQ₂) (inj₁ x) ι =
+    ≈-trans (∘-cong ≈-refl (≈-trans id-left id-right))
+    (≈-trans (≈-sym (Lmap-comp _ _)) (Lmap-cong (embed-Gl-in Q₁ pQ₁ x ι)))
+  embed-Gl-in (Q₁ + Q₂) (pQ₁ , pQ₂) (inj₂ y) ι =
+    ≈-trans (∘-cong ≈-refl (≈-trans id-left id-right))
+    (≈-trans (≈-sym (Lmap-comp _ _)) (Lmap-cong (embed-Gl-in Q₂ pQ₂ y ι)))
+  embed-Gl-in (Q₁ × Q₂) (pQ₁ , pQ₂) (x , y) ι =
+    ≈-trans (∘-cong ≈-refl
+              (≈-trans id-left
+                (≈-trans (∘-cong ≈-refl (≈-trans id-left (≈-trans id-right Lmap-id)))
+                         id-right)))
+    (≈-trans (∘-cong ≈-refl (Lmap-cong (pair-cong id-left id-left)))
+    (≈-trans (≈-sym (Lmap-comp _ _))
+             (Lmap-cong (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                                 (prod-m-cong (embed-Gl-in Q₁ pQ₁ x ι)
+                                              (embed-Gl-in Q₂ pQ₂ y ι))))))
+  embed-Gl-in (μ Q')    pQ' t ι =
+    M⁺.in-out-fib Q' (λ v → lift tt) pQ' (λ v → lift tt) t _
