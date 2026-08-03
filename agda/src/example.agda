@@ -140,3 +140,12 @@ module ex where
 
   rose-query : emp , rose ⊢ base number
   rose-query = app rose-sum (var zero)
+
+  case-ctxt : ctxt
+  case-ctxt = (emp , base number) , (unit [+] unit)
+
+  case-ctxt-fo : first-order-ctxt case-ctxt
+  case-ctxt-fo = (emp , base number) , (unit [+] unit)
+
+  case-term : case-ctxt ⊢ base number
+  case-term = case (var zero) (var (succ (succ zero))) (bop (lit num-zero) [])

@@ -1,84 +1,29 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Test harness for Boolean dependency analysis over rational data: a number carries one scalar
--- position, and the dependency relation of an operation at given arguments is the Boolean collapse
--- of the rational Jacobian there, ⊥ where an entry is 0 and ⊤ elsewhere.
 module example.dependency where
 
-open import categories using (Category)
-import prop
-import matrix
-import semimodule
 import ho-model-sd-semimod
-import semiring-Q
+import semimodule
 import indexed-family
-open import primitives using (Primitives)
-import example.values as V
-open Primitives using (sort-index; sort-width; op-fun; op-deps; rel-pred)
-open import commutative-semiring using (CommutativeSemiring)
+import two
+
+open import example.primitives public
 
 open import Level using (lift; 0ℓ) public
-open import Data.Nat using (ℕ)
 open import Data.Unit renaming (tt to ·) using () public
 open import Data.Product using (_,_) public
 open import Data.Sum using (inj₁; inj₂) public
 open import Relation.Binary.PropositionalEquality using (_≡_; refl) public
-open import Relation.Nullary using (yes; no)
-open import two renaming (I to ⊤; O to ⊥) using () public
 open import Data.Integer using (+_; -[1+_]) public
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _/_) public
-open import Data.Rational using () renaming (_≟_ to _≟ℚ_)
 open import Data.Nat.Base public using (nonZero)
 open import prop-setoid using (Setoid; IsEquivalence)
 open Setoid using (Carrier) public
-open import example.signature ℚ using (Sig; sort; number; label; op; rel; lit; add; mult; lbl; equal-label) public
 import example
 open import language-syntax Sig hiding (_,_) public
 module Ex = example ℚ 0ℚ
 open Ex.ex public
 open import label using (a; b) public
-open import prop using (liftS; LiftS)
-
-private
-  open matrix.Mat two.semiring using (_∥_; block)
-  module M𝟚 = matrix.Mat two.semiring
-  open prop-setoid._⇒_
-
-
--- Boolean collapse of a rational: ⊥ at 0, ⊤ elsewhere.
-collapse : ℚ → two.Two
-collapse q with q ≟ℚ 0ℚ
-... | yes _ = ⊥
-... | no _  = ⊤
-
-private
-  -- The Boolean collapse of the Jacobian of multiplication: [ ∂/∂x , ∂/∂y ] = [ y , x ].
-  mult-rel : ℚ → ℚ → Category._⇒_ M𝟚.cat 2 1
-  mult-rel x y = block (collapse y) ∥ block (collapse x)
-
-  mult-rel-resp : ∀ {x x' y y'} →
-                  Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
-                  Category._≈_ M𝟚.cat (mult-rel x y) (mult-rel x' y')
-  mult-rel-resp {x} {_} {y} (liftS refl) (liftS refl) = Category.≈-refl M𝟚.cat {f = mult-rel x y}
-
-primitives : Primitives two.semiring Sig
-primitives .sort-index = V.sort-index
-primitives .sort-width number = 1
-primitives .sort-width label  = 0
-primitives .op-fun = V.op-fun
-primitives .rel-pred = V.rel-pred
-primitives .op-deps (lit n) .func _ = M𝟚.εₘ
-primitives .op-deps add .func _ = M𝟚.I ∥ M𝟚.I
-primitives .op-deps mult .func (x , y , _) = mult-rel x y
-primitives .op-deps (lbl l) .func _ = M𝟚.εₘ
-primitives .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.εₘ}
-primitives .op-deps add .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.I ∥ M𝟚.I}
-primitives .op-deps mult .func-resp-≈ e =
-  mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.εₘ}
-
-sort-val : sort → Set
-sort-val = Primitives.sort-val primitives
 
 -- The model determined by the primitives, and the interpretation of the language over it.
 module HM = ho-model-sd-semimod two.semiring
