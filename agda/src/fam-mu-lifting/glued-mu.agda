@@ -420,6 +420,36 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
           (≈-trans (≈-sym (assoc _ _ _))
           (≈-trans (∘-cong (out-in-fib Q d pQ pd t ι₂) ≈-refl) id-left))))))
 
+  out-shape-natural : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+                      (d : ∀ i → DecoAssign (η̄ i))
+                      (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+                      (x : ⟦ ∣ Q ∣ ⟧shape η̄)
+                      {ι₁ ι₂ : fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier}
+                      (e : _≈s_ (fib-shape-Gl Q d pQ pd x .carrier .idx) ι₁ ι₂) →
+                      (fib-shape-Gl Q d pQ pd x .carrier .fam .subst e
+                        ∘ out-shape Q d pQ pd x ι₁)
+                        ≈ out-shape Q d pQ pd x ι₂
+  out-shape-natural Q d pQ pd x {ι₁} {ι₂} e =
+    ≈-sym (≈-trans (≈-sym id-right)
+          (≈-trans (∘-cong ≈-refl (≈-sym (in-out-shape Q d pQ pd x ι₁)))
+          (≈-trans (∘-cong ≈-refl (∘-cong (≈-sym (in-shape-natural Q d pQ pd x e)) ≈-refl))
+          (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (out-in-shape Q d pQ pd x ι₂) ≈-refl) id-left))))))
+
+  out-el-natural : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+                   (x : El r) {ι₁ ι₂ : fib-el-Gl r dr pr x .carrier .idx .Carrier}
+                   (e : _≈s_ (fib-el-Gl r dr pr x .carrier .idx) ι₁ ι₂) →
+                   (fib-el-Gl r dr pr x .carrier .fam .subst e ∘ out-el r dr pr x ι₁)
+                     ≈ out-el r dr pr x ι₂
+  out-el-natural r dr pr x {ι₁} {ι₂} e =
+    ≈-sym (≈-trans (≈-sym id-right)
+          (≈-trans (∘-cong ≈-refl (≈-sym (in-out-el r dr pr x ι₁)))
+          (≈-trans (∘-cong ≈-refl (∘-cong (≈-sym (in-el-natural r dr pr x e)) ≈-refl))
+          (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (out-in-el r dr pr x ι₂) ≈-refl) id-left))))))
+
   -- The singleton at a fibre includes into the fibre's glued carrier at the canonical index.
   fib-out : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
             (d : ∀ i → DecoAssign (ρ̄ i))
@@ -432,6 +462,27 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
   fib-out Q d pQ pd t .famf ._⇒f_.transf _ = out-fib Q d pQ pd t (fib-ix Q d pQ pd t)
   fib-out Q d pQ pd t .famf ._⇒f_.natural _ =
     ≈-trans id-right (≈-sym (out-fib-natural Q d pQ pd t _))
+
+  shape-out : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+              (d : ∀ i → DecoAssign (η̄ i))
+              (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+              (x : ⟦ ∣ Q ∣ ⟧shape η̄) →
+              Mor simple[ PS.𝟙 , fib-shape Q d x ] (fib-shape-Gl Q d pQ pd x .carrier)
+  shape-out Q d pQ pd x .idxf .PS._⇒_.func _ = shape-ix Q d pQ pd x
+  shape-out Q d pQ pd x .idxf .PS._⇒_.func-resp-≈ _ =
+    fib-shape-Gl Q d pQ pd x .carrier .idx .isEquivalence .refl
+  shape-out Q d pQ pd x .famf ._⇒f_.transf _ = out-shape Q d pQ pd x (shape-ix Q d pQ pd x)
+  shape-out Q d pQ pd x .famf ._⇒f_.natural _ =
+    ≈-trans id-right (≈-sym (out-shape-natural Q d pQ pd x _))
+
+  el-out : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr) (x : El r) →
+           Mor simple[ PS.𝟙 , fib-el r dr x ] (fib-el-Gl r dr pr x .carrier)
+  el-out r dr pr x .idxf .PS._⇒_.func _ = el-ix r dr pr x
+  el-out r dr pr x .idxf .PS._⇒_.func-resp-≈ _ =
+    fib-el-Gl r dr pr x .carrier .idx .isEquivalence .refl
+  el-out r dr pr x .famf ._⇒f_.transf _ = out-el r dr pr x (el-ix r dr pr x)
+  el-out r dr pr x .famf ._⇒f_.natural _ =
+    ≈-trans id-right (≈-sym (out-el-natural r dr pr x _))
 
   -- The inclusion of a fibre's carrier at its tree, over the constant index map.
   tree-in : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
