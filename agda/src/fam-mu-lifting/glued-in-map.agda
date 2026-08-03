@@ -19,7 +19,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import Data.Unit using (⊤; tt)
 open import prop using (_,_)
-open import basics using (IsJoin; IsMeet)
+open import basics using (IsJoin; IsMeet; IsBigJoin; IsClosureOp)
 open import prop-setoid as PS using ()
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
@@ -49,6 +49,7 @@ open fam-mu-lifting.glued-reindex T CM BP Lft 𝒫 𝒫P system G Rt Cl public
 open R hiding (fobj)
 open Gl.Obj
 open Gl._=>_
+open ClosureOp Cl
 
 private
   module 𝒫C = Category 𝒫
@@ -251,9 +252,12 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
                     (MuPred.μ-Gl δ₀ δP₀ Q pQ .pred [ G .fmor (elem-in (μObj Q δ₀) t) ])
                       ⊑ (MuPred.fib-Gl δ₀ δP₀ Q (λ i → lift tt) pQ (λ i → lift tt) t .pred
                            [ G .fmor (MuPred.tree-out δ₀ δP₀ Q pQ t) ]))
+    (sing-split : ∀ {X : Obj} {Q : Predicate (G .fobj X)} →
+                  Q ⊑ 𝐂 (⋁ (X .idx .Carrier)
+                          (λ x → (Q [ G .fmor (elem-in X x) ]) ⟨ G .fmor (elem-in X x) ⟩)))
     where
 
-  open InMapDef P δ hiding (module R)
+  open InMapDef P δ renaming (module R to RX)
 
   δP⁺ : ∀ i → Predicate (G .fobj (δ' i))
   δP⁺ Fin.zero    = MuPred.μ-Gl δ δP P pP .pred
@@ -517,3 +521,64 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
                                               (embed-Gl-in Q₂ pQ₂ y ι))))))
   embed-Gl-in (μ Q')    pQ' t ι =
     M⁺.in-out-fib Q' (λ v → lift tt) pQ' (λ v → lift tt) t _
+
+  -- The algebra map carries the one-step glued interpretation into the
+  -- decorated μ-carrier: split into singletons, embed each singleton into its
+  -- one-step fibre, reindex to the corresponding tree fibre, and land in that
+  -- tree's disjunct of the closed join.
+  inMap-Gl : fobj-Gl P pP δ' δP⁺ .pred ⊑ (Mδ.μ-Gl P pP .pred [ G .fmor inMor ])
+  inMap-Gl =
+    ⊑-trans sing-split
+    (⊑-trans (𝐂-isClosure .IsClosureOp.mono
+               (⋁-isJoin .IsBigJoin.least _ _ _
+                 (λ i → ⊑-trans ((step i) ⟨ G .fmor (elem-in X₀ i) ⟩m)
+                                (counit (G .fmor (elem-in X₀ i))))))
+    (⊑-trans (𝐂-isClosure .IsClosureOp.mono 𝐂-[]⁻¹)
+    (⊑-trans (𝐂-isClosure .IsClosureOp.closed) 𝐂-[])))
+    where
+      X₀ : Obj
+      X₀ = R.fobj μObj P δ'
+
+      t[_] : X₀ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i)
+      t[ i ] = Tδ.sup (RX.reindex-shape ∣ P ∣ mor₀ (embed-idx P i))
+
+      re : ∀ (i : X₀ .idx .Carrier) →
+           Mor simple[ PS.𝟙 , X₀ .fam .fm i ]
+               (Mδ.fib-Gl P (λ v → lift tt) pP (λ v → lift tt) t[ i ] .carrier)
+      re i = Fam𝒞._∘_ (GR.reindex-shape-Gl P pP pmd₀ (embed-idx P i) .mor .morph)
+                      (embed-Gl P pP i .mor .morph)
+
+      sq : ∀ (i : X₀ .idx .Carrier) →
+           Fam𝒞._≈_ (Fam𝒞._∘_ (Mδ.tree-in P pP t[ i ]) (re i))
+                    (Fam𝒞._∘_ inMor (elem-in X₀ i))
+      sq i ._≃_.idxf-eq .PS._≃m_.func-eq _ = Tδ.W-≈-refl t[ i ]
+      sq i ._≃_.famf-eq .indexed-family._≃f_.transf-eq {ι} =
+        ≈-trans (∘-cong (Tδ.fib-refl* P (λ v → lift tt) t[ i ])
+                        (≈-trans id-left (∘-cong ≈-refl id-left)))
+        (≈-trans id-left
+        (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong (GR.reindex-shape-Gl-in P pP pmd₀ (embed-idx P i)
+                            (embed-Gl P pP i .mor .morph .idxf .PS._⇒_.func ι))
+                         ≈-refl)
+        (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (embed-Gl-in P pP i ι))
+                 (≈-sym (≈-trans id-left id-right)))))))
+
+      step : ∀ (i : X₀ .idx .Carrier) →
+             (fobj-Gl P pP δ' δP⁺ .pred [ G .fmor (elem-in X₀ i) ])
+               ⊑ ((Mδ.μ-Gl P pP .pred [ G .fmor inMor ]) [ G .fmor (elem-in X₀ i) ])
+      step i =
+        ⊑-trans (embed-Gl P pP i .mor .presv)
+        (⊑-trans ((GR.reindex-shape-Gl P pP pmd₀ (embed-idx P i) .mor .presv)
+                    [ G .fmor (embed-Gl P pP i .mor .morph) ]m)
+        (⊑-trans ([]-comp _ _)
+        (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+        (⊑-trans ((unit (G .fmor (Mδ.tree-in P pP t[ i ]))) [ G .fmor (re i) ]m)
+        (⊑-trans ([]-comp _ _)
+        (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+        (⊑-trans ([]-cong (G .fmor-cong (sq i)))
+        (⊑-trans ((⊑-trans (⋁-isJoin .IsBigJoin.upper _ _ t[ i ])
+                           (𝐂-isClosure .IsClosureOp.unit))
+                    [ G .fmor (Fam𝒞._∘_ inMor (elem-in X₀ i)) ]m)
+        (⊑-trans ([]-cong (G .fmor-comp _ _))
+                 ([]-comp⁻¹ _ _))))))))))
