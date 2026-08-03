@@ -108,3 +108,52 @@ Id-preserves-colimits {𝒦 = 𝒦} DC S D = iso , coh
 
     coh : ∀ s → (fwd K.∘ CI .cocone .transf s) K.≈ CD .cocone .transf s
     coh = fwd-leg
+
+-- The change of base preserves the set-indexed coproducts of families: both
+-- sides have the same indexes and the same fibres, and differ only in how a
+-- transport is split, which the functor's composition law reconciles.
+module _ (S : Setoid os es) (D : Functor (setoid→category S) Fam𝒞.cat) where
+
+  private
+    CI = Fam𝒟.bigCoproducts S (FamF ∘F D)
+    CD = Fam𝒞.bigCoproducts S D
+
+  FamF-∐-fwd : Fam𝒟.Mor (CI .apex) (FamF .fobj (CD .apex))
+  FamF-∐-fwd .idxf .PS._⇒_.func i = i
+  FamF-∐-fwd .idxf .PS._⇒_.func-resp-≈ e = e
+  FamF-∐-fwd .famf ._⇒f_.transf _ = 𝒟C.id _
+  FamF-∐-fwd .famf ._⇒f_.natural _ =
+    𝒟C.≈-trans 𝒟C.id-left
+      (𝒟C.≈-trans (𝒟C.≈-sym (F .fmor-comp _ _)) (𝒟C.≈-sym 𝒟C.id-right))
+
+  FamF-∐-bwd : Fam𝒟.Mor (FamF .fobj (CD .apex)) (CI .apex)
+  FamF-∐-bwd .idxf .PS._⇒_.func i = i
+  FamF-∐-bwd .idxf .PS._⇒_.func-resp-≈ e = e
+  FamF-∐-bwd .famf ._⇒f_.transf _ = 𝒟C.id _
+  FamF-∐-bwd .famf ._⇒f_.natural _ =
+    𝒟C.≈-trans 𝒟C.id-left
+      (𝒟C.≈-trans (F .fmor-comp _ _) (𝒟C.≈-sym 𝒟C.id-right))
+
+  FamF-∐-iso : Category.Iso Fam𝒟.cat (CI .apex) (FamF .fobj (CD .apex))
+  FamF-∐-iso .Category.Iso.fwd = FamF-∐-fwd
+  FamF-∐-iso .Category.Iso.bwd = FamF-∐-bwd
+  FamF-∐-iso .Category.Iso.fwd∘bwd≈id .idxf-eq .PS._≃m_.func-eq e = e
+  FamF-∐-iso .Category.Iso.fwd∘bwd≈id .famf-eq ._≃f_.transf-eq =
+    𝒟C.≈-trans (𝒟C.∘-cong (𝒟C.≈-trans (F .fmor-cong (CD .apex .fam .refl*)) (F .fmor-id))
+                          (𝒟C.≈-trans 𝒟C.id-left 𝒟C.id-left))
+               𝒟C.id-left
+  FamF-∐-iso .Category.Iso.bwd∘fwd≈id .idxf-eq .PS._≃m_.func-eq e = e
+  FamF-∐-iso .Category.Iso.bwd∘fwd≈id .famf-eq ._≃f_.transf-eq =
+    𝒟C.≈-trans (𝒟C.∘-cong (CI .apex .fam .refl*)
+                          (𝒟C.≈-trans 𝒟C.id-left 𝒟C.id-left))
+               𝒟C.id-left
+
+  FamF-∐-leg : ∀ s → Fam𝒟.cat .Category._≈_
+                       (Fam𝒟.cat .Category._∘_ FamF-∐-fwd (CI .cocone .transf s))
+                       (FamF .fmor (CD .cocone .transf s))
+  FamF-∐-leg s .idxf-eq .PS._≃m_.func-eq e =
+    S .Setoid.refl , D .fmor-id .idxf-eq .PS._≃m_.func-eq e
+  FamF-∐-leg s .famf-eq ._≃f_.transf-eq =
+    𝒟C.≈-trans (𝒟C.∘-cong (𝒟C.≈-trans (F .fmor-cong (CD .apex .fam .refl*)) (F .fmor-id))
+                          (𝒟C.≈-trans 𝒟C.id-left 𝒟C.id-left))
+               (𝒟C.≈-trans 𝒟C.id-left (𝒟C.≈-sym (F .fmor-id)))
