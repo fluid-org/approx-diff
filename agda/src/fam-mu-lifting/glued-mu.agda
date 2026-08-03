@@ -97,6 +97,12 @@ Lf-Glᵢ f rt .inv₁ x =
 Lf-Glᵢ f rt .inv₂ x =
   ≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong (f .inv₂ x)) Lmap-id)
 
+idᵢ : ∀ {X} → X =>ᵢ X
+idᵢ .mor = Gl.id _
+idᵢ .inv x = id _
+idᵢ .inv₁ x = id-left
+idᵢ .inv₂ x = id-left
+
 [×]ᵢ : ∀ {X X' Y Y'} → X =>ᵢ X' → Y =>ᵢ Y' → (X [×] Y) =>ᵢ (X' [×] Y')
 [×]ᵢ f g .mor = [×]-map (f .mor) (g .mor)
 [×]ᵢ f g .inv (x , y) = prod-m (f .inv x) (g .inv y)
