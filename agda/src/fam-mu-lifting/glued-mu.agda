@@ -16,7 +16,8 @@ import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
-open import Data.Unit using (⊤)
+open import Data.Unit using (⊤; tt)
+open import prop using (_,_)
 open import prop-setoid as PS using ()
 open import categories using (Category; HasTerminal; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
@@ -119,3 +120,91 @@ module MuPred {n} (δGl : Fin n → Gl.Obj) where
     fib-el-Gl (inj₁ p) _ _ x =
       glue simple[ PS.𝟙 , δc p .fam .fm x ] (δGl p .pred [ G .fmor (elem-in (δc p) x) ])
     fib-el-Gl (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x = fib-Gl Q ρd pQ pρ x
+
+  -- The carrier of each fibre's glued object maps onto the fibre itself: fibrewise the identity,
+  -- packaged along the recursion since the carrier's index setoid follows the shape.
+  mutual
+    in-fib : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+             (d : ∀ i → DecoAssign (ρ̄ i))
+             (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+             (t : W ∣ Q ∣ ρ̄) (ι : fib-Gl Q d pQ pd t .carrier .idx .Carrier) →
+             fib-Gl Q d pQ pd t .carrier .fam .fm ι ⇒ fib Q d t
+    in-fib Q d pQ pd (sup x) ι = in-shape Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x ι
+
+    in-shape : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+               (d : ∀ i → DecoAssign (η̄ i))
+               (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+               (x : ⟦ ∣ Q ∣ ⟧shape η̄) (ι : fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier) →
+               fib-shape-Gl Q d pQ pd x .carrier .fam .fm ι ⇒ fib-shape Q d x
+    in-shape (const A) d pA pd x ι = id _
+    in-shape (var i)   d pQ pd x ι = in-el _ (d i) (pd i) x ι
+    in-shape (P' + Q') d (pP , pQ) pd (inj₁ x) ι = Lmap (in-shape P' d pP pd x ι)
+    in-shape (P' + Q') d (pP , pQ) pd (inj₂ y) ι = Lmap (in-shape Q' d pQ pd y ι)
+    in-shape (P' × Q') d (pP , pQ) pd (x , y) (ι₁ , ι₂) =
+      Lmap (prod-m (in-shape P' d pP pd x ι₁) (in-shape Q' d pQ pd y ι₂))
+    in-shape (μ Q')    d pQ' pd t ι = in-fib Q' d pQ' pd t ι
+
+    in-el : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+            (x : El r) (ι : fib-el-Gl r dr pr x .carrier .idx .Carrier) →
+            fib-el-Gl r dr pr x .carrier .fam .fm ι ⇒ fib-el r dr x
+    in-el (inj₁ p) _ _ x ι = id _
+    in-el (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x ι = in-fib Q ρd pQ pρ x ι
+
+  -- The inclusions absorb the carriers' transports, which are all isomorphic to the identity.
+  mutual
+    in-fib-natural : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+                     (d : ∀ i → DecoAssign (ρ̄ i))
+                     (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+                     (t : W ∣ Q ∣ ρ̄) {ι₁ ι₂ : fib-Gl Q d pQ pd t .carrier .idx .Carrier}
+                     (e : _≈s_ (fib-Gl Q d pQ pd t .carrier .idx) ι₁ ι₂) →
+                     (in-fib Q d pQ pd t ι₂ ∘ fib-Gl Q d pQ pd t .carrier .fam .subst e)
+                       ≈ in-fib Q d pQ pd t ι₁
+    in-fib-natural Q d pQ pd (sup x) e =
+      in-shape-natural Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x e
+
+    in-shape-natural : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+                       (d : ∀ i → DecoAssign (η̄ i))
+                       (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+                       (x : ⟦ ∣ Q ∣ ⟧shape η̄)
+                       {ι₁ ι₂ : fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier}
+                       (e : _≈s_ (fib-shape-Gl Q d pQ pd x .carrier .idx) ι₁ ι₂) →
+                       (in-shape Q d pQ pd x ι₂ ∘ fib-shape-Gl Q d pQ pd x .carrier .fam .subst e)
+                         ≈ in-shape Q d pQ pd x ι₁
+    in-shape-natural (const A) d pA pd x e = id-left
+    in-shape-natural (var i)   d pQ pd x e = in-el-natural _ (d i) (pd i) x e
+    in-shape-natural (P' + Q') d (pP , pQ) pd (inj₁ x) e =
+      ≈-trans (≈-sym (Lmap-comp _ _)) (Lmap-cong (in-shape-natural P' d pP pd x e))
+    in-shape-natural (P' + Q') d (pP , pQ) pd (inj₂ y) e =
+      ≈-trans (≈-sym (Lmap-comp _ _)) (Lmap-cong (in-shape-natural Q' d pQ pd y e))
+    in-shape-natural (P' × Q') d (pP , pQ) pd (x , y) {_ , _} {_ , _} (e₁ , e₂) =
+      ≈-trans (≈-sym (Lmap-comp _ _))
+        (Lmap-cong
+          (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                   (prod-m-cong (in-shape-natural P' d pP pd x e₁)
+                                (in-shape-natural Q' d pQ pd y e₂))))
+    in-shape-natural (μ Q')    d pQ' pd t e = in-fib-natural Q' d pQ' pd t e
+
+    in-el-natural : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+                    (x : El r) {ι₁ ι₂ : fib-el-Gl r dr pr x .carrier .idx .Carrier}
+                    (e : _≈s_ (fib-el-Gl r dr pr x .carrier .idx) ι₁ ι₂) →
+                    (in-el r dr pr x ι₂ ∘ fib-el-Gl r dr pr x .carrier .fam .subst e)
+                      ≈ in-el r dr pr x ι₁
+    in-el-natural (inj₁ p) _ _ x e = id-left
+    in-el-natural (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x e = in-fib-natural Q ρd pQ pρ x e
+
+  -- The inclusion of a fibre's carrier at its tree, over the constant index map.
+  tree-in : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
+            Mor (fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier) (μObj P' δc)
+  tree-in P' pP t .idxf .PS._⇒_.func _ = t
+  tree-in P' pP t .idxf .PS._⇒_.func-resp-≈ _ = W-≈-refl t
+  tree-in P' pP t .famf ._⇒f_.transf ι = in-fib P' (λ i → lift tt) pP (λ i → lift tt) t ι
+  tree-in P' pP t .famf ._⇒f_.natural {ι₁} {ι₂} e =
+    ≈-trans (in-fib-natural P' (λ i → lift tt) pP (λ i → lift tt) t e)
+            (≈-sym (≈-trans (∘-cong (fib-refl* P' (λ i → lift tt) t) ≈-refl) id-left))
+
+  -- The μ-carrier decorated with the join over trees of the fibre predicates.
+  μ-Gl : (P' : Poly (suc n)) (pP : PolyPred P') → Gl.Obj
+  μ-Gl P' pP .carrier = μObj P' δc
+  μ-Gl P' pP .pred =
+    ⋁ (W ∣ P' ∣ (λ i → inj₁ i))
+      (λ t → fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .pred ⟨ G .fmor (tree-in P' pP t) ⟩)
