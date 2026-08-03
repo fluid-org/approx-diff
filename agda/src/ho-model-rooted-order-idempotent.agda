@@ -20,7 +20,7 @@ import matrix
 import fam
 import fam-mu-lifting.in-map
 import order-idempotent-supported
-import ho-model-order-idempotent
+import order-idempotent-primitives
 import language-rooted-fo-interpretation
 
 module ho-model-rooted-order-idempotent
@@ -32,7 +32,7 @@ module ho-model-rooted-order-idempotent
   where
 
 open order-idempotent-supported S ∨-idem ∧-idem ⊤-add-top public
-module HMO = ho-model-order-idempotent S ∨-idem ∧-idem ⊤-add-top
+module OIP = order-idempotent-primitives S ∨-idem ∧-idem ⊤-add-top
 
 open Category.IsIso
 open SemiMod._≈m_
@@ -130,9 +130,9 @@ SupExp-pointed {X} {Y} pY .Fam⟨𝒟⟩μ.pt-natural {f₁} {f₂} e .*≈* .fu
 module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
   private
-    module IP = HMO.interp-primitives Sig 𝒫
+    module IP = OIP.interp-primitives Sig 𝒫
 
-  boolify : Fam⟨𝒞⟩μ.Mor HMO.Fam⟨𝒞⟩-bool 𝒞Bool
+  boolify : Fam⟨𝒞⟩μ.Mor OIP.Fam⟨𝒞⟩-bool 𝒞Bool
   boolify =
     FCC.coprod-m
       (FCμ._∘_ (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty}) (Fam⟨𝒞⟩μ.injF {X = 𝟙F}))
