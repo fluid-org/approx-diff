@@ -175,3 +175,98 @@ img-square-id h₁ h₂ h₃ sq =
   ⊑-trans ((⊑-trans []-id ([]-cong (𝒫C.≈-sym (G .fmor-id)))) ⟨ G .fmor h₂ ⟩m)
           (img-square h₁ h₂ h₃ (Fam𝒞.id _)
                       (Fam𝒞.≈-trans sq (Fam𝒞.≈-sym Fam𝒞.id-right)))
+
+-- The comparison of the one-step glued interpretation with the decorated
+-- μ-carrier, at a fixed μ-polynomial and environment. The instance squares
+-- are parameters: the two-sided transport of the root predicate along
+-- fibrewise isomorphisms, extraction of a direct image along its own
+-- injection, disjointness of the two coproduct images over a singleton,
+-- Beck-Chevalley for the payload injection at a singleton, and extraction of
+-- the closed join at a singleton tree.
+module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
+    (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i)))
+    (Rt-iso : ∀ {C D : Obj} (h : Mor C D)
+              (hinv : ∀ x → D .fam .fm (h .idxf .PS._⇒_.func x) ⇒ C .fam .fm x) →
+              (∀ x → (h .famf ._⇒f_.transf x ∘ hinv x) ≈ id _) →
+              (∀ x → (hinv x ∘ h .famf ._⇒f_.transf x) ≈ id _) →
+              Rt C ⊑ (Rt D [ G .fmor (Lf-map h) ]))
+    (Rt-iso⁻ : ∀ {C D : Obj} (h : Mor C D)
+               (hinv : ∀ x → D .fam .fm (h .idxf .PS._⇒_.func x) ⇒ C .fam .fm x) →
+               (∀ x → (h .famf ._⇒f_.transf x ∘ hinv x) ≈ id _) →
+               (∀ x → (hinv x ∘ h .famf ._⇒f_.transf x) ≈ id _) →
+               (Rt D [ G .fmor (Lf-map h) ]) ⊑ Rt C)
+    (in₁-extract : ∀ {X Y : Obj} {Q : Predicate (G .fobj X)} →
+                   ((Q ⟨ G .fmor (CP.in₁ {X} {Y}) ⟩) [ G .fmor (CP.in₁ {X} {Y}) ]) ⊑ Q)
+    (in₂-extract : ∀ {X Y : Obj} {Q : Predicate (G .fobj Y)} →
+                   ((Q ⟨ G .fmor (CP.in₂ {X} {Y}) ⟩) [ G .fmor (CP.in₂ {X} {Y}) ]) ⊑ Q)
+    (disjoint₁ : ∀ {X Y : Obj} {Q : Predicate (G .fobj Y)} (x : X .idx .Carrier)
+                 {S : Predicate (G .fobj simple[ PS.𝟙 , X .fam .fm x ])} →
+                 ((Q ⟨ G .fmor (CP.in₂ {X} {Y}) ⟩)
+                    [ G .fmor (elem-in (CP.coprod X Y) (inj₁ x)) ]) ⊑ S)
+    (disjoint₂ : ∀ {X Y : Obj} {Q : Predicate (G .fobj X)} (y : Y .idx .Carrier)
+                 {S : Predicate (G .fobj simple[ PS.𝟙 , Y .fam .fm y ])} →
+                 ((Q ⟨ G .fmor (CP.in₁ {X} {Y}) ⟩)
+                    [ G .fmor (elem-in (CP.coprod X Y) (inj₂ y)) ]) ⊑ S)
+    (BC-injF : ∀ {C : Obj} {Qp : Predicate (G .fobj C)} (x : C .idx .Carrier) →
+               ((Qp ⟨ G .fmor (injF {C}) ⟩) [ G .fmor (elem-in (Lf C) x) ])
+                 ⊑ ((Qp [ G .fmor (elem-in C x) ]) ⟨ G .fmor (sing-inj C x) ⟩))
+    (sing-extract : ∀ {k} (δ₀ : Fin k → Obj) (δP₀ : ∀ i → Predicate (G .fobj (δ₀ i)))
+                    (Q : Poly (suc k)) (pQ : PolyPred Q)
+                    (t : Tree.W δ₀ ∣ Q ∣ (λ i → inj₁ i)) →
+                    (MuPred.μ-Gl δ₀ δP₀ Q pQ .pred [ G .fmor (elem-in (μObj Q δ₀) t) ])
+                      ⊑ (MuPred.fib-Gl δ₀ δP₀ Q (λ i → lift tt) pQ (λ i → lift tt) t .pred
+                           [ G .fmor (MuPred.tree-out δ₀ δP₀ Q pQ t) ]))
+    where
+
+  open InMapDef P δ hiding (module R)
+
+  δP⁺ : ∀ i → Predicate (G .fobj (δ' i))
+  δP⁺ Fin.zero    = MuPred.μ-Gl δ δP P pP .pred
+  δP⁺ (Fin.suc i) = δP i
+
+  private
+    module M⁺ = MuPred δ' δP⁺
+    module Mδ = MuPred δ δP
+    module GR = GlReindex δ' δP⁺ δ δP Rt-iso
+
+  -- The singleton at a tree includes into the tree's fibre glued object; the
+  -- predicate part is the join extraction.
+  sing-μ : ∀ {k} (δ₀ : Fin k → Obj) (δP₀ : ∀ i → Predicate (G .fobj (δ₀ i)))
+           (Q : Poly (suc k)) (pQ : PolyPred Q)
+           (t : Tree.W δ₀ ∣ Q ∣ (λ i → inj₁ i)) →
+           glue simple[ PS.𝟙 , μObj Q δ₀ .fam .fm t ]
+                (MuPred.μ-Gl δ₀ δP₀ Q pQ .pred [ G .fmor (elem-in (μObj Q δ₀) t) ])
+             =>ᵢ MuPred.fib-Gl δ₀ δP₀ Q (λ i → lift tt) pQ (λ i → lift tt) t
+  sing-μ δ₀ δP₀ Q pQ t .mor .morph = MuPred.tree-out δ₀ δP₀ Q pQ t
+  sing-μ δ₀ δP₀ Q pQ t .mor .presv = sing-extract δ₀ δP₀ Q pQ t
+  sing-μ δ₀ δP₀ Q pQ t .inv _ =
+    MuPred.in-fib δ₀ δP₀ Q (λ i → lift tt) pQ (λ i → lift tt) t
+                  (MuPred.fib-ix δ₀ δP₀ Q (λ i → lift tt) pQ (λ i → lift tt) t)
+  sing-μ δ₀ δP₀ Q pQ t .inv₁ _ =
+    MuPred.out-in-fib δ₀ δP₀ Q (λ i → lift tt) pQ (λ i → lift tt) t _
+  sing-μ δ₀ δP₀ Q pQ t .inv₂ _ =
+    MuPred.in-out-fib δ₀ δP₀ Q (λ i → lift tt) pQ (λ i → lift tt) t _
+
+  -- The leaf data of the base reindexing: the environment leaves are
+  -- definitional, the μ-leaf extracts the join at the singleton.
+  pel₀ : ∀ v (a : TX.El (inj₁ v)) →
+         M⁺.fib-el-Gl (inj₁ v) (lift tt) (lift tt) a
+           =>ᵢ Mδ.fib-el-Gl (Sh.η₀ ∣ P ∣ v) (Tδ.deco-ext P (λ i → lift tt) v)
+                            (Mδ.deco-ext-pred P pP (λ i → lift tt) v) (m₀ v a)
+  pel₀ Fin.zero    a = sing-μ δ δP P pP a
+  pel₀ (Fin.suc i) a = idᵢ
+
+  pel-in₀ : ∀ v (a : TX.El (inj₁ v))
+            (ι : M⁺.fib-el-Gl (inj₁ v) (lift tt) (lift tt) a .carrier .idx .Carrier) →
+            (Mδ.in-el (Sh.η₀ ∣ P ∣ v) (Tδ.deco-ext P (λ i → lift tt) v)
+                      (Mδ.deco-ext-pred P pP (λ i → lift tt) v) (m₀ v a)
+                      (pel₀ v a .mor .morph .idxf .PS._⇒_.func ι)
+              ∘ pel₀ v a .mor .morph .famf ._⇒f_.transf ι)
+            ≈ (m₀-fam v a ∘ M⁺.in-el (inj₁ v) (lift tt) (lift tt) a ι)
+  pel-in₀ Fin.zero    a ι =
+    ≈-trans (Mδ.in-out-fib P (λ i → lift tt) pP (λ i → lift tt) a _) (≈-sym id-left)
+  pel-in₀ (Fin.suc i) a ι = ≈-refl
+
+  -- The leaf decoration of the base reindexing.
+  pmd₀ : GR.PredD mor₀ (λ v → lift tt) (Mδ.deco-ext-pred P pP (λ i → lift tt))
+  pmd₀ = GR.pbase pel₀ pel-in₀
