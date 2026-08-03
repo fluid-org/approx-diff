@@ -253,3 +253,195 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
       FD.fold-idx-resp γ≈ {t'} {t'} (Tδ.W-≈-refl t')
     vz-mor pQ t' ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
       ≈-trans (∘-cong (Ag .carrier .fam .refl*) ≈-refl) id-left
+
+    -- The strong product action fuses with a payload-only reindexing.
+    spm-fusion : ∀ {w x₁ x₂ y₁ y₂ x₁' x₂'} (a : prod w x₁ ⇒ y₁) (b : prod w x₂ ⇒ y₂)
+                 (c : x₁' ⇒ x₁) (d : x₂' ⇒ x₂) →
+                 (strong-prod-m a b ∘ prod-m (id _) (prod-m c d))
+                   ≈ strong-prod-m (a ∘ prod-m (id _) c) (b ∘ prod-m (id _) d)
+    spm-fusion a b c d =
+      ≈-trans (pair-natural _ _ _)
+      (≈-trans (pair-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl SP1L))
+                          (≈-trans (assoc _ _ _) (∘-cong ≈-refl SP2L)))
+      (≈-sym (pair-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl SP1R))
+                        (≈-trans (assoc _ _ _) (∘-cong ≈-refl SP2R)))))
+      where
+        SP1L : (strong-p₁ ∘ prod-m (id _) (prod-m c d)) ≈ pair p₁ (c ∘ (p₁ ∘ p₂))
+        SP1L =
+          ≈-trans (pair-natural _ _ _)
+          (pair-cong (≈-trans (pair-p₁ _ _) id-left)
+            (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+            (≈-trans (≈-sym (assoc _ _ _))
+            (≈-trans (∘-cong (pair-p₁ _ _) ≈-refl) (assoc _ _ _))))))
+        SP2L : (strong-p₂ ∘ prod-m (id _) (prod-m c d)) ≈ pair p₁ (d ∘ (p₂ ∘ p₂))
+        SP2L =
+          ≈-trans (pair-natural _ _ _)
+          (pair-cong (≈-trans (pair-p₁ _ _) id-left)
+            (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+            (≈-trans (≈-sym (assoc _ _ _))
+            (≈-trans (∘-cong (pair-p₂ _ _) ≈-refl) (assoc _ _ _))))))
+        SP1R : (prod-m (id _) c ∘ strong-p₁) ≈ pair p₁ (c ∘ (p₁ ∘ p₂))
+        SP1R =
+          ≈-trans (pair-natural _ _ _)
+          (pair-cong (≈-trans (∘-cong id-left ≈-refl) (pair-p₁ _ _))
+                     (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
+        SP2R : (prod-m (id _) d ∘ strong-p₂) ≈ pair p₁ (d ∘ (p₂ ∘ p₂))
+        SP2R =
+          ≈-trans (pair-natural _ _ _)
+          (pair-cong (≈-trans (∘-cong id-left ≈-refl) (pair-p₁ _ _))
+                     (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
+
+    -- Projecting a strong singleton onto one component of a glued product.
+    sing-strong-proj₁ : ∀ (X Y : Gl.Obj) (γ : Γc .idx .Carrier)
+      (ι₁ : X .carrier .idx .Carrier) (ι₂ : Y .carrier .idx .Carrier) →
+      (((Γg [×] (X [×] Y)) .pred)
+         [ G .fmor (elem-in (prodC (Fam𝒞-P.prod (X .carrier) (Y .carrier)))
+                            (γ , (ι₁ , ι₂))) ])
+      ⊑ (((Γg [×] X) .pred)
+           [ G .fmor (Fam𝒞._∘_ (elem-in (prodC (X .carrier)) (γ , ι₁))
+                               simplef[ PS.idS PS.𝟙 , prod-m (id _) p₁ ]) ])
+    sing-strong-proj₁ X Y γ ι₁ ι₂ =
+      ⊑-trans []-&&-dist
+      (⊑-trans (&&-isMeet .IsMeet.⟨_,_⟩
+                 (⊑-trans (&&-isMeet .IsMeet.π₁) legΓ)
+                 (⊑-trans (&&-isMeet .IsMeet.π₂) legX))
+               []-&&)
+      where
+        e× = elem-in (prodC (Fam𝒞-P.prod (X .carrier) (Y .carrier))) (γ , (ι₁ , ι₂))
+        cmp = Fam𝒞._∘_ (elem-in (prodC (X .carrier)) (γ , ι₁))
+                       simplef[ PS.idS PS.𝟙 , prod-m (id _) p₁ ]
+        sqΓ : Fam𝒞._≈_ (Fam𝒞._∘_ Fam𝒞-P.p₁ e×) (Fam𝒞._∘_ Fam𝒞-P.p₁ cmp)
+        sqΓ ._≃_.idxf-eq .PS._≃m_.func-eq _ = Γc .idx .isEquivalence .refl
+        sqΓ ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (Γc .fam .refl*) (≈-trans id-left id-right))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans (∘-cong ≈-refl (≈-trans id-left id-left))
+                          (≈-trans (pair-p₁ _ _) id-left)))))
+        sqX : Fam𝒞._≈_ (Fam𝒞._∘_ (Fam𝒞-P.p₁ {X .carrier} {Y .carrier})
+                                 (Fam𝒞._∘_ Fam𝒞-P.p₂ e×))
+                       (Fam𝒞._∘_ (Fam𝒞-P.p₂ {Γc} {X .carrier}) cmp)
+        sqX ._≃_.idxf-eq .PS._≃m_.func-eq _ = X .carrier .idx .isEquivalence .refl
+        sqX ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (X .carrier .fam .refl*)
+                          (≈-trans id-left (∘-cong ≈-refl (≈-trans id-left id-right))))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans (∘-cong ≈-refl (≈-trans id-left id-left))
+                          (pair-p₂ _ _)))))
+        legΓ : ((Γg .pred [ G .fmor Fam𝒞-P.p₁ ]) [ G .fmor e× ])
+               ⊑ ((Γg .pred [ G .fmor Fam𝒞-P.p₁ ]) [ G .fmor cmp ])
+        legΓ =
+          ⊑-trans ([]-comp _ _)
+          (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+          (⊑-trans ([]-cong (G .fmor-cong sqΓ))
+          (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))
+        legX : ((((X .pred [ G .fmor Fam𝒞-P.p₁ ]) && (Y .pred [ G .fmor Fam𝒞-P.p₂ ]))
+                   [ G .fmor Fam𝒞-P.p₂ ]) [ G .fmor e× ])
+               ⊑ ((X .pred [ G .fmor Fam𝒞-P.p₂ ]) [ G .fmor cmp ])
+        legX =
+          ⊑-trans ([]-comp _ _)
+          (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+          (⊑-trans []-&&-dist
+          (⊑-trans (&&-isMeet .IsMeet.π₁)
+          (⊑-trans ([]-comp _ _)
+          (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+          (⊑-trans ([]-cong (G .fmor-cong sqX))
+          (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))))))
+
+    sing-strong-proj₂ : ∀ (X Y : Gl.Obj) (γ : Γc .idx .Carrier)
+      (ι₁ : X .carrier .idx .Carrier) (ι₂ : Y .carrier .idx .Carrier) →
+      (((Γg [×] (X [×] Y)) .pred)
+         [ G .fmor (elem-in (prodC (Fam𝒞-P.prod (X .carrier) (Y .carrier)))
+                            (γ , (ι₁ , ι₂))) ])
+      ⊑ (((Γg [×] Y) .pred)
+           [ G .fmor (Fam𝒞._∘_ (elem-in (prodC (Y .carrier)) (γ , ι₂))
+                               simplef[ PS.idS PS.𝟙 , prod-m (id _) p₂ ]) ])
+    sing-strong-proj₂ X Y γ ι₁ ι₂ =
+      ⊑-trans []-&&-dist
+      (⊑-trans (&&-isMeet .IsMeet.⟨_,_⟩
+                 (⊑-trans (&&-isMeet .IsMeet.π₁) legΓ)
+                 (⊑-trans (&&-isMeet .IsMeet.π₂) legY))
+               []-&&)
+      where
+        e× = elem-in (prodC (Fam𝒞-P.prod (X .carrier) (Y .carrier))) (γ , (ι₁ , ι₂))
+        cmp = Fam𝒞._∘_ (elem-in (prodC (Y .carrier)) (γ , ι₂))
+                       simplef[ PS.idS PS.𝟙 , prod-m (id _) p₂ ]
+        sqΓ : Fam𝒞._≈_ (Fam𝒞._∘_ Fam𝒞-P.p₁ e×) (Fam𝒞._∘_ Fam𝒞-P.p₁ cmp)
+        sqΓ ._≃_.idxf-eq .PS._≃m_.func-eq _ = Γc .idx .isEquivalence .refl
+        sqΓ ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (Γc .fam .refl*) (≈-trans id-left id-right))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans (∘-cong ≈-refl (≈-trans id-left id-left))
+                          (≈-trans (pair-p₁ _ _) id-left)))))
+        sqY : Fam𝒞._≈_ (Fam𝒞._∘_ (Fam𝒞-P.p₂ {X .carrier} {Y .carrier})
+                                 (Fam𝒞._∘_ Fam𝒞-P.p₂ e×))
+                       (Fam𝒞._∘_ (Fam𝒞-P.p₂ {Γc} {Y .carrier}) cmp)
+        sqY ._≃_.idxf-eq .PS._≃m_.func-eq _ = Y .carrier .idx .isEquivalence .refl
+        sqY ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+          ≈-trans (∘-cong (Y .carrier .fam .refl*)
+                          (≈-trans id-left (∘-cong ≈-refl (≈-trans id-left id-right))))
+          (≈-trans id-left
+          (≈-sym (≈-trans id-left
+                 (≈-trans (∘-cong ≈-refl (≈-trans id-left id-left))
+                          (pair-p₂ _ _)))))
+        legΓ : ((Γg .pred [ G .fmor Fam𝒞-P.p₁ ]) [ G .fmor e× ])
+               ⊑ ((Γg .pred [ G .fmor Fam𝒞-P.p₁ ]) [ G .fmor cmp ])
+        legΓ =
+          ⊑-trans ([]-comp _ _)
+          (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+          (⊑-trans ([]-cong (G .fmor-cong sqΓ))
+          (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))
+        legY : ((((X .pred [ G .fmor Fam𝒞-P.p₁ ]) && (Y .pred [ G .fmor Fam𝒞-P.p₂ ]))
+                   [ G .fmor Fam𝒞-P.p₂ ]) [ G .fmor e× ])
+               ⊑ ((Y .pred [ G .fmor Fam𝒞-P.p₂ ]) [ G .fmor cmp ])
+        legY =
+          ⊑-trans ([]-comp _ _)
+          (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+          (⊑-trans []-&&-dist
+          (⊑-trans (&&-isMeet .IsMeet.π₂)
+          (⊑-trans ([]-comp _ _)
+          (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+          (⊑-trans ([]-cong (G .fmor-cong sqY))
+          (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))))))
+
+    -- The strong pairing of two singleton fold hypotheses.
+    strong-pair-sing : ∀ (X₁ X₂ Y₁ Y₂ : Gl.Obj) (γ : Γc .idx .Carrier)
+      (ι₁ : X₁ .carrier .idx .Carrier) (ι₂ : X₂ .carrier .idx .Carrier)
+      (hs₁ : Mor simple[ PS.𝟙 , prod (Γc .fam .fm γ) (X₁ .carrier .fam .fm ι₁) ]
+                 (Y₁ .carrier))
+      (hs₂ : Mor simple[ PS.𝟙 , prod (Γc .fam .fm γ) (X₂ .carrier .fam .fm ι₂) ]
+                 (Y₂ .carrier)) →
+      (((Γg [×] X₁) .pred [ G .fmor (elem-in (prodC (X₁ .carrier)) (γ , ι₁)) ])
+        ⊑ (Y₁ .pred [ G .fmor hs₁ ])) →
+      (((Γg [×] X₂) .pred [ G .fmor (elem-in (prodC (X₂ .carrier)) (γ , ι₂)) ])
+        ⊑ (Y₂ .pred [ G .fmor hs₂ ])) →
+      (((Γg [×] (X₁ [×] X₂)) .pred
+          [ G .fmor (elem-in (prodC (Fam𝒞-P.prod (X₁ .carrier) (X₂ .carrier)))
+                             (γ , (ι₁ , ι₂))) ])
+        ⊑ ((Y₁ [×] Y₂) .pred
+             [ G .fmor (Fam𝒞-P.pair
+                          (Fam𝒞._∘_ hs₁ simplef[ PS.idS PS.𝟙 , prod-m (id _) p₁ ])
+                          (Fam𝒞._∘_ hs₂ simplef[ PS.idS PS.𝟙 , prod-m (id _) p₂ ])) ]))
+    strong-pair-sing X₁ X₂ Y₁ Y₂ γ ι₁ ι₂ hs₁ hs₂ HYP₁ HYP₂ =
+      ⊑-trans (&&-isMeet .IsMeet.⟨_,_⟩ leg₁ leg₂) []-&&
+      where
+        leg₁ = ⊑-trans (sing-strong-proj₁ X₁ X₂ γ ι₁ ι₂)
+               (⊑-trans ([]-cong (G .fmor-comp _ _))
+               (⊑-trans ([]-comp⁻¹ _ _)
+               (⊑-trans (HYP₁ [ G .fmor simplef[ PS.idS PS.𝟙 , prod-m (id _) p₁ ] ]m)
+               (⊑-trans ([]-comp _ _)
+               (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               (⊑-trans ([]-cong (G .fmor-cong (Fam𝒞.≈-sym (Fam𝒞-P.pair-p₁ _ _))))
+               (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))))))
+        leg₂ = ⊑-trans (sing-strong-proj₂ X₁ X₂ γ ι₁ ι₂)
+               (⊑-trans ([]-cong (G .fmor-comp _ _))
+               (⊑-trans ([]-comp⁻¹ _ _)
+               (⊑-trans (HYP₂ [ G .fmor simplef[ PS.idS PS.𝟙 , prod-m (id _) p₂ ] ]m)
+               (⊑-trans ([]-comp _ _)
+               (⊑-trans ([]-cong (𝒫C'.≈-sym (G .fmor-comp _ _)))
+               (⊑-trans ([]-cong (G .fmor-cong (Fam𝒞.≈-sym (Fam𝒞-P.pair-p₂ _ _))))
+               (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))))))
