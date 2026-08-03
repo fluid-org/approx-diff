@@ -513,12 +513,22 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
 private module GlCP = Gl.coproducts coproducts
 
 -- The glued interpretation of a polynomial: the carrier interpretation with the matching glued
--- former at every node, the μ case supplying the closed join.
-fobj-Gl : ∀ {j} (Q : Poly j) (pQ : PolyPred Q)
-          (δ : Fin j → Obj) (δP : ∀ i → Predicate (G .fobj (δ i))) → Gl.Obj
-fobj-Gl (const A) pA δ δP = glue A pA
-fobj-Gl (var i)   _  δ δP = glue (δ i) (δP i)
-fobj-Gl (P' + Q') (pP , pQ) δ δP =
-  GlCP._[+]_ (Lf-Gl (fobj-Gl P' pP δ δP)) (Lf-Gl (fobj-Gl Q' pQ δ δP))
-fobj-Gl (P' × Q') (pP , pQ) δ δP = Lf-Gl (fobj-Gl P' pP δ δP [×] fobj-Gl Q' pQ δ δP)
-fobj-Gl (μ Q')    pQ' δ δP = MuPred.μ-Gl δ δP Q' pQ'
+-- former's predicate at every node, the μ case supplying the closed join. The carrier is the
+-- interpretation itself on the nose, so statements over an arbitrary polynomial elaborate; the
+-- predicate is projected from the glued former applied to the recursive interpretations.
+mutual
+  fobj-Gl : ∀ {j} (Q : Poly j) (pQ : PolyPred Q)
+            (δ : Fin j → Obj) (δP : ∀ i → Predicate (G .fobj (δ i))) → Gl.Obj
+  fobj-Gl Q pQ δ δP .carrier = R.fobj μObj Q δ
+  fobj-Gl Q pQ δ δP .pred = fobj-pred Q pQ δ δP
+
+  fobj-pred : ∀ {j} (Q : Poly j) (pQ : PolyPred Q)
+              (δ : Fin j → Obj) (δP : ∀ i → Predicate (G .fobj (δ i))) →
+              Predicate (G .fobj (R.fobj μObj Q δ))
+  fobj-pred (const A) pA δ δP = pA
+  fobj-pred (var i)   _  δ δP = δP i
+  fobj-pred (P' + Q') (pP , pQ) δ δP =
+    GlCP._[+]_ (Lf-Gl (fobj-Gl P' pP δ δP)) (Lf-Gl (fobj-Gl Q' pQ δ δP)) .pred
+  fobj-pred (P' × Q') (pP , pQ) δ δP =
+    Lf-Gl (fobj-Gl P' pP δ δP [×] fobj-Gl Q' pQ δ δP) .pred
+  fobj-pred (μ Q')    pQ' δ δP = MuPred.μ-Gl δ δP Q' pQ' .pred
