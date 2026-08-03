@@ -17,19 +17,8 @@ private
   module T = CommutativeSemiring two.semiring
   module TM = matrix.Mat two.semiring
 
-  ∨-idem : ∀ {x} → (x T.+ x) T.≈ x
-  ∨-idem {two.O} = T.refl {two.O}
-  ∨-idem {two.I} = T.refl {two.I}
-
-  ∧-idem : ∀ {x} → (x T.· x) T.≈ x
-  ∧-idem {two.O} = T.refl {two.O}
-  ∧-idem {two.I} = T.refl {two.I}
-
-  ⊤-add-top : ∀ {x} → (T.ι T.+ x) T.≈ T.ι
-  ⊤-add-top {two.O} = T.refl {two.I}
-  ⊤-add-top {two.I} = T.refl {two.I}
-
-open order-idempotent two.semiring (λ {x} → ∨-idem {x}) (λ {x} → ∧-idem {x}) (λ {x} → ⊤-add-top {x})
+open order-idempotent two.semiring
+  (λ {x} → two.∨-idem {x}) (λ {x} → two.∧-idem {x}) (λ {x} → two.⊤-add-top {x})
 
 pattern c₁ = zero
 pattern a  = suc zero
