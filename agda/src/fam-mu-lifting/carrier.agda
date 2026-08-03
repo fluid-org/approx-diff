@@ -88,7 +88,8 @@ fobj μ-obj (μ P')    δ = μ-obj P' δ
 import lifting-fold
 open lifting-fold CM BP Lft public
   using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
-         under-root-p₂; pm; pm-in₁; pm-in₂; bp-ext)
+         under-root-p₂; pm; pm-in₁; pm-in₂; bp-ext;
+         strip-root; strip-root-cong; strip-root-natural)
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
@@ -188,6 +189,60 @@ payloadF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
       ≈-trans (affine-inj CME.εm (id _))
         (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong (CME.comp-bilinear-ε₁ spt) ≈-refl)
           (CME.homCM _ _ .CommutativeMonoid.+-lunit))
+
+-- A chosen constant of every fibre, natural under the transports: what an eliminator produces
+-- from a root alone.
+record Pointed (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
+  field
+    pt         : ∀ x → 𝟙c ⇒ X .fam .fm x
+    pt-natural : ∀ {x₁ x₂} (e : _≈s_ (X .idx) x₁ x₂) →
+                 (X .fam .subst e ∘ pt x₁) ≈ pt x₂
+
+open Pointed public
+
+-- Zero constants: eliminators discard the root, the reading without tags.
+zero-pointed : ∀ {X} → Pointed X
+zero-pointed .pt x = CME.εm
+zero-pointed {X} .pt-natural e = CME.comp-bilinear-ε₂ (X .fam .subst e)
+
+-- The constant of a lifted family: the root together with the payload's constant beneath it.
+Lf-pointed : ∀ {X} → Pointed X → Pointed (Lf X)
+Lf-pointed p .pt x = root CME.+m (inj ∘ p .pt x)
+Lf-pointed {X} p .pt-natural {x₁} {x₂} e =
+  ≈-trans (CME.comp-bilinear₂ _ _ _)
+    (CME.homCM _ _ .CommutativeMonoid.+-cong
+      (Lmap-root _)
+      (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong₁ (Lmap-inj (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e)))
+          (≈-trans (assoc _ _ _) (∘-cong₂ (p .pt-natural e))))))
+
+prod-pointed : ∀ {X Y} → Pointed X → Pointed Y → Pointed (Fam𝒞-P.prod X Y)
+prod-pointed pX pY .pt (x , y) = pair (pX .pt x) (pY .pt y)
+prod-pointed pX pY .pt-natural {x₁ , y₁} {x₂ , y₂} (e₁ , e₂) =
+  ≈-trans (pair-natural _ _ _)
+    (pair-cong
+      (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₁ _ _)) (pX .pt-natural e₁)))
+      (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (pY .pt-natural e₂))))
+
+coprod-pointed : ∀ {X Y} → Pointed X → Pointed Y →
+                 Pointed (HasCoproducts.coprod coproducts X Y)
+coprod-pointed pX pY .pt (inj₁ x) = pX .pt x
+coprod-pointed pX pY .pt (inj₂ y) = pY .pt y
+coprod-pointed pX pY .pt-natural {inj₁ x₁} {inj₁ x₂} e = pX .pt-natural e
+coprod-pointed pX pY .pt-natural {inj₂ y₁} {inj₂ y₂} e = pY .pt-natural e
+
+-- Eliminating a root in context: the payload continues, and the root produces the target's
+-- chosen constant.
+elimF : ∀ {Γ X C : Obj} → Pointed C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
+elimF ptC f .idxf = f .idxf
+elimF ptC f .famf ._⇒f_.transf (γ , x) =
+  strip-root (ptC .pt (f .idxf .prop-setoid._⇒_.func (γ , x))) (f .famf ._⇒f_.transf (γ , x))
+elimF {Γ} {X} {C} ptC f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
+  strip-root-natural (Γ .fam .subst γ≈)
+    (fam-subst-iso₁ (X .fam) x≈) (fam-subst-iso₂ (X .fam) x≈)
+    (ptC .pt-natural (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
+    (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
+    (f .famf ._⇒f_.natural (γ≈ , x≈))
 
 -- The lift of an isomorphism of families.
 Lf-iso : ∀ {X Y : Obj} → Fam𝒞.Iso X Y → Fam𝒞.Iso (Lf X) (Lf Y)
