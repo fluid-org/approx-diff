@@ -73,12 +73,13 @@ PolyPred (P' + Q') = PolyPred P' ×T PolyPred Q'
 PolyPred (P' × Q') = PolyPred P' ×T PolyPred Q'
 PolyPred (μ Q')    = PolyPred Q'
 
-module MuPred {n} (δGl : Fin n → Gl.Obj) where
-  private
-    δc : Fin n → Obj
-    δc i = δGl i .carrier
+-- The environment enters as a carrier assignment and a predicate assignment separately, not as
+-- glued objects: the extended environment of the one-step algebra must agree definitionally with
+-- the one the reindexing machinery uses, and projecting carriers from glued objects only reduces
+-- at applied positions.
+module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i))) where
 
-  open Tree δc
+  open Tree δ
 
   -- Predicate assignments for decorations, mirroring the decoration structure.
   DecoPred : ∀ {s} → Deco s → Set ℓpred
@@ -120,7 +121,7 @@ module MuPred {n} (δGl : Fin n → Gl.Obj) where
     fib-el-Gl : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
                 (x : El r) → Gl.Obj
     fib-el-Gl (inj₁ p) _ _ x =
-      glue simple[ PS.𝟙 , δc p .fam .fm x ] (δGl p .pred [ G .fmor (elem-in (δc p) x) ])
+      glue simple[ PS.𝟙 , δ p .fam .fm x ] (δP p [ G .fmor (elem-in (δ p) x) ])
     fib-el-Gl (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x = fib-Gl Q ρd pQ pρ x
 
   -- The carrier of each fibre's glued object maps onto the fibre itself: fibrewise the identity,
@@ -328,7 +329,7 @@ module MuPred {n} (δGl : Fin n → Gl.Obj) where
 
   -- The inclusion of a fibre's carrier at its tree, over the constant index map.
   tree-in : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
-            Mor (fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier) (μObj P' δc)
+            Mor (fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier) (μObj P' δ)
   tree-in P' pP t .idxf .PS._⇒_.func _ = t
   tree-in P' pP t .idxf .PS._⇒_.func-resp-≈ _ = W-≈-refl t
   tree-in P' pP t .famf ._⇒f_.transf ι = in-fib P' (λ i → lift tt) pP (λ i → lift tt) t ι
@@ -340,7 +341,7 @@ module MuPred {n} (δGl : Fin n → Gl.Obj) where
   -- is needed because an element of the carrier factors through a single tree's inclusion only
   -- after its stage has been refined along a cover splitting the index choice.
   μ-Gl : (P' : Poly (suc n)) (pP : PolyPred P') → Gl.Obj
-  μ-Gl P' pP .carrier = μObj P' δc
+  μ-Gl P' pP .carrier = μObj P' δ
   μ-Gl P' pP .pred =
     𝐂 (⋁ (W ∣ P' ∣ (λ i → inj₁ i))
          (λ t → fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .pred ⟨ G .fmor (tree-in P' pP t) ⟩))
@@ -349,10 +350,11 @@ private module GlCP = Gl.coproducts coproducts
 
 -- The glued interpretation of a polynomial: the carrier interpretation with the matching glued
 -- former at every node, the μ case supplying the closed join.
-fobj-Gl : ∀ {j} (Q : Poly j) (pQ : PolyPred Q) (δGl : Fin j → Gl.Obj) → Gl.Obj
-fobj-Gl (const A) pA δGl = glue A pA
-fobj-Gl (var i)   _  δGl = δGl i
-fobj-Gl (P' + Q') (pP , pQ) δGl =
-  GlCP._[+]_ (Lf-Gl (fobj-Gl P' pP δGl)) (Lf-Gl (fobj-Gl Q' pQ δGl))
-fobj-Gl (P' × Q') (pP , pQ) δGl = Lf-Gl (fobj-Gl P' pP δGl [×] fobj-Gl Q' pQ δGl)
-fobj-Gl (μ Q')    pQ' δGl = MuPred.μ-Gl δGl Q' pQ'
+fobj-Gl : ∀ {j} (Q : Poly j) (pQ : PolyPred Q)
+          (δ : Fin j → Obj) (δP : ∀ i → Predicate (G .fobj (δ i))) → Gl.Obj
+fobj-Gl (const A) pA δ δP = glue A pA
+fobj-Gl (var i)   _  δ δP = glue (δ i) (δP i)
+fobj-Gl (P' + Q') (pP , pQ) δ δP =
+  GlCP._[+]_ (Lf-Gl (fobj-Gl P' pP δ δP)) (Lf-Gl (fobj-Gl Q' pQ δ δP))
+fobj-Gl (P' × Q') (pP , pQ) δ δP = Lf-Gl (fobj-Gl P' pP δ δP [×] fobj-Gl Q' pQ δ δP)
+fobj-Gl (μ Q')    pQ' δ δP = MuPred.μ-Gl δ δP Q' pQ'
