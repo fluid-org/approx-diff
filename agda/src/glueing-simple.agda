@@ -4,7 +4,8 @@ open import Level using (suc; _⊔_; 0ℓ)
 open import prop-setoid using (module ≈-Reasoning; IsEquivalence)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; module ≤-Reasoning; IsJoin; IsBigJoin)
 open import categories using (Category; HasProducts; HasExponentials; HasWeakExponentials;
-                              exponentials→weak; HasCoproducts; HasTerminal; IsTerminal)
+                              exponentials→weak; HasCoproducts; HasStrongCoproducts; HasTerminal;
+                              IsTerminal)
 open import functor using (Functor; HasColimits; Colimit; IsColimit; _∘F_; NatTrans; ≃-NatTrans)
 open import monad using (Monad; MonadFunctor)
 open import predicate-system using (PredicateSystem; FunctorPred; MonadPred)
@@ -309,6 +310,144 @@ module products-and-weak-exponentials
   weak-exponentials .HasWeakExponentials.lambda = lambda
   weak-exponentials .HasWeakExponentials.lambda-cong e .f≃f = E.lambda-cong (e .f≃f)
   weak-exponentials .HasWeakExponentials.eval-lambda f .f≃f = E.eval-lambda (f .morph)
+
+  -- Strong coproducts, decorated. The copair in context needs meets distributing over joins,
+  -- Frobenius reciprocity, and the Beck-Chevalley law of the square pairing a context with an
+  -- injection, all supplied as hypotheses; the last is model-specific.
+  module strong-coproducts
+      (SC : HasStrongCoproducts 𝒞 P)
+      (S-dist : ∀ {V} {P' Q' R' : Predicate V} →
+                (P' && (Q' ++ R')) ⊑ ((P' && Q') ++ (P' && R')))
+      (S-frob : ∀ {V V'} {P' : Predicate V'} {Q' : Predicate V} {h : V 𝒟.⇒ V'} →
+                (P' && (Q' ⟨ h ⟩)) ⊑ (((P' [ h ]) && Q') ⟨ h ⟩))
+      (let module SCm = HasStrongCoproducts SC)
+      (BC₁ : ∀ {W X Y : 𝒞.obj} {Q : Predicate (F .fobj X)} →
+             ((Q ⟨ F .fmor (SCm.in₁ {X} {Y}) ⟩) [ F .fmor (P.p₂ {W}) ])
+               ⊑ ((Q [ F .fmor (P.p₂ {W} {X}) ]) ⟨ F .fmor (P.pair P.p₁ (SCm.in₁ 𝒞.∘ P.p₂)) ⟩))
+      (BC₂ : ∀ {W X Y : 𝒞.obj} {Q : Predicate (F .fobj Y)} →
+             ((Q ⟨ F .fmor (SCm.in₂ {X} {Y}) ⟩) [ F .fmor (P.p₂ {W}) ])
+               ⊑ ((Q [ F .fmor (P.p₂ {W} {Y}) ]) ⟨ F .fmor (P.pair P.p₁ (SCm.in₂ 𝒞.∘ P.p₂)) ⟩))
+      where
+
+    -- Collapsing a composite reindexing along an equation in the base.
+    []-collapse : ∀ {V₁ V₂ V₃ : 𝒞.obj} (Q : Predicate (F .fobj V₃))
+                  {k : V₁ 𝒞.⇒ V₂} {p : V₂ 𝒞.⇒ V₃} {p' : V₁ 𝒞.⇒ V₃} →
+                  (p 𝒞.∘ k) 𝒞.≈ p' →
+                  ((Q [ F .fmor p ]) [ F .fmor k ]) ⊑ (Q [ F .fmor p' ])
+    []-collapse Q {k} {p} {p'} e = begin
+        (Q [ F .fmor p ]) [ F .fmor k ]
+      ≤⟨ []-comp _ _ ⟩
+        Q [ F .fmor p 𝒟.∘ F .fmor k ]
+      ≤⟨ []-cong (𝒟.≈-sym (F .fmor-comp _ _)) ⟩
+        Q [ F .fmor (p 𝒞.∘ k) ]
+      ≤⟨ []-cong (F .fmor-cong e) ⟩
+        Q [ F .fmor p' ]
+      ∎
+      where open ≤-Reasoning ⊑-isPreorder
+
+    _[+]ₛ_ : Obj → Obj → Obj
+    (X [+]ₛ Y) .carrier = SCm.coprod (X .carrier) (Y .carrier)
+    (X [+]ₛ Y) .pred = (X .pred ⟨ F .fmor SCm.in₁ ⟩) ++ (Y .pred ⟨ F .fmor SCm.in₂ ⟩)
+
+    in₁ₛ : ∀ {X Y} → X => (X [+]ₛ Y)
+    in₁ₛ .morph = SCm.in₁
+    in₁ₛ {X} {Y} .presv = begin
+        X .pred
+      ≤⟨ unit _ ⟩
+        X .pred ⟨ F .fmor SCm.in₁ ⟩ [ F .fmor SCm.in₁ ]
+      ≤⟨ ++-isJoin .IsJoin.inl [ _ ]m ⟩
+        ((X .pred ⟨ F .fmor SCm.in₁ ⟩) ++ (Y .pred ⟨ F .fmor SCm.in₂ ⟩)) [ F .fmor SCm.in₁ ]
+      ∎
+      where open ≤-Reasoning ⊑-isPreorder
+
+    in₂ₛ : ∀ {X Y} → Y => (X [+]ₛ Y)
+    in₂ₛ .morph = SCm.in₂
+    in₂ₛ {X} {Y} .presv = begin
+        Y .pred
+      ≤⟨ unit _ ⟩
+        Y .pred ⟨ F .fmor SCm.in₂ ⟩ [ F .fmor SCm.in₂ ]
+      ≤⟨ ++-isJoin .IsJoin.inr [ _ ]m ⟩
+        ((X .pred ⟨ F .fmor SCm.in₁ ⟩) ++ (Y .pred ⟨ F .fmor SCm.in₂ ⟩)) [ F .fmor SCm.in₂ ]
+      ∎
+      where open ≤-Reasoning ⊑-isPreorder
+
+    scopair : ∀ {W X Y Z} → (W [×] X) => Z → (W [×] Y) => Z → (W [×] (X [+]ₛ Y)) => Z
+    scopair f g .morph = SCm.copair (f .morph) (g .morph)
+    scopair {W} {X} {Y} {Z} f g .presv = begin
+        (W .pred [ F .fmor P.p₁ ])
+          && (((X .pred ⟨ F .fmor SCm.in₁ ⟩) ++ (Y .pred ⟨ F .fmor SCm.in₂ ⟩)) [ F .fmor P.p₂ ])
+      ≤⟨ IsMeet.mono &&-isMeet ⊑-refl []-++ ⟩
+        (W .pred [ F .fmor P.p₁ ])
+          && (((X .pred ⟨ F .fmor SCm.in₁ ⟩) [ F .fmor P.p₂ ])
+               ++ ((Y .pred ⟨ F .fmor SCm.in₂ ⟩) [ F .fmor P.p₂ ]))
+      ≤⟨ S-dist ⟩
+        ((W .pred [ F .fmor P.p₁ ]) && ((X .pred ⟨ F .fmor SCm.in₁ ⟩) [ F .fmor P.p₂ ]))
+          ++ ((W .pred [ F .fmor P.p₁ ]) && ((Y .pred ⟨ F .fmor SCm.in₂ ⟩) [ F .fmor P.p₂ ]))
+      ≤⟨ IsJoin.[_,_] ++-isJoin branch₁ branch₂ ⟩
+        Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) ]
+      ∎
+      where
+        open ≤-Reasoning ⊑-isPreorder
+
+        k₁ = P.pair P.p₁ (SCm.in₁ 𝒞.∘ P.p₂)
+        k₂ = P.pair P.p₁ (SCm.in₂ 𝒞.∘ P.p₂)
+
+        branch₁ : ((W .pred [ F .fmor P.p₁ ]) && ((X .pred ⟨ F .fmor SCm.in₁ ⟩) [ F .fmor P.p₂ ]))
+                    ⊑ (Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) ])
+        branch₁ = begin
+            (W .pred [ F .fmor P.p₁ ]) && ((X .pred ⟨ F .fmor SCm.in₁ ⟩) [ F .fmor P.p₂ ])
+          ≤⟨ IsMeet.mono &&-isMeet ⊑-refl BC₁ ⟩
+            (W .pred [ F .fmor P.p₁ ]) && ((X .pred [ F .fmor P.p₂ ]) ⟨ F .fmor k₁ ⟩)
+          ≤⟨ S-frob ⟩
+            (((W .pred [ F .fmor P.p₁ ]) [ F .fmor k₁ ]) && (X .pred [ F .fmor P.p₂ ])) ⟨ F .fmor k₁ ⟩
+          ≤⟨ (IsMeet.mono &&-isMeet ([]-collapse (W .pred) (P.pair-p₁ _ _)) ⊑-refl) ⟨ _ ⟩m ⟩
+            ((W .pred [ F .fmor P.p₁ ]) && (X .pred [ F .fmor P.p₂ ])) ⟨ F .fmor k₁ ⟩
+          ≤⟨ (f .presv) ⟨ _ ⟩m ⟩
+            (Z .pred [ F .fmor (f .morph) ]) ⟨ F .fmor k₁ ⟩
+          ≤⟨ ([]-cong (F .fmor-cong (𝒞.≈-sym (SCm.copair-in₁ (f .morph) (g .morph))))) ⟨ _ ⟩m ⟩
+            (Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph) 𝒞.∘ k₁) ]) ⟨ F .fmor k₁ ⟩
+          ≤⟨ ([]-cong (F .fmor-comp _ _)) ⟨ _ ⟩m ⟩
+            (Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) 𝒟.∘ F .fmor k₁ ]) ⟨ F .fmor k₁ ⟩
+          ≤⟨ ([]-comp⁻¹ _ _) ⟨ _ ⟩m ⟩
+            ((Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) ]) [ F .fmor k₁ ]) ⟨ F .fmor k₁ ⟩
+          ≤⟨ counit _ ⟩
+            Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) ]
+          ∎
+
+        branch₂ : ((W .pred [ F .fmor P.p₁ ]) && ((Y .pred ⟨ F .fmor SCm.in₂ ⟩) [ F .fmor P.p₂ ]))
+                    ⊑ (Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) ])
+        branch₂ = begin
+            (W .pred [ F .fmor P.p₁ ]) && ((Y .pred ⟨ F .fmor SCm.in₂ ⟩) [ F .fmor P.p₂ ])
+          ≤⟨ IsMeet.mono &&-isMeet ⊑-refl BC₂ ⟩
+            (W .pred [ F .fmor P.p₁ ]) && ((Y .pred [ F .fmor P.p₂ ]) ⟨ F .fmor k₂ ⟩)
+          ≤⟨ S-frob ⟩
+            (((W .pred [ F .fmor P.p₁ ]) [ F .fmor k₂ ]) && (Y .pred [ F .fmor P.p₂ ])) ⟨ F .fmor k₂ ⟩
+          ≤⟨ (IsMeet.mono &&-isMeet ([]-collapse (W .pred) (P.pair-p₁ _ _)) ⊑-refl) ⟨ _ ⟩m ⟩
+            ((W .pred [ F .fmor P.p₁ ]) && (Y .pred [ F .fmor P.p₂ ])) ⟨ F .fmor k₂ ⟩
+          ≤⟨ (g .presv) ⟨ _ ⟩m ⟩
+            (Z .pred [ F .fmor (g .morph) ]) ⟨ F .fmor k₂ ⟩
+          ≤⟨ ([]-cong (F .fmor-cong (𝒞.≈-sym (SCm.copair-in₂ (f .morph) (g .morph))))) ⟨ _ ⟩m ⟩
+            (Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph) 𝒞.∘ k₂) ]) ⟨ F .fmor k₂ ⟩
+          ≤⟨ ([]-cong (F .fmor-comp _ _)) ⟨ _ ⟩m ⟩
+            (Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) 𝒟.∘ F .fmor k₂ ]) ⟨ F .fmor k₂ ⟩
+          ≤⟨ ([]-comp⁻¹ _ _) ⟨ _ ⟩m ⟩
+            ((Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) ]) [ F .fmor k₂ ]) ⟨ F .fmor k₂ ⟩
+          ≤⟨ counit _ ⟩
+            Z .pred [ F .fmor (SCm.copair (f .morph) (g .morph)) ]
+          ∎
+
+    strongCoproducts : HasStrongCoproducts cat products
+    strongCoproducts .HasStrongCoproducts.coprod = _[+]ₛ_
+    strongCoproducts .HasStrongCoproducts.in₁ = in₁ₛ
+    strongCoproducts .HasStrongCoproducts.in₂ = in₂ₛ
+    strongCoproducts .HasStrongCoproducts.copair = scopair
+    strongCoproducts .HasStrongCoproducts.copair-cong e₁ e₂ .f≃f =
+      SCm.copair-cong (e₁ .f≃f) (e₂ .f≃f)
+    strongCoproducts .HasStrongCoproducts.copair-in₁ f g .f≃f =
+      SCm.copair-in₁ (f .morph) (g .morph)
+    strongCoproducts .HasStrongCoproducts.copair-in₂ f g .f≃f =
+      SCm.copair-in₂ (f .morph) (g .morph)
+    strongCoproducts .HasStrongCoproducts.copair-ext h .f≃f = SCm.copair-ext (h .morph)
 
 module products-and-exponentials
          (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (E : HasExponentials 𝒞 P)
