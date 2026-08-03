@@ -23,7 +23,7 @@ open import categories using (Category; HasTerminal; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 open import lifting using (Lifting)
 open import functor using (Functor)
-open import predicate-system using (PredicateSystem)
+open import predicate-system using (PredicateSystem; ClosureOp)
 open import indexed-family using (_⇒f_)
 import fam-mu-lifting.laws
 import fam-mu-lifting.glued
@@ -37,6 +37,8 @@ module fam-mu-lifting.glued-mu {o m e} {𝒞 : Category o m e}
   (G : Functor R.cat 𝒫)
   (let open PredicateSystem system)
   (Rt : ∀ (C : R.Obj) → Predicate (Functor.fobj G (R.Lf C)))
+  (Cl : ClosureOp 𝒫 𝒫P system)
+  (let open ClosureOp Cl)
   where
 
 open Functor
@@ -202,9 +204,23 @@ module MuPred {n} (δGl : Fin n → Gl.Obj) where
     ≈-trans (in-fib-natural P' (λ i → lift tt) pP (λ i → lift tt) t e)
             (≈-sym (≈-trans (∘-cong (fib-refl* P' (λ i → lift tt) t) ≈-refl) id-left))
 
-  -- The μ-carrier decorated with the join over trees of the fibre predicates.
+  -- The μ-carrier decorated with the closed join over trees of the fibre predicates. The closure
+  -- is needed because an element of the carrier factors through a single tree's inclusion only
+  -- after its stage has been refined along a cover splitting the index choice.
   μ-Gl : (P' : Poly (suc n)) (pP : PolyPred P') → Gl.Obj
   μ-Gl P' pP .carrier = μObj P' δc
   μ-Gl P' pP .pred =
-    ⋁ (W ∣ P' ∣ (λ i → inj₁ i))
-      (λ t → fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .pred ⟨ G .fmor (tree-in P' pP t) ⟩)
+    𝐂 (⋁ (W ∣ P' ∣ (λ i → inj₁ i))
+         (λ t → fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .pred ⟨ G .fmor (tree-in P' pP t) ⟩))
+
+private module GlCP = Gl.coproducts coproducts
+
+-- The glued interpretation of a polynomial: the carrier interpretation with the matching glued
+-- former at every node, the μ case supplying the closed join.
+fobj-Gl : ∀ {j} (Q : Poly j) (pQ : PolyPred Q) (δGl : Fin j → Gl.Obj) → Gl.Obj
+fobj-Gl (const A) pA δGl = glue A pA
+fobj-Gl (var i)   _  δGl = δGl i
+fobj-Gl (P' + Q') (pP , pQ) δGl =
+  GlCP._[+]_ (Lf-Gl (fobj-Gl P' pP δGl)) (Lf-Gl (fobj-Gl Q' pQ δGl))
+fobj-Gl (P' × Q') (pP , pQ) δGl = Lf-Gl (fobj-Gl P' pP δGl [×] fobj-Gl Q' pQ δGl)
+fobj-Gl (μ Q')    pQ' δGl = MuPred.μ-Gl δGl Q' pQ'
