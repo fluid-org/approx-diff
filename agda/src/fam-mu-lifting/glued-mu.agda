@@ -484,6 +484,49 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
   el-out r dr pr x .famf ._⇒f_.natural _ =
     ≈-trans id-right (≈-sym (out-el-natural r dr pr x _))
 
+  -- The singleton inclusions agree across the levels of the recursion.
+  fib-shape-out : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+                  (d : ∀ i → DecoAssign (ρ̄ i))
+                  (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+                  (x : ⟦ ∣ Q ∣ ⟧shape (extend ρ̄ (inj₂ (mkSort ∣ Q ∣ ρ̄)))) →
+                  Fam𝒞._≈_ (fib-out Q d pQ pd (sup x))
+                           (shape-out Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x)
+  fib-shape-out Q d pQ pd x ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+    fib-Gl Q d pQ pd (sup x) .carrier .idx .isEquivalence .refl
+  fib-shape-out Q d pQ pd x ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+    ≈-trans (∘-cong (fib-Gl Q d pQ pd (sup x) .carrier .fam .refl*) ≈-refl) id-left
+
+  shape-el-out : ∀ {j} {η̄ : Fin j → Fin n ⊎ Sort n} (i : Fin j)
+                 (d : ∀ v → DecoAssign (η̄ v))
+                 (pQ : PolyPred (var i)) (pd : ∀ v → DecoAssignPred (η̄ v) (d v))
+                 (x : El (η̄ i)) →
+                 Fam𝒞._≈_ (shape-out (var i) d pQ pd x) (el-out (η̄ i) (d i) (pd i) x)
+  shape-el-out i d pQ pd x ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+    fib-el-Gl _ (d i) (pd i) x .carrier .idx .isEquivalence .refl
+  shape-el-out i d pQ pd x ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+    ≈-trans (∘-cong (fib-el-Gl _ (d i) (pd i) x .carrier .fam .refl*) ≈-refl) id-left
+
+  shape-fib-out : ∀ {j} (Q' : Poly (suc j)) {η̄ : Fin j → Fin n ⊎ Sort n}
+                  (d : ∀ v → DecoAssign (η̄ v))
+                  (pQ' : PolyPred (μ Q')) (pd : ∀ v → DecoAssignPred (η̄ v) (d v))
+                  (t : W ∣ Q' ∣ η̄) →
+                  Fam𝒞._≈_ (shape-out (μ Q') d pQ' pd t) (fib-out Q' d pQ' pd t)
+  shape-fib-out Q' d pQ' pd t ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+    fib-Gl Q' d pQ' pd t .carrier .idx .isEquivalence .refl
+  shape-fib-out Q' d pQ' pd t ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+    ≈-trans (∘-cong (fib-Gl Q' d pQ' pd t .carrier .fam .refl*) ≈-refl) id-left
+
+  el-fib-out : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+               (ρd : ∀ i → DecoAssign (ρ̄ i))
+               (pQ : PolyPred Q) (pρ : ∀ i → DecoAssignPred (ρ̄ i) (ρd i))
+               (x : El (inj₂ (mkSort ∣ Q ∣ ρ̄))) →
+               Fam𝒞._≈_ (el-out (inj₂ (mkSort ∣ Q ∣ ρ̄)) (mkDeco Q ρd) (pQ , pρ) x)
+                        (fib-out Q ρd pQ pρ x)
+  el-fib-out Q ρd pQ pρ x ._≃_.idxf-eq .PS._≃m_.func-eq _ =
+    fib-Gl Q ρd pQ pρ x .carrier .idx .isEquivalence .refl
+  el-fib-out Q ρd pQ pρ x ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+    ≈-trans (∘-cong (fib-Gl Q ρd pQ pρ x .carrier .fam .refl*) ≈-refl) id-left
+
   -- The inclusion of a fibre's carrier at its tree, over the constant index map.
   tree-in : (P' : Poly (suc n)) (pP : PolyPred P') (t : W ∣ P' ∣ (λ i → inj₁ i)) →
             Mor (fib-Gl P' (λ i → lift tt) pP (λ i → lift tt) t .carrier) (μObj P' δ)
