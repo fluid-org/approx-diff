@@ -1410,3 +1410,59 @@ module rooted-tail (𝒟SC : HasStrongCoproducts 𝒟 𝒟P) where
 
   GlSC-native : HasStrongCoproducts Gl.cat GlPE.products
   GlSC-native = GlSCn.strongCoproducts
+
+  BC-pm : ∀ {W U V : 𝒟.obj} (h : U 𝒟.⇒ V) {Q : GlS.Predicate (G .fobj U)} →
+          ((Q GlS.⟨ G .fmor h ⟩) GlS.[ G .fmor (𝒟P.p₂ {W}) ])
+            GlS.⊑ ((Q GlS.[ G .fmor (𝒟P.p₂ {W} {U}) ])
+                     GlS.⟨ G .fmor (𝒟P.pair 𝒟P.p₁ (h 𝒟.∘ 𝒟P.p₂)) ⟩)
+  BC-pm {W} {U} {V} h {Q} = CP.⟨⟩-[]-transport {P = Q} (⟨⟩-[]-BC lft)
+    where
+    lft : ∀ a (v* : Setoid.Carrier ((G .fobj (𝒟P.prod W V)) .fobj a))
+            (u* : Setoid.Carrier ((G .fobj U) .fobj a)) →
+          Setoid._≈_ ((G .fobj V) .fobj a)
+            (prop-setoid._⇒_.func (G .fmor h .transf a) u*)
+            (prop-setoid._⇒_.func (G .fmor (𝒟P.p₂ {W}) .transf a) v*) →
+          ∃ (Setoid.Carrier ((G .fobj (𝒟P.prod W U)) .fobj a)) λ w* →
+            prop._∧_
+              (Setoid._≈_ ((G .fobj U) .fobj a)
+                (prop-setoid._⇒_.func (G .fmor (𝒟P.p₂ {W} {U}) .transf a) w*) u*)
+              (Setoid._≈_ ((G .fobj (𝒟P.prod W V)) .fobj a)
+                (prop-setoid._⇒_.func
+                  (G .fmor (𝒟P.pair 𝒟P.p₁ (h 𝒟.∘ 𝒟P.p₂)) .transf a) w*) v*)
+    lft a (lift v) (lift u) (lift e) =
+      lift w , (lift eq₁ , lift eq₂)
+      where
+      w = 𝒟P.pair (𝒟P.p₁ 𝒟.∘ v) u
+
+      eq₁ : (𝒟P.p₂ 𝒟.∘ (w 𝒟.∘ 𝒟.id _)) 𝒟.≈ u
+      eq₁ = 𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right) (𝒟P.pair-p₂ _ _)
+
+      side : ((h 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w) 𝒟.≈ (𝒟P.p₂ 𝒟.∘ v)
+      side = begin
+          (h 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w
+        ≈⟨ 𝒟.assoc _ _ _ ⟩
+          h 𝒟.∘ (𝒟P.p₂ 𝒟.∘ w)
+        ≈⟨ 𝒟.∘-cong 𝒟.≈-refl (𝒟P.pair-p₂ _ _) ⟩
+          h 𝒟.∘ u
+        ≈˘⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+          h 𝒟.∘ (u 𝒟.∘ 𝒟.id _)
+        ≈⟨ e ⟩
+          𝒟P.p₂ 𝒟.∘ (v 𝒟.∘ 𝒟.id _)
+        ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+          𝒟P.p₂ 𝒟.∘ v
+        ∎
+        where open ≈-Reasoning 𝒟.isEquiv
+
+      eq₂ : ((𝒟P.pair 𝒟P.p₁ (h 𝒟.∘ 𝒟P.p₂)) 𝒟.∘ (w 𝒟.∘ 𝒟.id _)) 𝒟.≈ v
+      eq₂ = begin
+          𝒟P.pair 𝒟P.p₁ (h 𝒟.∘ 𝒟P.p₂) 𝒟.∘ (w 𝒟.∘ 𝒟.id _)
+        ≈⟨ 𝒟.∘-cong 𝒟.≈-refl 𝒟.id-right ⟩
+          𝒟P.pair 𝒟P.p₁ (h 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w
+        ≈⟨ 𝒟P.pair-natural _ _ _ ⟩
+          𝒟P.pair (𝒟P.p₁ 𝒟.∘ w) ((h 𝒟.∘ 𝒟P.p₂) 𝒟.∘ w)
+        ≈⟨ 𝒟P.pair-cong (𝒟P.pair-p₁ _ _) side ⟩
+          𝒟P.pair (𝒟P.p₁ 𝒟.∘ v) (𝒟P.p₂ 𝒟.∘ v)
+        ≈⟨ 𝒟P.pair-ext v ⟩
+          v
+        ∎
+        where open ≈-Reasoning 𝒟.isEquiv
