@@ -254,6 +254,12 @@ strip-root-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
                   c ≈ c' → r ≈ r' → strip-root c r ≈ strip-root c' r'
 strip-root-cong ec er = cop-cong (∘-cong er ≈-refl) (affine-cong ec (∘-cong er ≈-refl))
 
+-- Transport across the lifting is the elimination whose constant is the root itself.
+under-root-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
+                   under-root r ≈ strip-root root (inj ∘ r)
+under-root-strip r =
+  cop-cong (≈-sym (assoc _ _ _)) (affine-cong ≈-refl (≈-sym (assoc _ _ _)))
+
 -- Root elimination commutes with transports: the payload map must be an isomorphism, as for
 -- under-root, but the result map is arbitrary provided it carries one constant to the other.
 strip-root-natural :

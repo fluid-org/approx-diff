@@ -88,7 +88,7 @@ fobj μ-obj (μ P')    δ = μ-obj P' δ
 import lifting-fold
 open lifting-fold CM BP Lft public
   using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
-         under-root-p₂; pm; pm-in₁; pm-in₂; bp-ext;
+         under-root-p₂; under-root-strip; pm; pm-in₁; pm-in₂; bp-ext;
          strip-root; strip-root-cong; strip-root-natural)
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
@@ -205,6 +205,11 @@ zero-pointed : ∀ {X} → Pointed X
 zero-pointed .pt x = CME.εm
 zero-pointed {X} .pt-natural e = CME.comp-bilinear-ε₂ (X .fam .subst e)
 
+-- The bare root as the constant of a lifted family.
+root-pointed : ∀ {X} → Pointed (Lf X)
+root-pointed .pt x = root
+root-pointed {X} .pt-natural e = Lmap-root (X .fam .subst e)
+
 -- The constant of a lifted family: the root together with the payload's constant beneath it.
 Lf-pointed : ∀ {X} → Pointed X → Pointed (Lf X)
 Lf-pointed p .pt x = root CME.+m (inj ∘ p .pt x)
@@ -243,6 +248,17 @@ elimF {Γ} {X} {C} ptC f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ
     (ptC .pt-natural (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
     (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
     (f .famf ._⇒f_.natural (γ≈ , x≈))
+
+-- Transport across the lifting is the elimination at the root constant with the injected map.
+under-rootF-elimF : ∀ {Γ X Y : Obj} (h : Mor (Fam𝒞-P.prod Γ X) Y) →
+                    under-rootF h ≃ elimF root-pointed (Fam𝒞._∘_ injF h)
+under-rootF-elimF h ._≃_.idxf-eq .prop-setoid._≃m_.func-eq e =
+  h .idxf .prop-setoid._⇒_.func-resp-≈ e
+under-rootF-elimF {Γ} {X} {Y} h ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+  ≈-trans (∘-cong (≈-trans (Lmap-cong (Y .fam .refl*)) Lmap-id) ≈-refl)
+  (≈-trans id-left
+  (≈-trans (under-root-strip _)
+           (strip-root-cong ≈-refl (≈-sym id-left))))
 
 -- The lift of an isomorphism of families.
 Lf-iso : ∀ {X Y : Obj} → Fam𝒞.Iso X Y → Fam𝒞.Iso (Lf X) (Lf Y)
