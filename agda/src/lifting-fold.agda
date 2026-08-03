@@ -245,6 +245,76 @@ under-root-pre {G₁} {G₂} {X₁} {X₂} {Y} g {x} {x'} xi₁ xi₂ r =
             (r ∘ pm g x) r (≈-sym id-left))
           (≈-trans (∘-cong Lmap-id ≈-refl) id-left)
 
+-- Eliminating a root in context against a chosen constant: the context and the payload pass to the
+-- continuation, and the root produces the constant.
+strip-root : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
+strip-root c r = cop (r ∘ ι₁) (affine c (r ∘ ι₂))
+
+strip-root-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
+                  c ≈ c' → r ≈ r' → strip-root c r ≈ strip-root c' r'
+strip-root-cong ec er = cop-cong (∘-cong er ≈-refl) (affine-cong ec (∘-cong er ≈-refl))
+
+-- Root elimination commutes with transports: the payload map must be an isomorphism, as for
+-- under-root, but the result map is arbitrary provided it carries one constant to the other.
+strip-root-natural :
+  ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂)
+    {x : X₁ ⇒ X₂} {x' : X₂ ⇒ X₁} (xi₁ : (x ∘ x') ≈ id X₂) (xi₂ : (x' ∘ x) ≈ id X₁)
+    {y : Y₁ ⇒ Y₂} {c₁ : 𝟙c ⇒ Y₁} {c₂ : 𝟙c ⇒ Y₂} → (y ∘ c₁) ≈ c₂ →
+    (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
+    (f₂ ∘ pm g x) ≈ (y ∘ f₁) →
+    (strip-root c₂ f₂ ∘ pm g (Lmap x)) ≈ (y ∘ strip-root c₁ f₁)
+strip-root-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi₁ xi₂ {y} {c₁} {c₂} yc f₁ f₂ sq =
+  bp-ext side₁ side₂
+  where
+  side₁ : ((strip-root c₂ f₂ ∘ pm g (Lmap x)) ∘ ι₁) ≈ ((y ∘ strip-root c₁ f₁) ∘ ι₁)
+  side₁ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong₂ (pm-in₁ g (Lmap x)))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong₁ (Biproduct.copair-in₁ (BP G₂ (L X₂)) _ _))
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong₂ (≈-sym (pm-in₁ g x)))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong₁ sq)
+    (≈-trans (assoc _ _ _)
+             (≈-sym (≈-trans (assoc _ _ _)
+                             (∘-cong₂ (Biproduct.copair-in₁ (BP G₁ (L X₁)) _ _))))))))))))
+
+  affine-side : (affine c₂ (f₂ ∘ ι₂) ∘ Lmap x) ≈ (y ∘ affine c₁ (f₁ ∘ ι₂))
+  affine-side = lifting-ext _ _
+    (≈-trans (assoc _ _ _)
+     (≈-trans (∘-cong₂ (Lmap-root x))
+      (≈-trans (affine-root _ _)
+       (≈-sym (≈-trans (assoc _ _ _)
+                       (≈-trans (∘-cong₂ (affine-root _ _)) yc))))))
+    (≈-trans (assoc _ _ _)
+     (≈-trans (∘-cong₂ (Lmap-inj xi₁ xi₂))
+      (≈-trans (≈-sym (assoc _ _ _))
+       (≈-trans (∘-cong₁ (affine-inj _ _))
+        (≈-trans (comp-bilinear₁ _ _ _)
+         (≈-trans (+m-cong
+                    (≈-trans (assoc _ _ _) (∘-cong₂ (spt-natural xi₁ xi₂)))
+                    (≈-trans (assoc _ _ _)
+                     (≈-trans (∘-cong₂ (≈-sym (pm-in₂ g x)))
+                      (≈-trans (≈-sym (assoc _ _ _))
+                       (≈-trans (∘-cong₁ sq) (assoc _ _ _))))))
+          (≈-sym
+            (≈-trans (assoc _ _ _)
+             (≈-trans (∘-cong₂ (affine-inj _ _))
+              (≈-trans (comp-bilinear₂ _ _ _)
+                       (+m-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ yc))
+                                ≈-refl)))))))))))
+
+  side₂ : ((strip-root c₂ f₂ ∘ pm g (Lmap x)) ∘ ι₂) ≈ ((y ∘ strip-root c₁ f₁) ∘ ι₂)
+  side₂ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong₂ (pm-in₂ g (Lmap x)))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong₁ (Biproduct.copair-in₂ (BP G₂ (L X₂)) _ _))
+    (≈-trans affine-side
+             (≈-sym (≈-trans (assoc _ _ _)
+                             (∘-cong₂ (Biproduct.copair-in₂ (BP G₁ (L X₁)) _ _))))))))
+
 
 data Poly : Set o where
   konst : obj → Poly
