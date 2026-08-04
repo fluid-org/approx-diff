@@ -11,17 +11,20 @@
 ------------------------------------------------------------------------------
 
 open import Level using (Level; 0ℓ; lift)
+open import Data.Unit using () renaming (tt to ttS)
 open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift)
 open import prop-setoid as PS using (Setoid; module ≈-Reasoning)
 open import categories using (Category; HasTerminal; HasProducts; HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import lifting using (Lifting)
 open import functor using (Functor; NatTrans)
-open import indexed-family using (_⇒f_)
+open import indexed-family using (_⇒f_; _≃f_)
 open import predicate-system using (PredicateSystem; ClosureOp)
 open import finite-product-functor
   using (preserve-chosen-terminal; preserve-chosen-products)
 import fam
+import setoid-predicate
+import fam-fibre-cover
 import conservativity-fam
 import fam-mu-lifting.laws
 import fam-mu-lifting.glued-interface
@@ -61,11 +64,18 @@ open PredicateSystem PSh⟨𝒞⟩-system
 open ClosureOp closureOp using (𝐂)
 
 open NatTrans
+open CF.Rel.PShPredicate
+open CF.Rel._⊑_
+open setoid-predicate.Predicate
+open setoid-predicate._⊑_
 
 private
   module FD = Category RML.cat
   module FDP = RML.Fam𝒞-P
   module PSh⟨𝒞⟩C = Category PSh⟨𝒞⟩
+  module FamC = fam.CategoryOfFamilies 0ℓ 0ℓ 𝒞₀
+  module FC = fam-fibre-cover 0ℓ 0ℓ 𝒞₀
+  module CvM = CF.Rel.CvM
 
 -- The singleton family at the lifting's unit.
 𝟙L : RML.Obj
@@ -88,6 +98,68 @@ Rt C = 𝐂 (⋁ (Setoid.Carrier (RML.idx C)) (λ i → TT ⟨ G .fmor (root-mor
 module RootedMu =
   fam-mu-lifting.glued-interface 𝒟₀T CM' BP' Lft'
     PSh⟨𝒞⟩ PSh⟨𝒞⟩-products PSh⟨𝒞⟩-system G Rt closureOp
+
+sing-split : ∀ {X : RML.Obj} {Q : Predicate (G .fobj X)} →
+             Q ⊑ 𝐂 (⋁ (Setoid.Carrier (RML.idx X))
+                      (λ x → (Q [ G .fmor (RootedMu.elem-in X x) ])
+                               ⟨ G .fmor (RootedMu.elem-in X x) ⟩))
+sing-split {X} {Q} .*⊑* a .*⊑* (lift m) qm = CvM.node cov xs ts eqs
+  where
+  cvr : CF.Rel.IdxCover a
+  cvr .CF.Rel.IdxCover.S = FamC.Obj.idx a
+  cvr .CF.Rel.IdxCover.D = FC.fibres a
+  cvr .CF.Rel.IdxCover.iso = FC.fib-iso a
+
+  cov : CF.Rel.Cover a
+  cov = CF.Rel.idx cvr
+
+  xs : ∀ s → Setoid.Carrier (G .fobj X .fobj (CF.Rel.cDom cov s))
+  xs s = G .fobj X .fmor (CF.Rel.cInj cov s) .PS._⇒_.func (lift m)
+
+  eqs : ∀ s → Setoid._≈_ (G .fobj X .fobj (CF.Rel.cDom cov s)) (xs s)
+                 (G .fobj X .fmor (CF.Rel.cInj cov s) .PS._⇒_.func (lift m))
+  eqs s = Setoid.refl (G .fobj X .fobj (CF.Rel.cDom cov s))
+
+  ts : ∀ s → CvM.Context (G .fobj X)
+               (⋁ (Setoid.Carrier (RML.idx X))
+                  (λ x → (Q [ G .fmor (RootedMu.elem-in X x) ])
+                           ⟨ G .fmor (RootedMu.elem-in X x) ⟩))
+               (CF.Rel.cDom cov s) (xs s)
+  ts (lift v) = CvM.leaf (xv , (lift wv , (qw , ew)))
+    where
+    mj : RML.Mor (CF.FamF .fobj (CF.Rel.cDom cov (lift v))) X
+    mj = FD._∘_ m (CF.FamF .fmor (CF.Rel.cInj cov (lift v)))
+
+    xv : Setoid.Carrier (RML.idx X)
+    xv = mj .RML.idxf .PS._⇒_.func (lift ttS)
+
+    wv : RML.Mor (CF.FamF .fobj (CF.Rel.cDom cov (lift v)))
+                 RML.simple[ PS.𝟙 , X .RML.fam .RML.fm xv ]
+    wv .RML.idxf = PS.idS PS.𝟙
+    wv .RML.famf ._⇒f_.transf i = mj .RML.famf ._⇒f_.transf i
+    wv .RML.famf ._⇒f_.natural e =
+      RML.≈-trans (mj .RML.famf ._⇒f_.natural e)
+                  (RML.∘-cong (X .RML.fam .RML.refl*) RML.≈-refl)
+
+    sq : FD._≈_ (FD._∘_ (RootedMu.elem-in X xv) (FD._∘_ wv (FD.id _))) mj
+    sq .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = Setoid.refl (RML.idx X)
+    sq .RML._≃_.famf-eq ._≃f_.transf-eq =
+      RML.≈-trans (RML.∘-cong (X .RML.fam .RML.refl*)
+                    (RML.≈-trans RML.id-left
+                      (RML.≈-trans RML.id-left (RML.≈-trans RML.id-left RML.id-right))))
+                  RML.id-left
+
+    ew : Setoid._≈_ (G .fobj X .fobj (CF.Rel.cDom cov (lift v)))
+           (G .fmor (RootedMu.elem-in X xv) .transf (CF.Rel.cDom cov (lift v))
+              .PS._⇒_.func (lift wv))
+           (xs (lift v))
+    ew = lift sq
+
+    qw : (Q [ G .fmor (RootedMu.elem-in X xv) ]) .pred (CF.Rel.cDom cov (lift v))
+           .pred (lift wv)
+    qw = Q .pred (CF.Rel.cDom cov (lift v)) .pred-≃
+           (Setoid.sym (G .fobj X .fobj (CF.Rel.cDom cov (lift v))) ew)
+           (Q .pred-mor (CF.Rel.cInj cov (lift v)) .*⊑* (lift m) qm)
 
 dist : ∀ {V} {Pp Q S : Predicate V} → (Pp && (Q ++ S)) ⊑ ((Pp && Q) ++ (Pp && S))
 dist = &&-++-distrib
