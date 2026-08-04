@@ -19,6 +19,10 @@ import ho-model-sd-semimod
 -- the Set interpretation at first order.
 import conservativity
 
+-- The same theorem for the language with recursive types, at the rooted model: families over the
+-- position orders, with the roots carrying the support.
+import conservativity-rooted-order-idempotent
+
 -- Polynomials over a category and their parameterised initial algebras; the
 -- action of a functor on polynomials, and the action of componentwise
 -- morphisms and isomorphisms on μ-objects.
