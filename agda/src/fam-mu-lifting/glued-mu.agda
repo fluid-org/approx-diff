@@ -90,7 +90,7 @@ Lf-Glᵢ : ∀ {X Y} (f : X =>ᵢ Y) →
          (Rt (X .carrier) ⊑ (Rt (Y .carrier) [ G .fmor (Lf-map (f .mor .morph)) ])) →
          Lf-Gl X =>ᵢ Lf-Gl Y
 Lf-Glᵢ f rt .mor =
-  Lf-Gl-map (f .mor) (injF-natural (f .mor .morph) (f .inv) (f .inv₁) (f .inv₂)) rt
+  Lf-Gl-map (f .mor) (assembleF-natural (f .mor .morph) (f .inv) (f .inv₁) (f .inv₂)) rt
 Lf-Glᵢ f rt .inv x = Lmap (f .inv x)
 Lf-Glᵢ f rt .inv₁ x =
   ≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong (f .inv₁ x)) Lmap-id)
