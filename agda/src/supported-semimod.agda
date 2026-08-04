@@ -99,9 +99,6 @@ Ls : Obj → Obj
 Ls X .carrier = Lift-module.Lsm (X .carrier) (X .supp)
 Ls X .supp = Lift-module.supp-L (X .carrier) (X .supp)
 
-private
-  module LM (X : Obj) = Lift-module (X .carrier) (X .supp)
-
 root-s : ∀ {X} → Mor 𝟙s (Ls X)
 root-s {X} .mor .*→* .prop-setoid._⇒_.func s =
   (s , Xm.ε) ,ₚ S.trans (S.+-cong (X .supp .preserve-ze) S.refl) S.+-lunit

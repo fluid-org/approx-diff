@@ -11,7 +11,7 @@
 -- uniqueness of initial algebras at the inner-μ cases.
 
 open import Level using (Level; _⊔_)
-open import Data.Nat using (ℕ; suc)
+open import Data.Nat using (suc)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import prop-setoid using (Setoid; module ≈-Reasoning)

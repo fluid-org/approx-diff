@@ -11,7 +11,7 @@
 ------------------------------------------------------------------------------
 
 open import Level using (Level; _⊔_; Lift; lift) renaming (suc to lsuc)
-open import Data.Nat using (ℕ; suc)
+open import Data.Nat using (suc)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (_⊎_; inj₁; inj₂)

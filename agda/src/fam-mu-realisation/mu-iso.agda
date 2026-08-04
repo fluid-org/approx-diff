@@ -4,7 +4,7 @@
 -- folds; its identity and composition coherences and algebra-map squares.
 
 open import Level using (Level; _⊔_)
-open import Data.Nat using (ℕ; suc)
+open import Data.Nat using (suc)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import prop-setoid using (Setoid; module ≈-Reasoning)

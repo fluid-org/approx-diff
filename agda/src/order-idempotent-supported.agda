@@ -7,7 +7,7 @@
 -- which is an element of the supported lift. This is the object-level comparison between the
 -- lifting on position orders and the lifting on supported semimodules.
 open import Level using (0ℓ; Level)
-open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat using (zero; suc)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (_,_; _×_)
 open import prop using (_∧_; ∃ₛ) renaming (_,_ to _,ₚ_)
@@ -235,12 +235,6 @@ Sup-biproduct = SS.Sup.biproduct-s SemiMod.biproduct
 𝓥-⊕-iso P Q =
   SC.IsIso→Iso (biproduct-iso SS.Sup.cmon (𝓥-image-biproduct P Q) (Sup-biproduct (𝓥 P) (𝓥 Q)))
 
--- Both sides of the model carry the fused fold: the position orders and their supported
--- realisations instantiate the engine.
-import lifting-fold
-module PosFold = lifting-fold OI.cmon OI.biproduct OF.Lp-lifting
-module SupFold = lifting-fold SS.Sup.cmon Sup-biproduct SS.supported-lifting
-
 -- The realisation preserves the chosen products, via the image biproducts.
 𝓥F-preserve-products :
   preserve-chosen-products 𝓥F (biproducts→products OI.cmon OI.biproduct)
@@ -250,10 +244,6 @@ module SupFold = lifting-fold SS.Sup.cmon Sup-biproduct SS.supported-lifting
 
 -- The realisation carries the rooted μ across, fibrewise: position-order μ-carriers realise as the
 -- supported μ-carriers over the same trees.
-module 𝓥Fibrewise (os es : Level) =
-  fam-mu-lifting.fibrewise os es OI.cmon OI.biproduct OF.Lp-lifting
-    SS.Sup.cmon Sup-biproduct SS.supported-lifting
-    𝓥F (λ {P} {Q} → 𝓥F-preserve-products {P} {Q}) 𝓥-Lp-iso (λ {P} {Q} f → Lmap-intertwine {P} {Q} f)
 
 -- The rooted model's function spaces: weak exponentials on Fam(Sup), fibres the dominated
 -- products.

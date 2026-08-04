@@ -6,7 +6,7 @@
 -- Lp P places a selection under a full root; it is a morphism, but it is not natural in P, which
 -- is why the lifting has no unit and no strength.
 open import Level using (0ℓ)
-open import Data.Nat using (ℕ; suc)
+open import Data.Nat using (suc)
 open import Data.Fin using (Fin; zero; suc)
 open import prop using (∃ₛ) renaming (_,_ to _,ₚ_)
 open import prop-setoid using (Setoid) renaming (_⇒_ to _⇒s_; _≃m_ to _≃s_)

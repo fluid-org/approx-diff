@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
-open import Data.Nat using (ℕ; suc; _+_)
+open import Data.Nat using (suc; _+_)
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])

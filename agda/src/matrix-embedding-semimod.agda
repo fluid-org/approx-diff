@@ -61,7 +61,7 @@ open import matrix-embedding SemiMod.cmon-enriched SemiMod.biproduct 𝟘 𝟘-i
 -- self-dual semimodule S^ n. The two differ only by the unit law at width one, where S^ 1 is 𝕀 and X^ 1 is
 -- 𝕀 ⊕ 𝟘.
 import sd-semimodule
-open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat using (zero; suc)
 open import functor using (Functor)
 
 module SDSemiMod = sd-semimodule S
