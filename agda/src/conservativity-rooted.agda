@@ -1273,3 +1273,28 @@ module _ (Γg Xg Yg : RootedMu.Gl.Obj)
                         &&-⋁-distrib)
                  [ G .fmor esing ]m)
       (⊑-trans []-⋁ (IsBigJoin.least ⋁-isJoin _ _ _ perI))
+
+-- Every obligation of the glued rooted μ-types, at the family-level nerve.
+private
+  module Ob = RootedMu.GlMuObligations
+
+obligations : RootedMu.GlMuObligations
+obligations .Ob.Rt-iso {C} {D} = Rt-iso {C} {D}
+obligations .Ob.Rt-iso⁻ {C} {D} = Rt-iso⁻ {C} {D}
+obligations .Ob.in₁-extract {X} {Y} {Q} = in₁-extract {X} {Y} {Q}
+obligations .Ob.in₂-extract {X} {Y} {Q} = in₂-extract {X} {Y} {Q}
+obligations .Ob.disjoint₁ {X} {Y} {Q} x {S} = disjoint₁ {X} {Y} {Q} x {S}
+obligations .Ob.disjoint₂ {X} {Y} {Q} y {S} = disjoint₂ {X} {Y} {Q} y {S}
+obligations .Ob.BC-assemble {C} {Qp} x = BC-assemble {C} {Qp} x
+obligations .Ob.sing-extract = sing-extract
+obligations .Ob.sing-split {X} {Q} = sing-split {X} {Q}
+obligations .Ob.payload-sing = payload-sing
+obligations .Ob.root-sing = root-sing
+obligations .Ob.dist {V} {Pp} {Q} {S} = dist {V} {Pp} {Q} {S}
+obligations .Ob.dist-⋁ {V} {I} {Pp} {Qs} = dist-⋁ {V} {I} {Pp} {Qs}
+obligations .Ob.frob {V} {V'} {Pp} {Q} {α} = frob {V} {V'} {Pp} {Q} {α}
+obligations .Ob.BC {W} {U} {V} h {Q} = BC {W} {U} {V} h {Q}
+
+-- The decorated μ-carrier with its algebra map and catamorphism, at every polynomial and
+-- environment.
+module RootedMuGl = RootedMu.GlMu obligations
