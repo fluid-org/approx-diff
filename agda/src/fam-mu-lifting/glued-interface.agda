@@ -124,6 +124,7 @@ record GlMuObligations : Set ℓI where
                     [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Xg .carrier))
                                        (γ , ι)) ])
                   ⊑ (Yg .pred [ G .fmor hs ])) →
+                Zeroed Xg →
                 ((((Γg .pred [ G .fmor Fam𝒞-P.p₁ ])
                     && (Rt (Xg .carrier) [ G .fmor Fam𝒞-P.p₂ ]))
                     [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Lf (Xg .carrier)))
@@ -168,12 +169,13 @@ module GlMu (Ob : GlMuObligations) where
                            (R.fobj μObj P (extend δ (Ag .carrier))))
                         (Ag .carrier)) →
              (𝐂 (Ag .pred) ⊑ Ag .pred) →
+             (∀ i → Zeroed (glue (δ i) (δP i))) →
              ((Γg [×] fobj-Gl P pP (extend δ (Ag .carrier))
                         (extend-pred δ δP (Ag .carrier) (Ag .pred))) .pred
                ⊑ (Ag .pred [ G .fmor alg ])) →
              (Γg [×] μGl) Gl.=> Ag
-    foldGl Γg Ag alg A-closed algP .morph =
+    foldGl Γg Ag alg A-closed δZ algP .morph =
       FoldDef.foldMor {n} {Γg .carrier} {Ag .carrier} {P} {δ} alg
-    foldGl Γg Ag alg A-closed algP .presv =
+    foldGl Γg Ag alg A-closed δZ algP .presv =
       GlFold.presv.fold-Gl P pP δ δP Γg Ag alg (payload-sing Γg) (root-sing Γg)
-        sing-split dist dist-⋁ frob BC A-closed algP
+        sing-split dist dist-⋁ frob BC A-closed δZ algP

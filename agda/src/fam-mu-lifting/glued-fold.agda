@@ -108,6 +108,7 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
                      [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Xg .carrier))
                                         (γ , ι)) ])
                    ⊑ (Yg .pred [ G .fmor hs ])) →
+                 Zeroed Xg →
                  ((((Γg .pred [ G .fmor Fam𝒞-P.p₁ ])
                      && (Rt (Xg .carrier) [ G .fmor Fam𝒞-P.p₂ ]))
                      [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Lf (Xg .carrier)))
@@ -126,10 +127,12 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
             ⊑ ((Q [ G .fmor (Fam𝒞-P.p₂ {W} {U}) ])
                  ⟨ G .fmor (Fam𝒞-P.pair Fam𝒞-P.p₁ (Fam𝒞._∘_ h Fam𝒞-P.p₂)) ⟩))
     (A-closed : 𝐂 (Ag .pred) ⊑ Ag .pred)
+    (δZ : ∀ i → Zeroed (glue (δ i) (δP i)))
     where
 
   private
     module Mδ = MuPred δ δP
+    module MZ = Mδ.MuZero δZ
     module Tδ = Tree δ
     module FD = FoldDef {n} {Γg .carrier} {Ag .carrier} {P} {δ} alg
 
@@ -237,15 +240,16 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
                           (Yg .carrier)) →
                 (((Γg [×] Xg) .pred [ G .fmor (elem-in (prodC (Xg .carrier)) (γ , ι)) ])
                   ⊑ (Yg .pred [ G .fmor hs ])) →
+                Zeroed Xg →
                 (((Γg [×] Lf-Gl Xg) .pred
                     [ G .fmor (elem-in (prodC (Lf (Xg .carrier))) (γ , ι)) ])
                   ⊑ (Lf-Gl Yg .pred [ G .fmor (sing-under-root hs) ]))
-    node-sing Xg Yg γ ι hs HYP =
+    node-sing Xg Yg γ ι hs HYP zX =
       ⊑-trans ((⊑-trans (IsMeet.mono &&-isMeet (IsPreorder.refl ⊑-isPreorder) []-++) dist)
                  [ G .fmor (elem-in (prodC (Lf (Xg .carrier))) (γ , ι)) ]m)
       (⊑-trans []-++
                (++-isJoin .IsJoin.[_,_] (payload-sing Xg Yg γ ι hs HYP)
-                                        (root-sing Xg Yg γ ι hs HYP)))
+                                        (root-sing Xg Yg γ ι hs HYP zX)))
 
     -- At the recursion slot the packaged shape morphism is the tree fold.
     vz-mor : ∀ (pQ : PolyPred {suc n} (var Fin.zero)) (t' : Tδ.W ∣ P ∣ (λ i → inj₁ i)) →
@@ -642,7 +646,8 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
       ⊑-trans (node-sing (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x) (fobj-Gl Q₁ pQ₁ δA' δPA⁺) γ ι
                  (Fam𝒞._∘_ (fold-shape-mor Q₁ pQ₁ x)
                     (elem-in (prodC (Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x .carrier)) (γ , ι)))
-                 (fold-shape-sing Q₁ pQ₁ x γ ι))
+                 (fold-shape-sing Q₁ pQ₁ x γ ι)
+                 (MZ.fib-shape-Gl-zero Q₁ dP pQ₁ pdP x))
       (⊑-trans ((GlCP.in₁ {Lf-Gl (fobj-Gl Q₁ pQ₁ δA' δPA⁺)} {Lf-Gl (fobj-Gl Q₂ pQ₂ δA' δPA⁺)}
                    .presv)
                   [ G .fmor (sing-under-root
@@ -680,7 +685,8 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
       ⊑-trans (node-sing (Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y) (fobj-Gl Q₂ pQ₂ δA' δPA⁺) γ ι
                  (Fam𝒞._∘_ (fold-shape-mor Q₂ pQ₂ y)
                     (elem-in (prodC (Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y .carrier)) (γ , ι)))
-                 (fold-shape-sing Q₂ pQ₂ y γ ι))
+                 (fold-shape-sing Q₂ pQ₂ y γ ι)
+                 (MZ.fib-shape-Gl-zero Q₂ dP pQ₂ pdP y))
       (⊑-trans ((GlCP.in₂ {Lf-Gl (fobj-Gl Q₁ pQ₁ δA' δPA⁺)} {Lf-Gl (fobj-Gl Q₂ pQ₂ δA' δPA⁺)}
                    .presv)
                   [ G .fmor (sing-under-root
@@ -722,7 +728,11 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
                                    (fobj-Gl Q₁ pQ₁ δA' δPA⁺) (fobj-Gl Q₂ pQ₂ δA' δPA⁺)
                                    γ ι₁ ι₂ hs₁ hs₂
                                    (fold-shape-sing Q₁ pQ₁ x γ ι₁)
-                                   (fold-shape-sing Q₂ pQ₂ y γ ι₂)))
+                                   (fold-shape-sing Q₂ pQ₂ y γ ι₂))
+                 (Zeroed-[×] {Mδ.fib-shape-Gl Q₁ dP pQ₁ pdP x}
+                             {Mδ.fib-shape-Gl Q₂ dP pQ₂ pdP y}
+                             (MZ.fib-shape-Gl-zero Q₁ dP pQ₁ pdP x)
+                             (MZ.fib-shape-Gl-zero Q₂ dP pQ₂ pdP y)))
               ([]-cong (G .fmor-cong SQ×))
       where
         hs₁ = Fam𝒞._∘_ (fold-shape-mor Q₁ pQ₁ x)
@@ -844,7 +854,8 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
                             {pdA = pdA} {pdB = pdB} pmf (inj₁ a) γ ι =
       ⊑-trans (node-sing (Mδ.fib-shape-Gl P' dA pP' pdA a)
                  (MA'.fib-shape-Gl P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a)) γ ι hs
-                 (fold-reindex-shape-sing P' pP' pmf a γ ι))
+                 (fold-reindex-shape-sing P' pP' pmf a γ ι)
+                 (MZ.fib-shape-Gl-zero P' dA pP' pdA a))
               ([]-cong (G .fmor-cong SQ4p₁))
       where
         hs = Fam𝒞._∘_ (MA'.shape-out P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a))
@@ -888,7 +899,8 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
                             {pdA = pdA} {pdB = pdB} pmf (inj₂ b) γ ι =
       ⊑-trans (node-sing (Mδ.fib-shape-Gl Q' dA pQ' pdA b)
                  (MA'.fib-shape-Gl Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b)) γ ι hs
-                 (fold-reindex-shape-sing Q' pQ' pmf b γ ι))
+                 (fold-reindex-shape-sing Q' pQ' pmf b γ ι)
+                 (MZ.fib-shape-Gl-zero Q' dA pQ' pdA b))
               ([]-cong (G .fmor-cong SQ4p₂))
       where
         hs = Fam𝒞._∘_ (MA'.shape-out Q' dB pQ' pdB (FD.fold-reindex-shape γ Q' fm b))
@@ -942,7 +954,11 @@ module GlFold {n} (P : Poly (suc n)) (pP : PolyPred P)
                                       (FD.fold-reindex-shape γ Q' fm b))
                                    γ ι₁ ι₂ hsP hsQ
                                    (fold-reindex-shape-sing P' pP' pmf a γ ι₁)
-                                   (fold-reindex-shape-sing Q' pQ' pmf b γ ι₂)))
+                                   (fold-reindex-shape-sing Q' pQ' pmf b γ ι₂))
+                 (Zeroed-[×] {Mδ.fib-shape-Gl P' dA pP' pdA a}
+                             {Mδ.fib-shape-Gl Q' dA pQ' pdA b}
+                             (MZ.fib-shape-Gl-zero P' dA pP' pdA a)
+                             (MZ.fib-shape-Gl-zero Q' dA pQ' pdA b)))
               ([]-cong (G .fmor-cong SQ4×))
       where
         hsP = Fam𝒞._∘_ (MA'.shape-out P' dB pP' pdB (FD.fold-reindex-shape γ P' fm a))
