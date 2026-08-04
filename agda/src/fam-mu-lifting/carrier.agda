@@ -12,12 +12,13 @@
 -- Emmenegger. W-types in setoids. arXiv:1809.02375, 2018.
 ------------------------------------------------------------------------------
 
-open import Level using (Level; _⊔_) renaming (suc to lsuc)
+open import Level using (Level; _⊔_; lift) renaming (suc to lsuc)
 open import Data.Nat using (ℕ; suc)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
+open import Data.Unit using () renaming (tt to ttS)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
@@ -168,6 +169,28 @@ injF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
 𝟙L : Obj
 𝟙L = simple[ prop-setoid.𝟙 , 𝟙c ]
 
+-- The zero morphism into a family, at a chosen index.
+zeroF : ∀ {A X : Obj} (x : X .idx .Carrier) → Mor A X
+zeroF {A} {X} x .idxf .prop-setoid._⇒_.func _ = x
+zeroF {A} {X} x .idxf .prop-setoid._⇒_.func-resp-≈ _ = X .idx .isEquivalence .refl
+zeroF {A} {X} x .famf ._⇒f_.transf i = CME.εm
+zeroF {A} {X} x .famf ._⇒f_.natural e =
+  ≈-trans (CME.comp-bilinear-ε₁ _) (≈-sym (CME.comp-bilinear-ε₂ _))
+
+zeroF-p₁ : ∀ {A X Y : Obj} (x : X .idx .Carrier) (y : Y .idx .Carrier) →
+           Fam𝒞._≈_ (Fam𝒞._∘_ (Fam𝒞-P.p₁ {X} {Y}) (zeroF {A} (x , y))) (zeroF x)
+zeroF-p₁ {A} {X} {Y} x y ._≃_.idxf-eq .prop-setoid._≃m_.func-eq _ = X .idx .isEquivalence .refl
+zeroF-p₁ {A} {X} {Y} x y ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+  ≈-trans (∘-cong (X .fam .refl*) (≈-trans id-left (CME.comp-bilinear-ε₂ _)))
+          id-left
+
+zeroF-p₂ : ∀ {A X Y : Obj} (x : X .idx .Carrier) (y : Y .idx .Carrier) →
+           Fam𝒞._≈_ (Fam𝒞._∘_ (Fam𝒞-P.p₂ {X} {Y}) (zeroF {A} (x , y))) (zeroF y)
+zeroF-p₂ {A} {X} {Y} x y ._≃_.idxf-eq .prop-setoid._≃m_.func-eq _ = Y .idx .isEquivalence .refl
+zeroF-p₂ {A} {X} {Y} x y ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+  ≈-trans (∘-cong (Y .fam .refl*) (≈-trans id-left (CME.comp-bilinear-ε₂ _)))
+          id-left
+
 -- The support, as a family morphism into the unit family.
 sptF : ∀ {X : Obj} → Mor X 𝟙L
 sptF .idxf = prop-setoid.to-𝟙
@@ -277,6 +300,16 @@ assembleF .idxf = prop-setoid.project₁
 assembleF {X} .famf ._⇒f_.transf (x , _) = cop inj root
 assembleF {X} .famf ._⇒f_.natural {x₁ , _} {x₂ , _} (e , _) =
   ≈-sym (Lmap-assemble (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e))
+
+-- The zero of a lifted family is the assembly of the zero payload over the zero root.
+zeroF-assemble : ∀ {A X : Obj} (x : X .idx .Carrier) →
+                 Fam𝒞._≈_ (Fam𝒞._∘_ (assembleF {X}) (zeroF {A} (x , lift ttS))) (zeroF x)
+zeroF-assemble {A} {X} x ._≃_.idxf-eq .prop-setoid._≃m_.func-eq _ =
+  X .idx .isEquivalence .refl
+zeroF-assemble {A} {X} x ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+  ≈-trans (∘-cong (≈-trans (Lmap-cong (X .fam .refl*)) Lmap-id)
+                  (≈-trans id-left (CME.comp-bilinear-ε₂ _)))
+          id-left
 
 -- The injection is the assembly at the payload's own support: the lifting's laws recover any map
 -- out of a lifted object from its two restrictions, and the identity is its own assembly.

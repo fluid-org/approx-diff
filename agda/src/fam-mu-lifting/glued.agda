@@ -1,6 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Level using (Level; suc; _⊔_)
+open import Level using (Level; suc; _⊔_; lift)
+open import Data.Product using (_,_)
+open import Data.Unit using () renaming (tt to ttS)
 open import basics using (IsPreorder; IsJoin; IsMeet)
 open import categories using (Category; HasTerminal; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
@@ -151,6 +153,53 @@ Lf-Gl-map {X} {Y} f sq rt .presv =
       (Lf-Gl Y .pred [ G .fmor (R.Lf-map h) ]) [ G .fmor R.assembleF ]
     ∎
     where open basics.≤-Reasoning ⊑-isPreorder
+
+-- A glued object whose predicate holds of the zero element at every index. An elimination reads
+-- its constant against a zero payload, so the objects the fold eliminates must carry this.
+Zeroed : Gl.Obj → Prop (o ⊔ m ⊔ e ⊔ suc os ⊔ suc es ⊔ o₂ ⊔ m₂ ⊔ e₂)
+Zeroed X = ∀ {W : R.Obj} (x : X .carrier .R.idx .R.Carrier) →
+           TT ⊑ (X .pred [ G .fmor (R.zeroF {W} x) ])
+
+-- The zero of a lifted object is the assembly of the zero payload over the zero root, and the zero
+-- of a product is the pair of the zeros.
+Zeroed-Lf : ∀ {X} → Zeroed X → Zeroed (Lf-Gl X)
+Zeroed-Lf {X} zX {W} x = begin
+    TT
+  ≤⟨ zX x ⟩
+    X .pred [ G .fmor (R.zeroF {W} x) ]
+  ≤⟨ []-cong (G .fmor-cong (R.Fam𝒞.≈-sym (R.zeroF-p₁ x (lift ttS)))) ⟩
+    X .pred [ G .fmor (R.Fam𝒞._∘_ R.Fam𝒞-P.p₁ (R.zeroF (x , lift ttS))) ]
+  ≤⟨ []-cong (G .fmor-comp _ _) ⟩
+    X .pred [ G .fmor R.Fam𝒞-P.p₁ 𝒫C.∘ G .fmor (R.zeroF (x , lift ttS)) ]
+  ≤⟨ []-comp⁻¹ _ _ ⟩
+    (X .pred [ G .fmor (R.Fam𝒞-P.p₁ {X .carrier} {R.𝟙L}) ]) [ G .fmor (R.zeroF (x , lift ttS)) ]
+  ≤⟨ (unit (G .fmor R.assembleF)) [ G .fmor (R.zeroF (x , lift ttS)) ]m ⟩
+    (((X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+       [ G .fmor R.assembleF ]) [ G .fmor (R.zeroF (x , lift ttS)) ]
+  ≤⟨ []-comp _ _ ⟩
+    ((X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+      [ G .fmor R.assembleF 𝒫C.∘ G .fmor (R.zeroF (x , lift ttS)) ]
+  ≤⟨ []-cong (𝒫C.≈-sym (G .fmor-comp _ _)) ⟩
+    ((X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+      [ G .fmor (R.Fam𝒞._∘_ R.assembleF (R.zeroF (x , lift ttS))) ]
+  ≤⟨ []-cong (G .fmor-cong (R.zeroF-assemble x)) ⟩
+    ((X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+      [ G .fmor (R.zeroF x) ]
+  ≤⟨ (++-isJoin .IsJoin.inl) [ G .fmor (R.zeroF x) ]m ⟩
+    Lf-Gl X .pred [ G .fmor (R.zeroF x) ]
+  ∎
+  where open basics.≤-Reasoning ⊑-isPreorder
+
+Zeroed-[×] : ∀ {X Y} → Zeroed X → Zeroed Y → Zeroed (X [×] Y)
+Zeroed-[×] {X} {Y} zX zY (x , y) =
+  ⊑-trans (&&-isMeet .IsMeet.⟨_,_⟩
+    (⊑-trans (zX x)
+    (⊑-trans ([]-cong (G .fmor-cong (R.Fam𝒞.≈-sym (R.zeroF-p₁ x y))))
+    (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))
+    (⊑-trans (zY y)
+    (⊑-trans ([]-cong (G .fmor-cong (R.Fam𝒞.≈-sym (R.zeroF-p₂ x y))))
+    (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _)))))
+    []-&&
 
 -- The whole-object glued eliminator is retired: the fold now works at the singletons, and the
 -- eliminator's obligations have to be restated against the assembled payload, whose root the
