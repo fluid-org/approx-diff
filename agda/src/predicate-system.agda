@@ -176,6 +176,11 @@ record ClosureOp (S : PredicateSystem) : Set (suc (o ⊔ m ⊔ e)) where
     𝐂-[]⁻¹      : ∀ {X Y} {P : Predicate Y} {f : X 𝒞.⇒ Y} → (𝐂 P [ f ]) ⊑ 𝐂 (P [ f ])
     𝐂-strong    : ∀ {X} {P Q : Predicate X} → (𝐂 P && Q) ⊑ 𝐂 (P && Q)
 
+  𝐂-strongʳ : ∀ {X} {P Q : Predicate X} → (P && 𝐂 Q) ⊑ 𝐂 (P && Q)
+  𝐂-strongʳ =
+    ⊑-trans (IsMeet.comm &&-isMeet)
+      (⊑-trans 𝐂-strong (𝐂-isClosure .IsClosureOp.mono (IsMeet.comm &&-isMeet)))
+
   𝐂-monoidal : ∀ {X} {P Q : Predicate X} → (𝐂 P && 𝐂 Q) ⊑ 𝐂 (P && Q)
   𝐂-monoidal {X} {P} {Q} = begin
       𝐂 P && 𝐂 Q
