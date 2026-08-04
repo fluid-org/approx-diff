@@ -243,9 +243,13 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
                  {S : Predicate (G .fobj simple[ PS.𝟙 , Y .fam .fm y ])} →
                  ((Q ⟨ G .fmor (CP.in₁ {X} {Y}) ⟩)
                     [ G .fmor (elem-in (CP.coprod X Y) (inj₂ y)) ]) ⊑ S)
-    (BC-injF : ∀ {C : Obj} {Qp : Predicate (G .fobj C)} (x : C .idx .Carrier) →
-               ((Qp ⟨ G .fmor (injF {C}) ⟩) [ G .fmor (elem-in (Lf C) x) ])
-                 ⊑ ((Qp [ G .fmor (elem-in C x) ]) ⟨ G .fmor (sing-inj C x) ⟩))
+    (BC-assemble : ∀ {C : Obj} {Qp : Predicate (G .fobj C)} (x : C .idx .Carrier) →
+                   (((Qp [ G .fmor (Fam𝒞-P.p₁ {C} {𝟙L}) ]) ⟨ G .fmor (assembleF {C}) ⟩)
+                      [ G .fmor (elem-in (Lf C) x) ])
+                     ⊑ ((((Qp [ G .fmor (elem-in C x) ])
+                            [ G .fmor (Fam𝒞-P.p₁ {simple[ PS.𝟙 , C .fam .fm x ]} {𝟙L}) ])
+                           ⟨ G .fmor (assembleF {simple[ PS.𝟙 , C .fam .fm x ]}) ⟩)
+                          [ G .fmor (sing-Lf C x) ]))
     (sing-extract : ∀ {k} (δ₀ : Fin k → Obj) (δP₀ : ∀ i → Predicate (G .fobj (δ₀ i)))
                     (Q : Poly (suc k)) (pQ : PolyPred Q)
                     (t : Tree.W δ₀ ∣ Q ∣ (λ i → inj₁ i)) →
@@ -337,10 +341,8 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
         (⊑-trans (in₁-extract [ G .fmor (elem-in (Lf (F₁ .carrier)) x) ]m)
         (⊑-trans []-++
         (++-isJoin .IsJoin.[_,_]
-          (⊑-trans (BC-injF x)
-          (⊑-trans (img-square-id (sing-Lf (F₁ .carrier) x) (sing-inj (F₁ .carrier) x)
-                                  injF (injF-sing (F₁ .carrier) x))
-                   ((++-isJoin .IsJoin.inl) [ G .fmor (sing-Lf (F₁ .carrier) x) ]m)))
+          (⊑-trans (BC-assemble x)
+                   ((++-isJoin .IsJoin.inl) [ G .fmor (sing-Lf (F₁ .carrier) x) ]m))
           (⊑-trans ([]-cong (G .fmor-cong (elem-in-Lf (F₁ .carrier) x)))
           (⊑-trans ([]-cong (G .fmor-comp _ _))
           (⊑-trans ([]-comp⁻¹ _ _)
@@ -373,10 +375,8 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
         (⊑-trans (in₂-extract [ G .fmor (elem-in (Lf (F₂ .carrier)) y) ]m)
         (⊑-trans []-++
         (++-isJoin .IsJoin.[_,_]
-          (⊑-trans (BC-injF y)
-          (⊑-trans (img-square-id (sing-Lf (F₂ .carrier) y) (sing-inj (F₂ .carrier) y)
-                                  injF (injF-sing (F₂ .carrier) y))
-                   ((++-isJoin .IsJoin.inl) [ G .fmor (sing-Lf (F₂ .carrier) y) ]m)))
+          (⊑-trans (BC-assemble y)
+                   ((++-isJoin .IsJoin.inl) [ G .fmor (sing-Lf (F₂ .carrier) y) ]m))
           (⊑-trans ([]-cong (G .fmor-cong (elem-in-Lf (F₂ .carrier) y)))
           (⊑-trans ([]-cong (G .fmor-comp _ _))
           (⊑-trans ([]-comp⁻¹ _ _)
@@ -404,9 +404,7 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
     node-pair : ∀ (F₁ F₂ : Gl.Obj) (x : F₁ .carrier .idx .Carrier)
                 (y : F₂ .carrier .idx .Carrier) →
                 glue simple[ PS.𝟙 , L (prod (F₁ .carrier .fam .fm x) (F₂ .carrier .fam .fm y)) ]
-                     ((((F₁ [×] F₂) .pred
-                          ⟨ G .fmor (injF {Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)}) ⟩)
-                        ++ Rt (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)))
+                     (Lf-Gl (F₁ [×] F₂) .pred
                         [ G .fmor (elem-in (Lf (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)))
                                            (x , y)) ])
                   =>ᵢ Lf-Gl (glue simple[ PS.𝟙 , F₁ .carrier .fam .fm x ]
@@ -417,55 +415,76 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
     node-pair F₁ F₂ x y .mor .presv =
       ⊑-trans []-++
       (++-isJoin .IsJoin.[_,_]
-        (⊑-trans (BC-injF (x , y))
-        (⊑-trans ((⊑-trans (&&-isMeet .IsMeet.⟨_,_⟩
-                    (⊑-trans ((&&-isMeet .IsMeet.π₁)
-                                [ G .fmor (elem-in (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier))
-                                                   (x , y)) ]m)
-                    (⊑-trans ([]-comp _ _)
-                    (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
-                    (⊑-trans ([]-cong (G .fmor-cong (p₁-sing (F₁ .carrier) (F₂ .carrier) x y)))
-                    (⊑-trans ([]-cong (G .fmor-cong
-                                (Fam𝒞.∘-cong Fam𝒞.≈-refl
-                                  (Fam𝒞.≈-sym (p₁-pair (F₁ .carrier) (F₂ .carrier) x y)))))
-                    (⊑-trans ([]-cong (G .fmor-comp _ _))
-                    (⊑-trans ([]-comp⁻¹ _ _)
-                    (⊑-trans ([]-cong (G .fmor-comp _ _))
-                             ([]-comp⁻¹ _ _)))))))))
-                    (⊑-trans ((&&-isMeet .IsMeet.π₂)
-                                [ G .fmor (elem-in (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier))
-                                                   (x , y)) ]m)
-                    (⊑-trans ([]-comp _ _)
-                    (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
-                    (⊑-trans ([]-cong (G .fmor-cong (p₂-sing (F₁ .carrier) (F₂ .carrier) x y)))
-                    (⊑-trans ([]-cong (G .fmor-cong
-                                (Fam𝒞.∘-cong Fam𝒞.≈-refl
-                                  (Fam𝒞.≈-sym (p₂-pair (F₁ .carrier) (F₂ .carrier) x y)))))
-                    (⊑-trans ([]-cong (G .fmor-comp _ _))
-                    (⊑-trans ([]-comp⁻¹ _ _)
-                    (⊑-trans ([]-cong (G .fmor-comp _ _))
-                             ([]-comp⁻¹ _ _))))))))))
-                    []-&&)
-                   ⟨ G .fmor (sing-inj (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)) (x , y)) ⟩m)
-        (⊑-trans (img-square (node-pair-mor F₁ F₂ x y)
-                             (sing-inj (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)) (x , y))
-                             injF (sing-pair (F₁ .carrier) (F₂ .carrier) x y)
-                             (injF-pair (F₁ .carrier) (F₂ .carrier) x y))
-                 ((++-isJoin .IsJoin.inl) [ G .fmor (node-pair-mor F₁ F₂ x y) ]m))))
-        (⊑-trans ([]-cong (G .fmor-cong
-                    (elem-in-Lf (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)) (x , y))))
+        (⊑-trans (BC-assemble (x , y))
+        (⊑-trans (payload [ G .fmor (sing-Lf (Fam𝒞-P.prod C₁ C₂) (x , y)) ]m)
+        (⊑-trans ([]-comp _ _) ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _))))))
+        (⊑-trans ([]-cong (G .fmor-cong (elem-in-Lf (Fam𝒞-P.prod C₁ C₂) (x , y))))
         (⊑-trans ([]-cong (G .fmor-comp _ _))
         (⊑-trans ([]-comp⁻¹ _ _)
-        (⊑-trans ((Rt-iso⁻ (elem-in (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)) (x , y))
+        (⊑-trans ((Rt-iso⁻ (elem-in (Fam𝒞-P.prod C₁ C₂) (x , y))
                            (λ _ → id _) (λ _ → id-left) (λ _ → id-left))
-                    [ G .fmor (sing-Lf (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)) (x , y)) ]m)
-        (⊑-trans ((Rt-iso (sing-pair (F₁ .carrier) (F₂ .carrier) x y)
-                          (λ _ → id _) (λ _ → id-left) (λ _ → id-left))
-                    [ G .fmor (sing-Lf (Fam𝒞-P.prod (F₁ .carrier) (F₂ .carrier)) (x , y)) ]m)
+                    [ G .fmor (sing-Lf (Fam𝒞-P.prod C₁ C₂) (x , y)) ]m)
+        (⊑-trans ((Rt-iso sp (λ _ → id _) (λ _ → id-left) (λ _ → id-left))
+                    [ G .fmor (sing-Lf (Fam𝒞-P.prod C₁ C₂) (x , y)) ]m)
         (⊑-trans ([]-comp _ _)
         (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
                  ((++-isJoin .IsJoin.inr)
                     [ G .fmor (node-pair-mor F₁ F₂ x y) ]m)))))))))
+      where
+      C₁ = F₁ .carrier
+      C₂ = F₂ .carrier
+      sp = sing-pair C₁ C₂ x y
+      S₁ = glue simple[ PS.𝟙 , C₁ .fam .fm x ] (F₁ .pred [ G .fmor (elem-in C₁ x) ])
+      S₂ = glue simple[ PS.𝟙 , C₂ .fam .fm y ] (F₂ .pred [ G .fmor (elem-in C₂ y) ])
+
+      -- The singleton at a pair of indices is the pair of the singletons.
+      conv : ((F₁ [×] F₂) .pred [ G .fmor (elem-in (Fam𝒞-P.prod C₁ C₂) (x , y)) ])
+               ⊑ ((S₁ [×] S₂) .pred [ G .fmor sp ])
+      conv =
+        ⊑-trans (&&-isMeet .IsMeet.⟨_,_⟩
+          (⊑-trans ((&&-isMeet .IsMeet.π₁)
+                      [ G .fmor (elem-in (Fam𝒞-P.prod C₁ C₂) (x , y)) ]m)
+          (⊑-trans ([]-comp _ _)
+          (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+          (⊑-trans ([]-cong (G .fmor-cong (p₁-sing C₁ C₂ x y)))
+          (⊑-trans ([]-cong (G .fmor-cong
+                      (Fam𝒞.∘-cong Fam𝒞.≈-refl (Fam𝒞.≈-sym (p₁-pair C₁ C₂ x y)))))
+          (⊑-trans ([]-cong (G .fmor-comp _ _))
+          (⊑-trans ([]-comp⁻¹ _ _)
+          (⊑-trans ([]-cong (G .fmor-comp _ _))
+                   ([]-comp⁻¹ _ _)))))))))
+          (⊑-trans ((&&-isMeet .IsMeet.π₂)
+                      [ G .fmor (elem-in (Fam𝒞-P.prod C₁ C₂) (x , y)) ]m)
+          (⊑-trans ([]-comp _ _)
+          (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+          (⊑-trans ([]-cong (G .fmor-cong (p₂-sing C₁ C₂ x y)))
+          (⊑-trans ([]-cong (G .fmor-cong
+                      (Fam𝒞.∘-cong Fam𝒞.≈-refl (Fam𝒞.≈-sym (p₂-pair C₁ C₂ x y)))))
+          (⊑-trans ([]-cong (G .fmor-comp _ _))
+          (⊑-trans ([]-comp⁻¹ _ _)
+          (⊑-trans ([]-cong (G .fmor-comp _ _))
+                   ([]-comp⁻¹ _ _))))))))))
+          []-&&
+
+      -- The payload branch: the singleton comparison under the free root.
+      payload : ((((F₁ [×] F₂) .pred [ G .fmor (elem-in (Fam𝒞-P.prod C₁ C₂) (x , y)) ])
+                    [ G .fmor (Fam𝒞-P.p₁ {simple[ PS.𝟙 , prod (C₁ .fam .fm x) (C₂ .fam .fm y) ]}
+                                          {𝟙L}) ])
+                   ⟨ G .fmor assembleF ⟩)
+                  ⊑ (Lf-Gl (S₁ [×] S₂) .pred [ G .fmor (Lf-map sp) ])
+      payload =
+        ⊑-trans ((⊑-trans (conv [ G .fmor Fam𝒞-P.p₁ ]m)
+                 (⊑-trans ([]-comp _ _)
+                 (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+                 (⊑-trans ([]-cong (G .fmor-cong (Fam𝒞.≈-sym (Fam𝒞-P.pair-p₁ _ _))))
+                 (⊑-trans ([]-cong (G .fmor-comp _ _))
+                          ([]-comp⁻¹ _ _))))))
+                   ⟨ G .fmor assembleF ⟩m)
+        (⊑-trans (img-square (Lf-map sp) assembleF assembleF
+                             (Fam𝒞-P.prod-m sp (Fam𝒞.id 𝟙L))
+                             (assembleF-natural sp (λ _ → id _) (λ _ → id-left) (λ _ → id-left)))
+                 ((++-isJoin .IsJoin.inl) [ G .fmor (Lf-map sp) ]m))
+
     node-pair F₁ F₂ x y .inv _ = id _
     node-pair F₁ F₂ x y .inv₁ _ =
       ≈-trans id-right (≈-trans id-left (≈-trans id-right Lmap-id))
