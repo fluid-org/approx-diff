@@ -19,10 +19,11 @@ open import Data.Unit using () renaming (tt to ttS)
 open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift; ⊥-elim; tt)
 open import Data.Sum using (inj₁; inj₂)
 open import prop-setoid as PS using (Setoid; module ≈-Reasoning)
-open import basics using (IsPreorder; IsMeet; IsBigJoin; IsClosureOp)
+open import basics using (IsPreorder; IsMeet; IsJoin; IsBigJoin; IsClosureOp)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
+open import commutative-monoid using (CommutativeMonoid)
 open import lifting using (Lifting)
 open import functor using (Functor; NatTrans)
 open import indexed-family using (_⇒f_; _≃f_)
@@ -115,6 +116,17 @@ private
     RML.≈-trans RML.id-left
       (RML.∘-cong RML.≈-refl (RML.≈-trans RML.id-left RML.id-right))
 
+  strip-π : ∀ {A B C : RML.obj} (f : RML._⇒_ B C) (t : RML._⇒_ A B) →
+            RML._≈_ (RML._∘_ (RML.id _)
+                       (RML._∘_ f
+                         (RML._∘_ (RML.id _)
+                           (RML._∘_ (RML._∘_ (RML.id _)
+                                       (RML._∘_ (RML.id _)
+                                         (RML._∘_ (RML.id _) (RML._∘_ t (RML.id _)))))
+                                    (RML.id _)))))
+                    (RML._∘_ f t)
+  strip-π f t = RML.≈-trans (strip-f f _) (RML.∘-cong RML.≈-refl (strip t))
+
 raw-in₁-extract : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj X)} →
               ((Q ⟨ G .fmor (RCP.in₁ {X} {Y}) ⟩) [ G .fmor (RCP.in₁ {X} {Y}) ]) ⊑ Q
 raw-in₁-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
@@ -167,6 +179,9 @@ Rt C = CS.⋁ (Setoid.Carrier (RML.idx C))
 module RootedMu =
   fam-mu-lifting.glued-interface 𝒟₀T CM' BP' Lft'
     PSh⟨𝒞⟩ PSh⟨𝒞⟩-products system G Rt idCl
+
+open RootedMu.Gl.Obj renaming (carrier to gcar; pred to gpred)
+open RootedMu.Gl._=>_ using () renaming (morph to gmorph; presv to gpresv)
 
 raw-sing-split : ∀ {X : RML.Obj} {Q : Predicate (G .fobj X)} →
              Q ⊑ 𝐂 (⋁ (Setoid.Carrier (RML.idx X))
@@ -700,9 +715,6 @@ module _ {k} (δ₀ : Fin k → RML.Obj) (δP₀ : ∀ i → CS.Predicate (G .fo
     module Tδ = RML.Tree δ₀
     module MT = Mδ.Transport Rt-iso
 
-    open RootedMu.Gl.Obj renaming (carrier to gcar; pred to gpred)
-    open RootedMu.Gl._=>_ using () renaming (morph to gmorph; presv to gpresv)
-
     dc : ∀ (i : Fin k) → Tδ.DecoAssign (inj₁ i)
     dc i = lift ttS
 
@@ -848,3 +860,233 @@ module _ {k} (δ₀ : Fin k → RML.Obj) (δP₀ : ∀ i → CS.Predicate (G .fo
       ⊑-trans 𝐂-[]⁻¹
       (⊑-trans (𝐂-isClosure .IsClosureOp.mono (raw-step t' t))
                (𝐂-isClosure .IsClosureOp.closed))
+
+-- The additive obligations of the fold's lifted nodes. Eliminating an assembled argument gives the
+-- assembly of the eliminated payload with the root that argument carried, joined with the support
+-- the elimination charges at it, so both branches land in the payload disjunct.
+module _ (Γg Xg Yg : RootedMu.Gl.Obj)
+         (γ : Setoid.Carrier (RML.idx (gcar Γg)))
+         (ι : Setoid.Carrier (RML.idx (gcar Xg)))
+         (hs : RML.Mor RML.simple[ PS.𝟙 , RML.prod (gcar Γg .RML.fam .RML.fm γ)
+                                                   (gcar Xg .RML.fam .RML.fm ι) ]
+                       (gcar Yg))
+         (HYP : CS._⊑_ (CS._[_] (gpred (Γg RootedMu.[×] Xg))
+                                (G .fmor (RootedMu.elem-in (FDP.prod (gcar Γg) (gcar Xg))
+                                                           (γ , ι))))
+                       (CS._[_] (gpred Yg) (G .fmor hs)))
+         where
+
+  private
+    module CME' = CMonEnriched CM'
+
+    Γc = gcar Γg
+    Xc = gcar Xg
+    Yc = gcar Yg
+    Γp = CPm.Predicate.pred (gpred Γg)
+    Xp = CPm.Predicate.pred (gpred Xg)
+    Yp = CPm.Predicate.pred (gpred Yg)
+
+    esing = RootedMu.elem-in (FDP.prod Γc (RML.Lf Xc)) (γ , ι)
+    epair = RootedMu.elem-in (FDP.prod Γc Xc) (γ , ι)
+    sur = RootedMu.sing-under-root hs
+
+    payY : Predicate (G .fobj (RML.Lf Yc))
+    payY = (Yp [ G .fmor (FDP.p₁ {Yc} {RML.𝟙L}) ]) ⟨ G .fmor (RML.assembleF {Yc}) ⟩
+
+    -- The payload branch, at the element level.
+    core : (((Γp [ G .fmor (FDP.p₁ {Γc} {RML.Lf Xc}) ])
+              && (((Xp [ G .fmor (FDP.p₁ {Xc} {RML.𝟙L}) ]) ⟨ G .fmor (RML.assembleF {Xc}) ⟩)
+                    [ G .fmor (FDP.p₂ {Γc} {RML.Lf Xc}) ]))
+             [ G .fmor esing ])
+             ⊑ (payY [ G .fmor sur ])
+    core .*⊑* a .*⊑* (lift m) (hΓ , (lift n , hX , lift sq)) = lift k , (hY , lift eqk)
+      where
+      M : ∀ i → _
+      M i = m .RML.famf ._⇒f_.transf i
+
+      exι : ∀ i → Setoid._≈_ (RML.idx Xc) (proj₁ (n .RML.idxf .PS._⇒_.func i)) ι
+      exι i = sq .RML._≃_.idxf-eq .PS._≃m_.func-eq (Setoid.refl (FamC.Obj.idx a) {i})
+
+      -- The argument transported to the singleton at ι.
+      n̂ : RML.Mor (CF.FamF .fobj a)
+                  RML.simple[ PS.𝟙 , RML.prod (Xc .RML.fam .RML.fm ι) 𝟙d ]
+      n̂ .RML.idxf = PS.to-𝟙
+      n̂ .RML.famf ._⇒f_.transf i =
+        RML._∘_ (RML.prod-m (Xc .RML.fam .RML.subst (exι i)) (RML.id 𝟙d))
+                (n .RML.famf ._⇒f_.transf i)
+      n̂ .RML.famf ._⇒f_.natural p =
+        RML.≈-trans (RML.assoc _ _ _)
+          (RML.≈-trans (RML.∘-cong RML.≈-refl (n .RML.famf ._⇒f_.natural p))
+            (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
+              (RML.≈-trans
+                (RML.∘-cong
+                  (RML.≈-trans (RML.≈-sym (RML.prod-m-comp _ _ _ _))
+                               (RML.prod-m-cong (RML.≈-sym (Xc .RML.fam .RML.trans* _ _))
+                                                RML.id-left))
+                  RML.≈-refl)
+                (RML.≈-sym RML.id-left))))
+
+      N̂ : ∀ i → _
+      N̂ i = n̂ .RML.famf ._⇒f_.transf i
+
+      -- The context paired with the transported payload, which the hypothesis reads.
+      v : RML.Mor (CF.FamF .fobj a)
+                  RML.simple[ PS.𝟙 , RML.prod (Γc .RML.fam .RML.fm γ) (Xc .RML.fam .RML.fm ι) ]
+      v .RML.idxf = PS.to-𝟙
+      v .RML.famf ._⇒f_.transf i =
+        RML.pair (RML._∘_ RML.p₁ (M i)) (RML._∘_ RML.p₁ (N̂ i))
+      v .RML.famf ._⇒f_.natural p =
+        RML.≈-trans (RML.pair-natural _ _ _)
+          (RML.≈-trans
+            (RML.pair-cong
+              (RML.≈-trans (RML.assoc _ _ _)
+                (RML.∘-cong RML.≈-refl
+                  (RML.≈-trans (m .RML.famf ._⇒f_.natural p) RML.id-left)))
+              (RML.≈-trans (RML.assoc _ _ _)
+                (RML.∘-cong RML.≈-refl
+                  (RML.≈-trans (n̂ .RML.famf ._⇒f_.natural p) RML.id-left))))
+            (RML.≈-sym RML.id-left))
+
+      -- The root the assembly carried, joined with the support charged at the payload.
+      sup : RML.Mor (CF.FamF .fobj a) RML.𝟙L
+      sup .RML.idxf = PS.to-𝟙
+      sup .RML.famf ._⇒f_.transf i =
+        CME'._+m_ (RML._∘_ RML.spt (RML._∘_ RML.p₁ (N̂ i))) (RML._∘_ RML.p₂ (N̂ i))
+      sup .RML.famf ._⇒f_.natural p =
+        RML.≈-trans (CME'.comp-bilinear₁ _ _ _)
+          (RML.≈-trans
+            (CME'.homCM _ _ .CommutativeMonoid.+-cong
+              (RML.≈-trans (RML.assoc _ _ _)
+                (RML.∘-cong RML.≈-refl
+                  (RML.≈-trans (RML.assoc _ _ _)
+                    (RML.∘-cong RML.≈-refl
+                      (RML.≈-trans (n̂ .RML.famf ._⇒f_.natural p) RML.id-left)))))
+              (RML.≈-trans (RML.assoc _ _ _)
+                (RML.∘-cong RML.≈-refl
+                  (RML.≈-trans (n̂ .RML.famf ._⇒f_.natural p) RML.id-left))))
+            (RML.≈-sym RML.id-left))
+
+      k : RML.Mor (CF.FamF .fobj a) (FDP.prod Yc RML.𝟙L)
+      k = FDP.pair (FD._∘_ hs v) sup
+
+      -- The hypothesis applies at the pairing of the context with the transported payload.
+      hΓv : (Γp [ G .fmor (FDP.p₁ {Γc} {Xc}) ]) .pred a .pred
+              (G .fmor epair .transf a .PS._⇒_.func (lift v))
+      hΓv = Γp .pred a .pred-≃ (lift sqΓ) hΓ
+        where
+        sqΓ : FD._≈_ (FD._∘_ FDP.p₁ (FD._∘_ (FD._∘_ esing (FD._∘_ m (FD.id _))) (FD.id _)))
+                     (FD._∘_ FDP.p₁ (FD._∘_ (FD._∘_ epair (FD._∘_ v (FD.id _)))
+                                                        (FD.id _)))
+        sqΓ .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = Setoid.refl (RML.idx Γc)
+        sqΓ .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+          RML.≈-trans (RML.∘-cong (Γc .RML.fam .RML.refl*) RML.≈-refl)
+          (RML.≈-trans RML.id-left
+          (RML.≈-trans (strip-π RML.p₁ (M i))
+          (RML.≈-trans (RML.≈-sym (RML.pair-p₁ _ _))
+                       (RML.≈-sym (strip-π RML.p₁ (v .RML.famf ._⇒f_.transf i))))))
+
+      hXv : (Xp [ G .fmor (FDP.p₂ {Γc} {Xc}) ]) .pred a .pred
+              (G .fmor epair .transf a .PS._⇒_.func (lift v))
+      hXv = Xp .pred a .pred-≃ (lift sqX) hX
+        where
+        sqX : FD._≈_ (FD._∘_ FDP.p₁ (FD._∘_ n (FD.id _)))
+                     (FD._∘_ FDP.p₂ (FD._∘_ (FD._∘_ epair (FD._∘_ v (FD.id _)))
+                                                        (FD.id _)))
+        sqX .RML._≃_.idxf-eq .PS._≃m_.func-eq {i₁} {i₂} _ = exι i₁
+        sqX .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+          RML.≈-trans (RML.∘-cong RML.≈-refl (strip-f RML.p₁ (n .RML.famf ._⇒f_.transf i)))
+          (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
+          (RML.≈-trans (RML.∘-cong (RML.≈-sym (RML.pair-p₁ _ _)) RML.≈-refl)
+          (RML.≈-trans (RML.assoc _ _ _)
+          (RML.≈-trans (RML.≈-sym (RML.pair-p₂ _ _))
+                       (RML.≈-sym (strip-π RML.p₂ (v .RML.famf ._⇒f_.transf i)))))))
+
+      hY : Yp .pred a .pred (lift (FD._∘_ FDP.p₁ (FD._∘_ k (FD.id _))))
+      hY = Yp .pred a .pred-≃ (lift sqY) (HYP .*⊑* a .*⊑* (lift v) (hΓv , hXv))
+        where
+        sqY : FD._≈_ (FD._∘_ hs (FD._∘_ v (FD.id _)))
+                     (FD._∘_ FDP.p₁ (FD._∘_ k (FD.id _)))
+        sqY .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = hs .RML.idxf .PS._⇒_.func-resp-≈ tt
+        sqY .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+          RML.≈-trans (RML.∘-cong (Yc .RML.fam .RML.refl*) RML.≈-refl)
+          (RML.≈-trans RML.id-left
+          (RML.≈-trans (strip-f (hs .RML.famf ._⇒f_.transf (lift ttS))
+                                (v .RML.famf ._⇒f_.transf i))
+          (RML.≈-trans (RML.≈-sym RML.id-left)
+          (RML.≈-trans (RML.≈-sym (RML.pair-p₁ _ _))
+                       (RML.≈-sym (strip-f RML.p₁ (k .RML.famf ._⇒f_.transf i)))))))
+
+      eqk : FD._≈_ (FD._∘_ RML.assembleF (FD._∘_ k (FD.id _)))
+                   (FD._∘_ sur (FD._∘_ m (FD.id _)))
+      eqk .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = hs .RML.idxf .PS._⇒_.func-resp-≈ tt
+      eqk .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+        RML.≈-trans (RML.∘-cong (RML.Lf Yc .RML.fam .RML.refl*) RML.≈-refl)
+          (RML.≈-trans RML.id-left
+            (RML.≈-trans (strip-f (RML.cop RML.inj RML.root) (k .RML.famf ._⇒f_.transf i))
+              (RML.≈-trans MAIN
+                (RML.≈-sym (strip-f (RML.under-root (hs .RML.famf ._⇒f_.transf (lift ttS)))
+                                    (M i))))))
+        where
+        HYPN : RML._≈_ (RML._∘_ (RML.cop RML.inj RML.root) (N̂ i))
+                       (RML._∘_ RML.p₂ (M i))
+        HYPN =
+          RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
+          (RML.≈-trans
+            (RML.∘-cong
+              (RML.≈-sym (RML.Lmap-assemble (RML.fam-subst-iso₁ (Xc .RML.fam) (exι i))
+                                            (RML.fam-subst-iso₂ (Xc .RML.fam) (exι i))))
+              RML.≈-refl)
+          (RML.≈-trans (RML.assoc _ _ _)
+          (RML.≈-trans
+            (RML.≈-sym (RML.∘-cong RML.≈-refl
+                         (strip-f (RML.cop RML.inj RML.root)
+                                  (n .RML.famf ._⇒f_.transf i))))
+          (RML.≈-trans (sq .RML._≃_.famf-eq ._≃f_.transf-eq {i})
+                       (strip-π RML.p₂ (M i))))))
+
+        MAIN : RML._≈_ (RML._∘_ (RML.cop RML.inj RML.root)
+                          (k .RML.famf ._⇒f_.transf i))
+                       (RML._∘_ (RML.under-root (hs .RML.famf ._⇒f_.transf (lift ttS))) (M i))
+        MAIN =
+          RML.≈-trans
+            (RML.∘-cong RML.≈-refl
+              (RML.pair-cong (RML.≈-trans RML.id-left RML.≈-refl) RML.≈-refl))
+          (RML.≈-trans
+            (RML.≈-sym (RML.under-root-pair (hs .RML.famf ._⇒f_.transf (lift ttS))
+                          (RML._∘_ RML.p₁ (M i)) (RML._∘_ RML.p₁ (N̂ i))
+                          (RML._∘_ RML.p₂ (N̂ i))))
+            (RML.∘-cong RML.≈-refl
+              (RML.≈-trans
+                (RML.pair-cong RML.≈-refl
+                  (RML.≈-trans (RML.∘-cong RML.≈-refl (RML.pair-ext (N̂ i))) HYPN))
+                (RML.pair-ext (M i)))))
+
+  payload-sing : CS._⊑_
+                   (CS._[_] (CS._&&_ (CS._[_] (gpred Γg) (G .fmor (FDP.p₁ {Γc} {RML.Lf Xc})))
+                                     (CS._[_] (CS._⟨_⟩ (CS._[_] (gpred Xg)
+                                                          (G .fmor (FDP.p₁ {Xc} {RML.𝟙L})))
+                                                       (G .fmor (RML.assembleF {Xc})))
+                                              (G .fmor (FDP.p₂ {Γc} {RML.Lf Xc}))))
+                            (G .fmor esing))
+                   (CS._[_] (gpred (RootedMu.Lf-Gl Yg)) (G .fmor sur))
+  payload-sing =
+    ⊑-trans (push [ G .fmor esing ]m)
+    (⊑-trans 𝐂-[]⁻¹
+    (⊑-trans (𝐂-isClosure .IsClosureOp.mono
+               (⊑-trans core
+                        ((⊑-trans (𝐂-isClosure .IsClosureOp.unit)
+                                  (++-isJoin .IsJoin.inl)) [ G .fmor sur ]m)))
+             𝐂-[]))
+    where
+    push : ((Γp [ G .fmor (FDP.p₁ {Γc} {RML.Lf Xc}) ])
+             && (𝐂 (((Xp [ G .fmor (FDP.p₁ {Xc} {RML.𝟙L}) ])
+                       ⟨ G .fmor (RML.assembleF {Xc}) ⟩))
+                   [ G .fmor (FDP.p₂ {Γc} {RML.Lf Xc}) ]))
+             ⊑ 𝐂 ((Γp [ G .fmor (FDP.p₁ {Γc} {RML.Lf Xc}) ])
+                    && (((Xp [ G .fmor (FDP.p₁ {Xc} {RML.𝟙L}) ])
+                           ⟨ G .fmor (RML.assembleF {Xc}) ⟩)
+                          [ G .fmor (FDP.p₂ {Γc} {RML.Lf Xc}) ]))
+    push =
+      ⊑-trans (IsMeet.mono &&-isMeet (⊑-isPreorder .IsPreorder.refl) 𝐂-[]⁻¹)
+      (⊑-trans (IsMeet.comm &&-isMeet)
+      (⊑-trans 𝐂-strong (𝐂-isClosure .IsClosureOp.mono (IsMeet.comm &&-isMeet))))
