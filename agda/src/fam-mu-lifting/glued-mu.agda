@@ -17,7 +17,7 @@ open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import Data.Unit using (⊤; tt)
-open import prop using (_,_)
+open import prop using (_,_; tt)
 open import prop-setoid as PS using ()
 open import categories using (Category; HasTerminal; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
@@ -295,6 +295,37 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
             (x : El r) → fib-el-Gl r dr pr x .carrier .idx .Carrier
     el-ix (inj₁ p) _ _ x = lift tt
     el-ix (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x = fib-ix Q ρd pQ pρ x
+
+  -- Every index of a fibre carrier is the canonical one: the index setoids are built from
+  -- singletons at the leaves and pairs at the nodes.
+  mutual
+    fib-ix-uniq : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+                  (d : ∀ i → DecoAssign (ρ̄ i))
+                  (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+                  (t : W ∣ Q ∣ ρ̄) (ι : fib-Gl Q d pQ pd t .carrier .idx .Carrier) →
+                  _≈s_ (fib-Gl Q d pQ pd t .carrier .idx) ι (fib-ix Q d pQ pd t)
+    fib-ix-uniq Q d pQ pd (sup x) ι =
+      shape-ix-uniq Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x ι
+
+    shape-ix-uniq : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+                    (d : ∀ i → DecoAssign (η̄ i))
+                    (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+                    (x : ⟦ ∣ Q ∣ ⟧shape η̄)
+                    (ι : fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier) →
+                    _≈s_ (fib-shape-Gl Q d pQ pd x .carrier .idx) ι (shape-ix Q d pQ pd x)
+    shape-ix-uniq (const A) d pA pd x ι = tt
+    shape-ix-uniq (var i)   d pQ pd x ι = el-ix-uniq _ (d i) (pd i) x ι
+    shape-ix-uniq (P' + Q') d (pP , pQ) pd (inj₁ x) ι = shape-ix-uniq P' d pP pd x ι
+    shape-ix-uniq (P' + Q') d (pP , pQ) pd (inj₂ y) ι = shape-ix-uniq Q' d pQ pd y ι
+    shape-ix-uniq (P' × Q') d (pP , pQ) pd (x , y) (ι₁ , ι₂) =
+      shape-ix-uniq P' d pP pd x ι₁ , shape-ix-uniq Q' d pQ pd y ι₂
+    shape-ix-uniq (μ Q')    d pQ' pd t ι = fib-ix-uniq Q' d pQ' pd t ι
+
+    el-ix-uniq : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+                 (x : El r) (ι : fib-el-Gl r dr pr x .carrier .idx .Carrier) →
+                 _≈s_ (fib-el-Gl r dr pr x .carrier .idx) ι (el-ix r dr pr x)
+    el-ix-uniq (inj₁ p) _ _ x ι = tt
+    el-ix-uniq (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x ι = fib-ix-uniq Q ρd pQ pρ x ι
 
   -- The reverse inclusions, from the fibre back onto the carrier's fibre at any index.
   mutual
@@ -616,6 +647,59 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
                  fib-el-Gl r dr pr x =>ᵢ fib-el-Gl r dr pr y
       subst-el (inj₁ p) _ _ e = elem-iso (δ p) (δP p) e
       subst-el (inj₂ s) (mkDeco Q ρd) (pQ , pρ) {x} {y} e = subst-fib Q ρd pQ pρ {x} {y} e
+
+    -- The transports intertwine the carrier inclusions with the fibres' own transport.
+    mutual
+      subst-fib-in : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+                     (d : ∀ i → DecoAssign (ρ̄ i))
+                     (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+                     {t t' : W ∣ Q ∣ ρ̄} (p : W-≈ t t')
+                     (ι : fib-Gl Q d pQ pd t .carrier .idx .Carrier) →
+                     (in-fib Q d pQ pd t'
+                        (subst-fib Q d pQ pd {t} {t'} p .mor .morph .idxf .PS._⇒_.func ι)
+                       ∘ subst-fib Q d pQ pd {t} {t'} p .mor .morph .famf ._⇒f_.transf ι)
+                       ≈ (fib-subst Q d {t} {t'} p ∘ in-fib Q d pQ pd t ι)
+      subst-fib-in Q d pQ pd {sup x} {sup y} p ι =
+        subst-shape-in Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) {x} {y} p ι
+
+      subst-shape-in : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+                       (d : ∀ i → DecoAssign (η̄ i))
+                       (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+                       {x y : ⟦ ∣ Q ∣ ⟧shape η̄} (p : shape≈ ∣ Q ∣ η̄ x y)
+                       (ι : fib-shape-Gl Q d pQ pd x .carrier .idx .Carrier) →
+                       (in-shape Q d pQ pd y
+                          (subst-shape Q d pQ pd {x} {y} p .mor .morph .idxf .PS._⇒_.func ι)
+                         ∘ subst-shape Q d pQ pd {x} {y} p .mor .morph .famf ._⇒f_.transf ι)
+                         ≈ (fib-shape-subst Q d {x} {y} p ∘ in-shape Q d pQ pd x ι)
+      subst-shape-in (const A) d pA pd p ι = ≈-trans id-left (≈-sym id-right)
+      subst-shape-in (var i)   d pQ pd p ι = subst-el-in _ (d i) (pd i) p ι
+      subst-shape-in (P' + Q') d (pP , pQ) pd {inj₁ x} {inj₁ y} p ι =
+        ≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (subst-shape-in P' d pP pd {x} {y} p ι)) (Lmap-comp _ _))
+      subst-shape-in (P' + Q') d (pP , pQ) pd {inj₂ x} {inj₂ y} p ι =
+        ≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong (subst-shape-in Q' d pQ pd {x} {y} p ι)) (Lmap-comp _ _))
+      subst-shape-in (P' × Q') d (pP , pQ) pd {x₁ , x₂} {y₁ , y₂} (p₁ , p₂) (ι₁ , ι₂) =
+        ≈-trans (∘-cong ≈-refl (Lmap-cong (pair-cong id-left id-left)))
+        (≈-trans (≈-sym (Lmap-comp _ _))
+        (≈-trans (Lmap-cong
+                   (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                    (≈-trans (prod-m-cong (subst-shape-in P' d pP pd {x₁} {y₁} p₁ ι₁)
+                                          (subst-shape-in Q' d pQ pd {x₂} {y₂} p₂ ι₂))
+                             (prod-m-comp _ _ _ _))))
+                 (Lmap-comp _ _)))
+      subst-shape-in (μ Q')    d pQ' pd {x} {y} p ι = subst-fib-in Q' d pQ' pd {x} {y} p ι
+
+      subst-el-in : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+                    {x y : El r} (e : elEq r x y)
+                    (ι : fib-el-Gl r dr pr x .carrier .idx .Carrier) →
+                    (in-el r dr pr y
+                       (subst-el r dr pr {x} {y} e .mor .morph .idxf .PS._⇒_.func ι)
+                      ∘ subst-el r dr pr {x} {y} e .mor .morph .famf ._⇒f_.transf ι)
+                      ≈ (fib-el-subst r dr {x} {y} e ∘ in-el r dr pr x ι)
+      subst-el-in (inj₁ p) _ _ e ι = ≈-trans id-left (≈-sym id-right)
+      subst-el-in (inj₂ s) (mkDeco Q ρd) (pQ , pρ) {x} {y} e ι =
+        subst-fib-in Q ρd pQ pρ {x} {y} e ι
 
 private module GlCP = Gl.coproducts coproducts
 
