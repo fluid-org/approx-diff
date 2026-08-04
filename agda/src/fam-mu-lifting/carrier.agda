@@ -88,7 +88,7 @@ fobj μ-obj (μ P')    δ = μ-obj P' δ
 import lifting-fold
 open lifting-fold CM BP Lft public
   using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
-         under-root-p₂; under-root-strip; pm; pm-in₁; pm-in₂; bp-ext;
+         under-root-p₂; under-root-strip; pm; pm-in₁; pm-in₂; bp-ext; cop; cop-cong;
          strip-root; strip-root-cong; strip-root-natural)
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
@@ -163,6 +163,71 @@ injF .idxf = prop-setoid.idS _
 injF {X} .famf ._⇒f_.transf x = inj
 injF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
   ≈-sym (Lmap-inj (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e))
+
+-- The unit family of the lifting: a single fibre, at the object the roots come from.
+𝟙L : Obj
+𝟙L = simple[ prop-setoid.𝟙 , 𝟙c ]
+
+-- The support, as a family morphism into the unit family.
+sptF : ∀ {X : Obj} → Mor X 𝟙L
+sptF .idxf = prop-setoid.to-𝟙
+sptF {X} .famf ._⇒f_.transf x = spt
+sptF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
+  ≈-trans (spt-natural (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e))
+          (≈-sym id-left)
+
+-- The action of the lifting commutes with the assembly at an isomorphism: the injection is natural
+-- only there, while the root is natural always.
+Lmap-assemble : ∀ {X Y : obj} {h : X ⇒ Y} {h' : Y ⇒ X} →
+                (h ∘ h') ≈ id Y → (h' ∘ h) ≈ id X →
+                (Lmap h ∘ cop inj root) ≈ (cop inj root ∘ pm h (id 𝟙c))
+Lmap-assemble {X} {Y} {h} {h'} hi₁ hi₂ =
+  bp-ext
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (Biproduct.copair-in₁ (BP _ _) _ _))
+        (≈-trans (Lmap-inj hi₁ hi₂)
+          (≈-sym (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl (pm-in₁ _ _))
+              (≈-trans (≈-sym (assoc _ _ _))
+                       (∘-cong (Biproduct.copair-in₁ (BP _ _) _ _) ≈-refl))))))))
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (Biproduct.copair-in₂ (BP _ _) _ _))
+        (≈-trans (Lmap-root _)
+          (≈-sym (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl (pm-in₂ _ _))
+              (≈-trans (≈-sym (assoc _ _ _))
+                (≈-trans (∘-cong (Biproduct.copair-in₂ (BP _ _) _ _) ≈-refl) id-right))))))))
+
+-- Assembling a lifted element from a payload and a root over it.
+assembleF : ∀ {X : Obj} → Mor (Fam𝒞-P.prod X 𝟙L) (Lf X)
+assembleF .idxf = prop-setoid.project₁
+assembleF {X} .famf ._⇒f_.transf (x , _) = cop inj root
+assembleF {X} .famf ._⇒f_.natural {x₁ , _} {x₂ , _} (e , _) =
+  ≈-sym (Lmap-assemble (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e))
+
+-- The injection is the assembly at the payload's own support: the lifting's laws recover any map
+-- out of a lifted object from its two restrictions, and the identity is its own assembly.
+inj-assemble : ∀ {X : obj} → (cop inj root ∘ pair (id X) spt) ≈ inj
+inj-assemble {X} =
+  ≈-trans (CME.comp-bilinear₂ _ _ _)
+  (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong
+             (≈-trans (≈-sym (assoc _ _ _))
+               (≈-trans (∘-cong (Biproduct.copair-in₁ (BP _ _) _ _) ≈-refl) id-right))
+             (≈-trans (≈-sym (assoc _ _ _))
+               (∘-cong (Biproduct.copair-in₂ (BP _ _) _ _) ≈-refl)))
+  (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-comm)
+  (≈-trans (≈-sym (affine-inj root inj))
+  (≈-trans (∘-cong (≈-trans (affine-cong (≈-sym id-left) (≈-sym id-left))
+                            (affine-η (id (L X))))
+                   ≈-refl)
+           id-left))))
+
+injF-assemble : ∀ {X : Obj} →
+                Fam𝒞._≈_ (Fam𝒞._∘_ (assembleF {X}) (Fam𝒞-P.pair (Fam𝒞.id X) sptF)) (injF {X})
+injF-assemble {X} ._≃_.idxf-eq .prop-setoid._≃m_.func-eq p = p
+injF-assemble {X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} =
+  ≈-trans (∘-cong (Lf X .fam .refl*) ≈-refl)
+          (≈-trans id-left (≈-trans id-left inj-assemble))
 
 -- Dropping the root: the assembly at the zero constant, so the root's contribution vanishes.
 payloadF : ∀ {X : Obj} → Mor (Lf X) X

@@ -125,6 +125,23 @@ injF-natural {X} {Y} f finv e₁ e₂ ._≃_.famf-eq .indexed-family._≃f_.tran
   (≈-trans (Lmap-inj (e₁ x) (e₂ x))
            (≈-sym id-left))))
 
+-- The assembly is natural in the payload at fibrewise isomorphisms, the square the lifted formers
+-- need of it.
+assembleF-natural : ∀ {X Y : Obj} (f : Mor X Y)
+                    (finv : ∀ x → Y .fam .fm (f .idxf .PS._⇒_.func x) ⇒ X .fam .fm x) →
+                    (∀ x → (f .famf ._⇒f_.transf x ∘ finv x) ≈ id _) →
+                    (∀ x → (finv x ∘ f .famf ._⇒f_.transf x) ≈ id _) →
+                    Fam𝒞._∘_ (Lf-map f) assembleF
+                      ≃ Fam𝒞._∘_ assembleF (Fam𝒞-P.prod-m f (Fam𝒞.id 𝟙L))
+assembleF-natural f finv e₁ e₂ ._≃_.idxf-eq .PS._≃m_.func-eq (x≈ , _) =
+  f .idxf .PS._⇒_.func-resp-≈ x≈
+assembleF-natural {X} {Y} f finv e₁ e₂ ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x , _} =
+  ≈-trans (∘-cong (Lf Y .fam .refl*) ≈-refl)
+  (≈-trans id-left
+  (≈-trans id-left
+  (≈-trans (Lmap-assemble (e₁ x) (e₂ x))
+  (≈-sym (≈-trans id-left (∘-cong ≈-refl (pair-cong id-left id-left)))))))
+
 -- One application of the algebra against a candidate at the recursive positions: the same
 -- recursion as the fold, with the candidate at the slot.
 module ApplyDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
