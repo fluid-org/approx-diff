@@ -10,13 +10,13 @@
 -- through a bare root at some index, up to cover refinement.
 ------------------------------------------------------------------------------
 
-open import Level using (Level; 0ℓ)
-open import prop using (Prf; ∃; ∃ₛ)
-open import prop-setoid as PS using (Setoid)
+open import Level using (Level; 0ℓ; lift)
+open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift)
+open import prop-setoid as PS using (Setoid; module ≈-Reasoning)
 open import categories using (Category; HasTerminal; HasProducts; HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import lifting using (Lifting)
-open import functor using (Functor)
+open import functor using (Functor; NatTrans)
 open import indexed-family using (_⇒f_)
 open import predicate-system using (PredicateSystem; ClosureOp)
 open import finite-product-functor
@@ -51,13 +51,21 @@ open Functor
 -- The family-level logical relations, reused wholesale.
 module CF = conservativity-fam 𝒞₀T 𝒞₀P 𝒟₀T 𝒟₀P F₀ F₀T F₀P 𝒟E F₀-faithful F₀def
 
-open CF.Rel using (G; PSh⟨𝒞⟩; PSh⟨𝒞⟩-products; PSh⟨𝒞⟩-system; closureOp)
+open CF.Rel using (G; PSh⟨𝒞⟩; PSh⟨𝒞⟩-products; PSh⟨𝒞⟩-system; closureOp;
+                   &&-++-distrib; &&-⋁-distrib; &&-⟨⟩-frobenius; ⟨⟩-[]-BC)
 
 -- The rooted structure on the same category of families.
 module RML = fam-mu-lifting.laws 0ℓ 0ℓ 𝒟₀T CM' BP' Lft'
 
-open PredicateSystem PSh⟨𝒞⟩-system using (Predicate; TT; _⟨_⟩; ⋁)
+open PredicateSystem PSh⟨𝒞⟩-system
 open ClosureOp closureOp using (𝐂)
+
+open NatTrans
+
+private
+  module FD = Category RML.cat
+  module FDP = RML.Fam𝒞-P
+  module PSh⟨𝒞⟩C = Category PSh⟨𝒞⟩
 
 -- The singleton family at the lifting's unit.
 𝟙L : RML.Obj
@@ -80,3 +88,67 @@ Rt C = 𝐂 (⋁ (Setoid.Carrier (RML.idx C)) (λ i → TT ⟨ G .fmor (root-mor
 module RootedMu =
   fam-mu-lifting.glued-interface 𝒟₀T CM' BP' Lft'
     PSh⟨𝒞⟩ PSh⟨𝒞⟩-products PSh⟨𝒞⟩-system G Rt closureOp
+
+dist : ∀ {V} {Pp Q S : Predicate V} → (Pp && (Q ++ S)) ⊑ ((Pp && Q) ++ (Pp && S))
+dist = &&-++-distrib
+
+dist-⋁ : ∀ {V} {I : Set 0ℓ} {Pp : Predicate V} {Qs : I → Predicate V} →
+         (Pp && ⋁ I Qs) ⊑ ⋁ I (λ i → Pp && Qs i)
+dist-⋁ = &&-⋁-distrib
+
+frob : ∀ {V V'} {Pp : Predicate V'} {Q : Predicate V} {α : V PSh⟨𝒞⟩C.⇒ V'} →
+       (Pp && (Q ⟨ α ⟩)) ⊑ (((Pp [ α ]) && Q) ⟨ α ⟩)
+frob = &&-⟨⟩-frobenius
+
+BC : ∀ {W U V : RML.Obj} (h : RML.Mor U V) {Q : Predicate (G .fobj U)} →
+     ((Q ⟨ G .fmor h ⟩) [ G .fmor (FDP.p₂ {W} {V}) ])
+       ⊑ ((Q [ G .fmor (FDP.p₂ {W} {U}) ])
+            ⟨ G .fmor (FDP.pair FDP.p₁ (FD._∘_ h FDP.p₂)) ⟩)
+BC {W} {U} {V} h {Q} = ⟨⟩-[]-BC lft
+  where
+  lft : ∀ a (v* : Setoid.Carrier ((G .fobj (FDP.prod W V)) .fobj a))
+          (u* : Setoid.Carrier ((G .fobj U) .fobj a)) →
+        Setoid._≈_ ((G .fobj V) .fobj a)
+          (PS._⇒_.func (G .fmor h .transf a) u*)
+          (PS._⇒_.func (G .fmor (FDP.p₂ {W}) .transf a) v*) →
+        ∃ (Setoid.Carrier ((G .fobj (FDP.prod W U)) .fobj a)) λ w* →
+          (Setoid._≈_ ((G .fobj U) .fobj a)
+            (PS._⇒_.func (G .fmor (FDP.p₂ {W} {U}) .transf a) w*) u*)
+          ∧ (Setoid._≈_ ((G .fobj (FDP.prod W V)) .fobj a)
+              (PS._⇒_.func (G .fmor (FDP.pair FDP.p₁ (FD._∘_ h FDP.p₂)) .transf a) w*) v*)
+  lft a (lift v) (lift u) (lift e) = lift w , (lift eq₁ , lift eq₂)
+    where
+    w = FDP.pair (FD._∘_ FDP.p₁ v) u
+
+    eq₁ : FD._≈_ (FD._∘_ FDP.p₂ (FD._∘_ w (FD.id _))) u
+    eq₁ = FD.≈-trans (FD.∘-cong FD.≈-refl FD.id-right) (FDP.pair-p₂ _ _)
+
+    side : FD._≈_ (FD._∘_ (FD._∘_ h FDP.p₂) w) (FD._∘_ FDP.p₂ v)
+    side = begin
+        FD._∘_ (FD._∘_ h FDP.p₂) w
+      ≈⟨ FD.assoc _ _ _ ⟩
+        FD._∘_ h (FD._∘_ FDP.p₂ w)
+      ≈⟨ FD.∘-cong FD.≈-refl (FDP.pair-p₂ _ _) ⟩
+        FD._∘_ h u
+      ≈˘⟨ FD.∘-cong FD.≈-refl FD.id-right ⟩
+        FD._∘_ h (FD._∘_ u (FD.id _))
+      ≈⟨ e ⟩
+        FD._∘_ FDP.p₂ (FD._∘_ v (FD.id _))
+      ≈⟨ FD.∘-cong FD.≈-refl FD.id-right ⟩
+        FD._∘_ FDP.p₂ v
+      ∎
+      where open ≈-Reasoning FD.isEquiv
+
+    eq₂ : FD._≈_ (FD._∘_ (FDP.pair FDP.p₁ (FD._∘_ h FDP.p₂)) (FD._∘_ w (FD.id _))) v
+    eq₂ = begin
+        FD._∘_ (FDP.pair FDP.p₁ (FD._∘_ h FDP.p₂)) (FD._∘_ w (FD.id _))
+      ≈⟨ FD.∘-cong FD.≈-refl FD.id-right ⟩
+        FD._∘_ (FDP.pair FDP.p₁ (FD._∘_ h FDP.p₂)) w
+      ≈⟨ FDP.pair-natural _ _ _ ⟩
+        FDP.pair (FD._∘_ FDP.p₁ w) (FD._∘_ (FD._∘_ h FDP.p₂) w)
+      ≈⟨ FDP.pair-cong (FDP.pair-p₁ _ _) side ⟩
+        FDP.pair (FD._∘_ FDP.p₁ v) (FD._∘_ FDP.p₂ v)
+      ≈⟨ FDP.pair-ext v ⟩
+        v
+      ∎
+      where open ≈-Reasoning FD.isEquiv
