@@ -12,7 +12,8 @@
 
 open import Level using (Level; 0ℓ; lift)
 open import Data.Unit using () renaming (tt to ttS)
-open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift)
+open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift; ⊥-elim; tt)
+open import Data.Sum using (inj₁; inj₂)
 open import prop-setoid as PS using (Setoid; module ≈-Reasoning)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasWeakExponentials)
@@ -193,6 +194,90 @@ sing-split {X} {Q} .*⊑* a .*⊑* (lift m) qm = CvM.node cov xs ts eqs
     qw = Q .pred (CF.Rel.cDom cov (lift v)) .pred-≃
            (Setoid.sym (G .fobj X .fobj (CF.Rel.cDom cov (lift v))) ew)
            (Q .pred-mor (CF.Rel.cInj cov (lift v)) .*⊑* (lift m) qm)
+
+private
+  RtJoin : ∀ (C : RML.Obj) → Predicate (G .fobj (RML.Lf C))
+  RtJoin C = ⋁ (Setoid.Carrier (RML.idx C)) (λ i → TT ⟨ G .fmor (root-mor C i) ⟩)
+
+disjoint₁ : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj Y)} (x : Setoid.Carrier (RML.idx X))
+            {C : RML.Obj}
+            (h : RML.Mor RML.simple[ PS.𝟙 , X .RML.fam .RML.fm x ] (RML.Lf C)) →
+            ((Q ⟨ G .fmor (RCP.in₂ {X} {Y}) ⟩)
+               [ G .fmor (RootedMu.elem-in (RCP.coprod X Y) (inj₁ x)) ])
+              ⊑ (Rt C [ G .fmor h ])
+disjoint₁ {X} {Y} {Q} x {C} h .*⊑* a .*⊑* (lift w) hyp = CvM.node cov xs ts eqs
+  where
+  src : Predicate (G .fobj RML.simple[ PS.𝟙 , X .RML.fam .RML.fm x ])
+  src = (Q ⟨ G .fmor (RCP.in₂ {X} {Y}) ⟩)
+          [ G .fmor (RootedMu.elem-in (RCP.coprod X Y) (inj₁ x)) ]
+
+  z : Setoid.Carrier (G .fobj (RML.Lf C) .fobj a)
+  z = G .fmor h .transf a .PS._⇒_.func (lift w)
+
+  cvr : CF.Rel.IdxCover a
+  cvr .CF.Rel.IdxCover.S = FamC.Obj.idx a
+  cvr .CF.Rel.IdxCover.D = FC.fibres a
+  cvr .CF.Rel.IdxCover.iso = FC.fib-iso a
+
+  cov : CF.Rel.Cover a
+  cov = CF.Rel.idx cvr
+
+  xs : ∀ s → Setoid.Carrier (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s))
+  xs s = G .fobj (RML.Lf C) .fmor (CF.Rel.cInj cov s) .PS._⇒_.func z
+
+  eqs : ∀ s → Setoid._≈_ (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s)) (xs s)
+                (G .fobj (RML.Lf C) .fmor (CF.Rel.cInj cov s) .PS._⇒_.func z)
+  eqs s = Setoid.refl (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s))
+
+  ts : ∀ s → CvM.Context (G .fobj (RML.Lf C)) (RtJoin C) (CF.Rel.cDom cov s) (xs s)
+  ts (lift v) = CvM.leaf (go (src .pred-mor (CF.Rel.cInj cov (lift v)) .*⊑* (lift w) hyp))
+    where
+    go : src .pred (CF.Rel.cDom cov (lift v)) .pred
+           (G .fobj RML.simple[ PS.𝟙 , X .RML.fam .RML.fm x ]
+              .fmor (CF.Rel.cInj cov (lift v)) .PS._⇒_.func (lift w)) →
+         RtJoin C .pred (CF.Rel.cDom cov (lift v)) .pred (xs (lift v))
+    go (lift u , qu , lift eqv) =
+      ⊥-elim (eqv .RML._≃_.idxf-eq .PS._≃m_.func-eq {lift ttS} {lift ttS} tt)
+
+disjoint₂ : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj X)} (y : Setoid.Carrier (RML.idx Y))
+            {C : RML.Obj}
+            (h : RML.Mor RML.simple[ PS.𝟙 , Y .RML.fam .RML.fm y ] (RML.Lf C)) →
+            ((Q ⟨ G .fmor (RCP.in₁ {X} {Y}) ⟩)
+               [ G .fmor (RootedMu.elem-in (RCP.coprod X Y) (inj₂ y)) ])
+              ⊑ (Rt C [ G .fmor h ])
+disjoint₂ {X} {Y} {Q} y {C} h .*⊑* a .*⊑* (lift w) hyp = CvM.node cov xs ts eqs
+  where
+  src : Predicate (G .fobj RML.simple[ PS.𝟙 , Y .RML.fam .RML.fm y ])
+  src = (Q ⟨ G .fmor (RCP.in₁ {X} {Y}) ⟩)
+          [ G .fmor (RootedMu.elem-in (RCP.coprod X Y) (inj₂ y)) ]
+
+  z : Setoid.Carrier (G .fobj (RML.Lf C) .fobj a)
+  z = G .fmor h .transf a .PS._⇒_.func (lift w)
+
+  cvr : CF.Rel.IdxCover a
+  cvr .CF.Rel.IdxCover.S = FamC.Obj.idx a
+  cvr .CF.Rel.IdxCover.D = FC.fibres a
+  cvr .CF.Rel.IdxCover.iso = FC.fib-iso a
+
+  cov : CF.Rel.Cover a
+  cov = CF.Rel.idx cvr
+
+  xs : ∀ s → Setoid.Carrier (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s))
+  xs s = G .fobj (RML.Lf C) .fmor (CF.Rel.cInj cov s) .PS._⇒_.func z
+
+  eqs : ∀ s → Setoid._≈_ (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s)) (xs s)
+                (G .fobj (RML.Lf C) .fmor (CF.Rel.cInj cov s) .PS._⇒_.func z)
+  eqs s = Setoid.refl (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s))
+
+  ts : ∀ s → CvM.Context (G .fobj (RML.Lf C)) (RtJoin C) (CF.Rel.cDom cov s) (xs s)
+  ts (lift v) = CvM.leaf (go (src .pred-mor (CF.Rel.cInj cov (lift v)) .*⊑* (lift w) hyp))
+    where
+    go : src .pred (CF.Rel.cDom cov (lift v)) .pred
+           (G .fobj RML.simple[ PS.𝟙 , Y .RML.fam .RML.fm y ]
+              .fmor (CF.Rel.cInj cov (lift v)) .PS._⇒_.func (lift w)) →
+         RtJoin C .pred (CF.Rel.cDom cov (lift v)) .pred (xs (lift v))
+    go (lift u , qu , lift eqv) =
+      ⊥-elim (eqv .RML._≃_.idxf-eq .PS._≃m_.func-eq {lift ttS} {lift ttS} tt)
 
 dist : ∀ {V} {Pp Q S : Predicate V} → (Pp && (Q ++ S)) ⊑ ((Pp && Q) ++ (Pp && S))
 dist = &&-++-distrib
