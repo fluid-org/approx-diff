@@ -23,7 +23,7 @@ open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import commutative-monoid using (CommutativeMonoid)
 open import lifting using (Lifting)
-open import prop-setoid using (IsEquivalence; Setoid)
+open import prop-setoid using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_)
 import fam
 import polynomial-functor
@@ -175,6 +175,79 @@ sptF {X} .famf ._⇒f_.transf x = spt
 sptF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
   ≈-trans (spt-natural (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e))
           (≈-sym id-left)
+
+-- A map out of a biproduct against a pairing splits into its two legs.
+cop-pair : ∀ {a b c d : obj} (f : a ⇒ c) (g : b ⇒ c) (u : d ⇒ a) (v : d ⇒ b) →
+           (cop f g ∘ pair u v) ≈ ((f ∘ u) CME.+m (g ∘ v))
+cop-pair f g u v =
+  ≈-trans (CME.comp-bilinear₂ _ _ _)
+    (CME.homCM _ _ .CommutativeMonoid.+-cong
+      (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (Biproduct.copair-in₁ (BP _ _) _ _) ≈-refl))
+      (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (Biproduct.copair-in₂ (BP _ _) _ _) ≈-refl)))
+
+-- Transporting under a root against an assembled argument: the payload is eliminated in context,
+-- and the root it carried joins the support that the elimination charges at the payload.
+under-root-pair : ∀ {W Γ X Y : obj} (r : prod Γ X ⇒ Y)
+                  (g : W ⇒ Γ) (u : W ⇒ X) (t : W ⇒ 𝟙c) →
+                  (under-root r ∘ pair g (cop inj root ∘ pair u t))
+                    ≈ (cop inj root ∘ pair (r ∘ pair g u) ((spt ∘ u) CME.+m t))
+under-root-pair {W} {Γ} {X} {Y} r g u t = begin
+    under-root r ∘ pair g (cop inj root ∘ pair u t)
+  ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (cop-pair _ _ _ _)) ⟩
+    under-root r ∘ pair g ((inj ∘ u) CME.+m (root ∘ t))
+  ≈⟨ cop-pair _ _ _ _ ⟩
+    ((inj ∘ (r ∘ i₁)) ∘ g) CME.+m (affine root (inj ∘ (r ∘ i₂)) ∘ ((inj ∘ u) CME.+m (root ∘ t)))
+  ≈⟨ +-cong ≈-refl (CME.comp-bilinear₂ _ _ _) ⟩
+    ((inj ∘ (r ∘ i₁)) ∘ g)
+      CME.+m ((affine root (inj ∘ (r ∘ i₂)) ∘ (inj ∘ u))
+                CME.+m (affine root (inj ∘ (r ∘ i₂)) ∘ (root ∘ t)))
+  ≈⟨ +-cong ≈-refl
+       (+-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (affine-inj _ _) ≈-refl))
+               (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (affine-root _ _) ≈-refl))) ⟩
+    ((inj ∘ (r ∘ i₁)) ∘ g)
+      CME.+m (((((root ∘ spt) CME.+m (inj ∘ (r ∘ i₂))) ∘ u)) CME.+m (root ∘ t))
+  ≈⟨ +-cong ≈-refl (+-cong (CME.comp-bilinear₁ _ _ _) ≈-refl) ⟩
+    ((inj ∘ (r ∘ i₁)) ∘ g)
+      CME.+m ((((root ∘ spt) ∘ u) CME.+m ((inj ∘ (r ∘ i₂)) ∘ u)) CME.+m (root ∘ t))
+  ≈˘⟨ +-assoc ⟩
+    (((inj ∘ (r ∘ i₁)) ∘ g)
+       CME.+m (((root ∘ spt) ∘ u) CME.+m ((inj ∘ (r ∘ i₂)) ∘ u))) CME.+m (root ∘ t)
+  ≈⟨ +-cong (+-cong ≈-refl +-comm) ≈-refl ⟩
+    (((inj ∘ (r ∘ i₁)) ∘ g)
+       CME.+m (((inj ∘ (r ∘ i₂)) ∘ u) CME.+m ((root ∘ spt) ∘ u))) CME.+m (root ∘ t)
+  ≈⟨ +-cong (≈-sym +-assoc) ≈-refl ⟩
+    ((((inj ∘ (r ∘ i₁)) ∘ g) CME.+m ((inj ∘ (r ∘ i₂)) ∘ u))
+       CME.+m ((root ∘ spt) ∘ u)) CME.+m (root ∘ t)
+  ≈⟨ +-assoc ⟩
+    (((inj ∘ (r ∘ i₁)) ∘ g) CME.+m ((inj ∘ (r ∘ i₂)) ∘ u))
+      CME.+m (((root ∘ spt) ∘ u) CME.+m (root ∘ t))
+  ≈˘⟨ +-cong payload-leg root-leg ⟩
+    (inj ∘ (r ∘ pair g u)) CME.+m (root ∘ ((spt ∘ u) CME.+m t))
+  ≈˘⟨ cop-pair _ _ _ _ ⟩
+    cop inj root ∘ pair (r ∘ pair g u) ((spt ∘ u) CME.+m t)
+  ∎
+  where
+  open ≈-Reasoning isEquiv
+  i₁ = Biproduct.in₁ (BP Γ X)
+  i₂ = Biproduct.in₂ (BP Γ X)
+
+  +-cong = λ {x} {y} {f₁} {f₂} {g₁} {g₂} →
+           CME.homCM x y .CommutativeMonoid.+-cong {f₁} {f₂} {g₁} {g₂}
+  +-assoc = λ {x} {y} {f₁} {f₂} {f₃} →
+            CME.homCM x y .CommutativeMonoid.+-assoc {f₁} {f₂} {f₃}
+  +-comm = λ {x} {y} {f₁} {f₂} → CME.homCM x y .CommutativeMonoid.+-comm {f₁} {f₂}
+
+  payload-leg : (inj ∘ (r ∘ pair g u))
+                  ≈ (((inj ∘ (r ∘ i₁)) ∘ g) CME.+m ((inj ∘ (r ∘ i₂)) ∘ u))
+  payload-leg =
+    ≈-trans (∘-cong ≈-refl (CME.comp-bilinear₂ _ _ _))
+    (≈-trans (CME.comp-bilinear₂ _ _ _)
+             (+-cong (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _)))
+                     (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _)))))
+
+  root-leg : (root ∘ ((spt ∘ u) CME.+m t)) ≈ (((root ∘ spt) ∘ u) CME.+m (root ∘ t))
+  root-leg =
+    ≈-trans (CME.comp-bilinear₂ _ _ _) (+-cong (≈-sym (assoc _ _ _)) ≈-refl)
 
 -- The action of the lifting commutes with the assembly at an isomorphism: the injection is natural
 -- only there, while the root is natural always.
