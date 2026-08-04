@@ -14,7 +14,8 @@ open import Level using (Level; 0ℓ; lift)
 open import Data.Unit using () renaming (tt to ttS)
 open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift)
 open import prop-setoid as PS using (Setoid; module ≈-Reasoning)
-open import categories using (Category; HasTerminal; HasProducts; HasWeakExponentials)
+open import categories
+  using (Category; HasTerminal; HasProducts; HasCoproducts; HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import lifting using (Lifting)
 open import functor using (Functor; NatTrans)
@@ -76,6 +77,38 @@ private
   module FamC = fam.CategoryOfFamilies 0ℓ 0ℓ 𝒞₀
   module FC = fam-fibre-cover 0ℓ 0ℓ 𝒞₀
   module CvM = CF.Rel.CvM
+  module RCP = HasCoproducts RML.coproducts
+
+  strip : ∀ {A B : RML.obj} (t : A RML.⇒ B) →
+          RML._≈_ (RML._∘_ (RML.id _)
+                     (RML._∘_ (RML.id _) (RML._∘_ (RML.id _) (RML._∘_ t (RML.id _))))) t
+  strip t =
+    RML.≈-trans RML.id-left
+      (RML.≈-trans RML.id-left (RML.≈-trans RML.id-left RML.id-right))
+
+in₁-extract : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj X)} →
+              ((Q ⟨ G .fmor (RCP.in₁ {X} {Y}) ⟩) [ G .fmor (RCP.in₁ {X} {Y}) ]) ⊑ Q
+in₁-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
+  Q .pred a .pred-≃ (lift mono) qu'
+  where
+  mono : FD._≈_ u' u
+  mono .RML._≃_.idxf-eq .PS._≃m_.func-eq p = eq .RML._≃_.idxf-eq .PS._≃m_.func-eq p
+  mono .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+    RML.≈-trans (RML.∘-cong RML.≈-refl (RML.≈-sym (strip (u' .RML.famf ._⇒f_.transf i))))
+                (RML.≈-trans (eq .RML._≃_.famf-eq ._≃f_.transf-eq)
+                             (strip (u .RML.famf ._⇒f_.transf i)))
+
+in₂-extract : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj Y)} →
+              ((Q ⟨ G .fmor (RCP.in₂ {X} {Y}) ⟩) [ G .fmor (RCP.in₂ {X} {Y}) ]) ⊑ Q
+in₂-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
+  Q .pred a .pred-≃ (lift mono) qu'
+  where
+  mono : FD._≈_ u' u
+  mono .RML._≃_.idxf-eq .PS._≃m_.func-eq p = eq .RML._≃_.idxf-eq .PS._≃m_.func-eq p
+  mono .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+    RML.≈-trans (RML.∘-cong RML.≈-refl (RML.≈-sym (strip (u' .RML.famf ._⇒f_.transf i))))
+                (RML.≈-trans (eq .RML._≃_.famf-eq ._≃f_.transf-eq)
+                             (strip (u .RML.famf ._⇒f_.transf i)))
 
 -- The singleton family at the lifting's unit.
 𝟙L : RML.Obj
