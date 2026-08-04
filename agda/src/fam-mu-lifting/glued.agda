@@ -29,24 +29,50 @@ module Gl = glueing-simple R.cat 𝒫 𝒫P system G
 open Gl.Obj
 open Gl._=>_
 
--- The lifting on glued objects: the payload predicate pushed under the injection, joined with the
--- root part.
+private module 𝒫C = Category 𝒫
+
+-- The lifting on glued objects: a payload predicate assembled with a root over it, joined with the
+-- root part. The root joined onto the payload is left free, because an elimination charges the root
+-- at the support of the value it consumed, which the payload's own support need not dominate.
 Lf-Gl : Gl.Obj → Gl.Obj
 Lf-Gl X .carrier = R.Lf (X .carrier)
-Lf-Gl X .pred = (X .pred ⟨ G .fmor (R.injF {X = X .carrier}) ⟩) ++ Rt (X .carrier)
+Lf-Gl X .pred =
+  ((X .pred [ G .fmor (R.Fam𝒞-P.p₁ {X .carrier} {R.𝟙L}) ])
+     ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+    ++ Rt (X .carrier)
 
 injF-Gl : ∀ {X} → X Gl.=> Lf-Gl X
 injF-Gl {X} .morph = R.injF
 injF-Gl {X} .presv = begin
     X .pred
-  ≤⟨ unit (G .fmor R.injF) ⟩
-    (X .pred ⟨ G .fmor (R.injF {X = X .carrier}) ⟩) [ G .fmor R.injF ]
+  ≤⟨ []-id ⟩
+    X .pred [ 𝒫C.id _ ]
+  ≤⟨ []-cong (𝒫C.≈-sym (G .fmor-id)) ⟩
+    X .pred [ G .fmor (R.Fam𝒞.id (X .carrier)) ]
+  ≤⟨ []-cong (G .fmor-cong (R.Fam𝒞.≈-sym (R.Fam𝒞-P.pair-p₁ _ _))) ⟩
+    X .pred [ G .fmor (R.Fam𝒞._∘_ R.Fam𝒞-P.p₁ pr) ]
+  ≤⟨ []-cong (G .fmor-comp _ _) ⟩
+    X .pred [ G .fmor R.Fam𝒞-P.p₁ 𝒫C.∘ G .fmor pr ]
+  ≤⟨ []-comp⁻¹ _ _ ⟩
+    (X .pred [ G .fmor (R.Fam𝒞-P.p₁ {X .carrier} {R.𝟙L}) ]) [ G .fmor pr ]
+  ≤⟨ (unit (G .fmor R.assembleF)) [ G .fmor pr ]m ⟩
+    (((X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+       [ G .fmor R.assembleF ]) [ G .fmor pr ]
+  ≤⟨ []-comp _ _ ⟩
+    ((X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+      [ G .fmor R.assembleF 𝒫C.∘ G .fmor pr ]
+  ≤⟨ []-cong (𝒫C.≈-sym (G .fmor-comp _ _)) ⟩
+    ((X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+      [ G .fmor (R.Fam𝒞._∘_ R.assembleF pr) ]
+  ≤⟨ []-cong (G .fmor-cong R.injF-assemble) ⟩
+    ((X .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {X .carrier}) ⟩)
+      [ G .fmor R.injF ]
   ≤⟨ (++-isJoin .IsJoin.inl) [ G .fmor R.injF ]m ⟩
-    ((X .pred ⟨ G .fmor (R.injF {X = X .carrier}) ⟩) ++ Rt (X .carrier)) [ G .fmor R.injF ]
+    Lf-Gl X .pred [ G .fmor R.injF ]
   ∎
-  where open basics.≤-Reasoning ⊑-isPreorder
-
-private module 𝒫C = Category 𝒫
+  where
+  open basics.≤-Reasoning ⊑-isPreorder
+  pr = R.Fam𝒞-P.pair (R.Fam𝒞.id (X .carrier)) R.sptF
 
 -- The product of glued objects, as the glueing category forms it: the product of the carriers
 -- with the meet of the reindexed predicates.
@@ -75,109 +101,57 @@ _[×]_ : Gl.Obj → Gl.Obj → Gl.Obj
                ([]-comp⁻¹ _ _)))))))
     []-&&
 
--- The glued lifting is functorial at morphisms whose payload square with the injection holds,
--- which the lifting grants at fibrewise isomorphisms; the root part is supplied by the caller,
--- being knowledge about the root predicate.
+-- The glued lifting is functorial at morphisms whose payload square with the assembly holds, which
+-- the lifting grants at fibrewise isomorphisms; the root part is supplied by the caller, being
+-- knowledge about the root predicate.
 Lf-Gl-map : ∀ {X Y} (f : X Gl.=> Y) →
-            R.Fam𝒞._≈_ (R.Fam𝒞._∘_ (R.Lf-map (f .morph)) R.injF)
-                        (R.Fam𝒞._∘_ R.injF (f .morph)) →
+            R.Fam𝒞._≈_ (R.Fam𝒞._∘_ (R.Lf-map (f .morph)) R.assembleF)
+                        (R.Fam𝒞._∘_ R.assembleF
+                           (R.Fam𝒞-P.prod-m (f .morph) (R.Fam𝒞.id R.𝟙L))) →
             (Rt (X .carrier) ⊑ (Rt (Y .carrier) [ G .fmor (R.Lf-map (f .morph)) ])) →
             Lf-Gl X Gl.=> Lf-Gl Y
 Lf-Gl-map f sq rt .morph = R.Lf-map (f .morph)
 Lf-Gl-map {X} {Y} f sq rt .presv =
-  ++-isJoin .IsJoin.[_,_]
-    (adjoint₂
-      (⊑-trans (f .presv)
-      (⊑-trans ((injF-Gl {Y} .presv) [ G .fmor (f .morph) ]m)
-      (⊑-trans ([]-comp _ _)
-      (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
-      (⊑-trans ([]-cong (G .fmor-cong (R.Fam𝒞.≈-sym sq)))
-      (⊑-trans ([]-cong (G .fmor-comp _ _))
-               ([]-comp⁻¹ _ _))))))))
+  ++-isJoin .IsJoin.[_,_] (adjoint₂ payload)
     (⊑-trans rt ((++-isJoin .IsJoin.inr) [ G .fmor (R.Lf-map (f .morph)) ]m))
+  where
+  h = f .morph
+  pm = R.Fam𝒞-P.prod-m h (R.Fam𝒞.id R.𝟙L)
 
--- The eliminator on glued objects, over the underlying eliminator. The lifted predicate splits
--- into its payload and root parts and each branch is a parameter: the root branch is instance
--- knowledge about the eliminator's constant at bare roots, and the payload branch is predicate
--- preservation for `elim-inj`, the closed form of the eliminator restricted along the payload
--- injection. The payload branch transports to the eliminator itself by the Beck-Chevalley square
--- at the second projection, Frobenius reciprocity and the restriction law `elimF-inj`.
-module elim
-    (dist : ∀ {V} {P Q S : Predicate V} → (P && (Q ++ S)) ⊑ ((P && Q) ++ (P && S)))
-    (frob : ∀ {V V'} {P : Predicate V'} {Q : Predicate V} {α : V 𝒫C.⇒ V'} →
-            (P && (Q ⟨ α ⟩)) ⊑ (((P [ α ]) && Q) ⟨ α ⟩))
-    (BC : ∀ {W U V : R.Obj} (h : R.Mor U V) {Q : Predicate (G .fobj U)} →
-          ((Q ⟨ G .fmor h ⟩) [ G .fmor (R.Fam𝒞-P.p₂ {W} {V}) ])
-            ⊑ ((Q [ G .fmor (R.Fam𝒞-P.p₂ {W} {U}) ])
-                 ⟨ G .fmor (R.Fam𝒞-P.pair R.Fam𝒞-P.p₁ (R.Fam𝒞._∘_ h R.Fam𝒞-P.p₂)) ⟩))
-    {Γ X C : Gl.Obj} (ptC : R.Pointed (C .carrier))
-    (f : R.Mor (R.Fam𝒞-P.prod (Γ .carrier) (X .carrier)) (C .carrier))
-    (payload : (Γ [×] X) .pred ⊑ (C .pred [ G .fmor (R.elim-inj ptC f) ]))
-    (root : ((Γ .pred [ G .fmor R.Fam𝒞-P.p₁ ]) && (Rt (X .carrier) [ G .fmor R.Fam𝒞-P.p₂ ]))
-            ⊑ (C .pred [ G .fmor (R.elimF ptC f) ]))
-    where
-
-  private
-    Γc = Γ .carrier
-    Xc = X .carrier
-    em = R.elimF ptC f
-    pr = R.Fam𝒞-P.pair (R.Fam𝒞-P.p₁ {Γc} {Xc}) (R.Fam𝒞._∘_ R.injF (R.Fam𝒞-P.p₂ {Γc} {Xc}))
-
-    -- The closed-form restriction is the eliminator after the payload injection in context.
-    bridge : R.Fam𝒞._≈_ (R.elim-inj ptC f) (R.Fam𝒞._∘_ em pr)
-    bridge =
-      R.Fam𝒞.≈-trans (R.Fam𝒞.≈-sym (R.elimF-inj ptC f))
-        (R.Fam𝒞.∘-cong R.Fam𝒞.≈-refl (R.Fam𝒞-P.pair-cong R.Fam𝒞.id-left R.Fam𝒞.≈-refl))
-
-    -- The context leg passes the pairing untouched.
-    ctx-fix : ((Γ .pred [ G .fmor (R.Fam𝒞-P.p₁ {Γc} {R.Lf Xc}) ]) [ G .fmor pr ])
-              ⊑ (Γ .pred [ G .fmor (R.Fam𝒞-P.p₁ {Γc} {Xc}) ])
-    ctx-fix =
-      ⊑-trans ([]-comp _ _)
-      (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
-               ([]-cong (G .fmor-cong (R.Fam𝒞-P.pair-p₁ _ _))))
-
-    payload-leg : ((Γ .pred [ G .fmor (R.Fam𝒞-P.p₁ {Γc} {R.Lf Xc}) ])
-                    && ((X .pred ⟨ G .fmor R.injF ⟩) [ G .fmor (R.Fam𝒞-P.p₂ {Γc} {R.Lf Xc}) ]))
-                  ⊑ (C .pred [ G .fmor em ])
-    payload-leg = begin
-        (Γ .pred [ G .fmor (R.Fam𝒞-P.p₁ {Γc} {R.Lf Xc}) ])
-          && ((X .pred ⟨ G .fmor R.injF ⟩) [ G .fmor (R.Fam𝒞-P.p₂ {Γc} {R.Lf Xc}) ])
-      ≤⟨ IsMeet.mono &&-isMeet (⊑-isPreorder .IsPreorder.refl) (BC R.injF) ⟩
-        (Γ .pred [ G .fmor (R.Fam𝒞-P.p₁ {Γc} {R.Lf Xc}) ])
-          && ((X .pred [ G .fmor (R.Fam𝒞-P.p₂ {Γc} {Xc}) ]) ⟨ G .fmor pr ⟩)
-      ≤⟨ frob ⟩
-        (((Γ .pred [ G .fmor (R.Fam𝒞-P.p₁ {Γc} {R.Lf Xc}) ]) [ G .fmor pr ])
-          && (X .pred [ G .fmor (R.Fam𝒞-P.p₂ {Γc} {Xc}) ])) ⟨ G .fmor pr ⟩
-      ≤⟨ (IsMeet.mono &&-isMeet ctx-fix (⊑-isPreorder .IsPreorder.refl)) ⟨ G .fmor pr ⟩m ⟩
-        ((Γ [×] X) .pred) ⟨ G .fmor pr ⟩
-      ≤⟨ payload ⟨ G .fmor pr ⟩m ⟩
-        (C .pred [ G .fmor (R.elim-inj ptC f) ]) ⟨ G .fmor pr ⟩
-      ≤⟨ ([]-cong (G .fmor-cong bridge)) ⟨ G .fmor pr ⟩m ⟩
-        (C .pred [ G .fmor (R.Fam𝒞._∘_ em pr) ]) ⟨ G .fmor pr ⟩
-      ≤⟨ ([]-cong (G .fmor-comp _ _)) ⟨ G .fmor pr ⟩m ⟩
-        (C .pred [ G .fmor em 𝒫C.∘ G .fmor pr ]) ⟨ G .fmor pr ⟩
-      ≤⟨ ([]-comp⁻¹ _ _) ⟨ G .fmor pr ⟩m ⟩
-        ((C .pred [ G .fmor em ]) [ G .fmor pr ]) ⟨ G .fmor pr ⟩
-      ≤⟨ counit _ ⟩
-        C .pred [ G .fmor em ]
-      ∎
-      where open basics.≤-Reasoning ⊑-isPreorder
-
-  elimF-Gl : (Γ [×] Lf-Gl X) Gl.=> C
-  elimF-Gl .morph = em
-  elimF-Gl .presv = begin
-      (Γ .pred [ G .fmor R.Fam𝒞-P.p₁ ])
-        && (((X .pred ⟨ G .fmor R.injF ⟩) ++ Rt Xc) [ G .fmor R.Fam𝒞-P.p₂ ])
-    ≤⟨ IsMeet.mono &&-isMeet (⊑-isPreorder .IsPreorder.refl) []-++ ⟩
-      (Γ .pred [ G .fmor R.Fam𝒞-P.p₁ ])
-        && (((X .pred ⟨ G .fmor R.injF ⟩) [ G .fmor R.Fam𝒞-P.p₂ ])
-              ++ (Rt Xc [ G .fmor R.Fam𝒞-P.p₂ ]))
-    ≤⟨ dist ⟩
-      ((Γ .pred [ G .fmor R.Fam𝒞-P.p₁ ])
-         && ((X .pred ⟨ G .fmor R.injF ⟩) [ G .fmor R.Fam𝒞-P.p₂ ]))
-        ++ ((Γ .pred [ G .fmor R.Fam𝒞-P.p₁ ]) && (Rt Xc [ G .fmor R.Fam𝒞-P.p₂ ]))
-    ≤⟨ ++-isJoin .IsJoin.[_,_] payload-leg root ⟩
-      C .pred [ G .fmor em ]
+  payload : (X .pred [ G .fmor (R.Fam𝒞-P.p₁ {X .carrier} {R.𝟙L}) ])
+              ⊑ ((Lf-Gl Y .pred [ G .fmor (R.Lf-map h) ]) [ G .fmor R.assembleF ])
+  payload = begin
+      X .pred [ G .fmor R.Fam𝒞-P.p₁ ]
+    ≤⟨ (f .presv) [ G .fmor R.Fam𝒞-P.p₁ ]m ⟩
+      (Y .pred [ G .fmor h ]) [ G .fmor R.Fam𝒞-P.p₁ ]
+    ≤⟨ []-comp _ _ ⟩
+      Y .pred [ G .fmor h 𝒫C.∘ G .fmor R.Fam𝒞-P.p₁ ]
+    ≤⟨ []-cong (𝒫C.≈-sym (G .fmor-comp _ _)) ⟩
+      Y .pred [ G .fmor (R.Fam𝒞._∘_ h R.Fam𝒞-P.p₁) ]
+    ≤⟨ []-cong (G .fmor-cong (R.Fam𝒞.≈-sym (R.Fam𝒞-P.pair-p₁ _ _))) ⟩
+      Y .pred [ G .fmor (R.Fam𝒞._∘_ R.Fam𝒞-P.p₁ pm) ]
+    ≤⟨ []-cong (G .fmor-comp _ _) ⟩
+      Y .pred [ G .fmor R.Fam𝒞-P.p₁ 𝒫C.∘ G .fmor pm ]
+    ≤⟨ []-comp⁻¹ _ _ ⟩
+      (Y .pred [ G .fmor (R.Fam𝒞-P.p₁ {Y .carrier} {R.𝟙L}) ]) [ G .fmor pm ]
+    ≤⟨ (unit (G .fmor R.assembleF)) [ G .fmor pm ]m ⟩
+      (((Y .pred [ G .fmor R.Fam𝒞-P.p₁ ]) ⟨ G .fmor (R.assembleF {Y .carrier}) ⟩)
+         [ G .fmor R.assembleF ]) [ G .fmor pm ]
+    ≤⟨ ((++-isJoin .IsJoin.inl) [ G .fmor R.assembleF ]m) [ G .fmor pm ]m ⟩
+      ((Lf-Gl Y .pred) [ G .fmor R.assembleF ]) [ G .fmor pm ]
+    ≤⟨ []-comp _ _ ⟩
+      Lf-Gl Y .pred [ G .fmor R.assembleF 𝒫C.∘ G .fmor pm ]
+    ≤⟨ []-cong (𝒫C.≈-sym (G .fmor-comp _ _)) ⟩
+      Lf-Gl Y .pred [ G .fmor (R.Fam𝒞._∘_ R.assembleF pm) ]
+    ≤⟨ []-cong (G .fmor-cong (R.Fam𝒞.≈-sym sq)) ⟩
+      Lf-Gl Y .pred [ G .fmor (R.Fam𝒞._∘_ (R.Lf-map h) R.assembleF) ]
+    ≤⟨ []-cong (G .fmor-comp _ _) ⟩
+      Lf-Gl Y .pred [ G .fmor (R.Lf-map h) 𝒫C.∘ G .fmor R.assembleF ]
+    ≤⟨ []-comp⁻¹ _ _ ⟩
+      (Lf-Gl Y .pred [ G .fmor (R.Lf-map h) ]) [ G .fmor R.assembleF ]
     ∎
     where open basics.≤-Reasoning ⊑-isPreorder
+
+-- The whole-object glued eliminator is retired: the fold now works at the singletons, and the
+-- eliminator's obligations have to be restated against the assembled payload, whose root the
+-- elimination charges. The previous version is at commit 72adae86.
