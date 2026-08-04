@@ -15,6 +15,7 @@ open import Data.Unit using () renaming (tt to ttS)
 open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift; ⊥-elim; tt)
 open import Data.Sum using (inj₁; inj₂)
 open import prop-setoid as PS using (Setoid; module ≈-Reasoning)
+open import basics using (IsBigJoin; IsClosureOp)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
@@ -63,7 +64,7 @@ open CF.Rel using (G; PSh⟨𝒞⟩; PSh⟨𝒞⟩-products; PSh⟨𝒞⟩-syste
 module RML = fam-mu-lifting.laws 0ℓ 0ℓ 𝒟₀T CM' BP' Lft'
 
 open PredicateSystem PSh⟨𝒞⟩-system
-open ClosureOp closureOp using (𝐂)
+open ClosureOp closureOp using (𝐂; 𝐂-isClosure; 𝐂-[]; 𝐂-[]⁻¹)
 
 open NatTrans
 open CF.Rel.PShPredicate
@@ -125,8 +126,11 @@ root-mor C i .RML.famf ._⇒f_.natural _ =
 
 -- Definable root selections: up to cover refinement, the maps into a lifted
 -- family that factor through a bare root.
+RtJoin : ∀ (C : RML.Obj) → Predicate (G .fobj (RML.Lf C))
+RtJoin C = ⋁ (Setoid.Carrier (RML.idx C)) (λ i → TT ⟨ G .fmor (root-mor C i) ⟩)
+
 Rt : ∀ (C : RML.Obj) → Predicate (G .fobj (RML.Lf C))
-Rt C = 𝐂 (⋁ (Setoid.Carrier (RML.idx C)) (λ i → TT ⟨ G .fmor (root-mor C i) ⟩))
+Rt C = 𝐂 (RtJoin C)
 
 -- The glued rooted μ interface at the family-level nerve.
 module RootedMu =
@@ -196,8 +200,29 @@ sing-split {X} {Q} .*⊑* a .*⊑* (lift m) qm = CvM.node cov xs ts eqs
            (Q .pred-mor (CF.Rel.cInj cov (lift v)) .*⊑* (lift m) qm)
 
 private
-  RtJoin : ∀ (C : RML.Obj) → Predicate (G .fobj (RML.Lf C))
-  RtJoin C = ⋁ (Setoid.Carrier (RML.idx C)) (λ i → TT ⟨ G .fmor (root-mor C i) ⟩)
+  root-square : ∀ {C D : RML.Obj} (h : RML.Mor C D) (i : Setoid.Carrier (RML.idx C)) →
+                FD._≈_ (root-mor D (h .RML.idxf .PS._⇒_.func i))
+                       (FD._∘_ (RML.Lf-map h) (root-mor C i))
+  root-square {C} {D} h i .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = Setoid.refl (RML.idx D)
+  root-square {C} {D} h i .RML._≃_.famf-eq ._≃f_.transf-eq =
+    RML.≈-trans (RML.Lmap-root _)
+                (RML.≈-sym (RML.≈-trans RML.id-left (RML.Lmap-root _)))
+
+Rt-iso : ∀ {C D : RML.Obj} (h : RML.Mor C D)
+         (hinv : ∀ x → RML._⇒_ (D .RML.fam .RML.fm (h .RML.idxf .PS._⇒_.func x))
+                                (C .RML.fam .RML.fm x)) →
+         (∀ x → RML._≈_ (RML._∘_ (h .RML.famf ._⇒f_.transf x) (hinv x)) (RML.id _)) →
+         (∀ x → RML._≈_ (RML._∘_ (hinv x) (h .RML.famf ._⇒f_.transf x)) (RML.id _)) →
+         Rt C ⊑ (Rt D [ G .fmor (RML.Lf-map h) ])
+Rt-iso {C} {D} h hinv e₁ e₂ =
+  ⊑-trans (IsClosureOp.mono 𝐂-isClosure (IsBigJoin.least ⋁-isJoin _ _ _ step)) 𝐂-[]
+  where
+  step : ∀ i → (TT ⟨ G .fmor (root-mor C i) ⟩) ⊑ (RtJoin D [ G .fmor (RML.Lf-map h) ])
+  step i =
+    adjoint₂
+      (⊑-trans (adjoint₁ (IsBigJoin.upper ⋁-isJoin _ _ (h .RML.idxf .PS._⇒_.func i)))
+      (⊑-trans ([]-cong (G .fmor-cong (root-square h i)))
+      (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))
 
 disjoint₁ : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj Y)} (x : Setoid.Carrier (RML.idx X))
             {C : RML.Obj}
