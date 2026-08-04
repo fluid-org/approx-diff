@@ -19,7 +19,7 @@ open import lifting using (Lifting)
 open import polynomial-functor using (Poly; extend)
 import lifting-fold
 
-module lifting-interp
+module unused.lifting-interp
   {o m e} {𝒞 : Category o m e}
   (𝒞T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)

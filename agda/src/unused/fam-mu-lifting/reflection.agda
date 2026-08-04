@@ -24,7 +24,7 @@ open import indexed-family using (_⇒f_)
 import fam-mu-lifting.laws
 import fam-mu-lifting.lambek
 
-module fam-mu-lifting.reflection {o m e} (os es : Level) {𝒞 : Category o m e}
+module unused.fam-mu-lifting.reflection {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
     {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
 
