@@ -113,7 +113,7 @@ private
 
 ------------------------------------------------------------------------------
 -- Kripke Predicates “of varying arity”
-open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒞 renaming (PSh to PSh⟨𝒞⟩; products to PSh⟨𝒞⟩-products) using (module DayMonad; module UnaryDay; Coend; Cowedge)
+open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒞 renaming (PSh to PSh⟨𝒞⟩; products to PSh⟨𝒞⟩-products) using (module DayMonad; module UnaryDay; Coend; Cowedge) public
 open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒟 renaming (よ to 𝒟よ) using ()
 
 open DayMonad 𝒞M using (monad-hat)
@@ -294,6 +294,7 @@ open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒞
   using (_⊑_; module CoverMonad;
          _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop;
          ⋁; module Monad-hat-pred; &&-++-distrib; &&-⟨⟩-frobenius; ⟨⟩-[]-BC)
+  public
 
 module PSh⟨𝒞⟩-system = PredicateSystem PSh⟨𝒞⟩-system
 
@@ -425,7 +426,7 @@ covPull (idx c) g = pb
     pb .eq (lift s) = 𝒞.≈-trans (𝒞.assoc _ _ _) (stb .SI.IdxStableBits.eq s)
 
 open CvM
-open CvM.Closure covPull
+open CvM.Closure covPull public
 
 module MDistrib = Distrib 𝒞M.funct
 
