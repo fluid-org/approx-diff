@@ -224,6 +224,112 @@ Rt-iso {C} {D} h hinv e₁ e₂ =
       (⊑-trans ([]-cong (G .fmor-cong (root-square h i)))
       (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))
 
+Rt-iso⁻ : ∀ {C D : RML.Obj} (h : RML.Mor C D)
+          (hinv : ∀ x → RML._⇒_ (D .RML.fam .RML.fm (h .RML.idxf .PS._⇒_.func x))
+                                 (C .RML.fam .RML.fm x)) →
+          (∀ x → RML._≈_ (RML._∘_ (h .RML.famf ._⇒f_.transf x) (hinv x)) (RML.id _)) →
+          (∀ x → RML._≈_ (RML._∘_ (hinv x) (h .RML.famf ._⇒f_.transf x)) (RML.id _)) →
+          (Rt D [ G .fmor (RML.Lf-map h) ]) ⊑ Rt C
+Rt-iso⁻ {C} {D} h hinv e₁ e₂ =
+  ⊑-trans 𝐂-[]⁻¹
+          (⊑-trans (IsClosureOp.mono 𝐂-isClosure ψ) (IsClosureOp.closed 𝐂-isClosure))
+  where
+  src : Predicate (G .fobj (RML.Lf C))
+  src = RtJoin D [ G .fmor (RML.Lf-map h) ]
+
+  ψ : src ⊑ 𝐂 (RtJoin C)
+  ψ .*⊑* a .*⊑* (lift w) hyp = CvM.node cov xs ts eqs
+    where
+    cvr : CF.Rel.IdxCover a
+    cvr .CF.Rel.IdxCover.S = FamC.Obj.idx a
+    cvr .CF.Rel.IdxCover.D = FC.fibres a
+    cvr .CF.Rel.IdxCover.iso = FC.fib-iso a
+
+    cov : CF.Rel.Cover a
+    cov = CF.Rel.idx cvr
+
+    xs : ∀ s → Setoid.Carrier (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s))
+    xs s = G .fobj (RML.Lf C) .fmor (CF.Rel.cInj cov s) .PS._⇒_.func (lift w)
+
+    eqs : ∀ s → Setoid._≈_ (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s)) (xs s)
+                  (G .fobj (RML.Lf C) .fmor (CF.Rel.cInj cov s) .PS._⇒_.func (lift w))
+    eqs s = Setoid.refl (G .fobj (RML.Lf C) .fobj (CF.Rel.cDom cov s))
+
+    ts : ∀ s → CvM.Context (G .fobj (RML.Lf C)) (RtJoin C) (CF.Rel.cDom cov s) (xs s)
+    ts (lift v) = CvM.leaf (go (src .pred-mor (CF.Rel.cInj cov (lift v)) .*⊑* (lift w) hyp))
+      where
+      wv : RML.Mor (CF.FamF .fobj (CF.Rel.cDom cov (lift v))) (RML.Lf C)
+      wv = FD._∘_ w (CF.FamF .fmor (CF.Rel.cInj cov (lift v)))
+
+      iv : Setoid.Carrier (RML.idx C)
+      iv = wv .RML.idxf .PS._⇒_.func (lift ttS)
+
+      go : src .pred (CF.Rel.cDom cov (lift v)) .pred (xs (lift v)) →
+           RtJoin C .pred (CF.Rel.cDom cov (lift v)) .pred (xs (lift v))
+      go (j , (lift t , _ , lift eqj)) = iv , (lift t , (tt , lift sq))
+        where
+        sq : FD._≈_ (FD._∘_ (root-mor C iv) (FD._∘_ t (FD.id _))) wv
+        sq .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = Setoid.refl (RML.idx C)
+        sq .RML._≃_.famf-eq ._≃f_.transf-eq {x} = RML.≈-trans lhs main
+          where
+          T = t .RML.famf ._⇒f_.transf x
+          W = wv .RML.famf ._⇒f_.transf x
+          HS = h .RML.famf ._⇒f_.transf iv
+
+          reduce : ∀ {B₁ B₂} (s : RML._⇒_ B₁ B₂) →
+                   RML._≈_ (RML._∘_ (RML.Lmap s)
+                              (RML._∘_ (RML.id _)
+                                 (RML._∘_ (RML.root {B₁})
+                                    (RML._∘_ (RML.id _) (RML._∘_ T (RML.id _))))))
+                           (RML._∘_ (RML.root {B₂}) T)
+          reduce s =
+            RML.≈-trans
+              (RML.∘-cong RML.≈-refl
+                (RML.≈-trans RML.id-left
+                  (RML.∘-cong RML.≈-refl (RML.≈-trans RML.id-left RML.id-right))))
+              (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
+                           (RML.∘-cong (RML.Lmap-root s) RML.≈-refl))
+
+          lhs : RML._≈_ (RML._∘_ (RML.Lmap (C .RML.fam .RML.subst _))
+                           (RML._∘_ (RML.id _)
+                              (RML._∘_ RML.root
+                                 (RML._∘_ (RML.id _) (RML._∘_ T (RML.id _))))))
+                        (RML._∘_ RML.root T)
+          lhs = reduce _
+
+          rhs : RML._≈_ (RML._∘_ (RML.id _)
+                           (RML._∘_ (RML.Lmap HS)
+                              (RML._∘_ (RML.id _) (RML._∘_ W (RML.id _)))))
+                        (RML._∘_ (RML.Lmap HS) W)
+          rhs = RML.≈-trans RML.id-left
+                  (RML.∘-cong RML.≈-refl (RML.≈-trans RML.id-left RML.id-right))
+
+          EQ : RML._≈_ (RML._∘_ RML.root T) (RML._∘_ (RML.Lmap HS) W)
+          EQ = RML.≈-trans (RML.≈-sym (reduce (D .RML.fam .RML.subst _)))
+                 (RML.≈-trans (eqj .RML._≃_.famf-eq ._≃f_.transf-eq) rhs)
+
+          main : RML._≈_ (RML._∘_ RML.root T) W
+          main = begin
+              RML._∘_ RML.root T
+            ≈˘⟨ RML.∘-cong (RML.Lmap-root (hinv iv)) RML.≈-refl ⟩
+              RML._∘_ (RML._∘_ (RML.Lmap (hinv iv)) RML.root) T
+            ≈⟨ RML.assoc _ _ _ ⟩
+              RML._∘_ (RML.Lmap (hinv iv)) (RML._∘_ RML.root T)
+            ≈⟨ RML.∘-cong RML.≈-refl EQ ⟩
+              RML._∘_ (RML.Lmap (hinv iv)) (RML._∘_ (RML.Lmap HS) W)
+            ≈˘⟨ RML.assoc _ _ _ ⟩
+              RML._∘_ (RML._∘_ (RML.Lmap (hinv iv)) (RML.Lmap HS)) W
+            ≈˘⟨ RML.∘-cong (RML.Lmap-comp _ _) RML.≈-refl ⟩
+              RML._∘_ (RML.Lmap (RML._∘_ (hinv iv) HS)) W
+            ≈⟨ RML.∘-cong (RML.Lmap-cong (e₂ iv)) RML.≈-refl ⟩
+              RML._∘_ (RML.Lmap (RML.id _)) W
+            ≈⟨ RML.∘-cong RML.Lmap-id RML.≈-refl ⟩
+              RML._∘_ (RML.id _) W
+            ≈⟨ RML.id-left ⟩
+              W
+            ∎
+            where open ≈-Reasoning RML.isEquiv
+
 disjoint₁ : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj Y)} (x : Setoid.Carrier (RML.idx X))
             {C : RML.Obj}
             (h : RML.Mor RML.simple[ PS.𝟙 , X .RML.fam .RML.fm x ] (RML.Lf C)) →
