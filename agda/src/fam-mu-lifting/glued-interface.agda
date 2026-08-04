@@ -85,9 +85,11 @@ record GlMuObligations : Set ℓI where
                 {S : Predicate (G .fobj simple[ PS.𝟙 , Y .fam .fm y ])} →
                 ((Q ⟨ G .fmor (CP''.in₁ {X} {Y}) ⟩)
                    [ G .fmor (elem-in (CP''.coprod X Y) (inj₂ y)) ]) ⊑ S
-    BC-injF : ∀ {C : Obj} {Qp : Predicate (G .fobj C)} (x : C .idx .Carrier) →
-              ((Qp ⟨ G .fmor (injF {C}) ⟩) [ G .fmor (elem-in (Lf C) x) ])
-                ⊑ ((Qp [ G .fmor (elem-in C x) ]) ⟨ G .fmor (sing-inj C x) ⟩)
+    BC-assemble : ∀ {C : Obj} {Qp : Predicate (G .fobj (Fam𝒞-P.prod C 𝟙L))}
+                  (x : C .idx .Carrier) →
+                  ((Qp ⟨ G .fmor (assembleF {C}) ⟩) [ G .fmor (elem-in (Lf C) x) ])
+                    ⊑ ((Qp [ G .fmor (elem-in (Fam𝒞-P.prod C 𝟙L) (x , lift tt)) ])
+                         ⟨ G .fmor (sing-assemble C x) ⟩)
     sing-extract : ∀ {k} (δ₀ : Fin k → Obj) (δP₀ : ∀ i → Predicate (G .fobj (δ₀ i)))
                    (Q : Poly (suc k)) (pQ : PolyPred Q)
                    (t : Tree.W δ₀ ∣ Q ∣ (λ i → inj₁ i)) →
@@ -107,7 +109,8 @@ record GlMuObligations : Set ℓI where
                                           (γ , ι)) ])
                      ⊑ (Yg .pred [ G .fmor hs ])) →
                    ((((Γg .pred [ G .fmor Fam𝒞-P.p₁ ])
-                       && ((Xg .pred ⟨ G .fmor (injF {Xg .carrier}) ⟩)
+                       && (((Xg .pred [ G .fmor (Fam𝒞-P.p₁ {Xg .carrier} {𝟙L}) ])
+                              ⟨ G .fmor (assembleF {Xg .carrier}) ⟩)
                              [ G .fmor Fam𝒞-P.p₂ ]))
                        [ G .fmor (elem-in (Fam𝒞-P.prod (Γg .carrier) (Lf (Xg .carrier)))
                                           (γ , ι)) ])
@@ -145,7 +148,7 @@ module GlMu (Ob : GlMuObligations) where
       (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i))) where
 
     open GlInMap P pP δ δP Rt-iso Rt-iso⁻ in₁-extract in₂-extract
-                 disjoint₁ disjoint₂ BC-injF sing-extract sing-split public
+                 disjoint₁ disjoint₂ BC-assemble sing-extract sing-split public
 
     private
       module Mδ = MuPred δ δP

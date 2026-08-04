@@ -65,6 +65,13 @@ sing-inj C x .idxf = PS.idS PS.𝟙
 sing-inj C x .famf ._⇒f_.transf _ = inj
 sing-inj C x .famf ._⇒f_.natural _ = ≈-trans id-right (≈-sym id-left)
 
+sing-assemble : (C : Obj) (x : C .idx .Carrier) →
+                Mor simple[ PS.𝟙 , prod (C .fam .fm x) 𝟙c ]
+                    simple[ PS.𝟙 , L (C .fam .fm x) ]
+sing-assemble C x .idxf = PS.idS PS.𝟙
+sing-assemble C x .famf ._⇒f_.transf _ = cop inj root
+sing-assemble C x .famf ._⇒f_.natural _ = ≈-trans id-right (≈-sym id-left)
+
 sing-Lf : (C : Obj) (x : C .idx .Carrier) →
           Mor simple[ PS.𝟙 , L (C .fam .fm x) ] (Lf simple[ PS.𝟙 , C .fam .fm x ])
 sing-Lf C x .idxf = PS.idS PS.𝟙
@@ -138,6 +145,16 @@ injF-sing : ∀ (C : Obj) (x : C .idx .Carrier) →
 injF-sing C x ._≃_.idxf-eq .PS._≃m_.func-eq e = e
 injF-sing C x ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
   ≈-trans (∘-cong Lmap-id (≈-trans id-left id-left)) id-left
+
+-- Assembling at a singleton is the assembly of the singletons.
+assemble-sing : ∀ (C : Obj) (x : C .idx .Carrier) →
+                Fam𝒞._≈_ (Fam𝒞._∘_ (sing-Lf C x) (sing-assemble C x))
+                         (Fam𝒞._∘_ (assembleF {simple[ PS.𝟙 , C .fam .fm x ]})
+                                   (sing-pair C 𝟙L x (lift tt)))
+assemble-sing C x ._≃_.idxf-eq .PS._≃m_.func-eq e = e
+assemble-sing C x ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+  ≈-trans (∘-cong Lmap-id (≈-trans id-left id-left))
+          (≈-trans id-left (≈-sym (≈-trans id-left id-right)))
 
 p₁-sing : ∀ (C D : Obj) (x : C .idx .Carrier) (y : D .idx .Carrier) →
           Fam𝒞._≈_ (Fam𝒞._∘_ (Fam𝒞-P.p₁ {C} {D}) (elem-in (Fam𝒞-P.prod C D) (x , y)))
@@ -243,13 +260,11 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
                  {S : Predicate (G .fobj simple[ PS.𝟙 , Y .fam .fm y ])} →
                  ((Q ⟨ G .fmor (CP.in₁ {X} {Y}) ⟩)
                     [ G .fmor (elem-in (CP.coprod X Y) (inj₂ y)) ]) ⊑ S)
-    (BC-assemble : ∀ {C : Obj} {Qp : Predicate (G .fobj C)} (x : C .idx .Carrier) →
-                   (((Qp [ G .fmor (Fam𝒞-P.p₁ {C} {𝟙L}) ]) ⟨ G .fmor (assembleF {C}) ⟩)
-                      [ G .fmor (elem-in (Lf C) x) ])
-                     ⊑ ((((Qp [ G .fmor (elem-in C x) ])
-                            [ G .fmor (Fam𝒞-P.p₁ {simple[ PS.𝟙 , C .fam .fm x ]} {𝟙L}) ])
-                           ⟨ G .fmor (assembleF {simple[ PS.𝟙 , C .fam .fm x ]}) ⟩)
-                          [ G .fmor (sing-Lf C x) ]))
+    (BC-assemble : ∀ {C : Obj} {Qp : Predicate (G .fobj (Fam𝒞-P.prod C 𝟙L))}
+                   (x : C .idx .Carrier) →
+                   ((Qp ⟨ G .fmor (assembleF {C}) ⟩) [ G .fmor (elem-in (Lf C) x) ])
+                     ⊑ ((Qp [ G .fmor (elem-in (Fam𝒞-P.prod C 𝟙L) (x , lift tt)) ])
+                          ⟨ G .fmor (sing-assemble C x) ⟩))
     (sing-extract : ∀ {k} (δ₀ : Fin k → Obj) (δP₀ : ∀ i → Predicate (G .fobj (δ₀ i)))
                     (Q : Poly (suc k)) (pQ : PolyPred Q)
                     (t : Tree.W δ₀ ∣ Q ∣ (λ i → inj₁ i)) →
@@ -271,6 +286,37 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
     module M⁺ = MuPred δ' δP⁺
     module Mδ = MuPred δ δP
     module GR = GlReindex δ' δP⁺ δ δP Rt-iso
+
+  -- The payload branch of a lifted singleton: the assembled payload restricts to the assembled
+  -- payload of the singleton, the square at the assembly followed by the singleton comparisons.
+  BC-payload : ∀ {C : Obj} {Qp : Predicate (G .fobj C)} (x : C .idx .Carrier) →
+               (((Qp [ G .fmor (Fam𝒞-P.p₁ {C} {𝟙L}) ]) ⟨ G .fmor (assembleF {C}) ⟩)
+                  [ G .fmor (elem-in (Lf C) x) ])
+                 ⊑ ((((Qp [ G .fmor (elem-in C x) ])
+                        [ G .fmor (Fam𝒞-P.p₁ {simple[ PS.𝟙 , C .fam .fm x ]} {𝟙L}) ])
+                       ⟨ G .fmor (assembleF {simple[ PS.𝟙 , C .fam .fm x ]}) ⟩)
+                      [ G .fmor (sing-Lf C x) ])
+  BC-payload {C} {Qp} x =
+    ⊑-trans (BC-assemble x)
+    (⊑-trans (conv ⟨ G .fmor (sing-assemble C x) ⟩m)
+             (img-square (sing-Lf C x) (sing-assemble C x) assembleF
+                         (sing-pair C 𝟙L x (lift tt)) (assemble-sing C x)))
+    where
+    conv : ((Qp [ G .fmor (Fam𝒞-P.p₁ {C} {𝟙L}) ])
+              [ G .fmor (elem-in (Fam𝒞-P.prod C 𝟙L) (x , lift tt)) ])
+             ⊑ (((Qp [ G .fmor (elem-in C x) ])
+                   [ G .fmor (Fam𝒞-P.p₁ {simple[ PS.𝟙 , C .fam .fm x ]} {𝟙L}) ])
+                  [ G .fmor (sing-pair C 𝟙L x (lift tt)) ])
+    conv =
+      ⊑-trans ([]-comp _ _)
+      (⊑-trans ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _)))
+      (⊑-trans ([]-cong (G .fmor-cong (p₁-sing C 𝟙L x (lift tt))))
+      (⊑-trans ([]-cong (G .fmor-cong
+                  (Fam𝒞.∘-cong Fam𝒞.≈-refl (Fam𝒞.≈-sym (p₁-pair C 𝟙L x (lift tt))))))
+      (⊑-trans ([]-cong (G .fmor-comp _ _))
+      (⊑-trans ([]-comp⁻¹ _ _)
+      (⊑-trans ([]-cong (G .fmor-comp _ _))
+               ([]-comp⁻¹ _ _)))))))
 
   -- The singleton at a tree includes into the tree's fibre glued object; the
   -- predicate part is the join extraction.
@@ -341,7 +387,7 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
         (⊑-trans (in₁-extract [ G .fmor (elem-in (Lf (F₁ .carrier)) x) ]m)
         (⊑-trans []-++
         (++-isJoin .IsJoin.[_,_]
-          (⊑-trans (BC-assemble x)
+          (⊑-trans (BC-payload x)
                    ((++-isJoin .IsJoin.inl) [ G .fmor (sing-Lf (F₁ .carrier) x) ]m))
           (⊑-trans ([]-cong (G .fmor-cong (elem-in-Lf (F₁ .carrier) x)))
           (⊑-trans ([]-cong (G .fmor-comp _ _))
@@ -375,7 +421,7 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
         (⊑-trans (in₂-extract [ G .fmor (elem-in (Lf (F₂ .carrier)) y) ]m)
         (⊑-trans []-++
         (++-isJoin .IsJoin.[_,_]
-          (⊑-trans (BC-assemble y)
+          (⊑-trans (BC-payload y)
                    ((++-isJoin .IsJoin.inl) [ G .fmor (sing-Lf (F₂ .carrier) y) ]m))
           (⊑-trans ([]-cong (G .fmor-cong (elem-in-Lf (F₂ .carrier) y)))
           (⊑-trans ([]-cong (G .fmor-comp _ _))
@@ -415,7 +461,7 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
     node-pair F₁ F₂ x y .mor .presv =
       ⊑-trans []-++
       (++-isJoin .IsJoin.[_,_]
-        (⊑-trans (BC-assemble (x , y))
+        (⊑-trans (BC-payload (x , y))
         (⊑-trans (payload [ G .fmor (sing-Lf (Fam𝒞-P.prod C₁ C₂) (x , y)) ]m)
         (⊑-trans ([]-comp _ _) ([]-cong (𝒫C.≈-sym (G .fmor-comp _ _))))))
         (⊑-trans ([]-cong (G .fmor-cong (elem-in-Lf (Fam𝒞-P.prod C₁ C₂) (x , y))))
