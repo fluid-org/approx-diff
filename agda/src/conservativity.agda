@@ -293,7 +293,7 @@ open import presheaf-predicate (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒞
   renaming (system to PSh⟨𝒞⟩-system; Predicate to PShPredicate)
   using (_⊑_; module CoverMonad;
          _++_; _⟨_⟩; ⊑-isPreorder; _[_]; []-++; ++-isJoin; _&&_; &&-isMeet; TT; TT-isTop;
-         ⋁; module Monad-hat-pred; &&-++-distrib; &&-⟨⟩-frobenius; ⟨⟩-[]-BC)
+         ⋁; module Monad-hat-pred; &&-++-distrib; &&-⋁-distrib; &&-⟨⟩-frobenius; ⟨⟩-[]-BC)
   public
 
 module PSh⟨𝒞⟩-system = PredicateSystem PSh⟨𝒞⟩-system
