@@ -50,8 +50,10 @@ open Gl.Obj
 open Gl._=>_
 
 private
+  module CME = CMonEnriched CM
+
   ℓpred : Level
-  ℓpred = lsuc o₂ ⊔ lsuc m₂ ⊔ lsuc e₂
+  ℓpred = lsuc o₂ ⊔ lsuc m₂ ⊔ lsuc e₂ ⊔ o ⊔ m ⊔ e ⊔ lsuc 0ℓ
 
 -- Pair a carrier with a predicate on its image.
 glue : (c : Obj) → Predicate (G .fobj c) → Gl.Obj
@@ -142,9 +144,26 @@ elem-iso X P' p .inv _ = X .fam .subst (X .idx .isEquivalence .sym p)
 elem-iso X P' p .inv₁ _ = fam-subst-iso₁ (X .fam) p
 elem-iso X P' p .inv₂ _ = fam-subst-iso₂ (X .fam) p
 
+-- The inclusion of a fibre absorbs the zero: the zero element of a fibre is the zero element of
+-- the family it sits in.
+zeroF-elem-in : ∀ {W : Obj} (X : Obj) (x : X .idx .Carrier)
+                (u : simple[ PS.𝟙 , X .fam .fm x ] .idx .Carrier) →
+                Fam𝒞._≈_ (Fam𝒞._∘_ (elem-in X x) (zeroF {W} u)) (zeroF x)
+zeroF-elem-in X x u ._≃_.idxf-eq .PS._≃m_.func-eq _ = X .idx .isEquivalence .refl
+zeroF-elem-in X x u ._≃_.famf-eq .indexed-family._≃f_.transf-eq =
+  ≈-trans (∘-cong (X .fam .refl*) (≈-trans id-left (CME.comp-bilinear-ε₂ _))) id-left
+
+-- A predicate at a const leaf, together with the fact that it holds of the zero element: the
+-- fold's root branch reads the context against a zero payload.
+record ConstPred (A : Obj) : Set ℓpred where
+  field
+    cpred : Predicate (G .fobj A)
+    czero : Zeroed (glue A cpred)
+open ConstPred public
+
 -- A predicate assignment for a polynomial: a predicate on the image of each const leaf.
 PolyPred : ∀ {j} → Poly j → Set ℓpred
-PolyPred (const A) = Predicate (G .fobj A)
+PolyPred (const A) = ConstPred A
 PolyPred (var i)   = Lift ℓpred ⊤
 PolyPred (P' + Q') = PolyPred P' ×T PolyPred Q'
 PolyPred (P' × Q') = PolyPred P' ×T PolyPred Q'
@@ -187,7 +206,7 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
                    (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
                    (x : ⟦ ∣ Q ∣ ⟧shape η̄) → Gl.Obj
     fib-shape-Gl (const A) d pA pd x =
-      glue simple[ PS.𝟙 , A .fam .fm x ] (pA [ G .fmor (elem-in A x) ])
+      glue simple[ PS.𝟙 , A .fam .fm x ] (pA .cpred [ G .fmor (elem-in A x) ])
     fib-shape-Gl (var i)   d pQ pd x = fib-el-Gl _ (d i) (pd i) x
     fib-shape-Gl (P' + Q') d (pP , pQ) pd (inj₁ x) = Lf-Gl (fib-shape-Gl P' d pP pd x)
     fib-shape-Gl (P' + Q') d (pP , pQ) pd (inj₂ y) = Lf-Gl (fib-shape-Gl Q' d pQ pd y)
@@ -200,6 +219,46 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
     fib-el-Gl (inj₁ p) _ _ x =
       glue simple[ PS.𝟙 , δ p .fam .fm x ] (δP p [ G .fmor (elem-in (δ p) x) ])
     fib-el-Gl (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x = fib-Gl Q ρd pQ pρ x
+
+  -- Every fibre glued object holds of the zero element, given that the leaf predicates do: the
+  -- lifted and product formers carry the property, and the leaves reindex it along their own
+  -- inclusion.
+  module MuZero (δZ : ∀ i → Zeroed (glue (δ i) (δP i))) where
+
+    mutual
+      fib-Gl-zero : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
+                    (d : ∀ i → DecoAssign (ρ̄ i))
+                    (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (ρ̄ i) (d i))
+                    (t : W ∣ Q ∣ ρ̄) → Zeroed (fib-Gl Q d pQ pd t)
+      fib-Gl-zero Q d pQ pd (sup x) =
+        fib-shape-Gl-zero Q (deco-ext Q d) pQ (deco-ext-pred Q pQ pd) x
+
+      fib-shape-Gl-zero : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Sort n}
+                          (d : ∀ i → DecoAssign (η̄ i))
+                          (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
+                          (x : ⟦ ∣ Q ∣ ⟧shape η̄) → Zeroed (fib-shape-Gl Q d pQ pd x)
+      fib-shape-Gl-zero (const A) d pA pd x u =
+        ⊑-trans (pA .czero x)
+        (⊑-trans ([]-cong (G .fmor-cong (Fam𝒞.≈-sym (zeroF-elem-in A x u))))
+        (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _)))
+      fib-shape-Gl-zero (var i)   d pQ pd x = fib-el-Gl-zero _ (d i) (pd i) x
+      fib-shape-Gl-zero (P' + Q') d (pP , pQ) pd (inj₁ x) =
+        Zeroed-Lf {fib-shape-Gl P' d pP pd x} (fib-shape-Gl-zero P' d pP pd x)
+      fib-shape-Gl-zero (P' + Q') d (pP , pQ) pd (inj₂ y) =
+        Zeroed-Lf {fib-shape-Gl Q' d pQ pd y} (fib-shape-Gl-zero Q' d pQ pd y)
+      fib-shape-Gl-zero (P' × Q') d (pP , pQ) pd (x , y) =
+        Zeroed-Lf {fib-shape-Gl P' d pP pd x [×] fib-shape-Gl Q' d pQ pd y}
+          (Zeroed-[×] {fib-shape-Gl P' d pP pd x} {fib-shape-Gl Q' d pQ pd y}
+            (fib-shape-Gl-zero P' d pP pd x) (fib-shape-Gl-zero Q' d pQ pd y))
+      fib-shape-Gl-zero (μ Q')    d pQ' pd t = fib-Gl-zero Q' d pQ' pd t
+
+      fib-el-Gl-zero : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (pr : DecoAssignPred r dr)
+                       (x : El r) → Zeroed (fib-el-Gl r dr pr x)
+      fib-el-Gl-zero (inj₁ p) _ _ x u =
+        ⊑-trans (δZ p x)
+        (⊑-trans ([]-cong (G .fmor-cong (Fam𝒞.≈-sym (zeroF-elem-in (δ p) x u))))
+        (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _)))
+      fib-el-Gl-zero (inj₂ s) (mkDeco Q ρd) (pQ , pρ) x = fib-Gl-zero Q ρd pQ pρ x
 
   -- The carrier of each fibre's glued object maps onto the fibre itself: fibrewise the identity,
   -- packaged along the recursion since the carrier's index setoid follows the shape.
@@ -632,7 +691,7 @@ module MuPred {n} (δ : Fin n → Obj) (δP : ∀ i → Predicate (G .fobj (δ i
                     (pQ : PolyPred Q) (pd : ∀ i → DecoAssignPred (η̄ i) (d i))
                     {x y : ⟦ ∣ Q ∣ ⟧shape η̄} (p : shape≈ ∣ Q ∣ η̄ x y) →
                     fib-shape-Gl Q d pQ pd x =>ᵢ fib-shape-Gl Q d pQ pd y
-      subst-shape (const A) d pA pd p = elem-iso A pA p
+      subst-shape (const A) d pA pd p = elem-iso A (pA .cpred) p
       subst-shape (var i)   d pQ pd p = subst-el _ (d i) (pd i) p
       subst-shape (P' + Q') d (pP , pQ) pd {inj₁ _} {inj₁ _} p =
         Lf-Glᵢ' (subst-shape P' d pP pd p)
@@ -716,7 +775,7 @@ mutual
   fobj-pred : ∀ {j} (Q : Poly j) (pQ : PolyPred Q)
               (δ : Fin j → Obj) (δP : ∀ i → Predicate (G .fobj (δ i))) →
               Predicate (G .fobj (R.fobj μObj Q δ))
-  fobj-pred (const A) pA δ δP = pA
+  fobj-pred (const A) pA δ δP = pA .cpred
   fobj-pred (var i)   _  δ δP = δP i
   fobj-pred (P' + Q') (pP , pQ) δ δP =
     GlCP._[+]_ (Lf-Gl (fobj-Gl P' pP δ δP)) (Lf-Gl (fobj-Gl Q' pQ δ δP)) .pred
