@@ -15,7 +15,7 @@ open import Data.Unit using () renaming (tt to ttS)
 open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift; ⊥-elim; tt)
 open import Data.Sum using (inj₁; inj₂)
 open import prop-setoid as PS using (Setoid; module ≈-Reasoning)
-open import basics using (IsPreorder; IsBigJoin; IsClosureOp)
+open import basics using (IsPreorder; IsMeet; IsBigJoin; IsClosureOp)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
@@ -27,6 +27,7 @@ open import finite-product-functor
   using (preserve-chosen-terminal; preserve-chosen-products)
 import fam
 import setoid-predicate
+import closure-predicate
 import fam-fibre-cover
 import conservativity-fam
 import fam-mu-lifting.laws
@@ -64,7 +65,7 @@ open CF.Rel using (G; PSh⟨𝒞⟩; PSh⟨𝒞⟩-products; PSh⟨𝒞⟩-syste
 module RML = fam-mu-lifting.laws 0ℓ 0ℓ 𝒟₀T CM' BP' Lft'
 
 open PredicateSystem PSh⟨𝒞⟩-system
-open ClosureOp closureOp using (𝐂; 𝐂-isClosure; 𝐂-[]; 𝐂-[]⁻¹)
+open ClosureOp closureOp using (𝐂; 𝐂-isClosure; 𝐂-[]; 𝐂-[]⁻¹; 𝐂-strong)
 
 module CS = PredicateSystem system
 
@@ -110,9 +111,9 @@ private
     RML.≈-trans RML.id-left
       (RML.∘-cong RML.≈-refl (RML.≈-trans RML.id-left RML.id-right))
 
-in₁-extract : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj X)} →
+raw-in₁-extract : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj X)} →
               ((Q ⟨ G .fmor (RCP.in₁ {X} {Y}) ⟩) [ G .fmor (RCP.in₁ {X} {Y}) ]) ⊑ Q
-in₁-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
+raw-in₁-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
   Q .pred a .pred-≃ (lift mono) qu'
   where
   mono : FD._≈_ u' u
@@ -122,9 +123,9 @@ in₁-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
                 (RML.≈-trans (eq .RML._≃_.famf-eq ._≃f_.transf-eq)
                              (strip (u .RML.famf ._⇒f_.transf i)))
 
-in₂-extract : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj Y)} →
+raw-in₂-extract : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj Y)} →
               ((Q ⟨ G .fmor (RCP.in₂ {X} {Y}) ⟩) [ G .fmor (RCP.in₂ {X} {Y}) ]) ⊑ Q
-in₂-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
+raw-in₂-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
   Q .pred a .pred-≃ (lift mono) qu'
   where
   mono : FD._≈_ u' u
@@ -163,11 +164,11 @@ module RootedMu =
   fam-mu-lifting.glued-interface 𝒟₀T CM' BP' Lft'
     PSh⟨𝒞⟩ PSh⟨𝒞⟩-products system G Rt idCl
 
-sing-split : ∀ {X : RML.Obj} {Q : Predicate (G .fobj X)} →
+raw-sing-split : ∀ {X : RML.Obj} {Q : Predicate (G .fobj X)} →
              Q ⊑ 𝐂 (⋁ (Setoid.Carrier (RML.idx X))
                       (λ x → (Q [ G .fmor (RootedMu.elem-in X x) ])
                                ⟨ G .fmor (RootedMu.elem-in X x) ⟩))
-sing-split {X} {Q} .*⊑* a .*⊑* (lift m) qm = CvM.node cov xs ts eqs
+raw-sing-split {X} {Q} .*⊑* a .*⊑* (lift m) qm = CvM.node cov xs ts eqs
   where
   cvr : CF.Rel.IdxCover a
   cvr .CF.Rel.IdxCover.S = FamC.Obj.idx a
@@ -234,13 +235,13 @@ private
     RML.≈-trans (RML.Lmap-root _)
                 (RML.≈-sym (RML.≈-trans RML.id-left (RML.Lmap-root _)))
 
-Rt-iso : ∀ {C D : RML.Obj} (h : RML.Mor C D)
+raw-Rt-iso : ∀ {C D : RML.Obj} (h : RML.Mor C D)
          (hinv : ∀ x → RML._⇒_ (D .RML.fam .RML.fm (h .RML.idxf .PS._⇒_.func x))
                                 (C .RML.fam .RML.fm x)) →
          (∀ x → RML._≈_ (RML._∘_ (h .RML.famf ._⇒f_.transf x) (hinv x)) (RML.id _)) →
          (∀ x → RML._≈_ (RML._∘_ (hinv x) (h .RML.famf ._⇒f_.transf x)) (RML.id _)) →
          RtRaw C ⊑ (RtRaw D [ G .fmor (RML.Lf-map h) ])
-Rt-iso {C} {D} h hinv e₁ e₂ =
+raw-Rt-iso {C} {D} h hinv e₁ e₂ =
   ⊑-trans (IsClosureOp.mono 𝐂-isClosure (IsBigJoin.least ⋁-isJoin _ _ _ step)) 𝐂-[]
   where
   step : ∀ i → (TT ⟨ G .fmor (root-mor C i) ⟩) ⊑ (RtJoin D [ G .fmor (RML.Lf-map h) ])
@@ -250,13 +251,13 @@ Rt-iso {C} {D} h hinv e₁ e₂ =
       (⊑-trans ([]-cong (G .fmor-cong (root-square h i)))
       (⊑-trans ([]-cong (G .fmor-comp _ _)) ([]-comp⁻¹ _ _))))
 
-Rt-iso⁻ : ∀ {C D : RML.Obj} (h : RML.Mor C D)
+raw-Rt-iso⁻ : ∀ {C D : RML.Obj} (h : RML.Mor C D)
           (hinv : ∀ x → RML._⇒_ (D .RML.fam .RML.fm (h .RML.idxf .PS._⇒_.func x))
                                  (C .RML.fam .RML.fm x)) →
           (∀ x → RML._≈_ (RML._∘_ (h .RML.famf ._⇒f_.transf x) (hinv x)) (RML.id _)) →
           (∀ x → RML._≈_ (RML._∘_ (hinv x) (h .RML.famf ._⇒f_.transf x)) (RML.id _)) →
           (RtRaw D [ G .fmor (RML.Lf-map h) ]) ⊑ RtRaw C
-Rt-iso⁻ {C} {D} h hinv e₁ e₂ =
+raw-Rt-iso⁻ {C} {D} h hinv e₁ e₂ =
   ⊑-trans 𝐂-[]⁻¹
           (⊑-trans (IsClosureOp.mono 𝐂-isClosure ψ) (IsClosureOp.closed 𝐂-isClosure))
   where
@@ -430,11 +431,11 @@ raw-disjoint₂ {X} {Y} {Q} y {T} .*⊑* a .*⊑* (lift w) hyp = CvM.node cov xs
     go (lift u , qu , lift eqv) =
       ⊥-elim (eqv .RML._≃_.idxf-eq .PS._≃m_.func-eq {lift ttS} {lift ttS} tt)
 
-BC-injF : ∀ {C : RML.Obj} {Qp : Predicate (G .fobj C)} (x : Setoid.Carrier (RML.idx C)) →
+raw-BC-injF : ∀ {C : RML.Obj} {Qp : Predicate (G .fobj C)} (x : Setoid.Carrier (RML.idx C)) →
           ((Qp ⟨ G .fmor (RML.injF {C}) ⟩) [ G .fmor (RootedMu.elem-in (RML.Lf C) x) ])
             ⊑ ((Qp [ G .fmor (RootedMu.elem-in C x) ])
                  ⟨ G .fmor (RootedMu.sing-inj C x) ⟩)
-BC-injF {C} {Qp} x = ⟨⟩-[]-BC lft
+raw-BC-injF {C} {Qp} x = ⟨⟩-[]-BC lft
   where
   lft : ∀ a (y* : Setoid.Carrier
                     (G .fobj RML.simple[ PS.𝟙 , RML.L (C .RML.fam .RML.fm x) ] .fobj a))
@@ -494,22 +495,11 @@ BC-injF {C} {Qp} x = ⟨⟩-[]-BC lft
                           RML.≈-refl)
               (RML.≈-trans (RML.assoc _ _ _) (HY i)))))
 
-dist : ∀ {V} {Pp Q S : Predicate V} → (Pp && (Q ++ S)) ⊑ ((Pp && Q) ++ (Pp && S))
-dist = &&-++-distrib
-
-dist-⋁ : ∀ {V} {I : Set 0ℓ} {Pp : Predicate V} {Qs : I → Predicate V} →
-         (Pp && ⋁ I Qs) ⊑ ⋁ I (λ i → Pp && Qs i)
-dist-⋁ = &&-⋁-distrib
-
-frob : ∀ {V V'} {Pp : Predicate V'} {Q : Predicate V} {α : V PSh⟨𝒞⟩C.⇒ V'} →
-       (Pp && (Q ⟨ α ⟩)) ⊑ (((Pp [ α ]) && Q) ⟨ α ⟩)
-frob = &&-⟨⟩-frobenius
-
-BC : ∀ {W U V : RML.Obj} (h : RML.Mor U V) {Q : Predicate (G .fobj U)} →
+raw-BC : ∀ {W U V : RML.Obj} (h : RML.Mor U V) {Q : Predicate (G .fobj U)} →
      ((Q ⟨ G .fmor h ⟩) [ G .fmor (FDP.p₂ {W} {V}) ])
        ⊑ ((Q [ G .fmor (FDP.p₂ {W} {U}) ])
             ⟨ G .fmor (FDP.pair FDP.p₁ (FD._∘_ h FDP.p₂)) ⟩)
-BC {W} {U} {V} h {Q} = ⟨⟩-[]-BC lft
+raw-BC {W} {U} {V} h {Q} = ⟨⟩-[]-BC lft
   where
   lft : ∀ a (v* : Setoid.Carrier ((G .fobj (FDP.prod W V)) .fobj a))
           (u* : Setoid.Carrier ((G .fobj U) .fobj a)) →
@@ -557,3 +547,114 @@ BC {W} {U} {V} h {Q} = ⟨⟩-[]-BC lft
         v
       ∎
       where open ≈-Reasoning FD.isEquiv
+
+private
+  module CPm = closure-predicate PSh⟨𝒞⟩-system closureOp
+  module CPd = CPm.distributive &&-++-distrib &&-⟨⟩-frobenius
+
+  RtDown : ∀ (C : RML.Obj) → CPm.Predicate.pred (Rt C) ⊑ RtRaw C
+  RtDown C =
+    ⊑-trans (𝐂-isClosure .IsClosureOp.mono
+              (IsBigJoin.least ⋁-isJoin _ _ _
+                (λ i → 𝐂-isClosure .IsClosureOp.mono (IsBigJoin.upper ⋁-isJoin _ _ i))))
+            (𝐂-isClosure .IsClosureOp.closed)
+
+  RtUp : ∀ (C : RML.Obj) → RtRaw C ⊑ CPm.Predicate.pred (Rt C)
+  RtUp C =
+    𝐂-isClosure .IsClosureOp.mono
+      (IsBigJoin.least ⋁-isJoin _ _ _
+        (λ i → ⊑-trans (𝐂-isClosure .IsClosureOp.unit) (IsBigJoin.upper ⋁-isJoin _ _ i)))
+
+dist : ∀ {V} {Pp Q S : CS.Predicate V} →
+       CS._⊑_ (CS._&&_ Pp (CS._++_ Q S)) (CS._++_ (CS._&&_ Pp Q) (CS._&&_ Pp S))
+dist {V} {Pp} {Q} {S} = CPd.&&-++-distrib {V} {Pp} {Q} {S}
+
+dist-⋁ : ∀ {V} {I : Set 0ℓ} {Pp : CS.Predicate V} {Qs : I → CS.Predicate V} →
+         CS._⊑_ (CS._&&_ Pp (CS.⋁ I Qs)) (CS.⋁ I (λ i → CS._&&_ Pp (Qs i)))
+dist-⋁ =
+  ⊑-trans (IsMeet.comm &&-isMeet)
+  (⊑-trans 𝐂-strong
+  (⊑-trans (𝐂-isClosure .IsClosureOp.mono (IsMeet.comm &&-isMeet))
+           (𝐂-isClosure .IsClosureOp.mono &&-⋁-distrib)))
+
+frob : ∀ {V V'} {Pp : CS.Predicate V'} {Q : CS.Predicate V} {α : V PSh⟨𝒞⟩C.⇒ V'} →
+       CS._⊑_ (CS._&&_ Pp (CS._⟨_⟩ Q α)) (CS._⟨_⟩ (CS._&&_ (CS._[_] Pp α) Q) α)
+frob {V} {V'} {Pp} {Q} {α} = CPd.&&-⟨⟩-frobenius {V} {V'} {Pp} {Q} {α}
+
+BC : ∀ {W U V : RML.Obj} (h : RML.Mor U V) {Q : CS.Predicate (G .fobj U)} →
+     CS._⊑_ (CS._[_] (CS._⟨_⟩ Q (G .fmor h)) (G .fmor (FDP.p₂ {W} {V})))
+            (CS._⟨_⟩ (CS._[_] Q (G .fmor (FDP.p₂ {W} {U})))
+                     (G .fmor (FDP.pair FDP.p₁ (FD._∘_ h FDP.p₂))))
+BC {W} {U} {V} h {Q} = CPm.⟨⟩-[]-transport {P = Q} (raw-BC h)
+
+BC-injF : ∀ {C : RML.Obj} {Qp : CS.Predicate (G .fobj C)}
+          (x : Setoid.Carrier (RML.idx C)) →
+          CS._⊑_ (CS._[_] (CS._⟨_⟩ Qp (G .fmor (RML.injF {C})))
+                          (G .fmor (RootedMu.elem-in (RML.Lf C) x)))
+                 (CS._⟨_⟩ (CS._[_] Qp (G .fmor (RootedMu.elem-in C x)))
+                          (G .fmor (RootedMu.sing-inj C x)))
+BC-injF {C} {Qp} x = CPm.⟨⟩-[]-transport {P = Qp} (raw-BC-injF x)
+
+in₁-extract : ∀ {X Y : RML.Obj} {Q : CS.Predicate (G .fobj X)} →
+              CS._⊑_ (CS._[_] (CS._⟨_⟩ Q (G .fmor (RCP.in₁ {X} {Y})))
+                              (G .fmor (RCP.in₁ {X} {Y}))) Q
+in₁-extract {X} {Y} {Q} =
+  ⊑-trans 𝐂-[]⁻¹
+  (⊑-trans (𝐂-isClosure .IsClosureOp.mono raw-in₁-extract) (CPm.Predicate.closed Q))
+
+in₂-extract : ∀ {X Y : RML.Obj} {Q : CS.Predicate (G .fobj Y)} →
+              CS._⊑_ (CS._[_] (CS._⟨_⟩ Q (G .fmor (RCP.in₂ {X} {Y})))
+                              (G .fmor (RCP.in₂ {X} {Y}))) Q
+in₂-extract {X} {Y} {Q} =
+  ⊑-trans 𝐂-[]⁻¹
+  (⊑-trans (𝐂-isClosure .IsClosureOp.mono raw-in₂-extract) (CPm.Predicate.closed Q))
+
+disjoint₁ : ∀ {X Y : RML.Obj} {Q : CS.Predicate (G .fobj Y)}
+            (x : Setoid.Carrier (RML.idx X))
+            {S : CS.Predicate (G .fobj RML.simple[ PS.𝟙 , X .RML.fam .RML.fm x ])} →
+            CS._⊑_ (CS._[_] (CS._⟨_⟩ Q (G .fmor (RCP.in₂ {X} {Y})))
+                            (G .fmor (RootedMu.elem-in (RCP.coprod X Y) (inj₁ x)))) S
+disjoint₁ {X} {Y} {Q} x {S} =
+  ⊑-trans 𝐂-[]⁻¹
+  (⊑-trans (𝐂-isClosure .IsClosureOp.mono (raw-disjoint₁ x))
+  (⊑-trans (𝐂-isClosure .IsClosureOp.closed) (CPm.Predicate.closed S)))
+
+disjoint₂ : ∀ {X Y : RML.Obj} {Q : CS.Predicate (G .fobj X)}
+            (y : Setoid.Carrier (RML.idx Y))
+            {S : CS.Predicate (G .fobj RML.simple[ PS.𝟙 , Y .RML.fam .RML.fm y ])} →
+            CS._⊑_ (CS._[_] (CS._⟨_⟩ Q (G .fmor (RCP.in₁ {X} {Y})))
+                            (G .fmor (RootedMu.elem-in (RCP.coprod X Y) (inj₂ y)))) S
+disjoint₂ {X} {Y} {Q} y {S} =
+  ⊑-trans 𝐂-[]⁻¹
+  (⊑-trans (𝐂-isClosure .IsClosureOp.mono (raw-disjoint₂ y))
+  (⊑-trans (𝐂-isClosure .IsClosureOp.closed) (CPm.Predicate.closed S)))
+
+sing-split : ∀ {X : RML.Obj} {Q : CS.Predicate (G .fobj X)} →
+             CS._⊑_ Q (CS.⋁ (Setoid.Carrier (RML.idx X))
+                         (λ x → CS._⟨_⟩ (CS._[_] Q (G .fmor (RootedMu.elem-in X x)))
+                                        (G .fmor (RootedMu.elem-in X x))))
+sing-split {X} {Q} =
+  ⊑-trans raw-sing-split
+    (𝐂-isClosure .IsClosureOp.mono
+      (IsBigJoin.least ⋁-isJoin _ _ _
+        (λ i → ⊑-trans (𝐂-isClosure .IsClosureOp.unit) (IsBigJoin.upper ⋁-isJoin _ _ i))))
+
+Rt-iso : ∀ {C D : RML.Obj} (h : RML.Mor C D)
+         (hinv : ∀ x → RML._⇒_ (D .RML.fam .RML.fm (h .RML.idxf .PS._⇒_.func x))
+                                (C .RML.fam .RML.fm x)) →
+         (∀ x → RML._≈_ (RML._∘_ (h .RML.famf ._⇒f_.transf x) (hinv x)) (RML.id _)) →
+         (∀ x → RML._≈_ (RML._∘_ (hinv x) (h .RML.famf ._⇒f_.transf x)) (RML.id _)) →
+         CS._⊑_ (Rt C) (CS._[_] (Rt D) (G .fmor (RML.Lf-map h)))
+Rt-iso {C} {D} h hinv e₁ e₂ =
+  ⊑-trans (RtDown C)
+          (⊑-trans (raw-Rt-iso h hinv e₁ e₂) (RtUp D [ G .fmor (RML.Lf-map h) ]m))
+
+Rt-iso⁻ : ∀ {C D : RML.Obj} (h : RML.Mor C D)
+          (hinv : ∀ x → RML._⇒_ (D .RML.fam .RML.fm (h .RML.idxf .PS._⇒_.func x))
+                                 (C .RML.fam .RML.fm x)) →
+          (∀ x → RML._≈_ (RML._∘_ (h .RML.famf ._⇒f_.transf x) (hinv x)) (RML.id _)) →
+          (∀ x → RML._≈_ (RML._∘_ (hinv x) (h .RML.famf ._⇒f_.transf x)) (RML.id _)) →
+          CS._⊑_ (CS._[_] (Rt D) (G .fmor (RML.Lf-map h))) (Rt C)
+Rt-iso⁻ {C} {D} h hinv e₁ e₂ =
+  ⊑-trans (RtDown D [ G .fmor (RML.Lf-map h) ]m)
+          (⊑-trans (raw-Rt-iso⁻ h hinv e₁ e₂) (RtUp C))
