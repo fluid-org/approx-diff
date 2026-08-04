@@ -4,7 +4,7 @@
 -- semiring used to model interval approximations. A scalar bounds the distance a value may change
 -- from its value in the run; ∞ is "no information". Information-join is min (tighter bound wins)
 -- and the multiplicative structure is ordinary addition.
-module semiring-Q-tropical-add where
+module unused.semiring-Q-tropical-add where
 
 open import Level using (0ℓ)
 open import Data.Rational using (ℚ; 0ℚ; _⊓_; _+_; NonNegative; nonNegative)

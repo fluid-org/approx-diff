@@ -5,7 +5,7 @@
 -- over-approximation).
 -- The tests exercise the Jacobians of the introductory example: a composite can have fewer
 -- nonzero entries than the composite of the nonzero entries suggests, when contributions cancel.
-module matrix-nonzero where
+module unused.matrix-nonzero where
 
 open import Data.Integer using (+_; -[1+_])
 open import Data.Rational using (0ℚ; 1ℚ; _/_)

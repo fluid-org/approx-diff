@@ -4,7 +4,7 @@
 -- approximated in two dimensions (left and right perturbation bound), and the dependency relations
 -- are min-plus matrices. Addition propagates bounds unchanged; multiplication admits no
 -- min-plus-linear bound, recorded by the constantly-∞ matrix.
-module example.intervals where
+module unused.example.intervals where
 
 open import categories using (Category)
 import prop

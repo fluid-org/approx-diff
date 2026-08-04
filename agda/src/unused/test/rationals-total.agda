@@ -2,7 +2,7 @@
 
 -- Forward and backward derivatives of the weighted-sum query from the introduction, at the
 -- rationals: the price column cancels (3 + (-3) = 0) even though the price is used.
-module test.rationals-total where
+module unused.test.rationals-total where
 
 open import example.rationals
 open import Data.Integer using (+_; -[1+_])

@@ -4,7 +4,7 @@
 -- (multiplicative tropical) semiring, log-isomorphic to min-plus. A scalar bounds the factor by
 -- which a value may change from its value in the run; ∞ is "no information". Information-join is
 -- min (tighter bound wins) and the multiplicative structure is ordinary multiplication.
-module semiring-Q-tropical-mult where
+module unused.semiring-Q-tropical-mult where
 
 open import Level using (0ℓ)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ; _⊓_; _*_; _≤_; NonNegative; nonNegative)

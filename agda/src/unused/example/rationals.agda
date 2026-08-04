@@ -3,7 +3,7 @@
 -- Test harness for the rationals (AD) model: a number carries one scalar position, and the
 -- dependency relation of an operation at given arguments is its Jacobian there, with rational
 -- entries.
-module example.rationals where
+module unused.example.rationals where
 
 open import categories using (Category)
 import prop

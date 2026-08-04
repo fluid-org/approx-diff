@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Absolute perturbation bounds for the selection-and-sum query, forwards and backwards.
-module test.intervals-query where
+module unused.test.intervals-query where
 
 open import example.intervals
 import Data.Fin as Fin
