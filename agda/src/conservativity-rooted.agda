@@ -14,6 +14,7 @@ open import Level using (Level; 0ℓ; lift)
 open import Data.Nat using (suc)
 import Data.Fin as Fin
 open Fin using (Fin)
+open import Data.Product using (_,_; proj₁)
 open import Data.Unit using () renaming (tt to ttS)
 open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift; ⊥-elim; tt)
 open import Data.Sum using (inj₁; inj₂)
@@ -434,68 +435,91 @@ raw-disjoint₂ {X} {Y} {Q} y {T} .*⊑* a .*⊑* (lift w) hyp = CvM.node cov xs
     go (lift u , qu , lift eqv) =
       ⊥-elim (eqv .RML._≃_.idxf-eq .PS._≃m_.func-eq {lift ttS} {lift ttS} tt)
 
-raw-BC-injF : ∀ {C : RML.Obj} {Qp : Predicate (G .fobj C)} (x : Setoid.Carrier (RML.idx C)) →
-          ((Qp ⟨ G .fmor (RML.injF {C}) ⟩) [ G .fmor (RootedMu.elem-in (RML.Lf C) x) ])
-            ⊑ ((Qp [ G .fmor (RootedMu.elem-in C x) ])
-                 ⟨ G .fmor (RootedMu.sing-inj C x) ⟩)
-raw-BC-injF {C} {Qp} x = ⟨⟩-[]-BC lft
+-- Beck-Chevalley for the assembly at a singleton: an assembled element that factors through the
+-- singleton at an index is the assembly of something over that singleton, the payload transported
+-- along the index equation the factorisation forces.
+raw-BC-assemble : ∀ {C : RML.Obj} {Qp : Predicate (G .fobj (FDP.prod C RML.𝟙L))}
+                  (x : Setoid.Carrier (RML.idx C)) →
+                  ((Qp ⟨ G .fmor (RML.assembleF {C}) ⟩)
+                     [ G .fmor (RootedMu.elem-in (RML.Lf C) x) ])
+                    ⊑ ((Qp [ G .fmor (RootedMu.elem-in (FDP.prod C RML.𝟙L) (x , lift ttS)) ])
+                         ⟨ G .fmor (RootedMu.sing-assemble C x) ⟩)
+raw-BC-assemble {C} {Qp} x = ⟨⟩-[]-BC lft
   where
+  SING = RML.simple[ PS.𝟙 , RML.prod (C .RML.fam .RML.fm x) 𝟙d ]
+
   lft : ∀ a (y* : Setoid.Carrier
                     (G .fobj RML.simple[ PS.𝟙 , RML.L (C .RML.fam .RML.fm x) ] .fobj a))
-          (u* : Setoid.Carrier (G .fobj C .fobj a)) →
+          (u* : Setoid.Carrier (G .fobj (FDP.prod C RML.𝟙L) .fobj a)) →
         Setoid._≈_ (G .fobj (RML.Lf C) .fobj a)
-          (PS._⇒_.func (G .fmor (RML.injF {C}) .transf a) u*)
+          (PS._⇒_.func (G .fmor (RML.assembleF {C}) .transf a) u*)
           (PS._⇒_.func (G .fmor (RootedMu.elem-in (RML.Lf C) x) .transf a) y*) →
-        ∃ (Setoid.Carrier (G .fobj RML.simple[ PS.𝟙 , C .RML.fam .RML.fm x ] .fobj a)) λ w* →
-          (Setoid._≈_ (G .fobj C .fobj a)
-            (PS._⇒_.func (G .fmor (RootedMu.elem-in C x) .transf a) w*) u*)
+        ∃ (Setoid.Carrier (G .fobj SING .fobj a)) λ w* →
+          (Setoid._≈_ (G .fobj (FDP.prod C RML.𝟙L) .fobj a)
+            (PS._⇒_.func
+              (G .fmor (RootedMu.elem-in (FDP.prod C RML.𝟙L) (x , lift ttS)) .transf a) w*)
+            u*)
           ∧ (Setoid._≈_ (G .fobj RML.simple[ PS.𝟙 , RML.L (C .RML.fam .RML.fm x) ] .fobj a)
-              (PS._⇒_.func (G .fmor (RootedMu.sing-inj C x) .transf a) w*) y*)
+              (PS._⇒_.func (G .fmor (RootedMu.sing-assemble C x) .transf a) w*) y*)
   lft a (lift y) (lift u) (lift hyp) = lift w , (lift eq₁ , lift eq₂)
     where
-    ex : ∀ i → Setoid._≈_ (RML.idx C) (u .RML.idxf .PS._⇒_.func i) x
+    ex : ∀ i → Setoid._≈_ (RML.idx C) (proj₁ (u .RML.idxf .PS._⇒_.func i)) x
     ex i = hyp .RML._≃_.idxf-eq .PS._≃m_.func-eq (Setoid.refl (FamC.Obj.idx a) {i})
 
-    w : RML.Mor (CF.FamF .fobj a) RML.simple[ PS.𝟙 , C .RML.fam .RML.fm x ]
+    w : RML.Mor (CF.FamF .fobj a) SING
     w .RML.idxf = PS.to-𝟙
     w .RML.famf ._⇒f_.transf i =
-      RML._∘_ (C .RML.fam .RML.subst (ex i)) (u .RML.famf ._⇒f_.transf i)
+      RML._∘_ (RML.prod-m (C .RML.fam .RML.subst (ex i)) (RML.id 𝟙d))
+              (u .RML.famf ._⇒f_.transf i)
     w .RML.famf ._⇒f_.natural p =
       RML.≈-trans (RML.assoc _ _ _)
         (RML.≈-trans (RML.∘-cong RML.≈-refl (u .RML.famf ._⇒f_.natural p))
           (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
-            (RML.≈-trans (RML.∘-cong (RML.≈-sym (C .RML.fam .RML.trans* _ _)) RML.≈-refl)
-                         (RML.≈-sym RML.id-left))))
+            (RML.≈-trans
+              (RML.∘-cong
+                (RML.≈-trans (RML.≈-sym (RML.prod-m-comp _ _ _ _))
+                             (RML.prod-m-cong (RML.≈-sym (C .RML.fam .RML.trans* _ _))
+                                              RML.id-left))
+                RML.≈-refl)
+              (RML.≈-sym RML.id-left))))
 
-    eq₁ : FD._≈_ (FD._∘_ (RootedMu.elem-in C x) (FD._∘_ w (FD.id _))) u
-    eq₁ .RML._≃_.idxf-eq .PS._≃m_.func-eq {i₁} {i₂} p = Setoid.sym (RML.idx C) (ex i₂)
+    eq₁ : FD._≈_ (FD._∘_ (RootedMu.elem-in (FDP.prod C RML.𝟙L) (x , lift ttS))
+                         (FD._∘_ w (FD.id _))) u
+    eq₁ .RML._≃_.idxf-eq .PS._≃m_.func-eq {i₁} {i₂} p =
+      Setoid.sym (RML.idx C) (ex i₂) , tt
     eq₁ .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
       RML.≈-trans (RML.∘-cong RML.≈-refl (strip (w .RML.famf ._⇒f_.transf i)))
         (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
-          (RML.≈-trans (RML.∘-cong (RML.≈-trans (RML.≈-sym (C .RML.fam .RML.trans* _ _))
-                                                (C .RML.fam .RML.refl*))
-                                   RML.≈-refl)
-                       RML.id-left))
+          (RML.≈-trans
+            (RML.∘-cong
+              (RML.≈-trans (RML.≈-sym (RML.prod-m-comp _ _ _ _))
+                (RML.≈-trans (RML.prod-m-cong (RML.fam-subst-iso₂ (C .RML.fam) (ex i))
+                                              RML.id-left)
+                             RML.prod-m-id))
+              RML.≈-refl)
+            RML.id-left))
 
     HY : ∀ i → RML._≈_ (RML._∘_ (RML.Lmap (C .RML.fam .RML.subst (ex i)))
-                          (RML._∘_ RML.inj (u .RML.famf ._⇒f_.transf i)))
+                          (RML._∘_ (RML.cop RML.inj RML.root) (u .RML.famf ._⇒f_.transf i)))
                        (y .RML.famf ._⇒f_.transf i)
     HY i =
       RML.≈-trans
-        (RML.≈-sym (RML.∘-cong RML.≈-refl (strip-f RML.inj (u .RML.famf ._⇒f_.transf i))))
+        (RML.≈-sym (RML.∘-cong RML.≈-refl
+                     (strip-f (RML.cop RML.inj RML.root) (u .RML.famf ._⇒f_.transf i))))
         (RML.≈-trans (hyp .RML._≃_.famf-eq ._≃f_.transf-eq {i})
                      (strip (y .RML.famf ._⇒f_.transf i)))
 
-    eq₂ : FD._≈_ (FD._∘_ (RootedMu.sing-inj C x) (FD._∘_ w (FD.id _))) y
+    eq₂ : FD._≈_ (FD._∘_ (RootedMu.sing-assemble C x) (FD._∘_ w (FD.id _))) y
     eq₂ .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = tt
     eq₂ .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
       RML.≈-trans RML.id-left
-        (RML.≈-trans (strip-f RML.inj (w .RML.famf ._⇒f_.transf i))
+        (RML.≈-trans (strip-f (RML.cop RML.inj RML.root) (w .RML.famf ._⇒f_.transf i))
           (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
             (RML.≈-trans
-              (RML.∘-cong (RML.≈-sym (RML.Lmap-inj (RML.fam-subst-iso₁ (C .RML.fam) (ex i))
-                                                   (RML.fam-subst-iso₂ (C .RML.fam) (ex i))))
-                          RML.≈-refl)
+              (RML.∘-cong
+                (RML.≈-sym (RML.Lmap-assemble (RML.fam-subst-iso₁ (C .RML.fam) (ex i))
+                                              (RML.fam-subst-iso₂ (C .RML.fam) (ex i))))
+                RML.≈-refl)
               (RML.≈-trans (RML.assoc _ _ _) (HY i)))))
 
 raw-BC : ∀ {W U V : RML.Obj} (h : RML.Mor U V) {Q : Predicate (G .fobj U)} →
@@ -590,13 +614,15 @@ BC : ∀ {W U V : RML.Obj} (h : RML.Mor U V) {Q : CS.Predicate (G .fobj U)} →
                      (G .fmor (FDP.pair FDP.p₁ (FD._∘_ h FDP.p₂))))
 BC {W} {U} {V} h {Q} = CPm.⟨⟩-[]-transport {P = Q} (raw-BC h)
 
-BC-injF : ∀ {C : RML.Obj} {Qp : CS.Predicate (G .fobj C)}
-          (x : Setoid.Carrier (RML.idx C)) →
-          CS._⊑_ (CS._[_] (CS._⟨_⟩ Qp (G .fmor (RML.injF {C})))
-                          (G .fmor (RootedMu.elem-in (RML.Lf C) x)))
-                 (CS._⟨_⟩ (CS._[_] Qp (G .fmor (RootedMu.elem-in C x)))
-                          (G .fmor (RootedMu.sing-inj C x)))
-BC-injF {C} {Qp} x = CPm.⟨⟩-[]-transport {P = Qp} (raw-BC-injF x)
+BC-assemble : ∀ {C : RML.Obj} {Qp : CS.Predicate (G .fobj (FDP.prod C RML.𝟙L))}
+              (x : Setoid.Carrier (RML.idx C)) →
+              CS._⊑_ (CS._[_] (CS._⟨_⟩ Qp (G .fmor (RML.assembleF {C})))
+                              (G .fmor (RootedMu.elem-in (RML.Lf C) x)))
+                     (CS._⟨_⟩ (CS._[_] Qp
+                                 (G .fmor (RootedMu.elem-in (FDP.prod C RML.𝟙L)
+                                                            (x , lift ttS))))
+                              (G .fmor (RootedMu.sing-assemble C x)))
+BC-assemble {C} {Qp} x = CPm.⟨⟩-[]-transport {P = Qp} (raw-BC-assemble x)
 
 in₁-extract : ∀ {X Y : RML.Obj} {Q : CS.Predicate (G .fobj X)} →
               CS._⊑_ (CS._[_] (CS._⟨_⟩ Q (G .fmor (RCP.in₁ {X} {Y})))
