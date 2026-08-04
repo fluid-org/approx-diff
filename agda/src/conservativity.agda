@@ -877,7 +877,7 @@ Definable-closed {X} {Y} f (node (idx c) xs ts eqs) = g , Fg≈f
 
 import closure-predicate
 module CP = closure-predicate PSh⟨𝒞⟩-system closureOp
-open CP using (system; embed; module 𝐂Monad)
+open CP using (system; embed; module 𝐂Monad) public
 
 open 𝐂Monad _ MP (MDistrib.distrib FMpull)
 
