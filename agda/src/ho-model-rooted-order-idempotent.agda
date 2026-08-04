@@ -48,7 +48,7 @@ private
     (SC._∘_ (HasTerminal.to-terminal Sup-terminal) 𝓥-𝟘-bwd) (SC.id _)
 𝓥F-preserve-terminal .inverse∘f≈id .*≈* .prop-setoid._≃m_.func-eq e = λ ()
 
-module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ OI.terminal OI.cmon OI.biproduct OF.Lp-lifting
+module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ OI.cmon OI.biproduct OF.Lp-lifting
 
 private
   module FCμ = Category Fam⟨𝒞⟩μ.cat
@@ -66,7 +66,7 @@ private
 𝒞Bool = FCC.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
 
 module Fam⟨𝒟⟩μ =
-  fam-mu-lifting.in-map 0ℓ 0ℓ Sup-terminal SS.Sup.cmon Sup-biproduct SS.supported-lifting
+  fam-mu-lifting.in-map 0ℓ 0ℓ SS.Sup.cmon Sup-biproduct SS.supported-lifting
 
 private
   module Sc = CommutativeSemiring S

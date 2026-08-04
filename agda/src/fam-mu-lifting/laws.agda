@@ -25,10 +25,10 @@ open import indexed-family using (_⇒f_)
 import fam-mu-lifting.in-map
 
 module fam-mu-lifting.laws {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
+    (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
     {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
 
-open fam-mu-lifting.in-map os es T CM BP Lft public
+open fam-mu-lifting.in-map os es CM BP Lft public
 
 private module CME = CMonEnriched CM
 open CME using (_+m_)

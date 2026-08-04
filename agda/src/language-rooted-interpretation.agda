@@ -26,7 +26,7 @@ open import cmon-enriched using (CMonEnriched; Biproduct)
 open import lifting using (Lifting)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 open import polynomial-functor using (Poly)
-import fam-mu-lifting.in-map
+import fam-mu-lifting.mu-map
 import fam-mu-lifting.point
 import language-syntax
 
@@ -35,7 +35,7 @@ module language-rooted-interpretation
   {o m e} (os es : Level) {𝒞 : Category o m e}
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
-  (let module R = fam-mu-lifting.in-map os es T CM BP Lft)
+  (let module R = fam-mu-lifting.mu-map os es T CM BP Lft)
   (𝒞E : HasWeakExponentials R.cat R.products)
   (exp-pt : ∀ {X Y : R.Obj} → R.Pointed Y → R.Pointed (HasWeakExponentials.exp 𝒞E X Y))
   (δ∅ : Fin 0 → R.Obj)
@@ -47,9 +47,9 @@ module language-rooted-interpretation
   (Int-pt : ∀ (s : Signature.sort Sig) → R.Pointed (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu;
+open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu; μ-map;
               Pointed; Lf-pointed; prod-pointed; coprod-pointed; elimF)
-module Rpt = fam-mu-lifting.point os es T CM BP Lft
+module Rpt = fam-mu-lifting.point os es CM BP Lft
 open Rpt using (PolyPt; μObj-pointed)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)

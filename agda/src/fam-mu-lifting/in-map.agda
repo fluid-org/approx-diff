@@ -22,10 +22,10 @@ open import indexed-family using (_⇒f_)
 import fam-mu-lifting.fold
 
 module fam-mu-lifting.in-map {o m e} (os es : Level) {𝒞 : Category o m e}
-    (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
+    (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
     {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
 
-open fam-mu-lifting.fold os es T CM BP Lft public
+open fam-mu-lifting.fold os es CM BP Lft public
 
 -- Parameterised initial algebras against the rooted interpretation: carrier, algebra map and
 -- catamorphism, as operations only. The laws come later, in fused form.
@@ -67,16 +67,6 @@ record HasMu : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     strong-μ-fmor P' {δ} {δ'} fs =
       ⦅ Fam𝒞._∘_ (inMap P' δ') (strong-fmor P' (strong-extend-mor fs Fam𝒞-P.p₂)) ⦆
 
-  -- The parameterised map between μ-carriers, as in the unrooted interpretation: fold the source
-  -- against the target's algebra map after the given unfolding step. P and δ are explicit because
-  -- fobj and μ-obj are not injective.
-  μ-map : ∀ {j k} (P : Poly (suc j)) (δ : Fin j → Obj) (Q : Poly (suc k)) (δ' : Fin k → Obj) →
-          Mor (fobj μ-obj P (extend δ (μ-obj Q δ')))
-              (fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
-          Mor (μ-obj P δ) (μ-obj Q δ')
-  μ-map P δ Q δ' unfold =
-    Fam𝒞._∘_ (⦅_⦆ {P = P} {δ = δ} (Fam𝒞._∘_ (Fam𝒞._∘_ (inMap Q δ') unfold) Fam𝒞-P.p₂))
-             (Fam𝒞-P.pair (HasTerminal.to-terminal (terminal T)) (Fam𝒞.id _))
 
 -- α's reconstruction machinery.
 module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where

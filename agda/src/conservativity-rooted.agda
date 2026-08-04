@@ -61,7 +61,7 @@ open CB using (G; PSh⟨𝒞⟩; PSh⟨𝒞⟩-products; PSh⟨𝒞⟩-system; c
                    &&-++-distrib; &&-⋁-distrib; &&-⟨⟩-frobenius; ⟨⟩-[]-BC)
 
 -- The rooted structure on the same category of families.
-module RML = fam-mu-lifting.laws 0ℓ 0ℓ 𝒟₀T CM' BP' Lft'
+module RML = fam-mu-lifting.laws 0ℓ 0ℓ CM' BP' Lft'
 
 open PredicateSystem PSh⟨𝒞⟩-system
 open ClosureOp closureOp using (𝐂; 𝐂-isClosure; 𝐂-[]; 𝐂-[]⁻¹; 𝐂-strong; 𝐂-strongʳ)
@@ -225,7 +225,7 @@ Rt C = CPm.embed (RtJoin C)
 
 -- The glued rooted μ interface at the family-level nerve.
 module RootedMu =
-  fam-mu-lifting.glued-interface 𝒟₀T CM' BP' Lft'
+  fam-mu-lifting.glued-interface CM' BP' Lft'
     PSh⟨𝒞⟩ PSh⟨𝒞⟩-products system G Rt idCl
 
 open RootedMu.Gl.Obj renaming (carrier to gcar; pred to gpred)

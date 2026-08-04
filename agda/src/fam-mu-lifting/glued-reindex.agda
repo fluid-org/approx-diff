@@ -29,9 +29,9 @@ import fam-mu-lifting.laws
 import fam-mu-lifting.glued-mu
 
 module fam-mu-lifting.glued-reindex {o m e} {𝒞 : Category o m e}
-  (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
+  (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
-  (let module R = fam-mu-lifting.laws 0ℓ 0ℓ T CM BP Lft)
+  (let module R = fam-mu-lifting.laws 0ℓ 0ℓ CM BP Lft)
   {o₂ m₂ e₂} (𝒫 : Category o₂ m₂ e₂) (𝒫P : HasProducts 𝒫)
   (system : PredicateSystem 𝒫 𝒫P)
   (G : Functor R.cat 𝒫)
@@ -42,7 +42,7 @@ module fam-mu-lifting.glued-reindex {o m e} {𝒞 : Category o m e}
 
 open Functor
 
-open fam-mu-lifting.glued-mu T CM BP Lft 𝒫 𝒫P system G Rt Cl public
+open fam-mu-lifting.glued-mu CM BP Lft 𝒫 𝒫P system G Rt Cl public
 
 open R hiding (fobj)
 open Gl.Obj

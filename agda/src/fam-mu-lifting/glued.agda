@@ -14,9 +14,9 @@ import glueing-simple
 
 module fam-mu-lifting.glued
   {o m e} (os es : Level) {𝒞 : Category o m e}
-  (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
+  (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
-  (let module R = fam-mu-lifting.laws os es T CM BP Lft)
+  (let module R = fam-mu-lifting.laws os es CM BP Lft)
   {o₂ m₂ e₂} (𝒫 : Category o₂ m₂ e₂) (𝒫P : HasProducts 𝒫)
   (system : PredicateSystem 𝒫 𝒫P)
   (G : Functor R.cat 𝒫)

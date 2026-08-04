@@ -41,8 +41,8 @@ module ho-model-rooted {o m e o₂ m₂ e₂} (os es : Level)
     where
 
 -- The rooted μ machinery on each side.
-module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es T CM BP Lft
-module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es T' CM' BP' Lft'
+module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP Lft
+module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' Lft'
 
 private
   module 𝒟C = Category 𝒟
