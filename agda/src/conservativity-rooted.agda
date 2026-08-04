@@ -11,6 +11,9 @@
 ------------------------------------------------------------------------------
 
 open import Level using (Level; 0ℓ; lift)
+open import Data.Nat using (suc)
+import Data.Fin as Fin
+open Fin using (Fin)
 open import Data.Unit using () renaming (tt to ttS)
 open import prop using (Prf; ∃; ∃ₛ; _∧_; _,_; LiftP; lift; ⊥-elim; tt)
 open import Data.Sum using (inj₁; inj₂)
@@ -658,3 +661,164 @@ Rt-iso⁻ : ∀ {C D : RML.Obj} (h : RML.Mor C D)
 Rt-iso⁻ {C} {D} h hinv e₁ e₂ =
   ⊑-trans (RtDown D [ G .fmor (RML.Lf-map h) ]m)
           (⊑-trans (raw-Rt-iso⁻ h hinv e₁ e₂) (RtUp C))
+
+-- The singleton at a tree factors through that tree's own fibre. An element of the join over trees
+-- at a stage factors through the inclusion of one tree only after the stage has been refined to a
+-- fibre, where the index part of the factorisation is a bisimilarity between that tree and the one
+-- selected; the fibre transports move the predicate along it.
+module _ {k} (δ₀ : Fin k → RML.Obj) (δP₀ : ∀ i → CS.Predicate (G .fobj (δ₀ i)))
+         (Q : RML.Poly (suc k)) (pQ : RootedMu.PolyPred Q) where
+
+  private
+    module Mδ = RootedMu.MuPred δ₀ δP₀
+    module Tδ = RML.Tree δ₀
+    module MT = Mδ.Transport Rt-iso
+
+    open RootedMu.Gl.Obj renaming (carrier to gcar; pred to gpred)
+    open RootedMu.Gl._=>_ using () renaming (morph to gmorph; presv to gpresv)
+
+    dc : ∀ (i : Fin k) → Tδ.DecoAssign (inj₁ i)
+    dc i = lift ttS
+
+    pc : ∀ (i : Fin k) → Mδ.DecoAssignPred (inj₁ i) (dc i)
+    pc i = lift ttS
+
+    fibGl : Tδ.W RML.∣ Q ∣ (λ i → inj₁ i) → RootedMu.Gl.Obj
+    fibGl t = Mδ.fib-Gl Q dc pQ pc t
+
+    tgt : (t : Tδ.W RML.∣ Q ∣ (λ i → inj₁ i)) →
+          Predicate (G .fobj RML.simple[ PS.𝟙 , RML.μObj Q δ₀ .RML.fam .RML.fm t ])
+    tgt t = CPm.Predicate.pred (gpred (fibGl t)) [ G .fmor (Mδ.tree-out Q pQ t) ]
+
+    raw-step : (t' t : Tδ.W RML.∣ Q ∣ (λ i → inj₁ i)) →
+               ((CPm.Predicate.pred (gpred (fibGl t')) ⟨ G .fmor (Mδ.tree-in Q pQ t') ⟩)
+                  [ G .fmor (RootedMu.elem-in (RML.μObj Q δ₀) t) ])
+                 ⊑ 𝐂 (tgt t)
+    raw-step t' t .*⊑* a .*⊑* (lift w) hyp = CvM.node cov xs ts eqs
+      where
+      SIMP = G .fobj RML.simple[ PS.𝟙 , RML.μObj Q δ₀ .RML.fam .RML.fm t ]
+
+      src : Predicate SIMP
+      src = (CPm.Predicate.pred (gpred (fibGl t')) ⟨ G .fmor (Mδ.tree-in Q pQ t') ⟩)
+              [ G .fmor (RootedMu.elem-in (RML.μObj Q δ₀) t) ]
+
+      cvr : CF.Rel.IdxCover a
+      cvr .CF.Rel.IdxCover.S = FamC.Obj.idx a
+      cvr .CF.Rel.IdxCover.D = FC.fibres a
+      cvr .CF.Rel.IdxCover.iso = FC.fib-iso a
+
+      cov : CF.Rel.Cover a
+      cov = CF.Rel.idx cvr
+
+      xs : ∀ s → Setoid.Carrier (SIMP .fobj (CF.Rel.cDom cov s))
+      xs s = SIMP .fmor (CF.Rel.cInj cov s) .PS._⇒_.func (lift w)
+
+      eqs : ∀ s → Setoid._≈_ (SIMP .fobj (CF.Rel.cDom cov s)) (xs s)
+                    (SIMP .fmor (CF.Rel.cInj cov s) .PS._⇒_.func (lift w))
+      eqs s = Setoid.refl (SIMP .fobj (CF.Rel.cDom cov s))
+
+      ts : ∀ s → CvM.Context SIMP (tgt t) (CF.Rel.cDom cov s) (xs s)
+      ts (lift v) = CvM.leaf (go (src .pred-mor (CF.Rel.cInj cov (lift v)) .*⊑* (lift w) hyp))
+        where
+        wv : RML.Mor (CF.FamF .fobj (CF.Rel.cDom cov (lift v)))
+                     RML.simple[ PS.𝟙 , RML.μObj Q δ₀ .RML.fam .RML.fm t ]
+        wv = FD._∘_ w (CF.FamF .fmor (CF.Rel.cInj cov (lift v)))
+
+        go : src .pred (CF.Rel.cDom cov (lift v)) .pred (xs (lift v)) →
+             tgt t .pred (CF.Rel.cDom cov (lift v)) .pred (xs (lift v))
+        go (lift nn , qn , lift eqn) =
+          CPm.Predicate.pred (gpred (fibGl t)) .pred (CF.Rel.cDom cov (lift v)) .pred-≃ (lift sq)
+            (MT.subst-fib Q dc pQ pc {t'} {t} p .RootedMu.mor .gpresv
+               .*⊑* (CF.Rel.cDom cov (lift v)) .*⊑* (lift nn) qn)
+          where
+          p : Tδ.W-≈ t' t
+          p = eqn .RML._≃_.idxf-eq .PS._≃m_.func-eq {lift ttS} {lift ttS} tt
+
+          σ : RML.Mor (fibGl t' .gcar) (fibGl t .gcar)
+          σ = MT.subst-fib Q dc pQ pc {t'} {t} p .RootedMu.mor .gmorph
+
+          sq : FD._≈_ (FD._∘_ σ (FD._∘_ nn (FD.id _)))
+                      (FD._∘_ (Mδ.tree-out Q pQ t) (FD._∘_ wv (FD.id _)))
+          sq .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = Mδ.fib-ix-uniq Q dc pQ pc t _
+          sq .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+            RML.≈-trans (RML.∘-cong RML.≈-refl (strip-f S N))
+              (RML.≈-trans main (RML.≈-sym (strip-f O Wf)))
+            where
+            ι = nn .RML.idxf .PS._⇒_.func i
+            N = nn .RML.famf ._⇒f_.transf i
+            S = σ .RML.famf ._⇒f_.transf ι
+            Wf = wv .RML.famf ._⇒f_.transf i
+            ix = Mδ.fib-ix Q dc pQ pc t
+            O = Mδ.out-fib Q dc pQ pc t ix
+
+            ixe : Setoid._≈_ (RML.idx (fibGl t .gcar)) (σ .RML.idxf .PS._⇒_.func ι) ix
+            ixe = Mδ.fib-ix-uniq Q dc pQ pc t _
+
+            sub = fibGl t .gcar .RML.fam .RML.subst ixe
+
+            H : RML._≈_ (RML._∘_ (Tδ.fib-subst Q dc {t'} {t} p)
+                                 (RML._∘_ (Mδ.in-fib Q dc pQ pc t' ι) N))
+                        Wf
+            H = RML.≈-trans
+                  (RML.≈-sym (RML.∘-cong RML.≈-refl (strip-f (Mδ.in-fib Q dc pQ pc t' ι) N)))
+                  (RML.≈-trans (eqn .RML._≃_.famf-eq ._≃f_.transf-eq {i}) (strip Wf))
+
+            main : RML._≈_ (RML._∘_ sub (RML._∘_ S N)) (RML._∘_ O Wf)
+            main = begin
+                RML._∘_ sub (RML._∘_ S N)
+              ≈˘⟨ RML.id-left ⟩
+                RML._∘_ (RML.id _) (RML._∘_ sub (RML._∘_ S N))
+              ≈˘⟨ RML.∘-cong (Mδ.out-in-fib Q dc pQ pc t ix) RML.≈-refl ⟩
+                RML._∘_ (RML._∘_ O (Mδ.in-fib Q dc pQ pc t ix)) (RML._∘_ sub (RML._∘_ S N))
+              ≈⟨ RML.assoc _ _ _ ⟩
+                RML._∘_ O (RML._∘_ (Mδ.in-fib Q dc pQ pc t ix) (RML._∘_ sub (RML._∘_ S N)))
+              ≈˘⟨ RML.∘-cong RML.≈-refl (RML.assoc _ _ _) ⟩
+                RML._∘_ O (RML._∘_ (RML._∘_ (Mδ.in-fib Q dc pQ pc t ix) sub) (RML._∘_ S N))
+              ≈⟨ RML.∘-cong RML.≈-refl
+                   (RML.∘-cong (Mδ.in-fib-natural Q dc pQ pc t ixe) RML.≈-refl) ⟩
+                RML._∘_ O (RML._∘_ (Mδ.in-fib Q dc pQ pc t (σ .RML.idxf .PS._⇒_.func ι))
+                                   (RML._∘_ S N))
+              ≈˘⟨ RML.∘-cong RML.≈-refl (RML.assoc _ _ _) ⟩
+                RML._∘_ O (RML._∘_ (RML._∘_ (Mδ.in-fib Q dc pQ pc t
+                                               (σ .RML.idxf .PS._⇒_.func ι)) S) N)
+              ≈⟨ RML.∘-cong RML.≈-refl
+                   (RML.∘-cong (MT.subst-fib-in Q dc pQ pc {t'} {t} p ι) RML.≈-refl) ⟩
+                RML._∘_ O (RML._∘_ (RML._∘_ (Tδ.fib-subst Q dc {t'} {t} p)
+                                            (Mδ.in-fib Q dc pQ pc t' ι)) N)
+              ≈⟨ RML.∘-cong RML.≈-refl (RML.assoc _ _ _) ⟩
+                RML._∘_ O (RML._∘_ (Tδ.fib-subst Q dc {t'} {t} p)
+                                   (RML._∘_ (Mδ.in-fib Q dc pQ pc t' ι) N))
+              ≈⟨ RML.∘-cong RML.≈-refl H ⟩
+                RML._∘_ O Wf
+              ∎
+              where open ≈-Reasoning RML.isEquiv
+
+  -- The join over trees, restricted along the singleton at a tree, lands in that tree's disjunct.
+  sing-extract : (t : Tδ.W RML.∣ Q ∣ (λ i → inj₁ i)) →
+                 CS._⊑_ (CS._[_] (gpred (Mδ.μ-Gl Q pQ))
+                                 (G .fmor (RootedMu.elem-in (RML.μObj Q δ₀) t)))
+                        (CS._[_] (gpred (fibGl t)) (G .fmor (Mδ.tree-out Q pQ t)))
+  sing-extract t =
+    ⊑-trans 𝐂-[]⁻¹
+    (⊑-trans (𝐂-isClosure .IsClosureOp.mono ([]-⋁ {I = Tδ.W RML.∣ Q ∣ (λ i → inj₁ i)}
+                                                  {P = joins} {f = ein}))
+    (⊑-trans (𝐂-isClosure .IsClosureOp.mono
+               (IsBigJoin.least ⋁-isJoin (Tδ.W RML.∣ Q ∣ (λ i → inj₁ i))
+                                (λ t' → joins t' [ ein ]) (𝐂 (tgt t)) step))
+    (⊑-trans (𝐂-isClosure .IsClosureOp.closed)
+             (CPm.Predicate.closed
+                (CS._[_] (gpred (fibGl t)) (G .fmor (Mδ.tree-out Q pQ t)))))))
+    where
+    ein = G .fmor (RootedMu.elem-in (RML.μObj Q δ₀) t)
+
+    -- The disjuncts of the μ-decoration, at the raw level: the closed direct image of each
+    -- fibre's predicate along that fibre's inclusion.
+    joins : Tδ.W RML.∣ Q ∣ (λ i → inj₁ i) → Predicate (G .fobj (RML.μObj Q δ₀))
+    joins t' = 𝐂 (CPm.Predicate.pred (gpred (fibGl t'))
+                    ⟨ G .fmor (Mδ.tree-in Q pQ t') ⟩)
+
+    step : ∀ t' → (joins t' [ ein ]) ⊑ 𝐂 (tgt t)
+    step t' =
+      ⊑-trans 𝐂-[]⁻¹
+      (⊑-trans (𝐂-isClosure .IsClosureOp.mono (raw-step t' t))
+               (𝐂-isClosure .IsClosureOp.closed))
