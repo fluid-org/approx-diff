@@ -88,6 +88,14 @@ private
     RML.≈-trans RML.id-left
       (RML.≈-trans RML.id-left (RML.≈-trans RML.id-left RML.id-right))
 
+  strip-f : ∀ {A B B' : RML.obj} (f : RML._⇒_ B B') (t : RML._⇒_ A B) →
+            RML._≈_ (RML._∘_ (RML.id _)
+                       (RML._∘_ f (RML._∘_ (RML.id _) (RML._∘_ t (RML.id _)))))
+                    (RML._∘_ f t)
+  strip-f f t =
+    RML.≈-trans RML.id-left
+      (RML.∘-cong RML.≈-refl (RML.≈-trans RML.id-left RML.id-right))
+
 in₁-extract : ∀ {X Y : RML.Obj} {Q : Predicate (G .fobj X)} →
               ((Q ⟨ G .fmor (RCP.in₁ {X} {Y}) ⟩) [ G .fmor (RCP.in₁ {X} {Y}) ]) ⊑ Q
 in₁-extract {X} {Y} {Q} .*⊑* a .*⊑* (lift u) (lift u' , qu' , lift eq) =
@@ -409,6 +417,70 @@ disjoint₂ {X} {Y} {Q} y {C} h .*⊑* a .*⊑* (lift w) hyp = CvM.node cov xs t
          RtJoin C .pred (CF.Rel.cDom cov (lift v)) .pred (xs (lift v))
     go (lift u , qu , lift eqv) =
       ⊥-elim (eqv .RML._≃_.idxf-eq .PS._≃m_.func-eq {lift ttS} {lift ttS} tt)
+
+BC-injF : ∀ {C : RML.Obj} {Qp : Predicate (G .fobj C)} (x : Setoid.Carrier (RML.idx C)) →
+          ((Qp ⟨ G .fmor (RML.injF {C}) ⟩) [ G .fmor (RootedMu.elem-in (RML.Lf C) x) ])
+            ⊑ ((Qp [ G .fmor (RootedMu.elem-in C x) ])
+                 ⟨ G .fmor (RootedMu.sing-inj C x) ⟩)
+BC-injF {C} {Qp} x = ⟨⟩-[]-BC lft
+  where
+  lft : ∀ a (y* : Setoid.Carrier
+                    (G .fobj RML.simple[ PS.𝟙 , RML.L (C .RML.fam .RML.fm x) ] .fobj a))
+          (u* : Setoid.Carrier (G .fobj C .fobj a)) →
+        Setoid._≈_ (G .fobj (RML.Lf C) .fobj a)
+          (PS._⇒_.func (G .fmor (RML.injF {C}) .transf a) u*)
+          (PS._⇒_.func (G .fmor (RootedMu.elem-in (RML.Lf C) x) .transf a) y*) →
+        ∃ (Setoid.Carrier (G .fobj RML.simple[ PS.𝟙 , C .RML.fam .RML.fm x ] .fobj a)) λ w* →
+          (Setoid._≈_ (G .fobj C .fobj a)
+            (PS._⇒_.func (G .fmor (RootedMu.elem-in C x) .transf a) w*) u*)
+          ∧ (Setoid._≈_ (G .fobj RML.simple[ PS.𝟙 , RML.L (C .RML.fam .RML.fm x) ] .fobj a)
+              (PS._⇒_.func (G .fmor (RootedMu.sing-inj C x) .transf a) w*) y*)
+  lft a (lift y) (lift u) (lift hyp) = lift w , (lift eq₁ , lift eq₂)
+    where
+    ex : ∀ i → Setoid._≈_ (RML.idx C) (u .RML.idxf .PS._⇒_.func i) x
+    ex i = hyp .RML._≃_.idxf-eq .PS._≃m_.func-eq (Setoid.refl (FamC.Obj.idx a) {i})
+
+    w : RML.Mor (CF.FamF .fobj a) RML.simple[ PS.𝟙 , C .RML.fam .RML.fm x ]
+    w .RML.idxf = PS.to-𝟙
+    w .RML.famf ._⇒f_.transf i =
+      RML._∘_ (C .RML.fam .RML.subst (ex i)) (u .RML.famf ._⇒f_.transf i)
+    w .RML.famf ._⇒f_.natural p =
+      RML.≈-trans (RML.assoc _ _ _)
+        (RML.≈-trans (RML.∘-cong RML.≈-refl (u .RML.famf ._⇒f_.natural p))
+          (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
+            (RML.≈-trans (RML.∘-cong (RML.≈-sym (C .RML.fam .RML.trans* _ _)) RML.≈-refl)
+                         (RML.≈-sym RML.id-left))))
+
+    eq₁ : FD._≈_ (FD._∘_ (RootedMu.elem-in C x) (FD._∘_ w (FD.id _))) u
+    eq₁ .RML._≃_.idxf-eq .PS._≃m_.func-eq {i₁} {i₂} p = Setoid.sym (RML.idx C) (ex i₂)
+    eq₁ .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+      RML.≈-trans (RML.∘-cong RML.≈-refl (strip (w .RML.famf ._⇒f_.transf i)))
+        (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
+          (RML.≈-trans (RML.∘-cong (RML.≈-trans (RML.≈-sym (C .RML.fam .RML.trans* _ _))
+                                                (C .RML.fam .RML.refl*))
+                                   RML.≈-refl)
+                       RML.id-left))
+
+    HY : ∀ i → RML._≈_ (RML._∘_ (RML.Lmap (C .RML.fam .RML.subst (ex i)))
+                          (RML._∘_ RML.inj (u .RML.famf ._⇒f_.transf i)))
+                       (y .RML.famf ._⇒f_.transf i)
+    HY i =
+      RML.≈-trans
+        (RML.≈-sym (RML.∘-cong RML.≈-refl (strip-f RML.inj (u .RML.famf ._⇒f_.transf i))))
+        (RML.≈-trans (hyp .RML._≃_.famf-eq ._≃f_.transf-eq {i})
+                     (strip (y .RML.famf ._⇒f_.transf i)))
+
+    eq₂ : FD._≈_ (FD._∘_ (RootedMu.sing-inj C x) (FD._∘_ w (FD.id _))) y
+    eq₂ .RML._≃_.idxf-eq .PS._≃m_.func-eq _ = tt
+    eq₂ .RML._≃_.famf-eq ._≃f_.transf-eq {i} =
+      RML.≈-trans RML.id-left
+        (RML.≈-trans (strip-f RML.inj (w .RML.famf ._⇒f_.transf i))
+          (RML.≈-trans (RML.≈-sym (RML.assoc _ _ _))
+            (RML.≈-trans
+              (RML.∘-cong (RML.≈-sym (RML.Lmap-inj (RML.fam-subst-iso₁ (C .RML.fam) (ex i))
+                                                   (RML.fam-subst-iso₂ (C .RML.fam) (ex i))))
+                          RML.≈-refl)
+              (RML.≈-trans (RML.assoc _ _ _) (HY i)))))
 
 dist : ∀ {V} {Pp Q S : Predicate V} → (Pp && (Q ++ S)) ⊑ ((Pp && Q) ++ (Pp && S))
 dist = &&-++-distrib
