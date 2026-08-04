@@ -78,13 +78,13 @@ record GlMuObligations : Set ℓI where
     in₂-extract : ∀ {X Y : Obj} {Q : Predicate (G .fobj Y)} →
                   ((Q ⟨ G .fmor (CP''.in₂ {X} {Y}) ⟩) [ G .fmor (CP''.in₂ {X} {Y}) ]) ⊑ Q
     disjoint₁ : ∀ {X Y : Obj} {Q : Predicate (G .fobj Y)} (x : X .idx .Carrier)
-                {S : Predicate (G .fobj simple[ PS.𝟙 , X .fam .fm x ])} →
+                {C : Obj} (h : Mor simple[ PS.𝟙 , X .fam .fm x ] (Lf C)) →
                 ((Q ⟨ G .fmor (CP''.in₂ {X} {Y}) ⟩)
-                   [ G .fmor (elem-in (CP''.coprod X Y) (inj₁ x)) ]) ⊑ S
+                   [ G .fmor (elem-in (CP''.coprod X Y) (inj₁ x)) ]) ⊑ (Rt C [ G .fmor h ])
     disjoint₂ : ∀ {X Y : Obj} {Q : Predicate (G .fobj X)} (y : Y .idx .Carrier)
-                {S : Predicate (G .fobj simple[ PS.𝟙 , Y .fam .fm y ])} →
+                {C : Obj} (h : Mor simple[ PS.𝟙 , Y .fam .fm y ] (Lf C)) →
                 ((Q ⟨ G .fmor (CP''.in₁ {X} {Y}) ⟩)
-                   [ G .fmor (elem-in (CP''.coprod X Y) (inj₂ y)) ]) ⊑ S
+                   [ G .fmor (elem-in (CP''.coprod X Y) (inj₂ y)) ]) ⊑ (Rt C [ G .fmor h ])
     BC-injF : ∀ {C : Obj} {Qp : Predicate (G .fobj C)} (x : C .idx .Carrier) →
               ((Qp ⟨ G .fmor (injF {C}) ⟩) [ G .fmor (elem-in (Lf C) x) ])
                 ⊑ ((Qp [ G .fmor (elem-in C x) ]) ⟨ G .fmor (sing-inj C x) ⟩)

@@ -236,13 +236,13 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
     (in₂-extract : ∀ {X Y : Obj} {Q : Predicate (G .fobj Y)} →
                    ((Q ⟨ G .fmor (CP.in₂ {X} {Y}) ⟩) [ G .fmor (CP.in₂ {X} {Y}) ]) ⊑ Q)
     (disjoint₁ : ∀ {X Y : Obj} {Q : Predicate (G .fobj Y)} (x : X .idx .Carrier)
-                 {S : Predicate (G .fobj simple[ PS.𝟙 , X .fam .fm x ])} →
+                 {C : Obj} (h : Mor simple[ PS.𝟙 , X .fam .fm x ] (Lf C)) →
                  ((Q ⟨ G .fmor (CP.in₂ {X} {Y}) ⟩)
-                    [ G .fmor (elem-in (CP.coprod X Y) (inj₁ x)) ]) ⊑ S)
+                    [ G .fmor (elem-in (CP.coprod X Y) (inj₁ x)) ]) ⊑ (Rt C [ G .fmor h ]))
     (disjoint₂ : ∀ {X Y : Obj} {Q : Predicate (G .fobj X)} (y : Y .idx .Carrier)
-                 {S : Predicate (G .fobj simple[ PS.𝟙 , Y .fam .fm y ])} →
+                 {C : Obj} (h : Mor simple[ PS.𝟙 , Y .fam .fm y ] (Lf C)) →
                  ((Q ⟨ G .fmor (CP.in₁ {X} {Y}) ⟩)
-                    [ G .fmor (elem-in (CP.coprod X Y) (inj₂ y)) ]) ⊑ S)
+                    [ G .fmor (elem-in (CP.coprod X Y) (inj₂ y)) ]) ⊑ (Rt C [ G .fmor h ]))
     (BC-injF : ∀ {C : Obj} {Qp : Predicate (G .fobj C)} (x : C .idx .Carrier) →
                ((Qp ⟨ G .fmor (injF {C}) ⟩) [ G .fmor (elem-in (Lf C) x) ])
                  ⊑ ((Qp [ G .fmor (elem-in C x) ]) ⟨ G .fmor (sing-inj C x) ⟩))
@@ -348,7 +348,8 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
                              (λ _ → id _) (λ _ → id-left) (λ _ → id-left))
                       [ G .fmor (sing-Lf (F₁ .carrier) x) ]m)
                    ((++-isJoin .IsJoin.inr) [ G .fmor (sing-Lf (F₁ .carrier) x) ]m)))))))))))
-        (disjoint₁ x))
+        (⊑-trans (disjoint₁ x (sing-Lf (F₁ .carrier) x))
+                 ((++-isJoin .IsJoin.inr) [ G .fmor (sing-Lf (F₁ .carrier) x) ]m)))
     node-inj₁ F₁ F₂ x .inv _ = id _
     node-inj₁ F₁ F₂ x .inv₁ _ = id-left
     node-inj₁ F₁ F₂ x .inv₂ _ = id-left
@@ -366,7 +367,8 @@ module GlInMap {n} (P : Poly (suc n)) (pP : PolyPred P)
     node-inj₂ F₁ F₂ y .mor .presv =
       ⊑-trans []-++
       (++-isJoin .IsJoin.[_,_]
-        (disjoint₂ y)
+        (⊑-trans (disjoint₂ y (sing-Lf (F₂ .carrier) y))
+                 ((++-isJoin .IsJoin.inr) [ G .fmor (sing-Lf (F₂ .carrier) y) ]m))
         (⊑-trans ([]-cong (G .fmor-cong (elem-in-inj₂ (Lf (F₁ .carrier)) (Lf (F₂ .carrier)) y)))
         (⊑-trans ([]-cong (G .fmor-comp _ _))
         (⊑-trans ([]-comp⁻¹ _ _)
