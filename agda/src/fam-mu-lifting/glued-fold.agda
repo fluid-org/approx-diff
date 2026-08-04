@@ -42,7 +42,13 @@ module fam-mu-lifting.glued-fold {o m e} {𝒞 : Category o m e}
 
 open Functor
 
-open fam-mu-lifting.glued-in-map T CM BP Lft 𝒫 𝒫P system G Rt Cl public
+private
+  module GIM = fam-mu-lifting.glued-in-map T CM BP Lft 𝒫 𝒫P system G Rt Cl
+
+open GIM
+open GIM public
+  using (module Gl; module GlInMap; module MuPred; Lf-Gl; Zeroed; _[×]_; mor; elem-in;
+         PolyPred; glue; fobj-Gl; sing-assemble; sing-under-root)
 
 open R hiding (fobj)
 open Gl.Obj
