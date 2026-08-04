@@ -41,7 +41,13 @@ module fam-mu-lifting.glued-interface {o m e} {𝒞 : Category o m e}
 
 open Functor
 
-open fam-mu-lifting.glued-fold T CM BP Lft 𝒫 𝒫P system G Rt Cl public
+private
+  module GF = fam-mu-lifting.glued-fold T CM BP Lft 𝒫 𝒫P system G Rt Cl
+
+open GF
+open GF public
+  using (module Gl; Lf-Gl; mor; Zeroed; _[×]_; elem-in; module MuPred; PolyPred;
+         sing-assemble; sing-under-root)
 
 open R hiding (fobj)
 open Gl.Obj
