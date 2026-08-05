@@ -28,7 +28,7 @@ open import example.rooted-runs
   using (length-term; query-ctxt-fo; module model; module interp)
 open import every using ([]; _∷_)
 open import language-syntax EP.Sig
-  using (base; unit; _[+]_; _[×]_; var; μ; _⊢_; bop; fold; case; snd; zero;
+  using (type; base; unit; _[+]_; _[×]_; var; μ; _⊢_; bop; fold; case; snd; zero;
          first-order; first-order-ctxt; emp; _,_)
 
 private
@@ -84,12 +84,18 @@ len-u =
   T.sup (inj₁ (lift tt))))))))))
 
 -- Width axis: list over a pair-of-pairs payload, doubling the payload width at fixed depth.
-ppTy = (base EP.label [×] base EP.number) [×] (base EP.label [×] base EP.number)
+ppT : type 1
+ppT = (base EP.label [×] base EP.number) [×] (base EP.label [×] base EP.number)
 
-pp-ctxt-fo : first-order-ctxt (emp , μ (unit [+] (ppTy [×] var Fin.zero)))
-pp-ctxt-fo = emp , μ (unit [+] (ppTy [×] var Fin.zero))
+ppList : type 0
+ppList = μ (unit [+] (ppT [×] var Fin.zero))
 
-len-pp : (emp , μ (unit [+] (ppTy [×] var Fin.zero))) ⊢ base EP.number
+pp-ctxt-fo : first-order-ctxt (emp , ppList)
+pp-ctxt-fo =
+  emp , μ (unit [+] (((base EP.label [×] base EP.number)
+                       [×] (base EP.label [×] base EP.number)) [×] var Fin.zero))
+
+len-pp : (emp , ppList) ⊢ base EP.number
 len-pp =
   fold (case (var zero)
           (bop (EP.lit 0ℚ) [])
