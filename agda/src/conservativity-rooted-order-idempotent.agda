@@ -2,15 +2,15 @@
 
 ------------------------------------------------------------------------------
 -- The rooted logical relations at the concrete model: families over the position orders as the
--- first-order side, families over the supported semimodules as the model, and the realisation as
--- the change of base.
+-- first-order side, families over plain semimodules as the model, and the realisation as the
+-- change of base.
 ------------------------------------------------------------------------------
 
 open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 import conservativity-rooted
-import ho-model-rooted-order-idempotent
+import order-idempotent-realise
 
 module conservativity-rooted-order-idempotent
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
@@ -20,9 +20,10 @@ module conservativity-rooted-order-idempotent
   (⊤-add-top : ∀ {x} → ι + x ≈ ι)
   where
 
-open ho-model-rooted-order-idempotent S ∨-idem ∧-idem ⊤-add-top
+private
+  module R = order-idempotent-realise S ∨-idem ∧-idem ⊤-add-top
 
 -- The rooted logical relations, with the decorated μ-carrier, its algebra map and its
 -- catamorphism at every polynomial and environment.
 module Rooted = conservativity-rooted
-  Sup-terminal SS.Sup.cmon Sup-biproduct SS.supported-lifting 𝓥F
+  R.SemiMod.terminal R.SemiMod.cmon-enriched R.SemiMod.biproduct R.Ls-lifting R.𝓥F
