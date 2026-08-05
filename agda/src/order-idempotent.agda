@@ -37,7 +37,9 @@ open matrix.Mat S
   using (Matrix; Vec; Σ; I; _ᵀ; _≈ₘ_; ∘-cong; assoc; id-left; id-right;
          Σ-cong; Σ-ε; Σ-+; Σ-·-distribₗ; Σ-·-distribᵣ; Σ-interchange; _+ₘ_; εₘ;
          comp-bilinear₁; comp-bilinear₂; comp-bilinear-ε₁; comp-bilinear-ε₂;
-         p₁; p₂; in₁; in₂; id-1; id-2; zero-1; zero-2; id-+)
+         p₁; p₂; in₁; in₂; id-1; id-2; zero-1; zero-2; id-+;
+         e; e-sym; Σ-unit; concat; split₁; split₂; concat-+; concat-preserves;
+         Σ-p₁; Σ-p₂; Σ-in₁; Σ-in₂)
   renaming (_∘_ to _∘ₘ_)
 module L = matrix.DistributiveLattice S ∨-idem ∧-idem ⊤-add-top
 open IsPreorder L.≤-isPreorder using () renaming (refl to ≤-refl; trans to ≤-trans)
@@ -59,13 +61,17 @@ open SemiMod._≈m_
 ≤-antisym : ∀ {x y} → x L.≤ y → y L.≤ x → x ≈ y
 ≤-antisym x≤y y≤x = trans (sym y≤x) (trans +-comm x≤y)
 
--- A position order: a dimension together with a reflexive, transitive matrix over it.
+-- A position order: a dimension together with a reflexive, transitive matrix over it. The action
+-- on selections is its own field because an entry of a nested block matrix costs the product of
+-- the dimensions across the nesting, which structural actions avoid.
 record Pos : Set where
   field
     dim : ℕ
     ord : Matrix dim dim
     ord-refl  : ∀ i → ι L.≤ ord i i
     ord-trans : ∀ i j k → (ord i j · ord j k) L.≤ ord i k
+    act       : Vec dim → Vec dim
+    act-app   : ∀ v i → act v i ≈ Σ {dim} (λ j → ord i j · v j)
 
   -- The order matrix is idempotent: transitivity bounds each composite term, and reflexivity
   -- recovers each entry through the diagonal.
@@ -154,6 +160,18 @@ app-congₘ : ∀ {m n} {R R' : Matrix m n} → R ≈ₘ R' →
             ∀ (v : Vec n) (i : Fin m) → app R v i ≈ app R' v i
 app-congₘ {m} {n} h v i = Σ-cong {n} (λ j → ·-cong (h i j) refl)
 
+app-congᵥ : ∀ {m n} (R : Matrix m n) {u w : Vec n} → (∀ j → u j ≈ w j) →
+            ∀ (i : Fin m) → app R u i ≈ app R w i
+app-congᵥ {m} {n} R h i = Σ-cong {n} (λ j → ·-cong refl (h j))
+
+concat-merge : ∀ {x y} (u : Vec x) (w : Vec y) (i : Fin (x +ℕ y)) →
+               (concat {x} {y} u (λ _ → ε) i + concat {x} {y} (λ _ → ε) w i) ≈ concat {x} {y} u w i
+concat-merge {x} {y} u w i =
+  trans (sym (concat-+ {x} {y} u (λ _ → ε) (λ _ → ε) w i))
+        (concat-preserves {x} {y} _≈_
+          {u₁ = λ k → u k + ε} {u₂ = u} {v₁ = λ k → ε + w k} {v₂ = w}
+          (λ j → trans +-comm +-lunit) (λ k → +-lunit) i)
+
 app-∘ : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) (v : Vec k) (i : Fin m) →
         app (R ∘ₘ T) v i ≈ app R (app T v) i
 app-∘ {m} {n} {k} R T v i =
@@ -220,8 +238,6 @@ fxd P (u ,ₚ p) = p
 colv : ∀ (P : Pos) (p : Fin (P .dim)) → ∃ₛ (Vec (P .dim)) (Fixed P)
 colv P p = (λ i → P .ord i p) ,ₚ (λ i → ord-idem P i p)
 
--- The same column, tabulated: each order entry is computed once and read back by lookup, so the
--- many coordinate reads an evaluation makes do not each recompute a block-order entry.
 private
   ≡→≈ : ∀ {x y : Setoid.Carrier A} → x ≡p y → x ≈ y
   ≡→≈ ≡p-refl = refl
@@ -231,14 +247,21 @@ private
 -- read, whereas an argument is one shared thunk captured by the returned closure.
 colv-tab : ∀ (P : Pos) (p : Fin (P .dim)) → ∃ₛ (Vec (P .dim)) (Fixed P)
 colv-tab P p =
-  mk (DV.tabulate (λ i → P .ord i p)) (λ i → lookup∘tabulate (λ j → P .ord j p) i)
+  mk (DV.tabulate (P .act (e p)))
+     (λ i → trans (≡→≈ (lookup∘tabulate (P .act (e p)) i)) (act-col i))
   where
+  act-col : ∀ i → P .act (e p) i ≈ P .ord i p
+  act-col i =
+    trans (P .act-app (e p) i)
+          (trans (Σ-cong {P .dim} (λ j → ·-cong refl (e-sym p j)))
+                 (id-right {M = P .ord} i p))
+
   mk : (t : DV.Vec (Setoid.Carrier A) (P .dim)) →
-       (∀ i → DV.lookup t i ≡p P .ord i p) → ∃ₛ (Vec (P .dim)) (Fixed P)
+       (∀ i → DV.lookup t i ≈ P .ord i p) → ∃ₛ (Vec (P .dim)) (Fixed P)
   mk t eq =
     (λ i → DV.lookup t i) ,ₚ
-    (λ i → trans (Σ-cong {P .dim} (λ j → ·-cong refl (≡→≈ (eq j))))
-                 (trans (ord-idem P i p) (sym (≡→≈ (eq i)))))
+    (λ i → trans (Σ-cong {P .dim} (λ j → ·-cong refl (eq j)))
+                 (trans (ord-idem P i p) (sym (eq i))))
 
 -- A matrix absorbed by the order matrices at either end: a presentation of a morphism. Columns are
 -- indexed by the source, as in Mat.cat.
@@ -532,6 +555,8 @@ op P .dim = P .dim
 op P .ord = P .ord ᵀ
 op P .ord-refl = P .ord-refl
 op P .ord-trans i j k = ≤-trans (L.≈→≤ ·-comm) (P .ord-trans k j i)
+op P .act v i = Σ {P .dim} (λ j → (P .ord ᵀ) i j · v j)
+op P .act-app v i = refl
 
 -- An absorbed matrix transposes to a matrix absorbed by the opposite orders, so conjugation pairs
 -- each object with its opposite; on morphisms it acts through the presentation.
@@ -545,12 +570,13 @@ _ᵀₘ {P} {Q} f .absorbed =
 _ᵀp : ∀ {P Q} → P ⇒ Q → op Q ⇒ op P
 _ᵀp h = mat→mor ((mor→mat h) ᵀₘ)
 
-ᵀp-involutive : ∀ {P Q} (f : P ⇒ Q) → (_ᵀp {op Q} {op P} (f ᵀp)) ≈p f
+-- Stated on the presentations: the morphism-level statement would need op (op P) and P to agree
+-- definitionally, which the act field prevents (its transpose action is not the original term).
+ᵀp-involutive : ∀ {P Q} (f : P ⇒ Q) →
+                mor→mat (_ᵀp {op Q} {op P} (f ᵀp)) .mat ≈ₘ mor→mat f .mat
 ᵀp-involutive {P} {Q} f =
-  ≈p-trans
-    (mat→mor-congₘ {f = (mor→mat (f ᵀp)) ᵀₘ} {g = mor→mat f}
-      (λ q p → mor→mat-mat ((mor→mat f) ᵀₘ) p q))
-    (mat→mor-full f)
+  ≈ₘ-trans (mor→mat-mat ((mor→mat (f ᵀp)) ᵀₘ))
+           (ᵀ-cong (mor→mat-mat ((mor→mat f) ᵀₘ)))
 
 ᵀp-id : ∀ (P : Pos) → (id P ᵀp) ≈p id (op P)
 ᵀp-id P = mat→mor-id (λ q p → refl)
@@ -687,11 +713,45 @@ module _ (P Q : Pos) where
     below₂ = ≤ₘ-trans (≈ₘ→≤ₘ (≈ₘ-sym (id-right {M = (in₂ {m} {n})})))
                       (∘ₘ-mono (≤ₘ-refl {M = (in₂ {m} {n})}) (I-≤-diag (Q .ord) (Q .ord-refl)))
 
+  B-act : ∀ (v : Vec (m +ℕ n)) (i : Fin (m +ℕ n)) →
+          app B v i
+            ≈ concat {m} {n} (app (P .ord) (split₁ {m} v)) (app (Q .ord) (split₂ {m} v)) i
+  B-act v i =
+    trans (app-+ₘ ((in₁ {m} {n}) ∘ₘ P .ord ∘ₘ (p₁ {m} {n}))
+                  ((in₂ {m} {n}) ∘ₘ Q .ord ∘ₘ (p₂ {m} {n})) v i)
+    (trans (+-cong arm₁ arm₂)
+           (concat-merge (app (P .ord) (split₁ {m} v)) (app (Q .ord) (split₂ {m} v)) i))
+    where
+    arm₁ : app ((in₁ {m} {n}) ∘ₘ P .ord ∘ₘ (p₁ {m} {n})) v i
+             ≈ concat {m} {n} (app (P .ord) (split₁ {m} v)) (λ _ → ε) i
+    arm₁ =
+      trans (app-∘ ((in₁ {m} {n}) ∘ₘ P .ord) (p₁ {m} {n}) v i)
+      (trans (app-∘ (in₁ {m} {n}) (P .ord) (app (p₁ {m} {n}) v) i)
+      (trans (app-congᵥ (in₁ {m} {n})
+               (λ k → app-congᵥ (P .ord) (λ j → Σ-p₁ {m} v j) k) i)
+             (Σ-in₁ (app (P .ord) (split₁ {m} v)) i)))
+
+    arm₂ : app ((in₂ {m} {n}) ∘ₘ Q .ord ∘ₘ (p₂ {m} {n})) v i
+             ≈ concat {m} {n} (λ _ → ε) (app (Q .ord) (split₂ {m} v)) i
+    arm₂ =
+      trans (app-∘ ((in₂ {m} {n}) ∘ₘ Q .ord) (p₂ {m} {n}) v i)
+      (trans (app-∘ (in₂ {m} {n}) (Q .ord) (app (p₂ {m} {n}) v) i)
+      (trans (app-congᵥ (in₂ {m} {n})
+               (λ k → app-congᵥ (Q .ord) (λ j → Σ-p₂ {m} v j) k) i)
+             (Σ-in₂ (app (Q .ord) (split₂ {m} v)) i)))
+
 _⊕_ : Pos → Pos → Pos
 (P ⊕ Q) .dim = P .dim +ℕ Q .dim
 (P ⊕ Q) .ord = B P Q
 (P ⊕ Q) .ord-refl i = ≤-trans (L.≈→≤ (sym (I-diag i))) (I-≤-B P Q i i)
 (P ⊕ Q) .ord-trans = idem-trans (B-idem P Q)
+(P ⊕ Q) .act v =
+  concat {P .dim} {Q .dim} (P .act (split₁ {P .dim} v)) (Q .act (split₂ {P .dim} v))
+(P ⊕ Q) .act-app v i =
+  trans (concat-preserves _≈_
+          (λ j → P .act-app (split₁ {P .dim} v) j)
+          (λ k → Q .act-app (split₂ {P .dim} v) k) i)
+        (sym (B-act P Q v i))
 
 -- Projections and injections, presented by the block matrices corrected by the block orders.
 π₁ₘ : ∀ (P Q : Pos) → (P ⊕ Q) ⇒ₘ P
@@ -855,6 +915,8 @@ disc n .dim = n
 disc n .ord = I
 disc n .ord-refl i = L.≈→≤ (sym (I-diag i))
 disc n .ord-trans = idem-trans (id-left {M = I})
+disc n .act v = v
+disc n .act-app v i = sym (Σ-unit i v)
 
 -- The block order on two discrete orders is discrete.
 B-disc : ∀ m n → B (disc m) (disc n) ≈ₘ I
@@ -920,6 +982,13 @@ Lp P .ord-trans (suc i) zero k =
   ≤-trans (L.≈→≤ ε-annihilₗ) (IsBottom.≤-bottom L.⊥-isBottom)
 Lp P .ord-trans (suc i) (suc j) zero = L.≈→≤ ε-annihilᵣ
 Lp P .ord-trans (suc i) (suc j) (suc k) = P .ord-trans i j k
+Lp P .act v zero    = Σ {suc (P .dim)} v
+Lp P .act v (suc i) = P .act (λ j → v (suc j)) i
+Lp P .act-app v zero =
+  Σ-cong {suc (P .dim)} {v} {λ j → ι · v j} (λ j → sym ·-lunit)
+Lp P .act-app v (suc i) =
+  trans (P .act-app (λ j → v (suc j)) i)
+        (sym (trans (+-cong ε-annihilₗ refl) +-lunit))
 
 head : ∀ {n} → Vec (suc n) → Setoid.Carrier A
 head v = v zero

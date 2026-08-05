@@ -71,6 +71,8 @@ spine .ord-trans b  c₁ k  = O-≤ (ord4 b k)
 spine .ord-trans b  a  k  = O-≤ (ord4 b k)
 spine .ord-trans b  c₂ k  = O-≤ (ord4 b k)
 spine .ord-trans b  b  k  = L-refl (ord4 b k)
+spine .act v i = TM.Σ {4} (λ j → ord4 i j TM.· v j)
+spine .act-app v i = T.refl {TM.Σ {4} (λ j → ord4 i j TM.· v j)}
 
 -- Ancestor closure of a selection of positions: the action of the order matrix.
 close-sel : TM.Vec 4 → TM.Vec 4

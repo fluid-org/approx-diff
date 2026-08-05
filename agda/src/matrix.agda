@@ -407,6 +407,21 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Σ-p₂ {suc x} w i =
     trans (+-cong ε-annihilₗ refl) (trans +-lunit (Σ-p₂ {x} (λ j → w (suc j)) i))
 
+  Σ-in₁ : ∀ {x y} (u : Vec x) (i : Fin (x +ℕ y)) →
+          Σ {x} (λ j → in₁ {x} {y} i j · u j) ≈ concat {x} {y} u (λ _ → ε) i
+  Σ-in₁ {zero} u i = refl
+  Σ-in₁ {suc x} u zero =
+    trans (+-cong ·-lunit (trans (Σ-cong {x} (λ j → ε-annihilₗ)) (Σ-ε {x})))
+          (trans +-comm +-lunit)
+  Σ-in₁ {suc x} u (suc i) =
+    trans (+-cong ε-annihilₗ refl) (trans +-lunit (Σ-in₁ {x} (λ j → u (suc j)) i))
+
+  Σ-in₂ : ∀ {x y} (w : Vec y) (i : Fin (x +ℕ y)) →
+          Σ {y} (λ j → in₂ {x} {y} i j · w j) ≈ concat {x} {y} (λ _ → ε) w i
+  Σ-in₂ {zero}  w i = Σ-unit i w
+  Σ-in₂ {suc x} {y} w zero = trans (Σ-cong {y} (λ j → ε-annihilₗ)) (Σ-ε {y})
+  Σ-in₂ {suc x} w (suc i) = Σ-in₂ {x} w i
+
 -- Additional (ordered) structures that might be present on S.
 module _ {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   open import basics using (IsPreorder; IsJoin; IsBottom; IsMeet; IsTop; module Disjoint)
