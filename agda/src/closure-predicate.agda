@@ -2,9 +2,9 @@
 
 open import Level using (suc; _⊔_; 0ℓ)
 open import basics
-  using (IsPreorder; IsTop; IsMeet; IsResidual; monoidOfMeet; module ≤-Reasoning; IsJoin; IsClosureOp; IsBigJoin)
-open import categories using (Category; HasProducts; HasExponentials)
-open import functor using (Functor; NatTrans; Id; _∘F_)
+  using (IsPreorder; IsTop; IsMeet; IsResidual; module ≤-Reasoning; IsJoin; IsClosureOp; IsBigJoin)
+open import categories using (Category; HasProducts)
+open import functor using (Functor; NatTrans)
 open import monad using (Monad)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 

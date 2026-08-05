@@ -1,14 +1,14 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import Level using (_⊔_; suc; 0ℓ)
-open import Data.Product using (_,_; proj₁; proj₂) renaming (_×_ to _××_)
-open import prop using (_,_; tt; ∃; _∧_; LiftS; liftS; proj₁; proj₂)
+open import Data.Product using (_,_; proj₂)
+open import prop using (_,_; tt; ∃; _∧_; LiftS; liftS; proj₂)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; module ≤-Reasoning; monoidOfMeet; IsJoin; IsClosureOp; IsBigJoin)
 open import prop-setoid using (Setoid; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_)
-open import categories using (Category; HasProducts; HasTerminal; IsTerminal; HasCoproducts)
-open import setoid-cat using (SetoidCat; Setoid-products; Setoid-coproducts)
-open import functor using (Functor; [_⇒_]; NatTrans; ≃-NatTrans; functor-preserve-iso; Id; _∘F_)
+open import categories using (Category; HasProducts)
+open import setoid-cat using (SetoidCat; Setoid-products)
+open import functor using (Functor; [_⇒_]; NatTrans; ≃-NatTrans)
 open import monad using (Monad)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 import setoid-predicate

@@ -3,10 +3,10 @@
 module fam where
 
 open import Level using (_⊔_; suc; lift)
-open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_)
-open import Data.Product using (_×_; _,_; Σ-syntax)
+open import Data.Product using (_,_; Σ-syntax)
 open import prop using (_,_; tt; ∃ₚ; ⟪_⟫; ⊥-elim)
 open import prop-setoid
   using (IsEquivalence; Setoid; 𝟙; +-setoid; ⊗-setoid; idS; _∘S_; module ≈-Reasoning)

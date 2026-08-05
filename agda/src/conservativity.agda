@@ -2,7 +2,7 @@
 
 open import Level using (Level; Lift; lift; lower; _⊔_; 0ℓ) renaming (suc to lsuc)
 open import Data.Product using (_,_)
-open import prop using (_,_; proj₁; proj₂; ∃; ∃ₛ; Prf; ⟪_⟫; LiftP; lift; lower; liftS; LiftS; inj₁; inj₂)
+open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫; LiftP; lift; lower; liftS; inj₁; inj₂)
 open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet; IsBigJoin; IsPreorder)
 open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
@@ -16,9 +16,8 @@ import polynomial-functor
 open import functor
   using (Functor; _∘F_; opF; _∘H_; ∘H-cong; id; _∘_; NatTrans; ≃-NatTrans; ≃-isEquivalence;
          interchange; H-id; NT-id-left;
-         HasColimits; Colimit; IsColimit; colambda-unique; constF; NatIso; functor-preserve-iso)
+         HasColimits; Colimit; colambda-unique; constF; NatIso; functor-preserve-iso)
 open import prop-setoid using (module ≈-Reasoning; IsEquivalence; Setoid)
-open import setoid-cat using (SetoidCat)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 open import stable-coproducts using (StableBits)
 import fam-mu-realisation

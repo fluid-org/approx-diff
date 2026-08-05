@@ -1,12 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Level using (_⊔_)
-open import Data.Product using (Σ; _,_; proj₁; proj₂)
-open import prop using (∃ₚ; ∃ₛ; Prf; ⟪_⟫; _,_; tt)
+open import Data.Product using (_,_; proj₁; proj₂)
+open import prop using (∃ₚ; ∃ₛ; ⟪_⟫; _,_; tt)
 open prop.∃ₚ using (fst; snd)
-open import prop-setoid using (Setoid; IsEquivalence; module ≈-Reasoning)
+open import prop-setoid using (Setoid; IsEquivalence)
 open import categories using (Category; setoid→category)
-open import functor using (Functor; HasColimits; Colimit; NatTrans; constF)
+open import functor using (Functor)
 open import fam using (module CategoryOfFamilies)
 import stable-coproducts-indexed
 

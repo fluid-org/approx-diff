@@ -7,11 +7,11 @@ open import Data.Product using (_,_)
 open import prop using (_∧_; _,_; proj₁; proj₂; ⊤; tt; ∃; LiftP; lower; _∨_; inj₁; inj₂; lift)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; monoidOfMeet; IsJoin; IsBigJoin)
 open import prop-setoid
-  using (idS; Setoid; IsEquivalence; _∘S_; ∘S-cong;
-         ⊗-setoid; project₁; project₂; pair; +-setoid; inject₁; inject₂;
+  using (idS; Setoid; _∘S_;
+         ⊗-setoid; project₁; project₂; pair;
          module ≈-Reasoning)
-  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence)
-open import setoid-cat using (SetoidCat; Setoid-products; Setoid-coproducts)
+  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_)
+open import setoid-cat using (SetoidCat; Setoid-products)
 
 record Predicate (X : Setoid o e) : Set (suc (suc o ⊔ suc e)) where
   no-eta-equality

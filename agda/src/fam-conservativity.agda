@@ -10,12 +10,12 @@
 -- decomposition can split a family into its fibres.
 ------------------------------------------------------------------------------
 
-open import Level using (Level; _⊔_)
-open import Data.Product using (Σ; _,_)
+open import Level using (Level)
+open import Data.Product using (_,_)
 open import prop using (Prf; ⟪_⟫; ∃; ∃ₛ; _,_)
-open import prop-setoid as PS using (Setoid; IsEquivalence)
+open import prop-setoid as PS using (Setoid)
 open import categories using (Category; setoid→category)
-open import functor using (Functor; HasColimits; Colimit; NatTrans; ≃-NatTrans; Id; _∘F_)
+open import functor using (Functor; HasColimits; Colimit; NatTrans; ≃-NatTrans; _∘F_)
 import functor
 open import indexed-family using (Fam; _⇒f_; _≃f_)
 open import monad using (Monad; IdentityMonad)

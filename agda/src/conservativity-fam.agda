@@ -9,9 +9,8 @@
 -- part here, so the monads are the identity ones.
 ------------------------------------------------------------------------------
 
-open import Level using (Level; 0ℓ)
+open import Level using (0ℓ)
 open import prop using (Prf; ∃; ∃ₛ; _,_)
-open import prop-setoid using (Setoid)
 open import categories using (Category; HasTerminal; HasProducts; HasWeakExponentials)
 open import functor using (Functor)
 open import monad using (IdentityMonad; preserve-identity-monad)
