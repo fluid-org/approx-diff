@@ -200,6 +200,6 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
                   (OI.Pos.dim (𝒞⟦ Γ-fo ⟧ctxt .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm γ))
       dep-mat q p =
         OI.vec (𝒞⟦ fo ⟧ty ∅𝒞 .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm out)
-               (dep .func
+               (SemiMod._⇒_.func dep
                  (OI.colv-tab (𝒞⟦ Γ-fo ⟧ctxt .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm γ) p))
                q
