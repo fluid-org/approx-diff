@@ -3,6 +3,9 @@
 open import Level using (0ℓ)
 open import Data.Nat using (ℕ; zero; suc) renaming (_+_ to _+ℕ_)
 open import Data.Fin using (Fin; zero; suc)
+import Data.Vec as DV
+open import Data.Vec.Properties using (lookup∘tabulate)
+open import Relation.Binary.PropositionalEquality using () renaming (_≡_ to _≡p_; refl to ≡p-refl)
 open import prop using (∃ₛ) renaming (_,_ to _,ₚ_)
 open import prop-setoid using (Setoid; IsEquivalence) renaming (_⇒_ to _⇒s_; _≃m_ to _≃s_)
 open import commutative-semiring using (CommutativeSemiring)
@@ -216,6 +219,28 @@ fxd P (u ,ₚ p) = p
 -- The down-closure of a basis vector is a selection, fixed by idempotence of the order.
 colv : ∀ (P : Pos) (p : Fin (P .dim)) → ∃ₛ (Vec (P .dim)) (Fixed P)
 colv P p = (λ i → P .ord i p) ,ₚ (λ i → ord-idem P i p)
+
+-- The same column, tabulated: each order entry is computed once and read back by lookup, so the
+-- many coordinate reads an evaluation makes do not each recompute a block-order entry.
+private
+  ≡→≈ : ∀ {x y : Setoid.Carrier A} → x ≡p y → x ≈ y
+  ≡→≈ ≡p-refl = refl
+
+colv-tab : ∀ (P : Pos) (p : Fin (P .dim)) → ∃ₛ (Vec (P .dim)) (Fixed P)
+colv-tab P p = v' ,ₚ fixed
+  where
+  t = DV.tabulate (λ i → P .ord i p)
+
+  v' : Vec (P .dim)
+  v' i = DV.lookup t i
+
+  v'-col : ∀ i → v' i ≡p P .ord i p
+  v'-col i = lookup∘tabulate (λ j → P .ord j p) i
+
+  fixed : Fixed P v'
+  fixed i =
+    trans (Σ-cong {P .dim} (λ j → ·-cong refl (≡→≈ (v'-col j))))
+          (trans (ord-idem P i p) (sym (≡→≈ (v'-col i))))
 
 -- A matrix absorbed by the order matrices at either end: a presentation of a morphism. Columns are
 -- indexed by the source, as in Mat.cat.

@@ -132,6 +132,10 @@ abstract
   u3e = bit (interp.readback.dep-mat unit-ctxt-fo (base EP.number) len-u γu3
                Fin.zero Fin.zero)
 
+  u4e : String
+  u4e = bit (interp.readback.dep-mat unit-ctxt-fo (base EP.number) len-u γu4
+               Fin.zero Fin.zero)
+
   p1 : String
   p1 = table (interp.readback.dep-mat query-ctxt-fo (base EP.number) length-term γp1)
 
@@ -158,6 +162,7 @@ main =
        writeFile "/tmp/probe-w2e.txt" w2e >>
        writeFile "/tmp/probe-u3e.txt" u3e >>
        writeFile "/tmp/probe-p2.txt" p2 >>
+       writeFile "/tmp/probe-u4e.txt" u4e >>
        writeFile "/tmp/probe-u3.txt" u3 >>
        writeFile "/tmp/probe-u4.txt" u4 >>
        writeFile "/tmp/probe-w2.txt" w2 >>

@@ -193,7 +193,13 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
                 (𝒟⟦ t ⟧tm .Fam⟨𝒟⟩μ.famf .transf γ𝒟)
                 (⟦ Γ-fo ⟧ctxt-iso .fwd .Fam⟨𝒟⟩μ.famf .transf γ))
 
+      -- The presentation matrix, read entrywise on tabulated basis columns so the evaluation's
+      -- coordinate reads hit a lookup rather than recompute a block-order entry each time.
       dep-mat : matrix.Mat.Matrix S
                   (OI.Pos.dim (𝒞⟦ fo ⟧ty ∅𝒞 .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm out))
                   (OI.Pos.dim (𝒞⟦ Γ-fo ⟧ctxt .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm γ))
-      dep-mat = OI.mor→mat dep .OI._⇒ₘ_.mat
+      dep-mat q p =
+        OI.vec (𝒞⟦ fo ⟧ty ∅𝒞 .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm out)
+               (dep .func
+                 (OI.colv-tab (𝒞⟦ Γ-fo ⟧ctxt .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm γ) p))
+               q

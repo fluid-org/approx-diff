@@ -11,7 +11,8 @@ open import Data.String using (String; _++_)
 open import Data.Product using (_×_) renaming (_,_ to _,'_)
 open import Data.List using (List; []; _∷_; map) renaming (foldr to foldrL)
 open import Data.Vec using (Vec; toList; tabulate)
-open import Data.Fin using (Fin)
+import Data.Fin as Fin
+open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Unit using (tt)
 open import Data.Unit.Polymorphic using () renaming (⊤ to ⊤p; tt to ttp)
@@ -23,7 +24,7 @@ import two
 import matrix
 import example.primitives as EP
 open import example.rooted-runs
-  using (length-term; query-ctxt-fo; module model; module interp)
+  using (length-term; query-ctxt-fo; γ-input; module model; module interp)
 open import language-syntax EP.Sig using (base)
 
 private
@@ -59,7 +60,15 @@ abstract
   dep1 = table (interp.readback.dep-mat query-ctxt-fo (base EP.number) length-term γ1)
   dep2 = table (interp.readback.dep-mat query-ctxt-fo (base EP.number) length-term γ2)
 
+  root-label-cols3 : String
+  root-label-cols3 =
+    bit (interp.readback.dep-mat query-ctxt-fo (base EP.number) length-term γ-input
+           Fin.zero Fin.zero) ++
+    bit (interp.readback.dep-mat query-ctxt-fo (base EP.number) length-term γ-input
+           Fin.zero (Fin.suc (Fin.suc Fin.zero)))
+
 main : Main
 main =
   run (writeFile "/tmp/prof-length-1.txt" dep1 >>
-       writeFile "/tmp/prof-length-2.txt" dep2)
+       writeFile "/tmp/prof-length-2.txt" dep2 >>
+       writeFile "/tmp/prof-spot3.txt" root-label-cols3)
