@@ -203,3 +203,7 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
                (SemiMod._⇒_.func dep
                  (OI.colv-tab (𝒞⟦ Γ-fo ⟧ctxt .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm γ) p))
                q
+
+  -- The realisation is identity on morphisms, so fullness holds with each morphism its own
+  -- preimage.
+  module syntactic = definability (λ e → e) (λ k → k ,ₚ SMC.≈-refl)

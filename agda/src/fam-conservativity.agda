@@ -209,3 +209,39 @@ module _ (faithful : ∀ {a b} {g₁ g₂ : a 𝒞C.⇒ b} → F .fmor g₁ 𝒟
         𝒟C.≈-trans (𝒟C.∘-cong (𝒟C.≈-trans (F .fmor-cong (b .fam .refl*)) (F .fmor-id))
                               𝒟C.≈-refl)
                    (𝒟C.≈-trans 𝒟C.id-left (pick-eq i))
+
+-- Fullness passes to families outright, with no mere-definability hypothesis: the index map is
+-- carried unchanged, each fibre's preimage is chosen directly, and the chosen fibres are natural
+-- because the base functor is faithful.
+module _ (faithful : ∀ {a b} {g₁ g₂ : a 𝒞C.⇒ b} → F .fmor g₁ 𝒟C.≈ F .fmor g₂ → g₁ 𝒞C.≈ g₂)
+         (full : ∀ {a b} (k : F .fobj a 𝒟C.⇒ F .fobj b) →
+                 ∃ₛ (a 𝒞C.⇒ b) λ g → F .fmor g 𝒟C.≈ k)
+         where
+
+  FamF-full : ∀ {a b : Fam𝒞.Obj} (h : Fam𝒟.Mor (FamF .fobj a) (FamF .fobj b)) →
+              ∃ₛ (Fam𝒞.Mor a b) λ g → Fam𝒟.cat .Category._≈_ (FamF .fmor g) h
+  FamF-full {a} {b} h = g , g-eq
+    where
+      pick : ∀ i → a .fam .fm i 𝒞C.⇒ b .fam .fm (h .idxf .PS._⇒_.func i)
+      pick i = ∃ₛ.fst (full (h .famf ._⇒f_.transf i))
+
+      pick-eq : ∀ i → F .fmor (pick i) 𝒟C.≈ h .famf ._⇒f_.transf i
+      pick-eq i = ∃ₛ.snd (full (h .famf ._⇒f_.transf i))
+
+      g : Fam𝒞.Mor a b
+      g .idxf = h .idxf
+      g .famf ._⇒f_.transf = pick
+      g .famf ._⇒f_.natural {i₁} {i₂} e =
+        faithful
+          (𝒟C.≈-trans (F .fmor-comp _ _)
+          (𝒟C.≈-trans (𝒟C.∘-cong (pick-eq i₂) 𝒟C.≈-refl)
+          (𝒟C.≈-trans (h .famf ._⇒f_.natural e)
+          (𝒟C.≈-trans (𝒟C.∘-cong 𝒟C.≈-refl (𝒟C.≈-sym (pick-eq i₁)))
+                      (𝒟C.≈-sym (F .fmor-comp _ _))))))
+
+      g-eq : Fam𝒟.cat .Category._≈_ (FamF .fmor g) h
+      g-eq .idxf-eq .PS._≃m_.func-eq e = h .idxf .PS._⇒_.func-resp-≈ e
+      g-eq .famf-eq ._≃f_.transf-eq {i} =
+        𝒟C.≈-trans (𝒟C.∘-cong (𝒟C.≈-trans (F .fmor-cong (b .fam .refl*)) (F .fmor-id))
+                              𝒟C.≈-refl)
+                   (𝒟C.≈-trans 𝒟C.id-left (pick-eq i))
