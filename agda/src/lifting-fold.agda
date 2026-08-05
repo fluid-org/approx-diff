@@ -677,3 +677,150 @@ module Reindex (W W' R : obj) (u : W' ⇒ W) where
         (rootStep-cong₂ W' R (sh R s) (fibS s) ≈-refl
           (≈-trans (foldS-ctx s _)
                    (foldS-cong W' R alg-ctx s (rootCont-ctx (sh R s) k))))
+
+-- Single-application forms of the transport and elimination combinators: the inner morphism is
+-- applied once, to the context recombined with the payload, instead of once per copairing arm.
+-- The classic forms split the inner morphism linearly across the arms, so nesting them squares
+-- the evaluation work per lifting layer; these are equal as morphisms but evaluate the
+-- continuation once per node.
+payloadL : ∀ {X} → L X ⇒ X
+payloadL {X} = affine εm (id X)
+
+tagL : ∀ {X} → L X ⇒ 𝟙c
+tagL {X} = affine (id 𝟙c) εm
+
+payloadL-root : ∀ {X} → (payloadL {X} ∘ root) ≈ εm
+payloadL-root {X} = affine-root εm (id X)
+
+payloadL-inj : ∀ {X} → (payloadL {X} ∘ inj) ≈ id X
+payloadL-inj {X} =
+  ≈-trans (affine-inj εm (id X))
+  (≈-trans (+m-cong (comp-bilinear-ε₁ spt) ≈-refl)
+           (homCM _ _ .CommutativeMonoid.+-lunit))
+
+tagL-root : ∀ {X} → (tagL {X} ∘ root) ≈ id 𝟙c
+tagL-root {X} = affine-root (id 𝟙c) εm
+
+tagL-inj : ∀ {X} → (tagL {X} ∘ inj) ≈ spt
+tagL-inj {X} =
+  ≈-trans (affine-inj (id 𝟙c) εm) (≈-trans (+m-cong id-left ≈-refl) +m-runit)
+
+under-root-alt : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
+under-root-alt {G} r = (inj ∘ (r ∘ pm (id G) payloadL)) +m ((root ∘ tagL) ∘ π₂)
+
+strip-root-alt : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
+strip-root-alt {G} c r = (r ∘ pm (id G) payloadL) +m ((c ∘ tagL) ∘ π₂)
+
+private
+  pm-arm-ι₁ : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ pm (id G) payloadL) ∘ ι₁) ≈ (r ∘ ι₁)
+  pm-arm-ι₁ {G} r =
+    ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pm-in₁ (id G) payloadL) id-right))
+
+  pm-arm-ι₂ : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
+              ((r ∘ pm (id G) payloadL) ∘ ι₂) ≈ (r ∘ (ι₂ ∘ payloadL))
+  pm-arm-ι₂ {G} r = ≈-trans (assoc _ _ _) (∘-cong ≈-refl (pm-in₂ (id G) payloadL))
+
+  tag-arm-ι₁ : ∀ {G X Y} (c : 𝟙c ⇒ Y) → (((c ∘ tagL {X}) ∘ π₂) ∘ ι₁ {G}) ≈ εm
+  tag-arm-ι₁ {G} {X} c =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 (BP G (L X)))) (comp-bilinear-ε₂ _))
+
+  tag-arm-ι₂ : ∀ {G X Y} (c : 𝟙c ⇒ Y) → (((c ∘ tagL {X}) ∘ π₂) ∘ ι₂ {G}) ≈ (c ∘ tagL)
+  tag-arm-ι₂ {G} {X} c =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (Biproduct.id-2 (BP G (L X)))) id-right)
+
+  -- The recombined arm restricted along root and inj.
+  payload-comp-root : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ (ι₂ ∘ payloadL)) ∘ root) ≈ εm
+  payload-comp-root r =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (≈-trans (assoc _ _ _)
+               (≈-trans (∘-cong ≈-refl payloadL-root) (comp-bilinear-ε₂ ι₂))))
+             (comp-bilinear-ε₂ r))
+
+  payload-comp-inj : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ (ι₂ ∘ payloadL)) ∘ inj) ≈ (r ∘ ι₂)
+  payload-comp-inj r =
+    ≈-trans (assoc _ _ _)
+    (∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl payloadL-inj) id-right)))
+
+-- The bridges: each single-application form equals its classic counterpart, so every law about
+-- the classic combinators transfers by congruence.
+under-root-alt-≈ : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → under-root-alt r ≈ under-root r
+under-root-alt-≈ {G} {X} {Y} r = bp-ext leg₁ leg₂
+  where
+  M = inj ∘ (r ∘ ι₂)
+
+  leg₁ : (under-root-alt r ∘ ι₁) ≈ (under-root r ∘ ι₁)
+  leg₁ =
+    ≈-trans (comp-bilinear₁ _ _ ι₁)
+    (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pm-arm-ι₁ r)))
+                      (tag-arm-ι₁ root))
+    (≈-trans +m-runit
+             (≈-sym (Biproduct.copair-in₁ (BP G (L X)) (inj ∘ (r ∘ ι₁)) (affine root M)))))
+
+  E : L X ⇒ L Y
+  E = (inj ∘ (r ∘ (ι₂ ∘ payloadL))) +m (root ∘ tagL)
+
+  E-root : (E ∘ root) ≈ (affine root M ∘ root)
+  E-root =
+    ≈-trans (comp-bilinear₁ _ _ root)
+    (≈-trans (+m-cong (≈-trans (assoc _ _ _)
+                        (≈-trans (∘-cong ≈-refl (payload-comp-root r)) (comp-bilinear-ε₂ inj)))
+                      (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl tagL-root) id-right)))
+    (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
+             (≈-sym (affine-root root M))))
+
+  E-inj : (E ∘ inj) ≈ (affine root M ∘ inj)
+  E-inj =
+    ≈-trans (comp-bilinear₁ _ _ inj)
+    (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (payload-comp-inj r)))
+                      (≈-trans (assoc _ _ _) (∘-cong ≈-refl tagL-inj)))
+    (≈-trans (homCM _ _ .CommutativeMonoid.+-comm)
+             (≈-sym (affine-inj root M))))
+
+  leg₂ : (under-root-alt r ∘ ι₂) ≈ (under-root r ∘ ι₂)
+  leg₂ =
+    ≈-trans (comp-bilinear₁ _ _ ι₂)
+    (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pm-arm-ι₂ r)))
+                      (tag-arm-ι₂ root))
+    (≈-trans (lifting-ext E (affine root M) E-root E-inj)
+             (≈-sym (Biproduct.copair-in₂ (BP G (L X)) (inj ∘ (r ∘ ι₁)) (affine root M)))))
+
+strip-root-alt-≈ : ∀ {G X Y} (c : 𝟙c ⇒ Y) (r : (G ⊕ X) ⇒ Y) →
+                   strip-root-alt c r ≈ strip-root c r
+strip-root-alt-≈ {G} {X} {Y} c r = bp-ext leg₁ leg₂
+  where
+  M = r ∘ ι₂
+
+  leg₁ : (strip-root-alt c r ∘ ι₁) ≈ (strip-root c r ∘ ι₁)
+  leg₁ =
+    ≈-trans (comp-bilinear₁ _ _ ι₁)
+    (≈-trans (+m-cong (pm-arm-ι₁ r) (tag-arm-ι₁ c))
+    (≈-trans +m-runit
+             (≈-sym (Biproduct.copair-in₁ (BP G (L X)) (r ∘ ι₁) (affine c M)))))
+
+  E : L X ⇒ Y
+  E = (r ∘ (ι₂ ∘ payloadL)) +m (c ∘ tagL)
+
+  E-root : (E ∘ root) ≈ (affine c M ∘ root)
+  E-root =
+    ≈-trans (comp-bilinear₁ _ _ root)
+    (≈-trans (+m-cong (payload-comp-root r)
+                      (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl tagL-root) id-right)))
+    (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
+             (≈-sym (affine-root c M))))
+
+  E-inj : (E ∘ inj) ≈ (affine c M ∘ inj)
+  E-inj =
+    ≈-trans (comp-bilinear₁ _ _ inj)
+    (≈-trans (+m-cong (payload-comp-inj r)
+                      (≈-trans (assoc _ _ _) (∘-cong ≈-refl tagL-inj)))
+    (≈-trans (homCM _ _ .CommutativeMonoid.+-comm)
+             (≈-sym (affine-inj c M))))
+
+  leg₂ : (strip-root-alt c r ∘ ι₂) ≈ (strip-root c r ∘ ι₂)
+  leg₂ =
+    ≈-trans (comp-bilinear₁ _ _ ι₂)
+    (≈-trans (+m-cong (pm-arm-ι₂ r) (tag-arm-ι₂ c))
+    (≈-trans (lifting-ext E (affine c M) E-root E-inj)
+             (≈-sym (Biproduct.copair-in₂ (BP G (L X)) (r ∘ ι₁) (affine c M)))))
