@@ -226,21 +226,19 @@ private
   ≡→≈ : ∀ {x y : Setoid.Carrier A} → x ≡p y → x ≈ y
   ≡→≈ ≡p-refl = refl
 
+-- The table is passed as an argument rather than named in a where-clause: a where-definition
+-- compiles to a lifted function of the enclosing parameters, re-evaluated at every coordinate
+-- read, whereas an argument is one shared thunk captured by the returned closure.
 colv-tab : ∀ (P : Pos) (p : Fin (P .dim)) → ∃ₛ (Vec (P .dim)) (Fixed P)
-colv-tab P p = v' ,ₚ fixed
+colv-tab P p =
+  mk (DV.tabulate (λ i → P .ord i p)) (λ i → lookup∘tabulate (λ j → P .ord j p) i)
   where
-  t = DV.tabulate (λ i → P .ord i p)
-
-  v' : Vec (P .dim)
-  v' i = DV.lookup t i
-
-  v'-col : ∀ i → v' i ≡p P .ord i p
-  v'-col i = lookup∘tabulate (λ j → P .ord j p) i
-
-  fixed : Fixed P v'
-  fixed i =
-    trans (Σ-cong {P .dim} (λ j → ·-cong refl (≡→≈ (v'-col j))))
-          (trans (ord-idem P i p) (sym (≡→≈ (v'-col i))))
+  mk : (t : DV.Vec (Setoid.Carrier A) (P .dim)) →
+       (∀ i → DV.lookup t i ≡p P .ord i p) → ∃ₛ (Vec (P .dim)) (Fixed P)
+  mk t eq =
+    (λ i → DV.lookup t i) ,ₚ
+    (λ i → trans (Σ-cong {P .dim} (λ j → ·-cong refl (≡→≈ (eq j))))
+                 (trans (ord-idem P i p) (sym (≡→≈ (eq i)))))
 
 -- A matrix absorbed by the order matrices at either end: a presentation of a morphism. Columns are
 -- indexed by the source, as in Mat.cat.
