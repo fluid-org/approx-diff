@@ -91,7 +91,7 @@ open lifting-fold CM BP Lft public
   using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
          under-root-p₂; under-root-strip; pm; pm-in₁; pm-in₂; bp-ext; cop; cop-cong;
          strip-root; strip-root-cong; strip-root-natural;
-         under-root-classic; under-root-unfold)
+         under-root-classic; under-root-unfold; strip-root-classic; strip-root-unfold)
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)

@@ -85,6 +85,7 @@ elimF-inj {Γ} {X} {C} ptC f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (pm-in₁ (id _) inj))
     (≈-trans (∘-cong ≈-refl id-right)
+    (≈-trans (∘-cong (strip-root-unfold c r) ≈-refl)
     (≈-trans (Biproduct.copair-in₁ bpL _ _)
     (≈-sym
       (≈-trans (CME.comp-bilinear₁ _ _ _)
@@ -92,7 +93,7 @@ elimF-inj {Γ} {X} {C} ptC f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ
                  (≈-trans (assoc _ _ _)
                    (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 bp)) (CME.comp-bilinear-ε₂ _)))
                  ≈-refl)
-               (CME.homCM _ _ .CommutativeMonoid.+-lunit)))))))
+               (CME.homCM _ _ .CommutativeMonoid.+-lunit))))))))
 
   side₂ : ((strip-root c r ∘ pm (id _) inj) ∘ Biproduct.in₂ bp)
           ≈ ((((c ∘ spt) ∘ p₂) +m r) ∘ Biproduct.in₂ bp)
@@ -100,6 +101,7 @@ elimF-inj {Γ} {X} {C} ptC f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (pm-in₂ (id _) inj))
     (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong (∘-cong (strip-root-unfold c r) ≈-refl) ≈-refl)
     (≈-trans (∘-cong (Biproduct.copair-in₂ bpL _ _) ≈-refl)
     (≈-trans (affine-inj c _)
     (≈-sym
@@ -107,7 +109,7 @@ elimF-inj {Γ} {X} {C} ptC f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ
                (CME.homCM _ _ .CommutativeMonoid.+-cong
                  (≈-trans (assoc _ _ _)
                    (≈-trans (∘-cong ≈-refl (Biproduct.id-2 bp)) id-right))
-                 ≈-refl)))))))
+                 ≈-refl))))))))
 
 -- The payload injection is natural at morphisms whose fibre maps are isomorphisms, which is all
 -- the lifting's action admits.
