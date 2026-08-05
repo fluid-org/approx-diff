@@ -90,7 +90,8 @@ import lifting-fold
 open lifting-fold CM BP Lft public
   using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
          under-root-p₂; under-root-strip; pm; pm-in₁; pm-in₂; bp-ext; cop; cop-cong;
-         strip-root; strip-root-cong; strip-root-natural)
+         strip-root; strip-root-cong; strip-root-natural;
+         under-root-classic; under-root-unfold)
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
@@ -218,6 +219,8 @@ under-root-pair {W} {Γ} {X} {Y} r g u t = begin
     under-root r ∘ pair g (cop inj root ∘ pair u t)
   ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (cop-pair _ _ _ _)) ⟩
     under-root r ∘ pair g ((inj ∘ u) CME.+m (root ∘ t))
+  ≈⟨ ∘-cong (under-root-unfold r) ≈-refl ⟩
+    under-root-classic r ∘ pair g ((inj ∘ u) CME.+m (root ∘ t))
   ≈⟨ cop-pair _ _ _ _ ⟩
     ((inj ∘ (r ∘ i₁)) ∘ g) CME.+m (affine root (inj ∘ (r ∘ i₂)) ∘ ((inj ∘ u) CME.+m (root ∘ t)))
   ≈⟨ +-cong ≈-refl (CME.comp-bilinear₂ _ _ _) ⟩
