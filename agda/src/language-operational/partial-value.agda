@@ -73,6 +73,10 @@ mutual
 
 infixl 30 _·*_
 
+-- A selection: a vector over the positions, fixed under the ancestor order.
+Sel : Pos → Set
+Sel P = ∃ₛ (M.Vec (P .dim)) (Fixed P)
+
 private
   cons : ∀ {n} → two.Two → M.Vec n → M.Vec (ℕ.suc n)
   cons a u zero    = a
@@ -83,9 +87,6 @@ private
   two-case : ∀ {a} {A : Set a} (b : two.Two) → (b ≡ two.O → A) → (b ≡ two.I → A) → A
   two-case two.O o i = o refl
   two-case two.I o i = i refl
-
-  Sel : Pos → Set
-  Sel P = ∃ₛ (M.Vec (P .dim)) (Fixed P)
 
   -- The empty selection, and fixedness of a discrete selection.
   zero-sel : ∀ P → Sel P
@@ -152,6 +153,14 @@ mutual
   pval-env (γ · v) (w ,ₚ fx) =
     pval-env γ (leftV w ,ₚ ⊕-fixed-left (pos-env γ) (pos v) fx) ·*
     pval v (rightV w ,ₚ ⊕-fixed-right (pos-env γ) (pos v) fx)
+
+-- Spine closure of a raw dependency vector: the least fixed selection above it, fixed by
+-- idempotence of the order. The model reports raw selections; closing under the ancestor order
+-- is the post-processing that turns a report into a partial value.
+spine-close : ∀ P → M.Vec (P .dim) → Sel P
+spine-close P w =
+  app (P .ord) w ,ₚ
+  (λ i → T.trans (T.sym (app-∘ (P .ord) (P .ord) w i)) (app-congₘ (ord-idem P) w i))
 
 ------------------------------------------------------------------------------
 -- The bridge lemma: sel and pval are mutually inverse, up to structural equality of partial
