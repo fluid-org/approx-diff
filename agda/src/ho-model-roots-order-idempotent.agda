@@ -22,6 +22,7 @@ import matrix
 import fam
 import fam-mu-lifting.in-map
 import fam-exponentials
+import semimod-products
 import order-idempotent-realise
 import order-idempotent-primitives
 import language-roots-fo-interpretation
@@ -82,11 +83,12 @@ simple-pointed c .Fam⟨𝒞⟩μ.pt-natural e = OIC.id-left {f = c}
 𝒞𝟙ty-pt : Fam⟨𝒞⟩μ.Pointed 𝒞𝟙ty
 𝒞𝟙ty-pt = Fam⟨𝒞⟩μ.Lf-pointed Fam⟨𝒞⟩μ.zero-pointed
 
--- The model-side function spaces: exponentials on Fam(SemiMod), from the setoid products that
--- limits of semimodules give, as in the unrooted model.
+-- The model-side function spaces: exponentials on Fam(SemiMod), from the direct setoid products
+-- of plain semimodules.
+module SMP = semimod-products S
+
 SPmod : HasSetoidProducts 0ℓ 0ℓ SemiMod.cat
-SPmod =
-  indexed-family.hasSetoidProducts 0ℓ 0ℓ SemiMod.cat (λ B → limits→limits' (SemiMod.limits _))
+SPmod = SMP.semimod-setoid-products
 
 module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod.biproduct SPmod
 

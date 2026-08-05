@@ -124,11 +124,24 @@ scalar a = (λ _ → a) ,ₚ disc-fixed (λ _ → a)
 
 module BT = biproduct-transport SemiMod.cmon-enriched
 
+-- The direct root witness, repackaged over the semimodule enrichment: same morphisms, same laws.
+𝓥-root-biproduct : ∀ P → Biproduct SemiMod.cmon-enriched (𝓥 Roots.𝟙p) (𝓥 P)
+𝓥-root-biproduct P .prod = 𝓥 (Roots.Lp P)
+𝓥-root-biproduct P .p₁ = Roots.root-biproduct P .p₁
+𝓥-root-biproduct P .p₂ = Roots.root-biproduct P .p₂
+𝓥-root-biproduct P .in₁ = Roots.root-biproduct P .in₁
+𝓥-root-biproduct P .in₂ = Roots.root-biproduct P .in₂
+𝓥-root-biproduct P .id-1 = Roots.root-biproduct P .id-1
+𝓥-root-biproduct P .id-2 = Roots.root-biproduct P .id-2
+𝓥-root-biproduct P .zero-1 = Roots.root-biproduct P .zero-1
+𝓥-root-biproduct P .zero-2 = Roots.root-biproduct P .zero-2
+𝓥-root-biproduct P .id-+ = Roots.root-biproduct P .id-+
+
 -- The realisation of a lifted order is a biproduct of the scalars and the realised payload: the
--- image biproduct transported along the scalar comparison at the root.
+-- root witness transported along the scalar comparison at the root.
 Lp-biproduct : ∀ P → Biproduct SemiMod.cmon-enriched 𝕀 (𝓥 P)
 Lp-biproduct P =
-  BT.transport₁ (𝓥-image-biproduct Roots.𝟙p P) ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd
+  BT.transport₁ (𝓥-root-biproduct P) ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd
 
 -- The chosen lifting on the model side: the biproduct with the scalars.
 module LsB = lifting-biproduct SemiMod.cmon-enriched 𝕀 (λ X → SemiMod.biproduct 𝕀 X)
@@ -151,6 +164,6 @@ Ls-lifting = LsB.biproduct-lifting
       (Lifting.Lmap Ls-lifting f) (𝓥-Lp-iso P .Category.Iso.fwd))
 𝓥-Lp-natural {P} {Q} f =
   BT.compare-natural
-    (𝓥-image-biproduct Roots.𝟙p P) (𝓥-image-biproduct Roots.𝟙p Q)
+    (𝓥-root-biproduct P) (𝓥-root-biproduct Q)
     (SemiMod.biproduct 𝕀 (𝓥 P)) (SemiMod.biproduct 𝕀 (𝓥 Q))
     ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd f

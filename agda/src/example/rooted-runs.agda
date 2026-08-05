@@ -1,19 +1,12 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Readbacks over a three-element list, at the rooted model. FOUR OF THE SIX BASELINE ROWS ARE
--- WRONG, and are committed so the defect is recorded rather than hidden.
---
--- Correct: const and fold0, both all-zero. Neither applies an elimination form to the list.
---
--- Wrong: case0, tag, length and the label-filtered query all come out saturated. case0 is the
--- sharpest, since its value is one constant whatever the input, so every column should be zero.
--- Expected instead: case0 all-zero; tag the outermost cell root only; length the cons cell roots
--- only; the query the cell roots, the labels, and the values whose label matches.
---
--- Cause: the constructors go through injF, which gives a cell no root of its own and derives one
--- as the support of its contents. Elimination reads that derived root, so examining a node counts
--- as depending on everything beneath it. Domination itself is the wanted prefix closure; the fault
--- is deriving the root rather than taking it as separate data, as assembleF does.
+-- Readbacks over a three-element list, at the rooted model with roots as isolated positions.
+-- Expected: const and fold0 all-zero (nothing examined); case0 and tag the sum-cell roots the
+-- fold examines and nothing else, the two agreeing because a fold's case charges each examined
+-- tag whatever the branches return; length additionally the pair roots its snd eliminates; the
+-- label-filtered query the cell roots, the labels, and the values whose label matches. Payload
+-- columns light up only when a branch reads them, which is the distinction the dominated model
+-- collapsed.
 module example.rooted-runs where
 
 import Data.Fin as Fin
@@ -29,12 +22,12 @@ import example
 import example.primitives as EP
 import matrix
 open import every using ([]; _∷_)
-import ho-model-rooted-order-idempotent
+import ho-model-roots-order-idempotent
 
 module Ex = example ℚ 0ℚ
 open Ex.ex using (query)
 
-module model = ho-model-rooted-order-idempotent two.semiring
+module model = ho-model-roots-order-idempotent two.semiring
   (λ {x} → two.∨-idem {x}) (λ {x} → two.∧-idem {x}) (λ {x} → two.⊤-add-top {x})
 module interp = model.rooted-interp EP.Sig EP.primitives
 

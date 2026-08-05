@@ -14,12 +14,12 @@ import two
 import matrix
 import example
 import example.primitives as EP
-import ho-model-rooted-order-idempotent
+import ho-model-roots-order-idempotent
 
 module Ex = example ℚ 0ℚ
 open Ex.ex using (case-ctxt-fo; case-term)
 
-module model = ho-model-rooted-order-idempotent two.semiring
+module model = ho-model-roots-order-idempotent two.semiring
   (λ {x} → two.∨-idem {x}) (λ {x} → two.∧-idem {x}) (λ {x} → two.⊤-add-top {x})
 module interp = model.rooted-interp EP.Sig EP.primitives
 

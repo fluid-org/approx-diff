@@ -8,6 +8,8 @@ module graph-viz.dump-rooted-tables where
 open import IO
 open import IO.Finite using (writeFile)
 open import Data.String using (String; _++_)
+open import Data.Product using (_×_; _,_)
+open import Data.Unit.Polymorphic using (⊤; tt)
 open import Data.List using (List; []; _∷_; map) renaming (foldr to foldrL)
 open import Data.Vec using (Vec; toList; tabulate)
 open import Data.Fin using (Fin)
@@ -33,16 +35,48 @@ private
   table : ∀ {m n} → TM.Matrix m n → String
   table M = rows (tabulate (λ i → tabulate (λ j → M i j)))
 
+-- Each table is a top-level definition so the per-example scratch files and the combined baseline
+-- share one evaluation; the scratch files are written in order as computed, so their timestamps
+-- attribute the evaluation cost per example.
+t-case-left t-case-right t-const t-fold0 t-tag t-case0 t-length t-query : String
+t-case-left  = table dep-l
+t-case-right = table dep-r
+t-const      = table dep-const
+t-fold0      = table dep-fold0
+t-tag        = table dep-tag
+t-case0      = table dep-case0
+t-length     = table dep-length
+t-query      = table dep
+
+tables : List (String × String)
+tables =
+  ("case-left"  , t-case-left)
+  ∷ ("case-right" , t-case-right)
+  ∷ ("const"      , t-const)
+  ∷ ("fold0"      , t-fold0)
+  ∷ ("tag"        , t-tag)
+  ∷ ("case0"      , t-case0)
+  ∷ ("length"     , t-length)
+  ∷ ("list-query" , t-query)
+  ∷ []
+
 contents : String
 contents =
-  "case-left\n"  ++ table dep-l ++
-  "case-right\n" ++ table dep-r ++
-  "list-query\n" ++ table dep ++
-  "const\n" ++ table dep-const ++
-  "length\n" ++ table dep-length ++
-  "fold0\n" ++ table dep-fold0 ++
-  "case0\n" ++ table dep-case0 ++
-  "tag\n" ++ table dep-tag
+  "case-left\n"  ++ t-case-left ++
+  "case-right\n" ++ t-case-right ++
+  "list-query\n" ++ t-query ++
+  "const\n" ++ t-const ++
+  "length\n" ++ t-length ++
+  "fold0\n" ++ t-fold0 ++
+  "case0\n" ++ t-case0 ++
+  "tag\n" ++ t-tag
+
+write-each : List (String × String) → IO {0ℓ} ⊤
+write-each []             = pure tt
+write-each ((n , s) ∷ ts) =
+  writeFile ("approx-diff/test-baselines/rooted-" ++ n ++ ".part") s >> write-each ts
 
 main : Main
-main = run (writeFile "approx-diff/test-baselines/rooted-dependency.txt" contents)
+main =
+  run (write-each tables >>
+       writeFile "approx-diff/test-baselines/rooted-dependency.txt" contents)
