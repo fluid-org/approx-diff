@@ -16,6 +16,7 @@ open import categories
          exponentials→weak)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import primitives using (Primitives)
+open import Relation.Binary.PropositionalEquality using (_≡_)
 open import functor using (limits→limits')
 open import indexed-family using (HasSetoidProducts; Fam; _⇒f_; constantFam; _[_])
 import matrix
@@ -23,6 +24,7 @@ import fam
 import fam-mu-lifting.in-map
 import fam-exponentials
 import semimod-products
+import order-idempotent-blocks
 import order-idempotent-realise
 import order-idempotent-primitives
 import language-roots-fo-interpretation
@@ -37,14 +39,16 @@ module ho-model-roots-order-idempotent
   where
 
 open order-idempotent-realise S ∨-idem ∧-idem ⊤-add-top public
+module OB = order-idempotent-blocks S ∨-idem ∧-idem ⊤-add-top
 module OIP = order-idempotent-primitives S ∨-idem ∧-idem ⊤-add-top
+module OIPB = OIP.over-biproducts OB.blocks-biproduct (λ x y → _≡_.refl)
 
 open SemiMod._≈m_
 open SemiMod._⇒_
 open prop-setoid._⇒_ using (func; func-resp-≈)
 open prop-setoid._≃m_ using (func-eq)
 
-module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ OI.cmon OI.biproduct Roots.Lp-lifting
+module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ OI.cmon OB.blocks-biproduct Roots.Lp-lifting
 module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiMod.cmon-enriched SemiMod.biproduct Ls-lifting
 
 private
@@ -130,9 +134,9 @@ SemiModExp-pointed {X} {Y} pY .Fam⟨𝒟⟩μ.pt-natural {f₁} {f₂} e =
 module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
   private
-    module IP = OIP.interp-primitives Sig 𝒫
+    module IP = OIPB.interp-primitives Sig 𝒫
 
-  boolify : Fam⟨𝒞⟩μ.Mor OIP.Fam⟨𝒞⟩-bool 𝒞Bool
+  boolify : Fam⟨𝒞⟩μ.Mor OIPB.Fam⟨𝒞⟩-bool 𝒞Bool
   boolify =
     FCC.coprod-m
       (FCμ._∘_ (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty}) (Fam⟨𝒞⟩μ.injF {X = 𝟙F}))
@@ -151,9 +155,9 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   open rooted-primitives Sig 𝒫
 
   open language-roots-fo-interpretation Sig 0ℓ 0ℓ
-    OI.terminal OI.cmon OI.biproduct Roots.Lp-lifting
+    OI.terminal OI.cmon OB.blocks-biproduct Roots.Lp-lifting
     SemiMod.terminal SemiMod.cmon-enriched SemiMod.biproduct Ls-lifting
-    𝓥F 𝓥F-preserve-terminal (λ {P} {Q} → 𝓥F-preserve-products {P} {Q})
+    𝓥F 𝓥F-preserve-terminal (λ {P} {Q} → 𝓥F-preserve-products-blocks {P} {Q})
     𝓥-Lp-iso (λ {P} {Q} f → 𝓥-Lp-natural {P} {Q} f)
     ι1-bwd
     SemiModExp (λ {X} {Y} pY → SemiModExp-pointed {X} {Y} pY)

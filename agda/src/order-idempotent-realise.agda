@@ -19,6 +19,7 @@ open import finite-product-functor using (preserve-chosen-terminal; preserve-cho
 open import lifting using (Lifting)
 import lifting-biproduct
 import biproduct-transport
+import order-idempotent-blocks
 import matrix
 import semimodule
 import order-idempotent
@@ -34,6 +35,7 @@ module order-idempotent-realise
 
 module M = matrix.Mat S
 module OI = order-idempotent S ∨-idem ∧-idem ⊤-add-top
+module Blocks = order-idempotent-blocks S ∨-idem ∧-idem ⊤-add-top
 module Roots = order-idempotent-roots S ∨-idem ∧-idem ⊤-add-top
 module SemiMod = semimodule S
 
@@ -90,6 +92,26 @@ open Biproduct
     (biproducts→products SemiMod.cmon-enriched SemiMod.biproduct)
 𝓥F-preserve-products {P} {Q} =
   biproduct-iso SemiMod.cmon-enriched (𝓥-image-biproduct P Q) (SemiMod.biproduct (𝓥 P) (𝓥 Q))
+
+-- The split-and-append witness, repackaged over the semimodule enrichment, and the product
+-- preservation stated against it.
+𝓥-blocks-biproduct : ∀ P Q → Biproduct SemiMod.cmon-enriched (𝓥 P) (𝓥 Q)
+𝓥-blocks-biproduct P Q .prod = 𝓥 (P OI.⊕ Q)
+𝓥-blocks-biproduct P Q .p₁ = Blocks.blocks-biproduct P Q .p₁
+𝓥-blocks-biproduct P Q .p₂ = Blocks.blocks-biproduct P Q .p₂
+𝓥-blocks-biproduct P Q .in₁ = Blocks.blocks-biproduct P Q .in₁
+𝓥-blocks-biproduct P Q .in₂ = Blocks.blocks-biproduct P Q .in₂
+𝓥-blocks-biproduct P Q .id-1 = Blocks.blocks-biproduct P Q .id-1
+𝓥-blocks-biproduct P Q .id-2 = Blocks.blocks-biproduct P Q .id-2
+𝓥-blocks-biproduct P Q .zero-1 = Blocks.blocks-biproduct P Q .zero-1
+𝓥-blocks-biproduct P Q .zero-2 = Blocks.blocks-biproduct P Q .zero-2
+𝓥-blocks-biproduct P Q .id-+ = Blocks.blocks-biproduct P Q .id-+
+
+𝓥F-preserve-products-blocks :
+  preserve-chosen-products 𝓥F (biproducts→products OI.cmon Blocks.blocks-biproduct)
+    (biproducts→products SemiMod.cmon-enriched SemiMod.biproduct)
+𝓥F-preserve-products-blocks {P} {Q} =
+  biproduct-iso SemiMod.cmon-enriched (𝓥-blocks-biproduct P Q) (SemiMod.biproduct (𝓥 P) (𝓥 Q))
 
 -- The one-position order realises as the scalars.
 disc-fixed : ∀ {n} (v : M.Vec n) → OI.Fixed (OI.disc n) v
