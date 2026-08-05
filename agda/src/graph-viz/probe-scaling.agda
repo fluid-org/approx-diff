@@ -128,6 +128,10 @@ abstract
   u3 = table (interp.readback.dep-mat unit-ctxt-fo (base EP.number) len-u γu3)
   u4 = table (interp.readback.dep-mat unit-ctxt-fo (base EP.number) len-u γu4)
 
+  u3e : String
+  u3e = bit (interp.readback.dep-mat unit-ctxt-fo (base EP.number) len-u γu3
+               Fin.zero Fin.zero)
+
   p1 : String
   p1 = table (interp.readback.dep-mat query-ctxt-fo (base EP.number) length-term γp1)
 
@@ -149,11 +153,12 @@ main : Main
 main =
   run (writeFile "/tmp/probe-u1.txt" u1 >>
        writeFile "/tmp/probe-u2.txt" u2 >>
-       writeFile "/tmp/probe-u3.txt" u3 >>
        writeFile "/tmp/probe-p1.txt" p1 >>
        writeFile "/tmp/probe-p2e.txt" p2e >>
        writeFile "/tmp/probe-w2e.txt" w2e >>
+       writeFile "/tmp/probe-u3e.txt" u3e >>
        writeFile "/tmp/probe-p2.txt" p2 >>
+       writeFile "/tmp/probe-u3.txt" u3 >>
        writeFile "/tmp/probe-u4.txt" u4 >>
        writeFile "/tmp/probe-w2.txt" w2 >>
        writeFile "/tmp/probe-done.txt" "done")
