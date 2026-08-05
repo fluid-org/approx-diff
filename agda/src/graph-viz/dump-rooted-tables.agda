@@ -15,6 +15,7 @@ open import Level using (0ℓ)
 import two
 import matrix
 open import example.rooted-dependency using (dep-l; dep-r)
+open import example.rooted-runs using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag)
 
 private
   module TM = matrix.Mat two.semiring
@@ -35,7 +36,13 @@ private
 contents : String
 contents =
   "case-left\n"  ++ table dep-l ++
-  "case-right\n" ++ table dep-r
+  "case-right\n" ++ table dep-r ++
+  "list-query\n" ++ table dep ++
+  "const\n" ++ table dep-const ++
+  "length\n" ++ table dep-length ++
+  "fold0\n" ++ table dep-fold0 ++
+  "case0\n" ++ table dep-case0 ++
+  "tag\n" ++ table dep-tag
 
 main : Main
 main = run (writeFile "approx-diff/test-baselines/rooted-dependency.txt" contents)
