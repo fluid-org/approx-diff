@@ -73,3 +73,14 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
     show-plist (roll* (inl* (hole _)))   = "~[]"
     show-plist (roll* (inr* (pair* h t))) = show-pval h ++ˢ " ∷ " ++ˢ show-plist t
     show-plist (roll* (inr* (hole _)))   = "~∷"
+
+  -- The over-approximating list rendering: a cell counts as selected when its tag is, and its
+  -- interior roots are not displayed. This is the abstraction half of the connection induced by
+  -- desugaring, which refines the sugared cell's single root into the tag-and-pair stack; it is
+  -- not injective, so the tests use show-plist.
+  show-plist≈ : ∀ {σ} {v : Val (μ (unit [+] (σ [×] var zero)))} → PVal v → String
+  show-plist≈ {v = roll _} (hole ())
+  show-plist≈ (roll* (hole _))           = "_"
+  show-plist≈ (roll* (inl* _))           = "[]"
+  show-plist≈ (roll* (inr* (hole _)))    = "_ ∷ _"
+  show-plist≈ (roll* (inr* (pair* h t))) = show-pval h ++ˢ " ∷ " ++ˢ show-plist≈ t
