@@ -139,25 +139,54 @@ private
     go []                 = ""
     go ((p , q , w) ∷ es) = dep-edge w p q ++ go es
 
-  graph : String → String → String → String → String → String
-  graph in-nodes in-tree out-nodes out-tree deps =
+  idxs : Entries → List ℕ
+  idxs []             = []
+  idxs ((i , _) ∷ es) = i ∷ idxs es
+
+  reps : Entries → List ℕ
+  reps []             = []
+  reps ((i , e) ∷ es) = if i ≡ᵇ e .cls then i ∷ reps es else reps es
+
+  last2 : List ℕ → List ℕ
+  last2 (i ∷ j ∷ []) = i ∷ j ∷ []
+  last2 (_ ∷ is)     = last2 is
+  last2 []           = []
+
+  -- The cluster's label sits to the right of the tree, drawn there by invisible edges from the
+  -- rightmost two nodes, which centre it between the tree's rows.
+  anchor-edges : String → String → List ℕ → String
+  anchor-edges pre lab []       = ""
+  anchor-edges pre lab (i ∷ is) =
+    "    " ++ pre ++ ℕ-Show.show i ++ " -> " ++ lab
+    ++ " [style=invis];\n" ++ anchor-edges pre lab is
+
+  cluster : String → String → String → String → List ℕ → String
+  cluster name pre ns ts as =
+    "  subgraph cluster_" ++ name ++ " {\n    color=none;\n"
+    ++ ns ++ ts
+    ++ "    " ++ pre ++ "lab [label=\"" ++ name ++ "\", shape=plaintext];\n"
+    ++ anchor-edges pre (pre ++ "lab") as
+    ++ "  }\n"
+
+  graph : String → String → String → String → List ℕ → List ℕ → String → String
+  graph in-nodes in-tree out-nodes out-tree in-as out-as deps =
     "digraph G {\n  rankdir=LR;\n  node [shape=circle, fontsize=11];\n"
-    ++ "  subgraph cluster_in {\n    label=\"input\";  color=none;\n"
-    ++ in-nodes ++ in-tree ++ "  }\n"
-    ++ "  subgraph cluster_out {\n    label=\"output\"; color=none;\n"
-    ++ out-nodes ++ out-tree ++ "  }\n"
+    ++ cluster "input"  "i" in-nodes  in-tree  in-as
+    ++ cluster "output" "o" out-nodes out-tree out-as
     ++ deps ++ "}\n"
 
 contents : String
 contents =
   graph (nodes "i" in-sk) (tree-edges "i" in-sk)
         (nodes "o" out-sk) (tree-edges "o" out-sk)
+        (last2 (idxs in-sk)) (last2 (idxs out-sk))
         dep-edges
 
 contents-sugar : String
 contents-sugar =
   graph (nodes-merged "i" in-sk) (tree-edges-of "i" (merged-tree in-sk in-sk []))
         (nodes-merged "o" out-sk) (tree-edges-of "o" (merged-tree out-sk out-sk []))
+        (last2 (reps in-sk)) (last2 (reps out-sk))
         dep-edges-merged
 
 main : Main
