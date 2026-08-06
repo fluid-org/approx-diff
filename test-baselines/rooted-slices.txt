@@ -1,0 +1,12 @@
+list-query
+(_, 0/1) ∷ _ ∷ (_, 1/1) ∷ ~[]
+const
+_
+length
+_ ∷ _ ∷ _ ∷ ~[]
+fold0
+_
+case0
+~∷
+tag
+~∷
