@@ -13,9 +13,10 @@ open import Data.String using (String; _++_)
 open import Data.Unit.Polymorphic using (⊤; tt)
 open import Data.List using (List; []; _∷_) renaming (foldr to foldrL)
 open import Data.Nat using (ℕ; zero; suc)
+import Data.Integer as ℤ
 open import Data.Fin using (Fin; toℕ)
 open import Data.Vec using (Vec; toList; tabulate)
-open import Data.Rational using (ℚ; 0ℚ; 1ℚ; ↥_; ↧_)
+open import Data.Rational using (ℚ; 0ℚ; 1ℚ; ↥_; ↧_) renaming (_+_ to _+ℚ_)
 import Data.Integer.Show as ℤ-Show
 open import Level using (0ℓ)
 import two
@@ -24,7 +25,7 @@ import label
 open import primitives using (Primitives)
 import example.primitives as EP
 open import example.rooted-runs
-  using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag)
+  using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag; dep-map)
 
 open import language-syntax EP.Sig using (type; base; list; _[×]_)
 open import language-operational.evaluation EP.Sig EP.primitives using (Val)
@@ -59,7 +60,9 @@ nilᵥ = roll (inl unit)
 
 -- Renderings of the example constants.
 show-ℚ : ℚ → String
-show-ℚ q = ℤ-Show.show (↥ q) ++ "/" ++ ℤ-Show.show (↧ q)
+show-ℚ q with ↧ q
+... | ℤ.+ (suc zero) = ℤ-Show.show (↥ q)
+... | d              = ℤ-Show.show (↥ q) ++ "/" ++ ℤ-Show.show d
 
 show-label : label.label → String
 show-label label.a = "a"
@@ -89,6 +92,39 @@ private
     foldrL (λ r s → r ++ "\n" ++ s) ""
       (toList (tabulate {n = m} (λ q → render-row (toList (tabulate (M q))))))
 
+-- The mapped output value, for rendering output-side selections.
+δ-out : Val listT
+δ-out = el label.a (0ℚ +ℚ 1ℚ) ∷ᵥ el label.b (1ℚ +ℚ 1ℚ) ∷ᵥ el label.a (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ
+
+private
+  and2 or2 not2 : two.Two → two.Two → two.Two
+  and2 two.I b = b
+  and2 two.O _ = two.O
+  or2 two.O b = b
+  or2 two.I _ = two.I
+  not2 two.I _ = two.O
+  not2 two.O _ = two.I
+
+  -- Row containment: every consumed position of the row is available in the selection.
+  contained : List two.Two → List two.Two → two.Two
+  contained []       _        = two.I
+  contained (r ∷ rs) []       = and2 (not2 r two.O) (contained rs [])
+  contained (r ∷ rs) (b ∷ bs) = and2 (or2 (not2 r two.O) b) (contained rs bs)
+
+  -- The forward slice of an input selection: the output positions whose whole row it contains,
+  -- rendered over the output value.
+  render-fwd : ∀ {m n} → TM.Matrix m n → List two.Two → String
+  render-fwd {m} M sel =
+    show-pval (λ {s} c → showC {s} c)
+      (pval δ-out (spine-close (pos δ-out)
+        (λ i → lookupO (toList (tabulate {n = m}
+                 (λ q → contained (toList (tabulate (M q))) sel))) (toℕ i))))
+
+  -- The first input cons cell, without its element.
+  cell1-sel : List two.Two
+  cell1-sel = two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O
+            ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ []
+
 contents : String
 contents =
   "list-query\n" ++ slice dep ++
@@ -96,7 +132,9 @@ contents =
   "length\n" ++ slice dep-length ++
   "fold0\n" ++ slice dep-fold0 ++
   "case0\n" ++ slice dep-case0 ++
-  "tag\n" ++ slice dep-tag
+  "tag\n" ++ slice dep-tag ++
+  "map-backward\n" ++ slice dep-map ++
+  "map-forward-cell1\n" ++ render-fwd dep-map cell1-sel ++ "\n" 
 
 main : Main
 main = run (writeFile "approx-diff/test-baselines/rooted-slices.txt" contents)
