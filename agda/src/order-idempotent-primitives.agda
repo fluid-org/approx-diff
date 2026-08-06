@@ -163,5 +163,9 @@ module over-biproducts (OI-BP : ∀ x y → Biproduct OI.cmon x y)
       model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect′ is
       model-over .Model.⟦rel⟧ {is} ψ = into-Ω FC.∘ predicate (rel-pred ψ ∘S untuple′ is)
 
+      -- The argument plumbing, for interpretations that refine single symbols over this Ω.
+      arg-untuple = untuple′
+      arg-collect = collect′
+
 
 open over-biproducts OI.biproduct (λ x y → _≡_.refl) public

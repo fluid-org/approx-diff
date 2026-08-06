@@ -11,7 +11,7 @@ import matrix
 import semiring-Q
 open import primitives using (Primitives)
 import example.values as V
-open Primitives using (sort-index; sort-width; op-fun; op-deps; rel-pred)
+open Primitives using (sort-index; sort-width; op-fun; op-deps; rel-pred; rel-deps)
 
 open import categories using (Category)
 open import Relation.Nullary using (yes; no)
@@ -22,7 +22,7 @@ open import Data.Rational using (ℚ; 0ℚ)
 open import Data.Rational using () renaming (_≟_ to _≟ℚ_)
 open import prop-setoid using (Setoid)
 open import prop using (liftS)
-open import example.signature ℚ using (Sig; sort; number; label; op; rel; lit; add; mult; lbl; equal-label) public
+open import example.signature ℚ using (Sig; sort; number; label; op; rel; lit; add; mult; lbl; equal-label; equal-number) public
 
 private
   open matrix.Mat two.semiring using (_∥_; block)
@@ -60,6 +60,10 @@ primitives .op-deps add .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M�
 primitives .op-deps mult .func-resp-≈ e =
   mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 primitives .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.εₘ}
+primitives .rel-deps equal-label .func _ = M𝟚.εₘ
+primitives .rel-deps equal-label .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.εₘ}
+primitives .rel-deps equal-number .func _ = M𝟚.I ∥ M𝟚.I
+primitives .rel-deps equal-number .func-resp-≈ _ = Category.≈-refl M𝟚.cat {f = M𝟚.I ∥ M𝟚.I}
 
 sort-val : sort → Set
 sort-val = Primitives.sort-val primitives

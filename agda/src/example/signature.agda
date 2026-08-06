@@ -20,6 +20,7 @@ data op : List sort → sort → Set where
 
 data rel : List sort → Set where
   equal-label : rel (label ∷ label ∷ [])
+  equal-number : rel (number ∷ number ∷ [])
 
 Sig : Signature 0ℓ
 Sig .Signature.sort = sort
