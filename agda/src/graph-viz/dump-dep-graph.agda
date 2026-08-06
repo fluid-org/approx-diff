@@ -90,7 +90,7 @@ private
   dep-edge three.O _ _ = ""
   dep-edge three.D p q =
     "  i" ++ ℕ-Show.show p ++ " -> o" ++ ℕ-Show.show q
-    ++ " [color=black, constraint=false];\n"
+    ++ " [color=blue, constraint=false];\n"
   dep-edge three.C p q =
     "  i" ++ ℕ-Show.show p ++ " -> o" ++ ℕ-Show.show q
     ++ " [color=black, style=dashed, constraint=false];\n"
