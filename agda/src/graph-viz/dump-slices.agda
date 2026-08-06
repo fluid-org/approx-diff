@@ -140,6 +140,36 @@ private
   cell1-sel = two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O
             ∷ two.O ∷ two.O ∷ two.O ∷ []
 
+  -- Output element 2 as a selection: its scalar and the spine above it.
+  out-elem2-sel : List two.Two
+  out-elem2-sel = two.I ∷ two.I ∷ two.O ∷ two.I ∷ two.I ∷ two.I ∷ two.O ∷ two.O
+                ∷ two.O ∷ two.O ∷ two.O ∷ []
+
+  -- The backward slice of an output selection: the join of the selected positions' rows.
+  bwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
+  bwd-bits {m} M outsel =
+    foldrL orL (toList (tabulate {n = m} (λ _ → two.O)))
+      (zipsel (toList (tabulate {n = m} (λ q → toList (tabulate (M q))))) outsel)
+    where
+    orL : List two.Two → List two.Two → List two.Two
+    orL []       ys       = ys
+    orL xs       []       = xs
+    orL (x ∷ xs) (y ∷ ys) = or2 x y ∷ orL xs ys
+    zipsel : List (List two.Two) → List two.Two → List (List two.Two)
+    zipsel []         _              = []
+    zipsel (_ ∷ rs)   []             = []
+    zipsel (r ∷ rs)   (two.I ∷ bs)   = r ∷ zipsel rs bs
+    zipsel (r ∷ rs)   (two.O ∷ bs)   = zipsel rs bs
+
+  render-in : List two.Two → String
+  render-in bits = render-row γ-nums-val bits
+
+  fwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
+  fwd-bits {m} M sel = toList (tabulate {n = m} (λ q → contained (toList (tabulate (M q))) sel))
+
+  render-out : List two.Two → String
+  render-out bits = render-row δ-out bits
+
 contents : String
 contents =
   "list-query\n" ++ slice dep ++
@@ -149,7 +179,11 @@ contents =
   "case0\n" ++ slice dep-case0 ++
   "tag\n" ++ slice dep-tag ++
   "map-backward\n" ++ slice-over γ-nums-val dep-map ++
-  "map-forward-cell1\n" ++ render-fwd dep-map cell1-sel ++ "\n" 
+  "map-forward-cell1\n" ++ render-fwd dep-map cell1-sel ++ "\n" ++
+  "map-roundtrip-elem2\n" ++
+    render-out out-elem2-sel ++ "\n" ++
+    render-in (bwd-bits dep-map out-elem2-sel) ++ "\n" ++
+    render-out (fwd-bits dep-map (bwd-bits dep-map out-elem2-sel)) ++ "\n" 
 
 main : Main
 main = run (writeFile "approx-diff/test-baselines/rooted-slices.txt" contents)
