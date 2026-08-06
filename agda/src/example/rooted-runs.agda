@@ -11,7 +11,7 @@ module example.rooted-runs where
 
 import Data.Fin as Fin
 open import prop-setoid using (Setoid)
-open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
+open import Data.Rational using (ℚ; 0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
 open import Data.Product using () renaming (_,_ to _,'_)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Unit using (tt)
@@ -124,28 +124,34 @@ abstract
                                    .model.Fam⟨𝒞⟩μ.fm γ-input))
   dep-tag = interp.readback.dep-mat query-ctxt-fo (base EP.number) tag-term γ-input
 
--- Rebuild the list, incrementing each number: the output's structure mirrors the input's, so
--- each output cell should record the input spine above it and its own element's scalar, and
--- nothing later.
-list-fo : first-order (list (base EP.label [×] base EP.number))
-list-fo = μ (unit [+] ((base EP.label [×] base EP.number) [×] var Fin.zero))
+-- Expected: each output cell records the input spine above it and its own scalar, nothing later.
+numlist-fo : first-order (list (base EP.number))
+numlist-fo = μ (unit [+] (base EP.number [×] var Fin.zero))
 
-map-term : (emp , list (base EP.label [×] base EP.number))
-             ⊢ list (base EP.label [×] base EP.number)
+map-ctxt-fo : first-order-ctxt (emp , list (base EP.number))
+map-ctxt-fo = emp , numlist-fo
+
+γ-nums : Setoid.Carrier (interp.𝒞⟦ map-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
+γ-nums =
+  lift tt ,'
+  T'.sup (inj₂ (0ℚ ,' T'.sup (inj₂ (1ℚ ,' T'.sup (inj₂ ((1ℚ +ℚ 1ℚ) ,'
+  T'.sup (inj₁ (lift tt))))))))
+  where module T' = model.Fam⟨𝒞⟩μ.Tree interp.∅𝒞
+
+map-term : (emp , list (base EP.number)) ⊢ list (base EP.number)
 map-term =
   from var zero collect
-    return (pair (fst (var zero))
-                 (bop EP.add ((bop (EP.lit 1ℚ) []) ∷ ((snd (var zero)) ∷ []))))
+    return (bop EP.add ((bop (EP.lit 1ℚ) []) ∷ ((var zero) ∷ [])))
 
 abstract
   dep-map : matrix.Mat.Matrix two.semiring
-              (model.OI.Pos.dim (interp.𝒞⟦ list-fo ⟧ty interp.∅𝒞 .model.Fam⟨𝒞⟩μ.fam
+              (model.OI.Pos.dim (interp.𝒞⟦ numlist-fo ⟧ty interp.∅𝒞 .model.Fam⟨𝒞⟩μ.fam
                                    .model.Fam⟨𝒞⟩μ.fm
-                                   (interp.readback.out query-ctxt-fo list-fo
-                                                        map-term γ-input)))
-              (model.OI.Pos.dim (interp.𝒞⟦ query-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.fam
-                                   .model.Fam⟨𝒞⟩μ.fm γ-input))
-  dep-map = interp.readback.dep-mat query-ctxt-fo list-fo map-term γ-input
+                                   (interp.readback.out map-ctxt-fo numlist-fo
+                                                        map-term γ-nums)))
+              (model.OI.Pos.dim (interp.𝒞⟦ map-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.fam
+                                   .model.Fam⟨𝒞⟩μ.fm γ-nums))
+  dep-map = interp.readback.dep-mat map-ctxt-fo numlist-fo map-term γ-nums
 
 -- One output row, the result number's scalar, against the input list's positions.
 abstract

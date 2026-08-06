@@ -82,19 +82,34 @@ private
 
   -- A matrix row, read over the operational fibre through a length-safe lookup; the two layouts
   -- agree positionwise, and a misalignment would surface in the rendered baseline.
-  render-row : List two.Two → String
-  render-row bits =
+  render-row : ∀ {τ} (v : Val τ) → List two.Two → String
+  render-row v bits =
     show-pval (λ {s} c → showC {s} c)
-      (pval γ-val (spine-close (pos γ-val) (λ i → lookupO bits (toℕ i))))
+      (pval v (spine-close (pos v) (λ i → lookupO bits (toℕ i))))
+
+  slice-over : ∀ {τ} (v : Val τ) {m n} → TM.Matrix m n → String
+  slice-over v {m} M =
+    foldrL (λ r s → r ++ "\n" ++ s) ""
+      (toList (tabulate {n = m} (λ q → render-row v (toList (tabulate (M q))))))
 
   slice : ∀ {m n} → TM.Matrix m n → String
-  slice {m} M =
-    foldrL (λ r s → r ++ "\n" ++ s) ""
-      (toList (tabulate {n = m} (λ q → render-row (toList (tabulate (M q))))))
+  slice = slice-over γ-val
 
--- The mapped output value, for rendering output-side selections.
-δ-out : Val listT
-δ-out = el label.a (0ℚ +ℚ 1ℚ) ∷ᵥ el label.b (1ℚ +ℚ 1ℚ) ∷ᵥ el label.a (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ
+numlistT : type 0
+numlistT = list (base EP.number)
+
+infixr 20 _∷ⁿ_
+_∷ⁿ_ : Val (base EP.number) → Val numlistT → Val numlistT
+x ∷ⁿ xs = roll (inr (pair x xs))
+
+nilⁿ : Val numlistT
+nilⁿ = roll (inl unit)
+
+γ-nums-val : Val numlistT
+γ-nums-val = const 0ℚ ∷ⁿ const 1ℚ ∷ⁿ const (1ℚ +ℚ 1ℚ) ∷ⁿ nilⁿ
+
+δ-out : Val numlistT
+δ-out = const (0ℚ +ℚ 1ℚ) ∷ⁿ const (1ℚ +ℚ 1ℚ) ∷ⁿ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ⁿ nilⁿ
 
 private
   and2 or2 not2 : two.Two → two.Two → two.Two
@@ -123,7 +138,7 @@ private
   -- The first input cons cell, without its element.
   cell1-sel : List two.Two
   cell1-sel = two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O
-            ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ []
+            ∷ two.O ∷ two.O ∷ two.O ∷ []
 
 contents : String
 contents =
@@ -133,7 +148,7 @@ contents =
   "fold0\n" ++ slice dep-fold0 ++
   "case0\n" ++ slice dep-case0 ++
   "tag\n" ++ slice dep-tag ++
-  "map-backward\n" ++ slice dep-map ++
+  "map-backward\n" ++ slice-over γ-nums-val dep-map ++
   "map-forward-cell1\n" ++ render-fwd dep-map cell1-sel ++ "\n" 
 
 main : Main
