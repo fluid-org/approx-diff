@@ -18,6 +18,8 @@ import two
 import matrix
 open import example.rooted-dependency using (dep-l; dep-r; dep-test)
 open import example.rooted-runs using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag; dep-map)
+import three
+import example.rooted-runs-three
 
 private
   module TM = matrix.Mat two.semiring
@@ -35,10 +37,23 @@ private
   table : ∀ {m n} → TM.Matrix m n → String
   table M = rows (tabulate (λ i → tabulate (λ j → M i j)))
 
+  module TM3 = matrix.Mat three.semiring
+
+  bit3 : three.Three → String
+  bit3 three.O = "0"
+  bit3 three.C = "c"
+  bit3 three.D = "d"
+
+  table3 : ∀ {m n} → TM3.Matrix m n → String
+  table3 M =
+    foldrL (λ r s → r ++ "\n" ++ s) ""
+      (map (λ v → foldrL _++_ "" (map bit3 (toList v)))
+           (toList (tabulate (λ i → tabulate (λ j → M i j)))))
+
 -- Each table is a top-level definition so the per-example scratch files and the combined baseline
 -- share one evaluation; the scratch files are written in order as computed, so their timestamps
 -- attribute the evaluation cost per example.
-t-case-left t-case-right t-test t-const t-fold0 t-tag t-case0 t-length t-query t-map : String
+t-case-left t-case-right t-test t-const t-fold0 t-tag t-case0 t-length t-query t-map t-map3 : String
 t-case-left  = table dep-l
 t-case-right = table dep-r
 t-test       = table dep-test
@@ -49,6 +64,7 @@ t-case0      = table dep-case0
 t-length     = table dep-length
 t-query      = table dep
 t-map        = table dep-map
+t-map3       = table3 example.rooted-runs-three.dep-map
 
 tables : List (String × String)
 tables =
@@ -62,6 +78,7 @@ tables =
   ∷ ("length"     , t-length)
   ∷ ("list-query" , t-query)
   ∷ ("list-map"   , t-map)
+  ∷ ("list-map-three" , t-map3)
   ∷ []
 
 contents : String
@@ -71,6 +88,7 @@ contents =
   "case-test\n" ++ t-test ++
   "list-query\n" ++ t-query ++
   "list-map\n" ++ t-map ++
+  "list-map-three\n" ++ t-map3 ++
   "const\n" ++ t-const ++
   "length\n" ++ t-length ++
   "fold0\n" ++ t-fold0 ++
