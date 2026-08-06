@@ -16,7 +16,7 @@ open import Data.Fin using (Fin)
 open import Level using (0ℓ)
 import two
 import matrix
-open import example.rooted-dependency using (dep-l; dep-r)
+open import example.rooted-dependency using (dep-l; dep-r; dep-test)
 open import example.rooted-runs using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag)
 
 private
@@ -38,9 +38,10 @@ private
 -- Each table is a top-level definition so the per-example scratch files and the combined baseline
 -- share one evaluation; the scratch files are written in order as computed, so their timestamps
 -- attribute the evaluation cost per example.
-t-case-left t-case-right t-const t-fold0 t-tag t-case0 t-length t-query : String
+t-case-left t-case-right t-test t-const t-fold0 t-tag t-case0 t-length t-query : String
 t-case-left  = table dep-l
 t-case-right = table dep-r
+t-test       = table dep-test
 t-const      = table dep-const
 t-fold0      = table dep-fold0
 t-tag        = table dep-tag
@@ -52,6 +53,7 @@ tables : List (String × String)
 tables =
   ("case-left"  , t-case-left)
   ∷ ("case-right" , t-case-right)
+  ∷ ("case-test"  , t-test)
   ∷ ("const"      , t-const)
   ∷ ("fold0"      , t-fold0)
   ∷ ("tag"        , t-tag)
@@ -64,6 +66,7 @@ contents : String
 contents =
   "case-left\n"  ++ t-case-left ++
   "case-right\n" ++ t-case-right ++
+  "case-test\n" ++ t-test ++
   "list-query\n" ++ t-query ++
   "const\n" ++ t-const ++
   "length\n" ++ t-length ++

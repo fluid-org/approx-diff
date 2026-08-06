@@ -2,6 +2,8 @@ case-left
 110
 case-right
 010
+case-test
+1
 list-query
 11111100111110
 const
