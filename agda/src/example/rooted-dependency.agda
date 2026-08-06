@@ -20,7 +20,7 @@ module Ex = example ℚ 0ℚ
 open Ex.ex using (case-ctxt-fo; case-term)
 
 module model = ho-model-roots-order-idempotent two.semiring
-  (λ {x} → two.∨-idem {x}) (λ {x} → two.∧-idem {x}) (λ {x} → two.⊤-add-top {x})
+  (λ {x} → two.∨-idem {x}) (λ {x} → two.∧-idem {x}) (λ {x} → two.⊤-add-top {x}) two.I
 module interp = model.rooted-interp EP.Sig EP.primitives
 
 open import language-syntax EP.Sig

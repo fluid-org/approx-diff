@@ -38,6 +38,7 @@ module ho-model-roots-order-idempotent
   (∨-idem    : ∀ {x} → x + x ≈ x)
   (∧-idem    : ∀ {x} → x · x ≈ x)
   (⊤-add-top : ∀ {x} → ι + x ≈ ι)
+  (charge    : Setoid.Carrier A)
   where
 
 open order-idempotent-realise S ∨-idem ∧-idem ⊤-add-top public
@@ -59,6 +60,20 @@ private
   module Sc = CommutativeSemiring S
   module OIC = Category OI.cat
   module SMC = Category SemiMod.cat
+
+private
+  disc-morₘ′ : ∀ {m n} → Category._⇒_ (matrix.Mat.cat S) m n → OI._⇒ₘ_ (OI.disc m) (OI.disc n)
+  disc-morₘ′ R .OI._⇒ₘ_.mat = R
+  disc-morₘ′ R .OI._⇒ₘ_.absorbed =
+    OI.≈ₘ-trans (matrix.Mat.∘-cong S (matrix.Mat.id-left S {M = R}) (OI.≈ₘ-refl {M = matrix.Mat.I S}))
+                (matrix.Mat.id-right S {M = R})
+
+-- The charge as an endomorphism of the model lifting's unit, conjugated through the realised
+-- unit order.
+charge-endo : Category._⇒_ SemiMod.cat SemiMod.𝕀 SemiMod.𝕀
+charge-endo =
+  SMC._∘_ ι1-fwd
+    (SMC._∘_ (OI.mat→mor (disc-morₘ′ (matrix.Mat.block S charge))) ι1-bwd)
 
 -- The unit object: the lifted terminal, one root for the unit value.
 𝟙F = HasTerminal.witness (Fam⟨𝒞⟩μ.terminal OI.terminal)
@@ -228,6 +243,7 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   open language-roots-fo-interpretation Sig 0ℓ 0ℓ
     OI.terminal OI.cmon OB.blocks-biproduct Roots.Lp-lifting
     SemiMod.terminal SemiMod.cmon-enriched SemiMod.biproduct Ls-lifting
+    charge-endo
     𝓥F 𝓥F-preserve-terminal (λ {P} {Q} → 𝓥F-preserve-products-blocks {P} {Q})
     𝓥-Lp-iso (λ {P} {Q} f → 𝓥-Lp-natural {P} {Q} f)
     ι1-bwd

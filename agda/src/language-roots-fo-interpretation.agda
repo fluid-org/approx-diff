@@ -38,6 +38,7 @@ module language-roots-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {𝒟 : Category o₂ m₂ e₂} (T' : HasTerminal 𝒟)
   (CM' : CMonEnriched 𝒟) (BP' : ∀ x y → Biproduct CM' x y)
   {𝟙d : Category.obj 𝒟} (Lft' : Lifting CM' 𝟙d)
+  (charge : Category._⇒_ 𝒟 𝟙d 𝟙d)
   (F : Functor 𝒞 𝒟)
   (F-terminal : preserve-chosen-terminal F T T')
   (F-prod : preserve-chosen-products F (biproducts→products CM BP) (biproducts→products CM' BP'))
@@ -124,7 +125,7 @@ module _ where
     (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
     𝒞-Sig-model
 
-open import language-roots-interpretation Sig os es T' CM' BP' Lft' 𝒟E 𝒟E-pt δ∅𝒟
+open import language-roots-interpretation Sig os es T' CM' BP' Lft' charge 𝒟E 𝒟E-pt δ∅𝒟
   𝒟𝟙ty 𝒟unit-pt (Fam⟨F⟩-pointed 𝒞𝟙ty-pt) 𝒟-Sig-model (λ s → Fam⟨F⟩-pointed (𝒞-sort-pt s))
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
             ty-cong to 𝒟-ty-cong)

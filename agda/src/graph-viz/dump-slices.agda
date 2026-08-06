@@ -128,12 +128,18 @@ private
 
   -- The forward slice of an input selection: the output positions whose whole row it contains,
   -- rendered over the output value.
+  meets : List two.Two → List two.Two → two.Two
+  meets []       _        = two.O
+  meets (_ ∷ _)  []       = two.O
+  meets (r ∷ rs) (b ∷ bs) = or2 (and2 r b) (meets rs bs)
+
+  fwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
+  fwd-bits {m} M sel = toList (tabulate {n = m} (λ q → meets (toList (tabulate (M q))) sel))
+
   render-fwd : ∀ {m n} → TM.Matrix m n → List two.Two → String
   render-fwd {m} M sel =
     show-pval (λ {s} c → showC {s} c)
-      (pval δ-out (spine-close (pos δ-out)
-        (λ i → lookupO (toList (tabulate {n = m}
-                 (λ q → contained (toList (tabulate (M q))) sel))) (toℕ i))))
+      (pval δ-out (spine-close (pos δ-out) (λ i → lookupO (fwd-bits M sel) (toℕ i))))
 
   -- The first input cons cell, without its element.
   cell1-sel : List two.Two
@@ -163,9 +169,6 @@ private
 
   render-in : List two.Two → String
   render-in bits = render-row γ-nums-val bits
-
-  fwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
-  fwd-bits {m} M sel = toList (tabulate {n = m} (λ q → contained (toList (tabulate (M q))) sel))
 
   render-out : List two.Two → String
   render-out bits = render-row δ-out bits
