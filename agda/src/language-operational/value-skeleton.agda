@@ -72,3 +72,6 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
 
   skeleton : ∀ {τ} (v : Val τ) → List Entry
   skeleton v = build v 0 nothing nothing
+
+  skeleton-env : ∀ {Γ} (γ : Env Γ) → List Entry
+  skeleton-env γ = build-env γ 0 nothing

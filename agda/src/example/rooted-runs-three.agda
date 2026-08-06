@@ -23,7 +23,9 @@ module model = ho-model-roots-order-idempotent three.semiring
 module interp = model.rooted-interp EP3.Sig EP3.primitives
 
 open import language-syntax EP3.Sig
-  using (base; list; unit; _[+]_; _[×]_; var; μ; first-order; first-order-ctxt; emp; _,_)
+  using (base; list; unit; _[+]_; _[×]_; var; μ; first-order; first-order-ctxt; emp; _,_;
+         _⊢_; if_then_else_; brel; bop; zero; succ)
+open import every using ([]; _∷_)
 
 numlist-fo : first-order (list (base EP3.number))
 numlist-fo = μ (unit [+] (base EP3.number [×] var Fin.zero))
@@ -37,6 +39,24 @@ map-ctxt-fo = emp , numlist-fo
   T'.sup (inj₂ (0ℚ ,' T'.sup (inj₂ (1ℚ ,' T'.sup (inj₂ ((1ℚ +ℚ 1ℚ) ,'
   T'.sup (inj₁ (lift tt))))))))
   where module T' = model.Fam⟨𝒞⟩μ.Tree interp.∅𝒞
+
+-- Data and control interacting through a numeric test: x reaches the output only through the
+-- equality, so its composite weight is C; y flows into the branch body at D.
+cond-ctxt-fo : first-order-ctxt (emp , base EP3.number , base EP3.number)
+cond-ctxt-fo = emp , base EP3.number , base EP3.number
+
+cond-term : (emp , base EP3.number , base EP3.number) ⊢ base EP3.number
+cond-term =
+  if brel EP3.equal-number ((var (succ zero)) ∷ ((bop (EP3.lit 0ℚ) []) ∷ []))
+  then bop EP3.add ((var zero) ∷ ((bop (EP3.lit 1ℚ) []) ∷ []))
+  else var zero
+
+γ-cond : Setoid.Carrier (interp.𝒞⟦ cond-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
+γ-cond = (lift tt ,' 0ℚ) ,' 1ℚ
+
+abstract
+  dep-cond : matrix.Mat.Matrix three.semiring 1 2
+  dep-cond = interp.readback.dep-mat cond-ctxt-fo (base EP3.number) cond-term γ-cond
 
 abstract
   dep-map : matrix.Mat.Matrix three.semiring
