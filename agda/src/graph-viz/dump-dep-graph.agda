@@ -20,15 +20,9 @@ open import Data.Vec using (toList; tabulate)
 open import Level using (0ℓ)
 import three
 import example.primitives as EP
-open import Data.Rational using (0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
-open import example.rooted-runs-three using (dep-map; dep-cond)
+open import example.rooted-runs-three using (dep-map)
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
-open import language-syntax EP.Sig using (base) renaming (emp to ∙; _,_ to _▸_)
-open import language-operational.evaluation EP.Sig EP.primitives using (Val; Env)
-open Val
-open Env
-open import language-operational.value-skeleton EP.Sig EP.primitives
-  using (Entry; skeleton; skeleton-env)
+open import language-operational.value-skeleton EP.Sig EP.primitives using (Entry; skeleton)
 open Entry
 
 private
@@ -42,17 +36,6 @@ private
   in-sk out-sk : Entries
   in-sk  = index 0 (skeleton (λ {s} c → showC {s} c) γ-nums-val)
   out-sk = index 0 (skeleton (λ {s} c → showC {s} c) δ-out)
-
-  -- The conditional example: x gates through the equality, y flows into the branch body.
-  γ-cond-env : Env (∙ ▸ base EP.number ▸ base EP.number)
-  γ-cond-env = emp · const 0ℚ · const 1ℚ
-
-  δ-cond : Val (base EP.number)
-  δ-cond = const (1ℚ +ℚ 1ℚ)
-
-  cond-in-sk cond-out-sk : Entries
-  cond-in-sk  = index 0 (skeleton-env (λ {s} c → showC {s} c) γ-cond-env)
-  cond-out-sk = index 0 (skeleton (λ {s} c → showC {s} c) δ-cond)
 
   -- List notation for the body's injections, as in the partial-value renderer.
   sugar : String → String
@@ -112,12 +95,11 @@ private
     "  i" ++ ℕ-Show.show p ++ " -> o" ++ ℕ-Show.show q
     ++ " [color=black, style=dashed, constraint=false];\n"
 
-  map-rows cond-rows : List (List three.Three)
-  map-rows  = toList (tabulate (λ q → toList (tabulate (dep-map q))))
-  cond-rows = toList (tabulate (λ q → toList (tabulate (dep-cond q))))
+  rows : List (List three.Three)
+  rows = toList (tabulate (λ q → toList (tabulate (dep-map q))))
 
-  dep-edges-for : List (List three.Three) → String
-  dep-edges-for rs = go 0 rs
+  dep-edges : String
+  dep-edges = go 0 rows
     where
     row : ℕ → ℕ → List three.Three → String
     row _ _ []       = ""
@@ -137,12 +119,12 @@ private
     then (p' , q' , w three.⊔ w') ∷ es
     else (p' , q' , w') ∷ upd p q w es
 
-  quotient-for : Entries → Entries → List (List three.Three) → List Edge
-  quotient-for isk osk rs = go-q 0 rs []
+  quotient : List Edge
+  quotient = go-q 0 rows []
     where
     add : ℕ → ℕ → three.Three → List Edge → List Edge
     add p q three.O acc = acc
-    add p q w       acc = upd (cls-of isk p) (cls-of osk q) w acc
+    add p q w       acc = upd (cls-of in-sk p) (cls-of out-sk q) w acc
     go-p : ℕ → ℕ → List three.Three → List Edge → List Edge
     go-p q _ []       acc = acc
     go-p q p (w ∷ ws) acc = go-p q (suc p) ws (add p q w acc)
@@ -150,8 +132,8 @@ private
     go-q _ []       acc = acc
     go-q q (r ∷ rs) acc = go-q (suc q) rs (go-p q 0 r acc)
 
-  merged-dep-edges-for : Entries → Entries → List (List three.Three) → String
-  merged-dep-edges-for isk osk rs = go (quotient-for isk osk rs)
+  dep-edges-merged : String
+  dep-edges-merged = go quotient
     where
     go : List Edge → String
     go []                 = ""
@@ -166,10 +148,9 @@ private
   reps ((i , e) ∷ es) = if i ≡ᵇ e .cls then i ∷ reps es else reps es
 
   last2 : List ℕ → List ℕ
-  last2 []           = []
-  last2 (i ∷ [])     = i ∷ []
   last2 (i ∷ j ∷ []) = i ∷ j ∷ []
   last2 (_ ∷ is)     = last2 is
+  last2 []           = []
 
   -- The cluster's label sits to the right of the tree, drawn there by invisible edges from the
   -- rightmost two nodes, which centre it between the tree's rows.
@@ -199,23 +180,15 @@ contents =
   graph (nodes "i" in-sk) (tree-edges "i" in-sk)
         (nodes "o" out-sk) (tree-edges "o" out-sk)
         (last2 (idxs in-sk)) (last2 (idxs out-sk))
-        (dep-edges-for map-rows)
+        dep-edges
 
 contents-sugar : String
 contents-sugar =
   graph (nodes-merged "i" in-sk) (tree-edges-of "i" (merged-tree in-sk in-sk []))
         (nodes-merged "o" out-sk) (tree-edges-of "o" (merged-tree out-sk out-sk []))
         (last2 (reps in-sk)) (last2 (reps out-sk))
-        (merged-dep-edges-for in-sk out-sk map-rows)
-
-contents-cond : String
-contents-cond =
-  graph (nodes "i" cond-in-sk) (tree-edges "i" cond-in-sk)
-        (nodes "o" cond-out-sk) (tree-edges "o" cond-out-sk)
-        (last2 (idxs cond-in-sk)) (last2 (idxs cond-out-sk))
-        (merged-dep-edges-for cond-in-sk cond-out-sk cond-rows)
+        dep-edges-merged
 
 main : Main
 main = run (writeFile "fig/dot/map-three.dot" contents
-            >> writeFile "fig/dot/map-three-sugar.dot" contents-sugar
-            >> writeFile "fig/dot/cond-three.dot" contents-cond)
+            >> writeFile "fig/dot/map-three-sugar.dot" contents-sugar)

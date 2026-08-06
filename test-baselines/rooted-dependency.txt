@@ -30,6 +30,8 @@ cc0cc0c0000
 cc0cc0ccd00
 cc0cc0cc0c0
 cc0cc0cc0c0
+cond-three
+cd
 const
 00000000000000
 length
