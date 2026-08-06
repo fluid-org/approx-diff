@@ -17,7 +17,8 @@ open import Level using (0ℓ)
 import two
 import matrix
 open import example.rooted-dependency using (dep-l; dep-r; dep-test)
-open import example.rooted-runs using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag; dep-map)
+open import example.rooted-runs
+  using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag; dep-map; dep-filter)
 import three
 import example.rooted-runs-three
 
@@ -54,7 +55,7 @@ private
 -- share one evaluation; the scratch files are written in order as computed, so their timestamps
 -- attribute the evaluation cost per example.
 t-case-left t-case-right t-test t-const t-fold0 t-tag t-case0 t-length t-query t-map t-map3
-  t-cond3 : String
+  t-cond3 t-filter t-filter3 : String
 t-case-left  = table dep-l
 t-case-right = table dep-r
 t-test       = table dep-test
@@ -67,6 +68,8 @@ t-query      = table dep
 t-map        = table dep-map
 t-map3       = table3 example.rooted-runs-three.dep-map
 t-cond3      = table3 example.rooted-runs-three.dep-cond
+t-filter     = table dep-filter
+t-filter3    = table3 example.rooted-runs-three.dep-filter
 
 tables : List (String × String)
 tables =
@@ -82,6 +85,8 @@ tables =
   ∷ ("list-map"   , t-map)
   ∷ ("list-map-three" , t-map3)
   ∷ ("cond-three"     , t-cond3)
+  ∷ ("filter"         , t-filter)
+  ∷ ("filter-three"   , t-filter3)
   ∷ []
 
 contents : String
@@ -93,6 +98,8 @@ contents =
   "list-map\n" ++ t-map ++
   "list-map-three\n" ++ t-map3 ++
   "cond-three\n" ++ t-cond3 ++
+  "filter\n" ++ t-filter ++
+  "filter-three\n" ++ t-filter3 ++
   "const\n" ++ t-const ++
   "length\n" ++ t-length ++
   "fold0\n" ++ t-fold0 ++

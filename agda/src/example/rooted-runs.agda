@@ -33,7 +33,7 @@ module interp = model.rooted-interp EP.Sig EP.primitives
 
 open import language-syntax EP.Sig
   using (base; list; unit; _[+]_; _[×]_; var; μ; _⊢_; bop; fold; case; snd; fst; pair;
-         from_collect_; return; zero; first-order; first-order-ctxt; emp; _,_; first-order)
+         from_collect_; return; zero; succ; when_；_; brel; first-order; first-order-ctxt; emp; _,_)
 
 query-ctxt-fo : first-order-ctxt (emp , list (base EP.label [×] base EP.number))
 query-ctxt-fo = emp , μ (unit [+] ((base EP.label [×] base EP.number) [×] var Fin.zero))
@@ -142,6 +142,34 @@ map-term : (emp , list (base EP.number)) ⊢ list (base EP.number)
 map-term =
   from var zero collect
     return (bop EP.add ((bop (EP.lit 1ℚ) []) ∷ ((var zero) ∷ [])))
+
+-- Membership by numeric equality: the target is compared with each element, so it gates every step
+-- without its value reaching the output.
+filter-ctxt-fo : first-order-ctxt (emp , base EP.number , list (base EP.number))
+filter-ctxt-fo = (emp , first-order.base EP.number) , numlist-fo
+
+γ-filter : Setoid.Carrier (interp.𝒞⟦ filter-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
+γ-filter =
+  ((lift tt ,' (1ℚ +ℚ 1ℚ)) ,'
+   T'.sup (inj₂ (1ℚ ,' T'.sup (inj₂ ((1ℚ +ℚ 1ℚ) ,' T'.sup (inj₂ (((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ,'
+   T'.sup (inj₁ (lift tt)))))))))
+  where module T' = model.Fam⟨𝒞⟩μ.Tree interp.∅𝒞
+
+filter-term : (emp , base EP.number , list (base EP.number)) ⊢ list (base EP.number)
+filter-term =
+  from var zero collect
+    (when brel EP.equal-number ((var zero) ∷ ((var (succ (succ zero))) ∷ []))
+     ； return (var zero))
+
+abstract
+  dep-filter : matrix.Mat.Matrix two.semiring
+                 (model.OI.Pos.dim (interp.𝒞⟦ numlist-fo ⟧ty interp.∅𝒞 .model.Fam⟨𝒞⟩μ.fam
+                                      .model.Fam⟨𝒞⟩μ.fm
+                                      (interp.readback.out filter-ctxt-fo numlist-fo
+                                                           filter-term γ-filter)))
+                 (model.OI.Pos.dim (interp.𝒞⟦ filter-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.fam
+                                      .model.Fam⟨𝒞⟩μ.fm γ-filter))
+  dep-filter = interp.readback.dep-mat filter-ctxt-fo numlist-fo filter-term γ-filter
 
 abstract
   dep-map : matrix.Mat.Matrix two.semiring

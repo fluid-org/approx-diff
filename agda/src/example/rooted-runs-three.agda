@@ -14,7 +14,7 @@ import three
 import matrix
 import example.primitives-over
 import ho-model-roots-order-idempotent
-open import example.rooted-runs using (map-term)
+open import example.rooted-runs using (map-term; filter-term)
 
 module EP3 = example.primitives-over three.semiring
 
@@ -57,6 +57,26 @@ cond-term =
 abstract
   dep-cond : matrix.Mat.Matrix three.semiring 1 2
   dep-cond = interp.readback.dep-mat cond-ctxt-fo (base EP3.number) cond-term γ-cond
+
+filter-ctxt-fo : first-order-ctxt (emp , base EP3.number , list (base EP3.number))
+filter-ctxt-fo = (emp , first-order.base EP3.number) , numlist-fo
+
+γ-filter : Setoid.Carrier (interp.𝒞⟦ filter-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
+γ-filter =
+  ((lift tt ,' (1ℚ +ℚ 1ℚ)) ,'
+   T'.sup (inj₂ (1ℚ ,' T'.sup (inj₂ ((1ℚ +ℚ 1ℚ) ,' T'.sup (inj₂ (((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ,'
+   T'.sup (inj₁ (lift tt)))))))))
+  where module T' = model.Fam⟨𝒞⟩μ.Tree interp.∅𝒞
+
+abstract
+  dep-filter : matrix.Mat.Matrix three.semiring
+                 (model.OI.Pos.dim (interp.𝒞⟦ numlist-fo ⟧ty interp.∅𝒞 .model.Fam⟨𝒞⟩μ.fam
+                                      .model.Fam⟨𝒞⟩μ.fm
+                                      (interp.readback.out filter-ctxt-fo numlist-fo
+                                                           filter-term γ-filter)))
+                 (model.OI.Pos.dim (interp.𝒞⟦ filter-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.fam
+                                      .model.Fam⟨𝒞⟩μ.fm γ-filter))
+  dep-filter = interp.readback.dep-mat filter-ctxt-fo numlist-fo filter-term γ-filter
 
 abstract
   dep-map : matrix.Mat.Matrix three.semiring
