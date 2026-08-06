@@ -19,7 +19,10 @@ module language-operational.render-partial
 
 open Signature Sig
 open Primitives 𝒫
+open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig 𝒫 using (Val; Env)
+open Val
+open Env
 open import language-operational.partial-value Sig 𝒫
 
 private
@@ -44,6 +47,7 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
 
   mutual
     show-pval : ∀ {τ} {v : Val τ} → PVal v → String
+    show-pval {μ (unit [+] (_ [×] var zero))} p = show-plist p
     show-pval (hole _)           = "_"
     show-pval unit*              = "()"
     show-pval (const* {c = c} w) = show-partial c w
@@ -57,3 +61,15 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
     show-pflat : ∀ {τ} {v : Val τ} → PVal v → String
     show-pflat (pair* p q) = show-pval p ++ˢ ", " ++ˢ show-pflat q
     show-pflat p           = show-pval p
+
+    -- Lists in constructor notation, which a hole in tail position composes with. A cons cell
+    -- carries two roots; keeping the tag while cutting the pair beneath it hides head and tail
+    -- entirely, so that partial value renders as a bare marked cons, and likewise a kept nil tag
+    -- with its unit payload cut renders as marked nil.
+    show-plist : ∀ {σ} {v : Val (μ (unit [+] (σ [×] var zero)))} → PVal v → String
+    show-plist {v = roll _} (hole ())
+    show-plist (roll* (hole _))          = "_"
+    show-plist (roll* (inl* unit*))      = "[]"
+    show-plist (roll* (inl* (hole _)))   = "~[]"
+    show-plist (roll* (inr* (pair* h t))) = show-pval h ++ˢ " ∷ " ++ˢ show-plist t
+    show-plist (roll* (inr* (hole _)))   = "~∷"
