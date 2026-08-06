@@ -32,7 +32,8 @@ module model = ho-model-roots-order-idempotent two.semiring
 module interp = model.rooted-interp EP.Sig EP.primitives
 
 open import language-syntax EP.Sig
-  using (base; list; unit; _[+]_; _[×]_; var; μ; _⊢_; bop; fold; case; snd; zero; first-order; first-order-ctxt; emp; _,_)
+  using (base; list; unit; _[+]_; _[×]_; var; μ; _⊢_; bop; fold; case; snd; fst; pair;
+         from_collect_; return; zero; first-order; first-order-ctxt; emp; _,_; first-order)
 
 query-ctxt-fo : first-order-ctxt (emp , list (base EP.label [×] base EP.number))
 query-ctxt-fo = emp , μ (unit [+] ((base EP.label [×] base EP.number) [×] var Fin.zero))
@@ -122,6 +123,29 @@ abstract
               (model.OI.Pos.dim (interp.𝒞⟦ query-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.fam
                                    .model.Fam⟨𝒞⟩μ.fm γ-input))
   dep-tag = interp.readback.dep-mat query-ctxt-fo (base EP.number) tag-term γ-input
+
+-- Rebuild the list, incrementing each number: the output's structure mirrors the input's, so
+-- each output cell should record the input spine above it and its own element's scalar, and
+-- nothing later.
+list-fo : first-order (list (base EP.label [×] base EP.number))
+list-fo = μ (unit [+] ((base EP.label [×] base EP.number) [×] var Fin.zero))
+
+map-term : (emp , list (base EP.label [×] base EP.number))
+             ⊢ list (base EP.label [×] base EP.number)
+map-term =
+  from var zero collect
+    return (pair (fst (var zero))
+                 (bop EP.add ((bop (EP.lit 1ℚ) []) ∷ ((snd (var zero)) ∷ []))))
+
+abstract
+  dep-map : matrix.Mat.Matrix two.semiring
+              (model.OI.Pos.dim (interp.𝒞⟦ list-fo ⟧ty interp.∅𝒞 .model.Fam⟨𝒞⟩μ.fam
+                                   .model.Fam⟨𝒞⟩μ.fm
+                                   (interp.readback.out query-ctxt-fo list-fo
+                                                        map-term γ-input)))
+              (model.OI.Pos.dim (interp.𝒞⟦ query-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.fam
+                                   .model.Fam⟨𝒞⟩μ.fm γ-input))
+  dep-map = interp.readback.dep-mat query-ctxt-fo list-fo map-term γ-input
 
 -- One output row, the result number's scalar, against the input list's positions.
 abstract
