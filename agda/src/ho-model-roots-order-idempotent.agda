@@ -15,7 +15,9 @@ open import categories
   using (Category; HasTerminal; HasCoproducts; HasWeakExponentials; HasExponentials;
          exponentials→weak)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
-open import primitives using (Primitives)
+open import primitives using (Primitives; sort-vals-setoid)
+open import lifting using (Lifting)
+open import Data.Sum using (inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import functor using (limits→limits')
 open import indexed-family using (HasSetoidProducts; Fam; _⇒f_; constantFam; _[_])
@@ -142,8 +144,77 @@ module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
       (FCμ._∘_ (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty}) (Fam⟨𝒞⟩μ.injF {X = 𝟙F}))
       (FCμ._∘_ (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty}) (Fam⟨𝒞⟩μ.injF {X = 𝟙F}))
 
+  private
+    module IPO = IP.over 𝒞Bool boolify
+    module Pm = Primitives 𝒫
+    module MS = matrix.Mat S
+    module Lft = Lifting Roots.Lp-lifting
+    open indexed-family._⇒f_
+
+    disc-morₘ : ∀ {m n} → Category._⇒_ MS.cat m n → OI._⇒ₘ_ (OI.disc m) (OI.disc n)
+    disc-morₘ R .OI._⇒ₘ_.mat = R
+    disc-morₘ R .OI._⇒ₘ_.absorbed =
+      OI.≈ₘ-trans (MS.∘-cong (MS.id-left {M = R}) (OI.≈ₘ-refl {M = MS.I}))
+                  (MS.id-right {M = R})
+
+    d' : ∀ {is} (ψ : Signature.rel Sig is)
+         (c : Setoid.Carrier (sort-vals-setoid Pm.sort-index is)) →
+         OI._⇒_ (OI.disc (Pm.bases-width is)) Roots.𝟙p
+    d' ψ c = OI.mat→mor (disc-morₘ (Pm.rel-deps ψ .func c))
+
+    deps-resp : ∀ {is} (ψ : Signature.rel Sig is)
+                {c c' : Setoid.Carrier (sort-vals-setoid Pm.sort-index is)} →
+                Setoid._≈_ (sort-vals-setoid Pm.sort-index is) c c' →
+                OIC._≈_ (d' ψ c') (d' ψ c)
+    deps-resp ψ {c} {c'} e =
+      OI.mat→mor-congₘ {f = disc-morₘ (Pm.rel-deps ψ .func c')}
+                       {g = disc-morₘ (Pm.rel-deps ψ .func c)}
+        (OI.≈ₘ-sym (Pm.rel-deps ψ .func-resp-≈ e))
+
+    -- The boolean's roots as its constants, so a test's fibre map is the point at the outcome
+    -- after its dependence row.
+    bool-root-pt : Fam⟨𝒞⟩μ.Pointed 𝒞Bool
+    bool-root-pt =
+      Fam⟨𝒞⟩μ.coprod-pointed (Fam⟨𝒞⟩μ.root-pointed {X = 𝒞𝟙ty})
+                             (Fam⟨𝒞⟩μ.root-pointed {X = 𝒞𝟙ty})
+
+  -- Tests write their dependence into the outcome's root: which branch runs reads the scalars the
+  -- test read.
+  rel-simple : ∀ is (ψ : Signature.rel Sig is) →
+               Fam⟨𝒞⟩μ.Mor
+                 Fam⟨𝒞⟩μ.simple[ sort-vals-setoid Pm.sort-index is ,
+                                 OI.disc (Pm.bases-width is) ]
+                 𝒞Bool
+  rel-simple is ψ .Fam⟨𝒞⟩μ.idxf = Pm.rel-pred ψ
+  rel-simple is ψ .Fam⟨𝒞⟩μ.famf .transf c =
+    OIC._∘_ (bool-root-pt .Fam⟨𝒞⟩μ.pt (Pm.rel-pred ψ .func c)) (d' ψ c)
+  rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e = pf
+    where
+    o  = Pm.rel-pred ψ .func c
+    o' = Pm.rel-pred ψ .func c'
+    P  = bool-root-pt .Fam⟨𝒞⟩μ.pt o
+    P' = bool-root-pt .Fam⟨𝒞⟩μ.pt o'
+    sub = 𝒞Bool .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {o} {o'} (Pm.rel-pred ψ .func-resp-≈ e)
+
+    step1 : OIC._≈_ (OIC._∘_ sub (OIC._∘_ P (d' ψ c))) (OIC._∘_ (OIC._∘_ sub P) (d' ψ c))
+    step1 = OIC.≈-sym (OIC.assoc sub P (d' ψ c))
+
+    step2 : OIC._≈_ (OIC._∘_ (OIC._∘_ sub P) (d' ψ c)) (OIC._∘_ P' (d' ψ c))
+    step2 = OIC.∘-cong (bool-root-pt .Fam⟨𝒞⟩μ.pt-natural {x₁ = o} {x₂ = o'}
+                          (Pm.rel-pred ψ .func-resp-≈ e))
+                       (OIC.≈-refl {f = d' ψ c})
+
+    step3 : OIC._≈_ (OIC._∘_ P' (d' ψ c)) (OIC._∘_ P' (d' ψ c'))
+    step3 = OIC.∘-cong (OIC.≈-refl {f = P'}) (OIC.≈-sym (deps-resp ψ e))
+
+    pf : OIC._≈_ (OIC._∘_ (OIC._∘_ P' (d' ψ c')) (OIC.id (OI.disc (Pm.bases-width is))))
+                 (OIC._∘_ sub (OIC._∘_ P (d' ψ c)))
+    pf = OIC.≈-trans (OIC.id-right {f = OIC._∘_ P' (d' ψ c')})
+           (OIC.≈-sym (OIC.≈-trans step1 (OIC.≈-trans step2 step3)))
+
   model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal OI.terminal , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig
-  model = IP.over.model-over 𝒞Bool boolify
+  model = record IPO.model-over
+    { ⟦rel⟧ = λ {is} ψ → FCμ._∘_ (rel-simple is ψ) (IPO.arg-collect is) }
 
   -- The sorts' constants: the full selection of each discrete order.
   sort-pt : ∀ s → Fam⟨𝒞⟩μ.Pointed (model .Model.⟦sort⟧ s)
