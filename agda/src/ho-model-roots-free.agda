@@ -10,7 +10,7 @@
 open import Level using (0ℓ)
 open import Data.Nat using (ℕ)
 import Data.Fin as Fin
-open import prop using () renaming (_,_ to _,ₚ_)
+import prop
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories
@@ -253,9 +253,13 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
                 (𝒟⟦ t ⟧tm .Fam⟨𝒟⟩μ.famf .transf γ𝒟)
                 (⟦ Γ-fo ⟧ctxt-iso .fwd .Fam⟨𝒟⟩μ.famf .transf γ))
 
-      -- The presentation matrix: the image of each input position's basis vector.
-      dep-mat : matrix.Mat.Matrix S tgt src
+      -- The presentation matrix: the image of each input position's basis vector. It is the
+      -- readback proper rather than a tabulation of it, since it presents the fibre map.
+      dep-mat : Category._⇒_ M.cat src tgt
       dep-mat q p = SemiMod._⇒_.func dep (M.e p) q
+
+      dep-presents : SMC._≈_ (mat dep-mat) dep
+      dep-presents = 𝔽F-full dep .prop.∃ₛ.snd
 
   -- A linear map between free semimodules is the matrix of its values on the basis, so the
   -- realisation is full and faithful and every first-order term's interpretation is the image of a
