@@ -44,6 +44,9 @@ ccccccc00000
 ccccccd00000
 ccccccccccc0
 ccccccccccc0
+eq-three
+d
+0
 const
 00000000000000
 length

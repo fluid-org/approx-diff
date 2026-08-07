@@ -58,6 +58,22 @@ abstract
   dep-cond : matrix.Mat.Matrix three.semiring 1 2
   dep-cond = interp.readback.dep-mat cond-ctxt-fo (base EP3.number) cond-term γ-cond
 
+-- The test's own outcome: the compared numbers reach the boolean at full weight, and only a
+-- consumer of that boolean turns the dependence into control.
+eq-ctxt-fo : first-order-ctxt (emp , base EP3.number)
+eq-ctxt-fo = emp , first-order.base EP3.number
+
+eq-term : (emp , base EP3.number) ⊢ (unit [+] unit)
+eq-term = brel EP3.equal-number ((var zero) ∷ ((bop (EP3.lit 0ℚ) []) ∷ []))
+
+γ-eq : Setoid.Carrier (interp.𝒞⟦ eq-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
+γ-eq = lift tt ,' 0ℚ
+
+abstract
+  dep-eq : matrix.Mat.Matrix three.semiring 2 1
+  dep-eq = interp.readback.dep-mat eq-ctxt-fo (first-order.unit [+] first-order.unit)
+                                   eq-term γ-eq
+
 filter-ctxt-fo : first-order-ctxt (emp , base EP3.number , list (base EP3.number))
 filter-ctxt-fo = (emp , first-order.base EP3.number) , numlist-fo
 
