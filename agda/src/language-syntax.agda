@@ -8,6 +8,7 @@ open import Data.Fin using (Fin; zero; suc)
 open import Data.List using (List; []; _∷_)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
+open import Relation.Nullary using (Dec; yes; no)
 
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
@@ -40,6 +41,23 @@ data first-order : ∀ {Δ} → type Δ → Set ℓ where
   _[+]_ : ∀ {Δ} {σ τ : type Δ} → first-order σ → first-order τ → first-order (σ [+] τ)
   _[×]_ : ∀ {Δ} {σ τ : type Δ} → first-order σ → first-order τ → first-order (σ [×] τ)
   μ     : ∀ {Δ} {τ : type (suc Δ)} → first-order τ → first-order (μ τ)
+
+first-order? : ∀ {Δ} (τ : type Δ) → Dec (first-order τ)
+first-order? (var i)    = yes (var i)
+first-order? unit       = yes unit
+first-order? (base s)   = yes (base s)
+first-order? (σ [+] τ) with first-order? σ | first-order? τ
+... | yes fσ | yes fτ = yes (fσ [+] fτ)
+... | no ¬fσ | _      = no λ { (fσ [+] _) → ¬fσ fσ }
+... | yes _  | no ¬fτ = no λ { (_ [+] fτ) → ¬fτ fτ }
+first-order? (σ [×] τ) with first-order? σ | first-order? τ
+... | yes fσ | yes fτ = yes (fσ [×] fτ)
+... | no ¬fσ | _      = no λ { (fσ [×] _) → ¬fσ fσ }
+... | yes _  | no ¬fτ = no λ { (_ [×] fτ) → ¬fτ fτ }
+first-order? (σ [→] τ) = no λ ()
+first-order? (μ τ) with first-order? τ
+... | yes fτ = yes (μ fτ)
+... | no ¬fτ = no λ { (μ fτ) → ¬fτ fτ }
 
 TyRen : TyCtxt → TyCtxt → Set
 TyRen Δ Δ' = Fin Δ → Fin Δ'

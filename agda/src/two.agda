@@ -2,6 +2,11 @@
 module two where
 
 open import prop using (⊤; ⊥; tt; _∨_; inj₁; inj₂; _,_)
+open import Relation.Binary.PropositionalEquality using (_≡_)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
+import Data.Empty as Empty
+import Data.Product as Product
+import Data.Sum as Sum
 open import basics using (IsPreorder; IsMeet; IsJoin; IsBottom; IsTop)
 
 data Two : Set where
@@ -66,6 +71,13 @@ I ⊓ x = x
 ⊓-isMeet .IsMeet.π₂ = ⊓-lower₂
 ⊓-isMeet .IsMeet.⟨_,_⟩ = ⊓-greatest
 
+-- Equality form of I-isTop: a meet is I only when both parts are.
+⊓-I : ∀ x y → (x ⊓ y) ≡ I → (x ≡ I) Product.× (y ≡ I)
+⊓-I I y h = ≡-refl Product., h
+
+⊓-I-pair : ∀ {x y} → x ≡ I → y ≡ I → (x ⊓ y) ≡ I
+⊓-I-pair ≡-refl h = h
+
 ------------------------------------------------------------------------------
 O-isBottom : IsBottom ≤-isPreorder O
 O-isBottom .IsBottom.≤-bottom = tt
@@ -90,6 +102,81 @@ I ⊔ x = I
 ⊔-isJoin .IsJoin.inl = ⊔-upper₁
 ⊔-isJoin .IsJoin.inr = ⊔-upper₂
 ⊔-isJoin .IsJoin.[_,_] = ⊔-least
+
+⊔-idem : ∀ {x} → (x ⊔ x) ≡ x
+⊔-idem {O} = ≡-refl
+⊔-idem {I} = ≡-refl
+
+⊔-runit : ∀ {x} → (x ⊔ O) ≡ x
+⊔-runit {O} = ≡-refl
+⊔-runit {I} = ≡-refl
+
+⊔-comm : ∀ x y → (x ⊔ y) ≡ (y ⊔ x)
+⊔-comm O O = ≡-refl
+⊔-comm O I = ≡-refl
+⊔-comm I O = ≡-refl
+⊔-comm I I = ≡-refl
+
+⊔-assoc : ∀ x y z → ((x ⊔ y) ⊔ z) ≡ (x ⊔ (y ⊔ z))
+⊔-assoc O y z = ≡-refl
+⊔-assoc I y z = ≡-refl
+
+-- I is join-prime, so a join is I only when some part is.
+⊔-I : ∀ x y → (x ⊔ y) ≡ I → (x ≡ I) Sum.⊎ (y ≡ I)
+⊔-I O y h = Sum.inj₂ h
+⊔-I I y h = Sum.inj₁ ≡-refl
+
+⊔-I-inl : ∀ {x y} → x ≡ I → (x ⊔ y) ≡ I
+⊔-I-inl ≡-refl = ≡-refl
+
+⊔-I-inr : ∀ x {y} → y ≡ I → (x ⊔ y) ≡ I
+⊔-I-inr O h = h
+⊔-I-inr I h = ≡-refl
+
+O≢I : O ≡ I → Empty.⊥
+O≢I ()
+
+-- Antisymmetry at the equality level: mutual implication at I gives equality.
+I-antisym : ∀ {x y} → (x ≡ I → y ≡ I) → (y ≡ I → x ≡ I) → x ≡ y
+I-antisym {O} {O} f g = ≡-refl
+I-antisym {O} {I} f g with g ≡-refl
+... | ()
+I-antisym {I} {O} f g with f ≡-refl
+... | ()
+I-antisym {I} {I} f g = ≡-refl
+
+------------------------------------------------------------------------------
+-- Folds of joins over lists.
+
+open import Data.List using (List; []; _∷_; foldr)
+open import Data.List.Relation.Unary.Any using (Any; here; there)
+
+⊔-swap : ∀ x y z → (x ⊔ (y ⊔ z)) ≡ (y ⊔ (x ⊔ z))
+⊔-swap O y z = ≡-refl
+⊔-swap I O z = ≡-refl
+⊔-swap I I z = ≡-refl
+
+foldr-⊔-base : ∀ (b : Two) (ts : List Two) → foldr _⊔_ b ts ≡ (b ⊔ foldr _⊔_ O ts)
+foldr-⊔-base b []       = ≡-sym ⊔-runit
+foldr-⊔-base b (t ∷ ts) =
+  ≡-trans (≡-cong (t ⊔_) (foldr-⊔-base b ts)) (⊔-swap t b (foldr _⊔_ O ts))
+
+foldr-⊔-I : ∀ (b : Two) (ts : List Two) → foldr _⊔_ b ts ≡ I →
+            (b ≡ I) Sum.⊎ Any (_≡ I) ts
+foldr-⊔-I b []       h = Sum.inj₁ h
+foldr-⊔-I b (t ∷ ts) h with ⊔-I t (foldr _⊔_ b ts) h
+... | Sum.inj₁ e = Sum.inj₂ (here e)
+... | Sum.inj₂ e with foldr-⊔-I b ts e
+...   | Sum.inj₁ e' = Sum.inj₁ e'
+...   | Sum.inj₂ a  = Sum.inj₂ (there a)
+
+foldr-⊔-at : ∀ (b : Two) {ts : List Two} → Any (_≡ I) ts → foldr _⊔_ b ts ≡ I
+foldr-⊔-at b {t ∷ ts} (here e)  = ⊔-I-inl e
+foldr-⊔-at b {t ∷ ts} (there a) = ⊔-I-inr t (foldr-⊔-at b a)
+
+foldr-⊔-here : ∀ {b : Two} (ts : List Two) → b ≡ I → foldr _⊔_ b ts ≡ I
+foldr-⊔-here []       e = e
+foldr-⊔-here (t ∷ ts) e = ⊔-I-inr t (foldr-⊔-here ts e)
 
 ------------------------------------------------------------------------------
 ¬ : Two → Two
