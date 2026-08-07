@@ -1,0 +1,281 @@
+{-# OPTIONS --prop --postfix-projections --safe #-}
+
+-- Free positions realised in semimodules: a dimension realises as the semimodule of weighted
+-- vectors over its positions, and a matrix as its action on them. Nothing closes a selection, so a
+-- selection is any weighted vector and a morphism any weighted relation. The root is one fresh
+-- position, so lifting is the biproduct with the unit dimension on the position side and with the
+-- scalars on the semimodule side, and the comparison between the two liftings is the canonical
+-- comparison of biproducts.
+open import Level using (0ℓ)
+open import Data.Nat using (ℕ) renaming (_+_ to _+ℕ_)
+open import Data.Fin using (Fin; zero)
+open import prop-setoid using (Setoid; IsEquivalence)
+open import commutative-monoid using (CommutativeMonoid)
+open import commutative-semiring using (CommutativeSemiring)
+open import categories using (Category; HasTerminal; IsTerminal)
+open import cmon-enriched
+  using (CMonEnriched; Biproduct; biproduct-iso; biproducts→products)
+open import functor using (Functor)
+open import finite-product-functor using (preserve-chosen-terminal; preserve-chosen-products)
+open import lifting using (Lifting)
+import lifting-biproduct
+import biproduct-transport
+import matrix
+import semimodule
+
+module free-realise {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+
+open CommutativeSemiring S hiding (_≈_; refl; sym; trans)
+open Setoid A
+
+module M = matrix.Mat S
+open M
+  using (Matrix; Vec; Σ; I; εₘ; _+ₘ_; _≈ₘ_; Σ-cong; Σ-ε; Σ-+; Σ-unit;
+         Σ-·-distribₗ; Σ-·-distribᵣ; Σ-interchange)
+  renaming (_∘_ to _∘ₘ_)
+module SemiMod = semimodule S
+open SemiMod using (Semimodule; 𝕀)
+open SemiMod._⇒_
+open SemiMod._≈m_
+open Functor
+open Biproduct
+
+private
+  module SMC = Category SemiMod.cat
+  module SMCM = CMonEnriched SemiMod.cmon-enriched
+
+  +m-cong : ∀ {X Y : Semimodule} {f f' g g' : SemiMod._⇒_ X Y} →
+            SMC._≈_ f f' → SMC._≈_ g g' →
+            SMC._≈_ (SMCM._+m_ f g) (SMCM._+m_ f' g')
+  +m-cong = CommutativeMonoid.+-cong (SMCM.homCM _ _)
+
+------------------------------------------------------------------------------
+-- The action of a matrix on a vector, linear in the vector and additive in the matrix.
+
+app : ∀ {m n} → Matrix m n → Vec n → Vec m
+app {m} {n} R v i = Σ {n} (λ j → R i j · v j)
+
+app-+ : ∀ {m n} (R : Matrix m n) (u v : Vec n) (i : Fin m) →
+        app R (λ j → u j + v j) i ≈ (app R u i + app R v i)
+app-+ {m} {n} R u v i =
+  trans (Σ-cong {n} (λ j → ·-+-distribₗ))
+        (sym (Σ-+ {n} (λ j → R i j · u j) (λ j → R i j · v j)))
+
+app-· : ∀ {m n} (R : Matrix m n) (s : Setoid.Carrier A) (u : Vec n) (i : Fin m) →
+        app R (λ j → s · u j) i ≈ (s · app R u i)
+app-· {m} {n} R s u i =
+  trans (Σ-cong {n} (λ j → trans (sym ·-assoc) (trans (·-cong ·-comm refl) ·-assoc)))
+        (sym (Σ-·-distribₗ {n} s (λ j → R i j · u j)))
+
+app-ε : ∀ {m n} (R : Matrix m n) (i : Fin m) → app R (λ _ → ε) i ≈ ε
+app-ε {m} {n} R i = trans (Σ-cong {n} (λ j → ε-annihilᵣ)) (Σ-ε {n})
+
+app-congₘ : ∀ {m n} {R R' : Matrix m n} → R ≈ₘ R' →
+            ∀ (v : Vec n) (i : Fin m) → app R v i ≈ app R' v i
+app-congₘ {m} {n} h v i = Σ-cong {n} (λ j → ·-cong (h i j) refl)
+
+app-congᵥ : ∀ {m n} (R : Matrix m n) {u w : Vec n} → (∀ j → u j ≈ w j) →
+            ∀ (i : Fin m) → app R u i ≈ app R w i
+app-congᵥ {m} {n} R h i = Σ-cong {n} (λ j → ·-cong refl (h j))
+
+app-∘ : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) (v : Vec k) (i : Fin m) →
+        app (R ∘ₘ T) v i ≈ app R (app T v) i
+app-∘ {m} {n} {k} R T v i =
+  trans (Σ-cong {k} (λ j → Σ-·-distribᵣ (λ l → R i l · T l j) (v j)))
+  (trans (Σ-cong {k} (λ j → Σ-cong {n} (λ l → ·-assoc)))
+  (trans (Σ-interchange {k} {n} (λ j l → R i l · (T l j · v j)))
+         (Σ-cong {n} (λ l → sym (Σ-·-distribₗ (R i l) (λ j → T l j · v j))))))
+
+app-+ₘ : ∀ {m n} (R T : Matrix m n) (v : Vec n) (i : Fin m) →
+         app (R +ₘ T) v i ≈ (app R v i + app T v i)
+app-+ₘ {m} {n} R T v i =
+  trans (Σ-cong {n} (λ j → ·-+-distribᵣ))
+        (sym (Σ-+ {n} (λ j → R i j · v j) (λ j → T i j · v j)))
+
+app-I : ∀ {n} (v : Vec n) (i : Fin n) → app (I {n}) v i ≈ v i
+app-I v i = Σ-unit i v
+
+app-εₘ : ∀ {m n} (v : Vec n) (i : Fin m) → app (εₘ {m} {n}) v i ≈ ε
+app-εₘ {m} {n} v i = trans (Σ-cong {n} (λ j → ε-annihilₗ)) (Σ-ε {n})
+
+------------------------------------------------------------------------------
+-- The realisation: the semimodule of weighted vectors over the positions, pointwise.
+
+𝔽 : ℕ → Semimodule
+𝔽 n .Semimodule.setoid .Setoid.Carrier = Vec n
+𝔽 n .Semimodule.setoid .Setoid._≈_ u v = ∀ i → u i ≈ v i
+𝔽 n .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.refl i = refl
+𝔽 n .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.sym e i = sym (e i)
+𝔽 n .Semimodule.setoid .Setoid.isEquivalence .IsEquivalence.trans e e' i = trans (e i) (e' i)
+𝔽 n .Semimodule.additive .CommutativeMonoid.ε _ = ε
+𝔽 n .Semimodule.additive .CommutativeMonoid._+_ u v i = u i + v i
+𝔽 n .Semimodule.additive .CommutativeMonoid.+-cong e e' i = +-cong (e i) (e' i)
+𝔽 n .Semimodule.additive .CommutativeMonoid.+-lunit i = +-lunit
+𝔽 n .Semimodule.additive .CommutativeMonoid.+-assoc i = +-assoc
+𝔽 n .Semimodule.additive .CommutativeMonoid.+-comm i = +-comm
+𝔽 n .Semimodule._·_ s u i = s · u i
+𝔽 n .Semimodule.·-cong e e' i = ·-cong e (e' i)
+𝔽 n .Semimodule.·-mul i = ·-assoc
+𝔽 n .Semimodule.·-unit i = ·-lunit
+𝔽 n .Semimodule.+-distribʳ i = ·-+-distribᵣ
+𝔽 n .Semimodule.+-distribˡ i = ·-+-distribₗ
+𝔽 n .Semimodule.zero-distribʳ i = ε-annihilₗ
+𝔽 n .Semimodule.zero-distribˡ i = ε-annihilᵣ
+
+mat : ∀ {m n} → Matrix m n → SemiMod._⇒_ (𝔽 n) (𝔽 m)
+mat R .*→* .prop-setoid._⇒_.func = app R
+mat R .*→* .prop-setoid._⇒_.func-resp-≈ = app-congᵥ R
+mat R .preserve-ze = app-ε R
+mat R .preserve-+ {u} {v} = app-+ R u v
+mat R .preserve-· {s} {u} = app-· R s u
+
+𝔽F : Functor M.cat SemiMod.cat
+𝔽F .fobj = 𝔽
+𝔽F .fmor = mat
+𝔽F .fmor-cong {f₂ = R'} h .*≈* .prop-setoid._≃m_.func-eq {u} e i =
+  trans (app-congₘ h u i) (app-congᵥ R' e i)
+𝔽F .fmor-id .*≈* .prop-setoid._≃m_.func-eq {u} e i = trans (app-I u i) (e i)
+𝔽F .fmor-comp f g .*≈* .prop-setoid._≃m_.func-eq {u} e i =
+  trans (app-∘ f g u i) (app-congᵥ f (λ j → app-congᵥ g e j) i)
+
+-- The realisation as a homomorphism of the enrichment, which is what the biproduct laws transfer
+-- along: composites, sums, the identity and the zero all realise as themselves.
+mat-cong : ∀ {m n} {R T : Matrix m n} → R ≈ₘ T → SMC._≈_ (mat R) (mat T)
+mat-cong h = 𝔽F .fmor-cong h
+
+mat-comp : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) →
+           SMC._≈_ (mat (R ∘ₘ T)) (SemiMod._∘_ (mat R) (mat T))
+mat-comp R T = 𝔽F .fmor-comp R T
+
+mat-I : ∀ {n} → SMC._≈_ (mat (I {n})) (SemiMod.id (𝔽 n))
+mat-I = 𝔽F .fmor-id
+
+mat-ε : ∀ {m n} → SMC._≈_ (mat (εₘ {m} {n})) (SMCM.εm {𝔽 n} {𝔽 m})
+mat-ε .*≈* .prop-setoid._≃m_.func-eq {u} e i = app-εₘ u i
+
+mat-+ : ∀ {m n} (R T : Matrix m n) →
+        SMC._≈_ (mat (R +ₘ T)) (SMCM._+m_ (mat R) (mat T))
+mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
+  trans (app-+ₘ R T u i) (+-cong (app-congᵥ R e i) (app-congᵥ T e i))
+
+------------------------------------------------------------------------------
+-- Preservation of the finite products: the biproduct of dimensions realises as a biproduct, with
+-- the block matrices as its structure morphisms.
+
+𝔽-biproduct : ∀ m n → Biproduct SemiMod.cmon-enriched (𝔽 m) (𝔽 n)
+𝔽-biproduct m n .prod = 𝔽 (m +ℕ n)
+𝔽-biproduct m n .p₁ = mat (M.p₁ {m} {n})
+𝔽-biproduct m n .p₂ = mat (M.p₂ {m} {n})
+𝔽-biproduct m n .in₁ = mat (M.in₁ {m} {n})
+𝔽-biproduct m n .in₂ = mat (M.in₂ {m} {n})
+𝔽-biproduct m n .id-1 =
+  SMC.≈-trans (SMC.≈-sym (mat-comp (M.p₁ {m} {n}) (M.in₁ {m} {n})))
+              (SMC.≈-trans (mat-cong (M.id-1 m n)) mat-I)
+𝔽-biproduct m n .id-2 =
+  SMC.≈-trans (SMC.≈-sym (mat-comp (M.p₂ {m} {n}) (M.in₂ {m} {n})))
+              (SMC.≈-trans (mat-cong (M.id-2 m n)) mat-I)
+𝔽-biproduct m n .zero-1 =
+  SMC.≈-trans (SMC.≈-sym (mat-comp (M.p₁ {m} {n}) (M.in₂ {m} {n})))
+              (SMC.≈-trans (mat-cong (M.zero-1 m n)) mat-ε)
+𝔽-biproduct m n .zero-2 =
+  SMC.≈-trans (SMC.≈-sym (mat-comp (M.p₂ {m} {n}) (M.in₁ {m} {n})))
+              (SMC.≈-trans (mat-cong (M.zero-2 m n)) mat-ε)
+𝔽-biproduct m n .id-+ =
+  SMC.≈-trans
+    (+m-cong (SMC.≈-sym (mat-comp (M.in₁ {m} {n}) (M.p₁ {m} {n})))
+             (SMC.≈-sym (mat-comp (M.in₂ {m} {n}) (M.p₂ {m} {n}))))
+    (SMC.≈-trans (SMC.≈-sym (mat-+ (M.in₁ {m} {n} ∘ₘ M.p₁ {m} {n})
+                                   (M.in₂ {m} {n} ∘ₘ M.p₂ {m} {n})))
+                 (SMC.≈-trans (mat-cong (M.id-+ m n)) mat-I))
+
+𝔽F-preserve-products :
+  preserve-chosen-products 𝔽F (biproducts→products M.cmon M.biproduct)
+    (biproducts→products SemiMod.cmon-enriched SemiMod.biproduct)
+𝔽F-preserve-products {m} {n} =
+  biproduct-iso SemiMod.cmon-enriched (𝔽-biproduct m n) (SemiMod.biproduct (𝔽 m) (𝔽 n))
+
+-- The empty dimension realises as the zero module.
+𝟘→𝔽0 : SemiMod._⇒_ SemiMod.𝟘 (𝔽 0)
+𝟘→𝔽0 .*→* .prop-setoid._⇒_.func _ ()
+𝟘→𝔽0 .*→* .prop-setoid._⇒_.func-resp-≈ _ ()
+𝟘→𝔽0 .preserve-ze ()
+𝟘→𝔽0 .preserve-+ ()
+𝟘→𝔽0 .preserve-· ()
+
+𝔽F-preserve-terminal : preserve-chosen-terminal 𝔽F M.terminal SemiMod.terminal
+𝔽F-preserve-terminal .Category.IsIso.inverse = 𝟘→𝔽0
+𝔽F-preserve-terminal .Category.IsIso.f∘inverse≈id =
+  HasTerminal.to-terminal-unique SemiMod.terminal _ (SemiMod.id _)
+𝔽F-preserve-terminal .Category.IsIso.inverse∘f≈id .*≈* .prop-setoid._≃m_.func-eq _ ()
+
+------------------------------------------------------------------------------
+-- The two liftings: one fresh position on the position side, the scalars on the semimodule side.
+
+module LmB = lifting-biproduct M.cmon 1 (M.biproduct 1)
+
+Lm-lifting : Lifting M.cmon 1
+Lm-lifting = LmB.biproduct-lifting
+
+module LsB = lifting-biproduct SemiMod.cmon-enriched 𝕀 (SemiMod.biproduct 𝕀)
+
+Ls-lifting : Lifting SemiMod.cmon-enriched 𝕀
+Ls-lifting = LsB.biproduct-lifting
+
+-- The unit dimension realises as the scalars.
+ι1-fwd : SemiMod._⇒_ (𝔽 1) 𝕀
+ι1-fwd .*→* .prop-setoid._⇒_.func v = v zero
+ι1-fwd .*→* .prop-setoid._⇒_.func-resp-≈ e = e zero
+ι1-fwd .preserve-ze = refl
+ι1-fwd .preserve-+ = refl
+ι1-fwd .preserve-· = refl
+
+ι1-bwd : SemiMod._⇒_ 𝕀 (𝔽 1)
+ι1-bwd .*→* .prop-setoid._⇒_.func a _ = a
+ι1-bwd .*→* .prop-setoid._⇒_.func-resp-≈ e i = e
+ι1-bwd .preserve-ze i = refl
+ι1-bwd .preserve-+ i = refl
+ι1-bwd .preserve-· i = refl
+
+ι1-fwd∘bwd : SemiMod._≈m_ {𝕀} {𝕀} (SemiMod._∘_ {𝕀} {𝔽 1} {𝕀} ι1-fwd ι1-bwd) (SemiMod.id 𝕀)
+ι1-fwd∘bwd .*≈* .prop-setoid._≃m_.func-eq e = e
+
+ι1-bwd∘fwd : SemiMod._≈m_ {𝔽 1} {𝔽 1}
+               (SemiMod._∘_ {𝔽 1} {𝕀} {𝔽 1} ι1-bwd ι1-fwd) (SemiMod.id (𝔽 1))
+ι1-bwd∘fwd .*≈* .prop-setoid._≃m_.func-eq e = λ { zero → e zero }
+
+module BT = biproduct-transport SemiMod.cmon-enriched
+
+-- The realisation of a lifted dimension is a biproduct of the scalars and the realised payload:
+-- the block witness with its first leg conjugated by the scalar comparison.
+L-biproduct : ∀ n → Biproduct SemiMod.cmon-enriched 𝕀 (𝔽 n)
+L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd
+
+𝔽-L-iso : ∀ n → Category.Iso SemiMod.cat
+                  (𝔽 (Lifting.L Lm-lifting n)) (Lifting.L Ls-lifting (𝔽 n))
+𝔽-L-iso n =
+  SMC.IsIso→Iso
+    (biproduct-iso SemiMod.cmon-enriched (L-biproduct n) (SemiMod.biproduct 𝕀 (𝔽 n)))
+
+-- The lifted action realises as the copairing over the block witness, which is the form the
+-- comparison's naturality is stated against.
+mat-Lmap : ∀ {P Q} (f : Category._⇒_ M.cat P Q) →
+           SMC._≈_ (mat (LmB.Lmap-b f))
+                   (copair (𝔽-biproduct 1 P) (𝔽-biproduct 1 Q .in₁)
+                           (SemiMod._∘_ (𝔽-biproduct 1 Q .in₂) (mat f)))
+mat-Lmap {P} {Q} f =
+  SMC.≈-trans (mat-+ (M.in₁ {1} {Q} ∘ₘ M.p₁ {1} {P}) ((M.in₂ {1} {Q} ∘ₘ f) ∘ₘ M.p₂ {1} {P}))
+    (+m-cong
+      (mat-comp (M.in₁ {1} {Q}) (M.p₁ {1} {P}))
+      (SMC.≈-trans (mat-comp (M.in₂ {1} {Q} ∘ₘ f) (M.p₂ {1} {P}))
+                   (SMC.∘-cong (mat-comp (M.in₂ {1} {Q}) f) (SMC.≈-refl {f = mat (M.p₂ {1} {P})}))))
+
+𝔽-L-natural : ∀ {P Q} (f : Category._⇒_ M.cat P Q) →
+  SMC._≈_ (SemiMod._∘_ (𝔽-L-iso Q .Category.Iso.fwd) (mat (Lifting.Lmap Lm-lifting f)))
+          (SemiMod._∘_ (Lifting.Lmap Ls-lifting (mat f)) (𝔽-L-iso P .Category.Iso.fwd))
+𝔽-L-natural {P} {Q} f =
+  SMC.≈-trans
+    (SMC.∘-cong (SMC.≈-refl {f = 𝔽-L-iso Q .Category.Iso.fwd}) (mat-Lmap f))
+    (BT.compare-natural
+      (𝔽-biproduct 1 P) (𝔽-biproduct 1 Q)
+      (SemiMod.biproduct 𝕀 (𝔽 P)) (SemiMod.biproduct 𝕀 (𝔽 Q))
+      ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd (mat f))
