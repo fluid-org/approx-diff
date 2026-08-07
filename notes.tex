@@ -3,6 +3,7 @@
 \usepackage{tabularx}
 \usepackage{bbm}
 \usepackage{bbold}
+\usepackage{stmaryrd}
 \usepackage{mathpartir}
 \usepackage{subcaption}
 \usepackage{tikz-cd}
@@ -13,6 +14,7 @@
 \citestyle{acmauthoryear}
 \raggedbottom
 
+\usepackage[commandnameprefix=ifneeded,commentmarkup=footnote]{changes}
 \input{macros}
 
 \begin{document}
@@ -50,8 +52,12 @@ Covered here:
    \end{itemize}
 \item matrices over a commutative semiring; $\Mat(\Two)$ as worked example (\secref{matrix})
 \item stable coproducts (\secref{stable-coproducts})
-\item predicate systems (\secref{predicate-system})
+% \item slicing interpretation of the source language via a strong monad on the semantic category
 \end{itemize}
+
+\noindent Inductive types from polynomial endofunctors, and the correctness development that
+depends on them (predicate systems, glueing, agreement of the underlying interpretation),
+previously covered here, now have their own document (\texttt{mu-types.pdf}).
 
 \noindent $\Set$ will usually be $\Setoid$ in the Agda implementation but we will gloss that detail for now.
 
@@ -68,7 +74,7 @@ Covered here:
 \input{notes/auto-diff-galois-slicing-via-fam}
 \input{notes/matrix}
 \input{notes/stable-coproducts}
-\input{notes/predicate-system}
+% \input{notes/slicing-interpretation}  % moved to unused: monadic slicing not load-bearing (see git history)
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib}

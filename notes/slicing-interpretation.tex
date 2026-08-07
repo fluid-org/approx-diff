@@ -1,0 +1,178 @@
+\section{Interpretations parameterised by a strong monad}
+\label{sec:slicing-interpretation}
+
+In response to the obstruction described in \secref{polynomial-types:no-cbn}, we move the
+$T$-tagging from a syntactic translation into the interpretation. The source language stays as in
+\secref{polynomial-types}. Following \citet{notions-of-computation}, the interpretation is
+parameterised by a category $\cat{D}$ equipped with a strong monad $T : \cat{D} \to \cat{D}$
+modelling a notion of computation. Within this setup we give two distinct interpretations: a Moggi-style CBN interpretation
+(\secref{slicing-interpretation:moggi}) with $T$ around the children of each non-base type former
+(matching the placement of \secref{polynomial-types:no-cbn}'s CBN translation), and one intended
+to model Galois slicing (\secref{slicing-interpretation:galois}) with $T$ at the root of each type
+former.
+
+\subsection{Semantic assumptions}
+\label{sec:slicing-interpretation:assumptions}
+
+Assume a category $\cat{D}$ with:
+\begin{itemize}
+\item finite products $(\times, \One)$ and exponentials (so $\cat{D}$ is Cartesian closed);
+\item finite coproducts $(+, 0)$, with the products distributing over coproducts;
+\item a strong monad $T : \cat{D} \to \cat{D}$ with unit $\eta : \id \Rightarrow T$, multiplication
+  $\mu : T^2 \Rightarrow T$, and strength $\mathsf{st}_{X,Y} : X \times T(Y) \to T(X \times Y)$;
+\item a signature interpretation, assigning each $\rho \in \PrimTy$ an object
+  $\sem{\rho}_{\PrimTy} \in \cat{D}$;
+\item initial algebras for all endofunctors in $\Poly^T_{\cat{D}}$, where
+  $\Poly^T_{\cat{D}}$ extends $\Poly_{\cat{D}}$ (\defref{polynomial-types:Poly}) by additionally
+  closing the morphisms under post-composition with $T$. We say $\cat{D}$ \emph{has
+  $\Poly^T$-types}, and write $\mu F$ for the initial algebra of an $F \in \Poly^T_{\cat{D}}$.
+\end{itemize}
+
+A type $\tau$ kinded in context $\Delta = \alpha_1, \ldots, \alpha_n$ is interpreted as a functor
+$\sem{\tau} : \cat{D}^n \to \cat{D}$; closed types ($\Delta = \cdot$) thus interpret as objects of
+$\cat{D}$. Term contexts contain only closed types. The two placements agree on the variable and
+$\mu$ clauses and differ on the others.
+
+\subsection{Moggi-style CBN interpretation}
+\label{sec:slicing-interpretation:moggi}
+
+The Moggi semantics matches \secref{polynomial-types:no-cbn}'s CBN translation: $T$ wraps each
+\emph{child} of every non-base type former, with primitives and $\tyUnit$ left bare.
+\begin{align*}
+\sem{\alpha_i}(\vec{X})            & = X_i \\
+\sem{\rho}(\vec{X})                & = \sem{\rho}_{\PrimTy} \\
+\sem{\tyUnit}(\vec{X})             & = \One \\
+\sem{\sigma \tyProd \tau}(\vec{X}) & = T(\sem{\sigma}(\vec{X})) \times T(\sem{\tau}(\vec{X})) \\
+\sem{\sigma \tySum \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X})) + T(\sem{\tau}(\vec{X})) \\
+\sem{\sigma \tyFun \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X})) \Rightarrow T(\sem{\tau}(\vec{X})) \\
+\sem{\mu\alpha.\tau}(\vec{X})      & = \mu(X \mapsto \sem{\tau}(\vec{X}, X)) \\[3mm]
+\sem{\emptyCxt}                    & = \One \\
+\sem{\Gamma, x : \tau}             & = \sem{\Gamma} \times T(\sem{\tau})
+\end{align*}
+Context entries are $T$-wrapped because in CBN every variable is a thunk. Substitution commutes
+with the interpretation:
+\[
+\sem{\subst{\tau}{\sigma}{\alpha}} = \sem{\tau}[\sem{\sigma}/\alpha]
+\]
+which is just function composition and so holds by definition.
+
+\subsubsection{Term interpretation}
+\label{sec:slicing-interpretation:moggi-terms}
+
+Following Moggi's CBN convention, a term judgement $\Gamma \vdash t : \tau$ is interpreted as a
+morphism $\sem{t} : \sem{\Gamma} \to T(\sem{\tau})$: terms are computations producing values of
+type $\tau$.
+\begin{align*}
+\sem{x_i}                              & = \pi_i \\
+\sem{\tmUnit}                          & = \eta_{\One} \comp {!_{\sem{\Gamma}}} \\
+\sem{\tmPair{s}{t}}                    & = \eta \comp \prodM{\sem{s}}{\sem{t}} \\
+\sem{\tmFst{s}}                        & = \pi_1^\dagger \comp \sem{s} \\
+\sem{\tmSnd{s}}                        & = \pi_2^\dagger \comp \sem{s} \\
+\sem{\tmInl{s}}                        & = \eta \comp \mathsf{inj}_1 \comp \sem{s} \\
+\sem{\tmInr{s}}                        & = \eta \comp \mathsf{inj}_2 \comp \sem{s} \\
+\sem{\tmCase{s}{x_1}{t_1}{x_2}{t_2}}   & = (\coprodM{\sem{t_1}}{\sem{t_2}} \comp \delta)^\dagger
+                                            \comp \mathsf{st} \comp \prodM{\id}{\sem{s}} \\
+\sem{\tmFun{x}{t}}                     & = \eta \comp \lambda(\sem{t}) \\
+\sem{\tmApp{s}{t}}                     & = \eval^\dagger \comp \mathsf{st} \comp \prodM{\sem{s}}{\sem{t}} \\
+\sem{\phi(t_1, \ldots, t_n)}           & = (\eta \comp \sem{\phi}_{\Op})^\dagger \comp
+                                            \langle\sem{t_1}, \ldots, \sem{t_n}\rangle \\
+\sem{\tmRoll{t}}                       & = (\eta \comp \mathsf{in}_F)^\dagger \comp \sem{t} \\
+\sem{\syn{fold}\,s\,\syn{with}\,x.t}   & = \cata{\sem{t}}_F^T \comp \prodM{\id}{\sem{s}}
+\end{align*}
+Each elimination peels the outer $T$ off the scrutinee using $(-)^\dagger$ to give a Kleisli
+arrow; each introduction composes with $\eta$ at the result. The $\syn{roll}$ clause now needs
+$(\eta \comp \mathsf{in}_F)^\dagger$ rather than just $\mathsf{in}_F \comp \sem{t}$ because the
+source's $\sem{t}$ is $T$-wrapped.
+
+The $\syn{fold}$ clause uses a \emph{monadic} catamorphism $\cata{-}_F^T$, taking the Kleisli
+$F$-algebra $\sem{t} : \sem{\Gamma} \times T(F(\sem{\sigma})) \to T(\sem{\sigma})$ to a
+parameterised Kleisli morphism $\sem{\Gamma} \times T(\mu F) \to T(\sem{\sigma})$. The standard
+constructions for this, namely a distributive law $F \circ T \Rightarrow T \circ F$ or a
+preservation property $T(\mu F) \cong \mu(T \circ F)$, combine the per-position $T$-effects
+across an $F$-structure into a single outer $T$-effect. In contrast to state and partiality,
+where this collapse is precisely the intended semantics, for slicing the per-constructor
+approximation information is the content of the monad, and collapsing it into an outer summary
+defeats the intent. For now we therefore take as a separate assumption that the Kleisli category
+$\cat{D}_T$ has initial algebras for the relevant polynomial endofunctors, without fixing the
+mechanism.
+
+\subsection{Galois slicing interpretation}
+\label{sec:slicing-interpretation:galois}
+
+The Galois slicing semantics puts $T$ at the root of each type former, including primitives:
+\begin{align*}
+\sem{\alpha_i}(\vec{X})            & = X_i \\
+\sem{\rho}(\vec{X})                & = T(\sem{\rho}_{\PrimTy}) \\
+\sem{\tyUnit}(\vec{X})             & = T(\One) \\
+\sem{\sigma \tyProd \tau}(\vec{X}) & = T(\sem{\sigma}(\vec{X}) \times \sem{\tau}(\vec{X})) \\
+\sem{\sigma \tySum \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X}) + \sem{\tau}(\vec{X})) \\
+\sem{\sigma \tyFun \tau}(\vec{X})  & = T(\sem{\sigma}(\vec{X}) \Rightarrow \sem{\tau}(\vec{X})) \\
+\sem{\mu\alpha.\tau}(\vec{X})      & = \mu(X \mapsto \sem{\tau}(\vec{X}, X)) \\[3mm]
+\sem{\emptyCxt}                    & = \One \\
+\sem{\Gamma, x : \tau}             & = \sem{\Gamma} \times \sem{\tau}
+\end{align*}
+We do \emph{not} add a further $T$ to context entries: the type interpretation already places $T$
+at the root of each $\tau_i$. The outer $T$ on primitives is not optional: without it,
+eliminations whose result is a base type (e.g.\ $\tmFst M$ with $M : \rho \tyProd \tau$) cannot be
+interpreted, since the Kleisli extension always produces a $T$-wrapped result, with no general
+way to project the outer $T$ off. The placement of $T$ at each constructor root realises
+the per-constructor approximation point of prior Galois slicing work.
+
+\begin{remark}[Lifting degenerates on $\LatConj$]
+\label{rem:slicing-interpretation:no-conjugate-lift}
+On $\LatGal$ the approximation monad $T$ is the lifting that adjoins a bottom. On $\LatConj$ the same
+construction is a comonad, not a monad: its morphisms are pairs of join-preserving maps, on which the
+bottom-adjoining lift is a comonad, whose counit collapses the hole rather than propagating it. It also
+degenerates the disjointness its morphisms depend on.
+Disjointness $x \mathrel{\#} y$ means $x \wedge y \le \bot$, that is $x \wedge y = \bot$ since $\bot$ is
+least. Adjoining a new least element $\bot'$ below the old bottom
+makes $\#$ require $x \wedge y = \bot'$, which embedded meets $\langle a \rangle \wedge \langle b \rangle =
+\langle a \wedge b \rangle$ never reach. So no two embedded elements are disjoint, and the lift retains
+none of the original disjointness.
+\end{remark}
+
+\subsubsection{Term interpretation}
+\label{sec:slicing-interpretation:terms}
+
+A term judgement $\Gamma \vdash t : \tau$ is interpreted as a morphism $\sem{t} : \sem{\Gamma} \to
+\sem{\tau}$. Write $f^\dagger = \mu \comp T(f) : T(X) \to T(Y)$ for the Kleisli extension of $f :
+X \to T(Y)$, with the convention that for $n$-ary $f : X_1 \times \cdots \times X_n \to T(Y)$,
+the same notation $f^\dagger : T(X_1) \times \cdots \times T(X_n) \to T(Y)$ denotes the $n$-ary
+generalisation, defined by iterating the unary case with strength. Introductions compose with
+$\eta$; eliminations take the Kleisli extension of the underlying operation, using strength
+where needed. Unlike the Moggi semantics (\secref{slicing-interpretation:moggi-terms}),
+the $\syn{fold}$ clause here takes a plain $F$-algebra $\sem{t} : \sem{\Gamma} \times F(\sem{\sigma}) \to
+\sem{\sigma}$ and uses the standard catamorphism, so the issue of collapsing per-constructor
+approximations under fold does not arise.
+
+\begin{align*}
+\sem{x_i}                              & = \pi_i \\
+\sem{\tmUnit}                          & = \eta_{\One} \comp {!_{\sem{\Gamma}}} \\
+\sem{\tmPair{s}{t}}                    & = \eta_{\sem{\sigma}\times\sem{\tau}} \comp
+                                            \prodM{\sem{s}}{\sem{t}} \\
+\sem{\tmFst{s}}                        & = \pi_1^\dagger \comp \sem{s} \\
+\sem{\tmSnd{s}}                        & = \pi_2^\dagger \comp \sem{s} \\
+\sem{\tmInl{s}}                        & = \eta_{\sem{\sigma}+\sem{\tau}} \comp \mathsf{inj}_1
+                                            \comp \sem{s} \\
+\sem{\tmInr{s}}                        & = \eta_{\sem{\sigma}+\sem{\tau}} \comp \mathsf{inj}_2
+                                            \comp \sem{s} \\
+\sem{\tmCase{s}{x_1}{t_1}{x_2}{t_2}}   & = (\coprodM{\sem{t_1}}{\sem{t_2}} \comp \delta)^\dagger \comp
+                                            \mathsf{st}_{\sem{\Gamma}, \sem{\sigma_1}+\sem{\sigma_2}}
+                                            \comp \prodM{\id}{\sem{s}} \\
+\sem{\tmFun{x}{t}}                     & = \eta_{\sem{\sigma}\Rightarrow\sem{\tau}} \comp \lambda(\sem{t}) \\
+\sem{\tmApp{s}{t}}                     & = \eval^\dagger \comp
+                                            \mathsf{st}_{\sem{\sigma}\Rightarrow\sem{\tau}, \sem{\sigma}}
+                                            \comp \prodM{\sem{s}}{\sem{t}} \\
+\sem{\phi(t_1, \ldots, t_n)}           & = (\eta_{\sem{\rho}_{\PrimTy}} \comp \sem{\phi}_{\Op})^\dagger
+                                            \comp \langle\sem{t_1}, \ldots, \sem{t_n}\rangle \\
+\sem{\tmRoll{t}}                       & = \mathsf{in}_F \comp \sem{t} \\
+\sem{\syn{fold}\,s\,\syn{with}\,x.t}   & = \cata{\sem{t}}_F \comp \prodM{\id}{\sem{s}}
+\end{align*}
+
+In the $\syn{case}$ clause, $\delta : \sem{\Gamma} \times (\sem{\sigma_1}+\sem{\sigma_2}) \to
+(\sem{\Gamma}\times\sem{\sigma_1}) + (\sem{\Gamma}\times\sem{\sigma_2})$ is the distributivity
+isomorphism. In the $\syn{roll}$ and $\syn{fold}$ clauses, for a type $\mu\alpha.\tau$, $F$ is
+the endofunctor $X \mapsto \sem{\tau}[X/\alpha]$ on $\cat{D}$; $\cata{-}_F$ denotes the
+parameterised catamorphism it induces, which exists by initiality of $\mu F$ together with the
+exponential structure of $\cat{D}$, used to internalise the $\Gamma$-parameter via currying.
+

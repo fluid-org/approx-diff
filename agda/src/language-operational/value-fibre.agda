@@ -1,0 +1,154 @@
+{-# OPTIONS --prop --postfix-projections --safe #-}
+
+-- The ordered fibre of a value: the positions of a value together with the order that makes a
+-- selection of them a prefix. Every value former contributes a root above its payload, so the
+-- bottom of a former is distinct from the former applied to bottoms. Rolling contributes nothing of
+-- its own, since the sum and product inside the body already carry roots. A closure carries a root
+-- above its environment, so that a function position can be sliced away on its own.
+--
+-- The dimension is the width the operational semantics would have to use, which differs from the
+-- present one at the unit, the injections and the pair.
+open import Level using (0ℓ)
+open import Data.Nat using (ℕ; suc; _+_)
+open import Data.Fin using (Fin; zero; suc)
+open import Data.Vec using (Vec; []; _∷_; tabulate)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
+open import commutative-semiring using (CommutativeSemiring)
+open import signature using (Signature)
+open import primitives using (Primitives)
+import two
+import matrix
+import order-idempotent
+import order-idempotent-freeness
+
+module language-operational.value-fibre {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+
+open Signature Sig
+open Primitives 𝒫
+import language-syntax Sig as Syn
+open import language-operational.evaluation Sig 𝒫 using (Val; Env; width; width-env)
+open Val
+open Env
+
+private
+  module T = CommutativeSemiring two.semiring
+  module TM = matrix.Mat two.semiring
+
+  ∨-idem : ∀ {x} → (x T.+ x) T.≈ x
+  ∨-idem {two.O} = T.refl {two.O}
+  ∨-idem {two.I} = T.refl {two.I}
+
+  ∧-idem : ∀ {x} → (x T.· x) T.≈ x
+  ∧-idem {two.O} = T.refl {two.O}
+  ∧-idem {two.I} = T.refl {two.I}
+
+  ⊤-add-top : ∀ {x} → (T.ι T.+ x) T.≈ T.ι
+  ⊤-add-top {two.O} = T.refl {two.I}
+  ⊤-add-top {two.I} = T.refl {two.I}
+
+open order-idempotent two.semiring (λ {x} → ∨-idem {x}) (λ {x} → ∧-idem {x}) (λ {x} → ⊤-add-top {x})
+open order-idempotent-freeness two.semiring
+  (λ {x} → ∨-idem {x}) (λ {x} → ∧-idem {x}) (λ {x} → ⊤-add-top {x})
+
+mutual
+  pos : ∀ {τ} → Val τ → Pos
+  pos unit            = Lp 𝟘p
+  pos (const {s} _)   = disc (sort-width s)
+  pos (inl v)         = Lp (pos v)
+  pos (inr v)         = Lp (pos v)
+  pos (pair v u)      = Lp (pos v ⊕ pos u)
+  pos (clo γ _)       = Lp (pos-env γ)
+  pos (roll v)        = pos v
+
+  pos-env : ∀ {Γ} → Env Γ → Pos
+  pos-env emp     = 𝟘p
+  pos-env (γ · v) = pos-env γ ⊕ pos v
+
+-- The width the ordered fibre implies, against the present one: a former now costs a position.
+mutual
+  width′ : ∀ {τ} → Val τ → ℕ
+  width′ unit          = 1
+  width′ (const {s} _) = sort-width s
+  width′ (inl v)       = suc (width′ v)
+  width′ (inr v)       = suc (width′ v)
+  width′ (pair v u)    = suc (width′ v + width′ u)
+  width′ (clo γ _)     = suc (width-env′ γ)
+  width′ (roll v)      = width′ v
+
+  width-env′ : ∀ {Γ} → Env Γ → ℕ
+  width-env′ emp     = 0
+  width-env′ (γ · v) = width-env′ γ + width′ v
+
+mutual
+  pos-dim : ∀ {τ} (v : Val τ) → pos v .dim ≡ width′ v
+  pos-dim unit        = refl
+  pos-dim (const _)   = refl
+  pos-dim (inl v)     = cong suc (pos-dim v)
+  pos-dim (inr v)     = cong suc (pos-dim v)
+  pos-dim (pair v u)  = cong suc (cong₂ _+_ (pos-dim v) (pos-dim u))
+  pos-dim (clo γ _)   = cong suc (pos-env-dim γ)
+  pos-dim (roll v)    = pos-dim v
+
+  pos-env-dim : ∀ {Γ} (γ : Env Γ) → pos-env γ .dim ≡ width-env′ γ
+  pos-env-dim emp     = refl
+  pos-env-dim (γ · v) = cong₂ _+_ (pos-env-dim γ) (pos-dim v)
+
+-- The positions of a part of a value sit inside those of the whole, under its root. These replace
+-- the injections into a free semimodule on a width.
+into-inl : ∀ {τ₁ τ₂} (v : Val τ₁) → pos v ⇒ pos (inl {τ₁} {τ₂} v)
+into-inl v = inj
+
+into-inr : ∀ {τ₁ τ₂} (v : Val τ₂) → pos v ⇒ pos (inr {τ₁} {τ₂} v)
+into-inr v = inj
+
+into-fst : ∀ {τ₁ τ₂} (v : Val τ₁) (u : Val τ₂) → pos v ⇒ pos (pair v u)
+into-fst v u = inj ∘ ι₁ (pos v) (pos u)
+
+into-snd : ∀ {τ₁ τ₂} (v : Val τ₁) (u : Val τ₂) → pos u ⇒ pos (pair v u)
+into-snd v u = inj ∘ ι₂ (pos v) (pos u)
+
+into-clo : ∀ {Γ σ τ} (γ : Env Γ) (t : (Γ Syn., σ) Syn.⊢ τ) → pos-env γ ⇒ pos (clo γ t)
+into-clo γ t = inj
+
+into-env-tail : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) → pos-env γ ⇒ pos-env (γ · v)
+into-env-tail γ v = ι₁ (pos-env γ) (pos v)
+
+into-env-head : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) → pos v ⇒ pos-env (γ · v)
+into-env-head γ v = ι₂ (pos-env γ) (pos v)
+
+-- Selecting a former's root alone, which is what an elimination reads.
+root-inl : ∀ {τ₁ τ₂} (v : Val τ₁) → 𝟙p ⇒ pos (inl {τ₁} {τ₂} v)
+root-inl v = root
+
+root-inr : ∀ {τ₁ τ₂} (v : Val τ₂) → 𝟙p ⇒ pos (inr {τ₁} {τ₂} v)
+root-inr v = root
+
+root-pair : ∀ {τ₁ τ₂} (v : Val τ₁) (u : Val τ₂) → 𝟙p ⇒ pos (pair v u)
+root-pair v u = root
+
+root-clo : ∀ {Γ σ τ} (γ : Env Γ) (t : (Γ Syn., σ) Syn.⊢ τ) → 𝟙p ⇒ pos (clo γ t)
+root-clo γ t = root
+
+private
+  table : ∀ {m n} → TM.Matrix m n → Vec (Vec two.Two n) m
+  table M = tabulate (λ i → tabulate (λ j → M i j))
+
+  -- An injected unit: the injection's root above the unit's root.
+  inl-unit : Vec (Vec two.Two 2) 2
+  inl-unit = (two.I ∷ two.I ∷ []) ∷ (two.O ∷ two.I ∷ []) ∷ []
+
+  test-inl-unit : table (pos (inl {Syn.unit} {Syn.unit} unit) .ord) ≡ inl-unit
+  test-inl-unit = refl
+
+  -- A pair of units: the pair's root above both components' roots, which are unrelated.
+  pair-units : Vec (Vec two.Two 3) 3
+  pair-units = (two.I ∷ two.I ∷ two.I ∷ []) ∷ (two.O ∷ two.I ∷ two.O ∷ []) ∷
+               (two.O ∷ two.O ∷ two.I ∷ []) ∷ []
+
+  test-pair-units : table (pos (pair {Syn.unit} {Syn.unit} unit unit) .ord) ≡ pair-units
+  test-pair-units = refl
+
+  -- A closure over the empty environment is a single root, so it can be sliced away entire.
+  test-closure : table (pos (clo {Syn.emp} {Syn.unit} {Syn.unit} emp (Syn.var Syn.zero)) .ord)
+                 ≡ ((two.I ∷ []) ∷ [])
+  test-closure = refl

@@ -20,9 +20,6 @@
 \newcommand{\bob}[1]{\textcolor{purple}{\textbf{BOB:} #1}}
 \newcommand{\roly}[1]{\textcolor{red}{\textbf{ROLY:} #1}}
 
-% Attribute inline edits with the optional id, e.g. \added[id=roly]{...}.
-\definechangesauthor[name=Bob, color=purple]{bob}
-\definechangesauthor[name=Roly, color=red]{roly}
 % No strikethrough: ulem's \sout is neither line-breakable nor metric-neutral.
 \colorlet{deletedgray}{gray!70}
 \setdeletedmarkup{\textcolor{deletedgray}{#1}}
@@ -143,7 +140,7 @@
 \newcommand*{\eval}{\varepsilon}
 \newcommand*{\faml}[1]{\overline{#1}} % \fam already defined
 \newcommand*{\fin}{\mathsf{fin}}
-\newcommand*{\cata}{\phi}
+\newcommand*{\cata}[1]{\llparenthesis #1 \rrparenthesis}
 \newcommand*{\id}{\mathsf{id}}
 \newcommand*{\idx}[1]{\widehat{#1}}
 \newcommand*{\inj}{\mathsf{inj}}
@@ -210,6 +207,9 @@
 \newcommand*{\demorgan}[1]{{#1}^{\circ}}
 \newcommand*{\HeytConj}{\namedcat{HeytConj}}
 \newcommand*{\muPoly}{\mu\namedcat{Poly}}
+\newcommand*{\Poly}{\namedcat{Poly}}
+\newcommand*{\roll}{\mathsf{roll}}
+\newcommand*{\with}{\mathsf{with}}
 \newcommand*{\Pred}{\mathrm{Pred}}
 \newcommand*{\PSh}{\namedcat{PSh}}
 \newcommand*{\PosGal}{\namedcat{PosGal}}
@@ -224,6 +224,8 @@
 \newcommand*{\JoinSLat}{\namedcat{JoinSLat}}
 \newcommand*{\Lposet}{\namedcat{Stable}}
 \newcommand*{\GLR}{\namedcat{GLR}} % Grothendieck Logical Relations
+\newcommand*{\Definable}{\mathsf{Def}}
+\newcommand*{\GF}{\hat{F}}
 \newcommand*{\Disc}{\mathrm{Disc}}
 \newcommand*{\LatConj}{\namedcat{LatConj}}
 \newcommand*{\QQ}{\mathbbm{Q}}

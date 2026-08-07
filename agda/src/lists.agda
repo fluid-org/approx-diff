@@ -53,7 +53,7 @@ module _ (A : 𝒞.obj) where
       𝒞P.prod-m (𝒞.id _) (transport {m} {o} _)
     ≈⟨ 𝒞P.prod-m-cong (𝒞.≈-sym 𝒞.id-left) (ListF .fmor-comp ⟪ succ-injective eq1 ⟫ ⟪ succ-injective eq2 ⟫) ⟩
       𝒞P.prod-m (𝒞.id _ 𝒞.∘ 𝒞.id _) (transport (succ-injective eq1) 𝒞.∘ transport (succ-injective eq2))
-    ≈⟨ 𝒞P.pair-functorial _ _ _ _ ⟩
+    ≈⟨ 𝒞P.prod-m-comp _ _ _ _ ⟩
       𝒞P.prod-m (𝒞.id _) (transport (succ-injective eq1)) 𝒞.∘ 𝒞P.prod-m (𝒞.id _) (transport (succ-injective eq2))
     ∎
     where open ≈-Reasoning 𝒞.isEquiv
@@ -114,7 +114,7 @@ module _ (A : 𝒞.obj) where
           cons-m 𝒞.∘ 𝒞P.prod-m (𝒞.id _ 𝒞.∘ 𝒞.id _) (𝒞.id _ 𝒞.∘ α .transf m)
         ≈⟨ 𝒞.∘-cong 𝒞.≈-refl (𝒞P.prod-m-cong 𝒞.≈-refl (α .natural {m} {n} ⟪ succ-injective eq ⟫)) ⟩
           cons-m 𝒞.∘ 𝒞P.prod-m (𝒞.id _ 𝒞.∘ 𝒞.id _) (α .transf n 𝒞.∘ transport (succ-injective eq))
-        ≈⟨ 𝒞.∘-cong 𝒞.≈-refl (𝒞P.pair-functorial _ _ _ _) ⟩
+        ≈⟨ 𝒞.∘-cong 𝒞.≈-refl (𝒞P.prod-m-comp _ _ _ _) ⟩
           cons-m 𝒞.∘ (𝒞P.prod-m (𝒞.id A) (α .transf n) 𝒞.∘ 𝒞P.prod-m (𝒞.id A) (transport {m} {n} _))
         ≈˘⟨ 𝒞.assoc _ _ _ ⟩
          (cons-m 𝒞.∘ 𝒞P.prod-m (𝒞.id A) (α .transf n)) 𝒞.∘ 𝒞P.prod-m (𝒞.id A) (transport (succ-injective eq))

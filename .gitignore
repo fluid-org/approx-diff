@@ -9,6 +9,14 @@
 *.out
 *.fdb_latexmk
 *.fls
+*.loc
+*.soc
 *.pdf
 *.zip
 *.DS_Store
+*.fdb_latexmk
+*.fls
+
+# Claude Code local state (memory, transcripts, and git worktrees it manages)
+/.claude/
+agda/_build/

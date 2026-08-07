@@ -340,6 +340,14 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   biproduct m n .Biproduct.zero-2 = zero-2 m n
   biproduct m n .Biproduct.id-+ = id-+ m n
 
+  -- Copairing of blocks: [ f , g ] as a matrix into the summed domain.
+  _∥_ : ∀ {m n k} → Matrix k m → Matrix k n → Matrix k (m +ℕ n)
+  _∥_ {m} {n} f g = Biproduct.copair (biproduct m n) f g
+
+  -- A scalar as a 1-by-1 block.
+  block : Carrier → Matrix 1 1
+  block c _ _ = c
+
   -- Vector concatenation, a monoid homomorphism preserving pointwise additive structure.
   concat : ∀ {x y} → Vec x → Vec y → Vec (x +ℕ y)
   concat {zero} u v = v
@@ -398,3 +406,381 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Σ-p₂ {zero} w i = Σ-unit i w
   Σ-p₂ {suc x} w i =
     trans (+-cong ε-annihilₗ refl) (trans +-lunit (Σ-p₂ {x} (λ j → w (suc j)) i))
+
+  Σ-in₁ : ∀ {x y} (u : Vec x) (i : Fin (x +ℕ y)) →
+          Σ {x} (λ j → in₁ {x} {y} i j · u j) ≈ concat {x} {y} u (λ _ → ε) i
+  Σ-in₁ {zero} u i = refl
+  Σ-in₁ {suc x} u zero =
+    trans (+-cong ·-lunit (trans (Σ-cong {x} (λ j → ε-annihilₗ)) (Σ-ε {x})))
+          (trans +-comm +-lunit)
+  Σ-in₁ {suc x} u (suc i) =
+    trans (+-cong ε-annihilₗ refl) (trans +-lunit (Σ-in₁ {x} (λ j → u (suc j)) i))
+
+  Σ-in₂ : ∀ {x y} (w : Vec y) (i : Fin (x +ℕ y)) →
+          Σ {y} (λ j → in₂ {x} {y} i j · w j) ≈ concat {x} {y} (λ _ → ε) w i
+  Σ-in₂ {zero}  w i = Σ-unit i w
+  Σ-in₂ {suc x} {y} w zero = trans (Σ-cong {y} (λ j → ε-annihilₗ)) (Σ-ε {y})
+  Σ-in₂ {suc x} w (suc i) = Σ-in₂ {x} w i
+
+-- Additional (ordered) structures that might be present on S.
+module _ {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+  open import basics using (IsPreorder; IsJoin; IsBottom; IsMeet; IsTop; module Disjoint)
+  open import preorder using (Preorder)
+  open import Data.Nat using (ℕ; zero; suc)
+  open import Data.Fin using (Fin; zero; suc)
+  open import join-semilattice using (JoinSemilattice)
+  open import meet-semilattice using (MeetSemilattice)
+
+  -- Pointwise lifts to Vec n.
+  module vec (P : Preorder) (n : ℕ) where
+    open Preorder
+    open JoinSemilattice
+    open MeetSemilattice
+
+    preorder : Preorder
+    preorder .Carrier = Fin n → P .Carrier
+    preorder ._≤_ u v = ∀ i → P ._≤_ (u i) (v i)
+    preorder .≤-isPreorder .IsPreorder.refl i = IsPreorder.refl (P .≤-isPreorder)
+    preorder .≤-isPreorder .IsPreorder.trans u≤v v≤w i = IsPreorder.trans (P .≤-isPreorder) (u≤v i) (v≤w i)
+
+    join : JoinSemilattice P → JoinSemilattice preorder
+    join J ._∨_ u v i = J ._∨_ (u i) (v i)
+    join J .⊥ _ = J .⊥
+    join J .∨-isJoin .IsJoin.inl i = IsJoin.inl (J .∨-isJoin)
+    join J .∨-isJoin .IsJoin.inr i = IsJoin.inr (J .∨-isJoin)
+    join J .∨-isJoin .IsJoin.[_,_] u≤w v≤w i = IsJoin.[_,_] (J .∨-isJoin) (u≤w i) (v≤w i)
+    join J .⊥-isBottom .IsBottom.≤-bottom i = IsBottom.≤-bottom (J .⊥-isBottom)
+
+    meet : MeetSemilattice P → MeetSemilattice preorder
+    meet M ._∧_ u v i = M ._∧_ (u i) (v i)
+    meet M .⊤ _ = M .⊤
+    meet M .∧-isMeet .IsMeet.π₁ i = IsMeet.π₁ (M .∧-isMeet)
+    meet M .∧-isMeet .IsMeet.π₂ i = IsMeet.π₂ (M .∧-isMeet)
+    meet M .∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z i = IsMeet.⟨_,_⟩ (M .∧-isMeet) (x≤y i) (x≤z i)
+    meet M .⊤-isTop .IsTop.≤-top i = IsTop.≤-top (M .⊤-isTop)
+
+  open Mat S
+    renaming (
+      _·_ to _∧_;
+      _+_ to _∨_;
+      ε to ⊥;
+      ι to ⊤;
+      ·-cong to ∧-cong;
+      ·-assoc to ∧-assoc;
+      ·-comm to ∧-comm;
+      ·-lunit to ∧-lunit;
+      +-cong to ∨-cong;
+      +-assoc to ∨-assoc;
+      +-comm to ∨-comm;
+      +-lunit to ∨-lunit;
+      ·-+-distribₗ to ∧-∨-distribₗ;
+      ·-+-distribᵣ to ∧-∨-distribᵣ;
+      ε-annihilₗ to ⊥-annihilₗ;
+      ε-annihilᵣ to ⊥-annihilᵣ
+    )
+
+  module Join
+    (_≤_          : Carrier → Carrier → Prop _)
+    (≤-isPreorder : IsPreorder _≤_)
+    (∨-isJoin     : IsJoin ≤-isPreorder _∨_)
+    (⊥-isBottom   : IsBottom ≤-isPreorder ⊥)
+    (≈→≤          : ∀ {x y} → x ≈ y → x ≤ y)
+    where
+
+    open IsPreorder ≤-isPreorder public using (_≃_) renaming (refl to ≤-refl; trans to ≤-trans)
+    open import prop public using (proj₁; proj₂)
+
+    preorder : Preorder
+    preorder .Preorder.Carrier = Carrier
+    preorder .Preorder._≤_ = _≤_
+    preorder .Preorder.≤-isPreorder = ≤-isPreorder
+
+    joins : JoinSemilattice preorder
+    joins .JoinSemilattice._∨_ = _∨_
+    joins .JoinSemilattice.⊥ = ⊥
+    joins .JoinSemilattice.∨-isJoin = ∨-isJoin
+    joins .JoinSemilattice.⊥-isBottom = ⊥-isBottom
+
+    -- Iterated-∨ laws (Σ as iterated +). Σ-ub mirrors inl/inr, Σ-lub mirrors [_,_].
+    Σ-ub : ∀ {n} (f : Fin n → Carrier) (i : Fin n) → f i ≤ Σ f
+    Σ-ub f zero = IsJoin.inl ∨-isJoin
+    Σ-ub f (suc i) = ≤-trans (Σ-ub (λ j → f (suc j)) i) (IsJoin.inr ∨-isJoin)
+
+    Σ-lub : ∀ {n} {z} (f : Fin n → Carrier) → (∀ j → f j ≤ z) → Σ f ≤ z
+    Σ-lub {zero} _ _ = IsBottom.≤-bottom ⊥-isBottom
+    Σ-lub {suc n} f h = IsJoin.[_,_] ∨-isJoin (h zero) (Σ-lub (λ j → f (suc j)) (λ j → h (suc j)))
+
+    Σ-mono : ∀ {n} {f g : Fin n → Carrier} → (∀ j → f j ≤ g j) → Σ f ≤ Σ g
+    Σ-mono = +-to-Σ.Σ-preserves _≤_ ≤-refl (IsJoin.mono ∨-isJoin)
+
+    -- Pointwise lift of _≤_ and _≃_ to Vec, from vec.preorder.
+    module _ {n : ℕ} where
+      open Preorder (vec.preorder preorder n) using () renaming (_≤_ to _≤^_; _≃_ to _≃^_) public
+
+    -- Iterated-∨ at Vec level.
+    Σ^-ub : ∀ {m n} (g : Fin m → Vec n) (i : Fin m) → g i ≤^ Σ^ g
+    Σ^-ub g i j = Σ-ub (λ k → g k j) i
+
+    Σ^-lub : ∀ {m n} {z : Vec n} (g : Fin m → Vec n) → (∀ i → g i ≤^ z) → Σ^ g ≤^ z
+    Σ^-lub g h j = Σ-lub (λ k → g k j) (λ i → h i j)
+
+    Σ^-mono : ∀ {m n} {g g' : Fin m → Vec n} → (∀ i → g i ≤^ g' i) → Σ^ g ≤^ Σ^ g'
+    Σ^-mono h j = Σ-mono (λ i → h i j)
+
+    -- Basis decomposition of a join-preserving, scale-linear map. Scale-linearity is an explicit hypothesis
+    -- because f's interaction with scalar · isn't otherwise constrained (like it is in Two). Currently unused,
+    -- but nice because it shows that because every such f is determined by its action on basis vectors, we
+    -- can think of it as a "join of atomic slices".
+    module _ {m n}
+      (f       : Vec m → Vec n)
+      (f-mono  : ∀ {u v} → u ≤^ v → f u ≤^ f v)
+      (f-⊥     : ∀ j → f (λ _ → ⊥) j ≤ ⊥)
+      (f-∨     : ∀ u v j → f (λ k → u k ∨ v k) j ≤ (f u j ∨ f v j))
+      (f-scale : ∀ a v j → f (scale a v) j ≃ scale a (f v) j)
+      where
+
+      -- f preserves and reflects Σ^.
+      f-Σ^ : ∀ {k} (g : Fin k → Vec m) → f (Σ^ g) ≃^ Σ^ (λ i → f (g i))
+      f-Σ^ {zero} g .proj₁ j = f-⊥ j
+      f-Σ^ {suc k} g .proj₁ j =
+        ≤-trans (f-∨ (g zero) (Σ^ (λ i → g (suc i))) j)
+                (IsJoin.mono ∨-isJoin ≤-refl (f-Σ^ (λ i → g (suc i)) .proj₁ j))
+      f-Σ^ g .proj₂ = Σ^-lub _ (λ i → f-mono (Σ^-ub g i))
+
+      basis-decomp : ∀ (v : Vec m) j → f v j ≃ Σ^ (λ i → scale (v i) (f (e i))) j
+      basis-decomp v j .proj₁ =
+        ≤-trans (f-mono (λ k → ≈→≤ (Σ^-basis v k)) j)
+          (≤-trans (f-Σ^ (λ i → scale (v i) (e i)) .proj₁ j)
+                   (Σ-mono (λ i → f-scale (v i) (e i) j .proj₁)))
+      basis-decomp v j .proj₂ =
+        ≤-trans (Σ-mono (λ i → f-scale (v i) (e i) j .proj₂))
+          (≤-trans (f-Σ^ (λ i → scale (v i) (e i)) .proj₂ j)
+                   (f-mono (λ k → ≈→≤ (sym (Σ^-basis v k))) j))
+
+  -- A commutative semiring is exactly a (bounded) distributive lattice when both ∨ (= +) and ∧ (= ·) are
+  -- idempotent and ⊤ (= 1) is the additive top. The (shared) induced order is x ≤ y iff x ∨ y ≈ y.
+  module DistributiveLattice
+    (∨-idem    : ∀ {x} → x ∨ x ≈ x)
+    (∧-idem    : ∀ {x} → x ∧ x ≈ x)
+    (⊤-add-top : ∀ {x} → ⊤ ∨ x ≈ ⊤)
+    where
+
+    open import prop using (proj₁; proj₂)
+
+    _≤_ : Carrier → Carrier → Prop _
+    x ≤ y = x ∨ y ≈ y
+
+    ≤-isPreorder : IsPreorder _≤_
+    ≤-isPreorder .IsPreorder.refl = ∨-idem
+    ≤-isPreorder .IsPreorder.trans {x} {y} {z} x≤y y≤z =
+      trans (∨-cong refl (sym y≤z)) (trans (sym ∨-assoc) (trans (∨-cong x≤y refl) y≤z))
+
+    ≈→≤ : ∀ {x y} → x ≈ y → x ≤ y
+    ≈→≤ x≈y = trans (∨-cong x≈y refl) ∨-idem
+
+    ∨-isJoin : IsJoin ≤-isPreorder _∨_
+    ∨-isJoin .IsJoin.inl = trans (sym ∨-assoc) (∨-cong ∨-idem refl)
+    ∨-isJoin .IsJoin.inr =
+      trans (∨-cong refl ∨-comm) (trans (sym ∨-assoc) (trans (∨-cong ∨-idem refl) ∨-comm))
+    ∨-isJoin .IsJoin.[_,_] x≤z y≤z = trans ∨-assoc (trans (∨-cong refl y≤z) x≤z)
+
+    ⊥-isBottom : IsBottom ≤-isPreorder ⊥
+    ⊥-isBottom .IsBottom.≤-bottom = ∨-lunit
+
+    ⊤-isTop : IsTop ≤-isPreorder ⊤
+    ⊤-isTop .IsTop.≤-top = trans ∨-comm ⊤-add-top
+
+    ∨-∧-absorption : ∀ {a b} → a ∨ (a ∧ b) ≈ a
+    ∨-∧-absorption {a} {b} =
+      trans (∨-cong (trans (sym ∧-lunit) ∧-comm) refl)
+            (trans (sym ∧-∨-distribₗ) (trans (∧-cong refl ⊤-add-top) (trans ∧-comm ∧-lunit)))
+
+    ∧-monoʳ : ∀ {a b c} → a ≤ b → c ∧ a ≤ c ∧ b
+    ∧-monoʳ a≤b = trans (sym ∧-∨-distribₗ) (∧-cong refl a≤b)
+
+    ∧-monoˡ : ∀ {a b c} → a ≤ b → a ∧ c ≤ b ∧ c
+    ∧-monoˡ a≤b = trans (sym ∧-∨-distribᵣ) (∧-cong a≤b refl)
+
+    ∧-isMeet : IsMeet ≤-isPreorder _∧_
+    ∧-isMeet .IsMeet.π₁ = trans ∨-comm ∨-∧-absorption
+    ∧-isMeet .IsMeet.π₂ = trans (∨-cong ∧-comm refl) (trans ∨-comm ∨-∧-absorption)
+    ∧-isMeet .IsMeet.⟨_,_⟩ {x} {y} {z} x≤y x≤z =
+      ≤-isPreorder .IsPreorder.trans
+        (trans (∨-cong (sym ∧-idem) refl) (∧-monoʳ x≤z)) (∧-monoˡ x≤y)
+
+    ∧-∨-distrib : ∀ {x y z} → x ∧ (y ∨ z) ≤ (x ∧ y) ∨ (x ∧ z)
+    ∧-∨-distrib = ≈→≤ ∧-∨-distribₗ
+
+    ∨-∧-distribₗ : ∀ {a b c} → (a ∨ b) ∧ (a ∨ c) ≈ a ∨ (b ∧ c)
+    ∨-∧-distribₗ {a} {b} {c} =
+      trans ∧-∨-distribᵣ
+            (trans (∨-cong ∧-∨-distribₗ ∧-∨-distribₗ)
+                  (trans (∨-cong (∨-cong ∧-idem refl) (∨-cong ∧-comm refl))
+                          (trans (∨-cong ∨-∧-absorption refl)
+                                 (trans (sym ∨-assoc) (∨-cong ∨-∧-absorption refl)))))
+
+    open import conjugate using (Obj; _⇒c_)
+    open _⇒c_
+
+    open Join _≤_ ≤-isPreorder ∨-isJoin ⊥-isBottom ≈→≤ using (Σ-mono; Σ-ub; Σ-lub) public
+    open IsPreorder ≤-isPreorder using () renaming (refl to ≤-refl; trans to ≤-trans)
+    open IsMeet ∧-isMeet using () renaming (mono to ∧-mono)
+
+    DistribLattice : ℕ → Obj
+    DistribLattice n .Obj.carrier .Preorder.Carrier = Fin n → Carrier
+    DistribLattice n .Obj.carrier .Preorder._≤_ u v = ∀ i → u i ≤ v i
+    DistribLattice n .Obj.carrier .Preorder.≤-isPreorder .IsPreorder.refl i = ≤-refl
+    DistribLattice n .Obj.carrier .Preorder.≤-isPreorder .IsPreorder.trans u≤v v≤w i =
+      ≤-trans (u≤v i) (v≤w i)
+    DistribLattice n .Obj.meets .MeetSemilattice._∧_ u v i = u i ∧ v i
+    DistribLattice n .Obj.meets .MeetSemilattice.⊤ _ = ⊤
+    DistribLattice n .Obj.meets .MeetSemilattice.∧-isMeet .IsMeet.π₁ i = IsMeet.π₁ ∧-isMeet
+    DistribLattice n .Obj.meets .MeetSemilattice.∧-isMeet .IsMeet.π₂ i = IsMeet.π₂ ∧-isMeet
+    DistribLattice n .Obj.meets .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z i =
+      IsMeet.⟨_,_⟩ ∧-isMeet (x≤y i) (x≤z i)
+    DistribLattice n .Obj.meets .MeetSemilattice.⊤-isTop .IsTop.≤-top i = IsTop.≤-top ⊤-isTop
+    DistribLattice n .Obj.joins .JoinSemilattice._∨_ u v i = u i ∨ v i
+    DistribLattice n .Obj.joins .JoinSemilattice.⊥ _ = ⊥
+    DistribLattice n .Obj.joins .JoinSemilattice.∨-isJoin .IsJoin.inl i = IsJoin.inl ∨-isJoin
+    DistribLattice n .Obj.joins .JoinSemilattice.∨-isJoin .IsJoin.inr i = IsJoin.inr ∨-isJoin
+    DistribLattice n .Obj.joins .JoinSemilattice.∨-isJoin .IsJoin.[_,_] x≤y y≤z i =
+      IsJoin.[_,_] ∨-isJoin (x≤y i) (y≤z i)
+    DistribLattice n .Obj.joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom i =
+      IsBottom.≤-bottom ⊥-isBottom
+    DistribLattice n .Obj.∧-∨-distrib _ _ _ _ = ∧-∨-distrib
+
+    open import join-semilattice using () renaming (_=>_ to _=>J_)
+    open _=>J_
+    open preorder._=>_ using (fun; mono)
+
+    -- Push y inside, interchange, pull x out.
+    swap : ∀ {m n} (M : Matrix n m) {x : Vec m} {y : Vec n} → y ⋅ (λ i → M i ⋅ x) ≈ (λ j → (M ᵀ) j ⋅ y) ⋅ x
+    swap {m} {n} M {x} {y} =
+      trans (Σ-cong {n} (λ i → Σ-·-distribₗ (y i) (λ j → M i j ∧ x j)))
+            (trans (Σ-interchange {n} {m} (λ i j → y i ∧ (M i j ∧ x j)))
+                   (Σ-cong {m} (λ j →
+                     trans (Σ-cong {n} (λ i → trans (sym ∧-assoc) (∧-cong ∧-comm refl)))
+                           (sym (Σ-·-distribᵣ (λ i → M i j ∧ y i) (x j))))))
+
+    to-conj : ∀ {m n} → Matrix n m → DistribLattice n ⇒c DistribLattice m
+    to-conj {m} {n} M .right .func .fun x j = (M ᵀ) j ⋅ x
+    to-conj {m} {n} M .right .func .mono x≤x' j = Σ-mono (λ i → ∧-mono ≤-refl (x≤x' i))
+    to-conj {m} {n} M .right .∨-preserving {x} {x'} j =
+      ≈→≤ (trans (Σ-cong {n} (λ i → ∧-∨-distribₗ)) (sym (Σ-+ {n} _ _)))
+    to-conj {m} {n} M .right .⊥-preserving j =
+      ≈→≤ (trans (Σ-cong {n} (λ i → ⊥-annihilᵣ)) (Σ-ε {n}))
+    to-conj {m} {n} M .left .func .fun y i = M i ⋅ y
+    to-conj {m} {n} M .left .func .mono y≤y' i = Σ-mono (λ j → ∧-mono ≤-refl (y≤y' j))
+    to-conj {m} {n} M .left .∨-preserving {y} {y'} i =
+      ≈→≤ (trans (Σ-cong {m} (λ j → ∧-∨-distribₗ)) (sym (Σ-+ {m} _ _)))
+    to-conj {m} {n} M .left .⊥-preserving i =
+      ≈→≤ (trans (Σ-cong {m} (λ j → ⊥-annihilᵣ)) (Σ-ε {m}))
+    to-conj {m} {n} M .conjugate {x} {y} .proj₁ h i =
+      ≤-trans (Σ-ub _ i) (≤-trans (≈→≤ (sym (swap (M ᵀ) {x} {y}))) (Σ-lub _ h))
+    to-conj {m} {n} M .conjugate {x} {y} .proj₂ k j =
+      ≤-trans (Σ-ub _ j) (≤-trans (≈→≤ (swap (M ᵀ) {x} {y})) (Σ-lub _ k))
+
+    -- The opposite semiring, with + and · swapped.
+    opposite : CommutativeSemiring A
+    opposite .CommutativeSemiring.additive = multiplicative
+    opposite .CommutativeSemiring.multiplicative = additive
+    opposite .CommutativeSemiring.·-+-distribₗ = sym ∨-∧-distribₗ
+    opposite .CommutativeSemiring.ε-annihilₗ = ⊤-add-top
+
+    -- The action of the transpose Mᵀ over the opposite semiring: a meet-preserving map given by y ↦ (j ↦ ⊓ᵢ
+    -- (M i j ∨ y i)). Distinct from the conjugate (which uses joins-of-meets). Athough this requires only
+    -- distributivity, not anything Boolean, we can think of this as the adjoint of ¬M; but neither ¬M nor the
+    -- right adjoint of M can themselves be defined for such a structure. Under additional Boolean (perhaps
+    -- only Heyting) assumptions, applying this construction to ¬M recovers the right adjoint of M.
+    private
+      module M-op = Mat opposite
+      open meet-semilattice using (MeetSemilattice)
+
+    open IsTop ⊤-isTop using () renaming (≤-top to ≤-⊤)
+
+    to-adj-candidate : ∀ {m n} → Matrix n m →
+                       meet-semilattice._=>_ (DistribLattice n .Obj.meets) (DistribLattice m .Obj.meets)
+    to-adj-candidate {m} {n} M .meet-semilattice._=>_.func .preorder._=>_.fun y j =
+      M-op.Σ {n} (λ i → M i j ∨ y i)
+    to-adj-candidate {m} {n} M .meet-semilattice._=>_.func .preorder._=>_.mono y≤y' j =
+      M-op.+-to-Σ.Σ-preserves _≤_ ≤-refl (IsMeet.mono ∧-isMeet)
+        (λ i → IsJoin.mono ∨-isJoin ≤-refl (y≤y' i))
+    to-adj-candidate {m} {n} M .meet-semilattice._=>_.∧-preserving {y₁} {y₂} j =
+      ≈→≤ (trans (M-op.Σ-+ {n} (λ i → M i j ∨ y₁ i) (λ i → M i j ∨ y₂ i))
+                 (M-op.Σ-cong {n} (λ i → ∨-∧-distribₗ)))
+    to-adj-candidate {m} {n} M .meet-semilattice._=>_.⊤-preserving j =
+      ≈→≤ (sym (trans (M-op.Σ-cong {n} (λ i → trans ∨-comm ⊤-add-top)) (M-op.Σ-ε {n})))
+
+open import prop using (_⇔_; proj₁; proj₂)
+
+-- I think we can actually derive this just from a Heyting implication.
+module BooleanAlgebra
+  {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+  (let open CommutativeSemiring S hiding (_≈_; trans; sym; refl); open Setoid A)
+  (∨-idem    : ∀ {x} → x + x ≈ x)
+  (∧-idem    : ∀ {x} → x · x ≈ x)
+  (⊤-add-top : ∀ {x} → ι + x ≈ ι)
+  (let module L = DistributiveLattice S ∨-idem ∧-idem ⊤-add-top)
+  (¬ : Setoid.Carrier A → Setoid.Carrier A)
+  (complement-∨ : ∀ {x} → ι L.≤ (x + ¬ x))
+  (complement-∧ : ∀ {x} → (x · ¬ x) L.≤ ε)
+  where
+  module L-op = DistributiveLattice L.opposite ∧-idem ∨-idem ε-annihilₗ
+
+  open Mat S using (Matrix; Σ)
+  open Mat L.opposite using () renaming (Σ to Σ-op; module +-to-Σ to +-to-Σ-op)
+  open import Data.Nat using (ℕ)
+  open import Data.Fin using (Fin)
+  import preorder
+  open import conjugate using (_⇒c_)
+  open import join-semilattice using () renaming (_=>_ to _=>J_)
+  import meet-semilattice
+  open _⇒c_
+  open _=>J_
+  open preorder._=>_
+
+  open import galois using () renaming (Obj to Obj-g; _⇒g_ to _=>g_)
+
+  BoundedLattice : ℕ → Obj-g
+  BoundedLattice n .Obj-g.carrier = L.DistribLattice n .conjugate.Obj.carrier
+  BoundedLattice n .Obj-g.meets = L.DistribLattice n .conjugate.Obj.meets
+  BoundedLattice n .Obj-g.joins = L.DistribLattice n .conjugate.Obj.joins
+
+  ¬ₘ : ∀ {m n} → Matrix n m → Matrix n m
+  ¬ₘ M i j = ¬ (M i j)
+
+  open import basics using (IsPreorder; IsMeet; IsJoin)
+
+  -- L-op's order is L's order reversed (up to the idempotence-derived equivalence).
+  L-op⇔L : ∀ {a b} → (a L-op.≤ b) ⇔ (b L.≤ a)
+  L-op⇔L .proj₁ a·b≈b =
+    trans (+-cong (sym a·b≈b) refl) (trans +-comm L.∨-∧-absorption)
+  L-op⇔L .proj₂ b+a≈a =
+    trans (·-cong (sym b+a≈a) refl) (trans ·-+-distribᵣ (trans (+-cong ∧-idem ·-comm) L.∨-∧-absorption))
+
+  open IsPreorder L.≤-isPreorder using () renaming (refl to ≤-refl; trans to ≤-trans)
+  open IsJoin L.∨-isJoin using () renaming (mono to ∨-mono)
+  open IsMeet L.∧-isMeet using (π₂)
+  open L using (∧-monoʳ; ≈→≤; Σ-ub; Σ-lub)
+
+  -- Direction matching `to-conj`. The right adjoint is the meet-preserving "adjoint to ¬M candidate" that we
+  -- were able to compute using the tranpose on the opposite semiring.
+  to-gal : ∀ {m n} → Matrix n m → BoundedLattice n =>g BoundedLattice m
+  to-gal M ._=>g_.left = L.to-conj M .left .func
+  to-gal M ._=>g_.right = L.to-adj-candidate (¬ₘ M) .meet-semilattice._=>_.func
+  to-gal M ._=>g_.left⊣right {x} {y} .proj₁ y≤rx i =
+    Σ-lub _ (λ j →
+      ≤-trans (∧-monoʳ (≤-trans (y≤rx j) (L-op⇔L .proj₁ (L-op.Σ-ub _ i))))
+              (≤-trans (≈→≤ ·-+-distribₗ)
+                       (≤-trans (∨-mono complement-∧ ≤-refl)
+                                (≤-trans (≈→≤ +-lunit) π₂))))
+  to-gal M ._=>g_.left⊣right {x} {y} .proj₂ ly≤x j =
+    L-op⇔L .proj₁ (L-op.Σ-lub _ (λ i → L-op⇔L .proj₂ (helper i)))
+    where
+      helper : ∀ i → y j L.≤ ¬ (M i j) + x i
+      helper i =
+        ≤-trans (≈→≤ (trans (sym ·-lunit) ·-comm))
+                (≤-trans (∧-monoʳ complement-∨)
+                         (≤-trans (≈→≤ ·-+-distribₗ)
+                                  (≤-trans (∨-mono (≤-trans (≈→≤ ·-comm) (≤-trans (Σ-ub _ j) (ly≤x i))) π₂)
+                                           (≈→≤ +-comm))))

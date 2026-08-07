@@ -323,6 +323,8 @@ module _ where
   open MeetSemilattice
   open _=>_
   open preorder._=>_
+  open _≃m_
+  open preorder._≃m_
 
   L : ∀ {A} → MeetSemilattice A → MeetSemilattice (preorder.L A)
   L X ._∧_ bottom _ = bottom
@@ -380,8 +382,7 @@ module _ where
   L-map f .∧-preserving {< x >} {< x₁ >} = f .∧-preserving
   L-map f .⊤-preserving = f .⊤-preserving
 
-  L-strength : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
-               (X ⊕ L Y) => L (X ⊕ Y)
+  L-strength : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} → (X ⊕ L Y) => L (X ⊕ Y)
   L-strength .func .fun (x , bottom) = bottom
   L-strength .func .fun (x , < y >) = < x , y >
   L-strength .func .mono {x₁ , bottom} {x₂ , bottom} (x₁≤x₂ , tt) = tt
@@ -391,3 +392,25 @@ module _ where
   L-strength .∧-preserving {x , < x₁ >} {x' , bottom} = tt
   L-strength {A}{B} .∧-preserving {x , < x₁ >} {x' , < x₂ >} = A .≤-refl , B .≤-refl
   L-strength {A}{B} .⊤-preserving = A .≤-refl , B .≤-refl
+
+  L-strength-natural : ∀ {A₁ A₂ B₁ B₂}
+                       {X₁ : MeetSemilattice A₁} {X₂ : MeetSemilattice A₂}
+                       {Y₁ : MeetSemilattice B₁} {Y₂ : MeetSemilattice B₂}
+                       (f : X₁ => X₂) (g : Y₁ => Y₂) →
+                       (L-map ⟨ f ∘ project₁ , g ∘ project₂ ⟩ ∘ L-strength {X = X₁} {Y = Y₁}) ≃m
+                       (L-strength {X = X₂} {Y = Y₂} ∘ ⟨ f ∘ project₁ , L-map g ∘ project₂ ⟩)
+  L-strength-natural f g .eqfunc .eqfun (x , bottom) = tt , tt
+  L-strength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun (x , < y >) =
+    (A₂ × B₂) .≃-refl
+
+  L-strength-p₂ : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
+                  (L-map project₂ ∘ L-strength {X = X} {Y = Y}) ≃m project₂
+  L-strength-p₂ .eqfunc .eqfun (x , bottom) = tt , tt
+  L-strength-p₂ {B = B} .eqfunc .eqfun (x , < y >) = B .≃-refl
+
+  -- Associativity coherence: L-strength commutes with the diagonal ⟨ project₁ , id ⟩.
+  L-strength-assoc : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
+                     (L-strength {X = X} {Y = X ⊕ Y} ∘ ⟨ project₁ , L-strength {X = X} {Y = Y} ⟩) ≃m
+                     (L-map ⟨ project₁ , id ⟩ ∘ L-strength {X = X} {Y = Y})
+  L-strength-assoc .eqfunc .eqfun (x , bottom) = tt , tt
+  L-strength-assoc {A} {B} .eqfunc .eqfun (x , < y >) = (A × (A × B)) .≃-refl

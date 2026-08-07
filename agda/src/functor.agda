@@ -4,7 +4,7 @@ module functor where
 
 open import Level using (_⊔_)
 open import prop using (tt; ⟪_⟫; ∃ₛ)
-open import categories using (Category; setoid→category)
+open import categories using (Category; setoid→category; HasProducts)
 open import prop-setoid using (Setoid; IsEquivalence; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_)
 
@@ -239,6 +239,65 @@ module _ {o₁ m₁ e₁}
   Id .fmor-id = 𝒞.≈-refl
   Id .fmor-comp f g = 𝒞.≈-refl
 
+  -- Product with a fixed object, as an endofunctor.
+  module _ (P : HasProducts 𝒞) (w : Category.obj 𝒞) where
+    open Category 𝒞
+    open HasProducts P
+
+    prod-functor : Functor 𝒞 𝒞
+    prod-functor .fobj x = prod w x
+    prod-functor .fmor f = prod-m (𝒞.id w) f
+    prod-functor .fmor-cong e = pair-cong ≈-refl (∘-cong e ≈-refl)
+    prod-functor .fmor-id =
+      ≈-trans (pair-cong id-left id-left)
+      (≈-trans (pair-cong (≈-sym id-right) (≈-sym id-right)) (pair-ext (𝒞.id _)))
+    prod-functor .fmor-comp f g =
+      ≈-sym (≈-trans (pair-natural _ _ _)
+             (pair-cong (≈-trans (∘-cong id-left ≈-refl) (pair-p₁ _ _))
+                        (≈-trans (assoc _ _ _)
+                        (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _))))))
+
+  record StrongFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+    open Category 𝒞
+    open HasProducts P
+    field
+      F              : Functor 𝒞 𝒞
+      strengthᵣ : ∀ {x y} → prod x (F .fobj y) ⇒ F .fobj (prod x y)
+      strengthᵣ-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ x₂) (g : y₁ ⇒ y₂) →
+                               (F .Functor.fmor (prod-m f g) 𝒞.∘ strengthᵣ) 𝒞.≈
+                               (strengthᵣ 𝒞.∘ prod-m f (F .Functor.fmor g))
+      strengthᵣ-p₂ : ∀ {x y} → (F .Functor.fmor p₂ 𝒞.∘ strengthᵣ {x} {y}) 𝒞.≈ p₂
+      -- Associativity coherence: strengthᵣ commutes with the diagonal pair p₁ (id _),
+      -- the comultiplication of the prod x - comonad.
+      strengthᵣ-assoc : ∀ {x y} →
+        (strengthᵣ {x} {prod x y} 𝒞.∘ pair p₁ (strengthᵣ {x} {y}))
+        𝒞.≈ (F .Functor.fmor (pair p₁ (𝒞.id _)) 𝒞.∘ strengthᵣ {x} {y})
+    open Functor F public
+
+    -- strengthₗ (left strength) derived by swapping inputs/outputs around strengthᵣ.
+    strengthₗ : ∀ {x y} → prod (F .fobj x) y ⇒ F .fobj (prod x y)
+    strengthₗ = F .Functor.fmor (pair p₂ p₁) 𝒞.∘ strengthᵣ 𝒞.∘ pair p₂ p₁
+
+  -- Strong endofunctor with a unit.
+  record StrongPointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
+    field
+      strongFunctor : StrongFunctor P
+      unit          : ∀ {x} → Category._⇒_ 𝒞 x (StrongFunctor.F strongFunctor .Functor.fobj x)
+    open StrongFunctor strongFunctor public
+
+  StrongFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongFunctor P
+  StrongFunctor-Id P .StrongFunctor.F              = Id
+  StrongFunctor-Id P .StrongFunctor.strengthᵣ = 𝒞.id _
+  StrongFunctor-Id P .StrongFunctor.strengthᵣ-natural f g =
+    𝒞.isEquiv .IsEquivalence.trans 𝒞.id-right (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-left)
+  StrongFunctor-Id P .StrongFunctor.strengthᵣ-p₂ = 𝒞.id-right
+  StrongFunctor-Id P .StrongFunctor.strengthᵣ-assoc =
+    𝒞.isEquiv .IsEquivalence.trans 𝒞.id-left (𝒞.isEquiv .IsEquivalence.sym 𝒞.id-right)
+
+  StrongPointedFunctor-Id : ∀ (P : HasProducts 𝒞) → StrongPointedFunctor P
+  StrongPointedFunctor-Id P .StrongPointedFunctor.strongFunctor = StrongFunctor-Id P
+  StrongPointedFunctor-Id P .StrongPointedFunctor.unit {x}      = 𝒞.id x
+
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}
          {𝒟 : Category o₂ m₂ e₂}
@@ -451,6 +510,30 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 
       cocone    : NatTrans D (constF 𝒮 apex)
       isColimit : IsColimit D apex cocone
     open IsColimit isColimit public
+
+  -- Transport a colimit along an equivalent cocone.
+  IsColimit-cong : ∀ {D : Functor 𝒮 𝒞} {apex} {cocone₁ cocone₂ : NatTrans D (constF 𝒮 apex)} →
+                   ≃-NatTrans cocone₁ cocone₂ → IsColimit D apex cocone₁ → IsColimit D apex cocone₂
+  IsColimit-cong eq isColim .IsColimit.colambda = isColim .IsColimit.colambda
+  IsColimit-cong eq isColim .IsColimit.colambda-cong = isColim .IsColimit.colambda-cong
+  IsColimit-cong eq isColim .IsColimit.colambda-coeval x α .transf-eq s =
+    𝒞.≈-trans (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-sym (eq .transf-eq s)))
+              (isColim .IsColimit.colambda-coeval x α .transf-eq s)
+  IsColimit-cong eq isColim .IsColimit.colambda-ext x f =
+    𝒞.≈-trans (isColim .IsColimit.colambda-cong
+                 (∘NT-cong (≃-isEquivalence .refl) (≃-isEquivalence .sym eq)))
+              (isColim .IsColimit.colambda-ext x f)
+
+  -- Mediating morphisms out of a colimit are unique: morphisms agreeing on the cocone agree.
+  colambda-unique : ∀ {D : Functor 𝒮 𝒞} {apex} {cocone : NatTrans D (constF 𝒮 apex)} →
+                    IsColimit D apex cocone →
+                    ∀ {x} {f g : apex 𝒞.⇒ x} →
+                    (∀ s → (f 𝒞.∘ cocone .NatTrans.transf s) 𝒞.≈ (g 𝒞.∘ cocone .NatTrans.transf s)) →
+                    f 𝒞.≈ g
+  colambda-unique isColim {x} {f} {g} eq =
+    𝒞.≈-trans (𝒞.≈-sym (isColim .IsColimit.colambda-ext x f))
+    (𝒞.≈-trans (isColim .IsColimit.colambda-cong (record { transf-eq = eq }))
+               (isColim .IsColimit.colambda-ext x g))
 
   record IsLimit (D : Functor 𝒮 𝒞)
                  (apex : 𝒞.obj) (cone : NatTrans (constF 𝒮 apex) D)
@@ -731,6 +814,44 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     ≈⟨ colimitOpD .Colimit.colambda-cong (∘NT-cong (≃-isEquivalence .refl) (switch⁻¹-switch D)) ⟩
       colimitOpD .Colimit.colambda x (constFmor f ∘ colimitOpD .Colimit.cocone)
     ≈⟨ colimitOpD .Colimit.colambda-ext x f ⟩
+      f
+    ∎
+    where open ≈-Reasoning 𝒞.isEquiv
+
+  private
+    coswitch : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans (constF 𝒮.opposite x) (opF' D) → NatTrans D (constF 𝒮 x)
+    coswitch D α .transf = α .transf
+    coswitch D α .natural f = 𝒞.≈-sym (α .natural f)
+
+    coswitch⁻¹ : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans D (constF 𝒮 x) → NatTrans (constF 𝒮.opposite x) (opF' D)
+    coswitch⁻¹ D α .transf = α .transf
+    coswitch⁻¹ D α .natural f = 𝒞.≈-sym (α .natural f)
+
+    coswitch⁻¹-cong : ∀ (D : Functor 𝒮 𝒞.opposite) {x} {α β} → ≃-NatTrans α β → ≃-NatTrans (coswitch⁻¹ D {x} α) (coswitch⁻¹ D {x} β)
+    coswitch⁻¹-cong D α≃β .transf-eq = α≃β .transf-eq
+
+    coswitch⁻¹-comp : ∀ D {x y α} {f : x 𝒞.⇒ y} → ≃-NatTrans (coswitch⁻¹ D {x} (constFmor f ∘ α)) (coswitch⁻¹ D α ∘ constFmor f)
+    coswitch⁻¹-comp D .transf-eq s = 𝒞.≈-refl
+
+    coswitch⁻¹-coswitch : ∀ D {x α} → ≃-NatTrans (coswitch⁻¹ D {x} (coswitch D α)) α
+    coswitch⁻¹-coswitch D .transf-eq s = 𝒞.≈-refl
+
+  op-limit : (D : Functor 𝒮 𝒞.opposite) → Limit (opF' D) → Colimit D
+  op-limit D limitOpD .Colimit.apex = limitOpD .Limit.apex
+  op-limit D limitOpD .Colimit.cocone = coswitch D (limitOpD .Limit.cone)
+  op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda x α =
+    limitOpD .Limit.lambda x (coswitch⁻¹ D α)
+  op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda-cong α≃β =
+    limitOpD .Limit.lambda-cong (coswitch⁻¹-cong D α≃β)
+  op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda-coeval x α .transf-eq s =
+    limitOpD .Limit.lambda-eval _ .transf-eq s
+  op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda-ext x f = begin
+      limitOpD .Limit.lambda x (coswitch⁻¹ D (constFmor f ∘ coswitch D (limitOpD .Limit.cone)))
+    ≈⟨ limitOpD .Limit.lambda-cong (coswitch⁻¹-comp D) ⟩
+      limitOpD .Limit.lambda x (coswitch⁻¹ D (coswitch D (limitOpD .Limit.cone)) ∘ constFmor f)
+    ≈⟨ limitOpD .Limit.lambda-cong (∘NT-cong (coswitch⁻¹-coswitch D) (≃-isEquivalence .refl)) ⟩
+      limitOpD .Limit.lambda x (limitOpD .Limit.cone ∘ constFmor f)
+    ≈⟨ limitOpD .Limit.lambda-ext f ⟩
       f
     ∎
     where open ≈-Reasoning 𝒞.isEquiv

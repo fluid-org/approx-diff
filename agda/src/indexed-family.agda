@@ -425,7 +425,87 @@ record HasSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc 
     ∎
     where open ≈-Reasoning isEquiv
 
+-- Setoid-indexed products without uniqueness of pairing: the operations, their congruences, the
+-- computation law, and the functoriality laws that uniqueness would otherwise supply. A chosen
+-- pairing can carry structure the projections do not see (such as a root), satisfying these laws
+-- while the extensionality law fails.
+record HasWeakSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc m ⊔ suc e ⊔ suc os ⊔ suc es) where
+  open Category 𝒞
+  field
+    Π : (A : Setoid os es) → Fam A 𝒞 → obj
+    lambdaΠ : ∀ {A} (x : obj) (P : Fam A 𝒞) → (constantFam A 𝒞 x ⇒f P) → (x ⇒ Π A P)
+    lambdaΠ-cong : ∀ {A x P} {f₁ f₂ : constantFam A 𝒞 x ⇒f P} → f₁ ≃f f₂ → lambdaΠ x P f₁ ≈ lambdaΠ x P f₂
+    evalΠ : ∀ {A} P (a : A .Setoid.Carrier) → Π A P ⇒ P .Fam.fm a
+    evalΠ-cong : ∀ {A} {P : Fam A 𝒞} {a₁ a₂ : A .Setoid.Carrier} →
+      (e : A .Setoid._≈_ a₁ a₂) → (P .Fam.subst e ∘ evalΠ P a₁) ≈ evalΠ P a₂
+
+  open IsEquivalence
+
+  evalΠf : ∀ {A} P → constantFam _ _ (Π A P) ⇒f P
+  evalΠf P = record { transf = evalΠ P
+                    ; natural = λ x₁≈x₂ →
+                       isEquiv .trans id-right (≈-sym (evalΠ-cong x₁≈x₂)) }
+
+  field
+    lambda-eval : ∀ {A} {P : Fam A 𝒞} {x} {f} a →
+      (evalΠ P a ∘ lambdaΠ x P f) ≈ f ._⇒f_.transf a
+
+  Π-map : ∀ {A} {P Q : Fam A 𝒞} → P ⇒f Q → Π A P ⇒ Π A Q
+  Π-map {A} {P} {Q} f = lambdaΠ (Π A P) Q (f ∘f evalΠf P)
+
+  Π-map-cong : ∀ {A} {P Q : Fam A 𝒞}
+               {f₁ f₂ : P ⇒f Q} → f₁ ≃f f₂ → Π-map f₁ ≈ Π-map f₂
+  Π-map-cong f₁≃f₂ = lambdaΠ-cong (∘f-cong f₁≃f₂ (≃f-isEquivalence .refl))
+
+  -- With extensionality gone, these are laws of the chosen structure.
+  field
+    Π-map-id : ∀ {A} {P : Fam A 𝒞} → Π-map {A} {P} {P} (idf _) ≈ id (Π A P)
+    Π-map-comp : ∀ {A} {P Q R : Fam A 𝒞} (f : Q ⇒f R) (g : P ⇒f Q) →
+                 Π-map (f ∘f g) ≈ (Π-map f ∘ Π-map g)
+    lambda-compose : ∀ {A} {Q R : Fam A 𝒞} {x}
+      (f : Q ⇒f R) (g : constantFam A 𝒞 x ⇒f Q) →
+      lambdaΠ _ _ (f ∘f g) ≈ (Π-map f ∘ lambdaΠ _ _ g)
+    -- Naturality of the pairing at isomorphisms only, which is all a transport needs.
+    lambdaΠ-natural-iso : ∀ {A} {P : Fam A 𝒞} {x y}
+      (f : constantFam A 𝒞 y ⇒f P) {h : x ⇒ y} {h⁻¹ : y ⇒ x} →
+      (h ∘ h⁻¹) ≈ id y → (h⁻¹ ∘ h) ≈ id x →
+      (lambdaΠ y P f ∘ h) ≈ lambdaΠ x P (f ∘f constF h)
+
+  lambda-evalf : ∀ {A} {P : Fam A 𝒞} {x} f → (evalΠf P ∘f constF (lambdaΠ x P f)) ≃f f
+  lambda-evalf f ._≃f_.transf-eq {a} = lambda-eval a
+
 open import functor
+
+-- A family is a functor from the setoid, viewed as a category.
+module _ {o m e os es} {𝒞 : Category o m e} where
+
+  private
+    module 𝒞C = Category 𝒞
+
+  open Functor
+  open Fam
+
+  fam→functor : ∀ {A : Setoid os es} → Fam A 𝒞 → Functor (setoid→category A) 𝒞
+  fam→functor F .fobj = F .fm
+  fam→functor F .fmor ⟪ eq ⟫ = F .subst eq
+  fam→functor F .fmor-cong _ = 𝒞C.≈-refl
+  fam→functor F .fmor-id = F .refl*
+  fam→functor F .fmor-comp f g = F .trans* _ _
+
+  functor→fam : ∀ {A : Setoid os es} → Functor (setoid→category A) 𝒞 → Fam A 𝒞
+  functor→fam D .fm = D .fobj
+  functor→fam D .subst eq = D .fmor ⟪ eq ⟫
+  functor→fam D .refl* = D .fmor-id
+  functor→fam D .trans* e₁ e₂ = D .fmor-comp ⟪ e₁ ⟫ ⟪ e₂ ⟫
+
+  fam→functor-eta : ∀ {A : Setoid os es} (D : Functor (setoid→category A) 𝒞) →
+                    NatIso D (fam→functor (functor→fam D))
+  fam→functor-eta D .NatIso.transform .NatTrans.transf x = 𝒞C.id _
+  fam→functor-eta D .NatIso.transform .NatTrans.natural ⟪ p ⟫ =
+    𝒞C.≈-trans 𝒞C.id-right (𝒞C.≈-sym 𝒞C.id-left)
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse = 𝒞C.id _
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒞C.id-left
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒞C.id-left
 
 -- If a category has all discrete limits, then it has all setoid
 -- products (almost by definition).
@@ -444,13 +524,6 @@ module _ {o m e} os es (𝒞 : Category o m e)
   open Fam
 
   open IsEquivalence
-
-  fam→functor : ∀ {A : Setoid os es} → Fam A 𝒞 → Functor (setoid→category A) 𝒞
-  fam→functor F .fobj = F .fm
-  fam→functor F .fmor ⟪ eq ⟫ = F .subst eq
-  fam→functor F .fmor-cong _ = 𝒞.≈-refl
-  fam→functor F .fmor-id = F .refl*
-  fam→functor F .fmor-comp f g = F .trans* _ _
 
   -- FIXME: this is a bit messy
 

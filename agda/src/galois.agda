@@ -266,57 +266,6 @@ module _ where
   products .pair-p₂ f g .right-eq = meet-semilattice.pair-p₂ (right-∧ f) (right-∧ g) ._≃M_.eqfunc
   products .pair-ext f .right-eq = meet-semilattice.pair-ext (right-∧ f) ._≃M_.eqfunc
 
--- This category has a lifting monad
-module _ where
-
-  𝕃 : Obj → Obj
-  𝕃 X .carrier = L (X .carrier)
-  𝕃 X .meets = meet-semilattice.L (X .meets)
-  𝕃 X .joins = join-semilattice.L (X .joins)
-
-  𝕃-map : ∀ {X Y} → X ⇒g Y → 𝕃 X ⇒g 𝕃 Y
-  𝕃-map f .right = meet-semilattice.L-map (right-∧ f) ._=>M_.func
-  𝕃-map f .left = join-semilattice.L-map (left-∨ f) ._=>J_.func
-  𝕃-map f .left⊣right {bottom} {bottom} .proj₁ y≤Lfx = tt
-  𝕃-map f .left⊣right {< x >} {bottom} .proj₁ y≤Lfx = tt
-  𝕃-map f .left⊣right {< x >} {< y >} .proj₁ y≤Lfx = f .left⊣right .proj₁ y≤Lfx
-  𝕃-map f .left⊣right {bottom} {bottom} .proj₂ Lfy≤x = tt
-  𝕃-map f .left⊣right {< x >} {bottom} .proj₂ Lfy≤x = tt
-  𝕃-map f .left⊣right {< x >} {< y >} .proj₂ Lfy≤x = f .left⊣right .proj₂ Lfy≤x
-
-  𝕃-unit : ∀ {X} → X ⇒g 𝕃 X
-  𝕃-unit {X} .right = meet-semilattice.L-unit {X = X .meets} ._=>M_.func
-  𝕃-unit {X} .left = join-semilattice.L-counit {X = X .joins} ._=>J_.func
-  𝕃-unit {X} .left⊣right {x} {bottom} .proj₁ tt =
-    X .joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom
-  𝕃-unit .left⊣right {x} {< x₁ >} .proj₁ x₁≤x = x₁≤x
-  𝕃-unit .left⊣right {x} {bottom} .proj₂ x₁ = tt
-  𝕃-unit .left⊣right {x} {< x₁ >} .proj₂ x₁≤x = x₁≤x
-
-  𝕃-join : ∀ {X} → 𝕃 (𝕃 X) ⇒g 𝕃 X
-  𝕃-join {X} .right = meet-semilattice.L-join {X = X .meets} ._=>M_.func
-  𝕃-join {X} .left = join-semilattice.L-dup {X = X .joins} ._=>J_.func
-  𝕃-join .left⊣right {bottom} {bottom} .proj₁ e = tt
-  𝕃-join .left⊣right {< bottom >} {bottom} .proj₁ e = tt
-  𝕃-join .left⊣right {< < x > >} {bottom} .proj₁ e = tt
-  𝕃-join .left⊣right {< < x > >} {< x₁ >} .proj₁ e = e
-  𝕃-join .left⊣right {bottom} {bottom} .proj₂ e = tt
-  𝕃-join .left⊣right {< bottom >} {bottom} .proj₂ e = tt
-  𝕃-join .left⊣right {< < x > >} {bottom} .proj₂ e = tt
-  𝕃-join .left⊣right {< < x > >} {< x₁ >} .proj₂ e = e
-
-  𝕃-strength : ∀ {X Y} → (X ⊕ 𝕃 Y) ⇒g 𝕃 (X ⊕ Y)
-  𝕃-strength {X} {Y} .right = meet-semilattice.L-strength {X = X .meets} {Y .meets} ._=>M_.func
-  𝕃-strength {X} {Y} .left = join-semilattice.L-costrength {X = X .joins} {Y .joins} ._=>J_.func
-  𝕃-strength {X} .left⊣right {x , bottom} {bottom} .proj₁ e =
-    X .joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom , tt
-  𝕃-strength {X} .left⊣right {x , < x₁ >} {bottom} .proj₁ e =
-    X .joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom , tt
-  𝕃-strength .left⊣right {x , < x₂ >} {< x₁ >} .proj₁ e = e
-  𝕃-strength .left⊣right {x , bottom} {bottom} .proj₂ e = tt
-  𝕃-strength .left⊣right {x , < x₁ >} {bottom} .proj₂ e = tt
-  𝕃-strength .left⊣right {x , < x₁ >} {< x₂ >} .proj₂ e = e
-
 module _ where
 
   open import two using (Two; I; O; _⊓_; _⊔_)

@@ -7,11 +7,11 @@ open import Data.Product using (_,_)
 open import prop using (_∧_; _,_; proj₁; proj₂; ⊤; tt; ∃; LiftP; lower; _∨_; inj₁; inj₂; lift)
 open import basics using (IsPreorder; IsMeet; IsTop; IsResidual; monoidOfMeet; IsJoin; IsBigJoin)
 open import prop-setoid
-  using (idS; Setoid; IsEquivalence; _∘S_; ∘S-cong;
-         ⊗-setoid; project₁; project₂; pair; +-setoid; inject₁; inject₂;
+  using (idS; Setoid; _∘S_;
+         ⊗-setoid; project₁; project₂; pair;
          module ≈-Reasoning)
-  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence)
-open import setoid-cat using (SetoidCat; Setoid-products; Setoid-coproducts)
+  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_)
+open import setoid-cat using (SetoidCat; Setoid-products)
 
 record Predicate (X : Setoid o e) : Set (suc (suc o ⊔ suc e)) where
   no-eta-equality
@@ -175,6 +175,33 @@ _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
 []-++ : ∀ {X Y} {P Q : Predicate Y} {f : X ⇒s Y} → ((P ++ Q) [ f ]) ⊑ ((P [ f ]) ++ (Q [ f ]))
 []-++ .*⊑* x p = p
 
+-- Meets distribute over joins, pointwise.
+&&-++-distrib : ∀ {X} {P Q R : Predicate X} → (P && (Q ++ R)) ⊑ ((P && Q) ++ ((P && R)))
+&&-++-distrib .*⊑* x (p , inj₁ q) = inj₁ (p , q)
+&&-++-distrib .*⊑* x (p , inj₂ r) = inj₂ (p , r)
+
+-- Frobenius: a meet with a direct image is the direct image of the reindexed meet.
+&&-⟨⟩-frobenius : ∀ {X Y} {P : Predicate Y} {Q : Predicate X} {f : X ⇒s Y} →
+                  (P && (Q ⟨ f ⟩)) ⊑ (((P [ f ]) && Q) ⟨ f ⟩)
+&&-⟨⟩-frobenius {X} {Y} {P} {Q} {f} .*⊑* y (p , (x , q , e)) =
+  x , (P .Predicate.pred-≃ (Y .Setoid.sym e) p , q) , e
+
+-- Beck-Chevalley for a square with a pointwise lifting: reindexing a direct image is the direct
+-- image of a reindexing whenever agreeing corners lift to the fourth object.
+⟨⟩-[]-BC : ∀ {W X Y Z : Setoid o e} {P : Predicate X}
+           {f : X ⇒s Z} {g : Y ⇒s Z} {h : W ⇒s X} {k : W ⇒s Y} →
+           (∀ (y : Y .Setoid.Carrier) (x : X .Setoid.Carrier) →
+              Z .Setoid._≈_ (f .func x) (g .func y) →
+              ∃ (W .Setoid.Carrier) λ w →
+                X .Setoid._≈_ (h .func w) x ∧ Y .Setoid._≈_ (k .func w) y) →
+           ((P ⟨ f ⟩) [ g ]) ⊑ ((P [ h ]) ⟨ k ⟩)
+⟨⟩-[]-BC {W} {X} {Y} {Z} {P} {f} {g} {h} {k} lft .*⊑* y (x , p , e) = go (lft y x e)
+  where
+    go : ∃ (W .Setoid.Carrier)
+           (λ w → X .Setoid._≈_ (h .func w) x ∧ Y .Setoid._≈_ (k .func w) y) →
+         ((P [ h ]) ⟨ k ⟩) .Predicate.pred y
+    go (w , hx , ky) = w , P .Predicate.pred-≃ (X .Setoid.sym hx) p , ky
+
 -- Big joins
 ⋁ : ∀ {X} (I : Set 0ℓ) → (I → Predicate X) → Predicate X
 ⋁ I P .Predicate.pred x = ∃ I λ i → P i .Predicate.pred x
@@ -186,6 +213,11 @@ _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
 
 []-⋁ : ∀ {X Y I} {P : I → Predicate Y} {f : X ⇒s Y} → (⋁ I P [ f ]) ⊑ ⋁ I (λ i → P i [ f ])
 []-⋁ .*⊑* x (i , p) = i , p
+
+-- Meets distribute over the big joins too.
+&&-⋁-distrib : ∀ {X} {I : Set 0ℓ} {P : Predicate X} {Q : I → Predicate X} →
+               (P && ⋁ I Q) ⊑ ⋁ I (λ i → P && Q i)
+&&-⋁-distrib .*⊑* x (p , (i , q)) = i , (p , q)
 
 -- Equality (experimental)
 Eq : ∀ X → Predicate (⊗-setoid X X)

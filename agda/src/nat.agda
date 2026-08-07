@@ -288,6 +288,10 @@ module _ where
   zero-m .func x = zero
   zero-m .func-resp-≈ x = ≃-refl
 
+  one-m : 𝟙 {0ℓ} {0ℓ} ⇒s ℕₛ
+  one-m .func x = succ zero
+  one-m .func-resp-≈ x = ≃-refl
+
 ------------------------------------------------------------------------------
 -- Multiplication: _*_ is defined in Agda.Builtin.Nat
 

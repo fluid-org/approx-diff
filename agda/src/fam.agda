@@ -3,16 +3,16 @@
 module fam where
 
 open import Level using (_⊔_; suc; lift)
-open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 import Relation.Binary.PropositionalEquality as ≡
 open ≡ using (_≡_)
-open import Data.Product using (_×_; _,_; Σ-syntax)
+open import Data.Product using (_,_; Σ-syntax)
 open import prop using (_,_; tt; ∃ₚ; ⟪_⟫; ⊥-elim)
 open import prop-setoid
   using (IsEquivalence; Setoid; 𝟙; +-setoid; ⊗-setoid; idS; _∘S_; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence)
 open import categories
-  using (Category; HasTerminal; IsTerminal; HasCoproducts; HasProducts; HasStrongCoproducts; HasLists; setoid→category)
+  using (Category; HasTerminal; IsTerminal; HasInitial; IsInitial; HasCoproducts; HasProducts; HasStrongCoproducts; setoid→category)
 open import setoid-cat using (Setoid-products)
 open import indexed-family
   using (Fam; _⇒f_; idf; _∘f_; ∘f-cong; _≃f_; ≃f-isEquivalence; ≃f-id-left; ≃f-assoc;
@@ -226,6 +226,19 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
 
     -- FIXME: simple is a functor and preserves products
 
+  -- The category of families always has an initial object: the family over the empty index.
+  initial : HasInitial cat
+  initial .HasInitial.witness .idx = prop-setoid.𝟘
+  initial .HasInitial.witness .fam .fm (lift ())
+  initial .HasInitial.witness .fam .subst {lift ()}
+  initial .HasInitial.witness .fam .refl* {lift ()}
+  initial .HasInitial.witness .fam .trans* {lift ()}
+  initial .HasInitial.is-initial .IsInitial.from-initial .idxf = prop-setoid.from-𝟘
+  initial .HasInitial.is-initial .IsInitial.from-initial .famf ._⇒f_.transf (lift ())
+  initial .HasInitial.is-initial .IsInitial.from-initial .famf ._⇒f_.natural {lift ()}
+  initial .HasInitial.is-initial .IsInitial.from-initial-ext f .idxf-eq = prop-setoid.from-𝟘-unique _ _
+  initial .HasInitial.is-initial .IsInitial.from-initial-ext f .famf-eq ._≃f_.transf-eq {lift ()}
+
   -- If 𝒞 has a terminal object, then so does the category of families
   module _ (T : HasTerminal 𝒞) where
     open HasTerminal hiding (to-terminal-unique)
@@ -253,6 +266,8 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     open _⇒f_
     open _≃f_
 
+    -- The two-element instance of the set-indexed coproducts below, kept as the
+    -- ⊎-indexed substrate for the (currently finite-only) HasStrongCoproducts.
     coproducts : HasCoproducts cat
     coproducts .coprod X Y .idx = +-setoid (X .idx) (Y .idx)
     coproducts .coprod X Y .fam .fm (inj₁ x) = X .fam .fm x
@@ -304,6 +319,43 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       isEquiv .trans (∘-cong (Z .fam .refl*) id-left) (isEquiv .trans id-left id-right)
     coproducts .copair-ext {X} {Y} {Z} f .famf-eq .transf-eq {inj₂ y} =
       isEquiv .trans (∘-cong (Z .fam .refl*) id-left) (isEquiv .trans id-left id-right)
+
+  -- Predicates: a setoid map into 𝟙 + 𝟙 lifts to a morphism into the Boolean object, with trivial
+  -- fibre maps.
+  module predicates (T : HasTerminal 𝒞) where
+
+    open Category 𝒞
+    open HasCoproducts
+    open HasTerminal
+    open _⇒f_
+
+    𝟚 : Obj
+    𝟚 = coproducts .coprod (simple[ 𝟙 , T .witness ]) (simple[ 𝟙 , T .witness ])
+
+    𝟚ₛ : Setoid os es
+    𝟚ₛ = +-setoid 𝟙 𝟙
+
+    private
+      predicate-transf : ∀ (X : Obj) x y → X .fam .Fam.fm x ⇒ 𝟚 .fam .Fam.fm y
+      predicate-transf X x (inj₁ _) = T .is-terminal .IsTerminal.to-terminal
+      predicate-transf X x (inj₂ _) = T .is-terminal .IsTerminal.to-terminal
+
+      predicate-natural : ∀ (X : Obj) {x₁} {x₂} {y₁} {y₂}
+        (x-eq : X .idx .Setoid._≈_ x₁ x₂)
+        (y-eq : 𝟚ₛ .Setoid._≈_ y₁ y₂) →
+        (predicate-transf X x₂ y₂ ∘ X .fam .Fam.subst x-eq) ≈
+          (𝟚 .fam .Fam.subst {y₁} {y₂} y-eq ∘ predicate-transf X x₁ y₁)
+      predicate-natural X {y₁ = inj₁ _} {inj₁ _} x-eq y-eq =
+        IsTerminal.to-terminal-unique (T .is-terminal) _ _
+      predicate-natural X {y₁ = inj₂ _} {inj₂ _} x-eq y-eq =
+        IsTerminal.to-terminal-unique (T .is-terminal) _ _
+
+    predicate : ∀ {X : Obj} → prop-setoid._⇒_ (X .idx) 𝟚ₛ → Mor X 𝟚
+    predicate f .idxf = f
+    predicate {X} f .famf .transf x = predicate-transf X x (f .prop-setoid._⇒_.func x)
+    predicate {X} f .famf .natural {x₁} {x₂} x₁≈x₂ =
+      predicate-natural X {y₁ = f .prop-setoid._⇒_.func x₁} x₁≈x₂
+        (f .prop-setoid._⇒_.func-resp-≈ x₁≈x₂)
 
   -- Fam(𝒞) has stable coproducts (is extensive): anything mapping into a coproduct A + B automatically splits
   -- into the part that lands in A and the part that lands in B.
@@ -548,7 +600,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     open Mor
 
     bigCoproducts : ∀ (S : Setoid os es) → HasColimits (setoid→category S) cat
-    bigCoproducts S D .apex .idx .Carrier = Σ[ s ∈ S .Carrier ] D .fobj s .idx .Carrier
+    bigCoproducts S D .apex .idx .Setoid.Carrier = Σ[ s ∈ S .Carrier ] D .fobj s .idx .Setoid.Carrier
     bigCoproducts S D .apex .idx ._≈_ (s₁ , x₁) (s₂ , x₂) =
       ∃ₚ (S ._≈_ s₁ s₂) λ s₁≈s₂ → D .fobj s₂ .idx ._≈_ (D .fmor ⟪ s₁≈s₂ ⟫ .idxf .func x₁) x₂
     bigCoproducts S D .apex .idx .isEquivalence .refl {s , x} =
@@ -733,7 +785,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         prod-m P (X .fam .subst _) (Y .fam .subst _)
       ≈⟨ prod-m-cong P (X .fam .trans* _ _) (Y .fam .trans* _ _) ⟩
         prod-m P (X .fam .subst _ ∘ X .fam .subst _) (Y .fam .subst _ ∘ Y .fam .subst _)
-      ≈⟨ pair-functorial P _ _ _ _ ⟩
+      ≈⟨ prod-m-comp P _ _ _ _ ⟩
         prod-m P (X .fam .subst _) (Y .fam .subst _) ∘ prod-m P (X .fam .subst _) (Y .fam .subst _)
       ∎ where open ≈-Reasoning isEquiv
 
@@ -836,6 +888,86 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       f .famf .natural (w₁≈w₂ , e)
     strongCoproducts .copair f g .famf .natural {w₁ , inj₂ y} {w₂ , inj₂ y₁} (w₁≈w₂ , e) =
       g .famf .natural (w₁≈w₂ , e)
+    strongCoproducts .copair-cong f₁≈f₂ g₁≈g₂ .idxf-eq ._≈s_.func-eq {w₁ , inj₁ x₁} {w₂ , inj₁ x₂} (w₁≈w₂ , x₁≈x₂) =
+      f₁≈f₂ .idxf-eq ._≈s_.func-eq (w₁≈w₂ , x₁≈x₂)
+    strongCoproducts .copair-cong f₁≈f₂ g₁≈g₂ .idxf-eq ._≈s_.func-eq {w₁ , inj₂ y₁} {w₂ , inj₂ y₂} (w₁≈w₂ , y₁≈y₂) =
+      g₁≈g₂ .idxf-eq ._≈s_.func-eq (w₁≈w₂ , y₁≈y₂)
+    strongCoproducts .copair-cong f₁≈f₂ g₁≈g₂ .famf-eq ._≃f_.transf-eq {w , inj₁ x} =
+      f₁≈f₂ .famf-eq ._≃f_.transf-eq
+    strongCoproducts .copair-cong f₁≈f₂ g₁≈g₂ .famf-eq ._≃f_.transf-eq {w , inj₂ y} =
+      g₁≈g₂ .famf-eq ._≃f_.transf-eq
+    strongCoproducts .copair-in₁ f g .idxf-eq ._≈s_.func-eq (w₁≈w₂ , x₁≈x₂) =
+      f .idxf ._⇒s_.func-resp-≈ (w₁≈w₂ , x₁≈x₂)
+    strongCoproducts .copair-in₁ {W} {X} {Y} {Z} f g .famf-eq ._≃f_.transf-eq {w , x} =
+      begin
+        Z .fam .subst _ ∘ (id _ ∘ (f .famf .transf (w , x) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂))))
+      ≈⟨ ∘-cong ≈-refl id-left ⟩
+        Z .fam .subst _ ∘ (f .famf .transf (w , x) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂)))
+      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong ≈-refl (≈-trans id-left id-left))) ⟩
+        Z .fam .subst _ ∘ (f .famf .transf (w , x) ∘ P .pair (P .p₁) (P .p₂))
+      ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong id-right id-right)) ⟩
+        Z .fam .subst _ ∘ (f .famf .transf (w , x) ∘ P .pair (P .p₁ ∘ id _) (P .p₂ ∘ id _))
+      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-ext (id _))) ⟩
+        Z .fam .subst _ ∘ (f .famf .transf (w , x) ∘ id _)
+      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
+        id _ ∘ f .famf .transf (w , x)
+      ≈⟨ id-left ⟩
+        f .famf .transf (w , x)
+      ∎ where open ≈-Reasoning isEquiv
+    strongCoproducts .copair-in₂ f g .idxf-eq ._≈s_.func-eq (w₁≈w₂ , y₁≈y₂) =
+      g .idxf ._⇒s_.func-resp-≈ (w₁≈w₂ , y₁≈y₂)
+    strongCoproducts .copair-in₂ {W} {X} {Y} {Z} f g .famf-eq ._≃f_.transf-eq {w , y} =
+      begin
+        Z .fam .subst _ ∘ (id _ ∘ (g .famf .transf (w , y) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂))))
+      ≈⟨ ∘-cong ≈-refl id-left ⟩
+        Z .fam .subst _ ∘ (g .famf .transf (w , y) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂)))
+      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong ≈-refl (≈-trans id-left id-left))) ⟩
+        Z .fam .subst _ ∘ (g .famf .transf (w , y) ∘ P .pair (P .p₁) (P .p₂))
+      ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong id-right id-right)) ⟩
+        Z .fam .subst _ ∘ (g .famf .transf (w , y) ∘ P .pair (P .p₁ ∘ id _) (P .p₂ ∘ id _))
+      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-ext (id _))) ⟩
+        Z .fam .subst _ ∘ (g .famf .transf (w , y) ∘ id _)
+      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
+        id _ ∘ g .famf .transf (w , y)
+      ≈⟨ id-left ⟩
+        g .famf .transf (w , y)
+      ∎ where open ≈-Reasoning isEquiv
+    strongCoproducts .copair-ext h .idxf-eq ._≈s_.func-eq {w₁ , inj₁ x₁} {w₂ , inj₁ x₂} (w₁≈w₂ , x₁≈x₂) =
+      h .idxf ._⇒s_.func-resp-≈ (w₁≈w₂ , x₁≈x₂)
+    strongCoproducts .copair-ext h .idxf-eq ._≈s_.func-eq {w₁ , inj₂ y₁} {w₂ , inj₂ y₂} (w₁≈w₂ , y₁≈y₂) =
+      h .idxf ._⇒s_.func-resp-≈ (w₁≈w₂ , y₁≈y₂)
+    strongCoproducts .copair-ext {W} {X} {Y} {Z} h .famf-eq ._≃f_.transf-eq {w , inj₁ x} =
+      begin
+        Z .fam .subst _ ∘ (id _ ∘ (h .famf .transf (w , inj₁ x) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂))))
+      ≈⟨ ∘-cong ≈-refl id-left ⟩
+        Z .fam .subst _ ∘ (h .famf .transf (w , inj₁ x) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂)))
+      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong ≈-refl (≈-trans id-left id-left))) ⟩
+        Z .fam .subst _ ∘ (h .famf .transf (w , inj₁ x) ∘ P .pair (P .p₁) (P .p₂))
+      ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong id-right id-right)) ⟩
+        Z .fam .subst _ ∘ (h .famf .transf (w , inj₁ x) ∘ P .pair (P .p₁ ∘ id _) (P .p₂ ∘ id _))
+      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-ext (id _))) ⟩
+        Z .fam .subst _ ∘ (h .famf .transf (w , inj₁ x) ∘ id _)
+      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
+        id _ ∘ h .famf .transf (w , inj₁ x)
+      ≈⟨ id-left ⟩
+        h .famf .transf (w , inj₁ x)
+      ∎ where open ≈-Reasoning isEquiv
+    strongCoproducts .copair-ext {W} {X} {Y} {Z} h .famf-eq ._≃f_.transf-eq {w , inj₂ y} =
+      begin
+        Z .fam .subst _ ∘ (id _ ∘ (h .famf .transf (w , inj₂ y) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂))))
+      ≈⟨ ∘-cong ≈-refl id-left ⟩
+        Z .fam .subst _ ∘ (h .famf .transf (w , inj₂ y) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂)))
+      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong ≈-refl (≈-trans id-left id-left))) ⟩
+        Z .fam .subst _ ∘ (h .famf .transf (w , inj₂ y) ∘ P .pair (P .p₁) (P .p₂))
+      ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong id-right id-right)) ⟩
+        Z .fam .subst _ ∘ (h .famf .transf (w , inj₂ y) ∘ P .pair (P .p₁ ∘ id _) (P .p₂ ∘ id _))
+      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-ext (id _))) ⟩
+        Z .fam .subst _ ∘ (h .famf .transf (w , inj₂ y) ∘ id _)
+      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
+        id _ ∘ h .famf .transf (w , inj₂ y)
+      ≈⟨ id-left ⟩
+        h .famf .transf (w , inj₂ y)
+      ∎ where open ≈-Reasoning isEquiv
 
 -- FIXME: every functor 𝒞 ⇒ 𝒟 gives a functor Fam(𝒞) ⇒ Fam(𝒟), and
 -- this carries over to natural transformations. So we have functors:

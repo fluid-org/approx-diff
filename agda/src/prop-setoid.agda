@@ -6,7 +6,7 @@ open import Level
 open import prop
 open import Data.Unit using (tt) renaming (⊤ to 𝟙S)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Empty using () renaming (⊥ to 𝟘)
+open import Data.Empty using () renaming (⊥ to 𝟘S)
 open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Relation.Binary.PropositionalEquality as ≡ using (_≡_)
 
@@ -153,6 +153,20 @@ module _ {o e} where
   const X x .func _ = x
   const X x .func-resp-≈ tt = X .refl
 
+  𝟘 : Setoid o e
+  𝟘 .Carrier = Lift _ 𝟘S
+  𝟘 ._≈_ _ _ = ⊤
+  𝟘 .isEquivalence .refl = tt
+  𝟘 .isEquivalence .sym _ = tt
+  𝟘 .isEquivalence .trans _ _ = tt
+
+  from-𝟘 : ∀ {X : Setoid o e} → 𝟘 ⇒ X
+  from-𝟘 .func (lift ())
+  from-𝟘 .func-resp-≈ {lift ()}
+
+  from-𝟘-unique : ∀ {X : Setoid o e} (f g : 𝟘 ⇒ X) → f ≃m g
+  from-𝟘-unique f g ._≃m_.func-eq {lift ()}
+
 open _≃m_
 
 +-setoid : ∀ {a b} (X : Setoid a b) (Y : Setoid a b) → Setoid a b
@@ -234,68 +248,6 @@ case f g .func (w , inj₂ y) = g .func (w , y)
 case f g .func-resp-≈ {w₁ , inj₁ x₁} {w₂ , inj₁ x₂} (w₁≈w₂ , x₁≈x₂) = f .func-resp-≈ (w₁≈w₂ , x₁≈x₂)
 case f g .func-resp-≈ {w₁ , inj₂ y₁} {w₂ , inj₂ y₂} (w₁≈w₂ , y₁≈y₂) = g .func-resp-≈ (w₁≈w₂ , y₁≈y₂)
 
--- Lists
---
--- FIXME: do this for a larger range of inductive datatypes
-module _ {o e} where
-
-  open import Data.List using (List; []; _∷_)
-
-  List-≈ : (A : Setoid o e) → List (A .Carrier) → List (A .Carrier) → Prop e
-  List-≈ A [] [] = ⊤
-  List-≈ A [] (_ ∷ _) = ⊥
-  List-≈ A (x ∷ xs) [] = ⊥
-  List-≈ A (x ∷ xs) (y ∷ ys) = A ._≈_ x y ∧ List-≈ A xs ys
-
-  List-≈-refl : ∀ A {xs : List (A .Carrier)} → List-≈ A xs xs
-  List-≈-refl A {[]} = tt
-  List-≈-refl A {x ∷ xs} = A .refl , List-≈-refl A
-
-  List-≈-sym : ∀ A {xs ys : List (A .Carrier)} → List-≈ A xs ys → List-≈ A ys xs
-  List-≈-sym A {[]} {[]} tt = tt
-  List-≈-sym A {x ∷ xs} {y ∷ ys} (x≈y , xs≈ys)  = A .sym x≈y , List-≈-sym A xs≈ys
-
-  List-≈-trans : ∀ A {xs ys zs : List (A .Carrier)} → List-≈ A xs ys → List-≈ A ys zs → List-≈ A xs zs
-  List-≈-trans A {[]} {[]} {[]} tt tt = tt
-  List-≈-trans A {x ∷ xs} {y ∷ ys} {z ∷ zs} (x≈y , xs≈ys) (y≈z , ys≈zs) =
-    A .trans x≈y y≈z , List-≈-trans A xs≈ys ys≈zs
-
-  ListS : Setoid o e → Setoid o e
-  ListS A .Carrier = List (A .Carrier)
-  ListS A ._≈_ = List-≈ A
-  ListS A .isEquivalence .refl = List-≈-refl A
-  ListS A .isEquivalence .sym = List-≈-sym A
-  ListS A .isEquivalence .trans = List-≈-trans A
-
-  nil : ∀ {A : Setoid o e} → (𝟙 {o} {e}) ⇒ ListS A
-  nil .func _ = []
-  nil .func-resp-≈ _ = tt
-
-  cons : ∀ {A : Setoid o e} → ⊗-setoid A (ListS A) ⇒ ListS A
-  cons .func (x , xs) = x ∷ xs
-  cons .func-resp-≈ e = e
-
-  foldr : ∀ {A B : Setoid o e} →
-          𝟙 {o} {e} ⇒ B →
-          ⊗-setoid A B ⇒ B →
-          ListS A ⇒ B
-  foldr nilCase consCase .func [] = nilCase .func (lift tt)
-  foldr nilCase consCase .func (x ∷ xs) = consCase .func (x , foldr nilCase consCase .func xs)
-  foldr nilCase consCase .func-resp-≈ {[]} {[]} tt = nilCase .func-resp-≈ tt
-  foldr nilCase consCase .func-resp-≈ {x₁ ∷ xs₁} {x₂ ∷ xs₂} (x₁≈x₂ , xs₁≈xs₂) =
-    consCase .func-resp-≈ (x₁≈x₂ , (foldr nilCase consCase .func-resp-≈ xs₁≈xs₂))
-
-  foldrP : ∀ {A B C : Setoid o e} →
-           C ⇒ B →
-           ⊗-setoid (⊗-setoid C A) B ⇒ B →
-           ⊗-setoid C (ListS A) ⇒ B
-  foldrP nilCase consCase .func (c , []) = nilCase .func c
-  foldrP nilCase consCase .func (c , x ∷ xs) = consCase .func ((c , x) , foldrP nilCase consCase .func (c , xs))
-  foldrP nilCase consCase .func-resp-≈ {c₁ , []}       {c₂ , []}        (c₁≈c₂ , tt) = nilCase .func-resp-≈ c₁≈c₂
-  foldrP nilCase consCase .func-resp-≈ {c₁ , x₁ ∷ xs₁} {c₂ , x₂ ∷ xs₂} (c₁≈c₂ , x₁≈x₂ , xs₁≈xs₂) =
-    consCase .func-resp-≈ ((c₁≈c₂ , x₁≈x₂) , foldrP nilCase consCase .func-resp-≈ (c₁≈c₂ , xs₁≈xs₂))
-
-  -- FIXME: the equations...
 
 -- Equivalence relations from relations
 module _ {o e} (A : Set o) (R : A → A → Prop e) where

@@ -1,0 +1,36 @@
+\section{Why a syntactic CBN translation does not extend to inductive types}
+\label{sec:polynomial-types:no-cbn}
+
+Earlier versions of the paper attempted a syntactic approach to \emph{shape approximation},
+enriching datatypes with dependency information: Moggi's call-by-name translation
+\citep{notions-of-computation} into the language extended with a type constructor $T$, whose
+tags mark the positions at which dependency is recorded. The translation inserts $T$ around each
+child of every type constructor: $\cbn{\sigma \tySum \tau} = T(\cbn{\sigma}) \tySum T(\cbn{\tau})$,
+similarly for $\tyProd$ and $\tyFun$, with $\cbn{\rho} = \rho$ and $\cbn{\tyUnit} = \tyUnit$. This
+appendix records why that route is unavailable in the presence of inductive types: the substitution
+$\subst{\tau}{\sigma}{\alpha}$ in the $\syn{fold}$ typing rule does not commute with the
+$T$-tagging.
+
+Take the list schema $\tau = \tyUnit \tySum (\gamma \tyProd \alpha)$ and $\sigma = \gamma$, a
+closed base type. The $\syn{fold}$ rule types the fold body in a context extended by
+$\subst{\tau}{\sigma}{\alpha}$, and for the translated fold to typecheck, the translation of that
+entry must agree with what the target's $\syn{fold}$ rule expects: translating then substituting
+must equal substituting then translating. On one side, the translated context entry (a thunk, hence
+one more $T$) is
+\[
+  T(\cbn{\subst{\tau}{\sigma}{\alpha}}) =
+  T\bigl(T(\tyUnit) \tySum T(T(\gamma) \tyProd T(\gamma))\bigr);
+\]
+on the other, the target rule substitutes the $T$-wrapped result type into the translated
+schema:
+\[
+  \subst{\cbn{\tau}}{T(\cbn{\sigma})}{\alpha} =
+  T(\tyUnit) \tySum T\bigl(T(\gamma) \tyProd T(T(\gamma))\bigr).
+\]
+The two disagree twice. The context translation contributes an outermost $T$ that the target
+rule does not. And at the recursive position, the target substitutes $T(\gamma)$ under the $T$
+already wrapping $\alpha$ in $\cbn{\tau}$, giving $T(T(\gamma))$, where the source-side
+substitution, performed while $\alpha$ was a bare variable, leaves $T(\gamma)$. It is not clear how
+to repair this within Moggi's translation. Two ideas worth exploring are the CBN-into-CBPV
+translation \citep{levy2003}, and moving the $T$-tagging into the interpretation while keeping the
+source language as is.

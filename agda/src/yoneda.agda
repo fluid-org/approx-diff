@@ -6,7 +6,7 @@ open import prop using (lift; lower; _,_; LiftS; liftS)
 open import prop-setoid
   using (Setoid; IsEquivalence; module ≈-Reasoning; _∘S_; idS)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; mk-≃m to mk-≈s; ⊗-setoid to _×s_)
-open import categories using (Category; HasProducts; IsProduct; HasExponentials; HasTerminal)
+open import categories using (Category; HasProducts; HasExponentials; HasTerminal)
 open import functor using ([_⇒_]; Functor; NatTrans; ≃-NatTrans;
   HasLimits';
   preserve-limits-of-shape; IsLimit; constF; constF-F; constFmor;

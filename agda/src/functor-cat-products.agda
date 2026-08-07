@@ -47,7 +47,7 @@ _×_ : Functor 𝒞 𝒟 → Functor 𝒞 𝒟 → Functor 𝒞 𝒟
     P.prod-m (F .fmor (f 𝒞.∘ g)) (G .fmor (f 𝒞.∘ g))
   ≈⟨ P.prod-m-cong (F .fmor-comp _ _) (G .fmor-comp _ _) ⟩
     P.prod-m (F .fmor f 𝒟.∘ F .fmor g) (G .fmor f 𝒟.∘ G .fmor g)
-  ≈⟨ P.pair-functorial _ _ _ _ ⟩
+  ≈⟨ P.prod-m-comp _ _ _ _ ⟩
     P.prod-m (F .fmor f) (G .fmor f) 𝒟.∘ P.prod-m (F .fmor g) (G .fmor g)
   ∎ where open ≈-Reasoning 𝒟.isEquiv
 

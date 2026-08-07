@@ -2,9 +2,9 @@
 
 open import Level using (suc; _⊔_; 0ℓ)
 open import basics
-  using (IsPreorder; IsTop; IsMeet; IsResidual; monoidOfMeet; module ≤-Reasoning; IsJoin; IsClosureOp; IsBigJoin)
-open import categories using (Category; HasProducts; HasExponentials)
-open import functor using (Functor; NatTrans; Id; _∘F_)
+  using (IsPreorder; IsTop; IsMeet; IsResidual; module ≤-Reasoning; IsJoin; IsClosureOp; IsBigJoin)
+open import categories using (Category; HasProducts)
+open import functor using (Functor; NatTrans)
 open import monad using (Monad)
 open import predicate-system using (PredicateSystem; ClosureOp; FunctorPred; MonadPred)
 
@@ -137,6 +137,58 @@ _==>_ : ∀ {X} → Predicate X → Predicate X → Predicate X
     𝐂 ((P .pred S.++ Q .pred) S.[ f ])
   ≤⟨ 𝐂-isClosure .mono S.[]-++ ⟩
     𝐂 ((P .pred S.[ f ]) S.++ (Q .pred S.[ f ]))
+  ∎
+  where open ≤-Reasoning S.⊑-isPreorder
+
+-- Meets distribute over the closed joins and satisfy Frobenius with the closed direct images,
+-- provided they do in the underlying system: the closure's strength carries the meet inside.
+module distributive
+    (S-dist : ∀ {X} {P Q R : S.Predicate X} →
+              (P S.&& (Q S.++ R)) S.⊑ ((P S.&& Q) S.++ (P S.&& R)))
+    (S-frob : ∀ {X Y} {P : S.Predicate Y} {Q : S.Predicate X} {f : X 𝒞.⇒ Y} →
+              (P S.&& (Q S.⟨ f ⟩)) S.⊑ (((P S.[ f ]) S.&& Q) S.⟨ f ⟩))
+    where
+
+  &&-++-distrib : ∀ {X} {P Q R : Predicate X} → (P && (Q ++ R)) ⊑ ((P && Q) ++ (P && R))
+  &&-++-distrib {X} {P} {Q} {R} = begin
+      P .pred S.&& 𝐂 (Q .pred S.++ R .pred)
+    ≤⟨ IsMeet.comm (S.&&-isMeet) ⟩
+      𝐂 (Q .pred S.++ R .pred) S.&& P .pred
+    ≤⟨ 𝐂-strong ⟩
+      𝐂 ((Q .pred S.++ R .pred) S.&& P .pred)
+    ≤⟨ 𝐂-isClosure .mono (IsMeet.comm (S.&&-isMeet)) ⟩
+      𝐂 (P .pred S.&& (Q .pred S.++ R .pred))
+    ≤⟨ 𝐂-isClosure .mono S-dist ⟩
+      𝐂 ((P .pred S.&& Q .pred) S.++ (P .pred S.&& R .pred))
+    ∎
+    where open ≤-Reasoning S.⊑-isPreorder
+
+  &&-⟨⟩-frobenius : ∀ {X Y} {P : Predicate Y} {Q : Predicate X} {f : X 𝒞.⇒ Y} →
+                    (P && (Q ⟨ f ⟩)) ⊑ (((P [ f ]) && Q) ⟨ f ⟩)
+  &&-⟨⟩-frobenius {X} {Y} {P} {Q} {f} = begin
+      P .pred S.&& 𝐂 (Q .pred S.⟨ f ⟩)
+    ≤⟨ IsMeet.comm (S.&&-isMeet) ⟩
+      𝐂 (Q .pred S.⟨ f ⟩) S.&& P .pred
+    ≤⟨ 𝐂-strong ⟩
+      𝐂 ((Q .pred S.⟨ f ⟩) S.&& P .pred)
+    ≤⟨ 𝐂-isClosure .mono (IsMeet.comm (S.&&-isMeet)) ⟩
+      𝐂 (P .pred S.&& (Q .pred S.⟨ f ⟩))
+    ≤⟨ 𝐂-isClosure .mono S-frob ⟩
+      𝐂 (((P .pred S.[ f ]) S.&& Q .pred) S.⟨ f ⟩)
+    ∎
+    where open ≤-Reasoning S.⊑-isPreorder
+
+-- Beck-Chevalley squares transport from the underlying system to the closed one.
+⟨⟩-[]-transport : ∀ {W X Y Z : 𝒞.obj} {P : Predicate X}
+                  {α : X 𝒞.⇒ Z} {β : Y 𝒞.⇒ Z} {γ : W 𝒞.⇒ X} {δ : W 𝒞.⇒ Y} →
+                  ((P .pred S.⟨ α ⟩) S.[ β ]) S.⊑ ((P .pred S.[ γ ]) S.⟨ δ ⟩) →
+                  ((P ⟨ α ⟩) [ β ]) ⊑ ((P [ γ ]) ⟨ δ ⟩)
+⟨⟩-[]-transport {W} {X} {Y} {Z} {P} {α} {β} {γ} {δ} raw = begin
+    𝐂 (P .pred S.⟨ α ⟩) S.[ β ]
+  ≤⟨ 𝐂-[]⁻¹ ⟩
+    𝐂 ((P .pred S.⟨ α ⟩) S.[ β ])
+  ≤⟨ 𝐂-isClosure .mono raw ⟩
+    𝐂 ((P .pred S.[ γ ]) S.⟨ δ ⟩)
   ∎
   where open ≤-Reasoning S.⊑-isPreorder
 

@@ -147,3 +147,18 @@ semiring = asSemiring lattice
 
 semiring-boolean : CS.BooleanAlgebra semiring
 semiring-boolean = asBoolean lattice boolean
+
+private
+  module S = CS.CommutativeSemiring semiring
+
+∨-idem : ∀ {x} → (x S.+ x) S.≈ x
+∨-idem {O} = S.refl {O}
+∨-idem {I} = S.refl {I}
+
+∧-idem : ∀ {x} → (x S.· x) S.≈ x
+∧-idem {O} = S.refl {O}
+∧-idem {I} = S.refl {I}
+
+⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι
+⊤-add-top {O} = S.refl {I}
+⊤-add-top {I} = S.refl {I}

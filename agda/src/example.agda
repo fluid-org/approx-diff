@@ -3,8 +3,10 @@
 module example (Num : Set) (num-zero : Num) where
 
 open import Level using (0ℓ; lift)
+import Data.Fin as Fin
 open import Data.List using (List; []; _∷_)
 open import every using (Every; []; _∷_)
+open import Relation.Binary.PropositionalEquality using (refl)
 open import signature
 import language-syntax
 import label
@@ -20,30 +22,10 @@ module L = language-syntax Sig
 --
 --   sum (concatMap x (e. if equal-label 'a' (fst e) then return (snd e) else nil))
 --
---   sum = fold (lit num-zero) (add (var zero) (var (succ zero)))
+--   sum = foldr (lit num-zero) (add (var zero) (var (succ zero)))
 
 module ex where
   open L
-
-  -- writer monad over the approximation object
-  Tag : type → type
-  Tag τ = base approx [×] τ
-
-  Tag-pure : ∀ {Γ τ} → Γ ⊢ τ [→] Tag τ
-  Tag-pure = lam (pair (bop approx-unit []) (var zero))
-
-  Tag-bind : ∀ {Γ σ τ} → Γ ⊢ Tag σ [→] (σ [→] Tag τ) [→] Tag τ
-  Tag-bind = lam (lam (pair (bop approx-mult (fst (var (succ zero)) ∷ fst (app (var zero) (snd (var (succ zero)))) ∷ []))
-                          (snd (app (var zero) (snd (var (succ zero)))))))
-
-  Tag-monad : SynMonad
-  Tag-monad .SynMonad.Mon = Tag
-  Tag-monad .SynMonad.pure = Tag-pure
-  Tag-monad .SynMonad.bind = Tag-bind
-
-  -- Summation function
-  sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
-  sum = lam (fold (bop (lit num-zero) []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
 
   `_ : ∀ {Γ} → label.label → Γ ⊢ base label
   ` l = bop (lbl l) []
@@ -51,11 +33,22 @@ module ex where
   _≟_ : ∀ {Γ} → Γ ⊢ base label → Γ ⊢ base label → Γ ⊢ bool
   M ≟ N = brel equal-label (M ∷ N ∷ [])
 
+  sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
+  sum = lam (foldr (bop (lit num-zero) []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
+
+  some-eq : ∀ {Γ} → Γ ⊢ base label [→] list (base label) [→] bool
+  some-eq = lam (lam
+    (foldr false
+      (if (brel equal-label (var (succ zero) ∷ var (succ (succ (succ zero))) ∷ []))
+       then true else (var zero))
+      (var zero)))
+
   query : label.label → emp , list (base label [×] base number) ⊢ base number
-  query l = app sum
-                (from var zero collect
-                 when fst (var zero) ≟ (` l) ；
-                 return (snd (var zero)))
+  query l =
+    app sum
+      (from var zero collect
+      when fst (var zero) ≟ (` l) ；
+      return (snd (var zero)))
 
   -- Price-weighted sum of the quantities with a given label; the per-label prices are a further
   -- pair of inputs.
@@ -74,21 +67,27 @@ module ex where
 
   -- Moving average with window two over four inputs; adjacent outputs share an input, and
   -- non-adjacent outputs share none. h is the constant 1/2, supplied as a literal.
-  mavg : Num → emp , ((base number [×] base number) [×] base number) [×] base number
-             ⊢ (base number [×] base number) [×] base number
-  mavg h = pair (pair (avg (fst (fst (fst (var zero)))) (snd (fst (fst (var zero)))))
-                      (avg (snd (fst (fst (var zero)))) (snd (fst (var zero)))))
-                (avg (snd (fst (var zero))) (snd (var zero)))
+  mavg-body : ∀ {Γ} → Num → Γ ⊢ base number [×] (base number [×] (base number [×] base number))
+            → Γ ⊢ base number [×] (base number [×] base number)
+  mavg-body h v = pair (avg x₁ x₂) (pair (avg x₂ x₃) (avg x₃ x₄))
     where
       avg : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ base number → Γ ⊢ base number
       avg x y = bop mult (bop (lit h) [] ∷ bop add (x ∷ y ∷ []) ∷ [])
+      x₁ = fst v
+      x₂ = fst (snd v)
+      x₃ = fst (snd (snd v))
+      x₄ = snd (snd (snd v))
+
+  mavg : Num → emp , base number [×] (base number [×] (base number [×] base number))
+             ⊢ base number [×] (base number [×] base number)
+  mavg h = mavg-body h (var zero)
 
   -- 3x3 grid scorer for the signed-saliency reading: a centre-surround linear filter (centre
   -- positive, corners negative) plus two adjacent-cell interaction products. Unlike the linear
   -- mavg, the products make the Jacobian, and hence the saliency, depend on the input. `neg` is
   -- the -1 weight literal; positive weights are implicit. The bottom-middle cell is absent from
   -- the score, so masked.
-  Row Grid : type
+  Row Grid : type 0
   Row  = (base number [×] base number) [×] base number
   Grid = (Row [×] Row) [×] Row
 
@@ -126,7 +125,27 @@ module ex where
   sum-mul : emp , list (base number) [×] base number ⊢ base number
   sum-mul = bop mult (app sum (fst (var zero)) ∷ snd (var zero) ∷ [])
 
-  open import cbn-translation Sig Tag-monad
+  -- Rose trees of numbers: a nested recursive type (the children list is itself
+  -- a μ-type mentioning the outer recursion variable).
+  rose : type 0
+  rose = μ (base number [×] μ (unit [+] (var (Fin.suc Fin.zero) [×] var Fin.zero)))
 
-  cbn-query : label.label → emp , Tag (list (Tag (Tag (base label) [×] Tag (base number)))) ⊢ Tag (base number)
-  cbn-query l = ⟪ query l ⟫tm
+  node : ∀ {Γ} → Γ ⊢ base number → Γ ⊢ list rose → Γ ⊢ rose
+  node n ts = roll (pair n ts)
+
+  -- Sum of all numbers in a rose tree: the fold's recursion crosses the inner
+  -- list μ, so the children arrive as a list of subtree sums.
+  rose-sum : ∀ {Γ} → Γ ⊢ rose [→] base number
+  rose-sum = lam (fold (bop add (fst (var zero) ∷ app sum (snd (var zero)) ∷ [])) (var zero))
+
+  rose-query : emp , rose ⊢ base number
+  rose-query = app rose-sum (var zero)
+
+  case-ctxt : ctxt
+  case-ctxt = (emp , base number) , (unit [+] unit)
+
+  case-ctxt-fo : first-order-ctxt case-ctxt
+  case-ctxt-fo = (emp , base number) , (unit [+] unit)
+
+  case-term : case-ctxt ⊢ base number
+  case-term = case (var zero) (var (succ (succ zero))) (bop (lit num-zero) [])

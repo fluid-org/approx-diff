@@ -2,12 +2,30 @@
 
 module product-category where
 
+open import Data.Fin using (Fin)
+open import Data.Nat using (ℕ)
 open import Level using (_⊔_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import prop using (_∧_; _,_; proj₁; proj₂)
 open import prop-setoid using (IsEquivalence)
 open import categories using (Category; HasProducts; HasTerminal)
-open import functor using (Functor; Limit; IsLimit; _∘F_; NatTrans; ≃-NatTrans)
+open import functor using (Functor; Limit; IsLimit; Colimit; IsColimit; _∘F_; NatTrans; ≃-NatTrans)
+
+open IsEquivalence
+
+_^_ : ∀ {o m e} → Category o m e → ℕ → Category o m e
+(𝒞 ^ n) .Category.obj           = Fin n → Category.obj 𝒞
+(𝒞 ^ n) .Category._⇒_ δ δ'      = ∀ i → Category._⇒_ 𝒞 (δ i) (δ' i)
+(𝒞 ^ n) .Category._≈_ fs gs     = ∀ i → Category._≈_ 𝒞 (fs i) (gs i)
+(𝒞 ^ n) .Category.isEquiv .refl                 i = Category.isEquiv 𝒞 .refl
+(𝒞 ^ n) .Category.isEquiv .sym fs≈gs            i = Category.isEquiv 𝒞 .sym (fs≈gs i)
+(𝒞 ^ n) .Category.isEquiv .trans fs≈gs gs≈hs    i = Category.isEquiv 𝒞 .trans (fs≈gs i) (gs≈hs i)
+(𝒞 ^ n) .Category.id δ                          i = Category.id 𝒞 (δ i)
+(𝒞 ^ n) .Category._∘_ fs gs                     i = Category._∘_ 𝒞 (fs i) (gs i)
+(𝒞 ^ n) .Category.∘-cong fs≈fs' gs≈gs'          i = Category.∘-cong 𝒞 (fs≈fs' i) (gs≈gs' i)
+(𝒞 ^ n) .Category.id-left                       i = Category.id-left 𝒞
+(𝒞 ^ n) .Category.id-right                      i = Category.id-right 𝒞
+(𝒞 ^ n) .Category.assoc fs gs hs                i = Category.assoc 𝒞 (fs i) (gs i) (hs i)
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒞 : Category o₁ m₁ e₁) (𝒟 : Category o₂ m₂ e₂) where
 
@@ -64,12 +82,13 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
 
   -- FIXME: natural isomorphisms to show that this is a product
 
-
-  -- Limits in product categories
+  -- Limits and colimits in product categories
   module _ {o₃ m₃ e₃} (𝒮 : Category o₃ m₃ e₃) where
 
     open Limit
     open IsLimit
+    open Colimit
+    open IsColimit
     open NatTrans
     open ≃-NatTrans
 
@@ -94,6 +113,28 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
       𝒟.≈-trans
        (limit𝒟 .lambda-cong (record { transf-eq = λ _ → 𝒟.≈-refl }))
        (limit𝒟 .lambda-ext (f .proj₂))
+
+    product-colimit : (D : Functor 𝒮 (product 𝒞 𝒟)) →
+                      Colimit (project₁ ∘F D) → Colimit (project₂ ∘F D) → Colimit D
+    product-colimit D colimit𝒞 colimit𝒟 .apex = colimit𝒞 .apex , colimit𝒟 .apex
+    product-colimit D colimit𝒞 colimit𝒟 .cocone .transf s = colimit𝒞 .cocone .transf s , colimit𝒟 .cocone .transf s
+    product-colimit D colimit𝒞 colimit𝒟 .cocone .natural f = colimit𝒞 .cocone .natural f , colimit𝒟 .cocone .natural f
+    product-colimit D colimit𝒞 colimit𝒟 .isColimit .colambda (x , y) α =
+      colimit𝒞 .colambda x (record { transf = λ s → α .transf s .proj₁ ; natural = λ f → α .natural f .proj₁ }) ,
+      colimit𝒟 .colambda y (record { transf = λ s → α .transf s .proj₂ ; natural = λ f → α .natural f .proj₂ })
+    product-colimit D colimit𝒞 colimit𝒟 .isColimit .colambda-cong α≃β =
+      colimit𝒞 .colambda-cong (record { transf-eq = λ s → α≃β .transf-eq s .proj₁ }) ,
+      colimit𝒟 .colambda-cong (record { transf-eq = λ s → α≃β .transf-eq s .proj₂ })
+    product-colimit D colimit𝒞 colimit𝒟 .isColimit .colambda-coeval (x , y) α .transf-eq s =
+      colimit𝒞 .colambda-coeval x (record { transf = λ s → α .transf s .proj₁ ; natural = _ }) .transf-eq s ,
+      colimit𝒟 .colambda-coeval y (record { transf = λ s → α .transf s .proj₂ ; natural = _ }) .transf-eq s
+    product-colimit D colimit𝒞 colimit𝒟 .isColimit .colambda-ext (x , y) f =
+      𝒞.≈-trans
+       (colimit𝒞 .colambda-cong (record { transf-eq = λ _ → 𝒞.≈-refl }))
+       (colimit𝒞 .colambda-ext x (f .proj₁)) ,
+      𝒟.≈-trans
+       (colimit𝒟 .colambda-cong (record { transf-eq = λ _ → 𝒟.≈-refl }))
+       (colimit𝒟 .colambda-ext y (f .proj₂))
 
   -- Products as a special case
   module _ (𝒞P : HasProducts 𝒞) (𝒟P : HasProducts 𝒟) where
