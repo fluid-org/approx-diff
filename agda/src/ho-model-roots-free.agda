@@ -256,3 +256,8 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
       -- The presentation matrix: the image of each input position's basis vector.
       dep-mat : matrix.Mat.Matrix S tgt src
       dep-mat q p = SemiMod._⇒_.func dep (M.e p) q
+
+  -- A linear map between free semimodules is the matrix of its values on the basis, so the
+  -- realisation is full and faithful and every first-order term's interpretation is the image of a
+  -- weighted relation between dimensions.
+  module syntactic = definability 𝔽F-faithful 𝔽F-full

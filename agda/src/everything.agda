@@ -13,6 +13,10 @@ import fam-exponentials
 -- biproduct lifting, with first-order definability of the interpretation.
 import ho-model-roots-order-idempotent
 
+-- The same model with free positions: no order on the positions of a value, so a fibre map is an
+-- arbitrary weighted relation and the readback of one is its matrix on the basis.
+import ho-model-roots-free
+
 -- The β and η laws of the rooted μ-types over an arbitrary lifting.
 import fam-mu-lifting.laws
 

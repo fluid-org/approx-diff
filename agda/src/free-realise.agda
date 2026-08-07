@@ -7,8 +7,9 @@
 -- scalars on the semimodule side, and the comparison between the two liftings is the canonical
 -- comparison of biproducts.
 open import Level using (0ℓ)
-open import Data.Nat using (ℕ) renaming (_+_ to _+ℕ_)
-open import Data.Fin using (Fin; zero)
+open import Data.Nat as Nat using (ℕ) renaming (_+_ to _+ℕ_)
+open import Data.Fin using (Fin; zero; suc)
+open import prop using (∃ₛ) renaming (_,_ to _,ₚ_)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -42,6 +43,7 @@ open Biproduct
 
 private
   module SMC = Category SemiMod.cat
+  module MC = Category M.cat
   module SMCM = CMonEnriched SemiMod.cmon-enriched
 
   +m-cong : ∀ {X Y : Semimodule} {f f' g g' : SemiMod._⇒_ X Y} →
@@ -279,3 +281,62 @@ mat-Lmap {P} {Q} f =
       (𝔽-biproduct 1 P) (𝔽-biproduct 1 Q)
       (SemiMod.biproduct 𝕀 (𝔽 P)) (SemiMod.biproduct 𝕀 (𝔽 Q))
       ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd (mat f))
+
+------------------------------------------------------------------------------
+-- The realisation is full and faithful: a linear map between free semimodules is the matrix of
+-- its values on the basis, so a fibre map of the model is a weighted relation and nothing else.
+
+-- The image of a basis vector reads off an entry.
+app-e : ∀ {m n} (R : Matrix m n) (j : Fin n) (i : Fin m) → app R (M.e j) i ≈ R i j
+app-e {m} {n} R j i =
+  trans (Σ-cong {n} (λ l → ·-comm)) (Σ-unit j (λ l → R i l))
+
+private
+  -- Padding a vector with a zero at the head, and the map it induces on linear maps: the
+  -- restriction of a map on suc m positions to the positions under the head.
+  shift : ∀ {m} → Vec m → Vec (Nat.suc m)
+  shift u zero    = ε
+  shift u (suc l) = u l
+
+  shift-e : ∀ {m} (l : Fin m) (j : Fin (Nat.suc m)) → shift (M.e l) j ≈ M.e (suc l) j
+  shift-e l zero     = refl
+  shift-e l (suc j') = refl
+
+  shift-map : ∀ {m n} → SemiMod._⇒_ (𝔽 (Nat.suc m)) (𝔽 n) → SemiMod._⇒_ (𝔽 m) (𝔽 n)
+  shift-map k .*→* .prop-setoid._⇒_.func u = k .func (shift u)
+  shift-map k .*→* .prop-setoid._⇒_.func-resp-≈ e =
+    k .func-resp-≈ (λ { zero → refl ; (suc l) → e l })
+  shift-map k .preserve-ze i =
+    trans (k .func-resp-≈ (λ { zero → refl ; (suc l) → refl }) i) (k .preserve-ze i)
+  shift-map k .preserve-+ i =
+    trans (k .func-resp-≈ (λ { zero → sym +-lunit ; (suc l) → refl }) i) (k .preserve-+ i)
+  shift-map k .preserve-· i =
+    trans (k .func-resp-≈ (λ { zero → sym ε-annihilᵣ ; (suc l) → refl }) i)
+          (k .preserve-· i)
+
+-- A linear map is the weighted sum of its values on the basis.
+sum-lin : ∀ {m n} (k : SemiMod._⇒_ (𝔽 m) (𝔽 n)) (v : Vec m) (i : Fin n) →
+          k .func v i ≈ Σ {m} (λ j → v j · k .func (M.e j) i)
+sum-lin {Nat.zero} k v i = trans (k .func-resp-≈ (λ ()) i) (k .preserve-ze i)
+sum-lin {Nat.suc m} k v i =
+  trans (k .func-resp-≈ split i)
+  (trans (k .preserve-+ i)
+         (+-cong (k .preserve-· i)
+                 (trans (sum-lin (shift-map k) (λ l → v (suc l)) i)
+                        (Σ-cong {m} (λ l → ·-cong refl (k .func-resp-≈ (shift-e l) i))))))
+  where
+  split : ∀ j → v j ≈ ((v zero · M.e zero j) + shift (λ l → v (suc l)) j)
+  split zero    = sym (trans (+-cong (trans ·-comm ·-lunit) refl) (trans +-comm +-lunit))
+  split (suc l) = sym (trans (+-cong ε-annihilᵣ refl) +-lunit)
+
+𝔽F-faithful : ∀ {m n} {R T : Category._⇒_ M.cat m n} → SMC._≈_ (mat R) (mat T) → MC._≈_ R T
+𝔽F-faithful {R = R} {T} h i j =
+  trans (sym (app-e R j i)) (trans (h .func-eq {M.e j} {M.e j} (λ _ → refl) i) (app-e T j i))
+
+𝔽F-full : ∀ {m n} (k : SemiMod._⇒_ (𝔽 m) (𝔽 n)) →
+          ∃ₛ (Category._⇒_ M.cat m n) λ R → SMC._≈_ (mat R) k
+𝔽F-full {m} k = (λ i j → k .func (M.e j) i) ,ₚ pf
+  where
+  pf : SMC._≈_ (mat (λ i j → k .func (M.e j) i)) k
+  pf .*≈* .prop-setoid._≃m_.func-eq {u} {v} e i =
+    trans (Σ-cong {m} (λ j → trans ·-comm (·-cong (e j) refl))) (sym (sum-lin k v i))
