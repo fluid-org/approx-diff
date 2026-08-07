@@ -33,6 +33,7 @@ open Val
 open import language-operational.value-fibre EP.Sig EP.primitives using (pos)
 open import language-operational.partial-value EP.Sig EP.primitives using (spine-close; pval)
 open import language-operational.render-partial EP.Sig EP.primitives
+open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open Primitives EP.primitives using (sort-val)
 
 private
@@ -47,13 +48,6 @@ listT = list elemT
 
 el : label.label → ℚ → Val elemT
 el l n = pair (const l) (const n)
-
-infixr 20 _∷ᵥ_
-_∷ᵥ_ : Val elemT → Val listT → Val listT
-x ∷ᵥ xs = roll (inr (pair x xs))
-
-nilᵥ : Val listT
-nilᵥ = roll (inl unit)
 
 γ-val : Val listT
 γ-val = el label.a 0ℚ ∷ᵥ el label.b 1ℚ ∷ᵥ el label.a 1ℚ ∷ᵥ nilᵥ
@@ -98,18 +92,11 @@ private
 numlistT : type 0
 numlistT = list (base EP.number)
 
-infixr 20 _∷ⁿ_
-_∷ⁿ_ : Val (base EP.number) → Val numlistT → Val numlistT
-x ∷ⁿ xs = roll (inr (pair x xs))
-
-nilⁿ : Val numlistT
-nilⁿ = roll (inl unit)
-
 γ-nums-val : Val numlistT
-γ-nums-val = const 0ℚ ∷ⁿ const 1ℚ ∷ⁿ const (1ℚ +ℚ 1ℚ) ∷ⁿ nilⁿ
+γ-nums-val = const 0ℚ ∷ᵥ const 1ℚ ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ
 
 δ-out : Val numlistT
-δ-out = const (0ℚ +ℚ 1ℚ) ∷ⁿ const (1ℚ +ℚ 1ℚ) ∷ⁿ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ⁿ nilⁿ
+δ-out = const (0ℚ +ℚ 1ℚ) ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ᵥ nilᵥ
 
 private
   and2 or2 not2 : two.Two → two.Two → two.Two

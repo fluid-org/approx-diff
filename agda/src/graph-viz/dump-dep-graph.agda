@@ -1,9 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Writes the three-weighted map dependence graph as dot, in two views: the full skeleton, and the
--- sugar view with each former merged into its enclosing injection, dependence edges joined by the
--- semiring's addition. Nodes, labels, tree edges and merge classes all come from the value
--- skeleton of the input and output values; run from the paper repository root.
+-- Merging vertices joins their edges with the semiring's addition, which agrees with composition by
+-- distributivity. Run from the paper repository root.
 module graph-viz.dump-dep-graph where
 
 open import IO
@@ -27,6 +25,7 @@ open import language-operational.evaluation EP.Sig EP.primitives using (Val; Env
 open Val
 open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
+open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open import language-operational.value-skeleton EP.Sig EP.primitives
   using (Entry; skeleton; skeleton-env)
 open Entry
@@ -48,15 +47,11 @@ private
   numsT = list (base EP.number)
 
   γ-filter-env : Env (∙ ▸ base EP.number ▸ numsT)
-  γ-filter-env = emp · const (1ℚ +ℚ 1ℚ) · γ-in
-    where γ-in : Val numsT
-          γ-in = roll (inr (pair (const 1ℚ)
-                 (roll (inr (pair (const (1ℚ +ℚ 1ℚ))
-                 (roll (inr (pair (const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ))
-                 (roll (inl unit))))))))))
+  γ-filter-env = emp · const (1ℚ +ℚ 1ℚ) ·
+                 (const 1ℚ ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ᵥ nilᵥ)
 
   δ-filter : Val numsT
-  δ-filter = roll (inr (pair (const (1ℚ +ℚ 1ℚ)) (roll (inl unit))))
+  δ-filter = const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ
 
   filter-in-sk filter-out-sk : Entries
   filter-in-sk  = index 0 (skeleton-env (λ {s} c → showC {s} c) γ-filter-env)
@@ -73,10 +68,6 @@ private
   node : String → ℕ → String → String
   node pre i l = "    " ++ pre ++ ℕ-Show.show i ++ " [label=\"" ++ l ++ "\"];\n"
 
-  nodes : String → Entries → String
-  nodes pre []             = ""
-  nodes pre ((i , e) ∷ es) = node pre i (sugar (e .label)) ++ nodes pre es
-
   nodes-merged : String → Entries → String
   nodes-merged pre []             = ""
   nodes-merged pre ((i , e) ∷ es) =
@@ -86,12 +77,6 @@ private
   tree-edge pre i j =
     "    " ++ pre ++ ℕ-Show.show i ++ " -> " ++ pre ++ ℕ-Show.show j
     ++ " [color=gray, arrowhead=none];\n"
-
-  tree-edges : String → Entries → String
-  tree-edges pre []             = ""
-  tree-edges pre ((i , e) ∷ es) with e .parent
-  ... | just p  = tree-edge pre p i ++ tree-edges pre es
-  ... | nothing = tree-edges pre es
 
   member : ℕ × ℕ → List (ℕ × ℕ) → Bool
   member _       []             = false
@@ -124,16 +109,6 @@ private
   map-rows    = toList (tabulate (λ q → toList (tabulate (dep-map q))))
   filter-rows = toList (tabulate (λ q → toList (tabulate (dep-filter q))))
 
-  dep-edges-for : List (List three.Three) → String
-  dep-edges-for rows = go 0 rows
-    where
-    row : ℕ → ℕ → List three.Three → String
-    row _ _ []       = ""
-    row q p (w ∷ ws) = dep-edge w p q ++ row q (suc p) ws
-    go : ℕ → List (List three.Three) → String
-    go _ []       = ""
-    go q (r ∷ rs) = row q 0 r ++ go (suc q) rs
-
   Edge : Set
   Edge = ℕ × ℕ × three.Three
 
@@ -164,10 +139,6 @@ private
     go : List Edge → String
     go []                 = ""
     go ((p , q , w) ∷ es) = dep-edge w p q ++ go es
-
-  idxs : Entries → List ℕ
-  idxs []             = []
-  idxs ((i , _) ∷ es) = i ∷ idxs es
 
   reps : Entries → List ℕ
   reps []             = []
@@ -201,15 +172,8 @@ private
     ++ cluster "output" "o" out-nodes out-tree out-as
     ++ deps ++ "}\n"
 
-contents : String
-contents =
-  graph (nodes "i" in-sk) (tree-edges "i" in-sk)
-        (nodes "o" out-sk) (tree-edges "o" out-sk)
-        (last2 (idxs in-sk)) (last2 (idxs out-sk))
-        (dep-edges-for map-rows)
-
-contents-sugar : String
-contents-sugar =
+contents-map : String
+contents-map =
   graph (nodes-merged "i" in-sk) (tree-edges-of "i" (merged-tree in-sk in-sk []))
         (nodes-merged "o" out-sk) (tree-edges-of "o" (merged-tree out-sk out-sk []))
         (last2 (reps in-sk)) (last2 (reps out-sk))
@@ -225,6 +189,5 @@ contents-filter =
         (merged-dep-edges-for filter-in-sk filter-out-sk filter-rows)
 
 main : Main
-main = run (writeFile "fig/dot/map-three.dot" contents
-            >> writeFile "fig/dot/map-three-sugar.dot" contents-sugar
+main = run (writeFile "fig/dot/map-three.dot" contents-map
             >> writeFile "fig/dot/filter-three.dot" contents-filter)
