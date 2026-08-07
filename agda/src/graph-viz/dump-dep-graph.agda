@@ -20,9 +20,15 @@ open import Data.Vec using (toList; tabulate)
 open import Level using (0ℓ)
 import three
 import example.primitives as EP
-open import example.rooted-runs-three using (dep-map)
+open import Data.Rational using (0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
+open import example.rooted-runs-three using (dep-map; dep-filter)
+open import language-syntax EP.Sig using (base; list) renaming (emp to ∙; _,_ to _▸_)
+open import language-operational.evaluation EP.Sig EP.primitives using (Val; Env)
+open Val
+open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
-open import language-operational.value-skeleton EP.Sig EP.primitives using (Entry; skeleton)
+open import language-operational.value-skeleton EP.Sig EP.primitives
+  using (Entry; skeleton; skeleton-env)
 open Entry
 
 private
@@ -36,6 +42,25 @@ private
   in-sk out-sk : Entries
   in-sk  = index 0 (skeleton (λ {s} c → showC {s} c) γ-nums-val)
   out-sk = index 0 (skeleton (λ {s} c → showC {s} c) δ-out)
+
+  -- Membership by numeric equality: the target gates every step without its value reaching the
+  -- output, and the kept element's value flows to the one output element.
+  numsT = list (base EP.number)
+
+  γ-filter-env : Env (∙ ▸ base EP.number ▸ numsT)
+  γ-filter-env = emp · const (1ℚ +ℚ 1ℚ) · γ-in
+    where γ-in : Val numsT
+          γ-in = roll (inr (pair (const 1ℚ)
+                 (roll (inr (pair (const (1ℚ +ℚ 1ℚ))
+                 (roll (inr (pair (const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ))
+                 (roll (inl unit))))))))))
+
+  δ-filter : Val numsT
+  δ-filter = roll (inr (pair (const (1ℚ +ℚ 1ℚ)) (roll (inl unit))))
+
+  filter-in-sk filter-out-sk : Entries
+  filter-in-sk  = index 0 (skeleton-env (λ {s} c → showC {s} c) γ-filter-env)
+  filter-out-sk = index 0 (skeleton (λ {s} c → showC {s} c) δ-filter)
 
   -- List notation for the body's injections, as in the partial-value renderer.
   sugar : String → String
@@ -95,11 +120,12 @@ private
     "  i" ++ ℕ-Show.show p ++ " -> o" ++ ℕ-Show.show q
     ++ " [color=black, style=dashed, constraint=false];\n"
 
-  rows : List (List three.Three)
-  rows = toList (tabulate (λ q → toList (tabulate (dep-map q))))
+  map-rows filter-rows : List (List three.Three)
+  map-rows    = toList (tabulate (λ q → toList (tabulate (dep-map q))))
+  filter-rows = toList (tabulate (λ q → toList (tabulate (dep-filter q))))
 
-  dep-edges : String
-  dep-edges = go 0 rows
+  dep-edges-for : List (List three.Three) → String
+  dep-edges-for rows = go 0 rows
     where
     row : ℕ → ℕ → List three.Three → String
     row _ _ []       = ""
@@ -119,12 +145,12 @@ private
     then (p' , q' , w three.⊔ w') ∷ es
     else (p' , q' , w') ∷ upd p q w es
 
-  quotient : List Edge
-  quotient = go-q 0 rows []
+  quotient-for : Entries → Entries → List (List three.Three) → List Edge
+  quotient-for isk osk rows = go-q 0 rows []
     where
     add : ℕ → ℕ → three.Three → List Edge → List Edge
     add p q three.O acc = acc
-    add p q w       acc = upd (cls-of in-sk p) (cls-of out-sk q) w acc
+    add p q w       acc = upd (cls-of isk p) (cls-of osk q) w acc
     go-p : ℕ → ℕ → List three.Three → List Edge → List Edge
     go-p q _ []       acc = acc
     go-p q p (w ∷ ws) acc = go-p q (suc p) ws (add p q w acc)
@@ -132,8 +158,8 @@ private
     go-q _ []       acc = acc
     go-q q (r ∷ rs) acc = go-q (suc q) rs (go-p q 0 r acc)
 
-  dep-edges-merged : String
-  dep-edges-merged = go quotient
+  merged-dep-edges-for : Entries → Entries → List (List three.Three) → String
+  merged-dep-edges-for isk osk rows = go (quotient-for isk osk rows)
     where
     go : List Edge → String
     go []                 = ""
@@ -180,15 +206,25 @@ contents =
   graph (nodes "i" in-sk) (tree-edges "i" in-sk)
         (nodes "o" out-sk) (tree-edges "o" out-sk)
         (last2 (idxs in-sk)) (last2 (idxs out-sk))
-        dep-edges
+        (dep-edges-for map-rows)
 
 contents-sugar : String
 contents-sugar =
   graph (nodes-merged "i" in-sk) (tree-edges-of "i" (merged-tree in-sk in-sk []))
         (nodes-merged "o" out-sk) (tree-edges-of "o" (merged-tree out-sk out-sk []))
         (last2 (reps in-sk)) (last2 (reps out-sk))
-        dep-edges-merged
+        (merged-dep-edges-for in-sk out-sk map-rows)
+
+contents-filter : String
+contents-filter =
+  graph (nodes-merged "i" filter-in-sk)
+        (tree-edges-of "i" (merged-tree filter-in-sk filter-in-sk []))
+        (nodes-merged "o" filter-out-sk)
+        (tree-edges-of "o" (merged-tree filter-out-sk filter-out-sk []))
+        (last2 (reps filter-in-sk)) (last2 (reps filter-out-sk))
+        (merged-dep-edges-for filter-in-sk filter-out-sk filter-rows)
 
 main : Main
 main = run (writeFile "fig/dot/map-three.dot" contents
-            >> writeFile "fig/dot/map-three-sugar.dot" contents-sugar)
+            >> writeFile "fig/dot/map-three-sugar.dot" contents-sugar
+            >> writeFile "fig/dot/filter-three.dot" contents-filter)
