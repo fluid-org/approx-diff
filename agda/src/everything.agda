@@ -30,10 +30,7 @@ import polynomial-functor
 -- first-order interpretation.
 import language-fo-interpretation
 
--- The instrumented operational semantics with its dependence graphs, totality of evaluation, and
--- the value renderer.
-import language-operational.instrument
-import language-operational.dependence-graph
+-- Totality of evaluation and the value renderer.
 import language-operational.totality
 import language-operational.render
 
