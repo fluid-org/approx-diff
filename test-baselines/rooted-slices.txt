@@ -24,7 +24,7 @@ _ ∷ _ ∷ _ ∷ ~[]
 _ ∷ _ ∷ _ ∷ ~[]
 map-forward-cell1
 1 ∷ 2 ∷ 3 ∷ []
-map-roundtrip-elem2
-_ ∷ 2 ∷ _
-_ ∷ 1 ∷ _
+map-roundtrip-cell2
+_ ∷ _ ∷ _
+_ ∷ ~∷
 1 ∷ 2 ∷ 3 ∷ []

@@ -133,9 +133,8 @@ private
   cell1-sel = two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O
             ∷ two.O ∷ two.O ∷ two.O ∷ []
 
-  -- Output element 2 as a selection: its scalar and the spine above it.
-  out-elem2-sel : List two.Two
-  out-elem2-sel = two.I ∷ two.I ∷ two.O ∷ two.I ∷ two.I ∷ two.I ∷ two.O ∷ two.O
+  out-cell2-sel : List two.Two
+  out-cell2-sel = two.O ∷ two.O ∷ two.O ∷ two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O
                 ∷ two.O ∷ two.O ∷ two.O ∷ []
 
   -- The backward slice of an output selection: the join of the selected positions' rows.
@@ -170,10 +169,10 @@ contents =
   "tag\n" ++ slice dep-tag ++
   "map-backward\n" ++ slice-over γ-nums-val dep-map ++
   "map-forward-cell1\n" ++ render-fwd dep-map cell1-sel ++ "\n" ++
-  "map-roundtrip-elem2\n" ++
-    render-out out-elem2-sel ++ "\n" ++
-    render-in (bwd-bits dep-map out-elem2-sel) ++ "\n" ++
-    render-out (fwd-bits dep-map (bwd-bits dep-map out-elem2-sel)) ++ "\n" 
+  "map-roundtrip-cell2\n" ++
+    render-out out-cell2-sel ++ "\n" ++
+    render-in (bwd-bits dep-map out-cell2-sel) ++ "\n" ++
+    render-out (fwd-bits dep-map (bwd-bits dep-map out-cell2-sel)) ++ "\n" 
 
 main : Main
 main = run (writeFile "approx-diff/test-baselines/rooted-slices.txt" contents)
