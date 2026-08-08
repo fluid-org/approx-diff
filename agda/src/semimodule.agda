@@ -12,10 +12,9 @@ open import commutative-monoid using (CommutativeMonoid; 𝟙cm) renaming (_⊗_
 open import commutative-semiring using (CommutativeSemiring)
 
 
-module semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
-  (let module S = CommutativeSemiring S)
-  (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
-  where
+module semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+
+module S = CommutativeSemiring S
 
 record Semimodule : Set (suc 0ℓ) where
   no-eta-equality
@@ -37,12 +36,6 @@ record Semimodule : Set (suc 0ℓ) where
     +-distribˡ    : ∀ {s x₁ x₂} → s · (x₁ + x₂) ≈ (s · x₁) + (s · x₂)
     zero-distribʳ : ∀ {x} → S.ε · x ≈ ε
     zero-distribˡ : ∀ {s} → s · ε ≈ ε
-
-  -- The top: every element is absorbed into it, the greatest element in the natural order
-  -- x ≤ y iff x + y ≈ y.
-  field
-    ⊤m        : Carrier
-    ⊤m-absorb : ∀ {x} → (x + ⊤m) ≈ ⊤m
 open Semimodule
 
 record _⇒_ (M N : Semimodule) : Set (0ℓ) where
@@ -140,8 +133,6 @@ _⊕_ : Semimodule → Semimodule → Semimodule
 (M ⊕ N) .+-distribˡ = +-distribˡ M , +-distribˡ N
 (M ⊕ N) .zero-distribʳ = zero-distribʳ M , zero-distribʳ N
 (M ⊕ N) .zero-distribˡ = zero-distribˡ M , zero-distribˡ N
-(M ⊕ N) .⊤m = M .⊤m , N .⊤m
-(M ⊕ N) .⊤m-absorb = ⊤m-absorb M , ⊤m-absorb N
 
 p₁ : ∀ {M N} → (M ⊕ N) ⇒ M
 p₁ .*→* = project₁
@@ -185,8 +176,6 @@ products .HasProducts.pair-ext f .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (
 𝟘 .+-distribˡ = tt
 𝟘 .zero-distribʳ = tt
 𝟘 .zero-distribˡ = tt
-𝟘 .⊤m = 𝟙cm {0ℓ} {0ℓ} .CommutativeMonoid.ε
-𝟘 .⊤m-absorb = tt
 
 -- Unit and associativity isomorphisms for the biproduct, constructed concretely on the pair
 -- representation.
@@ -291,10 +280,6 @@ module _ {M : Semimodule} (h : M ⇒ M) (h-idem : (h ∘ h) ≈m h) where
   Fix .+-distribˡ = M.+-distribˡ
   Fix .zero-distribʳ = M.zero-distribʳ
   Fix .zero-distribˡ = M.zero-distribˡ
-  Fix .⊤m = h .func M.⊤m , h-idem .*≈* ._≈s_.func-eq M.refl
-  Fix .⊤m-absorb {x , p} =
-    M.trans (M.+-cong (M.sym p) M.refl)
-      (M.trans (M.sym (h .preserve-+)) (h .func-resp-≈ M.⊤m-absorb))
 
   fix-sect : Fix ⇒ M
   fix-sect .*→* ._⇒s_.func (x , _) = x
@@ -332,31 +317,105 @@ module _ {M : Semimodule} (h : M ⇒ M) (h-idem : (h ∘ h) ≈m h) where
 𝕀 .+-distribˡ = S.·-+-distribₗ
 𝕀 .zero-distribʳ = S.ε-annihilₗ
 𝕀 .zero-distribˡ = S.ε-annihilᵣ
-𝕀 .⊤m = S.ι
-𝕀 .⊤m-absorb = S.trans S.+-comm ⊤-add-top
 
--- The top as a morphism from the scalars, absorbing in the enrichment.
-⊤-mor : ∀ M → 𝕀 ⇒ M
-⊤-mor M .*→* ._⇒s_.func s = M ._·_ s (M .⊤m)
-⊤-mor M .*→* ._⇒s_.func-resp-≈ e = ·-cong M e (M .refl)
-⊤-mor M .preserve-ze = zero-distribʳ M
-⊤-mor M .preserve-+ = +-distribʳ M
-⊤-mor M .preserve-· = ·-mul M
+------------------------------------------------------------------------------
+-- Semimodules carrying a top, as a full subcategory: when ι is an absorbing top on the scalars,
+-- the constructions above restrict to modules with a greatest element in the natural order
+-- x ≤ y iff x + y ≈ y. The morphisms are unchanged, so every law delegates.
+module Topped (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι) where
 
-⊤-mor-absorb : ∀ {M} (h : 𝕀 ⇒ M) → (+-map 𝕀 M h (⊤-mor M)) ≈m ⊤-mor M
-⊤-mor-absorb {M} h .*≈* ._≈s_.func-eq {s} {s'} e =
-  M.trans
-    (M.+-cong (M.trans (h .func-resp-≈ (S.sym (S.trans S.·-comm S.·-lunit))) (h .preserve-·))
-              M.refl)
-    (M.trans (M.sym M.+-distribˡ)
-      (M.trans (M.·-cong S.refl M.⊤m-absorb) (M.·-cong e M.refl)))
-  where module M = Semimodule M
+  record Semimodule⊤ : Set (suc 0ℓ) where
+    no-eta-equality
+    field
+      mod       : Semimodule
+      ⊤m        : mod .Carrier
+      ⊤m-absorb : ∀ {x} → mod ._≈_ (mod ._+_ x ⊤m) ⊤m
+  open Semimodule⊤ public
+
+  cat⊤ : Category (suc 0ℓ) (0ℓ) (0ℓ)
+  cat⊤ .Category.obj = Semimodule⊤
+  cat⊤ .Category._⇒_ M N = M .mod ⇒ N .mod
+  cat⊤ .Category._≈_ = _≈m_
+  cat⊤ .Category.isEquiv = cat .Category.isEquiv
+  cat⊤ .Category.id M = id (M .mod)
+  cat⊤ .Category._∘_ = _∘_
+  cat⊤ .Category.∘-cong = cat .Category.∘-cong
+  cat⊤ .Category.id-left = cat .Category.id-left
+  cat⊤ .Category.id-right = cat .Category.id-right
+  cat⊤ .Category.assoc = cat .Category.assoc
+
+  cmon-enriched⊤ : CMonEnriched cat⊤
+  cmon-enriched⊤ .CMonEnriched.homCM M N .CommutativeMonoid.ε = ε-map (M .mod) (N .mod)
+  cmon-enriched⊤ .CMonEnriched.homCM M N .CommutativeMonoid._+_ = +-map (M .mod) (N .mod)
+  cmon-enriched⊤ .CMonEnriched.homCM M N .CommutativeMonoid.+-cong =
+    cmon-enriched .CMonEnriched.homCM (M .mod) (N .mod) .CommutativeMonoid.+-cong
+  cmon-enriched⊤ .CMonEnriched.homCM M N .CommutativeMonoid.+-lunit =
+    cmon-enriched .CMonEnriched.homCM (M .mod) (N .mod) .CommutativeMonoid.+-lunit
+  cmon-enriched⊤ .CMonEnriched.homCM M N .CommutativeMonoid.+-assoc =
+    cmon-enriched .CMonEnriched.homCM (M .mod) (N .mod) .CommutativeMonoid.+-assoc
+  cmon-enriched⊤ .CMonEnriched.homCM M N .CommutativeMonoid.+-comm =
+    cmon-enriched .CMonEnriched.homCM (M .mod) (N .mod) .CommutativeMonoid.+-comm
+  cmon-enriched⊤ .CMonEnriched.comp-bilinear₁ = cmon-enriched .CMonEnriched.comp-bilinear₁
+  cmon-enriched⊤ .CMonEnriched.comp-bilinear₂ = cmon-enriched .CMonEnriched.comp-bilinear₂
+  cmon-enriched⊤ .CMonEnriched.comp-bilinear-ε₁ = cmon-enriched .CMonEnriched.comp-bilinear-ε₁
+  cmon-enriched⊤ .CMonEnriched.comp-bilinear-ε₂ = cmon-enriched .CMonEnriched.comp-bilinear-ε₂
+
+  𝟘⊤ : Semimodule⊤
+  𝟘⊤ .mod = 𝟘
+  𝟘⊤ .⊤m = 𝟙cm {0ℓ} {0ℓ} .CommutativeMonoid.ε
+  𝟘⊤ .⊤m-absorb = tt
+
+  terminal⊤ : HasTerminal cat⊤
+  terminal⊤ .HasTerminal.witness = 𝟘⊤
+  terminal⊤ .HasTerminal.is-terminal .IsTerminal.to-terminal {M} = ε-map (M .mod) 𝟘
+  terminal⊤ .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f .*≈* ._≈s_.func-eq _ = tt
+
+  _⊕⊤_ : Semimodule⊤ → Semimodule⊤ → Semimodule⊤
+  (M ⊕⊤ N) .mod = M .mod ⊕ N .mod
+  (M ⊕⊤ N) .⊤m = M .⊤m , N .⊤m
+  (M ⊕⊤ N) .⊤m-absorb = M .⊤m-absorb , N .⊤m-absorb
+
+  biproduct⊤ : ∀ M N → Biproduct cmon-enriched⊤ M N
+  biproduct⊤ M N .Biproduct.prod = M ⊕⊤ N
+  biproduct⊤ M N .Biproduct.p₁ = biproduct (M .mod) (N .mod) .Biproduct.p₁
+  biproduct⊤ M N .Biproduct.p₂ = biproduct (M .mod) (N .mod) .Biproduct.p₂
+  biproduct⊤ M N .Biproduct.in₁ = biproduct (M .mod) (N .mod) .Biproduct.in₁
+  biproduct⊤ M N .Biproduct.in₂ = biproduct (M .mod) (N .mod) .Biproduct.in₂
+  biproduct⊤ M N .Biproduct.id-1 = biproduct (M .mod) (N .mod) .Biproduct.id-1
+  biproduct⊤ M N .Biproduct.id-2 = biproduct (M .mod) (N .mod) .Biproduct.id-2
+  biproduct⊤ M N .Biproduct.zero-1 = biproduct (M .mod) (N .mod) .Biproduct.zero-1
+  biproduct⊤ M N .Biproduct.zero-2 = biproduct (M .mod) (N .mod) .Biproduct.zero-2
+  biproduct⊤ M N .Biproduct.id-+ = biproduct (M .mod) (N .mod) .Biproduct.id-+
+
+  𝕀⊤ : Semimodule⊤
+  𝕀⊤ .mod = 𝕀
+  𝕀⊤ .⊤m = S.ι
+  𝕀⊤ .⊤m-absorb = S.trans S.+-comm ⊤-add-top
+
+  -- The top as a morphism from the scalars, absorbing in the enrichment.
+  ⊤-mor : ∀ M → 𝕀 ⇒ M .mod
+  ⊤-mor M .*→* ._⇒s_.func s = M .mod ._·_ s (M .⊤m)
+  ⊤-mor M .*→* ._⇒s_.func-resp-≈ e = ·-cong (M .mod) e (M .mod .refl)
+  ⊤-mor M .preserve-ze = zero-distribʳ (M .mod)
+  ⊤-mor M .preserve-+ = +-distribʳ (M .mod)
+  ⊤-mor M .preserve-· = ·-mul (M .mod)
+
+  ⊤-mor-absorb : ∀ {M} (h : 𝕀 ⇒ M .mod) → (+-map 𝕀 (M .mod) h (⊤-mor M)) ≈m ⊤-mor M
+  ⊤-mor-absorb {M} h .*≈* ._≈s_.func-eq {s} {s'} e =
+    Mm.trans
+      (Mm.+-cong (Mm.trans (h .func-resp-≈ (S.sym (S.trans S.·-comm S.·-lunit))) (h .preserve-·))
+                 Mm.refl)
+      (Mm.trans (Mm.sym Mm.+-distribˡ)
+        (Mm.trans (Mm.·-cong S.refl (M .⊤m-absorb)) (Mm.·-cong e Mm.refl)))
+    where module Mm = Semimodule (M .mod)
 
 ------------------------------------------------------------------------------
 -- Top-absorption makes addition idempotent, so every S-semimodule is a bounded join-semilattice and every
 -- morphism join-preserving.
 
-module JoinSemilattices where
+module JoinSemilattices
+  (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
+  where
 
   import commutative-monoid
 

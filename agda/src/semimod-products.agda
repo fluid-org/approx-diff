@@ -17,10 +17,9 @@ import semimodule
 module semimod-products
   {A₀ : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A₀)
   (let module S = CommutativeSemiring S)
-  (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
   where
 
-module SemiMod = semimodule S ⊤-add-top
+module SemiMod = semimodule S
 
 open SemiMod using (Semimodule; _⇒_)
 open Semimodule
@@ -85,22 +84,6 @@ module DirectΠ (A : Setoid 0ℓ 0ℓ) (P : Fam A SemiMod.cat) where
   Πm .+-distribˡ x = Fib.+-distribˡ x
   Πm .zero-distribʳ x = Fib.zero-distribʳ x
   Πm .zero-distribˡ x = Fib.zero-distribˡ x
-  -- The pointwise top is a coherent choice because the transports are isomorphisms and the top
-  -- absorbs.
-  Πm .⊤m .part x = Fib.⊤m x
-  Πm .⊤m .part-natural {x₁} {x₂} e =
-    Fib.trans x₂ (P .subst e .func-resp-≈ (Fib.sym x₁ (Fib.⊤m-absorb x₁)))
-      (Fib.trans x₂ (P .subst e .preserve-+)
-        (Fib.trans x₂ (Fib.+-cong x₂ fg-elem (Fib.refl x₂))
-          (Fib.trans x₂ (Fib.+-comm x₂) (Fib.⊤m-absorb x₂))))
-    where
-      fg-elem : Fib._≈_ x₂ (P .subst e .func (P .subst (A.sym e) .func (Fib.⊤m x₂)))
-                           (Fib.⊤m x₂)
-      fg-elem =
-        Fib.trans x₂
-          (Fib.sym x₂ (P .trans* e (A.sym e) .*≈* ._≃s_.func-eq (Fib.refl x₂)))
-          (P .refl* .*≈* ._≃s_.func-eq (Fib.refl x₂))
-  Πm .⊤m-absorb x = Fib.⊤m-absorb x
 
   evalΠs : (a : A.Carrier) → Πm ⇒ P .fm a
   evalΠs a .*→* ._⇒s_.func c = c .part a
@@ -134,3 +117,58 @@ semimod-setoid-products .HasSetoidProducts.lambda-eval {B} {P} {x} {f} a
 semimod-setoid-products .HasSetoidProducts.lambda-ext {B} {P} {x} {f}
   .*≈* ._≃s_.func-eq e a =
   f .func-resp-≈ e a
+
+------------------------------------------------------------------------------
+-- The products restrict to the topped subcategory: the pointwise top is a coherent choice
+-- because the transports are isomorphisms and the top absorbs.
+module Topped (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι) where
+
+  open SemiMod.Topped ⊤-add-top
+
+  fam-mod : ∀ {A : Setoid 0ℓ 0ℓ} → Fam A cat⊤ → Fam A SemiMod.cat
+  fam-mod P .fm x = P .fm x .mod
+  fam-mod P .subst = P .subst
+  fam-mod P .refl* = P .refl*
+  fam-mod P .trans* = P .trans*
+
+  module DirectΠ⊤ (A : Setoid 0ℓ 0ℓ) (P : Fam A cat⊤) where
+    private
+      module A = Setoid A
+      module D = DirectΠ A (fam-mod P)
+      module Fib (x : A.Carrier) = Semimodule (P .fm x .mod)
+    open D.ΠCarrier
+
+    Πm⊤ : Semimodule⊤
+    Πm⊤ .mod = D.Πm
+    Πm⊤ .⊤m .part x = P .fm x .⊤m
+    Πm⊤ .⊤m .part-natural {x₁} {x₂} e =
+      Fib.trans x₂ (P .subst e .func-resp-≈ (Fib.sym x₁ (P .fm x₁ .⊤m-absorb)))
+        (Fib.trans x₂ (P .subst e .preserve-+)
+          (Fib.trans x₂ (Fib.+-cong x₂ fg-elem (Fib.refl x₂))
+            (Fib.trans x₂ (Fib.+-comm x₂) (P .fm x₂ .⊤m-absorb))))
+      where
+        fg-elem : Fib._≈_ x₂ (P .subst e .func (P .subst (A.sym e) .func (P .fm x₂ .⊤m)))
+                             (P .fm x₂ .⊤m)
+        fg-elem =
+          Fib.trans x₂
+            (Fib.sym x₂ (P .trans* e (A.sym e) .*≈* ._≃s_.func-eq (Fib.refl x₂)))
+            (P .refl* .*≈* ._≃s_.func-eq (Fib.refl x₂))
+    Πm⊤ .⊤m-absorb x = P .fm x .⊤m-absorb
+
+  semimod-setoid-products⊤ : HasSetoidProducts 0ℓ 0ℓ cat⊤
+  semimod-setoid-products⊤ .HasSetoidProducts.Π B P = DirectΠ⊤.Πm⊤ B P
+  semimod-setoid-products⊤ .HasSetoidProducts.lambdaΠ {B} x P f =
+    DirectΠ.lambdaΠs B (fam-mod P) (x .mod)
+      (record { transf = f .transf ; natural = f .natural })
+  semimod-setoid-products⊤ .HasSetoidProducts.lambdaΠ-cong {B} {x} {P} {f₁} {f₂} e
+    .*≈* ._≃s_.func-eq ee a = e .transf-eq {a} .*≈* ._≃s_.func-eq ee
+  semimod-setoid-products⊤ .HasSetoidProducts.evalΠ {B} P a = DirectΠ.evalΠs B (fam-mod P) a
+  semimod-setoid-products⊤ .HasSetoidProducts.evalΠ-cong {B} {P} {a₁} {a₂} e
+    .*≈* ._≃s_.func-eq {c₁} {c₂} ep =
+    Semimodule.trans (P .fm a₂ .mod) (DirectΠ.ΠCarrier.part-natural c₁ e) (ep a₂)
+  semimod-setoid-products⊤ .HasSetoidProducts.lambda-eval {B} {P} {x} {f} a
+    .*≈* ._≃s_.func-eq e =
+    f .transf a .func-resp-≈ e
+  semimod-setoid-products⊤ .HasSetoidProducts.lambda-ext {B} {P} {x} {f}
+    .*≈* ._≃s_.func-eq e a =
+    f .func-resp-≈ e a

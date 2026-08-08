@@ -48,7 +48,7 @@ open prop-setoid._⇒_ using (func; func-resp-≈)
 open prop-setoid._≃m_ using (func-eq)
 
 module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ M.cmon M.biproduct Lm-lifting
-module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiMod.cmon-enriched SemiMod.biproduct Ls-lifting
+module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiModT.cmon-enriched⊤ SemiModT.biproduct⊤ Ls-lifting
 
 private
   module FCμ = Category Fam⟨𝒞⟩μ.cat
@@ -83,18 +83,19 @@ full-absorb h i j = Sc.trans Sc.+-comm ⊤-add-top
 
 -- The model-side function spaces: exponentials on Fam(SemiMod), from the direct setoid products
 -- of plain semimodules.
-module SMP = semimod-products S ⊤-add-top
+module SMP = semimod-products S
+module SMPT = SMP.Topped ⊤-add-top
 
-SPmod : HasSetoidProducts 0ℓ 0ℓ SemiMod.cat
-SPmod = SMP.semimod-setoid-products
+SPmod : HasSetoidProducts 0ℓ 0ℓ SemiModT.cat⊤
+SPmod = SMPT.semimod-setoid-products⊤
 
-module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod.biproduct SPmod
+module FE = fam-exponentials 0ℓ 0ℓ SemiModT.cat⊤ SemiModT.cmon-enriched⊤ SemiModT.biproduct⊤ SPmod
 
 SemiModExp : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
 SemiModExp = exponentials→weak FE.exponentials
 
 𝒟-tops : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X
-𝒟-tops = Fam⟨𝒟⟩μ.top-pointed SemiMod.⊤-mor (λ h → SemiMod.⊤-mor-absorb h)
+𝒟-tops = Fam⟨𝒟⟩μ.top-pointed SemiModT.⊤-mor (λ h → SemiModT.⊤-mor-absorb h)
 
 -- The rooted interpretation of the primitives: the first-order interpretation, with the relations'
 -- booleans injected under zero roots.
@@ -174,7 +175,7 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
   open language-roots-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct Lm-lifting
-    SemiMod.terminal SemiMod.cmon-enriched SemiMod.biproduct Ls-lifting
+    SemiModT.terminal⊤ SemiModT.cmon-enriched⊤ SemiModT.biproduct⊤ Ls-lifting
     elim-weight-endo
     𝔽F 𝔽F-preserve-terminal (λ {m} {n} → 𝔽F-preserve-products {m} {n})
     𝔽-L-iso (λ {P} {Q} f → 𝔽-L-natural {P} {Q} f)
@@ -203,13 +204,13 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
       rel : SemiMod._⇒_ (𝔽 src) (𝔽 tgt)
       rel = SemiMod._∘_
               {𝔽 src}
-              {𝒟⟦ τ ⟧ty (λ ()) .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.fm out𝒟}
+              {𝒟⟦ τ ⟧ty (λ ()) .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.fm out𝒟 .SemiModT.mod}
               {𝔽 tgt}
               (closed-iso fo .bwd .Fam⟨𝒟⟩μ.famf .transf out𝒟)
               (SemiMod._∘_
                 {𝔽 src}
-                {𝒟⟦ Γ ⟧ctxt .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.fm γ𝒟}
-                {𝒟⟦ τ ⟧ty (λ ()) .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.fm out𝒟}
+                {𝒟⟦ Γ ⟧ctxt .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.fm γ𝒟 .SemiModT.mod}
+                {𝒟⟦ τ ⟧ty (λ ()) .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.fm out𝒟 .SemiModT.mod}
                 (𝒟⟦ t ⟧tm .Fam⟨𝒟⟩μ.famf .transf γ𝒟)
                 (⟦ Γ-fo ⟧ctxt-iso .fwd .Fam⟨𝒟⟩μ.famf .transf γ))
 
