@@ -22,5 +22,4 @@
 agda/_build/
 agda/_build-prof/
 
-# Rendered from dot/*.dot by script/gen-dot.sh
 dot/*.svg
