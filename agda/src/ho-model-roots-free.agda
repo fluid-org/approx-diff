@@ -260,8 +260,3 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
       dep-presents : SMC._≈_ (mat dep-mat) dep
       dep-presents = 𝔽F-full dep .prop.∃ₛ.snd
-
-  -- A linear map between free semimodules is the matrix of its values on the basis, so the
-  -- realisation is full and faithful and every first-order term's interpretation is the image of a
-  -- weighted relation between dimensions.
-  module syntactic = definability 𝔽F-faithful 𝔽F-full

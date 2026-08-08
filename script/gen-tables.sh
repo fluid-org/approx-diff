@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Compile the dump-rooted-tables Agda program and run it; the binary writes
-# test-baselines/rooted-dependency.txt via Agda IO.
+# Compile the dump-tables Agda program and run it; the binary writes
+# test-baselines/dependency.txt via Agda IO.
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ trap 'rm -f "$pidfile"' EXIT
 # iteration builds at some cost to the binary's speed.
 ( cd agda && agda --compile --compile-dir=_build --ghc-flag=-rtsopts \
     --ghc-flag=-j10 ${DUMP_FAST:+--ghc-flag=-O0} \
-    src/graph-viz/dump-rooted-tables.agda > "$log" 2>&1 )
-GHCRTS="${DUMP_GHCRTS:--M1G -s}" agda/_build/dump-rooted-tables
+    src/graph-viz/dump-tables.agda > "$log" 2>&1 )
+GHCRTS="${DUMP_GHCRTS:--M1G -s}" agda/_build/dump-tables
 
-echo "wrote test-baselines/rooted-dependency.txt"
+echo "wrote test-baselines/dependency.txt"

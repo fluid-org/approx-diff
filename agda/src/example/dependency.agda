@@ -1,8 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The dependency example over the Booleans at the model with free positions, instantiated once so
--- consumers pay for the module application through the interface file.
-module example.free-dependency where
+-- The dependency example over the Booleans, instantiated once so consumers pay for the module
+-- application through the interface file.
+module example.dependency where
 
 open import Data.Product using () renaming (_,_ to _,'_)
 open import Data.Sum using (inj₁; inj₂)

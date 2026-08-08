@@ -19,28 +19,28 @@ open import Level using (0ℓ)
 import three
 import example.primitives as EP
 open import Data.Rational using (0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
-open import example.rooted-runs-three using (dep-map; dep-filter)
+open import example.runs-three using (dep-map; dep-filter)
 open import language-syntax EP.Sig using (base; list) renaming (emp to ∙; _,_ to _▸_)
 open import language-operational.evaluation EP.Sig EP.primitives using (Val; Env)
 open Val
 open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
 open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
-open import language-operational.value-skeleton EP.Sig EP.primitives
-  using (Entry; skeleton; skeleton-env)
-open Entry
+open import language-operational.annotated-value EP.Sig EP.primitives
+  using (Node; walk; walk-env)
+open Node
 
 private
   Entries : Set
-  Entries = List (ℕ × Entry)
+  Entries = List (ℕ × Node)
 
-  index : ℕ → List Entry → Entries
+  index : ℕ → List Node → Entries
   index _ []       = []
   index i (e ∷ es) = (i , e) ∷ index (suc i) es
 
   in-sk out-sk : Entries
-  in-sk  = index 0 (skeleton (λ {s} c → showC {s} c) γ-nums-val)
-  out-sk = index 0 (skeleton (λ {s} c → showC {s} c) δ-out)
+  in-sk  = index 0 (walk (λ {s} c → showC {s} c) γ-nums-val)
+  out-sk = index 0 (walk (λ {s} c → showC {s} c) δ-out)
 
   -- Membership by numeric equality: the target gates every step without its value reaching the
   -- output, and the kept element's value flows to the one output element.
@@ -54,8 +54,8 @@ private
   δ-filter = const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ
 
   filter-in-sk filter-out-sk : Entries
-  filter-in-sk  = index 0 (skeleton-env (λ {s} c → showC {s} c) γ-filter-env)
-  filter-out-sk = index 0 (skeleton (λ {s} c → showC {s} c) δ-filter)
+  filter-in-sk  = index 0 (walk-env (λ {s} c → showC {s} c) γ-filter-env)
+  filter-out-sk = index 0 (walk (λ {s} c → showC {s} c) δ-filter)
 
   -- List notation for the body's injections, as in the partial-value renderer.
   sugar : String → String

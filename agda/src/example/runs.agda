@@ -1,9 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The same readbacks as example.rooted-runs, at the model with free positions: same terms, same
--- inputs, so the tables are directly comparable. With no order on positions the readback is the
--- fibre map evaluated on the basis, and a fibre's dimension is the object itself.
-module example.free-runs where
+-- Readbacks of the example terms over the Booleans: with no order on positions the readback is
+-- the fibre map evaluated on the basis, and a fibre's dimension is the object itself.
+module example.runs where
 
 open import prop-setoid using (Setoid)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)

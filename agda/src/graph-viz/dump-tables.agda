@@ -1,8 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- The layout matches graph-viz.dump-rooted-tables, so the two baselines can be diffed against each
--- other. Run from the approx-diff repository root.
-module graph-viz.dump-free-tables where
+-- The matrices are abstract, so the compiled program evaluates them rather than the typechecker.
+-- Run from the approx-diff repository root.
+module graph-viz.dump-tables where
 
 open import IO
 open import IO.Finite using (writeFile)
@@ -15,11 +15,11 @@ open import Data.Fin using (Fin)
 open import Level using (0ℓ)
 import two
 import matrix
-open import example.free-dependency using (dep-l; dep-r; dep-test)
-open import example.free-runs
+open import example.dependency using (dep-l; dep-r; dep-test)
+open import example.runs
   using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag; dep-map; dep-filter)
 import three
-import example.free-runs-three
+import example.runs-three
 
 private
   module TM = matrix.Mat two.semiring
@@ -62,11 +62,11 @@ t-case0      = table dep-case0
 t-length     = table dep-length
 t-query      = table dep
 t-map        = table dep-map
-t-map3       = table3 example.free-runs-three.dep-map
-t-cond3      = table3 example.free-runs-three.dep-cond
+t-map3       = table3 example.runs-three.dep-map
+t-cond3      = table3 example.runs-three.dep-cond
 t-filter     = table dep-filter
-t-filter3    = table3 example.free-runs-three.dep-filter
-t-eq3        = table3 example.free-runs-three.dep-eq
+t-filter3    = table3 example.runs-three.dep-filter
+t-eq3        = table3 example.runs-three.dep-eq
 
 contents : String
 contents =
@@ -87,4 +87,4 @@ contents =
   "tag\n" ++ t-tag
 
 main : Main
-main = run (writeFile "test-baselines/free-dependency.txt" contents)
+main = run (writeFile "test-baselines/dependency.txt" contents)

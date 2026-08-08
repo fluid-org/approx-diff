@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The map readback weighted in the three-chain: eliminations charge at C, value flow carries D.
-module example.rooted-runs-three where
+-- The readbacks weighted in the three-chain: eliminations charge at C, value flow carries D.
+module example.runs-three where
 
 open import prop-setoid using (Setoid)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
@@ -12,15 +12,14 @@ open import Level using (lift)
 import three
 import matrix
 import example.primitives-over
-import ho-model-roots-order-idempotent
+import ho-model-roots-free
 open import example.list-terms
   using (numlist-fo; map-ctxt-fo; map-term; filter-ctxt-fo; filter-term;
          cond-ctxt-fo; cond-term; eq-ctxt-fo; eq-term)
 
 module EP3 = example.primitives-over three.semiring
 
-module model = ho-model-roots-order-idempotent three.semiring
-  (λ {x} → three.∨-idem {x}) (λ {x} → three.∧-idem {x}) (λ {x} → three.⊤-add-top {x}) three.C
+module model = ho-model-roots-free three.semiring three.C
 module interp = model.rooted-interp EP3.Sig EP3.primitives
 
 open import language-syntax EP3.Sig using (base; unit; _[+]_; first-order)
@@ -56,20 +55,12 @@ abstract
 
 abstract
   dep-filter : matrix.Mat.Matrix three.semiring
-                 (model.OI.Pos.dim (interp.𝒞⟦ numlist-fo ⟧ty interp.∅𝒞 .model.Fam⟨𝒞⟩μ.fam
-                                      .model.Fam⟨𝒞⟩μ.fm
-                                      (interp.readback.out filter-ctxt-fo numlist-fo
-                                                           filter-term γ-filter)))
-                 (model.OI.Pos.dim (interp.𝒞⟦ filter-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.fam
-                                      .model.Fam⟨𝒞⟩μ.fm γ-filter))
+                 (interp.readback.tgt filter-ctxt-fo numlist-fo filter-term γ-filter)
+                 (interp.readback.src filter-ctxt-fo numlist-fo filter-term γ-filter)
   dep-filter = interp.readback.dep-mat filter-ctxt-fo numlist-fo filter-term γ-filter
 
 abstract
   dep-map : matrix.Mat.Matrix three.semiring
-              (model.OI.Pos.dim (interp.𝒞⟦ numlist-fo ⟧ty interp.∅𝒞 .model.Fam⟨𝒞⟩μ.fam
-                                   .model.Fam⟨𝒞⟩μ.fm
-                                   (interp.readback.out map-ctxt-fo numlist-fo
-                                                        map-term γ-nums)))
-              (model.OI.Pos.dim (interp.𝒞⟦ map-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.fam
-                                   .model.Fam⟨𝒞⟩μ.fm γ-nums))
+              (interp.readback.tgt map-ctxt-fo numlist-fo map-term γ-nums)
+              (interp.readback.src map-ctxt-fo numlist-fo map-term γ-nums)
   dep-map = interp.readback.dep-mat map-ctxt-fo numlist-fo map-term γ-nums

@@ -22,8 +22,6 @@ open import functor using (Functor)
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 open import polynomial-functor using (Poly; Poly-map)
 open import signature using (Signature; Model; PFPC[_,_,_,_]; transport-model)
-open import prop using (∃ₛ)
-import fam-conservativity
 import fam-mu-lifting.in-map
 import ho-model-rooted
 import language-syntax
@@ -185,28 +183,3 @@ closed-iso {τ} fo = FD.Iso-trans (⟦ fo ⟧-iso ∅𝒞) (≡-Iso (𝒟-ty-con
 ⟦ Γ-fo , fo ⟧ctxt-iso =
   FD.Iso-trans (FD.IsIso→Iso Fam⟨F⟩-preserves-products)
     (FDP.product-preserves-iso ⟦ Γ-fo ⟧ctxt-iso (closed-iso fo))
-
--- Definability of the first-order fragment: when the change of base is full and faithful, a
--- term's interpretation at first-order context and type, conjugated through the comparison
--- isomorphisms, is the image of a source-side morphism. Fullness is stated with a chosen
--- preimage, which the intended instances provide outright.
-module definability
-  (F-faithful : ∀ {a b} {g₁ g₂ : Category._⇒_ 𝒞 a b} →
-                Category._≈_ 𝒟 (F .fmor g₁) (F .fmor g₂) → Category._≈_ 𝒞 g₁ g₂)
-  (F-full : ∀ {a b} (k : Category._⇒_ 𝒟 (F .fobj a) (F .fobj b)) →
-            ∃ₛ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) k)
-  where
-
-  private
-    module FC = fam-conservativity os (Level._⊔_ os es) F
-
-  open Category.Iso
-
-  syntactic-definability :
-    ∀ {Γ} {τ : type 0} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) (M : Γ ⊢ τ) →
-    ∃ₛ (Fam⟨𝒞⟩μ.Mor 𝒞⟦ Γ-fo ⟧ctxt (𝒞⟦ fo ⟧ty ∅𝒞)) λ g →
-      FD._≈_ (Fam⟨F⟩ .fmor g)
-             (FD._∘_ (closed-iso fo .bwd) (FD._∘_ 𝒟⟦ M ⟧tm (⟦ Γ-fo ⟧ctxt-iso .fwd)))
-  syntactic-definability Γ-fo fo M =
-    FC.FamF-full F-faithful F-full
-      (FD._∘_ (closed-iso fo .bwd) (FD._∘_ 𝒟⟦ M ⟧tm (⟦ Γ-fo ⟧ctxt-iso .fwd)))

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile the dump-slices Agda program and run it; the binary writes
-# test-baselines/rooted-slices.txt via Agda IO.
+# test-baselines/slices.txt via Agda IO.
 
 set -euo pipefail
 
@@ -22,4 +22,4 @@ trap 'rm -f "$pidfile"' EXIT
     src/graph-viz/dump-slices.agda > "$log" 2>&1 )
 GHCRTS="${DUMP_GHCRTS:--M1G -s}" agda/_build/dump-slices
 
-echo "wrote test-baselines/rooted-slices.txt"
+echo "wrote test-baselines/slices.txt"
