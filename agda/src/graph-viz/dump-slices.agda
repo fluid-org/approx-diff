@@ -24,13 +24,14 @@ import example.primitives as EP
 open import example.runs
   using (dep; dep-const; dep-length; dep-fold0; dep-case0; dep-tag; dep-map)
 
-open import language-syntax EP.Sig using (type; base; list; unit; μ; var; _[×]_; _[+]_)
+open import language-syntax EP.Sig using (type; base; list; unit; μ; var; _[×]_; _[+]_; sub-ren-id)
+open import Relation.Binary.PropositionalEquality using (subst; sym)
 open import language-operational.evaluation EP.Sig EP.primitives using (Val)
 open Val
 import language-operational.annotated-value
 module AV = language-operational.annotated-value EP.Sig EP.primitives
 open AV.annotate two.semiring
-  using (AVal; unit*; const*; inl*; inr*; pair*; clo*; roll*; aval)
+  using (AVal; unit*; const*; inl*; inr*; pair*; clo*; roll*; aval; row-of)
 open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open Primitives EP.primitives using (sort-val; sort-width)
 
@@ -142,22 +143,39 @@ private
   erases : ∀ {m n} → TM.Matrix m n → TM.Vec n → TM.Vec m
   erases M = FR.app M
 
-  -- The first input cons cell's spine, without its element.
-  cell1-sel : List two.Two
-  cell1-sel = two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O
-            ∷ two.O ∷ two.O ∷ two.O ∷ []
+  nilᵃ : ∀ {τ : type 0} → two.Two → two.Two → AVal (nilᵥ {τ})
+  nilᵃ a b = roll* (inl* a (unit* b))
 
-  out-cell2-sel : List two.Two
-  out-cell2-sel = two.O ∷ two.O ∷ two.O ∷ two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O
-                ∷ two.O ∷ two.O ∷ two.O ∷ []
+  consᵃ : ∀ {τ : type 0} {x : Val τ} {xs : Val (list τ)} →
+          two.Two → two.Two →
+          AVal (subst Val (sym (sub-ren-id τ (λ ()))) x) → AVal xs → AVal (x ∷ᵥ xs)
+  consᵃ a b h t = roll* (inr* a (pair* b h t))
 
-  fwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
-  fwd-bits {m} M sel = bits-of m (erases M (vec-of sel))
+  numᵃ : (q : ℚ) → two.Two → AVal (const {EP.number} q)
+  numᵃ q a = const* (λ _ → a)
 
-  bwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
-  bwd-bits {m} {n} M outsel = bits-of n (consumes M (vec-of outsel))
+  cell1-sel : AVal γ-nums-val
+  cell1-sel =
+    consᵃ two.I two.I (numᵃ 0ℚ two.O)
+      (consᵃ two.O two.O (numᵃ 1ℚ two.O)
+        (consᵃ two.O two.O (numᵃ (1ℚ +ℚ 1ℚ) two.O) (nilᵃ two.O two.O)))
 
-  render-fwd : ∀ {m n} → TM.Matrix m n → List two.Two → String
+  out-cell2-sel : AVal δ-out
+  out-cell2-sel =
+    consᵃ two.O two.O (numᵃ (0ℚ +ℚ 1ℚ) two.O)
+      (consᵃ two.I two.I (numᵃ (1ℚ +ℚ 1ℚ) two.O)
+        (consᵃ two.O two.O (numᵃ ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) two.O) (nilᵃ two.O two.O)))
+
+  sel-of : ∀ {τ} {v : Val τ} {n} → AVal v → TM.Vec n
+  sel-of p i = row-of p (Fin.toℕ i)
+
+  fwd-bits : ∀ {m n} → TM.Matrix m n → TM.Vec n → List two.Two
+  fwd-bits {m} M sel = bits-of m (erases M sel)
+
+  bwd-bits : ∀ {m n} → TM.Matrix m n → TM.Vec m → List two.Two
+  bwd-bits {m} {n} M outsel = bits-of n (consumes M outsel)
+
+  render-fwd : ∀ {m n} → TM.Matrix m n → TM.Vec n → String
   render-fwd M sel = render-row δ-out (fwd-bits M sel)
 
   render-in : List two.Two → String
@@ -175,11 +193,11 @@ contents =
   "case0\n" ++ slice dep-case0 ++
   "tag\n" ++ slice dep-tag ++
   "map-backward\n" ++ slice-over γ-nums-val dep-map ++
-  "map-erase-cell1\n" ++ render-fwd dep-map cell1-sel ++ "\n" ++
+  "map-erase-cell1\n" ++ render-fwd dep-map (sel-of cell1-sel) ++ "\n" ++
   "map-query-cell2\n" ++
-    render-out out-cell2-sel ++ "\n" ++
-    render-in (bwd-bits dep-map out-cell2-sel) ++ "\n" ++
-    render-out (fwd-bits dep-map (bwd-bits dep-map out-cell2-sel)) ++ "\n"
+    show-aval out-cell2-sel ++ "\n" ++
+    render-in (bwd-bits dep-map (sel-of out-cell2-sel)) ++ "\n" ++
+    render-out (fwd-bits dep-map (vec-of (bwd-bits dep-map (sel-of out-cell2-sel)))) ++ "\n"
 
 main : Main
 main = run (writeFile "test-baselines/slices.txt" contents)

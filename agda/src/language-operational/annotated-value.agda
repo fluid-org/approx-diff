@@ -6,6 +6,7 @@ open import Level using (0ℓ)
 
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Fin using (toℕ)
+import Data.Fin as Fin
 open import Data.List using (List; []; _∷_; _++_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.String using (String)
@@ -70,6 +71,39 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
   aenv : ∀ {Γ} (γ : Env Γ) → (ℕ → Scalar) → AEnv γ
   aenv γ row = aenv-at γ row 0
+
+  private
+    module Sc = CommutativeSemiring S
+
+    fin-at : ∀ {n} → M.Vec n → ℕ → Scalar
+    fin-at {zero}  w i       = Sc.ε
+    fin-at {suc n} w zero    = w Fin.zero
+    fin-at {suc n} w (suc i) = fin-at {n} (λ k → w (Fin.suc k)) i
+
+    split-at : ℕ → (ℕ → Scalar) → (ℕ → Scalar) → ℕ → Scalar
+    split-at zero    f g i       = g i
+    split-at (suc n) f g zero    = f 0
+    split-at (suc n) f g (suc i) = split-at n (λ k → f (suc k)) g i
+
+  -- Inverse to aval.
+  mutual
+    row-of : ∀ {τ} {v : Val τ} → AVal v → ℕ → Scalar
+    row-of (unit* a)     zero    = a
+    row-of (unit* a)     (suc _) = Sc.ε
+    row-of (const* w)    i       = fin-at w i
+    row-of (inl* a p)    zero    = a
+    row-of (inl* a p)    (suc i) = row-of p i
+    row-of (inr* a p)    zero    = a
+    row-of (inr* a p)    (suc i) = row-of p i
+    row-of (pair* {v = v} a p q) zero    = a
+    row-of (pair* {v = v} a p q) (suc i) = split-at (width v) (row-of p) (row-of q) i
+    row-of (clo* a ρ)    zero    = a
+    row-of (clo* a ρ)    (suc i) = row-env-of ρ i
+    row-of (roll* p)     i       = row-of p i
+
+    row-env-of : ∀ {Γ} {γ : Env Γ} → AEnv γ → ℕ → Scalar
+    row-env-of emp*                    i = Sc.ε
+    row-env-of (_·*_ {γ = γ} ρ p) i = split-at (width-env γ) (row-env-of ρ) (row-of p) i
 
 -- A former directly beneath an injection joins the injection's class, so cons and nil cells and
 -- boolean values merge to single nodes in the graph dump.
