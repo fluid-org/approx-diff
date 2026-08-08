@@ -3,7 +3,7 @@
 -- The biproduct lifting: the root is an isolated position, so lifting an object is forming its
 -- biproduct with the unit object. The root and the injection are the two injections, the assembly
 -- is the copairing, and the support is zero, so restricting an assembly along the injection is the
--- linear part alone: eliminating a value the program itself constructed charges nothing at the
+-- linear part alone: eliminating a value the program itself constructed records no weight at the
 -- root. Every law of the lifting is biproduct reasoning, and the action on morphisms is natural
 -- outright, not only at isomorphisms.
 open import Level using (_⊔_)

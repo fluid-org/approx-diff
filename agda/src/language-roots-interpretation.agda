@@ -35,7 +35,7 @@ module language-roots-interpretation
   {o m e} (os es : Level) {𝒞 : Category o m e}
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
-  (charge : Category._⇒_ 𝒞 𝟙c 𝟙c)
+  (elim-weight : Category._⇒_ 𝒞 𝟙c 𝟙c)
   (let module R = fam-mu-lifting.mu-map os es T CM BP Lft)
   (𝒞E : HasWeakExponentials R.cat R.products)
   (exp-pt : ∀ {X Y : R.Obj} → R.Pointed Y → R.Pointed (HasWeakExponentials.exp 𝒞E X Y))
@@ -56,10 +56,9 @@ open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
 
--- The eliminator constant scaled by the charge: consumption is recorded at this weight.
 private
   scale-pt : ∀ {X : Obj} → Pointed X → Pointed X
-  scale-pt p .R.pt x = Category._∘_ 𝒞 (p .R.pt x) charge
+  scale-pt p .R.pt x = Category._∘_ 𝒞 (p .R.pt x) elim-weight
   scale-pt p .R.pt-natural e =
     Category.≈-trans 𝒞 (Category.≈-sym 𝒞 (Category.assoc 𝒞 _ _ _))
       (Category.∘-cong 𝒞 (p .R.pt-natural e) (Category.≈-refl 𝒞))

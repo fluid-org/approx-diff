@@ -210,7 +210,7 @@ cop-pair f g u v =
       (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (Biproduct.copair-in₂ (BP _ _) _ _) ≈-refl)))
 
 -- Transporting under a root against an assembled argument: the payload is eliminated in context,
--- and the root it carried joins the support that the elimination charges at the payload.
+-- and the root it carried joins the support the elimination records at the payload.
 under-root-pair : ∀ {W Γ X Y : obj} (r : prod Γ X ⇒ Y)
                   (g : W ⇒ Γ) (u : W ⇒ X) (t : W ⇒ 𝟙c) →
                   (under-root r ∘ pair g (cop inj root ∘ pair u t))

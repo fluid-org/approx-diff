@@ -1,10 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Rows are the readback matrices of the dependency tables, presented over the operational values
--- as annotated values: each position carries its own scalar, top by default and ⊥ where a position
--- is dropped. A token with two positions (a list cell's tag and pair, nil's tag and unit) carries
--- both marks in that order, · holding a top slot when only one is dropped. Run from the
--- approx-diff repository root.
+-- Run from the approx-diff repository root.
 module graph-viz.dump-slices where
 
 open import IO
@@ -84,7 +80,6 @@ private
   marks {zero}  w = ""
   marks {suc n} w = mark (w Fin.zero) ++ marks {n} (λ i → w (Fin.suc i))
 
-  -- A constant of width zero has no positions and nothing to select, so it renders as absent.
   show-c : (n : ℕ) → String → TM.Vec n → String
   show-c zero    s w = "_"
   show-c (suc n) s w = s ++ marks w
@@ -111,8 +106,7 @@ private
   lookupO (b ∷ _)  zero    = b
   lookupO (_ ∷ bs) (suc n) = lookupO bs n
 
-  -- A matrix row, read over the operational value through a length-safe lookup; the two layouts
-  -- agree positionwise, and a misalignment would surface in the rendered baseline.
+  -- The row and value layouts agree positionwise; a misalignment would surface in the baseline.
   render-row : ∀ {τ} (v : Val τ) → List two.Two → String
   render-row v bits = show-aval (aval v (lookupO bits))
 

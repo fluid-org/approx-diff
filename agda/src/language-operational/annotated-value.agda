@@ -1,12 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Annotated values: the operational presentation of a selection over free positions. A value's
--- positions are its scalar leaves together with one position per former, no order relates them, and
--- a selection is any weighted vector over the positions, presented by marking the value's subterms:
--- each former carries the scalar at its position and a constant carries one scalar per position.
--- Nothing closes a selection, so a relation row attaches to a value directly, positionwise in the
--- order the fibre counts positions: a former's root before its payload, a pair's first component
--- before its second.
+-- The position order matches the model fibre: a former's root before its payload, a pair's first
+-- component before its second.
 open import Level using (0ℓ)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Fin using (toℕ)
@@ -29,7 +24,7 @@ import language-syntax Sig as Syn
 open import language-operational.evaluation Sig 𝒫 using (Val; Env)
 open Val
 open Env
-open import language-operational.value-fibre Sig 𝒫 using (pos; pos-env)
+open import language-operational.width Sig 𝒫 using (width; width-env)
 
 module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
@@ -55,9 +50,6 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
   infixl 30 _·*_
 
-  -- A row read at an offset. The row is total so the caller fixes the out-of-range convention; the
-  -- layouts of the row and the value agree positionwise, and a misalignment would surface in the
-  -- rendered baseline.
   mutual
     aval-at : ∀ {τ} (v : Val τ) → (ℕ → Scalar) → ℕ → AVal v
     aval-at unit          row off = unit* (row off)
@@ -65,13 +57,13 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     aval-at (inl v)       row off = inl* (row off) (aval-at v row (suc off))
     aval-at (inr v)       row off = inr* (row off) (aval-at v row (suc off))
     aval-at (pair v u)    row off =
-      pair* (row off) (aval-at v row (suc off)) (aval-at u row (suc off + pos v))
+      pair* (row off) (aval-at v row (suc off)) (aval-at u row (suc off + width v))
     aval-at (clo γ t)     row off = clo* (row off) (aenv-at γ row (suc off))
     aval-at (roll v)      row off = roll* (aval-at v row off)
 
     aenv-at : ∀ {Γ} (γ : Env Γ) → (ℕ → Scalar) → ℕ → AEnv γ
     aenv-at emp     row off = emp*
-    aenv-at (γ · v) row off = aenv-at γ row off ·* aval-at v row (off + pos-env γ)
+    aenv-at (γ · v) row off = aenv-at γ row off ·* aval-at v row (off + width-env γ)
 
   aval : ∀ {τ} (v : Val τ) → (ℕ → Scalar) → AVal v
   aval v row = aval-at v row 0
@@ -79,10 +71,8 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   aenv : ∀ {Γ} (γ : Env Γ) → (ℕ → Scalar) → AEnv γ
   aenv γ row = aenv-at γ row 0
 
--- The walk: one node per position, in the same order and number as the positions, carrying a
--- label, the parent position and a merge class. The class rule is the over-approximating sugar
--- view the graph dump draws: a former directly beneath an injection joins the injection's class,
--- so cons and nil cells and boolean values become single nodes; scalars never merge.
+-- A former directly beneath an injection joins the injection's class, so cons and nil cells and
+-- boolean values merge to single nodes in the graph dump.
 record Node : Set where
   field
     label  : String
@@ -109,8 +99,6 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
     scalars c (suc n) off par = node (show-const c) par off ∷ scalars c n (suc off) par
 
   mutual
-    -- Nodes for a value at an absolute offset, given the parent of its root and the class the
-    -- root joins when the value sits directly beneath an injection.
     walk-at : ∀ {τ} (v : Val τ) (off : ℕ) (par : Maybe ℕ) (root-cls : Maybe ℕ) → List Node
     walk-at unit off par rc = node "()" par (pick rc off) ∷ []
     walk-at (const {s} c) off par rc = scalars c (sort-width s) off par
@@ -121,14 +109,14 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
     walk-at (pair v u) off par rc =
       node "pr" par (pick rc off)
         ∷ (walk-at v (suc off) (just off) nothing
-           ++ walk-at u (suc off + pos v) (just off) nothing)
+           ++ walk-at u (suc off + width v) (just off) nothing)
     walk-at (clo γ t) off par rc =
       node "clo" par (pick rc off) ∷ walk-env-at γ (suc off) (just off)
     walk-at (roll v) off par rc = walk-at v off par rc
 
     walk-env-at : ∀ {Γ} (γ : Env Γ) (off : ℕ) (par : Maybe ℕ) → List Node
     walk-env-at emp     off par = []
-    walk-env-at (γ · v) off par = walk-env-at γ off par ++ walk-at v (off + pos-env γ) par nothing
+    walk-env-at (γ · v) off par = walk-env-at γ off par ++ walk-at v (off + width-env γ) par nothing
 
   walk : ∀ {τ} (v : Val τ) → List Node
   walk v = walk-at v 0 nothing nothing

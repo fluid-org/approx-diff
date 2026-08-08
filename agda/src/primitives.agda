@@ -54,7 +54,7 @@ record Primitives {ℓ} {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (Sig 
                prop-setoid._⇒_ (sort-vals-setoid sort-index is) (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙)
 
     -- The scalar positions determining a test's outcome, as a single row: the analogue for a
-    -- relation symbol of an operation's derivative. Control dependence through a test charges
+    -- relation symbol of an operation's derivative. Control dependence through a test records
     -- these positions at the boolean's root.
     rel-deps : ∀ {is} → rel is →
                prop-setoid._⇒_ (sort-vals-setoid sort-index is)

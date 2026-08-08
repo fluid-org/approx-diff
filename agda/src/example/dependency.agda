@@ -38,7 +38,7 @@ abstract
   dep-l = interp.readback.dep-mat case-ctxt-fo (base EP.number) case-term γ-l
   dep-r = interp.readback.dep-mat case-ctxt-fo (base EP.number) case-term γ-r
 
--- Control dependence through a test: matching on a numeric equality must charge the scalar the
+-- Control dependence through a test: matching on a numeric equality must depend on the scalar the
 -- test read, through the root of the test's boolean.
 test-ctxt-fo : first-order-ctxt (emp , base EP.number)
 test-ctxt-fo = emp , base EP.number

@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The readbacks weighted in the three-chain: eliminations charge at C, value flow carries D.
+-- The readbacks weighted in the three-chain: consuming a former is recorded at C, value flow at D.
 module example.runs-three where
 
 open import prop-setoid using (Setoid)

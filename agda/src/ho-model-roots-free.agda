@@ -34,7 +34,7 @@ import language-syntax
 
 module ho-model-roots-free
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
-  (charge : Setoid.Carrier A)
+  (elim-weight : Setoid.Carrier A)
   where
 
 open free-realise S public
@@ -55,10 +55,8 @@ private
   module MC = Category M.cat
   module SMC = Category SemiMod.cat
 
--- The charge as an endomorphism of the model lifting's unit, conjugated through the realised unit
--- dimension.
-charge-endo : Category._⇒_ SemiMod.cat SemiMod.𝕀 SemiMod.𝕀
-charge-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S charge)) ι1-bwd)
+elim-weight-endo : Category._⇒_ SemiMod.cat SemiMod.𝕀 SemiMod.𝕀
+elim-weight-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S elim-weight)) ι1-bwd)
 
 -- The unit object: the lifted terminal, one root for the unit value.
 𝟙F = HasTerminal.witness (Fam⟨𝒞⟩μ.terminal M.terminal)
@@ -213,7 +211,7 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   open language-roots-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct Lm-lifting
     SemiMod.terminal SemiMod.cmon-enriched SemiMod.biproduct Ls-lifting
-    charge-endo
+    elim-weight-endo
     𝔽F 𝔽F-preserve-terminal (λ {m} {n} → 𝔽F-preserve-products {m} {n})
     𝔽-L-iso (λ {P} {Q} f → 𝔽-L-natural {P} {Q} f)
     ι1-bwd
