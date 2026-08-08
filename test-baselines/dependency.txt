@@ -46,7 +46,7 @@ ccccccccccc0
 ccccccccccc0
 eq-three
 d
-0
+d
 const
 00000000000000
 length

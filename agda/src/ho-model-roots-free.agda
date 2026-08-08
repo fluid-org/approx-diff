@@ -159,8 +159,8 @@ module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
     -- after its dependence row.
     bool-root-pt : Fam⟨𝒞⟩μ.Pointed 𝒞Bool
     bool-root-pt =
-      Fam⟨𝒞⟩μ.coprod-pointed (Fam⟨𝒞⟩μ.root-pointed {X = 𝒞𝟙ty})
-                             (Fam⟨𝒞⟩μ.root-pointed {X = 𝒞𝟙ty})
+      Fam⟨𝒞⟩μ.coprod-pointed (Fam⟨𝒞⟩μ.Lf-pointed 𝒞𝟙ty-pt)
+                             (Fam⟨𝒞⟩μ.Lf-pointed 𝒞𝟙ty-pt)
 
   -- Tests write their dependence into the outcome's root: which branch runs reads the scalars the
   -- test read.
