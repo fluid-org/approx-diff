@@ -1,6 +1,5 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Run from the approx-diff repository root.
 module graph-viz.dump-slices where
 
 open import IO
@@ -39,7 +38,6 @@ private
   module TM = matrix.Mat two.semiring
   module FR = free-realise two.semiring
 
--- The operational input value mirroring γ-input: three entries, two under the queried label.
 elemT : type 0
 elemT = base EP.label [×] base EP.number
 
@@ -52,7 +50,6 @@ el l n = pair (const l) (const n)
 γ-val : Val listT
 γ-val = el label.a 0ℚ ∷ᵥ el label.b 1ℚ ∷ᵥ el label.a 1ℚ ∷ᵥ nilᵥ
 
--- Renderings of the example constants.
 show-ℚ : ℚ → String
 show-ℚ q with ↧ q
 ... | ℤ.+ (suc zero) = ℤ-Show.show (↥ q)
@@ -72,12 +69,6 @@ private
   mark : two.Two → String
   mark two.I = ""
   mark two.O = "⊥"
-
-  mark2 : two.Two → two.Two → String
-  mark2 two.I two.I = ""
-  mark2 two.I two.O = "·⊥"
-  mark2 two.O two.I = "⊥·"
-  mark2 two.O two.O = "⊥⊥"
 
   marks : ∀ {n} → TM.Vec n → String
   marks {zero}  w = ""
@@ -100,16 +91,15 @@ private
     show-aval (roll* p)                  = show-aval p
 
     show-alist : ∀ {σ} {v : Val (μ (unit [+] (σ [×] var Fin.zero)))} → AVal v → String
-    show-alist (roll* (inl* a (unit* b)))     = "[]" ++ mark2 a b
+    show-alist (roll* (inl* a (unit* b)))     = "[]" ++ mark (a two.⊔ b)
     show-alist (roll* (inr* a (pair* b h t))) =
-      show-aval h ++ " ∷" ++ mark2 a b ++ " " ++ show-alist t
+      show-aval h ++ " ∷" ++ mark (a two.⊔ b) ++ " " ++ show-alist t
 
   lookupO : List two.Two → ℕ → two.Two
   lookupO []       _       = two.O
   lookupO (b ∷ _)  zero    = b
   lookupO (_ ∷ bs) (suc n) = lookupO bs n
 
-  -- The row and value layouts agree positionwise; a misalignment would surface in the baseline.
   render-row : ∀ {τ} (v : Val τ) → List two.Two → String
   render-row v bits = show-aval (aval v (lookupO bits))
 
