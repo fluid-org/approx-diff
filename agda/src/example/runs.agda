@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Readbacks of the example terms over the Booleans: with no order on positions the readback is
--- the fibre map evaluated on the basis, and a fibre's dimension is the object itself.
+-- The example terms' dependency matrices over the Booleans: with no order on positions a matrix
+-- is the fibre map evaluated on the basis, and a fibre's dimension is the object itself.
 module example.runs where
 
 open import prop-setoid using (Setoid)
@@ -42,33 +42,33 @@ private
 
 abstract
   dep-const : matrix.Mat.Matrix two.semiring
-                (interp.readback.tgt query-ctxt-fo (base EP.number) const-term γ-input)
-                (interp.readback.src query-ctxt-fo (base EP.number) const-term γ-input)
-  dep-const = interp.readback.dep-mat query-ctxt-fo (base EP.number) const-term γ-input
+                (interp.dependency.tgt query-ctxt-fo (base EP.number) const-term γ-input)
+                (interp.dependency.src query-ctxt-fo (base EP.number) const-term γ-input)
+  dep-const = interp.dependency.mat-of query-ctxt-fo (base EP.number) const-term γ-input
 
 abstract
   dep-length : matrix.Mat.Matrix two.semiring
-                 (interp.readback.tgt query-ctxt-fo (base EP.number) length-term γ-input)
-                 (interp.readback.src query-ctxt-fo (base EP.number) length-term γ-input)
-  dep-length = interp.readback.dep-mat query-ctxt-fo (base EP.number) length-term γ-input
+                 (interp.dependency.tgt query-ctxt-fo (base EP.number) length-term γ-input)
+                 (interp.dependency.src query-ctxt-fo (base EP.number) length-term γ-input)
+  dep-length = interp.dependency.mat-of query-ctxt-fo (base EP.number) length-term γ-input
 
 abstract
   dep-fold0 : matrix.Mat.Matrix two.semiring
-                (interp.readback.tgt query-ctxt-fo (base EP.number) fold0-term γ-input)
-                (interp.readback.src query-ctxt-fo (base EP.number) fold0-term γ-input)
-  dep-fold0 = interp.readback.dep-mat query-ctxt-fo (base EP.number) fold0-term γ-input
+                (interp.dependency.tgt query-ctxt-fo (base EP.number) fold0-term γ-input)
+                (interp.dependency.src query-ctxt-fo (base EP.number) fold0-term γ-input)
+  dep-fold0 = interp.dependency.mat-of query-ctxt-fo (base EP.number) fold0-term γ-input
 
 abstract
   dep-case0 : matrix.Mat.Matrix two.semiring
-                (interp.readback.tgt query-ctxt-fo (base EP.number) case0-term γ-input)
-                (interp.readback.src query-ctxt-fo (base EP.number) case0-term γ-input)
-  dep-case0 = interp.readback.dep-mat query-ctxt-fo (base EP.number) case0-term γ-input
+                (interp.dependency.tgt query-ctxt-fo (base EP.number) case0-term γ-input)
+                (interp.dependency.src query-ctxt-fo (base EP.number) case0-term γ-input)
+  dep-case0 = interp.dependency.mat-of query-ctxt-fo (base EP.number) case0-term γ-input
 
 abstract
   dep-tag : matrix.Mat.Matrix two.semiring
-              (interp.readback.tgt query-ctxt-fo (base EP.number) tag-term γ-input)
-              (interp.readback.src query-ctxt-fo (base EP.number) tag-term γ-input)
-  dep-tag = interp.readback.dep-mat query-ctxt-fo (base EP.number) tag-term γ-input
+              (interp.dependency.tgt query-ctxt-fo (base EP.number) tag-term γ-input)
+              (interp.dependency.src query-ctxt-fo (base EP.number) tag-term γ-input)
+  dep-tag = interp.dependency.mat-of query-ctxt-fo (base EP.number) tag-term γ-input
 
 γ-nums : Setoid.Carrier (interp.𝒞⟦ map-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
 γ-nums =
@@ -86,19 +86,19 @@ abstract
 
 abstract
   dep-filter : matrix.Mat.Matrix two.semiring
-                 (interp.readback.tgt filter-ctxt-fo numlist-fo filter-term γ-filter)
-                 (interp.readback.src filter-ctxt-fo numlist-fo filter-term γ-filter)
-  dep-filter = interp.readback.dep-mat filter-ctxt-fo numlist-fo filter-term γ-filter
+                 (interp.dependency.tgt filter-ctxt-fo numlist-fo filter-term γ-filter)
+                 (interp.dependency.src filter-ctxt-fo numlist-fo filter-term γ-filter)
+  dep-filter = interp.dependency.mat-of filter-ctxt-fo numlist-fo filter-term γ-filter
 
 abstract
   dep-map : matrix.Mat.Matrix two.semiring
-              (interp.readback.tgt map-ctxt-fo numlist-fo map-term γ-nums)
-              (interp.readback.src map-ctxt-fo numlist-fo map-term γ-nums)
-  dep-map = interp.readback.dep-mat map-ctxt-fo numlist-fo map-term γ-nums
+              (interp.dependency.tgt map-ctxt-fo numlist-fo map-term γ-nums)
+              (interp.dependency.src map-ctxt-fo numlist-fo map-term γ-nums)
+  dep-map = interp.dependency.mat-of map-ctxt-fo numlist-fo map-term γ-nums
 
 -- One output row, the result number's scalar, against the input list's positions.
 abstract
   dep : matrix.Mat.Matrix two.semiring
-          (interp.readback.tgt query-ctxt-fo (base EP.number) (query label.a) γ-input)
-          (interp.readback.src query-ctxt-fo (base EP.number) (query label.a) γ-input)
-  dep = interp.readback.dep-mat query-ctxt-fo (base EP.number) (query label.a) γ-input
+          (interp.dependency.tgt query-ctxt-fo (base EP.number) (query label.a) γ-input)
+          (interp.dependency.src query-ctxt-fo (base EP.number) (query label.a) γ-input)
+  dep = interp.dependency.mat-of query-ctxt-fo (base EP.number) (query label.a) γ-input

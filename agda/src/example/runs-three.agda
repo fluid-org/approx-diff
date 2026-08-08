@@ -1,6 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The readbacks weighted in the three-chain: consuming a former is recorded at C, value flow at D.
+-- Dependency matrices weighted in the three-chain: consuming a former is recorded at C, value
+-- flow at D.
 module example.runs-three where
 
 open import prop-setoid using (Setoid)
@@ -36,14 +37,14 @@ open import language-syntax EP3.Sig using (base; unit; _[+]_; first-order)
 
 abstract
   dep-cond : matrix.Mat.Matrix three.semiring 1 2
-  dep-cond = interp.readback.dep-mat cond-ctxt-fo (base EP3.number) cond-term γ-cond
+  dep-cond = interp.dependency.mat-of cond-ctxt-fo (base EP3.number) cond-term γ-cond
 
 γ-eq : Setoid.Carrier (interp.𝒞⟦ eq-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
 γ-eq = lift tt ,' 0ℚ
 
 abstract
   dep-eq : matrix.Mat.Matrix three.semiring 2 1
-  dep-eq = interp.readback.dep-mat eq-ctxt-fo (first-order.unit [+] first-order.unit)
+  dep-eq = interp.dependency.mat-of eq-ctxt-fo (first-order.unit [+] first-order.unit)
                                    eq-term γ-eq
 
 γ-filter : Setoid.Carrier (interp.𝒞⟦ filter-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
@@ -55,12 +56,12 @@ abstract
 
 abstract
   dep-filter : matrix.Mat.Matrix three.semiring
-                 (interp.readback.tgt filter-ctxt-fo numlist-fo filter-term γ-filter)
-                 (interp.readback.src filter-ctxt-fo numlist-fo filter-term γ-filter)
-  dep-filter = interp.readback.dep-mat filter-ctxt-fo numlist-fo filter-term γ-filter
+                 (interp.dependency.tgt filter-ctxt-fo numlist-fo filter-term γ-filter)
+                 (interp.dependency.src filter-ctxt-fo numlist-fo filter-term γ-filter)
+  dep-filter = interp.dependency.mat-of filter-ctxt-fo numlist-fo filter-term γ-filter
 
 abstract
   dep-map : matrix.Mat.Matrix three.semiring
-              (interp.readback.tgt map-ctxt-fo numlist-fo map-term γ-nums)
-              (interp.readback.src map-ctxt-fo numlist-fo map-term γ-nums)
-  dep-map = interp.readback.dep-mat map-ctxt-fo numlist-fo map-term γ-nums
+              (interp.dependency.tgt map-ctxt-fo numlist-fo map-term γ-nums)
+              (interp.dependency.src map-ctxt-fo numlist-fo map-term γ-nums)
+  dep-map = interp.dependency.mat-of map-ctxt-fo numlist-fo map-term γ-nums

@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The terms the dependency readbacks run at, and the first-order witnesses of their contexts.
+-- The terms the dependency examples run at, and the first-order witnesses of their contexts.
 -- Syntax only, so that the models these are read back in are compared on the same programs.
 module example.list-terms where
 

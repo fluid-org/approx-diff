@@ -223,11 +223,10 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   open Category.Iso
   open indexed-family._⇒f_ using (transf)
 
-  -- Reading a first-order term's dependency relation back: conjugate the fibre map at an input
-  -- through the comparison isomorphisms, then evaluate the resulting linear map on the basis. With
-  -- the fibres free, the basis vector at an input position is the selection of that position
-  -- alone, so no closure intervenes between the relation and its matrix.
-  module readback {Γ : ctxt} {τ : type 0} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ)
+  -- The fibre map at an input, conjugated through the comparison isomorphisms and evaluated on
+  -- the basis. With the fibres free, the basis vector at an input position is the selection of
+  -- that position alone, so no closure intervenes between the relation and its matrix.
+  module dependency {Γ : ctxt} {τ : type 0} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ)
                   (t : Γ ⊢ τ) (γ : Setoid.Carrier (𝒞⟦ Γ-fo ⟧ctxt .Fam⟨𝒞⟩μ.idx)) where
 
     γ𝒟 = ⟦ Γ-fo ⟧ctxt-iso .fwd .Fam⟨𝒟⟩μ.idxf .func γ
@@ -238,8 +237,8 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
     tgt = 𝒞⟦ fo ⟧ty ∅𝒞 .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.fm out
 
     abstract
-      dep : SemiMod._⇒_ (𝔽 src) (𝔽 tgt)
-      dep = SemiMod._∘_
+      rel : SemiMod._⇒_ (𝔽 src) (𝔽 tgt)
+      rel = SemiMod._∘_
               {𝔽 src}
               {𝒟⟦ τ ⟧ty (λ ()) .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.fm out𝒟}
               {𝔽 tgt}
@@ -251,10 +250,10 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
                 (𝒟⟦ t ⟧tm .Fam⟨𝒟⟩μ.famf .transf γ𝒟)
                 (⟦ Γ-fo ⟧ctxt-iso .fwd .Fam⟨𝒟⟩μ.famf .transf γ))
 
-      -- The presentation matrix: the image of each input position's basis vector. It is the
-      -- readback proper rather than a tabulation of it, since it presents the fibre map.
-      dep-mat : Category._⇒_ M.cat src tgt
-      dep-mat q p = SemiMod._⇒_.func dep (M.e p) q
+      -- The image of each input position's basis vector, which presents the fibre map rather
+      -- than tabulating it.
+      mat-of : Category._⇒_ M.cat src tgt
+      mat-of q p = SemiMod._⇒_.func rel (M.e p) q
 
-      dep-presents : SMC._≈_ (mat dep-mat) dep
-      dep-presents = 𝔽F-full dep .prop.∃ₛ.snd
+      presents : SMC._≈_ (mat mat-of) rel
+      presents = 𝔽F-full rel .prop.∃ₛ.snd

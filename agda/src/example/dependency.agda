@@ -30,13 +30,13 @@ open import every using ([]; _∷_)
 γ-l = ((lift tt ,' 1ℚ) ,' inj₁ (lift tt))
 γ-r = ((lift tt ,' 1ℚ) ,' inj₂ (lift tt))
 
--- The readback of the term's dependency matrices at the two inputs: one output row (the number's
+-- The term's dependency matrices at the two inputs: one output row (the number's
 -- scalar) against three input columns (the number's scalar, the injection's tag, the unit
 -- payload's root).
 abstract
   dep-l dep-r : matrix.Mat.Matrix two.semiring 1 3
-  dep-l = interp.readback.dep-mat case-ctxt-fo (base EP.number) case-term γ-l
-  dep-r = interp.readback.dep-mat case-ctxt-fo (base EP.number) case-term γ-r
+  dep-l = interp.dependency.mat-of case-ctxt-fo (base EP.number) case-term γ-l
+  dep-r = interp.dependency.mat-of case-ctxt-fo (base EP.number) case-term γ-r
 
 -- Control dependence through a test: matching on a numeric equality must depend on the scalar the
 -- test read, through the root of the test's boolean.
@@ -53,4 +53,4 @@ test-term =
 
 abstract
   dep-test : matrix.Mat.Matrix two.semiring 1 1
-  dep-test = interp.readback.dep-mat test-ctxt-fo (base EP.number) test-term γ-test
+  dep-test = interp.dependency.mat-of test-ctxt-fo (base EP.number) test-term γ-test
