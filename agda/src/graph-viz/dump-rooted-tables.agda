@@ -1,8 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Writes the rooted dependency tables as text, compared against a versioned baseline; run from the
--- paper repository root. The matrices are the abstract readbacks of example.rooted-dependency,
--- evaluated by the compiled program rather than by the typechecker.
+-- The matrices are abstract, so the compiled program evaluates them rather than the typechecker.
+-- Run from the approx-diff repository root.
 module graph-viz.dump-rooted-tables where
 
 open import IO

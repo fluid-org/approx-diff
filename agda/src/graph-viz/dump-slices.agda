@@ -1,10 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Writes the dependency slices as partial values of the input list, one line per output position,
--- compared against a versioned baseline; run from the paper repository root. Rows are read from
--- the same readback matrices as the bit tables and interpreted over the operational value fibre,
--- which agrees with the model fibre positionwise; the fixedness witness comes from spine closure,
+-- Rows are the readback matrices of the bit tables, interpreted over the operational value fibre,
+-- which agrees with the model fibre positionwise. The fixedness witness comes from spine closure,
 -- the identity on these rows, until the row-fixedness of absorbed presentations replaces it.
+-- Run from the approx-diff repository root.
 module graph-viz.dump-slices where
 
 open import IO

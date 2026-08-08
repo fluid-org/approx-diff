@@ -1,0 +1,61 @@
+digraph G {
+  rankdir=LR;
+  node [shape=circle, fontsize=11];
+  subgraph cluster_input {
+    color=none;
+    i0 [label="∷"];
+    i2 [label="0"];
+    i3 [label="∷"];
+    i5 [label="1"];
+    i6 [label="∷"];
+    i8 [label="2"];
+    i9 [label="[]"];
+    i6 -> i9 [color=gray, arrowhead=none];
+    i6 -> i8 [color=gray, arrowhead=none];
+    i3 -> i6 [color=gray, arrowhead=none];
+    i3 -> i5 [color=gray, arrowhead=none];
+    i0 -> i3 [color=gray, arrowhead=none];
+    i0 -> i2 [color=gray, arrowhead=none];
+    ilab [label="input", shape=plaintext];
+    i8 -> ilab [style=invis];
+    i9 -> ilab [style=invis];
+  }
+  subgraph cluster_output {
+    color=none;
+    o0 [label="∷"];
+    o2 [label="1"];
+    o3 [label="∷"];
+    o5 [label="2"];
+    o6 [label="∷"];
+    o8 [label="3"];
+    o9 [label="[]"];
+    o6 -> o9 [color=gray, arrowhead=none];
+    o6 -> o8 [color=gray, arrowhead=none];
+    o3 -> o6 [color=gray, arrowhead=none];
+    o3 -> o5 [color=gray, arrowhead=none];
+    o0 -> o3 [color=gray, arrowhead=none];
+    o0 -> o2 [color=gray, arrowhead=none];
+    olab [label="output", shape=plaintext];
+    o8 -> olab [style=invis];
+    o9 -> olab [style=invis];
+  }
+  i0 -> o0 [color=black, style=dashed, constraint=false];
+  i0 -> o2 [color=black, style=dashed, constraint=false];
+  i2 -> o2 [color=blue, constraint=false];
+  i0 -> o3 [color=black, style=dashed, constraint=false];
+  i3 -> o3 [color=black, style=dashed, constraint=false];
+  i0 -> o5 [color=black, style=dashed, constraint=false];
+  i3 -> o5 [color=black, style=dashed, constraint=false];
+  i5 -> o5 [color=blue, constraint=false];
+  i0 -> o6 [color=black, style=dashed, constraint=false];
+  i3 -> o6 [color=black, style=dashed, constraint=false];
+  i6 -> o6 [color=black, style=dashed, constraint=false];
+  i0 -> o8 [color=black, style=dashed, constraint=false];
+  i3 -> o8 [color=black, style=dashed, constraint=false];
+  i6 -> o8 [color=black, style=dashed, constraint=false];
+  i8 -> o8 [color=blue, constraint=false];
+  i0 -> o9 [color=black, style=dashed, constraint=false];
+  i3 -> o9 [color=black, style=dashed, constraint=false];
+  i6 -> o9 [color=black, style=dashed, constraint=false];
+  i9 -> o9 [color=black, style=dashed, constraint=false];
+}

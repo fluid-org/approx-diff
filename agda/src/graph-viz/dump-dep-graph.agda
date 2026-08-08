@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
 -- Merging vertices joins their edges with the semiring's addition, which agrees with composition by
--- distributivity. Run from the paper repository root.
+-- distributivity. Run from the approx-diff repository root.
 module graph-viz.dump-dep-graph where
 
 open import IO
@@ -189,5 +189,5 @@ contents-filter =
         (merged-dep-edges-for filter-in-sk filter-out-sk filter-rows)
 
 main : Main
-main = run (writeFile "fig/dot/map-three.dot" contents-map
-            >> writeFile "fig/dot/filter-three.dot" contents-filter)
+main = run (writeFile "dot/map-three.dot" contents-map
+            >> writeFile "dot/filter-three.dot" contents-filter)

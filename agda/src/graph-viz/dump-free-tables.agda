@@ -1,8 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Writes the dependency tables of the model with free positions, in the same layout as
--- graph-viz.dump-rooted-tables, so the two baselines can be diffed against each other; run from
--- the paper repository root.
+-- The layout matches graph-viz.dump-rooted-tables, so the two baselines can be diffed against each
+-- other. Run from the approx-diff repository root.
 module graph-viz.dump-free-tables where
 
 open import IO
