@@ -8,8 +8,8 @@ open import IO
 open import IO.Finite using (writeFile)
 open import Data.Bool using (Bool; true; false; if_then_else_; _∧_; _∨_)
 open import Data.String using (String; _++_; _==_)
-open import Data.Unit.Polymorphic using (⊤; tt)
-open import Data.List using (List; []; _∷_)
+open import Data.Unit.Polymorphic using () renaming (⊤ to ⊤p; tt to ttp)
+open import Data.List using (List; []; _∷_) renaming (_++_ to _++L_)
 open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
 import Data.Nat.Show as ℕ-Show
 open import Data.Maybe using (Maybe; just; nothing)
@@ -27,23 +27,11 @@ open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
 open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open import language-operational.annotated-value EP.Sig EP.primitives
-  using (Node; walk; walk-env)
-open Node
+  using (AVal; node; Shape; shape-of; shape-env-of; covers; covers-all)
+open import Data.Unit using (⊤)
+open import Data.Nat using (_+_)
 
 private
-  Entries : Set
-  Entries = List (ℕ × Node)
-
-  index : ℕ → List Node → Entries
-  index _ []       = []
-  index i (e ∷ es) = (i , e) ∷ index (suc i) es
-
-  in-sk out-sk : Entries
-  in-sk  = index 0 (walk (λ {s} c → showC {s} c) γ-nums-val)
-  out-sk = index 0 (walk (λ {s} c → showC {s} c) δ-out)
-
-  -- Membership by numeric equality: the target gates every step without its value reaching the
-  -- output, and the kept element's value flows to the one output element.
   numsT = list (base EP.number)
 
   γ-filter-env : Env (∙ ▸ base EP.number ▸ numsT)
@@ -53,48 +41,70 @@ private
   δ-filter : Val numsT
   δ-filter = const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ
 
-  filter-in-sk filter-out-sk : Entries
-  filter-in-sk  = index 0 (walk-env (λ {s} c → showC {s} c) γ-filter-env)
-  filter-out-sk = index 0 (walk (λ {s} c → showC {s} c) δ-filter)
+  in-tree out-tree filter-in-tree filter-out-tree : List (AVal ⊤)
+  in-tree         = shape-of (λ {s} c → showC {s} c) γ-nums-val ∷ []
+  out-tree        = shape-of (λ {s} c → showC {s} c) δ-out ∷ []
+  filter-in-tree  = shape-env-of (λ {s} c → showC {s} c) γ-filter-env
+  filter-out-tree = shape-of (λ {s} c → showC {s} c) δ-filter ∷ []
 
-  -- List notation for the body's injections, as in the partial-value renderer.
-  sugar : String → String
-  sugar l = if l == "inr" then "∷" else if l == "inl" then "[]" else l
+  mutual
+    drawn : ℕ → AVal ⊤ → List (ℕ × String)
+    drawn off (node _ l _ n cs) = (off , l) ∷ drawn-all (off + n) cs
 
-  cls-of : Entries → ℕ → ℕ
-  cls-of []             i = i
-  cls-of ((j , e) ∷ es) i = if i ≡ᵇ j then e .cls else cls-of es i
+    drawn-all : ℕ → List (AVal ⊤) → List (ℕ × String)
+    drawn-all off []       = []
+    drawn-all off (t ∷ ts) = drawn off t ++L drawn-all (off + covers t) ts
 
-  node : String → ℕ → String → String
-  node pre i l = "    " ++ pre ++ ℕ-Show.show i ++ " [label=\"" ++ l ++ "\"];\n"
+  mutual
+    kid-edges : ℕ → AVal ⊤ → List (ℕ × ℕ)
+    kid-edges off (node _ _ _ n cs) = links (off + n) cs ++L kid-edges-all (off + n) cs
+      where
+      links : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
+      links o []       = []
+      links o (t ∷ ts) = (off , o) ∷ links (o + covers t) ts
 
-  nodes-merged : String → Entries → String
+    kid-edges-all : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
+    kid-edges-all off []       = []
+    kid-edges-all off (t ∷ ts) = kid-edges off t ++L kid-edges-all (off + covers t) ts
+
+  mutual
+    owner : ℕ → AVal ⊤ → ℕ → ℕ
+    owner off (node _ _ _ n cs) i =
+      if in-run off n i then off else owner-all (off + n) cs i
+      where
+      in-run : ℕ → ℕ → ℕ → Bool
+      in-run o zero    j = false
+      in-run o (suc k) j = (o ≡ᵇ j) ∨ in-run (suc o) k j
+
+    owner-all : ℕ → List (AVal ⊤) → ℕ → ℕ
+    owner-all off []       i = i
+    owner-all off (t ∷ ts) i =
+      if lt i (off + covers t) then owner off t i else owner-all (off + covers t) ts i
+      where
+      lt : ℕ → ℕ → Bool
+      lt zero    (suc _) = true
+      lt _       zero    = false
+      lt (suc a) (suc b) = lt a b
+
+  nodes-of : List (AVal ⊤) → List (ℕ × String)
+  nodes-of ts = drawn-all 0 ts
+
+  edges-of : List (AVal ⊤) → List (ℕ × ℕ)
+  edges-of ts = kid-edges-all 0 ts
+
+  id-of : List (AVal ⊤) → ℕ → ℕ
+  id-of ts i = owner-all 0 ts i
+
+  nodes-merged : String → List (ℕ × String) → String
   nodes-merged pre []             = ""
-  nodes-merged pre ((i , e) ∷ es) =
-    (if i ≡ᵇ e .cls then node pre i (sugar (e .label)) else "") ++ nodes-merged pre es
-
-  tree-edge : String → ℕ → ℕ → String
-  tree-edge pre i j =
-    "    " ++ pre ++ ℕ-Show.show i ++ " -> " ++ pre ++ ℕ-Show.show j
-    ++ " [color=gray, arrowhead=none];\n"
-
-  member : ℕ × ℕ → List (ℕ × ℕ) → Bool
-  member _       []             = false
-  member (i , j) ((k , l) ∷ ps) = ((i ≡ᵇ k) ∧ (j ≡ᵇ l)) ∨ member (i , j) ps
-
-  -- Tree edges between classes: self-loops vanish and repeats are dropped.
-  merged-tree : Entries → Entries → List (ℕ × ℕ) → List (ℕ × ℕ)
-  merged-tree all []             acc = acc
-  merged-tree all ((i , e) ∷ es) acc with e .parent
-  ... | nothing = merged-tree all es acc
-  ... | just p  =
-    if ((cls-of all p) ≡ᵇ (e .cls)) ∨ member (cls-of all p , e .cls) acc
-    then merged-tree all es acc
-    else merged-tree all es ((cls-of all p , e .cls) ∷ acc)
+  nodes-merged pre ((i , l) ∷ ns) =
+    "    " ++ pre ++ ℕ-Show.show i ++ " [label=\"" ++ l ++ "\"];\n" ++ nodes-merged pre ns
 
   tree-edges-of : String → List (ℕ × ℕ) → String
   tree-edges-of pre []             = ""
-  tree-edges-of pre ((i , j) ∷ ps) = tree-edge pre i j ++ tree-edges-of pre ps
+  tree-edges-of pre ((i , j) ∷ ps) =
+    "    " ++ pre ++ ℕ-Show.show i ++ " -> " ++ pre ++ ℕ-Show.show j
+    ++ " [color=gray, arrowhead=none];\n" ++ tree-edges-of pre ps
 
   dep-edge : three.Three → ℕ → ℕ → String
   dep-edge three.O _ _ = ""
@@ -120,12 +130,12 @@ private
     then (p' , q' , w three.⊔ w') ∷ es
     else (p' , q' , w') ∷ upd p q w es
 
-  quotient-for : Entries → Entries → List (List three.Three) → List Edge
+  quotient-for : List (AVal ⊤) → List (AVal ⊤) → List (List three.Three) → List Edge
   quotient-for isk osk rows = go-q 0 rows []
     where
     add : ℕ → ℕ → three.Three → List Edge → List Edge
     add p q three.O acc = acc
-    add p q w       acc = upd (cls-of isk p) (cls-of osk q) w acc
+    add p q w       acc = upd (id-of isk p) (id-of osk q) w acc
     go-p : ℕ → ℕ → List three.Three → List Edge → List Edge
     go-p q _ []       acc = acc
     go-p q p (w ∷ ws) acc = go-p q (suc p) ws (add p q w acc)
@@ -133,16 +143,16 @@ private
     go-q _ []       acc = acc
     go-q q (r ∷ rs) acc = go-q (suc q) rs (go-p q 0 r acc)
 
-  merged-dep-edges-for : Entries → Entries → List (List three.Three) → String
+  merged-dep-edges-for : List (AVal ⊤) → List (AVal ⊤) → List (List three.Three) → String
   merged-dep-edges-for isk osk rows = go (quotient-for isk osk rows)
     where
     go : List Edge → String
     go []                 = ""
     go ((p , q , w) ∷ es) = dep-edge w p q ++ go es
 
-  reps : Entries → List ℕ
-  reps []             = []
-  reps ((i , e) ∷ es) = if i ≡ᵇ e .cls then i ∷ reps es else reps es
+  reps : List (ℕ × String) → List ℕ
+  reps []            = []
+  reps ((i , _) ∷ ns) = i ∷ reps ns
 
   last2 : List ℕ → List ℕ
   last2 (i ∷ j ∷ []) = i ∷ j ∷ []
@@ -174,19 +184,19 @@ private
 
 contents-map : String
 contents-map =
-  graph (nodes-merged "i" in-sk) (tree-edges-of "i" (merged-tree in-sk in-sk []))
-        (nodes-merged "o" out-sk) (tree-edges-of "o" (merged-tree out-sk out-sk []))
-        (last2 (reps in-sk)) (last2 (reps out-sk))
-        (merged-dep-edges-for in-sk out-sk map-rows)
+  graph (nodes-merged "i" (nodes-of in-tree)) (tree-edges-of "i" (edges-of in-tree))
+        (nodes-merged "o" (nodes-of out-tree)) (tree-edges-of "o" (edges-of out-tree))
+        (last2 (reps (nodes-of in-tree))) (last2 (reps (nodes-of out-tree)))
+        (merged-dep-edges-for in-tree out-tree map-rows)
 
 contents-filter : String
 contents-filter =
-  graph (nodes-merged "i" filter-in-sk)
-        (tree-edges-of "i" (merged-tree filter-in-sk filter-in-sk []))
-        (nodes-merged "o" filter-out-sk)
-        (tree-edges-of "o" (merged-tree filter-out-sk filter-out-sk []))
-        (last2 (reps filter-in-sk)) (last2 (reps filter-out-sk))
-        (merged-dep-edges-for filter-in-sk filter-out-sk filter-rows)
+  graph (nodes-merged "i" (nodes-of filter-in-tree))
+        (tree-edges-of "i" (edges-of filter-in-tree))
+        (nodes-merged "o" (nodes-of filter-out-tree))
+        (tree-edges-of "o" (edges-of filter-out-tree))
+        (last2 (reps (nodes-of filter-in-tree))) (last2 (reps (nodes-of filter-out-tree)))
+        (merged-dep-edges-for filter-in-tree filter-out-tree filter-rows)
 
 main : Main
 main = run (writeFile "dot/map-three.dot" contents-map

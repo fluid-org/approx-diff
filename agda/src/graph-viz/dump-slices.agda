@@ -27,10 +27,10 @@ open import language-syntax EP.Sig using (type; base; list; unit; μ; var; _[×]
 open import Relation.Binary.PropositionalEquality using (subst; sym)
 open import language-operational.evaluation EP.Sig EP.primitives using (Val)
 open Val
-import language-operational.annotated-value
-module AV = language-operational.annotated-value EP.Sig EP.primitives
-open AV.annotate two.semiring
-  using (AVal; unit*; const*; inl*; inr*; pair*; clo*; roll*; aval; row-of)
+open import language-operational.annotated-value EP.Sig EP.primitives
+  using (AVal; node; Shape; shape-of)
+import language-operational.annotated-value as AV
+open AV.annotate EP.Sig EP.primitives two.semiring using (row→aval; aval→row)
 open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open Primitives EP.primitives using (sort-val; sort-width)
 
@@ -70,30 +70,28 @@ private
   mark two.I = ""
   mark two.O = "⊥"
 
-  marks : ∀ {n} → TM.Vec n → String
-  marks {zero}  w = ""
-  marks {suc n} w = mark (w Fin.zero) ++ marks {n} (λ i → w (Fin.suc i))
-
-  show-c : (n : ℕ) → String → TM.Vec n → String
-  show-c zero    s w = "_"
-  show-c (suc n) s w = s ++ marks w
+  show-c : ℕ → String → two.Two → String
+  show-c zero    l a = "_"
+  show-c (suc _) l a = l ++ mark a
 
   mutual
-    show-aval : ∀ {τ} {v : Val τ} → AVal v → String
-    show-aval {μ (unit [+] (_ [×] var Fin.zero))} p = show-alist p
-    show-aval (unit* a)                  = "()" ++ mark a
-    show-aval (const* {s = s} {c = c} w) = show-c (sort-width s) (showC {s} c) w
-    show-aval (inl* a p)                 = "inl" ++ mark a ++ " " ++ show-aval p
-    show-aval (inr* a p)                 = "inr" ++ mark a ++ " " ++ show-aval p
-    show-aval (pair* a p q)              =
+    show-aval : AVal two.Two → String
+    show-aval (node Shape.unit  _ a _ _)  = "()" ++ mark a
+    show-aval (node Shape.const l a n _)  = show-c n l a
+    show-aval (node Shape.inl   _ a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
+    show-aval (node Shape.inr   _ a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
+    show-aval (node Shape.clo   _ a _ _)  = "<closure>" ++ mark a
+    show-aval (node Shape.nil   _ a _ _)  = "[]" ++ mark a
+    show-aval (node Shape.pair  _ a _ (p ∷ q ∷ _)) =
       "(" ++ show-aval p ++ ", " ++ show-aval q ++ ")" ++ mark a
-    show-aval (clo* a ρ)                 = "<closure>" ++ mark a
-    show-aval (roll* p)                  = show-aval p
+    show-aval (node Shape.pair  _ a _ _)  = "?"
+    show-aval (node Shape.cons  _ a _ (h ∷ t ∷ _)) =
+      show-aval h ++ " ∷" ++ mark a ++ " " ++ show-aval t
+    show-aval (node Shape.cons  _ a _ _)  = "?"
 
-    show-alist : ∀ {σ} {v : Val (μ (unit [+] (σ [×] var Fin.zero)))} → AVal v → String
-    show-alist (roll* (inl* a (unit* b)))     = "[]" ++ mark (a two.⊔ b)
-    show-alist (roll* (inr* a (pair* b h t))) =
-      show-aval h ++ " ∷" ++ mark (a two.⊔ b) ++ " " ++ show-alist t
+    show-kids : List (AVal two.Two) → String
+    show-kids []      = ""
+    show-kids (t ∷ _) = show-aval t
 
   lookupO : List two.Two → ℕ → two.Two
   lookupO []       _       = two.O
@@ -101,7 +99,7 @@ private
   lookupO (_ ∷ bs) (suc n) = lookupO bs n
 
   render-row : ∀ {τ} (v : Val τ) → List two.Two → String
-  render-row v bits = show-aval (aval v (lookupO bits))
+  render-row v bits = show-aval (row→aval (λ {s} c → showC {s} c) (lookupO bits) v)
 
   slice-over : ∀ {τ} (v : Val τ) {m n} → TM.Matrix m n → String
   slice-over v {m} M =
@@ -133,31 +131,29 @@ private
   erases : ∀ {m n} → TM.Matrix m n → TM.Vec n → TM.Vec m
   erases M = FR.app M
 
-  nilᵃ : ∀ {τ : type 0} → two.Two → two.Two → AVal (nilᵥ {τ})
-  nilᵃ a b = roll* (inl* a (unit* b))
+  consᵃ : two.Two → AVal two.Two → AVal two.Two → AVal two.Two
+  consᵃ a h t = node Shape.cons "∷" a 2 (h ∷ t ∷ [])
 
-  consᵃ : ∀ {τ : type 0} {x : Val τ} {xs : Val (list τ)} →
-          two.Two → two.Two →
-          AVal (subst Val (sym (sub-ren-id τ (λ ()))) x) → AVal xs → AVal (x ∷ᵥ xs)
-  consᵃ a b h t = roll* (inr* a (pair* b h t))
+  nilᵃ : two.Two → AVal two.Two
+  nilᵃ a = node Shape.nil "[]" a 2 []
 
-  numᵃ : (q : ℚ) → two.Two → AVal (const {EP.number} q)
-  numᵃ q a = const* (λ _ → a)
+  numᵃ : ℚ → two.Two → AVal two.Two
+  numᵃ q a = node Shape.const (show-ℚ q) a 1 []
 
-  cell1-sel : AVal γ-nums-val
+  cell1-sel : AVal two.Two
   cell1-sel =
-    consᵃ two.I two.I (numᵃ 0ℚ two.O)
-      (consᵃ two.O two.O (numᵃ 1ℚ two.O)
-        (consᵃ two.O two.O (numᵃ (1ℚ +ℚ 1ℚ) two.O) (nilᵃ two.O two.O)))
+    consᵃ two.I (numᵃ 0ℚ two.O)
+      (consᵃ two.O (numᵃ 1ℚ two.O)
+        (consᵃ two.O (numᵃ (1ℚ +ℚ 1ℚ) two.O) (nilᵃ two.O)))
 
-  out-cell2-sel : AVal δ-out
+  out-cell2-sel : AVal two.Two
   out-cell2-sel =
-    consᵃ two.O two.O (numᵃ (0ℚ +ℚ 1ℚ) two.O)
-      (consᵃ two.I two.I (numᵃ (1ℚ +ℚ 1ℚ) two.O)
-        (consᵃ two.O two.O (numᵃ ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) two.O) (nilᵃ two.O two.O)))
+    consᵃ two.O (numᵃ (0ℚ +ℚ 1ℚ) two.O)
+      (consᵃ two.I (numᵃ (1ℚ +ℚ 1ℚ) two.O)
+        (consᵃ two.O (numᵃ ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) two.O) (nilᵃ two.O)))
 
-  sel-of : ∀ {τ} {v : Val τ} {n} → AVal v → TM.Vec n
-  sel-of p i = row-of p (Fin.toℕ i)
+  sel-of : ∀ {n} → AVal two.Two → TM.Vec n
+  sel-of p i = aval→row p (Fin.toℕ i)
 
   fwd-bits : ∀ {m n} → TM.Matrix m n → TM.Vec n → List two.Two
   fwd-bits {m} M sel = bits-of m (erases M sel)

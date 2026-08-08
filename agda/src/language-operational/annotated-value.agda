@@ -1,159 +1,103 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The position order matches the model fibre: a former's root before its payload, a pair's first
--- component before its second.
 open import Level using (0ℓ)
-
 open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Fin using (toℕ)
-import Data.Fin as Fin
+open import Data.Unit using (⊤; tt)
 open import Data.List using (List; []; _∷_; _++_)
-open import Data.Maybe using (Maybe; just; nothing)
 open import Data.String using (String)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import primitives using (Primitives)
 import two
-import matrix
 
 module language-operational.annotated-value {ℓ} (Sig : Signature ℓ)
   (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫
-import language-syntax Sig as Syn
-open import language-operational.evaluation Sig 𝒫 using (Val; Env; width; width-env)
+open import language-syntax Sig using (unit; μ; var; _[+]_; _[×]_)
+open import language-operational.evaluation Sig 𝒫 using (Val; Env)
 open Val
 open Env
+open import Data.Fin using (zero)
+
+data Shape : Set where
+  unit const inl inr pair clo cons nil : Shape
+
+-- A node covers a run of positions at its own site, then its children in order. A cons covers the
+-- tag and the pair beneath it, and nil the tag and its unit.
+data AVal (X : Set) : Set where
+  node : Shape → String → X → ℕ → List (AVal X) → AVal X
+
+covers : ∀ {X} → AVal X → ℕ
+covers-all : ∀ {X} → List (AVal X) → ℕ
+
+covers (node _ _ _ n cs) = n + covers-all cs
+covers-all []       = 0
+covers-all (t ∷ ts) = covers t + covers-all ts
+
+module _ (show-const : ∀ {s} → sort-val s → String) where
+
+  mutual
+    shape-of : ∀ {τ} → Val τ → AVal ⊤
+    shape-of {μ (unit [+] (_ [×] var zero))} v = cell-of v
+    shape-of Val.unit          = node Shape.unit "()" tt 1 []
+    shape-of (Val.const {s} c) = node Shape.const (show-const c) tt (sort-width s) []
+    shape-of (Val.inl v)       = node Shape.inl "inl" tt 1 (shape-of v ∷ [])
+    shape-of (Val.inr v)       = node Shape.inr "inr" tt 1 (shape-of v ∷ [])
+    shape-of (Val.pair v u)    = node Shape.pair "pr" tt 1 (shape-of v ∷ shape-of u ∷ [])
+    shape-of (Val.clo γ _)     = node Shape.clo "clo" tt 1 (shape-env-of γ)
+    shape-of (Val.roll v)      = shape-of v
+
+    cell-of : ∀ {σ} → Val (μ (unit [+] (σ [×] var zero))) → AVal ⊤
+    cell-of (Val.roll (Val.inl Val.unit))         = node Shape.nil "[]" tt 2 []
+    cell-of (Val.roll (Val.inr (Val.pair hd tl))) =
+      node Shape.cons "∷" tt 2 (shape-of hd ∷ shape-of tl ∷ [])
+
+    shape-env-of : ∀ {Γ} → Env Γ → List (AVal ⊤)
+    shape-env-of emp     = []
+    shape-env-of (γ · v) = shape-env-of γ ++ (shape-of v ∷ [])
 
 module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
   private
-    module M = matrix.Mat S
+    module Sc = CommutativeSemiring S
 
   Scalar : Set
   Scalar = Setoid.Carrier A
 
-  mutual
-    data AVal : ∀ {τ} → Val τ → Set ℓ where
-      unit*  : Scalar → AVal unit
-      const* : ∀ {s} {c : sort-val s} → M.Vec (sort-width s) → AVal (const c)
-      inl*   : ∀ {τ₁ τ₂} {v : Val τ₁} → Scalar → AVal v → AVal (inl {τ₁} {τ₂} v)
-      inr*   : ∀ {τ₁ τ₂} {v : Val τ₂} → Scalar → AVal v → AVal (inr {τ₁} {τ₂} v)
-      pair*  : ∀ {τ₁ τ₂} {v : Val τ₁} {u : Val τ₂} → Scalar → AVal v → AVal u → AVal (pair v u)
-      clo*   : ∀ {Γ σ τ} {γ : Env Γ} {t : (Γ Syn., σ) Syn.⊢ τ} → Scalar → AEnv γ → AVal (clo γ t)
-      roll*  : ∀ {τ} {v : Val (τ Syn.[ Syn.μ τ ])} → AVal v → AVal (roll {τ = τ} v)
-
-    data AEnv : ∀ {Γ} → Env Γ → Set ℓ where
-      emp* : AEnv emp
-      _·*_ : ∀ {Γ τ} {γ : Env Γ} {v : Val τ} → AEnv γ → AVal v → AEnv (γ · v)
-
-  infixl 30 _·*_
-
-  mutual
-    aval-at : ∀ {τ} (v : Val τ) → (ℕ → Scalar) → ℕ → AVal v
-    aval-at unit          row off = unit* (row off)
-    aval-at (const {s} c) row off = const* (λ i → row (off + toℕ i))
-    aval-at (inl v)       row off = inl* (row off) (aval-at v row (suc off))
-    aval-at (inr v)       row off = inr* (row off) (aval-at v row (suc off))
-    aval-at (pair v u)    row off =
-      pair* (row off) (aval-at v row (suc off)) (aval-at u row (suc off + width v))
-    aval-at (clo γ t)     row off = clo* (row off) (aenv-at γ row (suc off))
-    aval-at (roll v)      row off = roll* (aval-at v row off)
-
-    aenv-at : ∀ {Γ} (γ : Env Γ) → (ℕ → Scalar) → ℕ → AEnv γ
-    aenv-at emp     row off = emp*
-    aenv-at (γ · v) row off = aenv-at γ row off ·* aval-at v row (off + width-env γ)
-
-  aval : ∀ {τ} (v : Val τ) → (ℕ → Scalar) → AVal v
-  aval v row = aval-at v row 0
-
-  aenv : ∀ {Γ} (γ : Env Γ) → (ℕ → Scalar) → AEnv γ
-  aenv γ row = aenv-at γ row 0
-
   private
-    module Sc = CommutativeSemiring S
+    join-run : (ℕ → Scalar) → ℕ → ℕ → Scalar
+    join-run row off zero    = Sc.ε
+    join-run row off (suc n) = row off Sc.+ join-run row (suc off) n
 
-    fin-at : ∀ {n} → M.Vec n → ℕ → Scalar
-    fin-at {zero}  w i       = Sc.ε
-    fin-at {suc n} w zero    = w Fin.zero
-    fin-at {suc n} w (suc i) = fin-at {n} (λ k → w (Fin.suc k)) i
-
-    split-at : ℕ → (ℕ → Scalar) → (ℕ → Scalar) → ℕ → Scalar
-    split-at zero    f g i       = g i
-    split-at (suc n) f g zero    = f 0
-    split-at (suc n) f g (suc i) = split-at n (λ k → f (suc k)) g i
-
-  -- Inverse to aval.
-  mutual
-    row-of : ∀ {τ} {v : Val τ} → AVal v → ℕ → Scalar
-    row-of (unit* a)     zero    = a
-    row-of (unit* a)     (suc _) = Sc.ε
-    row-of (const* w)    i       = fin-at w i
-    row-of (inl* a p)    zero    = a
-    row-of (inl* a p)    (suc i) = row-of p i
-    row-of (inr* a p)    zero    = a
-    row-of (inr* a p)    (suc i) = row-of p i
-    row-of (pair* {v = v} a p q) zero    = a
-    row-of (pair* {v = v} a p q) (suc i) = split-at (width v) (row-of p) (row-of q) i
-    row-of (clo* a ρ)    zero    = a
-    row-of (clo* a ρ)    (suc i) = row-env-of ρ i
-    row-of (roll* p)     i       = row-of p i
-
-    row-env-of : ∀ {Γ} {γ : Env Γ} → AEnv γ → ℕ → Scalar
-    row-env-of emp*                    i = Sc.ε
-    row-env-of (_·*_ {γ = γ} ρ p) i = split-at (width-env γ) (row-env-of ρ) (row-of p) i
-
--- A former directly beneath an injection joins the injection's class, so cons and nil cells and
--- boolean values merge to single nodes in the graph dump.
-record Node : Set where
-  field
-    label  : String
-    parent : Maybe ℕ
-    cls    : ℕ
-
-open Node public
-
-node : String → Maybe ℕ → ℕ → Node
-node l p c .label  = l
-node l p c .parent = p
-node l p c .cls    = c
-
-private
-  pick : Maybe ℕ → ℕ → ℕ
-  pick (just c) _ = c
-  pick nothing  i = i
-
-module _ (show-const : ∀ {s} → sort-val s → String) where
-
-  private
-    scalars : ∀ {s} → sort-val s → ℕ → ℕ → Maybe ℕ → List Node
-    scalars c zero    off par = []
-    scalars c (suc n) off par = node (show-const c) par off ∷ scalars c n (suc off) par
+    at-run : Scalar → ℕ → ℕ → ℕ → Scalar
+    at-run a zero    off      i        = Sc.ε
+    at-run a (suc n) zero     zero     = a
+    at-run a (suc n) zero     (suc i)  = at-run a n zero i
+    at-run a (suc n) (suc o)  zero     = Sc.ε
+    at-run a (suc n) (suc o)  (suc i)  = at-run a (suc n) o i
 
   mutual
-    walk-at : ∀ {τ} (v : Val τ) (off : ℕ) (par : Maybe ℕ) (root-cls : Maybe ℕ) → List Node
-    walk-at unit off par rc = node "()" par (pick rc off) ∷ []
-    walk-at (const {s} c) off par rc = scalars c (sort-width s) off par
-    walk-at (inl v) off par rc =
-      node "inl" par (pick rc off) ∷ walk-at v (suc off) (just off) (just (pick rc off))
-    walk-at (inr v) off par rc =
-      node "inr" par (pick rc off) ∷ walk-at v (suc off) (just off) (just (pick rc off))
-    walk-at (pair v u) off par rc =
-      node "pr" par (pick rc off)
-        ∷ (walk-at v (suc off) (just off) nothing
-           ++ walk-at u (suc off + width v) (just off) nothing)
-    walk-at (clo γ t) off par rc =
-      node "clo" par (pick rc off) ∷ walk-env-at γ (suc off) (just off)
-    walk-at (roll v) off par rc = walk-at v off par rc
+    fill : (ℕ → Scalar) → ℕ → AVal ⊤ → AVal Scalar
+    fill row off (node sh l _ n cs) = node sh l (join-run row off n) n (fill-all row (off + n) cs)
 
-    walk-env-at : ∀ {Γ} (γ : Env Γ) (off : ℕ) (par : Maybe ℕ) → List Node
-    walk-env-at emp     off par = []
-    walk-env-at (γ · v) off par = walk-env-at γ off par ++ walk-at v (off + width-env γ) par nothing
+    fill-all : (ℕ → Scalar) → ℕ → List (AVal ⊤) → List (AVal Scalar)
+    fill-all row off []       = []
+    fill-all row off (t ∷ ts) = fill row off t ∷ fill-all row (off + covers t) ts
 
-  walk : ∀ {τ} (v : Val τ) → List Node
-  walk v = walk-at v 0 nothing nothing
+  mutual
+    spread : AVal Scalar → ℕ → ℕ → Scalar
+    spread (node _ _ a n cs) off i = at-run a n off i Sc.+ spread-all cs (off + n) i
 
-  walk-env : ∀ {Γ} (γ : Env Γ) → List Node
-  walk-env γ = walk-env-at γ 0 nothing
+    spread-all : List (AVal Scalar) → ℕ → ℕ → Scalar
+    spread-all []       off i = Sc.ε
+    spread-all (t ∷ ts) off i = spread t off i Sc.+ spread-all ts (off + covers t) i
+
+  row→aval : ∀ {τ} (show-const : ∀ {s} → sort-val s → String) →
+             (ℕ → Scalar) → Val τ → AVal Scalar
+  row→aval sc row v = fill row 0 (shape-of sc v)
+
+  aval→row : AVal Scalar → ℕ → Scalar
+  aval→row t i = spread t 0 i

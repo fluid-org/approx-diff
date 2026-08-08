@@ -11,12 +11,12 @@ digraph G {
     i7 [label="∷"];
     i9 [label="3"];
     i10 [label="[]"];
-    i7 -> i10 [color=gray, arrowhead=none];
-    i7 -> i9 [color=gray, arrowhead=none];
-    i4 -> i7 [color=gray, arrowhead=none];
-    i4 -> i6 [color=gray, arrowhead=none];
-    i1 -> i4 [color=gray, arrowhead=none];
     i1 -> i3 [color=gray, arrowhead=none];
+    i1 -> i4 [color=gray, arrowhead=none];
+    i4 -> i6 [color=gray, arrowhead=none];
+    i4 -> i7 [color=gray, arrowhead=none];
+    i7 -> i9 [color=gray, arrowhead=none];
+    i7 -> i10 [color=gray, arrowhead=none];
     ilab [label="input", shape=plaintext];
     i9 -> ilab [style=invis];
     i10 -> ilab [style=invis];
@@ -26,8 +26,8 @@ digraph G {
     o0 [label="∷"];
     o2 [label="2"];
     o3 [label="[]"];
-    o0 -> o3 [color=gray, arrowhead=none];
     o0 -> o2 [color=gray, arrowhead=none];
+    o0 -> o3 [color=gray, arrowhead=none];
     olab [label="output", shape=plaintext];
     o2 -> olab [style=invis];
     o3 -> olab [style=invis];
