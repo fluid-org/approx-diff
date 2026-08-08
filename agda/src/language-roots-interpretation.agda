@@ -5,11 +5,11 @@
 -- carriers, and function spaces are lifted weak exponentials, so a closure carries a root like any
 -- other cell. Constructors inject their payload under the injection, whose root is zero: a cell
 -- the program itself constructs depends on nothing. Eliminators, including application, read the
--- scrutinee's root into the result type's chosen constant. Every type carries such a constant,
--- given ones for the sorts, the unit object and the exponentials. The empty environment
--- for the μ-carriers is a parameter because functions out of Fin 0 agree only propositionally, and
--- the comparison with a change of base needs the μ-carriers' environment to be the image
--- environment definitionally.
+-- scrutinee's root into the top of the result object, weighted by elim-weight; the family of tops,
+-- one point per object natural in the index, is assumed, since an arbitrary CMon-enriched category
+-- has none. The empty environment for the μ-carriers is a parameter because functions out of
+-- Fin 0 agree only propositionally, and the comparison with a change of base needs the
+-- μ-carriers' environment to be the image environment definitionally.
 
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
@@ -27,7 +27,6 @@ open import lifting using (Lifting)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 open import polynomial-functor using (Poly)
 import fam-mu-lifting.mu-map
-import fam-mu-lifting.point
 import language-syntax
 
 module language-roots-interpretation
@@ -38,20 +37,15 @@ module language-roots-interpretation
   (elim-weight : Category._⇒_ 𝒞 𝟙c 𝟙c)
   (let module R = fam-mu-lifting.mu-map os es T CM BP Lft)
   (𝒞E : HasWeakExponentials R.cat R.products)
-  (exp-pt : ∀ {X Y : R.Obj} → R.Pointed Y → R.Pointed (HasWeakExponentials.exp 𝒞E X Y))
+  (tops : ∀ (X : R.Obj) → R.Pointed X)
   (δ∅ : Fin 0 → R.Obj)
   (𝟙ty : R.Obj)
   (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
-  (𝟙ty-pt : R.Pointed 𝟙ty)
   (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
   (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
-  (Int-pt : ∀ (s : Signature.sort Sig) → R.Pointed (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu; μ-map;
-              Pointed; Lf-pointed; prod-pointed; coprod-pointed; elimF)
-module Rpt = fam-mu-lifting.point os es CM BP Lft
-open Rpt using (PolyPt; μObj-pointed)
+open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu; μ-map; Pointed; elimF)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
@@ -87,34 +81,6 @@ mutual
   as-poly (σ [×] τ)       δ = as-poly σ δ Poly.× as-poly τ δ
   as-poly (σ [→] τ)       δ = Poly.const (Lf (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ())))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
-
--- Every type's interpretation carries a chosen constant, given constants for the sorts, the unit
--- object and the exponentials: the eliminators read a root into the result type's constant.
-mutual
-  ty-pt : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Pointed (δ i)) → Pointed (⟦ τ ⟧ty δ)
-  ty-pt (var i)   δ δp = δp i
-  ty-pt unit      δ δp = 𝟙ty-pt
-  ty-pt (base s)  δ δp = Int-pt s
-  ty-pt (σ [+] τ) δ δp = coprod-pointed (Lf-pointed (ty-pt σ δ δp)) (Lf-pointed (ty-pt τ δ δp))
-  ty-pt (σ [×] τ) δ δp = Lf-pointed (prod-pointed (ty-pt σ δ δp) (ty-pt τ δ δp))
-  ty-pt (σ [→] τ) δ δp = Lf-pointed (exp-pt (ty-pt τ (λ ()) (λ ())))
-  ty-pt (μ τ)     δ δp = μObj-pointed {δ = δ∅} (as-poly τ δ) (λ ()) (poly-pt τ δ δp)
-
-  poly-pt : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Pointed (δ i)) →
-            PolyPt (as-poly {Δ} {n} τ δ)
-  poly-pt {Δ} {n} (var i) δ δp = go (splitAt n i)
-    where
-      P∨ : Fin n ⊎ Fin Δ → Poly R.cat n
-      P∨ = [ Poly.var , (λ j → Poly.const (δ j)) ]
-      go : (s : Fin n ⊎ Fin Δ) → PolyPt (P∨ s)
-      go (inj₁ k) = lift tt
-      go (inj₂ j) = δp j
-  poly-pt unit      δ δp = 𝟙ty-pt
-  poly-pt (base s)  δ δp = Int-pt s
-  poly-pt (σ [+] τ) δ δp = DP._,_ (poly-pt σ δ δp) (poly-pt τ δ δp)
-  poly-pt (σ [×] τ) δ δp = DP._,_ (poly-pt σ δ δp) (poly-pt τ δ δp)
-  poly-pt (σ [→] τ) δ δp = Lf-pointed (exp-pt (ty-pt τ (λ ()) (λ ())))
-  poly-pt (μ τ)     δ δp = poly-pt τ δ δp
 
 -- Combined context: the first n variables from δ₀ (the Poly variables), the rest from δ.
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
@@ -300,14 +266,14 @@ mutual
   ⟦ inl M ⟧tm           = in₁ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ inr M ⟧tm           = in₂ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ case {τ = τ} M M₁ M₂ ⟧tm =
-    scopair (elimF (scale-pt (ty-pt τ (λ ()) (λ ()))) ⟦ M₁ ⟧tm) (elimF (scale-pt (ty-pt τ (λ ()) (λ ()))) ⟦ M₂ ⟧tm)
+    scopair (elimF (scale-pt (tops _)) ⟦ M₁ ⟧tm) (elimF (scale-pt (tops _)) ⟦ M₂ ⟧tm)
       ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ pair M N ⟧tm        = injF ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (scale-pt (ty-pt τ₁ (λ ()) (λ ()))) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
-  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (scale-pt (ty-pt τ₂ (λ ()) (λ ()))) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (scale-pt (tops _)) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (scale-pt (tops _)) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ lam M ⟧tm           = injF ∘ lambda ⟦ M ⟧tm
   ⟦ app {τ = τ} M N ⟧tm =
-    elimF (scale-pt (ty-pt τ (λ ()) (λ ()))) (eval ∘ ⟨ p₂ , ⟦ N ⟧tm ∘ p₁ ⟩) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+    elimF (scale-pt (tops _)) (eval ∘ ⟨ p₂ , ⟦ N ⟧tm ∘ p₁ ⟩) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm        = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel r Ms ⟧tm       = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
   ⟦ roll {τ = τ} M ⟧tm  =

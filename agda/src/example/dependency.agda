@@ -19,7 +19,7 @@ import ho-model-roots-free
 module Ex = example ℚ 0ℚ
 open Ex.ex using (case-ctxt-fo; case-term)
 
-module model = ho-model-roots-free two.semiring two.I
+module model = ho-model-roots-free two.semiring (λ {x} → two.⊤-add-top {x}) two.I
 module interp = model.rooted-interp EP.Sig EP.primitives
 
 open import language-syntax EP.Sig

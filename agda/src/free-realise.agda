@@ -24,7 +24,10 @@ import biproduct-transport
 import matrix
 import semimodule
 
-module free-realise {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+module free-realise {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+  (let module S′ = CommutativeSemiring S)
+  (⊤-add-top : ∀ {x} → (S′.ι S′.+ x) S′.≈ S′.ι)
+  where
 
 open CommutativeSemiring S hiding (_≈_; refl; sym; trans)
 open Setoid A
@@ -34,7 +37,7 @@ open M
   using (Matrix; Vec; Σ; I; εₘ; _+ₘ_; _≈ₘ_; Σ-cong; Σ-ε; Σ-+; Σ-unit;
          Σ-·-distribₗ; Σ-·-distribᵣ; Σ-interchange)
   renaming (_∘_ to _∘ₘ_)
-module SemiMod = semimodule S
+module SemiMod = semimodule S ⊤-add-top
 open SemiMod using (Semimodule; 𝕀)
 open SemiMod._⇒_
 open SemiMod._≈m_
@@ -123,6 +126,8 @@ app-εₘ {m} {n} v i = trans (Σ-cong {n} (λ j → ε-annihilₗ)) (Σ-ε {n})
 𝔽 n .Semimodule.+-distribˡ i = ·-+-distribₗ
 𝔽 n .Semimodule.zero-distribʳ i = ε-annihilₗ
 𝔽 n .Semimodule.zero-distribˡ i = ε-annihilᵣ
+𝔽 n .Semimodule.⊤m _ = ι
+𝔽 n .Semimodule.⊤m-absorb i = trans +-comm ⊤-add-top
 
 mat : ∀ {m n} → Matrix m n → SemiMod._⇒_ (𝔽 n) (𝔽 m)
 mat R .*→* .prop-setoid._⇒_.func = app R

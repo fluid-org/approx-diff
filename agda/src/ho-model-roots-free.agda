@@ -20,7 +20,7 @@ open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import primitives using (Primitives; sort-vals-setoid)
 open import lifting using (Lifting)
 open import Data.Sum using (inj₁; inj₂)
-open import functor using (limits→limits')
+open import cmon-enriched using (CMonEnriched)
 open import indexed-family using (HasSetoidProducts; Fam; _⇒f_; constantFam; _[_])
 import matrix
 import fam
@@ -34,10 +34,12 @@ import language-syntax
 
 module ho-model-roots-free
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+  (let module Sc = CommutativeSemiring S)
+  (⊤-add-top : ∀ {x} → (Sc.ι Sc.+ x) Sc.≈ Sc.ι)
   (elim-weight : Setoid.Carrier A)
   where
 
-open free-realise S public
+open free-realise S ⊤-add-top public
 module FP = free-primitives S
 
 open SemiMod._≈m_
@@ -51,8 +53,8 @@ module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiMod.cmon-enriched S
 private
   module FCμ = Category Fam⟨𝒞⟩μ.cat
   module FCC = HasCoproducts Fam⟨𝒞⟩μ.coproducts
-  module Sc = CommutativeSemiring S
   module MC = Category M.cat
+  module MCM = CMonEnriched M.cmon
   module SMC = Category SemiMod.cat
 
 elim-weight-endo : Category._⇒_ SemiMod.cat SemiMod.𝕀 SemiMod.𝕀
@@ -73,19 +75,15 @@ elim-weight-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S elim-we
 full : ∀ n → Category._⇒_ M.cat 1 n
 full n _ _ = Sc.ι
 
--- A constant of a simple family: the same constant at every index; the transports are identities.
-simple-pointed : ∀ {B : Setoid 0ℓ 0ℓ} {P : ℕ} →
-                 Category._⇒_ M.cat 1 P → Fam⟨𝒞⟩μ.Pointed Fam⟨𝒞⟩μ.simple[ B , P ]
-simple-pointed c .Fam⟨𝒞⟩μ.pt a = c
-simple-pointed c .Fam⟨𝒞⟩μ.pt-natural e = MC.id-left {f = c}
+full-absorb : ∀ {n} (h : Category._⇒_ M.cat 1 n) → MC._≈_ (MCM._+m_ h (full n)) (full n)
+full-absorb h i j = Sc.trans Sc.+-comm ⊤-add-top
 
--- The unit object's constant: its root.
-𝒞𝟙ty-pt : Fam⟨𝒞⟩μ.Pointed 𝒞𝟙ty
-𝒞𝟙ty-pt = Fam⟨𝒞⟩μ.Lf-pointed Fam⟨𝒞⟩μ.zero-pointed
+𝒞-tops : ∀ (X : Fam⟨𝒞⟩μ.Obj) → Fam⟨𝒞⟩μ.Pointed X
+𝒞-tops = Fam⟨𝒞⟩μ.top-pointed full (λ h → full-absorb h)
 
 -- The model-side function spaces: exponentials on Fam(SemiMod), from the direct setoid products
 -- of plain semimodules.
-module SMP = semimod-products S
+module SMP = semimod-products S ⊤-add-top
 
 SPmod : HasSetoidProducts 0ℓ 0ℓ SemiMod.cat
 SPmod = SMP.semimod-setoid-products
@@ -95,35 +93,8 @@ module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod
 SemiModExp : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
 SemiModExp = exponentials→weak FE.exponentials
 
--- The exponential's constant: pointwise the target's constant, paired by the setoid product.
-private
-  pt-fam : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Pointed Y → (f : Fam⟨𝒟⟩μ.Mor X Y) →
-           constantFam (X .Fam⟨𝒟⟩μ.idx) SemiMod.cat SemiMod.𝕀
-             ⇒f (Y .Fam⟨𝒟⟩μ.fam [ f .Fam⟨𝒟⟩μ.idxf ])
-  pt-fam pY f ._⇒f_.transf x = pY .Fam⟨𝒟⟩μ.pt (f .Fam⟨𝒟⟩μ.idxf .func x)
-  pt-fam pY f ._⇒f_.natural e =
-    SMC.≈-trans SMC.id-right
-      (SMC.≈-sym (pY .Fam⟨𝒟⟩μ.pt-natural (f .Fam⟨𝒟⟩μ.idxf .func-resp-≈ e)))
-
-SemiModExp-pointed : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Pointed Y →
-                     Fam⟨𝒟⟩μ.Pointed (HasWeakExponentials.exp SemiModExp X Y)
-SemiModExp-pointed {X} {Y} pY .Fam⟨𝒟⟩μ.pt f =
-  SPmod .HasSetoidProducts.lambdaΠ SemiMod.𝕀 (Y .Fam⟨𝒟⟩μ.fam [ f .Fam⟨𝒟⟩μ.idxf ])
-    (pt-fam pY f)
-SemiModExp-pointed {X} {Y} pY .Fam⟨𝒟⟩μ.pt-natural {f₁} {f₂} e =
-  SMC.≈-trans
-    (SMC.≈-sym (HasSetoidProducts.lambda-compose SPmod
-      (indexed-family.reindex-≈ (f₁ .Fam⟨𝒟⟩μ.idxf) (f₂ .Fam⟨𝒟⟩μ.idxf)
-        (e .Fam⟨𝒟⟩μ._≃_.idxf-eq)) (pt-fam pY f₁)))
-    (SPmod .HasSetoidProducts.lambdaΠ-cong
-      {f₁ = indexed-family._∘f_
-              (indexed-family.reindex-≈ (f₁ .Fam⟨𝒟⟩μ.idxf) (f₂ .Fam⟨𝒟⟩μ.idxf)
-                (e .Fam⟨𝒟⟩μ._≃_.idxf-eq))
-              (pt-fam pY f₁)}
-      {f₂ = pt-fam pY f₂}
-      (record { transf-eq = λ {x} →
-        pY .Fam⟨𝒟⟩μ.pt-natural
-          (e .Fam⟨𝒟⟩μ._≃_.idxf-eq .func-eq (X .Fam⟨𝒟⟩μ.idx .Setoid.refl)) }))
+𝒟-tops : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X
+𝒟-tops = Fam⟨𝒟⟩μ.top-pointed SemiMod.⊤-mor (λ h → SemiMod.⊤-mor-absorb h)
 
 -- The rooted interpretation of the primitives: the first-order interpretation, with the relations'
 -- booleans injected under zero roots.
@@ -155,12 +126,9 @@ module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
                 MC._≈_ (d' ψ c') (d' ψ c)
     deps-resp ψ e = MC.≈-sym (Pm.rel-deps ψ .func-resp-≈ e)
 
-    -- The boolean's roots as its constants, so a test's fibre map is the point at the outcome
-    -- after its dependence row.
-    bool-root-pt : Fam⟨𝒞⟩μ.Pointed 𝒞Bool
-    bool-root-pt =
-      Fam⟨𝒞⟩μ.coprod-pointed (Fam⟨𝒞⟩μ.Lf-pointed 𝒞𝟙ty-pt)
-                             (Fam⟨𝒞⟩μ.Lf-pointed 𝒞𝟙ty-pt)
+    -- The boolean's top, so a test's fibre map is the whole outcome after its dependence row.
+    bool-top : Fam⟨𝒞⟩μ.Pointed 𝒞Bool
+    bool-top = 𝒞-tops 𝒞Bool
 
   -- Tests write their dependence into the outcome's root: which branch runs reads the scalars the
   -- test read.
@@ -170,20 +138,20 @@ module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
                  𝒞Bool
   rel-simple is ψ .Fam⟨𝒞⟩μ.idxf = Pm.rel-pred ψ
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .transf c =
-    MC._∘_ (bool-root-pt .Fam⟨𝒞⟩μ.pt (Pm.rel-pred ψ .func c)) (d' ψ c)
+    MC._∘_ (bool-top .Fam⟨𝒞⟩μ.pt (Pm.rel-pred ψ .func c)) (d' ψ c)
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e = pf
     where
     o  = Pm.rel-pred ψ .func c
     o' = Pm.rel-pred ψ .func c'
-    P  = bool-root-pt .Fam⟨𝒞⟩μ.pt o
-    P' = bool-root-pt .Fam⟨𝒞⟩μ.pt o'
+    P  = bool-top .Fam⟨𝒞⟩μ.pt o
+    P' = bool-top .Fam⟨𝒞⟩μ.pt o'
     sub = 𝒞Bool .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {o} {o'} (Pm.rel-pred ψ .func-resp-≈ e)
 
     step1 : MC._≈_ (MC._∘_ sub (MC._∘_ P (d' ψ c))) (MC._∘_ (MC._∘_ sub P) (d' ψ c))
     step1 = MC.≈-sym (MC.assoc sub P (d' ψ c))
 
     step2 : MC._≈_ (MC._∘_ (MC._∘_ sub P) (d' ψ c)) (MC._∘_ P' (d' ψ c))
-    step2 = MC.∘-cong (bool-root-pt .Fam⟨𝒞⟩μ.pt-natural {x₁ = o} {x₂ = o'}
+    step2 = MC.∘-cong (bool-top .Fam⟨𝒞⟩μ.pt-natural {x₁ = o} {x₂ = o'}
                          (Pm.rel-pred ψ .func-resp-≈ e))
                       (MC.≈-refl {f = d' ψ c})
 
@@ -199,10 +167,6 @@ module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   model = record IPO.model-over
     { ⟦rel⟧ = λ {is} ψ → FCμ._∘_ (rel-simple is ψ) (IPO.arg-collect is) }
 
-  -- The sorts' constants: the full selection of each width.
-  sort-pt : ∀ s → Fam⟨𝒞⟩μ.Pointed (model .Model.⟦sort⟧ s)
-  sort-pt s = simple-pointed (full (Primitives.sort-width 𝒫 s))
-
 -- The rooted higher-order model and the first-order comparison at the realisation.
 module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
@@ -214,9 +178,8 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
     elim-weight-endo
     𝔽F 𝔽F-preserve-terminal (λ {m} {n} → 𝔽F-preserve-products {m} {n})
     𝔽-L-iso (λ {P} {Q} f → 𝔽-L-natural {P} {Q} f)
-    ι1-bwd
-    SemiModExp (λ {X} {Y} pY → SemiModExp-pointed {X} {Y} pY)
-    𝒞𝟙ty 𝒞unit-pt 𝒞𝟙ty-pt model sort-pt
+    SemiModExp 𝒟-tops
+    𝒞𝟙ty 𝒞unit-pt model
     public
 
   open language-syntax Sig using (ctxt; type; _⊢_; first-order; first-order-ctxt)

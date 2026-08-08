@@ -17,9 +17,10 @@ import semimodule
 module semimod-products
   {A₀ : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A₀)
   (let module S = CommutativeSemiring S)
+  (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
   where
 
-module SemiMod = semimodule S
+module SemiMod = semimodule S ⊤-add-top
 
 open SemiMod using (Semimodule; _⇒_)
 open Semimodule
@@ -84,6 +85,22 @@ module DirectΠ (A : Setoid 0ℓ 0ℓ) (P : Fam A SemiMod.cat) where
   Πm .+-distribˡ x = Fib.+-distribˡ x
   Πm .zero-distribʳ x = Fib.zero-distribʳ x
   Πm .zero-distribˡ x = Fib.zero-distribˡ x
+  -- The pointwise top is a coherent choice because the transports are isomorphisms and the top
+  -- absorbs.
+  Πm .⊤m .part x = Fib.⊤m x
+  Πm .⊤m .part-natural {x₁} {x₂} e =
+    Fib.trans x₂ (P .subst e .func-resp-≈ (Fib.sym x₁ (Fib.⊤m-absorb x₁)))
+      (Fib.trans x₂ (P .subst e .preserve-+)
+        (Fib.trans x₂ (Fib.+-cong x₂ fg-elem (Fib.refl x₂))
+          (Fib.trans x₂ (Fib.+-comm x₂) (Fib.⊤m-absorb x₂))))
+    where
+      fg-elem : Fib._≈_ x₂ (P .subst e .func (P .subst (A.sym e) .func (Fib.⊤m x₂)))
+                           (Fib.⊤m x₂)
+      fg-elem =
+        Fib.trans x₂
+          (Fib.sym x₂ (P .trans* e (A.sym e) .*≈* ._≃s_.func-eq (Fib.refl x₂)))
+          (P .refl* .*≈* ._≃s_.func-eq (Fib.refl x₂))
+  Πm .⊤m-absorb x = Fib.⊤m-absorb x
 
   evalΠs : (a : A.Carrier) → Πm ⇒ P .fm a
   evalΠs a .*→* ._⇒s_.func c = c .part a

@@ -338,7 +338,7 @@ injF-assemble {X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} =
   ≈-trans (∘-cong (Lf X .fam .refl*) ≈-refl)
           (≈-trans id-left (≈-trans id-left inj-assemble))
 
--- Dropping the root: the assembly at the zero constant, so the root's contribution vanishes.
+-- Dropping the root: the assembly at the zero map, so the root's contribution vanishes.
 payloadF : ∀ {X : Obj} → Mor (Lf X) X
 payloadF .idxf = prop-setoid.idS _
 payloadF {X} .famf ._⇒f_.transf x = affine CME.εm (id _)
@@ -364,8 +364,8 @@ payloadF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
         (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong (CME.comp-bilinear-ε₁ spt) ≈-refl)
           (CME.homCM _ _ .CommutativeMonoid.+-lunit))
 
--- A chosen constant of every fibre, natural under the transports: what an eliminator produces
--- from a root alone.
+-- A point of every fibre, natural under the transports: what an eliminator writes when it
+-- consumes a root.
 record Pointed (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
   field
     pt         : ∀ x → 𝟙c ⇒ X .fam .fm x
@@ -374,44 +374,31 @@ record Pointed (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
 
 open Pointed public
 
--- Zero constants: eliminators discard the root, the reading without tags.
-zero-pointed : ∀ {X} → Pointed X
-zero-pointed .pt x = CME.εm
-zero-pointed {X} .pt-natural e = CME.comp-bilinear-ε₂ (X .fam .subst e)
-
--- The bare root as the constant of a lifted family.
+-- The bare root as the point of a lifted family.
 root-pointed : ∀ {X} → Pointed (Lf X)
 root-pointed .pt x = root
 root-pointed {X} .pt-natural e = Lmap-root (X .fam .subst e)
 
--- The constant of a lifted family: the root together with the payload's constant beneath it.
-Lf-pointed : ∀ {X} → Pointed X → Pointed (Lf X)
-Lf-pointed p .pt x = root CME.+m (inj ∘ p .pt x)
-Lf-pointed {X} p .pt-natural {x₁} {x₂} e =
-  ≈-trans (CME.comp-bilinear₂ _ _ _)
-    (CME.homCM _ _ .CommutativeMonoid.+-cong
-      (Lmap-root _)
-      (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong₁ (Lmap-inj (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e)))
-          (≈-trans (assoc _ _ _) (∘-cong₂ (p .pt-natural e))))))
+-- The family of tops: a top morphism into every object, absorbing in the enrichment, points
+-- every family at once, naturally because transports are isomorphisms and the top absorbs.
+module _ (top : ∀ a → 𝟙c ⇒ a)
+         (top-absorb : ∀ {a} (h : 𝟙c ⇒ a) → (h CME.+m top a) ≈ top a) where
 
-prod-pointed : ∀ {X Y} → Pointed X → Pointed Y → Pointed (Fam𝒞-P.prod X Y)
-prod-pointed pX pY .pt (x , y) = pair (pX .pt x) (pY .pt y)
-prod-pointed pX pY .pt-natural {x₁ , y₁} {x₂ , y₂} (e₁ , e₂) =
-  ≈-trans (pair-natural _ _ _)
-    (pair-cong
-      (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₁ _ _)) (pX .pt-natural e₁)))
-      (≈-trans (assoc _ _ _) (≈-trans (∘-cong₂ (pair-p₂ _ _)) (pY .pt-natural e₂))))
-
-coprod-pointed : ∀ {X Y} → Pointed X → Pointed Y →
-                 Pointed (HasCoproducts.coprod coproducts X Y)
-coprod-pointed pX pY .pt (inj₁ x) = pX .pt x
-coprod-pointed pX pY .pt (inj₂ y) = pY .pt y
-coprod-pointed pX pY .pt-natural {inj₁ x₁} {inj₁ x₂} e = pX .pt-natural e
-coprod-pointed pX pY .pt-natural {inj₂ y₁} {inj₂ y₂} e = pY .pt-natural e
+  top-pointed : ∀ (X : Obj) → Pointed X
+  top-pointed X .pt x = top (X .fam .fm x)
+  top-pointed X .pt-natural {x₁} {x₂} e =
+    ≈-trans (∘-cong₂ (≈-sym (top-absorb
+              (X .fam .subst (X .idx .Setoid.isEquivalence .sym e) ∘ top (X .fam .fm x₂)))))
+    (≈-trans (CME.comp-bilinear₂ _ _ _)
+    (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong
+               (≈-trans (≈-sym (assoc _ _ _))
+                 (≈-trans (∘-cong₁ (fam-subst-iso₁ (X .fam) e)) id-left))
+               ≈-refl)
+    (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-comm)
+             (top-absorb (X .fam .subst e ∘ top (X .fam .fm x₁))))))
 
 -- Eliminating a root in context: the payload continues, and the root produces the target's
--- chosen constant.
+-- point.
 elimF : ∀ {Γ X C : Obj} → Pointed C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
 elimF ptC f .idxf = f .idxf
 elimF ptC f .famf ._⇒f_.transf (γ , x) =
