@@ -48,7 +48,7 @@ open prop-setoid._⇒_ using (func; func-resp-≈)
 open prop-setoid._≃m_ using (func-eq)
 
 module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ M.cmon M.biproduct Lm-lifting
-module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiModT.cmon-enriched⊤ SemiModT.biproduct⊤ Ls-lifting
+module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ Ls-lifting
 
 private
   module FCμ = Category Fam⟨𝒞⟩μ.cat
@@ -86,10 +86,10 @@ full-absorb h i j = Sc.trans Sc.+-comm ⊤-add-top
 module SMP = semimod-products S
 module SMPT = SMP.Topped ⊤-add-top
 
-SPmod : HasSetoidProducts 0ℓ 0ℓ SemiModT.cat⊤
-SPmod = SMPT.semimod-setoid-products⊤
+SPmod : HasSetoidProducts 0ℓ 0ℓ SemiModT.cat-⊤
+SPmod = SMPT.semimod-setoid-products-⊤
 
-module FE = fam-exponentials 0ℓ 0ℓ SemiModT.cat⊤ SemiModT.cmon-enriched⊤ SemiModT.biproduct⊤ SPmod
+module FE = fam-exponentials 0ℓ 0ℓ SemiModT.cat-⊤ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SPmod
 
 SemiModExp : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
 SemiModExp = exponentials→weak FE.exponentials
@@ -175,7 +175,7 @@ module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
   open language-roots-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct Lm-lifting
-    SemiModT.terminal⊤ SemiModT.cmon-enriched⊤ SemiModT.biproduct⊤ Ls-lifting
+    SemiModT.terminal-⊤ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ Ls-lifting
     elim-weight-endo
     𝔽F 𝔽F-preserve-terminal (λ {m} {n} → 𝔽F-preserve-products {m} {n})
     𝔽-L-iso (λ {P} {Q} f → 𝔽-L-natural {P} {Q} f)
