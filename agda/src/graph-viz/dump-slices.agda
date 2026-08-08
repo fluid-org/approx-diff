@@ -76,18 +76,18 @@ private
 
   mutual
     show-aval : AVal two.Two → String
-    show-aval (node Shape.unit  _ a _ _)  = "()" ++ mark a
-    show-aval (node Shape.const l a n _)  = show-c n l a
-    show-aval (node Shape.inl   _ a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
-    show-aval (node Shape.inr   _ a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
-    show-aval (node Shape.clo   _ a _ _)  = "<closure>" ++ mark a
-    show-aval (node Shape.nil   _ a _ _)  = "[]" ++ mark a
-    show-aval (node Shape.pair  _ a _ (p ∷ q ∷ _)) =
+    show-aval (node Shape.unit      a _ _)  = "()" ++ mark a
+    show-aval (node (Shape.const l) a n _)  = show-c n l a
+    show-aval (node Shape.inl       a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
+    show-aval (node Shape.inr       a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
+    show-aval (node Shape.clo       a _ _)  = "<closure>" ++ mark a
+    show-aval (node Shape.nil       a _ _)  = "[]" ++ mark a
+    show-aval (node Shape.pair      a _ (p ∷ q ∷ _)) =
       "(" ++ show-aval p ++ ", " ++ show-aval q ++ ")" ++ mark a
-    show-aval (node Shape.pair  _ a _ _)  = "?"
-    show-aval (node Shape.cons  _ a _ (h ∷ t ∷ _)) =
+    show-aval (node Shape.pair      a _ _)  = "?"
+    show-aval (node Shape.cons      a _ (h ∷ t ∷ _)) =
       show-aval h ++ " ∷" ++ mark a ++ " " ++ show-aval t
-    show-aval (node Shape.cons  _ a _ _)  = "?"
+    show-aval (node Shape.cons      a _ _)  = "?"
 
     show-kids : List (AVal two.Two) → String
     show-kids []      = ""
@@ -132,13 +132,13 @@ private
   erases M = FR.app M
 
   consᵃ : two.Two → AVal two.Two → AVal two.Two → AVal two.Two
-  consᵃ a h t = node Shape.cons "∷" a 2 (h ∷ t ∷ [])
+  consᵃ a h t = node Shape.cons a 2 (h ∷ t ∷ [])
 
   nilᵃ : two.Two → AVal two.Two
-  nilᵃ a = node Shape.nil "[]" a 2 []
+  nilᵃ a = node Shape.nil a 2 []
 
   numᵃ : ℚ → two.Two → AVal two.Two
-  numᵃ q a = node Shape.const (show-ℚ q) a 1 []
+  numᵃ q a = node (Shape.const (show-ℚ q)) a 1 []
 
   cell1-sel : AVal two.Two
   cell1-sel =

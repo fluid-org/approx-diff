@@ -27,7 +27,7 @@ open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
 open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open import language-operational.annotated-value EP.Sig EP.primitives
-  using (AVal; node; Shape; shape-of; shape-env-of; covers; covers-all)
+  using (AVal; node; Shape; shape-of; shape-env-of; covers; covers-all; label-of)
 open import Data.Unit using (⊤)
 open import Data.Nat using (_+_)
 
@@ -49,7 +49,7 @@ private
 
   mutual
     drawn : ℕ → AVal ⊤ → List (ℕ × String)
-    drawn off (node _ l _ n cs) = (off , l) ∷ drawn-all (off + n) cs
+    drawn off (node sh _ n cs) = (off , label-of sh) ∷ drawn-all (off + n) cs
 
     drawn-all : ℕ → List (AVal ⊤) → List (ℕ × String)
     drawn-all off []       = []
@@ -57,7 +57,7 @@ private
 
   mutual
     kid-edges : ℕ → AVal ⊤ → List (ℕ × ℕ)
-    kid-edges off (node _ _ _ n cs) = links (off + n) cs ++L kid-edges-all (off + n) cs
+    kid-edges off (node _ _ n cs) = links (off + n) cs ++L kid-edges-all (off + n) cs
       where
       links : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
       links o []       = []
@@ -69,7 +69,7 @@ private
 
   mutual
     owner : ℕ → AVal ⊤ → ℕ → ℕ
-    owner off (node _ _ _ n cs) i =
+    owner off (node _ _ n cs) i =
       if in-run off n i then off else owner-all (off + n) cs i
       where
       in-run : ℕ → ℕ → ℕ → Bool
