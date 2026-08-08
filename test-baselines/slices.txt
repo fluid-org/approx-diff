@@ -22,9 +22,9 @@ map-backward
 0⊥ ∷ 1⊥ ∷ 2 ∷ []⊥⊥
 0⊥ ∷ 1⊥ ∷ 2⊥ ∷ []·⊥
 0⊥ ∷ 1⊥ ∷ 2⊥ ∷ []·⊥
-map-forward-cell1
+map-erase-cell1
 1 ∷ 2 ∷ 3 ∷ []
-map-roundtrip-cell2
+map-query-cell2
 1⊥ ∷⊥⊥ 2⊥ ∷ 3⊥ ∷⊥⊥ []⊥⊥
 0⊥ ∷ 1⊥ ∷·⊥ 2⊥ ∷⊥⊥ []⊥⊥
 1 ∷ 2 ∷ 3 ∷ []

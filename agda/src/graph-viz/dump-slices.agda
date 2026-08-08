@@ -17,6 +17,7 @@ import Data.Integer.Show as ℤ-Show
 open import Level using (0ℓ)
 import two
 import matrix
+import free-realise
 import label
 open import primitives using (Primitives)
 import example.primitives as EP
@@ -35,6 +36,7 @@ open Primitives EP.primitives using (sort-val; sort-width)
 
 private
   module TM = matrix.Mat two.semiring
+  module FR = free-realise two.semiring
 
 -- The operational input value mirroring γ-input: three entries, two under the queried label.
 elemT : type 0
@@ -128,34 +130,19 @@ numlistT = list (base EP.number)
 δ-out = const (0ℚ +ℚ 1ℚ) ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ᵥ nilᵥ
 
 private
-  and2 or2 not2 : two.Two → two.Two → two.Two
-  and2 two.I b = b
-  and2 two.O _ = two.O
-  or2 two.O b = b
-  or2 two.I _ = two.I
-  not2 two.I _ = two.O
-  not2 two.O _ = two.I
+  vec-of : ∀ {n} → List two.Two → TM.Vec n
+  vec-of bs i = lookupO bs (Fin.toℕ i)
 
-  -- Row containment: every consumed position of the row is available in the selection.
-  contained : List two.Two → List two.Two → two.Two
-  contained []       _        = two.I
-  contained (r ∷ rs) []       = and2 (not2 r two.O) (contained rs [])
-  contained (r ∷ rs) (b ∷ bs) = and2 (or2 (not2 r two.O) b) (contained rs bs)
+  bits-of : ∀ n → TM.Vec n → List two.Two
+  bits-of n w = toList (tabulate {n = n} w)
 
-  -- The forward slice of an input selection: the output positions whose whole row it contains,
-  -- rendered over the output value.
-  meets : List two.Two → List two.Two → two.Two
-  meets []       _        = two.O
-  meets (_ ∷ _)  []       = two.O
-  meets (r ∷ rs) (b ∷ bs) = or2 (and2 r b) (meets rs bs)
+  consumes : ∀ {m n} → TM.Matrix m n → TM.Vec m → TM.Vec n
+  consumes M = FR.app (M TM.ᵀ)
 
-  fwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
-  fwd-bits {m} M sel = toList (tabulate {n = m} (λ q → meets (toList (tabulate (M q))) sel))
+  erases : ∀ {m n} → TM.Matrix m n → TM.Vec n → TM.Vec m
+  erases M = FR.app M
 
-  render-fwd : ∀ {m n} → TM.Matrix m n → List two.Two → String
-  render-fwd M sel = render-row δ-out (fwd-bits M sel)
-
-  -- The first input cons cell, without its element.
+  -- The first input cons cell's spine, without its element.
   cell1-sel : List two.Two
   cell1-sel = two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O ∷ two.O
             ∷ two.O ∷ two.O ∷ two.O ∷ []
@@ -164,21 +151,14 @@ private
   out-cell2-sel = two.O ∷ two.O ∷ two.O ∷ two.I ∷ two.I ∷ two.O ∷ two.O ∷ two.O
                 ∷ two.O ∷ two.O ∷ two.O ∷ []
 
-  -- The backward slice of an output selection: the join of the selected positions' rows.
+  fwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
+  fwd-bits {m} M sel = bits-of m (erases M (vec-of sel))
+
   bwd-bits : ∀ {m n} → TM.Matrix m n → List two.Two → List two.Two
-  bwd-bits {m} M outsel =
-    foldrL orL (toList (tabulate {n = m} (λ _ → two.O)))
-      (zipsel (toList (tabulate {n = m} (λ q → toList (tabulate (M q))))) outsel)
-    where
-    orL : List two.Two → List two.Two → List two.Two
-    orL []       ys       = ys
-    orL xs       []       = xs
-    orL (x ∷ xs) (y ∷ ys) = or2 x y ∷ orL xs ys
-    zipsel : List (List two.Two) → List two.Two → List (List two.Two)
-    zipsel []         _              = []
-    zipsel (_ ∷ rs)   []             = []
-    zipsel (r ∷ rs)   (two.I ∷ bs)   = r ∷ zipsel rs bs
-    zipsel (r ∷ rs)   (two.O ∷ bs)   = zipsel rs bs
+  bwd-bits {m} {n} M outsel = bits-of n (consumes M (vec-of outsel))
+
+  render-fwd : ∀ {m n} → TM.Matrix m n → List two.Two → String
+  render-fwd M sel = render-row δ-out (fwd-bits M sel)
 
   render-in : List two.Two → String
   render-in bits = render-row γ-nums-val bits
@@ -195,8 +175,8 @@ contents =
   "case0\n" ++ slice dep-case0 ++
   "tag\n" ++ slice dep-tag ++
   "map-backward\n" ++ slice-over γ-nums-val dep-map ++
-  "map-forward-cell1\n" ++ render-fwd dep-map cell1-sel ++ "\n" ++
-  "map-roundtrip-cell2\n" ++
+  "map-erase-cell1\n" ++ render-fwd dep-map cell1-sel ++ "\n" ++
+  "map-query-cell2\n" ++
     render-out out-cell2-sel ++ "\n" ++
     render-in (bwd-bits dep-map out-cell2-sel) ++ "\n" ++
     render-out (fwd-bits dep-map (bwd-bits dep-map out-cell2-sel)) ++ "\n"
