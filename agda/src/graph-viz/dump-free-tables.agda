@@ -87,4 +87,4 @@ contents =
   "tag\n" ++ t-tag
 
 main : Main
-main = run (writeFile "approx-diff/test-baselines/free-dependency.txt" contents)
+main = run (writeFile "test-baselines/free-dependency.txt" contents)

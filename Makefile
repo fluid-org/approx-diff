@@ -40,7 +40,7 @@ notes.pdf: notes.tex $(NOTES_DEPS)
 AGDA_EXCLUDES:=-x "agda/_build/*" -x "agda/src/unused/*" -x "agda/src/incomplete/*" -x "agda/src/*~"
 
 submit: main-submit.pdf
-	cd agda && agda src/test/all.agda
+	cd agda && agda src/everything.agda
 	rm -f suppl-submit.zip
 	zip -r suppl-submit.zip agda $(AGDA_EXCLUDES)
 	@if grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/main-submit.log; then \

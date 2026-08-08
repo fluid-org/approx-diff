@@ -2,7 +2,7 @@
 
 module everything where
 
-import test.all
+import test.interaction
 
 import graph-viz.dump-rooted-tables
 import graph-viz.dump-free-tables

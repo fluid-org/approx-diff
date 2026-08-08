@@ -174,4 +174,4 @@ contents =
     render-out (fwd-bits dep-map (bwd-bits dep-map out-cell2-sel)) ++ "\n" 
 
 main : Main
-main = run (writeFile "approx-diff/test-baselines/rooted-slices.txt" contents)
+main = run (writeFile "test-baselines/rooted-slices.txt" contents)
