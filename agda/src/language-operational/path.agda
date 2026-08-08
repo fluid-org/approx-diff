@@ -122,29 +122,31 @@ mutual
               {D₁ : Map γ s τ₀ w R w' R'} {D₂ : γ · w' , s ⇓ u [ S ]} →
               Path D₂ → PathM (m-rec D₁ D₂)
     m-inl   : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-              {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+              {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {R : width-env γ ⇒ suc (width v)}
               {v' : Val (σ₁ [ σr ])} {R' : width-env γ ⇒ width v'}
-              {D : Map γ s σ₁ v R v' R'} →
-              PathM D → PathM (m-inl {σ₂ = σ₂} D)
+              {D : Map γ s σ₁ v (p₂ {1} {width v} ∘ R) v' R'} →
+              PathM D → PathM (m-inl {σ₂ = σ₂} {R = R} D)
     m-inr   : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-              {σ₁ σ₂ : type 1} {v : Val (σ₂ [ μ τ₀ ])} {R : width-env γ ⇒ width v}
+              {σ₁ σ₂ : type 1} {v : Val (σ₂ [ μ τ₀ ])} {R : width-env γ ⇒ suc (width v)}
               {v' : Val (σ₂ [ σr ])} {R' : width-env γ ⇒ width v'}
-              {D : Map γ s σ₂ v R v' R'} →
-              PathM D → PathM (m-inr {σ₁ = σ₁} D)
+              {D : Map γ s σ₂ v (p₂ {1} {width v} ∘ R) v' R'} →
+              PathM D → PathM (m-inr {σ₁ = σ₁} {R = R} D)
     m-pair₁ : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {u : Val (σ₂ [ μ τ₀ ])}
               {R : width-env γ ⇒ width (pair v u)}
               {v' : Val (σ₁ [ σr ])} {S : width-env γ ⇒ width v'}
               {u' : Val (σ₂ [ σr ])} {T : width-env γ ⇒ width u'}
-              {D₁ : Map γ s σ₁ v (p₁ ∘ R) v' S} {D₂ : Map γ s σ₂ u (p₂ ∘ R) u' T} →
-              PathM D₁ → PathM (m-pair D₁ D₂)
+              {D₁ : Map γ s σ₁ v (p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) v' S}
+              {D₂ : Map γ s σ₂ u (p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) u' T} →
+              PathM D₁ → PathM (m-pair {R = R} D₁ D₂)
     m-pair₂ : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {u : Val (σ₂ [ μ τ₀ ])}
               {R : width-env γ ⇒ width (pair v u)}
               {v' : Val (σ₁ [ σr ])} {S : width-env γ ⇒ width v'}
               {u' : Val (σ₂ [ σr ])} {T : width-env γ ⇒ width u'}
-              {D₁ : Map γ s σ₁ v (p₁ ∘ R) v' S} {D₂ : Map γ s σ₂ u (p₂ ∘ R) u' T} →
-              PathM D₂ → PathM (m-pair D₁ D₂)
+              {D₁ : Map γ s σ₁ v (p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) v' S}
+              {D₂ : Map γ s σ₂ u (p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) u' T} →
+              PathM D₂ → PathM (m-pair {R = R} D₁ D₂)
     m-mu    : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               {τ' : type 2} {w : Val (unfold₁ τ' [ μ τ₀ ])} {R : width-env γ ⇒ width w}
               {w' : Val (unfold₁ τ' [ σr ])} {R' : width-env γ ⇒ width w'}

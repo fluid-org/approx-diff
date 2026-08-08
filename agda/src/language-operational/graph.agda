@@ -117,23 +117,25 @@ mutual
 
   graph (⇓-inl D) env       (at (inl q)) = graph D env (at q)
   graph (⇓-inl D) (at (inl p)) (at (inl q)) = graph D (at p) (at q)
-  graph (⇓-inl D) (at (inl p)) (at ε) = edge M.I p
+  graph (⇓-inl D) (at (inl p)) (at ε) = edge (M.in₂ {1}) p
 
   graph (⇓-inr D) env       (at (inr q)) = graph D env (at q)
   graph (⇓-inr D) (at (inr p)) (at (inr q)) = graph D (at p) (at q)
-  graph (⇓-inr D) (at (inr p)) (at ε) = edge M.I p
+  graph (⇓-inr D) (at (inr p)) (at ε) = edge (M.in₂ {1}) p
 
   graph (⇓-case-l D₁ D₂) env (at (case-l₁ q)) = graph D₁ env (at q)
   graph (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at (case-l₁ q)) = graph D₁ (at p) (at q)
   graph (⇓-case-l D₁ D₂) env (at (case-l₂ q)) = graph D₂ env (at q) M.∘ M.in₁
-  graph (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at (case-l₂ q)) = edge (graph D₂ env (at q) M.∘ M.in₂) p
+  graph (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at (case-l₂ q)) =
+    edge (graph D₂ env (at q) M.∘ M.in₂ M.∘ M.p₂ {1}) p
   graph (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at (case-l₂ q)) = graph D₂ (at p) (at q)
   graph (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at ε) = edge M.I p
 
   graph (⇓-case-r D₁ D₂) env (at (case-r₁ q)) = graph D₁ env (at q)
   graph (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₁ q)) = graph D₁ (at p) (at q)
   graph (⇓-case-r D₁ D₂) env (at (case-r₂ q)) = graph D₂ env (at q) M.∘ M.in₁
-  graph (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₂ q)) = edge (graph D₂ env (at q) M.∘ M.in₂) p
+  graph (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₂ q)) =
+    edge (graph D₂ env (at q) M.∘ M.in₂ M.∘ M.p₂ {1}) p
   graph (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at (case-r₂ q)) = graph D₂ (at p) (at q)
   graph (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at ε) = edge M.I p
 
@@ -141,24 +143,25 @@ mutual
   graph (⇓-pair D₁ D₂) (at (pair₁ p)) (at (pair₁ q)) = graph D₁ (at p) (at q)
   graph (⇓-pair D₁ D₂) env (at (pair₂ q)) = graph D₂ env (at q)
   graph (⇓-pair D₁ D₂) (at (pair₂ p)) (at (pair₂ q)) = graph D₂ (at p) (at q)
-  graph (⇓-pair D₁ D₂) (at (pair₁ p)) (at ε) = edge M.in₁ p
-  graph (⇓-pair D₁ D₂) (at (pair₂ p)) (at ε) = edge M.in₂ p
+  graph (⇓-pair D₁ D₂) (at (pair₁ p)) (at ε) = edge (M.in₂ {1} M.∘ M.in₁) p
+  graph (⇓-pair D₁ D₂) (at (pair₂ p)) (at ε) = edge (M.in₂ {1} M.∘ M.in₂) p
 
   graph (⇓-fst D) env (at (fst q)) = graph D env (at q)
   graph (⇓-fst D) (at (fst p)) (at (fst q)) = graph D (at p) (at q)
-  graph (⇓-fst D) (at (fst p)) (at ε) = edge M.p₁ p
+  graph (⇓-fst D) (at (fst p)) (at ε) = edge (M.p₁ M.∘ M.p₂ {1}) p
 
   graph (⇓-snd D) env (at (snd q)) = graph D env (at q)
   graph (⇓-snd D) (at (snd p)) (at (snd q)) = graph D (at p) (at q)
-  graph (⇓-snd D) (at (snd p)) (at ε) = edge M.p₂ p
+  graph (⇓-snd D) (at (snd p)) (at ε) = edge (M.p₂ M.∘ M.p₂ {1}) p
 
-  graph ⇓-lam env (at ε) = M.I
+  graph ⇓-lam env (at ε) = M.in₂ {1}
 
   graph (⇓-app D₁ D₂ D₃) env (at (app₁ q)) = graph D₁ env (at q)
   graph (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at (app₁ q)) = graph D₁ (at p) (at q)
   graph (⇓-app D₁ D₂ D₃) env (at (app₂ q)) = graph D₂ env (at q)
   graph (⇓-app D₁ D₂ D₃) (at (app₂ p)) (at (app₂ q)) = graph D₂ (at p) (at q)
-  graph (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at (app₃ q)) = edge (graph D₃ env (at q) M.∘ M.in₁) p
+  graph (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at (app₃ q)) =
+    edge (graph D₃ env (at q) M.∘ M.in₁ M.∘ M.p₂ {1}) p
   graph (⇓-app D₁ D₂ D₃) (at (app₂ p)) (at (app₃ q)) = edge (graph D₃ env (at q) M.∘ M.in₂) p
   graph (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₃ q)) = graph D₃ (at p) (at q)
   graph (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at ε) = edge M.I p
@@ -210,23 +213,23 @@ mutual
   graphM m-arrow input (at ε) = M.I
 
   graphM (m-inl D) env (at (m-inl q)) = graphM D env (at q)
-  graphM (m-inl D) input (at (m-inl q)) = graphM D input (at q)
+  graphM (m-inl D) input (at (m-inl q)) = graphM D input (at q) M.∘ M.p₂ {1}
   graphM (m-inl D) (at (m-inl p)) (at (m-inl q)) = graphM D (at p) (at q)
-  graphM (m-inl D) (at (m-inl p)) (at ε) = edge-m M.I p
+  graphM (m-inl D) (at (m-inl p)) (at ε) = edge-m (M.in₂ {1}) p
 
   graphM (m-inr D) env (at (m-inr q)) = graphM D env (at q)
-  graphM (m-inr D) input (at (m-inr q)) = graphM D input (at q)
+  graphM (m-inr D) input (at (m-inr q)) = graphM D input (at q) M.∘ M.p₂ {1}
   graphM (m-inr D) (at (m-inr p)) (at (m-inr q)) = graphM D (at p) (at q)
-  graphM (m-inr D) (at (m-inr p)) (at ε) = edge-m M.I p
+  graphM (m-inr D) (at (m-inr p)) (at ε) = edge-m (M.in₂ {1}) p
 
   graphM (m-pair D₁ D₂) env (at (m-pair₁ q)) = graphM D₁ env (at q)
-  graphM (m-pair D₁ D₂) input (at (m-pair₁ q)) = graphM D₁ input (at q) M.∘ M.p₁
+  graphM (m-pair D₁ D₂) input (at (m-pair₁ q)) = graphM D₁ input (at q) M.∘ M.p₁ M.∘ M.p₂ {1}
   graphM (m-pair D₁ D₂) (at (m-pair₁ p)) (at (m-pair₁ q)) = graphM D₁ (at p) (at q)
   graphM (m-pair D₁ D₂) env (at (m-pair₂ q)) = graphM D₂ env (at q)
-  graphM (m-pair D₁ D₂) input (at (m-pair₂ q)) = graphM D₂ input (at q) M.∘ M.p₂
+  graphM (m-pair D₁ D₂) input (at (m-pair₂ q)) = graphM D₂ input (at q) M.∘ M.p₂ M.∘ M.p₂ {1}
   graphM (m-pair D₁ D₂) (at (m-pair₂ p)) (at (m-pair₂ q)) = graphM D₂ (at p) (at q)
-  graphM (m-pair D₁ D₂) (at (m-pair₁ p)) (at ε) = edge-m M.in₁ p
-  graphM (m-pair D₁ D₂) (at (m-pair₂ p)) (at ε) = edge-m M.in₂ p
+  graphM (m-pair D₁ D₂) (at (m-pair₁ p)) (at ε) = edge-m (M.in₂ {1} M.∘ M.in₁) p
+  graphM (m-pair D₁ D₂) (at (m-pair₂ p)) (at ε) = edge-m (M.in₂ {1} M.∘ M.in₂) p
 
   graphM (m-mu {τ' = τ'} {w = w} D) env (at (m-mu q)) = graphM D env (at q)
   graphM (m-mu {τ' = τ'} {w = w} D) input (at (m-mu q)) =

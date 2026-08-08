@@ -64,17 +64,20 @@ open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
 
 mutual
   width : ∀ {τ} → Val τ → ℕ
-  width unit        = 0
+  width unit          = 1
   width (const {s} _) = sort-width s
-  width (inl v)     = width v
-  width (inr v)     = width v
-  width (pair v u)  = width v + width u
-  width (clo γ _)   = width-env γ
-  width (roll v)    = width v
+  width (inl v)       = suc (width v)
+  width (inr v)       = suc (width v)
+  width (pair v u)    = suc (width v + width u)
+  width (clo γ _)     = suc (width-env γ)
+  width (roll v)      = width v
 
   width-env : ∀ {Γ} → Env Γ → ℕ
   width-env emp     = 0
   width-env (γ · v) = width-env γ + width v
+
+rooted : ∀ {m n} → m ⇒ n → m ⇒ suc n
+rooted R = ⟨ M.εₘ , R ⟩
 
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl
@@ -84,41 +87,46 @@ proj-var zero     (γ · v) = p₂ {width-env γ} {width v}
 proj-var (succ x) (γ · v) = proj-var x γ ∘ p₁ {width-env γ} {width v}
 
 -- Case on the branch so that the width computes.
-brel-mat : ∀ {Γ} (γ : Env Γ) (b : ⊤ {0ℓ} ⊎ ⊤ {0ℓ}) → width-env γ ⇒ width (bool→val b)
-brel-mat γ (inj₁ _) = to-terminal {width-env γ}
-brel-mat γ (inj₂ _) = to-terminal {width-env γ}
+brel-mat : ∀ {Γ} (γ : Env Γ) (d : width-env γ ⇒ 1) (b : ⊤ {0ℓ} ⊎ ⊤ {0ℓ}) →
+           width-env γ ⇒ width (bool→val b)
+brel-mat γ d (inj₁ _) = ⟨ d , M.εₘ ⟩
+brel-mat γ d (inj₂ _) = ⟨ d , M.εₘ ⟩
 
 mutual
   data _,_⇓_[_] : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) (v : Val τ) →
                    width-env γ ⇒ width v → Set ℓ where
     ⇓-var    : ∀ {Γ τ} {γ : Env Γ} (x : Γ ∋ τ) → γ , var x ⇓ lookup x γ [ proj-var x γ ]
-    ⇓-unit   : ∀ {Γ} {γ : Env Γ} → γ , unit ⇓ unit [ to-terminal ]
+    ⇓-unit   : ∀ {Γ} {γ : Env Γ} → γ , unit ⇓ unit [ M.εₘ ]
     ⇓-inl    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v R} →
-               γ , t ⇓ v [ R ] → γ , inl {τ₂ = τ₂} t ⇓ inl v [ R ]
+               γ , t ⇓ v [ R ] → γ , inl {τ₂ = τ₂} t ⇓ inl v [ rooted R ]
     ⇓-inr    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₂} {v R} →
-               γ , t ⇓ v [ R ] → γ , inr {τ₁ = τ₁} t ⇓ inr v [ R ]
+               γ , t ⇓ v [ R ] → γ , inr {τ₁ = τ₁} t ⇓ inr v [ rooted R ]
     ⇓-case-l : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R S} →
                γ , s ⇓ inl v [ R ] → γ · v , t₁ ⇓ u [ S ] →
-               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , R ⟩ ]
+               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , p₂ ∘ R ⟩ ]
     ⇓-case-r : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R S} →
                γ , s ⇓ inr v [ R ] → γ · v , t₂ ⇓ u [ S ] →
-               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , R ⟩ ]
+               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , p₂ ∘ R ⟩ ]
     ⇓-pair   : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R S} →
-               γ , s ⇓ v [ R ] → γ , t ⇓ u [ S ] → γ , pair s t ⇓ pair v u [ ⟨ R , S ⟩ ]
+               γ , s ⇓ v [ R ] → γ , t ⇓ u [ S ] → γ , pair s t ⇓ pair v u [ rooted ⟨ R , S ⟩ ]
     ⇓-fst    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
-               γ , t ⇓ pair v u [ R ] → γ , fst t ⇓ v [ p₁ ∘ R ]
+               γ , t ⇓ pair v u [ R ] →
+               γ , fst t ⇓ v [ p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R) ]
     ⇓-snd    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
-               γ , t ⇓ pair v u [ R ] → γ , snd t ⇓ u [ p₂ ∘ R ]
-    ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} → γ , lam t ⇓ clo γ t [ idm _ ]
+               γ , t ⇓ pair v u [ R ] →
+               γ , snd t ⇓ u [ p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R) ]
+    ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} → γ , lam t ⇓ clo γ t [ rooted (idm _) ]
     ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T} →
                γ , s ⇓ clo {Γ'} γ' t' [ R ] → γ , t ⇓ v [ S ] → γ' · v , t' ⇓ u [ T ] →
-               γ , app s t ⇓ u [ T ∘ ⟨ R , S ⟩ ]
+               γ , app s t ⇓ u [ T ∘ ⟨ p₂ {1} {width-env γ'} ∘ R , S ⟩ ]
     ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] → γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ op-deps ω .func vs ∘ R ]
     ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-               γ , Ms ⇓s vs [ R ] → γ , brel ω Ms ⇓ bool→val (rel-pred ω .func vs) [ brel-mat γ (rel-pred ω .func vs) ]
+               γ , Ms ⇓s vs [ R ] →
+               γ , brel ω Ms ⇓ bool→val (rel-pred ω .func vs)
+                     [ brel-mat γ (rel-deps ω .func vs ∘ R) (rel-pred ω .func vs) ]
     ⇓-roll   : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v R} →
                γ , t ⇓ v [ R ] → γ , roll {τ = τ} t ⇓ roll {τ} v [ R ]
     ⇓-fold   : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
@@ -144,12 +152,16 @@ mutual
     m-base  : ∀ {b v R} → Map γ s (base b) v R v R
     m-arrow : ∀ {σ₁ σ₂ v R} → Map γ s (σ₁ [→] σ₂) v R v R
     m-inl   : ∀ {σ₁ σ₂ v v' R R'} →
-              Map γ s σ₁ v R v' R' → Map γ s (σ₁ [+] σ₂) (inl v) R (inl v') R'
+              Map γ s σ₁ v (p₂ {1} {width v} ∘ R) v' R' →
+              Map γ s (σ₁ [+] σ₂) (inl v) R (inl v') ⟨ p₁ {1} {width v} ∘ R , R' ⟩
     m-inr   : ∀ {σ₁ σ₂ v v' R R'} →
-              Map γ s σ₂ v R v' R' → Map γ s (σ₁ [+] σ₂) (inr v) R (inr v') R'
+              Map γ s σ₂ v (p₂ {1} {width v} ∘ R) v' R' →
+              Map γ s (σ₁ [+] σ₂) (inr v) R (inr v') ⟨ p₁ {1} {width v} ∘ R , R' ⟩
     m-pair  : ∀ {σ₁ σ₂ v v' u u' R S T} →
-              Map γ s σ₁ v (p₁ ∘ R) v' S → Map γ s σ₂ u (p₂ ∘ R) u' T →
-              Map γ s (σ₁ [×] σ₂) (pair v u) R (pair v' u') ⟨ S , T ⟩
+              Map γ s σ₁ v (p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) v' S →
+              Map γ s σ₂ u (p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) u' T →
+              Map γ s (σ₁ [×] σ₂) (pair v u) R (pair v' u')
+                  ⟨ p₁ {1} {width v + width u} ∘ R , ⟨ S , T ⟩ ⟩
     m-mu    : ∀ {τ' : type 2} {w w' R R'} →
               Map γ s (unfold₁ τ') w R w' R' →
               Map γ s (μ τ')

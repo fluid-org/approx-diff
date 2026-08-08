@@ -3,6 +3,7 @@
 -- The position order matches the model fibre: a former's root before its payload, a pair's first
 -- component before its second.
 open import Level using (0ℓ)
+
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Fin using (toℕ)
 open import Data.List using (List; []; _∷_; _++_)
@@ -21,10 +22,9 @@ module language-operational.annotated-value {ℓ} (Sig : Signature ℓ)
 open Signature Sig
 open Primitives 𝒫
 import language-syntax Sig as Syn
-open import language-operational.evaluation Sig 𝒫 using (Val; Env)
+open import language-operational.evaluation Sig 𝒫 using (Val; Env; width; width-env)
 open Val
 open Env
-open import language-operational.width Sig 𝒫 using (width; width-env)
 
 module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 

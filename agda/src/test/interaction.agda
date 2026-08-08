@@ -47,10 +47,10 @@ init-dep = refl
 
 -- Scrutinee root revealed: its region splits, dependence routes through the revealed vertex, and
 -- the direct env-to-root entry disappears.
-reveal-in : visible-graph D K₁ env (at scrut) zero zero ≡ two.I
+reveal-in : visible-graph D K₁ env (at scrut) (suc zero) zero ≡ two.I
 reveal-in = refl
 
-reveal-out : visible-graph D K₁ (at scrut) (at ε) zero zero ≡ two.I
+reveal-out : visible-graph D K₁ (at scrut) (at ε) zero (suc zero) ≡ two.I
 reveal-out = refl
 
 reveal-no-direct : visible-graph D K₁ env (at ε) zero zero ≡ two.O
@@ -61,7 +61,7 @@ reveal-no-env-branch : fo-graph D env (at (case-l₂ ε)) zero zero ≡ two.O
 reveal-no-env-branch = refl
 
 -- The scrutinee slice of the branch environment carries the dependence instead.
-rewired-scrut-branch : fo-graph D (at scrut) (at (case-l₂ ε)) zero zero ≡ two.I
+rewired-scrut-branch : fo-graph D (at scrut) (at (case-l₂ ε)) zero (suc zero) ≡ two.I
 rewired-scrut-branch = refl
 
 -- Hidden again: the regions merge back and the initial view returns.
