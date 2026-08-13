@@ -5,7 +5,7 @@
 -- scrutinee root, giving the chain env → inl payload → scrutinee root → branch root → root.
 -- Initially the three intermediates form one hidden region; revealing the scrutinee root splits it
 -- in two, and hiding it again merges them back.
-module test.interaction where
+module interaction.example where
 
 open import Data.Fin using (zero; suc)
 open import Data.Rational using (ℚ; 1ℚ)
@@ -21,6 +21,7 @@ open import language-operational.evaluation Sig Dep.primitives
 open import language-operational.path Sig Dep.primitives
 open import language-operational.graph Sig Dep.primitives
 open import language-operational.hide Sig Dep.primitives
+open import interaction.config Sig Dep.primitives
 
 γ₀ : Env (emp ▸ base number)
 γ₀ = emp · const 1ℚ

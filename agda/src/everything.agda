@@ -2,7 +2,7 @@
 
 module everything where
 
-import test.interaction
+import interaction.example
 
 import graph-viz.dump-tables
 import graph-viz.dump-slices

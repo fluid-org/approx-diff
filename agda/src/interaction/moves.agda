@@ -29,7 +29,7 @@ import two
 -- The moves preserve the invariant that the stored regions partition the hidden set into
 -- pairwise-apart pieces, each carrying its summary. The initial configuration satisfies the
 -- invariant, and the hide and reveal moves preserve it.
-module language-operational.moves {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module interaction.moves {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫
@@ -38,6 +38,7 @@ open import language-operational.evaluation Sig 𝒫
 open import language-operational.path Sig 𝒫
 open import language-operational.graph Sig 𝒫
 open import language-operational.hide Sig 𝒫
+open import interaction.config Sig 𝒫
 open import language-operational.topological-order Sig 𝒫
 
 private
