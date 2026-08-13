@@ -14,7 +14,7 @@ open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
 import Data.Nat.Show as ℕ-Show
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.Vec using (toList; tabulate)
+open import Data.Vec as Vec using (Vec; toList; tabulate)
 open import Level using (0ℓ)
 import three
 import example.primitives as EP
@@ -27,8 +27,8 @@ open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
 open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open import language-operational.annotated-value EP.Sig EP.primitives
-  using (AVal; node; Tag; shape-of; shape-env-of; covers; covers-all; label-of;
-         fold; fold-all)
+  using (AVal; node; Tag; arity; shape-of; shape-env-of; covers; covers-vec; covers-all;
+         label-of; fold; fold-all)
 open import Data.Unit using (⊤)
 open import Data.Nat using (_+_)
 
@@ -49,12 +49,12 @@ private
   filter-out-tree = shape-of (λ {s} c → showC {s} c) δ-filter ∷ []
 
   private
-    node-entry : Tag → ⊤ → ℕ → ℕ → List (List (ℕ × String)) → List (ℕ × String)
-    node-entry sh _ _ off rs = (off , label-of sh) ∷ concat rs
+    node-entry : ∀ (t : Tag) → ⊤ → ℕ → ℕ → Vec (List (ℕ × String)) (arity t) → List (ℕ × String)
+    node-entry sh _ _ off rs = (off , label-of sh) ∷ concat (toList rs)
 
-    node-edges : Tag → ⊤ → ℕ → ℕ → List (ℕ × List (ℕ × ℕ)) → ℕ × List (ℕ × ℕ)
+    node-edges : ∀ (t : Tag) → ⊤ → ℕ → ℕ → Vec (ℕ × List (ℕ × ℕ)) (arity t) → ℕ × List (ℕ × ℕ)
     node-edges _ _ _ off rs =
-      off , (mapL (λ r → off , proj₁ r) rs ++L concat (mapL proj₂ rs))
+      off , (mapL (λ r → off , proj₁ r) (toList rs) ++L concat (mapL proj₂ (toList rs)))
 
   drawn : ℕ → AVal ⊤ → List (ℕ × String)
   drawn = fold node-entry
@@ -68,24 +68,30 @@ private
   kid-edges-all : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
   kid-edges-all off ts = concat (mapL proj₂ (fold-all node-edges off ts))
 
+  private
+    lt : ℕ → ℕ → Bool
+    lt zero    (suc _) = true
+    lt _       zero    = false
+    lt (suc a) (suc b) = lt a b
+
+    in-run : ℕ → ℕ → ℕ → Bool
+    in-run o zero    j = false
+    in-run o (suc k) j = (o ≡ᵇ j) ∨ in-run (suc o) k j
+
   mutual
     owner : ℕ → AVal ⊤ → ℕ → ℕ
     owner off (node _ _ n cs) i =
-      if in-run off n i then off else owner-all (off + n) cs i
-      where
-      in-run : ℕ → ℕ → ℕ → Bool
-      in-run o zero    j = false
-      in-run o (suc k) j = (o ≡ᵇ j) ∨ in-run (suc o) k j
+      if in-run off n i then off else owner-vec (off + n) cs i
 
-    owner-all : ℕ → List (AVal ⊤) → ℕ → ℕ
-    owner-all off []       i = i
-    owner-all off (t ∷ ts) i =
-      if lt i (off + covers t) then owner off t i else owner-all (off + covers t) ts i
-      where
-      lt : ℕ → ℕ → Bool
-      lt zero    (suc _) = true
-      lt _       zero    = false
-      lt (suc a) (suc b) = lt a b
+    owner-vec : ∀ {k} → ℕ → Vec (AVal ⊤) k → ℕ → ℕ
+    owner-vec off Vec.[]         i = i
+    owner-vec off (t Vec.∷ ts) i =
+      if lt i (off + covers t) then owner off t i else owner-vec (off + covers t) ts i
+
+  owner-all : ℕ → List (AVal ⊤) → ℕ → ℕ
+  owner-all off []       i = i
+  owner-all off (t ∷ ts) i =
+    if lt i (off + covers t) then owner off t i else owner-all (off + covers t) ts i
 
   nodes-of : List (AVal ⊤) → List (ℕ × String)
   nodes-of ts = drawn-all 0 ts

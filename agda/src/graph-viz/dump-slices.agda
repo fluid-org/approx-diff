@@ -7,6 +7,7 @@ open import IO.Finite using (writeFile)
 open import Data.String using (String; _++_)
 open import Data.Unit.Polymorphic using (⊤; tt)
 open import Data.List using (List; []; _∷_) renaming (foldr to foldrL)
+import Data.Vec
 open import Data.Nat using (ℕ; zero; suc)
 import Data.Integer as ℤ
 import Data.Fin as Fin
@@ -28,7 +29,7 @@ open import Relation.Binary.PropositionalEquality using (subst; sym)
 open import language-operational.evaluation EP.Sig EP.primitives using (Val)
 open Val
 open import language-operational.annotated-value EP.Sig EP.primitives
-  using (AVal; node; Tag; shape-of)
+  using (AVal; node; Tag; arity; shape-of)
 import language-operational.annotated-value as AV
 open AV.annotate EP.Sig EP.primitives two.semiring using (row→aval; aval→row)
 open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
@@ -74,24 +75,22 @@ private
   show-c zero    l a = "_"
   show-c (suc _) l a = l ++ mark a
 
-  mutual
-    show-aval : AVal two.Two → String
-    show-aval (node Tag.unit      a _ _)  = "()" ++ mark a
-    show-aval (node (Tag.const l) a n _)  = show-c n l a
-    show-aval (node Tag.inl       a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
-    show-aval (node Tag.inr       a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
-    show-aval (node Tag.clo       a _ _)  = "<closure>" ++ mark a
-    show-aval (node Tag.nil       a _ _)  = "[]" ++ mark a
-    show-aval (node Tag.pair      a _ (p ∷ q ∷ _)) =
-      "(" ++ show-aval p ++ ", " ++ show-aval q ++ ")" ++ mark a
-    show-aval (node Tag.pair      a _ _)  = "?"
-    show-aval (node Tag.cons      a _ (h ∷ t ∷ _)) =
-      show-aval h ++ " ∷" ++ mark a ++ " " ++ show-aval t
-    show-aval (node Tag.cons      a _ _)  = "?"
+  show-aval : AVal two.Two → String
+  show-kids : ∀ {k} → Data.Vec.Vec (AVal two.Two) k → String
 
-    show-kids : List (AVal two.Two) → String
-    show-kids []      = ""
-    show-kids (t ∷ _) = show-aval t
+  show-aval (node Tag.unit      a _ _)  = "()" ++ mark a
+  show-aval (node (Tag.const l) a n _)  = show-c n l a
+  show-aval (node Tag.inl       a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
+  show-aval (node Tag.inr       a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
+  show-aval (node (Tag.clo _)   a _ _)  = "<closure>" ++ mark a
+  show-aval (node Tag.nil       a _ _)  = "[]" ++ mark a
+  show-aval (node Tag.pair      a _ (p Data.Vec.∷ q Data.Vec.∷ Data.Vec.[])) =
+    "(" ++ show-aval p ++ ", " ++ show-aval q ++ ")" ++ mark a
+  show-aval (node Tag.cons      a _ (h Data.Vec.∷ t Data.Vec.∷ Data.Vec.[])) =
+    show-aval h ++ " ∷" ++ mark a ++ " " ++ show-aval t
+
+  show-kids Data.Vec.[]       = ""
+  show-kids (t Data.Vec.∷ _) = show-aval t
 
   lookupO : List two.Two → ℕ → two.Two
   lookupO []       _       = two.O
@@ -132,13 +131,13 @@ private
   erases M = FR.app M
 
   consᵃ : two.Two → AVal two.Two → AVal two.Two → AVal two.Two
-  consᵃ a h t = node Tag.cons a 2 (h ∷ t ∷ [])
+  consᵃ a h t = node Tag.cons a 2 (h Data.Vec.∷ t Data.Vec.∷ Data.Vec.[])
 
   nilᵃ : two.Two → AVal two.Two
-  nilᵃ a = node Tag.nil a 2 []
+  nilᵃ a = node Tag.nil a 2 Data.Vec.[]
 
   numᵃ : ℚ → two.Two → AVal two.Two
-  numᵃ q a = node (Tag.const (show-ℚ q)) a 1 []
+  numᵃ q a = node (Tag.const (show-ℚ q)) a 1 Data.Vec.[]
 
   cell1-sel : AVal two.Two
   cell1-sel =
