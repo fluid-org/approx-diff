@@ -18,7 +18,7 @@ open import meet-semilattice
             _⊕_ to _⊕M_;
             ≃m-isEquivalence to ≃M-isEquivalence)
 open import categories using (Category; HasProducts; HasTerminal)
-open import functor using (IsLimit; Limit; HasLimits; Functor; NatTrans; ≃-NatTrans)
+open import functor using (IsLimit; Limit; HasLimitCones; Functor; NatTrans; ≃-NatTrans)
 import two
 
 record Obj : Set (suc 0ℓ) where
@@ -120,7 +120,7 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   Π D .meets .MeetSemilattice.∧-isMeet .IsMeet.⟨_,_⟩ α≤β α≤γ s = D .fobj s .∧-isMeet .IsMeet.⟨_,_⟩ (α≤β s) (α≤γ s)
   Π D .meets .MeetSemilattice.⊤-isTop .IsTop.≤-top s = D .fobj s .⊤-isTop .IsTop.≤-top
 
-  limits : HasLimits 𝒮 cat
+  limits : HasLimitCones 𝒮 cat
   limits D .Limit.apex = Π D
   limits D .Limit.cone .transf x .*→* ._=>M_.func .fun α = α .Π-func x
   limits D .Limit.cone .transf x .*→* ._=>M_.func .mono α₁≤α₂ = α₁≤α₂ x

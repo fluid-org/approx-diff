@@ -510,14 +510,14 @@ module _ {o m e os es} {𝒞 : Category o m e} where
 -- If a category has all discrete limits, then it has all setoid
 -- products (almost by definition).
 module _ {o m e} os es (𝒞 : Category o m e)
-         (hasDiscreteLimits : ∀ (A : Setoid os es) → HasLimits' (setoid→category A) 𝒞)
+         (hasDiscreteLimits : ∀ (A : Setoid os es) → HasLimits (setoid→category A) 𝒞)
   where
 
   private
     module 𝒞 = Category 𝒞
 
   open HasSetoidProducts
-  open HasLimits'
+  open HasLimits
   open Functor
   open NatTrans
   open ≃-NatTrans

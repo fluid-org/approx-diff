@@ -21,7 +21,7 @@ open import primitives using (Primitives; sort-vals-setoid)
 open import lifting using (Lifting)
 open import Data.Sum using (inj₁; inj₂)
 open import cmon-enriched using (CMonEnriched)
-open import functor using (limits→limits')
+open import functor using (cones→limits)
 import indexed-family
 open import indexed-family using (HasSetoidProducts; Fam; _⇒f_; constantFam; _[_])
 import matrix
@@ -87,7 +87,7 @@ full-absorb h i j = Sc.trans Sc.+-comm ⊤-add-top
 SPmod : HasSetoidProducts 0ℓ 0ℓ SemiModT.cat-⊤
 SPmod =
   indexed-family.hasSetoidProducts 0ℓ 0ℓ SemiModT.cat-⊤
-    (λ A → limits→limits' (SemiModT.limits-⊤ A))
+    (λ A → cones→limits (SemiModT.limits-⊤ A))
 
 module FE = fam-exponentials 0ℓ 0ℓ SemiModT.cat-⊤ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SPmod
 

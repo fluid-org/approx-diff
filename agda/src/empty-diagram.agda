@@ -5,7 +5,7 @@ module empty-diagram where
 open import Level using (0ℓ)
 open import prop-setoid using (IsEquivalence; module ≈-Reasoning)
 open import categories using (Category; IsTerminal; HasTerminal)
-open import functor using (Functor; NatTrans; NatIso; IsLimit; ≃-NatTrans; constFmor; HasLimits; Limit)
+open import functor using (Functor; NatTrans; NatIso; IsLimit; ≃-NatTrans; constFmor; HasLimitCones; Limit)
 
 open IsEquivalence
 
@@ -51,7 +51,7 @@ module _ {o m e} (𝒞 : Category o m e) where
   limit→terminal F limit .HasTerminal.witness = limit .Limit.apex
   limit→terminal F limit .HasTerminal.is-terminal = IsLimit→IsTerminal (limit .Limit.isLimit)
 
-  limits→terminal : HasLimits cat 𝒞 → HasTerminal 𝒞
+  limits→terminal : HasLimitCones cat 𝒞 → HasTerminal 𝒞
   limits→terminal limits = limit→terminal initial-functor (limits initial-functor)
 
   terminal→limit : ∀ {t} →

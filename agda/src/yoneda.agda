@@ -8,11 +8,11 @@ open import prop-setoid
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; mk-≃m to mk-≈s; ⊗-setoid to _×s_)
 open import categories using (Category; HasProducts; HasExponentials; HasTerminal)
 open import functor using ([_⇒_]; Functor; NatTrans; ≃-NatTrans;
-  HasLimits';
+  HasLimits;
   preserve-limits-of-shape; IsLimit; constF; constF-F; constFmor;
   _∘F_; id; _∘H_; _∘_; ≃-isEquivalence; Id)
 open import monad using (Monad)
-open import setoid-cat using (SetoidCat; Setoid-terminal; Setoid-products; Setoid-Limit'; Setoid-coproducts)
+open import setoid-cat using (SetoidCat; Setoid-terminal; Setoid-products; Setoid-limits; Setoid-coproducts)
 
 -- extra 'os' level is to raise the level of the codomain if needed
 module yoneda {o m e} os (𝒞 : Category o m e) where
@@ -111,8 +111,8 @@ lemma⁻¹∘lemma F x .func-eq {Fx₁} {Fx₂} Fx₁≈Fx₂ = F .fmor-id .func
 
 import functor-cat-limits
 
-limits : (𝒮 : Category o m e) → HasLimits' 𝒮 PSh
-limits 𝒮 = functor-cat-limits.limits _ _ _ (Setoid-Limit' ℓ 𝒮)
+limits : (𝒮 : Category o m e) → HasLimits 𝒮 PSh
+limits 𝒮 = functor-cat-limits.limits _ _ _ (Setoid-limits ℓ 𝒮)
 
 -- products as a special case, using a nicer intensional representation.
 open import functor-cat-products

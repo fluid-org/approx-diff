@@ -575,8 +575,8 @@ HasColimits : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e�
 HasColimits 𝒮 𝒞 = (D : Functor 𝒮 𝒞) → Colimit D
 
 -- Has all limits of shape 𝒮
-HasLimits : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e₁) (𝒞 : Category o₂ m₂ e₂) → Set (o₁ ⊔ m₁ ⊔ e₁ ⊔ o₂ ⊔ m₂ ⊔ e₂)
-HasLimits 𝒮 𝒞 = (D : Functor 𝒮 𝒞) → Limit D
+HasLimitCones : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e₁) (𝒞 : Category o₂ m₂ e₂) → Set (o₁ ⊔ m₁ ⊔ e₁ ⊔ o₂ ⊔ m₂ ⊔ e₂)
+HasLimitCones 𝒮 𝒞 = (D : Functor 𝒮 𝒞) → Limit D
 
 ------------------------------------------------------------------------------
 -- If a category has all limits of shape 𝒮, then these can be
@@ -585,7 +585,7 @@ HasLimits 𝒮 𝒞 = (D : Functor 𝒮 𝒞) → Limit D
 module LimitFunctor {o₁ m₁ e₁ o₂ m₂ e₂}
                     {𝒮 : Category o₁ m₁ e₁}
                     {𝒞 : Category o₂ m₂ e₂}
-                    (limits : HasLimits 𝒮 𝒞)
+                    (limits : HasLimitCones 𝒮 𝒞)
                     where
 
   private
@@ -672,7 +672,7 @@ module LimitFunctor {o₁ m₁ e₁ o₂ m₂ e₂}
 -}
 --   triangle2 : ≃-NatTrans
 
-record HasLimits' {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e₁) (𝒞 : Category o₂ m₂ e₂)
+record HasLimits {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e₁) (𝒞 : Category o₂ m₂ e₂)
              : Set (o₁ ⊔ e₁ ⊔ e₂ ⊔ m₁ ⊔ m₂ ⊔ o₂) where
   private
     module 𝒞 = Category 𝒞
@@ -746,25 +746,25 @@ record HasLimits' {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e�
     ∎
     where open ≈-Reasoning 𝒞.isEquiv
 
-limits→limits' : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 : Category o₂ m₂ e₂} →
-                   HasLimits 𝒮 𝒞 →
-                   HasLimits' 𝒮 𝒞
-limits→limits' hasLimits .HasLimits'.Π D = hasLimits D .Limit.apex
-limits→limits' hasLimits .HasLimits'.lambdaΠ x D α = hasLimits D .Limit.isLimit .IsLimit.lambda x α
-limits→limits' hasLimits .HasLimits'.evalΠ D = hasLimits D .Limit.cone
-limits→limits' hasLimits .HasLimits'.lambda-cong {x} {D} = hasLimits D .Limit.isLimit .IsLimit.lambda-cong
-limits→limits' hasLimits .HasLimits'.lambda-eval {x} {D} = hasLimits D .Limit.isLimit .IsLimit.lambda-eval
-limits→limits' hasLimits .HasLimits'.lambda-ext {x} {D} = hasLimits D .Limit.isLimit .IsLimit.lambda-ext
-
-limits'→limits : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 : Category o₂ m₂ e₂} →
-                   HasLimits' 𝒮 𝒞 →
+cones→limits : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 : Category o₂ m₂ e₂} →
+                   HasLimitCones 𝒮 𝒞 →
                    HasLimits 𝒮 𝒞
-limits'→limits hasLimits' D .Limit.apex = hasLimits' .HasLimits'.Π D
-limits'→limits hasLimits' D .Limit.cone = hasLimits' .HasLimits'.evalΠ D
-limits'→limits hasLimits' D .Limit.isLimit .IsLimit.lambda x = hasLimits' .HasLimits'.lambdaΠ x D
-limits'→limits hasLimits' D .Limit.isLimit .IsLimit.lambda-cong = hasLimits' .HasLimits'.lambda-cong
-limits'→limits hasLimits' D .Limit.isLimit .IsLimit.lambda-eval = hasLimits' .HasLimits'.lambda-eval
-limits'→limits hasLimits' D .Limit.isLimit .IsLimit.lambda-ext f = hasLimits' .HasLimits'.lambda-ext f
+cones→limits hasLimits .HasLimits.Π D = hasLimits D .Limit.apex
+cones→limits hasLimits .HasLimits.lambdaΠ x D α = hasLimits D .Limit.isLimit .IsLimit.lambda x α
+cones→limits hasLimits .HasLimits.evalΠ D = hasLimits D .Limit.cone
+cones→limits hasLimits .HasLimits.lambda-cong {x} {D} = hasLimits D .Limit.isLimit .IsLimit.lambda-cong
+cones→limits hasLimits .HasLimits.lambda-eval {x} {D} = hasLimits D .Limit.isLimit .IsLimit.lambda-eval
+cones→limits hasLimits .HasLimits.lambda-ext {x} {D} = hasLimits D .Limit.isLimit .IsLimit.lambda-ext
+
+limits→cones : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 : Category o₂ m₂ e₂} →
+                   HasLimits 𝒮 𝒞 →
+                   HasLimitCones 𝒮 𝒞
+limits→cones hasLimits' D .Limit.apex = hasLimits' .HasLimits.Π D
+limits→cones hasLimits' D .Limit.cone = hasLimits' .HasLimits.evalΠ D
+limits→cones hasLimits' D .Limit.isLimit .IsLimit.lambda x = hasLimits' .HasLimits.lambdaΠ x D
+limits→cones hasLimits' D .Limit.isLimit .IsLimit.lambda-cong = hasLimits' .HasLimits.lambda-cong
+limits→cones hasLimits' D .Limit.isLimit .IsLimit.lambda-eval = hasLimits' .HasLimits.lambda-eval
+limits→cones hasLimits' D .Limit.isLimit .IsLimit.lambda-ext f = hasLimits' .HasLimits.lambda-ext f
 
 ------------------------------------------------------------------------------
 -- Colimits are limits in the opposite category

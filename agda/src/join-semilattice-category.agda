@@ -15,7 +15,7 @@ open import join-semilattice
             _⊕_ to _⊕J_;
             ≃m-isEquivalence to ≃J-isEquivalence)
 open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; HasInitial)
-open import functor using (IsColimit; Colimit; HasColimits; IsLimit; Limit; HasLimits; Functor; NatTrans; ≃-NatTrans)
+open import functor using (IsColimit; Colimit; HasColimits; IsLimit; Limit; HasLimitCones; Functor; NatTrans; ≃-NatTrans)
 import two
 
 record Obj : Set (suc 0ℓ) where
@@ -213,7 +213,7 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   Π D .joins .JoinSemilattice.∨-isJoin .IsJoin.[_,_] α≤β α≤γ s = D .fobj s .[_∨_] (α≤β s) (α≤γ s)
   Π D .joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom s = D .fobj s .≤-bottom
 
-  limits : HasLimits 𝒮 cat
+  limits : HasLimitCones 𝒮 cat
   limits D .Limit.apex = Π D
   limits D .Limit.cone .transf x .*→* ._=>J_.func .fun α = α .Π-func x
   limits D .Limit.cone .transf x .*→* ._=>J_.func .mono α₁≤α₂ = α₁≤α₂ x

@@ -6,7 +6,7 @@ open import Level using (0ℓ)
 open import prop using (⊤; tt)
 open import prop-setoid using (IsEquivalence; module ≈-Reasoning)
 open import categories using (Category; IsProduct; HasProducts; make-HasProducts; Product)
-open import functor using (Functor; NatTrans; NatIso; IsLimit; ≃-NatTrans; constFmor; constF; HasLimits; Limit)
+open import functor using (Functor; NatTrans; NatIso; IsLimit; ≃-NatTrans; constFmor; constF; HasLimitCones; Limit)
 
 data Obj : Set where
   L R : Obj
@@ -97,7 +97,7 @@ module _ {o m e} (𝒞 : Category o m e) where
   limit→product F limitF .Product.p₂ = limitF .Limit.cone .transf R
   limit→product F limitF .Product.isProduct = IsLimit→IsProduct (limitF .Limit.isLimit)
 
-  limits→products : HasLimits cat 𝒞 → HasProducts 𝒞
+  limits→products : HasLimitCones cat 𝒞 → HasProducts 𝒞
   limits→products limits = make-HasProducts 𝒞 λ x y → limit→product (pair→functor x y) (limits _)
 
   product→limit : ∀ {x y p p₁ p₂} →

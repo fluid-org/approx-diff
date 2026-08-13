@@ -85,7 +85,7 @@ module _ o where
   Setoid-exponentials .lambda-ext f .func-eq x₁≈x₂ .func-eq y₁≈y₂ =
     f .func-resp-≈ x₁≈x₂ .func-eq y₁≈y₂
 
-open import functor using (Functor; NatTrans; ≃-NatTrans; Colimit; IsColimit; Limit; IsLimit; HasLimits'; limits→limits')
+open import functor using (Functor; NatTrans; ≃-NatTrans; Colimit; IsColimit; Limit; IsLimit; HasLimits; cones→limits)
 
 -- Setoid categories have all "smaller" limits
 module _ {o m e} os (𝒮 : Category o m e) where
@@ -117,27 +117,27 @@ module _ {o m e} os (𝒮 : Category o m e) where
   Π F .isEquivalence .sym {f₁} {f₂} f₁≈f₂ a = F .fobj a .sym (f₁≈f₂ a)
   Π F .isEquivalence .trans f₁≈f₂ f₂≈f₃ a = F .fobj a .trans (f₁≈f₂ a) (f₂≈f₃ a)
 
-  Setoid-Limit : (D : Functor 𝒮 (SetoidCat ℓ ℓ)) → Limit D
-  Setoid-Limit D .apex = Π D
-  Setoid-Limit D .cone .transf x .func f = f .Π-func x
-  Setoid-Limit D .cone .transf x .func-resp-≈ f₁≈f₂ = f₁≈f₂ x
-  Setoid-Limit D .cone .natural {x} {y} g .func-eq {f₁} {f₂} f₁≈f₂ =
+  Setoid-limit-cones : (D : Functor 𝒮 (SetoidCat ℓ ℓ)) → Limit D
+  Setoid-limit-cones D .apex = Π D
+  Setoid-limit-cones D .cone .transf x .func f = f .Π-func x
+  Setoid-limit-cones D .cone .transf x .func-resp-≈ f₁≈f₂ = f₁≈f₂ x
+  Setoid-limit-cones D .cone .natural {x} {y} g .func-eq {f₁} {f₂} f₁≈f₂ =
     D .fobj y .trans (f₁ .Π-eq g) (f₁≈f₂ y)
-  Setoid-Limit D .isLimit .lambda A α .func a .Π-func x = α .transf x .func a
-  Setoid-Limit D .isLimit .lambda A α .func a .Π-eq {x₁} {x₂} f =
+  Setoid-limit-cones D .isLimit .lambda A α .func a .Π-func x = α .transf x .func a
+  Setoid-limit-cones D .isLimit .lambda A α .func a .Π-eq {x₁} {x₂} f =
     begin
       D .fmor f .func (α .transf x₁ .func a)
     ≈⟨ α .natural f .func-eq (A .refl) ⟩
       α .transf x₂ .func a
     ∎ where open ≈-Reasoning (D .fobj x₂ .isEquivalence)
-  Setoid-Limit D .isLimit .lambda A α .func-resp-≈ a₁≈a₂ x =
+  Setoid-limit-cones D .isLimit .lambda A α .func-resp-≈ a₁≈a₂ x =
     α .transf x .func-resp-≈ a₁≈a₂
-  Setoid-Limit D .isLimit .lambda-cong α≃β .func-eq x₁≈x₂ x = α≃β .transf-eq x .func-eq x₁≈x₂
-  Setoid-Limit D .isLimit .lambda-eval α .transf-eq x .func-eq = α .transf x .func-resp-≈
-  Setoid-Limit D .isLimit .lambda-ext f .func-eq = f .func-resp-≈
+  Setoid-limit-cones D .isLimit .lambda-cong α≃β .func-eq x₁≈x₂ x = α≃β .transf-eq x .func-eq x₁≈x₂
+  Setoid-limit-cones D .isLimit .lambda-eval α .transf-eq x .func-eq = α .transf x .func-resp-≈
+  Setoid-limit-cones D .isLimit .lambda-ext f .func-eq = f .func-resp-≈
 
-  Setoid-Limit' : HasLimits' 𝒮 (SetoidCat ℓ ℓ)
-  Setoid-Limit' = limits→limits' Setoid-Limit
+  Setoid-limits : HasLimits 𝒮 (SetoidCat ℓ ℓ)
+  Setoid-limits = cones→limits Setoid-limit-cones
 
 -- Colimits
 module _ {o m e} os (𝒮 : Category o m e) where

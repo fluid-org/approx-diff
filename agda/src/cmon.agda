@@ -230,15 +230,15 @@ module _ {o m e} os (𝒟 : Category o m e) where
 
    evalΠCM : ∀ F → NatTrans (constF 𝒟 (ΠCM F)) F
    evalΠCM F .transf x .function =
-     Setoid-Limit os 𝒟 (toSetoid ∘F F) .cone .transf x
+     Setoid-limit-cones os 𝒟 (toSetoid ∘F F) .cone .transf x
    evalΠCM F .transf x .cmFunc .preserve-ε = F .fobj x .refl
    evalΠCM F .transf x .cmFunc .preserve-+ = F .fobj x .refl
-   evalΠCM F .natural = Setoid-Limit os 𝒟 (toSetoid ∘F F) .cone .natural
+   evalΠCM F .natural = Setoid-limit-cones os 𝒟 (toSetoid ∘F F) .cone .natural
 
    lambdaΠCM : ∀ X (F : Functor 𝒟 (cat (os ⊔ o ⊔ m) (os ⊔ o ⊔ m))) →
                NatTrans (constF 𝒟 X) F → (X ⇒ ΠCM F)
    lambdaΠCM X F α .function =
-     Setoid-Limit os 𝒟 (toSetoid ∘F F) .isLimit .lambda (X .carrier) ((NTid toSetoid ∘H α) ∘V constF-F toSetoid X)
+     Setoid-limit-cones os 𝒟 (toSetoid ∘F F) .isLimit .lambda (X .carrier) ((NTid toSetoid ∘H α) ∘V constF-F toSetoid X)
    lambdaΠCM X F α .cmFunc .preserve-ε x = α .transf x .preserve-ε
    lambdaΠCM X F α .cmFunc .preserve-+ x = α .transf x .preserve-+
 
@@ -247,7 +247,7 @@ module _ {o m e} os (𝒟 : Category o m e) where
    limits D .cone = evalΠCM D
    limits D .isLimit .lambda X = lambdaΠCM X D
    limits D .isLimit .lambda-cong {x} {α} {β} α≃β =
-     Setoid-Limit os 𝒟 (toSetoid ∘F D) .isLimit .lambda-cong
+     Setoid-limit-cones os 𝒟 (toSetoid ∘F D) .isLimit .lambda-cong
        (∘NT-cong (∘H-cong (≃NT-isEquivalence .refl) α≃β) (≃NT-isEquivalence .refl))
    limits D .isLimit .lambda-eval α .transf-eq x ._≃s_.func-eq = α .transf x .func-resp-≈
    limits D .isLimit .lambda-ext f ._≃s_.func-eq = f .func-resp-≈
