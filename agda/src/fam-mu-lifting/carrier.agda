@@ -89,7 +89,7 @@ fobj μ-obj (μ P')    δ = μ-obj P' δ
 import lifting-fold
 open lifting-fold CM BP Lft public
   using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
-         under-root-p₂; under-root-strip; pm; pm-in₁; pm-in₂; bp-ext; cop; cop-cong;
+         under-root-p₂; under-root-strip; prod-m-in₁; prod-m-in₂; bp-ext;
          strip-root; strip-root-cong; strip-root-natural)
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
@@ -105,10 +105,10 @@ fam-subst-iso₂ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
 fam-subst-iso₂ {I} F e =
   ≈-trans (≈-sym (F .trans* (I .Setoid.isEquivalence .sym e) e)) (F .refl*)
 
-pm-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} {h : b₁ ⇒ b₂} {h' : b₂ ⇒ b₁} →
+prod-m-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} {h : b₁ ⇒ b₂} {h' : b₂ ⇒ b₁} →
          (f ∘ f') ≈ id a₂ → (h ∘ h') ≈ id b₂ →
          (prod-m f h ∘ prod-m f' h') ≈ id (prod a₂ b₂)
-pm-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
+prod-m-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
 
 -- The transport across the lifting as a family morphism: fibrewise under-root, natural because
 -- transports are isomorphisms.
