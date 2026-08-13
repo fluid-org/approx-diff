@@ -92,34 +92,18 @@ module interp-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   model .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
   model .Model.⟦rel⟧ {is} ψ = predicate (rel-pred ψ ∘S untuple is)
 
-  -- The same interpretation over any object of truth values receiving the booleans. The argument
-  -- product is rebuilt against the retargeted pointed category, whose list→product does not reduce
-  -- at a neutral sort list, so the one at the original booleans cannot be reused.
+  -- The same interpretation over any object of truth values receiving the booleans.
   module over (Ω : Obj) (into-Ω : Mor Fam⟨𝒞⟩-bool Ω) where
 
     private
       PF′ : PointedFPCat _ _ _
       PF′ = PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Ω ]
 
-      args′ : List sort → Obj
-      args′ = PointedFPCat.list→product PF′ ⟦sort⟧′
-
-      untuple′ : ∀ is → prop-setoid._⇒_ (Fam⟨𝒞⟩.Obj.idx (args′ is)) (sort-vals-setoid sort-index is)
-      untuple′ []       .func _ = tt
-      untuple′ (i ∷ is) .func (v , p) = v , untuple′ is .func p
-      untuple′ []       .func-resp-≈ _ = prop.tt
-      untuple′ (i ∷ is) .func-resp-≈ e = prop.proj₁ e prop., untuple′ is .func-resp-≈ (prop.proj₂ e)
-
-      collect′ : ∀ is → Mor (args′ is) simple[ sort-vals-setoid sort-index is , bases-width is ]
-      collect′ []       = simplef[ untuple [] , MC.id 0 ]
-      collect′ (i ∷ is) =
-        simple-monoidal FC.∘ FP.prod-m (FC.id (⟦sort⟧′ i)) (collect′ is)
-
     model-over : Model PF′ Sig
     model-over .Model.⟦sort⟧ = ⟦sort⟧′
-    model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect′ is
-    model-over .Model.⟦rel⟧ {is} ψ = into-Ω FC.∘ predicate (rel-pred ψ ∘S untuple′ is)
+    model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
+    model-over .Model.⟦rel⟧ {is} ψ = into-Ω FC.∘ predicate (rel-pred ψ ∘S untuple is)
 
     -- The argument plumbing, for interpretations that refine single symbols over this Ω.
-    arg-untuple = untuple′
-    arg-collect = collect′
+    arg-untuple = untuple
+    arg-collect = collect
