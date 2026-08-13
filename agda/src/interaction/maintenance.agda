@@ -2,7 +2,7 @@
 
 open import Data.Bool as Bool using (Bool; not; if_then_else_; _∧_; _∨_)
 open import Data.Bool.ListAction using (any)
-open import Data.List.Relation.Unary.All using (All; []; _∷_) renaming (map to All-map)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.Bool.Properties using (∧-comm)
 open import Data.List using (List; []; _∷_; _++_; length; map; concat; filterᵇ)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
@@ -24,8 +24,8 @@ open import signature using (Signature)
 open import primitives using (Primitives)
 import two
 
--- The stored regions of a reachable configuration are exactly the regions of its hidden set: the
--- initial configuration is canonical, and the hide and reveal moves preserve canonicity.
+-- The moves preserve correct summarisation, including the canonicity of the stored regions: the
+-- initial configuration is correctly summarised, and the hide and reveal moves preserve it.
 module interaction.maintenance {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
@@ -154,26 +154,28 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
             (merge-region-comm G w w' (regions G ws₂))
   regions-perm G (↭.trans p q)  = H.trans (regions-perm G p) (regions-perm G q)
 
-  -- A canonical configuration: the stored regions are the regions of the hidden set.
-  record Maintained (K : Config D) : Set ℓ where
-    field
-      canonical : map proj₁ (K .hidden) ↭↭ regions (fo-graph D) (hidden-set K)
+  private
+    stored≡ : map proj₁ (initial {D = D} .hidden) ≡ regions (fo-graph D) (FO D)
+    stored≡ = map-proj₁-pair summary (regions (fo-graph D) (FO D))
 
-  open Maintained public
-
-  initial-maintained : Maintained (initial {D = D})
-  initial-maintained .canonical =
+  initial-summarised : Summarised (initial {D = D})
+  initial-summarised .partition =
+    subst (λ z → concat z ↭ FO D) (≡-sym stored≡) (regions-concat (fo-graph D) (FO D))
+  initial-summarised .canonical =
     subst (λ z → z ↭↭ regions (fo-graph D) (concat z))
-          (≡-sym (map-proj₁-pair summary (regions (fo-graph D) (FO D))))
+          (≡-sym stored≡)
           (regions-perm (fo-graph D) (↭-sym (regions-concat (fo-graph D) (FO D))))
+  initial-summarised .summaries =
+    AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph D) (FO D)))
 
-  -- The hide move preserves canonicity: its merge is the merge step of the regions computation.
-  hide-at-maintained : (p : Path D) (K : Config D) → Maintained K →
-                       Maintained (hide-at p K)
-  hide-at-maintained p K M .canonical =
+  hide-at-summarised : (p : Path D) (K : Config D) (S : Summarised K) →
+                       member p (K .visible) ≡ Bool.true →
+                       Summarised (hide-at p K)
+  hide-at-summarised p K S pv .partition = hide-at-partition p K S pv
+  hide-at-summarised p K S pv .canonical =
     subst (λ z → z ↭↭ regions (fo-graph D) (hidden-set (hide-at p K)))
           lhs-eq
-          (H.trans (merge-region-resp (fo-graph D) p (M .canonical))
+          (H.trans (merge-region-resp (fo-graph D) p (S .canonical))
                    (H.sym ↭-sym (regions-perm (fo-graph D) (hide-at-hidden-set p K))))
     where
     lhs-eq : merge-region (fo-graph D) p (map proj₁ (K .hidden)) ≡
@@ -181,6 +183,7 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
     lhs-eq = ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
                (map-partition₁ proj₁ (adj (fo-graph D) p) (K .hidden))
                (map-partition₂ proj₁ (adj (fo-graph D) p) (K .hidden))
+  hide-at-summarised p K S pv .summaries = hide-at-summaries p K S pv
 
   private
     ↭↭-of-≡ : {xss yss : List (List (Path D))} → xss ≡ yss → xss ↭↭ yss
@@ -249,23 +252,23 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
     H.trans (regions-apart G C (concat Cs) (apart-concat {G = G} {C = C} {Cs = Cs} aps))
             (↭↭-++⁺ ↭↭-refl (regions-apart-concat pairs))
 
-  -- Each stored region of a canonical summarised configuration is a single region: distribution
+  -- Each stored region of a summarised configuration is a single region: distribution
   -- makes the stored list a permutation of the per-block regions, and a permutation preserves
   -- length while every nonempty block contributes at least one region.
-  blocks-one-region : (K : Config D) → Summarised K → Maintained K →
+  blocks-one-region : (K : Config D) → Summarised K →
                       All (λ C → regions (fo-graph D) C ↭↭ (C ∷ []))
                           (map proj₁ (K .hidden))
-  blocks-one-region K S M = All-map (λ {C} e → one {C} e) lens1
+  blocks-one-region K S = All-map (λ {C} e → one {C} e) lens1
     where
     G  = fo-graph D
     Cs = map proj₁ (K .hidden)
 
     perm2 : Cs ↭↭ concat (map (regions G) Cs)
-    perm2 = H.trans (M .canonical) (regions-apart-concat (S .separated))
+    perm2 = H.trans (S .canonical) (regions-apart-concat (separated S))
 
     nonempty : All (λ C → 1 ≤ length C) Cs
     nonempty = perm-All (λ {C} {C'} pc h → subst (1 ≤_) (↭-length pc) h)
-                        (H.sym ↭-sym (M .canonical))
+                        (H.sym ↭-sym (S .canonical))
                         (regions-nonempty G (hidden-set K))
 
     len-regions : ∀ (C : List (Path D)) → 1 ≤ length C → 1 ≤ length (regions G C)
@@ -293,12 +296,14 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                              (subst (λ z → concat z ↭ C) eq (regions-concat G C)))
                     (H.refl []))
 
-  -- The reveal move preserves canonicity: splitting the region containing p computes the regions of
-  -- the hidden set with p removed, block by block.
-  reveal-at-maintained : (p : Path D) (K : Config D) → Summarised K → Maintained K →
+  -- The reveal move preserves correct summarisation: splitting the region containing p computes the
+  -- regions of the hidden set with p removed, block by block.
+  reveal-at-summarised : (p : Path D) (K : Config D) (S : Summarised K) →
                          member p (hidden-set K) ≡ Bool.true →
-                         Maintained (reveal-at p K)
-  reveal-at-maintained p K S M hp .canonical =
+                         Summarised (reveal-at p K)
+  reveal-at-summarised p K S hp .partition = reveal-at-partition p K S hp
+  reveal-at-summarised p K S hp .summaries = reveal-at-summaries p K S hp
+  reveal-at-summarised p K S hp .canonical =
     subst (λ z → z ↭↭ regions G (hidden-set (reveal-at p K)))
           (≡-trans (≡-cong concat (map-∘ {g = map proj₁} {f = split-region p} (K .hidden)))
                    (concat-map {f = proj₁} (map (split-region p) (K .hidden))))
@@ -339,7 +344,7 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                                     (λ q h → any-filterᵇ (eq-path q) notp C h)
                                     (λ q h → any-filterᵇ (eq-path q) notp C' h)
                                     ap)
-                      (S .separated))
+                      (separated S))
 
     maps-eq : map (λ CH → regions G (filterᵇ notp (proj₁ CH))) (K .hidden) ≡
               map (regions G) (map (filterᵇ notp) Cs)
@@ -377,4 +382,4 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                   concat (map (λ CH → regions G (filterᵇ notp (proj₁ CH))) (K .hidden))
     blocks-part =
       concat-↭↭ (All-map (λ {CH} one → per-block CH one)
-                         (AllP.map⁻ (blocks-one-region K S M)))
+                         (AllP.map⁻ (blocks-one-region K S)))

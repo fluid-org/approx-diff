@@ -10,8 +10,8 @@ open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there) renaming (map to Any-map)
 import Data.List.Relation.Unary.Any.Properties as AnyPr
 import Data.List.Relation.Unary.All.Properties as AllP
-import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 open import Data.List.Properties using (++-identityʳ; concat-++; concat-map; foldl-++; map-++; map-∘)
+import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭)
@@ -26,9 +26,10 @@ import interaction.hide-algebra
 import matrix
 import two
 
--- The moves preserve the invariant that the stored regions partition the hidden set into
--- pairwise-apart pieces, each carrying its summary. The initial configuration satisfies the
--- invariant, and the hide and reveal moves preserve it.
+-- The invariant that the stored regions are the regions of the hidden set, each carrying its
+-- summary, and the consequences of the invariant for the visible graph: the stored summaries
+-- assemble to the summary of the whole hidden set, and hiding and revealing a vertex are mutually
+-- inverse up to configuration equivalence.
 module interaction.moves {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
@@ -151,17 +152,27 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
   regions-separated G []       = []
   regions-separated G (w ∷ ws) = merge-separated G w (regions-separated G ws)
 
-  -- A correctly summarised configuration: the visible and hidden vertices partition the first-order
-  -- paths, the stored regions are pairwise apart, and each carries its summary.
   record Summarised (K : Config D) : Set ℓ where
     field
       partition : (K .visible ++ hidden-set K) ↭ FO D
-      separated : AllPairs (Apart (fo-graph D)) (map proj₁ (K .hidden))
+      canonical : map proj₁ (K .hidden) ↭↭ regions (fo-graph D) (hidden-set K)
       summaries : All (λ CH → ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
                               proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j)
                       (K .hidden)
 
   open Summarised public
+
+  separated : {K : Config D} → Summarised K → AllPairs (Apart (fo-graph D)) (map proj₁ (K .hidden))
+  separated {K} S =
+    perm-AllPairs (λ {C} {C'} → apart-sym (fo-graph D) {C} {C'})
+                  (λ {C} {C'} {C''} → resp C C' C'')
+                  (H.sym ↭-sym (S .canonical))
+                  (regions-separated (fo-graph D) (hidden-set K))
+    where
+    resp : (C C' C'' : List (Path D)) → C ↭ C' → Apart (fo-graph D) C C'' →
+           Apart (fo-graph D) C' C''
+    resp C C' C'' r ap =
+      ≡-trans (≡-sym (any-perm (λ q → any (λ q' → adjacent (fo-graph D) (at q) (at q')) C'') r)) ap
 
   -- The regions of a list are made from exactly its members.
   regions-concat : (G : Graph D) (ws : List (Path D)) → concat (regions G ws) ↭ ws
@@ -171,20 +182,6 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
              (↭-trans (concat-resp (↭↭-of-↭ (partition-↭ _ (regions G ws))))
                       (regions-concat G ws)))
     where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) (regions G ws)
-
-  private
-    stored≡ : map proj₁ (initial {D = D} .hidden) ≡ regions (fo-graph D) (FO D)
-    stored≡ = map-proj₁-pair summary (regions (fo-graph D) (FO D))
-
-  -- The initial configuration is correctly summarised.
-  initial-summarised : Summarised (initial {D = D})
-  initial-summarised .partition =
-    subst (λ z → concat z ↭ FO D) (≡-sym (stored≡)) (regions-concat (fo-graph D) (FO D))
-  initial-summarised .separated =
-    subst (AllPairs (Apart (fo-graph D))) (≡-sym (stored≡))
-          (regions-separated (fo-graph D) (FO D))
-  initial-summarised .summaries =
-    AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph D) (FO D)))
 
   -- Hiding a vertex adds it to the hidden set.
   hide-at-hidden-set : (p : Path D) (K : Config D) →
@@ -196,17 +193,6 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                (concat-resp (↭↭-of-↭ (map⁺ proj₁ (partition-↭ _ (K .hidden)))))))
     where tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
                           (K .hidden)
-
-  -- The merged region and the untouched regions remain pairwise apart.
-  hide-at-separated : (p : Path D) (K : Config D) → Summarised K →
-                      AllPairs (Apart (fo-graph D)) (map proj₁ (hide-at p K .hidden))
-  hide-at-separated p K S =
-    subst (AllPairs (Apart (fo-graph D)))
-          (≡-cong₂ (λ z₁ z₂ → (p ∷ concat z₁) ∷ z₂)
-                   (map-partition₁ proj₁ g (K .hidden))
-                   (map-partition₂ proj₁ g (K .hidden)))
-          (merge-separated (fo-graph D) p (S .separated))
-    where g = any (λ q → adjacent (fo-graph D) (at p) (at q))
 
   private
     mv-mono : {C E : List (Path D)} →
@@ -676,7 +662,7 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                (proj₁ (partition-AllPairs {S = λ C C' → Apart G C C' × Distinct C C'}
                         (λ C → any (λ q → adjacent G (at p) (at q)) C)
                         (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , distinct-sym {C = C} {C' = C'} d))
-                        (AllPairs-zip (S .separated) dist))))
+                        (AllPairs-zip (separated S) dist))))
 
     core : ∀ x' y' (i' : Fin (vertex-width y')) (j' : Fin (vertex-width x')) →
            foldr _+G_ B (map proj₂ (proj₁ tp)) x' y' i' j' ≡
@@ -692,12 +678,12 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
   FO-distinct = filter-AllPairs (λ p → Bool.not (is-ε p) Bool.∧ fo-at p) (paths-distinct D)
 
   private
-    partition-distinct : (K : Config D) → Summarised K →
+    partition-distinct : (K : Config D) → (K .visible ++ hidden-set K) ↭ FO D →
                          AllPairs (λ q q' → eq-path q q' ≡ Bool.false)
                                   (K .visible ++ hidden-set K)
-    partition-distinct K S =
+    partition-distinct K part =
       AllPairs-perm (λ {q} {q'} h → eq-path-false-sym {p = q} {q = q'} h)
-                    (↭-sym (S .partition)) (FO-distinct)
+                    (↭-sym part) (FO-distinct)
 
     concat-distinct : (Css : List (List (Path D))) →
                       AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (concat Css) →
@@ -721,7 +707,7 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
     visible-not-hidden K S {p} pv =
       any-false (member-All {eq = eq-path} eq-path-≡ {x = p}
                   (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                              (partition-distinct K S))))
+                                              (partition-distinct K (S .partition)))))
                   pv)
 
   -- A summarised configuration's stored regions are pairwise disjoint: the partition invariant
@@ -730,22 +716,28 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                         AllPairs Distinct (map proj₁ (K .hidden))
   summarised-distinct K S =
     concat-distinct (map proj₁ (K .hidden))
-      (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S))))
+      (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                  (partition-distinct K (S .partition)))))
 
-  -- Hiding a visible vertex preserves correct summarisation.
-  hide-at-summarised : (p : Path D) (K : Config D) → Summarised K →
-                       member p (K .visible) ≡ Bool.true →
-                       Summarised (hide-at p K)
-  hide-at-summarised p K S pv .partition =
+  hide-at-partition : (p : Path D) (K : Config D) → Summarised K →
+                      member p (K .visible) ≡ Bool.true →
+                      (hide-at p K .visible ++ hidden-set (hide-at p K)) ↭ FO D
+  hide-at-partition p K S pv =
     ↭-trans (++⁺ ↭-refl (hide-at-hidden-set p K))
     (↭-trans (shift p (hide-at p K .visible) (hidden-set K))
     (↭-trans (++⁺ (filter-out-↭ {eq = eq-path} (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
-                    (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S)))
+                    (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                         (partition-distinct K (S .partition))))
                     pv)
                   ↭-refl)
              (S .partition)))
-  hide-at-summarised p K S pv .separated = hide-at-separated p K S
-  hide-at-summarised p K S pv .summaries =
+
+  hide-at-summaries : (p : Path D) (K : Config D) (S : Summarised K) →
+                      member p (K .visible) ≡ Bool.true →
+                      All (λ CH → ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                                  proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j)
+                          (hide-at p K .hidden)
+  hide-at-summaries p K S pv =
     merged-summary p K S (visible-not-hidden K S {p = p} pv) (summarised-distinct K S) ∷
     proj₂ (partition-All (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
                         (S .summaries))
@@ -773,23 +765,6 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
       (any-self eq-path-refl C₁))
 
   private
-    -- Each piece of a split region lies inside the region.
-    split-⊆ : (p : Path D)
-              (CH : List (Path D) × Graph D) →
-              All (λ C₁ → ∀ q → member q C₁ ≡ Bool.true → member q (proj₁ CH) ≡ Bool.true)
-                  (map proj₁ (split-region p CH))
-    split-⊆ p (C , H) with member p C
-    ... | Bool.false = (λ q h → h) ∷ []
-    ... | Bool.true  =
-      subst (All (λ C₁ → ∀ q → member q C₁ ≡ Bool.true → member q C ≡ Bool.true))
-            (≡-sym (map-proj₁-pair summary (regions (fo-graph D) C∖p)))
-            (All-map (λ {C₁} inc q h →
-                        any-filterᵇ (eq-path q) (λ q' → Bool.not (eq-path p q')) C
-                          (≡-trans (≡-sym (member-perm q (regions-concat (fo-graph D) C∖p)))
-                                   (inc q h)))
-                     (blocks-⊆ (regions (fo-graph D) C∖p)))
-      where C∖p = filterᵇ (λ q → Bool.not (eq-path p q)) C
-
     -- Splitting leaves a region without p alone.
     split-none : (p : Path D)
                  {CHs : List (List (Path D) × Graph D)} →
@@ -838,18 +813,6 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                             aC e)
 
   private
-    -- The pieces of a split region are pairwise apart, and each pair equals its summary.
-    split-separated : (p : Path D)
-                      (CH : List (Path D) × Graph D) →
-                      AllPairs (Apart (fo-graph D)) (map proj₁ (split-region p CH))
-    split-separated p (C , H) with member p C
-    ... | Bool.false = [] ∷ []
-    ... | Bool.true  =
-      subst (AllPairs (Apart (fo-graph D)))
-            (≡-sym (map-proj₁-pair summary (regions (fo-graph D) C∖p)))
-            (regions-separated (fo-graph D) C∖p)
-      where C∖p = filterᵇ (λ q → Bool.not (eq-path p q)) C
-
     split-summaries : (p : Path D)
                       (CH : List (Path D) × Graph D) →
                       (∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
@@ -863,38 +826,25 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
       AllP.map⁺ (universal (λ C' x y i j → ≡-refl)
                            (regions (fo-graph D) (filterᵇ (λ q → Bool.not (eq-path p q)) C)))
 
-  -- Revealing a hidden vertex preserves correct summarisation.
-  reveal-at-summarised : (p : Path D) (K : Config D) → Summarised K →
-                         member p (hidden-set K) ≡ Bool.true →
-                         Summarised (reveal-at p K)
-  reveal-at-summarised p K S hp .partition =
+  reveal-at-partition : (p : Path D) (K : Config D) → Summarised K →
+                        member p (hidden-set K) ≡ Bool.true →
+                        (reveal-at p K .visible ++ hidden-set (reveal-at p K)) ↭ FO D
+  reveal-at-partition p K S hp =
     ↭-trans (↭-sym (shift p (K .visible) (hidden-set (reveal-at p K))))
     (↭-trans (++⁺ ↭-refl
                 (reveal-set p (K .hidden)
                    (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                               (partition-distinct K S))))
+                                               (partition-distinct K (S .partition)))))
                    (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
                             (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ (K .hidden)))) hp))))
              (S .partition))
-  reveal-at-summarised p K S hp .separated =
-    subst (AllPairs (Apart (fo-graph D)))
-          (≡-trans (≡-cong concat (map-∘ {g = map proj₁} {f = split-region p} (K .hidden)))
-                   (concat-map {f = proj₁} (map (split-region p) (K .hidden))))
-          (AllPairsP.concat⁺
-            (AllP.map⁺ (All-map (λ {CH} _ → split-separated p CH)
-                                (S .summaries)))
-            (AllPairsP.map⁺
-              (AllPairs-map (λ {CH} {CH'} ap →
-                               All-map (λ {C₁} m₁ →
-                                          All-map (λ {C₂} m₂ →
-                                                     Apart-mono {G = fo-graph D}
-                                                       {C₁ = C₁} {C₂ = C₂}
-                                                       {C₁' = proj₁ CH} {C₂' = proj₁ CH'}
-                                                       m₁ m₂ ap)
-                                                  (split-⊆ p CH'))
-                                       (split-⊆ p CH))
-                            (AllPairsP.map⁻ (S .separated)))))
-  reveal-at-summarised p K S hp .summaries =
+
+  reveal-at-summaries : (p : Path D) (K : Config D) (S : Summarised K) →
+                        member p (hidden-set K) ≡ Bool.true →
+                        All (λ CH → ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+                                    proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j)
+                            (reveal-at p K .hidden)
+  reveal-at-summaries p K S hp =
     AllP.concat⁺ (AllP.map⁺ (All-map (λ {CH} old → split-summaries p CH old) (S .summaries)))
 
   private
@@ -939,7 +889,7 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
 
     seps : AllPairs (λ C C' → Apart G C' C × (any (λ q → member q C) C' ≡ Bool.false)) Cs
     seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , proj₁ d))
-                        (AllPairs-zip (S .separated) (summarised-distinct K S))
+                        (AllPairs-zip (separated S) (summarised-distinct K S))
 
     restrict-O : restrict G (hidden-set K) x y i j ≡ two.O
     restrict-O = ≡-cong (λ b → when b (G x y) i j) (≡-cong₂ _∨_ hx hy)
@@ -960,7 +910,9 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                         reveal-at p (hide-at p K) .visible ↭ K .visible
   hide-reveal-visible p K S pv =
     filter-out-↭ {eq = eq-path} (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
-                 (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S))) pv
+                 (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                      (partition-distinct K (S .partition))))
+                 pv
 
   hide-reveal-hidden-set : (p : Path D) (K : Config D) → Summarised K →
                            member p (K .visible) ≡ Bool.true →
@@ -970,7 +922,7 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
                       (proj₁ (proj₂ (AllPairs-++⁻ (hide-at p K .visible)
                                                   (hidden-set (hide-at p K))
                                                   (partition-distinct (hide-at p K)
-                                                    (hide-at-summarised p K S pv)))))
+                                                    (hide-at-partition p K S pv)))))
                       (or-introl _ _ (or-introl (eq-path p p) _ (eq-path-refl p))))
                     (hide-at-hidden-set p K))
 
@@ -982,7 +934,7 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
       any-false (All-map
         (λ {q} cr → eq-path-false-sym {p = q} {q = p}
                       (member-All {eq = eq-path} eq-path-≡ {x = p} cr hp))
-        (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K S)))))
+        (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K (S .partition))))))
 
   -- Hide after reveal at the same vertex restores the visible set exactly and the hidden set up to
   -- permutation.
@@ -1001,7 +953,7 @@ module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} wh
     ↭-trans (hide-at-hidden-set p (reveal-at p K))
             (reveal-set p (K .hidden)
                (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                           (partition-distinct K S))))
+                                           (partition-distinct K (S .partition)))))
                (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
                         (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ (K .hidden)))) hp)))
 

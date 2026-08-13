@@ -346,6 +346,25 @@ AllPairs-perm sym (↭.swap x y p) ((pxy ∷ pxs) ∷ (pys ∷ ps)) =
 AllPairs-perm sym (↭.trans p q)  ps                            =
   AllPairs-perm sym q (AllPairs-perm sym p ps)
 
+perm-AllPairs : ∀ {a r s} {A : Set a} {R : A → A → Set r} {S : A → A → Set s} →
+                (∀ {x y} → S x y → S y x) →
+                (∀ {x x' y} → R x x' → S x y → S x' y) →
+                {xs ys : List A} → H.Permutation R xs ys → AllPairs S xs → AllPairs S ys
+perm-AllPairs sym resp (H.refl [])                []                      = []
+perm-AllPairs sym resp (H.refl (r ∷ pw))          (px ∷ ps)               =
+  perm-All (λ r' s' → sym (resp r' (sym s'))) (H.refl pw) (All-map (resp r) px) ∷
+  perm-AllPairs sym resp (H.refl pw) ps
+perm-AllPairs sym resp (H.prep r p)               (px ∷ ps)               =
+  perm-All (λ r' s' → sym (resp r' (sym s'))) p (All-map (resp r) px) ∷
+  perm-AllPairs sym resp p ps
+perm-AllPairs sym resp (H.swap r₁ r₂ p) ((pxy ∷ pxs) ∷ (pys ∷ ps)) =
+  (resp r₂ (sym (resp r₁ pxy)) ∷
+   perm-All (λ r' s' → sym (resp r' (sym s'))) p (All-map (resp r₂) pys)) ∷
+  (perm-All (λ r' s' → sym (resp r' (sym s'))) p (All-map (resp r₁) pxs) ∷
+   perm-AllPairs sym resp p ps)
+perm-AllPairs sym resp (H.trans p q)              ps                      =
+  perm-AllPairs sym resp q (perm-AllPairs sym resp p ps)
+
 -- On a pairwise-distinct list, filtering out a listed element removes exactly its one occurrence.
 filter-out-↭ : ∀ {a} {A : Set a} {eq : A → A → Bool} →
                (∀ {x y} → eq x y ≡ Bool.true → x ≡ y) →
