@@ -226,15 +226,10 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   p₂ {suc m} i (suc j) = p₂ {m} i j
 
   in₁ : ∀ {m n} → Matrix (m +ℕ n) m
-  in₁ {suc m} zero zero = ι
-  in₁ {suc m} zero (suc _) = ε
-  in₁ {suc m} (suc i) zero = ε
-  in₁ {suc m} (suc i) (suc j) = in₁ {m} i j
+  in₁ = p₁ ᵀ
 
   in₂ : ∀ {m n} → Matrix (m +ℕ n) n
-  in₂ {zero}  i j = e i j
-  in₂ {suc m} zero _ = ε
-  in₂ {suc m} (suc i) j = in₂ {m} i j
+  in₂ = p₂ ᵀ
 
   private
     Σ-ε· : ∀ {n} (f : Fin n → Carrier) → Σ {n} (λ j → ε · f j) ≈ ε
@@ -250,7 +245,7 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   id-1 (suc m) n (suc i) (suc k) = trans (+-cong ε-annihilₗ refl) (trans +-lunit (id-1 m n i k))
 
   id-2 : ∀ m n → p₂ {m} {n} ∘ in₂ {m} {n} ≈ₘ I
-  id-2 zero n i j = Σ-unit i (λ k → e k j)
+  id-2 zero n i j = trans (Σ-unit i (λ k → e j k)) (e-sym j i)
   id-2 (suc m) n i j = trans (+-cong ε-annihilₗ refl) (trans +-lunit (id-2 m n i j))
 
   zero-1 : ∀ m n → p₁ {m} {n} ∘ in₂ {m} {n} ≈ₘ εₘ
@@ -264,7 +259,8 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   zero-2 (suc m) n i (suc j) = trans (+-cong ε-annihilₗ refl) (trans +-lunit (zero-2 m n i j))
 
   id-+ : ∀ m n → (in₁ {m} {n} ∘ p₁ {m} {n}) +ₘ (in₂ {m} {n} ∘ p₂ {m} {n}) ≈ₘ I {m +ℕ n}
-  id-+ zero n i j = trans +-lunit (Σ-unit i (λ k → e k j))
+  id-+ zero n i j =
+    trans +-lunit (trans (Σ-cong {n} (λ k → ·-cong (e-sym k i) refl)) (Σ-unit i (λ k → e k j)))
   id-+ (suc m) n zero zero =
     trans (+-cong (+-cong ·-lunit (Σ-ε· {m} _)) (Σ-ε· {n} _))
           (trans (+-cong (trans +-comm +-lunit) refl) (trans +-comm +-lunit))
@@ -365,7 +361,7 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   Σ-in₂ : ∀ {x y} (w : Vec y) (i : Fin (x +ℕ y)) →
           Σ {y} (λ j → in₂ {x} {y} i j · w j) ≈ concat {x} {y} (λ _ → ε) w i
-  Σ-in₂ {zero}  w i = Σ-unit i w
+  Σ-in₂ {zero} {y} w i = trans (Σ-cong {y} (λ j → ·-cong (e-sym j i) refl)) (Σ-unit i w)
   Σ-in₂ {suc x} {y} w zero = trans (Σ-cong {y} (λ j → ε-annihilₗ)) (Σ-ε {y})
   Σ-in₂ {suc x} w (suc i) = Σ-in₂ {x} w i
 
