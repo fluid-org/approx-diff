@@ -13,15 +13,15 @@ open import Level using (lift)
 import three
 import matrix
 import example.primitives-over
-import ho-model-roots-free
+import ho-model
 open import example.list-terms
   using (numlist-fo; map-ctxt-fo; map-term; filter-ctxt-fo; filter-term;
          cond-ctxt-fo; cond-term; eq-ctxt-fo; eq-term)
 
 module EP3 = example.primitives-over three.semiring
 
-module model = ho-model-roots-free three.semiring (λ {x} → three.⊤-add-top {x}) three.C
-module interp = model.rooted-interp EP3.Sig EP3.primitives
+module model = ho-model three.semiring (λ {x} → three.⊤-add-top {x}) three.C
+module interp = model.interp EP3.Sig EP3.primitives
 
 open import language-syntax EP3.Sig using (base; unit; _[+]_; first-order)
 

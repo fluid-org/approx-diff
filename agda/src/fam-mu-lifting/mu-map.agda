@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- The parameterised map between μ-carriers. It is the only part of the rooted μ machinery that
+-- The parameterised map between μ-carriers. It is the only part of the μ machinery that
 -- needs a terminal object, to enter a fold from the empty context, so it sits above the chain
 -- rather than forcing the parameter through every module below.
 ------------------------------------------------------------------------------

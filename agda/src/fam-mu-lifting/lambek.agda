@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Lambek for the rooted μ-types, round trips: the fold-specific bridge
+-- Lambek for the μ-types, round trips: the fold-specific bridge
 -- reindex has an inverse with identity fibres, and the two composites are the
 -- identity on trees and on fibres. The relation extends the pairing across
 -- binders, and the fibre composites fuse through the lifted action alone,

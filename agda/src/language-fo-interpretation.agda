@@ -1,11 +1,11 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The first-order fragment of the rooted interpretation, compared across a change of base. The
+-- The first-order fragment of the interpretation, compared across a change of base. The
 -- source side interprets first-order types directly over its family category; the target side is
--- the rooted interpretation of the language at the transported model, with the unit object the
+-- the interpretation of the language at the transported model, with the unit object the
 -- image of the source unit and the empty environment the image environment. With those choices the
 -- two polynomial translations agree on the nose, so the μ case is exactly the fibrewise
--- comparison of rooted μ-carriers, and every first-order type's interpretation on the target side
+-- comparison of μ-carriers, and every first-order type's interpretation on the target side
 -- is isomorphic to the image of its interpretation on the source side.
 
 open import Level using (Level)
@@ -23,12 +23,12 @@ open import finite-product-functor using (preserve-chosen-products; preserve-cho
 open import polynomial-functor using (Poly; Poly-map)
 open import signature using (Signature; Model; PFPC[_,_,_,_]; transport-model)
 import fam-mu-lifting.in-map
-import ho-model-rooted
+import fam-change-of-base
 import language-syntax
 
 open Functor
 
-module language-roots-fo-interpretation {ℓ} (Sig : Signature ℓ)
+module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o m e o₂ m₂ e₂} (os es : Level)
   {𝒞 : Category o m e} (T : HasTerminal 𝒞)
   (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
@@ -57,7 +57,7 @@ module language-roots-fo-interpretation {ℓ} (Sig : Signature ℓ)
 
 open language-syntax Sig
 
-module HR = ho-model-rooted os es T CM BP Lft T' CM' BP' Lft' F F-terminal F-prod F-L F-L-natural
+module HR = fam-change-of-base os es T CM BP Lft T' CM' BP' Lft' F F-terminal F-prod F-L F-L-natural
 open HR using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-products;
                Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L)
 
@@ -73,7 +73,7 @@ private
 δ∅𝒟 : Fin 0 → Fam⟨𝒟⟩μ.Obj
 δ∅𝒟 = λ i → Fam⟨F⟩ .fobj (∅𝒞 i)
 
--- Interpretation of the first-order types on the source side, with the rooted value formers and
+-- Interpretation of the first-order types on the source side, with the value formers and
 -- μ-types via the polynomial translation of the first-order witness.
 module _ where
   open Category Fam⟨𝒞⟩μ.cat
@@ -102,7 +102,7 @@ module _ where
   𝒞⟦ emp ⟧ctxt    = 𝟙
   𝒞⟦ Γ , τ ⟧ctxt = prod 𝒞⟦ Γ ⟧ctxt (𝒞⟦ τ ⟧ty ∅𝒞)
 
--- The target side: the rooted interpretation of the language at the transported model, with unit
+-- The target side: the interpretation of the language at the transported model, with unit
 -- the image of the source unit and the empty environment the image environment.
 𝒟𝟙ty : Fam⟨𝒟⟩μ.Obj
 𝒟𝟙ty = Fam⟨F⟩ .fobj 𝒞𝟙ty
@@ -119,7 +119,7 @@ module _ where
     (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
     𝒞-Sig-model
 
-open import language-roots-interpretation Sig os es T' CM' BP' Lft' elim-weight 𝒟E 𝒟-tops δ∅𝒟
+open import language-interpretation Sig os es T' CM' BP' Lft' elim-weight 𝒟E 𝒟-tops δ∅𝒟
   𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
             ty-cong to 𝒟-ty-cong)

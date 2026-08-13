@@ -15,7 +15,7 @@ import two
 import example
 import example.primitives as EP
 import matrix
-import ho-model-roots-free
+import ho-model
 open import example.list-terms
   using (query-ctxt-fo; const-term; length-term; fold0-term; case0-term; tag-term;
          numlist-fo; map-ctxt-fo; map-term; filter-ctxt-fo; filter-term)
@@ -23,8 +23,8 @@ open import example.list-terms
 module Ex = example ℚ 0ℚ
 open Ex.ex using (query)
 
-module model = ho-model-roots-free two.semiring (λ {x} → two.⊤-add-top {x}) two.I
-module interp = model.rooted-interp EP.Sig EP.primitives
+module model = ho-model two.semiring (λ {x} → two.⊤-add-top {x}) two.I
+module interp = model.interp EP.Sig EP.primitives
 
 open import language-syntax EP.Sig using (base)
 

@@ -14,13 +14,13 @@ import two
 import matrix
 import example
 import example.primitives as EP
-import ho-model-roots-free
+import ho-model
 
 module Ex = example ℚ 0ℚ
 open Ex.ex using (case-ctxt-fo; case-term)
 
-module model = ho-model-roots-free two.semiring (λ {x} → two.⊤-add-top {x}) two.I
-module interp = model.rooted-interp EP.Sig EP.primitives
+module model = ho-model two.semiring (λ {x} → two.⊤-add-top {x}) two.I
+module interp = model.interp EP.Sig EP.primitives
 
 open import language-syntax EP.Sig
   using (base; _⊢_; case; brel; bop; var; zero; first-order-ctxt; emp; _,_)

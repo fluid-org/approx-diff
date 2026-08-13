@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The rooted interpretation of the language in a category of families: every value former is
--- lifted. Sums are coproducts of lifted summands, products are lifted products, μ-types the rooted
+-- The interpretation of the language in a category of families: every value former is
+-- lifted. Sums are coproducts of lifted summands, products are lifted products, μ-types the
 -- carriers, and function spaces are lifted weak exponentials, so a closure carries a root like any
 -- other cell. Constructors inject their payload under the injection, whose root is zero: a cell
 -- the program itself constructs depends on nothing. Eliminators, including application, read the
@@ -29,7 +29,7 @@ open import polynomial-functor using (Poly)
 import fam-mu-lifting.mu-map
 import language-syntax
 
-module language-roots-interpretation
+module language-interpretation
   {ℓ} (Sig : Signature ℓ)
   {o m e} (os es : Level) {𝒞 : Category o m e}
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)

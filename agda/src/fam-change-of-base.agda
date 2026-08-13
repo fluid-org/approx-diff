@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The rooted analogue of the ho-model assembly: given two bases with biproducts and liftings and a
+-- The change of base between family categories: given two bases with biproducts and liftings and a
 -- structured functor between them (products, terminal and the lifting preserved), the change of
--- base between the family categories preserves the rooted structure. Coproducts and terminal are
--- native to the family categories; the lifting comparison acts fibrewise; the rooted μ-carriers
+-- base between the family categories preserves the structure. Coproducts and terminal are
+-- native to the family categories; the lifting comparison acts fibrewise; the μ-carriers
 -- are carried across by the fibrewise comparison.
 
 open import Level using (Level; _⊔_)
@@ -22,7 +22,7 @@ import fam-functor
 import fam-mu-lifting.in-map
 import fam-mu-lifting.fibrewise
 
-module ho-model-rooted {o m e o₂ m₂ e₂} (os es : Level)
+module fam-change-of-base {o m e o₂ m₂ e₂} (os es : Level)
     {𝒞 : Category o m e} (T : HasTerminal 𝒞)
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
     {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
@@ -39,7 +39,6 @@ module ho-model-rooted {o m e o₂ m₂ e₂} (os es : Level)
          (Category._∘_ 𝒟 (Lifting.Lmap Lft' (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
     where
 
--- The rooted μ machinery on each side.
 module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP Lft
 module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' Lft'
 
@@ -123,8 +122,6 @@ Fam⟨F⟩-L X .bwd∘fwd≈id .famf-eq .transf-eq {x} =
                (𝒟C.≈-trans 𝒟C.id-left (F-L (X .fam .fm x) .bwd∘fwd≈id)))
     𝒟C.id-left
 
--- The booleans follow the unit object: the change of base carries the rooted booleans over a
--- chosen unit object to the rooted booleans over its image.
 module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
 
   private
@@ -139,7 +136,6 @@ module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
     Fam𝒟._∘_ (CPd.coprod-m (Fam⟨F⟩-L 𝟙ty .fwd) (Fam⟨F⟩-L 𝟙ty .fwd))
              (Fam⟨F⟩-preserves-coproducts .inverse)
 
--- The rooted μ-carriers are carried across, fibrewise, over shared trees.
 module FW =
   fam-mu-lifting.fibrewise os es CM BP Lft CM' BP' Lft'
     F (λ {X} {Y} → F-prod {X} {Y}) F-L (λ {X} {Y} f → F-L-natural {X} {Y} f)

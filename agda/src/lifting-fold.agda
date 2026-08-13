@@ -59,7 +59,6 @@ pairb-cong {x} {y} {z} = Biproduct.pair-cong (BP y z)
 +m-cong : ∀ {x y} {f f' g g' : x ⇒ y} → f ≈ f' → g ≈ g' → (f +m g) ≈ (f' +m g')
 +m-cong = homCM _ _ .CommutativeMonoid.+-cong
 
--- Generic biproduct consequences the rooted machinery threads.
 pm : ∀ {a₁ a₂ b₁ b₂} → a₁ ⇒ a₂ → b₁ ⇒ b₂ → (a₁ ⊕ b₁) ⇒ (a₂ ⊕ b₂)
 pm g h = pairb (g ∘ π₁) (h ∘ π₂)
 

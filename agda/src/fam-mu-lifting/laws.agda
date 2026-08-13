@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- The fused initial-algebra laws for the rooted μ-types: applying an algebra
+-- The fused initial-algebra laws for the μ-types: applying an algebra
 -- once against a candidate at the recursive positions, by the same recursion
 -- as the fold. A tag is consumed exactly once; the strong action re-reads the
 -- tags of intermediates, so the laws are stated against this application, not
@@ -327,7 +327,7 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     agree-apply γ (fbind Q fm) (Fin.suc v) a = agree-apply γ fm v a
 
   -- Fibre agreement: the fold's fibre transported along the index agreement is the application's
-  -- fibre. At the rooted formers the transport passes across the lifting and the congruence closes
+  -- fibre. At the value formers the transport passes across the lifting and the congruence closes
   -- on the branch, exactly as in the fold's naturality.
   mutual
     agree-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →

@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- The change of base along a structured functor commutes with the rooted μ.
+-- The change of base along a structured functor commutes with the μ-carriers.
 -- The change of base keeps index setoids, and sorts and trees are built from
 -- index setoids alone, so the two μ-carriers share their trees up to a
 -- transport that is the identity at the leaves. The fibre comparison is by
@@ -29,7 +29,7 @@ open import indexed-family using (Fam)
 import fam
 import fam-functor
 import polynomial-functor
-import fam-mu-types.sort
+import fam-mu-lifting.sort
 import fam-mu-lifting.fibre
 
 module fam-mu-lifting.fibrewise {o m e o₂ m₂ e₂} (os es : Level)
@@ -49,7 +49,7 @@ module fam-mu-lifting.fibrewise {o m e o₂ m₂ e₂} (os es : Level)
 private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒟 = fam.CategoryOfFamilies os (os ⊔ es) 𝒟
-  module Sh = fam-mu-types.sort os es
+  module Sh = fam-mu-lifting.sort os es
   module Fc = fam-mu-lifting.fibre os es CM BP Lft
   module Fd = fam-mu-lifting.fibre os es CM' BP' Lft'
   module 𝒟C = Category 𝒟
@@ -466,7 +466,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     fib-el-cnat (env {p}) q = ≈-trans id-left (≈-sym id-right)
     fib-el-cnat (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) {x} {x'} q = fib-cnat Q ρ₁ ρ₂ d₁ d₂ rel {x} {x'} q
 
--- The assembled comparison: the change of base commutes with the rooted μ, as
+-- The assembled comparison: the change of base commutes with the μ-carriers, as
 -- an isomorphism of Fam(𝒟)-objects over shared trees.
 module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Obj) where
   open Fibrewise δ

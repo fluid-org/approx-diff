@@ -27,7 +27,7 @@ open import prop-setoid using (Setoid)
 import setoid-cat
 import fam
 import polynomial-functor
-import fam-mu-types.sort
+import fam-mu-lifting.sort
 
 module fam-mu-lifting.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
@@ -42,7 +42,7 @@ open Obj
 open Mor
 open Fam
 open _≃_
-module Sh = fam-mu-types.sort os es
+module Sh = fam-mu-lifting.sort os es
 open Sh using (mkSort)
 
 Poly-C = polynomial-functor.Poly cat

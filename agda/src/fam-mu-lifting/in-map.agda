@@ -27,7 +27,7 @@ module fam-mu-lifting.in-map {o m e} (os es : Level) {𝒞 : Category o m e}
 
 open fam-mu-lifting.fold os es CM BP Lft public
 
--- Parameterised initial algebras against the rooted interpretation: carrier, algebra map and
+-- Parameterised initial algebras against the interpretation: carrier, algebra map and
 -- catamorphism, as operations only. The laws come later, in fused form.
 record HasMu : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
   field
@@ -38,8 +38,6 @@ record HasMu : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
             Mor (Fam𝒞-P.prod Γ (fobj μ-obj P (extend δ A))) A →
             Mor (Fam𝒞-P.prod Γ (μ-obj P δ)) A
 
-  -- The strong actions, derived as in the unrooted interpretation but with the transport across
-  -- the lifting at each rooted former.
   strong-extend-mor : ∀ {k} {Γ : Obj} {δ δ' : Fin k → Obj} {X Y : Obj} →
                       (∀ i → Mor (Fam𝒞-P.prod Γ (δ i)) (δ' i)) →
                       Mor (Fam𝒞-P.prod Γ X) Y →

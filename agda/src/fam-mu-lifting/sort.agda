@@ -19,7 +19,7 @@ open import prop-setoid using (Setoid; IsEquivalence)
 import setoid-cat
 import polynomial-functor
 
-module fam-mu-types.sort (os es : Level) where
+module fam-mu-lifting.sort (os es : Level) where
 
 open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 open IsEquivalence

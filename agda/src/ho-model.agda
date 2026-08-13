@@ -1,6 +1,6 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
--- The rooted higher-order model over free positions: families of dimensions as the first-order
+-- The higher-order model: families of dimensions as the first-order
 -- side, families over plain semimodules as the model, the free realisation as the change of base,
 -- and the function spaces the exponentials that setoid products of semimodules give, lifted at the
 -- interpretation so a closure carries a root. Positions carry no order, so a fibre map is an
@@ -29,10 +29,10 @@ import fam-exponentials
 import semimod-products
 import matrix-embedding
 import matrix-primitives
-import language-roots-fo-interpretation
+import language-fo-interpretation
 import language-syntax
 
-module ho-model-roots-free
+module ho-model
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (let module Sc = CommutativeSemiring S)
   (⊤-add-top : ∀ {x} → (Sc.ι Sc.+ x) Sc.≈ Sc.ι)
@@ -97,9 +97,9 @@ SemiModExp = exponentials→weak FE.exponentials
 𝒟-tops : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X
 𝒟-tops = Fam⟨𝒟⟩μ.top-pointed SemiModT.⊤-mor (λ h → SemiModT.⊤-mor-absorb h)
 
--- The rooted interpretation of the primitives: the first-order interpretation, with the relations'
+-- The interpretation of the primitives: the first-order interpretation, with the relations'
 -- booleans injected under zero roots.
-module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
+module sig-model (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
   private
     module IP = FP.interp-primitives Sig 𝒫
@@ -168,12 +168,12 @@ module rooted-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   model = record IPO.model-over
     { ⟦rel⟧ = λ {is} ψ → FCμ._∘_ (rel-simple is ψ) (IPO.arg-collect is) }
 
--- The rooted higher-order model and the first-order comparison at the realisation.
-module rooted-interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
+-- The higher-order model and the first-order comparison at the realisation.
+module interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
-  open rooted-primitives Sig 𝒫
+  open sig-model Sig 𝒫
 
-  open language-roots-fo-interpretation Sig 0ℓ 0ℓ
+  open language-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct Lm-lifting
     SemiModT.terminal-⊤ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ Ls-lifting
     elim-weight-endo

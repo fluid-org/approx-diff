@@ -28,7 +28,7 @@ open import prop-setoid using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_)
 import fam
 import polynomial-functor
-import fam-mu-types.sort
+import fam-mu-lifting.sort
 import fam-mu-lifting.fibre
 
 module fam-mu-lifting.carrier {o m e} (os es : Level) {𝒞 : Category o m e}
@@ -62,7 +62,7 @@ open import prop using (_∧_; ⊥) public
 
 -- The category-free sort layer, shared by every base category, and the
 -- decorated fibre layer over this one.
-module Sh = fam-mu-types.sort os es
+module Sh = fam-mu-lifting.sort os es
 open Sh public using (Sort; mkSort)
 open fam-mu-lifting.fibre os es CM BP Lft public using (Idx; ∣_∣; module Fibre; μObj)
 
