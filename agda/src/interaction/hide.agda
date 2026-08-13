@@ -11,6 +11,7 @@ open import signature using (Signature)
 open import primitives using (Primitives)
 import matrix
 import two
+import interaction.hide-algebra
 
 -- Hiding an intermediate: each remaining dependence relation absorbs the dependence routed
 -- through the hidden vertex. Hidden vertices stay in the carrier, so hiding transforms the
@@ -32,8 +33,11 @@ private
 open import categories using (Category)
 open Category M.cat using (_⇒_)
 
+private
+  module HA = interaction.hide-algebra
+
 hide : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Graph D → Vertex D → Graph D
-hide G r x y = G x y M.+ₘ (G r y M.∘ G x r)
+hide {D = D} = HA.Hide.h (Vertex D) vertex-width
 
 -- Hide a list of vertices, first to last; on acyclic graphs the order is immaterial.
 hide-all : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Graph D → List (Vertex D) → Graph D
@@ -55,7 +59,7 @@ collapse D = hide-all (graph D) (map at (paths D)) env (at ε)
 
 hide-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
          {D : γ , Ms ⇓s vs [ R ]} → GraphS D → VertexS D → GraphS D
-hide-s G r x y = G x y M.+ₘ (G r y M.∘ G x r)
+hide-s {D = D} = HA.Hide.h (VertexS D) vertex-width-s
 
 hide-all-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
              {D : γ , Ms ⇓s vs [ R ]} → GraphS D → List (VertexS D) → GraphS D
@@ -69,7 +73,7 @@ hide-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ�
          {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
          {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
          {D : Map γ s σ' v R v' R'} → GraphM D → VertexM D → GraphM D
-hide-m G r x y = G x y M.+ₘ (G r y M.∘ G x r)
+hide-m {D = D} = HA.Hide.h (VertexM D) vertex-width-m
 
 hide-all-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
