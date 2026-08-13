@@ -223,6 +223,6 @@ module Fibre {n} (δ : Fin n → Obj) where
 -- The μ-type at the root sort: index by the category-free sort layer, fibres
 -- by the canonical decoration, which resolves the μ-body's free variables to
 -- the parameters.
-μObj : ∀ {n} → Poly-C (suc n) → (Fin n → Obj) → Obj
-μObj P δ .idx = Sh.Tree.WSetoid (λ i → δ i .idx) ∣ P ∣ (λ i → inj₁ i)
-μObj P δ .fam = Fibre.WFam δ P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)
+μ-fam : ∀ {n} → Poly-C (suc n) → (Fin n → Obj) → Obj
+μ-fam P δ .idx = Sh.Tree.WSetoid (λ i → δ i .idx) ∣ P ∣ (λ i → inj₁ i)
+μ-fam P δ .fam = Fibre.WFam δ P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)

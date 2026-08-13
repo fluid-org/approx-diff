@@ -64,7 +64,7 @@ open import prop using (_∧_; ⊥) public
 -- decorated fibre layer over this one.
 module Sh = fam-mu-lifting.sort os es
 open Sh public using (Sort; mkSort)
-open fam-mu-lifting.fibre os es CM BP Lft public using (Idx; ∣_∣; module Fibre; μObj)
+open fam-mu-lifting.fibre os es CM BP Lft public using (Idx; ∣_∣; module Fibre; μ-fam)
 
 -- The fibrewise lift of a family: same index, each fibre lifted, transports under the action.
 Lf : Obj → Obj

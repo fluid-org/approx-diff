@@ -96,7 +96,7 @@ module _ where
   𝒞⟦ base s ⟧ty      δ = 𝒞-Sig-model .Model.⟦sort⟧ s
   𝒞⟦ fo₁ [+] fo₂ ⟧ty δ = coprod (Lf (𝒞⟦ fo₁ ⟧ty δ)) (Lf (𝒞⟦ fo₂ ⟧ty δ))
   𝒞⟦ fo₁ [×] fo₂ ⟧ty δ = Lf (prod (𝒞⟦ fo₁ ⟧ty δ) (𝒞⟦ fo₂ ⟧ty δ))
-  𝒞⟦ μ fo ⟧ty        δ = Fam⟨𝒞⟩μ.μObj (fo-as-poly {n = 1} fo δ) ∅𝒞
+  𝒞⟦ μ fo ⟧ty        δ = Fam⟨𝒞⟩μ.μ-fam (fo-as-poly {n = 1} fo δ) ∅𝒞
 
   𝒞⟦_⟧ctxt : ∀ {Γ} → first-order-ctxt Γ → obj
   𝒞⟦ emp ⟧ctxt    = 𝟙
@@ -167,7 +167,7 @@ private
         (FDP.product-preserves-iso (⟦ fo₁ ⟧-iso δ𝒞) (⟦ fo₂ ⟧-iso δ𝒞))))
 ⟦ μ fo ⟧-iso        δ𝒞 =
   FD.Iso-trans (HR.FW.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
-    (≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μObj Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
+    (≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
 
 -- At closed types the target environment is the empty one, up to pointwise equality.
 closed-iso : ∀ {τ : type 0} (fo : first-order τ) →

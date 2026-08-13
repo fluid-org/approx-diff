@@ -45,7 +45,7 @@ module FoldBase {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj} where
                    (Tδ.deco-ext Q d) (TA'.deco-ext Q d')
 
 module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
-               (alg : Mor (Fam𝒞-P.prod Γ (fobj μObj P (extend δ A))) A) where
+               (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A) where
     open FoldBase {n} {Γ} {A} {P} {δ} public
     -- Fold the outer μ via `alg`; nested μ are reindexed into the `extend δ A` context,
     -- the recursion slot carrying the fold itself (inlined, so every call is structural).
@@ -54,7 +54,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-idx γ (Tδ.sup x) = alg .idxf .PS._⇒_.func (γ , fold-shape-idx P γ x)
 
       fold-shape-idx : (Q : Poly (suc n)) → Γ .idx .Carrier → Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣) →
-                      fobj μObj Q (extend δ A) .idx .Carrier
+                      fobj μ-fam Q (extend δ A) .idx .Carrier
       fold-shape-idx (const A')        γ a = a
       fold-shape-idx (var Fin.zero)    γ t = fold-idx γ t
       fold-shape-idx (var (Fin.suc i)) γ a = a
@@ -91,7 +91,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 
       fold-shape-idx-resp : (Q : Poly (suc n)) → ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {x x'}
                            (p : Tδ.shape≈ ∣ Q ∣ (Sh.η₀ ∣ P ∣) x x') →
-                           _≈s_ (fobj μObj Q (extend δ A) .idx) (fold-shape-idx Q γ x) (fold-shape-idx Q γ' x')
+                           _≈s_ (fobj μ-fam Q (extend δ A) .idx) (fold-shape-idx Q γ x) (fold-shape-idx Q γ' x')
       fold-shape-idx-resp (const A')        γ≈ p = p
       fold-shape-idx-resp (var Fin.zero)    γ≈ {x} {x'} p = fold-idx-resp γ≈ {x} {x'} p
       fold-shape-idx-resp (var (Fin.suc i)) γ≈ p = p
@@ -134,7 +134,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 
       fold-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
                        prod (Γ .fam .fm γ) (Tδ.fib-shape Q (Tδ.deco-ext P (λ i → lift tt)) x)
-                         ⇒ fobj μObj Q (extend δ A) .fam .fm (fold-shape-idx Q γ x)
+                         ⇒ fobj μ-fam Q (extend δ A) .fam .fm (fold-shape-idx Q γ x)
       fold-shape-fam (const A')        γ a = p₂
       fold-shape-fam (var Fin.zero)    γ t = fold-fam γ t
       fold-shape-fam (var (Fin.suc i)) γ a = p₂
@@ -182,7 +182,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-shape-fam-natural : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
                                (p : Tδ.shape≈ ∣ Q ∣ (Sh.η₀ ∣ P ∣) x x') →
                                fold-shape-fam Q γ₂ x' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-shape-subst Q (Tδ.deco-ext P (λ i → lift tt)) p) ≈
-                               fobj μObj Q (extend δ A) .fam .subst (fold-shape-idx-resp Q γ≈ p) ∘ fold-shape-fam Q γ₁ x
+                               fobj μ-fam Q (extend δ A) .fam .subst (fold-shape-idx-resp Q γ≈ p) ∘ fold-shape-fam Q γ₁ x
       fold-shape-fam-natural (const A')        γ≈ p = pair-p₂ _ _
       fold-shape-fam-natural (var Fin.zero)    γ≈ {x} {x'} p = fold-fam-natural γ≈ {x} {x'} p
       fold-shape-fam-natural (var (Fin.suc i)) γ≈ p = pair-p₂ _ _
@@ -190,16 +190,16 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
         under-root-natural (Γ .fam .subst γ≈)
           (Tδ.fib-shape-iso₁ Q₁ (Tδ.deco-ext P (λ i → lift tt)) p)
           (Tδ.fib-shape-iso₂ Q₁ (Tδ.deco-ext P (λ i → lift tt)) p)
-          (fam-subst-iso₁ (fobj μObj Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p))
-          (fam-subst-iso₂ (fobj μObj Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p))
+          (fam-subst-iso₁ (fobj μ-fam Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p))
+          (fam-subst-iso₂ (fobj μ-fam Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p))
           (fold-shape-fam Q₁ γ₁ x) (fold-shape-fam Q₁ γ₂ x')
           (fold-shape-fam-natural Q₁ γ≈ p)
       fold-shape-fam-natural (Q₁ + Q₂) {γ₁} {γ₂} γ≈ {inj₂ y} {inj₂ y'} p =
         under-root-natural (Γ .fam .subst γ≈)
           (Tδ.fib-shape-iso₁ Q₂ (Tδ.deco-ext P (λ i → lift tt)) p)
           (Tδ.fib-shape-iso₂ Q₂ (Tδ.deco-ext P (λ i → lift tt)) p)
-          (fam-subst-iso₁ (fobj μObj Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p))
-          (fam-subst-iso₂ (fobj μObj Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p))
+          (fam-subst-iso₁ (fobj μ-fam Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p))
+          (fam-subst-iso₂ (fobj μ-fam Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p))
           (fold-shape-fam Q₂ γ₁ y) (fold-shape-fam Q₂ γ₂ y')
           (fold-shape-fam-natural Q₂ γ≈ p)
       fold-shape-fam-natural (Q₁ × Q₂) {γ₁} {γ₂} γ≈ {x₁ , x₂} {x₁' , x₂'} (p₁p , p₂p) =
@@ -208,10 +208,10 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                   (Tδ.fib-shape-iso₁ Q₂ (Tδ.deco-ext P (λ i → lift tt)) p₂p))
           (pm-iso (Tδ.fib-shape-iso₂ Q₁ (Tδ.deco-ext P (λ i → lift tt)) p₁p)
                   (Tδ.fib-shape-iso₂ Q₂ (Tδ.deco-ext P (λ i → lift tt)) p₂p))
-          (pm-iso (fam-subst-iso₁ (fobj μObj Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p₁p))
-                  (fam-subst-iso₁ (fobj μObj Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p₂p)))
-          (pm-iso (fam-subst-iso₂ (fobj μObj Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p₁p))
-                  (fam-subst-iso₂ (fobj μObj Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p₂p)))
+          (pm-iso (fam-subst-iso₁ (fobj μ-fam Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p₁p))
+                  (fam-subst-iso₁ (fobj μ-fam Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p₂p)))
+          (pm-iso (fam-subst-iso₂ (fobj μ-fam Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p₁p))
+                  (fam-subst-iso₂ (fobj μ-fam Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p₂p)))
           (strong-prod-m (fold-shape-fam Q₁ γ₁ x₁) (fold-shape-fam Q₂ γ₁ x₂))
           (strong-prod-m (fold-shape-fam Q₁ γ₂ x₁') (fold-shape-fam Q₂ γ₂ x₂'))
           (strong-prod-m-natural (fold-shape-fam-natural Q₁ γ≈ p₁p) (fold-shape-fam-natural Q₂ γ≈ p₂p))
@@ -267,7 +267,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-apply-fam-natural γ≈ (fbind Q md) Fin.zero    {a} {a'} p = fold-reindex-fam-natural {Q = Q} γ≈ md {a} {a'} p
       fold-apply-fam-natural γ≈ (fbind Q md) (Fin.suc v) p = fold-apply-fam-natural γ≈ md v p
 
-    foldMor : Mor (Fam𝒞-P.prod Γ (μObj P δ)) A
+    foldMor : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A
     foldMor .idxf .PS._⇒_.func (γ , t) = fold-idx γ t
     foldMor .idxf .PS._⇒_.func-resp-≈ {γ , t} {γ' , t'} (γ≈ , t≈) = fold-idx-resp γ≈ {t} {t'} t≈
     foldMor .famf ._⇒f_.transf (γ , t) = fold-fam γ t

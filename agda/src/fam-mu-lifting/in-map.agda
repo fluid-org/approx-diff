@@ -68,21 +68,21 @@ record HasMu : Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
 
 -- α's reconstruction machinery.
 module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
-    δ' = extend δ (μObj P δ)
+    δ' = extend δ (μ-fam P δ)
     module Tδ = Tree δ
     module TX = Tree δ'
     module R  = Reindex δ' δ
 
     -- Bridge `fobj`'s native structure to our `⟦_⟧shape` (identity at leaves and μ).
-    embed-idx : (Q : Poly (suc n)) → fobj μObj Q δ' .idx .Carrier → TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)
+    embed-idx : (Q : Poly (suc n)) → fobj μ-fam Q δ' .idx .Carrier → TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)
     embed-idx (const A) a = a
     embed-idx (var v)   a = a
     embed-idx (Q₁ + Q₂) (inj₁ x) = inj₁ (embed-idx Q₁ x)
     embed-idx (Q₁ + Q₂) (inj₂ y) = inj₂ (embed-idx Q₂ y)
     embed-idx (Q₁ × Q₂) (x , y) = embed-idx Q₁ x , embed-idx Q₂ y
     embed-idx (μ Q')    t = t
-    embed-idx-resp : (Q : Poly (suc n)) {x y : fobj μObj Q δ' .idx .Carrier} →
-                     _≈s_ (fobj μObj Q δ' .idx) x y → TX.shape≈ ∣ Q ∣ (λ v → inj₁ v) (embed-idx Q x) (embed-idx Q y)
+    embed-idx-resp : (Q : Poly (suc n)) {x y : fobj μ-fam Q δ' .idx .Carrier} →
+                     _≈s_ (fobj μ-fam Q δ' .idx) x y → TX.shape≈ ∣ Q ∣ (λ v → inj₁ v) (embed-idx Q x) (embed-idx Q y)
     embed-idx-resp (const A) p = p
     embed-idx-resp (var v)   p = p
     embed-idx-resp (Q₁ + Q₂) {inj₁ _} {inj₁ _} p = embed-idx-resp Q₁ p
@@ -91,7 +91,7 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     embed-idx-resp (μ Q')    p = p
     -- Inverse bridge: `⟦_⟧shape` over the fresh context back to `fobj`'s native
     -- structure (identity at leaves and μ, like `embed-idx`).
-    unembed-idx : (Q : Poly (suc n)) → TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v) → fobj μObj Q δ' .idx .Carrier
+    unembed-idx : (Q : Poly (suc n)) → TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v) → fobj μ-fam Q δ' .idx .Carrier
     unembed-idx (const A) a = a
     unembed-idx (var v)   a = a
     unembed-idx (Q₁ + Q₂) (inj₁ x) = inj₁ (unembed-idx Q₁ x)
@@ -101,7 +101,7 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
 
     unembed-idx-resp : (Q : Poly (suc n)) {x y : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)} →
                        TX.shape≈ ∣ Q ∣ (λ v → inj₁ v) x y →
-                       _≈s_ (fobj μObj Q δ' .idx) (unembed-idx Q x) (unembed-idx Q y)
+                       _≈s_ (fobj μ-fam Q δ' .idx) (unembed-idx Q x) (unembed-idx Q y)
     unembed-idx-resp (const A) p = p
     unembed-idx-resp (var v)   p = p
     unembed-idx-resp (Q₁ + Q₂) {inj₁ _} {inj₁ _} p = unembed-idx-resp Q₁ p
@@ -137,16 +137,16 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     mor₀ : R.MorD (λ v → inj₁ v) (Sh.η₀ ∣ P ∣) (λ v → lift tt) (Tδ.deco-ext P (λ i → lift tt))
     mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-natural
     -- Fibre bridge: `fobj`'s fibre to our `fib-shape` (identity at leaves, products at ×).
-    embed-fam : (Q : Poly (suc n)) (x : fobj μObj Q δ' .idx .Carrier) →
-                fobj μObj Q δ' .fam .fm x ⇒ TX.fib-shape Q (λ v → lift tt) (embed-idx Q x)
+    embed-fam : (Q : Poly (suc n)) (x : fobj μ-fam Q δ' .idx .Carrier) →
+                fobj μ-fam Q δ' .fam .fm x ⇒ TX.fib-shape Q (λ v → lift tt) (embed-idx Q x)
     embed-fam (const A) a = id _
     embed-fam (var v)   a = id _
     embed-fam (Q₁ + Q₂) (inj₁ x) = Lmap (embed-fam Q₁ x)
     embed-fam (Q₁ + Q₂) (inj₂ y) = Lmap (embed-fam Q₂ y)
     embed-fam (Q₁ × Q₂) (x , y) = Lmap (prod-m (embed-fam Q₁ x) (embed-fam Q₂ y))
     embed-fam (μ Q')    t = id _
-    embed-fam-natural : (Q : Poly (suc n)) {x y : fobj μObj Q δ' .idx .Carrier} (e : _≈s_ (fobj μObj Q δ' .idx) x y) →
-                        (embed-fam Q y ∘ fobj μObj Q δ' .fam .subst e)
+    embed-fam-natural : (Q : Poly (suc n)) {x y : fobj μ-fam Q δ' .idx .Carrier} (e : _≈s_ (fobj μ-fam Q δ' .idx) x y) →
+                        (embed-fam Q y ∘ fobj μ-fam Q δ' .fam .subst e)
                           ≈ (TX.fib-shape-subst Q (λ v → lift tt) (embed-idx-resp Q e) ∘ embed-fam Q x)
     embed-fam-natural (const A) e = ≈-trans id-left (≈-sym id-right)
     embed-fam-natural (var v)   e = ≈-trans id-left (≈-sym id-right)
@@ -167,7 +167,7 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
 
     -- Fibre half of the inverse bridge.
     unembed-fam : (Q : Poly (suc n)) (y : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)) →
-                  TX.fib-shape Q (λ v → lift tt) y ⇒ fobj μObj Q δ' .fam .fm (unembed-idx Q y)
+                  TX.fib-shape Q (λ v → lift tt) y ⇒ fobj μ-fam Q δ' .fam .fm (unembed-idx Q y)
     unembed-fam (const A) a = id _
     unembed-fam (var v)   a = id _
     unembed-fam (Q₁ + Q₂) (inj₁ x) = Lmap (unembed-fam Q₁ x)
@@ -178,7 +178,7 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     unembed-fam-natural : (Q : Poly (suc n)) {x y : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)}
                           (e : TX.shape≈ ∣ Q ∣ (λ v → inj₁ v) x y) →
                           (unembed-fam Q y ∘ TX.fib-shape-subst Q (λ v → lift tt) e)
-                            ≈ (fobj μObj Q δ' .fam .subst (unembed-idx-resp Q e) ∘ unembed-fam Q x)
+                            ≈ (fobj μ-fam Q δ' .fam .subst (unembed-idx-resp Q e) ∘ unembed-fam Q x)
     unembed-fam-natural (const A) e = ≈-trans id-left (≈-sym id-right)
     unembed-fam-natural (var v)   e = ≈-trans id-left (≈-sym id-right)
     unembed-fam-natural (Q₁ + Q₂) {inj₁ _} {inj₁ _} e =
@@ -226,8 +226,8 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       ≈-trans (∘-cong (TX.fib-refl* Q' (λ v → lift tt) t) ≈-refl) (≈-trans id-left id-left)
 
     -- Unembedding after embedding is the identity, on indexes and on fibres.
-    unembed-embed : (Q : Poly (suc n)) (x : fobj μObj Q δ' .idx .Carrier) →
-                    _≈s_ (fobj μObj Q δ' .idx) (unembed-idx Q (embed-idx Q x)) x
+    unembed-embed : (Q : Poly (suc n)) (x : fobj μ-fam Q δ' .idx .Carrier) →
+                    _≈s_ (fobj μ-fam Q δ' .idx) (unembed-idx Q (embed-idx Q x)) x
     unembed-embed (const A) a = A .idx .isEquivalence .refl
     unembed-embed (var v)   a = TX.elEq-refl (inj₁ v) a
     unembed-embed (Q₁ + Q₂) (inj₁ x) = unembed-embed Q₁ x
@@ -235,8 +235,8 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     unembed-embed (Q₁ × Q₂) (x , y) = unembed-embed Q₁ x , unembed-embed Q₂ y
     unembed-embed (μ Q')    t = TX.W-≈-refl t
 
-    unembed-embed-fam : (Q : Poly (suc n)) (x : fobj μObj Q δ' .idx .Carrier) →
-                        (fobj μObj Q δ' .fam .subst (unembed-embed Q x)
+    unembed-embed-fam : (Q : Poly (suc n)) (x : fobj μ-fam Q δ' .idx .Carrier) →
+                        (fobj μ-fam Q δ' .fam .subst (unembed-embed Q x)
                          ∘ (unembed-fam Q (embed-idx Q x) ∘ embed-fam Q x))
                         ≈ id _
     unembed-embed-fam (const A) a =
@@ -263,7 +263,7 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     unembed-embed-fam (μ Q') t =
       ≈-trans (∘-cong (TX.fib-refl* Q' (λ v → lift tt) t) ≈-refl) (≈-trans id-left id-left)
 
-    inMor : Mor (fobj μObj P δ') (μObj P δ)
+    inMor : Mor (fobj μ-fam P δ') (μ-fam P δ)
     inMor .idxf .PS._⇒_.func i = Tδ.sup (R.reindex-shape ∣ P ∣ mor₀ (embed-idx P i))
     inMor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp ∣ P ∣ mor₀ (embed-idx-resp P x≈y)
     inMor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
@@ -275,6 +275,6 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
                (assoc _ _ _))))
 
 hasMu : HasMu
-hasMu .HasMu.μ-obj = μObj
+hasMu .HasMu.μ-obj = μ-fam
 hasMu .HasMu.inMap P δ = InMapDef.inMor P δ
 hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg

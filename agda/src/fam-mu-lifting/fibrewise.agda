@@ -489,13 +489,13 @@ module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Ob
     Bw = cbwd P ρ₀ ρ₀ d₁₀ d₂₀ rel₀
     ci = fib-ciso P ρ₀ ρ₀ d₁₀ d₂₀ rel₀
 
-  fwd-mor : F𝒟.Mor (FamF .fobj (Fc.μObj P δ)) (Fd.μObj (P̂ P) (λ i → FamF .fobj (δ i)))
+  fwd-mor : F𝒟.Mor (FamF .fobj (Fc.μ-fam P δ)) (Fd.μ-fam (P̂ P) (λ i → FamF .fobj (δ i)))
   fwd-mor .idxf .func = Fw
   fwd-mor .idxf .func-resp-≈ {w} {w'} = c≈fwd P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'}
   fwd-mor .famf .transf w = ci w .fwd
   fwd-mor .famf .natural {w} {w'} q = fib-cnat P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'} q
 
-  bwd-mor : F𝒟.Mor (Fd.μObj (P̂ P) (λ i → FamF .fobj (δ i))) (FamF .fobj (Fc.μObj P δ))
+  bwd-mor : F𝒟.Mor (Fd.μ-fam (P̂ P) (λ i → FamF .fobj (δ i))) (FamF .fobj (Fc.μ-fam P δ))
   bwd-mor .idxf .func = Bw
   bwd-mor .idxf .func-resp-≈ {s} {s'} = c≈bwd P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {s} {s'}
   bwd-mor .famf .transf s =
@@ -539,12 +539,12 @@ module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Ob
                 (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ w)))))
             (≈-trans (≈-sym (assoc _ _ _))
               (≈-trans (∘-cong₁ (ci (Bw (Fw w)) .bwd∘fwd≈id)) id-left)))))
-        (≈-trans (≈-sym ((FamF .fobj (Fc.μObj P δ)) .fam .trans*
+        (≈-trans (≈-sym ((FamF .fobj (Fc.μ-fam P δ)) .fam .trans*
                                   {x = w} {y = Bw (Fw w)} {z = w} _ _))
-          ((FamF .fobj (Fc.μObj P δ)) .fam .refl* {x = w})))
+          ((FamF .fobj (Fc.μ-fam P δ)) .fam .refl* {x = w})))
 
   fibrewise-μ-iso : Category.Iso F𝒟.cat
-                  (FamF .fobj (Fc.μObj P δ)) (Fd.μObj (P̂ P) (λ i → FamF .fobj (δ i)))
+                  (FamF .fobj (Fc.μ-fam P δ)) (Fd.μ-fam (P̂ P) (λ i → FamF .fobj (δ i)))
   fibrewise-μ-iso .Category.Iso.fwd = fwd-mor
   fibrewise-μ-iso .Category.Iso.bwd = bwd-mor
   fibrewise-μ-iso .Category.Iso.fwd∘bwd≈id = fb-≃

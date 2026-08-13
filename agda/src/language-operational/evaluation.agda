@@ -79,6 +79,9 @@ mutual
 rooted : ∀ {m n} → m ⇒ n → m ⇒ suc n
 rooted R = ⟨ M.εₘ , R ⟩
 
+unrooted : ∀ {m n} → m ⇒ suc n → m ⇒ n
+unrooted R = p₂ {1} ∘ R
+
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl
 
@@ -109,23 +112,23 @@ mutual
     ⇓-case-l : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R S} →
                γ , s ⇓ inl v [ R ] → γ · v , t₁ ⇓ u [ S ] →
-               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , p₂ ∘ R ⟩ ]
+               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , unrooted R ⟩ ]
     ⇓-case-r : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R S} →
                γ , s ⇓ inr v [ R ] → γ · v , t₂ ⇓ u [ S ] →
-               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , p₂ ∘ R ⟩ ]
+               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , unrooted R ⟩ ]
     ⇓-pair   : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R S} →
                γ , s ⇓ v [ R ] → γ , t ⇓ u [ S ] → γ , pair s t ⇓ pair v u [ rooted ⟨ R , S ⟩ ]
     ⇓-fst    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
-               γ , fst t ⇓ v [ p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R) ]
+               γ , fst t ⇓ v [ p₁ {width v} {width u} ∘ unrooted R ]
     ⇓-snd    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
-               γ , snd t ⇓ u [ p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R) ]
+               γ , snd t ⇓ u [ p₂ {width v} {width u} ∘ unrooted R ]
     ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} → γ , lam t ⇓ clo γ t [ rooted (idm _) ]
     ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T} →
                γ , s ⇓ clo {Γ'} γ' t' [ R ] → γ , t ⇓ v [ S ] → γ' · v , t' ⇓ u [ T ] →
-               γ , app s t ⇓ u [ T ∘ ⟨ p₂ {1} {width-env γ'} ∘ R , S ⟩ ]
+               γ , app s t ⇓ u [ T ∘ ⟨ unrooted R , S ⟩ ]
     ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] → γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ op-deps ω .func vs ∘ R ]
     ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
@@ -157,14 +160,14 @@ mutual
     m-base  : ∀ {b v R} → Map γ s (base b) v R v R
     m-arrow : ∀ {σ₁ σ₂ v R} → Map γ s (σ₁ [→] σ₂) v R v R
     m-inl   : ∀ {σ₁ σ₂ v v' R R'} →
-              Map γ s σ₁ v (p₂ {1} {width v} ∘ R) v' R' →
+              Map γ s σ₁ v (unrooted R) v' R' →
               Map γ s (σ₁ [+] σ₂) (inl v) R (inl v') ⟨ p₁ {1} {width v} ∘ R , R' ⟩
     m-inr   : ∀ {σ₁ σ₂ v v' R R'} →
-              Map γ s σ₂ v (p₂ {1} {width v} ∘ R) v' R' →
+              Map γ s σ₂ v (unrooted R) v' R' →
               Map γ s (σ₁ [+] σ₂) (inr v) R (inr v') ⟨ p₁ {1} {width v} ∘ R , R' ⟩
     m-pair  : ∀ {σ₁ σ₂ v v' u u' R S T} →
-              Map γ s σ₁ v (p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) v' S →
-              Map γ s σ₂ u (p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) u' T →
+              Map γ s σ₁ v (p₁ {width v} {width u} ∘ unrooted R) v' S →
+              Map γ s σ₂ u (p₂ {width v} {width u} ∘ unrooted R) u' T →
               Map γ s (σ₁ [×] σ₂) (pair v u) R (pair v' u')
                   ⟨ p₁ {1} {width v + width u} ∘ R , ⟨ S , T ⟩ ⟩
     m-mu    : ∀ {τ' : type 2} {w w' R R'} →
