@@ -16,8 +16,11 @@ module language-operational.annotated-value {ℓ} (Sig : Signature ℓ)
 
 open Signature Sig
 open Primitives 𝒫
-open import language-syntax Sig using (unit; μ; var; _[+]_; _[×]_)
-open import language-operational.evaluation Sig 𝒫 using (Val; Env)
+open import Data.Nat.Properties using (+-identityʳ; +-assoc)
+open import Relation.Binary.PropositionalEquality
+  using (_≡_; refl; sym; trans; cong; cong₂)
+open import language-syntax Sig using (unit; base; μ; var; _[+]_; _[×]_; _[→]_)
+open import language-operational.evaluation Sig 𝒫 using (Val; Env; width; width-env)
 open Val
 open Env
 open import Data.Fin using (zero)
@@ -37,6 +40,19 @@ covers-all : ∀ {X} → List (AVal X) → ℕ
 covers (node _ _ n cs) = n + covers-all cs
 covers-all []       = 0
 covers-all (t ∷ ts) = covers t + covers-all ts
+
+fold : ∀ {X B : Set} → (Shape → X → ℕ → ℕ → List B → B) → ℕ → AVal X → B
+fold-all : ∀ {X B : Set} → (Shape → X → ℕ → ℕ → List B → B) → ℕ → List (AVal X) → List B
+
+fold f off (node sh x n cs) = f sh x n off (fold-all f (off + n) cs)
+fold-all f off []       = []
+fold-all f off (t ∷ ts) = fold f off t ∷ fold-all f (off + covers t) ts
+
+covers-++ : ∀ {X} (ts us : List (AVal X)) →
+            covers-all (ts ++ us) ≡ covers-all ts + covers-all us
+covers-++ []       us = refl
+covers-++ (t ∷ ts) us =
+  trans (cong (covers t +_) (covers-++ ts us)) (sym (+-assoc (covers t) _ _))
 
 module _ (show-const : ∀ {s} → sort-val s → String) where
 
@@ -59,6 +75,58 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
     shape-env-of : ∀ {Γ} → Env Γ → List (AVal ⊤)
     shape-env-of emp     = []
     shape-env-of (γ · v) = shape-env-of γ ++ (shape-of v ∷ [])
+
+  mutual
+    covers-width : ∀ {τ} (v : Val τ) → covers (shape-of v) ≡ width v
+    covers-width {μ (unit [+] (_ [×] var zero))} v = covers-cell-width v
+    covers-width Val.unit          = refl
+    covers-width (Val.const {s} c) = +-identityʳ (sort-width s)
+    covers-width (Val.inl v)       =
+      cong suc (trans (+-identityʳ _) (covers-width v))
+    covers-width (Val.inr v)       =
+      cong suc (trans (+-identityʳ _) (covers-width v))
+    covers-width (Val.pair v u)    =
+      cong suc (trans (cong (covers (shape-of v) +_) (+-identityʳ _))
+                      (cong₂ _+_ (covers-width v) (covers-width u)))
+    covers-width (Val.clo γ _)     = cong suc (covers-env-width γ)
+    covers-width (Val.roll {τ = var _} v) = covers-width v
+    covers-width (Val.roll {τ = unit} v) = covers-width v
+    covers-width (Val.roll {τ = base _} v) = covers-width v
+    covers-width (Val.roll {τ = _ [×] _} v) = covers-width v
+    covers-width (Val.roll {τ = _ [→] _} v) = covers-width v
+    covers-width (Val.roll {τ = μ _} v) = covers-width v
+    covers-width (Val.roll {τ = (var _) [+] _} v) = covers-width v
+    covers-width (Val.roll {τ = (base _) [+] _} v) = covers-width v
+    covers-width (Val.roll {τ = (_ [+] _) [+] _} v) = covers-width v
+    covers-width (Val.roll {τ = (_ [×] _) [+] _} v) = covers-width v
+    covers-width (Val.roll {τ = (_ [→] _) [+] _} v) = covers-width v
+    covers-width (Val.roll {τ = (μ _) [+] _} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (var _)} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] unit} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (base _)} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (_ [+] _)} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (_ [→] _)} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (μ _)} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (_ [×] (unit))} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (_ [×] (base _))} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (_ [×] (_ [+] _))} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (_ [×] (_ [×] _))} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (_ [×] (_ [→] _))} v) = covers-width v
+    covers-width (Val.roll {τ = unit [+] (_ [×] (μ _))} v) = covers-width v
+
+    covers-cell-width : ∀ {σ} (v : Val (μ (unit [+] (σ [×] var zero)))) →
+                        covers (cell-of v) ≡ width v
+    covers-cell-width (Val.roll (Val.inl Val.unit)) = refl
+    covers-cell-width (Val.roll (Val.inr (Val.pair hd tl))) =
+      cong (λ k → suc (suc k))
+           (trans (cong (covers (shape-of hd) +_) (+-identityʳ _))
+                  (cong₂ _+_ (covers-width hd) (covers-width tl)))
+
+    covers-env-width : ∀ {Γ} (γ : Env Γ) → covers-all (shape-env-of γ) ≡ width-env γ
+    covers-env-width emp     = refl
+    covers-env-width (γ · v) =
+      trans (covers-++ (shape-env-of γ) (shape-of v ∷ []))
+            (cong₂ _+_ (covers-env-width γ) (trans (+-identityʳ _) (covers-width v)))
 
 label-of : Shape → String
 label-of Shape.unit      = "()"
@@ -90,21 +158,16 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     at-run a (suc n) (suc o)  zero     = Sc.ε
     at-run a (suc n) (suc o)  (suc i)  = at-run a (suc n) o i
 
-  mutual
-    fill : (ℕ → Scalar) → ℕ → AVal ⊤ → AVal Scalar
-    fill row off (node sh _ n cs) = node sh (join-run row off n) n (fill-all row (off + n) cs)
+  fill : (ℕ → Scalar) → ℕ → AVal ⊤ → AVal Scalar
+  fill row = fold (λ sh _ n off cs → node sh (join-run row off n) n cs)
 
-    fill-all : (ℕ → Scalar) → ℕ → List (AVal ⊤) → List (AVal Scalar)
-    fill-all row off []       = []
-    fill-all row off (t ∷ ts) = fill row off t ∷ fill-all row (off + covers t) ts
+  private
+    sum-at : List (ℕ → Scalar) → ℕ → Scalar
+    sum-at []       i = Sc.ε
+    sum-at (r ∷ rs) i = r i Sc.+ sum-at rs i
 
-  mutual
-    spread : AVal Scalar → ℕ → ℕ → Scalar
-    spread (node _ a n cs) off i = at-run a n off i Sc.+ spread-all cs (off + n) i
-
-    spread-all : List (AVal Scalar) → ℕ → ℕ → Scalar
-    spread-all []       off i = Sc.ε
-    spread-all (t ∷ ts) off i = spread t off i Sc.+ spread-all ts (off + covers t) i
+  spread : AVal Scalar → ℕ → ℕ → Scalar
+  spread t off = fold (λ _ a n o rs i → at-run a n o i Sc.+ sum-at rs i) off t
 
   row→aval : ∀ {τ} (show-const : ∀ {s} → sort-val s → String) →
              (ℕ → Scalar) → Val τ → AVal Scalar

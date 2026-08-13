@@ -9,11 +9,11 @@ open import IO.Finite using (writeFile)
 open import Data.Bool using (Bool; true; false; if_then_else_; _∧_; _∨_)
 open import Data.String using (String; _++_; _==_)
 open import Data.Unit.Polymorphic using () renaming (⊤ to ⊤p; tt to ttp)
-open import Data.List using (List; []; _∷_) renaming (_++_ to _++L_)
+open import Data.List using (List; []; _∷_; concat) renaming (_++_ to _++L_; map to mapL)
 open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
 import Data.Nat.Show as ℕ-Show
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Product using (_×_; _,_)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Vec using (toList; tabulate)
 open import Level using (0ℓ)
 import three
@@ -27,7 +27,8 @@ open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
 open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open import language-operational.annotated-value EP.Sig EP.primitives
-  using (AVal; node; Shape; shape-of; shape-env-of; covers; covers-all; label-of)
+  using (AVal; node; Shape; shape-of; shape-env-of; covers; covers-all; label-of;
+         fold; fold-all)
 open import Data.Unit using (⊤)
 open import Data.Nat using (_+_)
 
@@ -47,25 +48,25 @@ private
   filter-in-tree  = shape-env-of (λ {s} c → showC {s} c) γ-filter-env
   filter-out-tree = shape-of (λ {s} c → showC {s} c) δ-filter ∷ []
 
-  mutual
-    drawn : ℕ → AVal ⊤ → List (ℕ × String)
-    drawn off (node sh _ n cs) = (off , label-of sh) ∷ drawn-all (off + n) cs
+  private
+    node-entry : Shape → ⊤ → ℕ → ℕ → List (List (ℕ × String)) → List (ℕ × String)
+    node-entry sh _ _ off rs = (off , label-of sh) ∷ concat rs
 
-    drawn-all : ℕ → List (AVal ⊤) → List (ℕ × String)
-    drawn-all off []       = []
-    drawn-all off (t ∷ ts) = drawn off t ++L drawn-all (off + covers t) ts
+    node-edges : Shape → ⊤ → ℕ → ℕ → List (ℕ × List (ℕ × ℕ)) → ℕ × List (ℕ × ℕ)
+    node-edges _ _ _ off rs =
+      off , (mapL (λ r → off , proj₁ r) rs ++L concat (mapL proj₂ rs))
 
-  mutual
-    kid-edges : ℕ → AVal ⊤ → List (ℕ × ℕ)
-    kid-edges off (node _ _ n cs) = links (off + n) cs ++L kid-edges-all (off + n) cs
-      where
-      links : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
-      links o []       = []
-      links o (t ∷ ts) = (off , o) ∷ links (o + covers t) ts
+  drawn : ℕ → AVal ⊤ → List (ℕ × String)
+  drawn = fold node-entry
 
-    kid-edges-all : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
-    kid-edges-all off []       = []
-    kid-edges-all off (t ∷ ts) = kid-edges off t ++L kid-edges-all (off + covers t) ts
+  drawn-all : ℕ → List (AVal ⊤) → List (ℕ × String)
+  drawn-all off ts = concat (fold-all node-entry off ts)
+
+  kid-edges : ℕ → AVal ⊤ → List (ℕ × ℕ)
+  kid-edges off t = proj₂ (fold node-edges off t)
+
+  kid-edges-all : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
+  kid-edges-all off ts = concat (mapL proj₂ (fold-all node-edges off ts))
 
   mutual
     owner : ℕ → AVal ⊤ → ℕ → ℕ
