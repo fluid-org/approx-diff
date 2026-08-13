@@ -35,7 +35,9 @@ open Setoid A
 module M = matrix.Mat S
 open M
   using (Matrix; Vec; Σ; I; εₘ; _+ₘ_; _≈ₘ_; Σ-cong; Σ-ε; Σ-+; Σ-unit;
-         Σ-·-distribₗ; Σ-·-distribᵣ; Σ-interchange)
+         Σ-·-distribₗ; Σ-·-distribᵣ; Σ-interchange;
+         ∘-cong; id-left; assoc; comp-bilinear₁; comp-bilinear₂;
+         comp-bilinear-ε₁; comp-bilinear-ε₂)
   renaming (_∘_ to _∘ₘ_)
 module SemiMod = semimodule S
 module SemiModT = SemiMod.Topped ⊤-add-top
@@ -57,16 +59,17 @@ private
   +m-cong = CommutativeMonoid.+-cong (SMCM.homCM _ _)
 
 ------------------------------------------------------------------------------
--- The action of a matrix on a vector, linear in the vector and additive in the matrix.
+-- The action of a matrix on a vector: composition with the vector as a single column.
+
+col : ∀ {n} → Vec n → Matrix n 1
+col v i _ = v i
 
 app : ∀ {m n} → Matrix m n → Vec n → Vec m
-app {m} {n} R v i = Σ {n} (λ j → R i j · v j)
+app {m} {n} R v i = (R ∘ₘ col v) i zero
 
 app-+ : ∀ {m n} (R : Matrix m n) (u v : Vec n) (i : Fin m) →
         app R (λ j → u j + v j) i ≈ (app R u i + app R v i)
-app-+ {m} {n} R u v i =
-  trans (Σ-cong {n} (λ j → ·-+-distribₗ))
-        (sym (Σ-+ {n} (λ j → R i j · u j) (λ j → R i j · v j)))
+app-+ R u v i = comp-bilinear₂ R (col u) (col v) i zero
 
 app-· : ∀ {m n} (R : Matrix m n) (s : Setoid.Carrier A) (u : Vec n) (i : Fin m) →
         app R (λ j → s · u j) i ≈ (s · app R u i)
@@ -75,35 +78,30 @@ app-· {m} {n} R s u i =
         (sym (Σ-·-distribₗ {n} s (λ j → R i j · u j)))
 
 app-ε : ∀ {m n} (R : Matrix m n) (i : Fin m) → app R (λ _ → ε) i ≈ ε
-app-ε {m} {n} R i = trans (Σ-cong {n} (λ j → ε-annihilᵣ)) (Σ-ε {n})
+app-ε {m} {n} R i = comp-bilinear-ε₂ {m} {n} {1} R i zero
 
 app-congₘ : ∀ {m n} {R R' : Matrix m n} → R ≈ₘ R' →
             ∀ (v : Vec n) (i : Fin m) → app R v i ≈ app R' v i
-app-congₘ {m} {n} h v i = Σ-cong {n} (λ j → ·-cong (h i j) refl)
+app-congₘ {R = R} {R' = R'} h v i = ∘-cong {N₁ = col v} {N₂ = col v} h (λ _ _ → refl) i zero
 
 app-congᵥ : ∀ {m n} (R : Matrix m n) {u w : Vec n} → (∀ j → u j ≈ w j) →
             ∀ (i : Fin m) → app R u i ≈ app R w i
-app-congᵥ {m} {n} R h i = Σ-cong {n} (λ j → ·-cong refl (h j))
+app-congᵥ R {u = u} {w = w} h i =
+  ∘-cong {M₁ = R} {M₂ = R} {N₁ = col u} {N₂ = col w} (λ _ _ → refl) (λ j _ → h j) i zero
 
 app-∘ : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) (v : Vec k) (i : Fin m) →
         app (R ∘ₘ T) v i ≈ app R (app T v) i
-app-∘ {m} {n} {k} R T v i =
-  trans (Σ-cong {k} (λ j → Σ-·-distribᵣ (λ l → R i l · T l j) (v j)))
-  (trans (Σ-cong {k} (λ j → Σ-cong {n} (λ l → ·-assoc)))
-  (trans (Σ-interchange {k} {n} (λ j l → R i l · (T l j · v j)))
-         (Σ-cong {n} (λ l → sym (Σ-·-distribₗ (R i l) (λ j → T l j · v j))))))
+app-∘ R T v i = assoc R T (col v) i zero
 
 app-+ₘ : ∀ {m n} (R T : Matrix m n) (v : Vec n) (i : Fin m) →
          app (R +ₘ T) v i ≈ (app R v i + app T v i)
-app-+ₘ {m} {n} R T v i =
-  trans (Σ-cong {n} (λ j → ·-+-distribᵣ))
-        (sym (Σ-+ {n} (λ j → R i j · v j) (λ j → T i j · v j)))
+app-+ₘ R T v i = comp-bilinear₁ R T (col v) i zero
 
 app-I : ∀ {n} (v : Vec n) (i : Fin n) → app (I {n}) v i ≈ v i
-app-I v i = Σ-unit i v
+app-I v i = id-left {M = col v} i zero
 
 app-εₘ : ∀ {m n} (v : Vec n) (i : Fin m) → app (εₘ {m} {n}) v i ≈ ε
-app-εₘ {m} {n} v i = trans (Σ-cong {n} (λ j → ε-annihilₗ)) (Σ-ε {n})
+app-εₘ v i = comp-bilinear-ε₁ (col v) i zero
 
 ------------------------------------------------------------------------------
 -- The realisation: the semimodule of weighted vectors over the positions, pointwise.
