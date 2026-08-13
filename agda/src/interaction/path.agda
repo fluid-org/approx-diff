@@ -21,7 +21,7 @@ import two
 -- Paths of a derivation: ε addresses the derivation itself, and each step constructor addresses one
 -- premise, in evaluation order. One path type per judgement form, mutually with the judgements they
 -- index.
-module language-operational.path {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module interaction.path {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫

@@ -22,7 +22,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; subst)
 open import list
 open import signature using (Signature)
 open import primitives using (Primitives)
-import hide-algebra
+import interaction.hide-algebra
 import matrix
 import two
 
@@ -35,17 +35,17 @@ open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr)
 open import language-operational.evaluation Sig 𝒫
-open import language-operational.path Sig 𝒫
-open import language-operational.graph Sig 𝒫
-open import language-operational.hide Sig 𝒫
+open import interaction.path Sig 𝒫
+open import interaction.graph Sig 𝒫
+open import interaction.hide Sig 𝒫
 open import interaction.config Sig 𝒫
-open import language-operational.topological-order Sig 𝒫
+open import interaction.topological-order Sig 𝒫
 
 private
   module M = matrix.Mat two.semiring
 
   module HA {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) =
-    hide-algebra.Hide (Vertex D) vertex-width
+    interaction.hide-algebra.Hide (Vertex D) vertex-width
 
 member-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]}
               (q : Path D) {C C' : List (Path D)} → C ↭ C' → member q C ≡ member q C'

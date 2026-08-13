@@ -8,7 +8,7 @@ import two
 open import signature using (Signature)
 open import primitives using (Primitives)
 
-module language-operational.list-value {ℓ} (Sig : Signature ℓ)
+module example.list-value {ℓ} (Sig : Signature ℓ)
   (𝒫 : Primitives two.semiring Sig) where
 
 open import language-syntax Sig using (type; list; sub-ren-id)

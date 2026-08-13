@@ -16,15 +16,15 @@ import two
 -- through the hidden vertex. Hidden vertices stay in the carrier, so hiding transforms the
 -- relations and the caller tracks which vertices are live; relations at a hidden vertex are
 -- stale, never read.
-module language-operational.hide {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module interaction.hide {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr; if_then_else_)
 open import type-substitution Sig using (unfold₁)
 open import language-operational.evaluation Sig 𝒫
-open import language-operational.path Sig 𝒫
-open import language-operational.graph Sig 𝒫
+open import interaction.path Sig 𝒫
+open import interaction.graph Sig 𝒫
 
 private
   module M = matrix.Mat two.semiring

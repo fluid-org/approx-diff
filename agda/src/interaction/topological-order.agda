@@ -17,22 +17,22 @@ open import Relation.Binary.PropositionalEquality using (_≡_)
 open import signature using (Signature)
 open import primitives using (Primitives)
 import Data.Bool as Bool
-import hide-algebra
+import interaction.hide-algebra
 import matrix
 import two
 
 -- Every edge of a rule-built graph runs strictly forward in completion rank, so the graphs the
 -- rules produce are acyclic.
-module language-operational.topological-order {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module interaction.topological-order {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import type-substitution Sig using (unfold₁)
 open import language-operational.evaluation Sig 𝒫
-open import language-operational.path Sig 𝒫
-open import language-operational.graph Sig 𝒫
-open import language-operational.hide Sig 𝒫
+open import interaction.path Sig 𝒫
+open import interaction.graph Sig 𝒫
+open import interaction.hide Sig 𝒫
 
 private
   module M = matrix.Mat two.semiring
@@ -565,7 +565,7 @@ Forward {D = D} G = ∀ (x y : Vertex D) (i : Fin (vertex-width y)) (j : Fin (ve
 -- commutation pushed through the rest of the fold by congruence.
 private
   module Ranked (V : Set ℓ) (w : V → ℕ) (rk : V → ℕ) where
-    open hide-algebra.Hide V w using (Gr; h; _≈g_; fold-cong)
+    open interaction.hide-algebra.Hide V w using (Gr; h; _≈g_; fold-cong)
 
     private
       Fwd : Gr → Set ℓ

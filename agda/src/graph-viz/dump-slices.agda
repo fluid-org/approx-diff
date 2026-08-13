@@ -31,7 +31,7 @@ open import language-operational.annotated-value EP.Sig EP.primitives
   using (AVal; node; Shape; shape-of)
 import language-operational.annotated-value as AV
 open AV.annotate EP.Sig EP.primitives two.semiring using (row→aval; aval→row)
-open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
+open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open Primitives EP.primitives using (sort-val; sort-width)
 
 private

@@ -8,16 +8,16 @@ import two
 
 -- Agreement of the graph judgement with evaluation: collapsing a derivation's graph recovers the
 -- run's dependency relation, case by case on the rules.
-module language-operational.agreement {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module interaction.agreement {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
 
 open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig 𝒫
-open import language-operational.path Sig 𝒫
-open import language-operational.graph Sig 𝒫
-open import language-operational.hide Sig 𝒫
+open import interaction.path Sig 𝒫
+open import interaction.graph Sig 𝒫
+open import interaction.hide Sig 𝒫
 
 private
   module M = matrix.Mat two.semiring

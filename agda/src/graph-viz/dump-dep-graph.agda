@@ -25,7 +25,7 @@ open import language-operational.evaluation EP.Sig EP.primitives using (Val; Env
 open Val
 open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
-open import language-operational.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
+open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open import language-operational.annotated-value EP.Sig EP.primitives
   using (AVal; node; Shape; shape-of; shape-env-of; covers; covers-all; label-of)
 open import Data.Unit using (⊤)

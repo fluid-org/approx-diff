@@ -12,7 +12,7 @@ import two
 
 -- Hiding as join algebra, generic in the vertex set: entrywise laws for hide-all on graphs that
 -- agree on the hidden rows and columns. No rank or forwardness is assumed.
-module hide-algebra where
+module interaction.hide-algebra where
 
 private
   module M = matrix.Mat two.semiring

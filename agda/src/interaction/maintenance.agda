@@ -32,9 +32,9 @@ open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_) hiding (if_then_else_)
 open import language-operational.evaluation Sig 𝒫
-open import language-operational.path Sig 𝒫
-open import language-operational.graph Sig 𝒫
-open import language-operational.hide Sig 𝒫
+open import interaction.path Sig 𝒫
+open import interaction.graph Sig 𝒫
+open import interaction.hide Sig 𝒫
 open import interaction.config Sig 𝒫
 open import interaction.moves Sig 𝒫
 

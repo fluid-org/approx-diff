@@ -18,9 +18,9 @@ import example.primitives as Dep
 open import language-syntax Sig using (_⊢_; _∋_; zero; base; var; inl; case; ctxt; emp)
   renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig Dep.primitives
-open import language-operational.path Sig Dep.primitives
-open import language-operational.graph Sig Dep.primitives
-open import language-operational.hide Sig Dep.primitives
+open import interaction.path Sig Dep.primitives
+open import interaction.graph Sig Dep.primitives
+open import interaction.hide Sig Dep.primitives
 open import interaction.config Sig Dep.primitives
 
 γ₀ : Env (emp ▸ base number)
