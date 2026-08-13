@@ -264,15 +264,11 @@ mutual
   fo-at (app₁ p)    = fo-at p
   fo-at (app₂ p)    = fo-at p
   fo-at (app₃ p)    = fo-at p
-  fo-at (bop p)     = fo-at-s p
-  fo-at (brel p)    = fo-at-s p
+  fo-at (bop p)     = Bool.true
+  fo-at (brel p)    = Bool.true
   fo-at (roll p)    = fo-at p
   fo-at (fold₁ p)   = fo-at p
   fo-at (fold₂ p)   = fo-at-m p
-
-  fo-at-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            {D : γ , Ms ⇓s vs [ R ]} → PathS D → Bool
-  fo-at-s _ = Bool.true
 
   fo-at-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}

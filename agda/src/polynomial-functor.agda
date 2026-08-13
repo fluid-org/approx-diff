@@ -116,9 +116,7 @@ Preserves-μ : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e�
               Set (o₁ ⊔ m₂ ⊔ e₂)
 Preserves-μ {𝒞 = 𝒞} {𝒟 = 𝒟} 𝒞T 𝒞P 𝒞SCP 𝒟T 𝒟P 𝒟SCP 𝒞Mu 𝒟Mu F =
   ∀ {n} (P : Poly 𝒞 (suc n)) (δ : Fin n → Category.obj 𝒞) →
-  Category.Iso 𝒟 (F .Functor.fobj (CM.μ-obj P δ))
-                 (DM.μ-obj (Poly-map F P) (λ i → F .Functor.fobj (δ i)))
-  where
-    module CM = Interp.HasMu 𝒞Mu
-    module DM = Interp.HasMu 𝒟Mu
+  Category.Iso 𝒟 (F .Functor.fobj (Interp.HasMu.μ-obj 𝒞Mu P δ))
+                 (Interp.HasMu.μ-obj 𝒟Mu (Poly-map F P) (λ i → F .Functor.fobj (δ i)))
+
 

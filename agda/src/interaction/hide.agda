@@ -66,7 +66,7 @@ hide-all-s = foldl hide-s
 
 collapse-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
              (D : γ , Ms ⇓s vs [ R ]) → M.Matrix (bases-width is) (width-env γ)
-collapse-s D = hide-all-s (graphS D) (map at (paths-s D)) env (at ε)
+collapse-s D = hide-all-s (graph-s D) (map at (paths-s D)) env (at ε)
 
 hide-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
          {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
@@ -86,10 +86,10 @@ collapse-m-env : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ 
                  {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
                  {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
                  (D : Map γ s σ' v R v' R') → M.Matrix (width v') (width-env γ)
-collapse-m-env D = hide-all-m (graphM D) (map at (paths-m D)) env (at ε)
+collapse-m-env D = hide-all-m (graph-m D) (map at (paths-m D)) env (at ε)
 
 collapse-m-in : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                 {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : width-env γ ⇒ width v}
                 {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
                 (D : Map γ s σ' v R v' R') → M.Matrix (width v') (width v)
-collapse-m-in D = hide-all-m (graphM D) (map at (paths-m D)) input (at ε)
+collapse-m-in D = hide-all-m (graph-m D) (map at (paths-m D)) input (at ε)

@@ -43,7 +43,7 @@ open Mor
 open Fam
 open _≃_
 module Sh = fam-mu-lifting.sort os es
-open Sh using (mkSort)
+open Sh using (Sort; mkSort)
 
 Poly-C = polynomial-functor.Poly cat
 open polynomial-functor.Poly
@@ -71,19 +71,19 @@ module Fibre {n} (δ : Fin n → Obj) where
 
   -- A decoration of a sort: a μ-body erasing to it, with the sorts in its
   -- assignment decorated in turn. The sort is recovered by projection.
-  data Deco : Sh.Sort n → Set ℓD
+  data Deco : Sort n → Set ℓD
 
-  DecoAssign : Fin n ⊎ Sh.Sort n → Set ℓD
+  DecoAssign : Fin n ⊎ Sort n → Set ℓD
   DecoAssign (inj₁ _) = Lift ℓD ⊤
   DecoAssign (inj₂ s) = Deco s
 
   data Deco where
-    mkDeco : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n} →
+    mkDeco : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n} →
              ((i : Fin k) → DecoAssign (ρ̄ i)) → Deco (mkSort ∣ Q ∣ ρ̄)
 
   -- The body environment of a decorated μ-binder: slot 0 is the binder's own
   -- decoration, the rest are the ambient ones.
-  deco-ext : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+  deco-ext : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
              (d : ∀ i → DecoAssign (ρ̄ i)) →
              ∀ i → DecoAssign (extend ρ̄ (inj₂ (mkSort ∣ Q ∣ ρ̄)) i)
   deco-ext Q d Fin.zero = mkDeco Q d
@@ -93,11 +93,11 @@ module Fibre {n} (δ : Fin n → Obj) where
   -- parameter/const fibres at the leaves, the decoration supplying the
   -- constants.
   mutual
-    fib : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+    fib : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
           (d : ∀ i → DecoAssign (ρ̄ i)) → W ∣ Q ∣ ρ̄ → obj
     fib Q d (sup x) = fib-shape Q (deco-ext Q d) x
 
-    fib-shape : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+    fib-shape : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
                 (d : ∀ i → DecoAssign (η̄ i)) → ⟦ ∣ Q ∣ ⟧shape η̄ → obj
     fib-shape (const A) d x = A .fam .fm x
     fib-shape (var i)   d x = fib-el _ (d i) x
@@ -106,18 +106,18 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-shape (P × Q) d (x , y) = L (prod (fib-shape P d x) (fib-shape Q d y))
     fib-shape (μ Q') d x = fib Q' d x
 
-    fib-el : (r : Fin n ⊎ Sh.Sort n) → DecoAssign r → El r → obj
+    fib-el : (r : Fin n ⊎ Sort n) → DecoAssign r → El r → obj
     fib-el (inj₁ p) _ x = δ p .fam .fm x
     fib-el (inj₂ _) (mkDeco Q ρd) x = fib Q ρd x
 
   -- Transport of fibres along bisimilarity, by recursion on the W-≈ proof.
   mutual
-    fib-subst : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+    fib-subst : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
                 (d : ∀ i → DecoAssign (ρ̄ i)) {x y : W ∣ Q ∣ ρ̄} →
                 W-≈ x y → fib Q d x ⇒ fib Q d y
     fib-subst Q d {sup x} {sup y} p = fib-shape-subst Q (deco-ext Q d) p
 
-    fib-shape-subst : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+    fib-shape-subst : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
                       (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄} →
                       shape≈ ∣ Q ∣ η̄ x y → fib-shape Q d x ⇒ fib-shape Q d y
     fib-shape-subst (const A) d p = A .fam .subst p
@@ -128,19 +128,19 @@ module Fibre {n} (δ : Fin n → Obj) where
       Lmap (prod-m (fib-shape-subst P d p₁) (fib-shape-subst Q d p₂))
     fib-shape-subst (μ Q') d {x} {y} p = fib-subst Q' d {x = x} {y = y} p
 
-    fib-el-subst : (r : Fin n ⊎ Sh.Sort n) (dr : DecoAssign r) {x y : El r} →
+    fib-el-subst : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) {x y : El r} →
                    elEq r x y → fib-el r dr x ⇒ fib-el r dr y
     fib-el-subst (inj₁ p) _ e = δ p .fam .subst e
     fib-el-subst (inj₂ _) (mkDeco Q ρd) {x} {y} e = fib-subst Q ρd {x = x} {y = y} e
 
   -- Transport along reflexivity is the identity.
   mutual
-    fib-refl* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+    fib-refl* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
                 (d : ∀ i → DecoAssign (ρ̄ i)) (x : W ∣ Q ∣ ρ̄) →
                 fib-subst Q d {x = x} {y = x} (W-≈-refl x) ≈ id (fib Q d x)
     fib-refl* Q d (sup x) = fib-shape-refl* Q (deco-ext Q d) x
 
-    fib-shape-refl* : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+    fib-shape-refl* : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
                       (d : ∀ i → DecoAssign (η̄ i)) (x : ⟦ ∣ Q ∣ ⟧shape η̄) →
                       fib-shape-subst Q d (shape≈-refl ∣ Q ∣ η̄ x) ≈ id (fib-shape Q d x)
     fib-shape-refl* (const A) d x = A .fam .refl*
@@ -155,21 +155,21 @@ module Fibre {n} (δ : Fin n → Obj) where
               Lmap-id
     fib-shape-refl* (μ Q') d x = fib-refl* Q' d x
 
-    fib-el-refl* : (r : Fin n ⊎ Sh.Sort n) (dr : DecoAssign r) (x : El r) →
+    fib-el-refl* : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) (x : El r) →
                    fib-el-subst r dr (elEq-refl r x) ≈ id (fib-el r dr x)
     fib-el-refl* (inj₁ p) _ x = δ p .fam .refl*
     fib-el-refl* (inj₂ _) (mkDeco Q ρd) x = fib-refl* Q ρd x
 
   -- Transport is functorial: a composite is the composite of the transports.
   mutual
-    fib-trans* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+    fib-trans* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
                  (d : ∀ i → DecoAssign (ρ̄ i)) {x y z : W ∣ Q ∣ ρ̄}
                  (q : W-≈ y z) (p : W-≈ x y) →
                  fib-subst Q d {x = x} {y = z} (W-≈-trans {x = x} {y = y} {z = z} p q)
                    ≈ (fib-subst Q d {x = y} {y = z} q ∘ fib-subst Q d {x = x} {y = y} p)
     fib-trans* Q d {sup x} {sup y} {sup z} q p = fib-shape-trans* Q (deco-ext Q d) q p
 
-    fib-shape-trans* : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+    fib-shape-trans* : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
                        (d : ∀ i → DecoAssign (η̄ i)) {x y z : ⟦ ∣ Q ∣ ⟧shape η̄}
                        (q : shape≈ ∣ Q ∣ η̄ y z) (p : shape≈ ∣ Q ∣ η̄ x y) →
                        fib-shape-subst Q d (shape≈-trans ∣ Q ∣ η̄ p q)
@@ -187,7 +187,7 @@ module Fibre {n} (δ : Fin n → Obj) where
               (Lmap-comp _ _)
     fib-shape-trans* (μ Q') d {x} {y} {z} q p = fib-trans* Q' d {x = x} {y = y} {z = z} q p
 
-    fib-el-trans* : (r : Fin n ⊎ Sh.Sort n) (dr : DecoAssign r) {x y z : El r}
+    fib-el-trans* : (r : Fin n ⊎ Sort n) (dr : DecoAssign r) {x y z : El r}
                     (q : elEq r y z) (p : elEq r x y) →
                     fib-el-subst r dr (elEq-trans r p q)
                       ≈ (fib-el-subst r dr q ∘ fib-el-subst r dr p)
@@ -196,7 +196,7 @@ module Fibre {n} (δ : Fin n → Obj) where
 
   -- Transports are isomorphisms, inverted by transport along the symmetric proof; the equality
   -- proofs are propositions, so the round trip is transport along reflexivity.
-  fib-shape-iso₁ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+  fib-shape-iso₁ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
                    (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄}
                    (p : shape≈ ∣ Q ∣ η̄ x y) →
                    (fib-shape-subst Q d p ∘ fib-shape-subst Q d (shape≈-sym ∣ Q ∣ η̄ p))
@@ -204,7 +204,7 @@ module Fibre {n} (δ : Fin n → Obj) where
   fib-shape-iso₁ Q d {x} {y} p =
     ≈-trans (≈-sym (fib-shape-trans* Q d p (shape≈-sym ∣ Q ∣ _ p))) (fib-shape-refl* Q d y)
 
-  fib-shape-iso₂ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sh.Sort n}
+  fib-shape-iso₂ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
                    (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄}
                    (p : shape≈ ∣ Q ∣ η̄ x y) →
                    (fib-shape-subst Q d (shape≈-sym ∣ Q ∣ η̄ p) ∘ fib-shape-subst Q d p)
@@ -213,7 +213,7 @@ module Fibre {n} (δ : Fin n → Obj) where
     ≈-trans (≈-sym (fib-shape-trans* Q d (shape≈-sym ∣ Q ∣ _ p) p)) (fib-shape-refl* Q d x)
 
   -- The fibre family of the μ-type at a decorated sort.
-  WFam : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sh.Sort n}
+  WFam : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
          (d : ∀ i → DecoAssign (ρ̄ i)) → Fam (WSetoid ∣ Q ∣ ρ̄) 𝒞
   WFam Q d .fm = fib Q d
   WFam Q d .subst {x} {y} = fib-subst Q d {x = x} {y = y}

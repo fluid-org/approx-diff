@@ -55,7 +55,6 @@ open import yoneda (o₁ ⊔ o₂ ⊔ m ⊔ e ⊔ lsuc 0ℓ) 𝒟 renaming (よ 
 
 private
   module PSh⟨𝒞⟩ = Category PSh⟨𝒞⟩
-  module PSh⟨𝒞⟩P = HasProducts PSh⟨𝒞⟩-products
 
 -- FIXME: define PSh(F) : PSh⟨𝒟⟩ ⇒ PSh⟨𝒞⟩, then G is composition of this and yoneda
 

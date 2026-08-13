@@ -49,7 +49,6 @@ open Biproduct
 
 private
   module SMC = Category SemiMod.cat
-  module SMCT = Category SemiModT.cat-⊤
   module MC = Category M.cat
   module SMCM = CMonEnriched SemiMod.cmon-enriched
 
@@ -226,10 +225,10 @@ module LmB = lifting-biproduct M.cmon 1 (M.biproduct 1)
 Lm-lifting : Lifting M.cmon 1
 Lm-lifting = LmB.biproduct-lifting
 
-module LsB = lifting-biproduct SemiModT.cmon-enriched-⊤ SemiModT.𝕀-⊤ (SemiModT.biproduct-⊤ SemiModT.𝕀-⊤)
-
 Ls-lifting : Lifting SemiModT.cmon-enriched-⊤ SemiModT.𝕀-⊤
-Ls-lifting = LsB.biproduct-lifting
+Ls-lifting =
+  lifting-biproduct.biproduct-lifting SemiModT.cmon-enriched-⊤ SemiModT.𝕀-⊤
+    (SemiModT.biproduct-⊤ SemiModT.𝕀-⊤)
 
 -- The unit dimension realises as the scalars.
 ι1-fwd : SemiMod._⇒_ (𝔽 1) 𝕀
@@ -263,7 +262,7 @@ L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘b
 𝔽-L-iso : ∀ n → Category.Iso SemiModT.cat-⊤
                   (𝔽-⊤ (Lifting.L Lm-lifting n)) (Lifting.L Ls-lifting (𝔽-⊤ n))
 𝔽-L-iso n =
-  SMCT.IsIso→Iso
+  Category.IsIso→Iso SemiModT.cat-⊤
     (biproduct-iso SemiModT.cmon-enriched-⊤ (L-biproduct n) (SemiModT.biproduct-⊤ SemiModT.𝕀-⊤ (𝔽-⊤ n)))
 
 -- The lifted action realises as the copairing over the block witness, which is the form the

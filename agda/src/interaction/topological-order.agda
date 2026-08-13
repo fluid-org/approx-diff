@@ -38,7 +38,7 @@ private
   module M = matrix.Mat two.semiring
 
 open import categories using (Category)
-open Category M.cat using (_⇒_)
+open Category M.cat using (_⇒_; _∘_)
 
 -- Vertex rank: env below every path, each path above its premise offsets.
 rank-v : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Vertex D → ℕ
@@ -340,7 +340,7 @@ mutual
   forward-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
               (D : γ , Ms ⇓s vs [ R ]) (x y : VertexS D)
               (i : Fin (vertex-width-s y)) (j : Fin (vertex-width-s x)) →
-              graphS D x y i j ≡ two.I → rank-v-s x < rank-v-s y
+              graph-s D x y i j ≡ two.I → rank-v-s x < rank-v-s y
   forward-s [] env env i j ()
   forward-s [] env (at ε) i j ()
   forward-s [] (at ε) env i j ()
@@ -370,7 +370,7 @@ mutual
               {v' : Val (σ' [ σr ])} {R' : width-env γ ⇒ width v'}
               (D : Map γ s σ' v R v' R') (x y : VertexM D)
               (i : Fin (vertex-width-m y)) (j : Fin (vertex-width-m x)) →
-              graphM D x y i j ≡ two.I → rank-v-m x < rank-v-m y
+              graph-m D x y i j ≡ two.I → rank-v-m x < rank-v-m y
   forward-m (m-rec D₁ D₂) env env i j ()
   forward-m (m-rec D₁ D₂) env input i j ()
   forward-m (m-rec D₁ D₂) env (at ε) i j ()
@@ -538,7 +538,7 @@ private
   ... | inj₂ e with Σ-I (λ k → f (F.suc k)) e
   ...   | (k , e') = F.suc k , e'
 
-  ∘-I : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l → (A M.∘ B) i l ≡ two.I →
+  ∘-I : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l → (A ∘ B) i l ≡ two.I →
         Σ (Fin n) (λ j → (A i j ≡ two.I) × (B j l ≡ two.I))
   ∘-I A B i l h with Σ-I (λ j → A i j two.⊓ B j l) h
   ... | (j , e) with two.⊓-I (A i j) (B j l) e
@@ -549,7 +549,7 @@ private
   Σ-I-at f (F.suc k) h = two.⊔-I-inr (f F.zero) (Σ-I-at (λ i → f (F.suc i)) k h)
 
   ∘-I-at : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l j →
-           A i j ≡ two.I → B j l ≡ two.I → (A M.∘ B) i l ≡ two.I
+           A i j ≡ two.I → B j l ≡ two.I → (A ∘ B) i l ≡ two.I
   ∘-I-at A B i l j h₁ h₂ = Σ-I-at (λ j' → A i j' two.⊓ B j' l) j (two.⊓-I-pair h₁ h₂)
 
 -- The forward-edge property of an arbitrary graph over a derivation.
@@ -573,7 +573,7 @@ private
       Fwd G = ∀ x y (i : Fin (w y)) (j : Fin (w x)) → G x y i j ≡ two.I → rk x < rk y
 
     fwd-h : ∀ {G} r → Fwd G → Fwd (h G r)
-    fwd-h {G} r fwd x y i j e with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) e
+    fwd-h {G} r fwd x y i j e with two.⊔-I (G x y i j) ((G r y ∘ G x r) i j) e
     ... | inj₁ a = fwd x y i j a
     ... | inj₂ a with ∘-I (G r y) (G x r) i j a
     ...   | (k , (e₁ , e₂)) = <-trans (fwd x r k j e₂) (fwd r y i k e₁)
@@ -585,16 +585,16 @@ private
     into : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (w y)) (j : Fin (w x)) →
            h (h G r) r' x y i j ≡ two.I → h (h G r') r x y i j ≡ two.I
     into {G} fwd r r' x y i j e
-      with two.⊔-I (h G r x y i j) ((h G r r' y M.∘ h G r x r') i j) e
-    into {G} fwd r r' x y i j e | inj₁ a with two.⊔-I (G x y i j) ((G r y M.∘ G x r) i j) a
+      with two.⊔-I (h G r x y i j) ((h G r r' y ∘ h G r x r') i j) e
+    into {G} fwd r r' x y i j e | inj₁ a with two.⊔-I (G x y i j) ((G r y ∘ G x r) i j) a
     ... | inj₁ a₁ = two.⊔-I-inl (two.⊔-I-inl a₁)
     ... | inj₂ a₂ with ∘-I (G r y) (G x r) i j a₂
     ...   | (k , (e₁ , e₂)) =
       two.⊔-I-inr (h G r' x y i j)
         (∘-I-at (h G r' r y) (h G r' x r) i j k (two.⊔-I-inl e₁) (two.⊔-I-inl e₂))
     into {G} fwd r r' x y i j e | inj₂ b with ∘-I (h G r r' y) (h G r x r') i j b
-    ... | (m , (c , d)) with two.⊔-I (G r' y i m) ((G r y M.∘ G r' r) i m) c
-                           | two.⊔-I (G x r' m j) ((G r r' M.∘ G x r) m j) d
+    ... | (m , (c , d)) with two.⊔-I (G r' y i m) ((G r y ∘ G r' r) i m) c
+                           | two.⊔-I (G x r' m j) ((G r r' ∘ G x r) m j) d
     ...   | inj₁ c₁ | inj₁ d₁ =
       two.⊔-I-inl (two.⊔-I-inr (G x y i j) (∘-I-at (G r' y) (G x r') i j m c₁ d₁))
     ...   | inj₁ c₁ | inj₂ d₂ with ∘-I (G r r') (G x r) m j d₂
