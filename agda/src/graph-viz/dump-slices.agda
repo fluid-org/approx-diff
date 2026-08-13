@@ -16,7 +16,7 @@ import Data.Integer.Show as ℤ-Show
 open import Level using (0ℓ)
 import two
 import matrix
-import free-realise
+import matrix-embedding
 import label
 open import primitives using (Primitives)
 import example.primitives as EP
@@ -36,7 +36,7 @@ open Primitives EP.primitives using (sort-val; sort-width)
 
 private
   module TM = matrix.Mat two.semiring
-  module FR = free-realise two.semiring (λ {x} → two.⊤-add-top {x})
+  module FR = matrix-embedding two.semiring (λ {x} → two.⊤-add-top {x})
 
 elemT : type 0
 elemT = base EP.label [×] base EP.number

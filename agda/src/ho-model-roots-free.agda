@@ -27,8 +27,8 @@ import fam
 import fam-mu-lifting.in-map
 import fam-exponentials
 import semimod-products
-import free-realise
-import free-primitives
+import matrix-embedding
+import matrix-primitives
 import language-roots-fo-interpretation
 import language-syntax
 
@@ -39,8 +39,8 @@ module ho-model-roots-free
   (elim-weight : Setoid.Carrier A)
   where
 
-open free-realise S ⊤-add-top public
-module FP = free-primitives S
+open matrix-embedding S ⊤-add-top public
+module FP = matrix-primitives S
 
 open SemiMod._≈m_
 open SemiMod._⇒_

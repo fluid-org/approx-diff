@@ -20,7 +20,7 @@ import indexed-family
 import matrix
 import fam
 
-module free-primitives {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+module matrix-primitives {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 module M = matrix.Mat S
 

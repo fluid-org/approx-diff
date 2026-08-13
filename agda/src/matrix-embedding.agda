@@ -1,11 +1,13 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Free positions realised in semimodules: a dimension realises as the semimodule of weighted
--- vectors over its positions, and a matrix as its action on them. Nothing closes a selection, so a
--- selection is any weighted vector and a morphism any weighted relation. The root is one fresh
--- position, so lifting is the biproduct with the unit dimension on the position side and with the
--- scalars on the semimodule side, and the comparison between the two liftings is the canonical
--- comparison of biproducts.
+-- Mat(S) embedded in the semimodules, full and faithful: a dimension embeds as the semimodule of
+-- weighted vectors over its positions, and a matrix as its action on them. This is the case X = 𝕀
+-- of the embedding of Mat(End X) in any biproduct category, presented concretely so that a fibre
+-- map is read back by its values on the basis. Nothing closes a selection, so a selection is any
+-- weighted vector and a morphism any weighted relation. The root is one fresh position, so lifting
+-- is the biproduct with the unit dimension on the position side and with the scalars on the
+-- semimodule side, and the comparison between the two liftings is the canonical comparison of
+-- biproducts.
 open import Level using (0ℓ)
 open import Data.Nat as Nat using (ℕ) renaming (_+_ to _+ℕ_)
 open import Data.Fin using (Fin; zero; suc)
@@ -24,7 +26,7 @@ import biproduct-transport
 import matrix
 import semimodule
 
-module free-realise {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+module matrix-embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (let module S′ = CommutativeSemiring S)
   (⊤-add-top : ∀ {x} → (S′.ι S′.+ x) S′.≈ S′.ι)
   where
