@@ -49,14 +49,14 @@ module fam-mu-lifting.fibrewise {o m e o₂ m₂ e₂} (os es : Level)
 private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒟 = fam.CategoryOfFamilies os (os ⊔ es) 𝒟
-  module Sh = fam-mu-lifting.sort os es
+  module Srt = fam-mu-lifting.sort os es
   module Fc = fam-mu-lifting.fibre os es CM BP Lft
   module Fd = fam-mu-lifting.fibre os es CM' BP' Lft'
   module 𝒟C = Category 𝒟
   module 𝒟Pm = HasProducts (biproducts→products CM' BP')
   module DL = Lifting Lft'
 
-open Sh using (Sort; mkSort)
+open Srt using (Sort; mkSort)
 open polynomial-functor using (Poly; Poly-map; extend)
 open prop-setoid._⇒_
 open Functor
@@ -119,7 +119,7 @@ private
 ℓk = o ⊔ m ⊔ e ⊔ o₂ ⊔ m₂ ⊔ e₂ ⊔ lsuc os ⊔ lsuc es
 
 module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
-  module T = Sh.Tree (λ i → δ i .idx)
+  module T = Srt.Tree (λ i → δ i .idx)
   module C = Fc.Fibre δ
   module D = Fd.Fibre (λ i → FamF .fobj (δ i))
 

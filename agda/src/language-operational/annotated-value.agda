@@ -25,14 +25,14 @@ open Val
 open Env
 open import Data.Fin using (zero)
 
-data Shape : Set where
-  unit inl inr pair clo cons nil : Shape
-  const : String → Shape
+data Tag : Set where
+  unit inl inr pair clo cons nil : Tag
+  const : String → Tag
 
 -- A node covers a run of positions at its own site, then its children in order. A cons covers the
 -- tag and the pair beneath it, and nil the tag and its unit.
 data AVal (X : Set) : Set where
-  node : Shape → X → ℕ → List (AVal X) → AVal X
+  node : Tag → X → ℕ → List (AVal X) → AVal X
 
 covers : ∀ {X} → AVal X → ℕ
 covers-all : ∀ {X} → List (AVal X) → ℕ
@@ -41,8 +41,8 @@ covers (node _ _ n cs) = n + covers-all cs
 covers-all []       = 0
 covers-all (t ∷ ts) = covers t + covers-all ts
 
-fold : ∀ {X B : Set} → (Shape → X → ℕ → ℕ → List B → B) → ℕ → AVal X → B
-fold-all : ∀ {X B : Set} → (Shape → X → ℕ → ℕ → List B → B) → ℕ → List (AVal X) → List B
+fold : ∀ {X B : Set} → (Tag → X → ℕ → ℕ → List B → B) → ℕ → AVal X → B
+fold-all : ∀ {X B : Set} → (Tag → X → ℕ → ℕ → List B → B) → ℕ → List (AVal X) → List B
 
 fold f off (node sh x n cs) = f sh x n off (fold-all f (off + n) cs)
 fold-all f off []       = []
@@ -59,18 +59,18 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
   mutual
     shape-of : ∀ {τ} → Val τ → AVal ⊤
     shape-of {μ (unit [+] (_ [×] var zero))} v = cell-of v
-    shape-of Val.unit          = node Shape.unit tt 1 []
-    shape-of (Val.const {s} c) = node (Shape.const (show-const c)) tt (sort-width s) []
-    shape-of (Val.inl v)       = node Shape.inl tt 1 (shape-of v ∷ [])
-    shape-of (Val.inr v)       = node Shape.inr tt 1 (shape-of v ∷ [])
-    shape-of (Val.pair v u)    = node Shape.pair tt 1 (shape-of v ∷ shape-of u ∷ [])
-    shape-of (Val.clo γ _)     = node Shape.clo tt 1 (shape-env-of γ)
+    shape-of Val.unit          = node Tag.unit tt 1 []
+    shape-of (Val.const {s} c) = node (Tag.const (show-const c)) tt (sort-width s) []
+    shape-of (Val.inl v)       = node Tag.inl tt 1 (shape-of v ∷ [])
+    shape-of (Val.inr v)       = node Tag.inr tt 1 (shape-of v ∷ [])
+    shape-of (Val.pair v u)    = node Tag.pair tt 1 (shape-of v ∷ shape-of u ∷ [])
+    shape-of (Val.clo γ _)     = node Tag.clo tt 1 (shape-env-of γ)
     shape-of (Val.roll v)      = shape-of v
 
     cell-of : ∀ {σ} → Val (μ (unit [+] (σ [×] var zero))) → AVal ⊤
-    cell-of (Val.roll (Val.inl Val.unit))         = node Shape.nil tt 2 []
+    cell-of (Val.roll (Val.inl Val.unit))         = node Tag.nil tt 2 []
     cell-of (Val.roll (Val.inr (Val.pair hd tl))) =
-      node Shape.cons tt 2 (shape-of hd ∷ shape-of tl ∷ [])
+      node Tag.cons tt 2 (shape-of hd ∷ shape-of tl ∷ [])
 
     shape-env-of : ∀ {Γ} → Env Γ → List (AVal ⊤)
     shape-env-of emp     = []
@@ -128,15 +128,15 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
       trans (covers-++ (shape-env-of γ) (shape-of v ∷ []))
             (cong₂ _+_ (covers-env-width γ) (trans (+-identityʳ _) (covers-width v)))
 
-label-of : Shape → String
-label-of Shape.unit      = "()"
-label-of Shape.inl       = "inl"
-label-of Shape.inr       = "inr"
-label-of Shape.pair      = "pr"
-label-of Shape.clo       = "clo"
-label-of Shape.cons      = "∷"
-label-of Shape.nil       = "[]"
-label-of (Shape.const l) = l
+label-of : Tag → String
+label-of Tag.unit      = "()"
+label-of Tag.inl       = "inl"
+label-of Tag.inr       = "inr"
+label-of Tag.pair      = "pr"
+label-of Tag.clo       = "clo"
+label-of Tag.cons      = "∷"
+label-of Tag.nil       = "[]"
+label-of (Tag.const l) = l
 
 module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 

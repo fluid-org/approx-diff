@@ -62,8 +62,8 @@ open import prop using (_∧_; ⊥) public
 
 -- The category-free sort layer, shared by every base category, and the
 -- decorated fibre layer over this one.
-module Sh = fam-mu-lifting.sort os es
-open Sh public using (Sort; mkSort)
+module Srt = fam-mu-lifting.sort os es
+open Srt public using (Sort; mkSort)
 open fam-mu-lifting.fibre os es CM BP Lft public using (Idx; ∣_∣; module Fibre; μ-fam)
 
 -- The fibrewise lift of a family: same index, each fibre lifted, transports under the action.
@@ -208,5 +208,5 @@ Lf-iso {X} {Y} i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.famf-eq .indexed-family._≃
 
 -- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where
-  open Sh.Tree (λ i → δ i .idx) public
+  open Srt.Tree (λ i → δ i .idx) public
   open Fibre δ public

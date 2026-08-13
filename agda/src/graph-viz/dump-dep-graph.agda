@@ -27,7 +27,7 @@ open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
 open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open import language-operational.annotated-value EP.Sig EP.primitives
-  using (AVal; node; Shape; shape-of; shape-env-of; covers; covers-all; label-of;
+  using (AVal; node; Tag; shape-of; shape-env-of; covers; covers-all; label-of;
          fold; fold-all)
 open import Data.Unit using (⊤)
 open import Data.Nat using (_+_)
@@ -49,10 +49,10 @@ private
   filter-out-tree = shape-of (λ {s} c → showC {s} c) δ-filter ∷ []
 
   private
-    node-entry : Shape → ⊤ → ℕ → ℕ → List (List (ℕ × String)) → List (ℕ × String)
+    node-entry : Tag → ⊤ → ℕ → ℕ → List (List (ℕ × String)) → List (ℕ × String)
     node-entry sh _ _ off rs = (off , label-of sh) ∷ concat rs
 
-    node-edges : Shape → ⊤ → ℕ → ℕ → List (ℕ × List (ℕ × ℕ)) → ℕ × List (ℕ × ℕ)
+    node-edges : Tag → ⊤ → ℕ → ℕ → List (ℕ × List (ℕ × ℕ)) → ℕ × List (ℕ × ℕ)
     node-edges _ _ _ off rs =
       off , (mapL (λ r → off , proj₁ r) rs ++L concat (mapL proj₂ rs))
 

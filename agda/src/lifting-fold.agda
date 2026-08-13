@@ -77,22 +77,21 @@ bp-ext {a} {b} {c} {h} {k} e₁ e₂ =
 
 -- Reindexing a context-paired morphism under a root: the root passes through, the context enters
 -- the payload, and absorption records under the target root whatever the context contributes.
--- Proof-layer form only: applies r in both arms, exponential when nested in evaluation paths.
-under-root-classic : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
-under-root-classic r = cop (inj ∘ (r ∘ ι₁)) (affine root (inj ∘ (r ∘ ι₂)))
+under-root-split : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
+under-root-split r = cop (inj ∘ (r ∘ ι₁)) (affine root (inj ∘ (r ∘ ι₂)))
 
-under-root-classic-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → under-root-classic r ≈ under-root-classic r'
-under-root-classic-cong er =
+under-root-split-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → under-root-split r ≈ under-root-split r'
+under-root-split-cong er =
   cop-cong (∘-cong ≈-refl (∘-cong er ≈-refl))
            (affine-cong ≈-refl (∘-cong ≈-refl (∘-cong er ≈-refl)))
 
 -- Transport across the lifting fuses with composition on either side: with an isomorphism after,
 -- through the action, and with a context-paired map before.
-under-root-classic-post : ∀ {G X Y₁ Y₂} {h : Y₁ ⇒ Y₂} {h' : Y₂ ⇒ Y₁} →
+under-root-split-post : ∀ {G X Y₁ Y₂} {h : Y₁ ⇒ Y₂} {h' : Y₂ ⇒ Y₁} →
                   (h ∘ h') ≈ id Y₂ → (h' ∘ h) ≈ id Y₁ →
-                  (r : (G ⊕ X) ⇒ Y₁) → (Lmap h ∘ under-root-classic r) ≈ under-root-classic (h ∘ r)
-under-root-classic-post {G} {X} {Y₁} {Y₂} {h} {h'} hi₁ hi₂ r =
-  bp-ext {h = Lmap h ∘ under-root-classic r} {k = under-root-classic (h ∘ r)}
+                  (r : (G ⊕ X) ⇒ Y₁) → (Lmap h ∘ under-root-split r) ≈ under-root-split (h ∘ r)
+under-root-split-post {G} {X} {Y₁} {Y₂} {h} {h'} hi₁ hi₂ r =
+  bp-ext {h = Lmap h ∘ under-root-split r} {k = under-root-split (h ∘ r)}
     (≈-trans (assoc _ _ _)
      (≈-trans (∘-cong ≈-refl (Biproduct.copair-in₁ (BP G (L X)) _ _))
       (≈-trans (≈-sym (assoc _ _ _))
@@ -122,8 +121,8 @@ under-root-classic-post {G} {X} {Y₁} {Y₂} {h} {h'} hi₁ hi₂ r =
 
 -- Transporting the projection across the lifting is the projection: the context part vanishes and
 -- the assembly of the root with the injection is the identity.
-under-root-classic-p₂ : ∀ {G X} → under-root-classic (π₂ {G} {X}) ≈ π₂ {G} {L X}
-under-root-classic-p₂ {G} {X} =
+under-root-split-p₂ : ∀ {G X} → under-root-split (π₂ {G} {X}) ≈ π₂ {G} {L X}
+under-root-split-p₂ {G} {X} =
   ≈-trans (cop-cong
             (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 (BP G X))) (comp-bilinear-ε₂ inj))
             (≈-trans (affine-cong ≈-refl
@@ -135,14 +134,14 @@ under-root-classic-p₂ {G} {X} =
 -- Reindexing under a root commutes with transports along isomorphisms, which is what naturality of
 -- the fold and of reindexing in the tree demands. The context map is arbitrary; the payload and
 -- result maps must be isomorphisms, since the injection and the support are natural only there.
-under-root-classic-natural :
+under-root-split-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂)
     {x : X₁ ⇒ X₂} {x' : X₂ ⇒ X₁} (xi₁ : (x ∘ x') ≈ id X₂) (xi₂ : (x' ∘ x) ≈ id X₁)
     {y : Y₁ ⇒ Y₂} {y' : Y₂ ⇒ Y₁} (yi₁ : (y ∘ y') ≈ id Y₂) (yi₂ : (y' ∘ y) ≈ id Y₁)
     (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
     (f₂ ∘ pm g x) ≈ (y ∘ f₁) →
-    (under-root-classic f₂ ∘ pm g (Lmap x)) ≈ (Lmap y ∘ under-root-classic f₁)
-under-root-classic-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi₁ xi₂ {y} {y'} yi₁ yi₂ f₁ f₂ sq =
+    (under-root-split f₂ ∘ pm g (Lmap x)) ≈ (Lmap y ∘ under-root-split f₁)
+under-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi₁ xi₂ {y} {y'} yi₁ yi₂ f₁ f₂ sq =
   bp-ext side₁ side₂
   where
   square-ι₁ : ((f₂ ∘ ι₁) ∘ g) ≈ (y ∘ (f₁ ∘ ι₁))
@@ -159,7 +158,7 @@ under-root-classic-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} 
     (≈-trans (≈-sym (assoc _ _ _))
     (≈-trans (∘-cong sq ≈-refl) (assoc _ _ _))))
 
-  side₁ : ((under-root-classic f₂ ∘ pm g (Lmap x)) ∘ ι₁) ≈ ((Lmap y ∘ under-root-classic f₁) ∘ ι₁)
+  side₁ : ((under-root-split f₂ ∘ pm g (Lmap x)) ∘ ι₁) ≈ ((Lmap y ∘ under-root-split f₁) ∘ ι₁)
   side₁ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (pm-in₁ g (Lmap x)))
@@ -213,7 +212,7 @@ under-root-classic-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} 
                ≈ ((Lmap y ∘ affine root (inj ∘ (f₁ ∘ ι₂))) ∘ inj)
     inj-side = ≈-trans left-inj (≈-sym right-inj)
 
-  side₂ : ((under-root-classic f₂ ∘ pm g (Lmap x)) ∘ ι₂) ≈ ((Lmap y ∘ under-root-classic f₁) ∘ ι₂)
+  side₂ : ((under-root-split f₂ ∘ pm g (Lmap x)) ∘ ι₂) ≈ ((Lmap y ∘ under-root-split f₁) ∘ ι₂)
   side₂ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (pm-in₂ g (Lmap x)))
@@ -223,44 +222,43 @@ under-root-classic-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} 
     (≈-trans (∘-cong ≈-refl (≈-sym (Biproduct.copair-in₂ (BP G₁ (L X₁)) _ _)))
              (≈-sym (assoc _ _ _)))))))
 
-under-root-classic-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂)
+under-root-split-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂)
                  {x : X₁ ⇒ X₂} {x' : X₂ ⇒ X₁} (xi₁ : (x ∘ x') ≈ id X₂) (xi₂ : (x' ∘ x) ≈ id X₁)
                  (r : (G₂ ⊕ X₂) ⇒ Y) →
-                 (under-root-classic r ∘ pm g (Lmap x)) ≈ under-root-classic (r ∘ pm g x)
-under-root-classic-pre {G₁} {G₂} {X₁} {X₂} {Y} g {x} {x'} xi₁ xi₂ r =
-  ≈-trans (under-root-classic-natural g xi₁ xi₂ {y = id Y} {y' = id Y} id-left id-left
+                 (under-root-split r ∘ pm g (Lmap x)) ≈ under-root-split (r ∘ pm g x)
+under-root-split-pre {G₁} {G₂} {X₁} {X₂} {Y} g {x} {x'} xi₁ xi₂ r =
+  ≈-trans (under-root-split-natural g xi₁ xi₂ {y = id Y} {y' = id Y} id-left id-left
             (r ∘ pm g x) r (≈-sym id-left))
           (≈-trans (∘-cong Lmap-id ≈-refl) id-left)
 
 -- Eliminating a root in context against a chosen constant: the context and the payload pass to the
 -- continuation, and the root produces the constant.
--- Proof-layer form only: applies r in both arms, exponential when nested in evaluation paths.
-strip-root-classic : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
-strip-root-classic c r = cop (r ∘ ι₁) (affine c (r ∘ ι₂))
+strip-root-split : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
+strip-root-split c r = cop (r ∘ ι₁) (affine c (r ∘ ι₂))
 
-strip-root-classic-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
-                  c ≈ c' → r ≈ r' → strip-root-classic c r ≈ strip-root-classic c' r'
-strip-root-classic-cong ec er = cop-cong (∘-cong er ≈-refl) (affine-cong ec (∘-cong er ≈-refl))
+strip-root-split-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
+                  c ≈ c' → r ≈ r' → strip-root-split c r ≈ strip-root-split c' r'
+strip-root-split-cong ec er = cop-cong (∘-cong er ≈-refl) (affine-cong ec (∘-cong er ≈-refl))
 
 -- Transport across the lifting is the elimination whose constant is the root itself.
-under-root-classic-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
-                   under-root-classic r ≈ strip-root-classic root (inj ∘ r)
-under-root-classic-strip r =
+under-root-split-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
+                   under-root-split r ≈ strip-root-split root (inj ∘ r)
+under-root-split-strip r =
   cop-cong (≈-sym (assoc _ _ _)) (affine-cong ≈-refl (≈-sym (assoc _ _ _)))
 
--- Root elimination commutes with transports: the payload map must be an isomorphism, as for
--- under-root-classic, but the result map is arbitrary provided it carries one constant to the other.
-strip-root-classic-natural :
+-- Root elimination commutes with transports; the payload map must be an isomorphism, since the
+-- injection is natural only there.
+strip-root-split-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂)
     {x : X₁ ⇒ X₂} {x' : X₂ ⇒ X₁} (xi₁ : (x ∘ x') ≈ id X₂) (xi₂ : (x' ∘ x) ≈ id X₁)
     {y : Y₁ ⇒ Y₂} {c₁ : 𝟙c ⇒ Y₁} {c₂ : 𝟙c ⇒ Y₂} → (y ∘ c₁) ≈ c₂ →
     (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
     (f₂ ∘ pm g x) ≈ (y ∘ f₁) →
-    (strip-root-classic c₂ f₂ ∘ pm g (Lmap x)) ≈ (y ∘ strip-root-classic c₁ f₁)
-strip-root-classic-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi₁ xi₂ {y} {c₁} {c₂} yc f₁ f₂ sq =
+    (strip-root-split c₂ f₂ ∘ pm g (Lmap x)) ≈ (y ∘ strip-root-split c₁ f₁)
+strip-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi₁ xi₂ {y} {c₁} {c₂} yc f₁ f₂ sq =
   bp-ext side₁ side₂
   where
-  side₁ : ((strip-root-classic c₂ f₂ ∘ pm g (Lmap x)) ∘ ι₁) ≈ ((y ∘ strip-root-classic c₁ f₁) ∘ ι₁)
+  side₁ : ((strip-root-split c₂ f₂ ∘ pm g (Lmap x)) ∘ ι₁) ≈ ((y ∘ strip-root-split c₁ f₁) ∘ ι₁)
   side₁ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (pm-in₁ g (Lmap x)))
@@ -299,7 +297,7 @@ strip-root-classic-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} 
                        (+m-cong (≈-trans (≈-sym (assoc _ _ _)) (∘-cong₁ yc))
                                 ≈-refl)))))))))))
 
-  side₂ : ((strip-root-classic c₂ f₂ ∘ pm g (Lmap x)) ∘ ι₂) ≈ ((y ∘ strip-root-classic c₁ f₁) ∘ ι₂)
+  side₂ : ((strip-root-split c₂ f₂ ∘ pm g (Lmap x)) ∘ ι₂) ≈ ((y ∘ strip-root-split c₁ f₁) ∘ ι₂)
   side₂ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (pm-in₂ g (Lmap x)))
@@ -311,10 +309,9 @@ strip-root-classic-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} 
 
 
 -- Single-application forms as the public combinators: the inner morphism is applied once, to the
--- context recombined with the extracted payload, instead of once per copairing arm. The classic
--- forms split the inner morphism linearly across the arms, so nesting them multiplies evaluations
--- of the continuation per lifting layer. Each public lemma is the classic law transported across
--- the unfolding bridge, so downstream proofs are unchanged.
+-- context recombined with the extracted payload. The split forms apply it once per copairing arm,
+-- so nesting them multiplies evaluations of the continuation per lifting layer. Each public lemma
+-- is the split-form law transported across the unfolding bridge.
 payloadL : ∀ {X} → L X ⇒ X
 payloadL {X} = affine εm (id X)
 
@@ -376,12 +373,12 @@ private
     ≈-trans (assoc _ _ _)
     (∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl payloadL-inj) id-right)))
 
-under-root-unfold : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → under-root r ≈ under-root-classic r
+under-root-unfold : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → under-root r ≈ under-root-split r
 under-root-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
   where
   M = inj ∘ (r ∘ ι₂)
 
-  leg₁ : (under-root r ∘ ι₁) ≈ (under-root-classic r ∘ ι₁)
+  leg₁ : (under-root r ∘ ι₁) ≈ (under-root-split r ∘ ι₁)
   leg₁ =
     ≈-trans (comp-bilinear₁ _ _ ι₁)
     (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pm-arm-ι₁ r)))
@@ -409,7 +406,7 @@ under-root-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
     (≈-trans (homCM _ _ .CommutativeMonoid.+-comm)
              (≈-sym (affine-inj root M))))
 
-  leg₂ : (under-root r ∘ ι₂) ≈ (under-root-classic r ∘ ι₂)
+  leg₂ : (under-root r ∘ ι₂) ≈ (under-root-split r ∘ ι₂)
   leg₂ =
     ≈-trans (comp-bilinear₁ _ _ ι₂)
     (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pm-arm-ι₂ r)))
@@ -418,12 +415,12 @@ under-root-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
              (≈-sym (Biproduct.copair-in₂ (BP G (L X)) (inj ∘ (r ∘ ι₁)) (affine root M)))))
 
 strip-root-unfold : ∀ {G X Y} (c : 𝟙c ⇒ Y) (r : (G ⊕ X) ⇒ Y) →
-                    strip-root c r ≈ strip-root-classic c r
+                    strip-root c r ≈ strip-root-split c r
 strip-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
   where
   M = r ∘ ι₂
 
-  leg₁ : (strip-root c r ∘ ι₁) ≈ (strip-root-classic c r ∘ ι₁)
+  leg₁ : (strip-root c r ∘ ι₁) ≈ (strip-root-split c r ∘ ι₁)
   leg₁ =
     ≈-trans (comp-bilinear₁ _ _ ι₁)
     (≈-trans (+m-cong (pm-arm-ι₁ r) (tag-arm-ι₁ c))
@@ -449,29 +446,28 @@ strip-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
     (≈-trans (homCM _ _ .CommutativeMonoid.+-comm)
              (≈-sym (affine-inj c M))))
 
-  leg₂ : (strip-root c r ∘ ι₂) ≈ (strip-root-classic c r ∘ ι₂)
+  leg₂ : (strip-root c r ∘ ι₂) ≈ (strip-root-split c r ∘ ι₂)
   leg₂ =
     ≈-trans (comp-bilinear₁ _ _ ι₂)
     (≈-trans (+m-cong (pm-arm-ι₂ r) (tag-arm-ι₂ c))
     (≈-trans (lifting-ext E (affine c M) E-root E-inj)
              (≈-sym (Biproduct.copair-in₂ (BP G (L X)) (r ∘ ι₁) (affine c M)))))
 
--- The classic laws, transported across the bridges.
 under-root-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → under-root r ≈ under-root r'
 under-root-cong {r = r} {r'} er =
   ≈-trans (under-root-unfold r)
-  (≈-trans (under-root-classic-cong er) (≈-sym (under-root-unfold r')))
+  (≈-trans (under-root-split-cong er) (≈-sym (under-root-unfold r')))
 
 under-root-post : ∀ {G X Y₁ Y₂} {h : Y₁ ⇒ Y₂} {h' : Y₂ ⇒ Y₁} →
                   (h ∘ h') ≈ id Y₂ → (h' ∘ h) ≈ id Y₁ →
                   (r : (G ⊕ X) ⇒ Y₁) → (Lmap h ∘ under-root r) ≈ under-root (h ∘ r)
 under-root-post {h = h} hi₁ hi₂ r =
   ≈-trans (∘-cong ≈-refl (under-root-unfold r))
-  (≈-trans (under-root-classic-post hi₁ hi₂ r) (≈-sym (under-root-unfold (h ∘ r))))
+  (≈-trans (under-root-split-post hi₁ hi₂ r) (≈-sym (under-root-unfold (h ∘ r))))
 
 under-root-p₂ : ∀ {G X} → under-root (π₂ {G} {X}) ≈ π₂ {G} {L X}
 under-root-p₂ {G} {X} =
-  ≈-trans (under-root-unfold (π₂ {G} {X})) under-root-classic-p₂
+  ≈-trans (under-root-unfold (π₂ {G} {X})) under-root-split-p₂
 
 under-root-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂)
@@ -482,7 +478,7 @@ under-root-natural :
     (under-root f₂ ∘ pm g (Lmap x)) ≈ (Lmap y ∘ under-root f₁)
 under-root-natural g {x} {x'} xi₁ xi₂ {y} {y'} yi₁ yi₂ f₁ f₂ sq =
   ≈-trans (∘-cong (under-root-unfold f₂) ≈-refl)
-  (≈-trans (under-root-classic-natural g {x} {x'} xi₁ xi₂ {y} {y'} yi₁ yi₂ f₁ f₂ sq)
+  (≈-trans (under-root-split-natural g {x} {x'} xi₁ xi₂ {y} {y'} yi₁ yi₂ f₁ f₂ sq)
            (∘-cong ≈-refl (≈-sym (under-root-unfold f₁))))
 
 under-root-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂)
@@ -491,20 +487,20 @@ under-root-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂)
                  (under-root r ∘ pm g (Lmap x)) ≈ under-root (r ∘ pm g x)
 under-root-pre g {x} {x'} xi₁ xi₂ r =
   ≈-trans (∘-cong (under-root-unfold r) ≈-refl)
-  (≈-trans (under-root-classic-pre g {x} {x'} xi₁ xi₂ r)
+  (≈-trans (under-root-split-pre g {x} {x'} xi₁ xi₂ r)
            (≈-sym (under-root-unfold (r ∘ pm g x))))
 
 strip-root-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
                   c ≈ c' → r ≈ r' → strip-root c r ≈ strip-root c' r'
 strip-root-cong {c = c} {c'} {r} {r'} ec er =
   ≈-trans (strip-root-unfold c r)
-  (≈-trans (strip-root-classic-cong ec er) (≈-sym (strip-root-unfold c' r')))
+  (≈-trans (strip-root-split-cong ec er) (≈-sym (strip-root-unfold c' r')))
 
 under-root-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
                    under-root r ≈ strip-root root (inj ∘ r)
 under-root-strip r =
   ≈-trans (under-root-unfold r)
-  (≈-trans (under-root-classic-strip r) (≈-sym (strip-root-unfold root (inj ∘ r))))
+  (≈-trans (under-root-split-strip r) (≈-sym (strip-root-unfold root (inj ∘ r))))
 
 strip-root-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂)
@@ -515,5 +511,5 @@ strip-root-natural :
     (strip-root c₂ f₂ ∘ pm g (Lmap x)) ≈ (y ∘ strip-root c₁ f₁)
 strip-root-natural g {x} {x'} xi₁ xi₂ {y} {c₁} {c₂} yc f₁ f₂ sq =
   ≈-trans (∘-cong (strip-root-unfold c₂ f₂) ≈-refl)
-  (≈-trans (strip-root-classic-natural g {x} {x'} xi₁ xi₂ {y} {c₁} {c₂} yc f₁ f₂ sq)
+  (≈-trans (strip-root-split-natural g {x} {x'} xi₁ xi₂ {y} {c₁} {c₂} yc f₁ f₂ sq)
            (∘-cong ≈-refl (≈-sym (strip-root-unfold c₁ f₁))))

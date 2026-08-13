@@ -119,22 +119,22 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     embed-unembed (Q₁ × Q₂) (x , y) = embed-unembed Q₁ x , embed-unembed Q₂ y
     embed-unembed (μ Q')    t = TX.W-≈-refl t
 
-    m₀ : ∀ v → TX.El (inj₁ v) → Tδ.El (Sh.η₀ ∣ P ∣ v)
+    m₀ : ∀ v → TX.El (inj₁ v) → Tδ.El (Srt.η₀ ∣ P ∣ v)
     m₀ Fin.zero    a = a
     m₀ (Fin.suc i) a = a
-    m₀-resp : ∀ v {a a'} → TX.elEq (inj₁ v) a a' → Tδ.elEq (Sh.η₀ ∣ P ∣ v) (m₀ v a) (m₀ v a')
+    m₀-resp : ∀ v {a a'} → TX.elEq (inj₁ v) a a' → Tδ.elEq (Srt.η₀ ∣ P ∣ v) (m₀ v a) (m₀ v a')
     m₀-resp Fin.zero    p = p
     m₀-resp (Fin.suc i) p = p
     m₀-fam : ∀ v (a : TX.El (inj₁ v)) →
-             TX.fib-el (inj₁ v) (lift tt) a ⇒ Tδ.fib-el (Sh.η₀ ∣ P ∣ v) (Tδ.deco-ext P (λ i → lift tt) v) (m₀ v a)
+             TX.fib-el (inj₁ v) (lift tt) a ⇒ Tδ.fib-el (Srt.η₀ ∣ P ∣ v) (Tδ.deco-ext P (λ i → lift tt) v) (m₀ v a)
     m₀-fam Fin.zero    a = id _
     m₀-fam (Fin.suc i) a = id _
     m₀-fam-natural : ∀ v {a a'} (p : TX.elEq (inj₁ v) a a') →
                  (m₀-fam v a' ∘ TX.fib-el-subst (inj₁ v) (lift tt) p)
-                   ≈ (Tδ.fib-el-subst (Sh.η₀ ∣ P ∣ v) (Tδ.deco-ext P (λ i → lift tt) v) (m₀-resp v p) ∘ m₀-fam v a)
+                   ≈ (Tδ.fib-el-subst (Srt.η₀ ∣ P ∣ v) (Tδ.deco-ext P (λ i → lift tt) v) (m₀-resp v p) ∘ m₀-fam v a)
     m₀-fam-natural Fin.zero    p = ≈-trans id-left (≈-sym id-right)
     m₀-fam-natural (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
-    mor₀ : R.MorD (λ v → inj₁ v) (Sh.η₀ ∣ P ∣) (λ v → lift tt) (Tδ.deco-ext P (λ i → lift tt))
+    mor₀ : R.MorD (λ v → inj₁ v) (Srt.η₀ ∣ P ∣) (λ v → lift tt) (Tδ.deco-ext P (λ i → lift tt))
     mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-natural
     -- Fibre bridge: `fobj`'s fibre to our `fib-shape` (identity at leaves, products at ×).
     embed-fam : (Q : Poly (suc n)) (x : fobj μ-fam Q δ' .idx .Carrier) →

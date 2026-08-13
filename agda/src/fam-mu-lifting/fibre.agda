@@ -42,8 +42,8 @@ open Obj
 open Mor
 open Fam
 open _≃_
-module Sh = fam-mu-lifting.sort os es
-open Sh using (Sort; mkSort)
+module Srt = fam-mu-lifting.sort os es
+open Srt using (Sort; mkSort)
 
 Poly-C = polynomial-functor.Poly cat
 open polynomial-functor.Poly
@@ -59,7 +59,7 @@ Idx .fmor-cong e = e .idxf-eq
 Idx .fmor-id = SC.≈-refl
 Idx .fmor-comp f g = SC.≈-refl
 
-∣_∣ : ∀ {n} → Poly-C n → Sh.Poly n
+∣_∣ : ∀ {n} → Poly-C n → Srt.Poly n
 ∣_∣ = Poly-map Idx
 
 private
@@ -67,7 +67,7 @@ private
   ℓD = o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es
 
 module Fibre {n} (δ : Fin n → Obj) where
-  open Sh.Tree (λ i → δ i .idx)
+  open Srt.Tree (λ i → δ i .idx)
 
   -- A decoration of a sort: a μ-body erasing to it, with the sorts in its
   -- assignment decorated in turn. The sort is recovered by projection.
@@ -224,5 +224,5 @@ module Fibre {n} (δ : Fin n → Obj) where
 -- by the canonical decoration, which resolves the μ-body's free variables to
 -- the parameters.
 μ-fam : ∀ {n} → Poly-C (suc n) → (Fin n → Obj) → Obj
-μ-fam P δ .idx = Sh.Tree.WSetoid (λ i → δ i .idx) ∣ P ∣ (λ i → inj₁ i)
+μ-fam P δ .idx = Srt.Tree.WSetoid (λ i → δ i .idx) ∣ P ∣ (λ i → inj₁ i)
 μ-fam P δ .fam = Fibre.WFam δ P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)

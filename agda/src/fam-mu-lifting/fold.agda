@@ -38,7 +38,7 @@ module FoldBase {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj} where
     data FMor : ∀ {k} (ρ : Fin k → Fin n ⊎ Sort n) (ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)) →
                 (∀ v → Tδ.DecoAssign (ρ v)) → (∀ v → TA'.DecoAssign (ρ' v)) →
                 Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
-      fbase : FMor (Sh.η₀ ∣ P ∣) (λ v → inj₁ v)
+      fbase : FMor (Srt.η₀ ∣ P ∣) (λ v → inj₁ v)
                    (Tδ.deco-ext P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)) (λ v → lift tt)
       fbind : ∀ {k} {ρ ρ' d d'} (Q : Poly (suc k)) → FMor ρ ρ' d d' →
               FMor (extend ρ (inj₂ (mkSort ∣ Q ∣ ρ))) (extend ρ' (inj₂ (mkSort ∣ Q ∣ ρ')))
@@ -53,7 +53,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier
       fold-idx γ (Tδ.sup x) = alg .idxf .PS._⇒_.func (γ , fold-shape-idx P γ x)
 
-      fold-shape-idx : (Q : Poly (suc n)) → Γ .idx .Carrier → Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣) →
+      fold-shape-idx : (Q : Poly (suc n)) → Γ .idx .Carrier → Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣) →
                       fobj μ-fam Q (extend δ A) .idx .Carrier
       fold-shape-idx (const A')        γ a = a
       fold-shape-idx (var Fin.zero)    γ t = fold-idx γ t
@@ -90,7 +90,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-idx-resp γ≈ {Tδ.sup x} {Tδ.sup y} p = alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , fold-shape-idx-resp P γ≈ p)
 
       fold-shape-idx-resp : (Q : Poly (suc n)) → ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {x x'}
-                           (p : Tδ.shape≈ ∣ Q ∣ (Sh.η₀ ∣ P ∣) x x') →
+                           (p : Tδ.shape≈ ∣ Q ∣ (Srt.η₀ ∣ P ∣) x x') →
                            _≈s_ (fobj μ-fam Q (extend δ A) .idx) (fold-shape-idx Q γ x) (fold-shape-idx Q γ' x')
       fold-shape-idx-resp (const A')        γ≈ p = p
       fold-shape-idx-resp (var Fin.zero)    γ≈ {x} {x'} p = fold-idx-resp γ≈ {x} {x'} p
@@ -132,7 +132,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-fam γ (Tδ.sup x) =
         alg .famf ._⇒f_.transf (γ , fold-shape-idx P γ x) ∘ pair p₁ (fold-shape-fam P γ x)
 
-      fold-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Sh.η₀ ∣ P ∣)) →
+      fold-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣)) →
                        prod (Γ .fam .fm γ) (Tδ.fib-shape Q (Tδ.deco-ext P (λ i → lift tt)) x)
                          ⇒ fobj μ-fam Q (extend δ A) .fam .fm (fold-shape-idx Q γ x)
       fold-shape-fam (const A')        γ a = p₂
@@ -180,7 +180,7 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                  (assoc _ _ _))))))
 
       fold-shape-fam-natural : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
-                               (p : Tδ.shape≈ ∣ Q ∣ (Sh.η₀ ∣ P ∣) x x') →
+                               (p : Tδ.shape≈ ∣ Q ∣ (Srt.η₀ ∣ P ∣) x x') →
                                fold-shape-fam Q γ₂ x' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-shape-subst Q (Tδ.deco-ext P (λ i → lift tt)) p) ≈
                                fobj μ-fam Q (extend δ A) .fam .subst (fold-shape-idx-resp Q γ≈ p) ∘ fold-shape-fam Q γ₁ x
       fold-shape-fam-natural (const A')        γ≈ p = pair-p₂ _ _

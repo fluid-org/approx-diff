@@ -58,14 +58,14 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     ibase : ∀ {k} {ρA ρB} (f : ∀ v → TA.El (ρA v) → TB.El (ρB v))
             (f-resp : ∀ v {a a'} → TA.elEq (ρA v) a a' → TB.elEq (ρB v) (f v a) (f v a')) →
             IMorD {k} ρA ρB
-    ibind : ∀ {k} {ρA ρB} (R : Sh.Poly (suc k)) → IMorD ρA ρB →
+    ibind : ∀ {k} {ρA ρB} (R : Srt.Poly (suc k)) → IMorD ρA ρB →
             IMorD (extend ρA (inj₂ (mkSort R ρA))) (extend ρB (inj₂ (mkSort R ρB)))
 
   mutual
-    ireindex : ∀ {k} {R : Sh.Poly (suc k)} {ρA ρB} (md : IMorD ρA ρB) → TA.W R ρA → TB.W R ρB
+    ireindex : ∀ {k} {R : Srt.Poly (suc k)} {ρA ρB} (md : IMorD ρA ρB) → TA.W R ρA → TB.W R ρB
     ireindex {R = R} md (TA.sup x) = TB.sup (ireindex-shape R (ibind R md) x)
 
-    ireindex-shape : ∀ {j} (R : Sh.Poly j) {ηA ηB} (md : IMorD ηA ηB) → TA.⟦ R ⟧shape ηA → TB.⟦ R ⟧shape ηB
+    ireindex-shape : ∀ {j} (R : Srt.Poly j) {ηA ηB} (md : IMorD ηA ηB) → TA.⟦ R ⟧shape ηA → TB.⟦ R ⟧shape ηB
     ireindex-shape (const S) md a = a
     ireindex-shape (var v) md a = iapply md v a
     ireindex-shape (P + Q) md (inj₁ a) = inj₁ (ireindex-shape P md a)
@@ -79,11 +79,11 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     iapply (ibind R md) (Fin.suc v) a = iapply md v a
 
   mutual
-    ireindex-resp : ∀ {k} {R : Sh.Poly (suc k)} {ρA ρB} (md : IMorD ρA ρB) {t t' : TA.W R ρA} →
+    ireindex-resp : ∀ {k} {R : Srt.Poly (suc k)} {ρA ρB} (md : IMorD ρA ρB) {t t' : TA.W R ρA} →
                     TA.W-≈ t t' → TB.W-≈ (ireindex md t) (ireindex md t')
     ireindex-resp {R = R} md {TA.sup x} {TA.sup y} p = ireindex-shape-resp R (ibind R md) {x} {y} p
 
-    ireindex-shape-resp : ∀ {j} (R : Sh.Poly j) {ηA ηB} (md : IMorD ηA ηB) {a a' : TA.⟦ R ⟧shape ηA} →
+    ireindex-shape-resp : ∀ {j} (R : Srt.Poly j) {ηA ηB} (md : IMorD ηA ηB) {a a' : TA.⟦ R ⟧shape ηA} →
                           TA.shape≈ R ηA a a' → TB.shape≈ R ηB (ireindex-shape R md a) (ireindex-shape R md a')
     ireindex-shape-resp (const S) md p = p
     ireindex-shape-resp (var v)   md p = iapply-resp md v p
@@ -103,20 +103,20 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
   erase (base f f-resp _ _) = ibase f f-resp
   erase (bind Q md) = ibind ∣ Q ∣ (erase md)
 
-  reindex : ∀ {k} {R : Sh.Poly (suc k)} {ρA ρB dA dB} → MorD ρA ρB dA dB → TA.W R ρA → TB.W R ρB
+  reindex : ∀ {k} {R : Srt.Poly (suc k)} {ρA ρB dA dB} → MorD ρA ρB dA dB → TA.W R ρA → TB.W R ρB
   reindex md = ireindex (erase md)
 
-  reindex-shape : ∀ {j} (R : Sh.Poly j) {ηA ηB dA dB} → MorD ηA ηB dA dB → TA.⟦ R ⟧shape ηA → TB.⟦ R ⟧shape ηB
+  reindex-shape : ∀ {j} (R : Srt.Poly j) {ηA ηB dA dB} → MorD ηA ηB dA dB → TA.⟦ R ⟧shape ηA → TB.⟦ R ⟧shape ηB
   reindex-shape R md = ireindex-shape R (erase md)
 
   apply : ∀ {k} {ρA ρB dA dB} (md : MorD {k} ρA ρB dA dB) (v : Fin k) → TA.El (ρA v) → TB.El (ρB v)
   apply md = iapply (erase md)
 
-  reindex-resp : ∀ {k} {R : Sh.Poly (suc k)} {ρA ρB dA dB} (md : MorD ρA ρB dA dB) {t t' : TA.W R ρA} →
+  reindex-resp : ∀ {k} {R : Srt.Poly (suc k)} {ρA ρB dA dB} (md : MorD ρA ρB dA dB) {t t' : TA.W R ρA} →
                  TA.W-≈ t t' → TB.W-≈ (reindex md t) (reindex md t')
   reindex-resp md {t} {t'} = ireindex-resp (erase md) {t} {t'}
 
-  reindex-shape-resp : ∀ {j} (R : Sh.Poly j) {ηA ηB dA dB} (md : MorD ηA ηB dA dB) {a a' : TA.⟦ R ⟧shape ηA} →
+  reindex-shape-resp : ∀ {j} (R : Srt.Poly j) {ηA ηB dA dB} (md : MorD ηA ηB dA dB) {a a' : TA.⟦ R ⟧shape ηA} →
                        TA.shape≈ R ηA a a' → TB.shape≈ R ηB (reindex-shape R md a) (reindex-shape R md a')
   reindex-shape-resp R md {a} {a'} = ireindex-shape-resp R (erase md) {a} {a'}
 

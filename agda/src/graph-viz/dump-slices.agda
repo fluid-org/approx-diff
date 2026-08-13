@@ -28,7 +28,7 @@ open import Relation.Binary.PropositionalEquality using (subst; sym)
 open import language-operational.evaluation EP.Sig EP.primitives using (Val)
 open Val
 open import language-operational.annotated-value EP.Sig EP.primitives
-  using (AVal; node; Shape; shape-of)
+  using (AVal; node; Tag; shape-of)
 import language-operational.annotated-value as AV
 open AV.annotate EP.Sig EP.primitives two.semiring using (row→aval; aval→row)
 open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
@@ -76,18 +76,18 @@ private
 
   mutual
     show-aval : AVal two.Two → String
-    show-aval (node Shape.unit      a _ _)  = "()" ++ mark a
-    show-aval (node (Shape.const l) a n _)  = show-c n l a
-    show-aval (node Shape.inl       a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
-    show-aval (node Shape.inr       a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
-    show-aval (node Shape.clo       a _ _)  = "<closure>" ++ mark a
-    show-aval (node Shape.nil       a _ _)  = "[]" ++ mark a
-    show-aval (node Shape.pair      a _ (p ∷ q ∷ _)) =
+    show-aval (node Tag.unit      a _ _)  = "()" ++ mark a
+    show-aval (node (Tag.const l) a n _)  = show-c n l a
+    show-aval (node Tag.inl       a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
+    show-aval (node Tag.inr       a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
+    show-aval (node Tag.clo       a _ _)  = "<closure>" ++ mark a
+    show-aval (node Tag.nil       a _ _)  = "[]" ++ mark a
+    show-aval (node Tag.pair      a _ (p ∷ q ∷ _)) =
       "(" ++ show-aval p ++ ", " ++ show-aval q ++ ")" ++ mark a
-    show-aval (node Shape.pair      a _ _)  = "?"
-    show-aval (node Shape.cons      a _ (h ∷ t ∷ _)) =
+    show-aval (node Tag.pair      a _ _)  = "?"
+    show-aval (node Tag.cons      a _ (h ∷ t ∷ _)) =
       show-aval h ++ " ∷" ++ mark a ++ " " ++ show-aval t
-    show-aval (node Shape.cons      a _ _)  = "?"
+    show-aval (node Tag.cons      a _ _)  = "?"
 
     show-kids : List (AVal two.Two) → String
     show-kids []      = ""
@@ -132,13 +132,13 @@ private
   erases M = FR.app M
 
   consᵃ : two.Two → AVal two.Two → AVal two.Two → AVal two.Two
-  consᵃ a h t = node Shape.cons a 2 (h ∷ t ∷ [])
+  consᵃ a h t = node Tag.cons a 2 (h ∷ t ∷ [])
 
   nilᵃ : two.Two → AVal two.Two
-  nilᵃ a = node Shape.nil a 2 []
+  nilᵃ a = node Tag.nil a 2 []
 
   numᵃ : ℚ → two.Two → AVal two.Two
-  numᵃ q a = node (Shape.const (show-ℚ q)) a 1 []
+  numᵃ q a = node (Tag.const (show-ℚ q)) a 1 []
 
   cell1-sel : AVal two.Two
   cell1-sel =
