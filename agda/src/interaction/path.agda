@@ -296,6 +296,10 @@ is-ε _ = Bool.false
 FO : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
 FO D = filterᵇ (λ p → not (is-ε p) ∧ fo-at p) (paths D)
 
+-- Their complement among the non-empty paths: the intermediates the first-order graph hides.
+fo-hidden : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → List (Path D)
+fo-hidden D = filterᵇ (λ p → not (is-ε p) ∧ not (fo-at p)) (paths D)
+
 -- Equality of paths of the same derivation.
 mutual
   eq-path : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Path D → Path D → Bool

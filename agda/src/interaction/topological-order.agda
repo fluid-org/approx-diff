@@ -633,9 +633,7 @@ hide-all-forward {D = D} = Ranked.fwd-fold (Vertex D) vertex-width rank-v
 
 -- The first-order dependence graph inherits the property.
 fo-forward : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Forward (fo-graph D)
-fo-forward D =
-  hide-all-forward (map at (filterᵇ (λ p → Bool.not (is-ε p) Bool.∧ Bool.not (fo-at p)) (paths D)))
-                   (forward D)
+fo-forward D = hide-all-forward (map at (fo-hidden D)) (forward D)
 
 hide-all-perm : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} {G : Graph D} →
                 Forward G → ∀ {rs rs'} → rs ↭ rs' →

@@ -46,8 +46,7 @@ hide-all = foldl hide
 -- The first-order dependence graph: the graph of the derivation with every intermediate whose
 -- value is not first-order hidden, so that its live vertices are env, the root, and FO D.
 fo-graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → Graph D
-fo-graph D =
-  hide-all (graph D) (map at (filterᵇ (λ p → not (is-ε p) ∧ not (fo-at p)) (paths D)))
+fo-graph D = hide-all (graph D) (map at (fo-hidden D))
 
 
 -- Collapse: hide every path of the derivation and read the remaining dependence from env to the
