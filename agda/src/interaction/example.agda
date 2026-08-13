@@ -34,27 +34,27 @@ scrut : Path D
 scrut = case-l₁ ε
 
 K₀ : Config D
-K₀ = initial D
+K₀ = initial
 
 K₁ : Config D
-K₁ = reveal-at D scrut K₀
+K₁ = reveal-at scrut K₀
 
 K₂ : Config D
-K₂ = hide-at D scrut K₁
+K₂ = hide-at scrut K₁
 
 -- Everything hidden: the output depends on the input, through the whole chain.
-init-dep : visible-graph D K₀ env (at ε) zero zero ≡ two.I
+init-dep : visible-graph K₀ env (at ε) zero zero ≡ two.I
 init-dep = refl
 
 -- Scrutinee root revealed: its region splits, dependence routes through the revealed vertex, and
 -- the direct env-to-root entry disappears.
-reveal-in : visible-graph D K₁ env (at scrut) (suc zero) zero ≡ two.I
+reveal-in : visible-graph K₁ env (at scrut) (suc zero) zero ≡ two.I
 reveal-in = refl
 
-reveal-out : visible-graph D K₁ (at scrut) (at ε) zero (suc zero) ≡ two.I
+reveal-out : visible-graph K₁ (at scrut) (at ε) zero (suc zero) ≡ two.I
 reveal-out = refl
 
-reveal-no-direct : visible-graph D K₁ env (at ε) zero zero ≡ two.O
+reveal-no-direct : visible-graph K₁ env (at ε) zero zero ≡ two.O
 reveal-no-direct = refl
 
 -- The rewired env column of the branch is zero: the branch body uses only the bound variable.
@@ -66,7 +66,7 @@ rewired-scrut-branch : fo-graph D (at scrut) (at (case-l₂ ε)) zero (suc zero)
 rewired-scrut-branch = refl
 
 -- Hidden again: the regions merge back and the initial view returns.
-rehide-dep : visible-graph D K₂ env (at ε) zero zero ≡ two.I
+rehide-dep : visible-graph K₂ env (at ε) zero zero ≡ two.I
 rehide-dep = refl
 
 -- Collapsing the whole derivation recovers the run's dependency relation.
