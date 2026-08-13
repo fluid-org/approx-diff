@@ -21,12 +21,13 @@ open import primitives using (Primitives; sort-vals-setoid)
 open import lifting using (Lifting)
 open import Data.Sum using (inj₁; inj₂)
 open import cmon-enriched using (CMonEnriched)
+open import functor using (limits→limits')
+import indexed-family
 open import indexed-family using (HasSetoidProducts; Fam; _⇒f_; constantFam; _[_])
 import matrix
 import fam
 import fam-mu-lifting.in-map
 import fam-exponentials
-import semimod-products
 import matrix-embedding
 import matrix-primitives
 import language-fo-interpretation
@@ -83,11 +84,10 @@ full-absorb h i j = Sc.trans Sc.+-comm ⊤-add-top
 
 -- The model-side function spaces: exponentials on Fam(SemiMod), from the direct setoid products
 -- of plain semimodules.
-module SMP = semimod-products S
-module SMPT = SMP.Topped ⊤-add-top
-
 SPmod : HasSetoidProducts 0ℓ 0ℓ SemiModT.cat-⊤
-SPmod = SMPT.semimod-setoid-products-⊤
+SPmod =
+  indexed-family.hasSetoidProducts 0ℓ 0ℓ SemiModT.cat-⊤
+    (λ A → limits→limits' (SemiModT.limits-⊤ A))
 
 module FE = fam-exponentials 0ℓ 0ℓ SemiModT.cat-⊤ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SPmod
 

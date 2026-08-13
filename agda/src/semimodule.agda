@@ -3,13 +3,14 @@
 open import Level using (0ℓ; suc)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_,_; _×_)
-open import prop using (_,_; proj₁; proj₂; ∃ₛ; LiftS; liftS; tt; _⇔_; sym-⇔; trans-⇔)
+open import prop using (_,_; proj₁; proj₂; ∃ₛ; LiftS; liftS; tt; _⇔_; sym-⇔; trans-⇔; ⟪_⟫)
 open import prop-setoid
   using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂; 𝟙)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
-open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; IsTerminal; Splitting)
+open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; IsTerminal; Splitting; setoid→category)
 open import commutative-monoid using (CommutativeMonoid; 𝟙cm) renaming (_⊗_ to _×CM_)
 open import commutative-semiring using (CommutativeSemiring)
+open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimits)
 
 
 module semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
@@ -396,6 +397,67 @@ _⊸_ : Semimodule → Semimodule → Semimodule
 -- category is closed without the tensor.
 
 ------------------------------------------------------------------------------
+module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
+  private
+    module 𝒮 = Category 𝒮
+
+  open Functor
+  open NatTrans
+  open ≃-NatTrans
+
+  record Π-Carrier (D : Functor 𝒮 cat) : Set (0ℓ) where
+    field
+      Π-func : (x : 𝒮.obj) → D .fobj x .Carrier
+      Π-natural : ∀ {x₁ x₂} (f : x₁ 𝒮.⇒ x₂) → _≈_ (D .fobj x₂) (D .fmor f .func (Π-func x₁)) (Π-func x₂)
+  open Π-Carrier
+
+  Π : Functor 𝒮 cat → Semimodule
+  Π D .setoid .Setoid.Carrier = Π-Carrier D
+  Π D .setoid .Setoid._≈_ α β = ∀ x → D .fobj x ._≈_ (α .Π-func x) (β .Π-func x)
+  Π D .setoid .Setoid.isEquivalence .IsEquivalence.refl x = refl (fobj D x)
+  Π D .setoid .Setoid.isEquivalence .IsEquivalence.sym x x₁ = sym (fobj D x₁) (x x₁)
+  Π D .setoid .Setoid.isEquivalence .IsEquivalence.trans z₁ z₂ x₁ = trans (fobj D x₁) (z₁ x₁) (z₂ x₁)
+  Π D .additive .CommutativeMonoid.ε .Π-func x = D .fobj x .ε
+  Π D .additive .CommutativeMonoid.ε .Π-natural f = D .fmor f .preserve-ze
+  Π D .additive .CommutativeMonoid._+_ α₁ α₂ .Π-func x = D .fobj x ._+_ (α₁ .Π-func x) (α₂ .Π-func x)
+  Π D .additive .CommutativeMonoid._+_ α₁ α₂ .Π-natural = λ f →
+                                                             trans (fobj D _) (D .fmor f .preserve-+)
+                                                             (+-cong (fobj D _) (α₁ .Π-natural f) (α₂ .Π-natural f))
+  Π D .additive .CommutativeMonoid.+-cong = λ z z₁ x → +-cong (fobj D x) (z x) (z₁ x)
+  Π D .additive .CommutativeMonoid.+-lunit = λ x₁ → +-lunit (fobj D x₁)
+  Π D .additive .CommutativeMonoid.+-assoc = λ x₁ → +-assoc (fobj D x₁)
+  Π D .additive .CommutativeMonoid.+-comm = λ x₁ → +-comm (fobj D x₁)
+  Π D ._·_ s α .Π-func x = D .fobj x ._·_ s (α .Π-func x)
+  Π D ._·_ s α .Π-natural f =
+    D .fobj _ .trans (D .fmor f .preserve-·) (D .fobj _ .·-cong S.refl (α .Π-natural f))
+  Π D .·-cong = λ z z₁ x → ·-cong (D .fobj x) z (z₁ x)
+  Π D .·-mul = λ x₁ → ·-mul (D .fobj x₁)
+  Π D .·-unit = λ x₁ → ·-unit (D .fobj x₁)
+  Π D .+-distribʳ = λ x₁ → +-distribʳ (D .fobj x₁)
+  Π D .+-distribˡ = λ x → +-distribˡ (D .fobj x)
+  Π D .zero-distribʳ = λ x₁ → zero-distribʳ (D .fobj x₁)
+  Π D .zero-distribˡ = λ x → zero-distribˡ (D .fobj x)
+
+  limits : HasLimits 𝒮 cat
+  limits D .functor.Limit.apex = Π D
+  limits D .functor.Limit.cone .transf x .*→* ._⇒s_.func α = α .Π-func x
+  limits D .functor.Limit.cone .transf x .*→* ._⇒s_.func-resp-≈ α₁≈α₂ = α₁≈α₂ x
+  limits D .functor.Limit.cone .transf x .preserve-ze = D .fobj x .refl
+  limits D .functor.Limit.cone .transf x .preserve-+ = D .fobj x .refl
+  limits D .functor.Limit.cone .transf x .preserve-· = D .fobj x .refl
+  limits D .functor.Limit.cone .natural f .*≈* ._≈s_.func-eq {α₁} {α₂} α₁≈α₂ =
+    D .fobj _ .trans (α₁ .Π-natural f) (α₁≈α₂ _)
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .*→* ._⇒s_.func m .Π-func x = α .transf x .func m
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .*→* ._⇒s_.func m .Π-natural f = α .natural f .*≈* ._≈s_.func-eq (M .refl)
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .*→* ._⇒s_.func-resp-≈ m≈n x = α .transf x .func-resp-≈ m≈n
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .preserve-ze x = α .transf x .preserve-ze
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .preserve-+ x = α .transf x .preserve-+
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda M α .preserve-· x = α .transf x .preserve-·
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda-cong {M} α≃β .*≈* ._≈s_.func-eq {m}{n} m≈n x = α≃β .transf-eq x .*≈* ._≈s_.func-eq m≈n
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda-eval α .transf-eq x .*≈* ._≈s_.func-eq = α .transf x .func-resp-≈
+  limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
+
+------------------------------------------------------------------------------
 -- Semimodules carrying a top, as a full subcategory: when ι is an absorbing top on the scalars,
 -- the constructions above restrict to modules with a greatest element in the natural order
 -- x ≤ y iff x + y ≈ y. The morphisms are unchanged, so every law delegates.
@@ -468,6 +530,61 @@ module Topped (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι) where
   𝕀-⊤ .mod = 𝕀
   𝕀-⊤ .⊤m = S.ι
   𝕀-⊤ .⊤m-absorb = S.trans S.+-comm ⊤-add-top
+
+  -- Limits over a setoid shape restrict to the subcategory: each shape morphism is an equality
+  -- proof, so its image is invertible and sends the top of one fibre to the top of the next.
+  module _ (A : Setoid 0ℓ 0ℓ) where
+    private
+      module A = Setoid A
+      𝒮 = setoid→category A
+
+    mod-functor : Functor 𝒮 cat-⊤ → Functor 𝒮 cat
+    mod-functor D .Functor.fobj x = D .Functor.fobj x .mod
+    mod-functor D .Functor.fmor = D .Functor.fmor
+    mod-functor D .Functor.fmor-cong = D .Functor.fmor-cong
+    mod-functor D .Functor.fmor-id = D .Functor.fmor-id
+    mod-functor D .Functor.fmor-comp = D .Functor.fmor-comp
+
+    apex-⊤ : (D : Functor 𝒮 cat-⊤) → Semimodule-⊤
+    apex-⊤ D .mod = Π 𝒮 (mod-functor D)
+    apex-⊤ D .⊤m .Π-Carrier.Π-func x = D .Functor.fobj x .⊤m
+    apex-⊤ D .⊤m .Π-Carrier.Π-natural {x} {y} ⟪ e ⟫ =
+      fib.trans y (D .Functor.fmor ⟪ e ⟫ .func-resp-≈ (fib.sym x (D .Functor.fobj x .⊤m-absorb)))
+        (fib.trans y (D .Functor.fmor ⟪ e ⟫ .preserve-+)
+          (fib.trans y (fib.+-cong y round-trip (fib.refl y))
+            (fib.trans y (fib.+-comm y) (D .Functor.fobj y .⊤m-absorb))))
+      where
+        module fib (z : A.Carrier) = Semimodule (D .Functor.fobj z .mod)
+        round-trip :
+          fib._≈_ y (D .Functor.fmor ⟪ e ⟫ .func
+                      (D .Functor.fmor ⟪ A.sym e ⟫ .func (D .Functor.fobj y .⊤m)))
+                    (D .Functor.fobj y .⊤m)
+        round-trip =
+          fib.trans y (fib.sym y (D .Functor.fmor-comp ⟪ e ⟫ ⟪ A.sym e ⟫ .*≈* ._≈s_.func-eq (fib.refl y)))
+            (D .Functor.fmor-id .*≈* ._≈s_.func-eq (fib.refl y))
+    apex-⊤ D .⊤m-absorb x = D .Functor.fobj x .⊤m-absorb
+
+    limits-⊤ : HasLimits 𝒮 cat-⊤
+    limits-⊤ D .functor.Limit.apex = apex-⊤ D
+    limits-⊤ D .functor.Limit.cone .NatTrans.transf x =
+      limits 𝒮 (mod-functor D) .functor.Limit.cone .NatTrans.transf x
+    limits-⊤ D .functor.Limit.cone .NatTrans.natural f =
+      limits 𝒮 (mod-functor D) .functor.Limit.cone .NatTrans.natural f
+    limits-⊤ D .functor.Limit.isLimit .functor.IsLimit.lambda M α =
+      limits 𝒮 (mod-functor D) .functor.Limit.isLimit .functor.IsLimit.lambda (M .mod)
+        (record { transf = α .NatTrans.transf ; natural = α .NatTrans.natural })
+    limits-⊤ D .functor.Limit.isLimit .functor.IsLimit.lambda-cong α≃β =
+      limits 𝒮 (mod-functor D) .functor.Limit.isLimit .functor.IsLimit.lambda-cong
+        (record { transf-eq = α≃β .≃-NatTrans.transf-eq })
+    limits-⊤ D .functor.Limit.isLimit .functor.IsLimit.lambda-eval α .≃-NatTrans.transf-eq x =
+      limits 𝒮 (mod-functor D) .functor.Limit.isLimit .functor.IsLimit.lambda-eval
+        (record { transf = α .NatTrans.transf ; natural = α .NatTrans.natural })
+        .≃-NatTrans.transf-eq x
+    limits-⊤ D .functor.Limit.isLimit .functor.IsLimit.lambda-ext {x} f =
+      IsEquivalence.trans (cat .Category.isEquiv)
+        (limits 𝒮 (mod-functor D) .functor.Limit.isLimit .functor.IsLimit.lambda-cong
+          (record { transf-eq = λ _ → IsEquivalence.refl (cat .Category.isEquiv) }))
+        (limits 𝒮 (mod-functor D) .functor.Limit.isLimit .functor.IsLimit.lambda-ext f)
 
   -- The top as a morphism from the scalars, absorbing in the enrichment.
   ⊤-mor : ∀ M → 𝕀 ⇒ M .mod
