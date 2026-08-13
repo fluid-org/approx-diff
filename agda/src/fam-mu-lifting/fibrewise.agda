@@ -130,304 +130,225 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
   -- positions coincide, and sorts relate recursively through the μ-body from
   -- which both are formed.
   mutual
+    record RelAssign (j : ℕ) : Set ℓk where
+      inductive
+      field
+        ρ₁  : Fin j → Fin N ⊎ Sort N
+        ρ₂  : Fin j → Fin N ⊎ Sort N
+        d₁  : ∀ i → C.DecoAssign (ρ₁ i)
+        d₂  : ∀ i → D.DecoAssign (ρ₂ i)
+        rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)
+
     data SRel : (r₁ r₂ : Fin N ⊎ Sort N) → C.DecoAssign r₁ → D.DecoAssign r₂ → Set ℓk where
       env : ∀ {p} → SRel (inj₁ p) (inj₁ p) (lift tt) (lift tt)
       srt : ∀ {s₁ s₂ e₁ e₂} → SortRel s₁ s₂ e₁ e₂ → SRel (inj₂ s₁) (inj₂ s₂) e₁ e₂
 
     data SortRel : (s₁ s₂ : Sort N) → C.Deco s₁ → D.Deco s₂ → Set ℓk where
-      mk : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-           (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i)) →
-           (∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-           SortRel (mkSort Fc.∣ Q ∣ ρ₁) (mkSort Fd.∣ P̂ Q ∣ ρ₂)
-                   (C.mkDeco Q d₁) (D.mkDeco (P̂ Q) d₂)
+      mk : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
+           SortRel (mkSort Fc.∣ Q ∣ (E .RelAssign.ρ₁)) (mkSort Fd.∣ P̂ Q ∣ (E .RelAssign.ρ₂))
+                   (C.mkDeco Q (E .RelAssign.d₁)) (D.mkDeco (P̂ Q) (E .RelAssign.d₂))
+
+  open RelAssign public
+
+  ext : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) → RelAssign j → RelAssign (sucℕ j)
+  ext Q E .ρ₁ = extend (E .ρ₁) (inj₂ (mkSort Fc.∣ Q ∣ (E .ρ₁)))
+  ext Q E .ρ₂ = extend (E .ρ₂) (inj₂ (mkSort Fd.∣ P̂ Q ∣ (E .ρ₂)))
+  ext Q E .d₁ = C.deco-ext Q (E .d₁)
+  ext Q E .d₂ = D.deco-ext (P̂ Q) (E .d₂)
+  ext Q E .rel Fin.zero    = srt (mk Q E)
+  ext Q E .rel (Fin.suc i) = E .rel i
 
   -- Forward tree transport, by recursion on the polynomial; the leaves are
   -- identities.
   mutual
-    cfwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-           (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-           (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-           T.W Fc.∣ Q ∣ ρ₁ → T.W Fd.∣ P̂ Q ∣ ρ₂
-    cfwd Q ρ₁ ρ₂ d₁ d₂ rel (T.sup x) =
-      T.sup (shape-cfwd Q (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)))
-               (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)))
-               (C.deco-ext Q d₁) (D.deco-ext (P̂ Q) d₂)
-               (extend-rel Q ρ₁ ρ₂ d₁ d₂ rel) x)
+    cfwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
+           T.W Fc.∣ Q ∣ (E .ρ₁) → T.W Fd.∣ P̂ Q ∣ (E .ρ₂)
+    cfwd Q E (T.sup x) = T.sup (shape-cfwd Q (ext Q E) x)
 
-    extend-rel : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-                 (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-                 (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-                 (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-                 ∀ i → SRel (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)) i)
-                            (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)) i)
-                            (C.deco-ext Q d₁ i)
-                            (D.deco-ext (P̂ Q) d₂ i)
-    extend-rel Q ρ₁ ρ₂ d₁ d₂ rel Fin.zero    = srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)
-    extend-rel Q ρ₁ ρ₂ d₁ d₂ rel (Fin.suc i) = rel i
-
-    shape-cfwd : ∀ {j} (Q : Fc.Poly-C j)
-                 (η₁ η₂ : Fin j → Fin N ⊎ Sort N)
-                 (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → D.DecoAssign (η₂ i))
-                 (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
-                 T.⟦ Fc.∣ Q ∣ ⟧shape η₁ → T.⟦ Fd.∣ P̂ Q ∣ ⟧shape η₂
-    shape-cfwd (Poly.const A) η₁ η₂ d₁ d₂ rel x = x
-    shape-cfwd (Poly.var i)   η₁ η₂ d₁ d₂ rel x = el-cfwd (rel i) x
-    shape-cfwd (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₁ x) = inj₁ (shape-cfwd Q η₁ η₂ d₁ d₂ rel x)
-    shape-cfwd (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₂ y) = inj₂ (shape-cfwd R η₁ η₂ d₁ d₂ rel y)
-    shape-cfwd (Q Poly.× R) η₁ η₂ d₁ d₂ rel (x , y) =
-      shape-cfwd Q η₁ η₂ d₁ d₂ rel x , shape-cfwd R η₁ η₂ d₁ d₂ rel y
-    shape-cfwd (Poly.μ Q')  η₁ η₂ d₁ d₂ rel t = cfwd Q' η₁ η₂ d₁ d₂ rel t
+    shape-cfwd : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j) →
+                 T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁) → T.⟦ Fd.∣ P̂ Q ∣ ⟧shape (E .ρ₂)
+    shape-cfwd (Poly.const A) E x = x
+    shape-cfwd (Poly.var i)   E x = el-cfwd (E .rel i) x
+    shape-cfwd (Q Poly.+ R) E (inj₁ x) = inj₁ (shape-cfwd Q E x)
+    shape-cfwd (Q Poly.+ R) E (inj₂ y) = inj₂ (shape-cfwd R E y)
+    shape-cfwd (Q Poly.× R) E (x , y) = shape-cfwd Q E x , shape-cfwd R E y
+    shape-cfwd (Poly.μ Q')  E t = cfwd Q' E t
 
     el-cfwd : ∀ {r₁ r₂ e₁ e₂} → SRel r₁ r₂ e₁ e₂ → T.El r₁ → T.El r₂
     el-cfwd env x = x
-    el-cfwd (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) x = cfwd Q ρ₁ ρ₂ d₁ d₂ rel x
+    el-cfwd (srt (mk Q E)) x = cfwd Q E x
 
   -- The forward transport preserves bisimilarity.
   mutual
-    c≈fwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-            (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-            (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-            (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-            {x y : T.W Fc.∣ Q ∣ ρ₁} → T.W-≈ x y →
-            T.W-≈ (cfwd Q ρ₁ ρ₂ d₁ d₂ rel x) (cfwd Q ρ₁ ρ₂ d₁ d₂ rel y)
-    c≈fwd Q ρ₁ ρ₂ d₁ d₂ rel {T.sup x} {T.sup y} p =
-      shape≈-cfwd Q (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)))
-        (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)))
-        (C.deco-ext Q d₁) (D.deco-ext (P̂ Q) d₂)
-        (extend-rel Q ρ₁ ρ₂ d₁ d₂ rel) p
+    c≈fwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
+            {x y : T.W Fc.∣ Q ∣ (E .ρ₁)} → T.W-≈ x y →
+            T.W-≈ (cfwd Q E x) (cfwd Q E y)
+    c≈fwd Q E {T.sup x} {T.sup y} p = shape≈-cfwd Q (ext Q E) p
 
-    shape≈-cfwd : ∀ {j} (Q : Fc.Poly-C j)
-                  (η₁ η₂ : Fin j → Fin N ⊎ Sort N)
-                  (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → D.DecoAssign (η₂ i))
-                  (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
-                  {x y : T.⟦ Fc.∣ Q ∣ ⟧shape η₁} → T.shape≈ Fc.∣ Q ∣ η₁ x y →
-                  T.shape≈ Fd.∣ P̂ Q ∣ η₂ (shape-cfwd Q η₁ η₂ d₁ d₂ rel x) (shape-cfwd Q η₁ η₂ d₁ d₂ rel y)
-    shape≈-cfwd (Poly.const A) η₁ η₂ d₁ d₂ rel p = p
-    shape≈-cfwd (Poly.var i)   η₁ η₂ d₁ d₂ rel p = elEq-cfwd (rel i) p
-    shape≈-cfwd (Q Poly.+ R) η₁ η₂ d₁ d₂ rel {inj₁ _} {inj₁ _} p = shape≈-cfwd Q η₁ η₂ d₁ d₂ rel p
-    shape≈-cfwd (Q Poly.+ R) η₁ η₂ d₁ d₂ rel {inj₂ _} {inj₂ _} p = shape≈-cfwd R η₁ η₂ d₁ d₂ rel p
-    shape≈-cfwd (Q Poly.× R) η₁ η₂ d₁ d₂ rel {_ , _} {_ , _} (p ,ₚ q) =
-      shape≈-cfwd Q η₁ η₂ d₁ d₂ rel p ,ₚ shape≈-cfwd R η₁ η₂ d₁ d₂ rel q
-    shape≈-cfwd (Poly.μ Q')  η₁ η₂ d₁ d₂ rel {x} {y} p = c≈fwd Q' η₁ η₂ d₁ d₂ rel {x} {y} p
+    shape≈-cfwd : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j) →
+                  {x y : T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)} → T.shape≈ Fc.∣ Q ∣ (E .ρ₁) x y →
+                  T.shape≈ Fd.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E x) (shape-cfwd Q E y)
+    shape≈-cfwd (Poly.const A) E p = p
+    shape≈-cfwd (Poly.var i)   E p = elEq-cfwd (E .rel i) p
+    shape≈-cfwd (Q Poly.+ R) E {inj₁ _} {inj₁ _} p = shape≈-cfwd Q E p
+    shape≈-cfwd (Q Poly.+ R) E {inj₂ _} {inj₂ _} p = shape≈-cfwd R E p
+    shape≈-cfwd (Q Poly.× R) E {_ , _} {_ , _} (p ,ₚ q) =
+      shape≈-cfwd Q E p ,ₚ shape≈-cfwd R E q
+    shape≈-cfwd (Poly.μ Q')  E {x} {y} p = c≈fwd Q' E {x} {y} p
 
     elEq-cfwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : T.El r₁} →
                 T.elEq r₁ x y → T.elEq r₂ (el-cfwd r x) (el-cfwd r y)
     elEq-cfwd env p = p
-    elEq-cfwd (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) {x} {y} p = c≈fwd Q ρ₁ ρ₂ d₁ d₂ rel {x} {y} p
+    elEq-cfwd (srt (mk Q E)) {x} {y} p = c≈fwd Q E {x} {y} p
 
   -- Backward tree transport.
   mutual
-    cbwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-           (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-           (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-           T.W Fd.∣ P̂ Q ∣ ρ₂ → T.W Fc.∣ Q ∣ ρ₁
-    cbwd Q ρ₁ ρ₂ d₁ d₂ rel (T.sup x) =
-      T.sup (shape-cbwd Q (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)))
-               (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)))
-               (C.deco-ext Q d₁) (D.deco-ext (P̂ Q) d₂)
-               (extend-rel Q ρ₁ ρ₂ d₁ d₂ rel) x)
+    cbwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
+           T.W Fd.∣ P̂ Q ∣ (E .ρ₂) → T.W Fc.∣ Q ∣ (E .ρ₁)
+    cbwd Q E (T.sup x) = T.sup (shape-cbwd Q (ext Q E) x)
 
-    shape-cbwd : ∀ {j} (Q : Fc.Poly-C j)
-                 (η₁ η₂ : Fin j → Fin N ⊎ Sort N)
-                 (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → D.DecoAssign (η₂ i))
-                 (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
-                 T.⟦ Fd.∣ P̂ Q ∣ ⟧shape η₂ → T.⟦ Fc.∣ Q ∣ ⟧shape η₁
-    shape-cbwd (Poly.const A) η₁ η₂ d₁ d₂ rel x = x
-    shape-cbwd (Poly.var i)   η₁ η₂ d₁ d₂ rel x = el-cbwd (rel i) x
-    shape-cbwd (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₁ x) = inj₁ (shape-cbwd Q η₁ η₂ d₁ d₂ rel x)
-    shape-cbwd (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₂ y) = inj₂ (shape-cbwd R η₁ η₂ d₁ d₂ rel y)
-    shape-cbwd (Q Poly.× R) η₁ η₂ d₁ d₂ rel (x , y) =
-      shape-cbwd Q η₁ η₂ d₁ d₂ rel x , shape-cbwd R η₁ η₂ d₁ d₂ rel y
-    shape-cbwd (Poly.μ Q')  η₁ η₂ d₁ d₂ rel t = cbwd Q' η₁ η₂ d₁ d₂ rel t
+    shape-cbwd : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j) →
+                 T.⟦ Fd.∣ P̂ Q ∣ ⟧shape (E .ρ₂) → T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)
+    shape-cbwd (Poly.const A) E x = x
+    shape-cbwd (Poly.var i)   E x = el-cbwd (E .rel i) x
+    shape-cbwd (Q Poly.+ R) E (inj₁ x) = inj₁ (shape-cbwd Q E x)
+    shape-cbwd (Q Poly.+ R) E (inj₂ y) = inj₂ (shape-cbwd R E y)
+    shape-cbwd (Q Poly.× R) E (x , y) = shape-cbwd Q E x , shape-cbwd R E y
+    shape-cbwd (Poly.μ Q')  E t = cbwd Q' E t
 
     el-cbwd : ∀ {r₁ r₂ e₁ e₂} → SRel r₁ r₂ e₁ e₂ → T.El r₂ → T.El r₁
     el-cbwd env x = x
-    el-cbwd (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) x = cbwd Q ρ₁ ρ₂ d₁ d₂ rel x
+    el-cbwd (srt (mk Q E)) x = cbwd Q E x
 
   -- The backward transport preserves bisimilarity.
   mutual
-    c≈bwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-            (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-            (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-            (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-            {x y : T.W Fd.∣ P̂ Q ∣ ρ₂} → T.W-≈ x y →
-            T.W-≈ (cbwd Q ρ₁ ρ₂ d₁ d₂ rel x) (cbwd Q ρ₁ ρ₂ d₁ d₂ rel y)
-    c≈bwd Q ρ₁ ρ₂ d₁ d₂ rel {T.sup x} {T.sup y} p =
-      shape≈-cbwd Q (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)))
-        (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)))
-        (C.deco-ext Q d₁) (D.deco-ext (P̂ Q) d₂)
-        (extend-rel Q ρ₁ ρ₂ d₁ d₂ rel) p
+    c≈bwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
+            {x y : T.W Fd.∣ P̂ Q ∣ (E .ρ₂)} → T.W-≈ x y →
+            T.W-≈ (cbwd Q E x) (cbwd Q E y)
+    c≈bwd Q E {T.sup x} {T.sup y} p = shape≈-cbwd Q (ext Q E) p
 
-    shape≈-cbwd : ∀ {j} (Q : Fc.Poly-C j)
-                  (η₁ η₂ : Fin j → Fin N ⊎ Sort N)
-                  (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → D.DecoAssign (η₂ i))
-                  (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
-                  {x y : T.⟦ Fd.∣ P̂ Q ∣ ⟧shape η₂} → T.shape≈ Fd.∣ P̂ Q ∣ η₂ x y →
-                  T.shape≈ Fc.∣ Q ∣ η₁ (shape-cbwd Q η₁ η₂ d₁ d₂ rel x) (shape-cbwd Q η₁ η₂ d₁ d₂ rel y)
-    shape≈-cbwd (Poly.const A) η₁ η₂ d₁ d₂ rel p = p
-    shape≈-cbwd (Poly.var i)   η₁ η₂ d₁ d₂ rel p = elEq-cbwd (rel i) p
-    shape≈-cbwd (Q Poly.+ R) η₁ η₂ d₁ d₂ rel {inj₁ _} {inj₁ _} p = shape≈-cbwd Q η₁ η₂ d₁ d₂ rel p
-    shape≈-cbwd (Q Poly.+ R) η₁ η₂ d₁ d₂ rel {inj₂ _} {inj₂ _} p = shape≈-cbwd R η₁ η₂ d₁ d₂ rel p
-    shape≈-cbwd (Q Poly.× R) η₁ η₂ d₁ d₂ rel {_ , _} {_ , _} (p ,ₚ q) =
-      shape≈-cbwd Q η₁ η₂ d₁ d₂ rel p ,ₚ shape≈-cbwd R η₁ η₂ d₁ d₂ rel q
-    shape≈-cbwd (Poly.μ Q')  η₁ η₂ d₁ d₂ rel {x} {y} p = c≈bwd Q' η₁ η₂ d₁ d₂ rel {x} {y} p
+    shape≈-cbwd : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j) →
+                  {x y : T.⟦ Fd.∣ P̂ Q ∣ ⟧shape (E .ρ₂)} → T.shape≈ Fd.∣ P̂ Q ∣ (E .ρ₂) x y →
+                  T.shape≈ Fc.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E x) (shape-cbwd Q E y)
+    shape≈-cbwd (Poly.const A) E p = p
+    shape≈-cbwd (Poly.var i)   E p = elEq-cbwd (E .rel i) p
+    shape≈-cbwd (Q Poly.+ R) E {inj₁ _} {inj₁ _} p = shape≈-cbwd Q E p
+    shape≈-cbwd (Q Poly.+ R) E {inj₂ _} {inj₂ _} p = shape≈-cbwd R E p
+    shape≈-cbwd (Q Poly.× R) E {_ , _} {_ , _} (p ,ₚ q) =
+      shape≈-cbwd Q E p ,ₚ shape≈-cbwd R E q
+    shape≈-cbwd (Poly.μ Q')  E {x} {y} p = c≈bwd Q' E {x} {y} p
 
     elEq-cbwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : T.El r₂} →
                 T.elEq r₂ x y → T.elEq r₁ (el-cbwd r x) (el-cbwd r y)
     elEq-cbwd env p = p
-    elEq-cbwd (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) {x} {y} p = c≈bwd Q ρ₁ ρ₂ d₁ d₂ rel {x} {y} p
+    elEq-cbwd (srt (mk Q E)) {x} {y} p = c≈bwd Q E {x} {y} p
 
   -- Round trips: the two transports are mutually inverse up to bisimilarity.
   mutual
-    c-fb : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-           (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-           (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-           (x : T.W Fc.∣ Q ∣ ρ₁) →
-           T.W-≈ (cbwd Q ρ₁ ρ₂ d₁ d₂ rel (cfwd Q ρ₁ ρ₂ d₁ d₂ rel x)) x
-    c-fb Q ρ₁ ρ₂ d₁ d₂ rel (T.sup x) =
-      shape-cfb Q (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)))
-        (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)))
-        (C.deco-ext Q d₁) (D.deco-ext (P̂ Q) d₂)
-        (extend-rel Q ρ₁ ρ₂ d₁ d₂ rel) x
+    c-fb : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j)
+           (x : T.W Fc.∣ Q ∣ (E .ρ₁)) →
+           T.W-≈ (cbwd Q E (cfwd Q E x)) x
+    c-fb Q E (T.sup x) = shape-cfb Q (ext Q E) x
 
-    shape-cfb : ∀ {j} (Q : Fc.Poly-C j)
-                (η₁ η₂ : Fin j → Fin N ⊎ Sort N)
-                (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → D.DecoAssign (η₂ i))
-                (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
-                (x : T.⟦ Fc.∣ Q ∣ ⟧shape η₁) →
-                T.shape≈ Fc.∣ Q ∣ η₁ (shape-cbwd Q η₁ η₂ d₁ d₂ rel (shape-cfwd Q η₁ η₂ d₁ d₂ rel x)) x
-    shape-cfb (Poly.const A) η₁ η₂ d₁ d₂ rel x = IsEquivalence.refl (Setoid.isEquivalence (A .idx))
-    shape-cfb (Poly.var i)   η₁ η₂ d₁ d₂ rel x = el-cfb (rel i) x
-    shape-cfb (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₁ x) = shape-cfb Q η₁ η₂ d₁ d₂ rel x
-    shape-cfb (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₂ y) = shape-cfb R η₁ η₂ d₁ d₂ rel y
-    shape-cfb (Q Poly.× R) η₁ η₂ d₁ d₂ rel (x , y) =
-      shape-cfb Q η₁ η₂ d₁ d₂ rel x ,ₚ shape-cfb R η₁ η₂ d₁ d₂ rel y
-    shape-cfb (Poly.μ Q')  η₁ η₂ d₁ d₂ rel t = c-fb Q' η₁ η₂ d₁ d₂ rel t
+    shape-cfb : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j)
+                (x : T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)) →
+                T.shape≈ Fc.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E (shape-cfwd Q E x)) x
+    shape-cfb (Poly.const A) E x = IsEquivalence.refl (Setoid.isEquivalence (A .idx))
+    shape-cfb (Poly.var i)   E x = el-cfb (E .rel i) x
+    shape-cfb (Q Poly.+ R) E (inj₁ x) = shape-cfb Q E x
+    shape-cfb (Q Poly.+ R) E (inj₂ y) = shape-cfb R E y
+    shape-cfb (Q Poly.× R) E (x , y) = shape-cfb Q E x ,ₚ shape-cfb R E y
+    shape-cfb (Poly.μ Q')  E t = c-fb Q' E t
 
     el-cfb : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) →
              T.elEq r₁ (el-cbwd r (el-cfwd r x)) x
     el-cfb (env {p}) x = T.elEq-refl (inj₁ p) x
-    el-cfb (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) x = c-fb Q ρ₁ ρ₂ d₁ d₂ rel x
+    el-cfb (srt (mk Q E)) x = c-fb Q E x
 
   mutual
-    c-bf : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-           (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-           (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-           (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i)) →
-           (y : T.W Fd.∣ P̂ Q ∣ ρ₂) →
-           T.W-≈ (cfwd Q ρ₁ ρ₂ d₁ d₂ rel (cbwd Q ρ₁ ρ₂ d₁ d₂ rel y)) y
-    c-bf Q ρ₁ ρ₂ d₁ d₂ rel (T.sup y) =
-      shape-cbf Q (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)))
-        (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)))
-        (C.deco-ext Q d₁) (D.deco-ext (P̂ Q) d₂)
-        (extend-rel Q ρ₁ ρ₂ d₁ d₂ rel) y
+    c-bf : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j)
+           (y : T.W Fd.∣ P̂ Q ∣ (E .ρ₂)) →
+           T.W-≈ (cfwd Q E (cbwd Q E y)) y
+    c-bf Q E (T.sup y) = shape-cbf Q (ext Q E) y
 
-    shape-cbf : ∀ {j} (Q : Fc.Poly-C j)
-                (η₁ η₂ : Fin j → Fin N ⊎ Sort N)
-                (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → D.DecoAssign (η₂ i))
-                (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i)) →
-                (y : T.⟦ Fd.∣ P̂ Q ∣ ⟧shape η₂) →
-                T.shape≈ Fd.∣ P̂ Q ∣ η₂ (shape-cfwd Q η₁ η₂ d₁ d₂ rel (shape-cbwd Q η₁ η₂ d₁ d₂ rel y)) y
-    shape-cbf (Poly.const A) η₁ η₂ d₁ d₂ rel y = IsEquivalence.refl (Setoid.isEquivalence (A .idx))
-    shape-cbf (Poly.var i)   η₁ η₂ d₁ d₂ rel y = el-cbf (rel i) y
-    shape-cbf (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₁ y) = shape-cbf Q η₁ η₂ d₁ d₂ rel y
-    shape-cbf (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₂ y) = shape-cbf R η₁ η₂ d₁ d₂ rel y
-    shape-cbf (Q Poly.× R) η₁ η₂ d₁ d₂ rel (x , y) =
-      shape-cbf Q η₁ η₂ d₁ d₂ rel x ,ₚ shape-cbf R η₁ η₂ d₁ d₂ rel y
-    shape-cbf (Poly.μ Q')  η₁ η₂ d₁ d₂ rel t = c-bf Q' η₁ η₂ d₁ d₂ rel t
+    shape-cbf : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j)
+                (y : T.⟦ Fd.∣ P̂ Q ∣ ⟧shape (E .ρ₂)) →
+                T.shape≈ Fd.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E (shape-cbwd Q E y)) y
+    shape-cbf (Poly.const A) E y = IsEquivalence.refl (Setoid.isEquivalence (A .idx))
+    shape-cbf (Poly.var i)   E y = el-cbf (E .rel i) y
+    shape-cbf (Q Poly.+ R) E (inj₁ y) = shape-cbf Q E y
+    shape-cbf (Q Poly.+ R) E (inj₂ y) = shape-cbf R E y
+    shape-cbf (Q Poly.× R) E (x , y) = shape-cbf Q E x ,ₚ shape-cbf R E y
+    shape-cbf (Poly.μ Q')  E t = c-bf Q' E t
 
     el-cbf : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (y : T.El r₂) →
              T.elEq r₂ (el-cfwd r (el-cbwd r y)) y
     el-cbf (env {p}) y = T.elEq-refl (inj₁ p) y
-    el-cbf (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) y = c-bf Q ρ₁ ρ₂ d₁ d₂ rel y
+    el-cbf (srt (mk Q E)) y = c-bf Q E y
 
   -- The fibre isomorphisms: the base functor's image of a fibre against the
   -- target-side fibre at the transported tree. Constants and parameters are
   -- identities, products cross the product comparison, and each root crosses
   -- the lifting comparison.
   mutual
-    fib-ciso : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-               (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-               (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-               (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i))
-               (w : T.W Fc.∣ Q ∣ ρ₁) →
-               𝒟C.Iso (F .fobj (C.fib Q d₁ w)) (D.fib (P̂ Q) d₂ (cfwd Q ρ₁ ρ₂ d₁ d₂ rel w))
-    fib-ciso Q ρ₁ ρ₂ d₁ d₂ rel (T.sup x) =
-      fib-shape-ciso Q (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)))
-        (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)))
-        (C.deco-ext Q d₁) (D.deco-ext (P̂ Q) d₂)
-        (extend-rel Q ρ₁ ρ₂ d₁ d₂ rel) x
+    fib-ciso : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j)
+               (w : T.W Fc.∣ Q ∣ (E .ρ₁)) →
+               𝒟C.Iso (F .fobj (C.fib Q (E .d₁) w)) (D.fib (P̂ Q) (E .d₂) (cfwd Q E w))
+    fib-ciso Q E (T.sup x) = fib-shape-ciso Q (ext Q E) x
 
-    fib-shape-ciso : ∀ {j} (Q : Fc.Poly-C j)
-                     (η₁ η₂ : Fin j → Fin N ⊎ Sort N)
-                     (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → D.DecoAssign (η₂ i))
-                     (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i))
-                     (x : T.⟦ Fc.∣ Q ∣ ⟧shape η₁) →
-                     𝒟C.Iso (F .fobj (C.fib-shape Q d₁ x))
-                            (D.fib-shape (P̂ Q) d₂ (shape-cfwd Q η₁ η₂ d₁ d₂ rel x))
-    fib-shape-ciso (Poly.const A) η₁ η₂ d₁ d₂ rel x = Iso-refl
-    fib-shape-ciso (Poly.var i)   η₁ η₂ d₁ d₂ rel x = fib-el-ciso (rel i) x
-    fib-shape-ciso (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₁ x) =
-      Iso-trans (F-L _) (L-iso (fib-shape-ciso Q η₁ η₂ d₁ d₂ rel x))
-    fib-shape-ciso (Q Poly.+ R) η₁ η₂ d₁ d₂ rel (inj₂ y) =
-      Iso-trans (F-L _) (L-iso (fib-shape-ciso R η₁ η₂ d₁ d₂ rel y))
-    fib-shape-ciso (Q Poly.× R) η₁ η₂ d₁ d₂ rel (x , y) =
+    fib-shape-ciso : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j)
+                     (x : T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)) →
+                     𝒟C.Iso (F .fobj (C.fib-shape Q (E .d₁) x))
+                            (D.fib-shape (P̂ Q) (E .d₂) (shape-cfwd Q E x))
+    fib-shape-ciso (Poly.const A) E x = Iso-refl
+    fib-shape-ciso (Poly.var i)   E x = fib-el-ciso (E .rel i) x
+    fib-shape-ciso (Q Poly.+ R) E (inj₁ x) =
+      Iso-trans (F-L _) (L-iso (fib-shape-ciso Q E x))
+    fib-shape-ciso (Q Poly.+ R) E (inj₂ y) =
+      Iso-trans (F-L _) (L-iso (fib-shape-ciso R E y))
+    fib-shape-ciso (Q Poly.× R) E (x , y) =
       Iso-trans (F-L _)
         (L-iso (Iso-trans (IsIso→Iso F-prod)
                  (𝒟Pm.product-preserves-iso
-                   (fib-shape-ciso Q η₁ η₂ d₁ d₂ rel x)
-                   (fib-shape-ciso R η₁ η₂ d₁ d₂ rel y))))
-    fib-shape-ciso (Poly.μ Q')  η₁ η₂ d₁ d₂ rel t = fib-ciso Q' η₁ η₂ d₁ d₂ rel t
+                   (fib-shape-ciso Q E x)
+                   (fib-shape-ciso R E y))))
+    fib-shape-ciso (Poly.μ Q')  E t = fib-ciso Q' E t
 
     fib-el-ciso : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) →
                   𝒟C.Iso (F .fobj (C.fib-el r₁ e₁ x)) (D.fib-el r₂ e₂ (el-cfwd r x))
     fib-el-ciso (env {p}) x = Iso-refl
-    fib-el-ciso (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) x = fib-ciso Q ρ₁ ρ₂ d₁ d₂ rel x
+    fib-el-ciso (srt (mk Q E)) x = fib-ciso Q E x
 
   open preserve-chosen-products-consequences F (biproducts→products CM BP) (biproducts→products CM' BP') F-prod
     using (mul⁻¹-natural)
 
   -- The fibre isomorphisms commute with transport along bisimilarity.
   mutual
-    fib-cnat : ∀ {j} (Q : Fc.Poly-C (sucℕ j))
-               (ρ₁ ρ₂ : Fin j → Fin N ⊎ Sort N)
-               (d₁ : ∀ i → C.DecoAssign (ρ₁ i)) (d₂ : ∀ i → D.DecoAssign (ρ₂ i))
-               (rel : ∀ i → SRel (ρ₁ i) (ρ₂ i) (d₁ i) (d₂ i))
-               {w w' : T.W Fc.∣ Q ∣ ρ₁} (p : T.W-≈ w w') →
-               ((fib-ciso Q ρ₁ ρ₂ d₁ d₂ rel w' .fwd)
-                 ∘ F .fmor (C.fib-subst Q d₁ {x = w} {y = w'} p))
-               ≈ ((D.fib-subst (P̂ Q) d₂
-                        {x = cfwd Q ρ₁ ρ₂ d₁ d₂ rel w} {y = cfwd Q ρ₁ ρ₂ d₁ d₂ rel w'}
-                        (c≈fwd Q ρ₁ ρ₂ d₁ d₂ rel {w} {w'} p))
-                     ∘ (fib-ciso Q ρ₁ ρ₂ d₁ d₂ rel w .fwd))
-    fib-cnat Q ρ₁ ρ₂ d₁ d₂ rel {T.sup x} {T.sup x'} p =
-      fib-shape-cnat Q (extend ρ₁ (inj₂ (mkSort Fc.∣ Q ∣ ρ₁)))
-        (extend ρ₂ (inj₂ (mkSort Fd.∣ P̂ Q ∣ ρ₂)))
-        (C.deco-ext Q d₁) (D.deco-ext (P̂ Q) d₂)
-        (extend-rel Q ρ₁ ρ₂ d₁ d₂ rel) {x} {x'} p
+    fib-cnat : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j)
+               {w w' : T.W Fc.∣ Q ∣ (E .ρ₁)} (p : T.W-≈ w w') →
+               ((fib-ciso Q E w' .fwd)
+                 ∘ F .fmor (C.fib-subst Q (E .d₁) {x = w} {y = w'} p))
+               ≈ ((D.fib-subst (P̂ Q) (E .d₂)
+                        {x = cfwd Q E w} {y = cfwd Q E w'}
+                        (c≈fwd Q E {w} {w'} p))
+                     ∘ (fib-ciso Q E w .fwd))
+    fib-cnat Q E {T.sup x} {T.sup x'} p = fib-shape-cnat Q (ext Q E) {x} {x'} p
 
-    fib-shape-cnat : ∀ {j} (Q : Fc.Poly-C j)
-                     (η₁ η₂ : Fin j → Fin N ⊎ Sort N)
-                     (d₁ : ∀ i → C.DecoAssign (η₁ i)) (d₂ : ∀ i → D.DecoAssign (η₂ i))
-                     (rel : ∀ i → SRel (η₁ i) (η₂ i) (d₁ i) (d₂ i))
-                     {x x' : T.⟦ Fc.∣ Q ∣ ⟧shape η₁} (p : T.shape≈ Fc.∣ Q ∣ η₁ x x') →
-                     ((fib-shape-ciso Q η₁ η₂ d₁ d₂ rel x' .fwd)
-                       ∘ F .fmor (C.fib-shape-subst Q d₁ p))
-                     ≈ ((D.fib-shape-subst (P̂ Q) d₂ (shape≈-cfwd Q η₁ η₂ d₁ d₂ rel {x} {x'} p))
-                           ∘ (fib-shape-ciso Q η₁ η₂ d₁ d₂ rel x .fwd))
-    fib-shape-cnat (Poly.const A) η₁ η₂ d₁ d₂ rel p = ≈-trans id-left (≈-sym id-right)
-    fib-shape-cnat (Poly.var i)   η₁ η₂ d₁ d₂ rel p = fib-el-cnat (rel i) p
-    fib-shape-cnat (Q Poly.+ R) η₁ η₂ d₁ d₂ rel {inj₁ x} {inj₁ x'} p =
-      root-step (fib-shape-ciso Q η₁ η₂ d₁ d₂ rel x') (fib-shape-ciso Q η₁ η₂ d₁ d₂ rel x)
-        (fib-shape-cnat Q η₁ η₂ d₁ d₂ rel p)
-    fib-shape-cnat (Q Poly.+ R) η₁ η₂ d₁ d₂ rel {inj₂ y} {inj₂ y'} p =
-      root-step (fib-shape-ciso R η₁ η₂ d₁ d₂ rel y') (fib-shape-ciso R η₁ η₂ d₁ d₂ rel y)
-        (fib-shape-cnat R η₁ η₂ d₁ d₂ rel p)
-    fib-shape-cnat (Q Poly.× R) η₁ η₂ d₁ d₂ rel {x₁ , x₂} {x₁' , x₂'} (p₁ ,ₚ p₂) =
+    fib-shape-cnat : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j)
+                     {x x' : T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)} (p : T.shape≈ Fc.∣ Q ∣ (E .ρ₁) x x') →
+                     ((fib-shape-ciso Q E x' .fwd)
+                       ∘ F .fmor (C.fib-shape-subst Q (E .d₁) p))
+                     ≈ ((D.fib-shape-subst (P̂ Q) (E .d₂) (shape≈-cfwd Q E {x} {x'} p))
+                           ∘ (fib-shape-ciso Q E x .fwd))
+    fib-shape-cnat (Poly.const A) E p = ≈-trans id-left (≈-sym id-right)
+    fib-shape-cnat (Poly.var i)   E p = fib-el-cnat (E .rel i) p
+    fib-shape-cnat (Q Poly.+ R) E {inj₁ x} {inj₁ x'} p =
+      root-step (fib-shape-ciso Q E x') (fib-shape-ciso Q E x)
+        (fib-shape-cnat Q E p)
+    fib-shape-cnat (Q Poly.+ R) E {inj₂ y} {inj₂ y'} p =
+      root-step (fib-shape-ciso R E y') (fib-shape-ciso R E y)
+        (fib-shape-cnat R E p)
+    fib-shape-cnat (Q Poly.× R) E {x₁ , x₂} {x₁' , x₂'} (p₁ ,ₚ p₂) =
       root-step pI' pI
         (≈-trans (assoc _ _ _)
           (≈-trans (∘-cong ≈-refl (mul⁻¹-natural {f = s₁} {g = s₂}))
@@ -436,27 +357,27 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
                   (≈-trans (≈-sym (𝒟Pm.prod-m-comp _ _ _ _))
                     (≈-trans
                       (𝒟Pm.prod-m-cong
-                        (fib-shape-cnat Q η₁ η₂ d₁ d₂ rel {x₁} {x₁'} p₁)
-                        (fib-shape-cnat R η₁ η₂ d₁ d₂ rel {x₂} {x₂'} p₂))
+                        (fib-shape-cnat Q E {x₁} {x₁'} p₁)
+                        (fib-shape-cnat R E {x₂} {x₂'} p₂))
                       (𝒟Pm.prod-m-comp _ _ _ _)))
                   ≈-refl)
                 (assoc _ _ _)))))
       where
-        s₁ = C.fib-shape-subst Q d₁ p₁
-        s₂ = C.fib-shape-subst R d₁ p₂
+        s₁ = C.fib-shape-subst Q (E .d₁) p₁
+        s₂ = C.fib-shape-subst R (E .d₁) p₂
 
         pI : 𝒟C.Iso _ _
         pI = Iso-trans (IsIso→Iso F-prod)
                (𝒟Pm.product-preserves-iso
-                 (fib-shape-ciso Q η₁ η₂ d₁ d₂ rel x₁)
-                 (fib-shape-ciso R η₁ η₂ d₁ d₂ rel x₂))
+                 (fib-shape-ciso Q E x₁)
+                 (fib-shape-ciso R E x₂))
 
         pI' : 𝒟C.Iso _ _
         pI' = Iso-trans (IsIso→Iso F-prod)
                 (𝒟Pm.product-preserves-iso
-                  (fib-shape-ciso Q η₁ η₂ d₁ d₂ rel x₁')
-                  (fib-shape-ciso R η₁ η₂ d₁ d₂ rel x₂'))
-    fib-shape-cnat (Poly.μ Q')  η₁ η₂ d₁ d₂ rel {t} {t'} p = fib-cnat Q' η₁ η₂ d₁ d₂ rel {t} {t'} p
+                  (fib-shape-ciso Q E x₁')
+                  (fib-shape-ciso R E x₂'))
+    fib-shape-cnat (Poly.μ Q')  E {t} {t'} p = fib-cnat Q' E {t} {t'} p
 
     fib-el-cnat : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x x' : T.El r₁} (p : T.elEq r₁ x x') →
                   ((fib-el-ciso r x' .fwd)
@@ -464,7 +385,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
                   ≈ ((D.fib-el-subst r₂ e₂ (elEq-cfwd r {x} {x'} p))
                         ∘ (fib-el-ciso r x .fwd))
     fib-el-cnat (env {p}) q = ≈-trans id-left (≈-sym id-right)
-    fib-el-cnat (srt (mk Q ρ₁ ρ₂ d₁ d₂ rel)) {x} {x'} q = fib-cnat Q ρ₁ ρ₂ d₁ d₂ rel {x} {x'} q
+    fib-el-cnat (srt (mk Q E)) {x} {x'} q = fib-cnat Q E {x} {x'} q
 
 -- The assembled comparison: the change of base commutes with the μ-carriers, as
 -- an isomorphism of Fam(𝒟)-objects over shared trees.
@@ -473,70 +394,65 @@ module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Ob
   open Fam
 
   private
-    ρ₀ : Fin n → Fin n ⊎ Sort n
-    ρ₀ i = inj₁ i
+    E₀ : RelAssign n
+    E₀ .ρ₁ i = inj₁ i
+    E₀ .ρ₂ i = inj₁ i
+    E₀ .d₁ i = lift tt
+    E₀ .d₂ i = lift tt
+    E₀ .rel i = env
 
-    d₁₀ : ∀ i → C.DecoAssign (ρ₀ i)
-    d₁₀ i = lift tt
-
-    d₂₀ : ∀ i → D.DecoAssign (ρ₀ i)
-    d₂₀ i = lift tt
-
-    rel₀ : ∀ i → SRel (ρ₀ i) (ρ₀ i) (d₁₀ i) (d₂₀ i)
-    rel₀ i = env
-
-    Fw = cfwd P ρ₀ ρ₀ d₁₀ d₂₀ rel₀
-    Bw = cbwd P ρ₀ ρ₀ d₁₀ d₂₀ rel₀
-    ci = fib-ciso P ρ₀ ρ₀ d₁₀ d₂₀ rel₀
+    Fw = cfwd P E₀
+    Bw = cbwd P E₀
+    ci = fib-ciso P E₀
 
   fwd-mor : F𝒟.Mor (FamF .fobj (Fc.μ-fam P δ)) (Fd.μ-fam (P̂ P) (λ i → FamF .fobj (δ i)))
   fwd-mor .idxf .func = Fw
-  fwd-mor .idxf .func-resp-≈ {w} {w'} = c≈fwd P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'}
+  fwd-mor .idxf .func-resp-≈ {w} {w'} = c≈fwd P E₀ {w} {w'}
   fwd-mor .famf .transf w = ci w .fwd
-  fwd-mor .famf .natural {w} {w'} q = fib-cnat P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {w'} q
+  fwd-mor .famf .natural {w} {w'} q = fib-cnat P E₀ {w} {w'} q
 
   bwd-mor : F𝒟.Mor (Fd.μ-fam (P̂ P) (λ i → FamF .fobj (δ i))) (FamF .fobj (Fc.μ-fam P δ))
   bwd-mor .idxf .func = Bw
-  bwd-mor .idxf .func-resp-≈ {s} {s'} = c≈bwd P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {s} {s'}
+  bwd-mor .idxf .func-resp-≈ {s} {s'} = c≈bwd P E₀ {s} {s'}
   bwd-mor .famf .transf s =
     ci (Bw s) .bwd ∘
-    D.fib-subst (P̂ P) d₂₀ {x = s} {y = Fw (Bw s)}
-      (T.W-≈-sym {x = Fw (Bw s)} {y = s} (c-bf P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ s))
+    D.fib-subst (P̂ P) (E₀ .d₂) {x = s} {y = Fw (Bw s)}
+      (T.W-≈-sym {x = Fw (Bw s)} {y = s} (c-bf P E₀ s))
   bwd-mor .famf .natural {s₁} {s₂} q =
     ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (≈-sym (D.fib-trans* (P̂ P) d₂₀
+      (≈-trans (∘-cong₂ (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
                                            {x = s₁} {y = s₂} {z = Fw (Bw s₂)} _ q)))
         (≈-sym
           (≈-trans (≈-sym (assoc _ _ _))
             (≈-trans (∘-cong₁ (iso-flip (ci (Bw s₁)) (ci (Bw s₂))
-                (fib-cnat P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {Bw s₁} {Bw s₂}
-                  (c≈bwd P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {s₁} {s₂} q))))
+                (fib-cnat P E₀ {Bw s₁} {Bw s₂}
+                  (c≈bwd P E₀ {s₁} {s₂} q))))
               (≈-trans (assoc _ _ _)
-                (∘-cong₂ (≈-sym (D.fib-trans* (P̂ P) d₂₀
+                (∘-cong₂ (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
                                           {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _))))))))
 
   fb-≃ : Category._≈_ F𝒟.cat
            (Category._∘_ F𝒟.cat fwd-mor bwd-mor) (Category.id F𝒟.cat _)
   fb-≃ .idxf-eq =
-    mk-≃m (λ s → c-bf P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ s)
+    mk-≃m (λ s → c-bf P E₀ s)
   fb-≃ .famf-eq .transf-eq {s} =
     ≈-trans (∘-cong₂ id-left)
       (≈-trans (∘-cong₂ (≈-trans (≈-sym (assoc _ _ _))
           (≈-trans (∘-cong₁ (ci (Bw s) .fwd∘bwd≈id)) id-left)))
-        (≈-trans (≈-sym (D.fib-trans* (P̂ P) d₂₀
+        (≈-trans (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
                                   {x = s} {y = Fw (Bw s)} {z = s} _ _))
-          (D.fib-refl* (P̂ P) d₂₀ s)))
+          (D.fib-refl* (P̂ P) (E₀ .d₂) s)))
 
   bf-≃ : Category._≈_ F𝒟.cat
            (Category._∘_ F𝒟.cat bwd-mor fwd-mor) (Category.id F𝒟.cat _)
   bf-≃ .idxf-eq =
-    mk-≃m (λ w → c-fb P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ w)
+    mk-≃m (λ w → c-fb P E₀ w)
   bf-≃ .famf-eq .transf-eq {w} =
     ≈-trans (∘-cong₂ id-left)
       (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _)
           (≈-trans (∘-cong₂ (≈-sym
-              (fib-cnat P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ {w} {Bw (Fw w)}
-                (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P ρ₀ ρ₀ d₁₀ d₂₀ rel₀ w)))))
+              (fib-cnat P E₀ {w} {Bw (Fw w)}
+                (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P E₀ w)))))
             (≈-trans (≈-sym (assoc _ _ _))
               (≈-trans (∘-cong₁ (ci (Bw (Fw w)) .bwd∘fwd≈id)) id-left)))))
         (≈-trans (≈-sym ((FamF .fobj (Fc.μ-fam P δ)) .fam .trans*
