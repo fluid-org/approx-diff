@@ -278,16 +278,18 @@ map-total f (var Fin.zero) (mt-roll m') R =
 map-total f unit {v} mt-unit R = v , R , m-unit , tt
 map-total f (base b) {v} mt-base R = v , R , m-base , tt
 map-total f (σ₁ [→] σ₂) {v} (mt-arrow p tv) R = v , R , m-arrow , tv
-map-total {σr = σr} f (σ₁ [+] σ₂) (mt-inl m') R =
-  let (v' , R' , Dm , tv') = map-total f σ₁ m' R
-  in inl v' , R' , m-inl Dm , sum-in₁ {σ₁ [ σr ]} {σ₂ [ σr ]} tv'
-map-total {σr = σr} f (σ₁ [+] σ₂) (mt-inr m') R =
-  let (v' , R' , Dm , tv') = map-total f σ₂ m' R
-  in inr v' , R' , m-inr Dm , sum-in₂ {σ₁ [ σr ]} {σ₂ [ σr ]} tv'
-map-total {σr = σr} f (σ₁ [×] σ₂) (mt-pair m₁ m₂) R =
-  let (v₁' , S , D₁ , t₁) = map-total f σ₁ m₁ (p₁ ∘ R)
-      (v₂' , T , D₂ , t₂) = map-total f σ₂ m₂ (p₂ ∘ R)
-  in pair v₁' v₂' , ⟨ S , T ⟩ , m-pair D₁ D₂ ,
+map-total {σr = σr} f (σ₁ [+] σ₂) (mt-inl {v = v} m') R =
+  let (v' , R' , Dm , tv') = map-total f σ₁ m' (p₂ {1} {width v} ∘ R)
+  in inl v' , ⟨ p₁ {1} {width v} ∘ R , R' ⟩ , m-inl Dm , sum-in₁ {σ₁ [ σr ]} {σ₂ [ σr ]} tv'
+map-total {σr = σr} f (σ₁ [+] σ₂) (mt-inr {v = v} m') R =
+  let (v' , R' , Dm , tv') = map-total f σ₂ m' (p₂ {1} {width v} ∘ R)
+  in inr v' , ⟨ p₁ {1} {width v} ∘ R , R' ⟩ , m-inr Dm , sum-in₂ {σ₁ [ σr ]} {σ₂ [ σr ]} tv'
+map-total {σr = σr} f (σ₁ [×] σ₂) (mt-pair {v₁ = v₁} {v₂ = v₂} m₁ m₂) R =
+  let (v₁' , S , D₁ , t₁) =
+        map-total f σ₁ m₁ (p₁ {width v₁} {width v₂} ∘ (p₂ {1} {width v₁ + width v₂} ∘ R))
+      (v₂' , T , D₂ , t₂) =
+        map-total f σ₂ m₂ (p₂ {width v₁} {width v₂} ∘ (p₂ {1} {width v₁ + width v₂} ∘ R))
+  in pair v₁' v₂' , ⟨ p₁ {1} {width v₁ + width v₂} ∘ R , ⟨ S , T ⟩ ⟩ , m-pair D₁ D₂ ,
      prod-in {σ₁ [ σr ]} {σ₂ [ σr ]} t₁ t₂
 map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') (mt-mu {τ'} {w} m') R =
   let (w' , R' , Dm , tw') =
@@ -315,43 +317,46 @@ fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) (γ :
                 Σ (width-env γ ⇒ bases-width is) λ Rs → γ , Ms ⇓s vs [ Rs ]
 
 fundamental (var x) γ tγ = lookup x γ , proj-var x γ , ⇓-var x , lookup-total x tγ
-fundamental unit γ tγ = unit , to-terminal , ⇓-unit , tt
+fundamental unit γ tγ = unit , M.εₘ , ⇓-unit , tt
 fundamental (inl {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ =
   let (v , R , D , tv) = fundamental t γ tγ
-  in inl v , R , ⇓-inl D , sum-in₁ {τ₁} {τ₂} tv
+  in inl v , rooted R , ⇓-inl D , sum-in₁ {τ₁} {τ₂} tv
 fundamental (inr {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ =
   let (v , R , D , tv) = fundamental t γ tγ
-  in inr v , R , ⇓-inr D , sum-in₂ {τ₁} {τ₂} tv
+  in inr v , rooted R , ⇓-inr D , sum-in₂ {τ₁} {τ₂} tv
 fundamental (case {τ₁ = τ₁} {τ₂ = τ₂} s t₁ t₂) γ tγ with fundamental s γ tγ
 ... | inl v , R , D , ts =
   let (u , S , D₁ , tu) = fundamental t₁ (γ · v) (tγ , sum-out₁ {τ₁} {τ₂} ts)
-  in u , (S ∘ ⟨ idm _ , R ⟩) , ⇓-case-l D D₁ , tu
+  in u , (S ∘ ⟨ idm _ , p₂ {1} {width v} ∘ R ⟩) , ⇓-case-l D D₁ , tu
 ... | inr v , R , D , ts =
   let (u , S , D₂ , tu) = fundamental t₂ (γ · v) (tγ , sum-out₂ {τ₁} {τ₂} ts)
-  in u , (S ∘ ⟨ idm _ , R ⟩) , ⇓-case-r D D₂ , tu
+  in u , (S ∘ ⟨ idm _ , p₂ {1} {width v} ∘ R ⟩) , ⇓-case-r D D₂ , tu
 fundamental (pair {τ₁ = τ₁} {τ₂ = τ₂} s t) γ tγ =
   let (v , R , D , tv) = fundamental s γ tγ
       (u , S , D' , tu) = fundamental t γ tγ
-  in pair v u , ⟨ R , S ⟩ , ⇓-pair D D' , prod-in {τ₁} {τ₂} tv tu
+  in pair v u , rooted ⟨ R , S ⟩ , ⇓-pair D D' , prod-in {τ₁} {τ₂} tv tu
 fundamental (fst {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
 ... | pair v u , R , D , tv =
-  v , (p₁ ∘ R) , ⇓-fst D , proj₁ (prod-out {τ₁} {τ₂} tv)
+  v , (p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) , ⇓-fst D ,
+  proj₁ (prod-out {τ₁} {τ₂} tv)
 fundamental (snd {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
 ... | pair v u , R , D , tv =
-  u , (p₂ ∘ R) , ⇓-snd D , proj₂ (prod-out {τ₁} {τ₂} tv)
+  u , (p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) , ⇓-snd D ,
+  proj₂ (prod-out {τ₁} {τ₂} tv)
 fundamental (lam t) γ tγ =
-  clo γ t , idm _ , ⇓-lam , arr-in (λ v tv → fundamental t (γ · v) (tγ , tv))
+  clo γ t , rooted (idm _) , ⇓-lam , arr-in (λ v tv → fundamental t (γ · v) (tγ , tv))
 fundamental (app s t) γ tγ with fundamental s γ tγ
 ... | clo γ' t' , R , Ds , tf =
   let (v , S , Dt , tv) = fundamental t γ tγ
       (u , T , D' , tu) = arr-out tf v tv
-  in u , (T ∘ ⟨ R , S ⟩) , ⇓-app Ds Dt D' , tu
+  in u , (T ∘ ⟨ p₂ {1} {width-env γ'} ∘ R , S ⟩) , ⇓-app Ds Dt D' , tu
 fundamental (bop ω Ms) γ tγ =
   let (vs , Rs , Dss) = fundamental-s Ms γ tγ
   in const (op-fun ω .func vs) , (op-deps ω .func vs ∘ Rs) , ⇓-bop Dss , tt
 fundamental (brel ω Ms) γ tγ =
   let (vs , Rs , Dss) = fundamental-s Ms γ tγ
-  in bool→val (rel-pred ω .func vs) , brel-mat γ (rel-pred ω .func vs) , ⇓-brel Dss ,
+  in bool→val (rel-pred ω .func vs) ,
+     brel-mat γ (rel-deps ω .func vs ∘ Rs) (rel-pred ω .func vs) , ⇓-brel Dss ,
      bool-total (rel-pred ω .func vs)
 fundamental (roll {τ = τ₀} t) γ tγ =
   let (v , R , D , tv) = fundamental t γ tγ

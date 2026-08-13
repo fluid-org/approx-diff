@@ -172,6 +172,8 @@ mutual
 
   graph (⇓-brel D) env (at (brel q)) = graphS D env (at q)
   graph (⇓-brel D) (at (brel p)) (at (brel q)) = graphS D (at p) (at q)
+  graph (⇓-brel {ω = ω} {vs = vs} D) (at (brel p)) (at ε) =
+    edge-s (brel-deps ω vs (rel-pred ω .func vs)) p
 
   graph (⇓-roll D) env (at (roll q)) = graph D env (at q)
   graph (⇓-roll D) (at (roll p)) (at (roll q)) = graph D (at p) (at q)
@@ -216,11 +218,13 @@ mutual
   graphM (m-inl D) input (at (m-inl q)) = graphM D input (at q) M.∘ M.p₂ {1}
   graphM (m-inl D) (at (m-inl p)) (at (m-inl q)) = graphM D (at p) (at q)
   graphM (m-inl D) (at (m-inl p)) (at ε) = edge-m (M.in₂ {1}) p
+  graphM (m-inl D) input (at ε) = M.in₁ {1} M.∘ M.p₁ {1}
 
   graphM (m-inr D) env (at (m-inr q)) = graphM D env (at q)
   graphM (m-inr D) input (at (m-inr q)) = graphM D input (at q) M.∘ M.p₂ {1}
   graphM (m-inr D) (at (m-inr p)) (at (m-inr q)) = graphM D (at p) (at q)
   graphM (m-inr D) (at (m-inr p)) (at ε) = edge-m (M.in₂ {1}) p
+  graphM (m-inr D) input (at ε) = M.in₁ {1} M.∘ M.p₁ {1}
 
   graphM (m-pair D₁ D₂) env (at (m-pair₁ q)) = graphM D₁ env (at q)
   graphM (m-pair D₁ D₂) input (at (m-pair₁ q)) = graphM D₁ input (at q) M.∘ M.p₁ M.∘ M.p₂ {1}
@@ -230,6 +234,7 @@ mutual
   graphM (m-pair D₁ D₂) (at (m-pair₂ p)) (at (m-pair₂ q)) = graphM D₂ (at p) (at q)
   graphM (m-pair D₁ D₂) (at (m-pair₁ p)) (at ε) = edge-m (M.in₂ {1} M.∘ M.in₁) p
   graphM (m-pair D₁ D₂) (at (m-pair₂ p)) (at ε) = edge-m (M.in₂ {1} M.∘ M.in₂) p
+  graphM (m-pair D₁ D₂) input (at ε) = M.in₁ {1} M.∘ M.p₁ {1}
 
   graphM (m-mu {τ' = τ'} {w = w} D) env (at (m-mu q)) = graphM D env (at q)
   graphM (m-mu {τ' = τ'} {w = w} D) input (at (m-mu q)) =

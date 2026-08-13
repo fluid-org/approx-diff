@@ -92,6 +92,11 @@ brel-mat : ∀ {Γ} (γ : Env Γ) (d : width-env γ ⇒ 1) (b : ⊤ {0ℓ} ⊎ �
 brel-mat γ d (inj₁ _) = ⟨ d , M.εₘ ⟩
 brel-mat γ d (inj₂ _) = ⟨ d , M.εₘ ⟩
 
+brel-deps : ∀ {is} (ω : rel is) (vs : sort-vals is) (b : ⊤ {0ℓ} ⊎ ⊤ {0ℓ}) →
+            bases-width is ⇒ width (bool→val b)
+brel-deps ω vs (inj₁ _) = ⟨ rel-deps ω .func vs , M.εₘ ⟩
+brel-deps ω vs (inj₂ _) = ⟨ rel-deps ω .func vs , M.εₘ ⟩
+
 mutual
   data _,_⇓_[_] : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) (v : Val τ) →
                    width-env γ ⇒ width v → Set ℓ where

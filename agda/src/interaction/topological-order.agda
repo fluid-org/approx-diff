@@ -313,7 +313,8 @@ mutual
   forward (⇓-brel D) (at ε) (at ε) i j ()
   forward (⇓-brel D) (at ε) (at (brel q)) i j ()
   forward (⇓-brel D) (at (brel p)) env i j ()
-  forward (⇓-brel D) (at (brel p)) (at ε) i j ()
+  forward (⇓-brel D) (at (brel p)) (at ε) i j h with edge-ε-s p i j h
+  forward (⇓-brel D) (at (brel p)) (at ε) i j h | ≡-refl = root₀ (psize-s D)
   forward (⇓-brel D) (at (brel p)) (at (brel q)) i j h = forward-s D (at p) (at q) i j h
 
   forward (⇓-fold D₁ D₂) env env i j ()
@@ -435,7 +436,7 @@ mutual
   forward-m (m-inl D) env (at (m-inl q)) i j _ = src<
   forward-m (m-inl D) input env i j ()
   forward-m (m-inl D) input input i j ()
-  forward-m (m-inl D) input (at ε) i j ()
+  forward-m (m-inl D) input (at ε) i j _ = src<
   forward-m (m-inl D) input (at (m-inl q)) i j _ = src<
   forward-m (m-inl D) (at ε) env i j ()
   forward-m (m-inl D) (at ε) input i j ()
@@ -453,7 +454,7 @@ mutual
   forward-m (m-inr D) env (at (m-inr q)) i j _ = src<
   forward-m (m-inr D) input env i j ()
   forward-m (m-inr D) input input i j ()
-  forward-m (m-inr D) input (at ε) i j ()
+  forward-m (m-inr D) input (at ε) i j _ = src<
   forward-m (m-inr D) input (at (m-inr q)) i j _ = src<
   forward-m (m-inr D) (at ε) env i j ()
   forward-m (m-inr D) (at ε) input i j ()
@@ -490,7 +491,7 @@ mutual
   forward-m (m-pair D₁ D₂) env (at (m-pair₂ q)) i j _ = src<
   forward-m (m-pair D₁ D₂) input env i j ()
   forward-m (m-pair D₁ D₂) input input i j ()
-  forward-m (m-pair D₁ D₂) input (at ε) i j ()
+  forward-m (m-pair D₁ D₂) input (at ε) i j _ = src<
   forward-m (m-pair D₁ D₂) input (at (m-pair₁ q)) i j _ = src<
   forward-m (m-pair D₁ D₂) input (at (m-pair₂ q)) i j _ = src<
   forward-m (m-pair D₁ D₂) (at ε) env i j ()
