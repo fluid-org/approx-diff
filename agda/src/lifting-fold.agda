@@ -16,32 +16,35 @@ open Category 𝒞
 open CMonEnriched CM
 open Lifting Lft
 
+private
+  module B (x y : obj) = Biproduct (BP x y)
+
 _⊕_ : obj → obj → obj
-x ⊕ y = Biproduct.prod (BP x y)
+x ⊕ y = B.prod x y
 
 copair : ∀ {x y z} → x ⇒ z → y ⇒ z → (x ⊕ y) ⇒ z
-copair {x} {y} f g = Biproduct.copair (BP x y) f g
+copair {x} {y} f g = B.copair x y f g
 
 copair-cong : ∀ {x y z} {f f' : x ⇒ z} {g g' : y ⇒ z} → f ≈ f' → g ≈ g' → copair f g ≈ copair f' g'
-copair-cong {x} {y} = Biproduct.copair-cong (BP x y)
+copair-cong {x} {y} = B.copair-cong x y
 
 pair : ∀ {x y z} → x ⇒ y → x ⇒ z → x ⇒ (y ⊕ z)
-pair {x} {y} {z} f g = Biproduct.pair (BP y z) f g
+pair {x} {y} {z} f g = B.pair y z f g
 
 pair-cong : ∀ {x y z} {f f' : x ⇒ y} {g g' : x ⇒ z} → f ≈ f' → g ≈ g' → pair f g ≈ pair f' g'
-pair-cong {x} {y} {z} = Biproduct.pair-cong (BP y z)
+pair-cong {x} {y} {z} = B.pair-cong y z
 
 p₁ : ∀ {x y} → (x ⊕ y) ⇒ x
-p₁ {x} {y} = Biproduct.p₁ (BP x y)
+p₁ {x} {y} = B.p₁ x y
 
 p₂ : ∀ {x y} → (x ⊕ y) ⇒ y
-p₂ {x} {y} = Biproduct.p₂ (BP x y)
+p₂ {x} {y} = B.p₂ x y
 
 in₁ : ∀ {x y} → x ⇒ (x ⊕ y)
-in₁ {x} {y} = Biproduct.in₁ (BP x y)
+in₁ {x} {y} = B.in₁ x y
 
 in₂ : ∀ {x y} → y ⇒ (x ⊕ y)
-in₂ {x} {y} = Biproduct.in₂ (BP x y)
+in₂ {x} {y} = B.in₂ x y
 
 +m-cong : ∀ {x y} {f f' g g' : x ⇒ y} → f ≈ f' → g ≈ g' → (f +m g) ≈ (f' +m g')
 +m-cong = homCM _ _ .CommutativeMonoid.+-cong
@@ -51,29 +54,29 @@ prod-m g h = pair (g ∘ p₁) (h ∘ p₂)
 
 prod-m-in₁ : ∀ {a₁ a₂ b₁ b₂} (g : a₁ ⇒ a₂) (h : b₁ ⇒ b₂) → (prod-m g h ∘ in₁) ≈ (in₁ ∘ g)
 prod-m-in₁ {a₁} {a₂} {b₁} {b₂} g h =
-  ≈-trans (Biproduct.pair-natural (BP a₂ b₂) _ _ _)
+  ≈-trans (B.pair-natural a₂ b₂ _ _ _)
   (≈-trans (pair-cong
              (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl (Biproduct.id-1 (BP a₁ b₁))) id-right))
+               (≈-trans (∘-cong ≈-refl (B.id-1 a₁ b₁)) id-right))
              (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 (BP a₁ b₁))) (comp-bilinear-ε₂ h))))
+               (≈-trans (∘-cong ≈-refl (B.zero-2 a₁ b₁)) (comp-bilinear-ε₂ h))))
            (≈-trans (+m-cong ≈-refl (comp-bilinear-ε₂ in₂)) +m-runit))
 
 prod-m-in₂ : ∀ {a₁ a₂ b₁ b₂} (g : a₁ ⇒ a₂) (h : b₁ ⇒ b₂) → (prod-m g h ∘ in₂) ≈ (in₂ ∘ h)
 prod-m-in₂ {a₁} {a₂} {b₁} {b₂} g h =
-  ≈-trans (Biproduct.pair-natural (BP a₂ b₂) _ _ _)
+  ≈-trans (B.pair-natural a₂ b₂ _ _ _)
   (≈-trans (pair-cong
              (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl (Biproduct.zero-1 (BP a₁ b₁))) (comp-bilinear-ε₂ g)))
+               (≈-trans (∘-cong ≈-refl (B.zero-1 a₁ b₁)) (comp-bilinear-ε₂ g)))
              (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl (Biproduct.id-2 (BP a₁ b₁))) id-right)))
+               (≈-trans (∘-cong ≈-refl (B.id-2 a₁ b₁)) id-right)))
            (≈-trans (+m-cong (comp-bilinear-ε₂ in₁) ≈-refl)
                     (homCM _ _ .CommutativeMonoid.+-lunit)))
 
 bp-ext : ∀ {a b c} {h k : (a ⊕ b) ⇒ c} → (h ∘ in₁) ≈ (k ∘ in₁) → (h ∘ in₂) ≈ (k ∘ in₂) → h ≈ k
 bp-ext {a} {b} {c} {h} {k} e₁ e₂ =
-  ≈-trans (≈-sym (Biproduct.copair-ext (BP a b) h))
-  (≈-trans (copair-cong e₁ e₂) (Biproduct.copair-ext (BP a b) k))
+  ≈-trans (≈-sym (B.copair-ext a b h))
+  (≈-trans (copair-cong e₁ e₂) (B.copair-ext a b k))
 
 -- Reindexing a context-paired morphism under a root: the root passes through, the context enters
 -- the payload, and absorption records under the target root whatever the context contributes.
@@ -93,15 +96,15 @@ under-root-split-post : ∀ {G X Y₁ Y₂} {h : Y₁ ⇒ Y₂} {h' : Y₂ ⇒ Y
 under-root-split-post {G} {X} {Y₁} {Y₂} {h} {h'} hi₁ hi₂ r =
   bp-ext {h = Lmap h ∘ under-root-split r} {k = under-root-split (h ∘ r)}
     (≈-trans (assoc _ _ _)
-     (≈-trans (∘-cong ≈-refl (Biproduct.copair-in₁ (BP G (L X)) _ _))
+     (≈-trans (∘-cong ≈-refl (B.copair-in₁ G (L X) _ _))
       (≈-trans (≈-sym (assoc _ _ _))
        (≈-trans (∘-cong (Lmap-inj hi₁ hi₂) ≈-refl)
         (≈-trans (assoc _ _ _)
          (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
-          (≈-sym (Biproduct.copair-in₁ (BP G (L X)) _ _))))))))
+          (≈-sym (B.copair-in₁ G (L X) _ _))))))))
     (≈-trans (assoc _ _ _)
-     (≈-trans (∘-cong ≈-refl (Biproduct.copair-in₂ (BP G (L X)) _ _))
-      (≈-trans part₂ (≈-sym (Biproduct.copair-in₂ (BP G (L X)) _ _)))))
+     (≈-trans (∘-cong ≈-refl (B.copair-in₂ G (L X) _ _))
+      (≈-trans part₂ (≈-sym (B.copair-in₂ G (L X) _ _)))))
   where
   part₂ : (Lmap h ∘ affine root (inj ∘ (r ∘ in₂))) ≈ affine root (inj ∘ ((h ∘ r) ∘ in₂))
   part₂ = lifting-ext _ _
@@ -124,9 +127,9 @@ under-root-split-post {G} {X} {Y₁} {Y₂} {h} {h'} hi₁ hi₂ r =
 under-root-split-p₂ : ∀ {G X} → under-root-split (p₂ {G} {X}) ≈ p₂ {G} {L X}
 under-root-split-p₂ {G} {X} =
   ≈-trans (copair-cong
-            (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 (BP G X))) (comp-bilinear-ε₂ inj))
+            (≈-trans (∘-cong ≈-refl (B.zero-2 G X)) (comp-bilinear-ε₂ inj))
             (≈-trans (affine-cong ≈-refl
-                       (≈-trans (∘-cong ≈-refl (Biproduct.id-2 (BP G X))) id-right))
+                       (≈-trans (∘-cong ≈-refl (B.id-2 G X)) id-right))
              (≈-trans (affine-cong (≈-sym id-left) (≈-sym id-left)) (affine-η (id (L X))))))
   (≈-trans (+m-cong (comp-bilinear-ε₁ p₁) id-left)
            (homCM _ _ .CommutativeMonoid.+-lunit))
@@ -163,13 +166,13 @@ under-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (prod-m-in₁ g (Lmap x)))
     (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong (Biproduct.copair-in₁ (BP G₂ (L X₂)) _ _) ≈-refl)
+    (≈-trans (∘-cong (B.copair-in₁ G₂ (L X₂) _ _) ≈-refl)
     (≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl square-in₁)
     (≈-trans (≈-sym (assoc _ _ _))
     (≈-trans (∘-cong (≈-sym (Lmap-inj yi₁ yi₂)) ≈-refl)
     (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (≈-sym (Biproduct.copair-in₁ (BP G₁ (L X₁)) _ _)))
+    (≈-trans (∘-cong ≈-refl (≈-sym (B.copair-in₁ G₁ (L X₁) _ _)))
              (≈-sym (assoc _ _ _)))))))))))
 
   lift-part : (affine root (inj ∘ (f₂ ∘ in₂)) ∘ Lmap x) ≈ (Lmap y ∘ affine root (inj ∘ (f₁ ∘ in₂)))
@@ -217,9 +220,9 @@ under-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (prod-m-in₂ g (Lmap x)))
     (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong (Biproduct.copair-in₂ (BP G₂ (L X₂)) _ _) ≈-refl)
+    (≈-trans (∘-cong (B.copair-in₂ G₂ (L X₂) _ _) ≈-refl)
     (≈-trans lift-part
-    (≈-trans (∘-cong ≈-refl (≈-sym (Biproduct.copair-in₂ (BP G₁ (L X₁)) _ _)))
+    (≈-trans (∘-cong ≈-refl (≈-sym (B.copair-in₂ G₁ (L X₁) _ _)))
              (≈-sym (assoc _ _ _)))))))
 
 under-root-split-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂)
@@ -263,14 +266,14 @@ strip-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (prod-m-in₁ g (Lmap x)))
     (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong₁ (Biproduct.copair-in₁ (BP G₂ (L X₂)) _ _))
+    (≈-trans (∘-cong₁ (B.copair-in₁ G₂ (L X₂) _ _))
     (≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (≈-sym (prod-m-in₁ g x)))
     (≈-trans (≈-sym (assoc _ _ _))
     (≈-trans (∘-cong₁ sq)
     (≈-trans (assoc _ _ _)
              (≈-sym (≈-trans (assoc _ _ _)
-                             (∘-cong₂ (Biproduct.copair-in₁ (BP G₁ (L X₁)) _ _))))))))))))
+                             (∘-cong₂ (B.copair-in₁ G₁ (L X₁) _ _))))))))))))
 
   affine-side : (affine c₂ (f₂ ∘ in₂) ∘ Lmap x) ≈ (y ∘ affine c₁ (f₁ ∘ in₂))
   affine-side = lifting-ext _ _
@@ -302,10 +305,10 @@ strip-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g {x} {x'} xi
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (prod-m-in₂ g (Lmap x)))
     (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong₁ (Biproduct.copair-in₂ (BP G₂ (L X₂)) _ _))
+    (≈-trans (∘-cong₁ (B.copair-in₂ G₂ (L X₂) _ _))
     (≈-trans affine-side
              (≈-sym (≈-trans (assoc _ _ _)
-                             (∘-cong₂ (Biproduct.copair-in₂ (BP G₁ (L X₁)) _ _))))))))
+                             (∘-cong₂ (B.copair-in₂ G₁ (L X₁) _ _))))))))
 
 
 -- Single-application forms as the public combinators: the inner morphism is applied once, to the
@@ -354,12 +357,12 @@ private
   tag-arm-in₁ : ∀ {G X Y} (c : 𝟙c ⇒ Y) → (((c ∘ tag-L {X}) ∘ p₂) ∘ in₁ {G}) ≈ εm
   tag-arm-in₁ {G} {X} c =
     ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (Biproduct.zero-2 (BP G (L X)))) (comp-bilinear-ε₂ _))
+    (≈-trans (∘-cong ≈-refl (B.zero-2 G (L X))) (comp-bilinear-ε₂ _))
 
   tag-arm-in₂ : ∀ {G X Y} (c : 𝟙c ⇒ Y) → (((c ∘ tag-L {X}) ∘ p₂) ∘ in₂ {G}) ≈ (c ∘ tag-L)
   tag-arm-in₂ {G} {X} c =
     ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (Biproduct.id-2 (BP G (L X)))) id-right)
+    (≈-trans (∘-cong ≈-refl (B.id-2 G (L X))) id-right)
 
   payload-comp-root : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ (in₂ ∘ payload-L)) ∘ root) ≈ εm
   payload-comp-root r =
@@ -384,7 +387,7 @@ under-root-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
     (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (prod-m-arm-in₁ r)))
                       (tag-arm-in₁ root))
     (≈-trans +m-runit
-             (≈-sym (Biproduct.copair-in₁ (BP G (L X)) (inj ∘ (r ∘ in₁)) (affine root M)))))
+             (≈-sym (B.copair-in₁ G (L X) (inj ∘ (r ∘ in₁)) (affine root M)))))
 
   E : L X ⇒ L Y
   E = (inj ∘ (r ∘ (in₂ ∘ payload-L))) +m (root ∘ tag-L)
@@ -412,7 +415,7 @@ under-root-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
     (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (prod-m-arm-in₂ r)))
                       (tag-arm-in₂ root))
     (≈-trans (lifting-ext E (affine root M) E-root E-inj)
-             (≈-sym (Biproduct.copair-in₂ (BP G (L X)) (inj ∘ (r ∘ in₁)) (affine root M)))))
+             (≈-sym (B.copair-in₂ G (L X) (inj ∘ (r ∘ in₁)) (affine root M)))))
 
 strip-root-unfold : ∀ {G X Y} (c : 𝟙c ⇒ Y) (r : (G ⊕ X) ⇒ Y) →
                     strip-root c r ≈ strip-root-split c r
@@ -425,7 +428,7 @@ strip-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
     ≈-trans (comp-bilinear₁ _ _ in₁)
     (≈-trans (+m-cong (prod-m-arm-in₁ r) (tag-arm-in₁ c))
     (≈-trans +m-runit
-             (≈-sym (Biproduct.copair-in₁ (BP G (L X)) (r ∘ in₁) (affine c M)))))
+             (≈-sym (B.copair-in₁ G (L X) (r ∘ in₁) (affine c M)))))
 
   E : L X ⇒ Y
   E = (r ∘ (in₂ ∘ payload-L)) +m (c ∘ tag-L)
@@ -451,7 +454,7 @@ strip-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
     ≈-trans (comp-bilinear₁ _ _ in₂)
     (≈-trans (+m-cong (prod-m-arm-in₂ r) (tag-arm-in₂ c))
     (≈-trans (lifting-ext E (affine c M) E-root E-inj)
-             (≈-sym (Biproduct.copair-in₂ (BP G (L X)) (r ∘ in₁) (affine c M)))))
+             (≈-sym (B.copair-in₂ G (L X) (r ∘ in₁) (affine c M)))))
 
 under-root-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → under-root r ≈ under-root r'
 under-root-cong {r = r} {r'} er =
