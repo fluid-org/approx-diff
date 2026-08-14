@@ -327,21 +327,21 @@ fundamental (inr {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ =
 fundamental (case {τ₁ = τ₁} {τ₂ = τ₂} s t₁ t₂) γ tγ with fundamental s γ tγ
 ... | inl v , R , D , ts =
   let (u , S , D₁ , tu) = fundamental t₁ (γ · v) (tγ , sum-out₁ {τ₁} {τ₂} ts)
-  in u , (S ∘ ⟨ idm _ , p₂ {1} {width v} ∘ R ⟩) , ⇓-case-l D D₁ , tu
+  in u , ((S ∘ ⟨ idm _ , p₂ {1} {width v} ∘ R ⟩) M.+ₘ ctrl R) , ⇓-case-l D D₁ , tu
 ... | inr v , R , D , ts =
   let (u , S , D₂ , tu) = fundamental t₂ (γ · v) (tγ , sum-out₂ {τ₁} {τ₂} ts)
-  in u , (S ∘ ⟨ idm _ , p₂ {1} {width v} ∘ R ⟩) , ⇓-case-r D D₂ , tu
+  in u , ((S ∘ ⟨ idm _ , p₂ {1} {width v} ∘ R ⟩) M.+ₘ ctrl R) , ⇓-case-r D D₂ , tu
 fundamental (pair {τ₁ = τ₁} {τ₂ = τ₂} s t) γ tγ =
   let (v , R , D , tv) = fundamental s γ tγ
       (u , S , D' , tu) = fundamental t γ tγ
   in pair v u , rooted ⟨ R , S ⟩ , ⇓-pair D D' , prod-in {τ₁} {τ₂} tv tu
 fundamental (fst {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
 ... | pair v u , R , D , tv =
-  v , (p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) , ⇓-fst D ,
+  v , ((p₁ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) M.+ₘ ctrl R) , ⇓-fst D ,
   proj₁ (prod-out {τ₁} {τ₂} tv)
 fundamental (snd {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
 ... | pair v u , R , D , tv =
-  u , (p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) , ⇓-snd D ,
+  u , ((p₂ {width v} {width u} ∘ (p₂ {1} {width v + width u} ∘ R)) M.+ₘ ctrl R) , ⇓-snd D ,
   proj₂ (prod-out {τ₁} {τ₂} tv)
 fundamental (lam t) γ tγ =
   clo γ t , rooted (idm _) , ⇓-lam , arr-in (λ v tv → fundamental t (γ · v) (tγ , tv))
@@ -349,7 +349,7 @@ fundamental (app s t) γ tγ with fundamental s γ tγ
 ... | clo γ' t' , R , Ds , tf =
   let (v , S , Dt , tv) = fundamental t γ tγ
       (u , T , D' , tu) = arr-out tf v tv
-  in u , (T ∘ ⟨ p₂ {1} {width-env γ'} ∘ R , S ⟩) , ⇓-app Ds Dt D' , tu
+  in u , ((T ∘ ⟨ p₂ {1} {width-env γ'} ∘ R , S ⟩) M.+ₘ ctrl R) , ⇓-app Ds Dt D' , tu
 fundamental (bop ω Ms) γ tγ =
   let (vs , Rs , Dss) = fundamental-s Ms γ tγ
   in const (op-fun ω .func vs) , (op-deps ω .func vs ∘ Rs) , ⇓-bop Dss , tt

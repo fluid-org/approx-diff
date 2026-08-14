@@ -82,6 +82,14 @@ rooted R = ⟨ M.εₘ , R ⟩
 unrooted : ∀ {m n} → m ⇒ suc n → m ⇒ n
 unrooted R = p₂ {1} ∘ R
 
+-- The pointwise top: every position at the top weight.
+top : ∀ {n} → 1 ⇒ n
+top _ _ = two.I
+
+-- Control dependence: an eliminator's whole result depends on the root it consumes.
+ctrl : ∀ {m n k} → m ⇒ suc n → m ⇒ k
+ctrl R = top ∘ (p₁ {1} ∘ R)
+
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl
 
@@ -112,23 +120,23 @@ mutual
     ⇓-case-l : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R S} →
                γ , s ⇓ inl v [ R ] → γ · v , t₁ ⇓ u [ S ] →
-               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , unrooted R ⟩ ]
+               γ , case s t₁ t₂ ⇓ u [ (S ∘ ⟨ idm _ , unrooted R ⟩) M.+ₘ ctrl R ]
     ⇓-case-r : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R S} →
                γ , s ⇓ inr v [ R ] → γ · v , t₂ ⇓ u [ S ] →
-               γ , case s t₁ t₂ ⇓ u [ S ∘ ⟨ idm _ , unrooted R ⟩ ]
+               γ , case s t₁ t₂ ⇓ u [ (S ∘ ⟨ idm _ , unrooted R ⟩) M.+ₘ ctrl R ]
     ⇓-pair   : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R S} →
                γ , s ⇓ v [ R ] → γ , t ⇓ u [ S ] → γ , pair s t ⇓ pair v u [ rooted ⟨ R , S ⟩ ]
     ⇓-fst    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
-               γ , fst t ⇓ v [ p₁ {width v} {width u} ∘ unrooted R ]
+               γ , fst t ⇓ v [ (p₁ {width v} {width u} ∘ unrooted R) M.+ₘ ctrl R ]
     ⇓-snd    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
-               γ , snd t ⇓ u [ p₂ {width v} {width u} ∘ unrooted R ]
+               γ , snd t ⇓ u [ (p₂ {width v} {width u} ∘ unrooted R) M.+ₘ ctrl R ]
     ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} → γ , lam t ⇓ clo γ t [ rooted (idm _) ]
     ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R S T} →
                γ , s ⇓ clo {Γ'} γ' t' [ R ] → γ , t ⇓ v [ S ] → γ' · v , t' ⇓ u [ T ] →
-               γ , app s t ⇓ u [ T ∘ ⟨ unrooted R , S ⟩ ]
+               γ , app s t ⇓ u [ (T ∘ ⟨ unrooted R , S ⟩) M.+ₘ ctrl R ]
     ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] → γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ op-deps ω .func vs ∘ R ]
     ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →

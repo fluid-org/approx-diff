@@ -215,7 +215,8 @@ mutual
   forward (⇓-case-l D₁ D₂) (at ε) (at (case-l₁ q)) i j ()
   forward (⇓-case-l D₁ D₂) (at ε) (at (case-l₂ q)) i j ()
   forward (⇓-case-l D₁ D₂) (at (case-l₁ p)) env i j ()
-  forward (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at ε) i j ()
+  forward (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at ε) i j h with edge-ε p i j h
+  forward (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at ε) i j h | ≡-refl = root₁ (psize D₁) (size D₂)
   forward (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at (case-l₁ q)) i j h = forward D₁ (at p) (at q) i j h
   forward (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at (case-l₂ q)) i j h with edge-ε p i j h
   forward (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at (case-l₂ q)) i j h | ≡-refl = root₁ (psize D₁) (rank q)
@@ -235,7 +236,8 @@ mutual
   forward (⇓-case-r D₁ D₂) (at ε) (at (case-r₁ q)) i j ()
   forward (⇓-case-r D₁ D₂) (at ε) (at (case-r₂ q)) i j ()
   forward (⇓-case-r D₁ D₂) (at (case-r₁ p)) env i j ()
-  forward (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at ε) i j ()
+  forward (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at ε) i j h with edge-ε p i j h
+  forward (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at ε) i j h | ≡-refl = root₁ (psize D₁) (size D₂)
   forward (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₁ q)) i j h = forward D₁ (at p) (at q) i j h
   forward (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₂ q)) i j h with edge-ε p i j h
   forward (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₂ q)) i j h | ≡-refl = root₁ (psize D₁) (rank q)
@@ -276,7 +278,8 @@ mutual
   forward (⇓-app D₁ D₂ D₃) (at ε) (at (app₂ q)) i j ()
   forward (⇓-app D₁ D₂ D₃) (at ε) (at (app₃ q)) i j ()
   forward (⇓-app D₁ D₂ D₃) (at (app₁ p)) env i j ()
-  forward (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at ε) i j ()
+  forward (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at ε) i j h with edge-ε p i j h
+  forward (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at ε) i j h | ≡-refl = root₁₃ (psize D₁) (size D₂) (size D₃)
   forward (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at (app₁ q)) i j h = forward D₁ (at p) (at q) i j h
   forward (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at (app₂ q)) i j ()
   forward (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at (app₃ q)) i j h with edge-ε p i j h
