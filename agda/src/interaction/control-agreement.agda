@@ -1445,3 +1445,469 @@ module CaseR {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
               ≈ ((collapse D₂ ∘ Wₛ) M.+ₘ (collapse-src D₂ ∘ Uₛ))
   agree-src =
     ≈-trans (≈-of-≡ (plumb src)) (steps₂ (interior D₂) (interior-not-root D₂) base₂ .source-root)
+
+-- Application: function, argument, then body. The body's environment is wired to two premise roots,
+-- the closure's environment through the function root and the bound variable through the argument
+-- root; its source is wired to the function root's control column. Both collapses are the body's
+-- two collapses composed with a pair of substitutions.
+module App {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {ts : Γ ⊢ σ [→] τ} {tt : Γ ⊢ σ}
+           {tb : Γ' ▸ σ ⊢ τ} {v : Val σ} {u : Val τ}
+           {R : Nat.suc (width-env γ) ⇒ Nat.suc (width-env γ')}
+           {S : Nat.suc (width-env γ) ⇒ width v}
+           {T : Nat.suc (width-env (γ' · v)) ⇒ width u}
+           {D₁ : γ , ts ⇓ clo γ' tb [ R ]} {D₂ : γ , tt ⇓ v [ S ]}
+           {D₃ : γ' · v , tb ⇓ u [ T ]} where
+
+  private
+    iₗ : M.Matrix (width-env γ' Nat.+ width v) (width-env γ')
+    iₗ = M.in₁ {width-env γ'} {width v}
+
+    iᵣ : M.Matrix (width-env γ' Nat.+ width v) (width v)
+    iᵣ = M.in₂ {width-env γ'} {width v}
+
+    p1 : M.Matrix 1 (Nat.suc (width-env γ'))
+    p1 = M.p₁ {1} {width-env γ'}
+
+    p2 : M.Matrix (width-env γ') (Nat.suc (width-env γ'))
+    p2 = M.p₂ {1} {width-env γ'}
+
+  B : (q : Path D₃) → M.Matrix (width-at q) (width-env γ' Nat.+ width v)
+  B q = graph D₃ env (at q)
+
+  Bₛ : (q : Path D₃) → M.Matrix (width-at q) 1
+  Bₛ q = graph D₃ src (at q)
+
+  -- The body's dependence on the function root: the closure environment through the value columns,
+  -- the body's source through the control column.
+  Rt : (q : Path D₃) → M.Matrix (width-at q) (Nat.suc (width-env γ'))
+  Rt q = ((B q ∘ iₗ) ∘ p2) M.+ₘ (Bₛ q ∘ p1)
+
+  W : M.Matrix (width-env γ' Nat.+ width v) (width-env γ)
+  W = ((iₗ ∘ p2) ∘ collapse D₁) M.+ₘ (iᵣ ∘ collapse D₂)
+
+  U : M.Matrix 1 (width-env γ)
+  U = p1 ∘ collapse D₁
+
+  Wₛ : M.Matrix (width-env γ' Nat.+ width v) 1
+  Wₛ = ((iₗ ∘ p2) ∘ collapse-src D₁) M.+ₘ (iᵣ ∘ collapse-src D₂)
+
+  Uₛ : M.Matrix 1 1
+  Uₛ = ctrl-row {1} M.+ₘ (p1 ∘ collapse-src D₁)
+
+  private
+    route-env : ∀ {m} (A : M.Matrix m (width-env γ' Nat.+ width v)) (Bs : M.Matrix m 1) →
+                (((((A ∘ iₗ) ∘ p2) M.+ₘ (Bs ∘ p1)) ∘ collapse D₁)
+                   M.+ₘ ((A ∘ iᵣ) ∘ collapse D₂))
+                ≈ ((A ∘ W) M.+ₘ (Bs ∘ U))
+    route-env A Bs =
+      ≈-trans (+ₘ-cong (M.comp-bilinear₁ ((A ∘ iₗ) ∘ p2) (Bs ∘ p1) (collapse D₁))
+                       (≈-refl {f = (A ∘ iᵣ) ∘ collapse D₂}))
+      (≈-trans (+ₘ-swap (((A ∘ iₗ) ∘ p2) ∘ collapse D₁) ((Bs ∘ p1) ∘ collapse D₁)
+                        ((A ∘ iᵣ) ∘ collapse D₂))
+               (+ₘ-cong (≈-trans (+ₘ-cong (≈-trans (∘-cong₁ {g = collapse D₁} (assoc A iₗ p2))
+                                                   (assoc A (iₗ ∘ p2) (collapse D₁)))
+                                          (assoc A iᵣ (collapse D₂)))
+                                 (≈-sym (M.comp-bilinear₂ A ((iₗ ∘ p2) ∘ collapse D₁)
+                                                            (iᵣ ∘ collapse D₂))))
+                        (assoc Bs p1 (collapse D₁))))
+
+    route-src : ∀ {m} (A : M.Matrix m (width-env γ' Nat.+ width v)) (Bs : M.Matrix m 1) →
+                (((Bs ∘ ctrl-row {1})
+                    M.+ₘ ((((A ∘ iₗ) ∘ p2) M.+ₘ (Bs ∘ p1)) ∘ collapse-src D₁))
+                   M.+ₘ ((A ∘ iᵣ) ∘ collapse-src D₂))
+                ≈ ((A ∘ Wₛ) M.+ₘ (Bs ∘ Uₛ))
+    route-src A Bs =
+      ≈-trans (+ₘ-cong (+ₘ-cong (≈-refl {f = Bs ∘ ctrl-row {1}})
+                                (M.comp-bilinear₁ ((A ∘ iₗ) ∘ p2) (Bs ∘ p1) (collapse-src D₁)))
+                       (≈-refl {f = (A ∘ iᵣ) ∘ collapse-src D₂}))
+      (≈-trans (+ₘ-assoc (Bs ∘ ctrl-row {1})
+                         ((((A ∘ iₗ) ∘ p2) ∘ collapse-src D₁)
+                            M.+ₘ ((Bs ∘ p1) ∘ collapse-src D₁))
+                         ((A ∘ iᵣ) ∘ collapse-src D₂))
+      (≈-trans (+ₘ-cong (≈-refl {f = Bs ∘ ctrl-row {1}})
+                        (+ₘ-swap (((A ∘ iₗ) ∘ p2) ∘ collapse-src D₁)
+                                 ((Bs ∘ p1) ∘ collapse-src D₁)
+                                 ((A ∘ iᵣ) ∘ collapse-src D₂)))
+      (≈-trans (+ₘ-swap-mid (Bs ∘ ctrl-row {1})
+                            ((((A ∘ iₗ) ∘ p2) ∘ collapse-src D₁)
+                               M.+ₘ ((A ∘ iᵣ) ∘ collapse-src D₂))
+                            ((Bs ∘ p1) ∘ collapse-src D₁))
+               (+ₘ-cong (≈-trans (+ₘ-cong (≈-trans (∘-cong₁ {g = collapse-src D₁} (assoc A iₗ p2))
+                                                   (assoc A (iₗ ∘ p2) (collapse-src D₁)))
+                                          (assoc A iᵣ (collapse-src D₂)))
+                                 (≈-sym (M.comp-bilinear₂ A ((iₗ ∘ p2) ∘ collapse-src D₁)
+                                                            (iᵣ ∘ collapse-src D₂))))
+                        (≈-trans (+ₘ-cong (≈-refl {f = Bs ∘ ctrl-row {1}})
+                                          (assoc Bs p1 (collapse-src D₁)))
+                                 (≈-sym (M.comp-bilinear₂ Bs (ctrl-row {1})
+                                                            (p1 ∘ collapse-src D₁))))))))
+
+  record Phase₁ (G : Graph (⇓-app D₁ D₂ D₃)) (H : Graph D₁) : Set ℓ where
+    field
+      env-fun     : ∀ q → G env (at (app₁ q)) ≈ H env (at q)
+      src-fun     : ∀ q → G src (at (app₁ q)) ≈ H src (at q)
+      fun-fun     : ∀ p q → G (at (app₁ p)) (at (app₁ q)) ≈ H (at p) (at q)
+      env-arg     : ∀ q → G env (at (app₂ q)) ≈ graph D₂ env (at q)
+      src-arg     : ∀ q → G src (at (app₂ q)) ≈ graph D₂ src (at q)
+      arg-arg     : ∀ p q → G (at (app₂ p)) (at (app₂ q)) ≈ graph D₂ (at p) (at q)
+      fun-arg     : ∀ p q → G (at (app₁ p)) (at (app₂ q)) ≈ M.εₘ
+      arg-fun     : ∀ p q → G (at (app₂ p)) (at (app₁ q)) ≈ M.εₘ
+      env-body    : ∀ q → G env (at (app₃ q)) ≈ (Rt q ∘ H env (at ε))
+      src-body    : ∀ q → G src (at (app₃ q))
+                    ≈ ((Bₛ q ∘ ctrl-row {1}) M.+ₘ (Rt q ∘ H src (at ε)))
+      fun-body    : ∀ p → is-ε p ≡ Bool.false → ∀ q →
+                    G (at (app₁ p)) (at (app₃ q)) ≈ (Rt q ∘ H (at p) (at ε))
+      arg-body    : ∀ p q → G (at (app₂ p)) (at (app₃ q)) ≈ edge (B q ∘ iᵣ) p
+      body-body   : ∀ p q → G (at (app₃ p)) (at (app₃ q)) ≈ graph D₃ (at p) (at q)
+      body-fun    : ∀ p q → G (at (app₃ p)) (at (app₁ q)) ≈ M.εₘ
+      body-arg    : ∀ p q → G (at (app₃ p)) (at (app₂ q)) ≈ M.εₘ
+      env-root    : G env (at ε) ≈ M.εₘ
+      source-root : G src (at ε) ≈ M.εₘ
+      fun-root    : ∀ p → G (at (app₁ p)) (at ε) ≈ M.εₘ
+      arg-root    : ∀ p → G (at (app₂ p)) (at ε) ≈ M.εₘ
+      body-root   : ∀ p → G (at (app₃ p)) (at ε) ≈ edge M.I p
+
+  open Phase₁
+
+  step₁ : ∀ {G H} (w : Path D₁) → is-ε w ≡ Bool.false →
+          Phase₁ G H → Phase₁ (hide G (at (app₁ w))) (hide H (at w))
+  step₁ w nw r .env-fun q = +ₘ-cong (r .env-fun q) (∘-cong (r .fun-fun w q) (r .env-fun w))
+  step₁ w nw r .src-fun q = +ₘ-cong (r .src-fun q) (∘-cong (r .fun-fun w q) (r .src-fun w))
+  step₁ w nw r .fun-fun p q = +ₘ-cong (r .fun-fun p q) (∘-cong (r .fun-fun w q) (r .fun-fun p w))
+  step₁ {G} w nw r .env-arg q =
+    ≈-trans (+ₘ-cong (r .env-arg q) (∘-cong₁ (r .fun-arg w q)))
+            (absorb (graph D₂ env (at q)) (G env (at (app₁ w))))
+  step₁ {G} w nw r .src-arg q =
+    ≈-trans (+ₘ-cong (r .src-arg q) (∘-cong₁ (r .fun-arg w q)))
+            (absorb (graph D₂ src (at q)) (G src (at (app₁ w))))
+  step₁ {G} w nw r .arg-arg p q =
+    ≈-trans (+ₘ-cong (r .arg-arg p q) (∘-cong₁ (r .fun-arg w q)))
+            (absorb (graph D₂ (at p) (at q)) (G (at (app₂ p)) (at (app₁ w))))
+  step₁ {G} w nw r .fun-arg p q =
+    ≈-trans (+ₘ-cong (r .fun-arg p q) (∘-cong₁ (r .fun-arg w q)))
+            (absorb M.εₘ (G (at (app₁ p)) (at (app₁ w))))
+  step₁ {G} w nw r .arg-fun p q =
+    ≈-trans (+ₘ-cong (r .arg-fun p q) (∘-cong₂ (r .arg-fun p w)))
+            (absorb-r M.εₘ (G (at (app₁ w)) (at (app₁ q))))
+  step₁ {H = H} w nw r .env-body q =
+    root-step {P = Rt q} {X = H env (at ε)} {Y = H (at w) (at ε)} {Z = H env (at w)}
+      (r .env-body q) (r .fun-body w nw q) (r .env-fun w)
+  step₁ {H = H} w nw r .src-body q =
+    offset-step {K = Bₛ q ∘ ctrl-row {1}} {P = Rt q}
+                {X = H src (at ε)} {Y = H (at w) (at ε)} {Z = H src (at w)}
+      (r .src-body q) (r .fun-body w nw q) (r .src-fun w)
+  step₁ {H = H} w nw r .fun-body p np q =
+    root-step {P = Rt q} {X = H (at p) (at ε)} {Y = H (at w) (at ε)} {Z = H (at p) (at w)}
+      (r .fun-body p np q) (r .fun-body w nw q) (r .fun-fun p w)
+  step₁ {G} w nw r .arg-body p q =
+    ≈-trans (+ₘ-cong (r .arg-body p q) (∘-cong₂ (r .arg-fun p w)))
+            (absorb-r (edge (B q ∘ iᵣ) p) (G (at (app₁ w)) (at (app₃ q))))
+  step₁ {G} w nw r .body-body p q =
+    ≈-trans (+ₘ-cong (r .body-body p q) (∘-cong₂ (r .body-fun p w)))
+            (absorb-r (graph D₃ (at p) (at q)) (G (at (app₁ w)) (at (app₃ q))))
+  step₁ {G} w nw r .body-fun p q =
+    ≈-trans (+ₘ-cong (r .body-fun p q) (∘-cong₂ (r .body-fun p w)))
+            (absorb-r M.εₘ (G (at (app₁ w)) (at (app₁ q))))
+  step₁ {G} w nw r .body-arg p q =
+    ≈-trans (+ₘ-cong (r .body-arg p q) (∘-cong₁ (r .fun-arg w q)))
+            (absorb M.εₘ (G (at (app₃ p)) (at (app₁ w))))
+  step₁ {G} w nw r .env-root =
+    ≈-trans (+ₘ-cong (r .env-root) (∘-cong₁ (r .fun-root w)))
+            (absorb M.εₘ (G env (at (app₁ w))))
+  step₁ {G} w nw r .source-root =
+    ≈-trans (+ₘ-cong (r .source-root) (∘-cong₁ (r .fun-root w)))
+            (absorb M.εₘ (G src (at (app₁ w))))
+  step₁ {G} w nw r .fun-root p =
+    ≈-trans (+ₘ-cong (r .fun-root p) (∘-cong₁ (r .fun-root w)))
+            (absorb M.εₘ (G (at (app₁ p)) (at (app₁ w))))
+  step₁ {G} w nw r .arg-root p =
+    ≈-trans (+ₘ-cong (r .arg-root p) (∘-cong₂ (r .arg-fun p w)))
+            (absorb-r M.εₘ (G (at (app₁ w)) (at ε)))
+  step₁ {G} w nw r .body-root p =
+    ≈-trans (+ₘ-cong (r .body-root p) (∘-cong₂ (r .body-fun p w)))
+            (absorb-r (edge M.I p) (G (at (app₁ w)) (at ε)))
+
+  steps₁ : ∀ {G H} (ws : List (Path D₁)) → All (λ w → is-ε w ≡ Bool.false) ws →
+           Phase₁ G H → Phase₁ (hide-all G (map at (map app₁ ws))) (hide-all H (map at ws))
+  steps₁ []       []         r = r
+  steps₁ (w ∷ ws) (nw ∷ nws) r = steps₁ ws nws (step₁ w nw r)
+
+  private
+    hh : ∀ x y → hide (hide (graph (⇓-app D₁ D₂ D₃)) (at ε)) (at (app₁ ε)) x y
+         ≈ (graph (⇓-app D₁ D₂ D₃) x y
+              M.+ₘ (graph (⇓-app D₁ D₂ D₃) (at (app₁ ε)) y
+                      ∘ graph (⇓-app D₁ D₂ D₃) x (at (app₁ ε))))
+    hh = hide-hide-root (⇓-app D₁ D₂ D₃) (at (app₁ ε))
+
+    base₁ : Phase₁ (hide (hide (graph (⇓-app D₁ D₂ D₃)) (at ε)) (at (app₁ ε)))
+                   (hide (graph D₁) (at ε))
+    base₁ .env-fun q = hh env (at (app₁ q))
+    base₁ .src-fun q = hh src (at (app₁ q))
+    base₁ .fun-fun p q = hh (at (app₁ p)) (at (app₁ q))
+    base₁ .env-arg q =
+      ≈-trans (hh env (at (app₂ q))) (absorb (graph D₂ env (at q)) (graph D₁ env (at ε)))
+    base₁ .src-arg q =
+      ≈-trans (hh src (at (app₂ q))) (absorb (graph D₂ src (at q)) (graph D₁ src (at ε)))
+    base₁ .arg-arg p q =
+      ≈-trans (hh (at (app₂ p)) (at (app₂ q)))
+              (absorb (graph D₂ (at p) (at q))
+                      (graph (⇓-app D₁ D₂ D₃) (at (app₂ p)) (at (app₁ ε))))
+    base₁ .fun-arg p q =
+      ≈-trans (hh (at (app₁ p)) (at (app₂ q))) (absorb M.εₘ (graph D₁ (at p) (at ε)))
+    base₁ .arg-fun p q =
+      ≈-trans (hh (at (app₂ p)) (at (app₁ q))) (absorb-r M.εₘ (graph D₁ (at ε) (at q)))
+    base₁ .env-body q = ≈-trans (hh env (at (app₃ q))) (into-hidden D₁ (Rt q) env)
+    base₁ .src-body q =
+      ≈-trans {f = hide (hide (graph (⇓-app D₁ D₂ D₃)) (at ε)) (at (app₁ ε)) src (at (app₃ q))}
+              {g = (Bₛ q ∘ ctrl-row {1}) M.+ₘ (Rt q ∘ graph D₁ src (at ε))}
+              {h = (Bₛ q ∘ ctrl-row {1}) M.+ₘ (Rt q ∘ hide (graph D₁) (at ε) src (at ε))}
+              (hh src (at (app₃ q))) (into-hidden-off D₁ src (Bₛ q ∘ ctrl-row {1}) (Rt q))
+    base₁ .fun-body p np q =
+      ≈-trans (hh (at (app₁ p)) (at (app₃ q)))
+      (≈-trans (+ₘ-cong (edge-off (Rt q) p np) ≈-refl) (into-hidden D₁ (Rt q) (at p)))
+    base₁ .arg-body p q =
+      ≈-trans (hh (at (app₂ p)) (at (app₃ q))) (absorb-r (edge (B q ∘ iᵣ) p) (Rt q))
+    base₁ .body-body p q =
+      ≈-trans (hh (at (app₃ p)) (at (app₃ q))) (absorb-r (graph D₃ (at p) (at q)) (Rt q))
+    base₁ .body-fun p q =
+      ≈-trans (hh (at (app₃ p)) (at (app₁ q))) (absorb-r M.εₘ (graph D₁ (at ε) (at q)))
+    base₁ .body-arg p q =
+      ≈-trans (hh (at (app₃ p)) (at (app₂ q)))
+              (absorb M.εₘ (graph (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₁ ε))))
+    base₁ .env-root = ≈-trans (hh env (at ε)) (absorb M.εₘ (graph D₁ env (at ε)))
+    base₁ .source-root = ≈-trans (hh src (at ε)) (absorb M.εₘ (graph D₁ src (at ε)))
+    base₁ .fun-root p = ≈-trans (hh (at (app₁ p)) (at ε)) (absorb M.εₘ (graph D₁ (at p) (at ε)))
+    base₁ .arg-root p =
+      ≈-trans (hh (at (app₂ p)) (at ε))
+              (absorb M.εₘ (graph (⇓-app D₁ D₂ D₃) (at (app₂ p)) (at (app₁ ε))))
+    base₁ .body-root p =
+      ≈-trans (hh (at (app₃ p)) (at ε))
+              (absorb (edge M.I p) (graph (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₁ ε))))
+
+    PA : Graph (⇓-app D₁ D₂ D₃)
+    PA = hide-all (hide (hide (graph (⇓-app D₁ D₂ D₃)) (at ε)) (at (app₁ ε)))
+                  (map at (map app₁ (interior D₁)))
+
+    rA : Phase₁ PA (hide-all (hide (graph D₁) (at ε)) (map at (interior D₁)))
+    rA = steps₁ (interior D₁) (interior-not-root D₁) base₁
+
+  record Phase₂ (G : Graph (⇓-app D₁ D₂ D₃)) (H : Graph D₂) : Set ℓ where
+    field
+      env-arg     : ∀ q → G env (at (app₂ q)) ≈ H env (at q)
+      src-arg     : ∀ q → G src (at (app₂ q)) ≈ H src (at q)
+      arg-arg     : ∀ p q → G (at (app₂ p)) (at (app₂ q)) ≈ H (at p) (at q)
+      env-body    : ∀ q → G env (at (app₃ q))
+                    ≈ ((Rt q ∘ collapse D₁) M.+ₘ ((B q ∘ iᵣ) ∘ H env (at ε)))
+      src-body    : ∀ q → G src (at (app₃ q))
+                    ≈ (((Bₛ q ∘ ctrl-row {1}) M.+ₘ (Rt q ∘ collapse-src D₁))
+                         M.+ₘ ((B q ∘ iᵣ) ∘ H src (at ε)))
+      arg-body    : ∀ p → is-ε p ≡ Bool.false → ∀ q →
+                    G (at (app₂ p)) (at (app₃ q)) ≈ ((B q ∘ iᵣ) ∘ H (at p) (at ε))
+      body-body   : ∀ p q → G (at (app₃ p)) (at (app₃ q)) ≈ graph D₃ (at p) (at q)
+      body-arg    : ∀ p q → G (at (app₃ p)) (at (app₂ q)) ≈ M.εₘ
+      env-root    : G env (at ε) ≈ M.εₘ
+      source-root : G src (at ε) ≈ M.εₘ
+      arg-root    : ∀ p → G (at (app₂ p)) (at ε) ≈ M.εₘ
+      body-root   : ∀ p → G (at (app₃ p)) (at ε) ≈ edge M.I p
+
+  open Phase₂
+
+  step₂ : ∀ {G H} (w : Path D₂) → is-ε w ≡ Bool.false →
+          Phase₂ G H → Phase₂ (hide G (at (app₂ w))) (hide H (at w))
+  step₂ w nw r .env-arg q = +ₘ-cong (r .env-arg q) (∘-cong (r .arg-arg w q) (r .env-arg w))
+  step₂ w nw r .src-arg q = +ₘ-cong (r .src-arg q) (∘-cong (r .arg-arg w q) (r .src-arg w))
+  step₂ w nw r .arg-arg p q = +ₘ-cong (r .arg-arg p q) (∘-cong (r .arg-arg w q) (r .arg-arg p w))
+  step₂ {H = H} w nw r .env-body q =
+    offset-step {K = Rt q ∘ collapse D₁} {P = B q ∘ iᵣ}
+                {X = H env (at ε)} {Y = H (at w) (at ε)} {Z = H env (at w)}
+                (r .env-body q) (r .arg-body w nw q) (r .env-arg w)
+  step₂ {H = H} w nw r .src-body q =
+    offset-step {K = (Bₛ q ∘ ctrl-row {1}) M.+ₘ (Rt q ∘ collapse-src D₁)} {P = B q ∘ iᵣ}
+                {X = H src (at ε)} {Y = H (at w) (at ε)} {Z = H src (at w)}
+                (r .src-body q) (r .arg-body w nw q) (r .src-arg w)
+  step₂ {H = H} w nw r .arg-body p np q =
+    root-step {P = B q ∘ iᵣ} {X = H (at p) (at ε)} {Y = H (at w) (at ε)} {Z = H (at p) (at w)}
+              (r .arg-body p np q) (r .arg-body w nw q) (r .arg-arg p w)
+  step₂ {G} w nw r .body-body p q =
+    ≈-trans (+ₘ-cong (r .body-body p q) (∘-cong₂ (r .body-arg p w)))
+            (absorb-r (graph D₃ (at p) (at q)) (G (at (app₂ w)) (at (app₃ q))))
+  step₂ {G} w nw r .body-arg p q =
+    ≈-trans (+ₘ-cong (r .body-arg p q) (∘-cong₂ (r .body-arg p w)))
+            (absorb-r M.εₘ (G (at (app₂ w)) (at (app₂ q))))
+  step₂ {G} w nw r .env-root =
+    ≈-trans (+ₘ-cong (r .env-root) (∘-cong₁ (r .arg-root w)))
+            (absorb M.εₘ (G env (at (app₂ w))))
+  step₂ {G} w nw r .source-root =
+    ≈-trans (+ₘ-cong (r .source-root) (∘-cong₁ (r .arg-root w)))
+            (absorb M.εₘ (G src (at (app₂ w))))
+  step₂ {G} w nw r .arg-root p =
+    ≈-trans (+ₘ-cong (r .arg-root p) (∘-cong₁ (r .arg-root w)))
+            (absorb M.εₘ (G (at (app₂ p)) (at (app₂ w))))
+  step₂ {G} w nw r .body-root p =
+    ≈-trans (+ₘ-cong (r .body-root p) (∘-cong₁ (r .arg-root w)))
+            (absorb (edge M.I p) (G (at (app₃ p)) (at (app₂ w))))
+
+  steps₂ : ∀ {G H} (ws : List (Path D₂)) → All (λ w → is-ε w ≡ Bool.false) ws →
+           Phase₂ G H → Phase₂ (hide-all G (map at (map app₂ ws))) (hide-all H (map at ws))
+  steps₂ []       []         r = r
+  steps₂ (w ∷ ws) (nw ∷ nws) r = steps₂ ws nws (step₂ w nw r)
+
+  private
+    base₂ : Phase₂ (hide PA (at (app₂ ε))) (hide (graph D₂) (at ε))
+    base₂ .env-arg q = +ₘ-cong (rA .env-arg q) (∘-cong (rA .arg-arg ε q) (rA .env-arg ε))
+    base₂ .src-arg q = +ₘ-cong (rA .src-arg q) (∘-cong (rA .arg-arg ε q) (rA .src-arg ε))
+    base₂ .arg-arg p q = +ₘ-cong (rA .arg-arg p q) (∘-cong (rA .arg-arg ε q) (rA .arg-arg p ε))
+    base₂ .env-body q =
+      ≈-trans (+ₘ-cong (rA .env-body q) (∘-cong (rA .arg-body ε q) (rA .env-arg ε)))
+              (+ₘ-cong (≈-refl {f = Rt q ∘ collapse D₁})
+                       (∘-cong₂ {f = B q ∘ iᵣ} (≈-sym (hide-root D₂ env (at ε)))))
+    base₂ .src-body q =
+      ≈-trans (+ₘ-cong (rA .src-body q) (∘-cong (rA .arg-body ε q) (rA .src-arg ε)))
+              (+ₘ-cong (≈-refl {f = (Bₛ q ∘ ctrl-row {1}) M.+ₘ (Rt q ∘ collapse-src D₁)})
+                       (∘-cong₂ {f = B q ∘ iᵣ} (≈-sym (hide-root D₂ src (at ε)))))
+    base₂ .arg-body p np q =
+      ≈-trans (+ₘ-cong (≈-trans (rA .arg-body p q) (edge-off (B q ∘ iᵣ) p np))
+                       (∘-cong (rA .arg-body ε q) (rA .arg-arg p ε)))
+              (into-hidden D₂ (B q ∘ iᵣ) (at p))
+    base₂ .body-body p q =
+      ≈-trans (+ₘ-cong (rA .body-body p q) (∘-cong (rA .arg-body ε q) (rA .body-arg p ε)))
+              (absorb-r (graph D₃ (at p) (at q)) (B q ∘ iᵣ))
+    base₂ .body-arg p q =
+      ≈-trans (+ₘ-cong (rA .body-arg p q) (∘-cong (rA .arg-arg ε q) (rA .body-arg p ε)))
+              (absorb-r M.εₘ (graph D₂ (at ε) (at q)))
+    base₂ .env-root =
+      ≈-trans (+ₘ-cong (rA .env-root) (∘-cong₁ (rA .arg-root ε)))
+              (absorb M.εₘ (PA env (at (app₂ ε))))
+    base₂ .source-root =
+      ≈-trans (+ₘ-cong (rA .source-root) (∘-cong₁ (rA .arg-root ε)))
+              (absorb M.εₘ (PA src (at (app₂ ε))))
+    base₂ .arg-root p =
+      ≈-trans (+ₘ-cong (rA .arg-root p) (∘-cong₁ (rA .arg-root ε)))
+              (absorb M.εₘ (PA (at (app₂ p)) (at (app₂ ε))))
+    base₂ .body-root p =
+      ≈-trans (+ₘ-cong (rA .body-root p) (∘-cong₁ (rA .arg-root ε)))
+              (absorb (edge M.I p) (PA (at (app₃ p)) (at (app₂ ε))))
+
+    PB : Graph (⇓-app D₁ D₂ D₃)
+    PB = hide-all (hide PA (at (app₂ ε))) (map at (map app₂ (interior D₂)))
+
+    rB : Phase₂ PB (hide-all (hide (graph D₂) (at ε)) (map at (interior D₂)))
+    rB = steps₂ (interior D₂) (interior-not-root D₂) base₂
+
+  record Phase₃ (G : Graph (⇓-app D₁ D₂ D₃)) (H : Graph D₃) : Set ℓ where
+    field
+      env-body    : ∀ q → G env (at (app₃ q))
+                    ≈ ((H env (at q) ∘ W) M.+ₘ (H src (at q) ∘ U))
+      src-body    : ∀ q → G src (at (app₃ q))
+                    ≈ ((H env (at q) ∘ Wₛ) M.+ₘ (H src (at q) ∘ Uₛ))
+      body-body   : ∀ p q → G (at (app₃ p)) (at (app₃ q)) ≈ H (at p) (at q)
+      env-root    : G env (at ε) ≈ ((H env (at ε) ∘ W) M.+ₘ (H src (at ε) ∘ U))
+      source-root : G src (at ε) ≈ ((H env (at ε) ∘ Wₛ) M.+ₘ (H src (at ε) ∘ Uₛ))
+      body-root   : ∀ p → is-ε p ≡ Bool.false → G (at (app₃ p)) (at ε) ≈ H (at p) (at ε)
+
+  open Phase₃
+
+  step₃ : ∀ {G H} (w : Path D₃) → is-ε w ≡ Bool.false →
+          Phase₃ G H → Phase₃ (hide G (at (app₃ w))) (hide H (at w))
+  step₃ {H = H} w nw r .env-body q =
+    pair-step {W = W} {U = U} {A = H env (at q)} {B = H src (at q)} {Y = H (at w) (at q)}
+              {Aw = H env (at w)} {Bw = H src (at w)}
+              (r .env-body q) (r .body-body w q) (r .env-body w)
+  step₃ {H = H} w nw r .src-body q =
+    pair-step {W = Wₛ} {U = Uₛ} {A = H env (at q)} {B = H src (at q)} {Y = H (at w) (at q)}
+              {Aw = H env (at w)} {Bw = H src (at w)}
+              (r .src-body q) (r .body-body w q) (r .src-body w)
+  step₃ w nw r .body-body p q =
+    +ₘ-cong (r .body-body p q) (∘-cong (r .body-body w q) (r .body-body p w))
+  step₃ {H = H} w nw r .env-root =
+    pair-step {W = W} {U = U} {A = H env (at ε)} {B = H src (at ε)} {Y = H (at w) (at ε)}
+              {Aw = H env (at w)} {Bw = H src (at w)}
+              (r .env-root) (r .body-root w nw) (r .env-body w)
+  step₃ {H = H} w nw r .source-root =
+    pair-step {W = Wₛ} {U = Uₛ} {A = H env (at ε)} {B = H src (at ε)} {Y = H (at w) (at ε)}
+              {Aw = H env (at w)} {Bw = H src (at w)}
+              (r .source-root) (r .body-root w nw) (r .src-body w)
+  step₃ w nw r .body-root p np =
+    +ₘ-cong (r .body-root p np) (∘-cong (r .body-root w nw) (r .body-body p w))
+
+  steps₃ : ∀ {G H} (ws : List (Path D₃)) → All (λ w → is-ε w ≡ Bool.false) ws →
+           Phase₃ G H → Phase₃ (hide-all G (map at (map app₃ ws))) (hide-all H (map at ws))
+  steps₃ []       []         r = r
+  steps₃ (w ∷ ws) (nw ∷ nws) r = steps₃ ws nws (step₃ w nw r)
+
+  private
+    Zₑ : M.Matrix (width u) (width-env γ)
+    Zₑ = (B ε ∘ W) M.+ₘ (Bₛ ε ∘ U)
+
+    Zₛ : M.Matrix (width u) 1
+    Zₛ = (B ε ∘ Wₛ) M.+ₘ (Bₛ ε ∘ Uₛ)
+
+    base₃ : Phase₃ (hide PB (at (app₃ ε))) (hide (graph D₃) (at ε))
+    base₃ .env-body q =
+      pair-step {W = W} {U = U} {A = B q} {B = Bₛ q} {Y = graph D₃ (at ε) (at q)}
+                {Aw = B ε} {Bw = Bₛ ε}
+                (≈-trans (rB .env-body q) (route-env (B q) (Bₛ q)))
+                (rB .body-body ε q)
+                (≈-trans (rB .env-body ε) (route-env (B ε) (Bₛ ε)))
+    base₃ .src-body q =
+      pair-step {W = Wₛ} {U = Uₛ} {A = B q} {B = Bₛ q} {Y = graph D₃ (at ε) (at q)}
+                {Aw = B ε} {Bw = Bₛ ε}
+                (≈-trans (rB .src-body q) (route-src (B q) (Bₛ q)))
+                (rB .body-body ε q)
+                (≈-trans (rB .src-body ε) (route-src (B ε) (Bₛ ε)))
+    base₃ .body-body p q =
+      +ₘ-cong (rB .body-body p q) (∘-cong (rB .body-body ε q) (rB .body-body p ε))
+    base₃ .env-root =
+      ≈-trans {g = M.εₘ M.+ₘ (M.I ∘ Zₑ)}
+              (+ₘ-cong (rB .env-root)
+                       (∘-cong (rB .body-root ε)
+                               (≈-trans (rB .env-body ε) (route-env (B ε) (Bₛ ε)))))
+      (≈-trans {g = M.I ∘ Zₑ} (+ₘ-lunit (M.I ∘ Zₑ))
+      (≈-trans {g = Zₑ} id-left
+               (+ₘ-cong (∘-cong₁ {g = W} (≈-sym (hide-root D₃ env (at ε))))
+                        (∘-cong₁ {g = U} (≈-sym (hide-root D₃ src (at ε)))))))
+    base₃ .source-root =
+      ≈-trans {g = M.εₘ M.+ₘ (M.I ∘ Zₛ)}
+              (+ₘ-cong (rB .source-root)
+                       (∘-cong (rB .body-root ε)
+                               (≈-trans (rB .src-body ε) (route-src (B ε) (Bₛ ε)))))
+      (≈-trans {g = M.I ∘ Zₛ} (+ₘ-lunit (M.I ∘ Zₛ))
+      (≈-trans {g = Zₛ} id-left
+               (+ₘ-cong (∘-cong₁ {g = Wₛ} (≈-sym (hide-root D₃ env (at ε))))
+                        (∘-cong₁ {g = Uₛ} (≈-sym (hide-root D₃ src (at ε)))))))
+    base₃ .body-root p np =
+      ≈-trans (+ₘ-cong (≈-trans (rB .body-root p) (edge-off M.I p np))
+                       (∘-cong (rB .body-root ε) (rB .body-body p ε)))
+      (≈-trans (into-hidden D₃ M.I (at p)) id-left)
+
+    A₁ : Graph (⇓-app D₁ D₂ D₃)
+    A₁ = hide (graph (⇓-app D₁ D₂ D₃)) (at ε)
+
+    plumb : ∀ (x : Vertex (⇓-app D₁ D₂ D₃)) →
+            hide-all A₁ (map at (map app₁ (paths D₁)
+                                   ++ map app₂ (paths D₂) ++ map app₃ (paths D₃))) x (at ε)
+            ≡ hide-all (hide-all (hide-all A₁ (map at (map app₁ (paths D₁))))
+                                 (map at (map app₂ (paths D₂))))
+                       (map at (map app₃ (paths D₃))) x (at ε)
+    plumb x =
+      ≡-trans (≡-cong (λ L → hide-all A₁ L x (at ε))
+                      (≡-trans (map-++ at (map app₁ (paths D₁))
+                                          (map app₂ (paths D₂) ++ map app₃ (paths D₃)))
+                               (≡-cong (λ z → map at (map app₁ (paths D₁)) ++ z)
+                                       (map-++ at (map app₂ (paths D₂)) (map app₃ (paths D₃))))))
+      (≡-trans (≡-cong (λ Gg → Gg x (at ε))
+                       (hide-all-++ A₁ (map at (map app₁ (paths D₁)))
+                                    (map at (map app₂ (paths D₂))
+                                       ++ map at (map app₃ (paths D₃)))))
+               (≡-cong (λ Gg → Gg x (at ε))
+                       (hide-all-++ (hide-all A₁ (map at (map app₁ (paths D₁))))
+                                    (map at (map app₂ (paths D₂)))
+                                    (map at (map app₃ (paths D₃))))))
+
+  agree : collapse (⇓-app D₁ D₂ D₃) ≈ ((collapse D₃ ∘ W) M.+ₘ (collapse-src D₃ ∘ U))
+  agree =
+    ≈-trans (≈-of-≡ (plumb env)) (steps₃ (interior D₃) (interior-not-root D₃) base₃ .env-root)
+
+  agree-src : collapse-src (⇓-app D₁ D₂ D₃) ≈ ((collapse D₃ ∘ Wₛ) M.+ₘ (collapse-src D₃ ∘ Uₛ))
+  agree-src =
+    ≈-trans (≈-of-≡ (plumb src)) (steps₃ (interior D₃) (interior-not-root D₃) base₃ .source-root)
