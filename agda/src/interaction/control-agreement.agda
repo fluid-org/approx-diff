@@ -1911,3 +1911,395 @@ module App {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {ts : Γ ⊢ σ [→] τ
   agree-src : collapse-src (⇓-app D₁ D₂ D₃) ≈ ((collapse D₃ ∘ Wₛ) M.+ₘ (collapse-src D₃ ∘ Uₛ))
   agree-src =
     ≈-trans (≈-of-≡ (plumb src)) (steps₃ (interior D₃) (interior-not-root D₃) base₃ .source-root)
+
+-- Operand lists: the S-family analogues of the root and edge lemmas.
+root-sink-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+              (D : γ , Ms ⇓s vs [ R ]) (y : VertexS D) → graph-s D (at ε) y ≈ M.εₘ
+root-sink-s []       env    i j = refl {x = two.O}
+root-sink-s []       src    i j = refl {x = two.O}
+root-sink-s []       (at ε) i j = refl {x = two.O}
+root-sink-s (D ∷ D₁) env    i j = refl {x = two.O}
+root-sink-s (D ∷ D₁) src    i j = refl {x = two.O}
+root-sink-s (D ∷ D₁) (at ε) i j = refl {x = two.O}
+root-sink-s (D ∷ D₁) (at (hd q)) i j = refl {x = two.O}
+root-sink-s (D ∷ D₁) (at (tl q)) i j = refl {x = two.O}
+
+hide-root-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+              (D : γ , Ms ⇓s vs [ R ]) (x y : VertexS D) →
+              hide-s (graph-s D) (at ε) x y ≈ graph-s D x y
+hide-root-s D x y =
+  ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (root-sink-s D y)))
+          (absorb (graph-s D x y) (graph-s D x (at ε)))
+
+hide-hide-root-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                   (D : γ , Ms ⇓s vs [ R ]) (r x y : VertexS D) →
+                   hide-s (hide-s (graph-s D) (at ε)) r x y
+                   ≈ (graph-s D x y M.+ₘ (graph-s D r y ∘ graph-s D x r))
+hide-hide-root-s D r x y =
+  +ₘ-cong (hide-root-s D x y) (∘-cong (hide-root-s D r y) (hide-root-s D x r))
+
+edge-off-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+             {D : γ , Ms ⇓s vs [ R ]} {m}
+             (S : M.Matrix m (bases-width is)) (p : PathS D) → is-ε-s p ≡ Bool.false →
+             edge-s S p ≈ M.εₘ
+edge-off-s S ε ()
+edge-off-s S (hd p) np i j = refl {x = two.O}
+edge-off-s S (tl p) np i j = refl {x = two.O}
+
+into-hidden-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                (D : γ , Ms ⇓s vs [ R ]) {m}
+                (P : M.Matrix m (bases-width is)) (x : VertexS D) →
+                (M.εₘ M.+ₘ (P ∘ graph-s D x (at ε)))
+                ≈ (P ∘ hide-s (graph-s D) (at ε) x (at ε))
+into-hidden-s D P x =
+  ≈-trans (+ₘ-lunit (P ∘ graph-s D x (at ε))) (∘-cong₂ (≈-sym (hide-root-s D x (at ε))))
+
+into-hidden-off-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                    (D : γ , Ms ⇓s vs [ R ]) {m} (x : VertexS D)
+                    (K : M.Matrix m (vertex-width-s x)) (P : M.Matrix m (bases-width is)) →
+                    (K M.+ₘ (P ∘ graph-s D x (at ε)))
+                    ≈ (K M.+ₘ (P ∘ hide-s (graph-s D) (at ε) x (at ε)))
+into-hidden-off-s D x K P = +ₘ-cong ≈-refl (∘-cong₂ (≈-sym (hide-root-s D x (at ε))))
+
+interior-not-root-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                      (D : γ , Ms ⇓s vs [ R ]) →
+                      All (λ p → is-ε-s p ≡ Bool.false) (interior-s D)
+interior-not-root-s []       = []
+interior-not-root-s (D ∷ D₁) =
+  ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths D))) (map⁺ (universal (λ _ → ≡-refl) (paths-s D₁)))
+
+hide-all-s-++ : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                {D : γ , Ms ⇓s vs [ R ]} (G : GraphS D) (xs ys : List (VertexS D)) →
+                hide-all-s G (xs ++ ys) ≡ hide-all-s (hide-all-s G xs) ys
+hide-all-s-++ G []       ys = ≡-refl
+hide-all-s-++ G (x ∷ xs) ys = hide-all-s-++ (hide-s G x) xs ys
+
+-- An operand cons: head premise then tail premise, as for pair but with the tail in the S family.
+module SCons {Γ i is} {γ : Env Γ} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is}
+             {v : sort-val i} {vs : sort-vals is}
+             {R : Nat.suc (width-env γ) ⇒ width (const {s = i} v)}
+             {Rs : Nat.suc (width-env γ) ⇒ bases-width is}
+             {D₁ : γ , M ⇓ const v [ R ]} {D₂ : γ , Ms ⇓s vs [ Rs ]} where
+
+  private
+    j₁ : M.Matrix (bases-width (i ∷ is)) (sort-width i)
+    j₁ = M.in₁ {sort-width i} {bases-width is}
+
+    j₂ : M.Matrix (bases-width (i ∷ is)) (bases-width is)
+    j₂ = M.in₂ {sort-width i} {bases-width is}
+
+  record Phase₁ (G : GraphS (D₁ ∷ D₂)) (H : Graph D₁) : Set ℓ where
+    field
+      env-left    : ∀ q → G env (at (hd q)) ≈ H env (at q)
+      src-left    : ∀ q → G src (at (hd q)) ≈ H src (at q)
+      left-left   : ∀ p q → G (at (hd p)) (at (hd q)) ≈ H (at p) (at q)
+      env-root    : G env (at ε) ≈ (j₁ ∘ H env (at ε))
+      source-root : G src (at ε) ≈ (j₁ ∘ H src (at ε))
+      left-root   : ∀ p → is-ε p ≡ Bool.false →
+                    G (at (hd p)) (at ε) ≈ (j₁ ∘ H (at p) (at ε))
+      env-right   : ∀ q → G env (at (tl q)) ≈ graph-s D₂ env (at q)
+      src-right   : ∀ q → G src (at (tl q)) ≈ graph-s D₂ src (at q)
+      right-right : ∀ p q → G (at (tl p)) (at (tl q)) ≈ graph-s D₂ (at p) (at q)
+      right-root  : ∀ p → G (at (tl p)) (at ε) ≈ edge-s j₂ p
+      left-right  : ∀ p q → G (at (hd p)) (at (tl q)) ≈ M.εₘ
+      right-left  : ∀ p q → G (at (tl p)) (at (hd q)) ≈ M.εₘ
+
+  open Phase₁
+
+  step₁ : ∀ {G H} (w : Path D₁) → is-ε w ≡ Bool.false →
+          Phase₁ G H → Phase₁ (hide-s G (at (hd w))) (hide H (at w))
+  step₁ w nw r .env-left q = +ₘ-cong (r .env-left q) (∘-cong (r .left-left w q) (r .env-left w))
+  step₁ w nw r .src-left q = +ₘ-cong (r .src-left q) (∘-cong (r .left-left w q) (r .src-left w))
+  step₁ w nw r .left-left p q =
+    +ₘ-cong (r .left-left p q) (∘-cong (r .left-left w q) (r .left-left p w))
+  step₁ w nw r .env-root = root-step {P = j₁} (r .env-root) (r .left-root w nw) (r .env-left w)
+  step₁ w nw r .source-root = root-step {P = j₁} (r .source-root) (r .left-root w nw) (r .src-left w)
+  step₁ w nw r .left-root p np =
+    root-step {P = j₁} (r .left-root p np) (r .left-root w nw) (r .left-left p w)
+  step₁ {G} w nw r .env-right q =
+    ≈-trans (+ₘ-cong (r .env-right q) (∘-cong₁ (r .left-right w q)))
+            (absorb (graph-s D₂ env (at q)) (G env (at (hd w))))
+  step₁ {G} w nw r .src-right q =
+    ≈-trans (+ₘ-cong (r .src-right q) (∘-cong₁ (r .left-right w q)))
+            (absorb (graph-s D₂ src (at q)) (G src (at (hd w))))
+  step₁ {G} w nw r .right-right p q =
+    ≈-trans (+ₘ-cong (r .right-right p q) (∘-cong₁ (r .left-right w q)))
+            (absorb (graph-s D₂ (at p) (at q)) (G (at (tl p)) (at (hd w))))
+  step₁ {G} w nw r .right-root p =
+    ≈-trans (+ₘ-cong (r .right-root p) (∘-cong₂ (r .right-left p w)))
+            (absorb-r (edge-s j₂ p) (G (at (hd w)) (at ε)))
+  step₁ {G} w nw r .left-right p q =
+    ≈-trans (+ₘ-cong (r .left-right p q) (∘-cong₁ (r .left-right w q)))
+            (absorb M.εₘ (G (at (hd p)) (at (hd w))))
+  step₁ {G} w nw r .right-left p q =
+    ≈-trans (+ₘ-cong (r .right-left p q) (∘-cong₂ (r .right-left p w)))
+            (absorb-r M.εₘ (G (at (hd w)) (at (hd q))))
+
+  steps₁ : ∀ {G H} (ws : List (Path D₁)) → All (λ w → is-ε w ≡ Bool.false) ws →
+           Phase₁ G H → Phase₁ (hide-all-s G (map at (map hd ws))) (hide-all H (map at ws))
+  steps₁ []       []         r = r
+  steps₁ (w ∷ ws) (nw ∷ nws) r = steps₁ ws nws (step₁ w nw r)
+
+  private
+    hh : ∀ x y → hide-s (hide-s (graph-s (D₁ ∷ D₂)) (at ε)) (at (hd ε)) x y
+         ≈ (graph-s (D₁ ∷ D₂) x y
+              M.+ₘ (graph-s (D₁ ∷ D₂) (at (hd ε)) y ∘ graph-s (D₁ ∷ D₂) x (at (hd ε))))
+    hh = hide-hide-root-s (D₁ ∷ D₂) (at (hd ε))
+
+    base₁ : Phase₁ (hide-s (hide-s (graph-s (D₁ ∷ D₂)) (at ε)) (at (hd ε)))
+                   (hide (graph D₁) (at ε))
+    base₁ .env-left q = hh env (at (hd q))
+    base₁ .src-left q = hh src (at (hd q))
+    base₁ .left-left p q = hh (at (hd p)) (at (hd q))
+    base₁ .env-root = ≈-trans (hh env (at ε)) (into-hidden D₁ j₁ env)
+    base₁ .source-root = ≈-trans (hh src (at ε)) (into-hidden D₁ j₁ src)
+    base₁ .left-root p np =
+      ≈-trans (hh (at (hd p)) (at ε))
+      (≈-trans (+ₘ-cong (edge-off j₁ p np) ≈-refl) (into-hidden D₁ j₁ (at p)))
+    base₁ .env-right q =
+      ≈-trans (hh env (at (tl q))) (absorb (graph-s D₂ env (at q)) (graph D₁ env (at ε)))
+    base₁ .src-right q =
+      ≈-trans (hh src (at (tl q))) (absorb (graph-s D₂ src (at q)) (graph D₁ src (at ε)))
+    base₁ .right-right p q =
+      ≈-trans (hh (at (tl p)) (at (tl q)))
+              (absorb (graph-s D₂ (at p) (at q)) (graph-s (D₁ ∷ D₂) (at (tl p)) (at (hd ε))))
+    base₁ .right-root p =
+      ≈-trans (hh (at (tl p)) (at ε))
+              (absorb-r (edge-s j₂ p) (graph-s (D₁ ∷ D₂) (at (hd ε)) (at ε)))
+    base₁ .left-right p q =
+      ≈-trans (hh (at (hd p)) (at (tl q))) (absorb M.εₘ (graph D₁ (at p) (at ε)))
+    base₁ .right-left p q =
+      ≈-trans (hh (at (tl p)) (at (hd q))) (absorb-r M.εₘ (graph D₁ (at ε) (at q)))
+
+  record Phase₂ (G : GraphS (D₁ ∷ D₂)) (H : GraphS D₂)
+                (K : M.Matrix (bases-width (i ∷ is)) (width-env γ))
+                (Kₛ : M.Matrix (bases-width (i ∷ is)) 1) : Set ℓ where
+    field
+      env-right   : ∀ q → G env (at (tl q)) ≈ H env (at q)
+      src-right   : ∀ q → G src (at (tl q)) ≈ H src (at q)
+      right-right : ∀ p q → G (at (tl p)) (at (tl q)) ≈ H (at p) (at q)
+      env-root    : G env (at ε) ≈ (K M.+ₘ (j₂ ∘ H env (at ε)))
+      source-root : G src (at ε) ≈ (Kₛ M.+ₘ (j₂ ∘ H src (at ε)))
+      right-root  : ∀ p → is-ε-s p ≡ Bool.false →
+                    G (at (tl p)) (at ε) ≈ (j₂ ∘ H (at p) (at ε))
+
+  open Phase₂
+
+  step₂ : ∀ {G H K Kₛ} (w : PathS D₂) → is-ε-s w ≡ Bool.false →
+          Phase₂ G H K Kₛ → Phase₂ (hide-s G (at (tl w))) (hide-s H (at w)) K Kₛ
+  step₂ w nw r .env-right q = +ₘ-cong (r .env-right q) (∘-cong (r .right-right w q) (r .env-right w))
+  step₂ w nw r .src-right q = +ₘ-cong (r .src-right q) (∘-cong (r .right-right w q) (r .src-right w))
+  step₂ w nw r .right-right p q =
+    +ₘ-cong (r .right-right p q) (∘-cong (r .right-right w q) (r .right-right p w))
+  step₂ w nw r .env-root =
+    offset-step {P = j₂} (r .env-root) (r .right-root w nw) (r .env-right w)
+  step₂ w nw r .source-root =
+    offset-step {P = j₂} (r .source-root) (r .right-root w nw) (r .src-right w)
+  step₂ w nw r .right-root p np =
+    root-step {P = j₂} (r .right-root p np) (r .right-root w nw) (r .right-right p w)
+
+  steps₂ : ∀ {G H K Kₛ} (ws : List (PathS D₂)) → All (λ w → is-ε-s w ≡ Bool.false) ws →
+           Phase₂ G H K Kₛ →
+           Phase₂ (hide-all-s G (map at (map tl ws))) (hide-all-s H (map at ws)) K Kₛ
+  steps₂ []       []         r = r
+  steps₂ (w ∷ ws) (nw ∷ nws) r = steps₂ ws nws (step₂ w nw r)
+
+  private
+    r1 : Phase₁ (hide-all-s (hide-s (hide-s (graph-s (D₁ ∷ D₂)) (at ε)) (at (hd ε)))
+                            (map at (map hd (interior D₁))))
+                (hide-all (hide (graph D₁) (at ε)) (map at (interior D₁)))
+    r1 = steps₁ (interior D₁) (interior-not-root D₁) base₁
+
+    base₂ : Phase₂ (hide-s (hide-all-s (hide-s (hide-s (graph-s (D₁ ∷ D₂)) (at ε)) (at (hd ε)))
+                                       (map at (map hd (interior D₁))))
+                           (at (tl ε)))
+                   (hide-s (graph-s D₂) (at ε))
+                   (j₁ ∘ collapse D₁)
+                   (j₁ ∘ collapse-src D₁)
+    base₂ .env-right q = +ₘ-cong (r1 .env-right q) (∘-cong (r1 .right-right ε q) (r1 .env-right ε))
+    base₂ .src-right q = +ₘ-cong (r1 .src-right q) (∘-cong (r1 .right-right ε q) (r1 .src-right ε))
+    base₂ .right-right p q =
+      +ₘ-cong (r1 .right-right p q) (∘-cong (r1 .right-right ε q) (r1 .right-right p ε))
+    base₂ .env-root =
+      ≈-trans (+ₘ-cong (r1 .env-root) (∘-cong (r1 .right-root ε) (r1 .env-right ε)))
+              (+ₘ-cong (≈-refl {f = j₁ ∘ collapse D₁})
+                       (∘-cong₂ {f = j₂} (≈-sym (hide-root-s D₂ env (at ε)))))
+    base₂ .source-root =
+      ≈-trans (+ₘ-cong (r1 .source-root) (∘-cong (r1 .right-root ε) (r1 .src-right ε)))
+              (+ₘ-cong (≈-refl {f = j₁ ∘ collapse-src D₁})
+                       (∘-cong₂ {f = j₂} (≈-sym (hide-root-s D₂ src (at ε)))))
+    base₂ .right-root p np =
+      ≈-trans (+ₘ-cong (≈-trans (r1 .right-root p) (edge-off-s j₂ p np))
+                       (∘-cong (r1 .right-root ε) (r1 .right-right p ε)))
+              (into-hidden-s D₂ j₂ (at p))
+
+    plumb : ∀ (x : VertexS (D₁ ∷ D₂)) →
+            hide-all-s (hide-s (graph-s (D₁ ∷ D₂)) (at ε))
+                       (map at (map hd (paths D₁) ++ map tl (paths-s D₂))) x (at ε)
+            ≡ hide-all-s (hide-all-s (hide-s (graph-s (D₁ ∷ D₂)) (at ε))
+                                     (map at (map hd (paths D₁))))
+                         (map at (map tl (paths-s D₂))) x (at ε)
+    plumb x =
+      ≡-trans (≡-cong (λ L → hide-all-s (hide-s (graph-s (D₁ ∷ D₂)) (at ε)) L x (at ε))
+                      (map-++ at (map hd (paths D₁)) (map tl (paths-s D₂))))
+              (≡-cong (λ Gg → Gg x (at ε))
+                      (hide-all-s-++ (hide-s (graph-s (D₁ ∷ D₂)) (at ε))
+                                     (map at (map hd (paths D₁)))
+                                     (map at (map tl (paths-s D₂)))))
+
+  -- Collapsing an operand cons pairs the head and tail collapses.
+  agree : collapse-s (D₁ ∷ D₂) ≈ ((j₁ ∘ collapse D₁) M.+ₘ (j₂ ∘ collapse-s D₂))
+  agree =
+    ≈-trans (≈-of-≡ (plumb env)) (steps₂ (interior-s D₂) (interior-not-root-s D₂) base₂ .env-root)
+
+  agree-src : collapse-s-src (D₁ ∷ D₂)
+              ≈ ((j₁ ∘ collapse-src D₁) M.+ₘ (j₂ ∘ collapse-s-src D₂))
+  agree-src =
+    ≈-trans (≈-of-≡ (plumb src))
+            (steps₂ (interior-s D₂) (interior-not-root-s D₂) base₂ .source-root)
+
+-- A primitive operation: one operand-list premise, with the operator's derivative as root edge.
+-- The result is freshly built, so its source column is the control weight.
+module Bop {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is}
+           {vs : sort-vals is} {Rs : Nat.suc (width-env γ) ⇒ bases-width is}
+           {D : γ , Ms ⇓s vs [ Rs ]} where
+
+  record Embeds (G : Graph (⇓-bop {ω = ω} D)) (H : GraphS D)
+                (P : M.Matrix (sort-width o') (bases-width is))
+                (K : M.Matrix (sort-width o') 1) : Set ℓ where
+    field
+      env-embed   : ∀ q → G env (at (bop q)) ≈ H env (at q)
+      src-embed   : ∀ q → G src (at (bop q)) ≈ H src (at q)
+      embed-embed : ∀ p q → G (at (bop p)) (at (bop q)) ≈ H (at p) (at q)
+      env-root    : G env (at ε) ≈ (P ∘ H env (at ε))
+      source-root : G src (at ε) ≈ (K M.+ₘ (P ∘ H src (at ε)))
+      embed-root  : ∀ p → is-ε-s p ≡ Bool.false →
+                    G (at (bop p)) (at ε) ≈ (P ∘ H (at p) (at ε))
+
+  open Embeds
+
+  embeds-hide : ∀ {G H P K} (w : PathS D) → is-ε-s w ≡ Bool.false →
+                Embeds G H P K → Embeds (hide G (at (bop w))) (hide-s H (at w)) P K
+  embeds-hide w nw s .env-embed q =
+    +ₘ-cong (s .env-embed q) (∘-cong (s .embed-embed w q) (s .env-embed w))
+  embeds-hide w nw s .src-embed q =
+    +ₘ-cong (s .src-embed q) (∘-cong (s .embed-embed w q) (s .src-embed w))
+  embeds-hide w nw s .embed-embed p q =
+    +ₘ-cong (s .embed-embed p q) (∘-cong (s .embed-embed w q) (s .embed-embed p w))
+  embeds-hide {H = H} {P = P} w nw s .env-root =
+    root-step {P = P} {X = H env (at ε)} {Y = H (at w) (at ε)} {Z = H env (at w)}
+      (s .env-root) (s .embed-root w nw) (s .env-embed w)
+  embeds-hide {H = H} {P = P} {K = K} w nw s .source-root =
+    offset-step {K = K} {P = P} {X = H src (at ε)} {Y = H (at w) (at ε)} {Z = H src (at w)}
+      (s .source-root) (s .embed-root w nw) (s .src-embed w)
+  embeds-hide {H = H} {P = P} w nw s .embed-root p np =
+    root-step {P = P} {X = H (at p) (at ε)} {Y = H (at w) (at ε)} {Z = H (at p) (at w)}
+      (s .embed-root p np) (s .embed-root w nw) (s .embed-embed p w)
+
+  embeds-hide-all : ∀ {G H P K} (ws : List (PathS D)) → All (λ w → is-ε-s w ≡ Bool.false) ws →
+                    Embeds G H P K →
+                    Embeds (hide-all G (map at (map bop ws))) (hide-all-s H (map at ws)) P K
+  embeds-hide-all []       []         s = s
+  embeds-hide-all (w ∷ ws) (nw ∷ nws) s = embeds-hide-all ws nws (embeds-hide w nw s)
+
+  private
+    embeds₀ : Embeds (hide (hide (graph (⇓-bop {ω = ω} D)) (at ε)) (at (bop ε)))
+                     (hide-s (graph-s D) (at ε)) (op-deps ω .func vs) ctrl-row
+    embeds₀ .env-embed q = hide-hide-root (⇓-bop {ω = ω} D) (at (bop ε)) env (at (bop q))
+    embeds₀ .src-embed q = hide-hide-root (⇓-bop {ω = ω} D) (at (bop ε)) src (at (bop q))
+    embeds₀ .embed-embed p q =
+      hide-hide-root (⇓-bop {ω = ω} D) (at (bop ε)) (at (bop p)) (at (bop q))
+    embeds₀ .env-root =
+      ≈-trans (hide-hide-root (⇓-bop {ω = ω} D) (at (bop ε)) env (at ε))
+              (into-hidden-s D (op-deps ω .func vs) env)
+    embeds₀ .source-root =
+      ≈-trans {f = hide (hide (graph (⇓-bop {ω = ω} D)) (at ε)) (at (bop ε)) src (at ε)}
+              {g = ctrl-row M.+ₘ ((op-deps ω .func vs) ∘ graph-s D src (at ε))}
+              {h = ctrl-row M.+ₘ ((op-deps ω .func vs) ∘ hide-s (graph-s D) (at ε) src (at ε))}
+              (hide-hide-root (⇓-bop {ω = ω} D) (at (bop ε)) src (at ε))
+              (into-hidden-off-s D src ctrl-row (op-deps ω .func vs))
+    embeds₀ .embed-root p np =
+      ≈-trans (hide-hide-root (⇓-bop {ω = ω} D) (at (bop ε)) (at (bop p)) (at ε))
+      (≈-trans (+ₘ-cong (edge-off-s (op-deps ω .func vs) p np) ≈-refl)
+               (into-hidden-s D (op-deps ω .func vs) (at p)))
+
+  agree : collapse (⇓-bop {ω = ω} D) ≈ ((op-deps ω .func vs) ∘ collapse-s D)
+  agree = embeds-hide-all (interior-s D) (interior-not-root-s D) embeds₀ .env-root
+
+  agree-src : collapse-src (⇓-bop {ω = ω} D)
+              ≈ (ctrl-row M.+ₘ ((op-deps ω .func vs) ∘ collapse-s-src D))
+  agree-src = embeds-hide-all (interior-s D) (interior-not-root-s D) embeds₀ .source-root
+
+-- A primitive relation, as for an operation but with the branch-dependent derivative.
+module Brel {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is}
+            {vs : sort-vals is} {Rs : Nat.suc (width-env γ) ⇒ bases-width is}
+            {D : γ , Ms ⇓s vs [ Rs ]} where
+
+  private
+    b₀ = rel-pred ω .func vs
+
+  record Embeds (G : Graph (⇓-brel {ω = ω} D)) (H : GraphS D)
+                (P : M.Matrix (width (bool→val b₀)) (bases-width is))
+                (K : M.Matrix (width (bool→val b₀)) 1) : Set ℓ where
+    field
+      env-embed   : ∀ q → G env (at (brel q)) ≈ H env (at q)
+      src-embed   : ∀ q → G src (at (brel q)) ≈ H src (at q)
+      embed-embed : ∀ p q → G (at (brel p)) (at (brel q)) ≈ H (at p) (at q)
+      env-root    : G env (at ε) ≈ (P ∘ H env (at ε))
+      source-root : G src (at ε) ≈ (K M.+ₘ (P ∘ H src (at ε)))
+      embed-root  : ∀ p → is-ε-s p ≡ Bool.false →
+                    G (at (brel p)) (at ε) ≈ (P ∘ H (at p) (at ε))
+
+  open Embeds
+
+  embeds-hide : ∀ {G H P K} (w : PathS D) → is-ε-s w ≡ Bool.false →
+                Embeds G H P K → Embeds (hide G (at (brel w))) (hide-s H (at w)) P K
+  embeds-hide w nw s .env-embed q =
+    +ₘ-cong (s .env-embed q) (∘-cong (s .embed-embed w q) (s .env-embed w))
+  embeds-hide w nw s .src-embed q =
+    +ₘ-cong (s .src-embed q) (∘-cong (s .embed-embed w q) (s .src-embed w))
+  embeds-hide w nw s .embed-embed p q =
+    +ₘ-cong (s .embed-embed p q) (∘-cong (s .embed-embed w q) (s .embed-embed p w))
+  embeds-hide {H = H} {P = P} w nw s .env-root =
+    root-step {P = P} {X = H env (at ε)} {Y = H (at w) (at ε)} {Z = H env (at w)}
+      (s .env-root) (s .embed-root w nw) (s .env-embed w)
+  embeds-hide {H = H} {P = P} {K = K} w nw s .source-root =
+    offset-step {K = K} {P = P} {X = H src (at ε)} {Y = H (at w) (at ε)} {Z = H src (at w)}
+      (s .source-root) (s .embed-root w nw) (s .src-embed w)
+  embeds-hide {H = H} {P = P} w nw s .embed-root p np =
+    root-step {P = P} {X = H (at p) (at ε)} {Y = H (at w) (at ε)} {Z = H (at p) (at w)}
+      (s .embed-root p np) (s .embed-root w nw) (s .embed-embed p w)
+
+  embeds-hide-all : ∀ {G H P K} (ws : List (PathS D)) → All (λ w → is-ε-s w ≡ Bool.false) ws →
+                    Embeds G H P K →
+                    Embeds (hide-all G (map at (map brel ws))) (hide-all-s H (map at ws)) P K
+  embeds-hide-all []       []         s = s
+  embeds-hide-all (w ∷ ws) (nw ∷ nws) s = embeds-hide-all ws nws (embeds-hide w nw s)
+
+  private
+    embeds₀ : Embeds (hide (hide (graph (⇓-brel {ω = ω} D)) (at ε)) (at (brel ε)))
+                     (hide-s (graph-s D) (at ε)) (brel-deps ω vs b₀) ctrl-row
+    embeds₀ .env-embed q = hide-hide-root (⇓-brel {ω = ω} D) (at (brel ε)) env (at (brel q))
+    embeds₀ .src-embed q = hide-hide-root (⇓-brel {ω = ω} D) (at (brel ε)) src (at (brel q))
+    embeds₀ .embed-embed p q =
+      hide-hide-root (⇓-brel {ω = ω} D) (at (brel ε)) (at (brel p)) (at (brel q))
+    embeds₀ .env-root =
+      ≈-trans (hide-hide-root (⇓-brel {ω = ω} D) (at (brel ε)) env (at ε))
+              (into-hidden-s D (brel-deps ω vs b₀) env)
+    embeds₀ .source-root =
+      ≈-trans {f = hide (hide (graph (⇓-brel {ω = ω} D)) (at ε)) (at (brel ε)) src (at ε)}
+              {g = ctrl-row M.+ₘ (brel-deps ω vs b₀ ∘ graph-s D src (at ε))}
+              {h = ctrl-row M.+ₘ (brel-deps ω vs b₀ ∘ hide-s (graph-s D) (at ε) src (at ε))}
+              (hide-hide-root (⇓-brel {ω = ω} D) (at (brel ε)) src (at ε))
+              (into-hidden-off-s D src ctrl-row (brel-deps ω vs b₀))
+    embeds₀ .embed-root p np =
+      ≈-trans (hide-hide-root (⇓-brel {ω = ω} D) (at (brel ε)) (at (brel p)) (at ε))
+      (≈-trans (+ₘ-cong (edge-off-s (brel-deps ω vs b₀) p np) ≈-refl)
+               (into-hidden-s D (brel-deps ω vs b₀) (at p)))
+
+  agree : collapse (⇓-brel {ω = ω} D) ≈ ((brel-deps ω vs b₀) ∘ collapse-s D)
+  agree = embeds-hide-all (interior-s D) (interior-not-root-s D) embeds₀ .env-root
+
+  agree-src : collapse-src (⇓-brel {ω = ω} D)
+              ≈ (ctrl-row M.+ₘ ((brel-deps ω vs b₀) ∘ collapse-s-src D))
+  agree-src = embeds-hide-all (interior-s D) (interior-not-root-s D) embeds₀ .source-root
