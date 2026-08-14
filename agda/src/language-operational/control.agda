@@ -86,10 +86,10 @@ mutual
                γ , pair s t ⇓ pair v u [ ⟨ wsrc {n = 1} , ⟨ R , T ⟩ ⟩ ]
     ⇓-fst    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
-               γ , fst t ⇓ v [ p₁ {width v} {width u} ∘ (p₂ {1} ∘ R) ]
+               γ , fst t ⇓ v [ (p₁ {width v} {width u} ∘ (p₂ {1} ∘ R)) M.+ₘ (ctrl-row ∘ new-src R) ]
     ⇓-snd    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
-               γ , snd t ⇓ u [ p₂ {width v} {width u} ∘ (p₂ {1} ∘ R) ]
+               γ , snd t ⇓ u [ (p₂ {width v} {width u} ∘ (p₂ {1} ∘ R)) M.+ₘ (ctrl-row ∘ new-src R) ]
     ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} →
                γ , lam t ⇓ clo γ t [ ⟨ wsrc , env-cols ⟩ ]
     ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R T U} →
