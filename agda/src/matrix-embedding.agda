@@ -259,7 +259,7 @@ L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘b
 
 -- The lifted action realises as the copairing over the block witness, which is the form the
 -- comparison's naturality is stated against.
-mat-Lmap : ∀ {P Q} (f : Category._⇒_ M.cat P Q) →
+mat-Lmap : ∀ {P Q} (f : MC._⇒_ P Q) →
            SMC._≈_ (mat (Lm.Lmap f))
                    (copair (𝔽-biproduct 1 P) {x = 𝔽-⊤ (Lm.L Q)}
                            (𝔽-biproduct 1 Q .in₁)
@@ -271,7 +271,7 @@ mat-Lmap {P} {Q} f =
       (SMC.≈-trans (mat-comp (M.in₂ {1} {Q} ∘ₘ f) (M.p₂ {1} {P}))
                    (SMC.∘-cong (mat-comp (M.in₂ {1} {Q}) f) (SMC.≈-refl {f = mat (M.p₂ {1} {P})}))))
 
-𝔽-L-natural : ∀ {P Q} (f : Category._⇒_ M.cat P Q) →
+𝔽-L-natural : ∀ {P Q} (f : MC._⇒_ P Q) →
   SMC._≈_ (SemiMod._∘_ (𝔽-L-iso Q .Category.Iso.fwd) (mat (Lm.Lmap f)))
           (SemiMod._∘_ (Ls.Lmap {𝔽-⊤ P} {𝔽-⊤ Q} (mat f))
                        (𝔽-L-iso P .Category.Iso.fwd))
@@ -330,12 +330,12 @@ sum-lin {Nat.suc m} k v i =
   split zero    = sym (trans (+-cong (trans ·-comm ·-lunit) refl) (trans +-comm +-lunit))
   split (suc l) = sym (trans (+-cong ε-annihilᵣ refl) +-lunit)
 
-𝔽F-faithful : ∀ {m n} {R T : Category._⇒_ M.cat m n} → SMC._≈_ (mat R) (mat T) → MC._≈_ R T
+𝔽F-faithful : ∀ {m n} {R T : MC._⇒_ m n} → SMC._≈_ (mat R) (mat T) → MC._≈_ R T
 𝔽F-faithful {R = R} {T} h i j =
   trans (sym (app-e R j i)) (trans (h .func-eq {M.e j} {M.e j} (λ _ → refl) i) (app-e T j i))
 
 𝔽F-full : ∀ {m n} (k : SemiMod._⇒_ (𝔽 m) (𝔽 n)) →
-          ∃ₛ (Category._⇒_ M.cat m n) λ R → SMC._≈_ (mat R) k
+          ∃ₛ (MC._⇒_ m n) λ R → SMC._≈_ (mat R) k
 𝔽F-full {m} k = (λ i j → k .func (M.e j) i) ,ₚ pf
   where
   pf : SMC._≈_ (mat (λ i j → k .func (M.e j) i)) k

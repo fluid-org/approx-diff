@@ -30,34 +30,34 @@ open Functor
 
 module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o m e o₂ m₂ e₂} (os es : Level)
-  {𝒞 : Category o m e} (T : HasTerminal 𝒞)
-  (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-  (𝟙c : Category.obj 𝒞)
-  {𝒟 : Category o₂ m₂ e₂} (T' : HasTerminal 𝒟)
-  (CM' : CMonEnriched 𝒟) (BP' : ∀ x y → Biproduct CM' x y)
-  (𝟙d : Category.obj 𝒟)
+  {𝒞 : Category o m e} (T𝒞 : HasTerminal 𝒞)
+  (CM𝒞 : CMonEnriched 𝒞) (BP𝒞 : ∀ x y → Biproduct CM𝒞 x y)
+  (𝟙𝒞 : Category.obj 𝒞)
+  {𝒟 : Category o₂ m₂ e₂} (T𝒟 : HasTerminal 𝒟)
+  (CM𝒟 : CMonEnriched 𝒟) (BP𝒟 : ∀ x y → Biproduct CM𝒟 x y)
+  (𝟙𝒟 : Category.obj 𝒟)
   (F : Functor 𝒞 𝒟)
-  (F-terminal : preserve-chosen-terminal F T T')
-  (F-prod : preserve-chosen-products F (biproducts→products CM BP) (biproducts→products CM' BP'))
-  (let module CL = lifting CM BP 𝟙c) (let module DL = lifting CM' BP' 𝟙d)
-  (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (CL.L X)) (DL.L (Functor.fobj F X)))
-  (F-L-natural : ∀ {X Y} (f : Category._⇒_ 𝒞 X Y) →
-     Category._≈_ 𝒟
-       (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (CL.Lmap f)))
-       (Category._∘_ 𝒟 (DL.Lmap (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
-  (let module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP 𝟙c)
-  (let module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' 𝟙d)
+  (F-terminal : preserve-chosen-terminal F T𝒞 T𝒟)
+  (F-prod : preserve-chosen-products F (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟))
+  (let module L𝒞 = lifting CM𝒞 BP𝒞 𝟙𝒞) (let module L𝒟 = lifting CM𝒟 BP𝒟 𝟙𝒟)
+  (let module 𝒞 = Category 𝒞) (let module 𝒟 = Category 𝒟)
+  (F-L : ∀ X → 𝒟.Iso (Functor.fobj F (L𝒞.L X)) (L𝒟.L (Functor.fobj F X)))
+  (F-L-natural : ∀ {X Y} (f : X 𝒞.⇒ Y) →
+     (F-L Y .𝒟.Iso.fwd 𝒟.∘ Functor.fmor F (L𝒞.Lmap f))
+       𝒟.≈ (L𝒟.Lmap (Functor.fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
+  (let module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM𝒞 BP𝒞 𝟙𝒞)
+  (let module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM𝒟 BP𝒟 𝟙𝒟)
   (𝒟E : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products)
   (𝒟-elim-pt : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X)
   (𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj)
-  (𝒞unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T)) 𝒞𝟙ty)
+  (𝒞unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T𝒞)) 𝒞𝟙ty)
   (let 𝒞Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty))
-  (𝒞-Sig-model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig)
+  (𝒞-Sig-model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T𝒞 , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig)
   where
 
 open language-syntax Sig
 
-module HR = fam-change-of-base os es T CM BP 𝟙c T' CM' BP' 𝟙d F F-terminal F-prod F-L F-L-natural
+module HR = fam-change-of-base os es T𝒞 CM𝒞 BP𝒞 𝟙𝒞 T𝒟 CM𝒟 BP𝒟 𝟙𝒟 F F-terminal F-prod F-L F-L-natural
 open HR using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-products;
                Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L)
 
@@ -77,7 +77,7 @@ private
 -- μ-types via the polynomial translation of the first-order witness.
 module _ where
   open Category Fam⟨𝒞⟩μ.cat
-  open HasTerminal (Fam⟨𝒞⟩μ.terminal T) renaming (witness to 𝟙)
+  open HasTerminal (Fam⟨𝒞⟩μ.terminal T𝒞) renaming (witness to 𝟙)
   open HasProducts Fam⟨𝒞⟩μ.products
   open HasCoproducts Fam⟨𝒞⟩μ.coproducts
   open Fam⟨𝒞⟩μ using (Lf)
@@ -107,19 +107,19 @@ module _ where
 𝒟𝟙ty : Fam⟨𝒟⟩μ.Obj
 𝒟𝟙ty = Fam⟨F⟩ .fobj 𝒞𝟙ty
 
-𝒟unit-pt : Fam⟨𝒟⟩μ.Mor (HasTerminal.witness (Fam⟨𝒟⟩μ.terminal T')) 𝒟𝟙ty
+𝒟unit-pt : Fam⟨𝒟⟩μ.Mor (HasTerminal.witness (Fam⟨𝒟⟩μ.terminal T𝒟)) 𝒟𝟙ty
 𝒟unit-pt = FD._∘_ (Fam⟨F⟩ .fmor 𝒞unit-pt) (Fam⟨F⟩-preserves-terminal .Category.IsIso.inverse)
 
 𝒟Bool = FDC.coprod (Fam⟨𝒟⟩μ.Lf 𝒟𝟙ty) (Fam⟨𝒟⟩μ.Lf 𝒟𝟙ty)
 
-𝒟-Sig-model : Model PFPC[ Fam⟨𝒟⟩μ.cat , Fam⟨𝒟⟩μ.terminal T' , Fam⟨𝒟⟩μ.products , 𝒟Bool ] Sig
+𝒟-Sig-model : Model PFPC[ Fam⟨𝒟⟩μ.cat , Fam⟨𝒟⟩μ.terminal T𝒟 , Fam⟨𝒟⟩μ.products , 𝒟Bool ] Sig
 𝒟-Sig-model =
   transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal
     (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y})
     (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
     𝒞-Sig-model
 
-open import language-interpretation Sig os es T' CM' BP' 𝟙d 𝒟E 𝒟-elim-pt δ∅𝒟
+open import language-interpretation Sig os es T𝒟 CM𝒟 BP𝒟 𝟙𝒟 𝒟E 𝒟-elim-pt δ∅𝒟
   𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
             ty-cong to 𝒟-ty-cong)

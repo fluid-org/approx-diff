@@ -33,28 +33,28 @@ import fam-mu-lifting.sort
 import fam-mu-lifting.fibre
 
 module fam-mu-lifting.fibrewise {o m e o₂ m₂ e₂} (os es : Level)
-    {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    (𝟙c : Category.obj 𝒞)
-    {𝒟 : Category o₂ m₂ e₂} (CM' : CMonEnriched 𝒟) (BP' : ∀ x y → Biproduct CM' x y)
-    (𝟙d : Category.obj 𝒟)
+    {𝒞 : Category o m e} (CM𝒞 : CMonEnriched 𝒞) (BP𝒞 : ∀ x y → Biproduct CM𝒞 x y)
+    (𝟙𝒞 : Category.obj 𝒞)
+    {𝒟 : Category o₂ m₂ e₂} (CM𝒟 : CMonEnriched 𝒟) (BP𝒟 : ∀ x y → Biproduct CM𝒟 x y)
+    (𝟙𝒟 : Category.obj 𝒟)
     (F : Functor 𝒞 𝒟)
-    (F-prod : preserve-chosen-products F (biproducts→products CM BP) (biproducts→products CM' BP'))
-    (let module CL = lifting CM BP 𝟙c) (let module DL = lifting CM' BP' 𝟙d)
-    (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (CL.L X)) (DL.L (Functor.fobj F X)))
-    (F-L-natural : ∀ {X Y} (f : Category._⇒_ 𝒞 X Y) →
-       Category._≈_ 𝒟
-         (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (CL.Lmap f)))
-         (Category._∘_ 𝒟 (DL.Lmap (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
+    (F-prod : preserve-chosen-products F (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟))
+    (let module L𝒞 = lifting CM𝒞 BP𝒞 𝟙𝒞) (let module L𝒟 = lifting CM𝒟 BP𝒟 𝟙𝒟)
+    (let module 𝒞 = Category 𝒞) (let module 𝒟 = Category 𝒟)
+    (F-L : ∀ X → 𝒟.Iso (Functor.fobj F (L𝒞.L X)) (L𝒟.L (Functor.fobj F X)))
+    (F-L-natural : ∀ {X Y} (f : X 𝒞.⇒ Y) →
+       (F-L Y .𝒟.Iso.fwd 𝒟.∘ Functor.fmor F (L𝒞.Lmap f))
+         𝒟.≈ (L𝒟.Lmap (Functor.fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
     where
 
 private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒟 = fam.CategoryOfFamilies os (os ⊔ es) 𝒟
+  module F𝒟C = Category F𝒟.cat
   module Srt = fam-mu-lifting.sort os es
-  module Fc = fam-mu-lifting.fibre os es CM BP 𝟙c
-  module Fd = fam-mu-lifting.fibre os es CM' BP' 𝟙d
-  module 𝒟C = Category 𝒟
-  module 𝒟Pm = HasProducts (biproducts→products CM' BP')
+  module Fib𝒞 = fam-mu-lifting.fibre os es CM𝒞 BP𝒞 𝟙𝒞
+  module Fib𝒟 = fam-mu-lifting.fibre os es CM𝒟 BP𝒟 𝟙𝒟
+  module 𝒟Pm = HasProducts (biproducts→products CM𝒟 BP𝒟)
 
 open Srt using (Sort; mkSort)
 open polynomial-functor using (Poly; Poly-map; extend)
@@ -66,7 +66,7 @@ open F𝒟.Mor
 open F𝒟._≃_
 open indexed-family._⇒f_
 open indexed-family._≃f_
-open 𝒟C
+open 𝒟
 open Iso
 
 FamF : Functor F𝒞.cat F𝒟.cat
@@ -74,16 +74,16 @@ FamF = fam-functor.FamF os (os ⊔ es) F
 
 private
   -- Lifting an isomorphism through the target lifting.
-  L-iso : ∀ {a b} → 𝒟C.Iso a b → 𝒟C.Iso (DL.L a) (DL.L b)
-  L-iso i .fwd = DL.Lmap (i .fwd)
-  L-iso i .bwd = DL.Lmap (i .bwd)
+  L-iso : ∀ {a b} → 𝒟.Iso a b → 𝒟.Iso (L𝒟.L a) (L𝒟.L b)
+  L-iso i .fwd = L𝒟.Lmap (i .fwd)
+  L-iso i .bwd = L𝒟.Lmap (i .bwd)
   L-iso i .fwd∘bwd≈id =
-    ≈-trans (≈-sym (DL.Lmap-comp _ _)) (≈-trans (DL.Lmap-cong (i .fwd∘bwd≈id)) DL.Lmap-id)
+    ≈-trans (≈-sym (L𝒟.Lmap-comp _ _)) (≈-trans (L𝒟.Lmap-cong (i .fwd∘bwd≈id)) L𝒟.Lmap-id)
   L-iso i .bwd∘fwd≈id =
-    ≈-trans (≈-sym (DL.Lmap-comp _ _)) (≈-trans (DL.Lmap-cong (i .bwd∘fwd≈id)) DL.Lmap-id)
+    ≈-trans (≈-sym (L𝒟.Lmap-comp _ _)) (≈-trans (L𝒟.Lmap-cong (i .bwd∘fwd≈id)) L𝒟.Lmap-id)
 
   -- Conjugating a commuting square by isomorphisms on both sides.
-  iso-flip : ∀ {a b c d} (i : 𝒟C.Iso a b) (j : 𝒟C.Iso c d)
+  iso-flip : ∀ {a b c d} (i : 𝒟.Iso a b) (j : 𝒟.Iso c d)
              {f : a ⇒ c} {g : b ⇒ d} →
              (j .fwd ∘ f) ≈ (g ∘ i .fwd) →
              (f ∘ i .bwd) ≈ (j .bwd ∘ g)
@@ -100,18 +100,18 @@ private
 
   -- One naturality step across a root: the transport under the source lifting is carried through
   -- the lifting comparison, given the inner square under the target lifting.
-  root-step : ∀ {a a' b b'} (i' : 𝒟C.Iso (F .fobj a') b') (i : 𝒟C.Iso (F .fobj a) b)
-              {s : Category._⇒_ 𝒞 a a'} {t : b ⇒ b'} →
+  root-step : ∀ {a a' b b'} (i' : 𝒟.Iso (F .fobj a') b') (i : 𝒟.Iso (F .fobj a) b)
+              {s : a 𝒞.⇒ a'} {t : b ⇒ b'} →
               ((i' .fwd ∘ F .fmor s) ≈ (t ∘ i .fwd)) →
-              (((DL.Lmap (i' .fwd) ∘ F-L a' .fwd) ∘ F .fmor (CL.Lmap s))
-                ≈ (DL.Lmap t ∘ (DL.Lmap (i .fwd) ∘ F-L a .fwd)))
+              (((L𝒟.Lmap (i' .fwd) ∘ F-L a' .fwd) ∘ F .fmor (L𝒞.Lmap s))
+                ≈ (L𝒟.Lmap t ∘ (L𝒟.Lmap (i .fwd) ∘ F-L a .fwd)))
   root-step {a} {a'} i' i {s} {t} inner =
     ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong ≈-refl (F-L-natural s))
         (≈-trans (≈-sym (assoc _ _ _))
           (≈-trans (∘-cong
-              (≈-trans (≈-sym (DL.Lmap-comp _ _))
-                (≈-trans (DL.Lmap-cong inner) (DL.Lmap-comp _ _)))
+              (≈-trans (≈-sym (L𝒟.Lmap-comp _ _))
+                (≈-trans (L𝒟.Lmap-cong inner) (L𝒟.Lmap-comp _ _)))
               ≈-refl)
             (assoc _ _ _))))
 
@@ -120,10 +120,10 @@ private
 
 module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
   module T = Srt.Tree (λ i → δ i .idx)
-  module C = Fc.Fibre δ
-  module D = Fd.Fibre (λ i → FamF .fobj (δ i))
+  module C = Fib𝒞.Fibre δ
+  module D = Fib𝒟.Fibre (λ i → FamF .fobj (δ i))
 
-  P̂ : ∀ {j} → Fc.Poly-C j → Fd.Poly-C j
+  P̂ : ∀ {j} → Fib𝒞.Poly-C j → Fib𝒟.Poly-C j
   P̂ = Poly-map FamF
 
   -- Relate references and decorated sorts of the two erasures: environment
@@ -144,15 +144,15 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
       srt : ∀ {s₁ s₂ e₁ e₂} → SortRel s₁ s₂ e₁ e₂ → SRel (inj₂ s₁) (inj₂ s₂) e₁ e₂
 
     data SortRel : (s₁ s₂ : Sort N) → C.Deco s₁ → D.Deco s₂ → Set ℓk where
-      mk : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
-           SortRel (mkSort Fc.∣ Q ∣ (E .RelAssign.ρ₁)) (mkSort Fd.∣ P̂ Q ∣ (E .RelAssign.ρ₂))
+      mk : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
+           SortRel (mkSort Fib𝒞.∣ Q ∣ (E .RelAssign.ρ₁)) (mkSort Fib𝒟.∣ P̂ Q ∣ (E .RelAssign.ρ₂))
                    (C.mkDeco Q (E .RelAssign.d₁)) (D.mkDeco (P̂ Q) (E .RelAssign.d₂))
 
   open RelAssign public
 
-  ext : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) → RelAssign j → RelAssign (sucℕ j)
-  ext Q E .ρ₁ = extend (E .ρ₁) (inj₂ (mkSort Fc.∣ Q ∣ (E .ρ₁)))
-  ext Q E .ρ₂ = extend (E .ρ₂) (inj₂ (mkSort Fd.∣ P̂ Q ∣ (E .ρ₂)))
+  ext : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) → RelAssign j → RelAssign (sucℕ j)
+  ext Q E .ρ₁ = extend (E .ρ₁) (inj₂ (mkSort Fib𝒞.∣ Q ∣ (E .ρ₁)))
+  ext Q E .ρ₂ = extend (E .ρ₂) (inj₂ (mkSort Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)))
   ext Q E .d₁ = C.deco-ext Q (E .d₁)
   ext Q E .d₂ = D.deco-ext (P̂ Q) (E .d₂)
   ext Q E .rel Fin.zero    = srt (mk Q E)
@@ -161,12 +161,12 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
   -- Forward tree transport, by recursion on the polynomial; the leaves are
   -- identities.
   mutual
-    cfwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
-           T.W Fc.∣ Q ∣ (E .ρ₁) → T.W Fd.∣ P̂ Q ∣ (E .ρ₂)
+    cfwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
+           T.W Fib𝒞.∣ Q ∣ (E .ρ₁) → T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)
     cfwd Q E (T.sup x) = T.sup (shape-cfwd Q (ext Q E) x)
 
-    shape-cfwd : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j) →
-                 T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁) → T.⟦ Fd.∣ P̂ Q ∣ ⟧shape (E .ρ₂)
+    shape-cfwd : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j) →
+                 T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁) → T.⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)
     shape-cfwd (Poly.const A) E x = x
     shape-cfwd (Poly.var i)   E x = el-cfwd (E .rel i) x
     shape-cfwd (Q Poly.+ R) E (inj₁ x) = inj₁ (shape-cfwd Q E x)
@@ -180,14 +180,14 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
 
   -- The forward transport preserves bisimilarity.
   mutual
-    c≈fwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
-            {x y : T.W Fc.∣ Q ∣ (E .ρ₁)} → T.W-≈ x y →
+    c≈fwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
+            {x y : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)} → T.W-≈ x y →
             T.W-≈ (cfwd Q E x) (cfwd Q E y)
     c≈fwd Q E {T.sup x} {T.sup y} p = shape≈-cfwd Q (ext Q E) p
 
-    shape≈-cfwd : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j) →
-                  {x y : T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)} → T.shape≈ Fc.∣ Q ∣ (E .ρ₁) x y →
-                  T.shape≈ Fd.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E x) (shape-cfwd Q E y)
+    shape≈-cfwd : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j) →
+                  {x y : T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)} → T.shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) x y →
+                  T.shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E x) (shape-cfwd Q E y)
     shape≈-cfwd (Poly.const A) E p = p
     shape≈-cfwd (Poly.var i)   E p = elEq-cfwd (E .rel i) p
     shape≈-cfwd (Q Poly.+ R) E {inj₁ _} {inj₁ _} p = shape≈-cfwd Q E p
@@ -203,12 +203,12 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
 
   -- Backward tree transport.
   mutual
-    cbwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
-           T.W Fd.∣ P̂ Q ∣ (E .ρ₂) → T.W Fc.∣ Q ∣ (E .ρ₁)
+    cbwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
+           T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) → T.W Fib𝒞.∣ Q ∣ (E .ρ₁)
     cbwd Q E (T.sup x) = T.sup (shape-cbwd Q (ext Q E) x)
 
-    shape-cbwd : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j) →
-                 T.⟦ Fd.∣ P̂ Q ∣ ⟧shape (E .ρ₂) → T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)
+    shape-cbwd : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j) →
+                 T.⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂) → T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)
     shape-cbwd (Poly.const A) E x = x
     shape-cbwd (Poly.var i)   E x = el-cbwd (E .rel i) x
     shape-cbwd (Q Poly.+ R) E (inj₁ x) = inj₁ (shape-cbwd Q E x)
@@ -222,14 +222,14 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
 
   -- The backward transport preserves bisimilarity.
   mutual
-    c≈bwd : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j) →
-            {x y : T.W Fd.∣ P̂ Q ∣ (E .ρ₂)} → T.W-≈ x y →
+    c≈bwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
+            {x y : T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)} → T.W-≈ x y →
             T.W-≈ (cbwd Q E x) (cbwd Q E y)
     c≈bwd Q E {T.sup x} {T.sup y} p = shape≈-cbwd Q (ext Q E) p
 
-    shape≈-cbwd : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j) →
-                  {x y : T.⟦ Fd.∣ P̂ Q ∣ ⟧shape (E .ρ₂)} → T.shape≈ Fd.∣ P̂ Q ∣ (E .ρ₂) x y →
-                  T.shape≈ Fc.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E x) (shape-cbwd Q E y)
+    shape≈-cbwd : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j) →
+                  {x y : T.⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)} → T.shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) x y →
+                  T.shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E x) (shape-cbwd Q E y)
     shape≈-cbwd (Poly.const A) E p = p
     shape≈-cbwd (Poly.var i)   E p = elEq-cbwd (E .rel i) p
     shape≈-cbwd (Q Poly.+ R) E {inj₁ _} {inj₁ _} p = shape≈-cbwd Q E p
@@ -245,14 +245,14 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
 
   -- Round trips: the two transports are mutually inverse up to bisimilarity.
   mutual
-    c-fb : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j)
-           (x : T.W Fc.∣ Q ∣ (E .ρ₁)) →
+    c-fb : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
+           (x : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)) →
            T.W-≈ (cbwd Q E (cfwd Q E x)) x
     c-fb Q E (T.sup x) = shape-cfb Q (ext Q E) x
 
-    shape-cfb : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j)
-                (x : T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)) →
-                T.shape≈ Fc.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E (shape-cfwd Q E x)) x
+    shape-cfb : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j)
+                (x : T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)) →
+                T.shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E (shape-cfwd Q E x)) x
     shape-cfb (Poly.const A) E x = IsEquivalence.refl (Setoid.isEquivalence (A .idx))
     shape-cfb (Poly.var i)   E x = el-cfb (E .rel i) x
     shape-cfb (Q Poly.+ R) E (inj₁ x) = shape-cfb Q E x
@@ -266,14 +266,14 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     el-cfb (srt (mk Q E)) x = c-fb Q E x
 
   mutual
-    c-bf : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j)
-           (y : T.W Fd.∣ P̂ Q ∣ (E .ρ₂)) →
+    c-bf : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
+           (y : T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)) →
            T.W-≈ (cfwd Q E (cbwd Q E y)) y
     c-bf Q E (T.sup y) = shape-cbf Q (ext Q E) y
 
-    shape-cbf : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j)
-                (y : T.⟦ Fd.∣ P̂ Q ∣ ⟧shape (E .ρ₂)) →
-                T.shape≈ Fd.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E (shape-cbwd Q E y)) y
+    shape-cbf : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j)
+                (y : T.⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)) →
+                T.shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E (shape-cbwd Q E y)) y
     shape-cbf (Poly.const A) E y = IsEquivalence.refl (Setoid.isEquivalence (A .idx))
     shape-cbf (Poly.var i)   E y = el-cbf (E .rel i) y
     shape-cbf (Q Poly.+ R) E (inj₁ y) = shape-cbf Q E y
@@ -291,14 +291,14 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
   -- identities, products cross the product comparison, and each root crosses
   -- the lifting comparison.
   mutual
-    fib-ciso : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j)
-               (w : T.W Fc.∣ Q ∣ (E .ρ₁)) →
-               𝒟C.Iso (F .fobj (C.fib Q (E .d₁) w)) (D.fib (P̂ Q) (E .d₂) (cfwd Q E w))
+    fib-ciso : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
+               (w : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)) →
+               𝒟.Iso (F .fobj (C.fib Q (E .d₁) w)) (D.fib (P̂ Q) (E .d₂) (cfwd Q E w))
     fib-ciso Q E (T.sup x) = fib-shape-ciso Q (ext Q E) x
 
-    fib-shape-ciso : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j)
-                     (x : T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)) →
-                     𝒟C.Iso (F .fobj (C.fib-shape Q (E .d₁) x))
+    fib-shape-ciso : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j)
+                     (x : T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)) →
+                     𝒟.Iso (F .fobj (C.fib-shape Q (E .d₁) x))
                             (D.fib-shape (P̂ Q) (E .d₂) (shape-cfwd Q E x))
     fib-shape-ciso (Poly.const A) E x = Iso-refl
     fib-shape-ciso (Poly.var i)   E x = fib-el-ciso (E .rel i) x
@@ -315,17 +315,17 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     fib-shape-ciso (Poly.μ Q')  E t = fib-ciso Q' E t
 
     fib-el-ciso : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) →
-                  𝒟C.Iso (F .fobj (C.fib-el r₁ e₁ x)) (D.fib-el r₂ e₂ (el-cfwd r x))
+                  𝒟.Iso (F .fobj (C.fib-el r₁ e₁ x)) (D.fib-el r₂ e₂ (el-cfwd r x))
     fib-el-ciso (env {p}) x = Iso-refl
     fib-el-ciso (srt (mk Q E)) x = fib-ciso Q E x
 
-  open preserve-chosen-products-consequences F (biproducts→products CM BP) (biproducts→products CM' BP') F-prod
+  open preserve-chosen-products-consequences F (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟) F-prod
     using (mul⁻¹-natural)
 
   -- The fibre isomorphisms commute with transport along bisimilarity.
   mutual
-    fib-cnat : ∀ {j} (Q : Fc.Poly-C (sucℕ j)) (E : RelAssign j)
-               {w w' : T.W Fc.∣ Q ∣ (E .ρ₁)} (p : T.W-≈ w w') →
+    fib-cnat : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
+               {w w' : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)} (p : T.W-≈ w w') →
                ((fib-ciso Q E w' .fwd)
                  ∘ F .fmor (C.fib-subst Q (E .d₁) {x = w} {y = w'} p))
                ≈ ((D.fib-subst (P̂ Q) (E .d₂)
@@ -334,8 +334,8 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
                      ∘ (fib-ciso Q E w .fwd))
     fib-cnat Q E {T.sup x} {T.sup x'} p = fib-shape-cnat Q (ext Q E) {x} {x'} p
 
-    fib-shape-cnat : ∀ {j} (Q : Fc.Poly-C j) (E : RelAssign j)
-                     {x x' : T.⟦ Fc.∣ Q ∣ ⟧shape (E .ρ₁)} (p : T.shape≈ Fc.∣ Q ∣ (E .ρ₁) x x') →
+    fib-shape-cnat : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j)
+                     {x x' : T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)} (p : T.shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) x x') →
                      ((fib-shape-ciso Q E x' .fwd)
                        ∘ F .fmor (C.fib-shape-subst Q (E .d₁) p))
                      ≈ ((D.fib-shape-subst (P̂ Q) (E .d₂) (shape≈-cfwd Q E {x} {x'} p))
@@ -366,13 +366,13 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
         s₁ = C.fib-shape-subst Q (E .d₁) p₁
         s₂ = C.fib-shape-subst R (E .d₁) p₂
 
-        pI : 𝒟C.Iso _ _
+        pI : 𝒟.Iso _ _
         pI = Iso-trans (IsIso→Iso F-prod)
                (𝒟Pm.product-preserves-iso
                  (fib-shape-ciso Q E x₁)
                  (fib-shape-ciso R E x₂))
 
-        pI' : 𝒟C.Iso _ _
+        pI' : 𝒟.Iso _ _
         pI' = Iso-trans (IsIso→Iso F-prod)
                 (𝒟Pm.product-preserves-iso
                   (fib-shape-ciso Q E x₁')
@@ -389,7 +389,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
 
 -- The assembled comparison: the change of base commutes with the μ-carriers, as
 -- an isomorphism of Fam(𝒟)-objects over shared trees.
-module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Obj) where
+module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Obj) where
   open Fibrewise δ
   open Fam
 
@@ -405,13 +405,13 @@ module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Ob
     Bw = cbwd P E₀
     ci = fib-ciso P E₀
 
-  fwd-mor : F𝒟.Mor (FamF .fobj (Fc.μ-fam P δ)) (Fd.μ-fam (P̂ P) (λ i → FamF .fobj (δ i)))
+  fwd-mor : F𝒟.Mor (FamF .fobj (Fib𝒞.μ-fam P δ)) (Fib𝒟.μ-fam (P̂ P) (λ i → FamF .fobj (δ i)))
   fwd-mor .idxf .func = Fw
   fwd-mor .idxf .func-resp-≈ {w} {w'} = c≈fwd P E₀ {w} {w'}
   fwd-mor .famf .transf w = ci w .fwd
   fwd-mor .famf .natural {w} {w'} q = fib-cnat P E₀ {w} {w'} q
 
-  bwd-mor : F𝒟.Mor (Fd.μ-fam (P̂ P) (λ i → FamF .fobj (δ i))) (FamF .fobj (Fc.μ-fam P δ))
+  bwd-mor : F𝒟.Mor (Fib𝒟.μ-fam (P̂ P) (λ i → FamF .fobj (δ i))) (FamF .fobj (Fib𝒞.μ-fam P δ))
   bwd-mor .idxf .func = Bw
   bwd-mor .idxf .func-resp-≈ {s} {s'} = c≈bwd P E₀ {s} {s'}
   bwd-mor .famf .transf s =
@@ -431,8 +431,8 @@ module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Ob
                 (∘-cong₂ (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
                                           {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _))))))))
 
-  fb-≃ : Category._≈_ F𝒟.cat
-           (Category._∘_ F𝒟.cat fwd-mor bwd-mor) (Category.id F𝒟.cat _)
+  fb-≃ : F𝒟C._≈_
+           (F𝒟C._∘_ fwd-mor bwd-mor) (F𝒟C.id _)
   fb-≃ .idxf-eq =
     mk-≃m (λ s → c-bf P E₀ s)
   fb-≃ .famf-eq .transf-eq {s} =
@@ -443,8 +443,8 @@ module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Ob
                                   {x = s} {y = Fw (Bw s)} {z = s} _ _))
           (D.fib-refl* (P̂ P) (E₀ .d₂) s)))
 
-  bf-≃ : Category._≈_ F𝒟.cat
-           (Category._∘_ F𝒟.cat bwd-mor fwd-mor) (Category.id F𝒟.cat _)
+  bf-≃ : F𝒟C._≈_
+           (F𝒟C._∘_ bwd-mor fwd-mor) (F𝒟C.id _)
   bf-≃ .idxf-eq =
     mk-≃m (λ w → c-fb P E₀ w)
   bf-≃ .famf-eq .transf-eq {w} =
@@ -455,12 +455,12 @@ module FibrewiseMu {n : ℕ} (P : Fc.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Ob
                 (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P E₀ w)))))
             (≈-trans (≈-sym (assoc _ _ _))
               (≈-trans (∘-cong₁ (ci (Bw (Fw w)) .bwd∘fwd≈id)) id-left)))))
-        (≈-trans (≈-sym ((FamF .fobj (Fc.μ-fam P δ)) .fam .trans*
+        (≈-trans (≈-sym ((FamF .fobj (Fib𝒞.μ-fam P δ)) .fam .trans*
                                   {x = w} {y = Bw (Fw w)} {z = w} _ _))
-          ((FamF .fobj (Fc.μ-fam P δ)) .fam .refl* {x = w})))
+          ((FamF .fobj (Fib𝒞.μ-fam P δ)) .fam .refl* {x = w})))
 
   fibrewise-μ-iso : Category.Iso F𝒟.cat
-                  (FamF .fobj (Fc.μ-fam P δ)) (Fd.μ-fam (P̂ P) (λ i → FamF .fobj (δ i)))
+                  (FamF .fobj (Fib𝒞.μ-fam P δ)) (Fib𝒟.μ-fam (P̂ P) (λ i → FamF .fobj (δ i)))
   fibrewise-μ-iso .Category.Iso.fwd = fwd-mor
   fibrewise-μ-iso .Category.Iso.bwd = bwd-mor
   fibrewise-μ-iso .Category.Iso.fwd∘bwd≈id = fb-≃

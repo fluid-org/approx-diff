@@ -23,28 +23,27 @@ import fam-mu-lifting.in-map
 import fam-mu-lifting.fibrewise
 
 module fam-change-of-base {o m e o₂ m₂ e₂} (os es : Level)
-    {𝒞 : Category o m e} (T : HasTerminal 𝒞)
-    (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    (𝟙c : Category.obj 𝒞)
-    {𝒟 : Category o₂ m₂ e₂} (T' : HasTerminal 𝒟)
-    (CM' : CMonEnriched 𝒟) (BP' : ∀ x y → Biproduct CM' x y)
-    (𝟙d : Category.obj 𝒟)
+    {𝒞 : Category o m e} (T𝒞 : HasTerminal 𝒞)
+    (CM𝒞 : CMonEnriched 𝒞) (BP𝒞 : ∀ x y → Biproduct CM𝒞 x y)
+    (𝟙𝒞 : Category.obj 𝒞)
+    {𝒟 : Category o₂ m₂ e₂} (T𝒟 : HasTerminal 𝒟)
+    (CM𝒟 : CMonEnriched 𝒟) (BP𝒟 : ∀ x y → Biproduct CM𝒟 x y)
+    (𝟙𝒟 : Category.obj 𝒟)
     (F : Functor 𝒞 𝒟)
-    (F-terminal : preserve-chosen-terminal F T T')
-    (F-prod : preserve-chosen-products F (biproducts→products CM BP) (biproducts→products CM' BP'))
-    (let module CL = lifting CM BP 𝟙c) (let module DL = lifting CM' BP' 𝟙d)
-    (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (CL.L X)) (DL.L (Functor.fobj F X)))
-    (F-L-natural : ∀ {X Y} (f : Category._⇒_ 𝒞 X Y) →
-       Category._≈_ 𝒟
-         (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (CL.Lmap f)))
-         (Category._∘_ 𝒟 (DL.Lmap (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
+    (F-terminal : preserve-chosen-terminal F T𝒞 T𝒟)
+    (F-prod : preserve-chosen-products F (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟))
+    (let module L𝒞 = lifting CM𝒞 BP𝒞 𝟙𝒞) (let module L𝒟 = lifting CM𝒟 BP𝒟 𝟙𝒟)
+    (let module 𝒞 = Category 𝒞) (let module 𝒟 = Category 𝒟)
+    (F-L : ∀ X → 𝒟.Iso (Functor.fobj F (L𝒞.L X)) (L𝒟.L (Functor.fobj F X)))
+    (F-L-natural : ∀ {X Y} (f : X 𝒞.⇒ Y) →
+       (F-L Y .𝒟.Iso.fwd 𝒟.∘ Functor.fmor F (L𝒞.Lmap f))
+         𝒟.≈ (L𝒟.Lmap (Functor.fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
     where
 
-module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP 𝟙c
-module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' 𝟙d
+module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM𝒞 BP𝒞 𝟙𝒞
+module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM𝒟 BP𝒟 𝟙𝒟
 
 private
-  module 𝒟C = Category 𝒟
   module Fam𝒟 = Category Fam⟨𝒟⟩μ.cat
 
 open Category.Iso
@@ -65,16 +64,16 @@ Fam⟨F⟩ = fam-functor.FamF os (os ⊔ es) F
 
 Fam⟨F⟩-preserves-coproducts = fam-functor.preserve-coproducts os (os ⊔ es) F
 
-Fam⟨F⟩-preserves-terminal = fam-functor.preserve-terminal os (os ⊔ es) F T T' F-terminal
+Fam⟨F⟩-preserves-terminal = fam-functor.preserve-terminal os (os ⊔ es) F T𝒞 T𝒟 F-terminal
 
 Fam⟨F⟩-preserves-products =
   fam-functor.preserve-products os (os ⊔ es) F
-    (biproducts→products CM BP) (biproducts→products CM' BP')
+    (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟)
     (λ {X} {Y} → F-prod {X} {Y})
 
 -- The lifting comparison, fibrewise: the change of base commutes with the two liftings.
 Fam⟨F⟩-L : ∀ (X : Fam⟨𝒞⟩μ.Obj) →
-           Category.Iso Fam⟨𝒟⟩μ.cat (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X))
+           Fam𝒟.Iso (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X))
 Fam⟨F⟩-L X .fwd .idxf = prop-setoid.idS _
 Fam⟨F⟩-L X .fwd .famf .transf x = F-L (X .fam .fm x) .fwd
 Fam⟨F⟩-L X .fwd .famf .natural e = F-L-natural (X .fam .subst e)
@@ -84,10 +83,10 @@ Fam⟨F⟩-L X .bwd .famf .natural {x₁} {x₂} e =
   flip (F-L (X .fam .fm x₁)) (F-L (X .fam .fm x₂)) (F-L-natural (X .fam .subst e))
   where
     -- Conjugating the naturality square by the comparison isomorphisms.
-    flip : ∀ {a a' b b'} (i : 𝒟C.Iso a b) (j : 𝒟C.Iso a' b')
-           {f : a 𝒟C.⇒ a'} {g : b 𝒟C.⇒ b'} →
-           𝒟C._≈_ (𝒟C._∘_ (j .fwd) f) (𝒟C._∘_ g (i .fwd)) →
-           𝒟C._≈_ (𝒟C._∘_ (j .bwd) g) (𝒟C._∘_ f (i .bwd))
+    flip : ∀ {a a' b b'} (i : 𝒟.Iso a b) (j : 𝒟.Iso a' b')
+           {f : a 𝒟.⇒ a'} {g : b 𝒟.⇒ b'} →
+           𝒟._≈_ (𝒟._∘_ (j .fwd) f) (𝒟._∘_ g (i .fwd)) →
+           𝒟._≈_ (𝒟._∘_ (j .bwd) g) (𝒟._∘_ f (i .bwd))
     flip i j {f} {g} sq =
       begin
         j .bwd ∘ g
@@ -102,25 +101,25 @@ Fam⟨F⟩-L X .bwd .famf .natural {x₁} {x₂} e =
       ≈˘⟨ assoc _ _ _ ⟩
         (j .bwd ∘ j .fwd) ∘ (f ∘ i .bwd)
       ≈⟨ ∘-cong (j .bwd∘fwd≈id) ≈-refl ⟩
-        𝒟C.id _ ∘ (f ∘ i .bwd)
+        𝒟.id _ ∘ (f ∘ i .bwd)
       ≈⟨ id-left ⟩
         f ∘ i .bwd
       ∎
       where
-        open 𝒟C
-        open prop-setoid.≈-Reasoning 𝒟C.isEquiv
+        open 𝒟
+        open prop-setoid.≈-Reasoning 𝒟.isEquiv
 Fam⟨F⟩-L X .fwd∘bwd≈id .idxf-eq .func-eq e = e
 Fam⟨F⟩-L X .fwd∘bwd≈id .famf-eq .transf-eq {x} =
-  𝒟C.≈-trans
-    (𝒟C.∘-cong (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X) .fam .refl*)
-               (𝒟C.≈-trans 𝒟C.id-left (F-L (X .fam .fm x) .fwd∘bwd≈id)))
-    𝒟C.id-left
+  𝒟.≈-trans
+    (𝒟.∘-cong (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X) .fam .refl*)
+               (𝒟.≈-trans 𝒟.id-left (F-L (X .fam .fm x) .fwd∘bwd≈id)))
+    𝒟.id-left
 Fam⟨F⟩-L X .bwd∘fwd≈id .idxf-eq .func-eq e = e
 Fam⟨F⟩-L X .bwd∘fwd≈id .famf-eq .transf-eq {x} =
-  𝒟C.≈-trans
-    (𝒟C.∘-cong (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X) .fam .refl*)
-               (𝒟C.≈-trans 𝒟C.id-left (F-L (X .fam .fm x) .bwd∘fwd≈id)))
-    𝒟C.id-left
+  𝒟.≈-trans
+    (𝒟.∘-cong (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X) .fam .refl*)
+               (𝒟.≈-trans 𝒟.id-left (F-L (X .fam .fm x) .bwd∘fwd≈id)))
+    𝒟.id-left
 
 module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
 
@@ -137,5 +136,5 @@ module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
              (Fam⟨F⟩-preserves-coproducts .inverse)
 
 module FW =
-  fam-mu-lifting.fibrewise os es CM BP 𝟙c CM' BP' 𝟙d
+  fam-mu-lifting.fibrewise os es CM𝒞 BP𝒞 𝟙𝒞 CM𝒟 BP𝒟 𝟙𝒟
     F (λ {X} {Y} → F-prod {X} {Y}) F-L (λ {X} {Y} f → F-L-natural {X} {Y} f)

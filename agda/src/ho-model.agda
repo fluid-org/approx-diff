@@ -57,7 +57,7 @@ private
   module MCM = CMonEnriched M.cmon
   module SMC = Category SemiMod.cat
 
-elim-weight-endo : Category._⇒_ SemiMod.cat SemiMod.𝕀 SemiMod.𝕀
+elim-weight-endo : SemiMod._⇒_ SemiMod.𝕀 SemiMod.𝕀
 elim-weight-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S elim-weight)) ι1-bwd)
 
 -- The unit object: the lifted terminal, one root for the unit value.
@@ -72,10 +72,10 @@ elim-weight-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S elim-we
 𝒞Bool = FCC.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
 
 -- The full selection: every position at the top weight.
-full : ∀ n → Category._⇒_ M.cat 1 n
+full : ∀ n → MC._⇒_ 1 n
 full n _ _ = Sc.ι
 
-full-absorb : ∀ {n} (h : Category._⇒_ M.cat 1 n) → MC._≈_ (MCM._+m_ h (full n)) (full n)
+full-absorb : ∀ {n} (h : MC._⇒_ 1 n) → MC._≈_ (MCM._+m_ h (full n)) (full n)
 full-absorb h i j = Sc.trans Sc.+-comm ⊤-add-top
 
 𝒞-tops : ∀ (X : Fam⟨𝒞⟩μ.Obj) → Fam⟨𝒞⟩μ.Pointed X
@@ -121,7 +121,7 @@ module sig-model (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
     -- The positions a test reads, as a single row into the outcome's root.
     d' : ∀ {is} (ψ : Signature.rel Sig is)
          (c : Setoid.Carrier (sort-vals-setoid Pm.sort-index is)) →
-         Category._⇒_ M.cat (Pm.bases-width is) 1
+         MC._⇒_ (Pm.bases-width is) 1
     d' ψ c = Pm.rel-deps ψ .func c
 
     deps-resp : ∀ {is} (ψ : Signature.rel Sig is)
@@ -218,7 +218,7 @@ module interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
       -- The image of each input position's basis vector, which presents the fibre map rather
       -- than tabulating it.
-      mat-of : Category._⇒_ M.cat src tgt
+      mat-of : MC._⇒_ src tgt
       mat-of q p = SemiMod._⇒_.func rel (M.e p) q
 
       presents : SMC._≈_ (mat mat-of) rel
