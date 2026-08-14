@@ -2303,3 +2303,191 @@ module Brel {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ bas
   agree-src : collapse-src (⇓-brel {ω = ω} D)
               ≈ (ctrl-row M.+ₘ ((brel-deps ω vs b₀) ∘ collapse-s-src D))
   agree-src = embeds-hide-all (interior-s D) (interior-not-root-s D) embeds₀ .source-root
+
+-- The fold-action family: mirrors of the root and edge lemmas.
+root-sink-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width v}
+              {v' : Val (σ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width v'}
+              (D : Map γ s σ' v R v' R') (y : VertexM D) → graph-m D (at ε) y ≈ M.εₘ
+root-sink-m (m-rec D₁ D₂) env i j = refl {x = two.O}
+root-sink-m (m-rec D₁ D₂) src i j = refl {x = two.O}
+root-sink-m (m-rec D₁ D₂) input i j = refl {x = two.O}
+root-sink-m (m-rec D₁ D₂) (at ε) i j = refl {x = two.O}
+root-sink-m (m-rec D₁ D₂) (at (m-rec₁ q)) i j = refl {x = two.O}
+root-sink-m (m-rec D₁ D₂) (at (m-rec₂ q)) i j = refl {x = two.O}
+root-sink-m m-unit env i j = refl {x = two.O}
+root-sink-m m-unit src i j = refl {x = two.O}
+root-sink-m m-unit input i j = refl {x = two.O}
+root-sink-m m-unit (at ε) i j = refl {x = two.O}
+root-sink-m m-base env i j = refl {x = two.O}
+root-sink-m m-base src i j = refl {x = two.O}
+root-sink-m m-base input i j = refl {x = two.O}
+root-sink-m m-base (at ε) i j = refl {x = two.O}
+root-sink-m m-arrow env i j = refl {x = two.O}
+root-sink-m m-arrow src i j = refl {x = two.O}
+root-sink-m m-arrow input i j = refl {x = two.O}
+root-sink-m m-arrow (at ε) i j = refl {x = two.O}
+root-sink-m (m-inl D) env i j = refl {x = two.O}
+root-sink-m (m-inl D) src i j = refl {x = two.O}
+root-sink-m (m-inl D) input i j = refl {x = two.O}
+root-sink-m (m-inl D) (at ε) i j = refl {x = two.O}
+root-sink-m (m-inl D) (at (m-inl q)) i j = refl {x = two.O}
+root-sink-m (m-inr D) env i j = refl {x = two.O}
+root-sink-m (m-inr D) src i j = refl {x = two.O}
+root-sink-m (m-inr D) input i j = refl {x = two.O}
+root-sink-m (m-inr D) (at ε) i j = refl {x = two.O}
+root-sink-m (m-inr D) (at (m-inr q)) i j = refl {x = two.O}
+root-sink-m (m-pair D₁ D₂) env i j = refl {x = two.O}
+root-sink-m (m-pair D₁ D₂) src i j = refl {x = two.O}
+root-sink-m (m-pair D₁ D₂) input i j = refl {x = two.O}
+root-sink-m (m-pair D₁ D₂) (at ε) i j = refl {x = two.O}
+root-sink-m (m-pair D₁ D₂) (at (m-pair₁ q)) i j = refl {x = two.O}
+root-sink-m (m-pair D₁ D₂) (at (m-pair₂ q)) i j = refl {x = two.O}
+root-sink-m (m-mu D) env i j = refl {x = two.O}
+root-sink-m (m-mu D) src i j = refl {x = two.O}
+root-sink-m (m-mu D) input i j = refl {x = two.O}
+root-sink-m (m-mu D) (at ε) i j = refl {x = two.O}
+root-sink-m (m-mu D) (at (m-mu q)) i j = refl {x = two.O}
+
+hide-root-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width v}
+              {v' : Val (σ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width v'}
+              (D : Map γ s σ' v R v' R') (x y : VertexM D) →
+              hide-m (graph-m D) (at ε) x y ≈ graph-m D x y
+hide-root-m D x y =
+  ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (root-sink-m D y)))
+          (absorb (graph-m D x y) (graph-m D x (at ε)))
+
+hide-hide-root-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                   {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width v}
+                   {v' : Val (σ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width v'}
+                   (D : Map γ s σ' v R v' R') (r x y : VertexM D) →
+                   hide-m (hide-m (graph-m D) (at ε)) r x y
+                   ≈ (graph-m D x y M.+ₘ (graph-m D r y ∘ graph-m D x r))
+hide-hide-root-m D r x y =
+  +ₘ-cong (hide-root-m D x y) (∘-cong (hide-root-m D r y) (hide-root-m D x r))
+
+edge-off-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width v}
+             {v' : Val (σ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width v'}
+             {D : Map γ s σ' v R v' R'} {m}
+             (S : M.Matrix m (width v')) (p : PathM D) → is-ε-m p ≡ Bool.false →
+             edge-m S p ≈ M.εₘ
+edge-off-m S ε ()
+edge-off-m S (m-rec₁ p) np i j = refl {x = two.O}
+edge-off-m S (m-rec₂ p) np i j = refl {x = two.O}
+edge-off-m S (m-inl p) np i j = refl {x = two.O}
+edge-off-m S (m-inr p) np i j = refl {x = two.O}
+edge-off-m S (m-pair₁ p) np i j = refl {x = two.O}
+edge-off-m S (m-pair₂ p) np i j = refl {x = two.O}
+edge-off-m S (m-mu p) np i j = refl {x = two.O}
+
+into-hidden-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width v}
+                {v' : Val (σ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width v'}
+                (D : Map γ s σ' v R v' R') {m}
+                (P : M.Matrix m (width v')) (x : VertexM D) →
+                (M.εₘ M.+ₘ (P ∘ graph-m D x (at ε)))
+                ≈ (P ∘ hide-m (graph-m D) (at ε) x (at ε))
+into-hidden-m D P x =
+  ≈-trans (+ₘ-lunit (P ∘ graph-m D x (at ε))) (∘-cong₂ (≈-sym (hide-root-m D x (at ε))))
+
+into-hidden-off-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                    {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width v}
+                    {v' : Val (σ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width v'}
+                    (D : Map γ s σ' v R v' R') {m} (x : VertexM D)
+                    (K : M.Matrix m (vertex-width-m x)) (P : M.Matrix m (width v')) →
+                    (K M.+ₘ (P ∘ graph-m D x (at ε)))
+                    ≈ (K M.+ₘ (P ∘ hide-m (graph-m D) (at ε) x (at ε)))
+into-hidden-off-m D x K P = +ₘ-cong ≈-refl (∘-cong₂ (≈-sym (hide-root-m D x (at ε))))
+
+interior-not-root-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                      {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width v}
+                      {v' : Val (σ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width v'}
+                      (D : Map γ s σ' v R v' R') →
+                      All (λ p → is-ε-m p ≡ Bool.false) (interior-m D)
+interior-not-root-m (m-rec D₁ D₂) =
+  ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths-m D₁))) (map⁺ (universal (λ _ → ≡-refl) (paths D₂)))
+interior-not-root-m m-unit  = []
+interior-not-root-m m-base  = []
+interior-not-root-m m-arrow = []
+interior-not-root-m (m-inl D) = map⁺ (universal (λ _ → ≡-refl) (paths-m D))
+interior-not-root-m (m-inr D) = map⁺ (universal (λ _ → ≡-refl) (paths-m D))
+interior-not-root-m (m-pair D₁ D₂) =
+  ++⁺ (map⁺ (universal (λ _ → ≡-refl) (paths-m D₁))) (map⁺ (universal (λ _ → ≡-refl) (paths-m D₂)))
+interior-not-root-m (m-mu D) = map⁺ (universal (λ _ → ≡-refl) (paths-m D))
+
+hide-all-m-++ : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width v}
+                {v' : Val (σ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width v'}
+                {D : Map γ s σ' v R v' R'}
+                (G : GraphM D) (xs ys : List (VertexM D)) →
+                hide-all-m G (xs ++ ys) ≡ hide-all-m (hide-all-m G xs) ys
+hide-all-m-++ G []       ys = ≡-refl
+hide-all-m-++ G (x ∷ xs) ys = hide-all-m-++ (hide-m G x) xs ys
+
+-- One hide step where the root columns carry both a pre-composition P and a post-composition W.
+root-under : ∀ {m l g g' n} (P : M.Matrix m l) {W : M.Matrix g g'}
+             {G₁ : M.Matrix m g'} {X : M.Matrix l g} {G₂ : M.Matrix m n} {Y : M.Matrix l n}
+             {G₃ : M.Matrix n g'} {Z : M.Matrix n g} →
+             G₁ ≈ ((P ∘ X) ∘ W) → G₂ ≈ (P ∘ Y) → G₃ ≈ (Z ∘ W) →
+             (G₁ M.+ₘ (G₂ ∘ G₃)) ≈ ((P ∘ (X M.+ₘ (Y ∘ Z))) ∘ W)
+root-under P {W} {X = X} {Y = Y} {Z = Z} a b c =
+  ≈-trans (+ₘ-cong a (∘-cong b c))
+  (≈-trans (+ₘ-cong (≈-refl {f = (P ∘ X) ∘ W}) (≈-sym (assoc (P ∘ Y) Z W)))
+  (≈-trans (≈-sym (M.comp-bilinear₁ (P ∘ X) ((P ∘ Y) ∘ Z) W))
+           (∘-cong₁ (distrib-root P X Y Z))))
+
+offset-under : ∀ {m l g g' n} (P : M.Matrix m l) {W : M.Matrix g g'} {K : M.Matrix m g'}
+               {G₁ : M.Matrix m g'} {X : M.Matrix l g} {G₂ : M.Matrix m n} {Y : M.Matrix l n}
+               {G₃ : M.Matrix n g'} {Z : M.Matrix n g} →
+               G₁ ≈ (K M.+ₘ ((P ∘ X) ∘ W)) → G₂ ≈ (P ∘ Y) → G₃ ≈ (Z ∘ W) →
+               (G₁ M.+ₘ (G₂ ∘ G₃)) ≈ (K M.+ₘ ((P ∘ (X M.+ₘ (Y ∘ Z))) ∘ W))
+offset-under P {W} {K} {X = X} {Y = Y} {Z = Z} a b c =
+  ≈-trans (+ₘ-cong a (∘-cong b c))
+  (≈-trans (+ₘ-assoc K ((P ∘ X) ∘ W) ((P ∘ Y) ∘ (Z ∘ W)))
+           (+ₘ-cong (≈-refl {f = K})
+                    (root-under P {W} {X = X} {Y = Y} {Z = Z}
+                                (≈-refl {f = (P ∘ X) ∘ W}) (≈-refl {f = P ∘ Y})
+                                (≈-refl {f = Z ∘ W}))))
+
+-- Leaf fold actions: the output is the input, so the three collapses are zero, zero and identity.
+module _ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr} where
+
+  private
+    unit-map : ∀ {v R} → Map γ s unit v R v R
+    unit-map {v} {R} = m-unit {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {v = v} {R = R}
+
+    base-map : ∀ {b v R} → Map γ s (base b) v R v R
+    base-map {b} {v} {R} = m-base {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {b = b} {v = v} {R = R}
+
+    arrow-map : ∀ {σ₁ σ₂ v R} → Map γ s (σ₁ [→] σ₂) v R v R
+    arrow-map {σ₁} {σ₂} {v} {R} =
+      m-arrow {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {R = R}
+
+  agree-m-unit-env : ∀ {v R} → collapse-m-env (unit-map {v} {R}) ≈ M.εₘ
+  agree-m-unit-env {v} {R} = hide-root-m (unit-map {v} {R}) env (at ε)
+
+  agree-m-unit-src : ∀ {v R} → collapse-m-src (unit-map {v} {R}) ≈ M.εₘ
+  agree-m-unit-src {v} {R} = hide-root-m (unit-map {v} {R}) src (at ε)
+
+  agree-m-unit-in : ∀ {v R} → collapse-m-in (unit-map {v} {R}) ≈ M.I
+  agree-m-unit-in {v} {R} = hide-root-m (unit-map {v} {R}) input (at ε)
+
+  agree-m-base-env : ∀ {b v R} → collapse-m-env (base-map {b} {v} {R}) ≈ M.εₘ
+  agree-m-base-env {b} {v} {R} = hide-root-m (base-map {b} {v} {R}) env (at ε)
+
+  agree-m-base-src : ∀ {b v R} → collapse-m-src (base-map {b} {v} {R}) ≈ M.εₘ
+  agree-m-base-src {b} {v} {R} = hide-root-m (base-map {b} {v} {R}) src (at ε)
+
+  agree-m-base-in : ∀ {b v R} → collapse-m-in (base-map {b} {v} {R}) ≈ M.I
+  agree-m-base-in {b} {v} {R} = hide-root-m (base-map {b} {v} {R}) input (at ε)
+
+  agree-m-arrow-env : ∀ {σ₁ σ₂ v R} → collapse-m-env (arrow-map {σ₁} {σ₂} {v} {R}) ≈ M.εₘ
+  agree-m-arrow-env {σ₁} {σ₂} {v} {R} = hide-root-m (arrow-map {σ₁} {σ₂} {v} {R}) env (at ε)
+
+  agree-m-arrow-src : ∀ {σ₁ σ₂ v R} → collapse-m-src (arrow-map {σ₁} {σ₂} {v} {R}) ≈ M.εₘ
+  agree-m-arrow-src {σ₁} {σ₂} {v} {R} = hide-root-m (arrow-map {σ₁} {σ₂} {v} {R}) src (at ε)
+
+  agree-m-arrow-in : ∀ {σ₁ σ₂ v R} → collapse-m-in (arrow-map {σ₁} {σ₂} {v} {R}) ≈ M.I
+  agree-m-arrow-in {σ₁} {σ₂} {v} {R} = hide-root-m (arrow-map {σ₁} {σ₂} {v} {R}) input (at ε)
