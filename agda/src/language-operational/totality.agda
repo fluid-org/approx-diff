@@ -29,7 +29,7 @@ open Signature Sig
 open Primitives 𝒫
 open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
+open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
 open import language-operational.evaluation Sig 𝒫
 
 private

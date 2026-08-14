@@ -13,7 +13,7 @@ module interaction.agreement {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.
 open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import type-substitution Sig using (unfold₁; unfold₁-inst)
+open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig 𝒫
 open import interaction.path Sig 𝒫
 open import interaction.graph Sig 𝒫

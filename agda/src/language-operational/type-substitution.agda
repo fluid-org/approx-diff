@@ -10,7 +10,7 @@ open import signature using (Signature)
 
 -- Fusion laws for type-level renaming and substitution, and the unfolding law used to traverse values of
 -- nested inductive types.
-module type-substitution {ℓ} (Sig : Signature ℓ) where
+module language-operational.type-substitution {ℓ} (Sig : Signature ℓ) where
 
 open import language-syntax Sig hiding (_,_)
 

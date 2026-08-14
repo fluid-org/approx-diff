@@ -25,7 +25,7 @@ open Signature Sig
 open Primitives 𝒫
 open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import type-substitution Sig using (unfold₁; unfold₁-inst)
+open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 
 mutual
   data Val : type 0 → Set ℓ where
