@@ -36,7 +36,6 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {𝒟 : Category o₂ m₂ e₂} (T' : HasTerminal 𝒟)
   (CM' : CMonEnriched 𝒟) (BP' : ∀ x y → Biproduct CM' x y)
   (𝟙d : Category.obj 𝒟)
-  (elim-weight : Category._⇒_ 𝒟 𝟙d 𝟙d)
   (F : Functor 𝒞 𝒟)
   (F-terminal : preserve-chosen-terminal F T T')
   (F-prod : preserve-chosen-products F (biproducts→products CM BP) (biproducts→products CM' BP'))
@@ -49,7 +48,7 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (let module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP 𝟙c)
   (let module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' 𝟙d)
   (𝒟E : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products)
-  (𝒟-tops : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X)
+  (𝒟-elim-pt : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X)
   (𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj)
   (𝒞unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T)) 𝒞𝟙ty)
   (let 𝒞Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty))
@@ -120,7 +119,7 @@ module _ where
     (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
     𝒞-Sig-model
 
-open import language-interpretation Sig os es T' CM' BP' 𝟙d elim-weight 𝒟E 𝒟-tops δ∅𝒟
+open import language-interpretation Sig os es T' CM' BP' 𝟙d 𝒟E 𝒟-elim-pt δ∅𝒟
   𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
             ty-cong to 𝒟-ty-cong)

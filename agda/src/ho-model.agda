@@ -96,6 +96,10 @@ SemiModExp = exponentials→weak FE.exponentials
 𝒟-tops : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X
 𝒟-tops = Fam⟨𝒟⟩μ.top-pointed SemiModT.⊤-mor (λ h → SemiModT.⊤-mor-absorb h)
 
+-- The constant an eliminator writes: the top scaled by the elimination weight.
+𝒟-elim-pt : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X
+𝒟-elim-pt X = Fam⟨𝒟⟩μ.scale-pt elim-weight-endo (𝒟-tops X)
+
 -- The interpretation of the primitives: the first-order interpretation, with the relations'
 -- booleans injected under zero roots.
 module sig-model (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
@@ -175,10 +179,9 @@ module interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   open language-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct 1
     SemiModT.terminal-⊤ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SemiModT.𝕀-⊤
-    elim-weight-endo
     𝔽F 𝔽F-preserve-terminal (λ {m} {n} → 𝔽F-preserve-products {m} {n})
     𝔽-L-iso (λ {P} {Q} f → 𝔽-L-natural {P} {Q} f)
-    SemiModExp 𝒟-tops
+    SemiModExp 𝒟-elim-pt
     𝒞𝟙ty 𝒞unit-pt model
     public
 

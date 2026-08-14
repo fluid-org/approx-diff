@@ -4,10 +4,10 @@
 -- lifted. Sums are coproducts of lifted summands, products are lifted products, μ-types the
 -- carriers, and function spaces are lifted weak exponentials, so a closure carries a root like any
 -- other cell. Constructors inject their payload under the injection, whose root is zero: a cell
--- the program itself constructs depends on nothing. Eliminators, including application, read the
--- scrutinee's root into the top of the result object, weighted by elim-weight; the family of tops,
--- one point per object natural in the index, is assumed, since an arbitrary CMon-enriched category
--- has none. The empty environment for the μ-carriers is a parameter because functions out of
+-- the program itself constructs depends on nothing. Eliminators, including application, send the
+-- scrutinee's root to an assumed constant at the result object, one point per object natural in
+-- the index, since an arbitrary CMon-enriched category has none.
+-- The empty environment for the μ-carriers is a parameter because functions out of
 -- Fin 0 agree only propositionally, and the comparison with a change of base needs the
 -- μ-carriers' environment to be the image environment definitionally.
 
@@ -33,10 +33,9 @@ module language-interpretation
   {o m e} (os es : Level) {𝒞 : Category o m e}
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   (𝟙c : Category.obj 𝒞)
-  (elim-weight : Category._⇒_ 𝒞 𝟙c 𝟙c)
   (let module R = fam-mu-lifting.mu-map os es T CM BP 𝟙c)
   (𝒞E : HasWeakExponentials R.cat R.products)
-  (tops : ∀ (X : R.Obj) → R.Pointed X)
+  (elim-pt : ∀ (X : R.Obj) → R.Pointed X)
   (δ∅ : Fin 0 → R.Obj)
   (𝟙ty : R.Obj)
   (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
@@ -49,12 +48,6 @@ open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
 
-private
-  scale-pt : ∀ {X : Obj} → Pointed X → Pointed X
-  scale-pt p .R.pt x = Category._∘_ 𝒞 (p .R.pt x) elim-weight
-  scale-pt p .R.pt-natural e =
-    Category.≈-trans 𝒞 (Category.≈-sym 𝒞 (Category.assoc 𝒞 _ _ _))
-      (Category.∘-cong 𝒞 (p .R.pt-natural e) (Category.≈-refl 𝒞))
 open HasCoproducts R.coproducts using (coprod; coprod-m; in₁; in₂)
 open HasStrongCoproducts R.strongCoproducts using () renaming (copair to scopair)
 open HasWeakExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
@@ -265,14 +258,14 @@ mutual
   ⟦ inl M ⟧tm           = in₁ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ inr M ⟧tm           = in₂ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ case {τ = τ} M M₁ M₂ ⟧tm =
-    scopair (elimF (scale-pt (tops _)) ⟦ M₁ ⟧tm) (elimF (scale-pt (tops _)) ⟦ M₂ ⟧tm)
+    scopair (elimF (elim-pt _) ⟦ M₁ ⟧tm) (elimF (elim-pt _) ⟦ M₂ ⟧tm)
       ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ pair M N ⟧tm        = injF ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (scale-pt (tops _)) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
-  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (scale-pt (tops _)) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (elim-pt _) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (elim-pt _) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ lam M ⟧tm           = injF ∘ lambda ⟦ M ⟧tm
   ⟦ app {τ = τ} M N ⟧tm =
-    elimF (scale-pt (tops _)) (eval ∘ ⟨ p₂ , ⟦ N ⟧tm ∘ p₁ ⟩) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+    elimF (elim-pt _) (eval ∘ ⟨ p₂ , ⟦ N ⟧tm ∘ p₁ ⟩) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm        = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel r Ms ⟧tm       = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
   ⟦ roll {τ = τ} M ⟧tm  =

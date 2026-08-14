@@ -154,6 +154,12 @@ module _ (top : ∀ a → 𝟙c ⇒ a)
     (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-comm)
              (top-absorb (X .fam .subst e ∘ top (X .fam .fm x₁))))))
 
+-- Scaling a family of points by an endomorphism of the unit object.
+scale-pt : ∀ {X : Obj} → (𝟙c ⇒ 𝟙c) → Pointed X → Pointed X
+scale-pt w p .pt x = p .pt x ∘ w
+scale-pt w p .pt-natural e =
+  ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (p .pt-natural e) ≈-refl)
+
 -- Eliminating a root in context: the payload continues, and the root produces the target's
 -- point.
 elimF : ∀ {Γ X C : Obj} → Pointed C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
