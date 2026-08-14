@@ -9,6 +9,7 @@ import interaction.agreement
 import interaction.control-path
 import interaction.control-graph
 import interaction.control-hide
+import interaction.control-agreement
 
 import graph-viz.dump-tables
 import graph-viz.dump-slices
