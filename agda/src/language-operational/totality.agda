@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Level using (_⊔_) renaming (suc to lsuc)
+open import Level using (0ℓ; _⊔_) renaming (suc to lsuc)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ; suc; _+_; _<_; s≤s)
 open import Data.Nat.Properties using (m≤m+n; m≤n+m; n<1+n)
@@ -23,17 +23,19 @@ import two
 -- Computability (totality) predicate on values: the existence content of the logical relation, without the
 -- denotational component. Its fundamental lemma is normalisation, yielding a total evaluator.
 module language-operational.totality
-  {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+  {ℓ} (Sig : Signature ℓ)
+  {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+  (𝒫 : Primitives S Sig) (elim-weight : Setoid.Carrier A) where
 
 open Signature Sig
 open Primitives 𝒫
 open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
-open import language-operational.evaluation Sig 𝒫
+open import language-operational.evaluation Sig S 𝒫 elim-weight
 
 private
-  module M = matrix.Mat two.semiring
+  module M = matrix.Mat S
 
 open Category M.cat using (_⇒_; _∘_) renaming (id to idm)
 open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)

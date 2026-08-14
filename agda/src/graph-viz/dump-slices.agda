@@ -26,12 +26,12 @@ open import example.runs
 
 open import language-syntax EP.Sig using (type; base; list; unit; μ; var; _[×]_; _[+]_; sub-ren-id)
 open import Relation.Binary.PropositionalEquality using (subst; sym)
-open import language-operational.evaluation EP.Sig EP.primitives using (Val)
+open import language-operational.evaluation EP.Sig two.semiring EP.primitives two.I using (Val)
 open Val
-open import language-operational.annotated-value EP.Sig EP.primitives
+open import language-operational.annotated-value EP.Sig two.semiring EP.primitives two.I
   using (AVal; node; Tag; arity; shape-of)
 import language-operational.annotated-value as AV
-open AV.annotate EP.Sig EP.primitives two.semiring using (row→aval; aval→row)
+open AV.annotate EP.Sig two.semiring EP.primitives two.I two.semiring using (row→aval; aval→row)
 open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
 open Primitives EP.primitives using (sort-val; sort-width)
 

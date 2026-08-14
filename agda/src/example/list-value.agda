@@ -12,7 +12,7 @@ module example.list-value {ℓ} (Sig : Signature ℓ)
   (𝒫 : Primitives two.semiring Sig) where
 
 open import language-syntax Sig using (type; list; sub-ren-id)
-open import language-operational.evaluation Sig 𝒫 using (Val)
+open import language-operational.evaluation Sig two.semiring 𝒫 two.I using (Val)
 open Val
 
 infixr 20 _∷ᵥ_

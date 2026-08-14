@@ -14,7 +14,7 @@ open Signature Sig
 open Primitives 𝒫
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
-open import language-operational.evaluation Sig 𝒫
+open import language-operational.evaluation Sig two.semiring 𝒫 two.I
 open import interaction.path Sig 𝒫
 open import interaction.graph Sig 𝒫
 open import interaction.hide Sig 𝒫
@@ -358,7 +358,7 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
 
   private
     P₀ : M.Matrix (width v) (width (pair v u))
-    P₀ = (M.p₁ {width v} {width u} ∘ M.p₂ {1} {width v Nat.+ width u}) M.+ₘ (top ∘ M.p₁ {1})
+    P₀ = (M.p₁ {width v} {width u} ∘ M.p₂ {1} {width v Nat.+ width u}) M.+ₘ (ctrl-row ∘ M.p₁ {1})
 
   record Embeds (G : Graph (⇓-fst D)) (H : Graph D)
                 (P : M.Matrix (width v) (width (pair v u))) : Set ℓ where
@@ -410,7 +410,7 @@ module Snd {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
 
   private
     P₀ : M.Matrix (width u) (width (pair v u))
-    P₀ = (M.p₂ {width v} {width u} ∘ M.p₂ {1} {width v Nat.+ width u}) M.+ₘ (top ∘ M.p₁ {1})
+    P₀ = (M.p₂ {width v} {width u} ∘ M.p₂ {1} {width v Nat.+ width u}) M.+ₘ (ctrl-row ∘ M.p₁ {1})
 
   record Embeds (G : Graph (⇓-snd D)) (H : Graph D)
                 (P : M.Matrix (width u) (width (pair v u))) : Set ℓ where
@@ -712,7 +712,7 @@ module CaseL {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
   W = iₗ M.+ₘ (iᵣ ∘ p2 ∘ collapse D₁)
 
   P : M.Matrix (width u) (Nat.suc (width v))
-  P = top ∘ M.p₁ {1} {width v}
+  P = ctrl-row ∘ M.p₁ {1} {width v}
 
   record Phase₁ (G : Graph (⇓-case-l {t₂ = t₂} D₁ D₂)) (H : Graph D₁) : Set ℓ where
     field
@@ -886,7 +886,7 @@ module CaseR {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
   W = iₗ M.+ₘ (iᵣ ∘ p2 ∘ collapse D₁)
 
   P : M.Matrix (width u) (Nat.suc (width v))
-  P = top ∘ M.p₁ {1} {width v}
+  P = ctrl-row ∘ M.p₁ {1} {width v}
 
   record Phase₁ (G : Graph (⇓-case-r {t₁ = t₁} D₁ D₂)) (H : Graph D₁) : Set ℓ where
     field
@@ -1070,7 +1070,7 @@ module App {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {ts : Γ ⊢ σ [→] τ
   W = (iₗ ∘ p2 ∘ collapse D₁) M.+ₘ (iᵣ ∘ collapse D₂)
 
   P : M.Matrix (width u) (Nat.suc (width-env γ'))
-  P = top ∘ M.p₁ {1} {width-env γ'}
+  P = ctrl-row ∘ M.p₁ {1} {width-env γ'}
 
   record Phase₁ (G : Graph (⇓-app D₁ D₂ D₃)) (H : Graph D₁) : Set ℓ where
     field
@@ -2720,8 +2720,8 @@ mutual
                                        (collapse D₁))
                                 (∘-cong₂ {f = M.in₂ {width-env γ} {width v}}
                                          (∘-cong₂ {f = M.p₂ {1} {width v}} (agree D₁))))))
-      (≈-trans (∘-cong₂ {f = top ∘ M.p₁ {1} {width v}} (agree D₁))
-               (assoc top (M.p₁ {1} {width v}) R)))
+      (≈-trans (∘-cong₂ {f = ctrl-row ∘ M.p₁ {1} {width v}} (agree D₁))
+               (assoc ctrl-row (M.p₁ {1} {width v}) R)))
   agree {γ = γ} (⇓-case-r {s = sc} {t₁ = t₁} {t₂ = t₂} {v = v} {u = u} {R = R} {S = S} D₁ D₂) =
     ≈-trans (CaseR.agree {γ = γ} {ts = sc} {t₁ = t₁} {t₂ = t₂} {v = v} {u = u}
                                 {R = R} {S = S} {D₁ = D₁} {D₂ = D₂})
@@ -2732,8 +2732,8 @@ mutual
                                        (collapse D₁))
                                 (∘-cong₂ {f = M.in₂ {width-env γ} {width v}}
                                          (∘-cong₂ {f = M.p₂ {1} {width v}} (agree D₁))))))
-      (≈-trans (∘-cong₂ {f = top ∘ M.p₁ {1} {width v}} (agree D₁))
-               (assoc top (M.p₁ {1} {width v}) R)))
+      (≈-trans (∘-cong₂ {f = ctrl-row ∘ M.p₁ {1} {width v}} (agree D₁))
+               (assoc ctrl-row (M.p₁ {1} {width v}) R)))
   agree {γ = γ} (⇓-pair {s = sp} {t = tp} {v = v} {u = u} {R = R} {S = S} D₁ D₂) =
     ≈-trans (Pair.agree {γ = γ} {ts = sp} {tt = tp} {v = v} {u = u} {R = R} {S = S}
                              {D₁ = D₁} {D₂ = D₂})
@@ -2742,21 +2742,21 @@ mutual
   agree {γ = γ} (⇓-fst {τ₁ = τ₁} {τ₂ = τ₂} {t = tp} {v = v} {u = u} {R = R} D) =
     ≈-trans (Fst.agree {γ = γ} {t = tp} {v = v} {u = u} {R = R} {D = D})
     (≈-trans (∘-cong₂ {f = (M.p₁ {width v} {width u} ∘ M.p₂ {1} {width v Nat.+ width u})
-                            M.+ₘ (top ∘ M.p₁ {1})}
+                            M.+ₘ (ctrl-row ∘ M.p₁ {1})}
                       (agree D))
     (≈-trans (M.comp-bilinear₁ (M.p₁ {width v} {width u} ∘ M.p₂ {1} {width v Nat.+ width u})
-                               (top ∘ M.p₁ {1}) R)
+                               (ctrl-row ∘ M.p₁ {1}) R)
              (+ₘ-cong (assoc (M.p₁ {width v} {width u}) (M.p₂ {1} {width v Nat.+ width u}) R)
-                      (assoc top (M.p₁ {1}) R))))
+                      (assoc ctrl-row (M.p₁ {1}) R))))
   agree {γ = γ} (⇓-snd {τ₁ = τ₁} {τ₂ = τ₂} {t = tp} {v = v} {u = u} {R = R} D) =
     ≈-trans (Snd.agree {γ = γ} {t = tp} {v = v} {u = u} {R = R} {D = D})
     (≈-trans (∘-cong₂ {f = (M.p₂ {width v} {width u} ∘ M.p₂ {1} {width v Nat.+ width u})
-                            M.+ₘ (top ∘ M.p₁ {1})}
+                            M.+ₘ (ctrl-row ∘ M.p₁ {1})}
                       (agree D))
     (≈-trans (M.comp-bilinear₁ (M.p₂ {width v} {width u} ∘ M.p₂ {1} {width v Nat.+ width u})
-                               (top ∘ M.p₁ {1}) R)
+                               (ctrl-row ∘ M.p₁ {1}) R)
              (+ₘ-cong (assoc (M.p₂ {width v} {width u}) (M.p₂ {1} {width v Nat.+ width u}) R)
-                      (assoc top (M.p₁ {1}) R))))
+                      (assoc ctrl-row (M.p₁ {1}) R))))
   agree {γ = γ} (⇓-lam {σ = σl} {τ = τl} {t = tλ}) =
     agree-lam {σ = σl} {τ = τl} {γ = γ} {t = tλ}
   agree {γ = γ} (⇓-app {Γ' = Γ'} {σ = σa} {τ = τa} {γ' = γ'} {s = sa} {t = ta} {t' = ta'}
@@ -2771,8 +2771,8 @@ mutual
                                 (∘-cong₂ {f = M.in₁ {width-env γ'} {width v}}
                                          (∘-cong₂ {f = M.p₂ {1} {width-env γ'}} (agree D₁))))
                        (∘-cong₂ {f = M.in₂ {width-env γ'} {width v}} (agree D₂))))
-      (≈-trans (∘-cong₂ {f = top ∘ M.p₁ {1} {width-env γ'}} (agree D₁))
-               (assoc top (M.p₁ {1} {width-env γ'}) R)))
+      (≈-trans (∘-cong₂ {f = ctrl-row ∘ M.p₁ {1} {width-env γ'}} (agree D₁))
+               (assoc ctrl-row (M.p₁ {1} {width-env γ'}) R)))
   agree {γ = γ} (⇓-bop {ω = ω} {Ms = Ms} {vs = vs} {R = R} D) =
     ≈-trans (Bop.agree {γ = γ} {ω = ω} {Ms = Ms} {vs = vs} {Rs = R} {D = D})
             (∘-cong₂ (agree-s D))

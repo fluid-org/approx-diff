@@ -13,7 +13,8 @@ open import primitives using (Primitives)
 import two
 
 module language-operational.annotated-value {ℓ} (Sig : Signature ℓ)
-  (𝒫 : Primitives two.semiring Sig) where
+  {A₀ : Setoid 0ℓ 0ℓ} (S₀ : CommutativeSemiring A₀)
+  (𝒫 : Primitives S₀ Sig) (elim-weight : Setoid.Carrier A₀) where
 
 open Signature Sig
 open Primitives 𝒫
@@ -21,7 +22,7 @@ open import Data.Nat.Properties using (+-identityʳ; +-assoc)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; sym; trans; cong; cong₂)
 open import language-syntax Sig using (unit; base; μ; var; _[+]_; _[×]_; _[→]_)
-open import language-operational.evaluation Sig 𝒫 using (Val; Env; width; width-env)
+open import language-operational.evaluation Sig S₀ 𝒫 elim-weight using (Val; Env; width; width-env)
 open Val
 open Env
 open import Data.Fin using (zero)

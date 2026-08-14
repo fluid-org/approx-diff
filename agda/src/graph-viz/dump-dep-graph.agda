@@ -17,16 +17,17 @@ open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Vec as Vec using (Vec; toList; tabulate)
 open import Level using (0ℓ)
 import three
+import two
 import example.primitives as EP
 open import Data.Rational using (0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
 open import example.runs-three using (dep-map; dep-filter)
 open import language-syntax EP.Sig using (base; list) renaming (emp to ∙; _,_ to _▸_)
-open import language-operational.evaluation EP.Sig EP.primitives using (Val; Env)
+open import language-operational.evaluation EP.Sig two.semiring EP.primitives two.I using (Val; Env)
 open Val
 open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
 open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
-open import language-operational.annotated-value EP.Sig EP.primitives
+open import language-operational.annotated-value EP.Sig two.semiring EP.primitives two.I
   using (AVal; node; Tag; arity; shape-of; shape-env-of; covers; covers-vec; covers-all;
          label-of; fold; fold-all)
 open import Data.Unit using (⊤)

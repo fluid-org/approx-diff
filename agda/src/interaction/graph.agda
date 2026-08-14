@@ -22,7 +22,7 @@ open Primitives 𝒫
 open _⇒ₛ_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
-open import language-operational.evaluation Sig 𝒫
+open import language-operational.evaluation Sig two.semiring 𝒫 two.I
 open import interaction.path Sig 𝒫
 
 private
@@ -130,7 +130,7 @@ mutual
     edge (graph D₂ env (at q) ∘ M.in₂ ∘ M.p₂ {1}) p
   graph (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at (case-l₂ q)) = graph D₂ (at p) (at q)
   graph (⇓-case-l D₁ D₂) (at (case-l₂ p)) (at ε) = edge M.I p
-  graph (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at ε) = edge (top ∘ M.p₁ {1}) p
+  graph (⇓-case-l D₁ D₂) (at (case-l₁ p)) (at ε) = edge (ctrl-row ∘ M.p₁ {1}) p
 
   graph (⇓-case-r D₁ D₂) env (at (case-r₁ q)) = graph D₁ env (at q)
   graph (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at (case-r₁ q)) = graph D₁ (at p) (at q)
@@ -139,7 +139,7 @@ mutual
     edge (graph D₂ env (at q) ∘ M.in₂ ∘ M.p₂ {1}) p
   graph (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at (case-r₂ q)) = graph D₂ (at p) (at q)
   graph (⇓-case-r D₁ D₂) (at (case-r₂ p)) (at ε) = edge M.I p
-  graph (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at ε) = edge (top ∘ M.p₁ {1}) p
+  graph (⇓-case-r D₁ D₂) (at (case-r₁ p)) (at ε) = edge (ctrl-row ∘ M.p₁ {1}) p
 
   graph (⇓-pair D₁ D₂) env (at (pair₁ q)) = graph D₁ env (at q)
   graph (⇓-pair D₁ D₂) (at (pair₁ p)) (at (pair₁ q)) = graph D₁ (at p) (at q)
@@ -150,11 +150,11 @@ mutual
 
   graph (⇓-fst D) env (at (fst q)) = graph D env (at q)
   graph (⇓-fst D) (at (fst p)) (at (fst q)) = graph D (at p) (at q)
-  graph (⇓-fst D) (at (fst p)) (at ε) = edge ((M.p₁ ∘ M.p₂ {1}) M.+ₘ (top ∘ M.p₁ {1})) p
+  graph (⇓-fst D) (at (fst p)) (at ε) = edge ((M.p₁ ∘ M.p₂ {1}) M.+ₘ (ctrl-row ∘ M.p₁ {1})) p
 
   graph (⇓-snd D) env (at (snd q)) = graph D env (at q)
   graph (⇓-snd D) (at (snd p)) (at (snd q)) = graph D (at p) (at q)
-  graph (⇓-snd D) (at (snd p)) (at ε) = edge ((M.p₂ ∘ M.p₂ {1}) M.+ₘ (top ∘ M.p₁ {1})) p
+  graph (⇓-snd D) (at (snd p)) (at ε) = edge ((M.p₂ ∘ M.p₂ {1}) M.+ₘ (ctrl-row ∘ M.p₁ {1})) p
 
   graph ⇓-lam env (at ε) = M.in₂ {1}
 
@@ -167,7 +167,7 @@ mutual
   graph (⇓-app D₁ D₂ D₃) (at (app₂ p)) (at (app₃ q)) = edge (graph D₃ env (at q) ∘ M.in₂) p
   graph (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at (app₃ q)) = graph D₃ (at p) (at q)
   graph (⇓-app D₁ D₂ D₃) (at (app₃ p)) (at ε) = edge M.I p
-  graph (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at ε) = edge (top ∘ M.p₁ {1}) p
+  graph (⇓-app D₁ D₂ D₃) (at (app₁ p)) (at ε) = edge (ctrl-row ∘ M.p₁ {1}) p
 
   graph (⇓-bop {ω = ω} {vs = vs} D) env (at (bop q)) = graph-s D env (at q)
   graph (⇓-bop D) (at (bop p)) (at (bop q)) = graph-s D (at p) (at q)

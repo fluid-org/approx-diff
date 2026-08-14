@@ -16,10 +16,10 @@ open import primitives using (Primitives)
 import matrix
 import cmon-enriched
 open import categories using (Category; HasProducts; HasTerminal)
-import two
-
 -- Values, environments, and big-step evaluation decorated with dependency relations.
-module language-operational.evaluation {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module language-operational.evaluation {ℓ} (Sig : Signature ℓ)
+  {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+  (𝒫 : Primitives S Sig) (elim-weight : Setoid.Carrier A) where
 
 open Signature Sig
 open Primitives 𝒫
@@ -52,7 +52,7 @@ bool→val (inj₁ _) = inl unit
 bool→val (inj₂ _) = inr unit
 
 private
-  module M = matrix.Mat two.semiring
+  module M = matrix.Mat S
 
 open Category M.cat using (_⇒_; _∘_) renaming (id to idm)
 open HasTerminal M.terminal using (to-terminal)
@@ -82,13 +82,13 @@ rooted R = ⟨ M.εₘ , R ⟩
 unrooted : ∀ {m n} → m ⇒ suc n → m ⇒ n
 unrooted R = p₂ {1} ∘ R
 
--- The pointwise top: every position at the top weight.
-top : ∀ {n} → 1 ⇒ n
-top _ _ = two.I
+-- The control row: every position at the elimination weight.
+ctrl-row : ∀ {n} → 1 ⇒ n
+ctrl-row _ _ = elim-weight
 
 -- Control dependence: an eliminator's whole result depends on the root it consumes.
 ctrl : ∀ {m n k} → m ⇒ suc n → m ⇒ k
-ctrl R = top ∘ (p₁ {1} ∘ R)
+ctrl R = ctrl-row ∘ (p₁ {1} ∘ R)
 
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl
