@@ -2687,3 +2687,138 @@ module MInr {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀
 
   agree-in : collapse-m-in C ≈ (K M.+ₘ ((P ∘ collapse-m-in D) ∘ pᵥ))
   agree-in = rfin .input-root
+
+-- Casts along width equalities, and their interaction with the matrix algebra. Each is proved by
+-- matching the equality, so they apply at neutral width proofs.
+ccast-∘ : ∀ {m k n n'} (e : n ≡ n') (X : M.Matrix m k) (Y : M.Matrix k n) →
+          (X ∘ ccast e Y) ≈ ccast e (X ∘ Y)
+ccast-∘ ≡-refl X Y = ≈-refl
+
+ccast-cong : ∀ {m n n'} (e : n ≡ n') {X Y : M.Matrix m n} → X ≈ Y → ccast e X ≈ ccast e Y
+ccast-cong ≡-refl h = h
+
++ₘ-ccast : ∀ {m n n'} (e : n ≡ n') (X Y : M.Matrix m n) →
+           (ccast e X M.+ₘ ccast e Y) ≈ ccast e (X M.+ₘ Y)
++ₘ-ccast ≡-refl X Y = ≈-refl
+
+rcast-∘ : ∀ {m m' k n} (e : m ≡ m') (X : M.Matrix m k) (Y : M.Matrix k n) →
+          (rcast e X ∘ Y) ≈ rcast e (X ∘ Y)
+rcast-∘ ≡-refl X Y = ≈-refl
+
+rcast-cong : ∀ {m m' n} (e : m ≡ m') {X Y : M.Matrix m n} → X ≈ Y → rcast e X ≈ rcast e Y
+rcast-cong ≡-refl h = h
+
+ccast-step : ∀ {m k n n'} (e : n ≡ n') {G₁ : M.Matrix m n'} {X : M.Matrix m n}
+             {G₂ Y : M.Matrix m k} {G₃ : M.Matrix k n'} {Z : M.Matrix k n} →
+             G₁ ≈ ccast e X → G₂ ≈ Y → G₃ ≈ ccast e Z →
+             (G₁ M.+ₘ (G₂ ∘ G₃)) ≈ ccast e (X M.+ₘ (Y ∘ Z))
+ccast-step e {X = X} {Y = Y} {Z = Z} a b c =
+  ≈-trans (+ₘ-cong a (≈-trans (∘-cong b c) (ccast-∘ e Y Z))) (+ₘ-ccast e X (Y ∘ Z))
+
+root-step-cast : ∀ {m l g n n'} (e : n ≡ n') (P : M.Matrix m l)
+                 {G₁ : M.Matrix m n'} {X : M.Matrix l n} {G₂ : M.Matrix m g} {Y : M.Matrix l g}
+                 {G₃ : M.Matrix g n'} {Z : M.Matrix g n} →
+                 G₁ ≈ (P ∘ ccast e X) → G₂ ≈ (P ∘ Y) → G₃ ≈ ccast e Z →
+                 (G₁ M.+ₘ (G₂ ∘ G₃)) ≈ (P ∘ ccast e (X M.+ₘ (Y ∘ Z)))
+root-step-cast e P {X = X} {Y = Y} {Z = Z} a b c =
+  ≈-trans (+ₘ-cong a (∘-cong b c))
+  (≈-trans (+ₘ-cong ≈-refl (≈-trans (assoc P Y (ccast e Z)) (∘-cong₂ (ccast-∘ e Y Z))))
+  (≈-trans (≈-sym (M.comp-bilinear₂ P (ccast e X) (ccast e (Y ∘ Z))))
+           (∘-cong₂ (+ₘ-ccast e X (Y ∘ Z)))))
+
+-- The mu action: one premise at the unfolded type, with width casts on the input row and the
+-- root edge.
+module MMu {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+           {τ' : type 2} {w : Val (unfold₁ τ' [ μ τ₀ ])} {R : Nat.suc (width-env γ) ⇒ width w}
+           {w' : Val (unfold₁ τ' [ σr ])} {R' : Nat.suc (width-env γ) ⇒ width w'}
+           {D : Map γ s (unfold₁ τ') w R w' R'} where
+
+  private
+    C = m-mu {τ' = τ'} D
+
+    eᵥ : width w ≡ width (subst Val (unfold₁-inst τ' (μ τ₀)) w)
+    eᵥ = ≡-sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)
+
+    e' : width w' ≡ width (subst Val (unfold₁-inst τ' σr) w')
+    e' = ≡-sym (width-subst (unfold₁-inst τ' σr) w')
+
+    P : M.Matrix (width (subst Val (unfold₁-inst τ' σr) w')) (width w')
+    P = rcast e' M.I
+
+  record Embeds (G : GraphM C) (H : GraphM D) : Set ℓ where
+    field
+      env-embed   : ∀ q → G env (at (m-mu q)) ≈ H env (at q)
+      src-embed   : ∀ q → G src (at (m-mu q)) ≈ H src (at q)
+      input-embed : ∀ q → G input (at (m-mu q)) ≈ ccast eᵥ (H input (at q))
+      embed-embed : ∀ p q → G (at (m-mu p)) (at (m-mu q)) ≈ H (at p) (at q)
+      env-root    : G env (at ε) ≈ (P ∘ H env (at ε))
+      source-root : G src (at ε) ≈ (P ∘ H src (at ε))
+      input-root  : G input (at ε) ≈ (P ∘ ccast eᵥ (H input (at ε)))
+      embed-root  : ∀ p → is-ε-m p ≡ Bool.false →
+                    G (at (m-mu p)) (at ε) ≈ (P ∘ H (at p) (at ε))
+
+  open Embeds
+
+  embeds-hide : ∀ {G H} (x : PathM D) → is-ε-m x ≡ Bool.false →
+                Embeds G H → Embeds (hide-m G (at (m-mu x))) (hide-m H (at x))
+  embeds-hide x nw r .env-embed q =
+    +ₘ-cong (r .env-embed q) (∘-cong (r .embed-embed x q) (r .env-embed x))
+  embeds-hide x nw r .src-embed q =
+    +ₘ-cong (r .src-embed q) (∘-cong (r .embed-embed x q) (r .src-embed x))
+  embeds-hide x nw r .input-embed q =
+    ccast-step eᵥ (r .input-embed q) (r .embed-embed x q) (r .input-embed x)
+  embeds-hide x nw r .embed-embed p q =
+    +ₘ-cong (r .embed-embed p q) (∘-cong (r .embed-embed x q) (r .embed-embed p x))
+  embeds-hide x nw r .env-root =
+    root-step {P = P} (r .env-root) (r .embed-root x nw) (r .env-embed x)
+  embeds-hide x nw r .source-root =
+    root-step {P = P} (r .source-root) (r .embed-root x nw) (r .src-embed x)
+  embeds-hide x nw r .input-root =
+    root-step-cast eᵥ P (r .input-root) (r .embed-root x nw) (r .input-embed x)
+  embeds-hide x nw r .embed-root p np =
+    root-step {P = P} (r .embed-root p np) (r .embed-root x nw) (r .embed-embed p x)
+
+  embeds-hide-all : ∀ {G H} (ws : List (PathM D)) → All (λ x → is-ε-m x ≡ Bool.false) ws →
+                    Embeds G H →
+                    Embeds (hide-all-m G (map at (map m-mu ws))) (hide-all-m H (map at ws))
+  embeds-hide-all []       []         r = r
+  embeds-hide-all (x ∷ ws) (nw ∷ nws) r = embeds-hide-all ws nws (embeds-hide x nw r)
+
+  private
+    embeds₀ : Embeds (hide-m (hide-m (graph-m C) (at ε)) (at (m-mu ε)))
+                     (hide-m (graph-m D) (at ε))
+    embeds₀ .env-embed q = hide-hide-root-m C (at (m-mu ε)) env (at (m-mu q))
+    embeds₀ .src-embed q = hide-hide-root-m C (at (m-mu ε)) src (at (m-mu q))
+    embeds₀ .input-embed q =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) input (at (m-mu q)))
+              (ccast-step eᵥ {X = graph-m D input (at q)} {Z = graph-m D input (at ε)}
+                          ≈-refl ≈-refl ≈-refl)
+    embeds₀ .embed-embed p q = hide-hide-root-m C (at (m-mu ε)) (at (m-mu p)) (at (m-mu q))
+    embeds₀ .env-root =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) env (at ε)) (into-hidden-m D P env)
+    embeds₀ .source-root =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) src (at ε)) (into-hidden-m D P src)
+    embeds₀ .input-root =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) input (at ε))
+      (≈-trans (+ₘ-lunit (P ∘ ccast eᵥ (graph-m D input (at ε))))
+               (∘-cong₂ (ccast-cong eᵥ (≈-sym (hide-root-m D input (at ε))))))
+    embeds₀ .embed-root p np =
+      ≈-trans (hide-hide-root-m C (at (m-mu ε)) (at (m-mu p)) (at ε))
+      (≈-trans (+ₘ-cong (edge-off-m P p np) ≈-refl) (into-hidden-m D P (at p)))
+
+    rfin = embeds-hide-all (interior-m D) (interior-not-root-m D) embeds₀
+
+  agree-env : collapse-m-env C ≈ rcast e' (collapse-m-env D)
+  agree-env =
+    ≈-trans (rfin .env-root)
+    (≈-trans (rcast-∘ e' M.I (collapse-m-env D)) (rcast-cong e' id-left))
+
+  agree-src : collapse-m-src C ≈ rcast e' (collapse-m-src D)
+  agree-src =
+    ≈-trans (rfin .source-root)
+    (≈-trans (rcast-∘ e' M.I (collapse-m-src D)) (rcast-cong e' id-left))
+
+  agree-in : collapse-m-in C ≈ rcast e' (ccast eᵥ (collapse-m-in D))
+  agree-in =
+    ≈-trans (rfin .input-root)
+    (≈-trans (rcast-∘ e' M.I (ccast eᵥ (collapse-m-in D))) (rcast-cong e' id-left))
