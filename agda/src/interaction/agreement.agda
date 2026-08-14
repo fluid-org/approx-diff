@@ -98,7 +98,7 @@ root-sink (⇓-fold D₁ D₂) (at ε) i j = refl {x = two.O}
 root-sink (⇓-fold D₁ D₂) (at (fold₁ q)) i j = refl {x = two.O}
 root-sink (⇓-fold D₁ D₂) (at (fold₂ q)) i j = refl {x = two.O}
 
--- Absorb a correction routed through a zero row.
+-- A composite with a zero factor drops out of a sum.
 absorb : ∀ {m n k} (R : M.Matrix m n) (S : M.Matrix k n) → (R M.+ₘ (M.εₘ ∘ S)) ≈ R
 absorb R S i j = trans (+-cong (refl {x = R i j}) (M.comp-bilinear-ε₁ S i j))
                        (+-comm {x = R i j} {y = two.O})
