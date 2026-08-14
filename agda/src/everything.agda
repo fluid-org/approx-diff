@@ -6,6 +6,8 @@ import interaction.example
 
 import language-operational.totality
 import interaction.agreement
+import interaction.control-path
+import interaction.control-graph
 
 import graph-viz.dump-tables
 import graph-viz.dump-slices
