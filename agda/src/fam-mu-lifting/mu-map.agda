@@ -12,14 +12,13 @@ import Data.Fin as Fin
 open Fin using (Fin)
 open import categories using (Category; HasTerminal)
 open import cmon-enriched using (CMonEnriched; Biproduct)
-open import lifting using (Lifting)
 import fam-mu-lifting.in-map
 
 module fam-mu-lifting.mu-map {o m e} (os es : Level) {𝒞 : Category o m e}
     (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
+    (𝟙c : Category.obj 𝒞) where
 
-open fam-mu-lifting.in-map os es CM BP Lft public
+open fam-mu-lifting.in-map os es CM BP 𝟙c public
 
 private
   module M = HasMu hasMu

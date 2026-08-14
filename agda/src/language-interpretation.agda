@@ -23,7 +23,6 @@ open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
          HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct)
-open import lifting using (Lifting)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 open import polynomial-functor using (Poly)
 import fam-mu-lifting.mu-map
@@ -33,9 +32,9 @@ module language-interpretation
   {ℓ} (Sig : Signature ℓ)
   {o m e} (os es : Level) {𝒞 : Category o m e}
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-  {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
+  (𝟙c : Category.obj 𝒞)
   (elim-weight : Category._⇒_ 𝒞 𝟙c 𝟙c)
-  (let module R = fam-mu-lifting.mu-map os es T CM BP Lft)
+  (let module R = fam-mu-lifting.mu-map os es T CM BP 𝟙c)
   (𝒞E : HasWeakExponentials R.cat R.products)
   (tops : ∀ (X : R.Obj) → R.Pointed X)
   (δ∅ : Fin 0 → R.Obj)

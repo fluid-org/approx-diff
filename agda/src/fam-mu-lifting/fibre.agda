@@ -20,7 +20,7 @@ open import Data.Unit using (⊤; tt)
 open import prop using (_,_)
 open import categories using (Category; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import lifting using (Lifting)
+import lifting
 open import functor using (Functor)
 open import indexed-family using (Fam; _⇒f_)
 open import prop-setoid using (Setoid)
@@ -31,12 +31,12 @@ import fam-mu-lifting.sort
 
 module fam-mu-lifting.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
+    (𝟙c : Category.obj 𝒞) where
 
 open Category 𝒞
 open Functor
 open HasProducts (biproducts→products CM BP)
-open Lifting Lft
+open lifting CM BP 𝟙c using (L; Lmap; Lmap-cong; Lmap-id; Lmap-comp)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞
 open Obj
 open Mor
@@ -193,24 +193,6 @@ module Fibre {n} (δ : Fin n → Obj) where
                       ≈ (fib-el-subst r dr q ∘ fib-el-subst r dr p)
     fib-el-trans* (inj₁ i) _ q p = δ i .fam .trans* q p
     fib-el-trans* (inj₂ _) (mkDeco Q ρd) {x} {y} {z} q p = fib-trans* Q ρd {x = x} {y = y} {z = z} q p
-
-  -- Transports are isomorphisms, inverted by transport along the symmetric proof; the equality
-  -- proofs are propositions, so the round trip is transport along reflexivity.
-  fib-shape-iso₁ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
-                   (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄}
-                   (p : shape≈ ∣ Q ∣ η̄ x y) →
-                   (fib-shape-subst Q d p ∘ fib-shape-subst Q d (shape≈-sym ∣ Q ∣ η̄ p))
-                     ≈ id (fib-shape Q d y)
-  fib-shape-iso₁ Q d {x} {y} p =
-    ≈-trans (≈-sym (fib-shape-trans* Q d p (shape≈-sym ∣ Q ∣ _ p))) (fib-shape-refl* Q d y)
-
-  fib-shape-iso₂ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
-                   (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄}
-                   (p : shape≈ ∣ Q ∣ η̄ x y) →
-                   (fib-shape-subst Q d (shape≈-sym ∣ Q ∣ η̄ p) ∘ fib-shape-subst Q d p)
-                     ≈ id (fib-shape Q d x)
-  fib-shape-iso₂ Q d {x} {y} p =
-    ≈-trans (≈-sym (fib-shape-trans* Q d (shape≈-sym ∣ Q ∣ _ p) p)) (fib-shape-refl* Q d x)
 
   -- The fibre family of the μ-type at a decorated sort.
   WFam : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}

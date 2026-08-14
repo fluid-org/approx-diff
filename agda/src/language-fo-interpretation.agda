@@ -17,7 +17,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import lifting using (Lifting)
+import lifting
 open import functor using (Functor)
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 open import polynomial-functor using (Poly; Poly-map)
@@ -32,21 +32,22 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   {o m e o₂ m₂ e₂} (os es : Level)
   {𝒞 : Category o m e} (T : HasTerminal 𝒞)
   (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-  {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
+  (𝟙c : Category.obj 𝒞)
   {𝒟 : Category o₂ m₂ e₂} (T' : HasTerminal 𝒟)
   (CM' : CMonEnriched 𝒟) (BP' : ∀ x y → Biproduct CM' x y)
-  {𝟙d : Category.obj 𝒟} (Lft' : Lifting CM' 𝟙d)
+  (𝟙d : Category.obj 𝒟)
   (elim-weight : Category._⇒_ 𝒟 𝟙d 𝟙d)
   (F : Functor 𝒞 𝒟)
   (F-terminal : preserve-chosen-terminal F T T')
   (F-prod : preserve-chosen-products F (biproducts→products CM BP) (biproducts→products CM' BP'))
-  (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (Lifting.L Lft X)) (Lifting.L Lft' (Functor.fobj F X)))
+  (let module CL = lifting CM BP 𝟙c) (let module DL = lifting CM' BP' 𝟙d)
+  (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (CL.L X)) (DL.L (Functor.fobj F X)))
   (F-L-natural : ∀ {X Y} (f : Category._⇒_ 𝒞 X Y) →
      Category._≈_ 𝒟
-       (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (Lifting.Lmap Lft f)))
-       (Category._∘_ 𝒟 (Lifting.Lmap Lft' (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
-  (let module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP Lft)
-  (let module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' Lft')
+       (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (CL.Lmap f)))
+       (Category._∘_ 𝒟 (DL.Lmap (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
+  (let module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP 𝟙c)
+  (let module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' 𝟙d)
   (𝒟E : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products)
   (𝒟-tops : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X)
   (𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj)
@@ -57,7 +58,7 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
 
 open language-syntax Sig
 
-module HR = fam-change-of-base os es T CM BP Lft T' CM' BP' Lft' F F-terminal F-prod F-L F-L-natural
+module HR = fam-change-of-base os es T CM BP 𝟙c T' CM' BP' 𝟙d F F-terminal F-prod F-L F-L-natural
 open HR using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-products;
                Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L)
 
@@ -119,7 +120,7 @@ module _ where
     (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
     𝒞-Sig-model
 
-open import language-interpretation Sig os es T' CM' BP' Lft' elim-weight 𝒟E 𝒟-tops δ∅𝒟
+open import language-interpretation Sig os es T' CM' BP' 𝟙d elim-weight 𝒟E 𝒟-tops δ∅𝒟
   𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
             ty-cong to 𝒟-ty-cong)

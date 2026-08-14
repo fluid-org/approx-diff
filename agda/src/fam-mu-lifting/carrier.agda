@@ -23,7 +23,7 @@ open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import commutative-monoid using (CommutativeMonoid)
-open import lifting using (Lifting)
+import lifting
 open import prop-setoid using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_)
 import fam
@@ -33,7 +33,7 @@ import fam-mu-lifting.fibre
 
 module fam-mu-lifting.carrier {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
+    (𝟙c : Category.obj 𝒞) where
 
 open Category 𝒞 public
 open IsEquivalence public
@@ -42,7 +42,14 @@ P : HasProducts 𝒞
 P = biproducts→products CM BP
 
 open HasProducts P public
-open Lifting Lft public
+
+private
+  module Lc = lifting CM BP 𝟙c
+open Lc public
+  using (L; root; inj; copair-root; copair-inj; lifting-ext;
+         Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
+         under-root; under-root-cong; under-root-natural;
+         strip-root; strip-root-cong; strip-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
 open Obj public
 open Mor public
@@ -64,7 +71,7 @@ open import prop using (_∧_; ⊥) public
 -- decorated fibre layer over this one.
 module Srt = fam-mu-lifting.sort os es
 open Srt public using (Sort; mkSort)
-open fam-mu-lifting.fibre os es CM BP Lft public using (Idx; ∣_∣; module Fibre; μ-fam)
+open fam-mu-lifting.fibre os es CM BP 𝟙c public using (Idx; ∣_∣; module Fibre; μ-fam)
 
 -- The fibrewise lift of a family: same index, each fibre lifted, transports under the action.
 Lf : Obj → Obj
@@ -85,13 +92,6 @@ fobj μ-obj (P' + Q') δ =
 fobj μ-obj (P' × Q') δ = Lf (Fam𝒞-P.prod (fobj μ-obj P' δ) (fobj μ-obj Q' δ))
 fobj μ-obj (μ P')    δ = μ-obj P' δ
 
--- The context-paired transport across the lifting and its laws, from the engine.
-import lifting-fold
-open lifting-fold CM BP Lft public
-  using (under-root; under-root-cong; under-root-natural; under-root-post; under-root-pre;
-         under-root-p₂; under-root-strip; prod-m-in₁; prod-m-in₂; bp-ext;
-         strip-root; strip-root-cong; strip-root-natural)
-
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
                  {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
@@ -99,27 +99,13 @@ fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
 fam-subst-iso₁ {I} F e =
   ≈-trans (≈-sym (F .trans* e (I .Setoid.isEquivalence .sym e))) (F .refl*)
 
-fam-subst-iso₂ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
-                 {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
-                 (F .subst (I .Setoid.isEquivalence .sym e) ∘ F .subst e) ≈ id _
-fam-subst-iso₂ {I} F e =
-  ≈-trans (≈-sym (F .trans* (I .Setoid.isEquivalence .sym e) e)) (F .refl*)
-
-prod-m-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} {h : b₁ ⇒ b₂} {h' : b₂ ⇒ b₁} →
-         (f ∘ f') ≈ id a₂ → (h ∘ h') ≈ id b₂ →
-         (prod-m f h ∘ prod-m f' h') ≈ id (prod a₂ b₂)
-prod-m-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
-
--- The transport across the lifting as a family morphism: fibrewise under-root, natural because
--- transports are isomorphisms.
+-- The transport across the lifting as a family morphism: fibrewise under-root.
 under-rootF : ∀ {Γ X Y : Obj} → Mor (Fam𝒞-P.prod Γ X) Y → Mor (Fam𝒞-P.prod Γ (Lf X)) (Lf Y)
 under-rootF f .idxf = f .idxf
 under-rootF f .famf ._⇒f_.transf (γ , x) = under-root (f .famf ._⇒f_.transf (γ , x))
 under-rootF {Γ} {X} {Y} f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
-  under-root-natural (Γ .fam .subst γ≈)
-    (fam-subst-iso₁ (X .fam) x≈) (fam-subst-iso₂ (X .fam) x≈)
-    (fam-subst-iso₁ (Y .fam) (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
-    (fam-subst-iso₂ (Y .fam) (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
+  under-root-natural (Γ .fam .subst γ≈) (X .fam .subst x≈)
+    (Y .fam .subst (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
     (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
     (f .famf ._⇒f_.natural (γ≈ , x≈))
 
@@ -133,12 +119,12 @@ Lf-map f .famf ._⇒f_.transf x = Lmap (f .famf ._⇒f_.transf x)
 Lf-map f .famf ._⇒f_.natural e =
   ≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong (f .famf ._⇒f_.natural e)) (Lmap-comp _ _))
 
--- The payload injection, fibrewise; natural because transports are isomorphisms.
+-- The payload injection, fibrewise.
 injF : ∀ {X : Obj} → Mor X (Lf X)
 injF .idxf = prop-setoid.idS _
 injF {X} .famf ._⇒f_.transf x = inj
 injF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
-  ≈-sym (Lmap-inj (fam-subst-iso₁ (X .fam) e) (fam-subst-iso₂ (X .fam) e))
+  ≈-sym (Lmap-inj (X .fam .subst e))
 
 -- A point of every fibre, natural under the transports: what an eliminator writes when it
 -- consumes a root.
@@ -175,8 +161,7 @@ elimF ptC f .idxf = f .idxf
 elimF ptC f .famf ._⇒f_.transf (γ , x) =
   strip-root (ptC .pt (f .idxf .prop-setoid._⇒_.func (γ , x))) (f .famf ._⇒f_.transf (γ , x))
 elimF {Γ} {X} {C} ptC f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
-  strip-root-natural (Γ .fam .subst γ≈)
-    (fam-subst-iso₁ (X .fam) x≈) (fam-subst-iso₂ (X .fam) x≈)
+  strip-root-natural (Γ .fam .subst γ≈) (X .fam .subst x≈)
     (ptC .pt-natural (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
     (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
     (f .famf ._⇒f_.natural (γ≈ , x≈))

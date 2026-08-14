@@ -20,7 +20,7 @@ open import Data.Unit using (⊤; tt)
 open import prop using () renaming (_,_ to _,ₚ_)
 open import categories using (Category; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import lifting using (Lifting)
+import lifting
 open import functor using (Functor)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
@@ -34,27 +34,27 @@ import fam-mu-lifting.fibre
 
 module fam-mu-lifting.fibrewise {o m e o₂ m₂ e₂} (os es : Level)
     {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
+    (𝟙c : Category.obj 𝒞)
     {𝒟 : Category o₂ m₂ e₂} (CM' : CMonEnriched 𝒟) (BP' : ∀ x y → Biproduct CM' x y)
-    {𝟙d : Category.obj 𝒟} (Lft' : Lifting CM' 𝟙d)
+    (𝟙d : Category.obj 𝒟)
     (F : Functor 𝒞 𝒟)
     (F-prod : preserve-chosen-products F (biproducts→products CM BP) (biproducts→products CM' BP'))
-    (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (Lifting.L Lft X)) (Lifting.L Lft' (Functor.fobj F X)))
+    (let module CL = lifting CM BP 𝟙c) (let module DL = lifting CM' BP' 𝟙d)
+    (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (CL.L X)) (DL.L (Functor.fobj F X)))
     (F-L-natural : ∀ {X Y} (f : Category._⇒_ 𝒞 X Y) →
        Category._≈_ 𝒟
-         (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (Lifting.Lmap Lft f)))
-         (Category._∘_ 𝒟 (Lifting.Lmap Lft' (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
+         (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (CL.Lmap f)))
+         (Category._∘_ 𝒟 (DL.Lmap (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
     where
 
 private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒟 = fam.CategoryOfFamilies os (os ⊔ es) 𝒟
   module Srt = fam-mu-lifting.sort os es
-  module Fc = fam-mu-lifting.fibre os es CM BP Lft
-  module Fd = fam-mu-lifting.fibre os es CM' BP' Lft'
+  module Fc = fam-mu-lifting.fibre os es CM BP 𝟙c
+  module Fd = fam-mu-lifting.fibre os es CM' BP' 𝟙d
   module 𝒟C = Category 𝒟
   module 𝒟Pm = HasProducts (biproducts→products CM' BP')
-  module DL = Lifting Lft'
 
 open Srt using (Sort; mkSort)
 open polynomial-functor using (Poly; Poly-map; extend)
@@ -103,7 +103,7 @@ private
   root-step : ∀ {a a' b b'} (i' : 𝒟C.Iso (F .fobj a') b') (i : 𝒟C.Iso (F .fobj a) b)
               {s : Category._⇒_ 𝒞 a a'} {t : b ⇒ b'} →
               ((i' .fwd ∘ F .fmor s) ≈ (t ∘ i .fwd)) →
-              (((DL.Lmap (i' .fwd) ∘ F-L a' .fwd) ∘ F .fmor (Lifting.Lmap Lft s))
+              (((DL.Lmap (i' .fwd) ∘ F-L a' .fwd) ∘ F .fmor (CL.Lmap s))
                 ≈ (DL.Lmap t ∘ (DL.Lmap (i .fwd) ∘ F-L a .fwd)))
   root-step {a} {a'} i' i {s} {t} inner =
     ≈-trans (assoc _ _ _)

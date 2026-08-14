@@ -18,14 +18,13 @@ open import Data.Product using (_,_)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
-open import lifting using (Lifting)
 import fam-mu-lifting.carrier
 
 module fam-mu-lifting.reindex {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
+    (𝟙c : Category.obj 𝒞) where
 
-open fam-mu-lifting.carrier os es CM BP Lft public
+open fam-mu-lifting.carrier os es CM BP 𝟙c public
 
 -- Reindex a tree from one parameter context to another along a context morphism.
 -- The morphism is first-order data: `base` carries the leaf maps (applied only at

@@ -16,16 +16,15 @@ open import Data.Unit using (tt)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
-open import lifting using (Lifting)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
 import fam-mu-lifting.reindex
 
 module fam-mu-lifting.fold {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
+    (𝟙c : Category.obj 𝒞) where
 
-open fam-mu-lifting.reindex os es CM BP Lft public
+open fam-mu-lifting.reindex os es CM BP 𝟙c public
 
 -- The fold (catamorphism) for the μ-type, lifted to a standalone module so its
 -- mutual recursion is termination-checked independently of the `hasMu` copattern.
@@ -188,30 +187,22 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-shape-fam-natural (var (Fin.suc i)) γ≈ p = pair-p₂ _ _
       fold-shape-fam-natural (Q₁ + Q₂) {γ₁} {γ₂} γ≈ {inj₁ x} {inj₁ x'} p =
         under-root-natural (Γ .fam .subst γ≈)
-          (Tδ.fib-shape-iso₁ Q₁ (Tδ.deco-ext P (λ i → lift tt)) p)
-          (Tδ.fib-shape-iso₂ Q₁ (Tδ.deco-ext P (λ i → lift tt)) p)
-          (fam-subst-iso₁ (fobj μ-fam Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p))
-          (fam-subst-iso₂ (fobj μ-fam Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p))
+          (Tδ.fib-shape-subst Q₁ (Tδ.deco-ext P (λ i → lift tt)) p)
+          (fobj μ-fam Q₁ (extend δ A) .fam .subst (fold-shape-idx-resp Q₁ γ≈ p))
           (fold-shape-fam Q₁ γ₁ x) (fold-shape-fam Q₁ γ₂ x')
           (fold-shape-fam-natural Q₁ γ≈ p)
       fold-shape-fam-natural (Q₁ + Q₂) {γ₁} {γ₂} γ≈ {inj₂ y} {inj₂ y'} p =
         under-root-natural (Γ .fam .subst γ≈)
-          (Tδ.fib-shape-iso₁ Q₂ (Tδ.deco-ext P (λ i → lift tt)) p)
-          (Tδ.fib-shape-iso₂ Q₂ (Tδ.deco-ext P (λ i → lift tt)) p)
-          (fam-subst-iso₁ (fobj μ-fam Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p))
-          (fam-subst-iso₂ (fobj μ-fam Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p))
+          (Tδ.fib-shape-subst Q₂ (Tδ.deco-ext P (λ i → lift tt)) p)
+          (fobj μ-fam Q₂ (extend δ A) .fam .subst (fold-shape-idx-resp Q₂ γ≈ p))
           (fold-shape-fam Q₂ γ₁ y) (fold-shape-fam Q₂ γ₂ y')
           (fold-shape-fam-natural Q₂ γ≈ p)
       fold-shape-fam-natural (Q₁ × Q₂) {γ₁} {γ₂} γ≈ {x₁ , x₂} {x₁' , x₂'} (p₁p , p₂p) =
         under-root-natural (Γ .fam .subst γ≈)
-          (prod-m-iso (Tδ.fib-shape-iso₁ Q₁ (Tδ.deco-ext P (λ i → lift tt)) p₁p)
-                  (Tδ.fib-shape-iso₁ Q₂ (Tδ.deco-ext P (λ i → lift tt)) p₂p))
-          (prod-m-iso (Tδ.fib-shape-iso₂ Q₁ (Tδ.deco-ext P (λ i → lift tt)) p₁p)
-                  (Tδ.fib-shape-iso₂ Q₂ (Tδ.deco-ext P (λ i → lift tt)) p₂p))
-          (prod-m-iso (fam-subst-iso₁ (fobj μ-fam Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p₁p))
-                  (fam-subst-iso₁ (fobj μ-fam Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p₂p)))
-          (prod-m-iso (fam-subst-iso₂ (fobj μ-fam Q₁ (extend δ A) .fam) (fold-shape-idx-resp Q₁ γ≈ p₁p))
-                  (fam-subst-iso₂ (fobj μ-fam Q₂ (extend δ A) .fam) (fold-shape-idx-resp Q₂ γ≈ p₂p)))
+          (prod-m (Tδ.fib-shape-subst Q₁ (Tδ.deco-ext P (λ i → lift tt)) p₁p)
+                  (Tδ.fib-shape-subst Q₂ (Tδ.deco-ext P (λ i → lift tt)) p₂p))
+          (prod-m (fobj μ-fam Q₁ (extend δ A) .fam .subst (fold-shape-idx-resp Q₁ γ≈ p₁p))
+                  (fobj μ-fam Q₂ (extend δ A) .fam .subst (fold-shape-idx-resp Q₂ γ≈ p₂p)))
           (strong-prod-m (fold-shape-fam Q₁ γ₁ x₁) (fold-shape-fam Q₂ γ₁ x₂))
           (strong-prod-m (fold-shape-fam Q₁ γ₂ x₁') (fold-shape-fam Q₂ γ₂ x₂'))
           (strong-prod-m-natural (fold-shape-fam-natural Q₁ γ≈ p₁p) (fold-shape-fam-natural Q₂ γ≈ p₂p))
@@ -232,26 +223,21 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-reindex-shape-fam-natural γ≈ (var v)    md p = fold-apply-fam-natural γ≈ md v p
       fold-reindex-shape-fam-natural {γ₁ = γ₁} {γ₂} γ≈ (P' + Q') {dA = dA} {dB} md {inj₁ a} {inj₁ a'} p =
         under-root-natural (Γ .fam .subst γ≈)
-          (Tδ.fib-shape-iso₁ P' dA p) (Tδ.fib-shape-iso₂ P' dA p)
-          (TA'.fib-shape-iso₁ P' dB (fold-reindex-shape-resp γ≈ P' md p))
-          (TA'.fib-shape-iso₂ P' dB (fold-reindex-shape-resp γ≈ P' md p))
+          (Tδ.fib-shape-subst P' dA p)
+          (TA'.fib-shape-subst P' dB (fold-reindex-shape-resp γ≈ P' md p))
           (fold-reindex-shape-fam γ₁ P' md a) (fold-reindex-shape-fam γ₂ P' md a')
           (fold-reindex-shape-fam-natural γ≈ P' md p)
       fold-reindex-shape-fam-natural {γ₁ = γ₁} {γ₂} γ≈ (P' + Q') {dA = dA} {dB} md {inj₂ b} {inj₂ b'} p =
         under-root-natural (Γ .fam .subst γ≈)
-          (Tδ.fib-shape-iso₁ Q' dA p) (Tδ.fib-shape-iso₂ Q' dA p)
-          (TA'.fib-shape-iso₁ Q' dB (fold-reindex-shape-resp γ≈ Q' md p))
-          (TA'.fib-shape-iso₂ Q' dB (fold-reindex-shape-resp γ≈ Q' md p))
+          (Tδ.fib-shape-subst Q' dA p)
+          (TA'.fib-shape-subst Q' dB (fold-reindex-shape-resp γ≈ Q' md p))
           (fold-reindex-shape-fam γ₁ Q' md b) (fold-reindex-shape-fam γ₂ Q' md b')
           (fold-reindex-shape-fam-natural γ≈ Q' md p)
       fold-reindex-shape-fam-natural {γ₁ = γ₁} {γ₂} γ≈ (P' × Q') {dA = dA} {dB} md {a₁ , a₂} {a₁' , a₂'} (p₁p , p₂p) =
         under-root-natural (Γ .fam .subst γ≈)
-          (prod-m-iso (Tδ.fib-shape-iso₁ P' dA p₁p) (Tδ.fib-shape-iso₁ Q' dA p₂p))
-          (prod-m-iso (Tδ.fib-shape-iso₂ P' dA p₁p) (Tδ.fib-shape-iso₂ Q' dA p₂p))
-          (prod-m-iso (TA'.fib-shape-iso₁ P' dB (fold-reindex-shape-resp γ≈ P' md p₁p))
-                  (TA'.fib-shape-iso₁ Q' dB (fold-reindex-shape-resp γ≈ Q' md p₂p)))
-          (prod-m-iso (TA'.fib-shape-iso₂ P' dB (fold-reindex-shape-resp γ≈ P' md p₁p))
-                  (TA'.fib-shape-iso₂ Q' dB (fold-reindex-shape-resp γ≈ Q' md p₂p)))
+          (prod-m (Tδ.fib-shape-subst P' dA p₁p) (Tδ.fib-shape-subst Q' dA p₂p))
+          (prod-m (TA'.fib-shape-subst P' dB (fold-reindex-shape-resp γ≈ P' md p₁p))
+                  (TA'.fib-shape-subst Q' dB (fold-reindex-shape-resp γ≈ Q' md p₂p)))
           (strong-prod-m (fold-reindex-shape-fam γ₁ P' md a₁) (fold-reindex-shape-fam γ₁ Q' md a₂))
           (strong-prod-m (fold-reindex-shape-fam γ₂ P' md a₁') (fold-reindex-shape-fam γ₂ Q' md a₂'))
           (strong-prod-m-natural (fold-reindex-shape-fam-natural γ≈ P' md p₁p)

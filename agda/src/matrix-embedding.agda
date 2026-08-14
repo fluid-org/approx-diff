@@ -18,8 +18,7 @@ open import cmon-enriched
   using (CMonEnriched; Biproduct; biproduct-iso; biproducts→products)
 open import functor using (Functor)
 open import finite-product-functor using (preserve-chosen-terminal; preserve-chosen-products)
-open import lifting using (Lifting)
-import lifting-biproduct
+import lifting
 import biproduct-transport
 import matrix
 import semimodule
@@ -220,15 +219,8 @@ mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
 ------------------------------------------------------------------------------
 -- The two liftings: one fresh position on the position side, the scalars on the semimodule side.
 
-module LmB = lifting-biproduct M.cmon 1 (M.biproduct 1)
-
-Lm-lifting : Lifting M.cmon 1
-Lm-lifting = LmB.biproduct-lifting
-
-Ls-lifting : Lifting SemiModT.cmon-enriched-⊤ SemiModT.𝕀-⊤
-Ls-lifting =
-  lifting-biproduct.biproduct-lifting SemiModT.cmon-enriched-⊤ SemiModT.𝕀-⊤
-    (SemiModT.biproduct-⊤ SemiModT.𝕀-⊤)
+module Lm = lifting M.cmon M.biproduct 1
+module Ls = lifting SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SemiModT.𝕀-⊤
 
 -- The unit dimension realises as the scalars.
 ι1-fwd : SemiMod._⇒_ (𝔽 1) 𝕀
@@ -260,7 +252,7 @@ L-biproduct : ∀ n → Biproduct SemiModT.cmon-enriched-⊤ SemiModT.𝕀-⊤ (
 L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd
 
 𝔽-L-iso : ∀ n → Category.Iso SemiModT.cat-⊤
-                  (𝔽-⊤ (Lifting.L Lm-lifting n)) (Lifting.L Ls-lifting (𝔽-⊤ n))
+                  (𝔽-⊤ (Lm.L n)) (Ls.L (𝔽-⊤ n))
 𝔽-L-iso n =
   Category.IsIso→Iso SemiModT.cat-⊤
     (biproduct-iso SemiModT.cmon-enriched-⊤ (L-biproduct n) (SemiModT.biproduct-⊤ SemiModT.𝕀-⊤ (𝔽-⊤ n)))
@@ -268,8 +260,8 @@ L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘b
 -- The lifted action realises as the copairing over the block witness, which is the form the
 -- comparison's naturality is stated against.
 mat-Lmap : ∀ {P Q} (f : Category._⇒_ M.cat P Q) →
-           SMC._≈_ (mat (LmB.Lmap-b f))
-                   (copair (𝔽-biproduct 1 P) {x = 𝔽-⊤ (Lifting.L Lm-lifting Q)}
+           SMC._≈_ (mat (Lm.Lmap f))
+                   (copair (𝔽-biproduct 1 P) {x = 𝔽-⊤ (Lm.L Q)}
                            (𝔽-biproduct 1 Q .in₁)
                            (SemiMod._∘_ (𝔽-biproduct 1 Q .in₂) (mat f)))
 mat-Lmap {P} {Q} f =
@@ -280,8 +272,8 @@ mat-Lmap {P} {Q} f =
                    (SMC.∘-cong (mat-comp (M.in₂ {1} {Q}) f) (SMC.≈-refl {f = mat (M.p₂ {1} {P})}))))
 
 𝔽-L-natural : ∀ {P Q} (f : Category._⇒_ M.cat P Q) →
-  SMC._≈_ (SemiMod._∘_ (𝔽-L-iso Q .Category.Iso.fwd) (mat (Lifting.Lmap Lm-lifting f)))
-          (SemiMod._∘_ (Lifting.Lmap Ls-lifting {𝔽-⊤ P} {𝔽-⊤ Q} (mat f))
+  SMC._≈_ (SemiMod._∘_ (𝔽-L-iso Q .Category.Iso.fwd) (mat (Lm.Lmap f)))
+          (SemiMod._∘_ (Ls.Lmap {𝔽-⊤ P} {𝔽-⊤ Q} (mat f))
                        (𝔽-L-iso P .Category.Iso.fwd))
 𝔽-L-natural {P} {Q} f =
   SMC.≈-trans

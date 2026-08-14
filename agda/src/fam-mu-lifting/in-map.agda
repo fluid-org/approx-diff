@@ -16,16 +16,15 @@ open import Data.Unit using (tt)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
-open import lifting using (Lifting)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
 import fam-mu-lifting.fold
 
 module fam-mu-lifting.in-map {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c) where
+    (𝟙c : Category.obj 𝒞) where
 
-open fam-mu-lifting.fold os es CM BP Lft public
+open fam-mu-lifting.fold os es CM BP 𝟙c public
 
 -- Parameterised initial algebras against the interpretation: carrier, algebra map and
 -- catamorphism, as operations only. The laws come later, in fused form.

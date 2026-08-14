@@ -18,7 +18,6 @@ open import categories
          exponentials→weak)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import primitives using (Primitives; sort-vals-setoid)
-open import lifting using (Lifting)
 open import Data.Sum using (inj₁; inj₂)
 open import cmon-enriched using (CMonEnriched)
 open import functor using (cones→limits)
@@ -48,8 +47,8 @@ open SemiMod._⇒_
 open prop-setoid._⇒_ using (func; func-resp-≈)
 open prop-setoid._≃m_ using (func-eq)
 
-module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ M.cmon M.biproduct Lm-lifting
-module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ Ls-lifting
+module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ M.cmon M.biproduct 1
+module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SemiModT.𝕀-⊤
 
 private
   module FCμ = Category Fam⟨𝒞⟩μ.cat
@@ -174,8 +173,8 @@ module interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   open sig-model Sig 𝒫
 
   open language-fo-interpretation Sig 0ℓ 0ℓ
-    M.terminal M.cmon M.biproduct Lm-lifting
-    SemiModT.terminal-⊤ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ Ls-lifting
+    M.terminal M.cmon M.biproduct 1
+    SemiModT.terminal-⊤ SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SemiModT.𝕀-⊤
     elim-weight-endo
     𝔽F 𝔽F-preserve-terminal (λ {m} {n} → 𝔽F-preserve-products {m} {n})
     𝔽-L-iso (λ {P} {Q} f → 𝔽-L-natural {P} {Q} f)

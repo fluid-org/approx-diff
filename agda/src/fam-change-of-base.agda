@@ -13,7 +13,7 @@ open import prop using (_,_)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import categories using (Category; HasTerminal; HasCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
-open import lifting using (Lifting)
+import lifting
 open import functor using (Functor)
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 open import indexed-family using (Fam; _⇒f_; _≃f_)
@@ -25,26 +25,26 @@ import fam-mu-lifting.fibrewise
 module fam-change-of-base {o m e o₂ m₂ e₂} (os es : Level)
     {𝒞 : Category o m e} (T : HasTerminal 𝒞)
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    {𝟙c : Category.obj 𝒞} (Lft : Lifting CM 𝟙c)
+    (𝟙c : Category.obj 𝒞)
     {𝒟 : Category o₂ m₂ e₂} (T' : HasTerminal 𝒟)
     (CM' : CMonEnriched 𝒟) (BP' : ∀ x y → Biproduct CM' x y)
-    {𝟙d : Category.obj 𝒟} (Lft' : Lifting CM' 𝟙d)
+    (𝟙d : Category.obj 𝒟)
     (F : Functor 𝒞 𝒟)
     (F-terminal : preserve-chosen-terminal F T T')
     (F-prod : preserve-chosen-products F (biproducts→products CM BP) (biproducts→products CM' BP'))
-    (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (Lifting.L Lft X)) (Lifting.L Lft' (Functor.fobj F X)))
+    (let module CL = lifting CM BP 𝟙c) (let module DL = lifting CM' BP' 𝟙d)
+    (F-L : ∀ X → Category.Iso 𝒟 (Functor.fobj F (CL.L X)) (DL.L (Functor.fobj F X)))
     (F-L-natural : ∀ {X Y} (f : Category._⇒_ 𝒞 X Y) →
        Category._≈_ 𝒟
-         (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (Lifting.Lmap Lft f)))
-         (Category._∘_ 𝒟 (Lifting.Lmap Lft' (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
+         (Category._∘_ 𝒟 (Category.Iso.fwd (F-L Y)) (Functor.fmor F (CL.Lmap f)))
+         (Category._∘_ 𝒟 (DL.Lmap (Functor.fmor F f)) (Category.Iso.fwd (F-L X))))
     where
 
-module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP Lft
-module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' Lft'
+module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM BP 𝟙c
+module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM' BP' 𝟙d
 
 private
   module 𝒟C = Category 𝒟
-  module DL = Lifting Lft'
   module Fam𝒟 = Category Fam⟨𝒟⟩μ.cat
 
 open Category.Iso
@@ -137,5 +137,5 @@ module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
              (Fam⟨F⟩-preserves-coproducts .inverse)
 
 module FW =
-  fam-mu-lifting.fibrewise os es CM BP Lft CM' BP' Lft'
+  fam-mu-lifting.fibrewise os es CM BP 𝟙c CM' BP' 𝟙d
     F (λ {X} {Y} → F-prod {X} {Y}) F-L (λ {X} {Y} f → F-L-natural {X} {Y} f)
