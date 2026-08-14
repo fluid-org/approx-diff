@@ -71,15 +71,15 @@ elim-weight-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S elim-we
 
 𝒞Bool = FCC.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
 
--- The full selection: every position at the top weight.
-full : ∀ n → MC._⇒_ 1 n
-full n _ _ = Sc.ι
+-- The pointwise top: every position at the top weight.
+top : ∀ n → MC._⇒_ 1 n
+top n _ _ = Sc.ι
 
-full-absorb : ∀ {n} (h : MC._⇒_ 1 n) → MC._≈_ (MCM._+m_ h (full n)) (full n)
-full-absorb h i j = Sc.trans Sc.+-comm ⊤-add-top
+top-absorb : ∀ {n} (h : MC._⇒_ 1 n) → MC._≈_ (MCM._+m_ h (top n)) (top n)
+top-absorb h i j = Sc.trans Sc.+-comm ⊤-add-top
 
 𝒞-tops : ∀ (X : Fam⟨𝒞⟩μ.Obj) → Fam⟨𝒞⟩μ.Pointed X
-𝒞-tops = Fam⟨𝒞⟩μ.top-pointed full (λ h → full-absorb h)
+𝒞-tops = Fam⟨𝒞⟩μ.top-pointed top (λ h → top-absorb h)
 
 -- The model-side function spaces: exponentials on Fam(SemiMod), from the direct setoid products
 -- of plain semimodules.

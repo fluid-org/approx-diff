@@ -4,7 +4,7 @@
 -- and the payload injection its two coproduct injections, so a map out of a lifted object is the
 -- copairing of a constant at the root with a map on the payload, and the action on morphisms is
 -- natural outright. The transport combinators reindex a context-paired morphism across the lifting
--- (under-root) and eliminate a root in context against a chosen constant (strip-root), in
+-- (under-root) and eliminate a root in context against a chosen constant (elim-root), in
 -- single-application forms whose inner morphism is applied once; the split forms and the unfolding
 -- bridge supply their laws.
 open import Level using (_⊔_)
@@ -274,27 +274,27 @@ under-root-split-pre {G₁} {G₂} {X₁} {X₂} {Y} g x r =
 
 -- Eliminating a root in context against a chosen constant: the context and the payload pass to the
 -- continuation, and the root produces the constant.
-strip-root-split : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
-strip-root-split c r = copair (r ∘ in₁) (copair c (r ∘ in₂))
+elim-root-split : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
+elim-root-split c r = copair (r ∘ in₁) (copair c (r ∘ in₂))
 
-strip-root-split-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
-                  c ≈ c' → r ≈ r' → strip-root-split c r ≈ strip-root-split c' r'
-strip-root-split-cong ec er = copair-cong (∘-cong er ≈-refl) (copair-cong ec (∘-cong er ≈-refl))
+elim-root-split-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
+                  c ≈ c' → r ≈ r' → elim-root-split c r ≈ elim-root-split c' r'
+elim-root-split-cong ec er = copair-cong (∘-cong er ≈-refl) (copair-cong ec (∘-cong er ≈-refl))
 
 -- Transport across the lifting is the elimination whose constant is the root itself.
 under-root-split-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
-                   under-root-split r ≈ strip-root-split root (inj ∘ r)
+                   under-root-split r ≈ elim-root-split root (inj ∘ r)
 under-root-split-strip r =
   copair-cong (≈-sym (assoc _ _ _)) (copair-cong ≈-refl (≈-sym (assoc _ _ _)))
 
 -- Root elimination commutes with transports.
-strip-root-split-natural :
+elim-root-split-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂)
     {y : Y₁ ⇒ Y₂} {c₁ : 𝟙c ⇒ Y₁} {c₂ : 𝟙c ⇒ Y₂} → (y ∘ c₁) ≈ c₂ →
     (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
     (f₂ ∘ prod-m g x) ≈ (y ∘ f₁) →
-    (strip-root-split c₂ f₂ ∘ prod-m g (Lmap x)) ≈ (y ∘ strip-root-split c₁ f₁)
-strip-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x {y} {c₁} {c₂} yc f₁ f₂ sq =
+    (elim-root-split c₂ f₂ ∘ prod-m g (Lmap x)) ≈ (y ∘ elim-root-split c₁ f₁)
+elim-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x {y} {c₁} {c₂} yc f₁ f₂ sq =
   bp-ext side₁ side₂
   where
   square-in₂ : ((f₂ ∘ in₂) ∘ x) ≈ (y ∘ (f₁ ∘ in₂))
@@ -304,7 +304,7 @@ strip-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x {y} {c₁
     (≈-trans (≈-sym (assoc _ _ _))
     (≈-trans (∘-cong₁ sq) (assoc _ _ _))))
 
-  side₁ : ((strip-root-split c₂ f₂ ∘ prod-m g (Lmap x)) ∘ in₁) ≈ ((y ∘ strip-root-split c₁ f₁) ∘ in₁)
+  side₁ : ((elim-root-split c₂ f₂ ∘ prod-m g (Lmap x)) ∘ in₁) ≈ ((y ∘ elim-root-split c₁ f₁) ∘ in₁)
   side₁ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (prod-m-in₁ g (Lmap x)))
@@ -332,7 +332,7 @@ strip-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x {y} {c₁
         (≈-trans square-in₂
          (≈-sym (≈-trans (assoc _ _ _) (∘-cong₂ (copair-inj _ _)))))))))
 
-  side₂ : ((strip-root-split c₂ f₂ ∘ prod-m g (Lmap x)) ∘ in₂) ≈ ((y ∘ strip-root-split c₁ f₁) ∘ in₂)
+  side₂ : ((elim-root-split c₂ f₂ ∘ prod-m g (Lmap x)) ∘ in₂) ≈ ((y ∘ elim-root-split c₁ f₁) ∘ in₂)
   side₂ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong₂ (prod-m-in₂ g (Lmap x)))
@@ -370,8 +370,8 @@ under-root : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
 under-root {G} r = (inj ∘ (r ∘ prod-m (id G) payload-L)) +m ((root ∘ tag-L) ∘ p₂)
 
 -- Evaluation-critical shape: exactly one application of r per element.
-strip-root : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
-strip-root {G} c r = (r ∘ prod-m (id G) payload-L) +m ((c ∘ tag-L) ∘ p₂)
+elim-root : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
+elim-root {G} c r = (r ∘ prod-m (id G) payload-L) +m ((c ∘ tag-L) ∘ p₂)
 
 private
   prod-m-arm-in₁ : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ prod-m (id G) payload-L) ∘ in₁) ≈ (r ∘ in₁)
@@ -445,13 +445,13 @@ under-root-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
     (≈-trans (lifting-ext E (copair root M) E-root E-inj)
              (≈-sym (B.copair-in₂ G (L X) (inj ∘ (r ∘ in₁)) (copair root M)))))
 
-strip-root-unfold : ∀ {G X Y} (c : 𝟙c ⇒ Y) (r : (G ⊕ X) ⇒ Y) →
-                    strip-root c r ≈ strip-root-split c r
-strip-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
+elim-root-unfold : ∀ {G X Y} (c : 𝟙c ⇒ Y) (r : (G ⊕ X) ⇒ Y) →
+                    elim-root c r ≈ elim-root-split c r
+elim-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
   where
   M = r ∘ in₂
 
-  leg₁ : (strip-root c r ∘ in₁) ≈ (strip-root-split c r ∘ in₁)
+  leg₁ : (elim-root c r ∘ in₁) ≈ (elim-root-split c r ∘ in₁)
   leg₁ =
     ≈-trans (comp-bilinear₁ _ _ in₁)
     (≈-trans (+m-cong (prod-m-arm-in₁ r) (tag-arm-in₁ c))
@@ -477,7 +477,7 @@ strip-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
                        (≈-trans (∘-cong ≈-refl tag-L-inj) (comp-bilinear-ε₂ c))))
     (≈-trans +m-runit (≈-sym (copair-inj c M))))
 
-  leg₂ : (strip-root c r ∘ in₂) ≈ (strip-root-split c r ∘ in₂)
+  leg₂ : (elim-root c r ∘ in₂) ≈ (elim-root-split c r ∘ in₂)
   leg₂ =
     ≈-trans (comp-bilinear₁ _ _ in₂)
     (≈-trans (+m-cong (prod-m-arm-in₂ r) (tag-arm-in₂ c))
@@ -516,25 +516,25 @@ under-root-pre g x r =
   (≈-trans (under-root-split-pre g x r)
            (≈-sym (under-root-unfold (r ∘ prod-m g x))))
 
-strip-root-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
-                  c ≈ c' → r ≈ r' → strip-root c r ≈ strip-root c' r'
-strip-root-cong {c = c} {c'} {r} {r'} ec er =
-  ≈-trans (strip-root-unfold c r)
-  (≈-trans (strip-root-split-cong ec er) (≈-sym (strip-root-unfold c' r')))
+elim-root-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
+                  c ≈ c' → r ≈ r' → elim-root c r ≈ elim-root c' r'
+elim-root-cong {c = c} {c'} {r} {r'} ec er =
+  ≈-trans (elim-root-unfold c r)
+  (≈-trans (elim-root-split-cong ec er) (≈-sym (elim-root-unfold c' r')))
 
 under-root-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
-                   under-root r ≈ strip-root root (inj ∘ r)
+                   under-root r ≈ elim-root root (inj ∘ r)
 under-root-strip r =
   ≈-trans (under-root-unfold r)
-  (≈-trans (under-root-split-strip r) (≈-sym (strip-root-unfold root (inj ∘ r))))
+  (≈-trans (under-root-split-strip r) (≈-sym (elim-root-unfold root (inj ∘ r))))
 
-strip-root-natural :
+elim-root-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂)
     {y : Y₁ ⇒ Y₂} {c₁ : 𝟙c ⇒ Y₁} {c₂ : 𝟙c ⇒ Y₂} → (y ∘ c₁) ≈ c₂ →
     (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
     (f₂ ∘ prod-m g x) ≈ (y ∘ f₁) →
-    (strip-root c₂ f₂ ∘ prod-m g (Lmap x)) ≈ (y ∘ strip-root c₁ f₁)
-strip-root-natural g x {y} {c₁} {c₂} yc f₁ f₂ sq =
-  ≈-trans (∘-cong (strip-root-unfold c₂ f₂) ≈-refl)
-  (≈-trans (strip-root-split-natural g x {y} {c₁} {c₂} yc f₁ f₂ sq)
-           (∘-cong ≈-refl (≈-sym (strip-root-unfold c₁ f₁))))
+    (elim-root c₂ f₂ ∘ prod-m g (Lmap x)) ≈ (y ∘ elim-root c₁ f₁)
+elim-root-natural g x {y} {c₁} {c₂} yc f₁ f₂ sq =
+  ≈-trans (∘-cong (elim-root-unfold c₂ f₂) ≈-refl)
+  (≈-trans (elim-root-split-natural g x {y} {c₁} {c₂} yc f₁ f₂ sq)
+           (∘-cong ≈-refl (≈-sym (elim-root-unfold c₁ f₁))))
