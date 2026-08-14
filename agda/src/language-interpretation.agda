@@ -5,8 +5,9 @@
 -- carriers, and function spaces are lifted weak exponentials, so a closure carries a root like any
 -- other cell. Constructors inject their payload under the injection, whose root is zero: a cell
 -- the program itself constructs depends on nothing. Eliminators, including application, send the
--- scrutinee's root to an assumed constant at the result object, one point per object natural in
--- the index, since an arbitrary CMon-enriched category has none.
+-- scrutinee's root to the result type's unit constant scaled by the elimination weight; the unit
+-- constant is built by the same induction as the interpretation, from assumed constants at the
+-- unit type, the sorts and the exponentials.
 -- The empty environment for the μ-carriers is a parameter because functions out of
 -- Fin 0 agree only propositionally, and the comparison with a change of base needs the
 -- μ-carriers' environment to be the image environment definitionally.
@@ -35,15 +36,19 @@ module language-interpretation
   (𝟙c : Category.obj 𝒞)
   (let module R = fam-mu-lifting.mu-map os es T CM BP 𝟙c)
   (𝒞E : HasWeakExponentials R.cat R.products)
-  (elim-pt : ∀ (X : R.Obj) → R.Pointed X)
   (δ∅ : Fin 0 → R.Obj)
   (𝟙ty : R.Obj)
   (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
   (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
   (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
+  (elim-w : Category._⇒_ 𝒞 𝟙c 𝟙c)
+  (exp-const : ∀ {X Y : R.Obj} → R.Constant Y → R.Constant (HasWeakExponentials.exp 𝒞E X Y))
+  (𝟙ty-const : R.Constant 𝟙ty)
+  (sort-const : ∀ s → R.Constant (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu; μ-map; Pointed; elimF)
+open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu; μ-map; Constant; elimF;
+              scale-const; Lf-constant; coprod-constant; prod-constant; PolyConst)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
@@ -73,6 +78,42 @@ mutual
   as-poly (σ [×] τ)       δ = as-poly σ δ Poly.× as-poly τ δ
   as-poly (σ [→] τ)       δ = Poly.const (Lf (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ())))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
+
+-- The unit constant of each type's interpretation, by the same induction as the interpretation:
+-- unit weight at every root, the assumed constants at the leaves, and a recursion over trees at
+-- the μ-carriers.
+private module Mu∅ = R.MuUnit δ∅ (λ ())
+
+mutual
+  ty-unit : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Constant (δ i)) → Constant (⟦ τ ⟧ty δ)
+  ty-unit (var i)   δ δc = δc i
+  ty-unit unit      δ δc = 𝟙ty-const
+  ty-unit (base s)  δ δc = sort-const s
+  ty-unit (σ [+] τ) δ δc =
+    coprod-constant (Lf-constant (ty-unit σ δ δc)) (Lf-constant (ty-unit τ δ δc))
+  ty-unit (σ [×] τ) δ δc = Lf-constant (prod-constant (ty-unit σ δ δc) (ty-unit τ δ δc))
+  ty-unit (σ [→] τ) δ δc = Lf-constant (exp-const (ty-unit τ (λ ()) (λ ())))
+  ty-unit (μ τ)     δ δc = Mu∅.μ-unit (as-poly τ δ) (as-poly-const τ δ δc)
+
+  as-poly-const : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Constant (δ i)) →
+                  PolyConst (as-poly {Δ} {n} τ δ)
+  as-poly-const {Δ} {n} (var i) δ δc = go (splitAt n i)
+    where
+      go : (s : Fin n ⊎ Fin Δ) →
+           PolyConst ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+      go (inj₁ k) = lift tt
+      go (inj₂ j) = δc j
+  as-poly-const unit      δ δc = 𝟙ty-const
+  as-poly-const (base s)  δ δc = sort-const s
+  as-poly-const (σ [+] τ) δ δc = DP._,_ (as-poly-const σ δ δc) (as-poly-const τ δ δc)
+  as-poly-const (σ [×] τ) δ δc = DP._,_ (as-poly-const σ δ δc) (as-poly-const τ δ δc)
+  as-poly-const (σ [→] τ) δ δc = Lf-constant (exp-const (ty-unit τ (λ ()) (λ ())))
+  as-poly-const (μ τ)     δ δc = as-poly-const τ δ δc
+
+-- The constant an eliminator writes: the result type's unit constant scaled by the elimination
+-- weight.
+elim-const : ∀ (τ : type 0) → Constant (⟦ τ ⟧ty (λ ()))
+elim-const τ = scale-const elim-w (ty-unit τ (λ ()) (λ ()))
 
 -- Combined context: the first n variables from δ₀ (the Poly variables), the rest from δ.
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
@@ -258,14 +299,14 @@ mutual
   ⟦ inl M ⟧tm           = in₁ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ inr M ⟧tm           = in₂ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ case {τ = τ} M M₁ M₂ ⟧tm =
-    scopair (elimF (elim-pt _) ⟦ M₁ ⟧tm) (elimF (elim-pt _) ⟦ M₂ ⟧tm)
+    scopair (elimF (elim-const τ) ⟦ M₁ ⟧tm) (elimF (elim-const τ) ⟦ M₂ ⟧tm)
       ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ pair M N ⟧tm        = injF ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (elim-pt _) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
-  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (elim-pt _) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (elim-const τ₁) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (elim-const τ₂) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ lam M ⟧tm           = injF ∘ lambda ⟦ M ⟧tm
   ⟦ app {τ = τ} M N ⟧tm =
-    elimF (elim-pt _) (eval ∘ ⟨ p₂ , ⟦ N ⟧tm ∘ p₁ ⟩) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+    elimF (elim-const τ) (eval ∘ ⟨ p₂ , ⟦ N ⟧tm ∘ p₁ ⟩) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm        = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel r Ms ⟧tm       = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
   ⟦ roll {τ = τ} M ⟧tm  =

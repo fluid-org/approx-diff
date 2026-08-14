@@ -48,11 +48,16 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (let module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM𝒞 BP𝒞 𝟙𝒞)
   (let module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM𝒟 BP𝒟 𝟙𝒟)
   (𝒟E : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products)
-  (𝒟-elim-pt : ∀ (X : Fam⟨𝒟⟩μ.Obj) → Fam⟨𝒟⟩μ.Pointed X)
   (𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj)
   (𝒞unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T𝒞)) 𝒞𝟙ty)
   (let 𝒞Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty))
   (𝒞-Sig-model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T𝒞 , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig)
+  (elim-w : 𝟙𝒟 𝒟.⇒ 𝟙𝒟)
+  (𝒟-exp-const : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Constant Y →
+                 Fam⟨𝒟⟩μ.Constant (HasWeakExponentials.exp 𝒟E X Y))
+  (F𝟙 : 𝟙𝒟 𝒟.⇒ Functor.fobj F 𝟙𝒞)
+  (𝒞𝟙ty-const : Fam⟨𝒞⟩μ.Constant 𝒞𝟙ty)
+  (𝒞-sort-const : ∀ s → Fam⟨𝒞⟩μ.Constant (Model.⟦sort⟧ 𝒞-Sig-model s))
   where
 
 open language-syntax Sig
@@ -119,8 +124,16 @@ module _ where
     (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
     𝒞-Sig-model
 
-open import language-interpretation Sig os es T𝒟 CM𝒟 BP𝒟 𝟙𝒟 𝒟E 𝒟-elim-pt δ∅𝒟
-  𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model
+-- The target-side constants: the unit and sort constants are the images of the source-side
+-- ones, entered through the chosen map from the target unit object.
+𝒟𝟙ty-const : Fam⟨𝒟⟩μ.Constant 𝒟𝟙ty
+𝒟𝟙ty-const = HR.Fam⟨F⟩-constant F𝟙 𝒞𝟙ty-const
+
+𝒟-sort-const : ∀ s → Fam⟨𝒟⟩μ.Constant (Model.⟦sort⟧ 𝒟-Sig-model s)
+𝒟-sort-const s = HR.Fam⟨F⟩-constant F𝟙 (𝒞-sort-const s)
+
+open import language-interpretation Sig os es T𝒟 CM𝒟 BP𝒟 𝟙𝒟 𝒟E δ∅𝒟
+  𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model elim-w 𝒟-exp-const 𝒟𝟙ty-const 𝒟-sort-const
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
             ty-cong to 𝒟-ty-cong)
   using ()

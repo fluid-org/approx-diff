@@ -12,13 +12,13 @@
 -- Emmenegger. W-types in setoids. arXiv:1809.02375, 2018.
 ------------------------------------------------------------------------------
 
-open import Level using (Level; _⊔_; lift) renaming (suc to lsuc)
+open import Level using (Level; _⊔_; Lift; lift) renaming (suc to lsuc)
 open import Data.Nat using (suc)
 import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
-open import Data.Unit using () renaming (tt to ttS)
+open import Data.Unit using (⊤) renaming (tt to ttS)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
@@ -48,6 +48,7 @@ private
 open Lc public
   using (L; root; inj; copair-root; copair-inj; lifting-ext;
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
+         L-const; L-const-cong; L-const-natural;
          under-root; under-root-cong; under-root-natural;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
@@ -126,49 +127,55 @@ injF {X} .famf ._⇒f_.transf x = inj
 injF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
   ≈-sym (Lmap-inj (X .fam .subst e))
 
--- A point of every fibre, natural under the transports: what an eliminator writes when it
+-- A constant at every fibre, natural under the transports: what an eliminator writes when it
 -- consumes a root.
-record Pointed (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
+record Constant (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
   field
-    pt         : ∀ x → 𝟙c ⇒ X .fam .fm x
-    pt-natural : ∀ {x₁ x₂} (e : _≈s_ (X .idx) x₁ x₂) →
-                 (X .fam .subst e ∘ pt x₁) ≈ pt x₂
+    at         : ∀ x → 𝟙c ⇒ X .fam .fm x
+    at-natural : ∀ {x₁ x₂} (e : _≈s_ (X .idx) x₁ x₂) →
+                 (X .fam .subst e ∘ at x₁) ≈ at x₂
 
-open Pointed public
+open Constant public
 
--- The family of tops: a top morphism into every object, absorbing in the enrichment, points
--- every family at once, naturally because transports are isomorphisms and the top absorbs.
-module _ (top : ∀ a → 𝟙c ⇒ a)
-         (top-absorb : ∀ {a} (h : 𝟙c ⇒ a) → (h CME.+m top a) ≈ top a) where
+-- Constants are structural: simple families are constant at any chosen morphism, and constants
+-- close under the lifting, coproducts and products, with unit weight at each root the lifting
+-- adjoins.
+simple-constant : ∀ {A : Setoid os (os ⊔ es)} {x : obj} → (𝟙c ⇒ x) → Constant simple[ A , x ]
+simple-constant c .at _ = c
+simple-constant c .at-natural _ = id-left
 
-  top-pointed : ∀ (X : Obj) → Pointed X
-  top-pointed X .pt x = top (X .fam .fm x)
-  top-pointed X .pt-natural {x₁} {x₂} e =
-    ≈-trans (∘-cong₂ (≈-sym (top-absorb
-              (X .fam .subst (X .idx .Setoid.isEquivalence .sym e) ∘ top (X .fam .fm x₂)))))
-    (≈-trans (CME.comp-bilinear₂ _ _ _)
-    (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-cong
-               (≈-trans (≈-sym (assoc _ _ _))
-                 (≈-trans (∘-cong₁ (fam-subst-iso₁ (X .fam) e)) id-left))
-               ≈-refl)
-    (≈-trans (CME.homCM _ _ .CommutativeMonoid.+-comm)
-             (top-absorb (X .fam .subst e ∘ top (X .fam .fm x₁))))))
+Lf-constant : ∀ {X : Obj} → Constant X → Constant (Lf X)
+Lf-constant c .at x = L-const (c .at x)
+Lf-constant {X} c .at-natural e =
+  ≈-trans (L-const-natural (X .fam .subst e) (c .at _)) (L-const-cong (c .at-natural e))
 
--- Scaling a family of points by an endomorphism of the unit object.
-scale-pt : ∀ {X : Obj} → (𝟙c ⇒ 𝟙c) → Pointed X → Pointed X
-scale-pt w p .pt x = p .pt x ∘ w
-scale-pt w p .pt-natural e =
-  ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (p .pt-natural e) ≈-refl)
+coprod-constant : ∀ {X Y : Obj} → Constant X → Constant Y →
+                  Constant (HasCoproducts.coprod coproducts X Y)
+coprod-constant c d .at (inj₁ x) = c .at x
+coprod-constant c d .at (inj₂ y) = d .at y
+coprod-constant c d .at-natural {inj₁ _} {inj₁ _} e = c .at-natural e
+coprod-constant c d .at-natural {inj₂ _} {inj₂ _} e = d .at-natural e
+
+prod-constant : ∀ {X Y : Obj} → Constant X → Constant Y → Constant (Fam𝒞-P.prod X Y)
+prod-constant c d .at (x , y) = pair (c .at x) (d .at y)
+prod-constant c d .at-natural (e₁ , e₂) =
+  ≈-trans (pair-compose _ _ _ _) (pair-cong (c .at-natural e₁) (d .at-natural e₂))
+
+-- Scaling a constant by an endomorphism of the unit object.
+scale-const : ∀ {X : Obj} → (𝟙c ⇒ 𝟙c) → Constant X → Constant X
+scale-const w c .at x = c .at x ∘ w
+scale-const w c .at-natural e =
+  ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (c .at-natural e) ≈-refl)
 
 -- Eliminating a root in context: the payload continues, and the root produces the target's
--- point.
-elimF : ∀ {Γ X C : Obj} → Pointed C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
-elimF ptC f .idxf = f .idxf
-elimF ptC f .famf ._⇒f_.transf (γ , x) =
-  elim-root (ptC .pt (f .idxf .prop-setoid._⇒_.func (γ , x))) (f .famf ._⇒f_.transf (γ , x))
-elimF {Γ} {X} {C} ptC f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
+-- constant.
+elimF : ∀ {Γ X C : Obj} → Constant C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
+elimF cC f .idxf = f .idxf
+elimF cC f .famf ._⇒f_.transf (γ , x) =
+  elim-root (cC .at (f .idxf .prop-setoid._⇒_.func (γ , x))) (f .famf ._⇒f_.transf (γ , x))
+elimF {Γ} {X} {C} cC f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
   elim-root-natural (Γ .fam .subst γ≈) (X .fam .subst x≈)
-    (ptC .pt-natural (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
+    (cC .at-natural (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
     (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
     (f .famf ._⇒f_.natural (γ≈ , x≈))
 
@@ -201,3 +208,94 @@ Lf-iso {X} {Y} i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.famf-eq .indexed-family._≃
 module Tree {n} (δ : Fin n → Obj) where
   open Srt.Tree (λ i → δ i .idx) public
   open Fibre δ public
+
+-- A constant for a polynomial: one at every constant leaf.
+PolyConst : ∀ {n} → Poly n → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
+PolyConst (const A) = Constant A
+PolyConst (var i)   = Lift (o ⊔ m ⊔ e ⊔ os ⊔ es) ⊤
+PolyConst (P' + Q') = PolyConst P' ×T PolyConst Q'
+PolyConst (P' × Q') = PolyConst P' ×T PolyConst Q'
+PolyConst (μ P')    = PolyConst P'
+
+-- The unit constant of a μ-carrier, by recursion over trees: constants for the polynomial and
+-- the environment determine a constant at every fibre, natural in the tree, with unit weight at
+-- each root.
+module MuUnit {n} (δ : Fin n → Obj) (δ-const : ∀ i → Constant (δ i)) where
+  open Tree δ
+
+  DecoAssignConst : ∀ {r} → DecoAssign r → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
+  DecoConst : ∀ {s} → Deco s → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
+  DecoAssignConst {inj₁ _} _ = Lift (o ⊔ m ⊔ e ⊔ os ⊔ es) ⊤
+  DecoAssignConst {inj₂ _} d = DecoConst d
+  DecoConst (mkDeco Q d) = PolyConst Q ×T (∀ i → DecoAssignConst (d i))
+
+  deco-ext-const : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
+                   {d : ∀ i → DecoAssign (ρ̄ i)} →
+                   PolyConst Q → (∀ i → DecoAssignConst (d i)) →
+                   ∀ i → DecoAssignConst (deco-ext Q d i)
+  deco-ext-const Q Qc dc Fin.zero    = Qc , dc
+  deco-ext-const Q Qc dc (Fin.suc i) = dc i
+
+  mutual
+    fib-unit : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
+               (d : ∀ i → DecoAssign (ρ̄ i)) → PolyConst Q → (∀ i → DecoAssignConst (d i)) →
+               (t : W ∣ Q ∣ ρ̄) → 𝟙c ⇒ fib Q d t
+    fib-unit Q d Qc dc (sup x) = fib-shape-unit Q (deco-ext Q d) Qc (deco-ext-const Q Qc dc) x
+
+    fib-shape-unit : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Srt.Sort n}
+                     (d : ∀ i → DecoAssign (η̄ i)) → PolyConst Q → (∀ i → DecoAssignConst (d i)) →
+                     (x : ⟦ ∣ Q ∣ ⟧shape η̄) → 𝟙c ⇒ fib-shape Q d x
+    fib-shape-unit (const A) d Ac dc x = Ac .at x
+    fib-shape-unit (var i)   d _ dc x = fib-el-unit _ (d i) (dc i) x
+    fib-shape-unit (P' + Q') d (Pc , Qc) dc (inj₁ x) = L-const (fib-shape-unit P' d Pc dc x)
+    fib-shape-unit (P' + Q') d (Pc , Qc) dc (inj₂ y) = L-const (fib-shape-unit Q' d Qc dc y)
+    fib-shape-unit (P' × Q') d (Pc , Qc) dc (x , y) =
+      L-const (pair (fib-shape-unit P' d Pc dc x) (fib-shape-unit Q' d Qc dc y))
+    fib-shape-unit (μ Q')    d Qc dc x = fib-unit Q' d Qc dc x
+
+    fib-el-unit : ∀ (r : Fin n ⊎ Srt.Sort n) (dr : DecoAssign r) → DecoAssignConst dr →
+                  (x : El r) → 𝟙c ⇒ fib-el r dr x
+    fib-el-unit (inj₁ p) _ _ x = δ-const p .at x
+    fib-el-unit (inj₂ _) (mkDeco Q ρd) (Qc , ρdc) x = fib-unit Q ρd Qc ρdc x
+
+  mutual
+    fib-unit-natural : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
+                       (d : ∀ i → DecoAssign (ρ̄ i)) (Qc : PolyConst Q)
+                       (dc : ∀ i → DecoAssignConst (d i))
+                       {t t' : W ∣ Q ∣ ρ̄} (p : W-≈ t t') →
+                       (fib-subst Q d {x = t} {y = t'} p ∘ fib-unit Q d Qc dc t)
+                         ≈ fib-unit Q d Qc dc t'
+    fib-unit-natural Q d Qc dc {sup x} {sup y} p =
+      fib-shape-unit-natural Q (deco-ext Q d) Qc (deco-ext-const Q Qc dc) p
+
+    fib-shape-unit-natural : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Srt.Sort n}
+                             (d : ∀ i → DecoAssign (η̄ i)) (Qc : PolyConst Q)
+                             (dc : ∀ i → DecoAssignConst (d i))
+                             {x y : ⟦ ∣ Q ∣ ⟧shape η̄} (p : shape≈ ∣ Q ∣ η̄ x y) →
+                             (fib-shape-subst Q d p ∘ fib-shape-unit Q d Qc dc x)
+                               ≈ fib-shape-unit Q d Qc dc y
+    fib-shape-unit-natural (const A) d Ac dc p = Ac .at-natural p
+    fib-shape-unit-natural (var i)   d _ dc p = fib-el-unit-natural _ (d i) (dc i) p
+    fib-shape-unit-natural (P' + Q') d (Pc , Qc) dc {inj₁ _} {inj₁ _} p =
+      ≈-trans (L-const-natural _ _) (L-const-cong (fib-shape-unit-natural P' d Pc dc p))
+    fib-shape-unit-natural (P' + Q') d (Pc , Qc) dc {inj₂ _} {inj₂ _} p =
+      ≈-trans (L-const-natural _ _) (L-const-cong (fib-shape-unit-natural Q' d Qc dc p))
+    fib-shape-unit-natural (P' × Q') d (Pc , Qc) dc {_ , _} {_ , _} (p₁ , p₂) =
+      ≈-trans (L-const-natural _ _)
+        (L-const-cong (≈-trans (pair-compose _ _ _ _)
+          (pair-cong (fib-shape-unit-natural P' d Pc dc p₁)
+                     (fib-shape-unit-natural Q' d Qc dc p₂))))
+    fib-shape-unit-natural (μ Q')    d Qc dc {x} {y} p =
+      fib-unit-natural Q' d Qc dc {x} {y} p
+
+    fib-el-unit-natural : ∀ (r : Fin n ⊎ Srt.Sort n) (dr : DecoAssign r)
+                          (drc : DecoAssignConst dr) {x y : El r} (p : elEq r x y) →
+                          (fib-el-subst r dr p ∘ fib-el-unit r dr drc x) ≈ fib-el-unit r dr drc y
+    fib-el-unit-natural (inj₁ p) _ _ e = δ-const p .at-natural e
+    fib-el-unit-natural (inj₂ _) (mkDeco Q ρd) (Qc , ρdc) {x} {y} e =
+      fib-unit-natural Q ρd Qc ρdc {x} {y} e
+
+  μ-unit : ∀ (P : Poly (Data.Nat.suc n)) → PolyConst P → Constant (μ-fam P δ)
+  μ-unit P Pc .at t = fib-unit P (λ i → lift ttS) Pc (λ i → lift ttS) t
+  μ-unit P Pc .at-natural {t} {t'} e =
+    fib-unit-natural P (λ i → lift ttS) Pc (λ i → lift ttS) {t} {t'} e

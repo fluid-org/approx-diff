@@ -37,7 +37,7 @@ open Primitives EP.primitives using (sort-val; sort-width)
 
 private
   module TM = matrix.Mat two.semiring
-  module FR = matrix-embedding two.semiring (λ {x} → two.⊤-add-top {x})
+  module FR = matrix-embedding two.semiring
 
 elemT : type 0
 elemT = base EP.label [×] base EP.number

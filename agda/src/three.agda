@@ -176,7 +176,3 @@ private
 ∧-idem {C} = S.refl {C}
 ∧-idem {D} = S.refl {D}
 
-⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι
-⊤-add-top {O} = S.refl {D}
-⊤-add-top {C} = S.refl {D}
-⊤-add-top {D} = S.refl {D}

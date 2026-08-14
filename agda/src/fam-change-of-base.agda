@@ -121,6 +121,17 @@ Fam⟨F⟩-L X .bwd∘fwd≈id .famf-eq .transf-eq {x} =
                (𝒟.≈-trans 𝒟.id-left (F-L (X .fam .fm x) .bwd∘fwd≈id)))
     𝒟.id-left
 
+-- Constants transport along the change of base: the image of a constant family is constant at
+-- the image morphisms, entered through a chosen map from the target unit object.
+Fam⟨F⟩-constant : (u : 𝟙𝒟 𝒟.⇒ F .fobj 𝟙𝒞) → ∀ {X : Fam⟨𝒞⟩μ.Obj} →
+                  Fam⟨𝒞⟩μ.Constant X → Fam⟨𝒟⟩μ.Constant (Fam⟨F⟩ .fobj X)
+Fam⟨F⟩-constant u c .Fam⟨𝒟⟩μ.at x = 𝒟._∘_ (F .fmor (c .Fam⟨𝒞⟩μ.at x)) u
+Fam⟨F⟩-constant u {X} c .Fam⟨𝒟⟩μ.at-natural e =
+  𝒟.≈-trans (𝒟.≈-sym (𝒟.assoc _ _ _))
+    (𝒟.∘-cong
+      (𝒟.≈-trans (𝒟.≈-sym (F .fmor-comp _ _)) (F .fmor-cong (c .Fam⟨𝒞⟩μ.at-natural e)))
+      𝒟.≈-refl)
+
 module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
 
   private

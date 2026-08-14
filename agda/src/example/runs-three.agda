@@ -20,7 +20,7 @@ open import example.list-terms
 
 module EP3 = example.primitives-over three.semiring
 
-module model = ho-model three.semiring (λ {x} → three.⊤-add-top {x}) three.C
+module model = ho-model three.semiring three.C
 module interp = model.interp EP3.Sig EP3.primitives
 
 open import language-syntax EP3.Sig using (base; unit; _[+]_; first-order)

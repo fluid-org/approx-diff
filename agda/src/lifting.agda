@@ -122,6 +122,21 @@ Lmap-id {P} =
   ≈-trans (copair-cong ≈-refl id-right)
   (≈-trans (copair-cong (≈-sym id-left) (≈-sym id-left)) (B.copair-ext 𝟙c P (id (L P))))
 
+-- Extending a constant across the lifting: unit weight at the root, the given constant on the
+-- payload.
+L-const : ∀ {X} → (𝟙c ⇒ X) → (𝟙c ⇒ L X)
+L-const c = root +m (inj ∘ c)
+
+L-const-cong : ∀ {X} {c c' : 𝟙c ⇒ X} → c ≈ c' → L-const c ≈ L-const c'
+L-const-cong e = +m-cong ≈-refl (∘-cong ≈-refl e)
+
+L-const-natural : ∀ {X Y} (f : X ⇒ Y) (c : 𝟙c ⇒ X) → (Lmap f ∘ L-const c) ≈ L-const (f ∘ c)
+L-const-natural f c =
+  ≈-trans (comp-bilinear₂ (Lmap f) root (inj ∘ c))
+    (+m-cong (Lmap-root f)
+      (≈-trans (≈-sym (assoc (Lmap f) inj c))
+        (≈-trans (∘-cong (Lmap-inj f) ≈-refl) (assoc inj f c))))
+
 private
   -- Postcomposition distributes over the copairing, since composition is bilinear.
   copair-post : ∀ {x y z w} (h : z ⇒ w) (f : x ⇒ z) (g : y ⇒ z) →

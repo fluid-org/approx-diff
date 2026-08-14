@@ -23,10 +23,7 @@ import biproduct-transport
 import matrix
 import semimodule
 
-module matrix-embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
-  (let module S′ = CommutativeSemiring S)
-  (⊤-add-top : ∀ {x} → (S′.ι S′.+ x) S′.≈ S′.ι)
-  where
+module matrix-embedding {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 open CommutativeSemiring S hiding (_≈_; refl; sym; trans)
 open Setoid A
@@ -39,7 +36,6 @@ open M
          comp-bilinear-ε₁; comp-bilinear-ε₂)
   renaming (_∘_ to _∘ₘ_)
 module SemiMod = semimodule S
-module SemiModT = SemiMod.Topped ⊤-add-top
 open SemiMod using (Semimodule; 𝕀)
 open SemiMod._⇒_
 open SemiMod._≈m_
@@ -125,11 +121,6 @@ app-εₘ v i = comp-bilinear-ε₁ (col v) i zero
 𝔽 n .Semimodule.zero-distribʳ i = ε-annihilₗ
 𝔽 n .Semimodule.zero-distribˡ i = ε-annihilᵣ
 
-𝔽-⊤ : ℕ → SemiModT.Semimodule-⊤
-𝔽-⊤ n .SemiModT.mod = 𝔽 n
-𝔽-⊤ n .SemiModT.⊤m _ = ι
-𝔽-⊤ n .SemiModT.⊤m-absorb i = trans +-comm ⊤-add-top
-
 mat : ∀ {m n} → Matrix m n → SemiMod._⇒_ (𝔽 n) (𝔽 m)
 mat R .*→* .prop-setoid._⇒_.func = app R
 mat R .*→* .prop-setoid._⇒_.func-resp-≈ = app-congᵥ R
@@ -137,8 +128,8 @@ mat R .preserve-ze = app-ε R
 mat R .preserve-+ {u} {v} = app-+ R u v
 mat R .preserve-· {s} {u} = app-· R s u
 
-𝔽F : Functor M.cat SemiModT.cat-⊤
-𝔽F .fobj = 𝔽-⊤
+𝔽F : Functor M.cat SemiMod.cat
+𝔽F .fobj = 𝔽
 𝔽F .fmor = mat
 𝔽F .fmor-cong {f₂ = R'} h .*≈* .prop-setoid._≃m_.func-eq {u} e i =
   trans (app-congₘ h u i) (app-congᵥ R' e i)
@@ -170,8 +161,8 @@ mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
 -- Preservation of the finite products: the biproduct of dimensions realises as a biproduct, with
 -- the block matrices as its structure morphisms.
 
-𝔽-biproduct : ∀ m n → Biproduct SemiModT.cmon-enriched-⊤ (𝔽-⊤ m) (𝔽-⊤ n)
-𝔽-biproduct m n .prod = 𝔽-⊤ (m +ℕ n)
+𝔽-biproduct : ∀ m n → Biproduct SemiMod.cmon-enriched (𝔽 m) (𝔽 n)
+𝔽-biproduct m n .prod = 𝔽 (m +ℕ n)
 𝔽-biproduct m n .p₁ = mat (M.p₁ {m} {n})
 𝔽-biproduct m n .p₂ = mat (M.p₂ {m} {n})
 𝔽-biproduct m n .in₁ = mat (M.in₁ {m} {n})
@@ -198,9 +189,9 @@ mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
 
 𝔽F-preserve-products :
   preserve-chosen-products 𝔽F (biproducts→products M.cmon M.biproduct)
-    (biproducts→products SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤)
+    (biproducts→products SemiMod.cmon-enriched SemiMod.biproduct)
 𝔽F-preserve-products {m} {n} =
-  biproduct-iso SemiModT.cmon-enriched-⊤ (𝔽-biproduct m n) (SemiModT.biproduct-⊤ (𝔽-⊤ m) (𝔽-⊤ n))
+  biproduct-iso SemiMod.cmon-enriched (𝔽-biproduct m n) (SemiMod.biproduct (𝔽 m) (𝔽 n))
 
 -- The empty dimension realises as the zero module.
 𝟘→𝔽0 : SemiMod._⇒_ SemiMod.𝟘 (𝔽 0)
@@ -210,17 +201,17 @@ mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
 𝟘→𝔽0 .preserve-+ ()
 𝟘→𝔽0 .preserve-· ()
 
-𝔽F-preserve-terminal : preserve-chosen-terminal 𝔽F M.terminal SemiModT.terminal-⊤
+𝔽F-preserve-terminal : preserve-chosen-terminal 𝔽F M.terminal SemiMod.terminal
 𝔽F-preserve-terminal .Category.IsIso.inverse = 𝟘→𝔽0
 𝔽F-preserve-terminal .Category.IsIso.f∘inverse≈id =
-  HasTerminal.to-terminal-unique SemiModT.terminal-⊤ {x = SemiModT.𝟘-⊤} _ (SemiMod.id SemiMod.𝟘)
+  HasTerminal.to-terminal-unique SemiMod.terminal {x = SemiMod.𝟘} _ (SemiMod.id SemiMod.𝟘)
 𝔽F-preserve-terminal .Category.IsIso.inverse∘f≈id .*≈* .prop-setoid._≃m_.func-eq _ ()
 
 ------------------------------------------------------------------------------
 -- The two liftings: one fresh position on the position side, the scalars on the semimodule side.
 
 module Lm = lifting M.cmon M.biproduct 1
-module Ls = lifting SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SemiModT.𝕀-⊤
+module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 
 -- The unit dimension realises as the scalars.
 ι1-fwd : SemiMod._⇒_ (𝔽 1) 𝕀
@@ -244,24 +235,24 @@ module Ls = lifting SemiModT.cmon-enriched-⊤ SemiModT.biproduct-⊤ SemiModT.�
                (SemiMod._∘_ {𝔽 1} {𝕀} {𝔽 1} ι1-bwd ι1-fwd) (SemiMod.id (𝔽 1))
 ι1-bwd∘fwd .*≈* .prop-setoid._≃m_.func-eq e = λ { zero → e zero }
 
-module BT = biproduct-transport SemiModT.cmon-enriched-⊤
+module BT = biproduct-transport SemiMod.cmon-enriched
 
 -- The realisation of a lifted dimension is a biproduct of the scalars and the realised payload:
 -- the block witness with its first leg conjugated by the scalar comparison.
-L-biproduct : ∀ n → Biproduct SemiModT.cmon-enriched-⊤ SemiModT.𝕀-⊤ (𝔽-⊤ n)
+L-biproduct : ∀ n → Biproduct SemiMod.cmon-enriched SemiMod.𝕀 (𝔽 n)
 L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd
 
-𝔽-L-iso : ∀ n → Category.Iso SemiModT.cat-⊤
-                  (𝔽-⊤ (Lm.L n)) (Ls.L (𝔽-⊤ n))
+𝔽-L-iso : ∀ n → Category.Iso SemiMod.cat
+                  (𝔽 (Lm.L n)) (Ls.L (𝔽 n))
 𝔽-L-iso n =
-  Category.IsIso→Iso SemiModT.cat-⊤
-    (biproduct-iso SemiModT.cmon-enriched-⊤ (L-biproduct n) (SemiModT.biproduct-⊤ SemiModT.𝕀-⊤ (𝔽-⊤ n)))
+  Category.IsIso→Iso SemiMod.cat
+    (biproduct-iso SemiMod.cmon-enriched (L-biproduct n) (SemiMod.biproduct SemiMod.𝕀 (𝔽 n)))
 
 -- The lifted action realises as the copairing over the block witness, which is the form the
 -- comparison's naturality is stated against.
 mat-Lmap : ∀ {P Q} (f : MC._⇒_ P Q) →
            SMC._≈_ (mat (Lm.Lmap f))
-                   (copair (𝔽-biproduct 1 P) {x = 𝔽-⊤ (Lm.L Q)}
+                   (copair (𝔽-biproduct 1 P) {x = 𝔽 (Lm.L Q)}
                            (𝔽-biproduct 1 Q .in₁)
                            (SemiMod._∘_ (𝔽-biproduct 1 Q .in₂) (mat f)))
 mat-Lmap {P} {Q} f =
@@ -273,14 +264,14 @@ mat-Lmap {P} {Q} f =
 
 𝔽-L-natural : ∀ {P Q} (f : MC._⇒_ P Q) →
   SMC._≈_ (SemiMod._∘_ (𝔽-L-iso Q .Category.Iso.fwd) (mat (Lm.Lmap f)))
-          (SemiMod._∘_ (Ls.Lmap {𝔽-⊤ P} {𝔽-⊤ Q} (mat f))
+          (SemiMod._∘_ (Ls.Lmap {𝔽 P} {𝔽 Q} (mat f))
                        (𝔽-L-iso P .Category.Iso.fwd))
 𝔽-L-natural {P} {Q} f =
   SMC.≈-trans
     (SMC.∘-cong (SMC.≈-refl {f = 𝔽-L-iso Q .Category.Iso.fwd}) (mat-Lmap f))
     (BT.compare-natural
       (𝔽-biproduct 1 P) (𝔽-biproduct 1 Q)
-      (SemiModT.biproduct-⊤ SemiModT.𝕀-⊤ (𝔽-⊤ P)) (SemiModT.biproduct-⊤ SemiModT.𝕀-⊤ (𝔽-⊤ Q))
+      (SemiMod.biproduct SemiMod.𝕀 (𝔽 P)) (SemiMod.biproduct SemiMod.𝕀 (𝔽 Q))
       ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd (mat f))
 
 ------------------------------------------------------------------------------

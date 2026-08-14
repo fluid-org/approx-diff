@@ -246,6 +246,3 @@ private
 ∧-idem {O} = S.refl {O}
 ∧-idem {I} = S.refl {I}
 
-⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι
-⊤-add-top {O} = S.refl {I}
-⊤-add-top {I} = S.refl {I}

@@ -23,7 +23,7 @@ open import example.list-terms
 module Ex = example ℚ 0ℚ
 open Ex.ex using (query)
 
-module model = ho-model two.semiring (λ {x} → two.⊤-add-top {x}) two.I
+module model = ho-model two.semiring two.I
 module interp = model.interp EP.Sig EP.primitives
 
 open import language-syntax EP.Sig using (base)
