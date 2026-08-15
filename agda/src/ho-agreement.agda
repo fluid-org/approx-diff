@@ -834,6 +834,30 @@ private
     ≈-trans (+-cong ε-annihilₗ (Σ-cong {m} (λ j → ·-cong (p₂-e {m} k j) ≈-refl)))
             (≈-trans +-lunit (Σ-unit {m} k (λ j → o (suc j))))
 
+-- A one-premise rule with the identity routing, read at the inputs: the rule's own columns at the
+-- inputs, plus the entry from the premise's root applied to the premise's relation at the inputs.
+app-rule₁ : ∀ {Γ} {γ : Env Γ} {n n₀} (out : (i : Input) → M.Matrix n (input-width γ i))
+            (up : M.Matrix n n₀) (R' : M.Matrix n₀ (suc (width-env γ))) s x (k : Fin n) →
+            ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) out up (cols {γ = γ} R')))
+               (inputs γ s x) k
+            ≈s ((ap (out source) (λ _ → s) k +ₛ ap (out environment) x k) +ₛ ap up (ap R' (inputs γ s x)) k)
+app-rule₁ {γ = γ} out up R' s x k =
+  ≈-trans (app-of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) out up (cols {γ = γ} R')) s x k)
+  (≈-trans (+-cong (≈-trans (app-+ₘ (out source) (up ∘ cols {γ = γ} R' source) (λ _ → s) k)
+                            (+-cong ≈-refl (app-∘ up (cols {γ = γ} R' source) (λ _ → s) k)))
+                   (≈-trans (app-+ₘ (out environment) (up ∘ cols {γ = γ} R' environment) x k)
+                            (+-cong ≈-refl (app-∘ up (cols {γ = γ} R' environment) x k))))
+  (≈-trans Sc.+-interchange
+           (+-cong ≈-refl
+                   (≈-trans (≈-sym (app-+ᵥ up (ap (cols {γ = γ} R' source) (λ _ → s)) (ap (cols {γ = γ} R' environment) x) k))
+                            (app-congᵥ up (λ l → ≈-sym (app-inputs {γ = γ} R' s x l)) k)))))
+
+-- Transport along a reflexivity proof is the identity.
+private
+  subst-refl : ∀ τ {i : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i) (d : ∣ Fib τ i ∣) →
+               F._≈_ τ i (⟦ τ ⟧ .fam .subst e .func d) d
+  subst-refl τ {i} e d = ⟦ τ ⟧ .fam .indexed-family.Fam.refl* .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (F.refl τ i {d})
+
 -- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
               {gi} (rγ : RelVEnv γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
@@ -858,8 +882,83 @@ fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
                                                     (≈-refl {elim-weight ·ₛ s +ₛ ε})) (≈-refl {ε}))
                                     (≈-trans +-comm (≈-trans +-lunit ·-lunit))))
                     (app-εₘ {1} {width-env γ} x zero))
-fundamental (inl c) (⇓-inl D) rγ s x g rel = {!!}
-fundamental (inr c) (⇓-inr D) rγ s x g rel = {!!}
+fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} c) {γ = γ} (⇓-inl {v = v} {R = R'} D) {gi} rγ s x g rel =
+  root , payload
+  where
+  i' = ⟦ t ⟧tm .idxf .sfunc gi
+  e = Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₁ i'}
+  o' = ap R' (inputs γ s x)
+  o = ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (built-out γ (width v)) (M.in₂ {1}) (cols {γ = γ} R')))
+         (inputs γ s x)
+  d = F._+_ (τ₁ [+] τ₂) (inj₁ i') (ec (τ₁ [+] τ₂) (inj₁ i') s) (⟦ inl {τ₂ = τ₂} t ⟧tm .famf .transf gi .func g)
+  op-eq : ∀ k → o k ≈s ((ap (M.in₁ {1} {width v} ∘ ctrl-row {1}) (λ _ → s) k +ₛ ε) +ₛ ap (M.in₂ {1} {width v}) o' k)
+  op-eq k = ≈-trans (app-rule₁ {γ = γ} (built-out γ (width v)) (M.in₂ {1}) R' s x k)
+                    (+-cong (+-cong ≈-refl (app-εₘ x k)) ≈-refl)
+  root-den : proj₁ d ≈s (w ·ₛ s)
+  root-den = ≈-trans (+-cong (prop._∧_.proj₁ (ec-inj₁ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
+  root : o zero ≈A proj₁ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {inj₁ i'} {inj₁ i'} e .func d)
+  root =
+    ≈-trans (op-eq zero)
+    (≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {width v}) ctrl-row (λ _ → s) zero)
+                                      (≈-trans (ap-in₁-zero {width v} (ap (ctrl-row {1}) (λ _ → s)))
+                                               (ap-ctrl-row {1} s zero)))
+                             ≈-refl)
+                     (ap-in₂-zero {width v} o'))
+    (≈-trans +-runit
+    (≈-trans +-runit
+    (≈-sym (≈-trans (prop._∧_.proj₁ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d))
+                    (root-den))))))
+  payload : RelF τ₁ (relV c D rγ) (λ k → o (suc k)) (proj₂ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {inj₁ i'} {inj₁ i'} e .func d))
+  payload =
+    RelF-resp τ₁ (relV c D rγ)
+      (λ k → ≈-sym (≈-trans (op-eq (suc k))
+                            (≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {width v}) ctrl-row (λ _ → s) (suc k))
+                                                              (ap-in₁-suc {width v} (ap (ctrl-row {1}) (λ _ → s)) k))
+                                                     ≈-refl)
+                                             (ap-in₂-suc {width v} o' k))
+                                     (≈-trans (+-cong +-runit ≈-refl) +-lunit))))
+      (F.sym τ₁ i' (F.trans τ₁ i' (prop._∧_.proj₂ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d))
+                                  (F.+-cong τ₁ i' (prop._∧_.proj₂ (ec-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i'))))
+      (fundamental c D rγ s x g rel)
+fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} c) {γ = γ} (⇓-inr {v = v} {R = R'} D) {gi} rγ s x g rel =
+  root , payload
+  where
+  i' = ⟦ t ⟧tm .idxf .sfunc gi
+  e = Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₂ i'}
+  o' = ap R' (inputs γ s x)
+  o = ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (built-out γ (width v)) (M.in₂ {1}) (cols {γ = γ} R')))
+         (inputs γ s x)
+  d = F._+_ (τ₁ [+] τ₂) (inj₂ i') (ec (τ₁ [+] τ₂) (inj₂ i') s) (⟦ inr {τ₁ = τ₁} t ⟧tm .famf .transf gi .func g)
+  op-eq : ∀ k → o k ≈s ((ap (M.in₁ {1} {width v} ∘ ctrl-row {1}) (λ _ → s) k +ₛ ε) +ₛ ap (M.in₂ {1} {width v}) o' k)
+  op-eq k = ≈-trans (app-rule₁ {γ = γ} (built-out γ (width v)) (M.in₂ {1}) R' s x k)
+                    (+-cong (+-cong ≈-refl (app-εₘ x k)) ≈-refl)
+  root-den : proj₁ d ≈s (w ·ₛ s)
+  root-den = ≈-trans (+-cong (prop._∧_.proj₁ (ec-inj₂ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
+  root : o zero ≈A proj₁ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {inj₂ i'} {inj₂ i'} e .func d)
+  root =
+    ≈-trans (op-eq zero)
+    (≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {width v}) ctrl-row (λ _ → s) zero)
+                                      (≈-trans (ap-in₁-zero {width v} (ap (ctrl-row {1}) (λ _ → s)))
+                                               (ap-ctrl-row {1} s zero)))
+                             ≈-refl)
+                     (ap-in₂-zero {width v} o'))
+    (≈-trans +-runit
+    (≈-trans +-runit
+    (≈-sym (≈-trans (prop._∧_.proj₁ (subst-refl (τ₁ [+] τ₂) {inj₂ i'} e d))
+                    (root-den))))))
+  payload : RelF τ₂ (relV c D rγ) (λ k → o (suc k)) (proj₂ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {inj₂ i'} {inj₂ i'} e .func d))
+  payload =
+    RelF-resp τ₂ (relV c D rγ)
+      (λ k → ≈-sym (≈-trans (op-eq (suc k))
+                            (≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {width v}) ctrl-row (λ _ → s) (suc k))
+                                                              (ap-in₁-suc {width v} (ap (ctrl-row {1}) (λ _ → s)) k))
+                                                     ≈-refl)
+                                             (ap-in₂-suc {width v} o' k))
+                                     (≈-trans (+-cong +-runit ≈-refl) +-lunit))))
+      (F.sym τ₂ i' (F.trans τ₂ i' (prop._∧_.proj₂ (subst-refl (τ₁ [+] τ₂) {inj₂ i'} e d))
+                                  (F.+-cong τ₂ i' (prop._∧_.proj₂ (ec-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i'))))
+      (fundamental c D rγ s x g rel)
+
 fundamental (case c c₁ c₂) (⇓-case-l D₁ D₂) rγ s x g rel = {!!}
 fundamental (case c c₁ c₂) (⇓-case-r D₁ D₂) rγ s x g rel = {!!}
 fundamental (pair c₁ c₂) (⇓-pair D₁ D₂) rγ s x g rel = {!!}
