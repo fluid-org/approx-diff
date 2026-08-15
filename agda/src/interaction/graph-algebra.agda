@@ -4,7 +4,6 @@ open import Data.Bool using (Bool; true; not)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ)
-open import Data.List.Properties using (++-identityʳ)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
@@ -43,9 +42,6 @@ open Category M.cat using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; ass
 ≈-of-≡ : ∀ {m n} {X Y : M.Matrix m n} → X ≡ Y → X ≈ Y
 ≈-of-≡ ≡-refl = ≈-refl
 
-data Root : Set where
-  root : Root
-
 Void : Set
 Void = ⊥
 
@@ -56,15 +52,6 @@ sum-< R S (inj₁ p) (inj₁ q) = R p q
 sum-< R S (inj₁ _) (inj₂ _) = Unit
 sum-< R S (inj₂ _) (inj₁ _) = Void
 sum-< R S (inj₂ p) (inj₂ q) = S p q
-
--- Injecting two enumerations into a coproduct keeps each vertex listed once.
-sum-distinct : {A B : Set} {xs : List A} {ys : List B} →
-               AllPairs _≢_ xs → AllPairs _≢_ ys →
-               AllPairs _≢_ (map inj₁ xs ++ map inj₂ ys)
-sum-distinct {xs = xs} {ys = ys} dx dy =
-  AllPairsP.++⁺ (AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) dx))
-                (AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₂-injective e)) dy))
-                (AllP.map⁺ (universal (λ _ → AllP.map⁺ (universal (λ _ ()) ys)) xs))
 
 none-order : {A : Set} → IsStrictOrder {A = A} (λ _ _ → Void)
 none-order .IsStrictOrder.trans _ _ _ ()
@@ -86,12 +73,6 @@ sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₁ p) (inj₂ q) a ()
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₁ q) () b
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₂ q) a b = o₂ .IsStrictOrder.asym p q a b
 
-root-≟ : DecidableEquality Root
-root-≟ root root = yes ≡-refl
-
-void-≟ : DecidableEquality Void
-void-≟ ()
-
 record Graph (Inp : Set) (iw : Inp → ℕ) (n : ℕ) : Set₁ where
   field
     shape   : Shape
@@ -102,7 +83,7 @@ record Graph (Inp : Set) (iw : Inp → ℕ) (n : ℕ) : Set₁ where
     -- Every entry between interior vertices runs strictly forward in the completion order. The
     -- inputs and the root need no condition, being below and above everything.
     <-inside : ∀ p q (k : Fin (width q)) (l : Fin (width p)) →
-               inside p q k l ≡ two.I → p < q
+               inside p q k l ≡ two.I → lt shape p q
     fo-root : Bool
     out     : (i : Inp) → M.Matrix n (iw i)
     up      : (p : Vertex shape) → M.Matrix n (width p)
@@ -247,45 +228,53 @@ module Ordered {V : Set} (vw : V → ℕ) (_<_ : V → V → Set) (o : IsStrictO
 module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   open Graph B
 
-  V : Set
-  V = Inp ⊎ (Vertex shape ⊎ Root)
+  -- The interior vertices with the root adjoined: what a graph contributes to a larger graph.
+  Path⁺ : Set
+  Path⁺ = Vertex shape ⊎ Root
 
-  vw : V → ℕ
-  vw = [ iw , [ width , (λ _ → n) ] ]
-
-  -- A premise's interior vertices with its root adjoined, as the proofs address them while it is
-  -- being hidden.
-  Vertex⁺ : Set
-  Vertex⁺ = Vertex shape ⊎ Root
-
-  width⁺ : Vertex⁺ → ℕ
+  width⁺ : Path⁺ → ℕ
   width⁺ = [ width , (λ _ → n) ]
 
-  into⁺ : (i : Inp) (q : Vertex⁺) → M.Matrix (width⁺ q) (iw i)
+  fo⁺ : Path⁺ → Bool
+  fo⁺ = [ fo , (λ _ → fo-root) ]
+
+  into⁺ : (i : Inp) (q : Path⁺) → M.Matrix (width⁺ q) (iw i)
   into⁺ i (inj₁ q) = into i q
   into⁺ i (inj₂ _) = out i
 
-  inside⁺ : (p q : Vertex⁺) → M.Matrix (width⁺ q) (width⁺ p)
+  inside⁺ : (p q : Path⁺) → M.Matrix (width⁺ q) (width⁺ p)
   inside⁺ (inj₁ p) (inj₁ q) = inside p q
   inside⁺ (inj₁ p) (inj₂ _) = up p
   inside⁺ (inj₂ _) _        = M.εₘ
 
-  verts⁺ : List Vertex⁺
-  verts⁺ = inj₂ root ∷ map inj₁ (vertices shape)
+  _<⁺_ : Path⁺ → Path⁺ → Set
+  _<⁺_ = lts (shape ∷ [])
+
+  <⁺-order : IsStrictOrder _<⁺_
+  <⁺-order = lts-order (shape ∷ [])
+
+  <⁺-inside : ∀ p q (k : Fin (width⁺ q)) (l : Fin (width⁺ p)) →
+              inside⁺ p q k l ≡ two.I → p <⁺ q
+  <⁺-inside (inj₁ p) (inj₁ q) k l h = <-inside p q k l h
+  <⁺-inside (inj₁ p) (inj₂ _) k l h = tt
+  <⁺-inside (inj₂ _) q        k l ()
+
+  paths⁺ : List Path⁺
+  paths⁺ = inj₂ root ∷ map inj₁ (vertices shape)
+
+  V : Set
+  V = Inp ⊎ Path⁺
+
+  vw : V → ℕ
+  vw = [ iw , width⁺ ]
 
   gr : Entries vw
-  gr (inj₁ i)        (inj₂ (inj₁ q)) = into i q
-  gr (inj₁ i)        (inj₂ (inj₂ _)) = out i
-  gr (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) = inside p q
-  gr (inj₂ (inj₁ p)) (inj₂ (inj₂ _)) = up p
-  gr (inj₂ (inj₂ _)) (inj₂ _)        = M.εₘ
-  gr _               (inj₁ _)        = M.εₘ
-
-  verts : List V
-  verts = map (λ q → inj₂ (inj₁ q)) (vertices shape)
+  gr (inj₁ i) (inj₂ q) = into⁺ i q
+  gr (inj₂ p) (inj₂ q) = inside⁺ p q
+  gr _        (inj₁ _) = M.εₘ
 
   collapse : (i : Inp) → M.Matrix n (iw i)
-  collapse i = hide-all vw gr verts (inj₁ i) (inj₂ (inj₂ root))
+  collapse i = hide-all vw gr (map (λ q → inj₂ (inj₁ q)) (vertices shape)) (inj₁ i) (inj₂ (inj₂ root))
 
   -- The interior vertices whose values are first-order, and their complement.
   FO : List (Vertex shape)
@@ -301,14 +290,10 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   -- The completion order on all the vertices: the inputs first, then the interior, then the root.
   _<ᵥ_ : V → V → Set
-  _<ᵥ_ = sum-< (λ _ _ → Void) (sum-< (λ u v → u < v) (λ _ _ → Void))
+  _<ᵥ_ = sum-< (λ _ _ → Void) _<⁺_
 
   <ᵥ-order : IsStrictOrder _<ᵥ_
-  <ᵥ-order = sum-<-order none-order (sum-<-order lift-order none-order)
-    where
-    lift-order : IsStrictOrder {A = Vertex shape} _<_
-    lift-order .IsStrictOrder.trans = <-trans
-    lift-order .IsStrictOrder.asym = <-asym
+  <ᵥ-order = sum-<-order none-order <⁺-order
 
   private
     module O = Ordered vw _<ᵥ_ <ᵥ-order
@@ -317,13 +302,10 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   -- Every entry of a graph runs strictly forward, and the first-order graph inherits it.
   gr-forward : Fwd gr
-  gr-forward (inj₁ i)        (inj₂ (inj₁ q)) k l h = tt
-  gr-forward (inj₁ i)        (inj₂ (inj₂ _)) k l h = tt
-  gr-forward (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) k l h = <-inside p q k l h
-  gr-forward (inj₂ (inj₁ p)) (inj₂ (inj₂ _)) k l h = tt
-  gr-forward (inj₂ (inj₂ _)) (inj₂ _)        k l ()
-  gr-forward (inj₁ i)        (inj₁ _)        k l ()
-  gr-forward (inj₂ p)        (inj₁ _)        k l ()
+  gr-forward (inj₁ i) (inj₂ q) k l h = tt
+  gr-forward (inj₂ p) (inj₂ q) k l h = <⁺-inside p q k l h
+  gr-forward (inj₁ i) (inj₁ _) k l ()
+  gr-forward (inj₂ p) (inj₁ _) k l ()
 
   fo-forward : Fwd fo-graph
   fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) gr-forward
@@ -334,7 +316,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 module HidePremise
   {V : Set} (vw : V → ℕ)
   {Inp : Set} (inp : Inp → V)
-  {Path : Set} (blk : Path ⊎ Root → V)
+  {Q : Set} (blk : Q ⊎ Root → V)
   {T : Set} (tgt : T → V)
   {Inp' : Set} {iw' : Inp' → ℕ}
   (Φ : Linear iw' (λ i → vw (inp i)))
@@ -344,27 +326,27 @@ module HidePremise
 
   record St : Set where
     field
-      into   : (i' : Inp') (q : Path ⊎ Root) → M.Matrix (vw (blk q)) (iw' i')
-      inside : (p q : Path ⊎ Root) → M.Matrix (vw (blk q)) (vw (blk p))
+      into   : (i' : Inp') (q : Q ⊎ Root) → M.Matrix (vw (blk q)) (iw' i')
+      inside : (p q : Q ⊎ Root) → M.Matrix (vw (blk q)) (vw (blk p))
 
   open St public
 
-  step : St → (Path ⊎ Root) → St
+  step : St → (Q ⊎ Root) → St
   step H w .into i' q = H .into i' q M.+ₘ (H .inside w q ∘ H .into i' w)
   step H w .inside p q = H .inside p q M.+ₘ (H .inside w q ∘ H .inside p w)
 
-  steps : St → List (Path ⊎ Root) → St
+  steps : St → List (Q ⊎ Root) → St
   steps = foldl step
 
-  folds : ∀ {A V' : Set} (prem : A → St) (ι : Path ⊎ Root → V') (h' : A → V' → A) →
+  folds : ∀ {A V' : Set} (prem : A → St) (ι : Q ⊎ Root → V') (h' : A → V' → A) →
           (∀ G w → step (prem G) w ≡ prem (h' G (ι w))) →
-          (ws : List (Path ⊎ Root)) (G : A) → steps (prem G) ws ≡ prem (foldl h' G (map ι ws))
+          (ws : List (Q ⊎ Root)) (G : A) → steps (prem G) ws ≡ prem (foldl h' G (map ι ws))
   folds prem ι h' ok []       G = ≡-refl
   folds prem ι h' ok (w ∷ ws) G =
     ≡-trans (≡-cong (λ H → steps H ws) (ok G w)) (folds prem ι h' ok ws (h' G (ι w)))
 
   private
-    Φ-step : ∀ (H : St) (w : (Path ⊎ Root)) (i : Inp) (q : Path ⊎ Root) →
+    Φ-step : ∀ (H : St) (w : (Q ⊎ Root)) (i : Inp) (q : Q ⊎ Root) →
              Φ .ap (λ i' → step H w .into i' q) i
              ≈ (Φ .ap (λ i' → H .into i' q) i M.+ₘ (H .inside w q ∘ Φ .ap (λ i' → H .into i' w) i))
     Φ-step H w i q =
@@ -377,12 +359,12 @@ module HidePremise
       inside-ok : ∀ p q → G (blk p) (blk q) ≈ H .inside p q
       tgt-ok    : ∀ t i → G (inp i) (tgt t)
                           ≈ (K t i M.+ₘ (P t ∘ Φ .ap (λ i' → H .into i' (inj₂ root)) i))
-      up-ok     : ∀ t (p : Path) → G (blk (inj₁ p)) (tgt t)
+      up-ok     : ∀ t (p : Q) → G (blk (inj₁ p)) (tgt t)
                                 ≈ (P t ∘ H .inside (inj₁ p) (inj₂ root))
 
   open Agrees public
 
-  agrees-hide : ∀ {G H} (w : Path) → Agrees G H → Agrees (hide vw G (blk (inj₁ w))) (step H (inj₁ w))
+  agrees-hide : ∀ {G H} (w : Q) → Agrees G H → Agrees (hide vw G (blk (inj₁ w))) (step H (inj₁ w))
   agrees-hide {H = H} w s .into-ok i q =
     ≈-trans (M.+ₘ-cong (s .into-ok i q) (∘-cong (s .inside-ok (inj₁ w) q) (s .into-ok i (inj₁ w))))
             (≈-sym (Φ-step H (inj₁ w) i q))
@@ -400,7 +382,7 @@ module HidePremise
               {Y = H .inside (inj₁ w) (inj₂ root)} {Z = H .inside (inj₁ p) (inj₁ w)}
       (s .up-ok t p) (s .up-ok t w) (s .inside-ok (inj₁ p) (inj₁ w))
 
-  agrees-hide-all : ∀ {G H} (ws : List Path) → Agrees G H →
+  agrees-hide-all : ∀ {G H} (ws : List (Q)) → Agrees G H →
                     Agrees (hide-all vw G (map (λ w → blk (inj₁ w)) ws)) (steps H (map inj₁ ws))
   agrees-hide-all []       s = s
   agrees-hide-all (w ∷ ws) s = agrees-hide-all ws (agrees-hide w s)
@@ -413,7 +395,7 @@ module HidePremise
       inside-start : ∀ p q → G (blk p) (blk q) ≈ H .inside p q
       tgt-start    : ∀ t i → G (inp i) (tgt t) ≈ K t i
       up-start     : ∀ t → G (blk (inj₂ root)) (tgt t) ≈ P t
-      off-start    : ∀ t (p : Path) → G (blk (inj₁ p)) (tgt t) ≈ M.εₘ
+      off-start    : ∀ t (p : Q) → G (blk (inj₁ p)) (tgt t) ≈ M.εₘ
       sink         : ∀ q → H .inside (inj₂ root) q ≈ M.εₘ
 
   open Start public
@@ -499,14 +481,13 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   root-row (inj₁ _) = ≈-refl {f = M.εₘ}
   root-row (inj₂ _) = ≈-refl {f = M.εₘ}
 
-  hide-verts⁺ : ∀ (i : Inp) →
-                hide-all (vw B) (gr B) (map inj₂ (verts⁺ B)) (inj₁ i) (inj₂ (inj₂ root))
-                ≈ collapse B i
-  hide-verts⁺ i =
+  hide-paths⁺ : ∀ (i : Inp) →
+             hide-all (vw B) (gr B) (map inj₂ (paths⁺ B)) (inj₁ i) (inj₂ (inj₂ root))
+             ≈ collapse B i
+  hide-paths⁺ i =
     ≈-trans (≈-of-≡ (≡-cong (λ l → hide-all (vw B) (gr B) l (inj₁ i) (inj₂ (inj₂ root)))
-                            (≡-cong (inj₂ (inj₂ root) ∷_)
-                                    (map-map inj₂ inj₁ (vertices (Graph.shape B))))))
-            (hide-all-cong (vw B) (verts B)
+                            (≡-cong (inj₂ (inj₂ root) ∷_) (map-map inj₂ inj₁ (vertices (Graph.shape B))))))
+            (hide-all-cong (vw B) (map (λ q → inj₂ (inj₁ q)) (vertices (Graph.shape B)))
                            (hide-sink (vw B) (gr B) (inj₂ (inj₂ root)) root-row)
                            (inj₁ i) (inj₂ (inj₂ root)))
 
@@ -552,10 +533,10 @@ module Rule₀
   E .Graph.shape = node []
   E .Graph.width ()
   E .Graph.fo ()
-  E .Graph.into i ()
-  E .Graph.inside ()
   E .Graph.<-inside ()
   E .Graph.fo-root = fo-root
+  E .Graph.into i ()
+  E .Graph.inside ()
   E .Graph.out = out-root
   E .Graph.up ()
 
@@ -576,35 +557,19 @@ module Rule₁
 
   E : Graph Inp iw n
   E .Graph.shape = node (Graph.shape B ∷ [])
-  E .Graph.width stop     = n₀
-  E .Graph.width (down v) = Graph.width B v
-  E .Graph.width (next ())
-  E .Graph.fo stop     = Graph.fo-root B
-  E .Graph.fo (down v) = Graph.fo B v
-  E .Graph.fo (next ())
-  E .Graph.into i stop     = route .ap (Graph.out B) i
-  E .Graph.into i (down v) = route .ap (λ i' → Graph.into B i' v) i
-  E .Graph.into i (next ())
-  E .Graph.inside stop     q        = M.εₘ
-  E .Graph.inside (down p) stop     = Graph.up B p
-  E .Graph.inside (down p) (down q) = Graph.inside B p q
-  E .Graph.inside (down p) (next ())
-  E .Graph.inside (next ()) q
-  E .Graph.<-inside stop     q        k l ()
-  E .Graph.<-inside (down p) stop     k l h = tt
-  E .Graph.<-inside (down p) (down q) k l h = Graph.<-inside B p q k l h
-  E .Graph.<-inside (down p) (next ()) k l
-  E .Graph.<-inside (next ()) q k l
+  E .Graph.width = width⁺ B
+  E .Graph.fo = fo⁺ B
+  E .Graph.into i q = route .ap (λ i' → into⁺ B i' q) i
+  E .Graph.inside = inside⁺ B
+  E .Graph.<-inside = <⁺-inside B
   E .Graph.fo-root = fo-root
   E .Graph.out = out-root
-  E .Graph.up stop     = up-root
-  E .Graph.up (down _) = M.εₘ
-  E .Graph.up (next ())
+  E .Graph.up (inj₁ _) = M.εₘ
+  E .Graph.up (inj₂ _) = up-root
 
   private
-    b : Vertex⁺ B → V E
-    b (inj₁ v) = inj₂ (inj₁ (down v))
-    b (inj₂ _) = inj₂ (inj₁ stop)
+    b : Path⁺ B → V E
+    b q = inj₂ (inj₁ q)
 
     er : V E
     er = inj₂ (inj₂ root)
@@ -638,22 +603,14 @@ module Rule₁
     κ i' =
       ≈-trans (≈-of-≡ (≡-cong (λ H' → H' .S.into i' (inj₂ root))
                               (S.folds prem inj₂ (hide (vw B)) (λ G w → ≡-refl)
-                                       (verts⁺ B) (gr B))))
-              (hide-verts⁺ B i')
+                                       (paths⁺ B) (gr B))))
+              (hide-paths⁺ B i')
 
     plumb : ∀ i → collapse E i
                   ≡ hide-all (vw E) (hide (vw E) (gr E) (b (inj₂ root)))
                              (map (λ w → b (inj₁ w)) (vertices (Graph.shape B))) (inj₁ i) er
-    plumb i = ≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er) lst
-      where
-      vs = vertices (Graph.shape B)
-
-      lst : verts E ≡ b (inj₂ root) ∷ map (λ w → b (inj₁ w)) vs
-      lst =
-        ≡-cong (b (inj₂ root) ∷_)
-          (≡-trans (map-++ (λ q → inj₂ {A = Inp} (inj₁ q)) (map down vs) [])
-          (≡-trans (≡-cong (_++ []) (map-map (λ q → inj₂ {A = Inp} (inj₁ q)) down vs))
-                   (++-identityʳ _)))
+    plumb i = ≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er)
+                     (≡-cong (b (inj₂ root) ∷_) (map-map b inj₁ (vertices (Graph.shape B))))
 
   agree : ∀ i → collapse E i ≈ rule₁-result route out-root up-root (collapse B) i
   agree i =
@@ -681,82 +638,55 @@ module Rule₂
     ps₁ = vertices (Graph.shape B₁)
     ps₂ = vertices (Graph.shape B₂)
 
-    upE : (s : Vertex⁺ B₂) → M.Matrix n (width⁺ B₂ s)
+    upE : (s : Path⁺ B₂) → M.Matrix n (width⁺ B₂ s)
     upE (inj₁ _) = M.εₘ
     upE (inj₂ _) = up₂
 
   E : Graph Inp iw n
   E .Graph.shape = node (Graph.shape B₁ ∷ Graph.shape B₂ ∷ [])
-  E .Graph.width stop            = n₁
-  E .Graph.width (down v)        = Graph.width B₁ v
-  E .Graph.width (next stop)     = n₂
-  E .Graph.width (next (down v)) = Graph.width B₂ v
-  E .Graph.width (next (next ()))
-  E .Graph.fo stop            = Graph.fo-root B₁
-  E .Graph.fo (down v)        = Graph.fo B₁ v
-  E .Graph.fo (next stop)     = Graph.fo-root B₂
-  E .Graph.fo (next (down v)) = Graph.fo B₂ v
-  E .Graph.fo (next (next ()))
-  E .Graph.into i stop            = route₁ .ap (Graph.out B₁) i
-  E .Graph.into i (down v)        = route₁ .ap (λ i' → Graph.into B₁ i' v) i
-  E .Graph.into i (next stop)     = route₂ .ap (Graph.out B₂) i
-  E .Graph.into i (next (down v)) = route₂ .ap (λ i' → Graph.into B₂ i' v) i
-  E .Graph.into i (next (next ()))
-  E .Graph.inside stop            stop            = M.εₘ
-  E .Graph.inside stop            (down _)        = M.εₘ
-  E .Graph.inside stop            (next stop)     = link .at (Graph.out B₂)
-  E .Graph.inside stop            (next (down q)) = link .at (λ i' → Graph.into B₂ i' q)
-  E .Graph.inside stop            (next (next ()))
-  E .Graph.inside (down p)        stop            = Graph.up B₁ p
-  E .Graph.inside (down p)        (down q)        = Graph.inside B₁ p q
-  E .Graph.inside (down p)        (next _)        = M.εₘ
-  E .Graph.inside (next p)        stop            = M.εₘ
-  E .Graph.inside (next p)        (down _)        = M.εₘ
-  E .Graph.inside (next stop)     (next _)        = M.εₘ
-  E .Graph.inside (next (down p)) (next stop)     = Graph.up B₂ p
-  E .Graph.inside (next (down p)) (next (down q)) = Graph.inside B₂ p q
-  E .Graph.inside (next (down p)) (next (next ()))
-  E .Graph.inside (next (next ())) q
-  E .Graph.<-inside stop            stop            k l ()
-  E .Graph.<-inside stop            (down _)        k l ()
-  E .Graph.<-inside stop            (next _)        k l h = tt
-  E .Graph.<-inside (down p)        stop            k l h = tt
-  E .Graph.<-inside (down p)        (down q)        k l h = Graph.<-inside B₁ p q k l h
-  E .Graph.<-inside (down p)        (next _)        k l h = tt
-  E .Graph.<-inside (next p)        stop            k l ()
-  E .Graph.<-inside (next p)        (down _)        k l ()
-  E .Graph.<-inside (next stop)     (next _)        k l ()
-  E .Graph.<-inside (next (down p)) (next stop)     k l h = tt
-  E .Graph.<-inside (next (down p)) (next (down q)) k l h = Graph.<-inside B₂ p q k l h
-  E .Graph.<-inside (next (down p)) (next (next ())) k l
-  E .Graph.<-inside (next (next ())) q k l
+  E .Graph.width = [ width⁺ B₁ , width⁺ B₂ ]
+  E .Graph.fo = [ fo⁺ B₁ , fo⁺ B₂ ]
+  E .Graph.into i (inj₁ q) = route₁ .ap (λ i' → into⁺ B₁ i' q) i
+  E .Graph.into i (inj₂ q) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
+  E .Graph.inside (inj₁ p)        (inj₁ q) = inside⁺ B₁ p q
+  E .Graph.inside (inj₁ (inj₁ p)) (inj₂ q) = M.εₘ
+  E .Graph.inside (inj₁ (inj₂ _)) (inj₂ q) = link .at (λ i' → into⁺ B₂ i' q)
+  E .Graph.inside (inj₂ p)        (inj₁ q) = M.εₘ
+  E .Graph.inside (inj₂ p)        (inj₂ q) = inside⁺ B₂ p q
   E .Graph.fo-root = fo-root
+  E .Graph.<-inside (inj₁ (inj₁ p)) (inj₁ (inj₁ q)) k l h = Graph.<-inside B₁ p q k l h
+  E .Graph.<-inside (inj₁ (inj₁ p)) (inj₁ (inj₂ _)) k l h = tt
+  E .Graph.<-inside (inj₁ (inj₂ _)) (inj₁ _)        k l ()
+  E .Graph.<-inside (inj₁ (inj₁ p)) (inj₂ q)        k l h = tt
+  E .Graph.<-inside (inj₁ (inj₂ _)) (inj₂ q)        k l h = tt
+  E .Graph.<-inside (inj₂ p)        (inj₁ q)        k l ()
+  E .Graph.<-inside (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) k l h = Graph.<-inside B₂ p q k l h
+  E .Graph.<-inside (inj₂ (inj₁ p)) (inj₂ (inj₂ _)) k l h = tt
+  E .Graph.<-inside (inj₂ (inj₂ _)) (inj₂ _)        k l ()
   E .Graph.out = out-root
-  E .Graph.up stop            = up₁
-  E .Graph.up (down _)        = M.εₘ
-  E .Graph.up (next stop)     = up₂
-  E .Graph.up (next (down _)) = M.εₘ
-  E .Graph.up (next (next ()))
+  E .Graph.up (inj₁ (inj₁ p)) = M.εₘ
+  E .Graph.up (inj₁ (inj₂ _)) = up₁
+  E .Graph.up (inj₂ s) = upE s
 
   private
-    b1 : Vertex⁺ B₁ → V E
+    b1 : Path⁺ B₁ → V E
     b1 q = inj₂ (inj₁ (inj₁ q))
 
-    b2 : Vertex⁺ B₂ → V E
+    b2 : Path⁺ B₂ → V E
     b2 q = inj₂ (inj₁ (inj₂ q))
 
     er : V E
     er = inj₂ (inj₂ root)
 
-    tgt₁ : Vertex⁺ B₂ ⊎ Root → V E
+    tgt₁ : Path⁺ B₂ ⊎ Root → V E
     tgt₁ (inj₁ q) = b2 q
     tgt₁ (inj₂ _) = er
 
-    P₁ : (t : Vertex⁺ B₂ ⊎ Root) → M.Matrix (vw E (tgt₁ t)) n₁
+    P₁ : (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vw E (tgt₁ t)) n₁
     P₁ (inj₁ q) = link .at (λ i' → into⁺ B₂ i' q)
     P₁ (inj₂ _) = up₁
 
-    K₁ : (t : Vertex⁺ B₂ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt₁ t)) (iw i)
+    K₁ : (t : Path⁺ B₂ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt₁ t)) (iw i)
     K₁ (inj₁ q) i = route₂ .ap (λ i' → into⁺ B₂ i' q) i
     K₁ (inj₂ _) i = out-root i
 
@@ -794,8 +724,8 @@ module Rule₂
     κ₁ i =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S1.into i (inj₂ root))
                               (S1.folds prem₁ inj₂ (hide (vw B₁)) (λ G w → ≡-refl)
-                                        (verts⁺ B₁) (gr B₁))))
-              (hide-verts⁺ B₁ i)
+                                        (paths⁺ B₁) (gr B₁))))
+              (hide-paths⁺ B₁ i)
 
   -- The second premise's inputs once the first premise has collapsed.
   Φ₂ : Linear iw₂ iw
@@ -810,11 +740,11 @@ module Rule₂
 
     module S2 = HidePremise (vw E) inj₁ b2 (λ (_ : Root) → er) Φ₂ P₂ K₂
 
-    col₂ : Vertex⁺ B₂ ⊎ Root → V E
+    col₂ : Path⁺ B₂ ⊎ Root → V E
     col₂ (inj₁ q) = b2 q
     col₂ (inj₂ _) = er
 
-    Bh : (s : Vertex⁺ B₂) (t : Vertex⁺ B₂ ⊎ Root) → M.Matrix (vw E (col₂ t)) (width⁺ B₂ s)
+    Bh : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vw E (col₂ t)) (width⁺ B₂ s)
     Bh s (inj₁ q) = inside⁺ B₂ s q
     Bh s (inj₂ _) = upE s
 
@@ -861,18 +791,18 @@ module Rule₂
     κ₂ i' =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S2.into i' (inj₂ root))
                               (S2.folds prem₂ inj₂ (hide (vw B₂)) (λ G w → ≡-refl)
-                                        (verts⁺ B₂) (gr B₂))))
-              (hide-verts⁺ B₂ i')
+                                        (paths⁺ B₂) (gr B₂))))
+              (hide-paths⁺ B₂ i')
 
-    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (λ b → vertices (Graph.shape b) E)
+    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (vertices (Graph.shape E))
           ≡ (b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁)
             ++ (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂)
     lst =
-      ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (verts⁺ B₁)) (map inj₂ (verts⁺ B₂)))
+      ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (paths⁺ B₁)) (map inj₂ (paths⁺ B₂)))
               (≡-cong₂ _++_
-                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₁ (verts⁺ B₁))
+                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₁ (paths⁺ B₁))
                          (≡-cong (b1 (inj₂ root) ∷_) (map-map b1 inj₁ ps₁)))
-                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₂ (verts⁺ B₂))
+                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₂ (paths⁺ B₂))
                          (≡-cong (b2 (inj₂ root) ∷_) (map-map b2 inj₁ ps₂))))
 
     plumb : ∀ i → collapse E i ≡ G₂ (inj₁ i) er
@@ -915,126 +845,78 @@ module Rule₃
     ps₂ = vertices (Graph.shape B₂)
     ps₃ = vertices (Graph.shape B₃)
 
-    r₁ : (q : Vertex⁺ B₁) → M.Matrix n (width⁺ B₁ q)
+    r₁ : (q : Path⁺ B₁) → M.Matrix n (width⁺ B₁ q)
     r₁ (inj₁ _) = M.εₘ
     r₁ (inj₂ _) = up₁
 
-    r₂ : (q : Vertex⁺ B₂) → M.Matrix n (width⁺ B₂ q)
+    r₂ : (q : Path⁺ B₂) → M.Matrix n (width⁺ B₂ q)
     r₂ (inj₁ _) = M.εₘ
     r₂ (inj₂ _) = up₂
 
-    r₃ : (q : Vertex⁺ B₃) → M.Matrix n (width⁺ B₃ q)
+    r₃ : (q : Path⁺ B₃) → M.Matrix n (width⁺ B₃ q)
     r₃ (inj₁ _) = M.εₘ
     r₃ (inj₂ _) = up₃
 
-    e₁₃ : (p : Vertex⁺ B₁) (q : Vertex⁺ B₃) → M.Matrix (width⁺ B₃ q) (width⁺ B₁ p)
+    e₁₃ : (p : Path⁺ B₁) (q : Path⁺ B₃) → M.Matrix (width⁺ B₃ q) (width⁺ B₁ p)
     e₁₃ (inj₁ _) q = M.εₘ
     e₁₃ (inj₂ _) q = link₁ .at (λ i' → into⁺ B₃ i' q)
 
-    e₂₃ : (p : Vertex⁺ B₂) (q : Vertex⁺ B₃) → M.Matrix (width⁺ B₃ q) (width⁺ B₂ p)
+    e₂₃ : (p : Path⁺ B₂) (q : Path⁺ B₃) → M.Matrix (width⁺ B₃ q) (width⁺ B₂ p)
     e₂₃ (inj₁ _) q = M.εₘ
     e₂₃ (inj₂ _) q = link₂ .at (λ i' → into⁺ B₃ i' q)
 
   E : Graph Inp iw n
   E .Graph.shape = node (Graph.shape B₁ ∷ Graph.shape B₂ ∷ Graph.shape B₃ ∷ [])
-  E .Graph.width stop                   = n₁
-  E .Graph.width (down v)               = Graph.width B₁ v
-  E .Graph.width (next stop)            = n₂
-  E .Graph.width (next (down v))        = Graph.width B₂ v
-  E .Graph.width (next (next stop))     = n₃
-  E .Graph.width (next (next (down v))) = Graph.width B₃ v
-  E .Graph.width (next (next (next ())))
-  E .Graph.fo stop                   = Graph.fo-root B₁
-  E .Graph.fo (down v)               = Graph.fo B₁ v
-  E .Graph.fo (next stop)            = Graph.fo-root B₂
-  E .Graph.fo (next (down v))        = Graph.fo B₂ v
-  E .Graph.fo (next (next stop))     = Graph.fo-root B₃
-  E .Graph.fo (next (next (down v))) = Graph.fo B₃ v
-  E .Graph.fo (next (next (next ())))
-  E .Graph.into i stop                   = route₁ .ap (Graph.out B₁) i
-  E .Graph.into i (down v)               = route₁ .ap (λ i' → Graph.into B₁ i' v) i
-  E .Graph.into i (next stop)            = route₂ .ap (Graph.out B₂) i
-  E .Graph.into i (next (down v))        = route₂ .ap (λ i' → Graph.into B₂ i' v) i
-  E .Graph.into i (next (next stop))     = route₃ .ap (Graph.out B₃) i
-  E .Graph.into i (next (next (down v))) = route₃ .ap (λ i' → Graph.into B₃ i' v) i
-  E .Graph.into i (next (next (next ())))
-  E .Graph.inside stop stop                          = M.εₘ
-  E .Graph.inside stop (down _)                      = M.εₘ
-  E .Graph.inside stop (next stop)                   = M.εₘ
-  E .Graph.inside stop (next (down _))               = M.εₘ
-  E .Graph.inside stop (next (next stop))            = link₁ .at (Graph.out B₃)
-  E .Graph.inside stop (next (next (down q)))        = link₁ .at (λ i' → Graph.into B₃ i' q)
-  E .Graph.inside stop (next (next (next ())))
-  E .Graph.inside (down p) stop                      = Graph.up B₁ p
-  E .Graph.inside (down p) (down q)                  = Graph.inside B₁ p q
-  E .Graph.inside (down p) (next _)                  = M.εₘ
-  E .Graph.inside (next stop) stop                   = M.εₘ
-  E .Graph.inside (next stop) (down _)               = M.εₘ
-  E .Graph.inside (next stop) (next stop)            = M.εₘ
-  E .Graph.inside (next stop) (next (down _))        = M.εₘ
-  E .Graph.inside (next stop) (next (next stop))     = link₂ .at (Graph.out B₃)
-  E .Graph.inside (next stop) (next (next (down q))) = link₂ .at (λ i' → Graph.into B₃ i' q)
-  E .Graph.inside (next stop) (next (next (next ())))
-  E .Graph.inside (next (down p)) stop               = M.εₘ
-  E .Graph.inside (next (down p)) (down _)           = M.εₘ
-  E .Graph.inside (next (down p)) (next stop)        = Graph.up B₂ p
-  E .Graph.inside (next (down p)) (next (down q))    = Graph.inside B₂ p q
-  E .Graph.inside (next (down p)) (next (next _))    = M.εₘ
-  E .Graph.inside (next (next p)) stop               = M.εₘ
-  E .Graph.inside (next (next p)) (down _)           = M.εₘ
-  E .Graph.inside (next (next p)) (next stop)        = M.εₘ
-  E .Graph.inside (next (next p)) (next (down _))    = M.εₘ
-  E .Graph.inside (next (next stop)) (next (next _)) = M.εₘ
-  E .Graph.inside (next (next (down p))) (next (next stop))     = Graph.up B₃ p
-  E .Graph.inside (next (next (down p))) (next (next (down q))) = Graph.inside B₃ p q
-  E .Graph.inside (next (next (down p))) (next (next (next ())))
-  E .Graph.inside (next (next (next ()))) q
-  E .Graph.<-inside stop stop                          k l ()
-  E .Graph.<-inside stop (down _)                      k l ()
-  E .Graph.<-inside stop (next _)                      k l h = tt
-  E .Graph.<-inside (down p) stop                      k l h = tt
-  E .Graph.<-inside (down p) (down q)                  k l h = Graph.<-inside B₁ p q k l h
-  E .Graph.<-inside (down p) (next _)                  k l h = tt
-  E .Graph.<-inside (next p) stop                      k l ()
-  E .Graph.<-inside (next p) (down _)                  k l ()
-  E .Graph.<-inside (next stop) (next stop)            k l ()
-  E .Graph.<-inside (next stop) (next (down _))        k l ()
-  E .Graph.<-inside (next stop) (next (next _))        k l h = tt
-  E .Graph.<-inside (next (down p)) (next stop)        k l h = tt
-  E .Graph.<-inside (next (down p)) (next (down q))    k l h = Graph.<-inside B₂ p q k l h
-  E .Graph.<-inside (next (down p)) (next (next _))    k l h = tt
-  E .Graph.<-inside (next (next p)) (next stop)        k l ()
-  E .Graph.<-inside (next (next p)) (next (down _))    k l ()
-  E .Graph.<-inside (next (next stop)) (next (next _)) k l ()
-  E .Graph.<-inside (next (next (down p))) (next (next stop))     k l h = tt
-  E .Graph.<-inside (next (next (down p))) (next (next (down q))) k l h =
-    Graph.<-inside B₃ p q k l h
-  E .Graph.<-inside (next (next (down p))) (next (next (next ()))) k l
-  E .Graph.<-inside (next (next (next ()))) q k l
+  E .Graph.width = [ width⁺ B₁ , [ width⁺ B₂ , width⁺ B₃ ] ]
+  E .Graph.fo = [ fo⁺ B₁ , [ fo⁺ B₂ , fo⁺ B₃ ] ]
+  E .Graph.into i (inj₁ q)        = route₁ .ap (λ i' → into⁺ B₁ i' q) i
+  E .Graph.into i (inj₂ (inj₁ q)) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
+  E .Graph.into i (inj₂ (inj₂ q)) = route₃ .ap (λ i' → into⁺ B₃ i' q) i
+  E .Graph.inside (inj₁ p)        (inj₁ q)        = inside⁺ B₁ p q
+  E .Graph.inside (inj₁ p)        (inj₂ (inj₁ q)) = M.εₘ
+  E .Graph.inside (inj₁ p)        (inj₂ (inj₂ q)) = e₁₃ p q
+  E .Graph.inside (inj₂ (inj₁ p)) (inj₁ q)        = M.εₘ
+  E .Graph.inside (inj₂ (inj₂ p)) (inj₁ q)        = M.εₘ
+  E .Graph.inside (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) = inside⁺ B₂ p q
+  E .Graph.inside (inj₂ (inj₂ p)) (inj₂ (inj₁ q)) = M.εₘ
+  E .Graph.inside (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) = e₂₃ p q
+  E .Graph.inside (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) = inside⁺ B₃ p q
   E .Graph.fo-root = fo-root
+  E .Graph.<-inside (inj₁ (inj₁ p)) (inj₁ (inj₁ q)) k l h = Graph.<-inside B₁ p q k l h
+  E .Graph.<-inside (inj₁ (inj₁ p)) (inj₁ (inj₂ _)) k l h = tt
+  E .Graph.<-inside (inj₁ (inj₂ _)) (inj₁ _)        k l ()
+  E .Graph.<-inside (inj₁ (inj₁ p)) (inj₂ q)        k l h = tt
+  E .Graph.<-inside (inj₁ (inj₂ _)) (inj₂ q)        k l h = tt
+  E .Graph.<-inside (inj₂ (inj₁ p)) (inj₁ q)        k l ()
+  E .Graph.<-inside (inj₂ (inj₂ p)) (inj₁ q)        k l ()
+  E .Graph.<-inside (inj₂ (inj₁ (inj₁ p))) (inj₂ (inj₁ (inj₁ q))) k l h = Graph.<-inside B₂ p q k l h
+  E .Graph.<-inside (inj₂ (inj₁ (inj₁ p))) (inj₂ (inj₁ (inj₂ _))) k l h = tt
+  E .Graph.<-inside (inj₂ (inj₁ (inj₂ _))) (inj₂ (inj₁ _))        k l ()
+  E .Graph.<-inside (inj₂ (inj₁ (inj₁ p))) (inj₂ (inj₂ _))        k l h = tt
+  E .Graph.<-inside (inj₂ (inj₁ (inj₂ _))) (inj₂ (inj₂ _))        k l h = tt
+  E .Graph.<-inside (inj₂ (inj₂ _))        (inj₂ (inj₁ _))        k l ()
+  E .Graph.<-inside (inj₂ (inj₂ (inj₁ p))) (inj₂ (inj₂ (inj₁ q))) k l h = Graph.<-inside B₃ p q k l h
+  E .Graph.<-inside (inj₂ (inj₂ (inj₁ p))) (inj₂ (inj₂ (inj₂ _))) k l h = tt
+  E .Graph.<-inside (inj₂ (inj₂ (inj₂ _))) (inj₂ (inj₂ _))        k l ()
   E .Graph.out = out-root
-  E .Graph.up stop                   = up₁
-  E .Graph.up (down _)               = M.εₘ
-  E .Graph.up (next stop)            = up₂
-  E .Graph.up (next (down _))        = M.εₘ
-  E .Graph.up (next (next stop))     = up₃
-  E .Graph.up (next (next (down _))) = M.εₘ
-  E .Graph.up (next (next (next ())))
+  E .Graph.up (inj₁ p)        = r₁ p
+  E .Graph.up (inj₂ (inj₁ p)) = r₂ p
+  E .Graph.up (inj₂ (inj₂ p)) = r₃ p
 
   private
-    b1 : Vertex⁺ B₁ → V E
+    b1 : Path⁺ B₁ → V E
     b1 q = inj₂ (inj₁ (inj₁ q))
 
-    b2 : Vertex⁺ B₂ → V E
+    b2 : Path⁺ B₂ → V E
     b2 q = inj₂ (inj₁ (inj₂ (inj₁ q)))
 
-    b3 : Vertex⁺ B₃ → V E
+    b3 : Path⁺ B₃ → V E
     b3 q = inj₂ (inj₁ (inj₂ (inj₂ q)))
 
     er : V E
     er = inj₂ (inj₂ root)
 
-    tgt : Vertex⁺ B₃ ⊎ Root → V E
+    tgt : Path⁺ B₃ ⊎ Root → V E
     tgt (inj₁ q) = b3 q
     tgt (inj₂ _) = er
 
@@ -1044,11 +926,11 @@ module Rule₃
     c₂ : (i : Inp) → M.Matrix n₂ (iw i)
     c₂ i = route₂ .ap (collapse B₂) i
 
-    P₁ : (t : Vertex⁺ B₃ ⊎ Root) → M.Matrix (vw E (tgt t)) n₁
+    P₁ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vw E (tgt t)) n₁
     P₁ (inj₁ q) = link₁ .at (λ i' → into⁺ B₃ i' q)
     P₁ (inj₂ _) = up₁
 
-    K₁ : (t : Vertex⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt t)) (iw i)
+    K₁ : (t : Path⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt t)) (iw i)
     K₁ (inj₁ q) i = route₃ .ap (λ i' → into⁺ B₃ i' q) i
     K₁ (inj₂ _) i = out-root i
 
@@ -1086,8 +968,8 @@ module Rule₃
     κ₁ i =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S1.into i (inj₂ root))
                               (S1.folds prem₁ inj₂ (hide (vw B₁)) (λ G w → ≡-refl)
-                                        (verts⁺ B₁) (gr B₁))))
-              (hide-verts⁺ B₁ i)
+                                        (paths⁺ B₁) (gr B₁))))
+              (hide-paths⁺ B₁ i)
 
     -- The second premise's columns are untouched by the first premise's sweep.
     module Fz = Frozen (vw E) b1 inj₁ b2 (λ i q → route₂ .ap (λ i' → into⁺ B₂ i' q) i)
@@ -1100,11 +982,11 @@ module Rule₃
     frozen₁ = Fz.keeps-hide-all inj₁ ps₁ (Fz.keeps-hide (inj₂ root) frozen₀)
 
     -- The second and third premises' rows are untouched by earlier sweeps.
-    cols₂ : Vertex⁺ B₂ ⊎ (Vertex⁺ B₃ ⊎ Root) → V E
+    cols₂ : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root) → V E
     cols₂ (inj₁ q) = b2 q
     cols₂ (inj₂ t) = tgt t
 
-    Bh₂ : (s : Vertex⁺ B₂) (t : Vertex⁺ B₂ ⊎ (Vertex⁺ B₃ ⊎ Root)) → M.Matrix (vw E (cols₂ t)) (width⁺ B₂ s)
+    Bh₂ : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root)) → M.Matrix (vw E (cols₂ t)) (width⁺ B₂ s)
     Bh₂ s (inj₁ q)        = inside⁺ B₂ s q
     Bh₂ s (inj₂ (inj₁ q)) = e₂₃ s q
     Bh₂ s (inj₂ (inj₂ _)) = r₂ s
@@ -1123,11 +1005,11 @@ module Rule₃
     Φ₃₁ : Linear iw₃ iw
     Φ₃₁ = extend route₃ link₁ c₁
 
-    P₂ : (t : Vertex⁺ B₃ ⊎ Root) → M.Matrix (vw E (tgt t)) n₂
+    P₂ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vw E (tgt t)) n₂
     P₂ (inj₁ q) = link₂ .at (λ i' → into⁺ B₃ i' q)
     P₂ (inj₂ _) = up₂
 
-    K₂ : (t : Vertex⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt t)) (iw i)
+    K₂ : (t : Path⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt t)) (iw i)
     K₂ (inj₁ q) i = Φ₃₁ .ap (λ i' → into⁺ B₃ i' q) i
     K₂ (inj₂ _) i = out-root i M.+ₘ (up₁ ∘ c₁ i)
 
@@ -1169,17 +1051,17 @@ module Rule₃
     κ₂ i =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S2.into i (inj₂ root))
                               (S2.folds prem₂ inj₂ (hide (vw B₂)) (λ G w → ≡-refl)
-                                        (verts⁺ B₂) (gr B₂))))
-              (hide-verts⁺ B₂ i)
+                                        (paths⁺ B₂) (gr B₂))))
+              (hide-paths⁺ B₂ i)
 
-    hid₁₂ : Vertex⁺ B₁ ⊎ Vertex⁺ B₂ → V E
+    hid₁₂ : Path⁺ B₁ ⊎ Path⁺ B₂ → V E
     hid₁₂ (inj₁ q) = b1 q
     hid₁₂ (inj₂ q) = b2 q
 
-    cols₃ : Vertex⁺ B₃ ⊎ Root → V E
+    cols₃ : Path⁺ B₃ ⊎ Root → V E
     cols₃ = tgt
 
-    Bh₃ : (s : Vertex⁺ B₃) (t : Vertex⁺ B₃ ⊎ Root) → M.Matrix (vw E (cols₃ t)) (width⁺ B₃ s)
+    Bh₃ : (s : Path⁺ B₃) (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vw E (cols₃ t)) (width⁺ B₃ s)
     Bh₃ s (inj₁ q) = inside⁺ B₃ s q
     Bh₃ s (inj₂ _) = r₃ s
 
@@ -1243,29 +1125,29 @@ module Rule₃
     κ₃ i =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S3.into i (inj₂ root))
                               (S3.folds prem₃ inj₂ (hide (vw B₃)) (λ G w → ≡-refl)
-                                        (verts⁺ B₃) (gr B₃))))
-              (hide-verts⁺ B₃ i)
+                                        (paths⁺ B₃) (gr B₃))))
+              (hide-paths⁺ B₃ i)
 
     l₁ l₂ l₃ : List (V E)
     l₁ = b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁
     l₂ = b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂
     l₃ = b3 (inj₂ root) ∷ map (λ w → b3 (inj₁ w)) ps₃
 
-    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (λ b → vertices (Graph.shape b) E) ≡ l₁ ++ (l₂ ++ l₃)
+    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (vertices (Graph.shape E)) ≡ l₁ ++ (l₂ ++ l₃)
     lst =
-      ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (verts⁺ B₁))
-                      (map inj₂ (map inj₁ (verts⁺ B₂) ++ map inj₂ (verts⁺ B₃))))
+      ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (paths⁺ B₁))
+                      (map inj₂ (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃))))
               (≡-cong₂ _++_
-                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₁ (verts⁺ B₁))
+                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₁ (paths⁺ B₁))
                          (≡-cong (b1 (inj₂ root) ∷_) (map-map b1 inj₁ ps₁)))
                 (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₂
-                                  (map inj₁ (verts⁺ B₂) ++ map inj₂ (verts⁺ B₃)))
-                (≡-trans (map-++ (λ q → inj₂ (inj₁ (inj₂ q))) (map inj₁ (verts⁺ B₂))
-                                 (map inj₂ (verts⁺ B₃)))
+                                  (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃)))
+                (≡-trans (map-++ (λ q → inj₂ (inj₁ (inj₂ q))) (map inj₁ (paths⁺ B₂))
+                                 (map inj₂ (paths⁺ B₃)))
                          (≡-cong₂ _++_
-                           (≡-trans (map-map (λ q → inj₂ (inj₁ (inj₂ q))) inj₁ (verts⁺ B₂))
+                           (≡-trans (map-map (λ q → inj₂ (inj₁ (inj₂ q))) inj₁ (paths⁺ B₂))
                                     (≡-cong (b2 (inj₂ root) ∷_) (map-map b2 inj₁ ps₂)))
-                           (≡-trans (map-map (λ q → inj₂ (inj₁ (inj₂ q))) inj₂ (verts⁺ B₃))
+                           (≡-trans (map-map (λ q → inj₂ (inj₁ (inj₂ q))) inj₂ (paths⁺ B₃))
                                     (≡-cong (b3 (inj₂ root) ∷_) (map-map b3 inj₁ ps₃)))))))
 
     plumb : ∀ i → collapse E i ≡ G₃ (inj₁ i) er

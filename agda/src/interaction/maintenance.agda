@@ -31,38 +31,39 @@ import two
 -- initial configuration is correctly summarised, and the hide and reveal moves preserve it.
 module interaction.maintenance where
 
-open import interaction.graph-algebra 0ℓ
+open import interaction.shape
+open import interaction.graph-algebra
 open import interaction.config
 open import interaction.moves
 
 module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
 
-  open Graph 𝒢 using (Path)
+  open Graph 𝒢 using (shape)
   open Interaction 𝒢
 
   private
-    at : Path → V 𝒢
+    at : Vertex shape → V 𝒢
     at p = inj₂ (inj₁ p)
 
-    eq-path : Path → Path → Bool
-    eq-path p q = ⌊ Graph._≟_ 𝒢 p q ⌋
+    eq-path : Vertex shape → Vertex shape → Bool
+    eq-path p q = ⌊ _≟_ {shape} p q ⌋
 
-    eq-path-refl : ∀ (p : Path) → eq-path p p ≡ Bool.true
-    eq-path-refl p with Graph._≟_ 𝒢 p p
+    eq-path-refl : ∀ (p : Vertex shape) → eq-path p p ≡ Bool.true
+    eq-path-refl p with _≟_ {shape} p p
     ... | yes _ = ≡-refl
     ... | no ¬e = ⊥-elim (¬e ≡-refl)
 
-    eq-path-≡ : ∀ {p q : Path} → eq-path p q ≡ Bool.true → p ≡ q
-    eq-path-≡ {p} {q} h with Graph._≟_ 𝒢 p q
+    eq-path-≡ : ∀ {p q : Vertex shape} → eq-path p q ≡ Bool.true → p ≡ q
+    eq-path-≡ {p} {q} h with _≟_ {shape} p q
     ... | yes e = e
 
-    eq-path-false-sym : ∀ {p q : Path} → eq-path p q ≡ Bool.false → eq-path q p ≡ Bool.false
-    eq-path-false-sym {p} {q} h with Graph._≟_ 𝒢 q p
+    eq-path-false-sym : ∀ {p q : Vertex shape} → eq-path p q ≡ Bool.false → eq-path q p ≡ Bool.false
+    eq-path-false-sym {p} {q} h with _≟_ {shape} q p
     ... | no _  = ≡-refl
-    ... | yes e with Graph._≟_ 𝒢 p q
+    ... | yes e with _≟_ {shape} p q
     ...   | no ¬e = ⊥-elim (¬e (≡-sym e))
 
-  merge-region-resp : (G : Entries (vw 𝒢)) (w : Path) {rss rss' : List (List (Path))} →
+  merge-region-resp : (G : Entries (vw 𝒢)) (w : Vertex shape) {rss rss' : List (List (Vertex shape))} →
                       rss ↭↭ rss' → merge-region G w rss ↭↭ merge-region G w rss'
   merge-region-resp G w {rss} {rss'} p =
     H.prep (↭.prep w (concat-resp (proj₁ tp-p))) (proj₂ tp-p)
@@ -72,10 +73,10 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
                            p
 
   private
-    adj : (G : Entries (vw 𝒢)) (w : Path) → List (Path) → Bool
+    adj : (G : Entries (vw 𝒢)) (w : Vertex shape) → List (Vertex shape) → Bool
     adj G w C = any (λ q → adjacent G (at w) (at q)) C
 
-    merge-region-filter : (G : Entries (vw 𝒢)) (w : Path) (rss : List (List (Path))) →
+    merge-region-filter : (G : Entries (vw 𝒢)) (w : Vertex shape) (rss : List (List (Vertex shape))) →
                           merge-region G w rss ≡
                           ((w ∷ concat (filterᵇ (adj G w) rss)) ∷
                            filterᵇ (λ C → not (adj G w C)) rss)
@@ -84,7 +85,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
 
   -- Merging two vertices commutes: if they are adjacent or share an adjacent region both orders
   -- produce the one merged region, and otherwise the merges are independent.
-  merge-region-comm : (G : Entries (vw 𝒢)) (w w' : Path) (rss : List (List (Path))) →
+  merge-region-comm : (G : Entries (vw 𝒢)) (w w' : Vertex shape) (rss : List (List (Vertex shape))) →
                       merge-region G w (merge-region G w' rss) ↭↭
                       merge-region G w' (merge-region G w rss)
   merge-region-comm G w w' rss =
@@ -167,7 +168,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
       hb' = ≡-trans (any-cong (λ C → ∧-comm (A C) (A' C)) rss) hb
 
   -- Regions are insensitive to the order in which their vertices are enumerated.
-  regions-perm : (G : Entries (vw 𝒢)) {ws ws' : List (Path)} → ws ↭ ws' →
+  regions-perm : (G : Entries (vw 𝒢)) {ws ws' : List (Vertex shape)} → ws ↭ ws' →
                  regions G ws ↭↭ regions G ws'
   regions-perm G ↭.refl         = ↭↭-refl
   regions-perm G (↭.prep w p)   = merge-region-resp G w (regions-perm G p)
@@ -190,7 +191,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
   initial-summarised .summaries =
     AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph 𝒢) (FO 𝒢)))
 
-  hide-at-summarised : (p : Path) (K : Config 𝒢) (S : Summarised 𝒢 K) →
+  hide-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised 𝒢 K) →
                        member p (K .visible) ≡ Bool.true →
                        Summarised 𝒢 (hide-at p K)
   hide-at-summarised p K S pv .partition = hide-at-partition 𝒢 p K S pv
@@ -208,11 +209,11 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
   hide-at-summarised p K S pv .summaries = hide-at-summaries 𝒢 p K S pv
 
   private
-    ↭↭-of-≡ : {xss yss : List (List (Path))} → xss ≡ yss → xss ↭↭ yss
+    ↭↭-of-≡ : {xss yss : List (List (Vertex shape))} → xss ≡ yss → xss ↭↭ yss
     ↭↭-of-≡ ≡-refl = ↭↭-refl
 
     -- Each region of ws lies inside ws.
-    regions-⊆ : (G : Entries (vw 𝒢)) (ws : List (Path)) →
+    regions-⊆ : (G : Entries (vw 𝒢)) (ws : List (Vertex shape)) →
                 All (λ C → ∀ q → member q C ≡ Bool.true → member q ws ≡ Bool.true)
                     (regions G ws)
     regions-⊆ G ws =
@@ -220,7 +221,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
               (blocks-⊆ 𝒢 (regions G ws))
 
     -- Merging a vertex with no adjacency into a suffix of regions leaves the suffix alone.
-    merge-region-inert : (G : Entries (vw 𝒢)) (w : Path) (X Y : List (List (Path))) →
+    merge-region-inert : (G : Entries (vw 𝒢)) (w : Vertex shape) (X Y : List (List (Vertex shape))) →
                          All (λ C → adj G w C ≡ Bool.false) Y →
                          merge-region G w (X ++ Y) ≡ merge-region G w X ++ Y
     merge-region-inert G w X Y h =
@@ -235,7 +236,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
                (≡-cong (_++ Y) (≡-sym (merge-region-filter G w X))))
 
   -- Regions distribute over a concatenation with an apart suffix: no merge crosses the boundary.
-  regions-apart : (G : Entries (vw 𝒢)) (B rest : List (Path)) → Apart 𝒢 G B rest →
+  regions-apart : (G : Entries (vw 𝒢)) (B rest : List (Vertex shape)) → Apart 𝒢 G B rest →
                   regions G (B ++ rest) ↭↭ (regions G B ++ regions G rest)
   regions-apart G []      rest ap = ↭↭-refl
   regions-apart G (b ∷ B) rest ap with ∨-false (any (λ q' → adjacent G (at b) (at q')) rest)
@@ -252,21 +253,21 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
                 (regions-⊆ G rest))))
 
   private
-    apart-concat : {G : Entries (vw 𝒢)} {C : List (Path)} {Cs : List (List (Path))} →
+    apart-concat : {G : Entries (vw 𝒢)} {C : List (Vertex shape)} {Cs : List (List (Vertex shape))} →
                    All (Apart 𝒢 G C) Cs → Apart 𝒢 G C (concat Cs)
     apart-concat {G = G} {C} {Cs} aps =
       ≡-trans (any-cong (λ q → any-concat (λ q' → adjacent G (at q) (at q')) Cs) C)
       (≡-trans (any-comm (λ q C' → any (λ q' → adjacent G (at q) (at q')) C') C Cs)
                (any-false aps))
 
-    regions-nonempty : (G : Entries (vw 𝒢)) (ws : List (Path)) →
+    regions-nonempty : (G : Entries (vw 𝒢)) (ws : List (Vertex shape)) →
                        All (λ C → 1 ≤ length C) (regions G ws)
     regions-nonempty G []       = []
     regions-nonempty G (w ∷ ws) =
       s≤s z≤n ∷ proj₂ (partition-All (adj G w) (regions-nonempty G ws))
 
   -- Regions of a concatenation of pairwise-apart blocks are the blocks' regions.
-  regions-apart-concat : {G : Entries (vw 𝒢)} {Cs : List (List (Path))} →
+  regions-apart-concat : {G : Entries (vw 𝒢)} {Cs : List (List (Vertex shape))} →
                          AllPairs (Apart 𝒢 G) Cs →
                          regions G (concat Cs) ↭↭ concat (map (regions G) Cs)
   regions-apart-concat {G = G}           []                    = ↭↭-refl
@@ -293,7 +294,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
                         (H.sym ↭-sym (S .canonical))
                         (regions-nonempty G (hidden-set K))
 
-    len-regions : ∀ (C : List (Path)) → 1 ≤ length C → 1 ≤ length (regions G C)
+    len-regions : ∀ (C : List (Vertex shape)) → 1 ≤ length C → 1 ≤ length (regions G C)
     len-regions (q ∷ C') _ = s≤s z≤n
 
     atleast : All (λ C → 1 ≤ length (regions G C)) Cs
@@ -310,7 +311,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
     lens1 : All (λ C → length (regions G C) ≡ 1) Cs
     lens1 = AllP.map⁻ (sum-ones (AllP.map⁺ atleast) lens-eq)
 
-    one : ∀ {C : List (Path)} → length (regions G C) ≡ 1 → regions G C ↭↭ (C ∷ [])
+    one : ∀ {C : List (Vertex shape)} → length (regions G C) ≡ 1 → regions G C ↭↭ (C ∷ [])
     one {C} e with singleton (regions G C) e
     ... | (C₀ , eq) =
       subst (_↭↭ (C ∷ [])) (≡-sym eq)
@@ -320,7 +321,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
 
   -- The reveal move preserves correct summarisation: splitting the region containing p computes the
   -- regions of the hidden set with p removed, block by block.
-  reveal-at-summarised : (p : Path) (K : Config 𝒢) (S : Summarised 𝒢 K) →
+  reveal-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised 𝒢 K) →
                          member p (hidden-set K) ≡ Bool.true →
                          Summarised 𝒢 (reveal-at p K)
   reveal-at-summarised p K S hp .partition = reveal-at-partition 𝒢 p K S hp

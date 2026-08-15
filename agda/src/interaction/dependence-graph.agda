@@ -29,7 +29,7 @@ open import language-operational.evaluation Sig two.semiring 𝒫 two.I
 open Val
 open Env
 open import language-operational.control Sig two.semiring 𝒫 two.I
-open import interaction.graph-algebra 0ℓ
+open import interaction.graph-algebra
 
 private
   module M = matrix.Mat two.semiring

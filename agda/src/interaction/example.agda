@@ -24,7 +24,8 @@ open import language-operational.evaluation Sig two.semiring Dep.primitives two.
 open Env
 open Val
 open import language-operational.control Sig two.semiring Dep.primitives two.I
-open import interaction.graph-algebra 0ℓ
+open import interaction.shape
+open import interaction.graph-algebra
 open import interaction.dependence-graph Sig Dep.primitives
 open import interaction.config
 
@@ -40,16 +41,16 @@ G = graph D
 open Interaction G
 
 -- The scrutinee root, mid-chain.
-scrut : Graph.Path G
+scrut : Vertex (Graph.shape G)
 scrut = inj₁ (inj₂ root)
 
-branch : Graph.Path G
+branch : Vertex (Graph.shape G)
 branch = inj₂ (inj₂ root)
 
 env : V G
 env = inj₁ environment
 
-at : Graph.Path G → V G
+at : Vertex (Graph.shape G) → V G
 at p = inj₂ (inj₁ p)
 
 rt : V G

@@ -34,7 +34,8 @@ import two
 -- inverse up to configuration equivalence.
 module interaction.moves where
 
-open import interaction.graph-algebra 0ℓ
+open import interaction.shape
+open import interaction.graph-algebra
 open import interaction.config
 
 private
@@ -75,7 +76,10 @@ private
 
 module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
 
-  open Graph 𝒢 using (Path)
+  open Graph 𝒢 using (shape)
+
+  Path : Set
+  Path = Vertex shape
   open Interaction 𝒢
 
   private
@@ -85,26 +89,26 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
     at p = inj₂ (inj₁ p)
 
     eq-path : Path → Path → Bool
-    eq-path p q = ⌊ Graph._≟_ 𝒢 p q ⌋
+    eq-path p q = ⌊ _≟_ {shape} p q ⌋
 
     eq-path-refl : ∀ (p : Path) → eq-path p p ≡ Bool.true
-    eq-path-refl p with Graph._≟_ 𝒢 p p
+    eq-path-refl p with _≟_ {shape} p p
     ... | yes _  = ≡-refl
     ... | no ¬e  = ⊥-elim (¬e ≡-refl)
 
     eq-path-≡ : ∀ {p q : Path} → eq-path p q ≡ Bool.true → p ≡ q
-    eq-path-≡ {p} {q} h with Graph._≟_ 𝒢 p q
+    eq-path-≡ {p} {q} h with _≟_ {shape} p q
     ... | yes e = e
 
     ≢-eq-false : ∀ {p q : Path} → p ≢ q → eq-path p q ≡ Bool.false
-    ≢-eq-false {p} {q} ¬e with Graph._≟_ 𝒢 p q
+    ≢-eq-false {p} {q} ¬e with _≟_ {shape} p q
     ... | no _  = ≡-refl
     ... | yes e = ⊥-elim (¬e e)
 
     eq-path-false-sym : ∀ {p q : Path} → eq-path p q ≡ Bool.false → eq-path q p ≡ Bool.false
-    eq-path-false-sym {p} {q} h with Graph._≟_ 𝒢 q p
+    eq-path-false-sym {p} {q} h with _≟_ {shape} q p
     ... | no _  = ≡-refl
-    ... | yes e with Graph._≟_ 𝒢 p q
+    ... | yes e with _≟_ {shape} p q
     ...   | no ¬e = ⊥-elim (¬e (≡-sym e))
 
   member-perm : (q : Path) {C C' : List (Path)} → C ↭ C' → member q C ≡ member q C'
@@ -709,7 +713,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
   -- The first-order paths inherit distinctness from the path enumeration.
   FO-distinct : AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (FO 𝒢)
   FO-distinct =
-    filter-AllPairs (Graph.fo 𝒢) (AllPairs-map ≢-eq-false (Graph.distinct 𝒢))
+    filter-AllPairs (Graph.fo 𝒢) (AllPairs-map ≢-eq-false (distinct (Graph.shape 𝒢)))
 
   private
     partition-distinct : (K : Config 𝒢) → (K .visible ++ hidden-set K) ↭ FO 𝒢 →
