@@ -23,7 +23,7 @@ open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import prop
-open import prop using (_∧_; ∃; ∃ₛ; Prf; ⟪_⟫)
+open import prop using (_∧_; ∃; ∃ₛ; Prf; ⟪_⟫; _,_)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
@@ -199,6 +199,7 @@ open Setoid A using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-
 open M using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans) renaming (Σ to Σₛ)
 
 open Sc using (+-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
+open HasProducts products using () renaming (pair to ⟨_,_⟩)
 
 -- Reading a relation at the inputs: the source column at the source weight, and the environment
 -- columns at the environment vector.
@@ -247,6 +248,243 @@ app-of-cols {γ = γ} f s x k =
   ≈-trans (app-inputs {γ = γ} (of-cols {γ = γ} f) s x k)
           (+-cong (app-congₘ (cols-of-cols {γ = γ} f source) (λ _ → s) k)
                   (app-congₘ (cols-of-cols {γ = γ} f environment) x k))
+
+-- Semiring shorthands.
+private
+  w = elim-weight
+  +-runit : ∀ {x} → (x +ₛ ε) ≈s x
+  +-runit = ≈-trans +-comm +-lunit
+  ·-runit : ∀ {x} → (x ·ₛ ι) ≈s x
+  ·-runit = ≈-trans ·-comm ·-lunit
+  Σ₁ : ∀ (f : Fin 1 → Setoid.Carrier A) → Σₛ f ≈s f zero
+  Σ₁ f = +-runit
+
+  -- The same in a semimodule.
+  m-lunit : ∀ (X : Semimodule) {x} → Semimodule._≈_ X (Semimodule._+_ X (Semimodule.ε X) x) x
+  m-lunit X = Semimodule.+-lunit X
+  m-runit : ∀ (X : Semimodule) {x} → Semimodule._≈_ X (Semimodule._+_ X x (Semimodule.ε X)) x
+  m-runit X = Semimodule.trans X (Semimodule.+-comm X) (Semimodule.+-lunit X)
+
+-- Reading a lifted vector: the first position of the first summand's injection, and the rest of
+-- the second's.
+private
+  ap-in₁-zero : ∀ {n} (u : ∣ 𝔽 1 ∣) → ap (M.in₁ {1} {n}) u zero ≈s u zero
+  ap-in₁-zero {n} u = ≈-trans (Σ₁ (λ j → M.in₁ {1} {n} zero j ·ₛ u j)) ·-lunit
+
+  ap-in₁-suc : ∀ {n} (u : ∣ 𝔽 1 ∣) (k : Fin n) → ap (M.in₁ {1} {n}) u (suc k) ≈s ε
+  ap-in₁-suc {n} u k = ≈-trans (Σ₁ (λ j → M.in₁ {1} {n} (suc k) j ·ₛ u j)) ε-annihilₗ
+
+  ap-in₂-zero : ∀ {n} (u : ∣ 𝔽 n ∣) → ap (M.in₂ {1} {n}) u zero ≈s ε
+  ap-in₂-zero {n} u = ≈-trans (Σ-cong {n} (λ _ → ε-annihilₗ)) (Σ-ε {n})
+
+  ap-in₂-suc : ∀ {n} (u : ∣ 𝔽 n ∣) (k : Fin n) → ap (M.in₂ {1} {n}) u (suc k) ≈s u k
+  ap-in₂-suc {n} u k =
+    ≈-trans (Σ-cong {n} (λ j → ·-cong (≈-trans (p₂-e {n} j k) (M.e-sym j k)) ≈-refl)) (Σ-unit {n} k u)
+
+  ap-pair-zero : ∀ {m n} (f : M.Matrix 1 m) (g : M.Matrix n m) (u : ∣ 𝔽 m ∣) →
+                 ap (⟨ f , g ⟩) u zero ≈s ap f u zero
+  ap-pair-zero {m} {n} f g u =
+    ≈-trans (app-+ₘ (M.in₁ {1} {n} ∘ f) (M.in₂ {1} {n} ∘ g) u zero)
+            (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) f u zero) (ap-in₁-zero {n} (ap f u)))
+                             (≈-trans (app-∘ (M.in₂ {1} {n}) g u zero) (ap-in₂-zero {n} (ap g u))))
+                     +-runit)
+
+  ap-pair-suc : ∀ {m n} (f : M.Matrix 1 m) (g : M.Matrix n m) (u : ∣ 𝔽 m ∣) (k : Fin n) →
+                ap (⟨ f , g ⟩) u (suc k) ≈s ap g u k
+  ap-pair-suc {m} {n} f g u k =
+    ≈-trans (app-+ₘ (M.in₁ {1} {n} ∘ f) (M.in₂ {1} {n} ∘ g) u (suc k))
+            (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) f u (suc k)) (ap-in₁-suc {n} (ap f u) k))
+                             (≈-trans (app-∘ (M.in₂ {1} {n}) g u (suc k)) (ap-in₂-suc {n} (ap g u) k)))
+                     +-lunit)
+
+-- The control vector at a source weight: the weight at the root of a lifted value, and the
+-- payload's control vector after.
+private
+  ap-ctrl-row : ∀ {n} (s : Setoid.Carrier A) (k : Fin n) → ap ctrl-row (λ _ → s) k ≈s (w ·ₛ s)
+  ap-ctrl-row {n} s k = Σ₁ (λ j → ctrl-row {n} k j ·ₛ s)
+
+  ctrl-lift-zero : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) →
+                   ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) zero ≈s (w ·ₛ s)
+  ctrl-lift-zero {n} g s = ≈-trans (ap-pair-zero {1} {n} ctrl-row g (λ _ → s)) (ap-ctrl-row {1} s zero)
+
+  ctrl-lift-suc : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) (k : Fin n) →
+                  ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) (suc k) ≈s ap g (λ _ → s) k
+  ctrl-lift-suc {n} g s k = ap-pair-suc {1} {n} ctrl-row g (λ _ → s) k
+
+-- The elimination constant, elementwise: the weight times the source at each root, the payload's
+-- constant under it, and zero at a closure's payload.
+ec : ∀ τ (i : Ix τ) → Setoid.Carrier A → ∣ Fib τ i ∣
+ec τ i s = elim-const τ .at i .func s
+
+private
+  ec-unit : ∀ i s → ec unit i s zero ≈s (w ·ₛ s)
+  ec-unit i s =
+    ≈-trans (+-cong (·-cong +-runit ≈-refl) ≈-refl)
+            (≈-trans +-runit (≈-trans ·-lunit +-runit))
+
+  ec-inj₁ : ∀ {σ τ} (i : Ix σ) s →
+            (proj₁ (ec (σ [+] τ) (inj₁ i) s) ≈s (w ·ₛ s)) ∧
+            Semimodule._≈_ (Fib σ i) (proj₂ (ec (σ [+] τ) (inj₁ i) s)) (ec σ i s)
+  ec-inj₁ {σ} i s = ≈-trans +-runit +-runit , Semimodule.+-lunit (Fib σ i)
+
+  ec-inj₂ : ∀ {σ τ} (i : Ix τ) s →
+            (proj₁ (ec (σ [+] τ) (inj₂ i) s) ≈s (w ·ₛ s)) ∧
+            Semimodule._≈_ (Fib τ i) (proj₂ (ec (σ [+] τ) (inj₂ i) s)) (ec τ i s)
+  ec-inj₂ {σ} {τ} i s = ≈-trans +-runit +-runit , Semimodule.+-lunit (Fib τ i)
+
+  ec-pair : ∀ {σ τ} (i : Ix σ) (j : Ix τ) s →
+            (proj₁ (ec (σ [×] τ) (i , j) s) ≈s (w ·ₛ s)) ∧
+            (Semimodule._≈_ (Fib σ i) (proj₁ (proj₂ (ec (σ [×] τ) (i , j) s))) (ec σ i s) ∧
+             Semimodule._≈_ (Fib τ j) (proj₂ (proj₂ (ec (σ [×] τ) (i , j) s))) (ec τ j s))
+  ec-pair {σ} {τ} i j s =
+    ≈-trans +-runit +-runit ,
+    (Semimodule.trans (Fib σ i) (m-lunit (Fib σ i)) (m-runit (Fib σ i)) ,
+     Semimodule.trans (Fib τ j) (m-lunit (Fib τ j)) (m-lunit (Fib τ j)))
+
+  ec-clo : ∀ {σ τ} (f : Ix (σ [→] τ)) s →
+           (proj₁ (ec (σ [→] τ) f s) ≈s (w ·ₛ s)) ∧
+           Semimodule._≈_ (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) (proj₂ (ec (σ [→] τ) f s))
+             (Semimodule.ε (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f))
+  ec-clo {σ} {τ} f s =
+    ≈-trans +-runit +-runit ,
+    m-lunit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {Semimodule.ε (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)}
+
+  ec-natural : ∀ τ {i i' : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i') s →
+               Semimodule._≈_ (Fib τ i') (⟦ τ ⟧ .fam .subst e .func (ec τ i s)) (ec τ i' s)
+  ec-natural τ e s = elim-const τ .Constant.at-natural e .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq ≈-refl
+
+-- The fibre relation respects the setoids on both sides.
+private
+  module F τ i = Semimodule (Fib τ i)
+
+body-input-resp : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) {s s' c c' z} →
+                  s ≈s s' → (∀ k → c k ≈s c' k) → ∀ k →
+                  body-input γ' v s c z k ≈s body-input γ' v s' c' z k
+body-input-resp γ' v es ec zero    = es
+body-input-resp γ' v es ec (suc k) =
+  +-cong (app-congᵥ (M.in₁ {width-env γ'} {width v}) ec k) ≈-refl
+
+RelF-resp : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) {o o' : ∣ 𝔽 (width v) ∣} {d d' : ∣ Fib τ i ∣} →
+            (∀ k → o k ≈s o' k) → F._≈_ τ i d d' → RelF τ r o d → RelF τ r o' d'
+RelF-resp unit {unit} r eo ed h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (ed k))
+RelF-resp (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) {d = d} {d'} eo ed (h₀ , h) =
+  let ed' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .SemiMod._⇒_.func-resp-≈ ed in
+  ≈-trans (≈-sym (eo zero)) (≈-trans h₀ (prop._∧_.proj₁ ed')) ,
+  RelF-resp σ r (λ k → eo (suc k)) (prop._∧_.proj₂ ed') h
+RelF-resp (σ [+] τ) {inr v} {i} (i' , r , ⟪ e ⟫) {d = d} {d'} eo ed (h₀ , h) =
+  let ed' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₂ i'} e .SemiMod._⇒_.func-resp-≈ ed in
+  ≈-trans (≈-sym (eo zero)) (≈-trans h₀ (prop._∧_.proj₁ ed')) ,
+  RelF-resp τ r (λ k → eo (suc k)) (prop._∧_.proj₂ ed') h
+RelF-resp (σ [×] τ) {pair v u} {i , j} (r , r') eo (ed₀ , (ed₁ , ed₂)) (h₀ , (h₁ , h₂)) =
+  ≈-trans (≈-sym (eo zero)) (≈-trans h₀ ed₀) ,
+  (RelF-resp σ r (app-congᵥ (M.p₁ {width v} {width u}) (λ k → eo (suc k))) ed₁ h₁ ,
+   RelF-resp τ r' (app-congᵥ (M.p₂ {width v} {width u}) (λ k → eo (suc k))) ed₂ h₂)
+RelF-resp (σ [→] τ) {clo γ' t} {f} r {o} {o'} {d} {d'} eo (ed₀ , ed₂) (h₀ , hc) =
+  ≈-trans (≈-sym (eo zero)) (≈-trans h₀ ed₀) ,
+  λ s' {v} {j} rv z y hz {u} {U} D →
+    RelF-resp τ (r rv D)
+      (app-congᵥ U (body-input-resp γ' v (+-cong ≈-refl (eo zero)) (λ k → eo (suc k))))
+      (F.+-cong τ (f .idxf .sfunc j)
+         (elim-const τ .at (f .idxf .sfunc j) .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl (eo zero)))
+         (F.+-cong τ (f .idxf .sfunc j)
+            (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.func-resp-≈
+               {proj₂ d} {proj₂ d'} ed₂)
+            (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
+      (hc s' rv z y hz D)
+
+-- Transport of a sum of the constant and an element along an index equation.
+private
+  subst-ec+ : ∀ τ {i i' : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i') s d →
+              F._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (F._+_ τ i (ec τ i s) d))
+                         (F._+_ τ i' (ec τ i' s) (⟦ τ ⟧ .fam .subst e .func d))
+  subst-ec+ τ {i} {i'} e s d =
+    F.trans τ i' (⟦ τ ⟧ .fam .subst e .SemiMod._⇒_.preserve-+ {ec τ i s} {d})
+                 (F.+-cong τ i' (ec-natural τ e s) (F.refl τ i'))
+
+  app-+ᵥ : ∀ {m n} (R : M.Matrix m n) (u v : ∣ 𝔽 n ∣) (k : Fin m) →
+           ap R (λ j → u j +ₛ v j) k ≈s (ap R u k +ₛ ap R v k)
+  app-+ᵥ R u v k = model.app-+ R u v k
+
+  ap-pair-p₁ : ∀ {m a b} (f : M.Matrix a m) (g : M.Matrix b m) (u : ∣ 𝔽 m ∣) (k : Fin a) →
+               ap (M.p₁ {a} {b}) (ap (⟨ f , g ⟩) u) k ≈s ap f u k
+  ap-pair-p₁ {m} {a} {b} f g u k =
+    ≈-trans (≈-sym (app-∘ (M.p₁ {a} {b}) (⟨ f , g ⟩) u k))
+            (app-congₘ (HasProducts.pair-p₁ products f g) u k)
+
+  ap-pair-p₂ : ∀ {m a b} (f : M.Matrix a m) (g : M.Matrix b m) (u : ∣ 𝔽 m ∣) (k : Fin b) →
+               ap (M.p₂ {a} {b}) (ap (⟨ f , g ⟩) u) k ≈s ap g u k
+  ap-pair-p₂ {m} {a} {b} f g u k =
+    ≈-trans (≈-sym (app-∘ (M.p₂ {a} {b}) (⟨ f , g ⟩) u k))
+            (app-congₘ (HasProducts.pair-p₂ products f g) u k)
+
+-- Adding the value's control positions at a source weight on the operational side, and the
+-- elimination constant on the denotational side, preserves the relation.
+ctrl-add : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) (s : Setoid.Carrier A)
+           {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} → RelF τ r o d →
+           RelF τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (F._+_ τ i (ec τ i s) d)
+ctrl-add unit {unit} {i} r s h zero =
+  +-cong (≈-trans (ap-ctrl-row {1} s zero) (≈-sym (ec-unit i s))) (h zero)
+ctrl-add (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) s {o} {d} (h₀ , h) =
+  let e+ = subst-ec+ (σ [+] τ) {i} {inj₁ i'} e s d
+      d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func d
+  in
+  ≈-trans (+-cong (ctrl-lift-zero (ctrl-of v) s) h₀)
+          (≈-sym (≈-trans (prop._∧_.proj₁ e+) (+-cong (prop._∧_.proj₁ (ec-inj₁ {σ} {τ} i' s)) ≈-refl))) ,
+  RelF-resp σ r
+    (λ k → +-cong (≈-sym (ctrl-lift-suc (ctrl-of v) s k)) ≈-refl)
+    (F.sym σ i' (F.trans σ i' (prop._∧_.proj₂ e+)
+                              (F.+-cong σ i' (prop._∧_.proj₂ (ec-inj₁ {σ} {τ} i' s)) (F.refl σ i'))))
+    (ctrl-add σ r s h)
+ctrl-add (σ [+] τ) {inr v} {i} (i' , r , ⟪ e ⟫) s {o} {d} (h₀ , h) =
+  let e+ = subst-ec+ (σ [+] τ) {i} {inj₂ i'} e s d
+  in
+  ≈-trans (+-cong (ctrl-lift-zero (ctrl-of v) s) h₀)
+          (≈-sym (≈-trans (prop._∧_.proj₁ e+) (+-cong (prop._∧_.proj₁ (ec-inj₂ {σ} {τ} i' s)) ≈-refl))) ,
+  RelF-resp τ r
+    (λ k → +-cong (≈-sym (ctrl-lift-suc (ctrl-of v) s k)) ≈-refl)
+    (F.sym τ i' (F.trans τ i' (prop._∧_.proj₂ e+)
+                              (F.+-cong τ i' (prop._∧_.proj₂ (ec-inj₂ {σ} {τ} i' s)) (F.refl τ i'))))
+    (ctrl-add τ r s h)
+ctrl-add (σ [×] τ) {pair v u} {i , j} (r , r') s {o} {d} (h₀ , (h₁ , h₂)) =
+  ≈-trans (+-cong (ctrl-lift-zero (⟨ ctrl-of v , ctrl-of u ⟩) s) h₀)
+          (+-cong (≈-sym (prop._∧_.proj₁ (ec-pair {σ} {τ} i j s))) ≈-refl) ,
+  (RelF-resp σ r
+     (λ k → ≈-trans (+-cong (≈-sym (ap-pair-p₁ (ctrl-of v) (ctrl-of u) (λ _ → s) k)) ≈-refl)
+              (≈-trans (≈-sym (app-+ᵥ (M.p₁ {width v} {width u}) _ _ k))
+                       (app-congᵥ (M.p₁ {width v} {width u})
+                          (λ l → +-cong (≈-sym (ctrl-lift-suc (⟨ ctrl-of v , ctrl-of u ⟩) s l)) ≈-refl) k)))
+     (F.+-cong σ i (F.sym σ i (prop._∧_.proj₁ (prop._∧_.proj₂ (ec-pair {σ} {τ} i j s)))) (F.refl σ i))
+     (ctrl-add σ r s h₁) ,
+   RelF-resp τ r'
+     (λ k → ≈-trans (+-cong (≈-sym (ap-pair-p₂ (ctrl-of v) (ctrl-of u) (λ _ → s) k)) ≈-refl)
+              (≈-trans (≈-sym (app-+ᵥ (M.p₂ {width v} {width u}) _ _ k))
+                       (app-congᵥ (M.p₂ {width v} {width u})
+                          (λ l → +-cong (≈-sym (ctrl-lift-suc (⟨ ctrl-of v , ctrl-of u ⟩) s l)) ≈-refl) k)))
+     (F.+-cong τ j (F.sym τ j (prop._∧_.proj₂ (prop._∧_.proj₂ (ec-pair {σ} {τ} i j s)))) (F.refl τ j))
+     (ctrl-add τ r' s h₂))
+ctrl-add (σ [→] τ) {clo γ' t} {f} r s {o} {d} (h₀ , hc) =
+  ≈-trans (+-cong (ctrl-lift-zero {width-env γ'} εₘ s) h₀)
+          (+-cong (≈-sym (prop._∧_.proj₁ (ec-clo {σ} {τ} f s))) ≈-refl) ,
+  λ s' {v} {j} rv z y hz {u} {U} D →
+    RelF-resp τ (r rv D)
+      (app-congᵥ U (body-input-resp γ' v
+         (≈-trans +-assoc (+-cong ≈-refl (+-cong (≈-sym (ctrl-lift-zero {width-env γ'} εₘ s)) ≈-refl)))
+         (λ k → ≈-sym (≈-trans (+-cong (ctrl-lift-suc {width-env γ'} εₘ s k) ≈-refl)
+                               (≈-trans (+-cong (app-εₘ {width-env γ'} {1} (λ _ → s) k) ≈-refl) +-lunit)))))
+      (F.+-cong τ (f .idxf .sfunc j)
+         (elim-const τ .at (f .idxf .sfunc j) .SemiMod._⇒_.func-resp-≈
+            (≈-trans +-assoc (+-cong ≈-refl (+-cong (≈-sym (ctrl-lift-zero {width-env γ'} εₘ s)) ≈-refl))))
+         (F.+-cong τ (f .idxf .sfunc j)
+            (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.func-resp-≈
+               {proj₂ d} {proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) d)}
+               (P.sym {proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) d)} {proj₂ d}
+                 (P.trans {proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) d)} {P._+_ P.ε (proj₂ d)} {proj₂ d}
+                   (P.+-cong {proj₂ (ec (σ [→] τ) f s)} {P.ε} {proj₂ d} {proj₂ d}
+                      (prop._∧_.proj₂ (ec-clo {σ} {τ} f s)) (P.refl {proj₂ d}))
+                   (P.+-lunit {proj₂ d}))))
+            (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
+      (hc (s' +ₛ (w ·ₛ s)) rv z y hz D)
+  where module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
 
 -- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
