@@ -22,6 +22,9 @@ open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
+-- Qualified: the evaluation judgement for argument lists reuses [] and _∷_ for its derivations.
+import Data.List as L
+open import every using (Every)
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
@@ -100,8 +103,12 @@ FibC Γ i = ⟦ Γ ⟧ctxt .fam .fm i
 _≈A_ : Setoid.Carrier A → Setoid.Carrier A → Prop
 _≈A_ = Setoid._≈_ A
 
--- The fragment: no μ-types, no primitives.
-data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set where
+-- The fragment: no μ-types, and no primitives yet. CoreTms is the same for a primitive's
+-- argument list, ready for the bop and brel constructors.
+data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set
+data CoreTms : ∀ {Γ is} → Every (λ σ → Γ ⊢ base σ) is → Set
+
+data CoreTm where
   var  : ∀ {Γ τ} (x : Γ ∋ τ) → CoreTm (var x)
   unit : ∀ {Γ} → CoreTm (unit {Γ})
   inl  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₁} → CoreTm t → CoreTm (inl {τ₂ = τ₂} t)
@@ -113,6 +120,11 @@ data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set where
   snd  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₁ [×] τ₂} → CoreTm t → CoreTm (snd t)
   lam  : ∀ {Γ σ τ} {t : Γ ▸ σ ⊢ τ} → CoreTm t → CoreTm (lam t)
   app  : ∀ {Γ σ τ} {s : Γ ⊢ σ [→] τ} {t : Γ ⊢ σ} → CoreTm s → CoreTm t → CoreTm (app s t)
+
+data CoreTms where
+  []  : ∀ {Γ} → CoreTms {Γ} Every.[]
+  _∷_ : ∀ {Γ σ is} {M : Γ ⊢ base σ} {Ms : Every (λ σ' → Γ ⊢ base σ') is} →
+        CoreTm M → CoreTms Ms → CoreTms (M Every.∷ Ms)
 
 -- Values related to indices, by recursion on the type. A closure is related to a fibre map of the
 -- exponential when, for every related argument and every derivation of the body at it, the result
@@ -166,6 +178,17 @@ RelF (σ [→] τ) {clo γ' t} {f} r o d =
          (Semimodule._+_ (Fib τ (f .idxf .sfunc j))
            (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ d))
            (f .famf .transf j .func y))))
+
+-- A primitive's arguments. The model's index at a tuple of arguments is a tuple of sort indices,
+-- so the value relation is one base relation per argument, by recursion on the sorts. The fibre
+-- is 𝔽 (bases-width is) on both sides, the arguments' positions laid end to end, so the vector
+-- relation is equality there, as it is at a single base sort.
+RelVArgs : ∀ is → sort-vals is → sort-vals is → Set
+RelVArgs L.[]         _        _        = ⊤
+RelVArgs (σ L.∷ is) (i , i') (v , vs) = RelV (base σ) (const v) i × RelVArgs is i' vs
+
+RelFArgs : ∀ is → ∣ 𝔽 (bases-width is) ∣ → ∣ 𝔽 (bases-width is) ∣ → Prop
+RelFArgs is o d = Semimodule._≈_ (𝔽 (bases-width is)) o d
 
 -- Environments related to context indices, and environment vectors to elements of the context
 -- fibre at a source weight: each cell may carry, beyond its relation, a mark that the elimination
