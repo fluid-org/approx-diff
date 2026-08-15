@@ -21,7 +21,8 @@ import lifting
 open import functor using (Functor)
 open import finite-product-functor using (preserve-chosen-products; preserve-chosen-terminal)
 open import polynomial-functor using (Poly; Poly-map)
-open import signature using (Signature; Model; PFPC[_,_,_,_]; transport-model)
+open import signature
+  using (Signature; Model; PointedFPCat; PFPC[_,_,_,_]; transport-model; transport-product)
 import fam-mu-lifting.in-map
 import fam-change-of-base
 import language-syntax
@@ -123,6 +124,25 @@ module _ where
     (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y})
     (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
     𝒞-Sig-model
+
+-- The first of the two halves of the transported operation interpretation: an operation's
+-- arguments are collected on the target side, then carried to the image of the source-side
+-- product, and only then does the image of the source-side interpretation act. A proof that
+-- compares the two sides at a primitive has to take the halves separately.
+private
+  PF𝒞 = PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T𝒞 , Fam⟨𝒞⟩μ.products , 𝒞Bool ]
+  PF𝒟 = PFPC[ Fam⟨𝒟⟩μ.cat , Fam⟨𝒟⟩μ.terminal T𝒟 , Fam⟨𝒟⟩μ.products , 𝒟Bool ]
+
+𝒟-arg-product :
+  ∀ σs → Fam⟨𝒟⟩μ.Mor
+           (PointedFPCat.list→product PF𝒟
+              (λ σ → Fam⟨F⟩ .fobj (Model.⟦sort⟧ 𝒞-Sig-model σ)) σs)
+           (Fam⟨F⟩ .fobj
+              (PointedFPCat.list→product PF𝒞 (Model.⟦sort⟧ 𝒞-Sig-model) σs))
+𝒟-arg-product = transport-product {𝒞 = PF𝒞} {𝒟 = PF𝒟} Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal
+  (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y})
+  (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
+  (Model.⟦sort⟧ 𝒞-Sig-model)
 
 -- The target-side constants: the unit and sort constants are the images of the source-side
 -- ones, entered through the chosen map from the target unit object.
