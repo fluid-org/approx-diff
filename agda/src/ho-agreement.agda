@@ -889,6 +889,77 @@ app-rule₂-nolink {γ = γ} {n₁ = n₁} out u₁ u₂ R₁ R₂ s x k =
                                                                                 (app-εₘ (ap (c₁ i) vi) l)))
                                                         +-runit)) k)))
 
+-- The case rule, read at the inputs: the branch's relation at the scrutinee's root plus the
+-- weighted source as source, and at the environment and the scrutinee's payload as environment.
+app-case : ∀ {Γ τ'} {γ : Env Γ} (v : Val τ') {n} (R_s : M.Matrix (suc (width v)) (suc (width-env γ)))
+           (T : M.Matrix n (suc (width-env (γ · v)))) s x (k : Fin n) →
+           ap (of-cols {γ = γ} (M.rule₂-result (M.id-linear (input-width γ)) (branch-route γ v) (branch-link γ v)
+                                  (λ _ → εₘ) εₘ M.I (cols {γ = γ} R_s) (cols {γ = γ · v} T)))
+              (inputs γ s x) k
+           ≈s ap T (inputs (γ · v) (ap R_s (inputs γ s x) zero +ₛ (w ·ₛ s))
+                     (λ l → ap (M.in₁ {width-env γ} {width v}) x l +ₛ
+                            ap (M.in₂ {width-env γ} {width v}) (λ m → ap R_s (inputs γ s x) (suc m)) l)) k
+app-case {γ = γ} v R_s T s x k =
+  ≈-trans (app-of-cols {γ = γ} f s x k)
+  (≈-trans (+-cong (per-input source (λ _ → s) k) (per-input environment x k))
+  (≈-trans Sc.+-interchange
+  (≈-trans (+-cong src-part (≈-trans (+-cong (app-∘ (l .M.at cT) (cs source) (λ _ → s) k)
+                                              (app-∘ (l .M.at cT) (cs environment) x k))
+                                     (≈-trans (≈-sym (app-+ᵥ (l .M.at cT) (ap (cs source) (λ _ → s)) (ap (cs environment) x) k))
+                                              (≈-trans (app-congᵥ (l .M.at cT) (λ m → ≈-sym (app-inputs {γ = γ} R_s s x m)) k)
+                                                       l-expand))))
+  (≈-trans regroup
+  (≈-trans (+-cong (≈-sym (app-+ᵥ (cT source) (λ _ → w ·ₛ s) (λ _ → o_s zero) k))
+                   (≈-sym (app-+ᵥ (cT environment) (ap (M.in₁ {width-env γ} {width v}) x)
+                                                   (ap (M.in₂ {width-env γ} {width v}) (λ m → o_s (suc m))) k)))
+  (≈-trans (+-cong (app-congᵥ (cT source) (λ _ → +-comm {w ·ₛ s} {o_s zero}) k) (≈-refl {ap (cT environment) X k}))
+           (≈-sym (app-inputs {γ = γ · v} T (o_s zero +ₛ (w ·ₛ s)) X k))))))))
+  where
+  cs = cols {γ = γ} R_s
+  cT = cols {γ = γ · v} T
+  r₂ = branch-route γ v
+  l = branch-link γ v
+  f = M.rule₂-result (M.id-linear (input-width γ)) r₂ l (λ _ → εₘ) εₘ M.I cs cT
+  o_s = ap R_s (inputs γ s x)
+  X : ∣ 𝔽 (width-env γ + width v) ∣
+  X m = ap (M.in₁ {width-env γ} {width v}) x m +ₛ ap (M.in₂ {width-env γ} {width v}) (λ m' → o_s (suc m')) m
+
+  per-input : ∀ (i : Input) (vi : ∣ 𝔽 (input-width γ i) ∣) k →
+              ap (f i) vi k ≈s (ap (r₂ .M.ap cT i) vi k +ₛ ap (l .M.at cT ∘ cs i) vi k)
+  per-input i vi k =
+    ≈-trans (app-+ₘ (εₘ +ₘ (εₘ ∘ cs i)) (M.I ∘ (r₂ .M.ap cT i +ₘ (l .M.at cT ∘ cs i))) vi k)
+    (≈-trans (+-cong (≈-trans (app-+ₘ εₘ (εₘ ∘ cs i) vi k)
+                              (≈-trans (+-cong (app-εₘ vi k) (≈-trans (app-∘ εₘ (cs i) vi k) (app-εₘ (ap (cs i) vi) k)))
+                                       +-lunit))
+                     (≈-trans (app-∘ M.I (r₂ .M.ap cT i +ₘ (l .M.at cT ∘ cs i)) vi k)
+                              (≈-trans (app-I (ap (r₂ .M.ap cT i +ₘ (l .M.at cT ∘ cs i)) vi) k)
+                                       (app-+ₘ (r₂ .M.ap cT i) (l .M.at cT ∘ cs i) vi k))))
+             +-lunit)
+
+  src-part : (ap (r₂ .M.ap cT source) (λ _ → s) k +ₛ ap (r₂ .M.ap cT environment) x k)
+             ≈s (ap (cT source) (λ _ → w ·ₛ s) k +ₛ ap (cT environment) (ap (M.in₁ {width-env γ} {width v}) x) k)
+  src-part =
+    +-cong (≈-trans (app-∘ (cT source) (ctrl-row {1}) (λ _ → s) k)
+                    (app-congᵥ (cT source) (λ m → ap-ctrl-row {1} s m) k))
+           (app-∘ (cT environment) (M.in₁ {width-env γ} {width v}) x k)
+
+  l-expand : ap (l .M.at cT) o_s k ≈s
+             (ap (cT environment) (ap (M.in₂ {width-env γ} {width v}) (λ m → o_s (suc m))) k +ₛ
+              ap (cT source) (λ _ → o_s zero) k)
+  l-expand =
+    ≈-trans (app-+ₘ (cT environment ∘ (M.in₂ {width-env γ} {width v} ∘ M.p₂ {1} {width v}))
+                    (cT source ∘ M.p₁ {1} {width v}) o_s k)
+            (+-cong (≈-trans (app-∘ (cT environment) (M.in₂ {width-env γ} {width v} ∘ M.p₂ {1} {width v}) o_s k)
+                             (≈-trans (app-congᵥ (cT environment)
+                                         (λ m → app-∘ (M.in₂ {width-env γ} {width v}) (M.p₂ {1} {width v}) o_s m) k)
+                                      (app-congᵥ (cT environment)
+                                         (app-congᵥ (M.in₂ {width-env γ} {width v}) (ap-p₂₁ {width v} o_s)) k)))
+                    (≈-trans (app-∘ (cT source) (M.p₁ {1} {width v}) o_s k)
+                             (app-congᵥ (cT source) (ap-p₁₁ {width v} o_s) k)))
+
+  regroup : ∀ {a b c d} → (a +ₛ b) +ₛ (c +ₛ d) ≈s ((a +ₛ d) +ₛ (b +ₛ c))
+  regroup = ≈-trans (+-cong ≈-refl +-comm) Sc.+-interchange
+
 -- Transport along a reflexivity proof is the identity.
 private
   subst-refl : ∀ τ {i : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i) (d : ∣ Fib τ i ∣) →
@@ -1064,7 +1135,139 @@ fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} c) {γ = γ} (⇓-inr 
                                   (F.+-cong τ₂ i' (prop._∧_.proj₂ (ec-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i'))))
       (fundamental c D rγ s x g rel)
 
-fundamental (case c c₁ c₂) (⇓-case-l D₁ D₂) rγ s x g rel = {!!}
+fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {t₁ = t₁} {t₂ = t₂} c c₁ c₂) {γ = γ}
+            (⇓-case-l {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
+  RelF-resp τ (RelV-resp τ E r') (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k)) den-eq
+    (RelF-transport τ E r' IH₂)
+  where
+  rs = relV c D₁ rγ
+  i' = proj₁ rs
+  r_v = proj₁ (proj₂ rs)
+  e : Setoid._≈_ (⟦ τ₁ [+] τ₂ ⟧ .idx) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₁ i')
+  e = prop.Prf.prf (proj₂ (proj₂ rs))
+  sidx = ⟦ sc ⟧tm .idxf .sfunc gi
+  SC = HasStrongCoproducts.copair FD.strongCoproducts (FD.elimF (elim-const τ) ⟦ t₁ ⟧tm) (FD.elimF (elim-const τ) ⟦ t₂ ⟧tm)
+  Eidx : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₁ ⟧tm .idxf .sfunc (gi , i'))
+  Eidx = SC .idxf .prop-setoid._⇒_.func-resp-≈ {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
+  E : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ t₁ ⟧tm .idxf .sfunc (gi , i')) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi)
+  E = Setoid.sym (⟦ τ ⟧ .idx) Eidx
+  i₁ = ⟦ t₁ ⟧tm .idxf .sfunc (gi , i')
+  ic = ⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi
+  r' = relV c₁ D₂ (rγ · r_v)
+  o_s = ap R_s (inputs γ s x)
+  Sw = o_s zero +ₛ (w ·ₛ s)
+  X : ∣ 𝔽 (width-env γ + width v) ∣
+  X m = ap (M.in₁ {width-env γ} {width v}) x m +ₛ ap (M.in₂ {width-env γ} {width v}) (λ m' → o_s (suc m')) m
+  IH₁ = fundamental c D₁ rγ s x g rel
+  SG = ⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₁ i'} e .func (⟦ sc ⟧tm .famf .transf gi .func g)
+  a_s = proj₁ SG
+  y_v = proj₂ SG
+  dsum = F._+_ (τ₁ [+] τ₂) sidx (ec (τ₁ [+] τ₂) sidx s) (⟦ sc ⟧tm .famf .transf gi .func g)
+  split-sum = subst-ec+ (τ₁ [+] τ₂) {sidx} {inj₁ i'} e s (⟦ sc ⟧tm .famf .transf gi .func g)
+
+  o_s₀ : o_s zero ≈s ((w ·ₛ s) +ₛ a_s)
+  o_s₀ = ≈-trans (prop._∧_.proj₁ IH₁)
+                 (≈-trans (prop._∧_.proj₁ split-sum) (+-cong (prop._∧_.proj₁ (ec-inj₁ {τ₁} {τ₂} i' s)) ≈-refl))
+
+  payload₁ : RelF τ₁ r_v (λ m → o_s (suc m)) (F._+_ τ₁ i' y_v (ec τ₁ i' s))
+  payload₁ =
+    RelF-resp τ₁ r_v (λ m → ≈-refl)
+      (F.trans τ₁ i' (prop._∧_.proj₂ split-sum)
+        (F.trans τ₁ i' (F.+-cong τ₁ i' (prop._∧_.proj₂ (ec-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i')) (F.+-comm τ₁ i')))
+      (prop._∧_.proj₂ IH₁)
+
+  dom-s : Dominated τ₁ i' Sw (ec τ₁ i' s)
+  dom-s =
+    F.trans τ₁ i' (F.+-cong τ₁ i' (F.refl τ₁ i') (F.trans τ₁ i' (ec-linear τ₁ i' (o_s zero) (w ·ₛ s))
+                                                                (F.+-cong τ₁ i' (F.refl τ₁ i') (ec-w τ₁ i' s))))
+    (F.trans τ₁ i' (F.+-cong τ₁ i' (F.refl τ₁ i') (F.+-comm τ₁ i'))
+    (F.trans τ₁ i' (F.sym τ₁ i' (F.+-assoc τ₁ i'))
+    (F.trans τ₁ i' (F.+-cong τ₁ i' (ec-root τ₁ i' s) (F.refl τ₁ i'))
+    (F.trans τ₁ i' (F.+-comm τ₁ i')
+    (F.sym τ₁ i' (F.trans τ₁ i' (ec-linear τ₁ i' (o_s zero) (w ·ₛ s))
+                                (F.+-cong τ₁ i' (F.refl τ₁ i') (ec-w τ₁ i' s))))))))
+
+  rel' : RelEnv (rγ · r_v) Sw X (g , y_v)
+  rel' = RelEnv-resp rγ Sw (λ m → ≈-sym (ap-p₁-++ x (λ m' → o_s (suc m')) m)) (RelEnv-mono rγ s (o_s zero) rel) ,
+         RelFs-resp τ₁ r_v Sw (λ m → ≈-sym (ap-p₂-++ x (λ m' → o_s (suc m')) m))
+           (ec τ₁ i' s , (dom-s , payload₁))
+
+  IH₂ = fundamental c₁ D₂ (rγ · r_v) Sw X (g , y_v) rel'
+
+  B = ⟦ t₁ ⟧tm .famf .transf (gi , i') .func (g , y_v)
+
+  -- The case's fibre at the environment, through the naturality of the strong copairing along
+  -- the scrutinee's index equation.
+  Dom = HasProducts.prod FD.products ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
+  Pg = HasProducts.pair FD.products (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
+  Q = Dom .fam .subst {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .func Pg
+
+  case-famf : F._≈_ τ ic (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g)
+                        (F._+_ τ ic (⟦ τ ⟧ .fam .subst E .func B) (ec τ ic a_s))
+  case-famf =
+    F.trans τ ic (F.sym τ ic roundtrip)
+    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .SemiMod._⇒_.func-resp-≈ {⟦ τ ⟧ .fam .subst Eidx .func CF} {F._+_ τ i₁ B (ec τ i₁ a_s)}
+                    (F.trans τ i₁ (F.sym τ i₁ nat) branch-eq))
+    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .SemiMod._⇒_.preserve-+ {B} {ec τ i₁ a_s})
+                  (F.+-cong τ ic (F.refl τ ic) (ec-natural τ E a_s))))
+    where
+    CF = ⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g
+
+    roundtrip : F._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (⟦ τ ⟧ .fam .subst Eidx .func CF)) CF
+    roundtrip =
+      F.trans τ ic
+        (F.sym τ ic (⟦ τ ⟧ .fam .indexed-family.Fam.trans* {ic} {i₁} {ic} E Eidx
+                       .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (F.refl τ ic {CF})))
+        (subst-refl τ {ic} (Setoid.trans (⟦ τ ⟧ .idx) {ic} {i₁} {ic} Eidx E) CF)
+
+    -- Naturality of the strong copairing along the scrutinee's index equation.
+    nat : F._≈_ τ i₁ (SC .famf .transf (gi , inj₁ i') .func Q) (⟦ τ ⟧ .fam .subst Eidx .func CF)
+    nat = SC .famf .indexed-family._⇒f_.natural {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
+            .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
+
+    -- The transported pair is the environment with the scrutinee's transported fibre.
+    Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , inj₁ i')) Q (g , SG)
+    Q≈ = Semimodule.trans (FibC Γ gi) (m-runit (FibC Γ gi))
+           (Semimodule.trans (FibC Γ gi)
+              (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq
+                 (Semimodule.refl (FibC Γ gi) {Semimodule._+_ (FibC Γ gi) g (Semimodule.ε (FibC Γ gi))}))
+              (m-runit (FibC Γ gi))) ,
+         F.trans (τ₁ [+] τ₂) (inj₁ i') (m-lunit (Fib (τ₁ [+] τ₂) (inj₁ i')))
+           (F.trans (τ₁ [+] τ₂) (inj₁ i')
+              (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₁ i'} e .SemiMod._⇒_.preserve-+
+                 {Semimodule.ε (Fib (τ₁ [+] τ₂) sidx)} {⟦ sc ⟧tm .famf .transf gi .func g})
+              (F.trans (τ₁ [+] τ₂) (inj₁ i')
+                 (F.+-cong (τ₁ [+] τ₂) (inj₁ i') (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₁ i'} e .SemiMod._⇒_.preserve-ze)
+                                                 (F.refl (τ₁ [+] τ₂) (inj₁ i')))
+                 (m-lunit (Fib (τ₁ [+] τ₂) (inj₁ i')))))
+
+    branch-eq : F._≈_ τ i₁ (SC .famf .transf (gi , inj₁ i') .func Q) (F._+_ τ i₁ B (ec τ i₁ a_s))
+    branch-eq =
+      F.trans τ i₁ (SC .famf .transf (gi , inj₁ i') .SemiMod._⇒_.func-resp-≈ {Q} {g , SG} Q≈)
+        (F.+-cong τ i₁
+           (⟦ t₁ ⟧tm .famf .transf (gi , i') .SemiMod._⇒_.func-resp-≈
+              (m-runit (FibC Γ gi) ,
+               F.trans τ₁ i' (m-lunit (Fib τ₁ i')) (m-lunit (Fib τ₁ i'))))
+           (elim-const τ .at i₁ .SemiMod._⇒_.func-resp-≈ +-runit))
+
+  den-eq : F._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (F._+_ τ i₁ (ec τ i₁ Sw) B))
+                      (F._+_ τ ic (ec τ ic s) (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g))
+  den-eq =
+    F.trans τ ic (subst-ec+ τ E Sw B)
+    (F.trans τ ic (F.+-cong τ ic ec-part (F.refl τ ic))
+    (F.trans τ ic (F.+-assoc τ ic)
+    (F.trans τ ic (F.+-cong τ ic (F.refl τ ic) (F.+-comm τ ic))
+                  (F.+-cong τ ic (F.refl τ ic) (F.sym τ ic case-famf)))))
+    where
+    ec-part : F._≈_ τ ic (ec τ ic Sw) (F._+_ τ ic (ec τ ic s) (ec τ ic a_s))
+    ec-part =
+      F.trans τ ic (elim-const τ .at ic .SemiMod._⇒_.func-resp-≈ (+-cong o_s₀ ≈-refl))
+      (F.trans τ ic (ec-linear τ ic ((w ·ₛ s) +ₛ a_s) (w ·ₛ s))
+      (F.trans τ ic (F.+-cong τ ic (F.trans τ ic (ec-linear τ ic (w ·ₛ s) a_s) (F.+-cong τ ic (ec-w τ ic s) (F.refl τ ic)))
+                                   (ec-w τ ic s))
+      (F.trans τ ic (F.+-comm τ ic)
+      (F.trans τ ic (F.sym τ ic (F.+-assoc τ ic))
+                    (F.+-cong τ ic (ec-root τ ic s) (F.refl τ ic))))))
 fundamental (case c c₁ c₂) (⇓-case-r D₁ D₂) rγ s x g rel = {!!}
 fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} c₁ c₂) {γ = γ} (⇓-pair {v = v} {u = u} {R = R₁} {T = R₂} D₁ D₂) {gi} rγ s x g rel =
   root , (RelF-resp σ r₁ (λ k → ≈-sym (comp₁ k)) den₁ IH₁ , RelF-resp τ r₂ (λ k → ≈-sym (comp₂ k)) den₂ IH₂)
