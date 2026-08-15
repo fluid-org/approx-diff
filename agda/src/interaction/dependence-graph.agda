@@ -25,10 +25,6 @@ open _⇒ₛ_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig two.semiring 𝒫 two.I
-  using (Val; Env; width; width-env; width-subst; ctrl-row; proj-var; bool→val; brel-deps)
-open Val
-open Env
-open import language-operational.control Sig two.semiring 𝒫 two.I
 open import interaction.graph
 
 private
