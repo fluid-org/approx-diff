@@ -574,6 +574,50 @@ relV (snd c) (⇓-snd D) rγ = proj₂ (relV c D rγ)
 relV (lam c) ⇓-lam rγ {v} {j} rv {u} {U} D = relV c D (rγ · rv)
 relV (app c₁ c₂) (⇓-app D₁ D₂ D₃) rγ = relV c₁ D₁ rγ (relV c₂ D₂ rγ) D₃
 
+-- Reading the model's constructions elementwise: a pairing through the biproduct is the pair of
+-- the components, the lifted action keeps the root and acts on the payload, and eliminating a
+-- root applies the continuation to the payload and the constant to the root.
+private
+  module SMBP = HasProducts (cmon-enriched.biproducts→products SemiMod.cmon-enriched SemiMod.biproduct)
+
+  bpair-elt : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : X ⇒ Z) (x : ∣ X ∣) →
+              Semimodule._≈_ (SemiMod._⊕_ Y Z) (SMBP.pair f g .func x) (f .func x , g .func x)
+  bpair-elt {X} {Y} {Z} f g x = m-runit Y , m-lunit Z
+
+  Fpair-elt : ∀ {X Y Z : Obj} (f : Mor X Y) (g : Mor X Z) (x : Setoid.Carrier (X .idx)) (z : ∣ X .fam .fm x ∣) →
+              Semimodule._≈_ (HasProducts.prod FD.products Y Z .fam .fm (f .idxf .sfunc x , g .idxf .sfunc x))
+                (HasProducts.pair FD.products f g .famf .transf x .func z)
+                (f .famf .transf x .func z , g .famf .transf x .func z)
+  Fpair-elt f g x z = bpair-elt (f .famf .transf x) (g .famf .transf x) z
+
+  Lmap-elt : ∀ {X Y : Semimodule} (f : X ⇒ Y) (a : Setoid.Carrier A) (x : ∣ X ∣) →
+             Semimodule._≈_ (Ls.L Y) (Ls.Lmap f .func (a , x)) (a , f .func x)
+  Lmap-elt {X} {Y} f a x = +-runit , m-lunit Y
+
+  elim-root-elt : ∀ {G X Y : Semimodule} (c : SemiMod.𝕀 ⇒ Y) (r : SemiMod._⊕_ G X ⇒ Y)
+                  (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
+                  Semimodule._≈_ Y (Ls.elim-root c r .func (γe , (a , y)))
+                                   (Semimodule._+_ Y (r .func (γe , y)) (c .func a))
+  elim-root-elt {G} {X} {Y} c r γe a y =
+    Semimodule.+-cong Y
+      (r .SemiMod._⇒_.func-resp-≈
+         (Semimodule.trans (SemiMod._⊕_ G X)
+            (bpair-elt {SemiMod._⊕_ G (Ls.L X)} {G} {X}
+               (SemiMod._∘_ (SemiMod.id G) (SemiMod.p₁ {G} {Ls.L X}))
+               (SemiMod._∘_ (Ls.payload-L {X}) (SemiMod.p₂ {G} {Ls.L X})) (γe , (a , y)))
+            (Semimodule.refl G {γe} , m-lunit X {y})))
+      (c .SemiMod._⇒_.func-resp-≈ +-runit)
+
+  elimF-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (f : Mor (HasProducts.prod FD.products Γ' X) C)
+              {γi : Setoid.Carrier (Γ' .idx)} {xi : Setoid.Carrier (X .idx)}
+              (γe : ∣ Γ' .fam .fm γi ∣) (a : Setoid.Carrier A) (y : ∣ X .fam .fm xi ∣) →
+              Semimodule._≈_ (C .fam .fm (f .idxf .sfunc (γi , xi)))
+                (FD.elimF cC f .famf .transf (γi , xi) .func (γe , (a , y)))
+                (Semimodule._+_ (C .fam .fm (f .idxf .sfunc (γi , xi)))
+                  (f .famf .transf (γi , xi) .func (γe , y))
+                  (cC .at (f .idxf .sfunc (γi , xi)) .func a))
+  elimF-elt cC f {γi} {xi} γe a y = elim-root-elt (cC .at (f .idxf .sfunc (γi , xi))) (f .famf .transf (γi , xi)) γe a y
+
 -- Domination is monotone in the source weight, and a relation is a relation up to the zero mark.
 private
   ec-linear : ∀ τ (i : Ix τ) s s' →
@@ -718,6 +762,20 @@ private
                                         (F.trans τ i (ec-linear τ i a (w ·ₛ s))
                                                      (F.+-cong τ i (F.refl τ i) (ec-w τ i s)))))
                 (F.refl τ i)
+
+-- The constant at the weighted source plus itself and a further weight: the constant at the
+-- source plus the constant at the further weight.
+private
+  ec-double : ∀ τ (i : Ix τ) s a → F._≈_ τ i (ec τ i ((w ·ₛ s) +ₛ ((w ·ₛ s) +ₛ a))) (F._+_ τ i (ec τ i s) (ec τ i a))
+  ec-double τ i s a =
+    F.trans τ i (ec-linear τ i (w ·ₛ s) ((w ·ₛ s) +ₛ a))
+    (F.trans τ i (F.+-cong τ i (ec-w τ i s) (F.trans τ i (ec-linear τ i (w ·ₛ s) a) (F.+-cong τ i (ec-w τ i s) (F.refl τ i))))
+    (F.trans τ i (F.sym τ i (F.+-assoc τ i)) (F.+-cong τ i (ec-root τ i s) (F.refl τ i))))
+
+  ec-double' : ∀ τ (i : Ix τ) s a → F._≈_ τ i (ec τ i (((w ·ₛ s) +ₛ a) +ₛ (w ·ₛ s))) (F._+_ τ i (ec τ i s) (ec τ i a))
+  ec-double' τ i s a =
+    F.trans τ i (elim-const τ .at i .SemiMod._⇒_.func-resp-≈ (≈-trans +-comm (≈-refl {(w ·ₛ s) +ₛ ((w ·ₛ s) +ₛ a)})))
+                (ec-double τ i s a)
 
 private
   -- Splitting a bounded lifted element into a bounded root and a bounded payload.
@@ -1023,25 +1081,20 @@ private
     F.trans τ' i (F.+-cong τ' i ec-part ecomp)
     (F.trans τ' i rearr (F.+-cong τ' i (F.refl τ' i) (F.sym τ' i eG)))
     where
-    ec-part : F._≈_ τ' i (ec τ' i ((w ·ₛ s) +ₛ o'₀)) (F._+_ τ' i (ec τ' i s) (F._+_ τ' i (ec τ' i s) (ec τ' i a₀)))
-    ec-part =
-      F.trans τ' i (elim-const τ' .at i .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl eo))
-      (F.trans τ' i (ec-linear τ' i (w ·ₛ s) ((w ·ₛ s) +ₛ a₀))
-                    (F.+-cong τ' i (ec-w τ' i s) (F.trans τ' i (ec-linear τ' i (w ·ₛ s) a₀)
-                                                              (F.+-cong τ' i (ec-w τ' i s) (F.refl τ' i)))))
-    rearr : F._≈_ τ' i (F._+_ τ' i (F._+_ τ' i (ec τ' i s) (F._+_ τ' i (ec τ' i s) (ec τ' i a₀)))
-                                   (F._+_ τ' i (ec τ' i s) m))
+    ec-part : F._≈_ τ' i (ec τ' i ((w ·ₛ s) +ₛ o'₀)) (F._+_ τ' i (ec τ' i s) (ec τ' i a₀))
+    ec-part = F.trans τ' i (elim-const τ' .at i .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl eo)) (ec-double τ' i s a₀)
+    -- (e + a) + (e + m) ≈ e + (m + a)
+    rearr : F._≈_ τ' i (F._+_ τ' i (F._+_ τ' i (ec τ' i s) (ec τ' i a₀)) (F._+_ τ' i (ec τ' i s) m))
                        (F._+_ τ' i (ec τ' i s) (F._+_ τ' i m (ec τ' i a₀)))
     rearr =
-      F.trans τ' i (F.+-cong τ' i (F.sym τ' i (F.+-assoc τ' i)) (F.refl τ' i))
-      (F.trans τ' i (F.+-cong τ' i (F.+-cong τ' i (ec-root τ' i s) (F.refl τ' i)) (F.refl τ' i))
+      F.trans τ' i (F.+-cong τ' i (F.+-comm τ' i) (F.refl τ' i))
       (F.trans τ' i (F.+-assoc τ' i)
       (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.sym τ' i (F.+-assoc τ' i)))
-      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.+-cong τ' i (F.+-comm τ' i) (F.refl τ' i)))
-      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.+-assoc τ' i))
+      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.+-cong τ' i (ec-root τ' i s) (F.refl τ' i)))
+      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.+-comm τ' i))
       (F.trans τ' i (F.sym τ' i (F.+-assoc τ' i))
-      (F.trans τ' i (F.+-cong τ' i (ec-root τ' i s) (F.refl τ' i))
-                    (F.+-cong τ' i (F.refl τ' i) (F.+-comm τ' i)))))))))
+      (F.trans τ' i (F.+-cong τ' i (F.+-comm τ' i) (F.refl τ' i))
+                    (F.+-comm τ' i)))))))
 
 -- Transport along a reflexivity proof is the identity.
 private
@@ -1166,14 +1219,7 @@ private
                   (F.+-cong τ ic (F.refl τ ic) (F.sym τ ic eCF)))))
     where
     ec-part : F._≈_ τ ic (ec τ ic (o_s₀ +ₛ (w ·ₛ s))) (F._+_ τ ic (ec τ ic s) (ec τ ic a_s))
-    ec-part =
-      F.trans τ ic (elim-const τ .at ic .SemiMod._⇒_.func-resp-≈ (+-cong eo ≈-refl))
-      (F.trans τ ic (ec-linear τ ic ((w ·ₛ s) +ₛ a_s) (w ·ₛ s))
-      (F.trans τ ic (F.+-cong τ ic (F.trans τ ic (ec-linear τ ic (w ·ₛ s) a_s) (F.+-cong τ ic (ec-w τ ic s) (F.refl τ ic)))
-                                   (ec-w τ ic s))
-      (F.trans τ ic (F.+-comm τ ic)
-      (F.trans τ ic (F.sym τ ic (F.+-assoc τ ic))
-                    (F.+-cong τ ic (ec-root τ ic s) (F.refl τ ic))))))
+    ec-part = F.trans τ ic (elim-const τ .at ic .SemiMod._⇒_.func-resp-≈ (+-cong eo ≈-refl)) (ec-double' τ ic s a_s)
 
 -- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
@@ -1286,28 +1332,24 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
             .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
 
     Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , inj₁ i')) Q (g , SG)
-    Q≈ = Semimodule.trans (FibC Γ gi) (m-runit (FibC Γ gi))
-           (Semimodule.trans (FibC Γ gi)
+    Q≈ = Semimodule.trans (Dom .fam .fm (gi , inj₁ i'))
+           (Dom .fam .subst {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .SemiMod._⇒_.func-resp-≈
+              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
+           (Semimodule.trans (Dom .fam .fm (gi , inj₁ i'))
+              (bpair-elt {SemiMod._⊕_ (FibC Γ gi) (Fib (τ₁ [+] τ₂) sidx)} {FibC Γ gi} {Fib (τ₁ [+] τ₂) (inj₁ i')}
+                         (SemiMod._∘_ (⟦ Γ ⟧ctxt .fam .subst {gi} {gi} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}))
+                                      (SemiMod.p₁ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
+                         (SemiMod._∘_ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₁ i'} e)
+                                      (SemiMod.p₂ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
+                         (g , ⟦ sc ⟧tm .famf .transf gi .func g))
               (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq
-                 (Semimodule.refl (FibC Γ gi) {Semimodule._+_ (FibC Γ gi) g (Semimodule.ε (FibC Γ gi))}))
-              (m-runit (FibC Γ gi))) ,
-         F.trans (τ₁ [+] τ₂) (inj₁ i') (m-lunit (Fib (τ₁ [+] τ₂) (inj₁ i')))
-           (F.trans (τ₁ [+] τ₂) (inj₁ i')
-              (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₁ i'} e .SemiMod._⇒_.preserve-+
-                 {Semimodule.ε (Fib (τ₁ [+] τ₂) sidx)} {⟦ sc ⟧tm .famf .transf gi .func g})
-              (F.trans (τ₁ [+] τ₂) (inj₁ i')
-                 (F.+-cong (τ₁ [+] τ₂) (inj₁ i') (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₁ i'} e .SemiMod._⇒_.preserve-ze)
-                                                 (F.refl (τ₁ [+] τ₂) (inj₁ i')))
-                 (m-lunit (Fib (τ₁ [+] τ₂) (inj₁ i')))))
+                 (Semimodule.refl (FibC Γ gi) {g}) ,
+               F.refl (τ₁ [+] τ₂) (inj₁ i')))
 
     branch-eq : F._≈_ τ i₁ (SC .famf .transf (gi , inj₁ i') .func Q) (F._+_ τ i₁ B (ec τ i₁ a_s))
     branch-eq =
       F.trans τ i₁ (SC .famf .transf (gi , inj₁ i') .SemiMod._⇒_.func-resp-≈ {Q} {g , SG} Q≈)
-        (F.+-cong τ i₁
-           (⟦ t₁ ⟧tm .famf .transf (gi , i') .SemiMod._⇒_.func-resp-≈
-              (m-runit (FibC Γ gi) ,
-               F.trans τ₁ i' (m-lunit (Fib τ₁ i')) (m-lunit (Fib τ₁ i'))))
-           (elim-const τ .at i₁ .SemiMod._⇒_.func-resp-≈ +-runit))
+                   (elimF-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ ⟧} {⟦ τ ⟧} (elim-const τ) ⟦ t₁ ⟧tm {gi} {i'} g a_s y_v)
 fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {t₁ = t₁} {t₂ = t₂} c c₁ c₂) {γ = γ}
             (⇓-case-r {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
   RelF-resp τ (RelV-resp τ E r') (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
@@ -1371,28 +1413,24 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
             .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
 
     Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , inj₂ i')) Q (g , SG)
-    Q≈ = Semimodule.trans (FibC Γ gi) (m-runit (FibC Γ gi))
-           (Semimodule.trans (FibC Γ gi)
+    Q≈ = Semimodule.trans (Dom .fam .fm (gi , inj₂ i'))
+           (Dom .fam .subst {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .SemiMod._⇒_.func-resp-≈
+              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
+           (Semimodule.trans (Dom .fam .fm (gi , inj₂ i'))
+              (bpair-elt {SemiMod._⊕_ (FibC Γ gi) (Fib (τ₁ [+] τ₂) sidx)} {FibC Γ gi} {Fib (τ₁ [+] τ₂) (inj₂ i')}
+                         (SemiMod._∘_ (⟦ Γ ⟧ctxt .fam .subst {gi} {gi} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}))
+                                      (SemiMod.p₁ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
+                         (SemiMod._∘_ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₂ i'} e)
+                                      (SemiMod.p₂ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
+                         (g , ⟦ sc ⟧tm .famf .transf gi .func g))
               (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq
-                 (Semimodule.refl (FibC Γ gi) {Semimodule._+_ (FibC Γ gi) g (Semimodule.ε (FibC Γ gi))}))
-              (m-runit (FibC Γ gi))) ,
-         F.trans (τ₁ [+] τ₂) (inj₂ i') (m-lunit (Fib (τ₁ [+] τ₂) (inj₂ i')))
-           (F.trans (τ₁ [+] τ₂) (inj₂ i')
-              (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₂ i'} e .SemiMod._⇒_.preserve-+
-                 {Semimodule.ε (Fib (τ₁ [+] τ₂) sidx)} {⟦ sc ⟧tm .famf .transf gi .func g})
-              (F.trans (τ₁ [+] τ₂) (inj₂ i')
-                 (F.+-cong (τ₁ [+] τ₂) (inj₂ i') (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₂ i'} e .SemiMod._⇒_.preserve-ze)
-                                                 (F.refl (τ₁ [+] τ₂) (inj₂ i')))
-                 (m-lunit (Fib (τ₁ [+] τ₂) (inj₂ i')))))
+                 (Semimodule.refl (FibC Γ gi) {g}) ,
+               F.refl (τ₁ [+] τ₂) (inj₂ i')))
 
     branch-eq : F._≈_ τ i₁ (SC .famf .transf (gi , inj₂ i') .func Q) (F._+_ τ i₁ B (ec τ i₁ a_s))
     branch-eq =
       F.trans τ i₁ (SC .famf .transf (gi , inj₂ i') .SemiMod._⇒_.func-resp-≈ {Q} {g , SG} Q≈)
-        (F.+-cong τ i₁
-           (⟦ t₂ ⟧tm .famf .transf (gi , i') .SemiMod._⇒_.func-resp-≈
-              (m-runit (FibC Γ gi) ,
-               F.trans τ₂ i' (m-lunit (Fib τ₂ i')) (m-lunit (Fib τ₂ i'))))
-           (elim-const τ .at i₁ .SemiMod._⇒_.func-resp-≈ +-runit))
+                   (elimF-elt {⟦ Γ ⟧ctxt} {⟦ τ₂ ⟧} {⟦ τ ⟧} (elim-const τ) ⟦ t₂ ⟧tm {gi} {i'} g a_s y_v)
 fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} c₁ c₂) {γ = γ} (⇓-pair {v = v} {u = u} {R = R₁} {T = R₂} D₁ D₂) {gi} rγ s x g rel =
   root , (RelF-resp σ r₁ (λ k → ≈-sym (comp₁ k)) den₁ IH₁ , RelF-resp τ r₂ (λ k → ≈-sym (comp₂ k)) den₂ IH₂)
   where
@@ -1475,10 +1513,11 @@ fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} c) {γ = γ} (⇓-fst 
   o'₀ = ≈-trans (prop._∧_.proj₁ IH) (+-cong (prop._∧_.proj₁ (ec-pair {σ} {τ} i (proj₂ ij) s)) (≈-refl {a₀}))
   G-form : F._≈_ σ i (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (F._+_ σ i m₁ (ec σ i a₀))
   G-form =
-    F.+-cong σ i
-      (F.trans σ i (m-lunit (Fib σ i) {F._+_ σ i (F.ε σ i) (F._+_ σ i (F.ε σ i) m₁)})
-        (F.trans σ i (m-lunit (Fib σ i) {F._+_ σ i (F.ε σ i) m₁}) (m-lunit (Fib σ i) {m₁})))
-      (elim-const σ .at i .SemiMod._⇒_.func-resp-≈ {(ε +ₛ a₀) +ₛ ε} {a₀} (≈-trans +-runit +-lunit))
+    F.trans σ i (FD.elimF (elim-const σ) body .famf .transf (gi , ij) .SemiMod._⇒_.func-resp-≈
+                   (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [×] τ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))
+                (elimF-elt {⟦ Γ ⟧ctxt} {HasProducts.prod FD.products ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (elim-const σ) body {gi} {ij} g a₀ (proj₂ Mg))
+    where body = Category._∘_ FD.cat (HasProducts.p₁ FD.products {⟦ σ ⟧} {⟦ τ ⟧})
+                                     (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {HasProducts.prod FD.products ⟦ σ ⟧ ⟦ τ ⟧})
 fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} c) {γ = γ} (⇓-snd {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   RelF-resp τ r₂ (λ k → ≈-sym (proj-op {γ = γ} u {width v} {width u} (M.p₂ {width v} {width u}) R' s x k))
     (proj-den τ j s a₀ (o' zero) (proj₂ (proj₂ (F._+_ (σ [×] τ) ij (ec (σ [×] τ) ij s) Mg)))
@@ -1498,10 +1537,11 @@ fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} c) {γ = γ} (⇓-snd 
   o'₀ = ≈-trans (prop._∧_.proj₁ IH) (+-cong (prop._∧_.proj₁ (ec-pair {σ} {τ} (proj₁ ij) j s)) (≈-refl {a₀}))
   G-form : F._≈_ τ j (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (F._+_ τ j m₂ (ec τ j a₀))
   G-form =
-    F.+-cong τ j
-      (F.trans τ j (m-lunit (Fib τ j) {F._+_ τ j (F.ε τ j) (F._+_ τ j (F.ε τ j) m₂)})
-        (F.trans τ j (m-lunit (Fib τ j) {F._+_ τ j (F.ε τ j) m₂}) (m-lunit (Fib τ j) {m₂})))
-      (elim-const τ .at j .SemiMod._⇒_.func-resp-≈ {(ε +ₛ a₀) +ₛ ε} {a₀} (≈-trans +-runit +-lunit))
+    F.trans τ j (FD.elimF (elim-const τ) body .famf .transf (gi , ij) .SemiMod._⇒_.func-resp-≈
+                   (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [×] τ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))
+                (elimF-elt {⟦ Γ ⟧ctxt} {HasProducts.prod FD.products ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (elim-const τ) body {gi} {ij} g a₀ (proj₂ Mg))
+    where body = Category._∘_ FD.cat (HasProducts.p₂ FD.products {⟦ σ ⟧} {⟦ τ ⟧})
+                                     (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {HasProducts.prod FD.products ⟦ σ ⟧ ⟦ τ ⟧})
 fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} c) {γ = γ} ⇓-lam {gi} rγ s x g rel =
   root , clause
   where
@@ -1630,35 +1670,26 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
     G-form : F._≈_ τ i₁ (⟦ app M N ⟧tm .famf .transf gi .func g)
                (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ec τ i₁ a))
     G-form =
-      F.+-cong τ i₁
-        (F.+-cong τ i₁
-           (evalΠj .SemiMod._⇒_.func-resp-≈
-              {P._+_ (P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))) P.ε} {m}
-              (P.trans {P._+_ (P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))) P.ε} {P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))} {m}
-                 (m-runit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))})
-                 (P.trans {P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))} {P._+_ P.ε (P._+_ P.ε m)} {m}
-                    (m-lunit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {P._+_ P.ε (P._+_ P.ε m)})
-                    (P.trans {P._+_ P.ε (P._+_ P.ε m)} {P._+_ P.ε m} {m}
-                       (m-lunit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {P._+_ P.ε m})
-                       (m-lunit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {m})))))
-           (f .famf .transf j .SemiMod._⇒_.func-resp-≈
-              {F._+_ σ j (F.ε σ j) (⟦ N ⟧tm .famf .transf gi .func gεε)} {yN}
-              (F.trans σ j (m-lunit (Fib σ j) {⟦ N ⟧tm .famf .transf gi .func gεε})
-                 (⟦ N ⟧tm .famf .transf gi .SemiMod._⇒_.func-resp-≈ {gεε} {g}
-                    (Semimodule.trans (FibC Γ gi) (m-runit (FibC Γ gi) {Semimodule._+_ (FibC Γ gi) g (Semimodule.ε (FibC Γ gi))})
-                                                  (m-runit (FibC Γ gi) {g}))))))
-        (elim-const τ .at i₁ .SemiMod._⇒_.func-resp-≈ {(ε +ₛ a) +ₛ ε} {a} (≈-trans +-runit +-lunit))
+      F.trans τ i₁ (FD.elimF (elim-const τ) body .famf .transf (gi , f) .SemiMod._⇒_.func-resp-≈
+                      {HasProducts.pair FD.products (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ M ⟧tm .famf .transf gi .func g} {g , (a , m)}
+                      (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [→] τ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ M ⟧tm gi g))
+      (F.trans τ i₁ (elimF-elt {⟦ Γ ⟧ctxt} {Ex} {⟦ τ ⟧} (elim-const τ) body {gi} {f} g a m)
+                    (F.+-cong τ i₁ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .SemiMod._⇒_.func-resp-≈
+                                      {HasProducts.pair FD.products (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {Ex})
+                                         (Category._∘_ FD.cat ⟦ N ⟧tm (HasProducts.p₁ FD.products {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
+                                      {m , yN}
+                                      (Fpair-elt {HasProducts.prod FD.products ⟦ Γ ⟧ctxt Ex} {Ex} {⟦ σ ⟧}
+                                         (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {Ex})
+                                         (Category._∘_ FD.cat ⟦ N ⟧tm (HasProducts.p₁ FD.products {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
+                                   (F.refl τ i₁)))
       where
-      gεε = Semimodule._+_ (FibC Γ gi) (Semimodule._+_ (FibC Γ gi) g (Semimodule.ε (FibC Γ gi))) (Semimodule.ε (FibC Γ gi))
+      Ex = HasWeakExponentials.exp model.SemiModExp ⟦ σ ⟧ ⟦ τ ⟧
+      body = Category._∘_ FD.cat (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
+               (HasProducts.pair FD.products (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {Ex})
+                                             (Category._∘_ FD.cat ⟦ N ⟧tm (HasProducts.p₁ FD.products {⟦ Γ ⟧ctxt} {Ex})))
 
     ec-part : F._≈_ τ i₁ (ec τ i₁ ((w ·ₛ s) +ₛ o zero)) (F._+_ τ i₁ (ec τ i₁ s) (ec τ i₁ a))
-    ec-part =
-      F.trans τ i₁ (elim-const τ .at i₁ .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o₀))
-      (F.trans τ i₁ (ec-linear τ i₁ (w ·ₛ s) ((w ·ₛ s) +ₛ a))
-      (F.trans τ i₁ (F.+-cong τ i₁ (ec-w τ i₁ s) (F.trans τ i₁ (ec-linear τ i₁ (w ·ₛ s) a)
-                                                              (F.+-cong τ i₁ (ec-w τ i₁ s) (F.refl τ i₁))))
-      (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
-                    (F.+-cong τ i₁ (ec-root τ i₁ s) (F.refl τ i₁)))))
+    ec-part = F.trans τ i₁ (elim-const τ .at i₁ .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o₀)) (ec-double τ i₁ s a)
 
     eval-part : F._≈_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                            (evalΠj .func m)
