@@ -281,31 +281,31 @@ mutual
     ⇓-inl    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v R} →
                γ , t ⇓ v [ R ] →
                γ , inl {τ₂ = τ₂} t ⇓ inl v
-                 [ of-cols (M.one-result (M.id-linear (input-width γ)) (built-out γ (width v))
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (built-out γ (width v))
                                          (M.in₂ {1}) (cols R)) ]
     ⇓-inr    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₂} {v R} →
                γ , t ⇓ v [ R ] →
                γ , inr {τ₁ = τ₁} t ⇓ inr v
-                 [ of-cols (M.one-result (M.id-linear (input-width γ)) (built-out γ (width v))
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (built-out γ (width v))
                                          (M.in₂ {1}) (cols R)) ]
     ⇓-case-l : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R T} →
                γ , s ⇓ inl v [ R ] → γ · v , t₁ ⇓ u [ T ] →
                γ , case s t₁ t₂ ⇓ u
-                 [ of-cols (M.seq-result (M.id-linear (input-width γ)) (branch-route γ v)
+                 [ of-cols (M.rule₂-result (M.id-linear (input-width γ)) (branch-route γ v)
                                          (branch-link γ v) (λ _ → M.εₘ) M.εₘ M.I
                                          (cols R) (cols T)) ]
     ⇓-case-r : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R T} →
                γ , s ⇓ inr v [ R ] → γ · v , t₂ ⇓ u [ T ] →
                γ , case s t₁ t₂ ⇓ u
-                 [ of-cols (M.seq-result (M.id-linear (input-width γ)) (branch-route γ v)
+                 [ of-cols (M.rule₂-result (M.id-linear (input-width γ)) (branch-route γ v)
                                          (branch-link γ v) (λ _ → M.εₘ) M.εₘ M.I
                                          (cols R) (cols T)) ]
     ⇓-pair   : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R T} →
                γ , s ⇓ v [ R ] → γ , t ⇓ u [ T ] →
                γ , pair s t ⇓ pair v u
-                 [ of-cols (M.seq-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
+                 [ of-cols (M.rule₂-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
                                          (M.no-link (input-width γ) (width v))
                                          (built-out γ (width v + width u))
                                          (M.in₂ {1} ∘ M.in₁ {width v} {width u})
@@ -314,43 +314,43 @@ mutual
     ⇓-fst    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
                γ , fst t ⇓ v
-                 [ of-cols (M.one-result (M.id-linear (input-width γ)) (elim-out γ (width v))
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ (width v))
                                          (proj-up {width v} {width u} (p₁ {width v} {width u})) (cols R)) ]
     ⇓-snd    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
                γ , snd t ⇓ u
-                 [ of-cols (M.one-result (M.id-linear (input-width γ)) (elim-out γ (width u))
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ (width u))
                                          (proj-up {width v} {width u} (p₂ {width v} {width u})) (cols R)) ]
     ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} →
                γ , lam t ⇓ clo γ t [ of-cols (lam-out γ t) ]
     ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R T U} →
                γ , s ⇓ clo {Γ'} γ' t' [ R ] → γ , t ⇓ v [ T ] → γ' · v , t' ⇓ u [ U ] →
                γ , app s t ⇓ u
-                 [ of-cols (M.seq3-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
+                 [ of-cols (M.rule₃-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
                                           (body-route γ γ' v) (body-link₁ γ' v) (body-link₂ γ' v)
                                           (λ _ → M.εₘ) M.εₘ M.εₘ M.I
                                           (cols R) (cols T) (cols U)) ]
     ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] →
                γ , bop ω Ms ⇓ const (op-fun ω .func vs)
-                 [ of-cols (M.one-result (M.id-linear (input-width γ))
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ))
                                          (prim-out γ (width (const (op-fun ω .func vs))))
                                          (op-deps ω .func vs) (cols R)) ]
     ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] →
                γ , brel ω Ms ⇓ bool→val (rel-pred ω .func vs)
-                 [ of-cols (M.one-result (M.id-linear (input-width γ))
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ))
                                          (prim-out γ (width (bool→val (rel-pred ω .func vs))))
                                          (brel-deps ω vs (rel-pred ω .func vs)) (cols R)) ]
     ⇓-roll   : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v R} →
                γ , t ⇓ v [ R ] →
                γ , roll {τ = τ} t ⇓ roll {τ} v
-                 [ of-cols (M.one-result (M.id-linear (input-width γ)) (λ _ → M.εₘ) M.I (cols R)) ]
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (λ _ → M.εₘ) M.I (cols R)) ]
     ⇓-fold   : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
                {v u R F} →
                γ , t ⇓ v [ R ] → Map γ {τ} {σ} s (var zero) v u F →
                γ , fold s t ⇓ u
-                 [ of-cols (M.seq-result (M.id-linear (input-width γ)) (fold-route γ (width v))
+                 [ of-cols (M.rule₂-result (M.id-linear (input-width γ)) (fold-route γ (width v))
                                          (fold-link γ (width v)) (λ _ → M.εₘ) M.εₘ M.I
                                          (cols R) F) ]
 
@@ -361,7 +361,7 @@ mutual
     _∷_ : ∀ {i is v vs R Rs} {M : Γ ⊢ base i} {Ms : Every (λ s → Γ ⊢ base s) is} →
           γ , M ⇓ const v [ R ] → γ , Ms ⇓s vs [ Rs ] →
           γ , (M ∷ Ms) ⇓s (v , vs)
-            [ of-cols (M.seq-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
+            [ of-cols (M.rule₂-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
                                     (M.no-link (input-width γ) (width (const v)))
                                     (λ _ → M.εₘ)
                                     (M.in₁ {width (const v)} {bases-width is})
@@ -377,7 +377,7 @@ mutual
     m-rec   : ∀ {w w' u F T} →
               Map γ s τ₀ w w' F → γ · w' , s ⇓ u [ T ] →
               Map γ s (var zero) (roll w) u
-                  (M.seq-result (M.id-linear (inputM-width γ (width w))) (rec-route γ w')
+                  (M.rule₂-result (M.id-linear (inputM-width γ (width w))) (rec-route γ w')
                                 (rec-link γ w') (λ _ → M.εₘ) M.εₘ M.I F (cols T))
     m-unit  : ∀ {v} → Map γ s unit v v (map-leaf γ (width v))
     m-base  : ∀ {b v} → Map γ s (base b) v v (map-leaf γ (width v))
@@ -385,17 +385,17 @@ mutual
     m-inl   : ∀ {σ₁ σ₂ v v' F} →
               Map γ s σ₁ v v' F →
               Map γ s (σ₁ [+] σ₂) (inl v) (inl v')
-                  (M.one-result (input-route γ (p₂ {1} {width v}))
+                  (M.rule₁-result (input-route γ (p₂ {1} {width v}))
                                 (map-built-out γ (width v) (width v')) (M.in₂ {1}) F)
     m-inr   : ∀ {σ₁ σ₂ v v' F} →
               Map γ s σ₂ v v' F →
               Map γ s (σ₁ [+] σ₂) (inr v) (inr v')
-                  (M.one-result (input-route γ (p₂ {1} {width v}))
+                  (M.rule₁-result (input-route γ (p₂ {1} {width v}))
                                 (map-built-out γ (width v) (width v')) (M.in₂ {1}) F)
     m-pair  : ∀ {σ₁ σ₂ v v' u u' F G} →
               Map γ s σ₁ v v' F → Map γ s σ₂ u u' G →
               Map γ s (σ₁ [×] σ₂) (pair v u) (pair v' u')
-                  (M.seq-result (input-route γ (p₁ {width v} {width u} ∘ p₂ {1} {width v + width u}))
+                  (M.rule₂-result (input-route γ (p₁ {width v} {width u} ∘ p₂ {1} {width v + width u}))
                                 (input-route γ (p₂ {width v} {width u} ∘ p₂ {1} {width v + width u}))
                                 (M.no-link (inputM-width γ (width u)) (width v'))
                                 (map-built-out γ (width v + width u) (width v' + width u'))
@@ -406,7 +406,7 @@ mutual
               Map γ s (μ τ')
                   (roll (subst Val (unfold₁-inst τ' (μ τ₀)) w))
                   (roll (subst Val (unfold₁-inst τ' σr) w'))
-                  (M.one-result
+                  (M.rule₁-result
                      (input-route γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I))
                      (λ _ → M.εₘ)
                      (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I) F)

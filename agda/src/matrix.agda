@@ -496,34 +496,34 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   -- The column a rule contributes at each input position, as a function of its premises' columns.
   -- Used both to state a rule's relation and to state what its block collapses to.
-  one-result : ∀ {ℓ'} {Inp' : Set ℓ'} {iw' : Inp' → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₀} →
+  rule₁-result : ∀ {ℓ'} {Inp' : Set ℓ'} {iw' : Inp' → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₀} →
                Linear iw' iw → ((i : Inp) → Matrix n (iw i)) → Matrix n n₀ →
                ((i' : Inp') → Matrix n₀ (iw' i')) → (i : Inp) → Matrix n (iw i)
-  one-result route out up c i = out i +ₘ (up ∘ route .ap c i)
+  rule₁-result route out up c i = out i +ₘ (up ∘ route .ap c i)
 
-  seq-result : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
+  rule₂-result : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
                {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₁ n₂} →
                Linear iw₁ iw → Linear iw₂ iw → Link iw₂ n₁ →
                ((i : Inp) → Matrix n (iw i)) → Matrix n n₁ → Matrix n n₂ →
                ((i' : Inp₁) → Matrix n₁ (iw₁ i')) → ((i' : Inp₂) → Matrix n₂ (iw₂ i')) →
                (i : Inp) → Matrix n (iw i)
-  seq-result r₁ r₂ l out u₁ u₂ c₁ c₂ i =
-    one-result r₁ out u₁ c₁ i +ₘ (u₂ ∘ extend r₂ l (λ j → r₁ .ap c₁ j) .ap c₂ i)
+  rule₂-result r₁ r₂ l out u₁ u₂ c₁ c₂ i =
+    rule₁-result r₁ out u₁ c₁ i +ₘ (u₂ ∘ extend r₂ l (λ j → r₁ .ap c₁ j) .ap c₂ i)
 
-  seq3-result : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
+  rule₃-result : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
                 {Inp₃ : Set ℓ'} {iw₃ : Inp₃ → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₁ n₂ n₃} →
                 Linear iw₁ iw → Linear iw₂ iw → Linear iw₃ iw → Link iw₃ n₁ → Link iw₃ n₂ →
                 ((i : Inp) → Matrix n (iw i)) → Matrix n n₁ → Matrix n n₂ → Matrix n n₃ →
                 ((i' : Inp₁) → Matrix n₁ (iw₁ i')) → ((i' : Inp₂) → Matrix n₂ (iw₂ i')) →
                 ((i' : Inp₃) → Matrix n₃ (iw₃ i')) → (i : Inp) → Matrix n (iw i)
-  seq3-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁ c₂ c₃ i =
-    (one-result r₁ out u₁ c₁ i +ₘ (u₂ ∘ r₂ .ap c₂ i))
+  rule₃-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁ c₂ c₃ i =
+    (rule₁-result r₁ out u₁ c₁ i +ₘ (u₂ ∘ r₂ .ap c₂ i))
     +ₘ (u₃ ∘ extend (extend r₃ l₁ (λ j → r₁ .ap c₁ j)) l₂ (λ j → r₂ .ap c₂ j) .ap c₃ i)
 
   one-result-cong : ∀ {ℓ'} {Inp' : Set ℓ'} {iw' : Inp' → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₀}
                     (route : Linear iw' iw) {out : (i : Inp) → Matrix n (iw i)} {up : Matrix n n₀}
                     {c c' : (i' : Inp') → Matrix n₀ (iw' i')} → (∀ i' → c i' ≈ₘ c' i') →
-                    ∀ i → one-result route out up c i ≈ₘ one-result route out up c' i
+                    ∀ i → rule₁-result route out up c i ≈ₘ rule₁-result route out up c' i
   one-result-cong route e i = +ₘ-cong ≈ₘ-refl (∘-cong₂ (route .ap-cong e i))
 
   seq-result-cong : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
@@ -533,8 +533,8 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
                     {c₁ c₁' : (i' : Inp₁) → Matrix n₁ (iw₁ i')}
                     {c₂ c₂' : (i' : Inp₂) → Matrix n₂ (iw₂ i')} →
                     (∀ i' → c₁ i' ≈ₘ c₁' i') → (∀ i' → c₂ i' ≈ₘ c₂' i') →
-                    ∀ i → seq-result r₁ r₂ l out u₁ u₂ c₁ c₂ i
-                          ≈ₘ seq-result r₁ r₂ l out u₁ u₂ c₁' c₂' i
+                    ∀ i → rule₂-result r₁ r₂ l out u₁ u₂ c₁ c₂ i
+                          ≈ₘ rule₂-result r₁ r₂ l out u₁ u₂ c₁' c₂' i
   seq-result-cong r₁ r₂ l {out = out} {u₁ = u₁} e₁ e₂ i =
     +ₘ-cong (one-result-cong r₁ {out = out} {up = u₁} e₁ i)
             (∘-cong₂ (+ₘ-cong (r₂ .ap-cong e₂ i)
@@ -551,8 +551,8 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
                      {c₃ c₃' : (i' : Inp₃) → Matrix n₃ (iw₃ i')} →
                      (∀ i' → c₁ i' ≈ₘ c₁' i') → (∀ i' → c₂ i' ≈ₘ c₂' i') →
                      (∀ i' → c₃ i' ≈ₘ c₃' i') →
-                     ∀ i → seq3-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁ c₂ c₃ i
-                           ≈ₘ seq3-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁' c₂' c₃' i
+                     ∀ i → rule₃-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁ c₂ c₃ i
+                           ≈ₘ rule₃-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁' c₂' c₃' i
   seq3-result-cong r₁ r₂ r₃ l₁ l₂ {out = out} {u₁ = u₁} e₁ e₂ e₃ i =
     +ₘ-cong (+ₘ-cong (one-result-cong r₁ {out = out} {up = u₁} e₁ i) (∘-cong₂ (r₂ .ap-cong e₂ i)))
             (∘-cong₂ (+ₘ-cong (+ₘ-cong (r₃ .ap-cong e₃ i)

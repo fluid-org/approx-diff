@@ -33,7 +33,7 @@ private
   module M = matrix.Mat two.semiring
 
 open M using (Linear; Link; ap; ap-+; ap-∘; ap-cong; at; at-+; at-∘; at-cong;
-              id-linear; no-link; extend; one-result; seq-result; seq3-result)
+              id-linear; no-link; extend; rule₁-result; rule₂-result; rule₃-result)
 
 open import categories using (Category)
 open Category M.cat using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; ≈-refl; ≈-sym; ≈-trans)
@@ -341,7 +341,7 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   fo-forward : Fwd fo-graph
   fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) gr-forward
 
--- One graph's vertices being hidden inside a larger graph. The state records the graph's own
+-- Rule₁ graph's vertices being hidden inside a larger graph. The state records the graph's own
 -- entries as they accumulate; Φ maps the graph's input columns to the ambient graph's input
 -- columns, which for a premise evaluated in a substituted environment is not the identity.
 module Sweep
@@ -555,7 +555,7 @@ module Frozen
 
 
 -- A rule with no premises: the root and the inputs, and nothing between.
-module Leaf
+module Rule₀
   {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (fo-root : Bool)
   (out-root : (i : Inp) → M.Matrix n (iw i))
   where
@@ -582,7 +582,7 @@ module Leaf
 
 -- A rule with one premise: the conclusion's root is the premise's root through up-root, offset by
 -- out-root, and the premise's inputs are the conclusion's through route.
-module One
+module Rule₁
   {Inp : Set ℓ} {iw : Inp → ℕ}
   {Inp' : Set ℓ} {iw' : Inp' → ℕ} {n₀ : ℕ} (B : Graph Inp' iw' n₀)
   {n : ℕ}
@@ -654,7 +654,7 @@ module One
     plumb i = ≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er)
                      (≡-cong (b (inj₂ root) ∷_) (map-map b inj₁ (Graph.paths B)))
 
-  agree : ∀ i → collapse E i ≈ one-result route out-root up-root (collapse B) i
+  agree : ∀ i → collapse E i ≈ rule₁-result route out-root up-root (collapse B) i
   agree i =
     ≈-trans (≈-of-≡ (plumb i))
             (≈-trans (done .S.tgt-ok root i)
@@ -662,7 +662,7 @@ module One
 
 -- Two premises in sequence: each reaches the conclusion's inputs through its own routing, and the
 -- second also reaches the first premise's root through link. Both roots feed the conclusion's.
-module Seq
+module Rule₂
   {Inp : Set ℓ} {iw : Inp → ℕ}
   {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Graph Inp₁ iw₁ n₁)
   {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Graph Inp₂ iw₂ n₂)
@@ -856,7 +856,7 @@ module Seq
                         (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂)))
 
   agree : ∀ i → collapse E i
-                ≈ seq-result route₁ route₂ link out-root up₁ up₂ (collapse B₁) (collapse B₂) i
+                ≈ rule₂-result route₁ route₂ link out-root up₁ up₂ (collapse B₁) (collapse B₂) i
   agree i =
     ≈-trans (≈-of-≡ (plumb i))
             (≈-trans (done₂ .S2.tgt-ok root i)
@@ -864,7 +864,7 @@ module Seq
 
 -- Three premises in sequence, the third reaching both earlier roots. The first two have no entries
 -- between them.
-module Seq3
+module Rule₃
   {Inp : Set ℓ} {iw : Inp → ℕ}
   {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Graph Inp₁ iw₁ n₁)
   {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Graph Inp₂ iw₂ n₂)
@@ -1199,7 +1199,7 @@ module Seq3
                                (hide-all-++ (vw E) G₁ l₂ l₃)))
 
   agree : ∀ i → collapse E i
-                ≈ seq3-result route₁ route₂ route₃ link₁ link₂ out-root up₁ up₂ up₃
+                ≈ rule₃-result route₁ route₂ route₃ link₁ link₂ out-root up₁ up₂ up₃
                               (collapse B₁) (collapse B₂) (collapse B₃) i
   agree i =
     ≈-trans (≈-of-≡ (plumb i))
