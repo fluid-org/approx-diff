@@ -1,11 +1,14 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.Bool using (Bool; true; not)
-open import Data.Empty using (⊥)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ)
 open import Data.Nat using (ℕ)
+open import Data.Product using (Σ; _×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
+import Data.List.Relation.Binary.Permutation.Propositional as ↭
+open ↭ using (_↭_)
 open import Data.Unit.Polymorphic using () renaming (⊤ to Unit; tt to unit)
 open import Level using (Level; Lift) renaming (suc to lsuc)
 open import Relation.Binary.Definitions using (DecidableEquality)
@@ -47,6 +50,10 @@ sum-< R S (inj₁ p) (inj₁ q) = R p q
 sum-< R S (inj₁ _) (inj₂ _) = Unit
 sum-< R S (inj₂ _) (inj₁ _) = Void
 sum-< R S (inj₂ p) (inj₂ q) = S p q
+
+none-order : {A : Set ℓ} → IsStrictOrder {A = A} (λ _ _ → Void)
+none-order .IsStrictOrder.trans _ _ _ ()
+none-order .IsStrictOrder.asym _ _ ()
 
 sum-<-order : {A B : Set ℓ} {R : A → A → Set ℓ} {S : B → B → Set ℓ} →
               IsStrictOrder R → IsStrictOrder S → IsStrictOrder (sum-< R S)
@@ -122,6 +129,110 @@ hide-all-++ : {V : Set ℓ} (vw : V → ℕ) (G : Entries vw) (xs ys : List V) �
 hide-all-++ vw G []       ys = ≡-refl
 hide-all-++ vw G (x ∷ xs) ys = hide-all-++ vw (hide vw G x) xs ys
 
+-- Witnesses for non-zero entries of sums and composites.
+private
+  Σ-I : ∀ {n} (f : Fin n → two.Two) → M.Σ f ≡ two.I → Σ (Fin n) (λ k → f k ≡ two.I)
+  Σ-I {ℕ.suc n} f h with two.⊔-I (f Fin.zero) (M.Σ (λ k → f (Fin.suc k))) h
+  ... | inj₁ e = Fin.zero , e
+  ... | inj₂ e with Σ-I (λ k → f (Fin.suc k)) e
+  ...   | (k , e') = Fin.suc k , e'
+
+  ∘-I : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l → (A ∘ B) i l ≡ two.I →
+        Σ (Fin n) (λ j → (A i j ≡ two.I) × (B j l ≡ two.I))
+  ∘-I A B i l h with Σ-I (λ j → A i j two.⊓ B j l) h
+  ... | (j , e) with two.⊓-I (A i j) (B j l) e
+  ...   | (e₁ , e₂) = j , (e₁ , e₂)
+
+  Σ-I-at : ∀ {n} (f : Fin n → two.Two) (k : Fin n) → f k ≡ two.I → M.Σ f ≡ two.I
+  Σ-I-at f Fin.zero    h = two.⊔-I-inl h
+  Σ-I-at f (Fin.suc k) h = two.⊔-I-inr (f Fin.zero) (Σ-I-at (λ i → f (Fin.suc i)) k h)
+
+  ∘-I-at : ∀ {m n k} (A : M.Matrix m n) (B : M.Matrix n k) i l j →
+           A i j ≡ two.I → B j l ≡ two.I → (A ∘ B) i l ≡ two.I
+  ∘-I-at A B i l j h₁ h₂ = Σ-I-at (λ j' → A i j' two.⊓ B j' l) j (two.⊓-I-pair h₁ h₂)
+
+-- Consequences of the forward-edge property, over an abstract ordered vertex set. Hiding preserves
+-- it, since a new entry composes entries through the hidden vertex; hiding two vertices commutes,
+-- since an entry of one order decomposes into a term also present in the other, except the residual
+-- routed through an entry in each direction between the two, which the order rules out; and hiding
+-- a list is therefore independent of its order, adjacent swaps being commutation pushed through the
+-- rest of the fold.
+module Ordered {V : Set ℓ} (vw : V → ℕ) (_<_ : V → V → Set ℓ) (o : IsStrictOrder _<_) where
+
+  open IsStrictOrder o using (trans; asym)
+
+  Fwd : Entries vw → Set ℓ
+  Fwd G = ∀ x y (i : Fin (vw y)) (j : Fin (vw x)) → G x y i j ≡ two.I → x < y
+
+  private
+    _≐e_ : Entries vw → Entries vw → Set ℓ
+    G ≐e G' = ∀ x y (i : Fin (vw y)) (j : Fin (vw x)) → G x y i j ≡ G' x y i j
+
+    fold-cong : ∀ {G G'} rs → G ≐e G' → hide-all vw G rs ≐e hide-all vw G' rs
+    fold-cong []       e = e
+    fold-cong (r ∷ rs) e =
+      fold-cong rs (λ x y i j → ≡-cong₂ two._⊔_ (e x y i j)
+                                 (M.Σ-cong-≡ (λ k → ≡-cong₂ two._⊓_ (e r y i k) (e x r k j))))
+
+  fwd-hide : ∀ {G} r → Fwd G → Fwd (hide vw G r)
+  fwd-hide {G} r fwd x y i j e with two.⊔-I (G x y i j) ((G r y ∘ G x r) i j) e
+  ... | inj₁ a = fwd x y i j a
+  ... | inj₂ a with ∘-I (G r y) (G x r) i j a
+  ...   | (k , (e₁ , e₂)) = trans x r y (fwd x r k j e₂) (fwd r y i k e₁)
+
+  fwd-hide-all : ∀ {G} rs → Fwd G → Fwd (hide-all vw G rs)
+  fwd-hide-all []       fwd = fwd
+  fwd-hide-all (r ∷ rs) fwd = fwd-hide-all rs (fwd-hide r fwd)
+
+  private
+    into : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (vw y)) (j : Fin (vw x)) →
+           hide vw (hide vw G r) r' x y i j ≡ two.I →
+           hide vw (hide vw G r') r x y i j ≡ two.I
+    into {G} fwd r r' x y i j e
+      with two.⊔-I (hide vw G r x y i j) ((hide vw G r r' y ∘ hide vw G r x r') i j) e
+    into {G} fwd r r' x y i j e | inj₁ a with two.⊔-I (G x y i j) ((G r y ∘ G x r) i j) a
+    ... | inj₁ a₁ = two.⊔-I-inl (two.⊔-I-inl a₁)
+    ... | inj₂ a₂ with ∘-I (G r y) (G x r) i j a₂
+    ...   | (k , (e₁ , e₂)) =
+      two.⊔-I-inr (hide vw G r' x y i j)
+        (∘-I-at (hide vw G r' r y) (hide vw G r' x r) i j k (two.⊔-I-inl e₁) (two.⊔-I-inl e₂))
+    into {G} fwd r r' x y i j e | inj₂ b
+      with ∘-I (hide vw G r r' y) (hide vw G r x r') i j b
+    ... | (m , (c , d)) with two.⊔-I (G r' y i m) ((G r y ∘ G r' r) i m) c
+                           | two.⊔-I (G x r' m j) ((G r r' ∘ G x r) m j) d
+    ...   | inj₁ c₁ | inj₁ d₁ =
+      two.⊔-I-inl (two.⊔-I-inr (G x y i j) (∘-I-at (G r' y) (G x r') i j m c₁ d₁))
+    ...   | inj₁ c₁ | inj₂ d₂ with ∘-I (G r r') (G x r) m j d₂
+    ...     | (k , (d₁' , d₂')) =
+      two.⊔-I-inr (hide vw G r' x y i j)
+        (∘-I-at (hide vw G r' r y) (hide vw G r' x r) i j k
+          (two.⊔-I-inr (G r y i k) (∘-I-at (G r' y) (G r r') i k m c₁ d₁'))
+          (two.⊔-I-inl d₂'))
+    into {G} fwd r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₁ d₁
+      with ∘-I (G r y) (G r' r) i m c₂
+    ...     | (k , (c₁' , c₂')) =
+      two.⊔-I-inr (hide vw G r' x y i j)
+        (∘-I-at (hide vw G r' r y) (hide vw G r' x r) i j k
+          (two.⊔-I-inl c₁')
+          (two.⊔-I-inr (G x r k j) (∘-I-at (G r' r) (G x r') k j m c₂' d₁)))
+    into {G} fwd r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₂ d₂
+      with ∘-I (G r y) (G r' r) i m c₂ | ∘-I (G r r') (G x r) m j d₂
+    ...     | (k , (_ , c₂')) | (k' , (d₁' , _)) =
+      ⊥-elim (asym r' r (fwd r' r k m c₂') (fwd r r' m k' d₁'))
+
+    comm : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (vw y)) (j : Fin (vw x)) →
+           hide vw (hide vw G r) r' x y i j ≡ hide vw (hide vw G r') r x y i j
+    comm fwd r r' x y i j = two.I-antisym (into fwd r r' x y i j) (into fwd r' r x y i j)
+
+  hide-all-perm : ∀ {G rs rs'} → Fwd G → rs ↭ rs' → hide-all vw G rs ≐e hide-all vw G rs'
+  hide-all-perm fwd ↭.refl x y i j = ≡-refl
+  hide-all-perm fwd (↭.prep r p) = hide-all-perm (fwd-hide r fwd) p
+  hide-all-perm fwd (↭.swap {xs = rs} a b p) x y i j =
+    ≡-trans (fold-cong rs (comm fwd a b) x y i j)
+            (hide-all-perm (fwd-hide a (fwd-hide b fwd)) p x y i j)
+  hide-all-perm fwd (↭.trans p q) x y i j =
+    ≡-trans (hide-all-perm fwd p x y i j) (hide-all-perm fwd q x y i j)
+
 module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   open Graph B
 
@@ -151,11 +262,7 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   _<⁺_ = sum-< _<_ (λ _ _ → Void)
 
   <⁺-order : IsStrictOrder _<⁺_
-  <⁺-order = sum-<-order <-order empty-order
-    where
-    empty-order : IsStrictOrder {A = Root} (λ _ _ → Void)
-    empty-order .IsStrictOrder.trans _ _ _ ()
-    empty-order .IsStrictOrder.asym _ _ ()
+  <⁺-order = sum-<-order <-order none-order
 
   <⁺-inside : ∀ p q (k : Fin (width⁺ q)) (l : Fin (width⁺ p)) →
               inside⁺ p q k l ≡ two.I → p <⁺ q
@@ -191,6 +298,28 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   -- live vertices are the inputs, the root and FO.
   fo-graph : Entries vw
   fo-graph = hide-all vw gr (map (λ q → inj₂ (inj₁ q)) fo-hidden)
+
+  -- The completion order on all the vertices: the inputs first, then the interior, then the root.
+  _<ᵥ_ : V → V → Set ℓ
+  _<ᵥ_ = sum-< (λ _ _ → Void) _<⁺_
+
+  <ᵥ-order : IsStrictOrder _<ᵥ_
+  <ᵥ-order = sum-<-order none-order <⁺-order
+
+  private
+    module O = Ordered vw _<ᵥ_ <ᵥ-order
+
+  open O public using (Fwd; fwd-hide; fwd-hide-all; hide-all-perm)
+
+  -- Every entry of a graph runs strictly forward, and the first-order graph inherits it.
+  gr-forward : Fwd gr
+  gr-forward (inj₁ i) (inj₂ q) k l h = unit
+  gr-forward (inj₂ p) (inj₂ q) k l h = <⁺-inside p q k l h
+  gr-forward (inj₁ i) (inj₁ _) k l ()
+  gr-forward (inj₂ p) (inj₁ _) k l ()
+
+  fo-forward : Fwd fo-graph
+  fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) gr-forward
 
 -- One graph's vertices being hidden inside a larger graph. The state records the graph's own
 -- entries as they accumulate; Φ maps the graph's input columns to the ambient graph's input
@@ -402,6 +531,7 @@ module Frozen
                    Keeps G → Keeps (hide-all vw G (map (λ w → hid (f w)) ws))
   keeps-hide-all f []       k = k
   keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
+
 
 -- A rule with no premises: the root and the inputs, and nothing between.
 module Leaf
