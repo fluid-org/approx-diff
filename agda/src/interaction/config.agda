@@ -56,7 +56,7 @@ record Config {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) : Se
 
 open Config public
 
-module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
+module Interaction {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   private
     at : Graph.Path B → V B

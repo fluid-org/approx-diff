@@ -493,15 +493,16 @@ module Behind
   keeps-hide-all f []       k = k
   keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
 
-map-map : ∀ {a b c} {A : Set a} {B : Set b} {C : Set c} (g : B → C) (f : A → B) (xs : List A) →
-          map g (map f xs) ≡ map (λ x → g (f x)) xs
-map-map g f []       = ≡-refl
-map-map g f (x ∷ xs) = ≡-cong (g (f x) ∷_) (map-map g f xs)
+private
+  map-map : ∀ {a b c} {A : Set a} {B : Set b} {C : Set c} (g : B → C) (f : A → B) (xs : List A) →
+            map g (map f xs) ≡ map (λ x → g (f x)) xs
+  map-map g f []       = ≡-refl
+  map-map g f (x ∷ xs) = ≡-cong (g (f x) ∷_) (map-map g f xs)
 
-map-++ : ∀ {a b} {A : Set a} {B : Set b} (f : A → B) (xs ys : List A) →
-         map f (xs ++ ys) ≡ map f xs ++ map f ys
-map-++ f []       ys = ≡-refl
-map-++ f (x ∷ xs) ys = ≡-cong (f x ∷_) (map-++ f xs ys)
+  map-++ : ∀ {a b} {A : Set a} {B : Set b} (f : A → B) (xs ys : List A) →
+           map f (xs ++ ys) ≡ map f xs ++ map f ys
+  map-++ f []       ys = ≡-refl
+  map-++ f (x ∷ xs) ys = ≡-cong (f x ∷_) (map-++ f xs ys)
 
 -- Hiding a graph's own vertices, its root first, computes its collapse: the root has no outgoing
 -- entries, so hiding it changes nothing.
