@@ -6,8 +6,8 @@ import interaction.example
 
 import language-operational.totality
 import interaction.agreement
-import interaction.block
-import interaction.control-block
+import interaction.graph-algebra
+import interaction.dependence-graph
 
 import graph-viz.dump-tables
 import graph-viz.dump-slices

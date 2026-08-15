@@ -10,10 +10,10 @@ open import Relation.Binary.PropositionalEquality using (_≡_)
 import matrix
 import two
 
--- A dependence graph as a value rather than a family indexed by a derivation: a block is a set of
+-- A dependence graph as a value rather than a family indexed by a derivation: a graph is a set of
 -- interior vertices with widths, a distinguished root of given width, and the entries between them.
 -- The root has no outgoing entries, so it is a sink by construction.
-module interaction.block (ℓ : Level) where
+module interaction.graph-algebra (ℓ : Level) where
 
 private
   module M = matrix.Mat two.semiring
@@ -33,7 +33,7 @@ data Root : Set ℓ where
 Void : Set ℓ
 Void = Lift ℓ ⊥
 
-record Block (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
+record Graph (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
   field
     Q      : Set ℓ
     qw     : Q → ℕ
@@ -43,43 +43,43 @@ record Block (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
     out    : (i : Inp) → M.Matrix n (iw i)
     up     : (p : Q) → M.Matrix n (qw p)
 
--- Graphs over an arbitrary vertex set, and hiding, as in interaction.hide-algebra but stated at the
--- ≈ of the matrix category rather than entrywise.
-Gr : {V : Set ℓ} → (V → ℕ) → Set ℓ
-Gr {V} vw = (x y : V) → M.Matrix (vw y) (vw x)
+-- Entries over an arbitrary vertex set, and hiding, as in interaction.hide-algebra but stated at
+-- the ≈ of the matrix category rather than entrywise.
+Entries : {V : Set ℓ} → (V → ℕ) → Set ℓ
+Entries {V} vw = (x y : V) → M.Matrix (vw y) (vw x)
 
-hide : {V : Set ℓ} (vw : V → ℕ) → Gr vw → V → Gr vw
+hide : {V : Set ℓ} (vw : V → ℕ) → Entries vw → V → Entries vw
 hide vw G r x y = G x y M.+ₘ (G r y ∘ G x r)
 
-hide-all : {V : Set ℓ} (vw : V → ℕ) → Gr vw → List V → Gr vw
+hide-all : {V : Set ℓ} (vw : V → ℕ) → Entries vw → List V → Entries vw
 hide-all vw = foldl (hide vw)
 
-_≐_ : {V : Set ℓ} {vw : V → ℕ} → Gr vw → Gr vw → Prop ℓ
+_≐_ : {V : Set ℓ} {vw : V → ℕ} → Entries vw → Entries vw → Prop ℓ
 _≐_ {V} G G' = ∀ x y → G x y ≈ G' x y
 
-hide-cong : {V : Set ℓ} (vw : V → ℕ) {G G' : Gr vw} (r : V) →
+hide-cong : {V : Set ℓ} (vw : V → ℕ) {G G' : Entries vw} (r : V) →
             G ≐ G' → hide vw G r ≐ hide vw G' r
 hide-cong vw r e x y = M.+ₘ-cong (e x y) (∘-cong (e r y) (e x r))
 
-hide-all-cong : {V : Set ℓ} (vw : V → ℕ) {G G' : Gr vw} (rs : List V) →
+hide-all-cong : {V : Set ℓ} (vw : V → ℕ) {G G' : Entries vw} (rs : List V) →
                 G ≐ G' → hide-all vw G rs ≐ hide-all vw G' rs
 hide-all-cong vw []       e = e
 hide-all-cong vw (r ∷ rs) e = hide-all-cong vw rs (hide-cong vw r e)
 
 -- Hiding a sink leaves every entry unchanged.
-hide-sink : {V : Set ℓ} (vw : V → ℕ) (G : Gr vw) (r : V) →
+hide-sink : {V : Set ℓ} (vw : V → ℕ) (G : Entries vw) (r : V) →
             (∀ y → G r y ≈ M.εₘ) → hide vw G r ≐ G
 hide-sink vw G r z x y = ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (z y))) (M.absorb₁ (G x y) (G x r))
 
-hide-all-++ : {V : Set ℓ} (vw : V → ℕ) (G : Gr vw) (xs ys : List V) →
+hide-all-++ : {V : Set ℓ} (vw : V → ℕ) (G : Entries vw) (xs ys : List V) →
               hide-all vw G (xs ++ ys) ≡ hide-all vw (hide-all vw G xs) ys
 hide-all-++ vw G []       ys = ≡-refl
 hide-all-++ vw G (x ∷ xs) ys = hide-all-++ vw (hide vw G x) xs ys
 
-module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Block Inp iw n) where
-  open Block B
+module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
+  open Graph B
 
-  -- The interior vertices with the root adjoined: what a block contributes to a larger block.
+  -- The interior vertices with the root adjoined: what a graph contributes to a larger graph.
   Q⁺ : Set ℓ
   Q⁺ = Q ⊎ Root
 
@@ -104,7 +104,7 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Block Inp iw n) where
   vw : V → ℕ
   vw = [ iw , qw⁺ ]
 
-  gr : Gr vw
+  gr : Entries vw
   gr (inj₁ i) (inj₂ q) = into⁺ i q
   gr (inj₂ p) (inj₂ q) = inside⁺ p q
   gr _        (inj₁ _) = M.εₘ
@@ -112,8 +112,8 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Block Inp iw n) where
   collapse : (i : Inp) → M.Matrix n (iw i)
   collapse i = hide-all vw gr (map (λ q → inj₂ (inj₁ q)) qs) (inj₁ i) (inj₂ (inj₂ root))
 
--- One block's vertices being hidden inside a larger graph. The state records the block's own
--- entries as they accumulate; Φ maps the block's input columns to the ambient graph's input
+-- One graph's vertices being hidden inside a larger graph. The state records the graph's own
+-- entries as they accumulate; Φ maps the graph's input columns to the ambient graph's input
 -- columns, which for a premise evaluated in a substituted environment is not the identity.
 module Sweep
   {V : Set ℓ} (vw : V → ℕ)
@@ -158,7 +158,7 @@ module Sweep
       ≈-trans (Φ .ap-+ (λ i' → H .into i' q) (λ i' → H .inside w q ∘ H .into i' w) i)
               (M.+ₘ-cong ≈-refl (Φ .ap-∘ (H .inside w q) (λ i' → H .into i' w) i))
 
-  record Agrees (G : Gr vw) (H : St) : Set ℓ where
+  record Agrees (G : Entries vw) (H : St) : Set ℓ where
     field
       into-ok   : ∀ i q → G (inp i) (blk q) ≈ Φ .ap (λ i' → H .into i' q) i
       inside-ok : ∀ p q → G (blk p) (blk q) ≈ H .inside p q
@@ -192,9 +192,9 @@ module Sweep
   agrees-hide-all []       s = s
   agrees-hide-all (w ∷ ws) s = agrees-hide-all ws (agrees-hide w s)
 
-  -- The entries a rule contributes, before the block's root is hidden. Every edge from the block to
-  -- a target leaves the block's root, which here is a matter of the vertex set rather than a lemma.
-  record Start (G : Gr vw) (H : St) : Set ℓ where
+  -- The entries a rule contributes, before the graph's root is hidden. Every edge from the graph to
+  -- a target leaves the graph's root, which here is a matter of the vertex set rather than a lemma.
+  record Start (G : Entries vw) (H : St) : Set ℓ where
     field
       into-start   : ∀ i q → G (inp i) (blk q) ≈ Φ .ap (λ i' → H .into i' q) i
       inside-start : ∀ p q → G (blk p) (blk q) ≈ H .inside p q
@@ -247,7 +247,7 @@ module Behind
   (B : (s : S) (t : T) → M.Matrix (vw (col t)) (vw (src s)))
   where
 
-  record Keeps (G : Gr vw) : Set ℓ where
+  record Keeps (G : Entries vw) : Set ℓ where
     field
       keeps : ∀ s t → G (src s) (col t) ≈ B s t
       blind : ∀ s w → G (src s) (hid w) ≈ M.εₘ
@@ -277,9 +277,9 @@ map-++ : ∀ {a b} {A : Set a} {B : Set b} (f : A → B) (xs ys : List A) →
 map-++ f []       ys = ≡-refl
 map-++ f (x ∷ xs) ys = ≡-cong (f x ∷_) (map-++ f xs ys)
 
--- Hiding a block's own vertices, its root first, computes its collapse: the root has no outgoing
+-- Hiding a graph's own vertices, its root first, computes its collapse: the root has no outgoing
 -- entries, so hiding it changes nothing.
-module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Block Inp iw n) where
+module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ M.εₘ
   root-row (inj₁ _) = ≈-refl {f = M.εₘ}
@@ -290,13 +290,13 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Block Inp iw n) where
              ≈ collapse B i
   hide-qs⁺ i =
     ≈-trans (≈-of-≡ (≡-cong (λ l → hide-all (vw B) (gr B) l (inj₁ i) (inj₂ (inj₂ root)))
-                            (≡-cong (inj₂ (inj₂ root) ∷_) (map-map inj₂ inj₁ (Block.qs B)))))
-            (hide-all-cong (vw B) (map (λ q → inj₂ (inj₁ q)) (Block.qs B))
+                            (≡-cong (inj₂ (inj₂ root) ∷_) (map-map inj₂ inj₁ (Graph.qs B)))))
+            (hide-all-cong (vw B) (map (λ q → inj₂ (inj₁ q)) (Graph.qs B))
                            (hide-sink (vw B) (gr B) (inj₂ (inj₂ root)) root-row)
                            (inj₁ i) (inj₂ (inj₂ root)))
 
--- Two blocks in sequence: the second block's inputs are supplied by the conclusion's inputs
--- through route and by the first block's root through link, and the conclusion's root is fed by
+-- Two graphs in sequence: the second graph's inputs are supplied by the conclusion's inputs
+-- through route and by the first graph's root through link, and the conclusion's root is fed by
 -- Columns into vertices that the hidden set has no entries into survive hiding.
 module Frozen
   {V : Set ℓ} (vw : V → ℕ)
@@ -306,7 +306,7 @@ module Frozen
   (B : (s : S) (t : T) → M.Matrix (vw (col t)) (vw (src s)))
   where
 
-  record Keeps (G : Gr vw) : Set ℓ where
+  record Keeps (G : Entries vw) : Set ℓ where
     field
       keeps : ∀ s t → G (src s) (col t) ≈ B s t
       blind : ∀ w t → G (hid w) (col t) ≈ M.εₘ
@@ -331,14 +331,14 @@ module Leaf
   {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (out-root : (i : Inp) → M.Matrix n (iw i))
   where
 
-  E : Block Inp iw n
-  E .Block.Q = Void
-  E .Block.qw ()
-  E .Block.qs = []
-  E .Block.into i ()
-  E .Block.inside ()
-  E .Block.out = out-root
-  E .Block.up ()
+  E : Graph Inp iw n
+  E .Graph.Q = Void
+  E .Graph.qw ()
+  E .Graph.qs = []
+  E .Graph.into i ()
+  E .Graph.inside ()
+  E .Graph.out = out-root
+  E .Graph.up ()
 
   agree : ∀ i → collapse E i ≈ out-root i
   agree i = ≈-refl {f = out-root i}
@@ -347,22 +347,22 @@ module Leaf
 -- out-root, and the premise's inputs are the conclusion's through route.
 module One
   {Inp : Set ℓ} {iw : Inp → ℕ}
-  {Inp' : Set ℓ} {iw' : Inp' → ℕ} {n₀ : ℕ} (B : Block Inp' iw' n₀)
+  {Inp' : Set ℓ} {iw' : Inp' → ℕ} {n₀ : ℕ} (B : Graph Inp' iw' n₀)
   {n : ℕ}
   (route : Linear iw' iw)
   (out-root : (i : Inp) → M.Matrix n (iw i))
   (up-root : M.Matrix n n₀)
   where
 
-  E : Block Inp iw n
-  E .Block.Q = Q⁺ B
-  E .Block.qw = qw⁺ B
-  E .Block.qs = qs⁺ B
-  E .Block.into i q = route .ap (λ i' → into⁺ B i' q) i
-  E .Block.inside = inside⁺ B
-  E .Block.out = out-root
-  E .Block.up (inj₁ _) = M.εₘ
-  E .Block.up (inj₂ _) = up-root
+  E : Graph Inp iw n
+  E .Graph.Q = Q⁺ B
+  E .Graph.qw = qw⁺ B
+  E .Graph.qs = qs⁺ B
+  E .Graph.into i q = route .ap (λ i' → into⁺ B i' q) i
+  E .Graph.inside = inside⁺ B
+  E .Graph.out = out-root
+  E .Graph.up (inj₁ _) = M.εₘ
+  E .Graph.up (inj₂ _) = up-root
 
   private
     b : Q⁺ B → V E
@@ -386,13 +386,13 @@ module One
     start .S.sink q = ≈-refl {f = M.εₘ}
 
     H : S.St
-    H = S.steps (S.step H⁰ (inj₂ root)) (map inj₁ (Block.qs B))
+    H = S.steps (S.step H⁰ (inj₂ root)) (map inj₁ (Graph.qs B))
 
     done : S.Agrees (hide-all (vw E) (hide (vw E) (gr E) (b (inj₂ root)))
-                              (map (λ w → b (inj₁ w)) (Block.qs B))) H
-    done = S.agrees-hide-all (Block.qs B) (S.agrees-start start)
+                              (map (λ w → b (inj₁ w)) (Graph.qs B))) H
+    done = S.agrees-hide-all (Graph.qs B) (S.agrees-start start)
 
-    prem : Gr (vw B) → S.St
+    prem : Entries (vw B) → S.St
     prem G .S.into i' q = G (inj₁ i') (inj₂ q)
     prem G .S.inside p q = G (inj₂ p) (inj₂ q)
 
@@ -405,9 +405,9 @@ module One
 
     plumb : ∀ i → collapse E i
                   ≡ hide-all (vw E) (hide (vw E) (gr E) (b (inj₂ root)))
-                             (map (λ w → b (inj₁ w)) (Block.qs B)) (inj₁ i) er
+                             (map (λ w → b (inj₁ w)) (Graph.qs B)) (inj₁ i) er
     plumb i = ≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er)
-                     (≡-cong (b (inj₂ root) ∷_) (map-map b inj₁ (Block.qs B)))
+                     (≡-cong (b (inj₂ root) ∷_) (map-map b inj₁ (Graph.qs B)))
 
   agree : ∀ i → collapse E i ≈ one-result route out-root up-root (collapse B) i
   agree i =
@@ -419,8 +419,8 @@ module One
 -- second also reaches the first premise's root through link. Both roots feed the conclusion's.
 module Seq
   {Inp : Set ℓ} {iw : Inp → ℕ}
-  {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Block Inp₁ iw₁ n₁)
-  {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Block Inp₂ iw₂ n₂)
+  {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Graph Inp₁ iw₁ n₁)
+  {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Graph Inp₂ iw₂ n₂)
   {n : ℕ}
   (route₁ : Linear iw₁ iw)
   (route₂ : Linear iw₂ iw)
@@ -431,28 +431,28 @@ module Seq
   where
 
   private
-    qs₁ = Block.qs B₁
-    qs₂ = Block.qs B₂
+    qs₁ = Graph.qs B₁
+    qs₂ = Graph.qs B₂
 
     upE : (s : Q⁺ B₂) → M.Matrix n (qw⁺ B₂ s)
     upE (inj₁ _) = M.εₘ
     upE (inj₂ _) = up₂
 
-  E : Block Inp iw n
-  E .Block.Q = Q⁺ B₁ ⊎ Q⁺ B₂
-  E .Block.qw = [ qw⁺ B₁ , qw⁺ B₂ ]
-  E .Block.qs = map inj₁ (qs⁺ B₁) ++ map inj₂ (qs⁺ B₂)
-  E .Block.into i (inj₁ q) = route₁ .ap (λ i' → into⁺ B₁ i' q) i
-  E .Block.into i (inj₂ q) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
-  E .Block.inside (inj₁ p)        (inj₁ q) = inside⁺ B₁ p q
-  E .Block.inside (inj₁ (inj₁ p)) (inj₂ q) = M.εₘ
-  E .Block.inside (inj₁ (inj₂ _)) (inj₂ q) = link .at (λ i' → into⁺ B₂ i' q)
-  E .Block.inside (inj₂ p)        (inj₁ q) = M.εₘ
-  E .Block.inside (inj₂ p)        (inj₂ q) = inside⁺ B₂ p q
-  E .Block.out = out-root
-  E .Block.up (inj₁ (inj₁ p)) = M.εₘ
-  E .Block.up (inj₁ (inj₂ _)) = up₁
-  E .Block.up (inj₂ s) = upE s
+  E : Graph Inp iw n
+  E .Graph.Q = Q⁺ B₁ ⊎ Q⁺ B₂
+  E .Graph.qw = [ qw⁺ B₁ , qw⁺ B₂ ]
+  E .Graph.qs = map inj₁ (qs⁺ B₁) ++ map inj₂ (qs⁺ B₂)
+  E .Graph.into i (inj₁ q) = route₁ .ap (λ i' → into⁺ B₁ i' q) i
+  E .Graph.into i (inj₂ q) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
+  E .Graph.inside (inj₁ p)        (inj₁ q) = inside⁺ B₁ p q
+  E .Graph.inside (inj₁ (inj₁ p)) (inj₂ q) = M.εₘ
+  E .Graph.inside (inj₁ (inj₂ _)) (inj₂ q) = link .at (λ i' → into⁺ B₂ i' q)
+  E .Graph.inside (inj₂ p)        (inj₁ q) = M.εₘ
+  E .Graph.inside (inj₂ p)        (inj₂ q) = inside⁺ B₂ p q
+  E .Graph.out = out-root
+  E .Graph.up (inj₁ (inj₁ p)) = M.εₘ
+  E .Graph.up (inj₁ (inj₂ _)) = up₁
+  E .Graph.up (inj₂ s) = upE s
 
   private
     b1 : Q⁺ B₁ → V E
@@ -493,7 +493,7 @@ module Seq
     start₁ .S1.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
     start₁ .S1.sink q = ≈-refl {f = M.εₘ}
 
-    G₁ : Gr (vw E)
+    G₁ : Entries (vw E)
     G₁ = hide-all (vw E) (hide (vw E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) qs₁)
 
     H₁ : S1.St
@@ -502,7 +502,7 @@ module Seq
     done₁ : S1.Agrees G₁ H₁
     done₁ = S1.agrees-hide-all qs₁ (S1.agrees-start start₁)
 
-    prem₁ : Gr (vw B₁) → S1.St
+    prem₁ : Entries (vw B₁) → S1.St
     prem₁ G .S1.into i q = G (inj₁ i) (inj₂ q)
     prem₁ G .S1.inside p q = G (inj₂ p) (inj₂ q)
 
@@ -560,7 +560,7 @@ module Seq
     start₂ .S2.off-start _ p = keeps₁ .Bd.keeps (inj₁ p) (inj₂ root)
     start₂ .S2.sink q = ≈-refl {f = M.εₘ}
 
-    G₂ : Gr (vw E)
+    G₂ : Entries (vw E)
     G₂ = hide-all (vw E) (hide (vw E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) qs₂)
 
     H₂ : S2.St
@@ -569,7 +569,7 @@ module Seq
     done₂ : S2.Agrees G₂ H₂
     done₂ = S2.agrees-hide-all qs₂ (S2.agrees-start start₂)
 
-    prem₂ : Gr (vw B₂) → S2.St
+    prem₂ : Entries (vw B₂) → S2.St
     prem₂ G .S2.into i' q = G (inj₁ i') (inj₂ q)
     prem₂ G .S2.inside p q = G (inj₂ p) (inj₂ q)
 
@@ -580,7 +580,7 @@ module Seq
                                         (qs⁺ B₂) (gr B₂))))
               (hide-qs⁺ B₂ i')
 
-    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (Block.qs E)
+    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (Graph.qs E)
           ≡ (b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) qs₁)
             ++ (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) qs₂)
     lst =
@@ -608,7 +608,7 @@ module Seq
 
 -- A single premise evaluated in the conclusion's environment.
 module Same
-  {Inp : Set ℓ} {iw : Inp → ℕ} {n₀ n : ℕ} (B : Block Inp iw n₀)
+  {Inp : Set ℓ} {iw : Inp → ℕ} {n₀ n : ℕ} (B : Graph Inp iw n₀)
   (out-root : (i : Inp) → M.Matrix n (iw i))
   (up-root : M.Matrix n n₀)
   where
@@ -616,7 +616,7 @@ module Same
   private
     module O = One B (id-linear iw) out-root up-root
 
-  E : Block Inp iw n
+  E : Graph Inp iw n
   E = O.E
 
   agree : ∀ i → collapse E i ≈ one-result (id-linear iw) out-root up-root (collapse B) i
@@ -625,8 +625,8 @@ module Same
 -- Two premises with no entries between them, both feeding the conclusion's root.
 module Par
   {Inp : Set ℓ} {iw : Inp → ℕ}
-  {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Block Inp₁ iw₁ n₁)
-  {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Block Inp₂ iw₂ n₂)
+  {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Graph Inp₁ iw₁ n₁)
+  {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Graph Inp₂ iw₂ n₂)
   {n : ℕ}
   (route₁ : Linear iw₁ iw)
   (route₂ : Linear iw₂ iw)
@@ -638,7 +638,7 @@ module Par
   private
     module S = Seq B₁ B₂ route₁ route₂ (no-link iw₂ n₁) out-root up₁ up₂
 
-  E : Block Inp iw n
+  E : Graph Inp iw n
   E = S.E
 
   agree : ∀ i → collapse E i
@@ -654,9 +654,9 @@ module Par
 -- between them.
 module Seq3
   {Inp : Set ℓ} {iw : Inp → ℕ}
-  {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Block Inp₁ iw₁ n₁)
-  {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Block Inp₂ iw₂ n₂)
-  {Inp₃ : Set ℓ} {iw₃ : Inp₃ → ℕ} {n₃ : ℕ} (B₃ : Block Inp₃ iw₃ n₃)
+  {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Graph Inp₁ iw₁ n₁)
+  {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Graph Inp₂ iw₂ n₂)
+  {Inp₃ : Set ℓ} {iw₃ : Inp₃ → ℕ} {n₃ : ℕ} (B₃ : Graph Inp₃ iw₃ n₃)
   {n : ℕ}
   (route₁ : Linear iw₁ iw)
   (route₂ : Linear iw₂ iw)
@@ -670,9 +670,9 @@ module Seq3
   where
 
   private
-    qs₁ = Block.qs B₁
-    qs₂ = Block.qs B₂
-    qs₃ = Block.qs B₃
+    qs₁ = Graph.qs B₁
+    qs₂ = Graph.qs B₂
+    qs₃ = Graph.qs B₃
 
     r₁ : (q : Q⁺ B₁) → M.Matrix n (qw⁺ B₁ q)
     r₁ (inj₁ _) = M.εₘ
@@ -694,27 +694,27 @@ module Seq3
     e₂₃ (inj₁ _) q = M.εₘ
     e₂₃ (inj₂ _) q = link₂ .at (λ i' → into⁺ B₃ i' q)
 
-  E : Block Inp iw n
-  E .Block.Q = Q⁺ B₁ ⊎ (Q⁺ B₂ ⊎ Q⁺ B₃)
-  E .Block.qw = [ qw⁺ B₁ , [ qw⁺ B₂ , qw⁺ B₃ ] ]
-  E .Block.qs = map inj₁ (qs⁺ B₁)
+  E : Graph Inp iw n
+  E .Graph.Q = Q⁺ B₁ ⊎ (Q⁺ B₂ ⊎ Q⁺ B₃)
+  E .Graph.qw = [ qw⁺ B₁ , [ qw⁺ B₂ , qw⁺ B₃ ] ]
+  E .Graph.qs = map inj₁ (qs⁺ B₁)
                 ++ (map (λ q → inj₂ (inj₁ q)) (qs⁺ B₂) ++ map (λ q → inj₂ (inj₂ q)) (qs⁺ B₃))
-  E .Block.into i (inj₁ q)        = route₁ .ap (λ i' → into⁺ B₁ i' q) i
-  E .Block.into i (inj₂ (inj₁ q)) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
-  E .Block.into i (inj₂ (inj₂ q)) = route₃ .ap (λ i' → into⁺ B₃ i' q) i
-  E .Block.inside (inj₁ p)        (inj₁ q)        = inside⁺ B₁ p q
-  E .Block.inside (inj₁ p)        (inj₂ (inj₁ q)) = M.εₘ
-  E .Block.inside (inj₁ p)        (inj₂ (inj₂ q)) = e₁₃ p q
-  E .Block.inside (inj₂ (inj₁ p)) (inj₁ q)        = M.εₘ
-  E .Block.inside (inj₂ (inj₂ p)) (inj₁ q)        = M.εₘ
-  E .Block.inside (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) = inside⁺ B₂ p q
-  E .Block.inside (inj₂ (inj₂ p)) (inj₂ (inj₁ q)) = M.εₘ
-  E .Block.inside (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) = e₂₃ p q
-  E .Block.inside (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) = inside⁺ B₃ p q
-  E .Block.out = out-root
-  E .Block.up (inj₁ p)        = r₁ p
-  E .Block.up (inj₂ (inj₁ p)) = r₂ p
-  E .Block.up (inj₂ (inj₂ p)) = r₃ p
+  E .Graph.into i (inj₁ q)        = route₁ .ap (λ i' → into⁺ B₁ i' q) i
+  E .Graph.into i (inj₂ (inj₁ q)) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
+  E .Graph.into i (inj₂ (inj₂ q)) = route₃ .ap (λ i' → into⁺ B₃ i' q) i
+  E .Graph.inside (inj₁ p)        (inj₁ q)        = inside⁺ B₁ p q
+  E .Graph.inside (inj₁ p)        (inj₂ (inj₁ q)) = M.εₘ
+  E .Graph.inside (inj₁ p)        (inj₂ (inj₂ q)) = e₁₃ p q
+  E .Graph.inside (inj₂ (inj₁ p)) (inj₁ q)        = M.εₘ
+  E .Graph.inside (inj₂ (inj₂ p)) (inj₁ q)        = M.εₘ
+  E .Graph.inside (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) = inside⁺ B₂ p q
+  E .Graph.inside (inj₂ (inj₂ p)) (inj₂ (inj₁ q)) = M.εₘ
+  E .Graph.inside (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) = e₂₃ p q
+  E .Graph.inside (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) = inside⁺ B₃ p q
+  E .Graph.out = out-root
+  E .Graph.up (inj₁ p)        = r₁ p
+  E .Graph.up (inj₂ (inj₁ p)) = r₂ p
+  E .Graph.up (inj₂ (inj₂ p)) = r₃ p
 
   private
     b1 : Q⁺ B₁ → V E
@@ -764,7 +764,7 @@ module Seq3
     start₁ .S1.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
     start₁ .S1.sink q = ≈-refl {f = M.εₘ}
 
-    G₁ : Gr (vw E)
+    G₁ : Entries (vw E)
     G₁ = hide-all (vw E) (hide (vw E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) qs₁)
 
     H₁ : S1.St
@@ -773,7 +773,7 @@ module Seq3
     done₁ : S1.Agrees G₁ H₁
     done₁ = S1.agrees-hide-all qs₁ (S1.agrees-start start₁)
 
-    prem₁ : Gr (vw B₁) → S1.St
+    prem₁ : Entries (vw B₁) → S1.St
     prem₁ G .S1.into i q = G (inj₁ i) (inj₂ q)
     prem₁ G .S1.inside p q = G (inj₂ p) (inj₂ q)
 
@@ -847,7 +847,7 @@ module Seq3
     start₂ .S2.off-start (inj₂ _) p = behind₂ .Bd₂.keeps (inj₁ p) (inj₂ (inj₂ root))
     start₂ .S2.sink q = ≈-refl {f = M.εₘ}
 
-    G₂ : Gr (vw E)
+    G₂ : Entries (vw E)
     G₂ = hide-all (vw E) (hide (vw E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) qs₂)
 
     H₂ : S2.St
@@ -856,7 +856,7 @@ module Seq3
     done₂ : S2.Agrees G₂ H₂
     done₂ = S2.agrees-hide-all qs₂ (S2.agrees-start start₂)
 
-    prem₂ : Gr (vw B₂) → S2.St
+    prem₂ : Entries (vw B₂) → S2.St
     prem₂ G .S2.into i q = G (inj₁ i) (inj₂ q)
     prem₂ G .S2.inside p q = G (inj₂ p) (inj₂ q)
 
@@ -921,7 +921,7 @@ module Seq3
     start₃ .S3.off-start _ p = behind₃ .Bd₃.keeps (inj₁ p) (inj₂ root)
     start₃ .S3.sink q = ≈-refl {f = M.εₘ}
 
-    G₃ : Gr (vw E)
+    G₃ : Entries (vw E)
     G₃ = hide-all (vw E) (hide (vw E) G₂ (b3 (inj₂ root))) (map (λ w → b3 (inj₁ w)) qs₃)
 
     H₃ : S3.St
@@ -930,7 +930,7 @@ module Seq3
     done₃ : S3.Agrees G₃ H₃
     done₃ = S3.agrees-hide-all qs₃ (S3.agrees-start start₃)
 
-    prem₃ : Gr (vw B₃) → S3.St
+    prem₃ : Entries (vw B₃) → S3.St
     prem₃ G .S3.into i q = G (inj₁ i) (inj₂ q)
     prem₃ G .S3.inside p q = G (inj₂ p) (inj₂ q)
 
@@ -945,7 +945,7 @@ module Seq3
     l₂ = b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) qs₂
     l₃ = b3 (inj₂ root) ∷ map (λ w → b3 (inj₁ w)) qs₃
 
-    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (Block.qs E) ≡ l₁ ++ (l₂ ++ l₃)
+    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (Graph.qs E) ≡ l₁ ++ (l₂ ++ l₃)
     lst =
       ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (qs⁺ B₁))
                       (map (λ q → inj₂ (inj₁ q)) (qs⁺ B₂) ++ map (λ q → inj₂ (inj₂ q)) (qs⁺ B₃)))
