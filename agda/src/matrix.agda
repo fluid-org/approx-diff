@@ -519,3 +519,42 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   seq3-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁ c₂ c₃ i =
     (one-result r₁ out u₁ c₁ i +ₘ (u₂ ∘ r₂ .ap c₂ i))
     +ₘ (u₃ ∘ extend (extend r₃ l₁ (λ j → r₁ .ap c₁ j)) l₂ (λ j → r₂ .ap c₂ j) .ap c₃ i)
+
+  one-result-cong : ∀ {ℓ'} {Inp' : Set ℓ'} {iw' : Inp' → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₀}
+                    (route : Linear iw' iw) {out : (i : Inp) → Matrix n (iw i)} {up : Matrix n n₀}
+                    {c c' : (i' : Inp') → Matrix n₀ (iw' i')} → (∀ i' → c i' ≈ₘ c' i') →
+                    ∀ i → one-result route out up c i ≈ₘ one-result route out up c' i
+  one-result-cong route e i = +ₘ-cong ≈ₘ-refl (∘-cong₂ (route .ap-cong e i))
+
+  seq-result-cong : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
+                    {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₁ n₂}
+                    (r₁ : Linear iw₁ iw) (r₂ : Linear iw₂ iw) (l : Link iw₂ n₁)
+                    {out : (i : Inp) → Matrix n (iw i)} {u₁ : Matrix n n₁} {u₂ : Matrix n n₂}
+                    {c₁ c₁' : (i' : Inp₁) → Matrix n₁ (iw₁ i')}
+                    {c₂ c₂' : (i' : Inp₂) → Matrix n₂ (iw₂ i')} →
+                    (∀ i' → c₁ i' ≈ₘ c₁' i') → (∀ i' → c₂ i' ≈ₘ c₂' i') →
+                    ∀ i → seq-result r₁ r₂ l out u₁ u₂ c₁ c₂ i
+                          ≈ₘ seq-result r₁ r₂ l out u₁ u₂ c₁' c₂' i
+  seq-result-cong r₁ r₂ l {out = out} {u₁ = u₁} e₁ e₂ i =
+    +ₘ-cong (one-result-cong r₁ {out = out} {up = u₁} e₁ i)
+            (∘-cong₂ (+ₘ-cong (r₂ .ap-cong e₂ i)
+                              (∘-cong (l .at-cong e₂) (r₁ .ap-cong e₁ i))))
+
+  seq3-result-cong : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
+                     {Inp₃ : Set ℓ'} {iw₃ : Inp₃ → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₁ n₂ n₃}
+                     (r₁ : Linear iw₁ iw) (r₂ : Linear iw₂ iw) (r₃ : Linear iw₃ iw)
+                     (l₁ : Link iw₃ n₁) (l₂ : Link iw₃ n₂)
+                     {out : (i : Inp) → Matrix n (iw i)}
+                     {u₁ : Matrix n n₁} {u₂ : Matrix n n₂} {u₃ : Matrix n n₃}
+                     {c₁ c₁' : (i' : Inp₁) → Matrix n₁ (iw₁ i')}
+                     {c₂ c₂' : (i' : Inp₂) → Matrix n₂ (iw₂ i')}
+                     {c₃ c₃' : (i' : Inp₃) → Matrix n₃ (iw₃ i')} →
+                     (∀ i' → c₁ i' ≈ₘ c₁' i') → (∀ i' → c₂ i' ≈ₘ c₂' i') →
+                     (∀ i' → c₃ i' ≈ₘ c₃' i') →
+                     ∀ i → seq3-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁ c₂ c₃ i
+                           ≈ₘ seq3-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁' c₂' c₃' i
+  seq3-result-cong r₁ r₂ r₃ l₁ l₂ {out = out} {u₁ = u₁} e₁ e₂ e₃ i =
+    +ₘ-cong (+ₘ-cong (one-result-cong r₁ {out = out} {up = u₁} e₁ i) (∘-cong₂ (r₂ .ap-cong e₂ i)))
+            (∘-cong₂ (+ₘ-cong (+ₘ-cong (r₃ .ap-cong e₃ i)
+                                       (∘-cong (l₁ .at-cong e₃) (r₁ .ap-cong e₁ i)))
+                              (∘-cong (l₂ .at-cong e₃) (r₂ .ap-cong e₂ i))))

@@ -39,7 +39,7 @@ open Env
 private
   module M = matrix.Mat S
 
-open Category M.cat using (_⇒_; _∘_; ∘-cong₁; assoc) renaming (id to idm)
+open Category M.cat using (_⇒_; _∘_; ∘-cong₁; ∘-cong₂; assoc; id-right) renaming (id to idm)
 open M using (≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans)
 open HasTerminal M.terminal using (to-terminal)
 open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
@@ -82,6 +82,25 @@ cols R source      = R ∘ M.in₁ {1}
 of-cols : ∀ {Γ} {γ : Env Γ} {n} →
           ((i : Input) → M.Matrix n (input-width γ i)) → suc (width-env γ) ⇒ n
 of-cols f = (f source ∘ src-col) M.+ₘ (f environment ∘ env-cols)
+
+-- Reading a relation off its columns recovers it.
+cols-of-cols : ∀ {Γ} {γ : Env Γ} {n} (f : (i : Input) → M.Matrix n (input-width γ i)) (i : Input) →
+               cols (of-cols f) i M.≈ₘ f i
+cols-of-cols {γ = γ} f environment =
+  ≈ₘ-trans (M.comp-bilinear₁ (f source ∘ src-col) (f environment ∘ env-cols) (M.in₂ {1}))
+  (≈ₘ-trans (M.+ₘ-cong (≈ₘ-trans (assoc (f source) src-col (M.in₂ {1}))
+                                 (∘-cong₂ {f = f source} (M.zero-1 1 (width-env γ))))
+                       (≈ₘ-trans (assoc (f environment) env-cols (M.in₂ {1}))
+                                 (∘-cong₂ {f = f environment} (M.id-2 1 (width-env γ)))))
+  (≈ₘ-trans (M.+ₘ-comm (f source ∘ M.εₘ) (f environment ∘ M.I))
+  (≈ₘ-trans (M.absorb₂ (f environment ∘ M.I) (f source)) (id-right {f = f environment}))))
+cols-of-cols {γ = γ} f source =
+  ≈ₘ-trans (M.comp-bilinear₁ (f source ∘ src-col) (f environment ∘ env-cols) (M.in₁ {1}))
+  (≈ₘ-trans (M.+ₘ-cong (≈ₘ-trans (assoc (f source) src-col (M.in₁ {1}))
+                                 (∘-cong₂ {f = f source} (M.id-1 1 (width-env γ))))
+                       (≈ₘ-trans (assoc (f environment) env-cols (M.in₁ {1}))
+                                 (∘-cong₂ {f = f environment} (M.zero-2 1 (width-env γ)))))
+  (≈ₘ-trans (M.absorb₂ (f source ∘ M.I) (f environment)) (id-right {f = f source})))
 
 -- Each rule's wiring: the routing by which a premise reaches the conclusion's inputs, the column
 -- the conclusion's root receives directly, and the entry it receives from each premise's root.
