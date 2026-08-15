@@ -947,13 +947,134 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} c) {γ = γ} ⇓-lam {gi}
               (P.+-lunit {proj₂ L}))
 fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = γ}
             (⇓-app {Γ' = Γ'} {γ' = γ'} {t' = t'} {v = v} {u = u} {R = R} {T = T} {U = U} D₁ D₂ D₃) {gi} rγ s x g rel =
-  {!!}
+  RelF-resp τ r₃ (λ k → ≈-sym (app-op k)) (F.refl τ i₁)
+    (RelF-absorb τ r₃ s (RelF-resp τ r₃ (λ k → ≈-refl) den-eq C) absG bndE)
   where
+  f = ⟦ M ⟧tm .idxf .sfunc gi
+  j = ⟦ N ⟧tm .idxf .sfunc gi
+  i₁ = f .idxf .sfunc j
+  r₁ = relV c₁ D₁ rγ
+  r₂ = relV c₂ D₂ rγ
+  r₃ = r₁ r₂ D₃
+  IH₁ = fundamental c₁ D₁ rγ s x g rel
+  IH₂ = fundamental c₂ D₂ rγ s x g rel
+  a = proj₁ (⟦ M ⟧tm .famf .transf gi .func g)
+  m = proj₂ (⟦ M ⟧tm .famf .transf gi .func g)
+  yN = ⟦ N ⟧tm .famf .transf gi .func g
+  E = f .famf .transf j .func (ec σ j s)
+  G = F._+_ τ i₁ (ec τ i₁ s) (⟦ app M N ⟧tm .famf .transf gi .func g)
+  module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
+  evalΠj = SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
   -- The operational vectors of the function and the argument, and of the application.
   o : ∣ 𝔽 (suc (width-env γ')) ∣
   o = ap R (inputs γ s x)
   z : ∣ 𝔽 (width v) ∣
   z = ap T (inputs γ s x)
+
+  -- The clause of the function's relation at the application's weighted source and the argument.
+  C : RelF τ r₃ (ap U (body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z))
+        (F._+_ τ i₁ (ec τ i₁ ((w ·ₛ s) +ₛ o zero))
+          (F._+_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
+                      (f .famf .transf j .func (F._+_ σ j (ec σ j s) yN))))
+  C = prop._∧_.proj₂ IH₁ (w ·ₛ s) r₂ z (F._+_ σ j (ec σ j s) yN) IH₂ D₃
+
+  o₀ : o zero ≈s ((w ·ₛ s) +ₛ a)
+  o₀ = ≈-trans (prop._∧_.proj₁ IH₁) (+-cong (prop._∧_.proj₁ (ec-clo {σ} {τ} f s)) ≈-refl)
+
+  -- The clause's constant, evaluation and argument against the application's.
+  den-eq : F._≈_ τ i₁
+             (F._+_ τ i₁ (ec τ i₁ ((w ·ₛ s) +ₛ o zero))
+               (F._+_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
+                           (f .famf .transf j .func (F._+_ σ j (ec σ j s) yN))))
+             (F._+_ τ i₁ G E)
+  den-eq =
+    F.trans τ i₁ (F.+-cong τ i₁ ec-part (F.+-cong τ i₁ eval-part arg-part)) rearr
+    where
+    G-form : F._≈_ τ i₁ (⟦ app M N ⟧tm .famf .transf gi .func g)
+               (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ec τ i₁ a))
+    G-form =
+      F.+-cong τ i₁
+        (F.+-cong τ i₁
+           (evalΠj .SemiMod._⇒_.func-resp-≈
+              {P._+_ (P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))) P.ε} {m}
+              (P.trans {P._+_ (P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))) P.ε} {P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))} {m}
+                 (m-runit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))})
+                 (P.trans {P._+_ P.ε (P._+_ P.ε (P._+_ P.ε m))} {P._+_ P.ε (P._+_ P.ε m)} {m}
+                    (m-lunit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {P._+_ P.ε (P._+_ P.ε m)})
+                    (P.trans {P._+_ P.ε (P._+_ P.ε m)} {P._+_ P.ε m} {m}
+                       (m-lunit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {P._+_ P.ε m})
+                       (m-lunit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {m})))))
+           (f .famf .transf j .SemiMod._⇒_.func-resp-≈
+              {F._+_ σ j (F.ε σ j) (⟦ N ⟧tm .famf .transf gi .func gεε)} {yN}
+              (F.trans σ j (m-lunit (Fib σ j) {⟦ N ⟧tm .famf .transf gi .func gεε})
+                 (⟦ N ⟧tm .famf .transf gi .SemiMod._⇒_.func-resp-≈ {gεε} {g}
+                    (Semimodule.trans (FibC Γ gi) (m-runit (FibC Γ gi) {Semimodule._+_ (FibC Γ gi) g (Semimodule.ε (FibC Γ gi))})
+                                                  (m-runit (FibC Γ gi) {g}))))))
+        (elim-const τ .at i₁ .SemiMod._⇒_.func-resp-≈ {(ε +ₛ a) +ₛ ε} {a} (≈-trans +-runit +-lunit))
+      where
+      gεε = Semimodule._+_ (FibC Γ gi) (Semimodule._+_ (FibC Γ gi) g (Semimodule.ε (FibC Γ gi))) (Semimodule.ε (FibC Γ gi))
+
+    ec-part : F._≈_ τ i₁ (ec τ i₁ ((w ·ₛ s) +ₛ o zero)) (F._+_ τ i₁ (ec τ i₁ s) (ec τ i₁ a))
+    ec-part =
+      F.trans τ i₁ (elim-const τ .at i₁ .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o₀))
+      (F.trans τ i₁ (ec-linear τ i₁ (w ·ₛ s) ((w ·ₛ s) +ₛ a))
+      (F.trans τ i₁ (F.+-cong τ i₁ (ec-w τ i₁ s) (F.trans τ i₁ (ec-linear τ i₁ (w ·ₛ s) a)
+                                                              (F.+-cong τ i₁ (ec-w τ i₁ s) (F.refl τ i₁))))
+      (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+                    (F.+-cong τ i₁ (ec-root τ i₁ s) (F.refl τ i₁)))))
+
+    eval-part : F._≈_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
+                           (evalΠj .func m)
+    eval-part =
+      F.trans τ i₁ (evalΠj .SemiMod._⇒_.preserve-+ {proj₂ (ec (σ [→] τ) f s)} {m})
+      (F.trans τ i₁ (F.+-cong τ i₁ (F.trans τ i₁ (evalΠj .SemiMod._⇒_.func-resp-≈ {proj₂ (ec (σ [→] τ) f s)} {P.ε}
+                                                    (prop._∧_.proj₂ (ec-clo {σ} {τ} f s)))
+                                                 (evalΠj .SemiMod._⇒_.preserve-ze))
+                                   (F.refl τ i₁))
+                    (m-lunit (Fib τ i₁)))
+
+    arg-part : F._≈_ τ i₁ (f .famf .transf j .func (F._+_ σ j (ec σ j s) yN)) (F._+_ τ i₁ E (f .famf .transf j .func yN))
+    arg-part = f .famf .transf j .SemiMod._⇒_.preserve-+ {ec σ j s} {yN}
+
+    rearr : F._≈_ τ i₁
+              (F._+_ τ i₁ (F._+_ τ i₁ (ec τ i₁ s) (ec τ i₁ a))
+                          (F._+_ τ i₁ (evalΠj .func m) (F._+_ τ i₁ E (f .famf .transf j .func yN))))
+              (F._+_ τ i₁ G E)
+    rearr =
+      F.trans τ i₁ (F.+-assoc τ i₁)
+      (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) inner)
+      (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+                    (F.+-cong τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.sym τ i₁ G-form)) (F.refl τ i₁))))
+      where
+      inner : F._≈_ τ i₁
+                (F._+_ τ i₁ (ec τ i₁ a) (F._+_ τ i₁ (evalΠj .func m) (F._+_ τ i₁ E (f .famf .transf j .func yN))))
+                (F._+_ τ i₁ (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ec τ i₁ a)) E)
+      inner =
+        F.sym τ i₁
+          (F.trans τ i₁ (F.+-comm τ i₁)
+          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-comm τ i₁))
+          (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+          (F.trans τ i₁ (F.+-cong τ i₁ (F.+-comm τ i₁) (F.refl τ i₁))
+          (F.trans τ i₁ (F.+-assoc τ i₁)
+          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.sym τ i₁ (F.+-assoc τ i₁)))
+          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-cong τ i₁ (F.+-comm τ i₁) (F.refl τ i₁)))
+                        (F.+-cong τ i₁ (F.refl τ i₁) (F.+-assoc τ i₁)))))))))
+
+  absG : Absorbs τ i₁ s G
+  absG = F.trans τ i₁ (F.+-assoc τ i₁)
+         (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-comm τ i₁))
+         (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+                       (F.+-cong τ i₁ (ec-root τ i₁ s) (F.refl τ i₁))))
+
+  bndE : Bounded τ i₁ s E
+  bndE = f .famf .transf j .func (ty-unit σ (λ ()) (λ ()) .at j .func ι) ,
+         F.trans τ i₁
+           (f .famf .transf j .SemiMod._⇒_.func-resp-≈ {ec σ j s}
+              {F._·_ σ j (s ·ₛ w) (ty-unit σ (λ ()) (λ ()) .at j .func ι)}
+              (F.trans σ j (ty-unit σ (λ ()) (λ ()) .at j .SemiMod._⇒_.func-resp-≈
+                              {w ·ₛ s +ₛ ε} {(s ·ₛ w) ·ₛ ι} (≈-trans +-runit (≈-trans ·-comm (≈-sym ·-runit))))
+                           (ty-unit σ (λ ()) (λ ()) .at j .SemiMod._⇒_.preserve-· {s ·ₛ w} {ι})))
+           (f .famf .transf j .SemiMod._⇒_.preserve-· {s ·ₛ w} {ty-unit σ (λ ()) (λ ()) .at j .func ι})
 
   -- The application's relation reads the body's at the closure's root and the application's
   -- weighted source as source, and at the closure's cells and the argument as environment.
@@ -964,7 +1085,7 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
                     (inputs γ s x) k
                  ≈s ap U (body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z) k
   app-op k =
-    ≈-trans (app-of-cols {γ = γ} f s x k)
+    ≈-trans (app-of-cols {γ = γ} fR s x k)
     (≈-trans (+-cong (per-input source (λ _ → s) k) (per-input environment x k))
     (≈-trans regroup
     (≈-trans (+-cong (+-cong src-part l₁-part) l₂-part)
@@ -979,18 +1100,18 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
     cR = cols {γ = γ} R
     cT = cols {γ = γ} T
     cU = cols {γ = γ' · v} U
-    r₃ = body-route γ γ' v
+    rt₃ = body-route γ γ' v
     l₁ = body-link₁ γ' v
     l₂ = body-link₂ γ' v
-    f = M.rule₃-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ)) r₃ l₁ l₂
-          (λ _ → εₘ) εₘ εₘ M.I cR cT cU
+    fR = M.rule₃-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ)) rt₃ l₁ l₂
+           (λ _ → εₘ) εₘ εₘ M.I cR cT cU
     X : ∣ 𝔽 (width-env γ' + width v) ∣
     X l = ap (M.in₁ {width-env γ'} {width v}) (λ l' → o (suc l')) l +ₛ ap (M.in₂ {width-env γ'} {width v}) z l
 
     -- The column at one input, read at that input's vector: the three routed contributions.
     per-input : ∀ (i : Input) (vi : ∣ 𝔽 (input-width γ i) ∣) k →
-                ap (f i) vi k ≈s
-                ((ap (r₃ .M.ap cU i) vi k +ₛ ap (l₁ .M.at cU ∘ cR i) vi k) +ₛ ap (l₂ .M.at cU ∘ cT i) vi k)
+                ap (fR i) vi k ≈s
+                ((ap (rt₃ .M.ap cU i) vi k +ₛ ap (l₁ .M.at cU ∘ cR i) vi k) +ₛ ap (l₂ .M.at cU ∘ cT i) vi k)
     per-input i vi k =
       ≈-trans (app-+ₘ A₁ A₂ vi k)
       (≈-trans (+-cong (≈-trans (app-+ₘ A₁₁ (εₘ ∘ cT i) vi k)
@@ -1003,13 +1124,13 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
                                          +-lunit))
                        (≈-trans (app-∘ M.I A₂₁ vi k)
                                 (≈-trans (app-I (ap A₂₁ vi) k)
-                                         (≈-trans (app-+ₘ (r₃ .M.ap cU i +ₘ (l₁ .M.at cU ∘ cR i)) (l₂ .M.at cU ∘ cT i) vi k)
-                                                  (+-cong (app-+ₘ (r₃ .M.ap cU i) (l₁ .M.at cU ∘ cR i) vi k) ≈-refl)))))
+                                         (≈-trans (app-+ₘ (rt₃ .M.ap cU i +ₘ (l₁ .M.at cU ∘ cR i)) (l₂ .M.at cU ∘ cT i) vi k)
+                                                  (+-cong (app-+ₘ (rt₃ .M.ap cU i) (l₁ .M.at cU ∘ cR i) vi k) ≈-refl)))))
                +-lunit)
       where
       A₁₁ = εₘ +ₘ (εₘ ∘ cR i)
       A₁ = A₁₁ +ₘ (εₘ ∘ cT i)
-      A₂₁ = (r₃ .M.ap cU i +ₘ (l₁ .M.at cU ∘ cR i)) +ₘ (l₂ .M.at cU ∘ cT i)
+      A₂₁ = (rt₃ .M.ap cU i +ₘ (l₁ .M.at cU ∘ cR i)) +ₘ (l₂ .M.at cU ∘ cT i)
       A₂ = M.I ∘ A₂₁
 
     regroup : ∀ {a b c a' b' c'} →
@@ -1063,7 +1184,7 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
     same zero    = ≈-refl
     same (suc l) = ≈-refl
 
-    src-part : (ap (r₃ .M.ap cU source) (λ _ → s) k +ₛ ap (r₃ .M.ap cU environment) x k)
+    src-part : (ap (rt₃ .M.ap cU source) (λ _ → s) k +ₛ ap (rt₃ .M.ap cU environment) x k)
                ≈s ap (cU source) (λ _ → w ·ₛ s) k
     src-part =
       ≈-trans (+-cong (≈-trans (app-∘ (cU source) (ctrl-row {1}) (λ _ → s) k)
