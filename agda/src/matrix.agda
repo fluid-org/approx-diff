@@ -365,3 +365,76 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Σ-in₂ {suc x} {y} w zero = trans (Σ-cong {y} (λ j → ε-annihilₗ)) (Σ-ε {y})
   Σ-in₂ {suc x} w (suc i) = Σ-in₂ {x} w i
 
+
+  private
+    ≈ₘ-refl : ∀ {m n} {M : Matrix m n} → M ≈ₘ M
+    ≈ₘ-refl = ≈ₘ-isEquiv .IsEquivalence.refl
+
+    ≈ₘ-trans : ∀ {m n} {M N P : Matrix m n} → M ≈ₘ N → N ≈ₘ P → M ≈ₘ P
+    ≈ₘ-trans = ≈ₘ-isEquiv .IsEquivalence.trans
+
+    ≈ₘ-sym : ∀ {m n} {M N : Matrix m n} → M ≈ₘ N → N ≈ₘ M
+    ≈ₘ-sym = ≈ₘ-isEquiv .IsEquivalence.sym
+
+  ∘-cong₁ : ∀ {m n k} {M₁ M₂ : Matrix m n} {N : Matrix n k} → M₁ ≈ₘ M₂ → M₁ ∘ N ≈ₘ M₂ ∘ N
+  ∘-cong₁ p = ∘-cong p ≈ₘ-refl
+
+  ∘-cong₂ : ∀ {m n k} {M : Matrix m n} {N₁ N₂ : Matrix n k} → N₁ ≈ₘ N₂ → M ∘ N₁ ≈ₘ M ∘ N₂
+  ∘-cong₂ = ∘-cong ≈ₘ-refl
+
+  +ₘ-cong : ∀ {m n} {M₁ M₂ N₁ N₂ : Matrix m n} → M₁ ≈ₘ M₂ → N₁ ≈ₘ N₂ → (M₁ +ₘ N₁) ≈ₘ (M₂ +ₘ N₂)
+  +ₘ-cong p q i j = +-cong (p i j) (q i j)
+
+  +ₘ-lunit : ∀ {m n} (M : Matrix m n) → (εₘ +ₘ M) ≈ₘ M
+  +ₘ-lunit M i j = +-lunit {x = M i j}
+
+  +ₘ-runit : ∀ {m n} (M : Matrix m n) → (M +ₘ εₘ) ≈ₘ M
+  +ₘ-runit M i j = trans (+-comm {x = M i j} {y = ε}) (+-lunit {x = M i j})
+
+  +ₘ-comm : ∀ {m n} (M N : Matrix m n) → (M +ₘ N) ≈ₘ (N +ₘ M)
+  +ₘ-comm M N i j = +-comm {x = M i j} {y = N i j}
+
+  +ₘ-assoc : ∀ {m n} (M N P : Matrix m n) → ((M +ₘ N) +ₘ P) ≈ₘ (M +ₘ (N +ₘ P))
+  +ₘ-assoc M N P i j = +-assoc {x = M i j} {y = N i j} {z = P i j}
+
+  +ₘ-interchange : ∀ {m n} (M N P Q : Matrix m n) →
+                   ((M +ₘ N) +ₘ (P +ₘ Q)) ≈ₘ ((M +ₘ P) +ₘ (N +ₘ Q))
+  +ₘ-interchange M N P Q i j = +-interchange {w = M i j} {x = N i j} {y = P i j} {z = Q i j}
+
+  +ₘ-swap-mid : ∀ {m n} (M N P : Matrix m n) → (M +ₘ (N +ₘ P)) ≈ₘ (N +ₘ (M +ₘ P))
+  +ₘ-swap-mid M N P =
+    ≈ₘ-trans (≈ₘ-sym (+ₘ-assoc M N P))
+             (≈ₘ-trans (+ₘ-cong (+ₘ-comm M N) ≈ₘ-refl) (+ₘ-assoc N M P))
+
+  -- A composite with a zero factor drops out of a sum.
+  absorb₁ : ∀ {m n k} (M : Matrix m n) (N : Matrix k n) → (M +ₘ (εₘ ∘ N)) ≈ₘ M
+  absorb₁ M N = ≈ₘ-trans (+ₘ-cong ≈ₘ-refl (comp-bilinear-ε₁ N)) (+ₘ-runit M)
+
+  absorb₂ : ∀ {m n k} (M : Matrix m n) (N : Matrix m k) → (M +ₘ (N ∘ εₘ)) ≈ₘ M
+  absorb₂ M N = ≈ₘ-trans (+ₘ-cong ≈ₘ-refl (comp-bilinear-ε₂ N)) (+ₘ-runit M)
+
+  distrib-root : ∀ {m n k l} (P : Matrix m n) (X : Matrix n k) (Y : Matrix n l) (Z : Matrix l k) →
+                 ((P ∘ X) +ₘ ((P ∘ Y) ∘ Z)) ≈ₘ (P ∘ (X +ₘ (Y ∘ Z)))
+  distrib-root P X Y Z =
+    ≈ₘ-trans (+ₘ-cong ≈ₘ-refl (assoc P Y Z)) (≈ₘ-sym (comp-bilinear₂ P X (Y ∘ Z)))
+
+  offset-distrib : ∀ {m n l k} (K : Matrix m k) (P : Matrix m n) (X : Matrix n k)
+                   (Y : Matrix n l) (Z : Matrix l k) →
+                   ((K +ₘ (P ∘ X)) +ₘ ((P ∘ Y) ∘ Z)) ≈ₘ (K +ₘ (P ∘ (X +ₘ (Y ∘ Z))))
+  offset-distrib K P X Y Z =
+    ≈ₘ-trans (+ₘ-assoc K (P ∘ X) ((P ∘ Y) ∘ Z)) (+ₘ-cong ≈ₘ-refl (distrib-root P X Y Z))
+
+  -- One step of hiding a vertex, on entries whose columns factor through P.
+  root-step : ∀ {m n l k} {P : Matrix m n} {G₁ : Matrix m k} {X : Matrix n k}
+              {G₂ : Matrix m l} {Y : Matrix n l} {G₃ Z : Matrix l k} →
+              G₁ ≈ₘ (P ∘ X) → G₂ ≈ₘ (P ∘ Y) → G₃ ≈ₘ Z →
+              (G₁ +ₘ (G₂ ∘ G₃)) ≈ₘ (P ∘ (X +ₘ (Y ∘ Z)))
+  root-step {P = P} {X = X} {Y = Y} {Z = Z} a b c =
+    ≈ₘ-trans (+ₘ-cong a (∘-cong b c)) (distrib-root P X Y Z)
+
+  offset-step : ∀ {m n l k} {K : Matrix m k} {P : Matrix m n} {G₁ : Matrix m k}
+                {X : Matrix n k} {G₂ : Matrix m l} {Y : Matrix n l} {G₃ Z : Matrix l k} →
+                G₁ ≈ₘ (K +ₘ (P ∘ X)) → G₂ ≈ₘ (P ∘ Y) → G₃ ≈ₘ Z →
+                (G₁ +ₘ (G₂ ∘ G₃)) ≈ₘ (K +ₘ (P ∘ (X +ₘ (Y ∘ Z))))
+  offset-step {K = K} {P} {X = X} {Y = Y} {Z = Z} a b c =
+    ≈ₘ-trans (+ₘ-cong a (∘-cong b c)) (offset-distrib K P X Y Z)
