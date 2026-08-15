@@ -2,6 +2,7 @@
 
 module basics where
 
+open import Data.Empty using () renaming (⊥ to Empty)
 open import Level using (_⊔_; suc)
 open import prop using (_∧_; _,_; proj₁; proj₂)
 open import prop-setoid using (IsEquivalence; Setoid; module ≈-Reasoning)
@@ -13,6 +14,16 @@ module _ {a} {A : Set a} where
 
   SymmetricCore : ∀ {b} → (A → A → Prop b) → (A → A → Prop b)
   SymmetricCore R x y = R x y ∧ R y x
+
+  -- A strict order: transitive and asymmetric, hence irreflexive. Set-valued, unlike the preorders
+  -- below, because asymmetry is used to rule out cases whose conclusions are Sets.
+  record IsStrictOrder {b} (_<_ : A → A → Set b) : Set (a ⊔ b) where
+    field
+      trans : ∀ x y z → x < y → y < z → x < z
+      asym  : ∀ x y → x < y → y < x → Empty
+
+    irrefl : ∀ x → x < x → Empty
+    irrefl x h = asym x x h h
 
   record IsPreorder {b} (_≤_ : A → A → Prop b) : Prop (a ⊔ b) where
     field

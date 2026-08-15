@@ -13,6 +13,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary.Decidable using (yes)
 import Data.Sum.Properties as SumP
+open import basics using (IsStrictOrder)
 import matrix
 import two
 
@@ -41,30 +42,27 @@ Void = Lift ℓ ⊥
 
 -- The completion order on a coproduct: every vertex of the first summand precedes every vertex of
 -- the second.
-module Sum◃ {A B : Set ℓ} (_◃₁_ : A → A → Set ℓ) (_◃₂_ : B → B → Set ℓ) where
+sum-< : {A B : Set ℓ} → (A → A → Set ℓ) → (B → B → Set ℓ) → A ⊎ B → A ⊎ B → Set ℓ
+sum-< R S (inj₁ p) (inj₁ q) = R p q
+sum-< R S (inj₁ _) (inj₂ _) = Unit
+sum-< R S (inj₂ _) (inj₁ _) = Void
+sum-< R S (inj₂ p) (inj₂ q) = S p q
 
-  _◃_ : A ⊎ B → A ⊎ B → Set ℓ
-  inj₁ p ◃ inj₁ q = p ◃₁ q
-  inj₁ _ ◃ inj₂ _ = Unit
-  inj₂ _ ◃ inj₁ _ = Void
-  inj₂ p ◃ inj₂ q = p ◃₂ q
-
-  ◃-trans : (∀ p q r → p ◃₁ q → q ◃₁ r → p ◃₁ r) → (∀ p q r → p ◃₂ q → q ◃₂ r → p ◃₂ r) →
-            ∀ p q r → p ◃ q → q ◃ r → p ◃ r
-  ◃-trans t₁ t₂ (inj₁ p) (inj₁ q) (inj₁ r) a b = t₁ p q r a b
-  ◃-trans t₁ t₂ (inj₁ p) (inj₁ q) (inj₂ r) a b = unit
-  ◃-trans t₁ t₂ (inj₁ p) (inj₂ q) (inj₁ r) a ()
-  ◃-trans t₁ t₂ (inj₁ p) (inj₂ q) (inj₂ r) a b = unit
-  ◃-trans t₁ t₂ (inj₂ p) (inj₁ q) r        () b
-  ◃-trans t₁ t₂ (inj₂ p) (inj₂ q) (inj₁ r) a ()
-  ◃-trans t₁ t₂ (inj₂ p) (inj₂ q) (inj₂ r) a b = t₂ p q r a b
-
-  ◃-asym : (∀ p q → p ◃₁ q → q ◃₁ p → ⊥) → (∀ p q → p ◃₂ q → q ◃₂ p → ⊥) →
-           ∀ p q → p ◃ q → q ◃ p → ⊥
-  ◃-asym a₁ a₂ (inj₁ p) (inj₁ q) a b = a₁ p q a b
-  ◃-asym a₁ a₂ (inj₁ p) (inj₂ q) a ()
-  ◃-asym a₁ a₂ (inj₂ p) (inj₁ q) () b
-  ◃-asym a₁ a₂ (inj₂ p) (inj₂ q) a b = a₂ p q a b
+sum-<-order : {A B : Set ℓ} {R : A → A → Set ℓ} {S : B → B → Set ℓ} →
+              IsStrictOrder R → IsStrictOrder S → IsStrictOrder (sum-< R S)
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₁ q) (inj₁ r) a b =
+  o₁ .IsStrictOrder.trans p q r a b
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₁ q) (inj₂ r) a b = unit
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₂ q) (inj₁ r) a ()
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₂ q) (inj₂ r) a b = unit
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₂ p) (inj₁ q) r        () b
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₂ p) (inj₂ q) (inj₁ r) a ()
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₂ p) (inj₂ q) (inj₂ r) a b =
+  o₂ .IsStrictOrder.trans p q r a b
+sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₁ p) (inj₁ q) a b = o₁ .IsStrictOrder.asym p q a b
+sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₁ p) (inj₂ q) a ()
+sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₁ q) () b
+sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₂ q) a b = o₂ .IsStrictOrder.asym p q a b
 
 root-≟ : DecidableEquality Root
 root-≟ root root = yes ≡-refl
@@ -83,11 +81,10 @@ record Graph (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
     inside  : (p q : Path) → M.Matrix (width q) (width p)
     -- Completion order: every entry between interior vertices runs strictly forward in it, and the
     -- inputs and the root need no condition, being below and above everything.
-    _◃_      : Path → Path → Set ℓ
-    ◃-trans  : ∀ p q r → p ◃ q → q ◃ r → p ◃ r
-    ◃-asym   : ∀ p q → p ◃ q → q ◃ p → ⊥
-    ◃-inside : ∀ p q (k : Fin (width q)) (l : Fin (width p)) →
-               inside p q k l ≡ two.I → p ◃ q
+    _<_      : Path → Path → Set ℓ
+    <-order  : IsStrictOrder _<_
+    <-inside : ∀ p q (k : Fin (width q)) (l : Fin (width p)) →
+               inside p q k l ≡ two.I → p < q
     fo-root : Bool
     out     : (i : Inp) → M.Matrix n (iw i)
     up      : (p : Path) → M.Matrix n (width p)
@@ -150,28 +147,21 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   inside⁺ (inj₁ p) (inj₂ _) = up p
   inside⁺ (inj₂ _) _        = M.εₘ
 
-  _◃⁺_ : Path⁺ → Path⁺ → Set ℓ
-  inj₁ p ◃⁺ inj₁ q = p ◃ q
-  inj₁ p ◃⁺ inj₂ _ = Unit
-  inj₂ _ ◃⁺ _      = Void
+  _<⁺_ : Path⁺ → Path⁺ → Set ℓ
+  _<⁺_ = sum-< _<_ (λ _ _ → Void)
 
-  ◃⁺-trans : ∀ p q r → p ◃⁺ q → q ◃⁺ r → p ◃⁺ r
-  ◃⁺-trans (inj₁ p) (inj₁ q) (inj₁ r) a b = ◃-trans p q r a b
-  ◃⁺-trans (inj₁ p) (inj₁ q) (inj₂ _) a b = unit
-  ◃⁺-trans (inj₁ p) (inj₂ _) (inj₁ r) a ()
-  ◃⁺-trans (inj₁ p) (inj₂ _) (inj₂ _) a ()
-  ◃⁺-trans (inj₂ _) q        r        () b
+  <⁺-order : IsStrictOrder _<⁺_
+  <⁺-order = sum-<-order <-order empty-order
+    where
+    empty-order : IsStrictOrder {A = Root} (λ _ _ → Void)
+    empty-order .IsStrictOrder.trans _ _ _ ()
+    empty-order .IsStrictOrder.asym _ _ ()
 
-  ◃⁺-asym : ∀ p q → p ◃⁺ q → q ◃⁺ p → ⊥
-  ◃⁺-asym (inj₁ p) (inj₁ q) a b = ◃-asym p q a b
-  ◃⁺-asym (inj₁ p) (inj₂ _) a ()
-  ◃⁺-asym (inj₂ _) q        () b
-
-  ◃⁺-inside : ∀ p q (k : Fin (width⁺ q)) (l : Fin (width⁺ p)) →
-              inside⁺ p q k l ≡ two.I → p ◃⁺ q
-  ◃⁺-inside (inj₁ p) (inj₁ q) k l h = ◃-inside p q k l h
-  ◃⁺-inside (inj₁ p) (inj₂ _) k l h = unit
-  ◃⁺-inside (inj₂ _) q        k l ()
+  <⁺-inside : ∀ p q (k : Fin (width⁺ q)) (l : Fin (width⁺ p)) →
+              inside⁺ p q k l ≡ two.I → p <⁺ q
+  <⁺-inside (inj₁ p) (inj₁ q) k l h = <-inside p q k l h
+  <⁺-inside (inj₁ p) (inj₂ _) k l h = unit
+  <⁺-inside (inj₂ _) q        k l ()
 
   paths⁺ : List Path⁺
   paths⁺ = inj₂ root ∷ map inj₁ paths
@@ -425,10 +415,10 @@ module Leaf
   E .Graph.fo ()
   E .Graph._≟_ = void-≟
   E .Graph.paths = []
-  E .Graph._◃_ ()
-  E .Graph.◃-trans ()
-  E .Graph.◃-asym ()
-  E .Graph.◃-inside ()
+  E .Graph._<_ ()
+  E .Graph.<-order .IsStrictOrder.trans ()
+  E .Graph.<-order .IsStrictOrder.asym ()
+  E .Graph.<-inside ()
   E .Graph.fo-root = fo-root
   E .Graph.into i ()
   E .Graph.inside ()
@@ -458,10 +448,9 @@ module One
   E .Graph.paths = paths⁺ B
   E .Graph.into i q = route .ap (λ i' → into⁺ B i' q) i
   E .Graph.inside = inside⁺ B
-  E .Graph._◃_ = _◃⁺_ B
-  E .Graph.◃-trans = ◃⁺-trans B
-  E .Graph.◃-asym = ◃⁺-asym B
-  E .Graph.◃-inside = ◃⁺-inside B
+  E .Graph._<_ = _<⁺_ B
+  E .Graph.<-order = <⁺-order B
+  E .Graph.<-inside = <⁺-inside B
   E .Graph.fo-root = fo-root
   E .Graph.out = out-root
   E .Graph.up (inj₁ _) = M.εₘ
@@ -556,13 +545,12 @@ module Seq
   E .Graph.inside (inj₂ p)        (inj₁ q) = M.εₘ
   E .Graph.inside (inj₂ p)        (inj₂ q) = inside⁺ B₂ p q
   E .Graph.fo-root = fo-root
-  E .Graph._◃_ = Sum◃._◃_ (_◃⁺_ B₁) (_◃⁺_ B₂)
-  E .Graph.◃-trans = Sum◃.◃-trans (_◃⁺_ B₁) (_◃⁺_ B₂) (◃⁺-trans B₁) (◃⁺-trans B₂)
-  E .Graph.◃-asym = Sum◃.◃-asym (_◃⁺_ B₁) (_◃⁺_ B₂) (◃⁺-asym B₁) (◃⁺-asym B₂)
-  E .Graph.◃-inside (inj₁ p) (inj₁ q) k l h = ◃⁺-inside B₁ p q k l h
-  E .Graph.◃-inside (inj₁ p) (inj₂ q) k l h = unit
-  E .Graph.◃-inside (inj₂ p) (inj₁ q) k l ()
-  E .Graph.◃-inside (inj₂ p) (inj₂ q) k l h = ◃⁺-inside B₂ p q k l h
+  E .Graph._<_ = sum-< (_<⁺_ B₁) (_<⁺_ B₂)
+  E .Graph.<-order = sum-<-order (<⁺-order B₁) (<⁺-order B₂)
+  E .Graph.<-inside (inj₁ p) (inj₁ q) k l h = <⁺-inside B₁ p q k l h
+  E .Graph.<-inside (inj₁ p) (inj₂ q) k l h = unit
+  E .Graph.<-inside (inj₂ p) (inj₁ q) k l ()
+  E .Graph.<-inside (inj₂ p) (inj₂ q) k l h = <⁺-inside B₂ p q k l h
   E .Graph.out = out-root
   E .Graph.up (inj₁ (inj₁ p)) = M.εₘ
   E .Graph.up (inj₁ (inj₂ _)) = up₁
@@ -785,21 +773,16 @@ module Seq3
   E .Graph.inside (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) = e₂₃ p q
   E .Graph.inside (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) = inside⁺ B₃ p q
   E .Graph.fo-root = fo-root
-  E .Graph._◃_ = Sum◃._◃_ (_◃⁺_ B₁) (Sum◃._◃_ (_◃⁺_ B₂) (_◃⁺_ B₃))
-  E .Graph.◃-trans =
-    Sum◃.◃-trans (_◃⁺_ B₁) (Sum◃._◃_ (_◃⁺_ B₂) (_◃⁺_ B₃)) (◃⁺-trans B₁)
-                 (Sum◃.◃-trans (_◃⁺_ B₂) (_◃⁺_ B₃) (◃⁺-trans B₂) (◃⁺-trans B₃))
-  E .Graph.◃-asym =
-    Sum◃.◃-asym (_◃⁺_ B₁) (Sum◃._◃_ (_◃⁺_ B₂) (_◃⁺_ B₃)) (◃⁺-asym B₁)
-                (Sum◃.◃-asym (_◃⁺_ B₂) (_◃⁺_ B₃) (◃⁺-asym B₂) (◃⁺-asym B₃))
-  E .Graph.◃-inside (inj₁ p)        (inj₁ q)        k l h = ◃⁺-inside B₁ p q k l h
-  E .Graph.◃-inside (inj₁ p)        (inj₂ q)        k l h = unit
-  E .Graph.◃-inside (inj₂ (inj₁ p)) (inj₁ q)        k l ()
-  E .Graph.◃-inside (inj₂ (inj₂ p)) (inj₁ q)        k l ()
-  E .Graph.◃-inside (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) k l h = ◃⁺-inside B₂ p q k l h
-  E .Graph.◃-inside (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) k l h = unit
-  E .Graph.◃-inside (inj₂ (inj₂ p)) (inj₂ (inj₁ q)) k l ()
-  E .Graph.◃-inside (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) k l h = ◃⁺-inside B₃ p q k l h
+  E .Graph._<_ = sum-< (_<⁺_ B₁) (sum-< (_<⁺_ B₂) (_<⁺_ B₃))
+  E .Graph.<-order = sum-<-order (<⁺-order B₁) (sum-<-order (<⁺-order B₂) (<⁺-order B₃))
+  E .Graph.<-inside (inj₁ p)        (inj₁ q)        k l h = <⁺-inside B₁ p q k l h
+  E .Graph.<-inside (inj₁ p)        (inj₂ q)        k l h = unit
+  E .Graph.<-inside (inj₂ (inj₁ p)) (inj₁ q)        k l ()
+  E .Graph.<-inside (inj₂ (inj₂ p)) (inj₁ q)        k l ()
+  E .Graph.<-inside (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) k l h = <⁺-inside B₂ p q k l h
+  E .Graph.<-inside (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) k l h = unit
+  E .Graph.<-inside (inj₂ (inj₂ p)) (inj₂ (inj₁ q)) k l ()
+  E .Graph.<-inside (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) k l h = <⁺-inside B₃ p q k l h
   E .Graph.out = out-root
   E .Graph.up (inj₁ p)        = r₁ p
   E .Graph.up (inj₂ (inj₁ p)) = r₂ p
