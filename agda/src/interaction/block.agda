@@ -71,6 +71,22 @@ no-link iw' n .at-∘ {m} {k} X f =
   ≈-sym {f = X ∘ M.εₘ {m} {n}} {g = M.εₘ {k} {n}} (M.comp-bilinear-ε₂ X)
 no-link iw' n .at-cong {m} e = ≈-refl {f = M.εₘ {m} {n}}
 
+-- A routing with a further contribution reaching the premise through the column c, as when an
+-- earlier premise has collapsed onto its root.
+extend : {Inp' : Set ℓ} {iw' : Inp' → ℕ} {Inp : Set ℓ} {iw : Inp → ℕ} {n₀ : ℕ} →
+         Linear iw' iw → Link iw' n₀ → ((i : Inp) → M.Matrix n₀ (iw i)) → Linear iw' iw
+extend R L c .ap f i = R .ap f i M.+ₘ (L .at f ∘ c i)
+extend R L c .ap-+ f g i =
+  ≈-trans (M.+ₘ-cong (R .ap-+ f g i)
+                     (≈-trans (∘-cong₁ (L .at-+ f g))
+                              (M.comp-bilinear₁ (L .at f) (L .at g) (c i))))
+          (M.+ₘ-interchange (R .ap f i) (R .ap g i) (L .at f ∘ c i) (L .at g ∘ c i))
+extend R L c .ap-∘ X f i =
+  ≈-trans (M.+ₘ-cong (R .ap-∘ X f i)
+                     (≈-trans (∘-cong₁ (L .at-∘ X f)) (assoc X (L .at f) (c i))))
+          (≈-sym (M.comp-bilinear₂ X (R .ap f i) (L .at f ∘ c i)))
+extend R L c .ap-cong e i = M.+ₘ-cong (R .ap-cong e i) (∘-cong₁ (L .at-cong e))
+
 record Block (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
   field
     Q      : Set ℓ
@@ -553,22 +569,7 @@ module Seq
 
   -- The second premise's inputs once the first premise has collapsed.
   Φ₂ : Linear iw₂ iw
-  Φ₂ .ap f i = route₂ .ap f i M.+ₘ (link .at f ∘ route₁ .ap (collapse B₁) i)
-  Φ₂ .ap-+ f g i =
-    ≈-trans (M.+ₘ-cong (route₂ .ap-+ f g i)
-                       (≈-trans (∘-cong₁ (link .at-+ f g))
-                                (M.comp-bilinear₁ (link .at f) (link .at g)
-                                                  (route₁ .ap (collapse B₁) i))))
-            (M.+ₘ-interchange (route₂ .ap f i) (route₂ .ap g i)
-                              (link .at f ∘ route₁ .ap (collapse B₁) i)
-                              (link .at g ∘ route₁ .ap (collapse B₁) i))
-  Φ₂ .ap-∘ X f i =
-    ≈-trans (M.+ₘ-cong (route₂ .ap-∘ X f i)
-                       (≈-trans (∘-cong₁ (link .at-∘ X f))
-                                (assoc X (link .at f) (route₁ .ap (collapse B₁) i))))
-            (≈-sym (M.comp-bilinear₂ X (route₂ .ap f i)
-                                     (link .at f ∘ route₁ .ap (collapse B₁) i)))
-  Φ₂ .ap-cong e i = M.+ₘ-cong (route₂ .ap-cong e i) (∘-cong₁ (link .at-cong e))
+  Φ₂ = extend route₂ link (λ i → route₁ .ap (collapse B₁) i)
 
   private
     P₂ : (t : Root) → M.Matrix n n₂
@@ -703,3 +704,329 @@ module Par
             (M.+ₘ-cong ≈-refl
                        (∘-cong₂ (M.absorb₁ (route₂ .ap (collapse B₂) i)
                                            (route₁ .ap (collapse B₁) i))))
+
+-- Three premises in sequence, the third reaching both earlier roots. The first two have no entries
+-- between them.
+module Seq3
+  {Inp : Set ℓ} {iw : Inp → ℕ}
+  {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Block Inp₁ iw₁ n₁)
+  {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Block Inp₂ iw₂ n₂)
+  {Inp₃ : Set ℓ} {iw₃ : Inp₃ → ℕ} {n₃ : ℕ} (B₃ : Block Inp₃ iw₃ n₃)
+  {n : ℕ}
+  (route₁ : Linear iw₁ iw)
+  (route₂ : Linear iw₂ iw)
+  (route₃ : Linear iw₃ iw)
+  (link₁ : Link iw₃ n₁)
+  (link₂ : Link iw₃ n₂)
+  (out-root : (i : Inp) → M.Matrix n (iw i))
+  (up₁ : M.Matrix n n₁)
+  (up₂ : M.Matrix n n₂)
+  (up₃ : M.Matrix n n₃)
+  where
+
+  private
+    qs₁ = Block.qs B₁
+    qs₂ = Block.qs B₂
+    qs₃ = Block.qs B₃
+
+    r₁ : (q : Q⁺ B₁) → M.Matrix n (qw⁺ B₁ q)
+    r₁ (inj₁ _) = M.εₘ
+    r₁ (inj₂ _) = up₁
+
+    r₂ : (q : Q⁺ B₂) → M.Matrix n (qw⁺ B₂ q)
+    r₂ (inj₁ _) = M.εₘ
+    r₂ (inj₂ _) = up₂
+
+    r₃ : (q : Q⁺ B₃) → M.Matrix n (qw⁺ B₃ q)
+    r₃ (inj₁ _) = M.εₘ
+    r₃ (inj₂ _) = up₃
+
+    e₁₃ : (p : Q⁺ B₁) (q : Q⁺ B₃) → M.Matrix (qw⁺ B₃ q) (qw⁺ B₁ p)
+    e₁₃ (inj₁ _) q = M.εₘ
+    e₁₃ (inj₂ _) q = link₁ .at (λ i' → into⁺ B₃ i' q)
+
+    e₂₃ : (p : Q⁺ B₂) (q : Q⁺ B₃) → M.Matrix (qw⁺ B₃ q) (qw⁺ B₂ p)
+    e₂₃ (inj₁ _) q = M.εₘ
+    e₂₃ (inj₂ _) q = link₂ .at (λ i' → into⁺ B₃ i' q)
+
+  E : Block Inp iw n
+  E .Block.Q = Q⁺ B₁ ⊎ (Q⁺ B₂ ⊎ Q⁺ B₃)
+  E .Block.qw = [ qw⁺ B₁ , [ qw⁺ B₂ , qw⁺ B₃ ] ]
+  E .Block.qs = map inj₁ (qs⁺ B₁)
+                ++ (map (λ q → inj₂ (inj₁ q)) (qs⁺ B₂) ++ map (λ q → inj₂ (inj₂ q)) (qs⁺ B₃))
+  E .Block.into i (inj₁ q)        = route₁ .ap (λ i' → into⁺ B₁ i' q) i
+  E .Block.into i (inj₂ (inj₁ q)) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
+  E .Block.into i (inj₂ (inj₂ q)) = route₃ .ap (λ i' → into⁺ B₃ i' q) i
+  E .Block.inside (inj₁ p)        (inj₁ q)        = inside⁺ B₁ p q
+  E .Block.inside (inj₁ p)        (inj₂ (inj₁ q)) = M.εₘ
+  E .Block.inside (inj₁ p)        (inj₂ (inj₂ q)) = e₁₃ p q
+  E .Block.inside (inj₂ (inj₁ p)) (inj₁ q)        = M.εₘ
+  E .Block.inside (inj₂ (inj₂ p)) (inj₁ q)        = M.εₘ
+  E .Block.inside (inj₂ (inj₁ p)) (inj₂ (inj₁ q)) = inside⁺ B₂ p q
+  E .Block.inside (inj₂ (inj₂ p)) (inj₂ (inj₁ q)) = M.εₘ
+  E .Block.inside (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) = e₂₃ p q
+  E .Block.inside (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) = inside⁺ B₃ p q
+  E .Block.out = out-root
+  E .Block.up (inj₁ p)        = r₁ p
+  E .Block.up (inj₂ (inj₁ p)) = r₂ p
+  E .Block.up (inj₂ (inj₂ p)) = r₃ p
+
+  private
+    b1 : Q⁺ B₁ → V E
+    b1 q = inj₂ (inj₁ (inj₁ q))
+
+    b2 : Q⁺ B₂ → V E
+    b2 q = inj₂ (inj₁ (inj₂ (inj₁ q)))
+
+    b3 : Q⁺ B₃ → V E
+    b3 q = inj₂ (inj₁ (inj₂ (inj₂ q)))
+
+    er : V E
+    er = inj₂ (inj₂ root)
+
+    tgt : Q⁺ B₃ ⊎ Root → V E
+    tgt (inj₁ q) = b3 q
+    tgt (inj₂ _) = er
+
+    c₁ : (i : Inp) → M.Matrix n₁ (iw i)
+    c₁ i = route₁ .ap (collapse B₁) i
+
+    c₂ : (i : Inp) → M.Matrix n₂ (iw i)
+    c₂ i = route₂ .ap (collapse B₂) i
+
+    P₁ : (t : Q⁺ B₃ ⊎ Root) → M.Matrix (vw E (tgt t)) n₁
+    P₁ (inj₁ q) = link₁ .at (λ i' → into⁺ B₃ i' q)
+    P₁ (inj₂ _) = up₁
+
+    K₁ : (t : Q⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt t)) (iw i)
+    K₁ (inj₁ q) i = route₃ .ap (λ i' → into⁺ B₃ i' q) i
+    K₁ (inj₂ _) i = out-root i
+
+    module S1 = Sweep (vw E) inj₁ b1 tgt route₁ P₁ K₁
+
+    H₁⁰ : S1.St
+    H₁⁰ .S1.into i q = into⁺ B₁ i q
+    H₁⁰ .S1.inside p q = inside⁺ B₁ p q
+
+    start₁ : S1.Start (gr E) H₁⁰
+    start₁ .S1.into-start i q = ≈-refl
+    start₁ .S1.inside-start p q = ≈-refl
+    start₁ .S1.tgt-start (inj₁ q) i = ≈-refl
+    start₁ .S1.tgt-start (inj₂ _) i = ≈-refl {f = out-root i}
+    start₁ .S1.up-start (inj₁ q) = ≈-refl
+    start₁ .S1.up-start (inj₂ _) = ≈-refl {f = up₁}
+    start₁ .S1.off-start (inj₁ q) p = ≈-refl {f = M.εₘ}
+    start₁ .S1.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
+    start₁ .S1.sink q = ≈-refl {f = M.εₘ}
+
+    G₁ : Gr (vw E)
+    G₁ = hide-all (vw E) (hide (vw E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) qs₁)
+
+    H₁ : S1.St
+    H₁ = S1.steps (S1.step H₁⁰ (inj₂ root)) (map inj₁ qs₁)
+
+    done₁ : S1.Agrees G₁ H₁
+    done₁ = S1.agrees-hide-all qs₁ (S1.agrees-start start₁)
+
+    prem₁ : Gr (vw B₁) → S1.St
+    prem₁ G .S1.into i q = G (inj₁ i) (inj₂ q)
+    prem₁ G .S1.inside p q = G (inj₂ p) (inj₂ q)
+
+    κ₁ : ∀ i → H₁ .S1.into i (inj₂ root) ≈ collapse B₁ i
+    κ₁ i =
+      ≈-trans (≈-of-≡ (≡-cong (λ H → H .S1.into i (inj₂ root))
+                              (S1.folds prem₁ inj₂ (hide (vw B₁)) (λ G w → ≡-refl)
+                                        (qs⁺ B₁) (gr B₁))))
+              (hide-qs⁺ B₁ i)
+
+    -- The second premise's columns are untouched by the first premise's sweep.
+    module Fz = Frozen (vw E) b1 inj₁ b2 (λ i q → route₂ .ap (λ i' → into⁺ B₂ i' q) i)
+
+    frozen₀ : Fz.Keeps (gr E)
+    frozen₀ .Fz.keeps i q = ≈-refl
+    frozen₀ .Fz.blind w q = ≈-refl {f = M.εₘ}
+
+    frozen₁ : Fz.Keeps G₁
+    frozen₁ = Fz.keeps-hide-all inj₁ qs₁ (Fz.keeps-hide (inj₂ root) frozen₀)
+
+    -- The second and third premises' rows are untouched by earlier sweeps.
+    cols₂ : Q⁺ B₂ ⊎ (Q⁺ B₃ ⊎ Root) → V E
+    cols₂ (inj₁ q) = b2 q
+    cols₂ (inj₂ t) = tgt t
+
+    Bh₂ : (s : Q⁺ B₂) (t : Q⁺ B₂ ⊎ (Q⁺ B₃ ⊎ Root)) → M.Matrix (vw E (cols₂ t)) (qw⁺ B₂ s)
+    Bh₂ s (inj₁ q)        = inside⁺ B₂ s q
+    Bh₂ s (inj₂ (inj₁ q)) = e₂₃ s q
+    Bh₂ s (inj₂ (inj₂ _)) = r₂ s
+
+    module Bd₂ = Behind (vw E) b1 b2 cols₂ Bh₂
+
+    behind₂ : Bd₂.Keeps G₁
+    behind₂ = Bd₂.keeps-hide-all inj₁ qs₁ (Bd₂.keeps-hide (inj₂ root) k₀)
+      where
+      k₀ : Bd₂.Keeps (gr E)
+      k₀ .Bd₂.keeps s (inj₁ q)        = ≈-refl
+      k₀ .Bd₂.keeps s (inj₂ (inj₁ q)) = ≈-refl {f = e₂₃ s q}
+      k₀ .Bd₂.keeps s (inj₂ (inj₂ _)) = ≈-refl {f = r₂ s}
+      k₀ .Bd₂.blind s w = ≈-refl {f = M.εₘ}
+
+    Φ₃₁ : Linear iw₃ iw
+    Φ₃₁ = extend route₃ link₁ c₁
+
+    P₂ : (t : Q⁺ B₃ ⊎ Root) → M.Matrix (vw E (tgt t)) n₂
+    P₂ (inj₁ q) = link₂ .at (λ i' → into⁺ B₃ i' q)
+    P₂ (inj₂ _) = up₂
+
+    K₂ : (t : Q⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt t)) (iw i)
+    K₂ (inj₁ q) i = Φ₃₁ .ap (λ i' → into⁺ B₃ i' q) i
+    K₂ (inj₂ _) i = out-root i M.+ₘ (up₁ ∘ c₁ i)
+
+    module S2 = Sweep (vw E) inj₁ b2 tgt route₂ P₂ K₂
+
+    H₂⁰ : S2.St
+    H₂⁰ .S2.into i q = into⁺ B₂ i q
+    H₂⁰ .S2.inside p q = inside⁺ B₂ p q
+
+    start₂ : S2.Start G₁ H₂⁰
+    start₂ .S2.into-start i q = frozen₁ .Fz.keeps i q
+    start₂ .S2.inside-start p q = behind₂ .Bd₂.keeps p (inj₁ q)
+    start₂ .S2.tgt-start (inj₁ q) i =
+      ≈-trans (done₁ .S1.tgt-ok (inj₁ q) i)
+              (M.+ₘ-cong ≈-refl (∘-cong₂ (route₁ .ap-cong κ₁ i)))
+    start₂ .S2.tgt-start (inj₂ _) i =
+      ≈-trans (done₁ .S1.tgt-ok (inj₂ root) i)
+              (M.+ₘ-cong ≈-refl (∘-cong₂ (route₁ .ap-cong κ₁ i)))
+    start₂ .S2.up-start (inj₁ q) = behind₂ .Bd₂.keeps (inj₂ root) (inj₂ (inj₁ q))
+    start₂ .S2.up-start (inj₂ _) = behind₂ .Bd₂.keeps (inj₂ root) (inj₂ (inj₂ root))
+    start₂ .S2.off-start (inj₁ q) p = behind₂ .Bd₂.keeps (inj₁ p) (inj₂ (inj₁ q))
+    start₂ .S2.off-start (inj₂ _) p = behind₂ .Bd₂.keeps (inj₁ p) (inj₂ (inj₂ root))
+    start₂ .S2.sink q = ≈-refl {f = M.εₘ}
+
+    G₂ : Gr (vw E)
+    G₂ = hide-all (vw E) (hide (vw E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) qs₂)
+
+    H₂ : S2.St
+    H₂ = S2.steps (S2.step H₂⁰ (inj₂ root)) (map inj₁ qs₂)
+
+    done₂ : S2.Agrees G₂ H₂
+    done₂ = S2.agrees-hide-all qs₂ (S2.agrees-start start₂)
+
+    prem₂ : Gr (vw B₂) → S2.St
+    prem₂ G .S2.into i q = G (inj₁ i) (inj₂ q)
+    prem₂ G .S2.inside p q = G (inj₂ p) (inj₂ q)
+
+    κ₂ : ∀ i → H₂ .S2.into i (inj₂ root) ≈ collapse B₂ i
+    κ₂ i =
+      ≈-trans (≈-of-≡ (≡-cong (λ H → H .S2.into i (inj₂ root))
+                              (S2.folds prem₂ inj₂ (hide (vw B₂)) (λ G w → ≡-refl)
+                                        (qs⁺ B₂) (gr B₂))))
+              (hide-qs⁺ B₂ i)
+
+    hid₁₂ : Q⁺ B₁ ⊎ Q⁺ B₂ → V E
+    hid₁₂ (inj₁ q) = b1 q
+    hid₁₂ (inj₂ q) = b2 q
+
+    cols₃ : Q⁺ B₃ ⊎ Root → V E
+    cols₃ = tgt
+
+    Bh₃ : (s : Q⁺ B₃) (t : Q⁺ B₃ ⊎ Root) → M.Matrix (vw E (cols₃ t)) (qw⁺ B₃ s)
+    Bh₃ s (inj₁ q) = inside⁺ B₃ s q
+    Bh₃ s (inj₂ _) = r₃ s
+
+    module Bd₃ = Behind (vw E) hid₁₂ b3 cols₃ Bh₃
+
+    behind₃ : Bd₃.Keeps G₂
+    behind₃ =
+      Bd₃.keeps-hide-all (λ w → inj₂ (inj₁ w)) qs₂
+        (Bd₃.keeps-hide (inj₂ (inj₂ root))
+          (Bd₃.keeps-hide-all (λ w → inj₁ (inj₁ w)) qs₁
+            (Bd₃.keeps-hide (inj₁ (inj₂ root)) k₀)))
+      where
+      k₀ : Bd₃.Keeps (gr E)
+      k₀ .Bd₃.keeps s (inj₁ q) = ≈-refl
+      k₀ .Bd₃.keeps s (inj₂ _) = ≈-refl {f = r₃ s}
+      k₀ .Bd₃.blind s (inj₁ w) = ≈-refl {f = M.εₘ}
+      k₀ .Bd₃.blind s (inj₂ w) = ≈-refl {f = M.εₘ}
+
+  Φ₃ : Linear iw₃ iw
+  Φ₃ = extend Φ₃₁ link₂ c₂
+
+  private
+    P₃ : (t : Root) → M.Matrix n n₃
+    P₃ _ = up₃
+
+    K₃ : (t : Root) (i : Inp) → M.Matrix n (iw i)
+    K₃ _ i = (out-root i M.+ₘ (up₁ ∘ c₁ i)) M.+ₘ (up₂ ∘ c₂ i)
+
+    module S3 = Sweep (vw E) inj₁ b3 (λ (_ : Root) → er) Φ₃ P₃ K₃
+
+    H₃⁰ : S3.St
+    H₃⁰ .S3.into i q = into⁺ B₃ i q
+    H₃⁰ .S3.inside p q = inside⁺ B₃ p q
+
+    start₃ : S3.Start G₂ H₃⁰
+    start₃ .S3.into-start i q =
+      ≈-trans (done₂ .S2.tgt-ok (inj₁ q) i)
+              (M.+ₘ-cong ≈-refl (∘-cong₂ (route₂ .ap-cong κ₂ i)))
+    start₃ .S3.inside-start p q = behind₃ .Bd₃.keeps p (inj₁ q)
+    start₃ .S3.tgt-start _ i =
+      ≈-trans (done₂ .S2.tgt-ok (inj₂ root) i)
+              (M.+ₘ-cong ≈-refl (∘-cong₂ (route₂ .ap-cong κ₂ i)))
+    start₃ .S3.up-start _ = behind₃ .Bd₃.keeps (inj₂ root) (inj₂ root)
+    start₃ .S3.off-start _ p = behind₃ .Bd₃.keeps (inj₁ p) (inj₂ root)
+    start₃ .S3.sink q = ≈-refl {f = M.εₘ}
+
+    G₃ : Gr (vw E)
+    G₃ = hide-all (vw E) (hide (vw E) G₂ (b3 (inj₂ root))) (map (λ w → b3 (inj₁ w)) qs₃)
+
+    H₃ : S3.St
+    H₃ = S3.steps (S3.step H₃⁰ (inj₂ root)) (map inj₁ qs₃)
+
+    done₃ : S3.Agrees G₃ H₃
+    done₃ = S3.agrees-hide-all qs₃ (S3.agrees-start start₃)
+
+    prem₃ : Gr (vw B₃) → S3.St
+    prem₃ G .S3.into i q = G (inj₁ i) (inj₂ q)
+    prem₃ G .S3.inside p q = G (inj₂ p) (inj₂ q)
+
+    κ₃ : ∀ i → H₃ .S3.into i (inj₂ root) ≈ collapse B₃ i
+    κ₃ i =
+      ≈-trans (≈-of-≡ (≡-cong (λ H → H .S3.into i (inj₂ root))
+                              (S3.folds prem₃ inj₂ (hide (vw B₃)) (λ G w → ≡-refl)
+                                        (qs⁺ B₃) (gr B₃))))
+              (hide-qs⁺ B₃ i)
+
+    l₁ = b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) qs₁
+    l₂ = b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) qs₂
+    l₃ = b3 (inj₂ root) ∷ map (λ w → b3 (inj₁ w)) qs₃
+
+    lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (Block.qs E) ≡ l₁ ++ (l₂ ++ l₃)
+    lst =
+      ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (qs⁺ B₁))
+                      (map (λ q → inj₂ (inj₁ q)) (qs⁺ B₂) ++ map (λ q → inj₂ (inj₂ q)) (qs⁺ B₃)))
+              (≡-cong₂ _++_
+                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₁ (qs⁺ B₁))
+                         (≡-cong (b1 (inj₂ root) ∷_) (map-map b1 inj₁ qs₁)))
+                (≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map (λ q → inj₂ (inj₁ q)) (qs⁺ B₂))
+                                 (map (λ q → inj₂ (inj₂ q)) (qs⁺ B₃)))
+                         (≡-cong₂ _++_
+                           (≡-trans (map-map (λ q → inj₂ (inj₁ q)) (λ q → inj₂ (inj₁ q)) (qs⁺ B₂))
+                                    (≡-cong (b2 (inj₂ root) ∷_) (map-map b2 inj₁ qs₂)))
+                           (≡-trans (map-map (λ q → inj₂ (inj₁ q)) (λ q → inj₂ (inj₂ q)) (qs⁺ B₃))
+                                    (≡-cong (b3 (inj₂ root) ∷_) (map-map b3 inj₁ qs₃))))))
+
+    plumb : ∀ i → collapse E i ≡ G₃ (inj₁ i) er
+    plumb i =
+      ≡-trans (≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er) lst)
+              (≡-trans (≡-cong (λ G → G (inj₁ i) er)
+                               (hide-all-++ (vw E) (gr E) l₁ (l₂ ++ l₃)))
+                       (≡-cong (λ G → G (inj₁ i) er)
+                               (hide-all-++ (vw E) G₁ l₂ l₃)))
+
+  agree : ∀ i → collapse E i
+                ≈ (((out-root i M.+ₘ (up₁ ∘ c₁ i)) M.+ₘ (up₂ ∘ c₂ i))
+                   M.+ₘ (up₃ ∘ Φ₃ .ap (collapse B₃) i))
+  agree i =
+    ≈-trans (≈-of-≡ (plumb i))
+            (≈-trans (done₃ .S3.tgt-ok root i)
+                     (M.+ₘ-cong ≈-refl (∘-cong₂ (Φ₃ .ap-cong κ₃ i))))
