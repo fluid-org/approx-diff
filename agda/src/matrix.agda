@@ -366,15 +366,14 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Σ-in₂ {suc x} w (suc i) = Σ-in₂ {x} w i
 
 
-  private
-    ≈ₘ-refl : ∀ {m n} {M : Matrix m n} → M ≈ₘ M
-    ≈ₘ-refl = ≈ₘ-isEquiv .IsEquivalence.refl
+  ≈ₘ-refl : ∀ {m n} {M : Matrix m n} → M ≈ₘ M
+  ≈ₘ-refl = ≈ₘ-isEquiv .IsEquivalence.refl
 
-    ≈ₘ-trans : ∀ {m n} {M N P : Matrix m n} → M ≈ₘ N → N ≈ₘ P → M ≈ₘ P
-    ≈ₘ-trans = ≈ₘ-isEquiv .IsEquivalence.trans
+  ≈ₘ-trans : ∀ {m n} {M N P : Matrix m n} → M ≈ₘ N → N ≈ₘ P → M ≈ₘ P
+  ≈ₘ-trans = ≈ₘ-isEquiv .IsEquivalence.trans
 
-    ≈ₘ-sym : ∀ {m n} {M N : Matrix m n} → M ≈ₘ N → N ≈ₘ M
-    ≈ₘ-sym = ≈ₘ-isEquiv .IsEquivalence.sym
+  ≈ₘ-sym : ∀ {m n} {M N : Matrix m n} → M ≈ₘ N → N ≈ₘ M
+  ≈ₘ-sym = ≈ₘ-isEquiv .IsEquivalence.sym
 
   ∘-cong₁ : ∀ {m n k} {M₁ M₂ : Matrix m n} {N : Matrix n k} → M₁ ≈ₘ M₂ → M₁ ∘ N ≈ₘ M₂ ∘ N
   ∘-cong₁ p = ∘-cong p ≈ₘ-refl
@@ -438,3 +437,85 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
                 (G₁ +ₘ (G₂ ∘ G₃)) ≈ₘ (K +ₘ (P ∘ (X +ₘ (Y ∘ Z))))
   offset-step {K = K} {P} {X = X} {Y = Y} {Z = Z} a b c =
     ≈ₘ-trans (+ₘ-cong a (∘-cong b c)) (offset-distrib K P X Y Z)
+
+  -- Linear maps on families of columns indexed by a set of input positions: the routing by which a
+  -- premise's inputs are reached from the conclusion's.
+  record Linear {ℓ'} {Inp' : Set ℓ'} (iw' : Inp' → ℕ) {Inp : Set ℓ'} (iw : Inp → ℕ) :
+                Set (o ⊔ ℓ ⊔ ℓ') where
+    field
+      ap      : ∀ {m} → ((i' : Inp') → Matrix m (iw' i')) → (i : Inp) → Matrix m (iw i)
+      ap-+    : ∀ {m} (f g : (i' : Inp') → Matrix m (iw' i')) (i : Inp) →
+                ap (λ i' → f i' +ₘ g i') i ≈ₘ (ap f i +ₘ ap g i)
+      ap-∘    : ∀ {m k} (X : Matrix k m) (f : (i' : Inp') → Matrix m (iw' i')) (i : Inp) →
+                ap (λ i' → X ∘ f i') i ≈ₘ (X ∘ ap f i)
+      ap-cong : ∀ {m} {f g : (i' : Inp') → Matrix m (iw' i')} → (∀ i' → f i' ≈ₘ g i') →
+                ∀ i → ap f i ≈ₘ ap g i
+
+  open Linear public
+
+  -- The same into a single column: how a premise's inputs are reached from an earlier root.
+  record Link {ℓ'} {Inp' : Set ℓ'} (iw' : Inp' → ℕ) (n : ℕ) : Set (o ⊔ ℓ ⊔ ℓ') where
+    field
+      at      : ∀ {m} → ((i' : Inp') → Matrix m (iw' i')) → Matrix m n
+      at-+    : ∀ {m} (f g : (i' : Inp') → Matrix m (iw' i')) →
+                at (λ i' → f i' +ₘ g i') ≈ₘ (at f +ₘ at g)
+      at-∘    : ∀ {m k} (X : Matrix k m) (f : (i' : Inp') → Matrix m (iw' i')) →
+                at (λ i' → X ∘ f i') ≈ₘ (X ∘ at f)
+      at-cong : ∀ {m} {f g : (i' : Inp') → Matrix m (iw' i')} → (∀ i' → f i' ≈ₘ g i') →
+                at f ≈ₘ at g
+
+  open Link public
+
+  id-linear : ∀ {ℓ'} {Inp : Set ℓ'} (iw : Inp → ℕ) → Linear iw iw
+  id-linear iw .ap f i = f i
+  id-linear iw .ap-+ f g i = ≈ₘ-refl
+  id-linear iw .ap-∘ X f i = ≈ₘ-refl
+  id-linear iw .ap-cong e i = e i
+
+  no-link : ∀ {ℓ'} {Inp' : Set ℓ'} (iw' : Inp' → ℕ) (n : ℕ) → Link iw' n
+  no-link iw' n .at {m} _ = εₘ {m} {n}
+  no-link iw' n .at-+ {m} f g = ≈ₘ-sym (+ₘ-lunit (εₘ {m} {n}))
+  no-link iw' n .at-∘ {m} {k} X f = ≈ₘ-sym (comp-bilinear-ε₂ X)
+  no-link iw' n .at-cong {m} e = ≈ₘ-refl {M = εₘ {m} {n}}
+
+  -- A routing with a further contribution reaching the premise through the column c, as when an
+  -- earlier premise has collapsed onto its root.
+  extend : ∀ {ℓ'} {Inp' : Set ℓ'} {iw' : Inp' → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n₀ : ℕ} →
+           Linear iw' iw → Link iw' n₀ → ((i : Inp) → Matrix n₀ (iw i)) → Linear iw' iw
+  extend R L c .ap f i = R .ap f i +ₘ (L .at f ∘ c i)
+  extend R L c .ap-+ f g i =
+    ≈ₘ-trans (+ₘ-cong (R .ap-+ f g i)
+                      (≈ₘ-trans (∘-cong₁ (L .at-+ f g))
+                                (comp-bilinear₁ (L .at f) (L .at g) (c i))))
+             (+ₘ-interchange (R .ap f i) (R .ap g i) (L .at f ∘ c i) (L .at g ∘ c i))
+  extend R L c .ap-∘ X f i =
+    ≈ₘ-trans (+ₘ-cong (R .ap-∘ X f i)
+                      (≈ₘ-trans (∘-cong₁ (L .at-∘ X f)) (assoc X (L .at f) (c i))))
+             (≈ₘ-sym (comp-bilinear₂ X (R .ap f i) (L .at f ∘ c i)))
+  extend R L c .ap-cong e i = +ₘ-cong (R .ap-cong e i) (∘-cong₁ (L .at-cong e))
+
+  -- The column a rule contributes at each input position, as a function of its premises' columns.
+  -- Used both to state a rule's relation and to state what its block collapses to.
+  one-result : ∀ {ℓ'} {Inp' : Set ℓ'} {iw' : Inp' → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₀} →
+               Linear iw' iw → ((i : Inp) → Matrix n (iw i)) → Matrix n n₀ →
+               ((i' : Inp') → Matrix n₀ (iw' i')) → (i : Inp) → Matrix n (iw i)
+  one-result route out up c i = out i +ₘ (up ∘ route .ap c i)
+
+  seq-result : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
+               {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₁ n₂} →
+               Linear iw₁ iw → Linear iw₂ iw → Link iw₂ n₁ →
+               ((i : Inp) → Matrix n (iw i)) → Matrix n n₁ → Matrix n n₂ →
+               ((i' : Inp₁) → Matrix n₁ (iw₁ i')) → ((i' : Inp₂) → Matrix n₂ (iw₂ i')) →
+               (i : Inp) → Matrix n (iw i)
+  seq-result r₁ r₂ l out u₁ u₂ c₁ c₂ i =
+    one-result r₁ out u₁ c₁ i +ₘ (u₂ ∘ extend r₂ l (λ j → r₁ .ap c₁ j) .ap c₂ i)
+
+  seq3-result : ∀ {ℓ'} {Inp₁ : Set ℓ'} {iw₁ : Inp₁ → ℕ} {Inp₂ : Set ℓ'} {iw₂ : Inp₂ → ℕ}
+                {Inp₃ : Set ℓ'} {iw₃ : Inp₃ → ℕ} {Inp : Set ℓ'} {iw : Inp → ℕ} {n n₁ n₂ n₃} →
+                Linear iw₁ iw → Linear iw₂ iw → Linear iw₃ iw → Link iw₃ n₁ → Link iw₃ n₂ →
+                ((i : Inp) → Matrix n (iw i)) → Matrix n n₁ → Matrix n n₂ → Matrix n n₃ →
+                ((i' : Inp₁) → Matrix n₁ (iw₁ i')) → ((i' : Inp₂) → Matrix n₂ (iw₂ i')) →
+                ((i' : Inp₃) → Matrix n₃ (iw₃ i')) → (i : Inp) → Matrix n (iw i)
+  seq3-result r₁ r₂ r₃ l₁ l₂ out u₁ u₂ u₃ c₁ c₂ c₃ i =
+    (one-result r₁ out u₁ c₁ i +ₘ (u₂ ∘ r₂ .ap c₂ i))
+    +ₘ (u₃ ∘ extend (extend r₃ l₁ (λ j → r₁ .ap c₁ j)) l₂ (λ j → r₂ .ap c₂ j) .ap c₃ i)

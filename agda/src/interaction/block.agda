@@ -18,6 +18,9 @@ module interaction.block (ℓ : Level) where
 private
   module M = matrix.Mat two.semiring
 
+open M using (Linear; Link; ap; ap-+; ap-∘; ap-cong; at; at-+; at-∘; at-cong;
+              id-linear; no-link; extend; one-result; seq-result; seq3-result)
+
 open import categories using (Category)
 open Category M.cat using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; ≈-refl; ≈-sym; ≈-trans)
 
@@ -29,63 +32,6 @@ data Root : Set ℓ where
 
 Void : Set ℓ
 Void = Lift ℓ ⊥
-
--- A map on input columns, linear so that it commutes with hiding. A premise evaluated in a
--- substituted environment reaches the conclusion's inputs through one of these.
-record Linear {Inp' : Set ℓ} (iw' : Inp' → ℕ) {Inp : Set ℓ} (iw : Inp → ℕ) : Set (lsuc ℓ) where
-  field
-    ap      : ∀ {m} → ((i' : Inp') → M.Matrix m (iw' i')) → (i : Inp) → M.Matrix m (iw i)
-    ap-+    : ∀ {m} (f g : (i' : Inp') → M.Matrix m (iw' i')) (i : Inp) →
-              ap (λ i' → f i' M.+ₘ g i') i ≈ (ap f i M.+ₘ ap g i)
-    ap-∘    : ∀ {m k} (X : M.Matrix k m) (f : (i' : Inp') → M.Matrix m (iw' i')) (i : Inp) →
-              ap (λ i' → X ∘ f i') i ≈ (X ∘ ap f i)
-    ap-cong : ∀ {m} {f g : (i' : Inp') → M.Matrix m (iw' i')} → (∀ i' → f i' ≈ g i') →
-              ∀ i → ap f i ≈ ap g i
-
-open Linear public
-
--- The same into a single column: how a premise's inputs are reached from an earlier premise's root.
-record Link {Inp' : Set ℓ} (iw' : Inp' → ℕ) (n : ℕ) : Set (lsuc ℓ) where
-  field
-    at      : ∀ {m} → ((i' : Inp') → M.Matrix m (iw' i')) → M.Matrix m n
-    at-+    : ∀ {m} (f g : (i' : Inp') → M.Matrix m (iw' i')) →
-              at (λ i' → f i' M.+ₘ g i') ≈ (at f M.+ₘ at g)
-    at-∘    : ∀ {m k} (X : M.Matrix k m) (f : (i' : Inp') → M.Matrix m (iw' i')) →
-              at (λ i' → X ∘ f i') ≈ (X ∘ at f)
-    at-cong : ∀ {m} {f g : (i' : Inp') → M.Matrix m (iw' i')} → (∀ i' → f i' ≈ g i') →
-              at f ≈ at g
-
-open Link public
-
-id-linear : {Inp : Set ℓ} (iw : Inp → ℕ) → Linear iw iw
-id-linear iw .ap f i = f i
-id-linear iw .ap-+ f g i = ≈-refl
-id-linear iw .ap-∘ X f i = ≈-refl
-id-linear iw .ap-cong e i = e i
-
-no-link : {Inp' : Set ℓ} (iw' : Inp' → ℕ) (n : ℕ) → Link iw' n
-no-link iw' n .at {m} _ = M.εₘ {m} {n}
-no-link iw' n .at-+ {m} f g =
-  ≈-sym {f = M.εₘ {m} {n} M.+ₘ M.εₘ {m} {n}} {g = M.εₘ {m} {n}} (M.+ₘ-lunit (M.εₘ {m} {n}))
-no-link iw' n .at-∘ {m} {k} X f =
-  ≈-sym {f = X ∘ M.εₘ {m} {n}} {g = M.εₘ {k} {n}} (M.comp-bilinear-ε₂ X)
-no-link iw' n .at-cong {m} e = ≈-refl {f = M.εₘ {m} {n}}
-
--- A routing with a further contribution reaching the premise through the column c, as when an
--- earlier premise has collapsed onto its root.
-extend : {Inp' : Set ℓ} {iw' : Inp' → ℕ} {Inp : Set ℓ} {iw : Inp → ℕ} {n₀ : ℕ} →
-         Linear iw' iw → Link iw' n₀ → ((i : Inp) → M.Matrix n₀ (iw i)) → Linear iw' iw
-extend R L c .ap f i = R .ap f i M.+ₘ (L .at f ∘ c i)
-extend R L c .ap-+ f g i =
-  ≈-trans (M.+ₘ-cong (R .ap-+ f g i)
-                     (≈-trans (∘-cong₁ (L .at-+ f g))
-                              (M.comp-bilinear₁ (L .at f) (L .at g) (c i))))
-          (M.+ₘ-interchange (R .ap f i) (R .ap g i) (L .at f ∘ c i) (L .at g ∘ c i))
-extend R L c .ap-∘ X f i =
-  ≈-trans (M.+ₘ-cong (R .ap-∘ X f i)
-                     (≈-trans (∘-cong₁ (L .at-∘ X f)) (assoc X (L .at f) (c i))))
-          (≈-sym (M.comp-bilinear₂ X (R .ap f i) (L .at f ∘ c i)))
-extend R L c .ap-cong e i = M.+ₘ-cong (R .ap-cong e i) (∘-cong₁ (L .at-cong e))
 
 record Block (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
   field
@@ -463,7 +409,7 @@ module One
     plumb i = ≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er)
                      (≡-cong (b (inj₂ root) ∷_) (map-map b inj₁ (Block.qs B)))
 
-  agree : ∀ i → collapse E i ≈ (out-root i M.+ₘ (up-root ∘ route .ap (collapse B) i))
+  agree : ∀ i → collapse E i ≈ one-result route out-root up-root (collapse B) i
   agree i =
     ≈-trans (≈-of-≡ (plumb i))
             (≈-trans (done .S.tgt-ok root i)
@@ -654,8 +600,7 @@ module Seq
                         (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) qs₂)))
 
   agree : ∀ i → collapse E i
-                ≈ ((out-root i M.+ₘ (up₁ ∘ route₁ .ap (collapse B₁) i))
-                   M.+ₘ (up₂ ∘ Φ₂ .ap (collapse B₂) i))
+                ≈ seq-result route₁ route₂ link out-root up₁ up₂ (collapse B₁) (collapse B₂) i
   agree i =
     ≈-trans (≈-of-≡ (plumb i))
             (≈-trans (done₂ .S2.tgt-ok root i)
@@ -674,7 +619,7 @@ module Same
   E : Block Inp iw n
   E = O.E
 
-  agree : ∀ i → collapse E i ≈ (out-root i M.+ₘ (up-root ∘ collapse B i))
+  agree : ∀ i → collapse E i ≈ one-result (id-linear iw) out-root up-root (collapse B) i
   agree = O.agree
 
 -- Two premises with no entries between them, both feeding the conclusion's root.
@@ -697,7 +642,7 @@ module Par
   E = S.E
 
   agree : ∀ i → collapse E i
-                ≈ ((out-root i M.+ₘ (up₁ ∘ route₁ .ap (collapse B₁) i))
+                ≈ (one-result route₁ out-root up₁ (collapse B₁) i
                    M.+ₘ (up₂ ∘ route₂ .ap (collapse B₂) i))
   agree i =
     ≈-trans (S.agree i)
@@ -1024,8 +969,8 @@ module Seq3
                                (hide-all-++ (vw E) G₁ l₂ l₃)))
 
   agree : ∀ i → collapse E i
-                ≈ (((out-root i M.+ₘ (up₁ ∘ c₁ i)) M.+ₘ (up₂ ∘ c₂ i))
-                   M.+ₘ (up₃ ∘ Φ₃ .ap (collapse B₃) i))
+                ≈ seq3-result route₁ route₂ route₃ link₁ link₂ out-root up₁ up₂ up₃
+                              (collapse B₁) (collapse B₂) (collapse B₃) i
   agree i =
     ≈-trans (≈-of-≡ (plumb i))
             (≈-trans (done₃ .S3.tgt-ok root i)
