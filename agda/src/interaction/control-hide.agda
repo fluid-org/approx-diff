@@ -56,13 +56,17 @@ fo-graph D = hide-all (graph D) (map at (fo-hidden D))
 -- Collapse: hide every path of the derivation and read the remaining dependence from each input
 -- vertex to the root. Hiding the root itself is a no-op, since the root has no outgoing edges, so
 -- the whole enumeration can be hidden.
+collapse-at : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (i : Input) →
+              M.Matrix (width v) (input-width γ i)
+collapse-at D i = hide-all (graph D) (map at (paths D)) (inp i) (at ε)
+
 collapse : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
            M.Matrix (width v) (width-env γ)
-collapse D = hide-all (graph D) (map at (paths D)) env (at ε)
+collapse D = collapse-at D environment
 
 collapse-src : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
                M.Matrix (width v) 1
-collapse-src D = hide-all (graph D) (map at (paths D)) src (at ε)
+collapse-src D = collapse-at D source
 
 hide-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
          {D : γ , Ms ⇓s vs [ R ]} → GraphS D → VertexS D → GraphS D

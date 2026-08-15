@@ -34,15 +34,20 @@ private
 open import categories using (Category)
 open Category M.cat using (_⇒_; _∘_)
 
+data Input : Set where
+  environment source : Input
+
+input-width : ∀ {Γ} → Env Γ → Input → ℕ
+input-width γ environment = width-env γ
+input-width _ source      = 1
+
 data Vertex {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R : _} (D : γ , t ⇓ v [ R ]) : Set ℓ where
-  env : Vertex D
-  src : Vertex D
+  inp : Input → Vertex D
   at  : Path D → Vertex D
 
 data VertexS {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs} {R : _}
              (D : γ , Ms ⇓s vs [ R ]) : Set ℓ where
-  env : VertexS D
-  src : VertexS D
+  inp : Input → VertexS D
   at  : PathS D → VertexS D
 
 -- A fold-action derivation has a second source alongside env: the input value being folded over.
@@ -52,28 +57,27 @@ data VertexM {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ�
              {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : suc (width-env γ) ⇒ width v}
              {v' : Val (σ' [ σr ])} {R' : suc (width-env γ) ⇒ width v'}
              (D : Map γ s σ' v R v' R') : Set ℓ where
-  env   : VertexM D
-  src   : VertexM D
+  inp   : Input → VertexM D
   input : VertexM D
   at    : PathM D → VertexM D
 
+pattern env = inp environment
+pattern src = inp source
+
 vertex-width : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} → Vertex D → ℕ
-vertex-width {γ = γ} env = width-env γ
-vertex-width src         = 1
-vertex-width (at p)      = width-at p
+vertex-width {γ = γ} (inp i) = input-width γ i
+vertex-width (at p)          = width-at p
 
 vertex-width-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
       {D : γ , Ms ⇓s vs [ R ]} → VertexS D → ℕ
-vertex-width-s {γ = γ} env = width-env γ
-vertex-width-s src         = 1
-vertex-width-s (at p)      = width-at-s p
+vertex-width-s {γ = γ} (inp i) = input-width γ i
+vertex-width-s (at p)          = width-at-s p
 
 vertex-width-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
       {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {R : suc (width-env γ) ⇒ width v}
       {v' : Val (σ' [ σr ])} {R' : suc (width-env γ) ⇒ width v'}
       {D : Map γ s σ' v R v' R'} → VertexM D → ℕ
-vertex-width-m {γ = γ} env     = width-env γ
-vertex-width-m src             = 1
+vertex-width-m {γ = γ} (inp i) = input-width γ i
 vertex-width-m {v = v} input   = width v
 vertex-width-m (at p)          = width-at-m p
 
