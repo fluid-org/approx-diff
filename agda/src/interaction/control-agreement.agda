@@ -2822,3 +2822,261 @@ module MMu {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ 
   agree-in =
     ≈-trans (rfin .input-root)
     (≈-trans (rcast-∘ e' M.I (ccast eᵥ (collapse-m-in D))) (rcast-cong e' id-left))
+
+-- One summand survives because a factor of the other is zero.
+keep-l : ∀ {m n k} {G₁ C : M.Matrix m n} {G₂ : M.Matrix m k} {G₃ : M.Matrix k n} →
+         G₁ ≈ C → G₂ ≈ M.εₘ → (G₁ M.+ₘ (G₂ ∘ G₃)) ≈ C
+keep-l {C = C} {G₃ = G₃} a b = ≈-trans (+ₘ-cong a (∘-cong₁ b)) (absorb C G₃)
+
+keep-r : ∀ {m n k} {G₁ C : M.Matrix m n} {G₂ : M.Matrix m k} {G₃ : M.Matrix k n} →
+         G₁ ≈ C → G₃ ≈ M.εₘ → (G₁ M.+ₘ (G₂ ∘ G₃)) ≈ C
+keep-r {C = C} {G₂ = G₂} a c = ≈-trans (+ₘ-cong a (∘-cong₂ c)) (absorb-r C G₂)
+
+-- The pair action: the two premises' collapses are injected side by side, the input columns
+-- resolved through the two halves of the input value.
+module MPair {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+             {σ₁ σ₂ : type 1} {v : Val (σ₁ [ μ τ₀ ])} {u : Val (σ₂ [ μ τ₀ ])}
+             {R : Nat.suc (width-env γ) ⇒ width (pair v u)}
+             {v' : Val (σ₁ [ σr ])} {S₁ : Nat.suc (width-env γ) ⇒ width v'}
+             {u' : Val (σ₂ [ σr ])} {T : Nat.suc (width-env γ) ⇒ width u'}
+             {D₁ : Map γ s σ₁ v
+                     (M.p₁ {width v} {width u} ∘ (M.p₂ {1} {width v Nat.+ width u} ∘ R)) v' S₁}
+             {D₂ : Map γ s σ₂ u
+                     (M.p₂ {width v} {width u} ∘ (M.p₂ {1} {width v Nat.+ width u} ∘ R)) u' T}
+             where
+
+  private
+    C : Map γ s (σ₁ [×] σ₂) (pair v u) R (pair v' u') _
+    C = m-pair {v = v} {v' = v'} {u = u} {u' = u'} {R = R} {T = S₁} {U = T} D₁ D₂
+
+    p2 = M.p₂ {1} {width v Nat.+ width u}
+    pˡ = M.p₁ {width v} {width u}
+    pʳ = M.p₂ {width v} {width u}
+    i₁ = M.in₁ {width v'} {width u'}
+    i₂ = M.in₂ {width v'} {width u'}
+    ri₁ = M.in₂ {1} {width v' Nat.+ width u'} ∘ i₁
+    ri₂ = M.in₂ {1} {width v' Nat.+ width u'} ∘ i₂
+    Wˡ = pˡ ∘ p2
+    Wʳ = pʳ ∘ p2
+    K = M.in₁ {1} {width v' Nat.+ width u'} ∘ M.p₁ {1} {width v Nat.+ width u}
+    Kₛ = src-root {width v' Nat.+ width u'}
+
+  record Phase₁ (G : GraphM C) (H : GraphM D₁) : Set ℓ where
+    field
+      env-left    : ∀ q → G env (at (m-pair₁ q)) ≈ H env (at q)
+      src-left    : ∀ q → G src (at (m-pair₁ q)) ≈ H src (at q)
+      input-left  : ∀ q → G input (at (m-pair₁ q)) ≈ (H input (at q) ∘ Wˡ)
+      left-left   : ∀ p q → G (at (m-pair₁ p)) (at (m-pair₁ q)) ≈ H (at p) (at q)
+      env-root    : G env (at ε) ≈ (ri₁ ∘ H env (at ε))
+      source-root : G src (at ε) ≈ (Kₛ M.+ₘ (ri₁ ∘ H src (at ε)))
+      input-root  : G input (at ε) ≈ (K M.+ₘ ((ri₁ ∘ H input (at ε)) ∘ Wˡ))
+      left-root   : ∀ p → is-ε-m p ≡ Bool.false →
+                    G (at (m-pair₁ p)) (at ε) ≈ (ri₁ ∘ H (at p) (at ε))
+      env-right   : ∀ q → G env (at (m-pair₂ q)) ≈ graph-m D₂ env (at q)
+      src-right   : ∀ q → G src (at (m-pair₂ q)) ≈ graph-m D₂ src (at q)
+      input-right : ∀ q → G input (at (m-pair₂ q)) ≈ (graph-m D₂ input (at q) ∘ Wʳ)
+      right-right : ∀ p q → G (at (m-pair₂ p)) (at (m-pair₂ q)) ≈ graph-m D₂ (at p) (at q)
+      right-root  : ∀ p → G (at (m-pair₂ p)) (at ε) ≈ edge-m ri₂ p
+      left-right  : ∀ p q → G (at (m-pair₁ p)) (at (m-pair₂ q)) ≈ M.εₘ
+      right-left  : ∀ p q → G (at (m-pair₂ p)) (at (m-pair₁ q)) ≈ M.εₘ
+
+  open Phase₁
+
+  step₁ : ∀ {G H} (w : PathM D₁) → is-ε-m w ≡ Bool.false →
+          Phase₁ G H → Phase₁ (hide-m G (at (m-pair₁ w))) (hide-m H (at w))
+  step₁ w nw r .env-left q = +ₘ-cong (r .env-left q) (∘-cong (r .left-left w q) (r .env-left w))
+  step₁ w nw r .src-left q = +ₘ-cong (r .src-left q) (∘-cong (r .left-left w q) (r .src-left w))
+  step₁ {H = H} w nw r .input-left q =
+    step-under {W = Wˡ} {X = H input (at q)} {Y = H (at w) (at q)} {Z = H input (at w)}
+      (r .input-left q) (r .left-left w q) (r .input-left w)
+  step₁ w nw r .left-left p q =
+    +ₘ-cong (r .left-left p q) (∘-cong (r .left-left w q) (r .left-left p w))
+  step₁ w nw r .env-root = root-step {P = ri₁} (r .env-root) (r .left-root w nw) (r .env-left w)
+  step₁ {H = H} w nw r .source-root =
+    offset-step {K = Kₛ} {P = ri₁} {X = H src (at ε)} {Y = H (at w) (at ε)} {Z = H src (at w)}
+      (r .source-root) (r .left-root w nw) (r .src-left w)
+  step₁ {H = H} w nw r .input-root =
+    offset-under ri₁ {W = Wˡ} {K = K}
+                 {X = H input (at ε)} {Y = H (at w) (at ε)} {Z = H input (at w)}
+      (r .input-root) (r .left-root w nw) (r .input-left w)
+  step₁ w nw r .left-root p np =
+    root-step {P = ri₁} (r .left-root p np) (r .left-root w nw) (r .left-left p w)
+  step₁ w nw r .env-right q = keep-l (r .env-right q) (r .left-right w q)
+  step₁ w nw r .src-right q = keep-l (r .src-right q) (r .left-right w q)
+  step₁ w nw r .input-right q = keep-l (r .input-right q) (r .left-right w q)
+  step₁ w nw r .right-right p q = keep-l (r .right-right p q) (r .left-right w q)
+  step₁ w nw r .right-root p = keep-r (r .right-root p) (r .right-left p w)
+  step₁ w nw r .left-right p q = keep-l (r .left-right p q) (r .left-right w q)
+  step₁ w nw r .right-left p q = keep-r (r .right-left p q) (r .right-left p w)
+
+  steps₁ : ∀ {G H} (ws : List (PathM D₁)) → All (λ w → is-ε-m w ≡ Bool.false) ws →
+           Phase₁ G H → Phase₁ (hide-all-m G (map at (map m-pair₁ ws))) (hide-all-m H (map at ws))
+  steps₁ []       []         r = r
+  steps₁ (w ∷ ws) (nw ∷ nws) r = steps₁ ws nws (step₁ w nw r)
+
+  private
+    hh : ∀ x y → hide-m (hide-m (graph-m C) (at ε)) (at (m-pair₁ ε)) x y
+         ≈ (graph-m C x y M.+ₘ (graph-m C (at (m-pair₁ ε)) y ∘ graph-m C x (at (m-pair₁ ε))))
+    hh = hide-hide-root-m C (at (m-pair₁ ε))
+
+    base₁ : Phase₁ (hide-m (hide-m (graph-m C) (at ε)) (at (m-pair₁ ε)))
+                   (hide-m (graph-m D₁) (at ε))
+    base₁ .env-left q = hh env (at (m-pair₁ q))
+    base₁ .src-left q = hh src (at (m-pair₁ q))
+    base₁ .input-left q =
+      ≈-trans (hh input (at (m-pair₁ q)))
+              (step-under {W = Wˡ} {X = graph-m D₁ input (at q)} {Y = graph-m D₁ (at ε) (at q)}
+                          {Z = graph-m D₁ input (at ε)}
+                          (assoc (graph-m D₁ input (at q)) pˡ p2)
+                          (≈-refl {f = graph-m D₁ (at ε) (at q)})
+                          (assoc (graph-m D₁ input (at ε)) pˡ p2))
+    base₁ .left-left p q = hh (at (m-pair₁ p)) (at (m-pair₁ q))
+    base₁ .env-root = ≈-trans (hh env (at ε)) (into-hidden-m D₁ ri₁ env)
+    base₁ .source-root =
+      ≈-trans {f = hide-m (hide-m (graph-m C) (at ε)) (at (m-pair₁ ε)) src (at ε)}
+              {g = Kₛ M.+ₘ (ri₁ ∘ graph-m D₁ src (at ε))}
+              {h = Kₛ M.+ₘ (ri₁ ∘ hide-m (graph-m D₁) (at ε) src (at ε))}
+              (hh src (at ε)) (into-hidden-off-m D₁ src Kₛ ri₁)
+    base₁ .input-root =
+      ≈-trans (hh input (at ε))
+              (+ₘ-cong (≈-refl {f = K})
+                       (≈-trans (∘-cong₂ (assoc (graph-m D₁ input (at ε)) pˡ p2))
+                       (≈-trans (≈-sym (assoc ri₁ (graph-m D₁ input (at ε)) Wˡ))
+                                (∘-cong₁ (∘-cong₂ (≈-sym (hide-root-m D₁ input (at ε))))))))
+    base₁ .left-root p np =
+      ≈-trans (hh (at (m-pair₁ p)) (at ε))
+      (≈-trans (+ₘ-cong (edge-off-m ri₁ p np) ≈-refl) (into-hidden-m D₁ ri₁ (at p)))
+    base₁ .env-right q =
+      ≈-trans (hh env (at (m-pair₂ q)))
+              (absorb (graph-m C env (at (m-pair₂ q))) (graph-m C env (at (m-pair₁ ε))))
+    base₁ .src-right q =
+      ≈-trans (hh src (at (m-pair₂ q)))
+              (absorb (graph-m C src (at (m-pair₂ q))) (graph-m C src (at (m-pair₁ ε))))
+    base₁ .input-right q =
+      ≈-trans (hh input (at (m-pair₂ q)))
+              (≈-trans (absorb (graph-m C input (at (m-pair₂ q)))
+                               (graph-m C input (at (m-pair₁ ε))))
+                       (assoc (graph-m D₂ input (at q)) pʳ p2))
+    base₁ .right-right p q =
+      ≈-trans (hh (at (m-pair₂ p)) (at (m-pair₂ q)))
+              (absorb (graph-m C (at (m-pair₂ p)) (at (m-pair₂ q)))
+                      (graph-m C (at (m-pair₂ p)) (at (m-pair₁ ε))))
+    base₁ .right-root p =
+      ≈-trans (hh (at (m-pair₂ p)) (at ε))
+              (absorb-r (graph-m C (at (m-pair₂ p)) (at ε)) (graph-m C (at (m-pair₁ ε)) (at ε)))
+    base₁ .left-right p q =
+      ≈-trans (hh (at (m-pair₁ p)) (at (m-pair₂ q)))
+              (absorb (graph-m C (at (m-pair₁ p)) (at (m-pair₂ q)))
+                      (graph-m C (at (m-pair₁ p)) (at (m-pair₁ ε))))
+    base₁ .right-left p q =
+      ≈-trans (hh (at (m-pair₂ p)) (at (m-pair₁ q)))
+              (absorb-r (graph-m C (at (m-pair₂ p)) (at (m-pair₁ q)))
+                        (graph-m C (at (m-pair₁ ε)) (at (m-pair₁ q))))
+
+  record Phase₂ (G : GraphM C) (H : GraphM D₂)
+                (Kₑ : M.Matrix (width (pair v' u')) (width-env γ))
+                (Kc : M.Matrix (width (pair v' u')) 1)
+                (Kᵢ : M.Matrix (width (pair v' u')) (width (pair v u))) : Set ℓ where
+    field
+      env-right   : ∀ q → G env (at (m-pair₂ q)) ≈ H env (at q)
+      src-right   : ∀ q → G src (at (m-pair₂ q)) ≈ H src (at q)
+      input-right : ∀ q → G input (at (m-pair₂ q)) ≈ (H input (at q) ∘ Wʳ)
+      right-right : ∀ p q → G (at (m-pair₂ p)) (at (m-pair₂ q)) ≈ H (at p) (at q)
+      env-root    : G env (at ε) ≈ (Kₑ M.+ₘ (ri₂ ∘ H env (at ε)))
+      source-root : G src (at ε) ≈ (Kc M.+ₘ (ri₂ ∘ H src (at ε)))
+      input-root  : G input (at ε) ≈ (Kᵢ M.+ₘ ((ri₂ ∘ H input (at ε)) ∘ Wʳ))
+      right-root  : ∀ p → is-ε-m p ≡ Bool.false →
+                    G (at (m-pair₂ p)) (at ε) ≈ (ri₂ ∘ H (at p) (at ε))
+
+  open Phase₂
+
+  step₂ : ∀ {G H Kₑ Kc Kᵢ} (w : PathM D₂) → is-ε-m w ≡ Bool.false →
+          Phase₂ G H Kₑ Kc Kᵢ → Phase₂ (hide-m G (at (m-pair₂ w))) (hide-m H (at w)) Kₑ Kc Kᵢ
+  step₂ w nw r .env-right q = +ₘ-cong (r .env-right q) (∘-cong (r .right-right w q) (r .env-right w))
+  step₂ w nw r .src-right q = +ₘ-cong (r .src-right q) (∘-cong (r .right-right w q) (r .src-right w))
+  step₂ {H = H} w nw r .input-right q =
+    step-under {W = Wʳ} {X = H input (at q)} {Y = H (at w) (at q)} {Z = H input (at w)}
+      (r .input-right q) (r .right-right w q) (r .input-right w)
+  step₂ w nw r .right-right p q =
+    +ₘ-cong (r .right-right p q) (∘-cong (r .right-right w q) (r .right-right p w))
+  step₂ {Kₑ = Kₑ} w nw r .env-root =
+    offset-step {K = Kₑ} {P = ri₂} (r .env-root) (r .right-root w nw) (r .env-right w)
+  step₂ {Kc = Kc} w nw r .source-root =
+    offset-step {K = Kc} {P = ri₂} (r .source-root) (r .right-root w nw) (r .src-right w)
+  step₂ {H = H} {Kᵢ = Kᵢ} w nw r .input-root =
+    offset-under ri₂ {W = Wʳ} {K = Kᵢ}
+                 {X = H input (at ε)} {Y = H (at w) (at ε)} {Z = H input (at w)}
+      (r .input-root) (r .right-root w nw) (r .input-right w)
+  step₂ w nw r .right-root p np =
+    root-step {P = ri₂} (r .right-root p np) (r .right-root w nw) (r .right-right p w)
+
+  steps₂ : ∀ {G H Kₑ Kc Kᵢ} (ws : List (PathM D₂)) → All (λ w → is-ε-m w ≡ Bool.false) ws →
+           Phase₂ G H Kₑ Kc Kᵢ →
+           Phase₂ (hide-all-m G (map at (map m-pair₂ ws))) (hide-all-m H (map at ws)) Kₑ Kc Kᵢ
+  steps₂ []       []         r = r
+  steps₂ (w ∷ ws) (nw ∷ nws) r = steps₂ ws nws (step₂ w nw r)
+
+  private
+    r1 : Phase₁ (hide-all-m (hide-m (hide-m (graph-m C) (at ε)) (at (m-pair₁ ε)))
+                            (map at (map m-pair₁ (interior-m D₁))))
+                (hide-all-m (hide-m (graph-m D₁) (at ε)) (map at (interior-m D₁)))
+    r1 = steps₁ (interior-m D₁) (interior-not-root-m D₁) base₁
+
+    base₂ : Phase₂ (hide-m (hide-all-m (hide-m (hide-m (graph-m C) (at ε)) (at (m-pair₁ ε)))
+                                       (map at (map m-pair₁ (interior-m D₁))))
+                           (at (m-pair₂ ε)))
+                   (hide-m (graph-m D₂) (at ε))
+                   (ri₁ ∘ collapse-m-env D₁)
+                   (Kₛ M.+ₘ (ri₁ ∘ collapse-m-src D₁))
+                   (K M.+ₘ ((ri₁ ∘ collapse-m-in D₁) ∘ Wˡ))
+    base₂ .env-right q = +ₘ-cong (r1 .env-right q) (∘-cong (r1 .right-right ε q) (r1 .env-right ε))
+    base₂ .src-right q = +ₘ-cong (r1 .src-right q) (∘-cong (r1 .right-right ε q) (r1 .src-right ε))
+    base₂ .input-right q =
+      step-under {W = Wʳ} {X = graph-m D₂ input (at q)}
+                 {Y = graph-m D₂ (at ε) (at q)}
+                 {Z = graph-m D₂ input (at ε)}
+                 (r1 .input-right q) (r1 .right-right ε q) (r1 .input-right ε)
+    base₂ .right-right p q =
+      +ₘ-cong (r1 .right-right p q) (∘-cong (r1 .right-right ε q) (r1 .right-right p ε))
+    base₂ .env-root =
+      ≈-trans (+ₘ-cong (r1 .env-root) (∘-cong (r1 .right-root ε) (r1 .env-right ε)))
+              (+ₘ-cong (≈-refl {f = ri₁ ∘ collapse-m-env D₁})
+                       (∘-cong₂ {f = ri₂} (≈-sym (hide-root-m D₂ env (at ε)))))
+    base₂ .source-root =
+      ≈-trans (+ₘ-cong (r1 .source-root) (∘-cong (r1 .right-root ε) (r1 .src-right ε)))
+              (+ₘ-cong (≈-refl {f = Kₛ M.+ₘ (ri₁ ∘ collapse-m-src D₁)})
+                       (∘-cong₂ {f = ri₂} (≈-sym (hide-root-m D₂ src (at ε)))))
+    base₂ .input-root =
+      ≈-trans (+ₘ-cong (r1 .input-root) (∘-cong (r1 .right-root ε) (r1 .input-right ε)))
+              (+ₘ-cong (≈-refl {f = K M.+ₘ ((ri₁ ∘ collapse-m-in D₁) ∘ Wˡ)})
+                       (≈-trans (≈-sym (assoc ri₂ (graph-m D₂ input (at ε)) Wʳ))
+                                (∘-cong₁ (∘-cong₂ (≈-sym (hide-root-m D₂ input (at ε)))))))
+    base₂ .right-root p np =
+      ≈-trans (+ₘ-cong (≈-trans (r1 .right-root p) (edge-off-m ri₂ p np))
+                       (∘-cong (r1 .right-root ε) (r1 .right-right p ε)))
+              (into-hidden-m D₂ ri₂ (at p))
+
+    rfin = steps₂ (interior-m D₂) (interior-not-root-m D₂) base₂
+
+    plumbG : hide-all-m (hide-m (graph-m C) (at ε))
+                        (map at (map m-pair₁ (paths-m D₁) ++ map m-pair₂ (paths-m D₂)))
+             ≡ hide-all-m (hide-all-m (hide-m (graph-m C) (at ε))
+                                      (map at (map m-pair₁ (paths-m D₁))))
+                          (map at (map m-pair₂ (paths-m D₂)))
+    plumbG =
+      ≡-trans (≡-cong (hide-all-m (hide-m (graph-m C) (at ε)))
+                      (map-++ at (map m-pair₁ (paths-m D₁)) (map m-pair₂ (paths-m D₂))))
+              (hide-all-m-++ (hide-m (graph-m C) (at ε))
+                             (map at (map m-pair₁ (paths-m D₁)))
+                             (map at (map m-pair₂ (paths-m D₂))))
+
+  agree-env : collapse-m-env C ≈ ((ri₁ ∘ collapse-m-env D₁) M.+ₘ (ri₂ ∘ collapse-m-env D₂))
+  agree-env = ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg env (at ε)) plumbG)) (rfin .env-root)
+
+  agree-src : collapse-m-src C
+              ≈ ((Kₛ M.+ₘ (ri₁ ∘ collapse-m-src D₁)) M.+ₘ (ri₂ ∘ collapse-m-src D₂))
+  agree-src = ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg src (at ε)) plumbG)) (rfin .source-root)
+
+  agree-in : collapse-m-in C
+             ≈ ((K M.+ₘ ((ri₁ ∘ collapse-m-in D₁) ∘ Wˡ)) M.+ₘ ((ri₂ ∘ collapse-m-in D₂) ∘ Wʳ))
+  agree-in = ≈-trans (≈-of-≡ (≡-cong (λ Gg → Gg input (at ε)) plumbG)) (rfin .input-root)
