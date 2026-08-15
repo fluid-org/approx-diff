@@ -423,10 +423,11 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
   private
     module S₁ = Single E (pair₁ {D₁ = D₁} {D₂ = D₂}) is-ε ε (λ (_ : ⊤') → ε) (λ _ → P₁) (λ _ → K₁)
     module S₂ = Single E (pair₂ {D₁ = D₁} {D₂ = D₂}) is-ε ε (λ (_ : ⊤') → ε) (λ _ → P₂) (λ _ → K₂)
-    module A  = Apart E (pair₁ {D₁ = D₁} {D₂ = D₂}) (pair₂ {D₁ = D₁} {D₂ = D₂})
-                      (λ i q → graph D₂ (inp i) (at q))
-                      (λ p q → graph D₂ (at p) (at q))
-                      (λ p → edge P₂ p)
+    module Bh = Behind E (pair₁ {D₁ = D₁} {D₂ = D₂}) (pair₂ {D₁ = D₁} {D₂ = D₂})
+                       (λ p q → graph D₂ (at p) (at q))
+                       (λ p → edge P₂ p)
+    module Fr = Frozen E (pair₁ {D₁ = D₁} {D₂ = D₂}) (pair₂ {D₁ = D₁} {D₂ = D₂})
+                       (λ i q → graph D₂ (inp i) (at q))
 
   open S₁.Premise
   open S₂.Premise
@@ -434,7 +435,8 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
   open S₂.Agrees
   open S₁.Entries
   open S₂.Entries
-  open A.Keeps
+  open Bh.Keeps
+  open Fr.Keeps
 
   private
 
@@ -476,17 +478,23 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
     done₁ : S₁.Agrees G₁ (S₁.steps (prem₁ (hide (graph D₁) (at ε))) (interior D₁))
     done₁ = S₁.agrees-hide-all (interior D₁) (interior-not-root D₁) start₁
 
-    keeps₀ : A.Keeps (graph E)
-    keeps₀ .A.Keeps.input-keeps environment q = ≈-refl
-    keeps₀ .A.Keeps.input-keeps source q = ≈-refl
-    keeps₀ .A.Keeps.path-keeps p q = ≈-refl
-    keeps₀ .A.Keeps.root-keeps p = ≈-refl {f = edge P₂ p}
-    keeps₀ .A.Keeps.one-two p q = ≈-refl {f = M.εₘ}
-    keeps₀ .A.Keeps.two-one p q = ≈-refl {f = M.εₘ}
+    behind₀ : Bh.Keeps (graph E)
+    behind₀ .path-keeps p q = ≈-refl
+    behind₀ .root-keeps p = ≈-refl {f = edge P₂ p}
+    behind₀ .two-one p q = ≈-refl {f = M.εₘ}
 
-    keeps₁ : A.Keeps G₁
-    keeps₁ = A.keeps-hide-all (interior D₁)
-               (A.keeps-hide ε (A.keeps-sink (at ε) (root-sink E) keeps₀))
+    frozen₀ : Fr.Keeps (graph E)
+    frozen₀ .input-keeps environment q = ≈-refl
+    frozen₀ .input-keeps source q = ≈-refl
+    frozen₀ .one-two p q = ≈-refl {f = M.εₘ}
+
+    behind₁ : Bh.Keeps G₁
+    behind₁ = Bh.keeps-hide-all (interior D₁)
+                (Bh.keeps-hide ε (Bh.keeps-sink (at ε) (root-sink E) behind₀))
+
+    frozen₁ : Fr.Keeps G₁
+    frozen₁ = Fr.keeps-hide-all (interior D₁)
+                (Fr.keeps-hide ε (Fr.keeps-sink (at ε) (root-sink E) frozen₀))
 
     kin₂ : ∀ i → G₁ (inp i) (at ε) ≈ K₂ i
     kin₂ i =
@@ -496,11 +504,11 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
                                 (folds₁ (interior D₁) (hide (graph D₁) (at ε))))))
 
     entries₂ : S₂.Entries G₁ (prem₂ (graph D₂))
-    entries₂ .inputs i q = keeps₁ .input-keeps i q
-    entries₂ .block p q = keeps₁ .path-keeps p q
+    entries₂ .inputs i q = frozen₁ .input-keeps i q
+    entries₂ .block p q = behind₁ .path-keeps p q
     entries₂ .offset _ i = kin₂ i
-    entries₂ .root-edge _ = keeps₁ .root-keeps ε
-    entries₂ .off-edge _ p np = ≈-trans (keeps₁ .root-keeps p) (edge-off P₂ p np)
+    entries₂ .root-edge _ = behind₁ .root-keeps ε
+    entries₂ .off-edge _ p np = ≈-trans (behind₁ .root-keeps p) (edge-off P₂ p np)
     entries₂ .sink q = root-sink D₂ (at q)
 
     start₂ : S₂.Agrees (hide G₁ (at (pair₂ ε))) (prem₂ (hide (graph D₂) (at ε)))
