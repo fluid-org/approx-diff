@@ -39,8 +39,9 @@ module Single
   {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R : Nat.suc (width-env γ) ⇒ width v}
   (E : γ , t ⇓ v [ R ])
   {Q : Set ℓ} (j : Q → Path E) (root? : Q → Bool.Bool) (q₀ : Q)
-  (P : M.Matrix (width v) (width-at (j q₀)))
-  (K : (i : Input) → M.Matrix (width v) (input-width γ i))
+  {T : Set ℓ} (tgt : T → Path E)
+  (P : (n : T) → M.Matrix (width-at (tgt n)) (width-at (j q₀)))
+  (K : (n : T) (i : Input) → M.Matrix (width-at (tgt n)) (input-width γ i))
   where
 
   -- The premise's graph, read through the injection: its input rows and its path block. The two are
@@ -63,8 +64,9 @@ module Single
     field
       input-agrees : ∀ i q → G (inp i) (at (j q)) ≈ H .input-entry i q
       path-agrees  : ∀ p q → G (at (j p)) (at (j q)) ≈ H .path-entry p q
-      root-agrees  : ∀ i → G (inp i) (at ε) ≈ (K i M.+ₘ (P ∘ H .input-entry i q₀))
-      edge-agrees  : ∀ p → root? p ≡ Bool.false → G (at (j p)) (at ε) ≈ (P ∘ H .path-entry p q₀)
+      root-agrees  : ∀ n i → G (inp i) (at (tgt n)) ≈ (K n i M.+ₘ (P n ∘ H .input-entry i q₀))
+      edge-agrees  : ∀ n p → root? p ≡ Bool.false →
+                     G (at (j p)) (at (tgt n)) ≈ (P n ∘ H .path-entry p q₀)
 
   open Agrees
 
@@ -74,19 +76,19 @@ module Single
     +ₘ-cong (s .input-agrees i q) (∘-cong (s .path-agrees w q) (s .input-agrees i w))
   agrees-hide w nw s .path-agrees p q =
     +ₘ-cong (s .path-agrees p q) (∘-cong (s .path-agrees w q) (s .path-agrees p w))
-  agrees-hide {H = H} w nw s .root-agrees i =
-    offset-step {K = K i} {P = P} {X = H .input-entry i q₀} {Y = H .path-entry w q₀}
+  agrees-hide {H = H} w nw s .root-agrees n i =
+    offset-step {K = K n i} {P = P n} {X = H .input-entry i q₀} {Y = H .path-entry w q₀}
                 {Z = H .input-entry i w}
-      (s .root-agrees i) (s .edge-agrees w nw) (s .input-agrees i w)
-  agrees-hide {H = H} w nw s .edge-agrees p np =
-    root-step {P = P} {X = H .path-entry p q₀} {Y = H .path-entry w q₀} {Z = H .path-entry p w}
-      (s .edge-agrees p np) (s .edge-agrees w nw) (s .path-agrees p w)
+      (s .root-agrees n i) (s .edge-agrees n w nw) (s .input-agrees i w)
+  agrees-hide {H = H} w nw s .edge-agrees n p np =
+    root-step {P = P n} {X = H .path-entry p q₀} {Y = H .path-entry w q₀} {Z = H .path-entry p w}
+      (s .edge-agrees n p np) (s .edge-agrees n w nw) (s .path-agrees p w)
 
   -- Unification cannot invert _+ₘ_, so the two summands are supplied.
-  root-cong : ∀ (i : Input) {C C' : M.Matrix (width-at (j q₀)) (input-width γ i)} → C ≈ C' →
-              (K i M.+ₘ (P ∘ C)) ≈ (K i M.+ₘ (P ∘ C'))
-  root-cong i {C} {C'} h =
-    +ₘ-cong {R = K i} {R' = K i} {S = P ∘ C} {S' = P ∘ C'} ≈-refl (∘-cong₂ h)
+  root-cong : ∀ (n : T) (i : Input) {C C' : M.Matrix (width-at (j q₀)) (input-width γ i)} →
+              C ≈ C' → (K n i M.+ₘ (P n ∘ C)) ≈ (K n i M.+ₘ (P n ∘ C'))
+  root-cong n i {C} {C'} h =
+    +ₘ-cong {R = K n i} {R' = K n i} {S = P n ∘ C} {S' = P n ∘ C'} ≈-refl (∘-cong₂ h)
 
   agrees-hide-all : ∀ {G H} (ws : List Q) → All (λ w → root? w ≡ Bool.false) ws →
                     Agrees G H → Agrees (hide-all G (map at (map j ws))) (steps H ws)
@@ -95,51 +97,52 @@ module Single
 
   -- The rule's defining entries for this premise, read off a graph. The last field says the
   -- premise's root is a sink.
-  record Rule (G : Graph E) (H : Premise) : Set ℓ where
+  record Entries (G : Graph E) (H : Premise) : Set ℓ where
     field
-      rule-input : ∀ i q → G (inp i) (at (j q)) ≈ H .input-entry i q
-      rule-path  : ∀ p q → G (at (j p)) (at (j q)) ≈ H .path-entry p q
-      rule-root  : ∀ i → G (inp i) (at ε) ≈ K i
-      rule-edge  : G (at (j q₀)) (at ε) ≈ P
-      rule-off   : ∀ p → root? p ≡ Bool.false → G (at (j p)) (at ε) ≈ M.εₘ
-      rule-sink  : ∀ q → H .path-entry q₀ q ≈ M.εₘ
+      inputs    : ∀ i q → G (inp i) (at (j q)) ≈ H .input-entry i q
+      block     : ∀ p q → G (at (j p)) (at (j q)) ≈ H .path-entry p q
+      offset    : ∀ n i → G (inp i) (at (tgt n)) ≈ K n i
+      root-edge : ∀ n → G (at (j q₀)) (at (tgt n)) ≈ P n
+      off-edge  : ∀ n p → root? p ≡ Bool.false → G (at (j p)) (at (tgt n)) ≈ M.εₘ
+      sink      : ∀ q → H .path-entry q₀ q ≈ M.εₘ
 
-  open Rule
+  open Entries
 
-  agrees-from : ∀ {G H} → Rule G H → Agrees (hide G (at (j q₀))) (step H q₀)
+  agrees-from : ∀ {G H} → Entries G H → Agrees (hide G (at (j q₀))) (step H q₀)
   agrees-from r .input-agrees i q =
-    +ₘ-cong (r .rule-input i q) (∘-cong (r .rule-path q₀ q) (r .rule-input i q₀))
+    +ₘ-cong (r .inputs i q) (∘-cong (r .block q₀ q) (r .inputs i q₀))
   agrees-from r .path-agrees p q =
-    +ₘ-cong (r .rule-path p q) (∘-cong (r .rule-path q₀ q) (r .rule-path p q₀))
-  agrees-from {H = H} r .root-agrees i =
-    ≈-trans (+ₘ-cong (r .rule-root i) (∘-cong (r .rule-edge) (r .rule-input i q₀)))
+    +ₘ-cong (r .block p q) (∘-cong (r .block q₀ q) (r .block p q₀))
+  agrees-from {H = H} r .root-agrees n i =
+    ≈-trans (+ₘ-cong (r .offset n i) (∘-cong (r .root-edge n) (r .inputs i q₀)))
             (+ₘ-cong ≈-refl (∘-cong₂ (≈-sym (sink-input i))))
     where
     sink-input : ∀ i → step H q₀ .input-entry i q₀ ≈ H .input-entry i q₀
     sink-input i =
-      ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (r .rule-sink q₀)))
+      ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (r .sink q₀)))
               (absorb (H .input-entry i q₀) (H .input-entry i q₀))
-  agrees-from {H = H} r .edge-agrees p np =
-    ≈-trans (+ₘ-cong (r .rule-off p np) (∘-cong (r .rule-edge) (r .rule-path p q₀)))
-    (≈-trans (+ₘ-lunit (P ∘ H .path-entry p q₀))
+  agrees-from {H = H} r .edge-agrees n p np =
+    ≈-trans (+ₘ-cong (r .off-edge n p np) (∘-cong (r .root-edge n) (r .block p q₀)))
+    (≈-trans (+ₘ-lunit (P n ∘ H .path-entry p q₀))
              (∘-cong₂ (≈-sym sink-path)))
     where
     sink-path : step H q₀ .path-entry p q₀ ≈ H .path-entry p q₀
     sink-path =
-      ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (r .rule-sink q₀)))
+      ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (r .sink q₀)))
               (absorb (H .path-entry p q₀) (H .path-entry p q₀))
 
-  rule-hide-root : ∀ {H} → Rule (graph E) H → Rule (hide (graph E) (at ε)) H
-  rule-hide-root r .rule-input i q = ≈-trans (hide-root E (inp i) (at (j q))) (r .rule-input i q)
-  rule-hide-root r .rule-path p q = ≈-trans (hide-root E (at (j p)) (at (j q))) (r .rule-path p q)
-  rule-hide-root r .rule-root i = ≈-trans (hide-root E (inp i) (at ε)) (r .rule-root i)
-  rule-hide-root r .rule-edge = ≈-trans (hide-root E (at (j q₀)) (at ε)) (r .rule-edge)
-  rule-hide-root r .rule-off p np = ≈-trans (hide-root E (at (j p)) (at ε)) (r .rule-off p np)
-  rule-hide-root r .rule-sink q = r .rule-sink q
+  entries-hide-root : ∀ {H} → Entries (graph E) H → Entries (hide (graph E) (at ε)) H
+  entries-hide-root r .inputs i q = ≈-trans (hide-root E (inp i) (at (j q))) (r .inputs i q)
+  entries-hide-root r .block p q = ≈-trans (hide-root E (at (j p)) (at (j q))) (r .block p q)
+  entries-hide-root r .offset n i = ≈-trans (hide-root E (inp i) (at (tgt n))) (r .offset n i)
+  entries-hide-root r .root-edge n = ≈-trans (hide-root E (at (j q₀)) (at (tgt n))) (r .root-edge n)
+  entries-hide-root r .off-edge n p np =
+    ≈-trans (hide-root E (at (j p)) (at (tgt n))) (r .off-edge n p np)
+  entries-hide-root r .sink q = r .sink q
 
-  agrees-base : ∀ {H} → Rule (graph E) H →
+  agrees-base : ∀ {H} → Entries (graph E) H →
                 Agrees (hide (hide (graph E) (at ε)) (at (j q₀))) (step H q₀)
-  agrees-base r = agrees-from (rule-hide-root r)
+  agrees-base r = agrees-from (entries-hide-root r)
 
 -- A rule with two premises whose blocks are unlinked. While the first block's paths are hidden, the
 -- second block's entries and the two zero blocks between them are undisturbed, so the second block

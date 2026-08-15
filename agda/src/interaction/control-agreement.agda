@@ -224,10 +224,10 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
   K₀ environment = M.εₘ
   K₀ source      = ctrl-row ∘ ctrl-row {1}
 
-  open Single (⇓-fst D) (fst {D = D}) is-ε ε P₀ K₀
+  open Single (⇓-fst D) (fst {D = D}) is-ε ε (λ (_ : ⊤') → ε) (λ _ → P₀) (λ _ → K₀)
   open Premise
   open Agrees
-  open Rule
+  open Entries
 
   private
     premise-of : Graph D → Premise
@@ -239,25 +239,25 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
     folds []       G = ≡-refl
     folds (w ∷ ws) G = folds ws (hide G (at w))
 
-    rule : Rule (graph (⇓-fst D)) (premise-of (graph D))
-    rule .rule-input environment q = ≈-refl
-    rule .rule-input source q = ≈-refl
-    rule .rule-path p q = ≈-refl
-    rule .rule-root environment = ≈-refl {f = K₀ environment}
-    rule .rule-root source = ≈-refl {f = K₀ source}
-    rule .rule-edge = ≈-refl {f = P₀}
-    rule .rule-off p np = edge-off P₀ p np
-    rule .rule-sink q = root-sink D (at q)
+    entries : Entries (graph (⇓-fst D)) (premise-of (graph D))
+    entries .inputs environment q = ≈-refl
+    entries .inputs source q = ≈-refl
+    entries .block p q = ≈-refl
+    entries .offset _ environment = ≈-refl {f = K₀ environment}
+    entries .offset _ source = ≈-refl {f = K₀ source}
+    entries .root-edge _ = ≈-refl {f = P₀}
+    entries .off-edge _ p np = edge-off P₀ p np
+    entries .sink q = root-sink D (at q)
 
     start : Agrees (hide (hide (graph (⇓-fst D)) (at ε)) (at (fst ε)))
                    (premise-of (hide (graph D) (at ε)))
-    start = agrees-base rule
+    start = agrees-base entries
 
   agree : ∀ i → collapse-at (⇓-fst D) i ≈ (K₀ i M.+ₘ (P₀ ∘ collapse-at D i))
   agree i =
-    ≈-trans (agrees-hide-all (interior D) (interior-not-root D) start .root-agrees i)
-            (root-cong i (≈-of-≡ (≡-cong (λ H → H .input-entry i ε)
-                                         (folds (interior D) (hide (graph D) (at ε))))))
+    ≈-trans (agrees-hide-all (interior D) (interior-not-root D) start .root-agrees _ i)
+            (root-cong _ i (≈-of-≡ (≡-cong (λ H → H .input-entry i ε)
+                                           (folds (interior D) (hide (graph D) (at ε))))))
 
 -- Collapsing a snd derivation, symmetrically.
 module Snd {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val τ₁} {u : Val τ₂}
@@ -421,16 +421,26 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
   K₂ i = K₁ i M.+ₘ (P₁ ∘ collapse-at D₁ i)
 
   private
-    module S₁ = Single E (pair₁ {D₁ = D₁} {D₂ = D₂}) is-ε ε P₁ K₁
-    module S₂ = Single E (pair₂ {D₁ = D₁} {D₂ = D₂}) is-ε ε P₂ K₂
+    module S₁ = Single E (pair₁ {D₁ = D₁} {D₂ = D₂}) is-ε ε (λ (_ : ⊤') → ε) (λ _ → P₁) (λ _ → K₁)
+    module S₂ = Single E (pair₂ {D₁ = D₁} {D₂ = D₂}) is-ε ε (λ (_ : ⊤') → ε) (λ _ → P₂) (λ _ → K₂)
     module A  = Apart E (pair₁ {D₁ = D₁} {D₂ = D₂}) (pair₂ {D₁ = D₁} {D₂ = D₂})
                       (λ i q → graph D₂ (inp i) (at q))
                       (λ p q → graph D₂ (at p) (at q))
                       (λ p → edge P₂ p)
 
+  open S₁.Premise
+  open S₂.Premise
+  open S₁.Agrees
+  open S₂.Agrees
+  open S₁.Entries
+  open S₂.Entries
+  open A.Keeps
+
+  private
+
     prem₁ : Graph D₁ → S₁.Premise
-    prem₁ G .S₁.Premise.input-entry i q = G (inp i) (at q)
-    prem₁ G .S₁.Premise.path-entry p q = G (at p) (at q)
+    prem₁ G .input-entry i q = G (inp i) (at q)
+    prem₁ G .path-entry p q = G (at p) (at q)
 
     folds₁ : (ws : List (Path D₁)) (G : Graph D₁) →
              S₁.steps (prem₁ G) ws ≡ prem₁ (hide-all G (map at ws))
@@ -438,8 +448,8 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
     folds₁ (w ∷ ws) G = folds₁ ws (hide G (at w))
 
     prem₂ : Graph D₂ → S₂.Premise
-    prem₂ G .S₂.Premise.input-entry i q = G (inp i) (at q)
-    prem₂ G .S₂.Premise.path-entry p q = G (at p) (at q)
+    prem₂ G .input-entry i q = G (inp i) (at q)
+    prem₂ G .path-entry p q = G (at p) (at q)
 
     folds₂ : (ws : List (Path D₂)) (G : Graph D₂) →
              S₂.steps (prem₂ G) ws ≡ prem₂ (hide-all G (map at ws))
@@ -449,19 +459,19 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
     G₁ : Graph E
     G₁ = hide-all (hide (hide (graph E) (at ε)) (at (pair₁ ε))) (map at (map pair₁ (interior D₁)))
 
-    rule₁ : S₁.Rule (graph E) (prem₁ (graph D₁))
-    rule₁ .S₁.Rule.rule-input environment q = ≈-refl
-    rule₁ .S₁.Rule.rule-input source q = ≈-refl
-    rule₁ .S₁.Rule.rule-path p q = ≈-refl
-    rule₁ .S₁.Rule.rule-root environment = ≈-refl {f = K₁ environment}
-    rule₁ .S₁.Rule.rule-root source = ≈-refl {f = K₁ source}
-    rule₁ .S₁.Rule.rule-edge = ≈-refl {f = P₁}
-    rule₁ .S₁.Rule.rule-off p np = edge-off P₁ p np
-    rule₁ .S₁.Rule.rule-sink q = root-sink D₁ (at q)
+    entries₁ : S₁.Entries (graph E) (prem₁ (graph D₁))
+    entries₁ .inputs environment q = ≈-refl
+    entries₁ .inputs source q = ≈-refl
+    entries₁ .block p q = ≈-refl
+    entries₁ .offset _ environment = ≈-refl {f = K₁ environment}
+    entries₁ .offset _ source = ≈-refl {f = K₁ source}
+    entries₁ .root-edge _ = ≈-refl {f = P₁}
+    entries₁ .off-edge _ p np = edge-off P₁ p np
+    entries₁ .sink q = root-sink D₁ (at q)
 
     start₁ : S₁.Agrees (hide (hide (graph E) (at ε)) (at (pair₁ ε)))
                        (prem₁ (hide (graph D₁) (at ε)))
-    start₁ = S₁.agrees-base rule₁
+    start₁ = S₁.agrees-base entries₁
 
     done₁ : S₁.Agrees G₁ (S₁.steps (prem₁ (hide (graph D₁) (at ε))) (interior D₁))
     done₁ = S₁.agrees-hide-all (interior D₁) (interior-not-root D₁) start₁
@@ -480,21 +490,21 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
 
     kin₂ : ∀ i → G₁ (inp i) (at ε) ≈ K₂ i
     kin₂ i =
-      ≈-trans (done₁ .S₁.Agrees.root-agrees i)
-              (S₁.root-cong i
-                (≈-of-≡ (≡-cong (λ H → H .S₁.Premise.input-entry i ε)
+      ≈-trans (done₁ .root-agrees _ i)
+              (S₁.root-cong _ i
+                (≈-of-≡ (≡-cong (λ (H : S₁.Premise) → H .input-entry i ε)
                                 (folds₁ (interior D₁) (hide (graph D₁) (at ε))))))
 
-    rule₂ : S₂.Rule G₁ (prem₂ (graph D₂))
-    rule₂ .S₂.Rule.rule-input i q = keeps₁ .A.Keeps.input-keeps i q
-    rule₂ .S₂.Rule.rule-path p q = keeps₁ .A.Keeps.path-keeps p q
-    rule₂ .S₂.Rule.rule-root i = kin₂ i
-    rule₂ .S₂.Rule.rule-edge = keeps₁ .A.Keeps.root-keeps ε
-    rule₂ .S₂.Rule.rule-off p np = ≈-trans (keeps₁ .A.Keeps.root-keeps p) (edge-off P₂ p np)
-    rule₂ .S₂.Rule.rule-sink q = root-sink D₂ (at q)
+    entries₂ : S₂.Entries G₁ (prem₂ (graph D₂))
+    entries₂ .inputs i q = keeps₁ .input-keeps i q
+    entries₂ .block p q = keeps₁ .path-keeps p q
+    entries₂ .offset _ i = kin₂ i
+    entries₂ .root-edge _ = keeps₁ .root-keeps ε
+    entries₂ .off-edge _ p np = ≈-trans (keeps₁ .root-keeps p) (edge-off P₂ p np)
+    entries₂ .sink q = root-sink D₂ (at q)
 
     start₂ : S₂.Agrees (hide G₁ (at (pair₂ ε))) (prem₂ (hide (graph D₂) (at ε)))
-    start₂ = S₂.agrees-from rule₂
+    start₂ = S₂.agrees-from entries₂
 
     done₂ : S₂.Agrees (hide-all (hide G₁ (at (pair₂ ε))) (map at (map pair₂ (interior D₂))))
                       (S₂.steps (prem₂ (hide (graph D₂) (at ε))) (interior D₂))
@@ -512,9 +522,9 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
   agree : ∀ i → collapse-at E i ≈ (K₂ i M.+ₘ (P₂ ∘ collapse-at D₂ i))
   agree i =
     ≈-trans (≈-of-≡ (≡-cong (λ G → G (inp i) (at ε)) plumb))
-    (≈-trans (done₂ .S₂.Agrees.root-agrees i)
-             (S₂.root-cong i
-               (≈-of-≡ (≡-cong (λ H → H .S₂.Premise.input-entry i ε)
+    (≈-trans (done₂ .root-agrees _ i)
+             (S₂.root-cong _ i
+               (≈-of-≡ (≡-cong (λ (H : S₂.Premise) → H .input-entry i ε)
                                (folds₂ (interior D₂) (hide (graph D₂) (at ε)))))))
 
 -- Left case branch. The branch's environment and source columns are wired to the scrutinee root
