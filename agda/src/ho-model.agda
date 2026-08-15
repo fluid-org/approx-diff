@@ -84,9 +84,8 @@ elim-weight-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S elim-we
 𝒞𝟙ty-const : Fam⟨𝒞⟩μ.Constant 𝒞𝟙ty
 𝒞𝟙ty-const = Fam⟨𝒞⟩μ.Lf-constant 𝟙F-const
 
-𝒞Bool-const : Fam⟨𝒞⟩μ.Constant 𝒞Bool
-𝒞Bool-const =
-  Fam⟨𝒞⟩μ.coprod-constant (Fam⟨𝒞⟩μ.Lf-constant 𝒞𝟙ty-const) (Fam⟨𝒞⟩μ.Lf-constant 𝒞𝟙ty-const)
+𝒞Bool-root : Fam⟨𝒞⟩μ.Constant 𝒞Bool
+𝒞Bool-root = Fam⟨𝒞⟩μ.coprod-constant (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty}) (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty})
 
 -- The model-side function spaces: exponentials on Fam(SemiMod), from the direct setoid products
 -- of plain semimodules.
@@ -151,20 +150,20 @@ module sig-model (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
                  𝒞Bool
   rel-simple is ψ .Fam⟨𝒞⟩μ.idxf = Pm.rel-pred ψ
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .transf c =
-    MC._∘_ (𝒞Bool-const .Fam⟨𝒞⟩μ.at (Pm.rel-pred ψ .func c)) (d' ψ c)
+    MC._∘_ (𝒞Bool-root .Fam⟨𝒞⟩μ.at (Pm.rel-pred ψ .func c)) (d' ψ c)
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e = pf
     where
     o  = Pm.rel-pred ψ .func c
     o' = Pm.rel-pred ψ .func c'
-    P  = 𝒞Bool-const .Fam⟨𝒞⟩μ.at o
-    P' = 𝒞Bool-const .Fam⟨𝒞⟩μ.at o'
+    P  = 𝒞Bool-root .Fam⟨𝒞⟩μ.at o
+    P' = 𝒞Bool-root .Fam⟨𝒞⟩μ.at o'
     sub = 𝒞Bool .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {o} {o'} (Pm.rel-pred ψ .func-resp-≈ e)
 
     step1 : MC._≈_ (MC._∘_ sub (MC._∘_ P (d' ψ c))) (MC._∘_ (MC._∘_ sub P) (d' ψ c))
     step1 = MC.≈-sym (MC.assoc sub P (d' ψ c))
 
     step2 : MC._≈_ (MC._∘_ (MC._∘_ sub P) (d' ψ c)) (MC._∘_ P' (d' ψ c))
-    step2 = MC.∘-cong (𝒞Bool-const .Fam⟨𝒞⟩μ.at-natural {x₁ = o} {x₂ = o'}
+    step2 = MC.∘-cong (𝒞Bool-root .Fam⟨𝒞⟩μ.at-natural {x₁ = o} {x₂ = o'}
                          (Pm.rel-pred ψ .func-resp-≈ e))
                       (MC.≈-refl {f = d' ψ c})
 

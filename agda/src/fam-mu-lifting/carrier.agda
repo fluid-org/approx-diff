@@ -149,6 +149,10 @@ Lf-constant c .at x = L-const (c .at x)
 Lf-constant {X} c .at-natural e =
   ≈-trans (L-const-natural (X .fam .subst e) (c .at _)) (L-const-cong (c .at-natural e))
 
+Lf-root : ∀ {X : Obj} → Constant (Lf X)
+Lf-root .at x = root
+Lf-root {X} .at-natural e = Lmap-root (X .fam .subst e)
+
 coprod-constant : ∀ {X Y : Obj} → Constant X → Constant Y →
                   Constant (HasCoproducts.coprod coproducts X Y)
 coprod-constant c d .at (inj₁ x) = c .at x
