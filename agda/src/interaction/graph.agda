@@ -218,44 +218,45 @@ record Graph (Inp : Set) (iw : Inp → ℕ) (n : ℕ) : Set₁ where
     out     : (i : Inp) → M.Matrix n (iw i)
     up      : (p : Vertex shape) → M.Matrix n (width p)
 
--- Entries over an arbitrary vertex set, and hiding, as in interaction.hide-algebra but stated at
--- the ≈ of the matrix category rather than entrywise.
-Entries : {V : Set} → (V → ℕ) → Set
-Entries {V} vw = (x y : V) → M.Matrix (vw y) (vw x)
+-- The dependence relation of a graph over a bare vertex set: on pairs of a vertex and a position
+-- in the value there, with no shape and no distinguished root. Hiding a vertex composes through
+-- all of its positions and drops it from the addressing.
+Relation : {V : Set} → (V → ℕ) → Set
+Relation {V} vertex-width = (x y : V) → M.Matrix (vertex-width y) (vertex-width x)
 
-hide : {V : Set} (vw : V → ℕ) → Entries vw → V → Entries vw
-hide vw G r x y = G x y M.+ₘ (G r y ∘ G x r)
+hide : {V : Set} (vertex-width : V → ℕ) → Relation vertex-width → V → Relation vertex-width
+hide vertex-width G r x y = G x y M.+ₘ (G r y ∘ G x r)
 
-hide-all : {V : Set} (vw : V → ℕ) → Entries vw → List V → Entries vw
-hide-all vw = foldl (hide vw)
+hide-all : {V : Set} (vertex-width : V → ℕ) → Relation vertex-width → List V → Relation vertex-width
+hide-all vertex-width = foldl (hide vertex-width)
 
-_≐_ : {V : Set} {vw : V → ℕ} → Entries vw → Entries vw → Prop
+_≐_ : {V : Set} {vertex-width : V → ℕ} → Relation vertex-width → Relation vertex-width → Prop
 _≐_ {V} G G' = ∀ x y → G x y ≈ G' x y
 
-hide-cong : {V : Set} (vw : V → ℕ) {G G' : Entries vw} (r : V) →
-            G ≐ G' → hide vw G r ≐ hide vw G' r
-hide-cong vw r e x y = M.+ₘ-cong (e x y) (∘-cong (e r y) (e x r))
+hide-cong : {V : Set} (vertex-width : V → ℕ) {G G' : Relation vertex-width} (r : V) →
+            G ≐ G' → hide vertex-width G r ≐ hide vertex-width G' r
+hide-cong vertex-width r e x y = M.+ₘ-cong (e x y) (∘-cong (e r y) (e x r))
 
-hide-all-cong : {V : Set} (vw : V → ℕ) {G G' : Entries vw} (rs : List V) →
-                G ≐ G' → hide-all vw G rs ≐ hide-all vw G' rs
-hide-all-cong vw []       e = e
-hide-all-cong vw (r ∷ rs) e = hide-all-cong vw rs (hide-cong vw r e)
+hide-all-cong : {V : Set} (vertex-width : V → ℕ) {G G' : Relation vertex-width} (rs : List V) →
+                G ≐ G' → hide-all vertex-width G rs ≐ hide-all vertex-width G' rs
+hide-all-cong vertex-width []       e = e
+hide-all-cong vertex-width (r ∷ rs) e = hide-all-cong vertex-width rs (hide-cong vertex-width r e)
 
 -- Hiding a sink leaves every entry unchanged.
-hide-sink : {V : Set} (vw : V → ℕ) (G : Entries vw) (r : V) →
-            (∀ y → G r y ≈ M.εₘ) → hide vw G r ≐ G
-hide-sink vw G r z x y = ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (z y))) (M.absorb₁ (G x y) (G x r))
+hide-sink : {V : Set} (vertex-width : V → ℕ) (G : Relation vertex-width) (r : V) →
+            (∀ y → G r y ≈ M.εₘ) → hide vertex-width G r ≐ G
+hide-sink vertex-width G r z x y = ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (z y))) (M.absorb₁ (G x y) (G x r))
 
-hide-all-++ : {V : Set} (vw : V → ℕ) (G : Entries vw) (xs ys : List V) →
-              hide-all vw G (xs ++ ys) ≡ hide-all vw (hide-all vw G xs) ys
-hide-all-++ vw G []       ys = ≡-refl
-hide-all-++ vw G (x ∷ xs) ys = hide-all-++ vw (hide vw G x) xs ys
+hide-all-++ : {V : Set} (vertex-width : V → ℕ) (G : Relation vertex-width) (xs ys : List V) →
+              hide-all vertex-width G (xs ++ ys) ≡ hide-all vertex-width (hide-all vertex-width G xs) ys
+hide-all-++ vertex-width G []       ys = ≡-refl
+hide-all-++ vertex-width G (x ∷ xs) ys = hide-all-++ vertex-width (hide vertex-width G x) xs ys
 
 -- Entrywise laws for hiding a list of vertices on graphs that agree on the hidden rows and
 -- columns. No rank or forwardness is assumed.
 module Hide (V : Set) (w : V → ℕ) where
   Gr : Set
-  Gr = Entries w
+  Gr = Relation w
 
   h : Gr → V → Gr
   h = hide w
@@ -431,62 +432,62 @@ private
 -- routed through an entry in each direction between the two, which the order rules out; and hiding
 -- a list is therefore independent of its order, adjacent swaps being commutation pushed through the
 -- rest of the fold.
-module Ordered {V : Set} (vw : V → ℕ) (_<_ : V → V → Set) (o : IsStrictOrder _<_) where
+module Ordered {V : Set} (vertex-width : V → ℕ) (_<_ : V → V → Set) (o : IsStrictOrder _<_) where
 
   open IsStrictOrder o using (trans; asym)
 
-  Fwd : Entries vw → Set
-  Fwd G = ∀ x y (i : Fin (vw y)) (j : Fin (vw x)) → G x y i j ≡ two.I → x < y
+  Fwd : Relation vertex-width → Set
+  Fwd G = ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) → G x y i j ≡ two.I → x < y
 
   private
-    _≐e_ : Entries vw → Entries vw → Set
-    G ≐e G' = ∀ x y (i : Fin (vw y)) (j : Fin (vw x)) → G x y i j ≡ G' x y i j
+    _≐e_ : Relation vertex-width → Relation vertex-width → Set
+    G ≐e G' = ∀ x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) → G x y i j ≡ G' x y i j
 
-    fold-cong : ∀ {G G'} rs → G ≐e G' → hide-all vw G rs ≐e hide-all vw G' rs
+    fold-cong : ∀ {G G'} rs → G ≐e G' → hide-all vertex-width G rs ≐e hide-all vertex-width G' rs
     fold-cong []       e = e
     fold-cong (r ∷ rs) e =
       fold-cong rs (λ x y i j → ≡-cong₂ two._⊔_ (e x y i j)
                                  (M.Σ-cong-≡ (λ k → ≡-cong₂ two._⊓_ (e r y i k) (e x r k j))))
 
-  fwd-hide : ∀ {G} r → Fwd G → Fwd (hide vw G r)
+  fwd-hide : ∀ {G} r → Fwd G → Fwd (hide vertex-width G r)
   fwd-hide {G} r fwd x y i j e with two.⊔-I (G x y i j) ((G r y ∘ G x r) i j) e
   ... | inj₁ a = fwd x y i j a
   ... | inj₂ a with ∘-I (G r y) (G x r) i j a
   ...   | (k , (e₁ , e₂)) = trans x r y (fwd x r k j e₂) (fwd r y i k e₁)
 
-  fwd-hide-all : ∀ {G} rs → Fwd G → Fwd (hide-all vw G rs)
+  fwd-hide-all : ∀ {G} rs → Fwd G → Fwd (hide-all vertex-width G rs)
   fwd-hide-all []       fwd = fwd
   fwd-hide-all (r ∷ rs) fwd = fwd-hide-all rs (fwd-hide r fwd)
 
   private
-    into : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (vw y)) (j : Fin (vw x)) →
-           hide vw (hide vw G r) r' x y i j ≡ two.I →
-           hide vw (hide vw G r') r x y i j ≡ two.I
+    into : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+           hide vertex-width (hide vertex-width G r) r' x y i j ≡ two.I →
+           hide vertex-width (hide vertex-width G r') r x y i j ≡ two.I
     into {G} fwd r r' x y i j e
-      with two.⊔-I (hide vw G r x y i j) ((hide vw G r r' y ∘ hide vw G r x r') i j) e
+      with two.⊔-I (hide vertex-width G r x y i j) ((hide vertex-width G r r' y ∘ hide vertex-width G r x r') i j) e
     into {G} fwd r r' x y i j e | inj₁ a with two.⊔-I (G x y i j) ((G r y ∘ G x r) i j) a
     ... | inj₁ a₁ = two.⊔-I-inl (two.⊔-I-inl a₁)
     ... | inj₂ a₂ with ∘-I (G r y) (G x r) i j a₂
     ...   | (k , (e₁ , e₂)) =
-      two.⊔-I-inr (hide vw G r' x y i j)
-        (∘-I-at (hide vw G r' r y) (hide vw G r' x r) i j k (two.⊔-I-inl e₁) (two.⊔-I-inl e₂))
+      two.⊔-I-inr (hide vertex-width G r' x y i j)
+        (∘-I-at (hide vertex-width G r' r y) (hide vertex-width G r' x r) i j k (two.⊔-I-inl e₁) (two.⊔-I-inl e₂))
     into {G} fwd r r' x y i j e | inj₂ b
-      with ∘-I (hide vw G r r' y) (hide vw G r x r') i j b
+      with ∘-I (hide vertex-width G r r' y) (hide vertex-width G r x r') i j b
     ... | (m , (c , d)) with two.⊔-I (G r' y i m) ((G r y ∘ G r' r) i m) c
                            | two.⊔-I (G x r' m j) ((G r r' ∘ G x r) m j) d
     ...   | inj₁ c₁ | inj₁ d₁ =
       two.⊔-I-inl (two.⊔-I-inr (G x y i j) (∘-I-at (G r' y) (G x r') i j m c₁ d₁))
     ...   | inj₁ c₁ | inj₂ d₂ with ∘-I (G r r') (G x r) m j d₂
     ...     | (k , (d₁' , d₂')) =
-      two.⊔-I-inr (hide vw G r' x y i j)
-        (∘-I-at (hide vw G r' r y) (hide vw G r' x r) i j k
+      two.⊔-I-inr (hide vertex-width G r' x y i j)
+        (∘-I-at (hide vertex-width G r' r y) (hide vertex-width G r' x r) i j k
           (two.⊔-I-inr (G r y i k) (∘-I-at (G r' y) (G r r') i k m c₁ d₁'))
           (two.⊔-I-inl d₂'))
     into {G} fwd r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₁ d₁
       with ∘-I (G r y) (G r' r) i m c₂
     ...     | (k , (c₁' , c₂')) =
-      two.⊔-I-inr (hide vw G r' x y i j)
-        (∘-I-at (hide vw G r' r y) (hide vw G r' x r) i j k
+      two.⊔-I-inr (hide vertex-width G r' x y i j)
+        (∘-I-at (hide vertex-width G r' r y) (hide vertex-width G r' x r) i j k
           (two.⊔-I-inl c₁')
           (two.⊔-I-inr (G x r k j) (∘-I-at (G r' r) (G x r') k j m c₂' d₁)))
     into {G} fwd r r' x y i j e | inj₂ b | (m , (c , d)) | inj₂ c₂ | inj₂ d₂
@@ -494,11 +495,11 @@ module Ordered {V : Set} (vw : V → ℕ) (_<_ : V → V → Set) (o : IsStrictO
     ...     | (k , (_ , c₂')) | (k' , (d₁' , _)) =
       ⊥-elim (asym r' r (fwd r' r k m c₂') (fwd r r' m k' d₁'))
 
-    comm : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (vw y)) (j : Fin (vw x)) →
-           hide vw (hide vw G r) r' x y i j ≡ hide vw (hide vw G r') r x y i j
+    comm : ∀ {G} → Fwd G → ∀ r r' x y (i : Fin (vertex-width y)) (j : Fin (vertex-width x)) →
+           hide vertex-width (hide vertex-width G r) r' x y i j ≡ hide vertex-width (hide vertex-width G r') r x y i j
     comm fwd r r' x y i j = two.I-antisym (into fwd r r' x y i j) (into fwd r' r x y i j)
 
-  hide-all-perm : ∀ {G rs rs'} → Fwd G → rs ↭ rs' → hide-all vw G rs ≐e hide-all vw G rs'
+  hide-all-perm : ∀ {G rs rs'} → Fwd G → rs ↭ rs' → hide-all vertex-width G rs ≐e hide-all vertex-width G rs'
   hide-all-perm fwd ↭.refl x y i j = ≡-refl
   hide-all-perm fwd (↭.prep r p) = hide-all-perm (fwd-hide r fwd) p
   hide-all-perm fwd (↭.swap {xs = rs} a b p) x y i j =
@@ -547,16 +548,16 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   V : Set
   V = Inp ⊎ Path⁺
 
-  vw : V → ℕ
-  vw = [ iw , width⁺ ]
+  vertex-width : V → ℕ
+  vertex-width = [ iw , width⁺ ]
 
-  gr : Entries vw
+  gr : Relation vertex-width
   gr (inj₁ i) (inj₂ q) = into⁺ i q
   gr (inj₂ p) (inj₂ q) = inside⁺ p q
   gr _        (inj₁ _) = M.εₘ
 
   collapse : (i : Inp) → M.Matrix n (iw i)
-  collapse i = hide-all vw gr (map (λ q → inj₂ (inj₁ q)) (vertices shape)) (inj₁ i) (inj₂ (inj₂ root))
+  collapse i = hide-all vertex-width gr (map (λ q → inj₂ (inj₁ q)) (vertices shape)) (inj₁ i) (inj₂ (inj₂ root))
 
   -- The interior vertices whose values are first-order, and their complement.
   FO : List (Vertex shape)
@@ -567,8 +568,8 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   -- The first-order graph: every intermediate whose value is not first-order is hidden, so the
   -- live vertices are the inputs, the root and FO.
-  fo-graph : Entries vw
-  fo-graph = hide-all vw gr (map (λ q → inj₂ (inj₁ q)) fo-hidden)
+  fo-graph : Relation vertex-width
+  fo-graph = hide-all vertex-width gr (map (λ q → inj₂ (inj₁ q)) fo-hidden)
 
   -- The completion order on all the vertices: the inputs first, then the interior, then the root.
   _<ᵥ_ : V → V → Set
@@ -578,7 +579,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   <ᵥ-order = sum-<-order none-order <⁺-order
 
   private
-    module O = Ordered vw _<ᵥ_ <ᵥ-order
+    module O = Ordered vertex-width _<ᵥ_ <ᵥ-order
 
   open O public using (Fwd; fwd-hide; fwd-hide-all; hide-all-perm)
 
@@ -596,20 +597,20 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 -- the premise's own relations as they accumulate; Φ carries the premise's input columns to the
 -- conclusion's, which for a premise evaluated in a substituted environment is not the identity.
 module HidePremise
-  {V : Set} (vw : V → ℕ)
+  {V : Set} (vertex-width : V → ℕ)
   {Inp : Set} (inp : Inp → V)
   {Q : Set} (blk : Q ⊎ Root → V)
   {T : Set} (tgt : T → V)
   {Inp' : Set} {iw' : Inp' → ℕ}
-  (Φ : Linear iw' (λ i → vw (inp i)))
-  (P : (t : T) → M.Matrix (vw (tgt t)) (vw (blk (inj₂ root))))
-  (K : (t : T) (i : Inp) → M.Matrix (vw (tgt t)) (vw (inp i)))
+  (Φ : Linear iw' (λ i → vertex-width (inp i)))
+  (P : (t : T) → M.Matrix (vertex-width (tgt t)) (vertex-width (blk (inj₂ root))))
+  (K : (t : T) (i : Inp) → M.Matrix (vertex-width (tgt t)) (vertex-width (inp i)))
   where
 
   record St : Set where
     field
-      into   : (i' : Inp') (q : Q ⊎ Root) → M.Matrix (vw (blk q)) (iw' i')
-      inside : (p q : Q ⊎ Root) → M.Matrix (vw (blk q)) (vw (blk p))
+      into   : (i' : Inp') (q : Q ⊎ Root) → M.Matrix (vertex-width (blk q)) (iw' i')
+      inside : (p q : Q ⊎ Root) → M.Matrix (vertex-width (blk q)) (vertex-width (blk p))
 
   open St public
 
@@ -635,7 +636,7 @@ module HidePremise
       ≈-trans (Φ .ap-+ (λ i' → H .into i' q) (λ i' → H .inside w q ∘ H .into i' w) i)
               (M.+ₘ-cong ≈-refl (Φ .ap-∘ (H .inside w q) (λ i' → H .into i' w) i))
 
-  record Agrees (G : Entries vw) (H : St) : Set where
+  record Agrees (G : Relation vertex-width) (H : St) : Set where
     field
       into-ok   : ∀ i q → G (inp i) (blk q) ≈ Φ .ap (λ i' → H .into i' q) i
       inside-ok : ∀ p q → G (blk p) (blk q) ≈ H .inside p q
@@ -646,7 +647,7 @@ module HidePremise
 
   open Agrees public
 
-  agrees-hide : ∀ {G H} (w : Q) → Agrees G H → Agrees (hide vw G (blk (inj₁ w))) (step H (inj₁ w))
+  agrees-hide : ∀ {G H} (w : Q) → Agrees G H → Agrees (hide vertex-width G (blk (inj₁ w))) (step H (inj₁ w))
   agrees-hide {H = H} w s .into-ok i q =
     ≈-trans (M.+ₘ-cong (s .into-ok i q) (∘-cong (s .inside-ok (inj₁ w) q) (s .into-ok i (inj₁ w))))
             (≈-sym (Φ-step H (inj₁ w) i q))
@@ -665,13 +666,13 @@ module HidePremise
       (s .up-ok t p) (s .up-ok t w) (s .inside-ok (inj₁ p) (inj₁ w))
 
   agrees-hide-all : ∀ {G H} (ws : List (Q)) → Agrees G H →
-                    Agrees (hide-all vw G (map (λ w → blk (inj₁ w)) ws)) (steps H (map inj₁ ws))
+                    Agrees (hide-all vertex-width G (map (λ w → blk (inj₁ w)) ws)) (steps H (map inj₁ ws))
   agrees-hide-all []       s = s
   agrees-hide-all (w ∷ ws) s = agrees-hide-all ws (agrees-hide w s)
 
   -- The relations a rule contributes, before the graph's root is hidden. Every edge from the graph to
   -- a target leaves the graph's root, which here is a matter of the vertex set rather than a lemma.
-  record Start (G : Entries vw) (H : St) : Set where
+  record Start (G : Relation vertex-width) (H : St) : Set where
     field
       into-start   : ∀ i q → G (inp i) (blk q) ≈ Φ .ap (λ i' → H .into i' q) i
       inside-start : ∀ p q → G (blk p) (blk q) ≈ H .inside p q
@@ -683,7 +684,7 @@ module HidePremise
   open Start public
 
   agrees-start : ∀ {G H} → Start G H →
-                 Agrees (hide vw G (blk (inj₂ root))) (step H (inj₂ root))
+                 Agrees (hide vertex-width G (blk (inj₂ root))) (step H (inj₂ root))
   agrees-start {H = H} r .into-ok i q =
     ≈-trans (M.+ₘ-cong (r .into-start i q)
                      (∘-cong (r .inside-start (inj₂ root) q) (r .into-start i (inj₂ root))))
@@ -717,21 +718,21 @@ module HidePremise
 
 -- Rows out of vertices with no relation into the hidden set survive hiding.
 module Behind
-  {V : Set} (vw : V → ℕ)
+  {V : Set} (vertex-width : V → ℕ)
   {W : Set} (hid : W → V)
   {S : Set} (src : S → V)
   {T : Set} (col : T → V)
-  (B : (s : S) (t : T) → M.Matrix (vw (col t)) (vw (src s)))
+  (B : (s : S) (t : T) → M.Matrix (vertex-width (col t)) (vertex-width (src s)))
   where
 
-  record Keeps (G : Entries vw) : Set where
+  record Keeps (G : Relation vertex-width) : Set where
     field
       keeps : ∀ s t → G (src s) (col t) ≈ B s t
       blind : ∀ s w → G (src s) (hid w) ≈ M.εₘ
 
   open Keeps public
 
-  keeps-hide : ∀ {G} (w : W) → Keeps G → Keeps (hide vw G (hid w))
+  keeps-hide : ∀ {G} (w : W) → Keeps G → Keeps (hide vertex-width G (hid w))
   keeps-hide {G} w k .keeps s t =
     ≈-trans (M.+ₘ-cong (k .keeps s t) (∘-cong₂ (k .blind s w)))
             (M.absorb₂ (B s t) (G (hid w) (col t)))
@@ -740,7 +741,7 @@ module Behind
             (M.absorb₂ M.εₘ (G (hid w) (hid w')))
 
   keeps-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
-                   Keeps G → Keeps (hide-all vw G (map (λ w → hid (f w)) ws))
+                   Keeps G → Keeps (hide-all vertex-width G (map (λ w → hid (f w)) ws))
   keeps-hide-all f []       k = k
   keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
 
@@ -764,34 +765,34 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   root-row (inj₂ _) = ≈-refl {f = M.εₘ}
 
   hide-paths⁺ : ∀ (i : Inp) →
-             hide-all (vw B) (gr B) (map inj₂ (paths⁺ B)) (inj₁ i) (inj₂ (inj₂ root))
+             hide-all (vertex-width B) (gr B) (map inj₂ (paths⁺ B)) (inj₁ i) (inj₂ (inj₂ root))
              ≈ collapse B i
   hide-paths⁺ i =
-    ≈-trans (≈-of-≡ (≡-cong (λ l → hide-all (vw B) (gr B) l (inj₁ i) (inj₂ (inj₂ root)))
+    ≈-trans (≈-of-≡ (≡-cong (λ l → hide-all (vertex-width B) (gr B) l (inj₁ i) (inj₂ (inj₂ root)))
                             (≡-cong (inj₂ (inj₂ root) ∷_) (map-map inj₂ inj₁ (vertices (Graph.shape B))))))
-            (hide-all-cong (vw B) (map (λ q → inj₂ (inj₁ q)) (vertices (Graph.shape B)))
-                           (hide-sink (vw B) (gr B) (inj₂ (inj₂ root)) root-row)
+            (hide-all-cong (vertex-width B) (map (λ q → inj₂ (inj₁ q)) (vertices (Graph.shape B)))
+                           (hide-sink (vertex-width B) (gr B) (inj₂ (inj₂ root)) root-row)
                            (inj₁ i) (inj₂ (inj₂ root)))
 
 -- Two graphs in sequence: the second graph's inputs are supplied by the conclusion's inputs
 -- through route and by the first graph's root through link, and the conclusion's root is fed by
 -- Columns into vertices the hidden set has no relation into survive hiding.
 module Frozen
-  {V : Set} (vw : V → ℕ)
+  {V : Set} (vertex-width : V → ℕ)
   {W : Set} (hid : W → V)
   {S : Set} (src : S → V)
   {T : Set} (col : T → V)
-  (B : (s : S) (t : T) → M.Matrix (vw (col t)) (vw (src s)))
+  (B : (s : S) (t : T) → M.Matrix (vertex-width (col t)) (vertex-width (src s)))
   where
 
-  record Keeps (G : Entries vw) : Set where
+  record Keeps (G : Relation vertex-width) : Set where
     field
       keeps : ∀ s t → G (src s) (col t) ≈ B s t
       blind : ∀ w t → G (hid w) (col t) ≈ M.εₘ
 
   open Keeps public
 
-  keeps-hide : ∀ {G} (w : W) → Keeps G → Keeps (hide vw G (hid w))
+  keeps-hide : ∀ {G} (w : W) → Keeps G → Keeps (hide vertex-width G (hid w))
   keeps-hide {G} w k .keeps s t =
     ≈-trans (M.+ₘ-cong (k .keeps s t) (∘-cong₁ (k .blind w t)))
             (M.absorb₁ (B s t) (G (src s) (hid w)))
@@ -800,7 +801,7 @@ module Frozen
             (M.absorb₁ M.εₘ (G (hid w') (hid w)))
 
   keeps-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
-                   Keeps G → Keeps (hide-all vw G (map (λ w → hid (f w)) ws))
+                   Keeps G → Keeps (hide-all vertex-width G (map (λ w → hid (f w)) ws))
   keeps-hide-all f []       k = k
   keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
 
@@ -856,7 +857,7 @@ module Rule₁
     er : V E
     er = inj₂ (inj₂ root)
 
-    module S = HidePremise (vw E) inj₁ b (λ (_ : Root) → er) route (λ _ → up-root) (λ _ → out-root)
+    module S = HidePremise (vertex-width E) inj₁ b (λ (_ : Root) → er) route (λ _ → up-root) (λ _ → out-root)
 
     H⁰ : S.St
     H⁰ .S.into i' q = into⁺ B i' q
@@ -873,25 +874,25 @@ module Rule₁
     H : S.St
     H = S.steps (S.step H⁰ (inj₂ root)) (map inj₁ (vertices (Graph.shape B)))
 
-    done : S.Agrees (hide-all (vw E) (hide (vw E) (gr E) (b (inj₂ root)))
+    done : S.Agrees (hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b (inj₂ root)))
                               (map (λ w → b (inj₁ w)) (vertices (Graph.shape B)))) H
     done = S.agrees-hide-all (vertices (Graph.shape B)) (S.agrees-start start)
 
-    prem : Entries (vw B) → S.St
+    prem : Relation (vertex-width B) → S.St
     prem G .S.into i' q = G (inj₁ i') (inj₂ q)
     prem G .S.inside p q = G (inj₂ p) (inj₂ q)
 
     κ : ∀ i' → H .S.into i' (inj₂ root) ≈ collapse B i'
     κ i' =
       ≈-trans (≈-of-≡ (≡-cong (λ H' → H' .S.into i' (inj₂ root))
-                              (S.folds prem inj₂ (hide (vw B)) (λ G w → ≡-refl)
+                              (S.folds prem inj₂ (hide (vertex-width B)) (λ G w → ≡-refl)
                                        (paths⁺ B) (gr B))))
               (hide-paths⁺ B i')
 
     plumb : ∀ i → collapse E i
-                  ≡ hide-all (vw E) (hide (vw E) (gr E) (b (inj₂ root)))
+                  ≡ hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b (inj₂ root)))
                              (map (λ w → b (inj₁ w)) (vertices (Graph.shape B))) (inj₁ i) er
-    plumb i = ≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er)
+    plumb i = ≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ i) er)
                      (≡-cong (b (inj₂ root) ∷_) (map-map b inj₁ (vertices (Graph.shape B))))
 
   agree : ∀ i → collapse E i ≈ rule₁-result route out-root up-root (collapse B) i
@@ -964,15 +965,15 @@ module Rule₂
     tgt₁ (inj₁ q) = b2 q
     tgt₁ (inj₂ _) = er
 
-    P₁ : (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vw E (tgt₁ t)) n₁
+    P₁ : (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vertex-width E (tgt₁ t)) n₁
     P₁ (inj₁ q) = link .at (λ i' → into⁺ B₂ i' q)
     P₁ (inj₂ _) = up₁
 
-    K₁ : (t : Path⁺ B₂ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt₁ t)) (iw i)
+    K₁ : (t : Path⁺ B₂ ⊎ Root) (i : Inp) → M.Matrix (vertex-width E (tgt₁ t)) (iw i)
     K₁ (inj₁ q) i = route₂ .ap (λ i' → into⁺ B₂ i' q) i
     K₁ (inj₂ _) i = out-root i
 
-    module S1 = HidePremise (vw E) inj₁ b1 tgt₁ route₁ P₁ K₁
+    module S1 = HidePremise (vertex-width E) inj₁ b1 tgt₁ route₁ P₁ K₁
 
     H₁⁰ : S1.St
     H₁⁰ .S1.into i q = into⁺ B₁ i q
@@ -989,8 +990,8 @@ module Rule₂
     start₁ .S1.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
     start₁ .S1.sink q = ≈-refl {f = M.εₘ}
 
-    G₁ : Entries (vw E)
-    G₁ = hide-all (vw E) (hide (vw E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) ps₁)
+    G₁ : Relation (vertex-width E)
+    G₁ = hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) ps₁)
 
     H₁ : S1.St
     H₁ = S1.steps (S1.step H₁⁰ (inj₂ root)) (map inj₁ ps₁)
@@ -998,14 +999,14 @@ module Rule₂
     done₁ : S1.Agrees G₁ H₁
     done₁ = S1.agrees-hide-all ps₁ (S1.agrees-start start₁)
 
-    prem₁ : Entries (vw B₁) → S1.St
+    prem₁ : Relation (vertex-width B₁) → S1.St
     prem₁ G .S1.into i q = G (inj₁ i) (inj₂ q)
     prem₁ G .S1.inside p q = G (inj₂ p) (inj₂ q)
 
     κ₁ : ∀ i → H₁ .S1.into i (inj₂ root) ≈ collapse B₁ i
     κ₁ i =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S1.into i (inj₂ root))
-                              (S1.folds prem₁ inj₂ (hide (vw B₁)) (λ G w → ≡-refl)
+                              (S1.folds prem₁ inj₂ (hide (vertex-width B₁)) (λ G w → ≡-refl)
                                         (paths⁺ B₁) (gr B₁))))
               (hide-paths⁺ B₁ i)
 
@@ -1020,17 +1021,17 @@ module Rule₂
     K₂ : (t : Root) (i : Inp) → M.Matrix n (iw i)
     K₂ _ i = out-root i M.+ₘ (up₁ ∘ route₁ .ap (collapse B₁) i)
 
-    module S2 = HidePremise (vw E) inj₁ b2 (λ (_ : Root) → er) Φ₂ P₂ K₂
+    module S2 = HidePremise (vertex-width E) inj₁ b2 (λ (_ : Root) → er) Φ₂ P₂ K₂
 
     col₂ : Path⁺ B₂ ⊎ Root → V E
     col₂ (inj₁ q) = b2 q
     col₂ (inj₂ _) = er
 
-    Bh : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vw E (col₂ t)) (width⁺ B₂ s)
+    Bh : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vertex-width E (col₂ t)) (width⁺ B₂ s)
     Bh s (inj₁ q) = inside⁺ B₂ s q
     Bh s (inj₂ _) = upE s
 
-    module Bd = Behind (vw E) b1 b2 col₂ Bh
+    module Bd = Behind (vertex-width E) b1 b2 col₂ Bh
 
     keeps₀ : Bd.Keeps (gr E)
     keeps₀ .Bd.keeps s (inj₁ q) = ≈-refl
@@ -1056,8 +1057,8 @@ module Rule₂
     start₂ .S2.off-start _ p = keeps₁ .Bd.keeps (inj₁ p) (inj₂ root)
     start₂ .S2.sink q = ≈-refl {f = M.εₘ}
 
-    G₂ : Entries (vw E)
-    G₂ = hide-all (vw E) (hide (vw E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) ps₂)
+    G₂ : Relation (vertex-width E)
+    G₂ = hide-all (vertex-width E) (hide (vertex-width E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) ps₂)
 
     H₂ : S2.St
     H₂ = S2.steps (S2.step H₂⁰ (inj₂ root)) (map inj₁ ps₂)
@@ -1065,14 +1066,14 @@ module Rule₂
     done₂ : S2.Agrees G₂ H₂
     done₂ = S2.agrees-hide-all ps₂ (S2.agrees-start start₂)
 
-    prem₂ : Entries (vw B₂) → S2.St
+    prem₂ : Relation (vertex-width B₂) → S2.St
     prem₂ G .S2.into i' q = G (inj₁ i') (inj₂ q)
     prem₂ G .S2.inside p q = G (inj₂ p) (inj₂ q)
 
     κ₂ : ∀ i' → H₂ .S2.into i' (inj₂ root) ≈ collapse B₂ i'
     κ₂ i' =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S2.into i' (inj₂ root))
-                              (S2.folds prem₂ inj₂ (hide (vw B₂)) (λ G w → ≡-refl)
+                              (S2.folds prem₂ inj₂ (hide (vertex-width B₂)) (λ G w → ≡-refl)
                                         (paths⁺ B₂) (gr B₂))))
               (hide-paths⁺ B₂ i')
 
@@ -1089,9 +1090,9 @@ module Rule₂
 
     plumb : ∀ i → collapse E i ≡ G₂ (inj₁ i) er
     plumb i =
-      ≡-trans (≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er) lst)
+      ≡-trans (≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ i) er) lst)
               (≡-cong (λ G → G (inj₁ i) er)
-                      (hide-all-++ (vw E) (gr E)
+                      (hide-all-++ (vertex-width E) (gr E)
                         (b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁)
                         (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂)))
 
@@ -1208,15 +1209,15 @@ module Rule₃
     c₂ : (i : Inp) → M.Matrix n₂ (iw i)
     c₂ i = route₂ .ap (collapse B₂) i
 
-    P₁ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vw E (tgt t)) n₁
+    P₁ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (tgt t)) n₁
     P₁ (inj₁ q) = link₁ .at (λ i' → into⁺ B₃ i' q)
     P₁ (inj₂ _) = up₁
 
-    K₁ : (t : Path⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt t)) (iw i)
+    K₁ : (t : Path⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vertex-width E (tgt t)) (iw i)
     K₁ (inj₁ q) i = route₃ .ap (λ i' → into⁺ B₃ i' q) i
     K₁ (inj₂ _) i = out-root i
 
-    module S1 = HidePremise (vw E) inj₁ b1 tgt route₁ P₁ K₁
+    module S1 = HidePremise (vertex-width E) inj₁ b1 tgt route₁ P₁ K₁
 
     H₁⁰ : S1.St
     H₁⁰ .S1.into i q = into⁺ B₁ i q
@@ -1233,8 +1234,8 @@ module Rule₃
     start₁ .S1.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
     start₁ .S1.sink q = ≈-refl {f = M.εₘ}
 
-    G₁ : Entries (vw E)
-    G₁ = hide-all (vw E) (hide (vw E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) ps₁)
+    G₁ : Relation (vertex-width E)
+    G₁ = hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) ps₁)
 
     H₁ : S1.St
     H₁ = S1.steps (S1.step H₁⁰ (inj₂ root)) (map inj₁ ps₁)
@@ -1242,19 +1243,19 @@ module Rule₃
     done₁ : S1.Agrees G₁ H₁
     done₁ = S1.agrees-hide-all ps₁ (S1.agrees-start start₁)
 
-    prem₁ : Entries (vw B₁) → S1.St
+    prem₁ : Relation (vertex-width B₁) → S1.St
     prem₁ G .S1.into i q = G (inj₁ i) (inj₂ q)
     prem₁ G .S1.inside p q = G (inj₂ p) (inj₂ q)
 
     κ₁ : ∀ i → H₁ .S1.into i (inj₂ root) ≈ collapse B₁ i
     κ₁ i =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S1.into i (inj₂ root))
-                              (S1.folds prem₁ inj₂ (hide (vw B₁)) (λ G w → ≡-refl)
+                              (S1.folds prem₁ inj₂ (hide (vertex-width B₁)) (λ G w → ≡-refl)
                                         (paths⁺ B₁) (gr B₁))))
               (hide-paths⁺ B₁ i)
 
     -- The second premise's columns are untouched by the first premise's sweep.
-    module Fz = Frozen (vw E) b1 inj₁ b2 (λ i q → route₂ .ap (λ i' → into⁺ B₂ i' q) i)
+    module Fz = Frozen (vertex-width E) b1 inj₁ b2 (λ i q → route₂ .ap (λ i' → into⁺ B₂ i' q) i)
 
     frozen₀ : Fz.Keeps (gr E)
     frozen₀ .Fz.keeps i q = ≈-refl
@@ -1268,12 +1269,12 @@ module Rule₃
     cols₂ (inj₁ q) = b2 q
     cols₂ (inj₂ t) = tgt t
 
-    Bh₂ : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root)) → M.Matrix (vw E (cols₂ t)) (width⁺ B₂ s)
+    Bh₂ : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root)) → M.Matrix (vertex-width E (cols₂ t)) (width⁺ B₂ s)
     Bh₂ s (inj₁ q)        = inside⁺ B₂ s q
     Bh₂ s (inj₂ (inj₁ q)) = e₂₃ s q
     Bh₂ s (inj₂ (inj₂ _)) = r₂ s
 
-    module Bd₂ = Behind (vw E) b1 b2 cols₂ Bh₂
+    module Bd₂ = Behind (vertex-width E) b1 b2 cols₂ Bh₂
 
     behind₂ : Bd₂.Keeps G₁
     behind₂ = Bd₂.keeps-hide-all inj₁ ps₁ (Bd₂.keeps-hide (inj₂ root) k₀)
@@ -1287,15 +1288,15 @@ module Rule₃
     Φ₃₁ : Linear iw₃ iw
     Φ₃₁ = extend route₃ link₁ c₁
 
-    P₂ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vw E (tgt t)) n₂
+    P₂ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (tgt t)) n₂
     P₂ (inj₁ q) = link₂ .at (λ i' → into⁺ B₃ i' q)
     P₂ (inj₂ _) = up₂
 
-    K₂ : (t : Path⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vw E (tgt t)) (iw i)
+    K₂ : (t : Path⁺ B₃ ⊎ Root) (i : Inp) → M.Matrix (vertex-width E (tgt t)) (iw i)
     K₂ (inj₁ q) i = Φ₃₁ .ap (λ i' → into⁺ B₃ i' q) i
     K₂ (inj₂ _) i = out-root i M.+ₘ (up₁ ∘ c₁ i)
 
-    module S2 = HidePremise (vw E) inj₁ b2 tgt route₂ P₂ K₂
+    module S2 = HidePremise (vertex-width E) inj₁ b2 tgt route₂ P₂ K₂
 
     H₂⁰ : S2.St
     H₂⁰ .S2.into i q = into⁺ B₂ i q
@@ -1316,8 +1317,8 @@ module Rule₃
     start₂ .S2.off-start (inj₂ _) p = behind₂ .Bd₂.keeps (inj₁ p) (inj₂ (inj₂ root))
     start₂ .S2.sink q = ≈-refl {f = M.εₘ}
 
-    G₂ : Entries (vw E)
-    G₂ = hide-all (vw E) (hide (vw E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) ps₂)
+    G₂ : Relation (vertex-width E)
+    G₂ = hide-all (vertex-width E) (hide (vertex-width E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) ps₂)
 
     H₂ : S2.St
     H₂ = S2.steps (S2.step H₂⁰ (inj₂ root)) (map inj₁ ps₂)
@@ -1325,14 +1326,14 @@ module Rule₃
     done₂ : S2.Agrees G₂ H₂
     done₂ = S2.agrees-hide-all ps₂ (S2.agrees-start start₂)
 
-    prem₂ : Entries (vw B₂) → S2.St
+    prem₂ : Relation (vertex-width B₂) → S2.St
     prem₂ G .S2.into i q = G (inj₁ i) (inj₂ q)
     prem₂ G .S2.inside p q = G (inj₂ p) (inj₂ q)
 
     κ₂ : ∀ i → H₂ .S2.into i (inj₂ root) ≈ collapse B₂ i
     κ₂ i =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S2.into i (inj₂ root))
-                              (S2.folds prem₂ inj₂ (hide (vw B₂)) (λ G w → ≡-refl)
+                              (S2.folds prem₂ inj₂ (hide (vertex-width B₂)) (λ G w → ≡-refl)
                                         (paths⁺ B₂) (gr B₂))))
               (hide-paths⁺ B₂ i)
 
@@ -1343,11 +1344,11 @@ module Rule₃
     cols₃ : Path⁺ B₃ ⊎ Root → V E
     cols₃ = tgt
 
-    Bh₃ : (s : Path⁺ B₃) (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vw E (cols₃ t)) (width⁺ B₃ s)
+    Bh₃ : (s : Path⁺ B₃) (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (cols₃ t)) (width⁺ B₃ s)
     Bh₃ s (inj₁ q) = inside⁺ B₃ s q
     Bh₃ s (inj₂ _) = r₃ s
 
-    module Bd₃ = Behind (vw E) hid₁₂ b3 cols₃ Bh₃
+    module Bd₃ = Behind (vertex-width E) hid₁₂ b3 cols₃ Bh₃
 
     behind₃ : Bd₃.Keeps G₂
     behind₃ =
@@ -1372,7 +1373,7 @@ module Rule₃
     K₃ : (t : Root) (i : Inp) → M.Matrix n (iw i)
     K₃ _ i = (out-root i M.+ₘ (up₁ ∘ c₁ i)) M.+ₘ (up₂ ∘ c₂ i)
 
-    module S3 = HidePremise (vw E) inj₁ b3 (λ (_ : Root) → er) Φ₃ P₃ K₃
+    module S3 = HidePremise (vertex-width E) inj₁ b3 (λ (_ : Root) → er) Φ₃ P₃ K₃
 
     H₃⁰ : S3.St
     H₃⁰ .S3.into i q = into⁺ B₃ i q
@@ -1390,8 +1391,8 @@ module Rule₃
     start₃ .S3.off-start _ p = behind₃ .Bd₃.keeps (inj₁ p) (inj₂ root)
     start₃ .S3.sink q = ≈-refl {f = M.εₘ}
 
-    G₃ : Entries (vw E)
-    G₃ = hide-all (vw E) (hide (vw E) G₂ (b3 (inj₂ root))) (map (λ w → b3 (inj₁ w)) ps₃)
+    G₃ : Relation (vertex-width E)
+    G₃ = hide-all (vertex-width E) (hide (vertex-width E) G₂ (b3 (inj₂ root))) (map (λ w → b3 (inj₁ w)) ps₃)
 
     H₃ : S3.St
     H₃ = S3.steps (S3.step H₃⁰ (inj₂ root)) (map inj₁ ps₃)
@@ -1399,14 +1400,14 @@ module Rule₃
     done₃ : S3.Agrees G₃ H₃
     done₃ = S3.agrees-hide-all ps₃ (S3.agrees-start start₃)
 
-    prem₃ : Entries (vw B₃) → S3.St
+    prem₃ : Relation (vertex-width B₃) → S3.St
     prem₃ G .S3.into i q = G (inj₁ i) (inj₂ q)
     prem₃ G .S3.inside p q = G (inj₂ p) (inj₂ q)
 
     κ₃ : ∀ i → H₃ .S3.into i (inj₂ root) ≈ collapse B₃ i
     κ₃ i =
       ≈-trans (≈-of-≡ (≡-cong (λ H → H .S3.into i (inj₂ root))
-                              (S3.folds prem₃ inj₂ (hide (vw B₃)) (λ G w → ≡-refl)
+                              (S3.folds prem₃ inj₂ (hide (vertex-width B₃)) (λ G w → ≡-refl)
                                         (paths⁺ B₃) (gr B₃))))
               (hide-paths⁺ B₃ i)
 
@@ -1434,11 +1435,11 @@ module Rule₃
 
     plumb : ∀ i → collapse E i ≡ G₃ (inj₁ i) er
     plumb i =
-      ≡-trans (≡-cong (λ l → hide-all (vw E) (gr E) l (inj₁ i) er) lst)
+      ≡-trans (≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ i) er) lst)
               (≡-trans (≡-cong (λ G → G (inj₁ i) er)
-                               (hide-all-++ (vw E) (gr E) l₁ (l₂ ++ l₃)))
+                               (hide-all-++ (vertex-width E) (gr E) l₁ (l₂ ++ l₃)))
                        (≡-cong (λ G → G (inj₁ i) er)
-                               (hide-all-++ (vw E) G₁ l₂ l₃)))
+                               (hide-all-++ (vertex-width E) G₁ l₂ l₃)))
 
   agree : ∀ i → collapse E i
                 ≈ rule₃-result route₁ route₂ route₃ link₁ link₂ out-root up₁ up₂ up₃
