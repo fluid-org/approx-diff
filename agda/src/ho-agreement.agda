@@ -1,25 +1,29 @@
 {-# OPTIONS --prop --postfix-projections #-}
 
 -- Agreement between the operational relation and the higher-order model, on the fragment without
--- μ-types and primitives. A value denotes an index of its type's interpretation and a fibre map
--- from the free semimodule on its positions to the fibre there, both by recursion on the value; a
--- closure denotes the index and fibre of the lambda's denotation at its environment. The
--- fundamental lemma, by induction on the derivation, says the term's denotation at the
--- environment's denotation is the value's, that the environment columns of the relation realise
--- as the fibre map, and that the source column realises as the elimination constant. At a
--- closure's payload the two sides agree only up to a control mark scaled by the closure's root:
--- the operational environment cells carry marks that the interpretation's payload does not, and an
--- application absorbs them into the constant its own elimination writes. The absorption needs the
--- unit weight to be top and the elimination weight idempotent, as in a lattice.
+-- μ-types and primitives, as a logical relation. A value is related to an index of its type's
+-- interpretation by recursion on the type, behaviourally at arrow types: for related arguments and
+-- any derivation of the body, the result is related. Over that, a dependence vector on the value's
+-- positions is related to an element of the fibre: at first-order types position by position, at
+-- arrow types the root exactly and the payload through application, comparing the body's
+-- dependence through the closure's cells and the argument with the evaluation of the payload and
+-- the index's fibre map at the argument. Inputs are a source weight and an environment vector,
+-- and the environment relation lets a cell carry a control mark dominated by the source, which is
+-- how the operational semantics marks values inside a branch where the interpretation marks the
+-- branch's result once. The fundamental lemma, by induction on the term over all derivations,
+-- says the relation applied to the inputs is related to the term's fibre map at the environment's
+-- denotation plus the elimination constant at the source. The absorption of marks needs the
+-- elimination weight to be idempotent and to absorb its multiples under addition, as in a lattice.
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.Unit using (tt)
+open import Data.Unit using (⊤; tt)
+open import Data.Empty using (⊥)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import prop
-open import prop using (_∧_; ∃; ∃ₛ; LiftS; liftS)
+open import prop using (_∧_; ∃; ∃ₛ; Prf; ⟪_⟫)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
@@ -27,6 +31,7 @@ open import primitives using (Primitives)
 open import categories using (Category; HasProducts; HasTerminal; HasWeakExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 import indexed-family
+open import indexed-family using (HasSetoidProducts)
 import matrix
 import semimodule
 import ho-model
@@ -36,9 +41,9 @@ module ho-agreement
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
   (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig)
   (let module Sc = CommutativeSemiring S)
-  -- The unit weight is top and the elimination weight idempotent.
-  (+-top : ∀ x → Setoid._≈_ A (x Sc.+ Sc.ι) Sc.ι)
+  -- The elimination weight is idempotent and absorbs its multiples.
   (w-idem : Setoid._≈_ A (elim-weight Sc.· elim-weight) elim-weight)
+  (w-absorb : ∀ x → Setoid._≈_ A ((elim-weight Sc.· x) Sc.+ elim-weight) elim-weight)
   where
 
 open Signature Sig
@@ -48,19 +53,18 @@ open import language-operational.evaluation Sig S 𝒫 elim-weight
 
 module model = ho-model S elim-weight
 module interp = model.interp Sig 𝒫
-open model using (𝔽; mat; ι1-fwd; ι1-bwd; 𝔽-L-iso; 𝔽-biproduct; module Ls; module SemiMod)
-open SemiMod using (Semimodule; _⇒_; _≈m_)
+open model using (𝔽; mat; ι1-fwd; ι1-bwd; module Ls; module SemiMod)
+open SemiMod using (Semimodule; _⇒_)
 open Semimodule using () renaming (Carrier to ∣_∣)
 open SemiMod._⇒_ using (func)
 
 private
   module M = matrix.Mat S
-  module SMC = Category SemiMod.cat
-  module SMCM = CMonEnriched SemiMod.cmon-enriched
   module SMP = HasProducts SemiMod.products
   module FD = model.Fam⟨𝒟⟩μ
+  module SP = HasSetoidProducts model.SPmod
 
-open FD using (Obj; Mor; idx; fam; fm; idxf; famf; Lf; Constant)
+open FD using (Obj; Mor; idx; fam; fm; idxf; famf; Constant)
 open indexed-family.Fam using (subst)
 open indexed-family._⇒f_ using (transf)
 open prop-setoid._⇒_ using () renaming (func to sfunc)
@@ -71,8 +75,8 @@ module LI = language-interpretation Sig 0ℓ 0ℓ
   interp.δ∅𝒟 interp.𝒟𝟙ty interp.𝒟unit-pt interp.𝒟-Sig-model model.elim-weight-endo
   (λ {X} {Y} → model.exp-const {X} {Y}) interp.𝒟𝟙ty-const interp.𝒟-sort-const
 
-open LI using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; elim-const; ty-unit)
-open HasWeakExponentials model.SemiModExp using (lambda; eval)
+open LI using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; elim-const)
+open Constant using (at)
 
 ⟦_⟧ : type 0 → Obj
 ⟦ τ ⟧ = ⟦ τ ⟧ty (λ ())
@@ -89,120 +93,187 @@ IxC Γ = Setoid.Carrier (⟦ Γ ⟧ctxt .idx)
 FibC : (Γ : ctxt) → IxC Γ → Semimodule
 FibC Γ i = ⟦ Γ ⟧ctxt .fam .fm i
 
+_≈A_ : Setoid.Carrier A → Setoid.Carrier A → Prop
+_≈A_ = Setoid._≈_ A
+
 -- The fragment: no μ-types, no primitives.
-mutual
-  data CoreVal : ∀ {τ} → Val τ → Set where
-    unit : CoreVal unit
-    inl  : ∀ {τ₁ τ₂} {v : Val τ₁} → CoreVal v → CoreVal (inl {τ₂ = τ₂} v)
-    inr  : ∀ {τ₁ τ₂} {v : Val τ₂} → CoreVal v → CoreVal (inr {τ₁ = τ₁} v)
-    pair : ∀ {τ₁ τ₂} {v : Val τ₁} {u : Val τ₂} → CoreVal v → CoreVal u → CoreVal (pair v u)
-    clo  : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} → CoreEnv γ → CoreTm t → CoreVal (clo γ t)
+data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set where
+  var  : ∀ {Γ τ} (x : Γ ∋ τ) → CoreTm (var x)
+  unit : ∀ {Γ} → CoreTm (unit {Γ})
+  inl  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₁} → CoreTm t → CoreTm (inl {τ₂ = τ₂} t)
+  inr  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₂} → CoreTm t → CoreTm (inr {τ₁ = τ₁} t)
+  case : ∀ {Γ τ₁ τ₂ τ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ} →
+         CoreTm s → CoreTm t₁ → CoreTm t₂ → CoreTm (case s t₁ t₂)
+  pair : ∀ {Γ τ₁ τ₂} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} → CoreTm s → CoreTm t → CoreTm (pair s t)
+  fst  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₁ [×] τ₂} → CoreTm t → CoreTm (fst t)
+  snd  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₁ [×] τ₂} → CoreTm t → CoreTm (snd t)
+  lam  : ∀ {Γ σ τ} {t : Γ ▸ σ ⊢ τ} → CoreTm t → CoreTm (lam t)
+  app  : ∀ {Γ σ τ} {s : Γ ⊢ σ [→] τ} {t : Γ ⊢ σ} → CoreTm s → CoreTm t → CoreTm (app s t)
 
-  data CoreEnv : ∀ {Γ} → Env Γ → Set where
-    emp : CoreEnv emp
-    _·_ : ∀ {Γ τ} {γ : Env Γ} {v : Val τ} → CoreEnv γ → CoreVal v → CoreEnv (γ · v)
+-- Values related to indices, by recursion on the type. A closure is related to a fibre map of the
+-- exponential when, for every related argument and every derivation of the body at it, the result
+-- is related to the map's index at the argument.
+RelV : ∀ τ → Val τ → Ix τ → Set
+RelV unit unit i = ⊤
+RelV (base s) v i = ⊥
+RelV (σ [+] τ) (inl v) i = Σ (Ix σ) λ i' → RelV σ v i' × Prf (Setoid._≈_ (⟦ σ [+] τ ⟧ .idx) i (inj₁ i'))
+RelV (σ [+] τ) (inr v) i = Σ (Ix τ) λ i' → RelV τ v i' × Prf (Setoid._≈_ (⟦ σ [+] τ ⟧ .idx) i (inj₂ i'))
+RelV (σ [×] τ) (pair v u) (i , j) = RelV σ v i × RelV τ u j
+RelV (σ [→] τ) (clo γ' t) f =
+  ∀ {v : Val σ} {j : Ix σ} → RelV σ v j → ∀ {u U} → γ' · v , t ⇓ u [ U ] → RelV τ u (f .idxf .sfunc j)
+RelV (μ τ) v i = ⊥
 
-  data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set where
-    var  : ∀ {Γ τ} (x : Γ ∋ τ) → CoreTm (var x)
-    unit : ∀ {Γ} → CoreTm (unit {Γ})
-    inl  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₁} → CoreTm t → CoreTm (inl {τ₂ = τ₂} t)
-    inr  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₂} → CoreTm t → CoreTm (inr {τ₁ = τ₁} t)
-    case : ∀ {Γ τ₁ τ₂ τ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ} →
-           CoreTm s → CoreTm t₁ → CoreTm t₂ → CoreTm (case s t₁ t₂)
-    pair : ∀ {Γ τ₁ τ₂} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} → CoreTm s → CoreTm t → CoreTm (pair s t)
-    fst  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₁ [×] τ₂} → CoreTm t → CoreTm (fst t)
-    snd  : ∀ {Γ τ₁ τ₂} {t : Γ ⊢ τ₁ [×] τ₂} → CoreTm t → CoreTm (snd t)
-    lam  : ∀ {Γ σ τ} {t : Γ ▸ σ ⊢ τ} → CoreTm t → CoreTm (lam t)
-    app  : ∀ {Γ σ τ} {s : Γ ⊢ σ [→] τ} {t : Γ ⊢ σ} → CoreTm s → CoreTm t → CoreTm (app s t)
+-- The vector over the body's inputs at an application: a source weight, then the closure's cells
+-- and the argument as the environment.
+body-input : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) → Setoid.Carrier A →
+             ∣ 𝔽 (width-env γ') ∣ → ∣ 𝔽 (width v) ∣ → ∣ 𝔽 (suc (width-env γ' + width v)) ∣
+body-input γ' v s c z zero    = s
+body-input γ' v s c z (suc k) =
+  Semimodule._+_ (𝔽 (width-env γ' + width v))
+    (mat (M.in₁ {width-env γ'} {width v}) .func c)
+    (mat (M.in₂ {width-env γ'} {width v}) .func z) k
+
+-- A dependence vector on a value's positions against an element of the fibre at a related index.
+-- At an arrow type the root agrees, and for any further source weight, any related argument and
+-- any derivation of the body, the body's dependence through the root and the further weight as
+-- source and the cells and argument as environment agrees with the elimination constant at that
+-- source plus the payload evaluated at the argument plus the index's fibre map at the argument.
+RelF : ∀ τ {v : Val τ} {i : Ix τ} → RelV τ v i → ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
+RelF unit {unit} {i} r o d = Semimodule._≈_ (Fib unit i) o d
+RelF (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) o d =
+  let d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func d in
+  (o zero ≈A proj₁ d') ∧ RelF σ r (λ k → o (suc k)) (proj₂ d')
+RelF (σ [+] τ) {inr v} {i} (i' , r , ⟪ e ⟫) o d =
+  let d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₂ i'} e .func d in
+  (o zero ≈A proj₁ d') ∧ RelF τ r (λ k → o (suc k)) (proj₂ d')
+RelF (σ [×] τ) {pair v u} {i , j} (r , r') o d =
+  (o zero ≈A proj₁ d) ∧
+  (RelF σ r (mat (M.p₁ {width v} {width u}) .func (λ k → o (suc k))) (proj₁ (proj₂ d)) ∧
+   RelF τ r' (mat (M.p₂ {width v} {width u}) .func (λ k → o (suc k))) (proj₂ (proj₂ d)))
+RelF (σ [→] τ) {clo γ' t} {f} r o d =
+  (o zero ≈A proj₁ d) ∧
+  (∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : RelV σ v j)
+     (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → RelF σ rv z y →
+   ∀ {u U} (D : γ' · v , t ⇓ u [ U ]) →
+     RelF τ (r rv D) (mat U .func (body-input γ' v (s' Sc.+ o zero) (λ k → o (suc k)) z))
+       (Semimodule._+_ (Fib τ (f .idxf .sfunc j))
+         (elim-const τ .at (f .idxf .sfunc j) .func (s' Sc.+ o zero))
+         (Semimodule._+_ (Fib τ (f .idxf .sfunc j))
+           (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ d))
+           (f .famf .transf j .func y))))
+
+-- Environments related to context indices, and environment vectors to elements of the context
+-- fibre at a source weight: each cell may carry, beyond its relation, a mark that the elimination
+-- constant at the source absorbs.
+data RelVEnv : ∀ {Γ} → Env Γ → IxC Γ → Set where
+  emp : RelVEnv emp (lift tt)
+  _·_ : ∀ {Γ τ} {γ : Env Γ} {v : Val τ} {gi i} → RelVEnv γ gi → RelV τ v i → RelVEnv (γ · v) (gi , i)
 
 infixl 30 _·_
 
--- The denotation of a value: its index, and its fibre map from the free semimodule on its
--- positions. Lifted values map their root to the root and their payload under the injection; a
--- closure's payload is the lambda's fibre at the environment's denotation.
-mutual
-  ⌊_⌋ : ∀ {τ} {v : Val τ} → CoreVal v → Ix τ
-  ⌊ unit ⌋      = lift tt
-  ⌊ inl m ⌋     = inj₁ ⌊ m ⌋
-  ⌊ inr m ⌋     = inj₂ ⌊ m ⌋
-  ⌊ pair m n ⌋  = ⌊ m ⌋ , ⌊ n ⌋
-  ⌊ clo {t = t} mγ mt ⌋ = lambda ⟦ t ⟧tm .idxf .sfunc ⌊ mγ ⌋e
+Dominated : ∀ τ (i : Ix τ) → Setoid.Carrier A → ∣ Fib τ i ∣ → Prop
+Dominated τ i s m =
+  Semimodule._≈_ (Fib τ i) (Semimodule._+_ (Fib τ i) m (elim-const τ .at i .func s))
+                          (elim-const τ .at i .func s)
 
-  ⌊_⌋e : ∀ {Γ} {γ : Env Γ} → CoreEnv γ → IxC Γ
-  ⌊ emp ⌋e     = lift tt
-  ⌊ mγ · m ⌋e = ⌊ mγ ⌋e , ⌊ m ⌋
+RelFs : ∀ τ {v : Val τ} {i : Ix τ} → RelV τ v i → Setoid.Carrier A →
+        ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
+RelFs τ {i = i} r s o d =
+  ∃ (∣ Fib τ i ∣) (λ m → Dominated τ i s m ∧ RelF τ r o (Semimodule._+_ (Fib τ i) d m))
 
-  ⌊_⌋f : ∀ {τ} {v : Val τ} (m : CoreVal v) → 𝔽 (width v) ⇒ Fib τ ⌊ m ⌋
-  ⌊ unit ⌋f = SemiMod.id (𝔽 1)
-  ⌊ inl {v = v} m ⌋f = SemiMod._∘_ (Ls.Lmap ⌊ m ⌋f) (𝔽-L-iso (width v) .Category.Iso.fwd)
-  ⌊ inr {v = v} m ⌋f = SemiMod._∘_ (Ls.Lmap ⌊ m ⌋f) (𝔽-L-iso (width v) .Category.Iso.fwd)
-  ⌊ pair {v = v} {u = u} m n ⌋f =
-    SemiMod._∘_ (Ls.Lmap (SMP.pair (SemiMod._∘_ ⌊ m ⌋f (mat (M.p₁ {width v} {width u})))
-                                   (SemiMod._∘_ ⌊ n ⌋f (mat (M.p₂ {width v} {width u})))))
-                (𝔽-L-iso (width v + width u) .Category.Iso.fwd)
-  ⌊ clo {γ = γ} {t = t} mγ mt ⌋f =
-    SemiMod._∘_ (Ls.Lmap (SemiMod._∘_ (lambda ⟦ t ⟧tm .famf .transf ⌊ mγ ⌋e) ⌊ mγ ⌋ef))
-                (𝔽-L-iso (width-env γ) .Category.Iso.fwd)
+RelEnv : ∀ {Γ} {γ : Env Γ} {gi} → RelVEnv γ gi → Setoid.Carrier A →
+         ∣ 𝔽 (width-env γ) ∣ → ∣ FibC Γ gi ∣ → Prop
+RelEnv emp s x g = prop.⊤
+RelEnv (_·_ {γ = γ} {v = v} rγ r) s x g =
+  RelEnv rγ s (mat (M.p₁ {width-env γ} {width v}) .func x) (proj₁ g) ∧
+  RelFs _ r s (mat (M.p₂ {width-env γ} {width v}) .func x) (proj₂ g)
 
-  ⌊_⌋ef : ∀ {Γ} {γ : Env Γ} (mγ : CoreEnv γ) → 𝔽 (width-env γ) ⇒ FibC Γ ⌊ mγ ⌋e
-  ⌊ emp ⌋ef = SemiMod.ε-map (𝔽 0) SemiMod.𝟘
-  ⌊ _·_ {γ = γ} {v = v} mγ m ⌋ef =
-    SMP.pair (SemiMod._∘_ ⌊ mγ ⌋ef (mat (M.p₁ {width-env γ} {width v})))
-             (SemiMod._∘_ ⌊ m ⌋f (mat (M.p₂ {width-env γ} {width v})))
+-- The inputs of a derivation: the source weight at the first position, the environment after.
+inputs : ∀ {Γ} (γ : Env Γ) → Setoid.Carrier A → ∣ 𝔽 (width-env γ) ∣ → ∣ 𝔽 (suc (width-env γ)) ∣
+inputs γ s x zero    = s
+inputs γ s x (suc k) = x k
 
+open model using (app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
+open Sc using (ι; ε) renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
+open Setoid A using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
+open M using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans) renaming (Σ to Σₛ)
+
+open Sc using (+-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
+
+-- Reading a relation at the inputs: the source column at the source weight, and the environment
+-- columns at the environment vector.
 private
-  w = elim-weight
+  p₁-e : ∀ {m} (j : Fin (suc m)) → M.p₁ {1} {m} zero j ≈s M.e zero j
+  p₁-e zero    = ≈-refl
+  p₁-e (suc j) = ≈-refl
 
--- Agreement of two elements of a fibre: equal, except at a closure's payload, where the first
--- may exceed the second by a control mark scaled by the root.
-Agree : ∀ (τ : type 0) {i : Ix τ} → ∣ Fib τ i ∣ → ∣ Fib τ i ∣ → Prop
-Agree unit {i} x y = Semimodule._≈_ (Fib unit i) x y
-Agree (base s) {i} x y = Semimodule._≈_ (Fib (base s) i) x y
-Agree (σ [+] τ) {inj₁ i} (a , x) (b , y) = Setoid._≈_ A a b ∧ Agree σ x y
-Agree (σ [+] τ) {inj₂ i} (a , x) (b , y) = Setoid._≈_ A a b ∧ Agree τ x y
-Agree (σ [×] τ) {i , j} (a , (x₁ , x₂)) (b , (y₁ , y₂)) =
-  Setoid._≈_ A a b ∧ (Agree σ x₁ y₁ ∧ Agree τ x₂ y₂)
-Agree (σ [→] τ) {f} (a , x) (b , y) =
-  Setoid._≈_ A a b ∧
-  ∃ ∣ P ∣ (λ K → Semimodule._≈_ P x (Semimodule._+_ P y (Semimodule._·_ P (a Sc.· w) K)))
-  where P = model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f
-Agree (μ τ) {i} x y = Semimodule._≈_ (Fib (μ τ) i) x y
+  p₂-e : ∀ {m} (j : Fin m) (l : Fin m) → M.p₂ {1} {m} j (suc l) ≈s M.e j l
+  p₂-e j l = ≈-refl
 
-open Constant using (at)
+app-source : ∀ {Γ} {γ : Env Γ} {n} (R : M.Matrix n (suc (width-env γ))) (s : Setoid.Carrier A)
+             (k : Fin n) →
+             ap (cols {γ = γ} R source) (λ _ → s) k ≈s (R k zero ·ₛ s)
+app-source {γ = γ} R s k =
+  ≈-trans (+-cong (·-cong entry ≈-refl) ≈-refl) (≈-trans +-comm +-lunit)
+  where
+  entry : (R ∘ M.in₁ {1} {width-env γ}) k zero ≈s R k zero
+  entry = ≈-trans (Σ-cong {suc (width-env γ)}
+                     (λ j → ≈-trans (·-cong (≈-refl {R k j}) (p₁-e {width-env γ} j)) ·-comm))
+                  (Σ-unit {suc (width-env γ)} zero (λ j → R k j))
 
--- The value's control positions realise as the elimination constant at its index.
-ctrl-const : ∀ {τ} {v : Val τ} (m : CoreVal v) (x : ∣ 𝔽 1 ∣) →
-             Semimodule._≈_ (Fib τ ⌊ m ⌋)
-               (⌊ m ⌋f .func (mat (ctrl-of v) .func x))
-               (elim-const τ .at ⌊ m ⌋ .func (ι1-fwd .func x))
-ctrl-const = {!!}
+app-environment : ∀ {Γ} {γ : Env Γ} {n} (R : M.Matrix n (suc (width-env γ)))
+                  (x : ∣ 𝔽 (width-env γ) ∣) (k : Fin n) →
+                  ap (cols {γ = γ} R environment) x k ≈s Σₛ (λ j → R k (suc j) ·ₛ x j)
+app-environment {γ = γ} R x k = Σ-cong {width-env γ} (λ j → ·-cong (entry j) ≈-refl)
+  where
+  entry : ∀ j → (R ∘ M.in₂ {1} {width-env γ}) k j ≈s R k (suc j)
+  entry j =
+    ≈-trans (+-cong ε-annihilᵣ
+                    (Σ-cong {width-env γ}
+                       (λ l → ≈-trans (·-cong (≈-refl {R k (suc l)}) (p₂-e {width-env γ} j l)) ·-comm)))
+            (≈-trans +-lunit (Σ-unit {width-env γ} j (λ l → R k (suc l))))
 
--- Agreement of a derivation with the interpretation: the index, the environment columns and the
--- source column.
-record Agrees {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ])
-              (mγ : CoreEnv γ) (m : CoreVal v) : Prop where
-  field
-    ix  : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ t ⟧tm .idxf .sfunc ⌊ mγ ⌋e) ⌊ m ⌋
-    env : ∀ (x : ∣ 𝔽 (width-env γ) ∣) →
-          Agree τ (⌊ m ⌋f .func (mat (cols {γ = γ} R environment) .func x))
-                        (⟦ τ ⟧ .fam .subst ix .func
-                          (⟦ t ⟧tm .famf .transf ⌊ mγ ⌋e .func (⌊ mγ ⌋ef .func x)))
-    src : ∀ (x : ∣ 𝔽 1 ∣) →
-          Agree τ (⌊ m ⌋f .func (mat (cols {γ = γ} R source) .func x))
-                        (elim-const τ .at ⌊ m ⌋ .func (ι1-fwd .func x))
+app-inputs : ∀ {Γ} {γ : Env Γ} {n} (R : M.Matrix n (suc (width-env γ))) s x (k : Fin n) →
+             ap R (inputs γ s x) k ≈s
+             (ap (cols {γ = γ} R source) (λ _ → s) k +ₛ ap (cols {γ = γ} R environment) x k)
+app-inputs {γ = γ} R s x k =
+  +-cong (≈-sym (app-source {γ = γ} R s k)) (≈-sym (app-environment {γ = γ} R x k))
 
-open Agrees
+app-of-cols : ∀ {Γ} {γ : Env Γ} {n} (f : (i : Input) → M.Matrix n (input-width γ i)) s x
+              (k : Fin n) →
+              ap (of-cols {γ = γ} f) (inputs γ s x) k ≈s
+              (ap (f source) (λ _ → s) k +ₛ ap (f environment) x k)
+app-of-cols {γ = γ} f s x k =
+  ≈-trans (app-inputs {γ = γ} (of-cols {γ = γ} f) s x k)
+          (+-cong (app-congₘ (cols-of-cols {γ = γ} f source) (λ _ → s) k)
+                  (app-congₘ (cols-of-cols {γ = γ} f environment) x k))
 
-fundamental : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
-              CoreTm t → (mγ : CoreEnv γ) → ∃ₛ (CoreVal v) (Agrees D mγ)
-fundamental (⇓-var x) (var .x) mγ = {!!}
-fundamental ⇓-unit unit mγ = {!!}
-fundamental (⇓-inl D) (inl c) mγ = {!!}
-fundamental (⇓-inr D) (inr c) mγ = {!!}
-fundamental (⇓-case-l D₁ D₂) (case c c₁ c₂) mγ = {!!}
-fundamental (⇓-case-r D₁ D₂) (case c c₁ c₂) mγ = {!!}
-fundamental (⇓-pair D₁ D₂) (pair c₁ c₂) mγ = {!!}
-fundamental (⇓-fst D) (fst c) mγ = {!!}
-fundamental (⇓-snd D) (snd c) mγ = {!!}
-fundamental ⇓-lam (lam c) mγ = {!!}
-fundamental (⇓-app D₁ D₂ D₃) (app c₁ c₂) mγ = {!!}
+-- The fundamental lemma.
+fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
+              {gi} (rγ : RelVEnv γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
+              (g : ∣ FibC Γ gi ∣) → RelEnv rγ s x g →
+              ∃ₛ (RelV τ v (⟦ t ⟧tm .idxf .sfunc gi)) λ r →
+                RelF τ r (mat R .func (inputs γ s x))
+                  (Semimodule._+_ (Fib τ (⟦ t ⟧tm .idxf .sfunc gi))
+                    (elim-const τ .at (⟦ t ⟧tm .idxf .sfunc gi) .func s)
+                    (⟦ t ⟧tm .famf .transf gi .func g))
+fundamental (var x) D rγ s xs g rel = {!!}
+fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = record { fst = tt ; snd = goal }
+  where
+  goal : ∀ k → ap (of-cols {γ = γ} (unit-out γ)) (inputs γ s x) k ≈s
+               (elim-const unit .at (⟦ unit {Γ} ⟧tm .idxf .sfunc gi) .func s k +ₛ
+                ⟦ unit {Γ} ⟧tm .famf .transf gi .func g k)
+  goal zero =
+    ≈-trans (app-of-cols {γ = γ} (unit-out γ) s x zero)
+            (+-cong (≈-sym (≈-trans (+-cong (·-cong (≈-trans +-comm +-lunit)
+                                                    (≈-refl {elim-weight ·ₛ s +ₛ ε})) (≈-refl {ε}))
+                                    (≈-trans +-comm (≈-trans +-lunit ·-lunit))))
+                    (app-εₘ {1} {width-env γ} x zero))
+fundamental (inl c) D rγ s x g rel = {!!}
+fundamental (inr c) D rγ s x g rel = {!!}
+fundamental (case c c₁ c₂) D rγ s x g rel = {!!}
+fundamental (pair c₁ c₂) D rγ s x g rel = {!!}
+fundamental (fst c) D rγ s x g rel = {!!}
+fundamental (snd c) D rγ s x g rel = {!!}
+fundamental (lam c) D rγ s x g rel = {!!}
+fundamental (app c₁ c₂) D rγ s x g rel = {!!}
