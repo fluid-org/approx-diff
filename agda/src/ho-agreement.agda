@@ -895,6 +895,74 @@ private
                F._≈_ τ i (⟦ τ ⟧ .fam .subst e .func d) d
   subst-refl τ {i} e d = ⟦ τ ⟧ .fam .indexed-family.Fam.refl* .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (F.refl τ i {d})
 
+-- Transporting a relation along an index equation.
+RelF-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Setoid._≈_ (⟦ τ ⟧ .idx) i i') (r : RelV τ v i)
+                 {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
+                 RelF τ r o d → RelF τ (RelV-resp τ E r) o (⟦ τ ⟧ .fam .subst E .func d)
+RelF-transport unit {unit} {i} {i'} E r {o} {d} h k =
+  ≈-trans (h k) (≈-sym (subst-refl unit {i} E d k))
+RelF-transport (σ [+] τ) {inl v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o} {d} (h₀ , h) =
+  let e' = Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₁ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} E) e₀
+      comp = ⟦ σ [+] τ ⟧ .fam .indexed-family.Fam.trans* {i} {i'} {inj₁ i₀} e' E
+               .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (F.refl (σ [+] τ) i {d})
+  in
+  ≈-trans h₀ (prop._∧_.proj₁ comp) ,
+  RelF-resp σ r₀ (λ k → ≈-refl) (prop._∧_.proj₂ comp) h
+RelF-transport (σ [+] τ) {inr v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o} {d} (h₀ , h) =
+  let e' = Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₂ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} E) e₀
+      comp = ⟦ σ [+] τ ⟧ .fam .indexed-family.Fam.trans* {i} {i'} {inj₂ i₀} e' E
+               .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (F.refl (σ [+] τ) i {d})
+  in
+  ≈-trans h₀ (prop._∧_.proj₁ comp) ,
+  RelF-resp τ r₀ (λ k → ≈-refl) (prop._∧_.proj₂ comp) h
+RelF-transport (σ [×] τ) {pair v u} {i , j} {i' , j'} (E₁ , E₂) (r₁ , r₂) {o} {d} (h₀ , (h₁ , h₂)) =
+  ≈-trans h₀ (≈-sym +-runit) ,
+  (RelF-resp σ (RelV-resp σ E₁ r₁) (λ k → ≈-refl)
+     (F.sym σ i' (F.trans σ i' (m-lunit (Fib σ i')) (m-runit (Fib σ i'))))
+     (RelF-transport σ E₁ r₁ h₁) ,
+   RelF-resp τ (RelV-resp τ E₂ r₂) (λ k → ≈-refl)
+     (F.sym τ j' (F.trans τ j' (m-lunit (Fib τ j')) (m-lunit (Fib τ j'))))
+     (RelF-transport τ E₂ r₂ h₂))
+RelF-transport (σ [→] τ) {clo γ' t} {f} {f'} E r {o} {d} (h₀ , hc) =
+  ≈-trans h₀ (≈-sym +-runit) ,
+  λ s' {v} {j} rv z y hz {u} {U} D →
+    RelF-resp τ (RelV-resp τ (Ej j) (r rv D)) (λ k → ≈-refl)
+      (F.trans τ (f' .idxf .sfunc j)
+         (⟦ τ ⟧ .fam .subst (Ej j) .SemiMod._⇒_.preserve-+ {ec τ (f .idxf .sfunc j) (s' +ₛ o zero)} {_})
+      (F.+-cong τ (f' .idxf .sfunc j) (ec-natural τ (Ej j) (s' +ₛ o zero))
+      (F.trans τ (f' .idxf .sfunc j)
+         (⟦ τ ⟧ .fam .subst (Ej j) .SemiMod._⇒_.preserve-+ {_} {_})
+      (F.+-cong τ (f' .idxf .sfunc j) (eval-part j) (arg-part j y)))))
+      (RelF-transport τ (Ej j) (r rv D) (hc s' rv z y hz D))
+  where
+  P = model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧
+  Ej : ∀ j → Setoid._≈_ (⟦ τ ⟧ .idx) (f .idxf .sfunc j) (f' .idxf .sfunc j)
+  Ej j = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Setoid.refl (⟦ σ ⟧ .idx) {j})
+  hmap = indexed-family.reindex-≈ {P = ⟦ τ ⟧ .fam} (f .idxf) (f' .idxf) (E .FD._≃_.idxf-eq)
+  eval-part : ∀ j → F._≈_ τ (f' .idxf .sfunc j)
+                (⟦ τ ⟧ .fam .subst (Ej j) .func (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ d)))
+                (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]) j .func
+                   (proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)))
+  eval-part j =
+    F.trans τ (f' .idxf .sfunc j)
+      (F.sym τ (f' .idxf .sfunc j)
+         (SP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
+            {x = P .fam .fm f}
+            {f = indexed-family._∘f_ {A = ⟦ σ ⟧ .idx}
+                   {P = indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (P .fam .fm f)}
+                   {Q = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {R = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
+                   hmap (SP.evalΠf {A = ⟦ σ ⟧ .idx} (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]))} j
+            .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {proj₂ d} {proj₂ d} (Semimodule.refl (P .fam .fm f) {proj₂ d})))
+      (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]) j .SemiMod._⇒_.func-resp-≈
+         {SP.Π-map hmap .func (proj₂ d)} {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)}
+         (Semimodule.sym (P .fam .fm f') {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {SP.Π-map hmap .func (proj₂ d)}
+            (m-lunit (P .fam .fm f') {SP.Π-map hmap .func (proj₂ d)})))
+  arg-part : ∀ j (y : ∣ Fib σ j ∣) →
+             F._≈_ τ (f' .idxf .sfunc j) (⟦ τ ⟧ .fam .subst (Ej j) .func (f .famf .transf j .func y))
+                                        (f' .famf .transf j .func y)
+  arg-part j y = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq
+                   (Semimodule.refl (Fib σ j) {y})
+
 -- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
               {gi} (rγ : RelVEnv γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
