@@ -962,8 +962,147 @@ fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} c) {γ = γ} (⇓-inr 
 fundamental (case c c₁ c₂) (⇓-case-l D₁ D₂) rγ s x g rel = {!!}
 fundamental (case c c₁ c₂) (⇓-case-r D₁ D₂) rγ s x g rel = {!!}
 fundamental (pair c₁ c₂) (⇓-pair D₁ D₂) rγ s x g rel = {!!}
-fundamental (fst c) (⇓-fst D) rγ s x g rel = {!!}
-fundamental (snd c) (⇓-snd D) rγ s x g rel = {!!}
+fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} c) {γ = γ} (⇓-fst {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
+  RelF-resp σ r₁ (λ k → ≈-sym (op-eq k)) den-eq
+    (ctrl-add σ r₁ ((w ·ₛ s) +ₛ o' zero) (prop._∧_.proj₁ (prop._∧_.proj₂ IH)))
+  where
+  ij = ⟦ t ⟧tm .idxf .sfunc gi
+  i = proj₁ ij
+  r₁ = proj₁ (relV c D rγ)
+  IH = fundamental c D rγ s x g rel
+  o' = ap R' (inputs γ s x)
+  a₀ = proj₁ (⟦ t ⟧tm .famf .transf gi .func g)
+  m₁ = proj₁ (proj₂ (⟦ t ⟧tm .famf .transf gi .func g))
+  o'₀ : o' zero ≈s ((w ·ₛ s) +ₛ a₀)
+  o'₀ = ≈-trans (prop._∧_.proj₁ IH) (+-cong (prop._∧_.proj₁ (ec-pair {σ} {τ} i (proj₂ ij) s)) ≈-refl)
+
+  op-eq : ∀ k → ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ v)
+                                        (proj-up {width v} {width u} v (M.p₁ {width v} {width u})) (cols {γ = γ} R')))
+                   (inputs γ s x) k
+                ≈s (ap (ctrl-of v) (λ _ → (w ·ₛ s) +ₛ o' zero) k +ₛ ap (M.p₁ {width v} {width u}) (λ l → o' (suc l)) k)
+  op-eq k =
+    ≈-trans (app-rule₁ {γ = γ} (elim-out γ v) (proj-up {width v} {width u} v (M.p₁ {width v} {width u})) R' s x k)
+    (≈-trans (+-cong (≈-trans (+-cong (≈-trans (app-∘ (ctrl-of v) (ctrl-row {1}) (λ _ → s) k)
+                                               (app-congᵥ (ctrl-of v) (λ l → ap-ctrl-row {1} s l) k))
+                                      (app-εₘ x k))
+                              +-runit)
+                     (≈-trans (app-+ₘ (M.p₁ {width v} {width u} ∘ M.p₂ {1} {width v + width u})
+                                      (ctrl-of v ∘ M.p₁ {1} {width v + width u}) o' k)
+                              (+-cong (≈-trans (app-∘ (M.p₁ {width v} {width u}) (M.p₂ {1} {width v + width u}) o' k)
+                                               (app-congᵥ (M.p₁ {width v} {width u}) (ap-p₂₁ {width v + width u} o') k))
+                                      (≈-trans (app-∘ (ctrl-of v) (M.p₁ {1} {width v + width u}) o' k)
+                                               (app-congᵥ (ctrl-of v) (ap-p₁₁ {width v + width u} o') k)))))
+    (≈-trans (+-cong ≈-refl +-comm)
+    (≈-trans (≈-sym +-assoc)
+             (+-cong (≈-sym (app-+ᵥ (ctrl-of v) (λ _ → w ·ₛ s) (λ _ → o' zero) k)) ≈-refl))))
+
+  Mg = ⟦ t ⟧tm .famf .transf gi .func g
+
+  G-form : F._≈_ σ i (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (F._+_ σ i m₁ (ec σ i a₀))
+  G-form =
+    F.+-cong σ i
+      (F.trans σ i (m-lunit (Fib σ i) {F._+_ σ i (F.ε σ i) (F._+_ σ i (F.ε σ i) m₁)})
+        (F.trans σ i (m-lunit (Fib σ i) {F._+_ σ i (F.ε σ i) m₁}) (m-lunit (Fib σ i) {m₁})))
+      (elim-const σ .at i .SemiMod._⇒_.func-resp-≈ {(ε +ₛ a₀) +ₛ ε} {a₀} (≈-trans +-runit +-lunit))
+
+  den-eq : F._≈_ σ i (F._+_ σ i (ec σ i ((w ·ₛ s) +ₛ o' zero))
+                       (proj₁ (proj₂ (F._+_ (σ [×] τ) ij (ec (σ [×] τ) ij s) Mg))))
+                     (F._+_ σ i (ec σ i s) (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g))
+  den-eq =
+    F.trans σ i (F.+-cong σ i ec-part (F.+-cong σ i (prop._∧_.proj₁ (prop._∧_.proj₂ (ec-pair {σ} {τ} i (proj₂ ij) s))) (F.refl σ i)))
+    (F.trans σ i rearr (F.+-cong σ i (F.refl σ i) (F.sym σ i G-form)))
+    where
+    ec-part : F._≈_ σ i (ec σ i ((w ·ₛ s) +ₛ o' zero)) (F._+_ σ i (ec σ i s) (F._+_ σ i (ec σ i s) (ec σ i a₀)))
+    ec-part =
+      F.trans σ i (elim-const σ .at i .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o'₀))
+      (F.trans σ i (ec-linear σ i (w ·ₛ s) ((w ·ₛ s) +ₛ a₀))
+                   (F.+-cong σ i (ec-w σ i s) (F.trans σ i (ec-linear σ i (w ·ₛ s) a₀)
+                                                           (F.+-cong σ i (ec-w σ i s) (F.refl σ i)))))
+    -- (e + (e + a)) + (e + m) ≈ e + (m + a)
+    rearr : F._≈_ σ i (F._+_ σ i (F._+_ σ i (ec σ i s) (F._+_ σ i (ec σ i s) (ec σ i a₀)))
+                                 (F._+_ σ i (ec σ i s) m₁))
+                      (F._+_ σ i (ec σ i s) (F._+_ σ i m₁ (ec σ i a₀)))
+    rearr =
+      F.trans σ i (F.+-cong σ i (F.sym σ i (F.+-assoc σ i)) (F.refl σ i))
+      (F.trans σ i (F.+-cong σ i (F.+-cong σ i (ec-root σ i s) (F.refl σ i)) (F.refl σ i))
+      (F.trans σ i (F.+-assoc σ i)
+      (F.trans σ i (F.+-cong σ i (F.refl σ i) (F.sym σ i (F.+-assoc σ i)))
+      (F.trans σ i (F.+-cong σ i (F.refl σ i) (F.+-cong σ i (F.+-comm σ i) (F.refl σ i)))
+      (F.trans σ i (F.+-cong σ i (F.refl σ i) (F.+-assoc σ i))
+      (F.trans σ i (F.sym σ i (F.+-assoc σ i))
+      (F.trans σ i (F.+-cong σ i (ec-root σ i s) (F.refl σ i))
+                   (F.+-cong σ i (F.refl σ i) (F.+-comm σ i)))))))))
+fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} c) {γ = γ} (⇓-snd {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
+  RelF-resp τ r₂ (λ k → ≈-sym (op-eq k)) den-eq
+    (ctrl-add τ r₂ ((w ·ₛ s) +ₛ o' zero) (prop._∧_.proj₂ (prop._∧_.proj₂ IH)))
+  where
+  ij = ⟦ t ⟧tm .idxf .sfunc gi
+  j = proj₂ ij
+  r₂ = proj₂ (relV c D rγ)
+  IH = fundamental c D rγ s x g rel
+  o' = ap R' (inputs γ s x)
+  a₀ = proj₁ (⟦ t ⟧tm .famf .transf gi .func g)
+  m₂ = proj₂ (proj₂ (⟦ t ⟧tm .famf .transf gi .func g))
+  o'₀ : o' zero ≈s ((w ·ₛ s) +ₛ a₀)
+  o'₀ = ≈-trans (prop._∧_.proj₁ IH) (+-cong (prop._∧_.proj₁ (ec-pair {σ} {τ} (proj₁ ij) j s)) ≈-refl)
+
+  op-eq : ∀ k → ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ u)
+                                        (proj-up {width v} {width u} u (M.p₂ {width v} {width u})) (cols {γ = γ} R')))
+                   (inputs γ s x) k
+                ≈s (ap (ctrl-of u) (λ _ → (w ·ₛ s) +ₛ o' zero) k +ₛ ap (M.p₂ {width v} {width u}) (λ l → o' (suc l)) k)
+  op-eq k =
+    ≈-trans (app-rule₁ {γ = γ} (elim-out γ u) (proj-up {width v} {width u} u (M.p₂ {width v} {width u})) R' s x k)
+    (≈-trans (+-cong (≈-trans (+-cong (≈-trans (app-∘ (ctrl-of u) (ctrl-row {1}) (λ _ → s) k)
+                                               (app-congᵥ (ctrl-of u) (λ l → ap-ctrl-row {1} s l) k))
+                                      (app-εₘ x k))
+                              +-runit)
+                     (≈-trans (app-+ₘ (M.p₂ {width v} {width u} ∘ M.p₂ {1} {width v + width u})
+                                      (ctrl-of u ∘ M.p₁ {1} {width v + width u}) o' k)
+                              (+-cong (≈-trans (app-∘ (M.p₂ {width v} {width u}) (M.p₂ {1} {width v + width u}) o' k)
+                                               (app-congᵥ (M.p₂ {width v} {width u}) (ap-p₂₁ {width v + width u} o') k))
+                                      (≈-trans (app-∘ (ctrl-of u) (M.p₁ {1} {width v + width u}) o' k)
+                                               (app-congᵥ (ctrl-of u) (ap-p₁₁ {width v + width u} o') k)))))
+    (≈-trans (+-cong ≈-refl +-comm)
+    (≈-trans (≈-sym +-assoc)
+             (+-cong (≈-sym (app-+ᵥ (ctrl-of u) (λ _ → w ·ₛ s) (λ _ → o' zero) k)) ≈-refl))))
+
+  Mg = ⟦ t ⟧tm .famf .transf gi .func g
+
+  G-form : F._≈_ τ j (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (F._+_ τ j m₂ (ec τ j a₀))
+  G-form =
+    F.+-cong τ j
+      (F.trans τ j (m-lunit (Fib τ j) {F._+_ τ j (F.ε τ j) (F._+_ τ j (F.ε τ j) m₂)})
+        (F.trans τ j (m-lunit (Fib τ j) {F._+_ τ j (F.ε τ j) m₂}) (m-lunit (Fib τ j) {m₂})))
+      (elim-const τ .at j .SemiMod._⇒_.func-resp-≈ {(ε +ₛ a₀) +ₛ ε} {a₀} (≈-trans +-runit +-lunit))
+
+  den-eq : F._≈_ τ j (F._+_ τ j (ec τ j ((w ·ₛ s) +ₛ o' zero))
+                       (proj₂ (proj₂ (F._+_ (σ [×] τ) ij (ec (σ [×] τ) ij s) Mg))))
+                     (F._+_ τ j (ec τ j s) (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g))
+  den-eq =
+    F.trans τ j (F.+-cong τ j ec-part (F.+-cong τ j (prop._∧_.proj₂ (prop._∧_.proj₂ (ec-pair {σ} {τ} (proj₁ ij) j s))) (F.refl τ j)))
+    (F.trans τ j rearr (F.+-cong τ j (F.refl τ j) (F.sym τ j G-form)))
+    where
+    ec-part : F._≈_ τ j (ec τ j ((w ·ₛ s) +ₛ o' zero)) (F._+_ τ j (ec τ j s) (F._+_ τ j (ec τ j s) (ec τ j a₀)))
+    ec-part =
+      F.trans τ j (elim-const τ .at j .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o'₀))
+      (F.trans τ j (ec-linear τ j (w ·ₛ s) ((w ·ₛ s) +ₛ a₀))
+                   (F.+-cong τ j (ec-w τ j s) (F.trans τ j (ec-linear τ j (w ·ₛ s) a₀)
+                                                           (F.+-cong τ j (ec-w τ j s) (F.refl τ j)))))
+    -- (e + (e + a)) + (e + m) ≈ e + (m + a)
+    rearr : F._≈_ τ j (F._+_ τ j (F._+_ τ j (ec τ j s) (F._+_ τ j (ec τ j s) (ec τ j a₀)))
+                                 (F._+_ τ j (ec τ j s) m₂))
+                      (F._+_ τ j (ec τ j s) (F._+_ τ j m₂ (ec τ j a₀)))
+    rearr =
+      F.trans τ j (F.+-cong τ j (F.sym τ j (F.+-assoc τ j)) (F.refl τ j))
+      (F.trans τ j (F.+-cong τ j (F.+-cong τ j (ec-root τ j s) (F.refl τ j)) (F.refl τ j))
+      (F.trans τ j (F.+-assoc τ j)
+      (F.trans τ j (F.+-cong τ j (F.refl τ j) (F.sym τ j (F.+-assoc τ j)))
+      (F.trans τ j (F.+-cong τ j (F.refl τ j) (F.+-cong τ j (F.+-comm τ j) (F.refl τ j)))
+      (F.trans τ j (F.+-cong τ j (F.refl τ j) (F.+-assoc τ j))
+      (F.trans τ j (F.sym τ j (F.+-assoc τ j))
+      (F.trans τ j (F.+-cong τ j (ec-root τ j s) (F.refl τ j))
+                   (F.+-cong τ j (F.refl τ j) (F.+-comm τ j)))))))))
+
 fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} c) {γ = γ} ⇓-lam {gi} rγ s x g rel =
   root , clause
   where
