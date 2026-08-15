@@ -423,8 +423,9 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
     module S₁ = Single E (pair₁ {D₁ = D₁} {D₂ = D₂}) is-ε ε (λ (_ : Root) → ε) (λ _ → P₁) (λ _ → K₁)
     module S₂ = Single E (pair₂ {D₁ = D₁} {D₂ = D₂}) is-ε ε (λ (_ : Root) → ε) (λ _ → P₂) (λ _ → K₂)
     module Bh = Behind E (pair₁ {D₁ = D₁} {D₂ = D₂}) (pair₂ {D₁ = D₁} {D₂ = D₂})
+                       (λ (_ : Root) → ε)
                        (λ p q → graph D₂ (at p) (at q))
-                       (λ p → edge P₂ p)
+                       (λ _ p → edge P₂ p)
     module Fr = Frozen E (pair₁ {D₁ = D₁} {D₂ = D₂}) (pair₂ {D₁ = D₁} {D₂ = D₂})
                        (λ i q → graph D₂ (inp i) (at q))
 
@@ -477,7 +478,7 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
 
     behind₀ : Bh.Keeps (graph E)
     behind₀ .path-keeps p q = ≈-refl
-    behind₀ .root-keeps p = ≈-refl {f = edge P₂ p}
+    behind₀ .root-keeps _ p = ≈-refl {f = edge P₂ p}
     behind₀ .two-one p q = ≈-refl {f = M.εₘ}
 
     frozen₀ : Fr.Keeps (graph E)
@@ -486,11 +487,11 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
     frozen₀ .one-two p q = ≈-refl {f = M.εₘ}
 
     behind₁ : Bh.Keeps G₁
-    behind₁ = Bh.keeps-hide-all (interior D₁)
+    behind₁ = Bh.keeps-hide-all (λ w → w) (interior D₁)
                 (Bh.keeps-hide ε (Bh.keeps-sink (at ε) (root-sink E) behind₀))
 
     frozen₁ : Fr.Keeps G₁
-    frozen₁ = Fr.keeps-hide-all (interior D₁)
+    frozen₁ = Fr.keeps-hide-all (λ w → w) (interior D₁)
                 (Fr.keeps-hide ε (Fr.keeps-sink (at ε) (root-sink E) frozen₀))
 
     kin₂ : ∀ i → G₁ (inp i) (at ε) ≈ K₂ i
@@ -504,8 +505,8 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
     entries₂ .inputs i q = frozen₁ .input-keeps i q
     entries₂ .block p q = behind₁ .path-keeps p q
     entries₂ .offset _ i = kin₂ i
-    entries₂ .root-edge _ = behind₁ .root-keeps ε
-    entries₂ .off-edge _ p np = ≈-trans (behind₁ .root-keeps p) (edge-off P₂ p np)
+    entries₂ .root-edge _ = behind₁ .root-keeps root ε
+    entries₂ .off-edge _ p np = ≈-trans (behind₁ .root-keeps root p) (edge-off P₂ p np)
     entries₂ .sink q = root-sink D₂ (at q)
 
     start₂ : S₂.Agrees (hide G₁ (at (pair₂ ε))) (prem₂ (hide (graph D₂) (at ε)))
@@ -596,8 +597,9 @@ module CaseL {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
                       (λ (_ : Root) → ε) Wsub P₂ K₂
     module Bh = Behind E (case-l₁ {t₂ = t₂} {D₁ = D₁} {D₂ = D₂})
                        (case-l₂ {t₂ = t₂} {D₁ = D₁} {D₂ = D₂})
+                       (λ (_ : Root) → ε)
                        (λ p q → graph D₂ (at p) (at q))
-                       (λ p → edge M.I p)
+                       (λ _ p → edge M.I p)
 
   open Sc.Premise
   open Br.Premise
@@ -647,11 +649,11 @@ module CaseL {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
 
     behind₀ : Bh.Keeps (graph E)
     behind₀ .path-keeps p q = ≈-refl
-    behind₀ .root-keeps p = ≈-refl {f = edge M.I p}
+    behind₀ .root-keeps _ p = ≈-refl {f = edge M.I p}
     behind₀ .two-one p q = ≈-refl {f = M.εₘ}
 
     behind₁ : Bh.Keeps G₁
-    behind₁ = Bh.keeps-hide-all (interior D₁)
+    behind₁ = Bh.keeps-hide-all (λ w → w) (interior D₁)
                 (Bh.keeps-hide ε (Bh.keeps-sink (at ε) (root-sink E) behind₀))
 
     collapsed₁ : ∀ i → Sc.steps (prem₁ (hide (graph D₁) (at ε))) (interior D₁) .input-entry i ε
@@ -709,8 +711,8 @@ module CaseL {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
     entries₂ .inputs i q = branch-rows i q
     entries₂ .block p q = behind₁ .path-keeps p q
     entries₂ .offset _ i = zero-root i
-    entries₂ .root-edge _ = behind₁ .root-keeps ε
-    entries₂ .off-edge _ p np = ≈-trans (behind₁ .root-keeps p) (edge-off M.I p np)
+    entries₂ .root-edge _ = behind₁ .root-keeps root ε
+    entries₂ .off-edge _ p np = ≈-trans (behind₁ .root-keeps root p) (edge-off M.I p np)
     entries₂ .sink q = root-sink D₂ (at q)
 
     done₂ : Br.Agrees (hide-all (hide G₁ (at (case-l₂ ε))) (map at (map case-l₂ (interior D₂))))
@@ -806,8 +808,9 @@ module CaseR {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
                       (λ (_ : Root) → ε) Wsub P₂ K₂
     module Bh = Behind E (case-r₁ {t₁ = t₁} {D₁ = D₁} {D₂ = D₂})
                        (case-r₂ {t₁ = t₁} {D₁ = D₁} {D₂ = D₂})
+                       (λ (_ : Root) → ε)
                        (λ p q → graph D₂ (at p) (at q))
-                       (λ p → edge M.I p)
+                       (λ _ p → edge M.I p)
 
   open Sc.Premise
   open Br.Premise
@@ -857,11 +860,11 @@ module CaseR {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
 
     behind₀ : Bh.Keeps (graph E)
     behind₀ .path-keeps p q = ≈-refl
-    behind₀ .root-keeps p = ≈-refl {f = edge M.I p}
+    behind₀ .root-keeps _ p = ≈-refl {f = edge M.I p}
     behind₀ .two-one p q = ≈-refl {f = M.εₘ}
 
     behind₁ : Bh.Keeps G₁
-    behind₁ = Bh.keeps-hide-all (interior D₁)
+    behind₁ = Bh.keeps-hide-all (λ w → w) (interior D₁)
                 (Bh.keeps-hide ε (Bh.keeps-sink (at ε) (root-sink E) behind₀))
 
     collapsed₁ : ∀ i → Sc.steps (prem₁ (hide (graph D₁) (at ε))) (interior D₁) .input-entry i ε
@@ -919,8 +922,8 @@ module CaseR {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
     entries₂ .inputs i q = branch-rows i q
     entries₂ .block p q = behind₁ .path-keeps p q
     entries₂ .offset _ i = zero-root i
-    entries₂ .root-edge _ = behind₁ .root-keeps ε
-    entries₂ .off-edge _ p np = ≈-trans (behind₁ .root-keeps p) (edge-off M.I p np)
+    entries₂ .root-edge _ = behind₁ .root-keeps root ε
+    entries₂ .off-edge _ p np = ≈-trans (behind₁ .root-keeps root p) (edge-off M.I p np)
     entries₂ .sink q = root-sink D₂ (at q)
 
     done₂ : Br.Agrees (hide-all (hide G₁ (at (case-r₂ ε))) (map at (map case-r₂ (interior D₂))))

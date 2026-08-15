@@ -168,31 +168,33 @@ module Behind
   (E : γ , t ⇓ v [ R ])
   {Q₁ : Set ℓ} (j₁ : Q₁ → Path E)
   {Q₂ : Set ℓ} (j₂ : Q₂ → Path E)
+  {T : Set ℓ} (tgt : T → Path E)
   (B-path : (p q : Q₂) → M.Matrix (width-at (j₂ q)) (width-at (j₂ p)))
-  (B-root : (p : Q₂) → M.Matrix (width v) (width-at (j₂ p)))
+  (B-root : (n : T) (p : Q₂) → M.Matrix (width-at (tgt n)) (width-at (j₂ p)))
   where
 
   record Keeps (G : Graph E) : Set ℓ where
     field
       path-keeps : ∀ p q → G (at (j₂ p)) (at (j₂ q)) ≈ B-path p q
-      root-keeps : ∀ p → G (at (j₂ p)) (at ε) ≈ B-root p
+      root-keeps : ∀ n p → G (at (j₂ p)) (at (tgt n)) ≈ B-root n p
       two-one    : ∀ p q → G (at (j₂ p)) (at (j₁ q)) ≈ M.εₘ
 
   open Keeps
 
   keeps-sink : ∀ {G} (r : Vertex E) → (∀ y → G r y ≈ M.εₘ) → Keeps G → Keeps (hide G r)
   keeps-sink r z k .path-keeps p q = keep-l (k .path-keeps p q) (z (at (j₂ q)))
-  keeps-sink r z k .root-keeps p = keep-l (k .root-keeps p) (z (at ε))
+  keeps-sink r z k .root-keeps n p = keep-l (k .root-keeps n p) (z (at (tgt n)))
   keeps-sink r z k .two-one p q = keep-l (k .two-one p q) (z (at (j₁ q)))
 
   keeps-hide : ∀ {G} (w : Q₁) → Keeps G → Keeps (hide G (at (j₁ w)))
   keeps-hide w k .path-keeps p q = keep-r (k .path-keeps p q) (k .two-one p w)
-  keeps-hide w k .root-keeps p = keep-r (k .root-keeps p) (k .two-one p w)
+  keeps-hide w k .root-keeps n p = keep-r (k .root-keeps n p) (k .two-one p w)
   keeps-hide w k .two-one p q = keep-r (k .two-one p q) (k .two-one p w)
 
-  keeps-hide-all : ∀ {G} (ws : List Q₁) → Keeps G → Keeps (hide-all G (map at (map j₁ ws)))
-  keeps-hide-all []       k = k
-  keeps-hide-all (w ∷ ws) k = keeps-hide-all ws (keeps-hide w k)
+  keeps-hide-all : ∀ {G} {Q' : Set ℓ} (f : Q' → Q₁) (ws : List Q') →
+                   Keeps G → Keeps (hide-all G (map at (map (λ w → j₁ (f w)) ws)))
+  keeps-hide-all f []       k = k
+  keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
 
 module Frozen
   {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R : Nat.suc (width-env γ) ⇒ width v}
@@ -217,9 +219,10 @@ module Frozen
   keeps-hide w k .input-keeps i q = keep-l (k .input-keeps i q) (k .one-two w q)
   keeps-hide w k .one-two p q = keep-l (k .one-two p q) (k .one-two w q)
 
-  keeps-hide-all : ∀ {G} (ws : List Q₁) → Keeps G → Keeps (hide-all G (map at (map j₁ ws)))
-  keeps-hide-all []       k = k
-  keeps-hide-all (w ∷ ws) k = keeps-hide-all ws (keeps-hide w k)
+  keeps-hide-all : ∀ {G} {Q' : Set ℓ} (f : Q' → Q₁) (ws : List Q') →
+                   Keeps G → Keeps (hide-all G (map at (map (λ w → j₁ (f w)) ws)))
+  keeps-hide-all f []       k = k
+  keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
 
 module Under
   {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R : Nat.suc (width-env γ) ⇒ width v}
