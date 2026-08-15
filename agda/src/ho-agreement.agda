@@ -28,7 +28,7 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import primitives using (Primitives)
-open import categories using (Category; HasProducts; HasTerminal; HasWeakExponentials)
+open import categories using (Category; HasProducts; HasTerminal; HasWeakExponentials; HasStrongCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 import indexed-family
 open import indexed-family using (HasSetoidProducts)
@@ -486,17 +486,104 @@ ctrl-add (σ [→] τ) {clo γ' t} {f} r s {o} {d} (h₀ , hc) =
       (hc (s' +ₛ (w ·ₛ s)) rv z y hz D)
   where module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
 
+-- Looking up a variable in a related environment.
+lookupR : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} {gi} → RelVEnv γ gi →
+          RelV τ (lookup x γ) (LI.⟦ x ⟧var .idxf .sfunc gi)
+lookupR zero     (rγ · r) = r
+lookupR (succ x) (rγ · r) = lookupR x rγ
+
+private
+  RelFs-resp : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) s {o o' : ∣ 𝔽 (width v) ∣} {d} →
+               (∀ k → o k ≈s o' k) → RelFs τ r s o d → RelFs τ r s o' d
+  RelFs-resp τ {i = i} r s eo (m , (dm , h)) = m , (dm , RelF-resp τ r eo (F.refl τ i) h)
+
+lookupRel : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} {gi} (rγ : RelVEnv γ gi) s xs g →
+            RelEnv rγ s xs g →
+            RelFs τ (lookupR x rγ) s (ap (proj-var x γ) xs) (LI.⟦ x ⟧var .famf .transf gi .func g)
+lookupRel zero (rγ · r) s xs g (_ , h) = h
+lookupRel {τ = τ} (succ x) {γ · v} {gi , i} (rγ · r) s xs g (h , _) =
+  RelFs-resp τ (lookupR x rγ) s
+    (λ k → ≈-sym (app-∘ (proj-var x γ) (M.p₁ {width-env γ} {width v}) xs k))
+    (lookupRel x rγ s (ap (M.p₁ {width-env γ} {width v}) xs) (proj₁ g) h)
+
+-- A dominated mark is absorbed by the constant, so a relation up to a mark becomes a relation
+-- once the control positions and the constant are added.
+private
+  absorb : ∀ τ (i : Ix τ) s (d m : ∣ Fib τ i ∣) → Dominated τ i s m →
+           F._≈_ τ i (F._+_ τ i (ec τ i s) (F._+_ τ i d m)) (F._+_ τ i (ec τ i s) d)
+  absorb τ i s d m dm =
+    F.trans τ i (F.+-cong τ i (F.refl τ i) (F.+-comm τ i))
+    (F.trans τ i (F.sym τ i (F.+-assoc τ i))
+    (F.trans τ i (F.+-cong τ i (F.trans τ i (F.+-comm τ i) dm) (F.refl τ i))
+                 (F.refl τ i)))
+
+RelFs-ctrl : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) s {o : ∣ 𝔽 (width v) ∣} {d} →
+             RelFs τ r s o d →
+             RelF τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (F._+_ τ i (ec τ i s) d)
+RelFs-ctrl τ {i = i} r s {o} {d} (m , (dm , h)) =
+  RelF-resp τ r (λ k → ≈-refl) (absorb τ i s d m dm) (ctrl-add τ r s h)
+
+-- Related values are related at equal indices.
+RelV-resp : ∀ τ {v : Val τ} {i i' : Ix τ} → Setoid._≈_ (⟦ τ ⟧ .idx) i i' → RelV τ v i → RelV τ v i'
+RelV-resp unit {unit} e r = tt
+RelV-resp (σ [+] τ) {inl v} {i} {i'} e (i₀ , r , ⟪ e₀ ⟫) =
+  i₀ , r , ⟪ Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₁ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} e) e₀ ⟫
+RelV-resp (σ [+] τ) {inr v} {i} {i'} e (i₀ , r , ⟪ e₀ ⟫) =
+  i₀ , r , ⟪ Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₂ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} e) e₀ ⟫
+RelV-resp (σ [×] τ) {pair v u} {i , j} {i' , j'} (e₁ , e₂) (r , r') = RelV-resp σ e₁ r , RelV-resp τ e₂ r'
+RelV-resp (σ [→] τ) {clo γ' t} {f} {f'} e r {v} {j} rv {u} {U} D =
+  RelV-resp τ (e .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Setoid.refl (⟦ σ ⟧ .idx) {j})) (r rv D)
+
+-- The value part of the fundamental lemma: a term's value is related to the term's index at a
+-- related environment, by induction on the term over all derivations.
+relV : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
+       {gi} (rγ : RelVEnv γ gi) → RelV τ v (⟦ t ⟧tm .idxf .sfunc gi)
+relV (var x) (⇓-var .x) rγ = lookupR x rγ
+relV unit ⇓-unit rγ = tt
+relV {τ = τ₁ [+] τ₂} (inl {t = t} c) (⇓-inl D) {gi} rγ =
+  ⟦ t ⟧tm .idxf .sfunc gi , relV c D rγ ,
+  ⟪ Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₁ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
+relV {τ = τ₁ [+] τ₂} (inr {t = t} c) (⇓-inr D) {gi} rγ =
+  ⟦ t ⟧tm .idxf .sfunc gi , relV c D rγ ,
+  ⟪ Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₂ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
+relV {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} c c₁ c₂) (⇓-case-l D₁ D₂) {gi} rγ =
+  let (i' , r , ⟪ e ⟫) = relV c D₁ rγ in
+  RelV-resp τ
+    (Setoid.sym (⟦ τ ⟧ .idx)
+      (HasStrongCoproducts.copair FD.strongCoproducts
+         (FD.elimF (elim-const τ) ⟦ t₁ ⟧tm) (FD.elimF (elim-const τ) ⟦ t₂ ⟧tm)
+         .idxf .prop-setoid._⇒_.func-resp-≈ {gi , ⟦ s ⟧tm .idxf .sfunc gi} {gi , inj₁ i'}
+         (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)))
+    (relV c₁ D₂ (rγ · r))
+relV {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} c c₁ c₂) (⇓-case-r D₁ D₂) {gi} rγ =
+  let (i' , r , ⟪ e ⟫) = relV c D₁ rγ in
+  RelV-resp τ
+    (Setoid.sym (⟦ τ ⟧ .idx)
+      (HasStrongCoproducts.copair FD.strongCoproducts
+         (FD.elimF (elim-const τ) ⟦ t₁ ⟧tm) (FD.elimF (elim-const τ) ⟦ t₂ ⟧tm)
+         .idxf .prop-setoid._⇒_.func-resp-≈ {gi , ⟦ s ⟧tm .idxf .sfunc gi} {gi , inj₂ i'}
+         (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)))
+    (relV c₂ D₂ (rγ · r))
+relV (pair c₁ c₂) (⇓-pair D₁ D₂) rγ = relV c₁ D₁ rγ , relV c₂ D₂ rγ
+relV (fst c) (⇓-fst D) rγ = proj₁ (relV c D rγ)
+relV (snd c) (⇓-snd D) rγ = proj₂ (relV c D rγ)
+relV (lam c) ⇓-lam rγ {v} {j} rv {u} {U} D = relV c D (rγ · rv)
+relV (app c₁ c₂) (⇓-app D₁ D₂ D₃) rγ = relV c₁ D₁ rγ (relV c₂ D₂ rγ) D₃
+
 -- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
               {gi} (rγ : RelVEnv γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
               (g : ∣ FibC Γ gi ∣) → RelEnv rγ s x g →
-              ∃ₛ (RelV τ v (⟦ t ⟧tm .idxf .sfunc gi)) λ r →
-                RelF τ r (mat R .func (inputs γ s x))
-                  (Semimodule._+_ (Fib τ (⟦ t ⟧tm .idxf .sfunc gi))
-                    (elim-const τ .at (⟦ t ⟧tm .idxf .sfunc gi) .func s)
-                    (⟦ t ⟧tm .famf .transf gi .func g))
-fundamental (var x) D rγ s xs g rel = {!!}
-fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = record { fst = tt ; snd = goal }
+              RelF τ (relV c D rγ) (mat R .func (inputs γ s x))
+                (Semimodule._+_ (Fib τ (⟦ t ⟧tm .idxf .sfunc gi))
+                  (elim-const τ .at (⟦ t ⟧tm .idxf .sfunc gi) .func s)
+                  (⟦ t ⟧tm .famf .transf gi .func g))
+fundamental {τ = τ} (var x) {γ = γ} (⇓-var .x) {gi} rγ s xs g rel =
+  RelF-resp τ (lookupR x rγ)
+    (λ k → ≈-sym (app-of-cols {γ = γ} (var-out x γ) s xs k))
+    (F.refl τ (LI.⟦ x ⟧var .idxf .sfunc gi))
+    (RelFs-ctrl τ (lookupR x rγ) s (lookupRel x rγ s xs g rel))
+fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
   where
   goal : ∀ k → ap (of-cols {γ = γ} (unit-out γ)) (inputs γ s x) k ≈s
                (elim-const unit .at (⟦ unit {Γ} ⟧tm .idxf .sfunc gi) .func s k +ₛ
@@ -507,11 +594,12 @@ fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = record { fs
                                                     (≈-refl {elim-weight ·ₛ s +ₛ ε})) (≈-refl {ε}))
                                     (≈-trans +-comm (≈-trans +-lunit ·-lunit))))
                     (app-εₘ {1} {width-env γ} x zero))
-fundamental (inl c) D rγ s x g rel = {!!}
-fundamental (inr c) D rγ s x g rel = {!!}
-fundamental (case c c₁ c₂) D rγ s x g rel = {!!}
-fundamental (pair c₁ c₂) D rγ s x g rel = {!!}
-fundamental (fst c) D rγ s x g rel = {!!}
-fundamental (snd c) D rγ s x g rel = {!!}
-fundamental (lam c) D rγ s x g rel = {!!}
-fundamental (app c₁ c₂) D rγ s x g rel = {!!}
+fundamental (inl c) (⇓-inl D) rγ s x g rel = {!!}
+fundamental (inr c) (⇓-inr D) rγ s x g rel = {!!}
+fundamental (case c c₁ c₂) (⇓-case-l D₁ D₂) rγ s x g rel = {!!}
+fundamental (case c c₁ c₂) (⇓-case-r D₁ D₂) rγ s x g rel = {!!}
+fundamental (pair c₁ c₂) (⇓-pair D₁ D₂) rγ s x g rel = {!!}
+fundamental (fst c) (⇓-fst D) rγ s x g rel = {!!}
+fundamental (snd c) (⇓-snd D) rγ s x g rel = {!!}
+fundamental (lam c) ⇓-lam rγ s x g rel = {!!}
+fundamental (app c₁ c₂) (⇓-app D₁ D₂ D₃) rγ s x g rel = {!!}
