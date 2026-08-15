@@ -2,12 +2,14 @@
 
 open import Data.Bool as Bool using (Bool; not; _∧_; _∨_; if_then_else_)
 open import Data.Bool.ListAction using (any)
+open import Data.Nat using (ℕ)
 open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; concat; partitionᵇ; foldr)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Sum using (inj₁; inj₂)
+open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
+open import Relation.Nullary.Decidable using (⌊_⌋)
 open import list using (any-tabulate-false)
-open import signature using (Signature)
-open import primitives using (Primitives)
 import matrix
 import two
 
@@ -16,15 +18,9 @@ import two
 -- a summary. The visible graph reads the first-order graph at the visible vertices and the
 -- summaries elsewhere. The hide move merges the regions adjacent to a vertex and the reveal move
 -- splits the region containing one.
-module interaction.config {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module interaction.config where
 
-open Signature Sig
-open Primitives 𝒫
-open import language-syntax Sig renaming (_,_ to _▸_) hiding (foldr; if_then_else_)
-open import language-operational.evaluation Sig two.semiring 𝒫 two.I
-open import interaction.path Sig 𝒫
-open import interaction.graph Sig 𝒫
-open import interaction.hide Sig 𝒫
+open import interaction.graph-algebra 0ℓ
 
 private
   module M = matrix.Mat two.semiring
@@ -53,87 +49,103 @@ when Bool.false R = M.εₘ
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
 -- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
 -- summaries is a property the moves preserve.
-record Config {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) : Set ℓ where
+record Config {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) : Set₁ where
   field
-    visible : List (Path D)
-    hidden  : List (List (Path D) × Graph D)
+    visible : List (Graph.Path B)
+    hidden  : List (List (Graph.Path B) × Entries (vw B))
 
 open Config public
 
-module _ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} {D : γ , t ⇓ v [ R ]} where
+module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
+
+  private
+    at : Graph.Path B → V B
+    at p = inj₂ (inj₁ p)
+
+    eq : Graph.Path B → Graph.Path B → Bool
+    eq p q = ⌊ Graph._≟_ B p q ⌋
+
+  member : Graph.Path B → List (Graph.Path B) → Bool
+  member p = any (eq p)
 
   -- Vertices sharing an incident edge, in either direction.
-  adjacent : Graph D → Vertex D → Vertex D → Bool
+  adjacent : Entries (vw B) → V B → V B → Bool
   adjacent G x y = nonzero (G x y) ∨ nonzero (G y x)
 
   -- Merge into one region the regions adjacent to a vertex, the hide move's merging specialised to
   -- singletons.
-  merge-region : Graph D → Path D → List (List (Path D)) → List (List (Path D))
+  merge-region : Entries (vw B) → Graph.Path B → List (List (Graph.Path B)) →
+                 List (List (Graph.Path B))
   merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
     where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) rss
 
   -- The regions of a list of paths: the weakly connected components of the subgraph induced by its
   -- members.
-  regions : Graph D → List (Path D) → List (List (Path D))
+  regions : Entries (vw B) → List (Graph.Path B) → List (List (Graph.Path B))
   regions G []       = []
   regions G (w ∷ ws) = merge-region G w (regions G ws)
 
-  member-vertex : Vertex D → List (Path D) → Bool
-  member-vertex env    C = Bool.false
-  member-vertex (at p) C = member p C
+  -- The inputs and the root are never hidden, so only an interior vertex can lie in a region.
+  member-vertex : V B → List (Graph.Path B) → Bool
+  member-vertex (inj₁ _)        C = Bool.false
+  member-vertex (inj₂ (inj₁ p)) C = member p C
+  member-vertex (inj₂ (inj₂ _)) C = Bool.false
 
   -- The dependence relations with an endpoint in the given region, zero elsewhere.
-  restrict : Graph D → List (Path D) → Graph D
+  restrict : Entries (vw B) → List (Graph.Path B) → Entries (vw B)
   restrict G C x y = when (member-vertex x C ∨ member-vertex y C) (G x y)
 
   -- The summary of a hidden region: the dependence routed through it, as relations between the
   -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
   -- carried by the summary.
-  summary : List (Path D) → Graph D
-  summary C = hide-all (restrict (fo-graph D) C) (map at C)
+  summary : List (Graph.Path B) → Entries (vw B)
+  summary C = hide-all (vw B) (restrict (fo-graph B) C) (map at C)
 
-  -- The initial configuration: everything hidden, one summary per region of FO D.
-  initial : Config D
+  -- The initial configuration: everything hidden, one summary per region of FO.
+  initial : Config B
   initial .visible = []
-  initial .hidden  = map (λ C → C , summary C) (regions (fo-graph D) (FO D))
+  initial .hidden  = map (λ C → C , summary C) (regions (fo-graph B) (FO B))
 
   -- The union of a configuration's hidden regions.
-  hidden-set : Config D → List (Path D)
+  hidden-set : Config B → List (Graph.Path B)
   hidden-set K = concat (map proj₁ (K .hidden))
 
   -- The visible graph: the dependence relations of the first-order graph with neither endpoint
   -- hidden, together with those of the region summaries, parallel contributions summed.
-  visible-graph : Config D → Graph D
+  visible-graph : Config B → Entries (vw B)
   visible-graph K x y =
     foldr M._+ₘ_
-          (when (not (member-vertex x hs) ∧ not (member-vertex y hs)) (fo-graph D x y))
+          (when (not (member-vertex x hs) ∧ not (member-vertex y hs)) (fo-graph B x y))
           (map (λ CH → proj₂ CH x y) (K .hidden))
     where hs = hidden-set K
 
-  _+G_ : Graph D → Graph D → Graph D
+  _+G_ : Entries (vw B) → Entries (vw B) → Entries (vw B)
   (G +G H) x y = G x y M.+ₘ H x y
 
-  -- The hide move: remove p from the visible set, merge the regions adjacent to p, and hide p in the
-  -- graph assembling p's incident relations in the visible graph with the merged regions' summaries.
-  hide-at : Path D → Config D → Config D
-  hide-at p K .visible = filterᵇ (λ q → not (eq-path p q)) (K .visible)
-  hide-at p K .hidden  = (p ∷ concat (map proj₁ (proj₁ tp)) , hide assembled (at p)) ∷ proj₂ tp
+  -- The hide move: remove p from the visible set, merge the regions adjacent to p, and hide p in
+  -- the graph assembling p's incident relations in the visible graph with the merged regions'
+  -- summaries.
+  hide-at : Graph.Path B → Config B → Config B
+  hide-at p K .visible = filterᵇ (λ q → not (eq p q)) (K .visible)
+  hide-at p K .hidden  =
+    (p ∷ concat (map proj₁ (proj₁ tp)) , hide (vw B) assembled (at p)) ∷ proj₂ tp
     where
-      tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph D) (at p) (at q)) (proj₁ CH))
+      tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph B) (at p) (at q)) (proj₁ CH))
                       (K .hidden)
       assembled = foldr _+G_ (restrict (visible-graph K) (p ∷ [])) (map proj₂ (proj₁ tp))
 
   -- Split a stored region at p: recompute regions and summaries with p removed if the region
   -- contains p, and leave it alone otherwise.
-  split-region : Path D → List (Path D) × Graph D → List (List (Path D) × Graph D)
+  split-region : Graph.Path B → List (Graph.Path B) × Entries (vw B) →
+                 List (List (Graph.Path B) × Entries (vw B))
   split-region p (C , H) =
     if member p C
     then map (λ C' → C' , summary C')
-             (regions (fo-graph D) (filterᵇ (λ q → not (eq-path p q)) C))
+             (regions (fo-graph B) (filterᵇ (λ q → not (eq p q)) C))
     else (C , H) ∷ []
 
   -- The reveal move: return p to the visible set and split the region containing it, recomputing
   -- regions and summaries within that region alone.
-  reveal-at : Path D → Config D → Config D
+  reveal-at : Graph.Path B → Config B → Config B
   reveal-at p K .visible = p ∷ K .visible
   reveal-at p K .hidden  = concat (map (split-region p) (K .hidden))
