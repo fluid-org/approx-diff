@@ -361,21 +361,6 @@ private
 private
   module F τ i = Semimodule (Fib τ i)
 
--- Rearrangements in a fibre, by the semilattice solver: addition in every semimodule is
--- idempotent when the semiring's is.
-open import semilattice-solver using (Expr; var; nil; _⊕_)
-import semilattice-solver as SLS
-open import Data.Vec using ([]; _∷_)
-private
-  m-idem : ∀ (X : Semimodule) {x : ∣ X ∣} → Semimodule._≈_ X (Semimodule._+_ X x x) x
-  m-idem X {x} =
-    Semimodule.trans X (Semimodule.+-cong X (Semimodule.sym X (Semimodule.·-unit X)) (Semimodule.sym X (Semimodule.·-unit X)))
-    (Semimodule.trans X (Semimodule.sym X (Semimodule.+-distribʳ X))
-    (Semimodule.trans X (Semimodule.·-cong X (+-idem ι) (Semimodule.refl X)) (Semimodule.·-unit X)))
-
-  module SolveF τ i = SLS.Solver (Semimodule.additive (Fib τ i)) (m-idem (Fib τ i))
-  module SolveM (X : Semimodule) = SLS.Solver (Semimodule.additive X) (m-idem X)
-
 body-input-resp : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) {s s' c c' z} →
                   s ≈s s' → (∀ k → c k ≈s c' k) → ∀ k →
                   body-input γ' v s c z k ≈s body-input γ' v s' c' z k
@@ -531,9 +516,10 @@ private
   absorb : ∀ τ (i : Ix τ) s (d m : ∣ Fib τ i ∣) → Dominated τ i s m →
            F._≈_ τ i (F._+_ τ i (ec τ i s) (F._+_ τ i d m)) (F._+_ τ i (ec τ i s) d)
   absorb τ i s d m dm =
-    F.trans τ i (SolveF.solve τ i (var zero ⊕ (var (suc zero) ⊕ var (suc (suc zero))))
-                                  (var (suc zero) ⊕ (var (suc (suc zero)) ⊕ var zero)) refl (ec τ i s ∷ d ∷ m ∷ []))
-    (F.trans τ i (F.+-cong τ i (F.refl τ i) dm) (F.+-comm τ i))
+    F.trans τ i (F.+-cong τ i (F.refl τ i) (F.+-comm τ i))
+    (F.trans τ i (F.sym τ i (F.+-assoc τ i))
+    (F.trans τ i (F.+-cong τ i (F.trans τ i (F.+-comm τ i) dm) (F.refl τ i))
+                 (F.refl τ i)))
 
 RelFs-ctrl : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) s {o : ∣ 𝔽 (width v) ∣} {d} →
              RelFs τ r s o d →
@@ -608,28 +594,6 @@ private
              Semimodule._≈_ (Ls.L Y) (Ls.Lmap f .func (a , x)) (a , f .func x)
   Lmap-elt {X} {Y} f a x = +-runit , m-lunit Y
 
-  -- Transport of a lifted product or exponential fibre: the root unchanged, the payload
-  -- transported componentwise, or by the map of products.
-  subst-prod-elt : ∀ {σ τ} {i i' : Ix σ} {j j' : Ix τ} (E₁ : Setoid._≈_ (⟦ σ ⟧ .idx) i i') (E₂ : Setoid._≈_ (⟦ τ ⟧ .idx) j j')
-                   (a : Setoid.Carrier A) (x₁ : ∣ Fib σ i ∣) (x₂ : ∣ Fib τ j ∣) →
-                   F._≈_ (σ [×] τ) (i' , j') (⟦ σ [×] τ ⟧ .fam .subst {i , j} {i' , j'} (E₁ , E₂) .func (a , (x₁ , x₂)))
-                                            (a , (⟦ σ ⟧ .fam .subst E₁ .func x₁ , ⟦ τ ⟧ .fam .subst E₂ .func x₂))
-  subst-prod-elt {σ} {τ} {i} {i'} {j} {j'} E₁ E₂ a x₁ x₂ =
-    Semimodule.trans (Fib (σ [×] τ) (i' , j'))
-      (Lmap-elt (SMBP.pair (SemiMod._∘_ (⟦ σ ⟧ .fam .subst E₁) (SemiMod.p₁ {Fib σ i} {Fib τ j}))
-                           (SemiMod._∘_ (⟦ τ ⟧ .fam .subst E₂) (SemiMod.p₂ {Fib σ i} {Fib τ j}))) a (x₁ , x₂))
-      (≈-refl ,
-       bpair-elt {SemiMod._⊕_ (Fib σ i) (Fib τ j)} {Fib σ i'} {Fib τ j'}
-         (SemiMod._∘_ (⟦ σ ⟧ .fam .subst E₁) (SemiMod.p₁ {Fib σ i} {Fib τ j}))
-         (SemiMod._∘_ (⟦ τ ⟧ .fam .subst E₂) (SemiMod.p₂ {Fib σ i} {Fib τ j})) (x₁ , x₂))
-
-  subst-arrow-elt : ∀ {σ τ} {f f' : Ix (σ [→] τ)} (E : Setoid._≈_ (⟦ σ [→] τ ⟧ .idx) f f')
-                    (a : Setoid.Carrier A) (x : ∣ model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f ∣) →
-                    F._≈_ (σ [→] τ) f' (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func (a , x))
-                      (a , SP.Π-map (indexed-family.reindex-≈ {P = ⟦ τ ⟧ .fam} (f .idxf) (f' .idxf) (E .FD._≃_.idxf-eq)) .func x)
-  subst-arrow-elt {σ} {τ} {f} {f'} E a x =
-    Lmap-elt (SP.Π-map (indexed-family.reindex-≈ {P = ⟦ τ ⟧ .fam} (f .idxf) (f' .idxf) (E .FD._≃_.idxf-eq))) a x
-
   elim-root-elt : ∀ {G X Y : Semimodule} (c : SemiMod.𝕀 ⇒ Y) (r : SemiMod._⊕_ G X ⇒ Y)
                   (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
                   Semimodule._≈_ Y (Ls.elim-root c r .func (γe , (a , y)))
@@ -667,14 +631,14 @@ private
 
   Dominated-mono : ∀ τ (i : Ix τ) s s' m → Dominated τ i s m → Dominated τ i (s' +ₛ (w ·ₛ s)) m
   Dominated-mono τ i s s' m dm =
-    F.trans τ i (F.+-cong τ i (F.refl τ i) L)
-    (F.trans τ i (SolveF.solve τ i (var zero ⊕ (var (suc zero) ⊕ var (suc (suc zero))))
-                                   ((var zero ⊕ var (suc (suc zero))) ⊕ var (suc zero)) refl (m ∷ ec τ i s' ∷ ec τ i s ∷ []))
+    F.trans τ i (F.+-cong τ i (F.refl τ i) (F.trans τ i (ec-linear τ i s' (w ·ₛ s))
+                                                        (F.+-cong τ i (F.refl τ i) (ec-w τ i s))))
+    (F.trans τ i (F.+-cong τ i (F.refl τ i) (F.+-comm τ i))
+    (F.trans τ i (F.sym τ i (F.+-assoc τ i))
     (F.trans τ i (F.+-cong τ i dm (F.refl τ i))
-    (F.trans τ i (F.+-comm τ i) (F.sym τ i L))))
-    where
-    L : F._≈_ τ i (ec τ i (s' +ₛ (w ·ₛ s))) (F._+_ τ i (ec τ i s') (ec τ i s))
-    L = F.trans τ i (ec-linear τ i s' (w ·ₛ s)) (F.+-cong τ i (F.refl τ i) (ec-w τ i s))
+    (F.trans τ i (F.+-comm τ i)
+    (F.sym τ i (F.trans τ i (ec-linear τ i s' (w ·ₛ s))
+                            (F.+-cong τ i (F.refl τ i) (ec-w τ i s))))))))
 
   RelFs-mono : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) s s' {o d} →
                RelFs τ r s o d → RelFs τ r (s' +ₛ (w ·ₛ s)) o d
@@ -881,13 +845,11 @@ RelF-absorb (σ [→] τ) {clo γ' t} {f} r s {P} {Q} {E} (h₀ , hc) hQ hE =
                (F.+-cong τ (f .idxf .sfunc j)
                   (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.preserve-+ {proj₂ Q} {proj₂ E})
                   (F.refl τ (f .idxf .sfunc j))))
-            (SolveF.solve τ (f .idxf .sfunc j)
-               (var zero ⊕ ((var (suc zero) ⊕ var (suc (suc zero))) ⊕ var (suc (suc (suc zero)))))
-               ((var zero ⊕ (var (suc zero) ⊕ var (suc (suc (suc zero))))) ⊕ var (suc (suc zero))) refl
-               (ec τ (f .idxf .sfunc j) (s' +ₛ P zero)
-                ∷ SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ Q)
-                ∷ SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ E)
-                ∷ f .famf .transf j .func y ∷ [])))
+            (F.trans τ (f .idxf .sfunc j) (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j)) (F.+-assoc τ (f .idxf .sfunc j)))
+            (F.trans τ (f .idxf .sfunc j) (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j))
+                                             (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j)) (F.+-comm τ (f .idxf .sfunc j))))
+            (F.trans τ (f .idxf .sfunc j) (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j)) (F.sym τ (f .idxf .sfunc j) (F.+-assoc τ (f .idxf .sfunc j))))
+                     (F.sym τ (f .idxf .sfunc j) (F.+-assoc τ (f .idxf .sfunc j)))))))
          (hc s' rv z y hz D))
       (absQ₁ s' {j} {y})
       (bndE₁ {j} (prop._∧_.proj₂ hE'))
@@ -903,11 +865,11 @@ RelF-absorb (σ [→] τ) {clo γ' t} {f} r s {P} {Q} {E} (h₀ , hc) hQ hE =
               (F._+_ τ (f .idxf .sfunc j) (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ Q))
                                            (f .famf .transf j .func y)))
   absQ₁ s' {j} {y} =
-    F.trans τ i₁ (SolveF.solve τ i₁ ((var zero ⊕ (var (suc zero) ⊕ var (suc (suc zero)))) ⊕ var (suc (suc (suc zero))))
-                                    ((var zero ⊕ var (suc (suc (suc zero)))) ⊕ (var (suc zero) ⊕ var (suc (suc zero)))) refl
-                                    (ec τ i₁ (s' +ₛ P zero) ∷ SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ Q)
-                                     ∷ f .famf .transf j .func y ∷ ec τ i₁ s ∷ []))
-                 (F.+-cong τ i₁ (ec-abs τ i₁ s (s' +ₛ P zero) (≈-trans +-assoc (+-cong ≈-refl P₀-abs))) (F.refl τ i₁))
+    F.trans τ i₁ (F.+-assoc τ i₁)
+    (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-comm τ i₁))
+    (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+                  (F.+-cong τ i₁ (ec-abs τ i₁ s (s' +ₛ P zero) (≈-trans +-assoc (+-cong ≈-refl P₀-abs)))
+                                 (F.refl τ i₁))))
     where i₁ = f .idxf .sfunc j
   bndE₁ : ∀ {j : Ix σ} →
           ∃ (∣ model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f ∣)
@@ -1121,10 +1083,18 @@ private
     where
     ec-part : F._≈_ τ' i (ec τ' i ((w ·ₛ s) +ₛ o'₀)) (F._+_ τ' i (ec τ' i s) (ec τ' i a₀))
     ec-part = F.trans τ' i (elim-const τ' .at i .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl eo)) (ec-double τ' i s a₀)
+    -- (e + a) + (e + m) ≈ e + (m + a)
     rearr : F._≈_ τ' i (F._+_ τ' i (F._+_ τ' i (ec τ' i s) (ec τ' i a₀)) (F._+_ τ' i (ec τ' i s) m))
                        (F._+_ τ' i (ec τ' i s) (F._+_ τ' i m (ec τ' i a₀)))
-    rearr = SolveF.solve τ' i ((var zero ⊕ var (suc zero)) ⊕ (var zero ⊕ var (suc (suc zero))))
-                              (var zero ⊕ (var (suc (suc zero)) ⊕ var (suc zero))) refl (ec τ' i s ∷ ec τ' i a₀ ∷ m ∷ [])
+    rearr =
+      F.trans τ' i (F.+-cong τ' i (F.+-comm τ' i) (F.refl τ' i))
+      (F.trans τ' i (F.+-assoc τ' i)
+      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.sym τ' i (F.+-assoc τ' i)))
+      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.+-cong τ' i (ec-root τ' i s) (F.refl τ' i)))
+      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.+-comm τ' i))
+      (F.trans τ' i (F.sym τ' i (F.+-assoc τ' i))
+      (F.trans τ' i (F.+-cong τ' i (F.+-comm τ' i) (F.refl τ' i))
+                    (F.+-comm τ' i)))))))
 
 -- Transport along a reflexivity proof is the identity.
 private
@@ -1153,12 +1123,15 @@ RelF-transport (σ [+] τ) {inr v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o} {
   ≈-trans h₀ (prop._∧_.proj₁ comp) ,
   RelF-resp τ r₀ (λ k → ≈-refl) (prop._∧_.proj₂ comp) h
 RelF-transport (σ [×] τ) {pair v u} {i , j} {i' , j'} (E₁ , E₂) (r₁ , r₂) {o} {d} (h₀ , (h₁ , h₂)) =
-  let se = subst-prod-elt {σ} {τ} {i} {i'} {j} {j'} E₁ E₂ (proj₁ d) (proj₁ (proj₂ d)) (proj₂ (proj₂ d)) in
-  ≈-trans h₀ (≈-sym (prop._∧_.proj₁ se)) ,
-  (RelF-resp σ (RelV-resp σ E₁ r₁) (λ k → ≈-refl) (F.sym σ i' (prop._∧_.proj₁ (prop._∧_.proj₂ se))) (RelF-transport σ E₁ r₁ h₁) ,
-   RelF-resp τ (RelV-resp τ E₂ r₂) (λ k → ≈-refl) (F.sym τ j' (prop._∧_.proj₂ (prop._∧_.proj₂ se))) (RelF-transport τ E₂ r₂ h₂))
+  ≈-trans h₀ (≈-sym +-runit) ,
+  (RelF-resp σ (RelV-resp σ E₁ r₁) (λ k → ≈-refl)
+     (F.sym σ i' (F.trans σ i' (m-lunit (Fib σ i')) (m-runit (Fib σ i'))))
+     (RelF-transport σ E₁ r₁ h₁) ,
+   RelF-resp τ (RelV-resp τ E₂ r₂) (λ k → ≈-refl)
+     (F.sym τ j' (F.trans τ j' (m-lunit (Fib τ j')) (m-lunit (Fib τ j'))))
+     (RelF-transport τ E₂ r₂ h₂))
 RelF-transport (σ [→] τ) {clo γ' t} {f} {f'} E r {o} {d} (h₀ , hc) =
-  ≈-trans h₀ (≈-sym (prop._∧_.proj₁ (subst-arrow-elt {σ} {τ} {f} {f'} E (proj₁ d) (proj₂ d)))) ,
+  ≈-trans h₀ (≈-sym +-runit) ,
   λ s' {v} {j} rv z y hz {u} {U} D →
     RelF-resp τ (RelV-resp τ (Ej j) (r rv D)) (λ k → ≈-refl)
       (F.trans τ (f' .idxf .sfunc j)
@@ -1190,7 +1163,7 @@ RelF-transport (σ [→] τ) {clo γ' t} {f} {f'} E r {o} {d} (h₀ , hc) =
       (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]) j .SemiMod._⇒_.func-resp-≈
          {SP.Π-map hmap .func (proj₂ d)} {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)}
          (Semimodule.sym (P .fam .fm f') {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {SP.Π-map hmap .func (proj₂ d)}
-            (prop._∧_.proj₂ (subst-arrow-elt {σ} {τ} {f} {f'} E (proj₁ d) (proj₂ d)))))
+            (m-lunit (P .fam .fm f') {SP.Π-map hmap .func (proj₂ d)})))
   arg-part : ∀ j (y : ∣ Fib σ j ∣) →
              F._≈_ τ (f' .idxf .sfunc j) (⟦ τ ⟧ .fam .subst (Ej j) .func (f .famf .transf j .func y))
                                         (f' .famf .transf j .func y)
@@ -1213,13 +1186,14 @@ private
     Sw = o_s zero +ₛ (w ·ₛ s)
     dom-s : Dominated τk i' Sw (ec τk i' s)
     dom-s =
-      F.trans τk i' (F.+-cong τk i' (F.refl τk i') L)
-      (F.trans τk i' (SolveF.solve τk i' (var zero ⊕ (var (suc zero) ⊕ var zero)) (var (suc zero) ⊕ var zero) refl
-                                         (ec τk i' s ∷ ec τk i' (o_s zero) ∷ []))
-                     (F.sym τk i' L))
-      where
-      L : F._≈_ τk i' (ec τk i' Sw) (F._+_ τk i' (ec τk i' (o_s zero)) (ec τk i' s))
-      L = F.trans τk i' (ec-linear τk i' (o_s zero) (w ·ₛ s)) (F.+-cong τk i' (F.refl τk i') (ec-w τk i' s))
+      F.trans τk i' (F.+-cong τk i' (F.refl τk i') (F.trans τk i' (ec-linear τk i' (o_s zero) (w ·ₛ s))
+                                                                  (F.+-cong τk i' (F.refl τk i') (ec-w τk i' s))))
+      (F.trans τk i' (F.+-cong τk i' (F.refl τk i') (F.+-comm τk i'))
+      (F.trans τk i' (F.sym τk i' (F.+-assoc τk i'))
+      (F.trans τk i' (F.+-cong τk i' (ec-root τk i' s) (F.refl τk i'))
+      (F.trans τk i' (F.+-comm τk i')
+      (F.sym τk i' (F.trans τk i' (ec-linear τk i' (o_s zero) (w ·ₛ s))
+                                  (F.+-cong τk i' (F.refl τk i') (ec-w τk i' s))))))))
 
   -- Transport there and back is the identity.
   roundtrip : ∀ τ {i₁ ic : Ix τ} (E : Setoid._≈_ (⟦ τ ⟧ .idx) i₁ ic) (Eidx : Setoid._≈_ (⟦ τ ⟧ .idx) ic i₁)
@@ -1240,10 +1214,9 @@ private
   case-den τ {i₁} {ic} E s a_s o_s₀ B CF eo eCF =
     F.trans τ ic (subst-ec+ τ E (o_s₀ +ₛ (w ·ₛ s)) B)
     (F.trans τ ic (F.+-cong τ ic ec-part (F.refl τ ic))
-    (F.trans τ ic (SolveF.solve τ ic ((var zero ⊕ var (suc zero)) ⊕ var (suc (suc zero)))
-                                     (var zero ⊕ (var (suc (suc zero)) ⊕ var (suc zero))) refl
-                                     (ec τ ic s ∷ ec τ ic a_s ∷ ⟦ τ ⟧ .fam .subst E .func B ∷ []))
-                  (F.+-cong τ ic (F.refl τ ic) (F.sym τ ic eCF))))
+    (F.trans τ ic (F.+-assoc τ ic)
+    (F.trans τ ic (F.+-cong τ ic (F.refl τ ic) (F.+-comm τ ic))
+                  (F.+-cong τ ic (F.refl τ ic) (F.sym τ ic eCF)))))
     where
     ec-part : F._≈_ τ ic (ec τ ic (o_s₀ +ₛ (w ·ₛ s))) (F._+_ τ ic (ec τ ic s) (ec τ ic a_s))
     ec-part = F.trans τ ic (elim-const τ .at ic .SemiMod._⇒_.func-resp-≈ (+-cong eo ≈-refl)) (ec-double' τ ic s a_s)
@@ -1736,15 +1709,30 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
                           (F._+_ τ i₁ (evalΠj .func m) (F._+_ τ i₁ E (f .famf .transf j .func yN))))
               (F._+_ τ i₁ G E)
     rearr =
-      F.trans τ i₁
-        (SolveF.solve τ i₁ ((var zero ⊕ var (suc zero)) ⊕ (var (suc (suc zero)) ⊕ (var (suc (suc (suc zero))) ⊕ var (suc (suc (suc (suc zero)))))))
-                           ((var zero ⊕ ((var (suc (suc zero)) ⊕ var (suc (suc (suc (suc zero))))) ⊕ var (suc zero))) ⊕ var (suc (suc (suc zero)))) refl
-                           (ec τ i₁ s ∷ ec τ i₁ a ∷ evalΠj .func m ∷ E ∷ f .famf .transf j .func yN ∷ []))
-        (F.+-cong τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.sym τ i₁ G-form)) (F.refl τ i₁))
+      F.trans τ i₁ (F.+-assoc τ i₁)
+      (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) inner)
+      (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+                    (F.+-cong τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.sym τ i₁ G-form)) (F.refl τ i₁))))
+      where
+      inner : F._≈_ τ i₁
+                (F._+_ τ i₁ (ec τ i₁ a) (F._+_ τ i₁ (evalΠj .func m) (F._+_ τ i₁ E (f .famf .transf j .func yN))))
+                (F._+_ τ i₁ (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ec τ i₁ a)) E)
+      inner =
+        F.sym τ i₁
+          (F.trans τ i₁ (F.+-comm τ i₁)
+          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-comm τ i₁))
+          (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+          (F.trans τ i₁ (F.+-cong τ i₁ (F.+-comm τ i₁) (F.refl τ i₁))
+          (F.trans τ i₁ (F.+-assoc τ i₁)
+          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.sym τ i₁ (F.+-assoc τ i₁)))
+          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-cong τ i₁ (F.+-comm τ i₁) (F.refl τ i₁)))
+                        (F.+-cong τ i₁ (F.refl τ i₁) (F.+-assoc τ i₁)))))))))
 
   absG : Absorbs τ i₁ s G
-  absG = SolveF.solve τ i₁ ((var zero ⊕ var (suc zero)) ⊕ var zero) (var zero ⊕ var (suc zero)) refl
-                           (ec τ i₁ s ∷ ⟦ app M N ⟧tm .famf .transf gi .func g ∷ [])
+  absG = F.trans τ i₁ (F.+-assoc τ i₁)
+         (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-comm τ i₁))
+         (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+                       (F.+-cong τ i₁ (ec-root τ i₁ s) (F.refl τ i₁))))
 
   bndE : Bounded τ i₁ s E
   bndE = f .famf .transf j .func (ty-unit σ (λ ()) (λ ()) .at j .func ι) ,
