@@ -119,7 +119,7 @@ data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set where
 -- is related to the map's index at the argument.
 RelV : ∀ τ → Val τ → Ix τ → Set
 RelV unit unit i = ⊤
-RelV (base s) v i = ⊥
+RelV (base s) (const c) i = Prf (Setoid._≈_ (sort-index s) i c)
 RelV (σ [+] τ) (inl v) i = Σ (Ix σ) λ i' → RelV σ v i' × Prf (Setoid._≈_ (⟦ σ [+] τ ⟧ .idx) i (inj₁ i'))
 RelV (σ [+] τ) (inr v) i = Σ (Ix τ) λ i' → RelV τ v i' × Prf (Setoid._≈_ (⟦ σ [+] τ ⟧ .idx) i (inj₂ i'))
 RelV (σ [×] τ) (pair v u) (i , j) = RelV σ v i × RelV τ u j
@@ -144,6 +144,7 @@ body-input γ' v s c z (suc k) =
 -- source plus the payload evaluated at the argument plus the index's fibre map at the argument.
 RelF : ∀ τ {v : Val τ} {i : Ix τ} → RelV τ v i → ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
 RelF unit {unit} {i} r o d = Semimodule._≈_ (Fib unit i) o d
+RelF (base s) {const c} {i} r o d = Semimodule._≈_ (Fib (base s) i) o d
 RelF (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) o d =
   let d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func d in
   (o zero ≈A proj₁ d') ∧ RelF σ r (λ k → o (suc k)) (proj₂ d')
@@ -326,6 +327,11 @@ private
     ≈-trans (+-cong (·-cong +-runit ≈-refl) ≈-refl)
             (≈-trans +-runit (≈-trans ·-lunit +-runit))
 
+  -- The same at a base sort: the sort's unit constant is the row of units, so scaling by the
+  -- elimination weight leaves the weight at every position of the result.
+  ec-base : ∀ {σ} i s (k : Fin (sort-width σ)) → ec (base σ) i s k ≈s (w ·ₛ s)
+  ec-base i s k = ≈-trans +-runit (≈-trans ·-lunit +-runit)
+
   ec-inj₁ : ∀ {σ τ} (i : Ix σ) s →
             (proj₁ (ec (σ [+] τ) (inj₁ i) s) ≈s (w ·ₛ s)) ∧
             Semimodule._≈_ (Fib σ i) (proj₂ (ec (σ [+] τ) (inj₁ i) s)) (ec σ i s)
@@ -371,6 +377,7 @@ body-input-resp γ' v es ec (suc k) =
 RelF-resp : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) {o o' : ∣ 𝔽 (width v) ∣} {d d' : ∣ Fib τ i ∣} →
             (∀ k → o k ≈s o' k) → F._≈_ τ i d d' → RelF τ r o d → RelF τ r o' d'
 RelF-resp unit {unit} r eo ed h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (ed k))
+RelF-resp (base s) {const c} r eo ed h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (ed k))
 RelF-resp (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) {d = d} {d'} eo ed (h₀ , h) =
   let ed' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .SemiMod._⇒_.func-resp-≈ ed in
   ≈-trans (≈-sym (eo zero)) (≈-trans h₀ (prop._∧_.proj₁ ed')) ,
@@ -428,6 +435,8 @@ ctrl-add : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) (s : Setoid.Carrier
            RelF τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (F._+_ τ i (ec τ i s) d)
 ctrl-add unit {unit} {i} r s h zero =
   +-cong (≈-trans (ap-ctrl-row {1} s zero) (≈-sym (ec-unit i s))) (h zero)
+ctrl-add (base σ) {const c} {i} r s h k =
+  +-cong (≈-trans (ap-ctrl-row {sort-width σ} s k) (≈-sym (ec-base i s k))) (h k)
 ctrl-add (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) s {o} {d} (h₀ , h) =
   let e+ = subst-ec+ (σ [+] τ) {i} {inj₁ i'} e s d
       d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func d
@@ -530,6 +539,8 @@ RelFs-ctrl τ {i = i} r s {o} {d} (m , (dm , h)) =
 -- Related values are related at equal indices.
 RelV-resp : ∀ τ {v : Val τ} {i i' : Ix τ} → Setoid._≈_ (⟦ τ ⟧ .idx) i i' → RelV τ v i → RelV τ v i'
 RelV-resp unit {unit} e r = tt
+RelV-resp (base σ) {const c} {i} {i'} e ⟪ e₀ ⟫ =
+  ⟪ Setoid.trans (sort-index σ) {i'} {i} {c} (Setoid.sym (sort-index σ) {i} {i'} e) e₀ ⟫
 RelV-resp (σ [+] τ) {inl v} {i} {i'} e (i₀ , r , ⟪ e₀ ⟫) =
   i₀ , r , ⟪ Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₁ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} e) e₀ ⟫
 RelV-resp (σ [+] τ) {inr v} {i} {i'} e (i₀ , r , ⟪ e₀ ⟫) =
@@ -810,6 +821,10 @@ RelF-absorb unit {unit} {i} r s {P} {Q} {E} h hQ (E' , hE) zero =
   ≈-trans (h zero)
           (root-of s (Q zero +ₛ E zero) (Q zero) (E' zero) (+-cong ≈-refl (hE zero))
                    (≈-trans (+-cong ≈-refl (≈-sym (ec-unit i s))) (hQ zero)))
+RelF-absorb (base σ) {const c} {i} r s {P} {Q} {E} h hQ (E' , hE) k =
+  ≈-trans (h k)
+          (root-of s (Q k +ₛ E k) (Q k) (E' k) (+-cong ≈-refl (hE k))
+                   (≈-trans (+-cong ≈-refl (≈-sym (ec-base i s k))) (hQ k)))
 RelF-absorb (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) s {P} {Q} {E} (h₀ , h) hQ hE =
   let Q' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func Q
       E' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func E
@@ -1102,12 +1117,20 @@ private
                F._≈_ τ i (⟦ τ ⟧ .fam .subst e .func d) d
   subst-refl τ {i} e d = ⟦ τ ⟧ .fam .indexed-family.Fam.refl* .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (F.refl τ i {d})
 
+  -- A base sort's fibres do not vary with the index, so its transports are the identity.
+  subst-base : ∀ {σ} {i i' : Ix (base σ)} (e : Setoid._≈_ (⟦ base σ ⟧ .idx) i i')
+               (d : ∣ Fib (base σ) i ∣) (k : Fin (sort-width σ)) →
+               ⟦ base σ ⟧ .fam .subst e .func d k ≈s d k
+  subst-base {σ} e d k = Σ-unit {sort-width σ} k d
+
 -- Transporting a relation along an index equation.
 RelF-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Setoid._≈_ (⟦ τ ⟧ .idx) i i') (r : RelV τ v i)
                  {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
                  RelF τ r o d → RelF τ (RelV-resp τ E r) o (⟦ τ ⟧ .fam .subst E .func d)
 RelF-transport unit {unit} {i} {i'} E r {o} {d} h k =
   ≈-trans (h k) (≈-sym (subst-refl unit {i} E d k))
+RelF-transport (base σ) {const c} {i} {i'} E r {o} {d} h k =
+  ≈-trans (h k) (≈-sym (subst-base {σ} {i} {i'} E d k))
 RelF-transport (σ [+] τ) {inl v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o} {d} (h₀ , h) =
   let e' = Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₁ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} E) e₀
       comp = ⟦ σ [+] τ ⟧ .fam .indexed-family.Fam.trans* {i} {i'} {inj₁ i₀} e' E
