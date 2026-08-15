@@ -30,6 +30,7 @@ import Data.Nat as Nat
 open import Data.List using (List; []; _∷_; map; foldl)
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
+  renaming (refl to ≡-refl; trans to ≡-trans; cong to ≡-cong)
 open import categories using (Category)
 open Category M.cat using (_⇒_; _∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; ≈-refl; ≈-sym; ≈-trans)
 open import interaction.control-agreement-algebra Sig 𝒫
@@ -38,6 +39,34 @@ open import interaction.control-agreement-algebra Sig 𝒫
 
 data Root : Set ℓ where
   root : Root
+
+module Block
+  {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R : Nat.suc (width-env γ) ⇒ width v}
+  (E : γ , t ⇓ v [ R ])
+  {Γ'} (γ' : Env Γ')
+  {Q : Set ℓ} (j : Q → Path E)
+  where
+
+  record Premise : Set ℓ where
+    field
+      input-entry : (i : Input) (q : Q) → M.Matrix (width-at (j q)) (input-width γ' i)
+      path-entry  : (p q : Q) → M.Matrix (width-at (j q)) (width-at (j p))
+
+  open Premise public
+
+  step : Premise → Q → Premise
+  step H w .input-entry i q = H .input-entry i q M.+ₘ (H .path-entry w q ∘ H .input-entry i w)
+  step H w .path-entry p q = H .path-entry p q M.+ₘ (H .path-entry w q ∘ H .path-entry p w)
+
+  steps : Premise → List Q → Premise
+  steps = foldl step
+
+  folds : ∀ {V Gr : Set ℓ} (prem : Gr → Premise) (into : Q → V) (h : Gr → V → Gr) →
+          (∀ G w → step (prem G) w ≡ prem (h G (into w))) →
+          (ws : List Q) (G : Gr) → steps (prem G) ws ≡ prem (foldl h G (map into ws))
+  folds prem into h ok []       G = ≡-refl
+  folds prem into h ok (w ∷ ws) G =
+    ≡-trans (≡-cong (λ H → steps H ws) (ok G w)) (folds prem into h ok ws (h G (into w)))
 
 module Single
   {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R : Nat.suc (width-env γ) ⇒ width v}
@@ -48,21 +77,7 @@ module Single
   (K : (n : T) (i : Input) → M.Matrix (width-at (tgt n)) (input-width γ i))
   where
 
-  -- The premise's graph, read through the injection: its input rows and its path block. The two are
-  -- kept apart because the injection maps input vertices to themselves and paths through j.
-  record Premise : Set ℓ where
-    field
-      input-entry : (i : Input) (q : Q) → M.Matrix (width-at (j q)) (input-width γ i)
-      path-entry  : (p q : Q) → M.Matrix (width-at (j q)) (width-at (j p))
-
-  open Premise
-
-  step : Premise → Q → Premise
-  step H w .input-entry i q = H .input-entry i q M.+ₘ (H .path-entry w q ∘ H .input-entry i w)
-  step H w .path-entry p q = H .path-entry p q M.+ₘ (H .path-entry w q ∘ H .path-entry p w)
-
-  steps : Premise → List Q → Premise
-  steps = foldl step
+  open Block E γ j public using (Premise; step; steps; folds; input-entry; path-entry)
 
   record Agrees (G : Graph E) (H : Premise) : Set ℓ where
     field
@@ -217,19 +232,7 @@ module Under
   (K : (n : T) (i : Input) → M.Matrix (width-at (tgt n)) (input-width γ i))
   where
 
-  record Premise : Set ℓ where
-    field
-      input-entry : (i' : Input) (q : Q) → M.Matrix (width-at (j q)) (input-width γ' i')
-      path-entry  : (p q : Q) → M.Matrix (width-at (j q)) (width-at (j p))
-
-  open Premise
-
-  step : Premise → Q → Premise
-  step H w .input-entry i' q = H .input-entry i' q M.+ₘ (H .path-entry w q ∘ H .input-entry i' w)
-  step H w .path-entry p q = H .path-entry p q M.+ₘ (H .path-entry w q ∘ H .path-entry p w)
-
-  steps : Premise → List Q → Premise
-  steps = foldl step
+  open Block E γ' j public using (Premise; step; steps; folds; input-entry; path-entry)
 
   input-sub : Premise → (i : Input) (q : Q) → M.Matrix (width-at (j q)) (input-width γ i)
   input-sub H i q =

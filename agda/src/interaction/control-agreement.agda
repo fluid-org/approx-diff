@@ -234,10 +234,9 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
     premise-of G .input-entry i q = G (inp i) (at q)
     premise-of G .path-entry p q = G (at p) (at q)
 
-    folds : (ws : List (Path D)) (G : Graph D) →
-            steps (premise-of G) ws ≡ premise-of (hide-all G (map at ws))
-    folds []       G = ≡-refl
-    folds (w ∷ ws) G = folds ws (hide G (at w))
+    folds′ : (ws : List (Path D)) (G : Graph D) →
+             steps (premise-of G) ws ≡ premise-of (hide-all G (map at ws))
+    folds′ = folds premise-of at hide (λ G w → ≡-refl)
 
     entries : Entries (graph (⇓-fst D)) (premise-of (graph D))
     entries .inputs environment q = ≈-refl
@@ -257,7 +256,7 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
   agree i =
     ≈-trans (agrees-hide-all (interior D) (interior-not-root D) start .root-agrees root i)
             (root-cong root i (≈-of-≡ (≡-cong (λ H → H .input-entry i ε)
-                                           (folds (interior D) (hide (graph D) (at ε))))))
+                                           (folds′ (interior D) (hide (graph D) (at ε))))))
 
 -- Collapsing a snd derivation, symmetrically.
 module Snd {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val τ₁} {u : Val τ₂}
@@ -446,8 +445,7 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
 
     folds₁ : (ws : List (Path D₁)) (G : Graph D₁) →
              S₁.steps (prem₁ G) ws ≡ prem₁ (hide-all G (map at ws))
-    folds₁ []       G = ≡-refl
-    folds₁ (w ∷ ws) G = folds₁ ws (hide G (at w))
+    folds₁ = S₁.folds prem₁ at hide (λ G w → ≡-refl)
 
     prem₂ : Graph D₂ → S₂.Premise
     prem₂ G .input-entry i q = G (inp i) (at q)
@@ -455,8 +453,7 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
 
     folds₂ : (ws : List (Path D₂)) (G : Graph D₂) →
              S₂.steps (prem₂ G) ws ≡ prem₂ (hide-all G (map at ws))
-    folds₂ []       G = ≡-refl
-    folds₂ (w ∷ ws) G = folds₂ ws (hide G (at w))
+    folds₂ = S₂.folds prem₂ at hide (λ G w → ≡-refl)
 
     G₁ : Graph E
     G₁ = hide-all (hide (hide (graph E) (at ε)) (at (pair₁ ε))) (map at (map pair₁ (interior D₁)))
@@ -617,8 +614,7 @@ module CaseL {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
 
     folds₁ : (ws : List (Path D₁)) (G : Graph D₁) →
              Sc.steps (prem₁ G) ws ≡ prem₁ (hide-all G (map at ws))
-    folds₁ []       G = ≡-refl
-    folds₁ (w ∷ ws) G = folds₁ ws (hide G (at w))
+    folds₁ = Sc.folds prem₁ at hide (λ G w → ≡-refl)
 
     prem₂ : Graph D₂ → Br.Premise
     prem₂ G .input-entry i q = G (inp i) (at q)
@@ -626,8 +622,7 @@ module CaseL {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
 
     folds₂ : (ws : List (Path D₂)) (G : Graph D₂) →
              Br.steps (prem₂ G) ws ≡ prem₂ (hide-all G (map at ws))
-    folds₂ []       G = ≡-refl
-    folds₂ (w ∷ ws) G = folds₂ ws (hide G (at w))
+    folds₂ = Br.folds prem₂ at hide (λ G w → ≡-refl)
 
     G₁ : Graph E
     G₁ = hide-all (hide (hide (graph E) (at ε)) (at (case-l₁ ε)))
@@ -829,8 +824,7 @@ module CaseR {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
 
     folds₁ : (ws : List (Path D₁)) (G : Graph D₁) →
              Sc.steps (prem₁ G) ws ≡ prem₁ (hide-all G (map at ws))
-    folds₁ []       G = ≡-refl
-    folds₁ (w ∷ ws) G = folds₁ ws (hide G (at w))
+    folds₁ = Sc.folds prem₁ at hide (λ G w → ≡-refl)
 
     prem₂ : Graph D₂ → Br.Premise
     prem₂ G .input-entry i q = G (inp i) (at q)
@@ -838,8 +832,7 @@ module CaseR {Γ τ₁ τ₂ τ} {γ : Env Γ} {ts : Γ ⊢ τ₁ [+] τ₂} {t�
 
     folds₂ : (ws : List (Path D₂)) (G : Graph D₂) →
              Br.steps (prem₂ G) ws ≡ prem₂ (hide-all G (map at ws))
-    folds₂ []       G = ≡-refl
-    folds₂ (w ∷ ws) G = folds₂ ws (hide G (at w))
+    folds₂ = Br.folds prem₂ at hide (λ G w → ≡-refl)
 
     G₁ : Graph E
     G₁ = hide-all (hide (hide (graph E) (at ε)) (at (case-r₁ ε)))
