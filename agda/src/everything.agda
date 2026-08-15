@@ -2,12 +2,13 @@
 
 module everything where
 
-import interaction.example
-
 import language-operational.totality
-import interaction.agreement
 import interaction.graph-algebra
 import interaction.dependence-graph
+import interaction.config
+import interaction.moves
+import interaction.maintenance
+import interaction.example
 
 import graph-viz.dump-tables
 import graph-viz.dump-slices
