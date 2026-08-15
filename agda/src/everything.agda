@@ -10,6 +10,7 @@ import interaction.control-path
 import interaction.control-graph
 import interaction.control-hide
 import interaction.control-agreement-algebra
+import interaction.control-simulation
 import interaction.control-agreement
 import interaction.control-agreement-fold
 
