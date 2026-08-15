@@ -1,8 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool using (Bool; true)
+open import Data.Bool using (Bool; true; not)
 open import Data.Empty using (⊥)
-open import Data.List using (List; []; _∷_; _++_; map; foldl)
+open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ)
 open import Data.Nat using (ℕ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Level using (Level; Lift) renaming (suc to lsuc)
@@ -130,6 +130,18 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   collapse : (i : Inp) → M.Matrix n (iw i)
   collapse i = hide-all vw gr (map (λ q → inj₂ (inj₁ q)) paths) (inj₁ i) (inj₂ (inj₂ root))
+
+  -- The interior vertices whose values are first-order, and their complement.
+  FO : List Path
+  FO = filterᵇ fo paths
+
+  fo-hidden : List Path
+  fo-hidden = filterᵇ (λ q → not (fo q)) paths
+
+  -- The first-order graph: every intermediate whose value is not first-order is hidden, so the
+  -- live vertices are the inputs, the root and FO.
+  fo-graph : Entries vw
+  fo-graph = hide-all vw gr (map (λ q → inj₂ (inj₁ q)) fo-hidden)
 
 -- One graph's vertices being hidden inside a larger graph. The state records the graph's own
 -- entries as they accumulate; Φ maps the graph's input columns to the ambient graph's input
