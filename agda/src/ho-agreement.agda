@@ -75,7 +75,7 @@ module LI = language-interpretation Sig 0ℓ 0ℓ
   interp.δ∅𝒟 interp.𝒟𝟙ty interp.𝒟unit-pt interp.𝒟-Sig-model model.elim-weight-endo
   (λ {X} {Y} → model.exp-const {X} {Y}) interp.𝒟𝟙ty-const interp.𝒟-sort-const
 
-open LI using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; elim-const)
+open LI using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; elim-const; ty-unit)
 open Constant using (at)
 
 ⟦_⟧ : type 0 → Obj
@@ -570,6 +570,71 @@ relV (snd c) (⇓-snd D) rγ = proj₂ (relV c D rγ)
 relV (lam c) ⇓-lam rγ {v} {j} rv {u} {U} D = relV c D (rγ · rv)
 relV (app c₁ c₂) (⇓-app D₁ D₂ D₃) rγ = relV c₁ D₁ rγ (relV c₂ D₂ rγ) D₃
 
+-- Domination is monotone in the source weight, and a relation is a relation up to the zero mark.
+private
+  ec-linear : ∀ τ (i : Ix τ) s s' →
+              F._≈_ τ i (ec τ i (s +ₛ s')) (F._+_ τ i (ec τ i s) (ec τ i s'))
+  ec-linear τ i s s' = elim-const τ .at i .SemiMod._⇒_.preserve-+ {s} {s'}
+
+  ec-w : ∀ τ (i : Ix τ) s → F._≈_ τ i (ec τ i (w ·ₛ s)) (ec τ i s)
+  ec-w τ i s =
+    LI.ty-unit τ (λ ()) (λ ()) .at i .SemiMod._⇒_.func-resp-≈
+      (+-cong (≈-trans (≈-sym Sc.·-assoc) (·-cong w-idem ≈-refl)) ≈-refl)
+
+  Dominated-mono : ∀ τ (i : Ix τ) s s' m → Dominated τ i s m → Dominated τ i (s' +ₛ (w ·ₛ s)) m
+  Dominated-mono τ i s s' m dm =
+    F.trans τ i (F.+-cong τ i (F.refl τ i) (F.trans τ i (ec-linear τ i s' (w ·ₛ s))
+                                                        (F.+-cong τ i (F.refl τ i) (ec-w τ i s))))
+    (F.trans τ i (F.+-cong τ i (F.refl τ i) (F.+-comm τ i))
+    (F.trans τ i (F.sym τ i (F.+-assoc τ i))
+    (F.trans τ i (F.+-cong τ i dm (F.refl τ i))
+    (F.trans τ i (F.+-comm τ i)
+    (F.sym τ i (F.trans τ i (ec-linear τ i s' (w ·ₛ s))
+                            (F.+-cong τ i (F.refl τ i) (ec-w τ i s))))))))
+
+  RelFs-mono : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) s s' {o d} →
+               RelFs τ r s o d → RelFs τ r (s' +ₛ (w ·ₛ s)) o d
+  RelFs-mono τ {i = i} r s s' (m , (dm , h)) = m , (Dominated-mono τ i s s' m dm , h)
+
+  RelEnv-mono : ∀ {Γ} {γ : Env Γ} {gi} (rγ : RelVEnv γ gi) s s' {x g} →
+                RelEnv rγ s x g → RelEnv rγ (s' +ₛ (w ·ₛ s)) x g
+  RelEnv-mono emp s s' rel = prop.tt
+  RelEnv-mono (rγ · r) s s' (rel , h) = RelEnv-mono rγ s s' rel , RelFs-mono _ r s s' h
+
+  RelFs-of : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) s {o d} → RelF τ r o d → RelFs τ r s o d
+  RelFs-of τ {i = i} r s {o} {d} h =
+    F.ε τ i , (m-lunit (Fib τ i) , RelF-resp τ r (λ k → ≈-refl) (F.sym τ i (m-runit (Fib τ i))) h)
+
+-- Splitting a concatenated environment vector.
+private
+  ap-p₁-++ : ∀ {m n} (x : ∣ 𝔽 m ∣) (z : ∣ 𝔽 n ∣) k →
+             ap (M.p₁ {m} {n}) (λ l → ap (M.in₁ {m} {n}) x l +ₛ ap (M.in₂ {m} {n}) z l) k ≈s x k
+  ap-p₁-++ {m} {n} x z k =
+    ≈-trans (app-+ᵥ (M.p₁ {m} {n}) _ _ k)
+            (≈-trans (+-cong (≈-trans (≈-sym (app-∘ (M.p₁ {m} {n}) (M.in₁ {m} {n}) x k))
+                                      (≈-trans (app-congₘ (M.id-1 m n) x k) (app-I x k)))
+                             (≈-trans (≈-sym (app-∘ (M.p₁ {m} {n}) (M.in₂ {m} {n}) z k))
+                                      (≈-trans (app-congₘ (M.zero-1 m n) z k) (app-εₘ z k))))
+                     +-runit)
+
+  ap-p₂-++ : ∀ {m n} (x : ∣ 𝔽 m ∣) (z : ∣ 𝔽 n ∣) k →
+             ap (M.p₂ {m} {n}) (λ l → ap (M.in₁ {m} {n}) x l +ₛ ap (M.in₂ {m} {n}) z l) k ≈s z k
+  ap-p₂-++ {m} {n} x z k =
+    ≈-trans (app-+ᵥ (M.p₂ {m} {n}) _ _ k)
+            (≈-trans (+-cong (≈-trans (≈-sym (app-∘ (M.p₂ {m} {n}) (M.in₁ {m} {n}) x k))
+                                      (≈-trans (app-congₘ (M.zero-2 m n) x k) (app-εₘ x k)))
+                             (≈-trans (≈-sym (app-∘ (M.p₂ {m} {n}) (M.in₂ {m} {n}) z k))
+                                      (≈-trans (app-congₘ (M.id-2 m n) z k) (app-I z k))))
+                     +-lunit)
+
+private
+  RelEnv-resp : ∀ {Γ} {γ : Env Γ} {gi} (rγ : RelVEnv γ gi) s {x x' g} →
+                (∀ k → x k ≈s x' k) → RelEnv rγ s x g → RelEnv rγ s x' g
+  RelEnv-resp emp s ex rel = prop.tt
+  RelEnv-resp (_·_ {γ = γ} {v = v} rγ r) s ex (rel , h) =
+    RelEnv-resp rγ s (app-congᵥ (M.p₁ {width-env γ} {width v}) ex) rel ,
+    RelFs-resp _ r s (app-congᵥ (M.p₂ {width-env γ} {width v}) ex) h
+
 -- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
               {gi} (rγ : RelVEnv γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
@@ -601,5 +666,84 @@ fundamental (case c c₁ c₂) (⇓-case-r D₁ D₂) rγ s x g rel = {!!}
 fundamental (pair c₁ c₂) (⇓-pair D₁ D₂) rγ s x g rel = {!!}
 fundamental (fst c) (⇓-fst D) rγ s x g rel = {!!}
 fundamental (snd c) (⇓-snd D) rγ s x g rel = {!!}
-fundamental (lam c) ⇓-lam rγ s x g rel = {!!}
+fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} c) {γ = γ} ⇓-lam {gi} rγ s x g rel =
+  root , clause
+  where
+  o : ∣ 𝔽 (suc (width-env γ)) ∣
+  o = ap (of-cols {γ = γ} (lam-out γ t')) (inputs γ s x)
+
+  o₀ : o zero ≈s (w ·ₛ s)
+  o₀ = ≈-trans (app-of-cols {γ = γ} (lam-out γ t') s x zero)
+               (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ}) ctrl-row (λ _ → s) zero)
+                                         (≈-trans (ap-in₁-zero {width-env γ} (ap (ctrl-row {1}) (λ _ → s)))
+                                                  (ap-ctrl-row {1} s zero)))
+                                (ap-in₂-zero {width-env γ} x))
+                        +-runit)
+
+  o-tail : ∀ k → o (suc k) ≈s x k
+  o-tail k = ≈-trans (app-of-cols {γ = γ} (lam-out γ t') s x (suc k))
+                     (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ}) ctrl-row (λ _ → s) (suc k))
+                                               (ap-in₁-suc {width-env γ} (ap (ctrl-row {1}) (λ _ → s)) k))
+                                      (ap-in₂-suc {width-env γ} x k))
+                              +-lunit)
+
+  f = ⟦ lam t' ⟧tm .idxf .sfunc gi
+
+  root : o zero ≈A proj₁ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))
+  root = ≈-trans o₀ (≈-sym (≈-trans (+-cong (prop._∧_.proj₁ (ec-clo {σ} {τ} f s)) ≈-refl) +-runit))
+
+  clause : ∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : RelV σ v j)
+             (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → RelF σ rv z y →
+           ∀ {u U} (D : γ · v , t' ⇓ u [ U ]) →
+             RelF τ (relV c D (rγ · rv)) (mat U .func (body-input γ v (s' +ₛ o zero) (λ k → o (suc k)) z))
+               (F._+_ τ (f .idxf .sfunc j)
+                 (ec τ (f .idxf .sfunc j) (s' +ₛ o zero))
+                 (F._+_ τ (f .idxf .sfunc j)
+                   (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func
+                      (proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))))
+                   (f .famf .transf j .func y)))
+  clause s' {v} {j} rv z y hz {u} {U} D =
+    RelF-resp τ (relV c D (rγ · rv))
+      (app-congᵥ U (body-input-resp γ v (+-cong ≈-refl (≈-sym o₀)) (λ k → ≈-sym (o-tail k))))
+      (F.+-cong τ (f .idxf .sfunc j)
+         (elim-const τ .at (f .idxf .sfunc j) .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl (≈-sym o₀)))
+         (F.trans τ (f .idxf .sfunc j)
+            (⟦ t' ⟧tm .famf .transf (gi , j) .SemiMod._⇒_.func-resp-≈
+               {g , y} {(FibC Γ gi Semimodule.+ g) (Semimodule.ε (FibC Γ gi)) ,
+                        (Fib σ j Semimodule.+ Semimodule.ε (Fib σ j)) y}
+               (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , Semimodule.sym (Fib σ j) (m-lunit (Fib σ j))))
+         (F.trans τ (f .idxf .sfunc j)
+            (⟦ t' ⟧tm .famf .transf (gi , j) .SemiMod._⇒_.preserve-+
+               {g , Semimodule.ε (Fib σ j)} {Semimodule.ε (FibC Γ gi) , y})
+            (F.+-cong τ (f .idxf .sfunc j)
+               (F.trans τ (f .idxf .sfunc j) (F.sym τ (f .idxf .sfunc j) β)
+                  (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.func-resp-≈
+                     {proj₂ L} {proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) L)} pd))
+               (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))))
+      (fundamental c D (rγ · rv) (s' +ₛ (w ·ₛ s)) (λ k → body-input γ v (s' +ₛ (w ·ₛ s)) x z (suc k)) (g , y)
+         (RelEnv-resp rγ (s' +ₛ (w ·ₛ s)) (λ k → ≈-sym (ap-p₁-++ x z k)) (RelEnv-mono rγ s s' rel) ,
+          RelFs-resp σ rv (s' +ₛ (w ·ₛ s)) (λ k → ≈-sym (ap-p₂-++ x z k)) (RelFs-of σ rv (s' +ₛ (w ·ₛ s)) hz)))
+    where
+    module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
+    L = ⟦ lam t' ⟧tm .famf .transf gi .func g
+
+    -- The payload of the lambda's fibre evaluated at the argument is the body's fibre on the
+    -- environment part.
+    β : F._≈_ τ (f .idxf .sfunc j)
+          (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ L))
+          (⟦ t' ⟧tm .famf .transf (gi , j) .func (g , Semimodule.ε (Fib σ j)))
+    Fλ : indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (FibC Γ gi)
+           indexed-family.⇒f (⟦ τ ⟧ .fam indexed-family.[ f .idxf ])
+    Fλ = indexed-family._∘f_ indexed-family.reindex-comp
+           (indexed-family._∘f_ (indexed-family.reindex-f (model.FE.nudge gi) (⟦ t' ⟧tm .famf))
+                                (model.FE.nudge-in₁ gi))
+    β = SP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {x = FibC Γ gi} {f = Fλ} j
+          .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (Semimodule.refl (FibC Γ gi) {g})
+
+    pd : P._≈_ (proj₂ L) (proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) L))
+    pd = P.sym {proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) L)} {proj₂ L}
+           (P.trans {proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) L)} {P._+_ P.ε (proj₂ L)} {proj₂ L}
+              (P.+-cong {proj₂ (ec (σ [→] τ) f s)} {P.ε} {proj₂ L} {proj₂ L}
+                 (prop._∧_.proj₂ (ec-clo {σ} {τ} f s)) (P.refl {proj₂ L}))
+              (P.+-lunit {proj₂ L}))
 fundamental (app c₁ c₂) (⇓-app D₁ D₂ D₃) rγ s x g rel = {!!}
