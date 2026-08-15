@@ -218,9 +218,8 @@ record Graph (Inp : Set) (iw : Inp → ℕ) (n : ℕ) : Set₁ where
     out     : (i : Inp) → M.Matrix n (iw i)
     up      : (p : Vertex shape) → M.Matrix n (width p)
 
--- The dependence relation of a graph over a bare vertex set: on pairs of a vertex and a position
--- in the value there, with no shape and no distinguished root. Hiding a vertex composes through
--- all of its positions and drops it from the addressing.
+-- A dependence relation over an arbitrary vertex set: on pairs of a vertex and a position in the
+-- value there. The inputs, the interior vertices and the root are not distinguished.
 Relation : {V : Set} → (V → ℕ) → Set
 Relation {V} vertex-width = (x y : V) → M.Matrix (vertex-width y) (vertex-width x)
 
