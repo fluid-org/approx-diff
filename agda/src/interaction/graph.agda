@@ -25,8 +25,8 @@ import matrix
 import two
 
 -- A dependence graph as a value rather than a family indexed by a derivation: a graph is a set of
--- interior vertices with widths, a distinguished root of given width, and the entries between them.
--- The root has no outgoing entries, so it is a sink by construction.
+-- interior vertices with widths, a distinguished root of given width, and the dependence relation
+-- between each pair. The root has no outgoing relation, so it is a sink by construction.
 module interaction.graph where
 
 private
@@ -593,7 +593,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) gr-forward
 
 -- Hiding one premise's vertices, one at a time, inside the conclusion's graph. The state records
--- the premise's own entries as they accumulate; Φ carries the premise's input columns to the
+-- the premise's own relations as they accumulate; Φ carries the premise's input columns to the
 -- conclusion's, which for a premise evaluated in a substituted environment is not the identity.
 module HidePremise
   {V : Set} (vw : V → ℕ)
@@ -669,7 +669,7 @@ module HidePremise
   agrees-hide-all []       s = s
   agrees-hide-all (w ∷ ws) s = agrees-hide-all ws (agrees-hide w s)
 
-  -- The entries a rule contributes, before the graph's root is hidden. Every edge from the graph to
+  -- The relations a rule contributes, before the graph's root is hidden. Every edge from the graph to
   -- a target leaves the graph's root, which here is a matter of the vertex set rather than a lemma.
   record Start (G : Entries vw) (H : St) : Set where
     field
@@ -715,7 +715,7 @@ module HidePremise
       ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (r .sink (inj₂ root))))
               (M.absorb₁ (H .inside (inj₁ p) (inj₂ root)) (H .inside (inj₁ p) (inj₂ root)))
 
--- Rows out of vertices that have no entries into the hidden set survive hiding.
+-- Rows out of vertices with no relation into the hidden set survive hiding.
 module Behind
   {V : Set} (vw : V → ℕ)
   {W : Set} (hid : W → V)
@@ -756,7 +756,7 @@ private
   map-++ f (x ∷ xs) ys = ≡-cong (f x ∷_) (map-++ f xs ys)
 
 -- Hiding a graph's own vertices, its root first, computes its collapse: the root has no outgoing
--- entries, so hiding it changes nothing.
+-- relation, so hiding it changes nothing.
 module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ M.εₘ
@@ -775,7 +775,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
 -- Two graphs in sequence: the second graph's inputs are supplied by the conclusion's inputs
 -- through route and by the first graph's root through link, and the conclusion's root is fed by
--- Columns into vertices that the hidden set has no entries into survive hiding.
+-- Columns into vertices the hidden set has no relation into survive hiding.
 module Frozen
   {V : Set} (vw : V → ℕ)
   {W : Set} (hid : W → V)
@@ -1102,7 +1102,7 @@ module Rule₂
             (≈-trans (done₂ .S2.tgt-ok root i)
                      (M.+ₘ-cong ≈-refl (∘-cong₂ (Φ₂ .ap-cong κ₂ i))))
 
--- Three premises in sequence, the third reaching both earlier roots. The first two have no entries
+-- Three premises in sequence, the third reaching both earlier roots. The first two have no relation
 -- between them.
 module Rule₃
   {Inp : Set} {iw : Inp → ℕ}
