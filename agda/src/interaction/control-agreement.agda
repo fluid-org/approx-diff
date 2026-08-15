@@ -227,6 +227,7 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
   open Single (⇓-fst D) (fst {D = D}) is-ε ε P₀ K₀
   open Premise
   open Agrees
+  open Rule
 
   private
     premise-of : Graph D → Premise
@@ -238,16 +239,19 @@ module Fst {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v : Val
     folds []       G = ≡-refl
     folds (w ∷ ws) G = folds ws (hide G (at w))
 
+    rule : Rule (graph (⇓-fst D)) (premise-of (graph D))
+    rule .rule-input environment q = ≈-refl
+    rule .rule-input source q = ≈-refl
+    rule .rule-path p q = ≈-refl
+    rule .rule-root environment = ≈-refl {f = K₀ environment}
+    rule .rule-root source = ≈-refl {f = K₀ source}
+    rule .rule-edge = ≈-refl {f = P₀}
+    rule .rule-off p np = edge-off P₀ p np
+    rule .rule-sink q = root-sink D (at q)
+
     start : Agrees (hide (hide (graph (⇓-fst D)) (at ε)) (at (fst ε)))
                    (premise-of (hide (graph D) (at ε)))
-    start = agrees-base (premise-of (graph D))
-                        (λ { environment q → ≈-refl ; source q → ≈-refl })
-                        (λ p q → ≈-refl)
-                        (λ { environment → ≈-refl {f = K₀ environment}
-                           ; source → ≈-refl {f = K₀ source} })
-                        (≈-refl {f = P₀})
-                        (λ p np → edge-off P₀ p np)
-                        (λ q → root-sink D (at q))
+    start = agrees-base rule
 
   agree : ∀ i → collapse-at (⇓-fst D) i ≈ (K₀ i M.+ₘ (P₀ ∘ collapse-at D i))
   agree i =
@@ -445,16 +449,19 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
     G₁ : Graph E
     G₁ = hide-all (hide (hide (graph E) (at ε)) (at (pair₁ ε))) (map at (map pair₁ (interior D₁)))
 
+    rule₁ : S₁.Rule (graph E) (prem₁ (graph D₁))
+    rule₁ .S₁.Rule.rule-input environment q = ≈-refl
+    rule₁ .S₁.Rule.rule-input source q = ≈-refl
+    rule₁ .S₁.Rule.rule-path p q = ≈-refl
+    rule₁ .S₁.Rule.rule-root environment = ≈-refl {f = K₁ environment}
+    rule₁ .S₁.Rule.rule-root source = ≈-refl {f = K₁ source}
+    rule₁ .S₁.Rule.rule-edge = ≈-refl {f = P₁}
+    rule₁ .S₁.Rule.rule-off p np = edge-off P₁ p np
+    rule₁ .S₁.Rule.rule-sink q = root-sink D₁ (at q)
+
     start₁ : S₁.Agrees (hide (hide (graph E) (at ε)) (at (pair₁ ε)))
                        (prem₁ (hide (graph D₁) (at ε)))
-    start₁ = S₁.agrees-base (prem₁ (graph D₁))
-               (λ { environment q → ≈-refl ; source q → ≈-refl })
-               (λ p q → ≈-refl)
-               (λ { environment → ≈-refl {f = K₁ environment}
-                  ; source → ≈-refl {f = K₁ source} })
-               (≈-refl {f = P₁})
-               (λ p np → edge-off P₁ p np)
-               (λ q → root-sink D₁ (at q))
+    start₁ = S₁.agrees-base rule₁
 
     done₁ : S₁.Agrees G₁ (S₁.steps (prem₁ (hide (graph D₁) (at ε))) (interior D₁))
     done₁ = S₁.agrees-hide-all (interior D₁) (interior-not-root D₁) start₁
@@ -478,14 +485,16 @@ module Pair {Γ τ₁ τ₂} {γ : Env Γ} {ts : Γ ⊢ τ₁} {tt : Γ ⊢ τ�
                 (≈-of-≡ (≡-cong (λ H → H .S₁.Premise.input-entry i ε)
                                 (folds₁ (interior D₁) (hide (graph D₁) (at ε))))))
 
+    rule₂ : S₂.Rule G₁ (prem₂ (graph D₂))
+    rule₂ .S₂.Rule.rule-input i q = keeps₁ .A.Keeps.input-keeps i q
+    rule₂ .S₂.Rule.rule-path p q = keeps₁ .A.Keeps.path-keeps p q
+    rule₂ .S₂.Rule.rule-root i = kin₂ i
+    rule₂ .S₂.Rule.rule-edge = keeps₁ .A.Keeps.root-keeps ε
+    rule₂ .S₂.Rule.rule-off p np = ≈-trans (keeps₁ .A.Keeps.root-keeps p) (edge-off P₂ p np)
+    rule₂ .S₂.Rule.rule-sink q = root-sink D₂ (at q)
+
     start₂ : S₂.Agrees (hide G₁ (at (pair₂ ε))) (prem₂ (hide (graph D₂) (at ε)))
-    start₂ = S₂.agrees-from G₁ (prem₂ (graph D₂))
-               (λ i q → keeps₁ .A.Keeps.input-keeps i q)
-               (λ p q → keeps₁ .A.Keeps.path-keeps p q)
-               kin₂
-               (keeps₁ .A.Keeps.root-keeps ε)
-               (λ p np → ≈-trans (keeps₁ .A.Keeps.root-keeps p) (edge-off P₂ p np))
-               (λ q → root-sink D₂ (at q))
+    start₂ = S₂.agrees-from rule₂
 
     done₂ : S₂.Agrees (hide-all (hide G₁ (at (pair₂ ε))) (map at (map pair₂ (interior D₂))))
                       (S₂.steps (prem₂ (hide (graph D₂) (at ε))) (interior D₂))
