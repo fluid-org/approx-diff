@@ -20,9 +20,9 @@ open import Data.List using (List; []; _∷_)
 
 -- Values, environments, and big-step evaluation decorated with dependency relations, threading a
 -- control source: a distinguished extra input position holding the last eliminated constructor,
--- initially the run itself. A terminal rule attaches the source to its whole value; a constructor
--- attaches it to the new root; an elimination points the consumed root at the source and makes
--- that root the source of its continuation.
+-- initially the run itself. A terminal rule attaches the source to its value's control positions;
+-- a constructor attaches it to the new root; an elimination points the consumed root at the source
+-- and makes that root the source of its continuation.
 module language-operational.evaluation {ℓ} (Sig : Signature ℓ)
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (𝒫 : Primitives S Sig) (elim-weight : Setoid.Carrier A) where
@@ -95,6 +95,23 @@ ctrl-row _ _ = elim-weight
 -- Control dependence: an eliminator's whole result depends on the root it consumes.
 ctrl : ∀ {m n k} → m ⇒ suc n → m ⇒ k
 ctrl R = ctrl-row ∘ (p₁ {1} ∘ R)
+
+-- The positions of a value that carry control dependence: what a terminal rule or an eliminator
+-- writes the source to. Every position of a first-order value, so that a value returned under an
+-- unavailable constructor is wholly unavailable. Only the root of a closure: its environment
+-- cells reach a result only through the body at an application, and the application marks its
+-- whole result from the closure's root in any case. Marking the cells as well would make the
+-- closure's control dependence a function of what its body reads, which the interpretation cannot
+-- express, since there a value of arrow type carries the fibre of every possible result at once
+-- and an eliminator writes a constant fixed by the type.
+ctrl-of : ∀ {τ} (v : Val τ) → 1 ⇒ width v
+ctrl-of unit        = ctrl-row
+ctrl-of (const _)   = ctrl-row
+ctrl-of (inl v)     = ⟨ ctrl-row {1} , ctrl-of v ⟩
+ctrl-of (inr v)     = ⟨ ctrl-row {1} , ctrl-of v ⟩
+ctrl-of (pair v u)  = ⟨ ctrl-row {1} , ⟨ ctrl-of v , ctrl-of u ⟩ ⟩
+ctrl-of (clo γ _)   = ⟨ ctrl-row {1} , M.εₘ ⟩
+ctrl-of (roll v)    = ctrl-of v
 
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl
@@ -179,7 +196,7 @@ cols-of-cols {γ = γ} f source =
 -- The graph semantics is built from the same data.
 var-out : ∀ {Γ τ} (x : Γ ∋ τ) (γ : Env Γ) (i : Input) → M.Matrix (width (lookup x γ)) (input-width γ i)
 var-out x γ environment = proj-var x γ
-var-out x γ source      = ctrl-row
+var-out x γ source      = ctrl-of (lookup x γ)
 
 unit-out : ∀ {Γ} (γ : Env Γ) (i : Input) → M.Matrix (width unit) (input-width γ i)
 unit-out γ environment = M.εₘ
@@ -197,12 +214,14 @@ built-out γ n source      = M.in₁ {1} {n} ∘ ctrl-row {1}
 
 -- An eliminated root: the conclusion's root points at it, and the source is charged the control
 -- weight of consuming it.
-elim-out : ∀ {Γ} (γ : Env Γ) (n : ℕ) (i : Input) → M.Matrix n (input-width γ i)
-elim-out γ n environment = M.εₘ
-elim-out γ n source      = ctrl-row ∘ ctrl-row {1}
+elim-out : ∀ {Γ τ} (γ : Env Γ) (w : Val τ) (i : Input) → M.Matrix (width w) (input-width γ i)
+elim-out γ w environment = M.εₘ
+elim-out γ w source      = ctrl-of w ∘ ctrl-row {1}
 
-proj-up : ∀ {m n k} → M.Matrix k (m + n) → M.Matrix k (suc (m + n))
-proj-up {m} {n} P = (P ∘ p₂ {1} {m + n}) M.+ₘ (ctrl-row ∘ p₁ {1} {m + n})
+-- A projection from under a root: the payload's entry, and the root at the result's control
+-- positions.
+proj-up : ∀ {m n τ} (w : Val τ) → M.Matrix (width w) (m + n) → M.Matrix (width w) (suc (m + n))
+proj-up {m} {n} w P = (P ∘ p₂ {1} {m + n}) M.+ₘ (ctrl-of w ∘ p₁ {1} {m + n})
 
 -- A premise whose inputs are reached from the conclusion's by a fixed pair of matrices.
 two-route : ∀ {Γ Γ'} (γ : Env Γ) (γ' : Env Γ') →
@@ -386,13 +405,13 @@ mutual
     ⇓-fst    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
                γ , fst t ⇓ v
-                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ (width v))
-                                         (proj-up {width v} {width u} (p₁ {width v} {width u})) (cols R)) ]
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ v)
+                                         (proj-up {width v} {width u} v (p₁ {width v} {width u})) (cols R)) ]
     ⇓-snd    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
                γ , snd t ⇓ u
-                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ (width u))
-                                         (proj-up {width v} {width u} (p₂ {width v} {width u})) (cols R)) ]
+                 [ of-cols (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ u)
+                                         (proj-up {width v} {width u} u (p₂ {width v} {width u})) (cols R)) ]
     ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} →
                γ , lam t ⇓ clo γ t [ of-cols (lam-out γ t) ]
     ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R T U} →

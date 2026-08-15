@@ -58,11 +58,11 @@ mutual
           (M.no-link (input-width γ) (width v)) (fo-of τ) (built-out γ (width v + width u))
           (M.in₂ {1} M.∘ M.in₁ {width v} {width u}) (M.in₂ {1} M.∘ M.in₂ {width v} {width u})
   graph {τ = τ} (⇓-fst {γ = γ} {v = v} {u = u} D) =
-    Rule₁.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ (width v))
-          (proj-up {width v} {width u} (M.p₁ {width v} {width u}))
+    Rule₁.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ v)
+          (proj-up {width v} {width u} v (M.p₁ {width v} {width u}))
   graph {τ = τ} (⇓-snd {γ = γ} {v = v} {u = u} D) =
-    Rule₁.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ (width u))
-          (proj-up {width v} {width u} (M.p₂ {width v} {width u}))
+    Rule₁.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ u)
+          (proj-up {width v} {width u} u (M.p₂ {width v} {width u}))
   graph {τ = τ} (⇓-app {γ = γ} {γ' = γ'} {v = v} D₁ D₂ D₃) =
     Rule₃.E (graph D₁) (graph D₂) (graph D₃) (M.id-linear (input-width γ))
            (M.id-linear (input-width γ)) (body-route γ γ' v) (body-link₁ γ' v) (body-link₂ γ' v)
@@ -200,15 +200,15 @@ mutual
                       (M.in₂ {1} M.∘ M.in₁ {width v} {width u})
                       (M.in₂ {1} M.∘ M.in₂ {width v} {width u}) (agree D₁) (agree D₂) i)
   agree {τ = τ} (⇓-fst {γ = γ} {v = v} {u = u} D) i =
-    ≈-trans (Rule₁.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ (width v))
-                       (proj-up {width v} {width u} (M.p₁ {width v} {width u})) i)
-            (step-one (M.id-linear (input-width γ)) (elim-out γ (width v))
-                      (proj-up {width v} {width u} (M.p₁ {width v} {width u})) (agree D) i)
+    ≈-trans (Rule₁.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ v)
+                       (proj-up {width v} {width u} v (M.p₁ {width v} {width u})) i)
+            (step-one (M.id-linear (input-width γ)) (elim-out γ v)
+                      (proj-up {width v} {width u} v (M.p₁ {width v} {width u})) (agree D) i)
   agree {τ = τ} (⇓-snd {γ = γ} {v = v} {u = u} D) i =
-    ≈-trans (Rule₁.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ (width u))
-                       (proj-up {width v} {width u} (M.p₂ {width v} {width u})) i)
-            (step-one (M.id-linear (input-width γ)) (elim-out γ (width u))
-                      (proj-up {width v} {width u} (M.p₂ {width v} {width u})) (agree D) i)
+    ≈-trans (Rule₁.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ u)
+                       (proj-up {width v} {width u} u (M.p₂ {width v} {width u})) i)
+            (step-one (M.id-linear (input-width γ)) (elim-out γ u)
+                      (proj-up {width v} {width u} u (M.p₂ {width v} {width u})) (agree D) i)
   agree {τ = τ} (⇓-app {γ = γ} {γ' = γ'} {v = v} D₁ D₂ D₃) i =
     ≈-trans (Rule₃.agree (graph D₁) (graph D₂) (graph D₃) (M.id-linear (input-width γ))
                         (M.id-linear (input-width γ)) (body-route γ γ' v) (body-link₁ γ' v)

@@ -1,17 +1,16 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Where the operational relation and the interpretation part company: control dependence
--- through a closure. In app (case y of inl _ → x | inr _ → x) unit, with x the identity closure,
--- the result depends on y's root twice in the interpretation and once in the operational
--- semantics. Both charge the closure's root the elimination weight when the case consumes y's
--- root, and again when the application consumes the closure's root, giving w². The interpretation
--- also writes the arrow type's unit constant into the closure's payload, the tuple of the result
--- type's constants over every argument, and application reads that tuple at the argument, giving
--- a further w. The operational closure has no position that carries this: its positions are its
--- root and its environment's, and its environment's positions reach the result only through the
--- body, which here ignores them. Over the counting semiring with weight 3 the two give 9 and 12;
--- over a lattice, where w + w² = w², they agree. The remaining columns, the closure's root and y's
--- payload, agree.
+-- Control dependence through a closure, operationally and in the interpretation. In
+-- app (case y of inl _ → x | inr _ → x) unit, with x the identity closure, the result depends on
+-- y's root through the closure's root alone: the case charges the closure's root the elimination
+-- weight when it consumes y's root, and the application charges it again when it consumes the
+-- closure's root, giving w². Both sides agree because both mark only a closure's root: the
+-- operational control positions of a closure (ctrl-of) and the interpretation's arrow constant
+-- (ho-model.exp-const) leave the closure's environment, respectively the tuple of results over
+-- every argument, unmarked. Had the interpretation written the target's constant into that
+-- tuple, application would read it back at the argument for a further w, which no position of
+-- the closure carries. Over the counting semiring with weight 3 both give 9; the closure's root
+-- and y's payload columns give 3 and 0.
 module example.closure-control where
 
 open import Data.Fin using (zero; suc)
@@ -105,7 +104,7 @@ dep a b c = model.SemiMod._⇒_.func (𝒟⟦ t₀ ⟧tm .famf .transf γ-idx) (
 _ : dep 1 0 0 ≡ 3
 _ = refl
 
-_ : dep 0 1 0 ≡ 12
+_ : dep 0 1 0 ≡ 9
 _ = refl
 
 _ : dep 0 0 1 ≡ 0

@@ -100,35 +100,18 @@ module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod
 SemiModExp : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
 SemiModExp = exponentials→weak FE.exponentials
 
--- The unit constant of a function space: at each fibre map, the tuple of the target's constants
--- over its index action.
+-- The unit constant of a function space is zero: an eliminator returning a function marks only
+-- the root the lifting adjoins, matching the operational semantics, where a closure's control
+-- positions are its root alone (language-operational.evaluation.ctrl-of). The tuple of the
+-- target's constants over every argument would instead mark every possible result, which no
+-- position of a closure stands for.
 private
-  module SPm = HasSetoidProducts SPmod
-
-private
-  exp-tuple : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Constant Y → (f : Fam⟨𝒟⟩μ.Mor X Y) →
-              constantFam (X .Fam⟨𝒟⟩μ.idx) SemiMod.cat SemiMod.𝕀
-                ⇒f (Y .Fam⟨𝒟⟩μ.fam [ f .Fam⟨𝒟⟩μ.idxf ])
-  exp-tuple cY f ._⇒f_.transf x = cY .Fam⟨𝒟⟩μ.at (f .Fam⟨𝒟⟩μ.idxf .func x)
-  exp-tuple cY f ._⇒f_.natural e =
-    SMC.≈-trans SMC.id-right
-      (SMC.≈-sym (cY .Fam⟨𝒟⟩μ.at-natural (f .Fam⟨𝒟⟩μ.idxf .func-resp-≈ e)))
+  module SMCM = CMonEnriched SemiMod.cmon-enriched
 
 exp-const : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Constant Y → Fam⟨𝒟⟩μ.Constant (FE._⟶_ X Y)
-exp-const {X} {Y} cY .Fam⟨𝒟⟩μ.at f =
-  SPm.lambdaΠ SemiMod.𝕀 (Y .Fam⟨𝒟⟩μ.fam [ f .Fam⟨𝒟⟩μ.idxf ]) (exp-tuple cY f)
+exp-const {X} {Y} cY .Fam⟨𝒟⟩μ.at f = SMCM.εm
 exp-const {X} {Y} cY .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
-  SMC.≈-trans
-    (SMC.≈-sym
-      (SPm.lambda-compose
-        (reindex-≈ (f₁ .Fam⟨𝒟⟩μ.idxf) (f₂ .Fam⟨𝒟⟩μ.idxf) (Fam⟨𝒟⟩μ._≃_.idxf-eq e))
-        (exp-tuple cY f₁)))
-    (SPm.lambdaΠ-cong pw)
-  where
-  pw : (reindex-≈ (f₁ .Fam⟨𝒟⟩μ.idxf) (f₂ .Fam⟨𝒟⟩μ.idxf) (Fam⟨𝒟⟩μ._≃_.idxf-eq e)
-          ∘f exp-tuple cY f₁)
-         ≃f exp-tuple cY f₂
-  pw ._≃f_.transf-eq = cY .Fam⟨𝒟⟩μ.at-natural _
+  SMCM.comp-bilinear-ε₂ {SemiMod.𝕀} (FE._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
 
 -- The interpretation of the primitives: the first-order interpretation, with the relations'
 -- booleans injected under zero roots.
