@@ -852,6 +852,43 @@ app-rule₁ {γ = γ} out up R' s x k =
                    (≈-trans (≈-sym (app-+ᵥ up (ap (cols {γ = γ} R' source) (λ _ → s)) (ap (cols {γ = γ} R' environment) x) k))
                             (app-congᵥ up (λ l → ≈-sym (app-inputs {γ = γ} R' s x l)) k)))))
 
+-- A two-premise rule with the identity routings and no link, read at the inputs.
+app-rule₂-nolink : ∀ {Γ} {γ : Env Γ} {n n₁ n₂} (out : (i : Input) → M.Matrix n (input-width γ i))
+                   (u₁ : M.Matrix n n₁) (u₂ : M.Matrix n n₂)
+                   (R₁ : M.Matrix n₁ (suc (width-env γ))) (R₂ : M.Matrix n₂ (suc (width-env γ))) s x (k : Fin n) →
+                   ap (of-cols {γ = γ} (M.rule₂-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
+                                          (M.no-link (input-width γ) n₁) out u₁ u₂ (cols {γ = γ} R₁) (cols {γ = γ} R₂)))
+                      (inputs γ s x) k
+                   ≈s ((ap (out source) (λ _ → s) k +ₛ ap (out environment) x k) +ₛ
+                       (ap u₁ (ap R₁ (inputs γ s x)) k +ₛ ap u₂ (ap R₂ (inputs γ s x)) k))
+app-rule₂-nolink {γ = γ} {n₁ = n₁} out u₁ u₂ R₁ R₂ s x k =
+  ≈-trans (app-of-cols {γ = γ} f s x k)
+  (≈-trans (+-cong (per-input source (λ _ → s) k) (per-input environment x k))
+  (≈-trans Sc.+-interchange
+  (≈-trans (+-cong Sc.+-interchange ≈-refl)
+  (≈-trans +-assoc
+           (+-cong ≈-refl
+                   (+-cong (≈-trans (≈-sym (app-+ᵥ u₁ (ap (c₁ source) (λ _ → s)) (ap (c₁ environment) x) k))
+                                    (app-congᵥ u₁ (λ l → ≈-sym (app-inputs {γ = γ} R₁ s x l)) k))
+                           (≈-trans (≈-sym (app-+ᵥ u₂ (ap (c₂ source) (λ _ → s)) (ap (c₂ environment) x) k))
+                                    (app-congᵥ u₂ (λ l → ≈-sym (app-inputs {γ = γ} R₂ s x l)) k))))))))
+  where
+  c₁ = cols {γ = γ} R₁
+  c₂ = cols {γ = γ} R₂
+  f = M.rule₂-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
+        (M.no-link (input-width γ) n₁) out u₁ u₂ c₁ c₂
+  per-input : ∀ (i : Input) (vi : ∣ 𝔽 (input-width γ i) ∣) k →
+              ap (f i) vi k ≈s ((ap (out i) vi k +ₛ ap u₁ (ap (c₁ i) vi) k) +ₛ ap u₂ (ap (c₂ i) vi) k)
+  per-input i vi k =
+    ≈-trans (app-+ₘ (out i +ₘ (u₁ ∘ c₁ i)) (u₂ ∘ (c₂ i +ₘ (εₘ ∘ c₁ i))) vi k)
+            (+-cong (≈-trans (app-+ₘ (out i) (u₁ ∘ c₁ i) vi k) (+-cong ≈-refl (app-∘ u₁ (c₁ i) vi k)))
+                    (≈-trans (app-∘ u₂ (c₂ i +ₘ (εₘ ∘ c₁ i)) vi k)
+                             (app-congᵥ u₂
+                                (λ l → ≈-trans (app-+ₘ (c₂ i) (εₘ ∘ c₁ i) vi l)
+                                               (≈-trans (+-cong ≈-refl (≈-trans (app-∘ εₘ (c₁ i) vi l)
+                                                                                (app-εₘ (ap (c₁ i) vi) l)))
+                                                        +-runit)) k)))
+
 -- Transport along a reflexivity proof is the identity.
 private
   subst-refl : ∀ τ {i : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i) (d : ∣ Fib τ i ∣) →
@@ -961,7 +998,69 @@ fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} c) {γ = γ} (⇓-inr 
 
 fundamental (case c c₁ c₂) (⇓-case-l D₁ D₂) rγ s x g rel = {!!}
 fundamental (case c c₁ c₂) (⇓-case-r D₁ D₂) rγ s x g rel = {!!}
-fundamental (pair c₁ c₂) (⇓-pair D₁ D₂) rγ s x g rel = {!!}
+fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} c₁ c₂) {γ = γ} (⇓-pair {v = v} {u = u} {R = R₁} {T = R₂} D₁ D₂) {gi} rγ s x g rel =
+  root , (RelF-resp σ r₁ (λ k → ≈-sym (comp₁ k)) den₁ IH₁ , RelF-resp τ r₂ (λ k → ≈-sym (comp₂ k)) den₂ IH₂)
+  where
+  i = ⟦ M ⟧tm .idxf .sfunc gi
+  j = ⟦ N ⟧tm .idxf .sfunc gi
+  r₁ = relV c₁ D₁ rγ
+  r₂ = relV c₂ D₂ rγ
+  IH₁ = fundamental c₁ D₁ rγ s x g rel
+  IH₂ = fundamental c₂ D₂ rγ s x g rel
+  o₁ = ap R₁ (inputs γ s x)
+  o₂ = ap R₂ (inputs γ s x)
+  y₁ = ⟦ M ⟧tm .famf .transf gi .func g
+  y₂ = ⟦ N ⟧tm .famf .transf gi .func g
+  u₁ = M.in₂ {1} ∘ M.in₁ {width v} {width u}
+  u₂ = M.in₂ {1} ∘ M.in₂ {width v} {width u}
+  o = ap (of-cols {γ = γ} (M.rule₂-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
+                             (M.no-link (input-width γ) (width v)) (built-out γ (width v + width u)) u₁ u₂
+                             (cols {γ = γ} R₁) (cols {γ = γ} R₂)))
+         (inputs γ s x)
+  d = F._+_ (σ [×] τ) (i , j) (ec (σ [×] τ) (i , j) s) (⟦ pair M N ⟧tm .famf .transf gi .func g)
+
+  op-eq : ∀ k → o k ≈s ((ap (M.in₁ {1} {width v + width u} ∘ ctrl-row {1}) (λ _ → s) k +ₛ ε) +ₛ
+                        (ap (M.in₂ {1} {width v + width u}) (ap (M.in₁ {width v} {width u}) o₁) k +ₛ
+                         ap (M.in₂ {1} {width v + width u}) (ap (M.in₂ {width v} {width u}) o₂) k))
+  op-eq k =
+    ≈-trans (app-rule₂-nolink {γ = γ} (built-out γ (width v + width u)) u₁ u₂ R₁ R₂ s x k)
+            (+-cong (+-cong ≈-refl (app-εₘ x k))
+                    (+-cong (app-∘ (M.in₂ {1}) (M.in₁ {width v} {width u}) o₁ k)
+                            (app-∘ (M.in₂ {1}) (M.in₂ {width v} {width u}) o₂ k)))
+
+  tail-eq : ∀ k → o (suc k) ≈s (ap (M.in₁ {width v} {width u}) o₁ k +ₛ ap (M.in₂ {width v} {width u}) o₂ k)
+  tail-eq k =
+    ≈-trans (op-eq (suc k))
+            (≈-trans (+-cong (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width v + width u}) (ctrl-row {1}) (λ _ → s) (suc k))
+                                                       (ap-in₁-suc {width v + width u} (ap (ctrl-row {1}) (λ _ → s)) k))
+                                              ≈-refl)
+                                      +-runit)
+                             (+-cong (ap-in₂-suc {width v + width u} _ k) (ap-in₂-suc {width v + width u} _ k)))
+                     +-lunit)
+
+  root : o zero ≈A proj₁ d
+  root =
+    ≈-trans (op-eq zero)
+    (≈-trans (+-cong (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width v + width u}) (ctrl-row {1}) (λ _ → s) zero)
+                                               (≈-trans (ap-in₁-zero {width v + width u} (ap (ctrl-row {1}) (λ _ → s)))
+                                                        (ap-ctrl-row {1} s zero)))
+                                      ≈-refl)
+                              +-runit)
+                     (≈-trans (+-cong (ap-in₂-zero {width v + width u} _) (ap-in₂-zero {width v + width u} _)) +-runit))
+    (≈-trans +-runit
+             (≈-sym (≈-trans (+-cong (prop._∧_.proj₁ (ec-pair {σ} {τ} i j s)) (≈-refl {ε})) +-runit))))
+
+  comp₁ : ∀ k → ap (M.p₁ {width v} {width u}) (λ l → o (suc l)) k ≈s o₁ k
+  comp₁ k = ≈-trans (app-congᵥ (M.p₁ {width v} {width u}) tail-eq k) (ap-p₁-++ o₁ o₂ k)
+
+  comp₂ : ∀ k → ap (M.p₂ {width v} {width u}) (λ l → o (suc l)) k ≈s o₂ k
+  comp₂ k = ≈-trans (app-congᵥ (M.p₂ {width v} {width u}) tail-eq k) (ap-p₂-++ o₁ o₂ k)
+
+  den₁ : F._≈_ σ i (F._+_ σ i (ec σ i s) y₁) (proj₁ (proj₂ d))
+  den₁ = F.sym σ i (F.+-cong σ i (prop._∧_.proj₁ (prop._∧_.proj₂ (ec-pair {σ} {τ} i j s))) (m-runit (Fib σ i)))
+
+  den₂ : F._≈_ τ j (F._+_ τ j (ec τ j s) y₂) (proj₂ (proj₂ d))
+  den₂ = F.sym τ j (F.+-cong τ j (prop._∧_.proj₂ (prop._∧_.proj₂ (ec-pair {σ} {τ} i j s))) (m-lunit (Fib τ j)))
 fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} c) {γ = γ} (⇓-fst {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   RelF-resp σ r₁ (λ k → ≈-sym (op-eq k)) den-eq
     (ctrl-add σ r₁ ((w ·ₛ s) +ₛ o' zero) (prop._∧_.proj₁ (prop._∧_.proj₂ IH)))
