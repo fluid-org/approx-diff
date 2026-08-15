@@ -36,6 +36,9 @@ open import interaction.control-agreement-algebra Sig 𝒫
   using (absorb; +ₘ-cong; +ₘ-lunit; root-step; offset-step; hide-root; keep-l; keep-r;
          pair-step)
 
+data Root : Set ℓ where
+  root : Root
+
 module Single
   {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v : Val τ} {R : Nat.suc (width-env γ) ⇒ width v}
   (E : γ , t ⇓ v [ R ])
