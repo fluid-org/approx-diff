@@ -1,5 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
+open import Data.Bool using (Bool; true)
 open import Data.Empty using (⊥)
 open import Data.List using (List; []; _∷_; _++_; map; foldl)
 open import Data.Nat using (ℕ)
@@ -35,13 +36,15 @@ Void = Lift ℓ ⊥
 
 record Graph (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
   field
-    Path   : Set ℓ
-    width  : Path → ℕ
-    paths  : List Path
-    into   : (i : Inp) (q : Path) → M.Matrix (width q) (iw i)
-    inside : (p q : Path) → M.Matrix (width q) (width p)
-    out    : (i : Inp) → M.Matrix n (iw i)
-    up     : (p : Path) → M.Matrix n (width p)
+    Path    : Set ℓ
+    width   : Path → ℕ
+    fo      : Path → Bool
+    paths   : List Path
+    into    : (i : Inp) (q : Path) → M.Matrix (width q) (iw i)
+    inside  : (p q : Path) → M.Matrix (width q) (width p)
+    fo-root : Bool
+    out     : (i : Inp) → M.Matrix n (iw i)
+    up      : (p : Path) → M.Matrix n (width p)
 
 -- Entries over an arbitrary vertex set, and hiding, as in interaction.hide-algebra but stated at
 -- the ≈ of the matrix category rather than entrywise.
@@ -85,6 +88,9 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   width⁺ : Path⁺ → ℕ
   width⁺ = [ width , (λ _ → n) ]
+
+  fo⁺ : Path⁺ → Bool
+  fo⁺ = [ fo , (λ _ → fo-root) ]
 
   into⁺ : (i : Inp) (q : Path⁺) → M.Matrix (width⁺ q) (iw i)
   into⁺ i (inj₁ q) = into i q
@@ -325,13 +331,16 @@ module Frozen
 
 -- A rule with no premises: the root and the inputs, and nothing between.
 module Leaf
-  {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (out-root : (i : Inp) → M.Matrix n (iw i))
+  {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (fo-root : Bool)
+  (out-root : (i : Inp) → M.Matrix n (iw i))
   where
 
   E : Graph Inp iw n
   E .Graph.Path = Void
   E .Graph.width ()
+  E .Graph.fo ()
   E .Graph.paths = []
+  E .Graph.fo-root = fo-root
   E .Graph.into i ()
   E .Graph.inside ()
   E .Graph.out = out-root
@@ -347,6 +356,7 @@ module One
   {Inp' : Set ℓ} {iw' : Inp' → ℕ} {n₀ : ℕ} (B : Graph Inp' iw' n₀)
   {n : ℕ}
   (route : Linear iw' iw)
+  (fo-root : Bool)
   (out-root : (i : Inp) → M.Matrix n (iw i))
   (up-root : M.Matrix n n₀)
   where
@@ -354,7 +364,9 @@ module One
   E : Graph Inp iw n
   E .Graph.Path = Path⁺ B
   E .Graph.width = width⁺ B
+  E .Graph.fo = fo⁺ B
   E .Graph.paths = paths⁺ B
+  E .Graph.fo-root = fo-root
   E .Graph.into i q = route .ap (λ i' → into⁺ B i' q) i
   E .Graph.inside = inside⁺ B
   E .Graph.out = out-root
@@ -422,6 +434,7 @@ module Seq
   (route₁ : Linear iw₁ iw)
   (route₂ : Linear iw₂ iw)
   (link : Link iw₂ n₁)
+  (fo-root : Bool)
   (out-root : (i : Inp) → M.Matrix n (iw i))
   (up₁ : M.Matrix n n₁)
   (up₂ : M.Matrix n n₂)
@@ -438,6 +451,7 @@ module Seq
   E : Graph Inp iw n
   E .Graph.Path = Path⁺ B₁ ⊎ Path⁺ B₂
   E .Graph.width = [ width⁺ B₁ , width⁺ B₂ ]
+  E .Graph.fo = [ fo⁺ B₁ , fo⁺ B₂ ]
   E .Graph.paths = map inj₁ (paths⁺ B₁) ++ map inj₂ (paths⁺ B₂)
   E .Graph.into i (inj₁ q) = route₁ .ap (λ i' → into⁺ B₁ i' q) i
   E .Graph.into i (inj₂ q) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
@@ -446,6 +460,7 @@ module Seq
   E .Graph.inside (inj₁ (inj₂ _)) (inj₂ q) = link .at (λ i' → into⁺ B₂ i' q)
   E .Graph.inside (inj₂ p)        (inj₁ q) = M.εₘ
   E .Graph.inside (inj₂ p)        (inj₂ q) = inside⁺ B₂ p q
+  E .Graph.fo-root = fo-root
   E .Graph.out = out-root
   E .Graph.up (inj₁ (inj₁ p)) = M.εₘ
   E .Graph.up (inj₁ (inj₂ _)) = up₁
@@ -603,50 +618,6 @@ module Seq
             (≈-trans (done₂ .S2.tgt-ok root i)
                      (M.+ₘ-cong ≈-refl (∘-cong₂ (Φ₂ .ap-cong κ₂ i))))
 
--- A single premise evaluated in the conclusion's environment.
-module Same
-  {Inp : Set ℓ} {iw : Inp → ℕ} {n₀ n : ℕ} (B : Graph Inp iw n₀)
-  (out-root : (i : Inp) → M.Matrix n (iw i))
-  (up-root : M.Matrix n n₀)
-  where
-
-  private
-    module O = One B (id-linear iw) out-root up-root
-
-  E : Graph Inp iw n
-  E = O.E
-
-  agree : ∀ i → collapse E i ≈ one-result (id-linear iw) out-root up-root (collapse B) i
-  agree = O.agree
-
--- Two premises with no entries between them, both feeding the conclusion's root.
-module Par
-  {Inp : Set ℓ} {iw : Inp → ℕ}
-  {Inp₁ : Set ℓ} {iw₁ : Inp₁ → ℕ} {n₁ : ℕ} (B₁ : Graph Inp₁ iw₁ n₁)
-  {Inp₂ : Set ℓ} {iw₂ : Inp₂ → ℕ} {n₂ : ℕ} (B₂ : Graph Inp₂ iw₂ n₂)
-  {n : ℕ}
-  (route₁ : Linear iw₁ iw)
-  (route₂ : Linear iw₂ iw)
-  (out-root : (i : Inp) → M.Matrix n (iw i))
-  (up₁ : M.Matrix n n₁)
-  (up₂ : M.Matrix n n₂)
-  where
-
-  private
-    module S = Seq B₁ B₂ route₁ route₂ (no-link iw₂ n₁) out-root up₁ up₂
-
-  E : Graph Inp iw n
-  E = S.E
-
-  agree : ∀ i → collapse E i
-                ≈ (one-result route₁ out-root up₁ (collapse B₁) i
-                   M.+ₘ (up₂ ∘ route₂ .ap (collapse B₂) i))
-  agree i =
-    ≈-trans (S.agree i)
-            (M.+ₘ-cong ≈-refl
-                       (∘-cong₂ (M.absorb₁ (route₂ .ap (collapse B₂) i)
-                                           (route₁ .ap (collapse B₁) i))))
-
 -- Three premises in sequence, the third reaching both earlier roots. The first two have no entries
 -- between them.
 module Seq3
@@ -660,6 +631,7 @@ module Seq3
   (route₃ : Linear iw₃ iw)
   (link₁ : Link iw₃ n₁)
   (link₂ : Link iw₃ n₂)
+  (fo-root : Bool)
   (out-root : (i : Inp) → M.Matrix n (iw i))
   (up₁ : M.Matrix n n₁)
   (up₂ : M.Matrix n n₂)
@@ -694,6 +666,7 @@ module Seq3
   E : Graph Inp iw n
   E .Graph.Path = Path⁺ B₁ ⊎ (Path⁺ B₂ ⊎ Path⁺ B₃)
   E .Graph.width = [ width⁺ B₁ , [ width⁺ B₂ , width⁺ B₃ ] ]
+  E .Graph.fo = [ fo⁺ B₁ , [ fo⁺ B₂ , fo⁺ B₃ ] ]
   E .Graph.paths = map inj₁ (paths⁺ B₁)
                 ++ (map (λ q → inj₂ (inj₁ q)) (paths⁺ B₂) ++ map (λ q → inj₂ (inj₂ q)) (paths⁺ B₃))
   E .Graph.into i (inj₁ q)        = route₁ .ap (λ i' → into⁺ B₁ i' q) i
@@ -708,6 +681,7 @@ module Seq3
   E .Graph.inside (inj₂ (inj₂ p)) (inj₂ (inj₁ q)) = M.εₘ
   E .Graph.inside (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) = e₂₃ p q
   E .Graph.inside (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) = inside⁺ B₃ p q
+  E .Graph.fo-root = fo-root
   E .Graph.out = out-root
   E .Graph.up (inj₁ p)        = r₁ p
   E .Graph.up (inj₂ (inj₁ p)) = r₂ p

@@ -1,9 +1,12 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
+import Data.Bool as Bool
+open Bool using (Bool)
 open import Data.Fin using (zero)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (sym)
+open import Relation.Nullary.Decidable using (⌊_⌋)
 open import every using (Every; []; _∷_)
 open import prop-setoid using () renaming (_⇒_ to _⇒ₛ_)
 open import signature using (Signature)
@@ -34,84 +37,88 @@ private
 open import categories using (Category)
 open Category M.cat using (_≈_; ≈-sym; ≈-trans)
 
+-- The value at a vertex is first-order when the type of the subderivation's conclusion is.
+fo-of : ∀ {Δ} (τ : type Δ) → Bool
+fo-of τ = ⌊ first-order? τ ⌋
+
 mutual
   graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] →
           Graph Input (input-width γ) (width v)
-  graph (⇓-var {γ = γ} x) = Leaf.E (var-out x γ)
-  graph (⇓-unit {γ = γ}) = Leaf.E (unit-out γ)
-  graph (⇓-lam {γ = γ} {t = t}) = Leaf.E (lam-out γ t)
-  graph (⇓-inl {γ = γ} {v = v} D) =
-    One.E (graph D) (M.id-linear (input-width γ)) (built-out γ (width v)) (M.in₂ {1})
-  graph (⇓-inr {γ = γ} {v = v} D) =
-    One.E (graph D) (M.id-linear (input-width γ)) (built-out γ (width v)) (M.in₂ {1})
-  graph (⇓-case-l {γ = γ} {v = v} D₁ D₂) =
+  graph {τ = τ} (⇓-var {γ = γ} x) = Leaf.E (fo-of τ) (var-out x γ)
+  graph {τ = τ} (⇓-unit {γ = γ}) = Leaf.E (fo-of τ) (unit-out γ)
+  graph {τ = τ} (⇓-lam {γ = γ} {t = t}) = Leaf.E (fo-of τ) (lam-out γ t)
+  graph {τ = τ} (⇓-inl {γ = γ} {v = v} D) =
+    One.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (built-out γ (width v)) (M.in₂ {1})
+  graph {τ = τ} (⇓-inr {γ = γ} {v = v} D) =
+    One.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (built-out γ (width v)) (M.in₂ {1})
+  graph {τ = τ} (⇓-case-l {γ = γ} {v = v} D₁ D₂) =
     Seq.E (graph D₁) (graph D₂) (M.id-linear (input-width γ)) (branch-route γ v)
-          (branch-link γ v) (λ _ → M.εₘ) M.εₘ M.I
-  graph (⇓-case-r {γ = γ} {v = v} D₁ D₂) =
+          (branch-link γ v) (fo-of τ) (λ _ → M.εₘ) M.εₘ M.I
+  graph {τ = τ} (⇓-case-r {γ = γ} {v = v} D₁ D₂) =
     Seq.E (graph D₁) (graph D₂) (M.id-linear (input-width γ)) (branch-route γ v)
-          (branch-link γ v) (λ _ → M.εₘ) M.εₘ M.I
-  graph (⇓-pair {γ = γ} {v = v} {u = u} D₁ D₂) =
+          (branch-link γ v) (fo-of τ) (λ _ → M.εₘ) M.εₘ M.I
+  graph {τ = τ} (⇓-pair {γ = γ} {v = v} {u = u} D₁ D₂) =
     Seq.E (graph D₁) (graph D₂) (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
-          (M.no-link (input-width γ) (width v)) (built-out γ (width v + width u))
+          (M.no-link (input-width γ) (width v)) (fo-of τ) (built-out γ (width v + width u))
           (M.in₂ {1} M.∘ M.in₁ {width v} {width u}) (M.in₂ {1} M.∘ M.in₂ {width v} {width u})
-  graph (⇓-fst {γ = γ} {v = v} {u = u} D) =
-    One.E (graph D) (M.id-linear (input-width γ)) (elim-out γ (width v))
+  graph {τ = τ} (⇓-fst {γ = γ} {v = v} {u = u} D) =
+    One.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ (width v))
           (proj-up {width v} {width u} (M.p₁ {width v} {width u}))
-  graph (⇓-snd {γ = γ} {v = v} {u = u} D) =
-    One.E (graph D) (M.id-linear (input-width γ)) (elim-out γ (width u))
+  graph {τ = τ} (⇓-snd {γ = γ} {v = v} {u = u} D) =
+    One.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ (width u))
           (proj-up {width v} {width u} (M.p₂ {width v} {width u}))
-  graph (⇓-app {γ = γ} {γ' = γ'} {v = v} D₁ D₂ D₃) =
+  graph {τ = τ} (⇓-app {γ = γ} {γ' = γ'} {v = v} D₁ D₂ D₃) =
     Seq3.E (graph D₁) (graph D₂) (graph D₃) (M.id-linear (input-width γ))
            (M.id-linear (input-width γ)) (body-route γ γ' v) (body-link₁ γ' v) (body-link₂ γ' v)
-           (λ _ → M.εₘ) M.εₘ M.εₘ M.I
-  graph (⇓-bop {γ = γ} {ω = ω} {vs = vs} D) =
-    One.E (graph-s D) (M.id-linear (input-width γ))
+           (fo-of τ) (λ _ → M.εₘ) M.εₘ M.εₘ M.I
+  graph {τ = τ} (⇓-bop {γ = γ} {ω = ω} {vs = vs} D) =
+    One.E (graph-s D) (M.id-linear (input-width γ)) (fo-of τ)
           (prim-out γ (width (const (op-fun ω .func vs)))) (op-deps ω .func vs)
-  graph (⇓-brel {γ = γ} {ω = ω} {vs = vs} D) =
-    One.E (graph-s D) (M.id-linear (input-width γ))
+  graph {τ = τ} (⇓-brel {γ = γ} {ω = ω} {vs = vs} D) =
+    One.E (graph-s D) (M.id-linear (input-width γ)) (fo-of τ)
           (prim-out γ (width (bool→val (rel-pred ω .func vs))))
           (brel-deps ω vs (rel-pred ω .func vs))
-  graph (⇓-roll {γ = γ} D) =
-    One.E (graph D) (M.id-linear (input-width γ)) (λ _ → M.εₘ) M.I
-  graph (⇓-fold {γ = γ} {v = v} D₁ D₂) =
+  graph {τ = τ} (⇓-roll {γ = γ} D) =
+    One.E (graph D) (M.id-linear (input-width γ)) (fo-of τ) (λ _ → M.εₘ) M.I
+  graph {τ = τ} (⇓-fold {γ = γ} {v = v} D₁ D₂) =
     Seq.E (graph D₁) (graph-m D₂) (M.id-linear (input-width γ)) (fold-route γ (width v))
-          (fold-link γ (width v)) (λ _ → M.εₘ) M.εₘ M.I
+          (fold-link γ (width v)) (fo-of τ) (λ _ → M.εₘ) M.εₘ M.I
 
   graph-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
             γ , Ms ⇓s vs [ R ] → Graph Input (input-width γ) (bases-width is)
-  graph-s {γ = γ} [] = Leaf.E (λ _ → M.εₘ)
+  graph-s {γ = γ} [] = Leaf.E Bool.true (λ _ → M.εₘ)
   graph-s {γ = γ} (_∷_ {is = is} {v = v} D₁ D₂) =
     Seq.E (graph D₁) (graph-s D₂) (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
-          (M.no-link (input-width γ) (width (const v))) (λ _ → M.εₘ)
+          (M.no-link (input-width γ) (width (const v))) Bool.true (λ _ → M.εₘ)
           (M.in₁ {width (const v)} {bases-width is}) (M.in₂ {width (const v)} {bases-width is})
 
   graph-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
             Map γ s σ' v v' F → Graph InputM (inputM-width γ (width v)) (width v')
-  graph-m {γ = γ} (m-rec {w = w} {w' = w'} D₁ D₂) =
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-rec {w = w} {w' = w'} D₁ D₂) =
     Seq.E (graph-m D₁) (graph D₂) (M.id-linear (inputM-width γ (width w))) (rec-route γ w')
-          (rec-link γ w') (λ _ → M.εₘ) M.εₘ M.I
-  graph-m {γ = γ} (m-unit {v = v}) = Leaf.E (map-leaf γ (width v))
-  graph-m {γ = γ} (m-base {v = v}) = Leaf.E (map-leaf γ (width v))
-  graph-m {γ = γ} (m-arrow {v = v}) = Leaf.E (map-leaf γ (width v))
-  graph-m {γ = γ} (m-inl {v = v} {v' = v'} D) =
-    One.E (graph-m D) (input-route γ (M.p₂ {1} {width v}))
+          (rec-link γ w') (fo-of (σ' [ σr ])) (λ _ → M.εₘ) M.εₘ M.I
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-unit {v = v}) = Leaf.E (fo-of (σ' [ σr ])) (map-leaf γ (width v))
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-base {v = v}) = Leaf.E (fo-of (σ' [ σr ])) (map-leaf γ (width v))
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-arrow {v = v}) = Leaf.E (fo-of (σ' [ σr ])) (map-leaf γ (width v))
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-inl {v = v} {v' = v'} D) =
+    One.E (graph-m D) (input-route γ (M.p₂ {1} {width v})) (fo-of (σ' [ σr ]))
           (map-built-out γ (width v) (width v')) (M.in₂ {1})
-  graph-m {γ = γ} (m-inr {v = v} {v' = v'} D) =
-    One.E (graph-m D) (input-route γ (M.p₂ {1} {width v}))
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-inr {v = v} {v' = v'} D) =
+    One.E (graph-m D) (input-route γ (M.p₂ {1} {width v})) (fo-of (σ' [ σr ]))
           (map-built-out γ (width v) (width v')) (M.in₂ {1})
-  graph-m {γ = γ} (m-pair {v = v} {v' = v'} {u = u} {u' = u'} D₁ D₂) =
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-pair {v = v} {v' = v'} {u = u} {u' = u'} D₁ D₂) =
     Seq.E (graph-m D₁) (graph-m D₂)
           (input-route γ (M.p₁ {width v} {width u} M.∘ M.p₂ {1} {width v + width u}))
           (input-route γ (M.p₂ {width v} {width u} M.∘ M.p₂ {1} {width v + width u}))
-          (M.no-link (inputM-width γ (width u)) (width v'))
+          (M.no-link (inputM-width γ (width u)) (width v')) (fo-of (σ' [ σr ]))
           (map-built-out γ (width v + width u) (width v' + width u'))
           (M.in₂ {1} M.∘ M.in₁ {width v'} {width u'})
           (M.in₂ {1} M.∘ M.in₂ {width v'} {width u'})
-  graph-m {γ = γ} {τ₀ = τ₀} {σr = σr} (m-mu {τ' = τ'} {w = w} {w' = w'} D) =
+  graph-m {γ = γ} {τ₀ = τ₀} {σr = σr} {σ' = σ'} (m-mu {τ' = τ'} {w = w} {w' = w'} D) =
     One.E (graph-m D)
           (input-route γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I))
-          (λ _ → M.εₘ) (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I)
+          (fo-of (σ' [ σr ])) (λ _ → M.εₘ) (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I)
 
 
 -- Chaining a combinator's collapse law with the induction hypotheses and the round trip through
@@ -160,90 +167,90 @@ private
 mutual
   agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) (i : Input) →
           collapse (graph D) i ≈ cols R i
-  agree (⇓-var {γ = γ} x) i =
-    ≈-trans (Leaf.agree (var-out x γ) i) (≈-sym (cols-of-cols (var-out x γ) i))
-  agree (⇓-unit {γ = γ}) i =
-    ≈-trans (Leaf.agree (unit-out γ) i) (≈-sym (cols-of-cols (unit-out γ) i))
-  agree (⇓-lam {γ = γ} {t = t}) i =
-    ≈-trans (Leaf.agree (lam-out γ t) i) (≈-sym (cols-of-cols (lam-out γ t) i))
-  agree (⇓-inl {γ = γ} {v = v} D) i =
-    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (built-out γ (width v))
+  agree {τ = τ} (⇓-var {γ = γ} x) i =
+    ≈-trans (Leaf.agree (fo-of τ) (var-out x γ) i) (≈-sym (cols-of-cols (var-out x γ) i))
+  agree {τ = τ} (⇓-unit {γ = γ}) i =
+    ≈-trans (Leaf.agree (fo-of τ) (unit-out γ) i) (≈-sym (cols-of-cols (unit-out γ) i))
+  agree {τ = τ} (⇓-lam {γ = γ} {t = t}) i =
+    ≈-trans (Leaf.agree (fo-of τ) (lam-out γ t) i) (≈-sym (cols-of-cols (lam-out γ t) i))
+  agree {τ = τ} (⇓-inl {γ = γ} {v = v} D) i =
+    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (built-out γ (width v))
                        (M.in₂ {1}) i)
             (step-one (M.id-linear (input-width γ)) (built-out γ (width v)) (M.in₂ {1})
                       (agree D) i)
-  agree (⇓-inr {γ = γ} {v = v} D) i =
-    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (built-out γ (width v))
+  agree {τ = τ} (⇓-inr {γ = γ} {v = v} D) i =
+    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (built-out γ (width v))
                        (M.in₂ {1}) i)
             (step-one (M.id-linear (input-width γ)) (built-out γ (width v)) (M.in₂ {1})
                       (agree D) i)
-  agree (⇓-case-l {γ = γ} {v = v} D₁ D₂) i =
+  agree {τ = τ} (⇓-case-l {γ = γ} {v = v} D₁ D₂) i =
     ≈-trans (Seq.agree (graph D₁) (graph D₂) (M.id-linear (input-width γ)) (branch-route γ v)
-                       (branch-link γ v) (λ _ → M.εₘ) M.εₘ M.I i)
+                       (branch-link γ v) (fo-of τ) (λ _ → M.εₘ) M.εₘ M.I i)
             (step-seq (M.id-linear (input-width γ)) (branch-route γ v) (branch-link γ v)
                       (λ _ → M.εₘ) M.εₘ M.I (agree D₁) (agree D₂) i)
-  agree (⇓-case-r {γ = γ} {v = v} D₁ D₂) i =
+  agree {τ = τ} (⇓-case-r {γ = γ} {v = v} D₁ D₂) i =
     ≈-trans (Seq.agree (graph D₁) (graph D₂) (M.id-linear (input-width γ)) (branch-route γ v)
-                       (branch-link γ v) (λ _ → M.εₘ) M.εₘ M.I i)
+                       (branch-link γ v) (fo-of τ) (λ _ → M.εₘ) M.εₘ M.I i)
             (step-seq (M.id-linear (input-width γ)) (branch-route γ v) (branch-link γ v)
                       (λ _ → M.εₘ) M.εₘ M.I (agree D₁) (agree D₂) i)
-  agree (⇓-pair {γ = γ} {v = v} {u = u} D₁ D₂) i =
+  agree {τ = τ} (⇓-pair {γ = γ} {v = v} {u = u} D₁ D₂) i =
     ≈-trans (Seq.agree (graph D₁) (graph D₂) (M.id-linear (input-width γ))
                        (M.id-linear (input-width γ)) (M.no-link (input-width γ) (width v))
-                       (built-out γ (width v + width u))
+                       (fo-of τ) (built-out γ (width v + width u))
                        (M.in₂ {1} M.∘ M.in₁ {width v} {width u})
                        (M.in₂ {1} M.∘ M.in₂ {width v} {width u}) i)
             (step-seq (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
                       (M.no-link (input-width γ) (width v)) (built-out γ (width v + width u))
                       (M.in₂ {1} M.∘ M.in₁ {width v} {width u})
                       (M.in₂ {1} M.∘ M.in₂ {width v} {width u}) (agree D₁) (agree D₂) i)
-  agree (⇓-fst {γ = γ} {v = v} {u = u} D) i =
-    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (elim-out γ (width v))
+  agree {τ = τ} (⇓-fst {γ = γ} {v = v} {u = u} D) i =
+    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ (width v))
                        (proj-up {width v} {width u} (M.p₁ {width v} {width u})) i)
             (step-one (M.id-linear (input-width γ)) (elim-out γ (width v))
                       (proj-up {width v} {width u} (M.p₁ {width v} {width u})) (agree D) i)
-  agree (⇓-snd {γ = γ} {v = v} {u = u} D) i =
-    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (elim-out γ (width u))
+  agree {τ = τ} (⇓-snd {γ = γ} {v = v} {u = u} D) i =
+    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (elim-out γ (width u))
                        (proj-up {width v} {width u} (M.p₂ {width v} {width u})) i)
             (step-one (M.id-linear (input-width γ)) (elim-out γ (width u))
                       (proj-up {width v} {width u} (M.p₂ {width v} {width u})) (agree D) i)
-  agree (⇓-app {γ = γ} {γ' = γ'} {v = v} D₁ D₂ D₃) i =
+  agree {τ = τ} (⇓-app {γ = γ} {γ' = γ'} {v = v} D₁ D₂ D₃) i =
     ≈-trans (Seq3.agree (graph D₁) (graph D₂) (graph D₃) (M.id-linear (input-width γ))
                         (M.id-linear (input-width γ)) (body-route γ γ' v) (body-link₁ γ' v)
-                        (body-link₂ γ' v) (λ _ → M.εₘ) M.εₘ M.εₘ M.I i)
+                        (body-link₂ γ' v) (fo-of τ) (λ _ → M.εₘ) M.εₘ M.εₘ M.I i)
             (step-seq3 (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
                        (body-route γ γ' v) (body-link₁ γ' v) (body-link₂ γ' v)
                        (λ _ → M.εₘ) M.εₘ M.εₘ M.I (agree D₁) (agree D₂) (agree D₃) i)
-  agree (⇓-bop {γ = γ} {ω = ω} {vs = vs} D) i =
+  agree {τ = τ} (⇓-bop {γ = γ} {ω = ω} {vs = vs} D) i =
     ≈-trans (One.agree (graph-s D) (M.id-linear (input-width γ))
-                       (prim-out γ (width (const (op-fun ω .func vs)))) (op-deps ω .func vs) i)
+                       (fo-of τ) (prim-out γ (width (const (op-fun ω .func vs)))) (op-deps ω .func vs) i)
             (step-one (M.id-linear (input-width γ))
                       (prim-out γ (width (const (op-fun ω .func vs)))) (op-deps ω .func vs)
                       (agree-s D) i)
-  agree (⇓-brel {γ = γ} {ω = ω} {vs = vs} D) i =
+  agree {τ = τ} (⇓-brel {γ = γ} {ω = ω} {vs = vs} D) i =
     ≈-trans (One.agree (graph-s D) (M.id-linear (input-width γ))
-                       (prim-out γ (width (bool→val (rel-pred ω .func vs))))
+                       (fo-of τ) (prim-out γ (width (bool→val (rel-pred ω .func vs))))
                        (brel-deps ω vs (rel-pred ω .func vs)) i)
             (step-one (M.id-linear (input-width γ))
                       (prim-out γ (width (bool→val (rel-pred ω .func vs))))
                       (brel-deps ω vs (rel-pred ω .func vs)) (agree-s D) i)
-  agree (⇓-roll {γ = γ} D) i =
-    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (λ _ → M.εₘ) M.I i)
+  agree {τ = τ} (⇓-roll {γ = γ} D) i =
+    ≈-trans (One.agree (graph D) (M.id-linear (input-width γ)) (fo-of τ) (λ _ → M.εₘ) M.I i)
             (step-one (M.id-linear (input-width γ)) (λ _ → M.εₘ) M.I (agree D) i)
-  agree (⇓-fold {γ = γ} {v = v} D₁ D₂) i =
+  agree {τ = τ} (⇓-fold {γ = γ} {v = v} D₁ D₂) i =
     ≈-trans (Seq.agree (graph D₁) (graph-m D₂) (M.id-linear (input-width γ))
-                       (fold-route γ (width v)) (fold-link γ (width v)) (λ _ → M.εₘ) M.εₘ M.I i)
+                       (fold-route γ (width v)) (fold-link γ (width v)) (fo-of τ) (λ _ → M.εₘ) M.εₘ M.I i)
             (step-seq (M.id-linear (input-width γ)) (fold-route γ (width v))
                       (fold-link γ (width v)) (λ _ → M.εₘ) M.εₘ M.I (agree D₁) (agree-m D₂) i)
 
   agree-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
             (D : γ , Ms ⇓s vs [ R ]) (i : Input) → collapse (graph-s D) i ≈ cols R i
   agree-s {γ = γ} [] i =
-    ≈-trans (Leaf.agree {iw = input-width γ} (λ _ → M.εₘ) i)
+    ≈-trans (Leaf.agree {iw = input-width γ} Bool.true (λ _ → M.εₘ) i)
             (≈-sym (cols-of-cols {γ = γ} (λ _ → M.εₘ) i))
   agree-s {γ = γ} (_∷_ {is = is} {v = v} D₁ D₂) i =
     ≈-trans (Seq.agree (graph D₁) (graph-s D₂) (M.id-linear (input-width γ))
                        (M.id-linear (input-width γ)) (M.no-link (input-width γ) (width (const v)))
-                       (λ _ → M.εₘ) (M.in₁ {width (const v)} {bases-width is})
+                       Bool.true (λ _ → M.εₘ) (M.in₁ {width (const v)} {bases-width is})
                        (M.in₂ {width (const v)} {bases-width is}) i)
             (step-seq (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
                       (M.no-link (input-width γ) (width (const v))) (λ _ → M.εₘ)
@@ -253,32 +260,32 @@ mutual
   agree-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F}
             (D : Map γ s σ' v v' F) (i : InputM) → collapse (graph-m D) i ≈ F i
-  agree-m {γ = γ} (m-rec {w = w} {w' = w'} D₁ D₂) i =
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-rec {w = w} {w' = w'} D₁ D₂) i =
     ≈-trans (Seq.agree (graph-m D₁) (graph D₂) (M.id-linear (inputM-width γ (width w)))
-                       (rec-route γ w') (rec-link γ w') (λ _ → M.εₘ) M.εₘ M.I i)
+                       (rec-route γ w') (rec-link γ w') (fo-of (σ' [ σr ])) (λ _ → M.εₘ) M.εₘ M.I i)
             (M.seq-result-cong (M.id-linear (inputM-width γ (width w))) (rec-route γ w')
                                (rec-link γ w') (agree-m D₁) (agree D₂) i)
-  agree-m {γ = γ} (m-unit {v = v}) i = Leaf.agree (map-leaf γ (width v)) i
-  agree-m {γ = γ} (m-base {v = v}) i = Leaf.agree (map-leaf γ (width v)) i
-  agree-m {γ = γ} (m-arrow {v = v}) i = Leaf.agree (map-leaf γ (width v)) i
-  agree-m {γ = γ} (m-inl {v = v} {v' = v'} D) i =
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-unit {v = v}) i = Leaf.agree (fo-of (σ' [ σr ])) (map-leaf γ (width v)) i
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-base {v = v}) i = Leaf.agree (fo-of (σ' [ σr ])) (map-leaf γ (width v)) i
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-arrow {v = v}) i = Leaf.agree (fo-of (σ' [ σr ])) (map-leaf γ (width v)) i
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-inl {v = v} {v' = v'} D) i =
     ≈-trans (One.agree (graph-m D) (input-route γ (M.p₂ {1} {width v}))
-                       (map-built-out γ (width v) (width v')) (M.in₂ {1}) i)
+                       (fo-of (σ' [ σr ])) (map-built-out γ (width v) (width v')) (M.in₂ {1}) i)
             (M.one-result-cong (input-route γ (M.p₂ {1} {width v}))
                                {out = map-built-out γ (width v) (width v')} {up = M.in₂ {1}}
                                (agree-m D) i)
-  agree-m {γ = γ} (m-inr {v = v} {v' = v'} D) i =
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-inr {v = v} {v' = v'} D) i =
     ≈-trans (One.agree (graph-m D) (input-route γ (M.p₂ {1} {width v}))
-                       (map-built-out γ (width v) (width v')) (M.in₂ {1}) i)
+                       (fo-of (σ' [ σr ])) (map-built-out γ (width v) (width v')) (M.in₂ {1}) i)
             (M.one-result-cong (input-route γ (M.p₂ {1} {width v}))
                                {out = map-built-out γ (width v) (width v')} {up = M.in₂ {1}}
                                (agree-m D) i)
-  agree-m {γ = γ} (m-pair {v = v} {v' = v'} {u = u} {u' = u'} D₁ D₂) i =
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-pair {v = v} {v' = v'} {u = u} {u' = u'} D₁ D₂) i =
     ≈-trans (Seq.agree (graph-m D₁) (graph-m D₂)
                        (input-route γ (M.p₁ {width v} {width u} M.∘ M.p₂ {1} {width v + width u}))
                        (input-route γ (M.p₂ {width v} {width u} M.∘ M.p₂ {1} {width v + width u}))
                        (M.no-link (inputM-width γ (width u)) (width v'))
-                       (map-built-out γ (width v + width u) (width v' + width u'))
+                       (fo-of (σ' [ σr ])) (map-built-out γ (width v + width u) (width v' + width u'))
                        (M.in₂ {1} M.∘ M.in₁ {width v'} {width u'})
                        (M.in₂ {1} M.∘ M.in₂ {width v'} {width u'}) i)
             (M.seq-result-cong
@@ -289,10 +296,10 @@ mutual
                {u₁ = M.in₂ {1} M.∘ M.in₁ {width v'} {width u'}}
                {u₂ = M.in₂ {1} M.∘ M.in₂ {width v'} {width u'}}
                (agree-m D₁) (agree-m D₂) i)
-  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} (m-mu {τ' = τ'} {w = w} {w' = w'} D) i =
+  agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {σ' = σ'} (m-mu {τ' = τ'} {w = w} {w' = w'} D) i =
     ≈-trans (One.agree (graph-m D)
                        (input-route γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I))
-                       (λ _ → M.εₘ)
+                       (fo-of (σ' [ σr ])) (λ _ → M.εₘ)
                        (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I) i)
             (M.one-result-cong
                (input-route γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I))
