@@ -24,10 +24,9 @@ open import language-operational.evaluation Sig two.semiring Dep.primitives two.
 open Env
 open Val
 open import language-operational.control Sig two.semiring Dep.primitives two.I
-open import interaction.shape
-open import interaction.graph-algebra
+open import interaction.graph
 open import interaction.dependence-graph Sig Dep.primitives
-open import interaction.config
+open import interaction.moves
 
 γ₀ : Env (emp ▸ base number)
 γ₀ = emp · const 1ℚ

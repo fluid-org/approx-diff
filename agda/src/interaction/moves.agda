@@ -1,7 +1,17 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool as Bool using (Bool; _∨_)
+open import Data.Bool as Bool using (Bool; not; _∧_; _∨_; if_then_else_)
 open import Data.Bool.ListAction using (any)
+open import Data.Nat using (ℕ)
+open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; concat; partitionᵇ; foldr)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Sum using (inj₁; inj₂)
+open import Level using (0ℓ)
+open import Relation.Nullary.Decidable using (⌊_⌋)
+open import list using (any-tabulate-false)
+import matrix
+import two
+open import Data.Bool as Bool using (Bool; _∨_)
 open import Data.Bool.Properties using (∨-comm; ∨-identityʳ)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; foldr; partitionᵇ)
@@ -15,31 +25,161 @@ import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst)
-  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
-open import Data.Nat using (ℕ)
-open import Level using (0ℓ)
 open import Data.Empty using (⊥-elim)
 open import Relation.Nullary.Decidable using (⌊_⌋; yes; no)
 open import list
-import interaction.hide-algebra
-import matrix
-import two
+open import Data.Bool as Bool using (Bool; not; if_then_else_; _∧_; _∨_)
+open import Data.Bool.Properties using (∧-comm)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filterᵇ)
+open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
+import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (↭-length; drop-∷)
+open import Data.Nat using (_≤_; z≤n; s≤s)
+open import Data.Nat.ListAction using (sum)
+open import Data.List.Properties using (concat-++; concat-map; ++-identityʳ; length-map; map-∘)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 
--- The invariant that the stored regions are the regions of the hidden set, each carrying its
--- summary, and the consequences of the invariant for the visible graph: the stored summaries
--- assemble to the summary of the whole hidden set, and hiding and revealing a vertex are mutually
--- inverse up to configuration equivalence.
+-- Configurations of the interaction: a visible set of vertices together with one hidden region per
+-- weakly connected component of the hidden set, each carrying the dependence routed through it as
+-- a summary. The visible graph reads the first-order graph at the visible vertices and the
+-- summaries elsewhere. The hide move merges the regions adjacent to a vertex and the reveal move
+-- splits the region containing one. The moves preserve the invariant that the stored regions are
+-- the regions of the hidden set with their summaries, and are mutually inverse.
 module interaction.moves where
 
-open import interaction.shape
-open import interaction.graph-algebra
-open import interaction.config
+open import interaction.graph
 
 private
   module M = matrix.Mat two.semiring
+
+private
+  is-I : two.Two → Bool
+  is-I two.I = Bool.true
+  is-I two.O = Bool.false
+
+nonzero : ∀ {m n} → M.Matrix m n → Bool
+nonzero {m} {n} R = any (λ i → any (λ j → is-I (R i j)) (allFin n)) (allFin m)
+
+nonzero-O : ∀ {m n} (R : M.Matrix m n) → nonzero R ≡ Bool.false →
+            ∀ i j → R i j ≡ two.O
+nonzero-O {m} {n} R h i j
+  with R i j
+     | any-tabulate-false (λ j' → j') (λ j' → is-I (R i j'))
+         (any-tabulate-false (λ i' → i') (λ i' → any (λ j' → is-I (R i' j')) (allFin n)) h i) j
+... | two.O | _  = ≡-refl
+... | two.I | ()
+
+when : ∀ {m n} → Bool → M.Matrix m n → M.Matrix m n
+when Bool.true  R = R
+when Bool.false R = M.εₘ
+
+-- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
+-- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
+-- summaries is a property the moves preserve.
+record Config {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) : Set₁ where
+  field
+    visible : List (Vertex (Graph.shape B))
+    hidden  : List (List (Vertex (Graph.shape B)) × Entries (vw B))
+
+open Config public
+
+module Interaction {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
+
+  private
+    at : Vertex (Graph.shape B) → V B
+    at p = inj₂ (inj₁ p)
+
+    eq : Vertex (Graph.shape B) → Vertex (Graph.shape B) → Bool
+    eq p q = ⌊ _≟_ {Graph.shape B} p q ⌋
+
+  member : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Bool
+  member p = any (eq p)
+
+  -- Vertices sharing an incident edge, in either direction.
+  adjacent : Entries (vw B) → V B → V B → Bool
+  adjacent G x y = nonzero (G x y) ∨ nonzero (G y x)
+
+  -- Merge into one region the regions adjacent to a vertex, the hide move's merging specialised to
+  -- singletons.
+  merge-region : Entries (vw B) → Vertex (Graph.shape B) → List (List (Vertex (Graph.shape B))) →
+                 List (List (Vertex (Graph.shape B)))
+  merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
+    where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) rss
+
+  -- The regions of a list of paths: the weakly connected components of the subgraph induced by its
+  -- members.
+  regions : Entries (vw B) → List (Vertex (Graph.shape B)) → List (List (Vertex (Graph.shape B)))
+  regions G []       = []
+  regions G (w ∷ ws) = merge-region G w (regions G ws)
+
+  -- The inputs and the root are never hidden, so only an interior vertex can lie in a region.
+  member-vertex : V B → List (Vertex (Graph.shape B)) → Bool
+  member-vertex (inj₁ _)        C = Bool.false
+  member-vertex (inj₂ (inj₁ p)) C = member p C
+  member-vertex (inj₂ (inj₂ _)) C = Bool.false
+
+  -- The dependence relations with an endpoint in the given region, zero elsewhere.
+  restrict : Entries (vw B) → List (Vertex (Graph.shape B)) → Entries (vw B)
+  restrict G C x y = when (member-vertex x C ∨ member-vertex y C) (G x y)
+
+  -- The summary of a hidden region: the dependence routed through it, as relations between the
+  -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
+  -- carried by the summary.
+  summary : List (Vertex (Graph.shape B)) → Entries (vw B)
+  summary C = hide-all (vw B) (restrict (fo-graph B) C) (map at C)
+
+  -- The initial configuration: everything hidden, one summary per region of FO.
+  initial : Config B
+  initial .visible = []
+  initial .hidden  = map (λ C → C , summary C) (regions (fo-graph B) (FO B))
+
+  -- The union of a configuration's hidden regions.
+  hidden-set : Config B → List (Vertex (Graph.shape B))
+  hidden-set K = concat (map proj₁ (K .hidden))
+
+  -- The visible graph: the dependence relations of the first-order graph with neither endpoint
+  -- hidden, together with those of the region summaries, parallel contributions summed.
+  visible-graph : Config B → Entries (vw B)
+  visible-graph K x y =
+    foldr M._+ₘ_
+          (when (not (member-vertex x hs) ∧ not (member-vertex y hs)) (fo-graph B x y))
+          (map (λ CH → proj₂ CH x y) (K .hidden))
+    where hs = hidden-set K
+
+  _+G_ : Entries (vw B) → Entries (vw B) → Entries (vw B)
+  (G +G H) x y = G x y M.+ₘ H x y
+
+  -- The hide move: remove p from the visible set, merge the regions adjacent to p, and hide p in
+  -- the graph assembling p's incident relations in the visible graph with the merged regions'
+  -- summaries.
+  hide-at : Vertex (Graph.shape B) → Config B → Config B
+  hide-at p K .visible = filterᵇ (λ q → not (eq p q)) (K .visible)
+  hide-at p K .hidden  =
+    (p ∷ concat (map proj₁ (proj₁ tp)) , hide (vw B) assembled (at p)) ∷ proj₂ tp
+    where
+      tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph B) (at p) (at q)) (proj₁ CH))
+                      (K .hidden)
+      assembled = foldr _+G_ (restrict (visible-graph K) (p ∷ [])) (map proj₂ (proj₁ tp))
+
+  -- Split a stored region at p: recompute regions and summaries with p removed if the region
+  -- contains p, and leave it alone otherwise.
+  split-region : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) × Entries (vw B) →
+                 List (List (Vertex (Graph.shape B)) × Entries (vw B))
+  split-region p (C , H) =
+    if member p C
+    then map (λ C' → C' , summary C')
+             (regions (fo-graph B) (filterᵇ (λ q → not (eq p q)) C))
+    else (C , H) ∷ []
+
+  -- The reveal move: return p to the visible set and split the region containing it, recomputing
+  -- regions and summaries within that region alone.
+  reveal-at : Vertex (Graph.shape B) → Config B → Config B
+  reveal-at p K .visible = p ∷ K .visible
+  reveal-at p K .hidden  = concat (map (split-region p) (K .hidden))
+
+private
 
   when-O : ∀ (b : Bool) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
            (b ≡ Bool.true → R i j ≡ two.O) → when b R i j ≡ two.O
@@ -83,7 +223,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
   open Interaction 𝒢
 
   private
-    module HA = interaction.hide-algebra.Hide (V 𝒢) (vw 𝒢)
+    module HA = Hide (V 𝒢) (vw 𝒢)
 
     at : Path → V 𝒢
     at p = inj₂ (inj₁ p)
@@ -1087,3 +1227,374 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
                 hide-at p (reveal-at p K) ≈ K
   reveal-hide p K S hp .visible-≈ = ↭-reflexive (reveal-hide-visible p K S hp)
   reveal-hide p K S hp .hidden-≈  = reveal-hide-hidden-set p K S hp
+
+module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
+
+  open Graph 𝒢 using (shape)
+  open Interaction 𝒢
+
+  private
+    at : Vertex shape → V 𝒢
+    at p = inj₂ (inj₁ p)
+
+    eq-path : Vertex shape → Vertex shape → Bool
+    eq-path p q = ⌊ _≟_ {shape} p q ⌋
+
+    eq-path-refl : ∀ (p : Vertex shape) → eq-path p p ≡ Bool.true
+    eq-path-refl p with _≟_ {shape} p p
+    ... | yes _ = ≡-refl
+    ... | no ¬e = ⊥-elim (¬e ≡-refl)
+
+    eq-path-≡ : ∀ {p q : Vertex shape} → eq-path p q ≡ Bool.true → p ≡ q
+    eq-path-≡ {p} {q} h with _≟_ {shape} p q
+    ... | yes e = e
+
+    eq-path-false-sym : ∀ {p q : Vertex shape} → eq-path p q ≡ Bool.false → eq-path q p ≡ Bool.false
+    eq-path-false-sym {p} {q} h with _≟_ {shape} q p
+    ... | no _  = ≡-refl
+    ... | yes e with _≟_ {shape} p q
+    ...   | no ¬e = ⊥-elim (¬e (≡-sym e))
+
+  merge-region-resp : (G : Entries (vw 𝒢)) (w : Vertex shape) {rss rss' : List (List (Vertex shape))} →
+                      rss ↭↭ rss' → merge-region G w rss ↭↭ merge-region G w rss'
+  merge-region-resp G w {rss} {rss'} p =
+    H.prep (↭.prep w (concat-resp (proj₁ tp-p))) (proj₂ tp-p)
+    where
+    tp-p = partition-permᴿ (any (λ q → adjacent G (at w) (at q)))
+                           (λ {C} {C'} pc → any-perm (λ q → adjacent G (at w) (at q)) pc)
+                           p
+
+  private
+    adj : (G : Entries (vw 𝒢)) (w : Vertex shape) → List (Vertex shape) → Bool
+    adj G w C = any (λ q → adjacent G (at w) (at q)) C
+
+    merge-region-filter : (G : Entries (vw 𝒢)) (w : Vertex shape) (rss : List (List (Vertex shape))) →
+                          merge-region G w rss ≡
+                          ((w ∷ concat (filterᵇ (adj G w) rss)) ∷
+                           filterᵇ (λ C → not (adj G w C)) rss)
+    merge-region-filter G w rss =
+      ≡-cong (λ u → (w ∷ concat (proj₁ u)) ∷ proj₂ u) (partition-filter (adj G w) rss)
+
+  -- Merging two vertices commutes: if they are adjacent or share an adjacent region both orders
+  -- produce the one merged region, and otherwise the merges are independent.
+  merge-region-comm : (G : Entries (vw 𝒢)) (w w' : Vertex shape) (rss : List (List (Vertex shape))) →
+                      merge-region G w (merge-region G w' rss) ↭↭
+                      merge-region G w' (merge-region G w rss)
+  merge-region-comm G w w' rss =
+    subst₂ _↭↭_
+      (≡-sym (≡-trans (≡-cong (merge-region G w) (merge-region-filter G w' rss))
+                      (merge-region-filter G w ((w' ∷ concat F') ∷ N'))))
+      (≡-sym (≡-trans (≡-cong (merge-region G w') (merge-region-filter G w rss))
+                      (merge-region-filter G w' ((w ∷ concat F) ∷ N))))
+      (bool-case b true-branch false-branch)
+    where
+    A  = adj G w
+    A' = adj G w'
+    F  = filterᵇ A rss
+    F' = filterᵇ A' rss
+    N  = filterᵇ (λ C → not (A C)) rss
+    N' = filterᵇ (λ C → not (A' C)) rss
+
+    b  = A (w' ∷ concat F')
+
+    beq : b ≡ A' (w ∷ concat F)
+    beq =
+      ≡-cong₂ _∨_ (adjacent-sym 𝒢 G (at w) (at w'))
+        (≡-trans (any-concat (λ q → adjacent G (at w) (at q)) F')
+        (≡-trans (any-filterᵇ-∧ A A' rss)
+        (≡-trans (any-cong (λ C → ∧-comm (A' C) (A C)) rss)
+        (≡-sym (≡-trans (any-concat (λ q → adjacent G (at w') (at q)) F)
+                        (any-filterᵇ-∧ A' A rss))))))
+
+    Goal : Set
+    Goal = ((w ∷ concat (filterᵇ A ((w' ∷ concat F') ∷ N'))) ∷
+            filterᵇ (λ C → not (A C)) ((w' ∷ concat F') ∷ N'))
+           ↭↭
+           ((w' ∷ concat (filterᵇ A' ((w ∷ concat F) ∷ N))) ∷
+            filterᵇ (λ C → not (A' C)) ((w ∷ concat F) ∷ N))
+
+    untouched : filterᵇ (λ C → not (A C)) N' ↭↭ filterᵇ (λ C → not (A' C)) N
+    untouched = subst (λ z → filterᵇ (λ C → not (A C)) N' ↭↭ z)
+                      (filter-comm (λ C → not (A C)) (λ C → not (A' C)) rss)
+                      ↭↭-refl
+
+    true-branch : b ≡ Bool.true → Goal
+    true-branch eb =
+      subst₂ _↭↭_
+        (≡-sym (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
+                  (filter-head-true {f = A} {x = w' ∷ concat F'} N' eb)
+                  (filter-head-false {x = w' ∷ concat F'} N' (≡-cong not eb))))
+        (≡-sym (≡-cong₂ (λ u v → (w' ∷ concat u) ∷ v)
+                  (filter-head-true {f = A'} {x = w ∷ concat F} N (≡-trans (≡-sym beq) eb))
+                  (filter-head-false {x = w ∷ concat F} N
+                                     (≡-cong not (≡-trans (≡-sym beq) eb)))))
+        (H.prep
+          (↭.swap w w'
+            (↭-trans (↭-reflexive (concat-++ F' (filterᵇ A N')))
+            (↭-trans (concat-resp (↭↭-of-↭ (filter-exchange A A' rss)))
+                     (↭-reflexive (≡-sym (concat-++ F (filterᵇ A' N)))))))
+          untouched)
+
+    false-branch : b ≡ Bool.false → Goal
+    false-branch eb =
+      subst₂ _↭↭_
+        (≡-sym (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
+                  (filter-head-false {f = A} {x = w' ∷ concat F'} N' eb)
+                  (filter-head-true {x = w' ∷ concat F'} N' (≡-cong not eb))))
+        (≡-sym (≡-cong₂ (λ u v → (w' ∷ concat u) ∷ v)
+                  (filter-head-false {f = A'} {x = w ∷ concat F} N (≡-trans (≡-sym beq) eb))
+                  (filter-head-true {x = w ∷ concat F} N
+                                    (≡-cong not (≡-trans (≡-sym beq) eb)))))
+        (H.swap
+          (↭-reflexive (≡-cong (λ z → w ∷ concat z) (filter-avoid A A' rss hb)))
+          (↭-reflexive (≡-cong (λ z → w' ∷ concat z) (≡-sym (filter-avoid A' A rss hb'))))
+          untouched)
+      where
+      hb : any (λ C → A' C ∧ A C) rss ≡ Bool.false
+      hb = ≡-trans (≡-sym (≡-trans (any-concat (λ q → adjacent G (at w) (at q)) F')
+                                   (any-filterᵇ-∧ A A' rss)))
+                   (proj₂ (∨-false (adjacent G (at w) (at w'))
+                                   (any (λ q → adjacent G (at w) (at q)) (concat F')) eb))
+
+      hb' : any (λ C → A C ∧ A' C) rss ≡ Bool.false
+      hb' = ≡-trans (any-cong (λ C → ∧-comm (A C) (A' C)) rss) hb
+
+  -- Regions are insensitive to the order in which their vertices are enumerated.
+  regions-perm : (G : Entries (vw 𝒢)) {ws ws' : List (Vertex shape)} → ws ↭ ws' →
+                 regions G ws ↭↭ regions G ws'
+  regions-perm G ↭.refl         = ↭↭-refl
+  regions-perm G (↭.prep w p)   = merge-region-resp G w (regions-perm G p)
+  regions-perm G (↭.swap {xs = ws₁} {ys = ws₂} w w' p) =
+    H.trans (merge-region-resp G w (merge-region-resp G w' (regions-perm G p)))
+            (merge-region-comm G w w' (regions G ws₂))
+  regions-perm G (↭.trans p q)  = H.trans (regions-perm G p) (regions-perm G q)
+
+  private
+    stored≡ : map proj₁ (initial .hidden) ≡ regions (fo-graph 𝒢) (FO 𝒢)
+    stored≡ = map-proj₁-pair summary (regions (fo-graph 𝒢) (FO 𝒢))
+
+  initial-summarised : Summarised 𝒢 (initial)
+  initial-summarised .partition =
+    subst (λ z → concat z ↭ FO 𝒢) (≡-sym stored≡) (regions-concat 𝒢 (fo-graph 𝒢) (FO 𝒢))
+  initial-summarised .canonical =
+    subst (λ z → z ↭↭ regions (fo-graph 𝒢) (concat z))
+          (≡-sym stored≡)
+          (regions-perm (fo-graph 𝒢) (↭-sym (regions-concat 𝒢 (fo-graph 𝒢) (FO 𝒢))))
+  initial-summarised .summaries =
+    AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph 𝒢) (FO 𝒢)))
+
+  hide-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised 𝒢 K) →
+                       member p (K .visible) ≡ Bool.true →
+                       Summarised 𝒢 (hide-at p K)
+  hide-at-summarised p K S pv .partition = hide-at-partition 𝒢 p K S pv
+  hide-at-summarised p K S pv .canonical =
+    subst (λ z → z ↭↭ regions (fo-graph 𝒢) (hidden-set (hide-at p K)))
+          lhs-eq
+          (H.trans (merge-region-resp (fo-graph 𝒢) p (S .canonical))
+                   (H.sym ↭-sym (regions-perm (fo-graph 𝒢) (hide-at-hidden-set 𝒢 p K))))
+    where
+    lhs-eq : merge-region (fo-graph 𝒢) p (map proj₁ (K .hidden)) ≡
+             map proj₁ (hide-at p K .hidden)
+    lhs-eq = ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
+               (map-partition₁ proj₁ (adj (fo-graph 𝒢) p) (K .hidden))
+               (map-partition₂ proj₁ (adj (fo-graph 𝒢) p) (K .hidden))
+  hide-at-summarised p K S pv .summaries = hide-at-summaries 𝒢 p K S pv
+
+  private
+    ↭↭-of-≡ : {xss yss : List (List (Vertex shape))} → xss ≡ yss → xss ↭↭ yss
+    ↭↭-of-≡ ≡-refl = ↭↭-refl
+
+    -- Each region of ws lies inside ws.
+    regions-⊆ : (G : Entries (vw 𝒢)) (ws : List (Vertex shape)) →
+                All (λ C → ∀ q → member q C ≡ Bool.true → member q ws ≡ Bool.true)
+                    (regions G ws)
+    regions-⊆ G ws =
+      All-map (λ {C} inc q h → ≡-trans (≡-sym (member-perm 𝒢 q (regions-concat 𝒢 G ws))) (inc q h))
+              (blocks-⊆ 𝒢 (regions G ws))
+
+    -- Merging a vertex with no adjacency into a suffix of regions leaves the suffix alone.
+    merge-region-inert : (G : Entries (vw 𝒢)) (w : Vertex shape) (X Y : List (List (Vertex shape))) →
+                         All (λ C → adj G w C ≡ Bool.false) Y →
+                         merge-region G w (X ++ Y) ≡ merge-region G w X ++ Y
+    merge-region-inert G w X Y h =
+      ≡-trans (merge-region-filter G w (X ++ Y))
+      (≡-trans (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
+                 (≡-trans (filter-++ (adj G w) X Y)
+                 (≡-trans (≡-cong (filterᵇ (adj G w) X ++_) (filter-none h))
+                          (++-identityʳ (filterᵇ (adj G w) X))))
+                 (≡-trans (filter-++ (λ C → not (adj G w C)) X Y)
+                          (≡-cong (filterᵇ (λ C → not (adj G w C)) X ++_)
+                                  (filter-all-true (All-map (λ e → ≡-cong not e) h)))))
+               (≡-cong (_++ Y) (≡-sym (merge-region-filter G w X))))
+
+  -- Regions distribute over a concatenation with an apart suffix: no merge crosses the boundary.
+  regions-apart : (G : Entries (vw 𝒢)) (B rest : List (Vertex shape)) → Apart 𝒢 G B rest →
+                  regions G (B ++ rest) ↭↭ (regions G B ++ regions G rest)
+  regions-apart G []      rest ap = ↭↭-refl
+  regions-apart G (b ∷ B) rest ap with ∨-false (any (λ q' → adjacent G (at b) (at q')) rest)
+                                             (any (λ q → any (λ q' → adjacent G (at q) (at q')) rest) B)
+                                             ap
+  ... | (hb , hB) =
+    H.trans (merge-region-resp G b (regions-apart G B rest hB))
+            (↭↭-of-≡ (merge-region-inert G b (regions G B) (regions G rest)
+              (All-map (λ {C} inc →
+                 any-false (All-map (λ {q} mq →
+                              member-All {eq = eq-path} eq-path-≡ {x = q}
+                                (any-false-All _ rest hb) (inc q mq))
+                            (any-self eq-path-refl C)))
+                (regions-⊆ G rest))))
+
+  private
+    apart-concat : {G : Entries (vw 𝒢)} {C : List (Vertex shape)} {Cs : List (List (Vertex shape))} →
+                   All (Apart 𝒢 G C) Cs → Apart 𝒢 G C (concat Cs)
+    apart-concat {G = G} {C} {Cs} aps =
+      ≡-trans (any-cong (λ q → any-concat (λ q' → adjacent G (at q) (at q')) Cs) C)
+      (≡-trans (any-comm (λ q C' → any (λ q' → adjacent G (at q) (at q')) C') C Cs)
+               (any-false aps))
+
+    regions-nonempty : (G : Entries (vw 𝒢)) (ws : List (Vertex shape)) →
+                       All (λ C → 1 ≤ length C) (regions G ws)
+    regions-nonempty G []       = []
+    regions-nonempty G (w ∷ ws) =
+      s≤s z≤n ∷ proj₂ (partition-All (adj G w) (regions-nonempty G ws))
+
+  -- Regions of a concatenation of pairwise-apart blocks are the blocks' regions.
+  regions-apart-concat : {G : Entries (vw 𝒢)} {Cs : List (List (Vertex shape))} →
+                         AllPairs (Apart 𝒢 G) Cs →
+                         regions G (concat Cs) ↭↭ concat (map (regions G) Cs)
+  regions-apart-concat {G = G}           []                    = ↭↭-refl
+  regions-apart-concat {G = G} {C ∷ Cs} (aps ∷ pairs) =
+    H.trans (regions-apart G C (concat Cs) (apart-concat {G = G} {C = C} {Cs = Cs} aps))
+            (↭↭-++⁺ ↭↭-refl (regions-apart-concat pairs))
+
+  -- Each stored region of a summarised configuration is a single region: distribution
+  -- makes the stored list a permutation of the per-block regions, and a permutation preserves
+  -- length while every nonempty block contributes at least one region.
+  blocks-one-region : (K : Config 𝒢) → Summarised 𝒢 K →
+                      All (λ C → regions (fo-graph 𝒢) C ↭↭ (C ∷ []))
+                          (map proj₁ (K .hidden))
+  blocks-one-region K S = All-map (λ {C} e → one {C} e) lens1
+    where
+    G  = fo-graph 𝒢
+    Cs = map proj₁ (K .hidden)
+
+    perm2 : Cs ↭↭ concat (map (regions G) Cs)
+    perm2 = H.trans (S .canonical) (regions-apart-concat (separated 𝒢 S))
+
+    nonempty : All (λ C → 1 ≤ length C) Cs
+    nonempty = perm-All (λ {C} {C'} pc h → subst (1 ≤_) (↭-length pc) h)
+                        (H.sym ↭-sym (S .canonical))
+                        (regions-nonempty G (hidden-set K))
+
+    len-regions : ∀ (C : List (Vertex shape)) → 1 ≤ length C → 1 ≤ length (regions G C)
+    len-regions (q ∷ C') _ = s≤s z≤n
+
+    atleast : All (λ C → 1 ≤ length (regions G C)) Cs
+    atleast = All-map (λ {C} h → len-regions C h) nonempty
+
+    lens-eq : sum (map (λ C → length (regions G C)) Cs) ≡
+              length (map (λ C → length (regions G C)) Cs)
+    lens-eq =
+      ≡-trans (≡-cong sum (map-∘ {g = length} {f = regions G} Cs))
+      (≡-trans (≡-sym (length-concat (map (regions G) Cs)))
+      (≡-trans (≡-sym (perm-length perm2))
+               (≡-sym (length-map (λ C → length (regions G C)) Cs))))
+
+    lens1 : All (λ C → length (regions G C) ≡ 1) Cs
+    lens1 = AllP.map⁻ (sum-ones (AllP.map⁺ atleast) lens-eq)
+
+    one : ∀ {C : List (Vertex shape)} → length (regions G C) ≡ 1 → regions G C ↭↭ (C ∷ [])
+    one {C} e with singleton (regions G C) e
+    ... | (C₀ , eq) =
+      subst (_↭↭ (C ∷ [])) (≡-sym eq)
+            (H.prep (↭-trans (↭-reflexive (≡-sym (++-identityʳ C₀)))
+                             (subst (λ z → concat z ↭ C) eq (regions-concat 𝒢 G C)))
+                    (H.refl []))
+
+  -- The reveal move preserves correct summarisation: splitting the region containing p computes the
+  -- regions of the hidden set with p removed, block by block.
+  reveal-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised 𝒢 K) →
+                         member p (hidden-set K) ≡ Bool.true →
+                         Summarised 𝒢 (reveal-at p K)
+  reveal-at-summarised p K S hp .partition = reveal-at-partition 𝒢 p K S hp
+  reveal-at-summarised p K S hp .summaries = reveal-at-summaries 𝒢 p K S hp
+  reveal-at-summarised p K S hp .canonical =
+    subst (λ z → z ↭↭ regions G (hidden-set (reveal-at p K)))
+          (≡-trans (≡-cong concat (map-∘ {g = map proj₁} {f = split-region p} (K .hidden)))
+                   (concat-map {f = proj₁} (map (split-region p) (K .hidden))))
+          (H.trans blocks-part
+          (H.trans (↭↭-of-≡ (≡-cong concat maps-eq))
+          (H.trans (H.sym ↭.↭-sym (regions-apart-concat {G = G} apart-filtered))
+          (H.trans (↭↭-of-≡ (≡-cong (regions G) (≡-sym (filter-concat notp Cs))))
+                   (H.sym ↭.↭-sym (regions-perm G hrev))))))
+    where
+    G    = fo-graph 𝒢
+    Cs   = map proj₁ (K .hidden)
+    notp = λ q → not (eq-path p q)
+
+    vis-hid-distinct : AllPairs (λ q q' → eq-path q q' ≡ Bool.false)
+                               (K .visible ++ hidden-set K)
+    vis-hid-distinct =
+      AllPairs-perm (λ {q} {q'} h → eq-path-false-sym {p = q} {q = q'} h)
+                    (↭.↭-sym (S .partition)) (FO-distinct 𝒢)
+
+    distinct-hs : AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (hidden-set K)
+    distinct-hs = proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) vis-hid-distinct))
+
+    hrev : hidden-set (reveal-at p K) ↭ filterᵇ notp (hidden-set K)
+    hrev = drop-∷
+      (↭-trans (reveal-set 𝒢 p (K .hidden) distinct-hs
+                  (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
+                           (≡-trans (≡-sym (any-concat (eq-path p) Cs)) hp)))
+               (↭.↭-sym (filter-out-↭ {eq = eq-path}
+                          (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
+                          distinct-hs hp)))
+
+    apart-filtered : AllPairs (Apart 𝒢 G) (map (filterᵇ notp) Cs)
+    apart-filtered =
+      AllPairsP.map⁺
+        (AllPairs-map (λ {C} {C'} ap →
+                         Apart-mono 𝒢 {G = G} {C₁ = filterᵇ notp C} {C₂ = filterᵇ notp C'}
+                                    {C₁' = C} {C₂' = C'}
+                                    (λ q h → any-filterᵇ (eq-path q) notp C h)
+                                    (λ q h → any-filterᵇ (eq-path q) notp C' h)
+                                    ap)
+                      (separated 𝒢 S))
+
+    maps-eq : map (λ CH → regions G (filterᵇ notp (proj₁ CH))) (K .hidden) ≡
+              map (regions G) (map (filterᵇ notp) Cs)
+    maps-eq =
+      ≡-trans (map-∘ {g = λ C → regions G (filterᵇ notp C)} {f = proj₁} (K .hidden))
+              (map-∘ {g = regions G} {f = filterᵇ notp} Cs)
+
+    split-true : ∀ C (H' : Entries (vw 𝒢)) → member p C ≡ Bool.true →
+                 split-region p (C , H') ≡
+                 map (λ C' → C' , summary C') (regions G (filterᵇ notp C))
+    split-true C H' e =
+      ≡-cong (λ b → if b then map (λ C' → C' , summary C') (regions G (filterᵇ notp C))
+                         else (C , H') ∷ []) e
+
+    split-false : ∀ C (H' : Entries (vw 𝒢)) → member p C ≡ Bool.false →
+                  split-region p (C , H') ≡ (C , H') ∷ []
+    split-false C H' e =
+      ≡-cong (λ b → if b then map (λ C' → C' , summary C') (regions G (filterᵇ notp C))
+                         else (C , H') ∷ []) e
+
+    per-block : ∀ CH → regions G (proj₁ CH) ↭↭ (proj₁ CH ∷ []) →
+                map proj₁ (split-region p CH) ↭↭ regions G (filterᵇ notp (proj₁ CH))
+    per-block (C , H') one =
+      bool-case (member p C)
+        (λ e → ↭↭-of-≡ (≡-trans (≡-cong (map proj₁) (split-true C H' e))
+                                (map-proj₁-pair summary (regions G (filterᵇ notp C)))))
+        (λ e → subst₂ _↭↭_
+                 (≡-sym (≡-cong (map proj₁) (split-false C H' e)))
+                 (≡-sym (≡-cong (regions G)
+                          (filter-all-true (All-map (λ h → ≡-cong not h)
+                                                    (any-false-All _ C e)))))
+                 (H.sym ↭.↭-sym one))
+
+    blocks-part : concat (map (λ CH → map proj₁ (split-region p CH)) (K .hidden)) ↭↭
+                  concat (map (λ CH → regions G (filterᵇ notp (proj₁ CH))) (K .hidden))
+    blocks-part =
+      concat-↭↭ (All-map (λ {CH} one → per-block CH one)
+                         (AllP.map⁻ (blocks-one-region K S)))

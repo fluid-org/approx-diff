@@ -4,7 +4,7 @@ open import Data.Bool using (Bool; true; not)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
@@ -17,18 +17,17 @@ open import Data.Unit using (tt) renaming (⊤ to Unit)
 
 open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
-  renaming (refl to ≡-refl; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary.Decidable using (yes)
 import Data.Sum.Properties as SumP
 open import basics using (IsStrictOrder)
-open import interaction.shape
 import matrix
 import two
 
 -- A dependence graph as a value rather than a family indexed by a derivation: a graph is a set of
 -- interior vertices with widths, a distinguished root of given width, and the entries between them.
 -- The root has no outgoing entries, so it is a sink by construction.
-module interaction.graph-algebra where
+module interaction.graph where
 
 private
   module M = matrix.Mat two.semiring
@@ -36,8 +35,139 @@ private
 open M using (Linear; Link; ap; ap-+; ap-∘; ap-cong; at; at-+; at-∘; at-cong;
               id-linear; no-link; extend; rule₁-result; rule₂-result; rule₃-result)
 
+open two using (Two; O; I; _⊔_; ⊔-idem; ⊔-comm; ⊔-runit; ⊔-assoc)
 open import categories using (Category)
 open Category M.cat using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; ≈-refl; ≈-sym; ≈-trans)
+
+-- The branching of a derivation, and the paths into it. A vertex names a premise and then either
+-- descends into it or stops at its result, so the vertices of a rule are its premises' vertices
+-- with each premise's result adjoined.
+data Shape : Set where
+  node : List Shape → Shape
+
+data Root : Set where
+  root : Root
+
+mutual
+  Vertex : Shape → Set
+  Vertex (node ss) = Vertices ss
+
+  Vertices : List Shape → Set
+  Vertices []           = ⊥
+  Vertices (s ∷ [])     = Vertex s ⊎ Root
+  Vertices (s ∷ t ∷ ss) = (Vertex s ⊎ Root) ⊎ Vertices (t ∷ ss)
+
+root-≟ : DecidableEquality Root
+root-≟ root root = yes ≡-refl
+
+mutual
+  _≟_ : ∀ {s} → DecidableEquality (Vertex s)
+  _≟_ {node ss} = _≟s_ {ss}
+
+  _≟s_ : ∀ {ss} → DecidableEquality (Vertices ss)
+  _≟s_ {s ∷ []}     = SumP.≡-dec (_≟_ {s}) root-≟
+  _≟s_ {s ∷ t ∷ ss} = SumP.≡-dec (SumP.≡-dec (_≟_ {s}) root-≟) (_≟s_ {t ∷ ss})
+
+-- The vertices of a shape, each premise's result first, then its interior, then the premises after
+-- it. This fixes the order in which they are hidden.
+mutual
+  vertices : (s : Shape) → List (Vertex s)
+  vertices (node ss) = vertices-of ss
+
+  vertices-of : (ss : List Shape) → List (Vertices ss)
+  vertices-of []           = []
+  vertices-of (s ∷ [])     = inj₂ root ∷ map inj₁ (vertices s)
+  vertices-of (s ∷ t ∷ ss) =
+    map inj₁ (inj₂ root ∷ map inj₁ (vertices s)) ++ map inj₂ (vertices-of (t ∷ ss))
+
+private
+  sum-distinct : {A B : Set} {xs : List A} {ys : List B} →
+                 AllPairs _≢_ xs → AllPairs _≢_ ys →
+                 AllPairs _≢_ (map inj₁ xs ++ map inj₂ ys)
+  sum-distinct {xs = xs} {ys = ys} dx dy =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) dx))
+                  (AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₂-injective e)) dy))
+                  (AllP.map⁺ (universal (λ _ → AllP.map⁺ (universal (λ _ ()) ys)) xs))
+
+mutual
+  distinct : (s : Shape) → AllPairs _≢_ (vertices s)
+  distinct (node ss) = distinct-of ss
+
+  distinct-of : (ss : List Shape) → AllPairs _≢_ (vertices-of ss)
+  distinct-of []           = []
+  distinct-of (s ∷ [])     =
+    AllP.map⁺ (universal (λ _ ()) (vertices s))
+    ∷ AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) (distinct s))
+  distinct-of (s ∷ t ∷ ss) =
+    sum-distinct (AllP.map⁺ (universal (λ _ ()) (vertices s))
+                  ∷ AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) (distinct s)))
+                 (distinct-of (t ∷ ss))
+
+-- The completion order: a premise's interior before its result, and every premise before those
+-- after it. The shape is explicit, since it cannot be recovered from a vertex.
+mutual
+  lt : (s : Shape) → Vertex s → Vertex s → Set
+  lt (node ss) = lts ss
+
+  lts : (ss : List Shape) → Vertices ss → Vertices ss → Set
+  lts (s ∷ [])     (inj₁ u)        (inj₁ v)        = lt s u v
+  lts (s ∷ [])     (inj₁ _)        (inj₂ _)        = Unit
+  lts (s ∷ [])     (inj₂ _)        _               = ⊥
+  lts (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) = lt s u v
+  lts (s ∷ t ∷ ss) (inj₁ (inj₁ _)) (inj₁ (inj₂ _)) = Unit
+  lts (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₁ _)        = ⊥
+  lts (s ∷ t ∷ ss) (inj₁ _)        (inj₂ _)        = Unit
+  lts (s ∷ t ∷ ss) (inj₂ _)        (inj₁ _)        = ⊥
+  lts (s ∷ t ∷ ss) (inj₂ u)        (inj₂ v)        = lts (t ∷ ss) u v
+
+mutual
+  lt-trans : (s : Shape) (u v w : Vertex s) → lt s u v → lt s v w → lt s u w
+  lt-trans (node ss) = lts-trans ss
+
+  lts-trans : (ss : List Shape) (u v w : Vertices ss) → lts ss u v → lts ss v w → lts ss u w
+  lts-trans (s ∷ [])     (inj₁ u)        (inj₁ v)        (inj₁ w)        a b = lt-trans s u v w a b
+  lts-trans (s ∷ [])     (inj₁ u)        (inj₁ v)        (inj₂ _)        a b = tt
+  lts-trans (s ∷ [])     (inj₁ u)        (inj₂ _)        w               a ()
+  lts-trans (s ∷ [])     (inj₂ _)        v               w               () b
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) (inj₁ (inj₁ w)) a b = lt-trans s u v w a b
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) (inj₁ (inj₂ _)) a b = tt
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) (inj₂ _)        a b = tt
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₂ _)) (inj₁ _)        a ()
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₂ _)) (inj₂ _)        a b = tt
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₂ _)        (inj₁ _)        a ()
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₂ _)        (inj₂ _)        a b = tt
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₁ _)        w               () b
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₂ _)        (inj₁ _)        a ()
+  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₂ _)        (inj₂ _)        a b = tt
+  lts-trans (s ∷ t ∷ ss) (inj₂ _)        (inj₁ _)        w               () b
+  lts-trans (s ∷ t ∷ ss) (inj₂ _)        (inj₂ _)        (inj₁ _)        a ()
+  lts-trans (s ∷ t ∷ ss) (inj₂ u)        (inj₂ v)        (inj₂ w)        a b =
+    lts-trans (t ∷ ss) u v w a b
+
+mutual
+  lt-asym : (s : Shape) (u v : Vertex s) → lt s u v → lt s v u → ⊥
+  lt-asym (node ss) = lts-asym ss
+
+  lts-asym : (ss : List Shape) (u v : Vertices ss) → lts ss u v → lts ss v u → ⊥
+  lts-asym (s ∷ [])     (inj₁ u)        (inj₁ v)        a b = lt-asym s u v a b
+  lts-asym (s ∷ [])     (inj₁ _)        (inj₂ _)        a ()
+  lts-asym (s ∷ [])     (inj₂ _)        v               () b
+  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) a b = lt-asym s u v a b
+  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₁ _)) (inj₁ (inj₂ _)) a ()
+  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₁ _)) (inj₂ _)        a ()
+  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₁ _)        () b
+  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₂ _)        a ()
+  lts-asym (s ∷ t ∷ ss) (inj₂ _)        (inj₁ _)        () b
+  lts-asym (s ∷ t ∷ ss) (inj₂ u)        (inj₂ v)        a b = lts-asym (t ∷ ss) u v a b
+
+lt-order : (s : Shape) → IsStrictOrder (lt s)
+lt-order s .IsStrictOrder.trans = lt-trans s
+lt-order s .IsStrictOrder.asym = lt-asym s
+
+lts-order : (ss : List Shape) → IsStrictOrder (lts ss)
+lts-order ss .IsStrictOrder.trans = lts-trans ss
+lts-order ss .IsStrictOrder.asym = lts-asym ss
+
 
 ≈-of-≡ : ∀ {m n} {X Y : M.Matrix m n} → X ≡ Y → X ≈ Y
 ≈-of-≡ ≡-refl = ≈-refl
@@ -120,6 +250,158 @@ hide-all-++ : {V : Set} (vw : V → ℕ) (G : Entries vw) (xs ys : List V) →
               hide-all vw G (xs ++ ys) ≡ hide-all vw (hide-all vw G xs) ys
 hide-all-++ vw G []       ys = ≡-refl
 hide-all-++ vw G (x ∷ xs) ys = hide-all-++ vw (hide vw G x) xs ys
+
+-- Entrywise laws for hiding a list of vertices on graphs that agree on the hidden rows and
+-- columns. No rank or forwardness is assumed.
+module Hide (V : Set) (w : V → ℕ) where
+  Gr : Set
+  Gr = Entries w
+
+  h : Gr → V → Gr
+  h = hide w
+
+  _≈g_ : Gr → Gr → Set
+  G ≈g G' = ∀ x y (i : Fin (w y)) (j : Fin (w x)) → G x y i j ≡ G' x y i j
+
+  private
+    ⊔-absorbˡ : ∀ a b → (a ⊔ (a ⊔ b)) ≡ (a ⊔ b)
+    ⊔-absorbˡ O b = ≡-refl
+    ⊔-absorbˡ I b = ≡-refl
+
+    ⊔-absorbʳ : ∀ a b → (a ⊔ (b ⊔ a)) ≡ (b ⊔ a)
+    ⊔-absorbʳ O b = ≡-refl
+    ⊔-absorbʳ I O = ≡-refl
+    ⊔-absorbʳ I I = ≡-refl
+
+    absorb-mono : ∀ x y z → x ≡ (y ⊔ x) → (z ⊔ y) ≡ y → x ≡ (z ⊔ x)
+    absorb-mono x y O p q = ≡-refl
+    absorb-mono x O I p ()
+    absorb-mono x I I p ≡-refl = p
+
+    ⊔-shift : ∀ a s c → ((a ⊔ s) ⊔ c) ≡ ((a ⊔ c) ⊔ s)
+    ⊔-shift O s c = ⊔-comm s c
+    ⊔-shift I s c = ≡-refl
+
+    ⊔-insert : ∀ a b c → (a ⊔ b) ≡ b → (b ⊔ c) ≡ (b ⊔ (a ⊔ c))
+    ⊔-insert O b c q = ≡-refl
+    ⊔-insert I O c ()
+    ⊔-insert I I c ≡-refl = ≡-refl
+
+  private
+    Σ-O : ∀ {n} (f : Fin n → Two) → (∀ k → f k ≡ O) → M.Σ f ≡ O
+    Σ-O {ℕ.zero}  f z = ≡-refl
+    Σ-O {ℕ.suc n} f z =
+      ≡-cong₂ _⊔_ (z Fin.zero) (Σ-O (λ k → f (Fin.suc k)) (λ k → z (Fin.suc k)))
+
+    ⊓-O : ∀ x → (x two.⊓ O) ≡ O
+    ⊓-O O = ≡-refl
+    ⊓-O I = ≡-refl
+
+  -- Zero rows and columns persist under hiding: every new entry into the row or column of r₀
+  -- factors through an entry of that row or column.
+  zero-fold : ∀ {G : Gr} rs r₀ →
+              (((z : V) (i : Fin (w z)) (j : Fin (w r₀)) → G r₀ z i j ≡ O) ×
+               ((z : V) (i : Fin (w r₀)) (j : Fin (w z)) → G z r₀ i j ≡ O)) →
+              (((z : V) (i : Fin (w z)) (j : Fin (w r₀)) → foldl h G rs r₀ z i j ≡ O) ×
+               ((z : V) (i : Fin (w r₀)) (j : Fin (w z)) → foldl h G rs z r₀ i j ≡ O))
+  zero-fold []           r₀ zz        = zz
+  zero-fold {G} (r ∷ rs) r₀ (zr , zc) = zero-fold {h G r} rs r₀ (zr' , zc')
+    where
+    zr' : (z : V) (i : Fin (w z)) (j : Fin (w r₀)) → h G r r₀ z i j ≡ O
+    zr' z i j =
+      ≡-cong₂ _⊔_ (zr z i j)
+        (Σ-O (λ k → G r z i k two.⊓ G r₀ r k j)
+             (λ k → ≡-trans (≡-cong (G r z i k two.⊓_) (zr r k j)) (⊓-O (G r z i k))))
+
+    zc' : (z : V) (i : Fin (w r₀)) (j : Fin (w z)) → h G r z r₀ i j ≡ O
+    zc' z i j =
+      ≡-cong₂ _⊔_ (zc z i j)
+        (Σ-O (λ k → G r r₀ i k two.⊓ G z r k j)
+             (λ k → ≡-cong (two._⊓ G z r k j) (zc r i k)))
+
+  -- Hiding only adds entries.
+  increasing : ∀ {G : Gr} rs x y (i : Fin (w y)) (j : Fin (w x)) →
+               foldl h G rs x y i j ≡ (G x y i j ⊔ foldl h G rs x y i j)
+  increasing []           x y i j = ≡-sym ⊔-idem
+  increasing {G} (r ∷ rs) x y i j =
+    absorb-mono (foldl h (h G r) rs x y i j) (h G r x y i j) (G x y i j)
+                (increasing rs x y i j)
+                (⊔-absorbˡ (G x y i j) ((G r y ∘ G x r) i j))
+
+  h-cong : ∀ {G G'} r → G ≈g G' → h G r ≈g h G' r
+  h-cong r p x y i j =
+    ≡-cong₂ _⊔_ (p x y i j) (M.Σ-cong-≡ (λ k → ≡-cong₂ two._⊓_ (p r y i k) (p x r k j)))
+
+  fold-cong : ∀ {G G'} rs → G ≈g G' → foldl h G rs ≈g foldl h G' rs
+  fold-cong []       p = p
+  fold-cong (r ∷ rs) p = fold-cong rs (h-cong r p)
+
+  -- A summand with no entries at the hidden vertices passes through hiding them: every new
+  -- composite routes through a hidden row and column, which the summand lacks.
+  add-inert : ∀ {G S : Gr} rs →
+              All (λ r → ((z : V) (i : Fin (w z)) (j : Fin (w r)) → S r z i j ≡ O)
+                       × ((z : V) (i : Fin (w r)) (j : Fin (w z)) → S z r i j ≡ O)) rs →
+              ∀ x y (i : Fin (w y)) (j : Fin (w x)) →
+              foldl h (λ x' y' → G x' y' M.+ₘ S x' y') rs x y i j ≡
+              (foldl h G rs x y i j ⊔ S x y i j)
+  add-inert []               []               x y i j = ≡-refl
+  add-inert {G} {S} (r ∷ rs) ((zr , zc) ∷ zs) x y i j =
+    ≡-trans (fold-cong rs step x y i j) (add-inert {h G r} {S} rs zs x y i j)
+    where
+    step : h (λ x' y' → G x' y' M.+ₘ S x' y') r ≈g (λ x' y' → h G r x' y' M.+ₘ S x' y')
+    step x' y' i' j' =
+      ≡-trans
+        (≡-cong ((G x' y' i' j' ⊔ S x' y' i' j') ⊔_)
+          (M.Σ-cong-≡ (λ k → ≡-cong₂ two._⊓_
+            (≡-trans (≡-cong (G r y' i' k ⊔_) (zr y' i' k)) (⊔-runit {G r y' i' k}))
+            (≡-trans (≡-cong (G x' r k j' ⊔_) (zc x' k j')) (⊔-runit {G x' r k j'})))))
+        (⊔-shift (G x' y' i' j') (S x' y' i' j') ((G r y' ∘ G x' r) i' j'))
+
+  -- Hiding vertices at which a larger graph agrees with a smaller one adds only its extra
+  -- entries: every new composite routes through agreed rows and columns, so already arises in
+  -- the smaller graph.
+  agree-add : ∀ {G G' : Gr} rs →
+              (∀ x y (i : Fin (w y)) (j : Fin (w x)) → (G x y i j ⊔ G' x y i j) ≡ G' x y i j) →
+              All (λ r → ((z : V) (i : Fin (w z)) (j : Fin (w r)) → G' r z i j ≡ G r z i j)
+                       × ((z : V) (i : Fin (w r)) (j : Fin (w z)) → G' z r i j ≡ G z r i j)) rs →
+              ∀ x y (i : Fin (w y)) (j : Fin (w x)) →
+              foldl h G' rs x y i j ≡ (G' x y i j ⊔ foldl h G rs x y i j)
+  agree-add {G} {G'} []       sub _              x y i j =
+    ≡-sym (≡-trans (⊔-comm (G' x y i j) (G x y i j)) (sub x y i j))
+  agree-add {G} {G'} (r ∷ rs) sub ((ar , ac) ∷ as) x y i j =
+    ≡-trans (agree-add {h G r} {h G' r} rs sub' all' x y i j)
+    (≡-trans (≡-cong (_⊔ foldl h (h G r) rs x y i j) (step x y i j))
+    (≡-trans (⊔-assoc (G' x y i j) (h G r x y i j) (foldl h (h G r) rs x y i j))
+             (≡-cong (G' x y i j ⊔_) (≡-sym (increasing rs x y i j)))))
+    where
+    step : ∀ x' y' (i' : Fin (w y')) (j' : Fin (w x')) →
+           h G' r x' y' i' j' ≡ (G' x' y' i' j' ⊔ h G r x' y' i' j')
+    step x' y' i' j' =
+      ≡-trans
+        (≡-cong (G' x' y' i' j' ⊔_)
+          (M.Σ-cong-≡ (λ k → ≡-cong₂ two._⊓_ (ar y' i' k) (ac x' k j'))))
+        (⊔-insert (G x' y' i' j') (G' x' y' i' j') ((G r y' ∘ G x' r) i' j')
+                  (sub x' y' i' j'))
+
+    sub' : ∀ x' y' (i' : Fin (w y')) (j' : Fin (w x')) →
+           (h G r x' y' i' j' ⊔ h G' r x' y' i' j') ≡ h G' r x' y' i' j'
+    sub' x' y' i' j' =
+      ≡-trans (≡-cong (h G r x' y' i' j' ⊔_) (step x' y' i' j'))
+      (≡-trans (⊔-absorbʳ (h G r x' y' i' j') (G' x' y' i' j')) (≡-sym (step x' y' i' j')))
+
+    all' : All (λ r' → ((z : V) (i' : Fin (w z)) (j' : Fin (w r')) →
+                        h G' r r' z i' j' ≡ h G r r' z i' j')
+                     × ((z : V) (i' : Fin (w r')) (j' : Fin (w z)) →
+                        h G' r z r' i' j' ≡ h G r z r' i' j')) rs
+    all' = All-map
+      (λ {r'} (ar' , ac') →
+        (λ z i' j' → ≡-trans (step r' z i' j')
+                     (≡-trans (≡-cong (_⊔ h G r r' z i' j') (ar' z i' j'))
+                              (⊔-absorbˡ (G r' z i' j') ((G r z ∘ G r' r) i' j')))) ,
+        (λ z i' j' → ≡-trans (step z r' i' j')
+                     (≡-trans (≡-cong (_⊔ h G r z r' i' j') (ac' z i' j'))
+                              (⊔-absorbˡ (G z r' i' j') ((G r r' ∘ G z r) i' j')))))
+      as
 
 -- Witnesses for non-zero entries of sums and composites.
 private

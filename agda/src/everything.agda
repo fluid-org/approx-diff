@@ -3,11 +3,9 @@
 module everything where
 
 import language-operational.totality
-import interaction.graph-algebra
+import interaction.graph
 import interaction.dependence-graph
-import interaction.config
 import interaction.moves
-import interaction.maintenance
 import interaction.example
 
 import graph-viz.dump-tables
