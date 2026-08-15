@@ -4,6 +4,10 @@ open import Data.Bool using (Bool; true; not)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
+import Data.List.Relation.Unary.All.Properties as AllP
+import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 open import Data.Nat using (ℕ)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
@@ -12,7 +16,7 @@ open ↭ using (_↭_)
 open import Data.Unit.Polymorphic using () renaming (⊤ to Unit; tt to unit)
 open import Level using (Level; Lift) renaming (suc to lsuc)
 open import Relation.Binary.Definitions using (DecidableEquality)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
   renaming (refl to ≡-refl; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary.Decidable using (yes)
 import Data.Sum.Properties as SumP
@@ -51,6 +55,15 @@ sum-< R S (inj₁ _) (inj₂ _) = Unit
 sum-< R S (inj₂ _) (inj₁ _) = Void
 sum-< R S (inj₂ p) (inj₂ q) = S p q
 
+-- Injecting two enumerations into a coproduct keeps each vertex listed once.
+sum-distinct : {A B : Set ℓ} {xs : List A} {ys : List B} →
+               AllPairs _≢_ xs → AllPairs _≢_ ys →
+               AllPairs _≢_ (map inj₁ xs ++ map inj₂ ys)
+sum-distinct {xs = xs} {ys = ys} dx dy =
+  AllPairsP.++⁺ (AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) dx))
+                (AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₂-injective e)) dy))
+                (AllP.map⁺ (universal (λ _ → AllP.map⁺ (universal (λ _ ()) ys)) xs))
+
 none-order : {A : Set ℓ} → IsStrictOrder {A = A} (λ _ _ → Void)
 none-order .IsStrictOrder.trans _ _ _ ()
 none-order .IsStrictOrder.asym _ _ ()
@@ -84,6 +97,8 @@ record Graph (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
     fo      : Path → Bool
     _≟_     : DecidableEquality Path
     paths   : List Path
+    -- The enumeration lists each interior vertex once.
+    distinct : AllPairs _≢_ paths
     into    : (i : Inp) (q : Path) → M.Matrix (width q) (iw i)
     inside  : (p q : Path) → M.Matrix (width q) (width p)
     -- Completion order: every entry between interior vertices runs strictly forward in it, and the
@@ -272,6 +287,11 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   paths⁺ : List Path⁺
   paths⁺ = inj₂ root ∷ map inj₁ paths
+
+  distinct⁺ : AllPairs _≢_ paths⁺
+  distinct⁺ =
+    AllP.map⁺ (universal (λ _ ()) paths)
+    ∷ AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) distinct)
 
   V : Set ℓ
   V = Inp ⊎ Path⁺
@@ -545,6 +565,7 @@ module Leaf
   E .Graph.fo ()
   E .Graph._≟_ = void-≟
   E .Graph.paths = []
+  E .Graph.distinct = []
   E .Graph._<_ ()
   E .Graph.<-order .IsStrictOrder.trans ()
   E .Graph.<-order .IsStrictOrder.asym ()
@@ -576,6 +597,7 @@ module One
   E .Graph.fo = fo⁺ B
   E .Graph._≟_ = _≟⁺_ B
   E .Graph.paths = paths⁺ B
+  E .Graph.distinct = distinct⁺ B
   E .Graph.into i q = route .ap (λ i' → into⁺ B i' q) i
   E .Graph.inside = inside⁺ B
   E .Graph._<_ = _<⁺_ B
@@ -667,6 +689,7 @@ module Seq
   E .Graph.fo = [ fo⁺ B₁ , fo⁺ B₂ ]
   E .Graph._≟_ = SumP.≡-dec (_≟⁺_ B₁) (_≟⁺_ B₂)
   E .Graph.paths = map inj₁ (paths⁺ B₁) ++ map inj₂ (paths⁺ B₂)
+  E .Graph.distinct = sum-distinct (distinct⁺ B₁) (distinct⁺ B₂)
   E .Graph.into i (inj₁ q) = route₁ .ap (λ i' → into⁺ B₁ i' q) i
   E .Graph.into i (inj₂ q) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
   E .Graph.inside (inj₁ p)        (inj₁ q) = inside⁺ B₁ p q
@@ -888,8 +911,9 @@ module Seq3
   E .Graph.width = [ width⁺ B₁ , [ width⁺ B₂ , width⁺ B₃ ] ]
   E .Graph.fo = [ fo⁺ B₁ , [ fo⁺ B₂ , fo⁺ B₃ ] ]
   E .Graph._≟_ = SumP.≡-dec (_≟⁺_ B₁) (SumP.≡-dec (_≟⁺_ B₂) (_≟⁺_ B₃))
-  E .Graph.paths = map inj₁ (paths⁺ B₁)
-                ++ (map (λ q → inj₂ (inj₁ q)) (paths⁺ B₂) ++ map (λ q → inj₂ (inj₂ q)) (paths⁺ B₃))
+  E .Graph.paths =
+    map inj₁ (paths⁺ B₁) ++ map inj₂ (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃))
+  E .Graph.distinct = sum-distinct (distinct⁺ B₁) (sum-distinct (distinct⁺ B₂) (distinct⁺ B₃))
   E .Graph.into i (inj₁ q)        = route₁ .ap (λ i' → into⁺ B₁ i' q) i
   E .Graph.into i (inj₂ (inj₁ q)) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
   E .Graph.into i (inj₂ (inj₂ q)) = route₃ .ap (λ i' → into⁺ B₃ i' q) i
@@ -1143,6 +1167,7 @@ module Seq3
                                         (paths⁺ B₃) (gr B₃))))
               (hide-paths⁺ B₃ i)
 
+    l₁ l₂ l₃ : List (V E)
     l₁ = b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁
     l₂ = b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂
     l₃ = b3 (inj₂ root) ∷ map (λ w → b3 (inj₁ w)) ps₃
@@ -1150,17 +1175,19 @@ module Seq3
     lst : map (λ q → inj₂ {A = Inp} (inj₁ q)) (Graph.paths E) ≡ l₁ ++ (l₂ ++ l₃)
     lst =
       ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (paths⁺ B₁))
-                      (map (λ q → inj₂ (inj₁ q)) (paths⁺ B₂) ++ map (λ q → inj₂ (inj₂ q)) (paths⁺ B₃)))
+                      (map inj₂ (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃))))
               (≡-cong₂ _++_
                 (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₁ (paths⁺ B₁))
                          (≡-cong (b1 (inj₂ root) ∷_) (map-map b1 inj₁ ps₁)))
-                (≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map (λ q → inj₂ (inj₁ q)) (paths⁺ B₂))
-                                 (map (λ q → inj₂ (inj₂ q)) (paths⁺ B₃)))
+                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₂
+                                  (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃)))
+                (≡-trans (map-++ (λ q → inj₂ (inj₁ (inj₂ q))) (map inj₁ (paths⁺ B₂))
+                                 (map inj₂ (paths⁺ B₃)))
                          (≡-cong₂ _++_
-                           (≡-trans (map-map (λ q → inj₂ (inj₁ q)) (λ q → inj₂ (inj₁ q)) (paths⁺ B₂))
+                           (≡-trans (map-map (λ q → inj₂ (inj₁ (inj₂ q))) inj₁ (paths⁺ B₂))
                                     (≡-cong (b2 (inj₂ root) ∷_) (map-map b2 inj₁ ps₂)))
-                           (≡-trans (map-map (λ q → inj₂ (inj₁ q)) (λ q → inj₂ (inj₂ q)) (paths⁺ B₃))
-                                    (≡-cong (b3 (inj₂ root) ∷_) (map-map b3 inj₁ ps₃))))))
+                           (≡-trans (map-map (λ q → inj₂ (inj₁ (inj₂ q))) inj₂ (paths⁺ B₃))
+                                    (≡-cong (b3 (inj₂ root) ∷_) (map-map b3 inj₁ ps₃)))))))
 
     plumb : ∀ i → collapse E i ≡ G₃ (inj₁ i) er
     plumb i =
