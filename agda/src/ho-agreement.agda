@@ -22,8 +22,6 @@ open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
--- Qualified: the evaluation judgement for argument lists reuses [] and _∷_ for its derivations.
-import Data.List as L
 open import every using (Every)
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
@@ -121,6 +119,8 @@ data CoreTm where
   lam  : ∀ {Γ σ τ} {t : Γ ▸ σ ⊢ τ} → CoreTm t → CoreTm (lam t)
   app  : ∀ {Γ σ τ} {s : Γ ⊢ σ [→] τ} {t : Γ ⊢ σ} → CoreTm s → CoreTm t → CoreTm (app s t)
 
+-- Every's constructors are qualified: the evaluation judgement reuses [] and _∷_ for the
+-- derivations of an argument list.
 data CoreTms where
   []  : ∀ {Γ} → CoreTms {Γ} Every.[]
   _∷_ : ∀ {Γ σ is} {M : Γ ⊢ base σ} {Ms : Every (λ σ' → Γ ⊢ base σ') is} →
@@ -179,16 +179,11 @@ RelF (σ [→] τ) {clo γ' t} {f} r o d =
            (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ d))
            (f .famf .transf j .func y))))
 
--- A primitive's arguments. The model's index at a tuple of arguments is a tuple of sort indices,
--- so the value relation is one base relation per argument, by recursion on the sorts. The fibre
--- is 𝔽 (bases-width is) on both sides, the arguments' positions laid end to end, so the vector
--- relation is equality there, as it is at a single base sort.
-RelVArgs : ∀ is → sort-vals is → sort-vals is → Set
-RelVArgs L.[]         _        _        = ⊤
-RelVArgs (σ L.∷ is) (i , i') (v , vs) = RelV (base σ) (const v) i × RelVArgs is i' vs
-
-RelFArgs : ∀ is → ∣ 𝔽 (bases-width is) ∣ → ∣ 𝔽 (bases-width is) ∣ → Prop
-RelFArgs is o d = Semimodule._≈_ (𝔽 (bases-width is)) o d
+-- A primitive's arguments need no relations of their own. The model's index at a tuple of
+-- arguments is a tuple of sort indices, and sort-vals-setoid is built from ⊗-setoid, whose
+-- equality is the pairwise conjunction, so the value relation is equality in that setoid, one
+-- base equation per argument. The fibre is 𝔽 (bases-width is) on both sides, the arguments'
+-- positions laid end to end, so the vector relation is equality there, as at a single base sort.
 
 -- Environments related to context indices, and environment vectors to elements of the context
 -- fibre at a source weight: each cell may carry, beyond its relation, a mark that the elimination
