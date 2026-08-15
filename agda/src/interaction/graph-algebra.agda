@@ -6,8 +6,11 @@ open import Data.List using (List; []; _∷_; _++_; map; foldl)
 open import Data.Nat using (ℕ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Level using (Level; Lift) renaming (suc to lsuc)
+open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
+open import Relation.Nullary.Decidable using (yes)
+import Data.Sum.Properties as SumP
 import matrix
 import two
 
@@ -34,11 +37,18 @@ data Root : Set ℓ where
 Void : Set ℓ
 Void = Lift ℓ ⊥
 
+root-≟ : DecidableEquality Root
+root-≟ root root = yes ≡-refl
+
+void-≟ : DecidableEquality Void
+void-≟ ()
+
 record Graph (Inp : Set ℓ) (iw : Inp → ℕ) (n : ℕ) : Set (lsuc ℓ) where
   field
     Path    : Set ℓ
     width   : Path → ℕ
     fo      : Path → Bool
+    _≟_     : DecidableEquality Path
     paths   : List Path
     into    : (i : Inp) (q : Path) → M.Matrix (width q) (iw i)
     inside  : (p q : Path) → M.Matrix (width q) (width p)
@@ -91,6 +101,9 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
 
   fo⁺ : Path⁺ → Bool
   fo⁺ = [ fo , (λ _ → fo-root) ]
+
+  _≟⁺_ : DecidableEquality Path⁺
+  _≟⁺_ = SumP.≡-dec _≟_ root-≟
 
   into⁺ : (i : Inp) (q : Path⁺) → M.Matrix (width⁺ q) (iw i)
   into⁺ i (inj₁ q) = into i q
@@ -339,6 +352,7 @@ module Leaf
   E .Graph.Path = Void
   E .Graph.width ()
   E .Graph.fo ()
+  E .Graph._≟_ = void-≟
   E .Graph.paths = []
   E .Graph.fo-root = fo-root
   E .Graph.into i ()
@@ -365,6 +379,7 @@ module One
   E .Graph.Path = Path⁺ B
   E .Graph.width = width⁺ B
   E .Graph.fo = fo⁺ B
+  E .Graph._≟_ = _≟⁺_ B
   E .Graph.paths = paths⁺ B
   E .Graph.fo-root = fo-root
   E .Graph.into i q = route .ap (λ i' → into⁺ B i' q) i
@@ -452,6 +467,7 @@ module Seq
   E .Graph.Path = Path⁺ B₁ ⊎ Path⁺ B₂
   E .Graph.width = [ width⁺ B₁ , width⁺ B₂ ]
   E .Graph.fo = [ fo⁺ B₁ , fo⁺ B₂ ]
+  E .Graph._≟_ = SumP.≡-dec (_≟⁺_ B₁) (_≟⁺_ B₂)
   E .Graph.paths = map inj₁ (paths⁺ B₁) ++ map inj₂ (paths⁺ B₂)
   E .Graph.into i (inj₁ q) = route₁ .ap (λ i' → into⁺ B₁ i' q) i
   E .Graph.into i (inj₂ q) = route₂ .ap (λ i' → into⁺ B₂ i' q) i
@@ -667,6 +683,7 @@ module Seq3
   E .Graph.Path = Path⁺ B₁ ⊎ (Path⁺ B₂ ⊎ Path⁺ B₃)
   E .Graph.width = [ width⁺ B₁ , [ width⁺ B₂ , width⁺ B₃ ] ]
   E .Graph.fo = [ fo⁺ B₁ , [ fo⁺ B₂ , fo⁺ B₃ ] ]
+  E .Graph._≟_ = SumP.≡-dec (_≟⁺_ B₁) (SumP.≡-dec (_≟⁺_ B₂) (_≟⁺_ B₃))
   E .Graph.paths = map inj₁ (paths⁺ B₁)
                 ++ (map (λ q → inj₂ (inj₁ q)) (paths⁺ B₂) ++ map (λ q → inj₂ (inj₂ q)) (paths⁺ B₃))
   E .Graph.into i (inj₁ q)        = route₁ .ap (λ i' → into⁺ B₁ i' q) i
