@@ -341,10 +341,10 @@ module _ {Inp : Set ℓ} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
   fo-forward : Fwd fo-graph
   fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) gr-forward
 
--- Rule₁ graph's vertices being hidden inside a larger graph. The state records the graph's own
--- entries as they accumulate; Φ maps the graph's input columns to the ambient graph's input
--- columns, which for a premise evaluated in a substituted environment is not the identity.
-module Sweep
+-- Hiding one premise's vertices, one at a time, inside the conclusion's graph. The state records
+-- the premise's own entries as they accumulate; Φ carries the premise's input columns to the
+-- conclusion's, which for a premise evaluated in a substituted environment is not the identity.
+module HidePremise
   {V : Set ℓ} (vw : V → ℕ)
   {Inp : Set ℓ} (inp : Inp → V)
   {Path : Set ℓ} (blk : Path ⊎ Root → V)
@@ -616,7 +616,7 @@ module Rule₁
     er : V E
     er = inj₂ (inj₂ root)
 
-    module S = Sweep (vw E) inj₁ b (λ (_ : Root) → er) route (λ _ → up-root) (λ _ → out-root)
+    module S = HidePremise (vw E) inj₁ b (λ (_ : Root) → er) route (λ _ → up-root) (λ _ → out-root)
 
     H⁰ : S.St
     H⁰ .S.into i' q = into⁺ B i' q
@@ -732,7 +732,7 @@ module Rule₂
     K₁ (inj₁ q) i = route₂ .ap (λ i' → into⁺ B₂ i' q) i
     K₁ (inj₂ _) i = out-root i
 
-    module S1 = Sweep (vw E) inj₁ b1 tgt₁ route₁ P₁ K₁
+    module S1 = HidePremise (vw E) inj₁ b1 tgt₁ route₁ P₁ K₁
 
     H₁⁰ : S1.St
     H₁⁰ .S1.into i q = into⁺ B₁ i q
@@ -780,7 +780,7 @@ module Rule₂
     K₂ : (t : Root) (i : Inp) → M.Matrix n (iw i)
     K₂ _ i = out-root i M.+ₘ (up₁ ∘ route₁ .ap (collapse B₁) i)
 
-    module S2 = Sweep (vw E) inj₁ b2 (λ (_ : Root) → er) Φ₂ P₂ K₂
+    module S2 = HidePremise (vw E) inj₁ b2 (λ (_ : Root) → er) Φ₂ P₂ K₂
 
     col₂ : Path⁺ B₂ ⊎ Root → V E
     col₂ (inj₁ q) = b2 q
@@ -974,7 +974,7 @@ module Rule₃
     K₁ (inj₁ q) i = route₃ .ap (λ i' → into⁺ B₃ i' q) i
     K₁ (inj₂ _) i = out-root i
 
-    module S1 = Sweep (vw E) inj₁ b1 tgt route₁ P₁ K₁
+    module S1 = HidePremise (vw E) inj₁ b1 tgt route₁ P₁ K₁
 
     H₁⁰ : S1.St
     H₁⁰ .S1.into i q = into⁺ B₁ i q
@@ -1053,7 +1053,7 @@ module Rule₃
     K₂ (inj₁ q) i = Φ₃₁ .ap (λ i' → into⁺ B₃ i' q) i
     K₂ (inj₂ _) i = out-root i M.+ₘ (up₁ ∘ c₁ i)
 
-    module S2 = Sweep (vw E) inj₁ b2 tgt route₂ P₂ K₂
+    module S2 = HidePremise (vw E) inj₁ b2 tgt route₂ P₂ K₂
 
     H₂⁰ : S2.St
     H₂⁰ .S2.into i q = into⁺ B₂ i q
@@ -1130,7 +1130,7 @@ module Rule₃
     K₃ : (t : Root) (i : Inp) → M.Matrix n (iw i)
     K₃ _ i = (out-root i M.+ₘ (up₁ ∘ c₁ i)) M.+ₘ (up₂ ∘ c₂ i)
 
-    module S3 = Sweep (vw E) inj₁ b3 (λ (_ : Root) → er) Φ₃ P₃ K₃
+    module S3 = HidePremise (vw E) inj₁ b3 (λ (_ : Root) → er) Φ₃ P₃ K₃
 
     H₃⁰ : S3.St
     H₃⁰ .S3.into i q = into⁺ B₃ i q
