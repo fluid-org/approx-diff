@@ -13,7 +13,8 @@
 -- branch's result once. The fundamental lemma, by induction on the term over all derivations,
 -- says the relation applied to the inputs is related to the term's fibre map at the environment's
 -- denotation plus the elimination constant at the source. The absorption of marks needs the
--- elimination weight to be idempotent and to absorb its multiples under addition, as in a lattice.
+-- elimination weight to be idempotent and to absorb its multiples under addition, and addition
+-- to be idempotent, as in a lattice.
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Fin using (Fin; zero; suc)
@@ -41,7 +42,8 @@ module ho-agreement
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
   (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig)
   (let module Sc = CommutativeSemiring S)
-  -- The elimination weight is idempotent and absorbs its multiples.
+  -- Addition is idempotent, and the elimination weight is idempotent and absorbs its multiples.
+  (+-idem : ∀ x → Setoid._≈_ A (x Sc.+ x) x)
   (w-idem : Setoid._≈_ A (elim-weight Sc.· elim-weight) elim-weight)
   (w-absorb : ∀ x → Setoid._≈_ A ((elim-weight Sc.· x) Sc.+ elim-weight) elim-weight)
   where
@@ -634,6 +636,192 @@ private
   RelEnv-resp (_·_ {γ = γ} {v = v} rγ r) s ex (rel , h) =
     RelEnv-resp rγ s (app-congᵥ (M.p₁ {width-env γ} {width v}) ex) rel ,
     RelFs-resp _ r s (app-congᵥ (M.p₂ {width-env γ} {width v}) ex) h
+
+-- Absorption. A denotational element absorbs the constant at a source weight when adding the
+-- constant leaves it unchanged; an element is bounded by the source weight when it is a multiple
+-- of the weight times the elimination weight. A relation to a sum with a bounded summand is a
+-- relation to the other summand when that summand absorbs the constant: at first-order types the
+-- constant absorbs the bounded summand outright, and at arrow types the body's constant at the
+-- root does, since the root itself absorbs the source's weight.
+Absorbs : ∀ τ (i : Ix τ) → Setoid.Carrier A → ∣ Fib τ i ∣ → Prop
+Absorbs τ i s Q = F._≈_ τ i (F._+_ τ i Q (ec τ i s)) Q
+
+Bounded : ∀ τ (i : Ix τ) → Setoid.Carrier A → ∣ Fib τ i ∣ → Prop
+Bounded τ i s E = ∃ (∣ Fib τ i ∣) (λ E' → F._≈_ τ i E (F._·_ τ i (s ·ₛ w) E'))
+
+private
+  sw-absorb : ∀ s e → ((w ·ₛ s) +ₛ ((s ·ₛ w) ·ₛ e)) ≈s (w ·ₛ s)
+  sw-absorb s e =
+    ≈-trans (+-cong ·-comm Sc.·-assoc)
+    (≈-trans (≈-sym Sc.·-+-distribₗ)
+    (≈-trans (·-cong ≈-refl (≈-trans +-comm (w-absorb e))) ·-comm))
+
+  -- A scalar absorbing the weight times the source absorbs any bounded scalar.
+  root-absorb : ∀ s a e → (a +ₛ (w ·ₛ s)) ≈s a → (a +ₛ ((s ·ₛ w) ·ₛ e)) ≈s a
+  root-absorb s a e h =
+    ≈-trans (+-cong (≈-sym h) ≈-refl) (≈-trans +-assoc (≈-trans (+-cong ≈-refl (sw-absorb s e)) h))
+
+  ec-root : ∀ τ (i : Ix τ) s → Absorbs τ i s (ec τ i s)
+  ec-root τ i s = F.trans τ i (F.sym τ i (ec-linear τ i s s))
+                              (elim-const τ .at i .SemiMod._⇒_.func-resp-≈ (+-idem s))
+
+  -- The absorbing element's root absorbs the weight times the source; the payload absorbs the
+  -- payload's constant.
+  absorbs-inj₁ : ∀ {σ τ} (i : Ix σ) s (Q : ∣ Fib (σ [+] τ) (inj₁ i) ∣) → Absorbs (σ [+] τ) (inj₁ i) s Q →
+                 ((proj₁ Q +ₛ (w ·ₛ s)) ≈s proj₁ Q) ∧ Absorbs σ i s (proj₂ Q)
+  absorbs-inj₁ {σ} {τ} i s Q (h₀ , h₁) =
+    ≈-trans (+-cong ≈-refl (≈-sym (prop._∧_.proj₁ (ec-inj₁ {σ} {τ} i s)))) h₀ ,
+    F.trans σ i (F.+-cong σ i (F.refl σ i) (F.sym σ i (prop._∧_.proj₂ (ec-inj₁ {σ} {τ} i s)))) h₁
+
+  absorbs-inj₂ : ∀ {σ τ} (i : Ix τ) s (Q : ∣ Fib (σ [+] τ) (inj₂ i) ∣) → Absorbs (σ [+] τ) (inj₂ i) s Q →
+                 ((proj₁ Q +ₛ (w ·ₛ s)) ≈s proj₁ Q) ∧ Absorbs τ i s (proj₂ Q)
+  absorbs-inj₂ {σ} {τ} i s Q (h₀ , h₁) =
+    ≈-trans (+-cong ≈-refl (≈-sym (prop._∧_.proj₁ (ec-inj₂ {σ} {τ} i s)))) h₀ ,
+    F.trans τ i (F.+-cong τ i (F.refl τ i) (F.sym τ i (prop._∧_.proj₂ (ec-inj₂ {σ} {τ} i s)))) h₁
+
+  absorbs-pair : ∀ {σ τ} (i : Ix σ) (j : Ix τ) s Q → Absorbs (σ [×] τ) (i , j) s Q →
+                 ((proj₁ Q +ₛ (w ·ₛ s)) ≈s proj₁ Q) ∧
+                 (Absorbs σ i s (proj₁ (proj₂ Q)) ∧ Absorbs τ j s (proj₂ (proj₂ Q)))
+  absorbs-pair {σ} {τ} i j s Q (h₀ , (h₁ , h₂)) =
+    ≈-trans (+-cong ≈-refl (≈-sym (prop._∧_.proj₁ (ec-pair {σ} {τ} i j s)))) h₀ ,
+    (F.trans σ i (F.+-cong σ i (F.refl σ i) (F.sym σ i (prop._∧_.proj₁ (prop._∧_.proj₂ (ec-pair {σ} {τ} i j s))))) h₁ ,
+     F.trans τ j (F.+-cong τ j (F.refl τ j) (F.sym τ j (prop._∧_.proj₂ (prop._∧_.proj₂ (ec-pair {σ} {τ} i j s))))) h₂)
+
+  absorbs-clo : ∀ {σ τ} (f : Ix (σ [→] τ)) s Q → Absorbs (σ [→] τ) f s Q → (proj₁ Q +ₛ (w ·ₛ s)) ≈s proj₁ Q
+  absorbs-clo {σ} {τ} f s Q (h₀ , _) = ≈-trans (+-cong ≈-refl (≈-sym (prop._∧_.proj₁ (ec-clo {σ} {τ} f s)))) h₀
+
+  -- Transport preserves absorption and boundedness.
+  absorbs-subst : ∀ τ {i i' : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i') s Q → Absorbs τ i s Q →
+                  Absorbs τ i' s (⟦ τ ⟧ .fam .subst e .func Q)
+  absorbs-subst τ {i} {i'} e s Q h =
+    F.trans τ i' (F.+-cong τ i' (F.refl τ i') (F.sym τ i' (ec-natural τ e s)))
+    (F.trans τ i' (F.sym τ i' (⟦ τ ⟧ .fam .subst e .SemiMod._⇒_.preserve-+ {Q} {ec τ i s}))
+                  (⟦ τ ⟧ .fam .subst e .SemiMod._⇒_.func-resp-≈ h))
+
+  bounded-subst : ∀ τ {i i' : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i') s E → Bounded τ i s E →
+                  Bounded τ i' s (⟦ τ ⟧ .fam .subst e .func E)
+  bounded-subst τ {i} {i'} e s E (E' , h) =
+    ⟦ τ ⟧ .fam .subst e .func E' ,
+    F.trans τ i' (⟦ τ ⟧ .fam .subst e .SemiMod._⇒_.func-resp-≈ h)
+                 (⟦ τ ⟧ .fam .subst e .SemiMod._⇒_.preserve-· {s ·ₛ w} {E'})
+
+private
+  -- The root of a bounded element is a bounded scalar; a bounded lifted element has bounded parts.
+  root-of : ∀ s a b e → a ≈s (b +ₛ ((s ·ₛ w) ·ₛ e)) → (b +ₛ (w ·ₛ s)) ≈s b → a ≈s b
+  root-of s a b e ea hb = ≈-trans ea (root-absorb s b e hb)
+
+  ec-abs : ∀ τ (i : Ix τ) s a → (a +ₛ (w ·ₛ s)) ≈s a → Absorbs τ i s (ec τ i a)
+  ec-abs τ i s a h =
+    F.trans τ i (F.sym τ i (F.trans τ i (elim-const τ .at i .SemiMod._⇒_.func-resp-≈ (≈-sym h))
+                                        (F.trans τ i (ec-linear τ i a (w ·ₛ s))
+                                                     (F.+-cong τ i (F.refl τ i) (ec-w τ i s)))))
+                (F.refl τ i)
+
+private
+  -- Splitting a bounded lifted element into a bounded root and a bounded payload.
+  BoundedA : Setoid.Carrier A → Setoid.Carrier A → Prop
+  BoundedA s a = ∃ (Setoid.Carrier A) (λ e → a ≈s ((s ·ₛ w) ·ₛ e))
+
+  bounded-inj₁ : ∀ {σ τ} (i : Ix σ) s E → Bounded (σ [+] τ) (inj₁ i) s E →
+                 BoundedA s (proj₁ E) ∧ Bounded σ i s (proj₂ E)
+  bounded-inj₁ i s E (E' , (h₀ , h₁)) = (proj₁ E' , h₀) , (proj₂ E' , h₁)
+
+  bounded-inj₂ : ∀ {σ τ} (i : Ix τ) s E → Bounded (σ [+] τ) (inj₂ i) s E →
+                 BoundedA s (proj₁ E) ∧ Bounded τ i s (proj₂ E)
+  bounded-inj₂ i s E (E' , (h₀ , h₁)) = (proj₁ E' , h₀) , (proj₂ E' , h₁)
+
+  bounded-pair : ∀ {σ τ} (i : Ix σ) (j : Ix τ) s E → Bounded (σ [×] τ) (i , j) s E →
+                 BoundedA s (proj₁ E) ∧ (Bounded σ i s (proj₁ (proj₂ E)) ∧ Bounded τ j s (proj₂ (proj₂ E)))
+  bounded-pair i j s E (E' , (h₀ , (h₁ , h₂))) = (proj₁ E' , h₀) , ((proj₁ (proj₂ E') , h₁) , (proj₂ (proj₂ E') , h₂))
+
+  bounded-clo : ∀ {σ τ} (f : Ix (σ [→] τ)) s E → Bounded (σ [→] τ) f s E →
+                BoundedA s (proj₁ E) ∧
+                ∃ (∣ model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f ∣)
+                  (λ E' → Semimodule._≈_ (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) (proj₂ E)
+                            (Semimodule._·_ (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) (s ·ₛ w) E'))
+  bounded-clo f s E (E' , (h₀ , h₁)) = (proj₁ E' , h₀) , (proj₂ E' , h₁)
+
+  root-abs : ∀ s a b → BoundedA s a → (b +ₛ (w ·ₛ s)) ≈s b → (b +ₛ a) ≈s b
+  root-abs s a b (e , ea) hb = ≈-trans (+-cong ≈-refl ea) (root-absorb s b e hb)
+
+RelF-absorb : ∀ τ {v : Val τ} {i : Ix τ} (r : RelV τ v i) s {P : ∣ 𝔽 (width v) ∣} {Q E : ∣ Fib τ i ∣} →
+              RelF τ r P (F._+_ τ i Q E) → Absorbs τ i s Q → Bounded τ i s E → RelF τ r P Q
+RelF-absorb unit {unit} {i} r s {P} {Q} {E} h hQ (E' , hE) zero =
+  ≈-trans (h zero)
+          (root-of s (Q zero +ₛ E zero) (Q zero) (E' zero) (+-cong ≈-refl (hE zero))
+                   (≈-trans (+-cong ≈-refl (≈-sym (ec-unit i s))) (hQ zero)))
+RelF-absorb (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) s {P} {Q} {E} (h₀ , h) hQ hE =
+  let Q' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func Q
+      E' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func E
+      split = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .SemiMod._⇒_.preserve-+ {Q} {E}
+      hQ' = absorbs-inj₁ {σ} {τ} i' s Q' (absorbs-subst (σ [+] τ) {i} {inj₁ i'} e s Q hQ)
+      hE' = bounded-inj₁ {σ} {τ} i' s E' (bounded-subst (σ [+] τ) {i} {inj₁ i'} e s E hE)
+  in
+  ≈-trans h₀ (≈-trans (prop._∧_.proj₁ split) (root-abs s (proj₁ E') (proj₁ Q') (prop._∧_.proj₁ hE') (prop._∧_.proj₁ hQ'))) ,
+  RelF-absorb σ r s (RelF-resp σ r (λ k → ≈-refl) (prop._∧_.proj₂ split) h) (prop._∧_.proj₂ hQ') (prop._∧_.proj₂ hE')
+RelF-absorb (σ [+] τ) {inr v} {i} (i' , r , ⟪ e ⟫) s {P} {Q} {E} (h₀ , h) hQ hE =
+  let Q' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₂ i'} e .func Q
+      E' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₂ i'} e .func E
+      split = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₂ i'} e .SemiMod._⇒_.preserve-+ {Q} {E}
+      hQ' = absorbs-inj₂ {σ} {τ} i' s Q' (absorbs-subst (σ [+] τ) {i} {inj₂ i'} e s Q hQ)
+      hE' = bounded-inj₂ {σ} {τ} i' s E' (bounded-subst (σ [+] τ) {i} {inj₂ i'} e s E hE)
+  in
+  ≈-trans h₀ (≈-trans (prop._∧_.proj₁ split) (root-abs s (proj₁ E') (proj₁ Q') (prop._∧_.proj₁ hE') (prop._∧_.proj₁ hQ'))) ,
+  RelF-absorb τ r s (RelF-resp τ r (λ k → ≈-refl) (prop._∧_.proj₂ split) h) (prop._∧_.proj₂ hQ') (prop._∧_.proj₂ hE')
+RelF-absorb (σ [×] τ) {pair v u} {i , j} (r , r') s {P} {Q} {E} (h₀ , (h₁ , h₂)) hQ hE =
+  let hQ' = absorbs-pair {σ} {τ} i j s Q hQ
+      hE' = bounded-pair {σ} {τ} i j s E hE
+  in
+  ≈-trans h₀ (root-abs s (proj₁ E) (proj₁ Q) (prop._∧_.proj₁ hE') (prop._∧_.proj₁ hQ')) ,
+  (RelF-absorb σ r s h₁ (prop._∧_.proj₁ (prop._∧_.proj₂ hQ')) (prop._∧_.proj₁ (prop._∧_.proj₂ hE')) ,
+   RelF-absorb τ r' s h₂ (prop._∧_.proj₂ (prop._∧_.proj₂ hQ')) (prop._∧_.proj₂ (prop._∧_.proj₂ hE')))
+RelF-absorb (σ [→] τ) {clo γ' t} {f} r s {P} {Q} {E} (h₀ , hc) hQ hE =
+  root ,
+  λ s' {v} {j} rv z y hz {u} {U} D →
+    RelF-absorb τ (r rv D) s
+      (RelF-resp τ (r rv D) (λ k → ≈-refl)
+         (F.trans τ (f .idxf .sfunc j)
+            (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j))
+               (F.+-cong τ (f .idxf .sfunc j)
+                  (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.preserve-+ {proj₂ Q} {proj₂ E})
+                  (F.refl τ (f .idxf .sfunc j))))
+            (F.trans τ (f .idxf .sfunc j) (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j)) (F.+-assoc τ (f .idxf .sfunc j)))
+            (F.trans τ (f .idxf .sfunc j) (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j))
+                                             (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j)) (F.+-comm τ (f .idxf .sfunc j))))
+            (F.trans τ (f .idxf .sfunc j) (F.+-cong τ (f .idxf .sfunc j) (F.refl τ (f .idxf .sfunc j)) (F.sym τ (f .idxf .sfunc j) (F.+-assoc τ (f .idxf .sfunc j))))
+                     (F.sym τ (f .idxf .sfunc j) (F.+-assoc τ (f .idxf .sfunc j)))))))
+         (hc s' rv z y hz D))
+      (absQ₁ s' {j} {y})
+      (bndE₁ {j} (prop._∧_.proj₂ hE'))
+  where
+  hE' = bounded-clo {σ} {τ} f s E hE
+  root : P zero ≈A proj₁ Q
+  root = ≈-trans h₀ (root-abs s (proj₁ E) (proj₁ Q) (prop._∧_.proj₁ hE') (absorbs-clo {σ} {τ} f s Q hQ))
+  P₀-abs : (P zero +ₛ (w ·ₛ s)) ≈s P zero
+  P₀-abs = ≈-trans (+-cong root ≈-refl) (≈-trans (absorbs-clo {σ} {τ} f s Q hQ) (≈-sym root))
+  absQ₁ : ∀ s' {j : Ix σ} {y : ∣ Fib σ j ∣} →
+          Absorbs τ (f .idxf .sfunc j) s
+            (F._+_ τ (f .idxf .sfunc j) (ec τ (f .idxf .sfunc j) (s' +ₛ P zero))
+              (F._+_ τ (f .idxf .sfunc j) (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ Q))
+                                           (f .famf .transf j .func y)))
+  absQ₁ s' {j} {y} =
+    F.trans τ i₁ (F.+-assoc τ i₁)
+    (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-comm τ i₁))
+    (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
+                  (F.+-cong τ i₁ (ec-abs τ i₁ s (s' +ₛ P zero) (≈-trans +-assoc (+-cong ≈-refl P₀-abs)))
+                                 (F.refl τ i₁))))
+    where i₁ = f .idxf .sfunc j
+  bndE₁ : ∀ {j : Ix σ} →
+          ∃ (∣ model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f ∣)
+            (λ E' → Semimodule._≈_ (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) (proj₂ E)
+                      (Semimodule._·_ (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) (s ·ₛ w) E')) →
+          Bounded τ (f .idxf .sfunc j) s (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ E))
+  bndE₁ {j} (E' , h) =
+    SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func E' ,
+    F.trans τ (f .idxf .sfunc j)
+      (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.func-resp-≈
+         {proj₂ E} {Semimodule._·_ (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) (s ·ₛ w) E'} h)
+      (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.preserve-· {s ·ₛ w} {E'})
 
 -- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
