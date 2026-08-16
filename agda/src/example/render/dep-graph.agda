@@ -2,7 +2,7 @@
 
 -- Merging vertices joins their edges with the semiring's addition, which agrees with composition by
 -- distributivity. Run from the approx-diff repository root.
-module example.graph-viz.dump-dep-graph where
+module example.render.dep-graph where
 
 open import IO
 open import IO.Finite using (writeFile)
@@ -19,7 +19,7 @@ open import Level using (0ℓ)
 import three
 open import signature.example.interpretation three.semiring using (Sig; interpretation)
 open import example.runs three.semiring three.C using (map-run; filter-run; env; model-output; model-of)
-open import example.show three.semiring using (show-const)
+open import example.render.constants three.semiring using (show-const)
 open import language-operational.annotated-value Sig three.semiring interpretation three.C
   using (AVal; node; Tag; arity; shape-of; shape-env-of; covers; covers-vec; covers-all;
          label-of; fold; fold-all)

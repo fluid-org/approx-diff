@@ -11,8 +11,8 @@ fi
 
 mkdir -p dot
 
-( cd agda && agda --compile --compile-dir=_build src/example/graph-viz/dump-dep-graph.agda >/dev/null )
-agda/_build/dump-dep-graph
+( cd agda && agda --compile --compile-dir=_build src/example/render/dep-graph.agda >/dev/null )
+agda/_build/dep-graph
 
 for f in dot/*.dot; do
   echo "wrote $f"

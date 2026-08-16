@@ -3,7 +3,7 @@
 -- The model's output and relation of each example program at its input, the relation as slices in
 -- annotated-value form: the input environment annotated with the relation's row at each output
 -- position. Run from the approx-diff repository root.
-module example.graph-viz.dump-relations where
+module example.render.relations where
 
 open import IO
 open import IO.Finite using (writeFile)
@@ -20,14 +20,14 @@ open import commutative-semiring using (CommutativeSemiring)
 import matrix
 import two
 import three
-import example.show
+import example.render.constants
 import signature.example.interpretation
 import example.runs
 import language-operational.evaluation
 import language-operational.annotated-value as AV
 
 -- Rendering over a semiring, given how a scalar is shown after a position.
-module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
+module over {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
               (suffix : Setoid.Carrier A → String) where
 
   open CommutativeSemiring S using (ι; ε)
@@ -35,7 +35,7 @@ module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : 
   open language-operational.evaluation Sig S interpretation elim-weight using (Val; Env)
   open AV Sig S interpretation elim-weight using (AVal; node; Tag)
   open AV.annotate Sig S interpretation elim-weight S using (row→aval; row→avals)
-  open example.show S using (show-const)
+  open example.render.constants S using (show-const)
 
   private
     module M = matrix.Mat S
@@ -102,8 +102,8 @@ private
   suffix3 three.C = "ᶜ"
   suffix3 three.O = "⊥"
 
-  module R2 = render two.semiring two.I suffix2
-  module R3 = render three.semiring three.C suffix3
+  module R2 = over two.semiring two.I suffix2
+  module R3 = over three.semiring three.C suffix3
   module E2 = example.runs two.semiring two.I
   module E3 = example.runs three.semiring three.C
 

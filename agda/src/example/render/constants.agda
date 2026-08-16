@@ -5,7 +5,7 @@ open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 
-module example.show {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+module example.render.constants {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 open import Data.Nat using (zero; suc)
 open import Data.String using (String; _++_)
