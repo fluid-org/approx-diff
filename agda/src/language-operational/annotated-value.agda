@@ -195,9 +195,17 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   spread : AVal Scalar → ℕ → ℕ → Scalar
   spread t off = fold (λ _ a n o rs i → at-run a n o i Sc.+ sum-at rs i) off t
 
+  fill-all : (ℕ → Scalar) → ℕ → List (AVal ⊤) → List (AVal Scalar)
+  fill-all row off []       = []
+  fill-all row off (t ∷ ts) = fill row off t ∷ fill-all row (off + covers t) ts
+
   row→aval : ∀ {τ} (show-const : ∀ {s} → sort-val s → String) →
              (ℕ → Scalar) → Val τ → AVal Scalar
   row→aval sc row v = fill row 0 (shape-of sc v)
+
+  row→avals : ∀ {Γ} (show-const : ∀ {s} → sort-val s → String) →
+              (ℕ → Scalar) → Env Γ → List (AVal Scalar)
+  row→avals sc row γ = fill-all row 0 (shape-env-of sc γ)
 
   aval→row : AVal Scalar → ℕ → Scalar
   aval→row t i = spread t 0 i

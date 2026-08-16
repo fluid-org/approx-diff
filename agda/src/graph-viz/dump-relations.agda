@@ -1,0 +1,134 @@
+{-# OPTIONS --prop --postfix-projections --guardedness #-}
+
+-- The model's relation of each example program at its input, as slices in annotated-value form: the
+-- input environment annotated with the relation's row at each output position. Run from the
+-- approx-diff repository root.
+module graph-viz.dump-relations where
+
+open import IO
+open import IO.Finite using (writeFile)
+open import Data.String using (String; _++_)
+open import Data.Unit.Polymorphic using (⊤; tt)
+open import Data.List using (List; []; _∷_)
+open import Data.Nat using (ℕ; zero; suc)
+import Data.Nat.Show as ℕ-Show
+open import Data.Vec using (toList; tabulate)
+import Data.Vec as Vec
+open import Level using (0ℓ)
+open import prop-setoid using (Setoid)
+open import commutative-semiring using (CommutativeSemiring)
+import matrix
+import two
+import three
+open import example.show using (show-const)
+import example.primitives-over
+import example.relations-two
+import example.relations-three
+import language-operational.evaluation
+import language-operational.annotated-value as AV
+
+-- Rendering over a semiring, given the mark each scalar leaves on a position.
+module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
+              (mark : Setoid.Carrier A → String) where
+
+  open CommutativeSemiring S using (ι; ε)
+  open example.primitives-over S using (Sig; primitives)
+  open language-operational.evaluation Sig S primitives elim-weight using (Env)
+  open AV Sig S primitives elim-weight using (AVal; node; Tag)
+  open AV.annotate Sig S primitives elim-weight S using (row→avals)
+
+  private
+    module M = matrix.Mat S
+    Scalar = Setoid.Carrier A
+
+    show-c : ℕ → String → Scalar → String
+    show-c zero    l a = l
+    show-c (suc _) l a = l ++ mark a
+
+    show-aval : AVal Scalar → String
+    show-kids : ∀ {k} → Vec.Vec (AVal Scalar) k → String
+
+    show-aval (node Tag.unit      a _ _)  = "()" ++ mark a
+    show-aval (node (Tag.const l) a n _)  = show-c n l a
+    show-aval (node Tag.inl       a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
+    show-aval (node Tag.inr       a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
+    show-aval (node (Tag.clo _)   a _ _)  = "<closure>" ++ mark a
+    show-aval (node Tag.nil       a _ _)  = "[]" ++ mark a
+    show-aval (node Tag.pair      a _ (p Vec.∷ q Vec.∷ Vec.[])) =
+      "(" ++ show-aval p ++ ", " ++ show-aval q ++ ")" ++ mark a
+    show-aval (node Tag.cons      a _ (h Vec.∷ t Vec.∷ Vec.[])) =
+      show-aval h ++ " ∷" ++ mark a ++ " " ++ show-aval t
+
+    show-kids Vec.[]       = ""
+    show-kids (t Vec.∷ _) = show-aval t
+
+    show-env : List (AVal Scalar) → String
+    show-env []       = ""
+    show-env (c ∷ []) = show-aval c
+    show-env (c ∷ cs) = show-aval c ++ "; " ++ show-env cs
+
+    at : List Scalar → ℕ → Scalar
+    at []       _       = ε
+    at (a ∷ _)  zero    = a
+    at (_ ∷ as) (suc n) = at as n
+
+    rows : ∀ {m n} → M.Matrix m n → List (List Scalar)
+    rows M = toList (tabulate (λ q → toList (tabulate (M q))))
+
+    lines : List String → String
+    lines []       = ""
+    lines (l ∷ ls) = l ++ "\n" ++ lines ls
+
+  -- A program's input, then the relation's row at each output position on the input.
+  show-run : ∀ {Γ} → String → Env Γ → ∀ {m n} → M.Matrix m n → String
+  show-run name γ R =
+    lines (name ∷ ("  in  " ++ show-env (row→avals (λ {s} c → show-const {s} c) (λ _ → ι) γ)) ∷ [])
+    ++ go 0 (rows R)
+    where
+    go : ℕ → List (List Scalar) → String
+    go q []       = ""
+    go q (r ∷ rs) =
+      "  " ++ ℕ-Show.show q ++ "   " ++ show-env (row→avals (λ {s} c → show-const {s} c) (at r) γ) ++ "\n"
+      ++ go (suc q) rs
+
+private
+  mark2 : two.Two → String
+  mark2 two.I = ""
+  mark2 two.O = "⊥"
+
+  mark3 : three.Three → String
+  mark3 three.D = ""
+  mark3 three.C = "ᶜ"
+  mark3 three.O = "⊥"
+
+  module R2 = render two.semiring two.I mark2
+  module R3 = render three.semiring three.C mark3
+  module E2 = example.relations-two
+  module E3 = example.relations-three
+
+  two-run : String → E2.Run → String
+  two-run name r = R2.show-run name (E2.env r) (E2.model-of r)
+
+  three-run : String → E3.Run → String
+  three-run name r = R3.show-run name (E3.env r) (E3.model-of r)
+
+-- The Booleans for the programs whose point is which positions are read; the three-chain, which
+-- separates consumption from value flow, for those whose point is that distinction.
+contents : String
+contents =
+  two-run   "query"      E2.query-run  ++
+  two-run   "const"      E2.const-run  ++
+  two-run   "length"     E2.length-run ++
+  two-run   "fold0"      E2.fold0-run  ++
+  two-run   "case0"      E2.case0-run  ++
+  two-run   "tag"        E2.tag-run    ++
+  two-run   "case-left"  E2.case-l-run ++
+  two-run   "case-right" E2.case-r-run ++
+  two-run   "test"       E2.test-run   ++
+  three-run "map"        E3.map-run    ++
+  three-run "filter"     E3.filter-run ++
+  three-run "cond"       E3.cond-run   ++
+  three-run "eq"         E3.eq-run
+
+main : Main
+main = run (writeFile "test-baselines/relations.txt" contents)

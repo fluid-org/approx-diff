@@ -5,8 +5,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-script/gen-tables.sh >/dev/null
-script/gen-slices.sh >/dev/null
+script/gen-relations.sh >/dev/null
 script/gen-dot.sh >/dev/null
 
 if ! git diff --exit-code --stat -- test-baselines dot; then

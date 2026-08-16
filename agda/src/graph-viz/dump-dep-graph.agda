@@ -17,37 +17,30 @@ open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Vec as Vec using (Vec; toList; tabulate)
 open import Level using (0ℓ)
 import three
-import two
-import example.primitives as EP
 open import Data.Rational using (0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
-open import example.runs-three using (dep-map; dep-filter)
-open import language-syntax EP.Sig using (base; list) renaming (emp to ∙; _,_ to _▸_)
-open import language-operational.evaluation EP.Sig two.semiring EP.primitives two.I using (Val; Env)
+open import example.primitives-over three.semiring using (Sig; primitives; number)
+open import example.relations-three using (map-run; filter-run; env; model-of)
+open import example.show using (show-const)
+open import language-syntax Sig using (base; list)
+open import language-operational.evaluation Sig three.semiring primitives three.C using (Val)
 open Val
-open Env
-open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
-open import example.mk-list EP.Sig two.semiring EP.primitives two.I using (_∷ᵥ_; nilᵥ)
-open import language-operational.annotated-value EP.Sig two.semiring EP.primitives two.I
+open import example.mk-list Sig three.semiring primitives three.C using (_∷ᵥ_; nilᵥ)
+open import language-operational.annotated-value Sig three.semiring primitives three.C
   using (AVal; node; Tag; arity; shape-of; shape-env-of; covers; covers-vec; covers-all;
          label-of; fold; fold-all)
 open import Data.Unit using (⊤)
 open import Data.Nat using (_+_)
 
 private
-  numsT = list (base EP.number)
-
-  γ-filter-env : Env (∙ ▸ base EP.number ▸ numsT)
-  γ-filter-env = emp · const (1ℚ +ℚ 1ℚ) ·
-                 (const 1ℚ ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ᵥ nilᵥ)
-
-  δ-filter : Val numsT
+  δ-map δ-filter : Val (list (base number))
+  δ-map    = const (0ℚ +ℚ 1ℚ) ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ᵥ nilᵥ
   δ-filter = const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ
 
   in-tree out-tree filter-in-tree filter-out-tree : List (AVal ⊤)
-  in-tree         = shape-of (λ {s} c → showC {s} c) γ-nums-val ∷ []
-  out-tree        = shape-of (λ {s} c → showC {s} c) δ-out ∷ []
-  filter-in-tree  = shape-env-of (λ {s} c → showC {s} c) γ-filter-env
-  filter-out-tree = shape-of (λ {s} c → showC {s} c) δ-filter ∷ []
+  in-tree         = shape-env-of (λ {s} c → show-const {s} c) (map-run .env)
+  out-tree        = shape-of (λ {s} c → show-const {s} c) δ-map ∷ []
+  filter-in-tree  = shape-env-of (λ {s} c → show-const {s} c) (filter-run .env)
+  filter-out-tree = shape-of (λ {s} c → show-const {s} c) δ-filter ∷ []
 
   private
     node-entry : ∀ (t : Tag) → ⊤ → ℕ → ℕ → Vec (List (ℕ × String)) (arity t) → List (ℕ × String)
@@ -124,8 +117,8 @@ private
     ++ " [color=black, style=dashed, constraint=false];\n"
 
   map-rows filter-rows : List (List three.Three)
-  map-rows    = toList (tabulate (λ q → toList (tabulate (dep-map q))))
-  filter-rows = toList (tabulate (λ q → toList (tabulate (dep-filter q))))
+  map-rows    = toList (tabulate (λ q → toList (tabulate (model-of map-run q))))
+  filter-rows = toList (tabulate (λ q → toList (tabulate (model-of filter-run q))))
 
   Edge : Set
   Edge = ℕ × ℕ × three.Three

@@ -7,7 +7,7 @@
 -- substitution by its own unfolding and the sort environment by its own sort.
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_; _<_; s≤s)
-open import Data.Nat.Properties using (≤-reflexive; ≤-trans; <-trans; n<1+n; m≤m+n; m≤n+m; n≤1+n)
+open import Data.Nat.Properties using (≤-reflexive; <-trans; n<1+n; m≤m+n; m≤n+m)
 open import Data.Nat.Induction using (<-wellFounded)
 open import Induction.WellFounded using (Acc; acc)
 open import Data.Fin using (Fin; zero; suc; splitAt; _↑ˡ_)

@@ -2183,19 +2183,19 @@ val-idx fo v = interp.closed-iso fo .fwd .idxf .sfunc (⟦ fo ⟧val v)
 env-idx : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → Env Γ → IxC Γ
 env-idx Γ-fo γ = interp.⟦ Γ-fo ⟧ctxt-iso .fwd .idxf .sfunc (⟦ Γ-fo ⟧env γ)
 
-mu-free : ∀ {Δ} {τ : type Δ} → first-order τ → Set
-mu-free (var i)       = ⊤
-mu-free unit          = ⊤
-mu-free (base s)      = ⊤
-mu-free (fo₁ [+] fo₂) = mu-free fo₁ × mu-free fo₂
-mu-free (fo₁ [×] fo₂) = mu-free fo₁ × mu-free fo₂
-mu-free (μ fo)        = ⊥
+μ-free : ∀ {Δ} {τ : type Δ} → first-order τ → Set
+μ-free (var i)       = ⊤
+μ-free unit          = ⊤
+μ-free (base s)      = ⊤
+μ-free (fo₁ [+] fo₂) = μ-free fo₁ × μ-free fo₂
+μ-free (fo₁ [×] fo₂) = μ-free fo₁ × μ-free fo₂
+μ-free (μ fo)        = ⊥
 
-mu-free-ctxt : ∀ {Γ} → first-order-ctxt Γ → Set
-mu-free-ctxt emp         = ⊤
-mu-free-ctxt (Γ-fo ▸ fo) = mu-free-ctxt Γ-fo × mu-free fo
+μ-free-ctxt : ∀ {Γ} → first-order-ctxt Γ → Set
+μ-free-ctxt emp         = ⊤
+μ-free-ctxt (Γ-fo ▸ fo) = μ-free-ctxt Γ-fo × μ-free fo
 
-val-rel : ∀ {τ} (fo : first-order τ) → mu-free fo → (v : Val τ) → ValRel τ v (val-idx fo v)
+val-rel : ∀ {τ} (fo : first-order τ) → μ-free fo → (v : Val τ) → ValRel τ v (val-idx fo v)
 val-rel unit          _         unit       = tt
 val-rel (base s)      _         (const c)  = ⟪ Setoid.refl (sort-index s) ⟫
 val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inl v) =
@@ -2204,12 +2204,12 @@ val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inr v) =
   val-idx fo₂ v , val-rel fo₂ m₂ v , ⟪ Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₂ (val-idx fo₂ v)} ⟫
 val-rel (fo₁ [×] fo₂) (m₁ , m₂) (pair v u) = val-rel fo₁ m₁ v , val-rel fo₂ m₂ u
 
-env-rel : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → mu-free-ctxt Γ-fo → (γ : Env Γ) →
+env-rel : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → μ-free-ctxt Γ-fo → (γ : Env Γ) →
           EnvValRel γ (env-idx Γ-fo γ)
 env-rel emp         _        emp     = emp
 env-rel (Γ-fo ▸ fo) (mΓ , m) (γ · v) = env-rel Γ-fo mΓ γ · val-rel fo m v
 
-val-rel-unique : ∀ {τ} (fo : first-order τ) → mu-free fo → {v : Val τ} {i : Ix τ} →
+val-rel-unique : ∀ {τ} (fo : first-order τ) → μ-free fo → {v : Val τ} {i : Ix τ} →
                  ValRel τ v i → Setoid._≈_ (⟦ τ ⟧ .idx) i (val-idx fo v)
 val-rel-unique unit          _         {unit}      r = prop.tt
 val-rel-unique (base s)      _         {const c}   ⟪ e ⟫ = e
@@ -2222,7 +2222,7 @@ val-rel-unique (fo₁ [×] fo₂) (m₁ , m₂) {pair v u} {i , j} (r , r') =
 
 -- Soundness on values, at μ-free first-order types.
 soundness-val : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) →
-                mu-free-ctxt Γ-fo → mu-free fo →
+                μ-free-ctxt Γ-fo → μ-free fo →
                 ∀ {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ]) →
                 Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ t ⟧tm .idxf .sfunc (env-idx Γ-fo γ)) (val-idx fo v)
 soundness-val Γ-fo fo mΓ m c D = val-rel-unique fo m (fundamental-val c D (env-rel Γ-fo mΓ _))
