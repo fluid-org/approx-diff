@@ -19,7 +19,7 @@ open import categories
   using (Category; HasTerminal; IsTerminal; HasCoproducts; HasWeakExponentials; HasExponentials;
          exponentials→weak; setoid→category)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
-open import primitives using (Primitives; sort-vals-setoid)
+open import signature.interpretation using (Interpretation; sort-vals-setoid)
 open import Data.Sum using (inj₁; inj₂)
 open import cmon-enriched using (CMonEnriched)
 open import functor using (cones→limits)
@@ -116,10 +116,10 @@ exp-const {X} {Y} cY .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
 
 -- The interpretation of the primitives: the first-order interpretation, with the relations'
 -- booleans injected under zero roots.
-module sig-model (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
+module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
   private
-    module IP = FP.interp-primitives Sig 𝒫
+    module IP = FP.interp-primitives Sig ℐ
 
   boolify : Fam⟨𝒞⟩μ.Mor FP.Fam⟨𝒞⟩-bool 𝒞Bool
   boolify =
@@ -129,7 +129,7 @@ module sig-model (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
 
   private
     module IPO = IP.over 𝒞Bool boolify
-    module Pm = Primitives 𝒫
+    module Pm = Interpretation ℐ
     open indexed-family._⇒f_
 
     -- The positions a test reads, as a single row into the outcome's root.
@@ -182,12 +182,12 @@ module sig-model (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
     { ⟦rel⟧ = λ {is} ψ → FCμ._∘_ (rel-simple is ψ) (IPO.arg-collect is) }
 
 -- The higher-order model and the first-order comparison at the realisation.
-module interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
+module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
-  open sig-model Sig 𝒫
+  open sig-model Sig ℐ
 
   𝒞-sort-const : ∀ s → Fam⟨𝒞⟩μ.Constant (model .Model.⟦sort⟧ s)
-  𝒞-sort-const s = Fam⟨𝒞⟩μ.simple-constant (ι-row (Primitives.sort-width 𝒫 s))
+  𝒞-sort-const s = Fam⟨𝒞⟩μ.simple-constant (ι-row (Interpretation.sort-width ℐ s))
 
   open language-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct 1
@@ -204,8 +204,8 @@ module interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   open indexed-family._⇒f_ using (transf)
 
   private
-    module IP = FP.interp-primitives Sig 𝒫
-    module Pm = Primitives 𝒫
+    module IP = FP.interp-primitives Sig ℐ
+    module Pm = Interpretation ℐ
     open Fam⟨𝒟⟩μ using (idx; fam; fm; idxf; famf; subst)
     open SemiMod using (Semimodule)
     open Data.Product using (_,_)

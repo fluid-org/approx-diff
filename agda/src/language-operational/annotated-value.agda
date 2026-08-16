@@ -9,20 +9,20 @@ open import Data.String using (String)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
-open import primitives using (Primitives)
+open import signature.interpretation using (Interpretation)
 import two
 
 module language-operational.annotated-value {ℓ} (Sig : Signature ℓ)
   {A₀ : Setoid 0ℓ 0ℓ} (S₀ : CommutativeSemiring A₀)
-  (𝒫 : Primitives S₀ Sig) (elim-weight : Setoid.Carrier A₀) where
+  (ℐ : Interpretation S₀ Sig) (elim-weight : Setoid.Carrier A₀) where
 
 open Signature Sig
-open Primitives 𝒫
+open Interpretation ℐ
 open import Data.Nat.Properties using (+-identityʳ; +-assoc)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; sym; trans; cong; cong₂)
 open import language-syntax Sig using (unit; base; μ; var; _[+]_; _[×]_; _[→]_)
-open import language-operational.evaluation Sig S₀ 𝒫 elim-weight using (Val; Env; width; width-env)
+open import language-operational.evaluation Sig S₀ ℐ elim-weight using (Val; Env; width; width-env)
 open Val
 open Env
 open import Data.Fin using (zero)

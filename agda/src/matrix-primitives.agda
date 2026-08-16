@@ -15,7 +15,7 @@ open import categories using (Category; HasProducts; HasTerminal; HasCoproducts)
 open import cmon-enriched using (biproducts→products)
 import prop
 open prop using (_,_)
-open import primitives using (Primitives; sort-vals-setoid)
+open import signature.interpretation using (Interpretation; sort-vals-setoid)
 import indexed-family
 import matrix
 import fam
@@ -38,10 +38,10 @@ Fam⟨𝒞⟩-bool =
     (Fam⟨𝒞⟩-terminal .HasTerminal.witness)
     (Fam⟨𝒞⟩-terminal .HasTerminal.witness)
 
-module interp-primitives (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
+module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
   open Signature Sig
-  open Primitives 𝒫
+  open Interpretation ℐ
   open prop-setoid._⇒_ using (func; func-resp-≈)
 
   private

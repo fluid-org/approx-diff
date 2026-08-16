@@ -10,21 +10,21 @@ open import Relation.Nullary.Decidable using (⌊_⌋)
 open import every using (Every; []; _∷_)
 open import prop-setoid using () renaming (_⇒_ to _⇒ₛ_)
 open import signature using (Signature)
-open import primitives using (Primitives)
+open import signature.interpretation using (Interpretation)
 import matrix
 import two
 
 -- The dependence graph of a control-source derivation. Each rule builds its graph from its
 -- premises' graphs using the wiring that also defines the rule's relation, so collapsing the graph
 -- recovers the relation rule by rule.
-module interaction.dependence-graph {ℓ} (Sig : Signature ℓ) (𝒫 : Primitives two.semiring Sig) where
+module interaction.dependence-graph {ℓ} (Sig : Signature ℓ) (ℐ : Interpretation two.semiring Sig) where
 
 open Signature Sig
-open Primitives 𝒫
+open Interpretation ℐ
 open _⇒ₛ_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
-open import language-operational.evaluation Sig two.semiring 𝒫 two.I
+open import language-operational.evaluation Sig two.semiring ℐ two.I
 open import interaction.graph
 
 private

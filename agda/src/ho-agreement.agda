@@ -33,7 +33,7 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 import signature
-open import primitives using (Primitives; sort-vals-setoid)
+open import signature.interpretation using (Interpretation; sort-vals-setoid)
 open import categories using (Category; HasProducts; HasTerminal; HasWeakExponentials; HasStrongCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 import indexed-family
@@ -46,7 +46,7 @@ import language-interpretation
 
 module ho-agreement
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
-  (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig)
+  (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
   (let module Sc = CommutativeSemiring S)
   -- Addition is idempotent, and the elimination weight is idempotent and absorbs its multiples.
   (+-idem : ∀ x → Setoid._≈_ A (x Sc.+ x) x)
@@ -55,12 +55,12 @@ module ho-agreement
   where
 
 open Signature Sig
-open Primitives 𝒫
+open Interpretation ℐ
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig S 𝒫 elim-weight
+open import language-operational.evaluation Sig S ℐ elim-weight
 
 module model = ho-model S elim-weight
-module interp = model.interp Sig 𝒫
+module interp = model.interp Sig ℐ
 open model using (𝔽; mat; ι1-fwd; ι1-bwd; module Ls; module SemiMod)
 open SemiMod using (Semimodule; _⇒_)
 open Semimodule using () renaming (Carrier to ∣_∣)
@@ -87,7 +87,7 @@ open LI using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; elim-const; ty-uni
 open Constant using (at)
 
 private
-  module IP = model.FP.interp-primitives Sig 𝒫
+  module IP = model.FP.interp-primitives Sig ℐ
   module FCμ = model.Fam⟨𝒞⟩μ
 
 ⟦_⟧ : type 0 → Obj
@@ -1999,7 +1999,7 @@ fundamental-s {Ms = _} (c ∷ cs) {γ = γ} (_∷_ {i = i} {is = is} {v = v} {R 
 -- comparison isomorphisms. At a μ-free first-order type a value is related to its interpretation and
 -- to no other index, so at such types the fundamental lemma says that a term's value is interpreted
 -- as the term's index at the environment's interpretation.
-open import value-interpretation S elim-weight Sig 𝒫 using (⟦_⟧val; ⟦_⟧env)
+open import value-interpretation S elim-weight Sig ℐ using (⟦_⟧val; ⟦_⟧env)
 open Category.Iso using (fwd)
 
 val-idx : ∀ {τ} (fo : first-order τ) → Val τ → Ix τ

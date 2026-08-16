@@ -20,8 +20,8 @@ open import commutative-semiring using (CommutativeSemiring)
 import matrix
 import two
 import three
-open import example.show using (show-const)
-import example.primitives-over
+import example.show
+import signature.example.interpretation
 import example.relations-two
 import example.relations-three
 import language-operational.evaluation
@@ -32,10 +32,11 @@ module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : 
               (suffix : Setoid.Carrier A → String) where
 
   open CommutativeSemiring S using (ι; ε)
-  open example.primitives-over S using (Sig; primitives)
-  open language-operational.evaluation Sig S primitives elim-weight using (Val; Env)
-  open AV Sig S primitives elim-weight using (AVal; node; Tag)
-  open AV.annotate Sig S primitives elim-weight S using (row→aval; row→avals)
+  open signature.example.interpretation S using (Sig; interpretation)
+  open language-operational.evaluation Sig S interpretation elim-weight using (Val; Env)
+  open AV Sig S interpretation elim-weight using (AVal; node; Tag)
+  open AV.annotate Sig S interpretation elim-weight S using (row→aval; row→avals)
+  open example.show S using (show-const)
 
   private
     module M = matrix.Mat S

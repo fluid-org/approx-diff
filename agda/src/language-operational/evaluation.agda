@@ -11,7 +11,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import every using (Every; []; _∷_)
 open import signature using (Signature)
-open import primitives using (Primitives)
+open import signature.interpretation using (Interpretation)
 import matrix
 import cmon-enriched
 open import categories using (Category; HasProducts; HasTerminal)
@@ -25,10 +25,10 @@ open import Data.List using (List; []; _∷_)
 -- and makes that root the source of its continuation.
 module language-operational.evaluation {ℓ} (Sig : Signature ℓ)
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
-  (𝒫 : Primitives S Sig) (elim-weight : Setoid.Carrier A) where
+  (ℐ : Interpretation S Sig) (elim-weight : Setoid.Carrier A) where
 
 open Signature Sig
-open Primitives 𝒫
+open Interpretation ℐ
 open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)

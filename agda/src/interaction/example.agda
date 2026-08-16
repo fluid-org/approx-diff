@@ -16,13 +16,13 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import two
 
 open import signature.example ℚ using (Sig; number)
-import example.primitives as Dep
+import signature.example.interpretation two.semiring as Dep
 
 open import language-syntax Sig using (_⊢_; _∋_; zero; base; var; inl; case; ctxt; emp)
   renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig two.semiring Dep.primitives two.I
+open import language-operational.evaluation Sig two.semiring Dep.interpretation two.I
 open import interaction.graph
-open import interaction.dependence-graph Sig Dep.primitives
+open import interaction.dependence-graph Sig Dep.interpretation
 open import interaction.moves
 
 γ₀ : Env (emp ▸ base number)

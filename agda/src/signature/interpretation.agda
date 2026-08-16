@@ -12,10 +12,10 @@ open import prop-setoid using (Setoid; ⊗-setoid; +-setoid; 𝟙; ⊤-isEquival
 open import signature using (Signature)
 import matrix
 
--- The primitives of a signature, as assumed by the operational semantics: for each sort a setoid
--- of constants and a width, and for each operation a function on constants together with a dependency
--- relation at each tuple of constants.
-module primitives where
+-- An interpretation of a signature over a semiring, as assumed by the operational semantics: for
+-- each sort a setoid of constants and a width, and for each operation a function on constants
+-- together with a dependency relation at each tuple of constants.
+module signature.interpretation where
 
 -- The setoid of tuples of constants.
 sort-vals-setoid : ∀ {ℓ} {sort : Set ℓ} (sort-index : sort → Setoid 0ℓ 0ℓ) → List sort → Setoid 0ℓ 0ℓ
@@ -28,7 +28,7 @@ sorts-width : ∀ {ℓ} {A : Set ℓ} → (A → ℕ) → List A → ℕ
 sorts-width w []       = 0
 sorts-width w (s ∷ ss) = w s + sorts-width w ss
 
-record Primitives {ℓ} {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (Sig : Signature ℓ)
+record Interpretation {ℓ} {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (Sig : Signature ℓ)
                   : Set (ℓ ⊔ suc 0ℓ) where
   open Signature Sig
   field

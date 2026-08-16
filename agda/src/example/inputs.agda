@@ -9,13 +9,13 @@ module example.inputs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-w
 
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
 import label
-open import example.primitives-over S using (Sig; primitives; number; label)
+open import signature.example.interpretation S using (Sig; interpretation; number; label)
 open import example.programs using (case-ctxt)
 open import language-syntax Sig using (base; unit; list; _[×]_; _[+]_; emp; _,_)
-open import language-operational.evaluation Sig S primitives elim-weight using (Val; Env)
+open import language-operational.evaluation Sig S interpretation elim-weight using (Val; Env)
 open Val
 open Env
-open import example.mk-list Sig S primitives elim-weight using (_∷ᵥ_; nilᵥ)
+open import example.mk-list Sig S interpretation elim-weight using (_∷ᵥ_; nilᵥ)
 
 private
   el : label.label → ℚ → Val (base label [×] base number)

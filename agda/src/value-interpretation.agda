@@ -21,23 +21,23 @@ open import Relation.Binary.PropositionalEquality.Properties using (subst-subst-
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
-open import primitives using (Primitives)
+open import signature.interpretation using (Interpretation)
 open import polynomial-functor using (Poly; extend)
 import ho-model
 
 module value-interpretation
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
-  (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig)
+  (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
   where
 
-open Primitives 𝒫 using (sort-index)
+open Interpretation ℐ using (sort-index)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (sub-sub; sub-ren; sub-id)
-open import language-operational.evaluation Sig S 𝒫 elim-weight
+open import language-operational.evaluation Sig S ℐ elim-weight
   using (Val; Env; unit; const; inl; inr; pair; roll; emp; _·_; size; size-subst)
 
 module model = ho-model S elim-weight
-module interp = model.interp Sig 𝒫
+module interp = model.interp Sig ℐ
 open interp using (∅𝒞; fo-as-poly; 𝒞⟦_⟧ty; 𝒞⟦_⟧ctxt)
 open model.Fam⟨𝒞⟩μ using (idx; ∣_∣; Sort; mkSort; module Srt)
 open Setoid using (Carrier)

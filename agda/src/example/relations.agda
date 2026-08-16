@@ -11,15 +11,15 @@ module example.relations {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (eli
 import label
 import matrix
 import ho-model
-open import example.primitives-over S using (Sig; primitives; number)
+open import signature.example.interpretation S using (Sig; interpretation; number)
 open import example.programs
 open import example.inputs S elim-weight
 open import language-syntax Sig using (ctxt; type; first-order-ctxt; first-order; _⊢_; base; unit; _[+]_)
-open import language-operational.evaluation Sig S primitives elim-weight using (Val; Env)
-open import value-interpretation S elim-weight Sig primitives using (⟦_⟧env; ⟦_⟧val⁻¹)
+open import language-operational.evaluation Sig S interpretation elim-weight using (Val; Env)
+open import value-interpretation S elim-weight Sig interpretation using (⟦_⟧env; ⟦_⟧val⁻¹)
 
 module model = ho-model S elim-weight
-module interp = model.interp Sig primitives
+module interp = model.interp Sig interpretation
 
 private
   module M = matrix.Mat S
