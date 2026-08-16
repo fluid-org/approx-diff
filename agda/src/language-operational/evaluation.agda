@@ -99,11 +99,11 @@ ctrl R = ctrl-row ∘ (p₁ {1} ∘ R)
 -- The positions of a value that carry control dependence: what a terminal rule or an eliminator
 -- writes the source to. Every position of a first-order value, so that a value returned under an
 -- unavailable constructor is wholly unavailable. Only the root of a closure: its environment
--- cells reach a result only through the body at an application, and the application marks its
--- whole result from the closure's root in any case. Marking the cells as well would make the
--- closure's control dependence a function of what its body reads, which the interpretation cannot
--- express, since there a value of arrow type carries the fibre of every possible result at once
--- and an eliminator writes a constant fixed by the type.
+-- cells reach a result only through the body at an application, and the application attaches
+-- control dependence to its whole result from the closure's root in any case. Attaching it to the
+-- cells as well would make the closure's control dependence a function of what its body reads,
+-- which the interpretation cannot express, since there a value of arrow type carries the fibre of
+-- every possible result at once and an eliminator writes a constant fixed by the type.
 ctrl-of : ∀ {τ} (v : Val τ) → 1 ⇒ width v
 ctrl-of unit        = ctrl-row
 ctrl-of (const _)   = ctrl-row
@@ -212,8 +212,8 @@ built-out : ∀ {Γ} (γ : Env Γ) (n : ℕ) (i : Input) → M.Matrix (suc n) (i
 built-out γ n environment = M.εₘ
 built-out γ n source      = M.in₁ {1} {n} ∘ ctrl-row {1}
 
--- An eliminated root: the conclusion's root points at it, and the source is charged the control
--- weight of consuming it.
+-- An eliminated root: the conclusion's root points at it, and the control weight of consuming it
+-- is attached to the source.
 elim-out : ∀ {Γ τ} (γ : Env Γ) (w : Val τ) (i : Input) → M.Matrix (width w) (input-width γ i)
 elim-out γ w environment = M.εₘ
 elim-out γ w source      = ctrl-of w ∘ ctrl-row {1}

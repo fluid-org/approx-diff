@@ -101,11 +101,11 @@ module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod
 SemiModExp : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
 SemiModExp = exponentials→weak FE.exponentials
 
--- The unit constant of a function space is zero: an eliminator returning a function marks only
--- the root the lifting adjoins, matching the operational semantics, where a closure's control
--- positions are its root alone (language-operational.evaluation.ctrl-of). The tuple of the
--- target's constants over every argument would instead mark every possible result, which no
--- position of a closure stands for.
+-- The unit constant of a function space is zero: an eliminator returning a function attaches
+-- control dependence to the root the lifting adjoins alone, matching the operational semantics,
+-- where a closure's control positions are its root alone (language-operational.evaluation.ctrl-of).
+-- The tuple of the target's constants over every argument would instead attach it to every
+-- possible result, which no position of a closure stands for.
 private
   module SMCM = CMonEnriched SemiMod.cmon-enriched
 
