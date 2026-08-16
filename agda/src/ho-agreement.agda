@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Agreement between the operational relation and the higher-order model, on the fragment without
--- μ-types and primitives, as a logical relation. A value is related to an index of its type's
+-- μ-types, as a logical relation. A value is related to an index of its type's
 -- interpretation by recursion on the type, behaviourally at arrow types: for related arguments and
 -- any derivation of the body, the result is related. Over that, a dependence vector on the value's
 -- positions is related to an element of the fibre: at first-order types position by position, at
@@ -1394,6 +1394,55 @@ private
     (≈-trans (≈-sym (app-+ₘ (M.in₁ {m} {n} ∘ M.p₁ {m} {n}) (M.in₂ {m} {n} ∘ M.p₂ {m} {n}) (λ _ → c) k))
     (≈-trans (app-congₘ (M.id-+ m n) (λ _ → c) k) (app-I (λ _ → c) k))))
 
+-- The outcome of a test at either branch: the root carries the source weight and the test's
+-- reading of its arguments, and the unit beneath the source weight alone.
+private
+  test-branch : ∀ {n} (D : M.Matrix 1 n) (o : ∣ 𝔽 2 ∣) (a : Setoid.Carrier A) (v : ∣ 𝔽 1 ∣) s
+                (y : ∣ 𝔽 n ∣) →
+                (∀ k → o k ≈s ((w ·ₛ s) +ₛ ap (⟨ D , εₘ ⟩) (λ l → (w ·ₛ s) +ₛ y l) k)) →
+                a ≈s ((w ·ₛ s) +ₛ ap D y zero) → v zero ≈s (w ·ₛ s) →
+                (o zero ≈s a) ∧ (∀ k → o (suc k) ≈s v k)
+  test-branch {n} D o a v s y ho ha hv = root , payload
+    where
+    u = λ l → (w ·ₛ s) +ₛ y l
+    root : o zero ≈s a
+    root =
+      ≈-trans (ho zero)
+      (≈-trans (+-cong ≈-refl (≈-trans (ap-pair-zero {n} {1} D εₘ u) (app-+ᵥ D (λ _ → w ·ₛ s) y zero)))
+      (≈-trans (≈-sym +-assoc)
+      (≈-trans (+-cong (≈-trans (+-cong ≈-refl (≈-trans (app-congᵥ D (λ _ → ≈-sym ·-runit) zero)
+                                                          (≈-trans (model.app-· D (w ·ₛ s) (λ _ → ι) zero) (·-cong ·-comm ≈-refl))))
+                                (sw-absorb s (ap D (λ _ → ι) zero)))
+                       ≈-refl)
+               (≈-sym ha))))
+    payload : ∀ k → o (suc k) ≈s v k
+    payload zero =
+      ≈-trans (ho (suc zero))
+      (≈-trans (+-cong ≈-refl (≈-trans (ap-pair-suc {n} {1} D εₘ u zero) (app-εₘ {1} u zero)))
+               (≈-trans +-runit (≈-sym hv)))
+
+  RelF-bool : ∀ {is} (ω : rel is) (vs : sort-vals is) b {i : Ix (unit [+] unit)}
+              (e : Setoid._≈_ (⟦ unit [+] unit ⟧ .idx) i b)
+              (o : ∣ 𝔽 (width (bool→val b)) ∣) (d : ∣ Fib (unit [+] unit) i ∣) s
+              (y : ∣ 𝔽 (bases-width is) ∣) →
+              (∀ k → o k ≈s ((w ·ₛ s) +ₛ ap (brel-deps ω vs b) (λ l → (w ·ₛ s) +ₛ y l) k)) →
+              F._≈_ (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func d)
+                (F._+_ (unit [+] unit) b (ec (unit [+] unit) b s)
+                   (interp.bool-elt b (ap (rel-deps ω .sfunc vs) y zero))) →
+              RelF (unit [+] unit) (RelV-bool b i ⟪ e ⟫) o d
+  RelF-bool ω vs (inj₁ x) {i} e o d s y ho (hd₁ , hd₂) =
+    test-branch (rel-deps ω .sfunc vs) o (proj₁ d') (proj₂ d') s y ho
+      (≈-trans hd₁ (+-cong (prop._∧_.proj₁ (ec-inj₁ {unit} {unit} x s)) ≈-refl))
+      (≈-trans (hd₂ zero) (≈-trans (+-cong (prop._∧_.proj₂ (ec-inj₁ {unit} {unit} x s) zero) ≈-refl)
+                                   (≈-trans +-runit (ec-unit x s))))
+    where d' = ⟦ unit [+] unit ⟧ .fam .subst {i} {inj₁ x} e .func d
+  RelF-bool ω vs (inj₂ x) {i} e o d s y ho (hd₁ , hd₂) =
+    test-branch (rel-deps ω .sfunc vs) o (proj₁ d') (proj₂ d') s y ho
+      (≈-trans hd₁ (+-cong (prop._∧_.proj₁ (ec-inj₂ {unit} {unit} x s)) ≈-refl))
+      (≈-trans (hd₂ zero) (≈-trans (+-cong (prop._∧_.proj₂ (ec-inj₂ {unit} {unit} x s) zero) ≈-refl)
+                                   (≈-trans +-runit (ec-unit x s))))
+    where d' = ⟦ unit [+] unit ⟧ .fam .subst {i} {inj₂ x} e .func d
+
 -- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
               {gi} (rγ : RelVEnv γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
@@ -2065,11 +2114,36 @@ fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cs) {γ =
         (≈-trans (app-I (ap (D-c ∘ C) tp-elt) k)
         (≈-trans (app-∘ D-c C tp-elt k)
                  (app-congₘ (op-deps ω .prop-setoid._⇒_.func-resp-≈ (Prf.prf (fundamental-vals cs D rγ))) Z k)))
-fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-brel {vs = vs} {R = Rs} D) {gi} rγ s x g rel = {!!}
+fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-brel {vs = vs} {R = Rs} D) {gi} rγ s x g rel =
+  RelF-bool ω vs b e _ _ s Z op-side model-side
   where
+  b = rel-pred ω .sfunc vs
+  i = ⟦ brel ω Ms ⟧tm .idxf .sfunc gi
   Z = args-vec Ms gi g
+  D-vs = rel-deps ω .sfunc vs
+  args-eq = Prf.prf (fundamental-vals cs D rγ)
+  e : Setoid._≈_ (⟦ unit [+] unit ⟧ .idx) i b
+  e = Setoid.trans (⟦ unit [+] unit ⟧ .idx) {i} {rel-pred ω .sfunc (args-idx Ms gi)} {b}
+        (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .prop-setoid._⇒_.func-resp-≈ args-eq)
   IH : ∀ l → ap Rs (inputs γ s x) l ≈s ((w ·ₛ s) +ₛ Z l)
   IH = fundamental-s cs D rγ s x g rel
+  op-side : ∀ k → ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (prim-out γ (width (bool→val b)))
+                                                       (brel-deps ω vs b) (cols {γ = γ} Rs)))
+                     (inputs γ s x) k
+                  ≈s ((w ·ₛ s) +ₛ ap (brel-deps ω vs b) (λ l → (w ·ₛ s) +ₛ Z l) k)
+  op-side k =
+    ≈-trans (app-rule₁ {γ = γ} (prim-out γ (width (bool→val b))) (brel-deps ω vs b) Rs s x k)
+            (+-cong (≈-trans (+-cong (ap-ctrl-row s k) (app-εₘ x k)) +-runit) (app-congᵥ (brel-deps ω vs b) IH k))
+  den = ⟦ brel ω Ms ⟧tm .famf .transf gi .func g
+  model-side : F._≈_ (unit [+] unit) b
+                 (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func (F._+_ (unit [+] unit) i (ec (unit [+] unit) i s) den))
+                 (F._+_ (unit [+] unit) b (ec (unit [+] unit) b s) (interp.bool-elt b (ap D-vs Z zero)))
+  model-side =
+    F.trans (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .SemiMod._⇒_.preserve-+ {ec (unit [+] unit) i s} {den})
+      (F.+-cong (unit [+] unit) b (ec-natural (unit [+] unit) {i} {b} e s)
+        (F.trans (unit [+] unit) b
+          (interp.test.test-elt ω (⟦ Ms ⟧tms .idxf .sfunc gi) (⟦ Ms ⟧tms .famf .transf gi .func g) b e)
+          (interp.bool-elt-cong b (app-congₘ (rel-deps ω .prop-setoid._⇒_.func-resp-≈ args-eq) Z zero))))
 
 fundamental-s [] [] rγ s x g rel ()
 fundamental-s {Ms = _} (c ∷ cs) {γ = γ} (_∷_ {i = i} {is = is} {v = v} {R = R₁} {Rs = Rs} {M = M} {Ms = Ms} D Ds) {gi}
