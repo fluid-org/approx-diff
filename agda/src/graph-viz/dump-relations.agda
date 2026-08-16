@@ -1,8 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- The model's relation of each example program at its input, as slices in annotated-value form: the
--- input environment annotated with the relation's row at each output position. Run from the
--- approx-diff repository root.
+-- The model's output and relation of each example program at its input, the relation as slices in
+-- annotated-value form: the input environment annotated with the relation's row at each output
+-- position. Run from the approx-diff repository root.
 module graph-viz.dump-relations where
 
 open import IO
@@ -33,9 +33,9 @@ module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : 
 
   open CommutativeSemiring S using (ι; ε)
   open example.primitives-over S using (Sig; primitives)
-  open language-operational.evaluation Sig S primitives elim-weight using (Env)
+  open language-operational.evaluation Sig S primitives elim-weight using (Val; Env)
   open AV Sig S primitives elim-weight using (AVal; node; Tag)
-  open AV.annotate Sig S primitives elim-weight S using (row→avals)
+  open AV.annotate Sig S primitives elim-weight S using (row→aval; row→avals)
 
   private
     module M = matrix.Mat S
@@ -79,10 +79,11 @@ module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : 
     lines []       = ""
     lines (l ∷ ls) = l ++ "\n" ++ lines ls
 
-  -- A program's input, then the relation's row at each output position on the input.
-  show-run : ∀ {Γ} → String → Env Γ → ∀ {m n} → M.Matrix m n → String
-  show-run name γ R =
-    lines (name ∷ ("  in  " ++ show-env (row→avals (λ {s} c → show-const {s} c) (λ _ → ι) γ)) ∷ [])
+  show-run : ∀ {Γ τ} → String → Env Γ → Val τ → ∀ {m n} → M.Matrix m n → String
+  show-run name γ v R =
+    lines (name ∷
+           ("  in  " ++ show-env (row→avals (λ {s} c → show-const {s} c) (λ _ → ι) γ)) ∷
+           ("  out " ++ show-aval (row→aval (λ {s} c → show-const {s} c) (λ _ → ι) v)) ∷ [])
     ++ go 0 (rows R)
     where
     go : ℕ → List (List Scalar) → String
@@ -107,10 +108,10 @@ private
   module E3 = example.relations-three
 
   two-run : String → E2.Run → String
-  two-run name r = R2.show-run name (E2.env r) (E2.model-of r)
+  two-run name r = R2.show-run name (E2.env r) (E2.model-output r) (E2.model-of r)
 
   three-run : String → E3.Run → String
-  three-run name r = R3.show-run name (E3.env r) (E3.model-of r)
+  three-run name r = R3.show-run name (E3.env r) (E3.model-output r) (E3.model-of r)
 
 -- The Booleans for the programs whose point is which positions are read; the three-chain, which
 -- separates consumption from value flow, for those whose point is that distinction.

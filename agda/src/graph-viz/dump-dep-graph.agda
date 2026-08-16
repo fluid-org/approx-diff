@@ -17,14 +17,9 @@ open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Vec as Vec using (Vec; toList; tabulate)
 open import Level using (0ℓ)
 import three
-open import Data.Rational using (0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
-open import example.primitives-over three.semiring using (Sig; primitives; number)
-open import example.relations-three using (map-run; filter-run; env; model-of)
+open import example.primitives-over three.semiring using (Sig; primitives)
+open import example.relations-three using (map-run; filter-run; env; model-output; model-of)
 open import example.show using (show-const)
-open import language-syntax Sig using (base; list)
-open import language-operational.evaluation Sig three.semiring primitives three.C using (Val)
-open Val
-open import example.mk-list Sig three.semiring primitives three.C using (_∷ᵥ_; nilᵥ)
 open import language-operational.annotated-value Sig three.semiring primitives three.C
   using (AVal; node; Tag; arity; shape-of; shape-env-of; covers; covers-vec; covers-all;
          label-of; fold; fold-all)
@@ -32,15 +27,11 @@ open import Data.Unit using (⊤)
 open import Data.Nat using (_+_)
 
 private
-  δ-map δ-filter : Val (list (base number))
-  δ-map    = const (0ℚ +ℚ 1ℚ) ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ᵥ nilᵥ
-  δ-filter = const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ
-
   in-tree out-tree filter-in-tree filter-out-tree : List (AVal ⊤)
   in-tree         = shape-env-of (λ {s} c → show-const {s} c) (map-run .env)
-  out-tree        = shape-of (λ {s} c → show-const {s} c) δ-map ∷ []
+  out-tree        = shape-of (λ {s} c → show-const {s} c) (model-output map-run) ∷ []
   filter-in-tree  = shape-env-of (λ {s} c → show-const {s} c) (filter-run .env)
-  filter-out-tree = shape-of (λ {s} c → show-const {s} c) δ-filter ∷ []
+  filter-out-tree = shape-of (λ {s} c → show-const {s} c) (model-output filter-run) ∷ []
 
   private
     node-entry : ∀ (t : Tag) → ⊤ → ℕ → ℕ → Vec (List (ℕ × String)) (arity t) → List (ℕ × String)

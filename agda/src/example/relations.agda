@@ -4,8 +4,8 @@ open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 
--- The example programs at their inputs, and the model's relation of each at the interpretation of
--- the input.
+-- The example programs at their inputs, and the model's output and relation of each at the
+-- interpretation of the input.
 module example.relations {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A) where
 
 import label
@@ -15,8 +15,8 @@ open import example.primitives-over S using (Sig; primitives; number)
 open import example.programs
 open import example.inputs S elim-weight
 open import language-syntax Sig using (ctxt; type; first-order-ctxt; first-order; _⊢_; base; unit; _[+]_)
-open import language-operational.evaluation Sig S primitives elim-weight using (Env)
-open import value-interpretation S elim-weight Sig primitives using (⟦_⟧env)
+open import language-operational.evaluation Sig S primitives elim-weight using (Val; Env)
+open import value-interpretation S elim-weight Sig primitives using (⟦_⟧env; ⟦_⟧val⁻¹)
 
 module model = ho-model S elim-weight
 module interp = model.interp Sig primitives
@@ -39,6 +39,9 @@ open Run public
 
 model-input : (r : Run) → Setoid.Carrier (interp.𝒞⟦ r .Γ-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
 model-input r = ⟦ r .Γ-fo ⟧env (r .env)
+
+model-output : (r : Run) → Val (r .τ)
+model-output r = ⟦ r .fo ⟧val⁻¹ (interp.dependency.out (r .Γ-fo) (r .fo) (r .term) (model-input r))
 
 model-of : (r : Run) →
            M.Matrix (interp.dependency.tgt (r .Γ-fo) (r .fo) (r .term) (model-input r))
