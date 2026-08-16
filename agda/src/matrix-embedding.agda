@@ -10,6 +10,7 @@ open import Level using (0ℓ)
 open import Data.Nat as Nat using (ℕ) renaming (_+_ to _+ℕ_)
 open import Data.Fin using (Fin; zero; suc)
 open import prop using (∃ₛ) renaming (_,_ to _,ₚ_)
+open import Data.Product using (_,_)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -247,6 +248,15 @@ L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘b
 𝔽-L-iso n =
   Category.IsIso→Iso SemiMod.cat
     (biproduct-iso SemiMod.cmon-enriched (L-biproduct n) (SemiMod.biproduct SemiMod.𝕀 (𝔽 n)))
+
+-- The comparison read elementwise: the first position becomes the scalar, the rest the payload.
+𝔽-L-fwd-elt : ∀ n (v : Vec (Nat.suc n)) →
+              Semimodule._≈_ (Ls.L (𝔽 n)) (SemiMod._⇒_.func (𝔽-L-iso n .Category.Iso.fwd) v)
+                (v zero , (λ k → v (suc k)))
+𝔽-L-fwd-elt n v =
+  trans (+-cong (+-cong ·-lunit (trans (Σ-cong {n} (λ _ → ε-annihilₗ)) (Σ-ε {n}))) refl)
+        (trans (+-cong (trans +-comm +-lunit) refl) (trans +-comm +-lunit))
+  ,ₚ λ i → trans +-lunit (trans (+-cong ε-annihilₗ (Σ-unit {n} i (λ j → v (suc j)))) +-lunit)
 
 -- The lifted action realises as the copairing over the block witness, which is the form the
 -- comparison's naturality is stated against.

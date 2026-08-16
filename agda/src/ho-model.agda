@@ -10,6 +10,8 @@
 open import Level using (0ℓ)
 open import Data.Nat using (ℕ)
 import Data.Fin as Fin
+import Data.Product
+import Data.List
 import prop
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
@@ -200,6 +202,108 @@ module interp (Sig : Signature 0ℓ) (𝒫 : Primitives S Sig) where
   open language-syntax Sig using (ctxt; type; _⊢_; first-order; first-order-ctxt)
   open Category.Iso
   open indexed-family._⇒f_ using (transf)
+
+  private
+    module IP = FP.interp-primitives Sig 𝒫
+    module Pm = Primitives 𝒫
+    open Fam⟨𝒟⟩μ using (idx; fam; fm; idxf; famf; subst)
+    open SemiMod using (Semimodule)
+    open Data.Product using (_,_)
+    open prop using (_,_)
+
+  -- An element of the booleans' fibre at a branch: a root weight over the zero unit.
+  bool-elt : ∀ b → Setoid.Carrier A → Semimodule.Carrier (𝒟Bool .fam .fm b)
+  bool-elt (inj₁ _) a = a , (λ _ → Sc.ε)
+  bool-elt (inj₂ _) a = a , (λ _ → Sc.ε)
+
+  bool-elt-cong : ∀ b {a a'} → Setoid._≈_ A a a' →
+                  Semimodule._≈_ (𝒟Bool .fam .fm b) (bool-elt b a) (bool-elt b a')
+  bool-elt-cong (inj₁ _) e = e , λ _ → Sc.refl
+  bool-elt-cong (inj₂ _) e = e , λ _ → Sc.refl
+
+  private
+    Lmap-elt : ∀ {X Y : Semimodule} (f : SemiMod._⇒_ X Y) (a : Setoid.Carrier A)
+               (x : Semimodule.Carrier X) →
+               Semimodule._≈_ (Ls.L Y) (SemiMod._⇒_.func (Ls.Lmap f) (a , x)) (a , SemiMod._⇒_.func f x)
+    Lmap-elt {X} {Y} f a x = Sc.trans Sc.+-comm Sc.+-lunit , Semimodule.+-lunit Y
+
+    in₁-zero : ∀ (w : M.Vec 1) → Sc._≈_ (app (M.in₁ {1} {1}) w Fin.zero) (w Fin.zero)
+    in₁-zero w = Sc.trans (Sc.trans Sc.+-comm Sc.+-lunit) Sc.·-lunit
+
+    in₁-suc : ∀ (w : M.Vec 1) k → Sc._≈_ (app (M.in₁ {1} {1}) w (Fin.suc k)) Sc.ε
+    in₁-suc w k = Sc.trans (Sc.trans Sc.+-comm Sc.+-lunit) Sc.ε-annihilₗ
+
+    -- The booleans' comparison applied to a root constant over a row, then transported to a
+    -- branch: the row's reading at the root and zero beneath.
+    module bool-row {n} (D : MC._⇒_ n 1) (y : M.Vec n) where
+      Ω = HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty
+
+      private
+        u = app (MC._∘_ (M.in₁ {1} {1}) D) y
+
+        branch : ∀ {x₁ x} (e : Setoid._≈_ (𝒟𝟙ty .idx) x₁ x) →
+                 Semimodule._≈_ (Ls.L (𝔽 1))
+                   (SemiMod._⇒_.func (Ls.Lmap (𝒟𝟙ty .fam .subst {x₁} {x} e))
+                      (SemiMod._⇒_.func (𝔽-L-iso 1 .fwd) u))
+                   (app D y Fin.zero , λ _ → Sc.ε)
+        branch {x₁} {x} e =
+          Semimodule.trans (Ls.L (𝔽 1))
+            (SemiMod._⇒_.func-resp-≈ (Ls.Lmap g) (𝔽-L-fwd-elt 1 u))
+            (Semimodule.trans (Ls.L (𝔽 1))
+              (Lmap-elt g (u Fin.zero) (λ k → u (Fin.suc k)))
+              (Sc.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (in₁-zero (app D y)) ,
+               λ k → Sc.trans (app-congᵥ G (λ j → Sc.trans (app-∘ (M.in₁ {1} {1}) D y (Fin.suc j))
+                                                              (in₁-suc (app D y) j)) k)
+                              (app-ε G k)))
+          where
+          G = 𝒞𝟙ty .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {x₁} {x} e
+          g = 𝒟𝟙ty .fam .subst {x₁} {x} e
+
+      core : ∀ i₀ b (e : Setoid._≈_ (𝒟Bool .idx) (Ω .idxf .func i₀) b) →
+             Semimodule._≈_ (𝒟Bool .fam .fm b)
+               (SemiMod._⇒_.func (𝒟Bool .fam .subst {Ω .idxf .func i₀} {b} e)
+                 (SemiMod._⇒_.func (Ω .famf .transf i₀) (app (MC._∘_ (𝒞Bool-root .Fam⟨𝒞⟩μ.at i₀) D) y)))
+               (bool-elt b (app D y Fin.zero))
+      core (inj₁ _) (inj₁ _) e = branch e
+      core (inj₂ _) (inj₂ _) e = branch e
+
+  -- The model at a test, at an index and element of the argument product: the index of the
+  -- collected arguments, their positions laid end to end, and the element after transport to the
+  -- actual branch, which is the test's row applied to those positions at the root and zero beneath.
+  Args : Data.List.List (Signature.sort Sig) → Fam⟨𝒟⟩μ.Obj
+  Args = signature.finite-product (Fam⟨𝒟⟩μ.terminal SemiMod.terminal) Fam⟨𝒟⟩μ.products
+           (Model.⟦sort⟧ 𝒟-Sig-model)
+
+  module test {is} (ω : Signature.rel Sig is)
+    (p : Setoid.Carrier (Args is .idx)) (z : Semimodule.Carrier (Args is .fam .fm p)) where
+
+    private
+      p𝒞 = 𝒟-arg-product is .idxf .func p
+      z𝒞 = SemiMod._⇒_.func (𝒟-arg-product is .famf .transf p) z
+      C = IP.collect is .Fam⟨𝒞⟩μ.famf .transf p𝒞
+      test = Model.⟦rel⟧ 𝒟-Sig-model ω
+
+    args-idx = IP.collect is .Fam⟨𝒞⟩μ.idxf .func p𝒞
+    args-vec = app C z𝒞
+
+    test-elt : ∀ b (e : Setoid._≈_ (𝒟Bool .idx) (test .idxf .func p) b) →
+               Semimodule._≈_ (𝒟Bool .fam .fm b)
+                 (SemiMod._⇒_.func (𝒟Bool .fam .subst {test .idxf .func p} {b} e)
+                   (SemiMod._⇒_.func (test .famf .transf p) z))
+                 (bool-elt b (app (Pm.rel-deps ω .func args-idx) args-vec Fin.zero))
+    test-elt b e =
+      Semimodule.trans (𝒟Bool .fam .fm b)
+        (SemiMod._⇒_.func-resp-≈ (𝒟Bool .fam .subst {test .idxf .func p} {b} e)
+          (SemiMod._⇒_.func-resp-≈ (bool-row.Ω D args-vec .famf .transf i₀) elt))
+        (bool-row.core D args-vec i₀ b e)
+      where
+      i₀ = Pm.rel-pred ω .func args-idx
+      D = Pm.rel-deps ω .func args-idx
+      P = 𝒞Bool-root .Fam⟨𝒞⟩μ.at i₀
+      elt : ∀ k → Sc._≈_ (app (MC._∘_ M.I (MC._∘_ (MC._∘_ P D) C)) z𝒞 k)
+                         (app (MC._∘_ P D) args-vec k)
+      elt k = Sc.trans (app-∘ M.I (MC._∘_ (MC._∘_ P D) C) z𝒞 k)
+                (Sc.trans (app-I (app (MC._∘_ (MC._∘_ P D) C) z𝒞) k) (app-∘ (MC._∘_ P D) C z𝒞 k))
 
   -- The fibre map at an input, conjugated through the comparison isomorphisms and evaluated on
   -- the basis. With the fibres free, the basis vector at an input position is the selection of
