@@ -24,7 +24,7 @@ import example.render.constants
 import signature.example.interpretation
 import example.runs
 import language-operational.evaluation
-import language-operational.annotated-value as AV
+import example.render.annotated-value as AV
 
 -- Rendering over a semiring, given how a scalar is shown after a position.
 module over {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)

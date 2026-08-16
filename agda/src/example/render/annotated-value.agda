@@ -12,7 +12,7 @@ open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
 import two
 
-module language-operational.annotated-value {ℓ} (Sig : Signature ℓ)
+module example.render.annotated-value {ℓ} (Sig : Signature ℓ)
   {A₀ : Setoid 0ℓ 0ℓ} (S₀ : CommutativeSemiring A₀)
   (ℐ : Interpretation S₀ Sig) (elim-weight : Setoid.Carrier A₀) where
 
