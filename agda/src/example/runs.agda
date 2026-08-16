@@ -12,16 +12,12 @@ open import Data.Unit using (tt)
 open import Level using (lift)
 import label
 import two
-import example
 import example.primitives as EP
 import matrix
 import ho-model
-open import example.list-terms
-  using (query-ctxt-fo; const-term; length-term; fold0-term; case0-term; tag-term;
+open import example.programs
+  using (query; query-ctxt-fo; const-term; length-term; fold0-term; case0-term; tag-term;
          numlist-fo; map-ctxt-fo; map-term; filter-ctxt-fo; filter-term)
-
-module Ex = example ℚ 0ℚ
-open Ex.ex using (query)
 
 module model = ho-model two.semiring two.I
 module interp = model.interp EP.Sig EP.primitives

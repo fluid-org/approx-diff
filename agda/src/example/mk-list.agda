@@ -1,18 +1,18 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- List values at the list encoding of the syntax: a cons is an injection over a pair of head and
--- tail, under a roll. Shared by the example dumps so a list value is built one way.
+open import Level using (0ℓ)
 open import Data.List using (List; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (subst; sym)
-import two
+open import prop-setoid using (Setoid)
+open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import primitives using (Primitives)
 
-module example.list-value {ℓ} (Sig : Signature ℓ)
-  (𝒫 : Primitives two.semiring Sig) where
+module example.mk-list {ℓ} (Sig : Signature ℓ) {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+  (𝒫 : Primitives S Sig) (elim-weight : Setoid.Carrier A) where
 
 open import language-syntax Sig using (type; list; sub-ren-id)
-open import language-operational.evaluation Sig two.semiring 𝒫 two.I using (Val)
+open import language-operational.evaluation Sig S 𝒫 elim-weight using (Val)
 open Val
 
 infixr 20 _∷ᵥ_

@@ -26,7 +26,7 @@ open import language-operational.evaluation EP.Sig two.semiring EP.primitives tw
 open Val
 open Env
 open import graph-viz.dump-slices using (γ-nums-val; δ-out; showC)
-open import example.list-value EP.Sig EP.primitives using (_∷ᵥ_; nilᵥ)
+open import example.mk-list EP.Sig two.semiring EP.primitives two.I using (_∷ᵥ_; nilᵥ)
 open import language-operational.annotated-value EP.Sig two.semiring EP.primitives two.I
   using (AVal; node; Tag; arity; shape-of; shape-env-of; covers; covers-vec; covers-all;
          label-of; fold; fold-all)

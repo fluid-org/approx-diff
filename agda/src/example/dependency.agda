@@ -12,12 +12,9 @@ open import prop-setoid using (Setoid)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 import two
 import matrix
-import example
 import example.primitives as EP
 import ho-model
-
-module Ex = example ℚ 0ℚ
-open Ex.ex using (case-ctxt-fo; case-term)
+open import example.programs using (case-ctxt-fo; case-term; test-ctxt-fo; test-term)
 
 module model = ho-model two.semiring two.I
 module interp = model.interp EP.Sig EP.primitives
@@ -37,16 +34,6 @@ abstract
   dep-l dep-r : matrix.Mat.Matrix two.semiring 1 3
   dep-l = interp.dependency.mat-of case-ctxt-fo (base EP.number) case-term γ-l
   dep-r = interp.dependency.mat-of case-ctxt-fo (base EP.number) case-term γ-r
-
--- Control dependence through a test: matching on a numeric equality must depend on the scalar the
--- test read, through the root of the test's boolean.
-test-ctxt-fo : first-order-ctxt (emp , base EP.number)
-test-ctxt-fo = emp , base EP.number
-
-test-term : (emp , base EP.number) ⊢ base EP.number
-test-term =
-  case (brel EP.equal-number (var zero ∷ (bop (EP.lit 0ℚ) [] ∷ [])))
-       (bop (EP.lit 1ℚ) []) (bop (EP.lit 0ℚ) [])
 
 γ-test : Setoid.Carrier (interp.𝒞⟦ test-ctxt-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
 γ-test = (lift tt ,' 1ℚ)

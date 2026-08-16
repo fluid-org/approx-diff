@@ -14,7 +14,7 @@ import three
 import matrix
 import example.primitives-over
 import ho-model
-open import example.list-terms
+open import example.programs
   using (numlist-fo; map-ctxt-fo; map-term; filter-ctxt-fo; filter-term;
          cond-ctxt-fo; cond-term; eq-ctxt-fo; eq-term)
 
