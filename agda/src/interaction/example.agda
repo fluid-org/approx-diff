@@ -8,6 +8,7 @@
 module interaction.example where
 
 open import Data.Fin using (zero; suc)
+open import Data.Nat using (suc)
 open import Data.Rational using (ℚ; 1ℚ)
 open import Data.Sum using (inj₁; inj₂)
 open import Level using (0ℓ)
@@ -30,7 +31,7 @@ open import interaction.moves
 D : γ₀ , case (inl (var zero)) (var zero) (var zero) ⇓ const 1ℚ [ _ ]
 D = ⇓-case-l (⇓-inl (⇓-var zero)) (⇓-var zero)
 
-G : Graph Input (input-width γ₀) _
+G : Graph (suc (width-env γ₀)) _
 G = graph D
 
 open Interaction G
@@ -43,7 +44,7 @@ branch : Vertex (Graph.shape G)
 branch = inj₂ (inj₂ root)
 
 env : V G
-env = inj₁ environment
+env = inj₁ input
 
 at : Vertex (Graph.shape G) → V G
 at p = inj₂ (inj₁ p)
@@ -61,22 +62,22 @@ K₂ : Config G
 K₂ = hide-at scrut K₁
 
 -- Everything hidden: the output depends on the input, through the whole chain.
-init-dep : visible-graph K₀ env rt zero zero ≡ two.I
+init-dep : visible-graph K₀ env rt zero (suc zero) ≡ two.I
 init-dep = refl
 
 -- Scrutinee root revealed: its region splits, dependence routes through the revealed vertex, and
 -- the direct env-to-root entry disappears.
-reveal-in : visible-graph K₁ env (at scrut) (suc zero) zero ≡ two.I
+reveal-in : visible-graph K₁ env (at scrut) (suc zero) (suc zero) ≡ two.I
 reveal-in = refl
 
 reveal-out : visible-graph K₁ (at scrut) rt zero (suc zero) ≡ two.I
 reveal-out = refl
 
-reveal-no-direct : visible-graph K₁ env rt zero zero ≡ two.O
+reveal-no-direct : visible-graph K₁ env rt zero (suc zero) ≡ two.O
 reveal-no-direct = refl
 
 -- The rewired env column of the branch is zero: the branch body uses only the bound variable.
-reveal-no-env-branch : fo-graph G env (at branch) zero zero ≡ two.O
+reveal-no-env-branch : fo-graph G env (at branch) zero (suc zero) ≡ two.O
 reveal-no-env-branch = refl
 
 -- The scrutinee slice of the branch environment carries the dependence instead.
@@ -84,9 +85,9 @@ rewired-scrut-branch : fo-graph G (at scrut) (at branch) zero (suc zero) ≡ two
 rewired-scrut-branch = refl
 
 -- Hidden again: the regions merge back and the initial view returns.
-rehide-dep : visible-graph K₂ env rt zero zero ≡ two.I
+rehide-dep : visible-graph K₂ env rt zero (suc zero) ≡ two.I
 rehide-dep = refl
 
 -- Collapsing the whole derivation recovers the run's dependency relation.
-collapse-agrees : collapse G environment zero zero ≡ two.I
+collapse-agrees : collapse G zero (suc zero) ≡ two.I
 collapse-agrees = refl

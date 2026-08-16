@@ -8,8 +8,10 @@ cd "$(dirname "$0")/.."
 
 mkdir -p test-baselines
 
-log=${TMPDIR:-/tmp}/agda-watch.log
-pidfile=${TMPDIR:-/tmp}/agda-watch.pid
+run=${AGDA_WATCH_DIR:-$HOME/.claude/run}
+mkdir -p "$run"
+log=$run/agda-watch.log
+pidfile=$run/agda-watch.pid
 echo $$ > "$pidfile"
 trap 'rm -f "$pidfile"' EXIT
 

@@ -78,14 +78,14 @@ when Bool.false R = M.εₘ
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
 -- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
 -- summaries is a property the moves preserve.
-record Config {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) : Set₁ where
+record Config {m n : ℕ} (B : Graph m n) : Set₁ where
   field
     visible : List (Vertex (Graph.shape B))
     hidden  : List (List (Vertex (Graph.shape B)) × Relation (vertex-width B))
 
 open Config public
 
-module Interaction {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (B : Graph Inp iw n) where
+module Interaction {m n : ℕ} (B : Graph m n) where
 
   private
     at : Vertex (Graph.shape B) → V B
@@ -214,7 +214,7 @@ private
   foldr-entryₘ B []        i j = ≡-refl
   foldr-entryₘ B (R' ∷ Rs) i j = ≡-cong (R' i j two.⊔_) (foldr-entryₘ B Rs i j)
 
-module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
+module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   open Graph 𝒢 using (shape)
 
@@ -1228,7 +1228,7 @@ module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
   reveal-hide p K S hp .visible-≈ = ↭-reflexive (reveal-hide-visible p K S hp)
   reveal-hide p K S hp .hidden-≈  = reveal-hide-hidden-set p K S hp
 
-module _ {Inp : Set} {iw : Inp → ℕ} {n : ℕ} (𝒢 : Graph Inp iw n) where
+module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   open Graph 𝒢 using (shape)
   open Interaction 𝒢
