@@ -40,7 +40,8 @@ private
   module M = matrix.Mat S
 
 open Category M.cat using (_⇒_; _∘_) renaming (id to idm)
-open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
+open HasProducts M.products using (p₁; p₂)
+open M using (⟨_,_⟩)
 open HasTerminal M.terminal using (to-terminal)
 
 private

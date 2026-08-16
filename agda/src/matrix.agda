@@ -167,7 +167,9 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   terminal .HasTerminal.is-terminal .IsTerminal.to-terminal ()
   terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f ()
 
-  open import cmon-enriched using (CMonEnriched; Biproduct)
+  import cmon-enriched
+  open cmon-enriched using (CMonEnriched; Biproduct)
+  open import categories using (HasProducts)
   open import commutative-monoid using (CommutativeMonoid)
   open import Data.Nat using () renaming (_+_ to _+ℕ_)
 
@@ -286,6 +288,12 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   -- Copairing of blocks: [ f , g ] as a matrix into the summed domain.
   _∥_ : ∀ {m n k} → Matrix k m → Matrix k n → Matrix k (m +ℕ n)
   _∥_ {m} {n} f g = Biproduct.copair (biproduct m n) f g
+
+  products : HasProducts cat
+  products = cmon-enriched.biproducts→products cmon biproduct
+
+  -- Pairing of blocks: ⟨ f , g ⟩ as a matrix out of the summed codomain.
+  open HasProducts products using () renaming (pair to ⟨_,_⟩) public
 
   -- A scalar as a 1-by-1 block.
   block : Carrier → Matrix 1 1
@@ -411,3 +419,16 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   absorb₂ : ∀ {m n k} (M : Matrix m n) (N : Matrix m k) → (M +ₘ (N ∘ εₘ)) ≈ₘ M
   absorb₂ M N = ≈ₘ-trans (+ₘ-cong ≈ₘ-refl (comp-bilinear-ε₂ N)) (+ₘ-runit M)
+
+  -- Composing with a pairing or a copairing, blockwise.
+  ∘-pair : ∀ {m n k l} (A : Matrix l (m +ℕ n)) (X : Matrix m k) (Y : Matrix n k) →
+           (A ∘ ⟨ X , Y ⟩) ≈ₘ (((A ∘ in₁) ∘ X) +ₘ ((A ∘ in₂) ∘ Y))
+  ∘-pair A X Y =
+    ≈ₘ-trans (comp-bilinear₂ A (in₁ ∘ X) (in₂ ∘ Y)) (+ₘ-cong (≈ₘ-sym (assoc A in₁ X)) (≈ₘ-sym (assoc A in₂ Y)))
+
+  ∥-pair : ∀ {m n k l} (F : Matrix l m) (G : Matrix l n) (X : Matrix m k) (Y : Matrix n k) →
+           ((F ∥ G) ∘ ⟨ X , Y ⟩) ≈ₘ ((F ∘ X) +ₘ (G ∘ Y))
+  ∥-pair {m} {n} F G X Y =
+    ≈ₘ-trans (∘-pair (F ∥ G) X Y)
+             (+ₘ-cong (∘-cong₁ (Biproduct.copair-in₁ (biproduct m n) F G))
+                      (∘-cong₁ (Biproduct.copair-in₂ (biproduct m n) F G)))

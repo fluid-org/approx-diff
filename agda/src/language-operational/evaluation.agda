@@ -63,10 +63,8 @@ private
 open Category M.cat using (_⇒_; _∘_; ∘-cong₁; ∘-cong₂; assoc; id-right) renaming (id to idm)
 open HasTerminal M.terminal using (to-terminal)
 
-products : HasProducts M.cat
-products = cmon-enriched.biproducts→products M.cmon M.biproduct
-
-open HasProducts products using (p₁; p₂) renaming (pair to ⟨_,_⟩)
+open HasProducts M.products using (p₁; p₂)
+open M using (⟨_,_⟩)
 
 mutual
   width : ∀ {τ} → Val τ → ℕ
@@ -129,7 +127,7 @@ brel-deps ω vs (inj₁ _) = ⟨ rel-deps ω .func vs , M.εₘ ⟩
 brel-deps ω vs (inj₂ _) = ⟨ rel-deps ω .func vs , M.εₘ ⟩
 
 open M using (≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans)
-open HasProducts products using () renaming (prod-m to _⊕_) public
+open HasProducts M.products using () renaming (prod-m to _⊕_) public
 
 -- The inputs of a derivation are the control source, the first input position, then the
 -- environment.
@@ -161,24 +159,17 @@ lam-out γ t = ctrl-row {1} ⊕ M.I {width-env γ}
 proj-up : ∀ {m n τ} (w : Val τ) → M.Matrix (width w) (m + n) → M.Matrix (width w) (suc (m + n))
 proj-up {m} {n} w P = (P ∘ p₂ {1} {m + n}) M.+ₘ (ctrl-of w ∘ p₁ {1} {m + n})
 
--- A premise's inputs from the conclusion's (a route) and from an earlier premise's root (a link).
--- A branch's source is the scrutinee's root and its last cell the payload; a body's source is the
+-- A premise's inputs as a matrix over the conclusion's inputs and the earlier premises' outputs. A
+-- branch's source is the scrutinee's root and its last cell the payload; a body's source is the
 -- closure's root, its cells the closure's, its last cell the argument.
-branch-route : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) → suc (width-env γ) ⇒ suc (width-env γ + width v)
-branch-route γ v = ctrl-row {1} ⊕ M.in₁ {width-env γ} {width v}
+branch-inputs : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) →
+                (suc (width-env γ) + suc (width v)) ⇒ suc (width-env γ + width v)
+branch-inputs γ v = (ctrl-row {1} ⊕ M.in₁ {width-env γ} {width v}) M.∥ (M.I {1} ⊕ M.in₂ {width-env γ} {width v})
 
-branch-link : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) → suc (width v) ⇒ suc (width-env γ + width v)
-branch-link γ v = M.I {1} ⊕ M.in₂ {width-env γ} {width v}
-
-body-route : ∀ {Γ Γ' σ} (γ : Env Γ) (γ' : Env Γ') (v : Val σ) →
-             suc (width-env γ) ⇒ suc (width-env γ' + width v)
-body-route γ γ' v = M.in₁ {1} ∘ wsrc
-
-body-link₁ : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) → suc (width-env γ') ⇒ suc (width-env γ' + width v)
-body-link₁ γ' v = M.I {1} ⊕ M.in₁ {width-env γ'} {width v}
-
-body-link₂ : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) → width v ⇒ suc (width-env γ' + width v)
-body-link₂ γ' v = M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v}
+body-inputs : ∀ {Γ Γ' σ} (γ : Env Γ) (γ' : Env Γ') (v : Val σ) →
+              ((suc (width-env γ) + suc (width-env γ')) + width v) ⇒ suc (width-env γ' + width v)
+body-inputs γ γ' v =
+  ((M.in₁ {1} ∘ wsrc) M.∥ (M.I {1} ⊕ M.in₁ {width-env γ'} {width v})) M.∥ (M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v})
 
 -- The inputs of a fold action: the derivation's inputs, then the value folded over.
 rcast : ∀ {m m' n} → m ≡ m' → M.Matrix m n → M.Matrix m' n
@@ -187,24 +178,16 @@ rcast refl R = R
 ccast : ∀ {m n n'} → n ≡ n' → M.Matrix m n → M.Matrix m n'
 ccast refl R = R
 
--- A fold action's routes and links: to a subvalue through C, to the recursive call's environment
--- extended by the folded subresult, and from the folded value's premise into the action.
-input-route : ∀ {Γ} (γ : Env Γ) {m n} → M.Matrix m n →
+-- The inputs of a fold action on a subvalue reached through C, and of the recursive call on a
+-- folded subresult, over the action's inputs and the subresult.
+sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} → M.Matrix m n →
               (suc (width-env γ) + n) ⇒ (suc (width-env γ) + m)
-input-route γ C = M.I ⊕ C
+sub-inputs γ C = M.I ⊕ C
 
-rec-route : ∀ {Γ τ} (γ : Env Γ) (w' : Val τ) {m} →
-            (suc (width-env γ) + m) ⇒ suc (width-env γ + width w')
-rec-route γ w' {m} = (M.I {1} ⊕ M.in₁ {width-env γ} {width w'}) ∘ p₁ {suc (width-env γ)} {m}
-
-rec-link : ∀ {Γ τ} (γ : Env Γ) (w' : Val τ) → width w' ⇒ suc (width-env γ + width w')
-rec-link γ w' = M.in₂ {1} ∘ M.in₂ {width-env γ} {width w'}
-
-fold-route : ∀ {Γ} (γ : Env Γ) (m : ℕ) → suc (width-env γ) ⇒ (suc (width-env γ) + m)
-fold-route γ m = M.in₁ {suc (width-env γ)} {m}
-
-fold-link : ∀ {Γ} (γ : Env Γ) (m : ℕ) → m ⇒ (suc (width-env γ) + m)
-fold-link γ m = M.in₂ {suc (width-env γ)} {m}
+rec-inputs : ∀ {Γ τ} (γ : Env Γ) (w' : Val τ) {m} →
+             ((suc (width-env γ) + m) + width w') ⇒ suc (width-env γ + width w')
+rec-inputs γ w' {m} =
+  ((M.I {1} ⊕ M.in₁ {width-env γ} {width w'}) ∘ p₁ {suc (width-env γ)} {m}) M.∥ (M.in₂ {1} ∘ M.in₂ {width-env γ} {width w'})
 
 -- A rebuilt constructor's root carries the source and the copied root.
 map-built-out : ∀ {Γ} (γ : Env Γ) (m n : ℕ) → (suc (width-env γ) + suc m) ⇒ suc n
@@ -228,11 +211,11 @@ mutual
     ⇓-case-l : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R T} →
                γ , s ⇓ inl v [ R ] → γ · v , t₁ ⇓ u [ T ] →
-               γ , case s t₁ t₂ ⇓ u [ T ∘ (branch-route γ v M.+ₘ (branch-link γ v ∘ R)) ]
+               γ , case s t₁ t₂ ⇓ u [ T ∘ (branch-inputs γ v ∘ ⟨ M.I , R ⟩) ]
     ⇓-case-r : ∀ {Γ τ₁ τ₂ τ} {γ : Env Γ} {s : Γ ⊢ τ₁ [+] τ₂} {t₁ : Γ ▸ τ₁ ⊢ τ} {t₂ : Γ ▸ τ₂ ⊢ τ}
                {v u R T} →
                γ , s ⇓ inr v [ R ] → γ · v , t₂ ⇓ u [ T ] →
-               γ , case s t₁ t₂ ⇓ u [ T ∘ (branch-route γ v M.+ₘ (branch-link γ v ∘ R)) ]
+               γ , case s t₁ t₂ ⇓ u [ T ∘ (branch-inputs γ v ∘ ⟨ M.I , R ⟩) ]
     ⇓-pair   : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {s : Γ ⊢ τ₁} {t : Γ ⊢ τ₂} {v u R T} →
                γ , s ⇓ v [ R ] → γ , t ⇓ u [ T ] →
                γ , pair s t ⇓ pair v u [ built-out γ (width v + width u) M.+ₘ (M.in₂ {1} ∘ ⟨ R , T ⟩) ]
@@ -246,7 +229,7 @@ mutual
     ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R T U} →
                γ , s ⇓ clo {Γ'} γ' t' [ R ] → γ , t ⇓ v [ T ] → γ' · v , t' ⇓ u [ U ] →
                γ , app s t ⇓ u
-                 [ U ∘ ((body-route γ γ' v M.+ₘ (body-link₁ γ' v ∘ R)) M.+ₘ (body-link₂ γ' v ∘ T)) ]
+                 [ U ∘ (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) ]
     ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] →
                γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ wsrc M.+ₘ (op-deps ω .func vs ∘ R) ]
@@ -259,7 +242,7 @@ mutual
     ⇓-fold   : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
                {v u R F} →
                γ , t ⇓ v [ R ] → Map γ {τ} {σ} s (var zero) v u F →
-               γ , fold s t ⇓ u [ F ∘ (fold-route γ (width v) M.+ₘ (fold-link γ (width v) ∘ R)) ]
+               γ , fold s t ⇓ u [ F ∘ ⟨ M.I , R ⟩ ]
 
   data _,_⇓s_[_] {Γ} (γ : Env Γ) : ∀ {is} → Every (λ s → Γ ⊢ base s) is →
                   sort-vals is → suc (width-env γ) ⇒ bases-width is →
@@ -276,7 +259,7 @@ mutual
            (suc (width-env γ) + width v) ⇒ width v' → Set ℓ where
     m-rec   : ∀ {w w' u F T} →
               Map γ s τ₀ w w' F → γ · w' , s ⇓ u [ T ] →
-              Map γ s (var zero) (roll w) u (T ∘ (rec-route γ w' M.+ₘ (rec-link γ w' ∘ F)))
+              Map γ s (var zero) (roll w) u (T ∘ (rec-inputs γ w' ∘ ⟨ M.I , F ⟩))
     m-unit  : ∀ {v} → Map γ s unit v v (map-leaf γ (width v))
     m-base  : ∀ {b v} → Map γ s (base b) v v (map-leaf γ (width v))
     m-arrow : ∀ {σ₁ σ₂ v} → Map γ s (σ₁ [→] σ₂) v v (map-leaf γ (width v))
@@ -284,24 +267,24 @@ mutual
               Map γ s σ₁ v v' F →
               Map γ s (σ₁ [+] σ₂) (inl v) (inl v')
                   (map-built-out γ (width v) (width v') M.+ₘ
-                   (M.in₂ {1} ∘ (F ∘ input-route γ (p₂ {1} {width v}))))
+                   (M.in₂ {1} ∘ (F ∘ sub-inputs γ (p₂ {1} {width v}))))
     m-inr   : ∀ {σ₁ σ₂ v v' F} →
               Map γ s σ₂ v v' F →
               Map γ s (σ₁ [+] σ₂) (inr v) (inr v')
                   (map-built-out γ (width v) (width v') M.+ₘ
-                   (M.in₂ {1} ∘ (F ∘ input-route γ (p₂ {1} {width v}))))
+                   (M.in₂ {1} ∘ (F ∘ sub-inputs γ (p₂ {1} {width v}))))
     m-pair  : ∀ {σ₁ σ₂ v v' u u' F G} →
               Map γ s σ₁ v v' F → Map γ s σ₂ u u' G →
               Map γ s (σ₁ [×] σ₂) (pair v u) (pair v' u')
                   (map-built-out γ (width v + width u) (width v' + width u') M.+ₘ
-                   (M.in₂ {1} ∘ ⟨ F ∘ input-route γ (p₁ {width v} {width u} ∘ p₂ {1} {width v + width u}) ,
-                                  G ∘ input-route γ (p₂ {width v} {width u} ∘ p₂ {1} {width v + width u}) ⟩))
+                   (M.in₂ {1} ∘ ⟨ F ∘ sub-inputs γ (p₁ {width v} {width u} ∘ p₂ {1} {width v + width u}) ,
+                                  G ∘ sub-inputs γ (p₂ {width v} {width u} ∘ p₂ {1} {width v + width u}) ⟩))
     m-mu    : ∀ {τ' : type 2} {w w' F} →
               Map γ s (unfold₁ τ') w w' F →
               Map γ s (μ τ')
                   (roll (subst Val (unfold₁-inst τ' (μ τ₀)) w))
                   (roll (subst Val (unfold₁-inst τ' σr) w'))
                   (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I ∘
-                   (F ∘ input-route γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I)))
+                   (F ∘ sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I)))
 
 infix 25 _,_⇓_[_] _,_⇓s_[_]

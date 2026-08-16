@@ -243,7 +243,7 @@ open Setoid A using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-
 open M using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans) renaming (Σ to Σₛ)
 
 open Sc using (+-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
-open HasProducts products using () renaming (pair to ⟨_,_⟩)
+open M using (⟨_,_⟩)
 
 -- Reading a relation at the inputs: the source column at the source weight, and the environment
 -- columns at the environment vector.
@@ -477,13 +477,13 @@ private
                ap (M.p₁ {a} {b}) (ap (⟨ f , g ⟩) u) k ≈s ap f u k
   ap-pair-p₁ {m} {a} {b} f g u k =
     ≈-trans (≈-sym (app-∘ (M.p₁ {a} {b}) (⟨ f , g ⟩) u k))
-            (app-congₘ (HasProducts.pair-p₁ products f g) u k)
+            (app-congₘ (HasProducts.pair-p₁ M.products f g) u k)
 
   ap-pair-p₂ : ∀ {m a b} (f : M.Matrix a m) (g : M.Matrix b m) (u : ∣ 𝔽 m ∣) (k : Fin b) →
                ap (M.p₂ {a} {b}) (ap (⟨ f , g ⟩) u) k ≈s ap g u k
   ap-pair-p₂ {m} {a} {b} f g u k =
     ≈-trans (≈-sym (app-∘ (M.p₂ {a} {b}) (⟨ f , g ⟩) u k))
-            (app-congₘ (HasProducts.pair-p₂ products f g) u k)
+            (app-congₘ (HasProducts.pair-p₂ M.products f g) u k)
 
 -- Adding the value's control positions at a source weight on the operational side, and the
 -- elimination constant on the denotational side, preserves the relation.
@@ -1010,33 +1010,40 @@ private
 -- weighted source as source, and at the environment and the scrutinee's payload as environment.
 app-case : ∀ {Γ τ'} {γ : Env Γ} (v : Val τ') {n} (R_s : M.Matrix (suc (width v)) (suc (width-env γ)))
            (T : M.Matrix n (suc (width-env (γ · v)))) s x (k : Fin n) →
-           ap (T ∘ (branch-route γ v +ₘ (branch-link γ v ∘ R_s))) (inputs γ s x) k
+           ap (T ∘ (branch-inputs γ v ∘ ⟨ M.I , R_s ⟩)) (inputs γ s x) k
            ≈s ap T (inputs (γ · v) (ap R_s (inputs γ s x) zero +ₛ (w ·ₛ s))
                      (λ l → ap (M.in₁ {width-env γ} {width v}) x l +ₛ
                             ap (M.in₂ {width-env γ} {width v}) (λ m → ap R_s (inputs γ s x) (suc m)) l)) k
 app-case {γ = γ} v R_s T s x k =
-  ≈-trans (app-∘ T (branch-route γ v +ₘ (branch-link γ v ∘ R_s)) (inputs γ s x) k)
-          (app-congᵥ T branch-inputs k)
+  ≈-trans (app-congₘ (MC.∘-cong₂ {f = T} (≈ₘ-trans (M.∥-pair from-inputs from-scrutinee M.I R_s)
+                                                   (M.+ₘ-cong (MC.id-right {f = from-inputs}) ≈ₘ-refl))) y k)
+  (≈-trans (app-∘ T (from-inputs +ₘ (from-scrutinee ∘ R_s)) y k)
+           (app-congᵥ T branch-at k))
   where
+  module MC = Category M.cat
   y = inputs γ s x
   o_s = ap R_s y
+  from-inputs : M.Matrix (suc (width-env γ + width v)) (suc (width-env γ))
+  from-inputs = ctrl-row {1} ⊕ M.in₁ {width-env γ} {width v}
+  from-scrutinee : M.Matrix (suc (width-env γ + width v)) (suc (width v))
+  from-scrutinee = M.I {1} ⊕ M.in₂ {width-env γ} {width v}
 
-  branch-inputs : ∀ l → ap (branch-route γ v +ₘ (branch-link γ v ∘ R_s)) y l ≈s
-                        inputs (γ · v) (o_s zero +ₛ (w ·ₛ s))
-                          (λ m → ap (M.in₁ {width-env γ} {width v}) x m +ₛ
-                                 ap (M.in₂ {width-env γ} {width v}) (λ m' → o_s (suc m')) m) l
-  branch-inputs zero =
-    ≈-trans (app-+ₘ (branch-route γ v) (branch-link γ v ∘ R_s) y zero)
+  branch-at : ∀ l → ap (from-inputs +ₘ (from-scrutinee ∘ R_s)) y l ≈s
+                    inputs (γ · v) (o_s zero +ₛ (w ·ₛ s))
+                      (λ m → ap (M.in₁ {width-env γ} {width v}) x m +ₛ
+                             ap (M.in₂ {width-env γ} {width v}) (λ m' → o_s (suc m')) m) l
+  branch-at zero =
+    ≈-trans (app-+ₘ from-inputs (from-scrutinee ∘ R_s) y zero)
     (≈-trans (+-cong (≈-trans (ap-⊕₁-zero {width-env γ} (ctrl-row {1}) (M.in₁ {width-env γ} {width v}) y)
                               (ap-ctrl-row {1} s zero))
-                     (≈-trans (app-∘ (branch-link γ v) R_s y zero)
+                     (≈-trans (app-∘ from-scrutinee R_s y zero)
                               (≈-trans (ap-⊕₁-zero {width v} M.I (M.in₂ {width-env γ} {width v}) o_s)
                                        (app-I {1} (λ _ → o_s zero) zero))))
              +-comm)
-  branch-inputs (suc m) =
-    ≈-trans (app-+ₘ (branch-route γ v) (branch-link γ v ∘ R_s) y (suc m))
+  branch-at (suc m) =
+    ≈-trans (app-+ₘ from-inputs (from-scrutinee ∘ R_s) y (suc m))
             (+-cong (ap-⊕₁-suc {width-env γ} (ctrl-row {1}) (M.in₁ {width-env γ} {width v}) y m)
-                    (≈-trans (app-∘ (branch-link γ v) R_s y (suc m))
+                    (≈-trans (app-∘ from-scrutinee R_s y (suc m))
                              (ap-⊕₁-suc {width v} M.I (M.in₂ {width-env γ} {width v}) o_s m)))
 
 -- A projection, read at the inputs: the result's control positions at the weighted source plus
@@ -1860,39 +1867,53 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
 
   -- The application's relation reads the body's at the closure's root and the application's
   -- weighted source as source, and at the closure's cells and the argument as environment.
-  app-op : ∀ k → ap (U ∘ ((body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) +ₘ (body-link₂ γ' v ∘ T)))
-                    (inputs γ s x) k
+  app-op : ∀ k → ap (U ∘ (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩)) (inputs γ s x) k
                  ≈s ap U (body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z) k
   app-op k =
-    ≈-trans (app-∘ U ((body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) +ₘ (body-link₂ γ' v ∘ T)) y k)
-            (app-congᵥ U body-inputs k)
+    ≈-trans (app-congₘ (MC.∘-cong₂ {f = U} split) y k)
+    (≈-trans (app-∘ U ((from-source +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) y k)
+             (app-congᵥ U body-at k))
     where
+    module MC = Category M.cat
     y = inputs γ s x
+    from-source : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ))
+    from-source = M.in₁ {1} ∘ wsrc
+    from-closure : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ'))
+    from-closure = M.I {1} ⊕ M.in₁ {width-env γ'} {width v}
+    from-argument : M.Matrix (suc (width-env γ' + width v)) (width v)
+    from-argument = M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v}
 
-    body-inputs : ∀ l → ap ((body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) +ₘ (body-link₂ γ' v ∘ T)) y l ≈s
-                        body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
-    body-inputs zero =
-      ≈-trans (app-+ₘ (body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) (body-link₂ γ' v ∘ T) y zero)
-      (≈-trans (+-cong (≈-trans (app-+ₘ (body-route γ γ' v) (body-link₁ γ' v ∘ R) y zero)
+    split : (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) M.≈ₘ ((from-source +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T))
+    split =
+      ≈ₘ-trans (M.∥-pair (from-source M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T)
+               (M.+ₘ-cong (≈ₘ-trans (M.∥-pair from-source from-closure M.I R)
+                                    (M.+ₘ-cong (MC.id-right {f = from-source}) ≈ₘ-refl))
+                          ≈ₘ-refl)
+
+    body-at : ∀ l → ap ((from-source +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) y l ≈s
+                    body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
+    body-at zero =
+      ≈-trans (app-+ₘ (from-source +ₘ (from-closure ∘ R)) (from-argument ∘ T) y zero)
+      (≈-trans (+-cong (≈-trans (app-+ₘ from-source (from-closure ∘ R) y zero)
                                 (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wsrc y zero)
                                                  (≈-trans (ap-in₁-zero {width-env γ' + width v} (ap wsrc y))
                                                           (ap-wsrc {width-env γ} {1} y zero)))
-                                        (≈-trans (app-∘ (body-link₁ γ' v) R y zero)
+                                        (≈-trans (app-∘ from-closure R y zero)
                                                  (≈-trans (ap-⊕₁-zero {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o)
                                                           (app-I {1} (λ _ → o zero) zero)))))
-                       (≈-trans (app-∘ (body-link₂ γ' v) T y zero)
+                       (≈-trans (app-∘ from-argument T y zero)
                                 (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z zero)
                                          (ap-in₂-zero {width-env γ' + width v} _))))
                +-runit)
-    body-inputs (suc l) =
-      ≈-trans (app-+ₘ (body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) (body-link₂ γ' v ∘ T) y (suc l))
-      (≈-trans (+-cong (≈-trans (app-+ₘ (body-route γ γ' v) (body-link₁ γ' v ∘ R) y (suc l))
+    body-at (suc l) =
+      ≈-trans (app-+ₘ (from-source +ₘ (from-closure ∘ R)) (from-argument ∘ T) y (suc l))
+      (≈-trans (+-cong (≈-trans (app-+ₘ from-source (from-closure ∘ R) y (suc l))
                                 (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wsrc y (suc l))
                                                           (ap-in₁-suc {width-env γ' + width v} (ap wsrc y) l))
-                                                 (≈-trans (app-∘ (body-link₁ γ' v) R y (suc l))
+                                                 (≈-trans (app-∘ from-closure R y (suc l))
                                                           (ap-⊕₁-suc {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o l)))
                                          +-lunit))
-                       (≈-trans (app-∘ (body-link₂ γ' v) T y (suc l))
+                       (≈-trans (app-∘ from-argument T y (suc l))
                                 (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z (suc l))
                                          (ap-in₂-suc {width-env γ' + width v} _ l))))
                ≈-refl)

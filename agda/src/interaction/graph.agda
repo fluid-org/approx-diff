@@ -8,7 +8,7 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renam
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.Nat using (ℕ)
+open import Data.Nat using (ℕ; _+_)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -34,7 +34,7 @@ private
 
 open two using (Two; O; I; _⊔_; ⊔-idem; ⊔-comm; ⊔-runit; ⊔-assoc)
 open import categories using (Category)
-open Category M.cat using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; ≈-refl; ≈-sym; ≈-trans)
+open Category M.cat using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans)
 
 data Input : Set where
   input : Input
@@ -790,18 +790,16 @@ module _ {m n : ℕ} (B : Graph m n) where
                            (hide-sink (vertex-width B) (gr B) (inj₂ (inj₂ root)) root-row)
                            (inj₁ input) (inj₂ (inj₂ root)))
 
--- A premise's inputs through a routing plus a link from an earlier root, read after the earlier
--- root has collapsed.
+-- A premise's inputs from the conclusion's and from an earlier root, read after the earlier root
+-- has collapsed.
 private
-  link-through : ∀ {x y z w v} (A : M.Matrix z y) (r : M.Matrix y x) (l : M.Matrix y w)
-                 {h c : M.Matrix w v} (ρ : M.Matrix v x) → h ≈ c →
-                 ((A ∘ r) M.+ₘ ((A ∘ l) ∘ (h ∘ ρ))) ≈ (A ∘ (r M.+ₘ (l ∘ (c ∘ ρ))))
-  link-through A r l ρ e =
+  factor : ∀ {x y z w v} (A : M.Matrix z y) (r : M.Matrix y x) (l : M.Matrix y w)
+           {h c : M.Matrix w v} (ρ : M.Matrix v x) → h ≈ c →
+           ((A ∘ r) M.+ₘ ((A ∘ l) ∘ (h ∘ ρ))) ≈ (A ∘ (r M.+ₘ (l ∘ (c ∘ ρ))))
+  factor A r l ρ e =
     ≈-trans (M.+ₘ-cong ≈-refl (≈-trans (∘-cong₂ (∘-cong₁ e)) (assoc A l (_ ∘ ρ))))
             (≈-sym (M.comp-bilinear₂ A r (l ∘ (_ ∘ ρ))))
 
--- Two graphs in sequence: the second graph's inputs are supplied by the conclusion's inputs
--- through route and by the first graph's root through link, and the conclusion's root is fed by
 -- Columns into vertices the hidden set has no relation into survive hiding.
 module Frozen
   {V : Set} (vertex-width : V → ℕ)
@@ -853,12 +851,12 @@ module Rule₀
   agree = ≈-refl {f = out-root}
 
 -- A rule with one premise: the conclusion's root is the premise's root through up-root, offset by
--- out-root, and the premise's inputs are the conclusion's through route.
+-- out-root, and the premise's inputs are the conclusion's through inputs.
 module Rule₁
   {m : ℕ}
   {m' n₀ : ℕ} (B : Graph m' n₀)
   {n : ℕ}
-  (route : M.Matrix m' m)
+  (inputs : M.Matrix m' m)
   (fo-root : Bool)
   (out-root : M.Matrix n m)
   (up-root : M.Matrix n n₀)
@@ -868,7 +866,7 @@ module Rule₁
   E .Graph.shape = node (Graph.shape B ∷ [])
   E .Graph.width = width⁺ B
   E .Graph.fo = fo⁺ B
-  E .Graph.into q = into⁺ B q ∘ route
+  E .Graph.into q = into⁺ B q ∘ inputs
   E .Graph.inside = inside⁺ B
   E .Graph.<-inside = <⁺-inside B
   E .Graph.fo-root = fo-root
@@ -883,7 +881,7 @@ module Rule₁
     er : V E
     er = inj₂ (inj₂ root)
 
-    module S = HidePremise (vertex-width E) (inj₁ input) b (λ (_ : Root) → er) route (λ _ → up-root) (λ _ → out-root)
+    module S = HidePremise (vertex-width E) (inj₁ input) b (λ (_ : Root) → er) inputs (λ _ → up-root) (λ _ → out-root)
 
     H⁰ : S.St
     H⁰ .S.into q = into⁺ B q
@@ -921,22 +919,21 @@ module Rule₁
     plumb = ≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ input) er)
                    (≡-cong (b (inj₂ root) ∷_) (map-map b inj₁ (vertices (Graph.shape B))))
 
-  agree : collapse E ≈ (out-root M.+ₘ (up-root ∘ (collapse B ∘ route)))
+  agree : collapse E ≈ (out-root M.+ₘ (up-root ∘ (collapse B ∘ inputs)))
   agree =
     ≈-trans (≈-of-≡ plumb)
             (≈-trans (done .S.tgt-ok root)
                      (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ))))
 
--- Two premises in sequence: each reaches the conclusion's inputs through its own routing, and the
--- second also reaches the first premise's root through link. Both roots feed the conclusion's.
+-- Two premises in sequence: the first's inputs come from the conclusion's, the second's from the
+-- conclusion's and the first's root. Both roots feed the conclusion's.
 module Rule₂
   {m : ℕ}
   {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁)
   {m₂ n₂ : ℕ} (B₂ : Graph m₂ n₂)
   {n : ℕ}
-  (route₁ : M.Matrix m₁ m)
-  (route₂ : M.Matrix m₂ m)
-  (link : M.Matrix m₂ n₁)
+  (inputs₁ : M.Matrix m₁ m)
+  (inputs₂ : M.Matrix m₂ (m + n₁))
   (fo-root : Bool)
   (out-root : M.Matrix n m)
   (up₁ : M.Matrix n n₁)
@@ -944,6 +941,12 @@ module Rule₂
   where
 
   private
+    from-inputs₂ : M.Matrix m₂ m
+    from-inputs₂ = inputs₂ ∘ M.in₁ {m} {n₁}
+
+    from-root₁ : M.Matrix m₂ n₁
+    from-root₁ = inputs₂ ∘ M.in₂ {m} {n₁}
+
     ps₁ = vertices (Graph.shape B₁)
     ps₂ = vertices (Graph.shape B₂)
 
@@ -955,11 +958,11 @@ module Rule₂
   E .Graph.shape = node (Graph.shape B₁ ∷ Graph.shape B₂ ∷ [])
   E .Graph.width = [ width⁺ B₁ , width⁺ B₂ ]
   E .Graph.fo = [ fo⁺ B₁ , fo⁺ B₂ ]
-  E .Graph.into (inj₁ q) = into⁺ B₁ q ∘ route₁
-  E .Graph.into (inj₂ q) = into⁺ B₂ q ∘ route₂
+  E .Graph.into (inj₁ q) = into⁺ B₁ q ∘ inputs₁
+  E .Graph.into (inj₂ q) = into⁺ B₂ q ∘ from-inputs₂
   E .Graph.inside (inj₁ p)        (inj₁ q) = inside⁺ B₁ p q
   E .Graph.inside (inj₁ (inj₁ p)) (inj₂ q) = M.εₘ
-  E .Graph.inside (inj₁ (inj₂ _)) (inj₂ q) = into⁺ B₂ q ∘ link
+  E .Graph.inside (inj₁ (inj₂ _)) (inj₂ q) = into⁺ B₂ q ∘ from-root₁
   E .Graph.inside (inj₂ p)        (inj₁ q) = M.εₘ
   E .Graph.inside (inj₂ p)        (inj₂ q) = inside⁺ B₂ p q
   E .Graph.fo-root = fo-root
@@ -992,14 +995,14 @@ module Rule₂
     tgt₁ (inj₂ _) = er
 
     P₁ : (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vertex-width E (tgt₁ t)) n₁
-    P₁ (inj₁ q) = into⁺ B₂ q ∘ link
+    P₁ (inj₁ q) = into⁺ B₂ q ∘ from-root₁
     P₁ (inj₂ _) = up₁
 
     K₁ : (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vertex-width E (tgt₁ t)) m
-    K₁ (inj₁ q) = into⁺ B₂ q ∘ route₂
+    K₁ (inj₁ q) = into⁺ B₂ q ∘ from-inputs₂
     K₁ (inj₂ _) = out-root
 
-    module S1 = HidePremise (vertex-width E) (inj₁ input) b1 tgt₁ route₁ P₁ K₁
+    module S1 = HidePremise (vertex-width E) (inj₁ input) b1 tgt₁ inputs₁ P₁ K₁
 
     H₁⁰ : S1.St
     H₁⁰ .S1.into q = into⁺ B₁ q
@@ -1038,16 +1041,23 @@ module Rule₂
 
   -- The second premise's inputs once the first premise has collapsed.
   Φ₂ : M.Matrix m₂ m
-  Φ₂ = route₂ M.+ₘ (link ∘ (collapse B₁ ∘ route₁))
+  Φ₂ = inputs₂ ∘ M.⟨ M.I , collapse B₁ ∘ inputs₁ ⟩
 
   private
+    Φ₂' : M.Matrix m₂ m
+    Φ₂' = from-inputs₂ M.+ₘ (from-root₁ ∘ (collapse B₁ ∘ inputs₁))
+
+    Φ₂-split : Φ₂' ≈ Φ₂
+    Φ₂-split = ≈-sym (≈-trans (M.∘-pair inputs₂ M.I (collapse B₁ ∘ inputs₁))
+                              (M.+ₘ-cong (id-right {f = from-inputs₂}) (≈-refl {f = from-root₁ ∘ (collapse B₁ ∘ inputs₁)})))
+
     P₂ : (t : Root) → M.Matrix n n₂
     P₂ _ = up₂
 
     K₂ : (t : Root) → M.Matrix n m
-    K₂ _ = out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ route₁))
+    K₂ _ = out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))
 
-    module S2 = HidePremise (vertex-width E) (inj₁ input) b2 (λ (_ : Root) → er) Φ₂ P₂ K₂
+    module S2 = HidePremise (vertex-width E) (inj₁ input) b2 (λ (_ : Root) → er) Φ₂' P₂ K₂
 
     col₂ : Path⁺ B₂ ⊎ Root → V E
     col₂ (inj₁ q) = b2 q
@@ -1073,7 +1083,7 @@ module Rule₂
 
     start₂ : S2.Start G₁ H₂⁰
     start₂ .S2.into-start q =
-      ≈-trans (done₁ .S1.tgt-ok (inj₁ q)) (link-through (into⁺ B₂ q) route₂ link route₁ κ₁)
+      ≈-trans (done₁ .S1.tgt-ok (inj₁ q)) (factor (into⁺ B₂ q) from-inputs₂ from-root₁ inputs₁ κ₁)
     start₂ .S2.inside-start p q = keeps₁ .Bd.keeps p (inj₁ q)
     start₂ .S2.tgt-start _ =
       ≈-trans (done₁ .S1.tgt-ok (inj₂ root))
@@ -1122,25 +1132,23 @@ module Rule₂
                         (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂)))
 
   agree : collapse E
-          ≈ ((out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ route₁))) M.+ₘ (up₂ ∘ (collapse B₂ ∘ Φ₂)))
+          ≈ ((out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))) M.+ₘ (up₂ ∘ (collapse B₂ ∘ Φ₂)))
   agree =
     ≈-trans (≈-of-≡ plumb)
             (≈-trans (done₂ .S2.tgt-ok root)
-                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₂))))
+                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong κ₂ Φ₂-split))))
 
--- Three premises in sequence, the third reaching both earlier roots. The first two have no relation
--- between them.
+-- Three premises in sequence: the first two take their inputs from the conclusion's and have no
+-- relation between them; the third takes its from the conclusion's and both earlier roots.
 module Rule₃
   {m : ℕ}
   {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁)
   {m₂ n₂ : ℕ} (B₂ : Graph m₂ n₂)
   {m₃ n₃ : ℕ} (B₃ : Graph m₃ n₃)
   {n : ℕ}
-  (route₁ : M.Matrix m₁ m)
-  (route₂ : M.Matrix m₂ m)
-  (route₃ : M.Matrix m₃ m)
-  (link₁ : M.Matrix m₃ n₁)
-  (link₂ : M.Matrix m₃ n₂)
+  (inputs₁ : M.Matrix m₁ m)
+  (inputs₂ : M.Matrix m₂ m)
+  (inputs₃ : M.Matrix m₃ ((m + n₁) + n₂))
   (fo-root : Bool)
   (out-root : M.Matrix n m)
   (up₁ : M.Matrix n n₁)
@@ -1149,6 +1157,15 @@ module Rule₃
   where
 
   private
+    from-inputs₃ : M.Matrix m₃ m
+    from-inputs₃ = (inputs₃ ∘ M.in₁ {m + n₁} {n₂}) ∘ M.in₁ {m} {n₁}
+
+    from-root₁ : M.Matrix m₃ n₁
+    from-root₁ = (inputs₃ ∘ M.in₁ {m + n₁} {n₂}) ∘ M.in₂ {m} {n₁}
+
+    from-root₂ : M.Matrix m₃ n₂
+    from-root₂ = inputs₃ ∘ M.in₂ {m + n₁} {n₂}
+
     ps₁ = vertices (Graph.shape B₁)
     ps₂ = vertices (Graph.shape B₂)
     ps₃ = vertices (Graph.shape B₃)
@@ -1167,19 +1184,19 @@ module Rule₃
 
     e₁₃ : (p : Path⁺ B₁) (q : Path⁺ B₃) → M.Matrix (width⁺ B₃ q) (width⁺ B₁ p)
     e₁₃ (inj₁ _) q = M.εₘ
-    e₁₃ (inj₂ _) q = into⁺ B₃ q ∘ link₁
+    e₁₃ (inj₂ _) q = into⁺ B₃ q ∘ from-root₁
 
     e₂₃ : (p : Path⁺ B₂) (q : Path⁺ B₃) → M.Matrix (width⁺ B₃ q) (width⁺ B₂ p)
     e₂₃ (inj₁ _) q = M.εₘ
-    e₂₃ (inj₂ _) q = into⁺ B₃ q ∘ link₂
+    e₂₃ (inj₂ _) q = into⁺ B₃ q ∘ from-root₂
 
   E : Graph m n
   E .Graph.shape = node (Graph.shape B₁ ∷ Graph.shape B₂ ∷ Graph.shape B₃ ∷ [])
   E .Graph.width = [ width⁺ B₁ , [ width⁺ B₂ , width⁺ B₃ ] ]
   E .Graph.fo = [ fo⁺ B₁ , [ fo⁺ B₂ , fo⁺ B₃ ] ]
-  E .Graph.into (inj₁ q)        = into⁺ B₁ q ∘ route₁
-  E .Graph.into (inj₂ (inj₁ q)) = into⁺ B₂ q ∘ route₂
-  E .Graph.into (inj₂ (inj₂ q)) = into⁺ B₃ q ∘ route₃
+  E .Graph.into (inj₁ q)        = into⁺ B₁ q ∘ inputs₁
+  E .Graph.into (inj₂ (inj₁ q)) = into⁺ B₂ q ∘ inputs₂
+  E .Graph.into (inj₂ (inj₂ q)) = into⁺ B₃ q ∘ from-inputs₃
   E .Graph.inside (inj₁ p)        (inj₁ q)        = inside⁺ B₁ p q
   E .Graph.inside (inj₁ p)        (inj₂ (inj₁ q)) = M.εₘ
   E .Graph.inside (inj₁ p)        (inj₂ (inj₂ q)) = e₁₃ p q
@@ -1229,20 +1246,20 @@ module Rule₃
     tgt (inj₂ _) = er
 
     c₁ : M.Matrix n₁ m
-    c₁ = collapse B₁ ∘ route₁
+    c₁ = collapse B₁ ∘ inputs₁
 
     c₂ : M.Matrix n₂ m
-    c₂ = collapse B₂ ∘ route₂
+    c₂ = collapse B₂ ∘ inputs₂
 
     P₁ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (tgt t)) n₁
-    P₁ (inj₁ q) = into⁺ B₃ q ∘ link₁
+    P₁ (inj₁ q) = into⁺ B₃ q ∘ from-root₁
     P₁ (inj₂ _) = up₁
 
     K₁ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (tgt t)) m
-    K₁ (inj₁ q) = into⁺ B₃ q ∘ route₃
+    K₁ (inj₁ q) = into⁺ B₃ q ∘ from-inputs₃
     K₁ (inj₂ _) = out-root
 
-    module S1 = HidePremise (vertex-width E) (inj₁ input) b1 tgt route₁ P₁ K₁
+    module S1 = HidePremise (vertex-width E) (inj₁ input) b1 tgt inputs₁ P₁ K₁
 
     H₁⁰ : S1.St
     H₁⁰ .S1.into q = into⁺ B₁ q
@@ -1280,7 +1297,7 @@ module Rule₃
               (hide-paths⁺ B₁)
 
     -- The second premise's columns are untouched by the first premise's sweep.
-    module Fz = Frozen (vertex-width E) b1 (inj₁ {A = Input}) b2 (λ _ q → into⁺ B₂ q ∘ route₂)
+    module Fz = Frozen (vertex-width E) b1 (inj₁ {A = Input}) b2 (λ _ q → into⁺ B₂ q ∘ inputs₂)
 
     frozen₀ : Fz.Keeps (gr E)
     frozen₀ .Fz.keeps _ q = ≈-refl
@@ -1311,17 +1328,17 @@ module Rule₃
       k₀ .Bd₂.blind s w = ≈-refl {f = M.εₘ}
 
     Φ₃₁ : M.Matrix m₃ m
-    Φ₃₁ = route₃ M.+ₘ (link₁ ∘ c₁)
+    Φ₃₁ = from-inputs₃ M.+ₘ (from-root₁ ∘ c₁)
 
     P₂ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (tgt t)) n₂
-    P₂ (inj₁ q) = into⁺ B₃ q ∘ link₂
+    P₂ (inj₁ q) = into⁺ B₃ q ∘ from-root₂
     P₂ (inj₂ _) = up₂
 
     K₂ : (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (tgt t)) m
     K₂ (inj₁ q) = into⁺ B₃ q ∘ Φ₃₁
     K₂ (inj₂ _) = out-root M.+ₘ (up₁ ∘ c₁)
 
-    module S2 = HidePremise (vertex-width E) (inj₁ input) b2 tgt route₂ P₂ K₂
+    module S2 = HidePremise (vertex-width E) (inj₁ input) b2 tgt inputs₂ P₂ K₂
 
     H₂⁰ : S2.St
     H₂⁰ .S2.into q = into⁺ B₂ q
@@ -1331,7 +1348,7 @@ module Rule₃
     start₂ .S2.into-start q = frozen₁ .Fz.keeps input q
     start₂ .S2.inside-start p q = behind₂ .Bd₂.keeps p (inj₁ q)
     start₂ .S2.tgt-start (inj₁ q) =
-      ≈-trans (done₁ .S1.tgt-ok (inj₁ q)) (link-through (into⁺ B₃ q) route₃ link₁ route₁ κ₁)
+      ≈-trans (done₁ .S1.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) from-inputs₃ from-root₁ inputs₁ κ₁)
     start₂ .S2.tgt-start (inj₂ _) =
       ≈-trans (done₁ .S1.tgt-ok (inj₂ root))
               (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
@@ -1388,16 +1405,26 @@ module Rule₃
       k₀ .Bd₃.blind s (inj₂ w) = ≈-refl {f = M.εₘ}
 
   Φ₃ : M.Matrix m₃ m
-  Φ₃ = Φ₃₁ M.+ₘ (link₂ ∘ c₂)
+  Φ₃ = inputs₃ ∘ M.⟨ M.⟨ M.I , c₁ ⟩ , c₂ ⟩
 
   private
+    Φ₃' : M.Matrix m₃ m
+    Φ₃' = Φ₃₁ M.+ₘ (from-root₂ ∘ c₂)
+
+    Φ₃-split : Φ₃' ≈ Φ₃
+    Φ₃-split =
+      ≈-sym (≈-trans (M.∘-pair inputs₃ M.⟨ M.I , c₁ ⟩ c₂)
+                     (M.+ₘ-cong (≈-trans (M.∘-pair (inputs₃ ∘ M.in₁ {m + n₁} {n₂}) M.I c₁)
+                                         (M.+ₘ-cong (id-right {f = from-inputs₃}) (≈-refl {f = from-root₁ ∘ c₁})))
+                                (≈-refl {f = from-root₂ ∘ c₂})))
+
     P₃ : (t : Root) → M.Matrix n n₃
     P₃ _ = up₃
 
     K₃ : (t : Root) → M.Matrix n m
     K₃ _ = (out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂)
 
-    module S3 = HidePremise (vertex-width E) (inj₁ input) b3 (λ (_ : Root) → er) Φ₃ P₃ K₃
+    module S3 = HidePremise (vertex-width E) (inj₁ input) b3 (λ (_ : Root) → er) Φ₃' P₃ K₃
 
     H₃⁰ : S3.St
     H₃⁰ .S3.into q = into⁺ B₃ q
@@ -1405,7 +1432,7 @@ module Rule₃
 
     start₃ : S3.Start G₂ H₃⁰
     start₃ .S3.into-start q =
-      ≈-trans (done₂ .S2.tgt-ok (inj₁ q)) (link-through (into⁺ B₃ q) Φ₃₁ link₂ route₂ κ₂)
+      ≈-trans (done₂ .S2.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) Φ₃₁ from-root₂ inputs₂ κ₂)
     start₃ .S3.inside-start p q = behind₃ .Bd₃.keeps p (inj₁ q)
     start₃ .S3.tgt-start _ =
       ≈-trans (done₂ .S2.tgt-ok (inj₂ root))
@@ -1469,4 +1496,4 @@ module Rule₃
   agree =
     ≈-trans (≈-of-≡ plumb)
             (≈-trans (done₃ .S3.tgt-ok root)
-                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₃))))
+                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong κ₃ Φ₃-split))))
