@@ -56,13 +56,13 @@ R = proj₁ Dev
 
 -- The result's root against the environment's positions: the closure's root, y's root, y's
 -- payload root.
-_ : cols {γ = γ₀} R environment zero zero ≡ 3
+_ : R zero (suc zero) ≡ 3
 _ = refl
 
-_ : cols {γ = γ₀} R environment zero (suc zero) ≡ 9
+_ : R zero (suc (suc zero)) ≡ 9
 _ = refl
 
-_ : cols {γ = γ₀} R environment zero (suc (suc zero)) ≡ 0
+_ : R zero (suc (suc (suc zero))) ≡ 0
 _ = refl
 
 -- The interpretation: the fibre map of the term at the environment's index, applied to the basis

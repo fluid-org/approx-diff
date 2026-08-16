@@ -255,44 +255,6 @@ private
   p₂-e : ∀ {m} (j : Fin m) (l : Fin m) → M.p₂ {1} {m} j (suc l) ≈s M.e j l
   p₂-e j l = ≈-refl
 
-app-source : ∀ {Γ} {γ : Env Γ} {n} (R : M.Matrix n (suc (width-env γ))) (s : Setoid.Carrier A)
-             (k : Fin n) →
-             ap (cols {γ = γ} R source) (λ _ → s) k ≈s (R k zero ·ₛ s)
-app-source {γ = γ} R s k =
-  ≈-trans (+-cong (·-cong entry ≈-refl) ≈-refl) (≈-trans +-comm +-lunit)
-  where
-  entry : (R ∘ M.in₁ {1} {width-env γ}) k zero ≈s R k zero
-  entry = ≈-trans (Σ-cong {suc (width-env γ)}
-                     (λ j → ≈-trans (·-cong (≈-refl {R k j}) (p₁-e {width-env γ} j)) ·-comm))
-                  (Σ-unit {suc (width-env γ)} zero (λ j → R k j))
-
-app-environment : ∀ {Γ} {γ : Env Γ} {n} (R : M.Matrix n (suc (width-env γ)))
-                  (x : ∣ 𝔽 (width-env γ) ∣) (k : Fin n) →
-                  ap (cols {γ = γ} R environment) x k ≈s Σₛ (λ j → R k (suc j) ·ₛ x j)
-app-environment {γ = γ} R x k = Σ-cong {width-env γ} (λ j → ·-cong (entry j) ≈-refl)
-  where
-  entry : ∀ j → (R ∘ M.in₂ {1} {width-env γ}) k j ≈s R k (suc j)
-  entry j =
-    ≈-trans (+-cong ε-annihilᵣ
-                    (Σ-cong {width-env γ}
-                       (λ l → ≈-trans (·-cong (≈-refl {R k (suc l)}) (p₂-e {width-env γ} j l)) ·-comm)))
-            (≈-trans +-lunit (Σ-unit {width-env γ} j (λ l → R k (suc l))))
-
-app-inputs : ∀ {Γ} {γ : Env Γ} {n} (R : M.Matrix n (suc (width-env γ))) s x (k : Fin n) →
-             ap R (inputs γ s x) k ≈s
-             (ap (cols {γ = γ} R source) (λ _ → s) k +ₛ ap (cols {γ = γ} R environment) x k)
-app-inputs {γ = γ} R s x k =
-  +-cong (≈-sym (app-source {γ = γ} R s k)) (≈-sym (app-environment {γ = γ} R x k))
-
-app-of-cols : ∀ {Γ} {γ : Env Γ} {n} (f : (i : Input) → M.Matrix n (input-width γ i)) s x
-              (k : Fin n) →
-              ap (of-cols {γ = γ} f) (inputs γ s x) k ≈s
-              (ap (f source) (λ _ → s) k +ₛ ap (f environment) x k)
-app-of-cols {γ = γ} f s x k =
-  ≈-trans (app-inputs {γ = γ} (of-cols {γ = γ} f) s x k)
-          (+-cong (app-congₘ (cols-of-cols {γ = γ} f source) (λ _ → s) k)
-                  (app-congₘ (cols-of-cols {γ = γ} f environment) x k))
-
 -- Semiring shorthands.
 private
   w = elim-weight
@@ -354,6 +316,68 @@ private
   ctrl-lift-suc : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) (k : Fin n) →
                   ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) (suc k) ≈s ap g (λ _ → s) k
   ctrl-lift-suc {n} g s k = ap-pair-suc {1} {n} ctrl-row g (λ _ → s) k
+
+-- Reading a relation at the inputs: the source column at the source weight and the environment
+-- columns at the environment vector, and the relations the rules are built from at any vector.
+private
+  ap-p₁₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin 1) → ap (M.p₁ {1} {m}) o k ≈s o zero
+  ap-p₁₁ {m} o zero =
+    ≈-trans (Σ-cong {suc m} (λ j → ·-cong (p₁-e {m} j) (≈-refl {o j}))) (Σ-unit {suc m} zero o)
+
+  ap-p₂₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin m) → ap (M.p₂ {1} {m}) o k ≈s o (suc k)
+  ap-p₂₁ {m} o k =
+    ≈-trans (+-cong ε-annihilₗ (Σ-cong {m} (λ j → ·-cong (p₂-e {m} k j) ≈-refl)))
+            (≈-trans +-lunit (Σ-unit {m} k (λ j → o (suc j))))
+
+  inputs-in : ∀ {Γ} (γ : Env Γ) s x (l : Fin (suc (width-env γ))) →
+              inputs γ s x l ≈s
+              (ap (M.in₁ {1} {width-env γ}) (λ _ → s) l +ₛ ap (M.in₂ {1} {width-env γ}) x l)
+  inputs-in γ s x zero =
+    ≈-sym (≈-trans (+-cong (ap-in₁-zero {width-env γ} (λ _ → s)) (ap-in₂-zero {width-env γ} x)) +-runit)
+  inputs-in γ s x (suc l) =
+    ≈-sym (≈-trans (+-cong (ap-in₁-suc {width-env γ} (λ _ → s) l) (ap-in₂-suc {width-env γ} x l)) +-lunit)
+
+app-inputs : ∀ {Γ} {γ : Env Γ} {n} (R : M.Matrix n (suc (width-env γ))) s x (k : Fin n) →
+             ap R (inputs γ s x) k ≈s
+             (ap (R ∘ M.in₁ {1} {width-env γ}) (λ _ → s) k +ₛ ap (R ∘ M.in₂ {1} {width-env γ}) x k)
+app-inputs {γ = γ} R s x k =
+  ≈-trans (app-congᵥ R (inputs-in γ s x) k)
+  (≈-trans (model.app-+ R (ap (M.in₁ {1} {width-env γ}) (λ _ → s)) (ap (M.in₂ {1} {width-env γ}) x) k)
+           (+-cong (≈-sym (app-∘ R (M.in₁ {1} {width-env γ}) (λ _ → s) k))
+                   (≈-sym (app-∘ R (M.in₂ {1} {width-env γ}) x k))))
+
+private
+  ap-∥ : ∀ {m n} (A : M.Matrix n 1) (B : M.Matrix n m) (y : ∣ 𝔽 (suc m) ∣) (k : Fin n) →
+         ap (A M.∥ B) y k ≈s (ap A (λ _ → y zero) k +ₛ ap B (λ l → y (suc l)) k)
+  ap-∥ {m} A B y k =
+    ≈-trans (app-+ₘ (A ∘ M.p₁ {1} {m}) (B ∘ M.p₂ {1} {m}) y k)
+            (+-cong (≈-trans (app-∘ A (M.p₁ {1} {m}) y k) (app-congᵥ A (ap-p₁₁ {m} y) k))
+                    (≈-trans (app-∘ B (M.p₂ {1} {m}) y k) (app-congᵥ B (ap-p₂₁ {m} y) k)))
+
+  ap-wsrc : ∀ {m n} (y : ∣ 𝔽 (suc m) ∣) (k : Fin n) → ap (wsrc {m} {n}) y k ≈s (w ·ₛ y zero)
+  ap-wsrc {m} {n} y k =
+    ≈-trans (app-∘ (ctrl-row {n}) (M.p₁ {1} {m}) y k)
+            (≈-trans (app-congᵥ (ctrl-row {n}) (ap-p₁₁ {m} y) k) (ap-ctrl-row {n} (y zero) k))
+
+  ap-⊕-zero : ∀ {m a b} (f : M.Matrix 1 a) (g : M.Matrix b m) (y : ∣ 𝔽 (a + m) ∣) →
+              ap (f ⊕ g) y zero ≈s ap f (ap (M.p₁ {a} {m}) y) zero
+  ap-⊕-zero {m} {a} {b} f g y =
+    ≈-trans (ap-pair-zero {a + m} {b} (f ∘ M.p₁ {a} {m}) (g ∘ M.p₂ {a} {m}) y)
+            (app-∘ f (M.p₁ {a} {m}) y zero)
+
+  ap-⊕-suc : ∀ {m a b} (f : M.Matrix 1 a) (g : M.Matrix b m) (y : ∣ 𝔽 (a + m) ∣) (k : Fin b) →
+             ap (f ⊕ g) y (suc k) ≈s ap g (ap (M.p₂ {a} {m}) y) k
+  ap-⊕-suc {m} {a} {b} f g y k =
+    ≈-trans (ap-pair-suc {a + m} {b} (f ∘ M.p₁ {a} {m}) (g ∘ M.p₂ {a} {m}) y k)
+            (app-∘ g (M.p₂ {a} {m}) y k)
+
+  ap-⊕₁-zero : ∀ {m b} (f : M.Matrix 1 1) (g : M.Matrix b m) (y : ∣ 𝔽 (suc m) ∣) →
+               ap (f ⊕ g) y zero ≈s ap f (λ _ → y zero) zero
+  ap-⊕₁-zero {m} f g y = ≈-trans (ap-⊕-zero {m} {1} f g y) (app-congᵥ f (ap-p₁₁ {m} y) zero)
+
+  ap-⊕₁-suc : ∀ {m b} (f : M.Matrix 1 1) (g : M.Matrix b m) (y : ∣ 𝔽 (suc m) ∣) (k : Fin b) →
+              ap (f ⊕ g) y (suc k) ≈s ap g (λ l → y (suc l)) k
+  ap-⊕₁-suc {m} f g y k = ≈-trans (ap-⊕-suc {m} {1} f g y k) (app-congᵥ g (ap-p₂₁ {m} y) k)
 
 -- The elimination constant elementwise: the weight times the source at each root, the payload's
 -- constant under it, and zero at a closure's payload.
@@ -961,191 +985,85 @@ DepRel-absorb (σ [→] τ) {clo γ' t} {f} r s {P} {Q} {E} (h₀ , hc) hQ hE =
 
 -- Reading the first position of a lifted vector, and its tail, by the projections.
 private
-  ap-p₁₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin 1) → ap (M.p₁ {1} {m}) o k ≈s o zero
-  ap-p₁₁ {m} o zero =
-    ≈-trans (Σ-cong {suc m} (λ j → ·-cong (p₁-e {m} j) (≈-refl {o j}))) (Σ-unit {suc m} zero o)
+  built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x →
+               ap (built-out γ n +ₘ (M.in₂ {1} ∘ R')) (inputs γ s x) zero ≈s (w ·ₛ s)
+  built-zero {γ = γ} {n} R' s x =
+    ≈-trans (app-+ₘ (built-out γ n) (M.in₂ {1} ∘ R') (inputs γ s x) zero)
+    (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wsrc (inputs γ s x) zero)
+                              (≈-trans (ap-in₁-zero {n} (ap wsrc (inputs γ s x)))
+                                       (ap-wsrc {width-env γ} {1} (inputs γ s x) zero)))
+                     (≈-trans (app-∘ (M.in₂ {1} {n}) R' (inputs γ s x) zero)
+                              (ap-in₂-zero {n} (ap R' (inputs γ s x)))))
+             +-runit)
 
-  ap-p₂₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin m) → ap (M.p₂ {1} {m}) o k ≈s o (suc k)
-  ap-p₂₁ {m} o k =
-    ≈-trans (+-cong ε-annihilₗ (Σ-cong {m} (λ j → ·-cong (p₂-e {m} k j) ≈-refl)))
-            (≈-trans +-lunit (Σ-unit {m} k (λ j → o (suc j))))
-
--- A one-premise rule with the identity routing, read at the inputs: the rule's own columns at the
--- inputs, plus the entry from the premise's root applied to the premise's relation at the inputs.
-app-rule₁ : ∀ {Γ} {γ : Env Γ} {n n₀} (out : (i : Input) → M.Matrix n (input-width γ i))
-            (up : M.Matrix n n₀) (R' : M.Matrix n₀ (suc (width-env γ))) s x (k : Fin n) →
-            ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) out up (cols {γ = γ} R')))
-               (inputs γ s x) k
-            ≈s ((ap (out source) (λ _ → s) k +ₛ ap (out environment) x k) +ₛ ap up (ap R' (inputs γ s x)) k)
-app-rule₁ {γ = γ} out up R' s x k =
-  ≈-trans (app-of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) out up (cols {γ = γ} R')) s x k)
-  (≈-trans (+-cong (≈-trans (app-+ₘ (out source) (up ∘ cols {γ = γ} R' source) (λ _ → s) k)
-                            (+-cong ≈-refl (app-∘ up (cols {γ = γ} R' source) (λ _ → s) k)))
-                   (≈-trans (app-+ₘ (out environment) (up ∘ cols {γ = γ} R' environment) x k)
-                            (+-cong ≈-refl (app-∘ up (cols {γ = γ} R' environment) x k))))
-  (≈-trans Sc.+-interchange
-           (+-cong ≈-refl
-                   (≈-trans (≈-sym (app-+ᵥ up (ap (cols {γ = γ} R' source) (λ _ → s)) (ap (cols {γ = γ} R' environment) x) k))
-                            (app-congᵥ up (λ l → ≈-sym (app-inputs {γ = γ} R' s x l)) k)))))
-
--- A two-premise rule with the identity routings and no link, read at the inputs.
-app-rule₂-nolink : ∀ {Γ} {γ : Env Γ} {n n₁ n₂} (out : (i : Input) → M.Matrix n (input-width γ i))
-                   (u₁ : M.Matrix n n₁) (u₂ : M.Matrix n n₂)
-                   (R₁ : M.Matrix n₁ (suc (width-env γ))) (R₂ : M.Matrix n₂ (suc (width-env γ))) s x (k : Fin n) →
-                   ap (of-cols {γ = γ} (M.rule₂-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
-                                          (M.no-link (input-width γ) n₁) out u₁ u₂ (cols {γ = γ} R₁) (cols {γ = γ} R₂)))
-                      (inputs γ s x) k
-                   ≈s ((ap (out source) (λ _ → s) k +ₛ ap (out environment) x k) +ₛ
-                       (ap u₁ (ap R₁ (inputs γ s x)) k +ₛ ap u₂ (ap R₂ (inputs γ s x)) k))
-app-rule₂-nolink {γ = γ} {n₁ = n₁} out u₁ u₂ R₁ R₂ s x k =
-  ≈-trans (app-of-cols {γ = γ} f s x k)
-  (≈-trans (+-cong (per-input source (λ _ → s) k) (per-input environment x k))
-  (≈-trans Sc.+-interchange
-  (≈-trans (+-cong Sc.+-interchange ≈-refl)
-  (≈-trans +-assoc
-           (+-cong ≈-refl
-                   (+-cong (≈-trans (≈-sym (app-+ᵥ u₁ (ap (c₁ source) (λ _ → s)) (ap (c₁ environment) x) k))
-                                    (app-congᵥ u₁ (λ l → ≈-sym (app-inputs {γ = γ} R₁ s x l)) k))
-                           (≈-trans (≈-sym (app-+ᵥ u₂ (ap (c₂ source) (λ _ → s)) (ap (c₂ environment) x) k))
-                                    (app-congᵥ u₂ (λ l → ≈-sym (app-inputs {γ = γ} R₂ s x l)) k))))))))
-  where
-  c₁ = cols {γ = γ} R₁
-  c₂ = cols {γ = γ} R₂
-  f = M.rule₂-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
-        (M.no-link (input-width γ) n₁) out u₁ u₂ c₁ c₂
-  per-input : ∀ (i : Input) (vi : ∣ 𝔽 (input-width γ i) ∣) k →
-              ap (f i) vi k ≈s ((ap (out i) vi k +ₛ ap u₁ (ap (c₁ i) vi) k) +ₛ ap u₂ (ap (c₂ i) vi) k)
-  per-input i vi k =
-    ≈-trans (app-+ₘ (out i +ₘ (u₁ ∘ c₁ i)) (u₂ ∘ (c₂ i +ₘ (εₘ ∘ c₁ i))) vi k)
-            (+-cong (≈-trans (app-+ₘ (out i) (u₁ ∘ c₁ i) vi k) (+-cong ≈-refl (app-∘ u₁ (c₁ i) vi k)))
-                    (≈-trans (app-∘ u₂ (c₂ i +ₘ (εₘ ∘ c₁ i)) vi k)
-                             (app-congᵥ u₂
-                                (λ l → ≈-trans (app-+ₘ (c₂ i) (εₘ ∘ c₁ i) vi l)
-                                               (≈-trans (+-cong ≈-refl (≈-trans (app-∘ εₘ (c₁ i) vi l)
-                                                                                (app-εₘ (ap (c₁ i) vi) l)))
-                                                        +-runit)) k)))
+  built-suc : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x k →
+              ap (built-out γ n +ₘ (M.in₂ {1} ∘ R')) (inputs γ s x) (suc k) ≈s ap R' (inputs γ s x) k
+  built-suc {γ = γ} {n} R' s x k =
+    ≈-trans (app-+ₘ (built-out γ n) (M.in₂ {1} ∘ R') (inputs γ s x) (suc k))
+    (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wsrc (inputs γ s x) (suc k))
+                              (ap-in₁-suc {n} (ap wsrc (inputs γ s x)) k))
+                     (≈-trans (app-∘ (M.in₂ {1} {n}) R' (inputs γ s x) (suc k))
+                              (ap-in₂-suc {n} (ap R' (inputs γ s x)) k)))
+             +-lunit)
 
 -- The case rule, read at the inputs: the branch's relation at the scrutinee's root plus the
 -- weighted source as source, and at the environment and the scrutinee's payload as environment.
 app-case : ∀ {Γ τ'} {γ : Env Γ} (v : Val τ') {n} (R_s : M.Matrix (suc (width v)) (suc (width-env γ)))
            (T : M.Matrix n (suc (width-env (γ · v)))) s x (k : Fin n) →
-           ap (of-cols {γ = γ} (M.rule₂-result (M.id-linear (input-width γ)) (branch-route γ v) (branch-link γ v)
-                                  (λ _ → εₘ) εₘ M.I (cols {γ = γ} R_s) (cols {γ = γ · v} T)))
-              (inputs γ s x) k
+           ap (T ∘ (branch-route γ v +ₘ (branch-link γ v ∘ R_s))) (inputs γ s x) k
            ≈s ap T (inputs (γ · v) (ap R_s (inputs γ s x) zero +ₛ (w ·ₛ s))
                      (λ l → ap (M.in₁ {width-env γ} {width v}) x l +ₛ
                             ap (M.in₂ {width-env γ} {width v}) (λ m → ap R_s (inputs γ s x) (suc m)) l)) k
 app-case {γ = γ} v R_s T s x k =
-  ≈-trans (app-of-cols {γ = γ} f s x k)
-  (≈-trans (+-cong (per-input source (λ _ → s) k) (per-input environment x k))
-  (≈-trans Sc.+-interchange
-  (≈-trans (+-cong src-part (≈-trans (+-cong (app-∘ (l .M.at cT) (cs source) (λ _ → s) k)
-                                              (app-∘ (l .M.at cT) (cs environment) x k))
-                                     (≈-trans (≈-sym (app-+ᵥ (l .M.at cT) (ap (cs source) (λ _ → s)) (ap (cs environment) x) k))
-                                              (≈-trans (app-congᵥ (l .M.at cT) (λ m → ≈-sym (app-inputs {γ = γ} R_s s x m)) k)
-                                                       l-expand))))
-  (≈-trans regroup
-  (≈-trans (+-cong (≈-sym (app-+ᵥ (cT source) (λ _ → w ·ₛ s) (λ _ → o_s zero) k))
-                   (≈-sym (app-+ᵥ (cT environment) (ap (M.in₁ {width-env γ} {width v}) x)
-                                                   (ap (M.in₂ {width-env γ} {width v}) (λ m → o_s (suc m))) k)))
-  (≈-trans (+-cong (app-congᵥ (cT source) (λ _ → +-comm {w ·ₛ s} {o_s zero}) k) (≈-refl {ap (cT environment) X k}))
-           (≈-sym (app-inputs {γ = γ · v} T (o_s zero +ₛ (w ·ₛ s)) X k))))))))
+  ≈-trans (app-∘ T (branch-route γ v +ₘ (branch-link γ v ∘ R_s)) (inputs γ s x) k)
+          (app-congᵥ T branch-inputs k)
   where
-  cs = cols {γ = γ} R_s
-  cT = cols {γ = γ · v} T
-  r₂ = branch-route γ v
-  l = branch-link γ v
-  f = M.rule₂-result (M.id-linear (input-width γ)) r₂ l (λ _ → εₘ) εₘ M.I cs cT
-  o_s = ap R_s (inputs γ s x)
-  X : ∣ 𝔽 (width-env γ + width v) ∣
-  X m = ap (M.in₁ {width-env γ} {width v}) x m +ₛ ap (M.in₂ {width-env γ} {width v}) (λ m' → o_s (suc m')) m
+  y = inputs γ s x
+  o_s = ap R_s y
 
-  per-input : ∀ (i : Input) (vi : ∣ 𝔽 (input-width γ i) ∣) k →
-              ap (f i) vi k ≈s (ap (r₂ .M.ap cT i) vi k +ₛ ap (l .M.at cT ∘ cs i) vi k)
-  per-input i vi k =
-    ≈-trans (app-+ₘ (εₘ +ₘ (εₘ ∘ cs i)) (M.I ∘ (r₂ .M.ap cT i +ₘ (l .M.at cT ∘ cs i))) vi k)
-    (≈-trans (+-cong (≈-trans (app-+ₘ εₘ (εₘ ∘ cs i) vi k)
-                              (≈-trans (+-cong (app-εₘ vi k) (≈-trans (app-∘ εₘ (cs i) vi k) (app-εₘ (ap (cs i) vi) k)))
-                                       +-lunit))
-                     (≈-trans (app-∘ M.I (r₂ .M.ap cT i +ₘ (l .M.at cT ∘ cs i)) vi k)
-                              (≈-trans (app-I (ap (r₂ .M.ap cT i +ₘ (l .M.at cT ∘ cs i)) vi) k)
-                                       (app-+ₘ (r₂ .M.ap cT i) (l .M.at cT ∘ cs i) vi k))))
-             +-lunit)
-
-  src-part : (ap (r₂ .M.ap cT source) (λ _ → s) k +ₛ ap (r₂ .M.ap cT environment) x k)
-             ≈s (ap (cT source) (λ _ → w ·ₛ s) k +ₛ ap (cT environment) (ap (M.in₁ {width-env γ} {width v}) x) k)
-  src-part =
-    +-cong (≈-trans (app-∘ (cT source) (ctrl-row {1}) (λ _ → s) k)
-                    (app-congᵥ (cT source) (λ m → ap-ctrl-row {1} s m) k))
-           (app-∘ (cT environment) (M.in₁ {width-env γ} {width v}) x k)
-
-  l-expand : ap (l .M.at cT) o_s k ≈s
-             (ap (cT environment) (ap (M.in₂ {width-env γ} {width v}) (λ m → o_s (suc m))) k +ₛ
-              ap (cT source) (λ _ → o_s zero) k)
-  l-expand =
-    ≈-trans (app-+ₘ (cT environment ∘ (M.in₂ {width-env γ} {width v} ∘ M.p₂ {1} {width v}))
-                    (cT source ∘ M.p₁ {1} {width v}) o_s k)
-            (+-cong (≈-trans (app-∘ (cT environment) (M.in₂ {width-env γ} {width v} ∘ M.p₂ {1} {width v}) o_s k)
-                             (≈-trans (app-congᵥ (cT environment)
-                                         (λ m → app-∘ (M.in₂ {width-env γ} {width v}) (M.p₂ {1} {width v}) o_s m) k)
-                                      (app-congᵥ (cT environment)
-                                         (app-congᵥ (M.in₂ {width-env γ} {width v}) (ap-p₂₁ {width v} o_s)) k)))
-                    (≈-trans (app-∘ (cT source) (M.p₁ {1} {width v}) o_s k)
-                             (app-congᵥ (cT source) (ap-p₁₁ {width v} o_s) k)))
-
-  regroup : ∀ {a b c d} → (a +ₛ b) +ₛ (c +ₛ d) ≈s ((a +ₛ d) +ₛ (b +ₛ c))
-  regroup = ≈-trans (+-cong ≈-refl +-comm) Sc.+-interchange
-
--- A built constructor, read at the inputs: the weight at the new root, the premise's relation
--- after.
-private
-  built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x →
-               ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (built-out γ n) (M.in₂ {1}) (cols {γ = γ} R')))
-                  (inputs γ s x) zero ≈s (w ·ₛ s)
-  built-zero {γ = γ} {n} R' s x =
-    ≈-trans (app-rule₁ {γ = γ} (built-out γ n) (M.in₂ {1}) R' s x zero)
-    (≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) (ctrl-row {1}) (λ _ → s) zero)
-                                      (≈-trans (ap-in₁-zero {n} (ap (ctrl-row {1}) (λ _ → s))) (ap-ctrl-row {1} s zero)))
-                             (app-εₘ {1} {width-env γ} x zero))
-                     (ap-in₂-zero {n} (ap R' (inputs γ s x))))
-             (≈-trans +-runit +-runit))
-
-  built-suc : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x k →
-              ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (built-out γ n) (M.in₂ {1}) (cols {γ = γ} R')))
-                 (inputs γ s x) (suc k) ≈s ap R' (inputs γ s x) k
-  built-suc {γ = γ} {n} R' s x k =
-    ≈-trans (app-rule₁ {γ = γ} (built-out γ n) (M.in₂ {1}) R' s x (suc k))
-    (≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) (ctrl-row {1}) (λ _ → s) (suc k))
-                                      (ap-in₁-suc {n} (ap (ctrl-row {1}) (λ _ → s)) k))
-                             (app-εₘ {suc n} {width-env γ} x (suc k)))
-                     (ap-in₂-suc {n} (ap R' (inputs γ s x)) k))
-             (≈-trans (+-cong +-runit ≈-refl) +-lunit))
+  branch-inputs : ∀ l → ap (branch-route γ v +ₘ (branch-link γ v ∘ R_s)) y l ≈s
+                        inputs (γ · v) (o_s zero +ₛ (w ·ₛ s))
+                          (λ m → ap (M.in₁ {width-env γ} {width v}) x m +ₛ
+                                 ap (M.in₂ {width-env γ} {width v}) (λ m' → o_s (suc m')) m) l
+  branch-inputs zero =
+    ≈-trans (app-+ₘ (branch-route γ v) (branch-link γ v ∘ R_s) y zero)
+    (≈-trans (+-cong (≈-trans (ap-⊕₁-zero {width-env γ} (ctrl-row {1}) (M.in₁ {width-env γ} {width v}) y)
+                              (ap-ctrl-row {1} s zero))
+                     (≈-trans (app-∘ (branch-link γ v) R_s y zero)
+                              (≈-trans (ap-⊕₁-zero {width v} M.I (M.in₂ {width-env γ} {width v}) o_s)
+                                       (app-I {1} (λ _ → o_s zero) zero))))
+             +-comm)
+  branch-inputs (suc m) =
+    ≈-trans (app-+ₘ (branch-route γ v) (branch-link γ v ∘ R_s) y (suc m))
+            (+-cong (ap-⊕₁-suc {width-env γ} (ctrl-row {1}) (M.in₁ {width-env γ} {width v}) y m)
+                    (≈-trans (app-∘ (branch-link γ v) R_s y (suc m))
+                             (ap-⊕₁-suc {width v} M.I (M.in₂ {width-env γ} {width v}) o_s m)))
 
 -- A projection, read at the inputs: the result's control positions at the weighted source plus
 -- the consumed root, and the projection of the pair's payload.
 private
   proj-op : ∀ {Γ τ'} {γ : Env Γ} (wv : Val τ') {m n} (P : M.Matrix (width wv) (m + n))
             (R' : M.Matrix (suc (m + n)) (suc (width-env γ))) s x k →
-            ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (elim-out γ wv) (proj-up {m} {n} wv P) (cols {γ = γ} R')))
-               (inputs γ s x) k
+            ap (elim-out γ wv +ₘ (proj-up {m} {n} wv P ∘ R')) (inputs γ s x) k
             ≈s (ap (ctrl-of wv) (λ _ → (w ·ₛ s) +ₛ ap R' (inputs γ s x) zero) k +ₛ
                 ap P (λ l → ap R' (inputs γ s x) (suc l)) k)
   proj-op {γ = γ} wv {m} {n} P R' s x k =
-    ≈-trans (app-rule₁ {γ = γ} (elim-out γ wv) (proj-up {m} {n} wv P) R' s x k)
-    (≈-trans (+-cong (≈-trans (+-cong (≈-trans (app-∘ (ctrl-of wv) (ctrl-row {1}) (λ _ → s) k)
-                                               (app-congᵥ (ctrl-of wv) (λ l → ap-ctrl-row {1} s l) k))
-                                      (app-εₘ {width wv} {width-env γ} x k))
-                              +-runit)
+    ≈-trans (app-+ₘ (elim-out γ wv) (proj-up {m} {n} wv P ∘ R') (inputs γ s x) k)
+    (≈-trans (+-cong (≈-trans (app-∘ (ctrl-of wv) wsrc (inputs γ s x) k)
+                              (app-congᵥ (ctrl-of wv) (λ l → ap-wsrc {width-env γ} {1} (inputs γ s x) l) k))
+                     (≈-trans (app-∘ (proj-up {m} {n} wv P) R' (inputs γ s x) k)
                      (≈-trans (app-+ₘ (P ∘ M.p₂ {1} {m + n}) (ctrl-of wv ∘ M.p₁ {1} {m + n}) o' k)
                               (+-cong (≈-trans (app-∘ P (M.p₂ {1} {m + n}) o' k)
                                                (app-congᵥ P (ap-p₂₁ {m + n} o') k))
                                       (≈-trans (app-∘ (ctrl-of wv) (M.p₁ {1} {m + n}) o' k)
-                                               (app-congᵥ (ctrl-of wv) (ap-p₁₁ {m + n} o') k)))))
+                                               (app-congᵥ (ctrl-of wv) (ap-p₁₁ {m + n} o') k))))))
     (≈-trans (+-cong ≈-refl +-comm)
     (≈-trans (≈-sym +-assoc)
              (+-cong (≈-sym (app-+ᵥ (ctrl-of wv) (λ _ → w ·ₛ s) (λ _ → o' zero) k)) ≈-refl))))
     where o' = ap R' (inputs γ s x)
 
+
+private
   -- The constant at the weighted source plus the consumed root, with the pair's component, against
   -- the constant at the source with the projection's fibre.
   proj-den : ∀ τ' (i : Ix τ') s a₀ o'₀ (comp G m : ∣ Fib τ' i ∣) →
@@ -1466,20 +1384,17 @@ fundamental-s : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} (cs : Cor
                 ∀ k → ap R (inputs γ s x) k ≈s ((w ·ₛ s) +ₛ args-vec Ms gi g k)
 fundamental {τ = τ} (var x) {γ = γ} (⇓-var .x) {gi} rγ s xs g rel =
   DepRel-resp τ (lookup-val x rγ)
-    (λ k → ≈-sym (app-of-cols {γ = γ} (var-out x γ) s xs k))
+    (λ k → ≈-sym (ap-∥ (ctrl-of (lookup x γ)) (proj-var x γ) (inputs γ s xs) k))
     (F.refl τ (LI.⟦ x ⟧var .idxf .sfunc gi))
     (DepRel⊑-ctrl τ (lookup-val x rγ) s (lookup-dep x rγ s xs g rel))
 fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
   where
-  goal : ∀ k → ap (of-cols {γ = γ} (unit-out γ)) (inputs γ s x) k ≈s
+  goal : ∀ k → ap wsrc (inputs γ s x) k ≈s
                (elim-const unit .at (⟦ unit {Γ} ⟧tm .idxf .sfunc gi) .func s k +ₛ
                 ⟦ unit {Γ} ⟧tm .famf .transf gi .func g k)
   goal zero =
-    ≈-trans (app-of-cols {γ = γ} (unit-out γ) s x zero)
-            (+-cong (≈-sym (≈-trans (+-cong (·-cong (≈-trans +-comm +-lunit)
-                                                    (≈-refl {elim-weight ·ₛ s +ₛ ε})) (≈-refl {ε}))
-                                    (≈-trans +-comm (≈-trans +-lunit ·-lunit))))
-                    (app-εₘ {1} {width-env γ} x zero))
+    ≈-trans (ap-wsrc {width-env γ} {1} (inputs γ s x) zero)
+            (≈-sym (≈-trans (+-cong (ec-unit (⟦ unit {Γ} ⟧tm .idxf .sfunc gi) s) (≈-refl {ε})) +-runit))
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} c) {γ = γ} (⇓-inl {v = v} {R = R'} D) {gi} rγ s x g rel =
   ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (prop._∧_.proj₁ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d)) root-den)) ,
   DepRel-resp τ₁ (fundamental-val c D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
@@ -1679,44 +1594,20 @@ fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} c₁ c₂) {γ = �
   o₂ = ap R₂ (inputs γ s x)
   y₁ = ⟦ M ⟧tm .famf .transf gi .func g
   y₂ = ⟦ N ⟧tm .famf .transf gi .func g
-  u₁ = M.in₂ {1} ∘ M.in₁ {width v} {width u}
-  u₂ = M.in₂ {1} ∘ M.in₂ {width v} {width u}
-  o = ap (of-cols {γ = γ} (M.rule₂-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
-                             (M.no-link (input-width γ) (width v)) (built-out γ (width v + width u)) u₁ u₂
-                             (cols {γ = γ} R₁) (cols {γ = γ} R₂)))
-         (inputs γ s x)
+  o = ap (built-out γ (width v + width u) +ₘ (M.in₂ {1} ∘ ⟨ R₁ , R₂ ⟩)) (inputs γ s x)
   d = F._+_ (σ [×] τ) (i , j) (ec (σ [×] τ) (i , j) s) (⟦ pair M N ⟧tm .famf .transf gi .func g)
-
-  op-eq : ∀ k → o k ≈s ((ap (M.in₁ {1} {width v + width u} ∘ ctrl-row {1}) (λ _ → s) k +ₛ ε) +ₛ
-                        (ap (M.in₂ {1} {width v + width u}) (ap (M.in₁ {width v} {width u}) o₁) k +ₛ
-                         ap (M.in₂ {1} {width v + width u}) (ap (M.in₂ {width v} {width u}) o₂) k))
-  op-eq k =
-    ≈-trans (app-rule₂-nolink {γ = γ} (built-out γ (width v + width u)) u₁ u₂ R₁ R₂ s x k)
-            (+-cong (+-cong ≈-refl (app-εₘ x k))
-                    (+-cong (app-∘ (M.in₂ {1}) (M.in₁ {width v} {width u}) o₁ k)
-                            (app-∘ (M.in₂ {1}) (M.in₂ {width v} {width u}) o₂ k)))
 
   tail-eq : ∀ k → o (suc k) ≈s (ap (M.in₁ {width v} {width u}) o₁ k +ₛ ap (M.in₂ {width v} {width u}) o₂ k)
   tail-eq k =
-    ≈-trans (op-eq (suc k))
-            (≈-trans (+-cong (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width v + width u}) (ctrl-row {1}) (λ _ → s) (suc k))
-                                                       (ap-in₁-suc {width v + width u} (ap (ctrl-row {1}) (λ _ → s)) k))
-                                              ≈-refl)
-                                      +-runit)
-                             (+-cong (ap-in₂-suc {width v + width u} _ k) (ap-in₂-suc {width v + width u} _ k)))
-                     +-lunit)
+    ≈-trans (built-suc {γ = γ} ⟨ R₁ , R₂ ⟩ s x k)
+            (≈-trans (app-+ₘ (M.in₁ {width v} {width u} ∘ R₁) (M.in₂ {width v} {width u} ∘ R₂) (inputs γ s x) k)
+                     (+-cong (app-∘ (M.in₁ {width v} {width u}) R₁ (inputs γ s x) k)
+                             (app-∘ (M.in₂ {width v} {width u}) R₂ (inputs γ s x) k)))
 
   root : o zero ≈A proj₁ d
   root =
-    ≈-trans (op-eq zero)
-    (≈-trans (+-cong (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width v + width u}) (ctrl-row {1}) (λ _ → s) zero)
-                                               (≈-trans (ap-in₁-zero {width v + width u} (ap (ctrl-row {1}) (λ _ → s)))
-                                                        (ap-ctrl-row {1} s zero)))
-                                      ≈-refl)
-                              +-runit)
-                     (≈-trans (+-cong (ap-in₂-zero {width v + width u} _) (ap-in₂-zero {width v + width u} _)) +-runit))
-    (≈-trans +-runit
-             (≈-sym (≈-trans (+-cong (prop._∧_.proj₁ (ec-pair {σ} {τ} i j s)) (≈-refl {ε})) +-runit))))
+    ≈-trans (built-zero {γ = γ} ⟨ R₁ , R₂ ⟩ s x)
+            (≈-sym (≈-trans (+-cong (prop._∧_.proj₁ (ec-pair {σ} {τ} i j s)) (≈-refl {ε})) +-runit))
 
   comp₁ : ∀ k → ap (M.p₁ {width v} {width u}) (λ l → o (suc l)) k ≈s o₁ k
   comp₁ k = ≈-trans (app-congᵥ (M.p₁ {width v} {width u}) tail-eq k) (ap-p₁-++ o₁ o₂ k)
@@ -1781,22 +1672,13 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} c) {γ = γ} ⇓-lam {gi}
   root , clause
   where
   o : ∣ 𝔽 (suc (width-env γ)) ∣
-  o = ap (of-cols {γ = γ} (lam-out γ t')) (inputs γ s x)
+  o = ap (lam-out γ t') (inputs γ s x)
 
   o₀ : o zero ≈s (w ·ₛ s)
-  o₀ = ≈-trans (app-of-cols {γ = γ} (lam-out γ t') s x zero)
-               (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ}) ctrl-row (λ _ → s) zero)
-                                         (≈-trans (ap-in₁-zero {width-env γ} (ap (ctrl-row {1}) (λ _ → s)))
-                                                  (ap-ctrl-row {1} s zero)))
-                                (ap-in₂-zero {width-env γ} x))
-                        +-runit)
+  o₀ = ≈-trans (ap-⊕₁-zero {width-env γ} (ctrl-row {1}) M.I (inputs γ s x)) (ap-ctrl-row {1} s zero)
 
   o-tail : ∀ k → o (suc k) ≈s x k
-  o-tail k = ≈-trans (app-of-cols {γ = γ} (lam-out γ t') s x (suc k))
-                     (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ}) ctrl-row (λ _ → s) (suc k))
-                                               (ap-in₁-suc {width-env γ} (ap (ctrl-row {1}) (λ _ → s)) k))
-                                      (ap-in₂-suc {width-env γ} x k))
-                              +-lunit)
+  o-tail k = ≈-trans (ap-⊕₁-suc {width-env γ} (ctrl-row {1}) M.I (inputs γ s x) k) (app-I x k)
 
   f = ⟦ lam t' ⟧tm .idxf .sfunc gi
 
@@ -1978,128 +1860,51 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
 
   -- The application's relation reads the body's at the closure's root and the application's
   -- weighted source as source, and at the closure's cells and the argument as environment.
-  app-op : ∀ k → ap (of-cols {γ = γ}
-                       (M.rule₃-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ))
-                          (body-route γ γ' v) (body-link₁ γ' v) (body-link₂ γ' v)
-                          (λ _ → εₘ) εₘ εₘ M.I (cols {γ = γ} R) (cols {γ = γ} T) (cols {γ = γ' · v} U)))
+  app-op : ∀ k → ap (U ∘ ((body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) +ₘ (body-link₂ γ' v ∘ T)))
                     (inputs γ s x) k
                  ≈s ap U (body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z) k
   app-op k =
-    ≈-trans (app-of-cols {γ = γ} fR s x k)
-    (≈-trans (+-cong (per-input source (λ _ → s) k) (per-input environment x k))
-    (≈-trans regroup
-    (≈-trans (+-cong (+-cong src-part l₁-part) l₂-part)
-    (≈-trans (+-cong (+-cong ≈-refl l₁-expand) l₂-expand)
-    (≈-trans final-regroup
-    (≈-trans (+-cong (≈-sym (app-+ᵥ (cU source) (λ _ → w ·ₛ s) (λ _ → o zero) k))
-                     (≈-sym (app-+ᵥ (cU environment) (ap (M.in₁ {width-env γ'} {width v}) (λ l → o (suc l)))
-                                                     (ap (M.in₂ {width-env γ'} {width v}) z) k)))
-    (≈-trans (≈-sym (app-inputs {γ = γ' · v} U ((w ·ₛ s) +ₛ o zero) X k))
-             (app-congᵥ U same k))))))))
+    ≈-trans (app-∘ U ((body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) +ₘ (body-link₂ γ' v ∘ T)) y k)
+            (app-congᵥ U body-inputs k)
     where
-    cR = cols {γ = γ} R
-    cT = cols {γ = γ} T
-    cU = cols {γ = γ' · v} U
-    rt₃ = body-route γ γ' v
-    l₁ = body-link₁ γ' v
-    l₂ = body-link₂ γ' v
-    fR = M.rule₃-result (M.id-linear (input-width γ)) (M.id-linear (input-width γ)) rt₃ l₁ l₂
-           (λ _ → εₘ) εₘ εₘ M.I cR cT cU
-    X : ∣ 𝔽 (width-env γ' + width v) ∣
-    X l = ap (M.in₁ {width-env γ'} {width v}) (λ l' → o (suc l')) l +ₛ ap (M.in₂ {width-env γ'} {width v}) z l
+    y = inputs γ s x
 
-    -- The column at one input, read at that input's vector: the three routed contributions.
-    per-input : ∀ (i : Input) (vi : ∣ 𝔽 (input-width γ i) ∣) k →
-                ap (fR i) vi k ≈s
-                ((ap (rt₃ .M.ap cU i) vi k +ₛ ap (l₁ .M.at cU ∘ cR i) vi k) +ₛ ap (l₂ .M.at cU ∘ cT i) vi k)
-    per-input i vi k =
-      ≈-trans (app-+ₘ A₁ A₂ vi k)
-      (≈-trans (+-cong (≈-trans (app-+ₘ A₁₁ (εₘ ∘ cT i) vi k)
-                                (≈-trans (+-cong (≈-trans (app-+ₘ εₘ (εₘ ∘ cR i) vi k)
-                                                          (≈-trans (+-cong (app-εₘ vi k)
-                                                                           (≈-trans (app-∘ εₘ (cR i) vi k)
-                                                                                    (app-εₘ (ap (cR i) vi) k)))
-                                                                   +-lunit))
-                                                 (≈-trans (app-∘ εₘ (cT i) vi k) (app-εₘ (ap (cT i) vi) k)))
+    body-inputs : ∀ l → ap ((body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) +ₘ (body-link₂ γ' v ∘ T)) y l ≈s
+                        body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
+    body-inputs zero =
+      ≈-trans (app-+ₘ (body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) (body-link₂ γ' v ∘ T) y zero)
+      (≈-trans (+-cong (≈-trans (app-+ₘ (body-route γ γ' v) (body-link₁ γ' v ∘ R) y zero)
+                                (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wsrc y zero)
+                                                 (≈-trans (ap-in₁-zero {width-env γ' + width v} (ap wsrc y))
+                                                          (ap-wsrc {width-env γ} {1} y zero)))
+                                        (≈-trans (app-∘ (body-link₁ γ' v) R y zero)
+                                                 (≈-trans (ap-⊕₁-zero {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o)
+                                                          (app-I {1} (λ _ → o zero) zero)))))
+                       (≈-trans (app-∘ (body-link₂ γ' v) T y zero)
+                                (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z zero)
+                                         (ap-in₂-zero {width-env γ' + width v} _))))
+               +-runit)
+    body-inputs (suc l) =
+      ≈-trans (app-+ₘ (body-route γ γ' v +ₘ (body-link₁ γ' v ∘ R)) (body-link₂ γ' v ∘ T) y (suc l))
+      (≈-trans (+-cong (≈-trans (app-+ₘ (body-route γ γ' v) (body-link₁ γ' v ∘ R) y (suc l))
+                                (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wsrc y (suc l))
+                                                          (ap-in₁-suc {width-env γ' + width v} (ap wsrc y) l))
+                                                 (≈-trans (app-∘ (body-link₁ γ' v) R y (suc l))
+                                                          (ap-⊕₁-suc {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o l)))
                                          +-lunit))
-                       (≈-trans (app-∘ M.I A₂₁ vi k)
-                                (≈-trans (app-I (ap A₂₁ vi) k)
-                                         (≈-trans (app-+ₘ (rt₃ .M.ap cU i +ₘ (l₁ .M.at cU ∘ cR i)) (l₂ .M.at cU ∘ cT i) vi k)
-                                                  (+-cong (app-+ₘ (rt₃ .M.ap cU i) (l₁ .M.at cU ∘ cR i) vi k) ≈-refl)))))
-               +-lunit)
-      where
-      A₁₁ = εₘ +ₘ (εₘ ∘ cR i)
-      A₁ = A₁₁ +ₘ (εₘ ∘ cT i)
-      A₂₁ = (rt₃ .M.ap cU i +ₘ (l₁ .M.at cU ∘ cR i)) +ₘ (l₂ .M.at cU ∘ cT i)
-      A₂ = M.I ∘ A₂₁
-
-    regroup : ∀ {a b c a' b' c'} →
-              ((a +ₛ b) +ₛ c) +ₛ ((a' +ₛ b') +ₛ c') ≈s (((a +ₛ a') +ₛ (b +ₛ b')) +ₛ (c +ₛ c'))
-    regroup = ≈-trans Sc.+-interchange (+-cong Sc.+-interchange ≈-refl)
-
-    l₁-part : (ap (l₁ .M.at cU ∘ cR source) (λ _ → s) k +ₛ ap (l₁ .M.at cU ∘ cR environment) x k)
-              ≈s ap (l₁ .M.at cU) o k
-    l₁-part =
-      ≈-trans (+-cong (app-∘ (l₁ .M.at cU) (cR source) (λ _ → s) k) (app-∘ (l₁ .M.at cU) (cR environment) x k))
-      (≈-trans (≈-sym (app-+ᵥ (l₁ .M.at cU) (ap (cR source) (λ _ → s)) (ap (cR environment) x) k))
-               (app-congᵥ (l₁ .M.at cU) (λ l → ≈-sym (app-inputs {γ = γ} R s x l)) k))
-
-    l₂-part : (ap (l₂ .M.at cU ∘ cT source) (λ _ → s) k +ₛ ap (l₂ .M.at cU ∘ cT environment) x k)
-              ≈s ap (l₂ .M.at cU) z k
-    l₂-part =
-      ≈-trans (+-cong (app-∘ (l₂ .M.at cU) (cT source) (λ _ → s) k) (app-∘ (l₂ .M.at cU) (cT environment) x k))
-      (≈-trans (≈-sym (app-+ᵥ (l₂ .M.at cU) (ap (cT source) (λ _ → s)) (ap (cT environment) x) k))
-               (app-congᵥ (l₂ .M.at cU) (λ l → ≈-sym (app-inputs {γ = γ} T s x l)) k))
-
-    l₁-expand : ap (l₁ .M.at cU) o k ≈s
-                (ap (cU environment) (ap (M.in₁ {width-env γ'} {width v}) (λ l → o (suc l))) k +ₛ
-                 ap (cU source) (λ _ → o zero) k)
-    l₁-expand =
-      ≈-trans (app-+ₘ (cU environment ∘ (M.in₁ {width-env γ'} {width v} ∘ M.p₂ {1} {width-env γ'}))
-                      (cU source ∘ M.p₁ {1} {width-env γ'}) o k)
-              (+-cong (≈-trans (app-∘ (cU environment) (M.in₁ {width-env γ'} {width v} ∘ M.p₂ {1} {width-env γ'}) o k)
-                               (≈-trans (app-congᵥ (cU environment)
-                                           (λ l → app-∘ (M.in₁ {width-env γ'} {width v}) (M.p₂ {1} {width-env γ'}) o l) k)
-                                        (app-congᵥ (cU environment)
-                                           (app-congᵥ (M.in₁ {width-env γ'} {width v}) (ap-p₂₁ {width-env γ'} o)) k)))
-                      (≈-trans (app-∘ (cU source) (M.p₁ {1} {width-env γ'}) o k)
-                               (app-congᵥ (cU source) (ap-p₁₁ {width-env γ'} o) k)))
-
-    l₂-expand : ap (l₂ .M.at cU) z k ≈s
-                (ap (cU environment) (ap (M.in₂ {width-env γ'} {width v}) z) k +ₛ ε)
-    l₂-expand =
-      ≈-trans (app-+ₘ (cU environment ∘ M.in₂ {width-env γ'} {width v}) (cU source ∘ εₘ) z k)
-              (+-cong (app-∘ (cU environment) (M.in₂ {width-env γ'} {width v}) z k)
-                      (≈-trans (app-∘ (cU source) εₘ z k)
-                               (≈-trans (app-congᵥ (cU source) (λ l → app-εₘ z l) k) (model.app-ε (cU source) k))))
-
-    final-regroup : ∀ {a b c d} → (a +ₛ (b +ₛ c)) +ₛ (d +ₛ ε) ≈s ((a +ₛ c) +ₛ (b +ₛ d))
-    final-regroup =
-      ≈-trans (+-cong ≈-refl +-runit)
-      (≈-trans (+-cong (+-cong ≈-refl +-comm) ≈-refl)
-      (≈-trans (+-cong (≈-sym +-assoc) ≈-refl) +-assoc))
-
-    same : ∀ l → inputs (γ' · v) ((w ·ₛ s) +ₛ o zero) X l ≈s
-                 body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
-    same zero    = ≈-refl
-    same (suc l) = ≈-refl
-
-    src-part : (ap (rt₃ .M.ap cU source) (λ _ → s) k +ₛ ap (rt₃ .M.ap cU environment) x k)
-               ≈s ap (cU source) (λ _ → w ·ₛ s) k
-    src-part =
-      ≈-trans (+-cong (≈-trans (app-∘ (cU source) (ctrl-row {1}) (λ _ → s) k)
-                               (app-congᵥ (cU source) (λ l → ap-ctrl-row {1} s l) k))
-                      (≈-trans (app-∘ (cU environment) εₘ x k)
-                               (≈-trans (app-congᵥ (cU environment) (λ l → app-εₘ x l) k) (model.app-ε (cU environment) k))))
-              +-runit
+                       (≈-trans (app-∘ (body-link₂ γ' v) T y (suc l))
+                                (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z (suc l))
+                                         (ap-in₂-suc {width-env γ' + width v} _ l))))
+               ≈-refl)
 fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-bop {vs = vs} {R = Rs} D) {gi} rγ s x g rel k =
-  ≈-trans (app-rule₁ {γ = γ} (prim-out γ (sort-width o)) D-vs Rs s x k)
-  (≈-trans (+-cong (≈-trans (+-cong (ap-ctrl-row {sort-width o} s k) (app-εₘ x k)) +-runit)
+  ≈-trans (app-+ₘ wsrc (D-vs ∘ Rs) (inputs γ s x) k)
+  (≈-trans (+-cong (ap-wsrc {width-env γ} {sort-width o} (inputs γ s x) k)
+                   (≈-trans (app-∘ D-vs Rs (inputs γ s x) k)
                    (≈-trans (app-congᵥ D-vs IH k)
                    (≈-trans (app-+ᵥ D-vs (λ _ → w ·ₛ s) Z k)
                             (+-cong (≈-trans (app-congᵥ D-vs (λ _ → ≈-sym ·-runit) k)
                                              (≈-trans (model.app-· D-vs (w ·ₛ s) (λ _ → ι) k) (·-cong ·-comm ≈-refl)))
-                                    ≈-refl))))
+                                    ≈-refl)))))
   (≈-trans (≈-sym +-assoc)
   (≈-trans (+-cong (sw-absorb s (ap D-vs (λ _ → ι) k)) ≈-refl)
            (+-cong (≈-sym (ec-base i s k)) (≈-sym den)))))
@@ -2131,13 +1936,12 @@ fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-bre
         (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .prop-setoid._⇒_.func-resp-≈ args-eq)
   IH : ∀ l → ap Rs (inputs γ s x) l ≈s ((w ·ₛ s) +ₛ Z l)
   IH = fundamental-s cs D rγ s x g rel
-  op-side : ∀ k → ap (of-cols {γ = γ} (M.rule₁-result (M.id-linear (input-width γ)) (prim-out γ (width (bool→val b)))
-                                                       (brel-deps ω vs b) (cols {γ = γ} Rs)))
-                     (inputs γ s x) k
+  op-side : ∀ k → ap (wsrc +ₘ (brel-deps ω vs b ∘ Rs)) (inputs γ s x) k
                   ≈s ((w ·ₛ s) +ₛ ap (brel-deps ω vs b) (λ l → (w ·ₛ s) +ₛ Z l) k)
   op-side k =
-    ≈-trans (app-rule₁ {γ = γ} (prim-out γ (width (bool→val b))) (brel-deps ω vs b) Rs s x k)
-            (+-cong (≈-trans (+-cong (ap-ctrl-row s k) (app-εₘ x k)) +-runit) (app-congᵥ (brel-deps ω vs b) IH k))
+    ≈-trans (app-+ₘ wsrc (brel-deps ω vs b ∘ Rs) (inputs γ s x) k)
+            (+-cong (ap-wsrc {width-env γ} {width (bool→val b)} (inputs γ s x) k)
+                    (≈-trans (app-∘ (brel-deps ω vs b) Rs (inputs γ s x) k) (app-congᵥ (brel-deps ω vs b) IH k)))
   den = ⟦ brel ω Ms ⟧tm .famf .transf gi .func g
   model-side : F._≈_ (unit [+] unit) b
                  (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func (F._+_ (unit [+] unit) i (ec (unit [+] unit) i s) den))
@@ -2152,14 +1956,14 @@ fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-bre
 fundamental-s [] [] rγ s x g rel ()
 fundamental-s {Ms = _} (c ∷ cs) {γ = γ} (_∷_ {i = i} {is = is} {v = v} {R = R₁} {Rs = Rs} {M = M} {Ms = Ms} D Ds) {gi}
               rγ s x g rel k =
-  ≈-trans (app-rule₂-nolink {γ = γ} (λ _ → εₘ) u₁ u₂ R₁ Rs s x k)
-  (≈-trans (+-cong (≈-trans (+-cong (app-εₘ {sort-width i + bases-width is} {1} (λ _ → s) k) (app-εₘ x k)) +-lunit)
-                   (+-cong (≈-trans (app-congᵥ u₁ IH₁ k) (app-+ᵥ u₁ (λ _ → w ·ₛ s) y₁ k))
-                           (≈-trans (app-congᵥ u₂ IH₂ k) (app-+ᵥ u₂ (λ _ → w ·ₛ s) Z k))))
-  (≈-trans +-lunit
+  ≈-trans (app-+ₘ (u₁ ∘ R₁) (u₂ ∘ Rs) (inputs γ s x) k)
+  (≈-trans (+-cong (≈-trans (app-∘ u₁ R₁ (inputs γ s x) k)
+                            (≈-trans (app-congᵥ u₁ IH₁ k) (app-+ᵥ u₁ (λ _ → w ·ₛ s) y₁ k)))
+                   (≈-trans (app-∘ u₂ Rs (inputs γ s x) k)
+                            (≈-trans (app-congᵥ u₂ IH₂ k) (app-+ᵥ u₂ (λ _ → w ·ₛ s) Z k))))
   (≈-trans Sc.+-interchange
            (+-cong (in-const {sort-width i} {bases-width is} (w ·ₛ s) k)
-                   (≈-sym (args-vec-cons M Ms gi g k))))))
+                   (≈-sym (args-vec-cons M Ms gi g k)))))
   where
   u₁ = M.in₁ {sort-width i} {bases-width is}
   u₂ = M.in₂ {sort-width i} {bases-width is}

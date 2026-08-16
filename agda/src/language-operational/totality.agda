@@ -260,7 +260,7 @@ map-total : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : (Γ ▸ 
              ((γ · w') , s ⇓ u [ S ]) × Total σr u) →
             ∀ (σ' : type 1) {v : Val (σ' [ μ τ₀ ])} → MuT τ₀ σ' v →
             Σ (Val (σ' [ σr ])) λ v' →
-            Σ ((i : InputM) → M.Matrix (width v') (inputM-width γ (width v) i)) λ F →
+            Σ ((suc (width-env γ) + width v) ⇒ width v') λ F →
             Map γ s σ' v v' F × Total (σ' [ σr ]) v'
 map-total {γ = γ} f (var Fin.zero) (mt-roll m') =
   let (w' , F , Dm , tw') = map-total f _ m'
