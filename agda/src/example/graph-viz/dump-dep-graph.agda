@@ -2,7 +2,7 @@
 
 -- Merging vertices joins their edges with the semiring's addition, which agrees with composition by
 -- distributivity. Run from the approx-diff repository root.
-module graph-viz.dump-dep-graph where
+module example.graph-viz.dump-dep-graph where
 
 open import IO
 open import IO.Finite using (writeFile)

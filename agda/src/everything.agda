@@ -9,5 +9,5 @@ import interaction.dependence-graph
 import interaction.moves
 import example.interaction
 
-import graph-viz.dump-relations
-import graph-viz.dump-dep-graph
+import example.graph-viz.dump-relations
+import example.graph-viz.dump-dep-graph

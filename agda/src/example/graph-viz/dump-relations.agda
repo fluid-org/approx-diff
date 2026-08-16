@@ -3,7 +3,7 @@
 -- The model's output and relation of each example program at its input, the relation as slices in
 -- annotated-value form: the input environment annotated with the relation's row at each output
 -- position. Run from the approx-diff repository root.
-module graph-viz.dump-relations where
+module example.graph-viz.dump-relations where
 
 open import IO
 open import IO.Finite using (writeFile)

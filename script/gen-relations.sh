@@ -21,7 +21,7 @@ trap 'rm -f "$pidfile"' EXIT
 # iteration builds at some cost to the binary's speed.
 ( cd agda && agda --compile --compile-dir=_build --ghc-flag=-rtsopts \
     --ghc-flag=-j10 ${DUMP_FAST:+--ghc-flag=-O0} \
-    src/graph-viz/dump-relations.agda > "$log" 2>&1 )
+    src/example/graph-viz/dump-relations.agda > "$log" 2>&1 )
 GHCRTS="${DUMP_GHCRTS:--M1G -s}" agda/_build/dump-relations
 
 echo "wrote test-baselines/relations.txt"
