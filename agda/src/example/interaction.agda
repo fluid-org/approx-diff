@@ -5,7 +5,7 @@
 -- scrutinee root, giving the chain env → inl payload → scrutinee root → branch root → root.
 -- Initially the three intermediates form one hidden region; revealing the scrutinee root splits it
 -- in two, and hiding it again merges them back.
-module interaction.example where
+module example.interaction where
 
 open import Data.Fin using (zero; suc)
 open import Data.Nat using (suc)
