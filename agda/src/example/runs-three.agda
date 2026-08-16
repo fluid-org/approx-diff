@@ -2,7 +2,7 @@
 
 -- The examples over the three-chain, instantiated once so consumers pay for the module application
 -- through the interface file.
-module example.relations-three where
+module example.runs-three where
 
 import three
-open import example.relations three.semiring three.C public
+open import example.runs three.semiring three.C public

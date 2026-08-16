@@ -22,8 +22,8 @@ import two
 import three
 import example.show
 import signature.example.interpretation
-import example.relations-two
-import example.relations-three
+import example.runs-two
+import example.runs-three
 import language-operational.evaluation
 import language-operational.annotated-value as AV
 
@@ -105,8 +105,8 @@ private
 
   module R2 = render two.semiring two.I suffix2
   module R3 = render three.semiring three.C suffix3
-  module E2 = example.relations-two
-  module E3 = example.relations-three
+  module E2 = example.runs-two
+  module E3 = example.runs-three
 
   two-run : String → E2.Run → String
   two-run name r = R2.show-run name (E2.env r) (E2.model-output r) (E2.model-of r)

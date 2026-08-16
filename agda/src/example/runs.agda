@@ -6,7 +6,7 @@ open import commutative-semiring using (CommutativeSemiring)
 
 -- The example programs at their inputs, and the model's output and relation of each at the
 -- interpretation of the input.
-module example.relations {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A) where
+module example.runs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A) where
 
 import label
 import matrix
