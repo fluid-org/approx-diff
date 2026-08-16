@@ -34,6 +34,7 @@ open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
 open import language-operational.evaluation Sig S 𝒫 elim-weight
+  renaming (size to vsize; size-subst to vsize-subst)
 
 private
   module M = matrix.Mat S
@@ -159,19 +160,6 @@ mu-out m = mu-total-map (λ σ p t → total-irr σ t) m
 
 mu-in : ∀ {τ₀ v} → MuT τ₀ (var Fin.zero) v → Total (μ τ₀) v
 mu-in m = mu-total-map (λ σ p t → total-irr σ t) m
-
--- Value size, invariant under transport; drives the mutual recursion below.
-vsize : ∀ {τ : type 0} → Val τ → ℕ
-vsize unit       = 1
-vsize (const c)  = 1
-vsize (clo γ t)  = 1
-vsize (inl v)    = suc (vsize v)
-vsize (inr v)    = suc (vsize v)
-vsize (pair v u) = suc (vsize v + vsize u)
-vsize (roll v)   = suc (vsize v)
-
-vsize-subst : ∀ {σ σ' : type 0} (e : σ ≡ σ') (w : Val σ) → vsize (≡-subst Val e w) ≡ vsize w
-vsize-subst refl w = refl
 
 total-coerce : ∀ {σ σ' : type 0} (e : σ ≡ σ') {v : Val σ} →
                Total σ v → Total σ' (≡-subst Val e v)

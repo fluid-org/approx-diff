@@ -2169,3 +2169,60 @@ fundamental-s {Ms = _} (c ∷ cs) {γ = γ} (_∷_ {i = i} {is = is} {v = v} {R 
   IH₁ l = ≈-trans (fundamental c D rγ s x g rel l) (+-cong (ec-base (⟦ M ⟧tm .idxf .sfunc gi) s l) ≈-refl)
   IH₂ : ∀ l → ap Rs (inputs γ s x) l ≈s ((w ·ₛ s) +ₛ Z l)
   IH₂ = fundamental-s cs Ds rγ s x g rel
+
+-- The interpretation of first-order values and environments, read into the model through the
+-- comparison isomorphisms. At a μ-free first-order type a value is related to its interpretation and
+-- to no other index, so at such types the fundamental lemma says that a term's value is interpreted
+-- as the term's index at the environment's interpretation.
+open import value-interpretation S elim-weight Sig 𝒫 using (⟦_⟧val; ⟦_⟧env)
+open Category.Iso using (fwd)
+
+val-idx : ∀ {τ} (fo : first-order τ) → Val τ → Ix τ
+val-idx fo v = interp.closed-iso fo .fwd .idxf .sfunc (⟦ fo ⟧val v)
+
+env-idx : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → Env Γ → IxC Γ
+env-idx Γ-fo γ = interp.⟦ Γ-fo ⟧ctxt-iso .fwd .idxf .sfunc (⟦ Γ-fo ⟧env γ)
+
+mu-free : ∀ {Δ} {τ : type Δ} → first-order τ → Set
+mu-free (var i)       = ⊤
+mu-free unit          = ⊤
+mu-free (base s)      = ⊤
+mu-free (fo₁ [+] fo₂) = mu-free fo₁ × mu-free fo₂
+mu-free (fo₁ [×] fo₂) = mu-free fo₁ × mu-free fo₂
+mu-free (μ fo)        = ⊥
+
+mu-free-ctxt : ∀ {Γ} → first-order-ctxt Γ → Set
+mu-free-ctxt emp         = ⊤
+mu-free-ctxt (Γ-fo ▸ fo) = mu-free-ctxt Γ-fo × mu-free fo
+
+val-rel : ∀ {τ} (fo : first-order τ) → mu-free fo → (v : Val τ) → ValRel τ v (val-idx fo v)
+val-rel unit          _         unit       = tt
+val-rel (base s)      _         (const c)  = ⟪ Setoid.refl (sort-index s) ⟫
+val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inl v) =
+  val-idx fo₁ v , val-rel fo₁ m₁ v , ⟪ Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₁ (val-idx fo₁ v)} ⟫
+val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inr v) =
+  val-idx fo₂ v , val-rel fo₂ m₂ v , ⟪ Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₂ (val-idx fo₂ v)} ⟫
+val-rel (fo₁ [×] fo₂) (m₁ , m₂) (pair v u) = val-rel fo₁ m₁ v , val-rel fo₂ m₂ u
+
+env-rel : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → mu-free-ctxt Γ-fo → (γ : Env Γ) →
+          EnvValRel γ (env-idx Γ-fo γ)
+env-rel emp         _        emp     = emp
+env-rel (Γ-fo ▸ fo) (mΓ , m) (γ · v) = env-rel Γ-fo mΓ γ · val-rel fo m v
+
+val-rel-unique : ∀ {τ} (fo : first-order τ) → mu-free fo → {v : Val τ} {i : Ix τ} →
+                 ValRel τ v i → Setoid._≈_ (⟦ τ ⟧ .idx) i (val-idx fo v)
+val-rel-unique unit          _         {unit}      r = prop.tt
+val-rel-unique (base s)      _         {const c}   ⟪ e ⟫ = e
+val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inl v} {i} (i' , r , ⟪ e ⟫) =
+  Setoid.trans (⟦ τ₁ [+] τ₂ ⟧ .idx) {i} {inj₁ i'} {inj₁ (val-idx fo₁ v)} e (val-rel-unique fo₁ m₁ r)
+val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inr v} {i} (i' , r , ⟪ e ⟫) =
+  Setoid.trans (⟦ τ₁ [+] τ₂ ⟧ .idx) {i} {inj₂ i'} {inj₂ (val-idx fo₂ v)} e (val-rel-unique fo₂ m₂ r)
+val-rel-unique (fo₁ [×] fo₂) (m₁ , m₂) {pair v u} {i , j} (r , r') =
+  val-rel-unique fo₁ m₁ r , val-rel-unique fo₂ m₂ r'
+
+-- Soundness on values, at μ-free first-order types.
+soundness-val : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) →
+                mu-free-ctxt Γ-fo → mu-free fo →
+                ∀ {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ]) →
+                Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ t ⟧tm .idxf .sfunc (env-idx Γ-fo γ)) (val-idx fo v)
+soundness-val Γ-fo fo mΓ m c D = val-rel-unique fo m (fundamental-val c D (env-rel Γ-fo mΓ _))

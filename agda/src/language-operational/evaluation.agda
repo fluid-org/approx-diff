@@ -116,6 +116,19 @@ ctrl-of (roll v)    = ctrl-of v
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl
 
+-- Value size, for recursion on values across a transport of the type; a closure counts one.
+size : ∀ {τ} → Val τ → ℕ
+size unit       = 1
+size (const _)  = 1
+size (inl v)    = suc (size v)
+size (inr v)    = suc (size v)
+size (pair v u) = suc (size v + size u)
+size (clo _ _)  = 1
+size (roll v)   = suc (size v)
+
+size-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → size (subst Val e v) ≡ size v
+size-subst refl v = refl
+
 proj-var : ∀ {Γ τ} (x : Γ ∋ τ) (γ : Env Γ) → width-env γ ⇒ width (lookup x γ)
 proj-var zero     (γ · v) = p₂ {width-env γ} {width v}
 proj-var (succ x) (γ · v) = proj-var x γ ∘ p₁ {width-env γ} {width v}

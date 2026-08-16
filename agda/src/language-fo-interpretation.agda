@@ -202,10 +202,24 @@ private
   FD.Iso-trans (HR.FW.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
     (≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
 
--- At closed types the target environment is the empty one, up to pointwise equality.
+-- At closed types the target environment is the empty one, which agrees with the image environment
+-- only up to pointwise equality. The comparison recurses on the type, so that its index map computes
+-- at each value former, and meets the two environments only at a μ-type.
 closed-iso : ∀ {τ : type 0} (fo : first-order τ) →
              FD.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty ∅𝒞)) (𝒟⟦ τ ⟧ty (λ ()))
-closed-iso {τ} fo = FD.Iso-trans (⟦ fo ⟧-iso ∅𝒞) (≡-Iso (𝒟-ty-cong τ (λ ())))
+closed-iso unit          = FD.Iso-refl
+closed-iso (base s)      = FD.Iso-refl
+closed-iso (fo₁ [+] fo₂) =
+  FD.Iso-trans (FD.Iso-sym (FD.IsIso→Iso Fam⟨F⟩-preserves-coproducts))
+    (FDC.coproduct-preserve-iso
+      (FD.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (closed-iso fo₁)))
+      (FD.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (closed-iso fo₂))))
+closed-iso (fo₁ [×] fo₂) =
+  FD.Iso-trans (Fam⟨F⟩-L _)
+    (Fam⟨𝒟⟩μ.Lf-iso
+      (FD.Iso-trans (FD.IsIso→Iso Fam⟨F⟩-preserves-products)
+        (FDP.product-preserves-iso (closed-iso fo₁) (closed-iso fo₂))))
+closed-iso (μ {τ = τ} fo) = FD.Iso-trans (⟦ μ fo ⟧-iso ∅𝒞) (≡-Iso (𝒟-ty-cong (μ τ) (λ ())))
 
 ⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → FD.Iso (Fam⟨F⟩ .fobj 𝒞⟦ Γ-fo ⟧ctxt) (𝒟⟦ Γ ⟧ctxt)
 ⟦ emp ⟧ctxt-iso    = FD.IsIso→Iso Fam⟨F⟩-preserves-terminal
