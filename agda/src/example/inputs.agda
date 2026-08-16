@@ -8,16 +8,24 @@ open import commutative-semiring using (CommutativeSemiring)
 module example.inputs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A) where
 
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
+open import Relation.Binary.PropositionalEquality using (subst; sym)
 import label
 open import signature.example.interpretation S using (Sig; interpretation; number; label)
 open import example.programs using (case-ctxt)
-open import language-syntax Sig using (base; unit; list; _[×]_; _[+]_; emp; _,_)
+open import language-syntax Sig using (type; base; unit; list; _[×]_; _[+]_; emp; _,_; sub-ren-id)
 open import language-operational.evaluation Sig S interpretation elim-weight using (Val; Env)
 open Val
 open Env
-open import example.mk-list Sig S interpretation elim-weight using (_∷ᵥ_; nilᵥ)
 
 private
+  infixr 20 _∷ᵥ_
+
+  nilᵥ : ∀ {τ : type 0} → Val (list τ)
+  nilᵥ = roll (inl unit)
+
+  _∷ᵥ_ : ∀ {τ : type 0} → Val τ → Val (list τ) → Val (list τ)
+  _∷ᵥ_ {τ} x xs = roll (inr (pair (subst Val (sym (sub-ren-id τ (λ ()))) x) xs))
+
   el : label.label → ℚ → Val (base label [×] base number)
   el l n = pair (const l) (const n)
 
