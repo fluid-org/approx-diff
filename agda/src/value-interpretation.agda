@@ -32,7 +32,7 @@ module value-interpretation
 
 open Interpretation ℐ using (sort-index)
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-operational.type-substitution Sig using (sub-sub; sub-ren; sub-id)
+open import language-operational.type-substitution Sig using (sub-id; unfold-sub)
 open import language-operational.evaluation Sig S ℐ elim-weight
   using (Val; Env; unit; const; inl; inr; pair; roll; emp; _·_; size; size-subst)
 
@@ -46,15 +46,6 @@ private
   module T = model.Fam⟨𝒞⟩μ.Tree ∅𝒞
 
 open T using (⟦_⟧shape; El; W; sup)
-
--- Instantiating the body of a μ-type, substituted under the binder, at the substituted μ-type is
--- substituting the body with the substitution extended by that μ-type.
-unfold-sub : ∀ {n} (σ : TySub n 0) (τ : type (suc n)) →
-             sub (sub-lift σ) τ [ μ (sub (sub-lift σ) τ) ] ≡ sub (extend σ (μ (sub (sub-lift σ) τ))) τ
-unfold-sub σ τ =
-  trans (sub-sub (push (μ B)) (sub-lift σ) τ)
-        (sub-cong τ λ { zero → refl ; (suc i) → trans (sub-ren (push (μ B)) suc (σ i)) (sub-id (σ i)) })
-  where B = sub (sub-lift σ) τ
 
 -- The values at the substituted variables, as elements of the sort environment, for values below a
 -- size bound.

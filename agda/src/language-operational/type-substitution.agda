@@ -7,6 +7,7 @@ open import Data.Product using (_×_; _,_)
 open import Data.Unit using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import signature using (Signature)
+open import polynomial-functor using (extend)
 
 -- Fusion laws for type-level renaming and substitution, and the unfolding law used to traverse values of
 -- nested inductive types.
@@ -83,6 +84,15 @@ sub-id (τ₁ [+] τ₂) = cong₂ _[+]_ (sub-id τ₁) (sub-id τ₂)
 sub-id (τ₁ [×] τ₂) = cong₂ _[×]_ (sub-id τ₁) (sub-id τ₂)
 sub-id (τ₁ [→] τ₂) = refl
 sub-id (μ τ)       = cong μ (trans (sub-cong τ λ { zero → refl ; (suc i) → refl }) (sub-id τ))
+
+-- Instantiating the body of a μ-type, substituted under the binder, at the substituted μ-type is
+-- substituting the body with the substitution extended by that μ-type.
+unfold-sub : ∀ {n} (σ : TySub n 0) (τ : type (suc n)) →
+             sub (sub-lift σ) τ [ μ (sub (sub-lift σ) τ) ] ≡ sub (extend σ (μ (sub (sub-lift σ) τ))) τ
+unfold-sub σ τ =
+  trans (sub-sub (push (μ B)) (sub-lift σ) τ)
+        (sub-cong τ λ { zero → refl ; (suc i) → trans (sub-ren (push (μ B)) suc (σ i)) (sub-id (σ i)) })
+  where B = sub (sub-lift σ) τ
 
 unfold₁-sub : type 2 → TySub 2 1
 unfold₁-sub τ zero    = μ τ
