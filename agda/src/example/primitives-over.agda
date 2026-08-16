@@ -22,7 +22,7 @@ open import Relation.Binary.PropositionalEquality using (refl)
 open import Data.Product using (_,_)
 open import Data.Rational using (ℚ; 0ℚ) renaming (_≟_ to _≟ℚ_)
 open import prop using (liftS)
-open import example.signature ℚ
+open import signature.example ℚ
   using (Sig; sort; number; label; op; rel; lit; add; mult; lbl; equal-label; equal-number)
   public
 

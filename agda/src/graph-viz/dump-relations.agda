@@ -27,9 +27,9 @@ import example.relations-three
 import language-operational.evaluation
 import language-operational.annotated-value as AV
 
--- Rendering over a semiring, given the mark each scalar leaves on a position.
+-- Rendering over a semiring, given how a scalar is shown after a position.
 module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
-              (mark : Setoid.Carrier A → String) where
+              (suffix : Setoid.Carrier A → String) where
 
   open CommutativeSemiring S using (ι; ε)
   open example.primitives-over S using (Sig; primitives)
@@ -43,21 +43,21 @@ module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : 
 
     show-c : ℕ → String → Scalar → String
     show-c zero    l a = l
-    show-c (suc _) l a = l ++ mark a
+    show-c (suc _) l a = l ++ suffix a
 
     show-aval : AVal Scalar → String
     show-kids : ∀ {k} → Vec.Vec (AVal Scalar) k → String
 
-    show-aval (node Tag.unit      a _ _)  = "()" ++ mark a
+    show-aval (node Tag.unit      a _ _)  = "()" ++ suffix a
     show-aval (node (Tag.const l) a n _)  = show-c n l a
-    show-aval (node Tag.inl       a _ cs) = "inl" ++ mark a ++ " " ++ show-kids cs
-    show-aval (node Tag.inr       a _ cs) = "inr" ++ mark a ++ " " ++ show-kids cs
-    show-aval (node (Tag.clo _)   a _ _)  = "<closure>" ++ mark a
-    show-aval (node Tag.nil       a _ _)  = "[]" ++ mark a
+    show-aval (node Tag.inl       a _ cs) = "inl" ++ suffix a ++ " " ++ show-kids cs
+    show-aval (node Tag.inr       a _ cs) = "inr" ++ suffix a ++ " " ++ show-kids cs
+    show-aval (node (Tag.clo _)   a _ _)  = "<closure>" ++ suffix a
+    show-aval (node Tag.nil       a _ _)  = "[]" ++ suffix a
     show-aval (node Tag.pair      a _ (p Vec.∷ q Vec.∷ Vec.[])) =
-      "(" ++ show-aval p ++ ", " ++ show-aval q ++ ")" ++ mark a
+      "(" ++ show-aval p ++ ", " ++ show-aval q ++ ")" ++ suffix a
     show-aval (node Tag.cons      a _ (h Vec.∷ t Vec.∷ Vec.[])) =
-      show-aval h ++ " ∷" ++ mark a ++ " " ++ show-aval t
+      show-aval h ++ " ∷" ++ suffix a ++ " " ++ show-aval t
 
     show-kids Vec.[]       = ""
     show-kids (t Vec.∷ _) = show-aval t
@@ -93,17 +93,17 @@ module render {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : 
       ++ go (suc q) rs
 
 private
-  mark2 : two.Two → String
-  mark2 two.I = ""
-  mark2 two.O = "⊥"
+  suffix2 : two.Two → String
+  suffix2 two.I = ""
+  suffix2 two.O = "⊥"
 
-  mark3 : three.Three → String
-  mark3 three.D = ""
-  mark3 three.C = "ᶜ"
-  mark3 three.O = "⊥"
+  suffix3 : three.Three → String
+  suffix3 three.D = ""
+  suffix3 three.C = "ᶜ"
+  suffix3 three.O = "⊥"
 
-  module R2 = render two.semiring two.I mark2
-  module R3 = render three.semiring three.C mark3
+  module R2 = render two.semiring two.I suffix2
+  module R3 = render three.semiring three.C suffix3
   module E2 = example.relations-two
   module E3 = example.relations-three
 

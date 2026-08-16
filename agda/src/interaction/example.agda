@@ -15,7 +15,7 @@ open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import two
 
-open import example.signature ℚ using (Sig; number)
+open import signature.example ℚ using (Sig; number)
 import example.primitives as Dep
 
 open import language-syntax Sig using (_⊢_; _∋_; zero; base; var; inl; case; ctxt; emp)

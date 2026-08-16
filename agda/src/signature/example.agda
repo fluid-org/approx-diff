@@ -2,7 +2,7 @@
 
 -- Parameterised by the set of numeric literals, which the intended models take as the carrier of
 -- the `number` sort.
-module example.signature (Num : Set) where
+module signature.example (Num : Set) where
 
 open import Level using (0ℓ)
 open import signature using (Signature)

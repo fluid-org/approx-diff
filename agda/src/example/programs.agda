@@ -9,7 +9,7 @@ import Data.Fin as Fin
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import every using ([]; _∷_)
 import label
-open import example.signature ℚ
+open import signature.example ℚ
 open import language-syntax Sig
 
 -- Label literals and label equality.

@@ -10,7 +10,7 @@ import Data.Integer as ℤ
 import Data.Integer.Show as ℤ-Show
 open import prop-setoid using (Setoid)
 import label
-open import example.signature ℚ using (number; label)
+open import signature.example ℚ using (number; label)
 open import example.values using (sort-index)
 
 show-ℚ : ℚ → String

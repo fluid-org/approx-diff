@@ -18,7 +18,7 @@ open import Relation.Binary.PropositionalEquality using (refl)
 open import prop using (liftS)
 import semiring-Q
 import label
-open import example.signature ℚ
+open import signature.example ℚ
   using (sort; number; label; op; rel; lit; add; mult; lbl; equal-label; equal-number)
 
 private
