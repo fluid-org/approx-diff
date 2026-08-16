@@ -18,15 +18,21 @@
 -- constant absorbs such dependence needs the elimination weight to be idempotent and to absorb its
 -- multiples under addition, and addition to be idempotent, as in a lattice.
 open import Level using (0ℓ; lift)
-open import Data.Nat using (ℕ; suc; _+_)
-open import Data.Fin using (Fin; zero; suc)
+open import Data.Nat using (ℕ; suc; _+_; _<_; s≤s)
+open import Data.Nat.Properties using (≤-reflexive; <-trans; n<1+n; m≤m+n; m≤n+m)
+open import Data.Nat.Induction using (<-wellFounded)
+open import Induction.WellFounded using (Acc; acc)
+open import Data.Fin using (Fin; zero; suc; splitAt; _↑ˡ_; _↑ʳ_)
+open import Data.Fin.Properties using (splitAt⁻¹-↑ˡ; splitAt⁻¹-↑ʳ)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
-open import Data.Sum using (inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import every using (Every)
 open import Data.List using ([]; _∷_)
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+import Relation.Binary.PropositionalEquality as ≡
+open import polynomial-functor using (Poly; extend)
 import prop
 open import prop using (_∧_; ∃; ∃ₛ; Prf; ⟪_⟫; _,_)
 open import prop-setoid using (Setoid; IsEquivalence)
@@ -58,6 +64,7 @@ open Signature Sig
 open Interpretation ℐ
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig S ℐ elim-weight
+open import language-operational.type-substitution Sig using (unfold-sub)
 
 module model = ho-model S elim-weight
 module interp = model.interp Sig ℐ
@@ -71,7 +78,7 @@ module SMP = HasProducts SemiMod.products
 module FD = model.Fam⟨𝒟⟩μ
 module SP = HasSetoidProducts model.SPmod
 
-open FD using (Obj; Mor; idx; fam; fm; idxf; famf; Constant)
+open FD using (Obj; Mor; idx; fam; fm; idxf; famf; Constant; mkSort)
 open indexed-family.Fam using (subst)
 open indexed-family._⇒f_ using (transf)
 open prop-setoid._⇒_ using () renaming (func to sfunc)
@@ -107,10 +114,94 @@ _≈A_ : Setoid.Carrier A → Setoid.Carrier A → Prop
 _≈A_ = Setoid._≈_ A
 
 
+-- The μ-carriers' trees over a parameter environment: shapes of the index-erased polynomials at a
+-- sort environment, and the fibre at a shape under a decoration.
+module Tr {m} (δₘ : Fin m → Obj) = FD.Tree δₘ
+
+Shape : ∀ {m} (δₘ : Fin m → Obj) {n} → FD.Srt.Poly n → (Fin n → Fin m ⊎ FD.Sort m) → Set
+Shape δₘ = Tr.⟦_⟧shape δₘ
+
+El : ∀ {m} (δₘ : Fin m → Obj) → Fin m ⊎ FD.Sort m → Set
+El δₘ = Tr.El δₘ
+
+DecoAssign : ∀ {m} (δₘ : Fin m → Obj) → Fin m ⊎ FD.Sort m → Set _
+DecoAssign δₘ = Tr.DecoAssign δₘ
+
+FibSh : ∀ {m} (δₘ : Fin m → Obj) {n} (Q : Poly FD.cat n) {η : Fin n → Fin m ⊎ FD.Sort m}
+        (d : ∀ j → DecoAssign δₘ (η j)) → Shape δₘ FD.∣ Q ∣ η → Semimodule
+FibSh δₘ Q d x = Tr.fib-shape δₘ Q d x
+
+FibEl : ∀ {m} (δₘ : Fin m → Obj) (r : Fin m ⊎ FD.Sort m) → DecoAssign δₘ r → El δₘ r → Semimodule
+FibEl δₘ r d x = Tr.fib-el δₘ r d x
+
+-- The polynomial of a variable: a variable of the polynomial or a constant from the environment.
+Var : ∀ {Δ n} → (Fin Δ → Obj) → Fin n ⊎ Fin Δ → Poly FD.cat n
+Var δ = [ Poly.var , (λ j → Poly.const (δ j)) ]
+
+-- The relations at the variables of an open type under a substitution of closed types: at the
+-- polynomial's variables, values below a size bound against elements of the sort environment; at
+-- the environment's, values against indices of the object there.
+record VarRel {Δ n m} (δₘ : Fin m → Obj) (σ : TySub (n + Δ) 0) (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) : Set₁ where
+  field rel : ∀ j (u : Val (σ (j ↑ˡ Δ))) → size u < N → El δₘ (η j) → Set
+
+record ConstRel {Δ n} (δ : Fin Δ → Obj) (σ : TySub (n + Δ) 0) : Set₁ where
+  field crel : ∀ k (u : Val (σ (n ↑ʳ k))) → Setoid.Carrier (δ k .idx) → Set
+
+open VarRel public
+open ConstRel public
+
+extend-VarRel : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
+                {ρ : type 0} {s : Fin m ⊎ FD.Sort m} →
+                ((u : Val ρ) → size u < N → El δₘ s → Set) → VarRel δₘ σ η N →
+                VarRel δₘ (extend σ ρ) (extend η s) N
+extend-VarRel R₀ R .rel zero    = R₀
+extend-VarRel R₀ R .rel (suc j) = R .rel j
+
+lower-VarRel : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'} → N' < N →
+               VarRel δₘ σ η N → VarRel δₘ σ η N'
+lower-VarRel p R .rel j u q = R .rel j u (<-trans q p)
+
+-- The environment's relations are unchanged by an extension of the polynomial's variables.
+extend-ConstRel : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} {ρ : type 0} →
+                  ConstRel δ σ → ConstRel δ (extend σ ρ)
+extend-ConstRel R .crel = R .crel
+
+no-ConstRel : ∀ {n} {σ : TySub (n + 0) 0} → ConstRel {Δ = 0} {n = n} (λ ()) σ
+no-ConstRel .crel ()
+
+-- The environment of the body of a closed μ-type: its own sort at the recursive variable.
+η₀ : (τ : type 1) → Fin 1 → Fin 0 ⊎ FD.Sort 0
+η₀ τ = extend (λ i → inj₁ i) (inj₂ (mkSort FD.∣ LI.as-poly τ (λ ()) ∣ (λ i → inj₁ i)))
+
+mu-VarRel : ∀ {τ N} → ((u : Val (μ τ)) → size u < N → Ix (μ τ) → Set) →
+            VarRel interp.δ∅𝒟 (push (μ τ)) (η₀ τ) N
+mu-VarRel R .rel zero = R
+mu-VarRel R .rel (suc ())
+
+-- The relation at a variable, dispatched on its side of the environment.
+var-rel : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n + Δ)) (σ : TySub (n + Δ) 0)
+          (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) → VarRel δₘ σ η N → ConstRel δ σ →
+          (v : Val (σ i)) → size v < N → (s : Fin n ⊎ Fin Δ) → splitAt n i ≡ s →
+          Shape δₘ FD.∣ Var δ s ∣ η → Set
+var-rel δₘ δ i σ η N RP RΔ v p (inj₁ j) eq x =
+  RP .rel j (≡.subst Val (≡.sym (≡.cong σ (splitAt⁻¹-↑ˡ eq))) v) (≡.subst (_< N) (≡.sym (size-subst _ v)) p) x
+var-rel δₘ δ i σ η N RP RΔ v p (inj₂ k) eq x =
+  RΔ .crel k (≡.subst Val (≡.sym (≡.cong σ (splitAt⁻¹-↑ʳ eq))) v) x
+
 -- Values related to indices, by recursion on the type. A closure is related to a fibre map of the
 -- exponential when, for every related argument and every derivation of the body at it, the result
--- is related to the map's index at the argument.
+-- is related to the map's index at the argument. A value of a μ-type is related to a tree when its
+-- payload is related to the root shape over the body's environment, by well-founded recursion on
+-- the value: the relation itself, at smaller values, stands at the recursive variable. A value at
+-- an open type under a substitution of closed types is related to a shape of the type's polynomial
+-- over a sort environment, given the relations at the variables; a nested μ-type extends the
+-- substitution by its unfolding and the sort environment by its own sort.
 ValRel : ∀ τ → Val τ → Ix τ → Set
+MuRel : ∀ (τ : type 1) (N : ℕ) → Acc _<_ N → (v : Val (μ τ)) → size v < N → Ix (μ τ) → Set
+ShapeRel : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (τ : type (n + Δ)) (σ : TySub (n + Δ) 0)
+           (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) → Acc _<_ N → VarRel δₘ σ η N → ConstRel δ σ →
+           (v : Val (sub σ τ)) → size v < N → Shape δₘ FD.∣ LI.as-poly τ δ ∣ η → Set
+
 ValRel unit unit i = ⊤
 ValRel (base s) (const c) i = Prf (Setoid._≈_ (sort-index s) i c)
 ValRel (σ [+] τ) (inl v) i = Σ (Ix σ) λ i' → ValRel σ v i' × Prf (Setoid._≈_ (⟦ σ [+] τ ⟧ .idx) i (inj₁ i'))
@@ -118,7 +209,33 @@ ValRel (σ [+] τ) (inr v) i = Σ (Ix τ) λ i' → ValRel τ v i' × Prf (Setoi
 ValRel (σ [×] τ) (pair v u) (i , j) = ValRel σ v i × ValRel τ u j
 ValRel (σ [→] τ) (clo γ' t) f =
   ∀ {v : Val σ} {j : Ix σ} → ValRel σ v j → ∀ {u U} → γ' · v , t ⇓ u [ U ] → ValRel τ u (f .idxf .sfunc j)
-ValRel (μ τ) v i = ⊥
+ValRel (μ τ) v i = MuRel τ (suc (size v)) (<-wellFounded _) v (n<1+n _) i
+
+MuRel τ N (acc rs) (roll w) p (Tr.sup x) =
+  ShapeRel interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (rs p)
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (no-ConstRel {n = 1}) w (n<1+n _) x
+
+ShapeRel {n = n} δₘ δ (var i) σ η N a RP RΔ v p x = var-rel δₘ δ i σ η N RP RΔ v p (splitAt n i) ≡.refl x
+ShapeRel δₘ δ unit σ η N a RP RΔ unit p x = ⊤
+ShapeRel δₘ δ (base s) σ η N a RP RΔ (const c) p x = Prf (Setoid._≈_ (sort-index s) x c)
+ShapeRel δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ (inl v) p x =
+  Σ (Shape δₘ FD.∣ LI.as-poly σ₁ δ ∣ η) λ x' →
+    ShapeRel δₘ δ σ₁ σ η N a RP RΔ v (<-trans (n<1+n _) p) x' ×
+    Prf (Tr.shape≈ δₘ FD.∣ LI.as-poly (σ₁ [+] σ₂) δ ∣ η x (inj₁ x'))
+ShapeRel δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ (inr v) p x =
+  Σ (Shape δₘ FD.∣ LI.as-poly σ₂ δ ∣ η) λ x' →
+    ShapeRel δₘ δ σ₂ σ η N a RP RΔ v (<-trans (n<1+n _) p) x' ×
+    Prf (Tr.shape≈ δₘ FD.∣ LI.as-poly (σ₁ [+] σ₂) δ ∣ η x (inj₂ x'))
+ShapeRel δₘ δ (σ₁ [×] σ₂) σ η N a RP RΔ (pair v u) p (x , y) =
+  ShapeRel δₘ δ σ₁ σ η N a RP RΔ v (<-trans (s≤s (m≤m+n (size v) (size u))) p) x ×
+  ShapeRel δₘ δ σ₂ σ η N a RP RΔ u (<-trans (s≤s (m≤n+m (size u) (size v))) p) y
+ShapeRel δₘ δ (σ₁ [→] σ₂) σ η N a RP RΔ v p x = ValRel (σ₁ [→] σ₂) v x
+ShapeRel δₘ δ (μ τ) σ η N (acc rs) RP RΔ (roll w) p (Tr.sup y) =
+  ShapeRel δₘ δ τ (extend σ (μ (sub (sub-lift σ) τ))) (extend η (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η)))
+    (suc (size w)) (rs p)
+    (extend-VarRel (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ) (lower-VarRel p RP))
+    (extend-ConstRel RΔ)
+    (≡.subst Val (unfold-sub σ τ) w) (s≤s (≤-reflexive (size-subst (unfold-sub σ τ) w))) y
 
 -- The vector over the body's inputs at an application: a source weight, then the closure's cells
 -- and the argument as the environment.
@@ -130,12 +247,75 @@ body-input γ' v s c z (suc k) =
     (mat (M.in₁ {width-env γ'} {width v}) .func c)
     (mat (M.in₂ {width-env γ'} {width v}) .func z) k
 
+-- The dependence relations at the variables, over the value relations there.
+record VarDep {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
+              (RP : VarRel δₘ σ η N) (d : ∀ j → DecoAssign δₘ (η j)) : Set₁ where
+  field dep : ∀ j u q x (r : RP .rel j u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ (η j) (d j) x ∣ → Prop
+
+record ConstDep {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} (RΔ : ConstRel δ σ) : Set₁ where
+  field cdep : ∀ k u x (r : RΔ .crel k u x) → ∣ 𝔽 (width u) ∣ → ∣ δ k .fam .fm x ∣ → Prop
+
+open VarDep public
+open ConstDep public
+
+extend-VarDep : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
+                {ρ : type 0} {s : Fin m ⊎ FD.Sort m}
+                (R₀ : (u : Val ρ) → size u < N → El δₘ s → Set) (RP : VarRel δₘ σ η N)
+                {d : ∀ j → DecoAssign δₘ (extend η s j)} →
+                (∀ u q x (r : R₀ u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ s (d zero) x ∣ → Prop) →
+                VarDep RP (λ j → d (suc j)) → VarDep (extend-VarRel R₀ RP) d
+extend-VarDep R₀ RP D₀ D .dep zero    = D₀
+extend-VarDep R₀ RP D₀ D .dep (suc j) = D .dep j
+
+lower-VarDep : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'} (p : N' < N)
+               (RP : VarRel δₘ σ η N) {d} → VarDep RP d → VarDep (lower-VarRel p RP) d
+lower-VarDep p RP D .dep j u q = D .dep j u (<-trans q p)
+
+extend-ConstDep : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} {ρ : type 0} {RΔ : ConstRel δ σ} →
+                  ConstDep RΔ → ConstDep (extend-ConstRel {ρ = ρ} RΔ)
+extend-ConstDep D .cdep = D .cdep
+
+no-ConstDep : ∀ {n} {σ : TySub (n + 0) 0} → ConstDep (no-ConstRel {n = n} {σ = σ})
+no-ConstDep .cdep ()
+
+-- The decoration of the body of a closed μ-type: the carrier's own at the recursive variable.
+d₀ : (τ : type 1) → ∀ j → DecoAssign interp.δ∅𝒟 (η₀ τ j)
+d₀ τ = Tr.deco-ext interp.δ∅𝒟 (LI.as-poly τ (λ ())) (λ i → lift tt)
+
+mu-VarDep : ∀ {τ N} (R : (u : Val (μ τ)) → size u < N → Ix (μ τ) → Set) →
+            (∀ u q x (r : R u q x) → ∣ 𝔽 (width u) ∣ → ∣ Fib (μ τ) x ∣ → Prop) →
+            VarDep (mu-VarRel R) (d₀ τ)
+mu-VarDep R D .dep zero = D
+mu-VarDep R D .dep (suc ())
+
+var-dep : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n + Δ)) (σ : TySub (n + Δ) 0)
+          (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (RP : VarRel δₘ σ η N) (RΔ : ConstRel δ σ)
+          (d : ∀ j → DecoAssign δₘ (η j)) → VarDep RP d → ConstDep RΔ →
+          (v : Val (σ i)) (p : size v < N) (s : Fin n ⊎ Fin Δ) (eq : splitAt n i ≡ s)
+          (x : Shape δₘ FD.∣ Var δ s ∣ η) → var-rel δₘ δ i σ η N RP RΔ v p s eq x →
+          ∣ 𝔽 (width v) ∣ → ∣ FibSh δₘ (Var δ s) d x ∣ → Prop
+var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p (inj₁ j) eq x r o dv =
+  DP .dep j _ _ x r (λ k → o (≡.subst Fin (width-subst (≡.sym (≡.cong σ (splitAt⁻¹-↑ˡ eq))) v) k)) dv
+var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p (inj₂ k') eq x r o dv =
+  DΔ .cdep k' _ x r (λ k → o (≡.subst Fin (width-subst (≡.sym (≡.cong σ (splitAt⁻¹-↑ʳ eq))) v) k)) dv
+
 -- A dependence vector on a value's positions against an element of the fibre at a related index.
 -- At an arrow type the root agrees, and for any further source weight, any related argument and
 -- any derivation of the body, the body's dependence through the root and the further weight as
 -- source and the cells and argument as environment agrees with the elimination constant at that
--- source plus the payload evaluated at the argument plus the index's fibre map at the argument.
+-- source plus the payload evaluated at the argument plus the index's fibre map at the argument. At
+-- a μ-type and at the shapes of an open type, the vector is read against the fibre at the shape as
+-- at the closed type formers.
 DepRel : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
+MuDepRel : ∀ (τ : type 1) (N : ℕ) (a : Acc _<_ N) {v : Val (μ τ)} {p : size v < N} {i : Ix (μ τ)} →
+           MuRel τ N a v p i → ∣ 𝔽 (width v) ∣ → ∣ Fib (μ τ) i ∣ → Prop
+ShapeDepRel : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (τ : type (n + Δ)) (σ : TySub (n + Δ) 0)
+              (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (a : Acc _<_ N) (RP : VarRel δₘ σ η N) (RΔ : ConstRel δ σ)
+              (d : ∀ j → DecoAssign δₘ (η j)) → VarDep RP d → ConstDep RΔ →
+              {v : Val (sub σ τ)} {p : size v < N} {x : Shape δₘ FD.∣ LI.as-poly τ δ ∣ η} →
+              ShapeRel δₘ δ τ σ η N a RP RΔ v p x →
+              ∣ 𝔽 (width v) ∣ → ∣ FibSh δₘ (LI.as-poly τ δ) d x ∣ → Prop
+
 DepRel unit {unit} {i} r o d = Semimodule._≈_ (Fib unit i) o d
 DepRel (base s) {const c} {i} r o d = Semimodule._≈_ (Fib (base s) i) o d
 DepRel (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) o d =
@@ -159,6 +339,37 @@ DepRel (σ [→] τ) {clo γ' t} {f} r o d =
          (Semimodule._+_ (Fib τ (f .idxf .sfunc j))
            (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ d))
            (f .famf .transf j .func y))))
+DepRel (μ τ) {v} {i} r o d = MuDepRel τ (suc (size v)) (<-wellFounded _) {v} {n<1+n _} {i} r o d
+
+MuDepRel τ N (acc rs) {roll w} {p} {Tr.sup x} r o d =
+  ShapeDepRel interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (rs p)
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (no-ConstRel {n = 1}) (d₀ τ)
+    (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r)) (no-ConstDep {n = 1}) r o d
+
+ShapeDepRel {n = n} δₘ δ (var i) σ η N a RP RΔ d DP DΔ {v} {p} {x} r o dv =
+  var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p (splitAt n i) ≡.refl x r o dv
+ShapeDepRel δₘ δ unit σ η N a RP RΔ d DP DΔ {unit} {x = x} r o dv = Semimodule._≈_ (Fib unit x) o dv
+ShapeDepRel δₘ δ (base s) σ η N a RP RΔ d DP DΔ {const c} {x = x} r o dv = Semimodule._≈_ (Fib (base s) x) o dv
+ShapeDepRel δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ d DP DΔ {inl v} {x = x} (x' , r , ⟪ e ⟫) o dv =
+  let dv' = Tr.fib-shape-subst δₘ (LI.as-poly (σ₁ [+] σ₂) δ) d {x} {inj₁ x'} e .func dv in
+  (o zero ≈A proj₁ dv') ∧ ShapeDepRel δₘ δ σ₁ σ η N a RP RΔ d DP DΔ r (λ k → o (suc k)) (proj₂ dv')
+ShapeDepRel δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ d DP DΔ {inr v} {x = x} (x' , r , ⟪ e ⟫) o dv =
+  let dv' = Tr.fib-shape-subst δₘ (LI.as-poly (σ₁ [+] σ₂) δ) d {x} {inj₂ x'} e .func dv in
+  (o zero ≈A proj₁ dv') ∧ ShapeDepRel δₘ δ σ₂ σ η N a RP RΔ d DP DΔ r (λ k → o (suc k)) (proj₂ dv')
+ShapeDepRel δₘ δ (σ₁ [×] σ₂) σ η N a RP RΔ d DP DΔ {pair v u} {x = x , y} (r , r') o dv =
+  (o zero ≈A proj₁ dv) ∧
+  (ShapeDepRel δₘ δ σ₁ σ η N a RP RΔ d DP DΔ r (mat (M.p₁ {width v} {width u}) .func (λ k → o (suc k))) (proj₁ (proj₂ dv)) ∧
+   ShapeDepRel δₘ δ σ₂ σ η N a RP RΔ d DP DΔ r' (mat (M.p₂ {width v} {width u}) .func (λ k → o (suc k))) (proj₂ (proj₂ dv)))
+ShapeDepRel δₘ δ (σ₁ [→] σ₂) σ η N a RP RΔ d DP DΔ {v} {x = x} r o dv = DepRel (σ₁ [→] σ₂) {v} {x} r o dv
+ShapeDepRel δₘ δ (μ τ) σ η N (acc rs) RP RΔ d DP DΔ {roll w} {p} {Tr.sup y} r o dv =
+  ShapeDepRel δₘ δ τ (extend σ (μ (sub (sub-lift σ) τ))) (extend η (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η)))
+    (suc (size w)) (rs p)
+    (extend-VarRel (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ) (lower-VarRel p RP))
+    (extend-ConstRel RΔ) (Tr.deco-ext δₘ (LI.as-poly τ δ) d)
+    (extend-VarDep (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ) (lower-VarRel p RP)
+       (λ u q x r → ShapeDepRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d (lower-VarDep p RP DP) DΔ {u} {q} {x} r)
+       (lower-VarDep p RP DP))
+    (extend-ConstDep DΔ) r (λ k → o (≡.subst Fin (width-subst (unfold-sub σ τ) w) k)) dv
 
 -- A primitive's arguments need no relations of their own. The model's index at a tuple of
 -- arguments is a tuple of sort indices, and sort-vals-setoid is built from ⊗-setoid, whose
@@ -200,9 +411,9 @@ DepRel⊑ τ {i = i} r s o d =
 EnvDepRel : ∀ {Γ} {γ : Env Γ} {gi} → EnvValRel γ gi → Setoid.Carrier A →
             ∣ 𝔽 (width-env γ) ∣ → ∣ FibC Γ gi ∣ → Prop
 EnvDepRel emp s x g = prop.⊤
-EnvDepRel (_·_ {γ = γ} {v = v} rγ r) s x g =
+EnvDepRel (_·_ {τ = τ} {γ = γ} {v = v} rγ r) s x g =
   EnvDepRel rγ s (mat (M.p₁ {width-env γ} {width v}) .func x) (proj₁ g) ∧
-  DepRel⊑ _ r s (mat (M.p₂ {width-env γ} {width v}) .func x) (proj₂ g)
+  DepRel⊑ τ r s (mat (M.p₂ {width-env γ} {width v}) .func x) (proj₂ g)
 
 -- The inputs of a derivation: the source weight at the first position, the environment after.
 inputs : ∀ {Γ} (γ : Env Γ) → Setoid.Carrier A → ∣ 𝔽 (width-env γ) ∣ → ∣ 𝔽 (suc (width-env γ)) ∣
@@ -396,8 +607,60 @@ body-input-resp γ' v es ec zero    = es
 body-input-resp γ' v es ec (suc k) =
   +-cong (app-congᵥ (M.in₁ {width-env γ'} {width v}) ec k) ≈-refl
 
+-- The dependence relations at the variables respect the setoids on both sides.
+VarDep-resp : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
+              {RP : VarRel δₘ σ η N} {d : ∀ j → DecoAssign δₘ (η j)} → VarDep RP d → Prop
+VarDep-resp {δₘ = δₘ} {η = η} {RP = RP} {d} DP =
+  ∀ j u q x (r : RP .rel j u q x) {o o' : ∣ 𝔽 (width u) ∣} {dv dv'} →
+  (∀ k → o k ≈s o' k) → Semimodule._≈_ (FibEl δₘ (η j) (d j) x) dv dv' →
+  DP .dep j u q x r o dv → DP .dep j u q x r o' dv'
+
+ConstDep-resp : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} {RΔ : ConstRel δ σ} → ConstDep RΔ → Prop
+ConstDep-resp {δ = δ} {RΔ = RΔ} DΔ =
+  ∀ k u x (r : RΔ .crel k u x) {o o' : ∣ 𝔽 (width u) ∣} {dv dv'} →
+  (∀ k' → o k' ≈s o' k') → Semimodule._≈_ (δ k .fam .fm x) dv dv' →
+  DΔ .cdep k u x r o dv → DΔ .cdep k u x r o' dv'
+
+extend-VarDep-resp : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
+                     {ρ : type 0} {s : Fin m ⊎ FD.Sort m}
+                     {R₀ : (u : Val ρ) → size u < N → El δₘ s → Set} {RP : VarRel δₘ σ η N}
+                     {d : ∀ j → DecoAssign δₘ (extend η s j)}
+                     (D₀ : ∀ u q x (r : R₀ u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ s (d zero) x ∣ → Prop)
+                     (DP : VarDep RP (λ j → d (suc j))) →
+                     (∀ u q x (r : R₀ u q x) {o o' : ∣ 𝔽 (width u) ∣} {dv dv'} →
+                       (∀ k → o k ≈s o' k) → Semimodule._≈_ (FibEl δₘ s (d zero) x) dv dv' →
+                       D₀ u q x r o dv → D₀ u q x r o' dv') →
+                     VarDep-resp DP → VarDep-resp (extend-VarDep R₀ RP {d = d} D₀ DP)
+extend-VarDep-resp D₀ DP H₀ H zero    = H₀
+extend-VarDep-resp D₀ DP H₀ H (suc j) = H j
+
+lower-VarDep-resp : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'}
+                    (p : N' < N) {RP : VarRel δₘ σ η N} {d} (DP : VarDep RP d) →
+                    VarDep-resp DP → VarDep-resp (lower-VarDep p RP DP)
+lower-VarDep-resp p DP H j u q = H j u (<-trans q p)
+
+extend-ConstDep-resp : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} (ρ : type 0) {RΔ : ConstRel δ σ}
+                       (DΔ : ConstDep RΔ) → ConstDep-resp DΔ → ConstDep-resp (extend-ConstDep {ρ = ρ} DΔ)
+extend-ConstDep-resp ρ DΔ H = H
+
+no-ConstDep-resp : ∀ {n} {σ : TySub (n + 0) 0} → ConstDep-resp (no-ConstDep {n = n} {σ = σ})
+no-ConstDep-resp ()
+
 DepRel-resp : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) {o o' : ∣ 𝔽 (width v) ∣} {d d' : ∣ Fib τ i ∣} →
               (∀ k → o k ≈s o' k) → F._≈_ τ i d d' → DepRel τ r o d → DepRel τ r o' d'
+MuDepRel-resp : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} {p : size v < N} {i : Ix (μ τ)} (r : MuRel τ N a v p i)
+                {o o' : ∣ 𝔽 (width v) ∣} {d d' : ∣ Fib (μ τ) i ∣} →
+                (∀ k → o k ≈s o' k) → F._≈_ (μ τ) i d d' → MuDepRel τ N a r o d → MuDepRel τ N a r o' d'
+ShapeDepRel-resp : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (τ : type (n + Δ)) (σ : TySub (n + Δ) 0)
+                   (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (a : Acc _<_ N) (RP : VarRel δₘ σ η N) (RΔ : ConstRel δ σ)
+                   (d : ∀ j → DecoAssign δₘ (η j)) (DP : VarDep RP d) (DΔ : ConstDep RΔ) →
+                   VarDep-resp DP → ConstDep-resp DΔ →
+                   {v : Val (sub σ τ)} {p : size v < N} {x : Shape δₘ FD.∣ LI.as-poly τ δ ∣ η}
+                   (r : ShapeRel δₘ δ τ σ η N a RP RΔ v p x) {o o' : ∣ 𝔽 (width v) ∣}
+                   {dv dv' : ∣ FibSh δₘ (LI.as-poly τ δ) d x ∣} →
+                   (∀ k → o k ≈s o' k) → Semimodule._≈_ (FibSh δₘ (LI.as-poly τ δ) d x) dv dv' →
+                   ShapeDepRel δₘ δ τ σ η N a RP RΔ d DP DΔ r o dv → ShapeDepRel δₘ δ τ σ η N a RP RΔ d DP DΔ r o' dv'
+
 DepRel-resp unit {unit} r eo ed h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (ed k))
 DepRel-resp (base s) {const c} r eo ed h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (ed k))
 DepRel-resp (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) {d = d} {d'} eo ed (h₀ , h) =
@@ -424,6 +687,58 @@ DepRel-resp (σ [→] τ) {clo γ' t} {f} r {o} {o'} {d} {d'} eo (ed₀ , ed₂)
                {proj₂ d} {proj₂ d'} ed₂)
             (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
       (hc s' rv z y hz D)
+DepRel-resp (μ τ) {v} {i} r eo ed h = MuDepRel-resp τ (suc (size v)) (<-wellFounded _) {v} {n<1+n _} {i} r eo ed h
+
+MuDepRel-resp τ N (acc rs) {roll w} {p} {Tr.sup x} r eo ed h =
+  ShapeDepRel-resp interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (rs p)
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (no-ConstRel {n = 1}) (d₀ τ)
+    (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+    (no-ConstDep {n = 1}) H (no-ConstDep-resp {n = 1}) r eo ed h
+  where
+  H : VarDep-resp (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+  H zero u q x r = MuDepRel-resp τ (suc (size w)) (rs p) {u} {q} {x} r
+  H (suc ())
+
+ShapeDepRel-resp {Δ} {n} δₘ δ (var i) σ η N a RP RΔ d DP DΔ HP HΔ {v} {p} {x} r eo edv h =
+  go (splitAt n i) ≡.refl x r eo edv h
+  where
+  go : ∀ (s : Fin n ⊎ Fin Δ) (eq : splitAt n i ≡ s) (x : Shape δₘ FD.∣ Var δ s ∣ η)
+       (r : var-rel δₘ δ i σ η N RP RΔ v p s eq x) {o o' : ∣ 𝔽 (width v) ∣} {dv dv'} →
+       (∀ k → o k ≈s o' k) → Semimodule._≈_ (FibSh δₘ (Var δ s) d x) dv dv' →
+       var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p s eq x r o dv → var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p s eq x r o' dv'
+  go (inj₁ j) eq x r eo edv h = HP j _ _ x r (λ k → eo _) edv h
+  go (inj₂ k) eq x r eo edv h = HΔ k _ x r (λ k' → eo _) edv h
+ShapeDepRel-resp δₘ δ unit σ η N a RP RΔ d DP DΔ HP HΔ {unit} r eo edv h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (edv k))
+ShapeDepRel-resp δₘ δ (base s) σ η N a RP RΔ d DP DΔ HP HΔ {const c} r eo edv h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (edv k))
+ShapeDepRel-resp δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ d DP DΔ HP HΔ {inl v} {x = x} (x' , r , ⟪ e ⟫) eo edv (h₀ , h) =
+  let edv' = Tr.fib-shape-subst δₘ (LI.as-poly (σ₁ [+] σ₂) δ) d {x} {inj₁ x'} e .SemiMod._⇒_.func-resp-≈ edv in
+  ≈-trans (≈-sym (eo zero)) (≈-trans h₀ (prop._∧_.proj₁ edv')) ,
+  ShapeDepRel-resp δₘ δ σ₁ σ η N a RP RΔ d DP DΔ HP HΔ r (λ k → eo (suc k)) (prop._∧_.proj₂ edv') h
+ShapeDepRel-resp δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ d DP DΔ HP HΔ {inr v} {x = x} (x' , r , ⟪ e ⟫) eo edv (h₀ , h) =
+  let edv' = Tr.fib-shape-subst δₘ (LI.as-poly (σ₁ [+] σ₂) δ) d {x} {inj₂ x'} e .SemiMod._⇒_.func-resp-≈ edv in
+  ≈-trans (≈-sym (eo zero)) (≈-trans h₀ (prop._∧_.proj₁ edv')) ,
+  ShapeDepRel-resp δₘ δ σ₂ σ η N a RP RΔ d DP DΔ HP HΔ r (λ k → eo (suc k)) (prop._∧_.proj₂ edv') h
+ShapeDepRel-resp δₘ δ (σ₁ [×] σ₂) σ η N a RP RΔ d DP DΔ HP HΔ {pair v u} {x = x , y} (r , r') eo (ed₀ , (ed₁ , ed₂)) (h₀ , (h₁ , h₂)) =
+  ≈-trans (≈-sym (eo zero)) (≈-trans h₀ ed₀) ,
+  (ShapeDepRel-resp δₘ δ σ₁ σ η N a RP RΔ d DP DΔ HP HΔ r (app-congᵥ (M.p₁ {width v} {width u}) (λ k → eo (suc k))) ed₁ h₁ ,
+   ShapeDepRel-resp δₘ δ σ₂ σ η N a RP RΔ d DP DΔ HP HΔ r' (app-congᵥ (M.p₂ {width v} {width u}) (λ k → eo (suc k))) ed₂ h₂)
+ShapeDepRel-resp δₘ δ (σ₁ [→] σ₂) σ η N a RP RΔ d DP DΔ HP HΔ {v} {x = x} r eo edv h = DepRel-resp (σ₁ [→] σ₂) {v} {x} r eo edv h
+ShapeDepRel-resp δₘ δ (μ τ) σ η N (acc rs) RP RΔ d DP DΔ HP HΔ {roll w} {p} {Tr.sup y} r eo edv h =
+  ShapeDepRel-resp δₘ δ τ (extend σ (μ (sub (sub-lift σ) τ))) (extend η (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η)))
+    (suc (size w)) (rs p)
+    (extend-VarRel (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ) (lower-VarRel p RP))
+    (extend-ConstRel RΔ) (Tr.deco-ext δₘ (LI.as-poly τ δ) d)
+    (extend-VarDep (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ) (lower-VarRel p RP)
+       (λ u q x r → ShapeDepRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d (lower-VarDep p RP DP) DΔ {u} {q} {x} r)
+       (lower-VarDep p RP DP))
+    (extend-ConstDep DΔ)
+    (extend-VarDep-resp
+       (λ u q x r → ShapeDepRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d (lower-VarDep p RP DP) DΔ {u} {q} {x} r)
+       (lower-VarDep p RP DP)
+       (λ u q x r → ShapeDepRel-resp δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d
+                      (lower-VarDep p RP DP) DΔ (lower-VarDep-resp p DP HP) HΔ {u} {q} {x} r)
+       (lower-VarDep-resp p DP HP))
+    (extend-ConstDep-resp (μ (sub (sub-lift σ) τ)) DΔ HΔ) r (λ k → eo _) edv h
 
 -- Transport of a sum of the constant and an element along an index equation.
 subst-ec+ : ∀ τ {i i' : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i') s d →
