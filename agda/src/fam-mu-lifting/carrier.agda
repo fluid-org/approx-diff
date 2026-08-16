@@ -132,8 +132,7 @@ injF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
 record Constant (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
   field
     at         : ∀ x → 𝟙c ⇒ X .fam .fm x
-    at-natural : ∀ {x₁ x₂} (e : _≈s_ (X .idx) x₁ x₂) →
-                 (X .fam .subst e ∘ at x₁) ≈ at x₂
+    at-natural : ∀ {x₁ x₂} (e : _≈s_ (X .idx) x₁ x₂) → (X .fam .subst e ∘ at x₁) ≈ at x₂
 
 open Constant public
 

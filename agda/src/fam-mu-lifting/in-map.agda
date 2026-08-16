@@ -273,6 +273,7 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       (≈-trans (∘-cong₁ (R.reindex-fam-natural P mor₀ (embed-idx-resp P e)))
                (assoc _ _ _))))
 
+-- FIXME: Should this file be called has-mu? I'm also not sure we need all these separate files.
 hasMu : HasMu
 hasMu .HasMu.μ-obj = μ-fam
 hasMu .HasMu.inMap P δ = InMapDef.inMor P δ

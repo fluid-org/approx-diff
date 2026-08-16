@@ -175,4 +175,3 @@ private
 ∧-idem {O} = S.refl {O}
 ∧-idem {C} = S.refl {C}
 ∧-idem {D} = S.refl {D}
-
