@@ -16,13 +16,13 @@ open import categories using (Category; HasTerminal; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
-import fam-mu-lifting.in-map
+import fam-mu-lifting.fusion
 
 module fam-mu-lifting.lambek {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
     (𝟙c : Category.obj 𝒞) where
 
-open fam-mu-lifting.in-map os es CM BP 𝟙c public
+open fam-mu-lifting.fusion os es CM BP 𝟙c public
 
 module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
   private module At = InMapDef P δ

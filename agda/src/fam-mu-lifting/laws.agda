@@ -17,13 +17,13 @@ open import cmon-enriched using (CMonEnriched; Biproduct)
 open import commutative-monoid using (CommutativeMonoid)
 open import prop-setoid as PS using ()
 open import indexed-family using (_⇒f_)
-import fam-mu-lifting.in-map
+import fam-mu-lifting.lambek
 
 module fam-mu-lifting.laws {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
     (𝟙c : Category.obj 𝒞) where
 
-open fam-mu-lifting.in-map os es CM BP 𝟙c public
+open fam-mu-lifting.lambek os es CM BP 𝟙c public
 
 private module CME = CMonEnriched CM
 open CME using (_+m_)
@@ -31,7 +31,6 @@ open CME using (_+m_)
 -- One application of the algebra against a candidate at the recursive positions: the same
 -- recursion as the fold, with the candidate at the slot.
 module ApplyDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
-    (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A)
     (let module Tδ = Tree δ)
     (h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier)
     (h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
@@ -155,7 +154,7 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                       _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t'))
             (h-fam : ∀ γ t →
                      prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (h-idx γ t)) =
-    ApplyDef {n} {Γ} {A} {P} {δ} alg h-idx h-resp h-fam
+    ApplyDef {n} {Γ} {A} {P} {δ} h-idx h-resp h-fam
   module Af = Ap Ft.fold-idx Ft.fold-idx-resp Ft.fold-fam
 
   record IsFold
@@ -687,3 +686,103 @@ module Reflection {n} {Γ : Obj} {P : Poly (suc n)} {δ : Fin n → Obj} where
                    _≈s_ (μ-fam P δ .idx) (Tδ.sup x)
                         (algR .idxf .PS._⇒_.func (γ , Ah.apply-shape-idx P γ x))
   reflection-idx γ x = Tδ.shape≈-sym ∣ P ∣ (Srt.η₀ ∣ P ∣) (ra-top P γ x)
+
+module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+    (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) where
+  open FoldBase {n} {Γ} {A} {P} {δ}
+  private
+    module At = InMapDef P δ
+    module TX = Tree At.δ'
+    module RX = Reindex At.δ' (extend δ A)
+
+  h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier
+  h-idx γ t = h .idxf .PS._⇒_.func (γ , t)
+
+  h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') → _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t')
+  h-resp γ≈ p = h .idxf .PS._⇒_.func-resp-≈ (γ≈ , p)
+
+  h-fam : ∀ γ t → prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (h-idx γ t)
+  h-fam γ t = h .famf ._⇒f_.transf (γ , t)
+
+  open ApplyDef {n} {Γ} {A} {P} {δ} h-idx h-resp h-fam public
+
+  fs : ∀ i → Mor (Fam𝒞-P.prod Γ (At.δ' i)) (extend δ A i)
+  fs = FMuC.strong-extend-mor (λ i → Fam𝒞-P.p₂) h
+
+  -- Reindexing along the candidate at the recursion slot and the identity at the parameters.
+  cmb : Γ .idx .Carrier → RX.IMorD (λ v → inj₁ v) (λ v → inj₁ v)
+  cmb γ = RX.ibase (λ { Fin.zero t → h-idx γ t ; (Fin.suc i) a → a })
+                   (λ { Fin.zero p → h-resp (Γ .idx .isEquivalence .refl) p ; (Fin.suc i) p → p })
+
+  -- The application after the bridge reindexing, paired with the one reindexing they compose to.
+  data CRel (γ : Γ .idx .Carrier) :
+            ∀ {j} {ρX : Fin j → Fin (suc n) ⊎ Sort (suc n)} {ρ : Fin j → Fin n ⊎ Sort n}
+            {ρ' : Fin j → Fin (suc n) ⊎ Sort (suc n)}
+            {dX : ∀ v → TX.DecoAssign (ρX v)} {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → TA'.DecoAssign (ρ' v)} →
+            FMor ρ ρ' d d' → At.R.MorD ρX ρ dX d → RX.IMorD ρX ρ' →
+            Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+    cbase : CRel γ fbase At.mor₀ (cmb γ)
+    cbind : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im}
+            (Q : Poly (suc j)) → CRel γ fm md im →
+            CRel γ (fbind Q fm) (At.R.bind Q md) (RX.ibind ∣ Q ∣ im)
+
+  mutual
+    comp-W : ∀ {γ} {j} {Q̂ : Poly (suc j)} {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im} →
+             CRel γ fm md im → (t : TX.W ∣ Q̂ ∣ ρX) →
+             TA'.W-≈ (apply-reindex {Q = Q̂} γ fm (At.R.reindex md t)) (RX.ireindex im t)
+    comp-W {Q̂ = Q̂} rel (TX.sup x) = comp-shape Q̂ (cbind Q̂ rel) x
+
+    comp-shape : ∀ {γ} {j} (S : Poly j) {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im} →
+                 CRel γ fm md im → (a : TX.⟦ ∣ S ∣ ⟧shape ρX) →
+                 TA'.shape≈ ∣ S ∣ ρ' (apply-reindex-shape γ S fm (At.R.reindex-shape ∣ S ∣ md a)) (RX.ireindex-shape ∣ S ∣ im a)
+    comp-shape (const A') rel a = A' .idx .isEquivalence .refl
+    comp-shape (var v)    rel a = comp-el rel v a
+    comp-shape (P' + Q') rel (inj₁ a) = comp-shape P' rel a
+    comp-shape (P' + Q') rel (inj₂ b) = comp-shape Q' rel b
+    comp-shape (P' × Q') rel (a , b) = comp-shape P' rel a , comp-shape Q' rel b
+    comp-shape (μ Q'')   rel t = comp-W {Q̂ = Q''} rel t
+
+    comp-el : ∀ {γ} {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im} →
+              CRel γ fm md im → (v : Fin j) (a : TX.El (ρX v)) →
+              TA'.elEq (ρ' v) (apply-apply γ fm v (At.R.apply md v a)) (RX.iapply im v a)
+    comp-el cbase          Fin.zero    t = A .idx .isEquivalence .refl
+    comp-el cbase          (Fin.suc i) a = TA'.elEq-refl (inj₁ (Fin.suc i)) a
+    comp-el (cbind Q rel)  Fin.zero    a = comp-W {Q̂ = Q} rel a
+    comp-el (cbind Q rel)  (Fin.suc v) a = comp-el rel v a
+
+  -- The candidate applied at the shape under the algebra map is the strong action, on indices.
+  bridge-idx : ∀ (Q : Poly (suc n)) γ (y : fobj μ-fam Q At.δ' .idx .Carrier) →
+               _≈s_ (fobj μ-fam Q (extend δ A) .idx)
+                 (apply-shape-idx Q γ (At.R.reindex-shape ∣ Q ∣ At.mor₀ (At.embed-idx Q y)))
+                 (FMuC.strong-fmor Q fs .idxf .PS._⇒_.func (γ , y))
+  bridge-idx (const A')        γ a = A' .idx .isEquivalence .refl
+  bridge-idx (var Fin.zero)    γ t = A .idx .isEquivalence .refl
+  bridge-idx (var (Fin.suc i)) γ a = δ i .idx .isEquivalence .refl
+  bridge-idx (Q₁ + Q₂) γ (inj₁ y) = bridge-idx Q₁ γ y
+  bridge-idx (Q₁ + Q₂) γ (inj₂ y) = bridge-idx Q₂ γ y
+  bridge-idx (Q₁ × Q₂) γ (y₁ , y₂) = bridge-idx Q₁ γ y₁ , bridge-idx Q₂ γ y₂
+  bridge-idx (μ Q') γ t =
+    TA'.W-≈-trans {x = apply-reindex {Q = Q'} γ fbase (At.R.reindex At.mor₀ t)} {y = RX.ireindex (cmb γ) t}
+      (comp-W cbase t)
+      (fuse-idx {Γ = Γ} {sₛ = At.δ'} {sₜ = extend δ A} Q' cmb fs
+         (λ { Fin.zero γ≈ {a₁} {a₂} a≈ → h-resp γ≈ {a₁} {a₂} a≈ ; (Fin.suc i) γ≈ a≈ → a≈ })
+         (Γ .idx .isEquivalence .refl) {m₁ = t} {m₂ = t} (TX.W-≈-refl t))
+
+-- β on indices: the fold after the algebra map is the algebra after the strong action of the fold.
+module BetaIdx {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+    (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A) where
+  private
+    module At = InMapDef P δ
+    module Ft = FoldDef {n} {Γ} {A} {P} {δ} alg
+    module L = Laws {n} {Γ} {A} {P} {δ} alg
+  open Bridge {n} {Γ} {A} {P} {δ} Ft.foldMor
+
+  β-idx : ∀ γ y → _≈s_ (A .idx)
+            (Ft.fold-idx γ (At.inMor .idxf .PS._⇒_.func y))
+            (alg .idxf .PS._⇒_.func (γ , FMuC.strong-fmor P fs .idxf .PS._⇒_.func (γ , y)))
+  β-idx γ y =
+    alg .idxf .PS._⇒_.func-resp-≈
+      (Γ .idx .isEquivalence .refl ,
+       fobj μ-fam P (extend δ A) .idx .isEquivalence .trans
+         (L.agree-shape P γ (At.R.reindex-shape ∣ P ∣ At.mor₀ (At.embed-idx P y)))
+         (bridge-idx P γ y))
