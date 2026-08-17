@@ -57,7 +57,7 @@ open HasCoproducts R.coproducts using (coprod; coprod-m; in₁; in₂)
 open HasStrongCoproducts R.strongCoproducts using () renaming (copair to scopair)
 open HasWeakExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
-open HasMu hasMu
+open HasMu hasMu hiding (fmor; μ-map)
 open Model Int
 
 mutual
