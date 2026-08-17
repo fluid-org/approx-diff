@@ -20,7 +20,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
 open import Data.Unit using (⊤) renaming (tt to ttS)
 open import prop using (_,_)
-open import categories using (Category; HasTerminal; HasProducts; HasCoproducts)
+open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import commutative-monoid using (CommutativeMonoid)
 import lifting
@@ -82,17 +82,6 @@ Lf X .fam .subst e = Lmap (X .fam .subst e)
 Lf X .fam .refl* = ≈-trans (Lmap-cong (X .fam .refl*)) Lmap-id
 Lf X .fam .trans* q p = ≈-trans (Lmap-cong (X .fam .trans* q p)) (Lmap-comp _ _)
 
--- The interpretation of a polynomial with a root at every value former: sums are coproducts of
--- lifted summands, products are lifted products, mirroring the fibres of the trees.
-fobj : (μ-obj : ∀ {k} → Poly (suc k) → (Fin k → Obj) → Obj) →
-       ∀ {n} → Poly n → (Fin n → Obj) → Obj
-fobj μ-obj (const A) δ = A
-fobj μ-obj (var i)   δ = δ i
-fobj μ-obj (P' + Q') δ =
-  HasCoproducts.coprod coproducts (Lf (fobj μ-obj P' δ)) (Lf (fobj μ-obj Q' δ))
-fobj μ-obj (P' × Q') δ = Lf (Fam𝒞-P.prod (fobj μ-obj P' δ) (fobj μ-obj Q' δ))
-fobj μ-obj (μ P')    δ = μ-obj P' δ
-
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
                  {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
@@ -125,6 +114,9 @@ under-rootF-cong : ∀ {Γ X Y : Obj} {f g : Mor (Fam𝒞-P.prod Γ X) Y} →
 under-rootF-cong E ._≃_.idxf-eq = E ._≃_.idxf-eq
 under-rootF-cong E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
   ≈-trans (under-root-post _ _) (under-root-cong (E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x}))
+
+open polynomial-functor.Interp products strongCoproducts Lf under-rootF public
+  using (fobj; HasMu; HasMuLaws; _∘co_)
 
 private
   module CME = CMonEnriched CM
