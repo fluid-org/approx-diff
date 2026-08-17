@@ -19,10 +19,10 @@ open import Level using (0ℓ) renaming (_⊔_ to _⊔ℓ_)
 open import Data.List using (List; []; _∷_)
 
 -- Values, environments, and big-step evaluation decorated with dependency relations, threading a
--- control source: a distinguished extra input position holding the last eliminated constructor,
--- initially the run itself. A terminal rule attaches the source to its value's control positions;
--- a constructor attaches it to the new root; an elimination points the consumed root at the source
--- and makes that root the source of its continuation.
+-- control input: a distinguished extra input position holding the last eliminated constructor,
+-- initially the run itself. A terminal rule attaches the control input to its value's control
+-- positions; a constructor attaches it to the new root; an elimination points the consumed root at
+-- the control input and makes that root the control input of its continuation.
 module language-operational.evaluation {ℓ} (Sig : Signature ℓ)
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (ℐ : Interpretation S Sig) (elim-weight : Setoid.Carrier A) where
@@ -85,7 +85,7 @@ ctrl-row : ∀ {n} → 1 ⇒ n
 ctrl-row _ _ = elim-weight
 
 -- The positions of a value that carry control dependence: what a terminal rule or an eliminator
--- writes the source to. Every position of a first-order value, so that a value returned under an
+-- writes the control input to. Every position of a first-order value, so that a value returned under an
 -- unavailable constructor is wholly unavailable. Only the root of a closure: its environment
 -- cells reach a result only through the body at an application, and the application attaches
 -- control dependence to its whole result from the closure's root in any case. Attaching it to the
@@ -129,27 +129,27 @@ brel-deps ω vs (inj₂ _) = ⟨ rel-deps ω .func vs , M.εₘ ⟩
 open M using (≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans)
 open HasProducts M.products using () renaming (prod-m to _⊕_) public
 
--- The inputs of a derivation are the control source, the first input position, then the
+-- The inputs of a derivation are the control input, the first input position, then the
 -- environment.
-src-col : ∀ {m} → suc m ⇒ 1
-src-col {m} = p₁ {1} {m}
+ctrl-col : ∀ {m} → suc m ⇒ 1
+ctrl-col {m} = p₁ {1} {m}
 
 env-cols : ∀ {m} → suc m ⇒ m
 env-cols {m} = p₂ {1} {m}
 
--- The control edge from the source to every position of the result.
-wsrc : ∀ {m n} → suc m ⇒ n
-wsrc = ctrl-row ∘ src-col
+-- The control edge from the control input to every position of the result.
+wctrl : ∀ {m n} → suc m ⇒ n
+wctrl = ctrl-row ∘ ctrl-col
 
 -- A rule's own contribution to its result, before its premises'.
 var-out : ∀ {Γ τ} (x : Γ ∋ τ) (γ : Env Γ) → suc (width-env γ) ⇒ width (lookup x γ)
 var-out x γ = ctrl-of (lookup x γ) M.∥ proj-var x γ
 
 built-out : ∀ {Γ} (γ : Env Γ) (n : ℕ) → suc (width-env γ) ⇒ suc n
-built-out γ n = M.in₁ {1} {n} ∘ wsrc
+built-out γ n = M.in₁ {1} {n} ∘ wctrl
 
 elim-out : ∀ {Γ τ} (γ : Env Γ) (w : Val τ) → suc (width-env γ) ⇒ width w
-elim-out γ w = ctrl-of w ∘ wsrc
+elim-out γ w = ctrl-of w ∘ wctrl
 
 lam-out : ∀ {Γ σ τ} (γ : Env Γ) (t : Γ ▸ σ ⊢ τ) → suc (width-env γ) ⇒ width (clo γ t)
 lam-out γ t = ctrl-row {1} ⊕ M.I {width-env γ}
@@ -160,8 +160,8 @@ proj-up : ∀ {m n τ} (w : Val τ) → M.Matrix (width w) (m + n) → M.Matrix 
 proj-up {m} {n} w P = (P ∘ p₂ {1} {m + n}) M.+ₘ (ctrl-of w ∘ p₁ {1} {m + n})
 
 -- A premise's inputs as a matrix over the conclusion's inputs and the earlier premises' outputs. A
--- branch's source is the scrutinee's root and its last cell the payload; a body's source is the
--- closure's root, its cells the closure's, its last cell the argument.
+-- branch's control input is the scrutinee's root and its last cell the payload; a body's control
+-- input is the closure's root, its cells the closure's, its last cell the argument.
 branch-inputs : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) →
                 (suc (width-env γ) + suc (width v)) ⇒ suc (width-env γ + width v)
 branch-inputs γ v = (ctrl-row {1} ⊕ M.in₁ {width-env γ} {width v}) M.∥ (M.I {1} ⊕ M.in₂ {width-env γ} {width v})
@@ -169,7 +169,7 @@ branch-inputs γ v = (ctrl-row {1} ⊕ M.in₁ {width-env γ} {width v}) M.∥ (
 body-inputs : ∀ {Γ Γ' σ} (γ : Env Γ) (γ' : Env Γ') (v : Val σ) →
               ((suc (width-env γ) + suc (width-env γ')) + width v) ⇒ suc (width-env γ' + width v)
 body-inputs γ γ' v =
-  ((M.in₁ {1} ∘ wsrc) M.∥ (M.I {1} ⊕ M.in₁ {width-env γ'} {width v})) M.∥ (M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v})
+  ((M.in₁ {1} ∘ wctrl) M.∥ (M.I {1} ⊕ M.in₁ {width-env γ'} {width v})) M.∥ (M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v})
 
 -- The inputs of a fold action: the derivation's inputs, then the value folded over.
 rcast : ∀ {m m' n} → m ≡ m' → M.Matrix m n → M.Matrix m' n
@@ -189,9 +189,9 @@ rec-inputs : ∀ {Γ τ} (γ : Env Γ) (w' : Val τ) {m} →
 rec-inputs γ w' {m} =
   ((M.I {1} ⊕ M.in₁ {width-env γ} {width w'}) ∘ p₁ {suc (width-env γ)} {m}) M.∥ (M.in₂ {1} ∘ M.in₂ {width-env γ} {width w'})
 
--- A rebuilt constructor's root carries the source and the copied root.
+-- A rebuilt constructor's root carries the control input and the copied root.
 map-built-out : ∀ {Γ} (γ : Env Γ) (m n : ℕ) → (suc (width-env γ) + suc m) ⇒ suc n
-map-built-out γ m n = M.in₁ {1} {n} ∘ ((wsrc ∘ p₁ {suc (width-env γ)} {suc m}) M.+ₘ (p₁ {1} {m} ∘ p₂ {suc (width-env γ)} {suc m}))
+map-built-out γ m n = M.in₁ {1} {n} ∘ ((wctrl ∘ p₁ {suc (width-env γ)} {suc m}) M.+ₘ (p₁ {1} {m} ∘ p₂ {suc (width-env γ)} {suc m}))
 
 map-leaf : ∀ {Γ} (γ : Env Γ) (n : ℕ) → (suc (width-env γ) + n) ⇒ n
 map-leaf γ n = p₂ {suc (width-env γ)} {n}
@@ -201,7 +201,7 @@ mutual
   data _,_⇓_[_] : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) (v : Val τ) →
                    suc (width-env γ) ⇒ width v → Set ℓ where
     ⇓-var    : ∀ {Γ τ} {γ : Env Γ} (x : Γ ∋ τ) → γ , var x ⇓ lookup x γ [ var-out x γ ]
-    ⇓-unit   : ∀ {Γ} {γ : Env Γ} → γ , unit ⇓ unit [ wsrc ]
+    ⇓-unit   : ∀ {Γ} {γ : Env Γ} → γ , unit ⇓ unit [ wctrl ]
     ⇓-inl    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁} {v R} →
                γ , t ⇓ v [ R ] →
                γ , inl {τ₂ = τ₂} t ⇓ inl v [ built-out γ (width v) M.+ₘ (M.in₂ {1} ∘ R) ]
@@ -232,11 +232,11 @@ mutual
                  [ U ∘ (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) ]
     ⇓-bop    : ∀ {Γ is o'} {γ : Env Γ} {ω : op is o'} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] →
-               γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ wsrc M.+ₘ (op-deps ω .func vs ∘ R) ]
+               γ , bop ω Ms ⇓ const (op-fun ω .func vs) [ wctrl M.+ₘ (op-deps ω .func vs ∘ R) ]
     ⇓-brel   : ∀ {Γ is} {γ : Env Γ} {ω : rel is} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
                γ , Ms ⇓s vs [ R ] →
                γ , brel ω Ms ⇓ bool→val (rel-pred ω .func vs)
-                 [ wsrc M.+ₘ (brel-deps ω vs (rel-pred ω .func vs) ∘ R) ]
+                 [ wctrl M.+ₘ (brel-deps ω vs (rel-pred ω .func vs) ∘ R) ]
     ⇓-roll   : ∀ {Γ} {τ : type 1} {γ : Env Γ} {t : Γ ⊢ τ [ μ τ ]} {v R} →
                γ , t ⇓ v [ R ] → γ , roll {τ = τ} t ⇓ roll {τ} v [ R ]
     ⇓-fold   : ∀ {Γ} {τ : type 1} {σ : type 0} {γ : Env Γ} {s : Γ ▸ τ [ σ ] ⊢ σ} {t : Γ ⊢ μ τ}
@@ -252,8 +252,8 @@ mutual
           γ , M ⇓ const v [ R ] → γ , Ms ⇓s vs [ Rs ] →
           γ , (M ∷ Ms) ⇓s (v , vs) [ ⟨ R , Rs ⟩ ]
 
-  -- Functorial action of σ' on the fold s: the source passes through unchanged, and each rebuilt
-  -- constructor carries the copied root pointed at the source.
+  -- Functorial action of σ' on the fold s: the control input passes through unchanged, and each
+  -- rebuilt constructor carries the copied root pointed at the control input.
   data Map {Γ} (γ : Env Γ) {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) :
            (σ' : type 1) (v : Val (σ' [ μ τ₀ ])) (v' : Val (σ' [ σr ])) →
            (suc (width-env γ) + width v) ⇒ width v' → Set ℓ where

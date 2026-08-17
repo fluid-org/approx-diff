@@ -3,7 +3,7 @@
 -- The fundamental lemma on the fragment without μ-types, by induction on the term over all
 -- derivations: a term's value is related to its index at a related environment, and the relation
 -- applied to the inputs is related to the term's fibre map plus the elimination constant at the
--- source. Soundness at μ-free first-order types follows.
+-- control input's value. Soundness at μ-free first-order types follows.
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Fin using (Fin; zero; suc)
@@ -156,7 +156,8 @@ fundamental-val (brel {ω = ω} {Ms = Ms} cs) (⇓-brel {vs = vs} D) {gi} rγ =
 fundamental-vals [] [] rγ = ⟪ prop.tt ⟫
 fundamental-vals (c ∷ cs) (D ∷ Ds) rγ = ⟪ Prf.prf (fundamental-val c D rγ) , Prf.prf (fundamental-vals cs Ds rγ) ⟫
 -- The case rule, read at the inputs: the branch's relation at the scrutinee's root plus the
--- weighted source as source, and at the environment and the scrutinee's payload as environment.
+-- weighted control input as control input, and at the environment and the scrutinee's payload as
+-- environment.
 app-case : ∀ {Γ τ'} {γ : Env Γ} (v : Val τ') {n} (R_s : M.Matrix (suc (width v)) (suc (width-env γ)))
            (T : M.Matrix n (suc (width-env (γ · v)))) s x (k : Fin n) →
            ap (T ∘ (branch-inputs γ v ∘ ⟨ M.I , R_s ⟩)) (inputs γ s x) k
@@ -195,7 +196,7 @@ app-case {γ = γ} v R_s T s x k =
                     (≈-trans (app-∘ from-scrutinee R_s y (suc m))
                              (ap-⊕₁-suc {width v} M.I (M.in₂ {width-env γ} {width v}) o_s m)))
 
--- A projection, read at the inputs: the result's control positions at the weighted source plus
+-- A projection, read at the inputs: the result's control positions at the weighted control input plus
 -- the consumed root, and the projection of the pair's payload.
 private
   proj-op : ∀ {Γ τ'} {γ : Env Γ} (wv : Val τ') {m n} (P : M.Matrix (width wv) (m + n))
@@ -205,8 +206,8 @@ private
                 ap P (λ l → ap R' (inputs γ s x) (suc l)) k)
   proj-op {γ = γ} wv {m} {n} P R' s x k =
     ≈-trans (app-+ₘ (elim-out γ wv) (proj-up {m} {n} wv P ∘ R') (inputs γ s x) k)
-    (≈-trans (+-cong (≈-trans (app-∘ (ctrl-of wv) wsrc (inputs γ s x) k)
-                              (app-congᵥ (ctrl-of wv) (λ l → ap-wsrc {width-env γ} {1} (inputs γ s x) l) k))
+    (≈-trans (+-cong (≈-trans (app-∘ (ctrl-of wv) wctrl (inputs γ s x) k)
+                              (app-congᵥ (ctrl-of wv) (λ l → ap-wctrl {width-env γ} {1} (inputs γ s x) l) k))
                      (≈-trans (app-∘ (proj-up {m} {n} wv P) R' (inputs γ s x) k)
                      (≈-trans (app-+ₘ (P ∘ M.p₂ {1} {m + n}) (ctrl-of wv ∘ M.p₁ {1} {m + n}) o' k)
                               (+-cong (≈-trans (app-∘ P (M.p₂ {1} {m + n}) o' k)
@@ -220,8 +221,8 @@ private
 
 
 private
-  -- The constant at the weighted source plus the consumed root, with the pair's component, against
-  -- the constant at the source with the projection's fibre.
+  -- The constant at the weighted control input plus the consumed root, with the pair's component,
+  -- against the constant at the control input's value with the projection's fibre.
   proj-den : ∀ τ' (i : Ix τ') s a₀ o'₀ (comp G m : ∣ Fib τ' i ∣) →
              o'₀ ≈s ((w ·ₛ s) +ₛ a₀) →
              F._≈_ τ' i comp (F._+_ τ' i (ec τ' i s) m) →
@@ -246,8 +247,9 @@ private
       (F.trans τ' i (F.+-cong τ' i (F.+-comm τ' i) (F.refl τ' i))
                     (F.+-comm τ' i)))))))
 
--- The branch of a case: its environment is related at the scrutinee's root plus the weighted
--- source, the scrutinee's payload carrying the constant at the source as further control dependence.
+-- The branch of a case: its environment is related at the scrutinee's root plus the weighted control
+-- input, the scrutinee's payload carrying the constant at the control input's value as further
+-- control dependence.
 private
   branch-env : ∀ {Γ τk} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) {v : Val τk} {i'} (r_v : ValRel τk v i')
                s x g (o_s : ∣ 𝔽 (suc (width v)) ∣) (y_v : ∣ Fib τk i' ∣) →
@@ -393,8 +395,8 @@ private
     (≈-trans (≈-sym (app-+ₘ (M.in₁ {m} {n} ∘ M.p₁ {m} {n}) (M.in₂ {m} {n} ∘ M.p₂ {m} {n}) (λ _ → c) k))
     (≈-trans (app-congₘ (M.id-+ m n) (λ _ → c) k) (app-I (λ _ → c) k))))
 
--- The outcome of a test at either branch: the root carries the source weight and the test's
--- reading of its arguments, and the unit beneath the source weight alone.
+-- The outcome of a test at either branch: the root carries the control input's value and the test's
+-- reading of its arguments, and the unit beneath that value alone.
 private
   test-branch : ∀ {n} (D : M.Matrix 1 n) (o : ∣ 𝔽 2 ∣) (a : Setoid.Carrier A) (v : ∣ 𝔽 1 ∣) s
                 (y : ∣ 𝔽 n ∣) →
@@ -450,8 +452,8 @@ fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (c : CoreTm t) {γ : Env Γ} {v R} (D 
                 (Semimodule._+_ (Fib τ (⟦ t ⟧tm .idxf .sfunc gi))
                   (elim-const τ .at (⟦ t ⟧tm .idxf .sfunc gi) .func s)
                   (⟦ t ⟧tm .famf .transf gi .func g))
--- At a primitive's arguments the relation is equality, with the elimination weight times the source
--- at every position, as at a base sort.
+-- At a primitive's arguments the relation is equality, with the elimination weight times the control
+-- input's value at every position, as at a base sort.
 fundamental-s : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} (cs : CoreTms Ms) {γ : Env Γ} {vs R}
                 (D : γ , Ms ⇓s vs [ R ]) {gi} (rγ : EnvValRel γ gi) (s : Setoid.Carrier A)
                 (x : ∣ 𝔽 (width-env γ) ∣) (g : ∣ FibC Γ gi ∣) → EnvDepRel rγ s x g →
@@ -463,11 +465,11 @@ fundamental {τ = τ} (var x) {γ = γ} (⇓-var .x) {gi} rγ s xs g rel =
     (DepRel⊑-ctrl τ (lookup-val x rγ) s (lookup-dep x rγ s xs g rel))
 fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
   where
-  goal : ∀ k → ap wsrc (inputs γ s x) k ≈s
+  goal : ∀ k → ap wctrl (inputs γ s x) k ≈s
                (elim-const unit .at (⟦ unit {Γ} ⟧tm .idxf .sfunc gi) .func s k +ₛ
                 ⟦ unit {Γ} ⟧tm .famf .transf gi .func g k)
   goal zero =
-    ≈-trans (ap-wsrc {width-env γ} {1} (inputs γ s x) zero)
+    ≈-trans (ap-wctrl {width-env γ} {1} (inputs γ s x) zero)
             (≈-sym (≈-trans (+-cong (ec-unit (⟦ unit {Γ} ⟧tm .idxf .sfunc gi) s) (≈-refl {ε})) +-runit))
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} c) {γ = γ} (⇓-inl {v = v} {R = R'} D) {gi} rγ s x g rel =
   ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (prop._∧_.proj₁ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d)) root-den)) ,
@@ -839,7 +841,7 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
   z : ∣ 𝔽 (width v) ∣
   z = ap T (inputs γ s x)
 
-  -- The clause of the function's relation at the application's weighted source and the argument.
+  -- The clause of the function's relation at the application's weighted control input and the argument.
   C : DepRel τ r₃ (ap U (body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z))
         (F._+_ τ i₁ (ec τ i₁ ((w ·ₛ s) +ₛ o zero))
           (F._+_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ec (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
@@ -933,38 +935,39 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
            (f .famf .transf j .SemiMod._⇒_.preserve-· {s ·ₛ w} {ty-unit σ (λ ()) (λ ()) .at j .func ι})
 
   -- The application's relation reads the body's at the closure's root and the application's
-  -- weighted source as source, and at the closure's cells and the argument as environment.
+  -- weighted control input as control input, and at the closure's cells and the argument as
+  -- environment.
   app-op : ∀ k → ap (U ∘ (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩)) (inputs γ s x) k
                  ≈s ap U (body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z) k
   app-op k =
     ≈-trans (app-congₘ (MC.∘-cong₂ {f = U} split) y k)
-    (≈-trans (app-∘ U ((from-source +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) y k)
+    (≈-trans (app-∘ U ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) y k)
              (app-congᵥ U body-at k))
     where
     module MC = Category M.cat
     y = inputs γ s x
-    from-source : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ))
-    from-source = M.in₁ {1} ∘ wsrc
+    from-ctrl : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ))
+    from-ctrl = M.in₁ {1} ∘ wctrl
     from-closure : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ'))
     from-closure = M.I {1} ⊕ M.in₁ {width-env γ'} {width v}
     from-argument : M.Matrix (suc (width-env γ' + width v)) (width v)
     from-argument = M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v}
 
-    split : (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) M.≈ₘ ((from-source +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T))
+    split : (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) M.≈ₘ ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T))
     split =
-      ≈ₘ-trans (M.∥-pair (from-source M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T)
-               (M.+ₘ-cong (≈ₘ-trans (M.∥-pair from-source from-closure M.I R)
-                                    (M.+ₘ-cong (MC.id-right {f = from-source}) ≈ₘ-refl))
+      ≈ₘ-trans (M.∥-pair (from-ctrl M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T)
+               (M.+ₘ-cong (≈ₘ-trans (M.∥-pair from-ctrl from-closure M.I R)
+                                    (M.+ₘ-cong (MC.id-right {f = from-ctrl}) ≈ₘ-refl))
                           ≈ₘ-refl)
 
-    body-at : ∀ l → ap ((from-source +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) y l ≈s
+    body-at : ∀ l → ap ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) y l ≈s
                     body-input γ' v ((w ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
     body-at zero =
-      ≈-trans (app-+ₘ (from-source +ₘ (from-closure ∘ R)) (from-argument ∘ T) y zero)
-      (≈-trans (+-cong (≈-trans (app-+ₘ from-source (from-closure ∘ R) y zero)
-                                (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wsrc y zero)
-                                                 (≈-trans (ap-in₁-zero {width-env γ' + width v} (ap wsrc y))
-                                                          (ap-wsrc {width-env γ} {1} y zero)))
+      ≈-trans (app-+ₘ (from-ctrl +ₘ (from-closure ∘ R)) (from-argument ∘ T) y zero)
+      (≈-trans (+-cong (≈-trans (app-+ₘ from-ctrl (from-closure ∘ R) y zero)
+                                (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wctrl y zero)
+                                                 (≈-trans (ap-in₁-zero {width-env γ' + width v} (ap wctrl y))
+                                                          (ap-wctrl {width-env γ} {1} y zero)))
                                         (≈-trans (app-∘ from-closure R y zero)
                                                  (≈-trans (ap-⊕₁-zero {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o)
                                                           (app-I {1} (λ _ → o zero) zero)))))
@@ -973,10 +976,10 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
                                          (ap-in₂-zero {width-env γ' + width v} _))))
                +-runit)
     body-at (suc l) =
-      ≈-trans (app-+ₘ (from-source +ₘ (from-closure ∘ R)) (from-argument ∘ T) y (suc l))
-      (≈-trans (+-cong (≈-trans (app-+ₘ from-source (from-closure ∘ R) y (suc l))
-                                (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wsrc y (suc l))
-                                                          (ap-in₁-suc {width-env γ' + width v} (ap wsrc y) l))
+      ≈-trans (app-+ₘ (from-ctrl +ₘ (from-closure ∘ R)) (from-argument ∘ T) y (suc l))
+      (≈-trans (+-cong (≈-trans (app-+ₘ from-ctrl (from-closure ∘ R) y (suc l))
+                                (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wctrl y (suc l))
+                                                          (ap-in₁-suc {width-env γ' + width v} (ap wctrl y) l))
                                                  (≈-trans (app-∘ from-closure R y (suc l))
                                                           (ap-⊕₁-suc {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o l)))
                                          +-lunit))
@@ -985,8 +988,8 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} c₁ c₂) {γ = 
                                          (ap-in₂-suc {width-env γ' + width v} _ l))))
                ≈-refl)
 fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-bop {vs = vs} {R = Rs} D) {gi} rγ s x g rel k =
-  ≈-trans (app-+ₘ wsrc (D-vs ∘ Rs) (inputs γ s x) k)
-  (≈-trans (+-cong (ap-wsrc {width-env γ} {sort-width o} (inputs γ s x) k)
+  ≈-trans (app-+ₘ wctrl (D-vs ∘ Rs) (inputs γ s x) k)
+  (≈-trans (+-cong (ap-wctrl {width-env γ} {sort-width o} (inputs γ s x) k)
                    (≈-trans (app-∘ D-vs Rs (inputs γ s x) k)
                    (≈-trans (app-congᵥ D-vs IH k)
                    (≈-trans (app-+ᵥ D-vs (λ _ → w ·ₛ s) Z k)
@@ -1012,7 +1015,7 @@ fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cs) {γ =
         (≈-trans (app-∘ D-c C tp-elt k)
                  (app-congₘ (op-deps ω .prop-setoid._⇒_.func-resp-≈ (Prf.prf (fundamental-vals cs D rγ))) Z k)))
 fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-brel {vs = vs} {R = Rs} D) {gi} rγ s x g rel =
-  DepRel-bool ω vs b {i} e (mat (wsrc +ₘ (brel-deps ω vs b ∘ Rs)) .func (inputs γ s x))
+  DepRel-bool ω vs b {i} e (mat (wctrl +ₘ (brel-deps ω vs b ∘ Rs)) .func (inputs γ s x))
     (F._+_ (unit [+] unit) i (ec (unit [+] unit) i s) (⟦ brel ω Ms ⟧tm .famf .transf gi .func g)) s Z op-side model-side
   where
   b = rel-pred ω .sfunc vs
@@ -1025,11 +1028,11 @@ fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-bre
         (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .prop-setoid._⇒_.func-resp-≈ args-eq)
   IH : ∀ l → ap Rs (inputs γ s x) l ≈s ((w ·ₛ s) +ₛ Z l)
   IH = fundamental-s cs D rγ s x g rel
-  op-side : ∀ k → ap (wsrc +ₘ (brel-deps ω vs b ∘ Rs)) (inputs γ s x) k
+  op-side : ∀ k → ap (wctrl +ₘ (brel-deps ω vs b ∘ Rs)) (inputs γ s x) k
                   ≈s ((w ·ₛ s) +ₛ ap (brel-deps ω vs b) (λ l → (w ·ₛ s) +ₛ Z l) k)
   op-side k =
-    ≈-trans (app-+ₘ wsrc (brel-deps ω vs b ∘ Rs) (inputs γ s x) k)
-            (+-cong (ap-wsrc {width-env γ} {width (bool→val b)} (inputs γ s x) k)
+    ≈-trans (app-+ₘ wctrl (brel-deps ω vs b ∘ Rs) (inputs γ s x) k)
+            (+-cong (ap-wctrl {width-env γ} {width (bool→val b)} (inputs γ s x) k)
                     (≈-trans (app-∘ (brel-deps ω vs b) Rs (inputs γ s x) k) (app-congᵥ (brel-deps ω vs b) IH k)))
   den = ⟦ brel ω Ms ⟧tm .famf .transf gi .func g
   model-side : F._≈_ (unit [+] unit) b

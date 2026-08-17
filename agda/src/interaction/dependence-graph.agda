@@ -14,7 +14,7 @@ open import signature.interpretation using (Interpretation)
 import matrix
 import two
 
--- The dependence graph of a control-source derivation. Each rule builds its graph from its
+-- The dependence graph of a derivation with a control input. Each rule builds its graph from its
 -- premises' graphs using the wiring that also defines the rule's relation, so collapsing the graph
 -- recovers the relation rule by rule.
 module interaction.dependence-graph {ℓ} (Sig : Signature ℓ) (ℐ : Interpretation two.semiring Sig) where
@@ -42,7 +42,7 @@ fo-of τ = ⌊ first-order? τ ⌋
 mutual
   graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] → Graph (suc (width-env γ)) (width v)
   graph {τ = τ} (⇓-var {γ = γ} x) = Rule₀.E (fo-of τ) (var-out x γ)
-  graph {τ = τ} (⇓-unit {γ = γ}) = Rule₀.E (fo-of τ) wsrc
+  graph {τ = τ} (⇓-unit {γ = γ}) = Rule₀.E (fo-of τ) wctrl
   graph {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.E (fo-of τ) (lam-out γ t)
   graph {τ = τ} (⇓-inl {γ = γ} {v = v} D) =
     Rule₁.E (graph D) M.I (fo-of τ) (built-out γ (width v)) (M.in₂ {1})
@@ -62,9 +62,9 @@ mutual
   graph {τ = τ} (⇓-app {γ = γ} {γ' = γ'} {v = v} D₁ D₂ D₃) =
     Rule₃.E (graph D₁) (graph D₂) (graph D₃) M.I M.I (body-inputs γ γ' v) (fo-of τ) M.εₘ M.εₘ M.εₘ M.I
   graph {τ = τ} (⇓-bop {γ = γ} {ω = ω} {vs = vs} D) =
-    Rule₁.E (graph-s D) M.I (fo-of τ) wsrc (op-deps ω .func vs)
+    Rule₁.E (graph-s D) M.I (fo-of τ) wctrl (op-deps ω .func vs)
   graph {τ = τ} (⇓-brel {γ = γ} {ω = ω} {vs = vs} D) =
-    Rule₁.E (graph-s D) M.I (fo-of τ) wsrc (brel-deps ω vs (rel-pred ω .func vs))
+    Rule₁.E (graph-s D) M.I (fo-of τ) wctrl (brel-deps ω vs (rel-pred ω .func vs))
   graph {τ = τ} (⇓-roll {γ = γ} D) = Rule₁.E (graph D) M.I (fo-of τ) M.εₘ M.I
   graph {τ = τ} (⇓-fold {γ = γ} {v = v} D₁ D₂) =
     Rule₂.E (graph D₁) (graph-m D₂) M.I M.I (fo-of τ) M.εₘ M.εₘ M.I
@@ -180,7 +180,7 @@ private
 mutual
   agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → collapse (graph D) ≈ R
   agree {τ = τ} (⇓-var {γ = γ} x) = Rule₀.agree (fo-of τ) (var-out x γ)
-  agree {τ = τ} (⇓-unit {γ = γ}) = Rule₀.agree (fo-of τ) wsrc
+  agree {τ = τ} (⇓-unit {γ = γ}) = Rule₀.agree (fo-of τ) wctrl
   agree {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.agree (fo-of τ) (lam-out γ t)
   agree {τ = τ} (⇓-inl {γ = γ} {v = v} D) =
     ≈-trans (Rule₁.agree (graph D) M.I (fo-of τ) (built-out γ (width v)) (M.in₂ {1}))
@@ -214,11 +214,11 @@ mutual
     ≈-trans (Rule₃.agree (graph D₁) (graph D₂) (graph D₃) M.I M.I (body-inputs γ γ' v) (fo-of τ) M.εₘ M.εₘ M.εₘ M.I)
             (seq3 (body-inputs γ γ' v) (agree D₁) (agree D₂) (agree D₃))
   agree {τ = τ} (⇓-bop {γ = γ} {ω = ω} {vs = vs} D) =
-    ≈-trans (Rule₁.agree (graph-s D) M.I (fo-of τ) wsrc (op-deps ω .func vs))
-            (one wsrc (op-deps ω .func vs) (agree-s D))
+    ≈-trans (Rule₁.agree (graph-s D) M.I (fo-of τ) wctrl (op-deps ω .func vs))
+            (one wctrl (op-deps ω .func vs) (agree-s D))
   agree {τ = τ} (⇓-brel {γ = γ} {ω = ω} {vs = vs} D) =
-    ≈-trans (Rule₁.agree (graph-s D) M.I (fo-of τ) wsrc (brel-deps ω vs (rel-pred ω .func vs)))
-            (one wsrc (brel-deps ω vs (rel-pred ω .func vs)) (agree-s D))
+    ≈-trans (Rule₁.agree (graph-s D) M.I (fo-of τ) wctrl (brel-deps ω vs (rel-pred ω .func vs)))
+            (one wctrl (brel-deps ω vs (rel-pred ω .func vs)) (agree-s D))
   agree {τ = τ} (⇓-roll {γ = γ} {R = R} D) =
     ≈-trans (Rule₁.agree (graph D) M.I (fo-of τ) M.εₘ M.I)
             (≈-trans {g = M.I ∘ (collapse (graph D) ∘ M.I)} (M.+ₘ-lunit (M.I ∘ (collapse (graph D) ∘ M.I)))

@@ -225,8 +225,8 @@ ShapeRel δₘ δ (μ τ) σ η N (acc rs) RP RΔ (roll w) p (Tr.sup y) =
     (extend-ConstRel RΔ)
     (≡.subst Val (unfold-sub σ τ) w) (s≤s (≤-reflexive (size-subst (unfold-sub σ τ) w))) y
 
--- The vector over the body's inputs at an application: a source weight, then the closure's cells
--- and the argument as the environment.
+-- The vector over the body's inputs at an application: the value at the control input, then the
+-- closure's cells and the argument as the environment.
 body-input : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) → Setoid.Carrier A →
              ∣ 𝔽 (width-env γ') ∣ → ∣ 𝔽 (width v) ∣ → ∣ 𝔽 (suc (width-env γ' + width v)) ∣
 body-input γ' v s c z zero    = s
@@ -288,10 +288,10 @@ var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p (inj₂ k') eq x r o dv =
   DΔ .cdep k' _ x r (λ k → o (≡.subst Fin (width-subst (≡.sym (≡.cong σ (splitAt⁻¹-↑ʳ eq))) v) k)) dv
 
 -- A dependence vector on a value's positions against an element of the fibre at a related index.
--- At an arrow type the root agrees, and for any further source weight, any related argument and
--- any derivation of the body, the body's dependence through the root and the further weight as
--- source and the cells and argument as environment agrees with the elimination constant at that
--- source plus the payload evaluated at the argument plus the index's fibre map at the argument. At
+-- At an arrow type the root agrees, and for any further weight, any related argument and any
+-- derivation of the body, the body's dependence through the root and the further weight at the
+-- control input and the cells and argument as environment agrees with the elimination constant at
+-- that weight plus the payload evaluated at the argument plus the index's fibre map at the argument. At
 -- a μ-type and at the shapes of an open type, the vector is read against the fibre at the shape as
 -- at the closed type formers.
 DepRel : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
@@ -366,15 +366,15 @@ ShapeDepRel δₘ δ (μ τ) σ η N (acc rs) RP RΔ d DP DΔ {roll w} {p} {Tr.s
 -- positions laid end to end, so the vector relation is equality there, as at a single base sort.
 
 -- Environments related to context indices, and environment vectors to elements of the context
--- fibre at a source weight: each cell may carry, beyond its relation, control dependence below the
--- elimination constant at the source.
+-- fibre at a value s at the control input: each cell may carry, beyond its relation, control
+-- dependence below the elimination constant at s.
 data EnvValRel : ∀ {Γ} → Env Γ → IxC Γ → Set where
   emp : EnvValRel emp (lift tt)
   _·_ : ∀ {Γ τ} {γ : Env Γ} {v : Val τ} {gi i} → EnvValRel γ gi → ValRel τ v i → EnvValRel (γ · v) (gi , i)
 
 infixl 30 _·_
 
--- The elimination constant at an index and source weight.
+-- The elimination constant at an index and a weight.
 ec : ∀ τ (i : Ix τ) → Setoid.Carrier A → ∣ Fib τ i ∣
 ec τ i s = elim-const τ .at i .func s
 
@@ -392,7 +392,8 @@ module FS (X : Semimodule) where
 
 module F τ i = FS (Fib τ i)
 
--- The dependence relation up to control dependence below the elimination constant at the source.
+-- The dependence relation up to control dependence below the elimination constant at the control
+-- input's value.
 DepRel⊑ : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → Setoid.Carrier A →
           ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
 DepRel⊑ τ {i = i} r s o d =
@@ -405,7 +406,7 @@ EnvDepRel (_·_ {τ = τ} {γ = γ} {v = v} rγ r) s x g =
   EnvDepRel rγ s (mat (M.p₁ {width-env γ} {width v}) .func x) (proj₁ g) ∧
   DepRel⊑ τ r s (mat (M.p₂ {width-env γ} {width v}) .func x) (proj₂ g)
 
--- The inputs of a derivation: the source weight at the first position, the environment after.
+-- The inputs of a derivation: the control input's value at the first position, the environment after.
 inputs : ∀ {Γ} (γ : Env Γ) → Setoid.Carrier A → ∣ 𝔽 (width-env γ) ∣ → ∣ 𝔽 (suc (width-env γ)) ∣
 inputs γ s x zero    = s
 inputs γ s x (suc k) = x k
@@ -418,7 +419,7 @@ open M using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ
 open Sc using (+-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
 open M using (⟨_,_⟩)
 
--- Reading a relation at the inputs: the source column at the source weight, and the environment
+-- Reading a relation at the inputs: the control input's column at its value, and the environment
 -- columns at the environment vector.
 p₁-e : ∀ {m} (j : Fin (suc m)) → M.p₁ {1} {m} zero j ≈s M.e zero j
 p₁-e zero    = ≈-refl
@@ -473,7 +474,7 @@ ap-pair-suc {m} {n} f g u k =
                            (≈-trans (app-∘ (M.in₂ {1} {n}) g u (suc k)) (ap-in₂-suc {n} (ap g u) k)))
                    +-lunit)
 
--- The control vector at a source weight: the weight at the root of a lifted value, and the
+-- The control vector at a value s at the control input: the weight at the root of a lifted value, and the
 -- payload's control vector after.
 ap-ctrl-row : ∀ {n} (s : Setoid.Carrier A) (k : Fin n) → ap ctrl-row (λ _ → s) k ≈s (w ·ₛ s)
 ap-ctrl-row {n} s k = Σ₁ (λ j → ctrl-row {n} k j ·ₛ s)
@@ -486,7 +487,7 @@ ctrl-lift-suc : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) (k : Fin n) �
                 ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) (suc k) ≈s ap g (λ _ → s) k
 ctrl-lift-suc {n} g s k = ap-pair-suc {1} {n} ctrl-row g (λ _ → s) k
 
--- Reading a relation at the inputs: the source column at the source weight and the environment
+-- Reading a relation at the inputs: the control input's column at its value and the environment
 -- columns at the environment vector, and the relations the rules are built from at any vector.
 ap-p₁₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin 1) → ap (M.p₁ {1} {m}) o k ≈s o zero
 ap-p₁₁ {m} o zero =
@@ -521,8 +522,8 @@ ap-∥ {m} A B y k =
           (+-cong (≈-trans (app-∘ A (M.p₁ {1} {m}) y k) (app-congᵥ A (ap-p₁₁ {m} y) k))
                   (≈-trans (app-∘ B (M.p₂ {1} {m}) y k) (app-congᵥ B (ap-p₂₁ {m} y) k)))
 
-ap-wsrc : ∀ {m n} (y : ∣ 𝔽 (suc m) ∣) (k : Fin n) → ap (wsrc {m} {n}) y k ≈s (w ·ₛ y zero)
-ap-wsrc {m} {n} y k =
+ap-wctrl : ∀ {m n} (y : ∣ 𝔽 (suc m) ∣) (k : Fin n) → ap (wctrl {m} {n}) y k ≈s (w ·ₛ y zero)
+ap-wctrl {m} {n} y k =
   ≈-trans (app-∘ (ctrl-row {n}) (M.p₁ {1} {m}) y k)
           (≈-trans (app-congᵥ (ctrl-row {n}) (ap-p₁₁ {m} y) k) (ap-ctrl-row {n} (y zero) k))
 
@@ -546,8 +547,8 @@ ap-⊕₁-suc : ∀ {m b} (f : M.Matrix 1 1) (g : M.Matrix b m) (y : ∣ 𝔽 (s
             ap (f ⊕ g) y (suc k) ≈s ap g (λ l → y (suc l)) k
 ap-⊕₁-suc {m} f g y k = ≈-trans (ap-⊕-suc {m} {1} f g y k) (app-congᵥ g (ap-p₂₁ {m} y) k)
 
--- The elimination constant elementwise: the weight times the source at each root, the payload's
--- constant under it, and zero at a closure's payload.
+-- The elimination constant elementwise: the weight times the control input's value at each root, the
+-- payload's constant under it, and zero at a closure's payload.
 ec-unit : ∀ i s → ec unit i s zero ≈s (w ·ₛ s)
 ec-unit i s =
   ≈-trans (+-cong (·-cong +-runit ≈-refl) ≈-refl)
@@ -876,7 +877,7 @@ lower-VarDep-ctrl : ∀ {n m} {δₘ : Fin m → Obj} (δₘc : ∀ p → Consta
                     VarDep-ctrl δₘc dc DP → VarDep-ctrl δₘc dc (lower-VarDep p RP DP)
 lower-VarDep-ctrl δₘc p dc DP H j u q = H j u (<-trans q p)
 
--- Adding the value's control positions at a source weight on the operational side, and the
+-- Adding the value's control positions at a value s at the control input on the operational side, and the
 -- elimination constant on the denotational side, preserves the relation.
 ctrl-add : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) (s : Setoid.Carrier A)
            {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} → DepRel τ r o d →
@@ -1234,7 +1235,7 @@ elimF-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (f : Mor (HasProducts.prod FD.
                 (cC .at (f .idxf .sfunc (γi , xi)) .func a))
 elimF-elt cC f {γi} {xi} γe a y = elim-root-elt (cC .at (f .idxf .sfunc (γi , xi))) (f .famf .transf (γi , xi)) γe a y
 
--- Being below the constant is monotone in the source weight, and a relation is a relation up to
+-- Being below the constant is monotone in the control input's value, and a relation is a relation up to
 -- zero.
 ec-linear : ∀ τ (i : Ix τ) s s' →
             F._≈_ τ i (ec τ i (s +ₛ s')) (F._+_ τ i (ec τ i s) (ec τ i s'))
@@ -1297,12 +1298,12 @@ EnvDepRel-resp (_·_ {τ = τ} {γ = γ} {v = v} rγ r) s ex (rel , h) =
   EnvDepRel-resp rγ s (app-congᵥ (M.p₁ {width-env γ} {width v}) ex) rel ,
   DepRel⊑-resp τ r s (app-congᵥ (M.p₂ {width-env γ} {width v}) ex) h
 
--- Elements above the constant, and multiples of the source weight: an element is a multiple of
--- the source weight when it is that weight times the elimination weight times some element. A
+-- Elements above the constant, and multiples of the control input's value s: an element is a
+-- multiple of s when it is s times the elimination weight times some element. A
 -- relation to a sum with a multiple summand is a relation to the other summand when that summand is
 -- above the constant in the additive order: at first-order types the constant absorbs the multiple
 -- outright, and at arrow types the body's constant at the root does, since the root itself absorbs
--- the weighted source.
+-- the weighted s.
 MultipleS : (X : Semimodule) → Setoid.Carrier A → ∣ X ∣ → Prop
 MultipleS X s E = ∃ (∣ X ∣) (λ E' → Semimodule._≈_ X E (Semimodule._·_ X (s ·ₛ w) E'))
 
@@ -1315,7 +1316,7 @@ sw-absorb s e =
   (≈-trans (≈-sym Sc.·-+-distribₗ)
   (≈-trans (·-cong ≈-refl (≈-trans +-comm (w-absorb e))) ·-comm))
 
--- A scalar absorbing the weight times the source absorbs any multiple of it.
+-- A scalar absorbing the weight times s absorbs any multiple of s.
 root-absorb : ∀ s a e → (a +ₛ (w ·ₛ s)) ≈s a → (a +ₛ ((s ·ₛ w) ·ₛ e)) ≈s a
 root-absorb s a e h =
   ≈-trans (+-cong (≈-sym h) ≈-refl) (≈-trans +-assoc (≈-trans (+-cong ≈-refl (sw-absorb s e)) h))
@@ -1324,7 +1325,7 @@ ec-root : ∀ τ (i : Ix τ) s → F._⊑_ τ i (ec τ i s) (ec τ i s)
 ec-root τ i s = F.trans τ i (F.sym τ i (ec-linear τ i s s))
                             (elim-const τ .at i .SemiMod._⇒_.func-resp-≈ (+-idem s))
 
--- An element above the constant has a root absorbing the weight times the source and a payload
+-- An element above the constant has a root absorbing the weight times s and a payload
 -- above the payload's constant.
 ec⊑-inj₁ : ∀ {σ τ} (i : Ix σ) s (Q : ∣ Fib (σ [+] τ) (inj₁ i) ∣) →
            F._⊑_ (σ [+] τ) (inj₁ i) (ec (σ [+] τ) (inj₁ i) s) Q →
@@ -1379,8 +1380,8 @@ ec⊑-ec τ i s a h =
                             (F.trans τ i (ec-linear τ i a (w ·ₛ s))
                                          (F.+-cong τ i (F.refl τ i) (ec-w τ i s)))))
 
--- The constant at the weighted source plus itself and a further weight: the constant at the
--- source plus the constant at the further weight.
+-- The constant at the weighted s plus itself and a further weight: the constant at s plus the
+-- constant at the further weight.
 ec-double : ∀ τ (i : Ix τ) s a → F._≈_ τ i (ec τ i ((w ·ₛ s) +ₛ ((w ·ₛ s) +ₛ a))) (F._+_ τ i (ec τ i s) (ec τ i a))
 ec-double τ i s a =
   F.trans τ i (ec-linear τ i (w ·ₛ s) ((w ·ₛ s) +ₛ a))
@@ -1695,9 +1696,9 @@ built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s
              ap (built-out γ n +ₘ (M.in₂ {1} ∘ R')) (inputs γ s x) zero ≈s (w ·ₛ s)
 built-zero {γ = γ} {n} R' s x =
   ≈-trans (app-+ₘ (built-out γ n) (M.in₂ {1} ∘ R') (inputs γ s x) zero)
-  (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wsrc (inputs γ s x) zero)
-                            (≈-trans (ap-in₁-zero {n} (ap wsrc (inputs γ s x)))
-                                     (ap-wsrc {width-env γ} {1} (inputs γ s x) zero)))
+  (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wctrl (inputs γ s x) zero)
+                            (≈-trans (ap-in₁-zero {n} (ap wctrl (inputs γ s x)))
+                                     (ap-wctrl {width-env γ} {1} (inputs γ s x) zero)))
                    (≈-trans (app-∘ (M.in₂ {1} {n}) R' (inputs γ s x) zero)
                             (ap-in₂-zero {n} (ap R' (inputs γ s x)))))
            +-runit)
@@ -1706,8 +1707,8 @@ built-suc : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s 
             ap (built-out γ n +ₘ (M.in₂ {1} ∘ R')) (inputs γ s x) (suc k) ≈s ap R' (inputs γ s x) k
 built-suc {γ = γ} {n} R' s x k =
   ≈-trans (app-+ₘ (built-out γ n) (M.in₂ {1} ∘ R') (inputs γ s x) (suc k))
-  (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wsrc (inputs γ s x) (suc k))
-                            (ap-in₁-suc {n} (ap wsrc (inputs γ s x)) k))
+  (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wctrl (inputs γ s x) (suc k))
+                            (ap-in₁-suc {n} (ap wctrl (inputs γ s x)) k))
                    (≈-trans (app-∘ (M.in₂ {1} {n}) R' (inputs γ s x) (suc k))
                             (ap-in₂-suc {n} (ap R' (inputs γ s x)) k)))
            +-lunit)
