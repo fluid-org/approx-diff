@@ -109,7 +109,7 @@ module Interp
 
     -- With a terminal object: the functorial action, and the map between μ-objects induced by an
     -- unfolding of one polynomial into another at the target's carrier.
-    module _ (𝒞T : HasTerminal 𝒞) where
+    module WithTerminal (𝒞T : HasTerminal 𝒞) where
       open HasTerminal 𝒞T using (to-terminal)
 
       fmor : ∀ {k} (P : Poly 𝒞 k) {δ δ' : Fin k → obj} → (∀ i → δ i ⇒ δ' i) → fobj μ-obj P δ ⇒ fobj μ-obj P δ'
@@ -131,7 +131,7 @@ module Interp
   f ∘co g = f ∘ pair p₁ g
 
   record HasMuLaws (Mu : HasMu) : Set (o ⊔ m ⊔ e) where
-    open HasMu Mu
+    open HasMu Mu hiding (module WithTerminal)
     field
       ⦅⦆-β : ∀ {k} {Γ A : obj} {P : Poly 𝒞 (suc k)} {δ : Fin k → obj}
              (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) →
@@ -388,22 +388,23 @@ module Interp
     -- With a terminal object: the functorial action is a functor, and the induced maps between
     -- μ-objects respect the unfolding, send the identity to the identity, compute on the algebra
     -- map, and compose when the first unfolding commutes with the second map.
-    module _ (𝒞T : HasTerminal 𝒞) where
+    module WithTerminal (𝒞T : HasTerminal 𝒞) where
       open HasTerminal 𝒞T using (to-terminal; to-terminal-unique)
       open Unitor 𝒞T 𝒞P using (sect; sect-pre; sect-natural; unitor-comp)
+      open HasMu.WithTerminal Mu 𝒞T
 
       fmor-cong : ∀ {k} (P : Poly 𝒞 k) {δ δ' : Fin k → obj} {fs gs : ∀ i → δ i ⇒ δ' i} →
-                  (∀ i → fs i ≈ gs i) → fmor 𝒞T P fs ≈ fmor 𝒞T P gs
+                  (∀ i → fs i ≈ gs i) → fmor P fs ≈ fmor P gs
       fmor-cong P es = ∘-cong (strong-fmor-cong P (λ i → ∘-cong (es i) ≈-refl)) ≈-refl
 
-      fmor-id : ∀ {k} (P : Poly 𝒞 k) {δ : Fin k → obj} → fmor 𝒞T P (λ i → id (δ i)) ≈ id _
+      fmor-id : ∀ {k} (P : Poly 𝒞 k) {δ : Fin k → obj} → fmor P (λ i → id (δ i)) ≈ id _
       fmor-id P =
         ≈-trans (∘-cong (≈-trans (strong-fmor-cong P (λ i → id-left)) (strong-fmor-p₂ P)) ≈-refl)
                 (pair-p₂ _ _)
 
       fmor-comp : ∀ {k} (P : Poly 𝒞 k) {δ δ' δ'' : Fin k → obj}
                   (gs : ∀ i → δ' i ⇒ δ'' i) (fs : ∀ i → δ i ⇒ δ' i) →
-                  (fmor 𝒞T P gs ∘ fmor 𝒞T P fs) ≈ fmor 𝒞T P (λ i → gs i ∘ fs i)
+                  (fmor P gs ∘ fmor P fs) ≈ fmor P (λ i → gs i ∘ fs i)
       fmor-comp P gs fs =
         ≈-trans (unitor-comp _ _)
                 (∘-cong (≈-trans (strong-fmor-comp P _ _)
@@ -425,16 +426,16 @@ module Interp
                      (u : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
                      ∀ {l} {R : Poly 𝒞 (suc l)} {ρ : Fin l → obj} →
                      (strong-fmor R (strong-extend-mor {δ = ρ} (λ i → p₂) (⦅_⦆ {P = P} {δ = δ} ((inMap Q δ' ∘ u) ∘ p₂))) ∘ sect)
-                       ≈ fmor 𝒞T R (extend-mor (λ i → id (ρ i)) (μ-map 𝒞T P δ Q δ' u))
+                       ≈ fmor R (extend-mor (λ i → id (ρ i)) (μ-map P δ Q δ' u))
         fmor-μ-map P δ Q δ' u {R = R} =
           ∘-cong (strong-fmor-cong R (λ { Fin.zero → ≈-sym (sect-p₂ _) ; (Fin.suc i) → ≈-sym id-left })) ≈-refl
 
       μ-map-cong : ∀ {j k} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) (Q : Poly 𝒞 (suc k)) (δ' : Fin k → obj)
                    {u u' : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ'))} →
-                   u ≈ u' → μ-map 𝒞T P δ Q δ' u ≈ μ-map 𝒞T P δ Q δ' u'
+                   u ≈ u' → μ-map P δ Q δ' u ≈ μ-map P δ Q δ' u'
       μ-map-cong P δ Q δ' e = ∘-cong (⦅⦆-cong P δ (∘-cong (∘-cong ≈-refl e) ≈-refl)) ≈-refl
 
-      μ-map-id : ∀ {j} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) → μ-map 𝒞T P δ P δ (id _) ≈ id _
+      μ-map-id : ∀ {j} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) → μ-map P δ P δ (id _) ≈ id _
       μ-map-id P δ =
         ≈-trans (∘-cong (≈-trans (⦅⦆-cong P δ (∘-cong id-right ≈-refl)) (⦅⦆-reflect P δ)) ≈-refl)
                 (pair-p₂ _ _)
@@ -442,8 +443,8 @@ module Interp
       -- The induced map on a constructed element: the unfolding at the image of the arguments.
       μ-map-in : ∀ {j k} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) (Q : Poly 𝒞 (suc k)) (δ' : Fin k → obj)
                  (u : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
-                 (μ-map 𝒞T P δ Q δ' u ∘ inMap P δ)
-                   ≈ (inMap Q δ' ∘ (u ∘ fmor 𝒞T P (extend-mor (λ i → id (δ i)) (μ-map 𝒞T P δ Q δ' u))))
+                 (μ-map P δ Q δ' u ∘ inMap P δ)
+                   ≈ (inMap Q δ' ∘ (u ∘ fmor P (extend-mor (λ i → id (δ i)) (μ-map P δ Q δ' u))))
       μ-map-in P δ Q δ' u =
         begin
           (fold-u ∘ sect) ∘ inMap P δ
@@ -460,9 +461,9 @@ module Interp
         ≈⟨ assoc _ _ _ ⟩
           (inMap Q δ' ∘ u) ∘ (strong-fmor P (strong-extend-mor (λ i → p₂) fold-u) ∘ sect)
         ≈⟨ ∘-cong ≈-refl (fmor-μ-map P δ Q δ' u {R = P}) ⟩
-          (inMap Q δ' ∘ u) ∘ fmor 𝒞T P (extend-mor (λ i → id (δ i)) (μ-map 𝒞T P δ Q δ' u))
+          (inMap Q δ' ∘ u) ∘ fmor P (extend-mor (λ i → id (δ i)) (μ-map P δ Q δ' u))
         ≈⟨ assoc _ _ _ ⟩
-          inMap Q δ' ∘ (u ∘ fmor 𝒞T P (extend-mor (λ i → id (δ i)) (μ-map 𝒞T P δ Q δ' u)))
+          inMap Q δ' ∘ (u ∘ fmor P (extend-mor (λ i → id (δ i)) (μ-map P δ Q δ' u)))
         ∎
         where
           alg : prod (HasTerminal.witness 𝒞T) (fobj μ-obj P (extend δ (μ-obj Q δ'))) ⇒ μ-obj Q δ'
@@ -478,9 +479,9 @@ module Interp
                    (u  : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ')))
                    (v  : fobj μ-obj Q (extend δ' (μ-obj R δ'')) ⇒ fobj μ-obj R (extend δ'' (μ-obj R δ'')))
                    (u' : fobj μ-obj P (extend δ (μ-obj R δ'')) ⇒ fobj μ-obj Q (extend δ' (μ-obj R δ''))) →
-                   (fmor 𝒞T Q (extend-mor (λ i → id (δ' i)) (μ-map 𝒞T Q δ' R δ'' v)) ∘ u)
-                     ≈ (u' ∘ fmor 𝒞T P (extend-mor (λ i → id (δ i)) (μ-map 𝒞T Q δ' R δ'' v))) →
-                   (μ-map 𝒞T Q δ' R δ'' v ∘ μ-map 𝒞T P δ Q δ' u) ≈ μ-map 𝒞T P δ R δ'' (v ∘ u')
+                   (fmor Q (extend-mor (λ i → id (δ' i)) (μ-map Q δ' R δ'' v)) ∘ u)
+                     ≈ (u' ∘ fmor P (extend-mor (λ i → id (δ i)) (μ-map Q δ' R δ'' v))) →
+                   (μ-map Q δ' R δ'' v ∘ μ-map P δ Q δ' u) ≈ μ-map P δ R δ'' (v ∘ u')
       μ-map-comp P δ Q δ' R δ'' u v u' sq =
         ≈-trans (unitor-comp _ _) (∘-cong (fusion {P = P} {δ = δ} alg-u alg-vu' fold-v hyp) ≈-refl)
         where
@@ -493,7 +494,7 @@ module Interp
           alg-vu' = (inMap R δ'' ∘ (v ∘ u')) ∘ p₂
           fold-v : prod 𝟙 (μ-obj Q δ') ⇒ μ-obj R δ''
           fold-v = ⦅_⦆ {P = Q} {δ = δ'} alg-v
-          k = μ-map 𝒞T Q δ' R δ'' v
+          k = μ-map Q δ' R δ'' v
 
           -- The strong action at the fold after the unfolding is the unfolding after the strong action.
           step : (strong-fmor Q (strong-extend-mor (λ i → p₂) fold-v) ∘co (u ∘ p₂))
@@ -506,7 +507,7 @@ module Interp
             ≈˘⟨ ≈-trans (assoc _ _ _) (assoc _ _ _) ⟩
               ((SQ ∘ sect) ∘ u) ∘ p₂
             ≈⟨ ∘-cong (≈-trans (∘-cong (fmor-μ-map Q δ' R δ'' v {R = Q}) ≈-refl) sq) ≈-refl ⟩
-              (u' ∘ fmor 𝒞T P (extend-mor (λ i → id (δ i)) k)) ∘ p₂
+              (u' ∘ fmor P (extend-mor (λ i → id (δ i)) k)) ∘ p₂
             ≈˘⟨ ∘-cong (∘-cong ≈-refl (fmor-μ-map Q δ' R δ'' v {R = P})) ≈-refl ⟩
               (u' ∘ (SP ∘ sect)) ∘ p₂
             ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (sect-p₂ SP)) ⟩
@@ -543,6 +544,15 @@ module Interp
             where
               open ≈-Reasoning isEquiv
               SP = strong-fmor P (strong-extend-mor (λ i → p₂) fold-v)
+
+      -- The functorial action at a μ-polynomial is the induced map of the action at its body.
+      fmor-μ : ∀ {k} (P : Poly 𝒞 (suc k)) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
+               fmor (μ P) fs ≈ μ-map P δ P δ' (fmor P (extend-mor fs (id _)))
+      fmor-μ P {δ} {δ'} fs =
+        ∘-cong (⦅⦆-cong P δ (≈-sym (≈-trans (assoc _ _ _)
+                                             (∘-cong ≈-refl (≈-trans (sect-p₂ _)
+                                                                     (strong-fmor-cong P (λ { Fin.zero → id-left ; (Fin.suc i) → ≈-refl })))))))
+               ≈-refl
 
 -- Action of a functor on polynomials: apply the functor at the const leaves.
 Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} →

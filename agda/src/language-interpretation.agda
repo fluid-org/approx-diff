@@ -47,8 +47,9 @@ module language-interpretation
   (sort-const : ∀ s → R.Constant (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu; μ-map; Constant; elimF;
-              scale-const; Lf-constant; coprod-constant; prod-constant; PolyConst)
+open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu; fmor; μ-map; Constant; elimF;
+              scale-const; Lf-constant; coprod-constant; prod-constant; PolyConst;
+              fmor-cong; fmor-id; fmor-comp; fmor-μ; μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
@@ -57,7 +58,7 @@ open HasCoproducts R.coproducts using (coprod; coprod-m; in₁; in₂)
 open HasStrongCoproducts R.strongCoproducts using () renaming (copair to scopair)
 open HasWeakExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
-open HasMu hasMu hiding (fmor; μ-map)
+open HasMu hasMu
 open Model Int
 
 mutual
