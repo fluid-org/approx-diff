@@ -49,7 +49,7 @@ open Lc public
   using (L; root; inj; copair-root; copair-inj; lifting-ext;
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
          L-const; L-const-cong; L-const-natural;
-         under-root; under-root-cong; under-root-natural; under-root-pre; under-root-post; under-root-co;
+         under-root; under-root-cong; under-root-natural; under-root-pre; under-root-post; under-root-co; under-root-p₂;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
 open Obj public
@@ -115,8 +115,27 @@ under-rootF-cong E ._≃_.idxf-eq = E ._≃_.idxf-eq
 under-rootF-cong E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
   ≈-trans (under-root-post _ _) (under-root-cong (E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x}))
 
+under-rootF-co : ∀ {Γ X Y Z : Obj} (f : Mor (Fam𝒞-P.prod Γ Y) Z) (g : Mor (Fam𝒞-P.prod Γ X) Y) →
+                 (Fam𝒞._∘_ (under-rootF f) (Fam𝒞-P.pair Fam𝒞-P.p₁ (under-rootF g)))
+                   ≃ under-rootF (Fam𝒞._∘_ f (Fam𝒞-P.pair Fam𝒞-P.p₁ g))
+under-rootF-co f g ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) =
+  f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , g .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈))
+under-rootF-co {Z = Z} f g ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+  ≈-trans (∘-cong (Lf Z .fam .refl*) ≈-refl)
+          (≈-trans id-left (≈-trans id-left (≈-trans (under-root-co _ _) (under-root-cong (≈-sym id-left)))))
+
+under-rootF-p₂ : ∀ {Γ X : Obj} → under-rootF (Fam𝒞-P.p₂ {Γ} {X}) ≃ Fam𝒞-P.p₂ {Γ} {Lf X}
+under-rootF-p₂ ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) = x≈
+under-rootF-p₂ {X = X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+  ≈-trans (∘-cong (Lf X .fam .refl*) ≈-refl) (≈-trans id-left under-root-p₂)
+
 open polynomial-functor.Interp products strongCoproducts Lf under-rootF public
-  using (fobj; HasMu; HasMuLaws; _∘co_)
+  using (fobj; HasMu; HasMuLaws; UnderLaws; module MuConsequences; _∘co_)
+
+underLaws : UnderLaws
+underLaws .UnderLaws.under-cong = under-rootF-cong
+underLaws .UnderLaws.under-co   = under-rootF-co
+underLaws .UnderLaws.under-p₂   = under-rootF-p₂
 
 private
   module CME = CMonEnriched CM
