@@ -65,6 +65,9 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ≡-to-⇒-sym-l : ∀ {x y} (e : x ≡ y) → (≡-to-⇒ (≡.sym e) ∘ ≡-to-⇒ e) ≈ id x
   ≡-to-⇒-sym-l ≡.refl = id-left
 
+  ≡-to-⇒-sym-r : ∀ {x y} (e : x ≡ y) → (≡-to-⇒ e ∘ ≡-to-⇒ (≡.sym e)) ≈ id y
+  ≡-to-⇒-sym-r ≡.refl = id-left
+
   id-swap : ∀ {x y}{f : x ⇒ y} → (id y ∘ f) ≈ (f ∘ id x)
   id-swap = isEquiv .trans id-left (≈-sym id-right)
 

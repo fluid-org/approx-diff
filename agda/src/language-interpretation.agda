@@ -22,10 +22,11 @@ open import Data.Sum using (_⊎_; [_,_]; inj₁; inj₂; map₁)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
-         HasWeakExponentials)
+         HasWeakExponentials; strong-coproducts→coproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 open import polynomial-functor using (Poly)
+open import prop-setoid using (module ≈-Reasoning)
 import fam-mu-lifting.mu-map
 import language-syntax
 
@@ -47,29 +48,27 @@ module language-interpretation
   (sort-const : ∀ s → R.Constant (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; injF; extend; fobj; HasMu; hasMu; fmor; μ-map; Constant; elimF;
-              scale-const; Lf-constant; coprod-constant; prod-constant; PolyConst;
-              fmor-cong; fmor-id; fmor-comp; fmor-μ; μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
+open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; extend; extend-mor; fobj; HasMu; hasMu; fmor; μ-map;
+              Constant; elimF; scale-const; Lf-constant; coprod-constant; prod-constant; PolyConst;
+              fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
+              μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
 
-open HasCoproducts R.coproducts using (coprod; coprod-m; in₁; in₂)
+open HasCoproducts R.coproducts using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
+                                       copair-cong; copair-ext)
 open HasStrongCoproducts R.strongCoproducts using () renaming (copair to scopair)
 open HasWeakExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
 open HasMu hasMu
 open Model Int
 
+-- A type is interpreted as its polynomial, with the variables frozen at the environment, applied
+-- at the empty environment; under a μ, the bound variables stay free.
 mutual
   ⟦_⟧ty : ∀ {Δ} → type Δ → (Fin Δ → obj) → obj
-  ⟦ var i ⟧ty     δ = δ i
-  ⟦ unit ⟧ty      δ = 𝟙ty
-  ⟦ base s ⟧ty    δ = ⟦sort⟧ s
-  ⟦ σ [+] τ ⟧ty δ = coprod (Lf (⟦ σ ⟧ty δ)) (Lf (⟦ τ ⟧ty δ))
-  ⟦ σ [×] τ ⟧ty δ = Lf (prod (⟦ σ ⟧ty δ) (⟦ τ ⟧ty δ))
-  ⟦ σ [→] τ ⟧ty δ = Lf (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ()))
-  ⟦ μ τ ⟧ty       δ = μ-obj (as-poly τ δ) δ∅
+  ⟦ τ ⟧ty δ = fobj μ-obj (as-poly {n = 0} τ δ) δ∅
 
   as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly R.cat n
   as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
@@ -135,13 +134,7 @@ as-poly-cong (σ [→] τ) h = refl
 as-poly-cong (μ τ)     h = cong Poly.μ (as-poly-cong τ h)
 
 ty-cong : ∀ {Δ} (τ : type Δ) {δ δ' : Fin Δ → obj} → (∀ i → δ i ≡ δ' i) → ⟦ τ ⟧ty δ ≡ ⟦ τ ⟧ty δ'
-ty-cong (var i)   h = h i
-ty-cong unit      h = refl
-ty-cong (base s)  h = refl
-ty-cong (σ [+] τ) h = cong₂ (λ A B → coprod (Lf A) (Lf B)) (ty-cong σ h) (ty-cong τ h)
-ty-cong (σ [×] τ) h = cong₂ (λ A B → Lf (prod A B)) (ty-cong σ h) (ty-cong τ h)
-ty-cong (σ [→] τ) h = refl
-ty-cong (μ τ)     h = cong (λ (P : Poly R.cat 1) → μ-obj P δ∅) (as-poly-cong τ h)
+ty-cong τ h = cong (λ P → fobj μ-obj P δ∅) (as-poly-cong τ h)
 
 -- Renaming a type is reindexing its environment. extᵗⁿ leaves the first n (poly) variables alone,
 -- so splitAt commutes with it.
@@ -174,13 +167,244 @@ as-poly-ren ρ (μ τ)     δ = cong Poly.μ (as-poly-ren ρ τ δ)
 
 ty-ren : ∀ {Δ₁ Δ₂} (ρ : TyRen Δ₁ Δ₂) (τ : type Δ₁) (δ : Fin Δ₂ → obj) →
          ⟦ ρ *ᵗ τ ⟧ty δ ≡ ⟦ τ ⟧ty (λ i → δ (ρ i))
-ty-ren ρ (var i)   δ = refl
-ty-ren ρ unit      δ = refl
-ty-ren ρ (base s)  δ = refl
-ty-ren ρ (σ [+] τ) δ = cong₂ (λ A B → coprod (Lf A) (Lf B)) (ty-ren ρ σ δ) (ty-ren ρ τ δ)
-ty-ren ρ (σ [×] τ) δ = cong₂ (λ A B → Lf (prod A B)) (ty-ren ρ σ δ) (ty-ren ρ τ δ)
-ty-ren ρ (σ [→] τ) δ = refl
-ty-ren ρ (μ τ)     δ = cong (λ (P : Poly R.cat 1) → μ-obj P δ∅) (as-poly-ren ρ τ δ)
+ty-ren ρ τ δ = cong (λ P → fobj μ-obj P δ∅) (as-poly-ren ρ τ δ)
+
+private
+  module CP = HasCoproducts (strong-coproducts→coproducts (R.terminal T) R.strongCoproducts)
+
+coprod-m-strong : ∀ {X X' Y Y'} (f : X ⇒ X') (g : Y ⇒ Y') → coprod-m f g ≈ CP.coprod-m f g
+coprod-m-strong f g = ≈-trans (copair-cong (≈-sym (CP.copair-in₁ _ _)) (≈-sym (CP.copair-in₂ _ _))) (copair-ext _)
+
+[+]-map : ∀ {A A' B B' : obj} → A ⇒ A' → B ⇒ B' → coprod (Lf A) (Lf B) ⇒ coprod (Lf A') (Lf B')
+[+]-map f g = coprod-m (Lf-map f) (Lf-map g)
+
+[×]-map : ∀ {A A' B B' : obj} → A ⇒ A' → B ⇒ B' → Lf (prod A B) ⇒ Lf (prod A' B')
+[×]-map f g = Lf-map (prod-m f g)
+
+[+]-map-cong : ∀ {A A' B B' : obj} {f f' : A ⇒ A'} {g g' : B ⇒ B'} → f ≈ f' → g ≈ g' → [+]-map f g ≈ [+]-map f' g'
+[+]-map-cong e₁ e₂ = coprod-m-cong (Lf-map-cong e₁) (Lf-map-cong e₂)
+
+[+]-map-comp : ∀ {A A' A'' B B' B'' : obj} (f' : A' ⇒ A'') (f : A ⇒ A') (g' : B' ⇒ B'') (g : B ⇒ B') →
+               ([+]-map f' g' ∘ [+]-map f g) ≈ [+]-map (f' ∘ f) (g' ∘ g)
+[+]-map-comp f' f g' g = ≈-trans (≈-sym (coprod-m-comp _ _ _ _)) (coprod-m-cong (≈-sym (Lf-map-comp _ _)) (≈-sym (Lf-map-comp _ _)))
+
+[+]-map-id : ∀ {A B : obj} → [+]-map (id A) (id B) ≈ id _
+[+]-map-id = ≈-trans (coprod-m-cong Lf-map-id Lf-map-id) coprod-m-id
+
+[+]-square : ∀ {A A' A'' A''' B B' B'' B''' : obj}
+             {f : A ⇒ A'} {h : A' ⇒ A''} {h' : A ⇒ A'''} {f' : A''' ⇒ A''}
+             {g : B ⇒ B'} {l : B' ⇒ B''} {l' : B ⇒ B'''} {g' : B''' ⇒ B''} →
+             (h ∘ f) ≈ (f' ∘ h') → (l ∘ g) ≈ (g' ∘ l') → ([+]-map h l ∘ [+]-map f g) ≈ ([+]-map f' g' ∘ [+]-map h' l')
+[+]-square e₁ e₂ = ≈-trans ([+]-map-comp _ _ _ _) (≈-trans ([+]-map-cong e₁ e₂) (≈-sym ([+]-map-comp _ _ _ _)))
+
+[+]-inv : ∀ {A A' B B' : obj} {f : A ⇒ A'} {f' : A' ⇒ A} {g : B ⇒ B'} {g' : B' ⇒ B} →
+          (f ∘ f') ≈ id _ → (g ∘ g') ≈ id _ → ([+]-map f g ∘ [+]-map f' g') ≈ id _
+[+]-inv e₁ e₂ = ≈-trans ([+]-map-comp _ _ _ _) (≈-trans ([+]-map-cong e₁ e₂) [+]-map-id)
+
+[×]-map-cong : ∀ {A A' B B' : obj} {f f' : A ⇒ A'} {g g' : B ⇒ B'} → f ≈ f' → g ≈ g' → [×]-map f g ≈ [×]-map f' g'
+[×]-map-cong e₁ e₂ = Lf-map-cong (prod-m-cong e₁ e₂)
+
+[×]-map-comp : ∀ {A A' A'' B B' B'' : obj} (f' : A' ⇒ A'') (f : A ⇒ A') (g' : B' ⇒ B'') (g : B ⇒ B') →
+               ([×]-map f' g' ∘ [×]-map f g) ≈ [×]-map (f' ∘ f) (g' ∘ g)
+[×]-map-comp f' f g' g = ≈-trans (≈-sym (Lf-map-comp _ _)) (Lf-map-cong (≈-sym (prod-m-comp _ _ _ _)))
+
+[×]-map-id : ∀ {A B : obj} → [×]-map (id A) (id B) ≈ id _
+[×]-map-id = ≈-trans (Lf-map-cong prod-m-id) Lf-map-id
+
+[×]-square : ∀ {A A' A'' A''' B B' B'' B''' : obj}
+             {f : A ⇒ A'} {h : A' ⇒ A''} {h' : A ⇒ A'''} {f' : A''' ⇒ A''}
+             {g : B ⇒ B'} {l : B' ⇒ B''} {l' : B ⇒ B'''} {g' : B''' ⇒ B''} →
+             (h ∘ f) ≈ (f' ∘ h') → (l ∘ g) ≈ (g' ∘ l') → ([×]-map h l ∘ [×]-map f g) ≈ ([×]-map f' g' ∘ [×]-map h' l')
+[×]-square e₁ e₂ = ≈-trans ([×]-map-comp _ _ _ _) (≈-trans ([×]-map-cong e₁ e₂) (≈-sym ([×]-map-comp _ _ _ _)))
+
+[×]-inv : ∀ {A A' B B' : obj} {f : A ⇒ A'} {f' : A' ⇒ A} {g : B ⇒ B'} {g' : B' ⇒ B} →
+          (f ∘ f') ≈ id _ → (g ∘ g') ≈ id _ → ([×]-map f g ∘ [×]-map f' g') ≈ id _
+[×]-inv e₁ e₂ = ≈-trans ([×]-map-comp _ _ _ _) (≈-trans ([×]-map-cong e₁ e₂) [×]-map-id)
+
+fmor-[+] : ∀ {k} (P Q : Poly R.cat k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
+           fmor (P Poly.+ Q) fs ≈ [+]-map (fmor P fs) (fmor Q fs)
+fmor-[+] P Q fs = ≈-trans (fmor-+ P Q fs) (≈-sym (coprod-m-strong _ _))
+
+fmor-[×] : ∀ {k} (P Q : Poly R.cat k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
+           fmor (P Poly.× Q) fs ≈ [×]-map (fmor P fs) (fmor Q fs)
+fmor-[×] = fmor-×
+
+as-poly-map : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} → (∀ i → δ i ⇒ δ' i) → (δ₀ : Fin n → obj) →
+              fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀ ⇒ fobj μ-obj (as-poly {Δ} {n} τ δ') δ₀
+as-poly-map {Δ} {n} (var i) {δ} {δ'} gs δ₀ = go (splitAt n i)
+  where
+    go : (s : Fin n ⊎ Fin Δ) →
+         fobj μ-obj ([ Poly.var , (λ j → Poly.const (δ j)) ] s) δ₀ ⇒ fobj μ-obj ([ Poly.var , (λ j → Poly.const (δ' j)) ] s) δ₀
+    go (inj₁ j) = id _
+    go (inj₂ k) = gs k
+as-poly-map unit      gs δ₀ = id _
+as-poly-map (base s)  gs δ₀ = id _
+as-poly-map (σ [+] τ) gs δ₀ = [+]-map (as-poly-map σ gs δ₀) (as-poly-map τ gs δ₀)
+as-poly-map (σ [×] τ) gs δ₀ = [×]-map (as-poly-map σ gs δ₀) (as-poly-map τ gs δ₀)
+as-poly-map (σ [→] τ) gs δ₀ = id _
+as-poly-map (μ τ) {δ} {δ'} gs δ₀ =
+  μ-map (as-poly τ δ) δ₀ (as-poly τ δ') δ₀ (as-poly-map τ gs (extend δ₀ (μ-obj (as-poly τ δ') δ₀)))
+
+as-poly-map-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} {gs gs' : ∀ i → δ i ⇒ δ' i} →
+                   (∀ i → gs i ≈ gs' i) → (δ₀ : Fin n → obj) → as-poly-map τ gs δ₀ ≈ as-poly-map τ gs' δ₀
+as-poly-map-cong {n = n} (var i) es δ₀ with splitAt n i
+... | inj₁ j = ≈-refl
+... | inj₂ k = es k
+as-poly-map-cong unit      es δ₀ = ≈-refl
+as-poly-map-cong (base s)  es δ₀ = ≈-refl
+as-poly-map-cong (σ [+] τ) es δ₀ = [+]-map-cong (as-poly-map-cong σ es δ₀) (as-poly-map-cong τ es δ₀)
+as-poly-map-cong (σ [×] τ) es δ₀ = [×]-map-cong (as-poly-map-cong σ es δ₀) (as-poly-map-cong τ es δ₀)
+as-poly-map-cong (σ [→] τ) es δ₀ = ≈-refl
+as-poly-map-cong {n = n} (μ τ) es δ₀ = μ-map-cong _ _ _ _ (as-poly-map-cong {n = suc n} τ es _)
+
+as-poly-map-id : ∀ {Δ n} (τ : type (n + Δ)) {δ : Fin Δ → obj} (δ₀ : Fin n → obj) →
+                 as-poly-map τ (λ i → id (δ i)) δ₀ ≈ id _
+as-poly-map-id {n = n} (var i) δ₀ with splitAt n i
+... | inj₁ j = ≈-refl
+... | inj₂ k = ≈-refl
+as-poly-map-id unit      δ₀ = ≈-refl
+as-poly-map-id (base s)  δ₀ = ≈-refl
+as-poly-map-id (σ [+] τ) δ₀ = ≈-trans ([+]-map-cong (as-poly-map-id σ δ₀) (as-poly-map-id τ δ₀)) [+]-map-id
+as-poly-map-id (σ [×] τ) δ₀ = ≈-trans ([×]-map-cong (as-poly-map-id σ δ₀) (as-poly-map-id τ δ₀)) [×]-map-id
+as-poly-map-id (σ [→] τ) δ₀ = ≈-refl
+as-poly-map-id {n = n} (μ τ) δ₀ = ≈-trans (μ-map-cong _ _ _ _ (as-poly-map-id {n = suc n} τ _)) (μ-map-id _ _)
+
+fmor-extend-swap : ∀ {k} (P : Poly R.cat (suc k)) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) {X Y : obj} (h : X ⇒ Y) →
+                   (fmor P (extend-mor (λ i → id _) h) ∘ fmor P (extend-mor fs (id _)))
+                     ≈ (fmor P (extend-mor fs (id _)) ∘ fmor P (extend-mor (λ i → id _) h))
+fmor-extend-swap P fs h =
+  ≈-trans (fmor-comp P _ _)
+          (≈-trans (fmor-cong P (λ { Fin.zero → ≈-trans id-right (≈-sym id-left) ; (Fin.suc i) → ≈-trans id-left (≈-sym id-right) }))
+                   (≈-sym (fmor-comp P _ _)))
+
+mutual
+  as-poly-map-comp : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' δ'' : Fin Δ → obj}
+                     (gs' : ∀ i → δ' i ⇒ δ'' i) (gs : ∀ i → δ i ⇒ δ' i) (δ₀ : Fin n → obj) →
+                     (as-poly-map τ gs' δ₀ ∘ as-poly-map τ gs δ₀) ≈ as-poly-map τ (λ i → gs' i ∘ gs i) δ₀
+  as-poly-map-comp {n = n} (var i) gs' gs δ₀ with splitAt n i
+  ... | inj₁ j = id-left
+  ... | inj₂ k = ≈-refl
+  as-poly-map-comp unit      gs' gs δ₀ = id-left
+  as-poly-map-comp (base s)  gs' gs δ₀ = id-left
+  as-poly-map-comp (σ [+] τ) gs' gs δ₀ =
+    ≈-trans ([+]-map-comp _ _ _ _) ([+]-map-cong (as-poly-map-comp σ gs' gs δ₀) (as-poly-map-comp τ gs' gs δ₀))
+  as-poly-map-comp (σ [×] τ) gs' gs δ₀ =
+    ≈-trans ([×]-map-comp _ _ _ _) ([×]-map-cong (as-poly-map-comp σ gs' gs δ₀) (as-poly-map-comp τ gs' gs δ₀))
+  as-poly-map-comp (σ [→] τ) gs' gs δ₀ = id-left
+  as-poly-map-comp {n = n} (μ τ) {δ} {δ'} {δ''} gs' gs δ₀ =
+    ≈-trans (μ-map-comp (as-poly τ δ) δ₀ (as-poly τ δ') δ₀ (as-poly τ δ'') δ₀
+                        (as-poly-map τ gs (extend δ₀ M')) (as-poly-map τ gs' (extend δ₀ M'')) (as-poly-map τ gs (extend δ₀ M''))
+                        (as-poly-map-natural {n = suc n} τ gs (extend-mor (λ i → id _) k)))
+            (μ-map-cong _ _ _ _ (as-poly-map-comp {n = suc n} τ gs' gs _))
+    where
+      M'  = μ-obj (as-poly τ δ') δ₀
+      M'' = μ-obj (as-poly τ δ'') δ₀
+      k   = μ-map (as-poly τ δ') δ₀ (as-poly τ δ'') δ₀ (as-poly-map τ gs' (extend δ₀ M''))
+
+  as-poly-map-natural : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} (gs : ∀ i → δ i ⇒ δ' i)
+                        {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
+                        (fmor (as-poly τ δ') fs ∘ as-poly-map τ gs δ₀) ≈ (as-poly-map τ gs δ₀' ∘ fmor (as-poly τ δ) fs)
+  as-poly-map-natural {n = n} (var i) gs fs with splitAt n i
+  ... | inj₁ j = ≈-sym id-swap
+  ... | inj₂ k = ≈-trans (∘-cong (fmor-const fs) ≈-refl) (≈-trans id-left (≈-trans (≈-sym id-right) (∘-cong ≈-refl (≈-sym (fmor-const fs)))))
+  as-poly-map-natural unit      gs fs = ≈-sym id-swap
+  as-poly-map-natural (base s)  gs fs = ≈-sym id-swap
+  as-poly-map-natural (σ [+] τ) {δ} {δ'} gs fs =
+    ≈-trans (∘-cong (fmor-[+] (as-poly σ δ') (as-poly τ δ') fs) ≈-refl)
+            (≈-trans ([+]-square (as-poly-map-natural σ gs fs) (as-poly-map-natural τ gs fs))
+                     (∘-cong ≈-refl (≈-sym (fmor-[+] (as-poly σ δ) (as-poly τ δ) fs))))
+  as-poly-map-natural (σ [×] τ) {δ} {δ'} gs fs =
+    ≈-trans (∘-cong (fmor-[×] (as-poly σ δ') (as-poly τ δ') fs) ≈-refl)
+            (≈-trans ([×]-square (as-poly-map-natural σ gs fs) (as-poly-map-natural τ gs fs))
+                     (∘-cong ≈-refl (≈-sym (fmor-[×] (as-poly σ δ) (as-poly τ δ) fs))))
+  as-poly-map-natural (σ [→] τ) gs fs = ≈-sym id-swap
+  as-poly-map-natural {n = n} (μ τ) {δ} {δ'} gs {δ₀} {δ₀'} fs = begin
+      fmor (Poly.μ (as-poly τ δ')) fs ∘ μ-map (as-poly τ δ) δ₀ (as-poly τ δ') δ₀ (as-poly-map τ gs (extend δ₀ M'))
+    ≈⟨ ∘-cong (fmor-μ _ fs) ≈-refl ⟩
+      μ-map (as-poly τ δ') δ₀ (as-poly τ δ') δ₀' (fmor (as-poly τ δ') (extend-mor fs (id _)))
+        ∘ μ-map (as-poly τ δ) δ₀ (as-poly τ δ') δ₀ (as-poly-map τ gs (extend δ₀ M'))
+    ≈⟨ μ-map-comp (as-poly τ δ) δ₀ (as-poly τ δ') δ₀ (as-poly τ δ') δ₀'
+                  (as-poly-map τ gs (extend δ₀ M')) (fmor (as-poly τ δ') (extend-mor fs (id _))) (as-poly-map τ gs (extend δ₀ N'))
+                  (as-poly-map-natural {n = suc n} τ gs (extend-mor (λ i → id _) (μ-map (as-poly τ δ') δ₀ (as-poly τ δ') δ₀' (fmor (as-poly τ δ') (extend-mor fs (id _)))))) ⟩
+      μ-map (as-poly τ δ) δ₀ (as-poly τ δ') δ₀' (fmor (as-poly τ δ') (extend-mor fs (id _)) ∘ as-poly-map τ gs (extend δ₀ N'))
+    ≈⟨ μ-map-cong _ _ _ _ (as-poly-map-natural {n = suc n} τ gs (extend-mor fs (id _))) ⟩
+      μ-map (as-poly τ δ) δ₀ (as-poly τ δ') δ₀' (as-poly-map τ gs (extend δ₀' N') ∘ fmor (as-poly τ δ) (extend-mor fs (id _)))
+    ≈˘⟨ μ-map-comp (as-poly τ δ) δ₀ (as-poly τ δ) δ₀' (as-poly τ δ') δ₀'
+                   (fmor (as-poly τ δ) (extend-mor fs (id _))) (as-poly-map τ gs (extend δ₀' N')) (fmor (as-poly τ δ) (extend-mor fs (id _)))
+                   (fmor-extend-swap (as-poly τ δ) fs _) ⟩
+      μ-map (as-poly τ δ) δ₀' (as-poly τ δ') δ₀' (as-poly-map τ gs (extend δ₀' N'))
+        ∘ μ-map (as-poly τ δ) δ₀ (as-poly τ δ) δ₀' (fmor (as-poly τ δ) (extend-mor fs (id _)))
+    ≈˘⟨ ∘-cong ≈-refl (fmor-μ _ fs) ⟩
+      as-poly-map (μ τ) gs δ₀' ∘ fmor (Poly.μ (as-poly τ δ)) fs
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      M' = μ-obj (as-poly τ δ') δ₀
+      N' = μ-obj (as-poly τ δ') δ₀'
+
+cast : ∀ {n} {P P' : Poly R.cat n} → P ≡ P' → (δ₀ : Fin n → obj) → fobj μ-obj P δ₀ ⇒ fobj μ-obj P' δ₀
+cast e δ₀ = ≡-to-⇒ (cong (λ P → fobj μ-obj P δ₀) e)
+
+cast-natural : ∀ {n} {P P' : Poly R.cat n} (e : P ≡ P') {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
+               (fmor P' fs ∘ cast e δ₀) ≈ (cast e δ₀' ∘ fmor P fs)
+cast-natural refl fs = ≈-trans id-right (≈-sym id-left)
+
+cast-+ : ∀ {n} {P P' Q Q' : Poly R.cat n} (e₁ : P ≡ P') (e₂ : Q ≡ Q') (δ₀ : Fin n → obj) →
+         cast (cong₂ Poly._+_ e₁ e₂) δ₀ ≈ [+]-map (cast e₁ δ₀) (cast e₂ δ₀)
+cast-+ refl refl δ₀ = ≈-sym [+]-map-id
+
+cast-× : ∀ {n} {P P' Q Q' : Poly R.cat n} (e₁ : P ≡ P') (e₂ : Q ≡ Q') (δ₀ : Fin n → obj) →
+         cast (cong₂ Poly._×_ e₁ e₂) δ₀ ≈ [×]-map (cast e₁ δ₀) (cast e₂ δ₀)
+cast-× refl refl δ₀ = ≈-sym [×]-map-id
+
+cast-μ : ∀ {n} {P P' : Poly R.cat (suc n)} (e : P ≡ P') (δ₀ : Fin n → obj) →
+         cast (cong Poly.μ e) δ₀ ≈ μ-map P δ₀ P' δ₀ (cast e (extend δ₀ (μ-obj P' δ₀)))
+cast-μ refl δ₀ = ≈-sym (μ-map-id _ _)
+
+as-poly-map-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (n + Δ₁)) {δ δ' : Fin Δ₂ → obj} (gs : ∀ i → δ i ⇒ δ' i)
+                  (δ₀ : Fin n → obj) →
+                  (cast (as-poly-ren ρ τ δ') δ₀ ∘ as-poly-map (extᵗⁿ n ρ *ᵗ τ) gs δ₀)
+                    ≈ (as-poly-map τ (λ i → gs (ρ i)) δ₀ ∘ cast (as-poly-ren ρ τ δ) δ₀)
+as-poly-map-ren {n = n} ρ (var i) gs δ₀ with splitAt n i | splitAt n (extᵗⁿ n ρ i) | splitAt-extᵗⁿ n ρ i
+... | inj₁ j | .(inj₁ j)     | refl = ≈-refl
+... | inj₂ k | .(inj₂ (ρ k)) | refl = ≈-trans id-left (≈-sym id-right)
+as-poly-map-ren ρ unit      gs δ₀ = ≈-refl
+as-poly-map-ren ρ (base s)  gs δ₀ = ≈-refl
+as-poly-map-ren ρ (σ [+] τ) {δ} {δ'} gs δ₀ =
+  ≈-trans (∘-cong (cast-+ (as-poly-ren ρ σ δ') (as-poly-ren ρ τ δ') δ₀) ≈-refl)
+          (≈-trans ([+]-square (as-poly-map-ren ρ σ gs δ₀) (as-poly-map-ren ρ τ gs δ₀))
+                   (∘-cong ≈-refl (≈-sym (cast-+ (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀))))
+as-poly-map-ren ρ (σ [×] τ) {δ} {δ'} gs δ₀ =
+  ≈-trans (∘-cong (cast-× (as-poly-ren ρ σ δ') (as-poly-ren ρ τ δ') δ₀) ≈-refl)
+          (≈-trans ([×]-square (as-poly-map-ren ρ σ gs δ₀) (as-poly-map-ren ρ τ gs δ₀))
+                   (∘-cong ≈-refl (≈-sym (cast-× (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀))))
+as-poly-map-ren ρ (σ [→] τ) gs δ₀ = ≈-refl
+as-poly-map-ren {n = n} ρ (μ τ) {δ} {δ'} gs δ₀ = begin
+    cast (cong Poly.μ eq') δ₀ ∘ μ-map Ar δ₀ Ar' δ₀ (as-poly-map (extᵗⁿ (suc n) ρ *ᵗ τ) gs (extend δ₀ (μ-obj Ar' δ₀)))
+  ≈⟨ ∘-cong (cast-μ eq' δ₀) ≈-refl ⟩
+    μ-map Ar' δ₀ A' δ₀ (cast eq' (extend δ₀ (μ-obj A' δ₀))) ∘ μ-map Ar δ₀ Ar' δ₀ (as-poly-map (extᵗⁿ (suc n) ρ *ᵗ τ) gs (extend δ₀ (μ-obj Ar' δ₀)))
+  ≈⟨ μ-map-comp Ar δ₀ Ar' δ₀ A' δ₀
+                (as-poly-map (extᵗⁿ (suc n) ρ *ᵗ τ) gs (extend δ₀ (μ-obj Ar' δ₀))) (cast eq' (extend δ₀ (μ-obj A' δ₀)))
+                (as-poly-map (extᵗⁿ (suc n) ρ *ᵗ τ) gs (extend δ₀ (μ-obj A' δ₀)))
+                (as-poly-map-natural {n = suc n} (extᵗⁿ (suc n) ρ *ᵗ τ) gs (extend-mor (λ i → id _) (μ-map Ar' δ₀ A' δ₀ (cast eq' (extend δ₀ (μ-obj A' δ₀)))))) ⟩
+    μ-map Ar δ₀ A' δ₀ (cast eq' (extend δ₀ (μ-obj A' δ₀)) ∘ as-poly-map (extᵗⁿ (suc n) ρ *ᵗ τ) gs (extend δ₀ (μ-obj A' δ₀)))
+  ≈⟨ μ-map-cong _ _ _ _ (as-poly-map-ren {n = suc n} ρ τ gs _) ⟩
+    μ-map Ar δ₀ A' δ₀ (as-poly-map τ (λ i → gs (ρ i)) (extend δ₀ (μ-obj A' δ₀)) ∘ cast eq (extend δ₀ (μ-obj A' δ₀)))
+  ≈˘⟨ μ-map-comp Ar δ₀ A δ₀ A' δ₀
+                 (cast eq (extend δ₀ (μ-obj A δ₀))) (as-poly-map τ (λ i → gs (ρ i)) (extend δ₀ (μ-obj A' δ₀))) (cast eq (extend δ₀ (μ-obj A' δ₀)))
+                 (cast-natural eq _) ⟩
+    μ-map A δ₀ A' δ₀ (as-poly-map τ (λ i → gs (ρ i)) (extend δ₀ (μ-obj A' δ₀))) ∘ μ-map Ar δ₀ A δ₀ (cast eq (extend δ₀ (μ-obj A δ₀)))
+  ≈˘⟨ ∘-cong ≈-refl (cast-μ eq δ₀) ⟩
+    as-poly-map (μ τ) (λ i → gs (ρ i)) δ₀ ∘ cast (cong Poly.μ eq) δ₀
+  ∎
+  where
+    open ≈-Reasoning isEquiv
+    Ar  = as-poly (extᵗⁿ (suc n) ρ *ᵗ τ) δ
+    Ar' = as-poly (extᵗⁿ (suc n) ρ *ᵗ τ) δ'
+    A   = as-poly τ (λ i → δ (ρ i))
+    A'  = as-poly τ (λ i → δ' (ρ i))
+    eq  = as-poly-ren ρ τ δ
+    eq' = as-poly-ren ρ τ δ'
 
 -- Freezing the poly-variables δ₀ into the environment (with X at position 0) reshuffles the
 -- combined context only up to pointwise equality.

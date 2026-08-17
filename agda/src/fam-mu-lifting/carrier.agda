@@ -88,6 +88,8 @@ Lf = LfS.fobj
 Lf-map : ∀ {X Y : Obj} → Mor X Y → Mor (Lf X) (Lf Y)
 Lf-map = LfS.fmor
 
+open LfS public using () renaming (fmor-cong to Lf-map-cong; fmor-id to Lf-map-id; fmor-comp to Lf-map-comp)
+
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
                  {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
@@ -106,7 +108,7 @@ prod-m-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} 
 prod-m-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
 
 open polynomial-functor.Interp products strongCoproducts LfS public
-  using (fobj; HasMu; HasMuLaws; _∘co_) renaming (strong-Lmap to strong-Lf-map)
+  using (fobj; extend-mor; HasMu; HasMuLaws; _∘co_) renaming (strong-Lmap to strong-Lf-map)
 
 -- The action of the lifting on a family morphism in context is fibrewise the transport.
 strong-Lf-map-transf : ∀ {Γ X Y : Obj} (f : Mor (Fam𝒞-P.prod Γ X) Y) {γ x} →

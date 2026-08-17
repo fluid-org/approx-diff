@@ -17,4 +17,5 @@ open fam-mu-lifting.laws os es CM BP 𝟙c public
 
 open HasMu.WithTerminal hasMu (terminal T) public using (fmor; μ-map)
 open HasMuLaws.WithTerminal hasMuLaws (terminal T) public
-  using (fmor-cong; fmor-id; fmor-comp; fmor-μ; μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
+  using (fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
+         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)

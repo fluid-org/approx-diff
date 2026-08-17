@@ -4,7 +4,8 @@ import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Nat using (ℕ; suc)
 open import Level using (_⊔_)
-open import categories using (Category; HasProducts; HasStrongCoproducts; HasTerminal; coKleisli-prod; module Unitor)
+open import categories using (Category; HasProducts; HasCoproducts; HasStrongCoproducts; HasTerminal; coKleisli-prod;
+                              strong-coproducts→coproducts; module Unitor)
 open import prop-setoid using (module ≈-Reasoning)
 open import functor using (Functor; StrongFunctor)
 
@@ -32,7 +33,7 @@ module Interp
   open HasProducts 𝒞P
   open HasStrongCoproducts 𝒞SC
   open StrongFunctor 𝒞L using (strengthᵣ; strengthᵣ-natural; strengthᵣ-p₂; strengthᵣ-assoc)
-    renaming (fobj to L; fmor to Lmap; fmor-cong to Lmap-cong; fmor-comp to Lmap-comp)
+    renaming (fobj to L; fmor to Lmap; fmor-cong to Lmap-cong; fmor-id to Lmap-id; fmor-comp to Lmap-comp)
 
   -- The action of L on morphisms in context: its action after the strength. A congruence, and a
   -- functor for the composition in context.
@@ -544,6 +545,66 @@ module Interp
             where
               open ≈-Reasoning isEquiv
               SP = strong-fmor P (strong-extend-mor (λ i → p₂) fold-v)
+
+      private
+        𝟙 = HasTerminal.witness 𝒞T
+
+        sect-p₂-id : ∀ {X} → (sect ∘ p₂ {𝟙} {X}) ≈ id _
+        sect-p₂-id = ≈-trans (sect-pre _) (≈-trans (pair-cong (to-terminal-unique _ _) ≈-refl) pair-ext0)
+
+        strengthᵣ-sect : ∀ {X} → (strengthᵣ {𝟙} {X} ∘ sect) ≈ Lmap sect
+        strengthᵣ-sect = begin
+            strengthᵣ ∘ sect
+          ≈˘⟨ id-left ⟩
+            id _ ∘ (strengthᵣ ∘ sect)
+          ≈˘⟨ ∘-cong (≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong sect-p₂-id) Lmap-id)) ≈-refl ⟩
+            (Lmap sect ∘ Lmap p₂) ∘ (strengthᵣ ∘ sect)
+          ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
+            Lmap sect ∘ ((Lmap p₂ ∘ strengthᵣ) ∘ sect)
+          ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong strengthᵣ-p₂ ≈-refl) (pair-p₂ _ _)) ⟩
+            Lmap sect ∘ id _
+          ≈⟨ id-right ⟩
+            Lmap sect
+          ∎ where open ≈-Reasoning isEquiv
+
+        strengthᵣ-unit : ∀ {X} → strengthᵣ {𝟙} {X} ≈ (Lmap sect ∘ p₂)
+        strengthᵣ-unit =
+          ≈-trans (≈-sym id-right)
+                  (≈-trans (∘-cong ≈-refl (≈-sym sect-p₂-id))
+                           (≈-trans (≈-sym (assoc _ _ _)) (∘-cong strengthᵣ-sect ≈-refl)))
+
+        strong-Lmap-unit : ∀ {X Y} (h : prod 𝟙 X ⇒ Y) → strong-Lmap h ≈ (Lmap (h ∘ sect) ∘ p₂)
+        strong-Lmap-unit h =
+          ≈-trans (∘-cong ≈-refl strengthᵣ-unit) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (≈-sym (Lmap-comp _ _)) ≈-refl))
+
+        strong-prod-m-sect : ∀ {X₁ X₂ Y₁ Y₂} (f : prod 𝟙 X₁ ⇒ Y₁) (g : prod 𝟙 X₂ ⇒ Y₂) →
+                             (strong-prod-m f g ∘ sect) ≈ prod-m (f ∘ sect) (g ∘ sect)
+        strong-prod-m-sect f g =
+          ≈-trans (pair-natural _ _ _)
+                  (pair-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (≈-sym (sect-natural p₁))) (≈-sym (assoc _ _ _))))
+                             (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (≈-sym (sect-natural p₂))) (≈-sym (assoc _ _ _)))))
+
+        module CP = HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
+
+      fmor-const : ∀ {k} {A : obj} {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) → fmor (const A) fs ≈ id A
+      fmor-const fs = pair-p₂ _ _
+
+      fmor-var : ∀ {k} (i : Fin k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) → fmor (var i) fs ≈ fs i
+      fmor-var i fs = ≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) id-right)
+
+      fmor-+ : ∀ {k} (P Q : Poly 𝒞 k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
+               fmor (P + Q) fs ≈ CP.coprod-m (Lmap (fmor P fs)) (Lmap (fmor Q fs))
+      fmor-+ P Q fs =
+        ∘-cong (copair-cong (≈-trans (∘-cong ≈-refl (strong-Lmap-unit _)) (≈-sym (assoc _ _ _)))
+                            (≈-trans (∘-cong ≈-refl (strong-Lmap-unit _)) (≈-sym (assoc _ _ _))))
+               ≈-refl
+
+      fmor-× : ∀ {k} (P Q : Poly 𝒞 k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
+               fmor (P × Q) fs ≈ Lmap (prod-m (fmor P fs) (fmor Q fs))
+      fmor-× P Q fs =
+        ≈-trans (∘-cong (strong-Lmap-unit _) ≈-refl)
+                (≈-trans (assoc _ _ _)
+                         (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-trans id-right (Lmap-cong (strong-prod-m-sect _ _)))))
 
       -- The functorial action at a μ-polynomial is the induced map of the action at its body.
       fmor-μ : ∀ {k} (P : Poly 𝒞 (suc k)) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
