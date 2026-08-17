@@ -60,6 +60,7 @@ open products P public  -- Fam-level products
 module Fam𝒞-P = HasProducts products
 open _⇒f_ public
 open polynomial-functor using (extend) public
+open polynomial-functor using (StrongEndofunctor)
 open polynomial-functor.Poly public
 Poly = polynomial-functor.Poly cat
 open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_) public
@@ -99,43 +100,45 @@ prod-m-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} 
              (f ∘ f') ≈ id a₂ → (h ∘ h') ≈ id b₂ → (prod-m f h ∘ prod-m f' h') ≈ id (prod a₂ b₂)
 prod-m-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
 
--- The transport across the lifting as a family morphism: fibrewise under-root.
-under-rootF : ∀ {Γ X Y : Obj} → Mor (Fam𝒞-P.prod Γ X) Y → Mor (Fam𝒞-P.prod Γ (Lf X)) (Lf Y)
-under-rootF f .idxf = f .idxf
-under-rootF f .famf ._⇒f_.transf (γ , x) = under-root (f .famf ._⇒f_.transf (γ , x))
-under-rootF {Γ} {X} {Y} f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
+-- The action of the lifting on family morphisms in context: fibrewise under-root.
+strong-Lf-map : ∀ {Γ X Y : Obj} → Mor (Fam𝒞-P.prod Γ X) Y → Mor (Fam𝒞-P.prod Γ (Lf X)) (Lf Y)
+strong-Lf-map f .idxf = f .idxf
+strong-Lf-map f .famf ._⇒f_.transf (γ , x) = under-root (f .famf ._⇒f_.transf (γ , x))
+strong-Lf-map {Γ} {X} {Y} f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
   under-root-natural (Γ .fam .subst γ≈) (X .fam .subst x≈)
     (Y .fam .subst (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
     (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
     (f .famf ._⇒f_.natural (γ≈ , x≈))
 
-under-rootF-cong : ∀ {Γ X Y : Obj} {f g : Mor (Fam𝒞-P.prod Γ X) Y} →
-                   f ≃ g → under-rootF f ≃ under-rootF g
-under-rootF-cong E ._≃_.idxf-eq = E ._≃_.idxf-eq
-under-rootF-cong E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+strong-Lf-map-cong : ∀ {Γ X Y : Obj} {f g : Mor (Fam𝒞-P.prod Γ X) Y} →
+                     f ≃ g → strong-Lf-map f ≃ strong-Lf-map g
+strong-Lf-map-cong E ._≃_.idxf-eq = E ._≃_.idxf-eq
+strong-Lf-map-cong E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
   ≈-trans (under-root-post _ _) (under-root-cong (E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x}))
 
-under-rootF-co : ∀ {Γ X Y Z : Obj} (f : Mor (Fam𝒞-P.prod Γ Y) Z) (g : Mor (Fam𝒞-P.prod Γ X) Y) →
-                 (Fam𝒞._∘_ (under-rootF f) (Fam𝒞-P.pair Fam𝒞-P.p₁ (under-rootF g)))
-                   ≃ under-rootF (Fam𝒞._∘_ f (Fam𝒞-P.pair Fam𝒞-P.p₁ g))
-under-rootF-co f g ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) =
+strong-Lf-map-comp : ∀ {Γ X Y Z : Obj} (f : Mor (Fam𝒞-P.prod Γ Y) Z) (g : Mor (Fam𝒞-P.prod Γ X) Y) →
+                     (Fam𝒞._∘_ (strong-Lf-map f) (Fam𝒞-P.pair Fam𝒞-P.p₁ (strong-Lf-map g)))
+                       ≃ strong-Lf-map (Fam𝒞._∘_ f (Fam𝒞-P.pair Fam𝒞-P.p₁ g))
+strong-Lf-map-comp f g ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) =
   f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , g .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈))
-under-rootF-co {Z = Z} f g ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+strong-Lf-map-comp {Z = Z} f g ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
   ≈-trans (∘-cong (Lf Z .fam .refl*) ≈-refl)
           (≈-trans id-left (≈-trans id-left (≈-trans (under-root-co _ _) (under-root-cong (≈-sym id-left)))))
 
-under-rootF-p₂ : ∀ {Γ X : Obj} → under-rootF (Fam𝒞-P.p₂ {Γ} {X}) ≃ Fam𝒞-P.p₂ {Γ} {Lf X}
-under-rootF-p₂ ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) = x≈
-under-rootF-p₂ {X = X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+strong-Lf-map-p₂ : ∀ {Γ X : Obj} → strong-Lf-map (Fam𝒞-P.p₂ {Γ} {X}) ≃ Fam𝒞-P.p₂ {Γ} {Lf X}
+strong-Lf-map-p₂ ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) = x≈
+strong-Lf-map-p₂ {X = X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
   ≈-trans (∘-cong (Lf X .fam .refl*) ≈-refl) (≈-trans id-left under-root-p₂)
 
-open polynomial-functor.Interp products strongCoproducts Lf under-rootF public
-  using (fobj; HasMu; HasMuLaws; UnderLaws; module MuConsequences; _∘co_)
+strongLf : StrongEndofunctor products
+strongLf .StrongEndofunctor.L                = Lf
+strongLf .StrongEndofunctor.strong-Lmap      = strong-Lf-map
+strongLf .StrongEndofunctor.strong-Lmap-cong = strong-Lf-map-cong
+strongLf .StrongEndofunctor.strong-Lmap-comp = strong-Lf-map-comp
+strongLf .StrongEndofunctor.strong-Lmap-p₂   = strong-Lf-map-p₂
 
-underLaws : UnderLaws
-underLaws .UnderLaws.under-cong = under-rootF-cong
-underLaws .UnderLaws.under-co   = under-rootF-co
-underLaws .UnderLaws.under-p₂   = under-rootF-p₂
+open polynomial-functor.Interp products strongCoproducts strongLf public
+  using (fobj; HasMu; HasMuLaws; _∘co_)
 
 private
   module CME = CMonEnriched CM

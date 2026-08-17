@@ -21,18 +21,30 @@ extend : ∀ {n} {ℓ} {A : Set ℓ} → (Fin n → A) → A → Fin (suc n) →
 extend δ x Fin.zero    = x
 extend δ x (Fin.suc i) = δ i
 
--- Interpretation of the polynomials with an endofunctor, strong for the products, applied at every
--- sum and product; initial algebras for the μ-polynomials, with the catamorphism in context.
+-- An endofunctor with its action on morphisms in context: a congruence, preserving composition in
+-- context, and taking the projection to the projection.
+record StrongEndofunctor {o m e} {𝒞 : Category o m e} (𝒞P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
+  open Category 𝒞
+  open HasProducts 𝒞P
+  field
+    L : obj → obj
+    strong-Lmap : ∀ {Γ X Y} → prod Γ X ⇒ Y → prod Γ (L X) ⇒ L Y
+    strong-Lmap-cong : ∀ {Γ X Y} {f g : prod Γ X ⇒ Y} → f ≈ g → strong-Lmap f ≈ strong-Lmap g
+    strong-Lmap-comp : ∀ {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
+                       (strong-Lmap f ∘ pair p₁ (strong-Lmap g)) ≈ strong-Lmap (f ∘ pair p₁ g)
+    strong-Lmap-p₂   : ∀ {Γ X} → strong-Lmap (p₂ {Γ} {X}) ≈ p₂
+
+-- Interpretation of the polynomials with a strong endofunctor applied at every sum and product;
+-- initial algebras for the μ-polynomials, with the catamorphism in context, and the laws of the fold.
 module Interp
   {o m e} {𝒞 : Category o m e} (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
-  (L : Category.obj 𝒞 → Category.obj 𝒞)
-  (under : ∀ {Γ X Y} → Category._⇒_ 𝒞 (HasProducts.prod 𝒞P Γ X) Y →
-                       Category._⇒_ 𝒞 (HasProducts.prod 𝒞P Γ (L X)) (L Y))
+  (𝒞L : StrongEndofunctor 𝒞P)
   where
 
   open Category 𝒞
   open HasProducts 𝒞P
   open HasStrongCoproducts 𝒞SC
+  open StrongEndofunctor 𝒞L
 
   fobj : (μ-obj : ∀ {k} → Poly 𝒞 (suc k) → (Fin k → obj) → obj) → ∀ {n} → Poly 𝒞 n → (Fin n → obj) → obj
   fobj μ-obj (const A) δ = A
@@ -59,8 +71,8 @@ module Interp
                     (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (fobj μ-obj P δ) ⇒ fobj μ-obj P δ'
       strong-fmor (const A) fs = p₂
       strong-fmor (var i)   fs = fs i
-      strong-fmor (P + Q)   fs = copair (in₁ ∘ under (strong-fmor P fs)) (in₂ ∘ under (strong-fmor Q fs))
-      strong-fmor (P × Q)   fs = under (strong-prod-m (strong-fmor P fs) (strong-fmor Q fs))
+      strong-fmor (P + Q)   fs = copair (in₁ ∘ strong-Lmap (strong-fmor P fs)) (in₂ ∘ strong-Lmap (strong-fmor Q fs))
+      strong-fmor (P × Q)   fs = strong-Lmap (strong-prod-m (strong-fmor P fs) (strong-fmor Q fs))
       strong-fmor (μ P)     fs = strong-μ-fmor P fs
 
       strong-μ-fmor : ∀ {k} {Γ : obj} (P : Poly 𝒞 (suc k)) {δ δ' : Fin k → obj} →
@@ -81,20 +93,8 @@ module Interp
              (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) (h : prod Γ (μ-obj P δ) ⇒ A) →
              (h ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h)) → h ≈ ⦅ alg ⦆
 
-  -- The laws of the transport across the endofunctor: a congruence, functorial for the composition
-  -- in context, and the identity on the projection.
-  record UnderLaws : Set (o ⊔ m ⊔ e) where
-    field
-      under-cong : ∀ {Γ X Y} {f g : prod Γ X ⇒ Y} → f ≈ g → under f ≈ under g
-      under-co   : ∀ {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) → (under f ∘co under g) ≈ under (f ∘co g)
-      under-p₂   : ∀ {Γ X} → under (p₂ {Γ} {X}) ≈ p₂
-
-  -- Consequences of the initial-algebra laws: the fold respects its algebra, fusion and reflection,
-  -- and the strong action is a functor in the argument maps.
-  module MuConsequences (Mu : HasMu) (Laws : HasMuLaws Mu) (UL : UnderLaws) where
-    open HasMu Mu
-    open HasMuLaws Laws
-    open UnderLaws UL
+    -- Laws of the fold derived from the initial-algebra laws: the fold respects its algebra, fusion and
+    -- reflection, and the strong action is a functor in the argument maps.
     private module CoK {Γ : obj} = Category (coKleisli-prod 𝒞P Γ)
 
     ⦅⦆-cong : ∀ {k} {Γ A : obj} (P : Poly 𝒞 (suc k)) (δ : Fin k → obj)
@@ -166,10 +166,10 @@ module Interp
       strong-fmor-cong (const A) es = ≈-refl
       strong-fmor-cong (var i)   es = es i
       strong-fmor-cong (P + Q)   es =
-        copair-cong (∘-cong ≈-refl (under-cong (strong-fmor-cong P es)))
-                    (∘-cong ≈-refl (under-cong (strong-fmor-cong Q es)))
+        copair-cong (∘-cong ≈-refl (strong-Lmap-cong (strong-fmor-cong P es)))
+                    (∘-cong ≈-refl (strong-Lmap-cong (strong-fmor-cong Q es)))
       strong-fmor-cong (P × Q)   es =
-        under-cong (strong-prod-m-cong (strong-fmor-cong P es) (strong-fmor-cong Q es))
+        strong-Lmap-cong (strong-prod-m-cong (strong-fmor-cong P es) (strong-fmor-cong Q es))
       strong-fmor-cong (μ P)     es = strong-μ-fmor-cong P es
 
       strong-μ-fmor-cong : ∀ {k} {Γ : obj} (P : Poly 𝒞 (suc k)) {δ δ' : Fin k → obj}
@@ -199,11 +199,11 @@ module Interp
       strong-fmor-comp (var i)   gs fs = ≈-refl
       strong-fmor-comp (P + Q)   gs fs =
         ≈-trans (copair-comp _ _ _ _)
-                (copair-cong (∘-cong ≈-refl (≈-trans (under-co _ _) (under-cong (strong-fmor-comp P gs fs))))
-                             (∘-cong ≈-refl (≈-trans (under-co _ _) (under-cong (strong-fmor-comp Q gs fs)))))
+                (copair-cong (∘-cong ≈-refl (≈-trans (strong-Lmap-comp _ _) (strong-Lmap-cong (strong-fmor-comp P gs fs))))
+                             (∘-cong ≈-refl (≈-trans (strong-Lmap-comp _ _) (strong-Lmap-cong (strong-fmor-comp Q gs fs)))))
       strong-fmor-comp (P × Q)   gs fs =
-        ≈-trans (under-co _ _)
-                (under-cong (≈-trans (strong-prod-m-comp _ _ _ _)
+        ≈-trans (strong-Lmap-comp _ _)
+                (strong-Lmap-cong (≈-trans (strong-prod-m-comp _ _ _ _)
                                      (strong-prod-m-cong (strong-fmor-comp P gs fs) (strong-fmor-comp Q gs fs))))
       strong-fmor-comp (μ P)     gs fs = strong-μ-fmor-comp P gs fs
 
@@ -285,13 +285,13 @@ module Interp
       strong-fmor-p₂ (const A) = ≈-refl
       strong-fmor-p₂ (var i)   = ≈-refl
       strong-fmor-p₂ (P + Q)   =
-        ≈-trans (copair-cong (∘-cong ≈-refl (≈-trans (under-cong (strong-fmor-p₂ P)) under-p₂))
-                             (∘-cong ≈-refl (≈-trans (under-cong (strong-fmor-p₂ Q)) under-p₂)))
+        ≈-trans (copair-cong (∘-cong ≈-refl (≈-trans (strong-Lmap-cong (strong-fmor-p₂ P)) strong-Lmap-p₂))
+                             (∘-cong ≈-refl (≈-trans (strong-Lmap-cong (strong-fmor-p₂ Q)) strong-Lmap-p₂)))
                 copair-ext0
       strong-fmor-p₂ (P × Q)   =
-        ≈-trans (under-cong (≈-trans (strong-prod-m-cong (strong-fmor-p₂ P) (strong-fmor-p₂ Q))
+        ≈-trans (strong-Lmap-cong (≈-trans (strong-prod-m-cong (strong-fmor-p₂ P) (strong-fmor-p₂ Q))
                                      (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext _))))
-                under-p₂
+                strong-Lmap-p₂
       strong-fmor-p₂ (μ P)     = strong-μ-fmor-p₂ P
 
       strong-μ-fmor-p₂ : ∀ {k} {Γ : obj} (P : Poly 𝒞 (suc k)) {δ : Fin k → obj} →
