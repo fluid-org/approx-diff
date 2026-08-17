@@ -1,22 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Agreement between the operational relation and the higher-order model, on the fragment without
--- μ-types, as a logical relation. A value is related to an index of its type's
--- interpretation by recursion on the type, behaviourally at arrow types: for related arguments and
--- any derivation of the body, the result is related. Over that, a dependence vector on the value's
--- positions is related to an element of the fibre: at first-order types position by position, at
--- arrow types the root exactly and the payload through application, comparing, for any added
--- source weight, the body's dependence through the root and that weight as source and the cells
--- and the argument as environment with the elimination constant at that source plus the
--- evaluation of the payload and the index's fibre map at the argument. Inputs are a source
--- weight and an environment vector, and the environment relation lets a cell carry further control
--- dependence below the elimination constant at the source in the additive order, which is how the
--- operational semantics attaches control dependence to values inside a branch where the
--- interpretation attaches it to the branch's result once. The fundamental lemma, by induction on
--- the term over all derivations, says the relation applied to the inputs is related to the term's
--- fibre map at the environment's denotation plus the elimination constant at the source. That the
--- constant absorbs such dependence needs the elimination weight to be idempotent and to absorb its
--- multiples under addition, and addition to be idempotent, as in a lattice.
+-- The fundamental lemma on the fragment without μ-types, by induction on the term over all
+-- derivations: a term's value is related to its index at a related environment, and the relation
+-- applied to the inputs is related to the term's fibre map plus the elimination constant at the
+-- source. Soundness at μ-free first-order types follows.
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Fin using (Fin; zero; suc)
