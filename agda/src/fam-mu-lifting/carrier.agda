@@ -49,7 +49,7 @@ open Lc public
   using (L; root; inj; copair-root; copair-inj; lifting-ext;
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
          L-const; L-const-cong; L-const-natural;
-         under-root; under-root-cong; under-root-natural;
+         under-root; under-root-cong; under-root-natural; under-root-post;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
 open Obj public
@@ -100,6 +100,16 @@ fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
 fam-subst-iso₁ {I} F e =
   ≈-trans (≈-sym (F .trans* e (I .Setoid.isEquivalence .sym e))) (F .refl*)
 
+fam-subst-iso₂ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
+                 {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
+                 (F .subst (I .Setoid.isEquivalence .sym e) ∘ F .subst e) ≈ id _
+fam-subst-iso₂ {I} F e =
+  ≈-trans (≈-sym (F .trans* (I .Setoid.isEquivalence .sym e) e)) (F .refl*)
+
+prod-m-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} {h : b₁ ⇒ b₂} {h' : b₂ ⇒ b₁} →
+             (f ∘ f') ≈ id a₂ → (h ∘ h') ≈ id b₂ → (prod-m f h ∘ prod-m f' h') ≈ id (prod a₂ b₂)
+prod-m-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
+
 -- The transport across the lifting as a family morphism: fibrewise under-root.
 under-rootF : ∀ {Γ X Y : Obj} → Mor (Fam𝒞-P.prod Γ X) Y → Mor (Fam𝒞-P.prod Γ (Lf X)) (Lf Y)
 under-rootF f .idxf = f .idxf
@@ -109,6 +119,12 @@ under-rootF {Γ} {X} {Y} f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (
     (Y .fam .subst (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
     (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
     (f .famf ._⇒f_.natural (γ≈ , x≈))
+
+under-rootF-cong : ∀ {Γ X Y : Obj} {f g : Mor (Fam𝒞-P.prod Γ X) Y} →
+                   f ≃ g → under-rootF f ≃ under-rootF g
+under-rootF-cong E ._≃_.idxf-eq = E ._≃_.idxf-eq
+under-rootF-cong E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+  ≈-trans (under-root-post _ _) (under-root-cong (E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x}))
 
 private
   module CME = CMonEnriched CM
