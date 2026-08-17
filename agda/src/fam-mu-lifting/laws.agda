@@ -714,41 +714,106 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   cmb γ = RX.ibase (λ { Fin.zero t → h-idx γ t ; (Fin.suc i) a → a })
                    (λ { Fin.zero p → h-resp (Γ .idx .isEquivalence .refl) p ; (Fin.suc i) p → p })
 
-  -- The application after the bridge reindexing, paired with the one reindexing they compose to.
-  data CRel (γ : Γ .idx .Carrier) :
-            ∀ {j} {ρX : Fin j → Fin (suc n) ⊎ Sort (suc n)} {ρ : Fin j → Fin n ⊎ Sort n}
-            {ρ' : Fin j → Fin (suc n) ⊎ Sort (suc n)}
-            {dX : ∀ v → TX.DecoAssign (ρX v)} {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → TA'.DecoAssign (ρ' v)} →
-            FMor ρ ρ' d d' → At.R.MorD ρX ρ dX d → RX.IMorD ρX ρ' →
-            Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
-    cbase : CRel γ fbase At.mor₀ (cmb γ)
-    cbind : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im}
-            (Q : Poly (suc j)) → CRel γ fm md im →
-            CRel γ (fbind Q fm) (At.R.bind Q md) (RX.ibind ∣ Q ∣ im)
+  corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (At.δ' i .idx) a₁ a₂) →
+         _≈s_ (extend δ A i .idx) (RX.iapply (cmb γ₁) i a₁) (fs i .idxf .PS._⇒_.func (γ₂ , a₂))
+  corr Fin.zero    γ≈ {a₁} {a₂} a≈ = h-resp γ≈ {a₁} {a₂} a≈
+  corr (Fin.suc i) γ≈ a≈ = a≈
 
-  mutual
-    comp-W : ∀ {γ} {j} {Q̂ : Poly (suc j)} {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im} →
-             CRel γ fm md im → (t : TX.W ∣ Q̂ ∣ ρX) →
-             TA'.W-≈ (apply-reindex {Q = Q̂} γ fm (At.R.reindex md t)) (RX.ireindex im t)
-    comp-W {Q̂ = Q̂} rel (TX.sup x) = comp-shape Q̂ (cbind Q̂ rel) x
+  module Comp (γ : Γ .idx .Carrier) where
+    private module FRX = FReindex {δA = At.δ'} {δB = extend δ A} (Γ .fam .fm γ)
 
-    comp-shape : ∀ {γ} {j} (S : Poly j) {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im} →
-                 CRel γ fm md im → (a : TX.⟦ ∣ S ∣ ⟧shape ρX) →
-                 TA'.shape≈ ∣ S ∣ ρ' (apply-reindex-shape γ S fm (At.R.reindex-shape ∣ S ∣ md a)) (RX.ireindex-shape ∣ S ∣ im a)
-    comp-shape (const A') rel a = A' .idx .isEquivalence .refl
-    comp-shape (var v)    rel a = comp-el rel v a
-    comp-shape (P' + Q') rel (inj₁ a) = comp-shape P' rel a
-    comp-shape (P' + Q') rel (inj₂ b) = comp-shape Q' rel b
-    comp-shape (P' × Q') rel (a , b) = comp-shape P' rel a , comp-shape Q' rel b
-    comp-shape (μ Q'')   rel t = comp-W {Q̂ = Q''} rel t
+    act : FRX.FAct (cmb γ) (λ v → lift tt) (λ v → lift tt)
+    act = FRX.abase (λ { Fin.zero t → h-fam γ t ; (Fin.suc i) a → p₂ })
 
-    comp-el : ∀ {γ} {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im} →
-              CRel γ fm md im → (v : Fin j) (a : TX.El (ρX v)) →
-              TA'.elEq (ρ' v) (apply-apply γ fm v (At.R.apply md v a)) (RX.iapply im v a)
-    comp-el cbase          Fin.zero    t = A .idx .isEquivalence .refl
-    comp-el cbase          (Fin.suc i) a = TA'.elEq-refl (inj₁ (Fin.suc i)) a
-    comp-el (cbind Q rel)  Fin.zero    a = comp-W {Q̂ = Q} rel a
-    comp-el (cbind Q rel)  (Fin.suc v) a = comp-el rel v a
+    corr-fam : ∀ i {a} →
+               (extend δ A i .fam .subst (corr i (Γ .idx .isEquivalence .refl) (At.δ' i .idx .isEquivalence .refl {a}))
+                ∘ FRX.aapply act i a)
+               ≈ fs i .famf ._⇒f_.transf (γ , a)
+    corr-fam Fin.zero    = ≈-trans (∘-cong (A .fam .refl*) ≈-refl) id-left
+    corr-fam (Fin.suc i) = ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) id-left
+
+    -- The application after the bridge reindexing, paired with the one reindexing they compose to.
+    data CRel : ∀ {j} {ρX : Fin j → Fin (suc n) ⊎ Sort (suc n)} {ρ : Fin j → Fin n ⊎ Sort n}
+                {ρ' : Fin j → Fin (suc n) ⊎ Sort (suc n)}
+                {dX : ∀ v → TX.DecoAssign (ρX v)} {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → TA'.DecoAssign (ρ' v)} →
+                FMor ρ ρ' d d' → At.R.MorD ρX ρ dX d → (im : RX.IMorD ρX ρ') → FRX.FAct im dX d' →
+                Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+      cbase : CRel fbase At.mor₀ (cmb γ) act
+      cbind : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im} {am : FRX.FAct im dX d'}
+              (Q : Poly (suc j)) → CRel fm md im am →
+              CRel (fbind Q fm) (At.R.bind Q md) (RX.ibind ∣ Q ∣ im) (FRX.abind Q im am)
+
+    mutual
+      comp-W : ∀ {j} {Q̂ : Poly (suc j)} {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im}
+               {am : FRX.FAct im dX d'} → CRel fm md im am → (t : TX.W ∣ Q̂ ∣ ρX) →
+               TA'.W-≈ (apply-reindex {Q = Q̂} γ fm (At.R.reindex md t)) (RX.ireindex im t)
+      comp-W {Q̂ = Q̂} rel (TX.sup x) = comp-shape Q̂ (cbind Q̂ rel) x
+
+      comp-shape : ∀ {j} (S : Poly j) {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im}
+                   {am : FRX.FAct im dX d'} → CRel fm md im am → (a : TX.⟦ ∣ S ∣ ⟧shape ρX) →
+                   TA'.shape≈ ∣ S ∣ ρ' (apply-reindex-shape γ S fm (At.R.reindex-shape ∣ S ∣ md a)) (RX.ireindex-shape ∣ S ∣ im a)
+      comp-shape (const A') rel a = A' .idx .isEquivalence .refl
+      comp-shape (var v)    rel a = comp-el rel v a
+      comp-shape (P' + Q') rel (inj₁ a) = comp-shape P' rel a
+      comp-shape (P' + Q') rel (inj₂ b) = comp-shape Q' rel b
+      comp-shape (P' × Q') rel (a , b) = comp-shape P' rel a , comp-shape Q' rel b
+      comp-shape (μ Q'')   rel t = comp-W {Q̂ = Q''} rel t
+
+      comp-el : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im}
+                {am : FRX.FAct im dX d'} → CRel fm md im am → (v : Fin j) (a : TX.El (ρX v)) →
+                TA'.elEq (ρ' v) (apply-apply γ fm v (At.R.apply md v a)) (RX.iapply im v a)
+      comp-el cbase          Fin.zero    t = A .idx .isEquivalence .refl
+      comp-el cbase          (Fin.suc i) a = TA'.elEq-refl (inj₁ (Fin.suc i)) a
+      comp-el (cbind Q rel)  Fin.zero    a = comp-W {Q̂ = Q} rel a
+      comp-el (cbind Q rel)  (Fin.suc v) a = comp-el rel v a
+
+    mutual
+      comp-W-fam : ∀ {j} {Q̂ : Poly (suc j)} {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im}
+                   {am : FRX.FAct im dX d'} (rel : CRel fm md im am) (t : TX.W ∣ Q̂ ∣ ρX) →
+                   (TA'.fib-subst Q̂ d' {x = apply-reindex {Q = Q̂} γ fm (At.R.reindex md t)} {y = RX.ireindex im t}
+                      (comp-W rel t)
+                    ∘ (apply-reindex-fam {Q = Q̂} γ fm (At.R.reindex md t)
+                       ∘ prod-m (id _) (At.R.reindex-fam-W {Q = Q̂} md {t})))
+                   ≈ FRX.freindex-fam {Q = Q̂} am {t}
+      comp-W-fam {Q̂ = Q̂} rel (TX.sup x) = comp-shape-fam Q̂ (cbind Q̂ rel) x
+
+      comp-shape-fam : ∀ {j} (S : Poly j) {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im}
+                       {am : FRX.FAct im dX d'} (rel : CRel fm md im am) (a : TX.⟦ ∣ S ∣ ⟧shape ρX) →
+                       (TA'.fib-shape-subst S d' (comp-shape S rel a)
+                        ∘ (apply-reindex-shape-fam γ S fm (At.R.reindex-shape ∣ S ∣ md a)
+                           ∘ prod-m (id _) (At.R.reindex-fam S md {a})))
+                       ≈ FRX.freindex-shape-fam S am {a}
+      comp-shape-fam (const A') rel a =
+        ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (pair-p₂ _ _) id-left))
+      comp-shape-fam (var v)    rel a = comp-el-fam rel v a
+      comp-shape-fam (P' + Q') rel (inj₁ a) =
+        ≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
+        (≈-trans (under-root-post _ _) (under-root-cong (comp-shape-fam P' rel a)))
+      comp-shape-fam (P' + Q') rel (inj₂ b) =
+        ≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
+        (≈-trans (under-root-post _ _) (under-root-cong (comp-shape-fam Q' rel b)))
+      comp-shape-fam (P' × Q') rel (a , b) =
+        ≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
+        (≈-trans (under-root-post _ _)
+                 (under-root-cong
+                   (≈-trans (∘-cong ≈-refl (strong-prod-m-pre _ _ _ _ _))
+                   (≈-trans (strong-prod-m-post _ _ _ _)
+                            (strong-prod-m-cong (comp-shape-fam P' rel a) (comp-shape-fam Q' rel b))))))
+      comp-shape-fam (μ Q'')   rel t = comp-W-fam {Q̂ = Q''} rel t
+
+      comp-el-fam : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : At.R.MorD ρX ρ dX d} {im}
+                    {am : FRX.FAct im dX d'} (rel : CRel fm md im am) (v : Fin j) (a : TX.El (ρX v)) →
+                    (TA'.fib-el-subst (ρ' v) (d' v) (comp-el rel v a)
+                     ∘ (apply-apply-fam γ fm v (At.R.apply md v a) ∘ prod-m (id _) (At.R.apply-fam md v a)))
+                    ≈ FRX.aapply am v a
+      comp-el-fam cbase          Fin.zero    t =
+        ≈-trans (∘-cong (A .fam .refl*) ≈-refl)
+                (≈-trans id-left (≈-trans (∘-cong ≈-refl prod-m-id) id-right))
+      comp-el-fam cbase          (Fin.suc i) a =
+        ≈-trans (∘-cong (TA'.fib-el-refl* (inj₁ (Fin.suc i)) (lift tt) a) ≈-refl)
+                (≈-trans id-left (≈-trans (pair-p₂ _ _) id-left))
+      comp-el-fam (cbind Q rel)  Fin.zero    a = comp-W-fam {Q̂ = Q} rel a
+      comp-el-fam (cbind Q rel)  (Fin.suc v) a = comp-el-fam rel v a
 
   -- The candidate applied at the shape under the algebra map is the strong action, on indices.
   bridge-idx : ∀ (Q : Poly (suc n)) γ (y : fobj μ-fam Q At.δ' .idx .Carrier) →
@@ -764,12 +829,66 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   bridge-idx (μ Q') γ t =
     TA'.W-≈-trans {x = apply-reindex {Q = Q'} γ fbase (At.R.reindex At.mor₀ t)} {y = RX.ireindex (cmb γ) t}
       (comp-W cbase t)
-      (fuse-idx {Γ = Γ} {sₛ = At.δ'} {sₜ = extend δ A} Q' cmb fs
-         (λ { Fin.zero γ≈ {a₁} {a₂} a≈ → h-resp γ≈ {a₁} {a₂} a≈ ; (Fin.suc i) γ≈ a≈ → a≈ })
+      (fuse-idx {Γ = Γ} {sₛ = At.δ'} {sₜ = extend δ A} Q' cmb fs corr
          (Γ .idx .isEquivalence .refl) {m₁ = t} {m₂ = t} (TX.W-≈-refl t))
+    where open Comp γ
 
--- β on indices: the fold after the algebra map is the algebra after the strong action of the fold.
-module BetaIdx {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+  -- The same on fibres.
+  bridge-fam : ∀ (Q : Poly (suc n)) γ (y : fobj μ-fam Q At.δ' .idx .Carrier) →
+               (fobj μ-fam Q (extend δ A) .fam .subst (bridge-idx Q γ y)
+                ∘ (apply-shape-fam Q γ (At.R.reindex-shape ∣ Q ∣ At.mor₀ (At.embed-idx Q y))
+                   ∘ prod-m (id _) (At.R.reindex-fam Q At.mor₀ ∘ At.embed-fam Q y)))
+               ≈ FMuC.strong-fmor Q fs .famf ._⇒f_.transf (γ , y)
+  bridge-fam (const A')        γ a =
+    ≈-trans (∘-cong (A' .fam .refl*) ≈-refl)
+            (≈-trans id-left (≈-trans (pair-p₂ _ _) (≈-trans (∘-cong id-left ≈-refl) id-left)))
+  bridge-fam (var Fin.zero)    γ t =
+    ≈-trans (∘-cong (A .fam .refl*) ≈-refl)
+            (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans (prod-m-cong ≈-refl id-left) prod-m-id)) id-right))
+  bridge-fam (var (Fin.suc i)) γ a =
+    ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl)
+            (≈-trans id-left (≈-trans (pair-p₂ _ _) (≈-trans (∘-cong id-left ≈-refl) id-left)))
+  bridge-fam (Q₁ + Q₂) γ (inj₁ y) =
+    ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym (Lmap-comp _ _)))))
+    (≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
+    (≈-trans (under-root-post _ _)
+    (≈-trans (under-root-cong (bridge-fam Q₁ γ y))
+             (≈-sym (≈-trans id-left id-left)))))
+  bridge-fam (Q₁ + Q₂) γ (inj₂ y) =
+    ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym (Lmap-comp _ _)))))
+    (≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
+    (≈-trans (under-root-post _ _)
+    (≈-trans (under-root-cong (bridge-fam Q₂ γ y))
+             (≈-sym (≈-trans id-left id-left)))))
+  bridge-fam (Q₁ × Q₂) γ (y₁ , y₂) =
+    ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl
+               (≈-trans (≈-sym (Lmap-comp _ _)) (Lmap-cong (≈-sym (prod-m-comp _ _ _ _)))))))
+    (≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
+    (≈-trans (under-root-post _ _)
+    (≈-trans (under-root-cong
+               (≈-trans (∘-cong ≈-refl (strong-prod-m-pre _ _ _ _ _))
+               (≈-trans (strong-prod-m-post _ _ _ _)
+                        (strong-prod-m-cong (bridge-fam Q₁ γ y₁) (bridge-fam Q₂ γ y₂)))))
+             (≈-sym (under-root-cong
+                      (strong-prod-m-transf (FMuC.strong-fmor Q₁ fs) (FMuC.strong-fmor Q₂ fs) {γ} {y₁} {y₂}))))))
+  bridge-fam (μ Q') γ t =
+    ≈-trans (∘-cong (TA'.fib-trans* Q' (λ v → lift tt)
+                       {x = apply-reindex {Q = Q'} γ fbase (At.R.reindex At.mor₀ t)}
+                       {y = RX.ireindex (cmb γ) t}
+                       {z = FMuC.strong-fmor (μ Q') fs .idxf .PS._⇒_.func (γ , t)}
+                       (fuse-idx {Γ = Γ} {sₛ = At.δ'} {sₜ = extend δ A} Q' cmb fs corr
+                          (Γ .idx .isEquivalence .refl) {m₁ = t} {m₂ = t} (TX.W-≈-refl t))
+                       (comp-W cbase t))
+                    ≈-refl)
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl
+               (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl id-right)))
+                        (comp-W-fam cbase t)))
+             (fuse-fam γ Q' cmb act fs corr corr-fam {t})))
+    where open Comp γ
+
+-- β: the fold after the algebra map is the algebra after the strong action of the fold.
+module Beta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A) where
   private
     module At = InMapDef P δ
@@ -777,12 +896,47 @@ module BetaIdx {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     module L = Laws {n} {Γ} {A} {P} {δ} alg
   open Bridge {n} {Γ} {A} {P} {δ} Ft.foldMor
 
+  private
+    sf = FMuC.strong-fmor P fs
+    F = fobj μ-fam P (extend δ A)
+
   β-idx : ∀ γ y → _≈s_ (A .idx)
             (Ft.fold-idx γ (At.inMor .idxf .PS._⇒_.func y))
-            (alg .idxf .PS._⇒_.func (γ , FMuC.strong-fmor P fs .idxf .PS._⇒_.func (γ , y)))
+            (alg .idxf .PS._⇒_.func (γ , sf .idxf .PS._⇒_.func (γ , y)))
   β-idx γ y =
     alg .idxf .PS._⇒_.func-resp-≈
       (Γ .idx .isEquivalence .refl ,
-       fobj μ-fam P (extend δ A) .idx .isEquivalence .trans
+       F .idx .isEquivalence .trans
          (L.agree-shape P γ (At.R.reindex-shape ∣ P ∣ At.mor₀ (At.embed-idx P y)))
          (bridge-idx P γ y))
+
+  β-fam : ∀ γ y →
+          (A .fam .subst (β-idx γ y)
+           ∘ (Ft.fold-fam γ (At.inMor .idxf .PS._⇒_.func y) ∘ pair p₁ (At.inMor .famf ._⇒f_.transf y ∘ p₂)))
+          ≈ (alg .famf ._⇒f_.transf (γ , sf .idxf .PS._⇒_.func (γ , y)) ∘ pair p₁ (sf .famf ._⇒f_.transf (γ , y)))
+  β-fam γ y =
+    ≈-trans (∘-cong ≈-refl (assoc _ _ _))
+    (≈-trans (≈-sym (assoc _ _ _))
+    (≈-trans (∘-cong (≈-sym (alg .famf ._⇒f_.natural (Γ .idx .isEquivalence .refl , e′))) ≈-refl)
+    (≈-trans (assoc _ _ _)
+    (∘-cong ≈-refl
+      (≈-trans (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)))
+      (≈-trans (pair-compose _ _ _ _)
+      (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
+        (≈-trans (∘-cong (F .fam .trans* (bridge-idx P γ y) (L.agree-shape P γ x))
+                         (∘-cong ≈-refl (pair-cong (≈-sym id-left) ≈-refl)))
+        (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (L.agree-shape-fam P γ x) ≈-refl)))
+                 (bridge-fam P γ y)))))))))))
+    where
+      x = At.R.reindex-shape ∣ P ∣ At.mor₀ (At.embed-idx P y)
+      e′ = F .idx .isEquivalence .trans (L.agree-shape P γ x) (bridge-idx P γ y)
+
+  ⦅⦆-β : (FMuC.⦅ alg ⦆ ∘co (FMuC.inMap P δ Fam𝒞.∘ Fam𝒞-P.p₂))
+         ≃ (alg ∘co FMuC.strong-fmor P (FMuC.strong-extend-mor (λ i → Fam𝒞-P.p₂) FMuC.⦅ alg ⦆))
+  ⦅⦆-β ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , y₁} {γ₂ , y₂} (γ≈ , y≈) =
+    A .idx .isEquivalence .trans (β-idx γ₁ y₁)
+      (alg .idxf .PS._⇒_.func-resp-≈ (γ≈ , sf .idxf .PS._⇒_.func-resp-≈ (γ≈ , y≈)))
+  ⦅⦆-β ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , y} =
+    ≈-trans (∘-cong ≈-refl (≈-trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left))))
+            (≈-trans (β-fam γ y) (≈-sym id-left))
