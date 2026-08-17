@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections --safe --lossy-unification #-}
+{-# OPTIONS --prop --postfix-projections --safe #-}
 
 -- Agreement between the operational relation and the higher-order model, on the fragment without
 -- μ-types, as a logical relation. A value is related to an index of its type's
@@ -265,7 +265,7 @@ private
   branch-env : ∀ {Γ τk} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) {v : Val τk} {i'} (r_v : ValRel τk v i')
                s x g (o_s : ∣ 𝔽 (suc (width v)) ∣) (y_v : ∣ Fib τk i' ∣) →
                EnvDepRel rγ s x g → DepRel τk r_v (λ m → o_s (suc m)) (F._+_ τk i' y_v (ec τk i' s)) →
-               EnvDepRel (rγ · r_v) (o_s zero +ₛ (w ·ₛ s))
+               EnvDepRel (_·_ {τ = τk} {v = v} {i = i'} rγ r_v) (o_s zero +ₛ (w ·ₛ s))
                  (λ m → ap (M.in₁ {width-env γ} {width v}) x m +ₛ ap (M.in₂ {width-env γ} {width v}) (λ m' → o_s (suc m')) m)
                  (g , y_v)
   branch-env {τk = τk} {γ = γ} rγ {v} {i'} r_v s x g o_s y_v rel h =
@@ -441,7 +441,7 @@ private
                 F._≈_ (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func d)
                 (F._+_ (unit [+] unit) b (ec (unit [+] unit) b s)
                    (interp.bool-elt b (ap (rel-deps ω .sfunc vs) y zero))) →
-                DepRel (unit [+] unit) (ValRel-bool b i ⟪ e ⟫) o d
+                DepRel (unit [+] unit) {bool→val b} {i} (ValRel-bool b i ⟪ e ⟫) o d
   DepRel-bool ω vs (inj₁ x) {i} e o d s y ho (hd₁ , hd₂) =
     test-branch (rel-deps ω .sfunc vs) o (proj₁ d') (proj₂ d') s y ho
       (≈-trans hd₁ (+-cong (prop._∧_.proj₁ (ec-inj₁ {unit} {unit} x s)) ≈-refl))
@@ -510,8 +510,8 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
             (⇓-case-l {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
   DepRel-resp τ (ValRel-resp τ E r') (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
     (case-den τ E s a_s (o_s zero) B (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g) o_s₀ case-famf)
-    (DepRel-transport τ E r' (fundamental c₁ D₂ (rγ · r_v) (o_s zero +ₛ (w ·ₛ s)) X (g , y_v)
-                              (branch-env rγ r_v s x g o_s y_v rel payload₁)))
+    (DepRel-transport τ E r' (fundamental c₁ D₂ (_·_ {τ = τ₁} {v = v} {i = i'} rγ r_v) (o_s zero +ₛ (w ·ₛ s)) X (g , y_v)
+                              (branch-env {τk = τ₁} rγ {v = v} {i' = i'} r_v s x g o_s y_v rel payload₁)))
   where
   rs = fundamental-val c D₁ rγ
   i' = proj₁ rs
@@ -591,8 +591,8 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
             (⇓-case-r {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
   DepRel-resp τ (ValRel-resp τ E r') (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
     (case-den τ E s a_s (o_s zero) B (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g) o_s₀ case-famf)
-    (DepRel-transport τ E r' (fundamental c₂ D₂ (rγ · r_v) (o_s zero +ₛ (w ·ₛ s)) X (g , y_v)
-                              (branch-env rγ r_v s x g o_s y_v rel payload₁)))
+    (DepRel-transport τ E r' (fundamental c₂ D₂ (_·_ {τ = τ₂} {v = v} {i = i'} rγ r_v) (o_s zero +ₛ (w ·ₛ s)) X (g , y_v)
+                              (branch-env {τk = τ₂} rγ {v = v} {i' = i'} r_v s x g o_s y_v rel payload₁)))
   where
   rs = fundamental-val c D₁ rγ
   i' = proj₁ rs
@@ -1025,7 +1025,8 @@ fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cs) {γ =
         (≈-trans (app-∘ D-c C tp-elt k)
                  (app-congₘ (op-deps ω .prop-setoid._⇒_.func-resp-≈ (Prf.prf (fundamental-vals cs D rγ))) Z k)))
 fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cs) {γ = γ} (⇓-brel {vs = vs} {R = Rs} D) {gi} rγ s x g rel =
-  DepRel-bool ω vs b e _ _ s Z op-side model-side
+  DepRel-bool ω vs b {i} e (mat (wsrc +ₘ (brel-deps ω vs b ∘ Rs)) .func (inputs γ s x))
+    (F._+_ (unit [+] unit) i (ec (unit [+] unit) i s) (⟦ brel ω Ms ⟧tm .famf .transf gi .func g)) s Z op-side model-side
   where
   b = rel-pred ω .sfunc vs
   i = ⟦ brel ω Ms ⟧tm .idxf .sfunc gi
