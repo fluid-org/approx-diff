@@ -212,10 +212,10 @@ module FReindex {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj} (G : obj) 
                          prod G (TA.fib-shape R dA a) ⇒ TB.fib-shape R dB (ireindex-shape ∣ R ∣ cmb a)
     freindex-shape-fam (const A') act = p₂
     freindex-shape-fam (var v)    act {a} = aapply act v a
-    freindex-shape-fam (P + Q) act {inj₁ a} = under-root (freindex-shape-fam P act {a})
-    freindex-shape-fam (P + Q) act {inj₂ b} = under-root (freindex-shape-fam Q act {b})
+    freindex-shape-fam (P + Q) act {inj₁ a} = strong-Lmap (freindex-shape-fam P act {a})
+    freindex-shape-fam (P + Q) act {inj₂ b} = strong-Lmap (freindex-shape-fam Q act {b})
     freindex-shape-fam (P × Q) act {a , b} =
-      under-root (strong-prod-m (freindex-shape-fam P act {a}) (freindex-shape-fam Q act {b}))
+      strong-Lmap (strong-prod-m (freindex-shape-fam P act {a}) (freindex-shape-fam Q act {b}))
     freindex-shape-fam (μ Q') act {t} = freindex-fam act {t}
 
     aapply : ∀ {k} {ρA ρB} {cmb : IMorD {k} ρA ρB} {dA dB} (act : FAct cmb dA dB) (v : Fin k) (a : TA.El (ρA v)) →

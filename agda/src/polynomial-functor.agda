@@ -6,7 +6,7 @@ open import Data.Nat using (ℕ; suc)
 open import Level using (_⊔_)
 open import categories using (Category; HasProducts; HasStrongCoproducts; coKleisli-prod)
 open import prop-setoid using (module ≈-Reasoning)
-open import functor using (Functor)
+open import functor using (Functor; StrongFunctor)
 
 module polynomial-functor where
 
@@ -21,30 +21,58 @@ extend : ∀ {n} {ℓ} {A : Set ℓ} → (Fin n → A) → A → Fin (suc n) →
 extend δ x Fin.zero    = x
 extend δ x (Fin.suc i) = δ i
 
--- An endofunctor with its action on morphisms in context: a congruence, preserving composition in
--- context, and taking the projection to the projection.
-record StrongEndofunctor {o m e} {𝒞 : Category o m e} (𝒞P : HasProducts 𝒞) : Set (o ⊔ m ⊔ e) where
-  open Category 𝒞
-  open HasProducts 𝒞P
-  field
-    L : obj → obj
-    strong-Lmap : ∀ {Γ X Y} → prod Γ X ⇒ Y → prod Γ (L X) ⇒ L Y
-    strong-Lmap-cong : ∀ {Γ X Y} {f g : prod Γ X ⇒ Y} → f ≈ g → strong-Lmap f ≈ strong-Lmap g
-    strong-Lmap-comp : ∀ {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
-                       (strong-Lmap f ∘ pair p₁ (strong-Lmap g)) ≈ strong-Lmap (f ∘ pair p₁ g)
-    strong-Lmap-p₂   : ∀ {Γ X} → strong-Lmap (p₂ {Γ} {X}) ≈ p₂
-
--- Interpretation of the polynomials with a strong endofunctor applied at every sum and product;
+-- Interpretation of the polynomials with a strong endofunctor L applied at every sum and product;
 -- initial algebras for the μ-polynomials, with the catamorphism in context, and the laws of the fold.
 module Interp
   {o m e} {𝒞 : Category o m e} (𝒞P : HasProducts 𝒞) (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)
-  (𝒞L : StrongEndofunctor 𝒞P)
+  (𝒞L : StrongFunctor 𝒞P)
   where
 
   open Category 𝒞
   open HasProducts 𝒞P
   open HasStrongCoproducts 𝒞SC
-  open StrongEndofunctor 𝒞L
+  open StrongFunctor 𝒞L using (strengthᵣ; strengthᵣ-natural; strengthᵣ-p₂; strengthᵣ-assoc)
+    renaming (fobj to L; fmor to Lmap; fmor-cong to Lmap-cong; fmor-comp to Lmap-comp)
+
+  -- The action of L on morphisms in context: its action after the strength. A congruence, and a
+  -- functor for the composition in context.
+  strong-Lmap : ∀ {Γ X Y} → prod Γ X ⇒ Y → prod Γ (L X) ⇒ L Y
+  strong-Lmap f = Lmap f ∘ strengthᵣ
+
+  strong-Lmap-cong : ∀ {Γ X Y} {f g : prod Γ X ⇒ Y} → f ≈ g → strong-Lmap f ≈ strong-Lmap g
+  strong-Lmap-cong e = ∘-cong (Lmap-cong e) ≈-refl
+
+  strong-Lmap-comp : ∀ {Γ X Y Z} (f : prod Γ Y ⇒ Z) (g : prod Γ X ⇒ Y) →
+                     (strong-Lmap f ∘ pair p₁ (strong-Lmap g)) ≈ strong-Lmap (f ∘ pair p₁ g)
+  strong-Lmap-comp f g =
+    begin
+      (Lmap f ∘ strengthᵣ) ∘ pair p₁ (Lmap g ∘ strengthᵣ)
+    ≈⟨ assoc _ _ _ ⟩
+      Lmap f ∘ (strengthᵣ ∘ pair p₁ (Lmap g ∘ strengthᵣ))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (pair-compose _ _ _ _) (pair-cong id-left ≈-refl))) ⟩
+      Lmap f ∘ (strengthᵣ ∘ (prod-m (id _) (Lmap g) ∘ pair p₁ strengthᵣ))
+    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      Lmap f ∘ ((strengthᵣ ∘ prod-m (id _) (Lmap g)) ∘ pair p₁ strengthᵣ)
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong (strengthᵣ-natural (id _) g) ≈-refl) ⟩
+      Lmap f ∘ ((Lmap (prod-m (id _) g) ∘ strengthᵣ) ∘ pair p₁ strengthᵣ)
+    ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      Lmap f ∘ (Lmap (prod-m (id _) g) ∘ (strengthᵣ ∘ pair p₁ strengthᵣ))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl strengthᵣ-assoc) ⟩
+      Lmap f ∘ (Lmap (prod-m (id _) g) ∘ (Lmap (pair p₁ (id _)) ∘ strengthᵣ))
+    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      Lmap f ∘ ((Lmap (prod-m (id _) g) ∘ Lmap (pair p₁ (id _))) ∘ strengthᵣ)
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong (Lmap-comp _ _) ≈-refl) ⟩
+      Lmap f ∘ (Lmap (prod-m (id _) g ∘ pair p₁ (id _)) ∘ strengthᵣ)
+    ≈⟨ ∘-cong ≈-refl (∘-cong (Lmap-cong (≈-trans (pair-compose _ _ _ _) (pair-cong id-left id-right))) ≈-refl) ⟩
+      Lmap f ∘ (Lmap (pair p₁ g) ∘ strengthᵣ)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (Lmap f ∘ Lmap (pair p₁ g)) ∘ strengthᵣ
+    ≈˘⟨ ∘-cong (Lmap-comp _ _) ≈-refl ⟩
+      Lmap (f ∘ pair p₁ g) ∘ strengthᵣ
+    ∎ where open ≈-Reasoning isEquiv
+
+  strong-Lmap-p₂ : ∀ {Γ X} → strong-Lmap (p₂ {Γ} {X}) ≈ p₂
+  strong-Lmap-p₂ = strengthᵣ-p₂
 
   fobj : (μ-obj : ∀ {k} → Poly 𝒞 (suc k) → (Fin k → obj) → obj) → ∀ {n} → Poly 𝒞 n → (Fin n → obj) → obj
   fobj μ-obj (const A) δ = A

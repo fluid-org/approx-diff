@@ -204,29 +204,30 @@ fuse-shape-fam γ Q cmb act fsk corr corr-fam (var (Fin.suc i)) {x} =
   ≈-trans (corr-fam i)
     (≈-sym (≈-trans id-left (≈-trans id-left (≈-trans (∘-cong ≈-refl pair-ext0) id-right))))
 fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₁ a} =
-  ≈-trans (under-root-post _ _)
-  (≈-trans (under-root-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a}))
-  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans id-left id-left) ≈-refl) (under-root-co _ _))))
-                  (≈-trans (∘-cong ≈-refl (under-root-post _ _)) (under-root-post _ _)))))
+  ≈-trans (strong-Lmap-post _ _)
+  (≈-trans (strong-Lmap-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a}))
+  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf (HasMu.strong-fmor hasMu R₁ (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))))) ≈-refl) (strong-Lmap-co _ _))))
+                  (≈-trans (∘-cong ≈-refl (strong-Lmap-post _ _)) (strong-Lmap-post _ _)))))
 fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₂ b} =
-  ≈-trans (under-root-post _ _)
-  (≈-trans (under-root-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b}))
-  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans id-left id-left) ≈-refl) (under-root-co _ _))))
-                  (≈-trans (∘-cong ≈-refl (under-root-post _ _)) (under-root-post _ _)))))
+  ≈-trans (strong-Lmap-post _ _)
+  (≈-trans (strong-Lmap-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b}))
+  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf (HasMu.strong-fmor hasMu R₂ (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))))) ≈-refl) (strong-Lmap-co _ _))))
+                  (≈-trans (∘-cong ≈-refl (strong-Lmap-post _ _)) (strong-Lmap-post _ _)))))
 fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (R₁ × R₂) {a , b} =
-  ≈-trans (under-root-post _ _)
-  (≈-trans (under-root-cong
+  ≈-trans (strong-Lmap-post _ _)
+  (≈-trans (strong-Lmap-cong
              (≈-trans (strong-prod-m-post _ _ _ _)
              (≈-trans (strong-prod-m-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a})
                                           (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b}))
              (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (strong-prod-m-comp _ _ _ _)))
                     (≈-trans (∘-cong ≈-refl (strong-prod-m-post _ _ _ _)) (strong-prod-m-post _ _ _ _)))))))
-  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (under-root-cong
-                                                                    (strong-prod-m-transf (HasMu.strong-fmor hasMu R₁ fsk') (HasMu.strong-fmor hasMu R₂ fsk')
-                                                                       {γ} {Ft.fold-shape-idx R₁ γ a} {Ft.fold-shape-idx R₂ γ b}))
+  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans (strong-Lf-map-transf (Fam𝒞-P.strong-prod-m (HasMu.strong-fmor hasMu R₁ fsk') (HasMu.strong-fmor hasMu R₂ fsk')))
+                                                                          (strong-Lmap-cong
+                                                                            (strong-prod-m-transf (HasMu.strong-fmor hasMu R₁ fsk') (HasMu.strong-fmor hasMu R₂ fsk')
+                                                                               {γ} {Ft.fold-shape-idx R₁ γ a} {Ft.fold-shape-idx R₂ γ b})))
                                                                  ≈-refl)
-                                                         (under-root-co _ _))))
-                  (≈-trans (∘-cong ≈-refl (under-root-post _ _)) (under-root-post _ _)))))
+                                                         (strong-Lmap-co _ _))))
+                  (≈-trans (∘-cong ≈-refl (strong-Lmap-post _ _)) (strong-Lmap-post _ _)))))
   where
     module At = InMapDef Q sₜ
     fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂
@@ -341,20 +342,20 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
         ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left (≈-sym (≈-trans id-left (pair-p₂ _ _))))
       tele-shape-fam (var v) rel z = tele-apply-fam rel v
       tele-shape-fam (S₁ + S₂) rel (inj₁ z) =
-        ≈-trans (under-root-post _ _)
-        (≈-trans (under-root-cong (tele-shape-fam S₁ rel z))
-                 (≈-sym (≈-trans (∘-cong ≈-refl (under-root-co _ _)) (under-root-post _ _))))
+        ≈-trans (strong-Lmap-post _ _)
+        (≈-trans (strong-Lmap-cong (tele-shape-fam S₁ rel z))
+                 (≈-sym (≈-trans (∘-cong ≈-refl (strong-Lmap-co _ _)) (strong-Lmap-post _ _))))
       tele-shape-fam (S₁ + S₂) rel (inj₂ z) =
-        ≈-trans (under-root-post _ _)
-        (≈-trans (under-root-cong (tele-shape-fam S₂ rel z))
-                 (≈-sym (≈-trans (∘-cong ≈-refl (under-root-co _ _)) (under-root-post _ _))))
+        ≈-trans (strong-Lmap-post _ _)
+        (≈-trans (strong-Lmap-cong (tele-shape-fam S₂ rel z))
+                 (≈-sym (≈-trans (∘-cong ≈-refl (strong-Lmap-co _ _)) (strong-Lmap-post _ _))))
       tele-shape-fam (S₁ × S₂) rel (z₁ , z₂) =
-        ≈-trans (under-root-post _ _)
-        (≈-trans (under-root-cong
+        ≈-trans (strong-Lmap-post _ _)
+        (≈-trans (strong-Lmap-cong
                    (≈-trans (strong-prod-m-post _ _ _ _)
                      (≈-trans (strong-prod-m-cong (tele-shape-fam S₁ rel z₁) (tele-shape-fam S₂ rel z₂))
                        (≈-sym (≈-trans (∘-cong ≈-refl (strong-prod-m-comp _ _ _ _)) (strong-prod-m-post _ _ _ _))))))
-                 (≈-sym (≈-trans (∘-cong ≈-refl (under-root-co _ _)) (under-root-post _ _))))
+                 (≈-sym (≈-trans (∘-cong ≈-refl (strong-Lmap-co _ _)) (strong-Lmap-post _ _))))
       tele-shape-fam (μ S') rel (Ts.sup z') = tele-shape-fam S' (tbind S' rel) z'
 
       tele-apply-fam : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}

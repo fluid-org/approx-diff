@@ -4,13 +4,15 @@
 -- and the payload injection its two coproduct injections, so a map out of a lifted object is the
 -- copairing of a constant at the root with a map on the payload, and the action on morphisms is
 -- natural outright. The transport combinators reindex a context-paired morphism across the lifting
--- (under-root) and eliminate a root in context against a chosen constant (elim-root), in
--- single-application forms whose inner morphism is applied once; the split forms and the unfolding
--- bridge supply their laws.
+-- (strong-Lmap, the action of the lifting on morphisms in context) and eliminate a root in context
+-- against a chosen constant (elim-root), in single-application forms whose inner morphism is applied
+-- once; the split forms and the unfolding bridge supply their laws. The lifting is a strong
+-- endofunctor, with the strength the transport of the identity.
 open import Level using (_⊔_)
 open import categories using (Category)
-open import cmon-enriched using (CMonEnriched; Biproduct)
+open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 open import commutative-monoid using (CommutativeMonoid)
+open import functor using (Functor; StrongFunctor)
 
 module lifting
   {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞)
@@ -155,20 +157,20 @@ Lmap-comp {P} {Q} {R} g f =
 
 -- Reindexing a context-paired morphism under a root: the root passes through and the context
 -- enters the payload.
-under-root-split : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
-under-root-split r = copair (inj ∘ (r ∘ in₁)) (copair root (inj ∘ (r ∘ in₂)))
+strong-Lmap-split : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
+strong-Lmap-split r = copair (inj ∘ (r ∘ in₁)) (copair root (inj ∘ (r ∘ in₂)))
 
-under-root-split-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → under-root-split r ≈ under-root-split r'
-under-root-split-cong er =
+strong-Lmap-split-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → strong-Lmap-split r ≈ strong-Lmap-split r'
+strong-Lmap-split-cong er =
   copair-cong (∘-cong ≈-refl (∘-cong er ≈-refl))
            (copair-cong ≈-refl (∘-cong ≈-refl (∘-cong er ≈-refl)))
 
 -- Transport across the lifting fuses with composition on either side: through the action after,
 -- and with a context-paired map before.
-under-root-split-post : ∀ {G X Y₁ Y₂} (h : Y₁ ⇒ Y₂) (r : (G ⊕ X) ⇒ Y₁) →
-                        (Lmap h ∘ under-root-split r) ≈ under-root-split (h ∘ r)
-under-root-split-post {G} {X} {Y₁} {Y₂} h r =
-  bp-ext {h = Lmap h ∘ under-root-split r} {k = under-root-split (h ∘ r)}
+strong-Lmap-split-post : ∀ {G X Y₁ Y₂} (h : Y₁ ⇒ Y₂) (r : (G ⊕ X) ⇒ Y₁) →
+                        (Lmap h ∘ strong-Lmap-split r) ≈ strong-Lmap-split (h ∘ r)
+strong-Lmap-split-post {G} {X} {Y₁} {Y₂} h r =
+  bp-ext {h = Lmap h ∘ strong-Lmap-split r} {k = strong-Lmap-split (h ∘ r)}
     (≈-trans (assoc _ _ _)
      (≈-trans (∘-cong ≈-refl (B.copair-in₁ G (L X) _ _))
       (≈-trans (≈-sym (assoc _ _ _))
@@ -195,8 +197,8 @@ under-root-split-post {G} {X} {Y₁} {Y₂} h r =
 
 -- Transporting the projection across the lifting is the projection: the context part vanishes and
 -- the copairing of the root with the injection is the identity.
-under-root-split-p₂ : ∀ {G X} → under-root-split (p₂ {G} {X}) ≈ p₂ {G} {L X}
-under-root-split-p₂ {G} {X} =
+strong-Lmap-split-p₂ : ∀ {G X} → strong-Lmap-split (p₂ {G} {X}) ≈ p₂ {G} {L X}
+strong-Lmap-split-p₂ {G} {X} =
   ≈-trans (copair-cong
             (≈-trans (∘-cong ≈-refl (B.zero-2 G X)) (comp-bilinear-ε₂ inj))
             (≈-trans (copair-cong ≈-refl
@@ -208,12 +210,12 @@ under-root-split-p₂ {G} {X} =
 
 -- Reindexing under a root commutes with transports, which is what naturality of the fold and of
 -- reindexing in the tree demands.
-under-root-split-natural :
+strong-Lmap-split-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (y : Y₁ ⇒ Y₂)
     (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
     (f₂ ∘ prod-m g x) ≈ (y ∘ f₁) →
-    (under-root-split f₂ ∘ prod-m g (Lmap x)) ≈ (Lmap y ∘ under-root-split f₁)
-under-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x y f₁ f₂ sq =
+    (strong-Lmap-split f₂ ∘ prod-m g (Lmap x)) ≈ (Lmap y ∘ strong-Lmap-split f₁)
+strong-Lmap-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x y f₁ f₂ sq =
   bp-ext side₁ side₂
   where
   square-in₁ : ((f₂ ∘ in₁) ∘ g) ≈ (y ∘ (f₁ ∘ in₁))
@@ -230,7 +232,7 @@ under-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x y f₁ f�
     (≈-trans (≈-sym (assoc _ _ _))
     (≈-trans (∘-cong sq ≈-refl) (assoc _ _ _))))
 
-  side₁ : ((under-root-split f₂ ∘ prod-m g (Lmap x)) ∘ in₁) ≈ ((Lmap y ∘ under-root-split f₁) ∘ in₁)
+  side₁ : ((strong-Lmap-split f₂ ∘ prod-m g (Lmap x)) ∘ in₁) ≈ ((Lmap y ∘ strong-Lmap-split f₁) ∘ in₁)
   side₁ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (prod-m-in₁ g (Lmap x)))
@@ -271,7 +273,7 @@ under-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x y f₁ f�
       (≈-trans (assoc _ _ _)
                (≈-sym (≈-trans (assoc _ _ _) (∘-cong ≈-refl (copair-inj _ _))))))))))))
 
-  side₂ : ((under-root-split f₂ ∘ prod-m g (Lmap x)) ∘ in₂) ≈ ((Lmap y ∘ under-root-split f₁) ∘ in₂)
+  side₂ : ((strong-Lmap-split f₂ ∘ prod-m g (Lmap x)) ∘ in₂) ≈ ((Lmap y ∘ strong-Lmap-split f₁) ∘ in₂)
   side₂ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (prod-m-in₂ g (Lmap x)))
@@ -289,14 +291,14 @@ copair-pair {a} {b} f g h k =
                    (≈-trans (assoc _ _ _) (∘-cong ≈-refl (B.pair-p₂ a b h k))))
 
 -- Transport across the lifting fuses with composition in context.
-under-root-split-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
-                      (under-root-split r ∘ pair p₁ (under-root-split s)) ≈ under-root-split (r ∘ pair p₁ s)
-under-root-split-co {G} {X} {Y} {Z} r s = bp-ext leg₁ (lifting-ext _ _ leg₂-root leg₂-inj)
+strong-Lmap-split-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
+                      (strong-Lmap-split r ∘ pair p₁ (strong-Lmap-split s)) ≈ strong-Lmap-split (r ∘ pair p₁ s)
+strong-Lmap-split-co {G} {X} {Y} {Z} r s = bp-ext leg₁ (lifting-ext _ _ leg₂-root leg₂-inj)
   where
-  A = under-root-split r
-  u = under-root-split s
+  A = strong-Lmap-split r
+  u = strong-Lmap-split s
   R = r ∘ pair p₁ s
-  leg₁ : ((A ∘ pair p₁ u) ∘ in₁) ≈ (under-root-split R ∘ in₁)
+  leg₁ : ((A ∘ pair p₁ u) ∘ in₁) ≈ (strong-Lmap-split R ∘ in₁)
   leg₁ =
     ≈-trans (assoc _ _ _)
     (≈-trans (∘-cong ≈-refl (≈-trans (B.pair-natural G (L Y) _ _ _)
@@ -311,7 +313,7 @@ under-root-split-co {G} {X} {Y} {Z} r s = bp-ext leg₁ (lifting-ext _ _ leg₂-
       (≈-trans (comp-bilinear₂ _ _ _)
                (+m-cong (∘-cong ≈-refl (∘-cong ≈-refl id-right))
                         (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _)))))))))))))
-  leg₂-root : (((A ∘ pair p₁ u) ∘ in₂) ∘ root) ≈ ((under-root-split R ∘ in₂) ∘ root)
+  leg₂-root : (((A ∘ pair p₁ u) ∘ in₂) ∘ root) ≈ ((strong-Lmap-split R ∘ in₂) ∘ root)
   leg₂-root =
     ≈-trans (assoc _ _ _)
     (≈-trans (assoc _ _ _)
@@ -325,7 +327,7 @@ under-root-split-co {G} {X} {Y} {Z} r s = bp-ext leg₁ (lifting-ext _ _ leg₂-
     (≈-trans (+m-cong (comp-bilinear-ε₂ _) (copair-root _ _))
     (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
              (≈-sym (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl) (copair-root _ _))))))))
-  leg₂-inj : (((A ∘ pair p₁ u) ∘ in₂) ∘ inj) ≈ ((under-root-split R ∘ in₂) ∘ inj)
+  leg₂-inj : (((A ∘ pair p₁ u) ∘ in₂) ∘ inj) ≈ ((strong-Lmap-split R ∘ in₂) ∘ inj)
   leg₂-inj =
     ≈-trans (assoc _ _ _)
     (≈-trans (assoc _ _ _)
@@ -348,10 +350,10 @@ under-root-split-co {G} {X} {Y} {Z} r s = bp-ext leg₁ (lifting-ext _ _ leg₂-
       (≈-trans (∘-cong ≈-refl (homCM _ _ .CommutativeMonoid.+-lunit))
       (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _))))))))))))))))
 
-under-root-split-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (r : (G₂ ⊕ X₂) ⇒ Y) →
-                 (under-root-split r ∘ prod-m g (Lmap x)) ≈ under-root-split (r ∘ prod-m g x)
-under-root-split-pre {G₁} {G₂} {X₁} {X₂} {Y} g x r =
-  ≈-trans (under-root-split-natural g x (id Y) (r ∘ prod-m g x) r (≈-sym id-left))
+strong-Lmap-split-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (r : (G₂ ⊕ X₂) ⇒ Y) →
+                 (strong-Lmap-split r ∘ prod-m g (Lmap x)) ≈ strong-Lmap-split (r ∘ prod-m g x)
+strong-Lmap-split-pre {G₁} {G₂} {X₁} {X₂} {Y} g x r =
+  ≈-trans (strong-Lmap-split-natural g x (id Y) (r ∘ prod-m g x) r (≈-sym id-left))
           (≈-trans (∘-cong Lmap-id ≈-refl) id-left)
 
 -- Eliminating a root in context against a chosen constant: the context and the payload pass to the
@@ -364,9 +366,9 @@ elim-root-split-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y}
 elim-root-split-cong ec er = copair-cong (∘-cong er ≈-refl) (copair-cong ec (∘-cong er ≈-refl))
 
 -- Transport across the lifting is the elimination whose constant is the root itself.
-under-root-split-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
-                   under-root-split r ≈ elim-root-split root (inj ∘ r)
-under-root-split-strip r =
+strong-Lmap-split-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
+                   strong-Lmap-split r ≈ elim-root-split root (inj ∘ r)
+strong-Lmap-split-strip r =
   copair-cong (≈-sym (assoc _ _ _)) (copair-cong ≈-refl (≈-sym (assoc _ _ _)))
 
 -- Root elimination commutes with transports.
@@ -448,8 +450,8 @@ tag-L-inj : ∀ {X} → (tag-L {X} ∘ inj) ≈ εm
 tag-L-inj {X} = copair-inj (id 𝟙c) εm
 
 -- Evaluation-critical shape: exactly one application of r per element.
-under-root : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
-under-root {G} r = (inj ∘ (r ∘ prod-m (id G) payload-L)) +m ((root ∘ tag-L) ∘ p₂)
+strong-Lmap : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
+strong-Lmap {G} r = (inj ∘ (r ∘ prod-m (id G) payload-L)) +m ((root ∘ tag-L) ∘ p₂)
 
 -- Evaluation-critical shape: exactly one application of r per element.
 elim-root : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
@@ -486,12 +488,12 @@ private
     ≈-trans (assoc _ _ _)
     (∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl payload-L-inj) id-right)))
 
-under-root-unfold : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → under-root r ≈ under-root-split r
-under-root-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
+strong-Lmap-unfold : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → strong-Lmap r ≈ strong-Lmap-split r
+strong-Lmap-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
   where
   M = inj ∘ (r ∘ in₂)
 
-  leg₁ : (under-root r ∘ in₁) ≈ (under-root-split r ∘ in₁)
+  leg₁ : (strong-Lmap r ∘ in₁) ≈ (strong-Lmap-split r ∘ in₁)
   leg₁ =
     ≈-trans (comp-bilinear₁ _ _ in₁)
     (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (prod-m-arm-in₁ r)))
@@ -519,7 +521,7 @@ under-root-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
                        (≈-trans (∘-cong ≈-refl tag-L-inj) (comp-bilinear-ε₂ root))))
     (≈-trans +m-runit (≈-sym (copair-inj root M))))
 
-  leg₂ : (under-root r ∘ in₂) ≈ (under-root-split r ∘ in₂)
+  leg₂ : (strong-Lmap r ∘ in₂) ≈ (strong-Lmap-split r ∘ in₂)
   leg₂ =
     ≈-trans (comp-bilinear₁ _ _ in₂)
     (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (prod-m-arm-in₂ r)))
@@ -566,43 +568,43 @@ elim-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
     (≈-trans (lifting-ext E (copair c M) E-root E-inj)
              (≈-sym (B.copair-in₂ G (L X) (r ∘ in₁) (copair c M)))))
 
-under-root-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → under-root r ≈ under-root r'
-under-root-cong {r = r} {r'} er =
-  ≈-trans (under-root-unfold r)
-  (≈-trans (under-root-split-cong er) (≈-sym (under-root-unfold r')))
+strong-Lmap-cong : ∀ {G X Y} {r r' : (G ⊕ X) ⇒ Y} → r ≈ r' → strong-Lmap r ≈ strong-Lmap r'
+strong-Lmap-cong {r = r} {r'} er =
+  ≈-trans (strong-Lmap-unfold r)
+  (≈-trans (strong-Lmap-split-cong er) (≈-sym (strong-Lmap-unfold r')))
 
-under-root-post : ∀ {G X Y₁ Y₂} (h : Y₁ ⇒ Y₂) (r : (G ⊕ X) ⇒ Y₁) →
-                  (Lmap h ∘ under-root r) ≈ under-root (h ∘ r)
-under-root-post h r =
-  ≈-trans (∘-cong ≈-refl (under-root-unfold r))
-  (≈-trans (under-root-split-post h r) (≈-sym (under-root-unfold (h ∘ r))))
+strong-Lmap-post : ∀ {G X Y₁ Y₂} (h : Y₁ ⇒ Y₂) (r : (G ⊕ X) ⇒ Y₁) →
+                  (Lmap h ∘ strong-Lmap r) ≈ strong-Lmap (h ∘ r)
+strong-Lmap-post h r =
+  ≈-trans (∘-cong ≈-refl (strong-Lmap-unfold r))
+  (≈-trans (strong-Lmap-split-post h r) (≈-sym (strong-Lmap-unfold (h ∘ r))))
 
-under-root-p₂ : ∀ {G X} → under-root (p₂ {G} {X}) ≈ p₂ {G} {L X}
-under-root-p₂ {G} {X} =
-  ≈-trans (under-root-unfold (p₂ {G} {X})) under-root-split-p₂
+strong-Lmap-p₂ : ∀ {G X} → strong-Lmap (p₂ {G} {X}) ≈ p₂ {G} {L X}
+strong-Lmap-p₂ {G} {X} =
+  ≈-trans (strong-Lmap-unfold (p₂ {G} {X})) strong-Lmap-split-p₂
 
-under-root-natural :
+strong-Lmap-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (y : Y₁ ⇒ Y₂)
     (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
     (f₂ ∘ prod-m g x) ≈ (y ∘ f₁) →
-    (under-root f₂ ∘ prod-m g (Lmap x)) ≈ (Lmap y ∘ under-root f₁)
-under-root-natural g x y f₁ f₂ sq =
-  ≈-trans (∘-cong (under-root-unfold f₂) ≈-refl)
-  (≈-trans (under-root-split-natural g x y f₁ f₂ sq)
-           (∘-cong ≈-refl (≈-sym (under-root-unfold f₁))))
+    (strong-Lmap f₂ ∘ prod-m g (Lmap x)) ≈ (Lmap y ∘ strong-Lmap f₁)
+strong-Lmap-natural g x y f₁ f₂ sq =
+  ≈-trans (∘-cong (strong-Lmap-unfold f₂) ≈-refl)
+  (≈-trans (strong-Lmap-split-natural g x y f₁ f₂ sq)
+           (∘-cong ≈-refl (≈-sym (strong-Lmap-unfold f₁))))
 
-under-root-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (r : (G₂ ⊕ X₂) ⇒ Y) →
-                 (under-root r ∘ prod-m g (Lmap x)) ≈ under-root (r ∘ prod-m g x)
-under-root-pre g x r =
-  ≈-trans (∘-cong (under-root-unfold r) ≈-refl)
-  (≈-trans (under-root-split-pre g x r)
-           (≈-sym (under-root-unfold (r ∘ prod-m g x))))
+strong-Lmap-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (r : (G₂ ⊕ X₂) ⇒ Y) →
+                 (strong-Lmap r ∘ prod-m g (Lmap x)) ≈ strong-Lmap (r ∘ prod-m g x)
+strong-Lmap-pre g x r =
+  ≈-trans (∘-cong (strong-Lmap-unfold r) ≈-refl)
+  (≈-trans (strong-Lmap-split-pre g x r)
+           (≈-sym (strong-Lmap-unfold (r ∘ prod-m g x))))
 
-under-root-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
-                (under-root r ∘ pair p₁ (under-root s)) ≈ under-root (r ∘ pair p₁ s)
-under-root-co r s =
-  ≈-trans (∘-cong (under-root-unfold r) (pair-cong ≈-refl (under-root-unfold s)))
-  (≈-trans (under-root-split-co r s) (≈-sym (under-root-unfold _)))
+strong-Lmap-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
+                (strong-Lmap r ∘ pair p₁ (strong-Lmap s)) ≈ strong-Lmap (r ∘ pair p₁ s)
+strong-Lmap-co r s =
+  ≈-trans (∘-cong (strong-Lmap-unfold r) (pair-cong ≈-refl (strong-Lmap-unfold s)))
+  (≈-trans (strong-Lmap-split-co r s) (≈-sym (strong-Lmap-unfold _)))
 
 elim-root-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
                   c ≈ c' → r ≈ r' → elim-root c r ≈ elim-root c' r'
@@ -610,11 +612,11 @@ elim-root-cong {c = c} {c'} {r} {r'} ec er =
   ≈-trans (elim-root-unfold c r)
   (≈-trans (elim-root-split-cong ec er) (≈-sym (elim-root-unfold c' r')))
 
-under-root-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
-                   under-root r ≈ elim-root root (inj ∘ r)
-under-root-strip r =
-  ≈-trans (under-root-unfold r)
-  (≈-trans (under-root-split-strip r) (≈-sym (elim-root-unfold root (inj ∘ r))))
+strong-Lmap-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
+                   strong-Lmap r ≈ elim-root root (inj ∘ r)
+strong-Lmap-strip r =
+  ≈-trans (strong-Lmap-unfold r)
+  (≈-trans (strong-Lmap-split-strip r) (≈-sym (elim-root-unfold root (inj ∘ r))))
 
 elim-root-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂)
@@ -626,3 +628,23 @@ elim-root-natural g x {y} {c₁} {c₂} yc f₁ f₂ sq =
   ≈-trans (∘-cong (elim-root-unfold c₂ f₂) ≈-refl)
   (≈-trans (elim-root-split-natural g x {y} {c₁} {c₂} yc f₁ f₂ sq)
            (∘-cong ≈-refl (≈-sym (elim-root-unfold c₁ f₁))))
+
+-- The lifting as a strong endofunctor: the strength is the transport of the identity, so the
+-- transport of any morphism is its action after the strength.
+L-functor : Functor 𝒞 𝒞
+L-functor .Functor.fobj = L
+L-functor .Functor.fmor = Lmap
+L-functor .Functor.fmor-cong = Lmap-cong
+L-functor .Functor.fmor-id = Lmap-id
+L-functor .Functor.fmor-comp = Lmap-comp
+
+L-strong : StrongFunctor (biproducts→products CM BP)
+L-strong .StrongFunctor.F = L-functor
+L-strong .StrongFunctor.strengthᵣ = strong-Lmap (id _)
+L-strong .StrongFunctor.strengthᵣ-natural f g =
+  ≈-sym (strong-Lmap-natural f g (prod-m f g) (id _) (id _) (≈-trans id-left (≈-sym id-right)))
+L-strong .StrongFunctor.strengthᵣ-p₂ =
+  ≈-trans (strong-Lmap-post _ _) (≈-trans (strong-Lmap-cong id-right) strong-Lmap-p₂)
+L-strong .StrongFunctor.strengthᵣ-assoc =
+  ≈-trans (strong-Lmap-co _ _)
+          (≈-sym (≈-trans (strong-Lmap-post _ _) (strong-Lmap-cong (≈-trans id-right (≈-sym id-left)))))

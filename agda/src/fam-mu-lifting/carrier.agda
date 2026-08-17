@@ -27,6 +27,8 @@ import lifting
 open import prop-setoid using (IsEquivalence; Setoid; module ≈-Reasoning)
 open import indexed-family using (Fam; _⇒f_)
 import fam
+import fam-functor
+open import functor using (StrongFunctor)
 import polynomial-functor
 import fam-mu-lifting.sort
 import fam-mu-lifting.fibre
@@ -49,7 +51,7 @@ open Lc public
   using (L; root; inj; copair-root; copair-inj; lifting-ext;
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
          L-const; L-const-cong; L-const-natural;
-         under-root; under-root-cong; under-root-natural; under-root-pre; under-root-post; under-root-co; under-root-p₂;
+         strong-Lmap; strong-Lmap-cong; strong-Lmap-natural; strong-Lmap-pre; strong-Lmap-post; strong-Lmap-co; strong-Lmap-p₂;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
 open Obj public
@@ -60,7 +62,6 @@ open products P public  -- Fam-level products
 module Fam𝒞-P = HasProducts products
 open _⇒f_ public
 open polynomial-functor using (extend) public
-open polynomial-functor using (StrongEndofunctor)
 open polynomial-functor.Poly public
 Poly = polynomial-functor.Poly cat
 open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_) public
@@ -75,13 +76,17 @@ module Srt = fam-mu-lifting.sort os es
 open Srt public using (Sort; mkSort)
 open fam-mu-lifting.fibre os es CM BP 𝟙c public using (Idx; ∣_∣; module Fibre; μ-fam)
 
--- The fibrewise lift of a family: same index, each fibre lifted, transports under the action.
+-- The lifting on families: the fibrewise strong endofunctor induced by the lifting.
+private
+  LfS : StrongFunctor products
+  LfS = fam-functor.FamF-strong os (os ⊔ es) P Lc.L-strong
+  module LfS = StrongFunctor LfS
+
 Lf : Obj → Obj
-Lf X .idx = X .idx
-Lf X .fam .fm x = L (X .fam .fm x)
-Lf X .fam .subst e = Lmap (X .fam .subst e)
-Lf X .fam .refl* = ≈-trans (Lmap-cong (X .fam .refl*)) Lmap-id
-Lf X .fam .trans* q p = ≈-trans (Lmap-cong (X .fam .trans* q p)) (Lmap-comp _ _)
+Lf = LfS.fobj
+
+Lf-map : ∀ {X Y : Obj} → Mor X Y → Mor (Lf X) (Lf Y)
+Lf-map = LfS.fmor
 
 -- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
@@ -100,55 +105,16 @@ prod-m-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} 
              (f ∘ f') ≈ id a₂ → (h ∘ h') ≈ id b₂ → (prod-m f h ∘ prod-m f' h') ≈ id (prod a₂ b₂)
 prod-m-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (prod-m-cong e₁ e₂) prod-m-id)
 
--- The action of the lifting on family morphisms in context: fibrewise under-root.
-strong-Lf-map : ∀ {Γ X Y : Obj} → Mor (Fam𝒞-P.prod Γ X) Y → Mor (Fam𝒞-P.prod Γ (Lf X)) (Lf Y)
-strong-Lf-map f .idxf = f .idxf
-strong-Lf-map f .famf ._⇒f_.transf (γ , x) = under-root (f .famf ._⇒f_.transf (γ , x))
-strong-Lf-map {Γ} {X} {Y} f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x≈) =
-  under-root-natural (Γ .fam .subst γ≈) (X .fam .subst x≈)
-    (Y .fam .subst (f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈)))
-    (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
-    (f .famf ._⇒f_.natural (γ≈ , x≈))
+open polynomial-functor.Interp products strongCoproducts LfS public
+  using (fobj; HasMu; HasMuLaws; _∘co_) renaming (strong-Lmap to strong-Lf-map)
 
-strong-Lf-map-cong : ∀ {Γ X Y : Obj} {f g : Mor (Fam𝒞-P.prod Γ X) Y} →
-                     f ≃ g → strong-Lf-map f ≃ strong-Lf-map g
-strong-Lf-map-cong E ._≃_.idxf-eq = E ._≃_.idxf-eq
-strong-Lf-map-cong E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
-  ≈-trans (under-root-post _ _) (under-root-cong (E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x}))
-
-strong-Lf-map-comp : ∀ {Γ X Y Z : Obj} (f : Mor (Fam𝒞-P.prod Γ Y) Z) (g : Mor (Fam𝒞-P.prod Γ X) Y) →
-                     (Fam𝒞._∘_ (strong-Lf-map f) (Fam𝒞-P.pair Fam𝒞-P.p₁ (strong-Lf-map g)))
-                       ≃ strong-Lf-map (Fam𝒞._∘_ f (Fam𝒞-P.pair Fam𝒞-P.p₁ g))
-strong-Lf-map-comp f g ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) =
-  f .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , g .idxf .prop-setoid._⇒_.func-resp-≈ (γ≈ , x≈))
-strong-Lf-map-comp {Z = Z} f g ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
-  ≈-trans (∘-cong (Lf Z .fam .refl*) ≈-refl)
-          (≈-trans id-left (≈-trans id-left (≈-trans (under-root-co _ _) (under-root-cong (≈-sym id-left)))))
-
-strong-Lf-map-p₂ : ∀ {Γ X : Obj} → strong-Lf-map (Fam𝒞-P.p₂ {Γ} {X}) ≃ Fam𝒞-P.p₂ {Γ} {Lf X}
-strong-Lf-map-p₂ ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (γ≈ , x≈) = x≈
-strong-Lf-map-p₂ {X = X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
-  ≈-trans (∘-cong (Lf X .fam .refl*) ≈-refl) (≈-trans id-left under-root-p₂)
-
-strongLf : StrongEndofunctor products
-strongLf .StrongEndofunctor.L                = Lf
-strongLf .StrongEndofunctor.strong-Lmap      = strong-Lf-map
-strongLf .StrongEndofunctor.strong-Lmap-cong = strong-Lf-map-cong
-strongLf .StrongEndofunctor.strong-Lmap-comp = strong-Lf-map-comp
-strongLf .StrongEndofunctor.strong-Lmap-p₂   = strong-Lf-map-p₂
-
-open polynomial-functor.Interp products strongCoproducts strongLf public
-  using (fobj; HasMu; HasMuLaws; _∘co_)
+-- The action of the lifting on a family morphism in context is fibrewise the transport.
+strong-Lf-map-transf : ∀ {Γ X Y : Obj} (f : Mor (Fam𝒞-P.prod Γ X) Y) {γ x} →
+                       strong-Lf-map f .famf ._⇒f_.transf (γ , x) ≈ strong-Lmap (f .famf ._⇒f_.transf (γ , x))
+strong-Lf-map-transf f = ≈-trans id-left (≈-trans (strong-Lmap-post _ _) (strong-Lmap-cong id-right))
 
 private
   module CME = CMonEnriched CM
-
--- The fibrewise action of the lifting on a family morphism.
-Lf-map : ∀ {X Y : Obj} → Mor X Y → Mor (Lf X) (Lf Y)
-Lf-map f .idxf = f .idxf
-Lf-map f .famf ._⇒f_.transf x = Lmap (f .famf ._⇒f_.transf x)
-Lf-map f .famf ._⇒f_.natural e =
-  ≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong (f .famf ._⇒f_.natural e)) (Lmap-comp _ _))
 
 -- The payload injection, fibrewise.
 injF : ∀ {X : Obj} → Mor X (Lf X)

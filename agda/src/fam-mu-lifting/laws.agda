@@ -111,10 +111,10 @@ module ApplyDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       apply-shape-fam (const A')        γ a = p₂
       apply-shape-fam (var Fin.zero)    γ t = h-fam γ t
       apply-shape-fam (var (Fin.suc i)) γ a = p₂
-      apply-shape-fam (Q₁ + Q₂) γ (inj₁ x) = under-root (apply-shape-fam Q₁ γ x)
-      apply-shape-fam (Q₁ + Q₂) γ (inj₂ y) = under-root (apply-shape-fam Q₂ γ y)
+      apply-shape-fam (Q₁ + Q₂) γ (inj₁ x) = strong-Lmap (apply-shape-fam Q₁ γ x)
+      apply-shape-fam (Q₁ + Q₂) γ (inj₂ y) = strong-Lmap (apply-shape-fam Q₂ γ y)
       apply-shape-fam (Q₁ × Q₂) γ (x , y) =
-        under-root (strong-prod-m (apply-shape-fam Q₁ γ x) (apply-shape-fam Q₂ γ y))
+        strong-Lmap (strong-prod-m (apply-shape-fam Q₁ γ x) (apply-shape-fam Q₂ γ y))
       apply-shape-fam (μ Q')    γ t = apply-reindex-fam {Q = Q'} γ fbase t
 
       apply-reindex-fam : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (md : FMor ρ ρ' d d') (t : Tδ.W ∣ Q ∣ ρ) →
@@ -125,10 +125,10 @@ module ApplyDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                                prod (Γ .fam .fm γ) (Tδ.fib-shape R dA a) ⇒ TA'.fib-shape R dB (apply-reindex-shape γ R md a)
       apply-reindex-shape-fam γ (const A') md a = p₂
       apply-reindex-shape-fam γ (var v)    md a = apply-apply-fam γ md v a
-      apply-reindex-shape-fam γ (P' + Q') md (inj₁ a) = under-root (apply-reindex-shape-fam γ P' md a)
-      apply-reindex-shape-fam γ (P' + Q') md (inj₂ b) = under-root (apply-reindex-shape-fam γ Q' md b)
+      apply-reindex-shape-fam γ (P' + Q') md (inj₁ a) = strong-Lmap (apply-reindex-shape-fam γ P' md a)
+      apply-reindex-shape-fam γ (P' + Q') md (inj₂ b) = strong-Lmap (apply-reindex-shape-fam γ Q' md b)
       apply-reindex-shape-fam γ (P' × Q') md (a , b) =
-        under-root (strong-prod-m (apply-reindex-shape-fam γ P' md a) (apply-reindex-shape-fam γ Q' md b))
+        strong-Lmap (strong-prod-m (apply-reindex-shape-fam γ P' md a) (apply-reindex-shape-fam γ Q' md b))
       apply-reindex-shape-fam γ (μ Q'')   md t = apply-reindex-fam {Q = Q''} γ md t
 
       apply-apply-fam : ∀ {k} {ρ ρ' d d'} (γ : Γ .idx .Carrier) (md : FMor ρ ρ' d d') (v : Fin k) (a : Tδ.El (ρ v)) →
@@ -216,17 +216,17 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     agree-shape-fam (var Fin.zero)    γ t = ≈-trans (∘-cong (A .fam .refl*) ≈-refl) id-left
     agree-shape-fam (var (Fin.suc i)) γ a = ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) id-left
     agree-shape-fam (Q₁ + Q₂) γ (inj₁ x) =
-      ≈-trans (under-root-post _
+      ≈-trans (strong-Lmap-post _
                 (Ft.fold-shape-fam Q₁ γ x))
-              (under-root-cong (agree-shape-fam Q₁ γ x))
+              (strong-Lmap-cong (agree-shape-fam Q₁ γ x))
     agree-shape-fam (Q₁ + Q₂) γ (inj₂ y) =
-      ≈-trans (under-root-post _
+      ≈-trans (strong-Lmap-post _
                 (Ft.fold-shape-fam Q₂ γ y))
-              (under-root-cong (agree-shape-fam Q₂ γ y))
+              (strong-Lmap-cong (agree-shape-fam Q₂ γ y))
     agree-shape-fam (Q₁ × Q₂) γ (x , y) =
-      ≈-trans (under-root-post _
+      ≈-trans (strong-Lmap-post _
                 (strong-prod-m (Ft.fold-shape-fam Q₁ γ x) (Ft.fold-shape-fam Q₂ γ y)))
-              (under-root-cong
+              (strong-Lmap-cong
                 (≈-trans (strong-prod-m-post _ _ _ _)
                          (strong-prod-m-cong (agree-shape-fam Q₁ γ x) (agree-shape-fam Q₂ γ y))))
     agree-shape-fam (μ Q') γ t = agree-reindex-fam {Q = Q'} γ fbase t
@@ -247,17 +247,17 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     agree-reindex-shape-fam γ (const A') fm a = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
     agree-reindex-shape-fam γ (var v)    fm a = agree-apply-fam γ fm v a
     agree-reindex-shape-fam γ (P' + Q') {dA = dA} {dB} fm (inj₁ a) =
-      ≈-trans (under-root-post _
+      ≈-trans (strong-Lmap-post _
                 (Ft.fold-reindex-shape-fam γ P' fm a))
-              (under-root-cong (agree-reindex-shape-fam γ P' fm a))
+              (strong-Lmap-cong (agree-reindex-shape-fam γ P' fm a))
     agree-reindex-shape-fam γ (P' + Q') {dA = dA} {dB} fm (inj₂ b) =
-      ≈-trans (under-root-post _
+      ≈-trans (strong-Lmap-post _
                 (Ft.fold-reindex-shape-fam γ Q' fm b))
-              (under-root-cong (agree-reindex-shape-fam γ Q' fm b))
+              (strong-Lmap-cong (agree-reindex-shape-fam γ Q' fm b))
     agree-reindex-shape-fam γ (P' × Q') {dA = dA} {dB} fm (a , b) =
-      ≈-trans (under-root-post _
+      ≈-trans (strong-Lmap-post _
                 (strong-prod-m (Ft.fold-reindex-shape-fam γ P' fm a) (Ft.fold-reindex-shape-fam γ Q' fm b)))
-              (under-root-cong
+              (strong-Lmap-cong
                 (≈-trans (strong-prod-m-post _ _ _ _)
                          (strong-prod-m-cong (agree-reindex-shape-fam γ P' fm a)
                                              (agree-reindex-shape-fam γ Q' fm b))))
@@ -347,17 +347,17 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       compare-shape-fam (var Fin.zero)    γ t = uniq-fam γ t
       compare-shape-fam (var (Fin.suc i)) γ a = ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) id-left
       compare-shape-fam (Q₁ + Q₂) γ (inj₁ x) =
-        ≈-trans (under-root-post _
+        ≈-trans (strong-Lmap-post _
                   (Ah.apply-shape-fam Q₁ γ x))
-                (under-root-cong (compare-shape-fam Q₁ γ x))
+                (strong-Lmap-cong (compare-shape-fam Q₁ γ x))
       compare-shape-fam (Q₁ + Q₂) γ (inj₂ y) =
-        ≈-trans (under-root-post _
+        ≈-trans (strong-Lmap-post _
                   (Ah.apply-shape-fam Q₂ γ y))
-                (under-root-cong (compare-shape-fam Q₂ γ y))
+                (strong-Lmap-cong (compare-shape-fam Q₂ γ y))
       compare-shape-fam (Q₁ × Q₂) γ (x , y) =
-        ≈-trans (under-root-post _
+        ≈-trans (strong-Lmap-post _
                   (strong-prod-m (Ah.apply-shape-fam Q₁ γ x) (Ah.apply-shape-fam Q₂ γ y)))
-                (under-root-cong
+                (strong-Lmap-cong
                   (≈-trans (strong-prod-m-post _ _ _ _)
                            (strong-prod-m-cong (compare-shape-fam Q₁ γ x) (compare-shape-fam Q₂ γ y))))
       compare-shape-fam (μ Q') γ t = compare-reindex-fam {Q = Q'} γ fbase t
@@ -378,17 +378,17 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       compare-reindex-shape-fam γ (const A') fm a = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) id-left
       compare-reindex-shape-fam γ (var v)    fm a = compare-apply-fam γ fm v a
       compare-reindex-shape-fam γ (P' + Q') {dA = dA} {dB} fm (inj₁ a) =
-        ≈-trans (under-root-post _
+        ≈-trans (strong-Lmap-post _
                   (Ah.apply-reindex-shape-fam γ P' fm a))
-                (under-root-cong (compare-reindex-shape-fam γ P' fm a))
+                (strong-Lmap-cong (compare-reindex-shape-fam γ P' fm a))
       compare-reindex-shape-fam γ (P' + Q') {dA = dA} {dB} fm (inj₂ b) =
-        ≈-trans (under-root-post _
+        ≈-trans (strong-Lmap-post _
                   (Ah.apply-reindex-shape-fam γ Q' fm b))
-                (under-root-cong (compare-reindex-shape-fam γ Q' fm b))
+                (strong-Lmap-cong (compare-reindex-shape-fam γ Q' fm b))
       compare-reindex-shape-fam γ (P' × Q') {dA = dA} {dB} fm (a , b) =
-        ≈-trans (under-root-post _
+        ≈-trans (strong-Lmap-post _
                   (strong-prod-m (Ah.apply-reindex-shape-fam γ P' fm a) (Ah.apply-reindex-shape-fam γ Q' fm b)))
-                (under-root-cong
+                (strong-Lmap-cong
                   (≈-trans (strong-prod-m-post _ _ _ _)
                            (strong-prod-m-cong (compare-reindex-shape-fam γ P' fm a)
                                                (compare-reindex-shape-fam γ Q' fm b))))
@@ -459,19 +459,19 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     apply-shape-fam-natural (var Fin.zero)    γ≈ {x} {x'} p = h .famf ._⇒f_.natural (γ≈ , p)
     apply-shape-fam-natural (var (Fin.suc i)) γ≈ p = pair-p₂ _ _
     apply-shape-fam-natural (Q₁ + Q₂) {γ₁} {γ₂} γ≈ {inj₁ x} {inj₁ x'} p =
-      under-root-natural (Γ .fam .subst γ≈)
+      strong-Lmap-natural (Γ .fam .subst γ≈)
         (Tδ.fib-shape-subst Q₁ (Tδ.deco-ext P (λ i → lift tt)) p)
         (fobj μ-fam Q₁ (extend δ A) .fam .subst (apply-shape-idx-resp Q₁ γ≈ p))
         (apply-shape-fam Q₁ γ₁ x) (apply-shape-fam Q₁ γ₂ x')
         (apply-shape-fam-natural Q₁ γ≈ p)
     apply-shape-fam-natural (Q₁ + Q₂) {γ₁} {γ₂} γ≈ {inj₂ y} {inj₂ y'} p =
-      under-root-natural (Γ .fam .subst γ≈)
+      strong-Lmap-natural (Γ .fam .subst γ≈)
         (Tδ.fib-shape-subst Q₂ (Tδ.deco-ext P (λ i → lift tt)) p)
         (fobj μ-fam Q₂ (extend δ A) .fam .subst (apply-shape-idx-resp Q₂ γ≈ p))
         (apply-shape-fam Q₂ γ₁ y) (apply-shape-fam Q₂ γ₂ y')
         (apply-shape-fam-natural Q₂ γ≈ p)
     apply-shape-fam-natural (Q₁ × Q₂) {γ₁} {γ₂} γ≈ {x₁ , x₂} {x₁' , x₂'} (p₁p , p₂p) =
-      under-root-natural (Γ .fam .subst γ≈)
+      strong-Lmap-natural (Γ .fam .subst γ≈)
         (prod-m (Tδ.fib-shape-subst Q₁ (Tδ.deco-ext P (λ i → lift tt)) p₁p)
                 (Tδ.fib-shape-subst Q₂ (Tδ.deco-ext P (λ i → lift tt)) p₂p))
         (prod-m (fobj μ-fam Q₁ (extend δ A) .fam .subst (apply-shape-idx-resp Q₁ γ≈ p₁p))
@@ -496,19 +496,19 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     apply-reindex-shape-fam-natural γ≈ (const A') md p = pair-p₂ _ _
     apply-reindex-shape-fam-natural γ≈ (var v)    md p = apply-apply-fam-natural γ≈ md v p
     apply-reindex-shape-fam-natural {γ₁ = γ₁} {γ₂} γ≈ (P' + Q') {dA = dA} {dB} md {inj₁ a} {inj₁ a'} p =
-      under-root-natural (Γ .fam .subst γ≈)
+      strong-Lmap-natural (Γ .fam .subst γ≈)
         (Tδ.fib-shape-subst P' dA p)
         (TA'.fib-shape-subst P' dB (apply-reindex-shape-resp γ≈ P' md p))
         (apply-reindex-shape-fam γ₁ P' md a) (apply-reindex-shape-fam γ₂ P' md a')
         (apply-reindex-shape-fam-natural γ≈ P' md p)
     apply-reindex-shape-fam-natural {γ₁ = γ₁} {γ₂} γ≈ (P' + Q') {dA = dA} {dB} md {inj₂ b} {inj₂ b'} p =
-      under-root-natural (Γ .fam .subst γ≈)
+      strong-Lmap-natural (Γ .fam .subst γ≈)
         (Tδ.fib-shape-subst Q' dA p)
         (TA'.fib-shape-subst Q' dB (apply-reindex-shape-resp γ≈ Q' md p))
         (apply-reindex-shape-fam γ₁ Q' md b) (apply-reindex-shape-fam γ₂ Q' md b')
         (apply-reindex-shape-fam-natural γ≈ Q' md p)
     apply-reindex-shape-fam-natural {γ₁ = γ₁} {γ₂} γ≈ (P' × Q') {dA = dA} {dB} md {a₁ , a₂} {a₁' , a₂'} (p₁p , p₂p) =
-      under-root-natural (Γ .fam .subst γ≈)
+      strong-Lmap-natural (Γ .fam .subst γ≈)
         (prod-m (Tδ.fib-shape-subst P' dA p₁p) (Tδ.fib-shape-subst Q' dA p₂p))
         (prod-m (TA'.fib-shape-subst P' dB (apply-reindex-shape-resp γ≈ P' md p₁p))
                 (TA'.fib-shape-subst Q' dB (apply-reindex-shape-resp γ≈ Q' md p₂p)))
@@ -608,15 +608,15 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
         ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (pair-p₂ _ _) id-left))
       comp-shape-fam (var v)    rel a = comp-el-fam rel v a
       comp-shape-fam (P' + Q') rel (inj₁ a) =
-        ≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
-        (≈-trans (under-root-post _ _) (under-root-cong (comp-shape-fam P' rel a)))
+        ≈-trans (∘-cong ≈-refl (strong-Lmap-pre (id _) _ _))
+        (≈-trans (strong-Lmap-post _ _) (strong-Lmap-cong (comp-shape-fam P' rel a)))
       comp-shape-fam (P' + Q') rel (inj₂ b) =
-        ≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
-        (≈-trans (under-root-post _ _) (under-root-cong (comp-shape-fam Q' rel b)))
+        ≈-trans (∘-cong ≈-refl (strong-Lmap-pre (id _) _ _))
+        (≈-trans (strong-Lmap-post _ _) (strong-Lmap-cong (comp-shape-fam Q' rel b)))
       comp-shape-fam (P' × Q') rel (a , b) =
-        ≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
-        (≈-trans (under-root-post _ _)
-                 (under-root-cong
+        ≈-trans (∘-cong ≈-refl (strong-Lmap-pre (id _) _ _))
+        (≈-trans (strong-Lmap-post _ _)
+                 (strong-Lmap-cong
                    (≈-trans (∘-cong ≈-refl (strong-prod-m-pre _ _ _ _ _))
                    (≈-trans (strong-prod-m-post _ _ _ _)
                             (strong-prod-m-cong (comp-shape-fam P' rel a) (comp-shape-fam Q' rel b))))))
@@ -671,27 +671,28 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
             (≈-trans id-left (≈-trans (pair-p₂ _ _) (≈-trans (∘-cong id-left ≈-refl) id-left)))
   bridge-fam (Q₁ + Q₂) γ (inj₁ y) =
     ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym (Lmap-comp _ _)))))
-    (≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
-    (≈-trans (under-root-post _ _)
-    (≈-trans (under-root-cong (bridge-fam Q₁ γ y))
-             (≈-sym (≈-trans id-left id-left)))))
+    (≈-trans (∘-cong ≈-refl (strong-Lmap-pre (id _) _ _))
+    (≈-trans (strong-Lmap-post _ _)
+    (≈-trans (strong-Lmap-cong (bridge-fam Q₁ γ y))
+             (≈-sym (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf (FMuC.strong-fmor Q₁ fs))))))))
   bridge-fam (Q₁ + Q₂) γ (inj₂ y) =
     ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym (Lmap-comp _ _)))))
-    (≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
-    (≈-trans (under-root-post _ _)
-    (≈-trans (under-root-cong (bridge-fam Q₂ γ y))
-             (≈-sym (≈-trans id-left id-left)))))
+    (≈-trans (∘-cong ≈-refl (strong-Lmap-pre (id _) _ _))
+    (≈-trans (strong-Lmap-post _ _)
+    (≈-trans (strong-Lmap-cong (bridge-fam Q₂ γ y))
+             (≈-sym (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf (FMuC.strong-fmor Q₂ fs))))))))
   bridge-fam (Q₁ × Q₂) γ (y₁ , y₂) =
     ≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl
                (≈-trans (≈-sym (Lmap-comp _ _)) (Lmap-cong (≈-sym (prod-m-comp _ _ _ _)))))))
-    (≈-trans (∘-cong ≈-refl (under-root-pre (id _) _ _))
-    (≈-trans (under-root-post _ _)
-    (≈-trans (under-root-cong
+    (≈-trans (∘-cong ≈-refl (strong-Lmap-pre (id _) _ _))
+    (≈-trans (strong-Lmap-post _ _)
+    (≈-trans (strong-Lmap-cong
                (≈-trans (∘-cong ≈-refl (strong-prod-m-pre _ _ _ _ _))
                (≈-trans (strong-prod-m-post _ _ _ _)
                         (strong-prod-m-cong (bridge-fam Q₁ γ y₁) (bridge-fam Q₂ γ y₂)))))
-             (≈-sym (under-root-cong
-                      (strong-prod-m-transf (FMuC.strong-fmor Q₁ fs) (FMuC.strong-fmor Q₂ fs) {γ} {y₁} {y₂}))))))
+             (≈-sym (≈-trans (strong-Lf-map-transf (Fam𝒞-P.strong-prod-m (FMuC.strong-fmor Q₁ fs) (FMuC.strong-fmor Q₂ fs)))
+                             (strong-Lmap-cong
+                               (strong-prod-m-transf (FMuC.strong-fmor Q₁ fs) (FMuC.strong-fmor Q₂ fs) {γ} {y₁} {y₂})))))))
   bridge-fam (μ Q') γ t =
     ≈-trans (∘-cong (TA'.fib-trans* Q' (λ v → lift tt)
                        {x = apply-reindex {Q = Q'} γ fbase (At.R.reindex At.mor₀ t)}
