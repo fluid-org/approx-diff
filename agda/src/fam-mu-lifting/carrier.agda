@@ -49,7 +49,7 @@ open Lc public
   using (L; root; inj; copair-root; copair-inj; lifting-ext;
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
          L-const; L-const-cong; L-const-natural;
-         under-root; under-root-cong; under-root-natural; under-root-post;
+         under-root; under-root-cong; under-root-natural; under-root-post; under-root-co;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
 open Obj public

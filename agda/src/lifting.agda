@@ -281,6 +281,73 @@ under-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x y f₁ f�
     (≈-trans (∘-cong ≈-refl (≈-sym (B.copair-in₂ G₁ (L X₁) _ _)))
              (≈-sym (assoc _ _ _)))))))
 
+copair-pair : ∀ {a b c d} (f : a ⇒ d) (g : b ⇒ d) (h : c ⇒ a) (k : c ⇒ b) →
+              (copair f g ∘ pair h k) ≈ ((f ∘ h) +m (g ∘ k))
+copair-pair {a} {b} f g h k =
+  ≈-trans (comp-bilinear₁ _ _ _)
+          (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (B.pair-p₁ a b h k)))
+                   (≈-trans (assoc _ _ _) (∘-cong ≈-refl (B.pair-p₂ a b h k))))
+
+-- Transport across the lifting fuses with composition in context.
+under-root-split-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
+                      (under-root-split r ∘ pair p₁ (under-root-split s)) ≈ under-root-split (r ∘ pair p₁ s)
+under-root-split-co {G} {X} {Y} {Z} r s = bp-ext leg₁ (lifting-ext _ _ leg₂-root leg₂-inj)
+  where
+  A = under-root-split r
+  u = under-root-split s
+  R = r ∘ pair p₁ s
+  leg₁ : ((A ∘ pair p₁ u) ∘ in₁) ≈ (under-root-split R ∘ in₁)
+  leg₁ =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (≈-trans (B.pair-natural G (L Y) _ _ _)
+                                     (pair-cong (B.id-1 G (L X)) (B.copair-in₁ G (L X) _ _))))
+    (≈-trans (copair-pair _ _ _ _)
+    (≈-trans (+m-cong id-right (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (copair-inj _ _) ≈-refl)))
+    (≈-sym
+      (≈-trans (B.copair-in₁ G (L X) _ _)
+      (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+      (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (B.pair-natural G Y _ _ _) (pair-cong (B.id-1 G X) ≈-refl))))
+      (≈-trans (∘-cong ≈-refl (comp-bilinear₂ _ _ _))
+      (≈-trans (comp-bilinear₂ _ _ _)
+               (+m-cong (∘-cong ≈-refl (∘-cong ≈-refl id-right))
+                        (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _)))))))))))))
+  leg₂-root : (((A ∘ pair p₁ u) ∘ in₂) ∘ root) ≈ ((under-root-split R ∘ in₂) ∘ root)
+  leg₂-root =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (≈-trans (B.pair-natural G (L Y) _ _ _)
+                                     (pair-cong (≈-trans (≈-sym (assoc _ _ _))
+                                                         (≈-trans (∘-cong (B.zero-1 G (L X)) ≈-refl) (comp-bilinear-ε₁ _)))
+                                                (≈-trans (≈-sym (assoc _ _ _))
+                                                         (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl)
+                                                                  (copair-root _ _))))))
+    (≈-trans (copair-pair _ _ _ _)
+    (≈-trans (+m-cong (comp-bilinear-ε₂ _) (copair-root _ _))
+    (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
+             (≈-sym (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl) (copair-root _ _))))))))
+  leg₂-inj : (((A ∘ pair p₁ u) ∘ in₂) ∘ inj) ≈ ((under-root-split R ∘ in₂) ∘ inj)
+  leg₂-inj =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (≈-trans (B.pair-natural G (L Y) _ _ _)
+                                     (pair-cong (≈-trans (≈-sym (assoc _ _ _))
+                                                         (≈-trans (∘-cong (B.zero-1 G (L X)) ≈-refl) (comp-bilinear-ε₁ _)))
+                                                (≈-trans (≈-sym (assoc _ _ _))
+                                                         (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl)
+                                                                  (copair-inj _ _))))))
+    (≈-trans (copair-pair _ _ _ _)
+    (≈-trans (+m-cong (comp-bilinear-ε₂ _) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (copair-inj _ _) ≈-refl)))
+    (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
+    (≈-sym
+      (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl)
+      (≈-trans (copair-inj _ _)
+      (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+      (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (B.pair-natural G Y _ _ _) (pair-cong (B.zero-1 G X) ≈-refl))))
+      (≈-trans (∘-cong ≈-refl (comp-bilinear₂ _ _ _))
+      (≈-trans (∘-cong ≈-refl (+m-cong (≈-trans (∘-cong ≈-refl (comp-bilinear-ε₂ _)) (comp-bilinear-ε₂ _)) ≈-refl))
+      (≈-trans (∘-cong ≈-refl (homCM _ _ .CommutativeMonoid.+-lunit))
+      (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _))))))))))))))))
+
 under-root-split-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (r : (G₂ ⊕ X₂) ⇒ Y) →
                  (under-root-split r ∘ prod-m g (Lmap x)) ≈ under-root-split (r ∘ prod-m g x)
 under-root-split-pre {G₁} {G₂} {X₁} {X₂} {Y} g x r =
@@ -530,6 +597,12 @@ under-root-pre g x r =
   ≈-trans (∘-cong (under-root-unfold r) ≈-refl)
   (≈-trans (under-root-split-pre g x r)
            (≈-sym (under-root-unfold (r ∘ prod-m g x))))
+
+under-root-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
+                (under-root r ∘ pair p₁ (under-root s)) ≈ under-root (r ∘ pair p₁ s)
+under-root-co r s =
+  ≈-trans (∘-cong (under-root-unfold r) (pair-cong ≈-refl (under-root-unfold s)))
+  (≈-trans (under-root-split-co r s) (≈-sym (under-root-unfold _)))
 
 elim-root-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
                   c ≈ c' → r ≈ r' → elim-root c r ≈ elim-root c' r'
