@@ -142,7 +142,7 @@ Var δ = [ Poly.var , (λ j → Poly.const (δ j)) ]
 -- polynomial's variables, values below a size bound against elements of the sort environment; at
 -- the environment's, values against indices of the object there.
 record VarRel {Δ n m} (δₘ : Fin m → Obj) (σ : TySub (n + Δ) 0) (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) : Set₁ where
-  field rel : ∀ j (u : Val (σ (j ↑ˡ Δ))) → size u < N → El δₘ (η j) → Set
+  field vrel : ∀ j (u : Val (σ (j ↑ˡ Δ))) → size u < N → El δₘ (η j) → Set
 
 record ConstRel {Δ n} (δ : Fin Δ → Obj) (σ : TySub (n + Δ) 0) : Set₁ where
   field crel : ∀ k (u : Val (σ (n ↑ʳ k))) → Setoid.Carrier (δ k .idx) → Set
@@ -154,12 +154,12 @@ extend-VarRel : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η
                 {ρ : type 0} {s : Fin m ⊎ FD.Sort m} →
                 ((u : Val ρ) → size u < N → El δₘ s → Set) → VarRel δₘ σ η N →
                 VarRel δₘ (extend σ ρ) (extend η s) N
-extend-VarRel R₀ R .rel zero    = R₀
-extend-VarRel R₀ R .rel (suc j) = R .rel j
+extend-VarRel R₀ R .vrel zero    = R₀
+extend-VarRel R₀ R .vrel (suc j) = R .vrel j
 
 lower-VarRel : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'} → N' < N →
                VarRel δₘ σ η N → VarRel δₘ σ η N'
-lower-VarRel p R .rel j u q = R .rel j u (<-trans q p)
+lower-VarRel p R .vrel j u q = R .vrel j u (<-trans q p)
 
 -- The environment's relations are unchanged by an extension of the polynomial's variables.
 extend-ConstRel : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} {ρ : type 0} →
@@ -175,8 +175,8 @@ no-ConstRel .crel ()
 
 mu-VarRel : ∀ {τ N} → ((u : Val (μ τ)) → size u < N → Ix (μ τ) → Set) →
             VarRel interp.δ∅𝒟 (push (μ τ)) (η₀ τ) N
-mu-VarRel R .rel zero = R
-mu-VarRel R .rel (suc ())
+mu-VarRel R .vrel zero = R
+mu-VarRel R .vrel (suc ())
 
 -- The relation at a variable, dispatched on its side of the environment.
 var-rel : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n + Δ)) (σ : TySub (n + Δ) 0)
@@ -184,7 +184,7 @@ var-rel : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n
           (v : Val (σ i)) → size v < N → (s : Fin n ⊎ Fin Δ) → splitAt n i ≡ s →
           Shape δₘ FD.∣ Var δ s ∣ η → Set
 var-rel δₘ δ i σ η N RP RΔ v p (inj₁ j) eq x =
-  RP .rel j (≡.subst Val (≡.sym (≡.cong σ (splitAt⁻¹-↑ˡ eq))) v) (≡.subst (_< N) (≡.sym (size-subst _ v)) p) x
+  RP .vrel j (≡.subst Val (≡.sym (≡.cong σ (splitAt⁻¹-↑ˡ eq))) v) (≡.subst (_< N) (≡.sym (size-subst _ v)) p) x
 var-rel δₘ δ i σ η N RP RΔ v p (inj₂ k) eq x =
   RΔ .crel k (≡.subst Val (≡.sym (≡.cong σ (splitAt⁻¹-↑ʳ eq))) v) x
 
@@ -250,7 +250,7 @@ body-input γ' v s c z (suc k) =
 -- The dependence relations at the variables, over the value relations there.
 record VarDep {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
               (RP : VarRel δₘ σ η N) (d : ∀ j → DecoAssign δₘ (η j)) : Set₁ where
-  field dep : ∀ j u q x (r : RP .rel j u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ (η j) (d j) x ∣ → Prop
+  field vdep : ∀ j u q x (r : RP .vrel j u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ (η j) (d j) x ∣ → Prop
 
 record ConstDep {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} (RΔ : ConstRel δ σ) : Set₁ where
   field cdep : ∀ k u x (r : RΔ .crel k u x) → ∣ 𝔽 (width u) ∣ → ∣ δ k .fam .fm x ∣ → Prop
@@ -264,12 +264,12 @@ extend-VarDep : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η
                 {d : ∀ j → DecoAssign δₘ (extend η s j)} →
                 (∀ u q x (r : R₀ u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ s (d zero) x ∣ → Prop) →
                 VarDep RP (λ j → d (suc j)) → VarDep (extend-VarRel R₀ RP) d
-extend-VarDep R₀ RP D₀ D .dep zero    = D₀
-extend-VarDep R₀ RP D₀ D .dep (suc j) = D .dep j
+extend-VarDep R₀ RP D₀ D .vdep zero    = D₀
+extend-VarDep R₀ RP D₀ D .vdep (suc j) = D .vdep j
 
 lower-VarDep : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'} (p : N' < N)
                (RP : VarRel δₘ σ η N) {d} → VarDep RP d → VarDep (lower-VarRel p RP) d
-lower-VarDep p RP D .dep j u q = D .dep j u (<-trans q p)
+lower-VarDep p RP D .vdep j u q = D .vdep j u (<-trans q p)
 
 extend-ConstDep : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} {ρ : type 0} {RΔ : ConstRel δ σ} →
                   ConstDep RΔ → ConstDep (extend-ConstRel {ρ = ρ} RΔ)
@@ -285,8 +285,8 @@ d₀ τ = Tr.deco-ext interp.δ∅𝒟 (LI.as-poly τ (λ ())) (λ i → lift tt
 mu-VarDep : ∀ {τ N} (R : (u : Val (μ τ)) → size u < N → Ix (μ τ) → Set) →
             (∀ u q x (r : R u q x) → ∣ 𝔽 (width u) ∣ → ∣ Fib (μ τ) x ∣ → Prop) →
             VarDep (mu-VarRel R) (d₀ τ)
-mu-VarDep R D .dep zero = D
-mu-VarDep R D .dep (suc ())
+mu-VarDep R D .vdep zero = D
+mu-VarDep R D .vdep (suc ())
 
 var-dep : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n + Δ)) (σ : TySub (n + Δ) 0)
           (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (RP : VarRel δₘ σ η N) (RΔ : ConstRel δ σ)
@@ -295,7 +295,7 @@ var-dep : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n
           (x : Shape δₘ FD.∣ Var δ s ∣ η) → var-rel δₘ δ i σ η N RP RΔ v p s eq x →
           ∣ 𝔽 (width v) ∣ → ∣ FibSh δₘ (Var δ s) d x ∣ → Prop
 var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p (inj₁ j) eq x r o dv =
-  DP .dep j _ _ x r (λ k → o (≡.subst Fin (width-subst (≡.sym (≡.cong σ (splitAt⁻¹-↑ˡ eq))) v) k)) dv
+  DP .vdep j _ _ x r (λ k → o (≡.subst Fin (width-subst (≡.sym (≡.cong σ (splitAt⁻¹-↑ˡ eq))) v) k)) dv
 var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p (inj₂ k') eq x r o dv =
   DΔ .cdep k' _ x r (λ k → o (≡.subst Fin (width-subst (≡.sym (≡.cong σ (splitAt⁻¹-↑ʳ eq))) v) k)) dv
 
@@ -392,15 +392,17 @@ ec τ i s = elim-const τ .at i .func s
 
 -- Each fibre's semimodule with its additive order: x ⊑ y when x + y is y. Addition in a fibre is
 -- idempotent because it is in the semiring.
-fib-+-idem : ∀ τ i {x} → Semimodule._≈_ (Fib τ i) (Semimodule._+_ (Fib τ i) x x) x
-fib-+-idem τ i =
+sm-+-idem : ∀ (X : Semimodule) {x} → Semimodule._≈_ X (Semimodule._+_ X x x) x
+sm-+-idem X =
   X.trans (X.+-cong (X.sym X.·-unit) (X.sym X.·-unit))
           (X.trans (X.sym X.+-distribʳ) (X.trans (X.·-cong (+-idem Sc.ι) X.refl) X.·-unit))
-  where module X = Semimodule (Fib τ i)
+  where module X = Semimodule X
 
-module F τ i where
-  open Semimodule (Fib τ i) public
-  open commutative-monoid.AdditivePreorder additive (fib-+-idem τ i) public
+module FS (X : Semimodule) where
+  open Semimodule X public
+  open commutative-monoid.AdditivePreorder additive (sm-+-idem X) public
+
+module F τ i = FS (Fib τ i)
 
 -- The dependence relation up to control dependence below the elimination constant at the source.
 DepRel⊑ : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → Setoid.Carrier A →
@@ -599,6 +601,82 @@ ec-natural : ∀ τ {i i' : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i') s �
              Semimodule._≈_ (Fib τ i') (⟦ τ ⟧ .fam .subst e .func (ec τ i s)) (ec τ i' s)
 ec-natural τ e s = elim-const τ .Constant.at-natural e .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq ≈-refl
 
+-- The elimination constant at a shape: the unit constant of the type's polynomial over a decoration,
+-- scaled by the elimination weight, which is what the interpretation of a μ-type carries at a tree.
+module MU {m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) = FD.MuUnit δₘ δₘc
+
+DecoConst : ∀ {m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) {n} {η : Fin n → Fin m ⊎ FD.Sort m} →
+            (∀ j → DecoAssign δₘ (η j)) → Set _
+DecoConst δₘ δₘc d = ∀ j → MU.DecoAssignConst δₘ δₘc (d j)
+
+ec-sh : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k))
+        (τ : type (n + Δ)) {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d)
+        (x : Shape δₘ FD.∣ LI.as-poly τ δ ∣ η) → Setoid.Carrier A → ∣ FibSh δₘ (LI.as-poly τ δ) d x ∣
+ec-sh δₘ δₘc δ δc τ d dc x s =
+  SemiMod._∘_ (MU.fib-shape-unit δₘ δₘc (LI.as-poly τ δ) d (LI.as-poly-const τ δ δc) dc x) model.elim-weight-endo .func s
+
+ec-el : ∀ {m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (r : Fin m ⊎ FD.Sort m) (dr : DecoAssign δₘ r)
+        (drc : MU.DecoAssignConst δₘ δₘc dr) (x : El δₘ r) → Setoid.Carrier A → ∣ FibEl δₘ r dr x ∣
+ec-el δₘ δₘc r dr drc x s = SemiMod._∘_ (MU.fib-el-unit δₘ δₘc r dr drc x) model.elim-weight-endo .func s
+
+-- The decoration constants of the body of a closed μ-type.
+dc₀ : (τ : type 1) → DecoConst interp.δ∅𝒟 (λ ()) (d₀ τ)
+dc₀ τ = MU.deco-ext-const interp.δ∅𝒟 (λ ()) (LI.as-poly τ (λ ())) {ρ̄ = λ i → inj₁ i} {d = λ i → lift tt}
+          (LI.as-poly-const {0} {1} τ (λ ()) (λ ())) (λ i → lift tt)
+
+ec-sh-unit : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k)) {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) x s →
+             ec-sh {Δ} {n} {m} δₘ δₘc δ δc unit d dc x s zero ≈s (w ·ₛ s)
+ec-sh-unit δₘ δₘc δ δc d dc x s = ec-unit x s
+
+ec-sh-base : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k)) {b} {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) x s (k : Fin (sort-width b)) →
+             ec-sh {Δ} {n} {m} δₘ δₘc δ δc (base b) d dc x s k ≈s (w ·ₛ s)
+ec-sh-base δₘ δₘc δ δc d dc x s k = ec-base x s k
+
+ec-sh-inj₁ : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k)) {σ₁ σ₂ : type (n + Δ)} {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) x s →
+             (proj₁ (ec-sh δₘ δₘc δ δc (σ₁ [+] σ₂) d dc (inj₁ x) s) ≈s (w ·ₛ s)) ∧
+             Semimodule._≈_ (FibSh δₘ (LI.as-poly σ₁ δ) d x)
+               (proj₂ (ec-sh δₘ δₘc δ δc (σ₁ [+] σ₂) d dc (inj₁ x) s)) (ec-sh δₘ δₘc δ δc σ₁ d dc x s)
+ec-sh-inj₁ δₘ δₘc δ δc {σ₁} d dc x s = ≈-trans +-runit +-runit , Semimodule.+-lunit (FibSh δₘ (LI.as-poly σ₁ δ) d x)
+
+ec-sh-inj₂ : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k)) {σ₁ σ₂ : type (n + Δ)} {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) x s →
+             (proj₁ (ec-sh δₘ δₘc δ δc (σ₁ [+] σ₂) d dc (inj₂ x) s) ≈s (w ·ₛ s)) ∧
+             Semimodule._≈_ (FibSh δₘ (LI.as-poly σ₂ δ) d x)
+               (proj₂ (ec-sh δₘ δₘc δ δc (σ₁ [+] σ₂) d dc (inj₂ x) s)) (ec-sh δₘ δₘc δ δc σ₂ d dc x s)
+ec-sh-inj₂ δₘ δₘc δ δc {σ₁} {σ₂} d dc x s = ≈-trans +-runit +-runit , Semimodule.+-lunit (FibSh δₘ (LI.as-poly σ₂ δ) d x)
+
+ec-sh-pair : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k)) {σ₁ σ₂ : type (n + Δ)} {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) x y s →
+             (proj₁ (ec-sh δₘ δₘc δ δc (σ₁ [×] σ₂) d dc (x , y) s) ≈s (w ·ₛ s)) ∧
+             (Semimodule._≈_ (FibSh δₘ (LI.as-poly σ₁ δ) d x)
+                (proj₁ (proj₂ (ec-sh δₘ δₘc δ δc (σ₁ [×] σ₂) d dc (x , y) s))) (ec-sh δₘ δₘc δ δc σ₁ d dc x s) ∧
+              Semimodule._≈_ (FibSh δₘ (LI.as-poly σ₂ δ) d y)
+                (proj₂ (proj₂ (ec-sh δₘ δₘc δ δc (σ₁ [×] σ₂) d dc (x , y) s))) (ec-sh δₘ δₘc δ δc σ₂ d dc y s))
+ec-sh-pair δₘ δₘc δ δc {σ₁} {σ₂} d dc x y s =
+  ≈-trans +-runit +-runit ,
+  (Semimodule.trans X (m-lunit X) (m-runit X) , Semimodule.trans Y (m-lunit Y) (m-lunit Y))
+  where
+  X = FibSh δₘ (LI.as-poly σ₁ δ) d x
+  Y = FibSh δₘ (LI.as-poly σ₂ δ) d y
+
+ec-sh-clo : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k)) {σ₁ σ₂ : type 0} {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) x s →
+            (proj₁ (ec-sh {Δ} {n} {m} δₘ δₘc δ δc (σ₁ [→] σ₂) d dc x s) ≈s (w ·ₛ s)) ∧
+            Semimodule._≈_ (model.FE._⟶_ ⟦ σ₁ ⟧ ⟦ σ₂ ⟧ .fam .fm x) (proj₂ (ec-sh {Δ} {n} {m} δₘ δₘc δ δc (σ₁ [→] σ₂) d dc x s))
+              (Semimodule.ε (model.FE._⟶_ ⟦ σ₁ ⟧ ⟦ σ₂ ⟧ .fam .fm x))
+ec-sh-clo δₘ δₘc δ δc {σ₁} {σ₂} d dc x s = ec-clo {σ₁} {σ₂} x s
+
+ec-sh-natural : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k)) (τ : type (n + Δ)) {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) {x x'}
+                (e : Tr.shape≈ δₘ FD.∣ LI.as-poly τ δ ∣ η x x') s →
+                Semimodule._≈_ (FibSh δₘ (LI.as-poly τ δ) d x')
+                  (Tr.fib-shape-subst δₘ (LI.as-poly τ δ) d e .func (ec-sh δₘ δₘc δ δc τ d dc x s))
+                  (ec-sh δₘ δₘc δ δc τ d dc x' s)
+ec-sh-natural δₘ δₘc δ δc τ d dc {x} {x'} e s =
+  MU.fib-shape-unit-natural δₘ δₘc (LI.as-poly τ δ) d (LI.as-poly-const τ δ δc) dc {x} {x'} e
+    .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {model.elim-weight-endo .func s} {model.elim-weight-endo .func s} ≈-refl
+
+-- The constant at the recursive variable of a μ-type is the constant at its tree; the constant at a
+-- nested μ-type is the constant at its root shape.
+ec-el-mu : ∀ (τ : type 1) (t : Ix (μ τ)) s → ec-el interp.δ∅𝒟 (λ ()) (η₀ τ zero) (d₀ τ zero) (dc₀ τ zero) t s ≡ ec (μ τ) t s
+ec-el-mu τ t s = ≡.refl
+
 -- The fibre relation respects the setoids on both sides.
 body-input-resp : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) {s s' c c' z} →
                   s ≈s s' → (∀ k → c k ≈s c' k) → ∀ k →
@@ -611,9 +689,9 @@ body-input-resp γ' v es ec (suc k) =
 VarDep-resp : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
               {RP : VarRel δₘ σ η N} {d : ∀ j → DecoAssign δₘ (η j)} → VarDep RP d → Prop
 VarDep-resp {δₘ = δₘ} {η = η} {RP = RP} {d} DP =
-  ∀ j u q x (r : RP .rel j u q x) {o o' : ∣ 𝔽 (width u) ∣} {dv dv'} →
+  ∀ j u q x (r : RP .vrel j u q x) {o o' : ∣ 𝔽 (width u) ∣} {dv dv'} →
   (∀ k → o k ≈s o' k) → Semimodule._≈_ (FibEl δₘ (η j) (d j) x) dv dv' →
-  DP .dep j u q x r o dv → DP .dep j u q x r o' dv'
+  DP .vdep j u q x r o dv → DP .vdep j u q x r o' dv'
 
 ConstDep-resp : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} {RΔ : ConstRel δ σ} → ConstDep RΔ → Prop
 ConstDep-resp {δ = δ} {RΔ = RΔ} DΔ =
@@ -748,6 +826,19 @@ subst-ec+ τ {i} {i'} e s d =
   F.trans τ i' (⟦ τ ⟧ .fam .subst e .SemiMod._⇒_.preserve-+ {ec τ i s} {d})
                (F.+-cong τ i' (ec-natural τ e s) (F.refl τ i'))
 
+subst-ec-sh+ : ∀ {Δ n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (δ : Fin Δ → Obj) (δc : ∀ k → Constant (δ k))
+               (τ : type (n + Δ)) {η : Fin n → Fin m ⊎ FD.Sort m} (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d)
+               {x x'} (e : Tr.shape≈ δₘ FD.∣ LI.as-poly τ δ ∣ η x x') s dv →
+               Semimodule._≈_ (FibSh δₘ (LI.as-poly τ δ) d x')
+                 (Tr.fib-shape-subst δₘ (LI.as-poly τ δ) d e .func
+                    (Semimodule._+_ (FibSh δₘ (LI.as-poly τ δ) d x) (ec-sh δₘ δₘc δ δc τ d dc x s) dv))
+                 (Semimodule._+_ (FibSh δₘ (LI.as-poly τ δ) d x') (ec-sh δₘ δₘc δ δc τ d dc x' s)
+                    (Tr.fib-shape-subst δₘ (LI.as-poly τ δ) d e .func dv))
+subst-ec-sh+ δₘ δₘc δ δc τ d dc {x} {x'} e s dv =
+  Semimodule.trans X' (Tr.fib-shape-subst δₘ (LI.as-poly τ δ) d e .SemiMod._⇒_.preserve-+ {ec-sh δₘ δₘc δ δc τ d dc x s} {dv})
+                      (Semimodule.+-cong X' (ec-sh-natural δₘ δₘc δ δc τ d dc {x} {x'} e s) (Semimodule.refl X'))
+  where X' = FibSh δₘ (LI.as-poly τ δ) d x'
+
 app-+ᵥ : ∀ {m n} (R : M.Matrix m n) (u v : ∣ 𝔽 n ∣) (k : Fin m) →
          ap R (λ j → u j +ₛ v j) k ≈s (ap R u k +ₛ ap R v k)
 app-+ᵥ R u v k = model.app-+ R u v k
@@ -764,11 +855,58 @@ ap-pair-p₂ {m} {a} {b} f g u k =
   ≈-trans (≈-sym (app-∘ (M.p₂ {a} {b}) (⟨ f , g ⟩) u k))
           (app-congₘ (HasProducts.pair-p₂ M.products f g) u k)
 
+-- The control positions of a transported value are those of the value.
+ctrl-of-subst : ∀ {τ τ'} (E : τ ≡ τ') (v : Val τ) (c : ∣ 𝔽 1 ∣) k →
+                ap (ctrl-of (≡.subst Val E v)) c k ≈s ap (ctrl-of v) c (≡.subst Fin (width-subst E v) k)
+ctrl-of-subst ≡.refl v c k = ≈-refl
+
+-- The dependence relations at the variables absorb the control positions and the constant.
+VarDep-ctrl : ∀ {n m} {δₘ : Fin m → Obj} (δₘc : ∀ p → Constant (δₘ p)) {σ : TySub (n + 0) 0}
+              {η : Fin n → Fin m ⊎ FD.Sort m} {N} {RP : VarRel δₘ σ η N} {d : ∀ j → DecoAssign δₘ (η j)}
+              (dc : DecoConst δₘ δₘc d) → VarDep RP d → Prop
+VarDep-ctrl {δₘ = δₘ} δₘc {η = η} {RP = RP} {d} dc DP =
+  ∀ j u q x (r : RP .vrel j u q x) s {o : ∣ 𝔽 (width u) ∣} {dv} → DP .vdep j u q x r o dv →
+  DP .vdep j u q x r (λ k → ap (ctrl-of u) (λ _ → s) k +ₛ o k)
+    (Semimodule._+_ (FibEl δₘ (η j) (d j) x) (ec-el δₘ δₘc (η j) (d j) (dc j) x s) dv)
+
+extend-VarDep-ctrl : ∀ {n m} {δₘ : Fin m → Obj} (δₘc : ∀ p → Constant (δₘ p)) {σ : TySub (n + 0) 0}
+                     {η : Fin n → Fin m ⊎ FD.Sort m} {N} {ρ : type 0} {s : Fin m ⊎ FD.Sort m}
+                     {R₀ : (u : Val ρ) → size u < N → El δₘ s → Set} {RP : VarRel δₘ σ η N}
+                     {d : ∀ j → DecoAssign δₘ (extend η s j)} (dc : DecoConst δₘ δₘc d)
+                     (D₀ : ∀ u q x (r : R₀ u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ s (d zero) x ∣ → Prop)
+                     (DP : VarDep RP (λ j → d (suc j))) →
+                     (∀ u q x (r : R₀ u q x) s' {o : ∣ 𝔽 (width u) ∣} {dv} → D₀ u q x r o dv →
+                        D₀ u q x r (λ k → ap (ctrl-of u) (λ _ → s') k +ₛ o k)
+                          (Semimodule._+_ (FibEl δₘ s (d zero) x) (ec-el δₘ δₘc s (d zero) (dc zero) x s') dv)) →
+                     VarDep-ctrl δₘc (λ j → dc (suc j)) DP → VarDep-ctrl δₘc dc (extend-VarDep R₀ RP {d = d} D₀ DP)
+extend-VarDep-ctrl δₘc dc D₀ DP H₀ H zero    = H₀
+extend-VarDep-ctrl δₘc dc D₀ DP H₀ H (suc j) = H j
+
+lower-VarDep-ctrl : ∀ {n m} {δₘ : Fin m → Obj} (δₘc : ∀ p → Constant (δₘ p)) {σ : TySub (n + 0) 0}
+                    {η : Fin n → Fin m ⊎ FD.Sort m} {N N'} (p : N' < N) {RP : VarRel δₘ σ η N} {d}
+                    (dc : DecoConst δₘ δₘc d) (DP : VarDep RP d) →
+                    VarDep-ctrl δₘc dc DP → VarDep-ctrl δₘc dc (lower-VarDep p RP DP)
+lower-VarDep-ctrl δₘc p dc DP H j u q = H j u (<-trans q p)
+
 -- Adding the value's control positions at a source weight on the operational side, and the
 -- elimination constant on the denotational side, preserves the relation.
 ctrl-add : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) (s : Setoid.Carrier A)
            {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} → DepRel τ r o d →
            DepRel τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (F._+_ τ i (ec τ i s) d)
+MuCtrl-add : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} {p : size v < N} {i : Ix (μ τ)} (r : MuRel τ N a v p i)
+             (s : Setoid.Carrier A) {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib (μ τ) i ∣} → MuDepRel τ N a r o d →
+             MuDepRel τ N a r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (F._+_ (μ τ) i (ec (μ τ) i s) d)
+ShapeCtrl-add : ∀ {n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (τ : type (n + 0)) (σ : TySub (n + 0) 0)
+                (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (a : Acc _<_ N) (RP : VarRel δₘ σ η N) (RΔ : ConstRel {Δ = 0} (λ ()) σ)
+                (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) (DP : VarDep RP d) (DΔ : ConstDep RΔ) →
+                VarDep-resp DP → VarDep-ctrl δₘc dc DP →
+                {v : Val (sub σ τ)} {p : size v < N} {x : Shape δₘ FD.∣ LI.as-poly {0} τ (λ ()) ∣ η}
+                (r : ShapeRel {Δ = 0} δₘ (λ ()) τ σ η N a RP RΔ v p x) (s : Setoid.Carrier A)
+                {o : ∣ 𝔽 (width v) ∣} {dv : ∣ FibSh δₘ (LI.as-poly {0} τ (λ ())) d x ∣} →
+                ShapeDepRel {Δ = 0} δₘ (λ ()) τ σ η N a RP RΔ d DP DΔ r o dv →
+                ShapeDepRel {Δ = 0} δₘ (λ ()) τ σ η N a RP RΔ d DP DΔ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k)
+                  (Semimodule._+_ (FibSh δₘ (LI.as-poly {0} τ (λ ())) d x) (ec-sh {Δ = 0} δₘ δₘc (λ ()) (λ ()) τ d dc x s) dv)
+
 ctrl-add unit {unit} {i} r s h zero =
   +-cong (≈-trans (ap-ctrl-row {1} s zero) (≈-sym (ec-unit i s))) (h zero)
 ctrl-add (base σ) {const c} {i} r s h k =
@@ -834,6 +972,107 @@ ctrl-add (σ [→] τ) {clo γ' t} {f} r s {o} {d} (h₀ , hc) =
             (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
       (hc (s' +ₛ (w ·ₛ s)) rv z y hz D)
   where module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
+ctrl-add (μ τ) {v} {i} r s h = MuCtrl-add τ (suc (size v)) (<-wellFounded _) {v} {n<1+n _} {i} r s h
+
+MuCtrl-add τ N (acc rs) {roll w} {p} {Tr.sup x} r s h =
+  ShapeCtrl-add interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (rs p)
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (no-ConstRel {n = 1}) (d₀ τ) (dc₀ τ)
+    (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+    (no-ConstDep {n = 1}) HR H r s h
+  where
+  HR : VarDep-resp (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+  HR zero u q x r = MuDepRel-resp τ (suc (size w)) (rs p) {u} {q} {x} r
+  HR (suc ())
+  H : VarDep-ctrl (λ ()) (dc₀ τ) (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+  H zero u q x r = MuCtrl-add τ (suc (size w)) (rs p) {u} {q} {x} r
+  H (suc ())
+
+ShapeCtrl-add {n} δₘ δₘc (var i) σ η N a RP RΔ d dc DP DΔ HR HC {v} {p} {x} r s h =
+  go (splitAt n i) ≡.refl (LI.as-poly-const {0} (var i) (λ ()) (λ ())) x r h
+  where
+  go : ∀ (s' : Fin n ⊎ Fin 0) (eq : splitAt n i ≡ s') (Qc : FD.PolyConst (Var {Δ = 0} (λ ()) s')) (x : Shape δₘ FD.∣ Var {Δ = 0} (λ ()) s' ∣ η)
+       (r : var-rel {Δ = 0} δₘ (λ ()) i σ η N RP RΔ v p s' eq x) {o : ∣ 𝔽 (width v) ∣}
+       {dv : ∣ FibSh δₘ (Var {Δ = 0} (λ ()) s') d x ∣} →
+       var-dep {Δ = 0} δₘ (λ ()) i σ η N RP RΔ d DP DΔ v p s' eq x r o dv →
+       var-dep {Δ = 0} δₘ (λ ()) i σ η N RP RΔ d DP DΔ v p s' eq x r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k)
+         (Semimodule._+_ (FibSh δₘ (Var {Δ = 0} (λ ()) s') d x)
+           (SemiMod._∘_ (MU.fib-shape-unit δₘ δₘc (Var {Δ = 0} (λ ()) s') d Qc dc x) model.elim-weight-endo .func s) dv)
+  go (inj₁ j) eq Qc x r {o} h =
+    HR j _ _ x r (λ k → +-cong (ctrl-of-subst E v (λ _ → s) k) ≈-refl) (Semimodule.refl (FibEl δₘ (η j) (d j) x))
+      (HC j _ _ x r s h)
+    where E = ≡.sym (≡.cong σ (splitAt⁻¹-↑ˡ eq))
+  go (inj₂ ()) eq Qc x r h
+ShapeCtrl-add δₘ δₘc unit σ η N a RP RΔ d dc DP DΔ HR HC {unit} {x = x} r s h zero =
+  +-cong (≈-trans (ap-ctrl-row {1} s zero) (≈-sym (ec-sh-unit {Δ = 0} δₘ δₘc (λ ()) (λ ()) d dc x s))) (h zero)
+ShapeCtrl-add δₘ δₘc (base b) σ η N a RP RΔ d dc DP DΔ HR HC {const c} {x = x} r s h k =
+  +-cong (≈-trans (ap-ctrl-row {sort-width b} s k) (≈-sym (ec-sh-base {Δ = 0} δₘ δₘc (λ ()) (λ ()) d dc x s k))) (h k)
+ShapeCtrl-add δₘ δₘc (σ₁ [+] σ₂) σ η N a RP RΔ d dc DP DΔ HR HC {inl v} {x = x} (x' , r , ⟪ e ⟫) s {o} {dv} (h₀ , h) =
+  let e+ = subst-ec-sh+ {Δ = 0} δₘ δₘc (λ ()) (λ ()) (σ₁ [+] σ₂) d dc {x} {inj₁ x'} e s dv
+      X₁ = FibSh δₘ (LI.as-poly {0} σ₁ (λ ())) d x'
+  in
+  ≈-trans (+-cong (ctrl-lift-zero (ctrl-of v) s) h₀)
+          (≈-sym (≈-trans (prop._∧_.proj₁ e+) (+-cong (prop._∧_.proj₁ (ec-sh-inj₁ {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x' s)) ≈-refl))) ,
+  ShapeDepRel-resp {Δ = 0} δₘ (λ ()) σ₁ σ η N a RP RΔ d DP DΔ HR (λ ()) r
+    (λ k → +-cong (≈-sym (ctrl-lift-suc (ctrl-of v) s k)) ≈-refl)
+    (Semimodule.sym X₁ (Semimodule.trans X₁ (prop._∧_.proj₂ e+)
+       (Semimodule.+-cong X₁ (prop._∧_.proj₂ (ec-sh-inj₁ {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x' s)) (Semimodule.refl X₁))))
+    (ShapeCtrl-add δₘ δₘc σ₁ σ η N a RP RΔ d dc DP DΔ HR HC r s h)
+ShapeCtrl-add δₘ δₘc (σ₁ [+] σ₂) σ η N a RP RΔ d dc DP DΔ HR HC {inr v} {x = x} (x' , r , ⟪ e ⟫) s {o} {dv} (h₀ , h) =
+  let e+ = subst-ec-sh+ {Δ = 0} δₘ δₘc (λ ()) (λ ()) (σ₁ [+] σ₂) d dc {x} {inj₂ x'} e s dv
+      X₂ = FibSh δₘ (LI.as-poly {0} σ₂ (λ ())) d x'
+  in
+  ≈-trans (+-cong (ctrl-lift-zero (ctrl-of v) s) h₀)
+          (≈-sym (≈-trans (prop._∧_.proj₁ e+) (+-cong (prop._∧_.proj₁ (ec-sh-inj₂ {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x' s)) ≈-refl))) ,
+  ShapeDepRel-resp {Δ = 0} δₘ (λ ()) σ₂ σ η N a RP RΔ d DP DΔ HR (λ ()) r
+    (λ k → +-cong (≈-sym (ctrl-lift-suc (ctrl-of v) s k)) ≈-refl)
+    (Semimodule.sym X₂ (Semimodule.trans X₂ (prop._∧_.proj₂ e+)
+       (Semimodule.+-cong X₂ (prop._∧_.proj₂ (ec-sh-inj₂ {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x' s)) (Semimodule.refl X₂))))
+    (ShapeCtrl-add δₘ δₘc σ₂ σ η N a RP RΔ d dc DP DΔ HR HC r s h)
+ShapeCtrl-add δₘ δₘc (σ₁ [×] σ₂) σ η N a RP RΔ d dc DP DΔ HR HC {pair v u} {x = x , y} (r , r') s {o} {dv} (h₀ , (h₁ , h₂)) =
+  ≈-trans (+-cong (ctrl-lift-zero (⟨ ctrl-of v , ctrl-of u ⟩) s) h₀)
+          (+-cong (≈-sym (prop._∧_.proj₁ (ec-sh-pair {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x y s))) ≈-refl) ,
+  (ShapeDepRel-resp {Δ = 0} δₘ (λ ()) σ₁ σ η N a RP RΔ d DP DΔ HR (λ ()) r
+     (λ k → ≈-trans (+-cong (≈-sym (ap-pair-p₁ (ctrl-of v) (ctrl-of u) (λ _ → s) k)) ≈-refl)
+              (≈-trans (≈-sym (app-+ᵥ (M.p₁ {width v} {width u}) _ _ k))
+                       (app-congᵥ (M.p₁ {width v} {width u})
+                          (λ l → +-cong (≈-sym (ctrl-lift-suc (⟨ ctrl-of v , ctrl-of u ⟩) s l)) ≈-refl) k)))
+     (Semimodule.+-cong X₁ (Semimodule.sym X₁ (prop._∧_.proj₁ (prop._∧_.proj₂ (ec-sh-pair {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x y s)))) (Semimodule.refl X₁))
+     (ShapeCtrl-add δₘ δₘc σ₁ σ η N a RP RΔ d dc DP DΔ HR HC r s h₁) ,
+   ShapeDepRel-resp {Δ = 0} δₘ (λ ()) σ₂ σ η N a RP RΔ d DP DΔ HR (λ ()) r'
+     (λ k → ≈-trans (+-cong (≈-sym (ap-pair-p₂ (ctrl-of v) (ctrl-of u) (λ _ → s) k)) ≈-refl)
+              (≈-trans (≈-sym (app-+ᵥ (M.p₂ {width v} {width u}) _ _ k))
+                       (app-congᵥ (M.p₂ {width v} {width u})
+                          (λ l → +-cong (≈-sym (ctrl-lift-suc (⟨ ctrl-of v , ctrl-of u ⟩) s l)) ≈-refl) k)))
+     (Semimodule.+-cong X₂ (Semimodule.sym X₂ (prop._∧_.proj₂ (prop._∧_.proj₂ (ec-sh-pair {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x y s)))) (Semimodule.refl X₂))
+     (ShapeCtrl-add δₘ δₘc σ₂ σ η N a RP RΔ d dc DP DΔ HR HC r' s h₂))
+  where
+  X₁ = FibSh δₘ (LI.as-poly {0} σ₁ (λ ())) d x
+  X₂ = FibSh δₘ (LI.as-poly {0} σ₂ (λ ())) d y
+ShapeCtrl-add δₘ δₘc (σ₁ [→] σ₂) σ η N a RP RΔ d dc DP DΔ HR HC {v} {x = x} r s h = ctrl-add (σ₁ [→] σ₂) {v} {x} r s h
+ShapeCtrl-add δₘ δₘc (μ τ) σ η N (acc rs) RP RΔ d dc DP DΔ HR HC {roll w} {p} {Tr.sup y} r s h =
+  ShapeDepRel-resp {Δ = 0} δₘ (λ ()) τ σ' η' (suc (size w)) (rs p) RP' RΔ' d' DP' DΔ' HR' (λ ()) r
+    (λ k → +-cong (ctrl-of-subst (unfold-sub σ τ) w (λ _ → s) k) ≈-refl) (Semimodule.refl (FibSh δₘ (LI.as-poly {0} τ (λ ())) d' y))
+    (ShapeCtrl-add δₘ δₘc τ σ' η' (suc (size w)) (rs p) RP' RΔ' d' dc' DP' DΔ' HR'
+       (extend-VarDep-ctrl δₘc dc' D₀ (lower-VarDep p RP DP)
+          (λ u q x r s' → ShapeCtrl-add δₘ δₘc (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d dc
+                            (lower-VarDep p RP DP) DΔ (lower-VarDep-resp p DP HR) (lower-VarDep-ctrl δₘc p dc DP HC) {u} {q} {x} r s')
+          (lower-VarDep-ctrl δₘc p dc DP HC))
+       r s h)
+  where
+  σ' = extend σ (μ (sub (sub-lift σ) τ))
+  η' = extend η (inj₂ (mkSort FD.∣ LI.as-poly {0} τ (λ ()) ∣ η))
+  R₀ = ShapeRel {Δ = 0} δₘ (λ ()) (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ
+  RP' = extend-VarRel R₀ (lower-VarRel p RP)
+  RΔ' = extend-ConstRel RΔ
+  d' = Tr.deco-ext δₘ (LI.as-poly {0} τ (λ ())) d
+  dc' = MU.deco-ext-const δₘ δₘc (LI.as-poly {0} τ (λ ())) (LI.as-poly-const {0} τ (λ ()) (λ ())) dc
+  D₀ = λ u q x r → ShapeDepRel {Δ = 0} δₘ (λ ()) (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d (lower-VarDep p RP DP) DΔ {u} {q} {x} r
+  DP' = extend-VarDep R₀ (lower-VarRel p RP) {d = d'} D₀ (lower-VarDep p RP DP)
+  DΔ' = extend-ConstDep DΔ
+  HR' = extend-VarDep-resp D₀ (lower-VarDep p RP DP)
+          (λ u q x r → ShapeDepRel-resp {Δ = 0} δₘ (λ ()) (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d
+                         (lower-VarDep p RP DP) DΔ (lower-VarDep-resp p DP HR) (λ ()) {u} {q} {x} r)
+          (lower-VarDep-resp p DP HR)
 
 -- Looking up a variable in a related environment.
 lookup-val : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} {gi} → EnvValRel γ gi →
@@ -870,8 +1109,55 @@ DepRel⊑-ctrl : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s {o : ∣ 
 DepRel⊑-ctrl τ {i = i} r s {o} {d} (m , (dm , h)) =
   DepRel-resp τ r (λ k → ≈-refl) (⊑-absorb τ i s d m dm) (ctrl-add τ r s h)
 
+-- The value relations at the variables respect the equivalence on elements.
+VarRel-resp : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N} →
+              VarRel δₘ σ η N → Set
+VarRel-resp {δₘ = δₘ} {η = η} RP =
+  ∀ j u q {x x'} → Tr.elEq δₘ (η j) x x' → RP .vrel j u q x → RP .vrel j u q x'
+
+ConstRel-resp : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} → ConstRel δ σ → Set
+ConstRel-resp {δ = δ} RΔ = ∀ k u {x x'} → Setoid._≈_ (δ k .idx) x x' → RΔ .crel k u x → RΔ .crel k u x'
+
+extend-VarRel-resp : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
+                     {ρ : type 0} (s : Fin m ⊎ FD.Sort m)
+                     (R₀ : (u : Val ρ) → size u < N → El δₘ s → Set) (RP : VarRel δₘ σ η N) →
+                     (∀ u q {x x'} → Tr.elEq δₘ s x x' → R₀ u q x → R₀ u q x') → VarRel-resp RP →
+                     VarRel-resp (extend-VarRel {s = s} R₀ RP)
+extend-VarRel-resp s R₀ RP H₀ H zero    = H₀
+extend-VarRel-resp s R₀ RP H₀ H (suc j) = H j
+
+lower-VarRel-resp : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'}
+                    (p : N' < N) (RP : VarRel δₘ σ η N) → VarRel-resp RP → VarRel-resp (lower-VarRel p RP)
+lower-VarRel-resp p RP H j u q = H j u (<-trans q p)
+
+extend-ConstRel-resp : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} (ρ : type 0) (RΔ : ConstRel δ σ) →
+                       ConstRel-resp RΔ → ConstRel-resp (extend-ConstRel {ρ = ρ} RΔ)
+extend-ConstRel-resp ρ RΔ H = H
+
+no-ConstRel-resp : ∀ {n} {σ : TySub (n + 0) 0} → ConstRel-resp (no-ConstRel {n = n} {σ = σ})
+no-ConstRel-resp ()
+
+var-rel-resp : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n + Δ)) (σ : TySub (n + Δ) 0)
+               (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (RP : VarRel δₘ σ η N) (RΔ : ConstRel δ σ) →
+               VarRel-resp RP → ConstRel-resp RΔ → (v : Val (σ i)) (p : size v < N)
+               (s : Fin n ⊎ Fin Δ) (eq : splitAt n i ≡ s) (x x' : Shape δₘ FD.∣ Var δ s ∣ η) →
+               Tr.shape≈ δₘ FD.∣ Var δ s ∣ η x x' →
+               var-rel δₘ δ i σ η N RP RΔ v p s eq x → var-rel δₘ δ i σ η N RP RΔ v p s eq x'
+var-rel-resp δₘ δ i σ η N RP RΔ HP HΔ v p (inj₁ j) eq x x' e r = HP j _ _ e r
+var-rel-resp δₘ δ i σ η N RP RΔ HP HΔ v p (inj₂ k) eq x x' e r = HΔ k _ e r
+
 -- Related values are related at equal indices.
 ValRel-resp : ∀ τ {v : Val τ} {i i' : Ix τ} → Setoid._≈_ (⟦ τ ⟧ .idx) i i' → ValRel τ v i → ValRel τ v i'
+MuRel-resp : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} {p : size v < N} {i i' : Ix (μ τ)} →
+             Setoid._≈_ (⟦ μ τ ⟧ .idx) i i' → MuRel τ N a v p i → MuRel τ N a v p i'
+mu-VarRel-resp : ∀ τ N (a : Acc _<_ N) → VarRel-resp (mu-VarRel (MuRel τ N a))
+ShapeRel-resp : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (τ : type (n + Δ)) (σ : TySub (n + Δ) 0)
+                (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (a : Acc _<_ N) (RP : VarRel δₘ σ η N) (RΔ : ConstRel δ σ) →
+                VarRel-resp RP → ConstRel-resp RΔ →
+                {v : Val (sub σ τ)} {p : size v < N} {x x' : Shape δₘ FD.∣ LI.as-poly τ δ ∣ η} →
+                Tr.shape≈ δₘ FD.∣ LI.as-poly τ δ ∣ η x x' →
+                ShapeRel δₘ δ τ σ η N a RP RΔ v p x → ShapeRel δₘ δ τ σ η N a RP RΔ v p x'
+
 ValRel-resp unit {unit} e r = tt
 ValRel-resp (base σ) {const c} {i} {i'} e ⟪ e₀ ⟫ =
   ⟪ Setoid.trans (sort-index σ) {i'} {i} {c} (Setoid.sym (sort-index σ) {i} {i'} e) e₀ ⟫
@@ -882,7 +1168,40 @@ ValRel-resp (σ [+] τ) {inr v} {i} {i'} e (i₀ , r , ⟪ e₀ ⟫) =
 ValRel-resp (σ [×] τ) {pair v u} {i , j} {i' , j'} (e₁ , e₂) (r , r') = ValRel-resp σ e₁ r , ValRel-resp τ e₂ r'
 ValRel-resp (σ [→] τ) {clo γ' t} {f} {f'} e r {v} {j} rv {u} {U} D =
   ValRel-resp τ (e .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Setoid.refl (⟦ σ ⟧ .idx) {j})) (r rv D)
+ValRel-resp (μ τ) {v} {i} {i'} e r = MuRel-resp τ (suc (size v)) (<-wellFounded _) {v} {n<1+n _} {i} {i'} e r
 
+MuRel-resp τ N (acc rs) {roll w} {p} {Tr.sup x} {Tr.sup x'} e r =
+  ShapeRel-resp interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (rs p)
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (no-ConstRel {n = 1})
+    (mu-VarRel-resp τ (suc (size w)) (rs p)) (no-ConstRel-resp {n = 1}) e r
+
+mu-VarRel-resp τ N a zero u q {x} {x'} = MuRel-resp τ N a {u} {q} {x} {x'}
+mu-VarRel-resp τ N a (suc ())
+
+ShapeRel-resp {Δ} {n} δₘ δ (var i) σ η N a RP RΔ HP HΔ {v} {p} {x} {x'} e r =
+  var-rel-resp δₘ δ i σ η N RP RΔ HP HΔ v p (splitAt n i) ≡.refl x x' e r
+ShapeRel-resp δₘ δ unit σ η N a RP RΔ HP HΔ {unit} e r = tt
+ShapeRel-resp δₘ δ (base b) σ η N a RP RΔ HP HΔ {const c} {x = x} {x'} e ⟪ e₀ ⟫ =
+  ⟪ Setoid.trans (sort-index b) {x'} {x} {c} (Setoid.sym (sort-index b) {x} {x'} e) e₀ ⟫
+ShapeRel-resp δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ HP HΔ {inl v} {x = x} {x'} e (x₀ , r , ⟪ e₀ ⟫) =
+  x₀ , r , ⟪ Tr.shape≈-trans δₘ Q η {x'} {x} {inj₁ x₀} (Tr.shape≈-sym δₘ Q η {x} {x'} e) e₀ ⟫
+  where Q = FD.∣ LI.as-poly (σ₁ [+] σ₂) δ ∣
+ShapeRel-resp δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ HP HΔ {inr v} {x = x} {x'} e (x₀ , r , ⟪ e₀ ⟫) =
+  x₀ , r , ⟪ Tr.shape≈-trans δₘ Q η {x'} {x} {inj₂ x₀} (Tr.shape≈-sym δₘ Q η {x} {x'} e) e₀ ⟫
+  where Q = FD.∣ LI.as-poly (σ₁ [+] σ₂) δ ∣
+ShapeRel-resp δₘ δ (σ₁ [×] σ₂) σ η N a RP RΔ HP HΔ {pair v u} {x = x , y} {x' , y'} (e₁ , e₂) (r , r') =
+  ShapeRel-resp δₘ δ σ₁ σ η N a RP RΔ HP HΔ e₁ r , ShapeRel-resp δₘ δ σ₂ σ η N a RP RΔ HP HΔ e₂ r'
+ShapeRel-resp δₘ δ (σ₁ [→] σ₂) σ η N a RP RΔ HP HΔ {v} {x = x} {x'} e r = ValRel-resp (σ₁ [→] σ₂) {v} {x} {x'} e r
+ShapeRel-resp δₘ δ (μ τ) σ η N (acc rs) RP RΔ HP HΔ {roll w} {p} {Tr.sup y} {Tr.sup y'} e r =
+  ShapeRel-resp δₘ δ τ (extend σ (μ (sub (sub-lift σ) τ))) (extend η (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η)))
+    (suc (size w)) (rs p)
+    (extend-VarRel (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ) (lower-VarRel p RP))
+    (extend-ConstRel RΔ)
+    (extend-VarRel-resp (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η))
+       (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ) (lower-VarRel p RP)
+       (λ u q {x} {x'} → ShapeRel-resp δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ (lower-VarRel-resp p RP HP) HΔ {u} {q} {x} {x'})
+       (lower-VarRel-resp p RP HP))
+    (extend-ConstRel-resp (μ (sub (sub-lift σ) τ)) RΔ HΔ) e r
 
 -- Reading the model's constructions elementwise: a pairing through the biproduct is the pair of
 -- the components, the lifted action keeps the root and acts on the payload, and eliminating a
@@ -956,7 +1275,7 @@ DepRel⊑-mono τ {i = i} r s s' (m , (dm , h)) = m , (⊑ec-mono τ i s s' m dm
 EnvDepRel-mono : ∀ {Γ} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s s' {x g} →
                  EnvDepRel rγ s x g → EnvDepRel rγ (s' +ₛ (w ·ₛ s)) x g
 EnvDepRel-mono emp s s' rel = prop.tt
-EnvDepRel-mono (rγ · r) s s' (rel , h) = EnvDepRel-mono rγ s s' rel , DepRel⊑-mono _ r s s' h
+EnvDepRel-mono (_·_ {τ = τ} rγ r) s s' (rel , h) = EnvDepRel-mono rγ s s' rel , DepRel⊑-mono τ r s s' h
 
 DepRel⊑-of : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s {o d} → DepRel τ r o d → DepRel⊑ τ r s o d
 DepRel⊑-of τ {i = i} r s {o} {d} h =
@@ -986,9 +1305,9 @@ ap-p₂-++ {m} {n} x z k =
 EnvDepRel-resp : ∀ {Γ} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s {x x' g} →
                  (∀ k → x k ≈s x' k) → EnvDepRel rγ s x g → EnvDepRel rγ s x' g
 EnvDepRel-resp emp s ex rel = prop.tt
-EnvDepRel-resp (_·_ {γ = γ} {v = v} rγ r) s ex (rel , h) =
+EnvDepRel-resp (_·_ {τ = τ} {γ = γ} {v = v} rγ r) s ex (rel , h) =
   EnvDepRel-resp rγ s (app-congᵥ (M.p₁ {width-env γ} {width v}) ex) rel ,
-  DepRel⊑-resp _ r s (app-congᵥ (M.p₂ {width-env γ} {width v}) ex) h
+  DepRel⊑-resp τ r s (app-congᵥ (M.p₂ {width-env γ} {width v}) ex) h
 
 -- Elements above the constant, and multiples of the source weight: an element is a multiple of
 -- the source weight when it is that weight times the elimination weight times some element. A
@@ -996,8 +1315,11 @@ EnvDepRel-resp (_·_ {γ = γ} {v = v} rγ r) s ex (rel , h) =
 -- above the constant in the additive order: at first-order types the constant absorbs the multiple
 -- outright, and at arrow types the body's constant at the root does, since the root itself absorbs
 -- the weighted source.
+MultipleS : (X : Semimodule) → Setoid.Carrier A → ∣ X ∣ → Prop
+MultipleS X s E = ∃ (∣ X ∣) (λ E' → Semimodule._≈_ X E (Semimodule._·_ X (s ·ₛ w) E'))
+
 Multiple : ∀ τ (i : Ix τ) → Setoid.Carrier A → ∣ Fib τ i ∣ → Prop
-Multiple τ i s E = ∃ (∣ Fib τ i ∣) (λ E' → F._≈_ τ i E (F._·_ τ i (s ·ₛ w) E'))
+Multiple τ i = MultipleS (Fib τ i)
 
 sw-absorb : ∀ s e → ((w ·ₛ s) +ₛ ((s ·ₛ w) ·ₛ e)) ≈s (w ·ₛ s)
 sw-absorb s e =
@@ -1108,8 +1430,100 @@ multiple-clo f s E (E' , (h₀ , h₁)) = (proj₁ E' , h₀) , (proj₂ E' , h�
 root-abs : ∀ s a b → MultipleA s a → (b +ₛ (w ·ₛ s)) ≈s b → (b +ₛ a) ≈s b
 root-abs s a b (e , ea) hb = ≈-trans (+-cong ≈-refl ea) (root-absorb s b e hb)
 
+-- The same, in any lifted semimodule: an element above a root weight and a payload has a root
+-- absorbing the weight and a payload above the payload; a multiple has a multiple root and payload.
+⊑L : ∀ (X : Semimodule) {E Q : ∣ Ls.L X ∣} {a : Setoid.Carrier A} {c : ∣ X ∣} →
+     proj₁ E ≈s a → Semimodule._≈_ X (proj₂ E) c → FS._⊑_ (Ls.L X) E Q →
+     ((proj₁ Q +ₛ a) ≈s proj₁ Q) ∧ FS._⊑_ X c (proj₂ Q)
+⊑L X ea ec (h₀ , h₁) =
+  ≈-trans +-comm (≈-trans (+-cong (≈-sym ea) ≈-refl) h₀) , FS.trans X (FS.+-cong X (FS.sym X ec) (FS.refl X)) h₁
+
+⊑L× : ∀ (X Y : Semimodule) {E Q : ∣ Ls.L (SemiMod._⊕_ X Y) ∣} {a : Setoid.Carrier A} {cx : ∣ X ∣} {cy : ∣ Y ∣} →
+      proj₁ E ≈s a → Semimodule._≈_ X (proj₁ (proj₂ E)) cx → Semimodule._≈_ Y (proj₂ (proj₂ E)) cy →
+      FS._⊑_ (Ls.L (SemiMod._⊕_ X Y)) E Q →
+      ((proj₁ Q +ₛ a) ≈s proj₁ Q) ∧ (FS._⊑_ X cx (proj₁ (proj₂ Q)) ∧ FS._⊑_ Y cy (proj₂ (proj₂ Q)))
+⊑L× X Y ea ex ey (h₀ , (h₁ , h₂)) =
+  ≈-trans +-comm (≈-trans (+-cong (≈-sym ea) ≈-refl) h₀) ,
+  (FS.trans X (FS.+-cong X (FS.sym X ex) (FS.refl X)) h₁ , FS.trans Y (FS.+-cong Y (FS.sym Y ey) (FS.refl Y)) h₂)
+
+⊑L-root : ∀ (X : Semimodule) {E Q : ∣ Ls.L X ∣} {a : Setoid.Carrier A} → proj₁ E ≈s a → FS._⊑_ (Ls.L X) E Q →
+          (proj₁ Q +ₛ a) ≈s proj₁ Q
+⊑L-root X ea (h₀ , _) = ≈-trans +-comm (≈-trans (+-cong (≈-sym ea) ≈-refl) h₀)
+
+multipleL : ∀ (X : Semimodule) s (E : ∣ Ls.L X ∣) → MultipleS (Ls.L X) s E → MultipleA s (proj₁ E) ∧ MultipleS X s (proj₂ E)
+multipleL X s E (E' , (h₀ , h₁)) = (proj₁ E' , h₀) , (proj₂ E' , h₁)
+
+multipleL× : ∀ (X Y : Semimodule) s (E : ∣ Ls.L (SemiMod._⊕_ X Y) ∣) → MultipleS (Ls.L (SemiMod._⊕_ X Y)) s E →
+             MultipleA s (proj₁ E) ∧ (MultipleS X s (proj₁ (proj₂ E)) ∧ MultipleS Y s (proj₂ (proj₂ E)))
+multipleL× X Y s E (E' , (h₀ , (h₁ , h₂))) = (proj₁ E' , h₀) , ((proj₁ (proj₂ E') , h₁) , (proj₂ (proj₂ E') , h₂))
+
+-- A semimodule map carries multiples to multiples.
+multipleS-map : ∀ {X Y : Semimodule} (f : X ⇒ Y) s E → MultipleS X s E → MultipleS Y s (f .func E)
+multipleS-map {X} {Y} f s E (E' , h) =
+  f .func E' , FS.trans Y (f .SemiMod._⇒_.func-resp-≈ h) (f .SemiMod._⇒_.preserve-· {s ·ₛ w} {E'})
+
+-- Transport preserves being above the constant at a shape.
+ec⊑-sh-subst : ∀ {n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (τ : type (n + 0)) {η : Fin n → Fin m ⊎ FD.Sort m}
+               (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) {x x' : Shape δₘ FD.∣ LI.as-poly {0} τ (λ ()) ∣ η}
+               (e : Tr.shape≈ δₘ FD.∣ LI.as-poly {0} τ (λ ()) ∣ η x x') (s : Setoid.Carrier A)
+               (Q : ∣ FibSh δₘ (LI.as-poly {0} τ (λ ())) d x ∣) →
+               FS._⊑_ (FibSh δₘ (LI.as-poly {0} τ (λ ())) d x) (ec-sh {Δ = 0} δₘ δₘc (λ ()) (λ ()) τ d dc x s) Q →
+               FS._⊑_ (FibSh δₘ (LI.as-poly {0} τ (λ ())) d x') (ec-sh {Δ = 0} δₘ δₘc (λ ()) (λ ()) τ d dc x' s)
+                 (Tr.fib-shape-subst δₘ (LI.as-poly {0} τ (λ ())) d {x} {x'} e .func Q)
+ec⊑-sh-subst δₘ δₘc τ d dc {x} {x'} e s Q h =
+  FS.trans X' (FS.+-cong X' (FS.sym X' (ec-sh-natural {Δ = 0} δₘ δₘc (λ ()) (λ ()) τ d dc {x} {x'} e s)) (FS.refl X'))
+  (FS.trans X' (FS.sym X' (sb .SemiMod._⇒_.preserve-+ {ec-sh {Δ = 0} δₘ δₘc (λ ()) (λ ()) τ d dc x s} {Q}))
+               (sb .SemiMod._⇒_.func-resp-≈ h))
+  where
+  X' = FibSh δₘ (LI.as-poly {0} τ (λ ())) d x'
+  sb = Tr.fib-shape-subst δₘ (LI.as-poly {0} τ (λ ())) d {x} {x'} e
+
+-- The dependence relations at the variables absorb a multiple summand above the constant.
+VarDep-absorb : ∀ {n m} {δₘ : Fin m → Obj} (δₘc : ∀ p → Constant (δₘ p)) {σ : TySub (n + 0) 0}
+                {η : Fin n → Fin m ⊎ FD.Sort m} {N} {RP : VarRel δₘ σ η N} {d : ∀ j → DecoAssign δₘ (η j)}
+                (dc : DecoConst δₘ δₘc d) → VarDep RP d → Prop
+VarDep-absorb {δₘ = δₘ} δₘc {η = η} {RP = RP} {d} dc DP =
+  ∀ j u q x (r : RP .vrel j u q x) s {P : ∣ 𝔽 (width u) ∣} {Q E : ∣ FibEl δₘ (η j) (d j) x ∣} →
+  DP .vdep j u q x r P (Semimodule._+_ (FibEl δₘ (η j) (d j) x) Q E) →
+  FS._⊑_ (FibEl δₘ (η j) (d j) x) (ec-el δₘ δₘc (η j) (d j) (dc j) x s) Q →
+  MultipleS (FibEl δₘ (η j) (d j) x) s E → DP .vdep j u q x r P Q
+
+extend-VarDep-absorb : ∀ {n m} {δₘ : Fin m → Obj} (δₘc : ∀ p → Constant (δₘ p)) {σ : TySub (n + 0) 0}
+                       {η : Fin n → Fin m ⊎ FD.Sort m} {N} {ρ : type 0} {s : Fin m ⊎ FD.Sort m}
+                       {R₀ : (u : Val ρ) → size u < N → El δₘ s → Set} {RP : VarRel δₘ σ η N}
+                       {d : ∀ j → DecoAssign δₘ (extend η s j)} (dc : DecoConst δₘ δₘc d)
+                       (D₀ : ∀ u q x (r : R₀ u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ s (d zero) x ∣ → Prop)
+                       (DP : VarDep RP (λ j → d (suc j))) →
+                       (∀ u q x (r : R₀ u q x) s' {P : ∣ 𝔽 (width u) ∣} {Q E : ∣ FibEl δₘ s (d zero) x ∣} →
+                          D₀ u q x r P (Semimodule._+_ (FibEl δₘ s (d zero) x) Q E) →
+                          FS._⊑_ (FibEl δₘ s (d zero) x) (ec-el δₘ δₘc s (d zero) (dc zero) x s') Q →
+                          MultipleS (FibEl δₘ s (d zero) x) s' E → D₀ u q x r P Q) →
+                       VarDep-absorb δₘc (λ j → dc (suc j)) DP → VarDep-absorb δₘc dc (extend-VarDep R₀ RP {d = d} D₀ DP)
+extend-VarDep-absorb δₘc dc D₀ DP H₀ H zero    = H₀
+extend-VarDep-absorb δₘc dc D₀ DP H₀ H (suc j) = H j
+
+lower-VarDep-absorb : ∀ {n m} {δₘ : Fin m → Obj} (δₘc : ∀ p → Constant (δₘ p)) {σ : TySub (n + 0) 0}
+                      {η : Fin n → Fin m ⊎ FD.Sort m} {N N'} (p : N' < N) {RP : VarRel δₘ σ η N} {d}
+                      (dc : DecoConst δₘ δₘc d) (DP : VarDep RP d) →
+                      VarDep-absorb δₘc dc DP → VarDep-absorb δₘc dc (lower-VarDep p RP DP)
+lower-VarDep-absorb δₘc p dc DP H j u q = H j u (<-trans q p)
+
 DepRel-absorb : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s {P : ∣ 𝔽 (width v) ∣} {Q E : ∣ Fib τ i ∣} →
                 DepRel τ r P (F._+_ τ i Q E) → F._⊑_ τ i (ec τ i s) Q → Multiple τ i s E → DepRel τ r P Q
+MuAbsorb : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} {p : size v < N} {i : Ix (μ τ)} (r : MuRel τ N a v p i)
+           (s : Setoid.Carrier A) {P : ∣ 𝔽 (width v) ∣} {Q E : ∣ Fib (μ τ) i ∣} →
+           MuDepRel τ N a r P (F._+_ (μ τ) i Q E) → F._⊑_ (μ τ) i (ec (μ τ) i s) Q → Multiple (μ τ) i s E → MuDepRel τ N a r P Q
+ShapeAbsorb : ∀ {n m} (δₘ : Fin m → Obj) (δₘc : ∀ p → Constant (δₘ p)) (τ : type (n + 0)) (σ : TySub (n + 0) 0)
+              (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (a : Acc _<_ N) (RP : VarRel δₘ σ η N) (RΔ : ConstRel {Δ = 0} (λ ()) σ)
+              (d : ∀ j → DecoAssign δₘ (η j)) (dc : DecoConst δₘ δₘc d) (DP : VarDep RP d) (DΔ : ConstDep RΔ) →
+              VarDep-resp DP → VarDep-absorb δₘc dc DP →
+              {v : Val (sub σ τ)} {p : size v < N} {x : Shape δₘ FD.∣ LI.as-poly {0} τ (λ ()) ∣ η}
+              (r : ShapeRel {Δ = 0} δₘ (λ ()) τ σ η N a RP RΔ v p x) (s : Setoid.Carrier A)
+              {P : ∣ 𝔽 (width v) ∣} {Q E : ∣ FibSh δₘ (LI.as-poly {0} τ (λ ())) d x ∣} →
+              ShapeDepRel {Δ = 0} δₘ (λ ()) τ σ η N a RP RΔ d DP DΔ r P (Semimodule._+_ (FibSh δₘ (LI.as-poly {0} τ (λ ())) d x) Q E) →
+              FS._⊑_ (FibSh δₘ (LI.as-poly {0} τ (λ ())) d x) (ec-sh {Δ = 0} δₘ δₘc (λ ()) (λ ()) τ d dc x s) Q →
+              MultipleS (FibSh δₘ (LI.as-poly {0} τ (λ ())) d x) s E →
+              ShapeDepRel {Δ = 0} δₘ (λ ()) τ σ η N a RP RΔ d DP DΔ r P Q
 DepRel-absorb unit {unit} {i} r s {P} {Q} {E} h hQ (E' , hE) zero =
   ≈-trans (h zero)
           (root-of s (Q zero +ₛ E zero) (Q zero) (E' zero) (+-cong ≈-refl (hE zero))
@@ -1188,6 +1602,106 @@ DepRel-absorb (σ [→] τ) {clo γ' t} {f} r s {P} {Q} {E} (h₀ , hc) hQ hE =
          {proj₂ E} {Semimodule._·_ (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) (s ·ₛ w) E'} h)
       (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.preserve-· {s ·ₛ w} {E'})
 
+DepRel-absorb (μ τ) {v} {i} r s h hQ hE = MuAbsorb τ (suc (size v)) (<-wellFounded _) {v} {n<1+n _} {i} r s h hQ hE
+
+MuAbsorb τ N (acc rs) {roll w} {p} {Tr.sup x} r s h hQ hE =
+  ShapeAbsorb interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (rs p)
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (no-ConstRel {n = 1}) (d₀ τ) (dc₀ τ)
+    (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+    (no-ConstDep {n = 1}) HR H r s h hQ hE
+  where
+  HR : VarDep-resp (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+  HR zero u q x r = MuDepRel-resp τ (suc (size w)) (rs p) {u} {q} {x} r
+  HR (suc ())
+  H : VarDep-absorb (λ ()) (dc₀ τ) (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+  H zero u q x r = MuAbsorb τ (suc (size w)) (rs p) {u} {q} {x} r
+  H (suc ())
+
+ShapeAbsorb {n} δₘ δₘc (var i) σ η N a RP RΔ d dc DP DΔ HR HA {v} {p} {x} r s h hQ hE =
+  go (splitAt n i) ≡.refl (LI.as-poly-const {0} (var i) (λ ()) (λ ())) x r h hQ hE
+  where
+  go : ∀ (s' : Fin n ⊎ Fin 0) (eq : splitAt n i ≡ s') (Qc : FD.PolyConst (Var {Δ = 0} (λ ()) s'))
+       (x : Shape δₘ FD.∣ Var {Δ = 0} (λ ()) s' ∣ η) (r : var-rel {Δ = 0} δₘ (λ ()) i σ η N RP RΔ v p s' eq x)
+       {P : ∣ 𝔽 (width v) ∣} {Q E : ∣ FibSh δₘ (Var {Δ = 0} (λ ()) s') d x ∣} →
+       var-dep {Δ = 0} δₘ (λ ()) i σ η N RP RΔ d DP DΔ v p s' eq x r P (Semimodule._+_ (FibSh δₘ (Var {Δ = 0} (λ ()) s') d x) Q E) →
+       FS._⊑_ (FibSh δₘ (Var {Δ = 0} (λ ()) s') d x)
+         (SemiMod._∘_ (MU.fib-shape-unit δₘ δₘc (Var {Δ = 0} (λ ()) s') d Qc dc x) model.elim-weight-endo .func s) Q →
+       MultipleS (FibSh δₘ (Var {Δ = 0} (λ ()) s') d x) s E →
+       var-dep {Δ = 0} δₘ (λ ()) i σ η N RP RΔ d DP DΔ v p s' eq x r P Q
+  go (inj₁ j) eq Qc x r h hQ hE = HA j _ _ x r s h hQ hE
+  go (inj₂ ()) eq Qc x r h hQ hE
+ShapeAbsorb δₘ δₘc unit σ η N a RP RΔ d dc DP DΔ HR HA {unit} {x = x} r s {P} {Q} {E} h hQ (E' , hE) zero =
+  ≈-trans (h zero)
+          (root-of s (Q zero +ₛ E zero) (Q zero) (E' zero) (+-cong ≈-refl (hE zero))
+                   (≈-trans +-comm (≈-trans (+-cong (≈-sym (ec-sh-unit {Δ = 0} δₘ δₘc (λ ()) (λ ()) d dc x s)) ≈-refl) (hQ zero))))
+ShapeAbsorb δₘ δₘc (base b) σ η N a RP RΔ d dc DP DΔ HR HA {const c} {x = x} r s {P} {Q} {E} h hQ (E' , hE) k =
+  ≈-trans (h k)
+          (root-of s (Q k +ₛ E k) (Q k) (E' k) (+-cong ≈-refl (hE k))
+                   (≈-trans +-comm (≈-trans (+-cong (≈-sym (ec-sh-base {Δ = 0} δₘ δₘc (λ ()) (λ ()) d dc x s k)) ≈-refl) (hQ k))))
+ShapeAbsorb δₘ δₘc (σ₁ [+] σ₂) σ η N a RP RΔ d dc DP DΔ HR HA {inl v} {x = x} (x' , r , ⟪ e ⟫) s {P} {Q} {E} (h₀ , h) hQ hE =
+  let sb = Tr.fib-shape-subst δₘ (LI.as-poly {0} (σ₁ [+] σ₂) (λ ())) d {x} {inj₁ x'} e
+      Q' = sb .func Q
+      E' = sb .func E
+      split = sb .SemiMod._⇒_.preserve-+ {Q} {E}
+      ecx = ec-sh-inj₁ {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x' s
+      hQ' = ⊑L X₁ (prop._∧_.proj₁ ecx) (prop._∧_.proj₂ ecx) (ec⊑-sh-subst δₘ δₘc (σ₁ [+] σ₂) d dc {x} {inj₁ x'} e s Q hQ)
+      hE' = multipleL X₁ s E' (multipleS-map sb s E hE)
+  in
+  ≈-trans h₀ (≈-trans (prop._∧_.proj₁ split) (root-abs s (proj₁ E') (proj₁ Q') (prop._∧_.proj₁ hE') (prop._∧_.proj₁ hQ'))) ,
+  ShapeAbsorb δₘ δₘc σ₁ σ η N a RP RΔ d dc DP DΔ HR HA r s
+    (ShapeDepRel-resp {Δ = 0} δₘ (λ ()) σ₁ σ η N a RP RΔ d DP DΔ HR (λ ()) r (λ k → ≈-refl) (prop._∧_.proj₂ split) h)
+    (prop._∧_.proj₂ hQ') (prop._∧_.proj₂ hE')
+  where X₁ = FibSh δₘ (LI.as-poly {0} σ₁ (λ ())) d x'
+ShapeAbsorb δₘ δₘc (σ₁ [+] σ₂) σ η N a RP RΔ d dc DP DΔ HR HA {inr v} {x = x} (x' , r , ⟪ e ⟫) s {P} {Q} {E} (h₀ , h) hQ hE =
+  let sb = Tr.fib-shape-subst δₘ (LI.as-poly {0} (σ₁ [+] σ₂) (λ ())) d {x} {inj₂ x'} e
+      Q' = sb .func Q
+      E' = sb .func E
+      split = sb .SemiMod._⇒_.preserve-+ {Q} {E}
+      ecx = ec-sh-inj₂ {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x' s
+      hQ' = ⊑L X₂ (prop._∧_.proj₁ ecx) (prop._∧_.proj₂ ecx) (ec⊑-sh-subst δₘ δₘc (σ₁ [+] σ₂) d dc {x} {inj₂ x'} e s Q hQ)
+      hE' = multipleL X₂ s E' (multipleS-map sb s E hE)
+  in
+  ≈-trans h₀ (≈-trans (prop._∧_.proj₁ split) (root-abs s (proj₁ E') (proj₁ Q') (prop._∧_.proj₁ hE') (prop._∧_.proj₁ hQ'))) ,
+  ShapeAbsorb δₘ δₘc σ₂ σ η N a RP RΔ d dc DP DΔ HR HA r s
+    (ShapeDepRel-resp {Δ = 0} δₘ (λ ()) σ₂ σ η N a RP RΔ d DP DΔ HR (λ ()) r (λ k → ≈-refl) (prop._∧_.proj₂ split) h)
+    (prop._∧_.proj₂ hQ') (prop._∧_.proj₂ hE')
+  where X₂ = FibSh δₘ (LI.as-poly {0} σ₂ (λ ())) d x'
+ShapeAbsorb δₘ δₘc (σ₁ [×] σ₂) σ η N a RP RΔ d dc DP DΔ HR HA {pair v u} {x = x , y} (r , r') s {P} {Q} {E} (h₀ , (h₁ , h₂)) hQ hE =
+  let ecx = ec-sh-pair {Δ = 0} δₘ δₘc (λ ()) (λ ()) {σ₁} {σ₂} d dc x y s
+      hQ' = ⊑L× X₁ X₂ (prop._∧_.proj₁ ecx) (prop._∧_.proj₁ (prop._∧_.proj₂ ecx)) (prop._∧_.proj₂ (prop._∧_.proj₂ ecx)) hQ
+      hE' = multipleL× X₁ X₂ s E hE
+  in
+  ≈-trans h₀ (root-abs s (proj₁ E) (proj₁ Q) (prop._∧_.proj₁ hE') (prop._∧_.proj₁ hQ')) ,
+  (ShapeAbsorb δₘ δₘc σ₁ σ η N a RP RΔ d dc DP DΔ HR HA r s h₁ (prop._∧_.proj₁ (prop._∧_.proj₂ hQ')) (prop._∧_.proj₁ (prop._∧_.proj₂ hE')) ,
+   ShapeAbsorb δₘ δₘc σ₂ σ η N a RP RΔ d dc DP DΔ HR HA r' s h₂ (prop._∧_.proj₂ (prop._∧_.proj₂ hQ')) (prop._∧_.proj₂ (prop._∧_.proj₂ hE')))
+  where
+  X₁ = FibSh δₘ (LI.as-poly {0} σ₁ (λ ())) d x
+  X₂ = FibSh δₘ (LI.as-poly {0} σ₂ (λ ())) d y
+ShapeAbsorb δₘ δₘc (σ₁ [→] σ₂) σ η N a RP RΔ d dc DP DΔ HR HA {v} {x = x} r s {P} {Q} {E} h hQ hE =
+  DepRel-absorb (σ₁ [→] σ₂) {v} {x} r s {P} {Q} {E} h hQ hE
+ShapeAbsorb δₘ δₘc (μ τ) σ η N (acc rs) RP RΔ d dc DP DΔ HR HA {roll w} {p} {Tr.sup y} r s h hQ hE =
+  ShapeAbsorb δₘ δₘc τ σ' η' (suc (size w)) (rs p) RP' RΔ' d' dc' DP' DΔ'
+    (extend-VarDep-resp D₀ (lower-VarDep p RP DP)
+       (λ u q x r → ShapeDepRel-resp {Δ = 0} δₘ (λ ()) (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d
+                      (lower-VarDep p RP DP) DΔ (lower-VarDep-resp p DP HR) (λ ()) {u} {q} {x} r)
+       (lower-VarDep-resp p DP HR))
+    (extend-VarDep-absorb δₘc dc' D₀ (lower-VarDep p RP DP)
+       (λ u q x r s' → ShapeAbsorb δₘ δₘc (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d dc
+                         (lower-VarDep p RP DP) DΔ (lower-VarDep-resp p DP HR) (lower-VarDep-absorb δₘc p dc DP HA) {u} {q} {x} r s')
+       (lower-VarDep-absorb δₘc p dc DP HA))
+    r s h hQ hE
+  where
+  σ' = extend σ (μ (sub (sub-lift σ) τ))
+  η' = extend η (inj₂ (mkSort FD.∣ LI.as-poly {0} τ (λ ()) ∣ η))
+  R₀ = ShapeRel {Δ = 0} δₘ (λ ()) (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ
+  RP' = extend-VarRel R₀ (lower-VarRel p RP)
+  RΔ' = extend-ConstRel RΔ
+  d' = Tr.deco-ext δₘ (LI.as-poly {0} τ (λ ())) d
+  dc' = MU.deco-ext-const δₘ δₘc (LI.as-poly {0} τ (λ ())) (LI.as-poly-const {0} τ (λ ()) (λ ())) dc
+  D₀ = λ u q x r → ShapeDepRel {Δ = 0} δₘ (λ ()) (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d (lower-VarDep p RP DP) DΔ {u} {q} {x} r
+  DP' = extend-VarDep R₀ (lower-VarRel p RP) {d = d'} D₀ (lower-VarDep p RP DP)
+  DΔ' = extend-ConstDep DΔ
+
 -- Reading the first position of a lifted vector, and its tail, by the projections.
 built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x →
              ap (built-out γ n +ₘ (M.in₂ {1} ∘ R')) (inputs γ s x) zero ≈s (w ·ₛ s)
@@ -1221,10 +1735,79 @@ subst-base : ∀ {σ} {i i' : Ix (base σ)} (e : Setoid._≈_ (⟦ base σ ⟧ .
              ⟦ base σ ⟧ .fam .subst e .func d k ≈s d k
 subst-base {σ} e d k = Σ-unit {sort-width σ} k d
 
+-- The dependence relations at the variables transport along the equivalence on elements, over the
+-- transport of the value relations.
+VarDep-transport : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
+                   {RP : VarRel δₘ σ η N} (HP : VarRel-resp RP) {d : ∀ j → DecoAssign δₘ (η j)} → VarDep RP d → Prop
+VarDep-transport {δₘ = δₘ} {η = η} {RP = RP} HP {d} DP =
+  ∀ j u q {x x'} (e : Tr.elEq δₘ (η j) x x') (r : RP .vrel j u q x) {o : ∣ 𝔽 (width u) ∣} {dv} →
+  DP .vdep j u q x r o dv → DP .vdep j u q x' (HP j u q e r) o (Tr.fib-el-subst δₘ (η j) (d j) e .func dv)
+
+ConstDep-transport : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} {RΔ : ConstRel δ σ} (HΔ : ConstRel-resp RΔ) →
+                     ConstDep RΔ → Prop
+ConstDep-transport {δ = δ} {RΔ = RΔ} HΔ DΔ =
+  ∀ k u {x x'} (e : Setoid._≈_ (δ k .idx) x x') (r : RΔ .crel k u x) {o : ∣ 𝔽 (width u) ∣} {dv} →
+  DΔ .cdep k u x r o dv → DΔ .cdep k u x' (HΔ k u e r) o (δ k .fam .subst e .func dv)
+
+extend-VarDep-transport :
+  ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N}
+    {ρ : type 0} (s : Fin m ⊎ FD.Sort m)
+    (R₀ : (u : Val ρ) → size u < N → El δₘ s → Set) (RP : VarRel δₘ σ η N)
+    (H₀ : ∀ u q {x x'} → Tr.elEq δₘ s x x' → R₀ u q x → R₀ u q x') (HP : VarRel-resp RP)
+    {d : ∀ j → DecoAssign δₘ (extend η s j)}
+    (D₀ : ∀ u q x (r : R₀ u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ s (d zero) x ∣ → Prop)
+    (DP : VarDep RP (λ j → d (suc j))) →
+    (∀ u q {x x'} (e : Tr.elEq δₘ s x x') (r : R₀ u q x) {o : ∣ 𝔽 (width u) ∣} {dv} →
+       D₀ u q x r o dv → D₀ u q x' (H₀ u q e r) o (Tr.fib-el-subst δₘ s (d zero) e .func dv)) →
+    VarDep-transport HP DP → VarDep-transport (extend-VarRel-resp s R₀ RP H₀ HP) (extend-VarDep R₀ RP {d = d} D₀ DP)
+extend-VarDep-transport s R₀ RP H₀ HP D₀ DP T₀ T zero    = T₀
+extend-VarDep-transport s R₀ RP H₀ HP D₀ DP T₀ T (suc j) = T j
+
+lower-VarDep-transport : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'}
+                         (p : N' < N) (RP : VarRel δₘ σ η N) (HP : VarRel-resp RP) {d} (DP : VarDep RP d) →
+                         VarDep-transport HP DP → VarDep-transport (lower-VarRel-resp p RP HP) (lower-VarDep p RP DP)
+lower-VarDep-transport p RP HP DP T j u q = T j u (<-trans q p)
+
+extend-ConstDep-transport : ∀ {Δ n} {δ : Fin Δ → Obj} {σ : TySub (n + Δ) 0} (ρ : type 0) (RΔ : ConstRel δ σ)
+                            (HΔ : ConstRel-resp RΔ) (DΔ : ConstDep RΔ) →
+                            ConstDep-transport HΔ DΔ → ConstDep-transport (extend-ConstRel-resp ρ RΔ HΔ) (extend-ConstDep {ρ = ρ} DΔ)
+extend-ConstDep-transport ρ RΔ HΔ DΔ T = T
+
+no-ConstDep-transport : ∀ {n} {σ : TySub (n + 0) 0} → ConstDep-transport (no-ConstRel-resp {n = n} {σ = σ}) (no-ConstDep {n = n} {σ = σ})
+no-ConstDep-transport ()
+
+var-dep-transport : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n + Δ)) (σ : TySub (n + Δ) 0)
+                    (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (RP : VarRel δₘ σ η N) (RΔ : ConstRel δ σ)
+                    (HP : VarRel-resp RP) (HΔ : ConstRel-resp RΔ) (d : ∀ j → DecoAssign δₘ (η j))
+                    (DP : VarDep RP d) (DΔ : ConstDep RΔ) → VarDep-transport HP DP → ConstDep-transport HΔ DΔ →
+                    (v : Val (σ i)) (p : size v < N) (s : Fin n ⊎ Fin Δ) (eq : splitAt n i ≡ s)
+                    (x x' : Shape δₘ FD.∣ Var δ s ∣ η) (E : Tr.shape≈ δₘ FD.∣ Var δ s ∣ η x x')
+                    (r : var-rel δₘ δ i σ η N RP RΔ v p s eq x) {o : ∣ 𝔽 (width v) ∣} {dv : ∣ FibSh δₘ (Var δ s) d x ∣} →
+                    var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p s eq x r o dv →
+                    var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p s eq x' (var-rel-resp δₘ δ i σ η N RP RΔ HP HΔ v p s eq x x' E r) o
+                      (Tr.fib-shape-subst δₘ (Var δ s) d {x} {x'} E .func dv)
+var-dep-transport δₘ δ i σ η N RP RΔ HP HΔ d DP DΔ T TΔ v p (inj₁ j) eq x x' E r h = T j _ _ E r h
+var-dep-transport δₘ δ i σ η N RP RΔ HP HΔ d DP DΔ T TΔ v p (inj₂ k) eq x x' E r h = TΔ k _ E r h
+
 -- Transporting a relation along an index equation.
 DepRel-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Setoid._≈_ (⟦ τ ⟧ .idx) i i') (r : ValRel τ v i)
                    {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
                    DepRel τ r o d → DepRel τ (ValRel-resp τ E r) o (⟦ τ ⟧ .fam .subst E .func d)
+MuTransport : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} {p : size v < N} {i i' : Ix (μ τ)}
+              (E : Setoid._≈_ (⟦ μ τ ⟧ .idx) i i') (r : MuRel τ N a v p i) {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib (μ τ) i ∣} →
+              MuDepRel τ N a r o d → MuDepRel τ N a (MuRel-resp τ N a {v} {p} {i} {i'} E r) o (⟦ μ τ ⟧ .fam .subst {i} {i'} E .func d)
+ShapeTransport : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (τ : type (n + Δ)) (σ : TySub (n + Δ) 0)
+                 (η : Fin n → Fin m ⊎ FD.Sort m) (N : ℕ) (a : Acc _<_ N) (RP : VarRel δₘ σ η N) (RΔ : ConstRel δ σ)
+                 (HP : VarRel-resp RP) (HΔ : ConstRel-resp RΔ)
+                 (d : ∀ j → DecoAssign δₘ (η j)) (DP : VarDep RP d) (DΔ : ConstDep RΔ) →
+                 VarDep-resp DP → ConstDep-resp DΔ → VarDep-transport HP DP → ConstDep-transport HΔ DΔ →
+                 {v : Val (sub σ τ)} {p : size v < N} {x x' : Shape δₘ FD.∣ LI.as-poly τ δ ∣ η}
+                 (E : Tr.shape≈ δₘ FD.∣ LI.as-poly τ δ ∣ η x x') (r : ShapeRel δₘ δ τ σ η N a RP RΔ v p x)
+                 {o : ∣ 𝔽 (width v) ∣} {dv : ∣ FibSh δₘ (LI.as-poly τ δ) d x ∣} →
+                 ShapeDepRel δₘ δ τ σ η N a RP RΔ d DP DΔ r o dv →
+                 ShapeDepRel δₘ δ τ σ η N a RP RΔ d DP DΔ (ShapeRel-resp δₘ δ τ σ η N a RP RΔ HP HΔ E r) o
+                   (Tr.fib-shape-subst δₘ (LI.as-poly τ δ) d {x} {x'} E .func dv)
+
 DepRel-transport unit {unit} {i} {i'} E r {o} {d} h k =
   ≈-trans (h k) (≈-sym (subst-refl unit {i} E d k))
 DepRel-transport (base σ) {const c} {i} {i'} E r {o} {d} h k =
@@ -1290,4 +1873,270 @@ DepRel-transport (σ [→] τ) {clo γ' t} {f} {f'} E r {o} {d} (h₀ , hc) =
                                         (f' .famf .transf j .func y)
   arg-part j y = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq
                    (Semimodule.refl (Fib σ j) {y})
+DepRel-transport (μ τ) {v} {i} {i'} E r h = MuTransport τ (suc (size v)) (<-wellFounded _) {v} {n<1+n _} {i} {i'} E r h
 
+MuTransport τ N (acc rs) {roll w} {p} {Tr.sup x} {Tr.sup x'} E r h =
+  ShapeTransport interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (rs p)
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (no-ConstRel {n = 1}) HP (no-ConstRel-resp {n = 1}) (d₀ τ)
+    (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+    (no-ConstDep {n = 1}) HR (no-ConstDep-resp {n = 1}) T (no-ConstDep-transport {n = 1}) E r h
+  where
+  HP = mu-VarRel-resp τ (suc (size w)) (rs p)
+  HR : VarDep-resp (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+  HR zero u q x r = MuDepRel-resp τ (suc (size w)) (rs p) {u} {q} {x} r
+  HR (suc ())
+  T : VarDep-transport HP (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+  T zero u q {x} {x'} e r = MuTransport τ (suc (size w)) (rs p) {u} {q} {x} {x'} e r
+  T (suc ())
+
+ShapeTransport {Δ} {n} δₘ δ (var i) σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ {v} {p} {x} {x'} E r h =
+  var-dep-transport δₘ δ i σ η N RP RΔ HP HΔ d DP DΔ T TΔ v p (splitAt n i) ≡.refl x x' E r h
+ShapeTransport δₘ δ unit σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ {unit} {x = x} {x'} E r {o} {dv} h k =
+  ≈-trans (h k) (≈-sym (subst-refl unit {x} E dv k))
+ShapeTransport δₘ δ (base b) σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ {const c} {x = x} {x'} E r {o} {dv} h k =
+  ≈-trans (h k) (≈-sym (subst-base {b} {x} {x'} E dv k))
+ShapeTransport δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ {inl v} {x = x} {x'} E (x₀ , r₀ , ⟪ e₀ ⟫) {o} {dv} (h₀ , h) =
+  let Q = FD.∣ LI.as-poly (σ₁ [+] σ₂) δ ∣
+      e' = Tr.shape≈-trans δₘ Q η {x'} {x} {inj₁ x₀} (Tr.shape≈-sym δₘ Q η {x} {x'} E) e₀
+      comp = Tr.fib-shape-trans* δₘ (LI.as-poly (σ₁ [+] σ₂) δ) d {x} {x'} {inj₁ x₀} e' E
+               .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (Semimodule.refl (FibSh δₘ (LI.as-poly (σ₁ [+] σ₂) δ) d x) {dv})
+  in
+  ≈-trans h₀ (prop._∧_.proj₁ comp) ,
+  ShapeDepRel-resp δₘ δ σ₁ σ η N a RP RΔ d DP DΔ HR HRΔ r₀ (λ k → ≈-refl) (prop._∧_.proj₂ comp) h
+ShapeTransport δₘ δ (σ₁ [+] σ₂) σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ {inr v} {x = x} {x'} E (x₀ , r₀ , ⟪ e₀ ⟫) {o} {dv} (h₀ , h) =
+  let Q = FD.∣ LI.as-poly (σ₁ [+] σ₂) δ ∣
+      e' = Tr.shape≈-trans δₘ Q η {x'} {x} {inj₂ x₀} (Tr.shape≈-sym δₘ Q η {x} {x'} E) e₀
+      comp = Tr.fib-shape-trans* δₘ (LI.as-poly (σ₁ [+] σ₂) δ) d {x} {x'} {inj₂ x₀} e' E
+               .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (Semimodule.refl (FibSh δₘ (LI.as-poly (σ₁ [+] σ₂) δ) d x) {dv})
+  in
+  ≈-trans h₀ (prop._∧_.proj₁ comp) ,
+  ShapeDepRel-resp δₘ δ σ₂ σ η N a RP RΔ d DP DΔ HR HRΔ r₀ (λ k → ≈-refl) (prop._∧_.proj₂ comp) h
+ShapeTransport δₘ δ (σ₁ [×] σ₂) σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ {pair v u} {x = x , y} {x' , y'} (E₁ , E₂) (r₁ , r₂) {o} {dv} (h₀ , (h₁ , h₂)) =
+  ≈-trans h₀ (≈-sym +-runit) ,
+  (ShapeDepRel-resp δₘ δ σ₁ σ η N a RP RΔ d DP DΔ HR HRΔ (ShapeRel-resp δₘ δ σ₁ σ η N a RP RΔ HP HΔ E₁ r₁) (λ k → ≈-refl)
+     (Semimodule.sym X₁' (Semimodule.trans X₁' (m-lunit X₁') (m-runit X₁')))
+     (ShapeTransport δₘ δ σ₁ σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ E₁ r₁ h₁) ,
+   ShapeDepRel-resp δₘ δ σ₂ σ η N a RP RΔ d DP DΔ HR HRΔ (ShapeRel-resp δₘ δ σ₂ σ η N a RP RΔ HP HΔ E₂ r₂) (λ k → ≈-refl)
+     (Semimodule.sym X₂' (Semimodule.trans X₂' (m-lunit X₂') (m-lunit X₂')))
+     (ShapeTransport δₘ δ σ₂ σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ E₂ r₂ h₂))
+  where
+  X₁' = FibSh δₘ (LI.as-poly σ₁ δ) d x'
+  X₂' = FibSh δₘ (LI.as-poly σ₂ δ) d y'
+ShapeTransport δₘ δ (σ₁ [→] σ₂) σ η N a RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ {v} {x = x} {x'} E r {o} {dv} h =
+  DepRel-transport (σ₁ [→] σ₂) {v} {x} {x'} E r {o} {dv} h
+ShapeTransport δₘ δ (μ τ) σ η N (acc rs) RP RΔ HP HΔ d DP DΔ HR HRΔ T TΔ {roll w} {p} {Tr.sup y} {Tr.sup y'} E r h =
+  ShapeTransport δₘ δ τ σ' η' (suc (size w)) (rs p) RP' RΔ' HP' HΔ' d' DP' DΔ'
+    (extend-VarDep-resp D₀ (lower-VarDep p RP DP)
+       (λ u q x r → ShapeDepRel-resp δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d
+                      (lower-VarDep p RP DP) DΔ (lower-VarDep-resp p DP HR) HRΔ {u} {q} {x} r)
+       (lower-VarDep-resp p DP HR))
+    (extend-ConstDep-resp (μ (sub (sub-lift σ) τ)) DΔ HRΔ)
+    (extend-VarDep-transport (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η)) R₀ (lower-VarRel p RP) H₀ (lower-VarRel-resp p RP HP)
+       D₀ (lower-VarDep p RP DP)
+       (λ u q {x} {x'} e r → ShapeTransport δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ
+                               (lower-VarRel-resp p RP HP) HΔ d (lower-VarDep p RP DP) DΔ (lower-VarDep-resp p DP HR) HRΔ
+                               (lower-VarDep-transport p RP HP DP T) TΔ {u} {q} {x} {x'} e r)
+       (lower-VarDep-transport p RP HP DP T))
+    (extend-ConstDep-transport (μ (sub (sub-lift σ) τ)) RΔ HΔ DΔ TΔ)
+    E r h
+  where
+  σ' = extend σ (μ (sub (sub-lift σ) τ))
+  η' = extend η (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η))
+  R₀ = ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ
+  RP' = extend-VarRel R₀ (lower-VarRel p RP)
+  RΔ' = extend-ConstRel RΔ
+  H₀ = λ u q {x} {x'} → ShapeRel-resp δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ (lower-VarRel-resp p RP HP) HΔ {u} {q} {x} {x'}
+  HP' = extend-VarRel-resp (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η)) R₀ (lower-VarRel p RP) H₀ (lower-VarRel-resp p RP HP)
+  HΔ' = extend-ConstRel-resp (μ (sub (sub-lift σ) τ)) RΔ HΔ
+  d' = Tr.deco-ext δₘ (LI.as-poly τ δ) d
+  D₀ = λ u q x r → ShapeDepRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d (lower-VarDep p RP DP) DΔ {u} {q} {x} r
+  DP' = extend-VarDep R₀ (lower-VarRel p RP) {d = d'} D₀ (lower-VarDep p RP DP)
+  DΔ' = extend-ConstDep DΔ
+
+-- The relations do not depend on the bound or its accessibility proof: relations at the variables that
+-- agree below the bounds give the same relation, at the same shapes.
+VarRel-agree : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'} →
+               VarRel δₘ σ η N → VarRel δₘ σ η N' → Set
+VarRel-agree RP RP' = ∀ j u q q' x → RP .vrel j u q x → RP' .vrel j u q' x
+
+extend-VarRel-agree : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'}
+                      {ρ : type 0} (s : Fin m ⊎ FD.Sort m)
+                      (R₀ : (u : Val ρ) → size u < N → El δₘ s → Set) (R₀' : (u : Val ρ) → size u < N' → El δₘ s → Set)
+                      (RP : VarRel δₘ σ η N) (RP' : VarRel δₘ σ η N') →
+                      (∀ u q q' x → R₀ u q x → R₀' u q' x) → VarRel-agree RP RP' →
+                      VarRel-agree (extend-VarRel {s = s} R₀ RP) (extend-VarRel {s = s} R₀' RP')
+extend-VarRel-agree s R₀ R₀' RP RP' H₀ H zero    = H₀
+extend-VarRel-agree s R₀ R₀' RP RP' H₀ H (suc j) = H j
+
+lower-VarRel-agree : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N' M M'}
+                     (p : M < N) (p' : M' < N') (RP : VarRel δₘ σ η N) (RP' : VarRel δₘ σ η N') →
+                     VarRel-agree RP RP' → VarRel-agree (lower-VarRel p RP) (lower-VarRel p' RP')
+lower-VarRel-agree p p' RP RP' H j u q q' = H j u (<-trans q p) (<-trans q' p')
+
+ShapeRel-irr : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (τ : type (n + Δ)) (σ : TySub (n + Δ) 0)
+               (η : Fin n → Fin m ⊎ FD.Sort m) (N N' : ℕ) (a : Acc _<_ N) (a' : Acc _<_ N')
+               (RP : VarRel δₘ σ η N) (RP' : VarRel δₘ σ η N') (RΔ : ConstRel δ σ) → VarRel-agree RP RP' →
+               {v : Val (sub σ τ)} (p : size v < N) (p' : size v < N') {x : Shape δₘ FD.∣ LI.as-poly τ δ ∣ η} →
+               ShapeRel δₘ δ τ σ η N a RP RΔ v p x → ShapeRel δₘ δ τ σ η N' a' RP' RΔ v p' x
+MuRel-irr : ∀ τ N N' (a : Acc _<_ N) (a' : Acc _<_ N') {v : Val (μ τ)} (p : size v < N) (p' : size v < N') {i : Ix (μ τ)} →
+            MuRel τ N a v p i → MuRel τ N' a' v p' i
+mu-VarRel-agree : ∀ τ N N' (a : Acc _<_ N) (a' : Acc _<_ N') → VarRel-agree (mu-VarRel (MuRel τ N a)) (mu-VarRel (MuRel τ N' a'))
+
+var-rel-irr : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n + Δ)) (σ : TySub (n + Δ) 0)
+              (η : Fin n → Fin m ⊎ FD.Sort m) (N N' : ℕ) (RP : VarRel δₘ σ η N) (RP' : VarRel δₘ σ η N') (RΔ : ConstRel δ σ) →
+              VarRel-agree RP RP' → (v : Val (σ i)) (p : size v < N) (p' : size v < N') (s : Fin n ⊎ Fin Δ) (eq : splitAt n i ≡ s)
+              (x : Shape δₘ FD.∣ Var δ s ∣ η) →
+              var-rel δₘ δ i σ η N RP RΔ v p s eq x → var-rel δₘ δ i σ η N' RP' RΔ v p' s eq x
+var-rel-irr δₘ δ i σ η N N' RP RP' RΔ H v p p' (inj₁ j) eq x r = H j _ _ _ x r
+var-rel-irr δₘ δ i σ η N N' RP RP' RΔ H v p p' (inj₂ k) eq x r = r
+
+ShapeRel-irr {n = n} δₘ δ (var i) σ η N N' a a' RP RP' RΔ H {v} p p' {x} r =
+  var-rel-irr δₘ δ i σ η N N' RP RP' RΔ H v p p' (splitAt n i) ≡.refl x r
+ShapeRel-irr δₘ δ unit σ η N N' a a' RP RP' RΔ H {unit} p p' r = tt
+ShapeRel-irr δₘ δ (base b) σ η N N' a a' RP RP' RΔ H {const c} p p' r = r
+ShapeRel-irr δₘ δ (σ₁ [+] σ₂) σ η N N' a a' RP RP' RΔ H {inl v} p p' (x' , r , e) =
+  x' , ShapeRel-irr δₘ δ σ₁ σ η N N' a a' RP RP' RΔ H _ _ r , e
+ShapeRel-irr δₘ δ (σ₁ [+] σ₂) σ η N N' a a' RP RP' RΔ H {inr v} p p' (x' , r , e) =
+  x' , ShapeRel-irr δₘ δ σ₂ σ η N N' a a' RP RP' RΔ H _ _ r , e
+ShapeRel-irr δₘ δ (σ₁ [×] σ₂) σ η N N' a a' RP RP' RΔ H {pair v u} p p' {x , y} (r , r') =
+  ShapeRel-irr δₘ δ σ₁ σ η N N' a a' RP RP' RΔ H _ _ r , ShapeRel-irr δₘ δ σ₂ σ η N N' a a' RP RP' RΔ H _ _ r'
+ShapeRel-irr δₘ δ (σ₁ [→] σ₂) σ η N N' a a' RP RP' RΔ H p p' r = r
+ShapeRel-irr δₘ δ (μ τ) σ η N N' (acc rs) (acc rs') RP RP' RΔ H {roll w} p p' {Tr.sup y} r =
+  ShapeRel-irr δₘ δ τ (extend σ (μ (sub (sub-lift σ) τ))) (extend η (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η)))
+    (suc (size w)) (suc (size w)) (rs p) (rs' p')
+    (extend-VarRel (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ) (lower-VarRel p RP))
+    (extend-VarRel (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs' p') (lower-VarRel p' RP') RΔ) (lower-VarRel p' RP'))
+    (extend-ConstRel RΔ)
+    (extend-VarRel-agree (inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η))
+       (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ)
+       (ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs' p') (lower-VarRel p' RP') RΔ)
+       (lower-VarRel p RP) (lower-VarRel p' RP')
+       (λ u q q' x → ShapeRel-irr δₘ δ (μ τ) σ η (suc (size w)) (suc (size w)) (rs p) (rs' p') (lower-VarRel p RP) (lower-VarRel p' RP') RΔ
+                       (lower-VarRel-agree p p' RP RP' H) {u} q q' {x})
+       (lower-VarRel-agree p p' RP RP' H))
+    _ _ r
+
+MuRel-irr τ N N' (acc rs) (acc rs') {roll w} p p' {Tr.sup x} r =
+  ShapeRel-irr interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (suc (size w)) (rs p) (rs' p')
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (mu-VarRel (MuRel τ (suc (size w)) (rs' p'))) (no-ConstRel {n = 1})
+    (mu-VarRel-agree τ (suc (size w)) (suc (size w)) (rs p) (rs' p')) _ _ r
+
+mu-VarRel-agree τ N N' a a' zero u q q' x = MuRel-irr τ N N' a a' {u} q q' {x}
+mu-VarRel-agree τ N N' a a' (suc ())
+
+-- The relation at a μ-type at any bound is the value relation.
+MuRel-of : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} (p : size v < N) {i : Ix (μ τ)} → ValRel (μ τ) v i → MuRel τ N a v p i
+MuRel-of τ N a {v} p r = MuRel-irr τ (suc (size v)) N (<-wellFounded _) a (n<1+n _) p r
+
+MuRel-to : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} (p : size v < N) {i : Ix (μ τ)} → MuRel τ N a v p i → ValRel (μ τ) v i
+MuRel-to τ N a {v} p r = MuRel-irr τ N (suc (size v)) a (<-wellFounded _) p (n<1+n _) r
+
+VarDep-agree : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'}
+               {RP : VarRel δₘ σ η N} {RP' : VarRel δₘ σ η N'} (HA : VarRel-agree RP RP') {d : ∀ j → DecoAssign δₘ (η j)} →
+               VarDep RP d → VarDep RP' d → Prop
+VarDep-agree HA DP DP' = ∀ j u q q' x r {o dv} → DP .vdep j u q x r o dv → DP' .vdep j u q' x (HA j u q q' x r) o dv
+
+extend-VarDep-agree : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N'}
+                      {ρ : type 0} (s : Fin m ⊎ FD.Sort m)
+                      (R₀ : (u : Val ρ) → size u < N → El δₘ s → Set) (R₀' : (u : Val ρ) → size u < N' → El δₘ s → Set)
+                      (RP : VarRel δₘ σ η N) (RP' : VarRel δₘ σ η N')
+                      (H₀ : ∀ u q q' x → R₀ u q x → R₀' u q' x) (H : VarRel-agree RP RP')
+                      {d : ∀ j → DecoAssign δₘ (extend η s j)}
+                      (D₀ : ∀ u q x (r : R₀ u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ s (d zero) x ∣ → Prop)
+                      (D₀' : ∀ u q x (r : R₀' u q x) → ∣ 𝔽 (width u) ∣ → ∣ FibEl δₘ s (d zero) x ∣ → Prop)
+                      (DP : VarDep RP (λ j → d (suc j))) (DP' : VarDep RP' (λ j → d (suc j))) →
+                      (∀ u q q' x r {o dv} → D₀ u q x r o dv → D₀' u q' x (H₀ u q q' x r) o dv) → VarDep-agree H DP DP' →
+                      VarDep-agree (extend-VarRel-agree s R₀ R₀' RP RP' H₀ H) (extend-VarDep R₀ RP {d = d} D₀ DP) (extend-VarDep R₀' RP' {d = d} D₀' DP')
+extend-VarDep-agree s R₀ R₀' RP RP' H₀ H D₀ D₀' DP DP' T₀ T zero    = T₀
+extend-VarDep-agree s R₀ R₀' RP RP' H₀ H D₀ D₀' DP DP' T₀ T (suc j) = T j
+
+lower-VarDep-agree : ∀ {Δ n m} {δₘ : Fin m → Obj} {σ : TySub (n + Δ) 0} {η : Fin n → Fin m ⊎ FD.Sort m} {N N' M M'}
+                     (p : M < N) (p' : M' < N') (RP : VarRel δₘ σ η N) (RP' : VarRel δₘ σ η N') (H : VarRel-agree RP RP')
+                     {d} (DP : VarDep RP d) (DP' : VarDep RP' d) →
+                     VarDep-agree H DP DP' → VarDep-agree (lower-VarRel-agree p p' RP RP' H) (lower-VarDep p RP DP) (lower-VarDep p' RP' DP')
+lower-VarDep-agree p p' RP RP' H DP DP' T j u q q' = T j u (<-trans q p) (<-trans q' p')
+
+ShapeDepRel-irr : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (τ : type (n + Δ)) (σ : TySub (n + Δ) 0)
+                  (η : Fin n → Fin m ⊎ FD.Sort m) (N N' : ℕ) (a : Acc _<_ N) (a' : Acc _<_ N')
+                  (RP : VarRel δₘ σ η N) (RP' : VarRel δₘ σ η N') (RΔ : ConstRel δ σ) (H : VarRel-agree RP RP')
+                  (d : ∀ j → DecoAssign δₘ (η j)) (DP : VarDep RP d) (DP' : VarDep RP' d) (DΔ : ConstDep RΔ) →
+                  VarDep-agree H DP DP' →
+                  {v : Val (sub σ τ)} (p : size v < N) (p' : size v < N') {x : Shape δₘ FD.∣ LI.as-poly τ δ ∣ η}
+                  (r : ShapeRel δₘ δ τ σ η N a RP RΔ v p x) {o : ∣ 𝔽 (width v) ∣} {dv : ∣ FibSh δₘ (LI.as-poly τ δ) d x ∣} →
+                  ShapeDepRel δₘ δ τ σ η N a RP RΔ d DP DΔ r o dv →
+                  ShapeDepRel δₘ δ τ σ η N' a' RP' RΔ d DP' DΔ (ShapeRel-irr δₘ δ τ σ η N N' a a' RP RP' RΔ H p p' r) o dv
+MuDepRel-irr : ∀ τ N N' (a : Acc _<_ N) (a' : Acc _<_ N') {v : Val (μ τ)} (p : size v < N) (p' : size v < N') {i : Ix (μ τ)}
+               (r : MuRel τ N a v p i) {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib (μ τ) i ∣} →
+               MuDepRel τ N a r o d → MuDepRel τ N' a' (MuRel-irr τ N N' a a' p p' r) o d
+
+var-dep-irr : ∀ {Δ n m} (δₘ : Fin m → Obj) (δ : Fin Δ → Obj) (i : Fin (n + Δ)) (σ : TySub (n + Δ) 0)
+              (η : Fin n → Fin m ⊎ FD.Sort m) (N N' : ℕ) (RP : VarRel δₘ σ η N) (RP' : VarRel δₘ σ η N') (RΔ : ConstRel δ σ)
+              (H : VarRel-agree RP RP') (d : ∀ j → DecoAssign δₘ (η j)) (DP : VarDep RP d) (DP' : VarDep RP' d) (DΔ : ConstDep RΔ) →
+              VarDep-agree H DP DP' → (v : Val (σ i)) (p : size v < N) (p' : size v < N') (s : Fin n ⊎ Fin Δ) (eq : splitAt n i ≡ s)
+              (x : Shape δₘ FD.∣ Var δ s ∣ η) (r : var-rel δₘ δ i σ η N RP RΔ v p s eq x) {o : ∣ 𝔽 (width v) ∣}
+              {dv : ∣ FibSh δₘ (Var δ s) d x ∣} →
+              var-dep δₘ δ i σ η N RP RΔ d DP DΔ v p s eq x r o dv →
+              var-dep δₘ δ i σ η N' RP' RΔ d DP' DΔ v p' s eq x (var-rel-irr δₘ δ i σ η N N' RP RP' RΔ H v p p' s eq x r) o dv
+var-dep-irr δₘ δ i σ η N N' RP RP' RΔ H d DP DP' DΔ T v p p' (inj₁ j) eq x r h = T j _ _ _ x r h
+var-dep-irr δₘ δ i σ η N N' RP RP' RΔ H d DP DP' DΔ T v p p' (inj₂ k) eq x r h = h
+
+ShapeDepRel-irr {n = n} δₘ δ (var i) σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T {v} p p' {x} r h =
+  var-dep-irr δₘ δ i σ η N N' RP RP' RΔ H d DP DP' DΔ T v p p' (splitAt n i) ≡.refl x r h
+ShapeDepRel-irr δₘ δ unit σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T {unit} p p' r h = h
+ShapeDepRel-irr δₘ δ (base b) σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T {const c} p p' r h = h
+ShapeDepRel-irr δₘ δ (σ₁ [+] σ₂) σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T {inl v} p p' (x' , r , e) (h₀ , h) =
+  h₀ , ShapeDepRel-irr δₘ δ σ₁ σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T _ _ r h
+ShapeDepRel-irr δₘ δ (σ₁ [+] σ₂) σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T {inr v} p p' (x' , r , e) (h₀ , h) =
+  h₀ , ShapeDepRel-irr δₘ δ σ₂ σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T _ _ r h
+ShapeDepRel-irr δₘ δ (σ₁ [×] σ₂) σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T {pair v u} p p' {x , y} (r , r') (h₀ , (h₁ , h₂)) =
+  h₀ , (ShapeDepRel-irr δₘ δ σ₁ σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T _ _ r h₁ ,
+        ShapeDepRel-irr δₘ δ σ₂ σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T _ _ r' h₂)
+ShapeDepRel-irr δₘ δ (σ₁ [→] σ₂) σ η N N' a a' RP RP' RΔ H d DP DP' DΔ T p p' r h = h
+ShapeDepRel-irr δₘ δ (μ τ) σ η N N' (acc rs) (acc rs') RP RP' RΔ H d DP DP' DΔ T {roll w} p p' {Tr.sup y} r h =
+  ShapeDepRel-irr δₘ δ τ σ' η' (suc (size w)) (suc (size w)) (rs p) (rs' p') RP₁ RP₁' RΔ' H' d' DP₁ DP₁' DΔ'
+    (extend-VarDep-agree s₀ R₀ R₀' (lower-VarRel p RP) (lower-VarRel p' RP') H₀ (lower-VarRel-agree p p' RP RP' H)
+       D₀ D₀' (lower-VarDep p RP DP) (lower-VarDep p' RP' DP')
+       (λ u q q' x r → ShapeDepRel-irr δₘ δ (μ τ) σ η (suc (size w)) (suc (size w)) (rs p) (rs' p') (lower-VarRel p RP) (lower-VarRel p' RP') RΔ
+                         (lower-VarRel-agree p p' RP RP' H) d (lower-VarDep p RP DP) (lower-VarDep p' RP' DP') DΔ
+                         (lower-VarDep-agree p p' RP RP' H DP DP' T) {u} q q' {x} r)
+       (lower-VarDep-agree p p' RP RP' H DP DP' T))
+    _ _ r h
+  where
+  σ' = extend σ (μ (sub (sub-lift σ) τ))
+  s₀ = inj₂ (mkSort FD.∣ LI.as-poly τ δ ∣ η)
+  η' = extend η s₀
+  R₀ = ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ
+  R₀' = ShapeRel δₘ δ (μ τ) σ η (suc (size w)) (rs' p') (lower-VarRel p' RP') RΔ
+  RP₁ = extend-VarRel R₀ (lower-VarRel p RP)
+  RP₁' = extend-VarRel R₀' (lower-VarRel p' RP')
+  RΔ' = extend-ConstRel RΔ
+  H₀ = λ u q q' x → ShapeRel-irr δₘ δ (μ τ) σ η (suc (size w)) (suc (size w)) (rs p) (rs' p') (lower-VarRel p RP) (lower-VarRel p' RP') RΔ
+                      (lower-VarRel-agree p p' RP RP' H) {u} q q' {x}
+  H' = extend-VarRel-agree s₀ R₀ R₀' (lower-VarRel p RP) (lower-VarRel p' RP') H₀ (lower-VarRel-agree p p' RP RP' H)
+  d' = Tr.deco-ext δₘ (LI.as-poly τ δ) d
+  D₀ = λ u q x r → ShapeDepRel δₘ δ (μ τ) σ η (suc (size w)) (rs p) (lower-VarRel p RP) RΔ d (lower-VarDep p RP DP) DΔ {u} {q} {x} r
+  D₀' = λ u q x r → ShapeDepRel δₘ δ (μ τ) σ η (suc (size w)) (rs' p') (lower-VarRel p' RP') RΔ d (lower-VarDep p' RP' DP') DΔ {u} {q} {x} r
+  DP₁ = extend-VarDep R₀ (lower-VarRel p RP) {d = d'} D₀ (lower-VarDep p RP DP)
+  DP₁' = extend-VarDep R₀' (lower-VarRel p' RP') {d = d'} D₀' (lower-VarDep p' RP' DP')
+  DΔ' = extend-ConstDep DΔ
+
+MuDepRel-irr τ N N' (acc rs) (acc rs') {roll w} p p' {Tr.sup x} r h =
+  ShapeDepRel-irr interp.δ∅𝒟 (λ ()) τ (push (μ τ)) (η₀ τ) (suc (size w)) (suc (size w)) (rs p) (rs' p')
+    (mu-VarRel (MuRel τ (suc (size w)) (rs p))) (mu-VarRel (MuRel τ (suc (size w)) (rs' p'))) (no-ConstRel {n = 1}) H (d₀ τ)
+    (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+    (mu-VarDep (MuRel τ (suc (size w)) (rs' p')) (λ u q x r → MuDepRel τ (suc (size w)) (rs' p') {u} {q} {x} r))
+    (no-ConstDep {n = 1}) T _ _ r h
+  where
+  H = mu-VarRel-agree τ (suc (size w)) (suc (size w)) (rs p) (rs' p')
+  T : VarDep-agree H (mu-VarDep (MuRel τ (suc (size w)) (rs p)) (λ u q x r → MuDepRel τ (suc (size w)) (rs p) {u} {q} {x} r))
+                     (mu-VarDep (MuRel τ (suc (size w)) (rs' p')) (λ u q x r → MuDepRel τ (suc (size w)) (rs' p') {u} {q} {x} r))
+  T zero u q q' x r = MuDepRel-irr τ (suc (size w)) (suc (size w)) (rs p) (rs' p') {u} q q' {x} r
+  T (suc ())
+
+MuDepRel-of : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} (p : size v < N) {i : Ix (μ τ)} (r : ValRel (μ τ) v i)
+              {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib (μ τ) i ∣} → DepRel (μ τ) {v} {i} r o d → MuDepRel τ N a (MuRel-of τ N a {v} p {i} r) o d
+MuDepRel-of τ N a {v} p {i} r {o} {d} h = MuDepRel-irr τ (suc (size v)) N (<-wellFounded _) a {v} (n<1+n _) p {i} r {o} {d} h
+
+MuDepRel-to : ∀ τ N (a : Acc _<_ N) {v : Val (μ τ)} (p : size v < N) {i : Ix (μ τ)} (r : MuRel τ N a v p i)
+              {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib (μ τ) i ∣} → MuDepRel τ N a r o d → DepRel (μ τ) {v} {i} (MuRel-to τ N a {v} p {i} r) o d
+MuDepRel-to τ N a {v} p {i} r {o} {d} h = MuDepRel-irr τ N (suc (size v)) a (<-wellFounded _) {v} p (n<1+n _) {i} r {o} {d} h

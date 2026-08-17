@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --postfix-projections --safe #-}
+{-# OPTIONS --prop --postfix-projections --safe --lossy-unification #-}
 
 -- Agreement between the operational relation and the higher-order model, on the fragment without
 -- μ-types, as a logical relation. A value is related to an index of its type's
