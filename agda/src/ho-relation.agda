@@ -68,7 +68,7 @@ module LI = language-interpretation Sig 0ℓ 0ℓ
 open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; ty-unit)
 open Constant public using (at)
 
-module IP = model.FP.interp-primitives Sig ℐ
+module IP = model.sig-model.IP Sig ℐ
 open IP public using (collect)
 open interp public using (𝒟-arg-product)
 module FC = model.Fam⟨𝒞⟩μ
