@@ -37,7 +37,7 @@ import language-syntax
 
 module ho-model
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
-  (elim-weight : Setoid.Carrier A)
+  (ctrl-weight : Setoid.Carrier A)
   where
 
 open matrix-embedding S public
@@ -60,8 +60,8 @@ private
   module MCM = CMonEnriched M.cmon
   module SMC = Category SemiMod.cat
 
-elim-weight-endo : SemiMod._⇒_ SemiMod.𝕀 SemiMod.𝕀
-elim-weight-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S elim-weight)) ι1-bwd)
+ctrl-weight-endo : SemiMod._⇒_ SemiMod.𝕀 SemiMod.𝕀
+ctrl-weight-endo = SMC._∘_ ι1-fwd (SMC._∘_ (mat (matrix.Mat.block S ctrl-weight)) ι1-bwd)
 
 -- The unit object: the lifted terminal, one root for the unit value.
 𝟙F = HasTerminal.witness (Fam⟨𝒞⟩μ.terminal M.terminal)
@@ -196,7 +196,7 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     𝔽-L-iso (λ {P} {Q} f → 𝔽-L-natural {P} {Q} f)
     SemiModExp
     𝒞𝟙ty 𝒞unit-pt model
-    elim-weight-endo (λ {X} {Y} → exp-const {X} {Y}) ι1-bwd 𝒞𝟙ty-const 𝒞-sort-const
+    ctrl-weight-endo (λ {X} {Y} → exp-const {X} {Y}) ι1-bwd 𝒞𝟙ty-const 𝒞-sort-const
     public
 
   open language-syntax Sig using (ctxt; type; _⊢_; first-order; first-order-ctxt)

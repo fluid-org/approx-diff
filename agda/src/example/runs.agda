@@ -6,19 +6,19 @@ open import commutative-semiring using (CommutativeSemiring)
 
 -- The example programs at their inputs, and the model's output and relation of each at the
 -- interpretation of the input.
-module example.runs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A) where
+module example.runs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A) where
 
 import label
 import matrix
 import ho-model
 open import signature.example.interpretation S using (Sig; interpretation; number)
 open import example.programs
-open import example.inputs S elim-weight
+open import example.inputs S ctrl-weight
 open import language-syntax Sig using (ctxt; type; first-order-ctxt; first-order; _⊢_; base; unit; _[+]_)
-open import language-operational.evaluation Sig S interpretation elim-weight using (Val; Env)
-open import value-interpretation S elim-weight Sig interpretation using (⟦_⟧env; ⟦_⟧val⁻¹)
+open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
+open import value-interpretation S ctrl-weight Sig interpretation using (⟦_⟧env; ⟦_⟧val⁻¹)
 
-module model = ho-model S elim-weight
+module model = ho-model S ctrl-weight
 module interp = model.interp Sig interpretation
 
 private

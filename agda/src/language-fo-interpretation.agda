@@ -53,7 +53,7 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (𝒞unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T𝒞)) 𝒞𝟙ty)
   (let 𝒞Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty))
   (𝒞-Sig-model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T𝒞 , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig)
-  (elim-w : 𝟙𝒟 𝒟.⇒ 𝟙𝒟)
+  (ctrl-w : 𝟙𝒟 𝒟.⇒ 𝟙𝒟)
   (𝒟-exp-const : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Constant Y →
                  Fam⟨𝒟⟩μ.Constant (HasWeakExponentials.exp 𝒟E X Y))
   (F𝟙 : 𝟙𝒟 𝒟.⇒ Functor.fobj F 𝟙𝒞)
@@ -153,7 +153,7 @@ private
 𝒟-sort-const s = HR.Fam⟨F⟩-constant F𝟙 (𝒞-sort-const s)
 
 open import language-interpretation Sig os es T𝒟 CM𝒟 BP𝒟 𝟙𝒟 𝒟E δ∅𝒟
-  𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model elim-w 𝒟-exp-const 𝒟𝟙ty-const 𝒟-sort-const
+  𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model ctrl-w 𝒟-exp-const 𝒟𝟙ty-const 𝒟-sort-const
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
             ty-cong to 𝒟-ty-cong)
   using ()

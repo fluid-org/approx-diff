@@ -27,14 +27,14 @@ import language-operational.evaluation
 import example.render.annotated-value as AV
 
 -- Rendering over a semiring, given how a scalar is shown after a position.
-module over {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A)
+module over {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
               (suffix : Setoid.Carrier A → String) where
 
   open CommutativeSemiring S using (ι; ε)
   open signature.example.interpretation S using (Sig; interpretation)
-  open language-operational.evaluation Sig S interpretation elim-weight using (Val; Env)
-  open AV Sig S interpretation elim-weight using (AVal; node; Tag)
-  open AV.annotate Sig S interpretation elim-weight S using (row→aval; row→avals)
+  open language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
+  open AV Sig S interpretation ctrl-weight using (AVal; node; Tag)
+  open AV.annotate Sig S interpretation ctrl-weight S using (row→aval; row→avals)
   open example.render.constants S using (show-const)
 
   private

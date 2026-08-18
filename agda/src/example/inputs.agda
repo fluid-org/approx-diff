@@ -5,7 +5,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 
 -- The example programs' inputs, as environments of values.
-module example.inputs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (elim-weight : Setoid.Carrier A) where
+module example.inputs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A) where
 
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
 open import Relation.Binary.PropositionalEquality using (subst; sym)
@@ -13,7 +13,7 @@ import label
 open import signature.example.interpretation S using (Sig; interpretation; number; label)
 open import example.programs using (case-ctxt)
 open import language-syntax Sig using (type; base; unit; list; _[×]_; _[+]_; emp; _,_; sub-ren-id)
-open import language-operational.evaluation Sig S interpretation elim-weight using (Val; Env)
+open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
 open Val
 open Env
 

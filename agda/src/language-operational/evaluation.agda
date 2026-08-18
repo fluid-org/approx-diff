@@ -25,7 +25,7 @@ open import Data.List using (List; []; _∷_)
 -- the control input and makes that root the control input of its continuation.
 module language-operational.evaluation {ℓ} (Sig : Signature ℓ)
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
-  (ℐ : Interpretation S Sig) (elim-weight : Setoid.Carrier A) where
+  (ℐ : Interpretation S Sig) (ctrl-weight : Setoid.Carrier A) where
 
 open Signature Sig
 open Interpretation ℐ
@@ -80,9 +80,9 @@ mutual
   width-env emp     = 0
   width-env (γ · v) = width-env γ + width v
 
--- The control row: every position at the elimination weight.
+-- The control row: every position at the control weight.
 ctrl-row : ∀ {n} → 1 ⇒ n
-ctrl-row _ _ = elim-weight
+ctrl-row _ _ = ctrl-weight
 
 -- The positions of a value that carry control dependence: what a terminal rule or an eliminator
 -- writes the control input to. Every position of a first-order value, so that a value returned under an

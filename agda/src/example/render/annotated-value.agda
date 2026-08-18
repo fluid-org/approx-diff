@@ -14,7 +14,7 @@ import two
 
 module example.render.annotated-value {ℓ} (Sig : Signature ℓ)
   {A₀ : Setoid 0ℓ 0ℓ} (S₀ : CommutativeSemiring A₀)
-  (ℐ : Interpretation S₀ Sig) (elim-weight : Setoid.Carrier A₀) where
+  (ℐ : Interpretation S₀ Sig) (ctrl-weight : Setoid.Carrier A₀) where
 
 open Signature Sig
 open Interpretation ℐ
@@ -22,7 +22,7 @@ open import Data.Nat.Properties using (+-identityʳ; +-assoc)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; refl; sym; trans; cong; cong₂)
 open import language-syntax Sig using (unit; base; μ; var; _[+]_; _[×]_; _[→]_)
-open import language-operational.evaluation Sig S₀ ℐ elim-weight using (Val; Env; width; width-env)
+open import language-operational.evaluation Sig S₀ ℐ ctrl-weight using (Val; Env; width; width-env)
 open Val
 open Env
 open import Data.Fin using (zero)

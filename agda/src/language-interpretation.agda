@@ -5,7 +5,7 @@
 -- carriers, and function spaces are lifted weak exponentials, so a closure carries a root like any
 -- other cell. Constructors inject their payload under the injection, whose root is zero: a cell
 -- the program itself constructs depends on nothing. Eliminators, including application, send the
--- scrutinee's root to the result type's unit constant scaled by the elimination weight; the unit
+-- scrutinee's root to the result type's unit constant scaled by the control weight; the unit
 -- constant is built by the same induction as the interpretation, from assumed constants at the
 -- unit type, the sorts and the exponentials.
 -- The empty environment for the μ-carriers is a parameter because functions out of
@@ -42,7 +42,7 @@ module language-interpretation
   (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
   (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
   (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
-  (elim-w : Category._⇒_ 𝒞 𝟙c 𝟙c)
+  (ctrl-w : Category._⇒_ 𝒞 𝟙c 𝟙c)
   (exp-const : ∀ {X Y : R.Obj} → R.Constant Y → R.Constant (HasWeakExponentials.exp 𝒞E X Y))
   (𝟙ty-const : R.Constant 𝟙ty)
   (sort-const : ∀ s → R.Constant (Model.⟦sort⟧ Int s))
@@ -110,10 +110,10 @@ mutual
   as-poly-const (σ [→] τ) δ δc = Lf-constant (exp-const (ty-unit τ (λ ()) (λ ())))
   as-poly-const (μ τ)     δ δc = as-poly-const τ δ δc
 
--- The constant an eliminator writes: the result type's unit constant scaled by the elimination
+-- The control dependence an eliminator writes: the result type's unit constant scaled by the control
 -- weight.
-elim-const : ∀ (τ : type 0) → Constant (⟦ τ ⟧ty (λ ()))
-elim-const τ = scale-const elim-w (ty-unit τ (λ ()) (λ ()))
+ctrl-dep : ∀ (τ : type 0) → Constant (⟦ τ ⟧ty (λ ()))
+ctrl-dep τ = scale-const ctrl-w (ty-unit τ (λ ()) (λ ()))
 
 -- Combined context: the first n variables from δ₀ (the Poly variables), the rest from δ.
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
@@ -1605,14 +1605,14 @@ mutual
   ⟦ inl M ⟧tm           = in₁ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ inr M ⟧tm           = in₂ ∘ injF ∘ ⟦ M ⟧tm
   ⟦ case {τ = τ} M M₁ M₂ ⟧tm =
-    scopair (elimF (elim-const τ) ⟦ M₁ ⟧tm) (elimF (elim-const τ) ⟦ M₂ ⟧tm)
+    scopair (elimF (ctrl-dep τ) ⟦ M₁ ⟧tm) (elimF (ctrl-dep τ) ⟦ M₂ ⟧tm)
       ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ pair M N ⟧tm        = injF ∘ ⟨ ⟦ M ⟧tm , ⟦ N ⟧tm ⟩
-  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (elim-const τ₁) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
-  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (elim-const τ₂) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ fst {τ₁ = τ₁} M ⟧tm = elimF (ctrl-dep τ₁) (p₁ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+  ⟦ snd {τ₂ = τ₂} M ⟧tm = elimF (ctrl-dep τ₂) (p₂ ∘ p₂) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ lam M ⟧tm           = injF ∘ lambda ⟦ M ⟧tm
   ⟦ app {τ = τ} M N ⟧tm =
-    elimF (elim-const τ) (eval ∘ ⟨ p₂ , ⟦ N ⟧tm ∘ p₁ ⟩) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
+    elimF (ctrl-dep τ) (eval ∘ ⟨ p₂ , ⟦ N ⟧tm ∘ p₁ ⟩) ∘ ⟨ id _ , ⟦ M ⟧tm ⟩
   ⟦ bop ω Ms ⟧tm        = ⟦op⟧ ω ∘ ⟦ Ms ⟧tms
   ⟦ brel r Ms ⟧tm       = ⟦rel⟧ r ∘ ⟦ Ms ⟧tms
   ⟦ roll {τ = τ} M ⟧tm  = roll-mor τ ∘ ⟦ M ⟧tm

@@ -26,14 +26,14 @@ import two
 module language-operational.totality
   {ℓ} (Sig : Signature ℓ)
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
-  (ℐ : Interpretation S Sig) (elim-weight : Setoid.Carrier A) where
+  (ℐ : Interpretation S Sig) (ctrl-weight : Setoid.Carrier A) where
 
 open Signature Sig
 open Interpretation ℐ
 open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst; size; arr-bound; arr-self; unfold₁-arr)
-open import language-operational.evaluation Sig S ℐ elim-weight
+open import language-operational.evaluation Sig S ℐ ctrl-weight
   renaming (size to vsize; size-subst to vsize-subst)
 
 private
