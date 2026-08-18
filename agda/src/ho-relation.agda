@@ -5,7 +5,8 @@
 -- of the fibre, and the lemmas by recursion on types that the fundamental lemma needs (respect for the
 -- setoids, adding the control positions and the control dependence, absorption, transport).
 open import Level using (0ℓ; lift)
-open import Data.Nat using (suc; _+_)
+open import Data.Nat using (ℕ; suc; _+_; _⊔_; _≤_; s≤s)
+open import Data.Nat.Properties using (≤-refl; ≤-trans; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
@@ -65,7 +66,7 @@ module LI = language-interpretation Sig 0ℓ 0ℓ
   interp.δ∅𝒟 interp.𝒟𝟙ty interp.𝒟unit-pt interp.𝒟-Sig-model model.ctrl-weight-endo
   (λ {X} {Y} → model.exp-const {X} {Y}) interp.𝒟𝟙ty-const interp.𝒟-sort-const
 
-open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; ty-unit)
+open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; ty-unit; roll-mor; unroll-mor)
 open Constant public using (at)
 
 module IP = model.sig-model.IP Sig ℐ
@@ -184,6 +185,64 @@ DepRel (σ [→] τ) {clo γ' t} {f} r o d =
 
 DepRel⊑ τ {i = i} r s o d =
   ∃ (∣ Fib τ i ∣) (λ m → Fib._⊑_ τ i m (ctrl-dep-at τ i s) ∧ DepRel τ r o (Fib._+_ τ i d m))
+
+-- A bound on the arrow depth of a type bounds its components' and, at a μ-type, its unfolding's.
+bound₁ : ∀ {m n o} → m ⊔ n ≤ o → m ≤ o
+bound₁ = m⊔n≤o⇒m≤o _ _
+
+bound₂ : ∀ {m n o} → m ⊔ n ≤ o → n ≤ o
+bound₂ = m⊔n≤o⇒n≤o _ _
+
+bound-μ : ∀ (τ : type 1) {N} → arr-depth (μ τ) ≤ N → arr-depth (τ [ μ τ ]) ≤ N
+bound-μ τ = ≤-trans (arr-depth-unfold τ)
+
+-- The relations by recursion on a bound on the arrow depth of the type, which decreases at an arrow,
+-- and on the value. A rolled value is related to an index when its payload is related to the
+-- unrolled index, and its dependence vector to an element of the fibre when it is to the element's
+-- image under unrolling.
+ValRel′ : ∀ N τ → arr-depth τ ≤ N → Val τ → Ix τ → Set
+ValRel′ N unit p unit i = ⊤
+ValRel′ N (base s) p (const a) i = Prf (Setoid._≈_ (sort-index s) i a)
+ValRel′ N (σ [+] τ) p (inl v) i = Σ (Ix σ) λ i' → ValRel′ N σ (bound₁ p) v i' × Prf (Ix._≈_ (σ [+] τ) i (inj₁ i'))
+ValRel′ N (σ [+] τ) p (inr v) i = Σ (Ix τ) λ i' → ValRel′ N τ (bound₂ p) v i' × Prf (Ix._≈_ (σ [+] τ) i (inj₂ i'))
+ValRel′ N (σ [×] τ) p (pair v u) (i , j) = ValRel′ N σ (bound₁ p) v i × ValRel′ N τ (bound₂ p) u j
+ValRel′ (suc N) (σ [→] τ) (s≤s p) (clo γ' t) f =
+  ∀ {v : Val σ} {j : Ix σ} → ValRel′ N σ (bound₁ p) v j → ∀ {u U} → γ' · v , t ⇓ u [ U ] →
+  ValRel′ N τ (bound₂ p) u (f .idxf .sfunc j)
+ValRel′ N (μ τ) p (roll v) i = ValRel′ N (τ [ μ τ ]) (bound-μ τ p) v (unroll-mor τ .idxf .sfunc i)
+
+DepRel⊑′ : ∀ N τ (p : arr-depth τ ≤ N) {v : Val τ} {i : Ix τ} → ValRel′ N τ p v i → Setoid.Carrier A →
+           ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
+DepRel′ : ∀ N τ (p : arr-depth τ ≤ N) {v : Val τ} {i : Ix τ} → ValRel′ N τ p v i →
+          ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
+DepRel′ N unit p {unit} {i} r o d = Fib._≈_ unit i o d
+DepRel′ N (base s) p {const a} {i} r o d = Semimodule._≈_ (Fib (base s) i) o d
+DepRel′ N (σ [+] τ) p {inl v} {i} (i' , r , ⟪ e ⟫) o d =
+  let d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func d in
+  (o zero ≈s proj₁ d') ∧ DepRel′ N σ (bound₁ p) r (λ k → o (suc k)) (proj₂ d')
+DepRel′ N (σ [+] τ) p {inr v} {i} (i' , r , ⟪ e ⟫) o d =
+  let d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₂ i'} e .func d in
+  (o zero ≈s proj₁ d') ∧ DepRel′ N τ (bound₂ p) r (λ k → o (suc k)) (proj₂ d')
+DepRel′ N (σ [×] τ) p {pair v u} {i , j} (r , r') o d =
+  (o zero ≈s proj₁ d) ∧
+  (DepRel′ N σ (bound₁ p) r (ap (M.p₁ {width v} {width u}) (λ k → o (suc k))) (proj₁ (proj₂ d)) ∧
+   DepRel′ N τ (bound₂ p) r' (ap (M.p₂ {width v} {width u}) (λ k → o (suc k))) (proj₂ (proj₂ d)))
+DepRel′ (suc N) (σ [→] τ) (s≤s p) {clo γ' t} {f} r o d =
+  (o zero ≈s proj₁ d) ∧
+  (∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : ValRel′ N σ (bound₁ p) v j)
+     (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑′ N σ (bound₁ p) rv (s' +ₛ o zero) z y →
+   ∀ {u U} (D : γ' · v , t ⇓ u [ U ]) →
+     DepRel′ N τ (bound₂ p) (r rv D) (ap U (body-input γ' v (s' +ₛ o zero) (λ k → o (suc k)) z))
+       (Fib._+_ τ (f .idxf .sfunc j)
+         (ctrl-dep τ .at (f .idxf .sfunc j) .func (s' +ₛ o zero))
+         (Fib._+_ τ (f .idxf .sfunc j)
+           (evalΠ σ τ f j .func (proj₂ d))
+           (f .famf .transf j .func y))))
+DepRel′ N (μ τ) p {roll v} {i} r o d =
+  DepRel′ N (τ [ μ τ ]) (bound-μ τ p) r o (unroll-mor τ .famf .transf i .func d)
+
+DepRel⊑′ N τ p {i = i} r s o d =
+  ∃ (∣ Fib τ i ∣) (λ m → Fib._⊑_ τ i m (ctrl-dep-at τ i s) ∧ DepRel′ N τ p r o (Fib._+_ τ i d m))
 
 -- A primitive's arguments need no relations of their own. The model's index at a tuple of
 -- arguments is a tuple of sort indices, and sort-vals-setoid is built from ⊗-setoid, whose
