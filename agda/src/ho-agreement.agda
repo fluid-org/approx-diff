@@ -59,7 +59,7 @@ open indexed-family._⇒f_ using (transf)
 open prop-setoid._⇒_ using () renaming (func to sfunc)
 open LI using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; ty-unit)
 open Constant using (at)
-open model using (app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
+open model using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
 open Sc using (ι; ε) renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
 open Setoid A using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
 open M using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans) renaming (Σ to Σₛ)
@@ -216,7 +216,7 @@ private
                                                (app-congᵥ (ctrl-of wv) (ap-p₁₁ {m + n} o') k))))))
     (≈-trans (+-cong ≈-refl +-comm)
     (≈-trans (≈-sym +-assoc)
-             (+-cong (≈-sym (app-+ᵥ (ctrl-of wv) (λ _ → c ·ₛ s) (λ _ → o' zero) k)) ≈-refl))))
+             (+-cong (≈-sym (app-+ (ctrl-of wv) (λ _ → c ·ₛ s) (λ _ → o' zero) k)) ≈-refl))))
     where o' = ap R' (inputs γ s x)
 
 
@@ -297,7 +297,7 @@ private
                   (F.+-cong τ ic (F.refl τ ic) (F.sym τ ic eCF)))))
     where
     ctrl-dep-part : F._≈_ τ ic (ctrl-dep-at τ ic (o_s₀ +ₛ (c ·ₛ s))) (F._+_ τ ic (ctrl-dep-at τ ic s) (ctrl-dep-at τ ic a_s))
-    ctrl-dep-part = F.trans τ ic (ctrl-dep τ .at ic .SemiMod._⇒_.func-resp-≈ (+-cong eo ≈-refl)) (ctrl-dep-double' τ ic s a_s)
+    ctrl-dep-part = F.trans τ ic (ctrl-dep τ .at ic .SemiMod._⇒_.func-resp-≈ (≈-trans (+-cong eo ≈-refl) +-comm)) (ctrl-dep-double τ ic s a_s)
 
 -- A primitive's arguments on the model side, as a vector on their positions laid end to end.
 args-vec : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → ∣ FibC Γ gi ∣ →
@@ -409,7 +409,7 @@ private
     root : o zero ≈s a
     root =
       ≈-trans (ho zero)
-      (≈-trans (+-cong ≈-refl (≈-trans (ap-pair-zero {n} {1} D εₘ u) (app-+ᵥ D (λ _ → c ·ₛ s) y zero)))
+      (≈-trans (+-cong ≈-refl (≈-trans (ap-pair-zero {n} {1} D εₘ u) (app-+ D (λ _ → c ·ₛ s) y zero)))
       (≈-trans (≈-sym +-assoc)
       (≈-trans (+-cong (≈-trans (+-cong ≈-refl (≈-trans (app-congᵥ D (λ _ → ≈-sym ·-runit) zero)
                                                           (≈-trans (model.app-· D (c ·ₛ s) (λ _ → ι) zero) (·-cong ·-comm ≈-refl))))
@@ -695,7 +695,7 @@ fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ =
   den₁ = F.sym σ i (F.+-cong σ i (prop._∧_.proj₁ (prop._∧_.proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (m-runit (Fib σ i)))
 
   den₂ : F._≈_ τ j (F._+_ τ j (ctrl-dep-at τ j s) y₂) (proj₂ (proj₂ d))
-  den₂ = F.sym τ j (F.+-cong τ j (prop._∧_.proj₂ (prop._∧_.proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (m-lunit (Fib τ j)))
+  den₂ = F.sym τ j (F.+-cong τ j (prop._∧_.proj₂ (prop._∧_.proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (F.+-lunit τ j))
 fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} ct) {γ = γ} (⇓-fst {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   DepRel-resp σ r₁ (λ k → ≈-sym (proj-op {γ = γ} v {width v} {width u} (M.p₁ {width v} {width u}) R' s x k))
     (proj-den σ i s a₀ (o' zero) (proj₁ (proj₂ (F._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) Mg)))
@@ -780,7 +780,7 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
             (⟦ t' ⟧tm .famf .transf (gi , j) .SemiMod._⇒_.func-resp-≈
                {g , y} {(FibC Γ gi Semimodule.+ g) (Semimodule.ε (FibC Γ gi)) ,
                         (Fib σ j Semimodule.+ Semimodule.ε (Fib σ j)) y}
-               (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , Semimodule.sym (Fib σ j) (m-lunit (Fib σ j))))
+               (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , Semimodule.sym (Fib σ j) (F.+-lunit σ j)))
          (F.trans τ (f .idxf .sfunc j)
             (⟦ t' ⟧tm .famf .transf (gi , j) .SemiMod._⇒_.preserve-+
                {g , Semimodule.ε (Fib σ j)} {Semimodule.ε (FibC Γ gi) , y})
@@ -903,7 +903,7 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
                                                     (prop._∧_.proj₂ (ctrl-dep-clo {σ} {τ} f s)))
                                                  (evalΠj .SemiMod._⇒_.preserve-ze))
                                    (F.refl τ i₁))
-                    (m-lunit (Fib τ i₁)))
+                    (F.+-lunit τ i₁))
 
   -- The application's relation reads the body's at the closure's root and the application's
   -- weighted control input as control input, and at the closure's cells and the argument as
@@ -963,7 +963,7 @@ fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cts) {γ 
   (≈-trans (+-cong (ap-wctrl {width-env γ} {sort-width o} (inputs γ s x) k)
                    (≈-trans (app-∘ D-vs Rs (inputs γ s x) k)
                    (≈-trans (app-congᵥ D-vs IH k)
-                   (≈-trans (app-+ᵥ D-vs (λ _ → c ·ₛ s) Z k)
+                   (≈-trans (app-+ D-vs (λ _ → c ·ₛ s) Z k)
                             (+-cong (≈-trans (app-congᵥ D-vs (λ _ → ≈-sym ·-runit) k)
                                              (≈-trans (model.app-· D-vs (c ·ₛ s) (λ _ → ι) k) (·-cong ·-comm ≈-refl)))
                                     ≈-refl)))))
@@ -1021,9 +1021,9 @@ fundamental-s {Ms = _} (ct ∷ cts) {γ = γ} (_∷_ {i = i} {is = is} {v = v} {
               rγ s x g rel k =
   ≈-trans (app-+ₘ (u₁ ∘ R₁) (u₂ ∘ Rs) (inputs γ s x) k)
   (≈-trans (+-cong (≈-trans (app-∘ u₁ R₁ (inputs γ s x) k)
-                            (≈-trans (app-congᵥ u₁ IH₁ k) (app-+ᵥ u₁ (λ _ → c ·ₛ s) y₁ k)))
+                            (≈-trans (app-congᵥ u₁ IH₁ k) (app-+ u₁ (λ _ → c ·ₛ s) y₁ k)))
                    (≈-trans (app-∘ u₂ Rs (inputs γ s x) k)
-                            (≈-trans (app-congᵥ u₂ IH₂ k) (app-+ᵥ u₂ (λ _ → c ·ₛ s) Z k))))
+                            (≈-trans (app-congᵥ u₂ IH₂ k) (app-+ u₂ (λ _ → c ·ₛ s) Z k))))
   (≈-trans Sc.+-interchange
            (+-cong (in-const {sort-width i} {bases-width is} (c ·ₛ s) k)
                    (≈-sym (args-vec-cons M Ms gi g k)))))
