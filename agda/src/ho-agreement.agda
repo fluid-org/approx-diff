@@ -14,12 +14,12 @@ open import Data.List using ([]; _∷_)
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
 import prop
-open import prop using (_∧_; ∃; Prf; ⟪_⟫; _,_)
+open import prop using (_∧_; ∃; Prf; ⟪_⟫; _,_; proj₁; proj₂)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
-open import categories using (Category; HasProducts; HasWeakExponentials; HasStrongCoproducts)
+open import categories using (Category; HasWeakExponentials)
 import indexed-family
 
 module ho-agreement
@@ -67,7 +67,7 @@ data CoreTms where
         CoreTm M → CoreTms Ms → CoreTms (M Every.∷ Ms)
 args-idx : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → sort-vals is
 args-idx {is = is} Ms gi =
-  IP.collect is .FCμ.idxf .sfunc (interp.𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi))
+  collect is .FCμ.idxf .sfunc (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi))
 
 private
   bool-idx : ∀ (b : Ix (unit [+] unit)) →
@@ -100,7 +100,7 @@ fundamental-val {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s
   let (i' , r , ⟪ e ⟫) = fundamental-val ct D₁ rγ in
   ValRel-resp τ
     (Setoid.sym (⟦ τ ⟧ .idx)
-      (HasStrongCoproducts.copair FD.strongCoproducts
+      (copair
          (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
          .idxf .prop-setoid._⇒_.func-resp-≈ {gi , ⟦ s ⟧tm .idxf .sfunc gi} {gi , inj₁ i'}
          (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)))
@@ -109,7 +109,7 @@ fundamental-val {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s
   let (i' , r , ⟪ e ⟫) = fundamental-val ct D₁ rγ in
   ValRel-resp τ
     (Setoid.sym (⟦ τ ⟧ .idx)
-      (HasStrongCoproducts.copair FD.strongCoproducts
+      (copair
          (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
          .idxf .prop-setoid._⇒_.func-resp-≈ {gi , ⟦ s ⟧tm .idxf .sfunc gi} {gi , inj₂ i'}
          (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)))
@@ -207,7 +207,7 @@ private
     (F.trans τ' i rearr (F.+-cong τ' i (F.refl τ' i) (F.sym τ' i eG)))
     where
     ctrl-dep-part : F._≈_ τ' i (ctrl-dep-at τ' i ((c ·ₛ s) +ₛ o'₀)) (F._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀))
-    ctrl-dep-part = F.trans τ' i (ctrl-dep τ' .at i .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl eo)) (ctrl-dep-double τ' i s a₀)
+    ctrl-dep-part = F.trans τ' i (ctrl-dep τ' .at i .func-resp-≈ (+-cong ≈-refl eo)) (ctrl-dep-double τ' i s a₀)
     -- (e + a) + (e + m) ≈ e + (m + a)
     rearr : F._≈_ τ' i (F._+_ τ' i (F._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀)) (F._+_ τ' i (ctrl-dep-at τ' i s) m))
                        (F._+_ τ' i (ctrl-dep-at τ' i s) (F._+_ τ' i m (ctrl-dep-at τ' i a₀)))
@@ -237,7 +237,7 @@ private
   roundtrip τ {i₁} {ic} E Eidx d =
     F.trans τ ic
       (F.sym τ ic (⟦ τ ⟧ .fam .indexed-family.Fam.trans* {ic} {i₁} {ic} E Eidx
-                     .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (F.refl τ ic {d})))
+                     .func-eq (F.refl τ ic {d})))
       (subst-refl τ {ic} (Setoid.trans (⟦ τ ⟧ .idx) {ic} {i₁} {ic} Eidx E) d)
 
   -- The branch's constant and fibre, transported, against the case's.
@@ -254,14 +254,14 @@ private
                   (F.+-cong τ ic (F.refl τ ic) (F.sym τ ic eCF)))))
     where
     ctrl-dep-part : F._≈_ τ ic (ctrl-dep-at τ ic (o_s₀ +ₛ (c ·ₛ s))) (F._+_ τ ic (ctrl-dep-at τ ic s) (ctrl-dep-at τ ic a_s))
-    ctrl-dep-part = F.trans τ ic (ctrl-dep τ .at ic .SemiMod._⇒_.func-resp-≈ (≈-trans (+-cong eo ≈-refl) +-comm)) (ctrl-dep-double τ ic s a_s)
+    ctrl-dep-part = F.trans τ ic (ctrl-dep τ .at ic .func-resp-≈ (≈-trans (+-cong eo ≈-refl) +-comm)) (ctrl-dep-double τ ic s a_s)
 
 -- A primitive's arguments on the model side, as a vector on their positions laid end to end.
 args-vec : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → ∣ FibC Γ gi ∣ →
            ∣ 𝔽 (bases-width is) ∣
 args-vec {is = is} Ms gi g =
-  ap (IP.collect is .FCμ.famf .transf (interp.𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi)))
-     (interp.𝒟-arg-product is .famf .transf (⟦ Ms ⟧tms .idxf .sfunc gi) .func
+  ap (collect is .FCμ.famf .transf (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi)))
+     (𝒟-arg-product is .famf .transf (⟦ Ms ⟧tms .idxf .sfunc gi) .func
         (⟦ Ms ⟧tms .famf .transf gi .func g))
 
 private
@@ -269,10 +269,10 @@ private
   args-width is p = IP.args is .FCμ.fam .fm p
 
   collect-cons : ∀ i is (a : Setoid.Carrier (sort-index i)) (p : Setoid.Carrier (IP.args is .FCμ.idx)) →
-                 IP.collect (i ∷ is) .FCμ.famf .transf (a , p) M.≈ₘ
+                 collect (i ∷ is) .FCμ.famf .transf (a , p) M.≈ₘ
                  ((M.in₁ {sort-width i} {bases-width is} ∘ M.p₁ {sort-width i} {args-width is p}) +ₘ
                   (M.in₂ {sort-width i} {bases-width is} ∘
-                    (IP.collect is .FCμ.famf .transf p ∘ M.p₂ {sort-width i} {args-width is p})))
+                    (collect is .FCμ.famf .transf p ∘ M.p₂ {sort-width i} {args-width is p})))
   collect-cons i is a p =
     ≈ₘ-trans (MC.id-left {f = M.I ∘ (u₁ +ₘ u₂)})
     (≈ₘ-trans (MC.id-left {f = u₁ +ₘ u₂})
@@ -283,7 +283,7 @@ private
     module MC = Category M.cat
     open MC using (∘-cong₂)
     n = args-width is p
-    C = IP.collect is .FCμ.famf .transf p
+    C = collect is .FCμ.famf .transf p
     u₁ = M.in₁ {sort-width i} {bases-width is} ∘ (M.I ∘ (M.I ∘ M.p₁ {sort-width i} {n}))
     u₂ = M.in₂ {sort-width i} {bases-width is} ∘ (M.I ∘ (C ∘ M.p₂ {sort-width i} {n}))
 
@@ -304,17 +304,17 @@ private
     where
     a = ⟦ M ⟧tm .idxf .sfunc gi
     p = ⟦ Ms ⟧tms .idxf .sfunc gi
-    p' = interp.𝒟-arg-product is .idxf .sfunc p
+    p' = 𝒟-arg-product is .idxf .sfunc p
     n = args-width is p'
     u₁ = M.in₁ {sort-width i} {bases-width is}
     u₂ = M.in₂ {sort-width i} {bases-width is}
-    C = IP.collect is .FCμ.famf .transf p'
+    C = collect is .FCμ.famf .transf p'
     y₁ = ⟦ M ⟧tm .famf .transf gi .func g
     ys = ⟦ Ms ⟧tms .famf .transf gi .func g
     q = ⟦ M Every.∷ Ms ⟧tms .famf .transf gi .func g
-    tp-ys = interp.𝒟-arg-product is .famf .transf p .func ys
-    Zc = interp.𝒟-arg-product (i ∷ is) .famf .transf (a , p) .func q
-    z = HasProducts.prod-m FD.products (Category.id FD.cat ⟦ base i ⟧) (interp.𝒟-arg-product is) .famf .transf (a , p) .func q
+    tp-ys = 𝒟-arg-product is .famf .transf p .func ys
+    Zc = 𝒟-arg-product (i ∷ is) .famf .transf (a , p) .func q
+    z = FDP.prod-m (FDC.id ⟦ base i ⟧) (𝒟-arg-product is) .famf .transf (a , p) .func q
 
     q≈ = Fpair-elt ⟦ M ⟧tm ⟦ Ms ⟧tms gi g
     ArgsD = signature.PointedFPCat.list→product
@@ -322,16 +322,16 @@ private
               (signature.Model.⟦sort⟧ interp.𝒟-Sig-model) is .fam .fm p
     Q = SemiMod._⊕_ (𝔽 (sort-width i)) ArgsD
     f₁ = SemiMod._∘_ (SemiMod.id (𝔽 (sort-width i))) (SemiMod.p₁ {𝔽 (sort-width i)} {ArgsD})
-    f₂ = SemiMod._∘_ (interp.𝒟-arg-product is .famf .transf p) (SemiMod.p₂ {𝔽 (sort-width i)} {ArgsD})
+    f₂ = SemiMod._∘_ (𝒟-arg-product is .famf .transf p) (SemiMod.p₂ {𝔽 (sort-width i)} {ArgsD})
 
     z≈ : (∀ l → proj₁ z l ≈s y₁ l) ∧ (∀ l → proj₂ z l ≈s tp-ys l)
-    z≈ = (λ l → ≈-trans (prop._∧_.proj₁ (bpair-elt {Q} {𝔽 (sort-width i)} {𝔽 n} f₁ f₂ q) l) (prop._∧_.proj₁ q≈ l)) ,
-         (λ l → ≈-trans (prop._∧_.proj₂ (bpair-elt {Q} {𝔽 (sort-width i)} {𝔽 n} f₁ f₂ q) l)
-                        (interp.𝒟-arg-product is .famf .transf p .SemiMod._⇒_.func-resp-≈ (prop._∧_.proj₂ q≈) l))
+    z≈ = (λ l → ≈-trans (proj₁ (bpair-elt {Q} {𝔽 (sort-width i)} {𝔽 n} f₁ f₂ q) l) (proj₁ q≈ l)) ,
+         (λ l → ≈-trans (proj₂ (bpair-elt {Q} {𝔽 (sort-width i)} {𝔽 n} f₁ f₂ q) l)
+                        (𝒟-arg-product is .famf .transf p .func-resp-≈ (proj₂ q≈) l))
 
     Zc-split : ∀ l → Zc l ≈s (ap (M.in₁ {sort-width i} {n}) y₁ l +ₛ ap (M.in₂ {sort-width i} {n}) tp-ys l)
-    Zc-split l = +-cong (app-congᵥ (M.in₁ {sort-width i} {n}) (prop._∧_.proj₁ z≈) l)
-                        (app-congᵥ (M.in₂ {sort-width i} {n}) (prop._∧_.proj₂ z≈) l)
+    Zc-split l = +-cong (app-congᵥ (M.in₁ {sort-width i} {n}) (proj₁ z≈) l)
+                        (app-congᵥ (M.in₂ {sort-width i} {n}) (proj₂ z≈) l)
 
   ap-p₁-const : ∀ {m n} (a : Setoid.Carrier A) (l : Fin m) → ap (M.p₁ {m} {n}) (λ _ → a) l ≈s a
   ap-p₁-const {suc m} {n} a zero =
@@ -390,14 +390,14 @@ private
                 DepRel (unit [+] unit) {bool→val b} {i} (ValRel-bool b i ⟪ e ⟫) o d
   DepRel-bool ω vs (inj₁ x) {i} e o d s y ho (hd₁ , hd₂) =
     test-branch (rel-deps ω .sfunc vs) o (proj₁ d') (proj₂ d') s y ho
-      (≈-trans hd₁ (+-cong (prop._∧_.proj₁ (ctrl-dep-inj₁ {unit} {unit} x s)) ≈-refl))
-      (≈-trans (hd₂ zero) (≈-trans (+-cong (prop._∧_.proj₂ (ctrl-dep-inj₁ {unit} {unit} x s) zero) ≈-refl)
+      (≈-trans hd₁ (+-cong (proj₁ (ctrl-dep-inj₁ {unit} {unit} x s)) ≈-refl))
+      (≈-trans (hd₂ zero) (≈-trans (+-cong (proj₂ (ctrl-dep-inj₁ {unit} {unit} x s) zero) ≈-refl)
                                    (≈-trans +-runit (ctrl-dep-unit x s))))
     where d' = ⟦ unit [+] unit ⟧ .fam .subst {i} {inj₁ x} e .func d
   DepRel-bool ω vs (inj₂ x) {i} e o d s y ho (hd₁ , hd₂) =
     test-branch (rel-deps ω .sfunc vs) o (proj₁ d') (proj₂ d') s y ho
-      (≈-trans hd₁ (+-cong (prop._∧_.proj₁ (ctrl-dep-inj₂ {unit} {unit} x s)) ≈-refl))
-      (≈-trans (hd₂ zero) (≈-trans (+-cong (prop._∧_.proj₂ (ctrl-dep-inj₂ {unit} {unit} x s) zero) ≈-refl)
+      (≈-trans hd₁ (+-cong (proj₁ (ctrl-dep-inj₂ {unit} {unit} x s)) ≈-refl))
+      (≈-trans (hd₂ zero) (≈-trans (+-cong (proj₂ (ctrl-dep-inj₂ {unit} {unit} x s) zero) ≈-refl)
                                    (≈-trans +-runit (ctrl-dep-unit x s))))
     where d' = ⟦ unit [+] unit ⟧ .fam .subst {i} {inj₂ x} e .func d
 
@@ -429,29 +429,29 @@ fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
     ≈-trans (ap-wctrl {width-env γ} {1} (inputs γ s x) zero)
             (≈-sym (≈-trans (+-cong (ctrl-dep-unit (⟦ unit {Γ} ⟧tm .idxf .sfunc gi) s) (≈-refl {ε})) +-runit))
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} ct) {γ = γ} (⇓-inl {v = v} {R = R'} D) {gi} rγ s x g rel =
-  ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (prop._∧_.proj₁ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d)) root-den)) ,
+  ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (proj₁ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d)) root-den)) ,
   DepRel-resp τ₁ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
-    (F.sym τ₁ i' (F.trans τ₁ i' (prop._∧_.proj₂ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d))
-                                (F.+-cong τ₁ i' (prop._∧_.proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i'))))
+    (F.sym τ₁ i' (F.trans τ₁ i' (proj₂ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d))
+                                (F.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i'))))
     (fundamental ct D rγ s x g rel)
   where
   i' = ⟦ t ⟧tm .idxf .sfunc gi
   e = Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₁ i'}
   d = F._+_ (τ₁ [+] τ₂) (inj₁ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₁ i') s) (⟦ inl {τ₂ = τ₂} t ⟧tm .famf .transf gi .func g)
   root-den : proj₁ d ≈s (c ·ₛ s)
-  root-den = ≈-trans (+-cong (prop._∧_.proj₁ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
+  root-den = ≈-trans (+-cong (proj₁ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} ct) {γ = γ} (⇓-inr {v = v} {R = R'} D) {gi} rγ s x g rel =
-  ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (prop._∧_.proj₁ (subst-refl (τ₁ [+] τ₂) {inj₂ i'} e d)) root-den)) ,
+  ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (proj₁ (subst-refl (τ₁ [+] τ₂) {inj₂ i'} e d)) root-den)) ,
   DepRel-resp τ₂ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
-    (F.sym τ₂ i' (F.trans τ₂ i' (prop._∧_.proj₂ (subst-refl (τ₁ [+] τ₂) {inj₂ i'} e d))
-                                (F.+-cong τ₂ i' (prop._∧_.proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i'))))
+    (F.sym τ₂ i' (F.trans τ₂ i' (proj₂ (subst-refl (τ₁ [+] τ₂) {inj₂ i'} e d))
+                                (F.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i'))))
     (fundamental ct D rγ s x g rel)
   where
   i' = ⟦ t ⟧tm .idxf .sfunc gi
   e = Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₂ i'}
   d = F._+_ (τ₁ [+] τ₂) (inj₂ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₂ i') s) (⟦ inr {τ₁ = τ₁} t ⟧tm .famf .transf gi .func g)
   root-den : proj₁ d ≈s (c ·ₛ s)
-  root-den = ≈-trans (+-cong (prop._∧_.proj₁ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
+  root-den = ≈-trans (+-cong (proj₁ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
 fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) {γ = γ}
             (⇓-case-l {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
   DepRel-resp τ (ValRel-resp τ E r') (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
@@ -465,7 +465,7 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   e : Setoid._≈_ (⟦ τ₁ [+] τ₂ ⟧ .idx) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₁ i')
   e = prop.Prf.prf (proj₂ (proj₂ rs))
   sidx = ⟦ sc ⟧tm .idxf .sfunc gi
-  SC = HasStrongCoproducts.copair FD.strongCoproducts (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
+  SC = copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
   Eidx : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₁ ⟧tm .idxf .sfunc (gi , i'))
   Eidx = SC .idxf .prop-setoid._⇒_.func-resp-≈ {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
   E : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ t₁ ⟧tm .idxf .sfunc (gi , i')) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi)
@@ -483,41 +483,41 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   split-sum = subst-ctrl-dep+ (τ₁ [+] τ₂) {sidx} {inj₁ i'} e s (⟦ sc ⟧tm .famf .transf gi .func g)
 
   o_s₀ : o_s zero ≈s ((c ·ₛ s) +ₛ a_s)
-  o_s₀ = ≈-trans (prop._∧_.proj₁ IH₁)
-                 (≈-trans (prop._∧_.proj₁ split-sum) (+-cong (prop._∧_.proj₁ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) ≈-refl))
+  o_s₀ = ≈-trans (proj₁ IH₁)
+                 (≈-trans (proj₁ split-sum) (+-cong (proj₁ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) ≈-refl))
 
   payload₁ : DepRel τ₁ r_v (λ m → o_s (suc m)) (F._+_ τ₁ i' y_v (ctrl-dep-at τ₁ i' s))
   payload₁ =
     DepRel-resp τ₁ r_v (λ m → ≈-refl)
-      (F.trans τ₁ i' (prop._∧_.proj₂ split-sum)
-        (F.trans τ₁ i' (F.+-cong τ₁ i' (prop._∧_.proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i')) (F.+-comm τ₁ i')))
-      (prop._∧_.proj₂ IH₁)
+      (F.trans τ₁ i' (proj₂ split-sum)
+        (F.trans τ₁ i' (F.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i')) (F.+-comm τ₁ i')))
+      (proj₂ IH₁)
 
   B = ⟦ t₁ ⟧tm .famf .transf (gi , i') .func (g , y_v)
 
   -- The case's fibre at the environment, through the naturality of the strong copairing along
   -- the scrutinee's index equation.
-  Dom = HasProducts.prod FD.products ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
-  Pg = HasProducts.pair FD.products (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
+  Dom = FDP.prod ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
+  Pg = FDP.pair (FDC.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
   Q = Dom .fam .subst {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .func Pg
   CF = ⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g
 
   case-famf : F._≈_ τ ic CF (F._+_ τ ic (⟦ τ ⟧ .fam .subst E .func B) (ctrl-dep-at τ ic a_s))
   case-famf =
     F.trans τ ic (F.sym τ ic (roundtrip τ E Eidx CF))
-    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .SemiMod._⇒_.func-resp-≈ {⟦ τ ⟧ .fam .subst Eidx .func CF} {F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s)}
+    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .func-resp-≈ {⟦ τ ⟧ .fam .subst Eidx .func CF} {F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s)}
                     (F.trans τ i₁ (F.sym τ i₁ nat) branch-eq))
-    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .SemiMod._⇒_.preserve-+ {B} {ctrl-dep-at τ i₁ a_s})
+    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .preserve-+ {B} {ctrl-dep-at τ i₁ a_s})
                   (F.+-cong τ ic (F.refl τ ic) (ctrl-dep-natural τ E a_s))))
     where
     nat : F._≈_ τ i₁ (SC .famf .transf (gi , inj₁ i') .func Q) (⟦ τ ⟧ .fam .subst Eidx .func CF)
     nat = SC .famf .indexed-family._⇒f_.natural {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
-            .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
+            .func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
 
     Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , inj₁ i')) Q (g , SG)
     Q≈ = Semimodule.trans (Dom .fam .fm (gi , inj₁ i'))
-           (Dom .fam .subst {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .SemiMod._⇒_.func-resp-≈
-              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
+           (Dom .fam .subst {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .func-resp-≈
+              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
            (Semimodule.trans (Dom .fam .fm (gi , inj₁ i'))
               (bpair-elt {SemiMod._⊕_ (FibC Γ gi) (Fib (τ₁ [+] τ₂) sidx)} {FibC Γ gi} {Fib (τ₁ [+] τ₂) (inj₁ i')}
                          (SemiMod._∘_ (⟦ Γ ⟧ctxt .fam .subst {gi} {gi} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}))
@@ -525,13 +525,13 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
                          (SemiMod._∘_ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₁ i'} e)
                                       (SemiMod.p₂ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
                          (g , ⟦ sc ⟧tm .famf .transf gi .func g))
-              (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq
+              (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .func-eq
                  (Semimodule.refl (FibC Γ gi) {g}) ,
                F.refl (τ₁ [+] τ₂) (inj₁ i')))
 
     branch-eq : F._≈_ τ i₁ (SC .famf .transf (gi , inj₁ i') .func Q) (F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s))
     branch-eq =
-      F.trans τ i₁ (SC .famf .transf (gi , inj₁ i') .SemiMod._⇒_.func-resp-≈ {Q} {g , SG} Q≈)
+      F.trans τ i₁ (SC .famf .transf (gi , inj₁ i') .func-resp-≈ {Q} {g , SG} Q≈)
                    (elimF-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ ⟧} {⟦ τ ⟧} (ctrl-dep τ) ⟦ t₁ ⟧tm {gi} {i'} g a_s y_v)
 fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) {γ = γ}
             (⇓-case-r {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
@@ -546,7 +546,7 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   e : Setoid._≈_ (⟦ τ₁ [+] τ₂ ⟧ .idx) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₂ i')
   e = prop.Prf.prf (proj₂ (proj₂ rs))
   sidx = ⟦ sc ⟧tm .idxf .sfunc gi
-  SC = HasStrongCoproducts.copair FD.strongCoproducts (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
+  SC = copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
   Eidx : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₂ ⟧tm .idxf .sfunc (gi , i'))
   Eidx = SC .idxf .prop-setoid._⇒_.func-resp-≈ {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
   E : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ t₂ ⟧tm .idxf .sfunc (gi , i')) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi)
@@ -564,41 +564,41 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   split-sum = subst-ctrl-dep+ (τ₁ [+] τ₂) {sidx} {inj₂ i'} e s (⟦ sc ⟧tm .famf .transf gi .func g)
 
   o_s₀ : o_s zero ≈s ((c ·ₛ s) +ₛ a_s)
-  o_s₀ = ≈-trans (prop._∧_.proj₁ IH₁)
-                 (≈-trans (prop._∧_.proj₁ split-sum) (+-cong (prop._∧_.proj₁ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) ≈-refl))
+  o_s₀ = ≈-trans (proj₁ IH₁)
+                 (≈-trans (proj₁ split-sum) (+-cong (proj₁ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) ≈-refl))
 
   payload₁ : DepRel τ₂ r_v (λ m → o_s (suc m)) (F._+_ τ₂ i' y_v (ctrl-dep-at τ₂ i' s))
   payload₁ =
     DepRel-resp τ₂ r_v (λ m → ≈-refl)
-      (F.trans τ₂ i' (prop._∧_.proj₂ split-sum)
-        (F.trans τ₂ i' (F.+-cong τ₂ i' (prop._∧_.proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i')) (F.+-comm τ₂ i')))
-      (prop._∧_.proj₂ IH₁)
+      (F.trans τ₂ i' (proj₂ split-sum)
+        (F.trans τ₂ i' (F.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i')) (F.+-comm τ₂ i')))
+      (proj₂ IH₁)
 
   B = ⟦ t₂ ⟧tm .famf .transf (gi , i') .func (g , y_v)
 
   -- The case's fibre at the environment, through the naturality of the strong copairing along
   -- the scrutinee's index equation.
-  Dom = HasProducts.prod FD.products ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
-  Pg = HasProducts.pair FD.products (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
+  Dom = FDP.prod ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
+  Pg = FDP.pair (FDC.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
   Q = Dom .fam .subst {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .func Pg
   CF = ⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g
 
   case-famf : F._≈_ τ ic CF (F._+_ τ ic (⟦ τ ⟧ .fam .subst E .func B) (ctrl-dep-at τ ic a_s))
   case-famf =
     F.trans τ ic (F.sym τ ic (roundtrip τ E Eidx CF))
-    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .SemiMod._⇒_.func-resp-≈ {⟦ τ ⟧ .fam .subst Eidx .func CF} {F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s)}
+    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .func-resp-≈ {⟦ τ ⟧ .fam .subst Eidx .func CF} {F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s)}
                     (F.trans τ i₁ (F.sym τ i₁ nat) branch-eq))
-    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .SemiMod._⇒_.preserve-+ {B} {ctrl-dep-at τ i₁ a_s})
+    (F.trans τ ic (⟦ τ ⟧ .fam .subst E .preserve-+ {B} {ctrl-dep-at τ i₁ a_s})
                   (F.+-cong τ ic (F.refl τ ic) (ctrl-dep-natural τ E a_s))))
     where
     nat : F._≈_ τ i₁ (SC .famf .transf (gi , inj₂ i') .func Q) (⟦ τ ⟧ .fam .subst Eidx .func CF)
     nat = SC .famf .indexed-family._⇒f_.natural {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
-            .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
+            .func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
 
     Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , inj₂ i')) Q (g , SG)
     Q≈ = Semimodule.trans (Dom .fam .fm (gi , inj₂ i'))
-           (Dom .fam .subst {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .SemiMod._⇒_.func-resp-≈
-              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
+           (Dom .fam .subst {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .func-resp-≈
+              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
            (Semimodule.trans (Dom .fam .fm (gi , inj₂ i'))
               (bpair-elt {SemiMod._⊕_ (FibC Γ gi) (Fib (τ₁ [+] τ₂) sidx)} {FibC Γ gi} {Fib (τ₁ [+] τ₂) (inj₂ i')}
                          (SemiMod._∘_ (⟦ Γ ⟧ctxt .fam .subst {gi} {gi} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}))
@@ -606,13 +606,13 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
                          (SemiMod._∘_ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₂ i'} e)
                                       (SemiMod.p₂ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
                          (g , ⟦ sc ⟧tm .famf .transf gi .func g))
-              (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq
+              (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .func-eq
                  (Semimodule.refl (FibC Γ gi) {g}) ,
                F.refl (τ₁ [+] τ₂) (inj₂ i')))
 
     branch-eq : F._≈_ τ i₁ (SC .famf .transf (gi , inj₂ i') .func Q) (F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s))
     branch-eq =
-      F.trans τ i₁ (SC .famf .transf (gi , inj₂ i') .SemiMod._⇒_.func-resp-≈ {Q} {g , SG} Q≈)
+      F.trans τ i₁ (SC .famf .transf (gi , inj₂ i') .func-resp-≈ {Q} {g , SG} Q≈)
                    (elimF-elt {⟦ Γ ⟧ctxt} {⟦ τ₂ ⟧} {⟦ τ ⟧} (ctrl-dep τ) ⟦ t₂ ⟧tm {gi} {i'} g a_s y_v)
 fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ = γ} (⇓-pair {v = v} {u = u} {R = R₁} {T = R₂} D₁ D₂) {gi} rγ s x g rel =
   root , (DepRel-resp σ r₁ (λ k → ≈-sym (comp₁ k)) den₁ IH₁ , DepRel-resp τ r₂ (λ k → ≈-sym (comp₂ k)) den₂ IH₂)
@@ -640,7 +640,7 @@ fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ =
   root : o zero ≈A proj₁ d
   root =
     ≈-trans (built-zero {γ = γ} ⟨ R₁ , R₂ ⟩ s x)
-            (≈-sym (≈-trans (+-cong (prop._∧_.proj₁ (ctrl-dep-pair {σ} {τ} i j s)) (≈-refl {ε})) +-runit))
+            (≈-sym (≈-trans (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} i j s)) (≈-refl {ε})) +-runit))
 
   comp₁ : ∀ k → ap (M.p₁ {width v} {width u}) (λ l → o (suc l)) k ≈s o₁ k
   comp₁ k = ≈-trans (app-congᵥ (M.p₁ {width v} {width u}) tail-eq k) (ap-p₁-++ o₁ o₂ k)
@@ -649,16 +649,16 @@ fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ =
   comp₂ k = ≈-trans (app-congᵥ (M.p₂ {width v} {width u}) tail-eq k) (ap-p₂-++ o₁ o₂ k)
 
   den₁ : F._≈_ σ i (F._+_ σ i (ctrl-dep-at σ i s) y₁) (proj₁ (proj₂ d))
-  den₁ = F.sym σ i (F.+-cong σ i (prop._∧_.proj₁ (prop._∧_.proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (m-runit (Fib σ i)))
+  den₁ = F.sym σ i (F.+-cong σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (m-runit (Fib σ i)))
 
   den₂ : F._≈_ τ j (F._+_ τ j (ctrl-dep-at τ j s) y₂) (proj₂ (proj₂ d))
-  den₂ = F.sym τ j (F.+-cong τ j (prop._∧_.proj₂ (prop._∧_.proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (F.+-lunit τ j))
+  den₂ = F.sym τ j (F.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (F.+-lunit τ j))
 fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} ct) {γ = γ} (⇓-fst {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   DepRel-resp σ r₁ (λ k → ≈-sym (proj-op {γ = γ} v {width v} {width u} (M.p₁ {width v} {width u}) R' s x k))
     (proj-den σ i s a₀ (o' zero) (proj₁ (proj₂ (F._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) Mg)))
        (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) m₁
-       o'₀ (F.+-cong σ i (prop._∧_.proj₁ (prop._∧_.proj₂ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s))) (F.refl σ i)) G-form)
-    (ctrl-add σ r₁ ((c ·ₛ s) +ₛ o' zero) (prop._∧_.proj₁ (prop._∧_.proj₂ IH)))
+       o'₀ (F.+-cong σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s))) (F.refl σ i)) G-form)
+    (ctrl-add σ r₁ ((c ·ₛ s) +ₛ o' zero) (proj₁ (proj₂ IH)))
   where
   ij = ⟦ t ⟧tm .idxf .sfunc gi
   i = proj₁ ij
@@ -669,20 +669,20 @@ fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} ct) {γ = γ} (⇓-fst
   a₀ = proj₁ Mg
   m₁ = proj₁ (proj₂ Mg)
   o'₀ : o' zero ≈s ((c ·ₛ s) +ₛ a₀)
-  o'₀ = ≈-trans (prop._∧_.proj₁ IH) (+-cong (prop._∧_.proj₁ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s)) (≈-refl {a₀}))
+  o'₀ = ≈-trans (proj₁ IH) (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s)) (≈-refl {a₀}))
   G-form : F._≈_ σ i (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (F._+_ σ i m₁ (ctrl-dep-at σ i a₀))
   G-form =
-    F.trans σ i (FD.elimF (ctrl-dep σ) body .famf .transf (gi , ij) .SemiMod._⇒_.func-resp-≈
-                   (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [×] τ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))
-                (elimF-elt {⟦ Γ ⟧ctxt} {HasProducts.prod FD.products ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ) body {gi} {ij} g a₀ (proj₂ Mg))
-    where body = Category._∘_ FD.cat (HasProducts.p₁ FD.products {⟦ σ ⟧} {⟦ τ ⟧})
-                                     (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {HasProducts.prod FD.products ⟦ σ ⟧ ⟦ τ ⟧})
+    F.trans σ i (FD.elimF (ctrl-dep σ) body .famf .transf (gi , ij) .func-resp-≈
+                   (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [×] τ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))
+                (elimF-elt {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ) body {gi} {ij} g a₀ (proj₂ Mg))
+    where body = FDC._∘_ (FDP.p₁ {⟦ σ ⟧} {⟦ τ ⟧})
+                                     (FDP.p₂ {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧})
 fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} ct) {γ = γ} (⇓-snd {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   DepRel-resp τ r₂ (λ k → ≈-sym (proj-op {γ = γ} u {width v} {width u} (M.p₂ {width v} {width u}) R' s x k))
     (proj-den τ j s a₀ (o' zero) (proj₂ (proj₂ (F._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) Mg)))
        (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) m₂
-       o'₀ (F.+-cong τ j (prop._∧_.proj₂ (prop._∧_.proj₂ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s))) (F.refl τ j)) G-form)
-    (ctrl-add τ r₂ ((c ·ₛ s) +ₛ o' zero) (prop._∧_.proj₂ (prop._∧_.proj₂ IH)))
+       o'₀ (F.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s))) (F.refl τ j)) G-form)
+    (ctrl-add τ r₂ ((c ·ₛ s) +ₛ o' zero) (proj₂ (proj₂ IH)))
   where
   ij = ⟦ t ⟧tm .idxf .sfunc gi
   j = proj₂ ij
@@ -693,14 +693,14 @@ fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} ct) {γ = γ} (⇓-snd
   a₀ = proj₁ Mg
   m₂ = proj₂ (proj₂ Mg)
   o'₀ : o' zero ≈s ((c ·ₛ s) +ₛ a₀)
-  o'₀ = ≈-trans (prop._∧_.proj₁ IH) (+-cong (prop._∧_.proj₁ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s)) (≈-refl {a₀}))
+  o'₀ = ≈-trans (proj₁ IH) (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s)) (≈-refl {a₀}))
   G-form : F._≈_ τ j (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (F._+_ τ j m₂ (ctrl-dep-at τ j a₀))
   G-form =
-    F.trans τ j (FD.elimF (ctrl-dep τ) body .famf .transf (gi , ij) .SemiMod._⇒_.func-resp-≈
-                   (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [×] τ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))
-                (elimF-elt {⟦ Γ ⟧ctxt} {HasProducts.prod FD.products ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (ctrl-dep τ) body {gi} {ij} g a₀ (proj₂ Mg))
-    where body = Category._∘_ FD.cat (HasProducts.p₂ FD.products {⟦ σ ⟧} {⟦ τ ⟧})
-                                     (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {HasProducts.prod FD.products ⟦ σ ⟧ ⟦ τ ⟧})
+    F.trans τ j (FD.elimF (ctrl-dep τ) body .famf .transf (gi , ij) .func-resp-≈
+                   (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [×] τ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))
+                (elimF-elt {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (ctrl-dep τ) body {gi} {ij} g a₀ (proj₂ Mg))
+    where body = FDC._∘_ (FDP.p₂ {⟦ σ ⟧} {⟦ τ ⟧})
+                                     (FDP.p₂ {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧})
 fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi} rγ s x g rel =
   root , clause
   where
@@ -716,7 +716,7 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
   f = ⟦ lam t' ⟧tm .idxf .sfunc gi
 
   root : o zero ≈A proj₁ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))
-  root = ≈-trans o₀ (≈-sym (≈-trans (+-cong (prop._∧_.proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl) +-runit))
+  root = ≈-trans o₀ (≈-sym (≈-trans (+-cong (proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl) +-runit))
 
   clause : ∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : ValRel σ v j)
              (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑ σ rv (s' +ₛ o zero) z y →
@@ -732,18 +732,18 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
     DepRel-resp τ (fundamental-val ct D (rγ · rv))
       (app-congᵥ U (body-input-resp γ v (+-cong ≈-refl (≈-sym o₀)) (λ k → ≈-sym (o-tail k))))
       (F.+-cong τ (f .idxf .sfunc j)
-         (ctrl-dep τ .at (f .idxf .sfunc j) .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl (≈-sym o₀)))
+         (ctrl-dep τ .at (f .idxf .sfunc j) .func-resp-≈ (+-cong ≈-refl (≈-sym o₀)))
          (F.trans τ (f .idxf .sfunc j)
-            (⟦ t' ⟧tm .famf .transf (gi , j) .SemiMod._⇒_.func-resp-≈
+            (⟦ t' ⟧tm .famf .transf (gi , j) .func-resp-≈
                {g , y} {(FibC Γ gi Semimodule.+ g) (Semimodule.ε (FibC Γ gi)) ,
                         (Fib σ j Semimodule.+ Semimodule.ε (Fib σ j)) y}
                (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , Semimodule.sym (Fib σ j) (F.+-lunit σ j)))
          (F.trans τ (f .idxf .sfunc j)
-            (⟦ t' ⟧tm .famf .transf (gi , j) .SemiMod._⇒_.preserve-+
+            (⟦ t' ⟧tm .famf .transf (gi , j) .preserve-+
                {g , Semimodule.ε (Fib σ j)} {Semimodule.ε (FibC Γ gi) , y})
             (F.+-cong τ (f .idxf .sfunc j)
                (F.trans τ (f .idxf .sfunc j) (F.sym τ (f .idxf .sfunc j) β)
-                  (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .SemiMod._⇒_.func-resp-≈
+                  (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func-resp-≈
                      {proj₂ L} {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} pd))
                (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))))
       (fundamental ct D (rγ · rv) (s' +ₛ (c ·ₛ s)) (λ k → body-input γ v (s' +ₛ (c ·ₛ s)) x z (suc k)) (g , y)
@@ -764,13 +764,13 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
            (indexed-family._∘f_ (indexed-family.reindex-f (model.FE.nudge gi) (⟦ t' ⟧tm .famf))
                                 (model.FE.nudge-in₁ gi))
     β = SP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {x = FibC Γ gi} {f = Fλ} j
-          .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq (Semimodule.refl (FibC Γ gi) {g})
+          .func-eq (Semimodule.refl (FibC Γ gi) {g})
 
     pd : P._≈_ (proj₂ L) (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L))
     pd = P.sym {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} {proj₂ L}
            (P.trans {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} {P._+_ P.ε (proj₂ L)} {proj₂ L}
               (P.+-cong {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {P.ε} {proj₂ L} {proj₂ L}
-                 (prop._∧_.proj₂ (ctrl-dep-clo {σ} {τ} f s)) (P.refl {proj₂ L}))
+                 (proj₂ (ctrl-dep-clo {σ} {τ} f s)) (P.refl {proj₂ L}))
               (P.+-lunit {proj₂ L}))
 fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ = γ}
             (⇓-app {Γ' = Γ'} {γ' = γ'} {t' = t'} {v = v} {u = u} {R = R} {T = T} {U = U} D₁ D₂ D₃) {gi} rγ s x g rel =
@@ -796,14 +796,14 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   z = ap T (inputs γ s x)
 
   o₀ : o zero ≈s ((c ·ₛ s) +ₛ a)
-  o₀ = ≈-trans (prop._∧_.proj₁ IH₁) (+-cong (prop._∧_.proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl)
+  o₀ = ≈-trans (proj₁ IH₁) (+-cong (proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl)
 
   -- The argument's relation, its control dependence at s taken as slack below the control
   -- dependence at the application's weighted control input.
   arg : DepRel⊑ σ r₂ ((c ·ₛ s) +ₛ o zero) z yN
   arg = ctrl-dep-at σ j s ,
         (F.⊑-trans σ j (⊑ctrl-dep-mono σ j s (o zero) _ (F.⊑-refl σ j))
-                       (F.≈→⊑ σ j (ctrl-dep σ .at j .SemiMod._⇒_.func-resp-≈ +-comm)) ,
+                       (F.≈→⊑ σ j (ctrl-dep σ .at j .func-resp-≈ +-comm)) ,
          DepRel-resp σ r₂ (λ k → ≈-refl) (F.+-comm σ j) IH₂)
 
   -- The clause of the function's relation at the application's weighted control input and the argument.
@@ -811,7 +811,7 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
         (F._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
           (F._+_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                       (f .famf .transf j .func yN)))
-  C = prop._∧_.proj₂ IH₁ (c ·ₛ s) r₂ z yN arg D₃
+  C = proj₂ IH₁ (c ·ₛ s) r₂ z yN arg D₃
 
   -- The clause's constant, evaluation and argument against the application's.
   den-eq : F._≈_ τ i₁
@@ -827,34 +827,34 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
     G-form : F._≈_ τ i₁ (⟦ app M N ⟧tm .famf .transf gi .func g)
                (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ctrl-dep-at τ i₁ a))
     G-form =
-      F.trans τ i₁ (FD.elimF (ctrl-dep τ) body .famf .transf (gi , f) .SemiMod._⇒_.func-resp-≈
-                      {HasProducts.pair FD.products (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ M ⟧tm .famf .transf gi .func g} {g , (a , m)}
-                      (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [→] τ ⟧} (Category.id FD.cat ⟦ Γ ⟧ctxt) ⟦ M ⟧tm gi g))
+      F.trans τ i₁ (FD.elimF (ctrl-dep τ) body .famf .transf (gi , f) .func-resp-≈
+                      {FDP.pair (FDC.id ⟦ Γ ⟧ctxt) ⟦ M ⟧tm .famf .transf gi .func g} {g , (a , m)}
+                      (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [→] τ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ M ⟧tm gi g))
       (F.trans τ i₁ (elimF-elt {⟦ Γ ⟧ctxt} {Ex} {⟦ τ ⟧} (ctrl-dep τ) body {gi} {f} g a m)
-                    (F.+-cong τ i₁ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .SemiMod._⇒_.func-resp-≈
-                                      {HasProducts.pair FD.products (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {Ex})
-                                         (Category._∘_ FD.cat ⟦ N ⟧tm (HasProducts.p₁ FD.products {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
+                    (F.+-cong τ i₁ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .func-resp-≈
+                                      {FDP.pair (FDP.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                         (FDC._∘_ ⟦ N ⟧tm (FDP.p₁ {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
                                       {m , yN}
-                                      (Fpair-elt {HasProducts.prod FD.products ⟦ Γ ⟧ctxt Ex} {Ex} {⟦ σ ⟧}
-                                         (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {Ex})
-                                         (Category._∘_ FD.cat ⟦ N ⟧tm (HasProducts.p₁ FD.products {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
+                                      (Fpair-elt {FDP.prod ⟦ Γ ⟧ctxt Ex} {Ex} {⟦ σ ⟧}
+                                         (FDP.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                         (FDC._∘_ ⟦ N ⟧tm (FDP.p₁ {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
                                    (F.refl τ i₁)))
       where
       Ex = HasWeakExponentials.exp model.SemiModExp ⟦ σ ⟧ ⟦ τ ⟧
-      body = Category._∘_ FD.cat (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
-               (HasProducts.pair FD.products (HasProducts.p₂ FD.products {⟦ Γ ⟧ctxt} {Ex})
-                                             (Category._∘_ FD.cat ⟦ N ⟧tm (HasProducts.p₁ FD.products {⟦ Γ ⟧ctxt} {Ex})))
+      body = FDC._∘_ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
+               (FDP.pair (FDP.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                             (FDC._∘_ ⟦ N ⟧tm (FDP.p₁ {⟦ Γ ⟧ctxt} {Ex})))
 
     ctrl-dep-part : F._≈_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero)) (F._+_ τ i₁ (ctrl-dep-at τ i₁ s) (ctrl-dep-at τ i₁ a))
-    ctrl-dep-part = F.trans τ i₁ (ctrl-dep τ .at i₁ .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o₀)) (ctrl-dep-double τ i₁ s a)
+    ctrl-dep-part = F.trans τ i₁ (ctrl-dep τ .at i₁ .func-resp-≈ (+-cong ≈-refl o₀)) (ctrl-dep-double τ i₁ s a)
 
     eval-part : F._≈_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                            (evalΠj .func m)
     eval-part =
-      F.trans τ i₁ (evalΠj .SemiMod._⇒_.preserve-+ {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {m})
-      (F.trans τ i₁ (F.+-cong τ i₁ (F.trans τ i₁ (evalΠj .SemiMod._⇒_.func-resp-≈ {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {P.ε}
-                                                    (prop._∧_.proj₂ (ctrl-dep-clo {σ} {τ} f s)))
-                                                 (evalΠj .SemiMod._⇒_.preserve-ze))
+      F.trans τ i₁ (evalΠj .preserve-+ {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {m})
+      (F.trans τ i₁ (F.+-cong τ i₁ (F.trans τ i₁ (evalΠj .func-resp-≈ {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {P.ε}
+                                                    (proj₂ (ctrl-dep-clo {σ} {τ} f s)))
+                                                 (evalΠj .preserve-ze))
                                    (F.refl τ i₁))
                     (F.+-lunit τ i₁))
 
@@ -929,8 +929,8 @@ fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cts) {γ 
   D-c = op-deps ω .sfunc (args-idx Ms gi)
   Z = args-vec Ms gi g
   p = ⟦ Ms ⟧tms .idxf .sfunc gi
-  C = IP.collect is .FCμ.famf .transf (interp.𝒟-arg-product is .idxf .sfunc p)
-  tp-elt = interp.𝒟-arg-product is .famf .transf p .func (⟦ Ms ⟧tms .famf .transf gi .func g)
+  C = collect is .FCμ.famf .transf (𝒟-arg-product is .idxf .sfunc p)
+  tp-elt = 𝒟-arg-product is .famf .transf p .func (⟦ Ms ⟧tms .famf .transf gi .func g)
   IH : ∀ l → ap Rs (inputs γ s x) l ≈s ((c ·ₛ s) +ₛ Z l)
   IH = fundamental-s cts D rγ s x g rel
   den : ⟦ bop ω Ms ⟧tm .famf .transf gi .func g k ≈s ap D-vs Z k
@@ -963,7 +963,7 @@ fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cts) {γ = γ} (⇓-br
                  (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func (F._+_ (unit [+] unit) i (ctrl-dep-at (unit [+] unit) i s) den))
                  (F._+_ (unit [+] unit) b (ctrl-dep-at (unit [+] unit) b s) (interp.bool-elt b (ap D-vs Z zero)))
   model-side =
-    F.trans (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .SemiMod._⇒_.preserve-+ {ctrl-dep-at (unit [+] unit) i s} {den})
+    F.trans (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .preserve-+ {ctrl-dep-at (unit [+] unit) i s} {den})
       (F.+-cong (unit [+] unit) b (ctrl-dep-natural (unit [+] unit) {i} {b} e s)
         (F.trans (unit [+] unit) b
           (interp.test.test-elt ω (⟦ Ms ⟧tms .idxf .sfunc gi) (⟦ Ms ⟧tms .famf .transf gi .func g) b e)
