@@ -403,8 +403,8 @@ private
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
               {gi} (rγ : EnvValRel γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
               (g : ∣ FibC Γ gi ∣) → EnvDepRel rγ s x g →
-              DepRel τ (fundamental-val ct D rγ) (mat R .func (inputs γ s x))
-                (Semimodule._+_ (Fib τ (⟦ t ⟧tm .idxf .sfunc gi))
+              DepRel τ (fundamental-val ct D rγ) (ap R (inputs γ s x))
+                (F._+_ τ (⟦ t ⟧tm .idxf .sfunc gi)
                   (ctrl-dep τ .at (⟦ t ⟧tm .idxf .sfunc gi) .func s)
                   (⟦ t ⟧tm .famf .transf gi .func g))
 -- At a primitive's arguments the relation is equality, with the control weight times the control
@@ -619,7 +619,7 @@ fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ =
                      (+-cong (app-∘ (M.in₁ {width v} {width u}) R₁ (inputs γ s x) k)
                              (app-∘ (M.in₂ {width v} {width u}) R₂ (inputs γ s x) k)))
 
-  root : o zero ≈A proj₁ d
+  root : o zero ≈s proj₁ d
   root =
     ≈-trans (built-zero {γ = γ} ⟨ R₁ , R₂ ⟩ s x)
             (≈-sym (≈-trans (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} i j s)) (≈-refl {ε})) +-runit))
@@ -697,17 +697,17 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
 
   f = ⟦ lam t' ⟧tm .idxf .sfunc gi
 
-  root : o zero ≈A proj₁ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))
+  root : o zero ≈s proj₁ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))
   root = ≈-trans o₀ (≈-sym (≈-trans (+-cong (proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl) +-runit))
 
   clause : ∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : ValRel σ v j)
              (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑ σ rv (s' +ₛ o zero) z y →
            ∀ {u U} (D : γ · v , t' ⇓ u [ U ]) →
-             DepRel τ (fundamental-val ct D (rγ · rv)) (mat U .func (body-input γ v (s' +ₛ o zero) (λ k → o (suc k)) z))
+             DepRel τ (fundamental-val ct D (rγ · rv)) (ap U (body-input γ v (s' +ₛ o zero) (λ k → o (suc k)) z))
                (F._+_ τ (f .idxf .sfunc j)
                  (ctrl-dep-at τ (f .idxf .sfunc j) (s' +ₛ o zero))
                  (F._+_ τ (f .idxf .sfunc j)
-                   (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func
+                   (evalΠ σ τ f j .func
                       (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))))
                    (f .famf .transf j .func y)))
   clause s' {v} {j} rv z y hz {u} {U} D =
@@ -718,28 +718,28 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
          (F.trans τ (f .idxf .sfunc j)
             (⟦ t' ⟧tm .famf .transf (gi , j) .func-resp-≈
                {g , y} {(FibC Γ gi Semimodule.+ g) (Semimodule.ε (FibC Γ gi)) ,
-                        (Fib σ j Semimodule.+ Semimodule.ε (Fib σ j)) y}
-               (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , Semimodule.sym (Fib σ j) (F.+-lunit σ j)))
+                        (Fib σ j Semimodule.+ F.ε σ j) y}
+               (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , F.sym σ j (F.+-lunit σ j)))
          (F.trans τ (f .idxf .sfunc j)
             (⟦ t' ⟧tm .famf .transf (gi , j) .preserve-+
-               {g , Semimodule.ε (Fib σ j)} {Semimodule.ε (FibC Γ gi) , y})
+               {g , F.ε σ j} {Semimodule.ε (FibC Γ gi) , y})
             (F.+-cong τ (f .idxf .sfunc j)
                (F.trans τ (f .idxf .sfunc j) (F.sym τ (f .idxf .sfunc j) β)
-                  (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func-resp-≈
+                  (evalΠ σ τ f j .func-resp-≈
                      {proj₂ L} {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} pd))
                (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))))
       (fundamental ct D (rγ · rv) (s' +ₛ (c ·ₛ s)) (λ k → body-input γ v (s' +ₛ (c ·ₛ s)) x z (suc k)) (g , y)
          (EnvDepRel-resp rγ (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₁-++ x z k)) (EnvDepRel-mono rγ s s' rel) ,
           DepRel⊑-resp σ rv (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₂-++ x z k)) (DepRel⊑-resp-ctrl σ rv (+-cong ≈-refl o₀) hz)))
     where
-    module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
+    module P = Semimodule (Payload σ τ f)
     L = ⟦ lam t' ⟧tm .famf .transf gi .func g
 
     -- The payload of the lambda's fibre evaluated at the argument is the body's fibre on the
     -- environment part.
     β : F._≈_ τ (f .idxf .sfunc j)
-          (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ L))
-          (⟦ t' ⟧tm .famf .transf (gi , j) .func (g , Semimodule.ε (Fib σ j)))
+          (evalΠ σ τ f j .func (proj₂ L))
+          (⟦ t' ⟧tm .famf .transf (gi , j) .func (g , F.ε σ j))
     Fλ : indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (FibC Γ gi)
            indexed-family.⇒f (⟦ τ ⟧ .fam indexed-family.[ f .idxf ])
     Fλ = indexed-family._∘f_ indexed-family.reindex-comp
@@ -769,8 +769,8 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   a = proj₁ (⟦ M ⟧tm .famf .transf gi .func g)
   m = proj₂ (⟦ M ⟧tm .famf .transf gi .func g)
   yN = ⟦ N ⟧tm .famf .transf gi .func g
-  module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
-  evalΠj = SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
+  module P = Semimodule (Payload σ τ f)
+  evalΠj = evalΠ σ τ f j
   -- The operational vectors of the function and the argument, and of the application.
   o : ∣ 𝔽 (suc (width-env γ')) ∣
   o = ap R (inputs γ s x)
@@ -921,7 +921,7 @@ fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cts) {γ 
         (≈-trans (app-∘ D-c C tp-elt k)
                  (app-congₘ (op-deps ω .prop-setoid._⇒_.func-resp-≈ (Prf.prf (fundamental-vals cts D rγ))) Z k)))
 fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cts) {γ = γ} (⇓-brel {vs = vs} {R = Rs} D) {gi} rγ s x g rel =
-  DepRel-bool ω vs b {i} e (mat (wctrl +ₘ (brel-deps ω vs b ∘ Rs)) .func (inputs γ s x))
+  DepRel-bool ω vs b {i} e (ap (wctrl +ₘ (brel-deps ω vs b ∘ Rs)) (inputs γ s x))
     (F._+_ (unit [+] unit) i (ctrl-dep-at (unit [+] unit) i s) (⟦ brel ω Ms ⟧tm .famf .transf gi .func g)) s Z op-side model-side
   where
   b = rel-pred ω .sfunc vs

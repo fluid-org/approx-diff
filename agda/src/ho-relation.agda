@@ -90,8 +90,17 @@ IxC Γ = Setoid.Carrier (⟦ Γ ⟧ctxt .idx)
 FibC : (Γ : ctxt) → IxC Γ → Semimodule
 FibC Γ i = ⟦ Γ ⟧ctxt .fam .fm i
 
-_≈A_ : Setoid.Carrier A → Setoid.Carrier A → Prop
-_≈A_ = Setoid._≈_ A
+open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
+open CommutativeSemiring S public using (ι; ε; +-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
+  renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
+open Setoid A public using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
+open M public using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans; ⟨_,_⟩) renaming (Σ to Σₛ)
+
+Payload : ∀ σ τ → Ix (σ [→] τ) → Semimodule
+Payload σ τ f = model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f
+
+evalΠ : ∀ σ τ (f : Ix (σ [→] τ)) (j : Ix σ) → Payload σ τ f ⇒ Fib τ (f .idxf .sfunc j)
+evalΠ σ τ f j = SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
 
 
 -- Values related to indices, by recursion on the type. A closure is related to a fibre map of the
@@ -114,8 +123,8 @@ body-input : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) → Setoid.Carrier A →
 body-input γ' v s x z zero    = s
 body-input γ' v s x z (suc k) =
   Semimodule._+_ (𝔽 (width-env γ' + width v))
-    (mat (M.in₁ {width-env γ'} {width v}) .func x)
-    (mat (M.in₂ {width-env γ'} {width v}) .func z) k
+    (ap (M.in₁ {width-env γ'} {width v}) x)
+    (ap (M.in₂ {width-env γ'} {width v}) z) k
 
 -- The control dependence at an index and a value of the control input.
 ctrl-dep-at : ∀ τ (i : Ix τ) → Setoid.Carrier A → ∣ Fib τ i ∣
@@ -126,7 +135,7 @@ ctrl-dep-at τ i s = ctrl-dep τ .at i .func s
 fib-+-idem : ∀ τ i {x} → Semimodule._≈_ (Fib τ i) (Semimodule._+_ (Fib τ i) x x) x
 fib-+-idem τ i =
   X.trans (X.+-cong (X.sym X.·-unit) (X.sym X.·-unit))
-          (X.trans (X.sym X.+-distribʳ) (X.trans (X.·-cong (+-idem Sc.ι) X.refl) X.·-unit))
+          (X.trans (X.sym X.+-distribʳ) (X.trans (X.·-cong (+-idem ι) X.refl) X.·-unit))
   where module X = Semimodule (Fib τ i)
 
 module F τ i where
@@ -144,32 +153,32 @@ module F τ i where
 DepRel⊑ : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → Setoid.Carrier A →
           ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
 DepRel : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
-DepRel unit {unit} {i} r o d = Semimodule._≈_ (Fib unit i) o d
+DepRel unit {unit} {i} r o d = F._≈_ unit i o d
 DepRel (base s) {const a} {i} r o d = Semimodule._≈_ (Fib (base s) i) o d
 DepRel (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) o d =
   let d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func d in
-  (o zero ≈A proj₁ d') ∧ DepRel σ r (λ k → o (suc k)) (proj₂ d')
+  (o zero ≈s proj₁ d') ∧ DepRel σ r (λ k → o (suc k)) (proj₂ d')
 DepRel (σ [+] τ) {inr v} {i} (i' , r , ⟪ e ⟫) o d =
   let d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₂ i'} e .func d in
-  (o zero ≈A proj₁ d') ∧ DepRel τ r (λ k → o (suc k)) (proj₂ d')
+  (o zero ≈s proj₁ d') ∧ DepRel τ r (λ k → o (suc k)) (proj₂ d')
 DepRel (σ [×] τ) {pair v u} {i , j} (r , r') o d =
-  (o zero ≈A proj₁ d) ∧
-  (DepRel σ r (mat (M.p₁ {width v} {width u}) .func (λ k → o (suc k))) (proj₁ (proj₂ d)) ∧
-   DepRel τ r' (mat (M.p₂ {width v} {width u}) .func (λ k → o (suc k))) (proj₂ (proj₂ d)))
+  (o zero ≈s proj₁ d) ∧
+  (DepRel σ r (ap (M.p₁ {width v} {width u}) (λ k → o (suc k))) (proj₁ (proj₂ d)) ∧
+   DepRel τ r' (ap (M.p₂ {width v} {width u}) (λ k → o (suc k))) (proj₂ (proj₂ d)))
 DepRel (σ [→] τ) {clo γ' t} {f} r o d =
-  (o zero ≈A proj₁ d) ∧
+  (o zero ≈s proj₁ d) ∧
   (∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : ValRel σ v j)
-     (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑ σ rv (s' Sc.+ o zero) z y →
+     (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑ σ rv (s' +ₛ o zero) z y →
    ∀ {u U} (D : γ' · v , t ⇓ u [ U ]) →
-     DepRel τ (r rv D) (mat U .func (body-input γ' v (s' Sc.+ o zero) (λ k → o (suc k)) z))
-       (Semimodule._+_ (Fib τ (f .idxf .sfunc j))
-         (ctrl-dep τ .at (f .idxf .sfunc j) .func (s' Sc.+ o zero))
-         (Semimodule._+_ (Fib τ (f .idxf .sfunc j))
-           (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ d))
+     DepRel τ (r rv D) (ap U (body-input γ' v (s' +ₛ o zero) (λ k → o (suc k)) z))
+       (F._+_ τ (f .idxf .sfunc j)
+         (ctrl-dep τ .at (f .idxf .sfunc j) .func (s' +ₛ o zero))
+         (F._+_ τ (f .idxf .sfunc j)
+           (evalΠ σ τ f j .func (proj₂ d))
            (f .famf .transf j .func y))))
 
 DepRel⊑ τ {i = i} r s o d =
-  ∃ (∣ Fib τ i ∣) (λ m → F._⊑_ τ i m (ctrl-dep-at τ i s) ∧ DepRel τ r o (Semimodule._+_ (Fib τ i) d m))
+  ∃ (∣ Fib τ i ∣) (λ m → F._⊑_ τ i m (ctrl-dep-at τ i s) ∧ DepRel τ r o (F._+_ τ i d m))
 
 -- A primitive's arguments need no relations of their own. The model's index at a tuple of
 -- arguments is a tuple of sort indices, and sort-vals-setoid is built from ⊗-setoid, whose
@@ -190,19 +199,13 @@ EnvDepRel : ∀ {Γ} {γ : Env Γ} {gi} → EnvValRel γ gi → Setoid.Carrier A
             ∣ 𝔽 (width-env γ) ∣ → ∣ FibC Γ gi ∣ → Prop
 EnvDepRel emp s x g = prop.⊤
 EnvDepRel (_·_ {γ = γ} {v = v} rγ r) s x g =
-  EnvDepRel rγ s (mat (M.p₁ {width-env γ} {width v}) .func x) (proj₁ g) ∧
-  DepRel⊑ _ r s (mat (M.p₂ {width-env γ} {width v}) .func x) (proj₂ g)
+  EnvDepRel rγ s (ap (M.p₁ {width-env γ} {width v}) x) (proj₁ g) ∧
+  DepRel⊑ _ r s (ap (M.p₂ {width-env γ} {width v}) x) (proj₂ g)
 
 -- The inputs of a derivation: the control input's value at the first position, the environment after.
 inputs : ∀ {Γ} (γ : Env Γ) → Setoid.Carrier A → ∣ 𝔽 (width-env γ) ∣ → ∣ 𝔽 (suc (width-env γ)) ∣
 inputs γ s x zero    = s
 inputs γ s x (suc k) = x k
-
-open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
-open CommutativeSemiring S public using (ι; ε; +-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
-  renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
-open Setoid A public using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
-open M public using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans; ⟨_,_⟩) renaming (Σ to Σₛ)
 
 -- Reading a relation at the inputs: the control input's column at its value, and the environment
 -- columns at the environment vector.
@@ -326,33 +329,33 @@ ctrl-dep-base i s k = ≈-trans +-runit (≈-trans ·-lunit +-runit)
 
 ctrl-dep-inj₁ : ∀ {σ τ} (i : Ix σ) s →
           (proj₁ (ctrl-dep-at (σ [+] τ) (inj₁ i) s) ≈s (c ·ₛ s)) ∧
-          Semimodule._≈_ (Fib σ i) (proj₂ (ctrl-dep-at (σ [+] τ) (inj₁ i) s)) (ctrl-dep-at σ i s)
-ctrl-dep-inj₁ {σ} i s = ≈-trans +-runit +-runit , Semimodule.+-lunit (Fib σ i)
+          F._≈_ σ i (proj₂ (ctrl-dep-at (σ [+] τ) (inj₁ i) s)) (ctrl-dep-at σ i s)
+ctrl-dep-inj₁ {σ} i s = ≈-trans +-runit +-runit , F.+-lunit σ i
 
 ctrl-dep-inj₂ : ∀ {σ τ} (i : Ix τ) s →
           (proj₁ (ctrl-dep-at (σ [+] τ) (inj₂ i) s) ≈s (c ·ₛ s)) ∧
-          Semimodule._≈_ (Fib τ i) (proj₂ (ctrl-dep-at (σ [+] τ) (inj₂ i) s)) (ctrl-dep-at τ i s)
-ctrl-dep-inj₂ {σ} {τ} i s = ≈-trans +-runit +-runit , Semimodule.+-lunit (Fib τ i)
+          F._≈_ τ i (proj₂ (ctrl-dep-at (σ [+] τ) (inj₂ i) s)) (ctrl-dep-at τ i s)
+ctrl-dep-inj₂ {σ} {τ} i s = ≈-trans +-runit +-runit , F.+-lunit τ i
 
 ctrl-dep-pair : ∀ {σ τ} (i : Ix σ) (j : Ix τ) s →
           (proj₁ (ctrl-dep-at (σ [×] τ) (i , j) s) ≈s (c ·ₛ s)) ∧
-          (Semimodule._≈_ (Fib σ i) (proj₁ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at σ i s) ∧
-           Semimodule._≈_ (Fib τ j) (proj₂ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at τ j s))
+          (F._≈_ σ i (proj₁ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at σ i s) ∧
+           F._≈_ τ j (proj₂ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at τ j s))
 ctrl-dep-pair {σ} {τ} i j s =
   ≈-trans +-runit +-runit ,
-  (Semimodule.trans (Fib σ i) (F.+-lunit σ i) (m-runit (Fib σ i)) ,
-   Semimodule.trans (Fib τ j) (F.+-lunit τ j) (F.+-lunit τ j))
+  (F.trans σ i (F.+-lunit σ i) (m-runit (Fib σ i)) ,
+   F.trans τ j (F.+-lunit τ j) (F.+-lunit τ j))
 
 ctrl-dep-clo : ∀ {σ τ} (f : Ix (σ [→] τ)) s →
          (proj₁ (ctrl-dep-at (σ [→] τ) f s) ≈s (c ·ₛ s)) ∧
-         Semimodule._≈_ (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) (proj₂ (ctrl-dep-at (σ [→] τ) f s))
-           (Semimodule.ε (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f))
+         Semimodule._≈_ (Payload σ τ f) (proj₂ (ctrl-dep-at (σ [→] τ) f s))
+           (Semimodule.ε (Payload σ τ f))
 ctrl-dep-clo {σ} {τ} f s =
   ≈-trans +-runit +-runit ,
-  Semimodule.+-lunit (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f) {Semimodule.ε (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)}
+  Semimodule.+-lunit (Payload σ τ f) {Semimodule.ε (Payload σ τ f)}
 
 ctrl-dep-natural : ∀ τ {i i' : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i') s →
-             Semimodule._≈_ (Fib τ i') (⟦ τ ⟧ .fam .subst e .func (ctrl-dep-at τ i s)) (ctrl-dep-at τ i' s)
+             F._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (ctrl-dep-at τ i s)) (ctrl-dep-at τ i' s)
 ctrl-dep-natural τ e s = ctrl-dep τ .Constant.at-natural e .func-eq ≈-refl
 
 -- The fibre relation respects the setoids on both sides.
@@ -394,7 +397,7 @@ DepRel-resp (σ [→] τ) {clo γ' t} {f} r {o} {o'} {d} {d'} eo (ed₀ , ed₂)
       (F.+-cong τ (f .idxf .sfunc j)
          (ctrl-dep τ .at (f .idxf .sfunc j) .func-resp-≈ (+-cong ≈-refl (eo zero)))
          (F.+-cong τ (f .idxf .sfunc j)
-            (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func-resp-≈
+            (evalΠ σ τ f j .func-resp-≈
                {proj₂ d} {proj₂ d'} ed₂)
             (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
       (hc s' rv z y (DepRel⊑-resp-ctrl σ rv (+-cong ≈-refl (≈-sym (eo zero))) hz) D)
@@ -480,7 +483,7 @@ ctrl-add (σ [→] τ) {clo γ' t} {f} r s {o} {d} (h₀ , hc) =
       (F.+-cong τ (f .idxf .sfunc j)
          (ctrl-dep τ .at (f .idxf .sfunc j) .func-resp-≈ e₀)
          (F.+-cong τ (f .idxf .sfunc j)
-            (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func-resp-≈
+            (evalΠ σ τ f j .func-resp-≈
                {proj₂ d} {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)}
                (P.sym {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {proj₂ d}
                  (P.trans {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {P._+_ P.ε (proj₂ d)} {proj₂ d}
@@ -489,7 +492,7 @@ ctrl-add (σ [→] τ) {clo γ' t} {f} r s {o} {d} (h₀ , hc) =
                    (P.+-lunit {proj₂ d}))))
             (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
       (hc (s' +ₛ (c ·ₛ s)) rv z y (DepRel⊑-resp-ctrl σ rv (≈-sym e₀) hz) D)
-  where module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
+  where module P = Semimodule (Payload σ τ f)
 
 -- Looking up a variable in a related environment.
 lookup-val : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} {gi} → EnvValRel γ gi →
@@ -752,25 +755,24 @@ DepRel-transport (σ [→] τ) {clo γ' t} {f} {f'} E r {o} {d} (h₀ , hc) =
       (F.+-cong τ (f' .idxf .sfunc j) (eval-part j) (famf-eq-at σ τ E j y)))))
       (DepRel-transport τ (Ej j) (r rv D) (hc s' rv z y hz D))
   where
-  P = model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧
   Ej = idx-eq-at σ τ E
   hmap = indexed-family.reindex-≈ {P = ⟦ τ ⟧ .fam} (f .idxf) (f' .idxf) (E .FD._≃_.idxf-eq)
   eval-part : ∀ j → F._≈_ τ (f' .idxf .sfunc j)
-                (⟦ τ ⟧ .fam .subst (Ej j) .func (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ d)))
-                (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]) j .func
+                (⟦ τ ⟧ .fam .subst (Ej j) .func (evalΠ σ τ f j .func (proj₂ d)))
+                (evalΠ σ τ f' j .func
                    (proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)))
   eval-part j =
     F.trans τ (f' .idxf .sfunc j)
       (F.sym τ (f' .idxf .sfunc j)
          (SP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
-            {x = P .fam .fm f}
+            {x = Payload σ τ f}
             {f = indexed-family._∘f_ {A = ⟦ σ ⟧ .idx}
-                   {P = indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (P .fam .fm f)}
+                   {P = indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (Payload σ τ f)}
                    {Q = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {R = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
                    hmap (SP.evalΠf {A = ⟦ σ ⟧ .idx} (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]))} j
-            .func-eq {proj₂ d} {proj₂ d} (Semimodule.refl (P .fam .fm f) {proj₂ d})))
-      (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]) j .func-resp-≈
+            .func-eq {proj₂ d} {proj₂ d} (Semimodule.refl (Payload σ τ f) {proj₂ d})))
+      (evalΠ σ τ f' j .func-resp-≈
          {SP.Π-map hmap .func (proj₂ d)} {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)}
-         (Semimodule.sym (P .fam .fm f') {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {SP.Π-map hmap .func (proj₂ d)}
-            (Semimodule.+-lunit (P .fam .fm f') {SP.Π-map hmap .func (proj₂ d)})))
+         (Semimodule.sym (Payload σ τ f') {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {SP.Π-map hmap .func (proj₂ d)}
+            (Semimodule.+-lunit (Payload σ τ f') {SP.Π-map hmap .func (proj₂ d)})))
 
