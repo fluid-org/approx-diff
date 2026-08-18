@@ -762,7 +762,7 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
   root = ≈-trans o₀ (≈-sym (≈-trans (+-cong (prop._∧_.proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl) +-runit))
 
   clause : ∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : ValRel σ v j)
-             (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel σ rv z y →
+             (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑ σ rv (s' +ₛ o zero) z y →
            ∀ {u U} (D : γ · v , t' ⇓ u [ U ]) →
              DepRel τ (fundamental-val ct D (rγ · rv)) (mat U .func (body-input γ v (s' +ₛ o zero) (λ k → o (suc k)) z))
                (F._+_ τ (f .idxf .sfunc j)
@@ -791,7 +791,7 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
                (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))))
       (fundamental ct D (rγ · rv) (s' +ₛ (c ·ₛ s)) (λ k → body-input γ v (s' +ₛ (c ·ₛ s)) x z (suc k)) (g , y)
          (EnvDepRel-resp rγ (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₁-++ x z k)) (EnvDepRel-mono rγ s s' rel) ,
-          DepRel⊑-resp σ rv (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₂-++ x z k)) (DepRel⊑-of σ rv (s' +ₛ (c ·ₛ s)) hz)))
+          DepRel⊑-resp σ rv (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₂-++ x z k)) (DepRel⊑-resp-ctrl σ rv (+-cong ≈-refl o₀) hz)))
     where
     module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
     L = ⟦ lam t' ⟧tm .famf .transf gi .func g
@@ -817,8 +817,7 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
               (P.+-lunit {proj₂ L}))
 fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ = γ}
             (⇓-app {Γ' = Γ'} {γ' = γ'} {t' = t'} {v = v} {u = u} {R = R} {T = T} {U = U} D₁ D₂ D₃) {gi} rγ s x g rel =
-  DepRel-resp τ r₃ (λ k → ≈-sym (app-op k)) (F.refl τ i₁)
-    (DepRel-absorb τ r₃ s (DepRel-resp τ r₃ (λ k → ≈-refl) den-eq C) absG mulE)
+  DepRel-resp τ r₃ (λ k → ≈-sym (app-op k)) den-eq C
   where
   f = ⟦ M ⟧tm .idxf .sfunc gi
   j = ⟦ N ⟧tm .idxf .sfunc gi
@@ -831,8 +830,6 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   a = proj₁ (⟦ M ⟧tm .famf .transf gi .func g)
   m = proj₂ (⟦ M ⟧tm .famf .transf gi .func g)
   yN = ⟦ N ⟧tm .famf .transf gi .func g
-  E = f .famf .transf j .func (ctrl-dep-at σ j s)
-  G = F._+_ τ i₁ (ctrl-dep-at τ i₁ s) (⟦ app M N ⟧tm .famf .transf gi .func g)
   module P = Semimodule (model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f)
   evalΠj = SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
   -- The operational vectors of the function and the argument, and of the application.
@@ -841,24 +838,38 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   z : ∣ 𝔽 (width v) ∣
   z = ap T (inputs γ s x)
 
+  o₀ : o zero ≈s ((c ·ₛ s) +ₛ a)
+  o₀ = ≈-trans (prop._∧_.proj₁ IH₁) (+-cong (prop._∧_.proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl)
+
+  -- The argument's relation, its control dependence at s taken as slack below the control
+  -- dependence at the application's weighted control input.
+  arg : DepRel⊑ σ r₂ ((c ·ₛ s) +ₛ o zero) z yN
+  arg = ctrl-dep-at σ j s ,
+        (F.trans σ j (F.+-cong σ j (F.refl σ j) (F.trans σ j (ctrl-dep σ .at j .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o₀))
+                                                             (ctrl-dep-double σ j s a)))
+        (F.trans σ j (F.sym σ j (F.+-assoc σ j))
+        (F.trans σ j (F.+-cong σ j (ctrl-dep-root σ j s) (F.refl σ j))
+                     (F.sym σ j (F.trans σ j (ctrl-dep σ .at j .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o₀))
+                                             (ctrl-dep-double σ j s a))))) ,
+         DepRel-resp σ r₂ (λ k → ≈-refl) (F.+-comm σ j) IH₂)
+
   -- The clause of the function's relation at the application's weighted control input and the argument.
   C : DepRel τ r₃ (ap U (body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z))
         (F._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
           (F._+_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
-                      (f .famf .transf j .func (F._+_ σ j (ctrl-dep-at σ j s) yN))))
-  C = prop._∧_.proj₂ IH₁ (c ·ₛ s) r₂ z (F._+_ σ j (ctrl-dep-at σ j s) yN) IH₂ D₃
-
-  o₀ : o zero ≈s ((c ·ₛ s) +ₛ a)
-  o₀ = ≈-trans (prop._∧_.proj₁ IH₁) (+-cong (prop._∧_.proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl)
+                      (f .famf .transf j .func yN)))
+  C = prop._∧_.proj₂ IH₁ (c ·ₛ s) r₂ z yN arg D₃
 
   -- The clause's constant, evaluation and argument against the application's.
   den-eq : F._≈_ τ i₁
              (F._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
                (F._+_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
-                           (f .famf .transf j .func (F._+_ σ j (ctrl-dep-at σ j s) yN))))
-             (F._+_ τ i₁ G E)
+                           (f .famf .transf j .func yN)))
+             (F._+_ τ i₁ (ctrl-dep-at τ i₁ s) (⟦ app M N ⟧tm .famf .transf gi .func g))
   den-eq =
-    F.trans τ i₁ (F.+-cong τ i₁ ctrl-dep-part (F.+-cong τ i₁ eval-part arg-part)) rearr
+    F.trans τ i₁ (F.+-cong τ i₁ ctrl-dep-part (F.+-cong τ i₁ eval-part (F.refl τ i₁)))
+    (F.trans τ i₁ (F.+-assoc τ i₁)
+                  (F.+-cong τ i₁ (F.refl τ i₁) (F.trans τ i₁ (F.+-comm τ i₁) (F.sym τ i₁ G-form))))
     where
     G-form : F._≈_ τ i₁ (⟦ app M N ⟧tm .famf .transf gi .func g)
                (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ctrl-dep-at τ i₁ a))
@@ -893,46 +904,6 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
                                                  (evalΠj .SemiMod._⇒_.preserve-ze))
                                    (F.refl τ i₁))
                     (m-lunit (Fib τ i₁)))
-
-    arg-part : F._≈_ τ i₁ (f .famf .transf j .func (F._+_ σ j (ctrl-dep-at σ j s) yN)) (F._+_ τ i₁ E (f .famf .transf j .func yN))
-    arg-part = f .famf .transf j .SemiMod._⇒_.preserve-+ {ctrl-dep-at σ j s} {yN}
-
-    rearr : F._≈_ τ i₁
-              (F._+_ τ i₁ (F._+_ τ i₁ (ctrl-dep-at τ i₁ s) (ctrl-dep-at τ i₁ a))
-                          (F._+_ τ i₁ (evalΠj .func m) (F._+_ τ i₁ E (f .famf .transf j .func yN))))
-              (F._+_ τ i₁ G E)
-    rearr =
-      F.trans τ i₁ (F.+-assoc τ i₁)
-      (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) inner)
-      (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
-                    (F.+-cong τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.sym τ i₁ G-form)) (F.refl τ i₁))))
-      where
-      inner : F._≈_ τ i₁
-                (F._+_ τ i₁ (ctrl-dep-at τ i₁ a) (F._+_ τ i₁ (evalΠj .func m) (F._+_ τ i₁ E (f .famf .transf j .func yN))))
-                (F._+_ τ i₁ (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ctrl-dep-at τ i₁ a)) E)
-      inner =
-        F.sym τ i₁
-          (F.trans τ i₁ (F.+-comm τ i₁)
-          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-comm τ i₁))
-          (F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁))
-          (F.trans τ i₁ (F.+-cong τ i₁ (F.+-comm τ i₁) (F.refl τ i₁))
-          (F.trans τ i₁ (F.+-assoc τ i₁)
-          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.sym τ i₁ (F.+-assoc τ i₁)))
-          (F.trans τ i₁ (F.+-cong τ i₁ (F.refl τ i₁) (F.+-cong τ i₁ (F.+-comm τ i₁) (F.refl τ i₁)))
-                        (F.+-cong τ i₁ (F.refl τ i₁) (F.+-assoc τ i₁)))))))))
-
-  absG : F._⊑_ τ i₁ (ctrl-dep-at τ i₁ s) G
-  absG = F.trans τ i₁ (F.sym τ i₁ (F.+-assoc τ i₁)) (F.+-cong τ i₁ (ctrl-dep-root τ i₁ s) (F.refl τ i₁))
-
-  mulE : Multiple τ i₁ s E
-  mulE = f .famf .transf j .func (ty-unit σ (λ ()) (λ ()) .at j .func ι) ,
-         F.trans τ i₁
-           (f .famf .transf j .SemiMod._⇒_.func-resp-≈ {ctrl-dep-at σ j s}
-              {F._·_ σ j (s ·ₛ c) (ty-unit σ (λ ()) (λ ()) .at j .func ι)}
-              (F.trans σ j (ty-unit σ (λ ()) (λ ()) .at j .SemiMod._⇒_.func-resp-≈
-                              {c ·ₛ s +ₛ ε} {(s ·ₛ c) ·ₛ ι} (≈-trans +-runit (≈-trans ·-comm (≈-sym ·-runit))))
-                           (ty-unit σ (λ ()) (λ ()) .at j .SemiMod._⇒_.preserve-· {s ·ₛ c} {ι})))
-           (f .famf .transf j .SemiMod._⇒_.preserve-· {s ·ₛ c} {ty-unit σ (λ ()) (λ ()) .at j .func ι})
 
   -- The application's relation reads the body's at the closure's root and the application's
   -- weighted control input as control input, and at the closure's cells and the argument as
