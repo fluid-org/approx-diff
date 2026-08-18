@@ -81,6 +81,23 @@ private
   ValRel-bool (inj₁ _) i e = lift tt , tt , e
   ValRel-bool (inj₂ _) i e = lift tt , tt , e
 
+private
+  case-idx : ∀ {Γ τ₁ τ₂ τ} (sc : Γ ⊢ τ₁ [+] τ₂) (t₁ : Γ ▸ τ₁ ⊢ τ) (t₂ : Γ ▸ τ₂ ⊢ τ) gi
+             (k : Ix (τ₁ [+] τ₂)) → Setoid._≈_ (⟦ τ₁ [+] τ₂ ⟧ .idx) (⟦ sc ⟧tm .idxf .sfunc gi) k →
+             Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi)
+               (copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .sfunc (gi , k))
+  case-idx {Γ} {τ₁} {τ₂} {τ} sc t₁ t₂ gi k e =
+    copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .prop-setoid._⇒_.func-resp-≈
+      {gi , ⟦ sc ⟧tm .idxf .sfunc gi} {gi , k} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
+
+  brel-idx : ∀ {Γ is} (ω : rel is) (Ms : Every (λ σ → Γ ⊢ base σ) is) gi (vs : sort-vals is) →
+             Setoid._≈_ (sort-vals-setoid sort-index is) (args-idx Ms gi) vs →
+             Setoid._≈_ (⟦ unit [+] unit ⟧ .idx) (⟦ brel ω Ms ⟧tm .idxf .sfunc gi) (rel-pred ω .sfunc vs)
+  brel-idx ω Ms gi vs args-eq =
+    Setoid.trans (⟦ unit [+] unit ⟧ .idx)
+      {⟦ brel ω Ms ⟧tm .idxf .sfunc gi} {rel-pred ω .sfunc (args-idx Ms gi)} {rel-pred ω .sfunc vs}
+      (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .prop-setoid._⇒_.func-resp-≈ args-eq)
+
 -- The value part of the fundamental lemma: a term's value is related to the term's index at a
 -- related environment, by induction on the term over all derivations.
 fundamental-val : ∀ {Γ τ} {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
@@ -98,21 +115,11 @@ fundamental-val {τ = τ₁ [+] τ₂} (inr {t = t} ct) (⇓-inr D) {gi} rγ =
   ⟪ Setoid.refl (⟦ τ₁ [+] τ₂ ⟧ .idx) {inj₂ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
 fundamental-val {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) (⇓-case-l D₁ D₂) {gi} rγ =
   let (i' , r , ⟪ e ⟫) = fundamental-val ct D₁ rγ in
-  ValRel-resp τ
-    (Setoid.sym (⟦ τ ⟧ .idx)
-      (copair
-         (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
-         .idxf .prop-setoid._⇒_.func-resp-≈ {gi , ⟦ s ⟧tm .idxf .sfunc gi} {gi , inj₁ i'}
-         (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)))
+  ValRel-resp τ (Setoid.sym (⟦ τ ⟧ .idx) (case-idx s t₁ t₂ gi (inj₁ i') e))
     (fundamental-val ct₁ D₂ (rγ · r))
 fundamental-val {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) (⇓-case-r D₁ D₂) {gi} rγ =
   let (i' , r , ⟪ e ⟫) = fundamental-val ct D₁ rγ in
-  ValRel-resp τ
-    (Setoid.sym (⟦ τ ⟧ .idx)
-      (copair
-         (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
-         .idxf .prop-setoid._⇒_.func-resp-≈ {gi , ⟦ s ⟧tm .idxf .sfunc gi} {gi , inj₂ i'}
-         (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)))
+  ValRel-resp τ (Setoid.sym (⟦ τ ⟧ .idx) (case-idx s t₁ t₂ gi (inj₂ i') e))
     (fundamental-val ct₂ D₂ (rγ · r))
 fundamental-val (pair ct₁ ct₂) (⇓-pair D₁ D₂) rγ = fundamental-val ct₁ D₁ rγ , fundamental-val ct₂ D₂ rγ
 fundamental-val (fst ct) (⇓-fst D) rγ = proj₁ (fundamental-val ct D rγ)
@@ -122,10 +129,7 @@ fundamental-val (app ct₁ ct₂) (⇓-app D₁ D₂ D₃) rγ = fundamental-val
 fundamental-val (bop {ω = ω} cts) (⇓-bop D) rγ = ⟪ op-fun ω .prop-setoid._⇒_.func-resp-≈ (Prf.prf (fundamental-vals cts D rγ)) ⟫
 fundamental-val (brel {ω = ω} {Ms = Ms} cts) (⇓-brel {vs = vs} D) {gi} rγ =
   ValRel-bool (rel-pred ω .sfunc vs) (⟦ brel ω Ms ⟧tm .idxf .sfunc gi)
-    ⟪ Setoid.trans (⟦ unit [+] unit ⟧ .idx)
-        {⟦ brel ω Ms ⟧tm .idxf .sfunc gi} {rel-pred ω .sfunc (args-idx Ms gi)} {rel-pred ω .sfunc vs}
-        (bool-idx (rel-pred ω .sfunc (args-idx Ms gi)))
-        (rel-pred ω .prop-setoid._⇒_.func-resp-≈ (Prf.prf (fundamental-vals cts D rγ))) ⟫
+    ⟪ brel-idx ω Ms gi vs (Prf.prf (fundamental-vals cts D rγ)) ⟫
 
 fundamental-vals [] [] rγ = ⟪ prop.tt ⟫
 fundamental-vals (ct ∷ cts) (D ∷ Ds) rγ = ⟪ Prf.prf (fundamental-val ct D rγ) , Prf.prf (fundamental-vals cts Ds rγ) ⟫
@@ -267,8 +271,7 @@ private
                    sidx = ⟦ sc ⟧tm .idxf .sfunc gi
                in
                F._≈_ τ (SC .idxf .sfunc (gi , k))
-                 (⟦ τ ⟧ .fam .subst (SC .idxf .prop-setoid._⇒_.func-resp-≈ {gi , sidx} {gi , k} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e))
-                    .func (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g))
+                 (⟦ τ ⟧ .fam .subst (case-idx sc t₁ t₂ gi k e) .func (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g))
                  (SC .famf .transf (gi , k) .func (g , ⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {k} e .func (⟦ sc ⟧tm .famf .transf gi .func g)))
   case-fibre {Γ} {τ₁} {τ₂} {τ} sc t₁ t₂ gi g k e =
     F.trans τ (SC .idxf .sfunc (gi , k))
@@ -502,8 +505,7 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   e : Setoid._≈_ (⟦ τ₁ [+] τ₂ ⟧ .idx) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₁ i')
   e = prop.Prf.prf (proj₂ (proj₂ rs))
   Eidx : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₁ ⟧tm .idxf .sfunc (gi , i'))
-  Eidx = copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .prop-setoid._⇒_.func-resp-≈
-           {gi , ⟦ sc ⟧tm .idxf .sfunc gi} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
+  Eidx = case-idx sc t₁ t₂ gi (inj₁ i') e
   E = Setoid.sym (⟦ τ ⟧ .idx) Eidx
   r' = fundamental-val ct₁ D₂ (rγ · r_v)
   o_s = ap R_s (inputs γ s x)
@@ -541,8 +543,7 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   e : Setoid._≈_ (⟦ τ₁ [+] τ₂ ⟧ .idx) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₂ i')
   e = prop.Prf.prf (proj₂ (proj₂ rs))
   Eidx : Setoid._≈_ (⟦ τ ⟧ .idx) (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₂ ⟧tm .idxf .sfunc (gi , i'))
-  Eidx = copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .prop-setoid._⇒_.func-resp-≈
-           {gi , ⟦ sc ⟧tm .idxf .sfunc gi} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
+  Eidx = case-idx sc t₁ t₂ gi (inj₂ i') e
   E = Setoid.sym (⟦ τ ⟧ .idx) Eidx
   r' = fundamental-val ct₂ D₂ (rγ · r_v)
   o_s = ap R_s (inputs γ s x)
@@ -874,9 +875,7 @@ fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cts) {γ = γ} (⇓-br
   Z = args-vec Ms gi g
   D-vs = rel-deps ω .sfunc vs
   args-eq = Prf.prf (fundamental-vals cts D rγ)
-  e : Setoid._≈_ (⟦ unit [+] unit ⟧ .idx) i b
-  e = Setoid.trans (⟦ unit [+] unit ⟧ .idx) {i} {rel-pred ω .sfunc (args-idx Ms gi)} {b}
-        (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .prop-setoid._⇒_.func-resp-≈ args-eq)
+  e = brel-idx ω Ms gi vs args-eq
   IH : ∀ l → ap Rs (inputs γ s x) l ≈s ((c ·ₛ s) +ₛ Z l)
   IH = fundamental-s cts D rγ s x g rel
   op-side : ∀ k → ap (wctrl +ₘ (brel-deps ω vs b ∘ Rs)) (inputs γ s x) k
