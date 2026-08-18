@@ -21,15 +21,17 @@ open import signature using (Signature)
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
 open import categories using (Category; HasWeakExponentials)
 import indexed-family
+import commutative-monoid
 
 module ho-agreement
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
   (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
   (let module Sc = CommutativeSemiring S)
-  -- Addition is idempotent, and the control weight is idempotent and absorbs its multiples.
+  -- Addition is idempotent, and the control weight is idempotent and bounds its multiples.
   (+-idem : ∀ x → Setoid._≈_ A (x Sc.+ x) x)
+  (let module S⊑ = commutative-monoid.AdditivePreorder Sc.additive (λ {x} → +-idem x))
   (c-idem : Setoid._≈_ A (ctrl-weight Sc.· ctrl-weight) ctrl-weight)
-  (c-absorb : ∀ x → Setoid._≈_ A ((ctrl-weight Sc.· x) Sc.+ ctrl-weight) ctrl-weight)
+  (c-bound : ∀ x → (ctrl-weight Sc.· x) S⊑.⊑ ctrl-weight)
   where
 
 
@@ -38,7 +40,7 @@ open Interpretation ℐ
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 
-open import ho-relation S ctrl-weight Sig ℐ +-idem c-idem c-absorb
+open import ho-relation S ctrl-weight Sig ℐ +-idem c-idem c-bound
 
 -- The fragment: no μ-types.
 data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set

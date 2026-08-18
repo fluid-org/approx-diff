@@ -30,10 +30,11 @@ module ho-relation
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
   (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
   (let module Sc = CommutativeSemiring S)
-  -- Addition is idempotent, and the control weight is idempotent and absorbs its multiples.
+  -- Addition is idempotent, and the control weight is idempotent and bounds its multiples.
   (+-idem : ∀ x → Setoid._≈_ A (x Sc.+ x) x)
+  (let module S⊑ = commutative-monoid.AdditivePreorder Sc.additive (λ {x} → +-idem x))
   (c-idem : Setoid._≈_ A (ctrl-weight Sc.· ctrl-weight) ctrl-weight)
-  (c-absorb : ∀ x → Setoid._≈_ A ((ctrl-weight Sc.· x) Sc.+ ctrl-weight) ctrl-weight)
+  (c-bound : ∀ x → (ctrl-weight Sc.· x) S⊑.⊑ ctrl-weight)
   where
 
 open Signature Sig
@@ -695,7 +696,7 @@ cs-absorb : ∀ s e → ((c ·ₛ s) +ₛ ((s ·ₛ c) ·ₛ e)) ≈s (c ·ₛ s
 cs-absorb s e =
   ≈-trans (+-cong ·-comm Sc.·-assoc)
   (≈-trans (≈-sym Sc.·-+-distribₗ)
-  (≈-trans (·-cong ≈-refl (≈-trans +-comm (c-absorb e))) ·-comm))
+  (≈-trans (·-cong ≈-refl (≈-trans +-comm (c-bound e))) ·-comm))
 
 -- The control dependence at the weighted s plus itself and a further weight: the one at s plus the
 -- one at the further weight.
