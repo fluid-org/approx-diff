@@ -19,7 +19,6 @@ open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
 open import categories using (Category; HasProducts; HasStrongCoproducts)
-import cmon-enriched
 open import indexed-family using (HasSetoidProducts)
 import matrix
 import commutative-monoid
@@ -29,12 +28,12 @@ import language-interpretation
 module ho-relation
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
   (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
-  (let module Sc = CommutativeSemiring S)
+  (let module S = CommutativeSemiring S)
   -- Addition is idempotent, and the control weight is idempotent and bounds its multiples.
-  (+-idem : ∀ x → (x Sc.+ x) Sc.≈ x)
-  (let module S⊑ = commutative-monoid.AdditivePreorder Sc.additive (λ {x} → +-idem x))
-  (c-idem : (ctrl-weight Sc.· ctrl-weight) Sc.≈ ctrl-weight)
-  (c-bound : ∀ x → (ctrl-weight Sc.· x) S⊑.⊑ ctrl-weight)
+  (+-idem : ∀ x → (x S.+ x) S.≈ x)
+  (let module S⊑ = commutative-monoid.AdditivePreorder S.additive (λ {x} → +-idem x))
+  (c-idem : (ctrl-weight S.· ctrl-weight) S.≈ ctrl-weight)
+  (c-bound : ∀ x → (ctrl-weight S.· x) S⊑.⊑ ctrl-weight)
   where
 
 open Signature Sig
@@ -52,8 +51,6 @@ open SemiMod._≈m_ public using (func-eq)
 
 module M = matrix.Mat S
 module FD = model.Fam⟨𝒟⟩μ
-module FDP = HasProducts FD.products
-module FDC = Category FD.cat
 open HasStrongCoproducts FD.strongCoproducts public using (copair)
 module SP = HasSetoidProducts model.SPmod
 
@@ -74,23 +71,23 @@ open Constant public using (at)
 module IP = model.FP.interp-primitives Sig ℐ
 open IP public using (collect)
 open interp public using (𝒟-arg-product)
-module FCμ = model.Fam⟨𝒞⟩μ
+module FC = model.Fam⟨𝒞⟩μ
 
 ⟦_⟧ : type 0 → Obj
 ⟦ τ ⟧ = ⟦ τ ⟧ty (λ ())
 
-module IX (τ : type 0) = Setoid (⟦ τ ⟧ .idx)
+module Ix (τ : type 0) = Setoid (⟦ τ ⟧ .idx)
 
 Ix : type 0 → Set
-Ix τ = IX.Carrier τ
+Ix τ = Ix.Carrier τ
 
 Fib : (τ : type 0) → Ix τ → Semimodule
 Fib τ i = ⟦ τ ⟧ .fam .fm i
 
-module IXC (Γ : ctxt) = Setoid (⟦ Γ ⟧ctxt .idx)
+module IxC (Γ : ctxt) = Setoid (⟦ Γ ⟧ctxt .idx)
 
 IxC : ctxt → Set
-IxC Γ = IXC.Carrier Γ
+IxC Γ = IxC.Carrier Γ
 
 FibC : (Γ : ctxt) → IxC Γ → Semimodule
 FibC Γ i = ⟦ Γ ⟧ctxt .fam .fm i
@@ -104,7 +101,7 @@ open M public using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl;
 Payload : ∀ σ τ → Ix (σ [→] τ) → Semimodule
 Payload σ τ f = model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f
 
-module PL σ τ f = Semimodule (Payload σ τ f)
+module Payload σ τ f = Semimodule (Payload σ τ f)
 
 evalΠ : ∀ σ τ (f : Ix (σ [→] τ)) (j : Ix σ) → Payload σ τ f ⇒ Fib τ (f .idxf .sfunc j)
 evalΠ σ τ f j = SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
@@ -116,8 +113,8 @@ evalΠ σ τ f j = SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
 ValRel : ∀ τ → Val τ → Ix τ → Set
 ValRel unit unit i = ⊤
 ValRel (base s) (const a) i = Prf (Setoid._≈_ (sort-index s) i a)
-ValRel (σ [+] τ) (inl v) i = Σ (Ix σ) λ i' → ValRel σ v i' × Prf (IX._≈_ (σ [+] τ) i (inj₁ i'))
-ValRel (σ [+] τ) (inr v) i = Σ (Ix τ) λ i' → ValRel τ v i' × Prf (IX._≈_ (σ [+] τ) i (inj₂ i'))
+ValRel (σ [+] τ) (inl v) i = Σ (Ix σ) λ i' → ValRel σ v i' × Prf (Ix._≈_ (σ [+] τ) i (inj₁ i'))
+ValRel (σ [+] τ) (inr v) i = Σ (Ix τ) λ i' → ValRel τ v i' × Prf (Ix._≈_ (σ [+] τ) i (inj₂ i'))
 ValRel (σ [×] τ) (pair v u) (i , j) = ValRel σ v i × ValRel τ u j
 ValRel (σ [→] τ) (clo γ' t) f =
   ∀ {v : Val σ} {j : Ix σ} → ValRel σ v j → ∀ {u U} → γ' · v , t ⇓ u [ U ] → ValRel τ u (f .idxf .sfunc j)
@@ -145,7 +142,7 @@ fib-+-idem τ i =
           (X.trans (X.sym X.+-distribʳ) (X.trans (X.·-cong (+-idem ι) X.refl) X.·-unit))
   where module X = Semimodule (Fib τ i)
 
-module F τ i where
+module Fib τ i where
   open Semimodule (Fib τ i) public
   open commutative-monoid.AdditivePreorder additive (fib-+-idem τ i) public
 
@@ -160,7 +157,7 @@ module F τ i where
 DepRel⊑ : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → Setoid.Carrier A →
           ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
 DepRel : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
-DepRel unit {unit} {i} r o d = F._≈_ unit i o d
+DepRel unit {unit} {i} r o d = Fib._≈_ unit i o d
 DepRel (base s) {const a} {i} r o d = Semimodule._≈_ (Fib (base s) i) o d
 DepRel (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) o d =
   let d' = ⟦ σ [+] τ ⟧ .fam .subst {i} {inj₁ i'} e .func d in
@@ -178,14 +175,14 @@ DepRel (σ [→] τ) {clo γ' t} {f} r o d =
      (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑ σ rv (s' +ₛ o zero) z y →
    ∀ {u U} (D : γ' · v , t ⇓ u [ U ]) →
      DepRel τ (r rv D) (ap U (body-input γ' v (s' +ₛ o zero) (λ k → o (suc k)) z))
-       (F._+_ τ (f .idxf .sfunc j)
+       (Fib._+_ τ (f .idxf .sfunc j)
          (ctrl-dep τ .at (f .idxf .sfunc j) .func (s' +ₛ o zero))
-         (F._+_ τ (f .idxf .sfunc j)
+         (Fib._+_ τ (f .idxf .sfunc j)
            (evalΠ σ τ f j .func (proj₂ d))
            (f .famf .transf j .func y))))
 
 DepRel⊑ τ {i = i} r s o d =
-  ∃ (∣ Fib τ i ∣) (λ m → F._⊑_ τ i m (ctrl-dep-at τ i s) ∧ DepRel τ r o (F._+_ τ i d m))
+  ∃ (∣ Fib τ i ∣) (λ m → Fib._⊑_ τ i m (ctrl-dep-at τ i s) ∧ DepRel τ r o (Fib._+_ τ i d m))
 
 -- A primitive's arguments need no relations of their own. The model's index at a tuple of
 -- arguments is a tuple of sort indices, and sort-vals-setoid is built from ⊗-setoid, whose
@@ -336,40 +333,40 @@ ctrl-dep-base i s k = ≈-trans +-runit (≈-trans ·-lunit +-runit)
 
 ctrl-dep-inj₁ : ∀ {σ τ} (i : Ix σ) s →
           (proj₁ (ctrl-dep-at (σ [+] τ) (inj₁ i) s) ≈s (c ·ₛ s)) ∧
-          F._≈_ σ i (proj₂ (ctrl-dep-at (σ [+] τ) (inj₁ i) s)) (ctrl-dep-at σ i s)
-ctrl-dep-inj₁ {σ} i s = ≈-trans +-runit +-runit , F.+-lunit σ i
+          Fib._≈_ σ i (proj₂ (ctrl-dep-at (σ [+] τ) (inj₁ i) s)) (ctrl-dep-at σ i s)
+ctrl-dep-inj₁ {σ} i s = ≈-trans +-runit +-runit , Fib.+-lunit σ i
 
 ctrl-dep-inj₂ : ∀ {σ τ} (i : Ix τ) s →
           (proj₁ (ctrl-dep-at (σ [+] τ) (inj₂ i) s) ≈s (c ·ₛ s)) ∧
-          F._≈_ τ i (proj₂ (ctrl-dep-at (σ [+] τ) (inj₂ i) s)) (ctrl-dep-at τ i s)
-ctrl-dep-inj₂ {σ} {τ} i s = ≈-trans +-runit +-runit , F.+-lunit τ i
+          Fib._≈_ τ i (proj₂ (ctrl-dep-at (σ [+] τ) (inj₂ i) s)) (ctrl-dep-at τ i s)
+ctrl-dep-inj₂ {σ} {τ} i s = ≈-trans +-runit +-runit , Fib.+-lunit τ i
 
 ctrl-dep-pair : ∀ {σ τ} (i : Ix σ) (j : Ix τ) s →
           (proj₁ (ctrl-dep-at (σ [×] τ) (i , j) s) ≈s (c ·ₛ s)) ∧
-          (F._≈_ σ i (proj₁ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at σ i s) ∧
-           F._≈_ τ j (proj₂ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at τ j s))
+          (Fib._≈_ σ i (proj₁ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at σ i s) ∧
+           Fib._≈_ τ j (proj₂ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at τ j s))
 ctrl-dep-pair {σ} {τ} i j s =
   ≈-trans +-runit +-runit ,
-  (F.trans σ i (F.+-lunit σ i) (m-runit (Fib σ i)) ,
-   F.trans τ j (F.+-lunit τ j) (F.+-lunit τ j))
+  (Fib.trans σ i (Fib.+-lunit σ i) (m-runit (Fib σ i)) ,
+   Fib.trans τ j (Fib.+-lunit τ j) (Fib.+-lunit τ j))
 
 ctrl-dep-clo : ∀ {σ τ} (f : Ix (σ [→] τ)) s →
          (proj₁ (ctrl-dep-at (σ [→] τ) f s) ≈s (c ·ₛ s)) ∧
-         PL._≈_ σ τ f (proj₂ (ctrl-dep-at (σ [→] τ) f s))
-           (PL.ε σ τ f)
+         Payload._≈_ σ τ f (proj₂ (ctrl-dep-at (σ [→] τ) f s))
+           (Payload.ε σ τ f)
 ctrl-dep-clo {σ} {τ} f s =
   ≈-trans +-runit +-runit ,
-  PL.+-lunit σ τ f {PL.ε σ τ f}
+  Payload.+-lunit σ τ f {Payload.ε σ τ f}
 
 payload-ctrl-dep : ∀ σ τ (f : Ix (σ [→] τ)) s (d : ∣ Fib (σ [→] τ) f ∣) →
-                   PL._≈_ σ τ f (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)) (proj₂ d)
+                   Payload._≈_ σ τ f (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)) (proj₂ d)
 payload-ctrl-dep σ τ f s d =
-  PL.trans σ τ f {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {PL._+_ σ τ f (PL.ε σ τ f) (proj₂ d)} {proj₂ d}
-    (PL.+-cong σ τ f {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {PL.ε σ τ f} {proj₂ d} {proj₂ d} (proj₂ (ctrl-dep-clo {σ} {τ} f s)) (PL.refl σ τ f {proj₂ d}))
-    (PL.+-lunit σ τ f {proj₂ d})
+  Payload.trans σ τ f {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {Payload._+_ σ τ f (Payload.ε σ τ f) (proj₂ d)} {proj₂ d}
+    (Payload.+-cong σ τ f {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {Payload.ε σ τ f} {proj₂ d} {proj₂ d} (proj₂ (ctrl-dep-clo {σ} {τ} f s)) (Payload.refl σ τ f {proj₂ d}))
+    (Payload.+-lunit σ τ f {proj₂ d})
 
-ctrl-dep-natural : ∀ τ {i i' : Ix τ} (e : IX._≈_ τ i i') s →
-             F._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (ctrl-dep-at τ i s)) (ctrl-dep-at τ i' s)
+ctrl-dep-natural : ∀ τ {i i' : Ix τ} (e : Ix._≈_ τ i i') s →
+             Fib._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (ctrl-dep-at τ i s)) (ctrl-dep-at τ i' s)
 ctrl-dep-natural τ e s = ctrl-dep τ .Constant.at-natural e .func-eq ≈-refl
 
 -- The fibre relation respects the setoids on both sides.
@@ -384,11 +381,11 @@ body-input-resp γ' v es ecs (suc k) =
 DepRel⊑-resp-ctrl : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) {s s'} {o : ∣ 𝔽 (width v) ∣} {d} →
                     s ≈s s' → DepRel⊑ τ r s o d → DepRel⊑ τ r s' o d
 DepRel⊑-resp-ctrl τ {i = i} r es (m , (dm , h)) =
-  m , (F.trans τ i (F.+-cong τ i (F.refl τ i) (ctrl-dep τ .at i .func-resp-≈ (≈-sym es)))
-                   (F.trans τ i dm (ctrl-dep τ .at i .func-resp-≈ es)) , h)
+  m , (Fib.trans τ i (Fib.+-cong τ i (Fib.refl τ i) (ctrl-dep τ .at i .func-resp-≈ (≈-sym es)))
+                   (Fib.trans τ i dm (ctrl-dep τ .at i .func-resp-≈ es)) , h)
 
 DepRel-resp : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) {o o' : ∣ 𝔽 (width v) ∣} {d d' : ∣ Fib τ i ∣} →
-              (∀ k → o k ≈s o' k) → F._≈_ τ i d d' → DepRel τ r o d → DepRel τ r o' d'
+              (∀ k → o k ≈s o' k) → Fib._≈_ τ i d d' → DepRel τ r o d → DepRel τ r o' d'
 DepRel-resp unit {unit} r eo ed h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (ed k))
 DepRel-resp (base s) {const a} r eo ed h k = ≈-trans (≈-sym (eo k)) (≈-trans (h k) (ed k))
 DepRel-resp (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) {d = d} {d'} eo ed (h₀ , h) =
@@ -408,21 +405,21 @@ DepRel-resp (σ [→] τ) {clo γ' t} {f} r {o} {o'} {d} {d'} eo (ed₀ , ed₂)
   λ s' {v} {j} rv z y hz {u} {U} D →
     DepRel-resp τ (r rv D)
       (app-congᵥ U (body-input-resp γ' v (+-cong ≈-refl (eo zero)) (λ k → eo (suc k))))
-      (F.+-cong τ (f .idxf .sfunc j)
+      (Fib.+-cong τ (f .idxf .sfunc j)
          (ctrl-dep τ .at (f .idxf .sfunc j) .func-resp-≈ (+-cong ≈-refl (eo zero)))
-         (F.+-cong τ (f .idxf .sfunc j)
+         (Fib.+-cong τ (f .idxf .sfunc j)
             (evalΠ σ τ f j .func-resp-≈
                {proj₂ d} {proj₂ d'} ed₂)
-            (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
+            (Fib.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
       (hc s' rv z y (DepRel⊑-resp-ctrl σ rv (+-cong ≈-refl (≈-sym (eo zero))) hz) D)
 
 -- Transport of a sum of the control dependence and an element along an index equation.
-subst-ctrl-dep+ : ∀ τ {i i' : Ix τ} (e : IX._≈_ τ i i') s d →
-            F._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (F._+_ τ i (ctrl-dep-at τ i s) d))
-                       (F._+_ τ i' (ctrl-dep-at τ i' s) (⟦ τ ⟧ .fam .subst e .func d))
+subst-ctrl-dep+ : ∀ τ {i i' : Ix τ} (e : Ix._≈_ τ i i') s d →
+            Fib._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (Fib._+_ τ i (ctrl-dep-at τ i s) d))
+                       (Fib._+_ τ i' (ctrl-dep-at τ i' s) (⟦ τ ⟧ .fam .subst e .func d))
 subst-ctrl-dep+ τ {i} {i'} e s d =
-  F.trans τ i' (⟦ τ ⟧ .fam .subst e .preserve-+ {ctrl-dep-at τ i s} {d})
-               (F.+-cong τ i' (ctrl-dep-natural τ e s) (F.refl τ i'))
+  Fib.trans τ i' (⟦ τ ⟧ .fam .subst e .preserve-+ {ctrl-dep-at τ i s} {d})
+               (Fib.+-cong τ i' (ctrl-dep-natural τ e s) (Fib.refl τ i'))
 
 ap-pair-p₁ : ∀ {m a b} (f : M.Matrix a m) (g : M.Matrix b m) (u : ∣ 𝔽 m ∣) (k : Fin a) →
              ap (M.p₁ {a} {b}) (ap (⟨ f , g ⟩) u) k ≈s ap f u k
@@ -440,7 +437,7 @@ ap-pair-p₂ {m} {a} {b} f g u k =
 -- control dependence on the denotational side, preserves the relation.
 ctrl-add : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) (s : Setoid.Carrier A)
            {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} → DepRel τ r o d →
-           DepRel τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (F._+_ τ i (ctrl-dep-at τ i s) d)
+           DepRel τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (Fib._+_ τ i (ctrl-dep-at τ i s) d)
 ctrl-add unit {unit} {i} r s h zero =
   +-cong (≈-trans (ap-ctrl-row {1} s zero) (≈-sym (ctrl-dep-unit i s))) (h zero)
 ctrl-add (base σ) {const a} {i} r s h k =
@@ -453,8 +450,8 @@ ctrl-add (σ [+] τ) {inl v} {i} (i' , r , ⟪ e ⟫) s {o} {d} (h₀ , h) =
           (≈-sym (≈-trans (proj₁ e+) (+-cong (proj₁ (ctrl-dep-inj₁ {σ} {τ} i' s)) ≈-refl))) ,
   DepRel-resp σ r
     (λ k → +-cong (≈-sym (ctrl-lift-suc (ctrl-of v) s k)) ≈-refl)
-    (F.sym σ i' (F.trans σ i' (proj₂ e+)
-                              (F.+-cong σ i' (proj₂ (ctrl-dep-inj₁ {σ} {τ} i' s)) (F.refl σ i'))))
+    (Fib.sym σ i' (Fib.trans σ i' (proj₂ e+)
+                              (Fib.+-cong σ i' (proj₂ (ctrl-dep-inj₁ {σ} {τ} i' s)) (Fib.refl σ i'))))
     (ctrl-add σ r s h)
 ctrl-add (σ [+] τ) {inr v} {i} (i' , r , ⟪ e ⟫) s {o} {d} (h₀ , h) =
   let e+ = subst-ctrl-dep+ (σ [+] τ) {i} {inj₂ i'} e s d
@@ -463,8 +460,8 @@ ctrl-add (σ [+] τ) {inr v} {i} (i' , r , ⟪ e ⟫) s {o} {d} (h₀ , h) =
           (≈-sym (≈-trans (proj₁ e+) (+-cong (proj₁ (ctrl-dep-inj₂ {σ} {τ} i' s)) ≈-refl))) ,
   DepRel-resp τ r
     (λ k → +-cong (≈-sym (ctrl-lift-suc (ctrl-of v) s k)) ≈-refl)
-    (F.sym τ i' (F.trans τ i' (proj₂ e+)
-                              (F.+-cong τ i' (proj₂ (ctrl-dep-inj₂ {σ} {τ} i' s)) (F.refl τ i'))))
+    (Fib.sym τ i' (Fib.trans τ i' (proj₂ e+)
+                              (Fib.+-cong τ i' (proj₂ (ctrl-dep-inj₂ {σ} {τ} i' s)) (Fib.refl τ i'))))
     (ctrl-add τ r s h)
 ctrl-add (σ [×] τ) {pair v u} {i , j} (r , r') s {o} {d} (h₀ , (h₁ , h₂)) =
   ≈-trans (+-cong (ctrl-lift-zero (⟨ ctrl-of v , ctrl-of u ⟩) s) h₀)
@@ -474,14 +471,14 @@ ctrl-add (σ [×] τ) {pair v u} {i , j} (r , r') s {o} {d} (h₀ , (h₁ , h₂
               (≈-trans (≈-sym (app-+ (M.p₁ {width v} {width u}) _ _ k))
                        (app-congᵥ (M.p₁ {width v} {width u})
                           (λ l → +-cong (≈-sym (ctrl-lift-suc (⟨ ctrl-of v , ctrl-of u ⟩) s l)) ≈-refl) k)))
-     (F.+-cong σ i (F.sym σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i j s)))) (F.refl σ i))
+     (Fib.+-cong σ i (Fib.sym σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i j s)))) (Fib.refl σ i))
      (ctrl-add σ r s h₁) ,
    DepRel-resp τ r'
      (λ k → ≈-trans (+-cong (≈-sym (ap-pair-p₂ (ctrl-of v) (ctrl-of u) (λ _ → s) k)) ≈-refl)
               (≈-trans (≈-sym (app-+ (M.p₂ {width v} {width u}) _ _ k))
                        (app-congᵥ (M.p₂ {width v} {width u})
                           (λ l → +-cong (≈-sym (ctrl-lift-suc (⟨ ctrl-of v , ctrl-of u ⟩) s l)) ≈-refl) k)))
-     (F.+-cong τ j (F.sym τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} i j s)))) (F.refl τ j))
+     (Fib.+-cong τ j (Fib.sym τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} i j s)))) (Fib.refl τ j))
      (ctrl-add τ r' s h₂))
 ctrl-add (σ [→] τ) {clo γ' t} {f} r s {o} {d} (h₀ , hc) =
   ≈-trans (+-cong (ctrl-lift-zero {width-env γ'} εₘ s) h₀)
@@ -494,14 +491,14 @@ ctrl-add (σ [→] τ) {clo γ' t} {f} r s {o} {d} (h₀ , hc) =
       (app-congᵥ U (body-input-resp γ' v e₀
          (λ k → ≈-sym (≈-trans (+-cong (ctrl-lift-suc {width-env γ'} εₘ s k) ≈-refl)
                                (≈-trans (+-cong (app-εₘ {width-env γ'} {1} (λ _ → s) k) ≈-refl) +-lunit)))))
-      (F.+-cong τ (f .idxf .sfunc j)
+      (Fib.+-cong τ (f .idxf .sfunc j)
          (ctrl-dep τ .at (f .idxf .sfunc j) .func-resp-≈ e₀)
-         (F.+-cong τ (f .idxf .sfunc j)
+         (Fib.+-cong τ (f .idxf .sfunc j)
             (evalΠ σ τ f j .func-resp-≈
-               {proj₂ d} {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)}
-               (PL.sym σ τ f {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {proj₂ d}
+               {proj₂ d} {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)}
+               (Payload.sym σ τ f {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {proj₂ d}
                   (payload-ctrl-dep σ τ f s d)))
-            (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
+            (Fib.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
       (hc (s' +ₛ (c ·ₛ s)) rv z y (DepRel⊑-resp-ctrl σ rv (≈-sym e₀) hz) D)
 
 -- Looking up a variable in a related environment.
@@ -512,7 +509,7 @@ lookup-val (succ x) (rγ · r) = lookup-val x rγ
 
 DepRel⊑-resp : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s {o o' : ∣ 𝔽 (width v) ∣} {d} →
                (∀ k → o k ≈s o' k) → DepRel⊑ τ r s o d → DepRel⊑ τ r s o' d
-DepRel⊑-resp τ {i = i} r s eo (m , (dm , h)) = m , (dm , DepRel-resp τ r eo (F.refl τ i) h)
+DepRel⊑-resp τ {i = i} r s eo (m , (dm , h)) = m , (dm , DepRel-resp τ r eo (Fib.refl τ i) h)
 
 lookup-dep : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s xs g →
              EnvDepRel rγ s xs g →
@@ -525,38 +522,38 @@ lookup-dep {τ = τ} (succ x) {γ · v} {gi , i} (rγ · r) s xs g (h , _) =
 
 -- Dependence below the control dependence is absorbed by it, so a relation up to such dependence
 -- becomes a relation once the control positions and the control dependence are added.
-⊑-absorb : ∀ τ (i : Ix τ) s (d m : ∣ Fib τ i ∣) → F._⊑_ τ i m (ctrl-dep-at τ i s) →
-         F._≈_ τ i (F._+_ τ i (ctrl-dep-at τ i s) (F._+_ τ i d m)) (F._+_ τ i (ctrl-dep-at τ i s) d)
+⊑-absorb : ∀ τ (i : Ix τ) s (d m : ∣ Fib τ i ∣) → Fib._⊑_ τ i m (ctrl-dep-at τ i s) →
+         Fib._≈_ τ i (Fib._+_ τ i (ctrl-dep-at τ i s) (Fib._+_ τ i d m)) (Fib._+_ τ i (ctrl-dep-at τ i s) d)
 ⊑-absorb τ i s d m dm =
-  F.trans τ i (F.+-cong τ i (F.refl τ i) (F.+-comm τ i))
-  (F.trans τ i (F.sym τ i (F.+-assoc τ i))
-  (F.trans τ i (F.+-cong τ i (F.trans τ i (F.+-comm τ i) dm) (F.refl τ i))
-               (F.refl τ i)))
+  Fib.trans τ i (Fib.+-cong τ i (Fib.refl τ i) (Fib.+-comm τ i))
+  (Fib.trans τ i (Fib.sym τ i (Fib.+-assoc τ i))
+  (Fib.trans τ i (Fib.+-cong τ i (Fib.trans τ i (Fib.+-comm τ i) dm) (Fib.refl τ i))
+               (Fib.refl τ i)))
 
 DepRel⊑-ctrl : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s {o : ∣ 𝔽 (width v) ∣} {d} →
                DepRel⊑ τ r s o d →
-               DepRel τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (F._+_ τ i (ctrl-dep-at τ i s) d)
+               DepRel τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (Fib._+_ τ i (ctrl-dep-at τ i s) d)
 DepRel⊑-ctrl τ {i = i} r s {o} {d} (m , (dm , h)) =
   DepRel-resp τ r (λ k → ≈-refl) (⊑-absorb τ i s d m dm) (ctrl-add τ r s h)
 
-idx-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} → IX._≈_ (σ [→] τ) f f' → ∀ j →
-            IX._≈_ τ (f .idxf .sfunc j) (f' .idxf .sfunc j)
-idx-eq-at σ τ E j = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (IX.refl σ {j})
+idx-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} → Ix._≈_ (σ [→] τ) f f' → ∀ j →
+            Ix._≈_ τ (f .idxf .sfunc j) (f' .idxf .sfunc j)
+idx-eq-at σ τ E j = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Ix.refl σ {j})
 
-famf-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} (E : IX._≈_ (σ [→] τ) f f') j (y : ∣ Fib σ j ∣) →
-             F._≈_ τ (f' .idxf .sfunc j) (⟦ τ ⟧ .fam .subst (idx-eq-at σ τ E j) .func (f .famf .transf j .func y))
+famf-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} (E : Ix._≈_ (σ [→] τ) f f') j (y : ∣ Fib σ j ∣) →
+             Fib._≈_ τ (f' .idxf .sfunc j) (⟦ τ ⟧ .fam .subst (idx-eq-at σ τ E j) .func (f .famf .transf j .func y))
                                         (f' .famf .transf j .func y)
-famf-eq-at σ τ E j y = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .func-eq (F.refl σ j {y})
+famf-eq-at σ τ E j y = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .func-eq (Fib.refl σ j {y})
 
 -- Related values are related at equal indices.
-ValRel-resp : ∀ τ {v : Val τ} {i i' : Ix τ} → IX._≈_ τ i i' → ValRel τ v i → ValRel τ v i'
+ValRel-resp : ∀ τ {v : Val τ} {i i' : Ix τ} → Ix._≈_ τ i i' → ValRel τ v i → ValRel τ v i'
 ValRel-resp unit {unit} e r = tt
 ValRel-resp (base σ) {const a} {i} {i'} e ⟪ e₀ ⟫ =
   ⟪ Setoid.trans (sort-index σ) {i'} {i} {a} (Setoid.sym (sort-index σ) {i} {i'} e) e₀ ⟫
 ValRel-resp (σ [+] τ) {inl v} {i} {i'} e (i₀ , r , ⟪ e₀ ⟫) =
-  i₀ , r , ⟪ IX.trans (σ [+] τ) {i'} {i} {inj₁ i₀} (IX.sym (σ [+] τ) {i} {i'} e) e₀ ⟫
+  i₀ , r , ⟪ Ix.trans (σ [+] τ) {i'} {i} {inj₁ i₀} (Ix.sym (σ [+] τ) {i} {i'} e) e₀ ⟫
 ValRel-resp (σ [+] τ) {inr v} {i} {i'} e (i₀ , r , ⟪ e₀ ⟫) =
-  i₀ , r , ⟪ IX.trans (σ [+] τ) {i'} {i} {inj₂ i₀} (IX.sym (σ [+] τ) {i} {i'} e) e₀ ⟫
+  i₀ , r , ⟪ Ix.trans (σ [+] τ) {i'} {i} {inj₂ i₀} (Ix.sym (σ [+] τ) {i} {i'} e) e₀ ⟫
 ValRel-resp (σ [×] τ) {pair v u} {i , j} {i' , j'} (e₁ , e₂) (r , r') = ValRel-resp σ e₁ r , ValRel-resp τ e₂ r'
 ValRel-resp (σ [→] τ) {clo γ' t} {f} {f'} e r {v} {j} rv {u} {U} D =
   ValRel-resp τ (idx-eq-at σ τ e j) (r rv D)
@@ -565,23 +562,21 @@ ValRel-resp (σ [→] τ) {clo γ' t} {f} {f'} e r {v} {j} rv {u} {U} D =
 -- Reading the model's constructions elementwise: a pairing through the biproduct is the pair of
 -- the components, the lifted action keeps the root and acts on the payload, and eliminating a
 -- root applies the continuation to the payload and the control dependence to the root.
-module SMBP = HasProducts (cmon-enriched.biproducts→products SemiMod.cmon-enriched SemiMod.biproduct)
-
 bpair-elt : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : X ⇒ Z) (x : ∣ X ∣) →
-            Semimodule._≈_ (SemiMod._⊕_ Y Z) (SMBP.pair f g .func x) (f .func x , g .func x)
+            Semimodule._≈_ (SemiMod._⊕_ Y Z) (FD.pair f g .func x) (f .func x , g .func x)
 bpair-elt {X} {Y} {Z} f g x = m-runit Y , Semimodule.+-lunit Z
 
 Fpair-elt : ∀ {X Y Z : Obj} (f : Mor X Y) (g : Mor X Z) (x : Setoid.Carrier (X .idx)) (z : ∣ X .fam .fm x ∣) →
-            Semimodule._≈_ (FDP.prod Y Z .fam .fm (f .idxf .sfunc x , g .idxf .sfunc x))
-              (FDP.pair f g .famf .transf x .func z)
+            Semimodule._≈_ (FD.Fam𝒞-P.prod Y Z .fam .fm (f .idxf .sfunc x , g .idxf .sfunc x))
+              (FD.Fam𝒞-P.pair f g .famf .transf x .func z)
               (f .famf .transf x .func z , g .famf .transf x .func z)
 Fpair-elt f g x z = bpair-elt (f .famf .transf x) (g .famf .transf x) z
 
 Fprod-subst-elt : ∀ {X Y : Obj} {x x' : Setoid.Carrier (X .idx)} {y y' : Setoid.Carrier (Y .idx)}
                   (e₁ : Setoid._≈_ (X .idx) x x') (e₂ : Setoid._≈_ (Y .idx) y y')
                   (z : ∣ X .fam .fm x ∣) (w : ∣ Y .fam .fm y ∣) →
-                  Semimodule._≈_ (FDP.prod X Y .fam .fm (x' , y'))
-                    (FDP.prod X Y .fam .subst (e₁ , e₂) .func (z , w))
+                  Semimodule._≈_ (FD.Fam𝒞-P.prod X Y .fam .fm (x' , y'))
+                    (FD.Fam𝒞-P.prod X Y .fam .subst (e₁ , e₂) .func (z , w))
                     (X .fam .subst e₁ .func z , Y .fam .subst e₂ .func w)
 Fprod-subst-elt {X} {Y} {x} {x'} {y} {y'} e₁ e₂ z w =
   bpair-elt {SemiMod._⊕_ (X .fam .fm x) (Y .fam .fm y)} {X .fam .fm x'} {Y .fam .fm y'}
@@ -619,7 +614,7 @@ elim-root-elt {G} {X} {Y} k r γe a y =
           (Semimodule.refl G {γe} , Semimodule.+-lunit X {y})))
     (k .func-resp-≈ +-runit)
 
-elimF-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (f : Mor (FDP.prod Γ' X) C)
+elimF-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (f : Mor (FD.Fam𝒞-P.prod Γ' X) C)
             {γi : Setoid.Carrier (Γ' .idx)} {xi : Setoid.Carrier (X .idx)}
             (γe : ∣ Γ' .fam .fm γi ∣) (a : Setoid.Carrier A) (y : ∣ X .fam .fm xi ∣) →
             Semimodule._≈_ (C .fam .fm (f .idxf .sfunc (γi , xi)))
@@ -629,35 +624,35 @@ elimF-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (f : Mor (FDP.prod Γ' X) C)
                 (cC .at (f .idxf .sfunc (γi , xi)) .func a))
 elimF-elt cC f {γi} {xi} γe a y = elim-root-elt (cC .at (f .idxf .sfunc (γi , xi))) (f .famf .transf (γi , xi)) γe a y
 
-elim-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (body : Mor (FDP.prod Γ' X) C) (f : Mor Γ' (FD.Lf X))
+elim-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (body : Mor (FD.Fam𝒞-P.prod Γ' X) C) (f : Mor Γ' (FD.Lf X))
            {γi : Setoid.Carrier (Γ' .idx)} (γe : ∣ Γ' .fam .fm γi ∣) →
            Semimodule._≈_ (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
-             (FDC._∘_ (FD.elimF cC body) (FDP.pair (FDC.id Γ') f) .famf .transf γi .func γe)
+             (FD.Fam𝒞._∘_ (FD.elimF cC body) (FD.Fam𝒞-P.pair (FD.Fam𝒞.id Γ') f) .famf .transf γi .func γe)
              (Semimodule._+_ (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
                (body .famf .transf (γi , f .idxf .sfunc γi) .func (γe , proj₂ (f .famf .transf γi .func γe)))
                (cC .at (body .idxf .sfunc (γi , f .idxf .sfunc γi)) .func (proj₁ (f .famf .transf γi .func γe))))
 elim-elt {Γ'} {X} {C} cC body f {γi} γe =
   Semimodule.trans (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
     (FD.elimF cC body .famf .transf (γi , f .idxf .sfunc γi) .func-resp-≈
-       {FDP.pair (FDC.id Γ') f .famf .transf γi .func γe} {γe , f .famf .transf γi .func γe}
-       (Fpair-elt {Γ'} {Γ'} {FD.Lf X} (FDC.id Γ') f γi γe))
+       {FD.Fam𝒞-P.pair (FD.Fam𝒞.id Γ') f .famf .transf γi .func γe} {γe , f .famf .transf γi .func γe}
+       (Fpair-elt {Γ'} {Γ'} {FD.Lf X} (FD.Fam𝒞.id Γ') f γi γe))
     (elimF-elt {Γ'} {X} {C} cC body {γi} {f .idxf .sfunc γi} γe (proj₁ (f .famf .transf γi .func γe)) (proj₂ (f .famf .transf γi .func γe)))
 
 -- Being below the control dependence is monotone in the control input's value, and a relation is a relation up to
 -- zero.
 ctrl-dep-linear : ∀ τ (i : Ix τ) s s' →
-            F._≈_ τ i (ctrl-dep-at τ i (s +ₛ s')) (F._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i s'))
+            Fib._≈_ τ i (ctrl-dep-at τ i (s +ₛ s')) (Fib._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i s'))
 ctrl-dep-linear τ i s s' = ctrl-dep τ .at i .preserve-+ {s} {s'}
 
-ctrl-dep-c : ∀ τ (i : Ix τ) s → F._≈_ τ i (ctrl-dep-at τ i (c ·ₛ s)) (ctrl-dep-at τ i s)
+ctrl-dep-c : ∀ τ (i : Ix τ) s → Fib._≈_ τ i (ctrl-dep-at τ i (c ·ₛ s)) (ctrl-dep-at τ i s)
 ctrl-dep-c τ i s =
   LI.ty-unit τ (λ ()) (λ ()) .at i .func-resp-≈
-    (+-cong (≈-trans (≈-sym Sc.·-assoc) (·-cong c-idem ≈-refl)) ≈-refl)
+    (+-cong (≈-trans (≈-sym S.·-assoc) (·-cong c-idem ≈-refl)) ≈-refl)
 
-⊑ctrl-dep-mono : ∀ τ (i : Ix τ) s s' m → F._⊑_ τ i m (ctrl-dep-at τ i s) → F._⊑_ τ i m (ctrl-dep-at τ i (s' +ₛ (c ·ₛ s)))
+⊑ctrl-dep-mono : ∀ τ (i : Ix τ) s s' m → Fib._⊑_ τ i m (ctrl-dep-at τ i s) → Fib._⊑_ τ i m (ctrl-dep-at τ i (s' +ₛ (c ·ₛ s)))
 ⊑ctrl-dep-mono τ i s s' m dm =
-  F.⊑-trans τ i dm (F.⊑-trans τ i (IsJoin.inr (F.∨-isJoin τ i))
-    (F.≈→⊑ τ i (F.sym τ i (F.trans τ i (ctrl-dep-linear τ i s' (c ·ₛ s)) (F.+-cong τ i (F.refl τ i) (ctrl-dep-c τ i s))))))
+  Fib.⊑-trans τ i dm (Fib.⊑-trans τ i (IsJoin.inr (Fib.∨-isJoin τ i))
+    (Fib.≈→⊑ τ i (Fib.sym τ i (Fib.trans τ i (ctrl-dep-linear τ i s' (c ·ₛ s)) (Fib.+-cong τ i (Fib.refl τ i) (ctrl-dep-c τ i s))))))
 
 DepRel⊑-mono : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s s' {o d} →
                DepRel⊑ τ r s o d → DepRel⊑ τ r (s' +ₛ (c ·ₛ s)) o d
@@ -699,17 +694,17 @@ EnvDepRel-resp (_·_ {γ = γ} {v = v} rγ r) s ex (rel , h) =
 -- The weight times s absorbs any multiple of s.
 cs-absorb : ∀ s e → ((c ·ₛ s) +ₛ ((s ·ₛ c) ·ₛ e)) ≈s (c ·ₛ s)
 cs-absorb s e =
-  ≈-trans (+-cong ·-comm Sc.·-assoc)
-  (≈-trans (≈-sym Sc.·-+-distribₗ)
+  ≈-trans (+-cong ·-comm S.·-assoc)
+  (≈-trans (≈-sym S.·-+-distribₗ)
   (≈-trans (·-cong ≈-refl (≈-trans +-comm (c-bound e))) ·-comm))
 
 -- The control dependence at the weighted s plus itself and a further weight: the one at s plus the
 -- one at the further weight.
-ctrl-dep-double : ∀ τ (i : Ix τ) s a → F._≈_ τ i (ctrl-dep-at τ i ((c ·ₛ s) +ₛ ((c ·ₛ s) +ₛ a))) (F._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i a))
+ctrl-dep-double : ∀ τ (i : Ix τ) s a → Fib._≈_ τ i (ctrl-dep-at τ i ((c ·ₛ s) +ₛ ((c ·ₛ s) +ₛ a))) (Fib._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i a))
 ctrl-dep-double τ i s a =
-  F.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) ((c ·ₛ s) +ₛ a))
-  (F.trans τ i (F.+-cong τ i (ctrl-dep-c τ i s) (F.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) a) (F.+-cong τ i (ctrl-dep-c τ i s) (F.refl τ i))))
-  (F.trans τ i (F.sym τ i (F.+-assoc τ i)) (F.+-cong τ i (F.⊑-refl τ i) (F.refl τ i))))
+  Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) ((c ·ₛ s) +ₛ a))
+  (Fib.trans τ i (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) a) (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.refl τ i))))
+  (Fib.trans τ i (Fib.sym τ i (Fib.+-assoc τ i)) (Fib.+-cong τ i (Fib.⊑-refl τ i) (Fib.refl τ i))))
 
 -- Reading the first position of a lifted vector, and its tail, by the projections.
 built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x →
@@ -734,13 +729,13 @@ built-suc {γ = γ} {n} R' s x k =
            +-lunit)
 
 -- A base sort's fibres do not vary with the index, so its transports are the identity.
-subst-base : ∀ {σ} {i i' : Ix (base σ)} (e : IX._≈_ (base σ) i i')
+subst-base : ∀ {σ} {i i' : Ix (base σ)} (e : Ix._≈_ (base σ) i i')
              (d : ∣ Fib (base σ) i ∣) (k : Fin (sort-width σ)) →
              ⟦ base σ ⟧ .fam .subst e .func d k ≈s d k
 subst-base {σ} e d k = Σ-unit {sort-width σ} k d
 
 -- Transporting a relation along an index equation.
-DepRel-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : IX._≈_ τ i i') (r : ValRel τ v i)
+DepRel-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i i') (r : ValRel τ v i)
                    {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
                    DepRel τ r o d → DepRel τ (ValRel-resp τ E r) o (⟦ τ ⟧ .fam .subst E .func d)
 DepRel-transport unit {unit} {i} {i'} E r {o} {d} h k =
@@ -748,13 +743,13 @@ DepRel-transport unit {unit} {i} {i'} E r {o} {d} h k =
 DepRel-transport (base σ) {const a} {i} {i'} E r {o} {d} h k =
   ≈-trans (h k) (≈-sym (subst-base {σ} {i} {i'} E d k))
 DepRel-transport (σ [+] τ) {inl v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o} {d} (h₀ , h) =
-  let e' = IX.trans (σ [+] τ) {i'} {i} {inj₁ i₀} (IX.sym (σ [+] τ) {i} {i'} E) e₀
+  let e' = Ix.trans (σ [+] τ) {i'} {i} {inj₁ i₀} (Ix.sym (σ [+] τ) {i} {i'} E) e₀
       comp = subst-trans ⟦ σ [+] τ ⟧ {i} {i'} {inj₁ i₀} E e' d
   in
   ≈-trans h₀ (proj₁ comp) ,
   DepRel-resp σ r₀ (λ k → ≈-refl) (proj₂ comp) h
 DepRel-transport (σ [+] τ) {inr v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o} {d} (h₀ , h) =
-  let e' = IX.trans (σ [+] τ) {i'} {i} {inj₂ i₀} (IX.sym (σ [+] τ) {i} {i'} E) e₀
+  let e' = Ix.trans (σ [+] τ) {i'} {i} {inj₂ i₀} (Ix.sym (σ [+] τ) {i} {i'} E) e₀
       comp = subst-trans ⟦ σ [+] τ ⟧ {i} {i'} {inj₂ i₀} E e' d
   in
   ≈-trans h₀ (proj₁ comp) ,
@@ -762,41 +757,41 @@ DepRel-transport (σ [+] τ) {inr v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o}
 DepRel-transport (σ [×] τ) {pair v u} {i , j} {i' , j'} (E₁ , E₂) (r₁ , r₂) {o} {d} (h₀ , (h₁ , h₂)) =
   ≈-trans h₀ (≈-sym +-runit) ,
   (DepRel-resp σ (ValRel-resp σ E₁ r₁) (λ k → ≈-refl)
-     (F.sym σ i' (F.trans σ i' (F.+-lunit σ i') (m-runit (Fib σ i'))))
+     (Fib.sym σ i' (Fib.trans σ i' (Fib.+-lunit σ i') (m-runit (Fib σ i'))))
      (DepRel-transport σ E₁ r₁ h₁) ,
    DepRel-resp τ (ValRel-resp τ E₂ r₂) (λ k → ≈-refl)
-     (F.sym τ j' (F.trans τ j' (F.+-lunit τ j') (F.+-lunit τ j')))
+     (Fib.sym τ j' (Fib.trans τ j' (Fib.+-lunit τ j') (Fib.+-lunit τ j')))
      (DepRel-transport τ E₂ r₂ h₂))
 DepRel-transport (σ [→] τ) {clo γ' t} {f} {f'} E r {o} {d} (h₀ , hc) =
   ≈-trans h₀ (≈-sym +-runit) ,
   λ s' {v} {j} rv z y hz {u} {U} D →
     DepRel-resp τ (ValRel-resp τ (Ej j) (r rv D)) (λ k → ≈-refl)
-      (F.trans τ (f' .idxf .sfunc j)
+      (Fib.trans τ (f' .idxf .sfunc j)
          (⟦ τ ⟧ .fam .subst (Ej j) .preserve-+ {ctrl-dep-at τ (f .idxf .sfunc j) (s' +ₛ o zero)} {_})
-      (F.+-cong τ (f' .idxf .sfunc j) (ctrl-dep-natural τ (Ej j) (s' +ₛ o zero))
-      (F.trans τ (f' .idxf .sfunc j)
+      (Fib.+-cong τ (f' .idxf .sfunc j) (ctrl-dep-natural τ (Ej j) (s' +ₛ o zero))
+      (Fib.trans τ (f' .idxf .sfunc j)
          (⟦ τ ⟧ .fam .subst (Ej j) .preserve-+ {_} {_})
-      (F.+-cong τ (f' .idxf .sfunc j) (eval-part j) (famf-eq-at σ τ E j y)))))
+      (Fib.+-cong τ (f' .idxf .sfunc j) (eval-part j) (famf-eq-at σ τ E j y)))))
       (DepRel-transport τ (Ej j) (r rv D) (hc s' rv z y hz D))
   where
   Ej = idx-eq-at σ τ E
   hmap = indexed-family.reindex-≈ {P = ⟦ τ ⟧ .fam} (f .idxf) (f' .idxf) (E .FD._≃_.idxf-eq)
-  eval-part : ∀ j → F._≈_ τ (f' .idxf .sfunc j)
+  eval-part : ∀ j → Fib._≈_ τ (f' .idxf .sfunc j)
                 (⟦ τ ⟧ .fam .subst (Ej j) .func (evalΠ σ τ f j .func (proj₂ d)))
                 (evalΠ σ τ f' j .func
                    (proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)))
   eval-part j =
-    F.trans τ (f' .idxf .sfunc j)
-      (F.sym τ (f' .idxf .sfunc j)
+    Fib.trans τ (f' .idxf .sfunc j)
+      (Fib.sym τ (f' .idxf .sfunc j)
          (SP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
             {x = Payload σ τ f}
             {f = indexed-family._∘f_ {A = ⟦ σ ⟧ .idx}
                    {P = indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (Payload σ τ f)}
                    {Q = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {R = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
                    hmap (SP.evalΠf {A = ⟦ σ ⟧ .idx} (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]))} j
-            .func-eq {proj₂ d} {proj₂ d} (PL.refl σ τ f {proj₂ d})))
+            .func-eq {proj₂ d} {proj₂ d} (Payload.refl σ τ f {proj₂ d})))
       (evalΠ σ τ f' j .func-resp-≈
          {SP.Π-map hmap .func (proj₂ d)} {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)}
-         (PL.sym σ τ f' {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {SP.Π-map hmap .func (proj₂ d)}
-            (PL.+-lunit σ τ f' {SP.Π-map hmap .func (proj₂ d)})))
+         (Payload.sym σ τ f' {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {SP.Π-map hmap .func (proj₂ d)}
+            (Payload.+-lunit σ τ f' {SP.Π-map hmap .func (proj₂ d)})))
 

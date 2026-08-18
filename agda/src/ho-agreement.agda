@@ -26,12 +26,12 @@ import commutative-monoid
 module ho-agreement
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
   (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
-  (let module Sc = CommutativeSemiring S)
+  (let module S = CommutativeSemiring S)
   -- Addition is idempotent, and the control weight is idempotent and bounds its multiples.
-  (+-idem : ∀ x → (x Sc.+ x) Sc.≈ x)
-  (let module S⊑ = commutative-monoid.AdditivePreorder Sc.additive (λ {x} → +-idem x))
-  (c-idem : (ctrl-weight Sc.· ctrl-weight) Sc.≈ ctrl-weight)
-  (c-bound : ∀ x → (ctrl-weight Sc.· x) S⊑.⊑ ctrl-weight)
+  (+-idem : ∀ x → (x S.+ x) S.≈ x)
+  (let module S⊑ = commutative-monoid.AdditivePreorder S.additive (λ {x} → +-idem x))
+  (c-idem : (ctrl-weight S.· ctrl-weight) S.≈ ctrl-weight)
+  (c-bound : ∀ x → (ctrl-weight S.· x) S⊑.⊑ ctrl-weight)
   where
 
 
@@ -69,34 +69,34 @@ data CoreTms where
         CoreTm M → CoreTms Ms → CoreTms (M Every.∷ Ms)
 args-idx : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → sort-vals is
 args-idx {is = is} Ms gi =
-  collect is .FCμ.idxf .sfunc (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi))
+  collect is .FC.idxf .sfunc (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi))
 
 private
   bool-idx : ∀ (b : Ix (unit [+] unit)) →
-             IX._≈_ (unit [+] unit)
+             Ix._≈_ (unit [+] unit)
                (interp.HR.bool.Fam⟨F⟩-preserves-bool model.𝒞𝟙ty .idxf .sfunc b) b
   bool-idx (inj₁ _) = prop.tt
   bool-idx (inj₂ _) = prop.tt
 
-  ValRel-bool : ∀ (b i : Ix (unit [+] unit)) → Prf (IX._≈_ (unit [+] unit) i b) →
+  ValRel-bool : ∀ (b i : Ix (unit [+] unit)) → Prf (Ix._≈_ (unit [+] unit) i b) →
                 ValRel (unit [+] unit) (bool→val b) i
   ValRel-bool (inj₁ _) i e = lift tt , tt , e
   ValRel-bool (inj₂ _) i e = lift tt , tt , e
 
 private
   case-idx : ∀ {Γ τ₁ τ₂ τ} (sc : Γ ⊢ τ₁ [+] τ₂) (t₁ : Γ ▸ τ₁ ⊢ τ) (t₂ : Γ ▸ τ₂ ⊢ τ) gi
-             (k : Ix (τ₁ [+] τ₂)) → IX._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) k →
-             IX._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi)
+             (k : Ix (τ₁ [+] τ₂)) → Ix._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) k →
+             Ix._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi)
                (copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .sfunc (gi , k))
   case-idx {Γ} {τ₁} {τ₂} {τ} sc t₁ t₂ gi k e =
     copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .sfunc-resp-≈
-      {gi , ⟦ sc ⟧tm .idxf .sfunc gi} {gi , k} (IXC.refl Γ {gi} , e)
+      {gi , ⟦ sc ⟧tm .idxf .sfunc gi} {gi , k} (IxC.refl Γ {gi} , e)
 
   brel-idx : ∀ {Γ is} (ω : rel is) (Ms : Every (λ σ → Γ ⊢ base σ) is) gi (vs : sort-vals is) →
              Setoid._≈_ (sort-vals-setoid sort-index is) (args-idx Ms gi) vs →
-             IX._≈_ (unit [+] unit) (⟦ brel ω Ms ⟧tm .idxf .sfunc gi) (rel-pred ω .sfunc vs)
+             Ix._≈_ (unit [+] unit) (⟦ brel ω Ms ⟧tm .idxf .sfunc gi) (rel-pred ω .sfunc vs)
   brel-idx ω Ms gi vs args-eq =
-    IX.trans (unit [+] unit)
+    Ix.trans (unit [+] unit)
       {⟦ brel ω Ms ⟧tm .idxf .sfunc gi} {rel-pred ω .sfunc (args-idx Ms gi)} {rel-pred ω .sfunc vs}
       (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .sfunc-resp-≈ args-eq)
 
@@ -111,17 +111,17 @@ fundamental-val (var x) (⇓-var .x) rγ = lookup-val x rγ
 fundamental-val unit ⇓-unit rγ = tt
 fundamental-val {τ = τ₁ [+] τ₂} (inl {t = t} ct) (⇓-inl D) {gi} rγ =
   ⟦ t ⟧tm .idxf .sfunc gi , fundamental-val ct D rγ ,
-  ⟪ IX.refl (τ₁ [+] τ₂) {inj₁ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
+  ⟪ Ix.refl (τ₁ [+] τ₂) {inj₁ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
 fundamental-val {τ = τ₁ [+] τ₂} (inr {t = t} ct) (⇓-inr D) {gi} rγ =
   ⟦ t ⟧tm .idxf .sfunc gi , fundamental-val ct D rγ ,
-  ⟪ IX.refl (τ₁ [+] τ₂) {inj₂ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
+  ⟪ Ix.refl (τ₁ [+] τ₂) {inj₂ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
 fundamental-val {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) (⇓-case-l D₁ D₂) {gi} rγ =
   let (i' , r , ⟪ e ⟫) = fundamental-val ct D₁ rγ in
-  ValRel-resp τ (IX.sym τ (case-idx s t₁ t₂ gi (inj₁ i') e))
+  ValRel-resp τ (Ix.sym τ (case-idx s t₁ t₂ gi (inj₁ i') e))
     (fundamental-val ct₁ D₂ (rγ · r))
 fundamental-val {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) (⇓-case-r D₁ D₂) {gi} rγ =
   let (i' , r , ⟪ e ⟫) = fundamental-val ct D₁ rγ in
-  ValRel-resp τ (IX.sym τ (case-idx s t₁ t₂ gi (inj₂ i') e))
+  ValRel-resp τ (Ix.sym τ (case-idx s t₁ t₂ gi (inj₂ i') e))
     (fundamental-val ct₂ D₂ (rγ · r))
 fundamental-val (pair ct₁ ct₂) (⇓-pair D₁ D₂) rγ = fundamental-val ct₁ D₁ rγ , fundamental-val ct₂ D₂ rγ
 fundamental-val (fst ct) (⇓-fst D) rγ = proj₁ (fundamental-val ct D rγ)
@@ -145,12 +145,11 @@ app-case : ∀ {Γ τ'} {γ : Env Γ} (v : Val τ') {n} (R_s : M.Matrix (suc (wi
                      (λ l → ap (M.in₁ {width-env γ} {width v}) x l +ₛ
                             ap (M.in₂ {width-env γ} {width v}) (λ m → ap R_s (inputs γ s x) (suc m)) l)) k
 app-case {γ = γ} v R_s T s x k =
-  ≈-trans (app-congₘ (MC.∘-cong₂ {f = T} (≈ₘ-trans (M.∥-pair from-inputs from-scrutinee M.I R_s)
-                                                   (M.+ₘ-cong (MC.id-right {f = from-inputs}) ≈ₘ-refl))) y k)
+  ≈-trans (app-congₘ (M.∘-cong (≈ₘ-refl {M = T}) (≈ₘ-trans (M.∥-pair from-inputs from-scrutinee M.I R_s)
+                                                   (M.+ₘ-cong (M.id-right {M = from-inputs}) ≈ₘ-refl))) y k)
   (≈-trans (app-∘ T (from-inputs +ₘ (from-scrutinee ∘ R_s)) y k)
            (app-congᵥ T branch-at k))
   where
-  module MC = Category M.cat
   y = inputs γ s x
   o_s = ap R_s y
   from-inputs : M.Matrix (suc (width-env γ + width v)) (suc (width-env γ))
@@ -205,19 +204,19 @@ private
   -- against the control dependence at the control input's value with the projection's fibre.
   proj-den : ∀ τ' (i : Ix τ') s a₀ o'₀ (comp G m : ∣ Fib τ' i ∣) →
              o'₀ ≈s ((c ·ₛ s) +ₛ a₀) →
-             F._≈_ τ' i comp (F._+_ τ' i (ctrl-dep-at τ' i s) m) →
-             F._≈_ τ' i G (F._+_ τ' i m (ctrl-dep-at τ' i a₀)) →
-             F._≈_ τ' i (F._+_ τ' i (ctrl-dep-at τ' i ((c ·ₛ s) +ₛ o'₀)) comp) (F._+_ τ' i (ctrl-dep-at τ' i s) G)
+             Fib._≈_ τ' i comp (Fib._+_ τ' i (ctrl-dep-at τ' i s) m) →
+             Fib._≈_ τ' i G (Fib._+_ τ' i m (ctrl-dep-at τ' i a₀)) →
+             Fib._≈_ τ' i (Fib._+_ τ' i (ctrl-dep-at τ' i ((c ·ₛ s) +ₛ o'₀)) comp) (Fib._+_ τ' i (ctrl-dep-at τ' i s) G)
   proj-den τ' i s a₀ o'₀ comp G m eo ecomp eG =
-    F.trans τ' i (F.+-cong τ' i ctrl-dep-part ecomp)
-    (F.trans τ' i rearr (F.+-cong τ' i (F.refl τ' i) (F.sym τ' i eG)))
+    Fib.trans τ' i (Fib.+-cong τ' i ctrl-dep-part ecomp)
+    (Fib.trans τ' i rearr (Fib.+-cong τ' i (Fib.refl τ' i) (Fib.sym τ' i eG)))
     where
-    ctrl-dep-part : F._≈_ τ' i (ctrl-dep-at τ' i ((c ·ₛ s) +ₛ o'₀)) (F._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀))
-    ctrl-dep-part = F.trans τ' i (ctrl-dep τ' .at i .func-resp-≈ (+-cong ≈-refl eo)) (ctrl-dep-double τ' i s a₀)
+    ctrl-dep-part : Fib._≈_ τ' i (ctrl-dep-at τ' i ((c ·ₛ s) +ₛ o'₀)) (Fib._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀))
+    ctrl-dep-part = Fib.trans τ' i (ctrl-dep τ' .at i .func-resp-≈ (+-cong ≈-refl eo)) (ctrl-dep-double τ' i s a₀)
     -- (e + a) + (e + m) ≈ e + (m + a)
-    rearr : F._≈_ τ' i (F._+_ τ' i (F._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀)) (F._+_ τ' i (ctrl-dep-at τ' i s) m))
-                       (F._+_ τ' i (ctrl-dep-at τ' i s) (F._+_ τ' i m (ctrl-dep-at τ' i a₀)))
-    rearr = F.trans τ' i (F.+-interchange τ' i) (F.+-cong τ' i (F.⊑-refl τ' i) (F.+-comm τ' i))
+    rearr : Fib._≈_ τ' i (Fib._+_ τ' i (Fib._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀)) (Fib._+_ τ' i (ctrl-dep-at τ' i s) m))
+                       (Fib._+_ τ' i (ctrl-dep-at τ' i s) (Fib._+_ τ' i m (ctrl-dep-at τ' i a₀)))
+    rearr = Fib.trans τ' i (Fib.+-interchange τ' i) (Fib.+-cong τ' i (Fib.⊑-refl τ' i) (Fib.+-comm τ' i))
 
 -- The branch of a case: its environment is related at the scrutinee's root plus the weighted control
 -- input, the scrutinee's payload carrying the control dependence at the control input's value as further
@@ -225,104 +224,102 @@ private
 private
   branch-env : ∀ {Γ τk} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) {v : Val τk} {i'} (r_v : ValRel τk v i')
                s x g (o_s : ∣ 𝔽 (suc (width v)) ∣) (y_v : ∣ Fib τk i' ∣) →
-               EnvDepRel rγ s x g → DepRel τk r_v (λ m → o_s (suc m)) (F._+_ τk i' y_v (ctrl-dep-at τk i' s)) →
+               EnvDepRel rγ s x g → DepRel τk r_v (λ m → o_s (suc m)) (Fib._+_ τk i' y_v (ctrl-dep-at τk i' s)) →
                EnvDepRel (_·_ {τ = τk} {v = v} {i = i'} rγ r_v) (o_s zero +ₛ (c ·ₛ s))
                  (λ m → ap (M.in₁ {width-env γ} {width v}) x m +ₛ ap (M.in₂ {width-env γ} {width v}) (λ m' → o_s (suc m')) m)
                  (g , y_v)
   branch-env {τk = τk} {γ = γ} rγ {v} {i'} r_v s x g o_s y_v rel h =
     EnvDepRel-resp rγ Sw (λ m → ≈-sym (ap-p₁-++ x (λ m' → o_s (suc m')) m)) (EnvDepRel-mono rγ s (o_s zero) rel) ,
     DepRel⊑-resp τk r_v Sw (λ m → ≈-sym (ap-p₂-++ x (λ m' → o_s (suc m')) m))
-      (DepRel⊑-mono τk r_v s (o_s zero) (ctrl-dep-at τk i' s , (F.⊑-refl τk i' , h)))
+      (DepRel⊑-mono τk r_v s (o_s zero) (ctrl-dep-at τk i' s , (Fib.⊑-refl τk i' , h)))
     where
     Sw = o_s zero +ₛ (c ·ₛ s)
 
   -- Transport there and back is the identity.
-  roundtrip : ∀ τ {i₁ ic : Ix τ} (E : IX._≈_ τ i₁ ic) (Eidx : IX._≈_ τ ic i₁)
+  roundtrip : ∀ τ {i₁ ic : Ix τ} (E : Ix._≈_ τ i₁ ic) (Eidx : Ix._≈_ τ ic i₁)
               (d : ∣ Fib τ ic ∣) →
-              F._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (⟦ τ ⟧ .fam .subst Eidx .func d)) d
+              Fib._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (⟦ τ ⟧ .fam .subst Eidx .func d)) d
   roundtrip τ {i₁} {ic} E Eidx d =
-    F.trans τ ic (F.sym τ ic (subst-trans ⟦ τ ⟧ {ic} {i₁} {ic} Eidx E d))
-                 (subst-refl ⟦ τ ⟧ {ic} (IX.trans τ {ic} {i₁} {ic} Eidx E) d)
+    Fib.trans τ ic (Fib.sym τ ic (subst-trans ⟦ τ ⟧ {ic} {i₁} {ic} Eidx E d))
+                 (subst-refl ⟦ τ ⟧ {ic} (Ix.trans τ {ic} {i₁} {ic} Eidx E) d)
 
   -- The branch's constant and fibre, transported, against the case's.
-  case-den : ∀ τ {i₁ ic : Ix τ} (E : IX._≈_ τ i₁ ic) (Eidx : IX._≈_ τ ic i₁)
+  case-den : ∀ τ {i₁ ic : Ix τ} (E : Ix._≈_ τ i₁ ic) (Eidx : Ix._≈_ τ ic i₁)
              s a_s o_s₀ (B : ∣ Fib τ i₁ ∣) (CF : ∣ Fib τ ic ∣) →
              o_s₀ ≈s ((c ·ₛ s) +ₛ a_s) →
-             F._≈_ τ i₁ (⟦ τ ⟧ .fam .subst Eidx .func CF) (F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s)) →
-             F._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (F._+_ τ i₁ (ctrl-dep-at τ i₁ (o_s₀ +ₛ (c ·ₛ s))) B))
-                        (F._+_ τ ic (ctrl-dep-at τ ic s) CF)
+             Fib._≈_ τ i₁ (⟦ τ ⟧ .fam .subst Eidx .func CF) (Fib._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s)) →
+             Fib._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ (o_s₀ +ₛ (c ·ₛ s))) B))
+                        (Fib._+_ τ ic (ctrl-dep-at τ ic s) CF)
   case-den τ {i₁} {ic} E Eidx s a_s o_s₀ B CF eo eB =
-    F.trans τ ic (subst-ctrl-dep+ τ E (o_s₀ +ₛ (c ·ₛ s)) B)
-    (F.trans τ ic (F.+-cong τ ic ctrl-dep-part (F.refl τ ic))
-    (F.trans τ ic (F.+-assoc τ ic)
-    (F.trans τ ic (F.+-cong τ ic (F.refl τ ic) (F.+-comm τ ic))
-                  (F.+-cong τ ic (F.refl τ ic) (F.sym τ ic eCF)))))
+    Fib.trans τ ic (subst-ctrl-dep+ τ E (o_s₀ +ₛ (c ·ₛ s)) B)
+    (Fib.trans τ ic (Fib.+-cong τ ic ctrl-dep-part (Fib.refl τ ic))
+    (Fib.trans τ ic (Fib.+-assoc τ ic)
+    (Fib.trans τ ic (Fib.+-cong τ ic (Fib.refl τ ic) (Fib.+-comm τ ic))
+                  (Fib.+-cong τ ic (Fib.refl τ ic) (Fib.sym τ ic eCF)))))
     where
-    ctrl-dep-part : F._≈_ τ ic (ctrl-dep-at τ ic (o_s₀ +ₛ (c ·ₛ s))) (F._+_ τ ic (ctrl-dep-at τ ic s) (ctrl-dep-at τ ic a_s))
-    ctrl-dep-part = F.trans τ ic (ctrl-dep τ .at ic .func-resp-≈ (≈-trans (+-cong eo ≈-refl) +-comm)) (ctrl-dep-double τ ic s a_s)
-    eCF : F._≈_ τ ic CF (F._+_ τ ic (⟦ τ ⟧ .fam .subst E .func B) (ctrl-dep-at τ ic a_s))
+    ctrl-dep-part : Fib._≈_ τ ic (ctrl-dep-at τ ic (o_s₀ +ₛ (c ·ₛ s))) (Fib._+_ τ ic (ctrl-dep-at τ ic s) (ctrl-dep-at τ ic a_s))
+    ctrl-dep-part = Fib.trans τ ic (ctrl-dep τ .at ic .func-resp-≈ (≈-trans (+-cong eo ≈-refl) +-comm)) (ctrl-dep-double τ ic s a_s)
+    eCF : Fib._≈_ τ ic CF (Fib._+_ τ ic (⟦ τ ⟧ .fam .subst E .func B) (ctrl-dep-at τ ic a_s))
     eCF =
-      F.trans τ ic (F.sym τ ic (roundtrip τ E Eidx CF))
-      (F.trans τ ic (⟦ τ ⟧ .fam .subst E .func-resp-≈ {⟦ τ ⟧ .fam .subst Eidx .func CF} {F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s)} eB)
-      (F.trans τ ic (⟦ τ ⟧ .fam .subst E .preserve-+ {B} {ctrl-dep-at τ i₁ a_s})
-                    (F.+-cong τ ic (F.refl τ ic) (ctrl-dep-natural τ E a_s))))
+      Fib.trans τ ic (Fib.sym τ ic (roundtrip τ E Eidx CF))
+      (Fib.trans τ ic (⟦ τ ⟧ .fam .subst E .func-resp-≈ {⟦ τ ⟧ .fam .subst Eidx .func CF} {Fib._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s)} eB)
+      (Fib.trans τ ic (⟦ τ ⟧ .fam .subst E .preserve-+ {B} {ctrl-dep-at τ i₁ a_s})
+                    (Fib.+-cong τ ic (Fib.refl τ ic) (ctrl-dep-natural τ E a_s))))
 
   case-fibre : ∀ {Γ τ₁ τ₂ τ} (sc : Γ ⊢ τ₁ [+] τ₂) (t₁ : Γ ▸ τ₁ ⊢ τ) (t₂ : Γ ▸ τ₂ ⊢ τ) gi (g : ∣ FibC Γ gi ∣)
-               (k : Ix (τ₁ [+] τ₂)) (e : IX._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) k) →
+               (k : Ix (τ₁ [+] τ₂)) (e : Ix._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) k) →
                let SC = copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
                    sidx = ⟦ sc ⟧tm .idxf .sfunc gi
                in
-               F._≈_ τ (SC .idxf .sfunc (gi , k))
+               Fib._≈_ τ (SC .idxf .sfunc (gi , k))
                  (⟦ τ ⟧ .fam .subst (case-idx sc t₁ t₂ gi k e) .func (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g))
                  (SC .famf .transf (gi , k) .func (g , ⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {k} e .func (⟦ sc ⟧tm .famf .transf gi .func g)))
   case-fibre {Γ} {τ₁} {τ₂} {τ} sc t₁ t₂ gi g k e =
-    F.trans τ (SC .idxf .sfunc (gi , k))
-      (F.sym τ (SC .idxf .sfunc (gi , k)) (transf-natural SC {gi , sidx} {gi , k} (IXC.refl Γ {gi} , e) Pg))
+    Fib.trans τ (SC .idxf .sfunc (gi , k))
+      (Fib.sym τ (SC .idxf .sfunc (gi , k)) (transf-natural SC {gi , sidx} {gi , k} (IxC.refl Γ {gi} , e) Pg))
       (SC .famf .transf (gi , k) .func-resp-≈ Q≈)
     where
     SC = copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
     sidx = ⟦ sc ⟧tm .idxf .sfunc gi
-    Dom = FDP.prod ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
-    Pg = FDP.pair (FDC.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
+    Dom = FD.Fam𝒞-P.prod ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
+    Pg = FD.Fam𝒞-P.pair (FD.Fam𝒞.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
     Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , k))
-           (Dom .fam .subst {gi , sidx} {gi , k} (IXC.refl Γ {gi} , e) .func Pg)
+           (Dom .fam .subst {gi , sidx} {gi , k} (IxC.refl Γ {gi} , e) .func Pg)
            (g , ⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {k} e .func (⟦ sc ⟧tm .famf .transf gi .func g))
     Q≈ = Semimodule.trans (Dom .fam .fm (gi , k))
-           (Dom .fam .subst {gi , sidx} {gi , k} (IXC.refl Γ {gi} , e) .func-resp-≈
-              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
+           (Dom .fam .subst {gi , sidx} {gi , k} (IxC.refl Γ {gi} , e) .func-resp-≈
+              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (FD.Fam𝒞.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
            (Semimodule.trans (Dom .fam .fm (gi , k))
-              (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} {gi} {gi} {sidx} {k} (IXC.refl Γ {gi}) e g
+              (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} {gi} {gi} {sidx} {k} (IxC.refl Γ {gi}) e g
                  (⟦ sc ⟧tm .famf .transf gi .func g))
-              (subst-refl ⟦ Γ ⟧ctxt (IXC.refl Γ {gi}) g , F.refl (τ₁ [+] τ₂) k))
+              (subst-refl ⟦ Γ ⟧ctxt (IxC.refl Γ {gi}) g , Fib.refl (τ₁ [+] τ₂) k))
 
 -- A primitive's arguments on the model side, as a vector on their positions laid end to end.
 args-vec : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → ∣ FibC Γ gi ∣ →
            ∣ 𝔽 (bases-width is) ∣
 args-vec {is = is} Ms gi g =
-  ap (collect is .FCμ.famf .transf (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi)))
+  ap (collect is .FC.famf .transf (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi)))
      (𝒟-arg-product is .famf .transf (⟦ Ms ⟧tms .idxf .sfunc gi) .func
         (⟦ Ms ⟧tms .famf .transf gi .func g))
 
 private
-  args-width : ∀ is → Setoid.Carrier (IP.args is .FCμ.idx) → ℕ
-  args-width is p = IP.args is .FCμ.fam .fm p
+  args-width : ∀ is → Setoid.Carrier (IP.args is .FC.idx) → ℕ
+  args-width is p = IP.args is .FC.fam .fm p
 
-  collect-cons : ∀ i is (a : Setoid.Carrier (sort-index i)) (p : Setoid.Carrier (IP.args is .FCμ.idx)) →
-                 collect (i ∷ is) .FCμ.famf .transf (a , p) M.≈ₘ
+  collect-cons : ∀ i is (a : Setoid.Carrier (sort-index i)) (p : Setoid.Carrier (IP.args is .FC.idx)) →
+                 collect (i ∷ is) .FC.famf .transf (a , p) M.≈ₘ
                  ((M.in₁ {sort-width i} {bases-width is} ∘ M.p₁ {sort-width i} {args-width is p}) +ₘ
                   (M.in₂ {sort-width i} {bases-width is} ∘
-                    (collect is .FCμ.famf .transf p ∘ M.p₂ {sort-width i} {args-width is p})))
+                    (collect is .FC.famf .transf p ∘ M.p₂ {sort-width i} {args-width is p})))
   collect-cons i is a p =
-    ≈ₘ-trans (MC.id-left {f = M.I ∘ (u₁ +ₘ u₂)})
-    (≈ₘ-trans (MC.id-left {f = u₁ +ₘ u₂})
-      (M.+ₘ-cong (∘-cong₂ {f = M.in₁ {sort-width i} {bases-width is}}
-                          (≈ₘ-trans (MC.id-left {f = M.I ∘ M.p₁ {sort-width i} {n}}) (MC.id-left {f = M.p₁ {sort-width i} {n}})))
-                 (∘-cong₂ {f = M.in₂ {sort-width i} {bases-width is}} (MC.id-left {f = C ∘ M.p₂ {sort-width i} {n}}))))
+    ≈ₘ-trans (M.id-left {M = M.I ∘ (u₁ +ₘ u₂)})
+    (≈ₘ-trans (M.id-left {M = u₁ +ₘ u₂})
+      (M.+ₘ-cong (M.∘-cong (≈ₘ-refl {M = M.in₁ {sort-width i} {bases-width is}})
+                          (≈ₘ-trans (M.id-left {M = M.I ∘ M.p₁ {sort-width i} {n}}) (M.id-left {M = M.p₁ {sort-width i} {n}})))
+                 (M.∘-cong (≈ₘ-refl {M = M.in₂ {sort-width i} {bases-width is}}) (M.id-left {M = C ∘ M.p₂ {sort-width i} {n}}))))
     where
-    module MC = Category M.cat
-    open MC using (∘-cong₂)
     n = args-width is p
-    C = collect is .FCμ.famf .transf p
+    C = collect is .FC.famf .transf p
     u₁ = M.in₁ {sort-width i} {bases-width is} ∘ (M.I ∘ (M.I ∘ M.p₁ {sort-width i} {n}))
     u₂ = M.in₂ {sort-width i} {bases-width is} ∘ (M.I ∘ (C ∘ M.p₂ {sort-width i} {n}))
 
@@ -347,13 +344,13 @@ private
     n = args-width is p'
     u₁ = M.in₁ {sort-width i} {bases-width is}
     u₂ = M.in₂ {sort-width i} {bases-width is}
-    C = collect is .FCμ.famf .transf p'
+    C = collect is .FC.famf .transf p'
     y₁ = ⟦ M ⟧tm .famf .transf gi .func g
     ys = ⟦ Ms ⟧tms .famf .transf gi .func g
     q = ⟦ M Every.∷ Ms ⟧tms .famf .transf gi .func g
     tp-ys = 𝒟-arg-product is .famf .transf p .func ys
     Zc = 𝒟-arg-product (i ∷ is) .famf .transf (a , p) .func q
-    z = FDP.prod-m (FDC.id ⟦ base i ⟧) (𝒟-arg-product is) .famf .transf (a , p) .func q
+    z = FD.Fam𝒞-P.prod-m (FD.Fam𝒞.id ⟦ base i ⟧) (𝒟-arg-product is) .famf .transf (a , p) .func q
 
     q≈ = Fpair-elt ⟦ M ⟧tm ⟦ Ms ⟧tms gi g
     ArgsD = signature.PointedFPCat.list→product
@@ -419,12 +416,12 @@ private
                (≈-trans +-runit (≈-sym hv)))
 
   DepRel-bool : ∀ {is} (ω : rel is) (vs : sort-vals is) b {i : Ix (unit [+] unit)}
-                (e : IX._≈_ (unit [+] unit) i b)
+                (e : Ix._≈_ (unit [+] unit) i b)
                 (o : ∣ 𝔽 (width (bool→val b)) ∣) (d : ∣ Fib (unit [+] unit) i ∣) s
                 (y : ∣ 𝔽 (bases-width is) ∣) →
                 (∀ k → o k ≈s ((c ·ₛ s) +ₛ ap (brel-deps ω vs b) (λ l → (c ·ₛ s) +ₛ y l) k)) →
-                F._≈_ (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func d)
-                (F._+_ (unit [+] unit) b (ctrl-dep-at (unit [+] unit) b s)
+                Fib._≈_ (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func d)
+                (Fib._+_ (unit [+] unit) b (ctrl-dep-at (unit [+] unit) b s)
                    (interp.bool-elt b (ap (rel-deps ω .sfunc vs) y zero))) →
                 DepRel (unit [+] unit) {bool→val b} {i} (ValRel-bool b i ⟪ e ⟫) o d
   DepRel-bool ω vs (inj₁ x) {i} e o d s y ho (hd₁ , hd₂) =
@@ -445,7 +442,7 @@ fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D
               {gi} (rγ : EnvValRel γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
               (g : ∣ FibC Γ gi ∣) → EnvDepRel rγ s x g →
               DepRel τ (fundamental-val ct D rγ) (ap R (inputs γ s x))
-                (F._+_ τ (⟦ t ⟧tm .idxf .sfunc gi)
+                (Fib._+_ τ (⟦ t ⟧tm .idxf .sfunc gi)
                   (ctrl-dep τ .at (⟦ t ⟧tm .idxf .sfunc gi) .func s)
                   (⟦ t ⟧tm .famf .transf gi .func g))
 -- At a primitive's arguments the relation is equality, with the control weight times the control
@@ -457,7 +454,7 @@ fundamental-s : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} (cts : Co
 fundamental {τ = τ} (var x) {γ = γ} (⇓-var .x) {gi} rγ s xs g rel =
   DepRel-resp τ (lookup-val x rγ)
     (λ k → ≈-sym (ap-∥ (ctrl-of (lookup x γ)) (proj-var x γ) (inputs γ s xs) k))
-    (F.refl τ (LI.⟦ x ⟧var .idxf .sfunc gi))
+    (Fib.refl τ (LI.⟦ x ⟧var .idxf .sfunc gi))
     (DepRel⊑-ctrl τ (lookup-val x rγ) s (lookup-dep x rγ s xs g rel))
 fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
   where
@@ -470,25 +467,25 @@ fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} ct) {γ = γ} (⇓-inl {v = v} {R = R'} D) {gi} rγ s x g rel =
   ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (proj₁ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₁ i'} e d)) root-den)) ,
   DepRel-resp τ₁ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
-    (F.sym τ₁ i' (F.trans τ₁ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₁ i'} e d))
-                                (F.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i'))))
+    (Fib.sym τ₁ i' (Fib.trans τ₁ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₁ i'} e d))
+                                (Fib.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (Fib.refl τ₁ i'))))
     (fundamental ct D rγ s x g rel)
   where
   i' = ⟦ t ⟧tm .idxf .sfunc gi
-  e = IX.refl (τ₁ [+] τ₂) {inj₁ i'}
-  d = F._+_ (τ₁ [+] τ₂) (inj₁ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₁ i') s) (⟦ inl {τ₂ = τ₂} t ⟧tm .famf .transf gi .func g)
+  e = Ix.refl (τ₁ [+] τ₂) {inj₁ i'}
+  d = Fib._+_ (τ₁ [+] τ₂) (inj₁ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₁ i') s) (⟦ inl {τ₂ = τ₂} t ⟧tm .famf .transf gi .func g)
   root-den : proj₁ d ≈s (c ·ₛ s)
   root-den = ≈-trans (+-cong (proj₁ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} ct) {γ = γ} (⇓-inr {v = v} {R = R'} D) {gi} rγ s x g rel =
   ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (proj₁ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₂ i'} e d)) root-den)) ,
   DepRel-resp τ₂ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
-    (F.sym τ₂ i' (F.trans τ₂ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₂ i'} e d))
-                                (F.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i'))))
+    (Fib.sym τ₂ i' (Fib.trans τ₂ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₂ i'} e d))
+                                (Fib.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (Fib.refl τ₂ i'))))
     (fundamental ct D rγ s x g rel)
   where
   i' = ⟦ t ⟧tm .idxf .sfunc gi
-  e = IX.refl (τ₁ [+] τ₂) {inj₂ i'}
-  d = F._+_ (τ₁ [+] τ₂) (inj₂ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₂ i') s) (⟦ inr {τ₁ = τ₁} t ⟧tm .famf .transf gi .func g)
+  e = Ix.refl (τ₁ [+] τ₂) {inj₂ i'}
+  d = Fib._+_ (τ₁ [+] τ₂) (inj₂ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₂ i') s) (⟦ inr {τ₁ = τ₁} t ⟧tm .famf .transf gi .func g)
   root-den : proj₁ d ≈s (c ·ₛ s)
   root-den = ≈-trans (+-cong (proj₁ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
 fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) {γ = γ}
@@ -496,7 +493,7 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   DepRel-resp τ (ValRel-resp τ E r') (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
     (case-den τ E Eidx s a_s (o_s zero) (⟦ t₁ ⟧tm .famf .transf (gi , i') .func (g , y_v))
        (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g) o_s₀
-       (F.trans τ (⟦ t₁ ⟧tm .idxf .sfunc (gi , i')) (case-fibre sc t₁ t₂ gi g (inj₁ i') e)
+       (Fib.trans τ (⟦ t₁ ⟧tm .idxf .sfunc (gi , i')) (case-fibre sc t₁ t₂ gi g (inj₁ i') e)
           (elimF-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ ⟧} {⟦ τ ⟧} (ctrl-dep τ) ⟦ t₁ ⟧tm {gi} {i'} g a_s y_v)))
     (DepRel-transport τ E r' (fundamental ct₁ D₂ (_·_ {τ = τ₁} {v = v} {i = i'} rγ r_v) (o_s zero +ₛ (c ·ₛ s)) X (g , y_v)
                               (branch-env {τk = τ₁} rγ {v = v} {i' = i'} r_v s x g o_s y_v rel payload₁)))
@@ -504,11 +501,11 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   rs = fundamental-val ct D₁ rγ
   i' = proj₁ rs
   r_v = proj₁ (proj₂ rs)
-  e : IX._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₁ i')
+  e : Ix._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₁ i')
   e = prop.Prf.prf (proj₂ (proj₂ rs))
-  Eidx : IX._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₁ ⟧tm .idxf .sfunc (gi , i'))
+  Eidx : Ix._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₁ ⟧tm .idxf .sfunc (gi , i'))
   Eidx = case-idx sc t₁ t₂ gi (inj₁ i') e
-  E = IX.sym τ Eidx
+  E = Ix.sym τ Eidx
   r' = fundamental-val ct₁ D₂ (rγ · r_v)
   o_s = ap R_s (inputs γ s x)
   X : ∣ 𝔽 (width-env γ + width v) ∣
@@ -523,18 +520,18 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   o_s₀ = ≈-trans (proj₁ IH₁)
                  (≈-trans (proj₁ split-sum) (+-cong (proj₁ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) ≈-refl))
 
-  payload₁ : DepRel τ₁ r_v (λ m → o_s (suc m)) (F._+_ τ₁ i' y_v (ctrl-dep-at τ₁ i' s))
+  payload₁ : DepRel τ₁ r_v (λ m → o_s (suc m)) (Fib._+_ τ₁ i' y_v (ctrl-dep-at τ₁ i' s))
   payload₁ =
     DepRel-resp τ₁ r_v (λ m → ≈-refl)
-      (F.trans τ₁ i' (proj₂ split-sum)
-        (F.trans τ₁ i' (F.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i')) (F.+-comm τ₁ i')))
+      (Fib.trans τ₁ i' (proj₂ split-sum)
+        (Fib.trans τ₁ i' (Fib.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (Fib.refl τ₁ i')) (Fib.+-comm τ₁ i')))
       (proj₂ IH₁)
 fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) {γ = γ}
             (⇓-case-r {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
   DepRel-resp τ (ValRel-resp τ E r') (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
     (case-den τ E Eidx s a_s (o_s zero) (⟦ t₂ ⟧tm .famf .transf (gi , i') .func (g , y_v))
        (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g) o_s₀
-       (F.trans τ (⟦ t₂ ⟧tm .idxf .sfunc (gi , i')) (case-fibre sc t₁ t₂ gi g (inj₂ i') e)
+       (Fib.trans τ (⟦ t₂ ⟧tm .idxf .sfunc (gi , i')) (case-fibre sc t₁ t₂ gi g (inj₂ i') e)
           (elimF-elt {⟦ Γ ⟧ctxt} {⟦ τ₂ ⟧} {⟦ τ ⟧} (ctrl-dep τ) ⟦ t₂ ⟧tm {gi} {i'} g a_s y_v)))
     (DepRel-transport τ E r' (fundamental ct₂ D₂ (_·_ {τ = τ₂} {v = v} {i = i'} rγ r_v) (o_s zero +ₛ (c ·ₛ s)) X (g , y_v)
                               (branch-env {τk = τ₂} rγ {v = v} {i' = i'} r_v s x g o_s y_v rel payload₁)))
@@ -542,11 +539,11 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   rs = fundamental-val ct D₁ rγ
   i' = proj₁ rs
   r_v = proj₁ (proj₂ rs)
-  e : IX._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₂ i')
+  e : Ix._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₂ i')
   e = prop.Prf.prf (proj₂ (proj₂ rs))
-  Eidx : IX._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₂ ⟧tm .idxf .sfunc (gi , i'))
+  Eidx : Ix._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₂ ⟧tm .idxf .sfunc (gi , i'))
   Eidx = case-idx sc t₁ t₂ gi (inj₂ i') e
-  E = IX.sym τ Eidx
+  E = Ix.sym τ Eidx
   r' = fundamental-val ct₂ D₂ (rγ · r_v)
   o_s = ap R_s (inputs γ s x)
   X : ∣ 𝔽 (width-env γ + width v) ∣
@@ -561,11 +558,11 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   o_s₀ = ≈-trans (proj₁ IH₁)
                  (≈-trans (proj₁ split-sum) (+-cong (proj₁ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) ≈-refl))
 
-  payload₁ : DepRel τ₂ r_v (λ m → o_s (suc m)) (F._+_ τ₂ i' y_v (ctrl-dep-at τ₂ i' s))
+  payload₁ : DepRel τ₂ r_v (λ m → o_s (suc m)) (Fib._+_ τ₂ i' y_v (ctrl-dep-at τ₂ i' s))
   payload₁ =
     DepRel-resp τ₂ r_v (λ m → ≈-refl)
-      (F.trans τ₂ i' (proj₂ split-sum)
-        (F.trans τ₂ i' (F.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i')) (F.+-comm τ₂ i')))
+      (Fib.trans τ₂ i' (proj₂ split-sum)
+        (Fib.trans τ₂ i' (Fib.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (Fib.refl τ₂ i')) (Fib.+-comm τ₂ i')))
       (proj₂ IH₁)
 fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ = γ} (⇓-pair {v = v} {u = u} {R = R₁} {T = R₂} D₁ D₂) {gi} rγ s x g rel =
   root , (DepRel-resp σ r₁ (λ k → ≈-sym (comp₁ k)) den₁ IH₁ , DepRel-resp τ r₂ (λ k → ≈-sym (comp₂ k)) den₂ IH₂)
@@ -581,7 +578,7 @@ fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ =
   y₁ = ⟦ M ⟧tm .famf .transf gi .func g
   y₂ = ⟦ N ⟧tm .famf .transf gi .func g
   o = ap (built-out γ (width v + width u) +ₘ (M.in₂ {1} ∘ ⟨ R₁ , R₂ ⟩)) (inputs γ s x)
-  d = F._+_ (σ [×] τ) (i , j) (ctrl-dep-at (σ [×] τ) (i , j) s) (⟦ pair M N ⟧tm .famf .transf gi .func g)
+  d = Fib._+_ (σ [×] τ) (i , j) (ctrl-dep-at (σ [×] τ) (i , j) s) (⟦ pair M N ⟧tm .famf .transf gi .func g)
 
   tail-eq : ∀ k → o (suc k) ≈s (ap (M.in₁ {width v} {width u}) o₁ k +ₛ ap (M.in₂ {width v} {width u}) o₂ k)
   tail-eq k =
@@ -601,16 +598,16 @@ fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ =
   comp₂ : ∀ k → ap (M.p₂ {width v} {width u}) (λ l → o (suc l)) k ≈s o₂ k
   comp₂ k = ≈-trans (app-congᵥ (M.p₂ {width v} {width u}) tail-eq k) (ap-p₂-++ o₁ o₂ k)
 
-  den₁ : F._≈_ σ i (F._+_ σ i (ctrl-dep-at σ i s) y₁) (proj₁ (proj₂ d))
-  den₁ = F.sym σ i (F.+-cong σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (m-runit (Fib σ i)))
+  den₁ : Fib._≈_ σ i (Fib._+_ σ i (ctrl-dep-at σ i s) y₁) (proj₁ (proj₂ d))
+  den₁ = Fib.sym σ i (Fib.+-cong σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (m-runit (Fib σ i)))
 
-  den₂ : F._≈_ τ j (F._+_ τ j (ctrl-dep-at τ j s) y₂) (proj₂ (proj₂ d))
-  den₂ = F.sym τ j (F.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (F.+-lunit τ j))
+  den₂ : Fib._≈_ τ j (Fib._+_ τ j (ctrl-dep-at τ j s) y₂) (proj₂ (proj₂ d))
+  den₂ = Fib.sym τ j (Fib.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (Fib.+-lunit τ j))
 fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} ct) {γ = γ} (⇓-fst {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   DepRel-resp σ r₁ (λ k → ≈-sym (proj-op {γ = γ} v {width v} {width u} (M.p₁ {width v} {width u}) R' s x k))
-    (proj-den σ i s a₀ (o' zero) (proj₁ (proj₂ (F._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) Mg)))
+    (proj-den σ i s a₀ (o' zero) (proj₁ (proj₂ (Fib._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) Mg)))
        (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) m₁
-       o'₀ (F.+-cong σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s))) (F.refl σ i)) G-form)
+       o'₀ (Fib.+-cong σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s))) (Fib.refl σ i)) G-form)
     (ctrl-add σ r₁ ((c ·ₛ s) +ₛ o' zero) (proj₁ (proj₂ IH)))
   where
   ij = ⟦ t ⟧tm .idxf .sfunc gi
@@ -623,14 +620,14 @@ fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} ct) {γ = γ} (⇓-fst
   m₁ = proj₁ (proj₂ Mg)
   o'₀ : o' zero ≈s ((c ·ₛ s) +ₛ a₀)
   o'₀ = ≈-trans (proj₁ IH) (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s)) (≈-refl {a₀}))
-  G-form : F._≈_ σ i (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (F._+_ σ i m₁ (ctrl-dep-at σ i a₀))
-  G-form = elim-elt {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ)
-             (FDC._∘_ (FDP.p₁ {⟦ σ ⟧} {⟦ τ ⟧}) (FDP.p₂ {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
+  G-form : Fib._≈_ σ i (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (Fib._+_ σ i m₁ (ctrl-dep-at σ i a₀))
+  G-form = elim-elt {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ)
+             (FD.Fam𝒞._∘_ (FD.Fam𝒞-P.p₁ {⟦ σ ⟧} {⟦ τ ⟧}) (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
 fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} ct) {γ = γ} (⇓-snd {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   DepRel-resp τ r₂ (λ k → ≈-sym (proj-op {γ = γ} u {width v} {width u} (M.p₂ {width v} {width u}) R' s x k))
-    (proj-den τ j s a₀ (o' zero) (proj₂ (proj₂ (F._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) Mg)))
+    (proj-den τ j s a₀ (o' zero) (proj₂ (proj₂ (Fib._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) Mg)))
        (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) m₂
-       o'₀ (F.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s))) (F.refl τ j)) G-form)
+       o'₀ (Fib.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s))) (Fib.refl τ j)) G-form)
     (ctrl-add τ r₂ ((c ·ₛ s) +ₛ o' zero) (proj₂ (proj₂ IH)))
   where
   ij = ⟦ t ⟧tm .idxf .sfunc gi
@@ -643,9 +640,9 @@ fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} ct) {γ = γ} (⇓-snd
   m₂ = proj₂ (proj₂ Mg)
   o'₀ : o' zero ≈s ((c ·ₛ s) +ₛ a₀)
   o'₀ = ≈-trans (proj₁ IH) (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s)) (≈-refl {a₀}))
-  G-form : F._≈_ τ j (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (F._+_ τ j m₂ (ctrl-dep-at τ j a₀))
-  G-form = elim-elt {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (ctrl-dep τ)
-             (FDC._∘_ (FDP.p₂ {⟦ σ ⟧} {⟦ τ ⟧}) (FDP.p₂ {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
+  G-form : Fib._≈_ τ j (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (Fib._+_ τ j m₂ (ctrl-dep-at τ j a₀))
+  G-form = elim-elt {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (ctrl-dep τ)
+             (FD.Fam𝒞._∘_ (FD.Fam𝒞-P.p₂ {⟦ σ ⟧} {⟦ τ ⟧}) (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
 fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi} rγ s x g rel =
   root , clause
   where
@@ -660,39 +657,39 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
 
   f = ⟦ lam t' ⟧tm .idxf .sfunc gi
 
-  root : o zero ≈s proj₁ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))
+  root : o zero ≈s proj₁ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))
   root = ≈-trans o₀ (≈-sym (≈-trans (+-cong (proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl) +-runit))
 
   clause : ∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : ValRel σ v j)
              (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑ σ rv (s' +ₛ o zero) z y →
            ∀ {u U} (D : γ · v , t' ⇓ u [ U ]) →
              DepRel τ (fundamental-val ct D (rγ · rv)) (ap U (body-input γ v (s' +ₛ o zero) (λ k → o (suc k)) z))
-               (F._+_ τ (f .idxf .sfunc j)
+               (Fib._+_ τ (f .idxf .sfunc j)
                  (ctrl-dep-at τ (f .idxf .sfunc j) (s' +ₛ o zero))
-                 (F._+_ τ (f .idxf .sfunc j)
+                 (Fib._+_ τ (f .idxf .sfunc j)
                    (evalΠ σ τ f j .func
-                      (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))))
+                      (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))))
                    (f .famf .transf j .func y)))
   clause s' {v} {j} rv z y hz {u} {U} D =
     DepRel-resp τ (fundamental-val ct D (rγ · rv))
       (app-congᵥ U (body-input-resp γ v (+-cong ≈-refl (≈-sym o₀)) (λ k → ≈-sym (o-tail k))))
-      (F.+-cong τ (f .idxf .sfunc j)
+      (Fib.+-cong τ (f .idxf .sfunc j)
          (ctrl-dep τ .at (f .idxf .sfunc j) .func-resp-≈ (+-cong ≈-refl (≈-sym o₀)))
-         (F.trans τ (f .idxf .sfunc j)
+         (Fib.trans τ (f .idxf .sfunc j)
             (⟦ t' ⟧tm .famf .transf (gi , j) .func-resp-≈
                {g , y} {(FibC Γ gi Semimodule.+ g) (Semimodule.ε (FibC Γ gi)) ,
-                        (Fib σ j Semimodule.+ F.ε σ j) y}
-               (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , F.sym σ j (F.+-lunit σ j)))
-         (F.trans τ (f .idxf .sfunc j)
+                        (Fib σ j Semimodule.+ Fib.ε σ j) y}
+               (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , Fib.sym σ j (Fib.+-lunit σ j)))
+         (Fib.trans τ (f .idxf .sfunc j)
             (⟦ t' ⟧tm .famf .transf (gi , j) .preserve-+
-               {g , F.ε σ j} {Semimodule.ε (FibC Γ gi) , y})
-            (F.+-cong τ (f .idxf .sfunc j)
-               (F.trans τ (f .idxf .sfunc j) (F.sym τ (f .idxf .sfunc j) β)
+               {g , Fib.ε σ j} {Semimodule.ε (FibC Γ gi) , y})
+            (Fib.+-cong τ (f .idxf .sfunc j)
+               (Fib.trans τ (f .idxf .sfunc j) (Fib.sym τ (f .idxf .sfunc j) β)
                   (evalΠ σ τ f j .func-resp-≈
-                     {proj₂ L} {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)}
-                     (PL.sym σ τ f {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} {proj₂ L}
+                     {proj₂ L} {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)}
+                     (Payload.sym σ τ f {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} {proj₂ L}
                         (payload-ctrl-dep σ τ f s L))))
-               (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))))
+               (Fib.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))))
       (fundamental ct D (rγ · rv) (s' +ₛ (c ·ₛ s)) (λ k → body-input γ v (s' +ₛ (c ·ₛ s)) x z (suc k)) (g , y)
          (EnvDepRel-resp rγ (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₁-++ x z k)) (EnvDepRel-mono rγ s s' rel) ,
           DepRel⊑-resp σ rv (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₂-++ x z k)) (DepRel⊑-resp-ctrl σ rv (+-cong ≈-refl o₀) hz)))
@@ -701,9 +698,9 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
 
     -- The payload of the lambda's fibre evaluated at the argument is the body's fibre on the
     -- environment part.
-    β : F._≈_ τ (f .idxf .sfunc j)
+    β : Fib._≈_ τ (f .idxf .sfunc j)
           (evalΠ σ τ f j .func (proj₂ L))
-          (⟦ t' ⟧tm .famf .transf (gi , j) .func (g , F.ε σ j))
+          (⟦ t' ⟧tm .famf .transf (gi , j) .func (g , Fib.ε σ j))
     Fλ : indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (FibC Γ gi)
            indexed-family.⇒f (⟦ τ ⟧ .fam indexed-family.[ f .idxf ])
     Fλ = indexed-family._∘f_ indexed-family.reindex-comp
@@ -740,52 +737,52 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   -- dependence at the application's weighted control input.
   arg : DepRel⊑ σ r₂ ((c ·ₛ s) +ₛ o zero) z yN
   arg = ctrl-dep-at σ j s ,
-        (F.⊑-trans σ j (⊑ctrl-dep-mono σ j s (o zero) _ (F.⊑-refl σ j))
-                       (F.≈→⊑ σ j (ctrl-dep σ .at j .func-resp-≈ +-comm)) ,
-         DepRel-resp σ r₂ (λ k → ≈-refl) (F.+-comm σ j) IH₂)
+        (Fib.⊑-trans σ j (⊑ctrl-dep-mono σ j s (o zero) _ (Fib.⊑-refl σ j))
+                       (Fib.≈→⊑ σ j (ctrl-dep σ .at j .func-resp-≈ +-comm)) ,
+         DepRel-resp σ r₂ (λ k → ≈-refl) (Fib.+-comm σ j) IH₂)
 
   -- The clause of the function's relation at the application's weighted control input and the argument.
   C : DepRel τ r₃ (ap U (body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z))
-        (F._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
-          (F._+_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
+        (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
+          (Fib._+_ τ i₁ (evalΠj .func (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                       (f .famf .transf j .func yN)))
   C = proj₂ IH₁ (c ·ₛ s) r₂ z yN arg D₃
 
   -- The clause's constant, evaluation and argument against the application's.
-  den-eq : F._≈_ τ i₁
-             (F._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
-               (F._+_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
+  den-eq : Fib._≈_ τ i₁
+             (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
+               (Fib._+_ τ i₁ (evalΠj .func (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                            (f .famf .transf j .func yN)))
-             (F._+_ τ i₁ (ctrl-dep-at τ i₁ s) (⟦ app M N ⟧tm .famf .transf gi .func g))
+             (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ s) (⟦ app M N ⟧tm .famf .transf gi .func g))
   den-eq =
-    F.trans τ i₁ (F.+-cong τ i₁ ctrl-dep-part (F.+-cong τ i₁ eval-part (F.refl τ i₁)))
-    (F.trans τ i₁ (F.+-assoc τ i₁)
-                  (F.+-cong τ i₁ (F.refl τ i₁) (F.trans τ i₁ (F.+-comm τ i₁) (F.sym τ i₁ G-form))))
+    Fib.trans τ i₁ (Fib.+-cong τ i₁ ctrl-dep-part (Fib.+-cong τ i₁ eval-part (Fib.refl τ i₁)))
+    (Fib.trans τ i₁ (Fib.+-assoc τ i₁)
+                  (Fib.+-cong τ i₁ (Fib.refl τ i₁) (Fib.trans τ i₁ (Fib.+-comm τ i₁) (Fib.sym τ i₁ G-form))))
     where
-    G-form : F._≈_ τ i₁ (⟦ app M N ⟧tm .famf .transf gi .func g)
-               (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ctrl-dep-at τ i₁ a))
+    G-form : Fib._≈_ τ i₁ (⟦ app M N ⟧tm .famf .transf gi .func g)
+               (Fib._+_ τ i₁ (Fib._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ctrl-dep-at τ i₁ a))
     G-form =
-      F.trans τ i₁ (elim-elt {⟦ Γ ⟧ctxt} {Ex} {⟦ τ ⟧} (ctrl-dep τ) body ⟦ M ⟧tm {gi} g)
-                   (F.+-cong τ i₁ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .func-resp-≈
-                                      {FDP.pair (FDP.p₂ {⟦ Γ ⟧ctxt} {Ex})
-                                         (FDC._∘_ ⟦ N ⟧tm (FDP.p₁ {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
+      Fib.trans τ i₁ (elim-elt {⟦ Γ ⟧ctxt} {Ex} {⟦ τ ⟧} (ctrl-dep τ) body ⟦ M ⟧tm {gi} g)
+                   (Fib.+-cong τ i₁ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .func-resp-≈
+                                      {FD.Fam𝒞-P.pair (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                         (FD.Fam𝒞._∘_ ⟦ N ⟧tm (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
                                       {m , yN}
-                                      (Fpair-elt {FDP.prod ⟦ Γ ⟧ctxt Ex} {Ex} {⟦ σ ⟧}
-                                         (FDP.p₂ {⟦ Γ ⟧ctxt} {Ex})
-                                         (FDC._∘_ ⟦ N ⟧tm (FDP.p₁ {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
-                                  (F.refl τ i₁))
+                                      (Fpair-elt {FD.Fam𝒞-P.prod ⟦ Γ ⟧ctxt Ex} {Ex} {⟦ σ ⟧}
+                                         (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                         (FD.Fam𝒞._∘_ ⟦ N ⟧tm (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
+                                  (Fib.refl τ i₁))
       where
       Ex = HasWeakExponentials.exp model.SemiModExp ⟦ σ ⟧ ⟦ τ ⟧
-      body = FDC._∘_ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
-               (FDP.pair (FDP.p₂ {⟦ Γ ⟧ctxt} {Ex})
-                                             (FDC._∘_ ⟦ N ⟧tm (FDP.p₁ {⟦ Γ ⟧ctxt} {Ex})))
+      body = FD.Fam𝒞._∘_ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
+               (FD.Fam𝒞-P.pair (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                             (FD.Fam𝒞._∘_ ⟦ N ⟧tm (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {Ex})))
 
-    ctrl-dep-part : F._≈_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero)) (F._+_ τ i₁ (ctrl-dep-at τ i₁ s) (ctrl-dep-at τ i₁ a))
-    ctrl-dep-part = F.trans τ i₁ (ctrl-dep τ .at i₁ .func-resp-≈ (+-cong ≈-refl o₀)) (ctrl-dep-double τ i₁ s a)
+    ctrl-dep-part : Fib._≈_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero)) (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ s) (ctrl-dep-at τ i₁ a))
+    ctrl-dep-part = Fib.trans τ i₁ (ctrl-dep τ .at i₁ .func-resp-≈ (+-cong ≈-refl o₀)) (ctrl-dep-double τ i₁ s a)
 
-    eval-part : F._≈_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
+    eval-part : Fib._≈_ τ i₁ (evalΠj .func (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                            (evalΠj .func m)
-    eval-part = evalΠj .func-resp-≈ {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))} {m}
+    eval-part = evalΠj .func-resp-≈ {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))} {m}
                   (payload-ctrl-dep σ τ f s (⟦ M ⟧tm .famf .transf gi .func g))
 
   -- The application's relation reads the body's at the closure's root and the application's
@@ -794,11 +791,10 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   app-op : ∀ k → ap (U ∘ (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩)) (inputs γ s x) k
                  ≈s ap U (body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z) k
   app-op k =
-    ≈-trans (app-congₘ (MC.∘-cong₂ {f = U} split) y k)
+    ≈-trans (app-congₘ (M.∘-cong (≈ₘ-refl {M = U}) split) y k)
     (≈-trans (app-∘ U ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) y k)
              (app-congᵥ U body-at k))
     where
-    module MC = Category M.cat
     y = inputs γ s x
     from-ctrl : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ))
     from-ctrl = M.in₁ {1} ∘ wctrl
@@ -811,7 +807,7 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
     split =
       ≈ₘ-trans (M.∥-pair (from-ctrl M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T)
                (M.+ₘ-cong (≈ₘ-trans (M.∥-pair from-ctrl from-closure M.I R)
-                                    (M.+ₘ-cong (MC.id-right {f = from-ctrl}) ≈ₘ-refl))
+                                    (M.+ₘ-cong (M.id-right {M = from-ctrl}) ≈ₘ-refl))
                           ≈ₘ-refl)
 
     body-at : ∀ l → ap ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) y l ≈s
@@ -859,7 +855,7 @@ fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cts) {γ 
   D-c = op-deps ω .sfunc (args-idx Ms gi)
   Z = args-vec Ms gi g
   p = ⟦ Ms ⟧tms .idxf .sfunc gi
-  C = collect is .FCμ.famf .transf (𝒟-arg-product is .idxf .sfunc p)
+  C = collect is .FC.famf .transf (𝒟-arg-product is .idxf .sfunc p)
   tp-elt = 𝒟-arg-product is .famf .transf p .func (⟦ Ms ⟧tms .famf .transf gi .func g)
   IH : ∀ l → ap Rs (inputs γ s x) l ≈s ((c ·ₛ s) +ₛ Z l)
   IH = fundamental-s cts D rγ s x g rel
@@ -870,7 +866,7 @@ fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cts) {γ 
                  (app-congₘ (op-deps ω .sfunc-resp-≈ (Prf.prf (fundamental-vals cts D rγ))) Z k)))
 fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cts) {γ = γ} (⇓-brel {vs = vs} {R = Rs} D) {gi} rγ s x g rel =
   DepRel-bool ω vs b {i} e (ap (wctrl +ₘ (brel-deps ω vs b ∘ Rs)) (inputs γ s x))
-    (F._+_ (unit [+] unit) i (ctrl-dep-at (unit [+] unit) i s) (⟦ brel ω Ms ⟧tm .famf .transf gi .func g)) s Z op-side model-side
+    (Fib._+_ (unit [+] unit) i (ctrl-dep-at (unit [+] unit) i s) (⟦ brel ω Ms ⟧tm .famf .transf gi .func g)) s Z op-side model-side
   where
   b = rel-pred ω .sfunc vs
   i = ⟦ brel ω Ms ⟧tm .idxf .sfunc gi
@@ -887,13 +883,13 @@ fundamental {Γ = Γ} (brel {is = is} {ω = ω} {Ms = Ms} cts) {γ = γ} (⇓-br
             (+-cong (ap-wctrl {width-env γ} {width (bool→val b)} (inputs γ s x) k)
                     (≈-trans (app-∘ (brel-deps ω vs b) Rs (inputs γ s x) k) (app-congᵥ (brel-deps ω vs b) IH k)))
   den = ⟦ brel ω Ms ⟧tm .famf .transf gi .func g
-  model-side : F._≈_ (unit [+] unit) b
-                 (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func (F._+_ (unit [+] unit) i (ctrl-dep-at (unit [+] unit) i s) den))
-                 (F._+_ (unit [+] unit) b (ctrl-dep-at (unit [+] unit) b s) (interp.bool-elt b (ap D-vs Z zero)))
+  model-side : Fib._≈_ (unit [+] unit) b
+                 (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func (Fib._+_ (unit [+] unit) i (ctrl-dep-at (unit [+] unit) i s) den))
+                 (Fib._+_ (unit [+] unit) b (ctrl-dep-at (unit [+] unit) b s) (interp.bool-elt b (ap D-vs Z zero)))
   model-side =
-    F.trans (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .preserve-+ {ctrl-dep-at (unit [+] unit) i s} {den})
-      (F.+-cong (unit [+] unit) b (ctrl-dep-natural (unit [+] unit) {i} {b} e s)
-        (F.trans (unit [+] unit) b
+    Fib.trans (unit [+] unit) b (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .preserve-+ {ctrl-dep-at (unit [+] unit) i s} {den})
+      (Fib.+-cong (unit [+] unit) b (ctrl-dep-natural (unit [+] unit) {i} {b} e s)
+        (Fib.trans (unit [+] unit) b
           (interp.test.test-elt ω (⟦ Ms ⟧tms .idxf .sfunc gi) (⟦ Ms ⟧tms .famf .transf gi .func g) b e)
           (interp.bool-elt-cong b (app-congₘ (rel-deps ω .sfunc-resp-≈ args-eq) Z zero))))
 
@@ -905,7 +901,7 @@ fundamental-s {Ms = _} (ct ∷ cts) {γ = γ} (_∷_ {i = i} {is = is} {v = v} {
                             (≈-trans (app-congᵥ u₁ IH₁ k) (app-+ u₁ (λ _ → c ·ₛ s) y₁ k)))
                    (≈-trans (app-∘ u₂ Rs (inputs γ s x) k)
                             (≈-trans (app-congᵥ u₂ IH₂ k) (app-+ u₂ (λ _ → c ·ₛ s) Z k))))
-  (≈-trans Sc.+-interchange
+  (≈-trans S.+-interchange
            (+-cong (in-const {sort-width i} {bases-width is} (c ·ₛ s) k)
                    (≈-sym (args-vec-cons M Ms gi g k)))))
   where
@@ -947,9 +943,9 @@ val-rel : ∀ {τ} (fo : first-order τ) → μ-free fo → (v : Val τ) → Val
 val-rel unit          _         unit       = tt
 val-rel (base s)      _         (const a)  = ⟪ Setoid.refl (sort-index s) ⟫
 val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inl v) =
-  val-idx fo₁ v , val-rel fo₁ m₁ v , ⟪ IX.refl (τ₁ [+] τ₂) {inj₁ (val-idx fo₁ v)} ⟫
+  val-idx fo₁ v , val-rel fo₁ m₁ v , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₁ (val-idx fo₁ v)} ⟫
 val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inr v) =
-  val-idx fo₂ v , val-rel fo₂ m₂ v , ⟪ IX.refl (τ₁ [+] τ₂) {inj₂ (val-idx fo₂ v)} ⟫
+  val-idx fo₂ v , val-rel fo₂ m₂ v , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₂ (val-idx fo₂ v)} ⟫
 val-rel (fo₁ [×] fo₂) (m₁ , m₂) (pair v u) = val-rel fo₁ m₁ v , val-rel fo₂ m₂ u
 
 env-rel : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → μ-free-ctxt Γ-fo → (γ : Env Γ) →
@@ -958,13 +954,13 @@ env-rel emp         _        emp     = emp
 env-rel (Γ-fo ▸ fo) (mΓ , m) (γ · v) = env-rel Γ-fo mΓ γ · val-rel fo m v
 
 val-rel-unique : ∀ {τ} (fo : first-order τ) → μ-free fo → {v : Val τ} {i : Ix τ} →
-                 ValRel τ v i → IX._≈_ τ i (val-idx fo v)
+                 ValRel τ v i → Ix._≈_ τ i (val-idx fo v)
 val-rel-unique unit          _         {unit}      r = prop.tt
 val-rel-unique (base s)      _         {const a}   ⟪ e ⟫ = e
 val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inl v} {i} (i' , r , ⟪ e ⟫) =
-  IX.trans (τ₁ [+] τ₂) {i} {inj₁ i'} {inj₁ (val-idx fo₁ v)} e (val-rel-unique fo₁ m₁ r)
+  Ix.trans (τ₁ [+] τ₂) {i} {inj₁ i'} {inj₁ (val-idx fo₁ v)} e (val-rel-unique fo₁ m₁ r)
 val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inr v} {i} (i' , r , ⟪ e ⟫) =
-  IX.trans (τ₁ [+] τ₂) {i} {inj₂ i'} {inj₂ (val-idx fo₂ v)} e (val-rel-unique fo₂ m₂ r)
+  Ix.trans (τ₁ [+] τ₂) {i} {inj₂ i'} {inj₂ (val-idx fo₂ v)} e (val-rel-unique fo₂ m₂ r)
 val-rel-unique (fo₁ [×] fo₂) (m₁ , m₂) {pair v u} {i , j} (r , r') =
   val-rel-unique fo₁ m₁ r , val-rel-unique fo₂ m₂ r'
 
@@ -972,6 +968,6 @@ val-rel-unique (fo₁ [×] fo₂) (m₁ , m₂) {pair v u} {i , j} (r , r') =
 soundness-val : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) →
                 μ-free-ctxt Γ-fo → μ-free fo →
                 ∀ {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ]) →
-                IX._≈_ τ (⟦ t ⟧tm .idxf .sfunc (env-idx Γ-fo γ)) (val-idx fo v)
+                Ix._≈_ τ (⟦ t ⟧tm .idxf .sfunc (env-idx Γ-fo γ)) (val-idx fo v)
 soundness-val Γ-fo fo mΓ m ct D = val-rel-unique fo m (fundamental-val ct D (env-rel Γ-fo mΓ _))
 
