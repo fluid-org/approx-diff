@@ -354,6 +354,14 @@ ctrl-dep-clo {σ} {τ} f s =
   ≈-trans +-runit +-runit ,
   Semimodule.+-lunit (Payload σ τ f) {Semimodule.ε (Payload σ τ f)}
 
+payload-ctrl-dep : ∀ σ τ (f : Ix (σ [→] τ)) s (d : ∣ Fib (σ [→] τ) f ∣) →
+                   Semimodule._≈_ (Payload σ τ f) (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)) (proj₂ d)
+payload-ctrl-dep σ τ f s d =
+  P.trans {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {P._+_ P.ε (proj₂ d)} {proj₂ d}
+    (P.+-cong {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {P.ε} {proj₂ d} {proj₂ d} (proj₂ (ctrl-dep-clo {σ} {τ} f s)) (P.refl {proj₂ d}))
+    (P.+-lunit {proj₂ d})
+  where module P = Semimodule (Payload σ τ f)
+
 ctrl-dep-natural : ∀ τ {i i' : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i') s →
              F._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (ctrl-dep-at τ i s)) (ctrl-dep-at τ i' s)
 ctrl-dep-natural τ e s = ctrl-dep τ .Constant.at-natural e .func-eq ≈-refl
@@ -485,14 +493,10 @@ ctrl-add (σ [→] τ) {clo γ' t} {f} r s {o} {d} (h₀ , hc) =
          (F.+-cong τ (f .idxf .sfunc j)
             (evalΠ σ τ f j .func-resp-≈
                {proj₂ d} {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)}
-               (P.sym {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {proj₂ d}
-                 (P.trans {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {P._+_ P.ε (proj₂ d)} {proj₂ d}
-                   (P.+-cong {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {P.ε} {proj₂ d} {proj₂ d}
-                      (proj₂ (ctrl-dep-clo {σ} {τ} f s)) (P.refl {proj₂ d}))
-                   (P.+-lunit {proj₂ d}))))
+               (Semimodule.sym (Payload σ τ f) {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {proj₂ d}
+                  (payload-ctrl-dep σ τ f s d)))
             (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
       (hc (s' +ₛ (c ·ₛ s)) rv z y (DepRel⊑-resp-ctrl σ rv (≈-sym e₀) hz) D)
-  where module P = Semimodule (Payload σ τ f)
 
 -- Looking up a variable in a related environment.
 lookup-val : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} {gi} → EnvValRel γ gi →
@@ -618,6 +622,20 @@ elimF-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (f : Mor (FDP.prod Γ' X) C)
                 (f .famf .transf (γi , xi) .func (γe , y))
                 (cC .at (f .idxf .sfunc (γi , xi)) .func a))
 elimF-elt cC f {γi} {xi} γe a y = elim-root-elt (cC .at (f .idxf .sfunc (γi , xi))) (f .famf .transf (γi , xi)) γe a y
+
+elim-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (body : Mor (FDP.prod Γ' X) C) (f : Mor Γ' (FD.Lf X))
+           {γi : Setoid.Carrier (Γ' .idx)} (γe : ∣ Γ' .fam .fm γi ∣) →
+           Semimodule._≈_ (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
+             (FDC._∘_ (FD.elimF cC body) (FDP.pair (FDC.id Γ') f) .famf .transf γi .func γe)
+             (Semimodule._+_ (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
+               (body .famf .transf (γi , f .idxf .sfunc γi) .func (γe , proj₂ (f .famf .transf γi .func γe)))
+               (cC .at (body .idxf .sfunc (γi , f .idxf .sfunc γi)) .func (proj₁ (f .famf .transf γi .func γe))))
+elim-elt {Γ'} {X} {C} cC body f {γi} γe =
+  Semimodule.trans (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
+    (FD.elimF cC body .famf .transf (γi , f .idxf .sfunc γi) .func-resp-≈
+       {FDP.pair (FDC.id Γ') f .famf .transf γi .func γe} {γe , f .famf .transf γi .func γe}
+       (Fpair-elt {Γ'} {Γ'} {FD.Lf X} (FDC.id Γ') f γi γe))
+    (elimF-elt {Γ'} {X} {C} cC body {γi} {f .idxf .sfunc γi} γe (proj₁ (f .famf .transf γi .func γe)) (proj₂ (f .famf .transf γi .func γe)))
 
 -- Being below the control dependence is monotone in the control input's value, and a relation is a relation up to
 -- zero.

@@ -621,12 +621,8 @@ fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} ct) {γ = γ} (⇓-fst
   o'₀ : o' zero ≈s ((c ·ₛ s) +ₛ a₀)
   o'₀ = ≈-trans (proj₁ IH) (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s)) (≈-refl {a₀}))
   G-form : F._≈_ σ i (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (F._+_ σ i m₁ (ctrl-dep-at σ i a₀))
-  G-form =
-    F.trans σ i (FD.elimF (ctrl-dep σ) body .famf .transf (gi , ij) .func-resp-≈
-                   (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [×] τ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))
-                (elimF-elt {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ) body {gi} {ij} g a₀ (proj₂ Mg))
-    where body = FDC._∘_ (FDP.p₁ {⟦ σ ⟧} {⟦ τ ⟧})
-                                     (FDP.p₂ {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧})
+  G-form = elim-elt {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ)
+             (FDC._∘_ (FDP.p₁ {⟦ σ ⟧} {⟦ τ ⟧}) (FDP.p₂ {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
 fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} ct) {γ = γ} (⇓-snd {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   DepRel-resp τ r₂ (λ k → ≈-sym (proj-op {γ = γ} u {width v} {width u} (M.p₂ {width v} {width u}) R' s x k))
     (proj-den τ j s a₀ (o' zero) (proj₂ (proj₂ (F._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) Mg)))
@@ -645,12 +641,8 @@ fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} ct) {γ = γ} (⇓-snd
   o'₀ : o' zero ≈s ((c ·ₛ s) +ₛ a₀)
   o'₀ = ≈-trans (proj₁ IH) (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s)) (≈-refl {a₀}))
   G-form : F._≈_ τ j (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (F._+_ τ j m₂ (ctrl-dep-at τ j a₀))
-  G-form =
-    F.trans τ j (FD.elimF (ctrl-dep τ) body .famf .transf (gi , ij) .func-resp-≈
-                   (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [×] τ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))
-                (elimF-elt {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (ctrl-dep τ) body {gi} {ij} g a₀ (proj₂ Mg))
-    where body = FDC._∘_ (FDP.p₂ {⟦ σ ⟧} {⟦ τ ⟧})
-                                     (FDP.p₂ {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧})
+  G-form = elim-elt {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (ctrl-dep τ)
+             (FDC._∘_ (FDP.p₂ {⟦ σ ⟧} {⟦ τ ⟧}) (FDP.p₂ {⟦ Γ ⟧ctxt} {FDP.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
 fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi} rγ s x g rel =
   root , clause
   where
@@ -694,13 +686,14 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
             (F.+-cong τ (f .idxf .sfunc j)
                (F.trans τ (f .idxf .sfunc j) (F.sym τ (f .idxf .sfunc j) β)
                   (evalΠ σ τ f j .func-resp-≈
-                     {proj₂ L} {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} pd))
+                     {proj₂ L} {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)}
+                     (Semimodule.sym (Payload σ τ f) {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} {proj₂ L}
+                        (payload-ctrl-dep σ τ f s L))))
                (F.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))))
       (fundamental ct D (rγ · rv) (s' +ₛ (c ·ₛ s)) (λ k → body-input γ v (s' +ₛ (c ·ₛ s)) x z (suc k)) (g , y)
          (EnvDepRel-resp rγ (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₁-++ x z k)) (EnvDepRel-mono rγ s s' rel) ,
           DepRel⊑-resp σ rv (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₂-++ x z k)) (DepRel⊑-resp-ctrl σ rv (+-cong ≈-refl o₀) hz)))
     where
-    module P = Semimodule (Payload σ τ f)
     L = ⟦ lam t' ⟧tm .famf .transf gi .func g
 
     -- The payload of the lambda's fibre evaluated at the argument is the body's fibre on the
@@ -715,13 +708,6 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
                                 (model.FE.nudge-in₁ gi))
     β = SP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {x = FibC Γ gi} {f = Fλ} j
           .func-eq (Semimodule.refl (FibC Γ gi) {g})
-
-    pd : P._≈_ (proj₂ L) (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L))
-    pd = P.sym {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} {proj₂ L}
-           (P.trans {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} {P._+_ P.ε (proj₂ L)} {proj₂ L}
-              (P.+-cong {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {P.ε} {proj₂ L} {proj₂ L}
-                 (proj₂ (ctrl-dep-clo {σ} {τ} f s)) (P.refl {proj₂ L}))
-              (P.+-lunit {proj₂ L}))
 fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ = γ}
             (⇓-app {Γ' = Γ'} {γ' = γ'} {t' = t'} {v = v} {u = u} {R = R} {T = T} {U = U} D₁ D₂ D₃) {gi} rγ s x g rel =
   DepRel-resp τ r₃ (λ k → ≈-sym (app-op k)) den-eq C
@@ -737,7 +723,6 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   a = proj₁ (⟦ M ⟧tm .famf .transf gi .func g)
   m = proj₂ (⟦ M ⟧tm .famf .transf gi .func g)
   yN = ⟦ N ⟧tm .famf .transf gi .func g
-  module P = Semimodule (Payload σ τ f)
   evalΠj = evalΠ σ τ f j
   -- The operational vectors of the function and the argument, and of the application.
   o : ∣ 𝔽 (suc (width-env γ')) ∣
@@ -777,18 +762,15 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
     G-form : F._≈_ τ i₁ (⟦ app M N ⟧tm .famf .transf gi .func g)
                (F._+_ τ i₁ (F._+_ τ i₁ (evalΠj .func m) (f .famf .transf j .func yN)) (ctrl-dep-at τ i₁ a))
     G-form =
-      F.trans τ i₁ (FD.elimF (ctrl-dep τ) body .famf .transf (gi , f) .func-resp-≈
-                      {FDP.pair (FDC.id ⟦ Γ ⟧ctxt) ⟦ M ⟧tm .famf .transf gi .func g} {g , (a , m)}
-                      (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ σ [→] τ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ M ⟧tm gi g))
-      (F.trans τ i₁ (elimF-elt {⟦ Γ ⟧ctxt} {Ex} {⟦ τ ⟧} (ctrl-dep τ) body {gi} {f} g a m)
-                    (F.+-cong τ i₁ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .func-resp-≈
+      F.trans τ i₁ (elim-elt {⟦ Γ ⟧ctxt} {Ex} {⟦ τ ⟧} (ctrl-dep τ) body ⟦ M ⟧tm {gi} g)
+                   (F.+-cong τ i₁ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .func-resp-≈
                                       {FDP.pair (FDP.p₂ {⟦ Γ ⟧ctxt} {Ex})
                                          (FDC._∘_ ⟦ N ⟧tm (FDP.p₁ {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
                                       {m , yN}
                                       (Fpair-elt {FDP.prod ⟦ Γ ⟧ctxt Ex} {Ex} {⟦ σ ⟧}
                                          (FDP.p₂ {⟦ Γ ⟧ctxt} {Ex})
                                          (FDC._∘_ ⟦ N ⟧tm (FDP.p₁ {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
-                                   (F.refl τ i₁)))
+                                  (F.refl τ i₁))
       where
       Ex = HasWeakExponentials.exp model.SemiModExp ⟦ σ ⟧ ⟦ τ ⟧
       body = FDC._∘_ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
@@ -800,13 +782,8 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
 
     eval-part : F._≈_ τ i₁ (evalΠj .func (proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                            (evalΠj .func m)
-    eval-part =
-      F.trans τ i₁ (evalΠj .preserve-+ {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {m})
-      (F.trans τ i₁ (F.+-cong τ i₁ (F.trans τ i₁ (evalΠj .func-resp-≈ {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {P.ε}
-                                                    (proj₂ (ctrl-dep-clo {σ} {τ} f s)))
-                                                 (evalΠj .preserve-ze))
-                                   (F.refl τ i₁))
-                    (F.+-lunit τ i₁))
+    eval-part = evalΠj .func-resp-≈ {proj₂ (F._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))} {m}
+                  (payload-ctrl-dep σ τ f s (⟦ M ⟧tm .famf .transf gi .func g))
 
   -- The application's relation reads the body's at the closure's root and the application's
   -- weighted control input as control input, and at the closure's cells and the argument as
