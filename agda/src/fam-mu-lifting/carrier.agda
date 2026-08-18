@@ -50,7 +50,7 @@ private
 open Lc public
   using (L; root; inj; copair-root; copair-inj; lifting-ext;
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
-         L-const; L-const-cong; L-const-natural;
+         L-elem; L-elem-cong; L-elem-natural;
          strong-Lmap; strong-Lmap-cong; strong-Lmap-natural; strong-Lmap-pre; strong-Lmap-post; strong-Lmap-co; strong-Lmap-p₂;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
@@ -125,52 +125,52 @@ injF {X} .famf ._⇒f_.transf x = inj
 injF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
   ≈-sym (Lmap-inj (X .fam .subst e))
 
--- A constant at every fibre, natural under the transports: what an eliminator writes when it
--- consumes a root.
-record Constant (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
+-- A section of a family: an element of every fibre, natural under the transports. It is what an
+-- eliminator writes when it consumes a root.
+record Section (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
   field
     at         : ∀ x → 𝟙c ⇒ X .fam .fm x
     at-natural : ∀ {x₁ x₂} (e : _≈s_ (X .idx) x₁ x₂) → (X .fam .subst e ∘ at x₁) ≈ at x₂
 
-open Constant public
+open Section public
 
--- Constants are structural: simple families are constant at any chosen morphism, and constants
+-- Sections are structural: a simple family has a section at any chosen element, and sections
 -- close under the lifting, coproducts and products, with unit weight at each root the lifting
 -- adjoins.
-simple-constant : ∀ {A : Setoid os (os ⊔ es)} {x : obj} → (𝟙c ⇒ x) → Constant simple[ A , x ]
-simple-constant c .at _ = c
-simple-constant c .at-natural _ = id-left
+simple-section : ∀ {A : Setoid os (os ⊔ es)} {x : obj} → (𝟙c ⇒ x) → Section simple[ A , x ]
+simple-section c .at _ = c
+simple-section c .at-natural _ = id-left
 
-Lf-constant : ∀ {X : Obj} → Constant X → Constant (Lf X)
-Lf-constant c .at x = L-const (c .at x)
-Lf-constant {X} c .at-natural e =
-  ≈-trans (L-const-natural (X .fam .subst e) (c .at _)) (L-const-cong (c .at-natural e))
+Lf-section : ∀ {X : Obj} → Section X → Section (Lf X)
+Lf-section c .at x = L-elem (c .at x)
+Lf-section {X} c .at-natural e =
+  ≈-trans (L-elem-natural (X .fam .subst e) (c .at _)) (L-elem-cong (c .at-natural e))
 
-Lf-root : ∀ {X : Obj} → Constant (Lf X)
+Lf-root : ∀ {X : Obj} → Section (Lf X)
 Lf-root .at x = root
 Lf-root {X} .at-natural e = Lmap-root (X .fam .subst e)
 
-coprod-constant : ∀ {X Y : Obj} → Constant X → Constant Y →
-                  Constant (HasCoproducts.coprod coproducts X Y)
-coprod-constant c d .at (inj₁ x) = c .at x
-coprod-constant c d .at (inj₂ y) = d .at y
-coprod-constant c d .at-natural {inj₁ _} {inj₁ _} e = c .at-natural e
-coprod-constant c d .at-natural {inj₂ _} {inj₂ _} e = d .at-natural e
+coprod-section : ∀ {X Y : Obj} → Section X → Section Y →
+                  Section (HasCoproducts.coprod coproducts X Y)
+coprod-section c d .at (inj₁ x) = c .at x
+coprod-section c d .at (inj₂ y) = d .at y
+coprod-section c d .at-natural {inj₁ _} {inj₁ _} e = c .at-natural e
+coprod-section c d .at-natural {inj₂ _} {inj₂ _} e = d .at-natural e
 
-prod-constant : ∀ {X Y : Obj} → Constant X → Constant Y → Constant (Fam𝒞-P.prod X Y)
-prod-constant c d .at (x , y) = pair (c .at x) (d .at y)
-prod-constant c d .at-natural (e₁ , e₂) =
+prod-section : ∀ {X Y : Obj} → Section X → Section Y → Section (Fam𝒞-P.prod X Y)
+prod-section c d .at (x , y) = pair (c .at x) (d .at y)
+prod-section c d .at-natural (e₁ , e₂) =
   ≈-trans (pair-compose _ _ _ _) (pair-cong (c .at-natural e₁) (d .at-natural e₂))
 
--- Scaling a constant by an endomorphism of the unit object.
-scale-const : ∀ {X : Obj} → (𝟙c ⇒ 𝟙c) → Constant X → Constant X
-scale-const w c .at x = c .at x ∘ w
-scale-const w c .at-natural e =
+-- Scaling a section by an endomorphism of the unit object.
+scale-section : ∀ {X : Obj} → (𝟙c ⇒ 𝟙c) → Section X → Section X
+scale-section w c .at x = c .at x ∘ w
+scale-section w c .at-natural e =
   ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (c .at-natural e) ≈-refl)
 
 -- Eliminating a root in context: the payload continues, and the root produces the target's
--- constant.
-elimF : ∀ {Γ X C : Obj} → Constant C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
+-- section.
+elimF : ∀ {Γ X C : Obj} → Section C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
 elimF cC f .idxf = f .idxf
 elimF cC f .famf ._⇒f_.transf (γ , x) =
   elim-root (cC .at (f .idxf .prop-setoid._⇒_.func (γ , x))) (f .famf ._⇒f_.transf (γ , x))
@@ -210,93 +210,93 @@ module Tree {n} (δ : Fin n → Obj) where
   open Srt.Tree (λ i → δ i .idx) public
   open Fibre δ public
 
--- A constant for a polynomial: one at every constant leaf.
-PolyConst : ∀ {n} → Poly n → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
-PolyConst (const A) = Constant A
-PolyConst (var i)   = Lift (o ⊔ m ⊔ e ⊔ os ⊔ es) ⊤
-PolyConst (P' + Q') = PolyConst P' ×T PolyConst Q'
-PolyConst (P' × Q') = PolyConst P' ×T PolyConst Q'
-PolyConst (μ P')    = PolyConst P'
+-- Sections for a polynomial: one at every constant leaf.
+PolySection : ∀ {n} → Poly n → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
+PolySection (const A) = Section A
+PolySection (var i)   = Lift (o ⊔ m ⊔ e ⊔ os ⊔ es) ⊤
+PolySection (P' + Q') = PolySection P' ×T PolySection Q'
+PolySection (P' × Q') = PolySection P' ×T PolySection Q'
+PolySection (μ P')    = PolySection P'
 
--- The unit constant of a μ-carrier, by recursion over trees: constants for the polynomial and
--- the environment determine a constant at every fibre, natural in the tree, with unit weight at
+-- The unit section of a μ-carrier, by recursion over trees: sections for the polynomial and
+-- the environment determine an element at every fibre, natural in the tree, with unit weight at
 -- each root.
-module MuUnit {n} (δ : Fin n → Obj) (δ-const : ∀ i → Constant (δ i)) where
+module MuSection {n} (δ : Fin n → Obj) (δ-section : ∀ i → Section (δ i)) where
   open Tree δ
 
-  DecoAssignConst : ∀ {r} → DecoAssign r → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
-  DecoConst : ∀ {s} → Deco s → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
-  DecoAssignConst {inj₁ _} _ = Lift (o ⊔ m ⊔ e ⊔ os ⊔ es) ⊤
-  DecoAssignConst {inj₂ _} d = DecoConst d
-  DecoConst (mkDeco Q d) = PolyConst Q ×T (∀ i → DecoAssignConst (d i))
+  DecoAssignSection : ∀ {r} → DecoAssign r → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
+  DecoSection : ∀ {s} → Deco s → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
+  DecoAssignSection {inj₁ _} _ = Lift (o ⊔ m ⊔ e ⊔ os ⊔ es) ⊤
+  DecoAssignSection {inj₂ _} d = DecoSection d
+  DecoSection (mkDeco Q d) = PolySection Q ×T (∀ i → DecoAssignSection (d i))
 
-  deco-ext-const : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
+  deco-ext-section : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
                    {d : ∀ i → DecoAssign (ρ̄ i)} →
-                   PolyConst Q → (∀ i → DecoAssignConst (d i)) →
-                   ∀ i → DecoAssignConst (deco-ext Q d i)
-  deco-ext-const Q Qc dc Fin.zero    = Qc , dc
-  deco-ext-const Q Qc dc (Fin.suc i) = dc i
+                   PolySection Q → (∀ i → DecoAssignSection (d i)) →
+                   ∀ i → DecoAssignSection (deco-ext Q d i)
+  deco-ext-section Q Qc dc Fin.zero    = Qc , dc
+  deco-ext-section Q Qc dc (Fin.suc i) = dc i
 
   mutual
     fib-unit : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
-               (d : ∀ i → DecoAssign (ρ̄ i)) → PolyConst Q → (∀ i → DecoAssignConst (d i)) →
+               (d : ∀ i → DecoAssign (ρ̄ i)) → PolySection Q → (∀ i → DecoAssignSection (d i)) →
                (t : W ∣ Q ∣ ρ̄) → 𝟙c ⇒ fib Q d t
-    fib-unit Q d Qc dc (sup x) = fib-shape-unit Q (deco-ext Q d) Qc (deco-ext-const Q Qc dc) x
+    fib-unit Q d Qc dc (sup x) = fib-shape-unit Q (deco-ext Q d) Qc (deco-ext-section Q Qc dc) x
 
     fib-shape-unit : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Srt.Sort n}
-                     (d : ∀ i → DecoAssign (η̄ i)) → PolyConst Q → (∀ i → DecoAssignConst (d i)) →
+                     (d : ∀ i → DecoAssign (η̄ i)) → PolySection Q → (∀ i → DecoAssignSection (d i)) →
                      (x : ⟦ ∣ Q ∣ ⟧shape η̄) → 𝟙c ⇒ fib-shape Q d x
     fib-shape-unit (const A) d Ac dc x = Ac .at x
     fib-shape-unit (var i)   d _ dc x = fib-el-unit _ (d i) (dc i) x
-    fib-shape-unit (P' + Q') d (Pc , Qc) dc (inj₁ x) = L-const (fib-shape-unit P' d Pc dc x)
-    fib-shape-unit (P' + Q') d (Pc , Qc) dc (inj₂ y) = L-const (fib-shape-unit Q' d Qc dc y)
+    fib-shape-unit (P' + Q') d (Pc , Qc) dc (inj₁ x) = L-elem (fib-shape-unit P' d Pc dc x)
+    fib-shape-unit (P' + Q') d (Pc , Qc) dc (inj₂ y) = L-elem (fib-shape-unit Q' d Qc dc y)
     fib-shape-unit (P' × Q') d (Pc , Qc) dc (x , y) =
-      L-const (pair (fib-shape-unit P' d Pc dc x) (fib-shape-unit Q' d Qc dc y))
+      L-elem (pair (fib-shape-unit P' d Pc dc x) (fib-shape-unit Q' d Qc dc y))
     fib-shape-unit (μ Q')    d Qc dc x = fib-unit Q' d Qc dc x
 
-    fib-el-unit : ∀ (r : Fin n ⊎ Srt.Sort n) (dr : DecoAssign r) → DecoAssignConst dr →
+    fib-el-unit : ∀ (r : Fin n ⊎ Srt.Sort n) (dr : DecoAssign r) → DecoAssignSection dr →
                   (x : El r) → 𝟙c ⇒ fib-el r dr x
-    fib-el-unit (inj₁ p) _ _ x = δ-const p .at x
+    fib-el-unit (inj₁ p) _ _ x = δ-section p .at x
     fib-el-unit (inj₂ _) (mkDeco Q ρd) (Qc , ρdc) x = fib-unit Q ρd Qc ρdc x
 
   mutual
     fib-unit-natural : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
-                       (d : ∀ i → DecoAssign (ρ̄ i)) (Qc : PolyConst Q)
-                       (dc : ∀ i → DecoAssignConst (d i))
+                       (d : ∀ i → DecoAssign (ρ̄ i)) (Qc : PolySection Q)
+                       (dc : ∀ i → DecoAssignSection (d i))
                        {t t' : W ∣ Q ∣ ρ̄} (p : W-≈ t t') →
                        (fib-subst Q d {x = t} {y = t'} p ∘ fib-unit Q d Qc dc t)
                          ≈ fib-unit Q d Qc dc t'
     fib-unit-natural Q d Qc dc {sup x} {sup y} p =
-      fib-shape-unit-natural Q (deco-ext Q d) Qc (deco-ext-const Q Qc dc) p
+      fib-shape-unit-natural Q (deco-ext Q d) Qc (deco-ext-section Q Qc dc) p
 
     fib-shape-unit-natural : ∀ {j} (Q : Poly j) {η̄ : Fin j → Fin n ⊎ Srt.Sort n}
-                             (d : ∀ i → DecoAssign (η̄ i)) (Qc : PolyConst Q)
-                             (dc : ∀ i → DecoAssignConst (d i))
+                             (d : ∀ i → DecoAssign (η̄ i)) (Qc : PolySection Q)
+                             (dc : ∀ i → DecoAssignSection (d i))
                              {x y : ⟦ ∣ Q ∣ ⟧shape η̄} (p : shape≈ ∣ Q ∣ η̄ x y) →
                              (fib-shape-subst Q d p ∘ fib-shape-unit Q d Qc dc x)
                                ≈ fib-shape-unit Q d Qc dc y
     fib-shape-unit-natural (const A) d Ac dc p = Ac .at-natural p
     fib-shape-unit-natural (var i)   d _ dc p = fib-el-unit-natural _ (d i) (dc i) p
     fib-shape-unit-natural (P' + Q') d (Pc , Qc) dc {inj₁ _} {inj₁ _} p =
-      ≈-trans (L-const-natural _ _) (L-const-cong (fib-shape-unit-natural P' d Pc dc p))
+      ≈-trans (L-elem-natural _ _) (L-elem-cong (fib-shape-unit-natural P' d Pc dc p))
     fib-shape-unit-natural (P' + Q') d (Pc , Qc) dc {inj₂ _} {inj₂ _} p =
-      ≈-trans (L-const-natural _ _) (L-const-cong (fib-shape-unit-natural Q' d Qc dc p))
+      ≈-trans (L-elem-natural _ _) (L-elem-cong (fib-shape-unit-natural Q' d Qc dc p))
     fib-shape-unit-natural (P' × Q') d (Pc , Qc) dc {_ , _} {_ , _} (p₁ , p₂) =
-      ≈-trans (L-const-natural _ _)
-        (L-const-cong (≈-trans (pair-compose _ _ _ _)
+      ≈-trans (L-elem-natural _ _)
+        (L-elem-cong (≈-trans (pair-compose _ _ _ _)
           (pair-cong (fib-shape-unit-natural P' d Pc dc p₁)
                      (fib-shape-unit-natural Q' d Qc dc p₂))))
     fib-shape-unit-natural (μ Q')    d Qc dc {x} {y} p =
       fib-unit-natural Q' d Qc dc {x} {y} p
 
     fib-el-unit-natural : ∀ (r : Fin n ⊎ Srt.Sort n) (dr : DecoAssign r)
-                          (drc : DecoAssignConst dr) {x y : El r} (p : elEq r x y) →
+                          (drc : DecoAssignSection dr) {x y : El r} (p : elEq r x y) →
                           (fib-el-subst r dr p ∘ fib-el-unit r dr drc x) ≈ fib-el-unit r dr drc y
-    fib-el-unit-natural (inj₁ p) _ _ e = δ-const p .at-natural e
+    fib-el-unit-natural (inj₁ p) _ _ e = δ-section p .at-natural e
     fib-el-unit-natural (inj₂ _) (mkDeco Q ρd) (Qc , ρdc) {x} {y} e =
       fib-unit-natural Q ρd Qc ρdc {x} {y} e
 
-  μ-unit : ∀ (P : Poly (Data.Nat.suc n)) → PolyConst P → Constant (μ-fam P δ)
-  μ-unit P Pc .at t = fib-unit P (λ i → lift ttS) Pc (λ i → lift ttS) t
-  μ-unit P Pc .at-natural {t} {t'} e =
+  μ-section : ∀ (P : Poly (Data.Nat.suc n)) → PolySection P → Section (μ-fam P δ)
+  μ-section P Pc .at t = fib-unit P (λ i → lift ttS) Pc (λ i → lift ttS) t
+  μ-section P Pc .at-natural {t} {t'} e =
     fib-unit-natural P (λ i → lift ttS) Pc (λ i → lift ttS) {t} {t'} e

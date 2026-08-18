@@ -55,7 +55,7 @@ module FD = model.Fam⟨𝒟⟩μ
 open HasStrongCoproducts FD.strongCoproducts public using (copair)
 module SP = HasSetoidProducts model.SPmod
 
-open FD public using (Obj; Mor; idx; fam; fm; idxf; famf; Constant)
+open FD public using (Obj; Mor; idx; fam; fm; idxf; famf; Section)
 open indexed-family.Fam public using (subst)
 open indexed-family._⇒f_ public using (transf)
 open prop-setoid._⇒_ public using () renaming (func to sfunc; func-resp-≈ to sfunc-resp-≈)
@@ -64,10 +64,10 @@ open prop-setoid._⇒_ public using () renaming (func to sfunc; func-resp-≈ to
 module LI = language-interpretation Sig 0ℓ 0ℓ
   SemiMod.terminal SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀 model.SemiModExp
   interp.δ∅𝒟 interp.𝒟𝟙ty interp.𝒟unit-pt interp.𝒟-Sig-model model.ctrl-weight-endo
-  (λ {X} {Y} → model.exp-const {X} {Y}) interp.𝒟𝟙ty-const interp.𝒟-sort-const
+  (λ {X} {Y} → model.exp-section {X} {Y}) interp.𝒟𝟙ty-section interp.𝒟-sort-section
 
-open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; ty-unit; roll-mor; unroll-mor)
-open Constant public using (at)
+open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; unit-section; roll-mor; unroll-mor)
+open Section public using (at)
 
 module IP = model.sig-model.IP Sig ℐ
 open IP public using (collect)
@@ -418,13 +418,13 @@ ap-⊕₁-suc : ∀ {m b} (f : M.Matrix 1 1) (g : M.Matrix b m) (y : ∣ 𝔽 (s
 ap-⊕₁-suc {m} f g y k = ≈-trans (ap-⊕-suc {m} {1} f g y k) (app-congᵥ g (ap-p₂₁ {m} y) k)
 
 -- The control dependence elementwise: the weight times the control input's value at each root, the
--- payload's constant under it, and zero at a closure's payload.
+-- payload's section under it, and zero at a closure's payload.
 ctrl-dep-unit : ∀ i s → ctrl-dep-at unit i s zero ≈s (c ·ₛ s)
 ctrl-dep-unit i s =
   ≈-trans (+-cong (·-cong +-runit ≈-refl) ≈-refl)
           (≈-trans +-runit (≈-trans ·-lunit +-runit))
 
--- The same at a base sort: the sort's unit constant is the row of units, so scaling by the
+-- The same at a base sort: the sort's unit section is the row of units, so scaling by the
 -- control weight leaves the weight at every position of the result.
 ctrl-dep-base : ∀ {σ} i s (k : Fin (sort-width σ)) → ctrl-dep-at (base σ) i s k ≈s (c ·ₛ s)
 ctrl-dep-base i s k = ≈-trans +-runit (≈-trans ·-lunit +-runit)
@@ -465,7 +465,7 @@ payload-ctrl-dep σ τ f s d =
 
 ctrl-dep-natural : ∀ τ {i i' : Ix τ} (e : Ix._≈_ τ i i') s →
              Fib._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (ctrl-dep-at τ i s)) (ctrl-dep-at τ i' s)
-ctrl-dep-natural τ e s = ctrl-dep τ .Constant.at-natural e .func-eq ≈-refl
+ctrl-dep-natural τ e s = ctrl-dep τ .Section.at-natural e .func-eq ≈-refl
 
 -- The fibre relation respects the setoids on both sides.
 body-input-resp : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) {s s' x x' z} →
@@ -712,7 +712,7 @@ elim-root-elt {G} {X} {Y} k r γe a y =
           (Semimodule.refl G {γe} , Semimodule.+-lunit X {y})))
     (k .func-resp-≈ +-runit)
 
-elimF-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (f : Mor (FD.Fam𝒞-P.prod Γ' X) C)
+elimF-elt : ∀ {Γ' X C : Obj} (cC : Section C) (f : Mor (FD.Fam𝒞-P.prod Γ' X) C)
             {γi : Setoid.Carrier (Γ' .idx)} {xi : Setoid.Carrier (X .idx)}
             (γe : ∣ Γ' .fam .fm γi ∣) (a : Setoid.Carrier A) (y : ∣ X .fam .fm xi ∣) →
             Semimodule._≈_ (C .fam .fm (f .idxf .sfunc (γi , xi)))
@@ -722,7 +722,7 @@ elimF-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (f : Mor (FD.Fam𝒞-P.prod Γ
                 (cC .at (f .idxf .sfunc (γi , xi)) .func a))
 elimF-elt cC f {γi} {xi} γe a y = elim-root-elt (cC .at (f .idxf .sfunc (γi , xi))) (f .famf .transf (γi , xi)) γe a y
 
-elim-elt : ∀ {Γ' X C : Obj} (cC : Constant C) (body : Mor (FD.Fam𝒞-P.prod Γ' X) C) (f : Mor Γ' (FD.Lf X))
+elim-elt : ∀ {Γ' X C : Obj} (cC : Section C) (body : Mor (FD.Fam𝒞-P.prod Γ' X) C) (f : Mor Γ' (FD.Lf X))
            {γi : Setoid.Carrier (Γ' .idx)} (γe : ∣ Γ' .fam .fm γi ∣) →
            Semimodule._≈_ (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
              (FD.Fam𝒞._∘_ (FD.elimF cC body) (FD.Fam𝒞-P.pair (FD.Fam𝒞.id Γ') f) .famf .transf γi .func γe)
@@ -744,7 +744,7 @@ ctrl-dep-linear τ i s s' = ctrl-dep τ .at i .preserve-+ {s} {s'}
 
 ctrl-dep-c : ∀ τ (i : Ix τ) s → Fib._≈_ τ i (ctrl-dep-at τ i (c ·ₛ s)) (ctrl-dep-at τ i s)
 ctrl-dep-c τ i s =
-  LI.ty-unit τ (λ ()) (λ ()) .at i .func-resp-≈
+  LI.unit-section τ (λ ()) (λ ()) .at i .func-resp-≈
     (+-cong (≈-trans (≈-sym S.·-assoc) (·-cong c-idem ≈-refl)) ≈-refl)
 
 ⊑ctrl-dep-mono : ∀ τ (i : Ix τ) s s' m → Fib._⊑_ τ i m (ctrl-dep-at τ i s) → Fib._⊑_ τ i m (ctrl-dep-at τ i (s' +ₛ (c ·ₛ s)))

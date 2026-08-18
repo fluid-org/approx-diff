@@ -2,10 +2,10 @@
 
 -- The lifting adjoins a root: L P is the biproduct of the chosen unit object with P, with the root
 -- and the payload injection its two coproduct injections, so a map out of a lifted object is the
--- copairing of a constant at the root with a map on the payload, and the action on morphisms is
+-- copairing of an element at the root with a map on the payload, and the action on morphisms is
 -- natural outright. The transport combinators reindex a context-paired morphism across the lifting
 -- (strong-Lmap, the action of the lifting on morphisms in context) and eliminate a root in context
--- against a chosen constant (elim-root), in single-application forms whose inner morphism is applied
+-- against a chosen element (elim-root), in single-application forms whose inner morphism is applied
 -- once; the split forms and the unfolding bridge supply their laws. The lifting is a strong
 -- endofunctor, with the strength the transport of the identity.
 open import Level using (_⊔_)
@@ -94,7 +94,7 @@ root {P} = in₁
 inj : ∀ {P} → P ⇒ L P
 inj {P} = in₂
 
--- The root recovers the constant and the injection the payload map.
+-- The root recovers the element and the injection the payload map.
 copair-root : ∀ {P C} (c : 𝟙c ⇒ C) (M : P ⇒ C) → (copair c M ∘ root) ≈ c
 copair-root {P} c M = B.copair-in₁ 𝟙c P c M
 
@@ -124,16 +124,16 @@ Lmap-id {P} =
   ≈-trans (copair-cong ≈-refl id-right)
   (≈-trans (copair-cong (≈-sym id-left) (≈-sym id-left)) (B.copair-ext 𝟙c P (id (L P))))
 
--- Extending a constant across the lifting: unit weight at the root, the given constant on the
+-- Extending an element across the lifting: unit weight at the root, the given element on the
 -- payload.
-L-const : ∀ {X} → (𝟙c ⇒ X) → (𝟙c ⇒ L X)
-L-const c = root +m (inj ∘ c)
+L-elem : ∀ {X} → (𝟙c ⇒ X) → (𝟙c ⇒ L X)
+L-elem c = root +m (inj ∘ c)
 
-L-const-cong : ∀ {X} {c c' : 𝟙c ⇒ X} → c ≈ c' → L-const c ≈ L-const c'
-L-const-cong e = +m-cong ≈-refl (∘-cong ≈-refl e)
+L-elem-cong : ∀ {X} {c c' : 𝟙c ⇒ X} → c ≈ c' → L-elem c ≈ L-elem c'
+L-elem-cong e = +m-cong ≈-refl (∘-cong ≈-refl e)
 
-L-const-natural : ∀ {X Y} (f : X ⇒ Y) (c : 𝟙c ⇒ X) → (Lmap f ∘ L-const c) ≈ L-const (f ∘ c)
-L-const-natural f c =
+L-elem-natural : ∀ {X Y} (f : X ⇒ Y) (c : 𝟙c ⇒ X) → (Lmap f ∘ L-elem c) ≈ L-elem (f ∘ c)
+L-elem-natural f c =
   ≈-trans (comp-bilinear₂ (Lmap f) root (inj ∘ c))
     (+m-cong (Lmap-root f)
       (≈-trans (≈-sym (assoc (Lmap f) inj c))
@@ -356,8 +356,8 @@ strong-Lmap-split-pre {G₁} {G₂} {X₁} {X₂} {Y} g x r =
   ≈-trans (strong-Lmap-split-natural g x (id Y) (r ∘ prod-m g x) r (≈-sym id-left))
           (≈-trans (∘-cong Lmap-id ≈-refl) id-left)
 
--- Eliminating a root in context against a chosen constant: the context and the payload pass to the
--- continuation, and the root produces the constant.
+-- Eliminating a root in context against a chosen element: the context and the payload pass to the
+-- continuation, and the root produces the element.
 elim-root-split : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
 elim-root-split c r = copair (r ∘ in₁) (copair c (r ∘ in₂))
 
@@ -365,7 +365,7 @@ elim-root-split-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y}
                   c ≈ c' → r ≈ r' → elim-root-split c r ≈ elim-root-split c' r'
 elim-root-split-cong ec er = copair-cong (∘-cong er ≈-refl) (copair-cong ec (∘-cong er ≈-refl))
 
--- Transport across the lifting is the elimination whose constant is the root itself.
+-- Transport across the lifting is the elimination whose element is the root itself.
 strong-Lmap-split-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
                    strong-Lmap-split r ≈ elim-root-split root (inj ∘ r)
 strong-Lmap-split-strip r =

@@ -5,8 +5,8 @@
 -- carriers, and function spaces are lifted weak exponentials, so a closure carries a root like any
 -- other cell. Constructors inject their payload under the injection, whose root is zero: a cell
 -- the program itself constructs depends on nothing. Eliminators, including application, send the
--- scrutinee's root to the result type's unit constant scaled by the control weight; the unit
--- constant is built by the same induction as the interpretation, from assumed constants at the
+-- scrutinee's root to the result type's unit section scaled by the control weight; the unit
+-- section is built by the same induction as the interpretation, from assumed sections at the
 -- unit type, the sorts and the exponentials.
 -- The empty environment for the μ-carriers is a parameter because functions out of
 -- Fin 0 agree only propositionally, and the comparison with a change of base needs the
@@ -43,13 +43,13 @@ module language-interpretation
   (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
   (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
   (ctrl-w : Category._⇒_ 𝒞 𝟙c 𝟙c)
-  (exp-const : ∀ {X Y : R.Obj} → R.Constant Y → R.Constant (HasWeakExponentials.exp 𝒞E X Y))
-  (𝟙ty-const : R.Constant 𝟙ty)
-  (sort-const : ∀ s → R.Constant (Model.⟦sort⟧ Int s))
+  (exp-section : ∀ {X Y : R.Obj} → R.Section Y → R.Section (HasWeakExponentials.exp 𝒞E X Y))
+  (𝟙ty-section : R.Section 𝟙ty)
+  (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))
   where
 
 open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; extend; extend-mor; fobj; HasMu; hasMu; fmor; μ-map;
-              Constant; elimF; scale-const; Lf-constant; coprod-constant; prod-constant; PolyConst;
+              Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
               fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
               μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
 open Category R.cat
@@ -79,41 +79,41 @@ mutual
   as-poly (σ [→] τ)       δ = Poly.const (Lf (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ())))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
 
--- The unit constant of each type's interpretation, by the same induction as the interpretation:
--- unit weight at every root, the assumed constants at the leaves, and a recursion over trees at
+-- The unit section of each type's interpretation, by the same induction as the interpretation:
+-- unit weight at every root, the assumed sections at the leaves, and a recursion over trees at
 -- the μ-carriers.
-private module Mu∅ = R.MuUnit δ∅ (λ ())
+private module Mu∅ = R.MuSection δ∅ (λ ())
 
 mutual
-  ty-unit : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Constant (δ i)) → Constant (⟦ τ ⟧ty δ)
-  ty-unit (var i)   δ δc = δc i
-  ty-unit unit      δ δc = 𝟙ty-const
-  ty-unit (base s)  δ δc = sort-const s
-  ty-unit (σ [+] τ) δ δc =
-    coprod-constant (Lf-constant (ty-unit σ δ δc)) (Lf-constant (ty-unit τ δ δc))
-  ty-unit (σ [×] τ) δ δc = Lf-constant (prod-constant (ty-unit σ δ δc) (ty-unit τ δ δc))
-  ty-unit (σ [→] τ) δ δc = Lf-constant (exp-const (ty-unit τ (λ ()) (λ ())))
-  ty-unit (μ τ)     δ δc = Mu∅.μ-unit (as-poly τ δ) (as-poly-const τ δ δc)
+  unit-section : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) → Section (⟦ τ ⟧ty δ)
+  unit-section (var i)   δ δc = δc i
+  unit-section unit      δ δc = 𝟙ty-section
+  unit-section (base s)  δ δc = sort-section s
+  unit-section (σ [+] τ) δ δc =
+    coprod-section (Lf-section (unit-section σ δ δc)) (Lf-section (unit-section τ δ δc))
+  unit-section (σ [×] τ) δ δc = Lf-section (prod-section (unit-section σ δ δc) (unit-section τ δ δc))
+  unit-section (σ [→] τ) δ δc = Lf-section (exp-section (unit-section τ (λ ()) (λ ())))
+  unit-section (μ τ)     δ δc = Mu∅.μ-section (as-poly τ δ) (as-poly-section τ δ δc)
 
-  as-poly-const : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Constant (δ i)) →
-                  PolyConst (as-poly {Δ} {n} τ δ)
-  as-poly-const {Δ} {n} (var i) δ δc = go (splitAt n i)
+  as-poly-section : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) →
+                  PolySection (as-poly {Δ} {n} τ δ)
+  as-poly-section {Δ} {n} (var i) δ δc = go (splitAt n i)
     where
       go : (s : Fin n ⊎ Fin Δ) →
-           PolyConst ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+           PolySection ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
       go (inj₁ k) = lift tt
       go (inj₂ j) = δc j
-  as-poly-const unit      δ δc = 𝟙ty-const
-  as-poly-const (base s)  δ δc = sort-const s
-  as-poly-const (σ [+] τ) δ δc = DP._,_ (as-poly-const σ δ δc) (as-poly-const τ δ δc)
-  as-poly-const (σ [×] τ) δ δc = DP._,_ (as-poly-const σ δ δc) (as-poly-const τ δ δc)
-  as-poly-const (σ [→] τ) δ δc = Lf-constant (exp-const (ty-unit τ (λ ()) (λ ())))
-  as-poly-const (μ τ)     δ δc = as-poly-const τ δ δc
+  as-poly-section unit      δ δc = 𝟙ty-section
+  as-poly-section (base s)  δ δc = sort-section s
+  as-poly-section (σ [+] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
+  as-poly-section (σ [×] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
+  as-poly-section (σ [→] τ) δ δc = Lf-section (exp-section (unit-section τ (λ ()) (λ ())))
+  as-poly-section (μ τ)     δ δc = as-poly-section τ δ δc
 
--- The control dependence an eliminator writes: the result type's unit constant scaled by the control
+-- The control dependence an eliminator writes: the result type's unit section scaled by the control
 -- weight.
-ctrl-dep : ∀ (τ : type 0) → Constant (⟦ τ ⟧ty (λ ()))
-ctrl-dep τ = scale-const ctrl-w (ty-unit τ (λ ()) (λ ()))
+ctrl-dep : ∀ (τ : type 0) → Section (⟦ τ ⟧ty (λ ()))
+ctrl-dep τ = scale-section ctrl-w (unit-section τ (λ ()) (λ ()))
 
 -- Combined context: the first n variables from δ₀ (the Poly variables), the rest from δ.
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj

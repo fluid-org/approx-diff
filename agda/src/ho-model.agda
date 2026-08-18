@@ -66,12 +66,12 @@ ctrl-weight-endo = ι1-fwd SemiMod.∘ (mat (matrix.Mat.block S ctrl-weight) Sem
 
 𝒞Bool = FCC.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
 
--- The row of units: the unit constant of a simple family of dimensions.
+-- The row of units: the unit section of a simple family of dimensions.
 ι-row : ∀ n → M.Matrix n 1
 ι-row n _ _ = S.ι
 
-𝒞Bool-root : Fam⟨𝒞⟩μ.Constant 𝒞Bool
-𝒞Bool-root = Fam⟨𝒞⟩μ.coprod-constant (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty}) (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty})
+𝒞Bool-root : Fam⟨𝒞⟩μ.Section 𝒞Bool
+𝒞Bool-root = Fam⟨𝒞⟩μ.coprod-section (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty}) (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty})
 
 -- The model-side function spaces: exponentials on Fam(SemiMod), from the direct setoid products
 -- of plain semimodules.
@@ -85,17 +85,17 @@ module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod
 SemiModExp : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
 SemiModExp = exponentials→weak FE.exponentials
 
--- The unit constant of a function space is zero: an eliminator returning a function attaches
+-- The unit section of a function space is zero: an eliminator returning a function attaches
 -- control dependence to the root the lifting adjoins alone, matching the operational semantics,
 -- where a closure's control positions are its root alone (language-operational.evaluation.ctrl-of).
--- The tuple of the target's constants over every argument would instead attach it to every
+-- The tuple of the target's section over every argument would instead attach it to every
 -- possible result, which no position of a closure stands for.
 private
   module SMCM = CMonEnriched SemiMod.cmon-enriched
 
-exp-const : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Constant Y → Fam⟨𝒟⟩μ.Constant (FE._⟶_ X Y)
-exp-const {X} {Y} cY .Fam⟨𝒟⟩μ.at f = SMCM.εm
-exp-const {X} {Y} cY .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
+exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section Y → Fam⟨𝒟⟩μ.Section (FE._⟶_ X Y)
+exp-section {X} {Y} cY .Fam⟨𝒟⟩μ.at f = SMCM.εm
+exp-section {X} {Y} cY .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
   SMCM.comp-bilinear-ε₂ {SemiMod.𝕀} (FE._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
 
 -- The interpretation of the primitives: the first-order interpretation, with the relations'
@@ -168,8 +168,8 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
   open sig-model Sig ℐ
 
-  𝒞-sort-const : ∀ s → Fam⟨𝒞⟩μ.Constant (model .Model.⟦sort⟧ s)
-  𝒞-sort-const s = Fam⟨𝒞⟩μ.simple-constant (ι-row (Interpretation.sort-width ℐ s))
+  𝒞-sort-section : ∀ s → Fam⟨𝒞⟩μ.Section (model .Model.⟦sort⟧ s)
+  𝒞-sort-section s = Fam⟨𝒞⟩μ.simple-section (ι-row (Interpretation.sort-width ℐ s))
 
   open language-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct 1
@@ -178,9 +178,9 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     𝔽-L-iso (λ {P} {Q} f → 𝔽-L-natural {P} {Q} f)
     SemiModExp
     𝒞𝟙ty Fam⟨𝒞⟩μ.injF model
-    ctrl-weight-endo (λ {X} {Y} → exp-const {X} {Y}) ι1-bwd
-    (Fam⟨𝒞⟩μ.Lf-constant (Fam⟨𝒞⟩μ.simple-constant (M.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal)))
-    𝒞-sort-const
+    ctrl-weight-endo (λ {X} {Y} → exp-section {X} {Y}) ι1-bwd
+    (Fam⟨𝒞⟩μ.Lf-section (Fam⟨𝒞⟩μ.simple-section (M.terminal .HasTerminal.is-terminal .IsTerminal.to-terminal)))
+    𝒞-sort-section
     public
 
   open language-syntax Sig using (ctxt; type; _⊢_; first-order; first-order-ctxt)
@@ -214,7 +214,7 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     in₁-suc : ∀ (w : M.Vec 1) k → S._≈_ (app (M.in₁ {1} {1}) w (Fin.suc k)) S.ε
     in₁-suc w k = S.trans (S.trans S.+-comm S.+-lunit) S.ε-annihilₗ
 
-    -- The booleans' comparison applied to a root constant over a row, then transported to a
+    -- The booleans' comparison applied to a root element over a row, then transported to a
     -- branch: the row's reading at the root and zero beneath.
     module bool-row {n} (D : M.Matrix 1 n) (y : M.Vec n) where
       Ω = HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty
