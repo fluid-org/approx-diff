@@ -34,7 +34,8 @@ open M
   using (Matrix; Vec; Σ; I; εₘ; _+ₘ_; _≈ₘ_; Σ-cong; Σ-ε; Σ-+; Σ-unit;
          Σ-·-distribₗ; Σ-·-distribᵣ; Σ-interchange;
          ∘-cong; id-left; assoc; comp-bilinear₁; comp-bilinear₂;
-         comp-bilinear-ε₁; comp-bilinear-ε₂)
+         comp-bilinear-ε₁; comp-bilinear-ε₂;
+         ⟨_,_⟩; _∥_; concat; split₁; split₂; Σ-p₁; Σ-p₂; Σ-in₁; Σ-in₂)
   renaming (_∘_ to _∘ₘ_)
 module SemiMod = semimodule S
 open SemiMod using (Semimodule; 𝕀)
@@ -97,6 +98,39 @@ app-I v i = id-left {M = col v} i zero
 
 app-εₘ : ∀ {m n} (v : Vec n) (i : Fin m) → app (εₘ {m} {n}) v i ≈ ε
 app-εₘ v i = comp-bilinear-ε₁ (col v) i zero
+
+app-p₁ : ∀ {x y} (w : Vec (x +ℕ y)) (i : Fin x) → app (M.p₁ {x} {y}) w i ≈ split₁ {x} w i
+app-p₁ = Σ-p₁
+
+app-p₂ : ∀ {x y} (w : Vec (x +ℕ y)) (i : Fin y) → app (M.p₂ {x} {y}) w i ≈ split₂ {x} w i
+app-p₂ = Σ-p₂
+
+app-in₁ : ∀ {x y} (u : Vec x) (i : Fin (x +ℕ y)) → app (M.in₁ {x} {y}) u i ≈ concat {x} {y} u (λ _ → ε) i
+app-in₁ = Σ-in₁
+
+app-in₂ : ∀ {x y} (w : Vec y) (i : Fin (x +ℕ y)) → app (M.in₂ {x} {y}) w i ≈ concat {x} {y} (λ _ → ε) w i
+app-in₂ = Σ-in₂
+
+concat-+ : ∀ {x y} (u : Vec x) (w : Vec y) (i : Fin (x +ℕ y)) →
+           (concat {x} {y} u (λ _ → ε) i + concat {x} {y} (λ _ → ε) w i) ≈ concat {x} {y} u w i
+concat-+ {Nat.zero}  u w i       = +-lunit
+concat-+ {Nat.suc x} u w zero    = trans +-comm +-lunit
+concat-+ {Nat.suc x} u w (suc i) = concat-+ {x} (λ j → u (suc j)) w i
+
+app-pair : ∀ {m x y} (f : Matrix x m) (g : Matrix y m) (u : Vec m) (i : Fin (x +ℕ y)) →
+           app ⟨ f , g ⟩ u i ≈ concat {x} {y} (app f u) (app g u) i
+app-pair {m} {x} {y} f g u i =
+  trans (app-+ₘ (M.in₁ {x} {y} ∘ₘ f) (M.in₂ {x} {y} ∘ₘ g) u i)
+  (trans (+-cong (trans (app-∘ (M.in₁ {x} {y}) f u i) (app-in₁ (app f u) i))
+                 (trans (app-∘ (M.in₂ {x} {y}) g u i) (app-in₂ (app g u) i)))
+         (concat-+ (app f u) (app g u) i))
+
+app-∥ : ∀ {m n k} (A : Matrix k m) (B : Matrix k n) (w : Vec (m +ℕ n)) (i : Fin k) →
+        app (A ∥ B) w i ≈ (app A (split₁ {m} w) i + app B (split₂ {m} w) i)
+app-∥ {m} {n} A B w i =
+  trans (app-+ₘ (A ∘ₘ M.p₁ {m} {n}) (B ∘ₘ M.p₂ {m} {n}) w i)
+        (+-cong (trans (app-∘ A (M.p₁ {m} {n}) w i) (app-congᵥ A (app-p₁ w) i))
+                (trans (app-∘ B (M.p₂ {m} {n}) w i) (app-congᵥ B (app-p₂ w) i)))
 
 ------------------------------------------------------------------------------
 -- The realisation: the semimodule of weighted vectors over the positions, pointwise.

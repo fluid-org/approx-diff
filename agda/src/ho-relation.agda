@@ -92,7 +92,8 @@ IxC Γ = IxC.Carrier Γ
 FibC : (Γ : ctxt) → IxC Γ → Semimodule
 FibC Γ i = ⟦ Γ ⟧ctxt .fam .fm i
 
-open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
+open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ; app-p₁; app-p₂; app-in₁; app-in₂; app-pair; concat-+)
+  renaming (app to ap)
 open CommutativeSemiring S public using (ι; ε; +-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
   renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
 open Setoid A public using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
@@ -211,23 +212,12 @@ inputs : ∀ {Γ} (γ : Env Γ) → Setoid.Carrier A → ∣ 𝔽 (width-env γ)
 inputs γ s x zero    = s
 inputs γ s x (suc k) = x k
 
--- Reading a relation at the inputs: the control input's column at its value, and the environment
--- columns at the environment vector.
-p₁-e : ∀ {m} (j : Fin (suc m)) → M.p₁ {1} {m} zero j ≈s M.e zero j
-p₁-e zero    = ≈-refl
-p₁-e (suc j) = ≈-refl
-
-p₂-e : ∀ {m} (j : Fin m) (l : Fin m) → M.p₂ {1} {m} j (suc l) ≈s M.e j l
-p₂-e j l = ≈-refl
-
 -- Semiring shorthands.
 c = ctrl-weight
 +-runit : ∀ {x} → (x +ₛ ε) ≈s x
 +-runit = ≈-trans +-comm +-lunit
 ·-runit : ∀ {x} → (x ·ₛ ι) ≈s x
 ·-runit = ≈-trans ·-comm ·-lunit
-Σ₁ : ∀ (f : Fin 1 → Setoid.Carrier A) → Σₛ f ≈s f zero
-Σ₁ f = +-runit
 
 m-runit : ∀ (X : Semimodule) {x} → Semimodule._≈_ X (Semimodule._+_ X x (Semimodule.ε X)) x
 m-runit X = Semimodule.trans X (Semimodule.+-comm X) (Semimodule.+-lunit X)
@@ -235,38 +225,29 @@ m-runit X = Semimodule.trans X (Semimodule.+-comm X) (Semimodule.+-lunit X)
 -- Reading a lifted vector: the first position of the first summand's injection, and the rest of
 -- the second's.
 ap-in₁-zero : ∀ {n} (u : ∣ 𝔽 1 ∣) → ap (M.in₁ {1} {n}) u zero ≈s u zero
-ap-in₁-zero {n} u = ≈-trans (Σ₁ (λ j → M.in₁ {1} {n} zero j ·ₛ u j)) ·-lunit
+ap-in₁-zero {n} u = app-in₁ {1} {n} u zero
 
 ap-in₁-suc : ∀ {n} (u : ∣ 𝔽 1 ∣) (k : Fin n) → ap (M.in₁ {1} {n}) u (suc k) ≈s ε
-ap-in₁-suc {n} u k = ≈-trans (Σ₁ (λ j → M.in₁ {1} {n} (suc k) j ·ₛ u j)) ε-annihilₗ
+ap-in₁-suc {n} u k = app-in₁ {1} {n} u (suc k)
 
 ap-in₂-zero : ∀ {n} (u : ∣ 𝔽 n ∣) → ap (M.in₂ {1} {n}) u zero ≈s ε
-ap-in₂-zero {n} u = ≈-trans (Σ-cong {n} (λ _ → ε-annihilₗ)) (Σ-ε {n})
+ap-in₂-zero {n} u = app-in₂ {1} {n} u zero
 
 ap-in₂-suc : ∀ {n} (u : ∣ 𝔽 n ∣) (k : Fin n) → ap (M.in₂ {1} {n}) u (suc k) ≈s u k
-ap-in₂-suc {n} u k =
-  ≈-trans (Σ-cong {n} (λ j → ·-cong (≈-trans (p₂-e {n} j k) (M.e-sym j k)) ≈-refl)) (Σ-unit {n} k u)
+ap-in₂-suc {n} u k = app-in₂ {1} {n} u (suc k)
 
 ap-pair-zero : ∀ {m n} (f : M.Matrix 1 m) (g : M.Matrix n m) (u : ∣ 𝔽 m ∣) →
                ap (⟨ f , g ⟩) u zero ≈s ap f u zero
-ap-pair-zero {m} {n} f g u =
-  ≈-trans (app-+ₘ (M.in₁ {1} {n} ∘ f) (M.in₂ {1} {n} ∘ g) u zero)
-          (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) f u zero) (ap-in₁-zero {n} (ap f u)))
-                           (≈-trans (app-∘ (M.in₂ {1} {n}) g u zero) (ap-in₂-zero {n} (ap g u))))
-                   +-runit)
+ap-pair-zero {m} {n} f g u = app-pair {m} {1} {n} f g u zero
 
 ap-pair-suc : ∀ {m n} (f : M.Matrix 1 m) (g : M.Matrix n m) (u : ∣ 𝔽 m ∣) (k : Fin n) →
               ap (⟨ f , g ⟩) u (suc k) ≈s ap g u k
-ap-pair-suc {m} {n} f g u k =
-  ≈-trans (app-+ₘ (M.in₁ {1} {n} ∘ f) (M.in₂ {1} {n} ∘ g) u (suc k))
-          (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) f u (suc k)) (ap-in₁-suc {n} (ap f u) k))
-                           (≈-trans (app-∘ (M.in₂ {1} {n}) g u (suc k)) (ap-in₂-suc {n} (ap g u) k)))
-                   +-lunit)
+ap-pair-suc {m} {n} f g u k = app-pair {m} {1} {n} f g u (suc k)
 
 -- The control vector at a value s at the control input: the weight at the root of a lifted value, and the
 -- payload's control vector after.
 ap-ctrl-row : ∀ {n} (s : Setoid.Carrier A) (k : Fin n) → ap ctrl-row (λ _ → s) k ≈s (c ·ₛ s)
-ap-ctrl-row {n} s k = Σ₁ (λ j → ctrl-row {n} k j ·ₛ s)
+ap-ctrl-row {n} s k = +-runit
 
 ctrl-lift-zero : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) →
                  ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) zero ≈s (c ·ₛ s)
@@ -279,13 +260,10 @@ ctrl-lift-suc {n} g s k = ap-pair-suc {1} {n} ctrl-row g (λ _ → s) k
 -- Reading a relation at the inputs: the control input's column at its value and the environment
 -- columns at the environment vector, and the relations the rules are built from at any vector.
 ap-p₁₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin 1) → ap (M.p₁ {1} {m}) o k ≈s o zero
-ap-p₁₁ {m} o zero =
-  ≈-trans (Σ-cong {suc m} (λ j → ·-cong (p₁-e {m} j) (≈-refl {o j}))) (Σ-unit {suc m} zero o)
+ap-p₁₁ {m} o zero = app-p₁ {1} {m} o zero
 
 ap-p₂₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin m) → ap (M.p₂ {1} {m}) o k ≈s o (suc k)
-ap-p₂₁ {m} o k =
-  ≈-trans (+-cong ε-annihilₗ (Σ-cong {m} (λ j → ·-cong (p₂-e {m} k j) ≈-refl)))
-          (≈-trans +-lunit (Σ-unit {m} k (λ j → o (suc j))))
+ap-p₂₁ {m} o k = app-p₂ {1} {m} o k
 
 ap-∥ : ∀ {m n} (A : M.Matrix n 1) (B : M.Matrix n m) (y : ∣ 𝔽 (suc m) ∣) (k : Fin n) →
        ap (A M.∥ B) y k ≈s (ap A (λ _ → y zero) k +ₛ ap B (λ l → y (suc l)) k)
@@ -667,22 +645,14 @@ EnvDepRel-mono (rγ · r) s s' (rel , h) = EnvDepRel-mono rγ s s' rel , DepRel�
 ap-p₁-++ : ∀ {m n} (x : ∣ 𝔽 m ∣) (z : ∣ 𝔽 n ∣) k →
            ap (M.p₁ {m} {n}) (λ l → ap (M.in₁ {m} {n}) x l +ₛ ap (M.in₂ {m} {n}) z l) k ≈s x k
 ap-p₁-++ {m} {n} x z k =
-  ≈-trans (app-+ (M.p₁ {m} {n}) _ _ k)
-          (≈-trans (+-cong (≈-trans (≈-sym (app-∘ (M.p₁ {m} {n}) (M.in₁ {m} {n}) x k))
-                                    (≈-trans (app-congₘ (M.id-1 m n) x k) (app-I x k)))
-                           (≈-trans (≈-sym (app-∘ (M.p₁ {m} {n}) (M.in₂ {m} {n}) z k))
-                                    (≈-trans (app-congₘ (M.zero-1 m n) z k) (app-εₘ z k))))
-                   +-runit)
+  ≈-trans (app-congᵥ (M.p₁ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-+ x z l)) k)
+          (≈-trans (app-p₁ {m} {n} (M.concat x z) k) (M.split₁-concat x z k))
 
 ap-p₂-++ : ∀ {m n} (x : ∣ 𝔽 m ∣) (z : ∣ 𝔽 n ∣) k →
            ap (M.p₂ {m} {n}) (λ l → ap (M.in₁ {m} {n}) x l +ₛ ap (M.in₂ {m} {n}) z l) k ≈s z k
 ap-p₂-++ {m} {n} x z k =
-  ≈-trans (app-+ (M.p₂ {m} {n}) _ _ k)
-          (≈-trans (+-cong (≈-trans (≈-sym (app-∘ (M.p₂ {m} {n}) (M.in₁ {m} {n}) x k))
-                                    (≈-trans (app-congₘ (M.zero-2 m n) x k) (app-εₘ x k)))
-                           (≈-trans (≈-sym (app-∘ (M.p₂ {m} {n}) (M.in₂ {m} {n}) z k))
-                                    (≈-trans (app-congₘ (M.id-2 m n) z k) (app-I z k))))
-                   +-lunit)
+  ≈-trans (app-congᵥ (M.p₂ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-+ x z l)) k)
+          (≈-trans (app-p₂ {m} {n} (M.concat x z) k) (M.split₂-concat x z k))
 
 EnvDepRel-resp : ∀ {Γ} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s {x x' g} →
                  (∀ k → x k ≈s x' k) → EnvDepRel rγ s x g → EnvDepRel rγ s x' g
