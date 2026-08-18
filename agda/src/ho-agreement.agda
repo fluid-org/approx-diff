@@ -235,10 +235,8 @@ private
               (d : ∣ Fib τ ic ∣) →
               F._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (⟦ τ ⟧ .fam .subst Eidx .func d)) d
   roundtrip τ {i₁} {ic} E Eidx d =
-    F.trans τ ic
-      (F.sym τ ic (⟦ τ ⟧ .fam .indexed-family.Fam.trans* {ic} {i₁} {ic} E Eidx
-                     .func-eq (F.refl τ ic {d})))
-      (subst-refl τ {ic} (Setoid.trans (⟦ τ ⟧ .idx) {ic} {i₁} {ic} Eidx E) d)
+    F.trans τ ic (F.sym τ ic (subst-trans ⟦ τ ⟧ {ic} {i₁} {ic} Eidx E d))
+                 (subst-refl ⟦ τ ⟧ {ic} (Setoid.trans (⟦ τ ⟧ .idx) {ic} {i₁} {ic} Eidx E) d)
 
   -- The branch's constant and fibre, transported, against the case's.
   case-den : ∀ τ {i₁ ic : Ix τ} (E : Setoid._≈_ (⟦ τ ⟧ .idx) i₁ ic) s a_s o_s₀ (B : ∣ Fib τ i₁ ∣) (CF : ∣ Fib τ ic ∣) →
@@ -429,9 +427,9 @@ fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
     ≈-trans (ap-wctrl {width-env γ} {1} (inputs γ s x) zero)
             (≈-sym (≈-trans (+-cong (ctrl-dep-unit (⟦ unit {Γ} ⟧tm .idxf .sfunc gi) s) (≈-refl {ε})) +-runit))
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} ct) {γ = γ} (⇓-inl {v = v} {R = R'} D) {gi} rγ s x g rel =
-  ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (proj₁ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d)) root-den)) ,
+  ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (proj₁ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₁ i'} e d)) root-den)) ,
   DepRel-resp τ₁ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
-    (F.sym τ₁ i' (F.trans τ₁ i' (proj₂ (subst-refl (τ₁ [+] τ₂) {inj₁ i'} e d))
+    (F.sym τ₁ i' (F.trans τ₁ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₁ i'} e d))
                                 (F.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (F.refl τ₁ i'))))
     (fundamental ct D rγ s x g rel)
   where
@@ -441,9 +439,9 @@ fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} ct) {γ = γ} (⇓-inl
   root-den : proj₁ d ≈s (c ·ₛ s)
   root-den = ≈-trans (+-cong (proj₁ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} ct) {γ = γ} (⇓-inr {v = v} {R = R'} D) {gi} rγ s x g rel =
-  ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (proj₁ (subst-refl (τ₁ [+] τ₂) {inj₂ i'} e d)) root-den)) ,
+  ≈-trans (built-zero {γ = γ} R' s x) (≈-sym (≈-trans (proj₁ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₂ i'} e d)) root-den)) ,
   DepRel-resp τ₂ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
-    (F.sym τ₂ i' (F.trans τ₂ i' (proj₂ (subst-refl (τ₁ [+] τ₂) {inj₂ i'} e d))
+    (F.sym τ₂ i' (F.trans τ₂ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₂ i'} e d))
                                 (F.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (F.refl τ₂ i'))))
     (fundamental ct D rγ s x g rel)
   where
@@ -511,23 +509,15 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
                   (F.+-cong τ ic (F.refl τ ic) (ctrl-dep-natural τ E a_s))))
     where
     nat : F._≈_ τ i₁ (SC .famf .transf (gi , inj₁ i') .func Q) (⟦ τ ⟧ .fam .subst Eidx .func CF)
-    nat = SC .famf .indexed-family._⇒f_.natural {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
-            .func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
+    nat = transf-natural SC {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) Pg
 
     Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , inj₁ i')) Q (g , SG)
     Q≈ = Semimodule.trans (Dom .fam .fm (gi , inj₁ i'))
            (Dom .fam .subst {gi , sidx} {gi , inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .func-resp-≈
               (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
            (Semimodule.trans (Dom .fam .fm (gi , inj₁ i'))
-              (bpair-elt {SemiMod._⊕_ (FibC Γ gi) (Fib (τ₁ [+] τ₂) sidx)} {FibC Γ gi} {Fib (τ₁ [+] τ₂) (inj₁ i')}
-                         (SemiMod._∘_ (⟦ Γ ⟧ctxt .fam .subst {gi} {gi} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}))
-                                      (SemiMod.p₁ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
-                         (SemiMod._∘_ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₁ i'} e)
-                                      (SemiMod.p₂ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
-                         (g , ⟦ sc ⟧tm .famf .transf gi .func g))
-              (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .func-eq
-                 (Semimodule.refl (FibC Γ gi) {g}) ,
-               F.refl (τ₁ [+] τ₂) (inj₁ i')))
+              (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} {gi} {gi} {sidx} {inj₁ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}) e g (⟦ sc ⟧tm .famf .transf gi .func g))
+              (subst-refl ⟦ Γ ⟧ctxt (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}) g , F.refl (τ₁ [+] τ₂) (inj₁ i')))
 
     branch-eq : F._≈_ τ i₁ (SC .famf .transf (gi , inj₁ i') .func Q) (F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s))
     branch-eq =
@@ -592,23 +582,15 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
                   (F.+-cong τ ic (F.refl τ ic) (ctrl-dep-natural τ E a_s))))
     where
     nat : F._≈_ τ i₁ (SC .famf .transf (gi , inj₂ i') .func Q) (⟦ τ ⟧ .fam .subst Eidx .func CF)
-    nat = SC .famf .indexed-family._⇒f_.natural {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e)
-            .func-eq {Pg} {Pg} (Semimodule.refl (Dom .fam .fm (gi , sidx)) {Pg})
+    nat = transf-natural SC {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) Pg
 
     Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , inj₂ i')) Q (g , SG)
     Q≈ = Semimodule.trans (Dom .fam .fm (gi , inj₂ i'))
            (Dom .fam .subst {gi , sidx} {gi , inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi} , e) .func-resp-≈
               (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (FDC.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
            (Semimodule.trans (Dom .fam .fm (gi , inj₂ i'))
-              (bpair-elt {SemiMod._⊕_ (FibC Γ gi) (Fib (τ₁ [+] τ₂) sidx)} {FibC Γ gi} {Fib (τ₁ [+] τ₂) (inj₂ i')}
-                         (SemiMod._∘_ (⟦ Γ ⟧ctxt .fam .subst {gi} {gi} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}))
-                                      (SemiMod.p₁ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
-                         (SemiMod._∘_ (⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {inj₂ i'} e)
-                                      (SemiMod.p₂ {FibC Γ gi} {Fib (τ₁ [+] τ₂) sidx}))
-                         (g , ⟦ sc ⟧tm .famf .transf gi .func g))
-              (⟦ Γ ⟧ctxt .fam .indexed-family.Fam.refl* .func-eq
-                 (Semimodule.refl (FibC Γ gi) {g}) ,
-               F.refl (τ₁ [+] τ₂) (inj₂ i')))
+              (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} {gi} {gi} {sidx} {inj₂ i'} (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}) e g (⟦ sc ⟧tm .famf .transf gi .func g))
+              (subst-refl ⟦ Γ ⟧ctxt (Setoid.refl (⟦ Γ ⟧ctxt .idx) {gi}) g , F.refl (τ₁ [+] τ₂) (inj₂ i')))
 
     branch-eq : F._≈_ τ i₁ (SC .famf .transf (gi , inj₂ i') .func Q) (F._+_ τ i₁ B (ctrl-dep-at τ i₁ a_s))
     branch-eq =

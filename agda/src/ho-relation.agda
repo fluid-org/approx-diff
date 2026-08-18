@@ -526,6 +526,15 @@ DepRel⊑-ctrl : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s {o : ∣ 
 DepRel⊑-ctrl τ {i = i} r s {o} {d} (m , (dm , h)) =
   DepRel-resp τ r (λ k → ≈-refl) (⊑-absorb τ i s d m dm) (ctrl-add τ r s h)
 
+idx-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} → Setoid._≈_ (⟦ σ [→] τ ⟧ .idx) f f' → ∀ j →
+            Setoid._≈_ (⟦ τ ⟧ .idx) (f .idxf .sfunc j) (f' .idxf .sfunc j)
+idx-eq-at σ τ E j = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Setoid.refl (⟦ σ ⟧ .idx) {j})
+
+famf-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} (E : Setoid._≈_ (⟦ σ [→] τ ⟧ .idx) f f') j (y : ∣ Fib σ j ∣) →
+             F._≈_ τ (f' .idxf .sfunc j) (⟦ τ ⟧ .fam .subst (idx-eq-at σ τ E j) .func (f .famf .transf j .func y))
+                                        (f' .famf .transf j .func y)
+famf-eq-at σ τ E j y = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .func-eq (F.refl σ j {y})
+
 -- Related values are related at equal indices.
 ValRel-resp : ∀ τ {v : Val τ} {i i' : Ix τ} → Setoid._≈_ (⟦ τ ⟧ .idx) i i' → ValRel τ v i → ValRel τ v i'
 ValRel-resp unit {unit} e r = tt
@@ -537,7 +546,7 @@ ValRel-resp (σ [+] τ) {inr v} {i} {i'} e (i₀ , r , ⟪ e₀ ⟫) =
   i₀ , r , ⟪ Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₂ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} e) e₀ ⟫
 ValRel-resp (σ [×] τ) {pair v u} {i , j} {i' , j'} (e₁ , e₂) (r , r') = ValRel-resp σ e₁ r , ValRel-resp τ e₂ r'
 ValRel-resp (σ [→] τ) {clo γ' t} {f} {f'} e r {v} {j} rv {u} {U} D =
-  ValRel-resp τ (e .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Setoid.refl (⟦ σ ⟧ .idx) {j})) (r rv D)
+  ValRel-resp τ (idx-eq-at σ τ e j) (r rv D)
 
 
 -- Reading the model's constructions elementwise: a pairing through the biproduct is the pair of
@@ -554,6 +563,34 @@ Fpair-elt : ∀ {X Y Z : Obj} (f : Mor X Y) (g : Mor X Z) (x : Setoid.Carrier (X
               (FDP.pair f g .famf .transf x .func z)
               (f .famf .transf x .func z , g .famf .transf x .func z)
 Fpair-elt f g x z = bpair-elt (f .famf .transf x) (g .famf .transf x) z
+
+Fprod-subst-elt : ∀ {X Y : Obj} {x x' : Setoid.Carrier (X .idx)} {y y' : Setoid.Carrier (Y .idx)}
+                  (e₁ : Setoid._≈_ (X .idx) x x') (e₂ : Setoid._≈_ (Y .idx) y y')
+                  (z : ∣ X .fam .fm x ∣) (w : ∣ Y .fam .fm y ∣) →
+                  Semimodule._≈_ (FDP.prod X Y .fam .fm (x' , y'))
+                    (FDP.prod X Y .fam .subst (e₁ , e₂) .func (z , w))
+                    (X .fam .subst e₁ .func z , Y .fam .subst e₂ .func w)
+Fprod-subst-elt {X} {Y} {x} {x'} {y} {y'} e₁ e₂ z w =
+  bpair-elt {SemiMod._⊕_ (X .fam .fm x) (Y .fam .fm y)} {X .fam .fm x'} {Y .fam .fm y'}
+    (SemiMod._∘_ (X .fam .subst e₁) (SemiMod.p₁ {X .fam .fm x} {Y .fam .fm y}))
+    (SemiMod._∘_ (Y .fam .subst e₂) (SemiMod.p₂ {X .fam .fm x} {Y .fam .fm y})) (z , w)
+
+subst-refl : ∀ (X : Obj) {x : Setoid.Carrier (X .idx)} (e : Setoid._≈_ (X .idx) x x) (d : ∣ X .fam .fm x ∣) →
+             Semimodule._≈_ (X .fam .fm x) (X .fam .subst e .func d) d
+subst-refl X {x} e d = X .fam .indexed-family.Fam.refl* .func-eq (Semimodule.refl (X .fam .fm x) {d})
+
+subst-trans : ∀ (X : Obj) {x y z : Setoid.Carrier (X .idx)} (e₁ : Setoid._≈_ (X .idx) x y) (e₂ : Setoid._≈_ (X .idx) y z)
+              (d : ∣ X .fam .fm x ∣) →
+              Semimodule._≈_ (X .fam .fm z) (X .fam .subst (Setoid.trans (X .idx) e₁ e₂) .func d)
+                                            (X .fam .subst e₂ .func (X .fam .subst e₁ .func d))
+subst-trans X {x} {y} {z} e₁ e₂ d = X .fam .indexed-family.Fam.trans* {x} {y} {z} e₂ e₁ .func-eq (Semimodule.refl (X .fam .fm x) {d})
+
+transf-natural : ∀ {X Y : Obj} (f : Mor X Y) {x x' : Setoid.Carrier (X .idx)} (e : Setoid._≈_ (X .idx) x x')
+                 (z : ∣ X .fam .fm x ∣) →
+                 Semimodule._≈_ (Y .fam .fm (f .idxf .sfunc x'))
+                   (f .famf .transf x' .func (X .fam .subst e .func z))
+                   (Y .fam .subst (f .idxf .prop-setoid._⇒_.func-resp-≈ e) .func (f .famf .transf x .func z))
+transf-natural {X} f {x} {x'} e z = f .famf .indexed-family._⇒f_.natural {x} {x'} e .func-eq (Semimodule.refl (X .fam .fm x) {z})
 
 elim-root-elt : ∀ {G X Y : Semimodule} (k : SemiMod.𝕀 ⇒ Y) (r : SemiMod._⊕_ G X ⇒ Y)
                 (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
@@ -669,11 +706,6 @@ built-suc {γ = γ} {n} R' s x k =
                             (ap-in₂-suc {n} (ap R' (inputs γ s x)) k)))
            +-lunit)
 
--- Transport along a reflexivity proof is the identity.
-subst-refl : ∀ τ {i : Ix τ} (e : Setoid._≈_ (⟦ τ ⟧ .idx) i i) (d : ∣ Fib τ i ∣) →
-             F._≈_ τ i (⟦ τ ⟧ .fam .subst e .func d) d
-subst-refl τ {i} e d = ⟦ τ ⟧ .fam .indexed-family.Fam.refl* .func-eq (F.refl τ i {d})
-
 -- A base sort's fibres do not vary with the index, so its transports are the identity.
 subst-base : ∀ {σ} {i i' : Ix (base σ)} (e : Setoid._≈_ (⟦ base σ ⟧ .idx) i i')
              (d : ∣ Fib (base σ) i ∣) (k : Fin (sort-width σ)) →
@@ -685,20 +717,18 @@ DepRel-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Setoid._≈_ (⟦ τ 
                    {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
                    DepRel τ r o d → DepRel τ (ValRel-resp τ E r) o (⟦ τ ⟧ .fam .subst E .func d)
 DepRel-transport unit {unit} {i} {i'} E r {o} {d} h k =
-  ≈-trans (h k) (≈-sym (subst-refl unit {i} E d k))
+  ≈-trans (h k) (≈-sym (subst-refl ⟦ unit ⟧ {i} E d k))
 DepRel-transport (base σ) {const a} {i} {i'} E r {o} {d} h k =
   ≈-trans (h k) (≈-sym (subst-base {σ} {i} {i'} E d k))
 DepRel-transport (σ [+] τ) {inl v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o} {d} (h₀ , h) =
   let e' = Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₁ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} E) e₀
-      comp = ⟦ σ [+] τ ⟧ .fam .indexed-family.Fam.trans* {i} {i'} {inj₁ i₀} e' E
-               .func-eq (F.refl (σ [+] τ) i {d})
+      comp = subst-trans ⟦ σ [+] τ ⟧ {i} {i'} {inj₁ i₀} E e' d
   in
   ≈-trans h₀ (proj₁ comp) ,
   DepRel-resp σ r₀ (λ k → ≈-refl) (proj₂ comp) h
 DepRel-transport (σ [+] τ) {inr v} {i} {i'} E (i₀ , r₀ , ⟪ e₀ ⟫) {o} {d} (h₀ , h) =
   let e' = Setoid.trans (⟦ σ [+] τ ⟧ .idx) {i'} {i} {inj₂ i₀} (Setoid.sym (⟦ σ [+] τ ⟧ .idx) {i} {i'} E) e₀
-      comp = ⟦ σ [+] τ ⟧ .fam .indexed-family.Fam.trans* {i} {i'} {inj₂ i₀} e' E
-               .func-eq (F.refl (σ [+] τ) i {d})
+      comp = subst-trans ⟦ σ [+] τ ⟧ {i} {i'} {inj₂ i₀} E e' d
   in
   ≈-trans h₀ (proj₁ comp) ,
   DepRel-resp τ r₀ (λ k → ≈-refl) (proj₂ comp) h
@@ -719,12 +749,11 @@ DepRel-transport (σ [→] τ) {clo γ' t} {f} {f'} E r {o} {d} (h₀ , hc) =
       (F.+-cong τ (f' .idxf .sfunc j) (ctrl-dep-natural τ (Ej j) (s' +ₛ o zero))
       (F.trans τ (f' .idxf .sfunc j)
          (⟦ τ ⟧ .fam .subst (Ej j) .preserve-+ {_} {_})
-      (F.+-cong τ (f' .idxf .sfunc j) (eval-part j) (arg-part j y)))))
+      (F.+-cong τ (f' .idxf .sfunc j) (eval-part j) (famf-eq-at σ τ E j y)))))
       (DepRel-transport τ (Ej j) (r rv D) (hc s' rv z y hz D))
   where
   P = model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧
-  Ej : ∀ j → Setoid._≈_ (⟦ τ ⟧ .idx) (f .idxf .sfunc j) (f' .idxf .sfunc j)
-  Ej j = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Setoid.refl (⟦ σ ⟧ .idx) {j})
+  Ej = idx-eq-at σ τ E
   hmap = indexed-family.reindex-≈ {P = ⟦ τ ⟧ .fam} (f .idxf) (f' .idxf) (E .FD._≃_.idxf-eq)
   eval-part : ∀ j → F._≈_ τ (f' .idxf .sfunc j)
                 (⟦ τ ⟧ .fam .subst (Ej j) .func (SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j .func (proj₂ d)))
@@ -744,9 +773,4 @@ DepRel-transport (σ [→] τ) {clo γ' t} {f} {f'} E r {o} {d} (h₀ , hc) =
          {SP.Π-map hmap .func (proj₂ d)} {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)}
          (Semimodule.sym (P .fam .fm f') {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {SP.Π-map hmap .func (proj₂ d)}
             (Semimodule.+-lunit (P .fam .fm f') {SP.Π-map hmap .func (proj₂ d)})))
-  arg-part : ∀ j (y : ∣ Fib σ j ∣) →
-             F._≈_ τ (f' .idxf .sfunc j) (⟦ τ ⟧ .fam .subst (Ej j) .func (f .famf .transf j .func y))
-                                        (f' .famf .transf j .func y)
-  arg-part j y = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .func-eq
-                   (Semimodule.refl (Fib σ j) {y})
 
