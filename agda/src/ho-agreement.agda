@@ -7,29 +7,20 @@
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
 open import every using (Every)
 open import Data.List using ([]; _∷_)
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import prop
-open import prop using (_∧_; ∃; ∃ₛ; Prf; ⟪_⟫; _,_)
-open import prop-setoid using (Setoid; IsEquivalence)
+open import prop using (_∧_; ∃; Prf; ⟪_⟫; _,_)
+open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
-import signature
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
-open import categories using (Category; HasProducts; HasTerminal; HasWeakExponentials; HasStrongCoproducts)
-open import cmon-enriched using (CMonEnriched; Biproduct)
+open import categories using (Category; HasProducts; HasWeakExponentials; HasStrongCoproducts)
 import indexed-family
-open import indexed-family using (HasSetoidProducts)
-import matrix
-import semimodule
-import commutative-monoid
-import ho-model
-import language-interpretation
 
 module ho-agreement
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
@@ -48,23 +39,6 @@ open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 
 open import ho-relation S ctrl-weight Sig ℐ +-idem c-idem c-absorb
-
-open model using (𝔽; mat; ι1-fwd; ι1-bwd; module Ls; module SemiMod)
-open SemiMod using (Semimodule; _⇒_)
-open Semimodule using () renaming (Carrier to ∣_∣)
-open SemiMod._⇒_ using (func)
-open FD using (Obj; Mor; idx; fam; fm; idxf; famf; Constant)
-open indexed-family.Fam using (subst)
-open indexed-family._⇒f_ using (transf)
-open prop-setoid._⇒_ using () renaming (func to sfunc)
-open LI using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; ty-unit)
-open Constant using (at)
-open model using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
-open Sc using (ι; ε) renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
-open Setoid A using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
-open M using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans) renaming (Σ to Σₛ)
-open Sc using (+-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
-open M using (⟨_,_⟩)
 
 -- The fragment: no μ-types.
 data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set

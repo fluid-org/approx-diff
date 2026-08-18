@@ -5,29 +5,23 @@
 -- of the fibre, and the lemmas by recursion on types that the fundamental lemma needs (respect for the
 -- setoids, adding the control positions and the control dependence, absorption, transport).
 open import Level using (0ℓ; lift)
-open import Data.Nat using (ℕ; suc; _+_)
+open import Data.Nat using (suc; _+_)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
-open import every using (Every)
-open import Data.List using ([]; _∷_)
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import prop
-open import prop using (_∧_; ∃; ∃ₛ; Prf; ⟪_⟫; _,_)
-open import prop-setoid using (Setoid; IsEquivalence)
+open import prop using (_∧_; ∃; Prf; ⟪_⟫; _,_)
+open import prop-setoid using (Setoid)
 open import basics using (IsJoin)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
-import signature
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
-open import categories using (Category; HasProducts; HasTerminal; HasWeakExponentials; HasStrongCoproducts)
-open import cmon-enriched using (CMonEnriched; Biproduct)
-import indexed-family
+open import categories using (HasProducts)
+import cmon-enriched
 open import indexed-family using (HasSetoidProducts)
 import matrix
-import semimodule
 import commutative-monoid
 import ho-model
 import language-interpretation
@@ -49,20 +43,19 @@ open import language-operational.evaluation Sig S ℐ ctrl-weight
 
 module model = ho-model S ctrl-weight
 module interp = model.interp Sig ℐ
-open model using (𝔽; mat; ι1-fwd; ι1-bwd; module Ls; module SemiMod)
-open SemiMod using (Semimodule; _⇒_)
-open Semimodule using () renaming (Carrier to ∣_∣)
-open SemiMod._⇒_ using (func)
+open model public using (𝔽; mat; module Ls; module SemiMod)
+open SemiMod public using (Semimodule; _⇒_)
+open Semimodule public using () renaming (Carrier to ∣_∣)
+open SemiMod._⇒_ public using (func)
 
 module M = matrix.Mat S
-module SMP = HasProducts SemiMod.products
 module FD = model.Fam⟨𝒟⟩μ
 module SP = HasSetoidProducts model.SPmod
 
-open FD using (Obj; Mor; idx; fam; fm; idxf; famf; Constant)
-open indexed-family.Fam using (subst)
-open indexed-family._⇒f_ using (transf)
-open prop-setoid._⇒_ using () renaming (func to sfunc)
+open FD public using (Obj; Mor; idx; fam; fm; idxf; famf; Constant)
+open indexed-family.Fam public using (subst)
+open indexed-family._⇒f_ public using (transf)
+open prop-setoid._⇒_ public using () renaming (func to sfunc)
 
 -- The interpretation, at the parameters the higher-order model fixes.
 module LI = language-interpretation Sig 0ℓ 0ℓ
@@ -70,8 +63,8 @@ module LI = language-interpretation Sig 0ℓ 0ℓ
   interp.δ∅𝒟 interp.𝒟𝟙ty interp.𝒟unit-pt interp.𝒟-Sig-model model.ctrl-weight-endo
   (λ {X} {Y} → model.exp-const {X} {Y}) interp.𝒟𝟙ty-const interp.𝒟-sort-const
 
-open LI using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; ty-unit)
-open Constant using (at)
+open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; ty-unit)
+open Constant public using (at)
 
 module IP = model.FP.interp-primitives Sig ℐ
 module FCμ = model.Fam⟨𝒞⟩μ
@@ -199,13 +192,11 @@ inputs : ∀ {Γ} (γ : Env Γ) → Setoid.Carrier A → ∣ 𝔽 (width-env γ)
 inputs γ s x zero    = s
 inputs γ s x (suc k) = x k
 
-open model using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
-open Sc using (ι; ε) renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
-open Setoid A using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
-open M using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans) renaming (Σ to Σₛ)
-
-open Sc using (+-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
-open M using (⟨_,_⟩)
+open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ) renaming (app to ap)
+open CommutativeSemiring S public using (ι; ε; +-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
+  renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
+open Setoid A public using () renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
+open M public using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans; ⟨_,_⟩) renaming (Σ to Σₛ)
 
 -- Reading a relation at the inputs: the control input's column at its value, and the environment
 -- columns at the environment vector.
