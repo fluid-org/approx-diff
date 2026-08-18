@@ -1196,6 +1196,302 @@ mutual
       body' = subst-fwd-body σ τ δ' X
 
 
+sub-lift-pw-inv : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type (suc Δ)) (δ : Fin Δ' → obj) (X : obj) →
+                  (as-poly-map τ (λ i → ≡-to-⇒ (sym (sub-lift-pw σ δ X i))) δ∅ ∘ as-poly-map τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ X i)) δ∅)
+                    ≈ id _
+sub-lift-pw-inv σ τ δ X =
+  ≈-trans (as-poly-map-comp τ _ _ δ∅)
+          (≈-trans (as-poly-map-cong τ (λ i → ≡-to-⇒-sym-l (sub-lift-pw σ δ X i)) δ∅) (as-poly-map-id τ δ∅))
+
+sub-lift-pw-inv' : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type (suc Δ)) (δ : Fin Δ' → obj) (X : obj) →
+                   (as-poly-map τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ X i)) δ∅ ∘ as-poly-map τ (λ i → ≡-to-⇒ (sym (sub-lift-pw σ δ X i))) δ∅)
+                     ≈ id _
+sub-lift-pw-inv' σ τ δ X =
+  ≈-trans (as-poly-map-comp τ _ _ δ∅)
+          (≈-trans (as-poly-map-cong τ (λ i → ≡-to-⇒-sym-r (sub-lift-pw σ δ X i)) δ∅) (as-poly-map-id τ δ∅))
+
+sub-lift-pw-natural⁻ : ∀ {Δ Δ'} (σ : TySub Δ Δ') {δ δ' : Fin Δ' → obj} (gs : ∀ i → δ i ⇒ δ' i) {X X' : obj} (k : X ⇒ X')
+                       (i : Fin (suc Δ)) →
+                       (as-poly-map (sub-lift σ i) (concat-mor {n = 1} (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k) gs) δ∅
+                          ∘ ≡-to-⇒ (sym (sub-lift-pw σ δ X i)))
+                         ≈ (≡-to-⇒ (sym (sub-lift-pw σ δ' X' i))
+                            ∘ concat-mor {n = 1} (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k) (λ i → as-poly-map (σ i) gs δ∅) i)
+sub-lift-pw-natural⁻ σ {δ} {δ'} gs {X} {X'} k i =
+  ≡-to-⇒-conj (sub-lift-pw σ δ X i) (sub-lift-pw σ δ' X' i) (sub-lift-pw-natural σ gs k i)
+
+mutual
+  subst-bwd-fwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) (δ : Fin Δ' → obj) → (subst-bwd σ τ δ ∘ subst-fwd σ τ δ) ≈ id _
+  subst-bwd-fwd σ (var i)     δ = id-left
+  subst-bwd-fwd σ unit        δ = id-left
+  subst-bwd-fwd σ (base s)    δ = id-left
+  subst-bwd-fwd σ (τ₁ [+] τ₂) δ = [+]-inv (subst-bwd-fwd σ τ₁ δ) (subst-bwd-fwd σ τ₂ δ)
+  subst-bwd-fwd σ (τ₁ [×] τ₂) δ = [×]-inv (subst-bwd-fwd σ τ₁ δ) (subst-bwd-fwd σ τ₂ δ)
+  subst-bwd-fwd σ (τ₁ [→] τ₂) δ = id-left
+  subst-bwd-fwd {Δ} {Δ'} σ (μ τ) δ = begin
+      μ-map A δ∅ P δ∅ (subst-bwd-body σ τ δ N) ∘ μ-map P δ∅ A δ∅ (subst-fwd-body σ τ δ M)
+    ≈⟨ μ-map-comp P δ∅ A δ∅ P δ∅ (subst-fwd-body σ τ δ M) (subst-bwd-body σ τ δ N) (subst-fwd-body σ τ δ N)
+                  (subst-fwd-body-carrier σ τ δ (μ-map A δ∅ P δ∅ (subst-bwd-body σ τ δ N))) ⟩
+      μ-map P δ∅ P δ∅ (subst-bwd-body σ τ δ N ∘ subst-fwd-body σ τ δ N)
+    ≈⟨ μ-map-cong _ _ _ _ (subst-body-bwd-fwd σ τ δ N) ⟩
+      μ-map P δ∅ P δ∅ (id _)
+    ≈⟨ μ-map-id P δ∅ ⟩
+      id _
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      A = as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)
+      P = as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ
+      M = μ-obj A δ∅
+      N = μ-obj P δ∅
+
+  subst-fwd-bwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) (δ : Fin Δ' → obj) → (subst-fwd σ τ δ ∘ subst-bwd σ τ δ) ≈ id _
+  subst-fwd-bwd σ (var i)     δ = id-left
+  subst-fwd-bwd σ unit        δ = id-left
+  subst-fwd-bwd σ (base s)    δ = id-left
+  subst-fwd-bwd σ (τ₁ [+] τ₂) δ = [+]-inv (subst-fwd-bwd σ τ₁ δ) (subst-fwd-bwd σ τ₂ δ)
+  subst-fwd-bwd σ (τ₁ [×] τ₂) δ = [×]-inv (subst-fwd-bwd σ τ₁ δ) (subst-fwd-bwd σ τ₂ δ)
+  subst-fwd-bwd σ (τ₁ [→] τ₂) δ = id-left
+  subst-fwd-bwd {Δ} {Δ'} σ (μ τ) δ = begin
+      μ-map P δ∅ A δ∅ (subst-fwd-body σ τ δ M) ∘ μ-map A δ∅ P δ∅ (subst-bwd-body σ τ δ N)
+    ≈⟨ μ-map-comp A δ∅ P δ∅ A δ∅ (subst-bwd-body σ τ δ N) (subst-fwd-body σ τ δ M) (subst-bwd-body σ τ δ M)
+                  (subst-bwd-body-carrier σ τ δ (μ-map P δ∅ A δ∅ (subst-fwd-body σ τ δ M))) ⟩
+      μ-map A δ∅ A δ∅ (subst-fwd-body σ τ δ M ∘ subst-bwd-body σ τ δ M)
+    ≈⟨ μ-map-cong _ _ _ _ (subst-body-fwd-bwd σ τ δ M) ⟩
+      μ-map A δ∅ A δ∅ (id _)
+    ≈⟨ μ-map-id A δ∅ ⟩
+      id _
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      A = as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)
+      P = as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ
+      M = μ-obj A δ∅
+      N = μ-obj P δ∅
+
+  subst-body-bwd-fwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type (suc Δ)) (δ : Fin Δ' → obj) (X : obj) →
+                       (subst-bwd-body σ τ δ X ∘ subst-fwd-body σ τ δ X) ≈ id _
+  subst-body-bwd-fwd σ τ δ X = begin
+      (((af₂ ∘ S⁻) ∘ T⁻) ∘ ab₁) ∘ (((af₁ ∘ Rs) ∘ S) ∘ ab₂)
+    ≈⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (assoc _ _ _)) ⟩
+      (((af₂ ∘ S⁻) ∘ T⁻) ∘ ab₁) ∘ (af₁ ∘ (Rs ∘ (S ∘ ab₂)))
+    ≈˘⟨ assoc _ _ _ ⟩
+      ((((af₂ ∘ S⁻) ∘ T⁻) ∘ ab₁) ∘ af₁) ∘ (Rs ∘ (S ∘ ab₂))
+    ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (apply-bwd-fwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend δ∅ X))) id-right)) ≈-refl ⟩
+      ((af₂ ∘ S⁻) ∘ T⁻) ∘ (Rs ∘ (S ∘ ab₂))
+    ≈˘⟨ assoc _ _ _ ⟩
+      (((af₂ ∘ S⁻) ∘ T⁻) ∘ Rs) ∘ (S ∘ ab₂)
+    ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (sub-lift-pw-inv σ τ δ X)) id-right)) ≈-refl ⟩
+      (af₂ ∘ S⁻) ∘ (S ∘ ab₂)
+    ≈˘⟨ assoc _ _ _ ⟩
+      ((af₂ ∘ S⁻) ∘ S) ∘ ab₂
+    ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (subst-bwd-fwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ))) id-right)) ≈-refl ⟩
+      af₂ ∘ ab₂
+    ≈⟨ apply-fwd-bwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X) ⟩
+      id _
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      af₁ = apply-fwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend δ∅ X)
+      ab₁ = apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend δ∅ X)
+      af₂ = apply-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X)
+      ab₂ = apply-bwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X)
+      Rs  = as-poly-map τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ X i)) δ∅
+      T⁻  = as-poly-map τ (λ i → ≡-to-⇒ (sym (sub-lift-pw σ δ X i))) δ∅
+      S   = subst-fwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ)
+      S⁻  = subst-bwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ)
+
+  subst-body-fwd-bwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type (suc Δ)) (δ : Fin Δ' → obj) (X : obj) →
+                       (subst-fwd-body σ τ δ X ∘ subst-bwd-body σ τ δ X) ≈ id _
+  subst-body-fwd-bwd σ τ δ X = begin
+      (((af₁ ∘ Rs) ∘ S) ∘ ab₂) ∘ (((af₂ ∘ S⁻) ∘ T⁻) ∘ ab₁)
+    ≈⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (assoc _ _ _)) ⟩
+      (((af₁ ∘ Rs) ∘ S) ∘ ab₂) ∘ (af₂ ∘ (S⁻ ∘ (T⁻ ∘ ab₁)))
+    ≈˘⟨ assoc _ _ _ ⟩
+      ((((af₁ ∘ Rs) ∘ S) ∘ ab₂) ∘ af₂) ∘ (S⁻ ∘ (T⁻ ∘ ab₁))
+    ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (apply-bwd-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X))) id-right)) ≈-refl ⟩
+      ((af₁ ∘ Rs) ∘ S) ∘ (S⁻ ∘ (T⁻ ∘ ab₁))
+    ≈˘⟨ assoc _ _ _ ⟩
+      (((af₁ ∘ Rs) ∘ S) ∘ S⁻) ∘ (T⁻ ∘ ab₁)
+    ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (subst-fwd-bwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ))) id-right)) ≈-refl ⟩
+      (af₁ ∘ Rs) ∘ (T⁻ ∘ ab₁)
+    ≈˘⟨ assoc _ _ _ ⟩
+      ((af₁ ∘ Rs) ∘ T⁻) ∘ ab₁
+    ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (sub-lift-pw-inv' σ τ δ X)) id-right)) ≈-refl ⟩
+      af₁ ∘ ab₁
+    ≈⟨ apply-fwd-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend δ∅ X) ⟩
+      id _
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      af₁ = apply-fwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend δ∅ X)
+      ab₁ = apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend δ∅ X)
+      af₂ = apply-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X)
+      ab₂ = apply-bwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X)
+      Rs  = as-poly-map τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ X i)) δ∅
+      T⁻  = as-poly-map τ (λ i → ≡-to-⇒ (sym (sub-lift-pw σ δ X i))) δ∅
+      S   = subst-fwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ)
+      S⁻  = subst-bwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ)
+
+  subst-bwd-natural : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) {δ δ' : Fin Δ' → obj} (gs : ∀ i → δ i ⇒ δ' i) →
+                      (as-poly-map (sub σ τ) gs δ∅ ∘ subst-bwd σ τ δ)
+                        ≈ (subst-bwd σ τ δ' ∘ as-poly-map τ (λ i → as-poly-map (σ i) gs δ∅) δ∅)
+  subst-bwd-natural σ τ {δ} {δ'} gs = begin
+      pm ∘ sb
+    ≈˘⟨ ≈-trans (∘-cong (subst-bwd-fwd σ τ δ') ≈-refl) id-left ⟩
+      (sb' ∘ sf') ∘ (pm ∘ sb)
+    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
+      sb' ∘ ((sf' ∘ pm) ∘ sb)
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong (subst-fwd-natural σ τ gs) ≈-refl) ⟩
+      sb' ∘ ((pm' ∘ sf) ∘ sb)
+    ≈⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (subst-fwd-bwd σ τ δ)) id-right)) ⟩
+      sb' ∘ pm'
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      pm  = as-poly-map (sub σ τ) gs δ∅
+      pm' = as-poly-map τ (λ i → as-poly-map (σ i) gs δ∅) δ∅
+      sf  = subst-fwd σ τ δ
+      sf' = subst-fwd σ τ δ'
+      sb  = subst-bwd σ τ δ
+      sb' = subst-bwd σ τ δ'
+
+  subst-bwd-body-natural : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type (suc Δ)) {δ δ' : Fin Δ' → obj} (gs : ∀ i → δ i ⇒ δ' i)
+                           {X X' : obj} (k : X ⇒ X') →
+                           (as-poly-map {n = 1} (sub (sub-lift σ) τ) gs (extend δ∅ X')
+                              ∘ fmor (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k)
+                              ∘ subst-bwd-body σ τ δ X)
+                             ≈ (subst-bwd-body σ τ δ' X'
+                                ∘ as-poly-map {n = 1} τ (λ i → as-poly-map (σ i) gs δ∅) (extend δ∅ X')
+                                ∘ fmor (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k))
+  subst-bwd-body-natural {Δ} {Δ'} σ τ {δ} {δ'} gs {X} {X'} k = begin
+      (pm₁ ∘ Fp) ∘ (((af₂ ∘ S⁻) ∘ T⁻) ∘ ab₁)
+    ≈˘⟨ assoc _ _ _ ⟩
+      ((pm₁ ∘ Fp) ∘ ((af₂ ∘ S⁻) ∘ T⁻)) ∘ ab₁
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      (((pm₁ ∘ Fp) ∘ (af₂ ∘ S⁻)) ∘ T⁻) ∘ ab₁
+    ≈˘⟨ ∘-cong (∘-cong (assoc _ _ _) ≈-refl) ≈-refl ⟩
+      ((((pm₁ ∘ Fp) ∘ af₂) ∘ S⁻) ∘ T⁻) ∘ ab₁
+    ≈⟨ ∘-cong (∘-cong (∘-cong (assoc _ _ _) ≈-refl) ≈-refl) ≈-refl ⟩
+      (((pm₁ ∘ (Fp ∘ af₂)) ∘ S⁻) ∘ T⁻) ∘ ab₁
+    ≈⟨ ∘-cong (∘-cong (∘-cong (∘-cong ≈-refl (apply-fwd-natural {n = 1} (sub (sub-lift σ) τ) δ ek)) ≈-refl) ≈-refl) ≈-refl ⟩
+      (((pm₁ ∘ (af₂' ∘ Q₆)) ∘ S⁻) ∘ T⁻) ∘ ab₁
+    ≈˘⟨ ∘-cong (∘-cong (∘-cong (assoc _ _ _) ≈-refl) ≈-refl) ≈-refl ⟩
+      ((((pm₁ ∘ af₂') ∘ Q₆) ∘ S⁻) ∘ T⁻) ∘ ab₁
+    ≈˘⟨ ∘-cong (∘-cong (∘-cong (∘-cong (apply-fwd-map {n = 1} (sub (sub-lift σ) τ) gs (extend δ∅ X')) ≈-refl) ≈-refl) ≈-refl) ≈-refl ⟩
+      ((((af₂'' ∘ Q₅) ∘ Q₆) ∘ S⁻) ∘ T⁻) ∘ ab₁
+    ≈⟨ ∘-cong (∘-cong (∘-cong (assoc _ _ _) ≈-refl) ≈-refl) ≈-refl ⟩
+      (((af₂'' ∘ (Q₅ ∘ Q₆)) ∘ S⁻) ∘ T⁻) ∘ ab₁
+    ≈⟨ ∘-cong (∘-cong (∘-cong (∘-cong ≈-refl step5) ≈-refl) ≈-refl) ≈-refl ⟩
+      (((af₂'' ∘ Q₇) ∘ S⁻) ∘ T⁻) ∘ ab₁
+    ≈⟨ ∘-cong (∘-cong (assoc _ _ _) ≈-refl) ≈-refl ⟩
+      ((af₂'' ∘ (Q₇ ∘ S⁻)) ∘ T⁻) ∘ ab₁
+    ≈⟨ ∘-cong (∘-cong (∘-cong ≈-refl (subst-bwd-natural (sub-lift σ) τ mk)) ≈-refl) ≈-refl ⟩
+      ((af₂'' ∘ (S⁻' ∘ Q₄)) ∘ T⁻) ∘ ab₁
+    ≈˘⟨ ∘-cong (∘-cong (assoc _ _ _) ≈-refl) ≈-refl ⟩
+      (((af₂'' ∘ S⁻') ∘ Q₄) ∘ T⁻) ∘ ab₁
+    ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ((af₂'' ∘ S⁻') ∘ (Q₄ ∘ T⁻)) ∘ ab₁
+    ≈⟨ ∘-cong (∘-cong ≈-refl step4) ≈-refl ⟩
+      ((af₂'' ∘ S⁻') ∘ (T⁻' ∘ Q₃)) ∘ ab₁
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      (((af₂'' ∘ S⁻') ∘ T⁻') ∘ Q₃) ∘ ab₁
+    ≈⟨ assoc _ _ _ ⟩
+      ((af₂'' ∘ S⁻') ∘ T⁻') ∘ (Q₃ ∘ ab₁)
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong step3 ≈-refl) ⟩
+      ((af₂'' ∘ S⁻') ∘ T⁻') ∘ ((Q₂ ∘ Q₁) ∘ ab₁)
+    ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      ((af₂'' ∘ S⁻') ∘ T⁻') ∘ (Q₂ ∘ (Q₁ ∘ ab₁))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (apply-bwd-natural {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) ek)) ⟩
+      ((af₂'' ∘ S⁻') ∘ T⁻') ∘ (Q₂ ∘ (ab₁' ∘ F))
+    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      ((af₂'' ∘ S⁻') ∘ T⁻') ∘ ((Q₂ ∘ ab₁') ∘ F)
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong (apply-bwd-map {n = 1} τ gs' (extend δ∅ X')) ≈-refl) ⟩
+      ((af₂'' ∘ S⁻') ∘ T⁻') ∘ ((ab₁'' ∘ pm) ∘ F)
+    ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      ((af₂'' ∘ S⁻') ∘ T⁻') ∘ (ab₁'' ∘ (pm ∘ F))
+    ≈˘⟨ assoc _ _ _ ⟩
+      (((af₂'' ∘ S⁻') ∘ T⁻') ∘ ab₁'') ∘ (pm ∘ F)
+    ≈˘⟨ assoc _ _ _ ⟩
+      ((((af₂'' ∘ S⁻') ∘ T⁻') ∘ ab₁'') ∘ pm) ∘ F
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      A    = as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)
+      P    = as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ
+      gs'  : ∀ i → ⟦ σ i ⟧ty δ ⇒ ⟦ σ i ⟧ty δ'
+      gs' i = as-poly-map (σ i) gs δ∅
+      ek   = extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k
+      mk   = concat-mor {n = 1} ek gs
+      pm   = as-poly-map {n = 1} τ gs' (extend δ∅ X')
+      pm₁  = as-poly-map {n = 1} (sub (sub-lift σ) τ) gs (extend δ∅ X')
+      F    = fmor A ek
+      Fp   = fmor P ek
+      af₂   = apply-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X)
+      af₂'  = apply-fwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X')
+      af₂'' = apply-fwd {n = 1} (sub (sub-lift σ) τ) δ' (extend δ∅ X')
+      ab₁   = apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend δ∅ X)
+      ab₁'  = apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ) (extend δ∅ X')
+      ab₁'' = apply-bwd {n = 1} τ (λ i → ⟦ σ i ⟧ty δ') (extend δ∅ X')
+      T⁻   = as-poly-map τ (λ i → ≡-to-⇒ (sym (sub-lift-pw σ δ X i))) δ∅
+      T⁻'  = as-poly-map τ (λ i → ≡-to-⇒ (sym (sub-lift-pw σ δ' X' i))) δ∅
+      S⁻   = subst-bwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ)
+      S⁻'  = subst-bwd (sub-lift σ) τ (concat (extend {0} δ∅ X') δ')
+      m₁   = concat-mor {n = 1} ek (λ i → id (⟦ σ i ⟧ty δ))
+      m₂   = concat-mor {n = 1} (λ i → id (extend δ∅ X' i)) gs'
+      m₃   = concat-mor {n = 1} ek gs'
+      m₄   : ∀ i → ⟦ sub-lift σ i ⟧ty (concat (extend {0} δ∅ X) δ) ⇒ ⟦ sub-lift σ i ⟧ty (concat (extend {0} δ∅ X') δ')
+      m₄ i = as-poly-map (sub-lift σ i) mk δ∅
+      m₅   = concat-mor {n = 1} (λ i → id (extend δ∅ X' i)) gs
+      m₆   = concat-mor {n = 1} ek (λ i → id (δ i))
+      Q₁   = as-poly-map τ m₁ δ∅
+      Q₂   = as-poly-map τ m₂ δ∅
+      Q₃   = as-poly-map τ m₃ δ∅
+      Q₄   = as-poly-map τ m₄ δ∅
+      Q₅   = as-poly-map (sub (sub-lift σ) τ) m₅ δ∅
+      Q₆   = as-poly-map (sub (sub-lift σ) τ) m₆ δ∅
+      Q₇   = as-poly-map (sub (sub-lift σ) τ) mk δ∅
+      eq3 : ∀ i → (m₂ i ∘ m₁ i) ≈ m₃ i
+      eq3 i = ≈-trans (concat-mor-comp (λ i → id (extend δ∅ X' i)) ek gs' (λ i → id (⟦ σ i ⟧ty δ)) i)
+                      (concat-mor-unit {n = 1} ek gs' i)
+      step3 : (Q₂ ∘ Q₁) ≈ Q₃
+      step3 = ≈-trans (as-poly-map-comp τ m₂ m₁ δ∅) (as-poly-map-cong τ eq3 δ∅)
+      step4 : (Q₄ ∘ T⁻) ≈ (T⁻' ∘ Q₃)
+      step4 = ≈-trans (as-poly-map-comp τ m₄ (λ i → ≡-to-⇒ (sym (sub-lift-pw σ δ X i))) δ∅)
+                      (≈-trans (as-poly-map-cong τ (sub-lift-pw-natural⁻ σ gs k) δ∅)
+                               (≈-sym (as-poly-map-comp τ (λ i → ≡-to-⇒ (sym (sub-lift-pw σ δ' X' i))) m₃ δ∅)))
+      eq5 : ∀ i → (m₅ i ∘ m₆ i) ≈ mk i
+      eq5 i = ≈-trans (concat-mor-comp (λ i → id (extend δ∅ X' i)) ek gs (λ i → id (δ i)) i)
+                      (concat-mor-unit {n = 1} ek gs i)
+      step5 : (Q₅ ∘ Q₆) ≈ Q₇
+      step5 = ≈-trans (as-poly-map-comp (sub (sub-lift σ) τ) m₅ m₆ δ∅) (as-poly-map-cong (sub (sub-lift σ) τ) eq5 δ∅)
+
+  subst-bwd-body-carrier : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type (suc Δ)) (δ : Fin Δ' → obj) {X X' : obj} (k : X ⇒ X') →
+                           (fmor (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k)
+                              ∘ subst-bwd-body σ τ δ X)
+                             ≈ (subst-bwd-body σ τ δ X'
+                                ∘ fmor (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k))
+  subst-bwd-body-carrier {Δ} {Δ'} σ τ δ {X} {X'} k = begin
+      Fp ∘ body
+    ≈˘⟨ ≈-trans (∘-cong (as-poly-map-id (sub (sub-lift σ) τ) (extend δ∅ X')) ≈-refl) id-left ⟩
+      as-poly-map {n = 1} (sub (sub-lift σ) τ) (λ i → id (δ i)) (extend δ∅ X') ∘ (Fp ∘ body)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (as-poly-map {n = 1} (sub (sub-lift σ) τ) (λ i → id (δ i)) (extend δ∅ X') ∘ Fp) ∘ body
+    ≈⟨ subst-bwd-body-natural σ τ (λ i → id (δ i)) k ⟩
+      (body' ∘ as-poly-map {n = 1} τ (λ i → as-poly-map (σ i) (λ i → id (δ i)) δ∅) (extend δ∅ X')) ∘ F
+    ≈⟨ ∘-cong (≈-trans (∘-cong ≈-refl (≈-trans (as-poly-map-cong τ (λ i → as-poly-map-id (σ i) δ∅) (extend δ∅ X'))
+                                                 (as-poly-map-id τ (extend δ∅ X'))))
+                       id-right)
+              ≈-refl ⟩
+      body' ∘ F
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      F     = fmor (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k)
+      Fp    = fmor (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k)
+      body  = subst-bwd-body σ τ δ X
+      body' = subst-bwd-body σ τ δ X'
+
+
 -- The single substitution push τ', read pointwise as an environment.
 push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} δ∅ (⟦ τ' ⟧ty (λ ()))) (λ ()) i
 push-pw τ' Fin.zero = refl

@@ -68,6 +68,10 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ≡-to-⇒-sym-r : ∀ {x y} (e : x ≡ y) → (≡-to-⇒ e ∘ ≡-to-⇒ (≡.sym e)) ≈ id y
   ≡-to-⇒-sym-r ≡.refl = id-left
 
+  ≡-to-⇒-conj : ∀ {x y x' y'} (e : x ≡ y) (e' : x' ≡ y') {f : y ⇒ y'} {g : x ⇒ x'} →
+                (f ∘ ≡-to-⇒ e) ≈ (≡-to-⇒ e' ∘ g) → (g ∘ ≡-to-⇒ (≡.sym e)) ≈ (≡-to-⇒ (≡.sym e') ∘ f)
+  ≡-to-⇒-conj ≡.refl ≡.refl h = ≈-trans id-right (≈-trans (≈-sym id-left) (≈-trans (≈-sym h) (≈-trans id-right (≈-sym id-left))))
+
   id-swap : ∀ {x y}{f : x ⇒ y} → (id y ∘ f) ≈ (f ∘ id x)
   id-swap = isEquiv .trans id-left (≈-sym id-right)
 
