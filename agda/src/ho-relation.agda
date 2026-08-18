@@ -244,6 +244,67 @@ DepRel′ N (μ τ) p {roll v} {i} r o d =
 DepRel⊑′ N τ p {i = i} r s o d =
   ∃ (∣ Fib τ i ∣) (λ m → Fib._⊑_ τ i m (ctrl-dep-at τ i s) ∧ DepRel′ N τ p r o (Fib._+_ τ i d m))
 
+-- The relations do not depend on the bound. Both directions at once, since an arrow reverses the
+-- direction at its domain.
+ValRel′-bounds : ∀ {N N'} τ {p : arr-depth τ ≤ N} {p' : arr-depth τ ≤ N'} {v : Val τ} {i : Ix τ} →
+                 (ValRel′ N τ p v i → ValRel′ N' τ p' v i) × (ValRel′ N' τ p' v i → ValRel′ N τ p v i)
+ValRel′-bounds unit {v = unit} = (λ r → r) , (λ r → r)
+ValRel′-bounds (base s) {v = const a} = (λ r → r) , (λ r → r)
+ValRel′-bounds (σ [+] τ) {v = inl v} =
+  (λ (i' , r , e) → i' , proj₁ (ValRel′-bounds σ) r , e) , (λ (i' , r , e) → i' , proj₂ (ValRel′-bounds σ) r , e)
+ValRel′-bounds (σ [+] τ) {v = inr v} =
+  (λ (i' , r , e) → i' , proj₁ (ValRel′-bounds τ) r , e) , (λ (i' , r , e) → i' , proj₂ (ValRel′-bounds τ) r , e)
+ValRel′-bounds (σ [×] τ) {v = pair v u} {i , j} =
+  (λ (r , r') → proj₁ (ValRel′-bounds σ) r , proj₁ (ValRel′-bounds τ) r') ,
+  (λ (r , r') → proj₂ (ValRel′-bounds σ) r , proj₂ (ValRel′-bounds τ) r')
+ValRel′-bounds {suc N} {suc N'} (σ [→] τ) {s≤s p} {s≤s p'} {clo γ' t} =
+  (λ r rv D → proj₁ (ValRel′-bounds τ) (r (proj₂ (ValRel′-bounds σ) rv) D)) ,
+  (λ r rv D → proj₂ (ValRel′-bounds τ) (r (proj₁ (ValRel′-bounds σ) rv) D))
+ValRel′-bounds (μ τ) {v = roll v} = ValRel′-bounds (τ [ μ τ ])
+
+ValRel-at-bound : ∀ {N N'} τ {p : arr-depth τ ≤ N} {p' : arr-depth τ ≤ N'} {v : Val τ} {i : Ix τ} →
+                  ValRel′ N τ p v i → ValRel′ N' τ p' v i
+ValRel-at-bound τ = proj₁ (ValRel′-bounds τ)
+
+DepRel′-bounds : ∀ {N N'} τ {p : arr-depth τ ≤ N} {p' : arr-depth τ ≤ N'} {v : Val τ} {i : Ix τ} →
+                 (∀ (r : ValRel′ N τ p v i) {o d} →
+                    DepRel′ N τ p r o d → DepRel′ N' τ p' (proj₁ (ValRel′-bounds τ) r) o d) ∧
+                 (∀ (r : ValRel′ N' τ p' v i) {o d} →
+                    DepRel′ N' τ p' r o d → DepRel′ N τ p (proj₂ (ValRel′-bounds τ) r) o d)
+DepRel′-bounds unit {v = unit} = (λ r h → h) , (λ r h → h)
+DepRel′-bounds (base s) {v = const a} = (λ r h → h) , (λ r h → h)
+DepRel′-bounds (σ [+] τ) {v = inl v} =
+  (λ (i' , r , ⟪ e ⟫) (h₀ , h) → h₀ , proj₁ (DepRel′-bounds σ) r h) ,
+  (λ (i' , r , ⟪ e ⟫) (h₀ , h) → h₀ , proj₂ (DepRel′-bounds σ) r h)
+DepRel′-bounds (σ [+] τ) {v = inr v} =
+  (λ (i' , r , ⟪ e ⟫) (h₀ , h) → h₀ , proj₁ (DepRel′-bounds τ) r h) ,
+  (λ (i' , r , ⟪ e ⟫) (h₀ , h) → h₀ , proj₂ (DepRel′-bounds τ) r h)
+DepRel′-bounds (σ [×] τ) {v = pair v u} {i , j} =
+  (λ (r , r') (h₀ , (h₁ , h₂)) → h₀ , (proj₁ (DepRel′-bounds σ) r h₁ , proj₁ (DepRel′-bounds τ) r' h₂)) ,
+  (λ (r , r') (h₀ , (h₁ , h₂)) → h₀ , (proj₂ (DepRel′-bounds σ) r h₁ , proj₂ (DepRel′-bounds τ) r' h₂))
+DepRel′-bounds {suc N} {suc N'} (σ [→] τ) {s≤s p} {s≤s p'} {clo γ' t} =
+  (λ r (h₀ , hc) → h₀ , λ s' rv z y hz D →
+     proj₁ (DepRel′-bounds τ) _ (hc s' (proj₂ (ValRel′-bounds σ) rv) z y (bwd rv hz) D)) ,
+  (λ r (h₀ , hc) → h₀ , λ s' rv z y hz D →
+     proj₂ (DepRel′-bounds τ) _ (hc s' (proj₁ (ValRel′-bounds σ) rv) z y (fwd rv hz) D))
+  where
+    fwd : ∀ {v j} (rv : ValRel′ N σ (bound₁ p) v j) {s o d} → DepRel⊑′ N σ (bound₁ p) rv s o d →
+          DepRel⊑′ N' σ (bound₁ p') (proj₁ (ValRel′-bounds σ) rv) s o d
+    fwd rv (m , (dm , h)) = m , (dm , proj₁ (DepRel′-bounds σ) rv h)
+    bwd : ∀ {v j} (rv : ValRel′ N' σ (bound₁ p') v j) {s o d} → DepRel⊑′ N' σ (bound₁ p') rv s o d →
+          DepRel⊑′ N σ (bound₁ p) (proj₂ (ValRel′-bounds σ) rv) s o d
+    bwd rv (m , (dm , h)) = m , (dm , proj₂ (DepRel′-bounds σ) rv h)
+DepRel′-bounds (μ τ) {v = roll v} =
+  (λ r h → proj₁ (DepRel′-bounds (τ [ μ τ ])) r h) , (λ r h → proj₂ (DepRel′-bounds (τ [ μ τ ])) r h)
+
+DepRel-at-bound : ∀ {N N'} τ {p : arr-depth τ ≤ N} {p' : arr-depth τ ≤ N'} {v : Val τ} {i : Ix τ}
+                  (r : ValRel′ N τ p v i) {o d} → DepRel′ N τ p r o d → DepRel′ N' τ p' (ValRel-at-bound τ r) o d
+DepRel-at-bound τ = proj₁ (DepRel′-bounds τ)
+
+DepRel⊑-at-bound : ∀ {N N'} τ {p : arr-depth τ ≤ N} {p' : arr-depth τ ≤ N'} {v : Val τ} {i : Ix τ}
+                   (r : ValRel′ N τ p v i) {s o d} → DepRel⊑′ N τ p r s o d → DepRel⊑′ N' τ p' (ValRel-at-bound τ r) s o d
+DepRel⊑-at-bound τ r (m , (dm , h)) = m , (dm , DepRel-at-bound τ r h)
+
 -- A primitive's arguments need no relations of their own. The model's index at a tuple of
 -- arguments is a tuple of sort indices, and sort-vals-setoid is built from ⊗-setoid, whose
 -- equality is the pairwise conjunction, so the value relation is equality in that setoid, one
