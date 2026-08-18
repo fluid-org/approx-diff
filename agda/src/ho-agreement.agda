@@ -237,15 +237,7 @@ private
     -- (e + a) + (e + m) ≈ e + (m + a)
     rearr : F._≈_ τ' i (F._+_ τ' i (F._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀)) (F._+_ τ' i (ctrl-dep-at τ' i s) m))
                        (F._+_ τ' i (ctrl-dep-at τ' i s) (F._+_ τ' i m (ctrl-dep-at τ' i a₀)))
-    rearr =
-      F.trans τ' i (F.+-cong τ' i (F.+-comm τ' i) (F.refl τ' i))
-      (F.trans τ' i (F.+-assoc τ' i)
-      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.sym τ' i (F.+-assoc τ' i)))
-      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.+-cong τ' i (ctrl-dep-root τ' i s) (F.refl τ' i)))
-      (F.trans τ' i (F.+-cong τ' i (F.refl τ' i) (F.+-comm τ' i))
-      (F.trans τ' i (F.sym τ' i (F.+-assoc τ' i))
-      (F.trans τ' i (F.+-cong τ' i (F.+-comm τ' i) (F.refl τ' i))
-                    (F.+-comm τ' i)))))))
+    rearr = F.trans τ' i (F.+-interchange τ' i) (F.+-cong τ' i (F.⊑-refl τ' i) (F.+-comm τ' i))
 
 -- The branch of a case: its environment is related at the scrutinee's root plus the weighted control
 -- input, the scrutinee's payload carrying the control dependence at the control input's value as further
@@ -259,19 +251,10 @@ private
                  (g , y_v)
   branch-env {τk = τk} {γ = γ} rγ {v} {i'} r_v s x g o_s y_v rel h =
     EnvDepRel-resp rγ Sw (λ m → ≈-sym (ap-p₁-++ x (λ m' → o_s (suc m')) m)) (EnvDepRel-mono rγ s (o_s zero) rel) ,
-    DepRel⊑-resp τk r_v Sw (λ m → ≈-sym (ap-p₂-++ x (λ m' → o_s (suc m')) m)) (ctrl-dep-at τk i' s , (dom-s , h))
+    DepRel⊑-resp τk r_v Sw (λ m → ≈-sym (ap-p₂-++ x (λ m' → o_s (suc m')) m))
+      (DepRel⊑-mono τk r_v s (o_s zero) (ctrl-dep-at τk i' s , (F.⊑-refl τk i' , h)))
     where
     Sw = o_s zero +ₛ (c ·ₛ s)
-    dom-s : F._⊑_ τk i' (ctrl-dep-at τk i' s) (ctrl-dep-at τk i' Sw)
-    dom-s =
-      F.trans τk i' (F.+-cong τk i' (F.refl τk i') (F.trans τk i' (ctrl-dep-linear τk i' (o_s zero) (c ·ₛ s))
-                                                                  (F.+-cong τk i' (F.refl τk i') (ctrl-dep-c τk i' s))))
-      (F.trans τk i' (F.+-cong τk i' (F.refl τk i') (F.+-comm τk i'))
-      (F.trans τk i' (F.sym τk i' (F.+-assoc τk i'))
-      (F.trans τk i' (F.+-cong τk i' (ctrl-dep-root τk i' s) (F.refl τk i'))
-      (F.trans τk i' (F.+-comm τk i')
-      (F.sym τk i' (F.trans τk i' (ctrl-dep-linear τk i' (o_s zero) (c ·ₛ s))
-                                  (F.+-cong τk i' (F.refl τk i') (ctrl-dep-c τk i' s))))))))
 
   -- Transport there and back is the identity.
   roundtrip : ∀ τ {i₁ ic : Ix τ} (E : Setoid._≈_ (⟦ τ ⟧ .idx) i₁ ic) (Eidx : Setoid._≈_ (⟦ τ ⟧ .idx) ic i₁)
@@ -845,12 +828,8 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   -- dependence at the application's weighted control input.
   arg : DepRel⊑ σ r₂ ((c ·ₛ s) +ₛ o zero) z yN
   arg = ctrl-dep-at σ j s ,
-        (F.trans σ j (F.+-cong σ j (F.refl σ j) (F.trans σ j (ctrl-dep σ .at j .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o₀))
-                                                             (ctrl-dep-double σ j s a)))
-        (F.trans σ j (F.sym σ j (F.+-assoc σ j))
-        (F.trans σ j (F.+-cong σ j (ctrl-dep-root σ j s) (F.refl σ j))
-                     (F.sym σ j (F.trans σ j (ctrl-dep σ .at j .SemiMod._⇒_.func-resp-≈ (+-cong ≈-refl o₀))
-                                             (ctrl-dep-double σ j s a))))) ,
+        (F.⊑-trans σ j (⊑ctrl-dep-mono σ j s (o zero) _ (F.⊑-refl σ j))
+                       (F.≈→⊑ σ j (ctrl-dep σ .at j .SemiMod._⇒_.func-resp-≈ +-comm)) ,
          DepRel-resp σ r₂ (λ k → ≈-refl) (F.+-comm σ j) IH₂)
 
   -- The clause of the function's relation at the application's weighted control input and the argument.

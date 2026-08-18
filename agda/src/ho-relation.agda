@@ -17,6 +17,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import prop
 open import prop using (_∧_; ∃; ∃ₛ; Prf; ⟪_⟫; _,_)
 open import prop-setoid using (Setoid; IsEquivalence)
+open import basics using (IsJoin)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 import signature
@@ -594,14 +595,8 @@ ctrl-dep-c τ i s =
 
 ⊑ctrl-dep-mono : ∀ τ (i : Ix τ) s s' m → F._⊑_ τ i m (ctrl-dep-at τ i s) → F._⊑_ τ i m (ctrl-dep-at τ i (s' +ₛ (c ·ₛ s)))
 ⊑ctrl-dep-mono τ i s s' m dm =
-  F.trans τ i (F.+-cong τ i (F.refl τ i) (F.trans τ i (ctrl-dep-linear τ i s' (c ·ₛ s))
-                                                      (F.+-cong τ i (F.refl τ i) (ctrl-dep-c τ i s))))
-  (F.trans τ i (F.+-cong τ i (F.refl τ i) (F.+-comm τ i))
-  (F.trans τ i (F.sym τ i (F.+-assoc τ i))
-  (F.trans τ i (F.+-cong τ i dm (F.refl τ i))
-  (F.trans τ i (F.+-comm τ i)
-  (F.sym τ i (F.trans τ i (ctrl-dep-linear τ i s' (c ·ₛ s))
-                          (F.+-cong τ i (F.refl τ i) (ctrl-dep-c τ i s))))))))
+  F.⊑-trans τ i dm (F.⊑-trans τ i (IsJoin.inr (F.∨-isJoin τ i))
+    (F.≈→⊑ τ i (F.sym τ i (F.trans τ i (ctrl-dep-linear τ i s' (c ·ₛ s)) (F.+-cong τ i (F.refl τ i) (ctrl-dep-c τ i s))))))
 
 DepRel⊑-mono : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s s' {o d} →
                DepRel⊑ τ r s o d → DepRel⊑ τ r (s' +ₛ (c ·ₛ s)) o d
@@ -647,18 +642,13 @@ cs-absorb s e =
   (≈-trans (≈-sym Sc.·-+-distribₗ)
   (≈-trans (·-cong ≈-refl (≈-trans +-comm (c-absorb e))) ·-comm))
 
--- The control dependence at s is below itself.
-ctrl-dep-root : ∀ τ (i : Ix τ) s → F._⊑_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i s)
-ctrl-dep-root τ i s = F.trans τ i (F.sym τ i (ctrl-dep-linear τ i s s))
-                            (ctrl-dep τ .at i .SemiMod._⇒_.func-resp-≈ (+-idem s))
-
 -- The control dependence at the weighted s plus itself and a further weight: the one at s plus the
 -- one at the further weight.
 ctrl-dep-double : ∀ τ (i : Ix τ) s a → F._≈_ τ i (ctrl-dep-at τ i ((c ·ₛ s) +ₛ ((c ·ₛ s) +ₛ a))) (F._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i a))
 ctrl-dep-double τ i s a =
   F.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) ((c ·ₛ s) +ₛ a))
   (F.trans τ i (F.+-cong τ i (ctrl-dep-c τ i s) (F.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) a) (F.+-cong τ i (ctrl-dep-c τ i s) (F.refl τ i))))
-  (F.trans τ i (F.sym τ i (F.+-assoc τ i)) (F.+-cong τ i (ctrl-dep-root τ i s) (F.refl τ i))))
+  (F.trans τ i (F.sym τ i (F.+-assoc τ i)) (F.+-cong τ i (F.⊑-refl τ i) (F.refl τ i))))
 
 -- Reading the first position of a lifted vector, and its tail, by the projections.
 built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x →
