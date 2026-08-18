@@ -6,7 +6,8 @@
 
 open import Data.Fin using (Fin; zero; suc)
 open import Data.List using (List; []; _∷_)
-open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _⊔_; _≤_; z≤n)
+open import Data.Nat.Properties using (≤-refl; ⊔-lub; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 open import Relation.Nullary using (Dec; yes; no)
 
@@ -132,6 +133,47 @@ sub-ren-id (μ τ)       σ∘ρ≡id = cong μ (sub-ren-id τ lifted)
     lifted : ∀ i → sub-lift _ (extᵗ _ i) ≡ var i
     lifted zero    = refl
     lifted (suc i) rewrite σ∘ρ≡id i = refl
+
+arr-depth : ∀ {Δ} → type Δ → ℕ
+arr-depth (var i)     = 0
+arr-depth unit        = 0
+arr-depth (base s)    = 0
+arr-depth (τ₁ [+] τ₂) = arr-depth τ₁ ⊔ arr-depth τ₂
+arr-depth (τ₁ [×] τ₂) = arr-depth τ₁ ⊔ arr-depth τ₂
+arr-depth (τ₁ [→] τ₂) = suc (arr-depth τ₁ ⊔ arr-depth τ₂)
+arr-depth (μ τ)       = arr-depth τ
+
+arr-depth-ren : ∀ {Δ₁ Δ₂} (ρ : TyRen Δ₁ Δ₂) (τ : type Δ₁) → arr-depth (ρ *ᵗ τ) ≡ arr-depth τ
+arr-depth-ren ρ (var i)     = refl
+arr-depth-ren ρ unit        = refl
+arr-depth-ren ρ (base s)    = refl
+arr-depth-ren ρ (τ₁ [+] τ₂) = cong₂ _⊔_ (arr-depth-ren ρ τ₁) (arr-depth-ren ρ τ₂)
+arr-depth-ren ρ (τ₁ [×] τ₂) = cong₂ _⊔_ (arr-depth-ren ρ τ₁) (arr-depth-ren ρ τ₂)
+arr-depth-ren ρ (τ₁ [→] τ₂) = refl
+arr-depth-ren ρ (μ τ)       = arr-depth-ren (extᵗ ρ) τ
+
+arr-depth-sub : ∀ {Δ Δ' n} (σ : TySub Δ Δ') (τ : type Δ) → (∀ i → arr-depth (σ i) ≤ n) → arr-depth τ ≤ n →
+                arr-depth (sub σ τ) ≤ n
+arr-depth-sub σ (var i)     hσ hτ = hσ i
+arr-depth-sub σ unit        hσ hτ = hτ
+arr-depth-sub σ (base s)    hσ hτ = hτ
+arr-depth-sub σ (τ₁ [+] τ₂) hσ hτ =
+  ⊔-lub (arr-depth-sub σ τ₁ hσ (m⊔n≤o⇒m≤o _ _ hτ)) (arr-depth-sub σ τ₂ hσ (m⊔n≤o⇒n≤o _ _ hτ))
+arr-depth-sub σ (τ₁ [×] τ₂) hσ hτ =
+  ⊔-lub (arr-depth-sub σ τ₁ hσ (m⊔n≤o⇒m≤o _ _ hτ)) (arr-depth-sub σ τ₂ hσ (m⊔n≤o⇒n≤o _ _ hτ))
+arr-depth-sub σ (τ₁ [→] τ₂) hσ hτ = hτ
+arr-depth-sub σ (μ τ)       hσ hτ = arr-depth-sub (sub-lift σ) τ lifted hτ
+  where
+    lifted : ∀ i → arr-depth (sub-lift σ i) ≤ _
+    lifted zero    = z≤n
+    lifted (suc i) rewrite arr-depth-ren suc (σ i) = hσ i
+
+arr-depth-unfold : ∀ {Δ} (τ : type (suc Δ)) → arr-depth (τ [ μ τ ]) ≤ arr-depth (μ τ)
+arr-depth-unfold τ = arr-depth-sub (push (μ τ)) τ pushed ≤-refl
+  where
+    pushed : ∀ i → arr-depth (push (μ τ) i) ≤ arr-depth τ
+    pushed zero    = ≤-refl
+    pushed (suc i) = z≤n
 
 -- Total width of a list of sorts under a per-sort width assignment.
 data ctxt : Set ℓ where
