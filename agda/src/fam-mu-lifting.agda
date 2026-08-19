@@ -534,6 +534,67 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     apply-fam-natural (bind Q md) Fin.zero    {a} {a'} p = reindex-fam-W-natural md {a} {a'} p
     apply-fam-natural (bind Q md) (Fin.suc v) p = apply-fam-natural md v p
 
+module ReindexSection {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj}
+    (δAc : ∀ i → Section (δA i)) (δBc : ∀ i → Section (δB i)) where
+  private
+    module TA = Tree δA
+    module TB = Tree δB
+    module MA = MuSection δA δAc
+    module MB = MuSection δB δBc
+  open Reindex δA δB
+
+  data MorDSec : ∀ {k} {ρA : Fin k → Fin nA ⊎ Sort nA} {ρB : Fin k → Fin nB ⊎ Sort nB}
+                 {dA : ∀ v → TA.DecoAssign (ρA v)} {dB : ∀ v → TB.DecoAssign (ρB v)} →
+                 MorD ρA ρB dA dB → (∀ v → MA.DecoAssignSection (dA v)) →
+                 (∀ v → MB.DecoAssignSection (dB v)) → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+    base-s : ∀ {k} {ρA : Fin k → Fin nA ⊎ Sort nA} {ρB : Fin k → Fin nB ⊎ Sort nB}
+             {dA : ∀ v → TA.DecoAssign (ρA v)} {dB : ∀ v → TB.DecoAssign (ρB v)}
+             {f : ∀ v → TA.El (ρA v) → TB.El (ρB v)}
+             {f-resp : ∀ v {a a'} → TA.elEq (ρA v) a a' → TB.elEq (ρB v) (f v a) (f v a')}
+             {ffam : ∀ v a → TA.fib-el (ρA v) (dA v) a ⇒ TB.fib-el (ρB v) (dB v) (f v a)}
+             {ffam-natural : ∀ v {a a'} (p : TA.elEq (ρA v) a a') →
+                (ffam v a' ∘ TA.fib-el-subst (ρA v) (dA v) p)
+                  ≈ (TB.fib-el-subst (ρB v) (dB v) (f-resp v p) ∘ ffam v a)}
+             {dAc : ∀ v → MA.DecoAssignSection (dA v)} {dBc : ∀ v → MB.DecoAssignSection (dB v)} →
+             (∀ v a → (ffam v a ∘ MA.fib-el-unit (ρA v) (dA v) (dAc v) a)
+                      ≈ MB.fib-el-unit (ρB v) (dB v) (dBc v) (f v a)) →
+             MorDSec (base {ρA = ρA} {ρB = ρB} {dA = dA} {dB = dB} f f-resp ffam ffam-natural) dAc dBc
+    bind-s : ∀ {k} {ρA ρB dA dB} {md : MorD {k} ρA ρB dA dB} {dAc dBc} (Q : Poly (suc k))
+             (Qc : PolySection Q) → MorDSec md dAc dBc →
+             MorDSec (bind Q md) (MA.deco-ext-section Q Qc dAc) (MB.deco-ext-section Q Qc dBc)
+
+  mutual
+    reindex-fam-unit : ∀ {j} (R : Poly j) (Rc : PolySection R) {ηA ηB dA dB}
+      {md : MorD ηA ηB dA dB} {dAc dBc} → MorDSec md dAc dBc →
+      ∀ (a : TA.⟦ ∣ R ∣ ⟧shape ηA) →
+      (reindex-fam R md {a} ∘ MA.fib-shape-unit R dA Rc dAc a)
+        ≈ MB.fib-shape-unit R dB Rc dBc (reindex-shape ∣ R ∣ md a)
+    reindex-fam-unit (const A) Ac ms a = id-left
+    reindex-fam-unit (var v)   _  ms a = apply-fam-unit ms v a
+    reindex-fam-unit (P' + Q') (P'c , Q'c) ms (inj₁ a) =
+      ≈-trans (L-elem-natural _ _) (L-elem-cong (reindex-fam-unit P' P'c ms a))
+    reindex-fam-unit (P' + Q') (P'c , Q'c) ms (inj₂ b) =
+      ≈-trans (L-elem-natural _ _) (L-elem-cong (reindex-fam-unit Q' Q'c ms b))
+    reindex-fam-unit (P' × Q') (P'c , Q'c) ms (a , b) =
+      ≈-trans (L-elem-natural _ _)
+        (L-elem-cong (≈-trans (pair-compose _ _ _ _)
+          (pair-cong (reindex-fam-unit P' P'c ms a) (reindex-fam-unit Q' Q'c ms b))))
+    reindex-fam-unit (μ Q') Q'c ms t = reindex-fam-W-unit Q'c ms t
+
+    reindex-fam-W-unit : ∀ {k} {Q : Poly (suc k)} (Qc : PolySection Q) {ρA ρB dA dB}
+      {md : MorD ρA ρB dA dB} {dAc dBc} → MorDSec md dAc dBc → ∀ (t : TA.W ∣ Q ∣ ρA) →
+      (reindex-fam-W md {t} ∘ MA.fib-unit Q dA Qc dAc t)
+        ≈ MB.fib-unit Q dB Qc dBc (reindex md t)
+    reindex-fam-W-unit {Q = Q} Qc ms (TA.sup x) = reindex-fam-unit Q Qc (bind-s Q Qc ms) x
+
+    apply-fam-unit : ∀ {k} {ρA ρB dA dB} {md : MorD {k} ρA ρB dA dB} {dAc dBc} →
+      MorDSec md dAc dBc → ∀ (v : Fin k) (a : TA.El (ρA v)) →
+      (apply-fam md v a ∘ MA.fib-el-unit (ρA v) (dA v) (dAc v) a)
+        ≈ MB.fib-el-unit (ρB v) (dB v) (dBc v) (apply md v a)
+    apply-fam-unit (base-s h)       v a = h v a
+    apply-fam-unit (bind-s Q Qc ms) Fin.zero    a = reindex-fam-W-unit Qc ms a
+    apply-fam-unit (bind-s Q Qc ms) (Fin.suc v) a = apply-fam-unit ms v a
+
 -- Fibre reindex over an index-only reindex `cmb`, driven by an "external" per-variable action `act`: a
 -- fold's fibre action is Γ-dependent, so it can't live in a reindex morphism and is carried separately.
 -- The ambient Γ-fibre is `G`.
@@ -1124,11 +1185,55 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       (≈-trans (∘-cong₁ (R.reindex-fam-natural P mor₀ (embed-idx-resp P e)))
                (assoc _ _ _))))
 
--- FIXME: Should this file be called has-mu? I'm also not sure we need all these separate files.
+    module InMapSection (δc : ∀ i → Section (δ i)) (Pc : PolySection P) where
+      private
+        μc : Section (μ-fam P δ)
+        μc = MuSection.μ-section δ δc P Pc
+        module MX = MuSection δ' (extend-section δc μc)
+        module Mδ = MuSection δ δc
+        module RS = ReindexSection (extend-section δc μc) δc
+
+      mor₀-sec : RS.MorDSec mor₀ (λ v → lift tt) (Mδ.deco-ext-section P Pc (λ i → lift tt))
+      mor₀-sec = RS.base-s h
+        where
+        h : ∀ v a → (m₀-fam v a ∘ MX.fib-el-unit (inj₁ v) (lift tt) (lift tt) a)
+                    ≈ Mδ.fib-el-unit (Srt.η₀ ∣ P ∣ v) (Tδ.deco-ext P (λ i → lift tt) v)
+                                     (Mδ.deco-ext-section P Pc (λ i → lift tt) v) (m₀ v a)
+        h Fin.zero    a = id-left
+        h (Fin.suc i) a = id-left
+
+      embed-unit : (Q : Poly (suc n)) (Qc : PolySection Q) (x : fobj μ-fam Q δ' .idx .Carrier) →
+        (embed-fam Q x ∘ poly-section Q Qc (extend-section δc μc) .at x)
+          ≈ MX.fib-shape-unit Q (λ v → lift tt) Qc (λ v → lift tt) (embed-idx Q x)
+      embed-unit (const A) Ac a = id-left
+      embed-unit (var v)   _  a = id-left
+      embed-unit (Q₁ + Q₂) (Q₁c , Q₂c) (inj₁ x) =
+        ≈-trans (L-elem-natural _ _) (L-elem-cong (embed-unit Q₁ Q₁c x))
+      embed-unit (Q₁ + Q₂) (Q₁c , Q₂c) (inj₂ y) =
+        ≈-trans (L-elem-natural _ _) (L-elem-cong (embed-unit Q₂ Q₂c y))
+      embed-unit (Q₁ × Q₂) (Q₁c , Q₂c) (x , y) =
+        ≈-trans (L-elem-natural _ _)
+          (L-elem-cong (≈-trans (pair-compose _ _ _ _)
+            (pair-cong (embed-unit Q₁ Q₁c x) (embed-unit Q₂ Q₂c y))))
+      embed-unit (μ Q') Q'c t = id-left
+
+      preserves-inMor : preserves-section inMor (poly-section P Pc (extend-section δc μc)) μc
+      preserves-inMor x =
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (embed-unit P Pc x))
+                 (RS.reindex-fam-unit P Pc mor₀-sec (embed-idx P x)))
+
 hasMu : HasMu
 hasMu .HasMu.μ-obj = μ-fam
 hasMu .HasMu.inMap P δ = InMapDef.inMor P δ
 hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg
+
+preserves-inMap : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj)
+                  (δc : ∀ i → Section (δ i)) (Pc : PolySection P) →
+                  preserves-section (InMapDef.inMor P δ)
+                    (poly-section P Pc (extend-section δc (MuSection.μ-section δ δc P Pc)))
+                    (MuSection.μ-section δ δc P Pc)
+preserves-inMap P δ δc Pc = InMapDef.InMapSection.preserves-inMor P δ δc Pc
 
 -- The strong functorial action of a μ-polynomial on indices is reindexing along the pointwise
 -- family of its argument maps.
