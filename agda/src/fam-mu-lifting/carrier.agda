@@ -351,3 +351,13 @@ module MuSection {n} (δ : Fin n → Obj) (δ-section : ∀ i → Section (δ i)
   μ-section P Pc .at t = fib-unit P (λ i → lift ttS) Pc (λ i → lift ttS) t
   μ-section P Pc .at-natural {t} {t'} e =
     fib-unit-natural P (λ i → lift ttS) Pc (λ i → lift ttS) {t} {t'} e
+
+poly-section : ∀ {n} {δ : Fin n → Obj} (P : Poly n) → PolySection P → (∀ i → Section (δ i)) →
+               Section (fobj μ-fam P δ)
+poly-section (const A) Ac δc = Ac
+poly-section (var i)   _  δc = δc i
+poly-section (P + Q) (Pc , Qc) δc =
+  coprod-section (Lf-section (poly-section P Pc δc)) (Lf-section (poly-section Q Qc δc))
+poly-section (P × Q) (Pc , Qc) δc =
+  Lf-section (prod-section (poly-section P Pc δc) (poly-section Q Qc δc))
+poly-section {δ = δ} (μ P) Pc δc = MuSection.μ-section δ δc P Pc
