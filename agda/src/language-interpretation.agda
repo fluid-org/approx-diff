@@ -22,7 +22,7 @@ open import Data.Sum using (_⊎_; [_,_]; inj₁; inj₂; map₁)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts;
-         HasWeakExponentials; strong-coproducts→coproducts)
+         HasExponentials; strong-coproducts→coproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 open import polynomial-functor using (Poly)
@@ -36,14 +36,14 @@ module language-interpretation
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   (𝟙c : Category.obj 𝒞)
   (let module R = fam-mu-lifting.mu-map os es T CM BP 𝟙c)
-  (𝒞E : HasWeakExponentials R.cat R.products)
+  (𝒞E : HasExponentials R.cat R.products)
   (δ∅ : Fin 0 → R.Obj)
   (𝟙ty : R.Obj)
   (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
   (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
   (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
   (ctrl-w : Category._⇒_ 𝒞 𝟙c 𝟙c)
-  (exp-section : ∀ {X Y : R.Obj} → R.Section (HasWeakExponentials.exp 𝒞E X Y))
+  (exp-section : ∀ {X Y : R.Obj} → R.Section (HasExponentials.exp 𝒞E X Y))
   (𝟙ty-section : R.Section 𝟙ty)
   (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))
   where
@@ -59,7 +59,7 @@ open HasProducts R.products renaming (pair to ⟨_,_⟩)
 open HasCoproducts R.coproducts using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
                                        copair-cong; copair-ext)
 open HasStrongCoproducts R.strongCoproducts using () renaming (copair to scopair)
-open HasWeakExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
+open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
 open HasMu hasMu
 open Model Int

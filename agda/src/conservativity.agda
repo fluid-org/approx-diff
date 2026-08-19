@@ -6,7 +6,7 @@ open import prop using (_,_; ∃; ∃ₛ; Prf; ⟪_⟫; LiftP; lift; lower; lift
 open import basics using (module ≤-Reasoning; IsClosureOp; IsJoin; IsMeet; IsBigJoin; IsPreorder)
 open import categories
   using (Category; HasBooleans; HasProducts; HasCoproducts; HasExponentials;
-         HasWeakExponentials; HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans;
+         HasTerminal; IsTerminal; IsProduct; coproducts+exp→booleans;
          setoid→category; HasStrongCoproducts; ccc→strong-coproducts;
          strong-coproducts→coproducts)
 import Data.Nat
@@ -54,7 +54,7 @@ module conservativity
   (𝒞DC : ∀ (S : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category S) 𝒞)
   (𝒞istable : stable-coproducts-indexed.IdxStable 𝒞DC)
   -- A higher order model
-  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟E : HasWeakExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
+  (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
   (𝒟DC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) 𝒟)
   -- A functor which preserves terminal and products
   (F  : Functor 𝒞 𝒟)
@@ -769,7 +769,7 @@ module Gl = glueing-simple 𝒟 PSh⟨𝒞⟩ _ system G
 -- This category has all the structure we need:
 module GlCP = Gl.coproducts 𝒟CP
 module GlCPM = HasCoproducts GlCP.coproducts
-module GlPE = Gl.products-and-weak-exponentials 𝒟T 𝒟P 𝒟E G-preserve-products
+module GlPE = Gl.products-and-exponentials 𝒟T 𝒟P 𝒟E G-preserve-products
 module GlPM = HasProducts GlPE.products
 module GlT = HasTerminal GlPE.terminal
 module GlM = Gl.monad-glueing 𝒟M _ G-MonadFunctor 𝐂MP
@@ -1085,30 +1085,10 @@ definability {X} {Y} f with Definable-closed _ (f .presv .*⊑* X .*⊑* (lift (
                     ∎)
     where open ≈-Reasoning 𝒟.isEquiv
 
-------------------------------------------------------------------------------
--- The strong-exponential tail: the closure-derived strong coproducts, the realised μ-types, and
--- the syntactic interpretation, all of which need the extensionality law of the base
--- exponentials. The weak core above does not.
+module strong-exponentials where
 
-module strong-exponentials
-  (𝒟E-ext : ∀ {x y z} (f : Category._⇒_ 𝒟 x (HasWeakExponentials.exp 𝒟E y z)) →
-            Category._≈_ 𝒟
-              (HasWeakExponentials.lambda 𝒟E
-                (Category._∘_ 𝒟 (HasWeakExponentials.eval 𝒟E)
-                  (HasProducts.prod-m 𝒟P f (Category.id 𝒟 _))))
-              f)
-  where
-
-  -- The glued exponentials are the weak ones; the extensionality law lifts from the base's.
   Gl-exponentials : HasExponentials Gl.cat GlPE.products
-  Gl-exponentials .HasExponentials.exp = GlPE._[→]_
-  Gl-exponentials .HasExponentials.eval = GlPE.eval
-  Gl-exponentials .HasExponentials.lambda = GlPE.lambda
-  Gl-exponentials .HasExponentials.lambda-cong =
-    GlPE.weak-exponentials .HasWeakExponentials.lambda-cong
-  Gl-exponentials .HasExponentials.eval-lambda =
-    GlPE.weak-exponentials .HasWeakExponentials.eval-lambda
-  Gl-exponentials .HasExponentials.lambda-ext f .f≃f = 𝒟E-ext (f .morph)
+  Gl-exponentials = GlPE.exponentials
 
   GlSC : HasStrongCoproducts Gl.cat GlPE.products
   GlSC = ccc→strong-coproducts GlCP.coproducts Gl-exponentials

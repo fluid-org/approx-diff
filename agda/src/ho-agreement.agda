@@ -19,7 +19,7 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
-open import categories using (Category; HasWeakExponentials)
+open import categories using (Category; HasExponentials)
 import indexed-family
 import commutative-monoid
 
@@ -730,7 +730,7 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
                (Fib._+_ τ i₁ (Fib._+_ τ i₁ (evalΠ σ τ f j .func m) (f .famf .transf j .func yN)) (ctrl-dep-at τ i₁ (proj₁ (⟦ M ⟧tm .famf .transf gi .func g))))
     G-form =
       Fib.trans τ i₁ (elim-elt {⟦ Γ ⟧ctxt} {Ex} {⟦ τ ⟧} (ctrl-dep τ) body ⟦ M ⟧tm {gi} g)
-                   (Fib.+-cong τ i₁ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .func-resp-≈
+                   (Fib.+-cong τ i₁ (HasExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .func-resp-≈
                                       {FD.Fam𝒞-P.pair (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
                                          (FD.Fam𝒞._∘_ ⟦ N ⟧tm (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
                                       {m , yN}
@@ -739,8 +739,8 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
                                          (FD.Fam𝒞._∘_ ⟦ N ⟧tm (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
                                   (Fib.refl τ i₁))
       where
-      Ex = HasWeakExponentials.exp model.SemiModExp ⟦ σ ⟧ ⟦ τ ⟧
-      body = FD.Fam𝒞._∘_ (HasWeakExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
+      Ex = HasExponentials.exp model.SemiModExp ⟦ σ ⟧ ⟦ τ ⟧
+      body = FD.Fam𝒞._∘_ (HasExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
                (FD.Fam𝒞-P.pair (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
                                              (FD.Fam𝒞._∘_ ⟦ N ⟧tm (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {Ex})))
 

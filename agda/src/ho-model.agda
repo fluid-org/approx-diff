@@ -16,8 +16,7 @@ import prop
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories
-  using (Category; HasTerminal; IsTerminal; HasCoproducts; HasWeakExponentials; HasExponentials;
-         exponentials→weak; setoid→category)
+  using (Category; HasTerminal; IsTerminal; HasCoproducts; HasExponentials; setoid→category)
 open import signature using (Signature; Model; PFPC[_,_,_,_])
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
 open import Data.Sum using (inj₁; inj₂)
@@ -82,8 +81,8 @@ SPmod =
 
 module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod.biproduct SPmod
 
-SemiModExp : HasWeakExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
-SemiModExp = exponentials→weak FE.exponentials
+SemiModExp : HasExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
+SemiModExp = FE.exponentials
 
 -- The unit section of a function space is zero: an eliminator returning a function attaches
 -- control dependence to the root the lifting adjoins alone, matching the operational semantics,
