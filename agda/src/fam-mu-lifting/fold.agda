@@ -258,3 +258,98 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     foldMor .idxf .PS._⇒_.func-resp-≈ {γ , t} {γ' , t'} (γ≈ , t≈) = fold-idx-resp γ≈ {t} {t'} t≈
     foldMor .famf ._⇒f_.transf (γ , t) = fold-fam γ t
     foldMor .famf ._⇒f_.natural {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) = fold-fam-natural γ≈ {t₁} {t₂} t≈
+
+module FoldSection {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
+    (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A)
+    (δc : ∀ i → Section (δ i)) (cA : Section A) (Pc : PolySection P) where
+
+  open FoldDef {n} {Γ} {A} {P} {δ} alg
+  private
+    module Mδ = MuSection δ δc
+    module MA' = MuSection (extend δ A) (extend-section δc cA)
+
+  data FMorSec : ∀ {k} {ρ : Fin k → Fin n ⊎ Sort n} {ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)}
+                 {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → TA'.DecoAssign (ρ' v)} →
+                 FMor ρ ρ' d d' → (∀ v → Mδ.DecoAssignSection (d v)) →
+                 (∀ v → MA'.DecoAssignSection (d' v)) → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+    fbase-s : FMorSec fbase (Mδ.deco-ext-section P Pc (λ i → lift tt)) (λ v → lift tt)
+    fbind-s : ∀ {k} {ρ ρ' d d'} {fm : FMor {k} ρ ρ' d d'} {dc d'c} (Q : Poly (suc k))
+              (Qc : PolySection Q) → FMorSec fm dc d'c →
+              FMorSec (fbind Q fm) (Mδ.deco-ext-section Q Qc dc) (MA'.deco-ext-section Q Qc d'c)
+
+  module _ (γ : Γ .idx .Carrier) (cγ : 𝟙c ⇒ Γ .fam .fm γ)
+           (halg : ∀ s → (alg .famf ._⇒f_.transf (γ , s) ∘
+                           pair cγ (poly-section P Pc (extend-section δc cA) .at s))
+                         ≈ cA .at (alg .idxf .PS._⇒_.func (γ , s))) where
+    mutual
+      fold-fam-unit : ∀ t →
+        (fold-fam γ t ∘ pair cγ (Mδ.μ-section P Pc .at t)) ≈ cA .at (fold-idx γ t)
+      fold-fam-unit (Tδ.sup x) =
+        ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
+        (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (fold-shape-fam-unit P Pc x)))
+                 (halg (fold-shape-idx P γ x))))
+
+      fold-shape-fam-unit : ∀ (Q : Poly (suc n)) (Qc : PolySection Q)
+        (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣)) →
+        (fold-shape-fam Q γ x ∘
+          pair cγ (Mδ.fib-shape-unit Q (Tδ.deco-ext P (λ i → lift tt)) Qc
+                     (Mδ.deco-ext-section P Pc (λ i → lift tt)) x))
+        ≈ poly-section Q Qc (extend-section δc cA) .at (fold-shape-idx Q γ x)
+      fold-shape-fam-unit (const A')        Ac a = pair-p₂ _ _
+      fold-shape-fam-unit (var Fin.zero)    _  t = fold-fam-unit t
+      fold-shape-fam-unit (var (Fin.suc i)) _  a = pair-p₂ _ _
+      fold-shape-fam-unit (Q₁ + Q₂) (Q₁c , Q₂c) (inj₁ x) =
+        ≈-trans (strong-Lmap-elem _ _ _) (L-elem-cong (fold-shape-fam-unit Q₁ Q₁c x))
+      fold-shape-fam-unit (Q₁ + Q₂) (Q₁c , Q₂c) (inj₂ y) =
+        ≈-trans (strong-Lmap-elem _ _ _) (L-elem-cong (fold-shape-fam-unit Q₂ Q₂c y))
+      fold-shape-fam-unit (Q₁ × Q₂) (Q₁c , Q₂c) (x , y) =
+        ≈-trans (strong-Lmap-elem _ _ _)
+          (L-elem-cong (≈-trans (strong-prod-m-pair _ _ _ _ _)
+            (pair-cong (fold-shape-fam-unit Q₁ Q₁c x) (fold-shape-fam-unit Q₂ Q₂c y))))
+      fold-shape-fam-unit (μ Q') Q'c t = fold-reindex-fam-unit Q'c fbase-s t
+
+      fold-reindex-fam-unit : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} {fm : FMor ρ ρ' d d'}
+        {dc : ∀ v → Mδ.DecoAssignSection (d v)} {d'c : ∀ v → MA'.DecoAssignSection (d' v)}
+        (Qc : PolySection Q) → FMorSec fm dc d'c → ∀ t →
+        (fold-reindex-fam γ fm t ∘ pair cγ (Mδ.fib-unit Q d Qc dc t))
+          ≈ MA'.fib-unit Q d' Qc d'c (fold-reindex γ fm t)
+      fold-reindex-fam-unit {Q = Q} Qc fs (Tδ.sup x) =
+        fold-reindex-shape-fam-unit Q Qc (fbind-s Q Qc fs) x
+
+      fold-reindex-shape-fam-unit : ∀ {j} (R : Poly j) (Rc : PolySection R)
+        {ηA : Fin j → Fin n ⊎ Sort n} {ηB : Fin j → Fin (suc n) ⊎ Sort (suc n)}
+        {dA : ∀ v → Tδ.DecoAssign (ηA v)} {dB : ∀ v → TA'.DecoAssign (ηB v)}
+        {fm : FMor ηA ηB dA dB}
+        {dAc : ∀ v → Mδ.DecoAssignSection (dA v)} {dBc : ∀ v → MA'.DecoAssignSection (dB v)} →
+        FMorSec fm dAc dBc → ∀ (a : Tδ.⟦ ∣ R ∣ ⟧shape ηA) →
+        (fold-reindex-shape-fam γ R fm a ∘ pair cγ (Mδ.fib-shape-unit R dA Rc dAc a))
+          ≈ MA'.fib-shape-unit R dB Rc dBc (fold-reindex-shape γ R fm a)
+      fold-reindex-shape-fam-unit (const A') Ac fs a = pair-p₂ _ _
+      fold-reindex-shape-fam-unit (var v)    _  fs a = fold-apply-fam-unit fs v a
+      fold-reindex-shape-fam-unit (P' + Q') (P'c , Q'c) fs (inj₁ a) =
+        ≈-trans (strong-Lmap-elem _ _ _) (L-elem-cong (fold-reindex-shape-fam-unit P' P'c fs a))
+      fold-reindex-shape-fam-unit (P' + Q') (P'c , Q'c) fs (inj₂ b) =
+        ≈-trans (strong-Lmap-elem _ _ _) (L-elem-cong (fold-reindex-shape-fam-unit Q' Q'c fs b))
+      fold-reindex-shape-fam-unit (P' × Q') (P'c , Q'c) fs (a , b) =
+        ≈-trans (strong-Lmap-elem _ _ _)
+          (L-elem-cong (≈-trans (strong-prod-m-pair _ _ _ _ _)
+            (pair-cong (fold-reindex-shape-fam-unit P' P'c fs a)
+                       (fold-reindex-shape-fam-unit Q' Q'c fs b))))
+      fold-reindex-shape-fam-unit (μ Q'') Q''c fs t = fold-reindex-fam-unit Q''c fs t
+
+      fold-apply-fam-unit : ∀ {k} {ρ ρ' d d'} {fm : FMor {k} ρ ρ' d d'}
+        {dc : ∀ w → Mδ.DecoAssignSection (d w)} {d'c : ∀ w → MA'.DecoAssignSection (d' w)} →
+        FMorSec fm dc d'c → ∀ (v : Fin k) (a : Tδ.El (ρ v)) →
+        (fold-apply-fam γ fm v a ∘ pair cγ (Mδ.fib-el-unit (ρ v) (d v) (dc v) a))
+          ≈ MA'.fib-el-unit (ρ' v) (d' v) (d'c v) (fold-apply γ fm v a)
+      fold-apply-fam-unit fbase-s           Fin.zero    t = fold-fam-unit t
+      fold-apply-fam-unit fbase-s           (Fin.suc i) a = pair-p₂ _ _
+      fold-apply-fam-unit (fbind-s Q Qc fs) Fin.zero    a = fold-reindex-fam-unit Qc fs a
+      fold-apply-fam-unit (fbind-s Q Qc fs) (Fin.suc v) a = fold-apply-fam-unit fs v a
+
+  preserves-foldMor : (cΓ : Section Γ) →
+    preserves-section alg (prod-section cΓ (poly-section P Pc (extend-section δc cA))) cA →
+    preserves-section foldMor (prod-section cΓ (Mδ.μ-section P Pc)) cA
+  preserves-foldMor cΓ halg (γ , t) =
+    fold-fam-unit γ (cΓ .at γ) (λ s → halg (γ , s)) t

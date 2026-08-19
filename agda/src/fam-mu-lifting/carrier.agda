@@ -51,7 +51,7 @@ open Lc public
   using (L; root; inj; copair-root; copair-inj; lifting-ext;
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
          L-elem; L-elem-cong; L-elem-natural;
-         strong-Lmap; strong-Lmap-cong; strong-Lmap-natural; strong-Lmap-pre; strong-Lmap-post; strong-Lmap-co; strong-Lmap-p₂;
+         strong-Lmap; strong-Lmap-cong; strong-Lmap-natural; strong-Lmap-pre; strong-Lmap-post; strong-Lmap-co; strong-Lmap-p₂; strong-Lmap-elem;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
 open Obj public
@@ -361,3 +361,8 @@ poly-section (P + Q) (Pc , Qc) δc =
 poly-section (P × Q) (Pc , Qc) δc =
   Lf-section (prod-section (poly-section P Pc δc) (poly-section Q Qc δc))
 poly-section {δ = δ} (μ P) Pc δc = MuSection.μ-section δ δc P Pc
+
+extend-section : ∀ {n} {δ : Fin n → Obj} {X : Obj} → (∀ i → Section (δ i)) → Section X →
+                 ∀ i → Section (extend δ X i)
+extend-section δc c Fin.zero    = c
+extend-section δc c (Fin.suc i) = δc i

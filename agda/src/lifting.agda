@@ -606,6 +606,45 @@ strong-Lmap-co r s =
   ≈-trans (∘-cong (strong-Lmap-unfold r) (pair-cong ≈-refl (strong-Lmap-unfold s)))
   (≈-trans (strong-Lmap-split-co r s) (≈-sym (strong-Lmap-unfold _)))
 
+strong-Lmap-split-elem : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) (g : 𝟙c ⇒ G) (c : 𝟙c ⇒ X) →
+                        (strong-Lmap-split r ∘ pair g (L-elem c)) ≈ L-elem (r ∘ pair g c)
+strong-Lmap-split-elem {G} {X} {Y} r g c =
+  ≈-trans (comp-bilinear₂ S (in₁ ∘ g) (in₂ ∘ L-elem c))
+  (≈-trans (+m-cong summand₁ summand₂)
+  (≈-trans (≈-sym (homCM _ _ .CommutativeMonoid.+-assoc))
+  (≈-trans (+m-cong (homCM _ _ .CommutativeMonoid.+-comm) ≈-refl)
+  (≈-trans (homCM _ _ .CommutativeMonoid.+-assoc)
+           (+m-cong ≈-refl payload)))))
+  where
+  S = strong-Lmap-split r
+  C = copair root (inj ∘ (r ∘ in₂))
+
+  summand₁ : (S ∘ (in₁ ∘ g)) ≈ (inj ∘ (r ∘ (in₁ ∘ g)))
+  summand₁ =
+    ≈-trans (≈-sym (assoc S in₁ g))
+    (≈-trans (∘-cong (B.copair-in₁ G (L X) (inj ∘ (r ∘ in₁)) C) ≈-refl)
+    (≈-trans (assoc inj (r ∘ in₁) g) (∘-cong ≈-refl (assoc r in₁ g))))
+
+  summand₂ : (S ∘ (in₂ ∘ L-elem c)) ≈ (root +m (inj ∘ (r ∘ (in₂ ∘ c))))
+  summand₂ =
+    ≈-trans (≈-sym (assoc S in₂ (L-elem c)))
+    (≈-trans (∘-cong (B.copair-in₂ G (L X) (inj ∘ (r ∘ in₁)) C) ≈-refl)
+    (≈-trans (comp-bilinear₂ C root (inj ∘ c))
+             (+m-cong (copair-root root (inj ∘ (r ∘ in₂)))
+                      (≈-trans (≈-sym (assoc C inj c))
+                      (≈-trans (∘-cong (copair-inj root (inj ∘ (r ∘ in₂))) ≈-refl)
+                      (≈-trans (assoc inj (r ∘ in₂) c) (∘-cong ≈-refl (assoc r in₂ c))))))))
+
+  payload : ((inj ∘ (r ∘ (in₁ ∘ g))) +m (inj ∘ (r ∘ (in₂ ∘ c)))) ≈ (inj ∘ (r ∘ pair g c))
+  payload =
+    ≈-trans (≈-sym (comp-bilinear₂ inj (r ∘ (in₁ ∘ g)) (r ∘ (in₂ ∘ c))))
+            (∘-cong ≈-refl (≈-sym (comp-bilinear₂ r (in₁ ∘ g) (in₂ ∘ c))))
+
+strong-Lmap-elem : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) (g : 𝟙c ⇒ G) (c : 𝟙c ⇒ X) →
+                  (strong-Lmap r ∘ pair g (L-elem c)) ≈ L-elem (r ∘ pair g c)
+strong-Lmap-elem r g c =
+  ≈-trans (∘-cong (strong-Lmap-unfold r) ≈-refl) (strong-Lmap-split-elem r g c)
+
 elim-root-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y} →
                   c ≈ c' → r ≈ r' → elim-root c r ≈ elim-root c' r'
 elim-root-cong {c = c} {c'} {r} {r'} ec er =

@@ -621,6 +621,34 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
                        f₁ ≈ f₂ → g₁ ≈ g₂ → strong-prod-m f₁ g₁ ≈ strong-prod-m f₂ g₂
   strong-prod-m-cong f≈ g≈ = pair-cong (∘-cong f≈ ≈-refl) (∘-cong g≈ ≈-refl)
 
+  strong-prod-m-pair : ∀ {w x₁ x₂ y₁ y₂ z} (f : prod w x₁ ⇒ y₁) (g : prod w x₂ ⇒ y₂)
+                       (h : z ⇒ w) (c₁ : z ⇒ x₁) (c₂ : z ⇒ x₂) →
+                       (strong-prod-m f g ∘ pair h (pair c₁ c₂)) ≈ pair (f ∘ pair h c₁) (g ∘ pair h c₂)
+  strong-prod-m-pair f g h c₁ c₂ =
+    begin
+      strong-prod-m f g ∘ pair h (pair c₁ c₂)
+    ≈⟨ pair-natural _ _ _ ⟩
+      pair ((f ∘ strong-p₁) ∘ pair h (pair c₁ c₂)) ((g ∘ strong-p₂) ∘ pair h (pair c₁ c₂))
+    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
+      pair (f ∘ (strong-p₁ ∘ pair h (pair c₁ c₂))) (g ∘ (strong-p₂ ∘ pair h (pair c₁ c₂)))
+    ≈⟨ pair-cong (∘-cong ≈-refl strong-p₁-pair) (∘-cong ≈-refl strong-p₂-pair) ⟩
+      pair (f ∘ pair h c₁) (g ∘ pair h c₂)
+    ∎
+    where
+    open ≈-Reasoning isEquiv
+
+    strong-p₁-pair : (strong-p₁ ∘ pair h (pair c₁ c₂)) ≈ pair h c₁
+    strong-p₁-pair =
+      ≈-trans (pair-natural _ _ _)
+      (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
+               (pair-cong ≈-refl (pair-p₁ _ _)))
+
+    strong-p₂-pair : (strong-p₂ ∘ pair h (pair c₁ c₂)) ≈ pair h c₂
+    strong-p₂-pair =
+      ≈-trans (pair-natural _ _ _)
+      (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
+               (pair-cong ≈-refl (pair-p₂ _ _)))
+
   strong-p₁-natural : ∀ {w w' x₁ x₂ y₁ y₂} (u : w ⇒ w') (v₁ : x₁ ⇒ y₁) (v₂ : x₂ ⇒ y₂) →
                       (strong-p₁ ∘ prod-m u (prod-m v₁ v₂)) ≈ (prod-m u v₁ ∘ strong-p₁)
   strong-p₁-natural u v₁ v₂ =
