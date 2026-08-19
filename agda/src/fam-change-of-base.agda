@@ -19,7 +19,7 @@ open import finite-product-functor using (preserve-chosen-products; preserve-cho
 open import indexed-family using (Fam; _⇒f_; _≃f_)
 import fam
 import fam-functor
-import fam-mu-lifting.in-map
+import fam-mu-lifting
 import fam-mu-lifting.fibrewise
 
 module fam-change-of-base {o m e o₂ m₂ e₂} (os es : Level)
@@ -40,8 +40,8 @@ module fam-change-of-base {o m e o₂ m₂ e₂} (os es : Level)
          𝒟.≈ (L𝒟.Lmap (Functor.fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
     where
 
-module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM𝒞 BP𝒞 𝟙𝒞
-module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM𝒟 BP𝒟 𝟙𝒟
+module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM𝒞 BP𝒞 𝟙𝒞
+module Fam⟨𝒟⟩μ = fam-mu-lifting os es CM𝒟 BP𝒟 𝟙𝒟
 
 private
   module Fam𝒟 = Category Fam⟨𝒟⟩μ.cat

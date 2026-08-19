@@ -27,7 +27,7 @@ open import cmon-enriched using (CMonEnriched; Biproduct)
 open import signature using (Signature; Model; PointedFPCat; PFPC[_,_,_,_])
 open import polynomial-functor using (Poly)
 open import prop-setoid using (module ≈-Reasoning)
-import fam-mu-lifting.mu-map
+import fam-mu-lifting
 import language-syntax
 
 module language-interpretation
@@ -35,7 +35,7 @@ module language-interpretation
   {o m e} (os es : Level) {𝒞 : Category o m e}
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   (𝟙c : Category.obj 𝒞)
-  (let module R = fam-mu-lifting.mu-map os es T CM BP 𝟙c)
+  (let module R = fam-mu-lifting os es CM BP 𝟙c)
   (𝒞E : HasExponentials R.cat R.products)
   (δ∅ : Fin 0 → R.Obj)
   (𝟙ty : R.Obj)
@@ -48,10 +48,12 @@ module language-interpretation
   (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; extend; extend-mor; fobj; HasMu; hasMu; fmor; μ-map;
-              Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
-              fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
-              μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
+open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; extend; extend-mor; fobj; HasMu; hasMu;
+              Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection)
+open R.WithTerminal T
+  using (fmor; μ-map;
+         fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
+         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)

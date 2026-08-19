@@ -27,7 +27,7 @@ open import indexed-family
   using (HasSetoidProducts; Fam; _⇒f_; _≃f_; _∘f_; constantFam; _[_]; reindex-≈)
 import matrix
 import fam
-import fam-mu-lifting.in-map
+import fam-mu-lifting
 import fam-exponentials
 import matrix-embedding
 import matrix-primitives
@@ -48,8 +48,8 @@ open SemiMod._⇒_
 open prop-setoid._⇒_ using (func; func-resp-≈)
 open prop-setoid._≃m_ using (func-eq)
 
-module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ M.cmon M.biproduct 1
-module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map 0ℓ 0ℓ SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
+module Fam⟨𝒞⟩μ = fam-mu-lifting 0ℓ 0ℓ M.cmon M.biproduct 1
+module Fam⟨𝒟⟩μ = fam-mu-lifting 0ℓ 0ℓ SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 
 private
   module FCC = HasCoproducts Fam⟨𝒞⟩μ.coproducts

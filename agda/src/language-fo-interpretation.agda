@@ -23,7 +23,7 @@ open import finite-product-functor using (preserve-chosen-products; preserve-cho
 open import polynomial-functor using (Poly; Poly-map)
 open import signature
   using (Signature; Model; PointedFPCat; PFPC[_,_,_,_]; transport-model; transport-product)
-import fam-mu-lifting.in-map
+import fam-mu-lifting
 import fam-change-of-base
 import language-syntax
 
@@ -46,8 +46,8 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (F-L-natural : ∀ {X Y} (f : X 𝒞.⇒ Y) →
      (F-L Y .𝒟.Iso.fwd 𝒟.∘ Functor.fmor F (L𝒞.Lmap f))
        𝒟.≈ (L𝒟.Lmap (Functor.fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
-  (let module Fam⟨𝒞⟩μ = fam-mu-lifting.in-map os es CM𝒞 BP𝒞 𝟙𝒞)
-  (let module Fam⟨𝒟⟩μ = fam-mu-lifting.in-map os es CM𝒟 BP𝒟 𝟙𝒟)
+  (let module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM𝒞 BP𝒞 𝟙𝒞)
+  (let module Fam⟨𝒟⟩μ = fam-mu-lifting os es CM𝒟 BP𝒟 𝟙𝒟)
   (𝒟E : HasExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products)
   (𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj)
   (𝒞unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T𝒞)) 𝒞𝟙ty)
