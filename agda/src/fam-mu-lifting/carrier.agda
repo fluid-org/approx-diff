@@ -180,6 +180,57 @@ elimF {Γ} {X} {C} cC f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ�
     (f .famf ._⇒f_.transf (γ₁ , x₁)) (f .famf ._⇒f_.transf (γ₂ , x₂))
     (f .famf ._⇒f_.natural (γ≈ , x≈))
 
+-- Not every morphism preserves a section: the payload injection sends the element to a payload with
+-- zero root weight, not the lifted section's element.
+preserves-section : ∀ {X Y : Obj} → Mor X Y → Section X → Section Y → Prop (os ⊔ e)
+preserves-section f c d =
+  ∀ x → (f .famf ._⇒f_.transf x ∘ c .at x) ≈ d .at (f .idxf .prop-setoid._⇒_.func x)
+
+preserves-section-id : ∀ {X : Obj} (c : Section X) → preserves-section (Fam𝒞.id X) c c
+preserves-section-id c x = id-left
+
+preserves-section-∘ : ∀ {X Y Z : Obj} {f : Mor Y Z} {g : Mor X Y} {cX cY cZ} →
+                      preserves-section f cY cZ → preserves-section g cX cY →
+                      preserves-section (f Fam𝒞.∘ g) cX cZ
+preserves-section-∘ {f = f} {g} pf pg x =
+  ≈-trans (∘-cong id-left ≈-refl)
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (pg x)) (pf _)))
+
+preserves-section-resp : ∀ {X Y : Obj} {f g : Mor X Y} {c : Section X} {d : Section Y} →
+                         f Fam𝒞.≈ g → preserves-section f c d → preserves-section g c d
+preserves-section-resp {X} {Y} {f} {g} {c} {d} f≃g pf x =
+  ≈-trans (∘-cong (≈-sym (f≃g ._≃_.famf-eq .indexed-family._≃f_.transf-eq)) ≈-refl)
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (pf x)) (d .at-natural _)))
+
+preserves-coprod-m : ∀ {X X' Y Y' : Obj} {f : Mor X X'} {g : Mor Y Y'} {cX cX' cY cY'} →
+                     preserves-section f cX cX' → preserves-section g cY cY' →
+                     preserves-section (HasCoproducts.coprod-m coproducts f g)
+                       (coprod-section cX cY) (coprod-section cX' cY')
+preserves-coprod-m pf pg (inj₁ x) = ≈-trans (∘-cong (≈-trans id-left id-left) ≈-refl) (pf x)
+preserves-coprod-m pf pg (inj₂ y) = ≈-trans (∘-cong (≈-trans id-left id-left) ≈-refl) (pg y)
+
+preserves-prod-m : ∀ {X X' Y Y' : Obj} {f : Mor X X'} {g : Mor Y Y'} {cX cX' cY cY'} →
+                   preserves-section f cX cX' → preserves-section g cY cY' →
+                   preserves-section (Fam𝒞-P.prod-m f g) (prod-section cX cY) (prod-section cX' cY')
+preserves-prod-m pf pg (x , y) =
+  ≈-trans (∘-cong (pair-cong id-left id-left) ≈-refl)
+    (≈-trans (pair-compose _ _ _ _) (pair-cong (pf x) (pg y)))
+
+preserves-Lf-map : ∀ {X Y : Obj} {f : Mor X Y} {c d} →
+                   preserves-section f c d → preserves-section (Lf-map f) (Lf-section c) (Lf-section d)
+preserves-Lf-map {f = f} {c} p x =
+  ≈-trans (L-elem-natural (f .famf ._⇒f_.transf x) (c .at x)) (L-elem-cong (p x))
+
+preserves-Lf-root : ∀ {X Y : Obj} (f : Mor X Y) → preserves-section (Lf-map f) Lf-root Lf-root
+preserves-Lf-root f x = Lmap-root (f .famf ._⇒f_.transf x)
+
+preserves-scale : ∀ {X Y : Obj} {f : Mor X Y} {w : 𝟙c ⇒ 𝟙c} {c d} →
+                  preserves-section f c d →
+                  preserves-section f (scale-section w c) (scale-section w d)
+preserves-scale p x = ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (p x) ≈-refl)
+
 -- The lift of an isomorphism of families.
 Lf-iso : ∀ {X Y : Obj} → Fam𝒞.Iso X Y → Fam𝒞.Iso (Lf X) (Lf Y)
 Lf-iso i .Fam𝒞.Iso.fwd = Lf-map (i .Fam𝒞.Iso.fwd)
