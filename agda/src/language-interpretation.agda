@@ -43,7 +43,7 @@ module language-interpretation
   (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
   (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
   (ctrl-w : Category._⇒_ 𝒞 𝟙c 𝟙c)
-  (exp-section : ∀ {X Y : R.Obj} → R.Section Y → R.Section (HasWeakExponentials.exp 𝒞E X Y))
+  (exp-section : ∀ {X Y : R.Obj} → R.Section (HasWeakExponentials.exp 𝒞E X Y))
   (𝟙ty-section : R.Section 𝟙ty)
   (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))
   where
@@ -92,7 +92,7 @@ mutual
   unit-section (σ [+] τ) δ δc =
     coprod-section (Lf-section (unit-section σ δ δc)) (Lf-section (unit-section τ δ δc))
   unit-section (σ [×] τ) δ δc = Lf-section (prod-section (unit-section σ δ δc) (unit-section τ δ δc))
-  unit-section (σ [→] τ) δ δc = Lf-section (exp-section (unit-section τ (λ ()) (λ ())))
+  unit-section (σ [→] τ) δ δc = Lf-section exp-section
   unit-section (μ τ)     δ δc = Mu∅.μ-section (as-poly τ δ) (as-poly-section τ δ δc)
 
   as-poly-section : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) →
@@ -107,7 +107,7 @@ mutual
   as-poly-section (base s)  δ δc = sort-section s
   as-poly-section (σ [+] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
   as-poly-section (σ [×] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
-  as-poly-section (σ [→] τ) δ δc = Lf-section (exp-section (unit-section τ (λ ()) (λ ())))
+  as-poly-section (σ [→] τ) δ δc = Lf-section exp-section
   as-poly-section (μ τ)     δ δc = as-poly-section τ δ δc
 
 -- The control dependence an eliminator writes: the result type's unit section scaled by the control

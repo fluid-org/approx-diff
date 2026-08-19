@@ -54,7 +54,7 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (let 𝒞Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty))
   (𝒞-Sig-model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T𝒞 , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig)
   (ctrl-w : 𝟙𝒟 𝒟.⇒ 𝟙𝒟)
-  (𝒟-exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section Y →
+  (𝒟-exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} →
                  Fam⟨𝒟⟩μ.Section (HasWeakExponentials.exp 𝒟E X Y))
   (F𝟙 : 𝟙𝒟 𝒟.⇒ Functor.fobj F 𝟙𝒞)
   (𝒞𝟙ty-section : Fam⟨𝒞⟩μ.Section 𝒞𝟙ty)

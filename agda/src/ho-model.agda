@@ -93,9 +93,9 @@ SemiModExp = exponentials→weak FE.exponentials
 private
   module SMCM = CMonEnriched SemiMod.cmon-enriched
 
-exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section Y → Fam⟨𝒟⟩μ.Section (FE._⟶_ X Y)
-exp-section {X} {Y} cY .Fam⟨𝒟⟩μ.at f = SMCM.εm
-exp-section {X} {Y} cY .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
+exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section (FE._⟶_ X Y)
+exp-section {X} {Y} .Fam⟨𝒟⟩μ.at f = SMCM.εm
+exp-section {X} {Y} .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
   SMCM.comp-bilinear-ε₂ {SemiMod.𝕀} (FE._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
 
 -- The interpretation of the primitives: the first-order interpretation, with the relations'
