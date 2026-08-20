@@ -52,7 +52,8 @@ open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; extend
               Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
               poly-section; extend-section; preserves-section; preserves-section-id;
               preserves-section-∘; preserves-section-resp; preserves-section-inv;
-              preserves-coprod-m; preserves-prod-m; preserves-Lf-map)
+              preserves-coprod-m; preserves-prod-m; preserves-Lf-map; preserves-scale;
+              preserves-inMap; preserves-outMor)
 open R.WithTerminal T
   using (fmor; μ-map;
          fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
@@ -1899,6 +1900,53 @@ roll-unroll τ = begin
     sb   = sub-as-apply-bwd τ (μ τ)
     inm  = inMap (as-poly τ (λ ())) δ∅
     outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
+
+preserves-sub-as-apply-fwd : ∀ (τ : type 1) (τ' : type 0) →
+  preserves-section (sub-as-apply-fwd τ τ')
+    (unit-section (τ [ τ' ]) (λ ()) (λ ()))
+    (poly-section (as-poly {0} {1} τ (λ ())) (as-poly-section {0} {1} τ (λ ()) (λ ()))
+      (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
+preserves-sub-as-apply-fwd τ τ' =
+  preserves-section-∘
+    (preserves-section-∘
+      (preserves-apply-fwd {n = 1} τ (λ ())
+        (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
+      (preserves-as-poly-map τ (λ i → preserves-push-pw τ' i) δ∅ (λ ())))
+    (preserves-subst-fwd (push τ') τ (λ ()))
+
+preserves-sub-as-apply-bwd : ∀ (τ : type 1) (τ' : type 0) →
+  preserves-section (sub-as-apply-bwd τ τ')
+    (poly-section (as-poly {0} {1} τ (λ ())) (as-poly-section {0} {1} τ (λ ()) (λ ()))
+      (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
+    (unit-section (τ [ τ' ]) (λ ()) (λ ()))
+preserves-sub-as-apply-bwd τ τ' =
+  preserves-section-inv (sub-as-apply-fwd-bwd τ τ') (sub-as-apply-bwd-fwd τ τ')
+    (preserves-sub-as-apply-fwd τ τ')
+
+preserves-roll-mor : ∀ (τ : type 1) →
+  preserves-section (roll-mor τ)
+    (unit-section (τ [ μ τ ]) (λ ()) (λ ())) (unit-section (μ τ) (λ ()) (λ ()))
+preserves-roll-mor τ =
+  preserves-section-∘
+    (preserves-inMap (as-poly {0} {1} τ (λ ())) δ∅ (λ ())
+      (as-poly-section {0} {1} τ (λ ()) (λ ())))
+    (preserves-sub-as-apply-fwd τ (μ τ))
+
+preserves-unroll-mor : ∀ (τ : type 1) →
+  preserves-section (unroll-mor τ)
+    (unit-section (μ τ) (λ ()) (λ ())) (unit-section (τ [ μ τ ]) (λ ()) (λ ()))
+preserves-unroll-mor τ =
+  preserves-section-∘
+    (preserves-sub-as-apply-bwd τ (μ τ))
+    (preserves-outMor (as-poly {0} {1} τ (λ ())) δ∅ (λ ())
+      (as-poly-section {0} {1} τ (λ ()) (λ ())))
+
+preserves-unroll-ctrl-dep : ∀ (τ : type 1) →
+  preserves-section (unroll-mor τ) (ctrl-dep (μ τ)) (ctrl-dep (τ [ μ τ ]))
+preserves-unroll-ctrl-dep τ =
+  preserves-scale {w = ctrl-w}
+    {c = unit-section (μ τ) (λ ()) (λ ())} {d = unit-section (τ [ μ τ ]) (λ ()) (λ ())}
+    (preserves-unroll-mor τ)
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
