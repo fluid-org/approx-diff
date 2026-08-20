@@ -220,6 +220,15 @@ preserves-prod-m pf pg (x , y) =
   ≈-trans (∘-cong (pair-cong id-left id-left) ≈-refl)
     (≈-trans (pair-compose _ _ _ _) (pair-cong (pf x) (pg y)))
 
+preserves-p₂ : ∀ {X Y : Obj} {cX cY} →
+               preserves-section (Fam𝒞-P.p₂ {X} {Y}) (prod-section cX cY) cY
+preserves-p₂ (x , y) = pair-p₂ _ _
+
+preserves-pair : ∀ {X Y Z : Obj} {f : Mor X Y} {g : Mor X Z} {cX cY cZ} →
+                 preserves-section f cX cY → preserves-section g cX cZ →
+                 preserves-section (Fam𝒞-P.pair f g) cX (prod-section cY cZ)
+preserves-pair pf pg x = ≈-trans (pair-natural _ _ _) (pair-cong (pf x) (pg x))
+
 preserves-Lf-map : ∀ {X Y : Obj} {f : Mor X Y} {c d} →
                    preserves-section f c d → preserves-section (Lf-map f) (Lf-section c) (Lf-section d)
 preserves-Lf-map {f = f} {c} p x =
@@ -2756,3 +2765,56 @@ module WithTerminal (T : HasTerminal 𝒞) where
   open HasMuLaws.WithTerminal hasMuLaws (terminal T) public
     using (fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
            μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
+
+  terminal-section : Section (HasTerminal.witness (terminal T))
+  terminal-section .at _ = HasTerminal.to-terminal T
+  terminal-section .at-natural _ = HasTerminal.to-terminal-unique T _ _
+
+  preserves-to-terminal : ∀ {X : Obj} (cX : Section X) →
+    preserves-section (HasTerminal.to-terminal (terminal T)) cX terminal-section
+  preserves-to-terminal cX x = HasTerminal.to-terminal-unique T _ _
+
+  preserves-μ-map : ∀ {j k} (P : Poly (suc j)) (δ : Fin j → Obj) (Q : Poly (suc k)) (δ' : Fin k → Obj)
+    (δc : ∀ i → Section (δ i)) (δ'c : ∀ i → Section (δ' i))
+    (Pc : PolySection P) (Qc : PolySection Q)
+    (u : Mor (fobj μ-fam P (extend δ (μ-fam Q δ'))) (fobj μ-fam Q (extend δ' (μ-fam Q δ')))) →
+    preserves-section u
+      (poly-section P Pc (extend-section δc (MuSection.μ-section δ' δ'c Q Qc)))
+      (poly-section Q Qc (extend-section δ'c (MuSection.μ-section δ' δ'c Q Qc))) →
+    preserves-section (μ-map P δ Q δ' u)
+      (MuSection.μ-section δ δc P Pc) (MuSection.μ-section δ' δ'c Q Qc)
+  preserves-μ-map P δ Q δ' δc δ'c Pc Qc u hu =
+    preserves-section-∘
+      {X = μ-fam P δ} {Y = Fam𝒞-P.prod 𝟙F (μ-fam P δ)} {Z = μ-fam Q δ'}
+      {f = FoldDef.foldMor {Γ = 𝟙F} {A = μ-fam Q δ'} {P = P} {δ = δ} alg}
+      {g = Fam𝒞-P.pair (HasTerminal.to-terminal (terminal T)) (Fam𝒞.id (μ-fam P δ))}
+      {cX = μPc} {cY = prod-section terminal-section μPc} {cZ = μQc}
+      (FoldSection.preserves-foldMor {Γ = 𝟙F} {A = μ-fam Q δ'} {P = P} {δ = δ}
+        alg δc μQc Pc terminal-section
+        (preserves-section-∘
+          {X = Fam𝒞-P.prod 𝟙F PX} {Y = PX} {Z = μ-fam Q δ'}
+          {f = inMap∘u} {g = Fam𝒞-P.p₂ {𝟙F} {PX}}
+          {cX = prod-section terminal-section sP} {cY = sP} {cZ = μQc}
+          (preserves-section-∘
+            {X = PX} {Y = QX} {Z = μ-fam Q δ'}
+            {f = hasMu .HasMu.inMap Q δ'} {g = u}
+            {cX = sP} {cY = sQ} {cZ = μQc}
+            (preserves-inMap Q δ' δ'c Qc) hu)
+          (preserves-p₂ {X = 𝟙F} {Y = PX} {cX = terminal-section} {cY = sP})))
+      (preserves-pair
+        {X = μ-fam P δ} {Y = 𝟙F} {Z = μ-fam P δ}
+        {f = HasTerminal.to-terminal (terminal T)} {g = Fam𝒞.id (μ-fam P δ)}
+        {cX = μPc} {cY = terminal-section} {cZ = μPc}
+        (preserves-to-terminal μPc) (preserves-section-id μPc))
+    where
+    𝟙F = HasTerminal.witness (terminal T)
+    PX = fobj μ-fam P (extend δ (μ-fam Q δ'))
+    QX = fobj μ-fam Q (extend δ' (μ-fam Q δ'))
+    μQc = MuSection.μ-section δ' δ'c Q Qc
+    μPc = MuSection.μ-section δ δc P Pc
+    sP = poly-section P Pc (extend-section δc μQc)
+    sQ = poly-section Q Qc (extend-section δ'c μQc)
+    inMap∘u : Mor PX (μ-fam Q δ')
+    inMap∘u = hasMu .HasMu.inMap Q δ' Fam𝒞.∘ u
+    alg : Mor (Fam𝒞-P.prod 𝟙F PX) (μ-fam Q δ')
+    alg = inMap∘u Fam𝒞.∘ Fam𝒞-P.p₂
