@@ -1226,6 +1226,21 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
             (pair-cong (embed-unit Q₁ Q₁c x) (embed-unit Q₂ Q₂c y))))
       embed-unit (μ Q') Q'c t = id-left
 
+      unembed-unit : (Q : Poly (suc n)) (Qc : PolySection Q) (y : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)) →
+        (unembed-fam Q y ∘ MX.fib-shape-unit Q (λ v → lift tt) Qc (λ v → lift tt) y)
+          ≈ poly-section Q Qc (extend-section δc μc) .at (unembed-idx Q y)
+      unembed-unit (const A) Ac y = id-left
+      unembed-unit (var v)   _  y = id-left
+      unembed-unit (Q₁ + Q₂) (Q₁c , Q₂c) (inj₁ x) =
+        ≈-trans (L-elem-natural _ _) (L-elem-cong (unembed-unit Q₁ Q₁c x))
+      unembed-unit (Q₁ + Q₂) (Q₁c , Q₂c) (inj₂ y) =
+        ≈-trans (L-elem-natural _ _) (L-elem-cong (unembed-unit Q₂ Q₂c y))
+      unembed-unit (Q₁ × Q₂) (Q₁c , Q₂c) (x , y) =
+        ≈-trans (L-elem-natural _ _)
+          (L-elem-cong (≈-trans (pair-compose _ _ _ _)
+            (pair-cong (unembed-unit Q₁ Q₁c x) (unembed-unit Q₂ Q₂c y))))
+      unembed-unit (μ Q') Q'c t = id-left
+
       preserves-inMor : preserves-section inMor (poly-section P Pc (extend-section δc μc)) μc
       preserves-inMor x =
         ≈-trans (assoc _ _ _)
@@ -1872,6 +1887,37 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
               (≈-trans (∘-cong₁ step₃)
               (≈-trans (assoc _ _ _)
                        (∘-cong₂ step₄)))
+
+  module OutMorSection (δc : ∀ i → Section (δ i)) (Pc : PolySection P) where
+    private
+      μc : Section (μ-fam P δ)
+      μc = MuSection.μ-section δ δc P Pc
+      module Mδ = MuSection δ δc
+      module MXs = MuSection (extend δ (μ-fam P δ)) (extend-section δc μc)
+      module RS' = ReindexSection δc (extend-section δc μc)
+      module AtS = At.InMapSection δc Pc
+
+    mor₀⁻-sec : RS'.MorDSec mor₀⁻ (Mδ.deco-ext-section P Pc (λ i → lift tt)) (λ v → lift tt)
+    mor₀⁻-sec = RS'.base-s h
+      where
+      h : ∀ v a → (m₀⁻-fam v a ∘ Mδ.fib-el-unit (Srt.η₀ ∣ P ∣ v) (Tδ.deco-ext P (λ i → lift tt) v)
+                     (Mδ.deco-ext-section P Pc (λ i → lift tt) v) a)
+                  ≈ MXs.fib-el-unit (inj₁ v) (lift tt) (lift tt) (m₀⁻ v a)
+      h Fin.zero    a = id-left
+      h (Fin.suc i) a = id-left
+
+    preserves-outMor : preserves-section outMor μc (poly-section P Pc (extend-section δc μc))
+    preserves-outMor (Tδ.sup x) =
+      ≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (RS'.reindex-fam-unit P Pc mor₀⁻-sec x))
+               (AtS.unembed-unit P Pc (R'.reindex-shape ∣ P ∣ mor₀⁻ x)))
+
+preserves-outMor : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj)
+                   (δc : ∀ i → Section (δ i)) (Pc : PolySection P) →
+                   preserves-section (LambekDef.outMor P δ)
+                     (MuSection.μ-section δ δc P Pc)
+                     (poly-section P Pc (extend-section δc (MuSection.μ-section δ δc P Pc)))
+preserves-outMor P δ δc Pc = LambekDef.OutMorSection.preserves-outMor P δ δc Pc
 
 -- The initial-algebra laws for the tree model. A fused form first: a candidate is a fold when it is
 -- the algebra applied to itself at every node, by the same recursion as the fold. The bridge then
