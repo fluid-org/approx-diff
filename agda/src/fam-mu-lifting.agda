@@ -190,63 +190,64 @@ elimF {Γ} {X} {C} cC f .famf ._⇒f_.natural {γ₁ , x₁} {γ₂ , x₂} (γ�
 
 -- Not every morphism preserves a section: the payload injection sends the element to a payload with
 -- zero root weight, not the lifted section's element.
-preserves-section : ∀ {X Y : Obj} → Mor X Y → Section X → Section Y → Prop (os ⊔ e)
-preserves-section f c d =
-  ∀ x → (f .famf ._⇒f_.transf x ∘ c .at x) ≈ d .at (f .idxf .prop-setoid._⇒_.func x)
+record preserves-section {X Y : Obj} (f : Mor X Y) (c : Section X) (d : Section Y) : Prop (os ⊔ e) where
+  field
+    at : ∀ x → (f .famf ._⇒f_.transf x ∘ c .at x) ≈ d .at (f .idxf .prop-setoid._⇒_.func x)
+open preserves-section public
 
 preserves-section-id : ∀ {X : Obj} (c : Section X) → preserves-section (Fam𝒞.id X) c c
-preserves-section-id c x = id-left
+preserves-section-id c .at x = id-left
 
 preserves-section-∘ : ∀ {X Y Z : Obj} {f : Mor Y Z} {g : Mor X Y} {cX cY cZ} →
                       preserves-section f cY cZ → preserves-section g cX cY →
                       preserves-section (f Fam𝒞.∘ g) cX cZ
-preserves-section-∘ {f = f} {g} pf pg x =
+preserves-section-∘ {f = f} {g} pf pg .at x =
   ≈-trans (∘-cong id-left ≈-refl)
     (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (pg x)) (pf _)))
+      (≈-trans (∘-cong ≈-refl (pg .at x)) (pf .at _)))
 
 preserves-section-resp : ∀ {X Y : Obj} {f g : Mor X Y} {c : Section X} {d : Section Y} →
                          f Fam𝒞.≈ g → preserves-section f c d → preserves-section g c d
-preserves-section-resp {X} {Y} {f} {g} {c} {d} f≃g pf x =
+preserves-section-resp {X} {Y} {f} {g} {c} {d} f≃g pf .at x =
   ≈-trans (∘-cong (≈-sym (f≃g ._≃_.famf-eq .indexed-family._≃f_.transf-eq)) ≈-refl)
     (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (pf x)) (d .at-natural _)))
+      (≈-trans (∘-cong ≈-refl (pf .at x)) (d .at-natural _)))
 
 preserves-coprod-m : ∀ {X X' Y Y' : Obj} {f : Mor X X'} {g : Mor Y Y'} {cX cX' cY cY'} →
                      preserves-section f cX cX' → preserves-section g cY cY' →
                      preserves-section (HasCoproducts.coprod-m coproducts f g)
                        (coprod-section cX cY) (coprod-section cX' cY')
-preserves-coprod-m pf pg (inj₁ x) = ≈-trans (∘-cong (≈-trans id-left id-left) ≈-refl) (pf x)
-preserves-coprod-m pf pg (inj₂ y) = ≈-trans (∘-cong (≈-trans id-left id-left) ≈-refl) (pg y)
+preserves-coprod-m pf pg .at (inj₁ x) = ≈-trans (∘-cong (≈-trans id-left id-left) ≈-refl) (pf .at x)
+preserves-coprod-m pf pg .at (inj₂ y) = ≈-trans (∘-cong (≈-trans id-left id-left) ≈-refl) (pg .at y)
 
 preserves-prod-m : ∀ {X X' Y Y' : Obj} {f : Mor X X'} {g : Mor Y Y'} {cX cX' cY cY'} →
                    preserves-section f cX cX' → preserves-section g cY cY' →
                    preserves-section (Fam𝒞-P.prod-m f g) (prod-section cX cY) (prod-section cX' cY')
-preserves-prod-m pf pg (x , y) =
+preserves-prod-m pf pg .at (x , y) =
   ≈-trans (∘-cong (pair-cong id-left id-left) ≈-refl)
-    (≈-trans (pair-compose _ _ _ _) (pair-cong (pf x) (pg y)))
+    (≈-trans (pair-compose _ _ _ _) (pair-cong (pf .at x) (pg .at y)))
 
 preserves-p₂ : ∀ {X Y : Obj} {cX cY} →
                preserves-section (Fam𝒞-P.p₂ {X} {Y}) (prod-section cX cY) cY
-preserves-p₂ (x , y) = pair-p₂ _ _
+preserves-p₂ .at (x , y) = pair-p₂ _ _
 
 preserves-pair : ∀ {X Y Z : Obj} {f : Mor X Y} {g : Mor X Z} {cX cY cZ} →
                  preserves-section f cX cY → preserves-section g cX cZ →
                  preserves-section (Fam𝒞-P.pair f g) cX (prod-section cY cZ)
-preserves-pair pf pg x = ≈-trans (pair-natural _ _ _) (pair-cong (pf x) (pg x))
+preserves-pair pf pg .at x = ≈-trans (pair-natural _ _ _) (pair-cong (pf .at x) (pg .at x))
 
 preserves-Lf-map : ∀ {X Y : Obj} {f : Mor X Y} {c d} →
                    preserves-section f c d → preserves-section (Lf-map f) (Lf-section c) (Lf-section d)
-preserves-Lf-map {f = f} {c} p x =
-  ≈-trans (L-elem-natural (f .famf ._⇒f_.transf x) (c .at x)) (L-elem-cong (p x))
+preserves-Lf-map {f = f} {c} p .at x =
+  ≈-trans (L-elem-natural (f .famf ._⇒f_.transf x) (c .at x)) (L-elem-cong (p .at x))
 
 preserves-Lf-root : ∀ {X Y : Obj} (f : Mor X Y) → preserves-section (Lf-map f) Lf-root Lf-root
-preserves-Lf-root f x = Lmap-root (f .famf ._⇒f_.transf x)
+preserves-Lf-root f .at x = Lmap-root (f .famf ._⇒f_.transf x)
 
 preserves-scale : ∀ {X Y : Obj} {f : Mor X Y} {w : 𝟙c ⇒ 𝟙c} {c d} →
                   preserves-section f c d →
                   preserves-section f (scale-section w c) (scale-section w d)
-preserves-scale p x = ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (p x) ≈-refl)
+preserves-scale p .at x = ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (p .at x) ≈-refl)
 
 -- The lift of an isomorphism of families.
 Lf-iso : ∀ {X Y : Obj} → Fam𝒞.Iso X Y → Fam𝒞.Iso (Lf X) (Lf Y)
@@ -983,8 +984,8 @@ module FoldSection {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   preserves-foldMor : (cΓ : Section Γ) →
     preserves-section alg (prod-section cΓ (poly-section P Pc (extend-section δc cA))) cA →
     preserves-section foldMor (prod-section cΓ (Mδ.μ-section P Pc)) cA
-  preserves-foldMor cΓ halg (γ , t) =
-    fold-fam-unit γ (cΓ .at γ) (λ s → halg (γ , s)) t
+  preserves-foldMor cΓ halg .at (γ , t) =
+    fold-fam-unit γ (cΓ .at γ) (λ s → halg .at (γ , s)) t
 
 ------------------------------------------------------------------------------
 -- inMap, the canonical iso between the categorical one-step unfolding
@@ -1248,7 +1249,7 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       unembed-unit (μ Q') Q'c t = id-left
 
       preserves-inMor : preserves-section inMor (poly-section P Pc (extend-section δc μc)) μc
-      preserves-inMor x =
+      preserves-inMor .at x =
         ≈-trans (assoc _ _ _)
         (≈-trans (∘-cong ≈-refl (embed-unit P Pc x))
                  (RS.reindex-fam-unit P Pc mor₀-sec (embed-idx P x)))
@@ -1913,7 +1914,7 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       h (Fin.suc i) a = id-left
 
     preserves-outMor : preserves-section outMor μc (poly-section P Pc (extend-section δc μc))
-    preserves-outMor (Tδ.sup x) =
+    preserves-outMor .at (Tδ.sup x) =
       ≈-trans (assoc _ _ _)
       (≈-trans (∘-cong ≈-refl (RS'.reindex-fam-unit P Pc mor₀⁻-sec x))
                (AtS.unembed-unit P Pc (R'.reindex-shape ∣ P ∣ mor₀⁻ x)))
@@ -2824,7 +2825,7 @@ module WithTerminal (T : HasTerminal 𝒞) where
 
   preserves-to-terminal : ∀ {X : Obj} (cX : Section X) →
     preserves-section (HasTerminal.to-terminal (terminal T)) cX terminal-section
-  preserves-to-terminal cX x = HasTerminal.to-terminal-unique T _ _
+  preserves-to-terminal cX .at x = HasTerminal.to-terminal-unique T _ _
 
   preserves-μ-map : ∀ {j k} (P : Poly (suc j)) (δ : Fin j → Obj) (Q : Poly (suc k)) (δ' : Fin k → Obj)
     (δc : ∀ i → Section (δ i)) (δ'c : ∀ i → Section (δ' i))
@@ -2837,32 +2838,14 @@ module WithTerminal (T : HasTerminal 𝒞) where
       (MuSection.μ-section δ δc P Pc) (MuSection.μ-section δ' δ'c Q Qc)
   preserves-μ-map P δ Q δ' δc δ'c Pc Qc u hu =
     preserves-section-∘
-      {X = μ-fam P δ} {Y = Fam𝒞-P.prod 𝟙F (μ-fam P δ)} {Z = μ-fam Q δ'}
-      {f = FoldDef.foldMor {Γ = 𝟙F} {A = μ-fam Q δ'} {P = P} {δ = δ} alg}
-      {g = Fam𝒞-P.pair (HasTerminal.to-terminal (terminal T)) (Fam𝒞.id (μ-fam P δ))}
-      {cX = μPc} {cY = prod-section terminal-section μPc} {cZ = μQc}
-      (FoldSection.preserves-foldMor {Γ = 𝟙F} {A = μ-fam Q δ'} {P = P} {δ = δ}
-        alg δc μQc Pc terminal-section
-        (preserves-section-∘
-          {X = Fam𝒞-P.prod 𝟙F PX} {Y = PX} {Z = μ-fam Q δ'}
-          {f = hasMu .HasMu.inMap Q δ' Fam𝒞.∘ u} {g = Fam𝒞-P.p₂ {𝟙F} {PX}}
-          {cX = prod-section terminal-section sP} {cY = sP} {cZ = μQc}
-          (preserves-section-∘
-            {X = PX} {Y = fobj μ-fam Q (extend δ' (μ-fam Q δ'))} {Z = μ-fam Q δ'}
-            {f = hasMu .HasMu.inMap Q δ'} {g = u}
-            {cX = sP} {cY = poly-section Q Qc (extend-section δ'c μQc)} {cZ = μQc}
-            (preserves-inMap Q δ' δ'c Qc) hu)
-          (preserves-p₂ {X = 𝟙F} {Y = PX} {cX = terminal-section} {cY = sP})))
-      (preserves-pair
-        {X = μ-fam P δ} {Y = 𝟙F} {Z = μ-fam P δ}
-        {f = HasTerminal.to-terminal (terminal T)} {g = Fam𝒞.id (μ-fam P δ)}
-        {cX = μPc} {cY = terminal-section} {cZ = μPc}
-        (preserves-to-terminal μPc) (preserves-section-id μPc))
+      (FoldSection.preserves-foldMor {P = P} {δ = δ} alg δc μQc Pc terminal-section
+        (preserves-section-∘ (preserves-section-∘ (preserves-inMap Q δ' δ'c Qc) hu)
+          (preserves-p₂ {cX = terminal-section} {cY = poly-section P Pc (extend-section δc μQc)})))
+      (preserves-pair (preserves-to-terminal μPc) (preserves-section-id μPc))
     where
-    𝟙F = HasTerminal.witness (terminal T)
-    PX = fobj μ-fam P (extend δ (μ-fam Q δ'))
     μQc = MuSection.μ-section δ' δ'c Q Qc
     μPc = MuSection.μ-section δ δc P Pc
-    sP = poly-section P Pc (extend-section δc μQc)
-    alg : Mor (Fam𝒞-P.prod 𝟙F PX) (μ-fam Q δ')
+    alg : Mor (Fam𝒞-P.prod (HasTerminal.witness (terminal T))
+                (fobj μ-fam P (extend δ (μ-fam Q δ'))))
+              (μ-fam Q δ')
     alg = (hasMu .HasMu.inMap Q δ' Fam𝒞.∘ u) Fam𝒞.∘ Fam𝒞-P.p₂

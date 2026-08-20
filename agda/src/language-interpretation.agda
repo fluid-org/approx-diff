@@ -289,26 +289,17 @@ preserves-as-poly-map unit      hgs δ₀ δ₀c = preserves-section-id 𝟙ty-s
 preserves-as-poly-map (base s)  hgs δ₀ δ₀c = preserves-section-id (sort-section s)
 preserves-as-poly-map (σ [+] τ) {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c =
   preserves-coprod-m
-    {f = Lf-map (as-poly-map σ gs δ₀)} {g = Lf-map (as-poly-map τ gs δ₀)}
-    {cX = Lf-section sσ} {cX' = Lf-section sσ'} {cY = Lf-section sτ} {cY' = Lf-section sτ'}
-    (preserves-Lf-map {f = as-poly-map σ gs δ₀} {c = sσ} {d = sσ'}
-      (preserves-as-poly-map σ {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c))
-    (preserves-Lf-map {f = as-poly-map τ gs δ₀} {c = sτ} {d = sτ'}
-      (preserves-as-poly-map τ {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c))
+    (preserves-Lf-map {c = sσ} {d = sσ'} (preserves-as-poly-map σ hgs δ₀ δ₀c))
+    (preserves-Lf-map {c = sτ} {d = sτ'} (preserves-as-poly-map τ hgs δ₀ δ₀c))
   where
   sσ  = poly-section (as-poly σ δ)  (as-poly-section σ δ δc)   δ₀c
   sσ' = poly-section (as-poly σ δ') (as-poly-section σ δ' δ'c) δ₀c
   sτ  = poly-section (as-poly τ δ)  (as-poly-section τ δ δc)   δ₀c
   sτ' = poly-section (as-poly τ δ') (as-poly-section τ δ' δ'c) δ₀c
 preserves-as-poly-map (σ [×] τ) {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c =
-  preserves-Lf-map
-    {f = prod-m (as-poly-map σ gs δ₀) (as-poly-map τ gs δ₀)}
-    {c = prod-section sσ sτ} {d = prod-section sσ' sτ'}
-    (preserves-prod-m
-      {f = as-poly-map σ gs δ₀} {g = as-poly-map τ gs δ₀}
-      {cX = sσ} {cX' = sσ'} {cY = sτ} {cY' = sτ'}
-      (preserves-as-poly-map σ {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c)
-      (preserves-as-poly-map τ {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c))
+  preserves-Lf-map {c = prod-section sσ sτ} {d = prod-section sσ' sτ'}
+    (preserves-prod-m (preserves-as-poly-map σ hgs δ₀ δ₀c)
+                      (preserves-as-poly-map τ hgs δ₀ δ₀c))
   where
   sσ  = poly-section (as-poly σ δ)  (as-poly-section σ δ δc)   δ₀c
   sσ' = poly-section (as-poly σ δ') (as-poly-section σ δ' δ'c) δ₀c
@@ -460,13 +451,15 @@ as-poly-map-ren {n = n} ρ (μ τ) {δ} {δ'} gs δ₀ = begin
     eq  = as-poly-ren ρ τ δ
     eq' = as-poly-ren ρ τ δ'
 
+concat-mor-split : ∀ {n Δ} {δ₀ δ₀' : Fin n → obj} {δ δ' : Fin Δ → obj} →
+                   (∀ i → δ₀ i ⇒ δ₀' i) → (∀ i → δ i ⇒ δ' i) →
+                   (s : Fin n ⊎ Fin Δ) → [ δ₀ , δ ] s ⇒ [ δ₀' , δ' ] s
+concat-mor-split fs gs (inj₁ j) = fs j
+concat-mor-split fs gs (inj₂ k) = gs k
+
 concat-mor : ∀ {n Δ} {δ₀ δ₀' : Fin n → obj} {δ δ' : Fin Δ → obj} →
              (∀ i → δ₀ i ⇒ δ₀' i) → (∀ i → δ i ⇒ δ' i) → ∀ i → concat δ₀ δ i ⇒ concat δ₀' δ' i
-concat-mor {n} {Δ} {δ₀} {δ₀'} {δ} {δ'} fs gs i = go (splitAt n i)
-  where
-    go : (s : Fin n ⊎ Fin Δ) → [ δ₀ , δ ] s ⇒ [ δ₀' , δ' ] s
-    go (inj₁ j) = fs j
-    go (inj₂ k) = gs k
+concat-mor {n} fs gs i = concat-mor-split fs gs (splitAt n i)
 
 concat-mor-cong : ∀ {n Δ} {δ₀ δ₀' : Fin n → obj} {δ δ' : Fin Δ → obj}
                   {fs fs' : ∀ i → δ₀ i ⇒ δ₀' i} {gs gs' : ∀ i → δ i ⇒ δ' i} →
@@ -502,32 +495,78 @@ fmor-extend-id P = ≈-trans (fmor-cong P extend-mor-id) (fmor-id P)
 
 -- Freezing the poly-variables δ₀ into the environment (with X at position 0) reshuffles the
 -- combined context only up to pointwise equality.
+env-pw-suc : ∀ {Δ n} (δ : Fin Δ → obj) (δ₀ : Fin n → obj) (X : obj) (s : Fin n ⊎ Fin Δ) →
+             [_,_] {C = λ _ → obj} δ₀ δ s ≡ [_,_] {C = λ _ → obj} (extend δ₀ X) δ (map₁ Fin.suc s)
+env-pw-suc δ δ₀ X (inj₁ k) = refl
+env-pw-suc δ δ₀ X (inj₂ l) = refl
+
 env-pw : ∀ {Δ n} (δ : Fin Δ → obj) (δ₀ : Fin n → obj) (X : obj) (i : Fin (suc (n + Δ))) →
          concat (extend {0} δ∅ X) (concat δ₀ δ) i ≡ concat (extend δ₀ X) δ i
 env-pw δ δ₀ X Fin.zero    = refl
-env-pw {Δ} {n} δ δ₀ X (Fin.suc j) = go (splitAt n j)
-  where
-    go : (s : Fin n ⊎ Fin Δ) → [ δ₀ , δ ] s ≡ [ extend δ₀ X , δ ] (map₁ Fin.suc s)
-    go (inj₁ k) = refl
-    go (inj₂ l) = refl
+env-pw {Δ} {n} δ δ₀ X (Fin.suc j) = env-pw-suc δ δ₀ X (splitAt n j)
 
 env-pw-natural : ∀ {Δ n} {δ δ' : Fin Δ → obj} (gs : ∀ i → δ i ⇒ δ' i) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i)
                  {X X' : obj} (k : X ⇒ X') (i : Fin (suc (n + Δ))) →
                  (concat-mor (extend-mor fs k) gs i ∘ ≡-to-⇒ (env-pw δ δ₀ X i))
                    ≈ (≡-to-⇒ (env-pw δ' δ₀' X' i) ∘ concat-mor {n = 1} (extend-mor (λ j → id _) k) (concat-mor fs gs) i)
 env-pw-natural gs fs k Fin.zero = ≈-trans id-right (≈-sym id-left)
-env-pw-natural {n = n} gs fs k (Fin.suc j) with splitAt n j
-... | inj₁ l = ≈-trans id-right (≈-sym id-left)
-... | inj₂ l = ≈-trans id-right (≈-sym id-left)
+env-pw-natural {Δ} {n} {δ} {δ'} gs {δ₀} {δ₀'} fs {X} {X'} k (Fin.suc j) = go (splitAt n j)
+  where
+  go : (s : Fin n ⊎ Fin Δ) →
+       (concat-mor-split (extend-mor fs k) gs (map₁ Fin.suc s) ∘ ≡-to-⇒ (env-pw-suc δ δ₀ X s))
+         ≈ (≡-to-⇒ (env-pw-suc δ' δ₀' X' s) ∘ concat-mor-split fs gs s)
+  go (inj₁ l) = ≈-trans id-right (≈-sym id-left)
+  go (inj₂ l) = ≈-trans id-right (≈-sym id-left)
 
 env-pw-natural⁻ : ∀ {Δ n} {δ δ' : Fin Δ → obj} (gs : ∀ i → δ i ⇒ δ' i) {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i)
                   {X X' : obj} (k : X ⇒ X') (i : Fin (suc (n + Δ))) →
                   (concat-mor {n = 1} (extend-mor (λ j → id _) k) (concat-mor fs gs) i ∘ ≡-to-⇒ (sym (env-pw δ δ₀ X i)))
                     ≈ (≡-to-⇒ (sym (env-pw δ' δ₀' X' i)) ∘ concat-mor (extend-mor fs k) gs i)
 env-pw-natural⁻ gs fs k Fin.zero = ≈-trans id-right (≈-sym id-left)
-env-pw-natural⁻ {n = n} gs fs k (Fin.suc j) with splitAt n j
-... | inj₁ l = ≈-trans id-right (≈-sym id-left)
-... | inj₂ l = ≈-trans id-right (≈-sym id-left)
+env-pw-natural⁻ {Δ} {n} {δ} {δ'} gs {δ₀} {δ₀'} fs {X} {X'} k (Fin.suc j) = go (splitAt n j)
+  where
+  go : (s : Fin n ⊎ Fin Δ) →
+       (concat-mor-split fs gs s ∘ ≡-to-⇒ (sym (env-pw-suc δ δ₀ X s)))
+         ≈ (≡-to-⇒ (sym (env-pw-suc δ' δ₀' X' s)) ∘ concat-mor-split (extend-mor fs k) gs (map₁ Fin.suc s))
+  go (inj₁ l) = ≈-trans id-right (≈-sym id-left)
+  go (inj₂ l) = ≈-trans id-right (≈-sym id-left)
+
+concat-section : ∀ {n Δ} {δ₀ : Fin n → obj} {δ : Fin Δ → obj} →
+                 (∀ i → Section (δ₀ i)) → (∀ i → Section (δ i)) → ∀ i → Section (concat δ₀ δ i)
+concat-section {n = n} {δ₀ = δ₀} {δ = δ} δ₀c δc i =
+  [_,_] {C = λ s → Section ([ δ₀ , δ ] s)} δ₀c δc (splitAt n i)
+
+preserves-env-pw-suc : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X : obj}
+  (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (cX : Section X) (s : Fin n ⊎ Fin Δ) →
+  preserves-section (≡-to-⇒ (env-pw-suc δ δ₀ X s))
+    ([_,_] {C = λ s' → Section ([ δ₀ , δ ] s')} δ₀c δc s)
+    ([_,_] {C = λ s' → Section ([ extend δ₀ X , δ ] s')} (extend-section δ₀c cX) δc (map₁ Fin.suc s))
+preserves-env-pw-suc δc δ₀c cX (inj₁ k) = preserves-section-id (δ₀c k)
+preserves-env-pw-suc δc δ₀c cX (inj₂ l) = preserves-section-id (δc l)
+
+preserves-env-pw-suc⁻ : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X : obj}
+  (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (cX : Section X) (s : Fin n ⊎ Fin Δ) →
+  preserves-section (≡-to-⇒ (sym (env-pw-suc δ δ₀ X s)))
+    ([_,_] {C = λ s' → Section ([ extend δ₀ X , δ ] s')} (extend-section δ₀c cX) δc (map₁ Fin.suc s))
+    ([_,_] {C = λ s' → Section ([ δ₀ , δ ] s')} δ₀c δc s)
+preserves-env-pw-suc⁻ δc δ₀c cX (inj₁ k) = preserves-section-id (δ₀c k)
+preserves-env-pw-suc⁻ δc δ₀c cX (inj₂ l) = preserves-section-id (δc l)
+
+preserves-env-pw : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X : obj}
+  (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (cX : Section X) (i : Fin (suc (n + Δ))) →
+  preserves-section (≡-to-⇒ (env-pw δ δ₀ X i))
+    (concat-section {n = 1} (extend-section (λ ()) cX) (concat-section δ₀c δc) i)
+    (concat-section {n = suc n} (extend-section δ₀c cX) δc i)
+preserves-env-pw δc δ₀c cX Fin.zero = preserves-section-id cX
+preserves-env-pw {n = n} δc δ₀c cX (Fin.suc j) = preserves-env-pw-suc δc δ₀c cX (splitAt n j)
+
+preserves-env-pw⁻ : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X : obj}
+  (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (cX : Section X) (i : Fin (suc (n + Δ))) →
+  preserves-section (≡-to-⇒ (sym (env-pw δ δ₀ X i)))
+    (concat-section {n = suc n} (extend-section δ₀c cX) δc i)
+    (concat-section {n = 1} (extend-section (λ ()) cX) (concat-section δ₀c δc) i)
+preserves-env-pw⁻ δc δ₀c cX Fin.zero = preserves-section-id cX
+preserves-env-pw⁻ {n = n} δc δ₀c cX (Fin.suc j) = preserves-env-pw-suc⁻ δc δ₀c cX (splitAt n j)
 
 -- Applying the polynomial (as-poly τ δ) is the interpretation of τ, in each direction.
 mutual
@@ -1535,6 +1574,18 @@ mutual
 -- The single substitution push τ', read pointwise as an environment.
 push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} δ∅ (⟦ τ' ⟧ty (λ ()))) (λ ()) i
 push-pw τ' Fin.zero = refl
+
+preserves-push-pw : ∀ (τ' : type 0) (i : Fin 1) →
+  preserves-section (≡-to-⇒ (push-pw τ' i))
+    (unit-section (push τ' i) (λ ()) (λ ()))
+    (concat-section {n = 1} (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))) (λ ()) i)
+preserves-push-pw τ' Fin.zero = preserves-section-id (unit-section τ' (λ ()) (λ ()))
+
+preserves-push-pw⁻ : ∀ (τ' : type 0) (i : Fin 1) →
+  preserves-section (≡-to-⇒ (sym (push-pw τ' i)))
+    (concat-section {n = 1} (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))) (λ ()) i)
+    (unit-section (push τ' i) (λ ()) (λ ()))
+preserves-push-pw⁻ τ' Fin.zero = preserves-section-id (unit-section τ' (λ ()) (λ ()))
 
 -- Syntactic substitution is functor application.
 sub-as-apply-fwd : (τ : type 1) (τ' : type 0) →
