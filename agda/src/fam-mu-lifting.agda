@@ -1,15 +1,10 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 ------------------------------------------------------------------------------
--- Carrier of μ-types for the Fam construction: nested μ reduced to a single
--- sort-indexed W-type in setoids, with the fibre family computed by structural
--- recursion over trees. The sorts and trees are category-free, built from the
--- index setoids alone; the fibres recover the objects of the original
--- polynomial and environment through a decoration of the sorts.
---
--- Abbott, Altenkirch, Ghani. Containers: constructing strictly positive types. TCS 342(1), 2005.
--- Abbott, Altenkirch, Ghani. Representing nested inductive types using W-types. ICALP 2004.
--- Emmenegger. W-types in setoids. arXiv:1809.02375, 2018.
+-- μ-types for the Fam construction: the carrier, reindexing of its trees,
+-- the strong catamorphism, inMap, Lambek's lemma and the initial-algebra
+-- laws, with preservation of sections by each of the maps. The functorial
+-- action and μ-map, which need a terminal object, live under WithTerminal.
 ------------------------------------------------------------------------------
 
 open import Level using (Level; _⊔_; Lift; lift) renaming (suc to lsuc)
@@ -18,8 +13,7 @@ import Data.Fin as Fin
 open Fin using (Fin)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_)
-open import Data.Unit using (⊤) renaming (tt to ttS)
-open import Data.Unit using (tt)
+open import Data.Unit using (⊤; tt)
 open import prop using (_,_)
 open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasStrongCoproducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
@@ -39,13 +33,25 @@ module fam-mu-lifting {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
     (𝟙c : Category.obj 𝒞) where
 
+------------------------------------------------------------------------------
+-- Carrier: nested μ reduced to a single sort-indexed W-type in setoids, with
+-- the fibre family computed by structural recursion over trees. The sorts and
+-- trees are category-free, built from the index setoids alone; the fibres
+-- recover the objects of the original polynomial and environment through a
+-- decoration of the sorts.
+--
+-- Abbott, Altenkirch, Ghani. Containers: constructing strictly positive types. TCS 342(1), 2005.
+-- Abbott, Altenkirch, Ghani. Representing nested inductive types using W-types. ICALP 2004.
+-- Emmenegger. W-types in setoids. arXiv:1809.02375, 2018.
+------------------------------------------------------------------------------
+
 open Category 𝒞 public
 open IsEquivalence public
 
-P : HasProducts 𝒞
-P = biproducts→products CM BP
+𝒞-products : HasProducts 𝒞
+𝒞-products = biproducts→products CM BP
 
-open HasProducts P public
+open HasProducts 𝒞-products public
 
 private
   module Lc = lifting CM BP 𝟙c
@@ -60,7 +66,7 @@ open Obj public
 open Mor public
 open Fam public
 module Fam𝒞 = Category cat
-open products P public  -- Fam-level products
+open products 𝒞-products public  -- Fam-level products
 module Fam𝒞-P = HasProducts products
 open _⇒f_ public
 open polynomial-functor using (extend) public
@@ -81,7 +87,7 @@ open fam-mu-lifting.fibre os es CM BP 𝟙c public using (Idx; ∣_∣; module F
 -- The lifting on families: the fibrewise strong endofunctor induced by the lifting.
 private
   LfS : StrongFunctor products
-  LfS = fam-functor.FamF-strong os (os ⊔ es) P Lc.L-strong
+  LfS = fam-functor.FamF-strong os (os ⊔ es) 𝒞-products Lc.L-strong
   module LfS = StrongFunctor LfS
 
 Lf : Obj → Obj
@@ -359,9 +365,9 @@ module MuSection {n} (δ : Fin n → Obj) (δ-section : ∀ i → Section (δ i)
       fib-unit-natural Q ρd Qc ρdc {x} {y} e
 
   μ-section : ∀ (P : Poly (Data.Nat.suc n)) → PolySection P → Section (μ-fam P δ)
-  μ-section P Pc .at t = fib-unit P (λ i → lift ttS) Pc (λ i → lift ttS) t
+  μ-section P Pc .at t = fib-unit P (λ i → lift tt) Pc (λ i → lift tt) t
   μ-section P Pc .at-natural {t} {t'} e =
-    fib-unit-natural P (λ i → lift ttS) Pc (λ i → lift ttS) {t} {t'} e
+    fib-unit-natural P (λ i → lift tt) Pc (λ i → lift tt) {t} {t'} e
 
 poly-section : ∀ {n} {δ : Fin n → Obj} (P : Poly n) → PolySection P → (∀ i → Section (δ i)) →
                Section (fobj μ-fam P δ)

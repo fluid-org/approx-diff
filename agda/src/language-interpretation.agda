@@ -81,36 +81,25 @@ mutual
   as-poly (σ [→] τ)       δ = Poly.const (Lf (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ())))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
 
--- The unit section of each type's interpretation, by the same induction as the interpretation:
--- unit weight at every root, the assumed sections at the leaves, and a recursion over trees at
--- the μ-carriers.
-private module Mu∅ = R.MuSection δ∅ (λ ())
+-- Sections for a type's polynomial: the assumed sections at the constant leaves.
+as-poly-section : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) →
+                PolySection (as-poly {Δ} {n} τ δ)
+as-poly-section {Δ} {n} (var i) δ δc = go (splitAt n i)
+  where
+    go : (s : Fin n ⊎ Fin Δ) →
+         PolySection ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+    go (inj₁ k) = lift tt
+    go (inj₂ j) = δc j
+as-poly-section unit      δ δc = 𝟙ty-section
+as-poly-section (base s)  δ δc = sort-section s
+as-poly-section (σ [+] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
+as-poly-section (σ [×] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
+as-poly-section (σ [→] τ) δ δc = Lf-section exp-section
+as-poly-section (μ τ)     δ δc = as-poly-section τ δ δc
 
-mutual
-  unit-section : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) → Section (⟦ τ ⟧ty δ)
-  unit-section (var i)   δ δc = δc i
-  unit-section unit      δ δc = 𝟙ty-section
-  unit-section (base s)  δ δc = sort-section s
-  unit-section (σ [+] τ) δ δc =
-    coprod-section (Lf-section (unit-section σ δ δc)) (Lf-section (unit-section τ δ δc))
-  unit-section (σ [×] τ) δ δc = Lf-section (prod-section (unit-section σ δ δc) (unit-section τ δ δc))
-  unit-section (σ [→] τ) δ δc = Lf-section exp-section
-  unit-section (μ τ)     δ δc = Mu∅.μ-section (as-poly τ δ) (as-poly-section τ δ δc)
-
-  as-poly-section : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) →
-                  PolySection (as-poly {Δ} {n} τ δ)
-  as-poly-section {Δ} {n} (var i) δ δc = go (splitAt n i)
-    where
-      go : (s : Fin n ⊎ Fin Δ) →
-           PolySection ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
-      go (inj₁ k) = lift tt
-      go (inj₂ j) = δc j
-  as-poly-section unit      δ δc = 𝟙ty-section
-  as-poly-section (base s)  δ δc = sort-section s
-  as-poly-section (σ [+] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
-  as-poly-section (σ [×] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
-  as-poly-section (σ [→] τ) δ δc = Lf-section exp-section
-  as-poly-section (μ τ)     δ δc = as-poly-section τ δ δc
+-- The unit section of a type's interpretation.
+unit-section : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) → Section (⟦ τ ⟧ty δ)
+unit-section τ δ δc = R.poly-section (as-poly τ δ) (as-poly-section τ δ δc) (λ ())
 
 -- The control dependence an eliminator writes: the result type's unit section scaled by the control
 -- weight.
