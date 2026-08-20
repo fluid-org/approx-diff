@@ -600,6 +600,38 @@ strong-Lmap-pre g x r =
   (≈-trans (strong-Lmap-split-pre g x r)
            (≈-sym (strong-Lmap-unfold (r ∘ prod-m g x))))
 
+strong-Lmap-inj : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → (strong-Lmap r ∘ prod-m (id G) inj) ≈ (inj ∘ r)
+strong-Lmap-inj {G} {X} {Y} r =
+  ≈-trans (comp-bilinear₁ _ _ _)
+  (≈-trans (+m-cong payload-part root-part) +m-runit)
+  where
+  collapse : (prod-m (id G) payload-L ∘ prod-m (id G) inj) ≈ id _
+  collapse =
+    ≈-trans (B.pair-natural G X _ _ _)
+    (≈-trans (pair-cong
+        (≈-trans (∘-cong id-left ≈-refl) (≈-trans (B.pair-p₁ G (L X) _ _) id-left))
+        (≈-trans (assoc _ _ _)
+          (≈-trans (∘-cong ≈-refl (B.pair-p₂ G (L X) _ _))
+            (≈-trans (≈-sym (assoc _ _ _))
+              (≈-trans (∘-cong payload-L-inj ≈-refl) id-left)))))
+      (B.pair-ext0 G X))
+
+  payload-part : ((inj ∘ (r ∘ prod-m (id G) payload-L)) ∘ prod-m (id G) inj) ≈ (inj ∘ r)
+  payload-part =
+    ≈-trans (assoc _ _ _)
+    (∘-cong ≈-refl
+      (≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl collapse) id-right)))
+
+  root-part : (((root ∘ tag-L) ∘ p₂) ∘ prod-m (id G) inj) ≈ εm
+  root-part =
+    ≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl (B.pair-p₂ G (L X) _ _))
+      (≈-trans (≈-sym (assoc _ _ _))
+        (≈-trans (∘-cong (≈-trans (assoc _ _ _)
+                           (≈-trans (∘-cong ≈-refl tag-L-inj) (comp-bilinear-ε₂ root))) ≈-refl)
+          (comp-bilinear-ε₁ p₂))))
+
 strong-Lmap-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
                 (strong-Lmap r ∘ pair p₁ (strong-Lmap s)) ≈ strong-Lmap (r ∘ pair p₁ s)
 strong-Lmap-co r s =

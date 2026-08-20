@@ -59,7 +59,7 @@ open Lc public
   using (L; root; inj; copair-root; copair-inj; lifting-ext;
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
          L-elem; L-elem-cong; L-elem-natural;
-         strong-Lmap; strong-Lmap-cong; strong-Lmap-natural; strong-Lmap-pre; strong-Lmap-post; strong-Lmap-co; strong-Lmap-p₂; strong-Lmap-elem;
+         strong-Lmap; strong-Lmap-cong; strong-Lmap-natural; strong-Lmap-pre; strong-Lmap-post; strong-Lmap-co; strong-Lmap-p₂; strong-Lmap-elem; strong-Lmap-inj;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
 open Obj public
@@ -132,6 +132,30 @@ injF .idxf = prop-setoid.idS _
 injF {X} .famf ._⇒f_.transf x = inj
 injF {X} .famf ._⇒f_.natural {x₁} {x₂} e =
   ≈-sym (Lmap-inj (X .fam .subst e))
+
+injF-natural : ∀ {X Y : Obj} (f : Mor X Y) → Fam𝒞._∘_ (Lf-map f) injF ≃ Fam𝒞._∘_ injF f
+injF-natural f ._≃_.idxf-eq .PS._≃m_.func-eq e = f .idxf .PS._⇒_.func-resp-≈ e
+injF-natural {X} {Y} f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} =
+  ≈-trans (∘-cong (Lf Y .fam .refl*) id-left)
+  (≈-trans id-left
+  (≈-trans (Lmap-inj (f .famf ._⇒f_.transf x)) (≈-sym id-left)))
+
+private
+  strength-injF : ∀ {Γ X : Obj} →
+    Fam𝒞._∘_ (LfS.strengthᵣ {Γ} {X}) (Fam𝒞-P.pair Fam𝒞-P.p₁ (Fam𝒞._∘_ injF Fam𝒞-P.p₂)) ≃ injF
+  strength-injF ._≃_.idxf-eq .PS._≃m_.func-eq e = e
+  strength-injF {Γ} {X} ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
+    ≈-trans (∘-cong (Lf (Fam𝒞-P.prod Γ X) .fam .refl*) id-left)
+    (≈-trans id-left
+    (≈-trans (∘-cong ≈-refl (pair-cong ≈-refl id-left))
+    (≈-trans (∘-cong ≈-refl (pair-cong (≈-sym id-left) ≈-refl))
+    (≈-trans (strong-Lmap-inj (id _)) id-right))))
+
+strong-Lf-map-injF : ∀ {Γ X Y : Obj} (f : Mor (Fam𝒞-P.prod Γ X) Y) →
+  Fam𝒞._∘_ (strong-Lf-map f) (Fam𝒞-P.pair Fam𝒞-P.p₁ (Fam𝒞._∘_ injF Fam𝒞-P.p₂)) ≃ Fam𝒞._∘_ injF f
+strong-Lf-map-injF f =
+  Fam𝒞.≈-trans (Fam𝒞.assoc _ _ _)
+  (Fam𝒞.≈-trans (Fam𝒞.∘-cong Fam𝒞.≈-refl strength-injF) (injF-natural f))
 
 -- A section of a family: an element of every fibre, natural under the transports. It is what an
 -- eliminator writes when it consumes a root.
