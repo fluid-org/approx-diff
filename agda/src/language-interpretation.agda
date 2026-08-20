@@ -407,6 +407,77 @@ cast-μ : ∀ {n} {P P' : Poly R.cat (suc n)} (e : P ≡ P') (δ₀ : Fin n → 
          cast (cong Poly.μ e) δ₀ ≈ μ-map P δ₀ P' δ₀ (cast e (extend δ₀ (μ-obj P' δ₀)))
 cast-μ refl δ₀ = ≈-sym (μ-map-id _ _)
 
+cast-irr : ∀ {n} {P Q : Poly R.cat n} (e e' : P ≡ Q) (δ₀ : Fin n → obj) → cast e δ₀ ≈ cast e' δ₀
+cast-irr refl refl δ₀ = ≈-refl
+
+as-poly-ren-var : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (δ : Fin Δ₂ → obj)
+  (s : Fin n ⊎ Fin Δ₁) (s' : Fin n ⊎ Fin Δ₂) → s' ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] s →
+  [_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s'
+    ≡ [_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ (ρ j))) s
+as-poly-ren-var ρ δ (inj₁ j) _ refl = refl
+as-poly-ren-var ρ δ (inj₂ k) _ refl = refl
+
+preserves-as-poly-ren-var : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) {δ : Fin Δ₂ → obj}
+  (δc : ∀ i → Section (δ i)) {δ₀ : Fin n → obj} (δ₀c : ∀ i → Section (δ₀ i))
+  (s : Fin n ⊎ Fin Δ₁) (s' : Fin n ⊎ Fin Δ₂) (eq : s' ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] s) →
+  preserves-section (cast (as-poly-ren-var ρ δ s s' eq) δ₀)
+    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s')
+      (as-poly-var-section δ δc s') δ₀c)
+    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ (ρ j))) s)
+      (as-poly-var-section (λ j → δ (ρ j)) (λ j → δc (ρ j)) s) δ₀c)
+preserves-as-poly-ren-var ρ δc δ₀c (inj₁ j) _ refl = preserves-section-id (δ₀c j)
+preserves-as-poly-ren-var ρ δc δ₀c (inj₂ k) _ refl = preserves-section-id (δc (ρ k))
+
+preserves-as-poly-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (n + Δ₁)) {δ : Fin Δ₂ → obj}
+  (δc : ∀ i → Section (δ i)) {δ₀ : Fin n → obj} (δ₀c : ∀ i → Section (δ₀ i)) →
+  preserves-section (cast (as-poly-ren ρ τ δ) δ₀)
+    (poly-section (as-poly (extᵗⁿ n ρ *ᵗ τ) δ) (as-poly-section (extᵗⁿ n ρ *ᵗ τ) δ δc) δ₀c)
+    (poly-section (as-poly τ (λ i → δ (ρ i)))
+      (as-poly-section τ (λ i → δ (ρ i)) (λ i → δc (ρ i))) δ₀c)
+preserves-as-poly-ren {n = n} ρ (var i) {δ} δc {δ₀} δ₀c =
+  preserves-section-resp
+    (cast-irr (as-poly-ren-var ρ δ (splitAt n i) (splitAt n (extᵗⁿ n ρ i)) (splitAt-extᵗⁿ n ρ i))
+              (as-poly-ren ρ (var i) δ) δ₀)
+    (preserves-as-poly-ren-var ρ δc δ₀c (splitAt n i) (splitAt n (extᵗⁿ n ρ i))
+      (splitAt-extᵗⁿ n ρ i))
+preserves-as-poly-ren ρ unit      δc δ₀c = preserves-section-id 𝟙ty-section
+preserves-as-poly-ren ρ (base s)  δc δ₀c = preserves-section-id (sort-section s)
+preserves-as-poly-ren {n = n} ρ (σ [+] τ) {δ} δc {δ₀} δ₀c =
+  preserves-section-resp
+    (≈-sym (cast-+ (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀))
+    (preserves-coprod-m
+      (preserves-Lf-map {c = pσ'} {d = pσ} (preserves-as-poly-ren ρ σ δc δ₀c))
+      (preserves-Lf-map {c = pτ'} {d = pτ} (preserves-as-poly-ren ρ τ δc δ₀c)))
+  where
+  pσ' = poly-section (as-poly (extᵗⁿ n ρ *ᵗ σ) δ) (as-poly-section (extᵗⁿ n ρ *ᵗ σ) δ δc) δ₀c
+  pσ  = poly-section (as-poly σ (λ i → δ (ρ i))) (as-poly-section σ (λ i → δ (ρ i)) (λ i → δc (ρ i))) δ₀c
+  pτ' = poly-section (as-poly (extᵗⁿ n ρ *ᵗ τ) δ) (as-poly-section (extᵗⁿ n ρ *ᵗ τ) δ δc) δ₀c
+  pτ  = poly-section (as-poly τ (λ i → δ (ρ i))) (as-poly-section τ (λ i → δ (ρ i)) (λ i → δc (ρ i))) δ₀c
+preserves-as-poly-ren {n = n} ρ (σ [×] τ) {δ} δc {δ₀} δ₀c =
+  preserves-section-resp
+    (≈-sym (cast-× (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀))
+    (preserves-Lf-map {c = prod-section pσ' pτ'} {d = prod-section pσ pτ}
+      (preserves-prod-m (preserves-as-poly-ren ρ σ δc δ₀c) (preserves-as-poly-ren ρ τ δc δ₀c)))
+  where
+  pσ' = poly-section (as-poly (extᵗⁿ n ρ *ᵗ σ) δ) (as-poly-section (extᵗⁿ n ρ *ᵗ σ) δ δc) δ₀c
+  pσ  = poly-section (as-poly σ (λ i → δ (ρ i))) (as-poly-section σ (λ i → δ (ρ i)) (λ i → δc (ρ i))) δ₀c
+  pτ' = poly-section (as-poly (extᵗⁿ n ρ *ᵗ τ) δ) (as-poly-section (extᵗⁿ n ρ *ᵗ τ) δ δc) δ₀c
+  pτ  = poly-section (as-poly τ (λ i → δ (ρ i))) (as-poly-section τ (λ i → δ (ρ i)) (λ i → δc (ρ i))) δ₀c
+preserves-as-poly-ren ρ (σ [→] τ) δc δ₀c = preserves-section-id (Lf-section exp-section)
+preserves-as-poly-ren {Δ₁} {Δ₂} {n} ρ (μ τ) {δ} δc {δ₀} δ₀c =
+  preserves-section-resp
+    (≈-sym (cast-μ (as-poly-ren ρ τ δ) δ₀))
+    (preserves-μ-map (as-poly (extᵗⁿ (suc n) ρ *ᵗ τ) δ) δ₀ (as-poly τ (λ i → δ (ρ i))) δ₀
+      δ₀c δ₀c
+      (as-poly-section (extᵗⁿ (suc n) ρ *ᵗ τ) δ δc)
+      (as-poly-section τ (λ i → δ (ρ i)) (λ i → δc (ρ i)))
+      (cast (as-poly-ren ρ τ δ) (extend δ₀ M))
+      (preserves-as-poly-ren ρ τ δc (extend-section δ₀c μM)))
+  where
+  M  = μ-obj (as-poly {Δ₁} {suc n} τ (λ i → δ (ρ i))) δ₀
+  μM = poly-section (as-poly {Δ₁} {n} (μ τ) (λ i → δ (ρ i)))
+         (as-poly-section {Δ₁} {n} (μ τ) (λ i → δ (ρ i)) (λ i → δc (ρ i))) δ₀c
+
 as-poly-map-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (n + Δ₁)) {δ δ' : Fin Δ₂ → obj} (gs : ∀ i → δ i ⇒ δ' i)
                   (δ₀ : Fin n → obj) →
                   (cast (as-poly-ren ρ τ δ') δ₀ ∘ as-poly-map (extᵗⁿ n ρ *ᵗ τ) gs δ₀)
@@ -1642,6 +1713,71 @@ mutual
       body  = subst-bwd-body σ τ δ X
       body' = subst-bwd-body σ τ δ X'
 
+
+preserves-sub-lift-pw : ∀ {Δ Δ'} (σ : TySub Δ Δ') {δ : Fin Δ' → obj} (δc : ∀ i → Section (δ i))
+  {X : obj} (cX : Section X) (i : Fin (suc Δ)) →
+  preserves-section (≡-to-⇒ (sub-lift-pw σ δ X i))
+    (unit-section (sub-lift σ i) (concat (extend {0} δ∅ X) δ)
+      (concat-section {n = 1} (extend-section (λ ()) cX) δc))
+    (concat-section {n = 1} (extend-section (λ ()) cX) (λ j → unit-section (σ j) δ δc) i)
+preserves-sub-lift-pw σ δc cX Fin.zero = preserves-section-id cX
+preserves-sub-lift-pw σ δc cX (Fin.suc j) =
+  preserves-as-poly-ren Fin.suc (σ j)
+    (concat-section {n = 1} (extend-section (λ ()) cX) δc) (λ ())
+
+preserves-subst-fwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) {δ : Fin Δ' → obj}
+  (δc : ∀ i → Section (δ i)) →
+  preserves-section (subst-fwd σ τ δ)
+    (unit-section (sub σ τ) δ δc)
+    (unit-section τ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc))
+preserves-subst-fwd σ (var i)     {δ} δc = preserves-section-id (unit-section (σ i) δ δc)
+preserves-subst-fwd σ unit        δc = preserves-section-id 𝟙ty-section
+preserves-subst-fwd σ (base s)    δc = preserves-section-id (sort-section s)
+preserves-subst-fwd σ (τ₁ [+] τ₂) {δ} δc =
+  preserves-coprod-m
+    (preserves-Lf-map {c = u₁} {d = v₁} (preserves-subst-fwd σ τ₁ δc))
+    (preserves-Lf-map {c = u₂} {d = v₂} (preserves-subst-fwd σ τ₂ δc))
+  where
+  u₁ = unit-section (sub σ τ₁) δ δc
+  u₂ = unit-section (sub σ τ₂) δ δc
+  v₁ = unit-section τ₁ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
+  v₂ = unit-section τ₂ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
+preserves-subst-fwd σ (τ₁ [×] τ₂) {δ} δc =
+  preserves-Lf-map {c = prod-section u₁ u₂} {d = prod-section v₁ v₂}
+    (preserves-prod-m (preserves-subst-fwd σ τ₁ δc) (preserves-subst-fwd σ τ₂ δc))
+  where
+  u₁ = unit-section (sub σ τ₁) δ δc
+  u₂ = unit-section (sub σ τ₂) δ δc
+  v₁ = unit-section τ₁ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
+  v₂ = unit-section τ₂ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
+preserves-subst-fwd σ (τ₁ [→] τ₂) δc = preserves-section-id (Lf-section exp-section)
+preserves-subst-fwd {Δ} {Δ'} σ (μ τ) {δ} δc =
+  preserves-μ-map (as-poly {Δ'} {1} (sub (sub-lift σ) τ) δ) δ∅
+    (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) δ∅
+    (λ ()) (λ ())
+    (as-poly-section {Δ'} {1} (sub (sub-lift σ) τ) δ δc)
+    (as-poly-section {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc))
+    (subst-fwd-body σ τ δ M)
+    (preserves-section-∘
+      (preserves-section-∘
+        (preserves-section-∘
+          (preserves-apply-fwd {n = 1} τ (λ i → unit-section (σ i) δ δc)
+            (extend-section (λ ()) μM))
+          (preserves-as-poly-map τ (λ i → preserves-sub-lift-pw σ δc μM i) δ∅ (λ ())))
+        (preserves-subst-fwd (sub-lift σ) τ
+          (concat-section {n = 1} (extend-section (λ ()) μM) δc)))
+      (preserves-apply-bwd {n = 1} (sub (sub-lift σ) τ) δc (extend-section (λ ()) μM)))
+  where
+  M  = μ-obj (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) δ∅
+  μM = unit-section (μ τ) (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
+
+preserves-subst-bwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) {δ : Fin Δ' → obj}
+  (δc : ∀ i → Section (δ i)) →
+  preserves-section (subst-bwd σ τ δ)
+    (unit-section τ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc))
+    (unit-section (sub σ τ) δ δc)
+preserves-subst-bwd σ τ {δ} δc =
+  preserves-section-inv (subst-fwd-bwd σ τ δ) (subst-bwd-fwd σ τ δ) (preserves-subst-fwd σ τ δc)
 
 -- The single substitution push τ', read pointwise as an environment.
 push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} δ∅ (⟦ τ' ⟧ty (λ ()))) (λ ()) i
