@@ -51,6 +51,7 @@ module language-interpretation
 open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; extend; extend-mor; fobj; HasMu; hasMu;
               Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
               poly-section; extend-section; preserves-section; preserves-section-id;
+              preserves-section-∘; preserves-section-resp; preserves-section-inv;
               preserves-coprod-m; preserves-prod-m; preserves-Lf-map)
 open R.WithTerminal T
   using (fmor; μ-map;
@@ -1034,6 +1035,77 @@ mutual
       P = as-poly {n + Δ} {1} τ (concat δ₀ δ)
       M = μ-obj A δ₀
       N = μ-obj P δ∅
+
+apply-fwd-var : ∀ {Δ n} (δ : Fin Δ → obj) (δ₀ : Fin n → obj) (s : Fin n ⊎ Fin Δ) →
+                [_,_] {C = λ _ → obj} δ₀ δ s ⇒
+                  fobj μ-obj ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s) δ₀
+apply-fwd-var δ δ₀ (inj₁ j) = id _
+apply-fwd-var δ δ₀ (inj₂ k) = id _
+
+apply-fwd-var-eq : ∀ {Δ n} (δ : Fin Δ → obj) (δ₀ : Fin n → obj) (i : Fin (n + Δ)) →
+                   apply-fwd-var δ δ₀ (splitAt n i) ≈ apply-fwd (var i) δ δ₀
+apply-fwd-var-eq {Δ} {n} δ δ₀ i with splitAt n i
+... | inj₁ j = ≈-refl
+... | inj₂ k = ≈-refl
+
+preserves-apply-fwd-var : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj}
+  (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (s : Fin n ⊎ Fin Δ) →
+  preserves-section (apply-fwd-var δ δ₀ s)
+    ([_,_] {C = λ s' → Section ([ δ₀ , δ ] s')} δ₀c δc s)
+    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+      (as-poly-var-section δ δc s) δ₀c)
+preserves-apply-fwd-var δc δ₀c (inj₁ j) = preserves-section-id (δ₀c j)
+preserves-apply-fwd-var δc δ₀c (inj₂ k) = preserves-section-id (δc k)
+
+mutual
+  preserves-apply-fwd : ∀ {Δ n} (τ : type (n + Δ)) {δ : Fin Δ → obj} {δ₀ : Fin n → obj}
+    (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) →
+    preserves-section (apply-fwd τ δ δ₀)
+      (unit-section τ (concat δ₀ δ) (concat-section δ₀c δc))
+      (poly-section (as-poly τ δ) (as-poly-section τ δ δc) δ₀c)
+  preserves-apply-fwd {n = n} (var i) {δ} {δ₀} δc δ₀c =
+    preserves-section-resp (apply-fwd-var-eq δ δ₀ i) (preserves-apply-fwd-var δc δ₀c (splitAt n i))
+  preserves-apply-fwd unit      δc δ₀c = preserves-section-id 𝟙ty-section
+  preserves-apply-fwd (base s)  δc δ₀c = preserves-section-id (sort-section s)
+  preserves-apply-fwd (σ [+] τ) {δ} {δ₀} δc δ₀c =
+    preserves-coprod-m
+      (preserves-Lf-map {c = unit-section σ (concat δ₀ δ) (concat-section δ₀c δc)}
+                        {d = poly-section (as-poly σ δ) (as-poly-section σ δ δc) δ₀c}
+                        (preserves-apply-fwd σ δc δ₀c))
+      (preserves-Lf-map {c = unit-section τ (concat δ₀ δ) (concat-section δ₀c δc)}
+                        {d = poly-section (as-poly τ δ) (as-poly-section τ δ δc) δ₀c}
+                        (preserves-apply-fwd τ δc δ₀c))
+  preserves-apply-fwd (σ [×] τ) {δ} {δ₀} δc δ₀c =
+    preserves-Lf-map
+      {c = prod-section (unit-section σ (concat δ₀ δ) (concat-section δ₀c δc))
+                        (unit-section τ (concat δ₀ δ) (concat-section δ₀c δc))}
+      {d = prod-section (poly-section (as-poly σ δ) (as-poly-section σ δ δc) δ₀c)
+                        (poly-section (as-poly τ δ) (as-poly-section τ δ δc) δ₀c)}
+      (preserves-prod-m (preserves-apply-fwd σ δc δ₀c) (preserves-apply-fwd τ δc δ₀c))
+  preserves-apply-fwd (σ [→] τ) δc δ₀c = preserves-section-id (Lf-section exp-section)
+  preserves-apply-fwd {Δ} {n} (μ τ) {δ} {δ₀} δc δ₀c =
+    preserves-μ-map (as-poly {n + Δ} {1} τ (concat δ₀ δ)) δ∅ (as-poly {Δ} {suc n} τ δ) δ₀
+      (λ ()) δ₀c
+      (as-poly-section {n + Δ} {1} τ (concat δ₀ δ) (concat-section δ₀c δc))
+      (as-poly-section {Δ} {suc n} τ δ δc)
+      (apply-fwd-body τ δ δ₀ M)
+      (preserves-section-∘
+        (preserves-section-∘
+          (preserves-apply-fwd {n = suc n} τ δc (extend-section δ₀c μM))
+          (preserves-as-poly-map τ (λ i → preserves-env-pw δc δ₀c μM i) δ∅ (λ ())))
+        (preserves-apply-bwd {n = 1} τ (concat-section δ₀c δc) (extend-section (λ ()) μM)))
+    where
+    M  = μ-obj (as-poly {Δ} {suc n} τ δ) δ₀
+    μM = poly-section (as-poly {Δ} {n} (μ τ) δ) (as-poly-section {Δ} {n} (μ τ) δ δc) δ₀c
+
+  preserves-apply-bwd : ∀ {Δ n} (τ : type (n + Δ)) {δ : Fin Δ → obj} {δ₀ : Fin n → obj}
+    (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) →
+    preserves-section (apply-bwd τ δ δ₀)
+      (poly-section (as-poly τ δ) (as-poly-section τ δ δc) δ₀c)
+      (unit-section τ (concat δ₀ δ) (concat-section δ₀c δc))
+  preserves-apply-bwd τ {δ} {δ₀} δc δ₀c =
+    preserves-section-inv (apply-fwd-bwd τ δ δ₀) (apply-bwd-fwd τ δ δ₀)
+      (preserves-apply-fwd τ δc δ₀c)
 
 -- Pointwise action of a lifted substitution on the extended environment: the new variable is mapped
 -- to itself, and the (weakened) old ones ignore it.
