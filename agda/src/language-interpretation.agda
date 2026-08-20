@@ -1861,92 +1861,105 @@ sub-as-apply-fwd-bwd τ τ' = begin
     Rs = as-poly-map τ (λ i → ≡-to-⇒ (push-pw τ' i)) δ∅
     T⁻ = as-poly-map τ (λ i → ≡-to-⇒ (sym (push-pw τ' i))) δ∅
 
-roll-mor : (τ : type 1) → ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ ⟦ μ τ ⟧ty (λ ())
-roll-mor τ = inMap (as-poly τ (λ ())) δ∅ ∘ sub-as-apply-fwd τ (μ τ)
+abstract
+  roll-mor : (τ : type 1) → ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ ⟦ μ τ ⟧ty (λ ())
+  roll-mor τ = inMap (as-poly τ (λ ())) δ∅ ∘ sub-as-apply-fwd τ (μ τ)
 
-unroll-mor : (τ : type 1) → ⟦ μ τ ⟧ty (λ ()) ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
-unroll-mor τ = sub-as-apply-bwd τ (μ τ) ∘ R.LambekDef.outMor (as-poly τ (λ ())) δ∅
+  unroll-mor : (τ : type 1) → ⟦ μ τ ⟧ty (λ ()) ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
+  unroll-mor τ = sub-as-apply-bwd τ (μ τ) ∘ R.LambekDef.outMor (as-poly τ (λ ())) δ∅
 
-unroll-roll : (τ : type 1) → (unroll-mor τ ∘ roll-mor τ) ≈ id _
-unroll-roll τ = begin
-    (sb ∘ outm) ∘ (inm ∘ sf)
-  ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-    sb ∘ ((outm ∘ inm) ∘ sf)
-  ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (R.LambekDef.outMor-inMor (as-poly τ (λ ())) δ∅) ≈-refl) id-left) ⟩
-    sb ∘ sf
-  ≈⟨ sub-as-apply-bwd-fwd τ (μ τ) ⟩
-    id _
-  ∎
-  where
-    open ≈-Reasoning isEquiv
-    sf   = sub-as-apply-fwd τ (μ τ)
-    sb   = sub-as-apply-bwd τ (μ τ)
-    inm  = inMap (as-poly τ (λ ())) δ∅
-    outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
+  unroll-roll : (τ : type 1) → (unroll-mor τ ∘ roll-mor τ) ≈ id _
+  unroll-roll τ = begin
+      (sb ∘ outm) ∘ (inm ∘ sf)
+    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
+      sb ∘ ((outm ∘ inm) ∘ sf)
+    ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (R.LambekDef.outMor-inMor (as-poly τ (λ ())) δ∅) ≈-refl) id-left) ⟩
+      sb ∘ sf
+    ≈⟨ sub-as-apply-bwd-fwd τ (μ τ) ⟩
+      id _
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      F₀ : Obj
+      F₀ = fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend δ∅ (⟦ μ τ ⟧ty (λ ())))
+      sf : ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ F₀
+      sf   = sub-as-apply-fwd τ (μ τ)
+      sb : F₀ ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
+      sb   = sub-as-apply-bwd τ (μ τ)
+      inm : F₀ ⇒ ⟦ μ τ ⟧ty (λ ())
+      inm  = inMap (as-poly τ (λ ())) δ∅
+      outm : ⟦ μ τ ⟧ty (λ ()) ⇒ F₀
+      outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
 
-roll-unroll : (τ : type 1) → (roll-mor τ ∘ unroll-mor τ) ≈ id _
-roll-unroll τ = begin
-    (inm ∘ sf) ∘ (sb ∘ outm)
-  ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-    inm ∘ ((sf ∘ sb) ∘ outm)
-  ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (sub-as-apply-fwd-bwd τ (μ τ)) ≈-refl) id-left) ⟩
-    inm ∘ outm
-  ≈⟨ R.LambekDef.inMor-outMor (as-poly τ (λ ())) δ∅ ⟩
-    id _
-  ∎
-  where
-    open ≈-Reasoning isEquiv
-    sf   = sub-as-apply-fwd τ (μ τ)
-    sb   = sub-as-apply-bwd τ (μ τ)
-    inm  = inMap (as-poly τ (λ ())) δ∅
-    outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
+  roll-unroll : (τ : type 1) → (roll-mor τ ∘ unroll-mor τ) ≈ id _
+  roll-unroll τ = begin
+      (inm ∘ sf) ∘ (sb ∘ outm)
+    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
+      inm ∘ ((sf ∘ sb) ∘ outm)
+    ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (sub-as-apply-fwd-bwd τ (μ τ)) ≈-refl) id-left) ⟩
+      inm ∘ outm
+    ≈⟨ R.LambekDef.inMor-outMor (as-poly τ (λ ())) δ∅ ⟩
+      id _
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      F₀ : Obj
+      F₀ = fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend δ∅ (⟦ μ τ ⟧ty (λ ())))
+      sf : ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ F₀
+      sf   = sub-as-apply-fwd τ (μ τ)
+      sb : F₀ ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
+      sb   = sub-as-apply-bwd τ (μ τ)
+      inm : F₀ ⇒ ⟦ μ τ ⟧ty (λ ())
+      inm  = inMap (as-poly τ (λ ())) δ∅
+      outm : ⟦ μ τ ⟧ty (λ ()) ⇒ F₀
+      outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
 
-preserves-sub-as-apply-fwd : ∀ (τ : type 1) (τ' : type 0) →
-  preserves-section (sub-as-apply-fwd τ τ')
-    (unit-section (τ [ τ' ]) (λ ()) (λ ()))
-    (poly-section (as-poly {0} {1} τ (λ ())) (as-poly-section {0} {1} τ (λ ()) (λ ()))
-      (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
-preserves-sub-as-apply-fwd τ τ' =
-  preserves-section-∘
-    (preserves-section-∘
-      (preserves-apply-fwd {n = 1} τ (λ ())
+  preserves-sub-as-apply-fwd : ∀ (τ : type 1) (τ' : type 0) →
+    preserves-section (sub-as-apply-fwd τ τ')
+      (unit-section (τ [ τ' ]) (λ ()) (λ ()))
+      (poly-section (as-poly {0} {1} τ (λ ())) (as-poly-section {0} {1} τ (λ ()) (λ ()))
         (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
-      (preserves-as-poly-map τ (λ i → preserves-push-pw τ' i) δ∅ (λ ())))
-    (preserves-subst-fwd (push τ') τ (λ ()))
+  preserves-sub-as-apply-fwd τ τ' =
+    preserves-section-∘
+      (preserves-section-∘
+        (preserves-apply-fwd {n = 1} τ (λ ())
+          (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
+        (preserves-as-poly-map τ (λ i → preserves-push-pw τ' i) δ∅ (λ ())))
+      (preserves-subst-fwd (push τ') τ (λ ()))
 
-preserves-sub-as-apply-bwd : ∀ (τ : type 1) (τ' : type 0) →
-  preserves-section (sub-as-apply-bwd τ τ')
-    (poly-section (as-poly {0} {1} τ (λ ())) (as-poly-section {0} {1} τ (λ ()) (λ ()))
-      (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
-    (unit-section (τ [ τ' ]) (λ ()) (λ ()))
-preserves-sub-as-apply-bwd τ τ' =
-  preserves-section-inv (sub-as-apply-fwd-bwd τ τ') (sub-as-apply-bwd-fwd τ τ')
-    (preserves-sub-as-apply-fwd τ τ')
+  preserves-sub-as-apply-bwd : ∀ (τ : type 1) (τ' : type 0) →
+    preserves-section (sub-as-apply-bwd τ τ')
+      (poly-section (as-poly {0} {1} τ (λ ())) (as-poly-section {0} {1} τ (λ ()) (λ ()))
+        (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
+      (unit-section (τ [ τ' ]) (λ ()) (λ ()))
+  preserves-sub-as-apply-bwd τ τ' =
+    preserves-section-inv (sub-as-apply-fwd-bwd τ τ') (sub-as-apply-bwd-fwd τ τ')
+      (preserves-sub-as-apply-fwd τ τ')
 
-preserves-roll-mor : ∀ (τ : type 1) →
-  preserves-section (roll-mor τ)
-    (unit-section (τ [ μ τ ]) (λ ()) (λ ())) (unit-section (μ τ) (λ ()) (λ ()))
-preserves-roll-mor τ =
-  preserves-section-∘
-    (preserves-inMap (as-poly {0} {1} τ (λ ())) δ∅ (λ ())
-      (as-poly-section {0} {1} τ (λ ()) (λ ())))
-    (preserves-sub-as-apply-fwd τ (μ τ))
+  preserves-roll-mor : ∀ (τ : type 1) →
+    preserves-section (roll-mor τ)
+      (unit-section (τ [ μ τ ]) (λ ()) (λ ())) (unit-section (μ τ) (λ ()) (λ ()))
+  preserves-roll-mor τ =
+    preserves-section-∘
+      (preserves-inMap (as-poly {0} {1} τ (λ ())) δ∅ (λ ())
+        (as-poly-section {0} {1} τ (λ ()) (λ ())))
+      (preserves-sub-as-apply-fwd τ (μ τ))
 
-preserves-unroll-mor : ∀ (τ : type 1) →
-  preserves-section (unroll-mor τ)
-    (unit-section (μ τ) (λ ()) (λ ())) (unit-section (τ [ μ τ ]) (λ ()) (λ ()))
-preserves-unroll-mor τ =
-  preserves-section-∘
-    (preserves-sub-as-apply-bwd τ (μ τ))
-    (preserves-outMor (as-poly {0} {1} τ (λ ())) δ∅ (λ ())
-      (as-poly-section {0} {1} τ (λ ()) (λ ())))
+  preserves-unroll-mor : ∀ (τ : type 1) →
+    preserves-section (unroll-mor τ)
+      (unit-section (μ τ) (λ ()) (λ ())) (unit-section (τ [ μ τ ]) (λ ()) (λ ()))
+  preserves-unroll-mor τ =
+    preserves-section-∘
+      (preserves-sub-as-apply-bwd τ (μ τ))
+      (preserves-outMor (as-poly {0} {1} τ (λ ())) δ∅ (λ ())
+        (as-poly-section {0} {1} τ (λ ()) (λ ())))
 
-preserves-unroll-ctrl-dep : ∀ (τ : type 1) →
-  preserves-section (unroll-mor τ) (ctrl-dep (μ τ)) (ctrl-dep (τ [ μ τ ]))
-preserves-unroll-ctrl-dep τ =
-  preserves-scale {w = ctrl-w}
-    {c = unit-section (μ τ) (λ ()) (λ ())} {d = unit-section (τ [ μ τ ]) (λ ()) (λ ())}
-    (preserves-unroll-mor τ)
+  preserves-unroll-ctrl-dep : ∀ (τ : type 1) →
+    preserves-section (unroll-mor τ) (ctrl-dep (μ τ)) (ctrl-dep (τ [ μ τ ]))
+  preserves-unroll-ctrl-dep τ =
+    preserves-scale {w = ctrl-w}
+      {c = unit-section (μ τ) (λ ()) (λ ())} {d = unit-section (τ [ μ τ ]) (λ ()) (λ ())}
+      (preserves-unroll-mor τ)
 
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙

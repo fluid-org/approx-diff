@@ -61,6 +61,7 @@ data CoreTm where
   app  : ∀ {Γ σ τ} {s : Γ ⊢ σ [→] τ} {t : Γ ⊢ σ} → CoreTm s → CoreTm t → CoreTm (app s t)
   bop  : ∀ {Γ is o} {ω : op is o} {Ms : Every (λ σ → Γ ⊢ base σ) is} → CoreTms Ms → CoreTm (bop ω Ms)
   brel : ∀ {Γ is} {ω : rel is} {Ms : Every (λ σ → Γ ⊢ base σ) is} → CoreTms Ms → CoreTm (brel ω Ms)
+  roll : ∀ {Γ} {τ : type 1} {t : Γ ⊢ τ [ μ τ ]} → CoreTm t → CoreTm (roll {τ = τ} t)
 
 -- Every's constructors are qualified: the evaluation judgement reuses [] and _∷_ for the
 -- derivations of an argument list.
@@ -135,6 +136,14 @@ fundamental-val (lam {σ = σ} {τ = τ} ct) ⇓-lam rγ {v} {j} rv {u} {U} D =
 fundamental-val (app {σ = σ} {τ = τ} ct₁ ct₂) (⇓-app D₁ D₂ D₃) rγ =
   ValRel-at-bound τ
     (fundamental-val ct₁ D₁ rγ (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) D₃)
+fundamental-val {τ = μ τ} (roll {t = t} ct) (⇓-roll D) {gi} rγ =
+  ValRel-at-bound (τ [ μ τ ]) (ValRel-resp (τ [ μ τ ]) e (fundamental-val ct D rγ))
+  where
+  i  = ⟦ t ⟧tm .idxf .sfunc gi
+  i₂ = unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)
+  e : Ix._≈_ (τ [ μ τ ]) i i₂
+  e = Ix.sym (τ [ μ τ ]) {i₂} {i}
+        (LI.unroll-roll τ .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Ix.refl (τ [ μ τ ]) {i}))
 fundamental-val (bop {ω = ω} cts) (⇓-bop D) rγ = ⟪ op-fun ω .sfunc-resp-≈ (Prf.prf (fundamental-vals cts D rγ)) ⟫
 fundamental-val (brel {ω = ω} {Ms = Ms} cts) (⇓-brel {vs = vs} D) {gi} rγ =
   ValRel-bool (rel-pred ω .sfunc vs) (⟦ brel ω Ms ⟧tm .idxf .sfunc gi)
@@ -830,6 +839,49 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
                                 (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z (suc l))
                                          (ap-in₂-suc {width-env γ' + width v} _ l))))
                ≈-refl)
+fundamental {Γ = Γ} {τ = μ τ} (roll {t = t} ct) {γ = γ} (⇓-roll {v = v} {R = R} D) {gi} rγ s x g rel =
+  DepRel-at-bound (τ [ μ τ ]) (ValRel-resp (τ [ μ τ ]) e r)
+    (DepRel-resp (τ [ μ τ ]) (ValRel-resp (τ [ μ τ ]) e r) (λ k → ≈-refl) ed
+      (DepRel-transport (τ [ μ τ ]) e r (fundamental ct D rγ s x g rel)))
+  where
+  r  = fundamental-val ct D rγ
+  i  = ⟦ t ⟧tm .idxf .sfunc gi
+  I  = roll-mor τ .idxf .sfunc i
+  i₂ = unroll-mor τ .idxf .sfunc I
+  G  = ⟦ t ⟧tm .famf .transf gi .func g
+  X' = unroll-mor τ .famf .transf I .func (roll-mor τ .famf .transf i .func G)
+  e₀ : Ix._≈_ (τ [ μ τ ]) i₂ i
+  e₀ = LI.unroll-roll τ .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Ix.refl (τ [ μ τ ]) {i})
+  e : Ix._≈_ (τ [ μ τ ]) i i₂
+  e = Ix.sym (τ [ μ τ ]) {i₂} {i} e₀
+
+  tr-eq : Fib._≈_ (τ [ μ τ ]) i (⟦ τ [ μ τ ] ⟧ .fam .subst e₀ .func X') G
+  tr-eq = LI.unroll-roll τ .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {i}
+            .func-eq (Fib.refl (τ [ μ τ ]) i {G})
+
+  chainX : Fib._≈_ (τ [ μ τ ]) i₂ X' (⟦ τ [ μ τ ] ⟧ .fam .subst e .func G)
+  chainX =
+    Fib.trans (τ [ μ τ ]) i₂
+      (Fib.sym (τ [ μ τ ]) i₂ (subst-refl ⟦ τ [ μ τ ] ⟧ {i₂} (Ix.trans (τ [ μ τ ]) {i₂} {i} {i₂} e₀ e) X'))
+    (Fib.trans (τ [ μ τ ]) i₂
+      (subst-trans ⟦ τ [ μ τ ] ⟧ {i₂} {i} {i₂} e₀ e X')
+      (⟦ τ [ μ τ ] ⟧ .fam .subst e .func-resp-≈ tr-eq))
+
+  ed : Fib._≈_ (τ [ μ τ ]) i₂
+         (⟦ τ [ μ τ ] ⟧ .fam .subst e .func (Fib._+_ (τ [ μ τ ]) i (ctrl-dep-at (τ [ μ τ ]) i s) G))
+         (unroll-mor τ .famf .transf I .func
+           (Fib._+_ (μ τ) I (ctrl-dep-at (μ τ) I s) (roll-mor τ .famf .transf i .func G)))
+  ed =
+    Fib.trans (τ [ μ τ ]) i₂ (subst-ctrl-dep+ (τ [ μ τ ]) {i} {i₂} e s G)
+    (Fib.trans (τ [ μ τ ]) i₂
+      (Fib.+-cong (τ [ μ τ ]) i₂ (Fib.refl (τ [ μ τ ]) i₂) (Fib.sym (τ [ μ τ ]) i₂ chainX))
+      (Fib.sym (τ [ μ τ ]) i₂
+        (Fib.trans (τ [ μ τ ]) i₂
+          (unroll-mor τ .famf .transf I .preserve-+
+            {ctrl-dep-at (μ τ) I s} {roll-mor τ .famf .transf i .func G})
+          (Fib.+-cong (τ [ μ τ ]) i₂
+            (preserves-unroll-ctrl-dep τ .at I .func-eq {s} {s} ≈-refl)
+            (Fib.refl (τ [ μ τ ]) i₂)))))
 fundamental {Γ = Γ} {τ = base o} (bop {is = is} {ω = ω} {Ms = Ms} cts) {γ = γ} (⇓-bop {vs = vs} {R = Rs} D) {gi} rγ s x g rel k =
   ≈-trans (app-+ₘ wctrl (op-deps ω .sfunc vs ∘ Rs) (inputs γ s x) k)
   (≈-trans (+-cong (ap-wctrl {width-env γ} {sort-width o} (inputs γ s x) k)
