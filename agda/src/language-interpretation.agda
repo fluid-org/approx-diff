@@ -2062,6 +2062,16 @@ private
   sub-as-apply-bwd-[+] σ₁ σ₂ τ' =
     ≈-trans (∘-cong ([+]-map-comp _ _ _ _) ≈-refl) ([+]-map-comp _ _ _ _)
 
+  sub-as-apply-fwd-[×] : ∀ (σ₁ σ₂ : type 1) (τ' : type 0) →
+    sub-as-apply-fwd (σ₁ [×] σ₂) τ' ≈ [×]-map (sub-as-apply-fwd σ₁ τ') (sub-as-apply-fwd σ₂ τ')
+  sub-as-apply-fwd-[×] σ₁ σ₂ τ' =
+    ≈-trans (∘-cong ([×]-map-comp _ _ _ _) ≈-refl) ([×]-map-comp _ _ _ _)
+
+  sub-as-apply-bwd-[×] : ∀ (σ₁ σ₂ : type 1) (τ' : type 0) →
+    sub-as-apply-bwd (σ₁ [×] σ₂) τ' ≈ [×]-map (sub-as-apply-bwd σ₁ τ') (sub-as-apply-bwd σ₂ τ')
+  sub-as-apply-bwd-[×] σ₁ σ₂ τ' =
+    ≈-trans (∘-cong ([×]-map-comp _ _ _ _) ≈-refl) ([×]-map-comp _ _ _ _)
+
 fold-map-inl : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : Obj}
                (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
                (fold-map τ₀ σ (σ₁ [+] σ₂) B ∘ ⟨ p₁ , (in₁ ∘ injF) ∘ p₂ ⟩)
@@ -2162,6 +2172,62 @@ fold-map-inr τ₀ σ σ₁ σ₂ {Γ'} B = begin
   S⁺ : prod Γ' (fobj μ-obj (as-poly {0} {1} (σ₁ [+] σ₂) (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
        ⇒ fobj μ-obj (as-poly {0} {1} (σ₁ [+] σ₂) (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
   S⁺ = strong-fmor (as-poly {0} {1} (σ₁ [+] σ₂) (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+  S₂ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+
+fold-map-pair : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : Obj}
+                (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
+                (fold-map τ₀ σ (σ₁ [×] σ₂) B ∘ ⟨ p₁ , injF ∘ p₂ ⟩)
+                  ≈ (injF ∘ strong-prod-m (fold-map τ₀ σ σ₁ B) (fold-map τ₀ σ σ₂ B))
+fold-map-pair τ₀ σ σ₁ σ₂ {Γ'} B = begin
+    ((b× ∘ S×) ∘ ⟨ p₁ , f× ∘ p₂ ⟩) ∘ ⟨ p₁ , injF ∘ p₂ ⟩
+  ≈⟨ assoc _ _ _ ⟩
+    (b× ∘ S×) ∘ (⟨ p₁ , f× ∘ p₂ ⟩ ∘ ⟨ p₁ , injF ∘ p₂ ⟩)
+  ≈⟨ ∘-cong ≈-refl (pair-p₁-comp f× injF) ⟩
+    (b× ∘ S×) ∘ ⟨ p₁ , (f× ∘ injF) ∘ p₂ ⟩
+  ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (∘-cong
+       (≈-trans (∘-cong (sub-as-apply-fwd-[×] σ₁ σ₂ (μ τ₀)) ≈-refl)
+         (injF-natural (prod-m f₁ f₂))) ≈-refl)) ⟩
+    (b× ∘ S×) ∘ ⟨ p₁ , (injF ∘ prod-m f₁ f₂) ∘ p₂ ⟩
+  ≈˘⟨ ∘-cong ≈-refl (pair-p₁-comp injF (prod-m f₁ f₂)) ⟩
+    (b× ∘ S×) ∘ (⟨ p₁ , injF ∘ p₂ ⟩ ∘ ⟨ p₁ , prod-m f₁ f₂ ∘ p₂ ⟩)
+  ≈˘⟨ assoc _ _ _ ⟩
+    ((b× ∘ S×) ∘ ⟨ p₁ , injF ∘ p₂ ⟩) ∘ ⟨ p₁ , prod-m f₁ f₂ ∘ p₂ ⟩
+  ≈⟨ ∘-cong (≈-trans (assoc _ _ _)
+       (∘-cong ≈-refl (strong-Lf-map-injF (strong-prod-m S₁ S₂)))) ≈-refl ⟩
+    (b× ∘ (injF ∘ strong-prod-m S₁ S₂)) ∘ ⟨ p₁ , prod-m f₁ f₂ ∘ p₂ ⟩
+  ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+    ((b× ∘ injF) ∘ strong-prod-m S₁ S₂) ∘ ⟨ p₁ , prod-m f₁ f₂ ∘ p₂ ⟩
+  ≈⟨ ∘-cong (∘-cong (≈-trans (∘-cong (sub-as-apply-bwd-[×] σ₁ σ₂ σ) ≈-refl)
+       (injF-natural (prod-m b₁ b₂))) ≈-refl) ≈-refl ⟩
+    ((injF ∘ prod-m b₁ b₂) ∘ strong-prod-m S₁ S₂) ∘ ⟨ p₁ , prod-m f₁ f₂ ∘ p₂ ⟩
+  ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+    (injF ∘ (prod-m b₁ b₂ ∘ strong-prod-m S₁ S₂)) ∘ ⟨ p₁ , prod-m f₁ f₂ ∘ p₂ ⟩
+  ≈⟨ ∘-cong (∘-cong ≈-refl (strong-prod-m-post b₁ b₂ S₁ S₂)) ≈-refl ⟩
+    (injF ∘ strong-prod-m (b₁ ∘ S₁) (b₂ ∘ S₂)) ∘ ⟨ p₁ , prod-m f₁ f₂ ∘ p₂ ⟩
+  ≈⟨ assoc _ _ _ ⟩
+    injF ∘ (strong-prod-m (b₁ ∘ S₁) (b₂ ∘ S₂) ∘ ⟨ p₁ , prod-m f₁ f₂ ∘ p₂ ⟩)
+  ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong ≈-refl (pair-cong (≈-sym id-left) ≈-refl))
+       (≈-trans (strong-prod-m-pre (b₁ ∘ S₁) (b₂ ∘ S₂) (id _) f₁ f₂)
+         (strong-prod-m-cong (∘-cong ≈-refl (pair-cong id-left ≈-refl))
+                             (∘-cong ≈-refl (pair-cong id-left ≈-refl))))) ⟩
+    injF ∘ strong-prod-m ((b₁ ∘ S₁) ∘ ⟨ p₁ , f₁ ∘ p₂ ⟩) ((b₂ ∘ S₂) ∘ ⟨ p₁ , f₂ ∘ p₂ ⟩)
+  ∎
+  where
+  open ≈-Reasoning isEquiv
+  f× = sub-as-apply-fwd (σ₁ [×] σ₂) (μ τ₀)
+  f₁ = sub-as-apply-fwd σ₁ (μ τ₀)
+  f₂ = sub-as-apply-fwd σ₂ (μ τ₀)
+  b× = sub-as-apply-bwd (σ₁ [×] σ₂) σ
+  b₁ = sub-as-apply-bwd σ₁ σ
+  b₂ = sub-as-apply-bwd σ₂ σ
+  S× : prod Γ' (fobj μ-obj (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S× = strong-fmor (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+  S₁ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₁ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} σ₁ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S₁ = strong-fmor (as-poly {0} {1} σ₁ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
   S₂ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
        ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
   S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
