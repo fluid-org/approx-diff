@@ -49,7 +49,8 @@ module language-interpretation
   where
 
 open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF-natural;
-              strong-Lf-map; strong-Lf-map-injF; extend; extend-mor; fobj; HasMu; hasMu;
+              strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-injF; extend; extend-mor; fobj;
+              HasMu; hasMu; HasMuLaws; hasMuLaws;
               Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
               poly-section; extend-section; preserves-section; preserves-section-id;
               preserves-section-∘; preserves-section-resp; preserves-section-inv;
@@ -66,10 +67,12 @@ open HasProducts R.products renaming (pair to ⟨_,_⟩)
 open HasCoproducts R.coproducts using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
                                        copair-cong; copair-in₁; copair-in₂; copair-ext)
 open HasStrongCoproducts R.strongCoproducts
-  using () renaming (copair to scopair; copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂)
+  using () renaming (copair to scopair; copair-cong to scopair-cong;
+                     copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
 open HasMu hasMu
+open HasMuLaws hasMuLaws using (⦅⦆-cong)
 open Model Int
 
 -- A type is interpreted as its polynomial, with the variables frozen at the environment, applied
@@ -283,6 +286,46 @@ as-poly-map-id (σ [+] τ) δ₀ = ≈-trans ([+]-map-cong (as-poly-map-id σ δ
 as-poly-map-id (σ [×] τ) δ₀ = ≈-trans ([×]-map-cong (as-poly-map-id σ δ₀) (as-poly-map-id τ δ₀)) [×]-map-id
 as-poly-map-id (σ [→] τ) δ₀ = ≈-refl
 as-poly-map-id {n = n} (μ τ) δ₀ = ≈-trans (μ-map-cong _ _ _ _ (as-poly-map-id {n = suc n} τ _)) (μ-map-id _ _)
+
+strong-as-poly-var-map : ∀ {Δ n} {Γ' : Obj} {δ δ' : Fin Δ → obj} → (∀ i → prod Γ' (δ i) ⇒ δ' i) →
+                         (δ₀ : Fin n → obj) → (s : Fin n ⊎ Fin Δ) →
+                         prod Γ' (fobj μ-obj ([ Poly.var , (λ j → Poly.const (δ j)) ] s) δ₀) ⇒
+                           fobj μ-obj ([ Poly.var , (λ j → Poly.const (δ' j)) ] s) δ₀
+strong-as-poly-var-map hs δ₀ (inj₁ j) = p₂
+strong-as-poly-var-map hs δ₀ (inj₂ k) = hs k
+
+strong-as-poly-map : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj} →
+                     (∀ i → prod Γ' (δ i) ⇒ δ' i) → (δ₀ : Fin n → obj) →
+                     prod Γ' (fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀) ⇒ fobj μ-obj (as-poly {Δ} {n} τ δ') δ₀
+strong-as-poly-map {Δ} {n} (var i) hs δ₀ = strong-as-poly-var-map hs δ₀ (splitAt n i)
+strong-as-poly-map unit      hs δ₀ = p₂
+strong-as-poly-map (base s)  hs δ₀ = p₂
+strong-as-poly-map (σ [+] τ) hs δ₀ =
+  scopair (in₁ ∘ strong-Lf-map (strong-as-poly-map σ hs δ₀))
+          (in₂ ∘ strong-Lf-map (strong-as-poly-map τ hs δ₀))
+strong-as-poly-map (σ [×] τ) hs δ₀ =
+  strong-Lf-map (strong-prod-m (strong-as-poly-map σ hs δ₀) (strong-as-poly-map τ hs δ₀))
+strong-as-poly-map (σ [→] τ) hs δ₀ = p₂
+strong-as-poly-map (μ τ) {δ' = δ'} hs δ₀ =
+  ⦅ inMap (as-poly τ δ') δ₀ ∘ strong-as-poly-map τ hs (extend δ₀ (μ-obj (as-poly τ δ') δ₀)) ⦆
+
+strong-as-poly-map-cong : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj}
+                          {hs hs' : ∀ i → prod Γ' (δ i) ⇒ δ' i} →
+                          (∀ i → hs i ≈ hs' i) → (δ₀ : Fin n → obj) →
+                          strong-as-poly-map τ hs δ₀ ≈ strong-as-poly-map τ hs' δ₀
+strong-as-poly-map-cong {n = n} (var i) es δ₀ with splitAt n i
+... | inj₁ j = ≈-refl
+... | inj₂ k = es k
+strong-as-poly-map-cong unit      es δ₀ = ≈-refl
+strong-as-poly-map-cong (base s)  es δ₀ = ≈-refl
+strong-as-poly-map-cong (σ [+] τ) es δ₀ =
+  scopair-cong (∘-cong ≈-refl (strong-Lf-map-cong (strong-as-poly-map-cong σ es δ₀)))
+               (∘-cong ≈-refl (strong-Lf-map-cong (strong-as-poly-map-cong τ es δ₀)))
+strong-as-poly-map-cong (σ [×] τ) es δ₀ =
+  strong-Lf-map-cong (strong-prod-m-cong (strong-as-poly-map-cong σ es δ₀) (strong-as-poly-map-cong τ es δ₀))
+strong-as-poly-map-cong (σ [→] τ) es δ₀ = ≈-refl
+strong-as-poly-map-cong {n = n} (μ τ) es δ₀ =
+  ⦅⦆-cong _ _ (∘-cong ≈-refl (strong-as-poly-map-cong {n = suc n} τ es _))
 
 preserves-as-poly-var-map : ∀ {Δ n} {δ δ' : Fin Δ → obj} {gs : ∀ i → δ i ⇒ δ' i}
   {δc : ∀ i → Section (δ i)} {δ'c : ∀ i → Section (δ' i)} →
