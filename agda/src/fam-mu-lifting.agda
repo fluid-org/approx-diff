@@ -213,6 +213,26 @@ preserves-section-resp {X} {Y} {f} {g} {c} {d} f≃g pf .at x =
     (≈-trans (assoc _ _ _)
       (≈-trans (∘-cong ≈-refl (pf .at x)) (d .at-natural _)))
 
+-- Preservation inverts along an isomorphism: the target section pulls back through the inverse,
+-- with the index round trip carried by the sections' naturality.
+preserves-section-inv : ∀ {X Y : Obj} {f : Mor X Y} {g : Mor Y X} {c : Section X} {d : Section Y} →
+                        (f Fam𝒞.∘ g) ≃ Fam𝒞.id Y → (g Fam𝒞.∘ f) ≃ Fam𝒞.id X →
+                        preserves-section f c d → preserves-section g d c
+preserves-section-inv {X} {Y} {f} {g} {c} {d} fg gf hf .at y =
+  ≈-trans (∘-cong ≈-refl (≈-sym (≈-trans (∘-cong ≈-refl (hf .at x)) (d .at-natural fgy≈y))))
+  (≈-trans (≈-sym (assoc _ _ _))
+  (≈-trans (∘-cong (g .famf ._⇒f_.natural fgy≈y) ≈-refl)
+  (≈-trans (assoc _ _ _)
+  (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
+  (≈-trans (∘-cong ≈-refl (≈-trans (∘-cong (≈-sym id-left) ≈-refl) (hgf .at x)))
+           (c .at-natural (g .idxf .prop-setoid._⇒_.func-resp-≈ fgy≈y)))))))
+  where
+  x = g .idxf .prop-setoid._⇒_.func y
+  fgy≈y : _≈s_ (Y .idx) (f .idxf .prop-setoid._⇒_.func x) y
+  fgy≈y = fg ._≃_.idxf-eq .PS._≃m_.func-eq (Y .idx .isEquivalence .refl)
+  hgf : preserves-section (g Fam𝒞.∘ f) c c
+  hgf = preserves-section-resp (Fam𝒞.≈-sym gf) (preserves-section-id c)
+
 preserves-coprod-m : ∀ {X X' Y Y' : Obj} {f : Mor X X'} {g : Mor Y Y'} {cX cX' cY cY'} →
                      preserves-section f cX cX' → preserves-section g cY cY' →
                      preserves-section (HasCoproducts.coprod-m coproducts f g)
