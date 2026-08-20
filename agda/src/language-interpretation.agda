@@ -1961,6 +1961,35 @@ abstract
       {c = unit-section (μ τ) (λ ()) (λ ())} {d = unit-section (τ [ μ τ ]) (λ ()) (λ ())}
       (preserves-unroll-mor τ)
 
+-- Interpretation-side counterpart of the evaluation's Map judgement.
+fold-alg : ∀ (τ₀ : type 1) (σ : type 0) {Γ' : Obj} →
+           prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ()) →
+           prod Γ' (fobj μ-obj (as-poly {0} {1} τ₀ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))) ⇒
+             ⟦ σ ⟧ty (λ ())
+fold-alg τ₀ σ B = B ∘ prod-m (id _) (sub-as-apply-bwd τ₀ σ)
+
+fold-map : ∀ (τ₀ : type 1) (σ : type 0) (σ' : type 1) {Γ' : Obj} →
+           prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ()) →
+           prod Γ' (⟦ σ' [ μ τ₀ ] ⟧ty (λ ())) ⇒ ⟦ σ' [ σ ] ⟧ty (λ ())
+fold-map τ₀ σ σ' B =
+  sub-as-apply-bwd σ' σ
+    ∘ strong-fmor (as-poly {0} {1} σ' (λ ()))
+        (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+    ∘ ⟨ p₁ , sub-as-apply-fwd σ' (μ τ₀) ∘ p₂ ⟩
+
+fold-map-var : ∀ (τ₀ : type 1) (σ : type 0) {Γ' : Obj}
+               (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
+               fold-map τ₀ σ (var Fin.zero) B ≈ ⦅ fold-alg τ₀ σ B ⦆
+fold-map-var τ₀ σ B =
+  ≈-trans (∘-cong (∘-cong bwd-id ≈-refl) (pair-cong ≈-refl (∘-cong fwd-id ≈-refl)))
+  (≈-trans (∘-cong id-left (pair-cong ≈-refl id-left))
+  (≈-trans (∘-cong ≈-refl pair-ext0) id-right))
+  where
+  bwd-id : sub-as-apply-bwd (var Fin.zero) σ ≈ id _
+  bwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+  fwd-id : sub-as-apply-fwd (var Fin.zero) (μ τ₀) ≈ id _
+  fwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
 ⟦ Γ , τ ⟧ctxt = prod ⟦ Γ ⟧ctxt (⟦ τ ⟧ty (λ ()))
