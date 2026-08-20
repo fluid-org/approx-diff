@@ -1990,6 +1990,42 @@ fold-map-var τ₀ σ B =
   fwd-id : sub-as-apply-fwd (var Fin.zero) (μ τ₀) ≈ id _
   fwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
 
+fold-map-unit : ∀ (τ₀ : type 1) (σ : type 0) {Γ' : Obj}
+                (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
+                fold-map τ₀ σ unit B ≈ p₂
+fold-map-unit τ₀ σ B =
+  ≈-trans (∘-cong (∘-cong bwd-id ≈-refl) (pair-cong ≈-refl (∘-cong fwd-id ≈-refl)))
+  (≈-trans (∘-cong id-left (pair-cong ≈-refl id-left)) (pair-p₂ _ _))
+  where
+  bwd-id : sub-as-apply-bwd unit σ ≈ id _
+  bwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+  fwd-id : sub-as-apply-fwd unit (μ τ₀) ≈ id _
+  fwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+
+fold-map-base : ∀ (τ₀ : type 1) (σ : type 0) b {Γ' : Obj}
+                (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
+                fold-map τ₀ σ (base b) B ≈ p₂
+fold-map-base τ₀ σ b B =
+  ≈-trans (∘-cong (∘-cong bwd-id ≈-refl) (pair-cong ≈-refl (∘-cong fwd-id ≈-refl)))
+  (≈-trans (∘-cong id-left (pair-cong ≈-refl id-left)) (pair-p₂ _ _))
+  where
+  bwd-id : sub-as-apply-bwd (base b) σ ≈ id _
+  bwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+  fwd-id : sub-as-apply-fwd (base b) (μ τ₀) ≈ id _
+  fwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+
+fold-map-arrow : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 0) {Γ' : Obj}
+                 (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
+                 fold-map τ₀ σ (σ₁ [→] σ₂) B ≈ p₂
+fold-map-arrow τ₀ σ σ₁ σ₂ B =
+  ≈-trans (∘-cong (∘-cong bwd-id ≈-refl) (pair-cong ≈-refl (∘-cong fwd-id ≈-refl)))
+  (≈-trans (∘-cong id-left (pair-cong ≈-refl id-left)) (pair-p₂ _ _))
+  where
+  bwd-id : sub-as-apply-bwd (σ₁ [→] σ₂) σ ≈ id _
+  bwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+  fwd-id : sub-as-apply-fwd (σ₁ [→] σ₂) (μ τ₀) ≈ id _
+  fwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+
 ⟦_⟧ctxt : ctxt → obj
 ⟦ emp ⟧ctxt   = 𝟙
 ⟦ Γ , τ ⟧ctxt = prod ⟦ Γ ⟧ctxt (⟦ τ ⟧ty (λ ()))
