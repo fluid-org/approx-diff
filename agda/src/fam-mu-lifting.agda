@@ -2845,12 +2845,12 @@ module WithTerminal (T : HasTerminal 𝒞) where
         alg δc μQc Pc terminal-section
         (preserves-section-∘
           {X = Fam𝒞-P.prod 𝟙F PX} {Y = PX} {Z = μ-fam Q δ'}
-          {f = inMap∘u} {g = Fam𝒞-P.p₂ {𝟙F} {PX}}
+          {f = hasMu .HasMu.inMap Q δ' Fam𝒞.∘ u} {g = Fam𝒞-P.p₂ {𝟙F} {PX}}
           {cX = prod-section terminal-section sP} {cY = sP} {cZ = μQc}
           (preserves-section-∘
-            {X = PX} {Y = QX} {Z = μ-fam Q δ'}
+            {X = PX} {Y = fobj μ-fam Q (extend δ' (μ-fam Q δ'))} {Z = μ-fam Q δ'}
             {f = hasMu .HasMu.inMap Q δ'} {g = u}
-            {cX = sP} {cY = sQ} {cZ = μQc}
+            {cX = sP} {cY = poly-section Q Qc (extend-section δ'c μQc)} {cZ = μQc}
             (preserves-inMap Q δ' δ'c Qc) hu)
           (preserves-p₂ {X = 𝟙F} {Y = PX} {cX = terminal-section} {cY = sP})))
       (preserves-pair
@@ -2861,12 +2861,8 @@ module WithTerminal (T : HasTerminal 𝒞) where
     where
     𝟙F = HasTerminal.witness (terminal T)
     PX = fobj μ-fam P (extend δ (μ-fam Q δ'))
-    QX = fobj μ-fam Q (extend δ' (μ-fam Q δ'))
     μQc = MuSection.μ-section δ' δ'c Q Qc
     μPc = MuSection.μ-section δ δc P Pc
     sP = poly-section P Pc (extend-section δc μQc)
-    sQ = poly-section Q Qc (extend-section δ'c μQc)
-    inMap∘u : Mor PX (μ-fam Q δ')
-    inMap∘u = hasMu .HasMu.inMap Q δ' Fam𝒞.∘ u
     alg : Mor (Fam𝒞-P.prod 𝟙F PX) (μ-fam Q δ')
-    alg = inMap∘u Fam𝒞.∘ Fam𝒞-P.p₂
+    alg = (hasMu .HasMu.inMap Q δ' Fam𝒞.∘ u) Fam𝒞.∘ Fam𝒞-P.p₂

@@ -49,11 +49,13 @@ module language-interpretation
   where
 
 open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; extend; extend-mor; fobj; HasMu; hasMu;
-              Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection)
+              Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
+              poly-section; extend-section; preserves-section; preserves-section-id;
+              preserves-coprod-m; preserves-prod-m; preserves-Lf-map)
 open R.WithTerminal T
   using (fmor; μ-map;
          fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
-         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp)
+         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp; preserves-μ-map)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
@@ -81,15 +83,15 @@ mutual
   as-poly (σ [→] τ)       δ = Poly.const (Lf (⟦ σ ⟧ty (λ ()) ⟦→⟧ ⟦ τ ⟧ty (λ ())))
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
 
+as-poly-var-section : ∀ {Δ n} (δ : Fin Δ → obj) → (∀ i → Section (δ i)) → (s : Fin n ⊎ Fin Δ) →
+                      PolySection ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+as-poly-var-section δ δc (inj₁ k) = lift tt
+as-poly-var-section δ δc (inj₂ j) = δc j
+
 -- Sections for a type's polynomial: the assumed sections at the constant leaves.
 as-poly-section : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) →
                 PolySection (as-poly {Δ} {n} τ δ)
-as-poly-section {Δ} {n} (var i) δ δc = go (splitAt n i)
-  where
-    go : (s : Fin n ⊎ Fin Δ) →
-         PolySection ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
-    go (inj₁ k) = lift tt
-    go (inj₂ j) = δc j
+as-poly-section (var i)   δ δc = as-poly-var-section δ δc (splitAt _ i)
 as-poly-section unit      δ δc = 𝟙ty-section
 as-poly-section (base s)  δ δc = sort-section s
 as-poly-section (σ [+] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-poly-section τ δ δc)
@@ -220,14 +222,16 @@ fmor-[×] : ∀ {k} (P Q : Poly R.cat k) {δ δ' : Fin k → obj} (fs : ∀ i �
            fmor (P Poly.× Q) fs ≈ [×]-map (fmor P fs) (fmor Q fs)
 fmor-[×] = fmor-×
 
+as-poly-var-map : ∀ {Δ n} {δ δ' : Fin Δ → obj} → (∀ i → δ i ⇒ δ' i) → (δ₀ : Fin n → obj) →
+                  (s : Fin n ⊎ Fin Δ) →
+                  fobj μ-obj ([ Poly.var , (λ j → Poly.const (δ j)) ] s) δ₀ ⇒
+                    fobj μ-obj ([ Poly.var , (λ j → Poly.const (δ' j)) ] s) δ₀
+as-poly-var-map gs δ₀ (inj₁ j) = id _
+as-poly-var-map gs δ₀ (inj₂ k) = gs k
+
 as-poly-map : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} → (∀ i → δ i ⇒ δ' i) → (δ₀ : Fin n → obj) →
               fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀ ⇒ fobj μ-obj (as-poly {Δ} {n} τ δ') δ₀
-as-poly-map {Δ} {n} (var i) {δ} {δ'} gs δ₀ = go (splitAt n i)
-  where
-    go : (s : Fin n ⊎ Fin Δ) →
-         fobj μ-obj ([ Poly.var , (λ j → Poly.const (δ j)) ] s) δ₀ ⇒ fobj μ-obj ([ Poly.var , (λ j → Poly.const (δ' j)) ] s) δ₀
-    go (inj₁ j) = id _
-    go (inj₂ k) = gs k
+as-poly-map {Δ} {n} (var i) gs δ₀ = as-poly-var-map gs δ₀ (splitAt n i)
 as-poly-map unit      gs δ₀ = id _
 as-poly-map (base s)  gs δ₀ = id _
 as-poly-map (σ [+] τ) gs δ₀ = [+]-map (as-poly-map σ gs δ₀) (as-poly-map τ gs δ₀)
@@ -259,6 +263,65 @@ as-poly-map-id (σ [+] τ) δ₀ = ≈-trans ([+]-map-cong (as-poly-map-id σ δ
 as-poly-map-id (σ [×] τ) δ₀ = ≈-trans ([×]-map-cong (as-poly-map-id σ δ₀) (as-poly-map-id τ δ₀)) [×]-map-id
 as-poly-map-id (σ [→] τ) δ₀ = ≈-refl
 as-poly-map-id {n = n} (μ τ) δ₀ = ≈-trans (μ-map-cong _ _ _ _ (as-poly-map-id {n = suc n} τ _)) (μ-map-id _ _)
+
+preserves-as-poly-var-map : ∀ {Δ n} {δ δ' : Fin Δ → obj} {gs : ∀ i → δ i ⇒ δ' i}
+  {δc : ∀ i → Section (δ i)} {δ'c : ∀ i → Section (δ' i)} →
+  (∀ i → preserves-section (gs i) (δc i) (δ'c i)) →
+  (δ₀ : Fin n → obj) (δ₀c : ∀ i → Section (δ₀ i)) (s : Fin n ⊎ Fin Δ) →
+  preserves-section (as-poly-var-map gs δ₀ s)
+    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+      (as-poly-var-section δ δc s) δ₀c)
+    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ' j)) s)
+      (as-poly-var-section δ' δ'c s) δ₀c)
+preserves-as-poly-var-map hgs δ₀ δ₀c (inj₁ j) = preserves-section-id (δ₀c j)
+preserves-as-poly-var-map hgs δ₀ δ₀c (inj₂ k) = hgs k
+
+preserves-as-poly-map : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj}
+  {gs : ∀ i → δ i ⇒ δ' i} {δc : ∀ i → Section (δ i)} {δ'c : ∀ i → Section (δ' i)} →
+  (∀ i → preserves-section (gs i) (δc i) (δ'c i)) →
+  (δ₀ : Fin n → obj) (δ₀c : ∀ i → Section (δ₀ i)) →
+  preserves-section (as-poly-map τ gs δ₀)
+    (poly-section (as-poly τ δ) (as-poly-section τ δ δc) δ₀c)
+    (poly-section (as-poly τ δ') (as-poly-section τ δ' δ'c) δ₀c)
+preserves-as-poly-map {n = n} (var i) {gs = gs} {δc} {δ'c} hgs δ₀ δ₀c =
+  preserves-as-poly-var-map {gs = gs} {δc} {δ'c} hgs δ₀ δ₀c (splitAt n i)
+preserves-as-poly-map unit      hgs δ₀ δ₀c = preserves-section-id 𝟙ty-section
+preserves-as-poly-map (base s)  hgs δ₀ δ₀c = preserves-section-id (sort-section s)
+preserves-as-poly-map (σ [+] τ) {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c =
+  preserves-coprod-m
+    {f = Lf-map (as-poly-map σ gs δ₀)} {g = Lf-map (as-poly-map τ gs δ₀)}
+    {cX = Lf-section sσ} {cX' = Lf-section sσ'} {cY = Lf-section sτ} {cY' = Lf-section sτ'}
+    (preserves-Lf-map {f = as-poly-map σ gs δ₀} {c = sσ} {d = sσ'}
+      (preserves-as-poly-map σ {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c))
+    (preserves-Lf-map {f = as-poly-map τ gs δ₀} {c = sτ} {d = sτ'}
+      (preserves-as-poly-map τ {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c))
+  where
+  sσ  = poly-section (as-poly σ δ)  (as-poly-section σ δ δc)   δ₀c
+  sσ' = poly-section (as-poly σ δ') (as-poly-section σ δ' δ'c) δ₀c
+  sτ  = poly-section (as-poly τ δ)  (as-poly-section τ δ δc)   δ₀c
+  sτ' = poly-section (as-poly τ δ') (as-poly-section τ δ' δ'c) δ₀c
+preserves-as-poly-map (σ [×] τ) {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c =
+  preserves-Lf-map
+    {f = prod-m (as-poly-map σ gs δ₀) (as-poly-map τ gs δ₀)}
+    {c = prod-section sσ sτ} {d = prod-section sσ' sτ'}
+    (preserves-prod-m
+      {f = as-poly-map σ gs δ₀} {g = as-poly-map τ gs δ₀}
+      {cX = sσ} {cX' = sσ'} {cY = sτ} {cY' = sτ'}
+      (preserves-as-poly-map σ {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c)
+      (preserves-as-poly-map τ {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c))
+  where
+  sσ  = poly-section (as-poly σ δ)  (as-poly-section σ δ δc)   δ₀c
+  sσ' = poly-section (as-poly σ δ') (as-poly-section σ δ' δ'c) δ₀c
+  sτ  = poly-section (as-poly τ δ)  (as-poly-section τ δ δc)   δ₀c
+  sτ' = poly-section (as-poly τ δ') (as-poly-section τ δ' δ'c) δ₀c
+preserves-as-poly-map (σ [→] τ) hgs δ₀ δ₀c = preserves-section-id (Lf-section exp-section)
+preserves-as-poly-map {n = n} (μ τ) {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ₀c =
+  preserves-μ-map (as-poly τ δ) δ₀ (as-poly τ δ') δ₀ δ₀c δ₀c
+    (as-poly-section τ δ δc) (as-poly-section τ δ' δ'c)
+    (as-poly-map τ gs (extend δ₀ (μ-obj (as-poly τ δ') δ₀)))
+    (preserves-as-poly-map {n = suc n} τ hgs (extend δ₀ (μ-obj (as-poly τ δ') δ₀))
+      (extend-section δ₀c
+        (poly-section (as-poly (μ τ) δ') (as-poly-section (μ τ) δ' δ'c) δ₀c)))
 
 fmor-extend-swap : ∀ {k} (P : Poly R.cat (suc k)) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) {X Y : obj} (h : X ⇒ Y) →
                    (fmor P (extend-mor (λ i → id _) h) ∘ fmor P (extend-mor fs (id _)))
