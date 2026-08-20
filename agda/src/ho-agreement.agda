@@ -5,7 +5,8 @@
 -- applied to the inputs is related to the term's fibre map plus the control dependence at the
 -- control input's value. Soundness at μ-free first-order types follows.
 open import Level using (0ℓ; lift)
-open import Data.Nat using (ℕ; suc; _+_)
+open import Data.Nat using (ℕ; suc; _+_; _⊔_)
+open import Data.Nat.Properties using (≤-refl)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
@@ -110,24 +111,30 @@ fundamental-vals : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} (cts :
 fundamental-val (var x) (⇓-var .x) rγ = lookup-val x rγ
 fundamental-val unit ⇓-unit rγ = tt
 fundamental-val {τ = τ₁ [+] τ₂} (inl {t = t} ct) (⇓-inl D) {gi} rγ =
-  ⟦ t ⟧tm .idxf .sfunc gi , fundamental-val ct D rγ ,
+  ⟦ t ⟧tm .idxf .sfunc gi , ValRel-at-bound τ₁ (fundamental-val ct D rγ) ,
   ⟪ Ix.refl (τ₁ [+] τ₂) {inj₁ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
 fundamental-val {τ = τ₁ [+] τ₂} (inr {t = t} ct) (⇓-inr D) {gi} rγ =
-  ⟦ t ⟧tm .idxf .sfunc gi , fundamental-val ct D rγ ,
+  ⟦ t ⟧tm .idxf .sfunc gi , ValRel-at-bound τ₂ (fundamental-val ct D rγ) ,
   ⟪ Ix.refl (τ₁ [+] τ₂) {inj₂ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
 fundamental-val {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) (⇓-case-l D₁ D₂) {gi} rγ =
   let (i' , r , ⟪ e ⟫) = fundamental-val ct D₁ rγ in
   ValRel-resp τ (Ix.sym τ (case-idx s t₁ t₂ gi (inj₁ i') e))
-    (fundamental-val ct₁ D₂ (rγ · r))
+    (fundamental-val ct₁ D₂ (rγ · ValRel-at-bound τ₁ r))
 fundamental-val {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) (⇓-case-r D₁ D₂) {gi} rγ =
   let (i' , r , ⟪ e ⟫) = fundamental-val ct D₁ rγ in
   ValRel-resp τ (Ix.sym τ (case-idx s t₁ t₂ gi (inj₂ i') e))
-    (fundamental-val ct₂ D₂ (rγ · r))
-fundamental-val (pair ct₁ ct₂) (⇓-pair D₁ D₂) rγ = fundamental-val ct₁ D₁ rγ , fundamental-val ct₂ D₂ rγ
-fundamental-val (fst ct) (⇓-fst D) rγ = proj₁ (fundamental-val ct D rγ)
-fundamental-val (snd ct) (⇓-snd D) rγ = proj₂ (fundamental-val ct D rγ)
-fundamental-val (lam ct) ⇓-lam rγ {v} {j} rv {u} {U} D = fundamental-val ct D (rγ · rv)
-fundamental-val (app ct₁ ct₂) (⇓-app D₁ D₂ D₃) rγ = fundamental-val ct₁ D₁ rγ (fundamental-val ct₂ D₂ rγ) D₃
+    (fundamental-val ct₂ D₂ (rγ · ValRel-at-bound τ₂ r))
+fundamental-val {τ = τ₁ [×] τ₂} (pair ct₁ ct₂) (⇓-pair D₁ D₂) rγ =
+  ValRel-at-bound τ₁ (fundamental-val ct₁ D₁ rγ) , ValRel-at-bound τ₂ (fundamental-val ct₂ D₂ rγ)
+fundamental-val {τ = τ₁} (fst {τ₂ = τ₂} ct) (⇓-fst D) rγ =
+  ValRel-at-bound τ₁ (proj₁ (fundamental-val ct D rγ))
+fundamental-val {τ = τ₂} (snd {τ₁ = τ₁} ct) (⇓-snd D) rγ =
+  ValRel-at-bound τ₂ (proj₂ (fundamental-val ct D rγ))
+fundamental-val (lam {σ = σ} {τ = τ} ct) ⇓-lam rγ {v} {j} rv {u} {U} D =
+  ValRel-at-bound τ (fundamental-val ct D (rγ · ValRel-at-bound σ rv))
+fundamental-val (app {σ = σ} {τ = τ} ct₁ ct₂) (⇓-app D₁ D₂ D₃) rγ =
+  ValRel-at-bound τ
+    (fundamental-val ct₁ D₁ rγ (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) D₃)
 fundamental-val (bop {ω = ω} cts) (⇓-bop D) rγ = ⟪ op-fun ω .sfunc-resp-≈ (Prf.prf (fundamental-vals cts D rγ)) ⟫
 fundamental-val (brel {ω = ω} {Ms = Ms} cts) (⇓-brel {vs = vs} D) {gi} rγ =
   ValRel-bool (rel-pred ω .sfunc vs) (⟦ brel ω Ms ⟧tm .idxf .sfunc gi)
@@ -463,10 +470,11 @@ fundamental {Γ = Γ} unit {γ = γ} (⇓-unit) {gi} rγ s x g rel = goal
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} ct) {γ = γ} (⇓-inl {v = v} {R = R'} D) {gi} rγ s x g rel =
   ≈-trans (built-zero {γ = γ} R' s x)
           (≈-sym (≈-trans (proj₁ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₁ i'} (Ix.refl (τ₁ [+] τ₂) {inj₁ i'}) d)) root-den)) ,
-  DepRel-resp τ₁ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
-    (Fib.sym τ₁ i' (Fib.trans τ₁ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₁ i'} (Ix.refl (τ₁ [+] τ₂) {inj₁ i'}) d))
-                                (Fib.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (Fib.refl τ₁ i'))))
-    (fundamental ct D rγ s x g rel)
+  DepRel-at-bound τ₁ (fundamental-val ct D rγ)
+    (DepRel-resp τ₁ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
+      (Fib.sym τ₁ i' (Fib.trans τ₁ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₁ i'} (Ix.refl (τ₁ [+] τ₂) {inj₁ i'}) d))
+                                  (Fib.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (Fib.refl τ₁ i'))))
+      (fundamental ct D rγ s x g rel))
   where
   i' = ⟦ t ⟧tm .idxf .sfunc gi
   d = Fib._+_ (τ₁ [+] τ₂) (inj₁ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₁ i') s) (⟦ inl {τ₂ = τ₂} t ⟧tm .famf .transf gi .func g)
@@ -475,10 +483,11 @@ fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inl {t = t} ct) {γ = γ} (⇓-inl
 fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} ct) {γ = γ} (⇓-inr {v = v} {R = R'} D) {gi} rγ s x g rel =
   ≈-trans (built-zero {γ = γ} R' s x)
           (≈-sym (≈-trans (proj₁ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₂ i'} (Ix.refl (τ₁ [+] τ₂) {inj₂ i'}) d)) root-den)) ,
-  DepRel-resp τ₂ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
-    (Fib.sym τ₂ i' (Fib.trans τ₂ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₂ i'} (Ix.refl (τ₁ [+] τ₂) {inj₂ i'}) d))
-                                (Fib.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (Fib.refl τ₂ i'))))
-    (fundamental ct D rγ s x g rel)
+  DepRel-at-bound τ₂ (fundamental-val ct D rγ)
+    (DepRel-resp τ₂ (fundamental-val ct D rγ) (λ k → ≈-sym (built-suc {γ = γ} R' s x k))
+      (Fib.sym τ₂ i' (Fib.trans τ₂ i' (proj₂ (subst-refl ⟦ τ₁ [+] τ₂ ⟧ {inj₂ i'} (Ix.refl (τ₁ [+] τ₂) {inj₂ i'}) d))
+                                  (Fib.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (Fib.refl τ₂ i'))))
+      (fundamental ct D rγ s x g rel))
   where
   i' = ⟦ t ⟧tm .idxf .sfunc gi
   d = Fib._+_ (τ₁ [+] τ₂) (inj₂ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₂ i') s) (⟦ inr {τ₁ = τ₁} t ⟧tm .famf .transf gi .func g)
@@ -486,18 +495,19 @@ fundamental {Γ = Γ} {τ = τ₁ [+] τ₂} (inr {t = t} ct) {γ = γ} (⇓-inr
   root-den = ≈-trans (+-cong (proj₁ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (≈-refl {ε})) +-runit
 fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) {γ = γ}
             (⇓-case-l {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
-  DepRel-resp τ (ValRel-resp τ (Ix.sym τ Eidx) (fundamental-val ct₁ D₂ (rγ · r_v))) (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
+  DepRel-resp τ (ValRel-resp τ (Ix.sym τ Eidx) (fundamental-val ct₁ D₂ (rγ · rv'))) (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
     (case-den τ (Ix.sym τ Eidx) Eidx s a_s (ap R_s (inputs γ s x) zero) (⟦ t₁ ⟧tm .famf .transf (gi , i') .func (g , y_v))
        (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g) o_s₀
        (Fib.trans τ (⟦ t₁ ⟧tm .idxf .sfunc (gi , i')) (case-fibre sc t₁ t₂ gi g (inj₁ i') e)
           (elimF-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ ⟧} {⟦ τ ⟧} (ctrl-dep τ) ⟦ t₁ ⟧tm {gi} {i'} g a_s y_v)))
-    (DepRel-transport τ (Ix.sym τ Eidx) (fundamental-val ct₁ D₂ (rγ · r_v))
-       (fundamental ct₁ D₂ (_·_ {τ = τ₁} {v = v} {i = i'} rγ r_v) (ap R_s (inputs γ s x) zero +ₛ (c ·ₛ s)) X (g , y_v)
-                              (branch-env {τk = τ₁} rγ {v = v} {i' = i'} r_v s x g (ap R_s (inputs γ s x)) y_v rel payload₁)))
+    (DepRel-transport τ (Ix.sym τ Eidx) (fundamental-val ct₁ D₂ (rγ · rv'))
+       (fundamental ct₁ D₂ (_·_ {τ = τ₁} {v = v} {i = i'} rγ rv') (ap R_s (inputs γ s x) zero +ₛ (c ·ₛ s)) X (g , y_v)
+                              (branch-env {τk = τ₁} rγ {v = v} {i' = i'} rv' s x g (ap R_s (inputs γ s x)) y_v rel payload₁)))
   where
   rs = fundamental-val ct D₁ rγ
   i' = proj₁ rs
   r_v = proj₁ (proj₂ rs)
+  rv' = ValRel-at-bound τ₁ r_v
   e : Ix._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₁ i')
   e = prop.Prf.prf (proj₂ (proj₂ rs))
   Eidx : Ix._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₁ ⟧tm .idxf .sfunc (gi , i'))
@@ -513,26 +523,27 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   o_s₀ = ≈-trans (proj₁ (fundamental ct D₁ rγ s x g rel))
                  (≈-trans (proj₁ split-sum) (+-cong (proj₁ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) ≈-refl))
 
-  payload₁ : DepRel τ₁ r_v (λ m → ap R_s (inputs γ s x) (suc m)) (Fib._+_ τ₁ i' y_v (ctrl-dep-at τ₁ i' s))
+  payload₁ : DepRel τ₁ rv' (λ m → ap R_s (inputs γ s x) (suc m)) (Fib._+_ τ₁ i' y_v (ctrl-dep-at τ₁ i' s))
   payload₁ =
-    DepRel-resp τ₁ r_v (λ m → ≈-refl)
+    DepRel-resp τ₁ rv' (λ m → ≈-refl)
       (Fib.trans τ₁ i' (proj₂ split-sum)
         (Fib.trans τ₁ i' (Fib.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (Fib.refl τ₁ i')) (Fib.+-comm τ₁ i')))
-      (proj₂ (fundamental ct D₁ rγ s x g rel))
+      (DepRel-at-bound τ₁ r_v (proj₂ (fundamental ct D₁ rγ s x g rel)))
 fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {t₁ = t₁} {t₂ = t₂} ct ct₁ ct₂) {γ = γ}
             (⇓-case-r {v = v} {u = u} {R = R_s} {T = T} D₁ D₂) {gi} rγ s x g rel =
-  DepRel-resp τ (ValRel-resp τ (Ix.sym τ Eidx) (fundamental-val ct₂ D₂ (rγ · r_v))) (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
+  DepRel-resp τ (ValRel-resp τ (Ix.sym τ Eidx) (fundamental-val ct₂ D₂ (rγ · rv'))) (λ k → ≈-sym (app-case {γ = γ} v R_s T s x k))
     (case-den τ (Ix.sym τ Eidx) Eidx s a_s (ap R_s (inputs γ s x) zero) (⟦ t₂ ⟧tm .famf .transf (gi , i') .func (g , y_v))
        (⟦ case sc t₁ t₂ ⟧tm .famf .transf gi .func g) o_s₀
        (Fib.trans τ (⟦ t₂ ⟧tm .idxf .sfunc (gi , i')) (case-fibre sc t₁ t₂ gi g (inj₂ i') e)
           (elimF-elt {⟦ Γ ⟧ctxt} {⟦ τ₂ ⟧} {⟦ τ ⟧} (ctrl-dep τ) ⟦ t₂ ⟧tm {gi} {i'} g a_s y_v)))
-    (DepRel-transport τ (Ix.sym τ Eidx) (fundamental-val ct₂ D₂ (rγ · r_v))
-       (fundamental ct₂ D₂ (_·_ {τ = τ₂} {v = v} {i = i'} rγ r_v) (ap R_s (inputs γ s x) zero +ₛ (c ·ₛ s)) X (g , y_v)
-                              (branch-env {τk = τ₂} rγ {v = v} {i' = i'} r_v s x g (ap R_s (inputs γ s x)) y_v rel payload₁)))
+    (DepRel-transport τ (Ix.sym τ Eidx) (fundamental-val ct₂ D₂ (rγ · rv'))
+       (fundamental ct₂ D₂ (_·_ {τ = τ₂} {v = v} {i = i'} rγ rv') (ap R_s (inputs γ s x) zero +ₛ (c ·ₛ s)) X (g , y_v)
+                              (branch-env {τk = τ₂} rγ {v = v} {i' = i'} rv' s x g (ap R_s (inputs γ s x)) y_v rel payload₁)))
   where
   rs = fundamental-val ct D₁ rγ
   i' = proj₁ rs
   r_v = proj₁ (proj₂ rs)
+  rv' = ValRel-at-bound τ₂ r_v
   e : Ix._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) (inj₂ i')
   e = prop.Prf.prf (proj₂ (proj₂ rs))
   Eidx : Ix._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi) (⟦ t₂ ⟧tm .idxf .sfunc (gi , i'))
@@ -548,16 +559,18 @@ fundamental {Γ = Γ} {τ = τ} (case {τ₁ = τ₁} {τ₂ = τ₂} {s = sc} {
   o_s₀ = ≈-trans (proj₁ (fundamental ct D₁ rγ s x g rel))
                  (≈-trans (proj₁ split-sum) (+-cong (proj₁ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) ≈-refl))
 
-  payload₁ : DepRel τ₂ r_v (λ m → ap R_s (inputs γ s x) (suc m)) (Fib._+_ τ₂ i' y_v (ctrl-dep-at τ₂ i' s))
+  payload₁ : DepRel τ₂ rv' (λ m → ap R_s (inputs γ s x) (suc m)) (Fib._+_ τ₂ i' y_v (ctrl-dep-at τ₂ i' s))
   payload₁ =
-    DepRel-resp τ₂ r_v (λ m → ≈-refl)
+    DepRel-resp τ₂ rv' (λ m → ≈-refl)
       (Fib.trans τ₂ i' (proj₂ split-sum)
         (Fib.trans τ₂ i' (Fib.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (Fib.refl τ₂ i')) (Fib.+-comm τ₂ i')))
-      (proj₂ (fundamental ct D₁ rγ s x g rel))
+      (DepRel-at-bound τ₂ r_v (proj₂ (fundamental ct D₁ rγ s x g rel)))
 fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ = γ} (⇓-pair {v = v} {u = u} {R = R₁} {T = R₂} D₁ D₂) {gi} rγ s x g rel =
   root ,
-  (DepRel-resp σ (fundamental-val ct₁ D₁ rγ) (λ k → ≈-sym (comp₁ k)) den₁ (fundamental ct₁ D₁ rγ s x g rel) ,
-   DepRel-resp τ (fundamental-val ct₂ D₂ rγ) (λ k → ≈-sym (comp₂ k)) den₂ (fundamental ct₂ D₂ rγ s x g rel))
+  (DepRel-at-bound σ (fundamental-val ct₁ D₁ rγ)
+     (DepRel-resp σ (fundamental-val ct₁ D₁ rγ) (λ k → ≈-sym (comp₁ k)) den₁ (fundamental ct₁ D₁ rγ s x g rel)) ,
+   DepRel-at-bound τ (fundamental-val ct₂ D₂ rγ)
+     (DepRel-resp τ (fundamental-val ct₂ D₂ rγ) (λ k → ≈-sym (comp₂ k)) den₂ (fundamental ct₂ D₂ rγ s x g rel)))
   where
   i = ⟦ M ⟧tm .idxf .sfunc gi
   j = ⟦ N ⟧tm .idxf .sfunc gi
@@ -588,11 +601,12 @@ fundamental {Γ = Γ} {τ = σ [×] τ} (pair {s = M} {t = N} ct₁ ct₂) {γ =
   den₂ : Fib._≈_ τ j (Fib._+_ τ j (ctrl-dep-at τ j s) (⟦ N ⟧tm .famf .transf gi .func g)) (proj₂ (proj₂ d))
   den₂ = Fib.sym τ j (Fib.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} i j s))) (Fib.+-lunit τ j))
 fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} ct) {γ = γ} (⇓-fst {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
-  DepRel-resp σ (proj₁ (fundamental-val ct D rγ)) (λ k → ≈-sym (proj-op {γ = γ} v {width v} {width u} (M.p₁ {width v} {width u}) R' s x k))
+  DepRel-resp σ (ValRel-at-bound σ (proj₁ (fundamental-val ct D rγ))) (λ k → ≈-sym (proj-op {γ = γ} v {width v} {width u} (M.p₁ {width v} {width u}) R' s x k))
     (proj-den σ i s a₀ (ap R' (inputs γ s x) zero) (proj₁ (proj₂ (Fib._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) (⟦ t ⟧tm .famf .transf gi .func g))))
        (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (proj₁ (proj₂ (⟦ t ⟧tm .famf .transf gi .func g)))
        o'₀ (Fib.+-cong σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s))) (Fib.refl σ i)) G-form)
-    (ctrl-add σ (proj₁ (fundamental-val ct D rγ)) ((c ·ₛ s) +ₛ ap R' (inputs γ s x) zero) (proj₁ (proj₂ (fundamental ct D rγ s x g rel))))
+    (ctrl-add σ (ValRel-at-bound σ (proj₁ (fundamental-val ct D rγ))) ((c ·ₛ s) +ₛ ap R' (inputs γ s x) zero)
+      (DepRel-at-bound σ (proj₁ (fundamental-val ct D rγ)) (proj₁ (proj₂ (fundamental ct D rγ s x g rel)))))
   where
   ij = ⟦ t ⟧tm .idxf .sfunc gi
   i = proj₁ ij
@@ -603,11 +617,12 @@ fundamental {Γ = Γ} {τ = σ} (fst {τ₂ = τ} {t = t} ct) {γ = γ} (⇓-fst
   G-form = elim-elt {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ)
              (FD.Fam𝒞._∘_ (FD.Fam𝒞-P.p₁ {⟦ σ ⟧} {⟦ τ ⟧}) (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
 fundamental {Γ = Γ} {τ = τ} (snd {τ₁ = σ} {t = t} ct) {γ = γ} (⇓-snd {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
-  DepRel-resp τ (proj₂ (fundamental-val ct D rγ)) (λ k → ≈-sym (proj-op {γ = γ} u {width v} {width u} (M.p₂ {width v} {width u}) R' s x k))
+  DepRel-resp τ (ValRel-at-bound τ (proj₂ (fundamental-val ct D rγ))) (λ k → ≈-sym (proj-op {γ = γ} u {width v} {width u} (M.p₂ {width v} {width u}) R' s x k))
     (proj-den τ j s a₀ (ap R' (inputs γ s x) zero) (proj₂ (proj₂ (Fib._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) (⟦ t ⟧tm .famf .transf gi .func g))))
        (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (proj₂ (proj₂ (⟦ t ⟧tm .famf .transf gi .func g)))
        o'₀ (Fib.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s))) (Fib.refl τ j)) G-form)
-    (ctrl-add τ (proj₂ (fundamental-val ct D rγ)) ((c ·ₛ s) +ₛ ap R' (inputs γ s x) zero) (proj₂ (proj₂ (fundamental ct D rγ s x g rel))))
+    (ctrl-add τ (ValRel-at-bound τ (proj₂ (fundamental-val ct D rγ))) ((c ·ₛ s) +ₛ ap R' (inputs γ s x) zero)
+      (DepRel-at-bound τ (proj₂ (fundamental-val ct D rγ)) (proj₂ (proj₂ (fundamental ct D rγ s x g rel)))))
   where
   ij = ⟦ t ⟧tm .idxf .sfunc gi
   j = proj₂ ij
@@ -634,10 +649,14 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
   root : o zero ≈s proj₁ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))
   root = ≈-trans o₀ (≈-sym (≈-trans (+-cong (proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl) +-runit))
 
-  clause : ∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ} (rv : ValRel σ v j)
-             (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) → DepRel⊑ σ rv (s' +ₛ o zero) z y →
+  clause : ∀ (s' : Setoid.Carrier A) {v : Val σ} {j : Ix σ}
+             (rv : ValRel′ (arr-depth σ ⊔ arr-depth τ) σ (bound₁ ≤-refl) v j)
+             (z : ∣ 𝔽 (width v) ∣) (y : ∣ Fib σ j ∣) →
+             DepRel⊑′ (arr-depth σ ⊔ arr-depth τ) σ (bound₁ ≤-refl) rv (s' +ₛ o zero) z y →
            ∀ {u U} (D : γ · v , t' ⇓ u [ U ]) →
-             DepRel τ (fundamental-val ct D (rγ · rv)) (ap U (body-input γ v (s' +ₛ o zero) (λ k → o (suc k)) z))
+             DepRel′ (arr-depth σ ⊔ arr-depth τ) τ (bound₂ ≤-refl)
+               (ValRel-at-bound τ (fundamental-val ct D (rγ · ValRel-at-bound σ rv)))
+               (ap U (body-input γ v (s' +ₛ o zero) (λ k → o (suc k)) z))
                (Fib._+_ τ (f .idxf .sfunc j)
                  (ctrl-dep-at τ (f .idxf .sfunc j) (s' +ₛ o zero))
                  (Fib._+_ τ (f .idxf .sfunc j)
@@ -645,7 +664,8 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
                       (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ lam t' ⟧tm .famf .transf gi .func g))))
                    (f .famf .transf j .func y)))
   clause s' {v} {j} rv z y hz {u} {U} D =
-    DepRel-resp τ (fundamental-val ct D (rγ · rv))
+    DepRel-at-bound τ (fundamental-val ct D (rγ · ValRel-at-bound σ rv))
+      (DepRel-resp τ (fundamental-val ct D (rγ · ValRel-at-bound σ rv))
       (app-congᵥ U (body-input-resp γ v (+-cong ≈-refl (≈-sym o₀)) (λ k → ≈-sym (o-tail k))))
       (Fib.+-cong τ (f .idxf .sfunc j)
          (ctrl-dep τ .at (f .idxf .sfunc j) .func-resp-≈ (+-cong ≈-refl (≈-sym o₀)))
@@ -664,9 +684,10 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
                      (Payload.sym σ τ f {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) L)} {proj₂ L}
                         (payload-ctrl-dep σ τ f s L))))
                (Fib.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))))
-      (fundamental ct D (rγ · rv) (s' +ₛ (c ·ₛ s)) (λ k → body-input γ v (s' +ₛ (c ·ₛ s)) x z (suc k)) (g , y)
+      (fundamental ct D (rγ · ValRel-at-bound σ rv) (s' +ₛ (c ·ₛ s)) (λ k → body-input γ v (s' +ₛ (c ·ₛ s)) x z (suc k)) (g , y)
          (EnvDepRel-resp rγ (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₁-++ x z k)) (EnvDepRel-mono rγ s s' rel) ,
-          DepRel⊑-resp σ rv (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₂-++ x z k)) (DepRel⊑-resp-ctrl σ rv (+-cong ≈-refl o₀) hz)))
+          DepRel⊑-resp σ (ValRel-at-bound σ rv) (s' +ₛ (c ·ₛ s)) (λ k → ≈-sym (ap-p₂-++ x z k))
+            (DepRel⊑-resp-ctrl σ (ValRel-at-bound σ rv) (+-cong ≈-refl o₀) (DepRel⊑-at-bound σ rv hz)))))
     where
     L = ⟦ lam t' ⟧tm .famf .transf gi .func g
 
@@ -684,7 +705,9 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
           .func-eq (Semimodule.refl (FibC Γ gi) {g})
 fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ = γ}
             (⇓-app {Γ' = Γ'} {γ' = γ'} {t' = t'} {v = v} {u = u} {R = R} {T = T} {U = U} D₁ D₂ D₃) {gi} rγ s x g rel =
-  DepRel-resp τ (fundamental-val ct₁ D₁ rγ (fundamental-val ct₂ D₂ rγ) D₃) (λ k → ≈-sym (app-op k)) den-eq C
+  DepRel-resp τ (ValRel-at-bound τ (fundamental-val ct₁ D₁ rγ (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) D₃))
+    (λ k → ≈-sym (app-op k)) den-eq
+    (DepRel-at-bound τ (fundamental-val ct₁ D₁ rγ (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) D₃) C)
   where
   f = ⟦ M ⟧tm .idxf .sfunc gi
   j = ⟦ N ⟧tm .idxf .sfunc gi
@@ -702,18 +725,22 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
 
   -- The argument's relation, its control dependence at s taken as slack below the control
   -- dependence at the application's weighted control input.
-  arg : DepRel⊑ σ (fundamental-val ct₂ D₂ rγ) ((c ·ₛ s) +ₛ o zero) z yN
-  arg = ctrl-dep-at σ j s ,
-        (Fib.⊑-trans σ j (⊑ctrl-dep-mono σ j s (o zero) _ (Fib.⊑-refl σ j))
-                       (Fib.≈→⊑ σ j (ctrl-dep σ .at j .func-resp-≈ +-comm)) ,
-         DepRel-resp σ (fundamental-val ct₂ D₂ rγ) (λ k → ≈-refl) (Fib.+-comm σ j) (fundamental ct₂ D₂ rγ s x g rel))
+  arg : DepRel⊑′ (arr-depth σ ⊔ arr-depth τ) σ (bound₁ ≤-refl)
+          (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) ((c ·ₛ s) +ₛ o zero) z yN
+  arg = DepRel⊑-at-bound σ (fundamental-val ct₂ D₂ rγ)
+          (ctrl-dep-at σ j s ,
+           (Fib.⊑-trans σ j (⊑ctrl-dep-mono σ j s (o zero) _ (Fib.⊑-refl σ j))
+                          (Fib.≈→⊑ σ j (ctrl-dep σ .at j .func-resp-≈ +-comm)) ,
+            DepRel-resp σ (fundamental-val ct₂ D₂ rγ) (λ k → ≈-refl) (Fib.+-comm σ j) (fundamental ct₂ D₂ rγ s x g rel)))
 
   -- The clause of the function's relation at the application's weighted control input and the argument.
-  C : DepRel τ (fundamental-val ct₁ D₁ rγ (fundamental-val ct₂ D₂ rγ) D₃) (ap U (body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z))
+  C : DepRel′ (arr-depth σ ⊔ arr-depth τ) τ (bound₂ ≤-refl)
+        (fundamental-val ct₁ D₁ rγ (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) D₃)
+        (ap U (body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z))
         (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
           (Fib._+_ τ i₁ (evalΠ σ τ f j .func (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                       (f .famf .transf j .func yN)))
-  C = proj₂ (fundamental ct₁ D₁ rγ s x g rel) (c ·ₛ s) (fundamental-val ct₂ D₂ rγ) z yN arg D₃
+  C = proj₂ (fundamental ct₁ D₁ rγ s x g rel) (c ·ₛ s) (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) z yN arg D₃
 
   -- The clause's constant, evaluation and argument against the application's.
   den-eq : Fib._≈_ τ i₁
@@ -898,10 +925,11 @@ val-rel : ∀ {τ} (fo : first-order τ) → μ-free fo → (v : Val τ) → Val
 val-rel unit          _         unit       = tt
 val-rel (base s)      _         (const a)  = ⟪ Setoid.refl (sort-index s) ⟫
 val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inl v) =
-  val-idx fo₁ v , val-rel fo₁ m₁ v , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₁ (val-idx fo₁ v)} ⟫
+  val-idx fo₁ v , ValRel-at-bound τ₁ (val-rel fo₁ m₁ v) , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₁ (val-idx fo₁ v)} ⟫
 val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inr v) =
-  val-idx fo₂ v , val-rel fo₂ m₂ v , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₂ (val-idx fo₂ v)} ⟫
-val-rel (fo₁ [×] fo₂) (m₁ , m₂) (pair v u) = val-rel fo₁ m₁ v , val-rel fo₂ m₂ u
+  val-idx fo₂ v , ValRel-at-bound τ₂ (val-rel fo₂ m₂ v) , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₂ (val-idx fo₂ v)} ⟫
+val-rel {τ₁ [×] τ₂} (fo₁ [×] fo₂) (m₁ , m₂) (pair v u) =
+  ValRel-at-bound τ₁ (val-rel fo₁ m₁ v) , ValRel-at-bound τ₂ (val-rel fo₂ m₂ u)
 
 env-rel : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → μ-free-ctxt Γ-fo → (γ : Env Γ) →
           EnvValRel γ (env-idx Γ-fo γ)
@@ -913,11 +941,11 @@ val-rel-unique : ∀ {τ} (fo : first-order τ) → μ-free fo → {v : Val τ} 
 val-rel-unique unit          _         {unit}      r = prop.tt
 val-rel-unique (base s)      _         {const a}   ⟪ e ⟫ = e
 val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inl v} {i} (i' , r , ⟪ e ⟫) =
-  Ix.trans (τ₁ [+] τ₂) {i} {inj₁ i'} {inj₁ (val-idx fo₁ v)} e (val-rel-unique fo₁ m₁ r)
+  Ix.trans (τ₁ [+] τ₂) {i} {inj₁ i'} {inj₁ (val-idx fo₁ v)} e (val-rel-unique fo₁ m₁ (ValRel-at-bound τ₁ r))
 val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inr v} {i} (i' , r , ⟪ e ⟫) =
-  Ix.trans (τ₁ [+] τ₂) {i} {inj₂ i'} {inj₂ (val-idx fo₂ v)} e (val-rel-unique fo₂ m₂ r)
-val-rel-unique (fo₁ [×] fo₂) (m₁ , m₂) {pair v u} {i , j} (r , r') =
-  val-rel-unique fo₁ m₁ r , val-rel-unique fo₂ m₂ r'
+  Ix.trans (τ₁ [+] τ₂) {i} {inj₂ i'} {inj₂ (val-idx fo₂ v)} e (val-rel-unique fo₂ m₂ (ValRel-at-bound τ₂ r))
+val-rel-unique {τ₁ [×] τ₂} (fo₁ [×] fo₂) (m₁ , m₂) {pair v u} {i , j} (r , r') =
+  val-rel-unique fo₁ m₁ (ValRel-at-bound τ₁ r) , val-rel-unique fo₂ m₂ (ValRel-at-bound τ₂ r')
 
 -- Soundness on values, at μ-free first-order types.
 soundness-val : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) →
