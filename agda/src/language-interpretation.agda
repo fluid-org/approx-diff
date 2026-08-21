@@ -748,6 +748,31 @@ cast-μ refl δ₀ = ≈-sym (μ-map-id _ _)
 cast-irr : ∀ {n} {P Q : Poly R.cat n} (e e' : P ≡ Q) (δ₀ : Fin n → obj) → cast e δ₀ ≈ cast e' δ₀
 cast-irr refl refl δ₀ = ≈-refl
 
+private
+  cast-const : ∀ {n} {A A' : obj} (e : A ≡ A') (δ₀ : Fin n → obj) →
+               cast {n} (cong Poly.const e) δ₀ ≈ ≡-to-⇒ e
+  cast-const refl δ₀ = ≈-refl
+
+-- The cast along a pointwise environment equality is the environment action on the pointwise casts.
+cast-as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} (h : ∀ i → δ i ≡ δ' i)
+                    (δ₀ : Fin n → obj) →
+                    cast (as-poly-cong τ h) δ₀ ≈ as-poly-map τ (λ i → ≡-to-⇒ (h i)) δ₀
+cast-as-poly-cong {Δ} {n} (var i) h δ₀ with splitAt n i
+... | inj₁ j = ≈-refl
+... | inj₂ k = cast-const (h k) δ₀
+cast-as-poly-cong unit      h δ₀ = ≈-refl
+cast-as-poly-cong (base s)  h δ₀ = ≈-refl
+cast-as-poly-cong (σ [+] τ) h δ₀ =
+  ≈-trans (cast-+ (as-poly-cong σ h) (as-poly-cong τ h) δ₀)
+          ([+]-map-cong (cast-as-poly-cong σ h δ₀) (cast-as-poly-cong τ h δ₀))
+cast-as-poly-cong (σ [×] τ) h δ₀ =
+  ≈-trans (cast-× (as-poly-cong σ h) (as-poly-cong τ h) δ₀)
+          ([×]-map-cong (cast-as-poly-cong σ h δ₀) (cast-as-poly-cong τ h δ₀))
+cast-as-poly-cong (σ [→] τ) h δ₀ = ≈-refl
+cast-as-poly-cong {Δ} {n} (μ τ) {δ} {δ'} h δ₀ =
+  ≈-trans (cast-μ (as-poly-cong {Δ} {suc n} τ h) δ₀)
+          (μ-map-cong _ _ _ _ (cast-as-poly-cong {n = suc n} τ h (extend δ₀ (μ-obj (as-poly τ δ') δ₀))))
+
 as-poly-ren-var : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (δ : Fin Δ₂ → obj)
   (s : Fin n ⊎ Fin Δ₁) (s' : Fin n ⊎ Fin Δ₂) → s' ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] s →
   [_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s'
