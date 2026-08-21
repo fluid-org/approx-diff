@@ -92,6 +92,25 @@ module Interp
       Lmap (f ∘ prod-m u (id _)) ∘ strengthᵣ
     ∎ where open ≈-Reasoning isEquiv
 
+  strong-Lmap-pre : ∀ {Γ Γ' X X' Y} (u : Γ ⇒ Γ') (f : prod Γ' X' ⇒ Y) (c : X ⇒ X') →
+                    (strong-Lmap f ∘ prod-m u (Lmap c)) ≈ strong-Lmap (f ∘ prod-m u c)
+  strong-Lmap-pre u f c =
+    begin
+      (Lmap f ∘ strengthᵣ) ∘ prod-m u (Lmap c)
+    ≈⟨ assoc _ _ _ ⟩
+      Lmap f ∘ (strengthᵣ ∘ prod-m u (Lmap c))
+    ≈˘⟨ ∘-cong ≈-refl (strengthᵣ-natural u c) ⟩
+      Lmap f ∘ (Lmap (prod-m u c) ∘ strengthᵣ)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (Lmap f ∘ Lmap (prod-m u c)) ∘ strengthᵣ
+    ≈˘⟨ ∘-cong (Lmap-comp _ _) ≈-refl ⟩
+      Lmap (f ∘ prod-m u c) ∘ strengthᵣ
+    ∎ where open ≈-Reasoning isEquiv
+
+  strong-Lmap-post : ∀ {Γ X Y Z} (h : Y ⇒ Z) (f : prod Γ X ⇒ Y) →
+                     (Lmap h ∘ strong-Lmap f) ≈ strong-Lmap (h ∘ f)
+  strong-Lmap-post h f = ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (≈-sym (Lmap-comp _ _)) ≈-refl)
+
   fobj : (μ-obj : ∀ {k} → Poly 𝒞 (suc k) → (Fin k → obj) → obj) → ∀ {n} → Poly 𝒞 n → (Fin n → obj) → obj
   fobj μ-obj (const A) δ = A
   fobj μ-obj (var i)   δ = δ i

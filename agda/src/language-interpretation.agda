@@ -49,7 +49,8 @@ module language-interpretation
   where
 
 open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF-natural;
-              strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-p₂; strong-Lf-map-injF;
+              strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-p₂;
+              strong-Lf-map-pre; strong-Lf-map-post; strong-Lf-map-injF;
               extend; extend-mor; fobj; HasMu; hasMu; HasMuLaws; hasMuLaws; _∘co_;
               Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
               poly-section; extend-section; preserves-section; preserves-section-id;
@@ -68,7 +69,8 @@ open HasCoproducts R.coproducts using (coprod; coprod-m; coprod-m-cong; coprod-m
                                        copair-cong; copair-in₁; copair-in₂; copair-ext)
 open HasStrongCoproducts R.strongCoproducts
   using () renaming (copair to scopair; copair-cong to scopair-cong;
-                     copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂; copair-ext0 to scopair-ext0)
+                     copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂;
+                     copair-ext to scopair-ext; copair-ext0 to scopair-ext0)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
 open HasMu hasMu
@@ -833,6 +835,56 @@ strong-concat-mor-p₂ : ∀ {n Δ} {Γ' : Obj} {δ₀ : Fin n → obj} {δ : Fi
 strong-concat-mor-p₂ {n} i with splitAt n i
 ... | inj₁ j = ≈-refl
 ... | inj₂ k = ≈-refl
+
+private
+  ∘co-pre-plain : ∀ {Γ' : Obj} {W X Y Z : obj} (x : prod Γ' Y ⇒ Z) (y : prod Γ' X ⇒ Y) (b : W ⇒ X) →
+                  ((x ∘co y) ∘ prod-m (id Γ') b) ≈ (x ∘co (y ∘ prod-m (id Γ') b))
+  ∘co-pre-plain x y b =
+    ≈-trans (assoc _ _ _)
+            (∘-cong ≈-refl (≈-trans (pair-natural _ _ _)
+                                    (pair-cong (≈-trans (pair-p₁ _ _) id-left) ≈-refl)))
+
+  lift-post : ∀ {Γ' : Obj} {X Y Z : obj} (b : Y ⇒ Z) (y : prod Γ' X ⇒ Y) →
+              ((b ∘ p₂) ∘co y) ≈ (b ∘ y)
+  lift-post b y = ≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))
+
+  prod-m-id-comp : ∀ {Γ' : Obj} {X Y Z : obj} (b : Y ⇒ Z) (b' : X ⇒ Y) →
+                   (prod-m (id Γ') b ∘ prod-m (id Γ') b') ≈ prod-m (id Γ') (b ∘ b')
+  prod-m-id-comp b b' = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (prod-m-cong id-left ≈-refl)
+
+  scopair-pre : ∀ {Γ Γ' : Obj} {A A' B B' Z : obj} (u : Γ ⇒ Γ')
+                (f : prod Γ' A' ⇒ Z) (g : prod Γ' B' ⇒ Z) (c : A ⇒ A') (d : B ⇒ B') →
+                (scopair f g ∘ prod-m u (coprod-m c d)) ≈ scopair (f ∘ prod-m u c) (g ∘ prod-m u d)
+  scopair-pre u f g c d =
+    ≈-trans (≈-sym (scopair-ext _)) (scopair-cong br₁ br₂)
+    where
+    step₁ : (prod-m u (coprod-m c d) ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩) ≈ (⟨ p₁ , in₁ ∘ p₂ ⟩ ∘ prod-m u c)
+    step₁ =
+      ≈-trans (pair-compose _ _ _ _)
+        (≈-trans (pair-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _))
+                                     (≈-trans (∘-cong (copair-in₁ _ _) ≈-refl) (assoc _ _ _))))
+          (≈-sym (≈-trans (pair-natural _ _ _)
+                   (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))))))
+
+    step₂ : (prod-m u (coprod-m c d) ∘ ⟨ p₁ , in₂ ∘ p₂ ⟩) ≈ (⟨ p₁ , in₂ ∘ p₂ ⟩ ∘ prod-m u d)
+    step₂ =
+      ≈-trans (pair-compose _ _ _ _)
+        (≈-trans (pair-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _))
+                                     (≈-trans (∘-cong (copair-in₂ _ _) ≈-refl) (assoc _ _ _))))
+          (≈-sym (≈-trans (pair-natural _ _ _)
+                   (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))))))
+
+    br₁ : ((scopair f g ∘ prod-m u (coprod-m c d)) ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩) ≈ (f ∘ prod-m u c)
+    br₁ =
+      ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl step₁)
+          (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (scopair-in₁ f g) ≈-refl)))
+
+    br₂ : ((scopair f g ∘ prod-m u (coprod-m c d)) ∘ ⟨ p₁ , in₂ ∘ p₂ ⟩) ≈ (g ∘ prod-m u d)
+    br₂ =
+      ≈-trans (assoc _ _ _)
+        (≈-trans (∘-cong ≈-refl step₂)
+          (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (scopair-in₂ f g) ≈-refl)))
 
 extend-mor-id : ∀ {k} {δ : Fin k → obj} {X : obj} (i : Fin (suc k)) → extend-mor (λ j → id (δ j)) (id X) i ≈ id _
 extend-mor-id Fin.zero    = ≈-refl

@@ -118,7 +118,8 @@ prod-m-iso e₁ e₂ = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (≈-trans (pro
 open polynomial-functor.Interp products strongCoproducts LfS public
   using (fobj; extend-mor; HasMu; HasMuLaws; _∘co_)
   renaming (strong-Lmap to strong-Lf-map; strong-Lmap-cong to strong-Lf-map-cong;
-            strong-Lmap-comp to strong-Lf-map-comp; strong-Lmap-p₂ to strong-Lf-map-p₂)
+            strong-Lmap-comp to strong-Lf-map-comp; strong-Lmap-p₂ to strong-Lf-map-p₂;
+            strong-Lmap-pre to strong-Lf-map-pre; strong-Lmap-post to strong-Lf-map-post)
 
 -- The action of the lifting on a family morphism in context is fibrewise the transport.
 strong-Lf-map-transf : ∀ {Γ X Y : Obj} (f : Mor (Fam𝒞-P.prod Γ X) Y) {γ x} →
