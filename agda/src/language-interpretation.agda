@@ -73,6 +73,8 @@ open HasStrongCoproducts R.strongCoproducts
                      copair-ext to scopair-ext; copair-ext0 to scopair-ext0)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
+import language-operational.type-substitution
+open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁)
 open HasMu hasMu
 open HasMuLaws hasMuLaws
   using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
@@ -2272,6 +2274,29 @@ sub-as-apply-fwd-μ-in τ' ρ = begin
   eqs : ∀ i → extend-mor {δ = δ∅} {δ' = δ∅} (λ j → id _) (μ-map P₁ δ∅ Q δr b) i ≈ E i
   eqs Fin.zero    = ≈-sym (sub-as-apply-fwd-μ τ' ρ)
   eqs (Fin.suc ())
+
+private
+  concat-emp-pw : ∀ {δ₀ : Fin 1 → obj} (i : Fin 1) → δ₀ i ≡ concat δ₀ (λ ()) i
+  concat-emp-pw Fin.zero = refl
+
+unfold-pw : ∀ (τ' : type 2) (X : obj) (i : Fin 2) →
+            ⟦ unfold₁-sub τ' i ⟧ty (extend δ∅ X) ⇒
+            concat (extend (extend δ∅ X) (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ X))) (λ ()) i
+unfold-pw τ' X Fin.zero =
+  apply-fwd {0} {1} (μ τ') (λ ()) (extend δ∅ X) ∘ ≡-to-⇒ (ty-cong (μ τ') concat-emp-pw)
+unfold-pw τ' X (Fin.suc Fin.zero) = id X
+unfold-pw τ' X (Fin.suc (Fin.suc ()))
+
+unfold-as-apply-fwd : ∀ (τ' : type 2) (X : obj) →
+                      fobj μ-obj (as-poly {0} {1} (unfold₁ τ') (λ ())) (extend δ∅ X) ⇒
+                      fobj μ-obj (as-poly {0} {2} τ' (λ ()))
+                        (extend (extend δ∅ X) (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ X)))
+unfold-as-apply-fwd τ' X =
+  apply-fwd {0} {2} τ' (λ ()) (extend (extend δ∅ X) (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ X)))
+    ∘ as-poly-map {2} {0} τ' (unfold-pw τ' X) δ∅
+    ∘ subst-fwd (unfold₁-sub τ') τ' (extend δ∅ X)
+    ∘ ≡-to-⇒ (ty-cong (unfold₁ τ') (λ i → sym (concat-emp-pw i)))
+    ∘ apply-bwd {0} {1} (unfold₁ τ') (λ ()) (extend δ∅ X)
 
 abstract
   roll-mor : (τ : type 1) → ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ ⟦ μ τ ⟧ty (λ ())
