@@ -2498,6 +2498,65 @@ mutual
                                   (λ υ → ≡-to-⇒ (ty-ren Fin.suc υ γ)) (pw j)))
 
 
+private
+  concat-pw : ∀ {n Δ} {δ δ' : Fin Δ → obj} (δ₀ : Fin n → obj) → (∀ i → δ i ≡ δ' i) →
+              ∀ i → concat δ₀ δ i ≡ concat δ₀ δ' i
+  concat-pw {n} δ₀ h i with splitAt n i
+  ... | inj₁ j = refl
+  ... | inj₂ k = h k
+
+-- Environment-equality coherence for application: the cast along a pointwise environment equality
+-- passes through apply-fwd and apply-bwd as the polynomial-level cast. Stated for an arbitrary proof
+-- of the interpreted equality.
+apply-fwd-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} (h : ∀ i → δ i ≡ δ' i)
+                 (δ₀ : Fin n → obj) (E : ⟦ τ ⟧ty (concat δ₀ δ) ≡ ⟦ τ ⟧ty (concat δ₀ δ')) →
+                 (apply-fwd τ δ' δ₀ ∘ ≡-to-⇒ E) ≈ (cast (as-poly-cong τ h) δ₀ ∘ apply-fwd τ δ δ₀)
+apply-fwd-cong {Δ} {n} τ {δ} {δ'} h δ₀ E = begin
+    apply-fwd τ δ' δ₀ ∘ ≡-to-⇒ E
+  ≈⟨ ∘-cong ≈-refl (≡-to-⇒-irr E (cong (λ P → fobj μ-obj P δ∅) (as-poly-cong {n = 0} τ (concat-pw δ₀ h)))) ⟩
+    apply-fwd τ δ' δ₀ ∘ cast (as-poly-cong {n = 0} τ (concat-pw δ₀ h)) δ∅
+  ≈⟨ ∘-cong ≈-refl (cast-as-poly-cong {n = 0} τ (concat-pw δ₀ h) δ∅) ⟩
+    apply-fwd τ δ' δ₀ ∘ as-poly-map τ (λ i → ≡-to-⇒ (concat-pw δ₀ h i)) δ∅
+  ≈⟨ ∘-cong ≈-refl (as-poly-map-cong τ pw-match δ∅) ⟩
+    apply-fwd τ δ' δ₀ ∘ as-poly-map τ (concat-mor {δ₀ = δ₀} (λ i → id _) (λ i → ≡-to-⇒ (h i))) δ∅
+  ≈⟨ apply-fwd-map τ (λ i → ≡-to-⇒ (h i)) δ₀ ⟩
+    as-poly-map τ (λ i → ≡-to-⇒ (h i)) δ₀ ∘ apply-fwd τ δ δ₀
+  ≈˘⟨ ∘-cong (cast-as-poly-cong τ h δ₀) ≈-refl ⟩
+    cast (as-poly-cong τ h) δ₀ ∘ apply-fwd τ δ δ₀
+  ∎
+  where
+    open ≈-Reasoning isEquiv
+    pw-match : ∀ i → ≡-to-⇒ (concat-pw δ₀ h i)
+                       ≈ concat-mor {δ₀ = δ₀} (λ i → id _) (λ i → ≡-to-⇒ (h i)) i
+    pw-match i with splitAt n i
+    ... | inj₁ j = ≈-refl
+    ... | inj₂ k = ≈-refl
+
+apply-bwd-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} (h : ∀ i → δ i ≡ δ' i)
+                 (δ₀ : Fin n → obj) (E : ⟦ τ ⟧ty (concat δ₀ δ) ≡ ⟦ τ ⟧ty (concat δ₀ δ')) →
+                 (≡-to-⇒ E ∘ apply-bwd τ δ δ₀) ≈ (apply-bwd τ δ' δ₀ ∘ cast (as-poly-cong τ h) δ₀)
+apply-bwd-cong {Δ} {n} τ {δ} {δ'} h δ₀ E = begin
+    ≡-to-⇒ E ∘ apply-bwd τ δ δ₀
+  ≈˘⟨ id-left ⟩
+    id _ ∘ (≡-to-⇒ E ∘ apply-bwd τ δ δ₀)
+  ≈˘⟨ ∘-cong (apply-bwd-fwd τ δ' δ₀) ≈-refl ⟩
+    (apply-bwd τ δ' δ₀ ∘ apply-fwd τ δ' δ₀) ∘ (≡-to-⇒ E ∘ apply-bwd τ δ δ₀)
+  ≈⟨ assoc _ _ _ ⟩
+    apply-bwd τ δ' δ₀ ∘ (apply-fwd τ δ' δ₀ ∘ (≡-to-⇒ E ∘ apply-bwd τ δ δ₀))
+  ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+    apply-bwd τ δ' δ₀ ∘ ((apply-fwd τ δ' δ₀ ∘ ≡-to-⇒ E) ∘ apply-bwd τ δ δ₀)
+  ≈⟨ ∘-cong ≈-refl (∘-cong (apply-fwd-cong τ h δ₀ E) ≈-refl) ⟩
+    apply-bwd τ δ' δ₀ ∘ ((cast (as-poly-cong τ h) δ₀ ∘ apply-fwd τ δ δ₀) ∘ apply-bwd τ δ δ₀)
+  ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+    apply-bwd τ δ' δ₀ ∘ (cast (as-poly-cong τ h) δ₀ ∘ (apply-fwd τ δ δ₀ ∘ apply-bwd τ δ δ₀))
+  ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (apply-fwd-bwd τ δ δ₀)) ⟩
+    apply-bwd τ δ' δ₀ ∘ (cast (as-poly-cong τ h) δ₀ ∘ id _)
+  ≈⟨ ∘-cong ≈-refl id-right ⟩
+    apply-bwd τ δ' δ₀ ∘ cast (as-poly-cong τ h) δ₀
+  ∎
+  where open ≈-Reasoning isEquiv
+
+
 preserves-sub-lift-pw : ∀ {Δ Δ'} (σ : TySub Δ Δ') {δ : Fin Δ' → obj} (δc : ∀ i → Section (δ i))
   {X : obj} (cX : Section X) (i : Fin (suc Δ)) →
   preserves-section (≡-to-⇒ (sub-lift-pw σ δ X i))
