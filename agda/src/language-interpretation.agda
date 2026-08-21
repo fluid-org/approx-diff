@@ -521,6 +521,23 @@ strong-as-poly-map-p₂ {Δ} {n} (μ τ) {Γ'} {δ} δ₀ =
             (∘-cong ≈-refl (strong-as-poly-map-p₂ {n = suc n} τ _)))
           (⦅⦆-reflect (as-poly {Δ} {suc n} τ δ) δ₀)
 
+private
+  scopair-weaken : ∀ {Γ' : Obj} {x x' y y' : obj} (u : x ⇒ x') (v : y ⇒ y') →
+                   scopair {w = Γ'} (in₁ ∘ (u ∘ p₂)) (in₂ ∘ (v ∘ p₂)) ≈ (coprod-m u v ∘ p₂)
+  scopair-weaken u v =
+    ≈-trans (scopair-cong (≈-sym leg₁) (≈-sym leg₂)) (scopair-ext (coprod-m u v ∘ p₂))
+    where
+    leg₁ : ((coprod-m u v ∘ p₂) ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩) ≈ (in₁ ∘ (u ∘ p₂))
+    leg₁ = ≈-trans (assoc _ _ _)
+           (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+           (≈-trans (≈-sym (assoc _ _ _))
+           (≈-trans (∘-cong (copair-in₁ _ _) ≈-refl) (assoc _ _ _))))
+    leg₂ : ((coprod-m u v ∘ p₂) ∘ ⟨ p₁ , in₂ ∘ p₂ ⟩) ≈ (in₂ ∘ (v ∘ p₂))
+    leg₂ = ≈-trans (assoc _ _ _)
+           (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+           (≈-trans (≈-sym (assoc _ _ _))
+           (≈-trans (∘-cong (copair-in₂ _ _) ≈-refl) (assoc _ _ _))))
+
 strong-as-poly-map-weaken : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj}
                             (gs : ∀ i → δ i ⇒ δ' i) (δ₀ : Fin n → obj) →
                             strong-as-poly-map τ {Γ'} (λ i → gs i ∘ p₂) δ₀ ≈ (as-poly-map τ gs δ₀ ∘ p₂)
@@ -536,22 +553,10 @@ strong-as-poly-map-weaken (σ [+] τ) gs δ₀ =
                      (≈-trans (≈-sym (strong-Lf-map-post a₁ p₂)) (∘-cong ≈-refl strong-Lf-map-p₂))))
     (∘-cong ≈-refl (≈-trans (strong-Lf-map-cong (strong-as-poly-map-weaken τ gs δ₀))
                      (≈-trans (≈-sym (strong-Lf-map-post a₂ p₂)) (∘-cong ≈-refl strong-Lf-map-p₂)))))
-  (≈-trans (≈-sym (scopair-cong step₁ step₂))
-           (scopair-ext h))
+  (scopair-weaken (Lf-map a₁) (Lf-map a₂))
   where
   a₁ = as-poly-map σ gs δ₀
   a₂ = as-poly-map τ gs δ₀
-  h  = [+]-map a₁ a₂ ∘ p₂
-  step₁ : (h ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩) ≈ (in₁ ∘ (Lf-map a₁ ∘ p₂))
-  step₁ = ≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
-          (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (copair-in₁ _ _) ≈-refl) (assoc _ _ _))))
-  step₂ : (h ∘ ⟨ p₁ , in₂ ∘ p₂ ⟩) ≈ (in₂ ∘ (Lf-map a₂ ∘ p₂))
-  step₂ = ≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
-          (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (copair-in₂ _ _) ≈-refl) (assoc _ _ _))))
 strong-as-poly-map-weaken (σ [×] τ) gs δ₀ =
   ≈-trans (strong-Lf-map-cong
     (≈-trans (strong-prod-m-cong (strong-as-poly-map-weaken σ gs δ₀) (strong-as-poly-map-weaken τ gs δ₀))
