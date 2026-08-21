@@ -82,7 +82,7 @@ private
   module CoK {Γ' : Obj} = Category (coKleisli-prod R.products Γ')
 open Model Int
 
--- A type is interpreted as its polynomial, with the variables frozen at the environment, applied
+-- A type is interpreted as its polynomial, with the variables instantiated at the environment, applied
 -- at the empty environment; under a μ, the bound variables stay free.
 mutual
   ⟦_⟧ty : ∀ {Δ} → type Δ → (Fin Δ → obj) → obj
@@ -1076,7 +1076,7 @@ mutual
                   (apply-fwd-body τ δ' δ₀ M') (as-poly-map τ (concat-mor (λ i → id _) gs) (extend δ∅ M'))
                   (as-poly-map-natural {n = 1} τ (concat-mor (λ i → id _) gs) (extend-mor (λ i → id _) k₁)) ⟩
       μ-map P δ∅ A' δ₀ (apply-fwd-body τ δ' δ₀ M' ∘ as-poly-map τ (concat-mor (λ i → id _) gs) (extend δ∅ M'))
-    ≈⟨ μ-map-cong _ _ _ _ (apply-fwd-body-frozen τ gs δ₀ M') ⟩
+    ≈⟨ μ-map-cong _ _ _ _ (apply-fwd-body-env τ gs δ₀ M') ⟩
       μ-map P δ∅ A' δ₀ (as-poly-map τ gs (extend δ₀ M') ∘ apply-fwd-body τ δ δ₀ M')
     ≈˘⟨ μ-map-comp P δ∅ A δ₀ A' δ₀ (apply-fwd-body τ δ δ₀ M) (as-poly-map τ gs (extend δ₀ M')) (apply-fwd-body τ δ δ₀ M')
                    (apply-fwd-body-carrier τ δ δ₀ k₂) ⟩
@@ -1246,10 +1246,10 @@ mutual
       body  = apply-fwd-body τ δ δ₀ X
       body' = apply-fwd-body τ δ δ₀ X'
 
-  apply-fwd-body-frozen : ∀ {Δ n} (τ : type (suc n + Δ)) {δ δ' : Fin Δ → obj} (gs : ∀ i → δ i ⇒ δ' i) (δ₀ : Fin n → obj) (X : obj) →
+  apply-fwd-body-env : ∀ {Δ n} (τ : type (suc n + Δ)) {δ δ' : Fin Δ → obj} (gs : ∀ i → δ i ⇒ δ' i) (δ₀ : Fin n → obj) (X : obj) →
                           (apply-fwd-body τ δ' δ₀ X ∘ as-poly-map τ (concat-mor (λ i → id _) gs) (extend δ∅ X))
                             ≈ (as-poly-map τ gs (extend δ₀ X) ∘ apply-fwd-body τ δ δ₀ X)
-  apply-fwd-body-frozen τ {δ} {δ'} gs δ₀ X = begin
+  apply-fwd-body-env τ {δ} {δ'} gs δ₀ X = begin
       body' ∘ pm₁
     ≈˘⟨ ≈-trans (∘-cong ≈-refl (fmor-extend-id (as-poly {n = 1} τ (concat δ₀ δ)) {δ = δ∅})) id-right ⟩
       (body' ∘ pm₁) ∘ fmor (as-poly τ (concat δ₀ δ)) (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) (id X))

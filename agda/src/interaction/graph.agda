@@ -1299,12 +1299,12 @@ module Rule₃
     -- The second premise's columns are untouched by the first premise's sweep.
     module Fz = Frozen (vertex-width E) b1 (inj₁ {A = Input}) b2 (λ _ q → into⁺ B₂ q ∘ inputs₂)
 
-    frozen₀ : Fz.Keeps (gr E)
-    frozen₀ .Fz.keeps _ q = ≈-refl
-    frozen₀ .Fz.blind w q = ≈-refl {f = M.εₘ}
+    keeps₀ : Fz.Keeps (gr E)
+    keeps₀ .Fz.keeps _ q = ≈-refl
+    keeps₀ .Fz.blind w q = ≈-refl {f = M.εₘ}
 
-    frozen₁ : Fz.Keeps G₁
-    frozen₁ = Fz.keeps-hide-all inj₁ ps₁ (Fz.keeps-hide (inj₂ root) frozen₀)
+    keeps₁ : Fz.Keeps G₁
+    keeps₁ = Fz.keeps-hide-all inj₁ ps₁ (Fz.keeps-hide (inj₂ root) keeps₀)
 
     -- The second and third premises' rows are untouched by earlier sweeps.
     cols₂ : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root) → V E
@@ -1345,7 +1345,7 @@ module Rule₃
     H₂⁰ .S2.inside p q = inside⁺ B₂ p q
 
     start₂ : S2.Start G₁ H₂⁰
-    start₂ .S2.into-start q = frozen₁ .Fz.keeps input q
+    start₂ .S2.into-start q = keeps₁ .Fz.keeps input q
     start₂ .S2.inside-start p q = behind₂ .Bd₂.keeps p (inj₁ q)
     start₂ .S2.tgt-start (inj₁ q) =
       ≈-trans (done₁ .S1.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) from-inputs₃ from-root₁ inputs₁ κ₁)
