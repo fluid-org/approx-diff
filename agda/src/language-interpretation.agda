@@ -2235,6 +2235,44 @@ sub-as-apply-fwd-μ τ' ρ = begin
        (≈-trans (∘-cong ≈-refl (subst-fwd-body-carrier (push ρ) τ' (λ ()) af))
                 (≈-sym (assoc _ _ _)))))
 
+sub-as-apply-fwd-μ-in : ∀ (τ' : type 2) (ρ : type 0) →
+  (sub-as-apply-fwd (μ τ') ρ
+     ∘ (inMap (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ())) δ∅
+        ∘ sub-as-apply-fwd (sub (sub-lift (push ρ)) τ') (μ (sub (sub-lift (push ρ)) τ'))))
+    ≈ (inMap (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))
+       ∘ (sub-as-apply-fwd-μ-body τ' ρ (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ()))))
+          ∘ (fmor (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ()))
+               (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) (sub-as-apply-fwd (μ τ') ρ))
+             ∘ sub-as-apply-fwd (sub (sub-lift (push ρ)) τ') (μ (sub (sub-lift (push ρ)) τ')))))
+sub-as-apply-fwd-μ-in τ' ρ = begin
+    saf ∘ (inMap P₁ δ∅ ∘ sf)
+  ≈˘⟨ assoc _ _ _ ⟩
+    (saf ∘ inMap P₁ δ∅) ∘ sf
+  ≈⟨ ∘-cong (∘-cong (sub-as-apply-fwd-μ τ' ρ) ≈-refl) ≈-refl ⟩
+    (μ-map P₁ δ∅ Q δr b ∘ inMap P₁ δ∅) ∘ sf
+  ≈⟨ ∘-cong (μ-map-in P₁ δ∅ Q δr b) ≈-refl ⟩
+    (inMap Q δr ∘ (b ∘ fmor P₁ (extend-mor (λ i → id _) (μ-map P₁ δ∅ Q δr b)))) ∘ sf
+  ≈⟨ ∘-cong (∘-cong ≈-refl (∘-cong ≈-refl (fmor-cong P₁ eqs))) ≈-refl ⟩
+    (inMap Q δr ∘ (b ∘ fmor P₁ E)) ∘ sf
+  ≈⟨ assoc _ _ _ ⟩
+    inMap Q δr ∘ ((b ∘ fmor P₁ E) ∘ sf)
+  ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+    inMap Q δr ∘ (b ∘ (fmor P₁ E ∘ sf))
+  ∎
+  where
+  open ≈-Reasoning isEquiv
+  A  = sub (sub-lift (push ρ)) τ'
+  δr = extend δ∅ (⟦ ρ ⟧ty (λ ()))
+  P₁ = as-poly {0} {1} A (λ ())
+  Q  = as-poly {0} {2} τ' (λ ())
+  b  = sub-as-apply-fwd-μ-body τ' ρ (μ-obj Q δr)
+  saf = sub-as-apply-fwd (μ τ') ρ
+  sf  = sub-as-apply-fwd A (μ A)
+  E  = extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) saf
+  eqs : ∀ i → extend-mor {δ = δ∅} {δ' = δ∅} (λ j → id _) (μ-map P₁ δ∅ Q δr b) i ≈ E i
+  eqs Fin.zero    = ≈-sym (sub-as-apply-fwd-μ τ' ρ)
+  eqs (Fin.suc ())
+
 abstract
   roll-mor : (τ : type 1) → ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ ⟦ μ τ ⟧ty (λ ())
   roll-mor τ = inMap (as-poly τ (λ ())) δ∅ ∘ sub-as-apply-fwd τ (μ τ)
@@ -2287,6 +2325,15 @@ abstract
       inm  = inMap (as-poly τ (λ ())) δ∅
       outm : ⟦ μ τ ⟧ty (λ ()) ⇒ F₀
       outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
+
+  sub-as-apply-fwd-roll : ∀ (τ' : type 2) (ρ : type 0) →
+    (sub-as-apply-fwd (μ τ') ρ ∘ roll-mor (sub (sub-lift (push ρ)) τ'))
+      ≈ (inMap (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))
+         ∘ (sub-as-apply-fwd-μ-body τ' ρ (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ()))))
+            ∘ (fmor (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ()))
+                 (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) (sub-as-apply-fwd (μ τ') ρ))
+               ∘ sub-as-apply-fwd (sub (sub-lift (push ρ)) τ') (μ (sub (sub-lift (push ρ)) τ')))))
+  sub-as-apply-fwd-roll τ' ρ = sub-as-apply-fwd-μ-in τ' ρ
 
   preserves-sub-as-apply-fwd : ∀ (τ : type 1) (τ' : type 0) →
     preserves-section (sub-as-apply-fwd τ τ')
