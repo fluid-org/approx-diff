@@ -2557,6 +2557,275 @@ apply-bwd-cong {Δ} {n} τ {δ} {δ'} h δ₀ E = begin
   where open ≈-Reasoning isEquiv
 
 
+private
+  ≡-to-⇒-comp : ∀ {A B C : obj} (e₁ : A ≡ B) (e₂ : B ≡ C) → (≡-to-⇒ e₂ ∘ ≡-to-⇒ e₁) ≈ ≡-to-⇒ (trans e₁ e₂)
+  ≡-to-⇒-comp refl refl = id-left
+
+  cast-trans : ∀ {n} {P Q R' : Poly R.cat n} (e₁ : P ≡ Q) (e₂ : Q ≡ R') (δ₀ : Fin n → obj) →
+               cast (trans e₁ e₂) δ₀ ≈ (cast e₂ δ₀ ∘ cast e₁ δ₀)
+  cast-trans refl refl δ₀ = ≈-sym id-left
+
+  -- A square between a pair of two-sided inverses transposes to the inverse legs.
+  inv-conj : ∀ {A B A' B' : obj} {f : A ⇒ B} {g : B ⇒ A} {f' : A' ⇒ B'} {g' : B' ⇒ A'}
+             {u : A ⇒ A'} {v : B ⇒ B'} →
+             (f ∘ g) ≈ id _ → (g' ∘ f') ≈ id _ → (v ∘ f) ≈ (f' ∘ u) → (u ∘ g) ≈ (g' ∘ v)
+  inv-conj {f = f} {g} {f'} {g'} {u} {v} fg g'f' sq = begin
+      u ∘ g            ≈˘⟨ id-left ⟩
+      id _ ∘ (u ∘ g)   ≈˘⟨ ∘-cong g'f' ≈-refl ⟩
+      (g' ∘ f') ∘ (u ∘ g) ≈⟨ assoc _ _ _ ⟩
+      g' ∘ (f' ∘ (u ∘ g)) ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      g' ∘ ((f' ∘ u) ∘ g) ≈˘⟨ ∘-cong ≈-refl (∘-cong sq ≈-refl) ⟩
+      g' ∘ ((v ∘ f) ∘ g)  ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      g' ∘ (v ∘ (f ∘ g))  ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl fg) ⟩
+      g' ∘ (v ∘ id _)     ≈⟨ ∘-cong ≈-refl id-right ⟩
+      g' ∘ v ∎
+    where open ≈-Reasoning isEquiv
+
+  concat-ren-pw-go : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (δ : Fin Δ₂ → obj) (δ₀ : Fin n → obj)
+                     (s : Fin n ⊎ Fin Δ₁) (s' : Fin n ⊎ Fin Δ₂) → s' ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] s →
+                     [_,_] {C = λ _ → obj} δ₀ δ s' ≡ [_,_] {C = λ _ → obj} δ₀ (λ k → δ (ρ k)) s
+  concat-ren-pw-go ρ δ δ₀ (inj₁ j) _ refl = refl
+  concat-ren-pw-go ρ δ δ₀ (inj₂ k) _ refl = refl
+
+  -- Renaming a type is reindexing its concatenated environment, pointwise.
+  concat-ren-pw : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (δ : Fin Δ₂ → obj) (δ₀ : Fin n → obj) (i : Fin (n + Δ₁)) →
+                  concat δ₀ δ (extᵗⁿ n ρ i) ≡ concat δ₀ (λ k → δ (ρ k)) i
+  concat-ren-pw {n = n} ρ δ δ₀ i =
+    concat-ren-pw-go ρ δ δ₀ (splitAt n i) (splitAt n (extᵗⁿ n ρ i)) (splitAt-extᵗⁿ n ρ i)
+
+private
+  -- The middle factor of the renaming coherence at a mu body: the instantiated-variable cast family
+  -- refactors through the reindexing of the concatenated environment.
+  apply-fwd-ren-mid : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (suc n + Δ₁)) (δ : Fin Δ₂ → obj)
+                      (δ₀ : Fin n → obj) (X : obj) →
+                      (cast (trans (as-poly-ren {n = 0} (extᵗⁿ (suc n) ρ) τ (concat (extend δ₀ X) δ))
+                                   (as-poly-cong {n = 0} τ (concat-ren-pw ρ δ (extend δ₀ X)))) δ∅
+                         ∘ as-poly-map (extᵗⁿ (suc n) ρ *ᵗ τ) (λ i → ≡-to-⇒ (env-pw δ δ₀ X i)) δ∅)
+                        ≈ ((as-poly-map τ (λ i → ≡-to-⇒ (env-pw (λ k → δ (ρ k)) δ₀ X i)) δ∅
+                             ∘ ≡-to-⇒ (cong (λ P → fobj μ-obj P δ∅)
+                                             (as-poly-cong {n = 0} τ (concat-pw (extend {0} δ∅ X) (concat-ren-pw ρ δ δ₀)))))
+                           ∘ cast (trans (as-poly-ren {n = 0} (extᵗⁿ (suc n) ρ) τ (concat (extend {0} δ∅ X) (concat δ₀ δ)))
+                                         (as-poly-cong {n = 0} τ (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) (extend {0} δ∅ X)))) δ∅)
+  apply-fwd-ren-mid {Δ₁} {Δ₂} {n} ρ τ δ δ₀ X = begin
+      cast (trans a⁺ b⁺) δ∅ ∘ L₁
+    ≈⟨ ∘-cong (cast-trans a⁺ b⁺ δ∅) ≈-refl ⟩
+      (cast b⁺ δ∅ ∘ cast a⁺ δ∅) ∘ L₁
+    ≈⟨ assoc _ _ _ ⟩
+      cast b⁺ δ∅ ∘ (cast a⁺ δ∅ ∘ L₁)
+    ≈⟨ ∘-cong ≈-refl (as-poly-map-ren (extᵗⁿ (suc n) ρ) τ (λ i → ≡-to-⇒ (env-pw δ δ₀ X i)) δ∅) ⟩
+      cast b⁺ δ∅ ∘ (Sh ∘ cast a₀ δ∅)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (cast b⁺ δ∅ ∘ Sh) ∘ cast a₀ δ∅
+    ≈⟨ ∘-cong (∘-cong (cast-as-poly-cong {n = 0} τ (concat-ren-pw ρ δ (extend δ₀ X)) δ∅) ≈-refl) ≈-refl ⟩
+      (as-poly-map τ (λ i → ≡-to-⇒ (concat-ren-pw ρ δ (extend δ₀ X) i)) δ∅ ∘ Sh) ∘ cast a₀ δ∅
+    ≈⟨ ∘-cong (as-poly-map-comp τ (λ i → ≡-to-⇒ (concat-ren-pw ρ δ (extend δ₀ X) i))
+                                  (λ i → ≡-to-⇒ (env-pw δ δ₀ X (extᵗⁿ (suc n) ρ i))) δ∅) ≈-refl ⟩
+      as-poly-map τ (λ i → ≡-to-⇒ (concat-ren-pw ρ δ (extend δ₀ X) i) ∘ ≡-to-⇒ (env-pw δ δ₀ X (extᵗⁿ (suc n) ρ i))) δ∅
+        ∘ cast a₀ δ∅
+    ≈⟨ ∘-cong (as-poly-map-cong τ pw-refactor δ∅) ≈-refl ⟩
+      as-poly-map τ (λ i → (≡-to-⇒ (env-pw δρ δ₀ X i) ∘ ≡-to-⇒ (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i))
+                             ∘ ≡-to-⇒ (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂ i)) δ∅
+        ∘ cast a₀ δ∅
+    ≈˘⟨ ∘-cong (as-poly-map-comp τ (λ i → ≡-to-⇒ (env-pw δρ δ₀ X i) ∘ ≡-to-⇒ (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i))
+                                   (λ i → ≡-to-⇒ (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂ i)) δ∅) ≈-refl ⟩
+      (as-poly-map τ (λ i → ≡-to-⇒ (env-pw δρ δ₀ X i) ∘ ≡-to-⇒ (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i)) δ∅
+         ∘ as-poly-map τ (λ i → ≡-to-⇒ (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂ i)) δ∅)
+        ∘ cast a₀ δ∅
+    ≈˘⟨ ∘-cong (∘-cong (as-poly-map-comp τ (λ i → ≡-to-⇒ (env-pw δρ δ₀ X i))
+                                          (λ i → ≡-to-⇒ (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i)) δ∅)
+                       (cast-as-poly-cong {n = 0} τ (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂) δ∅)) ≈-refl ⟩
+      ((L₂ ∘ as-poly-map τ (λ i → ≡-to-⇒ (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i)) δ∅) ∘ cast cb₁ δ∅) ∘ cast a₀ δ∅
+    ≈˘⟨ ∘-cong (∘-cong (∘-cong ≈-refl (cast-as-poly-cong {n = 0} τ (concat-pw X̂ (concat-ren-pw ρ δ δ₀)) δ∅)) ≈-refl) ≈-refl ⟩
+      ((L₂ ∘ ≡-to-⇒ E) ∘ cast cb₁ δ∅) ∘ cast a₀ δ∅
+    ≈⟨ assoc _ _ _ ⟩
+      (L₂ ∘ ≡-to-⇒ E) ∘ (cast cb₁ δ∅ ∘ cast a₀ δ∅)
+    ≈˘⟨ ∘-cong ≈-refl (cast-trans a₀ cb₁ δ∅) ⟩
+      (L₂ ∘ ≡-to-⇒ E) ∘ cast (trans a₀ cb₁) δ∅
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      X̂  = extend {0} δ∅ X
+      δρ : Fin Δ₁ → obj
+      δρ = λ k → δ (ρ k)
+      L₁ = as-poly-map (extᵗⁿ (suc n) ρ *ᵗ τ) (λ i → ≡-to-⇒ (env-pw δ δ₀ X i)) δ∅
+      L₂ = as-poly-map τ (λ i → ≡-to-⇒ (env-pw δρ δ₀ X i)) δ∅
+      a⁺ = as-poly-ren {n = 0} (extᵗⁿ (suc n) ρ) τ (concat (extend δ₀ X) δ)
+      b⁺ = as-poly-cong {n = 0} τ (concat-ren-pw ρ δ (extend δ₀ X))
+      a₀ = as-poly-ren {n = 0} (extᵗⁿ (suc n) ρ) τ (concat X̂ (concat δ₀ δ))
+      cb₁ = as-poly-cong {n = 0} τ (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂)
+      E  = cong (λ P → fobj μ-obj P δ∅) (as-poly-cong {n = 0} τ (concat-pw X̂ (concat-ren-pw ρ δ δ₀)))
+      Sh = as-poly-map τ (λ i → ≡-to-⇒ (env-pw δ δ₀ X (extᵗⁿ (suc n) ρ i))) δ∅
+      pw-refactor : ∀ i → (≡-to-⇒ (concat-ren-pw ρ δ (extend δ₀ X) i) ∘ ≡-to-⇒ (env-pw δ δ₀ X (extᵗⁿ (suc n) ρ i)))
+                            ≈ ((≡-to-⇒ (env-pw δρ δ₀ X i) ∘ ≡-to-⇒ (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i))
+                               ∘ ≡-to-⇒ (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂ i))
+      pw-refactor i =
+        ≈-trans (≡-to-⇒-comp (env-pw δ δ₀ X (extᵗⁿ (suc n) ρ i)) (concat-ren-pw ρ δ (extend δ₀ X) i))
+        (≈-trans (≡-to-⇒-irr (trans (env-pw δ δ₀ X (extᵗⁿ (suc n) ρ i)) (concat-ren-pw ρ δ (extend δ₀ X) i))
+                             (trans (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂ i)
+                                    (trans (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i) (env-pw δρ δ₀ X i))))
+                 (≈-sym (≈-trans (∘-cong (≡-to-⇒-comp (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i) (env-pw δρ δ₀ X i)) ≈-refl)
+                                 (≡-to-⇒-comp (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂ i)
+                                              (trans (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i) (env-pw δρ δ₀ X i))))))
+
+-- Renaming coherence for application: the renaming cast passes through apply-fwd, at the cost of the
+-- corresponding cast on the fully applied side (the reindexing of the concatenated environment).
+mutual
+  apply-fwd-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (n + Δ₁)) (δ : Fin Δ₂ → obj) (δ₀ : Fin n → obj) →
+                  (cast (as-poly-ren ρ τ δ) δ₀ ∘ apply-fwd (extᵗⁿ n ρ *ᵗ τ) δ δ₀)
+                    ≈ (apply-fwd τ (λ k → δ (ρ k)) δ₀
+                       ∘ cast (trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) τ (concat δ₀ δ))
+                                     (as-poly-cong {n = 0} τ (concat-ren-pw ρ δ δ₀))) δ∅)
+  apply-fwd-ren {Δ₁} {Δ₂} {n} ρ (var i) δ δ₀ =
+    go i (extᵗⁿ n ρ i) (splitAt-extᵗⁿ n ρ i) (as-poly-ren ρ (var i) δ)
+       (trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) (var i) (concat δ₀ δ))
+              (as-poly-cong {n = 0} (var i) {δ = λ j → concat δ₀ δ (extᵗⁿ n ρ j)}
+                            {δ' = concat δ₀ (λ k → δ (ρ k))} (concat-ren-pw ρ δ δ₀)))
+    where
+    go : ∀ (i' : Fin (n + Δ₁)) (m : Fin (n + Δ₂))
+         (e : splitAt n m ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] (splitAt n i'))
+         (p : as-poly {Δ₂} {n} (var m) δ ≡ as-poly {Δ₁} {n} (var i') (λ k → δ (ρ k)))
+         (q : as-poly {n + Δ₂} {0} (var m) (concat δ₀ δ)
+                ≡ as-poly {n + Δ₁} {0} (var i') (concat δ₀ (λ k → δ (ρ k)))) →
+         (cast p δ₀ ∘ apply-fwd (var m) δ δ₀) ≈ (apply-fwd (var i') (λ k → δ (ρ k)) δ₀ ∘ cast q δ∅)
+    go i' m e p q with splitAt n i' | splitAt n m | e
+    ... | inj₁ j | .(inj₁ j)     | refl =
+      ≈-trans id-right (≈-trans (cast-irr p refl δ₀) (≈-trans (≈-sym (cast-irr q refl δ∅)) (≈-sym id-left)))
+    ... | inj₂ k | .(inj₂ (ρ k)) | refl =
+      ≈-trans id-right (≈-trans (cast-irr p refl δ₀) (≈-trans (≈-sym (cast-irr q refl δ∅)) (≈-sym id-left)))
+  apply-fwd-ren ρ unit      δ δ₀ = ≈-refl
+  apply-fwd-ren ρ (base s)  δ δ₀ = ≈-refl
+  apply-fwd-ren ρ (σ [→] τ) δ δ₀ = ≈-refl
+  apply-fwd-ren {Δ₁} {Δ₂} {n} ρ (σ [+] τ) δ δ₀ =
+    ≈-trans (∘-cong (cast-+ (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀) ≈-refl)
+            (≈-trans ([+]-square (apply-fwd-ren ρ σ δ δ₀) (apply-fwd-ren ρ τ δ δ₀))
+                     (∘-cong ≈-refl
+                       (≈-sym (≈-trans (cast-irr (trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) (σ [+] τ) (concat δ₀ δ))
+                                                        (as-poly-cong {n = 0} (σ [+] τ) (concat-ren-pw ρ δ δ₀)))
+                                                 (cong₂ Poly._+_ (rσ σ) (rσ τ)) δ∅)
+                                       (cast-+ (rσ σ) (rσ τ) δ∅)))))
+    where
+      rσ : (υ : type (n + Δ₁)) → as-poly {n + Δ₂} {0} (extᵗⁿ n ρ *ᵗ υ) (concat δ₀ δ)
+                                   ≡ as-poly {n + Δ₁} {0} υ (concat δ₀ (λ k → δ (ρ k)))
+      rσ υ = trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) υ (concat δ₀ δ))
+                   (as-poly-cong {n = 0} υ (concat-ren-pw ρ δ δ₀))
+  apply-fwd-ren {Δ₁} {Δ₂} {n} ρ (σ [×] τ) δ δ₀ =
+    ≈-trans (∘-cong (cast-× (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀) ≈-refl)
+            (≈-trans ([×]-square (apply-fwd-ren ρ σ δ δ₀) (apply-fwd-ren ρ τ δ δ₀))
+                     (∘-cong ≈-refl
+                       (≈-sym (≈-trans (cast-irr (trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) (σ [×] τ) (concat δ₀ δ))
+                                                        (as-poly-cong {n = 0} (σ [×] τ) (concat-ren-pw ρ δ δ₀)))
+                                                 (cong₂ Poly._×_ (rσ σ) (rσ τ)) δ∅)
+                                       (cast-× (rσ σ) (rσ τ) δ∅)))))
+    where
+      rσ : (υ : type (n + Δ₁)) → as-poly {n + Δ₂} {0} (extᵗⁿ n ρ *ᵗ υ) (concat δ₀ δ)
+                                   ≡ as-poly {n + Δ₁} {0} υ (concat δ₀ (λ k → δ (ρ k)))
+      rσ υ = trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) υ (concat δ₀ δ))
+                   (as-poly-cong {n = 0} υ (concat-ren-pw ρ δ δ₀))
+  apply-fwd-ren {Δ₁} {Δ₂} {n} ρ (μ τ) δ δ₀ = begin
+      cast (cong Poly.μ (as-poly-ren {n = suc n} ρ τ δ)) δ₀
+        ∘ μ-map PB δ∅ AB δ₀ (apply-fwd-body (extᵗⁿ (suc n) ρ *ᵗ τ) δ δ₀ MB)
+    ≈⟨ ∘-cong (cast-μ (as-poly-ren {n = suc n} ρ τ δ) δ₀) ≈-refl ⟩
+      μ-map AB δ₀ Aρ δ₀ (cast (as-poly-ren {n = suc n} ρ τ δ) (extend δ₀ Mρ))
+        ∘ μ-map PB δ∅ AB δ₀ (apply-fwd-body (extᵗⁿ (suc n) ρ *ᵗ τ) δ δ₀ MB)
+    ≈⟨ μ-map-comp PB δ∅ AB δ₀ Aρ δ₀ (apply-fwd-body (extᵗⁿ (suc n) ρ *ᵗ τ) δ δ₀ MB)
+                  (cast (as-poly-ren {n = suc n} ρ τ δ) (extend δ₀ Mρ))
+                  (apply-fwd-body (extᵗⁿ (suc n) ρ *ᵗ τ) δ δ₀ Mρ)
+                  (apply-fwd-body-carrier (extᵗⁿ (suc n) ρ *ᵗ τ) δ δ₀ k₁) ⟩
+      μ-map PB δ∅ Aρ δ₀ (cast (as-poly-ren {n = suc n} ρ τ δ) (extend δ₀ Mρ)
+                           ∘ apply-fwd-body (extᵗⁿ (suc n) ρ *ᵗ τ) δ δ₀ Mρ)
+    ≈⟨ μ-map-cong _ _ _ _ (apply-fwd-ren-body ρ τ δ δ₀ Mρ) ⟩
+      μ-map PB δ∅ Aρ δ₀ (apply-fwd-body τ (λ k → δ (ρ k)) δ₀ Mρ ∘ cast (trans aμ bμ) (extend δ∅ Mρ))
+    ≈˘⟨ μ-map-comp PB δ∅ Pρ δ∅ Aρ δ₀ (cast (trans aμ bμ) (extend δ∅ (μ-obj Pρ δ∅)))
+                   (apply-fwd-body τ (λ k → δ (ρ k)) δ₀ Mρ)
+                   (cast (trans aμ bμ) (extend δ∅ Mρ))
+                   (cast-natural (trans aμ bμ) (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k₂)) ⟩
+      μ-map Pρ δ∅ Aρ δ₀ (apply-fwd-body τ (λ k → δ (ρ k)) δ₀ Mρ)
+        ∘ μ-map PB δ∅ Pρ δ∅ (cast (trans aμ bμ) (extend δ∅ (μ-obj Pρ δ∅)))
+    ≈˘⟨ ∘-cong ≈-refl (cast-μ (trans aμ bμ) δ∅) ⟩
+      μ-map Pρ δ∅ Aρ δ₀ (apply-fwd-body τ (λ k → δ (ρ k)) δ₀ Mρ) ∘ cast (cong Poly.μ (trans aμ bμ)) δ∅
+    ≈˘⟨ ∘-cong ≈-refl (cast-irr (trans (cong Poly.μ aμ) (cong Poly.μ bμ)) (cong Poly.μ (trans aμ bμ)) δ∅) ⟩
+      μ-map Pρ δ∅ Aρ δ₀ (apply-fwd-body τ (λ k → δ (ρ k)) δ₀ Mρ)
+        ∘ cast (trans (cong Poly.μ aμ) (cong Poly.μ bμ)) δ∅
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      PB = as-poly {n + Δ₂} {1} (extᵗⁿ (suc n) ρ *ᵗ τ) (concat δ₀ δ)
+      AB = as-poly {Δ₂} {suc n} (extᵗⁿ (suc n) ρ *ᵗ τ) δ
+      Aρ = as-poly {Δ₁} {suc n} τ (λ k → δ (ρ k))
+      Pρ = as-poly {n + Δ₁} {1} τ (concat δ₀ (λ k → δ (ρ k)))
+      MB = μ-obj AB δ₀
+      Mρ = μ-obj Aρ δ₀
+      aμ = as-poly-ren {n = 1} (extᵗⁿ n ρ) τ (concat δ₀ δ)
+      bμ = as-poly-cong {n = 1} τ (concat-ren-pw ρ δ δ₀)
+      k₁ = μ-map AB δ₀ Aρ δ₀ (cast (as-poly-ren {n = suc n} ρ τ δ) (extend δ₀ Mρ))
+      k₂ = μ-map Pρ δ∅ Aρ δ₀ (apply-fwd-body τ (λ k → δ (ρ k)) δ₀ Mρ)
+
+  apply-fwd-ren-body : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (suc n + Δ₁)) (δ : Fin Δ₂ → obj)
+                       (δ₀ : Fin n → obj) (X : obj) →
+                       (cast (as-poly-ren {n = suc n} ρ τ δ) (extend δ₀ X)
+                          ∘ apply-fwd-body (extᵗⁿ (suc n) ρ *ᵗ τ) δ δ₀ X)
+                         ≈ (apply-fwd-body τ (λ k → δ (ρ k)) δ₀ X
+                            ∘ cast (trans (as-poly-ren {n = 1} (extᵗⁿ n ρ) τ (concat δ₀ δ))
+                                          (as-poly-cong {n = 1} τ (concat-ren-pw ρ δ δ₀))) (extend δ∅ X))
+  apply-fwd-ren-body {Δ₁} {Δ₂} {n} ρ τ δ δ₀ X = begin
+      CA ∘ (F₁ ∘ L₁ ∘ B₁)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (CA ∘ (F₁ ∘ L₁)) ∘ B₁
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ((CA ∘ F₁) ∘ L₁) ∘ B₁
+    ≈⟨ ∘-cong (∘-cong (apply-fwd-ren {n = suc n} ρ τ δ (extend δ₀ X)) ≈-refl) ≈-refl ⟩
+      ((F₂ ∘ cast (trans a⁺ b⁺) δ∅) ∘ L₁) ∘ B₁
+    ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      (F₂ ∘ (cast (trans a⁺ b⁺) δ∅ ∘ L₁)) ∘ B₁
+    ≈⟨ ∘-cong (∘-cong ≈-refl (apply-fwd-ren-mid ρ τ δ δ₀ X)) ≈-refl ⟩
+      (F₂ ∘ ((L₂ ∘ ≡-to-⇒ E) ∘ cast r₁ δ∅)) ∘ B₁
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ((F₂ ∘ (L₂ ∘ ≡-to-⇒ E)) ∘ cast r₁ δ∅) ∘ B₁
+    ≈⟨ assoc _ _ _ ⟩
+      (F₂ ∘ (L₂ ∘ ≡-to-⇒ E)) ∘ (cast r₁ δ∅ ∘ B₁)
+    ≈⟨ ∘-cong ≈-refl lemC ⟩
+      (F₂ ∘ (L₂ ∘ ≡-to-⇒ E)) ∘ (B₁' ∘ cast a₁ X̂)
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ((F₂ ∘ L₂) ∘ ≡-to-⇒ E) ∘ (B₁' ∘ cast a₁ X̂)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (((F₂ ∘ L₂) ∘ ≡-to-⇒ E) ∘ B₁') ∘ cast a₁ X̂
+    ≈⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ((F₂ ∘ L₂) ∘ (≡-to-⇒ E ∘ B₁')) ∘ cast a₁ X̂
+    ≈⟨ ∘-cong (∘-cong ≈-refl (apply-bwd-cong τ (concat-ren-pw ρ δ δ₀) X̂ E)) ≈-refl ⟩
+      ((F₂ ∘ L₂) ∘ (B₂ ∘ cast b₁ X̂)) ∘ cast a₁ X̂
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      (((F₂ ∘ L₂) ∘ B₂) ∘ cast b₁ X̂) ∘ cast a₁ X̂
+    ≈⟨ assoc _ _ _ ⟩
+      ((F₂ ∘ L₂) ∘ B₂) ∘ (cast b₁ X̂ ∘ cast a₁ X̂)
+    ≈˘⟨ ∘-cong ≈-refl (cast-trans a₁ b₁ X̂) ⟩
+      ((F₂ ∘ L₂) ∘ B₂) ∘ cast (trans a₁ b₁) X̂
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      X̂  = extend {0} δ∅ X
+      δρ : Fin Δ₁ → obj
+      δρ = λ k → δ (ρ k)
+      CA = cast (as-poly-ren {n = suc n} ρ τ δ) (extend δ₀ X)
+      F₁ = apply-fwd (extᵗⁿ (suc n) ρ *ᵗ τ) δ (extend δ₀ X)
+      L₁ = as-poly-map (extᵗⁿ (suc n) ρ *ᵗ τ) (λ i → ≡-to-⇒ (env-pw δ δ₀ X i)) δ∅
+      B₁ = apply-bwd {n = 1} (extᵗⁿ (suc n) ρ *ᵗ τ) (concat δ₀ δ) X̂
+      F₂ = apply-fwd τ δρ (extend δ₀ X)
+      L₂ = as-poly-map τ (λ i → ≡-to-⇒ (env-pw δρ δ₀ X i)) δ∅
+      B₂ = apply-bwd {n = 1} τ (concat δ₀ δρ) X̂
+      B₁' = apply-bwd {n = 1} τ (λ i → concat δ₀ δ (extᵗⁿ n ρ i)) X̂
+      a⁺ = as-poly-ren {n = 0} (extᵗⁿ (suc n) ρ) τ (concat (extend δ₀ X) δ)
+      b⁺ = as-poly-cong {n = 0} τ (concat-ren-pw ρ δ (extend δ₀ X))
+      a₀ = as-poly-ren {n = 0} (extᵗⁿ (suc n) ρ) τ (concat X̂ (concat δ₀ δ))
+      cb₁ = as-poly-cong {n = 0} τ (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂)
+      r₁ = trans a₀ cb₁
+      a₁ = as-poly-ren {n = 1} (extᵗⁿ n ρ) τ (concat δ₀ δ)
+      b₁ = as-poly-cong {n = 1} τ (concat-ren-pw ρ δ δ₀)
+      E  = cong (λ P → fobj μ-obj P δ∅) (as-poly-cong {n = 0} τ (concat-pw X̂ (concat-ren-pw ρ δ δ₀)))
+      lemC : (cast r₁ δ∅ ∘ B₁) ≈ (B₁' ∘ cast a₁ X̂)
+      lemC = inv-conj (apply-fwd-bwd {n = 1} (extᵗⁿ (suc n) ρ *ᵗ τ) (concat δ₀ δ) X̂)
+                      (apply-bwd-fwd {n = 1} τ (λ i → concat δ₀ δ (extᵗⁿ n ρ i)) X̂)
+                      (apply-fwd-ren {n = 1} (extᵗⁿ n ρ) τ (concat δ₀ δ) X̂)
+
 preserves-sub-lift-pw : ∀ {Δ Δ'} (σ : TySub Δ Δ') {δ : Fin Δ' → obj} (δc : ∀ i → Section (δ i))
   {X : obj} (cX : Section X) (i : Fin (suc Δ)) →
   preserves-section (≡-to-⇒ (sub-lift-pw σ δ X i))
