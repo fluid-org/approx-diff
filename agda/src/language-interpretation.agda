@@ -538,6 +538,36 @@ private
            (≈-trans (≈-sym (assoc _ _ _))
            (≈-trans (∘-cong (copair-in₂ _ _) ≈-refl) (assoc _ _ _))))
 
+  scopair-post : ∀ {Γ' : Obj} {x y z w : obj} (h : z ⇒ w) (a : prod Γ' x ⇒ z) (b : prod Γ' y ⇒ z) →
+                 (h ∘ scopair a b) ≈ scopair (h ∘ a) (h ∘ b)
+  scopair-post h a b =
+    ≈-trans (≈-sym (scopair-ext (h ∘ scopair a b)))
+            (scopair-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (scopair-in₁ a b)))
+                          (≈-trans (assoc _ _ _) (∘-cong ≈-refl (scopair-in₂ a b))))
+
+  co-unitₗ : ∀ {Γ' : Obj} {X Y : obj} (x : prod Γ' X ⇒ Y) → ((id _ ∘ p₂) ∘co x) ≈ x
+  co-unitₗ x = ≈-trans (∘-cong id-left ≈-refl) CoK.id-left
+
+  co-unitᵣ : ∀ {Γ' : Obj} {X Y : obj} (x : prod Γ' X ⇒ Y) → (x ∘co (id _ ∘ p₂)) ≈ x
+  co-unitᵣ x = ≈-trans (∘-cong ≈-refl (pair-cong ≈-refl id-left)) CoK.id-right
+
+  lift-comp : ∀ {Γ' : Obj} {X Y Z : obj} (f : Y ⇒ Z) (g : X ⇒ Y) →
+              ((f ∘ g) ∘ p₂ {Γ'}) ≈ ((f ∘ p₂) ∘co (g ∘ p₂))
+  lift-comp f g =
+    ≈-sym (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _))))
+
+  sL-weaken : ∀ {Γ' : Obj} {X Y : obj} (c : X ⇒ Y) →
+              strong-Lf-map {Γ'} (c ∘ p₂) ≈ (Lf-map c ∘ p₂)
+  sL-weaken c = ≈-trans (≈-sym (strong-Lf-map-post c p₂)) (∘-cong ≈-refl strong-Lf-map-p₂)
+
+  prod-m-weaken : ∀ {Γ' : Obj} {x₁ x₂ y₁ y₂ : obj} (a₁ : x₁ ⇒ y₁) (a₂ : x₂ ⇒ y₂) →
+                  strong-prod-m {w = Γ'} (a₁ ∘ p₂) (a₂ ∘ p₂) ≈ (prod-m a₁ a₂ ∘ p₂)
+  prod-m-weaken a₁ a₂ =
+    ≈-trans (pair-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))
+                       (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
+    (≈-trans (pair-cong (≈-sym (assoc _ _ _)) (≈-sym (assoc _ _ _)))
+             (≈-sym (pair-natural _ _ _)))
+
 strong-as-poly-map-weaken : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj}
                             (gs : ∀ i → δ i ⇒ δ' i) (δ₀ : Fin n → obj) →
                             strong-as-poly-map τ {Γ'} (λ i → gs i ∘ p₂) δ₀ ≈ (as-poly-map τ gs δ₀ ∘ p₂)
@@ -550,9 +580,9 @@ strong-as-poly-map-weaken (σ [→] τ) gs δ₀ = ≈-sym id-left
 strong-as-poly-map-weaken (σ [+] τ) gs δ₀ =
   ≈-trans (scopair-cong
     (∘-cong ≈-refl (≈-trans (strong-Lf-map-cong (strong-as-poly-map-weaken σ gs δ₀))
-                     (≈-trans (≈-sym (strong-Lf-map-post a₁ p₂)) (∘-cong ≈-refl strong-Lf-map-p₂))))
+                     (sL-weaken a₁)))
     (∘-cong ≈-refl (≈-trans (strong-Lf-map-cong (strong-as-poly-map-weaken τ gs δ₀))
-                     (≈-trans (≈-sym (strong-Lf-map-post a₂ p₂)) (∘-cong ≈-refl strong-Lf-map-p₂)))))
+                     (sL-weaken a₂))))
   (scopair-weaken (Lf-map a₁) (Lf-map a₂))
   where
   a₁ = as-poly-map σ gs δ₀
@@ -560,17 +590,11 @@ strong-as-poly-map-weaken (σ [+] τ) gs δ₀ =
 strong-as-poly-map-weaken (σ [×] τ) gs δ₀ =
   ≈-trans (strong-Lf-map-cong
     (≈-trans (strong-prod-m-cong (strong-as-poly-map-weaken σ gs δ₀) (strong-as-poly-map-weaken τ gs δ₀))
-             pm-weaken))
-  (≈-trans (≈-sym (strong-Lf-map-post (prod-m a₁ a₂) p₂)) (∘-cong ≈-refl strong-Lf-map-p₂))
+             (prod-m-weaken a₁ a₂)))
+  (sL-weaken (prod-m a₁ a₂))
   where
   a₁ = as-poly-map σ gs δ₀
   a₂ = as-poly-map τ gs δ₀
-  pm-weaken : strong-prod-m (a₁ ∘ p₂) (a₂ ∘ p₂) ≈ (prod-m a₁ a₂ ∘ p₂)
-  pm-weaken =
-    ≈-trans (pair-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))
-                       (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
-    (≈-trans (pair-cong (≈-sym (assoc _ _ _)) (≈-sym (assoc _ _ _)))
-             (≈-sym (pair-natural _ _ _)))
 strong-as-poly-map-weaken {Δ} {n} (μ τ) {Γ'} {δ} {δ'} gs δ₀ =
   ≈-trans (⦅⦆-cong (as-poly {Δ} {suc n} τ δ) δ₀
             (≈-trans (∘-cong ≈-refl (strong-as-poly-map-weaken {n = suc n} τ gs
@@ -2183,6 +2207,347 @@ preserves-push-pw⁻ : ∀ (τ' : type 0) (i : Fin 1) →
     (concat-section {n = 1} (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))) (λ ()) i)
     (unit-section (push τ' i) (λ ()) (λ ()))
 preserves-push-pw⁻ τ' Fin.zero = preserves-section-id (unit-section τ' (λ ()) (λ ()))
+
+private
+  strong-env-pw-natural : ∀ {Δ n} {Γ' : Obj} {δ δ' : Fin Δ → obj} (ks : ∀ i → prod Γ' (δ i) ⇒ δ' i)
+                          {δ₀ δ₀' : Fin n → obj} (hs : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i)
+                          {X X' : obj} (kc : prod Γ' X ⇒ X') (i : Fin (suc (n + Δ))) →
+                          (strong-concat-mor (strong-extend-mor hs kc) ks i ∘co (≡-to-⇒ (env-pw δ δ₀ X i) ∘ p₂))
+                            ≈ ((≡-to-⇒ (env-pw δ' δ₀' X' i) ∘ p₂)
+                               ∘co strong-concat-mor {n = 1} (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc) (strong-concat-mor hs ks) i)
+  strong-env-pw-natural ks hs kc Fin.zero = ≈-trans (co-unitᵣ kc) (≈-sym (co-unitₗ kc))
+  strong-env-pw-natural {Δ} {n} {δ = δ} {δ'} ks {δ₀} {δ₀'} hs {X} {X'} kc (Fin.suc j) = go (splitAt n j)
+    where
+    go : (s : Fin n ⊎ Fin Δ) →
+         (strong-concat-mor-split (strong-extend-mor hs kc) ks (map₁ Fin.suc s) ∘co (≡-to-⇒ (env-pw-suc δ δ₀ X s) ∘ p₂))
+           ≈ ((≡-to-⇒ (env-pw-suc δ' δ₀' X' s) ∘ p₂) ∘co strong-concat-mor-split hs ks s)
+    go (inj₁ l) = ≈-trans (co-unitᵣ (hs l)) (≈-sym (co-unitₗ (hs l)))
+    go (inj₂ l) = ≈-trans (co-unitᵣ (ks l)) (≈-sym (co-unitₗ (ks l)))
+
+mutual
+  strong-apply-fwd-natural : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj}
+    (ks : ∀ i → prod Γ' (δ i) ⇒ δ' i) {δ₀ δ₀' : Fin n → obj} (hs : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i) →
+    (strong-fmor (as-poly {Δ} {n} τ δ') hs
+       ∘co (strong-as-poly-map τ ks δ₀ ∘co (apply-fwd τ δ δ₀ ∘ p₂)))
+      ≈ ((apply-fwd τ δ' δ₀' ∘ p₂) ∘co strong-as-poly-map τ (strong-concat-mor hs ks) δ∅)
+  strong-apply-fwd-natural {n = n} (var i) ks hs with splitAt n i
+  ... | inj₁ j = ≈-trans (∘-cong ≈-refl (pair-cong ≈-refl (pair-p₂ _ _)))
+                 (≈-trans (co-unitᵣ (hs j)) (≈-sym (co-unitₗ (hs j))))
+  ... | inj₂ k = ≈-trans (pair-p₂ _ _) (≈-trans (co-unitᵣ (ks k)) (≈-sym (co-unitₗ (ks k))))
+  strong-apply-fwd-natural unit ks hs =
+    ≈-trans (pair-p₂ _ _) (≈-trans (pair-p₂ _ _) (≈-sym (≈-trans (∘-cong ≈-refl pair-ext0) id-right)))
+  strong-apply-fwd-natural (base s) ks hs =
+    ≈-trans (pair-p₂ _ _) (≈-trans (pair-p₂ _ _) (≈-sym (≈-trans (∘-cong ≈-refl pair-ext0) id-right)))
+  strong-apply-fwd-natural (σ [→] τ₂) ks hs =
+    ≈-trans (pair-p₂ _ _) (≈-trans (pair-p₂ _ _) (≈-sym (≈-trans (∘-cong ≈-refl pair-ext0) id-right)))
+  strong-apply-fwd-natural {Δ} {n} (σ [+] τ₂) {Γ'} {δ} {δ'} ks {δ₀} {δ₀'} hs =
+    ≈-trans (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (≈-sym (scopair-weaken (Lf-map fσ) (Lf-map fτ)))))
+    (≈-trans (CoK.∘-cong ≈-refl (copair-comp _ _ _ _))
+    (≈-trans (copair-comp _ _ _ _)
+    (≈-trans (scopair-cong (∘-cong ≈-refl comp₁) (∘-cong ≈-refl comp₂))
+             (≈-sym rhs-eq))))
+    where
+    fσ  = apply-fwd σ δ δ₀
+    fτ  = apply-fwd τ₂ δ δ₀
+    fσ' = apply-fwd σ δ' δ₀'
+    fτ' = apply-fwd τ₂ δ' δ₀'
+    comp₁ = ≈-trans (CoK.∘-cong ≈-refl (≈-trans (CoK.∘-cong ≈-refl (≈-sym (sL-weaken fσ)))
+                                                (strong-Lf-map-comp _ _)))
+            (≈-trans (strong-Lf-map-comp _ _)
+            (≈-trans (strong-Lf-map-cong (strong-apply-fwd-natural σ ks hs))
+            (≈-trans (strong-Lf-map-cong (lift-post fσ' _))
+                     (≈-sym (strong-Lf-map-post fσ' _)))))
+    comp₂ = ≈-trans (CoK.∘-cong ≈-refl (≈-trans (CoK.∘-cong ≈-refl (≈-sym (sL-weaken fτ)))
+                                                (strong-Lf-map-comp _ _)))
+            (≈-trans (strong-Lf-map-comp _ _)
+            (≈-trans (strong-Lf-map-cong (strong-apply-fwd-natural τ₂ ks hs))
+            (≈-trans (strong-Lf-map-cong (lift-post fτ' _))
+                     (≈-sym (strong-Lf-map-post fτ' _)))))
+    rhs-eq =
+      ≈-trans (lift-post (coprod-m (Lf-map fσ') (Lf-map fτ')) _)
+      (≈-trans (scopair-post (coprod-m (Lf-map fσ') (Lf-map fτ')) _ _)
+               (scopair-cong (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (copair-in₁ _ _) ≈-refl) (assoc _ _ _)))
+                             (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong (copair-in₂ _ _) ≈-refl) (assoc _ _ _)))))
+  strong-apply-fwd-natural {Δ} {n} (σ [×] τ₂) {Γ'} {δ} {δ'} ks {δ₀} {δ₀'} hs =
+    ≈-trans (CoK.∘-cong ≈-refl (≈-trans (CoK.∘-cong ≈-refl (≈-sym (sL-weaken (prod-m fσ fτ))))
+                                        (strong-Lf-map-comp _ _)))
+    (≈-trans (strong-Lf-map-comp _ _)
+    (≈-trans (strong-Lf-map-cong inner)
+    (≈-trans (≈-sym (strong-Lf-map-post (prod-m fσ' fτ') _))
+             (≈-sym (lift-post (Lf-map (prod-m fσ' fτ')) _)))))
+    where
+    fσ  = apply-fwd σ δ δ₀
+    fτ  = apply-fwd τ₂ δ δ₀
+    fσ' = apply-fwd σ δ' δ₀'
+    fτ' = apply-fwd τ₂ δ' δ₀'
+    SAMσ' = strong-as-poly-map σ (strong-concat-mor hs ks) δ∅
+    SAMτ' = strong-as-poly-map τ₂ (strong-concat-mor hs ks) δ∅
+    inner = ≈-trans (CoK.∘-cong ≈-refl (≈-trans (CoK.∘-cong ≈-refl (≈-sym (prod-m-weaken fσ fτ)))
+                                                (strong-prod-m-comp _ _ _ _)))
+            (≈-trans (strong-prod-m-comp _ _ _ _)
+            (≈-trans (strong-prod-m-cong
+                       (≈-trans (strong-apply-fwd-natural σ ks hs) (lift-post fσ' _))
+                       (≈-trans (strong-apply-fwd-natural τ₂ ks hs) (lift-post fτ' _)))
+                     (≈-sym (strong-prod-m-post fσ' fτ' SAMσ' SAMτ'))))
+  strong-apply-fwd-natural {Δ} {n} (μ τ₂) {Γ'} {δ} {δ'} ks {δ₀} {δ₀'} hs = main
+    where
+    A   = as-poly {Δ} {suc n} τ₂ δ
+    A'  = as-poly {Δ} {suc n} τ₂ δ'
+    P   = as-poly {n + Δ} {1} τ₂ (concat δ₀ δ)
+    P'' = as-poly {n + Δ} {1} τ₂ (concat δ₀' δ')
+    MA' = μ-obj A' δ₀
+    Mf  = μ-obj A' δ₀'
+    bodyMA = apply-fwd-body τ₂ δ δ₀ (μ-obj A δ₀)
+    body'  = apply-fwd-body τ₂ δ δ₀ MA'
+    body'' = apply-fwd-body τ₂ δ δ₀ Mf
+    bodyf  = apply-fwd-body τ₂ δ' δ₀' Mf
+    μm   = μ-map P δ∅ A δ₀ bodyMA
+    μm'' = μ-map P'' δ∅ A' δ₀' bodyf
+    SFμ   : prod Γ' (μ-obj A' δ₀) ⇒ μ-obj A' δ₀'
+    SFμ   = strong-fmor (as-poly {Δ} {n} (μ τ₂) δ') hs
+    SAMμ  : prod Γ' (μ-obj A δ₀) ⇒ μ-obj A' δ₀
+    SAMμ  = strong-as-poly-map {Δ} {n} (μ τ₂) ks δ₀
+    SAMμP : prod Γ' (μ-obj P δ∅) ⇒ μ-obj P'' δ∅
+    SAMμP = strong-as-poly-map (μ τ₂) (strong-concat-mor hs ks) δ∅
+    algPA : prod Γ' (fobj μ-obj P (extend δ∅ (μ-obj A δ₀))) ⇒ μ-obj A δ₀
+    algPA = (inMap A δ₀ ∘ bodyMA) ∘ p₂
+    SAM-A-X   = strong-as-poly-map {Δ} {suc n} τ₂ ks (extend δ₀ MA')
+    SAM-A-Mf  = strong-as-poly-map {Δ} {suc n} τ₂ ks (extend δ₀ Mf)
+    SF-A'-ext = strong-fmor A' (strong-extend-mor hs (p₂ {Γ'} {Mf}))
+    algM : prod Γ' (fobj μ-obj P (extend δ∅ MA')) ⇒ MA'
+    algM = (inMap A' δ₀ ∘ SAM-A-X) ∘co (body' ∘ p₂)
+    alg⋆ : prod Γ' (fobj μ-obj P (extend δ∅ Mf)) ⇒ Mf
+    alg⋆ = (inMap A' δ₀' ∘ SF-A'-ext) ∘co (SAM-A-Mf ∘co (body'' ∘ p₂))
+    SAM-P-Mf = strong-as-poly-map {n + Δ} {1} τ₂ (strong-concat-mor hs ks) (extend δ∅ Mf)
+    SAM-P-MP = strong-as-poly-map {n + Δ} {1} τ₂ (strong-concat-mor hs ks) (extend δ∅ (μ-obj P'' δ∅))
+    algP  = inMap P'' δ∅ ∘ SAM-P-MP
+    cataB : prod Γ' (μ-obj P'' δ∅) ⇒ Mf
+    cataB = ⦅_⦆ {P = P''} {δ = δ∅} ((inMap A' δ₀' ∘ bodyf) ∘ p₂)
+
+    collapse-Pʳ : ∀ {C : obj} {Z : obj} (w : prod Γ' (fobj μ-obj P (extend δ∅ C)) ⇒ Z) →
+                  (w ∘co strong-as-poly-map {n + Δ} {1} τ₂ (strong-concat-mor {δ₀ = δ₀} {δ₀' = δ₀} {δ = δ} {δ' = δ} (λ i → p₂) (λ i → p₂)) (extend δ∅ C)) ≈ w
+    collapse-Pʳ {C = C} w =
+      ≈-trans (CoK.∘-cong ≈-refl (≈-trans (strong-as-poly-map-cong {n + Δ} {1} τ₂ (λ i → strong-concat-mor-p₂ {δ₀ = δ₀} {δ = δ} i) (extend δ∅ C))
+                                          (strong-as-poly-map-p₂ {n + Δ} {1} τ₂ (extend δ∅ C))))
+              CoK.id-right
+
+    premL2 : (SAMμ ∘co algPA) ≈ (algM ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SAMμ))
+    premL2 = begin
+        SAMμ ∘co ((inMap A δ₀ ∘ bodyMA) ∘ p₂)
+      ≈⟨ CoK.∘-cong ≈-refl (assoc _ _ _) ⟩
+        SAMμ ∘co (inMap A δ₀ ∘ (bodyMA ∘ p₂))
+      ≈˘⟨ ∘co-push SAMμ (inMap A δ₀) (bodyMA ∘ p₂) ⟩
+        (SAMμ ∘co (inMap A δ₀ ∘ p₂)) ∘co (bodyMA ∘ p₂)
+      ≈⟨ CoK.∘-cong (⦅⦆-β {P = A} {δ = δ₀} (inMap A' δ₀ ∘ SAM-A-X)) ≈-refl ⟩
+        ((inMap A' δ₀ ∘ SAM-A-X) ∘co strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμ)) ∘co (bodyMA ∘ p₂)
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        (inMap A' δ₀ ∘ SAM-A-X) ∘co (strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμ) ∘co (bodyMA ∘ p₂))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (≈-trans (CoK.∘-cong (strong-as-poly-map-p₂ {n = suc n} τ₂ {δ = δ} (extend δ₀ (μ-obj A δ₀))) ≈-refl) CoK.id-left)) ⟩
+        (inMap A' δ₀ ∘ SAM-A-X) ∘co (strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμ)
+          ∘co (strong-as-poly-map {Δ} {suc n} τ₂ {δ = δ} {δ' = δ} (λ i → p₂) (extend δ₀ (μ-obj A δ₀)) ∘co (bodyMA ∘ p₂)))
+      ≈⟨ CoK.∘-cong ≈-refl (strong-apply-fwd-body-natural τ₂ {δ = δ} {δ' = δ} (λ i → p₂) {δ₀ = δ₀} {δ₀' = δ₀} (λ i → p₂) SAMμ) ⟩
+        (inMap A' δ₀ ∘ SAM-A-X) ∘co ((body' ∘ p₂)
+          ∘co (strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SAMμ)
+               ∘co strong-as-poly-map {n + Δ} {1} τ₂ (strong-concat-mor {δ₀ = δ₀} {δ₀' = δ₀} {δ = δ} {δ' = δ} (λ i → p₂) (λ i → p₂)) (extend δ∅ (μ-obj A δ₀))))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (collapse-Pʳ (strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SAMμ)))) ⟩
+        (inMap A' δ₀ ∘ SAM-A-X) ∘co ((body' ∘ p₂) ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SAMμ))
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        ((inMap A' δ₀ ∘ SAM-A-X) ∘co (body' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SAMμ)
+      ∎
+      where open ≈-Reasoning isEquiv
+
+    premL3 : (SFμ ∘co algM) ≈ (alg⋆ ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SFμ))
+    premL3 = begin
+        SFμ ∘co ((inMap A' δ₀ ∘ SAM-A-X) ∘co (body' ∘ p₂))
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        (SFμ ∘co (inMap A' δ₀ ∘ SAM-A-X)) ∘co (body' ∘ p₂)
+      ≈˘⟨ CoK.∘-cong (∘co-push SFμ (inMap A' δ₀) SAM-A-X) ≈-refl ⟩
+        ((SFμ ∘co (inMap A' δ₀ ∘ p₂)) ∘co SAM-A-X) ∘co (body' ∘ p₂)
+      ≈⟨ CoK.∘-cong (CoK.∘-cong (⦅⦆-β {P = A'} {δ = δ₀} (inMap A' δ₀' ∘ SF-A'-ext)) ≈-refl) ≈-refl ⟩
+        (((inMap A' δ₀' ∘ SF-A'-ext) ∘co strong-fmor A' (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SFμ)) ∘co SAM-A-X) ∘co (body' ∘ p₂)
+      ≈⟨ CoK.∘-cong (CoK.assoc _ _ _) ≈-refl ⟩
+        ((inMap A' δ₀' ∘ SF-A'-ext) ∘co (strong-fmor A' (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SFμ) ∘co SAM-A-X)) ∘co (body' ∘ p₂)
+      ≈⟨ CoK.∘-cong (CoK.∘-cong ≈-refl (strong-as-poly-map-natural {n = suc n} τ₂ ks (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SFμ))) ≈-refl ⟩
+        ((inMap A' δ₀' ∘ SF-A'-ext) ∘co (SAM-A-Mf ∘co strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SFμ))) ∘co (body' ∘ p₂)
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        (inMap A' δ₀' ∘ SF-A'-ext) ∘co ((SAM-A-Mf ∘co strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SFμ)) ∘co (body' ∘ p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (inMap A' δ₀' ∘ SF-A'-ext) ∘co (SAM-A-Mf ∘co (strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SFμ) ∘co (body' ∘ p₂)))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (≈-trans (CoK.∘-cong (strong-as-poly-map-p₂ {n = suc n} τ₂ {δ = δ} (extend δ₀ MA')) ≈-refl) CoK.id-left))) ⟩
+        (inMap A' δ₀' ∘ SF-A'-ext) ∘co (SAM-A-Mf ∘co (strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SFμ)
+          ∘co (strong-as-poly-map {Δ} {suc n} τ₂ {δ = δ} {δ' = δ} (λ i → p₂) (extend δ₀ MA') ∘co (body' ∘ p₂))))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (strong-apply-fwd-body-natural τ₂ {δ = δ} {δ' = δ} (λ i → p₂) {δ₀ = δ₀} {δ₀' = δ₀} (λ i → p₂) SFμ)) ⟩
+        (inMap A' δ₀' ∘ SF-A'-ext) ∘co (SAM-A-Mf ∘co ((body'' ∘ p₂)
+          ∘co (strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SFμ)
+               ∘co strong-as-poly-map {n + Δ} {1} τ₂ (strong-concat-mor {δ₀ = δ₀} {δ₀' = δ₀} {δ = δ} {δ' = δ} (λ i → p₂) (λ i → p₂)) (extend δ∅ MA'))))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (collapse-Pʳ (strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SFμ))))) ⟩
+        (inMap A' δ₀' ∘ SF-A'-ext) ∘co (SAM-A-Mf ∘co ((body'' ∘ p₂) ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SFμ)))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (inMap A' δ₀' ∘ SF-A'-ext) ∘co ((SAM-A-Mf ∘co (body'' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SFμ))
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        ((inMap A' δ₀' ∘ SF-A'-ext) ∘co (SAM-A-Mf ∘co (body'' ∘ p₂))) ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) SFμ)
+      ∎
+      where open ≈-Reasoning isEquiv
+
+    alg-eq : (((inMap A' δ₀' ∘ bodyf) ∘ p₂) ∘co SAM-P-Mf) ≈ alg⋆
+    alg-eq = ≈-sym (begin
+        (inMap A' δ₀' ∘ SF-A'-ext) ∘co (SAM-A-Mf ∘co (body'' ∘ p₂))
+      ≈⟨ assoc _ _ _ ⟩
+        inMap A' δ₀' ∘ (SF-A'-ext ∘co (SAM-A-Mf ∘co (body'' ∘ p₂)))
+      ≈⟨ ∘-cong ≈-refl (strong-apply-fwd-body-natural τ₂ ks hs (p₂ {Γ'} {Mf})) ⟩
+        inMap A' δ₀' ∘ ((bodyf ∘ p₂)
+          ∘co (strong-fmor P'' (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) (p₂ {Γ'} {Mf})) ∘co SAM-P-Mf))
+      ≈⟨ ∘-cong ≈-refl (CoK.∘-cong ≈-refl (≈-trans (CoK.∘-cong (≈-trans (strong-fmor-cong P'' eqP) (strong-fmor-p₂ P'')) ≈-refl) CoK.id-left)) ⟩
+        inMap A' δ₀' ∘ ((bodyf ∘ p₂) ∘co SAM-P-Mf)
+      ≈⟨ ∘-cong ≈-refl (lift-post bodyf SAM-P-Mf) ⟩
+        inMap A' δ₀' ∘ (bodyf ∘ SAM-P-Mf)
+      ≈˘⟨ assoc _ _ _ ⟩
+        (inMap A' δ₀' ∘ bodyf) ∘ SAM-P-Mf
+      ≈˘⟨ lift-post (inMap A' δ₀' ∘ bodyf) SAM-P-Mf ⟩
+        ((inMap A' δ₀' ∘ bodyf) ∘ p₂) ∘co SAM-P-Mf
+      ∎)
+      where
+      open ≈-Reasoning isEquiv
+      eqP : ∀ i → strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) (p₂ {Γ'} {Mf}) i ≈ p₂
+      eqP Fin.zero    = ≈-refl
+      eqP (Fin.suc ())
+
+    premR : (cataB ∘co algP) ≈ (alg⋆ ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) cataB))
+    premR = begin
+        cataB ∘co (inMap P'' δ∅ ∘ SAM-P-MP)
+      ≈˘⟨ ∘co-push cataB (inMap P'' δ∅) SAM-P-MP ⟩
+        (cataB ∘co (inMap P'' δ∅ ∘ p₂)) ∘co SAM-P-MP
+      ≈⟨ CoK.∘-cong (⦅⦆-β {P = P''} {δ = δ∅} ((inMap A' δ₀' ∘ bodyf) ∘ p₂)) ≈-refl ⟩
+        ((((inMap A' δ₀' ∘ bodyf) ∘ p₂) ∘co strong-fmor P'' (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) cataB)) ∘co SAM-P-MP)
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        (((inMap A' δ₀' ∘ bodyf) ∘ p₂) ∘co (strong-fmor P'' (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) cataB) ∘co SAM-P-MP))
+      ≈⟨ CoK.∘-cong ≈-refl (strong-as-poly-map-natural {n = 1} τ₂ (strong-concat-mor hs ks) (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) cataB)) ⟩
+        (((inMap A' δ₀' ∘ bodyf) ∘ p₂) ∘co (SAM-P-Mf ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) cataB)))
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        ((((inMap A' δ₀' ∘ bodyf) ∘ p₂) ∘co SAM-P-Mf) ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) cataB))
+      ≈⟨ CoK.∘-cong alg-eq ≈-refl ⟩
+        alg⋆ ∘co strong-fmor P (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) cataB)
+      ∎
+      where open ≈-Reasoning isEquiv
+
+
+    main : (SFμ ∘co (SAMμ ∘co (μm ∘ p₂))) ≈ ((μm'' ∘ p₂) ∘co SAMμP)
+    main = begin
+        SFμ ∘co (SAMμ ∘co (μm ∘ p₂))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (μ-map-weaken P δ∅ A δ₀ bodyMA)) ⟩
+        SFμ ∘co (SAMμ ∘co ⦅_⦆ {P = P} {δ = δ∅} algPA)
+      ≈⟨ CoK.∘-cong ≈-refl (fusion {P = P} {δ = δ∅} algPA algM SAMμ premL2) ⟩
+        SFμ ∘co ⦅_⦆ {P = P} {δ = δ∅} algM
+      ≈⟨ fusion {P = P} {δ = δ∅} algM alg⋆ SFμ premL3 ⟩
+        ⦅_⦆ {P = P} {δ = δ∅} alg⋆
+      ≈˘⟨ fusion {P = P} {δ = δ∅} algP alg⋆ cataB premR ⟩
+        cataB ∘co SAMμP
+      ≈⟨ CoK.∘-cong (μ-map-weaken P'' δ∅ A' δ₀' bodyf) ≈-refl ⟩
+        (μm'' ∘ p₂) ∘co SAMμP
+      ∎
+      where open ≈-Reasoning isEquiv
+
+  strong-apply-fwd-body-natural : ∀ {Δ n} (τ : type (suc n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj}
+    (ks : ∀ i → prod Γ' (δ i) ⇒ δ' i) {δ₀ δ₀' : Fin n → obj} (hs : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i)
+    {X X' : obj} (kc : prod Γ' X ⇒ X') →
+    (strong-fmor (as-poly {Δ} {suc n} τ δ') (strong-extend-mor hs kc)
+       ∘co (strong-as-poly-map {Δ} {suc n} τ ks (extend δ₀ X) ∘co (apply-fwd-body τ δ δ₀ X ∘ p₂)))
+      ≈ ((apply-fwd-body τ δ' δ₀' X' ∘ p₂)
+         ∘co (strong-fmor (as-poly {n + Δ} {1} τ (concat δ₀' δ')) (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) kc)
+              ∘co strong-as-poly-map {n + Δ} {1} τ (strong-concat-mor hs ks) (extend δ∅ X)))
+  strong-apply-fwd-body-natural {Δ} {n} τ {Γ'} {δ} {δ'} ks {δ₀} {δ₀'} hs {X} {X'} kc = main
+    where
+    SF    = strong-fmor (as-poly {Δ} {suc n} τ δ') (strong-extend-mor hs kc)
+    SAM-X = strong-as-poly-map {Δ} {suc n} τ ks (extend δ₀ X)
+    af   = apply-fwd τ δ (extend δ₀ X)
+    af'  = apply-fwd τ δ' (extend δ₀' X')
+    Rs   = as-poly-map τ (λ i → ≡-to-⇒ (env-pw δ δ₀ X i)) δ∅
+    Rs'  = as-poly-map τ (λ i → ≡-to-⇒ (env-pw δ' δ₀' X' i)) δ∅
+    ab   = apply-bwd {n = 1} τ (concat δ₀ δ) (extend δ∅ X)
+    ab'  = apply-bwd {n = 1} τ (concat δ₀' δ') (extend δ∅ X')
+    af₁  = apply-fwd {n = 1} τ (concat δ₀ δ) (extend δ∅ X)
+    af₁' = apply-fwd {n = 1} τ (concat δ₀' δ') (extend δ∅ X')
+    F₁ = strong-concat-mor {n = 1} (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc) (strong-concat-mor hs ks)
+    SAM-1 = strong-as-poly-map τ F₁ δ∅
+    SF-P' = strong-fmor (as-poly {n + Δ} {1} τ (concat δ₀' δ')) (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ i → p₂) kc)
+    SAM-P = strong-as-poly-map {n + Δ} {1} τ (strong-concat-mor hs ks) (extend δ∅ X)
+    SAM-full = strong-as-poly-map τ (strong-concat-mor (strong-extend-mor hs kc) ks) δ∅
+    cast-step : (SAM-full ∘co (Rs ∘ p₂)) ≈ ((Rs' ∘ p₂) ∘co SAM-1)
+    cast-step =
+      ≈-trans (CoK.∘-cong ≈-refl (≈-sym (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (env-pw δ δ₀ X i)) δ∅)))
+      (≈-trans (strong-as-poly-map-comp τ (strong-concat-mor (strong-extend-mor hs kc) ks)
+                                          (λ i → ≡-to-⇒ (env-pw δ δ₀ X i) ∘ p₂) δ∅)
+      (≈-trans (strong-as-poly-map-cong τ (λ i → strong-env-pw-natural ks hs kc i) δ∅)
+      (≈-trans (≈-sym (strong-as-poly-map-comp τ (λ i → ≡-to-⇒ (env-pw δ' δ₀' X' i) ∘ p₂) F₁ δ∅))
+               (CoK.∘-cong (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (env-pw δ' δ₀' X' i)) δ∅) ≈-refl))))
+    ab-step : (SAM-1 ∘co (ab ∘ p₂)) ≈ ((ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P))
+    ab-step = begin
+        SAM-1 ∘co (ab ∘ p₂)
+      ≈˘⟨ CoK.id-left ⟩
+        p₂ ∘co (SAM-1 ∘co (ab ∘ p₂))
+      ≈˘⟨ CoK.∘-cong iso-fact ≈-refl ⟩
+        ((ab' ∘ p₂) ∘co (af₁' ∘ p₂)) ∘co (SAM-1 ∘co (ab ∘ p₂))
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        (ab' ∘ p₂) ∘co ((af₁' ∘ p₂) ∘co (SAM-1 ∘co (ab ∘ p₂)))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (ab' ∘ p₂) ∘co (((af₁' ∘ p₂) ∘co SAM-1) ∘co (ab ∘ p₂))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (strong-apply-fwd-natural {n = 1} τ (strong-concat-mor hs ks) (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc)) ≈-refl) ⟩
+        (ab' ∘ p₂) ∘co ((SF-P' ∘co (SAM-P ∘co (af₁ ∘ p₂))) ∘co (ab ∘ p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (ab' ∘ p₂) ∘co (SF-P' ∘co ((SAM-P ∘co (af₁ ∘ p₂)) ∘co (ab ∘ p₂)))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.assoc _ _ _)) ⟩
+        (ab' ∘ p₂) ∘co (SF-P' ∘co (SAM-P ∘co ((af₁ ∘ p₂) ∘co (ab ∘ p₂))))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl fwd-bwd-fact)) ⟩
+        (ab' ∘ p₂) ∘co (SF-P' ∘co (SAM-P ∘co p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl CoK.id-right) ⟩
+        (ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P)
+      ∎
+      where
+      open ≈-Reasoning isEquiv
+      iso-fact : ((ab' ∘ p₂) ∘co (af₁' ∘ p₂)) ≈ p₂
+      iso-fact = ≈-trans (≈-sym (lift-comp ab' af₁'))
+                 (≈-trans (∘-cong (apply-bwd-fwd {n = 1} τ (concat δ₀' δ') (extend δ∅ X')) ≈-refl) id-left)
+      fwd-bwd-fact : ((af₁ ∘ p₂) ∘co (ab ∘ p₂)) ≈ p₂
+      fwd-bwd-fact = ≈-trans (≈-sym (lift-comp af₁ ab))
+                     (≈-trans (∘-cong (apply-fwd-bwd {n = 1} τ (concat δ₀ δ) (extend δ∅ X)) ≈-refl) id-left)
+
+
+    main : (SF ∘co (SAM-X ∘co (((af ∘ Rs) ∘ ab) ∘ p₂)))
+           ≈ ((((af' ∘ Rs') ∘ ab') ∘ p₂) ∘co (SF-P' ∘co SAM-P))
+    main = begin
+        SF ∘co (SAM-X ∘co (((af ∘ Rs) ∘ ab) ∘ p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (≈-trans (lift-comp (af ∘ Rs) ab) (CoK.∘-cong (lift-comp af Rs) ≈-refl))) ⟩
+        SF ∘co (SAM-X ∘co (((af ∘ p₂) ∘co (Rs ∘ p₂)) ∘co (ab ∘ p₂)))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.assoc _ _ _)) ⟩
+        SF ∘co (SAM-X ∘co ((af ∘ p₂) ∘co ((Rs ∘ p₂) ∘co (ab ∘ p₂))))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        SF ∘co ((SAM-X ∘co (af ∘ p₂)) ∘co ((Rs ∘ p₂) ∘co (ab ∘ p₂)))
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        (SF ∘co (SAM-X ∘co (af ∘ p₂))) ∘co ((Rs ∘ p₂) ∘co (ab ∘ p₂))
+      ≈⟨ CoK.∘-cong (strong-apply-fwd-natural {n = suc n} τ ks (strong-extend-mor hs kc)) ≈-refl ⟩
+        ((af' ∘ p₂) ∘co SAM-full) ∘co ((Rs ∘ p₂) ∘co (ab ∘ p₂))
+      ≈⟨ CoK.assoc _ _ _ ⟩
+        (af' ∘ p₂) ∘co (SAM-full ∘co ((Rs ∘ p₂) ∘co (ab ∘ p₂)))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (af' ∘ p₂) ∘co ((SAM-full ∘co (Rs ∘ p₂)) ∘co (ab ∘ p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong cast-step ≈-refl) ⟩
+        (af' ∘ p₂) ∘co (((Rs' ∘ p₂) ∘co SAM-1) ∘co (ab ∘ p₂))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (af' ∘ p₂) ∘co ((Rs' ∘ p₂) ∘co (SAM-1 ∘co (ab ∘ p₂)))
+      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl ab-step) ⟩
+        (af' ∘ p₂) ∘co ((Rs' ∘ p₂) ∘co ((ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P)))
+      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
+        (af' ∘ p₂) ∘co (((Rs' ∘ p₂) ∘co (ab' ∘ p₂)) ∘co (SF-P' ∘co SAM-P))
+      ≈˘⟨ CoK.assoc _ _ _ ⟩
+        ((af' ∘ p₂) ∘co ((Rs' ∘ p₂) ∘co (ab' ∘ p₂))) ∘co (SF-P' ∘co SAM-P)
+      ≈˘⟨ CoK.∘-cong (CoK.∘-cong ≈-refl (lift-comp Rs' ab')) ≈-refl ⟩
+        ((af' ∘ p₂) ∘co ((Rs' ∘ ab') ∘ p₂)) ∘co (SF-P' ∘co SAM-P)
+      ≈˘⟨ CoK.∘-cong (lift-comp af' (Rs' ∘ ab')) ≈-refl ⟩
+        ((af' ∘ (Rs' ∘ ab')) ∘ p₂) ∘co (SF-P' ∘co SAM-P)
+      ≈˘⟨ CoK.∘-cong (∘-cong (assoc _ _ _) ≈-refl) ≈-refl ⟩
+        (((af' ∘ Rs') ∘ ab') ∘ p₂) ∘co (SF-P' ∘co SAM-P)
+      ∎
+      where open ≈-Reasoning isEquiv
 
 -- Syntactic substitution is functor application.
 sub-as-apply-fwd : (τ : type 1) (τ' : type 0) →
