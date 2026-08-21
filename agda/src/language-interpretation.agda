@@ -2189,6 +2189,52 @@ sub-as-apply-fwd-bwd τ τ' = begin
     Rs = as-poly-map τ (λ i → ≡-to-⇒ (push-pw τ' i)) δ∅
     T⁻ = as-poly-map τ (λ i → ≡-to-⇒ (sym (push-pw τ' i))) δ∅
 
+sub-as-apply-fwd-μ-body : ∀ (τ' : type 2) (ρ : type 0) (X : obj) →
+                          fobj μ-obj (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ())) (extend δ∅ X) ⇒
+                          fobj μ-obj (as-poly {0} {2} τ' (λ ())) (extend (extend δ∅ (⟦ ρ ⟧ty (λ ()))) X)
+sub-as-apply-fwd-μ-body τ' ρ X =
+  apply-fwd-body τ' (λ ()) (extend δ∅ (⟦ ρ ⟧ty (λ ()))) X
+    ∘ as-poly-map {1} {1} τ' (λ i → ≡-to-⇒ (push-pw ρ i)) (extend δ∅ X)
+    ∘ subst-fwd-body (push ρ) τ' (λ ()) X
+
+sub-as-apply-fwd-μ : ∀ (τ' : type 2) (ρ : type 0) →
+                     sub-as-apply-fwd (μ τ') ρ
+                       ≈ μ-map (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ())) δ∅
+                           (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))
+                           (sub-as-apply-fwd-μ-body τ' ρ (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))))
+sub-as-apply-fwd-μ τ' ρ = begin
+    sub-as-apply-fwd (μ τ') ρ
+  ≈⟨ assoc _ _ _ ⟩
+    apply-fwd {0} {1} (μ τ') (λ ()) δr ∘ (as-poly-map {1} {0} (μ τ') cs δ∅ ∘ subst-fwd (push ρ) (μ τ') (λ ()))
+  ≈⟨ ∘-cong ≈-refl (μ-map-comp P₁ δ∅ P₂ δ∅ P₃ δ∅ (u₁ (μ-obj P₂ δ∅)) (u₂ M₃) (u₁ M₃)
+       (subst-fwd-body-carrier (push ρ) τ' (λ ()) (as-poly-map {1} {0} (μ τ') cs δ∅))) ⟩
+    apply-fwd {0} {1} (μ τ') (λ ()) δr ∘ μ-map P₁ δ∅ P₃ δ∅ (u₂ M₃ ∘ u₁ M₃)
+  ≈⟨ μ-map-comp P₁ δ∅ P₃ δ∅ Q δr (u₂ M₃ ∘ u₁ M₃) (apply-fwd-body τ' (λ ()) δr Mq) (u₂ Mq ∘ u₁ Mq) sq ⟩
+    μ-map P₁ δ∅ Q δr (apply-fwd-body τ' (λ ()) δr Mq ∘ (u₂ Mq ∘ u₁ Mq))
+  ≈˘⟨ μ-map-cong P₁ δ∅ Q δr (assoc _ _ _) ⟩
+    μ-map P₁ δ∅ Q δr (sub-as-apply-fwd-μ-body τ' ρ Mq)
+  ∎
+  where
+  open ≈-Reasoning isEquiv
+  δr = extend δ∅ (⟦ ρ ⟧ty (λ ()))
+  cs = λ i → ≡-to-⇒ (push-pw ρ i)
+  P₁ = as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ())
+  P₂ = as-poly {1} {1} τ' (λ i → ⟦ push ρ i ⟧ty (λ ()))
+  P₃ = as-poly {1} {1} τ' (λ i → concat δr (λ ()) i)
+  Q  = as-poly {0} {2} τ' (λ ())
+  M₃ = μ-obj P₃ δ∅
+  Mq = μ-obj Q δr
+  u₁ = subst-fwd-body (push ρ) τ' (λ ())
+  u₂ = λ X → as-poly-map {1} {1} τ' cs (extend δ∅ X)
+  af = apply-fwd {0} {1} (μ τ') (λ ()) δr
+  E  = extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) af
+  sq : (fmor P₃ E ∘ (u₂ M₃ ∘ u₁ M₃)) ≈ ((u₂ Mq ∘ u₁ Mq) ∘ fmor P₁ E)
+  sq = ≈-trans (≈-sym (assoc _ _ _))
+       (≈-trans (∘-cong (as-poly-map-natural {1} {1} τ' cs E) ≈-refl)
+       (≈-trans (assoc _ _ _)
+       (≈-trans (∘-cong ≈-refl (subst-fwd-body-carrier (push ρ) τ' (λ ()) af))
+                (≈-sym (assoc _ _ _)))))
+
 abstract
   roll-mor : (τ : type 1) → ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ ⟦ μ τ ⟧ty (λ ())
   roll-mor τ = inMap (as-poly τ (λ ())) δ∅ ∘ sub-as-apply-fwd τ (μ τ)
