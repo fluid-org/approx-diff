@@ -521,6 +521,59 @@ strong-as-poly-map-p₂ {Δ} {n} (μ τ) {Γ'} {δ} δ₀ =
             (∘-cong ≈-refl (strong-as-poly-map-p₂ {n = suc n} τ _)))
           (⦅⦆-reflect (as-poly {Δ} {suc n} τ δ) δ₀)
 
+strong-as-poly-map-weaken : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj}
+                            (gs : ∀ i → δ i ⇒ δ' i) (δ₀ : Fin n → obj) →
+                            strong-as-poly-map τ {Γ'} (λ i → gs i ∘ p₂) δ₀ ≈ (as-poly-map τ gs δ₀ ∘ p₂)
+strong-as-poly-map-weaken {n = n} (var i) gs δ₀ with splitAt n i
+... | inj₁ j = ≈-sym id-left
+... | inj₂ k = ≈-refl
+strong-as-poly-map-weaken unit      gs δ₀ = ≈-sym id-left
+strong-as-poly-map-weaken (base s)  gs δ₀ = ≈-sym id-left
+strong-as-poly-map-weaken (σ [→] τ) gs δ₀ = ≈-sym id-left
+strong-as-poly-map-weaken (σ [+] τ) gs δ₀ =
+  ≈-trans (scopair-cong
+    (∘-cong ≈-refl (≈-trans (strong-Lf-map-cong (strong-as-poly-map-weaken σ gs δ₀))
+                     (≈-trans (≈-sym (strong-Lf-map-post a₁ p₂)) (∘-cong ≈-refl strong-Lf-map-p₂))))
+    (∘-cong ≈-refl (≈-trans (strong-Lf-map-cong (strong-as-poly-map-weaken τ gs δ₀))
+                     (≈-trans (≈-sym (strong-Lf-map-post a₂ p₂)) (∘-cong ≈-refl strong-Lf-map-p₂)))))
+  (≈-trans (≈-sym (scopair-cong step₁ step₂))
+           (scopair-ext h))
+  where
+  a₁ = as-poly-map σ gs δ₀
+  a₂ = as-poly-map τ gs δ₀
+  h  = [+]-map a₁ a₂ ∘ p₂
+  step₁ : (h ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩) ≈ (in₁ ∘ (Lf-map a₁ ∘ p₂))
+  step₁ = ≈-trans (assoc _ _ _)
+          (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (copair-in₁ _ _) ≈-refl) (assoc _ _ _))))
+  step₂ : (h ∘ ⟨ p₁ , in₂ ∘ p₂ ⟩) ≈ (in₂ ∘ (Lf-map a₂ ∘ p₂))
+  step₂ = ≈-trans (assoc _ _ _)
+          (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
+          (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (copair-in₂ _ _) ≈-refl) (assoc _ _ _))))
+strong-as-poly-map-weaken (σ [×] τ) gs δ₀ =
+  ≈-trans (strong-Lf-map-cong
+    (≈-trans (strong-prod-m-cong (strong-as-poly-map-weaken σ gs δ₀) (strong-as-poly-map-weaken τ gs δ₀))
+             pm-weaken))
+  (≈-trans (≈-sym (strong-Lf-map-post (prod-m a₁ a₂) p₂)) (∘-cong ≈-refl strong-Lf-map-p₂))
+  where
+  a₁ = as-poly-map σ gs δ₀
+  a₂ = as-poly-map τ gs δ₀
+  pm-weaken : strong-prod-m (a₁ ∘ p₂) (a₂ ∘ p₂) ≈ (prod-m a₁ a₂ ∘ p₂)
+  pm-weaken =
+    ≈-trans (pair-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))
+                       (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
+    (≈-trans (pair-cong (≈-sym (assoc _ _ _)) (≈-sym (assoc _ _ _)))
+             (≈-sym (pair-natural _ _ _)))
+strong-as-poly-map-weaken {Δ} {n} (μ τ) {Γ'} {δ} {δ'} gs δ₀ =
+  ≈-trans (⦅⦆-cong (as-poly {Δ} {suc n} τ δ) δ₀
+            (≈-trans (∘-cong ≈-refl (strong-as-poly-map-weaken {n = suc n} τ gs
+                                       (extend δ₀ (μ-obj (as-poly {Δ} {suc n} τ δ') δ₀))))
+                     (≈-sym (assoc _ _ _))))
+          (μ-map-weaken (as-poly {Δ} {suc n} τ δ) δ₀ (as-poly {Δ} {suc n} τ δ') δ₀
+            (as-poly-map {n = suc n} τ gs (extend δ₀ (μ-obj (as-poly {Δ} {suc n} τ δ') δ₀))))
+
 preserves-as-poly-var-map : ∀ {Δ n} {δ δ' : Fin Δ → obj} {gs : ∀ i → δ i ⇒ δ' i}
   {δc : ∀ i → Section (δ i)} {δ'c : ∀ i → Section (δ' i)} →
   (∀ i → preserves-section (gs i) (δc i) (δ'c i)) →
