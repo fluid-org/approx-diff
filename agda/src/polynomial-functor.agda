@@ -75,6 +75,23 @@ module Interp
   strong-Lmap-p₂ : ∀ {Γ X} → strong-Lmap (p₂ {Γ} {X}) ≈ p₂
   strong-Lmap-p₂ = strengthᵣ-p₂
 
+  strong-Lmap-reindex : ∀ {Γ Γ' X Y} (u : Γ ⇒ Γ') (f : prod Γ' X ⇒ Y) →
+                        (strong-Lmap f ∘ prod-m u (id _)) ≈ strong-Lmap (f ∘ prod-m u (id _))
+  strong-Lmap-reindex u f =
+    begin
+      (Lmap f ∘ strengthᵣ) ∘ prod-m u (id _)
+    ≈⟨ assoc _ _ _ ⟩
+      Lmap f ∘ (strengthᵣ ∘ prod-m u (id _))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl Lmap-id)) ⟩
+      Lmap f ∘ (strengthᵣ ∘ prod-m u (Lmap (id _)))
+    ≈˘⟨ ∘-cong ≈-refl (strengthᵣ-natural u (id _)) ⟩
+      Lmap f ∘ (Lmap (prod-m u (id _)) ∘ strengthᵣ)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (Lmap f ∘ Lmap (prod-m u (id _))) ∘ strengthᵣ
+    ≈˘⟨ ∘-cong (Lmap-comp _ _) ≈-refl ⟩
+      Lmap (f ∘ prod-m u (id _)) ∘ strengthᵣ
+    ∎ where open ≈-Reasoning isEquiv
+
   fobj : (μ-obj : ∀ {k} → Poly 𝒞 (suc k) → (Fin k → obj) → obj) → ∀ {n} → Poly 𝒞 n → (Fin n → obj) → obj
   fobj μ-obj (const A) δ = A
   fobj μ-obj (var i)   δ = δ i
@@ -386,6 +403,90 @@ module Interp
         es₀ Fin.zero    = ≈-refl
         es₀ (Fin.suc i) = ≈-refl
 
+    -- Reindexing along a context map commutes with the strong action and the fold.
+    mutual
+      strong-fmor-reindex : ∀ {k} {Γ Γ' : obj} (P : Poly 𝒞 k) {δ δ' : Fin k → obj}
+                            (u : Γ ⇒ Γ') (fs : ∀ i → prod Γ' (δ i) ⇒ δ' i) →
+                            (strong-fmor P fs ∘ prod-m u (id _)) ≈ strong-fmor P (λ i → fs i ∘ prod-m u (id _))
+      strong-fmor-reindex (const A) u fs = ≈-trans (pair-p₂ _ _) id-left
+      strong-fmor-reindex (var i)   u fs = ≈-refl
+      strong-fmor-reindex (P + Q)   u fs =
+        ≈-trans (copair-reindex u _ _)
+                (copair-cong
+                  (≈-trans (assoc _ _ _)
+                     (∘-cong ≈-refl (≈-trans (strong-Lmap-reindex u _)
+                                             (strong-Lmap-cong (strong-fmor-reindex P u fs)))))
+                  (≈-trans (assoc _ _ _)
+                     (∘-cong ≈-refl (≈-trans (strong-Lmap-reindex u _)
+                                             (strong-Lmap-cong (strong-fmor-reindex Q u fs))))))
+      strong-fmor-reindex (P × Q)   u fs =
+        ≈-trans (strong-Lmap-reindex u _)
+                (strong-Lmap-cong
+                  (≈-trans (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym prod-m-id)))
+                    (≈-trans (strong-prod-m-pre _ _ u (id _) (id _))
+                      (strong-prod-m-cong (strong-fmor-reindex P u fs) (strong-fmor-reindex Q u fs)))))
+      strong-fmor-reindex (μ P)     u fs = strong-μ-fmor-reindex P u fs
+
+      strong-μ-fmor-reindex : ∀ {k} {Γ Γ' : obj} (P : Poly 𝒞 (suc k)) {δ δ' : Fin k → obj}
+                              (u : Γ ⇒ Γ') (fs : ∀ i → prod Γ' (δ i) ⇒ δ' i) →
+                              (strong-μ-fmor P fs ∘ prod-m u (id _)) ≈ strong-μ-fmor P (λ i → fs i ∘ prod-m u (id _))
+      strong-μ-fmor-reindex P {δ} {δ'} u fs =
+        ≈-trans (⦅⦆-reindex u (inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂)))
+                (⦅⦆-cong P δ
+                  (≈-trans (assoc _ _ _)
+                    (∘-cong ≈-refl (≈-trans (strong-fmor-reindex P u (strong-extend-mor fs p₂))
+                                            (strong-fmor-cong P es)))))
+        where
+        es : ∀ i → (strong-extend-mor fs p₂ i ∘ prod-m u (id _))
+                     ≈ strong-extend-mor (λ j → fs j ∘ prod-m u (id _)) p₂ i
+        es Fin.zero    = ≈-trans (pair-p₂ _ _) id-left
+        es (Fin.suc i) = ≈-refl
+
+      ⦅⦆-reindex : ∀ {k} {Γ Γ' A : obj} {P : Poly 𝒞 (suc k)} {δ : Fin k → obj} (u : Γ ⇒ Γ')
+                   (alg : prod Γ' (fobj μ-obj P (extend δ A)) ⇒ A) →
+                   (⦅ alg ⦆ ∘ prod-m u (id _)) ≈ ⦅ alg ∘ prod-m u (id _) ⦆
+      ⦅⦆-reindex {Γ = Γ} {Γ'} {A} {P = P} {δ} u alg =
+        ⦅⦆-η {P = P} {δ = δ} (alg ∘ prod-m u (id _)) (⦅ alg ⦆ ∘ prod-m u (id _)) premise
+        where
+        SF : prod Γ' (fobj μ-obj P (extend δ (μ-obj P δ))) ⇒ fobj μ-obj P (extend δ A)
+        SF = strong-fmor P (strong-extend-mor (λ i → p₂) ⦅ alg ⦆)
+
+        SF' : prod Γ (fobj μ-obj P (extend δ (μ-obj P δ))) ⇒ fobj μ-obj P (extend δ A)
+        SF' = strong-fmor P (strong-extend-mor (λ i → p₂) (⦅ alg ⦆ ∘ prod-m u (id _)))
+
+        es : ∀ i → (strong-extend-mor (λ j → p₂) ⦅ alg ⦆ i ∘ prod-m u (id _))
+                     ≈ strong-extend-mor (λ j → p₂) (⦅ alg ⦆ ∘ prod-m u (id _)) i
+        es Fin.zero    = ≈-refl
+        es (Fin.suc i) = ≈-trans (pair-p₂ _ _) id-left
+
+        step : (pair p₁ SF ∘ prod-m u (id _)) ≈ (prod-m u (id _) ∘ pair p₁ SF')
+        step =
+          ≈-trans (pair-natural _ _ _)
+          (≈-trans (pair-cong (pair-p₁ _ _)
+                     (≈-trans (strong-fmor-reindex P u (strong-extend-mor (λ i → p₂) ⦅ alg ⦆))
+                              (strong-fmor-cong P es)))
+            (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong ≈-refl id-left))))
+
+        premise : ((⦅ alg ⦆ ∘ prod-m u (id _)) ∘co (inMap P δ ∘ p₂))
+                    ≈ ((alg ∘ prod-m u (id _)) ∘co SF')
+        premise = begin
+            (⦅ alg ⦆ ∘ prod-m u (id _)) ∘ pair p₁ (inMap P δ ∘ p₂)
+          ≈⟨ assoc _ _ _ ⟩
+            ⦅ alg ⦆ ∘ (prod-m u (id _) ∘ pair p₁ (inMap P δ ∘ p₂))
+          ≈⟨ ∘-cong ≈-refl (prodm-pair-interchange u (inMap P δ)) ⟩
+            ⦅ alg ⦆ ∘ (pair p₁ (inMap P δ ∘ p₂) ∘ prod-m u (id _))
+          ≈˘⟨ assoc _ _ _ ⟩
+            (⦅ alg ⦆ ∘co (inMap P δ ∘ p₂)) ∘ prod-m u (id _)
+          ≈⟨ ∘-cong (⦅⦆-β {P = P} {δ = δ} alg) ≈-refl ⟩
+            (alg ∘co SF) ∘ prod-m u (id _)
+          ≈⟨ assoc _ _ _ ⟩
+            alg ∘ (pair p₁ SF ∘ prod-m u (id _))
+          ≈⟨ ∘-cong ≈-refl step ⟩
+            alg ∘ (prod-m u (id _) ∘ pair p₁ SF')
+          ≈˘⟨ assoc _ _ _ ⟩
+            (alg ∘ prod-m u (id _)) ∘ pair p₁ SF'
+          ∎ where open ≈-Reasoning isEquiv
+
     -- With a terminal object: the functorial action is a functor, and the induced maps between
     -- μ-objects respect the unfolding, send the identity to the identity, compute on the algebra
     -- map, and compose when the first unfolding commutes with the second map.
@@ -614,6 +715,45 @@ module Interp
                                              (∘-cong ≈-refl (≈-trans (sect-p₂ _)
                                                                      (strong-fmor-cong P (λ { Fin.zero → id-left ; (Fin.suc i) → ≈-refl })))))))
                ≈-refl
+
+      -- Weakening: the strong action and the fold at weakened maps are the weakened plain action and induced map.
+      private
+        lift-p₂ : ∀ {Γ X} → (pair to-terminal (id _) ∘ p₂ {Γ} {X}) ≈ prod-m to-terminal (id _)
+        lift-p₂ = ≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) ≈-refl)
+
+      strong-fmor-weaken : ∀ {k} {Γ : obj} (P : Poly 𝒞 k) {δ δ' : Fin k → obj} (gs : ∀ i → δ i ⇒ δ' i) →
+                           strong-fmor {Γ = Γ} P (λ i → gs i ∘ p₂) ≈ (fmor P gs ∘ p₂)
+      strong-fmor-weaken P gs =
+        ≈-sym (begin
+            (strong-fmor P (λ i → gs i ∘ p₂) ∘ pair to-terminal (id _)) ∘ p₂
+          ≈⟨ assoc _ _ _ ⟩
+            strong-fmor P (λ i → gs i ∘ p₂) ∘ (pair to-terminal (id _) ∘ p₂)
+          ≈⟨ ∘-cong ≈-refl lift-p₂ ⟩
+            strong-fmor P (λ i → gs i ∘ p₂) ∘ prod-m to-terminal (id _)
+          ≈⟨ strong-fmor-reindex P to-terminal (λ i → gs i ∘ p₂) ⟩
+            strong-fmor P (λ i → (gs i ∘ p₂) ∘ prod-m to-terminal (id _))
+          ≈⟨ strong-fmor-cong P (λ i → ≈-trans (assoc _ _ _)
+                                         (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left))) ⟩
+            strong-fmor P (λ i → gs i ∘ p₂)
+          ∎)
+        where open ≈-Reasoning isEquiv
+
+      μ-map-weaken : ∀ {j k} {Γ : obj} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) (Q : Poly 𝒞 (suc k)) (δ' : Fin k → obj)
+                     (u : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
+                     ⦅_⦆ {Γ = Γ} {P = P} {δ = δ} ((inMap Q δ' ∘ u) ∘ p₂) ≈ (μ-map P δ Q δ' u ∘ p₂)
+      μ-map-weaken P δ Q δ' u =
+        ≈-sym (begin
+            (⦅_⦆ {P = P} {δ = δ} ((inMap Q δ' ∘ u) ∘ p₂) ∘ pair to-terminal (id _)) ∘ p₂
+          ≈⟨ assoc _ _ _ ⟩
+            ⦅_⦆ {P = P} {δ = δ} ((inMap Q δ' ∘ u) ∘ p₂) ∘ (pair to-terminal (id _) ∘ p₂)
+          ≈⟨ ∘-cong ≈-refl lift-p₂ ⟩
+            ⦅_⦆ {P = P} {δ = δ} ((inMap Q δ' ∘ u) ∘ p₂) ∘ prod-m to-terminal (id _)
+          ≈⟨ ⦅⦆-reindex to-terminal _ ⟩
+            ⦅ ((inMap Q δ' ∘ u) ∘ p₂) ∘ prod-m to-terminal (id _) ⦆
+          ≈⟨ ⦅⦆-cong P δ (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left))) ⟩
+            ⦅ (inMap Q δ' ∘ u) ∘ p₂ ⦆
+          ∎)
+        where open ≈-Reasoning isEquiv
 
 -- Action of a functor on polynomials: apply the functor at the const leaves.
 Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} →
