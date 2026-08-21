@@ -49,7 +49,7 @@ module language-interpretation
   where
 
 open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF-natural;
-              strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-injF;
+              strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-p₂; strong-Lf-map-injF;
               extend; extend-mor; fobj; HasMu; hasMu; HasMuLaws; hasMuLaws; _∘co_;
               Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
               poly-section; extend-section; preserves-section; preserves-section-id;
@@ -59,7 +59,7 @@ open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF-n
 open R.WithTerminal T
   using (fmor; μ-map;
          fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
-         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp; preserves-μ-map)
+         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp; strong-fmor-weaken; μ-map-weaken; preserves-μ-map)
 open Category R.cat
 open HasTerminal (R.terminal T) renaming (witness to 𝟙)
 open HasProducts R.products renaming (pair to ⟨_,_⟩)
@@ -68,13 +68,13 @@ open HasCoproducts R.coproducts using (coprod; coprod-m; coprod-m-cong; coprod-m
                                        copair-cong; copair-in₁; copair-in₂; copair-ext)
 open HasStrongCoproducts R.strongCoproducts
   using () renaming (copair to scopair; copair-cong to scopair-cong;
-                     copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂)
+                     copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂; copair-ext0 to scopair-ext0)
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
 open HasMu hasMu
 open HasMuLaws hasMuLaws
-  using (⦅⦆-cong; ⦅⦆-β; fusion; ∘co-push; copair-comp;
-         strong-fmor-comp; strong-fmor-cong; strong-extend-mor-comp)
+  using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
+         strong-fmor-comp; strong-fmor-cong; strong-fmor-p₂; strong-extend-mor-comp)
 
 private
   module CoK {Γ' : Obj} = Category (coKleisli-prod R.products Γ')
@@ -496,6 +496,27 @@ strong-as-poly-map-comp {Δ} {n} (μ τ) {Γ'} {δ} {δ'} {δ''} hs' hs δ₀ =
     where open ≈-Reasoning isEquiv
 
 
+strong-as-poly-map-p₂ : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ : Fin Δ → obj} (δ₀ : Fin n → obj) →
+                        strong-as-poly-map τ {Γ'} {δ} {δ} (λ i → p₂) δ₀ ≈ p₂
+strong-as-poly-map-p₂ {n = n} (var i) δ₀ with splitAt n i
+... | inj₁ j = ≈-refl
+... | inj₂ k = ≈-refl
+strong-as-poly-map-p₂ unit      δ₀ = ≈-refl
+strong-as-poly-map-p₂ (base s)  δ₀ = ≈-refl
+strong-as-poly-map-p₂ (σ [+] τ) δ₀ =
+  ≈-trans (scopair-cong (∘-cong ≈-refl (≈-trans (strong-Lf-map-cong (strong-as-poly-map-p₂ σ δ₀)) strong-Lf-map-p₂))
+                        (∘-cong ≈-refl (≈-trans (strong-Lf-map-cong (strong-as-poly-map-p₂ τ δ₀)) strong-Lf-map-p₂)))
+          scopair-ext0
+strong-as-poly-map-p₂ (σ [×] τ) δ₀ =
+  ≈-trans (strong-Lf-map-cong (≈-trans (strong-prod-m-cong (strong-as-poly-map-p₂ σ δ₀) (strong-as-poly-map-p₂ τ δ₀))
+                                 (≈-trans (pair-cong (pair-p₂ _ _) (pair-p₂ _ _)) (pair-ext _))))
+          strong-Lf-map-p₂
+strong-as-poly-map-p₂ (σ [→] τ) δ₀ = ≈-refl
+strong-as-poly-map-p₂ {Δ} {n} (μ τ) {Γ'} {δ} δ₀ =
+  ≈-trans (⦅⦆-cong (as-poly {Δ} {suc n} τ δ) δ₀
+            (∘-cong ≈-refl (strong-as-poly-map-p₂ {n = suc n} τ _)))
+          (⦅⦆-reflect (as-poly {Δ} {suc n} τ δ) δ₀)
+
 preserves-as-poly-var-map : ∀ {Δ n} {δ δ' : Fin Δ → obj} {gs : ∀ i → δ i ⇒ δ' i}
   {δc : ∀ i → Section (δ i)} {δ'c : ∀ i → Section (δ' i)} →
   (∀ i → preserves-section (gs i) (δc i) (δ'c i)) →
@@ -787,6 +808,31 @@ concat-mor-id {n} i with splitAt n i
 concat-mor-unit : ∀ {n Δ} {δ₀ δ₀' : Fin n → obj} {δ δ' : Fin Δ → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) (gs : ∀ i → δ i ⇒ δ' i)
                   (i : Fin (n + Δ)) → concat-mor (λ j → id (δ₀' j) ∘ fs j) (λ j → gs j ∘ id (δ j)) i ≈ concat-mor fs gs i
 concat-mor-unit {n} fs gs i = concat-mor-cong {n = n} (λ _ → id-left) (λ _ → id-right) i
+
+strong-concat-mor-split : ∀ {n Δ} {Γ' : Obj} {δ₀ δ₀' : Fin n → obj} {δ δ' : Fin Δ → obj} →
+                          (∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i) → (∀ i → prod Γ' (δ i) ⇒ δ' i) →
+                          (s : Fin n ⊎ Fin Δ) → prod Γ' ([ δ₀ , δ ] s) ⇒ [ δ₀' , δ' ] s
+strong-concat-mor-split fs gs (inj₁ j) = fs j
+strong-concat-mor-split fs gs (inj₂ k) = gs k
+
+strong-concat-mor : ∀ {n Δ} {Γ' : Obj} {δ₀ δ₀' : Fin n → obj} {δ δ' : Fin Δ → obj} →
+                    (∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i) → (∀ i → prod Γ' (δ i) ⇒ δ' i) →
+                    ∀ i → prod Γ' (concat δ₀ δ i) ⇒ concat δ₀' δ' i
+strong-concat-mor {n} fs gs i = strong-concat-mor-split fs gs (splitAt n i)
+
+strong-concat-mor-cong : ∀ {n Δ} {Γ' : Obj} {δ₀ δ₀' : Fin n → obj} {δ δ' : Fin Δ → obj}
+                         {fs fs' : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i} {gs gs' : ∀ i → prod Γ' (δ i) ⇒ δ' i} →
+                         (∀ i → fs i ≈ fs' i) → (∀ i → gs i ≈ gs' i) →
+                         ∀ i → strong-concat-mor fs gs i ≈ strong-concat-mor fs' gs' i
+strong-concat-mor-cong {n} es es' i with splitAt n i
+... | inj₁ j = es j
+... | inj₂ k = es' k
+
+strong-concat-mor-p₂ : ∀ {n Δ} {Γ' : Obj} {δ₀ : Fin n → obj} {δ : Fin Δ → obj} (i : Fin (n + Δ)) →
+                       strong-concat-mor {n} {Δ} {Γ'} {δ₀} {δ₀} {δ} {δ} (λ j → p₂) (λ j → p₂) i ≈ p₂
+strong-concat-mor-p₂ {n} i with splitAt n i
+... | inj₁ j = ≈-refl
+... | inj₂ k = ≈-refl
 
 extend-mor-id : ∀ {k} {δ : Fin k → obj} {X : obj} (i : Fin (suc k)) → extend-mor (λ j → id (δ j)) (id X) i ≈ id _
 extend-mor-id Fin.zero    = ≈-refl
