@@ -40,41 +40,44 @@ module language-type-interpretation
   (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF-natural;
-              strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-p₂;
-              strong-Lf-map-pre; strong-Lf-map-post; strong-Lf-map-injF;
-              extend; extend-mor; fobj; HasMu; hasMu; HasMuLaws; hasMuLaws; _∘co_;
-              Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
-              poly-section; extend-section; preserves-section; preserves-section-id;
-              preserves-section-∘; preserves-section-resp; preserves-section-inv;
-              preserves-coprod-m; preserves-prod-m; preserves-Lf-map; preserves-scale;
-              preserves-inMap; preserves-outMor)
-open R.WithTerminal T
+-- The lifting again, bound here rather than in the telescope: names opened through a module the
+-- telescope binds by let do not re-export.
+module Fam = fam-mu-lifting os es CM BP 𝟙c
+
+open Fam using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF-natural;
+                strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-p₂;
+                strong-Lf-map-pre; strong-Lf-map-post; strong-Lf-map-injF;
+                extend; extend-mor; fobj; HasMu; hasMu; HasMuLaws; hasMuLaws; _∘co_;
+                Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
+                poly-section; extend-section; preserves-section; preserves-section-id;
+                preserves-section-∘; preserves-section-resp; preserves-section-inv;
+                preserves-coprod-m; preserves-prod-m; preserves-Lf-map; preserves-scale;
+                preserves-inMap; preserves-outMor) public
+open Fam.WithTerminal T
   using (fmor; μ-map;
          fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
-         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp; strong-fmor-weaken; μ-map-weaken; preserves-μ-map)
-open Category R.cat
-open HasTerminal (R.terminal T) renaming (witness to 𝟙)
-open HasProducts R.products renaming (pair to ⟨_,_⟩)
+         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp; strong-fmor-weaken; μ-map-weaken; preserves-μ-map) public
+open Category Fam.cat public
+open HasTerminal (Fam.terminal T) renaming (witness to 𝟙) public
+open HasProducts Fam.products renaming (pair to ⟨_,_⟩) public
 
-open HasCoproducts R.coproducts using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
-                                       copair-cong; copair-in₁; copair-in₂; copair-ext)
-open HasStrongCoproducts R.strongCoproducts
+open HasCoproducts Fam.coproducts using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
+                                         copair-cong; copair-in₁; copair-in₂; copair-ext) public
+open HasStrongCoproducts Fam.strongCoproducts
   using () renaming (copair to scopair; copair-cong to scopair-cong;
                      copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂;
-                     copair-ext to scopair-ext; copair-ext0 to scopair-ext0)
-open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
-open language-syntax Sig
+                     copair-ext to scopair-ext; copair-ext0 to scopair-ext0) public
+open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_) public
+open language-syntax Sig public
 import language-operational.type-substitution
-open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; ren-ren; sub-ren-comm)
-open HasMu hasMu
+open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; ren-ren; sub-ren-comm) public
+open HasMu hasMu public
 open HasMuLaws hasMuLaws
   using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
-         strong-fmor-comp; strong-fmor-cong; strong-fmor-p₂; strong-extend-mor-comp)
+         strong-fmor-comp; strong-fmor-cong; strong-fmor-p₂; strong-extend-mor-comp) public
 
-private
-  module CoK {Γ' : Obj} = Category (coKleisli-prod R.products Γ')
-open Model Int
+module CoK {Γ' : Obj} = Category (coKleisli-prod Fam.products Γ')
+open Model Int public
 
 -- A type is interpreted as its polynomial, with the variables instantiated at the environment, applied
 -- at the empty environment; under a μ, the bound variables stay free.

@@ -48,42 +48,6 @@ module language-interpretation
   (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))
   where
 
-open R using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF-natural;
-              strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-p₂;
-              strong-Lf-map-pre; strong-Lf-map-post; strong-Lf-map-injF;
-              extend; extend-mor; fobj; HasMu; hasMu; HasMuLaws; hasMuLaws; _∘co_;
-              Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
-              poly-section; extend-section; preserves-section; preserves-section-id;
-              preserves-section-∘; preserves-section-resp; preserves-section-inv;
-              preserves-coprod-m; preserves-prod-m; preserves-Lf-map; preserves-scale;
-              preserves-inMap; preserves-outMor)
-open R.WithTerminal T
-  using (fmor; μ-map;
-         fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;
-         μ-map-cong; μ-map-id; μ-map-in; μ-map-comp; strong-fmor-weaken; μ-map-weaken; preserves-μ-map)
-open Category R.cat
-open HasTerminal (R.terminal T) renaming (witness to 𝟙)
-open HasProducts R.products renaming (pair to ⟨_,_⟩)
-
-open HasCoproducts R.coproducts using (coprod; coprod-m; coprod-m-cong; coprod-m-comp; coprod-m-id; in₁; in₂;
-                                       copair-cong; copair-in₁; copair-in₂; copair-ext)
-open HasStrongCoproducts R.strongCoproducts
-  using () renaming (copair to scopair; copair-cong to scopair-cong;
-                     copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂;
-                     copair-ext to scopair-ext; copair-ext0 to scopair-ext0)
-open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
-open language-syntax Sig
-import language-operational.type-substitution
-open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; ren-ren; sub-ren-comm)
-open HasMu hasMu
-open HasMuLaws hasMuLaws
-  using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
-         strong-fmor-comp; strong-fmor-cong; strong-fmor-p₂; strong-extend-mor-comp)
-
-private
-  module CoK {Γ' : Obj} = Category (coKleisli-prod R.products Γ')
-open Model Int
-
 open import language-type-interpretation Sig os es T CM BP 𝟙c 𝒞E δ∅ 𝟙ty unit-pt Int ctrl-w
   (λ {X} {Y} → exp-section {X} {Y}) 𝟙ty-section sort-section public
 
