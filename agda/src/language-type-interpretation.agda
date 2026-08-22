@@ -70,7 +70,7 @@ open HasStrongCoproducts Fam.strongCoproducts
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_) public
 open language-syntax Sig public
 import language-operational.type-substitution
-open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; ren-ren; sub-ren; ren-sub; sub-sub; sub-ren-comm) public
+open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; unfold₁-inst; ren-ren; sub-ren; ren-sub; sub-sub; sub-id; sub-ren-comm) public
 open HasMu hasMu public
 open HasMuLaws hasMuLaws
   using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
@@ -2321,10 +2321,13 @@ mutual
       body' = subst-bwd-body σ τ δ X'
 
 
-private
-  ≡-to-⇒-irr : ∀ {A B : obj} (e e' : A ≡ B) → ≡-to-⇒ e ≈ ≡-to-⇒ e'
-  ≡-to-⇒-irr refl refl = ≈-refl
+≡-to-⇒-irr : ∀ {A B : obj} (e e' : A ≡ B) → ≡-to-⇒ e ≈ ≡-to-⇒ e'
+≡-to-⇒-irr refl refl = ≈-refl
 
+≡-to-⇒-comp : ∀ {A B C : obj} (e₁ : A ≡ B) (e₂ : B ≡ C) → (≡-to-⇒ e₂ ∘ ≡-to-⇒ e₁) ≈ ≡-to-⇒ (trans e₁ e₂)
+≡-to-⇒-comp refl refl = id-left
+
+private
   ty-square : ∀ {Δ} (F G : type Δ → obj) (h : ∀ υ → F υ ⇒ G υ) {υ υ' : type Δ} (e : υ ≡ υ') →
               (h υ' ∘ ≡-to-⇒ (cong F e)) ≈ (≡-to-⇒ (cong G e) ∘ h υ)
   ty-square F G h refl = ≈-trans id-right (≈-sym id-left)
@@ -2544,9 +2547,6 @@ apply-bwd-cong {Δ} {n} τ {δ} {δ'} h δ₀ E = begin
 
 
 private
-  ≡-to-⇒-comp : ∀ {A B C : obj} (e₁ : A ≡ B) (e₂ : B ≡ C) → (≡-to-⇒ e₂ ∘ ≡-to-⇒ e₁) ≈ ≡-to-⇒ (trans e₁ e₂)
-  ≡-to-⇒-comp refl refl = id-left
-
   cast-trans : ∀ {n} {P Q R' : Poly R.cat n} (e₁ : P ≡ Q) (e₂ : Q ≡ R') (δ₀ : Fin n → obj) →
                cast (trans e₁ e₂) δ₀ ≈ (cast e₂ δ₀ ∘ cast e₁ δ₀)
   cast-trans refl refl δ₀ = ≈-sym id-left
