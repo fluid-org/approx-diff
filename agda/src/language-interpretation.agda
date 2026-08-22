@@ -74,7 +74,7 @@ open HasStrongCoproducts R.strongCoproducts
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_)
 open language-syntax Sig
 import language-operational.type-substitution
-open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁)
+open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; ren-ren; sub-ren-comm)
 open HasMu hasMu
 open HasMuLaws hasMuLaws
   using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
@@ -2825,6 +2825,16 @@ mutual
       lemC = inv-conj (apply-fwd-bwd {n = 1} (extᵗⁿ (suc n) ρ *ᵗ τ) (concat δ₀ δ) X̂)
                       (apply-bwd-fwd {n = 1} τ (λ i → concat δ₀ δ (extᵗⁿ n ρ i)) X̂)
                       (apply-fwd-ren {n = 1} (extᵗⁿ n ρ) τ (concat δ₀ δ) X̂)
+
+-- The same coherence for the inverse comparison: the casts pass through apply-bwd the other way.
+apply-bwd-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (n + Δ₁)) (δ : Fin Δ₂ → obj) (δ₀ : Fin n → obj) →
+                (cast (trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) τ (concat δ₀ δ))
+                             (as-poly-cong {n = 0} τ (concat-ren-pw ρ δ δ₀))) δ∅
+                   ∘ apply-bwd (extᵗⁿ n ρ *ᵗ τ) δ δ₀)
+                  ≈ (apply-bwd τ (λ k → δ (ρ k)) δ₀ ∘ cast (as-poly-ren ρ τ δ) δ₀)
+apply-bwd-ren {Δ₁} {Δ₂} {n} ρ τ δ δ₀ =
+  inv-conj (apply-fwd-bwd (extᵗⁿ n ρ *ᵗ τ) δ δ₀) (apply-bwd-fwd τ (λ k → δ (ρ k)) δ₀)
+           (apply-fwd-ren ρ τ δ δ₀)
 
 -- Collapse of semantic substitution on a weakened type: when the substitution inverts the renaming
 -- pointwise, the pointwise casts after the renaming cast after subst-fwd compose to the cast along

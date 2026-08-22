@@ -85,6 +85,15 @@ sub-id (τ₁ [×] τ₂) = cong₂ _[×]_ (sub-id τ₁) (sub-id τ₂)
 sub-id (τ₁ [→] τ₂) = refl
 sub-id (μ τ)       = cong μ (trans (sub-cong τ λ { zero → refl ; (suc i) → refl }) (sub-id τ))
 
+-- A renaming and a substitution commute when the substitution sends each renamed variable to the
+-- renaming of its substituent.
+sub-ren-comm : ∀ {Δ₁ Δ₁' Δ₂ Δ₂'} (ρ : TyRen Δ₁ Δ₂) (ρ' : TyRen Δ₁' Δ₂')
+               (σ : TySub Δ₁ Δ₁') (σ' : TySub Δ₂ Δ₂') → (∀ i → σ' (ρ i) ≡ ρ' *ᵗ σ i) →
+               (τ : type Δ₁) → sub σ' (ρ *ᵗ τ) ≡ ρ' *ᵗ sub σ τ
+sub-ren-comm ρ ρ' σ σ' pw τ =
+  trans (sub-ren σ' ρ τ)
+        (trans (sub-cong {σ = λ i → σ' (ρ i)} {σ' = λ i → ρ' *ᵗ σ i} τ pw) (sym (ren-sub ρ' σ τ)))
+
 -- Instantiating the body of a μ-type, substituted under the binder, at the substituted μ-type is
 -- substituting the body with the substitution extended by that μ-type.
 unfold-sub : ∀ {n} (σ : TySub n 0) (τ : type (suc n)) →
