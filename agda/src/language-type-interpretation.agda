@@ -2325,7 +2325,6 @@ private
   ≡-to-⇒-irr : ∀ {A B : obj} (e e' : A ≡ B) → ≡-to-⇒ e ≈ ≡-to-⇒ e'
   ≡-to-⇒-irr refl refl = ≈-refl
 
-  -- A family of maps indexed by types commutes with the casts along a type equality.
   ty-square : ∀ {Δ} (F G : type Δ → obj) (h : ∀ υ → F υ ⇒ G υ) {υ υ' : type Δ} (e : υ ≡ υ') →
               (h υ' ∘ ≡-to-⇒ (cong F e)) ≈ (≡-to-⇒ (cong G e) ∘ h υ)
   ty-square F G h refl = ≈-trans id-right (≈-sym id-left)
@@ -2347,9 +2346,6 @@ private
                                                 (extend δ∅ (μ-obj (as-poly {Δ} {1} τ' δ) δ∅))) e))
   ty-cast-μ refl δ = ≈-sym (μ-map-id _ _)
 
--- Coherence of semantic substitution under a pointwise equality of substitutions: the environment
--- action on the pointwise casts exchanges subst-fwd at the two substitutions, across the cast along
--- any proof of the type equality.
 mutual
   subst-fwd-cong : ∀ {Δ Δ'} {σ σ' : TySub Δ Δ'} (τ : type Δ) (pw : ∀ i → σ i ≡ σ' i)
                    (e : sub σ τ ≡ sub σ' τ) (δ : Fin Δ' → obj) →
@@ -2498,9 +2494,6 @@ private
   ... | inj₁ j = refl
   ... | inj₂ k = h k
 
--- Environment-equality coherence for application: the cast along a pointwise environment equality
--- passes through apply-fwd and apply-bwd as the polynomial-level cast. Stated for an arbitrary proof
--- of the interpreted equality.
 apply-fwd-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} (h : ∀ i → δ i ≡ δ' i)
                  (δ₀ : Fin n → obj) (E : ⟦ τ ⟧ty (concat δ₀ δ) ≡ ⟦ τ ⟧ty (concat δ₀ δ')) →
                  (apply-fwd τ δ' δ₀ ∘ ≡-to-⇒ E) ≈ (cast (as-poly-cong τ h) δ₀ ∘ apply-fwd τ δ δ₀)
@@ -2558,7 +2551,6 @@ private
                cast (trans e₁ e₂) δ₀ ≈ (cast e₂ δ₀ ∘ cast e₁ δ₀)
   cast-trans refl refl δ₀ = ≈-sym id-left
 
-  -- A square between a pair of two-sided inverses transposes to the inverse legs.
   inv-conj : ∀ {A B A' B' : obj} {f : A ⇒ B} {g : B ⇒ A} {f' : A' ⇒ B'} {g' : B' ⇒ A'}
              {u : A ⇒ A'} {v : B ⇒ B'} →
              (f ∘ g) ≈ id _ → (g' ∘ f') ≈ id _ → (v ∘ f) ≈ (f' ∘ u) → (u ∘ g) ≈ (g' ∘ v)
@@ -2580,15 +2572,12 @@ private
   concat-ren-pw-go ρ δ δ₀ (inj₁ j) _ refl = refl
   concat-ren-pw-go ρ δ δ₀ (inj₂ k) _ refl = refl
 
-  -- Renaming a type is reindexing its concatenated environment, pointwise.
   concat-ren-pw : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (δ : Fin Δ₂ → obj) (δ₀ : Fin n → obj) (i : Fin (n + Δ₁)) →
                   concat δ₀ δ (extᵗⁿ n ρ i) ≡ concat δ₀ (λ k → δ (ρ k)) i
   concat-ren-pw {n = n} ρ δ δ₀ i =
     concat-ren-pw-go ρ δ δ₀ (splitAt n i) (splitAt n (extᵗⁿ n ρ i)) (splitAt-extᵗⁿ n ρ i)
 
 private
-  -- The middle factor of the renaming coherence at a mu body: the instantiated-variable cast family
-  -- refactors through the reindexing of the concatenated environment.
   apply-fwd-ren-mid : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (suc n + Δ₁)) (δ : Fin Δ₂ → obj)
                       (δ₀ : Fin n → obj) (X : obj) →
                       (cast (trans (as-poly-ren {n = 0} (extᵗⁿ (suc n) ρ) τ (concat (extend δ₀ X) δ))
@@ -2660,8 +2649,6 @@ private
                                  (≡-to-⇒-comp (concat-ren-pw (extᵗⁿ n ρ) (concat δ₀ δ) X̂ i)
                                               (trans (concat-pw X̂ (concat-ren-pw ρ δ δ₀) i) (env-pw δρ δ₀ X i))))))
 
--- Renaming coherence for application: the renaming cast passes through apply-fwd, at the cost of the
--- corresponding cast on the fully applied side (the reindexing of the concatenated environment).
 mutual
   apply-fwd-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (n + Δ₁)) (δ : Fin Δ₂ → obj) (δ₀ : Fin n → obj) →
                   (cast (as-poly-ren ρ τ δ) δ₀ ∘ apply-fwd (extᵗⁿ n ρ *ᵗ τ) δ δ₀)
@@ -2819,7 +2806,6 @@ mutual
                       (apply-bwd-fwd {n = 1} τ (λ i → concat δ₀ δ (extᵗⁿ n ρ i)) X̂)
                       (apply-fwd-ren {n = 1} (extᵗⁿ n ρ) τ (concat δ₀ δ) X̂)
 
--- The same coherence for the inverse comparison: the casts pass through apply-bwd the other way.
 apply-bwd-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type (n + Δ₁)) (δ : Fin Δ₂ → obj) (δ₀ : Fin n → obj) →
                 (cast (trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) τ (concat δ₀ δ))
                              (as-poly-cong {n = 0} τ (concat-ren-pw ρ δ δ₀))) δ∅
@@ -2829,9 +2815,6 @@ apply-bwd-ren {Δ₁} {Δ₂} {n} ρ τ δ δ₀ =
   inv-conj (apply-fwd-bwd (extᵗⁿ n ρ *ᵗ τ) δ δ₀) (apply-bwd-fwd τ (λ k → δ (ρ k)) δ₀)
            (apply-fwd-ren ρ τ δ δ₀)
 
--- Collapse of semantic substitution on a weakened type: when the substitution inverts the renaming
--- pointwise, the pointwise casts after the renaming cast after subst-fwd compose to the cast along
--- any proof of the syntactic collapse. Semantic counterpart of sub-ren-id.
 mutual
   subst-fwd-ren-id : ∀ {Δ Δ'} (ρ : TyRen Δ Δ') (σ : TySub Δ' Δ) (pw : ∀ i → σ (ρ i) ≡ var i)
                      (τ : type Δ) (e : sub σ (ρ *ᵗ τ) ≡ τ) (δ : Fin Δ → obj) →
@@ -3067,10 +3050,6 @@ mutual
                              (cong (λ υ → ⟦ υ ⟧ty γ) (pw-lift (Fin.suc j)))))))
 
 
--- Commuting a renaming past a substitution: when the substitution sends each renamed variable to the
--- renaming of its substituent, the pointwise casts after the renaming cast after subst-fwd are
--- subst-fwd at the reindexed environment after the cast along any proof of the syntactic commutation.
--- Semantic counterpart of sub-ren-comm.
 mutual
   subst-fwd-ren-sub : ∀ {Δ₁ Δ₁' Δ₂ Δ₂'} (ρ : TyRen Δ₁ Δ₂) (ρ' : TyRen Δ₁' Δ₂')
                       (σ : TySub Δ₁ Δ₁') (σ' : TySub Δ₂ Δ₂') (pw : ∀ i → σ' (ρ i) ≡ ρ' *ᵗ σ i)
@@ -3485,7 +3464,6 @@ mutual
           q₂ = trans c₂ c₁
           q₁ = trans d₂ d₁
 
--- Semantic counterpart of sub-sub, along any proof of the syntactic composition.
 mutual
   subst-fwd-sub : ∀ {Δ₁ Δ₂ Δ₃} (σ₁ : TySub Δ₁ Δ₂) (σ₂ : TySub Δ₂ Δ₃) (τ : type Δ₁)
                   (e : sub σ₂ (sub σ₁ τ) ≡ sub (λ i → sub σ₂ (σ₁ i)) τ) (δ : Fin Δ₃ → obj) →
