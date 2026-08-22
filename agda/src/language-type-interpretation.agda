@@ -70,7 +70,7 @@ open HasStrongCoproducts Fam.strongCoproducts
 open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_) public
 open language-syntax Sig public
 import language-operational.type-substitution
-open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; ren-ren; sub-ren-comm) public
+open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; ren-ren; sub-ren; ren-sub; sub-sub; sub-ren-comm) public
 open HasMu hasMu public
 open HasMuLaws hasMuLaws
   using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
@@ -3484,3 +3484,301 @@ mutual
           d₁ = ty-ren (extᵗ ρ') (sub-lift σ (Fin.suc j)) γ
           q₂ = trans c₂ c₁
           q₁ = trans d₂ d₁
+
+-- Semantic counterpart of sub-sub, along any proof of the syntactic composition.
+mutual
+  subst-fwd-sub : ∀ {Δ₁ Δ₂ Δ₃} (σ₁ : TySub Δ₁ Δ₂) (σ₂ : TySub Δ₂ Δ₃) (τ : type Δ₁)
+                  (e : sub σ₂ (sub σ₁ τ) ≡ sub (λ i → sub σ₂ (σ₁ i)) τ) (δ : Fin Δ₃ → obj) →
+                  (subst-fwd σ₁ τ (λ j → ⟦ σ₂ j ⟧ty δ) ∘ subst-fwd σ₂ (sub σ₁ τ) δ)
+                    ≈ (as-poly-map τ (λ i → subst-fwd σ₂ (σ₁ i) δ) δ∅
+                         ∘ subst-fwd (λ i → sub σ₂ (σ₁ i)) τ δ
+                         ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) e))
+  subst-fwd-sub σ₁ σ₂ (var i) e δ =
+    ≈-trans id-left
+            (≈-sym (≈-trans (∘-cong ≈-refl (≡-to-⇒-irr (cong (λ υ → ⟦ υ ⟧ty δ) e) refl))
+                            (≈-trans id-right id-right)))
+  subst-fwd-sub σ₁ σ₂ unit e δ =
+    ≈-trans id-left
+            (≈-sym (≈-trans (∘-cong ≈-refl (≡-to-⇒-irr (cong (λ υ → ⟦ υ ⟧ty δ) e) refl))
+                            (≈-trans id-right id-left)))
+  subst-fwd-sub σ₁ σ₂ (base s) e δ =
+    ≈-trans id-left
+            (≈-sym (≈-trans (∘-cong ≈-refl (≡-to-⇒-irr (cong (λ υ → ⟦ υ ⟧ty δ) e) refl))
+                            (≈-trans id-right id-left)))
+  subst-fwd-sub σ₁ σ₂ (τ₁ [→] τ₂) e δ =
+    ≈-trans id-left
+            (≈-sym (≈-trans (∘-cong ≈-refl (≡-to-⇒-irr (cong (λ υ → ⟦ υ ⟧ty δ) e) refl))
+                            (≈-trans id-right id-left)))
+  subst-fwd-sub σ₁ σ₂ (τ₁ [+] τ₂) e δ = begin
+      [+]-map T₁ T₂ ∘ [+]-map S₁ S₂
+    ≈⟨ [+]-map-comp _ _ _ _ ⟩
+      [+]-map (T₁ ∘ S₁) (T₂ ∘ S₂)
+    ≈⟨ [+]-map-cong (subst-fwd-sub σ₁ σ₂ τ₁ e₁ δ) (subst-fwd-sub σ₁ σ₂ τ₂ e₂ δ) ⟩
+      [+]-map ((G₁ ∘ U₁) ∘ E₁) ((G₂ ∘ U₂) ∘ E₂)
+    ≈˘⟨ [+]-map-comp _ _ _ _ ⟩
+      [+]-map (G₁ ∘ U₁) (G₂ ∘ U₂) ∘ [+]-map E₁ E₂
+    ≈˘⟨ ∘-cong ([+]-map-comp _ _ _ _) ≈-refl ⟩
+      ([+]-map G₁ G₂ ∘ [+]-map U₁ U₂) ∘ [+]-map E₁ E₂
+    ≈˘⟨ ∘-cong ≈-refl (ty-cast-+ e₁ e₂ δ) ⟩
+      ([+]-map G₁ G₂ ∘ [+]-map U₁ U₂) ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) (cong₂ _[+]_ e₁ e₂))
+    ≈⟨ ∘-cong ≈-refl (≡-to-⇒-irr (cong (λ υ → ⟦ υ ⟧ty δ) (cong₂ _[+]_ e₁ e₂)) (cong (λ υ → ⟦ υ ⟧ty δ) e)) ⟩
+      ([+]-map G₁ G₂ ∘ [+]-map U₁ U₂) ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) e)
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      δ₂ : Fin _ → obj
+      δ₂ = λ j → ⟦ σ₂ j ⟧ty δ
+      e₁ = sub-sub σ₂ σ₁ τ₁
+      e₂ = sub-sub σ₂ σ₁ τ₂
+      T₁ = subst-fwd σ₁ τ₁ δ₂
+      T₂ = subst-fwd σ₁ τ₂ δ₂
+      S₁ = subst-fwd σ₂ (sub σ₁ τ₁) δ
+      S₂ = subst-fwd σ₂ (sub σ₁ τ₂) δ
+      G₁ = as-poly-map τ₁ (λ i → subst-fwd σ₂ (σ₁ i) δ) δ∅
+      G₂ = as-poly-map τ₂ (λ i → subst-fwd σ₂ (σ₁ i) δ) δ∅
+      U₁ = subst-fwd (λ i → sub σ₂ (σ₁ i)) τ₁ δ
+      U₂ = subst-fwd (λ i → sub σ₂ (σ₁ i)) τ₂ δ
+      E₁ = ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) e₁)
+      E₂ = ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) e₂)
+  subst-fwd-sub σ₁ σ₂ (τ₁ [×] τ₂) e δ = begin
+      [×]-map T₁ T₂ ∘ [×]-map S₁ S₂
+    ≈⟨ [×]-map-comp _ _ _ _ ⟩
+      [×]-map (T₁ ∘ S₁) (T₂ ∘ S₂)
+    ≈⟨ [×]-map-cong (subst-fwd-sub σ₁ σ₂ τ₁ e₁ δ) (subst-fwd-sub σ₁ σ₂ τ₂ e₂ δ) ⟩
+      [×]-map ((G₁ ∘ U₁) ∘ E₁) ((G₂ ∘ U₂) ∘ E₂)
+    ≈˘⟨ [×]-map-comp _ _ _ _ ⟩
+      [×]-map (G₁ ∘ U₁) (G₂ ∘ U₂) ∘ [×]-map E₁ E₂
+    ≈˘⟨ ∘-cong ([×]-map-comp _ _ _ _) ≈-refl ⟩
+      ([×]-map G₁ G₂ ∘ [×]-map U₁ U₂) ∘ [×]-map E₁ E₂
+    ≈˘⟨ ∘-cong ≈-refl (ty-cast-× e₁ e₂ δ) ⟩
+      ([×]-map G₁ G₂ ∘ [×]-map U₁ U₂) ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) (cong₂ _[×]_ e₁ e₂))
+    ≈⟨ ∘-cong ≈-refl (≡-to-⇒-irr (cong (λ υ → ⟦ υ ⟧ty δ) (cong₂ _[×]_ e₁ e₂)) (cong (λ υ → ⟦ υ ⟧ty δ) e)) ⟩
+      ([×]-map G₁ G₂ ∘ [×]-map U₁ U₂) ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) e)
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      δ₂ : Fin _ → obj
+      δ₂ = λ j → ⟦ σ₂ j ⟧ty δ
+      e₁ = sub-sub σ₂ σ₁ τ₁
+      e₂ = sub-sub σ₂ σ₁ τ₂
+      T₁ = subst-fwd σ₁ τ₁ δ₂
+      T₂ = subst-fwd σ₁ τ₂ δ₂
+      S₁ = subst-fwd σ₂ (sub σ₁ τ₁) δ
+      S₂ = subst-fwd σ₂ (sub σ₁ τ₂) δ
+      G₁ = as-poly-map τ₁ (λ i → subst-fwd σ₂ (σ₁ i) δ) δ∅
+      G₂ = as-poly-map τ₂ (λ i → subst-fwd σ₂ (σ₁ i) δ) δ∅
+      U₁ = subst-fwd (λ i → sub σ₂ (σ₁ i)) τ₁ δ
+      U₂ = subst-fwd (λ i → sub σ₂ (σ₁ i)) τ₂ δ
+      E₁ = ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) e₁)
+      E₂ = ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) e₂)
+  subst-fwd-sub {Δ₁} {Δ₂} {Δ₃} σ₁ σ₂ (μ τ) e δ = begin
+      μ-map A₁ δ∅ A' δ∅ b₁ ∘ μ-map P δ∅ A₁ δ∅ b₂
+    ≈⟨ μ-map-comp P δ∅ A₁ δ∅ A' δ∅ b₂ b₁ b₂' (subst-fwd-body-carrier σ₂ (sub (sub-lift σ₁) τ) δ k₁) ⟩
+      μ-map P δ∅ A' δ∅ (b₁ ∘ b₂')
+    ≈⟨ μ-map-cong _ _ _ _ (subst-fwd-sub-body σ₁ σ₂ τ e° δ M') ⟩
+      μ-map P δ∅ A' δ∅ ((G ∘ u) ∘ Ce M')
+    ≈⟨ μ-map-cong _ _ _ _ (assoc _ _ _) ⟩
+      μ-map P δ∅ A' δ∅ (G ∘ (u ∘ Ce M'))
+    ≈˘⟨ μ-map-comp P δ∅ A₁₂ δ∅ A' δ∅ (uA ∘ Ce MA₁₂) G (u ∘ Ce M') sq₄ ⟩
+      μ-map A₁₂ δ∅ A' δ∅ G ∘ μ-map P δ∅ A₁₂ δ∅ (uA ∘ Ce MA₁₂)
+    ≈˘⟨ ∘-cong ≈-refl (μ-map-comp P δ∅ Q δ∅ A₁₂ δ∅ (Ce MQ) uA (Ce MA₁₂) sq₃) ⟩
+      μ-map A₁₂ δ∅ A' δ∅ G ∘ (μ-map Q δ∅ A₁₂ δ∅ uA ∘ μ-map P δ∅ Q δ∅ (Ce MQ))
+    ≈˘⟨ assoc _ _ _ ⟩
+      (μ-map A₁₂ δ∅ A' δ∅ G ∘ μ-map Q δ∅ A₁₂ δ∅ uA) ∘ μ-map P δ∅ Q δ∅ (Ce MQ)
+    ≈˘⟨ ∘-cong ≈-refl (ty-cast-μ e° δ) ⟩
+      (μ-map A₁₂ δ∅ A' δ∅ G ∘ μ-map Q δ∅ A₁₂ δ∅ uA) ∘ ≡-to-⇒ (cong (λ υ → ⟦ μ υ ⟧ty δ) e°)
+    ≈⟨ ∘-cong ≈-refl (≡-to-⇒-irr (cong (λ υ → ⟦ μ υ ⟧ty δ) e°) (cong (λ υ → ⟦ υ ⟧ty δ) e)) ⟩
+      (μ-map A₁₂ δ∅ A' δ∅ G ∘ μ-map Q δ∅ A₁₂ δ∅ uA) ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty δ) e)
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      σ₁₂ : TySub Δ₁ Δ₃
+      σ₁₂ = λ i → sub σ₂ (σ₁ i)
+      δ₂ : Fin Δ₂ → obj
+      δ₂ = λ j → ⟦ σ₂ j ⟧ty δ
+      gs : ∀ i → ⟦ σ₁₂ i ⟧ty δ ⇒ ⟦ σ₁ i ⟧ty δ₂
+      gs = λ i → subst-fwd σ₂ (σ₁ i) δ
+      pw-lift : ∀ i → sub (sub-lift σ₂) (sub-lift σ₁ i) ≡ sub-lift σ₁₂ i
+      pw-lift Fin.zero    = refl
+      pw-lift (Fin.suc i) = trans (sub-ren (sub-lift σ₂) Fin.suc (σ₁ i)) (sym (ren-sub Fin.suc σ₂ (σ₁ i)))
+      e° : sub (sub-lift σ₂) (sub (sub-lift σ₁) τ) ≡ sub (sub-lift σ₁₂) τ
+      e° = trans (sub-sub (sub-lift σ₂) (sub-lift σ₁) τ) (sub-cong τ pw-lift)
+      P   = as-poly {Δ₃} {1} (sub (sub-lift σ₂) (sub (sub-lift σ₁) τ)) δ
+      A₁  = as-poly {Δ₂} {1} (sub (sub-lift σ₁) τ) δ₂
+      A'  = as-poly {Δ₁} {1} τ (λ i → ⟦ σ₁ i ⟧ty δ₂)
+      A₁₂ = as-poly {Δ₁} {1} τ (λ i → ⟦ σ₁₂ i ⟧ty δ)
+      Q   = as-poly {Δ₃} {1} (sub (sub-lift σ₁₂) τ) δ
+      M'   = μ-obj A' δ∅
+      MA₁₂ = μ-obj A₁₂ δ∅
+      MQ   = μ-obj Q δ∅
+      G   = as-poly-map {n = 1} τ gs (extend δ∅ M')
+      b₂  = subst-fwd-body σ₂ (sub (sub-lift σ₁) τ) δ (μ-obj A₁ δ∅)
+      b₂' = subst-fwd-body σ₂ (sub (sub-lift σ₁) τ) δ M'
+      b₁  = subst-fwd-body σ₁ τ δ₂ M'
+      u   = subst-fwd-body σ₁₂ τ δ M'
+      uA  = subst-fwd-body σ₁₂ τ δ MA₁₂
+      Ce : (Y : obj) → fobj μ-obj P (extend δ∅ Y) ⇒ fobj μ-obj Q (extend δ∅ Y)
+      Ce Y = ≡-to-⇒ (cong (λ υ → fobj μ-obj (as-poly {Δ₃} {1} υ δ) (extend δ∅ Y)) e°)
+      k₁ = μ-map A₁ δ∅ A' δ∅ b₁
+      k₃ = μ-map Q δ∅ A₁₂ δ∅ uA
+      k₄ = μ-map A₁₂ δ∅ A' δ∅ G
+      sq₃ : (fmor Q (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k₃) ∘ Ce MQ)
+              ≈ (Ce MA₁₂ ∘ fmor P (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k₃))
+      sq₃ = ty-square (λ υ → fobj μ-obj (as-poly {Δ₃} {1} υ δ) (extend δ∅ MQ))
+                      (λ υ → fobj μ-obj (as-poly {Δ₃} {1} υ δ) (extend δ∅ MA₁₂))
+                      (λ υ → fmor (as-poly {Δ₃} {1} υ δ)
+                                  (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k₃)) e°
+      sq₄ : (fmor A₁₂ (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k₄) ∘ (uA ∘ Ce MA₁₂))
+              ≈ ((u ∘ Ce M') ∘ fmor P (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k₄))
+      sq₄ = ≈-trans (≈-sym (assoc _ _ _))
+            (≈-trans (∘-cong (subst-fwd-body-carrier σ₁₂ τ δ k₄) ≈-refl)
+            (≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl
+                             (ty-square (λ υ → fobj μ-obj (as-poly {Δ₃} {1} υ δ) (extend δ∅ MA₁₂))
+                                        (λ υ → fobj μ-obj (as-poly {Δ₃} {1} υ δ) (extend δ∅ M'))
+                                        (λ υ → fmor (as-poly {Δ₃} {1} υ δ)
+                                                    (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) k₄)) e°))
+                     (≈-sym (assoc _ _ _)))))
+
+  subst-fwd-sub-body : ∀ {Δ₁ Δ₂ Δ₃} (σ₁ : TySub Δ₁ Δ₂) (σ₂ : TySub Δ₂ Δ₃) (τ : type (suc Δ₁))
+                       (e : sub (sub-lift σ₂) (sub (sub-lift σ₁) τ) ≡ sub (sub-lift (λ i → sub σ₂ (σ₁ i))) τ)
+                       (δ : Fin Δ₃ → obj) (X : obj) →
+                       (subst-fwd-body σ₁ τ (λ j → ⟦ σ₂ j ⟧ty δ) X ∘ subst-fwd-body σ₂ (sub (sub-lift σ₁) τ) δ X)
+                         ≈ (as-poly-map {n = 1} τ (λ i → subst-fwd σ₂ (σ₁ i) δ) (extend δ∅ X)
+                              ∘ subst-fwd-body (λ i → sub σ₂ (σ₁ i)) τ δ X
+                              ∘ ≡-to-⇒ (cong (λ υ → fobj μ-obj (as-poly {Δ₃} {1} υ δ) (extend δ∅ X)) e))
+  subst-fwd-sub-body {Δ₁} {Δ₂} {Δ₃} σ₁ σ₂ τ e δ X = begin
+      (((F₁ ∘ L₁) ∘ S₁) ∘ B₁) ∘ (((F₂ ∘ L₂) ∘ S₂) ∘ B₂)
+    ≈⟨ ≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (assoc _ _ _)) ⟩
+      F₁ ∘ (L₁ ∘ (S₁ ∘ (B₁ ∘ (((F₂ ∘ L₂) ∘ S₂) ∘ B₂))))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (assoc _ _ _) (assoc _ _ _))))) ⟩
+      F₁ ∘ (L₁ ∘ (S₁ ∘ (B₁ ∘ (F₂ ∘ (L₂ ∘ (S₂ ∘ B₂))))))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _))) ⟩
+      F₁ ∘ (L₁ ∘ (S₁ ∘ ((B₁ ∘ F₂) ∘ (L₂ ∘ (S₂ ∘ B₂)))))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl
+                                             (∘-cong (apply-bwd-fwd {n = 1} (sub (sub-lift σ₁) τ) δ₂ (extend δ∅ X)) ≈-refl))) ⟩
+      F₁ ∘ (L₁ ∘ (S₁ ∘ (id _ ∘ (L₂ ∘ (S₂ ∘ B₂)))))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl id-left)) ⟩
+      F₁ ∘ (L₁ ∘ (S₁ ∘ (L₂ ∘ (S₂ ∘ B₂))))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
+      F₁ ∘ (L₁ ∘ ((S₁ ∘ L₂) ∘ (S₂ ∘ B₂)))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (subst-fwd-natural (sub-lift σ₁) τ L₂fam) ≈-refl)) ⟩
+      F₁ ∘ (L₁ ∘ ((N ∘ S₁') ∘ (S₂ ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
+      F₁ ∘ (L₁ ∘ (N ∘ (S₁' ∘ (S₂ ∘ B₂))))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _))) ⟩
+      F₁ ∘ (L₁ ∘ (N ∘ ((S₁' ∘ S₂) ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl
+                                             (∘-cong (subst-fwd-sub (sub-lift σ₁) (sub-lift σ₂) τ e' γ) ≈-refl))) ⟩
+      F₁ ∘ (L₁ ∘ (N ∘ (((W ∘ S₁₂') ∘ Ce') ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (assoc _ _ _) (assoc _ _ _)))) ⟩
+      F₁ ∘ (L₁ ∘ (N ∘ (W ∘ (S₁₂' ∘ (Ce' ∘ B₂)))))
+    ≈˘⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (assoc _ _ _)) ⟩
+      F₁ ∘ (((L₁ ∘ N) ∘ W) ∘ (S₁₂' ∘ (Ce' ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong (∘-cong (as-poly-map-comp τ L₁fam Nfam δ∅) ≈-refl) ≈-refl) ⟩
+      F₁ ∘ ((as-poly-map τ (λ i → L₁fam i ∘ Nfam i) δ∅ ∘ W) ∘ (S₁₂' ∘ (Ce' ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong (as-poly-map-comp τ (λ i → L₁fam i ∘ Nfam i) Wfam δ∅) ≈-refl) ⟩
+      F₁ ∘ (as-poly-map τ (λ i → (L₁fam i ∘ Nfam i) ∘ Wfam i) δ∅ ∘ (S₁₂' ∘ (Ce' ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong (as-poly-map-cong τ pw-step δ∅) ≈-refl) ⟩
+      F₁ ∘ (as-poly-map τ (λ i → (Kgfam i ∘ L₁₂fam i) ∘ Pcfam i) δ∅ ∘ (S₁₂' ∘ (Ce' ∘ B₂)))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong (as-poly-map-comp τ (λ i → Kgfam i ∘ L₁₂fam i) Pcfam δ∅) ≈-refl) ⟩
+      F₁ ∘ ((as-poly-map τ (λ i → Kgfam i ∘ L₁₂fam i) δ∅ ∘ Pc) ∘ (S₁₂' ∘ (Ce' ∘ B₂)))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong (∘-cong (as-poly-map-comp τ Kgfam L₁₂fam δ∅) ≈-refl) ≈-refl) ⟩
+      F₁ ∘ (((Kg ∘ L₁₂) ∘ Pc) ∘ (S₁₂' ∘ (Ce' ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
+      F₁ ∘ ((Kg ∘ L₁₂) ∘ (Pc ∘ (S₁₂' ∘ (Ce' ∘ B₂))))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
+      F₁ ∘ ((Kg ∘ L₁₂) ∘ ((Pc ∘ S₁₂') ∘ (Ce' ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (subst-fwd-cong τ pw-lift e'' γ) ≈-refl)) ⟩
+      F₁ ∘ ((Kg ∘ L₁₂) ∘ ((S₁₂ ∘ Ce'') ∘ (Ce' ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
+      F₁ ∘ ((Kg ∘ L₁₂) ∘ (S₁₂ ∘ (Ce'' ∘ (Ce' ∘ B₂))))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _))) ⟩
+      F₁ ∘ ((Kg ∘ L₁₂) ∘ (S₁₂ ∘ ((Ce'' ∘ Ce') ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl
+                                             (∘-cong (≡-to-⇒-comp (cong (λ υ → ⟦ υ ⟧ty γ) e') (cong (λ υ → ⟦ υ ⟧ty γ) e''))
+                                                     ≈-refl))) ⟩
+      F₁ ∘ ((Kg ∘ L₁₂) ∘ (S₁₂ ∘ (≡-to-⇒ (trans (cong (λ υ → ⟦ υ ⟧ty γ) e') (cong (λ υ → ⟦ υ ⟧ty γ) e'')) ∘ B₂)))
+    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl
+                                             (∘-cong (≡-to-⇒-irr (trans (cong (λ υ → ⟦ υ ⟧ty γ) e') (cong (λ υ → ⟦ υ ⟧ty γ) e''))
+                                                                 (cong (λ υ → ⟦ υ ⟧ty γ) e))
+                                                     ≈-refl))) ⟩
+      F₁ ∘ ((Kg ∘ L₁₂) ∘ (S₁₂ ∘ (Ceγ ∘ B₂)))
+    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl
+                                             (ty-square (λ υ → fobj μ-obj (as-poly {Δ₃} {1} υ δ) (extend δ∅ X))
+                                                        (λ υ → ⟦ υ ⟧ty γ)
+                                                        (λ υ → apply-bwd {n = 1} υ δ (extend δ∅ X)) e))) ⟩
+      F₁ ∘ ((Kg ∘ L₁₂) ∘ (S₁₂ ∘ (B₁₂ ∘ Ce)))
+    ≈˘⟨ assoc _ _ _ ⟩
+      (F₁ ∘ (Kg ∘ L₁₂)) ∘ (S₁₂ ∘ (B₁₂ ∘ Ce))
+    ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+      ((F₁ ∘ Kg) ∘ L₁₂) ∘ (S₁₂ ∘ (B₁₂ ∘ Ce))
+    ≈⟨ ∘-cong (∘-cong (apply-fwd-map {n = 1} τ gs (extend δ∅ X)) ≈-refl) ≈-refl ⟩
+      ((G ∘ F₁₂) ∘ L₁₂) ∘ (S₁₂ ∘ (B₁₂ ∘ Ce))
+    ≈⟨ ≈-trans (assoc _ _ _) (assoc _ _ _) ⟩
+      G ∘ (F₁₂ ∘ (L₁₂ ∘ (S₁₂ ∘ (B₁₂ ∘ Ce))))
+    ≈˘⟨ ∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (assoc _ _ _))) ⟩
+      G ∘ ((((F₁₂ ∘ L₁₂) ∘ S₁₂) ∘ B₁₂) ∘ Ce)
+    ≈˘⟨ assoc _ _ _ ⟩
+      (G ∘ (((F₁₂ ∘ L₁₂) ∘ S₁₂) ∘ B₁₂)) ∘ Ce
+    ∎
+    where
+      open ≈-Reasoning isEquiv
+      γ = concat (extend {0} δ∅ X) δ
+      σ₁₂ : TySub Δ₁ Δ₃
+      σ₁₂ = λ i → sub σ₂ (σ₁ i)
+      σ₁₂' : TySub (suc Δ₁) (suc Δ₃)
+      σ₁₂' = λ i → sub (sub-lift σ₂) (sub-lift σ₁ i)
+      δ₂ : Fin Δ₂ → obj
+      δ₂ = λ j → ⟦ σ₂ j ⟧ty δ
+      γ₂ = concat (extend {0} δ∅ X) δ₂
+      γσ₂ : Fin (suc Δ₂) → obj
+      γσ₂ = λ i → ⟦ sub-lift σ₂ i ⟧ty γ
+      δ₁ : Fin Δ₁ → obj
+      δ₁ = λ i → ⟦ σ₁ i ⟧ty δ₂
+      δ₁₂ : Fin Δ₁ → obj
+      δ₁₂ = λ i → ⟦ σ₁₂ i ⟧ty δ
+      gs : ∀ i → δ₁₂ i ⇒ δ₁ i
+      gs = λ i → subst-fwd σ₂ (σ₁ i) δ
+      pw-lift : ∀ i → σ₁₂' i ≡ sub-lift σ₁₂ i
+      pw-lift Fin.zero    = refl
+      pw-lift (Fin.suc i) = trans (sub-ren (sub-lift σ₂) Fin.suc (σ₁ i)) (sym (ren-sub Fin.suc σ₂ (σ₁ i)))
+      e'  = sub-sub (sub-lift σ₂) (sub-lift σ₁) τ
+      e'' = sub-cong τ pw-lift
+      F₁  = apply-fwd {n = 1} τ δ₁ (extend δ∅ X)
+      F₂  = apply-fwd {n = 1} (sub (sub-lift σ₁) τ) δ₂ (extend δ∅ X)
+      F₁₂ = apply-fwd {n = 1} τ δ₁₂ (extend δ∅ X)
+      L₁fam = λ i → ≡-to-⇒ (sub-lift-pw σ₁ δ₂ X i)
+      L₁ = as-poly-map τ L₁fam δ∅
+      L₂fam : ∀ i → γσ₂ i ⇒ γ₂ i
+      L₂fam = λ i → ≡-to-⇒ (sub-lift-pw σ₂ δ X i)
+      L₂ = as-poly-map (sub (sub-lift σ₁) τ) L₂fam δ∅
+      L₁₂fam = λ i → ≡-to-⇒ (sub-lift-pw σ₁₂ δ X i)
+      L₁₂ = as-poly-map τ L₁₂fam δ∅
+      S₁   = subst-fwd (sub-lift σ₁) τ γ₂
+      S₁'  = subst-fwd (sub-lift σ₁) τ γσ₂
+      S₂   = subst-fwd (sub-lift σ₂) (sub (sub-lift σ₁) τ) γ
+      S₁₂  = subst-fwd (sub-lift σ₁₂) τ γ
+      S₁₂' = subst-fwd σ₁₂' τ γ
+      B₁  = apply-bwd {n = 1} (sub (sub-lift σ₁) τ) δ₂ (extend δ∅ X)
+      B₂  = apply-bwd {n = 1} (sub (sub-lift σ₂) (sub (sub-lift σ₁) τ)) δ (extend δ∅ X)
+      B₁₂ = apply-bwd {n = 1} (sub (sub-lift σ₁₂) τ) δ (extend δ∅ X)
+      G   = as-poly-map {n = 1} τ gs (extend δ∅ X)
+      Nfam = λ i → as-poly-map (sub-lift σ₁ i) L₂fam δ∅
+      N  = as-poly-map τ Nfam δ∅
+      Wfam = λ i → subst-fwd (sub-lift σ₂) (sub-lift σ₁ i) γ
+      W  = as-poly-map τ Wfam δ∅
+      Kgfam = concat-mor {n = 1} {δ₀ = extend {0} δ∅ X} (λ i → id _) gs
+      Kg = as-poly-map τ Kgfam δ∅
+      Pcfam = λ i → ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty γ) (pw-lift i))
+      Pc = as-poly-map τ Pcfam δ∅
+      Ce   = ≡-to-⇒ (cong (λ υ → fobj μ-obj (as-poly {Δ₃} {1} υ δ) (extend δ∅ X)) e)
+      Ce'  = ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty γ) e')
+      Ce'' = ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty γ) e'')
+      Ceγ  = ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty γ) e)
+      pw-step : ∀ i → ((L₁fam i ∘ Nfam i) ∘ Wfam i) ≈ ((Kgfam i ∘ L₁₂fam i) ∘ Pcfam i)
+      pw-step Fin.zero    = ≈-refl
+      pw-step (Fin.suc j) =
+        ≈-trans (∘-cong (as-poly-map-ren Fin.suc (σ₁ j) L₂fam δ∅) ≈-refl)
+        (≈-trans (∘-cong (∘-cong (as-poly-map-cong (σ₁ j) (λ i → ≈-sym id-right) δ∅) ≈-refl) ≈-refl)
+                 (subst-fwd-ren-sub Fin.suc Fin.suc σ₂ (sub-lift σ₂) (λ _ → refl) (σ₁ j) (pw-lift (Fin.suc j)) γ))
