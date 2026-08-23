@@ -297,11 +297,11 @@ inputs γ s x zero    = s
 inputs γ s x (suc k) = x k
 
 -- The vector over the inputs of the action of a type on a fold: the control input and the
--- environment, then the value acted on.
-map-input : ∀ {Γ σ} (γ : Env Γ) (v : Val σ) → Setoid.Carrier A →
-            ∣ 𝔽 (width-env γ) ∣ → ∣ 𝔽 (width v) ∣ → ∣ 𝔽 (suc (width-env γ) + width v) ∣
-map-input γ v s x o l =
-  ap (M.in₁ {suc (width-env γ)} {width v}) (inputs γ s x) l +ₛ ap (M.in₂ {suc (width-env γ)} {width v}) o l
+-- environment, then the vector over the value acted on.
+map-input : ∀ {Γ} (γ : Env Γ) {n} → Setoid.Carrier A → ∣ 𝔽 (width-env γ) ∣ → ∣ 𝔽 n ∣ →
+            ∣ 𝔽 (suc (width-env γ) + n) ∣
+map-input γ {n} s x o l =
+  ap (M.in₁ {suc (width-env γ)} {n}) (inputs γ s x) l +ₛ ap (M.in₂ {suc (width-env γ)} {n}) o l
 
 -- Semiring shorthands.
 c = ctrl-weight
@@ -717,6 +717,22 @@ elim-root-elt {G} {X} {Y} k r γe a y =
           (Semimodule.refl G {γe} , Semimodule.+-lunit X {y})))
     (k .func-resp-≈ +-runit)
 
+-- The transport in context at an element: the root is copied and the payload is the map's value.
+strong-Lmap-elt : ∀ {G X Y : Semimodule} (r : SemiMod._⊕_ G X ⇒ Y) (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
+                  Semimodule._≈_ (Ls.L Y) (Ls.strong-Lmap r .func (γe , (a , y))) (a , r .func (γe , y))
+strong-Lmap-elt {G} {X} {Y} r γe a y =
+  ≈-trans +-lunit +-runit ,
+  Semimodule.trans Y (Semimodule.+-cong Y (r .func-resp-≈ P) (Semimodule.refl Y))
+                     (Semimodule.trans Y (Semimodule.+-comm Y) (Semimodule.+-lunit Y))
+  where
+  P : Semimodule._≈_ (SemiMod._⊕_ G X)
+        (Ls.prod-m (SemiMod.id G) (Ls.payload-L {X}) .func (γe , (a , y))) (γe , y)
+  P = Semimodule.trans (SemiMod._⊕_ G X)
+        (bpair-elt {SemiMod._⊕_ G (Ls.L X)} {G} {X}
+           (SemiMod._∘_ (SemiMod.id G) (SemiMod.p₁ {G} {Ls.L X}))
+           (SemiMod._∘_ (Ls.payload-L {X}) (SemiMod.p₂ {G} {Ls.L X})) (γe , (a , y)))
+        (Semimodule.refl G {γe} , Semimodule.+-lunit X {y})
+
 elimF-elt : ∀ {Γ' X C : Obj} (cC : Section C) (f : Mor (FD.Fam𝒞-P.prod Γ' X) C)
             {γi : Setoid.Carrier (Γ' .idx)} {xi : Setoid.Carrier (X .idx)}
             (γe : ∣ Γ' .fam .fm γi ∣) (a : Setoid.Carrier A) (y : ∣ X .fam .fm xi ∣) →
@@ -781,22 +797,21 @@ ap-p₂-++ {m} {n} x z k =
 
 -- The inputs of the recursive call on a folded payload: the control input and the environment
 -- extended by the folded payload.
-ap-rec-inputs : ∀ {Γ} (γ : Env Γ) {σ σ'} {v : Val σ} (v' : Val σ')
-                (F : M.Matrix (width v') (suc (width-env γ) + width v)) s x (o : ∣ 𝔽 (width v) ∣) k →
-                ap (rec-inputs γ v' ∘ ⟨ M.I , F ⟩) (map-input γ v s x o) k ≈s
+ap-rec-inputs : ∀ {Γ} (γ : Env Γ) {m σ'} (v' : Val σ')
+                (F : M.Matrix (width v') (suc (width-env γ) + m)) s x (o : ∣ 𝔽 m ∣) k →
+                ap (rec-inputs γ v' ∘ ⟨ M.I , F ⟩) (map-input γ s x o) k ≈s
                 inputs (γ · v') s
                   (λ l → ap (M.in₁ {width-env γ} {width v'}) x l +ₛ
-                         ap (M.in₂ {width-env γ} {width v'}) (ap F (map-input γ v s x o)) l) k
-ap-rec-inputs {Γ} γ {v = v} v' F s x o k =
+                         ap (M.in₂ {width-env γ} {width v'}) (ap F (map-input γ s x o)) l) k
+ap-rec-inputs {Γ} γ {m} v' F s x o k =
   ≈-trans (app-∘ (rec-inputs γ v') ⟨ M.I , F ⟩ y k)
   (≈-trans (app-+ₘ (L ∘ M.p₁ {a} {p}) (R ∘ M.p₂ {a} {p}) z k)
   (≈-trans (+-cong left right) (final k)))
   where
   n = width-env γ
-  m = width v
   p = width v'
   a = suc n + m
-  y = map-input γ v s x o
+  y = map-input γ s x o
   z = ap ⟨ M.I , F ⟩ y
   L = (M.I {1} ⊕ M.in₁ {n} {p}) ∘ M.p₁ {suc n} {m}
   R = M.in₂ {1} {n + p} ∘ M.in₂ {n} {p}
@@ -823,6 +838,58 @@ ap-rec-inputs {Γ} γ {v = v} v' F s x o k =
     +-cong (≈-trans (ap-⊕-suc M.I (M.in₁ {n} {p}) (inputs γ s x) k)
                     (app-congᵥ (M.in₁ {n} {p}) (ap-p₂₁ (inputs γ s x)) k))
            (ap-in₂-suc (ap (M.in₂ {n} {p}) oF) k)
+
+-- The inputs of the action on a subvalue reached through C: the control input and the environment,
+-- then the subvalue's vector.
+ap-sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} (C : M.Matrix m n) s x (o : ∣ 𝔽 n ∣) k →
+                ap (sub-inputs γ C) (map-input γ s x o) k ≈s map-input γ s x (ap C o) k
+ap-sub-inputs γ {m} {n} C s x o k =
+  ≈-trans (app-pair (M.I ∘ M.p₁ {a} {n}) (C ∘ M.p₂ {a} {n}) y k)
+  (≈-trans (M.concat-preserves _≈s_
+              {u₁ = ap (M.I ∘ M.p₁ {a} {n}) y} {u₂ = inputs γ s x} {v₁ = ap (C ∘ M.p₂ {a} {n}) y} {v₂ = ap C o}
+              (λ l → ≈-trans (app-∘ M.I (M.p₁ {a} {n}) y l)
+                             (≈-trans (app-I (ap (M.p₁ {a} {n}) y) l) (ap-p₁-++ (inputs γ s x) o l)))
+              (λ l → ≈-trans (app-∘ C (M.p₂ {a} {n}) y l) (app-congᵥ C (ap-p₂-++ (inputs γ s x) o) l)) k)
+           (≈-sym (≈-trans (+-cong (app-in₁ (inputs γ s x) k) (app-in₂ (ap C o) k))
+                           (concat-+ (inputs γ s x) (ap C o) k))))
+  where
+  a = suc (width-env γ)
+  y = map-input γ s x o
+
+-- A rebuilt constructor's root is the control weight times the control input plus the copied root;
+-- its payload reads the rest of the matrix at the action's inputs.
+map-built-zero : ∀ {Γ} (γ : Env Γ) {m n} (G : M.Matrix n (suc (width-env γ) + suc m)) s x (o : ∣ 𝔽 (suc m) ∣) →
+                 ap (map-built-out γ m n +ₘ (M.in₂ {1} {n} ∘ G)) (map-input γ s x o) zero ≈s ((c ·ₛ s) +ₛ o zero)
+map-built-zero γ {m} {n} G s x o =
+  ≈-trans (app-+ₘ (map-built-out γ m n) (M.in₂ {1} {n} ∘ G) y zero)
+  (≈-trans (+-cong
+     (≈-trans (app-∘ (M.in₁ {1} {n}) Z y zero)
+     (≈-trans (ap-in₁-zero {n} (ap Z y))
+     (≈-trans (app-+ₘ (wctrl ∘ M.p₁ {a} {suc m}) (M.p₁ {1} {m} ∘ M.p₂ {a} {suc m}) y zero)
+       (+-cong (≈-trans (app-∘ (wctrl {width-env γ} {1}) (M.p₁ {a} {suc m}) y zero)
+                (≈-trans (ap-wctrl {width-env γ} {1} (ap (M.p₁ {a} {suc m}) y) zero)
+                         (·-cong ≈-refl (ap-p₁-++ (inputs γ s x) o zero))))
+               (≈-trans (app-∘ (M.p₁ {1} {m}) (M.p₂ {a} {suc m}) y zero)
+                (≈-trans (ap-p₁₁ (ap (M.p₂ {a} {suc m}) y) zero) (ap-p₂-++ (inputs γ s x) o zero)))))))
+     (≈-trans (app-∘ (M.in₂ {1} {n}) G y zero) (ap-in₂-zero {n} (ap G y))))
+   +-runit)
+  where
+  a = suc (width-env γ)
+  y = map-input γ s x o
+  Z = (wctrl ∘ M.p₁ {a} {suc m}) +ₘ (M.p₁ {1} {m} ∘ M.p₂ {a} {suc m})
+
+map-built-suc : ∀ {Γ} (γ : Env Γ) {m n} (G : M.Matrix n (suc (width-env γ) + suc m)) s x (o : ∣ 𝔽 (suc m) ∣) k →
+                ap (map-built-out γ m n +ₘ (M.in₂ {1} {n} ∘ G)) (map-input γ s x o) (suc k) ≈s
+                ap G (map-input γ s x o) k
+map-built-suc γ {m} {n} G s x o k =
+  ≈-trans (app-+ₘ (map-built-out γ m n) (M.in₂ {1} {n} ∘ G) y (suc k))
+  (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) Z y (suc k)) (ap-in₁-suc {n} (ap Z y) k))
+                   (≈-trans (app-∘ (M.in₂ {1} {n}) G y (suc k)) (ap-in₂-suc {n} (ap G y) k)))
+           +-lunit)
+  where
+  a = suc (width-env γ)
+  y = map-input γ s x o
+  Z = (wctrl ∘ M.p₁ {a} {suc m}) +ₘ (M.p₁ {1} {m} ∘ M.p₂ {a} {suc m})
 
 EnvDepRel-resp : ∀ {Γ} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s {x x' g} →
                  (∀ k → x k ≈s x' k) → EnvDepRel rγ s x g → EnvDepRel rγ s x' g
