@@ -109,6 +109,12 @@ private
            Setoid._≈_ (Y .idx) (f .idxf .sfunc x) (g .idxf .sfunc x)
   idx-eq {X} E x = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq {x} {x} (Setoid.refl (X .idx) {x})
 
+  fam-eq : ∀ {X Y : Obj} {f g : Mor X Y} (E : f FD.≃ g) x (a : ∣ X .fam .fm x ∣) →
+           Semimodule._≈_ (Y .fam .fm (g .idxf .sfunc x))
+             (Y .fam .subst (idx-eq E x) .func (f .famf .transf x .func a)) (g .famf .transf x .func a)
+  fam-eq {X} E x a =
+    E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (Semimodule.refl (X .fam .fm x) {a})
+
 map-val : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
           (IH : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
                 ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
@@ -180,6 +186,19 @@ map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-mu {τ' = τ'} M) {gi} rγ {i} r =
   e : Ix._≈_ (τₛ [ μ τₛ ]) a (unroll-mor τₛ .idxf .sfunc (Fμ .idxf .sfunc (gi , i)))
   e = Ix.trans (τₛ [ μ τₛ ]) (Ix.sym (τₛ [ μ τₛ ]) (idx-eq (LI.unroll-roll τₛ) a))
         (unroll-mor τₛ .idxf .sfunc-resp-≈ {roll-mor τₛ .idxf .sfunc a} {Fμ .idxf .sfunc (gi , i)} e₁)
+
+-- The dependence part of the map lemma at a leaf type: the action is the second projection on both
+-- sides, and the conclusion's index is the hypothesis's index up to the model's law.
+map-dep-leaf : ∀ {Γ} {γ : Env Γ} τ {v : Val τ} {i I' : Ix τ} (r : ValRel τ v i) (E : Ix._≈_ τ I' i)
+               w (x : ∣ 𝔽 (width-env γ) ∣) (o : ∣ 𝔽 (width v) ∣) {e : ∣ Fib τ i ∣} {d : ∣ Fib τ I' ∣} →
+               Fib._≈_ τ i (⟦ τ ⟧ .fam .subst E .func d) e →
+               DepRel τ r o (Fib._+_ τ i (ctrl-dep-at τ i w) e) →
+               DepRel τ (ValRel-resp τ (Ix.sym τ E) r) (ap (map-leaf γ (width v)) (map-input γ v w x o))
+                 (Fib._+_ τ I' (ctrl-dep-at τ I' w) d)
+map-dep-leaf {γ = γ} τ {v} {i} {I'} r E w x o {e} {d} ed h =
+  DepRel-transport⁻ τ E r
+    (Fib.trans τ i (subst-ctrl-dep+ τ E w d) (Fib.+-cong τ i (Fib.refl τ i) ed))
+    (DepRel-resp τ r (λ k → ≈-sym (ap-p₂-++ (inputs γ w x) o k)) (Fib.refl τ i) h)
 
 -- The value part of the fundamental lemma: a term's value is related to the term's index at a
 -- related environment, by induction on the term over all derivations.
