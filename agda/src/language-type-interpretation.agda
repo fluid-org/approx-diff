@@ -925,68 +925,15 @@ strong-concat-mor : ∀ {n Δ} {Γ' : Obj} {δ₀ δ₀' : Fin n → obj} {δ δ
                     ∀ i → prod Γ' (concat δ₀ δ i) ⇒ concat δ₀' δ' i
 strong-concat-mor {n} fs gs i = strong-concat-mor-split fs gs (splitAt n i)
 
-strong-concat-mor-cong : ∀ {n Δ} {Γ' : Obj} {δ₀ δ₀' : Fin n → obj} {δ δ' : Fin Δ → obj}
-                         {fs fs' : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i} {gs gs' : ∀ i → prod Γ' (δ i) ⇒ δ' i} →
-                         (∀ i → fs i ≈ fs' i) → (∀ i → gs i ≈ gs' i) →
-                         ∀ i → strong-concat-mor fs gs i ≈ strong-concat-mor fs' gs' i
-strong-concat-mor-cong {n} es es' i with splitAt n i
-... | inj₁ j = es j
-... | inj₂ k = es' k
-
 strong-concat-mor-p₂ : ∀ {n Δ} {Γ' : Obj} {δ₀ : Fin n → obj} {δ : Fin Δ → obj} (i : Fin (n + Δ)) →
                        strong-concat-mor {n} {Δ} {Γ'} {δ₀} {δ₀} {δ} {δ} (λ j → p₂) (λ j → p₂) i ≈ p₂
 strong-concat-mor-p₂ {n} i with splitAt n i
 ... | inj₁ j = ≈-refl
 ... | inj₂ k = ≈-refl
 
-∘co-pre-plain : ∀ {Γ' : Obj} {W X Y Z : obj} (x : prod Γ' Y ⇒ Z) (y : prod Γ' X ⇒ Y) (b : W ⇒ X) →
-                ((x ∘co y) ∘ prod-m (id Γ') b) ≈ (x ∘co (y ∘ prod-m (id Γ') b))
-∘co-pre-plain x y b =
-  ≈-trans (assoc _ _ _)
-          (∘-cong ≈-refl (≈-trans (pair-natural _ _ _)
-                                  (pair-cong (≈-trans (pair-p₁ _ _) id-left) ≈-refl)))
-
 lift-post : ∀ {Γ' : Obj} {X Y Z : obj} (b : Y ⇒ Z) (y : prod Γ' X ⇒ Y) →
             ((b ∘ p₂) ∘co y) ≈ (b ∘ y)
 lift-post b y = ≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))
-
-prod-m-id-comp : ∀ {Γ' : Obj} {X Y Z : obj} (b : Y ⇒ Z) (b' : X ⇒ Y) →
-                 (prod-m (id Γ') b ∘ prod-m (id Γ') b') ≈ prod-m (id Γ') (b ∘ b')
-prod-m-id-comp b b' = ≈-trans (≈-sym (prod-m-comp _ _ _ _)) (prod-m-cong id-left ≈-refl)
-
-scopair-pre : ∀ {Γ Γ' : Obj} {A A' B B' Z : obj} (u : Γ ⇒ Γ')
-              (f : prod Γ' A' ⇒ Z) (g : prod Γ' B' ⇒ Z) (c : A ⇒ A') (d : B ⇒ B') →
-              (scopair f g ∘ prod-m u (coprod-m c d)) ≈ scopair (f ∘ prod-m u c) (g ∘ prod-m u d)
-scopair-pre u f g c d =
-  ≈-trans (≈-sym (scopair-ext _)) (scopair-cong br₁ br₂)
-  where
-  step₁ : (prod-m u (coprod-m c d) ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩) ≈ (⟨ p₁ , in₁ ∘ p₂ ⟩ ∘ prod-m u c)
-  step₁ =
-    ≈-trans (pair-compose _ _ _ _)
-      (≈-trans (pair-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _))
-                                   (≈-trans (∘-cong (copair-in₁ _ _) ≈-refl) (assoc _ _ _))))
-        (≈-sym (≈-trans (pair-natural _ _ _)
-                 (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))))))
-
-  step₂ : (prod-m u (coprod-m c d) ∘ ⟨ p₁ , in₂ ∘ p₂ ⟩) ≈ (⟨ p₁ , in₂ ∘ p₂ ⟩ ∘ prod-m u d)
-  step₂ =
-    ≈-trans (pair-compose _ _ _ _)
-      (≈-trans (pair-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _))
-                                   (≈-trans (∘-cong (copair-in₂ _ _) ≈-refl) (assoc _ _ _))))
-        (≈-sym (≈-trans (pair-natural _ _ _)
-                 (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))))))
-
-  br₁ : ((scopair f g ∘ prod-m u (coprod-m c d)) ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩) ≈ (f ∘ prod-m u c)
-  br₁ =
-    ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl step₁)
-        (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (scopair-in₁ f g) ≈-refl)))
-
-  br₂ : ((scopair f g ∘ prod-m u (coprod-m c d)) ∘ ⟨ p₁ , in₂ ∘ p₂ ⟩) ≈ (g ∘ prod-m u d)
-  br₂ =
-    ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl step₂)
-        (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (scopair-in₂ f g) ≈-refl)))
 
 extend-mor-id : ∀ {k} {δ : Fin k → obj} {X : obj} (i : Fin (suc k)) → extend-mor (λ j → id (δ j)) (id X) i ≈ id _
 extend-mor-id Fin.zero    = ≈-refl
@@ -1223,14 +1170,6 @@ preserves-env-pw-suc : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} 
 preserves-env-pw-suc δc δ₀c cX (inj₁ k) = preserves-section-id (δ₀c k)
 preserves-env-pw-suc δc δ₀c cX (inj₂ l) = preserves-section-id (δc l)
 
-preserves-env-pw-suc⁻ : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X : obj}
-  (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (cX : Section X) (s : Fin n ⊎ Fin Δ) →
-  preserves-section (≡-to-⇒ (sym (env-pw-suc δ δ₀ X s)))
-    ([_,_] {C = λ s' → Section ([ extend δ₀ X , δ ] s')} (extend-section δ₀c cX) δc (map₁ Fin.suc s))
-    ([_,_] {C = λ s' → Section ([ δ₀ , δ ] s')} δ₀c δc s)
-preserves-env-pw-suc⁻ δc δ₀c cX (inj₁ k) = preserves-section-id (δ₀c k)
-preserves-env-pw-suc⁻ δc δ₀c cX (inj₂ l) = preserves-section-id (δc l)
-
 preserves-env-pw : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X : obj}
   (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (cX : Section X) (i : Fin (suc (n + Δ))) →
   preserves-section (≡-to-⇒ (env-pw δ δ₀ X i))
@@ -1238,14 +1177,6 @@ preserves-env-pw : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X :
     (concat-section {n = suc n} (extend-section δ₀c cX) δc i)
 preserves-env-pw δc δ₀c cX Fin.zero = preserves-section-id cX
 preserves-env-pw {n = n} δc δ₀c cX (Fin.suc j) = preserves-env-pw-suc δc δ₀c cX (splitAt n j)
-
-preserves-env-pw⁻ : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X : obj}
-  (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (cX : Section X) (i : Fin (suc (n + Δ))) →
-  preserves-section (≡-to-⇒ (sym (env-pw δ δ₀ X i)))
-    (concat-section {n = suc n} (extend-section δ₀c cX) δc i)
-    (concat-section {n = 1} (extend-section (λ ()) cX) (concat-section δ₀c δc) i)
-preserves-env-pw⁻ δc δ₀c cX Fin.zero = preserves-section-id cX
-preserves-env-pw⁻ {n = n} δc δ₀c cX (Fin.suc j) = preserves-env-pw-suc⁻ δc δ₀c cX (splitAt n j)
 
 -- Applying the polynomial (as-poly τ δ) is the interpretation of τ, in each direction.
 mutual

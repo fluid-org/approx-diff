@@ -108,14 +108,6 @@ preserves-subst-fwd {Δ} {Δ'} σ (μ τ) {δ} δc =
   M  = μ-obj (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) δ∅
   μM = unit-section (μ τ) (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
 
-preserves-subst-bwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) {δ : Fin Δ' → obj}
-  (δc : ∀ i → Section (δ i)) →
-  preserves-section (subst-bwd σ τ δ)
-    (unit-section τ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc))
-    (unit-section (sub σ τ) δ δc)
-preserves-subst-bwd σ τ {δ} δc =
-  preserves-section-inv (subst-fwd-bwd σ τ δ) (subst-bwd-fwd σ τ δ) (preserves-subst-fwd σ τ δc)
-
 -- The single substitution push τ', read pointwise as an environment.
 push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} δ∅ (⟦ τ' ⟧ty (λ ()))) (λ ()) i
 push-pw τ' Fin.zero = refl
@@ -125,12 +117,6 @@ preserves-push-pw : ∀ (τ' : type 0) (i : Fin 1) →
     (unit-section (push τ' i) (λ ()) (λ ()))
     (concat-section {n = 1} (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))) (λ ()) i)
 preserves-push-pw τ' Fin.zero = preserves-section-id (unit-section τ' (λ ()) (λ ()))
-
-preserves-push-pw⁻ : ∀ (τ' : type 0) (i : Fin 1) →
-  preserves-section (≡-to-⇒ (sym (push-pw τ' i)))
-    (concat-section {n = 1} (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))) (λ ()) i)
-    (unit-section (push τ' i) (λ ()) (λ ()))
-preserves-push-pw⁻ τ' Fin.zero = preserves-section-id (unit-section τ' (λ ()) (λ ()))
 
 private
   strong-env-pw-natural : ∀ {Δ n} {Γ' : Obj} {δ δ' : Fin Δ → obj} (ks : ∀ i → prod Γ' (δ i) ⇒ δ' i)
@@ -1403,29 +1389,6 @@ abstract
       outm : ⟦ μ τ ⟧ty (λ ()) ⇒ F₀
       outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
 
-  roll-unroll : (τ : type 1) → (roll-mor τ ∘ unroll-mor τ) ≈ id _
-  roll-unroll τ = begin
-      (inm ∘ sf) ∘ (sb ∘ outm)
-    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-      inm ∘ ((sf ∘ sb) ∘ outm)
-    ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (sub-as-apply-fwd-bwd τ (μ τ)) ≈-refl) id-left) ⟩
-      inm ∘ outm
-    ≈⟨ R.LambekDef.inMor-outMor (as-poly τ (λ ())) δ∅ ⟩
-      id _
-    ∎
-    where
-      open ≈-Reasoning isEquiv
-      F₀ : Obj
-      F₀ = fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend δ∅ (⟦ μ τ ⟧ty (λ ())))
-      sf : ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ F₀
-      sf   = sub-as-apply-fwd τ (μ τ)
-      sb : F₀ ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
-      sb   = sub-as-apply-bwd τ (μ τ)
-      inm : F₀ ⇒ ⟦ μ τ ⟧ty (λ ())
-      inm  = inMap (as-poly τ (λ ())) δ∅
-      outm : ⟦ μ τ ⟧ty (λ ()) ⇒ F₀
-      outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
-
   sub-as-apply-fwd-roll : ∀ (τ' : type 2) (ρ : type 0) →
     (sub-as-apply-fwd (μ τ') ρ ∘ roll-mor (sub (sub-lift (push ρ)) τ'))
       ≈ (inMap (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))
@@ -1456,15 +1419,6 @@ abstract
   preserves-sub-as-apply-bwd τ τ' =
     preserves-section-inv (sub-as-apply-fwd-bwd τ τ') (sub-as-apply-bwd-fwd τ τ')
       (preserves-sub-as-apply-fwd τ τ')
-
-  preserves-roll-mor : ∀ (τ : type 1) →
-    preserves-section (roll-mor τ)
-      (unit-section (τ [ μ τ ]) (λ ()) (λ ())) (unit-section (μ τ) (λ ()) (λ ()))
-  preserves-roll-mor τ =
-    preserves-section-∘
-      (preserves-inMap (as-poly {0} {1} τ (λ ())) δ∅ (λ ())
-        (as-poly-section {0} {1} τ (λ ()) (λ ())))
-      (preserves-sub-as-apply-fwd τ (μ τ))
 
   preserves-unroll-mor : ∀ (τ : type 1) →
     preserves-section (unroll-mor τ)
