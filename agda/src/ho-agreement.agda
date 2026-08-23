@@ -115,19 +115,26 @@ private
   fam-eq {X} E x a =
     E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (Semimodule.refl (X .fam .fm x) {a})
 
+  -- The index equation at the recursive case of the action: the body's index at the action's index
+  -- on the unrolled payload is the action's index at the rolled index.
+  rec-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) gi (i : Ix (μ τ₀)) →
+            Ix._≈_ σr
+              (⟦ s ⟧tm .idxf .sfunc (gi , LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm .idxf .sfunc (gi , unroll-mor τ₀ .idxf .sfunc i)))
+              (LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm .idxf .sfunc (gi , i))
+  rec-idx {Γ} {τ₀} {σr} s gi i =
+    Ix.trans σr (Ix.sym σr (idx-eq (LI.fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , i₀)))
+      (Fv .idxf .sfunc-resp-≈ {gi , roll-mor τ₀ .idxf .sfunc i₀} {gi , i} (IxC.refl Γ {gi} , idx-eq (LI.roll-unroll τ₀) i))
+    where
+    i₀ = unroll-mor τ₀ .idxf .sfunc i
+    Fv = LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm
+
 map-val : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
           (IH : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
                 ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
           {σ' : type 1} {v v' F} (M : Map γ s σ' v v' F) {gi} (rγ : EnvValRel γ gi) {i} →
           ValRel (σ' [ μ τ₀ ]) v i → ValRel (σ' [ σr ]) v' (LI.fold-map τ₀ σr σ' ⟦ s ⟧tm .idxf .sfunc (gi , i))
 map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-rec M D) {gi} rγ {i} r =
-  ValRel-resp σr e (IH D (rγ · map-val IH M rγ (ValRel-at-bound (τ₀ [ μ τ₀ ]) r)))
-  where
-  i₀ = unroll-mor τ₀ .idxf .sfunc i
-  Fv = LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm
-  e : Ix._≈_ σr (⟦ s ⟧tm .idxf .sfunc (gi , LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm .idxf .sfunc (gi , i₀))) (Fv .idxf .sfunc (gi , i))
-  e = Ix.trans σr (Ix.sym σr (idx-eq (LI.fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , i₀)))
-        (Fv .idxf .sfunc-resp-≈ {gi , roll-mor τ₀ .idxf .sfunc i₀} {gi , i} (IxC.refl Γ {gi} , idx-eq (LI.roll-unroll τ₀) i))
+  ValRel-resp σr (rec-idx {τ₀ = τ₀} s gi i) (IH D (rγ · map-val IH M rγ (ValRel-at-bound (τ₀ [ μ τ₀ ]) r)))
 map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-unit {v = v}) {gi} rγ {i} r =
   ValRel-resp unit {v} {i} {LI.fold-map τ₀ σr unit ⟦ s ⟧tm .idxf .sfunc (gi , i)} (Ix.sym unit {LI.fold-map τ₀ σr unit ⟦ s ⟧tm .idxf .sfunc (gi , i)} {i} (idx-eq (LI.fold-map-unit τ₀ σr ⟦ s ⟧tm) (gi , i))) r
 map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-base {b = b} {v = v}) {gi} rγ {i} r =
@@ -199,6 +206,133 @@ map-dep-leaf {γ = γ} τ {v} {i} {I'} r E w x o {e} {d} ed h =
   DepRel-transport⁻ τ E r
     (Fib.trans τ i (subst-ctrl-dep+ τ E w d) (Fib.+-cong τ i (Fib.refl τ i) ed))
     (DepRel-resp τ r (λ k → ≈-sym (ap-p₂-++ (inputs γ w x) o k)) (Fib.refl τ i) h)
+
+private
+  -- The action's fibre map at a rolled index, read through the law for the recursive case: the
+  -- body's fibre map at the action on the unrolled payload.
+  rec-fibre : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) gi (i : Ix (μ τ₀))
+              (g : ∣ FibC Γ gi ∣) (e : ∣ Fib (μ τ₀) i ∣) →
+              let i₀ = unroll-mor τ₀ .idxf .sfunc i
+                  Fτ = LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm
+                  Fv = LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm
+              in
+              Fib._≈_ σr (Fv .idxf .sfunc (gi , i))
+                (⟦ σr ⟧ .fam .subst (rec-idx {τ₀ = τ₀} s gi i) .func
+                  (⟦ s ⟧tm .famf .transf (gi , Fτ .idxf .sfunc (gi , i₀)) .func
+                    (g , Fτ .famf .transf (gi , i₀) .func (g , unroll-mor τ₀ .famf .transf i .func e))))
+                (Fv .famf .transf (gi , i) .func (g , e))
+  rec-fibre {Γ} {τ₀} {σr} s gi i g e =
+    Fib.trans σr I' (subst-trans ⟦ σr ⟧ {J} {Iᵣ'} {I'} E₁ E₂ Y)
+    (Fib.trans σr I' (⟦ σr ⟧ .fam .subst {Iᵣ'} {I'} E₂ .func-resp-≈ step₁)
+    (Fib.trans σr I' (Fib.sym σr I' (transf-natural {Dom} {⟦ σr ⟧} Fv {gi , Iᵣ} {gi , i} Eᵣ Xin))
+      (Fv .famf .transf (gi , i) .func-resp-≈ step₂)))
+    where
+    i₀ = unroll-mor τ₀ .idxf .sfunc i
+    e₀ = unroll-mor τ₀ .famf .transf i .func e
+    Fτ = LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm
+    Fv = LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm
+    Dom = FD.Fam𝒞-P.prod ⟦ Γ ⟧ctxt ⟦ μ τ₀ ⟧
+    Dom₀ = FD.Fam𝒞-P.prod ⟦ Γ ⟧ctxt ⟦ τ₀ [ μ τ₀ ] ⟧
+    Dom' = FD.Fam𝒞-P.prod ⟦ Γ ⟧ctxt ⟦ τ₀ [ σr ] ⟧
+    IF = Fτ .idxf .sfunc (gi , i₀)
+    J = ⟦ s ⟧tm .idxf .sfunc (gi , IF)
+    Iᵣ = roll-mor τ₀ .idxf .sfunc i₀
+    Iᵣ' = Fv .idxf .sfunc (gi , Iᵣ)
+    I' = Fv .idxf .sfunc (gi , i)
+    dF = Fτ .famf .transf (gi , i₀) .func (g , e₀)
+    Y = ⟦ s ⟧tm .famf .transf (gi , IF) .func (g , dF)
+    P = FD.Fam𝒞-P.pair {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) (FD.Fam𝒞._∘_ (roll-mor τ₀) (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}))
+    Xin = (g , roll-mor τ₀ .famf .transf i₀ .func e₀)
+    X₀ = Fv .famf .transf (gi , Iᵣ) .func (P .famf .transf (gi , i₀) .func (g , e₀))
+    X = Fv .famf .transf (gi , Iᵣ) .func Xin
+    E₀ : Ix._≈_ σr Iᵣ' J
+    E₀ = idx-eq (LI.fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , i₀)
+    E₁ : Ix._≈_ σr J Iᵣ'
+    E₁ = Ix.sym σr {Iᵣ'} {J} E₀
+    Eᵣ : Setoid._≈_ (Dom .idx) (gi , Iᵣ) (gi , i)
+    Eᵣ = IxC.refl Γ {gi} , idx-eq (LI.roll-unroll τ₀) i
+    E₂ : Ix._≈_ σr Iᵣ' I'
+    E₂ = Fv .idxf .sfunc-resp-≈ {gi , Iᵣ} {gi , i} Eᵣ
+    step₁ : Fib._≈_ σr Iᵣ' (⟦ σr ⟧ .fam .subst {J} {Iᵣ'} E₁ .func Y) X
+    step₁ =
+      Fib.trans σr Iᵣ' (⟦ σr ⟧ .fam .subst {J} {Iᵣ'} E₁ .func-resp-≈
+                          (Fib.trans σr J (⟦ s ⟧tm .famf .transf (gi , IF) .func-resp-≈
+                                             (Semimodule.sym (Dom' .fam .fm (gi , IF))
+                                                (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ τ₀ [ σr ] ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) Fτ (gi , i₀) (g , e₀))))
+                                          (Fib.sym σr J (fam-eq (LI.fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , i₀) (g , e₀)))))
+      (Fib.trans σr Iᵣ' (Fib.sym σr Iᵣ' (subst-trans ⟦ σr ⟧ {Iᵣ'} {J} {Iᵣ'} E₀ E₁ X₀))
+      (Fib.trans σr Iᵣ' (subst-refl ⟦ σr ⟧ {Iᵣ'} (Ix.trans σr {Iᵣ'} {J} {Iᵣ'} E₀ E₁) X₀)
+        (Fv .famf .transf (gi , Iᵣ) .func-resp-≈
+           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) (FD.Fam𝒞._∘_ (roll-mor τ₀) (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧})) (gi , i₀) (g , e₀)))))
+    step₂ : Semimodule._≈_ (Dom .fam .fm (gi , i)) (Dom .fam .subst {gi , Iᵣ} {gi , i} Eᵣ .func Xin) (g , e)
+    step₂ =
+      Semimodule.trans (Dom .fam .fm (gi , i))
+        (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} {gi} {gi} {Iᵣ} {i} (IxC.refl Γ {gi}) (idx-eq (LI.roll-unroll τ₀) i) g
+           (roll-mor τ₀ .famf .transf i₀ .func e₀))
+        (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , fam-eq (LI.roll-unroll τ₀) i e)
+
+-- The recursive case of the dependence part of the map lemma, given the dependence parts for the
+-- action on the payload and for the body: the folded payload extends the environment, and the
+-- control dependence at its index witnesses the order.
+map-dep-rec : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+              (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
+                     ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
+              {v v' u F T} (M : Map γ s τ₀ v v' F) (D : γ · v' , s ⇓ u [ T ]) {gi} (rγ : EnvValRel γ gi)
+              {i} (r : ValRel (μ τ₀) (roll {τ₀} v) i) (w : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
+              (g : ∣ FibC Γ gi ∣) → EnvDepRel rγ w x g →
+              (∀ {i'} (r' : ValRel (τ₀ [ μ τ₀ ]) v i') (o : ∣ 𝔽 (width v) ∣) (e : ∣ Fib (τ₀ [ μ τ₀ ]) i' ∣) →
+                 DepRel (τ₀ [ μ τ₀ ]) r' o (Fib._+_ (τ₀ [ μ τ₀ ]) i' (ctrl-dep-at (τ₀ [ μ τ₀ ]) i' w) e) →
+                 DepRel (τ₀ [ σr ]) (map-val IHv M rγ r') (ap F (map-input γ v w x o))
+                   (Fib._+_ (τ₀ [ σr ]) (LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm .idxf .sfunc (gi , i'))
+                     (ctrl-dep-at (τ₀ [ σr ]) (LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm .idxf .sfunc (gi , i')) w)
+                     (LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm .famf .transf (gi , i') .func (g , e)))) →
+              (∀ {gj} (rγ' : EnvValRel (γ · v') gj) (x' : ∣ 𝔽 (width-env (γ · v')) ∣)
+                 (g' : ∣ FibC (Γ ▸ τ₀ [ σr ]) gj ∣) → EnvDepRel rγ' w x' g' →
+                 DepRel σr (IHv D rγ') (ap T (inputs (γ · v') w x'))
+                   (Fib._+_ σr (⟦ s ⟧tm .idxf .sfunc gj) (ctrl-dep-at σr (⟦ s ⟧tm .idxf .sfunc gj) w)
+                     (⟦ s ⟧tm .famf .transf gj .func g'))) →
+              (o : ∣ 𝔽 (width v) ∣) (e : ∣ Fib (μ τ₀) i ∣) →
+              DepRel (μ τ₀) {roll {τ₀} v} {i} r o (Fib._+_ (μ τ₀) i (ctrl-dep-at (μ τ₀) i w) e) →
+              DepRel σr (map-val {s = s} IHv {var zero} (m-rec M D) rγ {i} r)
+                (ap (T ∘ (rec-inputs γ v' ∘ ⟨ M.I , F ⟩)) (map-input γ (roll {τ₀} v) w x o))
+                (Fib._+_ σr (LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm .idxf .sfunc (gi , i))
+                  (ctrl-dep-at σr (LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm .idxf .sfunc (gi , i)) w)
+                  (LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm .famf .transf (gi , i) .func (g , e)))
+map-dep-rec {Γ} {γ} {τ₀} {σr} {s} IHv {v} {v'} {u} {F} {T} M D {gi} rγ {i} r w x g rel IHM IHD o e h =
+  DepRel-resp σr (ValRel-resp σr (rec-idx {τ₀ = τ₀} s gi i) (IHv D rγ')) (λ k → ≈-sym (inputs-eq k))
+    (Fib.trans σr I' (subst-ctrl-dep+ σr (rec-idx {τ₀ = τ₀} s gi i) w (⟦ s ⟧tm .famf .transf (gi , IF) .func (g , dF)))
+      (Fib.+-cong σr I' (Fib.refl σr I') (rec-fibre {τ₀ = τ₀} s gi i g e)))
+    (DepRel-transport σr (rec-idx {τ₀ = τ₀} s gi i) (IHv D rγ') (IHD rγ' x' (g , dF) rel'))
+  where
+  i₀ = unroll-mor τ₀ .idxf .sfunc i
+  r₀ = ValRel-at-bound (τ₀ [ μ τ₀ ]) r
+  e₀ = unroll-mor τ₀ .famf .transf i .func e
+  Fτ = LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm
+  IF = Fτ .idxf .sfunc (gi , i₀)
+  I' = LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm .idxf .sfunc (gi , i)
+  rv' = map-val IHv M rγ r₀
+  rγ' = rγ · rv'
+  y = map-input γ v w x o
+  oF = ap F y
+  dF = Fτ .famf .transf (gi , i₀) .func (g , e₀)
+  x' : ∣ 𝔽 (width-env γ + width v') ∣
+  x' l = ap (M.in₁ {width-env γ} {width v'}) x l +ₛ ap (M.in₂ {width-env γ} {width v'}) oF l
+  h₀ : DepRel (τ₀ [ μ τ₀ ]) r₀ o (Fib._+_ (τ₀ [ μ τ₀ ]) i₀ (ctrl-dep-at (τ₀ [ μ τ₀ ]) i₀ w) e₀)
+  h₀ = DepRel-resp (τ₀ [ μ τ₀ ]) r₀ (λ k → ≈-refl)
+         (Fib.trans (τ₀ [ μ τ₀ ]) i₀
+           (unroll-mor τ₀ .famf .transf i .preserve-+ {ctrl-dep-at (μ τ₀) i w} {e})
+           (Fib.+-cong (τ₀ [ μ τ₀ ]) i₀ (preserves-unroll-ctrl-dep τ₀ .at i .func-eq {w} {w} ≈-refl)
+                                       (Fib.refl (τ₀ [ μ τ₀ ]) i₀)))
+         (DepRel-at-bound (τ₀ [ μ τ₀ ]) r h)
+  rel' : EnvDepRel rγ' w x' (g , dF)
+  rel' = EnvDepRel-resp rγ w (λ k → ≈-sym (ap-p₁-++ x oF k)) rel ,
+         (ctrl-dep-at (τ₀ [ σr ]) IF w ,
+          (Fib.⊑-refl (τ₀ [ σr ]) IF ,
+           DepRel-resp (τ₀ [ σr ]) rv' (λ k → ≈-sym (ap-p₂-++ x oF k)) (Fib.+-comm (τ₀ [ σr ]) IF)
+             (IHM r₀ o e₀ h₀)))
+  inputs-eq : ∀ k → ap (T ∘ (rec-inputs γ v' ∘ ⟨ M.I , F ⟩)) y k ≈s ap T (inputs (γ · v') w x') k
+  inputs-eq k = ≈-trans (app-∘ T (rec-inputs γ v' ∘ ⟨ M.I , F ⟩) y k)
+                        (app-congᵥ T (ap-rec-inputs γ {v = v} v' F w x o) k)
 
 -- The value part of the fundamental lemma: a term's value is related to the term's index at a
 -- related environment, by induction on the term over all derivations.

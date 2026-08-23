@@ -779,6 +779,51 @@ ap-p₂-++ {m} {n} x z k =
   ≈-trans (app-congᵥ (M.p₂ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-+ x z l)) k)
           (≈-trans (app-p₂ {m} {n} (M.concat x z) k) (M.split₂-concat x z k))
 
+-- The inputs of the recursive call on a folded payload: the control input and the environment
+-- extended by the folded payload.
+ap-rec-inputs : ∀ {Γ} (γ : Env Γ) {σ σ'} {v : Val σ} (v' : Val σ')
+                (F : M.Matrix (width v') (suc (width-env γ) + width v)) s x (o : ∣ 𝔽 (width v) ∣) k →
+                ap (rec-inputs γ v' ∘ ⟨ M.I , F ⟩) (map-input γ v s x o) k ≈s
+                inputs (γ · v') s
+                  (λ l → ap (M.in₁ {width-env γ} {width v'}) x l +ₛ
+                         ap (M.in₂ {width-env γ} {width v'}) (ap F (map-input γ v s x o)) l) k
+ap-rec-inputs {Γ} γ {v = v} v' F s x o k =
+  ≈-trans (app-∘ (rec-inputs γ v') ⟨ M.I , F ⟩ y k)
+  (≈-trans (app-+ₘ (L ∘ M.p₁ {a} {p}) (R ∘ M.p₂ {a} {p}) z k)
+  (≈-trans (+-cong left right) (final k)))
+  where
+  n = width-env γ
+  m = width v
+  p = width v'
+  a = suc n + m
+  y = map-input γ v s x o
+  z = ap ⟨ M.I , F ⟩ y
+  L = (M.I {1} ⊕ M.in₁ {n} {p}) ∘ M.p₁ {suc n} {m}
+  R = M.in₂ {1} {n + p} ∘ M.in₂ {n} {p}
+  oF = ap F y
+  left : ap (L ∘ M.p₁ {a} {p}) z k ≈s ap (M.I {1} ⊕ M.in₁ {n} {p}) (inputs γ s x) k
+  left =
+    ≈-trans (app-∘ L (M.p₁ {a} {p}) z k)
+    (≈-trans (app-congᵥ L (λ l → ≈-trans (ap-pair-p₁ M.I F y l) (app-I y l)) k)
+    (≈-trans (app-∘ (M.I {1} ⊕ M.in₁ {n} {p}) (M.p₁ {suc n} {m}) y k)
+             (app-congᵥ (M.I {1} ⊕ M.in₁ {n} {p}) (ap-p₁-++ (inputs γ s x) o) k)))
+  right : ap (R ∘ M.p₂ {a} {p}) z k ≈s ap (M.in₂ {1} {n + p}) (ap (M.in₂ {n} {p}) oF) k
+  right =
+    ≈-trans (app-∘ R (M.p₂ {a} {p}) z k)
+    (≈-trans (app-congᵥ R (ap-pair-p₂ M.I F y) k)
+             (app-∘ (M.in₂ {1} {n + p}) (M.in₂ {n} {p}) oF k))
+  final : ∀ k → (ap (M.I {1} ⊕ M.in₁ {n} {p}) (inputs γ s x) k +ₛ ap (M.in₂ {1} {n + p}) (ap (M.in₂ {n} {p}) oF) k) ≈s
+                inputs (γ · v') s (λ l → ap (M.in₁ {n} {p}) x l +ₛ ap (M.in₂ {n} {p}) oF l) k
+  final zero =
+    ≈-trans (+-cong (≈-trans (ap-⊕-zero M.I (M.in₁ {n} {p}) (inputs γ s x))
+                             (≈-trans (app-I (ap (M.p₁ {1} {n}) (inputs γ s x)) zero) (ap-p₁₁ (inputs γ s x) zero)))
+                    (app-in₂ {1} {n + p} (ap (M.in₂ {n} {p}) oF) zero))
+            +-runit
+  final (suc k) =
+    +-cong (≈-trans (ap-⊕-suc M.I (M.in₁ {n} {p}) (inputs γ s x) k)
+                    (app-congᵥ (M.in₁ {n} {p}) (ap-p₂₁ (inputs γ s x)) k))
+           (ap-in₂-suc (ap (M.in₂ {n} {p}) oF) k)
+
 EnvDepRel-resp : ∀ {Γ} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s {x x' g} →
                  (∀ k → x k ≈s x' k) → EnvDepRel rγ s x g → EnvDepRel rγ s x' g
 EnvDepRel-resp emp s ex rel = prop.tt
