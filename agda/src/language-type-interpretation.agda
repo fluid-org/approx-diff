@@ -223,6 +223,12 @@ coprod-m-strong f g = ≈-trans (copair-cong (≈-sym (CP.copair-in₁ _ _)) (�
   (≈-trans (assoc _ _ _)
   (≈-trans (∘-cong ≈-refl (injF-natural g)) (≈-sym (assoc _ _ _)))))
 
+[+]-map-in₁ : ∀ {A A' B B' : obj} (f : A ⇒ A') (g : B ⇒ B') → ([+]-map f g ∘ in₁) ≈ (in₁ ∘ Lf-map f)
+[+]-map-in₁ f g = copair-in₁ _ _
+
+[+]-map-in₂ : ∀ {A A' B B' : obj} (f : A ⇒ A') (g : B ⇒ B') → ([+]-map f g ∘ in₂) ≈ (in₂ ∘ Lf-map g)
+[+]-map-in₂ f g = copair-in₂ _ _
+
 [×]-map-cong : ∀ {A A' B B' : obj} {f f' : A ⇒ A'} {g g' : B ⇒ B'} → f ≈ f' → g ≈ g' → [×]-map f g ≈ [×]-map f' g'
 [×]-map-cong e₁ e₂ = Lf-map-cong (prod-m-cong e₁ e₂)
 
