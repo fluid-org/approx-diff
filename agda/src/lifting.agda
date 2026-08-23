@@ -449,6 +449,22 @@ tag-L-root {X} = copair-root (id 𝟙c) εm
 tag-L-inj : ∀ {X} → (tag-L {X} ∘ inj) ≈ εm
 tag-L-inj {X} = copair-inj (id 𝟙c) εm
 
+tag-L-p₁ : ∀ {X} → tag-L {X} ≈ p₁
+tag-L-p₁ {X} =
+  lifting-ext _ _ (≈-trans tag-L-root (≈-sym (B.id-1 𝟙c X))) (≈-trans tag-L-inj (≈-sym (B.zero-1 𝟙c X)))
+
+-- The root projection passes through the action, which copies the root.
+p₁-Lmap : ∀ {P Q} (f : P ⇒ Q) → (p₁ ∘ Lmap f) ≈ p₁
+p₁-Lmap {P} {Q} f =
+  lifting-ext _ _
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (Lmap-root f)) (≈-trans (B.id-1 𝟙c Q) (≈-sym (B.id-1 𝟙c P)))))
+    (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (Lmap-inj f))
+        (≈-trans (≈-sym (assoc _ _ _))
+          (≈-trans (∘-cong (B.zero-1 𝟙c Q) ≈-refl)
+            (≈-trans (comp-bilinear-ε₁ f) (≈-sym (B.zero-1 𝟙c P)))))))
+
 -- Evaluation-critical shape: exactly one application of r per element.
 strong-Lmap : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
 strong-Lmap {G} r = (inj ∘ (r ∘ prod-m (id G) payload-L)) +m ((root ∘ tag-L) ∘ p₂)
@@ -456,6 +472,18 @@ strong-Lmap {G} r = (inj ∘ (r ∘ prod-m (id G) payload-L)) +m ((root ∘ tag-
 -- Evaluation-critical shape: exactly one application of r per element.
 elim-root : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
 elim-root {G} c r = (r ∘ prod-m (id G) payload-L) +m ((c ∘ tag-L) ∘ p₂)
+
+-- The root projection after the transport reads the root of the lifted argument.
+p₁-strong-Lmap : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → (p₁ ∘ strong-Lmap r) ≈ (p₁ ∘ p₂)
+p₁-strong-Lmap {G} {X} {Y} r =
+  ≈-trans (comp-bilinear₂ _ _ _)
+  (≈-trans (+m-cong
+             (≈-trans (≈-sym (assoc _ _ _))
+               (≈-trans (∘-cong (B.zero-1 𝟙c Y) ≈-refl) (comp-bilinear-ε₁ _)))
+             (≈-trans (≈-sym (assoc _ _ _))
+               (∘-cong (≈-trans (≈-sym (assoc _ _ _))
+                         (≈-trans (∘-cong (B.id-1 𝟙c Y) ≈-refl) (≈-trans id-left tag-L-p₁))) ≈-refl)))
+           (homCM _ _ .CommutativeMonoid.+-lunit))
 
 private
   prod-m-arm-in₁ : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ prod-m (id G) payload-L) ∘ in₁) ≈ (r ∘ in₁)

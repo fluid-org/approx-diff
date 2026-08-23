@@ -52,7 +52,9 @@ open Fam using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF
                 poly-section; extend-section; preserves-section; preserves-section-id;
                 preserves-section-∘; preserves-section-resp; preserves-section-inv;
                 preserves-coprod-m; preserves-prod-m; preserves-Lf-map; preserves-scale;
-                preserves-inMap; preserves-outMor) public
+                preserves-inMap; preserves-outMor;
+                root-mor; root-mor₊; root-mor-Lf-map; root-mor-strong-Lf-map; root-mor₊-coprod-m;
+                root-mor₊-scopair) public
 open Fam.WithTerminal T
   using (fmor; μ-map;
          fmor-cong; fmor-id; fmor-comp; fmor-const; fmor-var; fmor-+; fmor-×; fmor-μ;

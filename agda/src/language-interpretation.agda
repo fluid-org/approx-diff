@@ -1746,6 +1746,82 @@ fold-map-pair τ₀ σ σ₁ σ₂ {Γ'} B = begin
        ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
   S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
 
+-- The action at a sum or a product copies the root: read at the root, it is the root of the
+-- argument.
+fold-map-+-root : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : Obj}
+                  (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
+                  (root-mor₊ ∘ fold-map τ₀ σ (σ₁ [+] σ₂) B) ≈ (root-mor₊ ∘ p₂)
+fold-map-+-root τ₀ σ σ₁ σ₂ {Γ'} B = begin
+    root-mor₊ ∘ ((b⁺ ∘ S⁺) ∘ ⟨ p₁ , f⁺ ∘ p₂ ⟩)
+  ≈˘⟨ assoc _ _ _ ⟩
+    (root-mor₊ ∘ (b⁺ ∘ S⁺)) ∘ ⟨ p₁ , f⁺ ∘ p₂ ⟩
+  ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+    ((root-mor₊ ∘ b⁺) ∘ S⁺) ∘ ⟨ p₁ , f⁺ ∘ p₂ ⟩
+  ≈⟨ ∘-cong (∘-cong (≈-trans (∘-cong ≈-refl (sub-as-apply-bwd-[+] σ₁ σ₂ σ))
+                              (root-mor₊-coprod-m _ _)) ≈-refl) ≈-refl ⟩
+    (root-mor₊ ∘ S⁺) ∘ ⟨ p₁ , f⁺ ∘ p₂ ⟩
+  ≈⟨ ∘-cong (root-mor₊-scopair S₁ S₂) ≈-refl ⟩
+    (root-mor₊ ∘ p₂) ∘ ⟨ p₁ , f⁺ ∘ p₂ ⟩
+  ≈⟨ assoc _ _ _ ⟩
+    root-mor₊ ∘ (p₂ ∘ ⟨ p₁ , f⁺ ∘ p₂ ⟩)
+  ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
+    root-mor₊ ∘ (f⁺ ∘ p₂)
+  ≈˘⟨ assoc _ _ _ ⟩
+    (root-mor₊ ∘ f⁺) ∘ p₂
+  ≈⟨ ∘-cong (≈-trans (∘-cong ≈-refl (sub-as-apply-fwd-[+] σ₁ σ₂ (μ τ₀))) (root-mor₊-coprod-m _ _)) ≈-refl ⟩
+    root-mor₊ ∘ p₂
+  ∎
+  where
+  open ≈-Reasoning isEquiv
+  f⁺ = sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀)
+  b⁺ = sub-as-apply-bwd (σ₁ [+] σ₂) σ
+  S⁺ : prod Γ' (fobj μ-obj (as-poly {0} {1} (σ₁ [+] σ₂) (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} (σ₁ [+] σ₂) (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S⁺ = strong-fmor (as-poly {0} {1} (σ₁ [+] σ₂) (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+  S₁ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₁ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} σ₁ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S₁ = strong-fmor (as-poly {0} {1} σ₁ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+  S₂ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+
+fold-map-×-root : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : Obj}
+                  (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
+                  (root-mor ∘ fold-map τ₀ σ (σ₁ [×] σ₂) B) ≈ (root-mor ∘ p₂)
+fold-map-×-root τ₀ σ σ₁ σ₂ {Γ'} B = begin
+    root-mor ∘ ((b× ∘ S×) ∘ ⟨ p₁ , f× ∘ p₂ ⟩)
+  ≈˘⟨ assoc _ _ _ ⟩
+    (root-mor ∘ (b× ∘ S×)) ∘ ⟨ p₁ , f× ∘ p₂ ⟩
+  ≈˘⟨ ∘-cong (assoc _ _ _) ≈-refl ⟩
+    ((root-mor ∘ b×) ∘ S×) ∘ ⟨ p₁ , f× ∘ p₂ ⟩
+  ≈⟨ ∘-cong (∘-cong (≈-trans (∘-cong ≈-refl (sub-as-apply-bwd-[×] σ₁ σ₂ σ))
+                              (root-mor-Lf-map _)) ≈-refl) ≈-refl ⟩
+    (root-mor ∘ S×) ∘ ⟨ p₁ , f× ∘ p₂ ⟩
+  ≈⟨ ∘-cong (root-mor-strong-Lf-map (strong-prod-m S₁ S₂)) ≈-refl ⟩
+    (root-mor ∘ p₂) ∘ ⟨ p₁ , f× ∘ p₂ ⟩
+  ≈⟨ assoc _ _ _ ⟩
+    root-mor ∘ (p₂ ∘ ⟨ p₁ , f× ∘ p₂ ⟩)
+  ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
+    root-mor ∘ (f× ∘ p₂)
+  ≈˘⟨ assoc _ _ _ ⟩
+    (root-mor ∘ f×) ∘ p₂
+  ≈⟨ ∘-cong (≈-trans (∘-cong ≈-refl (sub-as-apply-fwd-[×] σ₁ σ₂ (μ τ₀))) (root-mor-Lf-map _)) ≈-refl ⟩
+    root-mor ∘ p₂
+  ∎
+  where
+  open ≈-Reasoning isEquiv
+  f× = sub-as-apply-fwd (σ₁ [×] σ₂) (μ τ₀)
+  b× = sub-as-apply-bwd (σ₁ [×] σ₂) σ
+  S× : prod Γ' (fobj μ-obj (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S× = strong-fmor (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+  S₁ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₁ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} σ₁ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S₁ = strong-fmor (as-poly {0} {1} σ₁ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+  S₂ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+
 fold-map-mu : ∀ (τ₀ : type 1) (σ : type 0) (τ' : type 2) {Γ' : Obj}
               (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
               (fold-map τ₀ σ (μ τ') B
