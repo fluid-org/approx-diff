@@ -115,6 +115,10 @@ fo-ren (fo₁ [+] fo₂)   = fo-ren fo₁ [+] fo-ren fo₂
 fo-ren (fo₁ [×] fo₂)   = fo-ren fo₁ [×] fo-ren fo₂
 fo-ren (μ fo)          = μ (fo-ren fo)
 
+fo-lift : ∀ {Δ₁ Δ₂} {σ : TySub Δ₁ Δ₂} → (∀ i → first-order (σ i)) → ∀ i → first-order (sub-lift σ i)
+fo-lift fσ zero    = var zero
+fo-lift fσ (suc i) = fo-ren (fσ i)
+
 fo-sub : ∀ {Δ₁ Δ₂} {σ : TySub Δ₁ Δ₂} {τ : type Δ₁} → (∀ i → first-order (σ i)) →
          first-order τ → first-order (sub σ τ)
 fo-sub fσ (var i)       = fσ i
@@ -122,7 +126,7 @@ fo-sub fσ unit          = unit
 fo-sub fσ (base s)      = base s
 fo-sub fσ (fo₁ [+] fo₂) = fo-sub fσ fo₁ [+] fo-sub fσ fo₂
 fo-sub fσ (fo₁ [×] fo₂) = fo-sub fσ fo₁ [×] fo-sub fσ fo₂
-fo-sub fσ (μ fo)        = μ (fo-sub (λ { zero → var zero ; (suc i) → fo-ren (fσ i) }) fo)
+fo-sub fσ (μ fo)        = μ (fo-sub (fo-lift fσ) fo)
 
 fo-inst : ∀ {Δ} {τ : type (suc Δ)} {ρ : type Δ} → first-order τ → first-order ρ →
           first-order (τ [ ρ ])
