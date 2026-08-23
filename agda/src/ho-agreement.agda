@@ -17,6 +17,7 @@ open import Data.Empty using (⊥)
 import prop
 open import prop using (_∧_; ∃; Prf; ⟪_⟫; _,_; proj₁; proj₂)
 open import prop-setoid using (Setoid)
+open import Relation.Binary.PropositionalEquality using (sym)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
@@ -39,6 +40,7 @@ module ho-agreement
 open Signature Sig
 open Interpretation ℐ
 open import language-syntax Sig renaming (_,_ to _▸_)
+open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 
 open import ho-relation S ctrl-weight Sig ℐ +-idem c-idem c-bound
@@ -101,6 +103,83 @@ private
     Ix.trans (unit [+] unit)
       {⟦ brel ω Ms ⟧tm .idxf .sfunc gi} {rel-pred ω .sfunc (args-idx Ms gi)} {rel-pred ω .sfunc vs}
       (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .sfunc-resp-≈ args-eq)
+
+private
+  idx-eq : ∀ {X Y : Obj} {f g : Mor X Y} → f FD.≃ g → ∀ x →
+           Setoid._≈_ (Y .idx) (f .idxf .sfunc x) (g .idxf .sfunc x)
+  idx-eq {X} E x = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq {x} {x} (Setoid.refl (X .idx) {x})
+
+map-val : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+          (IH : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
+                ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
+          {σ' : type 1} {v v' F} (M : Map γ s σ' v v' F) {gi} (rγ : EnvValRel γ gi) {i} →
+          ValRel (σ' [ μ τ₀ ]) v i → ValRel (σ' [ σr ]) v' (LI.fold-map τ₀ σr σ' ⟦ s ⟧tm .idxf .sfunc (gi , i))
+map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-rec M D) {gi} rγ {i} r =
+  ValRel-resp σr e (IH D (rγ · map-val IH M rγ (ValRel-at-bound (τ₀ [ μ τ₀ ]) r)))
+  where
+  i₀ = unroll-mor τ₀ .idxf .sfunc i
+  Fv = LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm
+  e : Ix._≈_ σr (⟦ s ⟧tm .idxf .sfunc (gi , LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm .idxf .sfunc (gi , i₀))) (Fv .idxf .sfunc (gi , i))
+  e = Ix.trans σr (Ix.sym σr (idx-eq (LI.fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , i₀)))
+        (Fv .idxf .sfunc-resp-≈ {gi , roll-mor τ₀ .idxf .sfunc i₀} {gi , i} (IxC.refl Γ {gi} , idx-eq (LI.roll-unroll τ₀) i))
+map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-unit {v = v}) {gi} rγ {i} r =
+  ValRel-resp unit {v} {i} {LI.fold-map τ₀ σr unit ⟦ s ⟧tm .idxf .sfunc (gi , i)} (Ix.sym unit {LI.fold-map τ₀ σr unit ⟦ s ⟧tm .idxf .sfunc (gi , i)} {i} (idx-eq (LI.fold-map-unit τ₀ σr ⟦ s ⟧tm) (gi , i))) r
+map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-base {b = b} {v = v}) {gi} rγ {i} r =
+  ValRel-resp (base b) {v} {i} {LI.fold-map τ₀ σr (base b) ⟦ s ⟧tm .idxf .sfunc (gi , i)} (Ix.sym (base b) {LI.fold-map τ₀ σr (base b) ⟦ s ⟧tm .idxf .sfunc (gi , i)} {i} (idx-eq (LI.fold-map-base τ₀ σr b ⟦ s ⟧tm) (gi , i))) r
+map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-arrow {σ₁ = σ₁} {σ₂ = σ₂} {v = v}) {gi} rγ {i} r =
+  ValRel-resp (σ₁ [→] σ₂) {v} {i} {LI.fold-map τ₀ σr (σ₁ [→] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i)}
+    (Ix.sym (σ₁ [→] σ₂) {LI.fold-map τ₀ σr (σ₁ [→] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i)} {i} (idx-eq (LI.fold-map-arrow τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i))) r
+map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-inl {σ₁ = σ₁} {σ₂ = σ₂} M) {gi} rγ {i} (i' , r , ⟪ e₀ ⟫) =
+  F₁ .idxf .sfunc (gi , i') , ValRel-at-bound (σ₁ [ σr ]) (map-val IH M rγ (ValRel-at-bound (σ₁ [ μ τ₀ ]) r)) ,
+  ⟪ Ix.trans ((σ₁ [+] σ₂) [ σr ]) {F₊ .idxf .sfunc (gi , i)} {F₊ .idxf .sfunc (gi , inj₁ i')} {inj₁ (F₁ .idxf .sfunc (gi , i'))}
+      (F₊ .idxf .sfunc-resp-≈ {gi , i} {gi , inj₁ i'} (IxC.refl Γ {gi} , e₀))
+      (idx-eq (LI.fold-map-inl τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i')) ⟫
+  where
+  F₊ = LI.fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
+  F₁ = LI.fold-map τ₀ σr σ₁ ⟦ s ⟧tm
+map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-inr {σ₁ = σ₁} {σ₂ = σ₂} M) {gi} rγ {i} (i' , r , ⟪ e₀ ⟫) =
+  F₂ .idxf .sfunc (gi , i') , ValRel-at-bound (σ₂ [ σr ]) (map-val IH M rγ (ValRel-at-bound (σ₂ [ μ τ₀ ]) r)) ,
+  ⟪ Ix.trans ((σ₁ [+] σ₂) [ σr ]) {F₊ .idxf .sfunc (gi , i)} {F₊ .idxf .sfunc (gi , inj₂ i')} {inj₂ (F₂ .idxf .sfunc (gi , i'))}
+      (F₊ .idxf .sfunc-resp-≈ {gi , i} {gi , inj₂ i'} (IxC.refl Γ {gi} , e₀))
+      (idx-eq (LI.fold-map-inr τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i')) ⟫
+  where
+  F₊ = LI.fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
+  F₂ = LI.fold-map τ₀ σr σ₂ ⟦ s ⟧tm
+map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-pair {σ₁ = σ₁} {σ₂ = σ₂} M₁ M₂) {gi} rγ {i} (r₁ , r₂) =
+  ValRel-at-bound (σ₁ [ σr ]) (ValRel-resp (σ₁ [ σr ]) (proj₁ e) (map-val IH M₁ rγ (ValRel-at-bound (σ₁ [ μ τ₀ ]) r₁))) ,
+  ValRel-at-bound (σ₂ [ σr ]) (ValRel-resp (σ₂ [ σr ]) (proj₂ e) (map-val IH M₂ rγ (ValRel-at-bound (σ₂ [ μ τ₀ ]) r₂)))
+  where
+  e = Ix.sym ((σ₁ [×] σ₂) [ σr ])
+        {LI.fold-map τ₀ σr (σ₁ [×] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i)}
+        {LI.fold-map τ₀ σr σ₁ ⟦ s ⟧tm .idxf .sfunc (gi , proj₁ i) , LI.fold-map τ₀ σr σ₂ ⟦ s ⟧tm .idxf .sfunc (gi , proj₂ i)}
+        (idx-eq (LI.fold-map-pair τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i))
+map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-mu {τ' = τ'} M) {gi} rγ {i} r =
+  ValRel-at-bound (τₛ [ μ τₛ ])
+    (ValRel-resp (τₛ [ μ τₛ ]) e
+      (ValRel-cast (unfold₁-inst τ' σr)
+        (map-val IH M rγ (ValRel-cast⁻ (unfold₁-inst τ' (μ τ₀)) (ValRel-at-bound (τμ [ μ τμ ]) r)))))
+  where
+  τμ = sub (sub-lift (push (μ τ₀))) τ'
+  τₛ = sub (sub-lift (push σr)) τ'
+  Cμ = ty-cast (unfold₁-inst τ' (μ τ₀))
+  Cₛ = ty-cast (unfold₁-inst τ' σr)
+  Fu = LI.fold-map τ₀ σr (unfold₁ τ') ⟦ s ⟧tm
+  Fμ = LI.fold-map τ₀ σr (μ τ') ⟦ s ⟧tm
+  i₀ = ty-cast (sym (unfold₁-inst τ' (μ τ₀))) .idxf .sfunc (unroll-mor τμ .idxf .sfunc i)
+  a = Cₛ .idxf .sfunc (Fu .idxf .sfunc (gi , i₀))
+  b = roll-mor τμ .idxf .sfunc (Cμ .idxf .sfunc i₀)
+  e₀ : Ix._≈_ (μ τμ) b i
+  e₀ = Ix.trans (μ τμ) {b} {roll-mor τμ .idxf .sfunc (unroll-mor τμ .idxf .sfunc i)} {i}
+         (roll-mor τμ .idxf .sfunc-resp-≈ {Cμ .idxf .sfunc i₀} {unroll-mor τμ .idxf .sfunc i}
+           (ty-cast-cancel (unfold₁-inst τ' (μ τ₀)) (unroll-mor τμ .idxf .sfunc i)))
+         (idx-eq (LI.roll-unroll τμ) i)
+  e₁ : Ix._≈_ (μ τₛ) (roll-mor τₛ .idxf .sfunc a) (Fμ .idxf .sfunc (gi , i))
+  e₁ = Ix.trans (μ τₛ) {roll-mor τₛ .idxf .sfunc a} {Fμ .idxf .sfunc (gi , b)} {Fμ .idxf .sfunc (gi , i)}
+         (Ix.sym (μ τₛ) {Fμ .idxf .sfunc (gi , b)} {roll-mor τₛ .idxf .sfunc a} (idx-eq (LI.fold-map-mu τ₀ σr τ' ⟦ s ⟧tm) (gi , i₀)))
+         (Fμ .idxf .sfunc-resp-≈ {gi , b} {gi , i} (IxC.refl Γ {gi} , e₀))
+  e : Ix._≈_ (τₛ [ μ τₛ ]) a (unroll-mor τₛ .idxf .sfunc (Fμ .idxf .sfunc (gi , i)))
+  e = Ix.trans (τₛ [ μ τₛ ]) (Ix.sym (τₛ [ μ τₛ ]) (idx-eq (LI.unroll-roll τₛ) a))
+        (unroll-mor τₛ .idxf .sfunc-resp-≈ {roll-mor τₛ .idxf .sfunc a} {Fμ .idxf .sfunc (gi , i)} e₁)
 
 -- The value part of the fundamental lemma: a term's value is related to the term's index at a
 -- related environment, by induction on the term over all derivations.

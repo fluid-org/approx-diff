@@ -8,7 +8,7 @@ open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_; _⊔_; _≤_; s≤s)
 open import Data.Nat.Properties using (≤-refl; ≤-trans; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
 open import Data.Fin using (Fin; zero; suc)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl) renaming (subst to ≡-subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong) renaming (subst to ≡-subst)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
@@ -894,20 +894,25 @@ DepRel-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i i') (r 
                    DepRel τ r o d → DepRel τ (ValRel-resp τ E r) o (⟦ τ ⟧ .fam .subst E .func d)
 DepRel-transport τ = DepRel-transport′ τ ≤-refl
 
-ix-cast : ∀ {τ τ'} → τ ≡ τ' → Ix τ → Ix τ'
-ix-cast refl i = i
-
-fib-cast : ∀ {τ τ'} (e : τ ≡ τ') {i : Ix τ} → ∣ Fib τ i ∣ → ∣ Fib τ' (ix-cast e i) ∣
-fib-cast refl d = d
+ty-cast : ∀ {τ τ'} → τ ≡ τ' → Mor ⟦ τ ⟧ ⟦ τ' ⟧
+ty-cast e = LI.≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty (λ ())) e)
 
 vec-cast : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} → ∣ 𝔽 (width v) ∣ → ∣ 𝔽 (width (≡-subst Val e v)) ∣
 vec-cast refl o = o
 
 ValRel-cast : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} {i : Ix τ} →
-              ValRel τ v i → ValRel τ' (≡-subst Val e v) (ix-cast e i)
+              ValRel τ v i → ValRel τ' (≡-subst Val e v) (ty-cast e .idxf .sfunc i)
 ValRel-cast refl r = r
+
+ValRel-cast⁻ : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} {i : Ix τ'} →
+               ValRel τ' (≡-subst Val e v) i → ValRel τ v (ty-cast (sym e) .idxf .sfunc i)
+ValRel-cast⁻ refl r = r
+
+ty-cast-cancel : ∀ {τ τ'} (e : τ ≡ τ') (i : Ix τ') →
+                 Ix._≈_ τ' (ty-cast e .idxf .sfunc (ty-cast (sym e) .idxf .sfunc i)) i
+ty-cast-cancel {τ' = τ'} refl i = Ix.refl τ' {i}
 
 DepRel-cast : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} {i : Ix τ} (r : ValRel τ v i)
               {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
-              DepRel τ r o d → DepRel τ' (ValRel-cast e r) (vec-cast e {v} o) (fib-cast e d)
+              DepRel τ r o d → DepRel τ' (ValRel-cast e r) (vec-cast e {v} o) (ty-cast e .famf .transf i .func d)
 DepRel-cast refl r h = h
