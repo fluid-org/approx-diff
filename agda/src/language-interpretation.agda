@@ -1850,6 +1850,45 @@ fold-map-pair τ₀ σ σ₁ σ₂ {Γ'} B = begin
        ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
   S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
 
+-- The action at a product: the lifting in context of the product in context of the actions at
+-- the factors.
+fold-map-pair-L : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : Obj}
+                  (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
+                  fold-map τ₀ σ (σ₁ [×] σ₂) B
+                    ≈ strong-Lf-map (strong-prod-m (fold-map τ₀ σ σ₁ B) (fold-map τ₀ σ σ₂ B))
+fold-map-pair-L τ₀ σ σ₁ σ₂ {Γ'} B = begin
+    (b× ∘ S×) ∘ ⟨ p₁ , f× ∘ p₂ ⟩
+  ≈⟨ ∘-cong (∘-cong (sub-as-apply-bwd-[×] σ₁ σ₂ σ) ≈-refl)
+            (pair-cong ≈-refl (∘-cong (sub-as-apply-fwd-[×] σ₁ σ₂ (μ τ₀)) ≈-refl)) ⟩
+    (Lf-map (prod-m b₁ b₂) ∘ S×) ∘ ⟨ p₁ , Lf-map (prod-m f₁ f₂) ∘ p₂ ⟩
+  ≈⟨ ∘-cong (strong-Lf-map-post (prod-m b₁ b₂) (strong-prod-m S₁ S₂)) (pair-cong (≈-sym id-left) ≈-refl) ⟩
+    strong-Lf-map (prod-m b₁ b₂ ∘ strong-prod-m S₁ S₂) ∘ prod-m (id _) (Lf-map (prod-m f₁ f₂))
+  ≈⟨ strong-Lf-map-pre (id _) (prod-m b₁ b₂ ∘ strong-prod-m S₁ S₂) (prod-m f₁ f₂) ⟩
+    strong-Lf-map ((prod-m b₁ b₂ ∘ strong-prod-m S₁ S₂) ∘ prod-m (id _) (prod-m f₁ f₂))
+  ≈⟨ strong-Lf-map-cong (≈-trans (∘-cong (strong-prod-m-post b₁ b₂ S₁ S₂) ≈-refl)
+       (≈-trans (strong-prod-m-pre (b₁ ∘ S₁) (b₂ ∘ S₂) (id _) f₁ f₂)
+         (strong-prod-m-cong (∘-cong ≈-refl (pair-cong id-left ≈-refl))
+                             (∘-cong ≈-refl (pair-cong id-left ≈-refl))))) ⟩
+    strong-Lf-map (strong-prod-m ((b₁ ∘ S₁) ∘ ⟨ p₁ , f₁ ∘ p₂ ⟩) ((b₂ ∘ S₂) ∘ ⟨ p₁ , f₂ ∘ p₂ ⟩))
+  ∎
+  where
+  open ≈-Reasoning isEquiv
+  f× = sub-as-apply-fwd (σ₁ [×] σ₂) (μ τ₀)
+  f₁ = sub-as-apply-fwd σ₁ (μ τ₀)
+  f₂ = sub-as-apply-fwd σ₂ (μ τ₀)
+  b× = sub-as-apply-bwd (σ₁ [×] σ₂) σ
+  b₁ = sub-as-apply-bwd σ₁ σ
+  b₂ = sub-as-apply-bwd σ₂ σ
+  S× : prod Γ' (fobj μ-obj (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S× = strong-fmor (as-poly {0} {1} (σ₁ [×] σ₂) (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+  S₁ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₁ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} σ₁ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S₁ = strong-fmor (as-poly {0} {1} σ₁ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+  S₂ : prod Γ' (fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ μ τ₀ ⟧ty (λ ()))))
+       ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
+  S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
+
 fold-map-mu : ∀ (τ₀ : type 1) (σ : type 0) (τ' : type 2) {Γ' : Obj}
               (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
               (fold-map τ₀ σ (μ τ') B
