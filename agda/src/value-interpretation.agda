@@ -87,6 +87,38 @@ shape-val (μ {τ = τ} fo) σ η N (acc rs) f (roll w) p =
          (subst Val (unfold-sub σ τ) w) (s≤s (≤-reflexive (size-subst (unfold-sub σ τ) w))))
   where B = sub (sub-lift σ) τ
 
+shape-val-irrelevant : ∀ {n} {τ : type (n + 0)} (fo : first-order τ) (σ : TySub (n + 0) 0)
+                       (η : Fin n → Fin 0 ⊎ Sort 0) {N N'} (a : Acc _<_ N) (a' : Acc _<_ N')
+                       (f : Compat σ η N) (f' : Compat σ η N') →
+                       (∀ j (u : Val (σ (j ↑ˡ 0))) (p : size u < N) (q : size u < N') → f j u p ≡ f' j u q) →
+                       ∀ (v : Val (sub σ τ)) (p : size v < N) (p' : size v < N') →
+                       shape-val fo σ η N a f v p ≡ shape-val fo σ η N' a' f' v p'
+shape-val-irrelevant {n} (var i) σ η a a' f f' hyp v p p' = go (splitAt n i) refl
+  where
+  go : ∀ s eq → shape-var i σ η _ f v p s eq ≡ shape-var i σ η _ f' v p' s eq
+  go (inj₁ j) eq = hyp j _ _ _
+  go (inj₂ ()) eq
+shape-val-irrelevant unit σ η a a' f f' hyp unit p p' = refl
+shape-val-irrelevant (base s) σ η a a' f f' hyp (const c) p p' = refl
+shape-val-irrelevant (fo₁ [+] fo₂) σ η a a' f f' hyp (inl v) p p' =
+  cong inj₁ (shape-val-irrelevant fo₁ σ η a a' f f' hyp v _ _)
+shape-val-irrelevant (fo₁ [+] fo₂) σ η a a' f f' hyp (inr v) p p' =
+  cong inj₂ (shape-val-irrelevant fo₂ σ η a a' f f' hyp v _ _)
+shape-val-irrelevant (fo₁ [×] fo₂) σ η a a' f f' hyp (pair v u) p p' =
+  cong₂ _,_ (shape-val-irrelevant fo₁ σ η a a' f f' hyp v _ _)
+            (shape-val-irrelevant fo₂ σ η a a' f f' hyp u _ _)
+shape-val-irrelevant (μ {τ = τ} fo) σ η (acc rs) (acc rs') f f' hyp (roll w) p p' =
+  cong sup (shape-val-irrelevant fo (extend σ (μ B)) η' (rs p) (rs' p') _ _ hyp'
+              (subst Val (unfold-sub σ τ) w) _ _)
+  where
+  B  = sub (sub-lift σ) τ
+  η' = extend η (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η))
+  hyp' : ∀ j u p₀ q₀ → _ ≡ _
+  hyp' zero    u p₀ q₀ =
+    shape-val-irrelevant (μ fo) σ η (rs p) (rs' p') _ _
+      (λ j u₁ p₁ q₁ → hyp j u₁ (<-trans p₁ p) (<-trans q₁ p')) u p₀ q₀
+  hyp' (suc j) u p₀ q₀ = hyp j u (<-trans p₀ p) (<-trans q₀ p')
+
 ⟦_⟧val : ∀ {τ : type 0} (fo : first-order τ) → Val τ → Carrier (𝒞⟦ fo ⟧ty ∅𝒞 .idx)
 ⟦ unit ⟧val unit = lift tt
 ⟦ base s ⟧val (const c) = c
