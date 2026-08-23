@@ -303,3 +303,54 @@ mutual
   rapply (rbase g coh) j x = g j x
   rapply (rbind fo r) zero x = ren-tree fo r x
   rapply (rbind fo r) (suc j) x = rapply r j x
+
+weaken-ren : ∀ {n} {η : Fin n → Fin 0 ⊎ Sort 0} {s : Fin 0 ⊎ Sort 0} → RenCompat suc suc η (extend η s)
+weaken-ren = rbase (λ j x → x) (λ j → refl)
+
+-- Shapes also translate along a first-order substitution of the type variables, sending the shape
+-- at a variable to a shape of the substituted type. A μ node lifts the substitution, so there the
+-- per-variable translations extend by a tree translation at the bound sort and the earlier ones
+-- are moved under the binder by the renaming translation at the weakening.
+data SubCompat : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} → (∀ i → first-order (σ i)) →
+                 (Fin n₁ → Fin 0 ⊎ Sort 0) → (Fin n₂ → Fin 0 ⊎ Sort 0) → Set₁ where
+  sbase : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
+          {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+          (∀ j → El (η₁ j) → ⟦ ∣ fo-as-poly (fσ (j ↑ˡ 0)) ∅𝒞 ∣ ⟧shape η₂) →
+          SubCompat fσ η₁ η₂
+  sbind : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
+          {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+          {τ : type (suc n₁ + 0)} (fo : first-order τ) → SubCompat fσ η₁ η₂ →
+          SubCompat (fo-lift fσ)
+                    (extend η₁ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η₁)))
+                    (extend η₂ (inj₂ (mkSort ∣ fo-as-poly (fo-sub (fo-lift fσ) fo) ∅𝒞 ∣ η₂)))
+
+mutual
+  sub-tree : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
+             {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+             {τ : type (suc n₁ + 0)} (fo : first-order τ) → SubCompat fσ η₁ η₂ →
+             W ∣ fo-as-poly fo ∅𝒞 ∣ η₁ → W ∣ fo-as-poly (fo-sub (fo-lift fσ) fo) ∅𝒞 ∣ η₂
+  sub-tree fo r (sup x) = sup (sub-shape fo (sbind fo r) x)
+
+  sub-shape : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
+              {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+              {τ : type (n₁ + 0)} (fo : first-order τ) → SubCompat fσ η₁ η₂ →
+              ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape η₁ → ⟦ ∣ fo-as-poly (fo-sub fσ fo) ∅𝒞 ∣ ⟧shape η₂
+  sub-shape {n₁ = n₁} {fσ = fσ} {η₁ = η₁} {η₂ = η₂} (var i) r x = go (splitAt n₁ i) refl x
+    where
+    go : ∀ s → splitAt n₁ i ≡ s → ⟦ ∣ Var s ∣ ⟧shape η₁ → ⟦ ∣ fo-as-poly (fσ i) ∅𝒞 ∣ ⟧shape η₂
+    go (inj₁ j) eq x' =
+      subst (λ i' → ⟦ ∣ fo-as-poly (fσ i') ∅𝒞 ∣ ⟧shape η₂) (splitAt⁻¹-↑ˡ eq) (sapply r j x')
+    go (inj₂ ()) eq x'
+  sub-shape unit r x = x
+  sub-shape (base s) r x = x
+  sub-shape (fo₁ [+] fo₂) r (inj₁ x) = inj₁ (sub-shape fo₁ r x)
+  sub-shape (fo₁ [+] fo₂) r (inj₂ y) = inj₂ (sub-shape fo₂ r y)
+  sub-shape (fo₁ [×] fo₂) r (x , y) = sub-shape fo₁ r x , sub-shape fo₂ r y
+  sub-shape (μ fo) r t = sub-tree fo r t
+
+  sapply : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
+           {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+           SubCompat fσ η₁ η₂ → ∀ j → El (η₁ j) → ⟦ ∣ fo-as-poly (fσ (j ↑ˡ 0)) ∅𝒞 ∣ ⟧shape η₂
+  sapply (sbase g) j x = g j x
+  sapply (sbind fo r) zero x = sub-tree fo r x
+  sapply (sbind {fσ = fσ} fo r) (suc j) x = ren-shape {ρ = suc} (fσ (j ↑ˡ 0)) weaken-ren (sapply r j x)
