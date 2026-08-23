@@ -12,7 +12,7 @@ open import Data.Nat.Properties using (≤-reflexive; <-trans; n<1+n; m≤m+n; m
 open import Data.Nat.Induction using (<-wellFounded)
 open import Induction.WellFounded using (Acc; acc)
 open import Data.Fin using (Fin; zero; suc; splitAt; _↑ˡ_)
-open import Data.Fin.Properties using (splitAt⁻¹-↑ˡ)
+open import Data.Fin.Properties using (splitAt⁻¹-↑ˡ; splitAt-↑ˡ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Product using (_,_)
 open import Data.Unit using (tt)
@@ -244,3 +244,62 @@ val-shape-val (μ {τ = τ} fo) σ η (acc rs) (acc rs') f f' inv (roll w) p q =
               (<-wellFounded _) (<-wellFounded _) (λ ()) (λ ()) (λ ()) v' (n<1+n _) (n<1+n _)))
         (subst-subst-sym {P = Val} (sub-id (μ τ)) {p = v})
   where v' = subst Val (sym (sub-id (μ τ))) v
+
+-- Shapes translate along a renaming of the type variables, given a translation of the shape at
+-- each variable. A μ node binds a new sort on each side, so there the per-variable translations
+-- extend by the translation of whole trees at the bound sort. The renaming on the polynomial's
+-- variables is carried separately, with a proof that the type-level renaming restricts to it.
+data RenCompat : ∀ {n₁ n₂} → TyRen (n₁ + 0) (n₂ + 0) → TyRen n₁ n₂ →
+                 (Fin n₁ → Fin 0 ⊎ Sort 0) → (Fin n₂ → Fin 0 ⊎ Sort 0) → Set₁ where
+  rbase : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
+          {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+          (∀ j → El (η₁ j) → El (η₂ (ρ̂ j))) → (∀ j → ρ (j ↑ˡ 0) ≡ ρ̂ j ↑ˡ 0) →
+          RenCompat ρ ρ̂ η₁ η₂
+  rbind : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
+          {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+          {τ : type (suc n₁ + 0)} (fo : first-order τ) → RenCompat ρ ρ̂ η₁ η₂ →
+          RenCompat (extᵗ ρ) (extᵗ ρ̂)
+                    (extend η₁ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η₁)))
+                    (extend η₂ (inj₂ (mkSort ∣ fo-as-poly (fo-ren {ρ = extᵗ ρ} fo) ∅𝒞 ∣ η₂)))
+
+rcoh : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
+       {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+       RenCompat ρ ρ̂ η₁ η₂ → ∀ j → ρ (j ↑ˡ 0) ≡ ρ̂ j ↑ˡ 0
+rcoh (rbase g coh) j      = coh j
+rcoh (rbind fo r) zero    = refl
+rcoh (rbind fo r) (suc j) = cong suc (rcoh r j)
+
+mutual
+  ren-tree : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
+             {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+             {τ : type (suc n₁ + 0)} (fo : first-order τ) → RenCompat ρ ρ̂ η₁ η₂ →
+             W ∣ fo-as-poly fo ∅𝒞 ∣ η₁ → W ∣ fo-as-poly (fo-ren {ρ = extᵗ ρ} fo) ∅𝒞 ∣ η₂
+  ren-tree fo r (sup x) = sup (ren-shape fo (rbind fo r) x)
+
+  ren-shape : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
+              {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+              {τ : type (n₁ + 0)} (fo : first-order τ) → RenCompat ρ ρ̂ η₁ η₂ →
+              ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape η₁ → ⟦ ∣ fo-as-poly (fo-ren {ρ = ρ} fo) ∅𝒞 ∣ ⟧shape η₂
+  ren-shape {n₁ = n₁} {n₂ = n₂} {ρ = ρ} {ρ̂ = ρ̂} {η₁ = η₁} {η₂ = η₂} (var i) r x =
+    go (splitAt n₁ i) refl x
+    where
+    go : ∀ s → splitAt n₁ i ≡ s → ⟦ ∣ Var s ∣ ⟧shape η₁ → ⟦ ∣ Var (splitAt n₂ (ρ i)) ∣ ⟧shape η₂
+    go (inj₁ j) eq x' =
+      subst (λ s → ⟦ ∣ Var s ∣ ⟧shape η₂)
+        (sym (trans (cong (splitAt n₂) (trans (sym (cong ρ (splitAt⁻¹-↑ˡ eq))) (rcoh r j)))
+                    (splitAt-↑ˡ n₂ (ρ̂ j) 0)))
+        (rapply r j x')
+    go (inj₂ ()) eq x'
+  ren-shape unit r x = x
+  ren-shape (base s) r x = x
+  ren-shape (fo₁ [+] fo₂) r (inj₁ x) = inj₁ (ren-shape fo₁ r x)
+  ren-shape (fo₁ [+] fo₂) r (inj₂ y) = inj₂ (ren-shape fo₂ r y)
+  ren-shape (fo₁ [×] fo₂) r (x , y) = ren-shape fo₁ r x , ren-shape fo₂ r y
+  ren-shape (μ fo) r t = ren-tree fo r t
+
+  rapply : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
+           {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+           RenCompat ρ ρ̂ η₁ η₂ → ∀ j → El (η₁ j) → El (η₂ (ρ̂ j))
+  rapply (rbase g coh) j x = g j x
+  rapply (rbind fo r) zero x = ren-tree fo r x
+  rapply (rbind fo r) (suc j) x = rapply r j x
