@@ -107,6 +107,27 @@ _[_] : ∀ {Δ} → type (suc Δ) → type Δ → type Δ
 
 infix 50 _[_]
 
+fo-ren : ∀ {Δ₁ Δ₂} {ρ : TyRen Δ₁ Δ₂} {τ : type Δ₁} → first-order τ → first-order (ρ *ᵗ τ)
+fo-ren {ρ = ρ} (var i) = var (ρ i)
+fo-ren unit            = unit
+fo-ren (base s)        = base s
+fo-ren (fo₁ [+] fo₂)   = fo-ren fo₁ [+] fo-ren fo₂
+fo-ren (fo₁ [×] fo₂)   = fo-ren fo₁ [×] fo-ren fo₂
+fo-ren (μ fo)          = μ (fo-ren fo)
+
+fo-sub : ∀ {Δ₁ Δ₂} {σ : TySub Δ₁ Δ₂} {τ : type Δ₁} → (∀ i → first-order (σ i)) →
+         first-order τ → first-order (sub σ τ)
+fo-sub fσ (var i)       = fσ i
+fo-sub fσ unit          = unit
+fo-sub fσ (base s)      = base s
+fo-sub fσ (fo₁ [+] fo₂) = fo-sub fσ fo₁ [+] fo-sub fσ fo₂
+fo-sub fσ (fo₁ [×] fo₂) = fo-sub fσ fo₁ [×] fo-sub fσ fo₂
+fo-sub fσ (μ fo)        = μ (fo-sub (λ { zero → var zero ; (suc i) → fo-ren (fσ i) }) fo)
+
+fo-inst : ∀ {Δ} {τ : type (suc Δ)} {ρ : type Δ} → first-order τ → first-order ρ →
+          first-order (τ [ ρ ])
+fo-inst fo fρ = fo-sub (λ { zero → fρ ; (suc i) → var i }) fo
+
 sub-cong : ∀ {Δ Δ'} {σ σ' : TySub Δ Δ'} (τ : type Δ) → (∀ i → σ i ≡ σ' i) → sub σ τ ≡ sub σ' τ
 sub-cong (var i)     σ≡σ' = σ≡σ' i
 sub-cong unit        _    = refl
