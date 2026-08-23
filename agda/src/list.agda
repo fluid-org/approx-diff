@@ -85,7 +85,6 @@ any-tabulate-false g f h Fin.zero    = proj₁ (∨-false (f (g Fin.zero)) _ h)
 any-tabulate-false g f h (Fin.suc i) =
   any-tabulate-false (λ k → g (Fin.suc k)) f (proj₂ (∨-false (f (g Fin.zero)) _ h)) i
 
--- A reflexive test finds every member of a list within that list.
 any-self : ∀ {a} {A : Set a} {f : A → A → Bool} → (∀ x → f x x ≡ Bool.true) →
            ∀ xs → All (λ x → any (f x) xs ≡ Bool.true) xs
 any-self     h []       = []
@@ -109,7 +108,6 @@ Any-All : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q} {xs : List
 Any-All (here px) (qx ∷ _) = here (px , qx)
 Any-All (there a) (_ ∷ qs) = there (Any-All a qs)
 
--- Eliminate an Any whose predicate is refutable.
 Any-contra : ∀ {a p b} {A : Set a} {P : A → Set p} {B : Set b} {xs : List A} →
              (∀ {x} → P x → ⊥) → Any P xs → B
 Any-contra contra (here px) = ⊥-elim (contra px)
@@ -120,7 +118,6 @@ map-All-cong : ∀ {a b} {A : Set a} {B : Set b} {f g : A → B} {xs : List A} �
 map-All-cong []       = ≡-refl
 map-All-cong (h ∷ hs) = ≡-cong₂ _∷_ h (map-All-cong hs)
 
--- Look up a Boolean membership witness in an All, given that the test is sound for equality.
 member-All : ∀ {a p} {A : Set a} {P : A → Set p} {eq : A → A → Bool} →
              (∀ {x y} → eq x y ≡ Bool.true → x ≡ y) →
              ∀ {x xs} → All P xs → any (eq x) xs ≡ Bool.true → P x
@@ -134,7 +131,6 @@ any-or f g []       = ≡-refl
 any-or f g (x ∷ xs) =
   ≡-trans (≡-cong ((f x ∨ g x) ∨_) (any-or f g xs)) (∨-interchange (f x) (g x) (any f xs) (any g xs))
 
--- Swapping the order of a doubly-nested search.
 any-comm : ∀ {a b} {A : Set a} {B : Set b} (h : A → B → Bool) (xs : List A) (ys : List B) →
            any (λ x → any (h x) ys) xs ≡ any (λ y → any (λ x → h x y) xs) ys
 any-comm h []       ys = ≡-sym (any-false (universal (λ y → ≡-refl) ys))
@@ -195,7 +191,6 @@ sum-ones {ns = suc m ∷ ns} (s≤s z≤n ∷ hs) eq = ≡-cong suc m≡0 ∷ su
 singleton : ∀ {a} {A : Set a} (l : List A) → length l ≡ 1 → Σ A (λ x → l ≡ x ∷ [])
 singleton (x ∷ []) e = x , ≡-refl
 
--- Lists of lists compared up to reordering at both levels.
 _↭↭_ : ∀ {a} {A : Set a} → List (List A) → List (List A) → Set a
 _↭↭_ = H.Permutation _↭_
 
@@ -240,7 +235,6 @@ map-proj₁-pair : ∀ {a b} {A : Set a} {B : Set b} (g : A → B) (xs : List A)
 map-proj₁-pair g []       = ≡-refl
 map-proj₁-pair g (x ∷ xs) = ≡-cong (x ∷_) (map-proj₁-pair g xs)
 
--- The two halves of a partition recombine to the original, up to order.
 partition-↭ : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
               (proj₁ (partitionᵇ f xs) ++ proj₂ (partitionᵇ f xs)) ↭ xs
 partition-↭ f []       = ↭-refl
@@ -282,7 +276,6 @@ AllPairs-zip : ∀ {a r s} {A : Set a} {S : A → A → Set r} {S' : A → A →
 AllPairs-zip []         []           = []
 AllPairs-zip (px ∷ ps) (px' ∷ ps') = All-zip _,_ px px' ∷ AllPairs-zip ps ps'
 
--- Partitioning preserves pairwise relatedness, and every kept member relates to every dropped one.
 partition-AllPairs : ∀ {a r} {A : Set a} {S : A → A → Set r} (f : A → Bool) →
                      (∀ {x y} → S x y → S y x) →
                      ∀ {xs : List A} → AllPairs S xs →
@@ -334,7 +327,6 @@ AllPairs-++⁻ []       ys ps        = [] , ps , []
 AllPairs-++⁻ (x ∷ xs) ys (px ∷ ps) with AllPairs-++⁻ xs ys ps
 ... | (a₁ , a₂ , cross) = (AllP.++⁻ˡ xs px ∷ a₁) , a₂ , (AllP.++⁻ʳ xs px ∷ cross)
 
--- Pairwise relatedness respects permutation when the relation is symmetric.
 AllPairs-perm : ∀ {a r} {A : Set a} {S : A → A → Set r} →
                 (∀ {x y} → S x y → S y x) →
                 {xs ys : List A} → xs ↭ ys → AllPairs S xs → AllPairs S ys
@@ -365,7 +357,6 @@ perm-AllPairs sym resp (H.swap r₁ r₂ p) ((pxy ∷ pxs) ∷ (pys ∷ ps)) =
 perm-AllPairs sym resp (H.trans p q)              ps                      =
   perm-AllPairs sym resp q (perm-AllPairs sym resp p ps)
 
--- On a pairwise-distinct list, filtering out a listed element removes exactly its one occurrence.
 filter-out-↭ : ∀ {a} {A : Set a} {eq : A → A → Bool} →
                (∀ {x y} → eq x y ≡ Bool.true → x ≡ y) →
                {x : A} {xs : List A} →

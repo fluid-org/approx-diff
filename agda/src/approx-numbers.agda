@@ -219,7 +219,6 @@ module Galois where
 
   𝟙 = terminal .HasTerminal.witness
 
-  -- Meet-preserving forwards map (right adjoint).
   add⁎ : ∀ q₁ q₂ → Intv q₁ → Intv q₂ → Intv (q₁ + q₂)
   add⁎ q₁ q₂ x y .lower = (q₂ + x .lower) ⊓ (q₁ + y .lower)
   add⁎ q₁ q₂ x y .upper = (q₂ + x .upper) ⊔ (q₁ + y .upper)
@@ -367,7 +366,6 @@ module Conjugate where
 
   𝟙 = terminal .HasTerminal.witness
 
-  -- Join-preserving forwards map (Tarski conjugate).
   addᵀ : ∀ q₁ q₂ → Intv q₁ → Intv q₂ → Intv (q₁ + q₂)
   addᵀ q₁ q₂ x y .lower = (q₂ + x .lower) ⊔ (q₁ + y .lower)
   addᵀ q₁ q₂ x y .upper = (q₂ + x .upper) ⊓ (q₁ + y .upper)
@@ -385,7 +383,6 @@ module Conjugate where
     liftS (⊔-mono-≤ (+-mono-≤ (≤-refl {q₂}) ϕ₁) (+-mono-≤ (≤-refl {q₁}) ψ₁)) ,
     liftS (⊓-mono-≤ (+-mono-≤ (≤-refl {q₂}) ϕ₂) (+-mono-≤ (≤-refl {q₁}) ψ₂))
 
-  -- Partial-input case of addᵀ: shifts x's bounds by q₂, the result Intv (q₁+q₂).
   addᵀ-r : ∀ q₁ q₂ → Intv q₁ → Intv (q₁ + q₂)
   addᵀ-r q₁ q₂ x .lower = q₂ + x .lower
   addᵀ-r q₁ q₂ x .upper = q₂ + x .upper
@@ -410,7 +407,6 @@ module Conjugate where
   addᵀ-l-mono q₁ q₂ (liftS ϕ₁ , liftS ϕ₂) =
     liftS (+-mono-≤ (≤-refl {q₁}) ϕ₁) , liftS (+-mono-≤ (≤-refl {q₁}) ϕ₂)
 
-  -- addᵀ as the join of the two partial-input contributions; basis of join-preservation.
   addᵀ-split-≤ : ∀ q₁ q₂ x y → addᵀ q₁ q₂ x y ⊑ (addᵀ-r q₁ q₂ x ⊔I addᵀ-l q₁ q₂ y)
   addᵀ-split-≤ q₁ q₂ x y = ⊑I-isPreorder .refl {addᵀ q₁ q₂ x y}
 
@@ -721,6 +717,5 @@ module _ (r : ℚ) {{_ : Positive r}} where
   scale-galois₁ q x y (liftS ϕ₁ , liftS ϕ₂) =
     (liftS {!!}) ,
     (liftS {!!})
-
 
 -}

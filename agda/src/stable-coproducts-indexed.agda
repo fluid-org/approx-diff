@@ -22,7 +22,6 @@ open Colimit
 open NatTrans
 open Functor
 
--- The coproduct object of an index-setoid diagram, and its injections.
 ∐ : ∀ (S : Setoid os es) (D : Functor (setoid→category S) 𝒞) → 𝒞.obj
 ∐ S D = LC S D .apex
 
@@ -34,13 +33,9 @@ record IdxStableBits
     {S : Setoid os es} {D : Functor (setoid→category S) 𝒞} {x y}
     (f : 𝒞.Iso (∐ S D) x) (g : y 𝒞.⇒ x) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
   field
-    -- The summands of y, over the same index as those of x.
     E   : Functor (setoid→category S) 𝒞
-    -- Each summand of y maps into the corresponding summand of x.
     leg : ∀ (s : S .Setoid.Carrier) → E .fobj s 𝒞.⇒ D .fobj s
-    -- y is the coproduct of its summands.
     h   : 𝒞.Iso (∐ S E) y
-    -- g restricted to the s-th summand factors through leg s.
     eq  : ∀ (s : S .Setoid.Carrier) →
           (f .fwd 𝒞.∘ (inj D s 𝒞.∘ leg s)) 𝒞.≈ (g 𝒞.∘ (h .fwd 𝒞.∘ inj E s))
 

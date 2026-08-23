@@ -35,7 +35,6 @@ _×m_ = prod-m
           ((f₁ ∘ g₁) ×m (f₂ ∘ g₂)) ≈ ((f₁ ×m f₂) ∘ (g₁ ×m g₂))
 ×m-comp = prod-m-comp
 
--- Associativity
 ×-assoc : ∀ {x y z} → ((x × y) × z) ⇒ (x × (y × z))
 ×-assoc = pair (p₁ ∘ p₁) (pair (p₂ ∘ p₁) p₂)
 
@@ -112,7 +111,6 @@ _×m_ = prod-m
   ∎
   where open ≈-Reasoning isEquiv
 
--- Right unit
 ×-runit : ∀ {x} → (x × 𝟙) ⇒ x
 ×-runit = p₁
 
@@ -142,7 +140,6 @@ _×m_ = prod-m
   ∎
   where open ≈-Reasoning isEquiv
 
--- Left unit
 ×-lunit : ∀ {x} → (𝟙 × x) ⇒ x
 ×-lunit = p₂
 

@@ -86,7 +86,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₃} {𝒞 : Category o₁ m₁ e₁} {𝒟 
   product-cmon-enriched .comp-bilinear-ε₂ f =
     comp-bilinear-ε₂ CM𝒞 (f .proj₁) , comp-bilinear-ε₂ CM𝒟 (f .proj₂)
 
-
 module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) where
   open Category 𝒞
   open CMonEnriched CM
@@ -106,7 +105,6 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) where
       zero-2 : (p₂ ∘ in₁) ≈ εm
       id-+   : ((in₁ ∘ p₁) +m (in₂ ∘ p₂)) ≈ id prod
 
-    -- This gives products
     pair : ∀ {x} → x ⇒ A → x ⇒ B → x ⇒ prod
     pair f g = (in₁ ∘ f) +m (in₂ ∘ g)
 
@@ -163,7 +161,6 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) where
         (in₁ ∘ (f ∘ h)) +m (in₂ ∘ (g ∘ h))
       ∎ where open ≈-Reasoning isEquiv
 
-    -- And coproducts
     copair : ∀ {x} → A ⇒ x → B ⇒ x → prod ⇒ x
     copair f g = (f ∘ p₁) +m (g ∘ p₂)
 
@@ -218,7 +215,6 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) where
     biproducts→products bp .HasProducts.pair-p₂ {x} {y} {z} = pair-p₂ (bp y z)
     biproducts→products bp .HasProducts.pair-ext {x} {y} {z} = pair-ext (bp y z)
 
-    -- Any two biproducts on the same pair are canonically isomorphic.
     biproduct-iso : ∀ {A B} (bp₁ bp₂ : Biproduct A B) → Category.IsIso 𝒞 (pair bp₂ (p₁ bp₁) (p₂ bp₁))
     biproduct-iso bp₁ bp₂ .Category.IsIso.inverse = pair bp₁ (p₁ bp₂) (p₂ bp₂)
     biproduct-iso bp₁ bp₂ .Category.IsIso.f∘inverse≈id =
@@ -407,8 +403,6 @@ module cmon+product→biproduct {o m e}
 
   open Product P
 
-  -- Use the universal property of products to show that the pairing
-  -- operation preserves zero and addition.
   pair-ε : ∀ {z} → pair εm εm ≈ εm {z} {prod}
   pair-ε =
     begin
@@ -463,7 +457,6 @@ cmon+products→biproducts : ∀ {o m e}
   ∀ x y → Biproduct CM𝒞 x y
 cmon+products→biproducts CM𝒞 P x y = biproduct
   where open cmon+product→biproduct CM𝒞 (HasProducts.getProduct P x y)
-
 
 ------------------------------------------------------------------------------
 -- CMon-enrichment is inherited by functor categories

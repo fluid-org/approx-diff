@@ -17,7 +17,6 @@ import matrix
 -- together with a dependency relation at each tuple of constants.
 module signature.interpretation where
 
--- The setoid of tuples of constants.
 sort-vals-setoid : ∀ {ℓ} {sort : Set ℓ} (sort-index : sort → Setoid 0ℓ 0ℓ) → List sort → Setoid 0ℓ 0ℓ
 sort-vals-setoid si [] .Setoid.Carrier = ⊤
 sort-vals-setoid si [] .Setoid._≈_ _ _ = prop.⊤

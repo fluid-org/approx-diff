@@ -476,7 +476,6 @@ record HasWeakSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ 
 
 open import functor
 
--- A family is a functor from the setoid, viewed as a category.
 module _ {o m e os es} {𝒞 : Category o m e} where
 
   private
@@ -507,8 +506,6 @@ module _ {o m e os es} {𝒞 : Category o m e} where
   fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒞C.id-left
   fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒞C.id-left
 
--- If a category has all discrete limits, then it has all setoid
--- products (almost by definition).
 module _ {o m e} os es (𝒞 : Category o m e)
          (hasDiscreteLimits : ∀ (A : Setoid os es) → HasLimits (setoid→category A) 𝒞)
   where

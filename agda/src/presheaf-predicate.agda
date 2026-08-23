@@ -37,12 +37,6 @@ record Predicate (X : PSh.obj) : Set (suc (suc ℓ)) where
     pred-mor : ∀ {a b} (f : b 𝒞.⇒ a) → pred a P.⊑ (pred b P.[ X .fmor f ])
 open Predicate
 
--- pred a : Predicate (X .fobj a)
--- pred b : Predicate (X .fobj b)
-
--- pred a ⟨ X .fmor CP.in₁ ⟩ : Predicate (X .fobj (CP.coprod a b))
--- pred (CP.coprod a b) : Predicate (X .fobj (CP.coprod a b))
-
 record _⊑_ {X : PSh.obj} (P Q : Predicate X) : Prop (suc ℓ) where
   no-eta-equality
   field
@@ -112,7 +106,6 @@ adjoint₁ ϕ .*⊑* x = P.adjoint₁ (ϕ .*⊑* x)
 adjoint₂ : ∀ {X Y} {P : Predicate X} {Q : Predicate Y} {f : X PSh.⇒ Y} → P ⊑ Q [ f ] → P ⟨ f ⟩ ⊑ Q
 adjoint₂ ϕ .*⊑* x = P.adjoint₂ (ϕ .*⊑* x)
 
-
 open IsMeet
 
 TT : ∀ {X} → Predicate X
@@ -157,7 +150,6 @@ _++_ {X} P Q .pred-mor {a} {b} f = begin
 []-++ : ∀ {X Y} {P Q : Predicate Y} {f : X PSh.⇒ Y} → ((P ++ Q) [ f ]) ⊑ ((P [ f ]) ++ (Q [ f ]))
 []-++ .*⊑* a = record { *⊑* = λ x z → z }
 
--- Meets distribute over joins, and satisfy Frobenius reciprocity with direct images, stagewise.
 &&-++-distrib : ∀ {X} {P Q R : Predicate X} → (P && (Q ++ R)) ⊑ ((P && Q) ++ (P && R))
 &&-++-distrib .*⊑* a = setoid-predicate.&&-++-distrib
 
@@ -165,7 +157,6 @@ _++_ {X} P Q .pred-mor {a} {b} f = begin
                   (P && (Q ⟨ α ⟩)) ⊑ (((P [ α ]) && Q) ⟨ α ⟩)
 &&-⟨⟩-frobenius .*⊑* a = setoid-predicate.&&-⟨⟩-frobenius
 
--- Beck-Chevalley for a square with a stagewise lifting of agreeing corners.
 ⟨⟩-[]-BC : ∀ {W X Y Z : PSh.obj} {P : Predicate X}
            {α : X PSh.⇒ Z} {β : Y PSh.⇒ Z} {γ : W PSh.⇒ X} {δ : W PSh.⇒ Y} →
            (∀ a (y : Setoid.Carrier (Y .fobj a)) (x : Setoid.Carrier (X .fobj a)) →
@@ -197,7 +188,6 @@ _++_ {X} P Q .pred-mor {a} {b} f = begin
 
 []-⋁ : ∀ {X Y I} {P : I → Predicate Y} {f : X PSh.⇒ Y} → (⋁ I P [ f ]) ⊑ ⋁ I (λ i → P i [ f ])
 []-⋁ .*⊑* a = P.[]-⋁
-
 
 open setoid-predicate.Predicate
 open setoid-predicate._⊑_
@@ -358,8 +348,6 @@ module CoverMonad
   open setoid-predicate.Predicate
   open setoid-predicate._⊑_
 
-  -- A cover of the target pulls back along any morphism to a cover of the
-  -- source, one leg per index.
   record CoverPullback {x y} (c : Cover x) (g : y 𝒞.⇒ x) : Set ℓ where
     field
       cover : Cover y
@@ -426,7 +414,6 @@ module CoverMonad
          (λ s → Y .fobj (dom c s) .trans (f .transf (dom c s) .func-resp-≈ (eqs s))
                   (Y .fobj (dom c s) .sym (f .natural _ .func-eq (X .fobj a .refl))))
 
-  -- The closure operator, for a coverage whose covers pull back.
   module Closure (stable : ∀ {x y} (c : Cover x) (g : y 𝒞.⇒ x) → CoverPullback c g) where
 
     Context-reindex : ∀ {X : PSh.obj} (P : Predicate X) →
@@ -489,12 +476,8 @@ module CoverMonad
     closureOp .ClosureOp.𝐂-[]⁻¹ = 𝐂-[]⁻¹
     closureOp .ClosureOp.𝐂-strong = 𝐂-strong
 
-    -- Lifting a predicate along an endofunctor distributes over the closure,
-    -- for endofunctors along whose images the covers pull back.
     module Distrib (F : Functor 𝒞 𝒞) where
 
-      -- A cover of x pulls back along any morphism into the F-image of x,
-      -- one leg per index, each leg landing in the F-image of a summand.
       record FCoverPullback {x y} (c : Cover x) (g : y 𝒞.⇒ F .fobj x) : Set ℓ where
         field
           cover : Cover y

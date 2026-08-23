@@ -96,7 +96,6 @@ _⟨_⟩m : ∀ {X Y : Setoid o e} {P Q : Predicate X} → P ⊑ Q → (f : X �
 []-&& : ∀ {X Y : Setoid o e} {P Q : Predicate Y} {f : X ⇒s Y} → ((P [ f ]) && (Q [ f ])) ⊑ (P && Q) [ f ]
 []-&& .*⊑* x ϕ = ϕ
 
--- Universal quantification
 ⋀ : ∀ {X Y : Setoid o e} → Predicate (⊗-setoid X Y) → Predicate X
 ⋀ P .Predicate.pred x = ∀ y → P .Predicate.pred (x , y)
 ⋀ {X} {Y} P .Predicate.pred-≃ x₁≈x₂ p y = P .Predicate.pred-≃ (x₁≈x₂ , Y .Setoid.refl) (p y)
@@ -133,9 +132,6 @@ Ex-frobenius : ∀ {X Y : Setoid o e} {P : Predicate (⊗-setoid X Y)} {Q : Pred
               Ex (P && (Q [ project₁ ])) ⊑ (Ex P && Q)
 Ex-frobenius {X} {Y} {P} {Q} .*⊑* x (y , p , q) = (y , p) , q
 
--- And the inverse...
-
--- Top
 TT : ∀ {X} → Predicate X
 TT .Predicate.pred x = ⊤
 TT .Predicate.pred-≃ _ tt = tt
@@ -146,7 +142,6 @@ TT-isTop .IsTop.≤-top .*⊑* x _ = tt
 []-TT : ∀ {X Y} {f : X ⇒s Y} → TT ⊑ TT [ f ]
 []-TT .*⊑* _ tt = tt
 
--- Residuals / implication
 _==>_ : ∀ {X : Setoid o e} → Predicate X → Predicate X → Predicate X
 (P ==> Q) .Predicate.pred x = P .Predicate.pred x → Q .Predicate.pred x
 _==>_ {X} P Q .Predicate.pred-≃ x₁≈x₂ ϕ p =
@@ -159,8 +154,6 @@ _==>_ {X} P Q .Predicate.pred-≃ x₁≈x₂ ϕ p =
 []-==> : ∀ {X Y : Setoid o e}{P Q : Predicate Y}{f : X ⇒s Y} → ((P [ f ]) ==> (Q [ f ])) ⊑ (P ==> Q) [ f ]
 []-==> .*⊑* x z = z
 
-
--- Joins / disjunction
 _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
 (P ++ Q) .Predicate.pred x = (P .Predicate.pred x) ∨ (Q .Predicate.pred x)
 (P ++ Q) .Predicate.pred-≃ x₁≈x₂ (inj₁ p) = inj₁ (P .Predicate.pred-≃ x₁≈x₂ p)
@@ -175,19 +168,15 @@ _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
 []-++ : ∀ {X Y} {P Q : Predicate Y} {f : X ⇒s Y} → ((P ++ Q) [ f ]) ⊑ ((P [ f ]) ++ (Q [ f ]))
 []-++ .*⊑* x p = p
 
--- Meets distribute over joins, pointwise.
 &&-++-distrib : ∀ {X} {P Q R : Predicate X} → (P && (Q ++ R)) ⊑ ((P && Q) ++ ((P && R)))
 &&-++-distrib .*⊑* x (p , inj₁ q) = inj₁ (p , q)
 &&-++-distrib .*⊑* x (p , inj₂ r) = inj₂ (p , r)
 
--- Frobenius: a meet with a direct image is the direct image of the reindexed meet.
 &&-⟨⟩-frobenius : ∀ {X Y} {P : Predicate Y} {Q : Predicate X} {f : X ⇒s Y} →
                   (P && (Q ⟨ f ⟩)) ⊑ (((P [ f ]) && Q) ⟨ f ⟩)
 &&-⟨⟩-frobenius {X} {Y} {P} {Q} {f} .*⊑* y (p , (x , q , e)) =
   x , (P .Predicate.pred-≃ (Y .Setoid.sym e) p , q) , e
 
--- Beck-Chevalley for a square with a pointwise lifting: reindexing a direct image is the direct
--- image of a reindexing whenever agreeing corners lift to the fourth object.
 ⟨⟩-[]-BC : ∀ {W X Y Z : Setoid o e} {P : Predicate X}
            {f : X ⇒s Z} {g : Y ⇒s Z} {h : W ⇒s X} {k : W ⇒s Y} →
            (∀ (y : Y .Setoid.Carrier) (x : X .Setoid.Carrier) →
@@ -202,7 +191,6 @@ _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
          ((P [ h ]) ⟨ k ⟩) .Predicate.pred y
     go (w , hx , ky) = w , P .Predicate.pred-≃ (X .Setoid.sym hx) p , ky
 
--- Big joins
 ⋁ : ∀ {X} (I : Set 0ℓ) → (I → Predicate X) → Predicate X
 ⋁ I P .Predicate.pred x = ∃ I λ i → P i .Predicate.pred x
 ⋁ I P .Predicate.pred-≃ x₁≈x₂ (i , p) = i , P i .Predicate.pred-≃ x₁≈x₂ p
@@ -214,7 +202,6 @@ _++_ : ∀ {X} → Predicate X → Predicate X → Predicate X
 []-⋁ : ∀ {X Y I} {P : I → Predicate Y} {f : X ⇒s Y} → (⋁ I P [ f ]) ⊑ ⋁ I (λ i → P i [ f ])
 []-⋁ .*⊑* x (i , p) = i , p
 
--- Meets distribute over the big joins too.
 &&-⋁-distrib : ∀ {X} {I : Set 0ℓ} {P : Predicate X} {Q : I → Predicate X} →
                (P && ⋁ I Q) ⊑ ⋁ I (λ i → P && Q i)
 &&-⋁-distrib .*⊑* x (p , (i , q)) = i , (p , q)
@@ -231,8 +218,6 @@ dup = pair (idS _) (idS _)
 
 refl : ∀ {X} → TT ⊑ Eq X [ dup ]
 refl {X} .*⊑* x tt .lower = X .Setoid.refl
-
--- subst : ∀ {X}
 
 open import predicate-system
 

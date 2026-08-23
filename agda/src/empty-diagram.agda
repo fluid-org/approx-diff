@@ -11,7 +11,6 @@ open IsEquivalence
 
 data Obj : Set where
 
--- No objects, no problems.
 cat : Category 0ℓ 0ℓ 0ℓ
 cat .Category.obj = Obj
 

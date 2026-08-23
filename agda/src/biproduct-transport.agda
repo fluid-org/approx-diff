@@ -20,7 +20,6 @@ open CommutativeMonoid
 open Biproduct
 
 -- FIXME: These would be better alongside the other generic biproduct facts.
--- Generic biproduct facts.
 pair-id-ε : ∀ {x y} (B : Biproduct CM x y) → Biproduct.pair B (id x) εm ≈ B .in₁
 pair-id-ε B =
   ≈-trans (Biproduct.pair-cong B (≈-sym (B .id-1)) (≈-sym (B .zero-2)))
@@ -42,7 +41,6 @@ module _ {x x' y : obj} (B : Biproduct CM x y)
   (fb : (fwd ∘ bwd) ≈ id x') (bf : (bwd ∘ fwd) ≈ id x)
   where
 
-  -- The transported biproduct: same product object, first leg conjugated by the isomorphism.
   transport₁ : Biproduct CM x' y
   transport₁ .prod = B .prod
   transport₁ .p₁ = fwd ∘ B .p₁
@@ -87,8 +85,6 @@ module _ {x x' y : obj} (B : Biproduct CM x y)
         B .in₁ ∘ (id _ ∘ B .p₁)          ≈⟨ ∘-cong ≈-refl id-left ⟩
         B .in₁ ∘ B .p₁                   ∎
 
--- The canonical comparison between a transported biproduct and a chosen one commutes with the
--- lifted action built by copairing: this is the naturality a change of base needs.
 module _ {x x' y y' : obj}
   (B  : Biproduct CM x y)  (B' : Biproduct CM x y')
   (C  : Biproduct CM x' y) (C' : Biproduct CM x' y')
@@ -107,8 +103,6 @@ module _ {x x' y y' : obj}
     φ' : B' .prod ⇒ C' .prod
     φ' = Biproduct.pair C' (Bt' .p₁) (Bt' .p₂)
 
-    -- The comparison sends the original injections to the chosen ones, up to the isomorphism on
-    -- the first leg.
     φ-in₁ : ∀ {z} (D : Biproduct CM x z) (E : Biproduct CM x' z)
             {ψ : D .prod ⇒ E .prod} → ψ ≈ Biproduct.pair E (fwd ∘ D .p₁) (D .p₂) →
             (ψ ∘ D .in₁) ≈ (E .in₁ ∘ fwd)

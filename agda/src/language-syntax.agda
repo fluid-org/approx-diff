@@ -175,7 +175,6 @@ arr-depth-unfold τ = arr-depth-sub (push (μ τ)) τ pushed ≤-refl
     pushed zero    = ≤-refl
     pushed (suc i) = z≤n
 
--- Total width of a list of sorts under a per-sort width assignment.
 data ctxt : Set ℓ where
   emp : ctxt
   _,_ : ctxt → type 0 → ctxt

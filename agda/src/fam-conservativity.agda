@@ -45,8 +45,6 @@ open fam.CategoryOfFamilies._≃_
 FamF : Functor Fam𝒞.cat Fam𝒟.cat
 FamF = fam-functor.FamF os es F
 
--- Faithfulness passes to families: the index maps are carried unchanged, so
--- only the fibre maps have to be reflected.
 FamF-faithful : (∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.≈ F .fmor g₂ → g₁ 𝒞.≈ g₂) →
                 ∀ {a b} {g₁ g₂ : Fam𝒞.Mor a b} →
                 Fam𝒟C._≈_ (FamF .fmor g₁) (FamF .fmor g₂) →
@@ -56,8 +54,6 @@ FamF-faithful faithful {a} {b} {g₁} {g₂} e .famf-eq ._≃f_.transf-eq {x} =
   faithful
     (𝒟.≈-trans (F .fmor-comp _ _) (e .famf-eq ._≃f_.transf-eq {x}))
 
--- The identity monad's functor leaves a diagram alone, so it preserves the
--- colimits on the nose.
 Id-preserves-colimits :
   ∀ {o m e} {𝒦 : Category o m e}
     (DC : ∀ (S : Setoid os es) → HasColimits (setoid→category S) 𝒦)
@@ -74,8 +70,6 @@ Id-preserves-colimits {𝒦 = 𝒦} DC S D = iso , coh
     CI = DC S (Monad.funct (IdentityMonad 𝒦) ∘F D)
     CD = DC S D
 
-    -- The two diagrams agree on objects and morphisms, so each cocone is a
-    -- cocone for the other.
     coI : NatTrans (Monad.funct (IdentityMonad 𝒦) ∘F D)
                    (functor.constF (setoid→category S) (CD .apex))
     coI .transf s = CD .cocone .transf s
@@ -111,9 +105,6 @@ Id-preserves-colimits {𝒦 = 𝒦} DC S D = iso , coh
     coh : ∀ s → (fwd K.∘ CI .cocone .transf s) K.≈ CD .cocone .transf s
     coh = fwd-leg
 
--- The change of base preserves the set-indexed coproducts of families: both
--- sides have the same indexes and the same fibres, and differ only in how a
--- transport is split, which the functor's composition law reconciles.
 module _ (S : Setoid os es) (D : Functor (setoid→category S) Fam𝒞.cat) where
 
   private
@@ -160,10 +151,6 @@ module _ (S : Setoid os es) (D : Functor (setoid→category S) Fam𝒞.cat) wher
                           (𝒟.≈-trans 𝒟.id-left 𝒟.id-left))
                (𝒟.≈-trans 𝒟.id-left (𝒟.≈-sym (F .fmor-id)))
 
--- The definability witness picker passes to families: a family morphism is an
--- index map together with a fibre map at each index, and the change of base
--- leaves the index map alone, so the fibres can be chosen one at a time. The
--- chosen fibres are natural because the base functor is faithful.
 module _ (faithful : ∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.≈ F .fmor g₂ → g₁ 𝒞.≈ g₂)
          (Fdef : ∀ {a b} (k : F .fobj a 𝒟.⇒ F .fobj b) →
                  Prf (∃ (a 𝒞.⇒ b) λ g → F .fmor g 𝒟.≈ k) →
@@ -175,7 +162,6 @@ module _ (faithful : ∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.
              ∃ₛ (Fam𝒞.Mor a b) λ g → Fam𝒟C._≈_ (FamF .fmor g) h
   FamF-def {a} {b} h ⟪ def ⟫ = g , g-eq
     where
-      -- Each fibre of h is definable, by restricting the given witness.
       fibre-def : ∀ i → Prf (∃ (a .fam .fm i 𝒞.⇒ b .fam .fm (h .idxf .PS._⇒_.func i))
                                λ k → F .fmor k 𝒟.≈ h .famf ._⇒f_.transf i)
       fibre-def i = ⟪ go def ⟫
@@ -212,9 +198,6 @@ module _ (faithful : ∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.
                               𝒟.≈-refl)
                    (𝒟.≈-trans 𝒟.id-left (pick-eq i))
 
--- Fullness passes to families outright, with no mere-definability hypothesis: the index map is
--- carried unchanged, each fibre's preimage is chosen directly, and the chosen fibres are natural
--- because the base functor is faithful.
 module _ (faithful : ∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.≈ F .fmor g₂ → g₁ 𝒞.≈ g₂)
          (full : ∀ {a b} (k : F .fobj a 𝒟.⇒ F .fobj b) →
                  ∃ₛ (a 𝒞.⇒ b) λ g → F .fmor g 𝒟.≈ k)

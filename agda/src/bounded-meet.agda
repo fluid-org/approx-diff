@@ -203,7 +203,6 @@ meet-idem {X} .greatest z₁ z₂ = z₁
 --   |       |       |
 --   a  ---  d  ---  f
 
-
 lemma : ∀ {X a b c d e} → IsMeetOf (X .≤-isPreorder) a b c → IsMeetOf (X .≤-isPreorder) e d b → X ._≤_ a d → IsMeetOf (X .≤-isPreorder) a e c
 lemma {X} m₁ m₂ a≤d .lower₁ = m₁ .lower₁
 lemma {X} m₁ m₂ a≤d .lower₂ = X .≤-trans (m₁ .lower₂) (m₂ .lower₁)
@@ -213,7 +212,6 @@ meet-swap : ∀ {X a b c} → IsMeetOf (X .≤-isPreorder) a b c → IsMeetOf (X
 meet-swap m .lower₁ = m .lower₂
 meet-swap m .lower₂ = m .lower₁
 meet-swap m .greatest z₁ z₂ = m .greatest z₂ z₁
-
 
 ------------------------------------------------------------------------------
 -- Coproducts

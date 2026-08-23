@@ -49,13 +49,11 @@ record _⇒g_ (X Y : Obj) : Set where
     left : Y .carrier preorder.=> X .carrier
     left⊣right : ∀ {x y} → y Y.≤ (right .fun x) ⇔ (left .fun y) X.≤ x
 
-  -- right adjoint preserves meets
   right-∧ : X .meets =>M Y .meets
   right-∧ .func = right
   right-∧ .∧-preserving = left⊣right .proj₂ XM.⟨ left⊣right .proj₁ YM.π₁ ∧ left⊣right .proj₁ YM.π₂ ⟩
   right-∧ .⊤-preserving = left⊣right .proj₂ XM.≤-top
 
-  -- left adjoint preserves joins
   left-∨ : Y .joins =>J X .joins
   left-∨ .func = left
   left-∨ .∨-preserving = left⊣right .proj₁ YJ.[ left⊣right .proj₂ XJ.inl ∨ left⊣right .proj₂ XJ.inr ]

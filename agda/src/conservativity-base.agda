@@ -34,8 +34,6 @@ open Functor
 open NatTrans
 open ≃-NatTrans
 
--- The finite coproducts and their stability are the two-element instance of the set-indexed
--- structure.
 private
   module 𝒞d = finite-coproducts-from-indexed.derive 𝒞DC
 
@@ -46,7 +44,6 @@ private
   module 𝒞 = Category 𝒞
   module 𝒞CP = HasCoproducts 𝒞CP
   module 𝒟 = Category 𝒟
-
 
 ------------------------------------------------------------------------------
 -- Kripke Predicates “of varying arity”
@@ -76,7 +73,6 @@ G .fmor-comp f g = begin
   ≈⟨ interchange _ _ _ _ ⟩
     (𝒟よ .fmor f ∘H id _) PSh⟨𝒞⟩.∘ (𝒟よ .fmor g ∘H id _)
   ∎ where open ≈-Reasoning PSh⟨𝒞⟩.isEquiv
-
 
 ------------------------------------------------------------------------------
 -- Presheaf predicates
@@ -138,8 +134,6 @@ cInj (idx c) (lift s) = c .IdxCover.iso .𝒞.Iso.fwd 𝒞.∘ SI.inj (c .IdxCov
 
 module CvM = CoverMonad Cover CIx cDom cInj
 
--- Covers pull back along any morphism: binary by stability of the finite
--- coproducts, set-indexed by stability of the set-indexed ones.
 covPull : ∀ {x y} (c : Cover x) (g : y 𝒞.⇒ x) → CvM.CoverPullback c g
 covPull (bin c) g = pb
   where

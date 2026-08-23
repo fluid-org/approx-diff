@@ -65,14 +65,12 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
   args : List sort → Obj
   args = PointedFPCat.list→product PF ⟦sort⟧′
 
-  -- Reassociate the index of the argument product into a tuple of constants.
   untuple : ∀ is → prop-setoid._⇒_ (Fam⟨𝒞⟩.Obj.idx (args is)) (sort-vals-setoid sort-index is)
   untuple []       .func _ = tt
   untuple (i ∷ is) .func (v , p) = v , untuple is .func p
   untuple []       .func-resp-≈ _ = prop.tt
   untuple (i ∷ is) .func-resp-≈ e = prop.proj₁ e prop., untuple is .func-resp-≈ (prop.proj₂ e)
 
-  -- Collapse the argument product onto the summed width, which is the product's own fibre.
   collect : ∀ is → Mor (args is) simple[ sort-vals-setoid sort-index is , bases-width is ]
   collect []       = simplef[ untuple [] , MC.id 0 ]
   collect (i ∷ is) =
@@ -92,7 +90,6 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
   model .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
   model .Model.⟦rel⟧ {is} ψ = predicate (rel-pred ψ ∘S untuple is)
 
-  -- The same interpretation over any object of truth values receiving the booleans.
   module over (Ω : Obj) (into-Ω : Mor Fam⟨𝒞⟩-bool Ω) where
 
     private
@@ -104,6 +101,5 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
     model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
     model-over .Model.⟦rel⟧ {is} ψ = into-Ω FC.∘ predicate (rel-pred ψ ∘S untuple is)
 
-    -- The argument plumbing, for interpretations that refine single symbols over this Ω.
     arg-untuple = untuple
     arg-collect = collect

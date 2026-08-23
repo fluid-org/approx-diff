@@ -35,7 +35,6 @@ open Category M.cat using (_∘_; _≈_; ≈-refl; ≈-sym; ≈-trans; ∘-cong�
 open HasProducts M.products using (p₁; p₂)
 open M using (⟨_,_⟩)
 
--- The value at a vertex is first-order when the type of the subderivation's conclusion is.
 fo-of : ∀ {Δ} (τ : type Δ) → Bool
 fo-of τ = ⌊ first-order? τ ⌋
 
@@ -100,7 +99,6 @@ mutual
     Rule₁.E (graph-m D) (sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I))
           (fo-of (σ' [ σr ])) M.εₘ (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I)
 
--- A combinator's collapse law against the rule's relation, given the premises' collapses.
 private
   one : ∀ {m n n₀} (out : M.Matrix n m) (up : M.Matrix n n₀) {c R' : M.Matrix n₀ m} → c ≈ R' →
         (out M.+ₘ (up ∘ (c ∘ M.I))) ≈ (out M.+ₘ (up ∘ R'))
@@ -140,13 +138,11 @@ private
                                                          (≈-trans {g = c₂} id-right e₂))))))
       (M.+ₘ-lunit (U ∘ (ins ∘ ⟨ ⟨ M.I , R₁ ⟩ , R₂ ⟩)))
 
-  -- A premise whose inputs are the conclusion's alone, after the earlier premise has collapsed.
   ignore-root : ∀ {m m₂ n₁} (A : M.Matrix m₂ m) (X : M.Matrix n₁ m) → ((A ∘ p₁ {m} {n₁}) ∘ ⟨ M.I , X ⟩) ≈ A
   ignore-root {m} {n₁ = n₁} A X =
     ≈-trans {g = A ∘ (p₁ {m} {n₁} ∘ ⟨ M.I , X ⟩)} (assoc A (p₁ {m} {n₁}) ⟨ M.I , X ⟩)
             (≈-trans {g = A ∘ M.I} (∘-cong₂ (HasProducts.pair-p₁ M.products M.I X)) id-right)
 
-  -- Two premises feeding a pair of roots.
   two-roots : ∀ {m m₁ m₂ n n₁ n₂} (out : M.Matrix n m) (r₁ : M.Matrix m₁ m) (ins₂ : M.Matrix m₂ (m + n₁))
               (u₁ : M.Matrix n n₁) (u₂ : M.Matrix n n₂)
               (c₁ : M.Matrix n₁ m₁) (c₂ : M.Matrix n₂ m₂) {X₁ : M.Matrix n₁ m} {X₂ : M.Matrix n₂ m} →
@@ -163,7 +159,6 @@ private
   inputs-only {m} {n₁} c₂ X e =
     ≈-trans {g = c₂ ∘ M.I} (∘-cong₂ (HasProducts.pair-p₁ M.products M.I X)) (≈-trans {g = c₂} id-right e)
 
-  -- The pair of roots as the pairing.
   pairing : ∀ {m n₁ n₂} (X₁ : M.Matrix n₁ m) (X₂ : M.Matrix n₂ m) →
             (((M.in₂ {1} ∘ M.in₁ {n₁} {n₂}) ∘ X₁) M.+ₘ ((M.in₂ {1} ∘ M.in₂ {n₁} {n₂}) ∘ X₂))
             ≈ (M.in₂ {1} ∘ ⟨ X₁ , X₂ ⟩)
@@ -176,7 +171,6 @@ private
        (M.εₘ M.+ₘ (rc ∘ (c ∘ ic))) ≈ (rc ∘ (F ∘ ic))
   mu rc ic {c = c} e = ≈-trans {g = rc ∘ (c ∘ ic)} (M.+ₘ-lunit (rc ∘ (c ∘ ic))) (∘-cong₂ (∘-cong₁ {g = ic} e))
 
--- Collapsing a derivation's graph recovers the relation the rules build.
 mutual
   agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → collapse (graph D) ≈ R
   agree {τ = τ} (⇓-var {γ = γ} x) = Rule₀.agree (fo-of τ) (var-out x γ)

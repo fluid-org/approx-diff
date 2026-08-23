@@ -89,7 +89,6 @@ s<s (<s x<y) = <s (s<s x<y)
 -- <-trans (s<s m<n) (s<s n<o) = s<s (<-trans m<n n<o)
 
 ------------------------------------------------------------------------------
--- Joins and Meets
 
 _⊔_ : ℕ → ℕ → ℕ
 zero   ⊔ y      = y
@@ -227,7 +226,6 @@ open IsMonoid +-isMonoid
 +-cancelᵣ {x}{y}{z} p =
   +-cancelₗ (≤-trans (+-comm {x} {y} .proj₁) (≤-trans p (+-comm {x} {z} .proj₂)))
 
--- Follows from totality and increasingness
 ⊓≤+ : ∀ {x y} → x ⊓ y ≤ x + y
 ⊓≤+ {zero}   {y}      = 0≤n
 ⊓≤+ {succ x} {zero}   = 0≤n
@@ -267,7 +265,6 @@ lambda {x}      {zero}   f       = f
 lambda {zero}   {succ y} 0≤n     = 0≤n
 lambda {succ x} {succ y} (s≤s f) = lambda f
 
--- Totality means that this is an op-pre-total order
 pre-total : ∀ x y → (x ∸ y) ⊓ (y ∸ x) ≤ zero
 pre-total x y with ≤-total x y
 ... | inj₁ x≤y = ≤-trans lower₁ (lambda (≤-trans x≤y (+-runit .proj₂)))
@@ -380,7 +377,6 @@ module _ where
 -- FIXME: _+_ and _*_ form a semiring
 
 ------------------------------------------------------------------------------
--- Even/odd
 
 mutual
   data Even : ℕ → Set where
@@ -399,13 +395,11 @@ even⊎odd (succ n) with even⊎odd n
 ------------------------------------------------------------------------------
 -- Halving
 
--- Floor of n/2
 ⌊_/2⌋ : ℕ → ℕ
 ⌊ zero          /2⌋ = 0
 ⌊ succ zero     /2⌋ = 0
 ⌊ succ (succ n) /2⌋ = succ ⌊ n /2⌋
 
--- Ceiling of n/2
 ⌈_/2⌉ : ℕ → ℕ
 ⌈ zero          /2⌉ = 0
 ⌈ succ zero     /2⌉ = 1
@@ -516,7 +510,6 @@ ceil-lemma (succ (succ n)) = s≤s (s≤s (≤-trans (ceil-lemma n) (+-succ .pro
 
 ⌈log2⌉-upper : ∀ n → n ≤ 2^ (⌈log2⌉ n)
 ⌈log2⌉-upper n = ⌈log2'⌉-upper n <-acc
-
 
 -- FIXME: ⌊log2'⌋-lower (except for 0), and they are always within 1
 -- of each other

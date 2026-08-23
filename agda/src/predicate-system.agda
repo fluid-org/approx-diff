@@ -87,14 +87,12 @@ record PredicateSystem : Set (suc (suc (o ⊔ m ⊔ e))) where
     ⋁-isJoin : ∀ {X} → IsBigJoin (⊑-isPreorder {X}) 0ℓ ⋁
     []-⋁     : ∀ {X Y I} {P : I → Predicate Y} {f : X 𝒞.⇒ Y} → (⋁ I P [ f ]) ⊑ ⋁ I (λ i → P i [ f ])
 
-  -- Direct images preserve the indexed joins, being left adjoints.
   ⟨⟩-⋁ : ∀ {X Y I} {P : I → Predicate X} (f : X 𝒞.⇒ Y) →
          ((⋁ I P) ⟨ f ⟩) ⊑ ⋁ I (λ i → P i ⟨ f ⟩)
   ⟨⟩-⋁ {I = I} {P} f =
     adjoint₂ (⋁-isJoin .IsBigJoin.least _ _ _
                (λ i → ⊑-trans (unit f) ((⋁-isJoin .IsBigJoin.upper _ _ i) [ f ]m)))
 
-  -- Derived properties of meets
   _[&&]_ : ∀ {X Y} → Predicate X → Predicate Y → Predicate (P.prod X Y)
   P [&&] Q = (P [ P.p₁ ]) && (Q [ P.p₂ ])
 
@@ -122,11 +120,9 @@ record PredicateSystem : Set (suc (suc (o ⊔ m ⊔ e))) where
     ∎
     where open ≤-Reasoning ⊑-isPreorder
 
-  --
   []-++⁻¹ : ∀ {X Y} {P Q : Predicate Y} {f : X 𝒞.⇒ Y} → ((P [ f ]) ++ (Q [ f ])) ⊑ ((P ++ Q) [ f ])
   []-++⁻¹ = ++-isJoin .IsJoin.[_,_] ((++-isJoin .IsJoin.inl) [ _ ]m) ((++-isJoin .IsJoin.inr) [ _ ]m)
 
-  -- Derived properties of products
   ⋀-[]⁻¹ : ∀ {X X' Y} {P : Predicate (P.prod X Y)} {f : X' 𝒞.⇒ X} → (⋀ P) [ f ] ⊑ (⋀ (P [ P.prod-m f (𝒞.id _) ]))
   ⋀-[]⁻¹ {X} {X'} {Y} {P} {f} = ⋀-lambda Φ
     where
@@ -197,11 +193,9 @@ record ClosureOp (S : PredicateSystem) : Set (suc (o ⊔ m ⊔ e)) where
     ∎
     where open ≤-Reasoning ⊑-isPreorder
 
-  -- The closure commutes past direct images, from the unit and the reindexing law.
   𝐂-⟨⟩ : ∀ {X Y} {P : Predicate X} (f : X 𝒞.⇒ Y) → ((𝐂 P) ⟨ f ⟩) ⊑ 𝐂 (P ⟨ f ⟩)
   𝐂-⟨⟩ f = adjoint₂ (⊑-trans (𝐂-isClosure .IsClosureOp.mono (unit f)) 𝐂-[])
 
-  -- A join of closed predicates is bounded by the closed join.
   ⋁-𝐂 : ∀ {X I} {P : I → Predicate X} → ⋁ I (λ i → 𝐂 (P i)) ⊑ 𝐂 (⋁ I P)
   ⋁-𝐂 =
     ⋁-isJoin .IsBigJoin.least _ _ _

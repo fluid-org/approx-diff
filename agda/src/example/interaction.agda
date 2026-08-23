@@ -36,7 +36,6 @@ G = graph D
 
 open Interaction G
 
--- The scrutinee root, mid-chain.
 scrut : Vertex (Graph.shape G)
 scrut = inj₁ (inj₂ root)
 

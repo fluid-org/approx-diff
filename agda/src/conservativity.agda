@@ -48,21 +48,15 @@ open ≃-NatTrans
 
 module conservativity
   {o₁ o₂ m e}
-  -- Category for interpreting first-order things, with stable set-indexed
-  -- coproducts (the finite coproducts used below are their two-element instance)
   (𝒞 : Category o₁ m e) (𝒞T : HasTerminal 𝒞) (𝒞P : HasProducts 𝒞) (𝒞M : Monad 𝒞)
   (𝒞DC : ∀ (S : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category S) 𝒞)
   (𝒞istable : stable-coproducts-indexed.IdxStable 𝒞DC)
-  -- A higher order model
   (𝒟 : Category o₂ m e) (𝒟T : HasTerminal 𝒟) (𝒟P : HasProducts 𝒟) (𝒟E : HasExponentials 𝒟 𝒟P) (𝒟M : Monad 𝒟)
   (𝒟DC : ∀ (A : Setoid 0ℓ 0ℓ) → HasColimits (setoid→category A) 𝒟)
-  -- A functor which preserves terminal and products
   (F  : Functor 𝒞 𝒟)
   (FT : preserve-chosen-terminal F 𝒞T 𝒟T)
   (FP : preserve-chosen-products F 𝒞P 𝒟P)
   (FM : preserve-monad F 𝒞M 𝒟M)
-  -- The monad functor preserves set-indexed coproducts (an iso commuting with
-  -- the injections)
   (FM-DC : ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) 𝒞) →
            ∃ₛ (Category.Iso 𝒞 (Colimit.apex (𝒞DC S (Monad.funct 𝒞M ∘F D)))
                               (Monad.funct 𝒞M .fobj (Colimit.apex (𝒞DC S D))))
@@ -70,7 +64,6 @@ module conservativity
                             (Category._∘_ 𝒞 (Category.Iso.fwd i)
                                (Colimit.cocone (𝒞DC S (Monad.funct 𝒞M ∘F D)) .transf s))
                             (Monad.funct 𝒞M .fmor (Colimit.cocone (𝒞DC S D) .transf s))))
-  -- F preserves set-indexed coproducts (an iso commuting with the injections)
   (F-DC : ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) 𝒞) →
           ∃ₛ (Category.Iso 𝒟 (Colimit.apex (𝒟DC S (F ∘F D)))
                              (F .fobj (Colimit.apex (𝒞DC S D))))
@@ -78,7 +71,6 @@ module conservativity
                            (Category._∘_ 𝒟 (Category.Iso.fwd i)
                               (Colimit.cocone (𝒟DC S (F ∘F D)) .transf s))
                            (F .fmor (Colimit.cocone (𝒞DC S D) .transf s))))
-  -- F reflects equality, and picks a definability witness uniformly
   (F-faithful : ∀ {a b} {g₁ g₂ : Category._⇒_ 𝒞 a b} → Category._≈_ 𝒟 (F .fmor g₁) (F .fmor g₂) → Category._≈_ 𝒞 g₁ g₂)
   (Fdef : ∀ {a b} (h : Category._⇒_ 𝒟 (F .fobj a) (F .fobj b)) →
           Prf (∃ (Category._⇒_ 𝒞 a b) λ g → Category._≈_ 𝒟 (F .fmor g) h) →
@@ -87,8 +79,6 @@ module conservativity
 
 open import conservativity-base 𝒞 𝒞DC 𝒞istable 𝒟 F public
 
--- The finite coproducts and their preservation are the two-element instance of
--- the set-indexed structure.
 private
   module 𝒟d = finite-coproducts-from-indexed.derive 𝒟DC
 
@@ -266,7 +256,6 @@ open setoid-predicate.Predicate
 open setoid-predicate._⊑_
 open _⊑_
 
--- The “𝒞 definability” predicate.
 Definable : ∀ x → PShPredicate (G .fobj (F .fobj x))
 Definable x .pred y .pred (lift f) = LiftP (o₁ ⊔ o₂ ⊔ lsuc 0ℓ) (∃ (y 𝒞.⇒ x) λ g → F .fmor g 𝒟.≈ f)
 Definable x .pred y .pred-≃ {lift f₁} {lift f₂} (lift f₁≈f₂) (lift (g , eq)) = lift (g , 𝒟.≈-trans eq f₁≈f₂)
@@ -318,9 +307,6 @@ Definable-products {x} {y} .*⊑* a .*⊑* (lift f) (lift (g₁ , eq₁) , lift 
 
 module MDistrib = Distrib 𝒞M.funct
 
--- Covers pull back along morphisms into the monad functor's images, using its
--- preservation of finite and set-indexed coproducts: pull back the functor
--- image of the cover, and correct the injections.
 FMpull : ∀ {x y} (c : Cover x) (g : y 𝒞.⇒ 𝒞M.funct .fobj x) → MDistrib.FCoverPullback c g
 FMpull (bin c) g = fp
   where
@@ -396,7 +382,6 @@ Definable-coproducts {x} {y} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
     step : ∀ s → (cInj (bin c₀) s 𝒞.∘ pb .CoverPullback.leg s) 𝒞.≈ (f 𝒞.∘ cInj (pb .CoverPullback.cover) s)
     step = pb .CoverPullback.eq
 
-    -- The summand restriction agrees with the reindexed witness.
     eq' : ∀ s → F .fmor (cInj (bin c₀) s 𝒞.∘ pb .CoverPullback.leg s) 𝒟.≈ (g 𝒟.∘ F .fmor (cInj (pb .CoverPullback.cover) s))
     eq' s = begin
         F .fmor (cInj (bin c₀) s 𝒞.∘ pb .CoverPullback.leg s)
@@ -409,7 +394,6 @@ Definable-coproducts {x} {y} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
 
-    -- inl/inr injections differ from cInj (bin c₀) only by the identity iso.
     inj₁≈ : F .fmor (𝒞CP.in₁ 𝒞.∘ h₁) 𝒟.≈ F .fmor (cInj (bin c₀) inl 𝒞.∘ h₁)
     inj₁≈ = F .fmor-cong (𝒞.∘-cong (𝒞.≈-sym 𝒞.id-left) 𝒞.≈-refl)
 
@@ -430,7 +414,6 @@ Definable-coproducts {x} {y} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
     eqs inl = lift (𝒟.≈-trans inj₁≈ (eq' inl))
     eqs inr = lift (𝒟.≈-trans inj₂≈ (eq' inr))
 
--- Set-indexed form.
 Definable-coproducts-indexed : ∀ {S : Setoid 0ℓ 0ℓ} {D : Functor (setoid→category S) 𝒞} →
                                Definable (SI.∐ S D) ⊑
                                𝐂 (⋁ (S .Setoid.Carrier) (λ s → Definable (D .fobj s) ⟨ G .fmor (F .fmor (SI.inj D s)) ⟩))
@@ -447,7 +430,6 @@ Definable-coproducts-indexed {S} {D} .*⊑* z .*⊑* (lift g) (lift (f , eq)) =
     xs : ∀ s → Setoid.Carrier (G .fobj (F .fobj (SI.∐ S D)) .fobj (cDom (pb .CoverPullback.cover) s))
     xs (lift s) = lift (F .fmor (SI.inj D s 𝒞.∘ pb .CoverPullback.leg (lift s)))
 
-    -- The summand restriction agrees with the reindexed witness.
     eq' : ∀ s → F .fmor (cInj (idx c₀) s 𝒞.∘ pb .CoverPullback.leg s) 𝒟.≈ (g 𝒟.∘ F .fmor (cInj (pb .CoverPullback.cover) s))
     eq' s = begin
         F .fmor (cInj (idx c₀) s 𝒞.∘ pb .CoverPullback.leg s)
@@ -636,15 +618,12 @@ Definable-closed {X} {Y} f (node (idx c) xs ts eqs) = g , Fg≈f
     fs-eq : (s : S .Setoid.Carrier) → fs s 𝒟.≈ (f 𝒟.∘ F .fmor (iso .𝒞.Iso.fwd 𝒞.∘ inj s))
     fs-eq s = lower (eqs (lift s))
 
-    -- The summand restrictions are definable; pick their witnesses uniformly.
     gs : (s : S .Setoid.Carrier) → D .fobj s 𝒞.⇒ Y
     gs s = ∃ₛ.fst (Fdef (fs s) ⟪ Definable-closed (fs s) (ts (lift s)) ⟫)
 
     Fgs : (s : S .Setoid.Carrier) → F .fmor (gs s) 𝒟.≈ fs s
     Fgs s = ∃ₛ.snd (Fdef (fs s) ⟪ Definable-closed (fs s) (ts (lift s)) ⟫)
 
-    -- The witnesses form a cocone, faithfulness reflecting the naturality
-    -- squares that hold after applying F.
     gs-cocone : NatTrans D (constF (setoid→category S) Y)
     gs-cocone .transf = gs
     gs-cocone .natural {s} {s'} ⟪ e ⟫ = 𝒞.≈-trans 𝒞.id-left (𝒞.≈-sym (F-faithful faith))
@@ -679,8 +658,6 @@ Definable-closed {X} {Y} f (node (idx c) xs ts eqs) = g , Fg≈f
     g : X 𝒞.⇒ Y
     g = g₀ 𝒞.∘ iso .𝒞.Iso.bwd
 
-    -- F takes the injections to a jointly-epic family (F preserves the
-    -- coproduct), so agreement on injections gives equality.
     module DCF = Colimit (𝒟DC S (F ∘F D))
     Fiso    = ∃ₛ.fst (F-DC S D)
     Fcompat = ∃ₛ.snd (F-DC S D)
@@ -766,7 +743,6 @@ open 𝐂Monad _ MP (MDistrib.distrib FMpull)
 
 module Gl = glueing-simple 𝒟 PSh⟨𝒞⟩ _ system G
 
--- This category has all the structure we need:
 module GlCP = Gl.coproducts 𝒟CP
 module GlCPM = HasCoproducts GlCP.coproducts
 module GlPE = Gl.products-and-exponentials 𝒟T 𝒟P 𝒟E G-preserve-products
@@ -801,8 +777,6 @@ GF .fmor {x} {y} f .presv = begin
 GF .fmor-cong f₁≈f₂ .f≃f = F .fmor-cong f₁≈f₂
 GF .fmor-id .f≃f = F .fmor-id
 GF .fmor-comp f g .f≃f = F .fmor-comp f g
-
--- GF is a finite product and coproduct preserving functor
 
 presv-terminal : GlT.witness Glued.⇒ GF .fobj 𝒞T.witness
 presv-terminal .morph = Category.IsIso.inverse FT
@@ -883,8 +857,6 @@ GF-preserve-coproducts .Category.IsIso.inverse = presv-cp
 GF-preserve-coproducts .Category.IsIso.f∘inverse≈id .f≃f = Category.IsIso.f∘inverse≈id FC
 GF-preserve-coproducts .Category.IsIso.inverse∘f≈id .f≃f = Category.IsIso.inverse∘f≈id FC
 
--- GF preserves set-indexed coproducts: carrier by F-DC, predicate by
--- Definable-coproducts-indexed. The set-indexed twin of GF-preserve-coproducts.
 GF-preserve-coproducts-indexed : ∀ (S : Setoid 0ℓ 0ℓ) (D : Functor (setoid→category S) 𝒞) →
   Glued.Iso (GDC S (GF ∘F D) .Colimit.apex) (GF .fobj (SI.∐ S D))
 GF-preserve-coproducts-indexed S D = iso
@@ -903,8 +875,6 @@ GF-preserve-coproducts-indexed S D = iso
 
     carrierIso = 𝒟.Iso-trans (𝒟d.∐-iso D-eq) FI.fst
 
-    -- Under the coproduct comparison each 𝒞-injection maps to the Gl carrier's
-    -- colimit injection: F-DC's compat, then the D-eq bridge.
     F-inⱼ : ∀ s → (carrierIso .Category.Iso.bwd 𝒟.∘ F .fmor (SI.inj D s)) 𝒟.≈
                   (GDC S (GF ∘F D) .Colimit.cocone .transf s .morph)
     F-inⱼ s =
@@ -1108,9 +1078,6 @@ module strong-exponentials where
                 fam-mu-realisation.μ-objℰ 0ℓ 0ℓ GDC GlPE.terminal GlPE.products Gl-exponentials GlSC Q δ
     Gl-Mu-obj Q δ = ≡-refl
 
-  -- The morphisms in the logical relations category that we are
-  -- interested are the ones that come from interpretations of the
-  -- language.
   module syntactic {ℓ}
      (Sig : Signature ℓ)
      (𝒞SC : HasStrongCoproducts 𝒞 𝒞P)

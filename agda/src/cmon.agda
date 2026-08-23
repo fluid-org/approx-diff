@@ -94,9 +94,6 @@ module _ {o e} where
 -- FIXME: free commutative monoid functor
 
 ------------------------------------------------------------------------------
--- Additive structure on morphisms, so that every homset is a
--- commutative monoid, and composition is a commutative monoid
--- morphism.
 module _ {o e} {X Y : Obj {o} {e}} where
   open _⇒s_
   open _≃s_

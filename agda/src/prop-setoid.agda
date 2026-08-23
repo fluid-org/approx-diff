@@ -238,7 +238,6 @@ pair-cong : ∀ {o e} {X Y Z : Setoid o e} {f₁ f₂ : X ⇒ Y} {g₁ g₂ : X 
 pair-cong f₁≈f₂ g₁≈g₂ .func-eq x₁≈x₂ .proj₁ = f₁≈f₂ .func-eq x₁≈x₂
 pair-cong f₁≈f₂ g₁≈g₂ .func-eq x₁≈x₂ .proj₂ = g₁≈g₂ .func-eq x₁≈x₂
 
--- Strong coproducts
 case : ∀ {o e} {W X Y Z : Setoid o e} →
           (⊗-setoid W X) ⇒ Z →
           (⊗-setoid W Y) ⇒ Z →
@@ -248,8 +247,6 @@ case f g .func (w , inj₂ y) = g .func (w , y)
 case f g .func-resp-≈ {w₁ , inj₁ x₁} {w₂ , inj₁ x₂} (w₁≈w₂ , x₁≈x₂) = f .func-resp-≈ (w₁≈w₂ , x₁≈x₂)
 case f g .func-resp-≈ {w₁ , inj₂ y₁} {w₂ , inj₂ y₂} (w₁≈w₂ , y₁≈y₂) = g .func-resp-≈ (w₁≈w₂ , y₁≈y₂)
 
-
--- Equivalence relations from relations
 module _ {o e} (A : Set o) (R : A → A → Prop e) where
   data EquivOfS : A → A → Set (o ⊔ e) where
     c-refl  : ∀ {a} → EquivOfS a a

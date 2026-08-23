@@ -107,7 +107,6 @@ lemma⁻¹∘lemma F x .func-eq {Fx₁} {Fx₂} Fx₁≈Fx₂ = F .fmor-id .func
 -- lemma-natural-x f = {!!}
 
 ------------------------------------------------------------------------------
--- Completeness
 
 import functor-cat-limits
 
@@ -298,7 +297,6 @@ preserve-limits 𝒮 D apex cone isLimit = lim
 --   https://math.stackexchange.com/questions/3511252/show-that-the-yoneda-embedding-preserves-exponential-objects?rq=1
 
 ------------------------------------------------------------------------------
--- A little bit of coends
 
 open import product-category using (product; pairF; project₁; project₂)
 
@@ -311,7 +309,6 @@ private
 --     dtransf   : ∀ x → F .fobj (x , x) ⇒s G .fobj (x , x)
 --     dinatural : ∀ {x₁ x₂} (f : x₁ 𝒞.⇒ x₂) → ((G .fmor (f , 𝒞.id _) ∘S dtransf x₁) ∘S F .fmor (𝒞.id _ , f)) ≈s ((G .fmor (𝒞.id _ , f) ∘S dtransf x₂) ∘S F .fmor (f , 𝒞.id _))
 
--- A Cowedge is a Dinatural transformation to a constant
 record Cowedge (Y : Setoid ℓ ℓ) (F : Functor (product 𝒞 𝒞.opposite) (SetoidCat ℓ ℓ)) (X : Setoid ℓ ℓ) : Set ℓ where
   field
     dtransf   : ∀ y → (Y ×s (F .fobj (y , y))) ⇒s X
@@ -356,8 +353,6 @@ record Coend (F : Functor (product 𝒞 𝒞.opposite) (SetoidCat ℓ ℓ)) : Se
   --                 where open ≈-Reasoning prop-setoid.≃m-isEquivalence
 open Coend
 
-
-
 ------------------------------------------------------------------------------
 -- Lifting EndoFunctors
 
@@ -383,8 +378,6 @@ module UnaryDay (M : Functor 𝒞 𝒞) where
   -- Maybe an arbitrary functor 𝒞 × 𝒞op → Setoid?
 
   -- FIXME: construction of coends in Setoid
-
-  -- Now construct the lifting of a functor using coends
 
   M-hat-F : (F : PSh .Category.obj) (x : 𝒞.obj) → Functor (product 𝒞 𝒞.opposite) (SetoidCat ℓ ℓ)
   M-hat-F F x = MonoidalProduct.⊗-functor SM.×-monoidal ∘F pairF ((atObj x ∘F (よ ∘F M)) ∘F project₁) (F ∘F project₂)

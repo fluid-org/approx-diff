@@ -140,8 +140,6 @@ _==>_ : ∀ {X} → Predicate X → Predicate X → Predicate X
   ∎
   where open ≤-Reasoning S.⊑-isPreorder
 
--- Meets distribute over the closed joins and satisfy Frobenius with the closed direct images,
--- provided they do in the underlying system: the closure's strength carries the meet inside.
 module distributive
     (S-dist : ∀ {X} {P Q R : S.Predicate X} →
               (P S.&& (Q S.++ R)) S.⊑ ((P S.&& Q) S.++ (P S.&& R)))
@@ -178,7 +176,6 @@ module distributive
     ∎
     where open ≤-Reasoning S.⊑-isPreorder
 
--- Beck-Chevalley squares transport from the underlying system to the closed one.
 ⟨⟩-[]-transport : ∀ {W X Y Z : 𝒞.obj} {P : Predicate X}
                   {α : X 𝒞.⇒ Z} {β : Y 𝒞.⇒ Z} {γ : W 𝒞.⇒ X} {δ : W 𝒞.⇒ Y} →
                   ((P .pred S.⟨ α ⟩) S.[ β ]) S.⊑ ((P .pred S.[ γ ]) S.⟨ δ ⟩) →
@@ -275,8 +272,6 @@ module 𝐂Functor (F : Functor 𝒞 𝒞) (FP : FunctorPred _ _ S F)
    (S⊑-trans (𝐂-isClosure .closed)
              (𝐂-isClosure .mono ((𝐂-isClosure .unit) S.⟨ _ ⟩m))))
 
--- If we have a Monad that distributes over the closure, then this
--- also lifts to the closed predicates.
 module 𝐂Monad (M : Monad 𝒞) (MP : MonadPred _ _  S M)
                (distrib : ∀ {X} {P : S.Predicate X} → MP .MonadPred.liftF (𝐂 P) S.⊑ 𝐂 (MP .MonadPred.liftF P))
           where

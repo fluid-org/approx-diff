@@ -89,7 +89,6 @@ module derive
         coconeEq .≃-NatTrans.transf-eq (inj₁ _) = f₁≈f₂
         coconeEq .≃-NatTrans.transf-eq (inj₂ _) = g₁≈g₂
 
-  -- Finite coproducts derived from the two-element set-indexed coproduct.
   coproducts-from-indexed : HasCoproducts 𝒞
   coproducts-from-indexed .HasCoproducts.coprod = ⊕
   coproducts-from-indexed .HasCoproducts.in₁ = ι₁
@@ -193,7 +192,6 @@ module derive
       yy₁ = IB.E .fobj (inj₁ (lift tt))
       yy₂ = IB.E .fobj (inj₂ (lift tt))
 
-      -- E and the two-element diagram on its objects agree up to identity.
       natiso : NatIso (Dpair yy₁ yy₂) IB.E
       natiso .NatIso.transform .transf (inj₁ _) = 𝒞.id _
       natiso .NatIso.transform .transf (inj₂ _) = 𝒞.id _
@@ -208,8 +206,6 @@ module derive
       natiso .NatIso.transf-iso (inj₁ _) .Category.IsIso.inverse∘f≈id = 𝒞.id-left
       natiso .NatIso.transf-iso (inj₂ _) .Category.IsIso.inverse∘f≈id = 𝒞.id-left
 
-      -- The comparison iso commutes with the injections, so the factorisation
-      -- equations transport from IB.E's coproduct to the derived one.
       adj₁ = 𝒞.≈-sym (𝒞.≈-trans (𝒞.assoc _ _ _)
                (𝒞.∘-cong 𝒞.≈-refl (𝒞.≈-trans (∐-map-coeval (natiso .NatIso.transform) (inj₁ (lift tt))) 𝒞.id-right)))
       adj₂ = 𝒞.≈-sym (𝒞.≈-trans (𝒞.assoc _ _ _)
@@ -224,8 +220,6 @@ module derive
       sb .SC.StableBits.eq₁ = 𝒞.≈-trans (IB.eq (inj₁ (lift tt))) (𝒞.∘-cong 𝒞.≈-refl adj₁)
       sb .SC.StableBits.eq₂ = 𝒞.≈-trans (IB.eq (inj₂ (lift tt))) (𝒞.∘-cong 𝒞.≈-refl adj₂)
 
--- A functor preserving set-indexed coproducts preserves the finite coproducts
--- derived from them (the two-element instance).
 module preserve
   {oA mA eA oB mB eB}
   {𝒜 : Category oA mA eA} {ℬ : Category oB mB eB}
@@ -266,7 +260,6 @@ module preserve
       where
         module FI = ∃ₛ (F-DC SA.Two (SA.Dpair x y))
 
-        -- SB.Dpair (F x) (F y) and F ∘F SA.Dpair x y agree up to identity.
         ψ : NatIso (SB.Dpair (F .fobj x) (F .fobj y)) (F ∘F SA.Dpair x y)
         ψ .NatIso.transform .transf (inj₁ _) = ℬ.id _
         ψ .NatIso.transform .transf (inj₂ _) = ℬ.id _
@@ -289,7 +282,6 @@ module preserve
         fwd-iso .f∘inverse≈id = theIso .fwd∘bwd≈id
         fwd-iso .inverse∘f≈id = theIso .bwd∘fwd≈id
 
-        -- theIso.fwd sends each injection to F of the corresponding one.
         onIn₁ = ℬ.≈-trans (ℬ.assoc _ _ _)
                   (ℬ.≈-trans (ℬ.∘-cong ℬ.≈-refl
                                (ℬ.≈-trans (SB.∐-map-coeval (ψ .NatIso.transform) (inj₁ (lift tt))) ℬ.id-right))

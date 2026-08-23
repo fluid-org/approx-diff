@@ -24,8 +24,6 @@ record FPFunctor : Set (o₁ ⊔ m₁ ⊔ e₁ ⊔ o₂ ⊔ m₂ ⊔ e₂) where
       IsProduct 𝒞 x y xy p₁ p₂ →
       IsProduct 𝒟 (F.fobj x) (F.fobj y) (F.fobj xy) (F.fmor p₁) (F.fmor p₂)
 
--- If a functor preserves the empty diagram, then it preserves terminal objects
-
 open import empty-diagram using (IsLimit→IsTerminal; terminal→limit)
 open import product-diagram using (IsLimit→IsProduct; product→limit)
 
@@ -33,8 +31,6 @@ mk-preserve-terminal : preserve-limits-of-shape empty-diagram.cat F →
                        ∀ t → IsTerminal 𝒞 t → IsTerminal 𝒟 (F.fobj t)
 mk-preserve-terminal F-preserve t t-terminal =
     IsLimit→IsTerminal 𝒟 (F-preserve _ t _ (terminal→limit 𝒞 t-terminal))
-
--- If a functor preserves product-shaped limits, then it preserves products
 
 mk-preserve-products : preserve-limits-of-shape product-diagram.cat F →
                        ∀ (x y xy : 𝒞.obj) (p₁ : xy 𝒞.⇒ x) (p₂ : xy 𝒞.⇒ y) →

@@ -48,7 +48,6 @@ module _ {o₁ m₁ e₁} {𝒮 : Category o₁ m₁ e₁} (D : Functor 𝒮 �
     ∎ where open ≈-Reasoning isEquiv
 
   private
-    -- Transpose a cocone on D×B to a cocone on D.
     curry : ∀ x → NatTrans D×B (constF 𝒮 x) → NatTrans D (constF 𝒮 (E.exp B x))
     curry x α .transf s = E.lambda (α .transf s)
     curry x α .natural {s₁} {s₂} f =

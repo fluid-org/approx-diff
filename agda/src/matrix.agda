@@ -15,23 +15,19 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   open import Data.Nat using (ℕ; zero; suc)
   open import Data.Fin using (Fin; zero; suc)
 
-  -- Vectors S^n.
   Vec : ℕ → Set o
   Vec n = Fin n → Carrier
 
-  -- Standard basis vector: ι at position i, ε elsewhere.
   e : ∀ {n} → Fin n → Vec n
   e zero zero = ι
   e zero (suc _) = ε
   e (suc i) zero = ε
   e (suc i) (suc j) = e i j
 
-  -- Finite sum: Σᵢ f(i), using addition of S.
   Σ : ∀ {n} → (Fin n → Carrier) → Carrier
   Σ {zero} _ = ε
   Σ {suc n} f = f zero + Σ {n} (λ i → f (suc i))
 
-  -- Dot product (sum of multiplications).
   infixl 21 _⋅_
   _⋅_ : ∀ {n} → Vec n → Vec n → Carrier
   _⋅_ {n} u v = Σ {n} λ i → u i · v i
@@ -39,11 +35,9 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Matrix : ℕ → ℕ → Set o
   Matrix m n = Fin m → Fin n → Carrier
 
-  -- Identity matrix (Kronecker delta).
   I : ∀ {n} → Matrix n n
   I = e
 
-  -- Matrix composition: (M ∘ N)ᵢₖ = Σⱼ Mᵢⱼ · Nⱼₖ.
   _∘_ : ∀ {m n k} → Matrix m n → Matrix n k → Matrix m k
   (M ∘ N) i k = Σ (λ j → M i j · N j k)
 
@@ -52,7 +46,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   _ᵀ : ∀ {m n} → Matrix m n → Matrix n m
   (M ᵀ) i j = M j i
 
-  -- Pointwise equality of matrices.
   _≈ₘ_ : ∀ {m n} → Matrix m n → Matrix m n → Prop ℓ
   M ≈ₘ N = ∀ i j → M i j ≈ N i j
 
@@ -61,7 +54,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   open import prop-setoid using (IsEquivalence)
   open import categories using (Category)
 
-  -- Any reflexive relation preserved by + is preserved by Σ.
   module +-to-Σ
     {p} (_~_ : Carrier → Carrier → Prop p)
     (~-refl : ∀ {x} → x ~ x)
@@ -80,19 +72,16 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Σ-cong-≡ {zero}  p = ≡.refl
   Σ-cong-≡ {suc n} p = ≡.cong₂ _+_ (p zero) (Σ-cong-≡ {n} (λ i → p (suc i)))
 
-  -- Kronecker delta is symmetric.
   e-sym : ∀ {n} (i j : Fin n) → e i j ≈ e j i
   e-sym zero zero = refl
   e-sym zero (suc _) = refl
   e-sym (suc _) zero = refl
   e-sym (suc i) (suc j) = e-sym i j
 
-  -- Σ of zeros is zero.
   Σ-ε : ∀ {n} → Σ {n} (λ _ → ε) ≈ ε
   Σ-ε {zero} = refl
   Σ-ε {suc n} = trans +-lunit (Σ-ε {n})
 
-  -- Picking out the i-th element: Σⱼ e(i,j) · f(j) ≈ f(i).
   Σ-unit : ∀ {n} (i : Fin n) (f : Fin n → Carrier) → Σ {n} (λ j → e i j · f j) ≈ f i
   Σ-unit {suc n} zero f =
     trans (+-cong ·-lunit (trans (Σ-cong {n} (λ j → ε-annihilₗ)) (Σ-ε {n})))
@@ -101,24 +90,20 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
     trans (+-cong ε-annihilₗ refl)
           (trans +-lunit (Σ-unit i (λ j → f (suc j))))
 
-  -- Distributing · over Σ on the right: (Σⱼ fⱼ) · x ≈ Σⱼ (fⱼ · x).
   Σ-·-distribᵣ : ∀ {n} (f : Fin n → Carrier) (x : Carrier) → Σ {n} f · x ≈ Σ {n} (λ j → f j · x)
   Σ-·-distribᵣ {zero} f x = ε-annihilₗ
   Σ-·-distribᵣ {suc n} f x =
     trans ·-+-distribᵣ (+-cong refl (Σ-·-distribᵣ {n} (λ j → f (suc j)) x))
 
-  -- Distributing · over Σ on the left: x · (Σⱼ fⱼ) ≈ Σⱼ (x · fⱼ).
   Σ-·-distribₗ : ∀ {n} (x : Carrier) (f : Fin n → Carrier) → x · Σ {n} f ≈ Σ {n} (λ j → x · f j)
   Σ-·-distribₗ {n} x f =
     trans ·-comm (trans (Σ-·-distribᵣ f x) (Σ-cong {n} (λ j → ·-comm)))
 
-  -- Σ distributes over +: Σ g + Σ h ≈ Σ (λ j → g j + h j).
   Σ-+ : ∀ {n} (g h : Fin n → Carrier) → Σ {n} g + Σ {n} h ≈ Σ {n} (λ j → g j + h j)
   Σ-+ {zero} g h = +-lunit
   Σ-+ {suc n} g h =
     trans +-interchange (+-cong refl (Σ-+ {n} (λ j → g (suc j)) (λ j → h (suc j))))
 
-  -- Swapping two finite sums.
   Σ-interchange : ∀ {m n} (f : Fin m → Fin n → Carrier) → Σ {m} (λ i → Σ {n} (f i)) ≈ Σ {n} (λ j → Σ {m} (λ i → f i j))
   Σ-interchange {zero} {n} f = sym (Σ-ε {n})
   Σ-interchange {suc m} {n} f =
@@ -173,16 +158,13 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   open import commutative-monoid using (CommutativeMonoid)
   open import Data.Nat using () renaming (_+_ to _+ℕ_)
 
-  -- Pointwise addition of matrices.
   _+ₘ_ : ∀ {m n} → Matrix m n → Matrix m n → Matrix m n
   (M +ₘ N) i j = M i j + N i j
 
   infixl 21 _+ₘ_
 
-  -- Zero matrix.
   εₘ : ∀ {m n} → Matrix m n
   εₘ _ _ = ε
-
 
   comp-bilinear₁ : ∀ {m n k} (M₁ M₂ : Matrix m n) (N : Matrix n k) → (M₁ +ₘ M₂) ∘ N ≈ₘ (M₁ ∘ N) +ₘ (M₂ ∘ N)
   comp-bilinear₁ {n = n} M₁ M₂ N i k =
@@ -202,7 +184,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   comp-bilinear-ε₂ {n = n} M i k =
     trans (Σ-cong {n} (λ j → ε-annihilᵣ)) (Σ-ε {n})
 
-
   cmon : CMonEnriched cat
   cmon .CMonEnriched.homCM m n .CommutativeMonoid.ε = εₘ
   cmon .CMonEnriched.homCM m n .CommutativeMonoid._+_ = _+ₘ_
@@ -215,7 +196,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   cmon .CMonEnriched.comp-bilinear-ε₁ = comp-bilinear-ε₁
   cmon .CMonEnriched.comp-bilinear-ε₂ = comp-bilinear-ε₂
 
-  -- Biproducts.
   p₁ : ∀ {m n} → Matrix m (m +ℕ n)
   p₁ {suc m} zero zero = ι
   p₁ {suc m} zero (suc _) = ε
@@ -285,21 +265,17 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   biproduct m n .Biproduct.zero-2 = zero-2 m n
   biproduct m n .Biproduct.id-+ = id-+ m n
 
-  -- Copairing of blocks: [ f , g ] as a matrix into the summed domain.
   _∥_ : ∀ {m n k} → Matrix k m → Matrix k n → Matrix k (m +ℕ n)
   _∥_ {m} {n} f g = Biproduct.copair (biproduct m n) f g
 
   products : HasProducts cat
   products = cmon-enriched.biproducts→products cmon biproduct
 
-  -- Pairing of blocks: ⟨ f , g ⟩ as a matrix out of the summed codomain.
   open HasProducts products using () renaming (pair to ⟨_,_⟩) public
 
-  -- A scalar as a 1-by-1 block.
   block : Carrier → Matrix 1 1
   block c _ _ = c
 
-  -- Vector concatenation, a monoid homomorphism preserving pointwise additive structure.
   concat : ∀ {x y} → Vec x → Vec y → Vec (x +ℕ y)
   concat {zero} u v = v
   concat {suc x} u v zero = u zero
@@ -345,7 +321,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   concat-split {suc x} w zero = refl
   concat-split {suc x} w (suc i) = concat-split {x} (λ j → w (suc j)) i
 
-  -- Matrix multiplication by p₁/p₂ computes split₁/split₂.
   Σ-p₁ : ∀ {x y} (w : Vec (x +ℕ y)) (i : Fin x) → Σ {x +ℕ y} (λ j → p₁ {x} {y} i j · w j) ≈ split₁ {x} w i
   Σ-p₁ {suc x} w zero =
     trans (+-cong ·-lunit (trans (Σ-cong {x +ℕ _} (λ j → ε-annihilₗ)) (Σ-ε {x +ℕ _})))
@@ -372,7 +347,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Σ-in₂ {zero} {y} w i = trans (Σ-cong {y} (λ j → ·-cong (e-sym j i) refl)) (Σ-unit i w)
   Σ-in₂ {suc x} {y} w zero = trans (Σ-cong {y} (λ j → ε-annihilₗ)) (Σ-ε {y})
   Σ-in₂ {suc x} w (suc i) = Σ-in₂ {x} w i
-
 
   ≈ₘ-refl : ∀ {m n} {M : Matrix m n} → M ≈ₘ M
   ≈ₘ-refl = ≈ₘ-isEquiv .IsEquivalence.refl
@@ -413,14 +387,12 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
     ≈ₘ-trans (≈ₘ-sym (+ₘ-assoc M N P))
              (≈ₘ-trans (+ₘ-cong (+ₘ-comm M N) ≈ₘ-refl) (+ₘ-assoc N M P))
 
-  -- A composite with a zero factor drops out of a sum.
   absorb₁ : ∀ {m n k} (M : Matrix m n) (N : Matrix k n) → (M +ₘ (εₘ ∘ N)) ≈ₘ M
   absorb₁ M N = ≈ₘ-trans (+ₘ-cong ≈ₘ-refl (comp-bilinear-ε₁ N)) (+ₘ-runit M)
 
   absorb₂ : ∀ {m n k} (M : Matrix m n) (N : Matrix m k) → (M +ₘ (N ∘ εₘ)) ≈ₘ M
   absorb₂ M N = ≈ₘ-trans (+ₘ-cong ≈ₘ-refl (comp-bilinear-ε₂ N)) (+ₘ-runit M)
 
-  -- Composing with a pairing or a copairing, blockwise.
   ∘-pair : ∀ {m n k l} (A : Matrix l (m +ℕ n)) (X : Matrix m k) (Y : Matrix n k) →
            (A ∘ ⟨ X , Y ⟩) ≈ₘ (((A ∘ in₁) ∘ X) +ₘ ((A ∘ in₂) ∘ Y))
   ∘-pair A X Y =

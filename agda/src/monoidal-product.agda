@@ -24,7 +24,6 @@ record MonoidalProduct {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) whe
   field
     I⊗  : obj
 
-    -- Functor (𝒞 ×C 𝒞) 𝒞
     _⊗_ : obj → obj → obj
     _⊗m_ : ∀ {x₁ x₂ y₁ y₂} → x₁ ⇒ x₂ → y₁ ⇒ y₂ → (x₁ ⊗ y₁) ⇒ (x₂ ⊗ y₂)
     ⊗m-cong : ∀ {x₁ x₂ y₁ y₂} {f₁ f₂ : x₁ ⇒ x₂} {g₁ g₂ : y₁ ⇒ y₂} → f₁ ≈ f₂ → g₁ ≈ g₂ → (f₁ ⊗m g₁) ≈ (f₂ ⊗m g₂)
@@ -33,7 +32,6 @@ record MonoidalProduct {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) whe
               (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
               ((f₁ ∘ g₁) ⊗m (f₂ ∘ g₂)) ≈ ((f₁ ⊗m f₂) ∘ (g₁ ⊗m g₂))
 
-    -- associativity
     ⊗-assoc : ∀ {x y z} → ((x ⊗ y) ⊗ z) ⇒ (x ⊗ (y ⊗ z))
     ⊗-assoc-natural : ∀ {x₁ x₂ y₁ y₂ z₁ z₂} (f : x₁ ⇒ x₂) (g : y₁ ⇒ y₂) (h : z₁ ⇒ z₂) →
       ((f ⊗m (g ⊗m h)) ∘ ⊗-assoc) ≈ (⊗-assoc ∘ ((f ⊗m g) ⊗m h))
@@ -41,14 +39,12 @@ record MonoidalProduct {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) whe
     ⊗-assoc-iso1 : ∀ {x y z} → (⊗-assoc ∘ ⊗-assoc⁻¹) ≈ id (x ⊗ (y ⊗ z))
     ⊗-assoc-iso2 : ∀ {x y z} → (⊗-assoc⁻¹ ∘ ⊗-assoc) ≈ id ((x ⊗ y) ⊗ z)
 
-    -- left unit
     ⊗-lunit : ∀ {x} → (I⊗ ⊗ x) ⇒ x
     ⊗-lunit⁻¹ : ∀ {x} → x ⇒ (I⊗ ⊗ x)
     ⊗-lunit-natural : ∀ {x₁ x₂} (f : x₁ ⇒ x₂) → (f ∘ ⊗-lunit) ≈ (⊗-lunit ∘ (id _ ⊗m f))
     ⊗-lunit-iso1 : ∀ {x} → (⊗-lunit ∘ ⊗-lunit⁻¹) ≈ id x
     ⊗-lunit-iso2 : ∀ {x} → (⊗-lunit⁻¹ ∘ ⊗-lunit) ≈ id (I⊗ ⊗ x)
 
-    -- right unit
     ⊗-runit : ∀ {x} → (x ⊗ I⊗) ⇒ x
     ⊗-runit⁻¹ : ∀ {x} → x ⇒ (x ⊗ I⊗)
     ⊗-runit-natural : ∀ {x₁ x₂} (f : x₁ ⇒ x₂) → (f ∘ ⊗-runit) ≈ (⊗-runit ∘ (f ⊗m id _))
@@ -69,7 +65,6 @@ record MonoidalProduct {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) whe
   ⊗-functor .fmor-cong (f₁≈f₂ , g₁≈g₂) = ⊗m-cong f₁≈f₂ g₁≈g₂
   ⊗-functor .fmor-id = ⊗m-id
   ⊗-functor .fmor-comp (f₁ , g₁) (f₂ , g₂) = ⊗m-comp f₁ g₁ f₂ g₂
-
 
   ⊗-runit⁻¹-natural : ∀ {x₁ x₂} (f : x₁ ⇒ x₂) → (⊗-runit⁻¹ ∘ f) ≈ ((f ⊗m id _) ∘ ⊗-runit⁻¹)
   ⊗-runit⁻¹-natural f = begin
@@ -172,10 +167,8 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       mult : ∀ {X Y} → (F.fobj X 𝒟M.⊗ F.fobj Y) 𝒟.⇒ F.fobj (X 𝒞M.⊗ Y)
       unit : 𝒟M.I⊗ 𝒟.⇒ F.fobj 𝒞M.I⊗
 
-      -- naturality of mult
       mult-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ 𝒞.⇒ x₂) (g : y₁ 𝒞.⇒ y₂) →
                      (mult 𝒟.∘ (F.fmor f 𝒟M.⊗m F.fmor g)) 𝒟.≈ (F.fmor (f 𝒞M.⊗m g) 𝒟.∘ mult)
-      -- assoc, left-unit, right-unit
       mult-assoc : ∀ {x y z} →
         (mult 𝒟.∘ ((𝒟.id _ 𝒟M.⊗m mult) 𝒟.∘ 𝒟M.⊗-assoc {F.fobj x} {F.fobj y} {F.fobj z}))
         𝒟.≈ (F.fmor 𝒞M.⊗-assoc 𝒟.∘ (mult 𝒟.∘ (mult 𝒟M.⊗m 𝒟.id _)))

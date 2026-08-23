@@ -12,7 +12,6 @@ open import commutative-monoid using (CommutativeMonoid; 𝟙cm) renaming (_⊗_
 open import commutative-semiring using (CommutativeSemiring)
 open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimitCones)
 
-
 module semimodule {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
 
 module S = CommutativeSemiring S
@@ -177,7 +176,6 @@ products .HasProducts.pair-ext f .*≈* ._≈s_.func-eq = _⇒s_.func-resp-≈ (
 𝟘 .+-distribˡ = tt
 𝟘 .zero-distribʳ = tt
 𝟘 .zero-distribˡ = tt
-
 
 terminal : HasTerminal cat
 terminal .HasTerminal.witness = 𝟘

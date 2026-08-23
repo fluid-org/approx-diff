@@ -139,7 +139,6 @@ module _ {o m e} os (𝒮 : Category o m e) where
   Setoid-limits : HasLimits 𝒮 (SetoidCat ℓ ℓ)
   Setoid-limits = cones→limits Setoid-limit-cones
 
--- Colimits
 module _ {o m e} os (𝒮 : Category o m e) where
 
   private

@@ -126,7 +126,6 @@ unk ·ˢ unk = unk
 ·ˢ-assoc unk unk neg = refl
 ·ˢ-assoc unk unk unk = refl
 
--- · distributes over +: the one nontrivial law.
 distribˢ : ∀ x y z → (x ·ˢ (y +ˢ z)) ≡ ((x ·ˢ y) +ˢ (x ·ˢ z))
 distribˢ zer y z = refl
 distribˢ pos y z = refl

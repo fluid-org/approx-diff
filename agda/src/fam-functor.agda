@@ -306,8 +306,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
 
-  -- FamF admits a uniform choice of definability witnesses when the base
-  -- functor does (and is faithful, for the reconstructed naturality).
   FamF-def : (∀ {a b} (h : F .fobj a 𝒟.⇒ F .fobj b) →
                 Prf (∃ (a 𝒞.⇒ b) λ g → F .fmor g 𝒟.≈ h) → ∃ₛ (a 𝒞.⇒ b) λ g → F .fmor g 𝒟.≈ h) →
              (∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.≈ F .fmor g₂ → g₁ 𝒞.≈ g₂) →
@@ -343,8 +341,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
         𝒟.≈-trans (𝒟.∘-cong (FamF .fobj Y .fam .refl*) 𝒟.≈-refl)
           (𝒟.≈-trans 𝒟.id-left (∃ₛ.snd (wit x)))
 
-  -- FamF preserves set-indexed coproducts: index sets and fibres are unchanged,
-  -- so the comparison is the identity up to the fibrewise fmor-comp bridge.
   FamF-preserve-bigCopro : ∀ (S : Setoid os es) (D : Functor (setoid→category S) Fam𝒞.cat) →
     ∃ₛ (Fam𝒟C.Iso
           (Colimit.apex (Fam𝒟.bigCoproducts S (FamF ∘F D)))
@@ -391,8 +387,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
         𝒟.≈-trans (𝒟.∘-cong (Ro .fam .refl*) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left))
           (𝒟.≈-trans 𝒟.id-left (𝒟.≈-sym (F .fmor-id)))
 
-
-
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂}
          os es (F G : Functor 𝒞 𝒟)
        where
@@ -425,8 +419,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
     ∎
     where open ≈-Reasoning 𝒟.isEquiv
 
--- A strong endofunctor lifts fibrewise to a strong endofunctor of the families: the strength acts on
--- each fibre and is the identity on indices.
 module _ {o m e} {𝒞 : Category o m e} os es
          (𝒞P : HasProducts 𝒞) (𝕃 : StrongFunctor 𝒞P) where
 

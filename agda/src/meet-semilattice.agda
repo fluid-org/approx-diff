@@ -152,7 +152,6 @@ module _ where
     +m-lunit : ∀ {f} → (εm +m f) ≃m f
     +m-lunit .eqfunc .eqfun x = Y.∧-lunit
 
-  -- Bilinearity of composition
   module _ {A B C}
            {X : MeetSemilattice A}{Y : MeetSemilattice B}{Z : MeetSemilattice C} where
     open preorder._≃m_
@@ -408,7 +407,6 @@ module _ where
   L-strength-p₂ .eqfunc .eqfun (x , bottom) = tt , tt
   L-strength-p₂ {B = B} .eqfunc .eqfun (x , < y >) = B .≃-refl
 
-  -- Associativity coherence: L-strength commutes with the diagonal ⟨ project₁ , id ⟩.
   L-strength-assoc : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
                      (L-strength {X = X} {Y = X ⊕ Y} ∘ ⟨ project₁ , L-strength {X = X} {Y = Y} ⟩) ≃m
                      (L-map ⟨ project₁ , id ⟩ ∘ L-strength {X = X} {Y = Y})

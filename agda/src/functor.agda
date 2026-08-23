@@ -108,7 +108,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} where
     opF' F .fmor-id = F .fmor-id
     opF' F .fmor-comp f g = F .fmor-comp g f
 
--- Functors form a category
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} where
 
   private
@@ -206,7 +205,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
   constFmor f .transf _ = f
   constFmor f .natural _ = 𝒟.id-swap
 
--- Category of functors
 [_⇒_] : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} →
          Category o₁ m₁ e₁ →
          Category o₂ m₂ e₂ →
@@ -239,7 +237,6 @@ module _ {o₁ m₁ e₁}
   Id .fmor-id = 𝒞.≈-refl
   Id .fmor-comp f g = 𝒞.≈-refl
 
-  -- Product with a fixed object, as an endofunctor.
   module _ (P : HasProducts 𝒞) (w : Category.obj 𝒞) where
     open Category 𝒞
     open HasProducts P
@@ -267,18 +264,14 @@ module _ {o₁ m₁ e₁}
                                (F .Functor.fmor (prod-m f g) 𝒞.∘ strengthᵣ) 𝒞.≈
                                (strengthᵣ 𝒞.∘ prod-m f (F .Functor.fmor g))
       strengthᵣ-p₂ : ∀ {x y} → (F .Functor.fmor p₂ 𝒞.∘ strengthᵣ {x} {y}) 𝒞.≈ p₂
-      -- Associativity coherence: strengthᵣ commutes with the diagonal pair p₁ (id _),
-      -- the comultiplication of the prod x - comonad.
       strengthᵣ-assoc : ∀ {x y} →
         (strengthᵣ {x} {prod x y} 𝒞.∘ pair p₁ (strengthᵣ {x} {y}))
         𝒞.≈ (F .Functor.fmor (pair p₁ (𝒞.id _)) 𝒞.∘ strengthᵣ {x} {y})
     open Functor F public
 
-    -- strengthₗ (left strength) derived by swapping inputs/outputs around strengthᵣ.
     strengthₗ : ∀ {x y} → prod (F .fobj x) y ⇒ F .fobj (prod x y)
     strengthₗ = F .Functor.fmor (pair p₂ p₁) 𝒞.∘ strengthᵣ 𝒞.∘ pair p₂ p₁
 
-  -- Strong endofunctor with a unit.
   record StrongPointedFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
     field
       strongFunctor : StrongFunctor P
@@ -348,10 +341,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃ o₄ m₄ e₄}
   F-assoc⁻¹ .transf x = ℱ.id _
   F-assoc⁻¹ .natural f = ℱ.id-swap'
 
-
-  -- and back again... and it is natural, and some coherence bits
-
--- Unitors
 module _ {o₁ m₁ e₁ o₂ m₂ e₂}
          {𝒞 : Category o₁ m₁ e₁}
          {𝒟 : Category o₂ m₂ e₂}
@@ -385,7 +374,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
   left-unit F .transf x = 𝒟.id _
   left-unit F .natural f = 𝒟.id-swap'
 
--- Horizontal composition of natural transformations
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}
          {𝒟 : Category o₂ m₂ e₂}
@@ -511,7 +499,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 
       isColimit : IsColimit D apex cocone
     open IsColimit isColimit public
 
-  -- Transport a colimit along an equivalent cocone.
   IsColimit-cong : ∀ {D : Functor 𝒮 𝒞} {apex} {cocone₁ cocone₂ : NatTrans D (constF 𝒮 apex)} →
                    ≃-NatTrans cocone₁ cocone₂ → IsColimit D apex cocone₁ → IsColimit D apex cocone₂
   IsColimit-cong eq isColim .IsColimit.colambda = isColim .IsColimit.colambda
@@ -524,7 +511,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 
                  (∘NT-cong (≃-isEquivalence .refl) (≃-isEquivalence .sym eq)))
               (isColim .IsColimit.colambda-ext x f)
 
-  -- Mediating morphisms out of a colimit are unique: morphisms agreeing on the cocone agree.
   colambda-unique : ∀ {D : Functor 𝒮 𝒞} {apex} {cocone : NatTrans D (constF 𝒮 apex)} →
                     IsColimit D apex cocone →
                     ∀ {x} {f g : apex 𝒞.⇒ x} →
@@ -570,11 +556,9 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒮 : Category o₁ m₁ e₁} {𝒞 
       isLimit : IsLimit D apex cone
     open IsLimit isLimit public
 
--- Has all colimits of shape 𝒮
 HasColimits : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e₁) (𝒞 : Category o₂ m₂ e₂) → Set (o₁ ⊔ m₁ ⊔ e₁ ⊔ o₂ ⊔ m₂ ⊔ e₂)
 HasColimits 𝒮 𝒞 = (D : Functor 𝒮 𝒞) → Colimit D
 
--- Has all limits of shape 𝒮
 HasLimitCones : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e₁) (𝒞 : Category o₂ m₂ e₂) → Set (o₁ ⊔ m₁ ⊔ e₁ ⊔ o₂ ⊔ m₂ ⊔ e₂)
 HasLimitCones 𝒮 𝒞 = (D : Functor 𝒮 𝒞) → Limit D
 
@@ -635,8 +619,6 @@ module LimitFunctor {o₁ m₁ e₁ o₂ m₂ e₂}
           module EL = Limit (limits E)
           module FL = Limit (limits F)
 
-  -- This functor forms an adjunction with const
-
   open NatTrans
 
   unitΠ : NatTrans Id (Π ∘F const)
@@ -685,9 +667,6 @@ record HasLimits {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e₁
                   ≃-NatTrans α β → lambdaΠ x F α 𝒞.≈ lambdaΠ x F β
     lambda-eval : ∀ {x} {F} α → ≃-NatTrans (evalΠ F ∘ constFmor (lambdaΠ x F α)) α
     lambda-ext  : ∀ {x} {F} f → lambdaΠ x F (evalΠ F ∘ constFmor f) 𝒞.≈ f
-
-  -- If 𝒞 has all limits of shape 𝒮, then there is a functor
-  --    Π : Functor [ 𝒮 ⇒ 𝒞 ] 𝒞
 
   Π-map : ∀ {P Q : Functor 𝒮 𝒞} → NatTrans P Q → Π P 𝒞.⇒ Π Q
   Π-map {P} {Q} f = lambdaΠ (Π P) Q (f ∘ evalΠ P)
@@ -855,7 +834,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       f
     ∎
     where open ≈-Reasoning 𝒞.isEquiv
-
 
 ------------------------------------------------------------------------------
 -- Definition of limit preservation

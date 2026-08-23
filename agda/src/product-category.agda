@@ -82,7 +82,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
 
   -- FIXME: natural isomorphisms to show that this is a product
 
-  -- Limits and colimits in product categories
   module _ {o₃ m₃ e₃} (𝒮 : Category o₃ m₃ e₃) where
 
     open Limit
@@ -136,7 +135,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
        (colimit𝒟 .colambda-cong (record { transf-eq = λ _ → 𝒟.≈-refl }))
        (colimit𝒟 .colambda-ext y (f .proj₂))
 
-  -- Products as a special case
   module _ (𝒞P : HasProducts 𝒞) (𝒟P : HasProducts 𝒟) where
 
     private
@@ -153,7 +151,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
     product-products .HasProducts.pair-p₂ (f₁ , f₂) (g₁ , g₂) = 𝒞P.pair-p₂ f₁ g₁ , 𝒟P.pair-p₂ f₂ g₂
     product-products .HasProducts.pair-ext (f₁ , f₂) = 𝒞P.pair-ext f₁ , 𝒟P.pair-ext f₂
 
-  -- Terminal objects as a special case
   module _ (𝒞T : HasTerminal 𝒞) (𝒟T : HasTerminal 𝒟) where
 
     private

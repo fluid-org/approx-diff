@@ -30,7 +30,6 @@ record JoinSemilattice (A : Preorder) : Set (suc 0ℓ) where
     renaming (lunit to ∨-lunit; runit to ∨-runit)
     public
 
-
 module _ {A B : Preorder} where
   open Preorder
   open preorder._=>_
@@ -152,7 +151,6 @@ module _ where
     +m-lunit : ∀ {f} → (εm +m f) ≃m f
     +m-lunit .eqfunc .eqfun x = Y.∨-lunit
 
-  -- Bilinearity of composition
   module _ {A B C}
            {X : JoinSemilattice A}{Y : JoinSemilattice B}{Z : JoinSemilattice C} where
 
@@ -186,7 +184,6 @@ module _ where
   𝟙 .∨-isJoin .IsJoin.[_,_] tt tt = tt
   𝟙 .⊥-isBottom .IsBottom.≤-bottom = tt
 
-  -- this is a zero object (both initial and terminal)
   initial : ∀ {A}{X : JoinSemilattice A} → 𝟙 => X
   initial = ⊥-map
 
@@ -216,7 +213,6 @@ module _ where
 ------------------------------------------------------------------------------
 -- Set-wide direct sums of JoinSemilattices
 module _ (I : Set) {A : I -> Preorder} (X : (i : I) → JoinSemilattice (A i)) where
-    -- Now where I is a Setoid, and (A,X) is a family of JoinSemilattices respecting equality
   open Preorder
   open JoinSemilattice
   open _=>_
@@ -305,7 +301,6 @@ module _ where
     Y .∨-isJoin .IsJoin.[_,_] y₁≤z₂ y₂≤z₂
   (X ⊕ Y) .⊥-isBottom .IsBottom.≤-bottom = IsBottom.≤-bottom (X .⊥-isBottom) , IsBottom.≤-bottom (Y .⊥-isBottom)
 
-  -- Product bits:
   project₁ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → (X ⊕ Y) => X
   project₁ .func .fun = proj₁
   project₁ .func .mono = proj₁
@@ -349,7 +344,6 @@ module _ where
 
   -- FIXME: deduce biproducts from cmon-enrichment
 
-  -- Coproduct bits:
   inject₁ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → X => (X ⊕ Y)
   inject₁ {Y = Y} .func .fun x = x , Y .⊥
   inject₁ {B = B} .func .mono x≤x' = x≤x' , B .≤-refl
@@ -430,7 +424,6 @@ module _ where
           module Y = JoinSemilattice Y
           module X = JoinSemilattice X
 
-  -- Biproduct properties
   proj₁-inverts-inj₁ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → (project₁ {X = X}{Y} ∘ inject₁) ≃m id
   proj₁-inverts-inj₁ {A} ._≃m_.eqfunc .eqfun x = ≃-refl A
 
@@ -556,8 +549,6 @@ module _ where
     A .≤-refl , B .≤-refl
   L-costrength {A} .⊥-preserving = A .≤-refl , tt
 
-  -- Naturality of L-costrength: commutes with the bifunctorial action of L
-  -- combined with the product on the first arg.
   L-costrength-natural : ∀ {A₁ A₂ B₁ B₂}
                          {X₁ : JoinSemilattice A₁} {X₂ : JoinSemilattice A₂}
                          {Y₁ : JoinSemilattice B₁} {Y₂ : JoinSemilattice B₂}
@@ -576,8 +567,6 @@ module _ where
   L-costrength-p₂ .eqfunc .eqfun bottom = tt , tt
   L-costrength-p₂ {B = B} .eqfunc .eqfun < x , y > = B .≃-refl
 
-  -- Associativity coherence dual to meet-semilattice.L-strength-assoc: L-costrength commutes
-  -- with the codiagonal [ inject₁ , id ].
   L-costrength-assoc : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
                        ([ inject₁ {X = X} {Y = L Y} , L-costrength {X = X} {Y = Y} ] ∘ L-costrength {X = X} {Y = X ⊕ Y}) ≃m
                        (L-costrength {X = X} {Y = Y} ∘ L-map [ inject₁ {X = X} {Y = Y} , id {X = X ⊕ Y} ])

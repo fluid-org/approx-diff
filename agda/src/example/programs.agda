@@ -12,7 +12,6 @@ import label
 open import signature.example ℚ
 open import language-syntax Sig
 
--- Label literals and label equality.
 `_ : ∀ {Γ} → label.label → Γ ⊢ base label
 ` l = bop (lbl l) []
 
@@ -102,7 +101,6 @@ filter-term =
     (when brel equal-number ((var zero) ∷ ((var (succ (succ zero))) ∷ []))
      ； return (var zero))
 
--- Sum of a list of numbers, multiplied by another number.
 sum-mul : emp , list (base number) [×] base number ⊢ base number
 sum-mul = bop mult (app sum (fst (var zero)) ∷ snd (var zero) ∷ [])
 
@@ -148,7 +146,6 @@ case-ctxt-fo = (emp , base number) , (unit [+] unit)
 case-term : case-ctxt ⊢ base number
 case-term = case (var zero) (var (succ (succ zero))) (bop (lit 0ℚ) [])
 
--- Product of two numbers.
 mult-ex : emp , base number [×] base number ⊢ base number
 mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])
 

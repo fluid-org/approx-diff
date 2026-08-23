@@ -76,7 +76,6 @@ cmon-enriched .CMonEnriched.comp-bilinear₂ f g₁ g₂ .f≃f = comp-bilinear�
 cmon-enriched .CMonEnriched.comp-bilinear-ε₁ f .f≃f = comp-bilinear-ε₁ (f .*→*)
 cmon-enriched .CMonEnriched.comp-bilinear-ε₂ f .f≃f = comp-bilinear-ε₂ (f .*→*)
 
-
 ------------------------------------------------------------------------------
 -- Colimits
 
@@ -174,7 +173,6 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
     ∎
     where open ≈-Reasoning (isEquivalence X)
   colambda-ext D X f (elt s x) = X .≃-refl
-
 
   colimits : HasColimits 𝒮 cat
   colimits D .Colimit.apex = ∐ D

@@ -35,8 +35,6 @@ module Interp
   open StrongFunctor 𝒞L using (strengthᵣ; strengthᵣ-natural; strengthᵣ-p₂; strengthᵣ-assoc)
     renaming (fobj to L; fmor to Lmap; fmor-cong to Lmap-cong; fmor-id to Lmap-id; fmor-comp to Lmap-comp)
 
-  -- The action of L on morphisms in context: its action after the strength. A congruence, and a
-  -- functor for the composition in context.
   strong-Lmap : ∀ {Γ X Y} → prod Γ X ⇒ Y → prod Γ (L X) ⇒ L Y
   strong-Lmap f = Lmap f ∘ strengthᵣ
 
@@ -144,8 +142,6 @@ module Interp
                       (∀ i → prod Γ (δ i) ⇒ δ' i) → prod Γ (μ-obj P δ) ⇒ μ-obj P δ'
       strong-μ-fmor P {δ} {δ'} fs = ⦅ inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂) ⦆
 
-    -- With a terminal object: the functorial action, and the map between μ-objects induced by an
-    -- unfolding of one polynomial into another at the target's carrier.
     module WithTerminal (𝒞T : HasTerminal 𝒞) where
       open HasTerminal 𝒞T using (to-terminal)
 
@@ -157,7 +153,6 @@ module Interp
               μ-obj P δ ⇒ μ-obj Q δ'
       μ-map P δ Q δ' u = ⦅_⦆ {P = P} {δ = δ} ((inMap Q δ' ∘ u) ∘ p₂) ∘ pair to-terminal (id _)
 
-  -- Extending a family of maps by a map at the new variable.
   extend-mor : ∀ {k} {δ δ' : Fin k → obj} {X Y : obj} → (∀ i → δ i ⇒ δ' i) → X ⇒ Y →
                ∀ i → extend δ X i ⇒ extend δ' Y i
   extend-mor fs xy Fin.zero    = xy
@@ -177,8 +172,6 @@ module Interp
              (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) (h : prod Γ (μ-obj P δ) ⇒ A) →
              (h ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h)) → h ≈ ⦅ alg ⦆
 
-    -- Laws of the fold derived from the initial-algebra laws: the fold respects its algebra, fusion and
-    -- reflection, and the strong action is a functor in the argument maps.
     private module CoK {Γ : obj} = Category (coKleisli-prod 𝒞P Γ)
 
     ⦅⦆-cong : ∀ {k} {Γ A : obj} (P : Poly 𝒞 (suc k)) (δ : Fin k → obj)
@@ -188,7 +181,6 @@ module Interp
       ⦅⦆-η {P = P} {δ = δ} alg' (⦅_⦆ {P = P} {δ = δ} alg)
         (≈-trans (⦅⦆-β {P = P} {δ = δ} alg) (∘-cong e ≈-refl))
 
-    -- A plain morphism moves out of a composite in context.
     ∘co-push : ∀ {Γ W X Y Z} (x : prod Γ Y ⇒ Z) (a : X ⇒ Y) (y : prod Γ W ⇒ X) →
                ((x ∘co (a ∘ p₂)) ∘co y) ≈ (x ∘co (a ∘ y))
     ∘co-push x a y =
@@ -200,7 +192,6 @@ module Interp
         x ∘ pair p₁ (a ∘ y)
       ∎ where open ≈-Reasoning isEquiv
 
-    -- Composites of copairings of injections.
     copair-comp : ∀ {Γ X₁ X₂ Y₁ Y₂ Z₁ Z₂}
       (f₂ : prod Γ Y₁ ⇒ Z₁) (g₂ : prod Γ Y₂ ⇒ Z₂) (f₁ : prod Γ X₁ ⇒ Y₁) (g₁ : prod Γ X₂ ⇒ Y₂) →
       (copair (in₁ ∘ f₂) (in₂ ∘ g₂) ∘co copair (in₁ ∘ f₁) (in₂ ∘ g₁))
@@ -266,7 +257,6 @@ module Interp
           es' Fin.zero    = ≈-refl
           es' (Fin.suc i) = es i
 
-    -- Pointwise composition in context of extended environments is the extension of the composites.
     strong-extend-mor-comp : ∀ {k} {Γ : obj} {δ δ' δ'' : Fin k → obj} {X Y Z : obj}
       {as : ∀ i → prod Γ (δ' i) ⇒ δ'' i} {bs : ∀ i → prod Γ (δ i) ⇒ δ' i} {cs : ∀ i → prod Γ (δ i) ⇒ δ'' i}
       {x : prod Γ Y ⇒ Z} {y : prod Γ X ⇒ Y} {z : prod Γ X ⇒ Z} →
@@ -291,7 +281,6 @@ module Interp
                                      (strong-prod-m-cong (strong-fmor-comp P gs fs) (strong-fmor-comp Q gs fs))))
       strong-fmor-comp (μ P)     gs fs = strong-μ-fmor-comp P gs fs
 
-      -- Fusion: postcomposition with an algebra morphism takes folds to folds.
       fusion : ∀ {k} {Γ A B : obj} {P : Poly 𝒞 (suc k)} {δ : Fin k → obj}
                (a : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A)
                (b : prod Γ (fobj μ-obj P (extend δ B)) ⇒ B)
@@ -362,7 +351,6 @@ module Interp
               alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs)
             ∎ where open ≈-Reasoning isEquiv
 
-    -- The strong action at the projections is the projection.
     mutual
       strong-fmor-p₂ : ∀ {k} {Γ : obj} (P : Poly 𝒞 k) {δ : Fin k → obj} →
                        strong-fmor {Γ = Γ} P {δ} {δ} (λ i → p₂) ≈ p₂
@@ -408,7 +396,6 @@ module Interp
           premise : (p₂ ∘co (inMap P δ ∘ p₂)) ≈ (alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂))
           premise = ≈-trans CoK.id-left (≈-sym rhs)
 
-    -- Reflection: the fold of the algebra map is the identity.
     ⦅⦆-reflect : ∀ {k} {Γ : obj} (P : Poly 𝒞 (suc k)) (δ : Fin k → obj) →
                  ⦅_⦆ {Γ = Γ} {P = P} {δ = δ} (inMap P δ ∘ p₂) ≈ p₂
     ⦅⦆-reflect P δ =
@@ -422,7 +409,6 @@ module Interp
         es₀ Fin.zero    = ≈-refl
         es₀ (Fin.suc i) = ≈-refl
 
-    -- Reindexing along a context map commutes with the strong action and the fold.
     mutual
       strong-fmor-reindex : ∀ {k} {Γ Γ' : obj} (P : Poly 𝒞 k) {δ δ' : Fin k → obj}
                             (u : Γ ⇒ Γ') (fs : ∀ i → prod Γ' (δ i) ⇒ δ' i) →
@@ -506,9 +492,6 @@ module Interp
             (alg ∘ prod-m u (id _)) ∘ pair p₁ SF'
           ∎ where open ≈-Reasoning isEquiv
 
-    -- With a terminal object: the functorial action is a functor, and the induced maps between
-    -- μ-objects respect the unfolding, send the identity to the identity, compute on the algebra
-    -- map, and compose when the first unfolding commutes with the second map.
     module WithTerminal (𝒞T : HasTerminal 𝒞) where
       open HasTerminal 𝒞T using (to-terminal; to-terminal-unique)
       open Unitor 𝒞T 𝒞P using (sect; sect-pre; sect-natural; unitor-comp)
@@ -533,7 +516,6 @@ module Interp
                                                              (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _))))))
                         ≈-refl)
 
-      -- A morphism in the context of the terminal object is one out of the second component.
       private
         sect-p₂ : ∀ {X Y} (h : prod _ X ⇒ Y) → ((h ∘ sect) ∘ p₂) ≈ h
         sect-p₂ h =
@@ -542,7 +524,6 @@ module Interp
                                                    (≈-trans (pair-cong (to-terminal-unique _ _) ≈-refl) pair-ext0)))
                            id-right)
 
-        -- The strong action at the fold and the functorial action at the induced map agree.
         fmor-μ-map : ∀ {j k} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) (Q : Poly 𝒞 (suc k)) (δ' : Fin k → obj)
                      (u : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
                      ∀ {l} {R : Poly 𝒞 (suc l)} {ρ : Fin l → obj} →
@@ -561,7 +542,6 @@ module Interp
         ≈-trans (∘-cong (≈-trans (⦅⦆-cong P δ (∘-cong id-right ≈-refl)) (⦅⦆-reflect P δ)) ≈-refl)
                 (pair-p₂ _ _)
 
-      -- The induced map on a constructed element: the unfolding at the image of the arguments.
       μ-map-in : ∀ {j k} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) (Q : Poly 𝒞 (suc k)) (δ' : Fin k → obj)
                  (u : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
                  (μ-map P δ Q δ' u ∘ inMap P δ)
@@ -593,8 +573,6 @@ module Interp
           fold-u = ⦅_⦆ {P = P} {δ = δ} alg
           open ≈-Reasoning isEquiv
 
-      -- Composition: two induced maps compose to the induced map of the composite unfolding, when
-      -- the first unfolding commutes with the second map.
       μ-map-comp : ∀ {i j k} (P : Poly 𝒞 (suc i)) (δ : Fin i → obj) (Q : Poly 𝒞 (suc j)) (δ' : Fin j → obj)
                    (R : Poly 𝒞 (suc k)) (δ'' : Fin k → obj)
                    (u  : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ')))
@@ -617,7 +595,6 @@ module Interp
           fold-v = ⦅_⦆ {P = Q} {δ = δ'} alg-v
           k = μ-map Q δ' R δ'' v
 
-          -- The strong action at the fold after the unfolding is the unfolding after the strong action.
           step : (strong-fmor Q (strong-extend-mor (λ i → p₂) fold-v) ∘co (u ∘ p₂))
                    ≈ (u' ∘ strong-fmor P (strong-extend-mor (λ i → p₂) fold-v))
           step =
@@ -726,7 +703,6 @@ module Interp
                 (≈-trans (assoc _ _ _)
                          (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-trans id-right (Lmap-cong (strong-prod-m-sect _ _)))))
 
-      -- The functorial action at a μ-polynomial is the induced map of the action at its body.
       fmor-μ : ∀ {k} (P : Poly 𝒞 (suc k)) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
                fmor (μ P) fs ≈ μ-map P δ P δ' (fmor P (extend-mor fs (id _)))
       fmor-μ P {δ} {δ'} fs =
@@ -735,7 +711,6 @@ module Interp
                                                                      (strong-fmor-cong P (λ { Fin.zero → id-left ; (Fin.suc i) → ≈-refl })))))))
                ≈-refl
 
-      -- Weakening: the strong action and the fold at weakened maps are the weakened plain action and induced map.
       private
         lift-p₂ : ∀ {Γ X} → (pair to-terminal (id _) ∘ p₂ {Γ} {X}) ≈ prod-m to-terminal (id _)
         lift-p₂ = ≈-trans (pair-natural _ _ _) (pair-cong (to-terminal-unique _ _) ≈-refl)
@@ -774,7 +749,6 @@ module Interp
           ∎)
         where open ≈-Reasoning isEquiv
 
--- Action of a functor on polynomials: apply the functor at the const leaves.
 Poly-map : ∀ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} →
            Functor 𝒞 𝒟 → ∀ {n} → Poly 𝒞 n → Poly 𝒟 n
 Poly-map F (const A) = const (F .Functor.fobj A)

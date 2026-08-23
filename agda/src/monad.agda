@@ -73,14 +73,12 @@ record StrongMonad {o m e} (𝒞 : Category o m e) (𝒞⊗ : MonoidalProduct �
     -- FIXME: laws
 
 ------------------------------------------------------------------------------
--- Every category has the identity monad
 
 IdentityMonad : ∀ {o m e} (𝒞 : Category o m e) → Monad 𝒞
 IdentityMonad 𝒞 .Monad.funct = Id
 IdentityMonad 𝒞 .Monad.unit = id _
 IdentityMonad 𝒞 .Monad.join = right-unit _
 
--- and every functor preserves it
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} where
 
   private
@@ -95,7 +93,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
   preserve-identity-monad F .preserve-monad.preserve-unit = 𝒟.≈-trans 𝒟.id-left (F .Functor.fmor-id)
   preserve-identity-monad F .preserve-monad.preserve-join = 𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl (F .Functor.fmor-id)) (𝒟.≈-sym 𝒟.id-left)
 
--- And it always preserves coproducts and products
 open categories using (HasCoproducts)
 open import finite-coproduct-functor using (preserve-chosen-coproducts)
 

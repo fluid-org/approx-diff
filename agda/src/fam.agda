@@ -211,7 +211,6 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         reindex-comp ∘f (reindex-f (g .idxf ∘S h .idxf) (f .famf) ∘f (reindex-comp ∘f (reindex-f (h .idxf) (g .famf) ∘f h .famf)))
       ∎  where open ≈-Reasoning ≃f-isEquivalence
 
-  -- Simple objects, where there is no dependency
   module _ where
     open Category 𝒞
 
@@ -226,7 +225,6 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
 
     -- FIXME: simple is a functor and preserves products
 
-  -- The category of families always has an initial object: the family over the empty index.
   initial : HasInitial cat
   initial .HasInitial.witness .idx = prop-setoid.𝟘
   initial .HasInitial.witness .fam .fm (lift ())
@@ -239,7 +237,6 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
   initial .HasInitial.is-initial .IsInitial.from-initial-ext f .idxf-eq = prop-setoid.from-𝟘-unique _ _
   initial .HasInitial.is-initial .IsInitial.from-initial-ext f .famf-eq ._≃f_.transf-eq {lift ()}
 
-  -- If 𝒞 has a terminal object, then so does the category of families
   module _ (T : HasTerminal 𝒞) where
     open HasTerminal hiding (to-terminal-unique)
     open IsTerminal
@@ -320,8 +317,6 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     coproducts .copair-ext {X} {Y} {Z} f .famf-eq .transf-eq {inj₂ y} =
       isEquiv .trans (∘-cong (Z .fam .refl*) id-left) (isEquiv .trans id-left id-right)
 
-  -- Predicates: a setoid map into 𝟙 + 𝟙 lifts to a morphism into the Boolean object, with trivial
-  -- fibre maps.
   module predicates (T : HasTerminal 𝒞) where
 
     open Category 𝒞
@@ -357,8 +352,6 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
       predicate-natural X {y₁ = f .prop-setoid._⇒_.func x₁} x₁≈x₂
         (f .prop-setoid._⇒_.func-resp-≈ x₁≈x₂)
 
-  -- Fam(𝒞) has stable coproducts (is extensive): anything mapping into a coproduct A + B automatically splits
-  -- into the part that lands in A and the part that lands in B.
   module _ where
 
     open Obj
@@ -373,9 +366,6 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
 
     open stable-coproducts {𝒞 = cat} coproducts using (Stable; StableBits)
 
-    -- For Fam, take a family y sitting over x₁ + x₂. Looks at each index to decide which side its image falls
-    -- on (see Tag/decide), and use that to split y into two sub-families y₁ and y₂. Then check they glue back
-    -- together into y (the iso h) and map correctly into x₁ and x₂.
     fam-stable : Stable
     fam-stable {x₁} {x₂} {x} {y} f g = stb
       where
@@ -582,7 +572,6 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
           x .idx .isEquivalence .trans (eq-idx i (inj₂ b) eq) (g .idxf .func-resp-≈ c≈c')
         stb .StableBits.eq₂ .famf-eq ._≃f_.transf-eq {i , b , eq} = eq-fib i (inj₂ b) eq
 
-  -- Fam(𝒞) is discretely cocomplete
   module _ where
 
     open import functor using (Functor; Colimit; HasColimits; IsColimit; NatTrans; ≃-NatTrans)
@@ -1203,7 +1192,6 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
             sY = Y .fam .subst y₁≈y₂
             sYS = ListF Y .fam .subst ys₁≈ys₂
             eq = prop-setoid.foldrP (nilCase .idxf) (consCase .idxf) ._⇒s_.func-resp-≈ (x₁≈x₂ , ys₁≈ys₂)
-
 
     lists : HasLists cat (terminal T) products
     lists .HasLists.list = ListF

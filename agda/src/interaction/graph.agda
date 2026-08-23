@@ -39,9 +39,6 @@ open Category M.cat using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; ass
 data Input : Set where
   input : Input
 
--- The branching of a derivation, and the paths into it. A vertex names a premise and then either
--- descends into it or stops at its result, so the vertices of a rule are its premises' vertices
--- with each premise's result adjoined.
 data Shape : Set where
   node : List Shape → Shape
 
@@ -168,15 +165,12 @@ lts-order : (ss : List Shape) → IsStrictOrder (lts ss)
 lts-order ss .IsStrictOrder.trans = lts-trans ss
 lts-order ss .IsStrictOrder.asym = lts-asym ss
 
-
 ≈-of-≡ : ∀ {m n} {X Y : M.Matrix m n} → X ≡ Y → X ≈ Y
 ≈-of-≡ ≡-refl = ≈-refl
 
 Void : Set
 Void = ⊥
 
--- The completion order on a coproduct: every vertex of the first summand precedes every vertex of
--- the second.
 sum-< : {A B : Set} → (A → A → Set) → (B → B → Set) → A ⊎ B → A ⊎ B → Set
 sum-< R S (inj₁ p) (inj₁ q) = R p q
 sum-< R S (inj₁ _) (inj₂ _) = Unit
@@ -218,8 +212,6 @@ record Graph (m n : ℕ) : Set₁ where
     out     : M.Matrix n m
     up      : (p : Vertex shape) → M.Matrix n (width p)
 
--- A dependence relation over an arbitrary vertex set: on pairs of a vertex and a position in the
--- value there. The inputs, the interior vertices and the root are not distinguished.
 Relation : {V : Set} → (V → ℕ) → Set
 Relation {V} vertex-width = (x y : V) → M.Matrix (vertex-width y) (vertex-width x)
 
@@ -241,7 +233,6 @@ hide-all-cong : {V : Set} (vertex-width : V → ℕ) {G G' : Relation vertex-wid
 hide-all-cong vertex-width []       e = e
 hide-all-cong vertex-width (r ∷ rs) e = hide-all-cong vertex-width rs (hide-cong vertex-width r e)
 
--- Hiding a sink leaves every entry unchanged.
 hide-sink : {V : Set} (vertex-width : V → ℕ) (G : Relation vertex-width) (r : V) →
             (∀ y → G r y ≈ M.εₘ) → hide vertex-width G r ≐ G
 hide-sink vertex-width G r z x y = ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (z y))) (M.absorb₁ (G x y) (G x r))
@@ -251,8 +242,6 @@ hide-all-++ : {V : Set} (vertex-width : V → ℕ) (G : Relation vertex-width) (
 hide-all-++ vertex-width G []       ys = ≡-refl
 hide-all-++ vertex-width G (x ∷ xs) ys = hide-all-++ vertex-width (hide vertex-width G x) xs ys
 
--- Entrywise laws for hiding a list of vertices on graphs that agree on the hidden rows and
--- columns. No rank or forwardness is assumed.
 module Hide (V : Set) (w : V → ℕ) where
   Gr : Set
   Gr = Relation w
@@ -297,8 +286,6 @@ module Hide (V : Set) (w : V → ℕ) where
     ⊓-O O = ≡-refl
     ⊓-O I = ≡-refl
 
-  -- Zero rows and columns persist under hiding: every new entry into the row or column of r₀
-  -- factors through an entry of that row or column.
   zero-fold : ∀ {G : Gr} rs r₀ →
               (((z : V) (i : Fin (w z)) (j : Fin (w r₀)) → G r₀ z i j ≡ O) ×
                ((z : V) (i : Fin (w r₀)) (j : Fin (w z)) → G z r₀ i j ≡ O)) →
@@ -319,7 +306,6 @@ module Hide (V : Set) (w : V → ℕ) where
         (Σ-O (λ k → G r r₀ i k two.⊓ G z r k j)
              (λ k → ≡-cong (two._⊓ G z r k j) (zc r i k)))
 
-  -- Hiding only adds entries.
   increasing : ∀ {G : Gr} rs x y (i : Fin (w y)) (j : Fin (w x)) →
                foldl h G rs x y i j ≡ (G x y i j ⊔ foldl h G rs x y i j)
   increasing []           x y i j = ≡-sym ⊔-idem
@@ -336,8 +322,6 @@ module Hide (V : Set) (w : V → ℕ) where
   fold-cong []       p = p
   fold-cong (r ∷ rs) p = fold-cong rs (h-cong r p)
 
-  -- A summand with no entries at the hidden vertices passes through hiding them: every new
-  -- composite routes through a hidden row and column, which the summand lacks.
   add-inert : ∀ {G S : Gr} rs →
               All (λ r → ((z : V) (i : Fin (w z)) (j : Fin (w r)) → S r z i j ≡ O)
                        × ((z : V) (i : Fin (w r)) (j : Fin (w z)) → S z r i j ≡ O)) rs →
@@ -357,9 +341,6 @@ module Hide (V : Set) (w : V → ℕ) where
             (≡-trans (≡-cong (G x' r k j' ⊔_) (zc x' k j')) (⊔-runit {G x' r k j'})))))
         (⊔-shift (G x' y' i' j') (S x' y' i' j') ((G r y' ∘ G x' r) i' j'))
 
-  -- Hiding vertices at which a larger graph agrees with a smaller one adds only its extra
-  -- entries: every new composite routes through agreed rows and columns, so already arises in
-  -- the smaller graph.
   agree-add : ∀ {G G' : Gr} rs →
               (∀ x y (i : Fin (w y)) (j : Fin (w x)) → (G x y i j ⊔ G' x y i j) ≡ G' x y i j) →
               All (λ r → ((z : V) (i : Fin (w z)) (j : Fin (w r)) → G' r z i j ≡ G r z i j)
@@ -403,7 +384,6 @@ module Hide (V : Set) (w : V → ℕ) where
                               (⊔-absorbˡ (G z r' i' j') ((G r r' ∘ G z r) i' j')))))
       as
 
--- Witnesses for non-zero entries of sums and composites.
 private
   Σ-I : ∀ {n} (f : Fin n → two.Two) → M.Σ f ≡ two.I → Σ (Fin n) (λ k → f k ≡ two.I)
   Σ-I {ℕ.suc n} f h with two.⊔-I (f Fin.zero) (M.Σ (λ k → f (Fin.suc k))) h
@@ -425,12 +405,6 @@ private
            A i j ≡ two.I → B j l ≡ two.I → (A ∘ B) i l ≡ two.I
   ∘-I-at A B i l j h₁ h₂ = Σ-I-at (λ j' → A i j' two.⊓ B j' l) j (two.⊓-I-pair h₁ h₂)
 
--- Consequences of the forward-edge property, over an abstract ordered vertex set. Hiding preserves
--- it, since a new entry composes entries through the hidden vertex; hiding two vertices commutes,
--- since an entry of one order decomposes into a term also present in the other, except the residual
--- routed through an entry in each direction between the two, which the order rules out; and hiding
--- a list is therefore independent of its order, adjacent swaps being commutation pushed through the
--- rest of the fold.
 module Ordered {V : Set} (vertex-width : V → ℕ) (_<_ : V → V → Set) (o : IsStrictOrder _<_) where
 
   open IsStrictOrder o using (trans; asym)
@@ -510,7 +484,6 @@ module Ordered {V : Set} (vertex-width : V → ℕ) (_<_ : V → V → Set) (o :
 module _ {m n : ℕ} (B : Graph m n) where
   open Graph B
 
-  -- The interior vertices with the root adjoined: what a graph contributes to a larger graph.
   Path⁺ : Set
   Path⁺ = Vertex shape ⊎ Root
 
@@ -558,19 +531,15 @@ module _ {m n : ℕ} (B : Graph m n) where
   collapse : M.Matrix n m
   collapse = hide-all vertex-width gr (map (λ q → inj₂ (inj₁ q)) (vertices shape)) (inj₁ input) (inj₂ (inj₂ root))
 
-  -- The interior vertices whose values are first-order, and their complement.
   FO : List (Vertex shape)
   FO = filterᵇ fo (vertices shape)
 
   fo-hidden : List (Vertex shape)
   fo-hidden = filterᵇ (λ q → not (fo q)) (vertices shape)
 
-  -- The first-order graph: every intermediate whose value is not first-order is hidden, so the
-  -- live vertices are the inputs, the root and FO.
   fo-graph : Relation vertex-width
   fo-graph = hide-all vertex-width gr (map (λ q → inj₂ (inj₁ q)) fo-hidden)
 
-  -- The completion order on all the vertices: the inputs first, then the interior, then the root.
   _<ᵥ_ : V → V → Set
   _<ᵥ_ = sum-< (λ _ _ → Void) _<⁺_
 
@@ -582,7 +551,6 @@ module _ {m n : ℕ} (B : Graph m n) where
 
   open O public using (Fwd; fwd-hide; fwd-hide-all; hide-all-perm)
 
-  -- Every entry of a graph runs strictly forward, and the first-order graph inherits it.
   gr-forward : Fwd gr
   gr-forward (inj₁ _) (inj₂ q) k l h = tt
   gr-forward (inj₂ p) (inj₂ q) k l h = <⁺-inside p q k l h
@@ -592,7 +560,6 @@ module _ {m n : ℕ} (B : Graph m n) where
   fo-forward : Fwd fo-graph
   fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) gr-forward
 
--- One step of hiding a vertex, on entries whose columns factor through P.
 private
   distrib-root : ∀ {m n k l} (P : M.Matrix m n) (X : M.Matrix n k) (Y : M.Matrix n l) (Z : M.Matrix l k) →
                  ((P ∘ X) M.+ₘ ((P ∘ Y) ∘ Z)) ≈ (P ∘ (X M.+ₘ (Y ∘ Z)))
@@ -733,7 +700,6 @@ module HidePremise
       ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (r .sink (inj₂ root))))
               (M.absorb₁ (H .inside (inj₁ p) (inj₂ root)) (H .inside (inj₁ p) (inj₂ root)))
 
--- Rows out of vertices with no relation into the hidden set survive hiding.
 module Behind
   {V : Set} (vertex-width : V → ℕ)
   {W : Set} (hid : W → V)
@@ -773,8 +739,6 @@ private
   map-++ f []       ys = ≡-refl
   map-++ f (x ∷ xs) ys = ≡-cong (f x ∷_) (map-++ f xs ys)
 
--- Hiding a graph's own vertices, its root first, computes its collapse: the root has no outgoing
--- relation, so hiding it changes nothing.
 module _ {m n : ℕ} (B : Graph m n) where
 
   root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ M.εₘ
@@ -790,8 +754,6 @@ module _ {m n : ℕ} (B : Graph m n) where
                            (hide-sink (vertex-width B) (gr B) (inj₂ (inj₂ root)) root-row)
                            (inj₁ input) (inj₂ (inj₂ root)))
 
--- A premise's inputs from the conclusion's and from an earlier root, read after the earlier root
--- has collapsed.
 private
   factor : ∀ {x y z w v} (A : M.Matrix z y) (r : M.Matrix y x) (l : M.Matrix y w)
            {h c : M.Matrix w v} (ρ : M.Matrix v x) → h ≈ c →
@@ -800,7 +762,6 @@ private
     ≈-trans (M.+ₘ-cong ≈-refl (≈-trans (∘-cong₂ (∘-cong₁ e)) (assoc A l (_ ∘ ρ))))
             (≈-sym (M.comp-bilinear₂ A r (l ∘ (_ ∘ ρ))))
 
--- Columns into vertices the hidden set has no relation into survive hiding.
 module Frozen
   {V : Set} (vertex-width : V → ℕ)
   {W : Set} (hid : W → V)
@@ -829,8 +790,6 @@ module Frozen
   keeps-hide-all f []       k = k
   keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
 
-
--- A rule with no premises: the root and the inputs, and nothing between.
 module Rule₀
   {m n : ℕ} (fo-root : Bool)
   (out-root : M.Matrix n m)
@@ -850,8 +809,6 @@ module Rule₀
   agree : collapse E ≈ out-root
   agree = ≈-refl {f = out-root}
 
--- A rule with one premise: the conclusion's root is the premise's root through up-root, offset by
--- out-root, and the premise's inputs are the conclusion's through inputs.
 module Rule₁
   {m : ℕ}
   {m' n₀ : ℕ} (B : Graph m' n₀)
@@ -925,8 +882,6 @@ module Rule₁
             (≈-trans (done .S.tgt-ok root)
                      (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ))))
 
--- Two premises in sequence: the first's inputs come from the conclusion's, the second's from the
--- conclusion's and the first's root. Both roots feed the conclusion's.
 module Rule₂
   {m : ℕ}
   {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁)
@@ -1039,7 +994,6 @@ module Rule₂
                                         (paths⁺ B₁) (gr B₁))))
               (hide-paths⁺ B₁)
 
-  -- The second premise's inputs once the first premise has collapsed.
   Φ₂ : M.Matrix m₂ m
   Φ₂ = inputs₂ ∘ M.⟨ M.I , collapse B₁ ∘ inputs₁ ⟩
 
@@ -1138,8 +1092,6 @@ module Rule₂
             (≈-trans (done₂ .S2.tgt-ok root)
                      (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong κ₂ Φ₂-split))))
 
--- Three premises in sequence: the first two take their inputs from the conclusion's and have no
--- relation between them; the third takes its from the conclusion's and both earlier roots.
 module Rule₃
   {m : ℕ}
   {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁)
@@ -1296,7 +1248,6 @@ module Rule₃
                                         (paths⁺ B₁) (gr B₁))))
               (hide-paths⁺ B₁)
 
-    -- The second premise's columns are untouched by the first premise's sweep.
     module Fz = Frozen (vertex-width E) b1 (inj₁ {A = Input}) b2 (λ _ q → into⁺ B₂ q ∘ inputs₂)
 
     keeps₀ : Fz.Keeps (gr E)
@@ -1306,7 +1257,6 @@ module Rule₃
     keeps₁ : Fz.Keeps G₁
     keeps₁ = Fz.keeps-hide-all inj₁ ps₁ (Fz.keeps-hide (inj₂ root) keeps₀)
 
-    -- The second and third premises' rows are untouched by earlier sweeps.
     cols₂ : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root) → V E
     cols₂ (inj₁ q) = b2 q
     cols₂ (inj₂ t) = tgt t

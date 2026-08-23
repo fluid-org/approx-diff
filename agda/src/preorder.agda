@@ -27,7 +27,6 @@ record Preorder : Set (suc 0ℓ) where
 module _ where
   open Preorder
 
-  -- Monotone functions
   record _=>_ (A B : Preorder) : Set where
     open Preorder
     private
@@ -89,14 +88,12 @@ module _ where
 module _ where
   open Preorder
 
-  -- Unit preorder
   𝟙 : Preorder
   𝟙 .Carrier = Data.Unit.⊤
   𝟙 ._≤_ tt tt = ⊤
   𝟙 .≤-isPreorder .IsPreorder.refl = tt
   𝟙 .≤-isPreorder .IsPreorder.trans tt tt = tt
 
--- Lifting
 data LCarrier (X : Set) : Set where
   bottom : LCarrier X
   <_>    : X → LCarrier X
@@ -123,7 +120,6 @@ L X .Preorder.Carrier = LCarrier (X .Preorder.Carrier)
 L X .Preorder._≤_ = _≤L_ (X .Preorder.≤-isPreorder)
 L X .Preorder.≤-isPreorder = ≤L-isPreorder (X .Preorder.≤-isPreorder)
 
--- Binary products
 module _ where
   open Preorder
 
@@ -139,7 +135,6 @@ module _ where
   ×-≃ (x₁≤x₂ , x₂≤x₁) (y₁≤y₂ , y₂≤y₁) .proj₁ = x₁≤x₂ , y₁≤y₂
   ×-≃ (x₁≤x₂ , x₂≤x₁) (y₁≤y₂ , y₂≤y₁) .proj₂ = x₂≤x₁ , y₂≤y₁
 
--- Arbitrary products
 module _ (I : Set) (A : I → Preorder) where
   open Preorder
 

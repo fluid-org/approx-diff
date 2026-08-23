@@ -57,11 +57,9 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ≡-to-≈ : ∀ {x y} {f g : x ⇒ y} → f ≡ g → f ≈ g
   ≡-to-≈ ≡.refl = ≈-refl
 
-  -- An object equality as a (cast) morphism: the transport of the identity.
   ≡-to-⇒ : ∀ {x y} → x ≡ y → x ⇒ y
   ≡-to-⇒ ≡.refl = id _
 
-  -- A cast and its inverse compose to the identity.
   ≡-to-⇒-sym-l : ∀ {x y} (e : x ≡ y) → (≡-to-⇒ (≡.sym e) ∘ ≡-to-⇒ e) ≈ id x
   ≡-to-⇒-sym-l ≡.refl = id-left
 
@@ -102,7 +100,6 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
       f∘inverse≈id : (f ∘ inverse) ≈ id y
       inverse∘f≈id : (inverse ∘ f) ≈ id x
 
-  -- Being an isomorphism respects equality of morphisms.
   IsIso-cong : ∀ {x y} {f g : x ⇒ y} → f ≈ g → IsIso f → IsIso g
   IsIso-cong e i .IsIso.inverse = i .IsIso.inverse
   IsIso-cong e i .IsIso.f∘inverse≈id =
@@ -197,7 +194,6 @@ setoid→category A .Category.id-left = tt
 setoid→category A .Category.id-right = tt
 setoid→category A .Category.assoc _ _ _ = tt
 
-
 ------------------------------------------------------------------------------
 -- Terminal objects
 record IsTerminal {o m e} (𝒞 : Category o m e) (t : Category.obj 𝒞) : Set (o ⊔ m ⊔ e) where
@@ -250,7 +246,6 @@ record Splitting {o m e} (𝒞 : Category o m e) {x : Category.obj 𝒞} (f : Ca
     retr-sect : (retr ∘ sect) ≈ id witness
     sect-retr : (sect ∘ retr) ≈ f
 
-  -- A morphism with a splitting is idempotent.
   split-idem : (f ∘ f) ≈ f
   split-idem =
     ≈-trans (∘-cong (≈-sym sect-retr) (≈-sym sect-retr))
@@ -367,7 +362,6 @@ record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       id _
     ∎ where open ≈-Reasoning isEquiv
 
--- Two coproduct structures on the same category give isomorphic coproducts.
 coproducts-canonical-iso : ∀ {o m e} {𝒞 : Category o m e}
   (CP₁ CP₂ : HasCoproducts 𝒞) →
   ∀ x y → Category.Iso 𝒞 (HasCoproducts.coprod CP₁ x y) (HasCoproducts.coprod CP₂ x y)
@@ -395,7 +389,6 @@ coproducts-canonical-iso {𝒞 = 𝒞} CP₁ CP₂ x y = iso
             (isEquiv .trans (assoc _ _ _) (isEquiv .trans (∘-cong ≈-refl (P.copair-in₁ _ _)) (isEquiv .trans (Q.copair-in₁ _ _) (isEquiv .sym id-left))))
             (isEquiv .trans (assoc _ _ _) (isEquiv .trans (∘-cong ≈-refl (P.copair-in₂ _ _)) (isEquiv .trans (Q.copair-in₂ _ _) (isEquiv .sym id-left)))))
           (P.copair-ext _))
-
 
 module _ {o m e} (𝒞 : Category o m e) where
 
@@ -593,7 +586,6 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       pair p₁ (v ∘ p₂) ∘ prod-m u (id _)
     ∎ where open ≈-Reasoning isEquiv
 
-
   prod-m-id : ∀ {x y} → prod-m (id x) (id y) ≈ id (prod x y)
   prod-m-id =
     begin
@@ -719,8 +711,6 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       strong-prod-m (f ∘ prod-m u v₁) (g ∘ prod-m u v₂)
     ∎ where open ≈-Reasoning isEquiv
 
-  -- Componentwise naturality squares against prod-m actions assemble to a square
-  -- for the strong product action.
   strong-prod-m-natural : ∀ {w w' x₁ x₂ y₁ y₂ x₁' x₂' y₁' y₂'}
                           {f : prod w x₁ ⇒ y₁} {g : prod w x₂ ⇒ y₂}
                           {f' : prod w' x₁' ⇒ y₁'} {g' : prod w' x₂' ⇒ y₂'}
@@ -761,7 +751,6 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       pair p₁ (k ∘ strong-p₂)
     ∎ where open ≈-Reasoning isEquiv
 
-  -- The strong product action is functorial for co-Kleisli composition f ∘ pair p₁ g.
   strong-prod-m-comp : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (f : prod w y₁ ⇒ z₁) (g : prod w y₂ ⇒ z₂)
                           (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
                           (strong-prod-m f g ∘ pair p₁ (strong-prod-m h k))
@@ -783,7 +772,6 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       strong-prod-m (f ∘ pair p₁ h) (g ∘ pair p₁ k)
     ∎ where open ≈-Reasoning isEquiv
 
-  -- functors preserve isomorphisms
   product-preserves-iso : ∀ {x₁ x₂ y₁ y₂} → Iso x₁ x₂ → Iso y₁ y₂ → Iso (prod x₁ y₁) (prod x₂ y₂)
   product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.fwd = prod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd)
   product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.bwd = prod-m (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.bwd)
@@ -955,7 +943,6 @@ module Unitor {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasPro
   sect : ∀ {X} → X ⇒ prod witness X
   sect = pair to-terminal (id _)
 
-  -- sect ∘ f and (witness × g) ∘ sect both have the unique terminal map as first component.
   sect-pre : ∀ {X Y} (f : X ⇒ Y) → (sect ∘ f) ≈ pair to-terminal f
   sect-pre f = ≈-trans (pair-natural _ _ _) (pair-cong (≈-sym (to-terminal-ext _)) id-left)
 
@@ -972,15 +959,12 @@ module Unitor {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasPro
       pair to-terminal g
     ∎ where open ≈-Reasoning isEquiv
 
-  -- Naturality of sect : Id ⇒ witness × -.
   sect-natural : ∀ {X Y} (f : X ⇒ Y) → (sect ∘ f) ≈ (pair p₁ (f ∘ p₂) ∘ sect)
   sect-natural f = ≈-trans (sect-pre f) (≈-sym (sect-post f))
 
-  -- When the domain is already witness × X, the terminal component collapses to p₁.
   unitor-natural : ∀ {X Y} (h : prod witness X ⇒ Y) → (sect ∘ h) ≈ pair p₁ h
   unitor-natural h = ≈-trans (sect-pre h) (pair-cong (to-terminal-unique _ _) ≈-refl)
 
-  -- Composing two sect-embedded maps is the embedded co-Kleisli composite.
   unitor-comp : ∀ {X Y Z} (f : prod witness Y ⇒ Z) (g : prod witness X ⇒ Y) →
                 ((f ∘ sect) ∘ (g ∘ sect)) ≈ ((f ∘ pair p₁ g) ∘ sect)
   unitor-comp f g = begin
@@ -995,8 +979,6 @@ module Unitor {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasPro
       (f ∘ pair p₁ g) ∘ sect
     ∎ where open ≈-Reasoning isEquiv
 
--- Given a terminal, every HasStrongCoproducts gives a plain HasCoproducts:
--- copair f g := strong-copair (f ∘ p₂) (g ∘ p₂) ∘ pair to-terminal (id _).
 strong-coproducts→coproducts : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞}
                                → HasTerminal 𝒞 → HasStrongCoproducts 𝒞 P → HasCoproducts 𝒞
 strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
@@ -1010,7 +992,6 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
                 copair-cong to scopair-cong; copair-in₁ to scopair-in₁;
                 copair-in₂ to scopair-in₂; copair-ext to scopair-ext)
 
-    -- Convert plain → strong-shaped via the unitor section sect : a ⇒ 𝟙 × a.
     open Unitor T P
 
     result : HasCoproducts 𝒞
@@ -1155,7 +1136,6 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
     ∎
     where open ≈-Reasoning isEquiv
 
-  -- functors preserve isomorphisms
   exp-preserves-iso : ∀ {x₁ x₂ y₁ y₂} → Iso x₁ x₂ → Iso y₁ y₂ → Iso (exp x₁ y₁) (exp x₂ y₂)
   exp-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.fwd = exp-fmor (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.fwd)
   exp-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.bwd = exp-fmor (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.bwd)
@@ -1190,7 +1170,6 @@ record HasBooleans {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : H
     cond : ∀ {x y} → x ⇒ y → x ⇒ y → prod x Bool ⇒ y
   -- FIXME: equations
 
--- strong coproducts to booleans
 module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) {P : HasProducts 𝒞} (C : HasStrongCoproducts 𝒞 P) where
 
   open Category 𝒞
@@ -1205,7 +1184,6 @@ module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) {P : HasProducts
   strong-coproducts→booleans .False = in₂
   strong-coproducts→booleans .cond f g = copair (f ∘ p₁) (g ∘ p₁)
 
--- coproducts and exponentials to booleans
 module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) {P : HasProducts 𝒞} (CP : HasCoproducts 𝒞) (E : HasExponentials 𝒞 P) where
 
   open Category 𝒞
@@ -1238,7 +1216,6 @@ record HasLists {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasP
            prod x (list y) ⇒ z
   -- FIXME: equations
 
--- Any CCC has strong coproducts.
 ccc→strong-coproducts : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞}
                         → HasCoproducts 𝒞 → HasExponentials 𝒞 P → HasStrongCoproducts 𝒞 P
 ccc→strong-coproducts {𝒞 = 𝒞} {P = P} CP E = strongCoproducts
@@ -1248,7 +1225,6 @@ ccc→strong-coproducts {𝒞 = 𝒞} {P = P} CP E = strongCoproducts
     open HasCoproducts CP
     open HasExponentials E
 
-    -- Lambda-abstract over the *second* factor of a product (via swap).
     lambda' : ∀ {w x y} → prod w x ⇒ y → x ⇒ exp w y
     lambda' f = lambda (f ∘ swap)
 

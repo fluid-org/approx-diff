@@ -43,7 +43,6 @@ open SI using (IdxStable; IdxStableBits; ∐; inj)
 fam-stable-indexed : IdxStable
 fam-stable-indexed {S} {D} {x} {y} f g = record { E = E ; leg = leg ; h = h ; eq = eq }
   where
-    -- Where each index of y lands in the coproduct ∐ S D.
     p : y .idx ⇒ (∐ S D) .idx
     p = Mor-∘ (f .bwd) g .idxf
 
@@ -55,7 +54,6 @@ fam-stable-indexed {S} {D} {x} {y} f g = record { E = E ; leg = leg ; h = h ; eq
 
     pfam = Mor-∘ (f .bwd) g .famf
 
-    -- The s-th summand of y: the indices of y landing in the s-th component.
     E : Functor (setoid→category S) cat
     E .fobj s .idx .Carrier = ∃ₛ (y .idx .Carrier) (λ i → S ._≈_ (sOf i) s)
     E .fobj s .idx ._≈_ (i , _) (j , _) = y .idx ._≈_ i j
@@ -77,8 +75,6 @@ fam-stable-indexed {S} {D} {x} {y} f g = record { E = E ; leg = leg ; h = h ; eq
     E .fmor-comp _ _ .idxf-eq .func-eq i≈j = i≈j
     E .fmor-comp _ _ .famf-eq .transf-eq {i , _} = ≈-transC id-rightC (≈-transC (y .fam .indexed-family.Fam.refl*) (≈-symC (≈-transC id-leftC id-leftC)))
 
-    -- Each summand of y maps into the corresponding summand of x, transporting
-    -- the recorded landing to the target index s.
     leg : ∀ s → Mor (E .fobj s) (D .fobj s)
     leg s .idxf .func (i , pf) = D .fmor ⟪ pf ⟫ .idxf .func (dOf i)
     leg s .idxf .func-resp-≈ {i , pf} {j , pf'} i≈j =
@@ -106,8 +102,6 @@ fam-stable-indexed {S} {D} {x} {y} f g = record { E = E ; leg = leg ; h = h ; eq
         legresp : D .fobj s .idx ._≈_ (D .fmor ⟪ pf ⟫ .idxf .func (dOf i)) (D .fmor ⟪ pf' ⟫ .idxf .func (dOf j))
         legresp = leg s .idxf .func-resp-≈ {i , pf} {j , pf'} i≈j
 
-        -- ⟪_⟫ proofs are definitionally interchangeable, so fmor-comp relates
-        -- the transport at pf to the two-step transport through e₀ and pf'.
         q₂ : D .fobj s .idx ._≈_ (D .fmor ⟪ pf' ⟫ .idxf .func (D .fmor ⟪ e₀ ⟫ .idxf .func (dOf i))) (D .fmor ⟪ pf ⟫ .idxf .func (dOf i))
         q₂ = D .fobj s .idx .sym (D .fmor-comp ⟪ pf' ⟫ ⟪ e₀ ⟫ .idxf-eq .func-eq (D .fobj (sOf i) .idx .refl))
 
@@ -125,7 +119,6 @@ fam-stable-indexed {S} {D} {x} {y} f g = record { E = E ; leg = leg ; h = h ; eq
                     (≈-transC (assocC _ _ _)
                       (∘-cong₂C (Dcomp .famf-eq .transf-eq {dOf i})))))))
 
-    -- y is the coproduct of its summands.
     fwd-h : Mor (∐ S E) y
     fwd-h .idxf .func (s , i , _) = i
     fwd-h .idxf .func-resp-≈ {s₁ , i , _} {s₂ , j , _} (_ , i≈j) = i≈j
@@ -183,13 +176,9 @@ fam-stable-indexed {S} {D} {x} {y} f g = record { E = E ; leg = leg ; h = h ; eq
         EQ : x .idx ._≈_ (f .fwd .idxf .func ŝ) w
         EQ = x .idx .trans (x .idx .sym q₃) (f .fwd∘bwd≈id .idxf-eq .func-eq (x .idx .refl {w}))
 
-        -- The leg's transport is the coproduct's subst along symapex, up to a
-        -- vanishing refl-subst.
         insert : D .fmor ⟪ pf ⟫ .famf .transf (dOf i) ≈C (∐ S D) .fam .indexed-family.Fam.subst symapex
         insert = ≈-symC (≈-transC (∘-cong₁C (D .fobj s .fam .indexed-family.Fam.refl*)) id-leftC)
 
-        -- Sending the summand back through the decomposition and out along the
-        -- iso is the identity, by naturality and the iso's roundtrip.
         roundtrip : (x .fam .indexed-family.Fam.subst EQ
                       ∘C (f .fwd .famf .transf ŝ
                         ∘C (D .fmor ⟪ pf ⟫ .famf .transf (dOf i) ∘C f .bwd .famf .transf w)))

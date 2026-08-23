@@ -172,8 +172,6 @@ mat R .preserve-· {s} {u} = app-· R s u
 𝔽F .fmor-comp f g .*≈* .prop-setoid._≃m_.func-eq {u} e i =
   trans (app-∘ f g u i) (app-congᵥ f (λ j → app-congᵥ g e j) i)
 
--- The realisation as a homomorphism of the enrichment, which is what the biproduct laws transfer
--- along: composites, sums, the identity and the zero all realise as themselves.
 mat-cong : ∀ {m n} {R T : Matrix m n} → R ≈ₘ T → SMC._≈_ (mat R) (mat T)
 mat-cong h = 𝔽F .fmor-cong h
 
@@ -228,7 +226,6 @@ mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
 𝔽F-preserve-products {m} {n} =
   biproduct-iso SemiMod.cmon-enriched (𝔽-biproduct m n) (SemiMod.biproduct (𝔽 m) (𝔽 n))
 
--- The empty dimension realises as the zero module.
 𝟘→𝔽0 : SemiMod._⇒_ SemiMod.𝟘 (𝔽 0)
 𝟘→𝔽0 .*→* .prop-setoid._⇒_.func _ ()
 𝟘→𝔽0 .*→* .prop-setoid._⇒_.func-resp-≈ _ ()
@@ -248,7 +245,6 @@ mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
 module Lm = lifting M.cmon M.biproduct 1
 module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 
--- The unit dimension realises as the scalars.
 ι1-fwd : SemiMod._⇒_ (𝔽 1) 𝕀
 ι1-fwd .*→* .prop-setoid._⇒_.func v = v zero
 ι1-fwd .*→* .prop-setoid._⇒_.func-resp-≈ e = e zero
@@ -272,8 +268,6 @@ module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 
 module BT = biproduct-transport SemiMod.cmon-enriched
 
--- The realisation of a lifted dimension is a biproduct of the scalars and the realised payload:
--- the block witness with its first leg conjugated by the scalar comparison.
 L-biproduct : ∀ n → Biproduct SemiMod.cmon-enriched SemiMod.𝕀 (𝔽 n)
 L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd
 
@@ -283,7 +277,6 @@ L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘b
   Category.IsIso→Iso SemiMod.cat
     (biproduct-iso SemiMod.cmon-enriched (L-biproduct n) (SemiMod.biproduct SemiMod.𝕀 (𝔽 n)))
 
--- The comparison read elementwise: the first position becomes the scalar, the rest the payload.
 𝔽-L-fwd-elt : ∀ n (v : Vec (Nat.suc n)) →
               Semimodule._≈_ (Ls.L (𝔽 n)) (SemiMod._⇒_.func (𝔽-L-iso n .Category.Iso.fwd) v)
                 (v zero , (λ k → v (suc k)))
@@ -292,8 +285,6 @@ L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘b
         (trans (+-cong (trans +-comm +-lunit) refl) (trans +-comm +-lunit))
   ,ₚ λ i → trans +-lunit (trans (+-cong ε-annihilₗ (Σ-unit {n} i (λ j → v (suc j)))) +-lunit)
 
--- The lifted action realises as the copairing over the block witness, which is the form the
--- comparison's naturality is stated against.
 mat-Lmap : ∀ {P Q} (f : MC._⇒_ P Q) →
            SMC._≈_ (mat (Lm.Lmap f))
                    (copair (𝔽-biproduct 1 P) {x = 𝔽 (Lm.L Q)}
@@ -322,14 +313,11 @@ mat-Lmap {P} {Q} f =
 -- The realisation is full and faithful: a linear map between free semimodules is the matrix of
 -- its values on the basis, so a fibre map of the model is a weighted relation and nothing else.
 
--- The image of a basis vector reads off an entry.
 app-e : ∀ {m n} (R : Matrix m n) (j : Fin n) (i : Fin m) → app R (M.e j) i ≈ R i j
 app-e {m} {n} R j i =
   trans (Σ-cong {n} (λ l → ·-comm)) (Σ-unit j (λ l → R i l))
 
 private
-  -- Padding a vector with a zero at the head, and the map it induces on linear maps: the
-  -- restriction of a map on suc m positions to the positions under the head.
   shift : ∀ {m} → Vec m → Vec (Nat.suc m)
   shift u zero    = ε
   shift u (suc l) = u l
@@ -350,7 +338,6 @@ private
     trans (k .func-resp-≈ (λ { zero → sym ε-annihilᵣ ; (suc l) → refl }) i)
           (k .preserve-· i)
 
--- A linear map is the weighted sum of its values on the basis.
 sum-lin : ∀ {m n} (k : SemiMod._⇒_ (𝔽 m) (𝔽 n)) (v : Vec m) (i : Fin n) →
           k .func v i ≈ Σ {m} (λ j → v j · k .func (M.e j) i)
 sum-lin {Nat.zero} k v i = trans (k .func-resp-≈ (λ ()) i) (k .preserve-ze i)

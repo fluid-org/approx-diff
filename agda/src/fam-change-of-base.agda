@@ -58,7 +58,6 @@ open prop-setoid._⇒_
 open prop-setoid._≃m_
 open indexed-family._≃f_
 
--- The change of base and its preservation of the family-level structure.
 Fam⟨F⟩ : Functor Fam⟨𝒞⟩μ.cat Fam⟨𝒟⟩μ.cat
 Fam⟨F⟩ = fam-functor.FamF os (os ⊔ es) F
 
@@ -71,7 +70,6 @@ Fam⟨F⟩-preserves-products =
     (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟)
     (λ {X} {Y} → F-prod {X} {Y})
 
--- The lifting comparison, fibrewise: the change of base commutes with the two liftings.
 Fam⟨F⟩-L : ∀ (X : Fam⟨𝒞⟩μ.Obj) →
            Fam𝒟.Iso (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X))
 Fam⟨F⟩-L X .fwd .idxf = prop-setoid.idS _
@@ -82,7 +80,6 @@ Fam⟨F⟩-L X .bwd .famf .transf x = F-L (X .fam .fm x) .bwd
 Fam⟨F⟩-L X .bwd .famf .natural {x₁} {x₂} e =
   flip (F-L (X .fam .fm x₁)) (F-L (X .fam .fm x₂)) (F-L-natural (X .fam .subst e))
   where
-    -- Conjugating the naturality square by the comparison isomorphisms.
     flip : ∀ {a a' b b'} (i : 𝒟.Iso a b) (j : 𝒟.Iso a' b')
            {f : a 𝒟.⇒ a'} {g : b 𝒟.⇒ b'} →
            𝒟._≈_ (𝒟._∘_ (j .fwd) f) (𝒟._∘_ g (i .fwd)) →
@@ -121,8 +118,6 @@ Fam⟨F⟩-L X .bwd∘fwd≈id .famf-eq .transf-eq {x} =
                (𝒟.≈-trans 𝒟.id-left (F-L (X .fam .fm x) .bwd∘fwd≈id)))
     𝒟.id-left
 
--- Sections transport along the change of base: the image of a family with a section has the
--- image elements as a section, entered through a chosen map from the target unit object.
 Fam⟨F⟩-section : (u : 𝟙𝒟 𝒟.⇒ F .fobj 𝟙𝒞) → ∀ {X : Fam⟨𝒞⟩μ.Obj} →
                   Fam⟨𝒞⟩μ.Section X → Fam⟨𝒟⟩μ.Section (Fam⟨F⟩ .fobj X)
 Fam⟨F⟩-section u c .Fam⟨𝒟⟩μ.at x = 𝒟._∘_ (F .fmor (c .Fam⟨𝒞⟩μ.at x)) u

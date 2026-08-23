@@ -97,19 +97,14 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   member : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Bool
   member p = any (eq p)
 
-  -- Vertices sharing an incident edge, in either direction.
   adjacent : Relation (vertex-width B) → V B → V B → Bool
   adjacent G x y = nonzero (G x y) ∨ nonzero (G y x)
 
-  -- Merge into one region the regions adjacent to a vertex, the hide move's merging specialised to
-  -- singletons.
   merge-region : Relation (vertex-width B) → Vertex (Graph.shape B) → List (List (Vertex (Graph.shape B))) →
                  List (List (Vertex (Graph.shape B)))
   merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
     where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) rss
 
-  -- The regions of a list of paths: the weakly connected components of the subgraph induced by its
-  -- members.
   regions : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → List (List (Vertex (Graph.shape B)))
   regions G []       = []
   regions G (w ∷ ws) = merge-region G w (regions G ws)
@@ -120,7 +115,6 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   member-vertex (inj₂ (inj₁ p)) C = member p C
   member-vertex (inj₂ (inj₂ _)) C = Bool.false
 
-  -- The dependence relations with an endpoint in the given region, zero elsewhere.
   restrict : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → Relation (vertex-width B)
   restrict G C x y = when (member-vertex x C ∨ member-vertex y C) (G x y)
 
@@ -130,17 +124,13 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   summary : List (Vertex (Graph.shape B)) → Relation (vertex-width B)
   summary C = hide-all (vertex-width B) (restrict (fo-graph B) C) (map at C)
 
-  -- The initial configuration: everything hidden, one summary per region of FO.
   initial : Config B
   initial .visible = []
   initial .hidden  = map (λ C → C , summary C) (regions (fo-graph B) (FO B))
 
-  -- The union of a configuration's hidden regions.
   hidden-set : Config B → List (Vertex (Graph.shape B))
   hidden-set K = concat (map proj₁ (K .hidden))
 
-  -- The visible graph: the dependence relations of the first-order graph with neither endpoint
-  -- hidden, together with those of the region summaries, parallel contributions summed.
   visible-graph : Config B → Relation (vertex-width B)
   visible-graph K x y =
     foldr M._+ₘ_
@@ -151,9 +141,6 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   _+G_ : Relation (vertex-width B) → Relation (vertex-width B) → Relation (vertex-width B)
   (G +G H) x y = G x y M.+ₘ H x y
 
-  -- The hide move: remove p from the visible set, merge the regions adjacent to p, and hide p in
-  -- the graph assembling p's incident relations in the visible graph with the merged regions'
-  -- summaries.
   hide-at : Vertex (Graph.shape B) → Config B → Config B
   hide-at p K .visible = filterᵇ (λ q → not (eq p q)) (K .visible)
   hide-at p K .hidden  =
@@ -163,8 +150,6 @@ module Interaction {m n : ℕ} (B : Graph m n) where
                       (K .hidden)
       assembled = foldr _+G_ (restrict (visible-graph K) (p ∷ [])) (map proj₂ (proj₁ tp))
 
-  -- Split a stored region at p: recompute regions and summaries with p removed if the region
-  -- contains p, and leave it alone otherwise.
   split-region : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) × Relation (vertex-width B) →
                  List (List (Vertex (Graph.shape B)) × Relation (vertex-width B))
   split-region p (C , H) =
@@ -173,8 +158,6 @@ module Interaction {m n : ℕ} (B : Graph m n) where
              (regions (fo-graph B) (filterᵇ (λ q → not (eq p q)) C))
     else (C , H) ∷ []
 
-  -- The reveal move: return p to the visible set and split the region containing it, recomputing
-  -- regions and summaries within that region alone.
   reveal-at : Vertex (Graph.shape B) → Config B → Config B
   reveal-at p K .visible = p ∷ K .visible
   reveal-at p K .hidden  = concat (map (split-region p) (K .hidden))
@@ -260,7 +243,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   member-vertex-perm (inj₂ (inj₂ _)) p = ≡-refl
   member-vertex-perm (inj₂ (inj₁ q)) p = member-perm q p
 
-  -- Restriction reads the region only through membership, so respects permutation.
   restrict-perm : (G : Relation (vertex-width 𝒢)) {C C' : List (Path)} → C ↭ C' →
                   ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                   restrict G C x y i j ≡ restrict G C' x y i j
@@ -268,14 +250,11 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ≡-cong (λ b → when b (G x y) i j)
            (≡-cong₂ _∨_ (member-vertex-perm x p) (member-vertex-perm y p))
 
-  -- Restriction only zeroes relations, so preserves the forward-edge property.
   restrict-forward : {G : Relation (vertex-width 𝒢)} (C : List (Path)) → Fwd 𝒢 G → Fwd 𝒢 (restrict G C)
   restrict-forward C fwd x y i j with member-vertex x C ∨ member-vertex y C
   ... | Bool.true  = fwd x y i j
   ... | Bool.false = λ ()
 
-  -- Summaries are stable under permutation of the region: restriction is membership-based, and the
-  -- hiding order is immaterial on the restricted graph, which is forward.
   summary-perm : {C C' : List (Path)} → C ↭ C' →
                  ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                  summary C x y i j ≡ summary C' x y i j
@@ -286,8 +265,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   adjacent-sym : (G : Relation (vertex-width 𝒢)) (x y : V 𝒢) → adjacent G x y ≡ adjacent G y x
   adjacent-sym G x y = ∨-comm (nonzero (G x y)) (nonzero (G y x))
 
-  -- Regions with no edge between them; each reads the graph only through its own members, so hiding
-  -- either leaves the other's summary alone.
   Apart : Relation (vertex-width 𝒢) → List (Path) → List (Path) → Set
   Apart G C C' = any (λ q → any (λ q' → adjacent G (at q) (at q')) C') C ≡ Bool.false
 
@@ -296,9 +273,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ≡-trans (any-comm (λ q q' → adjacent G (at q) (at q')) C' C)
     (≡-trans (any-cong (λ q → any-cong (λ q' → adjacent-sym G (at q') (at q)) C') C) h)
 
-  -- Adding a vertex and merging the regions adjacent to it preserves pairwise apartness: an
-  -- untouched region fails the adjacency test for the vertex and was already apart from each of the
-  -- merged regions.
   merge-separated : (G : Relation (vertex-width 𝒢)) (w : Path) {rs : List (List (Path))} →
                     AllPairs (Apart G) rs →
                     let tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) rs in
@@ -316,7 +290,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                            (any-false hc)))
               (part₂-false f rs) (proj₂ (proj₂ pa))
 
-  -- The regions computation produces pairwise-apart regions.
   regions-separated : (G : Relation (vertex-width 𝒢)) (ws : List (Path)) → AllPairs (Apart G) (regions G ws)
   regions-separated G []       = []
   regions-separated G (w ∷ ws) = merge-separated G w (regions-separated G ws)
@@ -343,7 +316,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     resp C C' C'' r ap =
       ≡-trans (≡-sym (any-perm (λ q → any (λ q' → adjacent (fo-graph 𝒢) (at q) (at q')) C'') r)) ap
 
-  -- The regions of a list are made from exactly its members.
   regions-concat : (G : Relation (vertex-width 𝒢)) (ws : List (Path)) → concat (regions G ws) ↭ ws
   regions-concat G []       = ↭.refl
   regions-concat G (w ∷ ws) =
@@ -352,7 +324,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       (regions-concat G ws)))
     where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) (regions G ws)
 
-  -- Hiding a vertex adds it to the hidden set.
   hide-at-hidden-set : (p : Path) (K : Config 𝒢) →
                        hidden-set (hide-at p K) ↭ (p ∷ hidden-set K)
   hide-at-hidden-set p K =
@@ -414,7 +385,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     HA.agree-add (map at C) (restrict-sub (fo-graph 𝒢) mono) (restrict-agree (fo-graph 𝒢) mono)
                  x y i j
 
-  -- A region neither containing nor adjacent to a vertex has a summary with no dependence at it.
   summary-zero : {C : List (Path)} (q : Path) →
                  member q C ≡ Bool.false →
                  any (λ q' → adjacent (fo-graph 𝒢) (at q) (at q')) C ≡ Bool.false →
@@ -461,9 +431,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       (≡-trans (≡-cong (λ b → when b (fo-graph 𝒢 z (at q)) i j) (∨-identityʳ (member-vertex z C)))
                (when-O (member-vertex z C) (fo-graph 𝒢 z (at q)) i j (λ hz → entry-col z hz i j)))
 
-  -- Hiding pairwise-apart, pairwise-disjoint regions inside a common restriction adds exactly
-  -- their summaries: each region contributes its summary via localisation, and stays inert while
-  -- the remaining regions are hidden.
   assemble : {E : List (Path)} (Cs : List (List (Path))) →
              All (λ C → ∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) Cs →
              AllPairs (λ C C' → Apart (fo-graph 𝒢) C' C
@@ -532,10 +499,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       any-Any (λ C → member q C) Css (≡-trans (≡-sym (any-concat (eq-path q) Css)) h)
 
   private
-    -- The base of the assembled graph agrees with the restriction of the first-order graph to the
-    -- merged region, modulo the joined summaries of the merged regions: an edge at p is either a
-    -- first-order edge whose other end is visible or in a merged region, or a stored summary edge;
-    -- an end in an unmerged region is ruled out by non-adjacency.
     base-agree : (p : Path) (K : Config 𝒢) → Summarised K →
                  member p (hidden-set K) ≡ Bool.false →
                  let tp = partitionᵇ (λ CH → any (λ q → adjacent (fo-graph 𝒢) (at p) (at q)) (proj₁ CH))
@@ -787,7 +750,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       ...   | inj₁ hx = bwd-l x' y' i' j' ge hx
       ...   | inj₂ hy = bwd-r x' y' i' j' ge hy
 
-  -- The graph assembled by the hide (vertex-width 𝒢) move, hidden at p, is the summary of the merged region.
   merged-summary : (p : Path) (K : Config 𝒢) → Summarised K →
                    member p (hidden-set K) ≡ Bool.false →
                    AllPairs Distinct (map proj₁ (K .hidden)) →
@@ -850,7 +812,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       (≡-trans (base-swap x' y' i' j')
                (≡-sym (assemble {E = C*} Ms monosC* sepsMs x' y' i' j'))))
 
-  -- The first-order paths inherit distinctness from the path enumeration.
   FO-distinct : AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (FO 𝒢)
   FO-distinct =
     filter-AllPairs (Graph.fo 𝒢) (AllPairs-map ≢-eq-false (distinct (Graph.shape 𝒢)))
@@ -888,8 +849,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                               (partition-distinct K (S .partition)))))
                   pv)
 
-  -- A summarised configuration's stored regions are pairwise disjoint: the partition invariant
-  -- places them inside the duplicate-free first-order paths.
   summarised-distinct : (K : Config 𝒢) → Summarised K →
                         AllPairs Distinct (map proj₁ (K .hidden))
   summarised-distinct K S =
@@ -921,12 +880,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                         (S .summaries))
 
   private
-    -- Apart in pointwise form, and its monotonicity under region inclusion.
     Apart-All : {G : Relation (vertex-width 𝒢)} {C C' : List (Path)} → Apart G C C' →
                 All (λ q → All (λ q' → adjacent G (at q) (at q') ≡ Bool.false) C') C
     Apart-All {C = C} {C'} ap = All-map (λ h → any-false-All _ C' h) (any-false-All _ C ap)
 
-  -- Apartness is monotone under region inclusion.
   Apart-mono : {G : Relation (vertex-width 𝒢)} {C₁ C₂ C₁' C₂' : List (Path)} →
                (∀ q → member q C₁ ≡ Bool.true → member q C₁' ≡ Bool.true) →
                (∀ q → member q C₂ ≡ Bool.true → member q C₂' ≡ Bool.true) →
@@ -943,7 +900,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       (any-self eq-path-refl C₁))
 
   private
-    -- Splitting leaves a region without p alone.
     split-none : (p : Path)
                  {CHs : List (List (Path) × Relation (vertex-width 𝒢))} →
                  All (λ CH → member p (proj₁ CH) ≡ Bool.false) CHs →
@@ -951,7 +907,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     split-none p []                     = ≡-refl
     split-none p (_∷_ {C , H} h hs) rewrite h = ≡-cong ((C , H) ∷_) (split-none p hs)
 
-  -- Splitting at a hidden vertex removes exactly p from the hidden set.
   reveal-set : (p : Path)
                (CHs : List (List (Path) × Relation (vertex-width 𝒢))) →
                AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (concat (map proj₁ CHs)) →
@@ -1039,9 +994,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
               (≡-cong (foldr two._⊔_ _)
                       (≡-sym (map-∘ {g = λ R' → R' i j} {f = λ CH → proj₂ CH x y} (K .hidden))))
 
-  -- At a vertex pair with no hidden endpoint, the visible graph is the first-order relation joined
-  -- with the summary of the whole hidden set: the stored summaries assemble to the single-region
-  -- summary.
   visible-graph-summary : (K : Config 𝒢) → Summarised K →
                           ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                           member-vertex x (hidden-set K) ≡ Bool.false →
@@ -1082,7 +1034,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       (≡-cong (two._⊔ foldr two._⊔_ two.O (map (λ C → summary C x y i j) Cs))
                               restrict-O))))
 
-  -- Reveal after hide (vertex-width 𝒢) at the same vertex restores the visible set and the hidden set.
   hide-reveal-visible : (p : Path) (K : Config 𝒢) → Summarised K →
                         member p (K .visible) ≡ Bool.true →
                         reveal-at p (hide-at p K) .visible ↭ K .visible
@@ -1114,8 +1065,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       (member-All {eq = eq-path} eq-path-≡ {x = p} cr hp))
         (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K (S .partition))))))
 
-  -- Hide after reveal at the same vertex restores the visible set exactly and the hidden set up to
-  -- permutation.
   reveal-hide-visible : (p : Path) (K : Config 𝒢) → Summarised K →
                         member p (hidden-set K) ≡ Bool.true →
                         hide-at p (reveal-at p K) .visible ≡ K .visible
@@ -1159,9 +1108,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                  (or-intror (member-vertex z C) (member q C) hq))))
         (any-self eq-path-refl C))
 
-  -- The paper's assembly lemma: at a vertex pair with no hidden endpoint, the visible graph is the
-  -- first-order graph with the whole hidden set hidden. The restriction in the summary is invisible
-  -- there, since the two graphs agree on the relations at hidden vertices.
   summaries-assemble : (K : Config 𝒢) → Summarised K →
                        ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                        member-vertex x (hidden-set K) ≡ Bool.false →
@@ -1200,8 +1146,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   ≈-trans e e' .visible-≈ = ↭-trans (e .visible-≈) (e' .visible-≈)
   ≈-trans e e' .hidden-≈  = ↭-trans (e .hidden-≈) (e' .hidden-≈)
 
-  -- Equivalent summarised configurations have the same visible graph at each vertex pair with no
-  -- hidden endpoint.
   ≈-visible-graph : (K K' : Config 𝒢) → Summarised K → Summarised K' → K ≈ K' →
                     ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                     member-vertex x (hidden-set K) ≡ Bool.false →
@@ -1214,8 +1158,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                        (≡-trans (member-vertex-perm x (↭-sym (e .hidden-≈))) hx)
                        (≡-trans (member-vertex-perm y (↭-sym (e .hidden-≈))) hy))))
 
-  -- The inversion corollary: on a summarised configuration, revealing a vertex inverts hiding it,
-  -- and hiding a vertex inverts revealing it, up to configuration equivalence.
   hide-reveal : (p : Path) (K : Config 𝒢) → Summarised K →
                 member p (K .visible) ≡ Bool.true →
                 reveal-at p (hide-at p K) ≈ K
@@ -1275,8 +1217,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     merge-region-filter G w rss =
       ≡-cong (λ u → (w ∷ concat (proj₁ u)) ∷ proj₂ u) (partition-filter (adj G w) rss)
 
-  -- Merging two vertices commutes: if they are adjacent or share an adjacent region both orders
-  -- produce the one merged region, and otherwise the merges are independent.
   merge-region-comm : (G : Relation (vertex-width 𝒢)) (w w' : Vertex shape) (rss : List (List (Vertex shape))) →
                       merge-region G w (merge-region G w' rss) ↭↭
                       merge-region G w' (merge-region G w rss)
@@ -1359,7 +1299,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       hb' : any (λ C → A C ∧ A' C) rss ≡ Bool.false
       hb' = ≡-trans (any-cong (λ C → ∧-comm (A C) (A' C)) rss) hb
 
-  -- Regions are insensitive to the order in which their vertices are enumerated.
   regions-perm : (G : Relation (vertex-width 𝒢)) {ws ws' : List (Vertex shape)} → ws ↭ ws' →
                  regions G ws ↭↭ regions G ws'
   regions-perm G ↭.refl         = ↭↭-refl
@@ -1404,7 +1343,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ↭↭-of-≡ : {xss yss : List (List (Vertex shape))} → xss ≡ yss → xss ↭↭ yss
     ↭↭-of-≡ ≡-refl = ↭↭-refl
 
-    -- Each region of ws lies inside ws.
     regions-⊆ : (G : Relation (vertex-width 𝒢)) (ws : List (Vertex shape)) →
                 All (λ C → ∀ q → member q C ≡ Bool.true → member q ws ≡ Bool.true)
                     (regions G ws)
@@ -1412,7 +1350,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       All-map (λ {C} inc q h → ≡-trans (≡-sym (member-perm 𝒢 q (regions-concat 𝒢 G ws))) (inc q h))
               (blocks-⊆ 𝒢 (regions G ws))
 
-    -- Merging a vertex with no adjacency into a suffix of regions leaves the suffix alone.
     merge-region-inert : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (X Y : List (List (Vertex shape))) →
                          All (λ C → adj G w C ≡ Bool.false) Y →
                          merge-region G w (X ++ Y) ≡ merge-region G w X ++ Y
@@ -1427,7 +1364,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                   (filter-all-true (All-map (λ e → ≡-cong not e) h)))))
                (≡-cong (_++ Y) (≡-sym (merge-region-filter G w X))))
 
-  -- Regions distribute over a concatenation with an apart suffix: no merge crosses the boundary.
   regions-apart : (G : Relation (vertex-width 𝒢)) (B rest : List (Vertex shape)) → Apart 𝒢 G B rest →
                   regions G (B ++ rest) ↭↭ (regions G B ++ regions G rest)
   regions-apart G []      rest ap = ↭↭-refl
@@ -1458,7 +1394,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     regions-nonempty G (w ∷ ws) =
       s≤s z≤n ∷ proj₂ (partition-All (adj G w) (regions-nonempty G ws))
 
-  -- Regions of a concatenation of pairwise-apart blocks are the blocks' regions.
   regions-apart-concat : {G : Relation (vertex-width 𝒢)} {Cs : List (List (Vertex shape))} →
                          AllPairs (Apart 𝒢 G) Cs →
                          regions G (concat Cs) ↭↭ concat (map (regions G) Cs)
@@ -1467,9 +1402,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     H.trans (regions-apart G C (concat Cs) (apart-concat {G = G} {C = C} {Cs = Cs} aps))
             (↭↭-++⁺ ↭↭-refl (regions-apart-concat pairs))
 
-  -- Each stored region of a summarised configuration is a single region: distribution
-  -- makes the stored list a permutation of the per-block regions, and a permutation preserves
-  -- length while every nonempty block contributes at least one region.
   blocks-one-region : (K : Config 𝒢) → Summarised 𝒢 K →
                       All (λ C → regions (fo-graph 𝒢) C ↭↭ (C ∷ []))
                           (map proj₁ (K .hidden))
@@ -1511,8 +1443,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                              (subst (λ z → concat z ↭ C) eq (regions-concat 𝒢 G C)))
                     (H.refl []))
 
-  -- The reveal move preserves correct summarisation: splitting the region containing p computes the
-  -- regions of the hidden set with p removed, block by block.
   reveal-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised 𝒢 K) →
                          member p (hidden-set K) ≡ Bool.true →
                          Summarised 𝒢 (reveal-at p K)

@@ -129,7 +129,6 @@ cat .Category.assoc f g h .right-eq = JS.assoc (f .right) (g .right) (h .right)
 cat .Category.assoc f g h .left-eq =
   JS.≃m-isEquivalence .sym (JS.assoc (h .left) (g .left) (f .left))
 
--- CMon enrichment
 module _ {X Y : Obj} where
   open _=>_
   open preorder._=>_
@@ -195,7 +194,6 @@ module _ where
   cmon-enriched .CMonEnriched.comp-bilinear-ε₂ {Z = Z} f .right-eq ._≃J_.eqfunc .eqfun x = _=>J_.⊥-preserving-≃ (f .right)
   cmon-enriched .CMonEnriched.comp-bilinear-ε₂ {X = X} f .left-eq ._≃J_.eqfunc .eqfun x = X .≃-refl
 
--- Terminal object
 module _ where
   open IsTerminal
   open HasTerminal
@@ -226,7 +224,6 @@ module _ where
     X .≤-bottom ,
     ≤-trans X (∧-idem X .proj₂) (#-mono X (≤-refl X) _ (f .conjugate .proj₁ tt))
 
--- Products
 module _ where
 
   open HasProducts

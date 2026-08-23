@@ -64,7 +64,6 @@ semiring .CommutativeSemiring.multiplicative = multiplicative
 semiring .CommutativeSemiring.·-+-distribₗ = distrib
 semiring .CommutativeSemiring.ε-annihilₗ = annihil
 
--- Freeness: a valuation of the variables in any commutative semiring extends to a homomorphism.
 module Eval {o e : Level} {A : Setoid o e} (T : CommutativeSemiring A) (ρ : X → Setoid.Carrier A) where
   private module T = CommutativeSemiring T
 

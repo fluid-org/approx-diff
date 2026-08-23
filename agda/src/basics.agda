@@ -30,7 +30,6 @@ module _ {a} {A : Set a} where
       refl  : ∀ {x} → x ≤ x
       trans : ∀ {x y z} → x ≤ y → y ≤ z → x ≤ z
 
-    -- Derived equivalence relation
     _≃_ = SymmetricCore _≤_
 
     ≃-refl : ∀ {x} → x ≃ x
@@ -50,7 +49,6 @@ module _ {a} {A : Set a} where
 
     infix 4 _≃_
 
-    -- The opposite order
     opposite : IsPreorder (Op _≤_)
     opposite .refl = refl
     opposite .trans y≤x z≤y = trans z≤y y≤x
@@ -85,7 +83,6 @@ module ≤-Reasoning {o i} {A : Set o} {_≤_ : A → A → Prop i} (isPreorder 
       -----
     → x ≤ x
   x ∎  =  isPreorder .refl
-
 
 module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreorder _≤_) where
 
@@ -235,7 +232,6 @@ module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreo
     field
       ≤-bottom : ∀ {x} → ⊥ ≤ x
 
-  -- Disjointness from a meet and a bottom.
   module Disjoint {_∧_ : A → A → A} {⊥ : A} (∧-isMeet : IsMeet _∧_) (⊥-isBottom : IsBottom ⊥) where
     open IsMeet ∧-isMeet
     open IsBottom ⊥-isBottom
@@ -250,7 +246,6 @@ module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreo
     ⊥-# : ∀ {x} → ⊥ # x
     ⊥-# = π₁
 
-    -- The annihilator map y ↦ {z | z # y} preserves ≤ (is contravariant).
     #-mono : ∀ {x y} → x ≤ y → ∀ z → y # z → x # z
     #-mono x≤y z = trans (mono x≤y refl)
 
@@ -402,7 +397,6 @@ module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreo
       nu       : ε ≤ (ε ⍮ ε)
       gu       : ε ≤ ι
 
-  -- If a monoid is commutative, then it is duoidal over itself
   module _ {_∙_ : A → A → A} {ε : A} (∙-isMonoid : IsMonoid _∙_ ε)
            (∙-comm : ∀ {x y} → (x ∙ y) ≤ (y ∙ x)) where
 
@@ -414,7 +408,6 @@ module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreo
     selfDuoidal .IsDuoidal.nu = lunit .proj₂
     selfDuoidal .IsDuoidal.gu = refl
 
-  -- Every monotone operator is duoidal over meets
   module _ {_∙_ ε} (∙-isMonoid : IsMonoid _∙_ ε)
            {_∧_ ⊤} (∧-isMeet : IsMeet _∧_) (⊤-isTop : IsTop ⊤) where
 
@@ -428,7 +421,6 @@ module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreo
     meetDuoidal .IsDuoidal.nu = ⟨ refl , refl ⟩
     meetDuoidal .IsDuoidal.gu = ≤-top
 
-  -- ... and under joins
   module _ {_∙_ ε} (∙-isMonoid : IsMonoid _∙_ ε)
            {_∨_ ⊥} (∨-isJoin : IsJoin _∨_) (⊥-isBottom : IsBottom ⊥) where
 

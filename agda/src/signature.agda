@@ -19,7 +19,6 @@ finite-product : ∀ {o m e} {𝒞 : Category o m e} → HasTerminal 𝒞 → Ha
 finite-product T P i []       = HasTerminal.witness T
 finite-product T P i (x ∷ xs) = HasProducts.prod P (i x) (finite-product T P i xs)
 
-
 -- Models of signatures live in finite product (FIXME: monoidal?)
 -- categories with a specified object of truth values.
 record PointedFPCat o m e : Set (suc (o ⊔ m ⊔ e)) where
@@ -42,7 +41,6 @@ record PointedFPCat o m e : Set (suc (o ⊔ m ⊔ e)) where
   list→product : ∀ {ℓ} {A : Set ℓ} → (A → obj) → List A → obj
   list→product = finite-product terminal products
 
--- A category whose unit type has no positions of its own.
 PFPC[_,_,_,_] : ∀ {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasProducts 𝒞)
                 (Ω : Category.obj 𝒞) → PointedFPCat o m e
 PFPC[ 𝒞 , T , P , Ω ] .PointedFPCat.cat = 𝒞

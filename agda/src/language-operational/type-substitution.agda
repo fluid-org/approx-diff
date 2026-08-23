@@ -92,8 +92,6 @@ sub-ren-comm ρ ρ' σ σ' pw τ =
   trans (sub-ren σ' ρ τ)
         (trans (sub-cong {σ = λ i → σ' (ρ i)} {σ' = λ i → ρ' *ᵗ σ i} τ pw) (sym (ren-sub ρ' σ τ)))
 
--- Instantiating the body of a μ-type, substituted under the binder, at the substituted μ-type is
--- substituting the body with the substitution extended by that μ-type.
 unfold-sub : ∀ {n} (σ : TySub n 0) (τ : type (suc n)) →
              sub (sub-lift σ) τ [ μ (sub (sub-lift σ) τ) ] ≡ sub (extend σ (μ (sub (sub-lift σ) τ))) τ
 unfold-sub σ τ =

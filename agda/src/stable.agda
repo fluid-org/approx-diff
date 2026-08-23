@@ -78,9 +78,6 @@ record LPoset : Set (suc 0ℓ) where
     renaming (refl to ≃-refl; sym to ≃-sym; trans to ≃-trans) public
 open LPoset
 
-
--- Stable functions are monotone functions that satisfy a stability
--- property.
 record Stable (A B : LPoset) : Set where
   private
     module A = LPoset A
@@ -108,7 +105,6 @@ open _≈_
 -- stability witnesses are equal too.
 --
 -- Also, we get a galois connection on the principal downsets
-
 
 id : ∀ A → Stable A A
 id A .func a = a
@@ -214,7 +210,6 @@ products .HasProducts.pair-p₁ {A} {B} {C} f g .*≈* = B .≃-refl
 products .HasProducts.pair-p₂ {A} {B} {C} f g .*≈* = C .≃-refl
 products .HasProducts.pair-ext {A} {B} {C} f .*≈* = (B [×] C) .≃-refl
 
--- terminal object
 𝟙 : LPoset
 𝟙 .Carrier = Unit
 𝟙 ._≤_ _ _ = prop.⊤
@@ -316,7 +311,6 @@ copair {A} {B} {C} f g .stable (inj₂ b) c₀ c₀≤gb =
 -- bounded meets and joins then it is a (reverse) tangent category.
 
 ------------------------------------------------------------------------------
--- Every setoid gives a "flat" LPoset with no approximation information
 
 Flat : Setoid 0ℓ 0ℓ → LPoset
 Flat A .Carrier = A .Setoid.Carrier
@@ -355,7 +349,6 @@ Setoid→LPoset .Functor.fmor-comp {A} {B} {C} f g .*≈* .proj₂ = C .Setoid.r
 -- FIXME: preserves products and coproducts
 
 ------------------------------------------------------------------------------
--- Lifting. Adds a new global bottom element
 
 data L-carrier (A : Set) : Set where
   `⊥ : L-carrier A
@@ -450,7 +443,6 @@ L-strong {A} {B} .stable (a , `↑ b) (`↑ (a₀ , b₀)) ϕ =
   (a₀ , `↑ b₀) , ϕ , (A .≤-refl , B .≤-refl) ,
   λ { (a₀' , `↑ b₀') y z → z }
 
-
 -- Plan:
 --   3. Embed fully faithfully into Fam(LatGal)
 --      which relies on every downset being a lattice
@@ -461,7 +453,6 @@ L-strong {A} {B} .stable (a , `↑ b) (`↑ (a₀ , b₀)) ϕ =
 --      - is lifting laxly preserved?
 
 ------------------------------------------------------------------------------
--- Getting the Lattice for each element of an LPoset
 
 import galois
 import preorder
@@ -471,7 +462,6 @@ open import join-semilattice using (JoinSemilattice)
 open galois using (_⇒g_; Obj)
 open _⇒g_
 
--- Every element of the LPoset has an associated lattice of approximations
 lattice : (X : LPoset) → X .Carrier → galois.Obj
 lattice X x .Obj.carrier .preorder.Preorder.Carrier = ∃ₛ (X .Carrier) λ δx → X ._≤_ δx x
 lattice X x .Obj.carrier .preorder.Preorder._≤_ (δx₁ , _) (δx₂ , _) = X ._≤_ δx₁ δx₂
@@ -495,8 +485,6 @@ lattice X x .Obj.joins .JoinSemilattice.∨-isJoin .IsJoin.inr = bounded-∨ X _
 lattice X x .Obj.joins .JoinSemilattice.∨-isJoin .IsJoin.[_,_] = bounded-∨ X _ _ .is-join .least
 lattice X x .Obj.joins .JoinSemilattice.⊥-isBottom .IsBottom.≤-bottom {x₁ , x₁≤x} = bounded-⊥ X x .is-bot x₁ x₁≤x
 
-
--- Every morphism of LPosets yields a Galois connection!
 morphism : ∀ (X Y : LPoset) (f : Stable X Y) x → lattice X x ⇒g lattice Y (f .func x)
 morphism X Y f x .right .preorder._=>_.fun (δx , δx≤x) = f .func δx , f .mono δx≤x
 morphism X Y f x .right .preorder._=>_.mono = f .mono

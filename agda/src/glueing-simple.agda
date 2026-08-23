@@ -91,7 +91,6 @@ project .fmor-cong eq = eq .f≃f
 project .fmor-id = IsEquivalence.refl 𝒞.isEquiv
 project .fmor-comp f g = IsEquivalence.refl 𝒞.isEquiv
 
--- Binary Coproducts
 module coproducts (CP : HasCoproducts 𝒞) where
 
   private
@@ -158,7 +157,6 @@ module coproducts (CP : HasCoproducts 𝒞) where
   coproducts .HasCoproducts.copair-in₂ f g .f≃f = CP.copair-in₂ (f .morph) (g .morph)
   coproducts .HasCoproducts.copair-ext f .f≃f = CP.copair-ext (f .morph)
 
--- Products and exponentials
 module products-and-exponentials
          (T : HasTerminal 𝒞) (P : HasProducts 𝒞) (E : HasExponentials 𝒞 P)
          (FP : preserve-chosen-products F P 𝒟P)
@@ -173,7 +171,6 @@ module products-and-exponentials
 
   open IsMeet
 
-  -- Terminal
   [⊤] : Obj
   [⊤] .carrier = T.witness
   [⊤] .pred = TT
@@ -195,7 +192,6 @@ module products-and-exponentials
   terminal .HasTerminal.is-terminal .IsTerminal.to-terminal-ext f .f≃f =
     T.is-terminal .IsTerminal.to-terminal-ext (f .morph)
 
-  -- Products
   _[×]_ : Obj → Obj → Obj
   (X [×] Y) .carrier = P.prod (X .carrier) (Y .carrier)
   (X [×] Y) .pred = (X .pred [ F .fmor P.p₁ ]) && (Y .pred [ F .fmor P.p₂ ])
@@ -234,7 +230,6 @@ module products-and-exponentials
   products .HasProducts.pair-p₂ f g .f≃f = P.pair-p₂ (f .morph) (g .morph)
   products .HasProducts.pair-ext f .f≃f = P.pair-ext (f .morph)
 
-  -- Exponentials
   _[→]_ : Obj → Obj → Obj
   (X [→] Y) .carrier = E.exp (X .carrier) (Y .carrier)
   (X [→] Y) .pred = ⋀ (((X .pred [ F .fmor P.p₂ ]) ==> (Y .pred [ F .fmor E.eval ])) [ mul ])
@@ -327,7 +322,6 @@ module products-and-exponentials
                ⊑ ((Q [ F .fmor (P.p₂ {W} {Y}) ]) ⟨ F .fmor (P.pair P.p₁ (SCm.in₂ 𝒞.∘ P.p₂)) ⟩))
       where
 
-    -- Collapsing a composite reindexing along an equation in the base.
     []-collapse : ∀ {V₁ V₂ V₃ : 𝒞.obj} (Q : Predicate (F .fobj V₃))
                   {k : V₁ 𝒞.⇒ V₂} {p : V₂ 𝒞.⇒ V₃} {p' : V₁ 𝒞.⇒ V₃} →
                   (p 𝒞.∘ k) 𝒞.≈ p' →
@@ -447,8 +441,6 @@ module products-and-exponentials
       SCm.copair-in₂ (f .morph) (g .morph)
     strongCoproducts .HasStrongCoproducts.copair-ext h .f≃f = SCm.copair-ext (h .morph)
 
--- Colimits
---
 -- FIXME: be less specific about the universe levels here
 module colimits (𝒮 : Category 0ℓ 0ℓ 0ℓ) (𝒞-colimits : HasColimits 𝒮 𝒞) where
 
@@ -512,7 +504,6 @@ module colimits (𝒮 : Category 0ℓ 0ℓ 0ℓ) (𝒞-colimits : HasColimits �
     ∎
     where open ≈-Reasoning 𝒞.isEquiv
 
--- If we have an endofunctor with a lifting, then we can transfer it to the glued category
 module endofunctor
          (𝒞M : Functor 𝒞 𝒞)
          (𝒟M : Functor 𝒟 𝒟)
@@ -545,8 +536,6 @@ module endofunctor
   GF .fmor-id = record { f≃f = 𝒞M .fmor-id }
   GF .fmor-comp = λ f g → record { f≃f = 𝒞M .fmor-comp (f .morph) (g .morph) }
 
--- If the natural transformation goes the other way, we can glue in
--- the other direction too.
 module endofunctor2
          (𝒞M : Functor 𝒞 𝒞)
          (𝒟M : Functor 𝒟 𝒟)

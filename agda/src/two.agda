@@ -71,7 +71,6 @@ I ⊓ x = x
 ⊓-isMeet .IsMeet.π₂ = ⊓-lower₂
 ⊓-isMeet .IsMeet.⟨_,_⟩ = ⊓-greatest
 
--- Equality form of I-isTop: a meet is I only when both parts are.
 ⊓-I : ∀ x y → (x ⊓ y) ≡ I → (x ≡ I) Product.× (y ≡ I)
 ⊓-I I y h = ≡-refl Product., h
 
@@ -121,7 +120,6 @@ I ⊔ x = I
 ⊔-assoc O y z = ≡-refl
 ⊔-assoc I y z = ≡-refl
 
--- I is join-prime, so a join is I only when some part is.
 ⊔-I : ∀ x y → (x ⊔ y) ≡ I → (x ≡ I) Sum.⊎ (y ≡ I)
 ⊔-I O y h = Sum.inj₂ h
 ⊔-I I y h = Sum.inj₁ ≡-refl
@@ -136,7 +134,6 @@ I ⊔ x = I
 O≢I : O ≡ I → Empty.⊥
 O≢I ()
 
--- Antisymmetry at the equality level: mutual implication at I gives equality.
 I-antisym : ∀ {x y} → (x ≡ I → y ≡ I) → (y ≡ I → x ≡ I) → x ≡ y
 I-antisym {O} {O} f g = ≡-refl
 I-antisym {O} {I} f g with g ≡-refl
@@ -204,7 +201,6 @@ compl-∨ {I} = tt
 -- is a Boolean algebra.
 
 ------------------------------------------------------------------------------
--- Two as a distributive lattice with complement.
 
 open import meet-semilattice using (MeetSemilattice)
 open import join-semilattice using (JoinSemilattice)
