@@ -60,7 +60,6 @@ open Lc public
          Lmap; Lmap-cong; Lmap-id; Lmap-comp; Lmap-root; Lmap-inj;
          L-elem; L-elem-cong; L-elem-natural;
          strong-Lmap; strong-Lmap-cong; strong-Lmap-natural; strong-Lmap-pre; strong-Lmap-post; strong-Lmap-co; strong-Lmap-p₂; strong-Lmap-elem; strong-Lmap-inj;
-         p₁-Lmap; p₁-strong-Lmap;
          elim-root; elim-root-cong; elim-root-natural)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞 public
 open Obj public
@@ -126,55 +125,6 @@ open polynomial-functor.Interp products strongCoproducts LfS public
 strong-Lf-map-transf : ∀ {Γ X Y : Obj} (f : Mor (Fam𝒞-P.prod Γ X) Y) {γ x} →
                        strong-Lf-map f .famf ._⇒f_.transf (γ , x) ≈ strong-Lmap (f .famf ._⇒f_.transf (γ , x))
 strong-Lf-map-transf f = ≈-trans id-left (≈-trans (strong-Lmap-post _ _) (strong-Lmap-cong id-right))
-
--- The root read as a morphism to the constant family at the unit object: the root projection in
--- every fibre. The action of the lifting and its transport in context copy the root, and so do a
--- map of lifted summands and the copairing in context of two transports.
-root-mor : ∀ {X : Obj} → Mor (Lf X) simple[ PS.𝟙 , 𝟙c ]
-root-mor .idxf = PS.to-𝟙
-root-mor .famf ._⇒f_.transf x = p₁
-root-mor {X} .famf ._⇒f_.natural e = ≈-trans (p₁-Lmap (X .fam .subst e)) (≈-sym id-left)
-
-root-mor-Lf-map : ∀ {X Y : Obj} (f : Mor X Y) → Fam𝒞._∘_ root-mor (Lf-map f) ≃ root-mor
-root-mor-Lf-map f ._≃_.idxf-eq = PS.to-𝟙-unique _ _
-root-mor-Lf-map f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} =
-  ≈-trans id-left (≈-trans id-left (p₁-Lmap (f .famf ._⇒f_.transf x)))
-
-root-mor-strong-Lf-map : ∀ {Γ X Y : Obj} (f : Mor (Fam𝒞-P.prod Γ X) Y) →
-                         Fam𝒞._∘_ root-mor (strong-Lf-map f) ≃ Fam𝒞._∘_ root-mor Fam𝒞-P.p₂
-root-mor-strong-Lf-map f ._≃_.idxf-eq = PS.to-𝟙-unique _ _
-root-mor-strong-Lf-map f ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , x} =
-  ≈-trans id-left (≈-trans id-left
-    (≈-trans (∘-cong ≈-refl (strong-Lf-map-transf f)) (≈-trans (p₁-strong-Lmap _) (≈-sym id-left))))
-
-private
-  module FC = HasCoproducts coproducts
-  module FSC = HasStrongCoproducts strongCoproducts
-
-root-mor₊ : ∀ {X Y : Obj} → Mor (FC.coprod (Lf X) (Lf Y)) simple[ PS.𝟙 , 𝟙c ]
-root-mor₊ = FC.copair root-mor root-mor
-
-root-mor₊-coprod-m : ∀ {X X' Y Y' : Obj} (f : Mor X X') (g : Mor Y Y') →
-                     Fam𝒞._∘_ root-mor₊ (FC.coprod-m (Lf-map f) (Lf-map g)) ≃ root-mor₊
-root-mor₊-coprod-m f g ._≃_.idxf-eq = PS.to-𝟙-unique _ _
-root-mor₊-coprod-m f g ._≃_.famf-eq .indexed-family._≃f_.transf-eq {inj₁ x} =
-  ≈-trans id-left (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans id-left id-left)) (p₁-Lmap _)))
-root-mor₊-coprod-m f g ._≃_.famf-eq .indexed-family._≃f_.transf-eq {inj₂ y} =
-  ≈-trans id-left (≈-trans id-left (≈-trans (∘-cong ≈-refl (≈-trans id-left id-left)) (p₁-Lmap _)))
-
-root-mor₊-scopair : ∀ {Γ X₁ X₂ Y₁ Y₂ : Obj} (f : Mor (Fam𝒞-P.prod Γ X₁) Y₁) (g : Mor (Fam𝒞-P.prod Γ X₂) Y₂) →
-                    Fam𝒞._∘_ root-mor₊
-                      (FSC.copair (Fam𝒞._∘_ FSC.in₁ (strong-Lf-map f)) (Fam𝒞._∘_ FSC.in₂ (strong-Lf-map g)))
-                      ≃ Fam𝒞._∘_ root-mor₊ Fam𝒞-P.p₂
-root-mor₊-scopair f g ._≃_.idxf-eq = PS.to-𝟙-unique _ _
-root-mor₊-scopair f g ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , inj₁ x} =
-  ≈-trans id-left (≈-trans id-left
-    (≈-trans (∘-cong ≈-refl (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf f))))
-      (≈-trans (p₁-strong-Lmap _) (≈-sym id-left))))
-root-mor₊-scopair f g ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , inj₂ y} =
-  ≈-trans id-left (≈-trans id-left
-    (≈-trans (∘-cong ≈-refl (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf g))))
-      (≈-trans (p₁-strong-Lmap _) (≈-sym id-left))))
 
 private
   module CME = CMonEnriched CM
