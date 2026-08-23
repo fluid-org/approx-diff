@@ -1047,3 +1047,37 @@ DepRel-cast : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} {i : Ix τ} (r : ValRel
               {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
               DepRel τ r o d → DepRel τ' (ValRel-cast e r) (vec-cast e {v} o) (ty-cast e .famf .transf i .func d)
 DepRel-cast refl r h = h
+
+vec-cast⁻ : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} → ∣ 𝔽 (width (≡-subst Val e v)) ∣ → ∣ 𝔽 (width v) ∣
+vec-cast⁻ refl o = o
+
+vec-cast-cong : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} {o o' : ∣ 𝔽 (width v) ∣} → (∀ k → o k ≈s o' k) →
+                ∀ k → vec-cast e {v} o k ≈s vec-cast e {v} o' k
+vec-cast-cong refl eq = eq
+
+DepRel-cast⁻ : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} {i : Ix τ'} (r : ValRel τ' (≡-subst Val e v) i)
+               {o : ∣ 𝔽 (width (≡-subst Val e v)) ∣} {d : ∣ Fib τ' i ∣} →
+               DepRel τ' r o d →
+               DepRel τ (ValRel-cast⁻ e r) (vec-cast⁻ e {v} o) (ty-cast (sym e) .famf .transf i .func d)
+DepRel-cast⁻ refl r h = h
+
+ty-cast-cancel-elt : ∀ {τ τ'} (e : τ ≡ τ') (i : Ix τ') (d : ∣ Fib τ' i ∣) →
+                     Fib._≈_ τ' i
+                       (⟦ τ' ⟧ .fam .subst (ty-cast-cancel e i) .func
+                         (ty-cast e .famf .transf (ty-cast (sym e) .idxf .sfunc i) .func
+                           (ty-cast (sym e) .famf .transf i .func d)))
+                       d
+ty-cast-cancel-elt {τ' = τ'} refl i d = subst-refl ⟦ τ' ⟧ {i} (Ix.refl τ' {i}) d
+
+ty-cast-ctrl-dep : ∀ {τ τ'} (e : τ ≡ τ') (i : Ix τ) (s : Setoid.Carrier A) →
+                   Fib._≈_ τ' (ty-cast e .idxf .sfunc i)
+                     (ty-cast e .famf .transf i .func (ctrl-dep-at τ i s)) (ctrl-dep-at τ' (ty-cast e .idxf .sfunc i) s)
+ty-cast-ctrl-dep {τ' = τ'} refl i s = Fib.refl τ' i
+
+ap-ccast-I : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} (o : ∣ 𝔽 (width (≡-subst Val e v)) ∣) k →
+             ap (ccast (sym (width-subst e v)) M.I) o k ≈s vec-cast⁻ e {v} o k
+ap-ccast-I refl o k = app-I o k
+
+ap-rcast-I : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} (o : ∣ 𝔽 (width v) ∣) k →
+             ap (rcast (sym (width-subst e v)) M.I) o k ≈s vec-cast e {v} o k
+ap-rcast-I refl o k = app-I o k
