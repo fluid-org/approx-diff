@@ -1,9 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The fundamental lemma on the fragment without μ-types, by induction on the term over all
--- derivations: a term's value is related to its index at a related environment, and the relation
--- applied to the inputs is related to the term's fibre map plus the control dependence at the
--- control input's value. Soundness at μ-free first-order types follows.
+-- The fundamental lemma on the fragment without fold: a term's value is related to its index at a
+-- related environment, and the relation applied to the inputs is related to the term's fibre map plus
+-- the control dependence at the control input's value. Soundness at μ-free first-order types follows.
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_; _⊔_)
 open import Data.Nat.Properties using (≤-refl)
@@ -29,13 +28,11 @@ module ho-agreement
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
   (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
   (let module S = CommutativeSemiring S)
-  -- Addition is idempotent, and the control weight is idempotent and bounds its multiples.
   (+-idem : ∀ x → (x S.+ x) S.≈ x)
   (let module S⊑ = commutative-monoid.AdditivePreorder S.additive (λ {x} → +-idem x))
   (c-idem : (ctrl-weight S.· ctrl-weight) S.≈ ctrl-weight)
   (c-bound : ∀ x → (ctrl-weight S.· x) S⊑.⊑ ctrl-weight)
   where
-
 
 open Signature Sig
 open Interpretation ℐ
@@ -45,7 +42,6 @@ open import language-operational.evaluation Sig S ℐ ctrl-weight
 
 open import ho-relation S ctrl-weight Sig ℐ +-idem c-idem c-bound
 
--- The fragment: no μ-types.
 data CoreTm : ∀ {Γ τ} → Γ ⊢ τ → Set
 data CoreTms : ∀ {Γ is} → Every (λ σ → Γ ⊢ base σ) is → Set
 
@@ -65,8 +61,6 @@ data CoreTm where
   brel : ∀ {Γ is} {ω : rel is} {Ms : Every (λ σ → Γ ⊢ base σ) is} → CoreTms Ms → CoreTm (brel ω Ms)
   roll : ∀ {Γ} {τ : type 1} {t : Γ ⊢ τ [ μ τ ]} → CoreTm t → CoreTm (roll {τ = τ} t)
 
--- Every's constructors are qualified: the evaluation judgement reuses [] and _∷_ for the
--- derivations of an argument list.
 data CoreTms where
   []  : ∀ {Γ} → CoreTms {Γ} Every.[]
   _∷_ : ∀ {Γ σ is} {M : Γ ⊢ base σ} {Ms : Every (λ σ' → Γ ⊢ base σ') is} →
@@ -115,8 +109,6 @@ private
   fam-eq {X} E x a =
     E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (Semimodule.refl (X .fam .fm x) {a})
 
-  -- The index equation at the recursive case of the action: the body's index at the action's index
-  -- on the unrolled payload is the action's index at the rolled index.
   rec-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) gi (i : Ix (μ τ₀)) →
             Ix._≈_ σr
               (⟦ s ⟧tm .idxf .sfunc (gi , LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm .idxf .sfunc (gi , unroll-mor τ₀ .idxf .sfunc i)))
@@ -128,8 +120,6 @@ private
     i₀ = unroll-mor τ₀ .idxf .sfunc i
     Fv = LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm
 
-  -- The index equations at an injection: the action's index at an index equal to an injection is
-  -- the injection of the action's index at the summand.
   inl-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ₁ σ₂ : type 1) gi {i} {i' : Ix (σ₁ [ μ τ₀ ])} →
             Ix._≈_ ((σ₁ [+] σ₂) [ μ τ₀ ]) i (inj₁ i') →
             Ix._≈_ ((σ₁ [+] σ₂) [ σr ]) (LI.fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i))
@@ -154,8 +144,6 @@ private
     F₊ = LI.fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
     F₂ = LI.fold-map τ₀ σr σ₂ ⟦ s ⟧tm
 
-  -- The index equation at a product: the action's index is the pair of the actions' indices at the
-  -- factors.
   pair-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ₁ σ₂ : type 1) gi
              (i : Ix ((σ₁ [×] σ₂) [ μ τ₀ ])) →
              Ix._≈_ ((σ₁ [×] σ₂) [ σr ]) (LI.fold-map τ₀ σr (σ₁ [×] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i))
@@ -233,8 +221,6 @@ map-val {Γ} {τ₀ = τ₀} {σr} {s} IH (m-mu {τ' = τ'} M) {gi} rγ {i} r =
   τμ = sub (sub-lift (push (μ τ₀))) τ'
   τₛ = sub (sub-lift (push σr)) τ'
 
--- The dependence part of the map lemma at a leaf type: the action is the second projection on both
--- sides, and the conclusion's index is the hypothesis's index up to the model's law.
 map-dep-leaf : ∀ {Γ} {γ : Env Γ} τ {v : Val τ} {i I' : Ix τ} (r : ValRel τ v i) (E : Ix._≈_ τ I' i)
                w (x : ∣ 𝔽 (width-env γ) ∣) (o : ∣ 𝔽 (width v) ∣) {e : ∣ Fib τ i ∣} {d : ∣ Fib τ I' ∣} →
                Fib._≈_ τ i (⟦ τ ⟧ .fam .subst E .func d) e →
@@ -247,8 +233,6 @@ map-dep-leaf {γ = γ} τ {v} {i} {I'} r E w x o {e} {d} ed h =
     (DepRel-resp τ r (λ k → ≈-sym (ap-p₂-++ (inputs γ w x) o k)) (Fib.refl τ i) h)
 
 private
-  -- The action's fibre map at a rolled index, read through the law for the recursive case: the
-  -- body's fibre map at the action on the unrolled payload.
   rec-fibre : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) gi (i : Ix (μ τ₀))
               (g : ∣ FibC Γ gi ∣) (e : ∣ Fib (μ τ₀) i ∣) →
               let i₀ = unroll-mor τ₀ .idxf .sfunc i
@@ -310,9 +294,6 @@ private
            (roll-mor τ₀ .famf .transf i₀ .func e₀))
         (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , fam-eq (LI.roll-unroll τ₀) i e)
 
--- The recursive case of the dependence part of the map lemma, given the dependence parts for the
--- action on the payload and for the body: the folded payload extends the environment, and the
--- control dependence at its index witnesses the order.
 map-dep-rec : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
                      ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
@@ -376,8 +357,6 @@ map-dep-rec {Γ} {γ} {τ₀} {σr} {s} IHv {v} {v'} {u} {F} {T} M D {gi} rγ {i
 private
   module FSC = HasStrongCoproducts FD.strongCoproducts
 
-  -- The action's fibre map at an index equal to an injection, read through the restriction law: the
-  -- root is copied and the payload is the action at the summand.
   inl-fibre : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ₁ σ₂ : type 1) gi {i} {i' : Ix (σ₁ [ μ τ₀ ])}
               (e₀ : Ix._≈_ ((σ₁ [+] σ₂) [ μ τ₀ ]) i (inj₁ i')) (g : ∣ FibC Γ gi ∣) (e : ∣ Fib ((σ₁ [+] σ₂) [ μ τ₀ ]) i ∣) →
               let F₊ = LI.fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
@@ -478,9 +457,6 @@ private
                     (Fpair-elt {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧})
                        (FD.Fam𝒞._∘_ FSC.in₂ (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧})) (gi , i') (g , ẽ))))
 
--- The injection cases of the dependence part of the map lemma, given the dependence part for the
--- action on the payload: the root on both sides is the control weight times the control input plus
--- the copied root, and the payloads are related by the hypothesis.
 map-dep-inl : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
                      ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
@@ -634,8 +610,6 @@ map-dep-inr {Γ} {γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {F} M {gi} 
                                   (+-cong ≈-refl (app-congᵥ (M.in₂ {suc (width-env γ)} {width v}) (ap-p₂₁ o) l))) k))
 
 private
-  -- The action's fibre map at a product, read through the law: the root is copied and the payload is
-  -- the pair of the actions at the factors.
   pair-fibre : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ₁ σ₂ : type 1) gi
                (i : Ix ((σ₁ [×] σ₂) [ μ τ₀ ])) (g : ∣ FibC Γ gi ∣) (e : ∣ Fib ((σ₁ [×] σ₂) [ μ τ₀ ]) i ∣) →
                let F× = LI.fold-map τ₀ σr (σ₁ [×] σ₂) ⟦ s ⟧tm
@@ -683,9 +657,6 @@ private
            (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {X₂} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod X₁ X₂})
               (FD.Fam𝒞._∘_ (FD.Fam𝒞-P.p₂ {X₁} {X₂}) (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod X₁ X₂})) (gi , i) (g , proj₂ e)))
 
--- The pair case of the dependence part of the map lemma, given the dependence parts for the actions
--- on the components: the root on both sides is the control weight times the control input plus the
--- copied root, and each component is related by its hypothesis.
 map-dep-pair : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
                       ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
@@ -765,7 +736,6 @@ map-dep-pair {Γ} {γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {u} {u'} {
   h₂' = DepRel-resp (σ₂ [ μ τ₀ ]) r₂' (λ k → ≈-refl)
           (Fib.+-cong (σ₂ [ μ τ₀ ]) i₂ (proj₂ (proj₂ cdμ)) (Fib.refl (σ₂ [ μ τ₀ ]) i₂))
           (DepRel-at-bound (σ₂ [ μ τ₀ ]) r₂ h₂)
-  -- the components of the transported fibre element
   root-fib : proj₁ dF ≈s proj₁ e
   root-fib = ≈-trans (≈-sym +-runit) (proj₁ fib)
   pay₁ : Fib._≈_ (σ₁ [ σr ]) I₁ (⟦ σ₁ [ σr ] ⟧ .fam .subst {proj₁ I×} {I₁} (proj₁ E) .func (proj₁ (proj₂ dF)))
@@ -1026,8 +996,6 @@ map-dep-mu {Γ} {γ} {τ₀} {σr} {s} IHv {τ'} {v} {v'} {F} M {gi} rγ {i} r w
       (Fib.trans T Ju (unroll-mor τₛ .famf .transf Iμ .preserve-+ {ctrl-dep-at (μ τₛ) Iμ w} {dF})
                       (Fib.+-cong T Ju (preserves-unroll-ctrl-dep τₛ .at Iμ .func-eq {w} {w} ≈-refl) (Fib.refl T Ju))))))
 
--- The value part of the fundamental lemma: a term's value is related to the term's index at a
--- related environment, by induction on the term over all derivations.
 fundamental-val : ∀ {Γ τ} {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
        {gi} (rγ : EnvValRel γ gi) → ValRel τ v (⟦ t ⟧tm .idxf .sfunc gi)
 fundamental-vals : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} (cts : CoreTms Ms) {γ : Env Γ} {vs R}
@@ -1075,9 +1043,6 @@ fundamental-val (brel {ω = ω} {Ms = Ms} cts) (⇓-brel {vs = vs} D) {gi} rγ =
 
 fundamental-vals [] [] rγ = ⟪ prop.tt ⟫
 fundamental-vals (ct ∷ cts) (D ∷ Ds) rγ = ⟪ Prf.prf (fundamental-val ct D rγ) , Prf.prf (fundamental-vals cts Ds rγ) ⟫
--- The case rule, read at the inputs: the branch's relation at the scrutinee's root plus the
--- weighted control input as control input, and at the environment and the scrutinee's payload as
--- environment.
 app-case : ∀ {Γ τ'} {γ : Env Γ} (v : Val τ') {n} (R_s : M.Matrix (suc (width v)) (suc (width-env γ)))
            (T : M.Matrix n (suc (width-env (γ · v)))) s x (k : Fin n) →
            ap (T ∘ (branch-inputs γ v ∘ ⟨ M.I , R_s ⟩)) (inputs γ s x) k
@@ -1113,8 +1078,6 @@ app-case {γ = γ} v R_s T s x k =
                     (≈-trans (app-∘ from-scrutinee R_s (inputs γ s x) (suc m))
                              (ap-⊕₁-suc {width v} M.I (M.in₂ {width-env γ} {width v}) (ap R_s (inputs γ s x)) m)))
 
--- A projection, read at the inputs: the result's control positions at the weighted control input plus
--- the consumed root, and the projection of the pair's payload.
 private
   proj-op : ∀ {Γ τ'} {γ : Env Γ} (wv : Val τ') {m n} (P : M.Matrix (width wv) (m + n))
             (R' : M.Matrix (suc (m + n)) (suc (width-env γ))) s x k →
@@ -1136,10 +1099,7 @@ private
              (+-cong (≈-sym (app-+ (ctrl-of wv) (λ _ → c ·ₛ s) (λ _ → o' zero) k)) ≈-refl))))
     where o' = ap R' (inputs γ s x)
 
-
 private
-  -- The constant at the weighted control input plus the consumed root, with the pair's component,
-  -- against the control dependence at the control input's value with the projection's fibre.
   proj-den : ∀ τ' (i : Ix τ') s a₀ o'₀ (comp G m : ∣ Fib τ' i ∣) →
              o'₀ ≈s ((c ·ₛ s) +ₛ a₀) →
              Fib._≈_ τ' i comp (Fib._+_ τ' i (ctrl-dep-at τ' i s) m) →
@@ -1151,14 +1111,10 @@ private
     where
     ctrl-dep-part : Fib._≈_ τ' i (ctrl-dep-at τ' i ((c ·ₛ s) +ₛ o'₀)) (Fib._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀))
     ctrl-dep-part = Fib.trans τ' i (ctrl-dep τ' .at i .func-resp-≈ (+-cong ≈-refl eo)) (ctrl-dep-double τ' i s a₀)
-    -- (e + a) + (e + m) ≈ e + (m + a)
     rearr : Fib._≈_ τ' i (Fib._+_ τ' i (Fib._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀)) (Fib._+_ τ' i (ctrl-dep-at τ' i s) m))
                        (Fib._+_ τ' i (ctrl-dep-at τ' i s) (Fib._+_ τ' i m (ctrl-dep-at τ' i a₀)))
     rearr = Fib.trans τ' i (Fib.+-interchange τ' i) (Fib.+-cong τ' i (Fib.⊑-refl τ' i) (Fib.+-comm τ' i))
 
--- The branch of a case: its environment is related at the scrutinee's root plus the weighted control
--- input, the scrutinee's payload carrying the control dependence at the control input's value as further
--- control dependence.
 private
   branch-env : ∀ {Γ τk} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) {v : Val τk} {i'} (r_v : ValRel τk v i')
                s x g (o_s : ∣ 𝔽 (suc (width v)) ∣) (y_v : ∣ Fib τk i' ∣) →
@@ -1171,7 +1127,6 @@ private
     DepRel⊑-resp τk r_v (o_s zero +ₛ (c ·ₛ s)) (λ m → ≈-sym (ap-p₂-++ x (λ m' → o_s (suc m')) m))
       (DepRel⊑-mono τk r_v s (o_s zero) (ctrl-dep-at τk i' s , (Fib.⊑-refl τk i' , h)))
 
-  -- Transport there and back is the identity.
   roundtrip : ∀ τ {i₁ ic : Ix τ} (E : Ix._≈_ τ i₁ ic) (Eidx : Ix._≈_ τ ic i₁)
               (d : ∣ Fib τ ic ∣) →
               Fib._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (⟦ τ ⟧ .fam .subst Eidx .func d)) d
@@ -1179,7 +1134,6 @@ private
     Fib.trans τ ic (Fib.sym τ ic (subst-trans ⟦ τ ⟧ {ic} {i₁} {ic} Eidx E d))
                  (subst-refl ⟦ τ ⟧ {ic} (Ix.trans τ {ic} {i₁} {ic} Eidx E) d)
 
-  -- The branch's constant and fibre, transported, against the case's.
   case-den : ∀ τ {i₁ ic : Ix τ} (E : Ix._≈_ τ i₁ ic) (Eidx : Ix._≈_ τ ic i₁)
              s a_s o_s₀ (B : ∣ Fib τ i₁ ∣) (CF : ∣ Fib τ ic ∣) →
              o_s₀ ≈s ((c ·ₛ s) +ₛ a_s) →
@@ -1230,7 +1184,6 @@ private
                  (⟦ sc ⟧tm .famf .transf gi .func g))
               (subst-refl ⟦ Γ ⟧ctxt (IxC.refl Γ {gi}) g , Fib.refl (τ₁ [+] τ₂) k))
 
--- A primitive's arguments on the model side, as a vector on their positions laid end to end.
 args-vec : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → ∣ FibC Γ gi ∣ →
            ∣ 𝔽 (bases-width is) ∣
 args-vec {is = is} Ms gi g =
@@ -1324,8 +1277,6 @@ private
     (≈-trans (≈-sym (app-+ₘ (M.in₁ {m} {n} ∘ M.p₁ {m} {n}) (M.in₂ {m} {n} ∘ M.p₂ {m} {n}) (λ _ → a) k))
     (≈-trans (app-congₘ (M.id-+ m n) (λ _ → a) k) (app-I (λ _ → a) k))))
 
--- The outcome of a test at either branch: the root carries the control input's value and the test's
--- reading of its arguments, and the unit beneath that value alone.
 private
   test-branch : ∀ {n} (D : M.Matrix 1 n) (o : ∣ 𝔽 2 ∣) (a : Setoid.Carrier A) (v : ∣ 𝔽 1 ∣) s
                 (y : ∣ 𝔽 n ∣) →
@@ -1373,7 +1324,6 @@ private
                                    (≈-trans +-runit (ctrl-dep-unit x s))))
     where d' = ⟦ unit [+] unit ⟧ .fam .subst {i} {inj₂ x} e .func d
 
--- The fundamental lemma.
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
               {gi} (rγ : EnvValRel γ gi) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣)
               (g : ∣ FibC Γ gi ∣) → EnvDepRel rγ s x g →
@@ -1381,8 +1331,6 @@ fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D
                 (Fib._+_ τ (⟦ t ⟧tm .idxf .sfunc gi)
                   (ctrl-dep τ .at (⟦ t ⟧tm .idxf .sfunc gi) .func s)
                   (⟦ t ⟧tm .famf .transf gi .func g))
--- At a primitive's arguments the relation is equality, with the control weight times the control
--- input's value at every position, as at a base sort.
 fundamental-s : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} (cts : CoreTms Ms) {γ : Env Γ} {vs R}
                 (D : γ , Ms ⇓s vs [ R ]) {gi} (rγ : EnvValRel γ gi) (s : Setoid.Carrier A)
                 (x : ∣ 𝔽 (width-env γ) ∣) (g : ∣ FibC Γ gi ∣) → EnvDepRel rγ s x g →
@@ -1624,8 +1572,6 @@ fundamental {Γ = Γ} {τ = σ [→] τ} (lam {t = t'} ct) {γ = γ} ⇓-lam {gi
     where
     L = ⟦ lam t' ⟧tm .famf .transf gi .func g
 
-    -- The payload of the lambda's fibre evaluated at the argument is the body's fibre on the
-    -- environment part.
     β : Fib._≈_ τ (f .idxf .sfunc j)
           (evalΠ σ τ f j .func (proj₂ L))
           (⟦ t' ⟧tm .famf .transf (gi , j) .func (g , Fib.ε σ j))
@@ -1647,7 +1593,6 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   i₁ = f .idxf .sfunc j
   m = proj₂ (⟦ M ⟧tm .famf .transf gi .func g)
   yN = ⟦ N ⟧tm .famf .transf gi .func g
-  -- The operational vectors of the function and the argument, and of the application.
   o : ∣ 𝔽 (suc (width-env γ')) ∣
   o = ap R (inputs γ s x)
   z : ∣ 𝔽 (width v) ∣
@@ -1656,8 +1601,6 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
   o₀ : o zero ≈s ((c ·ₛ s) +ₛ (proj₁ (⟦ M ⟧tm .famf .transf gi .func g)))
   o₀ = ≈-trans (proj₁ (fundamental ct₁ D₁ rγ s x g rel)) (+-cong (proj₁ (ctrl-dep-clo {σ} {τ} f s)) ≈-refl)
 
-  -- The argument's relation, its control dependence at s taken as slack below the control
-  -- dependence at the application's weighted control input.
   arg : DepRel⊑′ (arr-depth σ ⊔ arr-depth τ) σ (bound₁ ≤-refl)
           (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) ((c ·ₛ s) +ₛ o zero) z yN
   arg = DepRel⊑-at-bound σ (fundamental-val ct₂ D₂ rγ)
@@ -1666,7 +1609,6 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
                           (Fib.≈→⊑ σ j (ctrl-dep σ .at j .func-resp-≈ +-comm)) ,
             DepRel-resp σ (fundamental-val ct₂ D₂ rγ) (λ k → ≈-refl) (Fib.+-comm σ j) (fundamental ct₂ D₂ rγ s x g rel)))
 
-  -- The clause of the function's relation at the application's weighted control input and the argument.
   C : DepRel′ (arr-depth σ ⊔ arr-depth τ) τ (bound₂ ≤-refl)
         (fundamental-val ct₁ D₁ rγ (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) D₃)
         (ap U (body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z))
@@ -1675,7 +1617,6 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
                       (f .famf .transf j .func yN)))
   C = proj₂ (fundamental ct₁ D₁ rγ s x g rel) (c ·ₛ s) (ValRel-at-bound σ (fundamental-val ct₂ D₂ rγ)) z yN arg D₃
 
-  -- The clause's constant, evaluation and argument against the application's.
   den-eq : Fib._≈_ τ i₁
              (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero))
                (Fib._+_ τ i₁ (evalΠ σ τ f j .func (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
@@ -1712,9 +1653,6 @@ fundamental {Γ = Γ} {τ = τ} (app {σ = σ} {s = M} {t = N} ct₁ ct₂) {γ 
     eval-part = evalΠ σ τ f j .func-resp-≈ {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))} {m}
                   (payload-ctrl-dep σ τ f s (⟦ M ⟧tm .famf .transf gi .func g))
 
-  -- The application's relation reads the body's at the closure's root and the application's
-  -- weighted control input as control input, and at the closure's cells and the argument as
-  -- environment.
   app-op : ∀ k → ap (U ∘ (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩)) (inputs γ s x) k
                  ≈s ap U (body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z) k
   app-op k =
@@ -1872,10 +1810,6 @@ fundamental-s {Ms = _} (ct ∷ cts) {γ = γ} (_∷_ {i = i} {is = is} {v = v} {
   IH₂ : ∀ l → ap Rs (inputs γ s x) l ≈s ((c ·ₛ s) +ₛ (args-vec Ms gi g) l)
   IH₂ = fundamental-s cts Ds rγ s x g rel
 
--- The interpretation of first-order values and environments, read into the model through the
--- comparison isomorphisms. At a μ-free first-order type a value is related to its interpretation and
--- to no other index, so at such types the fundamental lemma says that a term's value is interpreted
--- as the term's index at the environment's interpretation.
 open import value-interpretation S ctrl-weight Sig ℐ using (⟦_⟧val; ⟦_⟧env)
 open Category.Iso using (fwd)
 
@@ -1923,7 +1857,6 @@ val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inr v} {i} (i'
 val-rel-unique {τ₁ [×] τ₂} (fo₁ [×] fo₂) (m₁ , m₂) {pair v u} {i , j} (r , r') =
   val-rel-unique fo₁ m₁ (ValRel-at-bound τ₁ r) , val-rel-unique fo₂ m₂ (ValRel-at-bound τ₂ r')
 
--- Soundness on values, at μ-free first-order types.
 soundness-val : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) →
                 μ-free-ctxt Γ-fo → μ-free fo →
                 ∀ {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ]) →

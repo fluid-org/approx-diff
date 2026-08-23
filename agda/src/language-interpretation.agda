@@ -108,7 +108,6 @@ preserves-subst-fwd {Δ} {Δ'} σ (μ τ) {δ} δc =
   M  = μ-obj (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) δ∅
   μM = unit-section (μ τ) (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
 
--- The single substitution push τ', read pointwise as an environment.
 push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} δ∅ (⟦ τ' ⟧ty (λ ()))) (λ ()) i
 push-pw τ' Fin.zero = refl
 
@@ -340,7 +339,6 @@ mutual
       ∎
       where open ≈-Reasoning isEquiv
 
-
     main : (SFμ ∘co (SAMμ ∘co (μm ∘ p₂))) ≈ ((μm'' ∘ p₂) ∘co SAMμP)
     main = begin
         SFμ ∘co (SAMμ ∘co (μm ∘ p₂))
@@ -420,7 +418,6 @@ mutual
       fwd-bwd-fact : ((af₁ ∘ p₂) ∘co (ab ∘ p₂)) ≈ p₂
       fwd-bwd-fact = ≈-trans (≈-sym (lift-comp af₁ ab))
                      (≈-trans (∘-cong (apply-fwd-bwd {n = 1} τ (concat δ₀ δ) (extend δ∅ X)) ≈-refl) id-left)
-
 
     main : (SF ∘co (SAM-X ∘co (((af ∘ Rs) ∘ ab) ∘ p₂)))
            ≈ ((((af' ∘ Rs') ∘ ab') ∘ p₂) ∘co (SF-P' ∘co SAM-P))
@@ -779,7 +776,6 @@ mutual
       ∎
       where open ≈-Reasoning isEquiv
 
--- Syntactic substitution is functor application.
 sub-as-apply-fwd : (τ : type 1) (τ' : type 0) →
                    ⟦ τ [ τ' ] ⟧ty (λ ()) ⇒ fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend δ∅ (⟦ τ' ⟧ty (λ ())))
 sub-as-apply-fwd τ τ' =
@@ -1690,8 +1686,6 @@ fold-map-inr τ₀ σ σ₁ σ₂ {Γ'} B = begin
        ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
   S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
 
--- The action at a sum, restricted to a summand: the lifting in context of the action at that
--- summand.
 fold-map-inl-L : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : Obj}
                  (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
                  (fold-map τ₀ σ (σ₁ [+] σ₂) B ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩)
@@ -1850,8 +1844,6 @@ fold-map-pair τ₀ σ σ₁ σ₂ {Γ'} B = begin
        ⇒ fobj μ-obj (as-poly {0} {1} σ₂ (λ ())) (extend δ∅ (⟦ σ ⟧ty (λ ())))
   S₂ = strong-fmor (as-poly {0} {1} σ₂ (λ ())) (strong-extend-mor (λ ()) (⦅ fold-alg τ₀ σ B ⦆))
 
--- The action at a product: the lifting in context of the product in context of the actions at
--- the factors.
 fold-map-pair-L : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : Obj}
                   (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
                   fold-map τ₀ σ (σ₁ [×] σ₂) B

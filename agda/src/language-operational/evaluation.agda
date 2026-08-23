@@ -80,7 +80,6 @@ mutual
   width-env emp     = 0
   width-env (γ · v) = width-env γ + width v
 
--- The control row: every position at the control weight.
 ctrl-row : ∀ {n} → 1 ⇒ n
 ctrl-row _ _ = ctrl-weight
 
@@ -104,7 +103,6 @@ ctrl-of (roll v)    = ctrl-of v
 width-subst : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) → width (subst Val e v) ≡ width v
 width-subst refl v = refl
 
--- Value size, for recursion on values across a transport of the type; a closure counts one.
 size : ∀ {τ} → Val τ → ℕ
 size unit       = 1
 size (const _)  = 1
@@ -129,19 +127,15 @@ brel-deps ω vs (inj₂ _) = ⟨ rel-deps ω .func vs , M.εₘ ⟩
 open M using (≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans)
 open HasProducts M.products using () renaming (prod-m to _⊕_) public
 
--- The inputs of a derivation are the control input, the first input position, then the
--- environment.
 ctrl-col : ∀ {m} → suc m ⇒ 1
 ctrl-col {m} = p₁ {1} {m}
 
 env-cols : ∀ {m} → suc m ⇒ m
 env-cols {m} = p₂ {1} {m}
 
--- The control edge from the control input to every position of the result.
 wctrl : ∀ {m n} → suc m ⇒ n
 wctrl = ctrl-row ∘ ctrl-col
 
--- A rule's own contribution to its result, before its premises'.
 var-out : ∀ {Γ τ} (x : Γ ∋ τ) (γ : Env Γ) → suc (width-env γ) ⇒ width (lookup x γ)
 var-out x γ = ctrl-of (lookup x γ) M.∥ proj-var x γ
 
@@ -154,14 +148,9 @@ elim-out γ w = ctrl-of w ∘ wctrl
 lam-out : ∀ {Γ σ τ} (γ : Env Γ) (t : Γ ▸ σ ⊢ τ) → suc (width-env γ) ⇒ width (clo γ t)
 lam-out γ t = ctrl-row {1} ⊕ M.I {width-env γ}
 
--- A projection from under a root: the payload's entry, and the root at the result's control
--- positions.
 proj-up : ∀ {m n τ} (w : Val τ) → M.Matrix (width w) (m + n) → M.Matrix (width w) (suc (m + n))
 proj-up {m} {n} w P = (P ∘ p₂ {1} {m + n}) M.+ₘ (ctrl-of w ∘ p₁ {1} {m + n})
 
--- A premise's inputs as a matrix over the conclusion's inputs and the earlier premises' outputs. A
--- branch's control input is the scrutinee's root and its last cell the payload; a body's control
--- input is the closure's root, its cells the closure's, its last cell the argument.
 branch-inputs : ∀ {Γ τ} (γ : Env Γ) (v : Val τ) →
                 (suc (width-env γ) + suc (width v)) ⇒ suc (width-env γ + width v)
 branch-inputs γ v = (ctrl-row {1} ⊕ M.in₁ {width-env γ} {width v}) M.∥ (M.I {1} ⊕ M.in₂ {width-env γ} {width v})
@@ -171,15 +160,12 @@ body-inputs : ∀ {Γ Γ' σ} (γ : Env Γ) (γ' : Env Γ') (v : Val σ) →
 body-inputs γ γ' v =
   ((M.in₁ {1} ∘ wctrl) M.∥ (M.I {1} ⊕ M.in₁ {width-env γ'} {width v})) M.∥ (M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v})
 
--- The inputs of a fold action: the derivation's inputs, then the value folded over.
 rcast : ∀ {m m' n} → m ≡ m' → M.Matrix m n → M.Matrix m' n
 rcast refl R = R
 
 ccast : ∀ {m n n'} → n ≡ n' → M.Matrix m n → M.Matrix m n'
 ccast refl R = R
 
--- The inputs of a fold action on a subvalue reached through C, and of the recursive call on a
--- folded subresult, over the action's inputs and the subresult.
 sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} → M.Matrix m n →
               (suc (width-env γ) + n) ⇒ (suc (width-env γ) + m)
 sub-inputs γ C = M.I ⊕ C
@@ -189,13 +175,11 @@ rec-inputs : ∀ {Γ τ} (γ : Env Γ) (w' : Val τ) {m} →
 rec-inputs γ w' {m} =
   ((M.I {1} ⊕ M.in₁ {width-env γ} {width w'}) ∘ p₁ {suc (width-env γ)} {m}) M.∥ (M.in₂ {1} ∘ M.in₂ {width-env γ} {width w'})
 
--- A rebuilt constructor's root carries the control input and the copied root.
 map-built-out : ∀ {Γ} (γ : Env Γ) (m n : ℕ) → (suc (width-env γ) + suc m) ⇒ suc n
 map-built-out γ m n = M.in₁ {1} {n} ∘ ((wctrl ∘ p₁ {suc (width-env γ)} {suc m}) M.+ₘ (p₁ {1} {m} ∘ p₂ {suc (width-env γ)} {suc m}))
 
 map-leaf : ∀ {Γ} (γ : Env Γ) (n : ℕ) → (suc (width-env γ) + n) ⇒ n
 map-leaf γ n = p₂ {suc (width-env γ)} {n}
-
 
 mutual
   data _,_⇓_[_] : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) (v : Val τ) →
@@ -252,8 +236,6 @@ mutual
           γ , M ⇓ const v [ R ] → γ , Ms ⇓s vs [ Rs ] →
           γ , (M ∷ Ms) ⇓s (v , vs) [ ⟨ R , Rs ⟩ ]
 
-  -- Functorial action of σ' on the fold s: the control input passes through unchanged, and each
-  -- rebuilt constructor carries the copied root pointed at the control input.
   data Map {Γ} (γ : Env Γ) {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) :
            (σ' : type 1) (v : Val (σ' [ μ τ₀ ])) (v' : Val (σ' [ σr ])) →
            (suc (width-env γ) + width v) ⇒ width v' → Set ℓ where

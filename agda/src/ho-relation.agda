@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The logical relation between the operational semantics and the higher-order model, on the fragment
--- without μ-types: values against indices of the interpretation, dependence vectors against elements
--- of the fibre, and the lemmas by recursion on types that the fundamental lemma needs (respect for the
--- setoids, adding the control positions and the control dependence, absorption, transport).
+-- The logical relation between the operational semantics and the higher-order model: values against
+-- indices of the interpretation, dependence vectors against elements of the fibre, and the lemmas by
+-- recursion on types that the fundamental lemma needs (respect for the setoids, adding the control
+-- positions and the control dependence, absorption, transport).
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_; _⊔_; _≤_; s≤s)
 open import Data.Nat.Properties using (≤-refl; ≤-trans; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
@@ -31,7 +31,6 @@ module ho-relation
   {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
   (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
   (let module S = CommutativeSemiring S)
-  -- Addition is idempotent, and the control weight is idempotent and bounds its multiples.
   (+-idem : ∀ x → (x S.+ x) S.≈ x)
   (let module S⊑ = commutative-monoid.AdditivePreorder S.additive (λ {x} → +-idem x))
   (c-idem : (ctrl-weight S.· ctrl-weight) S.≈ ctrl-weight)
@@ -62,7 +61,6 @@ open indexed-family.Fam public using (subst)
 open indexed-family._⇒f_ public using (transf)
 open prop-setoid._⇒_ public using () renaming (func to sfunc; func-resp-≈ to sfunc-resp-≈)
 
--- The interpretation, at the parameters the higher-order model fixes.
 module LI = language-interpretation Sig 0ℓ 0ℓ
   SemiMod.terminal SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀 model.SemiModExp
   interp.δ∅𝒟 interp.𝒟𝟙ty interp.𝒟unit-pt interp.𝒟-Sig-model model.ctrl-weight-endo
@@ -111,10 +109,6 @@ module Payload σ τ f = Semimodule (Payload σ τ f)
 evalΠ : ∀ σ τ (f : Ix (σ [→] τ)) (j : Ix σ) → Payload σ τ f ⇒ Fib τ (f .idxf .sfunc j)
 evalΠ σ τ f j = SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
 
-
-
--- The vector over the body's inputs at an application: the value at the control input, then the
--- closure's cells and the argument as the environment.
 body-input : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) → Setoid.Carrier A →
              ∣ 𝔽 (width-env γ') ∣ → ∣ 𝔽 (width v) ∣ → ∣ 𝔽 (suc (width-env γ' + width v)) ∣
 body-input γ' v s x z zero    = s
@@ -123,12 +117,9 @@ body-input γ' v s x z (suc k) =
     (ap (M.in₁ {width-env γ'} {width v}) x)
     (ap (M.in₂ {width-env γ'} {width v}) z) k
 
--- The control dependence at an index and a value of the control input.
 ctrl-dep-at : ∀ τ (i : Ix τ) → Setoid.Carrier A → ∣ Fib τ i ∣
 ctrl-dep-at τ i s = ctrl-dep τ .at i .func s
 
--- Each fibre's semimodule with its additive order: x ⊑ y when x + y is y. Addition in a fibre is
--- idempotent because it is in the semiring.
 fib-+-idem : ∀ τ i {x} → Semimodule._≈_ (Fib τ i) (Semimodule._+_ (Fib τ i) x x) x
 fib-+-idem τ i =
   X.trans (X.+-cong (X.sym X.·-unit) (X.sym X.·-unit))
@@ -139,8 +130,6 @@ module Fib τ i where
   open Semimodule (Fib τ i) public
   open commutative-monoid.AdditivePreorder additive (fib-+-idem τ i) public
 
-
--- A bound on the arrow depth of a type bounds its components' and, at a μ-type, its unfolding's.
 bound₁ : ∀ {m n o} → m ⊔ n ≤ o → m ≤ o
 bound₁ = m⊔n≤o⇒m≤o _ _
 
@@ -150,10 +139,6 @@ bound₂ = m⊔n≤o⇒n≤o _ _
 bound-μ : ∀ (τ : type 1) {N} → arr-depth (μ τ) ≤ N → arr-depth (τ [ μ τ ]) ≤ N
 bound-μ τ = ≤-trans (arr-depth-unfold τ)
 
--- The relations by recursion on a bound on the arrow depth of the type, which decreases at an arrow,
--- and on the value. A rolled value is related to an index when its payload is related to the
--- unrolled index, and its dependence vector to an element of the fibre when it is to the element's
--- image under unrolling.
 ValRel′ : ∀ N τ → arr-depth τ ≤ N → Val τ → Ix τ → Set
 ValRel′ N unit p unit i = ⊤
 ValRel′ N (base s) p (const a) i = Prf (Setoid._≈_ (sort-index s) i a)
@@ -208,8 +193,6 @@ DepRel⊑ : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → Setoid.Carrier
           ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
 DepRel⊑ τ = DepRel⊑′ (arr-depth τ) τ ≤-refl
 
--- The relations do not depend on the bound. Both directions at once, since an arrow reverses the
--- direction at its domain.
 ValRel′-bounds : ∀ {N N'} τ {p : arr-depth τ ≤ N} {p' : arr-depth τ ≤ N'} {v : Val τ} {i : Ix τ} →
                  (ValRel′ N τ p v i → ValRel′ N' τ p' v i) × (ValRel′ N' τ p' v i → ValRel′ N τ p v i)
 ValRel′-bounds unit {v = unit} = (λ r → r) , (λ r → r)
@@ -269,15 +252,10 @@ DepRel⊑-at-bound : ∀ {N N'} τ {p : arr-depth τ ≤ N} {p' : arr-depth τ �
                    (r : ValRel′ N τ p v i) {s o d} → DepRel⊑′ N τ p r s o d → DepRel⊑′ N' τ p' (ValRel-at-bound τ r) s o d
 DepRel⊑-at-bound τ r (m , (dm , h)) = m , (dm , DepRel-at-bound τ r h)
 
--- A primitive's arguments need no relations of their own. The model's index at a tuple of
--- arguments is a tuple of sort indices, and sort-vals-setoid is built from ⊗-setoid, whose
--- equality is the pairwise conjunction, so the value relation is equality in that setoid, one
--- base equation per argument. The fibre is 𝔽 (bases-width is) on both sides, the arguments'
--- positions laid end to end, so the vector relation is equality there, as at a single base sort.
+-- A primitive's arguments need no relations of their own: the index at a tuple of arguments is a
+-- tuple of sort indices, so the value relation is equality in sort-vals-setoid, and the fibre is
+-- 𝔽 (bases-width is) on both sides, so the vector relation is equality, as at a base sort.
 
--- Environments related to context indices, and environment vectors to elements of the context
--- fibre at a value s at the control input: each cell may carry, beyond its relation, control
--- dependence below the control dependence at s.
 data EnvValRel : ∀ {Γ} → Env Γ → IxC Γ → Set where
   emp : EnvValRel emp (lift tt)
   _·_ : ∀ {Γ τ} {γ : Env Γ} {v : Val τ} {gi i} → EnvValRel γ gi → ValRel τ v i → EnvValRel (γ · v) (gi , i)
@@ -291,19 +269,15 @@ EnvDepRel (_·_ {τ = τ} {γ = γ} {v = v} rγ r) s x g =
   EnvDepRel rγ s (ap (M.p₁ {width-env γ} {width v}) x) (proj₁ g) ∧
   DepRel⊑ τ r s (ap (M.p₂ {width-env γ} {width v}) x) (proj₂ g)
 
--- The inputs of a derivation: the control input's value at the first position, the environment after.
 inputs : ∀ {Γ} (γ : Env Γ) → Setoid.Carrier A → ∣ 𝔽 (width-env γ) ∣ → ∣ 𝔽 (suc (width-env γ)) ∣
 inputs γ s x zero    = s
 inputs γ s x (suc k) = x k
 
--- The vector over the inputs of the action of a type on a fold: the control input and the
--- environment, then the vector over the value acted on.
 map-input : ∀ {Γ} (γ : Env Γ) {n} → Setoid.Carrier A → ∣ 𝔽 (width-env γ) ∣ → ∣ 𝔽 n ∣ →
             ∣ 𝔽 (suc (width-env γ) + n) ∣
 map-input γ {n} s x o l =
   ap (M.in₁ {suc (width-env γ)} {n}) (inputs γ s x) l +ₛ ap (M.in₂ {suc (width-env γ)} {n}) o l
 
--- Semiring shorthands.
 c = ctrl-weight
 +-runit : ∀ {x} → (x +ₛ ε) ≈s x
 +-runit = ≈-trans +-comm +-lunit
@@ -313,8 +287,6 @@ c = ctrl-weight
 m-runit : ∀ (X : Semimodule) {x} → Semimodule._≈_ X (Semimodule._+_ X x (Semimodule.ε X)) x
 m-runit X = Semimodule.trans X (Semimodule.+-comm X) (Semimodule.+-lunit X)
 
--- Reading a lifted vector: the first position of the first summand's injection, and the rest of
--- the second's.
 ap-in₁-zero : ∀ {n} (u : ∣ 𝔽 1 ∣) → ap (M.in₁ {1} {n}) u zero ≈s u zero
 ap-in₁-zero {n} u = app-in₁ {1} {n} u zero
 
@@ -335,8 +307,6 @@ ap-pair-suc : ∀ {m n} (f : M.Matrix 1 m) (g : M.Matrix n m) (u : ∣ 𝔽 m �
               ap (⟨ f , g ⟩) u (suc k) ≈s ap g u k
 ap-pair-suc {m} {n} f g u k = app-pair {m} {1} {n} f g u (suc k)
 
--- The control vector at a value s at the control input: the weight at the root of a lifted value, and the
--- payload's control vector after.
 ap-ctrl-row : ∀ {n} (s : Setoid.Carrier A) (k : Fin n) → ap ctrl-row (λ _ → s) k ≈s (c ·ₛ s)
 ap-ctrl-row {n} s k = +-runit
 
@@ -348,8 +318,6 @@ ctrl-lift-suc : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) (k : Fin n) �
                 ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) (suc k) ≈s ap g (λ _ → s) k
 ctrl-lift-suc {n} g s k = ap-pair-suc {1} {n} ctrl-row g (λ _ → s) k
 
--- Reading a relation at the inputs: the control input's column at its value and the environment
--- columns at the environment vector, and the relations the rules are built from at any vector.
 ap-p₁₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin 1) → ap (M.p₁ {1} {m}) o k ≈s o zero
 ap-p₁₁ {m} o zero = app-p₁ {1} {m} o zero
 
@@ -388,15 +356,11 @@ ap-⊕₁-suc : ∀ {m b} (f : M.Matrix 1 1) (g : M.Matrix b m) (y : ∣ 𝔽 (s
             ap (f ⊕ g) y (suc k) ≈s ap g (λ l → y (suc l)) k
 ap-⊕₁-suc {m} f g y k = ≈-trans (ap-⊕-suc {m} {1} f g y k) (app-congᵥ g (ap-p₂₁ {m} y) k)
 
--- The control dependence elementwise: the weight times the control input's value at each root, the
--- payload's section under it, and zero at a closure's payload.
 ctrl-dep-unit : ∀ i s → ctrl-dep-at unit i s zero ≈s (c ·ₛ s)
 ctrl-dep-unit i s =
   ≈-trans (+-cong (·-cong +-runit ≈-refl) ≈-refl)
           (≈-trans +-runit (≈-trans ·-lunit +-runit))
 
--- The same at a base sort: the sort's unit section is the row of units, so scaling by the
--- control weight leaves the weight at every position of the result.
 ctrl-dep-base : ∀ {σ} i s (k : Fin (sort-width σ)) → ctrl-dep-at (base σ) i s k ≈s (c ·ₛ s)
 ctrl-dep-base i s k = ≈-trans +-runit (≈-trans ·-lunit +-runit)
 
@@ -438,7 +402,6 @@ ctrl-dep-natural : ∀ τ {i i' : Ix τ} (e : Ix._≈_ τ i i') s →
              Fib._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (ctrl-dep-at τ i s)) (ctrl-dep-at τ i' s)
 ctrl-dep-natural τ e s = ctrl-dep τ .Section.at-natural e .func-eq ≈-refl
 
--- The fibre relation respects the setoids on both sides.
 body-input-resp : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) {s s' x x' z} →
                   s ≈s s' → (∀ k → x k ≈s x' k) → ∀ k →
                   body-input γ' v s x z k ≈s body-input γ' v s' x' z k
@@ -446,7 +409,6 @@ body-input-resp γ' v es ecs zero    = es
 body-input-resp γ' v es ecs (suc k) =
   +-cong (app-congᵥ (M.in₁ {width-env γ'} {width v}) ecs k) ≈-refl
 
--- The relation up to control dependence respects the control input's value.
 DepRel⊑-resp-ctrl′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i : Ix τ} (r : ValRel′ N τ p v i)
                      {s s'} {o : ∣ 𝔽 (width v) ∣} {d} →
                      s ≈s s' → DepRel⊑′ N τ p r s o d → DepRel⊑′ N τ p r s' o d
@@ -494,7 +456,6 @@ DepRel-resp : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) {o o' : ∣ �
               (∀ k → o k ≈s o' k) → Fib._≈_ τ i d d' → DepRel τ r o d → DepRel τ r o' d'
 DepRel-resp τ = DepRel-resp′ τ ≤-refl
 
--- Transport of a sum of the control dependence and an element along an index equation.
 subst-ctrl-dep+ : ∀ τ {i i' : Ix τ} (e : Ix._≈_ τ i i') s d →
             Fib._≈_ τ i' (⟦ τ ⟧ .fam .subst e .func (Fib._+_ τ i (ctrl-dep-at τ i s) d))
                        (Fib._+_ τ i' (ctrl-dep-at τ i' s) (⟦ τ ⟧ .fam .subst e .func d))
@@ -514,8 +475,6 @@ ap-pair-p₂ {m} {a} {b} f g u k =
   ≈-trans (≈-sym (app-∘ (M.p₂ {a} {b}) (⟨ f , g ⟩) u k))
           (app-congₘ (HasProducts.pair-p₂ M.products f g) u k)
 
--- Adding the value's control positions at a value s at the control input on the operational side, and the
--- control dependence on the denotational side, preserves the relation.
 ctrl-add′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i : Ix τ} (r : ValRel′ N τ p v i)
             (s : Setoid.Carrier A) {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} → DepRel′ N τ p r o d →
             DepRel′ N τ p r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (Fib._+_ τ i (ctrl-dep-at τ i s) d)
@@ -597,7 +556,6 @@ ctrl-add : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) (s : Setoid.Carri
            DepRel τ r (λ k → ap (ctrl-of v) (λ _ → s) k +ₛ o k) (Fib._+_ τ i (ctrl-dep-at τ i s) d)
 ctrl-add τ = ctrl-add′ τ ≤-refl
 
--- Looking up a variable in a related environment.
 lookup-val : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} {gi} → EnvValRel γ gi →
              ValRel τ (lookup x γ) (LI.⟦ x ⟧var .idxf .sfunc gi)
 lookup-val zero     (rγ · r) = r
@@ -616,8 +574,6 @@ lookup-dep {τ = τ} (succ x) {γ · v} {gi , i} (rγ · r) s xs g (h , _) =
     (λ k → ≈-sym (app-∘ (proj-var x γ) (M.p₁ {width-env γ} {width v}) xs k))
     (lookup-dep x rγ s (ap (M.p₁ {width-env γ} {width v}) xs) (proj₁ g) h)
 
--- Dependence below the control dependence is absorbed by it, so a relation up to such dependence
--- becomes a relation once the control positions and the control dependence are added.
 ⊑-absorb : ∀ τ (i : Ix τ) s (d m : ∣ Fib τ i ∣) → Fib._⊑_ τ i m (ctrl-dep-at τ i s) →
          Fib._≈_ τ i (Fib._+_ τ i (ctrl-dep-at τ i s) (Fib._+_ τ i d m)) (Fib._+_ τ i (ctrl-dep-at τ i s) d)
 ⊑-absorb τ i s d m dm =
@@ -641,7 +597,6 @@ famf-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} (E : Ix._≈_ (σ [→] τ) f f
                                         (f' .famf .transf j .func y)
 famf-eq-at σ τ E j y = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .func-eq (Fib.refl σ j {y})
 
--- Related values are related at equal indices.
 ValRel-resp′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i i' : Ix τ} →
                Ix._≈_ τ i i' → ValRel′ N τ p v i → ValRel′ N τ p v i'
 ValRel-resp′ unit p {unit} e r = tt
@@ -661,10 +616,6 @@ ValRel-resp′ (μ τ) p {roll v} {i} {i'} e r =
 ValRel-resp : ∀ τ {v : Val τ} {i i' : Ix τ} → Ix._≈_ τ i i' → ValRel τ v i → ValRel τ v i'
 ValRel-resp τ = ValRel-resp′ τ ≤-refl
 
-
--- Reading the model's constructions elementwise: a pairing through the biproduct is the pair of
--- the components, the lifted action keeps the root and acts on the payload, and eliminating a
--- root applies the continuation to the payload and the control dependence to the root.
 bpair-elt : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : X ⇒ Z) (x : ∣ X ∣) →
             Semimodule._≈_ (SemiMod._⊕_ Y Z) (FD.pair f g .func x) (f .func x , g .func x)
 bpair-elt {X} {Y} {Z} f g x = m-runit Y , Semimodule.+-lunit Z
@@ -717,7 +668,6 @@ elim-root-elt {G} {X} {Y} k r γe a y =
           (Semimodule.refl G {γe} , Semimodule.+-lunit X {y})))
     (k .func-resp-≈ +-runit)
 
--- The transport in context at an element: the root is copied and the payload is the map's value.
 strong-Lmap-elt : ∀ {G X Y : Semimodule} (r : SemiMod._⊕_ G X ⇒ Y) (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
                   Semimodule._≈_ (Ls.L Y) (Ls.strong-Lmap r .func (γe , (a , y))) (a , r .func (γe , y))
 strong-Lmap-elt {G} {X} {Y} r γe a y =
@@ -757,8 +707,6 @@ elim-elt {Γ'} {X} {C} cC body f {γi} γe =
        (Fpair-elt {Γ'} {Γ'} {FD.Lf X} (FD.Fam𝒞.id Γ') f γi γe))
     (elimF-elt {Γ'} {X} {C} cC body {γi} {f .idxf .sfunc γi} γe (proj₁ (f .famf .transf γi .func γe)) (proj₂ (f .famf .transf γi .func γe)))
 
--- Being below the control dependence is monotone in the control input's value, and a relation is a relation up to
--- zero.
 ctrl-dep-linear : ∀ τ (i : Ix τ) s s' →
             Fib._≈_ τ i (ctrl-dep-at τ i (s +ₛ s')) (Fib._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i s'))
 ctrl-dep-linear τ i s s' = ctrl-dep τ .at i .preserve-+ {s} {s'}
@@ -782,7 +730,6 @@ EnvDepRel-mono : ∀ {Γ} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s s' {x g} 
 EnvDepRel-mono emp s s' rel = prop.tt
 EnvDepRel-mono (_·_ {τ = τ} rγ r) s s' (rel , h) = EnvDepRel-mono rγ s s' rel , DepRel⊑-mono τ r s s' h
 
--- Splitting a concatenated environment vector.
 ap-p₁-++ : ∀ {m n} (x : ∣ 𝔽 m ∣) (z : ∣ 𝔽 n ∣) k →
            ap (M.p₁ {m} {n}) (λ l → ap (M.in₁ {m} {n}) x l +ₛ ap (M.in₂ {m} {n}) z l) k ≈s x k
 ap-p₁-++ {m} {n} x z k =
@@ -795,8 +742,6 @@ ap-p₂-++ {m} {n} x z k =
   ≈-trans (app-congᵥ (M.p₂ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-+ x z l)) k)
           (≈-trans (app-p₂ {m} {n} (M.concat x z) k) (M.split₂-concat x z k))
 
--- The inputs of the recursive call on a folded payload: the control input and the environment
--- extended by the folded payload.
 ap-rec-inputs : ∀ {Γ} (γ : Env Γ) {m σ'} (v' : Val σ')
                 (F : M.Matrix (width v') (suc (width-env γ) + m)) s x (o : ∣ 𝔽 m ∣) k →
                 ap (rec-inputs γ v' ∘ ⟨ M.I , F ⟩) (map-input γ s x o) k ≈s
@@ -839,8 +784,6 @@ ap-rec-inputs {Γ} γ {m} v' F s x o k =
                     (app-congᵥ (M.in₁ {n} {p}) (ap-p₂₁ (inputs γ s x)) k))
            (ap-in₂-suc (ap (M.in₂ {n} {p}) oF) k)
 
--- The inputs of the action on a subvalue reached through C: the control input and the environment,
--- then the subvalue's vector.
 ap-sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} (C : M.Matrix m n) s x (o : ∣ 𝔽 n ∣) k →
                 ap (sub-inputs γ C) (map-input γ s x o) k ≈s map-input γ s x (ap C o) k
 ap-sub-inputs γ {m} {n} C s x o k =
@@ -856,8 +799,6 @@ ap-sub-inputs γ {m} {n} C s x o k =
   a = suc (width-env γ)
   y = map-input γ s x o
 
--- A rebuilt constructor's root is the control weight times the control input plus the copied root;
--- its payload reads the rest of the matrix at the action's inputs.
 map-built-zero : ∀ {Γ} (γ : Env Γ) {m n} (G : M.Matrix n (suc (width-env γ) + suc m)) s x (o : ∣ 𝔽 (suc m) ∣) →
                  ap (map-built-out γ m n +ₘ (M.in₂ {1} {n} ∘ G)) (map-input γ s x o) zero ≈s ((c ·ₛ s) +ₛ o zero)
 map-built-zero γ {m} {n} G s x o =
@@ -898,22 +839,18 @@ EnvDepRel-resp (_·_ {τ = τ} {γ = γ} {v = v} rγ r) s ex (rel , h) =
   EnvDepRel-resp rγ s (app-congᵥ (M.p₁ {width-env γ} {width v}) ex) rel ,
   DepRel⊑-resp τ r s (app-congᵥ (M.p₂ {width-env γ} {width v}) ex) h
 
--- The weight times s absorbs any multiple of s.
 cs-absorb : ∀ s e → ((c ·ₛ s) +ₛ ((s ·ₛ c) ·ₛ e)) ≈s (c ·ₛ s)
 cs-absorb s e =
   ≈-trans (+-cong ·-comm S.·-assoc)
   (≈-trans (≈-sym S.·-+-distribₗ)
   (≈-trans (·-cong ≈-refl (≈-trans +-comm (c-bound e))) ·-comm))
 
--- The control dependence at the weighted s plus itself and a further weight: the one at s plus the
--- one at the further weight.
 ctrl-dep-double : ∀ τ (i : Ix τ) s a → Fib._≈_ τ i (ctrl-dep-at τ i ((c ·ₛ s) +ₛ ((c ·ₛ s) +ₛ a))) (Fib._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i a))
 ctrl-dep-double τ i s a =
   Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) ((c ·ₛ s) +ₛ a))
   (Fib.trans τ i (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) a) (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.refl τ i))))
   (Fib.trans τ i (Fib.sym τ i (Fib.+-assoc τ i)) (Fib.+-cong τ i (Fib.⊑-refl τ i) (Fib.refl τ i))))
 
--- Reading the first position of a lifted vector, and its tail, by the projections.
 built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x →
              ap (built-out γ n +ₘ (M.in₂ {1} ∘ R')) (inputs γ s x) zero ≈s (c ·ₛ s)
 built-zero {γ = γ} {n} R' s x =
@@ -935,13 +872,11 @@ built-suc {γ = γ} {n} R' s x k =
                             (ap-in₂-suc {n} (ap R' (inputs γ s x)) k)))
            +-lunit)
 
--- A base sort's fibres do not vary with the index, so its transports are the identity.
 subst-base : ∀ {σ} {i i' : Ix (base σ)} (e : Ix._≈_ (base σ) i i')
              (d : ∣ Fib (base σ) i ∣) (k : Fin (sort-width σ)) →
              ⟦ base σ ⟧ .fam .subst e .func d k ≈s d k
 subst-base {σ} e d k = Σ-unit {sort-width σ} k d
 
--- Transporting a relation along an index equation.
 DepRel-transport′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i i')
                     (r : ValRel′ N τ p v i) {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
                     DepRel′ N τ p r o d → DepRel′ N τ p (ValRel-resp′ τ p E r) o (⟦ τ ⟧ .fam .subst E .func d)
@@ -1013,8 +948,6 @@ DepRel-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i i') (r 
                    DepRel τ r o d → DepRel τ (ValRel-resp τ E r) o (⟦ τ ⟧ .fam .subst E .func d)
 DepRel-transport τ = DepRel-transport′ τ ≤-refl
 
--- Transport along the inverse of an index equation, with the hypothesis read on the transported
--- element.
 DepRel-transport⁻ : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i' i) (r : ValRel τ v i)
                     {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i' ∣} {d' : ∣ Fib τ i ∣} →
                     Fib._≈_ τ i (⟦ τ ⟧ .fam .subst E .func d) d' →
