@@ -72,15 +72,12 @@ private
   module FDP = HasProducts Fam⟨𝒟⟩μ.products
   module FDC = HasCoproducts Fam⟨𝒟⟩μ.coproducts
 
--- The chosen empty environment on the source side, and its image on the target side.
 ∅𝒞 : Fin 0 → Fam⟨𝒞⟩μ.Obj
 ∅𝒞 ()
 
 δ∅𝒟 : Fin 0 → Fam⟨𝒟⟩μ.Obj
 δ∅𝒟 = λ i → Fam⟨F⟩ .fobj (∅𝒞 i)
 
--- Interpretation of the first-order types on the source side, with the value formers and
--- μ-types via the polynomial translation of the first-order witness.
 module _ where
   open Category Fam⟨𝒞⟩μ.cat
   open HasTerminal (Fam⟨𝒞⟩μ.terminal T𝒞) renaming (witness to 𝟙)
@@ -108,8 +105,6 @@ module _ where
   𝒞⟦ emp ⟧ctxt    = 𝟙
   𝒞⟦ Γ , τ ⟧ctxt = prod 𝒞⟦ Γ ⟧ctxt (𝒞⟦ τ ⟧ty ∅𝒞)
 
--- The target side: the interpretation of the language at the transported model, with unit
--- the image of the source unit and the empty environment the image environment.
 𝒟𝟙ty : Fam⟨𝒟⟩μ.Obj
 𝒟𝟙ty = Fam⟨F⟩ .fobj 𝒞𝟙ty
 
@@ -144,8 +139,6 @@ private
   (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
   (Model.⟦sort⟧ 𝒞-Sig-model)
 
--- The target-side sections: the unit and sort sections are the images of the source-side
--- ones, entered through the chosen map from the target unit object.
 𝒟𝟙ty-section : Fam⟨𝒟⟩μ.Section 𝒟𝟙ty
 𝒟𝟙ty-section = HR.Fam⟨F⟩-section F𝟙 𝒞𝟙ty-section
 
@@ -159,8 +152,6 @@ open import language-interpretation Sig os es T𝒟 CM𝒟 BP𝒟 𝟙𝒟 𝒟E
   using ()
   public
 
--- The polynomial translations agree on the nose: the change of base leaves variables in place and
--- carries each const leaf to the leaf the transported model interprets there.
 fo-poly-map-≡ : ∀ {Δ n} {τ : type (n + Δ)} (fo : first-order τ) (δ𝒞 : Fin Δ → Fam⟨𝒞⟩μ.Obj) →
                 Poly-map Fam⟨F⟩ (fo-as-poly {Δ} {n} fo δ𝒞)
                   ≡ 𝒟-as-poly {Δ} {n} τ (λ i → Fam⟨F⟩ .fobj (δ𝒞 i))
@@ -181,8 +172,6 @@ private
   ≡-Iso : ∀ {x y} → x ≡ y → FD.Iso x y
   ≡-Iso refl = FD.Iso-refl
 
--- Every first-order type's interpretation on the target side is isomorphic to the image of its
--- interpretation on the source side; μ-types by the fibrewise comparison over shared trees.
 ⟦_⟧-iso : ∀ {Δ} {τ : type Δ} (fo : first-order τ) (δ𝒞 : Fin Δ → Fam⟨𝒞⟩μ.Obj) →
           FD.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty δ𝒞)) (𝒟⟦ τ ⟧ty (λ i → Fam⟨F⟩ .fobj (δ𝒞 i)))
 ⟦ var i ⟧-iso       δ𝒞 = FD.Iso-refl

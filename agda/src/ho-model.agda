@@ -57,7 +57,6 @@ private
 ctrl-weight-endo : SemiMod._⇒_ SemiMod.𝕀 SemiMod.𝕀
 ctrl-weight-endo = ι1-fwd SemiMod.∘ (mat (matrix.Mat.block S ctrl-weight) SemiMod.∘ ι1-bwd)
 
--- The unit object: the lifted terminal, one root for the unit value.
 𝟙F = HasTerminal.witness (Fam⟨𝒞⟩μ.terminal M.terminal)
 
 𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj
@@ -65,15 +64,12 @@ ctrl-weight-endo = ι1-fwd SemiMod.∘ (mat (matrix.Mat.block S ctrl-weight) Sem
 
 𝒞Bool = FCC.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
 
--- The row of units: the unit section of a simple family of dimensions.
 ι-row : ∀ n → M.Matrix n 1
 ι-row n _ _ = S.ι
 
 𝒞Bool-root : Fam⟨𝒞⟩μ.Section 𝒞Bool
 𝒞Bool-root = Fam⟨𝒞⟩μ.coprod-section (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty}) (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty})
 
--- The model-side function spaces: exponentials on Fam(SemiMod), from the direct setoid products
--- of plain semimodules.
 SPmod : HasSetoidProducts 0ℓ 0ℓ SemiMod.cat
 SPmod =
   indexed-family.hasSetoidProducts 0ℓ 0ℓ SemiMod.cat
@@ -97,8 +93,6 @@ exp-section {X} {Y} .Fam⟨𝒟⟩μ.at f = SMCM.εm
 exp-section {X} {Y} .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
   SMCM.comp-bilinear-ε₂ {SemiMod.𝕀} (FE._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
 
--- The interpretation of the primitives: the first-order interpretation, with the relations'
--- booleans injected under zero roots.
 module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
   module IP = matrix-primitives.interp-primitives S Sig ℐ
@@ -114,7 +108,6 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     module IPO = IP.over 𝒞Bool boolify
     open indexed-family._⇒f_
 
-    -- The positions a test reads, as a single row into the outcome's root.
     d' : ∀ {is} (ψ : Signature.rel Sig is)
          (c : Setoid.Carrier (sort-vals-setoid ℐ.sort-index is)) →
          M.Matrix 1 (ℐ.bases-width is)
@@ -162,7 +155,6 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
   model = record IPO.model-over
     { ⟦rel⟧ = λ {is} ψ → (rel-simple is ψ Fam⟨𝒞⟩μ.Fam𝒞.∘ IPO.arg-collect is) }
 
--- The higher-order model and the first-order comparison at the realisation.
 module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
   open sig-model Sig ℐ
@@ -191,7 +183,6 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
   open Data.Product using (_,_)
   open prop using (_,_)
 
-  -- An element of the booleans' fibre at a branch: a root weight over the zero unit.
   bool-elt : ∀ b → Setoid.Carrier A → Semimodule.Carrier (𝒟Bool .fam .fm b)
   bool-elt (inj₁ _) a = a , (λ _ → S.ε)
   bool-elt (inj₂ _) a = a , (λ _ → S.ε)
@@ -213,8 +204,6 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     in₁-suc : ∀ (w : M.Vec 1) k → S._≈_ (app (M.in₁ {1} {1}) w (Fin.suc k)) S.ε
     in₁-suc w k = S.trans (S.trans S.+-comm S.+-lunit) S.ε-annihilₗ
 
-    -- The booleans' comparison applied to a root element over a row, then transported to a
-    -- branch: the row's reading at the root and zero beneath.
     module bool-row {n} (D : M.Matrix 1 n) (y : M.Vec n) where
       Ω = HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty
 
@@ -247,9 +236,6 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
       core (inj₁ _) (inj₁ _) e = branch e
       core (inj₂ _) (inj₂ _) e = branch e
 
-  -- The model at a test, at an index and element of the argument product: the index of the
-  -- collected arguments, their positions laid end to end, and the element after transport to the
-  -- actual branch, which is the test's row applied to those positions at the root and zero beneath.
   Args : Data.List.List (Signature.sort Sig) → Fam⟨𝒟⟩μ.Obj
   Args = signature.finite-product (Fam⟨𝒟⟩μ.terminal SemiMod.terminal) Fam⟨𝒟⟩μ.products
            (Model.⟦sort⟧ 𝒟-Sig-model)
@@ -312,8 +298,6 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
                 (𝒟⟦ t ⟧tm .Fam⟨𝒟⟩μ.famf .transf γ𝒟)
                 (⟦ Γ-fo ⟧ctxt-iso .fwd .Fam⟨𝒟⟩μ.famf .transf γ))
 
-      -- The image of each input position's basis vector, which presents the fibre map rather
-      -- than tabulating it.
       mat-of : M.Matrix tgt src
       mat-of q p = SemiMod._⇒_.func rel (M.e p) q
 

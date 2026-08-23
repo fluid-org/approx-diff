@@ -51,7 +51,6 @@ open polynomial-functor using (extend; Poly-map)
 
 private module SC = Category (setoid-cat.SetoidCat os (os ⊔ es))
 
--- The index functor: a family to its index setoid, a morphism to its index map.
 Idx : Functor cat (setoid-cat.SetoidCat os (os ⊔ es))
 Idx .fobj X = X .idx
 Idx .fmor f = f .idxf
@@ -69,8 +68,6 @@ private
 module Fibre {n} (δ : Fin n → Obj) where
   open Srt.Tree (λ i → δ i .idx)
 
-  -- A decoration of a sort: a μ-body erasing to it, with the sorts in its
-  -- assignment decorated in turn. The sort is recovered by projection.
   data Deco : Sort n → Set ℓD
 
   DecoAssign : Fin n ⊎ Sort n → Set ℓD
@@ -81,17 +78,12 @@ module Fibre {n} (δ : Fin n → Obj) where
     mkDeco : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n} →
              ((i : Fin k) → DecoAssign (ρ̄ i)) → Deco (mkSort ∣ Q ∣ ρ̄)
 
-  -- The body environment of a decorated μ-binder: slot 0 is the binder's own
-  -- decoration, the rest are the ambient ones.
   deco-ext : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
              (d : ∀ i → DecoAssign (ρ̄ i)) →
              ∀ i → DecoAssign (extend ρ̄ (inj₂ (mkSort ∣ Q ∣ ρ̄)) i)
   deco-ext Q d Fin.zero = mkDeco Q d
   deco-ext Q d (Fin.suc i) = d i
 
-  -- The fibre object at each tree: a root above each branch and each pair,
-  -- parameter/const fibres at the leaves, the decoration supplying the
-  -- constants.
   mutual
     fib : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
           (d : ∀ i → DecoAssign (ρ̄ i)) → W ∣ Q ∣ ρ̄ → obj
@@ -110,7 +102,6 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-el (inj₁ p) _ x = δ p .fam .fm x
     fib-el (inj₂ _) (mkDeco Q ρd) x = fib Q ρd x
 
-  -- Transport of fibres along bisimilarity, by recursion on the W-≈ proof.
   mutual
     fib-subst : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
                 (d : ∀ i → DecoAssign (ρ̄ i)) {x y : W ∣ Q ∣ ρ̄} →
@@ -133,7 +124,6 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-el-subst (inj₁ p) _ e = δ p .fam .subst e
     fib-el-subst (inj₂ _) (mkDeco Q ρd) {x} {y} e = fib-subst Q ρd {x = x} {y = y} e
 
-  -- Transport along reflexivity is the identity.
   mutual
     fib-refl* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
                 (d : ∀ i → DecoAssign (ρ̄ i)) (x : W ∣ Q ∣ ρ̄) →
@@ -160,7 +150,6 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-el-refl* (inj₁ p) _ x = δ p .fam .refl*
     fib-el-refl* (inj₂ _) (mkDeco Q ρd) x = fib-refl* Q ρd x
 
-  -- Transport is functorial: a composite is the composite of the transports.
   mutual
     fib-trans* : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
                  (d : ∀ i → DecoAssign (ρ̄ i)) {x y z : W ∣ Q ∣ ρ̄}
@@ -210,7 +199,6 @@ module Fibre {n} (δ : Fin n → Obj) where
   fib-shape-iso₂ Q d {x} {y} p =
     ≈-trans (≈-sym (fib-shape-trans* Q d (shape≈-sym ∣ Q ∣ _ p) p)) (fib-shape-refl* Q d x)
 
-  -- The fibre family of the μ-type at a decorated sort.
   WFam : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
          (d : ∀ i → DecoAssign (ρ̄ i)) → Fam (WSetoid ∣ Q ∣ ρ̄) 𝒞
   WFam Q d .fm = fib Q d
@@ -218,9 +206,6 @@ module Fibre {n} (δ : Fin n → Obj) where
   WFam Q d .refl* {x} = fib-refl* Q d x
   WFam Q d .trans* {x} {y} {z} e₁ e₂ = fib-trans* Q d {x = x} {y = y} {z = z} e₁ e₂
 
--- The μ-type at the root sort: index by the category-free sort layer, fibres
--- by the canonical decoration, which resolves the μ-body's free variables to
--- the parameters.
 μ-fam : ∀ {n} → Poly-C (suc n) → (Fin n → Obj) → Obj
 μ-fam P δ .idx = Srt.Tree.WSetoid (λ i → δ i .idx) ∣ P ∣ (λ i → inj₁ i)
 μ-fam P δ .fam = Fibre.WFam δ P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)

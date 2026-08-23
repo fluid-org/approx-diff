@@ -79,8 +79,6 @@ open HasMuLaws hasMuLaws
 module CoK {Γ' : Obj} = Category (coKleisli-prod Fam.products Γ')
 open Model Int public
 
--- A type is interpreted as its polynomial, with the variables instantiated at the environment, applied
--- at the empty environment; under a μ, the bound variables stay free.
 mutual
   ⟦_⟧ty : ∀ {Δ} → type Δ → (Fin Δ → obj) → obj
   ⟦ τ ⟧ty δ = fobj μ-obj (as-poly {n = 0} τ δ) δ∅
@@ -99,7 +97,6 @@ as-poly-var-section : ∀ {Δ n} (δ : Fin Δ → obj) → (∀ i → Section (�
 as-poly-var-section δ δc (inj₁ k) = lift tt
 as-poly-var-section δ δc (inj₂ j) = δc j
 
--- Sections for a type's polynomial: the assumed sections at the constant leaves.
 as-poly-section : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) →
                 PolySection (as-poly {Δ} {n} τ δ)
 as-poly-section (var i)   δ δc = as-poly-var-section δ δc (splitAt _ i)
@@ -110,20 +107,15 @@ as-poly-section (σ [×] τ) δ δc = DP._,_ (as-poly-section σ δ δc) (as-pol
 as-poly-section (σ [→] τ) δ δc = Lf-section exp-section
 as-poly-section (μ τ)     δ δc = as-poly-section τ δ δc
 
--- The unit section of a type's interpretation.
 unit-section : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) → Section (⟦ τ ⟧ty δ)
 unit-section τ δ δc = R.poly-section (as-poly τ δ) (as-poly-section τ δ δc) (λ ())
 
--- The control dependence an eliminator writes: the result type's unit section scaled by the control
--- weight.
 ctrl-dep : ∀ (τ : type 0) → Section (⟦ τ ⟧ty (λ ()))
 ctrl-dep τ = scale-section ctrl-w (unit-section τ (λ ()) (λ ()))
 
--- Combined context: the first n variables from δ₀ (the Poly variables), the rest from δ.
 concat : ∀ {n Δ} → (Fin n → obj) → (Fin Δ → obj) → Fin (n + Δ) → obj
 concat {n} δ₀ δ i = [ δ₀ , δ ] (splitAt n i)
 
--- Both as-poly and ⟦_⟧ty respect pointwise-equal environments.
 as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} → (∀ i → δ i ≡ δ' i) → as-poly τ δ ≡ as-poly τ δ'
 as-poly-cong {Δ} {n} (var i) {δ} {δ'} h = go (splitAt n i)
   where
@@ -140,8 +132,6 @@ as-poly-cong (μ τ)     h = cong Poly.μ (as-poly-cong τ h)
 ty-cong : ∀ {Δ} (τ : type Δ) {δ δ' : Fin Δ → obj} → (∀ i → δ i ≡ δ' i) → ⟦ τ ⟧ty δ ≡ ⟦ τ ⟧ty δ'
 ty-cong τ h = cong (λ P → fobj μ-obj P δ∅) (as-poly-cong τ h)
 
--- Renaming a type is reindexing its environment. extᵗⁿ leaves the first n (poly) variables alone,
--- so splitAt commutes with it.
 splitAt-extᵗⁿ : ∀ {Δ₁ Δ₂} n (ρ : TyRen Δ₁ Δ₂) (i : Fin (n + Δ₁)) →
                 splitAt n (extᵗⁿ n ρ i) ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] (splitAt n i)
 splitAt-extᵗⁿ zero    ρ i           = refl
@@ -500,7 +490,6 @@ strong-as-poly-map-comp {Δ} {n} (μ τ) {Γ'} {δ} {δ'} {δ''} hs' hs δ₀ =
     ∎
     where open ≈-Reasoning isEquiv
 
-
 strong-as-poly-map-p₂ : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ : Fin Δ → obj} (δ₀ : Fin n → obj) →
                         strong-as-poly-map τ {Γ'} {δ} {δ} (λ i → p₂) δ₀ ≈ p₂
 strong-as-poly-map-p₂ {n = n} (var i) δ₀ with splitAt n i
@@ -753,7 +742,6 @@ private
                cast {n} (cong Poly.const e) δ₀ ≈ ≡-to-⇒ e
   cast-const refl δ₀ = ≈-refl
 
--- The cast along a pointwise environment equality is the environment action on the pointwise casts.
 cast-as-poly-cong : ∀ {Δ n} (τ : type (n + Δ)) {δ δ' : Fin Δ → obj} (h : ∀ i → δ i ≡ δ' i)
                     (δ₀ : Fin n → obj) →
                     cast (as-poly-cong τ h) δ₀ ≈ as-poly-map τ (λ i → ≡-to-⇒ (h i)) δ₀
@@ -1125,8 +1113,6 @@ fmor-extend-id : ∀ {k} (P : Poly R.cat (suc k)) {δ : Fin k → obj} {X : obj}
                  fmor P (extend-mor (λ j → id (δ j)) (id X)) ≈ id _
 fmor-extend-id P = ≈-trans (fmor-cong P extend-mor-id) (fmor-id P)
 
--- Freezing the poly-variables δ₀ into the environment (with X at position 0) reshuffles the
--- combined context only up to pointwise equality.
 env-pw-suc : ∀ {Δ n} (δ : Fin Δ → obj) (δ₀ : Fin n → obj) (X : obj) (s : Fin n ⊎ Fin Δ) →
              [_,_] {C = λ _ → obj} δ₀ δ s ≡ [_,_] {C = λ _ → obj} (extend δ₀ X) δ (map₁ Fin.suc s)
 env-pw-suc δ δ₀ X (inj₁ k) = refl
@@ -1184,7 +1170,6 @@ preserves-env-pw : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → obj} {X :
 preserves-env-pw δc δ₀c cX Fin.zero = preserves-section-id cX
 preserves-env-pw {n = n} δc δ₀c cX (Fin.suc j) = preserves-env-pw-suc δc δ₀c cX (splitAt n j)
 
--- Applying the polynomial (as-poly τ δ) is the interpretation of τ, in each direction.
 mutual
   apply-fwd : ∀ {Δ n} (τ : type (n + Δ)) (δ : Fin Δ → obj) (δ₀ : Fin n → obj) →
               ⟦ τ ⟧ty (concat δ₀ δ) ⇒ fobj μ-obj (as-poly {Δ} {n} τ δ) δ₀
@@ -1722,15 +1707,11 @@ mutual
     preserves-section-inv (apply-fwd-bwd τ δ δ₀) (apply-bwd-fwd τ δ δ₀)
       (preserves-apply-fwd τ δc δ₀c)
 
--- Pointwise action of a lifted substitution on the extended environment: the new variable is mapped
--- to itself, and the (weakened) old ones ignore it.
 sub-lift-pw : ∀ {Δ Δ'} (σ : TySub Δ Δ') (δ : Fin Δ' → obj) (X : obj) (i : Fin (suc Δ)) →
               ⟦ sub-lift σ i ⟧ty (concat (extend {0} δ∅ X) δ) ≡ concat (extend {0} δ∅ X) (λ j → ⟦ σ j ⟧ty δ) i
 sub-lift-pw σ δ X Fin.zero    = refl
 sub-lift-pw σ δ X (Fin.suc j) = ty-ren Fin.suc (σ j) (concat (extend {0} δ∅ X) δ)
 
--- Semantic substitution: substituting then interpreting maps to interpreting in the environment
--- that interprets the substituents (in each direction).
 mutual
   subst-fwd : ∀ {Δ Δ'} (σ : TySub Δ Δ') (τ : type Δ) (δ : Fin Δ' → obj) →
               ⟦ sub σ τ ⟧ty δ ⇒ ⟦ τ ⟧ty (λ i → ⟦ σ i ⟧ty δ)
@@ -1974,7 +1955,6 @@ mutual
       pm₁   = as-poly-map {n = 1} (sub (sub-lift σ) τ) gs (extend δ∅ X)
       body  = subst-fwd-body σ τ δ X
       body' = subst-fwd-body σ τ δ' X
-
 
 sub-lift-pw-natural⁻ : ∀ {Δ Δ'} (σ : TySub Δ Δ') {δ δ' : Fin Δ' → obj} (gs : ∀ i → δ i ⇒ δ' i) {X X' : obj} (k : X ⇒ X')
                        (i : Fin (suc Δ)) →
@@ -2257,7 +2237,6 @@ mutual
       body  = subst-bwd-body σ τ δ X
       body' = subst-bwd-body σ τ δ X'
 
-
 ≡-to-⇒-irr : ∀ {A B : obj} (e e' : A ≡ B) → ≡-to-⇒ e ≈ ≡-to-⇒ e'
 ≡-to-⇒-irr refl refl = ≈-refl
 
@@ -2426,7 +2405,6 @@ mutual
                        (ty-square (λ υ → ⟦ Fin.suc *ᵗ υ ⟧ty γ) (λ υ → ⟦ υ ⟧ty δ)
                                   (λ υ → ≡-to-⇒ (ty-ren Fin.suc υ γ)) (pw j)))
 
-
 private
   concat-pw : ∀ {n Δ} {δ δ' : Fin Δ → obj} (δ₀ : Fin n → obj) → (∀ i → δ i ≡ δ' i) →
               ∀ i → concat δ₀ δ i ≡ concat δ₀ δ' i
@@ -2481,7 +2459,6 @@ apply-bwd-cong {Δ} {n} τ {δ} {δ'} h δ₀ E = begin
     apply-bwd τ δ' δ₀ ∘ cast (as-poly-cong τ h) δ₀
   ∎
   where open ≈-Reasoning isEquiv
-
 
 private
   cast-trans : ∀ {n} {P Q R' : Poly R.cat n} (e₁ : P ≡ Q) (e₂ : Q ≡ R') (δ₀ : Fin n → obj) →
@@ -2985,7 +2962,6 @@ mutual
         (≈-trans id-left
                  (≡-to-⇒-irr (cong (λ υ → ⟦ Fin.suc *ᵗ υ ⟧ty γ) (pw j))
                              (cong (λ υ → ⟦ υ ⟧ty γ) (pw-lift (Fin.suc j)))))))
-
 
 mutual
   subst-fwd-ren-sub : ∀ {Δ₁ Δ₁' Δ₂ Δ₂'} (ρ : TyRen Δ₁ Δ₂) (ρ' : TyRen Δ₁' Δ₂')

@@ -110,7 +110,6 @@ mu-total-map f (mt-inr m)      = mt-inr (mu-total-map f m)
 mu-total-map f (mt-pair m m')  = mt-pair (mu-total-map f m) (mu-total-map f m')
 mu-total-map f (mt-mu m)       = mt-mu (mu-total-map f m)
 
--- Total-acc does not depend on the accessibility proof.
 total-irr-acc : ∀ τ → Acc _<_ (size τ) →
                 ∀ {ac ac' : Acc _<_ (size τ)} {v} →
                 Total-acc τ ac v → Total-acc τ ac' v
@@ -133,11 +132,9 @@ total-irr : ∀ τ {ac ac' : Acc _<_ (size τ)} {v} →
             Total-acc τ ac v → Total-acc τ ac' v
 total-irr τ = total-irr-acc τ (<-wellFounded (size τ))
 
--- Canonical mu family, with the totality predicate itself at arrow leaves.
 MuT : (τ₀ : type 1) (σ' : type 1) → Val (σ' [ μ τ₀ ]) → Set ℓT
 MuT τ₀ = MuTotal τ₀ (λ σ p → Total σ)
 
--- Introduction and elimination for Total at each connective.
 sum-out₁ : ∀ {σ τ v} → Total (σ [+] τ) (inl v) → Total σ v
 sum-out₁ {σ} t = total-irr σ t
 
@@ -166,8 +163,6 @@ total-coerce : ∀ {σ σ' : type 0} (e : σ ≡ σ') {v : Val σ} →
                Total σ v → Total σ' (≡-subst Val e v)
 total-coerce refl t = t
 
--- Totality at a substituted type versus membership of the mu family. The nested case crosses between the
--- outer family and the family of the inner body through Total at the propositionally equal type.
 fold-tot-acc : ∀ (τ₀ σ' : type 1) → arr-bound (size (μ τ₀)) σ' →
                ∀ {v : Val (σ' [ μ τ₀ ])} → Acc _<_ (vsize v) →
                Total (σ' [ μ τ₀ ]) v → MuT τ₀ σ' v
@@ -237,7 +232,6 @@ bool-total : ∀ (b : _) → Total (unit [+] unit) (bool→val b)
 bool-total (inj₁ _) = sum-in₁ {unit} {unit} {unit} tt
 bool-total (inj₂ _) = sum-in₂ {unit} {unit} {unit} tt
 
--- The arrow clause of Total, stated with the canonical predicate throughout.
 ArrTot : (σ τ : type 0) {Γ' : ctxt} (γ' : Env Γ') (t : (Γ' ▸ σ) ⊢ τ) → Set ℓT
 ArrTot σ τ {Γ'} γ' t =
   ∀ (v : Val σ) → Total σ v →
@@ -254,7 +248,6 @@ arr-out : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} →
 arr-out {σ} {τ} f v tv =
   let (u , R , D , tu) = f v (total-irr σ tv) in u , R , D , total-irr τ tu
 
--- Traversal of a total value by the fold body, producing the Map derivation.
 map-total : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : (Γ ▸ (τ₀ [ σr ])) ⊢ σr} →
             (∀ (w' : Val (τ₀ [ σr ])) → Total (τ₀ [ σr ]) w' →
              Σ (Val σr) λ u → Σ (suc (width-env γ + width w') ⇒ width u) λ S →
@@ -287,7 +280,6 @@ map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') (mt-mu {τ'} 
                       (arr-self (sub (sub-lift (push σr)) τ'))
                       (total-coerce (unfold₁-inst τ' σr) tw')))
 
--- Fundamental lemma: every well-typed term evaluates, with a dependency matrix, to a total value.
 Eval : ∀ {Γ} (γ : Env Γ) {τ} (t : Γ ⊢ τ) → Set ℓT
 Eval γ {τ} t =
   Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → (γ , t ⇓ v [ R ]) × Total τ v
@@ -355,7 +347,6 @@ fundamental-s (M ∷ Ms) γ tγ with fundamental M γ tγ
   let (vs , Rs , Dss) = fundamental-s Ms γ tγ
   in (v , vs) , _ , (D ∷ Dss)
 
--- The evaluator: every closed term evaluates, with its dependency matrix.
 eval : ∀ {τ} (t : emp ⊢ τ) →
        Σ (Val τ) λ v → Σ (1 ⇒ width v) λ R → emp , t ⇓ v [ R ]
 eval t = let (v , R , D , _) = fundamental t emp tt in v , R , D

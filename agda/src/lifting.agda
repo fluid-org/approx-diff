@@ -94,15 +94,12 @@ root {P} = in₁
 inj : ∀ {P} → P ⇒ L P
 inj {P} = in₂
 
--- The root recovers the element and the injection the payload map.
 copair-root : ∀ {P C} (c : 𝟙c ⇒ C) (M : P ⇒ C) → (copair c M ∘ root) ≈ c
 copair-root {P} c M = B.copair-in₁ 𝟙c P c M
 
 copair-inj : ∀ {P C} (c : 𝟙c ⇒ C) (M : P ⇒ C) → (copair c M ∘ inj) ≈ M
 copair-inj {P} c M = B.copair-in₂ 𝟙c P c M
 
--- Two maps out of a lifted object agreeing on the root and on the payload are equal, which is the
--- uniqueness principle the initial-algebra laws use.
 lifting-ext : ∀ {P C} (h k : L P ⇒ C) →
               (h ∘ root) ≈ (k ∘ root) → (h ∘ inj) ≈ (k ∘ inj) → h ≈ k
 lifting-ext h k = bp-ext
@@ -124,8 +121,6 @@ Lmap-id {P} =
   ≈-trans (copair-cong ≈-refl id-right)
   (≈-trans (copair-cong (≈-sym id-left) (≈-sym id-left)) (B.copair-ext 𝟙c P (id (L P))))
 
--- Extending an element across the lifting: unit weight at the root, the given element on the
--- payload.
 L-elem : ∀ {X} → (𝟙c ⇒ X) → (𝟙c ⇒ L X)
 L-elem c = root +m (inj ∘ c)
 
@@ -140,7 +135,6 @@ L-elem-natural f c =
         (≈-trans (∘-cong (Lmap-inj f) ≈-refl) (assoc inj f c))))
 
 private
-  -- Postcomposition distributes over the copairing, since composition is bilinear.
   copair-post : ∀ {x y z w} (h : z ⇒ w) (f : x ⇒ z) (g : y ⇒ z) →
                 (h ∘ copair f g) ≈ copair (h ∘ f) (h ∘ g)
   copair-post {x} {y} h f g =
@@ -155,8 +149,6 @@ Lmap-comp {P} {Q} {R} g f =
       (≈-trans (≈-sym (assoc (Lmap g) inj f))
       (≈-trans (∘-cong (Lmap-inj g) ≈-refl) (assoc inj g f)))))
 
--- Reindexing a context-paired morphism under a root: the root passes through and the context
--- enters the payload.
 strong-Lmap-split : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
 strong-Lmap-split r = copair (inj ∘ (r ∘ in₁)) (copair root (inj ∘ (r ∘ in₂)))
 
@@ -165,8 +157,6 @@ strong-Lmap-split-cong er =
   copair-cong (∘-cong ≈-refl (∘-cong er ≈-refl))
            (copair-cong ≈-refl (∘-cong ≈-refl (∘-cong er ≈-refl)))
 
--- Transport across the lifting fuses with composition on either side: through the action after,
--- and with a context-paired map before.
 strong-Lmap-split-post : ∀ {G X Y₁ Y₂} (h : Y₁ ⇒ Y₂) (r : (G ⊕ X) ⇒ Y₁) →
                         (Lmap h ∘ strong-Lmap-split r) ≈ strong-Lmap-split (h ∘ r)
 strong-Lmap-split-post {G} {X} {Y₁} {Y₂} h r =
@@ -195,8 +185,6 @@ strong-Lmap-split-post {G} {X} {Y₁} {Y₂} h r =
          (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
           (≈-sym (copair-inj _ _))))))))
 
--- Transporting the projection across the lifting is the projection: the context part vanishes and
--- the copairing of the root with the injection is the identity.
 strong-Lmap-split-p₂ : ∀ {G X} → strong-Lmap-split (p₂ {G} {X}) ≈ p₂ {G} {L X}
 strong-Lmap-split-p₂ {G} {X} =
   ≈-trans (copair-cong
@@ -208,8 +196,6 @@ strong-Lmap-split-p₂ {G} {X} =
   (≈-trans (+m-cong (comp-bilinear-ε₁ p₁) id-left)
            (homCM _ _ .CommutativeMonoid.+-lunit))
 
--- Reindexing under a root commutes with transports, which is what naturality of the fold and of
--- reindexing in the tree demands.
 strong-Lmap-split-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (y : Y₁ ⇒ Y₂)
     (f₁ : (G₁ ⊕ X₁) ⇒ Y₁) (f₂ : (G₂ ⊕ X₂) ⇒ Y₂) →
@@ -290,7 +276,6 @@ copair-pair {a} {b} f g h k =
           (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (B.pair-p₁ a b h k)))
                    (≈-trans (assoc _ _ _) (∘-cong ≈-refl (B.pair-p₂ a b h k))))
 
--- Transport across the lifting fuses with composition in context.
 strong-Lmap-split-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
                       (strong-Lmap-split r ∘ pair p₁ (strong-Lmap-split s)) ≈ strong-Lmap-split (r ∘ pair p₁ s)
 strong-Lmap-split-co {G} {X} {Y} {Z} r s = bp-ext leg₁ (lifting-ext _ _ leg₂-root leg₂-inj)
@@ -356,8 +341,6 @@ strong-Lmap-split-pre {G₁} {G₂} {X₁} {X₂} {Y} g x r =
   ≈-trans (strong-Lmap-split-natural g x (id Y) (r ∘ prod-m g x) r (≈-sym id-left))
           (≈-trans (∘-cong Lmap-id ≈-refl) id-left)
 
--- Eliminating a root in context against a chosen element: the context and the payload pass to the
--- continuation, and the root produces the element.
 elim-root-split : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
 elim-root-split c r = copair (r ∘ in₁) (copair c (r ∘ in₂))
 
@@ -365,13 +348,11 @@ elim-root-split-cong : ∀ {G X Y} {c c' : 𝟙c ⇒ Y} {r r' : (G ⊕ X) ⇒ Y}
                   c ≈ c' → r ≈ r' → elim-root-split c r ≈ elim-root-split c' r'
 elim-root-split-cong ec er = copair-cong (∘-cong er ≈-refl) (copair-cong ec (∘-cong er ≈-refl))
 
--- Transport across the lifting is the elimination whose element is the root itself.
 strong-Lmap-split-strip : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
                    strong-Lmap-split r ≈ elim-root-split root (inj ∘ r)
 strong-Lmap-split-strip r =
   copair-cong (≈-sym (assoc _ _ _)) (copair-cong ≈-refl (≈-sym (assoc _ _ _)))
 
--- Root elimination commutes with transports.
 elim-root-split-natural :
   ∀ {G₁ G₂ X₁ X₂ Y₁ Y₂} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂)
     {y : Y₁ ⇒ Y₂} {c₁ : 𝟙c ⇒ Y₁} {c₂ : 𝟙c ⇒ Y₂} → (y ∘ c₁) ≈ c₂ →
@@ -426,7 +407,6 @@ elim-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x {y} {c₁}
              (≈-sym (≈-trans (assoc _ _ _)
                              (∘-cong₂ (B.copair-in₂ G₁ (L X₁) _ _))))))))
 
-
 -- Single-application forms as the public combinators: the inner morphism is applied once, to the
 -- context recombined with the extracted payload. The split forms apply it once per copairing arm,
 -- so nesting them multiplies evaluations of the continuation per lifting layer. Each public lemma
@@ -449,11 +429,9 @@ tag-L-root {X} = copair-root (id 𝟙c) εm
 tag-L-inj : ∀ {X} → (tag-L {X} ∘ inj) ≈ εm
 tag-L-inj {X} = copair-inj (id 𝟙c) εm
 
--- Evaluation-critical shape: exactly one application of r per element.
 strong-Lmap : ∀ {G X Y} → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ L Y)
 strong-Lmap {G} r = (inj ∘ (r ∘ prod-m (id G) payload-L)) +m ((root ∘ tag-L) ∘ p₂)
 
--- Evaluation-critical shape: exactly one application of r per element.
 elim-root : ∀ {G X Y} → (𝟙c ⇒ Y) → ((G ⊕ X) ⇒ Y) → ((G ⊕ L X) ⇒ Y)
 elim-root {G} c r = (r ∘ prod-m (id G) payload-L) +m ((c ∘ tag-L) ∘ p₂)
 
@@ -700,8 +678,6 @@ elim-root-natural g x {y} {c₁} {c₂} yc f₁ f₂ sq =
   (≈-trans (elim-root-split-natural g x {y} {c₁} {c₂} yc f₁ f₂ sq)
            (∘-cong ≈-refl (≈-sym (elim-root-unfold c₁ f₁))))
 
--- The lifting as a strong endofunctor: the strength is the transport of the identity, so the
--- transport of any morphism is its action after the strength.
 L-functor : Functor 𝒞 𝒞
 L-functor .Functor.fobj = L
 L-functor .Functor.fmor = Lmap

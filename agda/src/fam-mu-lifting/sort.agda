@@ -24,19 +24,14 @@ module fam-mu-lifting.sort (os es : Level) where
 open Setoid using (Carrier; isEquivalence) renaming (_≈_ to _≈s_)
 open IsEquivalence
 
--- Index-erased polynomials: constants are index setoids.
 𝒮 = setoid-cat.SetoidCat os (os ⊔ es)
 Poly = polynomial-functor.Poly 𝒮
 open polynomial-functor.Poly
 open polynomial-functor using (extend)
 
--- A sort is an index-erased μ-body together with a assignment of its free
--- variables to parameters or other sorts.
 data Sort (n : ℕ) : Set (lsuc os ⊔ lsuc es) where
   mkSort : ∀ {k} → Poly (suc k) → (Fin k → Fin n ⊎ Sort n) → Sort n
 
--- The body environment of a μ-binder: slot 0 is the binder's own sort, the rest
--- are the ambient parameters.
 η₀ : ∀ {n} → Poly (suc n) → Fin (suc n) → Fin n ⊎ Sort n
 η₀ P = extend (λ i → inj₁ i) (inj₂ (mkSort P (λ i → inj₁ i)))
 
@@ -126,7 +121,6 @@ module Tree {n} (ι : Fin n → Setoid os (os ⊔ es)) where
     elEq-trans (inj₁ p)            e f = ι p .isEquivalence .trans e f
     elEq-trans (inj₂ (mkSort Q ρ)) {x} {y} {z} e f = W-≈-trans {x = x} {y = y} {z = z} e f
 
-  -- The carrier setoid of the μ-type at sort (Q , ρ).
   WSetoid : ∀ {k} (Q : Poly (suc k)) (ρ : Fin k → Fin n ⊎ Sort n) → Setoid os (os ⊔ es)
   WSetoid Q ρ .Carrier = W Q ρ
   WSetoid Q ρ ._≈s_ = W-≈

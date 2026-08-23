@@ -47,8 +47,6 @@ private
 
 open T using (⟦_⟧shape; El; W; sup)
 
--- The values at the substituted variables, as elements of the sort environment, for values below a
--- size bound.
 Compat : ∀ {n} → TySub (n + 0) 0 → (Fin n → Fin 0 ⊎ Sort 0) → ℕ → Set
 Compat {n} σ η N = ∀ (j : Fin n) (u : Val (σ (j ↑ˡ 0))) → size u < N → El (η j)
 
@@ -68,9 +66,8 @@ private
     f j (subst Val (sym (cong σ (splitAt⁻¹-↑ˡ eq))) v) (subst (_< N) (sym (size-subst _ v)) p)
   shape-var i σ η N f v p (inj₂ ()) eq
 
--- A value at a first-order type under a substitution of closed types, as a shape of the type's
--- polynomial over a sort environment, given the values at the substituted variables. The bound lets
--- the body of a μ-type read the values at its own variable, which are smaller, by the same function.
+-- The size bound lets the body of a μ-type read the values at its own variable, which are smaller,
+-- by the same function.
 shape-val : ∀ {n} {τ : type (n + 0)} (fo : first-order τ) (σ : TySub (n + 0) 0)
             (η : Fin n → Fin 0 ⊎ Sort 0) (N : ℕ) → Acc _<_ N → Compat σ η N →
             (v : Val (sub σ τ)) → size v < N → ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape η

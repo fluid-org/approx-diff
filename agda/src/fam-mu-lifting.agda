@@ -78,13 +78,10 @@ open import Data.Sum using (_⊎_) public
 open import Data.Product using () renaming (_×_ to _×T_) public
 open import prop using (_∧_; ⊥) public
 
--- The category-free sort layer, shared by every base category, and the
--- decorated fibre layer over this one.
 module Srt = fam-mu-lifting.sort os es
 open Srt public using (Sort; mkSort)
 open fam-mu-lifting.fibre os es CM BP 𝟙c public using (Idx; ∣_∣; module Fibre; μ-fam)
 
--- The lifting on families: the fibrewise strong endofunctor induced by the lifting.
 private
   LfS : StrongFunctor products
   LfS = fam-functor.FamF-strong os (os ⊔ es) 𝒞-products Lc.L-strong
@@ -98,7 +95,6 @@ Lf-map = LfS.fmor
 
 open LfS public using () renaming (fmor-cong to Lf-map-cong; fmor-id to Lf-map-id; fmor-comp to Lf-map-comp)
 
--- A family's transports are isomorphisms, inverted along the symmetric proof.
 fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
                  {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
                  (F .subst e ∘ F .subst (I .Setoid.isEquivalence .sym e)) ≈ id _
@@ -121,7 +117,6 @@ open polynomial-functor.Interp products strongCoproducts LfS public
             strong-Lmap-comp to strong-Lf-map-comp; strong-Lmap-p₂ to strong-Lf-map-p₂;
             strong-Lmap-pre to strong-Lf-map-pre; strong-Lmap-post to strong-Lf-map-post)
 
--- The action of the lifting on a family morphism in context is fibrewise the transport.
 strong-Lf-map-transf : ∀ {Γ X Y : Obj} (f : Mor (Fam𝒞-P.prod Γ X) Y) {γ x} →
                        strong-Lf-map f .famf ._⇒f_.transf (γ , x) ≈ strong-Lmap (f .famf ._⇒f_.transf (γ , x))
 strong-Lf-map-transf f = ≈-trans id-left (≈-trans (strong-Lmap-post _ _) (strong-Lmap-cong id-right))
@@ -129,7 +124,6 @@ strong-Lf-map-transf f = ≈-trans id-left (≈-trans (strong-Lmap-post _ _) (st
 private
   module CME = CMonEnriched CM
 
--- The payload injection, fibrewise.
 injF : ∀ {X : Obj} → Mor X (Lf X)
 injF .idxf = prop-setoid.idS _
 injF {X} .famf ._⇒f_.transf x = inj
@@ -160,8 +154,6 @@ strong-Lf-map-injF f =
   Fam𝒞.≈-trans (Fam𝒞.assoc _ _ _)
   (Fam𝒞.≈-trans (Fam𝒞.∘-cong Fam𝒞.≈-refl strength-injF) (injF-natural f))
 
--- A section of a family: an element of every fibre, natural under the transports. It is what an
--- eliminator writes when it consumes a root.
 record Section (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
   field
     at         : ∀ x → 𝟙c ⇒ X .fam .fm x
@@ -169,9 +161,6 @@ record Section (X : Obj) : Set (o ⊔ m ⊔ e ⊔ os ⊔ es) where
 
 open Section public
 
--- Sections are structural: a simple family has a section at any chosen element, and sections
--- close under the lifting, coproducts and products, with unit weight at each root the lifting
--- adjoins.
 simple-section : ∀ {A : Setoid os (os ⊔ es)} {x : obj} → (𝟙c ⇒ x) → Section simple[ A , x ]
 simple-section c .at _ = c
 simple-section c .at-natural _ = id-left
@@ -197,14 +186,11 @@ prod-section c d .at (x , y) = pair (c .at x) (d .at y)
 prod-section c d .at-natural (e₁ , e₂) =
   ≈-trans (pair-compose _ _ _ _) (pair-cong (c .at-natural e₁) (d .at-natural e₂))
 
--- Scaling a section by an endomorphism of the unit object.
 scale-section : ∀ {X : Obj} → (𝟙c ⇒ 𝟙c) → Section X → Section X
 scale-section w c .at x = c .at x ∘ w
 scale-section w c .at-natural e =
   ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (c .at-natural e) ≈-refl)
 
--- Eliminating a root in context: the payload continues, and the root produces the target's
--- section.
 elimF : ∀ {Γ X C : Obj} → Section C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
 elimF cC f .idxf = f .idxf
 elimF cC f .famf ._⇒f_.transf (γ , x) =
@@ -240,8 +226,6 @@ preserves-section-resp {X} {Y} {f} {g} {c} {d} f≃g pf .at x =
     (≈-trans (assoc _ _ _)
       (≈-trans (∘-cong ≈-refl (pf .at x)) (d .at-natural _)))
 
--- Preservation inverts along an isomorphism: the target section pulls back through the inverse,
--- with the index round trip carried by the sections' naturality.
 preserves-section-inv : ∀ {X Y : Obj} {f : Mor X Y} {g : Mor Y X} {c : Section X} {d : Section Y} →
                         (f Fam𝒞.∘ g) ≃ Fam𝒞.id Y → (g Fam𝒞.∘ f) ≃ Fam𝒞.id X →
                         preserves-section f c d → preserves-section g d c
@@ -296,7 +280,6 @@ preserves-scale : ∀ {X Y : Obj} {f : Mor X Y} {w : 𝟙c ⇒ 𝟙c} {c d} →
                   preserves-section f (scale-section w c) (scale-section w d)
 preserves-scale p .at x = ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (p .at x) ≈-refl)
 
--- The lift of an isomorphism of families.
 Lf-iso : ∀ {X Y : Obj} → Fam𝒞.Iso X Y → Fam𝒞.Iso (Lf X) (Lf Y)
 Lf-iso i .Fam𝒞.Iso.fwd = Lf-map (i .Fam𝒞.Iso.fwd)
 Lf-iso i .Fam𝒞.Iso.bwd = Lf-map (i .Fam𝒞.Iso.bwd)
@@ -321,12 +304,10 @@ Lf-iso {X} {Y} i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.famf-eq .indexed-family._≃
               (i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x})))
           Lmap-id)))
 
--- Trees over an environment: shapes at its index setoids, fibres by decoration.
 module Tree {n} (δ : Fin n → Obj) where
   open Srt.Tree (λ i → δ i .idx) public
   open Fibre δ public
 
--- Sections for a polynomial: one at every constant leaf.
 PolySection : ∀ {n} → Poly n → Set (o ⊔ m ⊔ e ⊔ os ⊔ es)
 PolySection (const A) = Section A
 PolySection (var i)   = Lift (o ⊔ m ⊔ e ⊔ os ⊔ es) ⊤
@@ -334,9 +315,6 @@ PolySection (P' + Q') = PolySection P' ×T PolySection Q'
 PolySection (P' × Q') = PolySection P' ×T PolySection Q'
 PolySection (μ P')    = PolySection P'
 
--- The unit section of a μ-carrier, by recursion over trees: sections for the polynomial and
--- the environment determine an element at every fibre, natural in the tree, with unit weight at
--- each root.
 module MuSection {n} (δ : Fin n → Obj) (δ-section : ∀ i → Section (δ i)) where
   open Tree δ
 
@@ -441,10 +419,6 @@ extend-section δc c (Fin.suc i) = δc i
 -- actions carry the decorations of both sides.
 ------------------------------------------------------------------------------
 
--- Reindex a tree from one parameter context to another along a context morphism.
--- The morphism is first-order data: `base` carries the leaf maps (applied only at
--- leaves), `bind` records one binder. So `reindex`'s recursive calls are syntactically
--- direct and structurally terminating — no closure, no fuel.
 module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
   private
     module TA = Tree δA
@@ -463,10 +437,6 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
            MorD (extend ρA (inj₂ (mkSort ∣ Q ∣ ρA))) (extend ρB (inj₂ (mkSort ∣ Q ∣ ρB)))
                 (TA.deco-ext Q dA) (TB.deco-ext Q dB)
 
-  -- Index-only reindex: the index action of a context morphism, with no fibre data,
-  -- so entirely at the category-free shapes. Carries both `MorD`'s index side (via
-  -- `erase` below) and the fusion morphisms (`combine`), whose Γ-dependent fibre
-  -- action lives externally in `FReindex`.
   data IMorD : ∀ {k} → (Fin k → Fin nA ⊎ Sort nA) → (Fin k → Fin nB ⊎ Sort nB) →
                Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     ibase : ∀ {k} {ρA ρB} (f : ∀ v → TA.El (ρA v) → TB.El (ρB v))
@@ -512,7 +482,6 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     iapply-resp (ibind R md) Fin.zero {a} {a'} p = ireindex-resp md {a} {a'} p
     iapply-resp (ibind R md) (Fin.suc v) p = iapply-resp md v p
 
-  -- Erase the fibre fields; `MorD`'s index-level operations are `IMorD`'s.
   erase : ∀ {k} {ρA ρB dA dB} → MorD {k} ρA ρB dA dB → IMorD ρA ρB
   erase (base f f-resp _ _) = ibase f f-resp
   erase (bind Q md) = ibind ∣ Q ∣ (erase md)
@@ -538,7 +507,6 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
                TA.elEq (ρA v) a a' → TB.elEq (ρB v) (apply md v a) (apply md v a')
   apply-resp md v {a} {a'} = iapply-resp (erase md) v {a} {a'}
 
-  -- The fibre side of `reindex`: a 𝒞-morphism into the reindexed fibre.
   mutual
     reindex-fam : ∀ {j} (R : Poly j) {ηA ηB dA dB} (md : MorD ηA ηB dA dB) {a : TA.⟦ ∣ R ∣ ⟧shape ηA} →
                   TA.fib-shape R dA a ⇒ TB.fib-shape R dB (reindex-shape ∣ R ∣ md a)
@@ -559,7 +527,6 @@ module Reindex {nA nB} (δA : Fin nA → Obj) (δB : Fin nB → Obj) where
     apply-fam (bind Q md) Fin.zero a = reindex-fam-W md {a}
     apply-fam (bind Q md) (Fin.suc v) a = apply-fam md v a
 
-  -- The fibre reindex commutes with subst (naturality).
   mutual
     reindex-fam-natural : ∀ {j} (R : Poly j) {ηA ηB dA dB} (md : MorD ηA ηB dA dB)
                       {a a' : TA.⟦ ∣ R ∣ ⟧shape ηA} (p : TA.shape≈ ∣ R ∣ ηA a a') →
@@ -708,9 +675,6 @@ module FReindex {nA nB} {δA : Fin nA → Obj} {δB : Fin nB → Obj} (G : obj) 
 
 -- The fold (catamorphism) for the μ-type, lifted to a standalone module so its
 -- mutual recursion is termination-checked independently of the `hasMu` copattern.
--- The fold-specific reindex morphism, shared by the fold and by the application of an algebra to a
--- candidate: `fbase` sends the outer recursion slot to the recursive map and parameters to
--- themselves; `fbind` records a binder.
 module FoldBase {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj} where
     module Tδ = Tree δ
     module TA' = Tree (extend δ A)
@@ -762,7 +726,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-apply γ (fbind Q fm) Fin.zero    a = fold-reindex {Q = Q} γ fm a
       fold-apply γ (fbind Q fm) (Fin.suc v) a = fold-apply γ fm v a
 
-    -- The index fold respects ≈ (in both Γ and the tree).
     mutual
       fold-idx-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
                       _≈s_ (A .idx) (fold-idx γ t) (fold-idx γ' t')
@@ -804,7 +767,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-apply-resp γ≈ (fbind Q fm) Fin.zero    {a} {a'} p = fold-reindex-resp {Q = Q} γ≈ fm {a} {a'} p
       fold-apply-resp γ≈ (fbind Q fm) (Fin.suc v) p = fold-apply-resp γ≈ fm v p
 
-    -- The fibre fold: collapse the tree's fibre via `alg.famf`, threading the Γ-fibre.
     mutual
       fold-fam : (γ : Γ .idx .Carrier) (t : Tδ.W ∣ P ∣ (λ i → inj₁ i)) →
                  prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (fold-idx γ t)
@@ -844,7 +806,6 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-apply-fam γ (fbind Q md) Fin.zero    a = fold-reindex-fam {Q = Q} γ md a
       fold-apply-fam γ (fbind Q md) (Fin.suc v) a = fold-apply-fam γ md v a
 
-    -- The fibre fold is natural: it commutes with `subst` (in both Γ and the tree).
     mutual
       fold-fam-natural : ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {t t'} (p : Tδ.W-≈ t t') →
                          fold-fam γ₂ t' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-subst P (λ i → lift tt) {x = t} {y = t'} p) ≈
@@ -1040,14 +1001,12 @@ module FoldSection {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 -- packaged with the fold as the HasMu instance.
 ------------------------------------------------------------------------------
 
--- α's reconstruction machinery.
 module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     δ' = extend δ (μ-fam P δ)
     module Tδ = Tree δ
     module TX = Tree δ'
     module R  = Reindex δ' δ
 
-    -- Bridge `fobj`'s native structure to our `⟦_⟧shape` (identity at leaves and μ).
     embed-idx : (Q : Poly (suc n)) → fobj μ-fam Q δ' .idx .Carrier → TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)
     embed-idx (const A) a = a
     embed-idx (var v)   a = a
@@ -1063,8 +1022,6 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     embed-idx-resp (Q₁ + Q₂) {inj₂ _} {inj₂ _} p = embed-idx-resp Q₂ p
     embed-idx-resp (Q₁ × Q₂) {_ , _} {_ , _} (p₁ , p₂) = embed-idx-resp Q₁ p₁ , embed-idx-resp Q₂ p₂
     embed-idx-resp (μ Q')    p = p
-    -- Inverse bridge: `⟦_⟧shape` over the fresh context back to `fobj`'s native
-    -- structure (identity at leaves and μ, like `embed-idx`).
     unembed-idx : (Q : Poly (suc n)) → TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v) → fobj μ-fam Q δ' .idx .Carrier
     unembed-idx (const A) a = a
     unembed-idx (var v)   a = a
@@ -1083,7 +1040,6 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     unembed-idx-resp (Q₁ × Q₂) {_ , _} {_ , _} (p₁ , p₂) = unembed-idx-resp Q₁ p₁ , unembed-idx-resp Q₂ p₂
     unembed-idx-resp (μ Q')    p = p
 
-    -- Embedding after unembedding is the identity.
     embed-unembed : (Q : Poly (suc n)) (x : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)) →
                     TX.shape≈ ∣ Q ∣ (λ v → inj₁ v) (embed-idx Q (unembed-idx Q x)) x
     embed-unembed (const A) a = A .idx .isEquivalence .refl
@@ -1110,7 +1066,6 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     m₀-fam-natural (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
     mor₀ : R.MorD (λ v → inj₁ v) (Srt.η₀ ∣ P ∣) (λ v → lift tt) (Tδ.deco-ext P (λ i → lift tt))
     mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-natural
-    -- Fibre bridge: `fobj`'s fibre to our `fib-shape` (identity at leaves, products at ×).
     embed-fam : (Q : Poly (suc n)) (x : fobj μ-fam Q δ' .idx .Carrier) →
                 fobj μ-fam Q δ' .fam .fm x ⇒ TX.fib-shape Q (λ v → lift tt) (embed-idx Q x)
     embed-fam (const A) a = id _
@@ -1139,7 +1094,6 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
                (Lmap-comp _ _))
     embed-fam-natural (μ Q')    e = ≈-trans id-left (≈-sym id-right)
 
-    -- Fibre half of the inverse bridge.
     unembed-fam : (Q : Poly (suc n)) (y : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)) →
                   TX.fib-shape Q (λ v → lift tt) y ⇒ fobj μ-fam Q δ' .fam .fm (unembed-idx Q y)
     unembed-fam (const A) a = id _
@@ -1170,7 +1124,6 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
                (Lmap-comp _ _))
     unembed-fam-natural (μ Q')    e = ≈-trans id-left (≈-sym id-right)
 
-    -- Embedding after unembedding is the identity on fibres too.
     embed-unembed-fam : (Q : Poly (suc n)) (y : TX.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)) →
                         (TX.fib-shape-subst Q (λ v → lift tt) (embed-unembed Q y)
                          ∘ (embed-fam Q (unembed-idx Q y) ∘ unembed-fam Q y))
@@ -1199,7 +1152,6 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     embed-unembed-fam (μ Q') t =
       ≈-trans (∘-cong (TX.fib-refl* Q' (λ v → lift tt) t) ≈-refl) (≈-trans id-left id-left)
 
-    -- Unembedding after embedding is the identity, on indexes and on fibres.
     unembed-embed : (Q : Poly (suc n)) (x : fobj μ-fam Q δ' .idx .Carrier) →
                     _≈s_ (fobj μ-fam Q δ' .idx) (unembed-idx Q (embed-idx Q x)) x
     unembed-embed (const A) a = A .idx .isEquivalence .refl
@@ -1313,9 +1265,6 @@ preserves-inMap : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj)
                     (MuSection.μ-section δ δc P Pc)
 preserves-inMap P δ δc Pc = InMapDef.InMapSection.preserves-inMor P δ δc Pc
 
--- The strong functorial action of a μ-polynomial on indices is reindexing along the pointwise
--- family of its argument maps.
-
 fuse-idx : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
                let module Rs = Reindex sₛ sₜ in
                (cmb : Γ .idx .Carrier → Rs.IMorD (λ v → inj₁ v) (λ v → inj₁ v))
@@ -1422,7 +1371,6 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
                        (At.R.reindex At.mor₀ (Rs'.ireindex (cmb' γ₁) wm₁))
     telescope = tele-shape (μ R'') tbase x₁
 
--- The fibre map of the strong product action is the strong product action of the fibre maps.
 strong-prod-m-transf : ∀ {Γ X₁ X₂ Y₁ Y₂ : Obj} (f : Mor (Fam𝒞-P.prod Γ X₁) Y₁) (g : Mor (Fam𝒞-P.prod Γ X₂) Y₂)
                        {γ x₁ x₂} →
                        Fam𝒞-P.strong-prod-m f g .famf ._⇒f_.transf (γ , (x₁ , x₂))
@@ -1431,8 +1379,6 @@ strong-prod-m-transf f g =
   pair-cong (≈-trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left)))
             (≈-trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left)))
 
--- The fibre half: the fibre reindexing along an external action agreeing with the argument maps is
--- the strong action's fibre map, transported along the index half.
 fuse-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
                let module Rs = Reindex sₛ sₜ
                    module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ) in
@@ -1678,7 +1624,6 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     module Tδ = Tree δ
     module R' = Reindex δ (extend δ (μ-fam P δ))
 
-  -- The inverse bridge: the recursion slot and the parameters map to themselves.
   m₀⁻ : ∀ v → Tδ.El (Srt.η₀ ∣ P ∣ v) → TX.El (inj₁ v)
   m₀⁻ Fin.zero    a = a
   m₀⁻ (Fin.suc i) a = a
@@ -1702,7 +1647,6 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
   mor₀⁻ : R'.MorD (Srt.η₀ ∣ P ∣) (λ v → inj₁ v) (Tδ.deco-ext P (λ i → lift tt)) (λ v → lift tt)
   mor₀⁻ = R'.base m₀⁻ m₀⁻-resp m₀⁻-fam m₀⁻-fam-natural
 
-  -- Pair each extension of the inverse bridge with the extension of the bridge it undoes.
   data DRel : ∀ {j} {ρ : Fin j → Fin n ⊎ Sort n} {ρ' : Fin j → Fin (suc n) ⊎ Sort (suc n)}
               {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → TX.DecoAssign (ρ' v)} →
               R'.MorD ρ ρ' d d' → R.MorD ρ' ρ d' d →
@@ -1711,7 +1655,6 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     dbind : ∀ {j} {ρ ρ' d d'} {md' : R'.MorD {j} ρ ρ' d d'} {md} (Q' : Poly (suc j)) →
             DRel md' md → DRel (R'.bind Q' md') (R.bind Q' md)
 
-  -- Round trip on the parameter side: back and forth is the identity.
   mutual
     drt-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md} → DRel md' md →
             (t : Tδ.W ∣ Q̂ ∣ ρ) → Tδ.W-≈ (R.reindex md (R'.reindex md' t)) t
@@ -1735,7 +1678,6 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     drt-el (dbind Q' rel) Fin.zero    a = drt-W {Q̂ = Q'} rel a
     drt-el (dbind Q' rel) (Fin.suc v) a = drt-el rel v a
 
-  -- Round trip on the recursion side.
   mutual
     drt'-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md} → DRel md' md →
              (u : TX.W ∣ Q̂ ∣ ρ') → TX.W-≈ (R'.reindex md' (R.reindex md u)) u
@@ -1759,8 +1701,6 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     drt'-el (dbind Q' rel) Fin.zero    a = drt'-W {Q̂ = Q'} rel a
     drt'-el (dbind Q' rel) (Fin.suc v) a = drt'-el rel v a
 
-  -- Fibre halves of the round trips: the fibre composites, transported along the index round
-  -- trips, are the identity. Pure Lmap and prod-m algebra; no isomorphisms are needed.
   mutual
     drt-fam-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
                 (rel : DRel md' md) (t : Tδ.W ∣ Q̂ ∣ ρ) →
@@ -1860,7 +1800,6 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     drt'-el-fam (dbind Q' rel) Fin.zero    a = drt'-fam-W {Q̂ = Q'} rel a
     drt'-el-fam (dbind Q' rel) (Fin.suc v) a = drt'-el-fam rel v a
 
-  -- The inverse of inMor: strip the root, reindex back to the fresh context, unembed.
   u-idx : Tδ.W ∣ P ∣ (λ i → inj₁ i) → fobj μ-fam P At.δ' .idx .Carrier
   u-idx (Tδ.sup x) = unembed-idx P (R'.reindex-shape ∣ P ∣ mor₀⁻ x)
 
@@ -1885,9 +1824,6 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     (≈-trans (∘-cong₁ (At.unembed-fam-natural P (R'.reindex-shape-resp ∣ P ∣ mor₀⁻ e)))
              (assoc _ _ _))))
 
-  -- The triangle identities: inMor is an isomorphism (Lambek), with outMor the inverse. The index
-  -- halves compose the bridges' round trips with the reindex round trips; the fibre halves push
-  -- the transports through the fibre actions by naturality and close with the fibre round trips.
   inMor-outMor : Fam𝒞._∘_ At.inMor outMor ≃ Fam𝒞.id (μ-fam P δ)
   inMor-outMor ._≃_.idxf-eq .PS._≃m_.func-eq {Tδ.sup x} {Tδ.sup y} e =
     Tδ.shape≈-trans ∣ P ∣ (Srt.η₀ ∣ P ∣)
@@ -1978,8 +1914,6 @@ preserves-outMor P δ δc Pc = LambekDef.OutMorSection.preserves-outMor P δ δc
 -- identifies that application, at the shape under the algebra map, with the strong action of the
 -- candidate, which gives β and η in their categorical form and the HasMuLaws instance.
 
--- One application of the algebra against a candidate at the recursive positions: the same
--- recursion as the fold, with the candidate at the slot.
 module ApplyDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (let module Tδ = Tree δ)
     (h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier)
@@ -2091,9 +2025,6 @@ module ApplyDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       apply-apply-fam γ (fbind Q md) Fin.zero    a = apply-reindex-fam {Q = Q} γ md a
       apply-apply-fam γ (fbind Q md) (Fin.suc v) a = apply-apply-fam γ md v a
 
-
--- The fused law: a candidate is a fold when it is the algebra applied to itself at every node. The
--- fold's recursion agrees with the application at the fold, and the fused law determines the fold.
 module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A) where
   open FoldBase {n} {Γ} {A} {P} {δ}
@@ -2123,7 +2054,6 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                   ∘ (alg .famf ._⇒f_.transf (γ , Ap.apply-shape-idx h-idx h-resp h-fam P γ x)
                      ∘ pair p₁ (Ap.apply-shape-fam h-idx h-resp h-fam P γ x)))
 
-  -- Index agreement between the fold's recursion and the application at the fold.
   mutual
     agree-shape : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣)) →
                   _≈s_ (fobj μ-fam Q (extend δ A) .idx) (Ft.fold-shape-idx Q γ x) (Af.apply-shape-idx Q γ x)
@@ -2158,9 +2088,6 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     agree-apply γ (fbind Q fm) Fin.zero    a = agree-reindex {Q = Q} γ fm a
     agree-apply γ (fbind Q fm) (Fin.suc v) a = agree-apply γ fm v a
 
-  -- Fibre agreement: the fold's fibre transported along the index agreement is the application's
-  -- fibre. At the value formers the transport passes across the lifting and the congruence closes
-  -- on the branch, exactly as in the fold's naturality.
   mutual
     agree-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣)) →
                       (fobj μ-fam Q (extend δ A) .fam .subst (agree-shape Q γ x) ∘ Ft.fold-shape-fam Q γ x)
@@ -2227,8 +2154,6 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     agree-apply-fam γ (fbind Q fm) Fin.zero    a = agree-reindex-fam {Q = Q} γ fm a
     agree-apply-fam γ (fbind Q fm) (Fin.suc v) a = agree-apply-fam γ fm v a
 
-  -- The fused law determines the fold: the comparison of the application at the candidate with the
-  -- fold's recursion carries the tree induction at the recursive slots.
   module Unique (h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier)
                 (h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
                           _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t'))
@@ -2358,8 +2283,6 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       compare-apply-fam γ (fbind Q fm) Fin.zero    a = compare-reindex-fam {Q = Q} γ fm a
       compare-apply-fam γ (fbind Q fm) (Fin.suc v) a = compare-apply-fam γ fm v a
 
-
-  -- The fused law for a candidate given as a family morphism, and uniqueness at that level.
   IsFoldMor : (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) → Prop (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es)
   IsFoldMor h =
     IsFold (λ γ t → h .idxf .PS._⇒_.func (γ , t))
@@ -2381,7 +2304,6 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 
 private module FMuC = HasMu hasMu
 
--- The candidate's application at the shape under the algebra map, against its strong action.
 module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) where
   open FoldBase {n} {Γ} {A} {P} {δ}
@@ -2401,7 +2323,6 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 
   open ApplyDef {n} {Γ} {A} {P} {δ} h-idx h-resp h-fam public
 
-  -- The fibre maps of the application are natural in the shape.
   mutual
     apply-shape-fam-natural : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
                               (p : Tδ.shape≈ ∣ Q ∣ (Srt.η₀ ∣ P ∣) x x') →
@@ -2483,7 +2404,6 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   fs : ∀ i → Mor (Fam𝒞-P.prod Γ (At.δ' i)) (extend δ A i)
   fs = FMuC.strong-extend-mor (λ i → Fam𝒞-P.p₂) h
 
-  -- Reindexing along the candidate at the recursion slot and the identity at the parameters.
   cmb : Γ .idx .Carrier → RX.IMorD (λ v → inj₁ v) (λ v → inj₁ v)
   cmb γ = RX.ibase (λ { Fin.zero t → h-idx γ t ; (Fin.suc i) a → a })
                    (λ { Fin.zero p → h-resp (Γ .idx .isEquivalence .refl) p ; (Fin.suc i) p → p })
@@ -2506,7 +2426,6 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     corr-fam Fin.zero    = ≈-trans (∘-cong (A .fam .refl*) ≈-refl) id-left
     corr-fam (Fin.suc i) = ≈-trans (∘-cong (δ i .fam .refl*) ≈-refl) id-left
 
-    -- The application after the bridge reindexing, paired with the one reindexing they compose to.
     data CRel : ∀ {j} {ρX : Fin j → Fin (suc n) ⊎ Sort (suc n)} {ρ : Fin j → Fin n ⊎ Sort n}
                 {ρ' : Fin j → Fin (suc n) ⊎ Sort (suc n)}
                 {dX : ∀ v → TX.DecoAssign (ρX v)} {d : ∀ v → Tδ.DecoAssign (ρ v)} {d' : ∀ v → TA'.DecoAssign (ρ' v)} →
@@ -2589,7 +2508,6 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       comp-el-fam (cbind Q rel)  Fin.zero    a = comp-W-fam {Q̂ = Q} rel a
       comp-el-fam (cbind Q rel)  (Fin.suc v) a = comp-el-fam rel v a
 
-  -- The candidate applied at the shape under the algebra map is the strong action, on indices.
   bridge-idx : ∀ (Q : Poly (suc n)) γ (y : fobj μ-fam Q At.δ' .idx .Carrier) →
                _≈s_ (fobj μ-fam Q (extend δ A) .idx)
                  (apply-shape-idx Q γ (At.R.reindex-shape ∣ Q ∣ At.mor₀ (At.embed-idx Q y)))
@@ -2607,7 +2525,6 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
          (Γ .idx .isEquivalence .refl) {m₁ = t} {m₂ = t} (TX.W-≈-refl t))
     where open Comp γ
 
-  -- The same on fibres.
   bridge-fam : ∀ (Q : Poly (suc n)) γ (y : fobj μ-fam Q At.δ' .idx .Carrier) →
                (fobj μ-fam Q (extend δ A) .fam .subst (bridge-idx Q γ y)
                 ∘ (apply-shape-fam Q γ (At.R.reindex-shape ∣ Q ∣ At.mor₀ (At.embed-idx Q y))
@@ -2662,7 +2579,6 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
              (fuse-fam γ Q' cmb act fs corr corr-fam {t})))
     where open Comp γ
 
--- β: the fold after the algebra map is the algebra after the strong action of the fold.
 module Beta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A) where
   private
@@ -2716,8 +2632,6 @@ module Beta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     ≈-trans (∘-cong ≈-refl (≈-trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left))))
             (≈-trans (β-fam γ y) (≈-sym id-left))
 
--- η: a morphism satisfying the fold equation is the fold. The equation at a tree, taken at the
--- tree's unfolding, gives the fused law at its shape by the bridge and the algebra map's inverse.
 module Eta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A)
     (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A)
@@ -2780,7 +2694,6 @@ module Eta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       Hf = ≈-trans (∘-cong ≈-refl (≈-sym (≈-trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left)))))
            (≈-trans (H ._≃_.famf-eq .indexed-family._≃f_.transf-eq {γ , y}) id-left)
 
-      -- The candidate at the shape's unfolding, through the strong action and the bridge.
       step : (hx' ∘ prod-m (id _) s⁻)
              ≈ (A .fam .subst (A .idx .isEquivalence .sym Hi)
                 ∘ (A .fam .subst (alg .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl , ex))
@@ -2853,7 +2766,6 @@ module Eta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   ⦅⦆-η : h ≃ FMuC.⦅ alg ⦆
   ⦅⦆-η = L.unique h is-fold
 
--- The tree model satisfies the initial-algebra laws.
 hasMuLaws : HasMuLaws hasMu
 hasMuLaws .HasMuLaws.⦅⦆-β alg = Beta.⦅⦆-β alg
 hasMuLaws .HasMuLaws.⦅⦆-η alg h H = Eta.⦅⦆-η alg h H

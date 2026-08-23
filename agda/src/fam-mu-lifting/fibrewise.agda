@@ -73,7 +73,6 @@ FamF : Functor F𝒞.cat F𝒟.cat
 FamF = fam-functor.FamF os (os ⊔ es) F
 
 private
-  -- Lifting an isomorphism through the target lifting.
   L-iso : ∀ {a b} → 𝒟.Iso a b → 𝒟.Iso (L𝒟.L a) (L𝒟.L b)
   L-iso i .fwd = L𝒟.Lmap (i .fwd)
   L-iso i .bwd = L𝒟.Lmap (i .bwd)
@@ -82,7 +81,6 @@ private
   L-iso i .bwd∘fwd≈id =
     ≈-trans (≈-sym (L𝒟.Lmap-comp _ _)) (≈-trans (L𝒟.Lmap-cong (i .bwd∘fwd≈id)) L𝒟.Lmap-id)
 
-  -- Conjugating a commuting square by isomorphisms on both sides.
   iso-flip : ∀ {a b c d} (i : 𝒟.Iso a b) (j : 𝒟.Iso c d)
              {f : a ⇒ c} {g : b ⇒ d} →
              (j .fwd ∘ f) ≈ (g ∘ i .fwd) →
@@ -98,8 +96,6 @@ private
                     (∘-cong ≈-refl (i .fwd∘bwd≈id)))
                   (∘-cong ≈-refl id-right)))))))
 
-  -- One naturality step across a root: the transport under the source lifting is carried through
-  -- the lifting comparison, given the inner square under the target lifting.
   root-step : ∀ {a a' b b'} (i' : 𝒟.Iso (F .fobj a') b') (i : 𝒟.Iso (F .fobj a) b)
               {s : a 𝒞.⇒ a'} {t : b ⇒ b'} →
               ((i' .fwd ∘ F .fmor s) ≈ (t ∘ i .fwd)) →
@@ -126,9 +122,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
   P̂ : ∀ {j} → Fib𝒞.Poly-C j → Fib𝒟.Poly-C j
   P̂ = Poly-map FamF
 
-  -- Relate references and decorated sorts of the two erasures: environment
-  -- positions coincide, and sorts relate recursively through the μ-body from
-  -- which both are formed.
   mutual
     record RelAssign (j : ℕ) : Set ℓk where
       inductive
@@ -158,8 +151,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
   ext Q E .rel Fin.zero    = srt (mk Q E)
   ext Q E .rel (Fin.suc i) = E .rel i
 
-  -- Forward tree transport, by recursion on the polynomial; the leaves are
-  -- identities.
   mutual
     cfwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
            T.W Fib𝒞.∣ Q ∣ (E .ρ₁) → T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)
@@ -178,7 +169,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     el-cfwd env x = x
     el-cfwd (srt (mk Q E)) x = cfwd Q E x
 
-  -- The forward transport preserves bisimilarity.
   mutual
     c≈fwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
             {x y : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)} → T.W-≈ x y →
@@ -201,7 +191,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     elEq-cfwd env p = p
     elEq-cfwd (srt (mk Q E)) {x} {y} p = c≈fwd Q E {x} {y} p
 
-  -- Backward tree transport.
   mutual
     cbwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
            T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) → T.W Fib𝒞.∣ Q ∣ (E .ρ₁)
@@ -220,7 +209,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     el-cbwd env x = x
     el-cbwd (srt (mk Q E)) x = cbwd Q E x
 
-  -- The backward transport preserves bisimilarity.
   mutual
     c≈bwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
             {x y : T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)} → T.W-≈ x y →
@@ -243,7 +231,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     elEq-cbwd env p = p
     elEq-cbwd (srt (mk Q E)) {x} {y} p = c≈bwd Q E {x} {y} p
 
-  -- Round trips: the two transports are mutually inverse up to bisimilarity.
   mutual
     c-fb : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
            (x : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)) →
@@ -286,10 +273,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     el-cbf (env {p}) y = T.elEq-refl (inj₁ p) y
     el-cbf (srt (mk Q E)) y = c-bf Q E y
 
-  -- The fibre isomorphisms: the base functor's image of a fibre against the
-  -- target-side fibre at the transported tree. Constants and parameters are
-  -- identities, products cross the product comparison, and each root crosses
-  -- the lifting comparison.
   mutual
     fib-ciso : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
                (w : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)) →
@@ -322,7 +305,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
   open preserve-chosen-products-consequences F (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟) F-prod
     using (mul⁻¹-natural)
 
-  -- The fibre isomorphisms commute with transport along bisimilarity.
   mutual
     fib-cnat : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
                {w w' : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)} (p : T.W-≈ w w') →
@@ -387,8 +369,6 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     fib-el-cnat (env {p}) q = ≈-trans id-left (≈-sym id-right)
     fib-el-cnat (srt (mk Q E)) {x} {x'} q = fib-cnat Q E {x} {x'} q
 
--- The assembled comparison: the change of base commutes with the μ-carriers, as
--- an isomorphism of Fam(𝒟)-objects over shared trees.
 module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F𝒞.Obj) where
   open Fibrewise δ
   open Fam
