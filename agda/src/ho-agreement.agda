@@ -996,6 +996,52 @@ map-dep-mu {Γ} {γ} {τ₀} {σr} {s} IHv {τ'} {v} {v'} {F} M {gi} rγ {i} r w
       (Fib.trans T Ju (unroll-mor τₛ .famf .transf Iμ .preserve-+ {ctrl-dep-at (μ τₛ) Iμ w} {dF})
                       (Fib.+-cong T Ju (preserves-unroll-ctrl-dep τₛ .at Iμ .func-eq {w} {w} ≈-refl) (Fib.refl T Ju))))))
 
+map-dep : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+          (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
+                 ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
+          (IHd : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) (w : Setoid.Carrier A)
+                 (x' : ∣ 𝔽 (width-env (γ · w')) ∣) (g' : ∣ FibC (Γ ▸ τ₀ [ σr ]) gj ∣) → EnvDepRel rγ w x' g' →
+                 DepRel σr (IHv D rγ) (ap T (inputs (γ · w') w x'))
+                   (Fib._+_ σr (⟦ s ⟧tm .idxf .sfunc gj) (ctrl-dep-at σr (⟦ s ⟧tm .idxf .sfunc gj) w)
+                     (⟦ s ⟧tm .famf .transf gj .func g')))
+          {σ' : type 1} {v v' F} (M : Map γ s σ' v v' F) {gi} (rγ : EnvValRel γ gi) {i} (r : ValRel (σ' [ μ τ₀ ]) v i)
+          (w : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣) (g : ∣ FibC Γ gi ∣) → EnvDepRel rγ w x g →
+          (o : ∣ 𝔽 (width v) ∣) (e : ∣ Fib (σ' [ μ τ₀ ]) i ∣) →
+          DepRel (σ' [ μ τ₀ ]) r o (Fib._+_ (σ' [ μ τ₀ ]) i (ctrl-dep-at (σ' [ μ τ₀ ]) i w) e) →
+          DepRel (σ' [ σr ]) (map-val IHv M rγ r) (ap F (map-input γ w x o))
+            (Fib._+_ (σ' [ σr ]) (LI.fold-map τ₀ σr σ' ⟦ s ⟧tm .idxf .sfunc (gi , i))
+              (ctrl-dep-at (σ' [ σr ]) (LI.fold-map τ₀ σr σ' ⟦ s ⟧tm .idxf .sfunc (gi , i)) w)
+              (LI.fold-map τ₀ σr σ' ⟦ s ⟧tm .famf .transf (gi , i) .func (g , e)))
+map-dep {Γ} {γ} {τ₀} {σr} {s} IHv IHd (m-rec M D) {gi} rγ {i} r w x g rel o e h =
+  map-dep-rec {τ₀ = τ₀} IHv M D rγ {i = i} r w x g rel
+    (λ r' o' e' h' → map-dep IHv IHd M rγ r' w x g rel o' e' h')
+    (λ rγ' x' g' rel' → IHd D rγ' w x' g' rel') o e h
+map-dep {Γ} {γ} {τ₀} {σr} {s} IHv IHd (m-unit {v = v}) {gi} rγ {i} r w x g rel o e h =
+  map-dep-leaf {γ = γ} unit {v = v} r (idx-eq (LI.fold-map-unit τ₀ σr ⟦ s ⟧tm) (gi , i)) w x o
+    {e = e} {d = LI.fold-map τ₀ σr unit ⟦ s ⟧tm .famf .transf (gi , i) .func (g , e)}
+    (fam-eq (LI.fold-map-unit τ₀ σr ⟦ s ⟧tm) (gi , i) (g , e)) h
+map-dep {Γ} {γ} {τ₀} {σr} {s} IHv IHd (m-base {b = b} {v = v}) {gi} rγ {i} r w x g rel o e h =
+  map-dep-leaf {γ = γ} (base b) {v = v} r (idx-eq (LI.fold-map-base τ₀ σr b ⟦ s ⟧tm) (gi , i)) w x o
+    {e = e} {d = LI.fold-map τ₀ σr (base b) ⟦ s ⟧tm .famf .transf (gi , i) .func (g , e)}
+    (fam-eq (LI.fold-map-base τ₀ σr b ⟦ s ⟧tm) (gi , i) (g , e)) h
+map-dep {Γ} {γ} {τ₀} {σr} {s} IHv IHd (m-arrow {σ₁ = σ₁} {σ₂ = σ₂} {v = v}) {gi} rγ {i} r w x g rel o e h =
+  map-dep-leaf {γ = γ} (σ₁ [→] σ₂) {v = v} r (idx-eq (LI.fold-map-arrow τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i)) w x o
+    {e = e} {d = LI.fold-map τ₀ σr (σ₁ [→] σ₂) ⟦ s ⟧tm .famf .transf (gi , i) .func (g , e)}
+    (fam-eq (LI.fold-map-arrow τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i) (g , e)) h
+map-dep {Γ} {γ} {τ₀} {σr} {s} IHv IHd (m-inl {σ₁ = σ₁} {σ₂ = σ₂} M) {gi} rγ {i} r w x g rel o e h =
+  map-dep-inl {τ₀ = τ₀} IHv {σ₁ = σ₁} {σ₂ = σ₂} M rγ {i = i} r w x g
+    (λ r' o' e' h' → map-dep IHv IHd M rγ r' w x g rel o' e' h') o e h
+map-dep {Γ} {γ} {τ₀} {σr} {s} IHv IHd (m-inr {σ₁ = σ₁} {σ₂ = σ₂} M) {gi} rγ {i} r w x g rel o e h =
+  map-dep-inr {τ₀ = τ₀} IHv {σ₁ = σ₁} {σ₂ = σ₂} M rγ {i = i} r w x g
+    (λ r' o' e' h' → map-dep IHv IHd M rγ r' w x g rel o' e' h') o e h
+map-dep {Γ} {γ} {τ₀} {σr} {s} IHv IHd (m-pair {σ₁ = σ₁} {σ₂ = σ₂} M₁ M₂) {gi} rγ {i} r w x g rel o e h =
+  map-dep-pair {τ₀ = τ₀} IHv {σ₁ = σ₁} {σ₂ = σ₂} M₁ M₂ rγ {i = i} r w x g
+    (λ r' o' e' h' → map-dep IHv IHd M₁ rγ r' w x g rel o' e' h')
+    (λ r' o' e' h' → map-dep IHv IHd M₂ rγ r' w x g rel o' e' h') o e h
+map-dep {Γ} {γ} {τ₀} {σr} {s} IHv IHd (m-mu {τ' = τ'} M) {gi} rγ {i} r w x g rel o e h =
+  map-dep-mu {τ₀ = τ₀} IHv {τ' = τ'} M rγ {i = i} r w x g
+    (λ r' o' e' h' → map-dep IHv IHd M rγ r' w x g rel o' e' h') o e h
+
 fundamental-val : ∀ {Γ τ} {t : Γ ⊢ τ} (ct : CoreTm t) {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
        {gi} (rγ : EnvValRel γ gi) → ValRel τ v (⟦ t ⟧tm .idxf .sfunc gi)
 fundamental-vals : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} (cts : CoreTms Ms) {γ : Env Γ} {vs R}
