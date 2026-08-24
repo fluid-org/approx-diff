@@ -786,3 +786,46 @@ id-shape-val {τ = μ τ} (μ fo) a f E v p =
            (subst Val (sym (sub-id (μ τ))) v) _ _)
   where
   e-v = cong (λ h → subst Val h v) (uip E (sym (sub-id (μ τ))))
+
+inst-compat : ∀ {τ : type 1} (fo : first-order τ) →
+              SubCompat (fo-push (μ fo))
+                        (extend (λ i → inj₁ i) (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ (λ i → inj₁ i))))
+                        (λ i → inj₁ i)
+inst-compat fo = sbase g
+  where
+  g : ∀ j → El (extend (λ i → inj₁ i) (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ (λ i → inj₁ i))) j) →
+      ⟦ ∣ fo-as-poly (fo-push (μ fo) (j ↑ˡ 0)) ∅𝒞 ∣ ⟧shape (λ i → inj₁ i)
+  g zero x = x
+  g (suc ())
+
+inst-shape-val :
+  ∀ {τ : type 1} (fo : first-order τ) {N N' : ℕ} (a : Acc _<_ N) (a' : Acc _<_ N')
+  (f₀ : Compat var (λ i → inj₁ i) N) (f₂ : Compat var (λ i → inj₁ i) N')
+  (E : sub var (τ [ μ τ ]) ≡ sub (extend var (μ (sub (sub-lift var) τ))) τ)
+  (v : Val (sub var (τ [ μ τ ]))) (q : size v < N') (p : size (subst Val E v) < N) →
+  shape-val (fo-inst fo (μ fo)) var (λ i → inj₁ i) N' a' f₂ v q
+    ≡ sub-shape fo (inst-compat fo)
+        (shape-val fo (extend var (μ (sub (sub-lift var) τ)))
+           (extend (λ i → inj₁ i) (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ (λ i → inj₁ i))))
+           N a (extend-compat (shape-val (μ fo) var (λ i → inj₁ i) N a f₀) f₀)
+           (subst Val E v) p)
+inst-shape-val {τ = τ} fo {N} {N'} a a' f₀ f₂ E v q p =
+  sub-shape-val fo (inst-compat fo) σ₁ var Eσ a a' F f₂ hyp E v q p
+  where
+  B  = sub (sub-lift var) τ
+  σ₁ = extend var (μ B)
+  F  = extend-compat (shape-val (μ fo) var (λ i → inj₁ i) N a f₀) f₀
+  Eσ : ∀ i → sub var (push (μ τ) i) ≡ σ₁ i
+  Eσ zero = refl
+  Eσ (suc ())
+  hyp : ∀ j (u : Val (sub var (push (μ τ) (j ↑ˡ 0)))) (q₁ : size u < N')
+        (Ej : sub var (push (μ τ) (j ↑ˡ 0)) ≡ σ₁ (j ↑ˡ 0)) (p₁ : size (subst Val Ej u) < N) →
+        shape-val (fo-push (μ fo) (j ↑ˡ 0)) var (λ i → inj₁ i) N' a' f₂ u q₁
+          ≡ sapply (inst-compat fo) j (F j (subst Val Ej u) p₁)
+  hyp zero u q₁ Ej p₁ =
+    trans (shape-val-irrelevant (μ fo) var (λ i → inj₁ i) a' a f₂ f₀ (λ ()) u q₁ p₁')
+          (sym (shape-val-cast (μ fo) var (λ i → inj₁ i) N a f₀ e-u p₁))
+    where
+    e-u = cong (λ h → subst Val h u) (uip Ej refl)
+    p₁' = subst (λ z → size z < N) e-u p₁
+  hyp (suc ())
