@@ -835,3 +835,81 @@ inst-shape-val {τ = τ} fo {N} {N'} a a' f₀ f₂ E v q p =
     trans (shape-val-irrelevant (μ fo) var η∅ a' a f₂ f₀ (λ ()) u q₁ _)
           (sym (shape-val-cast (μ fo) var η∅ N a f₀ (subst-val-refl Ej u) p₁))
   hyp (suc ())
+
+private
+  μ-body : (τ : type 1) → τ ≡ sub (sub-lift var) τ
+  μ-body τ = sym (trans (sub-cong τ (λ { zero → refl ; (suc ()) })) (sub-id τ))
+
+μ-shape : ∀ {τ : type 1} (fo : first-order τ) → Val (τ [ μ τ ]) →
+          ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape (extend η∅ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η∅)))
+μ-shape {τ = τ} fo v =
+  shape-val fo (extend var (μ (sub (sub-lift var) τ)))
+    (extend η∅ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η∅)))
+    (suc (size vE)) (<-wellFounded _)
+    (extend-compat (shape-val (μ fo) var η∅ (suc (size vE)) (<-wellFounded _) (λ ())) (λ ()))
+    vE (n<1+n _)
+  where
+  vE = subst Val (unfold-sub var τ) (subst Val (cong (λ υ → υ [ μ υ ]) (μ-body τ)) v)
+
+val-roll : ∀ {τ : type 1} (fo : first-order τ) (v : Val (τ [ μ τ ])) →
+           ⟦ μ fo ⟧val (roll v) ≡ sup (μ-shape fo v)
+val-roll {τ = τ} fo v =
+  trans (shape-val-cast (μ fo) var η∅ (suc (size v')) (<-wellFounded _) f∅ e-roll (n<1+n _))
+        (go (<-wellFounded _) (subst (λ u → size u < suc (size v')) e-roll (n<1+n _)))
+  where
+  σ' = extend var (μ (sub (sub-lift var) τ))
+  η' = extend η∅ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η∅))
+  v' = subst Val (sym (sub-id (μ τ))) (roll v)
+  w' = subst Val (cong (λ υ → υ [ μ υ ]) (μ-body τ)) v
+  rw : Val (μ (sub (sub-lift var) τ))
+  rw = roll w'
+  vE = subst Val (unfold-sub var τ) w'
+  f∅ : Compat var η∅ (suc (size v'))
+  f∅ = λ ()
+  e-roll : v' ≡ rw
+  e-roll = subst-val-roll (μ-body τ) (sym (sub-id (μ τ))) v
+  F₀ = extend-compat (shape-val (μ fo) var η∅ (suc (size vE)) (<-wellFounded _) (λ ())) (λ ())
+  go : (a : Acc _<_ (suc (size v'))) (p : size rw < suc (size v')) →
+       shape-val (μ fo) var η∅ (suc (size v')) a f∅ rw p ≡ sup (μ-shape fo v)
+  go (acc rs) p =
+    cong sup (shape-val-irrelevant fo σ' η' (rs p) (<-wellFounded _) F₁ F₀ hyp vE
+                (s≤s (≤-reflexive (size-subst (unfold-sub var τ) w'))) (n<1+n _))
+    where
+    fc : Compat var η∅ (suc (size w'))
+    fc j u q = f∅ j u (<-trans q p)
+    F₁ = extend-compat (shape-val (μ fo) var η∅ (suc (size w')) (rs p) fc) fc
+    hyp : ∀ j (u : Val (σ' (j ↑ˡ 0))) (p₀ : size u < suc (size w')) (q₀ : size u < suc (size vE)) →
+          F₁ j u p₀ ≡ F₀ j u q₀
+    hyp zero u p₀ q₀ =
+      shape-val-irrelevant (μ fo) var η∅ (rs p) (<-wellFounded _) fc (λ ()) (λ ()) u p₀ q₀
+    hyp (suc ())
+
+val-inst : ∀ {τ : type 1} (fo : first-order τ) (v : Val (τ [ μ τ ])) →
+           ⟦ fo-inst fo (μ fo) ⟧val v
+             ≡ subst id (val-carrier (fo-inst fo (μ fo)))
+                 (sub-shape fo (inst-compat fo) (μ-shape fo v))
+val-inst {τ = τ} fo v =
+  trans (sym (id-shape-val (fo-inst fo (μ fo)) (<-wellFounded _) (λ ()) Eid v (n<1+n _)))
+        (cong (subst id (val-carrier (fo-inst fo (μ fo))))
+          (trans (inst-shape-val fo {N = suc (size vE)} {N' = suc (size v̂)}
+                    (<-wellFounded _) (<-wellFounded _) (λ ()) (λ ()) E' v̂ (n<1+n _) p₂)
+                 (cong (sub-shape fo (inst-compat fo))
+                   (trans (shape-val-cast fo σ' η' (suc (size vE)) (<-wellFounded _) F₀ e-val p₂)
+                          (cong (shape-val fo σ' η' (suc (size vE)) (<-wellFounded _) F₀ vE)
+                                (<-irrelevant (subst (λ u → size u < suc (size vE)) e-val p₂)
+                                              (n<1+n _)))))))
+  where
+  σ'  = extend var (μ (sub (sub-lift var) τ))
+  η'  = extend η∅ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η∅))
+  Eid = sym (sub-id (τ [ μ τ ]))
+  v̂   = subst Val Eid v
+  Ew  = cong (λ υ → υ [ μ υ ]) (μ-body τ)
+  vE  = subst Val (unfold-sub var τ) (subst Val Ew v)
+  E'  = trans (sub-id (τ [ μ τ ])) (trans Ew (unfold-sub var τ))
+  F₀  = extend-compat (shape-val (μ fo) var η∅ (suc (size vE)) (<-wellFounded _) (λ ())) (λ ())
+  e-val : subst Val E' v̂ ≡ vE
+  e-val = trans (subst-subst Eid)
+          (trans (cong (λ h → subst Val h v) (uip (trans Eid E') (trans Ew (unfold-sub var τ))))
+                 (sym (subst-subst Ew)))
+  p₂ : size (subst Val E' v̂) < suc (size vE)
+  p₂ = subst (λ u → size u < suc (size vE)) (sym e-val) (n<1+n _)
