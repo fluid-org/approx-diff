@@ -79,6 +79,18 @@ module FC = model.Fam⟨𝒞⟩μ
 ⟦_⟧ : type 0 → Obj
 ⟦ τ ⟧ = ⟦ τ ⟧ty (λ ())
 
+module IxO (X : Obj) = Setoid (X .idx)
+
+IxO : Obj → Set
+IxO X = IxO.Carrier X
+
+FibO : (X : Obj) → IxO X → Semimodule
+FibO X x = X .fam .fm x
+
+module FibO X x = Semimodule (FibO X x)
+
+module 𝔽 n = Semimodule (𝔽 n)
+
 module Ix (τ : type 0) = Setoid (⟦ τ ⟧ .idx)
 
 Ix : type 0 → Set
@@ -94,6 +106,8 @@ IxC Γ = IxC.Carrier Γ
 
 FibC : (Γ : ctxt) → IxC Γ → Semimodule
 FibC Γ i = ⟦ Γ ⟧ctxt .fam .fm i
+
+module FibC Γ i = Semimodule (FibC Γ i)
 
 open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ; app-p₁; app-p₂; app-in₁; app-in₂; app-pair; concat-+)
   renaming (app to ap)
@@ -114,7 +128,7 @@ body-input : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) → Setoid.Carrier A →
              ∣ 𝔽 (width-env γ') ∣ → ∣ 𝔽 (width v) ∣ → ∣ 𝔽 (suc (width-env γ' + width v)) ∣
 body-input γ' v s x z zero    = s
 body-input γ' v s x z (suc k) =
-  Semimodule._+_ (𝔽 (width-env γ' + width v))
+  𝔽._+_ (width-env γ' + width v)
     (ap (M.in₁ {width-env γ'} {width v}) x)
     (ap (M.in₂ {width-env γ'} {width v}) z) k
 
@@ -621,39 +635,39 @@ bpair-elt : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : X ⇒ Z) (x : ∣ X ∣)
             Semimodule._≈_ (SemiMod._⊕_ Y Z) (FD.pair f g .func x) (f .func x , g .func x)
 bpair-elt {X} {Y} {Z} f g x = m-runit Y , Semimodule.+-lunit Z
 
-Fpair-elt : ∀ {X Y Z : Obj} (f : Mor X Y) (g : Mor X Z) (x : Setoid.Carrier (X .idx)) (z : ∣ X .fam .fm x ∣) →
-            Semimodule._≈_ (FD.Fam𝒞-P.prod Y Z .fam .fm (f .idxf .sfunc x , g .idxf .sfunc x))
+Fpair-elt : ∀ {X Y Z : Obj} (f : Mor X Y) (g : Mor X Z) (x : IxO X) (z : ∣ FibO X x ∣) →
+            FibO._≈_ (FD.Fam𝒞-P.prod Y Z) (f .idxf .sfunc x , g .idxf .sfunc x)
               (FD.Fam𝒞-P.pair f g .famf .transf x .func z)
               (f .famf .transf x .func z , g .famf .transf x .func z)
 Fpair-elt f g x z = bpair-elt (f .famf .transf x) (g .famf .transf x) z
 
-Fprod-subst-elt : ∀ {X Y : Obj} {x x' : Setoid.Carrier (X .idx)} {y y' : Setoid.Carrier (Y .idx)}
-                  (e₁ : Setoid._≈_ (X .idx) x x') (e₂ : Setoid._≈_ (Y .idx) y y')
-                  (z : ∣ X .fam .fm x ∣) (w : ∣ Y .fam .fm y ∣) →
-                  Semimodule._≈_ (FD.Fam𝒞-P.prod X Y .fam .fm (x' , y'))
+Fprod-subst-elt : ∀ {X Y : Obj} {x x' : IxO X} {y y' : IxO Y}
+                  (e₁ : IxO._≈_ X x x') (e₂ : IxO._≈_ Y y y')
+                  (z : ∣ FibO X x ∣) (w : ∣ FibO Y y ∣) →
+                  FibO._≈_ (FD.Fam𝒞-P.prod X Y) (x' , y')
                     (FD.Fam𝒞-P.prod X Y .fam .subst (e₁ , e₂) .func (z , w))
                     (X .fam .subst e₁ .func z , Y .fam .subst e₂ .func w)
 Fprod-subst-elt {X} {Y} {x} {x'} {y} {y'} e₁ e₂ z w =
-  bpair-elt {SemiMod._⊕_ (X .fam .fm x) (Y .fam .fm y)} {X .fam .fm x'} {Y .fam .fm y'}
-    (SemiMod._∘_ (X .fam .subst e₁) (SemiMod.p₁ {X .fam .fm x} {Y .fam .fm y}))
-    (SemiMod._∘_ (Y .fam .subst e₂) (SemiMod.p₂ {X .fam .fm x} {Y .fam .fm y})) (z , w)
+  bpair-elt {SemiMod._⊕_ (FibO X x) (FibO Y y)} {FibO X x'} {FibO Y y'}
+    (SemiMod._∘_ (X .fam .subst e₁) (SemiMod.p₁ {FibO X x} {FibO Y y}))
+    (SemiMod._∘_ (Y .fam .subst e₂) (SemiMod.p₂ {FibO X x} {FibO Y y})) (z , w)
 
-subst-refl : ∀ (X : Obj) {x : Setoid.Carrier (X .idx)} (e : Setoid._≈_ (X .idx) x x) (d : ∣ X .fam .fm x ∣) →
-             Semimodule._≈_ (X .fam .fm x) (X .fam .subst e .func d) d
-subst-refl X {x} e d = X .fam .indexed-family.Fam.refl* .func-eq (Semimodule.refl (X .fam .fm x) {d})
+subst-refl : ∀ (X : Obj) {x : IxO X} (e : IxO._≈_ X x x) (d : ∣ FibO X x ∣) →
+             FibO._≈_ X x (X .fam .subst e .func d) d
+subst-refl X {x} e d = X .fam .indexed-family.Fam.refl* .func-eq (FibO.refl X x {d})
 
-subst-trans : ∀ (X : Obj) {x y z : Setoid.Carrier (X .idx)} (e₁ : Setoid._≈_ (X .idx) x y) (e₂ : Setoid._≈_ (X .idx) y z)
-              (d : ∣ X .fam .fm x ∣) →
-              Semimodule._≈_ (X .fam .fm z) (X .fam .subst (Setoid.trans (X .idx) e₁ e₂) .func d)
+subst-trans : ∀ (X : Obj) {x y z : IxO X} (e₁ : IxO._≈_ X x y) (e₂ : IxO._≈_ X y z)
+              (d : ∣ FibO X x ∣) →
+              FibO._≈_ X z (X .fam .subst (IxO.trans X e₁ e₂) .func d)
                                             (X .fam .subst e₂ .func (X .fam .subst e₁ .func d))
-subst-trans X {x} {y} {z} e₁ e₂ d = X .fam .indexed-family.Fam.trans* {x} {y} {z} e₂ e₁ .func-eq (Semimodule.refl (X .fam .fm x) {d})
+subst-trans X {x} {y} {z} e₁ e₂ d = X .fam .indexed-family.Fam.trans* {x} {y} {z} e₂ e₁ .func-eq (FibO.refl X x {d})
 
-transf-natural : ∀ {X Y : Obj} (f : Mor X Y) {x x' : Setoid.Carrier (X .idx)} (e : Setoid._≈_ (X .idx) x x')
-                 (z : ∣ X .fam .fm x ∣) →
-                 Semimodule._≈_ (Y .fam .fm (f .idxf .sfunc x'))
+transf-natural : ∀ {X Y : Obj} (f : Mor X Y) {x x' : IxO X} (e : IxO._≈_ X x x')
+                 (z : ∣ FibO X x ∣) →
+                 FibO._≈_ Y (f .idxf .sfunc x')
                    (f .famf .transf x' .func (X .fam .subst e .func z))
                    (Y .fam .subst (f .idxf .sfunc-resp-≈ e) .func (f .famf .transf x .func z))
-transf-natural {X} f {x} {x'} e z = f .famf .indexed-family._⇒f_.natural {x} {x'} e .func-eq (Semimodule.refl (X .fam .fm x) {z})
+transf-natural {X} f {x} {x'} e z = f .famf .indexed-family._⇒f_.natural {x} {x'} e .func-eq (FibO.refl X x {z})
 
 elim-root-elt : ∀ {G X Y : Semimodule} (k : SemiMod.𝕀 ⇒ Y) (r : SemiMod._⊕_ G X ⇒ Y)
                 (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
@@ -685,24 +699,24 @@ strong-Lmap-elt {G} {X} {Y} r γe a y =
         (Semimodule.refl G {γe} , Semimodule.+-lunit X {y})
 
 elimF-elt : ∀ {Γ' X C : Obj} (cC : Section C) (f : Mor (FD.Fam𝒞-P.prod Γ' X) C)
-            {γi : Setoid.Carrier (Γ' .idx)} {xi : Setoid.Carrier (X .idx)}
-            (γe : ∣ Γ' .fam .fm γi ∣) (a : Setoid.Carrier A) (y : ∣ X .fam .fm xi ∣) →
-            Semimodule._≈_ (C .fam .fm (f .idxf .sfunc (γi , xi)))
+            {γi : IxO Γ'} {xi : IxO X}
+            (γe : ∣ FibO Γ' γi ∣) (a : Setoid.Carrier A) (y : ∣ FibO X xi ∣) →
+            FibO._≈_ C (f .idxf .sfunc (γi , xi))
               (FD.elimF cC f .famf .transf (γi , xi) .func (γe , (a , y)))
-              (Semimodule._+_ (C .fam .fm (f .idxf .sfunc (γi , xi)))
+              (FibO._+_ C (f .idxf .sfunc (γi , xi))
                 (f .famf .transf (γi , xi) .func (γe , y))
                 (cC .at (f .idxf .sfunc (γi , xi)) .func a))
 elimF-elt cC f {γi} {xi} γe a y = elim-root-elt (cC .at (f .idxf .sfunc (γi , xi))) (f .famf .transf (γi , xi)) γe a y
 
 elim-elt : ∀ {Γ' X C : Obj} (cC : Section C) (body : Mor (FD.Fam𝒞-P.prod Γ' X) C) (f : Mor Γ' (FD.Lf X))
-           {γi : Setoid.Carrier (Γ' .idx)} (γe : ∣ Γ' .fam .fm γi ∣) →
-           Semimodule._≈_ (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
+           {γi : IxO Γ'} (γe : ∣ FibO Γ' γi ∣) →
+           FibO._≈_ C (body .idxf .sfunc (γi , f .idxf .sfunc γi))
              (FD.Fam𝒞._∘_ (FD.elimF cC body) (FD.Fam𝒞-P.pair (FD.Fam𝒞.id Γ') f) .famf .transf γi .func γe)
-             (Semimodule._+_ (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
+             (FibO._+_ C (body .idxf .sfunc (γi , f .idxf .sfunc γi))
                (body .famf .transf (γi , f .idxf .sfunc γi) .func (γe , proj₂ (f .famf .transf γi .func γe)))
                (cC .at (body .idxf .sfunc (γi , f .idxf .sfunc γi)) .func (proj₁ (f .famf .transf γi .func γe))))
 elim-elt {Γ'} {X} {C} cC body f {γi} γe =
-  Semimodule.trans (C .fam .fm (body .idxf .sfunc (γi , f .idxf .sfunc γi)))
+  FibO.trans C (body .idxf .sfunc (γi , f .idxf .sfunc γi))
     (FD.elimF cC body .famf .transf (γi , f .idxf .sfunc γi) .func-resp-≈
        {FD.Fam𝒞-P.pair (FD.Fam𝒞.id Γ') f .famf .transf γi .func γe} {γe , f .famf .transf γi .func γe}
        (Fpair-elt {Γ'} {Γ'} {FD.Lf X} (FD.Fam𝒞.id Γ') f γi γe))

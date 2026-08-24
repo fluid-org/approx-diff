@@ -76,14 +76,14 @@ private
 
 private
   idx-eq : ∀ {X Y : Obj} {f g : Mor X Y} → f FD.≃ g → ∀ x →
-           Setoid._≈_ (Y .idx) (f .idxf .sfunc x) (g .idxf .sfunc x)
-  idx-eq {X} E x = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq {x} {x} (Setoid.refl (X .idx) {x})
+           IxO._≈_ Y (f .idxf .sfunc x) (g .idxf .sfunc x)
+  idx-eq {X} E x = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq {x} {x} (IxO.refl X {x})
 
-  fam-eq : ∀ {X Y : Obj} {f g : Mor X Y} (E : f FD.≃ g) x (a : ∣ X .fam .fm x ∣) →
-           Semimodule._≈_ (Y .fam .fm (g .idxf .sfunc x))
+  fam-eq : ∀ {X Y : Obj} {f g : Mor X Y} (E : f FD.≃ g) x (a : ∣ FibO X x ∣) →
+           FibO._≈_ Y (g .idxf .sfunc x)
              (Y .fam .subst (idx-eq E x) .func (f .famf .transf x .func a)) (g .famf .transf x .func a)
   fam-eq {X} E x a =
-    E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (Semimodule.refl (X .fam .fm x) {a})
+    E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (FibO.refl X x {a})
 
   rec-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) gi (i : Ix (μ τ₀)) →
             Ix._≈_ σr
@@ -248,7 +248,7 @@ private
     E₀ = idx-eq (LI.fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , i₀)
     E₁ : Ix._≈_ σr J Iᵣ'
     E₁ = Ix.sym σr {Iᵣ'} {J} E₀
-    Eᵣ : Setoid._≈_ (Dom .idx) (gi , Iᵣ) (gi , i)
+    Eᵣ : IxO._≈_ Dom (gi , Iᵣ) (gi , i)
     Eᵣ = IxC.refl Γ {gi} , idx-eq (LI.roll-unroll τ₀) i
     E₂ : Ix._≈_ σr Iᵣ' I'
     E₂ = Fv .idxf .sfunc-resp-≈ {gi , Iᵣ} {gi , i} Eᵣ
@@ -256,16 +256,16 @@ private
     step₁ =
       Fib.trans σr Iᵣ' (⟦ σr ⟧ .fam .subst {J} {Iᵣ'} E₁ .func-resp-≈
                           (Fib.trans σr J (⟦ s ⟧tm .famf .transf (gi , IF) .func-resp-≈
-                                             (Semimodule.sym (Dom' .fam .fm (gi , IF))
+                                             (FibO.sym Dom' (gi , IF)
                                                 (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ τ₀ [ σr ] ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) Fτ (gi , i₀) (g , e₀))))
                                           (Fib.sym σr J (fam-eq (LI.fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , i₀) (g , e₀)))))
       (Fib.trans σr Iᵣ' (Fib.sym σr Iᵣ' (subst-trans ⟦ σr ⟧ {Iᵣ'} {J} {Iᵣ'} E₀ E₁ X₀))
       (Fib.trans σr Iᵣ' (subst-refl ⟦ σr ⟧ {Iᵣ'} (Ix.trans σr {Iᵣ'} {J} {Iᵣ'} E₀ E₁) X₀)
         (Fv .famf .transf (gi , Iᵣ) .func-resp-≈
            (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) (FD.Fam𝒞._∘_ (roll-mor τ₀) (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧})) (gi , i₀) (g , e₀)))))
-    step₂ : Semimodule._≈_ (Dom .fam .fm (gi , i)) (Dom .fam .subst {gi , Iᵣ} {gi , i} Eᵣ .func Xin) (g , e)
+    step₂ : FibO._≈_ Dom (gi , i) (Dom .fam .subst {gi , Iᵣ} {gi , i} Eᵣ .func Xin) (g , e)
     step₂ =
-      Semimodule.trans (Dom .fam .fm (gi , i))
+      FibO.trans Dom (gi , i)
         (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} {gi} {gi} {Iᵣ} {i} (IxC.refl Γ {gi}) (idx-eq (LI.roll-unroll τ₀) i) g
            (roll-mor τ₀ .famf .transf i₀ .func e₀))
         (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , fam-eq (LI.roll-unroll τ₀) i e)
@@ -349,7 +349,7 @@ private
     (Fib.trans τ₊ J (⟦ τ₊ ⟧ .fam .subst {I₊'} {J} E₂ .func-resp-≈
                        (Fib.trans τ₊ I₊' step₁ (F₊ .famf .transf (gi , inj₁ i') .func-resp-≈ step₂)))
     (Fib.trans τ₊ J (fam-eq (LI.fold-map-inl-L τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i') (g , ẽ))
-    (Fib.trans τ₊ J (FD.strong-Lf-map-transf F₁ {gi} {i'} .func-eq (Semimodule.refl (Domₖ .fam .fm (gi , i')) {g , ẽ}))
+    (Fib.trans τ₊ J (FD.strong-Lf-map-transf F₁ {gi} {i'} .func-eq (FibO.refl Domₖ (gi , i') {g , ẽ}))
       (strong-Lmap-elt (F₁ .famf .transf (gi , i')) g (proj₁ ẽ) (proj₂ ẽ)))))
     where
     τ₊ = (σ₁ [+] σ₂) [ σr ]
@@ -362,7 +362,7 @@ private
     I₊ = F₊ .idxf .sfunc (gi , i)
     I₊' = F₊ .idxf .sfunc (gi , inj₁ i')
     J = inj₁ (F₁ .idxf .sfunc (gi , i'))
-    Eᵢ : Setoid._≈_ (Dom .idx) (gi , i) (gi , inj₁ i')
+    Eᵢ : IxO._≈_ Dom (gi , i) (gi , inj₁ i')
     Eᵢ = IxC.refl Γ {gi} , e₀
     E₁ : Ix._≈_ τ₊ I₊ I₊'
     E₁ = F₊ .idxf .sfunc-resp-≈ {gi , i} {gi , inj₁ i'} Eᵢ
@@ -373,13 +373,13 @@ private
     step₁ : Fib._≈_ τ₊ I₊' (⟦ τ₊ ⟧ .fam .subst {I₊} {I₊'} E₁ .func (F₊ .famf .transf (gi , i) .func (g , e)))
                            (F₊ .famf .transf (gi , inj₁ i') .func (Dom .fam .subst {gi , i} {gi , inj₁ i'} Eᵢ .func (g , e)))
     step₁ = Fib.sym τ₊ I₊' (transf-natural {Dom} {⟦ τ₊ ⟧} F₊ {gi , i} {gi , inj₁ i'} Eᵢ (g , e))
-    step₂ : Semimodule._≈_ (Dom .fam .fm (gi , inj₁ i'))
+    step₂ : FibO._≈_ Dom (gi , inj₁ i')
               (Dom .fam .subst {gi , i} {gi , inj₁ i'} Eᵢ .func (g , e)) (P .famf .transf (gi , i') .func (g , ẽ))
-    step₂ = Semimodule.trans (Dom .fam .fm (gi , inj₁ i'))
+    step₂ = FibO.trans Dom (gi , inj₁ i')
               (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} {gi} {gi} {i} {inj₁ i'} (IxC.refl Γ {gi}) e₀ g e)
-              (Semimodule.trans (Dom .fam .fm (gi , inj₁ i'))
-                 (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , Semimodule.refl (⟦ τμ ⟧ .fam .fm (inj₁ i')) {ẽ})
-                 (Semimodule.sym (Dom .fam .fm (gi , inj₁ i'))
+              (FibO.trans Dom (gi , inj₁ i')
+                 (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , Fib.refl τμ (inj₁ i') {ẽ})
+                 (FibO.sym Dom (gi , inj₁ i')
                     (Fpair-elt {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₁ [ μ τ₀ ] ⟧})
                        (FD.Fam𝒞._∘_ FSC.in₁ (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₁ [ μ τ₀ ] ⟧})) (gi , i') (g , ẽ))))
 
@@ -399,7 +399,7 @@ private
     (Fib.trans τ₊ J (⟦ τ₊ ⟧ .fam .subst {I₊'} {J} E₂ .func-resp-≈
                        (Fib.trans τ₊ I₊' step₁ (F₊ .famf .transf (gi , inj₂ i') .func-resp-≈ step₂)))
     (Fib.trans τ₊ J (fam-eq (LI.fold-map-inr-L τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i') (g , ẽ))
-    (Fib.trans τ₊ J (FD.strong-Lf-map-transf F₂ {gi} {i'} .func-eq (Semimodule.refl (Domₖ .fam .fm (gi , i')) {g , ẽ}))
+    (Fib.trans τ₊ J (FD.strong-Lf-map-transf F₂ {gi} {i'} .func-eq (FibO.refl Domₖ (gi , i') {g , ẽ}))
       (strong-Lmap-elt (F₂ .famf .transf (gi , i')) g (proj₁ ẽ) (proj₂ ẽ)))))
     where
     τ₊ = (σ₁ [+] σ₂) [ σr ]
@@ -412,7 +412,7 @@ private
     I₊ = F₊ .idxf .sfunc (gi , i)
     I₊' = F₊ .idxf .sfunc (gi , inj₂ i')
     J = inj₂ (F₂ .idxf .sfunc (gi , i'))
-    Eᵢ : Setoid._≈_ (Dom .idx) (gi , i) (gi , inj₂ i')
+    Eᵢ : IxO._≈_ Dom (gi , i) (gi , inj₂ i')
     Eᵢ = IxC.refl Γ {gi} , e₀
     E₁ : Ix._≈_ τ₊ I₊ I₊'
     E₁ = F₊ .idxf .sfunc-resp-≈ {gi , i} {gi , inj₂ i'} Eᵢ
@@ -423,13 +423,13 @@ private
     step₁ : Fib._≈_ τ₊ I₊' (⟦ τ₊ ⟧ .fam .subst {I₊} {I₊'} E₁ .func (F₊ .famf .transf (gi , i) .func (g , e)))
                            (F₊ .famf .transf (gi , inj₂ i') .func (Dom .fam .subst {gi , i} {gi , inj₂ i'} Eᵢ .func (g , e)))
     step₁ = Fib.sym τ₊ I₊' (transf-natural {Dom} {⟦ τ₊ ⟧} F₊ {gi , i} {gi , inj₂ i'} Eᵢ (g , e))
-    step₂ : Semimodule._≈_ (Dom .fam .fm (gi , inj₂ i'))
+    step₂ : FibO._≈_ Dom (gi , inj₂ i')
               (Dom .fam .subst {gi , i} {gi , inj₂ i'} Eᵢ .func (g , e)) (P .famf .transf (gi , i') .func (g , ẽ))
-    step₂ = Semimodule.trans (Dom .fam .fm (gi , inj₂ i'))
+    step₂ = FibO.trans Dom (gi , inj₂ i')
               (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} {gi} {gi} {i} {inj₂ i'} (IxC.refl Γ {gi}) e₀ g e)
-              (Semimodule.trans (Dom .fam .fm (gi , inj₂ i'))
-                 (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , Semimodule.refl (⟦ τμ ⟧ .fam .fm (inj₂ i')) {ẽ})
-                 (Semimodule.sym (Dom .fam .fm (gi , inj₂ i'))
+              (FibO.trans Dom (gi , inj₂ i')
+                 (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , Fib.refl τμ (inj₂ i') {ẽ})
+                 (FibO.sym Dom (gi , inj₂ i')
                     (Fpair-elt {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧})
                        (FD.Fam𝒞._∘_ FSC.in₂ (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧})) (gi , i') (g , ẽ))))
 
@@ -600,7 +600,7 @@ private
                             F₂ .famf .transf (gi , proj₂ i) .func (g , proj₂ (proj₂ e))))
   pair-fibre {Γ} {τ₀} {σr} s σ₁ σ₂ gi i g e =
     Fib.trans τ× J (fam-eq (LI.fold-map-pair-L τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i) (g , e))
-    (Fib.trans τ× J (FD.strong-Lf-map-transf SP {gi} {i} .func-eq (Semimodule.refl (Dom .fam .fm (gi , i)) {g , e}))
+    (Fib.trans τ× J (FD.strong-Lf-map-transf SP {gi} {i} .func-eq (FibO.refl Dom (gi , i) {g , e}))
     (Fib.trans τ× J (strong-Lmap-elt (SP .famf .transf (gi , i)) g (proj₁ e) (proj₂ e))
       (≈-refl , payload)))
     where
@@ -619,12 +619,12 @@ private
     SP = FD.Fam𝒞-P.strong-prod-m {⟦ Γ ⟧ctxt} {X₁} {X₂} {Y₁} {Y₂} F₁ F₂
     SP₁ = FD.Fam𝒞-P.strong-p₁ {⟦ Γ ⟧ctxt} {X₁} {X₂}
     SP₂ = FD.Fam𝒞-P.strong-p₂ {⟦ Γ ⟧ctxt} {X₁} {X₂}
-    payload : Semimodule._≈_ (FD.Fam𝒞-P.prod Y₁ Y₂ .fam .fm J)
+    payload : FibO._≈_ (FD.Fam𝒞-P.prod Y₁ Y₂) J
                 (SP .famf .transf (gi , i) .func (g , proj₂ e))
                 (F₁ .famf .transf (gi , proj₁ i) .func (g , proj₁ (proj₂ e)) ,
                  F₂ .famf .transf (gi , proj₂ i) .func (g , proj₂ (proj₂ e)))
     payload =
-      Semimodule.trans (FD.Fam𝒞-P.prod Y₁ Y₂ .fam .fm J)
+      FibO.trans (FD.Fam𝒞-P.prod Y₁ Y₂) J
         (Fpair-elt {Dom₀} {Y₁} {Y₂} (FD.Fam𝒞._∘_ F₁ SP₁) (FD.Fam𝒞._∘_ F₂ SP₂) (gi , i) (g , proj₂ e))
         (F₁ .famf .transf (gi , proj₁ i) .func-resp-≈
            (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {X₁} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {FD.Fam𝒞-P.prod X₁ X₂})
@@ -839,7 +839,7 @@ private
     Er = roll-mor τμ .idxf .sfunc-resp-≈ {Cμ .idxf .sfunc i₀} {iu} Ec
     e₀ : Ix._≈_ (μ τμ) b i
     e₀ = Ix.trans (μ τμ) {b} {roll-mor τμ .idxf .sfunc iu} {i} Er (idx-eq (LI.roll-unroll τμ) i)
-    Eb : Setoid._≈_ (Dom .idx) (gi , b) (gi , i)
+    Eb : IxO._≈_ Dom (gi , b) (gi , i)
     Eb = IxC.refl Γ {gi} , e₀
     E-F : Ix._≈_ (μ τₛ) Ib Iμ
     E-F = Fμ .idxf .sfunc-resp-≈ {gi , b} {gi , i} Eb
@@ -865,14 +865,14 @@ private
                                     (Cμ .famf .transf i₀ .func e₁)))
                                (roll-mor τμ .famf .transf iu .func-resp-≈ (ty-cast-cancel-elt eμ iu eu))))
         (fam-eq (LI.roll-unroll τμ) i e))
-    step₂ : Semimodule._≈_ (Dom .fam .fm (gi , i)) (Dom .fam .subst {gi , b} {gi , i} Eb .func Pb) (g , e)
+    step₂ : FibO._≈_ Dom (gi , i) (Dom .fam .subst {gi , b} {gi , i} Eb .func Pb) (g , e)
     step₂ =
-      Semimodule.trans (Dom .fam .fm (gi , i))
+      FibO.trans Dom (gi , i)
         (Dom .fam .subst {gi , b} {gi , i} Eb .func-resp-≈
            (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τμ ⟧} (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧})
               (FD.Fam𝒞._∘_ (FD.Fam𝒞._∘_ (roll-mor τμ) Cμ) (FD.Fam𝒞-P.p₂ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧}))
               (gi , i₀) (g , e₁)))
-      (Semimodule.trans (Dom .fam .fm (gi , i))
+      (FibO.trans Dom (gi , i)
         (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ μ τμ ⟧} {gi} {gi} {b} {i} (IxC.refl Γ {gi}) e₀ g
            (roll-mor τμ .famf .transf (Cμ .idxf .sfunc i₀) .func (Cμ .famf .transf i₀ .func e₁)))
         (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , pay))
@@ -1031,7 +1031,7 @@ private
     Fib.trans σ J
       (⟦ σ ⟧ .fam .subst {IF} {J} E .func-resp-≈
         (Fv .famf .transf (gi , it) .func-resp-≈
-          (Semimodule.sym (Dom .fam .fm (gi , it))
+          (FibO.sym Dom (gi , it)
             (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (FD.Fam𝒞.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))))
       (fam-eq (LI.fold-map-var τ₀ σ ⟦ s ⟧tm) (gi , it) Pg)
     where
@@ -1224,13 +1224,13 @@ private
     sidx = ⟦ sc ⟧tm .idxf .sfunc gi
     Dom = FD.Fam𝒞-P.prod ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
     Pg = FD.Fam𝒞-P.pair (FD.Fam𝒞.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
-    Q≈ : Semimodule._≈_ (Dom .fam .fm (gi , k))
+    Q≈ : FibO._≈_ Dom (gi , k)
            (Dom .fam .subst {gi , sidx} {gi , k} (IxC.refl Γ {gi} , e) .func Pg)
            (g , ⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {k} e .func (⟦ sc ⟧tm .famf .transf gi .func g))
-    Q≈ = Semimodule.trans (Dom .fam .fm (gi , k))
+    Q≈ = FibO.trans Dom (gi , k)
            (Dom .fam .subst {gi , sidx} {gi , k} (IxC.refl Γ {gi} , e) .func-resp-≈
               (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (FD.Fam𝒞.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
-           (Semimodule.trans (Dom .fam .fm (gi , k))
+           (FibO.trans Dom (gi , k)
               (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} {gi} {gi} {sidx} {k} (IxC.refl Γ {gi}) e g
                  (⟦ sc ⟧tm .famf .transf gi .func g))
               (subst-refl ⟦ Γ ⟧ctxt (IxC.refl Γ {gi}) g , Fib.refl (τ₁ [+] τ₂) k))
@@ -1603,12 +1603,11 @@ fundamental {Γ = Γ} {τ = σ [→] τ} {γ = γ} (⇓-lam {t = t'}) {gi} rγ s
          (ctrl-dep τ .at (f .idxf .sfunc j) .func-resp-≈ (+-cong ≈-refl (≈-sym o₀)))
          (Fib.trans τ (f .idxf .sfunc j)
             (⟦ t' ⟧tm .famf .transf (gi , j) .func-resp-≈
-               {g , y} {(FibC Γ gi Semimodule.+ g) (Semimodule.ε (FibC Γ gi)) ,
-                        (Fib σ j Semimodule.+ Fib.ε σ j) y}
-               (Semimodule.sym (FibC Γ gi) (m-runit (FibC Γ gi)) , Fib.sym σ j (Fib.+-lunit σ j)))
+               {g , y} {FibC._+_ Γ gi g (FibC.ε Γ gi) , Fib._+_ σ j (Fib.ε σ j) y}
+               (FibC.sym Γ gi (m-runit (FibC Γ gi)) , Fib.sym σ j (Fib.+-lunit σ j)))
          (Fib.trans τ (f .idxf .sfunc j)
             (⟦ t' ⟧tm .famf .transf (gi , j) .preserve-+
-               {g , Fib.ε σ j} {Semimodule.ε (FibC Γ gi) , y})
+               {g , Fib.ε σ j} {FibC.ε Γ gi , y})
             (Fib.+-cong τ (f .idxf .sfunc j)
                (Fib.trans τ (f .idxf .sfunc j) (Fib.sym τ (f .idxf .sfunc j) β)
                   (evalΠ σ τ f j .func-resp-≈
@@ -1632,7 +1631,7 @@ fundamental {Γ = Γ} {τ = σ [→] τ} {γ = γ} (⇓-lam {t = t'}) {gi} rγ s
            (indexed-family._∘f_ (indexed-family.reindex-f (model.FE.nudge gi) (⟦ t' ⟧tm .famf))
                                 (model.FE.nudge-in₁ gi))
     β = SP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {x = FibC Γ gi} {f = Fλ} j
-          .func-eq (Semimodule.refl (FibC Γ gi) {g})
+          .func-eq (FibC.refl Γ gi {g})
 fundamental {Γ = Γ} {τ = τ} {γ = γ}
             (⇓-app {Γ' = Γ'} {σ = σ} {γ' = γ'} {s = M} {t = N} {t' = t'} {v = v} {u = u} {R = R} {T = T} {U = U} D₁ D₂ D₃) {gi} rγ s x g rel =
   DepRel-resp τ (ValRel-at-bound τ (fundamental-val D₁ rγ (ValRel-at-bound σ (fundamental-val D₂ rγ)) D₃))
@@ -2167,7 +2166,7 @@ env-fib⁻¹ {Γ ▸ τ} (Γ-fo ▸ fo) (γ · v) =
                  (val-fib⁻¹ fo v SemiMod.∘ SemiMod.p₂ {FibC Γ (env-idx Γ-fo γ)} {Fib τ (val-idx fo v)})
 
 val-fib⁻¹-fib : ∀ {τ} (fo : first-order τ) (v : Val τ) (o : ∣ 𝔽 (width v) ∣) →
-                Semimodule._≈_ (𝔽 (width v)) (val-fib⁻¹ fo v .func (val-fib fo v .func o)) o
+                𝔽._≈_ (width v) (val-fib⁻¹ fo v .func (val-fib fo v .func o)) o
 val-fib⁻¹-fib unit     unit      o k = ≈-refl
 val-fib⁻¹-fib (base s) (const a) o k = ≈-refl
 val-fib⁻¹-fib (fo₁ [+] fo₂) (inl v) o zero    = ≈-refl
@@ -2180,7 +2179,7 @@ val-fib⁻¹-fib (fo₁ [×] fo₂) (pair v u) o (suc k) =
                   (app-congᵥ (M.in₂ {width v} {width u}) (val-fib⁻¹-fib fo₂ u (ap (M.p₂ {width v} {width u}) (λ l → o (suc l)))) k))
           (ap-++-p {width v} {width u} (λ l → o (suc l)) k)
 val-fib⁻¹-fib {μ τ} (μ fo) (roll v) o =
-  Semimodule.trans (𝔽 (width v))
+  𝔽.trans (width v)
     (val-fib⁻¹ fo′ v .func-resp-≈ (fam-eq (LI.unroll-roll τ) j (val-fib fo′ v .func o)))
     (val-fib⁻¹-fib fo′ v o)
   where
@@ -2216,7 +2215,7 @@ val-fib-fib⁻¹ {μ τ} (μ fo) (roll v) d =
   y   = ⟦ τ [ μ τ ] ⟧ .fam .subst {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc j)} {j} E .func z
 
 env-fib⁻¹-fib : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) (x : ∣ 𝔽 (width-env γ) ∣) →
-                Semimodule._≈_ (𝔽 (width-env γ)) (env-fib⁻¹ Γ-fo γ .func (env-fib Γ-fo γ .func x)) x
+                𝔽._≈_ (width-env γ) (env-fib⁻¹ Γ-fo γ .func (env-fib Γ-fo γ .func x)) x
 env-fib⁻¹-fib emp         emp     x ()
 env-fib⁻¹-fib (Γ-fo ▸ fo) (γ · v) x k =
   ≈-trans (+-cong (app-congᵥ (M.in₁ {width-env γ} {width v}) (env-fib⁻¹-fib Γ-fo γ (ap (M.p₁ {width-env γ} {width v}) x)) k)
@@ -2224,10 +2223,10 @@ env-fib⁻¹-fib (Γ-fo ▸ fo) (γ · v) x k =
           (ap-++-p {width-env γ} {width v} x k)
 
 env-fib-fib⁻¹ : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) (g : ∣ FibC Γ (env-idx Γ-fo γ) ∣) →
-                Semimodule._≈_ (FibC Γ (env-idx Γ-fo γ)) (env-fib Γ-fo γ .func (env-fib⁻¹ Γ-fo γ .func g)) g
-env-fib-fib⁻¹ emp         emp     g = Semimodule.refl (FibC emp (lift tt))
+                FibC._≈_ Γ (env-idx Γ-fo γ) (env-fib Γ-fo γ .func (env-fib⁻¹ Γ-fo γ .func g)) g
+env-fib-fib⁻¹ emp         emp     g = FibC.refl emp (lift tt)
 env-fib-fib⁻¹ {Γ ▸ τ} (Γ-fo ▸ fo) (γ · v) g =
-  Semimodule.trans (FibC Γ gi) (env-fib Γ-fo γ .func-resp-≈ (ap-p₁-++ x y)) (env-fib-fib⁻¹ Γ-fo γ (proj₁ g)) ,
+  FibC.trans Γ gi (env-fib Γ-fo γ .func-resp-≈ (ap-p₁-++ x y)) (env-fib-fib⁻¹ Γ-fo γ (proj₁ g)) ,
   Fib.trans τ i (val-fib fo v .func-resp-≈ (ap-p₂-++ x y)) (val-fib-fib⁻¹ fo v (proj₂ g))
   where
   gi = env-idx Γ-fo γ
@@ -2240,11 +2239,11 @@ val-fib-iso fo v .Category.IsIso.inverse = val-fib⁻¹ fo v
 val-fib-iso {τ} fo v .Category.IsIso.f∘inverse≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {d} e =
   Fib.trans τ (val-idx fo v) (val-fib-fib⁻¹ fo v d) e
 val-fib-iso fo v .Category.IsIso.inverse∘f≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {o} e =
-  Semimodule.trans (𝔽 (width v)) (val-fib⁻¹-fib fo v o) e
+  𝔽.trans (width v) (val-fib⁻¹-fib fo v o) e
 
 env-fib-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) → Category.IsIso SemiMod.cat (env-fib Γ-fo γ)
 env-fib-iso Γ-fo γ .Category.IsIso.inverse = env-fib⁻¹ Γ-fo γ
 env-fib-iso {Γ} Γ-fo γ .Category.IsIso.f∘inverse≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {g} e =
-  Semimodule.trans (FibC Γ (env-idx Γ-fo γ)) (env-fib-fib⁻¹ Γ-fo γ g) e
+  FibC.trans Γ (env-idx Γ-fo γ) (env-fib-fib⁻¹ Γ-fo γ g) e
 env-fib-iso Γ-fo γ .Category.IsIso.inverse∘f≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {x} e =
-  Semimodule.trans (𝔽 (width-env γ)) (env-fib⁻¹-fib Γ-fo γ x) e
+  𝔽.trans (width-env γ) (env-fib⁻¹-fib Γ-fo γ x) e
