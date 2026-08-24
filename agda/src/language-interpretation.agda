@@ -1362,6 +1362,9 @@ abstract
   unroll-mor : (τ : type 1) → ⟦ μ τ ⟧ty (λ ()) ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
   unroll-mor τ = sub-as-apply-bwd τ (μ τ) ∘ R.LambekDef.outMor (as-poly τ (λ ())) δ∅
 
+  roll-mor-def : (τ : type 1) → roll-mor τ ≈ (inMap (as-poly τ (λ ())) δ∅ ∘ sub-as-apply-fwd τ (μ τ))
+  roll-mor-def τ = ≈-refl
+
   unroll-roll : (τ : type 1) → (unroll-mor τ ∘ roll-mor τ) ≈ id _
   unroll-roll τ = begin
       (sb ∘ outm) ∘ (inm ∘ sf)
