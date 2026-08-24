@@ -16,6 +16,7 @@ open import Data.Fin.Properties using (splitAt⁻¹-↑ˡ; splitAt-↑ˡ; ↑ˡ-
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Product using (_,_; _×_)
 open import Data.Unit using (tt)
+open import Function using (id)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂; subst)
 open import Relation.Binary.PropositionalEquality.Properties using (subst-subst-sym; subst-sym-subst; subst-subst)
 open import prop-setoid using (Setoid)
@@ -47,10 +48,16 @@ private
 
 open T using (⟦_⟧shape; El; W; sup)
 
-Compat : ∀ {n} → TySub (n + 0) 0 → (Fin n → Fin 0 ⊎ Sort 0) → ℕ → Set
+SortEnv : ℕ → Set₁
+SortEnv n = Fin n → Fin 0 ⊎ Sort 0
+
+η∅ : SortEnv 0
+η∅ i = inj₁ i
+
+Compat : ∀ {n} → TySub (n + 0) 0 → (SortEnv n) → ℕ → Set
 Compat {n} σ η N = ∀ (j : Fin n) (u : Val (σ (j ↑ˡ 0))) → size u < N → El (η j)
 
-extend-compat : ∀ {n} {σ : TySub (n + 0) 0} {η : Fin n → Fin 0 ⊎ Sort 0} {N} {ρ : type 0} {s} →
+extend-compat : ∀ {n} {σ : TySub (n + 0) 0} {η : SortEnv n} {N} {ρ : type 0} {s} →
                 ((u : Val ρ) → size u < N → El s) → Compat σ η N → Compat (extend σ ρ) (extend η s) N
 extend-compat f₀ f zero    = f₀
 extend-compat f₀ f (suc j) = f j
@@ -59,7 +66,7 @@ private
   Var : ∀ {n} → (Fin n ⊎ Fin 0) → Poly model.Fam⟨𝒞⟩μ.cat n
   Var s = [ Poly.var , (λ j → Poly.const (∅𝒞 j)) ] s
 
-  shape-var : ∀ {n} (i : Fin (n + 0)) (σ : TySub (n + 0) 0) (η : Fin n → Fin 0 ⊎ Sort 0) (N : ℕ) →
+  shape-var : ∀ {n} (i : Fin (n + 0)) (σ : TySub (n + 0) 0) (η : SortEnv n) (N : ℕ) →
               Compat σ η N → (v : Val (σ i)) → size v < N →
               (s : Fin n ⊎ Fin 0) → splitAt n i ≡ s → ⟦ ∣ Var s ∣ ⟧shape η
   shape-var i σ η N f v p (inj₁ j) eq =
@@ -69,7 +76,7 @@ private
 -- The size bound lets the body of a μ-type read the values at its own variable, which are smaller,
 -- by the same function.
 shape-val : ∀ {n} {τ : type (n + 0)} (fo : first-order τ) (σ : TySub (n + 0) 0)
-            (η : Fin n → Fin 0 ⊎ Sort 0) (N : ℕ) → Acc _<_ N → Compat σ η N →
+            (η : SortEnv n) (N : ℕ) → Acc _<_ N → Compat σ η N →
             (v : Val (sub σ τ)) → size v < N → ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape η
 shape-val {n} (var i) σ η N a f v p = shape-var i σ η N f v p (splitAt n i) refl
 shape-val unit σ η N a f unit p = lift tt
@@ -88,7 +95,7 @@ shape-val (μ {τ = τ} fo) σ η N (acc rs) f (roll w) p =
   where B = sub (sub-lift σ) τ
 
 shape-val-irrelevant : ∀ {n} {τ : type (n + 0)} (fo : first-order τ) (σ : TySub (n + 0) 0)
-                       (η : Fin n → Fin 0 ⊎ Sort 0) {N N'} (a : Acc _<_ N) (a' : Acc _<_ N')
+                       (η : SortEnv n) {N N'} (a : Acc _<_ N) (a' : Acc _<_ N')
                        (f : Compat σ η N) (f' : Compat σ η N') →
                        (∀ j (u : Val (σ (j ↑ˡ 0))) (p : size u < N) (q : size u < N') → f j u p ≡ f' j u q) →
                        ∀ (v : Val (sub σ τ)) (p : size v < N) (p' : size v < N') →
@@ -126,7 +133,7 @@ shape-val-irrelevant (μ {τ = τ} fo) σ η (acc rs) (acc rs') f f' hyp (roll w
 ⟦ fo₁ [+] fo₂ ⟧val (inr v) = inj₂ (⟦ fo₂ ⟧val v)
 ⟦ fo₁ [×] fo₂ ⟧val (pair v u) = ⟦ fo₁ ⟧val v , ⟦ fo₂ ⟧val u
 ⟦ μ {τ = τ} fo ⟧val v =
-  shape-val (μ fo) var (λ i → inj₁ i) (suc (size v')) (<-wellFounded _) (λ ()) v' (n<1+n _)
+  shape-val (μ fo) var η∅ (suc (size v')) (<-wellFounded _) (λ ()) v' (n<1+n _)
   where v' = subst Val (sym (sub-id (μ τ))) v
 
 ⟦_⟧env : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → Env Γ → Carrier (𝒞⟦ Γ-fo ⟧ctxt .idx)
@@ -134,10 +141,10 @@ shape-val-irrelevant (μ {τ = τ} fo) σ η (acc rs) (acc rs') f f' hyp (roll w
 ⟦ Γ-fo ▸ fo ⟧env (γ · v) = ⟦ Γ-fo ⟧env γ , ⟦ fo ⟧val v
 
 mutual
-  W-size : ∀ {k} {Q : Srt.Poly (suc k)} {ρ : Fin k → Fin 0 ⊎ Sort 0} → W Q ρ → ℕ
+  W-size : ∀ {k} {Q : Srt.Poly (suc k)} {ρ : SortEnv k} → W Q ρ → ℕ
   W-size {Q = Q} {ρ} (sup x) = suc (shape-size Q (extend ρ (inj₂ (mkSort Q ρ))) x)
 
-  shape-size : ∀ {k} (Q : Srt.Poly k) (η : Fin k → Fin 0 ⊎ Sort 0) → ⟦ Q ⟧shape η → ℕ
+  shape-size : ∀ {k} (Q : Srt.Poly k) (η : SortEnv k) → ⟦ Q ⟧shape η → ℕ
   shape-size (Poly.const S) η x        = 1
   shape-size (Poly.var j)   η x        = el-size (η j) x
   shape-size (P Poly.+ Q)   η (inj₁ x) = suc (shape-size P η x)
@@ -148,24 +155,24 @@ mutual
   el-size : (r : Fin 0 ⊎ Sort 0) → El r → ℕ
   el-size (inj₂ (mkSort Q ρ)) x = W-size x
 
-Compat⁻¹ : ∀ {n} → TySub (n + 0) 0 → (Fin n → Fin 0 ⊎ Sort 0) → ℕ → Set
+Compat⁻¹ : ∀ {n} → TySub (n + 0) 0 → (SortEnv n) → ℕ → Set
 Compat⁻¹ {n} σ η N = ∀ (j : Fin n) (e : El (η j)) → el-size (η j) e < N → Val (σ (j ↑ˡ 0))
 
-extend-compat⁻¹ : ∀ {n} {σ : TySub (n + 0) 0} {η : Fin n → Fin 0 ⊎ Sort 0} {N} {ρ : type 0} {s} →
+extend-compat⁻¹ : ∀ {n} {σ : TySub (n + 0) 0} {η : SortEnv n} {N} {ρ : type 0} {s} →
                   ((e : El s) → el-size s e < N → Val ρ) → Compat⁻¹ σ η N →
                   Compat⁻¹ (extend σ ρ) (extend η s) N
 extend-compat⁻¹ f₀ f zero    = f₀
 extend-compat⁻¹ f₀ f (suc j) = f j
 
 private
-  val-var : ∀ {n} (i : Fin (n + 0)) (σ : TySub (n + 0) 0) (η : Fin n → Fin 0 ⊎ Sort 0) (N : ℕ) →
+  val-var : ∀ {n} (i : Fin (n + 0)) (σ : TySub (n + 0) 0) (η : SortEnv n) (N : ℕ) →
             Compat⁻¹ σ η N → (s : Fin n ⊎ Fin 0) → splitAt n i ≡ s →
             (x : ⟦ ∣ Var s ∣ ⟧shape η) → shape-size ∣ Var s ∣ η x < N → Val (σ i)
   val-var i σ η N f (inj₁ j) eq x p = subst Val (cong σ (splitAt⁻¹-↑ˡ eq)) (f j x p)
   val-var i σ η N f (inj₂ ()) eq x p
 
 val-shape : ∀ {n} {τ : type (n + 0)} (fo : first-order τ) (σ : TySub (n + 0) 0)
-            (η : Fin n → Fin 0 ⊎ Sort 0) (N : ℕ) → Acc _<_ N → Compat⁻¹ σ η N →
+            (η : SortEnv n) (N : ℕ) → Acc _<_ N → Compat⁻¹ σ η N →
             (x : ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape η) → shape-size ∣ fo-as-poly fo ∅𝒞 ∣ η x < N →
             Val (sub σ τ)
 val-shape {n} (var i) σ η N a f x p = val-var i σ η N f (splitAt n i) refl x p
@@ -196,10 +203,10 @@ val-shape (μ {τ = τ} fo) σ η N (acc rs) f (sup x) p =
 ⟦ fo₁ [×] fo₂ ⟧val⁻¹ (i , j) = pair (⟦ fo₁ ⟧val⁻¹ i) (⟦ fo₂ ⟧val⁻¹ j)
 ⟦ μ {τ = τ} fo ⟧val⁻¹ t =
   subst Val (sub-id (μ τ))
-    (val-shape (μ fo) var (λ i → inj₁ i) (suc (W-size t)) (<-wellFounded _) (λ ()) t (n<1+n _))
+    (val-shape (μ fo) var η∅ (suc (W-size t)) (<-wellFounded _) (λ ()) t (n<1+n _))
 
 val-shape-val : ∀ {n} {τ : type (n + 0)} (fo : first-order τ) (σ : TySub (n + 0) 0)
-  (η : Fin n → Fin 0 ⊎ Sort 0) {N N'} (a : Acc _<_ N) (a' : Acc _<_ N')
+  (η : SortEnv n) {N N'} (a : Acc _<_ N) (a' : Acc _<_ N')
   (f : Compat σ η N') (f' : Compat⁻¹ σ η N) →
   (∀ j (u : Val (σ (j ↑ˡ 0))) (p : size u < N') (q : el-size (η j) (f j u p) < N) → f' j (f j u p) q ≡ u) →
   ∀ (v : Val (sub σ τ)) (p : size v < N')
@@ -240,7 +247,7 @@ val-shape-val (μ {τ = τ} fo) σ η (acc rs) (acc rs') f f' inv (roll w) p q =
 ⟦⟧val⁻¹-val (fo₁ [×] fo₂) (pair v u) = cong₂ pair (⟦⟧val⁻¹-val fo₁ v) (⟦⟧val⁻¹-val fo₂ u)
 ⟦⟧val⁻¹-val (μ {τ = τ} fo) v =
   trans (cong (subst Val (sub-id (μ τ)))
-           (val-shape-val (μ fo) var (λ i → inj₁ i) {suc (W-size (⟦ μ fo ⟧val v))} {suc (size v')}
+           (val-shape-val (μ fo) var η∅ {suc (W-size (⟦ μ fo ⟧val v))} {suc (size v')}
               (<-wellFounded _) (<-wellFounded _) (λ ()) (λ ()) (λ ()) v' (n<1+n _) (n<1+n _)))
         (subst-subst-sym {P = Val} (sub-id (μ τ)) {p = v})
   where v' = subst Val (sym (sub-id (μ τ))) v
@@ -250,20 +257,20 @@ val-shape-val (μ {τ = τ} fo) σ η (acc rs) (acc rs') f f' inv (roll w) p q =
 -- extend by the translation of whole trees at the bound sort. The renaming on the polynomial's
 -- variables is carried separately, with a proof that the type-level renaming restricts to it.
 data RenCompat : ∀ {n₁ n₂} → TyRen (n₁ + 0) (n₂ + 0) → TyRen n₁ n₂ →
-                 (Fin n₁ → Fin 0 ⊎ Sort 0) → (Fin n₂ → Fin 0 ⊎ Sort 0) → Set₁ where
+                 (SortEnv n₁) → (SortEnv n₂) → Set₁ where
   rbase : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
-          {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+          {η₁ : SortEnv n₁} {η₂ : SortEnv n₂} →
           (∀ j → El (η₁ j) → El (η₂ (ρ̂ j))) → (∀ j → ρ (j ↑ˡ 0) ≡ ρ̂ j ↑ˡ 0) →
           RenCompat ρ ρ̂ η₁ η₂
   rbind : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
-          {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+          {η₁ : SortEnv n₁} {η₂ : SortEnv n₂}
           {τ : type (suc n₁ + 0)} (fo : first-order τ) → RenCompat ρ ρ̂ η₁ η₂ →
           RenCompat (extᵗ ρ) (extᵗ ρ̂)
                     (extend η₁ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η₁)))
                     (extend η₂ (inj₂ (mkSort ∣ fo-as-poly (fo-ren {ρ = extᵗ ρ} fo) ∅𝒞 ∣ η₂)))
 
 rcoh : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
-       {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+       {η₁ : SortEnv n₁} {η₂ : SortEnv n₂} →
        RenCompat ρ ρ̂ η₁ η₂ → ∀ j → ρ (j ↑ˡ 0) ≡ ρ̂ j ↑ˡ 0
 rcoh (rbase g coh) j      = coh j
 rcoh (rbind fo r) zero    = refl
@@ -271,13 +278,13 @@ rcoh (rbind fo r) (suc j) = cong suc (rcoh r j)
 
 mutual
   ren-tree : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
-             {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+             {η₁ : SortEnv n₁} {η₂ : SortEnv n₂}
              {τ : type (suc n₁ + 0)} (fo : first-order τ) → RenCompat ρ ρ̂ η₁ η₂ →
              W ∣ fo-as-poly fo ∅𝒞 ∣ η₁ → W ∣ fo-as-poly (fo-ren {ρ = extᵗ ρ} fo) ∅𝒞 ∣ η₂
   ren-tree fo r (sup x) = sup (ren-shape fo (rbind fo r) x)
 
   ren-shape : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
-              {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+              {η₁ : SortEnv n₁} {η₂ : SortEnv n₂}
               {τ : type (n₁ + 0)} (fo : first-order τ) → RenCompat ρ ρ̂ η₁ η₂ →
               ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape η₁ → ⟦ ∣ fo-as-poly (fo-ren {ρ = ρ} fo) ∅𝒞 ∣ ⟧shape η₂
   ren-shape {n₁ = n₁} (var i) r x = ren-var r i (splitAt n₁ i) refl x
@@ -289,7 +296,7 @@ mutual
   ren-shape (μ fo) r t = ren-tree fo r t
 
   ren-var : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
-            {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+            {η₁ : SortEnv n₁} {η₂ : SortEnv n₂} →
             RenCompat ρ ρ̂ η₁ η₂ → (i : Fin (n₁ + 0)) (s : Fin n₁ ⊎ Fin 0) → splitAt n₁ i ≡ s →
             ⟦ ∣ Var s ∣ ⟧shape η₁ → ⟦ ∣ Var (splitAt n₂ (ρ i)) ∣ ⟧shape η₂
   ren-var {n₂ = n₂} {ρ = ρ} {ρ̂ = ρ̂} {η₂ = η₂} r i (inj₁ j) eq x =
@@ -300,18 +307,29 @@ mutual
   ren-var r i (inj₂ ()) eq x
 
   rapply : ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
-           {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+           {η₁ : SortEnv n₁} {η₂ : SortEnv n₂} →
            RenCompat ρ ρ̂ η₁ η₂ → ∀ j → El (η₁ j) → El (η₂ (ρ̂ j))
   rapply (rbase g coh) j x = g j x
   rapply (rbind fo r) zero x = ren-tree fo r x
   rapply (rbind fo r) (suc j) x = rapply r j x
 
-weaken-ren : ∀ {n} {η : Fin n → Fin 0 ⊎ Sort 0} {s : Fin 0 ⊎ Sort 0} → RenCompat suc suc η (extend η s)
+weaken-ren : ∀ {n} {η : SortEnv n} {s : Fin 0 ⊎ Sort 0} → RenCompat suc suc η (extend η s)
 weaken-ren = rbase (λ j x → x) (λ j → refl)
 
 private
   uip : ∀ {A : Set} {x y : A} (p q : x ≡ y) → p ≡ q
   uip refl refl = refl
+
+  subst-val-refl : ∀ {τ : type 0} (E : τ ≡ τ) (v : Val τ) → subst Val E v ≡ v
+  subst-val-refl E v = cong (λ h → subst Val h v) (uip E refl)
+
+  sub-ren-cong : ∀ {Δ₁ Δ₂ Δ} (ρ : TyRen Δ₁ Δ₂) {σ₁ : TySub Δ₁ Δ} (σ₂ : TySub Δ₂ Δ) →
+                 (∀ i → σ₂ (ρ i) ≡ σ₁ i) → (τ' : type Δ₁) → sub σ₂ (ρ *ᵗ τ') ≡ sub σ₁ τ'
+  sub-ren-cong ρ σ₂ Eσ τ' = trans (sub-ren σ₂ ρ τ') (sub-cong τ' Eσ)
+
+  sub-sub-cong : ∀ {Δ₁ Δ₂ Δ} (σᵗ : TySub Δ₁ Δ₂) {σ₁ : TySub Δ₁ Δ} (σ₂ : TySub Δ₂ Δ) →
+                 (∀ i → sub σ₂ (σᵗ i) ≡ σ₁ i) → (τ' : type Δ₁) → sub σ₂ (sub σᵗ τ') ≡ sub σ₁ τ'
+  sub-sub-cong σᵗ σ₂ Eσ τ' = trans (sub-sub σ₂ σᵗ τ') (sub-cong τ' Eσ)
 
   subst-val-inl : ∀ {τ₁ τ₂ τ₁' τ₂' : type 0} (e₁ : τ₁ ≡ τ₁') (e₂ : τ₂ ≡ τ₂')
                   (E : (τ₁ [+] τ₂) ≡ (τ₁' [+] τ₂')) (v : Val τ₁) →
@@ -333,7 +351,7 @@ private
   subst-val-roll refl refl w = refl
 
   shape-val-cast : ∀ {n} {τ : type (n + 0)} (fo : first-order τ) (σ : TySub (n + 0) 0)
-                   (η : Fin n → Fin 0 ⊎ Sort 0) (N : ℕ) (a : Acc _<_ N) (f : Compat σ η N)
+                   (η : SortEnv n) (N : ℕ) (a : Acc _<_ N) (f : Compat σ η N)
                    {v v' : Val (sub σ τ)} (e : v ≡ v') (p : size v < N) →
                    shape-val fo σ η N a f v p ≡ shape-val fo σ η N a f v' (subst (λ u → size u < N) e p)
   shape-val-cast fo σ η N a f refl p = refl
@@ -349,7 +367,7 @@ private
 -- quantified over arbitrary equality proofs, which uip reconciles at the leaves.
 ren-shape-val :
   ∀ {n₁ n₂} {ρ : TyRen (n₁ + 0) (n₂ + 0)} {ρ̂ : TyRen n₁ n₂}
-  {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+  {η₁ : SortEnv n₁} {η₂ : SortEnv n₂}
   {τ : type (n₁ + 0)} (fo : first-order τ) (r : RenCompat ρ ρ̂ η₁ η₂)
   (σ₁ : TySub (n₁ + 0) 0) (σ₂ : TySub (n₂ + 0) 0) (Eσ : ∀ i → σ₂ (ρ i) ≡ σ₁ i)
   {N N' : ℕ} (a : Acc _<_ N) (a' : Acc _<_ N') (f₁ : Compat σ₁ η₁ N) (f₂ : Compat σ₂ η₂ N') →
@@ -402,16 +420,16 @@ ren-shape-val {n₁ = n₁} {n₂ = n₂} {ρ = ρ} {ρ̂ = ρ̂} {η₁ = η₁
   go (inj₁ j) eq (inj₂ ()) eq₂
   go (inj₂ ()) eq s₂ eq₂
 ren-shape-val {η₁ = η₁} unit r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E unit q p =
-  sym (shape-val-cast unit σ₁ η₁ N a f₁ (cong (λ h → subst Val h unit) (uip E refl)) p)
+  sym (shape-val-cast unit σ₁ η₁ N a f₁ (subst-val-refl E unit) p)
 ren-shape-val {η₁ = η₁} (base s) r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E (const c) q p =
-  sym (shape-val-cast (base s) σ₁ η₁ N a f₁ (cong (λ h → subst Val h (const c)) (uip E refl)) p)
+  sym (shape-val-cast (base s) σ₁ η₁ N a f₁ (subst-val-refl E (const c)) p)
 ren-shape-val {ρ = ρ} {η₁ = η₁} {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂) r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E (inl v) q p =
   trans (cong inj₁ (ren-shape-val fo₁ r σ₁ σ₂ Eσ a a' f₁ f₂ hyp E₁ v (<-trans (n<1+n _) q)
                       (<-trans (n<1+n _) p̂)))
         (sym (cong (ren-shape (fo₁ [+] fo₂) r) (shape-val-cast (fo₁ [+] fo₂) σ₁ η₁ N a f₁ e-inl p)))
   where
-  E₁ = trans (sub-ren σ₂ ρ τ₁) (sub-cong {σ = λ i → σ₂ (ρ i)} {σ' = σ₁} τ₁ Eσ)
-  E₂ = trans (sub-ren σ₂ ρ τ₂) (sub-cong {σ = λ i → σ₂ (ρ i)} {σ' = σ₁} τ₂ Eσ)
+  E₁ = sub-ren-cong ρ σ₂ Eσ τ₁
+  E₂ = sub-ren-cong ρ σ₂ Eσ τ₂
   e-inl = subst-val-inl E₁ E₂ E v
   p̂ = subst (λ z → size z < N) e-inl p
 ren-shape-val {ρ = ρ} {η₁ = η₁} {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂) r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E (inr v) q p =
@@ -419,8 +437,8 @@ ren-shape-val {ρ = ρ} {η₁ = η₁} {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂)
                       (<-trans (n<1+n _) p̂)))
         (sym (cong (ren-shape (fo₁ [+] fo₂) r) (shape-val-cast (fo₁ [+] fo₂) σ₁ η₁ N a f₁ e-inr p)))
   where
-  E₁ = trans (sub-ren σ₂ ρ τ₁) (sub-cong {σ = λ i → σ₂ (ρ i)} {σ' = σ₁} τ₁ Eσ)
-  E₂ = trans (sub-ren σ₂ ρ τ₂) (sub-cong {σ = λ i → σ₂ (ρ i)} {σ' = σ₁} τ₂ Eσ)
+  E₁ = sub-ren-cong ρ σ₂ Eσ τ₁
+  E₂ = sub-ren-cong ρ σ₂ Eσ τ₂
   e-inr = subst-val-inr E₁ E₂ E v
   p̂ = subst (λ z → size z < N) e-inr p
 ren-shape-val {ρ = ρ} {η₁ = η₁} {τ = τ₁ [×] τ₂} (fo₁ [×] fo₂) r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E (pair v u) q p =
@@ -430,8 +448,8 @@ ren-shape-val {ρ = ρ} {η₁ = η₁} {τ = τ₁ [×] τ₂} (fo₁ [×] fo�
                       (<-trans (s≤s (m≤n+m _ _)) q) (<-trans (s≤s (m≤n+m _ _)) p̂)))
         (sym (cong (ren-shape (fo₁ [×] fo₂) r) (shape-val-cast (fo₁ [×] fo₂) σ₁ η₁ N a f₁ e-pair p)))
   where
-  E₁ = trans (sub-ren σ₂ ρ τ₁) (sub-cong {σ = λ i → σ₂ (ρ i)} {σ' = σ₁} τ₁ Eσ)
-  E₂ = trans (sub-ren σ₂ ρ τ₂) (sub-cong {σ = λ i → σ₂ (ρ i)} {σ' = σ₁} τ₂ Eσ)
+  E₁ = sub-ren-cong ρ σ₂ Eσ τ₁
+  E₂ = sub-ren-cong ρ σ₂ Eσ τ₂
   e-pair = subst-val-pair E₁ E₂ E v u
   p̂ = subst (λ z → size z < N) e-pair p
 ren-shape-val {n₁ = n₁} {n₂ = n₂} {ρ = ρ} {ρ̂ = ρ̂} {η₁ = η₁} {η₂ = η₂} {τ = μ τ} (μ fo) r σ₁ σ₂ Eσ
@@ -449,9 +467,7 @@ ren-shape-val {n₁ = n₁} {n₂ = n₂} {ρ = ρ} {ρ̂ = ρ̂} {η₁ = η₁
   pw : ∀ i → sub-lift σ₂ (extᵗ ρ i) ≡ sub-lift σ₁ i
   pw zero    = refl
   pw (suc i) = cong (suc *ᵗ_) (Eσ i)
-  e : B₂ ≡ B₁
-  e = trans (sub-ren (sub-lift σ₂) (extᵗ ρ) τ)
-            (sub-cong {σ = λ i → sub-lift σ₂ (extᵗ ρ i)} {σ' = sub-lift σ₁} τ pw)
+  e = sub-ren-cong (extᵗ ρ) (sub-lift σ₂) pw τ
   Ew = cong (λ υ → υ [ μ υ ]) e
   wE = subst Val Ew w
   e-roll = subst-val-roll e E w
@@ -467,9 +483,7 @@ ren-shape-val {n₁ = n₁} {n₂ = n₂} {ρ = ρ} {ρ̂ = ρ̂} {η₁ = η₁
   Eσ' : ∀ i → σ₂' (extᵗ ρ i) ≡ σ₁' i
   Eσ' zero    = E
   Eσ' (suc i) = Eσ i
-  E'' : sub σ₂' (extᵗ ρ *ᵗ τ) ≡ sub σ₁' τ
-  E'' = trans (sub-ren σ₂' (extᵗ ρ) τ)
-              (sub-cong {σ = λ i → σ₂' (extᵗ ρ i)} {σ' = σ₁'} τ Eσ')
+  E'' = sub-ren-cong (extᵗ ρ) σ₂' Eσ' τ
   U₁ = unfold-sub σ₁ τ
   U₂ = unfold-sub σ₂ (extᵗ ρ *ᵗ τ)
   vI = subst Val U₂ w
@@ -493,13 +507,13 @@ ren-shape-val {n₁ = n₁} {n₂ = n₂} {ρ = ρ} {ρ̂ = ρ̂} {η₁ = η₁
 -- per-variable translations extend by a tree translation at the bound sort and the earlier ones
 -- are moved under the binder by the renaming translation at the weakening.
 data SubCompat : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} → (∀ i → first-order (σ i)) →
-                 (Fin n₁ → Fin 0 ⊎ Sort 0) → (Fin n₂ → Fin 0 ⊎ Sort 0) → Set₁ where
+                 (SortEnv n₁) → (SortEnv n₂) → Set₁ where
   sbase : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
-          {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+          {η₁ : SortEnv n₁} {η₂ : SortEnv n₂} →
           (∀ j → El (η₁ j) → ⟦ ∣ fo-as-poly (fσ (j ↑ˡ 0)) ∅𝒞 ∣ ⟧shape η₂) →
           SubCompat fσ η₁ η₂
   sbind : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
-          {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+          {η₁ : SortEnv n₁} {η₂ : SortEnv n₂}
           {τ : type (suc n₁ + 0)} (fo : first-order τ) → SubCompat fσ η₁ η₂ →
           SubCompat (fo-lift fσ)
                     (extend η₁ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η₁)))
@@ -507,13 +521,13 @@ data SubCompat : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} → (∀ i �
 
 mutual
   sub-tree : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
-             {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+             {η₁ : SortEnv n₁} {η₂ : SortEnv n₂}
              {τ : type (suc n₁ + 0)} (fo : first-order τ) → SubCompat fσ η₁ η₂ →
              W ∣ fo-as-poly fo ∅𝒞 ∣ η₁ → W ∣ fo-as-poly (fo-sub (fo-lift fσ) fo) ∅𝒞 ∣ η₂
   sub-tree fo r (sup x) = sup (sub-shape fo (sbind fo r) x)
 
   sub-shape : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
-              {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+              {η₁ : SortEnv n₁} {η₂ : SortEnv n₂}
               {τ : type (n₁ + 0)} (fo : first-order τ) → SubCompat fσ η₁ η₂ →
               ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape η₁ → ⟦ ∣ fo-as-poly (fo-sub fσ fo) ∅𝒞 ∣ ⟧shape η₂
   sub-shape {n₁ = n₁} (var i) r x = sub-var r i (splitAt n₁ i) refl x
@@ -525,7 +539,7 @@ mutual
   sub-shape (μ fo) r t = sub-tree fo r t
 
   sub-var : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
-            {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+            {η₁ : SortEnv n₁} {η₂ : SortEnv n₂} →
             SubCompat fσ η₁ η₂ → (i : Fin (n₁ + 0)) (s : Fin n₁ ⊎ Fin 0) → splitAt n₁ i ≡ s →
             ⟦ ∣ Var s ∣ ⟧shape η₁ → ⟦ ∣ fo-as-poly (fσ i) ∅𝒞 ∣ ⟧shape η₂
   sub-var {fσ = fσ} {η₂ = η₂} r i (inj₁ j) eq x =
@@ -533,7 +547,7 @@ mutual
   sub-var r i (inj₂ ()) eq x
 
   sapply : ∀ {n₁ n₂} {σ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σ i)}
-           {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0} →
+           {η₁ : SortEnv n₁} {η₂ : SortEnv n₂} →
            SubCompat fσ η₁ η₂ → ∀ j → El (η₁ j) → ⟦ ∣ fo-as-poly (fσ (j ↑ˡ 0)) ∅𝒞 ∣ ⟧shape η₂
   sapply (sbase g) j x = g j x
   sapply (sbind fo r) zero x = sub-tree fo r x
@@ -546,7 +560,7 @@ mutual
 -- variables by ren-shape-val at the weakening renaming.
 sub-shape-val :
   ∀ {n₁ n₂} {σᵗ : TySub (n₁ + 0) (n₂ + 0)} {fσ : ∀ i → first-order (σᵗ i)}
-  {η₁ : Fin n₁ → Fin 0 ⊎ Sort 0} {η₂ : Fin n₂ → Fin 0 ⊎ Sort 0}
+  {η₁ : SortEnv n₁} {η₂ : SortEnv n₂}
   {τ : type (n₁ + 0)} (fo : first-order τ) (r : SubCompat fσ η₁ η₂)
   (σ₁ : TySub (n₁ + 0) 0) (σ₂ : TySub (n₂ + 0) 0) (Eσ : ∀ i → sub σ₂ (σᵗ i) ≡ σ₁ i)
   {N N' : ℕ} (a : Acc _<_ N) (a' : Acc _<_ N') (f₁ : Compat σ₁ η₁ N) (f₂ : Compat σ₂ η₂ N') →
@@ -579,7 +593,7 @@ sub-shape-val {n₁ = n₁} {σᵗ = σᵗ} {fσ = fσ} {η₁ = η₁} {η₂ =
     u₁ = subst Val E₁ (subst Val E' v')
     p₁ = subst (_< N) (sym (size-subst E₁ (subst Val E' v'))) p'
     e-u : subst Val E' v' ≡ u₁
-    e-u = sym (cong (λ h → subst Val h (subst Val E' v')) (uip E₁ refl))
+    e-u = sym (subst-val-refl E₁ (subst Val E' v'))
     p* = subst (λ z → size z < N) (sym e-u) p₁
 
   go : ∀ s (eq : splitAt n₁ i ≡ s) →
@@ -588,16 +602,16 @@ sub-shape-val {n₁ = n₁} {σᵗ = σᵗ} {fσ = fσ} {η₁ = η₁} {η₂ =
   go (inj₁ j) eq = go' i j eq (splitAt⁻¹-↑ˡ eq) v q E p
   go (inj₂ ()) eq
 sub-shape-val {η₁ = η₁} unit r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E unit q p =
-  sym (shape-val-cast unit σ₁ η₁ N a f₁ (cong (λ h → subst Val h unit) (uip E refl)) p)
+  sym (shape-val-cast unit σ₁ η₁ N a f₁ (subst-val-refl E unit) p)
 sub-shape-val {η₁ = η₁} (base s) r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E (const c) q p =
-  sym (shape-val-cast (base s) σ₁ η₁ N a f₁ (cong (λ h → subst Val h (const c)) (uip E refl)) p)
+  sym (shape-val-cast (base s) σ₁ η₁ N a f₁ (subst-val-refl E (const c)) p)
 sub-shape-val {σᵗ = σᵗ} {η₁ = η₁} {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂) r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E (inl v) q p =
   trans (cong inj₁ (sub-shape-val fo₁ r σ₁ σ₂ Eσ a a' f₁ f₂ hyp E₁ v (<-trans (n<1+n _) q)
                       (<-trans (n<1+n _) p̂)))
         (sym (cong (sub-shape (fo₁ [+] fo₂) r) (shape-val-cast (fo₁ [+] fo₂) σ₁ η₁ N a f₁ e-inl p)))
   where
-  E₁ = trans (sub-sub σ₂ σᵗ τ₁) (sub-cong {σ = λ i → sub σ₂ (σᵗ i)} {σ' = σ₁} τ₁ Eσ)
-  E₂ = trans (sub-sub σ₂ σᵗ τ₂) (sub-cong {σ = λ i → sub σ₂ (σᵗ i)} {σ' = σ₁} τ₂ Eσ)
+  E₁ = sub-sub-cong σᵗ σ₂ Eσ τ₁
+  E₂ = sub-sub-cong σᵗ σ₂ Eσ τ₂
   e-inl = subst-val-inl E₁ E₂ E v
   p̂ = subst (λ z → size z < N) e-inl p
 sub-shape-val {σᵗ = σᵗ} {η₁ = η₁} {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂) r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E (inr v) q p =
@@ -605,8 +619,8 @@ sub-shape-val {σᵗ = σᵗ} {η₁ = η₁} {τ = τ₁ [+] τ₂} (fo₁ [+] 
                       (<-trans (n<1+n _) p̂)))
         (sym (cong (sub-shape (fo₁ [+] fo₂) r) (shape-val-cast (fo₁ [+] fo₂) σ₁ η₁ N a f₁ e-inr p)))
   where
-  E₁ = trans (sub-sub σ₂ σᵗ τ₁) (sub-cong {σ = λ i → sub σ₂ (σᵗ i)} {σ' = σ₁} τ₁ Eσ)
-  E₂ = trans (sub-sub σ₂ σᵗ τ₂) (sub-cong {σ = λ i → sub σ₂ (σᵗ i)} {σ' = σ₁} τ₂ Eσ)
+  E₁ = sub-sub-cong σᵗ σ₂ Eσ τ₁
+  E₂ = sub-sub-cong σᵗ σ₂ Eσ τ₂
   e-inr = subst-val-inr E₁ E₂ E v
   p̂ = subst (λ z → size z < N) e-inr p
 sub-shape-val {σᵗ = σᵗ} {η₁ = η₁} {τ = τ₁ [×] τ₂} (fo₁ [×] fo₂) r σ₁ σ₂ Eσ {N = N} a a' f₁ f₂ hyp E (pair v u) q p =
@@ -616,8 +630,8 @@ sub-shape-val {σᵗ = σᵗ} {η₁ = η₁} {τ = τ₁ [×] τ₂} (fo₁ [×
                       (<-trans (s≤s (m≤n+m _ _)) q) (<-trans (s≤s (m≤n+m _ _)) p̂)))
         (sym (cong (sub-shape (fo₁ [×] fo₂) r) (shape-val-cast (fo₁ [×] fo₂) σ₁ η₁ N a f₁ e-pair p)))
   where
-  E₁ = trans (sub-sub σ₂ σᵗ τ₁) (sub-cong {σ = λ i → sub σ₂ (σᵗ i)} {σ' = σ₁} τ₁ Eσ)
-  E₂ = trans (sub-sub σ₂ σᵗ τ₂) (sub-cong {σ = λ i → sub σ₂ (σᵗ i)} {σ' = σ₁} τ₂ Eσ)
+  E₁ = sub-sub-cong σᵗ σ₂ Eσ τ₁
+  E₂ = sub-sub-cong σᵗ σ₂ Eσ τ₂
   e-pair = subst-val-pair E₁ E₂ E v u
   p̂ = subst (λ z → size z < N) e-pair p
 sub-shape-val {n₁ = n₁} {n₂ = n₂} {σᵗ = σᵗ} {fσ = fσ} {η₁ = η₁} {η₂ = η₂} {τ = μ τ} (μ fo) r σ₁ σ₂ Eσ
@@ -638,9 +652,7 @@ sub-shape-val {n₁ = n₁} {n₂ = n₂} {σᵗ = σᵗ} {fσ = fσ} {η₁ = �
   pw zero    = refl
   pw (suc i) = trans (sub-ren (sub-lift σ₂) suc (σᵗ i))
                      (trans (sym (ren-sub suc σ₂ (σᵗ i))) (cong (suc *ᵗ_) (Eσ i)))
-  e : B₂ ≡ B₁
-  e = trans (sub-sub (sub-lift σ₂) (sub-lift σᵗ) τ)
-            (sub-cong {σ = λ i → sub (sub-lift σ₂) (sub-lift σᵗ i)} {σ' = sub-lift σ₁} τ pw)
+  e = sub-sub-cong (sub-lift σᵗ) (sub-lift σ₂) pw τ
   Ew = cong (λ υ → υ [ μ υ ]) e
   wE = subst Val Ew w
   e-roll = subst-val-roll e E w
@@ -658,9 +670,7 @@ sub-shape-val {n₁ = n₁} {n₂ = n₂} {σᵗ = σᵗ} {fσ = fσ} {η₁ = �
   Eσ' : ∀ i → sub σ₂' (sub-lift σᵗ i) ≡ σ₁' i
   Eσ' zero    = E
   Eσ' (suc i) = trans (sub-ren σ₂' suc (σᵗ i)) (Eσ i)
-  E'' : sub σ₂' (sub (sub-lift σᵗ) τ) ≡ sub σ₁' τ
-  E'' = trans (sub-sub σ₂' (sub-lift σᵗ) τ)
-              (sub-cong {σ = λ i → sub σ₂' (sub-lift σᵗ i)} {σ' = σ₁'} τ Eσ')
+  E'' = sub-sub-cong (sub-lift σᵗ) σ₂' Eσ' τ
   U₁ = unfold-sub σ₁ τ
   U₂ = unfold-sub σ₂ (sub (sub-lift σᵗ) τ)
   vI = subst Val U₂ w
@@ -683,7 +693,7 @@ sub-shape-val {n₁ = n₁} {n₂ = n₂} {σᵗ = σᵗ} {fσ = fσ} {η₁ = �
           (Ej : σ₂' (suc j ↑ˡ 0) ≡ σ₂ (j ↑ˡ 0)) (p₁ : size (subst Val Ej u) < N') →
           F₂ (suc j) u q₁ ≡ rapply wr j (f₂ j (subst Val Ej u) p₁)
   hyp-w j u q₁ Ej p₁ =
-    app-cast (f₂ j) (sym (cong (λ h → subst Val h u) (uip Ej refl))) (<-irrelevant _ _)
+    app-cast (f₂ j) (sym (subst-val-refl Ej u)) (<-irrelevant _ _)
   hyp' : ∀ j (u : Val (sub σ₂' (sub-lift σᵗ (j ↑ˡ 0)))) (q₀ : size u < suc (size w))
          (Ej : sub σ₂' (sub-lift σᵗ (j ↑ˡ 0)) ≡ σ₁' (j ↑ˡ 0))
          (p₀ : size (subst Val Ej u) < suc (size wE)) →
@@ -723,21 +733,21 @@ sub-shape-val {n₁ = n₁} {n₂ = n₂} {σᵗ = σᵗ} {fσ = fσ} {η₁ = �
 private
   subst-set-inj₁ : ∀ {ℓ} {A A' B B' : Set ℓ} (e₁ : A ≡ A') (e₂ : B ≡ B')
                    (E : (A ⊎ B) ≡ (A' ⊎ B')) (x : A) →
-                   subst (λ X → X) E (inj₁ x) ≡ inj₁ (subst (λ X → X) e₁ x)
+                   subst id E (inj₁ x) ≡ inj₁ (subst id e₁ x)
   subst-set-inj₁ refl refl refl x = refl
 
   subst-set-inj₂ : ∀ {ℓ} {A A' B B' : Set ℓ} (e₁ : A ≡ A') (e₂ : B ≡ B')
                    (E : (A ⊎ B) ≡ (A' ⊎ B')) (y : B) →
-                   subst (λ X → X) E (inj₂ y) ≡ inj₂ (subst (λ X → X) e₂ y)
+                   subst id E (inj₂ y) ≡ inj₂ (subst id e₂ y)
   subst-set-inj₂ refl refl refl y = refl
 
   subst-set-pair : ∀ {ℓ} {A A' B B' : Set ℓ} (e₁ : A ≡ A') (e₂ : B ≡ B')
                    (E : (A × B) ≡ (A' × B')) (x : A) (y : B) →
-                   subst (λ X → X) E (x , y) ≡ (subst (λ X → X) e₁ x , subst (λ X → X) e₂ y)
+                   subst id E (x , y) ≡ (subst id e₁ x , subst id e₂ y)
   subst-set-pair refl refl refl x y = refl
 
 val-carrier : ∀ {τ : type 0} (fo : first-order τ) →
-              ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape (λ i → inj₁ i) ≡ Carrier (𝒞⟦ fo ⟧ty ∅𝒞 .idx)
+              ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape η∅ ≡ Carrier (𝒞⟦ fo ⟧ty ∅𝒞 .idx)
 val-carrier (var ())
 val-carrier unit          = refl
 val-carrier (base s)      = refl
@@ -746,86 +756,82 @@ val-carrier (fo₁ [×] fo₂) = cong₂ _×_ (val-carrier fo₁) (val-carrier f
 val-carrier (μ fo)        = refl
 
 id-shape-val : ∀ {τ : type 0} (fo : first-order τ) {N} (a : Acc _<_ N)
-               (f : Compat var (λ i → inj₁ i) N) (E : τ ≡ sub var τ) (v : Val τ)
+               (f : Compat var η∅ N) (E : τ ≡ sub var τ) (v : Val τ)
                (p : size (subst Val E v) < N) →
-               subst (λ X → X) (val-carrier fo)
-                 (shape-val fo var (λ i → inj₁ i) N a f (subst Val E v) p)
+               subst id (val-carrier fo)
+                 (shape-val fo var η∅ N a f (subst Val E v) p)
                  ≡ ⟦ fo ⟧val v
 id-shape-val (var ())
 id-shape-val unit a f E unit p =
-  shape-val-cast unit var (λ i → inj₁ i) _ a f (cong (λ h → subst Val h unit) (uip E refl)) p
+  shape-val-cast unit var η∅ _ a f (subst-val-refl E unit) p
 id-shape-val (base s) a f E (const c) p =
-  shape-val-cast (base s) var (λ i → inj₁ i) _ a f (cong (λ h → subst Val h (const c)) (uip E refl)) p
+  shape-val-cast (base s) var η∅ _ a f (subst-val-refl E (const c)) p
 id-shape-val {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂) a f E (inl v) p =
-  trans (cong (subst (λ X → X) (val-carrier (fo₁ [+] fo₂)))
-              (shape-val-cast (fo₁ [+] fo₂) var (λ i → inj₁ i) _ a f (subst-val-inl e₁ e₂ E v) p))
+  trans (cong (subst id (val-carrier (fo₁ [+] fo₂)))
+              (shape-val-cast (fo₁ [+] fo₂) var η∅ _ a f (subst-val-inl e₁ e₂ E v) p))
   (trans (subst-set-inj₁ (val-carrier fo₁) (val-carrier fo₂) (val-carrier (fo₁ [+] fo₂)) _)
          (cong inj₁ (id-shape-val fo₁ a f e₁ v _)))
   where
   e₁ = sym (sub-id τ₁)
   e₂ = sym (sub-id τ₂)
 id-shape-val {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂) a f E (inr v) p =
-  trans (cong (subst (λ X → X) (val-carrier (fo₁ [+] fo₂)))
-              (shape-val-cast (fo₁ [+] fo₂) var (λ i → inj₁ i) _ a f (subst-val-inr e₁ e₂ E v) p))
+  trans (cong (subst id (val-carrier (fo₁ [+] fo₂)))
+              (shape-val-cast (fo₁ [+] fo₂) var η∅ _ a f (subst-val-inr e₁ e₂ E v) p))
   (trans (subst-set-inj₂ (val-carrier fo₁) (val-carrier fo₂) (val-carrier (fo₁ [+] fo₂)) _)
          (cong inj₂ (id-shape-val fo₂ a f e₂ v _)))
   where
   e₁ = sym (sub-id τ₁)
   e₂ = sym (sub-id τ₂)
 id-shape-val {τ = τ₁ [×] τ₂} (fo₁ [×] fo₂) a f E (pair v u) p =
-  trans (cong (subst (λ X → X) (val-carrier (fo₁ [×] fo₂)))
-              (shape-val-cast (fo₁ [×] fo₂) var (λ i → inj₁ i) _ a f (subst-val-pair e₁ e₂ E v u) p))
+  trans (cong (subst id (val-carrier (fo₁ [×] fo₂)))
+              (shape-val-cast (fo₁ [×] fo₂) var η∅ _ a f (subst-val-pair e₁ e₂ E v u) p))
   (trans (subst-set-pair (val-carrier fo₁) (val-carrier fo₂) (val-carrier (fo₁ [×] fo₂)) _ _)
          (cong₂ _,_ (id-shape-val fo₁ a f e₁ v _) (id-shape-val fo₂ a f e₂ u _)))
   where
   e₁ = sym (sub-id τ₁)
   e₂ = sym (sub-id τ₂)
 id-shape-val {τ = μ τ} (μ fo) a f E v p =
-  trans (shape-val-cast (μ fo) var (λ i → inj₁ i) _ a f e-v p)
-        (shape-val-irrelevant (μ fo) var (λ i → inj₁ i) a (<-wellFounded _) f (λ ()) (λ ())
+  trans (shape-val-cast (μ fo) var η∅ _ a f e-v p)
+        (shape-val-irrelevant (μ fo) var η∅ a (<-wellFounded _) f (λ ()) (λ ())
            (subst Val (sym (sub-id (μ τ))) v) _ _)
   where
   e-v = cong (λ h → subst Val h v) (uip E (sym (sub-id (μ τ))))
 
 inst-compat : ∀ {τ : type 1} (fo : first-order τ) →
               SubCompat (fo-push (μ fo))
-                        (extend (λ i → inj₁ i) (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ (λ i → inj₁ i))))
-                        (λ i → inj₁ i)
+                        (extend η∅ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η∅)))
+                        η∅
 inst-compat fo = sbase g
   where
-  g : ∀ j → El (extend (λ i → inj₁ i) (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ (λ i → inj₁ i))) j) →
-      ⟦ ∣ fo-as-poly (fo-push (μ fo) (j ↑ˡ 0)) ∅𝒞 ∣ ⟧shape (λ i → inj₁ i)
+  g : ∀ j → El (extend η∅ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η∅)) j) →
+      ⟦ ∣ fo-as-poly (fo-push (μ fo) (j ↑ˡ 0)) ∅𝒞 ∣ ⟧shape η∅
   g zero x = x
   g (suc ())
 
 inst-shape-val :
   ∀ {τ : type 1} (fo : first-order τ) {N N' : ℕ} (a : Acc _<_ N) (a' : Acc _<_ N')
-  (f₀ : Compat var (λ i → inj₁ i) N) (f₂ : Compat var (λ i → inj₁ i) N')
+  (f₀ : Compat var η∅ N) (f₂ : Compat var η∅ N')
   (E : sub var (τ [ μ τ ]) ≡ sub (extend var (μ (sub (sub-lift var) τ))) τ)
   (v : Val (sub var (τ [ μ τ ]))) (q : size v < N') (p : size (subst Val E v) < N) →
-  shape-val (fo-inst fo (μ fo)) var (λ i → inj₁ i) N' a' f₂ v q
+  shape-val (fo-inst fo (μ fo)) var η∅ N' a' f₂ v q
     ≡ sub-shape fo (inst-compat fo)
         (shape-val fo (extend var (μ (sub (sub-lift var) τ)))
-           (extend (λ i → inj₁ i) (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ (λ i → inj₁ i))))
-           N a (extend-compat (shape-val (μ fo) var (λ i → inj₁ i) N a f₀) f₀)
+           (extend η∅ (inj₂ (mkSort ∣ fo-as-poly fo ∅𝒞 ∣ η∅)))
+           N a (extend-compat (shape-val (μ fo) var η∅ N a f₀) f₀)
            (subst Val E v) p)
 inst-shape-val {τ = τ} fo {N} {N'} a a' f₀ f₂ E v q p =
   sub-shape-val fo (inst-compat fo) σ₁ var Eσ a a' F f₂ hyp E v q p
   where
-  B  = sub (sub-lift var) τ
-  σ₁ = extend var (μ B)
-  F  = extend-compat (shape-val (μ fo) var (λ i → inj₁ i) N a f₀) f₀
+  σ₁ = extend var (μ (sub (sub-lift var) τ))
+  F  = extend-compat (shape-val (μ fo) var η∅ N a f₀) f₀
   Eσ : ∀ i → sub var (push (μ τ) i) ≡ σ₁ i
   Eσ zero = refl
   Eσ (suc ())
   hyp : ∀ j (u : Val (sub var (push (μ τ) (j ↑ˡ 0)))) (q₁ : size u < N')
         (Ej : sub var (push (μ τ) (j ↑ˡ 0)) ≡ σ₁ (j ↑ˡ 0)) (p₁ : size (subst Val Ej u) < N) →
-        shape-val (fo-push (μ fo) (j ↑ˡ 0)) var (λ i → inj₁ i) N' a' f₂ u q₁
+        shape-val (fo-push (μ fo) (j ↑ˡ 0)) var η∅ N' a' f₂ u q₁
           ≡ sapply (inst-compat fo) j (F j (subst Val Ej u) p₁)
   hyp zero u q₁ Ej p₁ =
-    trans (shape-val-irrelevant (μ fo) var (λ i → inj₁ i) a' a f₂ f₀ (λ ()) u q₁ p₁')
-          (sym (shape-val-cast (μ fo) var (λ i → inj₁ i) N a f₀ e-u p₁))
-    where
-    e-u = cong (λ h → subst Val h u) (uip Ej refl)
-    p₁' = subst (λ z → size z < N) e-u p₁
+    trans (shape-val-irrelevant (μ fo) var η∅ a' a f₂ f₀ (λ ()) u q₁ _)
+          (sym (shape-val-cast (μ fo) var η∅ N a f₀ (subst-val-refl Ej u) p₁))
   hyp (suc ())
