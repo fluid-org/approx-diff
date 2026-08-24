@@ -20,6 +20,9 @@ open import commutative-semiring using (CommutativeSemiring)
 import matrix
 import two
 import three
+import semiring-sign as sign
+open import Data.Rational using (ℚ)
+open import signature.example.collapse using (nonzero)
 import example.render.constants
 import signature.example.interpretation
 import example.runs
@@ -27,15 +30,15 @@ import language-operational.evaluation
 import example.render.annotated-value as AV
 
 -- Rendering over a semiring, given how a scalar is shown after a position.
-module over {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A)
-              (suffix : Setoid.Carrier A → String) where
+module over {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
+              (ctrl-weight : Setoid.Carrier A) (suffix : Setoid.Carrier A → String) where
 
   open CommutativeSemiring S using (ι; ε)
-  open signature.example.interpretation S using (Sig; interpretation)
+  open signature.example.interpretation collapse S using (Sig; interpretation)
   open language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
   open AV Sig S interpretation ctrl-weight using (AVal; node; Tag)
   open AV.annotate Sig S interpretation ctrl-weight S using (row→aval; row→avals)
-  open example.render.constants S using (show-const)
+  open example.render.constants collapse S using (show-const)
 
   private
     module M = matrix.Mat S
@@ -111,10 +114,21 @@ private
   suffix3 three.C = "ᶜ"
   suffix3 three.O = "⊥"
 
-  module R2 = over two.semiring two.I suffix2
-  module R3 = over three.semiring three.C suffix3
-  module E2 = example.runs two.semiring two.I
-  module E3 = example.runs three.semiring three.C
+  suffix-sign : sign.Sign → String
+  suffix-sign sign.pos = ""
+  suffix-sign sign.neg = "⁻"
+  suffix-sign sign.unk = "?"
+  suffix-sign sign.zer = "⊥"
+
+  module R2 = over (nonzero two.semiring) two.semiring two.I suffix2
+  module R3 = over (nonzero three.semiring) three.semiring three.C suffix3
+  module RS = over sign.sign-of sign.semiring sign.unk suffix-sign
+  module E2 = example.runs (nonzero two.semiring) two.semiring two.I
+  module E3 = example.runs (nonzero three.semiring) three.semiring three.C
+  module ES = example.runs sign.sign-of sign.semiring sign.unk
+
+  sign-run : String → ES.Run → String
+  sign-run name r = RS.show-run name (ES.env r) (ES.model-output r) (ES.model-of r)
 
   two-run : String → E2.Run → String
   two-run name r = R2.show-run name (E2.env r) (E2.model-output r) (E2.model-of r)
@@ -128,7 +142,8 @@ private
   three-run name r = R3.show-run name (E3.env r) (E3.model-output r) (E3.model-of r)
 
 -- The Booleans for the programs whose point is which positions are read; the three-chain, which
--- separates consumption from value flow, for those whose point is that distinction.
+-- separates consumption from value flow, for those whose point is that distinction; the signs, with
+-- the sign of a rational as its weight, for the saliency reading of the grid scorer.
 contents : String
 contents =
   two-run   "query"      E2.query-run  ++
@@ -146,7 +161,8 @@ contents =
   three-run "eq"         E3.eq-run     ++
   three-run "mult"       E3.mult-run   ++
   three-run "mavg"       E3.mavg-run   ++
-  three-related "mavg-related" E3.mavg-run
+  three-related "mavg-related" E3.mavg-run ++
+  sign-run  "score"      ES.score-run
 
 main : Main
 main = run (writeFile "test-baselines/relations.txt" contents)

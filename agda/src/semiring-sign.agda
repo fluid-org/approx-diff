@@ -12,9 +12,18 @@ open import prop using (LiftS; liftS)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
+open import Data.Nat using (zero; suc)
+open import Data.Integer using (+_; -[1+_])
+open import Data.Rational using (ℚ; ↥_)
 
 data Sign : Set where
   pos zer neg unk : Sign
+
+sign-of : ℚ → Sign
+sign-of q with ↥ q
+... | + zero    = zer
+... | + (suc _) = pos
+... | -[1+ _ ]  = neg
 
 infixl 20 _+ˢ_
 _+ˢ_ : Sign → Sign → Sign

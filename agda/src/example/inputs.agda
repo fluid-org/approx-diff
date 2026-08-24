@@ -5,13 +5,17 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 
 -- The example programs' inputs, as environments of values.
-module example.inputs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A) where
+open import Data.Rational using (ℚ)
+module example.inputs {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
+                      (ctrl-weight : Setoid.Carrier A) where
 
-open import Data.Rational using (ℚ; 0ℚ; 1ℚ) renaming (_+_ to _+ℚ_)
+open import Data.Rational using (0ℚ; 1ℚ; _/_) renaming (_+_ to _+ℚ_)
+open import Data.Integer using (+_)
+open import Data.Nat using (ℕ)
 open import Relation.Binary.PropositionalEquality using (subst; sym)
 import label
-open import signature.example.interpretation S using (Sig; interpretation; number; label)
-open import example.programs using (case-ctxt)
+open import signature.example.interpretation collapse S using (Sig; interpretation; number; label)
+open import example.programs using (case-ctxt; Grid)
 open import language-syntax Sig using (type; base; unit; list; _[×]_; _[+]_; emp; _,_; sub-ren-id)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
 open Val
@@ -57,6 +61,14 @@ private
 -- The derivative of x * y is [y, x], so at (1, 0) the result depends on y alone.
 γ-mult : Env (emp , base number [×] base number)
 γ-mult = emp · pair (const 1ℚ) (const 0ℚ)
+
+γ-score : Env (emp , Grid)
+γ-score = emp · pair (pair (row 1 2 1) (row 3 5 4)) (row 1 7 1)
+  where
+  num : ℕ → ℚ
+  num k = (+ k) / 1
+  row : ℕ → ℕ → ℕ → Val ((base number [×] base number) [×] base number)
+  row a b c = pair (pair (const (num a)) (const (num b))) (const (num c))
 
 γ-case-l γ-case-r : Env case-ctxt
 γ-case-l = emp · const 1ℚ · inl unit

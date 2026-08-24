@@ -5,7 +5,8 @@ open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 
-module example.render.constants {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+open import Data.Rational using (ℚ)
+module example.render.constants {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A) where
 
 open import Data.Nat using (zero; suc)
 open import Data.String using (String; _++_)
@@ -14,7 +15,7 @@ import Data.Integer as ℤ
 import Data.Integer.Show as ℤ-Show
 import label
 open import signature.example ℚ using (number; label)
-open import signature.example.interpretation S using (sort-val)
+open import signature.example.interpretation collapse S using (sort-val)
 
 show-ℚ : ℚ → String
 show-ℚ q with ↧ q

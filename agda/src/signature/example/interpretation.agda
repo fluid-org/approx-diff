@@ -2,13 +2,14 @@
 
 -- The example signature over rational data, weighted in any commutative semiring: a number is a
 -- rational carrying one scalar position, a label carries none, and the dependency relation of an
--- operation at given arguments is the collapse of the rational Jacobian there, ε where an entry is
--- 0 and ι elsewhere.
+-- operation at given arguments is the collapse of the rational Jacobian there.
 open import Level using (0ℓ)
 open import prop-setoid using (Setoid; IsEquivalence; +-setoid; 𝟙)
 open import commutative-semiring using (CommutativeSemiring)
 
-module signature.example.interpretation {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
+open import Data.Rational using (ℚ)
+module signature.example.interpretation {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A)
+                                        (S : CommutativeSemiring A) where
 
 import prop
 import matrix
@@ -18,12 +19,12 @@ open import signature.interpretation using (Interpretation)
 open Interpretation using (sort-index; sort-width; op-fun; op-deps; rel-pred; rel-deps)
 
 open import categories using (Category)
-open import Relation.Nullary using (yes; no)
 open import Relation.Binary.PropositionalEquality using (refl)
 open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.Rational using (ℚ; 0ℚ) renaming (_≟_ to _≟ℚ_)
 open import prop using (liftS)
+open import Data.Rational using (0ℚ) renaming (_≟_ to _≟ℚ_)
+open import Relation.Nullary using (yes; no)
 open import signature.example ℚ
   using (Sig; sort; number; label; op; rel; lit; add; mult; lbl; equal-label; equal-number)
   public
@@ -34,12 +35,6 @@ private
   open matrix.Mat S using (_∥_; block)
   module MS = matrix.Mat S
   open prop-setoid._⇒_
-
--- Collapse of a rational: ε at 0, ι elsewhere.
-collapse : ℚ → Setoid.Carrier A
-collapse q with q ≟ℚ 0ℚ
-... | yes _ = Sc.ε
-... | no _  = Sc.ι
 
 private
   -- The collapse of the Jacobian of multiplication: [ ∂/∂x , ∂/∂y ] = [ y , x ].

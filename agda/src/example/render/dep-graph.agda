@@ -17,9 +17,10 @@ open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Vec as Vec using (Vec; toList; tabulate)
 open import Level using (0ℓ)
 import three
-open import signature.example.interpretation three.semiring using (Sig; interpretation)
-open import example.runs three.semiring three.C using (map-run; filter-run; env; model-output; model-of)
-open import example.render.constants three.semiring using (show-const)
+open import signature.example.collapse using (nonzero)
+open import signature.example.interpretation (nonzero three.semiring) three.semiring using (Sig; interpretation)
+open import example.runs (nonzero three.semiring) three.semiring three.C using (map-run; filter-run; env; model-output; model-of)
+open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
 open import example.render.annotated-value Sig three.semiring interpretation three.C
   using (AVal; node; Tag; arity; shape-of; shape-env-of; covers; covers-vec; covers-all;
          label-of; fold; fold-all)

@@ -14,7 +14,9 @@ open import every using ([]; _∷_)
 import two
 
 open import signature.example ℚ using (Sig; number; add; mult)
-import signature.example.interpretation two.semiring as Dep
+open import signature.example.collapse using (nonzero)
+import signature.example.interpretation
+module Dep = signature.example.interpretation (nonzero two.semiring) two.semiring
 
 open import language-syntax Sig using (_⊢_; zero; succ; base; var; bop; emp) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig two.semiring Dep.interpretation two.I

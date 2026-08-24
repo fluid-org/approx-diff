@@ -16,7 +16,9 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import two
 
 open import signature.example ℚ using (Sig; number)
-import signature.example.interpretation two.semiring as Dep
+open import signature.example.collapse using (nonzero)
+import signature.example.interpretation
+module Dep = signature.example.interpretation (nonzero two.semiring) two.semiring
 
 open import language-syntax Sig using (_⊢_; _∋_; zero; base; var; inl; case; ctxt; emp)
   renaming (_,_ to _▸_)

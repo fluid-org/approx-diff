@@ -181,6 +181,10 @@ Row Grid : type 0
 Row  = (base number [×] base number) [×] base number
 Grid = (Row [×] Row) [×] Row
 
+score-ctxt-fo : first-order-ctxt (emp , Grid)
+score-ctxt-fo = emp , ((row [×] row) [×] row)
+  where row = (base number [×] base number) [×] base number
+
 score : ℚ → emp , Grid ⊢ base number
 score neg =
   plus (plus x5 (minus (plus (plus x1 x3) (plus x7 x9))))

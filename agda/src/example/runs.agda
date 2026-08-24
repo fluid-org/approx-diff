@@ -6,15 +6,17 @@ open import commutative-semiring using (CommutativeSemiring)
 
 -- The example programs at their inputs, and the model's output and relation of each at the
 -- interpretation of the input.
-module example.runs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A) where
+open import Data.Rational using (ℚ)
+module example.runs {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
+                    (ctrl-weight : Setoid.Carrier A) where
 
 import label
-open import Data.Rational using (½)
+open import Data.Rational using (½; 1ℚ; -_)
 import matrix
 import ho-model
-open import signature.example.interpretation S using (Sig; interpretation; number)
+open import signature.example.interpretation collapse S using (Sig; interpretation; number)
 open import example.programs
-open import example.inputs S ctrl-weight
+open import example.inputs collapse S ctrl-weight
 open import language-syntax Sig using (ctxt; type; first-order-ctxt; first-order; _⊢_; base; unit; _[+]_; _[×]_)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
 open import value-interpretation S ctrl-weight Sig interpretation using (⟦_⟧env; ⟦_⟧val⁻¹)
@@ -64,6 +66,9 @@ test-run   = run test-ctxt-fo (base number) test-term γ-test
 
 mult-run : Run
 mult-run = run mult-ctxt-fo (base number) mult-ex γ-mult
+
+score-run : Run
+score-run = run score-ctxt-fo (base number) (score (- 1ℚ)) γ-score
 
 mavg-run : Run
 mavg-run = run mavg-ctxt-fo (base number [×] (base number [×] base number)) (mavg ½) γ-mavg
