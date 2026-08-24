@@ -4,6 +4,7 @@ module everything where
 
 import language-operational.totality
 import ho-agreement
+import value-interpretation
 import fam-mu-lifting
 import interaction.graph
 import interaction.dependence-graph

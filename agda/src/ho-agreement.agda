@@ -2,17 +2,16 @@
 
 -- The fundamental lemma: a term's value is related to its index at a
 -- related environment, and the relation applied to the inputs is related to the term's fibre map plus
--- the control dependence at the control input's value. Soundness at μ-free first-order types follows.
+-- the control dependence at the control input's value. Soundness at first-order types follows.
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_; _⊔_)
 open import Data.Nat.Properties using (≤-refl)
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (_,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
 open import every using (Every)
 open import Data.List using ([]; _∷_)
-open import Data.Unit using (⊤; tt)
-open import Data.Empty using (⊥)
+open import Data.Unit using (tt)
 import prop
 open import prop using (_∧_; ∃; Prf; ⟪_⟫; _,_; proj₁; proj₂)
 open import prop-setoid using (Setoid)
@@ -1894,56 +1893,56 @@ fundamental-s {γ = γ} (_∷_ {i = i} {is = is} {v = v} {R = R₁} {Rs = Rs} {M
   IH₂ : ∀ l → ap Rs (inputs γ s x) l ≈s ((c ·ₛ s) +ₛ (args-vec Ms gi g) l)
   IH₂ = fundamental-s Ds rγ s x g rel
 
-open import value-interpretation S ctrl-weight Sig ℐ using (⟦_⟧val; ⟦_⟧env)
-open Category.Iso using (fwd)
-
 val-idx : ∀ {τ} (fo : first-order τ) → Val τ → Ix τ
-val-idx fo v = interp.closed-iso fo .fwd .idxf .sfunc (⟦ fo ⟧val v)
+val-idx unit           unit       = lift tt
+val-idx (base s)       (const a)  = a
+val-idx (fo₁ [+] fo₂)  (inl v)    = inj₁ (val-idx fo₁ v)
+val-idx (fo₁ [+] fo₂)  (inr v)    = inj₂ (val-idx fo₂ v)
+val-idx (fo₁ [×] fo₂)  (pair v u) = val-idx fo₁ v , val-idx fo₂ u
+val-idx (μ {τ = τ} fo) (roll v)   = roll-mor τ .idxf .sfunc (val-idx (fo-inst fo (μ fo)) v)
 
 env-idx : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → Env Γ → IxC Γ
-env-idx Γ-fo γ = interp.⟦ Γ-fo ⟧ctxt-iso .fwd .idxf .sfunc (⟦ Γ-fo ⟧env γ)
+env-idx emp         emp     = lift tt
+env-idx (Γ-fo ▸ fo) (γ · v) = env-idx Γ-fo γ , val-idx fo v
 
-μ-free : ∀ {Δ} {τ : type Δ} → first-order τ → Set
-μ-free (var i)       = ⊤
-μ-free unit          = ⊤
-μ-free (base s)      = ⊤
-μ-free (fo₁ [+] fo₂) = μ-free fo₁ × μ-free fo₂
-μ-free (fo₁ [×] fo₂) = μ-free fo₁ × μ-free fo₂
-μ-free (μ fo)        = ⊥
+val-rel : ∀ {τ} (fo : first-order τ) (v : Val τ) → ValRel τ v (val-idx fo v)
+val-rel unit          unit       = tt
+val-rel (base s)      (const a)  = ⟪ Setoid.refl (sort-index s) ⟫
+val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (inl v) =
+  val-idx fo₁ v , ValRel-at-bound τ₁ (val-rel fo₁ v) , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₁ (val-idx fo₁ v)} ⟫
+val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (inr v) =
+  val-idx fo₂ v , ValRel-at-bound τ₂ (val-rel fo₂ v) , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₂ (val-idx fo₂ v)} ⟫
+val-rel {τ₁ [×] τ₂} (fo₁ [×] fo₂) (pair v u) =
+  ValRel-at-bound τ₁ (val-rel fo₁ v) , ValRel-at-bound τ₂ (val-rel fo₂ u)
+val-rel {μ τ} (μ fo) (roll v) =
+  ValRel-resp′ (τ [ μ τ ]) (bound-μ τ ≤-refl) {v} {i} {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)}
+    (Ix.sym (τ [ μ τ ]) {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)} {i} (idx-eq (LI.unroll-roll τ) i))
+    (ValRel-at-bound (τ [ μ τ ]) (val-rel (fo-inst fo (μ fo)) v))
+  where i = val-idx (fo-inst fo (μ fo)) v
 
-μ-free-ctxt : ∀ {Γ} → first-order-ctxt Γ → Set
-μ-free-ctxt emp         = ⊤
-μ-free-ctxt (Γ-fo ▸ fo) = μ-free-ctxt Γ-fo × μ-free fo
+env-rel : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) → EnvValRel γ (env-idx Γ-fo γ)
+env-rel emp         emp     = emp
+env-rel (Γ-fo ▸ fo) (γ · v) = env-rel Γ-fo γ · val-rel fo v
 
-val-rel : ∀ {τ} (fo : first-order τ) → μ-free fo → (v : Val τ) → ValRel τ v (val-idx fo v)
-val-rel unit          _         unit       = tt
-val-rel (base s)      _         (const a)  = ⟪ Setoid.refl (sort-index s) ⟫
-val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inl v) =
-  val-idx fo₁ v , ValRel-at-bound τ₁ (val-rel fo₁ m₁ v) , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₁ (val-idx fo₁ v)} ⟫
-val-rel {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) (inr v) =
-  val-idx fo₂ v , ValRel-at-bound τ₂ (val-rel fo₂ m₂ v) , ⟪ Ix.refl (τ₁ [+] τ₂) {inj₂ (val-idx fo₂ v)} ⟫
-val-rel {τ₁ [×] τ₂} (fo₁ [×] fo₂) (m₁ , m₂) (pair v u) =
-  ValRel-at-bound τ₁ (val-rel fo₁ m₁ v) , ValRel-at-bound τ₂ (val-rel fo₂ m₂ u)
-
-env-rel : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → μ-free-ctxt Γ-fo → (γ : Env Γ) →
-          EnvValRel γ (env-idx Γ-fo γ)
-env-rel emp         _        emp     = emp
-env-rel (Γ-fo ▸ fo) (mΓ , m) (γ · v) = env-rel Γ-fo mΓ γ · val-rel fo m v
-
-val-rel-unique : ∀ {τ} (fo : first-order τ) → μ-free fo → {v : Val τ} {i : Ix τ} →
+val-rel-unique : ∀ {τ} (fo : first-order τ) {v : Val τ} {i : Ix τ} →
                  ValRel τ v i → Ix._≈_ τ i (val-idx fo v)
-val-rel-unique unit          _         {unit}      r = prop.tt
-val-rel-unique (base s)      _         {const a}   ⟪ e ⟫ = e
-val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inl v} {i} (i' , r , ⟪ e ⟫) =
-  Ix.trans (τ₁ [+] τ₂) {i} {inj₁ i'} {inj₁ (val-idx fo₁ v)} e (val-rel-unique fo₁ m₁ (ValRel-at-bound τ₁ r))
-val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) (m₁ , m₂) {inr v} {i} (i' , r , ⟪ e ⟫) =
-  Ix.trans (τ₁ [+] τ₂) {i} {inj₂ i'} {inj₂ (val-idx fo₂ v)} e (val-rel-unique fo₂ m₂ (ValRel-at-bound τ₂ r))
-val-rel-unique {τ₁ [×] τ₂} (fo₁ [×] fo₂) (m₁ , m₂) {pair v u} {i , j} (r , r') =
-  val-rel-unique fo₁ m₁ (ValRel-at-bound τ₁ r) , val-rel-unique fo₂ m₂ (ValRel-at-bound τ₂ r')
+val-rel-unique unit          {unit}      r = prop.tt
+val-rel-unique (base s)      {const a}   ⟪ e ⟫ = e
+val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) {inl v} {i} (i' , r , ⟪ e ⟫) =
+  Ix.trans (τ₁ [+] τ₂) {i} {inj₁ i'} {inj₁ (val-idx fo₁ v)} e (val-rel-unique fo₁ (ValRel-at-bound τ₁ r))
+val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) {inr v} {i} (i' , r , ⟪ e ⟫) =
+  Ix.trans (τ₁ [+] τ₂) {i} {inj₂ i'} {inj₂ (val-idx fo₂ v)} e (val-rel-unique fo₂ (ValRel-at-bound τ₂ r))
+val-rel-unique {τ₁ [×] τ₂} (fo₁ [×] fo₂) {pair v u} {i , j} (r , r') =
+  val-rel-unique fo₁ (ValRel-at-bound τ₁ r) , val-rel-unique fo₂ (ValRel-at-bound τ₂ r')
+val-rel-unique {μ τ} (μ fo) {roll v} {i} r =
+  Ix.trans (μ τ) {i} {roll-mor τ .idxf .sfunc (unroll-mor τ .idxf .sfunc i)} {roll-mor τ .idxf .sfunc j}
+    (Ix.sym (μ τ) {roll-mor τ .idxf .sfunc (unroll-mor τ .idxf .sfunc i)} {i} (idx-eq (LI.roll-unroll τ) i))
+    (roll-mor τ .idxf .sfunc-resp-≈ {unroll-mor τ .idxf .sfunc i} {j}
+      (val-rel-unique (fo-inst fo (μ fo)) {v} {unroll-mor τ .idxf .sfunc i} (ValRel-at-bound (τ [ μ τ ]) r)))
+  where j = val-idx (fo-inst fo (μ fo)) v
 
 soundness-val : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) →
-                μ-free-ctxt Γ-fo → μ-free fo →
                 ∀ {t : Γ ⊢ τ} {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ]) →
                 Ix._≈_ τ (⟦ t ⟧tm .idxf .sfunc (env-idx Γ-fo γ)) (val-idx fo v)
-soundness-val Γ-fo fo mΓ m D = val-rel-unique fo m (fundamental-val D (env-rel Γ-fo mΓ _))
+soundness-val Γ-fo fo D = val-rel-unique fo (fundamental-val D (env-rel Γ-fo _))
 
