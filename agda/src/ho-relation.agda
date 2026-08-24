@@ -24,6 +24,7 @@ open import categories using (Category; HasProducts; HasStrongCoproducts)
 open import indexed-family using (HasSetoidProducts)
 import matrix
 import commutative-monoid
+open import cmon-enriched using (Biproduct)
 import ho-model
 import language-interpretation
 
@@ -741,6 +742,13 @@ ap-p₂-++ : ∀ {m n} (x : ∣ 𝔽 m ∣) (z : ∣ 𝔽 n ∣) k →
 ap-p₂-++ {m} {n} x z k =
   ≈-trans (app-congᵥ (M.p₂ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-+ x z l)) k)
           (≈-trans (app-p₂ {m} {n} (M.concat x z) k) (M.split₂-concat x z k))
+
+ap-++-p : ∀ {m n} (w : ∣ 𝔽 (m + n) ∣) k →
+          (ap (M.in₁ {m} {n}) (ap (M.p₁ {m} {n}) w) k +ₛ ap (M.in₂ {m} {n}) (ap (M.p₂ {m} {n}) w) k) ≈s w k
+ap-++-p {m} {n} w k =
+  ≈-trans (+-cong (≈-sym (app-∘ (M.in₁ {m} {n}) (M.p₁ {m} {n}) w k)) (≈-sym (app-∘ (M.in₂ {m} {n}) (M.p₂ {m} {n}) w k)))
+  (≈-trans (≈-sym (app-+ₘ (M.in₁ {m} {n} ∘ M.p₁ {m} {n}) (M.in₂ {m} {n} ∘ M.p₂ {m} {n}) w k))
+  (≈-trans (app-congₘ (M.biproduct m n .Biproduct.id-+) w k) (app-I w k)))
 
 ap-rec-inputs : ∀ {Γ} (γ : Env Γ) {m σ'} (v' : Val σ')
                 (F : M.Matrix (width v') (suc (width-env γ) + m)) s x (o : ∣ 𝔽 m ∣) k →

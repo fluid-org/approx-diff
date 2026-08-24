@@ -35,7 +35,7 @@ module ho-agreement
 
 open Signature Sig
 open Interpretation ℐ
-open import language-syntax Sig renaming (_,_ to _▸_)
+open import language-syntax Sig renaming (_,_ to _▸_) hiding (cons)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 
@@ -1962,6 +1962,21 @@ private
   tl n .preserve-+ k = ≈-refl
   tl n .preserve-· k = ≈-refl
 
+  cons : ∀ n → SemiMod._⊕_ SemiMod.𝕀 (𝔽 n) ⇒ 𝔽 (suc n)
+  cons n .SemiMod._⇒_.*→* .prop-setoid._⇒_.func (a , u) zero    = a
+  cons n .SemiMod._⇒_.*→* .prop-setoid._⇒_.func (a , u) (suc k) = u k
+  cons n .SemiMod._⇒_.*→* .prop-setoid._⇒_.func-resp-≈ (e , e') zero    = e
+  cons n .SemiMod._⇒_.*→* .prop-setoid._⇒_.func-resp-≈ (e , e') (suc k) = e' k
+  cons n .preserve-ze zero    = ≈-refl
+  cons n .preserve-ze (suc k) = ≈-refl
+  cons n .preserve-+ zero    = ≈-refl
+  cons n .preserve-+ (suc k) = ≈-refl
+  cons n .preserve-· zero    = ≈-refl
+  cons n .preserve-· (suc k) = ≈-refl
+
+  cat : ∀ m n → SemiMod._⊕_ (𝔽 m) (𝔽 n) ⇒ 𝔽 (m + n)
+  cat m n = SemiMod.+-map _ _ (mat (M.in₁ {m} {n}) SemiMod.∘ SemiMod.p₁) (mat (M.in₂ {m} {n}) SemiMod.∘ SemiMod.p₂)
+
 val-fib : ∀ {τ} (fo : first-order τ) (v : Val τ) → 𝔽 (width v) ⇒ Fib τ (val-idx fo v)
 val-fib unit           unit       = SemiMod.id (𝔽 1)
 val-fib (base s)       (const a)  = SemiMod.id (𝔽 (sort-width s))
@@ -2114,3 +2129,122 @@ val-idx-inj {μ τ} (μ fo)  {roll v}   {roll v'}    e =
   fo′ = fo-inst fo (μ fo)
   i   = val-idx fo′ v
   i'  = val-idx fo′ v'
+
+val-fib⁻¹ : ∀ {τ} (fo : first-order τ) (v : Val τ) → Fib τ (val-idx fo v) ⇒ 𝔽 (width v)
+val-fib⁻¹ unit           unit       = SemiMod.id (𝔽 1)
+val-fib⁻¹ (base s)       (const a)  = SemiMod.id (𝔽 (sort-width s))
+val-fib⁻¹ {τ₁ [+] τ₂} (fo₁ [+] fo₂) (inl v) =
+  cons (width v) SemiMod.∘
+    SemiMod.pair (SemiMod.p₁ {SemiMod.𝕀} {Fib τ₁ (val-idx fo₁ v)})
+                 (val-fib⁻¹ fo₁ v SemiMod.∘ SemiMod.p₂ {SemiMod.𝕀} {Fib τ₁ (val-idx fo₁ v)})
+val-fib⁻¹ {τ₁ [+] τ₂} (fo₁ [+] fo₂) (inr v) =
+  cons (width v) SemiMod.∘
+    SemiMod.pair (SemiMod.p₁ {SemiMod.𝕀} {Fib τ₂ (val-idx fo₂ v)})
+                 (val-fib⁻¹ fo₂ v SemiMod.∘ SemiMod.p₂ {SemiMod.𝕀} {Fib τ₂ (val-idx fo₂ v)})
+val-fib⁻¹ {τ₁ [×] τ₂} (fo₁ [×] fo₂) (pair v u) =
+  cons (width v + width u) SemiMod.∘
+    SemiMod.pair (SemiMod.p₁ {SemiMod.𝕀} {P})
+      (cat (width v) (width u) SemiMod.∘
+        SemiMod.pair (val-fib⁻¹ fo₁ v SemiMod.∘ (SemiMod.p₁ {Fib τ₁ i} {Fib τ₂ j} SemiMod.∘ SemiMod.p₂ {SemiMod.𝕀} {P}))
+                     (val-fib⁻¹ fo₂ u SemiMod.∘ (SemiMod.p₂ {Fib τ₁ i} {Fib τ₂ j} SemiMod.∘ SemiMod.p₂ {SemiMod.𝕀} {P})))
+  where
+  i = val-idx fo₁ v
+  j = val-idx fo₂ u
+  P = SemiMod._⊕_ (Fib τ₁ i) (Fib τ₂ j)
+val-fib⁻¹ {μ τ} (μ fo) (roll v) =
+  val-fib⁻¹ fo′ v SemiMod.∘
+    (⟦ τ [ μ τ ] ⟧ .fam .subst {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc j)} {j} (idx-eq (LI.unroll-roll τ) j)
+      SemiMod.∘ unroll-mor τ .famf .transf (roll-mor τ .idxf .sfunc j))
+  where
+  fo′ = fo-inst fo (μ fo)
+  j   = val-idx fo′ v
+
+env-fib⁻¹ : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) → FibC Γ (env-idx Γ-fo γ) ⇒ 𝔽 (width-env γ)
+env-fib⁻¹ emp         emp     = SemiMod.ε-map _ (𝔽 0)
+env-fib⁻¹ {Γ ▸ τ} (Γ-fo ▸ fo) (γ · v) =
+  cat (width-env γ) (width v) SemiMod.∘
+    SemiMod.pair (env-fib⁻¹ Γ-fo γ SemiMod.∘ SemiMod.p₁ {FibC Γ (env-idx Γ-fo γ)} {Fib τ (val-idx fo v)})
+                 (val-fib⁻¹ fo v SemiMod.∘ SemiMod.p₂ {FibC Γ (env-idx Γ-fo γ)} {Fib τ (val-idx fo v)})
+
+val-fib⁻¹-fib : ∀ {τ} (fo : first-order τ) (v : Val τ) (o : ∣ 𝔽 (width v) ∣) →
+                Semimodule._≈_ (𝔽 (width v)) (val-fib⁻¹ fo v .func (val-fib fo v .func o)) o
+val-fib⁻¹-fib unit     unit      o k = ≈-refl
+val-fib⁻¹-fib (base s) (const a) o k = ≈-refl
+val-fib⁻¹-fib (fo₁ [+] fo₂) (inl v) o zero    = ≈-refl
+val-fib⁻¹-fib (fo₁ [+] fo₂) (inl v) o (suc k) = val-fib⁻¹-fib fo₁ v (λ l → o (suc l)) k
+val-fib⁻¹-fib (fo₁ [+] fo₂) (inr v) o zero    = ≈-refl
+val-fib⁻¹-fib (fo₁ [+] fo₂) (inr v) o (suc k) = val-fib⁻¹-fib fo₂ v (λ l → o (suc l)) k
+val-fib⁻¹-fib (fo₁ [×] fo₂) (pair v u) o zero    = ≈-refl
+val-fib⁻¹-fib (fo₁ [×] fo₂) (pair v u) o (suc k) =
+  ≈-trans (+-cong (app-congᵥ (M.in₁ {width v} {width u}) (val-fib⁻¹-fib fo₁ v (ap (M.p₁ {width v} {width u}) (λ l → o (suc l)))) k)
+                  (app-congᵥ (M.in₂ {width v} {width u}) (val-fib⁻¹-fib fo₂ u (ap (M.p₂ {width v} {width u}) (λ l → o (suc l)))) k))
+          (ap-++-p {width v} {width u} (λ l → o (suc l)) k)
+val-fib⁻¹-fib {μ τ} (μ fo) (roll v) o =
+  Semimodule.trans (𝔽 (width v))
+    (val-fib⁻¹ fo′ v .func-resp-≈ (fam-eq (LI.unroll-roll τ) j (val-fib fo′ v .func o)))
+    (val-fib⁻¹-fib fo′ v o)
+  where
+  fo′ = fo-inst fo (μ fo)
+  j   = val-idx fo′ v
+
+val-fib-fib⁻¹ : ∀ {τ} (fo : first-order τ) (v : Val τ) (d : ∣ Fib τ (val-idx fo v) ∣) →
+                Fib._≈_ τ (val-idx fo v) (val-fib fo v .func (val-fib⁻¹ fo v .func d)) d
+val-fib-fib⁻¹ unit     unit      d k = ≈-refl
+val-fib-fib⁻¹ (base s) (const a) d k = ≈-refl
+val-fib-fib⁻¹ (fo₁ [+] fo₂) (inl v) d = ≈-refl , val-fib-fib⁻¹ fo₁ v (proj₂ d)
+val-fib-fib⁻¹ (fo₁ [+] fo₂) (inr v) d = ≈-refl , val-fib-fib⁻¹ fo₂ v (proj₂ d)
+val-fib-fib⁻¹ {τ₁ [×] τ₂} (fo₁ [×] fo₂) (pair v u) d =
+  ≈-refl ,
+  (Fib.trans τ₁ i (val-fib fo₁ v .func-resp-≈ (ap-p₁-++ x y)) (val-fib-fib⁻¹ fo₁ v (proj₁ (proj₂ d))) ,
+   Fib.trans τ₂ j (val-fib fo₂ u .func-resp-≈ (ap-p₂-++ x y)) (val-fib-fib⁻¹ fo₂ u (proj₂ (proj₂ d))))
+  where
+  i = val-idx fo₁ v
+  j = val-idx fo₂ u
+  x = val-fib⁻¹ fo₁ v .func (proj₁ (proj₂ d))
+  y = val-fib⁻¹ fo₂ u .func (proj₂ (proj₂ d))
+val-fib-fib⁻¹ {μ τ} (μ fo) (roll v) d =
+  Fib.trans (μ τ) (roll-mor τ .idxf .sfunc j)
+    (roll-mor τ .famf .transf j .func-resp-≈ (val-fib-fib⁻¹ fo′ v y))
+    (Fib.trans (μ τ) (roll-mor τ .idxf .sfunc j)
+      (transf-natural (roll-mor τ) {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc j)} {j} E z)
+      (fam-eq (LI.roll-unroll τ) (roll-mor τ .idxf .sfunc j) d))
+  where
+  fo′ = fo-inst fo (μ fo)
+  j   = val-idx fo′ v
+  E   = idx-eq (LI.unroll-roll τ) j
+  z   = unroll-mor τ .famf .transf (roll-mor τ .idxf .sfunc j) .func d
+  y   = ⟦ τ [ μ τ ] ⟧ .fam .subst {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc j)} {j} E .func z
+
+env-fib⁻¹-fib : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) (x : ∣ 𝔽 (width-env γ) ∣) →
+                Semimodule._≈_ (𝔽 (width-env γ)) (env-fib⁻¹ Γ-fo γ .func (env-fib Γ-fo γ .func x)) x
+env-fib⁻¹-fib emp         emp     x ()
+env-fib⁻¹-fib (Γ-fo ▸ fo) (γ · v) x k =
+  ≈-trans (+-cong (app-congᵥ (M.in₁ {width-env γ} {width v}) (env-fib⁻¹-fib Γ-fo γ (ap (M.p₁ {width-env γ} {width v}) x)) k)
+                  (app-congᵥ (M.in₂ {width-env γ} {width v}) (val-fib⁻¹-fib fo v (ap (M.p₂ {width-env γ} {width v}) x)) k))
+          (ap-++-p {width-env γ} {width v} x k)
+
+env-fib-fib⁻¹ : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) (g : ∣ FibC Γ (env-idx Γ-fo γ) ∣) →
+                Semimodule._≈_ (FibC Γ (env-idx Γ-fo γ)) (env-fib Γ-fo γ .func (env-fib⁻¹ Γ-fo γ .func g)) g
+env-fib-fib⁻¹ emp         emp     g = Semimodule.refl (FibC emp (lift tt))
+env-fib-fib⁻¹ {Γ ▸ τ} (Γ-fo ▸ fo) (γ · v) g =
+  Semimodule.trans (FibC Γ gi) (env-fib Γ-fo γ .func-resp-≈ (ap-p₁-++ x y)) (env-fib-fib⁻¹ Γ-fo γ (proj₁ g)) ,
+  Fib.trans τ i (val-fib fo v .func-resp-≈ (ap-p₂-++ x y)) (val-fib-fib⁻¹ fo v (proj₂ g))
+  where
+  gi = env-idx Γ-fo γ
+  i  = val-idx fo v
+  x  = env-fib⁻¹ Γ-fo γ .func (proj₁ g)
+  y  = val-fib⁻¹ fo v .func (proj₂ g)
+
+val-fib-iso : ∀ {τ} (fo : first-order τ) (v : Val τ) → Category.IsIso SemiMod.cat (val-fib fo v)
+val-fib-iso fo v .Category.IsIso.inverse = val-fib⁻¹ fo v
+val-fib-iso {τ} fo v .Category.IsIso.f∘inverse≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {d} e =
+  Fib.trans τ (val-idx fo v) (val-fib-fib⁻¹ fo v d) e
+val-fib-iso fo v .Category.IsIso.inverse∘f≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {o} e =
+  Semimodule.trans (𝔽 (width v)) (val-fib⁻¹-fib fo v o) e
+
+env-fib-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) → Category.IsIso SemiMod.cat (env-fib Γ-fo γ)
+env-fib-iso Γ-fo γ .Category.IsIso.inverse = env-fib⁻¹ Γ-fo γ
+env-fib-iso {Γ} Γ-fo γ .Category.IsIso.f∘inverse≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {g} e =
+  Semimodule.trans (FibC Γ (env-idx Γ-fo γ)) (env-fib-fib⁻¹ Γ-fo γ g) e
+env-fib-iso Γ-fo γ .Category.IsIso.inverse∘f≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {x} e =
+  Semimodule.trans (𝔽 (width-env γ)) (env-fib⁻¹-fib Γ-fo γ x) e
