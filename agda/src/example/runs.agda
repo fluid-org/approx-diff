@@ -62,6 +62,9 @@ case-l-run = run case-ctxt-fo (base number) case-term γ-case-l
 case-r-run = run case-ctxt-fo (base number) case-term γ-case-r
 test-run   = run test-ctxt-fo (base number) test-term γ-test
 
+mult-run : Run
+mult-run = run mult-ctxt-fo (base number) mult-ex γ-mult
+
 mavg-run : Run
 mavg-run = run mavg-ctxt-fo (base number [×] (base number [×] base number)) (mavg ½) γ-mavg
 

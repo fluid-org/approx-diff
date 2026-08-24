@@ -13,5 +13,6 @@ import ho-agreement
 
 -- Tests.
 import example.interaction
+import example.value-flow
 import example.render.relations
 import example.render.dep-graph

@@ -146,6 +146,9 @@ case-ctxt-fo = (emp , base number) , (unit [+] unit)
 case-term : case-ctxt ⊢ base number
 case-term = case (var zero) (var (succ (succ zero))) (bop (lit 0ℚ) [])
 
+mult-ctxt-fo : first-order-ctxt (emp , base number [×] base number)
+mult-ctxt-fo = emp , base number [×] base number
+
 mult-ex : emp , base number [×] base number ⊢ base number
 mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])
 

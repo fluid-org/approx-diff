@@ -54,6 +54,10 @@ private
   four  = two +ℚ two
   eight = four +ℚ four
 
+-- The derivative of x * y is [y, x], so at (1, 0) the result depends on y alone.
+γ-mult : Env (emp , base number [×] base number)
+γ-mult = emp · pair (const 1ℚ) (const 0ℚ)
+
 γ-case-l γ-case-r : Env case-ctxt
 γ-case-l = emp · const 1ℚ · inl unit
 γ-case-r = emp · const 1ℚ · inr unit

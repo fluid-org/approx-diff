@@ -144,6 +144,7 @@ contents =
   three-run "filter"     E3.filter-run ++
   three-run "cond"       E3.cond-run   ++
   three-run "eq"         E3.eq-run     ++
+  three-run "mult"       E3.mult-run   ++
   three-run "mavg"       E3.mavg-run   ++
   three-related "mavg-related" E3.mavg-run
 
