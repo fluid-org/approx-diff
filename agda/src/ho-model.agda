@@ -128,28 +128,18 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
   rel-simple is ψ .Fam⟨𝒞⟩μ.idxf = ℐ.rel-pred ψ
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .transf c =
     𝒞Bool-root .Fam⟨𝒞⟩μ.at (ℐ.rel-pred ψ .func c) M.∘ d' ψ c
-  rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e = pf
+  rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e =
+    M.≈ₘ-trans (M.id-right {M = P' M.∘ d' ψ c'})
+    (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {M = P'}) (deps-resp ψ e))
+    (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-sym (𝒞Bool-root .Fam⟨𝒞⟩μ.at-natural {x₁ = o} {x₂ = o'} (ℐ.rel-pred ψ .func-resp-≈ e)))
+                          (M.≈ₘ-refl {M = d' ψ c}))
+                (M.assoc sub P (d' ψ c))))
     where
     o  = ℐ.rel-pred ψ .func c
     o' = ℐ.rel-pred ψ .func c'
     P  = 𝒞Bool-root .Fam⟨𝒞⟩μ.at o
     P' = 𝒞Bool-root .Fam⟨𝒞⟩μ.at o'
     sub = 𝒞Bool .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {o} {o'} (ℐ.rel-pred ψ .func-resp-≈ e)
-
-    step1 : (sub M.∘ (P M.∘ d' ψ c)) M.≈ₘ ((sub M.∘ P) M.∘ d' ψ c)
-    step1 = M.≈ₘ-sym (M.assoc sub P (d' ψ c))
-
-    step2 : ((sub M.∘ P) M.∘ d' ψ c) M.≈ₘ (P' M.∘ d' ψ c)
-    step2 = M.∘-cong (𝒞Bool-root .Fam⟨𝒞⟩μ.at-natural {x₁ = o} {x₂ = o'}
-                         (ℐ.rel-pred ψ .func-resp-≈ e))
-                      (M.≈ₘ-refl {M = d' ψ c})
-
-    step3 : (P' M.∘ d' ψ c) M.≈ₘ (P' M.∘ d' ψ c')
-    step3 = M.∘-cong (M.≈ₘ-refl {M = P'}) (M.≈ₘ-sym (deps-resp ψ e))
-
-    pf : ((P' M.∘ d' ψ c') M.∘ M.I) M.≈ₘ (sub M.∘ (P M.∘ d' ψ c))
-    pf = M.≈ₘ-trans (M.id-right {M = (P' M.∘ d' ψ c')})
-           (M.≈ₘ-sym (M.≈ₘ-trans step1 (M.≈ₘ-trans step2 step3)))
 
   model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal M.terminal , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig
   model = record IPO.model-over
