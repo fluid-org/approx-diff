@@ -2093,3 +2093,24 @@ soundness-dep {τ = τ} Γ-fo fo {γ = γ} {v} D s x =
     (dep-rel-unique fo (fundamental-val D rγ) (fundamental D rγ s x (env-fib Γ-fo γ .func x) (env-dep Γ-fo γ s x)))
     (subst-ctrl-dep+ τ (soundness-val Γ-fo fo D) s _)
   where rγ = env-rel Γ-fo γ
+
+val-idx-inj : ∀ {τ} (fo : first-order τ) {v v' : Val τ} → Ix._≈_ τ (val-idx fo v) (val-idx fo v') → v ≈v v'
+val-idx-inj unit          {unit}     {unit}       e = unit
+val-idx-inj (base s)      {const a}  {const b}    e = const e
+val-idx-inj (fo₁ [+] fo₂) {inl v}    {inl v'}     e = inl (val-idx-inj fo₁ e)
+val-idx-inj (fo₁ [+] fo₂) {inl v}    {inr v'}     e = prop.⊥-elim e
+val-idx-inj (fo₁ [+] fo₂) {inr v}    {inl v'}     e = prop.⊥-elim e
+val-idx-inj (fo₁ [+] fo₂) {inr v}    {inr v'}     e = inr (val-idx-inj fo₂ e)
+val-idx-inj (fo₁ [×] fo₂) {pair v u} {pair v' u'} (e₁ , e₂) = pair (val-idx-inj fo₁ e₁) (val-idx-inj fo₂ e₂)
+val-idx-inj {μ τ} (μ fo)  {roll v}   {roll v'}    e =
+  roll (val-idx-inj fo′ {v} {v'}
+    (Ix.trans (τ [ μ τ ]) {i} {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)} {i'}
+      (Ix.sym (τ [ μ τ ]) {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)} {i} (idx-eq (LI.unroll-roll τ) i))
+      (Ix.trans (τ [ μ τ ]) {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)}
+                            {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i')} {i'}
+        (unroll-mor τ .idxf .sfunc-resp-≈ {roll-mor τ .idxf .sfunc i} {roll-mor τ .idxf .sfunc i'} e)
+        (idx-eq (LI.unroll-roll τ) i'))))
+  where
+  fo′ = fo-inst fo (μ fo)
+  i   = val-idx fo′ v
+  i'  = val-idx fo′ v'

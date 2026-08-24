@@ -49,6 +49,16 @@ mutual
 
 infixl 30 _·_
 
+infix 4 _≈v_
+
+data _≈v_ : ∀ {τ} → Val τ → Val τ → Prop ℓ where
+  unit  : unit ≈v unit
+  const : ∀ {s} {a b : sort-val s} → Setoid._≈_ (sort-index s) a b → const a ≈v const b
+  inl   : ∀ {τ₁ τ₂} {v v' : Val τ₁} → v ≈v v' → inl {τ₂ = τ₂} v ≈v inl v'
+  inr   : ∀ {τ₁ τ₂} {v v' : Val τ₂} → v ≈v v' → inr {τ₁ = τ₁} v ≈v inr v'
+  pair  : ∀ {τ₁ τ₂} {v v' : Val τ₁} {u u' : Val τ₂} → v ≈v v' → u ≈v u' → pair v u ≈v pair v' u'
+  roll  : ∀ {τ : type 1} {v v' : Val (τ [ μ τ ])} → v ≈v v' → roll {τ} v ≈v roll {τ} v'
+
 lookup : ∀ {Γ τ} → Γ ∋ τ → Env Γ → Val τ
 lookup zero     (γ · v) = v
 lookup (succ x) (γ · _) = lookup x γ
