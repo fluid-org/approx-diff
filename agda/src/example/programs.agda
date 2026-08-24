@@ -166,6 +166,9 @@ mavg : ℚ → emp , base number [×] (base number [×] (base number [×] base n
            ⊢ base number [×] (base number [×] base number)
 mavg h = mavg-body h (var zero)
 
+mavg-ctxt-fo : first-order-ctxt (emp , base number [×] (base number [×] (base number [×] base number)))
+mavg-ctxt-fo = emp , base number [×] (base number [×] (base number [×] base number))
+
 -- 3x3 grid scorer for the signed-saliency reading: a centre-surround linear filter (centre
 -- positive, corners negative) plus two adjacent-cell interaction products. Unlike the linear
 -- mavg, the products make the Jacobian, and hence the saliency, depend on the input. `neg` is

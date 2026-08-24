@@ -92,6 +92,15 @@ module over {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Se
       "  " ++ ℕ-Show.show q ++ "   " ++ show-env (row→avals (λ {s} c → show-const {s} c) (at r) γ) ++ "\n"
       ++ go (suc q) rs
 
+  show-composite : ∀ {τ} → String → Val τ → ∀ {m} → M.Matrix m m → String
+  show-composite name v R = name ++ "\n" ++ go 0 (rows R)
+    where
+    go : ℕ → List (List Scalar) → String
+    go q []       = ""
+    go q (r ∷ rs) =
+      "  " ++ ℕ-Show.show q ++ "   " ++ show-aval (row→aval (λ {s} c → show-const {s} c) (at r) v) ++ "\n"
+      ++ go (suc q) rs
+
 private
   suffix2 : two.Two → String
   suffix2 two.I = ""
@@ -109,6 +118,11 @@ private
 
   two-run : String → E2.Run → String
   two-run name r = R2.show-run name (E2.env r) (E2.model-output r) (E2.model-of r)
+
+  module M3 = matrix.Mat three.semiring
+
+  three-related : String → E3.Run → String
+  three-related name r = R3.show-composite name (E3.model-output r) (E3.model-of r M3.∘ (E3.model-of r M3.ᵀ))
 
   three-run : String → E3.Run → String
   three-run name r = R3.show-run name (E3.env r) (E3.model-output r) (E3.model-of r)
@@ -129,7 +143,9 @@ contents =
   three-run "map"        E3.map-run    ++
   three-run "filter"     E3.filter-run ++
   three-run "cond"       E3.cond-run   ++
-  three-run "eq"         E3.eq-run
+  three-run "eq"         E3.eq-run     ++
+  three-run "mavg"       E3.mavg-run   ++
+  three-related "mavg-related" E3.mavg-run
 
 main : Main
 main = run (writeFile "test-baselines/relations.txt" contents)

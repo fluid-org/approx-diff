@@ -9,12 +9,13 @@ open import commutative-semiring using (CommutativeSemiring)
 module example.runs {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) (ctrl-weight : Setoid.Carrier A) where
 
 import label
+open import Data.Rational using (½)
 import matrix
 import ho-model
 open import signature.example.interpretation S using (Sig; interpretation; number)
 open import example.programs
 open import example.inputs S ctrl-weight
-open import language-syntax Sig using (ctxt; type; first-order-ctxt; first-order; _⊢_; base; unit; _[+]_)
+open import language-syntax Sig using (ctxt; type; first-order-ctxt; first-order; _⊢_; base; unit; _[+]_; _[×]_)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
 open import value-interpretation S ctrl-weight Sig interpretation using (⟦_⟧env; ⟦_⟧val⁻¹)
 
@@ -60,6 +61,9 @@ case-l-run case-r-run test-run : Run
 case-l-run = run case-ctxt-fo (base number) case-term γ-case-l
 case-r-run = run case-ctxt-fo (base number) case-term γ-case-r
 test-run   = run test-ctxt-fo (base number) test-term γ-test
+
+mavg-run : Run
+mavg-run = run mavg-ctxt-fo (base number [×] (base number [×] base number)) (mavg ½) γ-mavg
 
 map-run filter-run cond-run eq-run : Run
 map-run    = run map-ctxt-fo numlist-fo map-term γ-nums

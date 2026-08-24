@@ -47,6 +47,13 @@ private
 γ-eq   = emp · const 0ℚ
 γ-test = emp · const 1ℚ
 
+γ-mavg : Env (emp , base number [×] (base number [×] (base number [×] base number)))
+γ-mavg = emp · pair (const 1ℚ) (pair (const two) (pair (const four) (const eight)))
+  where
+  two   = 1ℚ +ℚ 1ℚ
+  four  = two +ℚ two
+  eight = four +ℚ four
+
 γ-case-l γ-case-r : Env case-ctxt
 γ-case-l = emp · const 1ℚ · inl unit
 γ-case-r = emp · const 1ℚ · inr unit
