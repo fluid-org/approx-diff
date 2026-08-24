@@ -1,6 +1,17 @@
-.PHONY: main notes mu-types clean submit arXiv # otherwise confused by folders with the same name
+.PHONY: main notes mu-types check clean submit arXiv # otherwise confused by folders with the same name
 
-default: main
+default: check main
+
+# Type-check the development and compare the regenerated artefacts with their baselines. The stamp
+# skips the check when no source, script or baseline has changed since it last passed.
+CHECK_DEPS:=$(shell find agda/src -name '*.agda') $(wildcard script/*.sh) $(wildcard test-baselines/*) $(wildcard dot/*)
+
+check: agda/_build/check.stamp
+
+agda/_build/check.stamp: $(CHECK_DEPS)
+	cd agda && agda src/everything.agda
+	script/check.sh
+	touch $@
 
 main: main.pdf
 notes: notes.pdf
