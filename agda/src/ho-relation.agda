@@ -811,7 +811,7 @@ ap-body-inputs γ γ' v R T s x k =
                             (≈-trans (ap-∥-pair from-ctrl from-closure M.I R y k)
                                      (+-cong (app-congᵥ from-ctrl (app-I y) k) ≈-refl)))
                    ≈-refl)
-           (at k))
+           (body-at k))
   where
   n' = width-env γ'
   p = width v
@@ -824,15 +824,15 @@ ap-body-inputs γ γ' v R T s x k =
   from-closure = M.I {1} ⊕ M.in₁ {n'} {p}
   from-argument : M.Matrix (suc (n' + p)) p
   from-argument = M.in₂ {1} ∘ M.in₂ {n'} {p}
-  at : ∀ l → ((ap from-ctrl y l +ₛ ap from-closure o l) +ₛ ap from-argument z l) ≈s
+  body-at : ∀ l → ((ap from-ctrl y l +ₛ ap from-closure o l) +ₛ ap from-argument z l) ≈s
              body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
-  at zero =
+  body-at zero =
     ≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {n' + p}) wctrl y zero)
                                      (≈-trans (ap-in₁-zero {n' + p} (ap wctrl y)) (ap-wctrl {width-env γ} {1} y zero)))
                             (≈-trans (ap-⊕₁-zero {n'} M.I (M.in₁ {n'} {p}) o) (app-I {1} (λ _ → o zero) zero)))
                     (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {n'} {p}) z zero) (ap-in₂-zero {n' + p} _)))
             +-runit
-  at (suc l) =
+  body-at (suc l) =
     +-cong (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n' + p}) wctrl y (suc l)) (ap-in₁-suc {n' + p} (ap wctrl y) l))
                             (ap-⊕₁-suc {n'} M.I (M.in₁ {n'} {p}) o l))
                     +-lunit)
@@ -845,19 +845,19 @@ ap-branch-inputs : ∀ {Γ τ'} (γ : Env Γ) (v : Val τ') (R : M.Matrix (suc (
                             ap (M.in₂ {width-env γ} {width v}) (λ m → ap R (inputs γ s x) (suc m)) l) k
 ap-branch-inputs γ v R s x k =
   ≈-trans (ap-∥-pair (ctrl-row {1} ⊕ M.in₁ {n} {p}) (M.I {1} ⊕ M.in₂ {n} {p}) M.I R y k)
-  (≈-trans (+-cong (app-congᵥ (ctrl-row {1} ⊕ M.in₁ {n} {p}) (app-I y) k) ≈-refl) (at k))
+  (≈-trans (+-cong (app-congᵥ (ctrl-row {1} ⊕ M.in₁ {n} {p}) (app-I y) k) ≈-refl) (branch-at k))
   where
   n = width-env γ
   p = width v
   y = inputs γ s x
-  at : ∀ l → (ap (ctrl-row {1} ⊕ M.in₁ {n} {p}) y l +ₛ ap (M.I {1} ⊕ M.in₂ {n} {p}) (ap R y) l) ≈s
+  branch-at : ∀ l → (ap (ctrl-row {1} ⊕ M.in₁ {n} {p}) y l +ₛ ap (M.I {1} ⊕ M.in₂ {n} {p}) (ap R y) l) ≈s
              inputs (γ · v) (ap R y zero +ₛ (c ·ₛ s))
                (λ m → ap (M.in₁ {n} {p}) x m +ₛ ap (M.in₂ {n} {p}) (λ m' → ap R y (suc m')) m) l
-  at zero =
+  branch-at zero =
     ≈-trans (+-cong (≈-trans (ap-⊕₁-zero {n} (ctrl-row {1}) (M.in₁ {n} {p}) y) (ap-ctrl-row {1} s zero))
                     (≈-trans (ap-⊕₁-zero {p} M.I (M.in₂ {n} {p}) (ap R y)) (app-I {1} (λ _ → ap R y zero) zero)))
             +-comm
-  at (suc m) =
+  branch-at (suc m) =
     +-cong (ap-⊕₁-suc {n} (ctrl-row {1}) (M.in₁ {n} {p}) y m)
            (ap-⊕₁-suc {p} M.I (M.in₂ {n} {p}) (ap R y) m)
 
