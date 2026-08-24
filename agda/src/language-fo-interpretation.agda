@@ -13,9 +13,7 @@ open import Data.Nat using (suc; _+_)
 import Data.Fin as Fin
 open Fin using (Fin; splitAt)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; subst)
-open import prop-setoid using (Setoid)
-open prop-setoid._⇒_ using (func)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 open import categories
   using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
@@ -217,37 +215,3 @@ closed-iso (μ {τ = τ} fo) = FD.Iso-trans (⟦ μ fo ⟧-iso ∅𝒞) (≡-Iso
 ⟦ Γ-fo , fo ⟧ctxt-iso =
   FD.Iso-trans (FD.IsIso→Iso Fam⟨F⟩-preserves-products)
     (FDP.product-preserves-iso ⟦ Γ-fo ⟧ctxt-iso (closed-iso fo))
-
-𝒟Idx : Fam⟨𝒟⟩μ.Obj → Set os
-𝒟Idx X = Setoid.Carrier (X .Fam⟨𝒟⟩μ.idx)
-
-private
-  ≡-Iso-idx : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} (e : X ≡ Y) (x : 𝒟Idx X) →
-              Setoid._≈_ (Y .Fam⟨𝒟⟩μ.idx)
-                (≡-Iso e .FD.Iso.fwd .Fam⟨𝒟⟩μ.idxf .func x) (subst 𝒟Idx e x)
-  ≡-Iso-idx {X} refl x = Setoid.refl (X .Fam⟨𝒟⟩μ.idx)
-
-  subst-idx-resp : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} (e : X ≡ Y) {x y : 𝒟Idx X} →
-                   Setoid._≈_ (X .Fam⟨𝒟⟩μ.idx) x y →
-                   Setoid._≈_ (Y .Fam⟨𝒟⟩μ.idx) (subst 𝒟Idx e x) (subst 𝒟Idx e y)
-  subst-idx-resp refl p = p
-
-closed-iso-μ-idx :
-  ∀ {τ : type 1} (fo : first-order τ) (x : 𝒟Idx (Fam⟨F⟩ .fobj (𝒞⟦ μ fo ⟧ty ∅𝒞))) →
-  Setoid._≈_ (𝒟⟦ μ τ ⟧ty (λ ()) .Fam⟨𝒟⟩μ.idx)
-    (closed-iso (μ fo) .FD.Iso.fwd .Fam⟨𝒟⟩μ.idxf .func x)
-    (subst 𝒟Idx (𝒟-ty-cong (μ τ) (λ ()))
-      (subst 𝒟Idx (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo ∅𝒞))
-        (HR.FW.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo ∅𝒞) ∅𝒞 .FD.Iso.fwd .Fam⟨𝒟⟩μ.idxf .func x)))
-closed-iso-μ-idx {τ = τ} fo x =
-  Setoid.trans (𝒟⟦ μ τ ⟧ty (λ ()) .Fam⟨𝒟⟩μ.idx)
-    {≡-Iso eq₂ .FD.Iso.fwd .Fam⟨𝒟⟩μ.idxf .func (≡-Iso eq₁ .FD.Iso.fwd .Fam⟨𝒟⟩μ.idxf .func w)}
-    {subst 𝒟Idx eq₂ (≡-Iso eq₁ .FD.Iso.fwd .Fam⟨𝒟⟩μ.idxf .func w)}
-    {subst 𝒟Idx eq₂ (subst 𝒟Idx eq₁ w)}
-    (≡-Iso-idx eq₂ (≡-Iso eq₁ .FD.Iso.fwd .Fam⟨𝒟⟩μ.idxf .func w))
-    (subst-idx-resp eq₂ (≡-Iso-idx eq₁ w))
-  where
-  w   = HR.FW.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo ∅𝒞) ∅𝒞 .FD.Iso.fwd .Fam⟨𝒟⟩μ.idxf .func x
-  eq₁ = cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo ∅𝒞)
-  eq₂ : 𝒟⟦ μ τ ⟧ty δ∅𝒟 ≡ 𝒟⟦ μ τ ⟧ty (λ ())
-  eq₂ = 𝒟-ty-cong (μ τ) (λ ())
