@@ -764,6 +764,12 @@ ap-++-p {m} {n} w k =
   (≈-trans (≈-sym (app-+ₘ (M.in₁ {m} {n} ∘ M.p₁ {m} {n}) (M.in₂ {m} {n} ∘ M.p₂ {m} {n}) w k))
   (≈-trans (app-congₘ (M.biproduct m n .Biproduct.id-+) w k) (app-I w k)))
 
+ap-∥-pair : ∀ {r a b m} (A : M.Matrix r a) (B : M.Matrix r b) (C : M.Matrix a m) (D : M.Matrix b m) (y : ∣ 𝔽 m ∣) (k : Fin r) →
+            ap ((A M.∥ B) ∘ ⟨ C , D ⟩) y k ≈s (ap A (ap C y) k +ₛ ap B (ap D y) k)
+ap-∥-pair A B C D y k =
+  ≈-trans (app-congₘ (M.∥-pair A B C D) y k)
+  (≈-trans (app-+ₘ (A ∘ C) (B ∘ D) y k) (+-cong (app-∘ A C y k) (app-∘ B D y k)))
+
 ap-rec-inputs : ∀ {Γ} (γ : Env Γ) {m σ'} (v' : Val σ')
                 (F : M.Matrix (width v') (suc (width-env γ) + m)) s x (o : ∣ 𝔽 m ∣) k →
                 ap (rec-inputs γ v' ∘ ⟨ M.I , F ⟩) (map-input γ s x o) k ≈s
@@ -771,29 +777,18 @@ ap-rec-inputs : ∀ {Γ} (γ : Env Γ) {m σ'} (v' : Val σ')
                   (λ l → ap (M.in₁ {width-env γ} {width v'}) x l +ₛ
                          ap (M.in₂ {width-env γ} {width v'}) (ap F (map-input γ s x o)) l) k
 ap-rec-inputs {Γ} γ {m} v' F s x o k =
-  ≈-trans (app-∘ (rec-inputs γ v') ⟨ M.I , F ⟩ y k)
-  (≈-trans (app-+ₘ (L ∘ M.p₁ {a} {p}) (R ∘ M.p₂ {a} {p}) z k)
-  (≈-trans (+-cong left right) (final k)))
+  ≈-trans (ap-∥-pair ((M.I {1} ⊕ M.in₁ {n} {p}) ∘ M.p₁ {suc n} {m}) (M.in₂ {1} {n + p} ∘ M.in₂ {n} {p}) M.I F y k)
+  (≈-trans (+-cong left (app-∘ (M.in₂ {1} {n + p}) (M.in₂ {n} {p}) oF k)) (final k))
   where
   n = width-env γ
   p = width v'
-  a = suc n + m
   y = map-input γ s x o
-  z = ap ⟨ M.I , F ⟩ y
-  L = (M.I {1} ⊕ M.in₁ {n} {p}) ∘ M.p₁ {suc n} {m}
-  R = M.in₂ {1} {n + p} ∘ M.in₂ {n} {p}
   oF = ap F y
-  left : ap (L ∘ M.p₁ {a} {p}) z k ≈s ap (M.I {1} ⊕ M.in₁ {n} {p}) (inputs γ s x) k
+  left : ap ((M.I {1} ⊕ M.in₁ {n} {p}) ∘ M.p₁ {suc n} {m}) (ap M.I y) k ≈s ap (M.I {1} ⊕ M.in₁ {n} {p}) (inputs γ s x) k
   left =
-    ≈-trans (app-∘ L (M.p₁ {a} {p}) z k)
-    (≈-trans (app-congᵥ L (λ l → ≈-trans (ap-pair-p₁ M.I F y l) (app-I y l)) k)
-    (≈-trans (app-∘ (M.I {1} ⊕ M.in₁ {n} {p}) (M.p₁ {suc n} {m}) y k)
-             (app-congᵥ (M.I {1} ⊕ M.in₁ {n} {p}) (ap-p₁-++ (inputs γ s x) o) k)))
-  right : ap (R ∘ M.p₂ {a} {p}) z k ≈s ap (M.in₂ {1} {n + p}) (ap (M.in₂ {n} {p}) oF) k
-  right =
-    ≈-trans (app-∘ R (M.p₂ {a} {p}) z k)
-    (≈-trans (app-congᵥ R (ap-pair-p₂ M.I F y) k)
-             (app-∘ (M.in₂ {1} {n + p}) (M.in₂ {n} {p}) oF k))
+    ≈-trans (app-∘ (M.I {1} ⊕ M.in₁ {n} {p}) (M.p₁ {suc n} {m}) (ap M.I y) k)
+            (app-congᵥ (M.I {1} ⊕ M.in₁ {n} {p})
+               (λ l → ≈-trans (app-congᵥ (M.p₁ {suc n} {m}) (app-I y) l) (ap-p₁-++ (inputs γ s x) o l)) k)
   final : ∀ k → (ap (M.I {1} ⊕ M.in₁ {n} {p}) (inputs γ s x) k +ₛ ap (M.in₂ {1} {n + p}) (ap (M.in₂ {n} {p}) oF) k) ≈s
                 inputs (γ · v') s (λ l → ap (M.in₁ {n} {p}) x l +ₛ ap (M.in₂ {n} {p}) oF l) k
   final zero =
@@ -810,51 +805,61 @@ ap-body-inputs : ∀ {Γ Γ' σ} (γ : Env Γ) (γ' : Env Γ') (v : Val σ)
                  (R : M.Matrix (suc (width-env γ')) (suc (width-env γ))) (T : M.Matrix (width v) (suc (width-env γ))) s x k →
                  ap (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) (inputs γ s x) k ≈s
                  body-input γ' v ((c ·ₛ s) +ₛ ap R (inputs γ s x) zero) (λ l → ap R (inputs γ s x) (suc l)) (ap T (inputs γ s x)) k
-ap-body-inputs γ γ' v R T s x k = ≈-trans (app-congₘ split (inputs γ s x) k) (body-at k)
+ap-body-inputs γ γ' v R T s x k =
+  ≈-trans (ap-∥-pair (from-ctrl M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T y k)
+  (≈-trans (+-cong (≈-trans (≈-sym (app-∘ (from-ctrl M.∥ from-closure) ⟨ M.I , R ⟩ y k))
+                            (≈-trans (ap-∥-pair from-ctrl from-closure M.I R y k)
+                                     (+-cong (app-congᵥ from-ctrl (app-I y) k) ≈-refl)))
+                   ≈-refl)
+           (at k))
   where
-  o = ap R (inputs γ s x)
-  z = ap T (inputs γ s x)
-  from-ctrl : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ))
+  n' = width-env γ'
+  p = width v
+  y = inputs γ s x
+  o = ap R y
+  z = ap T y
+  from-ctrl : M.Matrix (suc (n' + p)) (suc (width-env γ))
   from-ctrl = M.in₁ {1} ∘ wctrl
-  from-closure : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ'))
-  from-closure = M.I {1} ⊕ M.in₁ {width-env γ'} {width v}
-  from-argument : M.Matrix (suc (width-env γ' + width v)) (width v)
-  from-argument = M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v}
+  from-closure : M.Matrix (suc (n' + p)) (suc n')
+  from-closure = M.I {1} ⊕ M.in₁ {n'} {p}
+  from-argument : M.Matrix (suc (n' + p)) p
+  from-argument = M.in₂ {1} ∘ M.in₂ {n'} {p}
+  at : ∀ l → ((ap from-ctrl y l +ₛ ap from-closure o l) +ₛ ap from-argument z l) ≈s
+             body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
+  at zero =
+    ≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {n' + p}) wctrl y zero)
+                                     (≈-trans (ap-in₁-zero {n' + p} (ap wctrl y)) (ap-wctrl {width-env γ} {1} y zero)))
+                            (≈-trans (ap-⊕₁-zero {n'} M.I (M.in₁ {n'} {p}) o) (app-I {1} (λ _ → o zero) zero)))
+                    (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {n'} {p}) z zero) (ap-in₂-zero {n' + p} _)))
+            +-runit
+  at (suc l) =
+    +-cong (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n' + p}) wctrl y (suc l)) (ap-in₁-suc {n' + p} (ap wctrl y) l))
+                            (ap-⊕₁-suc {n'} M.I (M.in₁ {n'} {p}) o l))
+                    +-lunit)
+           (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {n'} {p}) z (suc l)) (ap-in₂-suc {n' + p} _ l))
 
-  split : (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) M.≈ₘ ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T))
-  split =
-    ≈ₘ-trans (M.∥-pair (from-ctrl M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T)
-             (M.+ₘ-cong (≈ₘ-trans (M.∥-pair from-ctrl from-closure M.I R)
-                                  (M.+ₘ-cong (M.id-right {M = from-ctrl}) ≈ₘ-refl))
-                        ≈ₘ-refl)
-
-  body-at : ∀ l → ap ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) (inputs γ s x) l ≈s
-                  body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
-  body-at zero =
-    ≈-trans (app-+ₘ (from-ctrl +ₘ (from-closure ∘ R)) (from-argument ∘ T) (inputs γ s x) zero)
-    (≈-trans (+-cong (≈-trans (app-+ₘ from-ctrl (from-closure ∘ R) (inputs γ s x) zero)
-                              (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wctrl (inputs γ s x) zero)
-                                               (≈-trans (ap-in₁-zero {width-env γ' + width v} (ap wctrl (inputs γ s x)))
-                                                        (ap-wctrl {width-env γ} {1} (inputs γ s x) zero)))
-                                      (≈-trans (app-∘ from-closure R (inputs γ s x) zero)
-                                               (≈-trans (ap-⊕₁-zero {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o)
-                                                        (app-I {1} (λ _ → o zero) zero)))))
-                     (≈-trans (app-∘ from-argument T (inputs γ s x) zero)
-                              (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z zero)
-                                       (ap-in₂-zero {width-env γ' + width v} _))))
-             +-runit)
-  body-at (suc l) =
-    ≈-trans (app-+ₘ (from-ctrl +ₘ (from-closure ∘ R)) (from-argument ∘ T) (inputs γ s x) (suc l))
-    (≈-trans (+-cong (≈-trans (app-+ₘ from-ctrl (from-closure ∘ R) (inputs γ s x) (suc l))
-                              (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wctrl (inputs γ s x) (suc l))
-                                                        (ap-in₁-suc {width-env γ' + width v} (ap wctrl (inputs γ s x)) l))
-                                               (≈-trans (app-∘ from-closure R (inputs γ s x) (suc l))
-                                                        (ap-⊕₁-suc {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o l)))
-                                       +-lunit))
-                     (≈-trans (app-∘ from-argument T (inputs γ s x) (suc l))
-                              (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z (suc l))
-                                       (ap-in₂-suc {width-env γ' + width v} _ l))))
-             ≈-refl)
+ap-branch-inputs : ∀ {Γ τ'} (γ : Env Γ) (v : Val τ') (R : M.Matrix (suc (width v)) (suc (width-env γ))) s x k →
+                   ap (branch-inputs γ v ∘ ⟨ M.I , R ⟩) (inputs γ s x) k ≈s
+                   inputs (γ · v) (ap R (inputs γ s x) zero +ₛ (c ·ₛ s))
+                     (λ l → ap (M.in₁ {width-env γ} {width v}) x l +ₛ
+                            ap (M.in₂ {width-env γ} {width v}) (λ m → ap R (inputs γ s x) (suc m)) l) k
+ap-branch-inputs γ v R s x k =
+  ≈-trans (ap-∥-pair (ctrl-row {1} ⊕ M.in₁ {n} {p}) (M.I {1} ⊕ M.in₂ {n} {p}) M.I R y k)
+  (≈-trans (+-cong (app-congᵥ (ctrl-row {1} ⊕ M.in₁ {n} {p}) (app-I y) k) ≈-refl) (at k))
+  where
+  n = width-env γ
+  p = width v
+  y = inputs γ s x
+  at : ∀ l → (ap (ctrl-row {1} ⊕ M.in₁ {n} {p}) y l +ₛ ap (M.I {1} ⊕ M.in₂ {n} {p}) (ap R y) l) ≈s
+             inputs (γ · v) (ap R y zero +ₛ (c ·ₛ s))
+               (λ m → ap (M.in₁ {n} {p}) x m +ₛ ap (M.in₂ {n} {p}) (λ m' → ap R y (suc m')) m) l
+  at zero =
+    ≈-trans (+-cong (≈-trans (ap-⊕₁-zero {n} (ctrl-row {1}) (M.in₁ {n} {p}) y) (ap-ctrl-row {1} s zero))
+                    (≈-trans (ap-⊕₁-zero {p} M.I (M.in₂ {n} {p}) (ap R y)) (app-I {1} (λ _ → ap R y zero) zero)))
+            +-comm
+  at (suc m) =
+    +-cong (ap-⊕₁-suc {n} (ctrl-row {1}) (M.in₁ {n} {p}) y m)
+           (ap-⊕₁-suc {p} M.I (M.in₂ {n} {p}) (ap R y) m)
 
 ap-sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} (C : M.Matrix m n) s x (o : ∣ 𝔽 n ∣) k →
                 ap (sub-inputs γ C) (map-input γ s x o) k ≈s map-input γ s x (ap C o) k

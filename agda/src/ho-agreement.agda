@@ -1101,33 +1101,7 @@ app-case : ∀ {Γ τ'} {γ : Env Γ} (v : Val τ') {n} (R_s : M.Matrix (suc (wi
                      (λ l → ap (M.in₁ {width-env γ} {width v}) x l +ₛ
                             ap (M.in₂ {width-env γ} {width v}) (λ m → ap R_s (inputs γ s x) (suc m)) l)) k
 app-case {γ = γ} v R_s T s x k =
-  ≈-trans (app-congₘ (M.∘-cong (≈ₘ-refl {M = T}) (≈ₘ-trans (M.∥-pair from-inputs from-scrutinee M.I R_s)
-                                                   (M.+ₘ-cong (M.id-right {M = from-inputs}) ≈ₘ-refl))) (inputs γ s x) k)
-  (≈-trans (app-∘ T (from-inputs +ₘ (from-scrutinee ∘ R_s)) (inputs γ s x) k)
-           (app-congᵥ T branch-at k))
-  where
-  from-inputs : M.Matrix (suc (width-env γ + width v)) (suc (width-env γ))
-  from-inputs = ctrl-row {1} ⊕ M.in₁ {width-env γ} {width v}
-  from-scrutinee : M.Matrix (suc (width-env γ + width v)) (suc (width v))
-  from-scrutinee = M.I {1} ⊕ M.in₂ {width-env γ} {width v}
-
-  branch-at : ∀ l → ap (from-inputs +ₘ (from-scrutinee ∘ R_s)) (inputs γ s x) l ≈s
-                    inputs (γ · v) (ap R_s (inputs γ s x) zero +ₛ (c ·ₛ s))
-                      (λ m → ap (M.in₁ {width-env γ} {width v}) x m +ₛ
-                             ap (M.in₂ {width-env γ} {width v}) (λ m' → ap R_s (inputs γ s x) (suc m')) m) l
-  branch-at zero =
-    ≈-trans (app-+ₘ from-inputs (from-scrutinee ∘ R_s) (inputs γ s x) zero)
-    (≈-trans (+-cong (≈-trans (ap-⊕₁-zero {width-env γ} (ctrl-row {1}) (M.in₁ {width-env γ} {width v}) (inputs γ s x))
-                              (ap-ctrl-row {1} s zero))
-                     (≈-trans (app-∘ from-scrutinee R_s (inputs γ s x) zero)
-                              (≈-trans (ap-⊕₁-zero {width v} M.I (M.in₂ {width-env γ} {width v}) (ap R_s (inputs γ s x)))
-                                       (app-I {1} (λ _ → ap R_s (inputs γ s x) zero) zero))))
-             +-comm)
-  branch-at (suc m) =
-    ≈-trans (app-+ₘ from-inputs (from-scrutinee ∘ R_s) (inputs γ s x) (suc m))
-            (+-cong (ap-⊕₁-suc {width-env γ} (ctrl-row {1}) (M.in₁ {width-env γ} {width v}) (inputs γ s x) m)
-                    (≈-trans (app-∘ from-scrutinee R_s (inputs γ s x) (suc m))
-                             (ap-⊕₁-suc {width v} M.I (M.in₂ {width-env γ} {width v}) (ap R_s (inputs γ s x)) m)))
+  ≈-trans (app-∘ T (branch-inputs γ v ∘ ⟨ M.I , R_s ⟩) (inputs γ s x) k) (app-congᵥ T (ap-branch-inputs γ v R_s s x) k)
 
 private
   proj-op : ∀ {Γ τ'} {γ : Env Γ} (wv : Val τ') {m n} (P : M.Matrix (width wv) (m + n))
