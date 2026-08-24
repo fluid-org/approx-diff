@@ -21,7 +21,9 @@ import matrix
 import two
 import three
 import semiring-sign as sign
+open import Data.Product using (_×_; _,_)
 open import Data.Rational using (ℚ)
+open import commutative-semiring-product using (_⊗S_)
 open import signature.example.collapse using (nonzero)
 import example.render.constants
 import signature.example.interpretation
@@ -120,12 +122,21 @@ private
   suffix-sign sign.unk = "?"
   suffix-sign sign.zer = "⊥"
 
+  -- A sign paired with the three-chain: the sign of a position's effect, and whether the position
+  -- is reached as value flow or through a control point.
+  suffix-signed : sign.Sign × three.Three → String
+  suffix-signed (s , three.O) = "⊥"
+  suffix-signed (s , k)       = suffix-sign s ++ suffix3 k
+
+  collapse-signed : ℚ → sign.Sign × three.Three
+  collapse-signed q = sign.sign-of q , nonzero three.semiring q
+
   module R2 = over (nonzero two.semiring) two.semiring two.I suffix2
   module R3 = over (nonzero three.semiring) three.semiring three.C suffix3
-  module RS = over sign.sign-of sign.semiring sign.unk suffix-sign
+  module RS = over collapse-signed (sign.semiring ⊗S three.semiring) (sign.unk , three.C) suffix-signed
   module E2 = example.runs (nonzero two.semiring) two.semiring two.I
   module E3 = example.runs (nonzero three.semiring) three.semiring three.C
-  module ES = example.runs sign.sign-of sign.semiring sign.unk
+  module ES = example.runs collapse-signed (sign.semiring ⊗S three.semiring) (sign.unk , three.C)
 
   sign-run : String → ES.Run → String
   sign-run name r = RS.show-run name (ES.env r) (ES.model-output r) (ES.model-of r)
@@ -142,8 +153,8 @@ private
   three-run name r = R3.show-run name (E3.env r) (E3.model-output r) (E3.model-of r)
 
 -- The Booleans for the programs whose point is which positions are read; the three-chain, which
--- separates consumption from value flow, for those whose point is that distinction; the signs, with
--- the sign of a rational as its weight, for the saliency reading of the grid scorer.
+-- separates consumption from value flow, for those whose point is that distinction; signs paired
+-- with the three-chain for the saliency reading of the grid scorer.
 contents : String
 contents =
   two-run   "query"      E2.query-run  ++
