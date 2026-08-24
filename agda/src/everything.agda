@@ -11,6 +11,10 @@ import language-operational.totality
 -- Soundness: soundness-val, soundness-dep. Injectivity of the value interpretation, for adequacy: val-idx-inj.
 import ho-agreement
 
+-- Reading of a first-order value as a tree on the first-order side, ahead of the value-level agreement
+-- that complements conservativity.
+import value-interpretation
+
 -- Tests.
 import example.interaction
 import example.render.relations
