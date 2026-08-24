@@ -877,6 +877,23 @@ subst-base : ∀ {σ} {i i' : Ix (base σ)} (e : Ix._≈_ (base σ) i i')
              ⟦ base σ ⟧ .fam .subst e .func d k ≈s d k
 subst-base {σ} e d k = Σ-unit {sort-width σ} k d
 
+subst-inj₁ : ∀ {σ τ} {i i' : Ix σ} (e : Ix._≈_ σ i i') (d : ∣ Fib (σ [+] τ) (inj₁ i) ∣) →
+             Fib._≈_ (σ [+] τ) (inj₁ i') (⟦ σ [+] τ ⟧ .fam .subst {inj₁ i} {inj₁ i'} e .func d)
+                                         (proj₁ d , ⟦ σ ⟧ .fam .subst e .func (proj₂ d))
+subst-inj₁ {σ} {i' = i'} e d = ≈-trans +-comm +-lunit , Fib.+-lunit σ i'
+
+subst-inj₂ : ∀ {σ τ} {i i' : Ix τ} (e : Ix._≈_ τ i i') (d : ∣ Fib (σ [+] τ) (inj₂ i) ∣) →
+             Fib._≈_ (σ [+] τ) (inj₂ i') (⟦ σ [+] τ ⟧ .fam .subst {inj₂ i} {inj₂ i'} e .func d)
+                                         (proj₁ d , ⟦ τ ⟧ .fam .subst e .func (proj₂ d))
+subst-inj₂ {τ = τ} {i' = i'} e d = ≈-trans +-comm +-lunit , Fib.+-lunit τ i'
+
+subst-pair : ∀ {σ τ} {i i' : Ix σ} {j j' : Ix τ} (e₁ : Ix._≈_ σ i i') (e₂ : Ix._≈_ τ j j')
+             (d : ∣ Fib (σ [×] τ) (i , j) ∣) →
+             Fib._≈_ (σ [×] τ) (i' , j') (⟦ σ [×] τ ⟧ .fam .subst {i , j} {i' , j'} (e₁ , e₂) .func d)
+               (proj₁ d , (⟦ σ ⟧ .fam .subst e₁ .func (proj₁ (proj₂ d)) , ⟦ τ ⟧ .fam .subst e₂ .func (proj₂ (proj₂ d))))
+subst-pair {σ} {τ} {i' = i'} {j' = j'} e₁ e₂ d =
+  +-runit , (Fib.trans σ i' (Fib.+-lunit σ i') (m-runit (Fib σ i')) , Fib.trans τ j' (Fib.+-lunit τ j') (Fib.+-lunit τ j'))
+
 DepRel-transport′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i i')
                     (r : ValRel′ N τ p v i) {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i ∣} →
                     DepRel′ N τ p r o d → DepRel′ N τ p (ValRel-resp′ τ p E r) o (⟦ τ ⟧ .fam .subst E .func d)
@@ -948,15 +965,21 @@ DepRel-transport : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i i') (r 
                    DepRel τ r o d → DepRel τ (ValRel-resp τ E r) o (⟦ τ ⟧ .fam .subst E .func d)
 DepRel-transport τ = DepRel-transport′ τ ≤-refl
 
+DepRel-transport⁻′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i' i)
+                     (r : ValRel′ N τ p v i) {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i' ∣} {d' : ∣ Fib τ i ∣} →
+                     Fib._≈_ τ i (⟦ τ ⟧ .fam .subst E .func d) d' →
+                     DepRel′ N τ p r o d' → DepRel′ N τ p (ValRel-resp′ τ p (Ix.sym τ E) r) o d
+DepRel-transport⁻′ τ p {i = i} {i'} E r {o} {d} {d'} ed h =
+  DepRel-resp′ τ p (ValRel-resp′ τ p (Ix.sym τ E) r) (λ k → ≈-refl)
+    (Fib.trans τ i' (Fib.sym τ i' (subst-trans ⟦ τ ⟧ E (Ix.sym τ E) d))
+                    (subst-refl ⟦ τ ⟧ (Ix.trans τ E (Ix.sym τ E)) d))
+    (DepRel-transport′ τ p (Ix.sym τ E) r (DepRel-resp′ τ p r (λ k → ≈-refl) (Fib.sym τ i ed) h))
+
 DepRel-transport⁻ : ∀ τ {v : Val τ} {i i' : Ix τ} (E : Ix._≈_ τ i' i) (r : ValRel τ v i)
                     {o : ∣ 𝔽 (width v) ∣} {d : ∣ Fib τ i' ∣} {d' : ∣ Fib τ i ∣} →
                     Fib._≈_ τ i (⟦ τ ⟧ .fam .subst E .func d) d' →
                     DepRel τ r o d' → DepRel τ (ValRel-resp τ (Ix.sym τ E) r) o d
-DepRel-transport⁻ τ {i = i} {i'} E r {o} {d} {d'} ed h =
-  DepRel-resp τ (ValRel-resp τ (Ix.sym τ E) r) (λ k → ≈-refl)
-    (Fib.trans τ i' (Fib.sym τ i' (subst-trans ⟦ τ ⟧ E (Ix.sym τ E) d))
-                    (subst-refl ⟦ τ ⟧ (Ix.trans τ E (Ix.sym τ E)) d))
-    (DepRel-transport τ (Ix.sym τ E) r (DepRel-resp τ r (λ k → ≈-refl) (Fib.sym τ i ed) h))
+DepRel-transport⁻ τ = DepRel-transport⁻′ τ ≤-refl
 
 ty-cast : ∀ {τ τ'} → τ ≡ τ' → Mor ⟦ τ ⟧ ⟦ τ' ⟧
 ty-cast e = LI.≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty (λ ())) e)
