@@ -14,7 +14,7 @@ open import Induction.WellFounded using (Acc; acc)
 open import Data.Fin using (Fin; zero; suc; splitAt; _↑ˡ_)
 open import Data.Fin.Properties using (splitAt⁻¹-↑ˡ; splitAt-↑ˡ; ↑ˡ-injective)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
-open import Data.Product using (_,_)
+open import Data.Product using (_,_; _×_)
 open import Data.Unit using (tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂; subst)
 open import Relation.Binary.PropositionalEquality.Properties using (subst-subst-sym; subst-sym-subst; subst-subst)
@@ -719,3 +719,70 @@ sub-shape-val {n₁ = n₁} {n₂ = n₂} {σᵗ = σᵗ} {fσ = fσ} {η₁ = �
     e-u : subst Val Ej' (subst Val Eᵣ u) ≡ subst Val Ej u
     e-u = trans (subst-subst Eᵣ) (cong (λ h → subst Val h u) (uip (trans Eᵣ Ej') Ej))
     p† = subst (λ z → size z < N) (sym e-u) (<-trans p₀ p̂)
+
+private
+  subst-set-inj₁ : ∀ {ℓ} {A A' B B' : Set ℓ} (e₁ : A ≡ A') (e₂ : B ≡ B')
+                   (E : (A ⊎ B) ≡ (A' ⊎ B')) (x : A) →
+                   subst (λ X → X) E (inj₁ x) ≡ inj₁ (subst (λ X → X) e₁ x)
+  subst-set-inj₁ refl refl refl x = refl
+
+  subst-set-inj₂ : ∀ {ℓ} {A A' B B' : Set ℓ} (e₁ : A ≡ A') (e₂ : B ≡ B')
+                   (E : (A ⊎ B) ≡ (A' ⊎ B')) (y : B) →
+                   subst (λ X → X) E (inj₂ y) ≡ inj₂ (subst (λ X → X) e₂ y)
+  subst-set-inj₂ refl refl refl y = refl
+
+  subst-set-pair : ∀ {ℓ} {A A' B B' : Set ℓ} (e₁ : A ≡ A') (e₂ : B ≡ B')
+                   (E : (A × B) ≡ (A' × B')) (x : A) (y : B) →
+                   subst (λ X → X) E (x , y) ≡ (subst (λ X → X) e₁ x , subst (λ X → X) e₂ y)
+  subst-set-pair refl refl refl x y = refl
+
+val-carrier : ∀ {τ : type 0} (fo : first-order τ) →
+              ⟦ ∣ fo-as-poly fo ∅𝒞 ∣ ⟧shape (λ i → inj₁ i) ≡ Carrier (𝒞⟦ fo ⟧ty ∅𝒞 .idx)
+val-carrier (var ())
+val-carrier unit          = refl
+val-carrier (base s)      = refl
+val-carrier (fo₁ [+] fo₂) = cong₂ _⊎_ (val-carrier fo₁) (val-carrier fo₂)
+val-carrier (fo₁ [×] fo₂) = cong₂ _×_ (val-carrier fo₁) (val-carrier fo₂)
+val-carrier (μ fo)        = refl
+
+id-shape-val : ∀ {τ : type 0} (fo : first-order τ) {N} (a : Acc _<_ N)
+               (f : Compat var (λ i → inj₁ i) N) (E : τ ≡ sub var τ) (v : Val τ)
+               (p : size (subst Val E v) < N) →
+               subst (λ X → X) (val-carrier fo)
+                 (shape-val fo var (λ i → inj₁ i) N a f (subst Val E v) p)
+                 ≡ ⟦ fo ⟧val v
+id-shape-val (var ())
+id-shape-val unit a f E unit p =
+  shape-val-cast unit var (λ i → inj₁ i) _ a f (cong (λ h → subst Val h unit) (uip E refl)) p
+id-shape-val (base s) a f E (const c) p =
+  shape-val-cast (base s) var (λ i → inj₁ i) _ a f (cong (λ h → subst Val h (const c)) (uip E refl)) p
+id-shape-val {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂) a f E (inl v) p =
+  trans (cong (subst (λ X → X) (val-carrier (fo₁ [+] fo₂)))
+              (shape-val-cast (fo₁ [+] fo₂) var (λ i → inj₁ i) _ a f (subst-val-inl e₁ e₂ E v) p))
+  (trans (subst-set-inj₁ (val-carrier fo₁) (val-carrier fo₂) (val-carrier (fo₁ [+] fo₂)) _)
+         (cong inj₁ (id-shape-val fo₁ a f e₁ v _)))
+  where
+  e₁ = sym (sub-id τ₁)
+  e₂ = sym (sub-id τ₂)
+id-shape-val {τ = τ₁ [+] τ₂} (fo₁ [+] fo₂) a f E (inr v) p =
+  trans (cong (subst (λ X → X) (val-carrier (fo₁ [+] fo₂)))
+              (shape-val-cast (fo₁ [+] fo₂) var (λ i → inj₁ i) _ a f (subst-val-inr e₁ e₂ E v) p))
+  (trans (subst-set-inj₂ (val-carrier fo₁) (val-carrier fo₂) (val-carrier (fo₁ [+] fo₂)) _)
+         (cong inj₂ (id-shape-val fo₂ a f e₂ v _)))
+  where
+  e₁ = sym (sub-id τ₁)
+  e₂ = sym (sub-id τ₂)
+id-shape-val {τ = τ₁ [×] τ₂} (fo₁ [×] fo₂) a f E (pair v u) p =
+  trans (cong (subst (λ X → X) (val-carrier (fo₁ [×] fo₂)))
+              (shape-val-cast (fo₁ [×] fo₂) var (λ i → inj₁ i) _ a f (subst-val-pair e₁ e₂ E v u) p))
+  (trans (subst-set-pair (val-carrier fo₁) (val-carrier fo₂) (val-carrier (fo₁ [×] fo₂)) _ _)
+         (cong₂ _,_ (id-shape-val fo₁ a f e₁ v _) (id-shape-val fo₂ a f e₂ u _)))
+  where
+  e₁ = sym (sub-id τ₁)
+  e₂ = sym (sub-id τ₂)
+id-shape-val {τ = μ τ} (μ fo) a f E v p =
+  trans (shape-val-cast (μ fo) var (λ i → inj₁ i) _ a f e-v p)
+        (shape-val-irrelevant (μ fo) var (λ i → inj₁ i) a (<-wellFounded _) f (λ ()) (λ ())
+           (subst Val (sym (sub-id (μ τ))) v) _ _)
+  where
+  e-v = cong (λ h → subst Val h v) (uip E (sym (sub-id (μ τ))))
