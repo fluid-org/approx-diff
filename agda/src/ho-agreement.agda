@@ -1706,51 +1706,8 @@ fundamental {Γ = Γ} {τ = τ} {γ = γ}
   app-op : ∀ k → ap (U ∘ (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩)) (inputs γ s x) k
                  ≈s ap U (body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l → o (suc l)) z) k
   app-op k =
-    ≈-trans (app-congₘ (M.∘-cong (≈ₘ-refl {M = U}) split) (inputs γ s x) k)
-    (≈-trans (app-∘ U ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) (inputs γ s x) k)
-             (app-congᵥ U body-at k))
-    where
-    from-ctrl : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ))
-    from-ctrl = M.in₁ {1} ∘ wctrl
-    from-closure : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ'))
-    from-closure = M.I {1} ⊕ M.in₁ {width-env γ'} {width v}
-    from-argument : M.Matrix (suc (width-env γ' + width v)) (width v)
-    from-argument = M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v}
-
-    split : (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) M.≈ₘ ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T))
-    split =
-      ≈ₘ-trans (M.∥-pair (from-ctrl M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T)
-               (M.+ₘ-cong (≈ₘ-trans (M.∥-pair from-ctrl from-closure M.I R)
-                                    (M.+ₘ-cong (M.id-right {M = from-ctrl}) ≈ₘ-refl))
-                          ≈ₘ-refl)
-
-    body-at : ∀ l → ap ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) (inputs γ s x) l ≈s
-                    body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
-    body-at zero =
-      ≈-trans (app-+ₘ (from-ctrl +ₘ (from-closure ∘ R)) (from-argument ∘ T) (inputs γ s x) zero)
-      (≈-trans (+-cong (≈-trans (app-+ₘ from-ctrl (from-closure ∘ R) (inputs γ s x) zero)
-                                (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wctrl (inputs γ s x) zero)
-                                                 (≈-trans (ap-in₁-zero {width-env γ' + width v} (ap wctrl (inputs γ s x)))
-                                                          (ap-wctrl {width-env γ} {1} (inputs γ s x) zero)))
-                                        (≈-trans (app-∘ from-closure R (inputs γ s x) zero)
-                                                 (≈-trans (ap-⊕₁-zero {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o)
-                                                          (app-I {1} (λ _ → o zero) zero)))))
-                       (≈-trans (app-∘ from-argument T (inputs γ s x) zero)
-                                (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z zero)
-                                         (ap-in₂-zero {width-env γ' + width v} _))))
-               +-runit)
-    body-at (suc l) =
-      ≈-trans (app-+ₘ (from-ctrl +ₘ (from-closure ∘ R)) (from-argument ∘ T) (inputs γ s x) (suc l))
-      (≈-trans (+-cong (≈-trans (app-+ₘ from-ctrl (from-closure ∘ R) (inputs γ s x) (suc l))
-                                (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wctrl (inputs γ s x) (suc l))
-                                                          (ap-in₁-suc {width-env γ' + width v} (ap wctrl (inputs γ s x)) l))
-                                                 (≈-trans (app-∘ from-closure R (inputs γ s x) (suc l))
-                                                          (ap-⊕₁-suc {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o l)))
-                                         +-lunit))
-                       (≈-trans (app-∘ from-argument T (inputs γ s x) (suc l))
-                                (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z (suc l))
-                                         (ap-in₂-suc {width-env γ' + width v} _ l))))
-               ≈-refl)
+    ≈-trans (app-∘ U (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) (inputs γ s x) k)
+            (app-congᵥ U (ap-body-inputs γ γ' v R T s x) k)
 fundamental {Γ = Γ} {τ = μ τ} {γ = γ} (⇓-roll {t = t} {v = v} {R = R} D) {gi} rγ s x g rel =
   DepRel-at-bound (τ [ μ τ ]) (ValRel-resp (τ [ μ τ ]) e r)
     (DepRel-resp (τ [ μ τ ]) (ValRel-resp (τ [ μ τ ]) e r) (λ k → ≈-refl) ed

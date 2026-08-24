@@ -806,6 +806,56 @@ ap-rec-inputs {Γ} γ {m} v' F s x o k =
                     (app-congᵥ (M.in₁ {n} {p}) (ap-p₂₁ (inputs γ s x)) k))
            (ap-in₂-suc (ap (M.in₂ {n} {p}) oF) k)
 
+ap-body-inputs : ∀ {Γ Γ' σ} (γ : Env Γ) (γ' : Env Γ') (v : Val σ)
+                 (R : M.Matrix (suc (width-env γ')) (suc (width-env γ))) (T : M.Matrix (width v) (suc (width-env γ))) s x k →
+                 ap (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) (inputs γ s x) k ≈s
+                 body-input γ' v ((c ·ₛ s) +ₛ ap R (inputs γ s x) zero) (λ l → ap R (inputs γ s x) (suc l)) (ap T (inputs γ s x)) k
+ap-body-inputs γ γ' v R T s x k = ≈-trans (app-congₘ split (inputs γ s x) k) (body-at k)
+  where
+  o = ap R (inputs γ s x)
+  z = ap T (inputs γ s x)
+  from-ctrl : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ))
+  from-ctrl = M.in₁ {1} ∘ wctrl
+  from-closure : M.Matrix (suc (width-env γ' + width v)) (suc (width-env γ'))
+  from-closure = M.I {1} ⊕ M.in₁ {width-env γ'} {width v}
+  from-argument : M.Matrix (suc (width-env γ' + width v)) (width v)
+  from-argument = M.in₂ {1} ∘ M.in₂ {width-env γ'} {width v}
+
+  split : (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) M.≈ₘ ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T))
+  split =
+    ≈ₘ-trans (M.∥-pair (from-ctrl M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T)
+             (M.+ₘ-cong (≈ₘ-trans (M.∥-pair from-ctrl from-closure M.I R)
+                                  (M.+ₘ-cong (M.id-right {M = from-ctrl}) ≈ₘ-refl))
+                        ≈ₘ-refl)
+
+  body-at : ∀ l → ap ((from-ctrl +ₘ (from-closure ∘ R)) +ₘ (from-argument ∘ T)) (inputs γ s x) l ≈s
+                  body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
+  body-at zero =
+    ≈-trans (app-+ₘ (from-ctrl +ₘ (from-closure ∘ R)) (from-argument ∘ T) (inputs γ s x) zero)
+    (≈-trans (+-cong (≈-trans (app-+ₘ from-ctrl (from-closure ∘ R) (inputs γ s x) zero)
+                              (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wctrl (inputs γ s x) zero)
+                                               (≈-trans (ap-in₁-zero {width-env γ' + width v} (ap wctrl (inputs γ s x)))
+                                                        (ap-wctrl {width-env γ} {1} (inputs γ s x) zero)))
+                                      (≈-trans (app-∘ from-closure R (inputs γ s x) zero)
+                                               (≈-trans (ap-⊕₁-zero {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o)
+                                                        (app-I {1} (λ _ → o zero) zero)))))
+                     (≈-trans (app-∘ from-argument T (inputs γ s x) zero)
+                              (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z zero)
+                                       (ap-in₂-zero {width-env γ' + width v} _))))
+             +-runit)
+  body-at (suc l) =
+    ≈-trans (app-+ₘ (from-ctrl +ₘ (from-closure ∘ R)) (from-argument ∘ T) (inputs γ s x) (suc l))
+    (≈-trans (+-cong (≈-trans (app-+ₘ from-ctrl (from-closure ∘ R) (inputs γ s x) (suc l))
+                              (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {width-env γ' + width v}) wctrl (inputs γ s x) (suc l))
+                                                        (ap-in₁-suc {width-env γ' + width v} (ap wctrl (inputs γ s x)) l))
+                                               (≈-trans (app-∘ from-closure R (inputs γ s x) (suc l))
+                                                        (ap-⊕₁-suc {width-env γ'} M.I (M.in₁ {width-env γ'} {width v}) o l)))
+                                       +-lunit))
+                     (≈-trans (app-∘ from-argument T (inputs γ s x) (suc l))
+                              (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {width-env γ'} {width v}) z (suc l))
+                                       (ap-in₂-suc {width-env γ' + width v} _ l))))
+             ≈-refl)
+
 ap-sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} (C : M.Matrix m n) s x (o : ∣ 𝔽 n ∣) k →
                 ap (sub-inputs γ C) (map-input γ s x o) k ≈s map-input γ s x (ap C o) k
 ap-sub-inputs γ {m} {n} C s x o k =
