@@ -2197,6 +2197,36 @@ val-idx-inj {μ τ} (μ fo)  {roll v}   {roll v'}    e =
   i   = val-idx v
   i'  = val-idx v'
 
+adequacy : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) {t : Γ ⊢ τ} {γ : Env Γ} {v : Val τ}
+           {R : M.Matrix (width v) (suc (width-env γ))}
+           (e : Ix._≈_ τ (⟦ t ⟧tm .idxf .sfunc (env-idx γ)) (val-idx v)) →
+           (∀ (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣) →
+             Fib._≈_ τ (val-idx v)
+               (val-fib fo v .func (ap R (inputs γ s x)))
+               (Fib._+_ τ (val-idx v) (ctrl-dep-at τ (val-idx v) s)
+                 (⟦ τ ⟧ .fam .subst e .func (⟦ t ⟧tm .famf .transf (env-idx γ) .func (env-fib Γ-fo γ .func x))))) →
+           ∀ {v' R'} (D : γ , t ⇓ v' [ R' ]) →
+           (v ≈v v') ∧
+           (∀ (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣) →
+             Fib._≈_ τ (val-idx v')
+               (⟦ τ ⟧ .fam .subst
+                 (Ix.trans τ {val-idx v} {⟦ t ⟧tm .idxf .sfunc (env-idx γ)} {val-idx v'}
+                   (Ix.sym τ {⟦ t ⟧tm .idxf .sfunc (env-idx γ)} {val-idx v} e) (soundness-val D))
+                 .func (val-fib fo v .func (ap R (inputs γ s x))))
+               (val-fib fo v' .func (ap R' (inputs γ s x))))
+adequacy {τ = τ} Γ-fo fo {t} {γ} {v} {R} e h {v'} {R'} D =
+  val-idx-inj fo E , λ s x →
+    Fib.trans τ i' (⟦ τ ⟧ .fam .subst E .func-resp-≈ (h s x))
+      (Fib.trans τ i' (subst-ctrl-dep+ τ E s _)
+        (Fib.trans τ i'
+          (Fib.+-cong τ i' (Fib.refl τ i') (Fib.sym τ i' (subst-trans ⟦ τ ⟧ e E (d x))))
+          (Fib.sym τ i' (soundness-dep Γ-fo fo D s x))))
+  where
+  i   = val-idx v
+  i'  = val-idx v'
+  E   = Ix.trans τ {i} {⟦ t ⟧tm .idxf .sfunc (env-idx γ)} {i'} (Ix.sym τ {⟦ t ⟧tm .idxf .sfunc (env-idx γ)} {i} e) (soundness-val D)
+  d   = λ x → ⟦ t ⟧tm .famf .transf (env-idx γ) .func (env-fib Γ-fo γ .func x)
+
 val-fib⁻¹ : ∀ {τ} (fo : first-order τ) (v : Val τ) → Fib τ (val-idx v) ⇒ 𝔽 (width v)
 val-fib⁻¹ unit           unit       = SemiMod.id (𝔽 1)
 val-fib⁻¹ (base s)       (const a)  = SemiMod.id (𝔽 (sort-width s))
