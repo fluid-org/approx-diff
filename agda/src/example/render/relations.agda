@@ -24,7 +24,7 @@ import semiring-sign as sign
 open import Data.Product using (_×_; _,_)
 open import Data.Rational using (ℚ)
 open import commutative-semiring-product using (_⊗S_)
-open import signature.example.collapse using (nonzero)
+open import semiring-Q using (nonzero)
 import example.render.constants
 import signature.example.interpretation
 import example.runs

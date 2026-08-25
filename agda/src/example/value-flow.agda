@@ -14,7 +14,7 @@ open import every using ([]; _∷_)
 import two
 
 open import signature.example ℚ using (Sig; number; add; mult)
-open import signature.example.collapse using (nonzero)
+open import semiring-Q using (nonzero)
 import signature.example.interpretation
 module Dep = signature.example.interpretation (nonzero two.semiring) two.semiring
 
