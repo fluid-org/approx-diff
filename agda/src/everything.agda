@@ -6,6 +6,9 @@ module everything where
 -- Every value and environment is total: val-total, env-total. Existence half of the determinism theorem: eval.
 import language-operational.totality
 
+-- Uniqueness half of the determinism theorem, including the derivation: unique.
+import language-operational.uniqueness
+
 -- Fundamental lemma: fundamental-val, fundamental. Map lemma: map-val, map-dep.
 -- Soundness of values at every type: soundness-val; of dependence at first-order types: soundness-dep.
 -- Injectivity of the value interpretation, for adequacy: val-idx-inj.
