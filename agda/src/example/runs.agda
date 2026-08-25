@@ -13,16 +13,12 @@ module example.runs {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A)
 import label
 open import Data.Rational using (½; 1ℚ; -_)
 import matrix
-import ho-model
 open import signature.example.interpretation collapse S using (Sig; interpretation; number)
 open import example.programs
 open import example.inputs collapse S ctrl-weight
 open import language-syntax Sig using (ctxt; type; first-order-ctxt; first-order; _⊢_; base; unit; _[+]_; _[×]_)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
-open import value-interpretation S ctrl-weight Sig interpretation using (⟦_⟧env; ⟦_⟧val⁻¹)
-
-module model = ho-model S ctrl-weight
-module interp = model.interp Sig interpretation
+open import value-interpretation S ctrl-weight Sig interpretation using (⟦_⟧env; ⟦_⟧val⁻¹; module model; module interp)
 
 private
   module M = matrix.Mat S
