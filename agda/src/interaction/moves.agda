@@ -49,10 +49,25 @@ open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; su
 -- the regions of the hidden set with their summaries, and are mutually inverse.
 module interaction.moves where
 
-open import interaction.graph
+open import interaction.graph two.semiring (λ x → two.∨-idem {x})
+import commutative-semiring
+open import prop using (Prf; ⟪_⟫) renaming (_∧_ to _∧ₚ_; _,_ to _,ₚ_; proj₁ to proj₁ₚ; proj₂ to proj₂ₚ)
 
 private
   module M = matrix.Mat two.semiring
+  module S = commutative-semiring.CommutativeSemiring two.semiring
+
+  ⊥ₚ-elim : ∀ {A : Set} → prop.⊥ {0ℓ} → A
+  ⊥ₚ-elim ()
+
+  ≈-of-≡ₛ : ∀ {x y : two.Two} → x ≡ y → x S.≈ y
+  ≈-of-≡ₛ ≡-refl = S.refl
+
+  ≡-of-≈ₛ : ∀ {x y : two.Two} → x S.≈ y → x ≡ y
+  ≡-of-≈ₛ {two.O} {two.O} _ = ≡-refl
+  ≡-of-≈ₛ {two.I} {two.I} _ = ≡-refl
+  ≡-of-≈ₛ {two.O} {two.I} e = ⊥ₚ-elim (proj₂ₚ e)
+  ≡-of-≈ₛ {two.I} {two.O} e = ⊥ₚ-elim (proj₁ₚ e)
 
 private
   is-I : two.Two → Bool
@@ -214,6 +229,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     eq-path : Path → Path → Bool
     eq-path p q = ⌊ _≟_ {shape} p q ⌋
 
+    rows-≈ : {G G' : Relation (vertex-width 𝒢)} {rs : List (V 𝒢)} →
+             All (λ r → ((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) → G r z i j ≡ G' r z i j)
+                      × ((z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) → G z r i j ≡ G' z r i j)) rs →
+             All (λ r → Prf (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) → G r z i j S.≈ G' r z i j)
+                          ∧ₚ ((z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) → G z r i j S.≈ G' z r i j))) rs
+    rows-≈ []             = []
+    rows-≈ ((p , q) ∷ ps) = ⟪ ((λ z i j → ≈-of-≡ₛ (p z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (q z i j))) ⟫ ∷ rows-≈ ps
+
     eq-path-refl : ∀ (p : Path) → eq-path p p ≡ Bool.true
     eq-path-refl p with _≟_ {shape} p p
     ... | yes _  = ≡-refl
@@ -253,14 +276,15 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   restrict-forward : {G : Relation (vertex-width 𝒢)} (C : List (Path)) → Fwd 𝒢 G → Fwd 𝒢 (restrict G C)
   restrict-forward C fwd x y i j with member-vertex x C ∨ member-vertex y C
   ... | Bool.true  = fwd x y i j
-  ... | Bool.false = λ ()
+  ... | Bool.false = inj₂ ⟪ S.refl {two.O} ⟫
 
   summary-perm : {C C' : List (Path)} → C ↭ C' →
                  ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                  summary C x y i j ≡ summary C' x y i j
   summary-perm {C = C} {C' = C'} p x y i j =
-    ≡-trans (HA.fold-cong (map at C) (restrict-perm (fo-graph 𝒢) p) x y i j)
-            (hide-all-perm 𝒢 (restrict-forward C' (fo-forward 𝒢)) (map⁺ at p) x y i j)
+    ≡-of-≈ₛ
+      (S.trans (HA.fold-cong (map at C) (λ x' y' i' j' → ≈-of-≡ₛ (restrict-perm (fo-graph 𝒢) p x' y' i' j')) x y i j)
+               (hide-all-perm 𝒢 (restrict-forward C' (fo-forward 𝒢)) (map⁺ at p) x y i j))
 
   adjacent-sym : (G : Relation (vertex-width 𝒢)) (x y : V 𝒢) → adjacent G x y ≡ adjacent G y x
   adjacent-sym G x y = ∨-comm (nonzero (G x y)) (nonzero (G y x))
@@ -382,8 +406,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
              hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) E) (map at C) x y i j ≡
              (restrict (fo-graph 𝒢) E x y i j two.⊔ summary C x y i j)
   localise {C = C} {E = E} mono x y i j =
-    HA.agree-add (map at C) (restrict-sub (fo-graph 𝒢) mono) (restrict-agree (fo-graph 𝒢) mono)
-                 x y i j
+    ≡-of-≈ₛ (HA.agree-add {G = restrict (fo-graph 𝒢) C} {G' = restrict (fo-graph 𝒢) E} (map at C)
+               (λ x' y' i' j' → ≈-of-≡ₛ (restrict-sub (fo-graph 𝒢) mono x' y' i' j'))
+               (rows-≈ {G = restrict (fo-graph 𝒢) E} {G' = restrict (fo-graph 𝒢) C} (restrict-agree (fo-graph 𝒢) mono))
+               x y i j)
 
   summary-zero : {C : List (Path)} (q : Path) →
                  member q C ≡ Bool.false →
@@ -393,7 +419,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                   ((z : V 𝒢) (i : Fin (vertex-width 𝒢 (at q))) (j : Fin (vertex-width 𝒢 z)) →
                    summary C z (at q) i j ≡ two.O))
   summary-zero {C = C} q hm hadj =
-    HA.zero-fold (map at C) (at q) (base-row , base-col)
+    (λ z i j → ≡-of-≈ₛ (proj₁ₚ zf z i j)) , (λ z i j → ≡-of-≈ₛ (proj₂ₚ zf z i j))
     where
     adjs : All (λ q' → adjacent (fo-graph 𝒢) (at q) (at q') ≡ Bool.false) C
     adjs = any-false-All _ C hadj
@@ -431,6 +457,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       (≡-trans (≡-cong (λ b → when b (fo-graph 𝒢 z (at q)) i j) (∨-identityʳ (member-vertex z C)))
                (when-O (member-vertex z C) (fo-graph 𝒢 z (at q)) i j (λ hz → entry-col z hz i j)))
 
+    zf = HA.zero-fold (map at C) (at q)
+           ((λ z i j → ≈-of-≡ₛ (base-row z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (base-col z i j)))
+
   assemble : {E : List (Path)} (Cs : List (List (Path))) →
              All (λ C → ∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) Cs →
              AllPairs (λ C C' → Apart (fo-graph 𝒢) C' C
@@ -443,8 +472,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   assemble {E = E} (C ∷ Cs) (mono ∷ monos) (shead ∷ stail) x y i j =
     ≡-trans (≡-cong (λ ws → hide-all (vertex-width 𝒢) R-E ws x y i j) (map-++ at C (concat Cs)))
     (≡-trans (≡-cong (λ H → H x y i j) (foldl-++ (hide (vertex-width 𝒢)) R-E (map at C) (map at (concat Cs))))
-    (≡-trans (HA.fold-cong (map at (concat Cs)) (localise {C = C} mono) x y i j)
-    (≡-trans (HA.add-inert {G = R-E} {S = summary C} (map at (concat Cs)) inert x y i j)
+    (≡-trans (≡-of-≈ₛ (HA.fold-cong (map at (concat Cs)) (λ x' y' i' j' → ≈-of-≡ₛ (localise {C = C} mono x' y' i' j')) x y i j))
+    (≡-trans (≡-of-≈ₛ (HA.add-inert {G = R-E} {T = summary C} (map at (concat Cs)) inert' x y i j))
     (≡-trans (≡-cong (two._⊔ summary C x y i j) (assemble Cs monos stail x y i j))
              (two.⊔-comm _ (summary C x y i j))))))
     where
@@ -454,6 +483,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                 All-zip (λ {q} ha hm → summary-zero {C = C} q hm ha)
                         (any-false-All _ C' ap) (any-false-All _ C' ds))
               shead))
+    inert' = rows-≈ {G = summary C} {G' = λ _ _ → M.εₘ} inert
 
   private
     foldr-entry : (B : Relation (vertex-width 𝒢)) (Gs : List (Relation (vertex-width 𝒢))) →
@@ -478,7 +508,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                  summary (p ∷ C) x y i j ≡
                  hide (vertex-width 𝒢) (hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) (p ∷ C)) (map at C)) (at p) x y i j
   summary-snoc p C x y i j =
-    ≡-trans (hide-all-perm 𝒢 (restrict-forward (p ∷ C) (fo-forward 𝒢)) perm x y i j)
+    ≡-trans (≡-of-≈ₛ (hide-all-perm 𝒢 (restrict-forward (p ∷ C) (fo-forward 𝒢)) perm x y i j))
             (≡-cong (λ H → H x y i j)
                     (foldl-++ (hide (vertex-width 𝒢)) (restrict (fo-graph 𝒢) (p ∷ C)) (map at C) (at p ∷ [])))
     where
@@ -564,7 +594,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
              (member-vertex x' C ∨ member-vertex y' C) ≡ Bool.true →
              G x' y' i' j' ≡ two.I → summary C x' y' i' j' ≡ two.I
       summary-I C x' y' i' j' gd ge =
-        ≡-trans (HA.increasing (map at C) x' y' i' j')
+        ≡-trans (≡-of-≈ₛ (HA.increasing (map at C) x' y' i' j'))
                 (≡-cong (two._⊔ hide-all (vertex-width 𝒢) (restrict G C) (map at C) x' y' i' j')
                         (≡-trans (≡-cong (λ b → when b (G x' y') i' j') gd) ge))
 
@@ -761,7 +791,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                         (at p) x y i j
                    ≡ summary (p ∷ concat (map proj₁ (proj₁ tp))) x y i j
   merged-summary p K S hp dist x y i j =
-    ≡-trans (HA.h-cong (at p) core x y i j) (≡-sym (summary-snoc p (concat Ms) x y i j))
+    ≡-trans (≡-of-≈ₛ (HA.h-cong (at p) (λ x' y' i' j' → ≈-of-≡ₛ (core x' y' i' j')) x y i j))
+            (≡-sym (summary-snoc p (concat Ms) x y i j))
     where
     G  = fo-graph 𝒢
     adj-p : List (Path) × Relation (vertex-width 𝒢) → Bool
@@ -1116,11 +1147,12 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                        hide-all (vertex-width 𝒢) (fo-graph 𝒢) (map at (hidden-set K)) x y i j
   summaries-assemble K S x y i j hx hy =
     ≡-trans (visible-graph-summary K S x y i j hx hy)
-            (≡-sym (HA.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
+            (≡-sym (≡-of-≈ₛ (HA.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
                       (map at (hidden-set K))
-                      (restrict-≤ (fo-graph 𝒢) (hidden-set K))
-                      (restrict-hidden-agree (fo-graph 𝒢) (hidden-set K))
-                      x y i j))
+                      (λ x' y' i' j' → ≈-of-≡ₛ (restrict-≤ (fo-graph 𝒢) (hidden-set K) x' y' i' j'))
+                      (rows-≈ {G = fo-graph 𝒢} {G' = restrict (fo-graph 𝒢) (hidden-set K)}
+                              (restrict-hidden-agree (fo-graph 𝒢) (hidden-set K)))
+                      x y i j)))
 
   -- Configuration equivalence: the same visible set and the same hidden set, up to order. On
   -- summarised configurations these data determine the visible graph wherever it is read, so

@@ -8,27 +8,29 @@ open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (sym)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import every using (Every; []; _∷_)
-open import prop-setoid using () renaming (_⇒_ to _⇒ₛ_)
+open import prop-setoid using (Setoid) renaming (_⇒_ to _⇒ₛ_)
+open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
 import matrix
-import two
 
 -- The dependence graph of a derivation with a control input. Each rule builds its graph from its
 -- premises' graphs using the wiring that also defines the rule's relation, so collapsing the graph
 -- recovers the relation rule by rule.
-module interaction.dependence-graph {ℓ} (Sig : Signature ℓ) (ℐ : Interpretation two.semiring Sig) where
+module interaction.dependence-graph {ℓ} (Sig : Signature ℓ) {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+  (ℐ : Interpretation S Sig) (ctrl-weight : Setoid.Carrier A)
+  (let module S = CommutativeSemiring S) (+-idem : ∀ x → (x S.+ x) S.≈ x) where
 
 open Signature Sig
 open Interpretation ℐ
 open _⇒ₛ_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
-open import language-operational.evaluation Sig two.semiring ℐ two.I
-open import interaction.graph
+open import language-operational.evaluation Sig S ℐ ctrl-weight
+open import interaction.graph S +-idem
 
 private
-  module M = matrix.Mat two.semiring
+  module M = matrix.Mat S
 
 open import categories using (Category; HasProducts)
 open Category M.cat using (_∘_; _≈_; ≈-refl; ≈-sym; ≈-trans; ∘-cong₁; ∘-cong₂; ∘-cong; assoc; id-left; id-right)

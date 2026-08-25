@@ -20,8 +20,8 @@ module Dep = signature.example.interpretation (nonzero two.semiring) two.semirin
 
 open import language-syntax Sig using (_⊢_; zero; succ; base; var; bop; emp) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig two.semiring Dep.interpretation two.I
-open import interaction.graph
-open import interaction.dependence-graph Sig Dep.interpretation
+open import interaction.graph two.semiring (λ x → two.∨-idem {x})
+open import interaction.dependence-graph Sig two.semiring Dep.interpretation two.I (λ x → two.∨-idem {x})
 open import interaction.moves
 
 γ₀ : Env (emp ▸ base number ▸ base number)
