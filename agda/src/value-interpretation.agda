@@ -88,20 +88,20 @@ mutual
 
   val-var : ∀ {n} (i : Fin (n + 0)) (σ : TySub (n + 0) 0) (η : SortEnv n) → Binders σ η →
             (s : Fin n ⊎ Fin 0) → splitAt n i ≡ s → ∀ {υ} → υ ≡ σ i → ⟦ ∣ Var s ∣ ⟧shape η → Val υ
-  val-var i σ η r (inj₁ j) eq e x = read⁻¹ r j (trans e (sym (cong σ (splitAt⁻¹-↑ˡ eq)))) x
+  val-var i σ η r (inj₁ j) eq e x = val-el r j (trans e (sym (cong σ (splitAt⁻¹-↑ˡ eq)))) x
   val-var i σ η r (inj₂ ()) eq e x
 
-  read⁻¹ : ∀ {n} {σ : TySub (n + 0) 0} {η : SortEnv n} → Binders σ η → (j : Fin n) →
+  val-el : ∀ {n} {σ : TySub (n + 0) 0} {η : SortEnv n} → Binders σ η → (j : Fin n) →
            ∀ {υ} → υ ≡ σ (j ↑ˡ 0) → El (η j) → Val υ
-  read⁻¹ (bind {σ = σ} {η = η} fo r) zero    e t = val-shape (μ fo) σ η r e t
-  read⁻¹ (bind fo r)                 (suc j) e x = read⁻¹ r j e x
+  val-el (bind {σ = σ} {η = η} fo r) zero    e t = val-shape (μ fo) σ η r e t
+  val-el (bind fo r)                 (suc j) e x = val-el r j e x
 
-⟦_⟧val⁻¹ : ∀ {τ : type 0} (fo : first-order τ) → Carrier (𝒞⟦ fo ⟧ty ∅𝒞 .idx) → Val τ
-⟦ unit ⟧val⁻¹ i = unit
-⟦ base s ⟧val⁻¹ c = const c
-⟦ fo₁ [+] fo₂ ⟧val⁻¹ (inj₁ i) = inl (⟦ fo₁ ⟧val⁻¹ i)
-⟦ fo₁ [+] fo₂ ⟧val⁻¹ (inj₂ j) = inr (⟦ fo₂ ⟧val⁻¹ j)
-⟦ fo₁ [×] fo₂ ⟧val⁻¹ (i , j) = pair (⟦ fo₁ ⟧val⁻¹ i) (⟦ fo₂ ⟧val⁻¹ j)
-⟦ μ {τ = τ} fo ⟧val⁻¹ t = val-shape (μ fo) var η∅ emp (sym (sub-id (μ τ))) t
+idx-val : ∀ {τ : type 0} (fo : first-order τ) → Carrier (𝒞⟦ fo ⟧ty ∅𝒞 .idx) → Val τ
+idx-val unit i = unit
+idx-val (base s) c = const c
+idx-val (fo₁ [+] fo₂) (inj₁ i) = inl (idx-val fo₁ i)
+idx-val (fo₁ [+] fo₂) (inj₂ j) = inr (idx-val fo₂ j)
+idx-val (fo₁ [×] fo₂) (i , j) = pair (idx-val fo₁ i) (idx-val fo₂ j)
+idx-val (μ {τ = τ} fo) t = val-shape (μ fo) var η∅ emp (sym (sub-id (μ τ))) t
 
 
