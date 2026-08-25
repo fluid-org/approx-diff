@@ -18,7 +18,10 @@ open import example.programs
 open import example.inputs collapse S ctrl-weight
 open import language-syntax Sig using (ctxt; type; first-order-ctxt; first-order; _⊢_; base; unit; _[+]_; _[×]_)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
-open import value-interpretation S ctrl-weight Sig interpretation using (⟦_⟧env; ⟦_⟧val⁻¹; module model; module interp)
+open import value-interpretation S ctrl-weight Sig interpretation using (env-idx; ⟦_⟧val⁻¹; module model; module interp)
+open import categories using (Category)
+open Category.Iso using (bwd)
+open prop-setoid._⇒_ using (func)
 
 private
   module M = matrix.Mat S
@@ -37,7 +40,7 @@ record Run : Set where
 open Run public
 
 model-input : (r : Run) → Setoid.Carrier (interp.𝒞⟦ r .Γ-fo ⟧ctxt .model.Fam⟨𝒞⟩μ.idx)
-model-input r = ⟦ r .Γ-fo ⟧env (r .env)
+model-input r = interp.⟦ r .Γ-fo ⟧ctxt-iso .bwd .model.Fam⟨𝒟⟩μ.idxf .func (env-idx (r .env))
 
 model-output : (r : Run) → Val (r .τ)
 model-output r = ⟦ r .fo ⟧val⁻¹ (interp.dependency.out (r .Γ-fo) (r .fo) (r .term) (model-input r))

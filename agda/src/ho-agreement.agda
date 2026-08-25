@@ -1824,20 +1824,6 @@ fundamental-s {γ = γ} (_∷_ {i = i} {is = is} {v = v} {R = R₁} {Rs = Rs} {M
   IH₂ : ∀ l → ap Rs (inputs γ s x) l ≈s ((c ·ₛ s) +ₛ (args-vec Ms gi g) l)
   IH₂ = fundamental-s Ds rγ s x g rel
 
-val-idx : ∀ {τ} → Val τ → Ix τ
-env-idx : ∀ {Γ} → Env Γ → IxC Γ
-
-val-idx unit             = lift tt
-val-idx (const a)        = a
-val-idx (inl v)          = inj₁ (val-idx v)
-val-idx (inr v)          = inj₂ (val-idx v)
-val-idx (pair v u)       = val-idx v , val-idx u
-val-idx (clo γ t)        = ⟦ lam t ⟧tm .idxf .sfunc (env-idx γ)
-val-idx (roll {τ = τ} v) = roll-mor τ .idxf .sfunc (val-idx v)
-
-env-idx emp     = lift tt
-env-idx (γ · v) = env-idx γ , val-idx v
-
 val-rel : ∀ {τ} (fo : first-order τ) (v : Val τ) → ValRel τ v (val-idx v)
 val-rel unit          unit       = tt
 val-rel (base s)      (const a)  = ⟪ Setoid.refl (sort-index s) ⟫

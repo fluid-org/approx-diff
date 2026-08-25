@@ -25,7 +25,6 @@ open import indexed-family using (HasSetoidProducts)
 import matrix
 import commutative-monoid
 open import cmon-enriched using (Biproduct)
-import ho-model
 import language-interpretation
 
 module ho-relation
@@ -43,8 +42,7 @@ open Interpretation ℐ
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 
-module model = ho-model S ctrl-weight
-module interp = model.interp Sig ℐ
+open import value-interpretation S ctrl-weight Sig ℐ public using (module model; module interp; val-idx; env-idx)
 open model public using (𝔽; mat; module Ls; module SemiMod)
 open SemiMod public using (Semimodule; _⇒_)
 open Semimodule public using () renaming (Carrier to ∣_∣)

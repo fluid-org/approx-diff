@@ -148,7 +148,7 @@ private
 open import language-interpretation Sig os es T𝒟 CM𝒟 BP𝒟 𝟙𝒟 𝒟E δ∅𝒟
   𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model ctrl-w 𝒟-exp-section 𝒟𝟙ty-section 𝒟-sort-section
   renaming (⟦_⟧ty to 𝒟⟦_⟧ty; ⟦_⟧ctxt to 𝒟⟦_⟧ctxt; ⟦_⟧tm to 𝒟⟦_⟧tm; as-poly to 𝒟-as-poly;
-            ty-cong to 𝒟-ty-cong)
+            ty-cong to 𝒟-ty-cong; roll-mor to 𝒟roll-mor)
   using ()
   public
 
