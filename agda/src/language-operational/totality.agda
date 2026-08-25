@@ -347,6 +347,20 @@ fundamental-s (M ∷ Ms) γ tγ with fundamental M γ tγ
   let (vs , Rs , Dss) = fundamental-s Ms γ tγ
   in (v , vs) , _ , (D ∷ Dss)
 
-eval : ∀ {τ} (t : emp ⊢ τ) →
-       Σ (Val τ) λ v → Σ (1 ⇒ width v) λ R → emp , t ⇓ v [ R ]
-eval t = let (v , R , D , _) = fundamental t emp tt in v , R , D
+val-total : ∀ {τ} (v : Val τ) → Total τ v
+env-total : ∀ {Γ} (γ : Env Γ) → TotalEnv Γ γ
+
+val-total unit = tt
+val-total (const _) = tt
+val-total (inl {τ₁ = τ₁} {τ₂ = τ₂} v) = sum-in₁ {τ₁} {τ₂} (val-total v)
+val-total (inr {τ₁ = τ₁} {τ₂ = τ₂} v) = sum-in₂ {τ₁} {τ₂} (val-total v)
+val-total (pair {τ₁ = τ₁} {τ₂ = τ₂} v u) = prod-in {τ₁} {τ₂} (val-total v) (val-total u)
+val-total (clo γ t) = arr-in (λ v tv → fundamental t (γ · v) (env-total γ , tv))
+val-total (roll {τ = τ₀} v) = mu-in (mt-roll (fold-tot τ₀ τ₀ (arr-self τ₀) (val-total v)))
+
+env-total emp = tt
+env-total (γ · v) = env-total γ , val-total v
+
+eval : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) →
+       Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → γ , t ⇓ v [ R ]
+eval t γ = let (v , R , D , _) = fundamental t γ (env-total γ) in v , R , D
