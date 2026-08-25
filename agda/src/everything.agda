@@ -7,7 +7,8 @@ module everything where
 import language-operational.totality
 
 -- Fundamental lemma: fundamental-val, fundamental. Map lemma: map-val, map-dep.
--- Soundness: soundness-val, soundness-dep. Injectivity of the value interpretation, for adequacy: val-idx-inj.
+-- Soundness of values at every type: soundness-val; of dependence at first-order types: soundness-dep.
+-- Injectivity of the value interpretation, for adequacy: val-idx-inj.
 import ho-agreement
 
 -- Hiding in any order gives the same relation: hide-all-perm.

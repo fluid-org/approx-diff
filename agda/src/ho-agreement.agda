@@ -2,7 +2,8 @@
 
 -- The fundamental lemma: a term's value is related to its index at a
 -- related environment, and the relation applied to the inputs is related to the term's fibre map plus
--- the control dependence at the control input's value. Soundness at first-order types follows.
+-- the control dependence at the control input's value. Soundness of values at every type and of dependence at
+-- first-order types.
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_; _⊔_)
 open import Data.Nat.Properties using (≤-refl)
@@ -15,7 +16,7 @@ open import Data.Unit using (tt)
 import prop
 open import prop using (_∧_; ∃; Prf; ⟪_⟫; _,_; proj₁; proj₂)
 open import prop-setoid using (Setoid)
-open import Relation.Binary.PropositionalEquality using (sym) renaming (subst to ≡-subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation; sort-vals-setoid)
@@ -1873,10 +1874,144 @@ val-rel-unique {μ τ} (μ fo) {roll v} {i} r =
       (val-rel-unique (fo-inst fo (μ fo)) {v} {unroll-mor τ .idxf .sfunc i} (ValRel-at-bound (τ [ μ τ ]) r)))
   where j = val-idx v
 
-soundness-val : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) →
-                ∀ {t : Γ ⊢ τ} {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ]) →
+private
+  lookup-idx : ∀ {Γ τ} (x : Γ ∋ τ) (γ : Env Γ) →
+               Ix._≈_ τ (⟦ var x ⟧tm .idxf .sfunc (env-idx γ)) (val-idx (lookup x γ))
+  lookup-idx {τ = τ} zero     (γ · v) = Ix.refl τ {val-idx v}
+  lookup-idx         (succ x) (γ · v) = lookup-idx x γ
+
+  bool-val-idx : ∀ b → Ix._≈_ (unit [+] unit) b (val-idx (bool→val b))
+  bool-val-idx (inj₁ _) = prop.tt
+  bool-val-idx (inj₂ _) = prop.tt
+
+  val-idx-cast : ∀ {τ τ'} (e : τ ≡ τ') (v : Val τ) →
+                 Ix._≈_ τ' (val-idx (≡-subst Val e v)) (ty-cast e .idxf .sfunc (val-idx v))
+  val-idx-cast {τ} refl v = Ix.refl τ {val-idx v}
+
+soundness-val : ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ]) →
                 Ix._≈_ τ (⟦ t ⟧tm .idxf .sfunc (env-idx γ)) (val-idx v)
-soundness-val Γ-fo fo D = val-rel-unique fo (fundamental-val D (env-rel Γ-fo _))
+soundness-vals : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} {γ : Env Γ} {vs R}
+                 (D : γ , Ms ⇓s vs [ R ]) →
+                 Prf (Setoid._≈_ (sort-vals-setoid sort-index is) (args-idx Ms (env-idx γ)) vs)
+map-idx : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+          {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])}
+          {F : M.Matrix (width v') (suc (width-env γ) + width v)} (M : Map γ s σ' v v' F) →
+          Ix._≈_ (σ' [ σr ]) (LI.fold-map τ₀ σr σ' ⟦ s ⟧tm .idxf .sfunc (env-idx γ , val-idx v)) (val-idx v')
+
+soundness-val (⇓-var x) = lookup-idx x _
+soundness-val ⇓-unit = prop.tt
+soundness-val (⇓-inl D) = soundness-val D
+soundness-val (⇓-inr D) = soundness-val D
+soundness-val {Γ} {τ} {γ = γ} (⇓-case-l {s = s} {t₁ = t₁} {t₂ = t₂} {v = v} {u = u} D₁ D₂) =
+  Ix.trans τ {⟦ case s t₁ t₂ ⟧tm .idxf .sfunc gi} {⟦ t₁ ⟧tm .idxf .sfunc (gi , val-idx v)} {val-idx u}
+    (case-idx s t₁ t₂ gi (inj₁ (val-idx v)) (soundness-val D₁)) (soundness-val D₂)
+  where gi = env-idx γ
+soundness-val {Γ} {τ} {γ = γ} (⇓-case-r {s = s} {t₁ = t₁} {t₂ = t₂} {v = v} {u = u} D₁ D₂) =
+  Ix.trans τ {⟦ case s t₁ t₂ ⟧tm .idxf .sfunc gi} {⟦ t₂ ⟧tm .idxf .sfunc (gi , val-idx v)} {val-idx u}
+    (case-idx s t₁ t₂ gi (inj₂ (val-idx v)) (soundness-val D₁)) (soundness-val D₂)
+  where gi = env-idx γ
+soundness-val (⇓-pair D₁ D₂) = soundness-val D₁ , soundness-val D₂
+soundness-val (⇓-fst D) = proj₁ (soundness-val D)
+soundness-val (⇓-snd D) = proj₂ (soundness-val D)
+soundness-val {γ = γ} (⇓-lam {σ = σ} {τ = τ} {t = t}) = Ix.refl (σ [→] τ) {⟦ lam t ⟧tm .idxf .sfunc (env-idx γ)}
+soundness-val {γ = γ} (⇓-app {Γ' = Γ'} {σ = σ} {τ = τ} {γ' = γ'} {s = s} {t = t} {t' = t'} {v = v} {u = u} D₁ D₂ D₃) =
+  Ix.trans τ {⟦ app s t ⟧tm .idxf .sfunc gi} {⟦ t' ⟧tm .idxf .sfunc (gi' , j)} {val-idx u}
+    (idx-eq-at σ τ {⟦ s ⟧tm .idxf .sfunc gi} {val-idx (clo γ' t')} (soundness-val D₁) j)
+    (Ix.trans τ {⟦ t' ⟧tm .idxf .sfunc (gi' , j)} {⟦ t' ⟧tm .idxf .sfunc (gi' , val-idx v)} {val-idx u}
+      (⟦ t' ⟧tm .idxf .sfunc-resp-≈ {gi' , j} {gi' , val-idx v} (IxC.refl Γ' {gi'} , soundness-val D₂))
+      (soundness-val D₃))
+  where
+  gi  = env-idx γ
+  gi' = env-idx γ'
+  j   = ⟦ t ⟧tm .idxf .sfunc gi
+soundness-val (⇓-bop {ω = ω} D) = op-fun ω .sfunc-resp-≈ (Prf.prf (soundness-vals D))
+soundness-val {γ = γ} (⇓-brel {ω = ω} {Ms = Ms} {vs = vs} D) =
+  Ix.trans (unit [+] unit) {⟦ brel ω Ms ⟧tm .idxf .sfunc gi} {b} {val-idx (bool→val b)}
+    (brel-idx ω Ms gi vs (Prf.prf (soundness-vals D))) (bool-val-idx b)
+  where
+  gi = env-idx γ
+  b  = rel-pred ω .sfunc vs
+soundness-val {γ = γ} (⇓-roll {τ = τ} {t = t} {v = v} D) =
+  roll-mor τ .idxf .sfunc-resp-≈ {⟦ t ⟧tm .idxf .sfunc (env-idx γ)} {val-idx v} (soundness-val D)
+soundness-val {Γ} {γ = γ} (⇓-fold {τ = τ₀} {σ = σ} {s = s} {t = t} {v = v} {u = u} D M) =
+  Ix.trans σ {⟦ fold s t ⟧tm .idxf .sfunc gi} {Fv .idxf .sfunc (gi , j)} {val-idx u}
+    (Ix.sym σ {Fv .idxf .sfunc (gi , j)} {⟦ fold s t ⟧tm .idxf .sfunc gi}
+      (idx-eq (LI.fold-map-var τ₀ σ ⟦ s ⟧tm) (gi , j)))
+    (Ix.trans σ {Fv .idxf .sfunc (gi , j)} {Fv .idxf .sfunc (gi , val-idx v)} {val-idx u}
+      (Fv .idxf .sfunc-resp-≈ {gi , j} {gi , val-idx v} (IxC.refl Γ {gi} , soundness-val D))
+      (map-idx M))
+  where
+  gi = env-idx γ
+  j  = ⟦ t ⟧tm .idxf .sfunc gi
+  Fv = LI.fold-map τ₀ σ (var zero) ⟦ s ⟧tm
+
+soundness-vals [] = ⟪ prop.tt ⟫
+soundness-vals (D ∷ Ds) = ⟪ soundness-val D , Prf.prf (soundness-vals Ds) ⟫
+
+map-idx {Γ} {γ} {τ₀} {σr} {s} (m-rec {w = w} {w' = w'} {u = u} M D) =
+  Ix.trans σr {Fv .idxf .sfunc (gi , val-idx (roll {τ = τ₀} w))} {⟦ s ⟧tm .idxf .sfunc (gi , Fτ .idxf .sfunc (gi , val-idx w))} {val-idx u}
+    (idx-eq (LI.fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , val-idx w))
+    (Ix.trans σr {⟦ s ⟧tm .idxf .sfunc (gi , Fτ .idxf .sfunc (gi , val-idx w))} {⟦ s ⟧tm .idxf .sfunc (gi , val-idx w')} {val-idx u}
+      (⟦ s ⟧tm .idxf .sfunc-resp-≈ {gi , Fτ .idxf .sfunc (gi , val-idx w)} {gi , val-idx w'} (IxC.refl Γ {gi} , map-idx M))
+      (soundness-val D))
+  where
+  gi = env-idx γ
+  Fv = LI.fold-map τ₀ σr (var zero) ⟦ s ⟧tm
+  Fτ = LI.fold-map τ₀ σr τ₀ ⟦ s ⟧tm
+map-idx {Γ} {γ} {τ₀} {σr} {s} (m-unit {v = v}) = idx-eq (LI.fold-map-unit τ₀ σr ⟦ s ⟧tm) (env-idx γ , val-idx v)
+map-idx {Γ} {γ} {τ₀} {σr} {s} (m-base {b = b} {v = v}) = idx-eq (LI.fold-map-base τ₀ σr b ⟦ s ⟧tm) (env-idx γ , val-idx v)
+map-idx {Γ} {γ} {τ₀} {σr} {s} (m-arrow {σ₁ = σ₁} {σ₂ = σ₂} {v = v}) =
+  idx-eq (LI.fold-map-arrow τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (env-idx γ , val-idx v)
+map-idx {Γ} {γ} {τ₀} {σr} {s} (m-inl {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {v' = v'} M) =
+  Ix.trans ((σ₁ [+] σ₂) [ σr ]) {F₊ .idxf .sfunc (gi , inj₁ (val-idx v))} {inj₁ (F₁ .idxf .sfunc (gi , val-idx v))} {inj₁ (val-idx v')}
+    (idx-eq (LI.fold-map-inl τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , val-idx v)) (map-idx M)
+  where
+  gi = env-idx γ
+  F₊ = LI.fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
+  F₁ = LI.fold-map τ₀ σr σ₁ ⟦ s ⟧tm
+map-idx {Γ} {γ} {τ₀} {σr} {s} (m-inr {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {v' = v'} M) =
+  Ix.trans ((σ₁ [+] σ₂) [ σr ]) {F₊ .idxf .sfunc (gi , inj₂ (val-idx v))} {inj₂ (F₂ .idxf .sfunc (gi , val-idx v))} {inj₂ (val-idx v')}
+    (idx-eq (LI.fold-map-inr τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , val-idx v)) (map-idx M)
+  where
+  gi = env-idx γ
+  F₊ = LI.fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
+  F₂ = LI.fold-map τ₀ σr σ₂ ⟦ s ⟧tm
+map-idx {Γ} {γ} {τ₀} {σr} {s} (m-pair {σ₁ = σ₁} {σ₂ = σ₂} {v = v} {v' = v'} {u = u} {u' = u'} M₁ M₂) =
+  Ix.trans ((σ₁ [×] σ₂) [ σr ]) {F× .idxf .sfunc (gi , (val-idx v , val-idx u))}
+    {F₁ .idxf .sfunc (gi , val-idx v) , F₂ .idxf .sfunc (gi , val-idx u)} {val-idx v' , val-idx u'}
+    (pair-idx {τ₀ = τ₀} s σ₁ σ₂ gi (val-idx v , val-idx u)) (map-idx M₁ , map-idx M₂)
+  where
+  gi = env-idx γ
+  F× = LI.fold-map τ₀ σr (σ₁ [×] σ₂) ⟦ s ⟧tm
+  F₁ = LI.fold-map τ₀ σr σ₁ ⟦ s ⟧tm
+  F₂ = LI.fold-map τ₀ σr σ₂ ⟦ s ⟧tm
+map-idx {Γ} {γ} {τ₀} {σr} {s} (m-mu {τ' = τ'} {w = w} {w' = w'} M) =
+  Ix.trans (μ τₛ) {Fμ .idxf .sfunc (gi , roll-mor τμ .idxf .sfunc (val-idx (≡-subst Val eμ w)))}
+    {Fμ .idxf .sfunc (gi , roll-mor τμ .idxf .sfunc (Cμ .idxf .sfunc (val-idx w)))}
+    {roll-mor τₛ .idxf .sfunc (val-idx (≡-subst Val eₛ w'))}
+    (Fμ .idxf .sfunc-resp-≈ {gi , roll-mor τμ .idxf .sfunc (val-idx (≡-subst Val eμ w))}
+      {gi , roll-mor τμ .idxf .sfunc (Cμ .idxf .sfunc (val-idx w))}
+      (IxC.refl Γ {gi} ,
+       roll-mor τμ .idxf .sfunc-resp-≈ {val-idx (≡-subst Val eμ w)} {Cμ .idxf .sfunc (val-idx w)} (val-idx-cast eμ w)))
+    (Ix.trans (μ τₛ) {Fμ .idxf .sfunc (gi , roll-mor τμ .idxf .sfunc (Cμ .idxf .sfunc (val-idx w)))}
+      {roll-mor τₛ .idxf .sfunc (Cₛ .idxf .sfunc (Fu .idxf .sfunc (gi , val-idx w)))}
+      {roll-mor τₛ .idxf .sfunc (val-idx (≡-subst Val eₛ w'))}
+      (idx-eq (LI.fold-map-mu τ₀ σr τ' ⟦ s ⟧tm) (gi , val-idx w))
+      (roll-mor τₛ .idxf .sfunc-resp-≈ {Cₛ .idxf .sfunc (Fu .idxf .sfunc (gi , val-idx w))} {val-idx (≡-subst Val eₛ w')}
+        (Ix.trans (τₛ [ μ τₛ ]) {Cₛ .idxf .sfunc (Fu .idxf .sfunc (gi , val-idx w))} {Cₛ .idxf .sfunc (val-idx w')}
+          {val-idx (≡-subst Val eₛ w')}
+          (Cₛ .idxf .sfunc-resp-≈ {Fu .idxf .sfunc (gi , val-idx w)} {val-idx w'} (map-idx M))
+          (Ix.sym (τₛ [ μ τₛ ]) {val-idx (≡-subst Val eₛ w')} {Cₛ .idxf .sfunc (val-idx w')} (val-idx-cast eₛ w')))))
+  where
+  gi = env-idx γ
+  τμ = sub (sub-lift (push (μ τ₀))) τ'
+  τₛ = sub (sub-lift (push σr)) τ'
+  eμ = unfold₁-inst τ' (μ τ₀)
+  eₛ = unfold₁-inst τ' σr
+  Cμ = ty-cast eμ
+  Cₛ = ty-cast eₛ
+  Fu = LI.fold-map τ₀ σr (unfold₁ τ') ⟦ s ⟧tm
+  Fμ = LI.fold-map τ₀ σr (μ τ') ⟦ s ⟧tm
 
 
 private
@@ -2033,12 +2168,12 @@ soundness-dep : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) 
                 Fib._≈_ τ (val-idx v)
                   (val-fib fo v .func (ap R (inputs γ s x)))
                   (Fib._+_ τ (val-idx v) (ctrl-dep-at τ (val-idx v) s)
-                    (⟦ τ ⟧ .fam .subst (soundness-val Γ-fo fo D) .func
+                    (⟦ τ ⟧ .fam .subst (soundness-val D) .func
                       (⟦ t ⟧tm .famf .transf (env-idx γ) .func (env-fib Γ-fo γ .func x))))
 soundness-dep {τ = τ} Γ-fo fo {γ = γ} {v} D s x =
   Fib.trans τ (val-idx v)
     (dep-rel-unique fo (fundamental-val D rγ) (fundamental D rγ s x (env-fib Γ-fo γ .func x) (env-dep Γ-fo γ s x)))
-    (subst-ctrl-dep+ τ (soundness-val Γ-fo fo D) s _)
+    (subst-ctrl-dep+ τ (soundness-val D) s _)
   where rγ = env-rel Γ-fo γ
 
 val-idx-inj : ∀ {τ} (fo : first-order τ) {v v' : Val τ} → Ix._≈_ τ (val-idx v) (val-idx v') → v ≈v v'
