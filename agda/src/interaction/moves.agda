@@ -69,6 +69,10 @@ private
   ≡-of-≈ₛ {two.O} {two.I} e = ⊥ₚ-elim (proj₂ₚ e)
   ≡-of-≈ₛ {two.I} {two.O} e = ⊥ₚ-elim (proj₁ₚ e)
 
+  pair-≈ : ∀ {A : Set} (P Q : A → Set) (P' Q' : A → Prop) →
+           (∀ {a} → P a → P' a) → (∀ {a} → Q a → Q' a) → ∀ {a} → P a × Q a → Prf (P' a ∧ₚ Q' a)
+  pair-≈ P Q P' Q' f g (p , q) = ⟪ (f p ,ₚ g q) ⟫
+
 private
   is-I : two.Two → Bool
   is-I two.I = Bool.true
@@ -228,14 +232,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
     eq-path : Path → Path → Bool
     eq-path p q = ⌊ _≟_ {shape} p q ⌋
-
-    rows-≈ : {G G' : Relation (vertex-width 𝒢)} {rs : List (V 𝒢)} →
-             All (λ r → ((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) → G r z i j ≡ G' r z i j)
-                      × ((z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) → G z r i j ≡ G' z r i j)) rs →
-             All (λ r → Prf (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) → G r z i j S.≈ G' r z i j)
-                          ∧ₚ ((z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) → G z r i j S.≈ G' z r i j))) rs
-    rows-≈ []             = []
-    rows-≈ ((p , q) ∷ ps) = ⟪ ((λ z i j → ≈-of-≡ₛ (p z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (q z i j))) ⟫ ∷ rows-≈ ps
 
     eq-path-refl : ∀ (p : Path) → eq-path p p ≡ Bool.true
     eq-path-refl p with _≟_ {shape} p p
@@ -408,7 +404,18 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   localise {C = C} {E = E} mono x y i j =
     ≡-of-≈ₛ (HA.agree-add {G = restrict (fo-graph 𝒢) C} {G' = restrict (fo-graph 𝒢) E} (map at C)
                (λ x' y' i' j' → ≈-of-≡ₛ (restrict-sub (fo-graph 𝒢) mono x' y' i' j'))
-               (rows-≈ {G = restrict (fo-graph 𝒢) E} {G' = restrict (fo-graph 𝒢) C} (restrict-agree (fo-graph 𝒢) mono))
+               (All-map
+                 (pair-≈
+                   (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
+                          restrict (fo-graph 𝒢) E r z i j ≡ restrict (fo-graph 𝒢) C r z i j)
+                   (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) →
+                          restrict (fo-graph 𝒢) E z r i j ≡ restrict (fo-graph 𝒢) C z r i j)
+                   (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
+                          restrict (fo-graph 𝒢) E r z i j S.≈ restrict (fo-graph 𝒢) C r z i j)
+                   (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) →
+                          restrict (fo-graph 𝒢) E z r i j S.≈ restrict (fo-graph 𝒢) C z r i j)
+                   (λ p z i' j' → ≈-of-≡ₛ (p z i' j')) (λ q z i' j' → ≈-of-≡ₛ (q z i' j')))
+                 (restrict-agree (fo-graph 𝒢) mono))
                x y i j)
 
   summary-zero : {C : List (Path)} (q : Path) →
@@ -483,7 +490,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                 All-zip (λ {q} ha hm → summary-zero {C = C} q hm ha)
                         (any-false-All _ C' ap) (any-false-All _ C' ds))
               shead))
-    inert' = rows-≈ {G = summary C} {G' = λ _ _ → M.εₘ} inert
+    inert' = All-map
+      (pair-≈
+        (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) → summary C r z i j ≡ two.O)
+        (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) → summary C z r i j ≡ two.O)
+        (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) → summary C r z i j S.≈ two.O)
+        (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) → summary C z r i j S.≈ two.O)
+        (λ p z i j → ≈-of-≡ₛ (p z i j)) (λ q z i j → ≈-of-≡ₛ (q z i j)))
+      inert
 
   private
     foldr-entry : (B : Relation (vertex-width 𝒢)) (Gs : List (Relation (vertex-width 𝒢))) →
@@ -1150,8 +1164,18 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
             (≡-sym (≡-of-≈ₛ (HA.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
                       (map at (hidden-set K))
                       (λ x' y' i' j' → ≈-of-≡ₛ (restrict-≤ (fo-graph 𝒢) (hidden-set K) x' y' i' j'))
-                      (rows-≈ {G = fo-graph 𝒢} {G' = restrict (fo-graph 𝒢) (hidden-set K)}
-                              (restrict-hidden-agree (fo-graph 𝒢) (hidden-set K)))
+                      (All-map
+                        (pair-≈
+                          (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
+                                 fo-graph 𝒢 r z i j ≡ restrict (fo-graph 𝒢) (hidden-set K) r z i j)
+                          (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) →
+                                 fo-graph 𝒢 z r i j ≡ restrict (fo-graph 𝒢) (hidden-set K) z r i j)
+                          (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
+                                 fo-graph 𝒢 r z i j S.≈ restrict (fo-graph 𝒢) (hidden-set K) r z i j)
+                          (λ r → (z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) →
+                                 fo-graph 𝒢 z r i j S.≈ restrict (fo-graph 𝒢) (hidden-set K) z r i j)
+                          (λ p z i' j' → ≈-of-≡ₛ (p z i' j')) (λ q z i' j' → ≈-of-≡ₛ (q z i' j')))
+                        (restrict-hidden-agree (fo-graph 𝒢) (hidden-set K)))
                       x y i j)))
 
   -- Configuration equivalence: the same visible set and the same hidden set, up to order. On
