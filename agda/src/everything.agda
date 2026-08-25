@@ -11,6 +11,16 @@ import language-operational.totality
 -- Soundness: soundness-val, soundness-dep. Injectivity of the value interpretation, for adequacy: val-idx-inj.
 import ho-agreement
 
+-- Hiding in any order gives the same relation: hide-all-perm.
+import interaction.graph
+
+-- Operational agreement: agree, agree-s, agree-m.
+import interaction.dependence-graph
+
+-- Summaries assemble: summaries-assemble. Moves maintain the configuration: initial-summarised,
+-- hide-at-summarised, reveal-at-summarised. Hide and reveal are mutually inverse: hide-reveal, reveal-hide.
+import interaction.moves
+
 -- Tests.
 import example.interaction
 import example.value-flow
