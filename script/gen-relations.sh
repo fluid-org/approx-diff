@@ -19,27 +19,19 @@ trap 'rm -f "$pidfile"' EXIT
 # fails fast instead of thrashing, and -s for a GC summary on stderr. Override via DUMP_GHCRTS.
 # GHC compiles its make-mode graph in parallel; DUMP_FAST=1 additionally drops to -O0 for quicker
 # iteration builds at some cost to the binary's speed.
-compile() {
-  ( cd agda && agda --compile --compile-dir=_build --ghc-flag=-rtsopts \
-      --ghc-flag=-j10 ${DUMP_FAST:+--ghc-flag=-O0} \
-      src/example/render/relations.agda > "$log" 2>&1 )
-}
-run() {
-  GHCRTS="${DUMP_GHCRTS:--M1G -s}" agda/_build/relations
-}
-
-compile
-# Agda regenerates Haskell only for modules whose interfaces changed, and the result can be
-# inconsistent with the older object code; the binary then aborts with a GHC internal error.
-# Rebuild all the generated Haskell once before giving up.
+( cd agda && agda --compile --compile-dir=_build --ghc-flag=-rtsopts \
+    --ghc-flag=-j10 ${DUMP_FAST:+--ghc-flag=-O0} \
+    src/example/render/relations.agda > "$log" 2>&1 )
 status=0
-run || status=$?
-if [ "$status" -eq 134 ]; then
-  echo "relations aborted; rebuilding the generated Haskell" >&2
-  rm -rf agda/_build/MAlonzo
-  compile
-  run
-elif [ "$status" -ne 0 ]; then
+GHCRTS="${DUMP_GHCRTS:--M1G -s}" agda/_build/relations || status=$?
+if [ "$status" -ne 0 ]; then
+  git checkout -- test-baselines/relations.txt
+  # Agda regenerates Haskell only for modules whose interfaces changed, and the result can be
+  # inconsistent with the older object code; the binary then aborts with a GHC internal error.
+  if [ "$status" -eq 134 ]; then
+    rm -rf agda/_build/MAlonzo
+    echo "relations aborted; removed the generated Haskell, rerun to rebuild it" >&2
+  fi
   exit "$status"
 fi
 
