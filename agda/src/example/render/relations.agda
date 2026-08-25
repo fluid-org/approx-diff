@@ -32,7 +32,7 @@ import language-operational.evaluation
 import example.render.annotated-value as AV
 
 -- Rendering over a semiring, given how a scalar is shown after a position.
-module over {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
+module render {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
               (ctrl-weight : Setoid.Carrier A) (suffix : Setoid.Carrier A → String) where
 
   open CommutativeSemiring S using (ι; ε)
@@ -131,9 +131,9 @@ private
   collapse-signed : ℚ → sign.Sign × three.Three
   collapse-signed q = sign.sign-of q , nonzero three.semiring q
 
-  module R2 = over (nonzero two.semiring) two.semiring two.I suffix2
-  module R3 = over (nonzero three.semiring) three.semiring three.C suffix3
-  module RS = over collapse-signed (sign.semiring ⊗S three.semiring) (sign.unk , three.C) suffix-signed
+  module R2 = render (nonzero two.semiring) two.semiring two.I suffix2
+  module R3 = render (nonzero three.semiring) three.semiring three.C suffix3
+  module RS = render collapse-signed (sign.semiring ⊗S three.semiring) (sign.unk , three.C) suffix-signed
   module E2 = example.runs (nonzero two.semiring) two.semiring two.I
   module E3 = example.runs (nonzero three.semiring) three.semiring three.C
   module ES = example.runs collapse-signed (sign.semiring ⊗S three.semiring) (sign.unk , three.C)
