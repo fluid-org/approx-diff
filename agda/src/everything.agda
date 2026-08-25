@@ -12,6 +12,7 @@ import language-operational.uniqueness
 -- Fundamental lemma: fundamental-val, fundamental. Map lemma: map-val, map-dep.
 -- Soundness of values at every type: soundness-val; of dependence at first-order types: soundness-dep.
 -- Injectivity of the value interpretation: val-idx-inj. Adequacy, for the derivation eval provides: adequacy.
+-- The collapsed dependence graph agrees with the fibre map: agreement.
 import ho-agreement
 
 -- Hiding in any order gives the same relation: hide-all-perm.

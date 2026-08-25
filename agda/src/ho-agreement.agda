@@ -2345,3 +2345,18 @@ env-fib-iso {Γ} Γ-fo γ .Category.IsIso.f∘inverse≈id .SemiMod._≈m_.*≈*
   FibC.trans Γ (env-idx γ) (env-fib-fib⁻¹ Γ-fo γ g) e
 env-fib-iso Γ-fo γ .Category.IsIso.inverse∘f≈id .SemiMod._≈m_.*≈* .prop-setoid._≃m_.func-eq {x} e =
   𝔽.trans (width-env γ) (env-fib⁻¹-fib Γ-fo γ x) e
+
+open import interaction.graph S +-idem using (collapse)
+open import interaction.dependence-graph Sig S ℐ ctrl-weight +-idem using (graph; agree)
+
+agreement : ∀ {Γ τ} (Γ-fo : first-order-ctxt Γ) (fo : first-order τ) →
+            ∀ {t : Γ ⊢ τ} {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ]) (s : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣) →
+            Fib._≈_ τ (val-idx v)
+              (val-fib fo v .func (ap (collapse (graph D)) (inputs γ s x)))
+              (Fib._+_ τ (val-idx v) (ctrl-dep-at τ (val-idx v) s)
+                (⟦ τ ⟧ .fam .subst (soundness-val D) .func
+                  (⟦ t ⟧tm .famf .transf (env-idx γ) .func (env-fib Γ-fo γ .func x))))
+agreement {τ = τ} Γ-fo fo {γ = γ} {v} D s x =
+  Fib.trans τ (val-idx v)
+    (val-fib fo v .func-resp-≈ (app-congₘ (agree D) (inputs γ s x)))
+    (soundness-dep Γ-fo fo D s x)
