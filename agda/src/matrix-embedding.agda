@@ -4,12 +4,12 @@
 -- weighted vectors over its positions, and a matrix as its action on them. This is the case X = 𝕀
 -- of the embedding of Mat(End X) in any biproduct category, presented concretely so that a
 -- morphism is read back from its values on the basis. The lifting on each side is the biproduct
--- with the unit object, and the comparison between the two is the canonical comparison of
--- biproducts.
+-- with the unit object, and the comparison between the two splits a vector into its first entry
+-- and the rest.
 open import Level using (0ℓ)
 open import Data.Nat as Nat using (ℕ) renaming (_+_ to _+ℕ_)
 open import Data.Fin using (Fin; zero; suc)
-open import prop using (∃ₛ) renaming (_,_ to _,ₚ_)
+open import prop using (∃ₛ; proj₁; proj₂) renaming (_,_ to _,ₚ_)
 open import Data.Product using (_,_)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
@@ -20,7 +20,6 @@ open import cmon-enriched
 open import functor using (Functor)
 open import finite-product-functor using (preserve-chosen-terminal; preserve-chosen-products)
 import lifting
-import biproduct-transport
 import matrix
 import semimodule
 
@@ -259,55 +258,51 @@ module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 ι1-bwd .preserve-+ i = refl
 ι1-bwd .preserve-· i = refl
 
-ι1-fwd∘bwd : SemiMod._≈m_ {𝕀} {𝕀} (SemiMod._∘_ {𝕀} {𝔽 1} {𝕀} ι1-fwd ι1-bwd) (SemiMod.id 𝕀)
-ι1-fwd∘bwd .*≈* .prop-setoid._≃m_.func-eq e = e
+𝔽-L-fwd : ∀ n → SemiMod._⇒_ (𝔽 (Lm.L n)) (Ls.L (𝔽 n))
+𝔽-L-fwd n .*→* .prop-setoid._⇒_.func v = v zero , λ k → v (suc k)
+𝔽-L-fwd n .*→* .prop-setoid._⇒_.func-resp-≈ e = e zero ,ₚ λ k → e (suc k)
+𝔽-L-fwd n .preserve-ze = refl ,ₚ λ k → refl
+𝔽-L-fwd n .preserve-+ = refl ,ₚ λ k → refl
+𝔽-L-fwd n .preserve-· = refl ,ₚ λ k → refl
 
-ι1-bwd∘fwd : SemiMod._≈m_ {𝔽 1} {𝔽 1}
-               (SemiMod._∘_ {𝔽 1} {𝕀} {𝔽 1} ι1-bwd ι1-fwd) (SemiMod.id (𝔽 1))
-ι1-bwd∘fwd .*≈* .prop-setoid._≃m_.func-eq e = λ { zero → e zero }
+𝔽-L-bwd : ∀ n → SemiMod._⇒_ (Ls.L (𝔽 n)) (𝔽 (Lm.L n))
+𝔽-L-bwd n .*→* .prop-setoid._⇒_.func (a , u) zero = a
+𝔽-L-bwd n .*→* .prop-setoid._⇒_.func (a , u) (suc k) = u k
+𝔽-L-bwd n .*→* .prop-setoid._⇒_.func-resp-≈ e zero = e .proj₁
+𝔽-L-bwd n .*→* .prop-setoid._⇒_.func-resp-≈ e (suc k) = e .proj₂ k
+𝔽-L-bwd n .preserve-ze zero = refl
+𝔽-L-bwd n .preserve-ze (suc k) = refl
+𝔽-L-bwd n .preserve-+ zero = refl
+𝔽-L-bwd n .preserve-+ (suc k) = refl
+𝔽-L-bwd n .preserve-· zero = refl
+𝔽-L-bwd n .preserve-· (suc k) = refl
 
-module BT = biproduct-transport SemiMod.cmon-enriched
-
-L-biproduct : ∀ n → Biproduct SemiMod.cmon-enriched SemiMod.𝕀 (𝔽 n)
-L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd
-
-𝔽-L-iso : ∀ n → Category.Iso SemiMod.cat
-                  (𝔽 (Lm.L n)) (Ls.L (𝔽 n))
-𝔽-L-iso n =
-  Category.IsIso→Iso SemiMod.cat
-    (biproduct-iso SemiMod.cmon-enriched (L-biproduct n) (SemiMod.biproduct SemiMod.𝕀 (𝔽 n)))
-
-𝔽-L-fwd-elt : ∀ n (v : Vec (Nat.suc n)) →
-              Semimodule._≈_ (Ls.L (𝔽 n)) (SemiMod._⇒_.func (𝔽-L-iso n .Category.Iso.fwd) v)
-                (v zero , (λ k → v (suc k)))
-𝔽-L-fwd-elt n v =
-  trans (+-cong (+-cong ·-lunit (trans (Σ-cong {n} (λ _ → ε-annihilₗ)) (Σ-ε {n}))) refl)
-        (trans (+-cong (+-runit) refl) (+-runit))
-  ,ₚ λ i → trans +-lunit (trans (+-cong ε-annihilₗ (Σ-unit {n} i (λ j → v (suc j)))) +-lunit)
-
-mat-Lmap : ∀ {P Q} (f : MC._⇒_ P Q) →
-           SMC._≈_ (mat (Lm.Lmap f))
-                   (copair (𝔽-biproduct 1 P) {x = 𝔽 (Lm.L Q)}
-                           (𝔽-biproduct 1 Q .in₁)
-                           (SemiMod._∘_ (𝔽-biproduct 1 Q .in₂) (mat f)))
-mat-Lmap {P} {Q} f =
-  SMC.≈-trans (mat-+ (M.in₁ {1} {Q} ∘ₘ M.p₁ {1} {P}) ((M.in₂ {1} {Q} ∘ₘ f) ∘ₘ M.p₂ {1} {P}))
-    (+m-cong
-      (mat-comp (M.in₁ {1} {Q}) (M.p₁ {1} {P}))
-      (SMC.≈-trans (mat-comp (M.in₂ {1} {Q} ∘ₘ f) (M.p₂ {1} {P}))
-                   (SMC.∘-cong (mat-comp (M.in₂ {1} {Q}) f) (SMC.≈-refl {f = mat (M.p₂ {1} {P})}))))
+𝔽-L-iso : ∀ n → Category.Iso SemiMod.cat (𝔽 (Lm.L n)) (Ls.L (𝔽 n))
+𝔽-L-iso n .Category.Iso.fwd = 𝔽-L-fwd n
+𝔽-L-iso n .Category.Iso.bwd = 𝔽-L-bwd n
+𝔽-L-iso n .Category.Iso.fwd∘bwd≈id .*≈* .prop-setoid._≃m_.func-eq e = e
+𝔽-L-iso n .Category.Iso.bwd∘fwd≈id .*≈* .prop-setoid._≃m_.func-eq e zero = e zero
+𝔽-L-iso n .Category.Iso.bwd∘fwd≈id .*≈* .prop-setoid._≃m_.func-eq e (suc k) = e (suc k)
 
 𝔽-L-natural : ∀ {P Q} (f : MC._⇒_ P Q) →
-  SMC._≈_ (SemiMod._∘_ (𝔽-L-iso Q .Category.Iso.fwd) (mat (Lm.Lmap f)))
-          (SemiMod._∘_ (Ls.Lmap {𝔽 P} {𝔽 Q} (mat f))
-                       (𝔽-L-iso P .Category.Iso.fwd))
-𝔽-L-natural {P} {Q} f =
-  SMC.≈-trans
-    (SMC.∘-cong (SMC.≈-refl {f = 𝔽-L-iso Q .Category.Iso.fwd}) (mat-Lmap f))
-    (BT.compare-natural
-      (𝔽-biproduct 1 P) (𝔽-biproduct 1 Q)
-      (SemiMod.biproduct SemiMod.𝕀 (𝔽 P)) (SemiMod.biproduct SemiMod.𝕀 (𝔽 Q))
-      ι1-fwd ι1-bwd ι1-fwd∘bwd ι1-bwd∘fwd (mat f))
+  SMC._≈_ (SemiMod._∘_ (𝔽-L-fwd Q) (mat (Lm.Lmap f)))
+          (SemiMod._∘_ (Ls.Lmap {𝔽 P} {𝔽 Q} (mat f)) (𝔽-L-fwd P))
+𝔽-L-natural {P} {Q} f .*≈* .prop-setoid._≃m_.func-eq {u} {u'} e = root ,ₚ payload
+  where
+  root : app (Lm.Lmap f) u zero ≈ (u' zero + ε)
+  root =
+    trans (app-∥ (M.in₁ {1} {Q}) (M.in₂ {1} {Q} ∘ₘ f) u zero)
+          (+-cong (trans (app-in₁ {1} {Q} (split₁ {1} u) zero) (e zero))
+                  (trans (app-∘ (M.in₂ {1} {Q}) f (split₂ {1} u) zero)
+                         (app-in₂ {1} {Q} (app f (split₂ {1} u)) zero)))
+
+  payload : ∀ k → app (Lm.Lmap f) u (suc k) ≈ (ε + app f (λ l → u' (suc l)) k)
+  payload k =
+    trans (app-∥ (M.in₁ {1} {Q}) (M.in₂ {1} {Q} ∘ₘ f) u (suc k))
+          (+-cong (app-in₁ {1} {Q} (split₁ {1} u) (suc k))
+                  (trans (app-∘ (M.in₂ {1} {Q}) f (split₂ {1} u) (suc k))
+                         (trans (app-in₂ {1} {Q} (app f (split₂ {1} u)) (suc k))
+                                (app-congᵥ f (λ l → e (suc l)) k))))
 
 ------------------------------------------------------------------------------
 -- The realisation is full and faithful: a linear map between free semimodules is the matrix of

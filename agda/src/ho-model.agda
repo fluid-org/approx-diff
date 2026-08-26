@@ -192,13 +192,11 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
                    (app D y Fin.zero , λ _ → S.ε)
         branch {x₁} {x} e =
           Semimodule.trans (Ls.L (𝔽 1))
-            (SemiMod._⇒_.func-resp-≈ (Ls.Lmap g) (𝔽-L-fwd-elt 1 u))
-            (Semimodule.trans (Ls.L (𝔽 1))
-              (Lmap-elt g (u Fin.zero) (λ k → u (Fin.suc k)))
-              (S.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (app-in₁ {1} {1} (app D y) Fin.zero) ,
-               λ k → S.trans (app-congᵥ G (λ j → S.trans (app-∘ (M.in₁ {1} {1}) D y (Fin.suc j))
-                                                              (app-in₁ {1} {1} (app D y) (Fin.suc j))) k)
-                              (app-ε G k)))
+            (Lmap-elt g (u Fin.zero) (λ k → u (Fin.suc k)))
+            (S.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (app-in₁ {1} {1} (app D y) Fin.zero) ,
+             λ k → S.trans (app-congᵥ G (λ j → S.trans (app-∘ (M.in₁ {1} {1}) D y (Fin.suc j))
+                                                       (app-in₁ {1} {1} (app D y) (Fin.suc j))) k)
+                            (app-ε G k))
           where
           G = 𝒞𝟙ty .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {x₁} {x} e
           g = 𝒟𝟙ty .fam .subst {x₁} {x} e
