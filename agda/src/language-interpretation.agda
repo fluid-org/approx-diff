@@ -111,12 +111,6 @@ preserves-subst-fwd {Δ} {Δ'} σ (μ τ) {δ} δc =
 push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} δ∅ (⟦ τ' ⟧ty (λ ()))) (λ ()) i
 push-pw τ' Fin.zero = refl
 
-preserves-push-pw : ∀ (τ' : type 0) (i : Fin 1) →
-  preserves-section (≡-to-⇒ (push-pw τ' i))
-    (unit-section (push τ' i) (λ ()) (λ ()))
-    (concat-section {n = 1} (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))) (λ ()) i)
-preserves-push-pw τ' Fin.zero = preserves-section-id (unit-section τ' (λ ()) (λ ()))
-
 private
   ∅ : Fin 0 → obj
   ∅ = λ ()
@@ -1342,7 +1336,7 @@ abstract
       (preserves-section-∘
         (preserves-apply-fwd {n = 1} τ (λ ())
           (extend-section (λ ()) (unit-section τ' (λ ()) (λ ()))))
-        (preserves-as-poly-map τ (λ i → preserves-push-pw τ' i) δ∅ (λ ())))
+        (preserves-as-poly-map τ (λ { Fin.zero → preserves-section-id (unit-section τ' (λ ()) (λ ())) }) δ∅ (λ ())))
       (preserves-subst-fwd (push τ') τ (λ ()))
 
   preserves-sub-as-apply-bwd : ∀ (τ : type 1) (τ' : type 0) →
@@ -1354,21 +1348,13 @@ abstract
     preserves-section-inv (sub-as-apply-fwd-bwd τ τ') (sub-as-apply-bwd-fwd τ τ')
       (preserves-sub-as-apply-fwd τ τ')
 
-  preserves-unroll-mor : ∀ (τ : type 1) →
-    preserves-section (unroll-mor τ)
-      (unit-section (μ τ) (λ ()) (λ ())) (unit-section (τ [ μ τ ]) (λ ()) (λ ()))
-  preserves-unroll-mor τ =
-    preserves-section-∘
-      (preserves-sub-as-apply-bwd τ (μ τ))
-      (preserves-outMor (as-poly {0} {1} τ (λ ())) δ∅ (λ ())
-        (as-poly-section {0} {1} τ (λ ()) (λ ())))
-
   preserves-unroll-ctrl-dep : ∀ (τ : type 1) →
     preserves-section (unroll-mor τ) (ctrl-dep (μ τ)) (ctrl-dep (τ [ μ τ ]))
   preserves-unroll-ctrl-dep τ =
     preserves-scale {w = ctrl-w}
       {c = unit-section (μ τ) (λ ()) (λ ())} {d = unit-section (τ [ μ τ ]) (λ ()) (λ ())}
-      (preserves-unroll-mor τ)
+      (preserves-section-∘ (preserves-sub-as-apply-bwd τ (μ τ))
+        (preserves-outMor (as-poly {0} {1} τ (λ ())) δ∅ (λ ()) (as-poly-section {0} {1} τ (λ ()) (λ ()))))
 
 -- Interpretation-side counterpart of the evaluation's Map judgement.
 fold-alg : ∀ (τ₀ : type 1) (σ : type 0) {Γ' : Obj} →

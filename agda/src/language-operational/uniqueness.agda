@@ -89,7 +89,7 @@ unique (⇓-brel D) (⇓-brel D') with unique-s D D'
 unique (⇓-roll D) (⇓-roll D') with unique D D'
 ... | refl = refl
 unique (⇓-fold {τ = τ₀} {σ = σr} {s = s} D M) (⇓-fold D' M') with unique D D'
-... | refl with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+... | refl with unique-map M M' refl
 ...   | refl = refl
 
 unique-s [] [] = refl
@@ -97,22 +97,22 @@ unique-s (D ∷ Ds) (D' ∷ Ds') with unique D D' | unique-s Ds Ds'
 ... | refl | refl = refl
 
 unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-rec M D) (m-rec M' D') refl
-  with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+  with unique-map M M' refl
 ... | refl with unique D D'
 ...   | refl = refl
 unique-map m-unit m-unit refl = refl
 unique-map m-base m-base refl = refl
 unique-map m-arrow m-arrow refl = refl
 unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-inl M) (m-inl M') refl
-  with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+  with unique-map M M' refl
 ... | refl = refl
 unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-inr M) (m-inr M') refl
-  with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+  with unique-map M M' refl
 ... | refl = refl
 unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-pair M₁ M₂) (m-pair M₁' M₂') refl
-  with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M₁ M₁' refl | unique-map {τ₀ = τ₀} {σr = σr} {s = s} M₂ M₂' refl
+  with unique-map M₁ M₁' refl | unique-map M₂ M₂' refl
 ... | refl | refl = refl
 unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-mu {τ' = τ'} M) (m-mu M') e
   with subst-inj (unfold₁-inst τ' (μ τ₀)) (roll-inj e)
-... | refl with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+... | refl with unique-map M M' refl
 ...   | refl = refl

@@ -198,13 +198,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       module 𝒟T = HasTerminal 𝒟T
       module 𝒞T = HasTerminal 𝒞T
 
-    Fam𝒞-terminal : HasTerminal Fam𝒞.cat
-    Fam𝒞-terminal = Fam𝒞.terminal 𝒞T
-
-    Fam𝒟-terminal : HasTerminal Fam𝒟.cat
-    Fam𝒟-terminal = Fam𝒟.terminal 𝒟T
-
-    preserve-terminal : preserve-chosen-terminal FamF Fam𝒞-terminal Fam𝒟-terminal
+    preserve-terminal : preserve-chosen-terminal FamF (Fam𝒞.terminal 𝒞T) (Fam𝒟.terminal 𝒟T)
     preserve-terminal .inverse .idxf = idS _
     preserve-terminal .inverse .famf .transf x = inverse FT
     preserve-terminal .inverse .famf .natural {lift tt} {lift tt} _ = begin
@@ -233,15 +227,9 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       module 𝒟P = HasProducts 𝒟P
       module 𝒞P = HasProducts 𝒞P
 
-    Fam𝒞-products : HasProducts Fam𝒞.cat
-    Fam𝒞-products = Fam𝒞.products.products 𝒞P
-
-    Fam𝒟-products : HasProducts Fam𝒟.cat
-    Fam𝒟-products = Fam𝒟.products.products 𝒟P
-
     open preserve-chosen-products-consequences F 𝒞P 𝒟P FP
 
-    preserve-products : preserve-chosen-products FamF Fam𝒞-products Fam𝒟-products
+    preserve-products : preserve-chosen-products FamF (Fam𝒞.products.products 𝒞P) (Fam𝒟.products.products 𝒟P)
     preserve-products .inverse .idxf = idS _
     preserve-products .inverse .famf .transf (x , y) = mul
     preserve-products .inverse .famf .natural {x₁ , y₁} {x₂ , y₂} (eq₁ , eq₂) = 𝒟.≈-sym mul-natural

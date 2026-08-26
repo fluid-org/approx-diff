@@ -33,7 +33,7 @@ private
   module M = matrix.Mat S
 
 open import categories using (Category; HasProducts)
-open Category M.cat using (_∘_; _≈_; ≈-refl; ≈-sym; ≈-trans; ∘-cong₁; ∘-cong₂; ∘-cong; assoc; id-left; id-right)
+open Category M.cat using (_∘_; _≈_; ≈-refl; ≈-sym; ≈-trans ; ∘-cong₁; ∘-cong₂; ∘-cong; assoc; id-left; id-right)
 open HasProducts M.products using (p₁; p₂; pair-cong; pair-p₁)
 open M using (⟨_,_⟩)
 
@@ -104,7 +104,7 @@ mutual
 private
   one : ∀ {m n n₀} (out : M.Matrix n m) (up : M.Matrix n n₀) {c R' : M.Matrix n₀ m} → c ≈ R' →
         (out M.+ₘ (up ∘ (c ∘ M.I))) ≈ (out M.+ₘ (up ∘ R'))
-  one out up {c = c} e = M.+ₘ-cong (≈-refl {f = out}) (∘-cong₂ (≈-trans {g = c} id-right e))
+  one out up {c = c} e = M.+ₘ-cong (≈-refl {f = out}) (∘-cong₂ (≈-trans id-right e))
 
   one-inputs : ∀ {m m' n n₀} (out : M.Matrix n m) (up : M.Matrix n n₀) (ins : M.Matrix m' m)
                {c R' : M.Matrix n₀ m'} → c ≈ R' →
@@ -116,10 +116,10 @@ private
         ((M.εₘ M.+ₘ (M.εₘ ∘ (c₁ ∘ M.I))) M.+ₘ (M.I ∘ (c₂ ∘ (ins ∘ ⟨ M.I , c₁ ∘ M.I ⟩))))
         ≈ (T ∘ (ins ∘ ⟨ M.I , R₁ ⟩))
   seq ins {c₁ = c₁} {R₁ = R₁} {c₂ = c₂} {T = T} e₁ e₂ =
-    ≈-trans {g = M.εₘ M.+ₘ (T ∘ (ins ∘ ⟨ M.I , R₁ ⟩))}
+    ≈-trans
       (M.+ₘ-cong (M.absorb₁ M.εₘ (c₁ ∘ M.I))
-                 (≈-trans {g = c₂ ∘ (ins ∘ ⟨ M.I , c₁ ∘ M.I ⟩)} id-left
-                          (∘-cong e₂ (∘-cong₂ (pair-cong (≈-refl {f = M.I}) (≈-trans {g = c₁} id-right e₁))))))
+                 (≈-trans id-left
+                          (∘-cong e₂ (∘-cong₂ (pair-cong (≈-refl {f = M.I}) (≈-trans id-right e₁))))))
       (M.+ₘ-lunit (T ∘ (ins ∘ ⟨ M.I , R₁ ⟩)))
 
   seq3 : ∀ {m m₃ n₁ n₂ n₃} (ins : M.Matrix m₃ ((m + n₁) + n₂))
@@ -129,17 +129,17 @@ private
           (M.I ∘ (c₃ ∘ (ins ∘ ⟨ ⟨ M.I , c₁ ∘ M.I ⟩ , c₂ ∘ M.I ⟩))))
          ≈ (U ∘ (ins ∘ ⟨ ⟨ M.I , R₁ ⟩ , R₂ ⟩))
   seq3 ins {c₁ = c₁} {R₁ = R₁} {c₂ = c₂} {R₂ = R₂} {c₃ = c₃} {U = U} e₁ e₂ e₃ =
-    ≈-trans {g = M.εₘ M.+ₘ (U ∘ (ins ∘ ⟨ ⟨ M.I , R₁ ⟩ , R₂ ⟩))}
-      (M.+ₘ-cong (≈-trans {g = M.εₘ M.+ₘ (M.εₘ ∘ (c₁ ∘ M.I))} (M.absorb₁ _ (c₂ ∘ M.I)) (M.absorb₁ M.εₘ (c₁ ∘ M.I)))
-                 (≈-trans {g = c₃ ∘ (ins ∘ ⟨ ⟨ M.I , c₁ ∘ M.I ⟩ , c₂ ∘ M.I ⟩)} id-left
-                          (∘-cong e₃ (∘-cong₂ (pair-cong (pair-cong (≈-refl {f = M.I}) (≈-trans {g = c₁} id-right e₁))
-                                                         (≈-trans {g = c₂} id-right e₂))))))
+    ≈-trans
+      (M.+ₘ-cong (≈-trans (M.absorb₁ _ (c₂ ∘ M.I)) (M.absorb₁ M.εₘ (c₁ ∘ M.I)))
+                 (≈-trans id-left
+                          (∘-cong e₃ (∘-cong₂ (pair-cong (pair-cong (≈-refl {f = M.I}) (≈-trans id-right e₁))
+                                                         (≈-trans id-right e₂))))))
       (M.+ₘ-lunit (U ∘ (ins ∘ ⟨ ⟨ M.I , R₁ ⟩ , R₂ ⟩)))
 
   ignore-root : ∀ {m m₂ n₁} (A : M.Matrix m₂ m) (X : M.Matrix n₁ m) → ((A ∘ p₁ {m} {n₁}) ∘ ⟨ M.I , X ⟩) ≈ A
   ignore-root {m} {n₁ = n₁} A X =
-    ≈-trans {g = A ∘ (p₁ {m} {n₁} ∘ ⟨ M.I , X ⟩)} (assoc A (p₁ {m} {n₁}) ⟨ M.I , X ⟩)
-            (≈-trans {g = A ∘ M.I} (∘-cong₂ (pair-p₁ M.I X)) id-right)
+    ≈-trans (assoc A (p₁ {m} {n₁}) ⟨ M.I , X ⟩)
+            (≈-trans (∘-cong₂ (pair-p₁ M.I X)) id-right)
 
   two-roots : ∀ {m m₁ m₂ n n₁ n₂} (out : M.Matrix n m) (r₁ : M.Matrix m₁ m) (ins₂ : M.Matrix m₂ (m + n₁))
               (u₁ : M.Matrix n n₁) (u₂ : M.Matrix n n₂)
@@ -148,26 +148,26 @@ private
               ((out M.+ₘ (u₁ ∘ (c₁ ∘ r₁))) M.+ₘ (u₂ ∘ (c₂ ∘ (ins₂ ∘ ⟨ M.I , c₁ ∘ r₁ ⟩))))
               ≈ (out M.+ₘ ((u₁ ∘ X₁) M.+ₘ (u₂ ∘ X₂)))
   two-roots out r₁ ins₂ u₁ u₂ c₁ c₂ {X₁ = X₁} {X₂ = X₂} e₁ e₂ =
-    ≈-trans {g = (out M.+ₘ (u₁ ∘ X₁)) M.+ₘ (u₂ ∘ X₂)}
+    ≈-trans
       (M.+ₘ-cong (M.+ₘ-cong (≈-refl {f = out}) (∘-cong₂ e₁)) (∘-cong₂ e₂))
       (M.+ₘ-assoc out (u₁ ∘ X₁) (u₂ ∘ X₂))
 
   inputs-only : ∀ {m n₁ n₂} (c₂ : M.Matrix n₂ m) (X : M.Matrix n₁ m) {R : M.Matrix n₂ m} → c₂ ≈ R →
                 (c₂ ∘ (p₁ {m} {n₁} ∘ ⟨ M.I , X ⟩)) ≈ R
   inputs-only {m} {n₁} c₂ X e =
-    ≈-trans {g = c₂ ∘ M.I} (∘-cong₂ (pair-p₁ M.I X)) (≈-trans {g = c₂} id-right e)
+    ≈-trans (∘-cong₂ (pair-p₁ M.I X)) (≈-trans id-right e)
 
   pairing : ∀ {m n₁ n₂} (X₁ : M.Matrix n₁ m) (X₂ : M.Matrix n₂ m) →
             (((M.in₂ {1} ∘ M.in₁ {n₁} {n₂}) ∘ X₁) M.+ₘ ((M.in₂ {1} ∘ M.in₂ {n₁} {n₂}) ∘ X₂))
             ≈ (M.in₂ {1} ∘ ⟨ X₁ , X₂ ⟩)
   pairing {n₁ = n₁} {n₂ = n₂} X₁ X₂ =
-    ≈-trans {g = (M.in₂ {1} ∘ (M.in₁ {n₁} {n₂} ∘ X₁)) M.+ₘ (M.in₂ {1} ∘ (M.in₂ {n₁} {n₂} ∘ X₂))}
+    ≈-trans
       (M.+ₘ-cong (assoc (M.in₂ {1}) (M.in₁ {n₁} {n₂}) X₁) (assoc (M.in₂ {1}) (M.in₂ {n₁} {n₂}) X₂))
       (≈-sym (M.comp-bilinear₂ (M.in₂ {1}) (M.in₁ {n₁} {n₂} ∘ X₁) (M.in₂ {n₁} {n₂} ∘ X₂)))
 
   mu : ∀ {m m' n n'} (rc : M.Matrix n' n) (ic : M.Matrix m' m) {c F : M.Matrix n m'} → c ≈ F →
        (M.εₘ M.+ₘ (rc ∘ (c ∘ ic))) ≈ (rc ∘ (F ∘ ic))
-  mu rc ic {c = c} e = ≈-trans {g = rc ∘ (c ∘ ic)} (M.+ₘ-lunit (rc ∘ (c ∘ ic))) (∘-cong₂ (∘-cong₁ {g = ic} e))
+  mu rc ic {c = c} e = ≈-trans (M.+ₘ-lunit (rc ∘ (c ∘ ic))) (∘-cong₂ (∘-cong₁ {g = ic} e))
 
 mutual
   agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → collapse (graph D) ≈ R
@@ -193,7 +193,7 @@ mutual
     (≈-trans (two-roots (built-out γ (width v + width u)) M.I (p₁ {suc (width-env γ)} {width v})
                         (M.in₂ {1} ∘ M.in₁ {width v} {width u}) (M.in₂ {1} ∘ M.in₂ {width v} {width u})
                         (collapse (graph D₁)) (collapse (graph D₂))
-                        (≈-trans {g = collapse (graph D₁)} id-right (agree D₁))
+                        (≈-trans id-right (agree D₁))
                         (inputs-only (collapse (graph D₂)) (collapse (graph D₁) ∘ M.I) (agree D₂)))
              (M.+ₘ-cong (≈-refl {f = built-out γ (width v + width u)}) (pairing R T)))
   agree {τ = τ} (⇓-fst {γ = γ} {v = v} {u = u} D) =
@@ -213,12 +213,12 @@ mutual
             (one wctrl (brel-deps ω vs (rel-pred ω .func vs)) (agree-s D))
   agree {τ = τ} (⇓-roll {γ = γ} {R = R} D) =
     ≈-trans (Rule₁.agree (graph D) M.I (fo-of τ) M.εₘ M.I)
-            (≈-trans {g = M.I ∘ (collapse (graph D) ∘ M.I)} (M.+ₘ-lunit (M.I ∘ (collapse (graph D) ∘ M.I)))
-                     (≈-trans {g = collapse (graph D) ∘ M.I} id-left
-                              (≈-trans {g = collapse (graph D)} id-right (agree D))))
+            (≈-trans (M.+ₘ-lunit (M.I ∘ (collapse (graph D) ∘ M.I)))
+                     (≈-trans id-left
+                              (≈-trans id-right (agree D))))
   agree {τ = τ} (⇓-fold {γ = γ} {v = v} {R = R} {F = F} D₁ D₂) =
     ≈-trans (Rule₂.agree (graph D₁) (graph-m D₂) M.I M.I (fo-of τ) M.εₘ M.εₘ M.I)
-            (≈-trans {g = F ∘ (M.I ∘ ⟨ M.I , R ⟩)} (seq M.I (agree D₁) (agree-m D₂))
+            (≈-trans (seq M.I (agree D₁) (agree-m D₂))
                      (∘-cong₂ {f = F} (id-left {f = ⟨ M.I , R ⟩})))
 
   agree-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
@@ -230,7 +230,7 @@ mutual
     (≈-trans (two-roots M.εₘ M.I (p₁ {suc (width-env γ)} {width (const v)})
                         (M.in₁ {width (const v)} {bases-width is}) (M.in₂ {width (const v)} {bases-width is})
                         (collapse (graph D₁)) (collapse (graph-s D₂))
-                        (≈-trans {g = collapse (graph D₁)} id-right (agree D₁))
+                        (≈-trans id-right (agree D₁))
                         (inputs-only (collapse (graph-s D₂)) (collapse (graph D₁) ∘ M.I) (agree-s D₂)))
              (M.+ₘ-lunit ⟨ R , Rs ⟩))
 
@@ -262,7 +262,7 @@ mutual
                         (M.in₂ {1} ∘ M.in₁ {width v'} {width u'}) (M.in₂ {1} ∘ M.in₂ {width v'} {width u'})
                         (collapse (graph-m D₁)) (collapse (graph-m D₂))
                         (∘-cong₁ {g = ins₁} (agree-m D₁))
-                        (≈-trans {g = collapse (graph-m D₂) ∘ ins₂}
+                        (≈-trans
                                  (∘-cong₂ {f = collapse (graph-m D₂)} (ignore-root ins₂ (collapse (graph-m D₁) ∘ ins₁)))
                                  (∘-cong₁ {g = ins₂} (agree-m D₂))))
              (M.+ₘ-cong (≈-refl {f = map-built-out γ (width v + width u) (width v' + width u')})

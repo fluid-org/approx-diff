@@ -64,9 +64,6 @@ ctrl-weight-endo = ι1-fwd SemiMod.∘ (mat (matrix.Mat.block S ctrl-weight) Sem
 
 𝒞Bool = FCC.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
 
-ι-row : ∀ n → M.Matrix n 1
-ι-row n _ _ = S.ι
-
 𝒞Bool-root : Fam⟨𝒞⟩μ.Section 𝒞Bool
 𝒞Bool-root = Fam⟨𝒞⟩μ.coprod-section (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty}) (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty})
 
@@ -113,12 +110,6 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
          M.Matrix 1 (ℐ.bases-width is)
     d' ψ c = ℐ.rel-deps ψ .func c
 
-    deps-resp : ∀ {is} (ψ : Signature.rel Sig is)
-                {c c' : Setoid.Carrier (sort-vals-setoid ℐ.sort-index is)} →
-                Setoid._≈_ (sort-vals-setoid ℐ.sort-index is) c c' →
-                d' ψ c' M.≈ₘ d' ψ c
-    deps-resp ψ e = M.≈ₘ-sym (ℐ.rel-deps ψ .func-resp-≈ e)
-
   -- Tests write their dependence into the outcome's root: which branch runs reads the scalars the
   -- test read.
   rel-simple : ∀ is (ψ : Signature.rel Sig is) →
@@ -130,7 +121,7 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     𝒞Bool-root .Fam⟨𝒞⟩μ.at (ℐ.rel-pred ψ .func c) M.∘ d' ψ c
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e =
     M.≈ₘ-trans (M.id-right {M = P' M.∘ d' ψ c'})
-    (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {f = P'}) (deps-resp ψ e))
+    (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {f = P'}) (M.≈ₘ-sym (ℐ.rel-deps ψ .func-resp-≈ e)))
     (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-sym (𝒞Bool-root .Fam⟨𝒞⟩μ.at-natural {x₁ = o} {x₂ = o'} (ℐ.rel-pred ψ .func-resp-≈ e)))
                           (M.≈ₘ-refl {f = d' ψ c}))
                 (M.assoc sub P (d' ψ c))))
@@ -150,7 +141,7 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
   open sig-model Sig ℐ
 
   𝒞-sort-section : ∀ s → Fam⟨𝒞⟩μ.Section (model .Model.⟦sort⟧ s)
-  𝒞-sort-section s = Fam⟨𝒞⟩μ.simple-section (ι-row (Interpretation.sort-width ℐ s))
+  𝒞-sort-section s = Fam⟨𝒞⟩μ.simple-section (λ _ _ → S.ι)
 
   open language-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct 1
