@@ -1216,33 +1216,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   reveal-hide p K S hp .visible-≈ = ↭-reflexive (reveal-hide-visible p K S hp)
   reveal-hide p K S hp .hidden-≈  = reveal-hide-hidden-set p K S hp
 
-module _ {m n : ℕ} (𝒢 : Graph m n) where
-
-  open Graph 𝒢 using (shape)
-  open Interaction 𝒢
-
-  private
-    at : Vertex shape → V 𝒢
-    at p = inj₂ (inj₁ p)
-
-    eq-path : Vertex shape → Vertex shape → Bool
-    eq-path p q = ⌊ _≟_ {shape} p q ⌋
-
-    eq-path-refl : ∀ (p : Vertex shape) → eq-path p p ≡ Bool.true
-    eq-path-refl p with _≟_ {shape} p p
-    ... | yes _ = ≡-refl
-    ... | no ¬e = ⊥-elim (¬e ≡-refl)
-
-    eq-path-≡ : ∀ {p q : Vertex shape} → eq-path p q ≡ Bool.true → p ≡ q
-    eq-path-≡ {p} {q} h with _≟_ {shape} p q
-    ... | yes e = e
-
-    eq-path-false-sym : ∀ {p q : Vertex shape} → eq-path p q ≡ Bool.false → eq-path q p ≡ Bool.false
-    eq-path-false-sym {p} {q} h with _≟_ {shape} q p
-    ... | no _  = ≡-refl
-    ... | yes e with _≟_ {shape} p q
-    ...   | no ¬e = ⊥-elim (¬e (≡-sym e))
-
   merge-region-resp : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) {rss rss' : List (List (Vertex shape))} →
                       rss ↭↭ rss' → merge-region G w rss ↭↭ merge-region G w rss'
   merge-region-resp G w {rss} {rss'} p =
@@ -1285,7 +1258,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
     beq : b ≡ A' (w ∷ concat F)
     beq =
-      ≡-cong₂ _∨_ (adjacent-sym 𝒢 G (at w) (at w'))
+      ≡-cong₂ _∨_ (adjacent-sym G (at w) (at w'))
         (≡-trans (any-concat (λ q → adjacent G (at w) (at q)) F')
         (≡-trans (any-filterᵇ-∧ A A' rss)
         (≡-trans (any-cong (λ C → ∧-comm (A' C) (A C)) rss)
@@ -1358,32 +1331,32 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     stored≡ : map proj₁ (initial .hidden) ≡ regions (fo-graph 𝒢) (FO 𝒢)
     stored≡ = map-proj₁-pair summary (regions (fo-graph 𝒢) (FO 𝒢))
 
-  initial-summarised : Summarised 𝒢 (initial)
+  initial-summarised : Summarised (initial)
   initial-summarised .partition =
-    subst (λ z → concat z ↭ FO 𝒢) (≡-sym stored≡) (regions-concat 𝒢 (fo-graph 𝒢) (FO 𝒢))
+    subst (λ z → concat z ↭ FO 𝒢) (≡-sym stored≡) (regions-concat (fo-graph 𝒢) (FO 𝒢))
   initial-summarised .canonical =
     subst (λ z → z ↭↭ regions (fo-graph 𝒢) (concat z))
           (≡-sym stored≡)
-          (regions-perm (fo-graph 𝒢) (↭-sym (regions-concat 𝒢 (fo-graph 𝒢) (FO 𝒢))))
+          (regions-perm (fo-graph 𝒢) (↭-sym (regions-concat (fo-graph 𝒢) (FO 𝒢))))
   initial-summarised .summaries =
     AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph 𝒢) (FO 𝒢)))
 
-  hide-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised 𝒢 K) →
+  hide-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised K) →
                        member p (K .visible) ≡ Bool.true →
-                       Summarised 𝒢 (hide-at p K)
-  hide-at-summarised p K S pv .partition = hide-at-partition 𝒢 p K S pv
+                       Summarised (hide-at p K)
+  hide-at-summarised p K S pv .partition = hide-at-partition p K S pv
   hide-at-summarised p K S pv .canonical =
     subst (λ z → z ↭↭ regions (fo-graph 𝒢) (hidden-set (hide-at p K)))
           lhs-eq
           (H.trans (merge-region-resp (fo-graph 𝒢) p (S .canonical))
-                   (H.sym ↭-sym (regions-perm (fo-graph 𝒢) (hide-at-hidden-set 𝒢 p K))))
+                   (H.sym ↭-sym (regions-perm (fo-graph 𝒢) (hide-at-hidden-set p K))))
     where
     lhs-eq : merge-region (fo-graph 𝒢) p (map proj₁ (K .hidden)) ≡
              map proj₁ (hide-at p K .hidden)
     lhs-eq = ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
                (map-partition₁ proj₁ (adj (fo-graph 𝒢) p) (K .hidden))
                (map-partition₂ proj₁ (adj (fo-graph 𝒢) p) (K .hidden))
-  hide-at-summarised p K S pv .summaries = hide-at-summaries 𝒢 p K S pv
+  hide-at-summarised p K S pv .summaries = hide-at-summaries p K S pv
 
   private
     ↭↭-of-≡ : {xss yss : List (List (Vertex shape))} → xss ≡ yss → xss ↭↭ yss
@@ -1393,8 +1366,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                 All (λ C → ∀ q → member q C ≡ Bool.true → member q ws ≡ Bool.true)
                     (regions G ws)
     regions-⊆ G ws =
-      All-map (λ {C} inc q h → ≡-trans (≡-sym (member-perm 𝒢 q (regions-concat 𝒢 G ws))) (inc q h))
-              (blocks-⊆ 𝒢 (regions G ws))
+      All-map (λ {C} inc q h → ≡-trans (≡-sym (member-perm q (regions-concat G ws))) (inc q h))
+              (blocks-⊆ (regions G ws))
 
     merge-region-inert : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (X Y : List (List (Vertex shape))) →
                          All (λ C → adj G w C ≡ Bool.false) Y →
@@ -1410,7 +1383,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                   (filter-all-true (All-map (λ e → ≡-cong not e) h)))))
                (≡-cong (_++ Y) (≡-sym (merge-region-filter G w X))))
 
-  regions-apart : (G : Relation (vertex-width 𝒢)) (B rest : List (Vertex shape)) → Apart 𝒢 G B rest →
+  regions-apart : (G : Relation (vertex-width 𝒢)) (B rest : List (Vertex shape)) → Apart G B rest →
                   regions G (B ++ rest) ↭↭ (regions G B ++ regions G rest)
   regions-apart G []      rest ap = ↭↭-refl
   regions-apart G (b ∷ B) rest ap with ∨-false (any (λ q' → adjacent G (at b) (at q')) rest)
@@ -1428,7 +1401,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   private
     apart-concat : {G : Relation (vertex-width 𝒢)} {C : List (Vertex shape)} {Cs : List (List (Vertex shape))} →
-                   All (Apart 𝒢 G C) Cs → Apart 𝒢 G C (concat Cs)
+                   All (Apart G C) Cs → Apart G C (concat Cs)
     apart-concat {G = G} {C} {Cs} aps =
       ≡-trans (any-cong (λ q → any-concat (λ q' → adjacent G (at q) (at q')) Cs) C)
       (≡-trans (any-comm (λ q C' → any (λ q' → adjacent G (at q) (at q')) C') C Cs)
@@ -1441,14 +1414,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       s≤s z≤n ∷ proj₂ (partition-All (adj G w) (regions-nonempty G ws))
 
   regions-apart-concat : {G : Relation (vertex-width 𝒢)} {Cs : List (List (Vertex shape))} →
-                         AllPairs (Apart 𝒢 G) Cs →
+                         AllPairs (Apart G) Cs →
                          regions G (concat Cs) ↭↭ concat (map (regions G) Cs)
   regions-apart-concat {G = G}           []                    = ↭↭-refl
   regions-apart-concat {G = G} {C ∷ Cs} (aps ∷ pairs) =
     H.trans (regions-apart G C (concat Cs) (apart-concat {G = G} {C = C} {Cs = Cs} aps))
             (↭↭-++⁺ ↭↭-refl (regions-apart-concat pairs))
 
-  blocks-one-region : (K : Config 𝒢) → Summarised 𝒢 K →
+  blocks-one-region : (K : Config 𝒢) → Summarised K →
                       All (λ C → regions (fo-graph 𝒢) C ↭↭ (C ∷ []))
                           (map proj₁ (K .hidden))
   blocks-one-region K S = All-map (λ {C} e → one {C} e) lens1
@@ -1457,7 +1430,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     Cs = map proj₁ (K .hidden)
 
     perm2 : Cs ↭↭ concat (map (regions G) Cs)
-    perm2 = H.trans (S .canonical) (regions-apart-concat (separated 𝒢 S))
+    perm2 = H.trans (S .canonical) (regions-apart-concat (separated S))
 
     nonempty : All (λ C → 1 ≤ length C) Cs
     nonempty = perm-All (λ {C} {C'} pc h → subst (1 ≤_) (↭-length pc) h)
@@ -1486,14 +1459,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ... | (C₀ , eq) =
       subst (_↭↭ (C ∷ [])) (≡-sym eq)
             (H.prep (↭-trans (↭-reflexive (≡-sym (++-identityʳ C₀)))
-                             (subst (λ z → concat z ↭ C) eq (regions-concat 𝒢 G C)))
+                             (subst (λ z → concat z ↭ C) eq (regions-concat G C)))
                     (H.refl []))
 
-  reveal-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised 𝒢 K) →
+  reveal-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised K) →
                          member p (hidden-set K) ≡ Bool.true →
-                         Summarised 𝒢 (reveal-at p K)
-  reveal-at-summarised p K S hp .partition = reveal-at-partition 𝒢 p K S hp
-  reveal-at-summarised p K S hp .summaries = reveal-at-summaries 𝒢 p K S hp
+                         Summarised (reveal-at p K)
+  reveal-at-summarised p K S hp .partition = reveal-at-partition p K S hp
+  reveal-at-summarised p K S hp .summaries = reveal-at-summaries p K S hp
   reveal-at-summarised p K S hp .canonical =
     subst (λ z → z ↭↭ regions G (hidden-set (reveal-at p K)))
           (≡-trans (≡-cong concat (map-∘ {g = map proj₁} {f = split-region p} (K .hidden)))
@@ -1508,34 +1481,28 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     Cs   = map proj₁ (K .hidden)
     notp = λ q → not (eq-path p q)
 
-    vis-hid-distinct : AllPairs (λ q q' → eq-path q q' ≡ Bool.false)
-                               (K .visible ++ hidden-set K)
-    vis-hid-distinct =
-      AllPairs-perm (λ {q} {q'} h → eq-path-false-sym {p = q} {q = q'} h)
-                    (↭.↭-sym (S .partition)) (FO-distinct 𝒢)
-
     distinct-hs : AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (hidden-set K)
-    distinct-hs = proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) vis-hid-distinct))
+    distinct-hs = proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K (S .partition))))
 
     hrev : hidden-set (reveal-at p K) ↭ filterᵇ notp (hidden-set K)
     hrev = drop-∷
-      (↭-trans (reveal-set 𝒢 p (K .hidden) distinct-hs
+      (↭-trans (reveal-set p (K .hidden) distinct-hs
                   (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
                            (≡-trans (≡-sym (any-concat (eq-path p) Cs)) hp)))
                (↭.↭-sym (filter-out-↭ {eq = eq-path}
                           (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
                           distinct-hs hp)))
 
-    apart-filtered : AllPairs (Apart 𝒢 G) (map (filterᵇ notp) Cs)
+    apart-filtered : AllPairs (Apart G) (map (filterᵇ notp) Cs)
     apart-filtered =
       AllPairsP.map⁺
         (AllPairs-map (λ {C} {C'} ap →
-                         Apart-mono 𝒢 {G = G} {C₁ = filterᵇ notp C} {C₂ = filterᵇ notp C'}
+                         Apart-mono {G = G} {C₁ = filterᵇ notp C} {C₂ = filterᵇ notp C'}
                                     {C₁' = C} {C₂' = C'}
                                     (λ q h → any-filterᵇ (eq-path q) notp C h)
                                     (λ q h → any-filterᵇ (eq-path q) notp C' h)
                                     ap)
-                      (separated 𝒢 S))
+                      (separated S))
 
     maps-eq : map (λ CH → regions G (filterᵇ notp (proj₁ CH))) (K .hidden) ≡
               map (regions G) (map (filterᵇ notp) Cs)
