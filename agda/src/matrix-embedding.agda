@@ -114,7 +114,7 @@ app-in₂ = Σ-in₂
 concat-+ : ∀ {x y} (u : Vec x) (w : Vec y) (i : Fin (x +ℕ y)) →
            (concat {x} {y} u (λ _ → ε) i + concat {x} {y} (λ _ → ε) w i) ≈ concat {x} {y} u w i
 concat-+ {Nat.zero}  u w i       = +-lunit
-concat-+ {Nat.suc x} u w zero    = trans +-comm +-lunit
+concat-+ {Nat.suc x} u w zero    = +-runit
 concat-+ {Nat.suc x} u w (suc i) = concat-+ {x} (λ j → u (suc j)) w i
 
 app-pair : ∀ {m x y} (f : Matrix x m) (g : Matrix y m) (u : Vec m) (i : Fin (x +ℕ y)) →
@@ -282,7 +282,7 @@ L-biproduct n = BT.transport₁ (𝔽-biproduct 1 n) ι1-fwd ι1-bwd ι1-fwd∘b
                 (v zero , (λ k → v (suc k)))
 𝔽-L-fwd-elt n v =
   trans (+-cong (+-cong ·-lunit (trans (Σ-cong {n} (λ _ → ε-annihilₗ)) (Σ-ε {n}))) refl)
-        (trans (+-cong (trans +-comm +-lunit) refl) (trans +-comm +-lunit))
+        (trans (+-cong (+-runit) refl) (+-runit))
   ,ₚ λ i → trans +-lunit (trans (+-cong ε-annihilₗ (Σ-unit {n} i (λ j → v (suc j)))) +-lunit)
 
 mat-Lmap : ∀ {P Q} (f : MC._⇒_ P Q) →
@@ -349,7 +349,7 @@ sum-lin {Nat.suc m} k v i =
                         (Σ-cong {m} (λ l → ·-cong refl (k .func-resp-≈ (shift-e l) i))))))
   where
   split : ∀ j → v j ≈ ((v zero · M.e zero j) + shift (λ l → v (suc l)) j)
-  split zero    = sym (trans (+-cong (trans ·-comm ·-lunit) refl) (trans +-comm +-lunit))
+  split zero    = sym (trans (+-cong (trans ·-comm ·-lunit) refl) (+-runit))
   split (suc l) = sym (trans (+-cong ε-annihilᵣ refl) +-lunit)
 
 𝔽F-faithful : ∀ {m n} {R T : MC._⇒_ m n} → SMC._≈_ (mat R) (mat T) → MC._≈_ R T

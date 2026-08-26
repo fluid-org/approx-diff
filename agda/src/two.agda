@@ -22,10 +22,8 @@ I ≤ I = ⊤
 ≤-refl {I} = tt
 
 ≤-trans : ∀ {x y z} → x ≤ y → y ≤ z → x ≤ z
-≤-trans {O} {O} {O} p q = tt
-≤-trans {O} {O} {I} p q = tt
-≤-trans {O} {I} {I} p q = tt
-≤-trans {I} {I} {I} p q = tt
+≤-trans {O} _ _ = tt
+≤-trans {I} {I} {I} _ _ = tt
 
 ≤-total : ∀ x y → (x ≤ y) ∨ (y ≤ x)
 ≤-total O y = inj₁ tt
@@ -232,10 +230,8 @@ private
   module S = CS.CommutativeSemiring semiring
 
 ∨-idem : ∀ {x} → (x S.+ x) S.≈ x
-∨-idem {O} = S.refl {O}
-∨-idem {I} = S.refl {I}
+∨-idem = IsJoin.idem ⊔-isJoin
 
 ∧-idem : ∀ {x} → (x S.· x) S.≈ x
-∧-idem {O} = S.refl {O}
-∧-idem {I} = S.refl {I}
+∧-idem = IsMeet.idem ⊓-isMeet
 

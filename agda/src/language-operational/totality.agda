@@ -132,24 +132,6 @@ total-irr τ = total-irr-acc τ (<-wellFounded (size τ))
 MuT : (τ₀ : type 1) (σ' : type 1) → Val (σ' [ μ τ₀ ]) → Set ℓT
 MuT τ₀ = MuTotal τ₀ (λ σ p → Total σ)
 
-sum-out₁ : ∀ {σ τ v} → Total (σ [+] τ) (inl v) → Total σ v
-sum-out₁ {σ} t = total-irr σ t
-
-sum-out₂ : ∀ {σ τ v} → Total (σ [+] τ) (inr v) → Total τ v
-sum-out₂ {σ} {τ} t = total-irr τ t
-
-sum-in₁ : ∀ {σ τ v} → Total σ v → Total (σ [+] τ) (inl v)
-sum-in₁ {σ} t = total-irr σ t
-
-sum-in₂ : ∀ {σ τ v} → Total τ v → Total (σ [+] τ) (inr v)
-sum-in₂ {σ} {τ} t = total-irr τ t
-
-prod-out : ∀ {σ τ v u} → Total (σ [×] τ) (pair v u) → Total σ v × Total τ u
-prod-out {σ} {τ} (t , t') = total-irr σ t , total-irr τ t'
-
-prod-in : ∀ {σ τ v u} → Total σ v → Total τ u → Total (σ [×] τ) (pair v u)
-prod-in {σ} {τ} t t' = total-irr σ t , total-irr τ t'
-
 mu-out : ∀ {τ₀ v} → Total (μ τ₀) v → MuT τ₀ (var Fin.zero) v
 mu-out m = mu-total-map (λ σ p t → total-irr σ t) m
 
@@ -171,12 +153,12 @@ fold-tot-acc τ₀ (var Fin.zero) b av t = mu-out t
 fold-tot-acc τ₀ unit b {unit} av t = mt-unit
 fold-tot-acc τ₀ (base s) b {const c} av t = mt-base
 fold-tot-acc τ₀ (σ₁ [+] σ₂) (b₁ , b₂) {inl v₁} (acc ra) t =
-  mt-inl (fold-tot-acc τ₀ σ₁ b₁ (ra (n<1+n _)) (sum-out₁ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} t))
+  mt-inl (fold-tot-acc τ₀ σ₁ b₁ (ra (n<1+n _)) (total-irr (σ₁ [ μ τ₀ ]) t))
 fold-tot-acc τ₀ (σ₁ [+] σ₂) (b₁ , b₂) {inr v₂} (acc ra) t =
-  mt-inr (fold-tot-acc τ₀ σ₂ b₂ (ra (n<1+n _)) (sum-out₂ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} t))
+  mt-inr (fold-tot-acc τ₀ σ₂ b₂ (ra (n<1+n _)) (total-irr (σ₂ [ μ τ₀ ]) t))
 fold-tot-acc τ₀ (σ₁ [×] σ₂) (b₁ , b₂) {pair v₁ v₂} (acc ra) t =
-  mt-pair (fold-tot-acc τ₀ σ₁ b₁ (ra (s≤s (m≤m+n (vsize v₁) (vsize v₂)))) (Data.Product.proj₁ (prod-out {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} t)))
-          (fold-tot-acc τ₀ σ₂ b₂ (ra (s≤s (m≤n+m (vsize v₂) (vsize v₁)))) (Data.Product.proj₂ (prod-out {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} t)))
+  mt-pair (fold-tot-acc τ₀ σ₁ b₁ (ra (s≤s (m≤m+n (vsize v₁) (vsize v₂)))) (total-irr (σ₁ [ μ τ₀ ]) (Data.Product.proj₁ t)))
+          (fold-tot-acc τ₀ σ₂ b₂ (ra (s≤s (m≤n+m (vsize v₂) (vsize v₁)))) (total-irr (σ₂ [ μ τ₀ ]) (Data.Product.proj₂ t)))
   where import Data.Product
 fold-tot-acc τ₀ (σ₁ [→] σ₂) b av t = mt-arrow b t
 fold-tot-acc τ₀ (μ τ') b {roll w₂} (acc ra) t
@@ -196,12 +178,12 @@ unfold-tot-acc τ₀ (var Fin.zero) av m = mu-in m
 unfold-tot-acc τ₀ unit av m = tt
 unfold-tot-acc τ₀ (base s) av m = tt
 unfold-tot-acc τ₀ (σ₁ [+] σ₂) (acc ra) (mt-inl m) =
-  sum-in₁ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} (unfold-tot-acc τ₀ σ₁ (ra (n<1+n _)) m)
+  total-irr (σ₁ [ μ τ₀ ]) (unfold-tot-acc τ₀ σ₁ (ra (n<1+n _)) m)
 unfold-tot-acc τ₀ (σ₁ [+] σ₂) (acc ra) (mt-inr m) =
-  sum-in₂ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} (unfold-tot-acc τ₀ σ₂ (ra (n<1+n _)) m)
+  total-irr (σ₂ [ μ τ₀ ]) (unfold-tot-acc τ₀ σ₂ (ra (n<1+n _)) m)
 unfold-tot-acc τ₀ (σ₁ [×] σ₂) (acc ra) (mt-pair {v₁ = v₁} {v₂ = v₂} m₁ m₂) =
-  prod-in {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} (unfold-tot-acc τ₀ σ₁ (ra (s≤s (m≤m+n (vsize v₁) (vsize v₂)))) m₁)
-    (unfold-tot-acc τ₀ σ₂ (ra (s≤s (m≤n+m (vsize v₂) (vsize v₁)))) m₂)
+  total-irr (σ₁ [ μ τ₀ ]) (unfold-tot-acc τ₀ σ₁ (ra (s≤s (m≤m+n (vsize v₁) (vsize v₂)))) m₁) ,
+  total-irr (σ₂ [ μ τ₀ ]) (unfold-tot-acc τ₀ σ₂ (ra (s≤s (m≤n+m (vsize v₂) (vsize v₁)))) m₂)
 unfold-tot-acc τ₀ (σ₁ [→] σ₂) av (mt-arrow p t) = t
 unfold-tot-acc τ₀ (μ τ') (acc ra) (mt-mu {w = w} m) =
   mu-in (mt-roll (fold-tot-acc B B (arr-self B) (ra (n<1+n _))
@@ -226,8 +208,8 @@ lookup-total zero     {γ · v} (tγ , tv) = tv
 lookup-total (succ x) {γ · v} (tγ , tv) = lookup-total x tγ
 
 bool-total : ∀ (b : _) → Total (unit [+] unit) (bool→val b)
-bool-total (inj₁ _) = sum-in₁ {unit} {unit} {unit} tt
-bool-total (inj₂ _) = sum-in₂ {unit} {unit} {unit} tt
+bool-total (inj₁ _) = tt
+bool-total (inj₂ _) = tt
 
 ArrTot : (σ τ : type 0) {Γ' : ctxt} (γ' : Env Γ') (t : (Γ' ▸ σ) ⊢ τ) → Set ℓT
 ArrTot σ τ {Γ'} γ' t =
@@ -262,14 +244,14 @@ map-total f (base b) {v} mt-base = v , _ , m-base , tt
 map-total f (σ₁ [→] σ₂) {v} (mt-arrow p tv) = v , _ , m-arrow , tv
 map-total {σr = σr} f (σ₁ [+] σ₂) (mt-inl {v = v} m') =
   let (v' , F , Dm , tv') = map-total f σ₁ m'
-  in inl v' , _ , m-inl Dm , sum-in₁ {σ₁ [ σr ]} {σ₂ [ σr ]} tv'
+  in inl v' , _ , m-inl Dm , total-irr (σ₁ [ σr ]) tv'
 map-total {σr = σr} f (σ₁ [+] σ₂) (mt-inr {v = v} m') =
   let (v' , F , Dm , tv') = map-total f σ₂ m'
-  in inr v' , _ , m-inr Dm , sum-in₂ {σ₁ [ σr ]} {σ₂ [ σr ]} tv'
+  in inr v' , _ , m-inr Dm , total-irr (σ₂ [ σr ]) tv'
 map-total {σr = σr} f (σ₁ [×] σ₂) (mt-pair {v₁ = v₁} {v₂ = v₂} m₁ m₂) =
   let (v₁' , F , D₁ , t₁) = map-total f σ₁ m₁
       (v₂' , G , D₂ , t₂) = map-total f σ₂ m₂
-  in pair v₁' v₂' , _ , m-pair D₁ D₂ , prod-in {σ₁ [ σr ]} {σ₂ [ σr ]} t₁ t₂
+  in pair v₁' v₂' , _ , m-pair D₁ D₂ , (total-irr (σ₁ [ σr ]) t₁ , total-irr (σ₂ [ σr ]) t₂)
 map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') (mt-mu {τ'} {w} m') =
   let (w' , F , Dm , tw') = map-total f (unfold₁ τ') m'
   in roll (≡-subst Val (unfold₁-inst τ' σr) w') , _ , m-mu Dm ,
@@ -291,29 +273,29 @@ fundamental (var x) γ tγ =
 fundamental unit γ tγ = unit , _ , ⇓-unit , tt
 fundamental (inl {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ =
   let (v , R , D , tv) = fundamental t γ tγ
-  in inl v , _ , ⇓-inl D , sum-in₁ {τ₁} {τ₂} tv
+  in inl v , _ , ⇓-inl D , total-irr τ₁ tv
 fundamental (inr {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ =
   let (v , R , D , tv) = fundamental t γ tγ
-  in inr v , _ , ⇓-inr D , sum-in₂ {τ₁} {τ₂} tv
+  in inr v , _ , ⇓-inr D , total-irr τ₂ tv
 fundamental (case {τ₁ = τ₁} {τ₂ = τ₂} s t₁ t₂) γ tγ with fundamental s γ tγ
 ... | inl v , R , D , ts =
-  let (u , S , D₁ , tu) = fundamental t₁ (γ · v) (tγ , sum-out₁ {τ₁} {τ₂} ts)
+  let (u , S , D₁ , tu) = fundamental t₁ (γ · v) (tγ , total-irr τ₁ ts)
   in u , _ , ⇓-case-l D D₁ , tu
 ... | inr v , R , D , ts =
-  let (u , S , D₂ , tu) = fundamental t₂ (γ · v) (tγ , sum-out₂ {τ₁} {τ₂} ts)
+  let (u , S , D₂ , tu) = fundamental t₂ (γ · v) (tγ , total-irr τ₂ ts)
   in u , _ , ⇓-case-r D D₂ , tu
 fundamental (pair {τ₁ = τ₁} {τ₂ = τ₂} s t) γ tγ =
   let (v , R , D , tv) = fundamental s γ tγ
       (u , S , D' , tu) = fundamental t γ tγ
-  in pair v u , _ , ⇓-pair D D' , prod-in {τ₁} {τ₂} tv tu
+  in pair v u , _ , ⇓-pair D D' , (total-irr τ₁ tv , total-irr τ₂ tu)
 fundamental (fst {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
 ... | pair v u , R , D , tv =
   v , _ , ⇓-fst D ,
-  proj₁ (prod-out {τ₁} {τ₂} tv)
+  total-irr τ₁ (proj₁ tv)
 fundamental (snd {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
 ... | pair v u , R , D , tv =
   u , _ , ⇓-snd D ,
-  proj₂ (prod-out {τ₁} {τ₂} tv)
+  total-irr τ₂ (proj₂ tv)
 fundamental (lam t) γ tγ =
   clo γ t , _ , ⇓-lam , arr-in (λ v tv → fundamental t (γ · v) (tγ , tv))
 fundamental (app s t) γ tγ with fundamental s γ tγ
@@ -349,9 +331,9 @@ env-total : ∀ {Γ} (γ : Env Γ) → TotalEnv Γ γ
 
 val-total unit = tt
 val-total (const _) = tt
-val-total (inl {τ₁ = τ₁} {τ₂ = τ₂} v) = sum-in₁ {τ₁} {τ₂} (val-total v)
-val-total (inr {τ₁ = τ₁} {τ₂ = τ₂} v) = sum-in₂ {τ₁} {τ₂} (val-total v)
-val-total (pair {τ₁ = τ₁} {τ₂ = τ₂} v u) = prod-in {τ₁} {τ₂} (val-total v) (val-total u)
+val-total (inl {τ₁ = τ₁} {τ₂ = τ₂} v) = total-irr τ₁ (val-total v)
+val-total (inr {τ₁ = τ₁} {τ₂ = τ₂} v) = total-irr τ₂ (val-total v)
+val-total (pair {τ₁ = τ₁} {τ₂ = τ₂} v u) = total-irr τ₁ (val-total v) , total-irr τ₂ (val-total u)
 val-total (clo γ t) = arr-in (λ v tv → fundamental t (γ · v) (env-total γ , tv))
 val-total (roll {τ = τ₀} v) = mu-in (mt-roll (fold-tot τ₀ τ₀ (arr-self τ₀) (val-total v)))
 

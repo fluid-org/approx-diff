@@ -130,9 +130,9 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     𝒞Bool-root .Fam⟨𝒞⟩μ.at (ℐ.rel-pred ψ .func c) M.∘ d' ψ c
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e =
     M.≈ₘ-trans (M.id-right {M = P' M.∘ d' ψ c'})
-    (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {M = P'}) (deps-resp ψ e))
+    (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {f = P'}) (deps-resp ψ e))
     (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-sym (𝒞Bool-root .Fam⟨𝒞⟩μ.at-natural {x₁ = o} {x₂ = o'} (ℐ.rel-pred ψ .func-resp-≈ e)))
-                          (M.≈ₘ-refl {M = d' ψ c}))
+                          (M.≈ₘ-refl {f = d' ψ c}))
                 (M.assoc sub P (d' ψ c))))
     where
     o  = ℐ.rel-pred ψ .func c
@@ -186,13 +186,7 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     Lmap-elt : ∀ {X Y : Semimodule} (f : SemiMod._⇒_ X Y) (a : Setoid.Carrier A)
                (x : Semimodule.Carrier X) →
                Semimodule._≈_ (Ls.L Y) (SemiMod._⇒_.func (Ls.Lmap f) (a , x)) (a , SemiMod._⇒_.func f x)
-    Lmap-elt {X} {Y} f a x = S.trans S.+-comm S.+-lunit , Semimodule.+-lunit Y
-
-    in₁-zero : ∀ (w : M.Vec 1) → S._≈_ (app (M.in₁ {1} {1}) w Fin.zero) (w Fin.zero)
-    in₁-zero w = S.trans (S.trans S.+-comm S.+-lunit) S.·-lunit
-
-    in₁-suc : ∀ (w : M.Vec 1) k → S._≈_ (app (M.in₁ {1} {1}) w (Fin.suc k)) S.ε
-    in₁-suc w k = S.trans (S.trans S.+-comm S.+-lunit) S.ε-annihilₗ
+    Lmap-elt {X} {Y} f a x = S.+-runit , Semimodule.+-lunit Y
 
     module bool-row {n} (D : M.Matrix 1 n) (y : M.Vec n) where
       Ω = HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty
@@ -210,9 +204,9 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
             (SemiMod._⇒_.func-resp-≈ (Ls.Lmap g) (𝔽-L-fwd-elt 1 u))
             (Semimodule.trans (Ls.L (𝔽 1))
               (Lmap-elt g (u Fin.zero) (λ k → u (Fin.suc k)))
-              (S.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (in₁-zero (app D y)) ,
+              (S.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (app-in₁ {1} {1} (app D y) Fin.zero) ,
                λ k → S.trans (app-congᵥ G (λ j → S.trans (app-∘ (M.in₁ {1} {1}) D y (Fin.suc j))
-                                                              (in₁-suc (app D y) j)) k)
+                                                              (app-in₁ {1} {1} (app D y) (Fin.suc j))) k)
                               (app-ε G k)))
           where
           G = 𝒞𝟙ty .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {x₁} {x} e

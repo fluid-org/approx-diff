@@ -36,15 +36,11 @@ module interaction.graph {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
 private
   module M = matrix.Mat S
 
-open Semiring using (Carrier; +-cong; +-assoc; +-comm; +-lunit; ·-cong; ε-annihilₗ; ε-annihilᵣ)
+open Semiring using (Carrier; +-cong; +-assoc; +-comm; +-lunit; +-runit; ·-cong; ε-annihilₗ; ε-annihilᵣ)
   renaming (_≈_ to _≈ₛ_; refl to ≈ₛ-refl; sym to ≈ₛ-sym; trans to ≈ₛ-trans; _+_ to _+ₛ_; _·_ to _·ₛ_; ε to εₛ)
 open import categories using (Category)
 open Category M.cat
   using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
-
-private
-  +-runit : ∀ {x} → (x +ₛ εₛ) ≈ₛ x
-  +-runit = ≈ₛ-trans +-comm +-lunit
 
 data Input : Set where
   input : Input

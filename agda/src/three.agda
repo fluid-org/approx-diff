@@ -167,11 +167,7 @@ private
   module S = CS.CommutativeSemiring semiring
 
 ∨-idem : ∀ {x} → (x S.+ x) S.≈ x
-∨-idem {O} = S.refl {O}
-∨-idem {C} = S.refl {C}
-∨-idem {D} = S.refl {D}
+∨-idem = IsJoin.idem ⊔-isJoin
 
 ∧-idem : ∀ {x} → (x S.· x) S.≈ x
-∧-idem {O} = S.refl {O}
-∧-idem {C} = S.refl {C}
-∧-idem {D} = S.refl {D}
+∧-idem = IsMeet.idem ⊓-isMeet
