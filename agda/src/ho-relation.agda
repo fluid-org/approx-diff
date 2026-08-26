@@ -299,36 +299,16 @@ c = ctrl-weight
 m-runit : ∀ (X : Semimodule) {x} → Semimodule._≈_ X (Semimodule._+_ X x (Semimodule.ε X)) x
 m-runit X = Semimodule.trans X (Semimodule.+-comm X) (Semimodule.+-lunit X)
 
-ap-in₁-zero : ∀ {n} (u : ∣ 𝔽 1 ∣) → ap (M.in₁ {1} {n}) u zero ≈s u zero
-ap-in₁-zero {n} u = app-in₁ {1} {n} u zero
-
-ap-in₁-suc : ∀ {n} (u : ∣ 𝔽 1 ∣) (k : Fin n) → ap (M.in₁ {1} {n}) u (suc k) ≈s ε
-ap-in₁-suc {n} u k = app-in₁ {1} {n} u (suc k)
-
-ap-in₂-zero : ∀ {n} (u : ∣ 𝔽 n ∣) → ap (M.in₂ {1} {n}) u zero ≈s ε
-ap-in₂-zero {n} u = app-in₂ {1} {n} u zero
-
-ap-in₂-suc : ∀ {n} (u : ∣ 𝔽 n ∣) (k : Fin n) → ap (M.in₂ {1} {n}) u (suc k) ≈s u k
-ap-in₂-suc {n} u k = app-in₂ {1} {n} u (suc k)
-
-ap-pair-zero : ∀ {m n} (f : M.Matrix 1 m) (g : M.Matrix n m) (u : ∣ 𝔽 m ∣) →
-               ap (⟨ f , g ⟩) u zero ≈s ap f u zero
-ap-pair-zero {m} {n} f g u = app-pair {m} {1} {n} f g u zero
-
-ap-pair-suc : ∀ {m n} (f : M.Matrix 1 m) (g : M.Matrix n m) (u : ∣ 𝔽 m ∣) (k : Fin n) →
-              ap (⟨ f , g ⟩) u (suc k) ≈s ap g u k
-ap-pair-suc {m} {n} f g u k = app-pair {m} {1} {n} f g u (suc k)
-
 ap-ctrl-row : ∀ {n} (s : Setoid.Carrier A) (k : Fin n) → ap ctrl-row (λ _ → s) k ≈s (c ·ₛ s)
 ap-ctrl-row {n} s k = +-runit
 
 ctrl-lift-zero : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) →
                  ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) zero ≈s (c ·ₛ s)
-ctrl-lift-zero {n} g s = ≈-trans (ap-pair-zero {1} {n} ctrl-row g (λ _ → s)) (ap-ctrl-row {1} s zero)
+ctrl-lift-zero {n} g s = ≈-trans (app-pair {1} {1} {n} ctrl-row g (λ _ → s) zero) (ap-ctrl-row {1} s zero)
 
 ctrl-lift-suc : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) (k : Fin n) →
                 ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) (suc k) ≈s ap g (λ _ → s) k
-ctrl-lift-suc {n} g s k = ap-pair-suc {1} {n} ctrl-row g (λ _ → s) k
+ctrl-lift-suc {n} g s k = app-pair {1} {1} {n} ctrl-row g (λ _ → s) (suc k)
 
 ap-p₁₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin 1) → ap (M.p₁ {1} {m}) o k ≈s o zero
 ap-p₁₁ {m} o zero = app-p₁ {1} {m} o zero
@@ -351,13 +331,13 @@ ap-wctrl {m} {n} y k =
 ap-⊕-zero : ∀ {m a b} (f : M.Matrix 1 a) (g : M.Matrix b m) (y : ∣ 𝔽 (a + m) ∣) →
             ap (f ⊕ g) y zero ≈s ap f (ap (M.p₁ {a} {m}) y) zero
 ap-⊕-zero {m} {a} {b} f g y =
-  ≈-trans (ap-pair-zero {a + m} {b} (f ∘ M.p₁ {a} {m}) (g ∘ M.p₂ {a} {m}) y)
+  ≈-trans (app-pair {a + m} {1} {b} (f ∘ M.p₁ {a} {m}) (g ∘ M.p₂ {a} {m}) y zero)
           (app-∘ f (M.p₁ {a} {m}) y zero)
 
 ap-⊕-suc : ∀ {m a b} (f : M.Matrix 1 a) (g : M.Matrix b m) (y : ∣ 𝔽 (a + m) ∣) (k : Fin b) →
            ap (f ⊕ g) y (suc k) ≈s ap g (ap (M.p₂ {a} {m}) y) k
 ap-⊕-suc {m} {a} {b} f g y k =
-  ≈-trans (ap-pair-suc {a + m} {b} (f ∘ M.p₁ {a} {m}) (g ∘ M.p₂ {a} {m}) y k)
+  ≈-trans (app-pair {a + m} {1} {b} (f ∘ M.p₁ {a} {m}) (g ∘ M.p₂ {a} {m}) y (suc k))
           (app-∘ g (M.p₂ {a} {m}) y k)
 
 ap-⊕₁-zero : ∀ {m b} (f : M.Matrix 1 1) (g : M.Matrix b m) (y : ∣ 𝔽 (suc m) ∣) →
@@ -796,7 +776,7 @@ ap-rec-inputs {Γ} γ {m} v' F s x o k =
   final (suc k) =
     +-cong (≈-trans (ap-⊕-suc M.I (M.in₁ {n} {p}) (inputs γ s x) k)
                     (app-congᵥ (M.in₁ {n} {p}) (ap-p₂₁ (inputs γ s x)) k))
-           (ap-in₂-suc (ap (M.in₂ {n} {p}) oF) k)
+           (app-in₂ {1} (ap (M.in₂ {n} {p}) oF) (suc k))
 
 ap-body-inputs : ∀ {Γ Γ' σ} (γ : Env Γ) (γ' : Env Γ') (v : Val σ)
                  (R : M.Matrix (suc (width-env γ')) (suc (width-env γ))) (T : M.Matrix (width v) (suc (width-env γ))) s x k →
@@ -825,15 +805,15 @@ ap-body-inputs γ γ' v R T s x k =
              body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
   body-at zero =
     ≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {n' + p}) wctrl y zero)
-                                     (≈-trans (ap-in₁-zero {n' + p} (ap wctrl y)) (ap-wctrl {width-env γ} {1} y zero)))
+                                     (≈-trans (app-in₁ {1} {n' + p} (ap wctrl y) zero) (ap-wctrl {width-env γ} {1} y zero)))
                             (≈-trans (ap-⊕₁-zero {n'} M.I (M.in₁ {n'} {p}) o) (app-I {1} (λ _ → o zero) zero)))
-                    (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {n'} {p}) z zero) (ap-in₂-zero {n' + p} _)))
+                    (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {n'} {p}) z zero) (app-in₂ {1} {n' + p} _ zero)))
             +-runit
   body-at (suc l) =
-    +-cong (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n' + p}) wctrl y (suc l)) (ap-in₁-suc {n' + p} (ap wctrl y) l))
+    +-cong (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n' + p}) wctrl y (suc l)) (app-in₁ {1} {n' + p} (ap wctrl y) (suc l)))
                             (ap-⊕₁-suc {n'} M.I (M.in₁ {n'} {p}) o l))
                     +-lunit)
-           (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {n'} {p}) z (suc l)) (ap-in₂-suc {n' + p} _ l))
+           (≈-trans (app-∘ (M.in₂ {1}) (M.in₂ {n'} {p}) z (suc l)) (app-in₂ {1} {n' + p} _ (suc l)))
 
 ap-branch-inputs : ∀ {Γ τ'} (γ : Env Γ) (v : Val τ') (R : M.Matrix (suc (width v)) (suc (width-env γ))) s x k →
                    ap (branch-inputs γ v ∘ ⟨ M.I , R ⟩) (inputs γ s x) k ≈s
@@ -879,14 +859,14 @@ map-built-zero γ {m} {n} G s x o =
   ≈-trans (app-+ₘ (map-built-out γ m n) (M.in₂ {1} {n} ∘ G) y zero)
   (≈-trans (+-cong
      (≈-trans (app-∘ (M.in₁ {1} {n}) Z y zero)
-     (≈-trans (ap-in₁-zero {n} (ap Z y))
+     (≈-trans (app-in₁ {1} {n} (ap Z y) zero)
      (≈-trans (app-+ₘ (wctrl ∘ M.p₁ {a} {suc m}) (M.p₁ {1} {m} ∘ M.p₂ {a} {suc m}) y zero)
        (+-cong (≈-trans (app-∘ (wctrl {width-env γ} {1}) (M.p₁ {a} {suc m}) y zero)
                 (≈-trans (ap-wctrl {width-env γ} {1} (ap (M.p₁ {a} {suc m}) y) zero)
                          (·-cong ≈-refl (ap-p₁-++ (inputs γ s x) o zero))))
                (≈-trans (app-∘ (M.p₁ {1} {m}) (M.p₂ {a} {suc m}) y zero)
                 (≈-trans (ap-p₁₁ (ap (M.p₂ {a} {suc m}) y) zero) (ap-p₂-++ (inputs γ s x) o zero)))))))
-     (≈-trans (app-∘ (M.in₂ {1} {n}) G y zero) (ap-in₂-zero {n} (ap G y))))
+     (≈-trans (app-∘ (M.in₂ {1} {n}) G y zero) (app-in₂ {1} {n} (ap G y) zero)))
    +-runit)
   where
   a = suc (width-env γ)
@@ -898,8 +878,8 @@ map-built-suc : ∀ {Γ} (γ : Env Γ) {m n} (G : M.Matrix n (suc (width-env γ)
                 ap G (map-input γ s x o) k
 map-built-suc γ {m} {n} G s x o k =
   ≈-trans (app-+ₘ (map-built-out γ m n) (M.in₂ {1} {n} ∘ G) y (suc k))
-  (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) Z y (suc k)) (ap-in₁-suc {n} (ap Z y) k))
-                   (≈-trans (app-∘ (M.in₂ {1} {n}) G y (suc k)) (ap-in₂-suc {n} (ap G y) k)))
+  (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) Z y (suc k)) (app-in₁ {1} {n} (ap Z y) (suc k)))
+                   (≈-trans (app-∘ (M.in₂ {1} {n}) G y (suc k)) (app-in₂ {1} {n} (ap G y) (suc k))))
            +-lunit)
   where
   a = suc (width-env γ)
@@ -930,10 +910,10 @@ built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s
 built-zero {γ = γ} {n} R' s x =
   ≈-trans (app-+ₘ (built-out γ n) (M.in₂ {1} ∘ R') (inputs γ s x) zero)
   (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wctrl (inputs γ s x) zero)
-                            (≈-trans (ap-in₁-zero {n} (ap wctrl (inputs γ s x)))
+                            (≈-trans (app-in₁ {1} {n} (ap wctrl (inputs γ s x)) zero)
                                      (ap-wctrl {width-env γ} {1} (inputs γ s x) zero)))
                    (≈-trans (app-∘ (M.in₂ {1} {n}) R' (inputs γ s x) zero)
-                            (ap-in₂-zero {n} (ap R' (inputs γ s x)))))
+                            (app-in₂ {1} {n} (ap R' (inputs γ s x)) zero)))
            +-runit)
 
 built-suc : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x k →
@@ -941,9 +921,9 @@ built-suc : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s 
 built-suc {γ = γ} {n} R' s x k =
   ≈-trans (app-+ₘ (built-out γ n) (M.in₂ {1} ∘ R') (inputs γ s x) (suc k))
   (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wctrl (inputs γ s x) (suc k))
-                            (ap-in₁-suc {n} (ap wctrl (inputs γ s x)) k))
+                            (app-in₁ {1} {n} (ap wctrl (inputs γ s x)) (suc k)))
                    (≈-trans (app-∘ (M.in₂ {1} {n}) R' (inputs γ s x) (suc k))
-                            (ap-in₂-suc {n} (ap R' (inputs γ s x)) k)))
+                            (app-in₂ {1} {n} (ap R' (inputs γ s x)) (suc k))))
            +-lunit)
 
 subst-base : ∀ {σ} {i i' : Ix (base σ)} (e : Ix._≈_ (base σ) i i')

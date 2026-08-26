@@ -1315,7 +1315,7 @@ private
     root : o zero ≈s a
     root =
       ≈-trans (ho zero)
-      (≈-trans (+-cong ≈-refl (≈-trans (ap-pair-zero {n} {1} D εₘ u) (app-+ D (λ _ → c ·ₛ s) y zero)))
+      (≈-trans (+-cong ≈-refl (≈-trans (app-pair {n} {1} {1} D εₘ u zero) (app-+ D (λ _ → c ·ₛ s) y zero)))
       (≈-trans (≈-sym +-assoc)
       (≈-trans (+-cong (≈-trans (+-cong ≈-refl (≈-trans (app-congᵥ D (λ _ → ≈-sym ·-runit) zero)
                                                           (≈-trans (model.app-· D (c ·ₛ s) (λ _ → ι) zero) (·-cong ·-comm ≈-refl))))
@@ -1325,7 +1325,7 @@ private
     payload : ∀ k → o (suc k) ≈s v k
     payload zero =
       ≈-trans (ho (suc zero))
-      (≈-trans (+-cong ≈-refl (≈-trans (ap-pair-suc {n} {1} D εₘ u zero) (app-εₘ {1} u zero)))
+      (≈-trans (+-cong ≈-refl (≈-trans (app-pair {n} {1} {1} D εₘ u (suc zero)) (app-εₘ {1} u zero)))
                (≈-trans +-runit (≈-sym hv)))
 
   DepRel-bool : ∀ {is} (ω : rel is) (vs : sort-vals is) b {i : Ix (unit [+] unit)}
