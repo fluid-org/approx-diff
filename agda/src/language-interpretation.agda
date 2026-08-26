@@ -358,6 +358,27 @@ mutual
       ∎
       where open ≈-Reasoning isEquiv
 
+  strong-apply-bwd-natural : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj}
+    (ks : ∀ i → prod Γ' (δ i) ⇒ δ' i) {δ₀ δ₀' : Fin n → obj} (hs : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i) →
+    (strong-as-poly-map τ (strong-concat-mor hs ks) δ∅ ∘co (apply-bwd τ δ δ₀ ∘ p₂))
+      ≈ ((apply-bwd τ δ' δ₀' ∘ p₂)
+         ∘co (strong-fmor (as-poly {Δ} {n} τ δ') hs ∘co strong-as-poly-map τ ks δ₀))
+  strong-apply-bwd-natural τ {δ = δ} {δ'} ks {δ₀} {δ₀'} hs =
+    ≈-trans (≈-sym CoK.id-left)
+    (≈-trans (CoK.∘-cong (≈-sym iso-fact) ≈-refl)
+    (≈-trans (CoK.assoc _ _ _)
+    (≈-trans (CoK.∘-cong ≈-refl (≈-sym (CoK.assoc _ _ _)))
+    (≈-trans (CoK.∘-cong ≈-refl (CoK.∘-cong (≈-sym (strong-apply-fwd-natural τ ks hs)) ≈-refl))
+    (≈-trans (CoK.∘-cong ≈-refl (CoK.assoc _ _ _))
+    (≈-trans (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.assoc _ _ _)))
+    (≈-trans (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl fwd-bwd-fact)))
+             (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl CoK.id-right)))))))))
+    where
+    iso-fact : ((apply-bwd τ δ' δ₀' ∘ p₂) ∘co (apply-fwd τ δ' δ₀' ∘ p₂)) ≈ p₂
+    iso-fact = ≈-trans (≈-sym (lift-comp _ _)) (≈-trans (∘-cong (apply-bwd-fwd τ δ' δ₀') ≈-refl) id-left)
+    fwd-bwd-fact : ((apply-fwd τ δ δ₀ ∘ p₂) ∘co (apply-bwd τ δ δ₀ ∘ p₂)) ≈ p₂
+    fwd-bwd-fact = ≈-trans (≈-sym (lift-comp _ _)) (≈-trans (∘-cong (apply-fwd-bwd τ δ δ₀) ≈-refl) id-left)
+
   strong-apply-fwd-body-natural : ∀ {Δ n} (τ : type (suc n + Δ)) {Γ' : Obj} {δ δ' : Fin Δ → obj}
     (ks : ∀ i → prod Γ' (δ i) ⇒ δ' i) {δ₀ δ₀' : Fin n → obj} (hs : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i)
     {X X' : obj} (kc : prod Γ' X ⇒ X') →
@@ -392,35 +413,9 @@ mutual
       (≈-trans (≈-sym (strong-as-poly-map-comp τ (λ i → ≡-to-⇒ (env-pw δ' δ₀' X' i) ∘ p₂) F₁ δ∅))
                (CoK.∘-cong (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (env-pw δ' δ₀' X' i)) δ∅) ≈-refl))))
     ab-step : (SAM-1 ∘co (ab ∘ p₂)) ≈ ((ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P))
-    ab-step = begin
-        SAM-1 ∘co (ab ∘ p₂)
-      ≈˘⟨ CoK.id-left ⟩
-        p₂ ∘co (SAM-1 ∘co (ab ∘ p₂))
-      ≈˘⟨ CoK.∘-cong iso-fact ≈-refl ⟩
-        ((ab' ∘ p₂) ∘co (af₁' ∘ p₂)) ∘co (SAM-1 ∘co (ab ∘ p₂))
-      ≈⟨ CoK.assoc _ _ _ ⟩
-        (ab' ∘ p₂) ∘co ((af₁' ∘ p₂) ∘co (SAM-1 ∘co (ab ∘ p₂)))
-      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
-        (ab' ∘ p₂) ∘co (((af₁' ∘ p₂) ∘co SAM-1) ∘co (ab ∘ p₂))
-      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (strong-apply-fwd-natural {n = 1} τ (strong-concat-mor hs ks) (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc)) ≈-refl) ⟩
-        (ab' ∘ p₂) ∘co ((SF-P' ∘co (SAM-P ∘co (af₁ ∘ p₂))) ∘co (ab ∘ p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
-        (ab' ∘ p₂) ∘co (SF-P' ∘co ((SAM-P ∘co (af₁ ∘ p₂)) ∘co (ab ∘ p₂)))
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.assoc _ _ _)) ⟩
-        (ab' ∘ p₂) ∘co (SF-P' ∘co (SAM-P ∘co ((af₁ ∘ p₂) ∘co (ab ∘ p₂))))
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl fwd-bwd-fact)) ⟩
-        (ab' ∘ p₂) ∘co (SF-P' ∘co (SAM-P ∘co p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl CoK.id-right) ⟩
-        (ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P)
-      ∎
-      where
-      open ≈-Reasoning isEquiv
-      iso-fact : ((ab' ∘ p₂) ∘co (af₁' ∘ p₂)) ≈ p₂
-      iso-fact = ≈-trans (≈-sym (lift-comp ab' af₁'))
-                 (≈-trans (∘-cong (apply-bwd-fwd {n = 1} τ (concat δ₀' δ') (extend δ∅ X')) ≈-refl) id-left)
-      fwd-bwd-fact : ((af₁ ∘ p₂) ∘co (ab ∘ p₂)) ≈ p₂
-      fwd-bwd-fact = ≈-trans (≈-sym (lift-comp af₁ ab))
-                     (≈-trans (∘-cong (apply-fwd-bwd {n = 1} τ (concat δ₀ δ) (extend δ∅ X)) ≈-refl) id-left)
+    ab-step =
+      strong-apply-bwd-natural {n = 1} τ (strong-concat-mor hs ks)
+                               (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc)
 
     main : (SF ∘co (SAM-X ∘co (((af ∘ Rs) ∘ ab) ∘ p₂)))
            ≈ ((((af' ∘ Rs') ∘ ab') ∘ p₂) ∘co (SF-P' ∘co SAM-P))
@@ -704,35 +699,9 @@ mutual
                (CoK.∘-cong (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ' X' i)) δ∅) ≈-refl))))
 
     ab-step : (SAM-sub ∘co (ab ∘ p₂)) ≈ ((ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P))
-    ab-step = begin
-        SAM-sub ∘co (ab ∘ p₂)
-      ≈˘⟨ CoK.id-left ⟩
-        p₂ ∘co (SAM-sub ∘co (ab ∘ p₂))
-      ≈˘⟨ CoK.∘-cong iso-fact ≈-refl ⟩
-        ((ab' ∘ p₂) ∘co (af₁' ∘ p₂)) ∘co (SAM-sub ∘co (ab ∘ p₂))
-      ≈⟨ CoK.assoc _ _ _ ⟩
-        (ab' ∘ p₂) ∘co ((af₁' ∘ p₂) ∘co (SAM-sub ∘co (ab ∘ p₂)))
-      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
-        (ab' ∘ p₂) ∘co (((af₁' ∘ p₂) ∘co SAM-sub) ∘co (ab ∘ p₂))
-      ≈˘⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (strong-apply-fwd-natural {n = 1} (sub (sub-lift σ) τ) gs (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc)) ≈-refl) ⟩
-        (ab' ∘ p₂) ∘co ((SF-P' ∘co (SAM-P ∘co (af₁ ∘ p₂))) ∘co (ab ∘ p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.assoc _ _ _) ⟩
-        (ab' ∘ p₂) ∘co (SF-P' ∘co ((SAM-P ∘co (af₁ ∘ p₂)) ∘co (ab ∘ p₂)))
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.assoc _ _ _)) ⟩
-        (ab' ∘ p₂) ∘co (SF-P' ∘co (SAM-P ∘co ((af₁ ∘ p₂) ∘co (ab ∘ p₂))))
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl fwd-bwd-fact)) ⟩
-        (ab' ∘ p₂) ∘co (SF-P' ∘co (SAM-P ∘co p₂))
-      ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl CoK.id-right) ⟩
-        (ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P)
-      ∎
-      where
-      open ≈-Reasoning isEquiv
-      iso-fact : ((ab' ∘ p₂) ∘co (af₁' ∘ p₂)) ≈ p₂
-      iso-fact = ≈-trans (≈-sym (lift-comp ab' af₁'))
-                 (≈-trans (∘-cong (apply-bwd-fwd {n = 1} (sub (sub-lift σ) τ) δ' (extend δ∅ X')) ≈-refl) id-left)
-      fwd-bwd-fact : ((af₁ ∘ p₂) ∘co (ab ∘ p₂)) ≈ p₂
-      fwd-bwd-fact = ≈-trans (≈-sym (lift-comp af₁ ab))
-                     (≈-trans (∘-cong (apply-fwd-bwd {n = 1} (sub (sub-lift σ) τ) δ (extend δ∅ X)) ≈-refl) id-left)
+    ab-step =
+      strong-apply-bwd-natural {n = 1} (sub (sub-lift σ) τ) gs
+                               (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc)
 
     main : (SF ∘co (SAM-X ∘co ((((af ∘ Rs) ∘ S) ∘ ab) ∘ p₂)))
              ≈ (((((af' ∘ Rs') ∘ S') ∘ ab') ∘ p₂) ∘co (SF-P' ∘co SAM-P))
