@@ -12,7 +12,6 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
-open import Data.Empty using (⊥)
 import prop
 open import prop using (_∧_; ∃; Prf; ⟪_⟫; _,_; proj₁; proj₂)
 open import prop-setoid using (Setoid)
@@ -107,7 +106,7 @@ FibC Γ i = ⟦ Γ ⟧ctxt .fam .fm i
 
 module FibC Γ i = Semimodule (FibC Γ i)
 
-open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-e; app-congₘ; app-congᵥ; app-p₁; app-p₂; app-in₁; app-in₂; app-pair; concat-+)
+open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-congₘ; app-congᵥ; app-p₁; app-p₂; app-in₁; app-in₂; app-pair; concat-+)
   renaming (app to ap)
 open CommutativeSemiring S public using (ι; ε; +-cong; ·-cong; +-lunit; +-comm; +-assoc; ·-lunit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
   renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)

@@ -2,8 +2,7 @@
 
 open import Level using (0ℓ)
 open import Data.Nat using (suc; _+_)
-open import Data.Fin using (zero)
-open import Data.Product using (Σ; _,_; proj₁)
+open import Data.Product using (Σ; _,_)
 open import every using (Every; []; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst)
 open import prop-setoid using (Setoid)

@@ -155,9 +155,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
 
   ------------------------------------------------------------------------------
   -- Preservation of coproducts.
-  --
-  -- This should be trivial, because everything is the identity, but
-  -- Agda makes us show every case separately.
 
   open import finite-coproduct-functor
   open import Data.Sum using (inj₁; inj₂)

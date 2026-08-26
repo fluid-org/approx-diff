@@ -1,13 +1,12 @@
 {-# OPTIONS --postfix-projections --prop --safe #-}
 
 open import Level using (0ℓ; suc)
-open import Data.Nat using (ℕ)
-open import Data.Product using (_,_; _×_)
-open import prop using (_,_; proj₁; proj₂; ∃ₛ; LiftS; liftS; tt; _⇔_; sym-⇔; trans-⇔; ⟪_⟫)
+open import Data.Product using (_,_)
+open import prop using (_,_; tt)
 open import prop-setoid
   using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂; 𝟙)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
-open import categories using (Category; HasProducts; HasCoproducts; HasTerminal; IsTerminal; setoid→category)
+open import categories using (Category; HasProducts; HasTerminal; IsTerminal)
 open import commutative-monoid using (CommutativeMonoid; 𝟙cm) renaming (_⊗_ to _×CM_)
 open import commutative-semiring using (CommutativeSemiring)
 open import functor using (Functor; NatTrans; ≃-NatTrans; HasLimitCones)
@@ -89,7 +88,7 @@ cat .Category.id-right .*≈* = idS-right
 cat .Category.assoc f g h .*≈* = assocS (f .*→*) (g .*→*) (h .*→*)
 
 ------------------------------------------------------------------------------
-open import cmon-enriched using (CMonEnriched; Biproduct; biproduct-iso; biproducts→coproducts)
+open import cmon-enriched using (CMonEnriched; Biproduct)
 
 ε-map : ∀ M N → M ⇒ N
 ε-map M N .*→* ._⇒s_.func x = N .ε

@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Level using (0ℓ; _⊔_) renaming (suc to lsuc)
+open import Level using (0ℓ) renaming (suc to lsuc)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ; suc; _+_; _<_; s≤s)
 open import Data.Nat.Properties using (m≤m+n; m≤n+m; n<1+n)
@@ -11,14 +11,13 @@ open import Data.Sum using (inj₁; inj₂)
 open import every using (Every; []; _∷_)
 open import Data.Unit.Polymorphic using (tt) renaming (⊤ to ⊤ₛ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym) renaming (subst to ≡-subst)
-open import Relation.Binary.PropositionalEquality.Properties using (subst-subst-sym; subst-sym-subst)
+open import Relation.Binary.PropositionalEquality.Properties using (subst-subst-sym)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
-open import categories using (Category; HasProducts; HasTerminal)
+open import categories using (Category)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
 import matrix
-import two
 
 -- Computability (totality) predicate on values: the existence
 -- content of the logical relation, without the denotational component. Its fundamental lemma is
@@ -39,10 +38,8 @@ open import language-operational.evaluation Sig S ℐ ctrl-weight
 private
   module M = matrix.Mat S
 
-open Category M.cat using (_⇒_; _∘_) renaming (id to idm)
-open HasProducts M.products using (p₁; p₂)
+open Category M.cat using (_⇒_)
 open M using (⟨_,_⟩)
-open HasTerminal M.terminal using (to-terminal)
 
 private
   ℓT = ℓ

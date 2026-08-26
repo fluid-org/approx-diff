@@ -10,7 +10,7 @@ open import Data.Fin.Properties using (splitAt⁻¹-↑ˡ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Product using (_,_)
 open import Data.Unit using (tt)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
@@ -33,13 +33,13 @@ module model = ho-model S ctrl-weight
 module interp = model.interp Sig ℐ
 open interp using (∅𝒞; fo-as-poly; 𝒞⟦_⟧ty; 𝒟⟦_⟧ty; 𝒟⟦_⟧ctxt; 𝒟⟦_⟧tm; 𝒟roll-mor)
 open prop-setoid._⇒_ using (func)
-open model.Fam⟨𝒞⟩μ using (idx; ∣_∣; Sort; mkSort; module Srt)
+open model.Fam⟨𝒞⟩μ using (idx; ∣_∣; Sort; mkSort)
 open Setoid using (Carrier)
 
 private
   module T = model.Fam⟨𝒞⟩μ.Tree ∅𝒞
 
-open T using (⟦_⟧shape; El; W; sup)
+open T using (⟦_⟧shape; El; sup)
 
 SortEnv : ℕ → Set₁
 SortEnv n = Fin n → Fin 0 ⊎ Sort 0

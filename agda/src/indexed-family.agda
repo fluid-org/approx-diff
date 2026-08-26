@@ -11,9 +11,7 @@ open import categories using (Category; setoid→category)
 
 -- Families of objects over a setoid
 --
--- FIXME: restate this as "Functor (setoid→category A) 𝒞"
 --
--- FIXME: restate this as a displayed category
 module _ {o m e os es} (A : Setoid os es) (𝒞 : Category o m e) where
 
   open Setoid A
@@ -21,7 +19,6 @@ module _ {o m e os es} (A : Setoid os es) (𝒞 : Category o m e) where
 
   -- A family of elements indexed over a setoid (really a functor from
   -- the setoid-as-category)
-  -- FIXME: rename to distinguish from other functor we call Fam (Grothendieck construction for one of these)
   record Fam : Set (o ⊔ m ⊔ e ⊔ suc os ⊔ suc es) where
     no-eta-equality
     field
@@ -108,7 +105,6 @@ module _ {o m e} {os es} {𝒞 : Category o m e} {A : Setoid os es} where
       ((f ∘f g) ∘f h) ≃f (f ∘f (g ∘f h))
   ≃f-assoc f g h .transf-eq = assoc _ _ _
 
--- FIXME: families over a fixed setoid form a category
 
   constF : ∀ {x y} → x ⇒ y → constantFam A 𝒞 x ⇒f constantFam A 𝒞 y
   constF f .transf _ = f
@@ -179,31 +175,15 @@ module _ {o m e o' m' e' os es}
   preserveConst⁻¹ x .transf a = 𝒟.id _
   preserveConst⁻¹ x .natural a₁≈a₂ = 𝒟.∘-cong (𝒟.≈-sym (F .fmor-id)) (𝒟.isEquiv .refl)
 
-  -- FIXME: preserves id and composition, and preserveConst is a natural isomorphism
-
-module _ {o m e o' m' e'} os es
-         {𝒞 : Category o m e}
-         {𝒟 : Category o' m' e'}
-         (A : Setoid os es)
-         {F G : Functor 𝒞 𝒟}
-         (α : NatTrans F G)
-  where
-
 ------------------------------------------------------------------------------
 -- reindexing of families (so that Fam is an indexed category)
---
--- FIXME: Codify what an indexed category is
---
--- Probably https://ncatlab.org/nlab/show/pseudofunctor specialised to
--- the case when the codomain is Cat
 module _ {o m e os es} {𝒞 : Category o m e} where
 
   open _⇒s_
   open Fam
 
-  -- NOTE: This requires that all proofs of setoid equalities are
-  -- equal for the iobj-id and iobj-trans to typecheck. This is why I
-  -- am using Prop.
+  -- Requires all proofs of setoid equalities to be equal, for iobj-id and iobj-trans to typecheck; hence
+  -- the setoid relations live in Prop.
   _[_] : ∀ {X Y : Setoid os es} → Fam X 𝒞 → (Y ⇒s X) → Fam Y 𝒞
   _[_] P f .fm w    = P .fm (f .func w)
   _[_] P f .subst e = P .subst (f .func-resp-≈ e)
@@ -265,8 +245,6 @@ module _ {o m e os es} {𝒞 : Category o m e} where
     (f₁≈f₂ : f₁ ≈s f₂) (g₁≈g₂ : g₁ ≈s g₂) →
        (reindex-≈ (f₁ ∘S g₁) (f₂ ∘S g₂) (∘S-cong f₁≈f₂ g₁≈g₂) ∘f reindex-comp {P = P})
     ≃f (reindex-comp ∘f (reindex-≈ g₁ g₂ g₁≈g₂ ∘f reindex-f g₁ (reindex-≈ f₁ f₂ f₁≈f₂)))
-    -- FIXME: better as horizontal composition? then we are using the
-    -- interchange law.
   reindex-comp-≈ P f₁≈f₂ g₁≈g₂ .transf-eq {x} =
     begin
       P .subst _ ∘ id _               ≈⟨ id-right ⟩
@@ -328,7 +306,6 @@ module _ {o m e os es} {𝒞 : Category o m e} where
 
 ------------------------------------------------------------------------------
 
--- FIXME: this is a special case of limits, defined in functor.agda
 record HasSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc m ⊔ suc e ⊔ suc os ⊔ suc es) where
   open Category 𝒞
   field
@@ -521,8 +498,6 @@ module _ {o m e} os es (𝒞 : Category o m e)
   open Fam
 
   open IsEquivalence
-
-  -- FIXME: this is a bit messy
 
   hasSetoidProducts : HasSetoidProducts os es 𝒞
   hasSetoidProducts .Π A F = hasDiscreteLimits A .Π (fam→functor F)

@@ -13,10 +13,8 @@ open import every using (Every; []; _∷_)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
 import matrix
-import cmon-enriched
 open import categories using (Category; HasProducts; HasTerminal)
-open import Level using (0ℓ) renaming (_⊔_ to _⊔ℓ_)
-open import Data.List using (List; []; _∷_)
+open import Data.List using ([]; _∷_)
 
 -- Values, environments, and big-step evaluation decorated with dependency relations, threading a
 -- control input: a distinguished extra input position holding the last eliminated constructor,
@@ -70,8 +68,7 @@ bool→val (inj₂ _) = inr unit
 private
   module M = matrix.Mat S
 
-open Category M.cat using (_⇒_; _∘_; ∘-cong₁; ∘-cong₂; assoc; id-right) renaming (id to idm)
-open HasTerminal M.terminal using (to-terminal)
+open Category M.cat using (_⇒_; _∘_)
 
 open HasProducts M.products using (p₁; p₂)
 open M using (⟨_,_⟩)
@@ -134,7 +131,6 @@ brel-deps : ∀ {is} (ω : rel is) (vs : sort-vals is) (b : ⊤ {0ℓ} ⊎ ⊤ {
 brel-deps ω vs (inj₁ _) = ⟨ rel-deps ω .func vs , M.εₘ ⟩
 brel-deps ω vs (inj₂ _) = ⟨ rel-deps ω .func vs , M.εₘ ⟩
 
-open M using (≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans)
 open HasProducts M.products using () renaming (prod-m to _⊕_) public
 
 ctrl-col : ∀ {m} → suc m ⇒ 1

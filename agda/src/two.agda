@@ -197,9 +197,6 @@ compl-∨ {I} = tt
 ¬-antitone {O} {I} _ = tt
 ¬-antitone {I} {I} _ = tt
 
--- FIXME: de Morgan, etc., should be derived from the fact that this
--- is a Boolean algebra.
-
 ------------------------------------------------------------------------------
 
 open import meet-semilattice using (MeetSemilattice)

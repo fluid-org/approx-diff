@@ -342,8 +342,6 @@ module _ where
              ⟨ project₁ ∘ f , project₂ ∘ f ⟩ ≃m f
   pair-ext {B = B} {C = C} f .eqfunc .eqfun x = (B × C) .≃-refl
 
-  -- FIXME: deduce biproducts from cmon-enrichment
-
   inject₁ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → X => (X ⊕ Y)
   inject₁ {Y = Y} .func .fun x = x , Y .⊥
   inject₁ {B = B} .func .mono x≤x' = x≤x' , B .≤-refl
@@ -427,8 +425,8 @@ module _ where
   proj₁-inverts-inj₁ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → (project₁ {X = X}{Y} ∘ inject₁) ≃m id
   proj₁-inverts-inj₁ {A} ._≃m_.eqfunc .eqfun x = ≃-refl A
 
-  proj₂-inverts-inj₂ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → (project₁ {X = X}{Y} ∘ inject₁) ≃m id
-  proj₂-inverts-inj₂ {A} ._≃m_.eqfunc .eqfun x = ≃-refl A
+  proj₂-inverts-inj₂ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → (project₂ {X = X}{Y} ∘ inject₂) ≃m id
+  proj₂-inverts-inj₂ {A}{B} ._≃m_.eqfunc .eqfun x = ≃-refl B
 
   proj₁-zeroes-inj₂ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → (project₁ {X = X}{Y} ∘ inject₂) ≃m ⊥-map
   proj₁-zeroes-inj₂ {A} ._≃m_.eqfunc .eqfun x = ≃-refl A
@@ -578,20 +576,3 @@ module _ where
     A .≤-refl , Y .∨-isJoin .IsJoin.inr
   L-costrength-assoc {A = A} {B = B} {X = X} {Y = Y} .eqfunc .eqfun < x , (x' , y) > .proj₂ =
     A .≤-refl , Y .∨-isJoin .IsJoin.[_,_] (Y .⊥-isBottom .IsBottom.≤-bottom) (B .≤-refl)
-
-{-
-  L-coassoc : ∀ {A}{X : JoinSemilattice A} → (L-map L-dup ∘ L-dup) ≃m (L-dup ∘ L-dup {X = X})
-  L-coassoc .eqfunc .eqfun bottom .proj₁ = tt
-  L-coassoc .eqfunc .eqfun bottom .proj₂ = tt
-  L-coassoc {A} .eqfunc .eqfun < x > = A .≃-refl
-
-  L-unit1 : ∀ {A}{X : JoinSemilattice A} → (L-counit ∘ L-dup) ≃m id {X = L X}
-  L-unit1 .eqfunc .eqfun bottom .proj₁ = tt
-  L-unit1 .eqfunc .eqfun bottom .proj₂ = tt
-  L-unit1 {A} .eqfunc .eqfun < x > = A .≃-refl
-
-  L-unit2 : ∀ {A}{X : JoinSemilattice A} → (L-map L-counit ∘ L-dup) ≃m id {X = L X}
-  L-unit2 .eqfunc .eqfun bottom .proj₁ = tt
-  L-unit2 .eqfunc .eqfun bottom .proj₂ = tt
-  L-unit2 {A} .eqfunc .eqfun < x > = A .≃-refl
--}

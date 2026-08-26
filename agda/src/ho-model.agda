@@ -13,7 +13,7 @@ import Data.Fin as Fin
 import Data.Product
 import Data.List
 import prop
-open import prop-setoid using (Setoid; IsEquivalence)
+open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories
   using (Category; HasTerminal; IsTerminal; HasCoproducts; HasExponentials; setoid→category)
@@ -24,7 +24,7 @@ open import cmon-enriched using (CMonEnriched)
 open import functor using (cones→limits)
 import indexed-family
 open import indexed-family
-  using (HasSetoidProducts; Fam; _⇒f_; _≃f_; _∘f_; constantFam; _[_]; reindex-≈)
+  using (HasSetoidProducts; Fam; _⇒f_; _[_])
 import matrix
 import fam
 import fam-mu-lifting

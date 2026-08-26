@@ -2,44 +2,34 @@
 
 open import Data.Bool as Bool using (Bool; not; _∧_; _∨_; if_then_else_)
 open import Data.Bool.ListAction using (any)
-open import Data.Nat using (ℕ)
-open import Data.List using (List; []; _∷_; allFin; map; filterᵇ; concat; partitionᵇ; foldr)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.Sum using (inj₁; inj₂)
-open import Level using (0ℓ)
-open import Relation.Nullary.Decidable using (⌊_⌋)
-open import list using (any-tabulate-false)
-import matrix
-import two
-open import Data.Bool as Bool using (Bool; _∨_)
-open import Data.Bool.Properties using (∨-comm; ∨-identityʳ)
+open import Data.Bool.Properties using (∨-comm; ∨-identityʳ; ∧-comm)
+open import Data.Empty using (⊥-elim)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; map; concat; filterᵇ; foldr; partitionᵇ)
+open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filterᵇ; concat; partitionᵇ; foldr)
+open import Data.List.Properties using (++-identityʳ; concat-++; concat-map; foldl-++; length-map; map-++; map-∘)
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties
+  using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭; ↭-length)
+open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
-open import Data.List.Relation.Unary.Any using (Any; here; there) renaming (map to Any-map)
-import Data.List.Relation.Unary.Any.Properties as AnyPr
-import Data.List.Relation.Unary.All.Properties as AllP
-open import Data.List.Properties using (++-identityʳ; concat-++; concat-map; foldl-++; map-++; map-∘)
+open import Data.List.Relation.Unary.Any using (Any) renaming (map to Any-map)
+open import Data.Nat using (ℕ; _≤_; z≤n; s≤s)
+open import Data.Nat.ListAction using (sum)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
+open import Level using (0ℓ)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
+open import Relation.Nullary.Decidable using (⌊_⌋; yes; no)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
-open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭)
-open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
-open import Data.Empty using (⊥-elim)
-open import Relation.Nullary.Decidable using (⌊_⌋; yes; no)
-open import list
-open import Data.Bool as Bool using (Bool; not; if_then_else_; _∧_; _∨_)
-open import Data.Bool.Properties using (∧-comm)
-open import Data.List using (List; []; _∷_; _++_; length; map; concat; filterᵇ)
-open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
+import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (↭-length; drop-∷)
-open import Data.Nat using (_≤_; z≤n; s≤s)
-open import Data.Nat.ListAction using (sum)
-open import Data.List.Properties using (concat-++; concat-map; ++-identityʳ; length-map; map-∘)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
-  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
+import Data.List.Relation.Unary.Any.Properties as AnyPr
+import matrix
+import two
+open import list
 
 -- Configurations of the interaction: a visible set of vertices together with one hidden region per
 -- weakly connected component of the hidden set, each carrying the dependence routed through it as

@@ -18,9 +18,6 @@ module example.render.annotated-value {ℓ} (Sig : Signature ℓ)
 
 open Signature Sig
 open Interpretation ℐ
-open import Data.Nat.Properties using (+-identityʳ; +-assoc)
-open import Relation.Binary.PropositionalEquality
-  using (_≡_; refl; sym; trans; cong; cong₂)
 open import language-syntax Sig using (unit; base; μ; var; _[+]_; _[×]_; _[→]_)
 open import language-operational.evaluation Sig S₀ ℐ ctrl-weight using (Val; Env; width; width-env)
 open Val
@@ -69,16 +66,6 @@ fold-vec f off (t ∷ᵥ ts) = fold f off t ∷ᵥ fold-vec f (off + covers t) t
 fold-all f off []       = []
 fold-all f off (t ∷ ts) = fold f off t ∷ fold-all f (off + covers t) ts
 
-covers-++ : ∀ {X} (ts us : List (AVal X)) →
-            covers-all (ts ++ us) ≡ covers-all ts + covers-all us
-covers-++ []       us = refl
-covers-++ (t ∷ ts) us =
-  trans (cong (covers t +_) (covers-++ ts us)) (sym (+-assoc (covers t) _ _))
-
-covers-fromList : ∀ {X} (ts : List (AVal X)) → covers-vec (fromList ts) ≡ covers-all ts
-covers-fromList []       = refl
-covers-fromList (t ∷ ts) = cong (covers t +_) (covers-fromList ts)
-
 module _ (show-const : ∀ {s} → sort-val s → String) where
 
   mutual
@@ -100,59 +87,6 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
     shape-env-of : ∀ {Γ} → Env Γ → List (AVal ⊤)
     shape-env-of emp     = []
     shape-env-of (γ · v) = shape-env-of γ ++ (shape-of v ∷ [])
-
-  mutual
-    covers-width : ∀ {τ} (v : Val τ) → covers (shape-of v) ≡ width v
-    covers-width {μ (unit [+] (_ [×] var zero))} v = covers-cell-width v
-    covers-width Val.unit          = refl
-    covers-width (Val.const {s} c) = +-identityʳ (sort-width s)
-    covers-width (Val.inl v)       =
-      cong suc (trans (+-identityʳ _) (covers-width v))
-    covers-width (Val.inr v)       =
-      cong suc (trans (+-identityʳ _) (covers-width v))
-    covers-width (Val.pair v u)    =
-      cong suc (trans (cong (covers (shape-of v) +_) (+-identityʳ _))
-                      (cong₂ _+_ (covers-width v) (covers-width u)))
-    covers-width (Val.clo γ _)     =
-      cong suc (trans (covers-fromList (shape-env-of γ)) (covers-env-width γ))
-    covers-width (Val.roll {τ = var _} v) = covers-width v
-    covers-width (Val.roll {τ = unit} v) = covers-width v
-    covers-width (Val.roll {τ = base _} v) = covers-width v
-    covers-width (Val.roll {τ = _ [×] _} v) = covers-width v
-    covers-width (Val.roll {τ = _ [→] _} v) = covers-width v
-    covers-width (Val.roll {τ = μ _} v) = covers-width v
-    covers-width (Val.roll {τ = (var _) [+] _} v) = covers-width v
-    covers-width (Val.roll {τ = (base _) [+] _} v) = covers-width v
-    covers-width (Val.roll {τ = (_ [+] _) [+] _} v) = covers-width v
-    covers-width (Val.roll {τ = (_ [×] _) [+] _} v) = covers-width v
-    covers-width (Val.roll {τ = (_ [→] _) [+] _} v) = covers-width v
-    covers-width (Val.roll {τ = (μ _) [+] _} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (var _)} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] unit} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (base _)} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (_ [+] _)} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (_ [→] _)} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (μ _)} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (_ [×] (unit))} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (_ [×] (base _))} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (_ [×] (_ [+] _))} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (_ [×] (_ [×] _))} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (_ [×] (_ [→] _))} v) = covers-width v
-    covers-width (Val.roll {τ = unit [+] (_ [×] (μ _))} v) = covers-width v
-
-    covers-cell-width : ∀ {σ} (v : Val (μ (unit [+] (σ [×] var zero)))) →
-                        covers (cell-of v) ≡ width v
-    covers-cell-width (Val.roll (Val.inl Val.unit)) = refl
-    covers-cell-width (Val.roll (Val.inr (Val.pair hd tl))) =
-      cong (λ k → suc (suc k))
-           (trans (cong (covers (shape-of hd) +_) (+-identityʳ _))
-                  (cong₂ _+_ (covers-width hd) (covers-width tl)))
-
-    covers-env-width : ∀ {Γ} (γ : Env Γ) → covers-all (shape-env-of γ) ≡ width-env γ
-    covers-env-width emp     = refl
-    covers-env-width (γ · v) =
-      trans (covers-++ (shape-env-of γ) (shape-of v ∷ []))
-            (cong₂ _+_ (covers-env-width γ) (trans (+-identityʳ _) (covers-width v)))
 
 label-of : Tag → String
 label-of Tag.unit      = "()"
@@ -177,23 +111,8 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
     join-run row off zero    = Sc.ε
     join-run row off (suc n) = row off Sc.+ join-run row (suc off) n
 
-    at-run : Scalar → ℕ → ℕ → ℕ → Scalar
-    at-run a zero    off      i        = Sc.ε
-    at-run a (suc n) zero     zero     = a
-    at-run a (suc n) zero     (suc i)  = at-run a n zero i
-    at-run a (suc n) (suc o)  zero     = Sc.ε
-    at-run a (suc n) (suc o)  (suc i)  = at-run a (suc n) o i
-
   fill : (ℕ → Scalar) → ℕ → AVal ⊤ → AVal Scalar
   fill row = fold (λ sh _ n off cs → node sh (join-run row off n) n cs)
-
-  private
-    sum-at : ∀ {k} → Vec (ℕ → Scalar) k → ℕ → Scalar
-    sum-at []ᵥ       i = Sc.ε
-    sum-at (r ∷ᵥ rs) i = r i Sc.+ sum-at rs i
-
-  spread : AVal Scalar → ℕ → ℕ → Scalar
-  spread t off = fold (λ _ a n o rs i → at-run a n o i Sc.+ sum-at rs i) off t
 
   fill-all : (ℕ → Scalar) → ℕ → List (AVal ⊤) → List (AVal Scalar)
   fill-all row off []       = []
@@ -207,5 +126,3 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
               (ℕ → Scalar) → Env Γ → List (AVal Scalar)
   row→avals sc row γ = fill-all row 0 (shape-env-of sc γ)
 
-  aval→row : AVal Scalar → ℕ → Scalar
-  aval→row t i = spread t 0 i

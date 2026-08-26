@@ -311,13 +311,11 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
   (F ∘F G) .fmor-comp f g =
     ℰ.isEquiv .trans (F .fmor-cong (G .fmor-comp _ _)) (F .fmor-comp _ _)
 
-  -- FIXME: this is an isomorphism
   constF-F : ∀ (F : Functor 𝒟 ℰ) x →
              NatTrans (constF 𝒞 (F .fobj x)) (F ∘F constF 𝒞 x)
   constF-F F x .transf _ = ℰ.id _
   constF-F F x .natural f = ℰ.∘-cong (F .fmor-id) ℰ.≈-refl
 
--- FIXME: associativity and unit for functor composition
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃ o₄ m₄ e₄}
          {𝒞 : Category o₁ m₁ e₁}
          {𝒟 : Category o₂ m₂ e₂}
@@ -646,13 +644,6 @@ module LimitFunctor {o₁ m₁ e₁ o₂ m₂ e₂}
   counitΠ .transf D = limits D .cone
   counitΠ .natural {D} {E} α .transf-eq s =
     𝒞.≈-sym (limits E .lambda-eval (α ∘ limits D .cone) .transf-eq s)
-{-
-  triangle1 : ≃-NatTrans
-                (left-unit _ ∘ ((counitΠ ∘H id const) ∘ (F-assoc⁻¹ ∘ ((id const ∘H unitΠ) ∘ right-unit⁻¹ _))))
-                (id const)
-  triangle1 .transf-eq x .transf-eq s = {!!}
--}
---   triangle2 : ≃-NatTrans
 
 record HasLimits {o₁ m₁ e₁ o₂ m₂ e₂} (𝒮 : Category o₁ m₁ e₁) (𝒞 : Category o₂ m₂ e₂)
              : Set (o₁ ⊔ e₁ ⊔ e₂ ⊔ m₁ ⊔ m₂ ⊔ o₂) where

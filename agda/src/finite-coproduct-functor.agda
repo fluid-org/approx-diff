@@ -15,8 +15,6 @@ private
   module 𝒟 = Category 𝒟
   module F = Functor F
 
--- FIXME: do preservation of coproducts as in finite-product-functor
-
 module _ (𝒞P : HasCoproducts 𝒞) (𝒟P : HasCoproducts 𝒟) where
 
   private
@@ -42,8 +40,6 @@ module _ (𝒞P : HasCoproducts 𝒞) (𝒟P : HasCoproducts 𝒟) where
     iso .Category.Iso.bwd = mul
     iso .Category.Iso.fwd∘bwd≈id = Category.IsIso.f∘inverse≈id Fp
     iso .Category.Iso.bwd∘fwd≈id = Category.IsIso.inverse∘f≈id Fp
-
-    -- FIXME: naturality
 
     F-in₁ : ∀ {x y} → (mul 𝒟.∘ F.fmor (𝒞P.in₁ {x} {y})) 𝒟.≈ 𝒟P.in₁
     F-in₁ {x} {y} = begin

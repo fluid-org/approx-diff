@@ -80,8 +80,6 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
   project₂ .fmor-id = 𝒟.≈-refl
   project₂ .fmor-comp f g = 𝒟.≈-refl
 
-  -- FIXME: natural isomorphisms to show that this is a product
-
   module _ {o₃ m₃ e₃} (𝒮 : Category o₃ m₃ e₃) where
 
     open Limit

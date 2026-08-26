@@ -19,7 +19,7 @@ finite-product : ∀ {o m e} {𝒞 : Category o m e} → HasTerminal 𝒞 → Ha
 finite-product T P i []       = HasTerminal.witness T
 finite-product T P i (x ∷ xs) = HasProducts.prod P (i x) (finite-product T P i xs)
 
--- Models of signatures live in finite product (FIXME: monoidal?)
+-- Models of signatures live in finite product
 -- categories with a specified object of truth values.
 record PointedFPCat o m e : Set (suc (o ⊔ m ⊔ e)) where
   field
@@ -57,12 +57,6 @@ record Model {ℓ o m e} (𝒞 : PointedFPCat o m e) (Sig : Signature ℓ) : Set
     ⟦sort⟧ : sort → obj
     ⟦op⟧   : ∀ {i o} → op i o → list→product ⟦sort⟧ i ⇒ ⟦sort⟧ o
     ⟦rel⟧  : ∀ {i} → rel i → list→product ⟦sort⟧ i ⇒ Ω
-
-  -- FIXME: morphisms of models: for each sort, a morphism between
-  --   interpretations, such that all the operations and relations are
-  --   preserved.
-  --
-  --   Get a category of models in the given category.
 
 -- If F : 𝒞 ⇒ 𝒟 is a finite product preserving, point preserving
 -- functor, then there is a map of Models : Model 𝒞 Sig → Model 𝒟 Sig

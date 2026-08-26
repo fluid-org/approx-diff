@@ -38,8 +38,6 @@ record CommutativeMonoid {o e} (A : Setoid o e) : Set (o ⊔ e) where
     where open ≈-Reasoning isEquivalence
 
 ------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
 -- The additive preorder x ⊑ y iff x + y ≈ y. When addition is idempotent this is a preorder with
 -- monotone addition, joins given by + and bottom ε.
 module AdditivePreorder {o e} {A : Setoid o e} (M : CommutativeMonoid A)

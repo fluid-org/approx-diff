@@ -526,9 +526,6 @@ module _ {o m e o₂ m₂ e₂}
   private
     module 𝒮𝒞Cmon = CMonEnriched (FunctorCat-cmon 𝒮 𝒞 CM𝒞)
 
-  -- FIXME: Using the fact that const : 𝒞 ⇒ [ 𝒮 ⇒ 𝒞 ] is a
-  -- Cmon-functor. Make this explicit.
-
   lambda-ε : ∀ {x} → lambda x 𝒮𝒞Cmon.εm ≈ εm {x} {apex}
   lambda-ε {x} = begin
       lambda x 𝒮𝒞Cmon.εm

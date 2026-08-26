@@ -22,7 +22,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
 open import example.runs (nonzero three.semiring) three.semiring three.C using (map-run; filter-run; env; model-output; model-of)
 open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
 open import example.render.annotated-value Sig three.semiring interpretation three.C
-  using (AVal; node; Tag; arity; shape-of; shape-env-of; covers; covers-vec; covers-all;
+  using (AVal; node; Tag; arity; shape-of; shape-env-of; covers;
          label-of; fold; fold-all)
 open import Data.Unit using (⊤)
 open import Data.Nat using (_+_)
@@ -42,14 +42,8 @@ private
     node-edges _ _ _ off rs =
       off , (mapL (λ r → off , proj₁ r) (toList rs) ++L concat (mapL proj₂ (toList rs)))
 
-  drawn : ℕ → AVal ⊤ → List (ℕ × String)
-  drawn = fold node-entry
-
   drawn-all : ℕ → List (AVal ⊤) → List (ℕ × String)
   drawn-all off ts = concat (fold-all node-entry off ts)
-
-  kid-edges : ℕ → AVal ⊤ → List (ℕ × ℕ)
-  kid-edges off t = proj₂ (fold node-edges off t)
 
   kid-edges-all : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
   kid-edges-all off ts = concat (mapL proj₂ (fold-all node-edges off ts))

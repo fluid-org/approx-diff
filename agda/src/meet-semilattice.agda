@@ -116,8 +116,6 @@ module _ where
   assoc {D = D} f g h .eqfunc .eqfun x = D .≃-refl
 
   -- Commutative Monoid structure
-  --
-  -- FIXME: this is true of any monoids: generalise!
   module _ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} where
     open preorder._≃m_
     private

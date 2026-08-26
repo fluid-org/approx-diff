@@ -4,9 +4,6 @@
 -- canonical comparison with a chosen biproduct against maps built by copairing. Stated over an
 -- abstract category so that instances at concrete categories whose objects lack eta need no
 -- equational reasoning of their own.
--- FIXME: Not clear why this is its own module or whether this overlaps with something we already have.
--- Also that last comment about abstract category seems like noise. And the other comments here seem to be
--- assuming some context: "first leg", "this is the naturality a change of base needs", etc.
 open import categories using (Category)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 open import commutative-monoid using (CommutativeMonoid)
@@ -19,7 +16,6 @@ open CMonEnriched CM
 open CommutativeMonoid
 open Biproduct
 
--- FIXME: These would be better alongside the other generic biproduct facts.
 pair-id-ε : ∀ {x y} (B : Biproduct CM x y) → Biproduct.pair B (id x) εm ≈ B .in₁
 pair-id-ε B =
   ≈-trans (Biproduct.pair-cong B (≈-sym (B .id-1)) (≈-sym (B .zero-2)))

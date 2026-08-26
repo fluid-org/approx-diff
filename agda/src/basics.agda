@@ -263,7 +263,6 @@ module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreo
 
   ------------------------------------------------------------------------------
   -- residual implies distributivity of joins and the monoid
-  -- FIXME: don't assume symmetry and do the left and right ones separately
   module _ {_∙_ ε _-∙_ _∨_}
            (isMonoid : IsMonoid _∙_ ε)
            (∙-sym : ∀ {x y} → (x ∙ y) ≤ (y ∙ x))
