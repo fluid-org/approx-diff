@@ -109,7 +109,7 @@ module _ {x x' y y' : obj}
       ≈⟨ Biproduct.pair-natural E _ _ _ ⟩
         Biproduct.pair E ((fwd ∘ D .p₁) ∘ D .in₁) (D .p₂ ∘ D .in₁)
       ≈⟨ Biproduct.pair-cong E
-           (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (D .id-1)) id-right))
+           (tail-cancel (D .id-1))
            (D .zero-2) ⟩
         Biproduct.pair E fwd εm
       ≈⟨ Biproduct.pair-cong E (≈-sym id-left) (≈-sym (comp-bilinear-ε₁ fwd)) ⟩
@@ -131,7 +131,7 @@ module _ {x x' y y' : obj}
       ≈⟨ Biproduct.pair-natural E _ _ _ ⟩
         Biproduct.pair E ((fwd ∘ D .p₁) ∘ D .in₂) (D .p₂ ∘ D .in₂)
       ≈⟨ Biproduct.pair-cong E
-           (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (D .zero-1)) (comp-bilinear-ε₂ fwd)))
+           (≈-trans (tail-cong (D .zero-1)) (comp-bilinear-ε₂ fwd))
            (D .id-2) ⟩
         Biproduct.pair E εm (id _)
       ≈⟨ pair-ε-id E ⟩

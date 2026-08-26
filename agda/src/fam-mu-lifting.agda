@@ -189,7 +189,7 @@ prod-section c d .at-natural (e₁ , e₂) =
 scale-section : ∀ {X : Obj} → (𝟙c ⇒ 𝟙c) → Section X → Section X
 scale-section w c .at x = c .at x ∘ w
 scale-section w c .at-natural e =
-  ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (c .at-natural e) ≈-refl)
+  head-cong (c .at-natural e)
 
 elimF : ∀ {Γ X C : Obj} → Section C → Mor (Fam𝒞-P.prod Γ X) C → Mor (Fam𝒞-P.prod Γ (Lf X)) C
 elimF cC f .idxf = f .idxf
@@ -216,27 +216,22 @@ preserves-section-∘ : ∀ {X Y Z : Obj} {f : Mor Y Z} {g : Mor X Y} {cX cY cZ}
                       preserves-section (f Fam𝒞.∘ g) cX cZ
 preserves-section-∘ {f = f} {g} pf pg .at x =
   ≈-trans (∘-cong id-left ≈-refl)
-    (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (pg .at x)) (pf .at _)))
+    (≈-trans (tail-cong (pg .at x)) (pf .at _))
 
 preserves-section-resp : ∀ {X Y : Obj} {f g : Mor X Y} {c : Section X} {d : Section Y} →
                          f Fam𝒞.≈ g → preserves-section f c d → preserves-section g c d
 preserves-section-resp {X} {Y} {f} {g} {c} {d} f≃g pf .at x =
   ≈-trans (∘-cong (≈-sym (f≃g ._≃_.famf-eq .indexed-family._≃f_.transf-eq)) ≈-refl)
-    (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (pf .at x)) (d .at-natural _)))
+    (≈-trans (tail-cong (pf .at x)) (d .at-natural _))
 
 preserves-section-inv : ∀ {X Y : Obj} {f : Mor X Y} {g : Mor Y X} {c : Section X} {d : Section Y} →
                         (f Fam𝒞.∘ g) ≃ Fam𝒞.id Y → (g Fam𝒞.∘ f) ≃ Fam𝒞.id X →
                         preserves-section f c d → preserves-section g d c
 preserves-section-inv {X} {Y} {f} {g} {c} {d} fg gf hf .at y =
   ≈-trans (∘-cong ≈-refl (≈-sym (≈-trans (∘-cong ≈-refl (hf .at x)) (d .at-natural fgy≈y))))
-  (≈-trans (≈-sym (assoc _ _ _))
-  (≈-trans (∘-cong (g .famf ._⇒f_.natural fgy≈y) ≈-refl)
-  (≈-trans (assoc _ _ _)
-  (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
-  (≈-trans (∘-cong ≈-refl (≈-trans (∘-cong (≈-sym id-left) ≈-refl) (hgf .at x)))
-           (c .at-natural (g .idxf .prop-setoid._⇒_.func-resp-≈ fgy≈y)))))))
+  (≈-trans (head-cong (g .famf ._⇒f_.natural fgy≈y))
+   (≈-trans (tail-cong (≈-trans (head-cong (≈-sym id-left)) (hgf .at x)))
+             (c .at-natural (g .idxf .prop-setoid._⇒_.func-resp-≈ fgy≈y))))
   where
   x = g .idxf .prop-setoid._⇒_.func y
   fgy≈y : _≈s_ (Y .idx) (f .idxf .prop-setoid._⇒_.func x) y
@@ -278,7 +273,7 @@ preserves-Lf-root f .at x = Lmap-root (f .famf ._⇒f_.transf x)
 preserves-scale : ∀ {X Y : Obj} {f : Mor X Y} {w : 𝟙c ⇒ 𝟙c} {c d} →
                   preserves-section f c d →
                   preserves-section f (scale-section w c) (scale-section w d)
-preserves-scale p .at x = ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (p .at x) ≈-refl)
+preserves-scale p .at x = head-cong (p .at x)
 
 Lf-iso : ∀ {X Y : Obj} → Fam𝒞.Iso X Y → Fam𝒞.Iso (Lf X) (Lf Y)
 Lf-iso = functor-preserve-iso LfS.F
@@ -790,13 +785,10 @@ module FoldDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                          fold-fam γ₂ t' ∘ prod-m (Γ .fam .subst γ≈) (Tδ.fib-subst P (λ i → lift tt) {x = t} {y = t'} p) ≈
                          A .fam .subst (fold-idx-resp γ≈ {t} {t'} p) ∘ fold-fam γ₁ t
       fold-fam-natural {γ₁} {γ₂} γ≈ {Tδ.sup x} {Tδ.sup y} p =
-        ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
-        (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (fold-shape-fam-natural P γ≈ {x} {y} p)))
-        (≈-trans (∘-cong ≈-refl (≈-sym (pair-compose _ _ _ _)))
-        (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong (alg .famf ._⇒f_.natural (γ≈ , fold-shape-idx-resp P γ≈ {x} {y} p)) ≈-refl)
-                 (assoc _ _ _))))))
+        ≈-trans (tail-cong (≈-trans (pair-natural _ _ _)
+                                    (≈-trans (pair-cong (pair-p₁ _ _) (fold-shape-fam-natural P γ≈ {x} {y} p))
+                                             (≈-sym (pair-compose _ _ _ _)))))
+        (head-cong-assoc (alg .famf ._⇒f_.natural (γ≈ , fold-shape-idx-resp P γ≈ {x} {y} p)))
 
       fold-shape-fam-natural : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
                                (p : Tδ.shape≈ ∣ Q ∣ (Srt.η₀ ∣ P ∣) x x') →
@@ -905,10 +897,9 @@ module FoldSection {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-fam-unit : ∀ t →
         (fold-fam γ t ∘ pair cγ (Mδ.μ-section P Pc .at t)) ≈ cA .at (fold-idx γ t)
       fold-fam-unit (Tδ.sup x) =
-        ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (pair-natural _ _ _))
-        (≈-trans (∘-cong ≈-refl (pair-cong (pair-p₁ _ _) (fold-shape-fam-unit P Pc x)))
-                 (halg (fold-shape-idx P γ x))))
+        ≈-trans (tail-cong (≈-trans (pair-natural _ _ _)
+                                    (pair-cong (pair-p₁ _ _) (fold-shape-fam-unit P Pc x))))
+                 (halg (fold-shape-idx P γ x))
 
       fold-shape-fam-unit : ∀ (Q : Poly (suc n)) (Qc : PolySection Q)
         (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣)) →
@@ -1173,11 +1164,8 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     inMor .idxf .PS._⇒_.func-resp-≈ x≈y = R.reindex-shape-resp ∣ P ∣ mor₀ (embed-idx-resp P x≈y)
     inMor .famf ._⇒f_.transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
     inMor .famf ._⇒f_.natural e =
-      ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (embed-fam-natural P e))
-      (≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong₁ (R.reindex-fam-natural P mor₀ (embed-idx-resp P e)))
-               (assoc _ _ _))))
+      ≈-trans (tail-cong (embed-fam-natural P e))
+      (head-cong-assoc (R.reindex-fam-natural P mor₀ (embed-idx-resp P e)))
 
     module InMapSection (δc : ∀ i → Section (δ i)) (Pc : PolySection P) where
       private
@@ -1228,9 +1216,8 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
 
       preserves-inMor : preserves-section inMor (poly-section P Pc (extend-section δc μc)) μc
       preserves-inMor .at x =
-        ≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (embed-unit P Pc x))
-                 (RS.reindex-fam-unit P Pc mor₀-sec (embed-idx P x)))
+        ≈-trans (tail-cong (embed-unit P Pc x))
+                 (RS.reindex-fam-unit P Pc mor₀-sec (embed-idx P x))
 
 hasMu : HasMu
 hasMu .HasMu.μ-obj = μ-fam
@@ -1461,17 +1448,12 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
                         {t' = HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
                         rec-idx)
                      (tele-shape (μ R'') tbase x)) ≈-refl)
-    (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (tele-shape-fam (μ R'') tbase x))
-        (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (≈-sym (At.R.reindex-fam-W-natural {Q = R''} At.mor₀
-                                     {t = Rs'.ireindex (cmb' γ) wm₁}
-                                     {t' = HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
-                                     rec-idx)) ≈-refl)
-            (≈-trans (assoc _ _ _)
-              (∘-cong ≈-refl
-                (≈-trans (≈-sym (assoc _ _ _))
-                  (≈-trans (∘-cong rec-fam ≈-refl) (≈-sym id-left)))))))))
+    (≈-trans (tail-cong (tele-shape-fam (μ R'') tbase x))
+     (≈-trans (head-cong (≈-sym (At.R.reindex-fam-W-natural {Q = R''} At.mor₀
+                                   {t = Rs'.ireindex (cmb' γ) wm₁}
+                                   {t' = HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .PS._⇒_.func (γ , wm₁)}
+                                   rec-idx)))
+              (tail-cong (≈-trans (head-cong rec-fam) (≈-sym id-left)))))
   where
     module Tt = Tree sₜ
     module Ts = Tree sₛ
@@ -1797,11 +1779,8 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
   outMor .idxf .PS._⇒_.func-resp-≈ {t} {t'} = u-resp {t} {t'}
   outMor .famf ._⇒f_.transf = u-fam
   outMor .famf ._⇒f_.natural {Tδ.sup x} {Tδ.sup y} e =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong₂ (R'.reindex-fam-natural P mor₀⁻ e))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong₁ (At.unembed-fam-natural P (R'.reindex-shape-resp ∣ P ∣ mor₀⁻ e)))
-             (assoc _ _ _))))
+    ≈-trans (tail-cong (R'.reindex-fam-natural P mor₀⁻ e))
+    (head-cong-assoc (At.unembed-fam-natural P (R'.reindex-shape-resp ∣ P ∣ mor₀⁻ e)))
 
   inMor-outMor : Fam𝒞._∘_ At.inMor outMor ≃ Fam𝒞.id (μ-fam P δ)
   inMor-outMor ._≃_.idxf-eq .PS._≃m_.func-eq {Tδ.sup x} {Tδ.sup y} e =
@@ -1815,21 +1794,14 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
                        (drt-shape P dbase x)
                        (R.reindex-shape-resp ∣ P ∣ mor₀ (At.embed-unembed P z)))
                     id-left)
-    (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong₂ step₂) (drt-shape-fam P dbase x)))
+    (≈-trans (tail-cong step₂) (drt-shape-fam P dbase x))
     where
       z = R'.reindex-shape ∣ P ∣ mor₀⁻ x
 
-      step₃ = ≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (≈-sym (R.reindex-fam-natural P mor₀ (At.embed-unembed P z))))
-                       (assoc _ _ _))
-      step₄ = ≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (≈-trans (assoc _ _ _) (At.embed-unembed-fam P z)))
-                       id-left)
-      step₂ = ≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ step₃)
-              (≈-trans (assoc _ _ _)
-                       (∘-cong₂ step₄)))
+      step₃ = head-cong-assoc (≈-sym (R.reindex-fam-natural P mor₀ (At.embed-unembed P z)))
+      step₄ = head-cancel (≈-trans (assoc _ _ _) (At.embed-unembed-fam P z))
+      step₂ = ≈-trans (head-cong step₃)
+                      (tail-cong step₄)
 
   outMor-inMor : Fam𝒞._∘_ outMor At.inMor ≃ Fam𝒞.id (fobj μ-fam P At.δ')
   outMor-inMor ._≃_.idxf-eq .PS._≃m_.func-eq {i} {i'} e =
@@ -1843,19 +1815,12 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
                        (At.unembed-embed P i)
                        (At.unembed-idx-resp P (drt'-shape P dbase (At.embed-idx P i))))
                     id-left)
-    (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong₂ step₂) (At.unembed-embed-fam P i)))
+    (≈-trans (tail-cong step₂) (At.unembed-embed-fam P i))
     where
-      step₃ = ≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (≈-sym (At.unembed-fam-natural P (drt'-shape P dbase (At.embed-idx P i)))))
-                       (assoc _ _ _))
-      step₄ = ≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (≈-trans (assoc _ _ _) (drt'-shape-fam P dbase (At.embed-idx P i))))
-                       id-left)
-      step₂ = ≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ step₃)
-              (≈-trans (assoc _ _ _)
-                       (∘-cong₂ step₄)))
+      step₃ = head-cong-assoc (≈-sym (At.unembed-fam-natural P (drt'-shape P dbase (At.embed-idx P i))))
+      step₄ = head-cancel (≈-trans (assoc _ _ _) (drt'-shape-fam P dbase (At.embed-idx P i)))
+      step₂ = ≈-trans (head-cong step₃)
+                      (tail-cong step₄)
 
   module OutMorSection (δc : ∀ i → Section (δ i)) (Pc : PolySection P) where
     private
@@ -1877,9 +1842,8 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
 
     preserves-outMor : preserves-section outMor μc (poly-section P Pc (extend-section δc μc))
     preserves-outMor .at (Tδ.sup x) =
-      ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (RS'.reindex-fam-unit P Pc mor₀⁻-sec x))
-               (AtS.unembed-unit P Pc (R'.reindex-shape ∣ P ∣ mor₀⁻ x)))
+      ≈-trans (tail-cong (RS'.reindex-fam-unit P Pc mor₀⁻-sec x))
+               (AtS.unembed-unit P Pc (R'.reindex-shape ∣ P ∣ mor₀⁻ x))
 
 preserves-outMor : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj)
                    (δc : ∀ i → Section (δ i)) (Pc : PolySection P) →
@@ -2174,18 +2138,14 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       uniq-fam : ∀ γ t → (A .fam .subst (uniq-idx γ t) ∘ h-fam γ t) ≈ Ft.fold-fam γ t
       uniq-fam γ (Tδ.sup x) =
         ≈-trans (∘-cong ≈-refl (H .IsFold.is-fam γ x))
-        (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong (≈-sym (A .fam .trans*
-                   (uniq-idx γ (Tδ.sup x))
-                   (A .idx .isEquivalence .sym (H .IsFold.is-idx γ x)))) ≈-refl)
-        (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong (≈-sym (alg .famf ._⇒f_.natural
-                   (Γ .idx .isEquivalence .refl , compare-shape P γ x))) ≈-refl)
-        (≈-trans (assoc _ _ _)
-        (∘-cong ≈-refl
-          (≈-trans (pair-compose _ _ _ _)
-                   (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
-                              (compare-shape-fam P γ x)))))))))
+        (≈-trans (head-cong (≈-sym (A .fam .trans*
+                      (uniq-idx γ (Tδ.sup x))
+                      (A .idx .isEquivalence .sym (H .IsFold.is-idx γ x)))))
+         (≈-trans (head-cong (≈-sym (alg .famf ._⇒f_.natural
+                       (Γ .idx .isEquivalence .refl , compare-shape P γ x))))
+                  (tail-cong (≈-trans (pair-compose _ _ _ _)
+                                      (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
+                                                 (compare-shape-fam P γ x))))))
 
       compare-shape-fam : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣)) →
                         (fobj μ-fam Q (extend δ A) .fam .subst (compare-shape Q γ x) ∘ Ah.apply-shape-fam Q γ x)
@@ -2524,11 +2484,9 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                           (Γ .idx .isEquivalence .refl) {m₁ = t} {m₂ = t} (TX.W-≈-refl t))
                        (comp-W cbase t))
                     ≈-refl)
-    (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl
-               (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl id-right)))
-                        (comp-W-fam cbase t)))
-             (fuse-fam γ Q' cmb act fs corr corr-fam {t})))
+    (≈-trans (tail-cong (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl id-right)))
+                                 (comp-W-fam cbase t)))
+              (fuse-fam γ Q' cmb act fs corr corr-fam {t}))
     where open Comp γ
 
 module Beta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
@@ -2559,18 +2517,15 @@ module Beta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
           ≈ (alg .famf ._⇒f_.transf (γ , sf .idxf .PS._⇒_.func (γ , y)) ∘ pair p₁ (sf .famf ._⇒f_.transf (γ , y)))
   β-fam γ y =
     ≈-trans (∘-cong ≈-refl (assoc _ _ _))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong (≈-sym (alg .famf ._⇒f_.natural (Γ .idx .isEquivalence .refl , e′))) ≈-refl)
-    (≈-trans (assoc _ _ _)
-    (∘-cong ≈-refl
-      (≈-trans (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)))
-      (≈-trans (pair-compose _ _ _ _)
-      (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
-        (≈-trans (∘-cong (F .fam .trans* (bridge-idx P γ y) (L.agree-shape P γ x))
-                         (∘-cong ≈-refl (pair-cong (≈-sym id-left) ≈-refl)))
-        (≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (L.agree-shape-fam P γ x) ≈-refl)))
-                 (bridge-fam P γ y)))))))))))
+    (≈-trans (head-cong (≈-sym (alg .famf ._⇒f_.natural (Γ .idx .isEquivalence .refl , e′))))
+             (tail-cong (≈-trans (∘-cong ≈-refl
+                                         (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) ≈-refl)))
+                        (≈-trans (pair-compose _ _ _ _)
+                        (pair-cong (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
+                          (≈-trans (∘-cong (F .fam .trans* (bridge-idx P γ y) (L.agree-shape P γ x))
+                                           (∘-cong ≈-refl (pair-cong (≈-sym id-left) ≈-refl)))
+                          (≈-trans (tail-cong (head-cong (L.agree-shape-fam P γ x)))
+                                    (bridge-fam P γ y))))))))
     where
       x = At.R.reindex-shape ∣ P ∣ At.mor₀ (At.embed-idx P y)
       e′ = F .idx .isEquivalence .trans (L.agree-shape P γ x) (bridge-idx P γ y)
@@ -2637,10 +2592,10 @@ module Eta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       ιυ : (ι ∘ υ) ≈ s⁻
       ιυ = ≈-trans (≈-sym id-left)
            (≈-trans (∘-cong (≈-sym (fam-subst-iso₂ μF rt)) ≈-refl)
-           (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl inv) id-right)))
+           (tail-cancel inv))
 
       ιυs : (ι ∘ (υ ∘ s)) ≈ id _
-      ιυs = ≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong ιυ ≈-refl) (fam-subst-iso₂ μF rt))
+      ιυs = ≈-trans (head-cong ιυ) (fam-subst-iso₂ μF rt)
 
       Hf : (A .fam .subst Hi ∘ (hx' ∘ pair p₁ (ι ∘ p₂))) ≈ (algT ∘ pair p₁ sft)
       Hf = ≈-trans (∘-cong ≈-refl (≈-sym (≈-trans id-left (∘-cong ≈-refl (pair-cong ≈-refl id-left)))))
@@ -2652,46 +2607,37 @@ module Eta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                    ∘ (alg .famf ._⇒f_.transf (γ , apply-shape-idx P γ x) ∘ pair p₁ asf)))
       step =
         ≈-trans (∘-cong (≈-sym (≈-trans (∘-cong ≈-refl (≈-trans (pair-cong ≈-refl (≈-trans (∘-cong ιυs ≈-refl) id-left)) pair-ext0)) id-right)) ≈-refl)
-        (≈-trans (∘-cong (≈-trans (∘-cong ≈-refl (≈-sym PP)) (≈-sym (assoc _ _ _))) ≈-refl)
-        (≈-trans (∘-cong (∘-cong (≈-trans (≈-sym id-left)
-                                   (≈-trans (∘-cong (≈-sym (fam-subst-iso₂ (A .fam) Hi)) ≈-refl)
-                                   (≈-trans (assoc _ _ _) (∘-cong ≈-refl Hf)))) ≈-refl) ≈-refl)
-        (≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl QQ)
-        (≈-trans (assoc _ _ _)
-        (∘-cong ≈-refl
-          (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) sfυ)))
-          (≈-trans (∘-cong ≈-refl (≈-trans (pair-cong (≈-sym (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)) ≈-refl)
-                                            (≈-sym (pair-compose _ _ _ _))))
-          (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong (alg .famf ._⇒f_.natural (Γ .idx .isEquivalence .refl , ex)) ≈-refl)
-                   (assoc _ _ _))))))))))))
+        (≈-trans (∘-cong (≈-trans (∘-cong ≈-refl (≈-sym PP))
+                                  (head-cong (≈-trans (≈-sym id-left)
+                                               (≈-trans (∘-cong (≈-sym (fam-subst-iso₂ (A .fam) Hi)) ≈-refl)
+                                               (tail-cong Hf))))) ≈-refl)
+         (≈-trans (tail-cong QQ)
+          (tail-cong (≈-trans (tail-cong (≈-trans (pair-natural _ _ _)
+                     (≈-trans (pair-cong (pair-p₁ _ _) sfυ)
+                     (≈-trans (pair-cong (≈-sym (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)) ≈-refl)
+                              (≈-sym (pair-compose _ _ _ _))))))
+                     (head-cong-assoc (alg .famf ._⇒f_.natural (Γ .idx .isEquivalence .refl , ex)))))))
         where
           PP : (pair p₁ (ι ∘ p₂) ∘ pair p₁ ((υ ∘ s) ∘ p₂)) ≈ pair p₁ ((ι ∘ (υ ∘ s)) ∘ p₂)
           PP = ≈-trans (pair-natural _ _ _)
-               (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))
+               (pair-cong (pair-p₁ _ _) (tail-cong-assoc (pair-p₂ _ _)))
           QQ : (pair p₁ ((υ ∘ s) ∘ p₂) ∘ prod-m (id _) s⁻) ≈ pair p₁ (υ ∘ p₂)
           QQ = ≈-trans (pair-natural _ _ _)
                (pair-cong (≈-trans (pair-p₁ _ _) id-left)
-                          (≈-trans (assoc _ _ _)
-                          (≈-trans (∘-cong ≈-refl (pair-p₂ _ _))
-                          (≈-trans (assoc _ _ _)
-                                   (∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _))
-                                                  (≈-trans (∘-cong (fam-subst-iso₁ μF rt) ≈-refl) id-left)))))))
+                          (≈-trans (tail-cong (pair-p₂ _ _))
+                           (tail-cong (head-cancel (fam-subst-iso₁ μF rt)))))
           sfυ : (sft ∘ pair p₁ (υ ∘ p₂)) ≈ (F .fam .subst ex ∘ asf)
           sfυ = ≈-trans (∘-cong (≈-sym (bridge-fam P γ y)) ≈-refl)
-                (≈-trans (assoc _ _ _)
-                (≈-trans (∘-cong ≈-refl
-                           (≈-trans (assoc _ _ _)
-                           (∘-cong ≈-refl
-                             (≈-trans (pair-compose _ _ _ _)
-                                      (pair-cong (∘-cong (≈-sym (Γ .fam .refl*)) ≈-refl)
-                                                 (≈-trans (≈-sym (assoc _ _ _)) (∘-cong ιυ ≈-refl)))))))
-                (≈-trans (∘-cong ≈-refl (apply-shape-fam-natural P (Γ .idx .isEquivalence .refl) {x} {x'} tr))
-                (≈-trans (≈-sym (assoc _ _ _))
-                         (∘-cong (≈-sym (F .fam .trans* (bridge-idx P γ y)
-                                          (apply-shape-idx-resp P (Γ .idx .isEquivalence .refl) {x} {x'} tr))) ≈-refl)))))
+                (≈-trans (tail-cong (≈-trans (tail-cong (≈-trans (pair-compose _ _ _ _)
+                                                                 (pair-cong (∘-cong (≈-sym (Γ .fam .refl*))
+                                                                                    ≈-refl)
+                                                                            (head-cong ιυ))))
+                                              (apply-shape-fam-natural P (Γ .idx .isEquivalence .refl) {x}
+                                                                       {x'}
+                                                                       tr)))
+                         (head-cong (≈-sym (F .fam .trans* (bridge-idx P γ y)
+                                             (apply-shape-idx-resp P (Γ .idx .isEquivalence .refl) {x} {x'}
+                                                                   tr)))))
 
     is-fam : h-fam γ (Tδ.sup x)
              ≈ (A .fam .subst (A .idx .isEquivalence .sym is-idx)
@@ -2700,16 +2646,14 @@ module Eta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       ≈-trans (≈-sym (≈-trans (∘-cong ≈-refl (prod-m-iso (≈-trans (∘-cong (Γ .fam .refl*) ≈-refl) id-left)
                                                           (fam-subst-iso₁ μF rt)))
                               id-right))
-      (≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong (h .famf ._⇒f_.natural {γ , Tδ.sup x'} {γ , Tδ.sup x} (Γ .idx .isEquivalence .refl , rt)) ≈-refl)
-      (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl step)
-      (≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong (≈-sym (A .fam .trans* (h-resp (Γ .idx .isEquivalence .refl) rt) (A .idx .isEquivalence .sym Hi))) ≈-refl)
-      (≈-trans (≈-sym (assoc _ _ _))
-               (∘-cong (≈-sym (A .fam .trans*
-                                (A .idx .isEquivalence .trans (A .idx .isEquivalence .sym Hi) (h-resp (Γ .idx .isEquivalence .refl) rt))
-                                (alg .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl , ex)))) ≈-refl))))))))
+      (≈-trans (head-cong (h .famf ._⇒f_.natural {γ , Tδ.sup x'} {γ , Tδ.sup x}
+                             (Γ .idx .isEquivalence .refl , rt)))
+       (≈-trans (tail-cong step)
+        (≈-trans (head-cong (≈-sym (A .fam .trans* (h-resp (Γ .idx .isEquivalence .refl) rt)
+                                      (A .idx .isEquivalence .sym Hi))))
+        (head-cong (≈-sym (A .fam .trans*
+                            (A .idx .isEquivalence .trans (A .idx .isEquivalence .sym Hi) (h-resp (Γ .idx .isEquivalence .refl) rt))
+                            (alg .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl , ex))))))))
 
   is-fold : L.IsFold h
   is-fold .L.IsFold.is-idx = is-idx

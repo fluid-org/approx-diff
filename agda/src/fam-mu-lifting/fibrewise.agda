@@ -83,13 +83,8 @@ private
   iso-flip i j {f} {g} sq =
     ≈-trans (≈-sym id-left)
       (≈-trans (∘-cong (≈-sym (j .bwd∘fwd≈id)) ≈-refl)
-        (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
-            (≈-trans (∘-cong ≈-refl (∘-cong sq ≈-refl))
-              (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-                (≈-trans (∘-cong ≈-refl
-                    (∘-cong ≈-refl (i .fwd∘bwd≈id)))
-                  (∘-cong ≈-refl id-right)))))))
+        (tail-cong (≈-trans (head-cong sq)
+                    (tail-cancel (i .fwd∘bwd≈id)))))
 
   root-step : ∀ {a a' b b'} (i' : 𝒟.Iso (F .fobj a') b') (i : 𝒟.Iso (F .fobj a) b)
               {s : a 𝒞.⇒ a'} {t : b ⇒ b'} →
@@ -97,14 +92,9 @@ private
               (((L𝒟.Lmap (i' .fwd) ∘ F-L a' .fwd) ∘ F .fmor (L𝒞.Lmap s))
                 ≈ (L𝒟.Lmap t ∘ (L𝒟.Lmap (i .fwd) ∘ F-L a .fwd)))
   root-step {a} {a'} i' i {s} {t} inner =
-    ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (F-L-natural s))
-        (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong
-              (≈-trans (≈-sym (L𝒟.Lmap-comp _ _))
-                (≈-trans (L𝒟.Lmap-cong inner) (L𝒟.Lmap-comp _ _)))
-              ≈-refl)
-            (assoc _ _ _))))
+    ≈-trans (tail-cong (F-L-natural s))
+    (head-cong-assoc (≈-trans (≈-sym (L𝒟.Lmap-comp _ _))
+                       (≈-trans (L𝒟.Lmap-cong inner) (L𝒟.Lmap-comp _ _))))
 
 ℓk : Level
 ℓk = o ⊔ m ⊔ e ⊔ o₂ ⊔ m₂ ⊔ e₂ ⊔ lsuc os ⊔ lsuc es
@@ -327,18 +317,13 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
         (fib-shape-cnat R E p)
     fib-shape-cnat (Q Poly.× R) E {x₁ , x₂} {x₁' , x₂'} (p₁ ,ₚ p₂) =
       root-step pI' pI
-        (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (mul⁻¹-natural {f = s₁} {g = s₂}))
-            (≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong
-                  (≈-trans (≈-sym (𝒟Pm.prod-m-comp _ _ _ _))
-                    (≈-trans
-                      (𝒟Pm.prod-m-cong
-                        (fib-shape-cnat Q E {x₁} {x₁'} p₁)
-                        (fib-shape-cnat R E {x₂} {x₂'} p₂))
-                      (𝒟Pm.prod-m-comp _ _ _ _)))
-                  ≈-refl)
-                (assoc _ _ _)))))
+        (≈-trans (tail-cong (mul⁻¹-natural {f = s₁} {g = s₂}))
+         (head-cong-assoc (≈-trans (≈-sym (𝒟Pm.prod-m-comp _ _ _ _))
+                            (≈-trans
+                              (𝒟Pm.prod-m-cong
+                                (fib-shape-cnat Q E {x₁} {x₁'} p₁)
+                                (fib-shape-cnat R E {x₂} {x₂'} p₂))
+                              (𝒟Pm.prod-m-comp _ _ _ _)))))
       where
         s₁ = C.fib-shape-subst Q (E .d₁) p₁
         s₂ = C.fib-shape-subst R (E .d₁) p₂
@@ -394,17 +379,14 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
     D.fib-subst (P̂ P) (E₀ .d₂) {x = s} {y = Fw (Bw s)}
       (T.W-≈-sym {x = Fw (Bw s)} {y = s} (c-bf P E₀ s))
   bwd-mor .famf .natural {s₁} {s₂} q =
-    ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong₂ (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
-                                           {x = s₁} {y = s₂} {z = Fw (Bw s₂)} _ q)))
-        (≈-sym
-          (≈-trans (≈-sym (assoc _ _ _))
-            (≈-trans (∘-cong₁ (iso-flip (ci (Bw s₁)) (ci (Bw s₂))
-                (fib-cnat P E₀ {Bw s₁} {Bw s₂}
-                  (c≈bwd P E₀ {s₁} {s₂} q))))
-              (≈-trans (assoc _ _ _)
-                (∘-cong₂ (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
-                                          {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _))))))))
+    ≈-trans (tail-cong (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
+                                          {x = s₁} {y = s₂} {z = Fw (Bw s₂)} _ q)))
+      (≈-sym
+        (≈-trans (head-cong (iso-flip (ci (Bw s₁)) (ci (Bw s₂))
+              (fib-cnat P E₀ {Bw s₁} {Bw s₂}
+                (c≈bwd P E₀ {s₁} {s₂} q))))
+                 (tail-cong (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
+                                             {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _)))))
 
   fb-≃ : F𝒟C._≈_
            (F𝒟C._∘_ fwd-mor bwd-mor) (F𝒟C.id _)
@@ -412,8 +394,7 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
     mk-≃m (λ s → c-bf P E₀ s)
   fb-≃ .famf-eq .transf-eq {s} =
     ≈-trans (∘-cong₂ id-left)
-      (≈-trans (∘-cong₂ (≈-trans (≈-sym (assoc _ _ _))
-          (≈-trans (∘-cong₁ (ci (Bw s) .fwd∘bwd≈id)) id-left)))
+      (≈-trans (∘-cong₂ (head-cancel (ci (Bw s) .fwd∘bwd≈id)))
         (≈-trans (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
                                   {x = s} {y = Fw (Bw s)} {z = s} _ _))
           (D.fib-refl* (P̂ P) (E₀ .d₂) s)))
@@ -424,12 +405,9 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
     mk-≃m (λ w → c-fb P E₀ w)
   bf-≃ .famf-eq .transf-eq {w} =
     ≈-trans (∘-cong₂ id-left)
-      (≈-trans (∘-cong₂ (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong₂ (≈-sym
-              (fib-cnat P E₀ {w} {Bw (Fw w)}
-                (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P E₀ w)))))
-            (≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong₁ (ci (Bw (Fw w)) .bwd∘fwd≈id)) id-left)))))
+      (≈-trans (∘-cong₂ (≈-trans (tail-cong (≈-sym (fib-cnat P E₀ {w} {Bw (Fw w)}
+                                                      (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P E₀ w)))))
+                                 (head-cancel (ci (Bw (Fw w)) .bwd∘fwd≈id))))
         (≈-trans (≈-sym ((FamF .fobj (Fib𝒞.μ-fam P δ)) .fam .trans*
                                   {x = w} {y = Bw (Fw w)} {z = w} _ _))
           ((FamF .fobj (Fib𝒞.μ-fam P δ)) .fam .refl* {x = w})))

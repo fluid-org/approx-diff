@@ -251,8 +251,7 @@ module _ {o₁ m₁ e₁}
     prod-functor .fmor-comp f g =
       ≈-sym (≈-trans (pair-natural _ _ _)
              (pair-cong (≈-trans (∘-cong id-left ≈-refl) (pair-p₁ _ _))
-                        (≈-trans (assoc _ _ _)
-                        (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _))))))
+                        (tail-cong-assoc (pair-p₂ _ _))))
 
   record StrongFunctor (P : HasProducts 𝒞) : Set (o₁ ⊔ m₁ ⊔ e₁) where
     open Category 𝒞

@@ -93,10 +93,8 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   inv-conj : ∀ {x y x' y'} {f : x ⇒ y} {g : y ⇒ x} {f' : x' ⇒ y'} {g' : y' ⇒ x'} {u : x ⇒ x'}
              {v : y ⇒ y'} → (f ∘ g) ≈ id y → (g' ∘ f') ≈ id x' → (v ∘ f) ≈ (f' ∘ u) → (u ∘ g) ≈ (g' ∘ v)
   inv-conj fg g'f' sq =
-    ≈-trans (≈-sym id-left) (≈-trans (∘-cong (≈-sym g'f') ≈-refl) (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-trans (∘-cong ≈-refl (∘-cong (≈-sym sq) ≈-refl))
-        (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-          (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl fg)) (∘-cong ≈-refl id-right)))))))
+    ≈-trans (≈-sym id-left) (≈-trans (∘-cong (≈-sym g'f') ≈-refl) (tail-cong (≈-trans (head-cong (≈-sym sq))
+                                                                              (tail-cancel fg))))
 
   id-swap : ∀ {x y}{f : x ⇒ y} → (id y ∘ f) ≈ (f ∘ id x)
   id-swap = isEquiv .trans id-left (≈-sym id-right)
@@ -166,8 +164,7 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ∘-inv : ∀ {x y z} {f : y ⇒ z} {f' : z ⇒ y} {g : x ⇒ y} {g' : y ⇒ x} →
           (f ∘ f') ≈ id z → (g ∘ g') ≈ id y → ((f ∘ g) ∘ (g' ∘ f')) ≈ id z
   ∘-inv ff' gg' =
-    ≈-trans (assoc _ _ _)
-            (≈-trans (∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong gg' ≈-refl) id-left))) ff')
+    ≈-trans (tail-cong (head-cancel gg')) ff'
 
   Iso-trans : ∀ {x y z} → Iso x y → Iso y z → Iso x z
   Iso-trans iso₁ iso₂ .fwd = (iso₂ .fwd) ∘ (iso₁ .fwd)
@@ -549,7 +546,7 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       pair (u ∘ p₁) (id _ ∘ (v ∘ p₂))
     ≈⟨ pair-cong ≈-refl id-left ⟩
       pair (u ∘ p₁) (v ∘ p₂)
-    ≈˘⟨ pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left))) ⟩
+    ≈˘⟨ pair-cong (pair-p₁ _ _) (tail-cong (≈-trans (pair-p₂ _ _) id-left)) ⟩
       pair (p₁ ∘ prod-m u (id _)) ((v ∘ p₂) ∘ prod-m u (id _))
     ≈˘⟨ pair-natural _ _ _ ⟩
       pair p₁ (v ∘ p₂) ∘ prod-m u (id _)
@@ -560,13 +557,13 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
 
   strong-pair : ∀ {w x y z} (q : y ⇒ z) (h : w ⇒ x) (g : w ⇒ y) → (pair p₁ (q ∘ p₂) ∘ pair h g) ≈ pair h (q ∘ g)
   strong-pair q h g =
-    ≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
+    ≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (tail-cong (pair-p₂ _ _)))
 
   strong-square : ∀ {w w' x x' y y'} {u : w ⇒ w'} {m : x ⇒ x'} {q' : x ⇒ y} {q : x' ⇒ y'} {v : y ⇒ y'} →
                   (q ∘ m) ≈ (v ∘ q') → (pair p₁ (q ∘ p₂) ∘ prod-m u m) ≈ (prod-m u v ∘ pair p₁ (q' ∘ p₂))
   strong-square sq =
     ≈-trans (strong-pair _ _ _)
-            (≈-trans (pair-cong₂ (≈-trans (≈-sym (assoc _ _ _)) (≈-trans (∘-cong sq ≈-refl) (assoc _ _ _))))
+            (≈-trans (pair-cong₂ (head-cong-assoc sq))
                      (≈-sym (pair-compose _ _ _ _)))
 
   -- Strong (w-threading) projections and product action: the counterparts of
@@ -589,8 +586,8 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
                        (strong-prod-m f g ∘ pair h (pair c₁ c₂)) ≈ pair (f ∘ pair h c₁) (g ∘ pair h c₂)
   strong-prod-m-pair f g h c₁ c₂ =
     ≈-trans (pair-natural _ _ _)
-      (pair-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (strong-pair _ _ _) (pair-cong₂ (pair-p₁ _ _)))))
-                 (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (strong-pair _ _ _) (pair-cong₂ (pair-p₂ _ _))))))
+      (pair-cong (tail-cong (≈-trans (strong-pair _ _ _) (pair-cong₂ (pair-p₁ _ _))))
+                 (tail-cong (≈-trans (strong-pair _ _ _) (pair-cong₂ (pair-p₂ _ _)))))
 
   strong-prod-m-post : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (s₁ : y₁ ⇒ z₁) (s₂ : y₂ ⇒ z₂)
                        (f : prod w x₁ ⇒ y₁) (g : prod w x₂ ⇒ y₂) →
@@ -603,8 +600,8 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
   strong-prod-m-pre f g u v₁ v₂ =
     ≈-trans (pair-natural _ _ _)
       (pair-cong
-        (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (strong-square (pair-p₁ _ _))) (≈-sym (assoc _ _ _))))
-        (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (strong-square (pair-p₂ _ _))) (≈-sym (assoc _ _ _)))))
+        (tail-cong-assoc (strong-square (pair-p₁ _ _)))
+        (tail-cong-assoc (strong-square (pair-p₂ _ _))))
 
   strong-prod-m-natural : ∀ {w w' x₁ x₂ y₁ y₂ x₁' x₂' y₁' y₂'}
                           {f : prod w x₁ ⇒ y₁} {g : prod w x₂ ⇒ y₂}
@@ -623,8 +620,8 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
   strong-prod-m-comp f g h k =
     ≈-trans (strong-prod-m-pair f g p₁ _ _)
       (≈-sym (pair-cong
-        (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _)))))
-        (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _)))))))
+        (tail-cong (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))))
+        (tail-cong (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))))))
 
   prod-m-inv : ∀ {x₁ x₂ y₁ y₂} {f : x₁ ⇒ x₂} {f' : x₂ ⇒ x₁} {g : y₁ ⇒ y₂} {g' : y₂ ⇒ y₁} →
                (f ∘ f') ≈ id _ → (g ∘ g') ≈ id _ → (prod-m f g ∘ prod-m f' g') ≈ id _
@@ -735,8 +732,7 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
     where
       c : ∀ {v} (ι : v ⇒ coprod x y) {h : prod w' v ⇒ z} → (copair f g ∘ pair p₁ (ι ∘ p₂)) ≈ h →
           ((copair f g ∘ prod-m u (id _)) ∘ pair p₁ (ι ∘ p₂)) ≈ (h ∘ prod-m u (id _))
-      c ι e = ≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (prodm-pair-interchange u ι))
-                                             (≈-trans (≈-sym (assoc _ _ _)) (∘-cong e ≈-refl)))
+      c ι e = ≈-trans (tail-cong (prodm-pair-interchange u ι)) (head-cong e)
 
   copair-natural : ∀ {w x y z z'} (h : z ⇒ z') (f : prod w x ⇒ z) (g : prod w y ⇒ z) →
                    (h ∘ copair f g) ≈ copair (h ∘ f) (h ∘ g)
@@ -804,8 +800,8 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
     cin : ∀ {x y z} (f : x ⇒ z) (g : y ⇒ z) {v} (ι : v ⇒ scoprod x y) {h : v ⇒ z} →
           (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (ι ∘ p₂)) ≈ (h ∘ p₂) → ((scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ ι) ≈ h
     cin f g ι e =
-      ≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (sect-natural ι)) (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong e ≈-refl) (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) id-right)))))
+      ≈-trans (tail-cong (sect-natural ι))
+      (≈-trans (head-cong e) (tail-cancel (pair-p₂ _ _)))
 
     result : HasCoproducts 𝒞
     result .HasCoproducts.coprod = scoprod

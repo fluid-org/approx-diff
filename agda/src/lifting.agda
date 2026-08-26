@@ -144,29 +144,21 @@ strong-Lmap-split-post : ∀ {G X Y₁ Y₂} (h : Y₁ ⇒ Y₂) (r : (G ⊕ X) 
                         (Lmap h ∘ strong-Lmap-split r) ≈ strong-Lmap-split (h ∘ r)
 strong-Lmap-split-post {G} {X} {Y₁} {Y₂} h r =
   bp-ext {h = Lmap h ∘ strong-Lmap-split r} {k = strong-Lmap-split (h ∘ r)}
-    (≈-trans (assoc _ _ _)
-     (≈-trans (∘-cong ≈-refl (B.copair-in₁ G (L X) _ _))
-      (≈-trans (≈-sym (assoc _ _ _))
-       (≈-trans (∘-cong (Lmap-inj h) ≈-refl)
-        (≈-trans (assoc _ _ _)
-         (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
-          (≈-sym (B.copair-in₁ G (L X) _ _))))))))
-    (≈-trans (assoc _ _ _)
-     (≈-trans (∘-cong ≈-refl (B.copair-in₂ G (L X) _ _))
-      (≈-trans part₂ (≈-sym (B.copair-in₂ G (L X) _ _)))))
+    (≈-trans (tail-cong (B.copair-in₁ G (L X) _ _))
+     (≈-trans (head-cong (Lmap-inj h))
+      (≈-trans (tail-cong (≈-sym (assoc _ _ _)))
+       (≈-sym (B.copair-in₁ G (L X) _ _)))))
+    (≈-trans (tail-cong (B.copair-in₂ G (L X) _ _))
+      (≈-trans part₂ (≈-sym (B.copair-in₂ G (L X) _ _))))
   where
   part₂ : (Lmap h ∘ copair root (inj ∘ (r ∘ in₂))) ≈ copair root (inj ∘ ((h ∘ r) ∘ in₂))
   part₂ = lifting-ext _ _
-    (≈-trans (assoc _ _ _)
-     (≈-trans (∘-cong ≈-refl (copair-root _ _))
-      (≈-trans (Lmap-root h) (≈-sym (copair-root _ _)))))
-    (≈-trans (assoc _ _ _)
-     (≈-trans (∘-cong ≈-refl (copair-inj _ _))
-      (≈-trans (≈-sym (assoc _ _ _))
-       (≈-trans (∘-cong (Lmap-inj h) ≈-refl)
-        (≈-trans (assoc _ _ _)
-         (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _)))
-          (≈-sym (copair-inj _ _))))))))
+    (≈-trans (tail-cong (copair-root _ _))
+      (≈-trans (Lmap-root h) (≈-sym (copair-root _ _))))
+    (≈-trans (tail-cong (copair-inj _ _))
+     (≈-trans (head-cong (Lmap-inj h))
+      (≈-trans (tail-cong (≈-sym (assoc _ _ _)))
+       (≈-sym (copair-inj _ _)))))
 
 strong-Lmap-split-p₂ : ∀ {G X} → strong-Lmap-split (p₂ {G} {X}) ≈ p₂ {G} {L X}
 strong-Lmap-split-p₂ {G} {X} =
@@ -189,31 +181,21 @@ strong-Lmap-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x y f₁ f
   where
   square-in₁ : ((f₂ ∘ in₁) ∘ g) ≈ (y ∘ (f₁ ∘ in₁))
   square-in₁ =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (≈-sym (prod-m-in₁ g x)))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong sq ≈-refl) (assoc _ _ _))))
+    ≈-trans (tail-cong (≈-sym (prod-m-in₁ g x)))
+    (head-cong-assoc sq)
 
   square-in₂ : ((f₂ ∘ in₂) ∘ x) ≈ (y ∘ (f₁ ∘ in₂))
   square-in₂ =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (≈-sym (prod-m-in₂ g x)))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong sq ≈-refl) (assoc _ _ _))))
+    ≈-trans (tail-cong (≈-sym (prod-m-in₂ g x)))
+    (head-cong-assoc sq)
 
   side₁ : ((strong-Lmap-split f₂ ∘ prod-m g (Lmap x)) ∘ in₁) ≈ ((Lmap y ∘ strong-Lmap-split f₁) ∘ in₁)
   side₁ =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (prod-m-in₁ g (Lmap x)))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong (B.copair-in₁ G₂ (L X₂) _ _) ≈-refl)
-    (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl square-in₁)
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong (≈-sym (Lmap-inj y)) ≈-refl)
-    (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (≈-sym (B.copair-in₁ G₁ (L X₁) _ _)))
-             (≈-sym (assoc _ _ _)))))))))))
+    ≈-trans (tail-cong (prod-m-in₁ g (Lmap x)))
+    (≈-trans (head-cong (B.copair-in₁ G₂ (L X₂) _ _))
+     (≈-trans (tail-cong square-in₁)
+      (≈-trans (head-cong (≈-sym (Lmap-inj y)))
+       (tail-cong-assoc (≈-sym (B.copair-in₁ G₁ (L X₁) _ _))))))
 
   lift-part : (copair root (inj ∘ (f₂ ∘ in₂)) ∘ Lmap x) ≈ (Lmap y ∘ copair root (inj ∘ (f₁ ∘ in₂)))
   lift-part = lifting-ext _ _ root-side inj-side
@@ -221,43 +203,34 @@ strong-Lmap-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x y f₁ f
     root-side : ((copair root (inj ∘ (f₂ ∘ in₂)) ∘ Lmap x) ∘ root)
                 ≈ ((Lmap y ∘ copair root (inj ∘ (f₁ ∘ in₂))) ∘ root)
     root-side =
-      ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (Lmap-root x))
+      ≈-trans (tail-cong (Lmap-root x))
       (≈-trans (copair-root _ _)
       (≈-sym
-        (≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl (copair-root _ _)) (Lmap-root y))))))
+        (≈-trans (tail-cong (copair-root _ _)) (Lmap-root y))))
 
     inj-side : ((copair root (inj ∘ (f₂ ∘ in₂)) ∘ Lmap x) ∘ inj)
                ≈ ((Lmap y ∘ copair root (inj ∘ (f₁ ∘ in₂))) ∘ inj)
     inj-side =
-      ≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (Lmap-inj x))
-      (≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong (copair-inj _ _) ≈-refl)
-      (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl square-in₂)
-      (≈-trans (≈-sym (assoc _ _ _))
-      (≈-trans (∘-cong (≈-sym (Lmap-inj y)) ≈-refl)
-      (≈-trans (assoc _ _ _)
-               (≈-sym (≈-trans (assoc _ _ _) (∘-cong ≈-refl (copair-inj _ _))))))))))))
+      ≈-trans (tail-cong (Lmap-inj x))
+      (≈-trans (head-cong (copair-inj _ _))
+       (≈-trans (tail-cong square-in₂)
+        (≈-trans (head-cong-assoc (≈-sym (Lmap-inj y)))
+                  (≈-sym (tail-cong (copair-inj _ _))))))
 
   side₂ : ((strong-Lmap-split f₂ ∘ prod-m g (Lmap x)) ∘ in₂) ≈ ((Lmap y ∘ strong-Lmap-split f₁) ∘ in₂)
   side₂ =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (prod-m-in₂ g (Lmap x)))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong (B.copair-in₂ G₂ (L X₂) _ _) ≈-refl)
+    ≈-trans (tail-cong (prod-m-in₂ g (Lmap x)))
+    (≈-trans (head-cong (B.copair-in₂ G₂ (L X₂) _ _))
     (≈-trans lift-part
     (≈-trans (∘-cong ≈-refl (≈-sym (B.copair-in₂ G₁ (L X₁) _ _)))
-             (≈-sym (assoc _ _ _)))))))
+             (≈-sym (assoc _ _ _)))))
 
 copair-pair : ∀ {a b c d} (f : a ⇒ d) (g : b ⇒ d) (h : c ⇒ a) (k : c ⇒ b) →
               (copair f g ∘ pair h k) ≈ ((f ∘ h) +m (g ∘ k))
 copair-pair {a} {b} f g h k =
   ≈-trans (comp-bilinear₁ _ _ _)
-          (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (B.pair-p₁ a b h k)))
-                   (≈-trans (assoc _ _ _) (∘-cong ≈-refl (B.pair-p₂ a b h k))))
+          (+m-cong (tail-cong (B.pair-p₁ a b h k))
+                   (tail-cong (B.pair-p₂ a b h k)))
 
 strong-Lmap-split-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
                       (strong-Lmap-split r ∘ pair p₁ (strong-Lmap-split s)) ≈ strong-Lmap-split (r ∘ pair p₁ s)
@@ -268,55 +241,48 @@ strong-Lmap-split-co {G} {X} {Y} {Z} r s = bp-ext leg₁ (lifting-ext _ _ leg₂
   R = r ∘ pair p₁ s
   leg₁ : ((A ∘ pair p₁ u) ∘ in₁) ≈ (strong-Lmap-split R ∘ in₁)
   leg₁ =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (≈-trans (B.pair-natural G (L Y) _ _ _)
-                                     (pair-cong (B.id-1 G (L X)) (B.copair-in₁ G (L X) _ _))))
+    ≈-trans (tail-cong (≈-trans (B.pair-natural G (L Y) _ _ _)
+                                (pair-cong (B.id-1 G (L X)) (B.copair-in₁ G (L X) _ _))))
     (≈-trans (copair-pair _ _ _ _)
-    (≈-trans (+m-cong id-right (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (copair-inj _ _) ≈-refl)))
+    (≈-trans (+m-cong id-right (head-cong (copair-inj _ _)))
     (≈-sym
       (≈-trans (B.copair-in₁ G (L X) _ _)
-      (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-      (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (B.pair-natural G Y _ _ _) (pair-cong (B.id-1 G X) ≈-refl))))
-      (≈-trans (∘-cong ≈-refl (comp-bilinear₂ _ _ _))
-      (≈-trans (comp-bilinear₂ _ _ _)
-               (+m-cong (∘-cong ≈-refl (∘-cong ≈-refl id-right))
-                        (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _)))))))))))))
+      (≈-trans (∘-cong ≈-refl
+                       (tail-cong (≈-trans (B.pair-natural G Y _ _ _) (pair-cong (B.id-1 G X) ≈-refl))))
+       (≈-trans (∘-cong ≈-refl (comp-bilinear₂ _ _ _))
+       (≈-trans (comp-bilinear₂ _ _ _)
+                (+m-cong (∘-cong ≈-refl (∘-cong ≈-refl id-right))
+                         (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _)))))))))))
   leg₂-root : (((A ∘ pair p₁ u) ∘ in₂) ∘ root) ≈ ((strong-Lmap-split R ∘ in₂) ∘ root)
   leg₂-root =
     ≈-trans (assoc _ _ _)
-    (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (≈-trans (B.pair-natural G (L Y) _ _ _)
-                                     (pair-cong (≈-trans (≈-sym (assoc _ _ _))
-                                                         (≈-trans (∘-cong (B.zero-1 G (L X)) ≈-refl) (comp-bilinear-ε₁ _)))
-                                                (≈-trans (≈-sym (assoc _ _ _))
-                                                         (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl)
-                                                                  (copair-root _ _))))))
-    (≈-trans (copair-pair _ _ _ _)
-    (≈-trans (+m-cong (comp-bilinear-ε₂ _) (copair-root _ _))
-    (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
-             (≈-sym (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl) (copair-root _ _))))))))
+    (≈-trans (tail-cong (≈-trans (B.pair-natural G (L Y) _ _ _)
+                                 (pair-cong (≈-trans (head-cong (B.zero-1 G (L X))) (comp-bilinear-ε₁ _))
+                                            (≈-trans (head-cong (B.copair-in₂ G (L X) _ _))
+                                                      (copair-root _ _)))))
+     (≈-trans (copair-pair _ _ _ _)
+     (≈-trans (+m-cong (comp-bilinear-ε₂ _) (copair-root _ _))
+     (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
+              (≈-sym (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl) (copair-root _ _)))))))
   leg₂-inj : (((A ∘ pair p₁ u) ∘ in₂) ∘ inj) ≈ ((strong-Lmap-split R ∘ in₂) ∘ inj)
   leg₂-inj =
     ≈-trans (assoc _ _ _)
-    (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (≈-trans (B.pair-natural G (L Y) _ _ _)
-                                     (pair-cong (≈-trans (≈-sym (assoc _ _ _))
-                                                         (≈-trans (∘-cong (B.zero-1 G (L X)) ≈-refl) (comp-bilinear-ε₁ _)))
-                                                (≈-trans (≈-sym (assoc _ _ _))
-                                                         (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl)
-                                                                  (copair-inj _ _))))))
-    (≈-trans (copair-pair _ _ _ _)
-    (≈-trans (+m-cong (comp-bilinear-ε₂ _) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (copair-inj _ _) ≈-refl)))
-    (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
-    (≈-sym
-      (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl)
-      (≈-trans (copair-inj _ _)
-      (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-      (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (B.pair-natural G Y _ _ _) (pair-cong (B.zero-1 G X) ≈-refl))))
-      (≈-trans (∘-cong ≈-refl (comp-bilinear₂ _ _ _))
-      (≈-trans (∘-cong ≈-refl (+m-cong (≈-trans (∘-cong ≈-refl (comp-bilinear-ε₂ _)) (comp-bilinear-ε₂ _)) ≈-refl))
-      (≈-trans (∘-cong ≈-refl (homCM _ _ .CommutativeMonoid.+-lunit))
-      (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _))))))))))))))))
+    (≈-trans (tail-cong (≈-trans (B.pair-natural G (L Y) _ _ _)
+                                 (pair-cong (≈-trans (head-cong (B.zero-1 G (L X))) (comp-bilinear-ε₁ _))
+                                            (≈-trans (head-cong (B.copair-in₂ G (L X) _ _))
+                                                      (copair-inj _ _)))))
+     (≈-trans (copair-pair _ _ _ _)
+     (≈-trans (+m-cong (comp-bilinear-ε₂ _) (head-cong (copair-inj _ _)))
+     (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
+     (≈-sym
+       (≈-trans (∘-cong (B.copair-in₂ G (L X) _ _) ≈-refl)
+       (≈-trans (copair-inj _ _)
+       (≈-trans (∘-cong ≈-refl
+                        (tail-cong (≈-trans (B.pair-natural G Y _ _ _) (pair-cong (B.zero-1 G X) ≈-refl))))
+        (≈-trans (∘-cong ≈-refl (comp-bilinear₂ _ _ _))
+        (≈-trans (∘-cong ≈-refl (+m-cong (≈-trans (∘-cong ≈-refl (comp-bilinear-ε₂ _)) (comp-bilinear-ε₂ _)) ≈-refl))
+        (≈-trans (∘-cong ≈-refl (homCM _ _ .CommutativeMonoid.+-lunit))
+        (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-sym (assoc _ _ _))))))))))))))
 
 strong-Lmap-split-pre : ∀ {G₁ G₂ X₁ X₂ Y} (g : G₁ ⇒ G₂) (x : X₁ ⇒ X₂) (r : (G₂ ⊕ X₂) ⇒ Y) →
                  (strong-Lmap-split r ∘ prod-m g (Lmap x)) ≈ strong-Lmap-split (r ∘ prod-m g x)
@@ -347,48 +313,33 @@ elim-root-split-natural {G₁} {G₂} {X₁} {X₂} {Y₁} {Y₂} g x {y} {c₁}
   where
   square-in₂ : ((f₂ ∘ in₂) ∘ x) ≈ (y ∘ (f₁ ∘ in₂))
   square-in₂ =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong₂ (≈-sym (prod-m-in₂ g x)))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong₁ sq) (assoc _ _ _))))
+    ≈-trans (tail-cong (≈-sym (prod-m-in₂ g x)))
+    (head-cong-assoc sq)
 
   side₁ : ((elim-root-split c₂ f₂ ∘ prod-m g (Lmap x)) ∘ in₁) ≈ ((y ∘ elim-root-split c₁ f₁) ∘ in₁)
   side₁ =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong₂ (prod-m-in₁ g (Lmap x)))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong₁ (B.copair-in₁ G₂ (L X₂) _ _))
-    (≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong₂ (≈-sym (prod-m-in₁ g x)))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong₁ sq)
-    (≈-trans (assoc _ _ _)
-             (≈-sym (≈-trans (assoc _ _ _)
-                             (∘-cong₂ (B.copair-in₁ G₁ (L X₁) _ _))))))))))))
+    ≈-trans (tail-cong (prod-m-in₁ g (Lmap x)))
+    (≈-trans (head-cong (B.copair-in₁ G₂ (L X₂) _ _))
+     (≈-trans (tail-cong (≈-sym (prod-m-in₁ g x)))
+      (≈-trans (head-cong-assoc sq)
+                (≈-sym (tail-cong (B.copair-in₁ G₁ (L X₁) _ _))))))
 
   const-side : (copair c₂ (f₂ ∘ in₂) ∘ Lmap x) ≈ (y ∘ copair c₁ (f₁ ∘ in₂))
   const-side = lifting-ext _ _
-    (≈-trans (assoc _ _ _)
-     (≈-trans (∘-cong₂ (Lmap-root x))
+    (≈-trans (tail-cong (Lmap-root x))
       (≈-trans (copair-root _ _)
-       (≈-sym (≈-trans (assoc _ _ _)
-                       (≈-trans (∘-cong₂ (copair-root _ _)) yc))))))
-    (≈-trans (assoc _ _ _)
-     (≈-trans (∘-cong₂ (Lmap-inj x))
-      (≈-trans (≈-sym (assoc _ _ _))
-       (≈-trans (∘-cong₁ (copair-inj _ _))
-        (≈-trans square-in₂
-         (≈-sym (≈-trans (assoc _ _ _) (∘-cong₂ (copair-inj _ _)))))))))
+       (≈-sym (≈-trans (tail-cong (copair-root _ _)) yc))))
+    (≈-trans (tail-cong (Lmap-inj x))
+     (≈-trans (head-cong (copair-inj _ _))
+      (≈-trans square-in₂
+       (≈-sym (tail-cong (copair-inj _ _))))))
 
   side₂ : ((elim-root-split c₂ f₂ ∘ prod-m g (Lmap x)) ∘ in₂) ≈ ((y ∘ elim-root-split c₁ f₁) ∘ in₂)
   side₂ =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong₂ (prod-m-in₂ g (Lmap x)))
-    (≈-trans (≈-sym (assoc _ _ _))
-    (≈-trans (∘-cong₁ (B.copair-in₂ G₂ (L X₂) _ _))
+    ≈-trans (tail-cong (prod-m-in₂ g (Lmap x)))
+    (≈-trans (head-cong (B.copair-in₂ G₂ (L X₂) _ _))
     (≈-trans const-side
-             (≈-sym (≈-trans (assoc _ _ _)
-                             (∘-cong₂ (B.copair-in₂ G₁ (L X₁) _ _))))))))
+             (≈-sym (tail-cong (B.copair-in₂ G₁ (L X₁) _ _)))))
 
 -- Single-application forms as the public combinators: the inner morphism is applied once, to the
 -- context recombined with the extracted payload. The split forms apply it once per copairing arm,
@@ -421,33 +372,28 @@ elim-root {G} c r = (r ∘ prod-m (id G) payload-L) +m ((c ∘ tag-L) ∘ p₂)
 private
   prod-m-arm-in₁ : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ prod-m (id G) payload-L) ∘ in₁) ≈ (r ∘ in₁)
   prod-m-arm-in₁ {G} r =
-    ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (prod-m-in₁ (id G) payload-L) id-right))
+    tail-cong (≈-trans (prod-m-in₁ (id G) payload-L) id-right)
 
   prod-m-arm-in₂ : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) →
               ((r ∘ prod-m (id G) payload-L) ∘ in₂) ≈ (r ∘ (in₂ ∘ payload-L))
-  prod-m-arm-in₂ {G} r = ≈-trans (assoc _ _ _) (∘-cong ≈-refl (prod-m-in₂ (id G) payload-L))
+  prod-m-arm-in₂ {G} r = tail-cong (prod-m-in₂ (id G) payload-L)
 
   tag-arm-in₁ : ∀ {G X Y} (c : 𝟙c ⇒ Y) → (((c ∘ tag-L {X}) ∘ p₂) ∘ in₁ {G}) ≈ εm
   tag-arm-in₁ {G} {X} c =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (B.zero-2 G (L X))) (comp-bilinear-ε₂ _))
+    ≈-trans (tail-cong (B.zero-2 G (L X))) (comp-bilinear-ε₂ _)
 
   tag-arm-in₂ : ∀ {G X Y} (c : 𝟙c ⇒ Y) → (((c ∘ tag-L {X}) ∘ p₂) ∘ in₂ {G}) ≈ (c ∘ tag-L)
   tag-arm-in₂ {G} {X} c =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (B.id-2 G (L X))) id-right)
+    tail-cancel (B.id-2 G (L X))
 
   payload-comp-root : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ (in₂ ∘ payload-L)) ∘ root) ≈ εm
   payload-comp-root r =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl payload-L-root) (comp-bilinear-ε₂ in₂))))
-             (comp-bilinear-ε₂ r))
+    ≈-trans (tail-cong (≈-trans (tail-cong payload-L-root) (comp-bilinear-ε₂ in₂)))
+             (comp-bilinear-ε₂ r)
 
   payload-comp-inj : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → ((r ∘ (in₂ ∘ payload-L)) ∘ inj) ≈ (r ∘ in₂)
   payload-comp-inj r =
-    ≈-trans (assoc _ _ _)
-    (∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl payload-L-inj) id-right)))
+    tail-cong (tail-cancel payload-L-inj)
 
 strong-Lmap-unfold : ∀ {G X Y} (r : (G ⊕ X) ⇒ Y) → strong-Lmap r ≈ strong-Lmap-split r
 strong-Lmap-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
@@ -457,7 +403,7 @@ strong-Lmap-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
   leg₁ : (strong-Lmap r ∘ in₁) ≈ (strong-Lmap-split r ∘ in₁)
   leg₁ =
     ≈-trans (comp-bilinear₁ _ _ in₁)
-    (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (prod-m-arm-in₁ r)))
+    (≈-trans (+m-cong (tail-cong (prod-m-arm-in₁ r))
                       (tag-arm-in₁ root))
     (≈-trans +m-runit
              (≈-sym (B.copair-in₁ G (L X) (inj ∘ (r ∘ in₁)) (copair root M)))))
@@ -468,24 +414,22 @@ strong-Lmap-unfold {G} {X} {Y} r = bp-ext leg₁ leg₂
   E-root : (E ∘ root) ≈ (copair root M ∘ root)
   E-root =
     ≈-trans (comp-bilinear₁ _ _ root)
-    (≈-trans (+m-cong (≈-trans (assoc _ _ _)
-                        (≈-trans (∘-cong ≈-refl (payload-comp-root r)) (comp-bilinear-ε₂ inj)))
-                      (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl tag-L-root) id-right)))
+    (≈-trans (+m-cong (≈-trans (tail-cong (payload-comp-root r)) (comp-bilinear-ε₂ inj))
+                      (tail-cancel tag-L-root))
     (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
              (≈-sym (copair-root root M))))
 
   E-inj : (E ∘ inj) ≈ (copair root M ∘ inj)
   E-inj =
     ≈-trans (comp-bilinear₁ _ _ inj)
-    (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (payload-comp-inj r)))
-                      (≈-trans (assoc _ _ _)
-                       (≈-trans (∘-cong ≈-refl tag-L-inj) (comp-bilinear-ε₂ root))))
+    (≈-trans (+m-cong (tail-cong (payload-comp-inj r))
+                      (≈-trans (tail-cong tag-L-inj) (comp-bilinear-ε₂ root)))
     (≈-trans +m-runit (≈-sym (copair-inj root M))))
 
   leg₂ : (strong-Lmap r ∘ in₂) ≈ (strong-Lmap-split r ∘ in₂)
   leg₂ =
     ≈-trans (comp-bilinear₁ _ _ in₂)
-    (≈-trans (+m-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (prod-m-arm-in₂ r)))
+    (≈-trans (+m-cong (tail-cong (prod-m-arm-in₂ r))
                       (tag-arm-in₂ root))
     (≈-trans (lifting-ext E (copair root M) E-root E-inj)
              (≈-sym (B.copair-in₂ G (L X) (inj ∘ (r ∘ in₁)) (copair root M)))))
@@ -510,7 +454,7 @@ elim-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
   E-root =
     ≈-trans (comp-bilinear₁ _ _ root)
     (≈-trans (+m-cong (payload-comp-root r)
-                      (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl tag-L-root) id-right)))
+                      (tail-cancel tag-L-root))
     (≈-trans (homCM _ _ .CommutativeMonoid.+-lunit)
              (≈-sym (copair-root c M))))
 
@@ -518,8 +462,7 @@ elim-root-unfold {G} {X} {Y} c r = bp-ext leg₁ leg₂
   E-inj =
     ≈-trans (comp-bilinear₁ _ _ inj)
     (≈-trans (+m-cong (payload-comp-inj r)
-                      (≈-trans (assoc _ _ _)
-                       (≈-trans (∘-cong ≈-refl tag-L-inj) (comp-bilinear-ε₂ c))))
+                      (≈-trans (tail-cong tag-L-inj) (comp-bilinear-ε₂ c)))
     (≈-trans +m-runit (≈-sym (copair-inj c M))))
 
   leg₂ : (elim-root c r ∘ in₂) ≈ (elim-root-split c r ∘ in₂)
@@ -571,27 +514,19 @@ strong-Lmap-inj {G} {X} {Y} r =
     ≈-trans (B.pair-natural G X _ _ _)
     (≈-trans (pair-cong
         (≈-trans (∘-cong id-left ≈-refl) (≈-trans (B.pair-p₁ G (L X) _ _) id-left))
-        (≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (B.pair-p₂ G (L X) _ _))
-            (≈-trans (≈-sym (assoc _ _ _))
-              (≈-trans (∘-cong payload-L-inj ≈-refl) id-left)))))
+        (≈-trans (tail-cong (B.pair-p₂ G (L X) _ _))
+         (head-cancel payload-L-inj)))
       (B.pair-ext0 G X))
 
   payload-part : ((inj ∘ (r ∘ prod-m (id G) payload-L)) ∘ prod-m (id G) inj) ≈ (inj ∘ r)
   payload-part =
-    ≈-trans (assoc _ _ _)
-    (∘-cong ≈-refl
-      (≈-trans (assoc _ _ _)
-        (≈-trans (∘-cong ≈-refl collapse) id-right)))
+    tail-cong (tail-cancel collapse)
 
   root-part : (((root ∘ tag-L) ∘ p₂) ∘ prod-m (id G) inj) ≈ εm
   root-part =
-    ≈-trans (assoc _ _ _)
-    (≈-trans (∘-cong ≈-refl (B.pair-p₂ G (L X) _ _))
-      (≈-trans (≈-sym (assoc _ _ _))
-        (≈-trans (∘-cong (≈-trans (assoc _ _ _)
-                           (≈-trans (∘-cong ≈-refl tag-L-inj) (comp-bilinear-ε₂ root))) ≈-refl)
-          (comp-bilinear-ε₁ p₂))))
+    ≈-trans (tail-cong (B.pair-p₂ G (L X) _ _))
+    (≈-trans (head-cong (≈-trans (tail-cong tag-L-inj) (comp-bilinear-ε₂ root)))
+      (comp-bilinear-ε₁ p₂))
 
 strong-Lmap-co : ∀ {G X Y Z} (r : (G ⊕ Y) ⇒ Z) (s : (G ⊕ X) ⇒ Y) →
                 (strong-Lmap r ∘ pair p₁ (strong-Lmap s)) ≈ strong-Lmap (r ∘ pair p₁ s)
