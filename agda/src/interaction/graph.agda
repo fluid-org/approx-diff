@@ -4,6 +4,7 @@ open import Data.Bool using (Bool; true; not)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ)
+open import Data.List.Properties using (map-++; map-∘; foldl-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
@@ -38,7 +39,8 @@ private
 open Semiring using (Carrier; +-cong; +-assoc; +-comm; +-lunit; ·-cong; ε-annihilₗ; ε-annihilᵣ)
   renaming (_≈_ to _≈ₛ_; refl to ≈ₛ-refl; sym to ≈ₛ-sym; trans to ≈ₛ-trans; _+_ to _+ₛ_; _·_ to _·ₛ_; ε to εₛ)
 open import categories using (Category)
-open Category M.cat using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans)
+open Category M.cat
+  using (_∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
 
 private
   +-runit : ∀ {x} → (x +ₛ εₛ) ≈ₛ x
@@ -155,9 +157,6 @@ mutual
   lts-order (s ∷ [])     = sum-<-order (lt-order s) none-order
   lts-order (s ∷ t ∷ ss) = sum-<-order (sum-<-order (lt-order s) none-order) (lts-order (t ∷ ss))
 
-≈-of-≡ : ∀ {m n} {X Y : M.Matrix m n} → X ≡ Y → X ≈ Y
-≈-of-≡ ≡-refl = ≈-refl
-
 record Graph (m n : ℕ) : Set₁ where
   field
     shape   : Shape
@@ -197,11 +196,6 @@ hide-all-cong vertex-width (r ∷ rs) e = hide-all-cong vertex-width rs (hide-co
 hide-sink : {V : Set} (vertex-width : V → ℕ) (G : Relation vertex-width) (r : V) →
             (∀ y → G r y ≈ M.εₘ) → hide vertex-width G r ≐ G
 hide-sink vertex-width G r z x y = ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (z y))) (M.absorb₁ (G x y) (G x r))
-
-hide-all-++ : {V : Set} (vertex-width : V → ℕ) (G : Relation vertex-width) (xs ys : List V) →
-              hide-all vertex-width G (xs ++ ys) ≡ hide-all vertex-width (hide-all vertex-width G xs) ys
-hide-all-++ vertex-width G []       ys = ≡-refl
-hide-all-++ vertex-width G (x ∷ xs) ys = hide-all-++ vertex-width (hide vertex-width G x) xs ys
 
 module Hide (V : Set) (w : V → ℕ) where
   Gr : Set
@@ -318,13 +312,13 @@ module Hide (V : Set) (w : V → ℕ) where
                              h G' r z r' i' j' ≈ₛ h G r z r' i' j'))) rs
     all' = All-map
       (λ {r'} pq →
-        record { prf =
+        ⟪
           (λ z i' j' → ≈ₛ-trans (step r' z i' j')
                        (≈ₛ-trans (+-cong (proj₁ (Prf.prf pq) z i' j') ≈ₛ-refl)
                                  (absorbˡ (G r' z i' j') ((G r z ∘ G r' r) i' j')))) ,
           (λ z i' j' → ≈ₛ-trans (step z r' i' j')
                        (≈ₛ-trans (+-cong (proj₂ (Prf.prf pq) z i' j') ≈ₛ-refl)
-                                 (absorbˡ (G z r' i' j') ((G r r' ∘ G z r) i' j')))) })
+                                 (absorbˡ (G z r' i' j') ((G r r' ∘ G z r) i' j')))) ⟫)
       as
 
 module Ordered {V : Set} (vertex-width : V → ℕ) (_<_ : V → V → Set) (o : IsStrictOrder _<_) where
@@ -672,16 +666,6 @@ module Behind
   keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
 
 private
-  map-map : ∀ {a b c} {A : Set a} {B : Set b} {C : Set c} (g : B → C) (f : A → B) (xs : List A) →
-            map g (map f xs) ≡ map (λ x → g (f x)) xs
-  map-map g f []       = ≡-refl
-  map-map g f (x ∷ xs) = ≡-cong (g (f x) ∷_) (map-map g f xs)
-
-  map-++ : ∀ {a b} {A : Set a} {B : Set b} (f : A → B) (xs ys : List A) →
-           map f (xs ++ ys) ≡ map f xs ++ map f ys
-  map-++ f []       ys = ≡-refl
-  map-++ f (x ∷ xs) ys = ≡-cong (f x ∷_) (map-++ f xs ys)
-
 module _ {m n : ℕ} (B : Graph m n) where
 
   root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ M.εₘ
@@ -691,8 +675,8 @@ module _ {m n : ℕ} (B : Graph m n) where
   hide-paths⁺ : hide-all (vertex-width B) (gr B) (map inj₂ (paths⁺ B)) (inj₁ input) (inj₂ (inj₂ root))
                 ≈ collapse B
   hide-paths⁺ =
-    ≈-trans (≈-of-≡ (≡-cong (λ l → hide-all (vertex-width B) (gr B) l (inj₁ input) (inj₂ (inj₂ root)))
-                            (≡-cong (inj₂ (inj₂ root) ∷_) (map-map inj₂ inj₁ (vertices (Graph.shape B))))))
+    ≈-trans (≡-to-≈ (≡-cong (λ l → hide-all (vertex-width B) (gr B) l (inj₁ input) (inj₂ (inj₂ root)))
+                            (≡-cong (inj₂ (inj₂ root) ∷_) (≡-sym (map-∘ {g = inj₂} {f = inj₁} (vertices (Graph.shape B)))))))
             (hide-all-cong (vertex-width B) (map (λ q → inj₂ (inj₁ q)) (vertices (Graph.shape B)))
                            (hide-sink (vertex-width B) (gr B) (inj₂ (inj₂ root)) root-row)
                            (inj₁ input) (inj₂ (inj₂ root)))
@@ -808,7 +792,7 @@ module Rule₁
 
     κ : H .S.into (inj₂ root) ≈ collapse B
     κ =
-      ≈-trans (≈-of-≡ (≡-cong (λ H' → H' .S.into (inj₂ root))
+      ≈-trans (≡-to-≈ (≡-cong (λ H' → H' .S.into (inj₂ root))
                               (S.folds prem inj₂ (hide (vertex-width B)) (λ G w → ≡-refl)
                                        (paths⁺ B) (gr B))))
               (hide-paths⁺ B)
@@ -817,11 +801,11 @@ module Rule₁
             ≡ hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b (inj₂ root)))
                        (map (λ w → b (inj₁ w)) (vertices (Graph.shape B))) (inj₁ input) er
     plumb = ≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ input) er)
-                   (≡-cong (b (inj₂ root) ∷_) (map-map b inj₁ (vertices (Graph.shape B))))
+                   (≡-cong (b (inj₂ root) ∷_) (≡-sym (map-∘ {g = b} {f = inj₁} (vertices (Graph.shape B)))))
 
   agree : collapse E ≈ (out-root M.+ₘ (up-root ∘ (collapse B ∘ inputs)))
   agree =
-    ≈-trans (≈-of-≡ plumb)
+    ≈-trans (≡-to-≈ plumb)
             (≈-trans (done .S.tgt-ok root)
                      (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ))))
 
@@ -932,7 +916,7 @@ module Rule₂
 
     κ₁ : H₁ .S1.into (inj₂ root) ≈ collapse B₁
     κ₁ =
-      ≈-trans (≈-of-≡ (≡-cong (λ H → H .S1.into (inj₂ root))
+      ≈-trans (≡-to-≈ (≡-cong (λ H → H .S1.into (inj₂ root))
                               (S1.folds prem₁ inj₂ (hide (vertex-width B₁)) (λ G w → ≡-refl)
                                         (paths⁺ B₁) (gr B₁))))
               (hide-paths⁺ B₁)
@@ -1004,7 +988,7 @@ module Rule₂
 
     κ₂ : H₂ .S2.into (inj₂ root) ≈ collapse B₂
     κ₂ =
-      ≈-trans (≈-of-≡ (≡-cong (λ H → H .S2.into (inj₂ root))
+      ≈-trans (≡-to-≈ (≡-cong (λ H → H .S2.into (inj₂ root))
                               (S2.folds prem₂ inj₂ (hide (vertex-width B₂)) (λ G w → ≡-refl)
                                         (paths⁺ B₂) (gr B₂))))
               (hide-paths⁺ B₂)
@@ -1015,23 +999,21 @@ module Rule₂
     lst =
       ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (paths⁺ B₁)) (map inj₂ (paths⁺ B₂)))
               (≡-cong₂ _++_
-                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₁ (paths⁺ B₁))
-                         (≡-cong (b1 (inj₂ root) ∷_) (map-map b1 inj₁ ps₁)))
-                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₂ (paths⁺ B₂))
-                         (≡-cong (b2 (inj₂ root) ∷_) (map-map b2 inj₁ ps₂))))
+                (≡-trans (≡-sym (map-∘ {g = (λ q → inj₂ (inj₁ q))} {f = inj₁} (paths⁺ B₁)))
+                         (≡-cong (b1 (inj₂ root) ∷_) (≡-sym (map-∘ {g = b1} {f = inj₁} ps₁))))
+                (≡-trans (≡-sym (map-∘ {g = (λ q → inj₂ (inj₁ q))} {f = inj₂} (paths⁺ B₂)))
+                         (≡-cong (b2 (inj₂ root) ∷_) (≡-sym (map-∘ {g = b2} {f = inj₁} ps₂)))))
 
     plumb : collapse E ≡ G₂ (inj₁ input) er
     plumb =
       ≡-trans (≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ input) er) lst)
               (≡-cong (λ G → G (inj₁ input) er)
-                      (hide-all-++ (vertex-width E) (gr E)
-                        (b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁)
-                        (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂)))
+                      (foldl-++ (hide (vertex-width E)) (gr E) (b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁) (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂)))
 
   agree : collapse E
           ≈ ((out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))) M.+ₘ (up₂ ∘ (collapse B₂ ∘ Φ₂)))
   agree =
-    ≈-trans (≈-of-≡ plumb)
+    ≈-trans (≡-to-≈ plumb)
             (≈-trans (done₂ .S2.tgt-ok root)
                      (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong κ₂ Φ₂-split))))
 
@@ -1186,7 +1168,7 @@ module Rule₃
 
     κ₁ : H₁ .S1.into (inj₂ root) ≈ collapse B₁
     κ₁ =
-      ≈-trans (≈-of-≡ (≡-cong (λ H → H .S1.into (inj₂ root))
+      ≈-trans (≡-to-≈ (≡-cong (λ H → H .S1.into (inj₂ root))
                               (S1.folds prem₁ inj₂ (hide (vertex-width B₁)) (λ G w → ≡-refl)
                                         (paths⁺ B₁) (gr B₁))))
               (hide-paths⁺ B₁)
@@ -1266,7 +1248,7 @@ module Rule₃
 
     κ₂ : H₂ .S2.into (inj₂ root) ≈ collapse B₂
     κ₂ =
-      ≈-trans (≈-of-≡ (≡-cong (λ H → H .S2.into (inj₂ root))
+      ≈-trans (≡-to-≈ (≡-cong (λ H → H .S2.into (inj₂ root))
                               (S2.folds prem₂ inj₂ (hide (vertex-width B₂)) (λ G w → ≡-refl)
                                         (paths⁺ B₂) (gr B₂))))
               (hide-paths⁺ B₂)
@@ -1349,7 +1331,7 @@ module Rule₃
 
     κ₃ : H₃ .S3.into (inj₂ root) ≈ collapse B₃
     κ₃ =
-      ≈-trans (≈-of-≡ (≡-cong (λ H → H .S3.into (inj₂ root))
+      ≈-trans (≡-to-≈ (≡-cong (λ H → H .S3.into (inj₂ root))
                               (S3.folds prem₃ inj₂ (hide (vertex-width B₃)) (λ G w → ≡-refl)
                                         (paths⁺ B₃) (gr B₃))))
               (hide-paths⁺ B₃)
@@ -1364,29 +1346,28 @@ module Rule₃
       ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (paths⁺ B₁))
                       (map inj₂ (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃))))
               (≡-cong₂ _++_
-                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₁ (paths⁺ B₁))
-                         (≡-cong (b1 (inj₂ root) ∷_) (map-map b1 inj₁ ps₁)))
-                (≡-trans (map-map (λ q → inj₂ (inj₁ q)) inj₂
-                                  (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃)))
+                (≡-trans (≡-sym (map-∘ {g = (λ q → inj₂ (inj₁ q))} {f = inj₁} (paths⁺ B₁)))
+                         (≡-cong (b1 (inj₂ root) ∷_) (≡-sym (map-∘ {g = b1} {f = inj₁} ps₁))))
+                (≡-trans (≡-sym (map-∘ {g = (λ q → inj₂ (inj₁ q))} {f = inj₂} (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃))))
                 (≡-trans (map-++ (λ q → inj₂ (inj₁ (inj₂ q))) (map inj₁ (paths⁺ B₂))
                                  (map inj₂ (paths⁺ B₃)))
                          (≡-cong₂ _++_
-                           (≡-trans (map-map (λ q → inj₂ (inj₁ (inj₂ q))) inj₁ (paths⁺ B₂))
-                                    (≡-cong (b2 (inj₂ root) ∷_) (map-map b2 inj₁ ps₂)))
-                           (≡-trans (map-map (λ q → inj₂ (inj₁ (inj₂ q))) inj₂ (paths⁺ B₃))
-                                    (≡-cong (b3 (inj₂ root) ∷_) (map-map b3 inj₁ ps₃)))))))
+                           (≡-trans (≡-sym (map-∘ {g = (λ q → inj₂ (inj₁ (inj₂ q)))} {f = inj₁} (paths⁺ B₂)))
+                                    (≡-cong (b2 (inj₂ root) ∷_) (≡-sym (map-∘ {g = b2} {f = inj₁} ps₂))))
+                           (≡-trans (≡-sym (map-∘ {g = (λ q → inj₂ (inj₁ (inj₂ q)))} {f = inj₂} (paths⁺ B₃)))
+                                    (≡-cong (b3 (inj₂ root) ∷_) (≡-sym (map-∘ {g = b3} {f = inj₁} ps₃))))))))
 
     plumb : collapse E ≡ G₃ (inj₁ input) er
     plumb =
       ≡-trans (≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ input) er) lst)
               (≡-trans (≡-cong (λ G → G (inj₁ input) er)
-                               (hide-all-++ (vertex-width E) (gr E) l₁ (l₂ ++ l₃)))
+                               (foldl-++ (hide (vertex-width E)) (gr E) l₁ (l₂ ++ l₃)))
                        (≡-cong (λ G → G (inj₁ input) er)
-                               (hide-all-++ (vertex-width E) G₁ l₂ l₃)))
+                               (foldl-++ (hide (vertex-width E)) G₁ l₂ l₃)))
 
   agree : collapse E
           ≈ (((out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂)) M.+ₘ (up₃ ∘ (collapse B₃ ∘ Φ₃)))
   agree =
-    ≈-trans (≈-of-≡ plumb)
+    ≈-trans (≡-to-≈ plumb)
             (≈-trans (done₃ .S3.tgt-ok root)
                      (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong κ₃ Φ₃-split))))

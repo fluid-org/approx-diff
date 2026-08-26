@@ -34,7 +34,7 @@ private
 
 open import categories using (Category; HasProducts)
 open Category M.cat using (_∘_; _≈_; ≈-refl; ≈-sym; ≈-trans; ∘-cong₁; ∘-cong₂; ∘-cong; assoc; id-left; id-right)
-open HasProducts M.products using (p₁; p₂)
+open HasProducts M.products using (p₁; p₂; pair-cong; pair-p₁)
 open M using (⟨_,_⟩)
 
 fo-of : ∀ {Δ} (τ : type Δ) → Bool
@@ -111,10 +111,6 @@ private
                (out M.+ₘ (up ∘ (c ∘ ins))) ≈ (out M.+ₘ (up ∘ (R' ∘ ins)))
   one-inputs out up ins e = M.+ₘ-cong (≈-refl {f = out}) (∘-cong₂ (∘-cong₁ e))
 
-  pair-cong : ∀ {m n₁ n₂} {X₁ Y₁ : M.Matrix n₁ m} {X₂ Y₂ : M.Matrix n₂ m} → X₁ ≈ Y₁ → X₂ ≈ Y₂ →
-              ⟨ X₁ , X₂ ⟩ ≈ ⟨ Y₁ , Y₂ ⟩
-  pair-cong = HasProducts.pair-cong M.products
-
   seq : ∀ {m m₂ n₁ n₂} (ins : M.Matrix m₂ (m + n₁)) {c₁ R₁ : M.Matrix n₁ m} {c₂ T : M.Matrix n₂ m₂} →
         c₁ ≈ R₁ → c₂ ≈ T →
         ((M.εₘ M.+ₘ (M.εₘ ∘ (c₁ ∘ M.I))) M.+ₘ (M.I ∘ (c₂ ∘ (ins ∘ ⟨ M.I , c₁ ∘ M.I ⟩))))
@@ -143,7 +139,7 @@ private
   ignore-root : ∀ {m m₂ n₁} (A : M.Matrix m₂ m) (X : M.Matrix n₁ m) → ((A ∘ p₁ {m} {n₁}) ∘ ⟨ M.I , X ⟩) ≈ A
   ignore-root {m} {n₁ = n₁} A X =
     ≈-trans {g = A ∘ (p₁ {m} {n₁} ∘ ⟨ M.I , X ⟩)} (assoc A (p₁ {m} {n₁}) ⟨ M.I , X ⟩)
-            (≈-trans {g = A ∘ M.I} (∘-cong₂ (HasProducts.pair-p₁ M.products M.I X)) id-right)
+            (≈-trans {g = A ∘ M.I} (∘-cong₂ (pair-p₁ M.I X)) id-right)
 
   two-roots : ∀ {m m₁ m₂ n n₁ n₂} (out : M.Matrix n m) (r₁ : M.Matrix m₁ m) (ins₂ : M.Matrix m₂ (m + n₁))
               (u₁ : M.Matrix n n₁) (u₂ : M.Matrix n n₂)
@@ -159,7 +155,7 @@ private
   inputs-only : ∀ {m n₁ n₂} (c₂ : M.Matrix n₂ m) (X : M.Matrix n₁ m) {R : M.Matrix n₂ m} → c₂ ≈ R →
                 (c₂ ∘ (p₁ {m} {n₁} ∘ ⟨ M.I , X ⟩)) ≈ R
   inputs-only {m} {n₁} c₂ X e =
-    ≈-trans {g = c₂ ∘ M.I} (∘-cong₂ (HasProducts.pair-p₁ M.products M.I X)) (≈-trans {g = c₂} id-right e)
+    ≈-trans {g = c₂ ∘ M.I} (∘-cong₂ (pair-p₁ M.I X)) (≈-trans {g = c₂} id-right e)
 
   pairing : ∀ {m n₁ n₂} (X₁ : M.Matrix n₁ m) (X₂ : M.Matrix n₂ m) →
             (((M.in₂ {1} ∘ M.in₁ {n₁} {n₂}) ∘ X₁) M.+ₘ ((M.in₂ {1} ∘ M.in₂ {n₁} {n₂}) ∘ X₂))
