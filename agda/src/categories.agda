@@ -54,6 +54,26 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   ∘-cong₂ : ∀ {x y z} {f : y ⇒ z} {g₁ g₂ : x ⇒ y} → g₁ ≈ g₂ → (f ∘ g₁) ≈ (f ∘ g₂)
   ∘-cong₂ e = ∘-cong (isEquiv .refl) e
 
+  head-cong : ∀ {w x y z} {f : y ⇒ z} {g : x ⇒ y} {h : x ⇒ z} {k : w ⇒ x} → (f ∘ g) ≈ h → (f ∘ (g ∘ k)) ≈ (h ∘ k)
+  head-cong e = isEquiv .trans (isEquiv .sym (assoc _ _ _)) (∘-cong e (isEquiv .refl))
+
+  head-cong-assoc : ∀ {w x y y' z} {f : y ⇒ z} {g : x ⇒ y} {h₁ : y' ⇒ z} {h₂ : x ⇒ y'} {k : w ⇒ x} →
+                    (f ∘ g) ≈ (h₁ ∘ h₂) → (f ∘ (g ∘ k)) ≈ (h₁ ∘ (h₂ ∘ k))
+  head-cong-assoc e = isEquiv .trans (head-cong e) (assoc _ _ _)
+
+  head-cancel : ∀ {w x y} {f : x ⇒ y} {g : y ⇒ x} {k : w ⇒ y} → (f ∘ g) ≈ id y → (f ∘ (g ∘ k)) ≈ k
+  head-cancel e = isEquiv .trans (head-cong e) id-left
+
+  tail-cong : ∀ {w x y z} {f : y ⇒ z} {g : x ⇒ y} {h : w ⇒ x} {k : w ⇒ y} → (g ∘ h) ≈ k → ((f ∘ g) ∘ h) ≈ (f ∘ k)
+  tail-cong e = isEquiv .trans (assoc _ _ _) (∘-cong (isEquiv .refl) e)
+
+  tail-cong-assoc : ∀ {w x x' y z} {f : y ⇒ z} {g : x ⇒ y} {h : w ⇒ x} {k₁ : x' ⇒ y} {k₂ : w ⇒ x'} →
+                    (g ∘ h) ≈ (k₁ ∘ k₂) → ((f ∘ g) ∘ h) ≈ ((f ∘ k₁) ∘ k₂)
+  tail-cong-assoc e = isEquiv .trans (tail-cong e) (isEquiv .sym (assoc _ _ _))
+
+  tail-cancel : ∀ {w x y} {f : x ⇒ y} {g : w ⇒ x} {h : x ⇒ w} → (g ∘ h) ≈ id x → ((f ∘ g) ∘ h) ≈ f
+  tail-cancel e = isEquiv .trans (tail-cong e) id-right
+
   ≡-to-≈ : ∀ {x y} {f g : x ⇒ y} → f ≡ g → f ≈ g
   ≡-to-≈ ≡.refl = ≈-refl
 

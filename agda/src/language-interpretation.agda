@@ -918,29 +918,19 @@ unfold-as-apply-fwd-inst τ' ρ =
   open ≈-Reasoning isEquiv
   A  = sub (sub-lift (push ρ)) τ'
   Xρ = ⟦ ρ ⟧ty ∅
-  δr : Fin 1 → obj
   δr = extend δ∅ Xρ
-  σp : TySub 1 0
   σp = push ρ
-  σL : TySub 2 1
   σL = sub-lift σp
-  σu : TySub 2 1
   σu = unfold₁-sub τ'
-  σm : TySub 1 0
   σm = push (μ A)
-  σa : TySub 2 0
   σa = λ i → sub σp (σu i)
-  σb : TySub 2 0
   σb = λ i → sub σm (σL i)
-  δp : Fin 1 → obj
   δp = λ i → ⟦ σp i ⟧ty ∅
-  δm : Fin 1 → obj
   δm = λ i → ⟦ σm i ⟧ty ∅
   Q  = as-poly {0} {2} τ' ∅
   P₁ = as-poly {0} {1} A ∅
   MQ = μ-obj Q δr
   Mμ = μ-obj P₁ δ∅
-  γ' : Fin 1 → obj
   γ' = concat (extend {0} δ∅ MQ) ∅
   pwu : ∀ i → σa i ≡ σb i
   pwu Fin.zero    = refl
@@ -1061,121 +1051,63 @@ unfold-as-apply-fwd-inst τ' ρ =
           ≈ (Fq ∘ (as-poly-map τ' famL δ∅ ∘ (Sa ∘ Ca)))
   lhs = begin
       ((((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ B')) ∘ (fmE ∘ (((Fs ∘ Rs) ∘ Ts) ∘ Cρ))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl cast-split)) ⟩
-      ((((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ B')) ∘ (fmE ∘ (((Fs ∘ Rs) ∘ Ts) ∘ (Cc ∘ (Cb ∘ Ca))))
-    ≈˘⟨ ∘-cong ≈-refl (≈-trans (∘-cong (≈-trans (∘-cong (assoc _ _ _) ≈-refl) (assoc _ _ _)) ≈-refl) (assoc _ _ _)) ⟩
-      ((((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ B')) ∘ ((((fmE ∘ Fs) ∘ Rs) ∘ Ts) ∘ (Cc ∘ (Cb ∘ Ca)))
-    ≈⟨ ∘-cong ≈-refl (∘-cong (∘-cong (∘-cong (apply-fwd-natural A ∅ E) ≈-refl) ≈-refl) ≈-refl) ⟩
-      ((((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ B')) ∘ ((((FsQ ∘ KA) ∘ Rs) ∘ Ts) ∘ (Cc ∘ (Cb ∘ Ca)))
-    ≈⟨ assoc _ _ _ ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((((F' ∘ L') ∘ S') ∘ B') ∘ ((((FsQ ∘ KA) ∘ Rs) ∘ Ts) ∘ (Cc ∘ (Cb ∘ Ca))))
-    ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ (B' ∘ ((((FsQ ∘ KA) ∘ Rs) ∘ Ts) ∘ (Cc ∘ (Cb ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (assoc _ _ _))))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ (B' ∘ (FsQ ∘ (KA ∘ (Rs ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca))))))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ ((B' ∘ FsQ) ∘ (KA ∘ (Rs ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (apply-bwd-fwd {n = 1} A ∅ (extend δ∅ MQ)) ≈-refl)) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ (id _ ∘ (KA ∘ (Rs ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl id-left) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ (KA ∘ (Rs ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca))))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ ((KA ∘ Rs) ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (as-poly-map-comp A KAfam (λ i → ≡-to-⇒ (push-pw (μ A) i)) δ∅) ≈-refl)) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ (((F' ∘ L') ∘ S') ∘ (Kr ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (S' ∘ (Kr ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca))))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ ((S' ∘ Kr) ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (subst-fwd-natural σL τ' krfam) ≈-refl)) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ ((NL ∘ SL) ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ (SL ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca))))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ ((SL ∘ Ts) ∘ (Cc ∘ (Cb ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (subst-fwd-sub σL σm τ' e-ss ∅) ≈-refl))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ (((Wm ∘ Sb) ∘ Css) ∘ (Cc ∘ (Cb ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _)))))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ ((Wm ∘ Sb) ∘ ((Css ∘ Cc) ∘ (Cb ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong cast-cancel ≈-refl)))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ ((Wm ∘ Sb) ∘ (id _ ∘ (Cb ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl id-left))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ ((Wm ∘ Sb) ∘ (Cb ∘ Ca))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _)))))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ (Wm ∘ ((Sb ∘ Cb) ∘ Ca))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (subst-fwd-cong τ' pwu e-c ∅) ≈-refl)))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ (Wm ∘ ((Pw ∘ Sa) ∘ Ca))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)))) ⟩
-      (((Fq ∘ Eb) ∘ Bb) ∘ Mb) ∘ ((F' ∘ L') ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca)))))
-    ≈⟨ ≈-trans (assoc _ _ _) (assoc _ _ _) ⟩
-      (Fq ∘ Eb) ∘ (Bb ∘ (Mb ∘ ((F' ∘ L') ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca)))))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong ≈-refl (assoc _ _ _)) (≈-sym (assoc _ _ _)))) ⟩
-      (Fq ∘ Eb) ∘ (Bb ∘ ((Mb ∘ F') ∘ (L' ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca)))))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (apply-fwd-map {n = 1} τ' gρ (extend δ∅ MQ)) ≈-refl)) ⟩
-      (Fq ∘ Eb) ∘ (Bb ∘ ((FQ' ∘ Kρ) ∘ (L' ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca)))))))
-    ≈⟨ ∘-cong ≈-refl (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (≈-sym (assoc _ _ _)) ≈-refl)) ⟩
-      (Fq ∘ Eb) ∘ (((Bb ∘ FQ') ∘ Kρ) ∘ (L' ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca))))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong (∘-cong (apply-bwd-fwd {n = 1} τ' (concat δr ∅) (extend δ∅ MQ)) ≈-refl) ≈-refl) ⟩
-      (Fq ∘ Eb) ∘ ((id _ ∘ Kρ) ∘ (L' ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca))))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong id-left ≈-refl) ⟩
-      (Fq ∘ Eb) ∘ (Kρ ∘ (L' ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca))))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)))) ⟩
-      (Fq ∘ Eb) ∘ (Kρ ∘ (L' ∘ (NL ∘ ((Wm ∘ Pw) ∘ (Sa ∘ Ca)))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (as-poly-map-comp τ' Wmfam Pwfam δ∅) ≈-refl)))) ⟩
-      (Fq ∘ Eb) ∘ (Kρ ∘ (L' ∘ (NL ∘ (as-poly-map τ' (λ i → Wmfam i ∘ Pwfam i) δ∅ ∘ (Sa ∘ Ca)))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _))) ⟩
-      (Fq ∘ Eb) ∘ (Kρ ∘ (L' ∘ ((NL ∘ as-poly-map τ' (λ i → Wmfam i ∘ Pwfam i) δ∅) ∘ (Sa ∘ Ca))))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (as-poly-map-comp τ' NLfam (λ i → Wmfam i ∘ Pwfam i) δ∅) ≈-refl))) ⟩
-      (Fq ∘ Eb) ∘ (Kρ ∘ (L' ∘ (as-poly-map τ' (λ i → NLfam i ∘ (Wmfam i ∘ Pwfam i)) δ∅ ∘ (Sa ∘ Ca))))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
-      (Fq ∘ Eb) ∘ (Kρ ∘ ((L' ∘ as-poly-map τ' (λ i → NLfam i ∘ (Wmfam i ∘ Pwfam i)) δ∅) ∘ (Sa ∘ Ca)))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (∘-cong (as-poly-map-comp τ' L'fam (λ i → NLfam i ∘ (Wmfam i ∘ Pwfam i)) δ∅) ≈-refl)) ⟩
-      (Fq ∘ Eb) ∘ (Kρ ∘ (as-poly-map τ' (λ i → L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i))) δ∅ ∘ (Sa ∘ Ca)))
-    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      (Fq ∘ Eb) ∘ ((Kρ ∘ as-poly-map τ' (λ i → L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i))) δ∅) ∘ (Sa ∘ Ca))
-    ≈⟨ ∘-cong ≈-refl (∘-cong (as-poly-map-comp τ' Kρfam (λ i → L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i))) δ∅) ≈-refl) ⟩
-      (Fq ∘ Eb) ∘ (as-poly-map τ' (λ i → Kρfam i ∘ (L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i)))) δ∅ ∘ (Sa ∘ Ca))
-    ≈⟨ assoc _ _ _ ⟩
-      Fq ∘ (Eb ∘ (as-poly-map τ' (λ i → Kρfam i ∘ (L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i)))) δ∅ ∘ (Sa ∘ Ca)))
-    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      Fq ∘ ((Eb ∘ as-poly-map τ' (λ i → Kρfam i ∘ (L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i)))) δ∅) ∘ (Sa ∘ Ca))
-    ≈⟨ ∘-cong ≈-refl (∘-cong (as-poly-map-comp τ' Ebfam (λ i → Kρfam i ∘ (L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i)))) δ∅) ≈-refl) ⟩
+    ≈⟨ ≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _)
+       (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (assoc _ _ _)))))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (S' ∘ (B' ∘ (fmE ∘ (((Fs ∘ Rs) ∘ Ts) ∘ Cρ)))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂
+       (≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (∘-cong₂ (∘-cong₂ (∘-cong₂ cast-split))))))))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (S' ∘ (B' ∘ (fmE ∘ (Fs ∘ (Rs ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂
+       (head-cong-assoc (apply-fwd-natural A ∅ E))))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (S' ∘ (B' ∘ (FsQ ∘ (KA ∘ (Rs ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂
+       (head-cancel (apply-bwd-fwd {n = 1} A ∅ (extend δ∅ MQ))))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (S' ∘ (KA ∘ (Rs ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca)))))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂
+       (head-cong (as-poly-map-comp A KAfam (λ i → ≡-to-⇒ (push-pw (μ A) i)) δ∅)))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (S' ∘ (Kr ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca))))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (head-cong-assoc (≈-sym (subst-fwd-natural σL τ' krfam)))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (NL ∘ (SL ∘ (Ts ∘ (Cc ∘ (Cb ∘ Ca))))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂
+       (≈-trans (head-cong (subst-fwd-sub σL σm τ' e-ss ∅)) (≈-trans (assoc _ _ _) (assoc _ _ _))))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (NL ∘ (Wm ∘ (Sb ∘ (Css ∘ (Cc ∘ (Cb ∘ Ca)))))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂
+       (head-cancel cast-cancel))))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (NL ∘ (Wm ∘ (Sb ∘ (Cb ∘ Ca)))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂
+       (head-cong-assoc (≈-sym (subst-fwd-cong τ' pwu e-c ∅)))))))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (Mb ∘ (F' ∘ (L' ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca)))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (head-cong-assoc (≈-sym (apply-fwd-map {n = 1} τ' gρ (extend δ∅ MQ)))))) ⟩
+      Fq ∘ (Eb ∘ (Bb ∘ (FQ' ∘ (Kρ ∘ (L' ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca)))))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (head-cancel (apply-bwd-fwd {n = 1} τ' (concat δr ∅) (extend δ∅ MQ)))) ⟩
+      Fq ∘ (Eb ∘ (Kρ ∘ (L' ∘ (NL ∘ (Wm ∘ (Pw ∘ (Sa ∘ Ca)))))))
+    ≈⟨ ∘-cong₂ (≈-trans (∘-cong₂ (≈-trans (∘-cong₂ (≈-trans (∘-cong₂ (≈-trans (∘-cong₂
+         (head-cong (as-poly-map-comp τ' Wmfam Pwfam δ∅)))
+         (head-cong (as-poly-map-comp τ' NLfam (λ i → Wmfam i ∘ Pwfam i) δ∅))))
+         (head-cong (as-poly-map-comp τ' L'fam (λ i → NLfam i ∘ (Wmfam i ∘ Pwfam i)) δ∅))))
+         (head-cong (as-poly-map-comp τ' Kρfam (λ i → L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i))) δ∅))))
+         (head-cong (as-poly-map-comp τ' Ebfam (λ i → Kρfam i ∘ (L'fam i ∘ (NLfam i ∘ (Wmfam i ∘ Pwfam i)))) δ∅))) ⟩
       Fq ∘ (as-poly-map τ' famL δ∅ ∘ (Sa ∘ Ca))
     ∎
   rhs : (((((Fq ∘ Mu) ∘ Su) ∘ Cu) ∘ Bu) ∘ ((Fu ∘ Ru) ∘ Tu)) ≈ (Fq ∘ (as-poly-map τ' famR δ∅ ∘ (Sa ∘ Ca)))
   rhs = begin
       ((((Fq ∘ Mu) ∘ Su) ∘ Cu) ∘ Bu) ∘ ((Fu ∘ Ru) ∘ Tu)
-    ≈⟨ assoc _ _ _ ⟩
-      (((Fq ∘ Mu) ∘ Su) ∘ Cu) ∘ (Bu ∘ ((Fu ∘ Ru) ∘ Tu))
-    ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong ≈-refl (assoc _ _ _)) (≈-sym (assoc _ _ _))) ⟩
-      (((Fq ∘ Mu) ∘ Su) ∘ Cu) ∘ ((Bu ∘ Fu) ∘ (Ru ∘ Tu))
-    ≈⟨ ∘-cong ≈-refl (∘-cong (apply-bwd-fwd {0} {1} (unfold₁ τ') ∅ δr) ≈-refl) ⟩
-      (((Fq ∘ Mu) ∘ Su) ∘ Cu) ∘ (id _ ∘ (Ru ∘ Tu))
-    ≈⟨ ∘-cong ≈-refl id-left ⟩
-      (((Fq ∘ Mu) ∘ Su) ∘ Cu) ∘ (Ru ∘ Tu)
-    ≈⟨ ∘-cong (∘-cong ≈-refl (cast-as-poly-cong {n = 0} (unfold₁ τ') (λ i → sym (concat-emp-pw {δ₀ = δr} i)) δ∅)) ≈-refl ⟩
-      (((Fq ∘ Mu) ∘ Su) ∘ Cu') ∘ (Ru ∘ Tu)
-    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-      ((Fq ∘ Mu) ∘ Su) ∘ ((Cu' ∘ Ru) ∘ Tu)
-    ≈⟨ ∘-cong ≈-refl (∘-cong (as-poly-map-comp (unfold₁ τ') (λ i → ≡-to-⇒ (sym (concat-emp-pw {δ₀ = δr} i))) gρ δ∅) ≈-refl) ⟩
-      ((Fq ∘ Mu) ∘ Su) ∘ (CR ∘ Tu)
-    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-      (Fq ∘ Mu) ∘ ((Su ∘ CR) ∘ Tu)
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong (subst-fwd-natural σu τ' cu) ≈-refl) ⟩
-      (Fq ∘ Mu) ∘ ((Nu ∘ Sup) ∘ Tu)
-    ≈⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      (Fq ∘ Mu) ∘ (Nu ∘ (Sup ∘ Tu))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (subst-fwd-sub σu σp τ' e-ss' ∅)) ⟩
-      (Fq ∘ Mu) ∘ (Nu ∘ ((Wu ∘ Sa) ∘ Ca))
-    ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (assoc _ _ _)) ⟩
-      (Fq ∘ Mu) ∘ (Nu ∘ (Wu ∘ (Sa ∘ Ca)))
-    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      (Fq ∘ Mu) ∘ ((Nu ∘ Wu) ∘ (Sa ∘ Ca))
-    ≈⟨ ∘-cong ≈-refl (∘-cong (as-poly-map-comp τ' Nufam Wufam δ∅) ≈-refl) ⟩
-      (Fq ∘ Mu) ∘ (as-poly-map τ' (λ i → Nufam i ∘ Wufam i) δ∅ ∘ (Sa ∘ Ca))
-    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-      Fq ∘ ((Mu ∘ as-poly-map τ' (λ i → Nufam i ∘ Wufam i) δ∅) ∘ (Sa ∘ Ca))
-    ≈⟨ ∘-cong ≈-refl (∘-cong (as-poly-map-comp τ' (unfold-pw τ' Xρ) (λ i → Nufam i ∘ Wufam i) δ∅) ≈-refl) ⟩
+    ≈⟨ ≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _) (≈-trans (assoc _ _ _)
+       (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (assoc _ _ _))))))))) ⟩
+      Fq ∘ (Mu ∘ (Su ∘ (Cu ∘ (Bu ∘ (Fu ∘ (Ru ∘ Tu))))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₂ (head-cancel (apply-bwd-fwd {0} {1} (unfold₁ τ') ∅ δr))))) ⟩
+      Fq ∘ (Mu ∘ (Su ∘ (Cu ∘ (Ru ∘ Tu))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (∘-cong₁ (cast-as-poly-cong {n = 0} (unfold₁ τ') (λ i → sym (concat-emp-pw {δ₀ = δr} i)) δ∅)))) ⟩
+      Fq ∘ (Mu ∘ (Su ∘ (Cu' ∘ (Ru ∘ Tu))))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂
+       (head-cong (as-poly-map-comp (unfold₁ τ') (λ i → ≡-to-⇒ (sym (concat-emp-pw {δ₀ = δr} i))) gρ δ∅)))) ⟩
+      Fq ∘ (Mu ∘ (Su ∘ (CR ∘ Tu)))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (head-cong-assoc (≈-sym (subst-fwd-natural σu τ' cu)))) ⟩
+      Fq ∘ (Mu ∘ (Nu ∘ (Sup ∘ Tu)))
+    ≈⟨ ∘-cong₂ (∘-cong₂ (∘-cong₂ (≈-trans (subst-fwd-sub σu σp τ' e-ss' ∅) (assoc _ _ _)))) ⟩
+      Fq ∘ (Mu ∘ (Nu ∘ (Wu ∘ (Sa ∘ Ca))))
+    ≈⟨ ∘-cong₂ (≈-trans (∘-cong₂ (head-cong (as-poly-map-comp τ' Nufam Wufam δ∅)))
+                        (head-cong (as-poly-map-comp τ' (unfold-pw τ' Xρ) (λ i → Nufam i ∘ Wufam i) δ∅))) ⟩
       Fq ∘ (as-poly-map τ' famR δ∅ ∘ (Sa ∘ Ca))
     ∎
 
