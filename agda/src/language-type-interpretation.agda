@@ -592,6 +592,19 @@ strong-as-poly-map-weaken {Δ} {n} (μ τ) {Γ'} {δ} {δ'} gs δ₀ =
           (μ-map-weaken (as-poly {Δ} {suc n} τ δ) δ₀ (as-poly {Δ} {suc n} τ δ') δ₀
             (as-poly-map {n = suc n} τ gs (extend δ₀ (μ-obj (as-poly {Δ} {suc n} τ δ') δ₀))))
 
+strong-as-poly-map-square : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ₁ δ₁' δ₂ δ₂' : Fin Δ → obj}
+  (r : ∀ i → δ₁ i ⇒ δ₁' i) (r' : ∀ i → δ₂ i ⇒ δ₂' i)
+  (hs₁ : ∀ i → prod Γ' (δ₁ i) ⇒ δ₂ i) (hs₂ : ∀ i → prod Γ' (δ₁' i) ⇒ δ₂' i) (δ₀ : Fin n → obj) →
+  (∀ i → (hs₂ i ∘co (r i ∘ p₂)) ≈ ((r' i ∘ p₂) ∘co hs₁ i)) →
+  (strong-as-poly-map τ hs₂ δ₀ ∘co (as-poly-map τ r δ₀ ∘ p₂))
+    ≈ ((as-poly-map τ r' δ₀ ∘ p₂) ∘co strong-as-poly-map τ hs₁ δ₀)
+strong-as-poly-map-square τ r r' hs₁ hs₂ δ₀ pw =
+  ≈-trans (CoK.∘-cong ≈-refl (≈-sym (strong-as-poly-map-weaken τ r δ₀)))
+  (≈-trans (strong-as-poly-map-comp τ hs₂ (λ i → r i ∘ p₂) δ₀)
+  (≈-trans (strong-as-poly-map-cong τ pw δ₀)
+  (≈-trans (≈-sym (strong-as-poly-map-comp τ (λ i → r' i ∘ p₂) hs₁ δ₀))
+           (CoK.∘-cong (strong-as-poly-map-weaken τ r' δ₀) ≈-refl))))
+
 preserves-as-poly-var-map : ∀ {Δ n} {δ δ' : Fin Δ → obj} {gs : ∀ i → δ i ⇒ δ' i}
   {δc : ∀ i → Section (δ i)} {δ'c : ∀ i → Section (δ' i)} →
   (∀ i → preserves-section (gs i) (δc i) (δ'c i)) →

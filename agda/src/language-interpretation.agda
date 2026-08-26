@@ -406,12 +406,8 @@ mutual
     SAM-full = strong-as-poly-map τ (strong-concat-mor (strong-extend-mor hs kc) ks) δ∅
     cast-step : (SAM-full ∘co (Rs ∘ p₂)) ≈ ((Rs' ∘ p₂) ∘co SAM-1)
     cast-step =
-      ≈-trans (CoK.∘-cong ≈-refl (≈-sym (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (env-pw δ δ₀ X i)) δ∅)))
-      (≈-trans (strong-as-poly-map-comp τ (strong-concat-mor (strong-extend-mor hs kc) ks)
-                                          (λ i → ≡-to-⇒ (env-pw δ δ₀ X i) ∘ p₂) δ∅)
-      (≈-trans (strong-as-poly-map-cong τ (λ i → strong-env-pw-natural ks hs kc i) δ∅)
-      (≈-trans (≈-sym (strong-as-poly-map-comp τ (λ i → ≡-to-⇒ (env-pw δ' δ₀' X' i) ∘ p₂) F₁ δ∅))
-               (CoK.∘-cong (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (env-pw δ' δ₀' X' i)) δ∅) ≈-refl))))
+      strong-as-poly-map-square τ (λ i → ≡-to-⇒ (env-pw δ δ₀ X i)) (λ i → ≡-to-⇒ (env-pw δ' δ₀' X' i)) F₁
+                                (strong-concat-mor (strong-extend-mor hs kc) ks) δ∅ (strong-env-pw-natural ks hs kc)
     ab-step : (SAM-1 ∘co (ab ∘ p₂)) ≈ ((ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P))
     ab-step =
       strong-apply-bwd-natural {n = 1} τ (strong-concat-mor hs ks)
@@ -688,15 +684,11 @@ mutual
 
     cast-step : (SAM-full ∘co (Rs ∘ p₂)) ≈ ((Rs' ∘ p₂) ∘co SAM-1)
     cast-step =
-      ≈-trans (CoK.∘-cong ≈-refl (≈-sym (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ X i)) δ∅)))
-      (≈-trans (strong-as-poly-map-comp τ
-                  (strong-concat-mor {n = 1} (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc)
-                     (λ j → strong-as-poly-map (σ j) gs δ∅))
-                  (λ i → ≡-to-⇒ (sub-lift-pw σ δ X i) ∘ p₂) δ∅)
-      (≈-trans (strong-as-poly-map-cong τ (λ i → strong-sub-lift-pw-natural σ gs kc i) δ∅)
-      (≈-trans (≈-sym (strong-as-poly-map-comp τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ' X' i) ∘ p₂)
-                        (λ j → strong-as-poly-map (sub-lift σ j) Kδ δ∅) δ∅))
-               (CoK.∘-cong (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ' X' i)) δ∅) ≈-refl))))
+      strong-as-poly-map-square τ (λ i → ≡-to-⇒ (sub-lift-pw σ δ X i)) (λ i → ≡-to-⇒ (sub-lift-pw σ δ' X' i))
+                                (λ j → strong-as-poly-map (sub-lift σ j) Kδ δ∅)
+                                (strong-concat-mor {n = 1} (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc)
+                                                   (λ j → strong-as-poly-map (σ j) gs δ∅))
+                                δ∅ (strong-sub-lift-pw-natural σ gs kc)
 
     ab-step : (SAM-sub ∘co (ab ∘ p₂)) ≈ ((ab' ∘ p₂) ∘co (SF-P' ∘co SAM-P))
     ab-step =
@@ -1227,12 +1219,8 @@ private
                  ≈ ((≡-to-⇒ (ty-cong τ h₂) ∘ p₂) ∘co strong-as-poly-map τ hs₁ δ∅)
     nat-cast τ h₁ h₂ hs₁ hs₂ pw =
       ≈-trans (CoK.∘-cong ≈-refl (∘-cong (cast-as-poly-cong {n = 0} τ h₁ δ∅) ≈-refl))
-      (≈-trans (CoK.∘-cong ≈-refl (≈-sym (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (h₁ i)) δ∅)))
-      (≈-trans (strong-as-poly-map-comp τ hs₂ (λ i → ≡-to-⇒ (h₁ i) ∘ p₂) δ∅)
-      (≈-trans (strong-as-poly-map-cong τ pw δ∅)
-      (≈-trans (≈-sym (strong-as-poly-map-comp τ (λ i → ≡-to-⇒ (h₂ i) ∘ p₂) hs₁ δ∅))
-      (≈-trans (CoK.∘-cong (strong-as-poly-map-weaken τ (λ i → ≡-to-⇒ (h₂ i)) δ∅) ≈-refl)
-               (CoK.∘-cong (∘-cong (≈-sym (cast-as-poly-cong {n = 0} τ h₂ δ∅)) ≈-refl) ≈-refl))))))
+      (≈-trans (strong-as-poly-map-square τ (λ i → ≡-to-⇒ (h₁ i)) (λ i → ≡-to-⇒ (h₂ i)) hs₁ hs₂ δ∅ pw)
+               (CoK.∘-cong (∘-cong (≈-sym (cast-as-poly-cong {n = 0} τ h₂ δ∅)) ≈-refl) ≈-refl))
 
     pw-M : ∀ i → (strong-concat-mor {n = 2} Hs p₂s i ∘co (unfold-pw τ' Xμ i ∘ p₂))
                    ≈ ((unfold-pw τ' Xσ i ∘ p₂) ∘co strong-as-poly-map (unfold₁-sub τ' i) hsK δ∅)
@@ -1251,12 +1239,9 @@ private
     sq-M : (strong-as-poly-map τ' (strong-concat-mor {n = 2} Hs p₂s) δ∅ ∘co (M Xμ ∘ p₂))
              ≈ ((M Xσ ∘ p₂) ∘co strong-as-poly-map τ' (λ i → strong-as-poly-map (unfold₁-sub τ' i) hsK δ∅) δ∅)
     sq-M =
-      ≈-trans (CoK.∘-cong ≈-refl (≈-sym (strong-as-poly-map-weaken τ' (unfold-pw τ' Xμ) δ∅)))
-      (≈-trans (strong-as-poly-map-comp τ' (strong-concat-mor {n = 2} Hs p₂s) (λ i → unfold-pw τ' Xμ i ∘ p₂) δ∅)
-      (≈-trans (strong-as-poly-map-cong τ' pw-M δ∅)
-      (≈-trans (≈-sym (strong-as-poly-map-comp τ' (λ i → unfold-pw τ' Xσ i ∘ p₂)
-                                                  (λ i → strong-as-poly-map (unfold₁-sub τ' i) hsK δ∅) δ∅))
-               (CoK.∘-cong (strong-as-poly-map-weaken τ' (unfold-pw τ' Xσ) δ∅) ≈-refl))))
+      strong-as-poly-map-square τ' (unfold-pw τ' Xμ) (unfold-pw τ' Xσ)
+                                (λ i → strong-as-poly-map (unfold₁-sub τ' i) hsK δ∅) (strong-concat-mor {n = 2} Hs p₂s)
+                                δ∅ pw-M
 
     sq-C : (strong-as-poly-map (unfold₁ τ') hsK δ∅ ∘co (C Xμ ∘ p₂))
              ≈ ((C Xσ ∘ p₂) ∘co strong-as-poly-map (unfold₁ τ') HC1 δ∅)
