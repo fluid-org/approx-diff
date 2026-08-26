@@ -1894,14 +1894,19 @@ preserves-outMor P δ δc Pc = LambekDef.OutMorSection.preserves-outMor P δ δc
 -- candidate, which gives β and η in their categorical form and the HasMuLaws instance.
 
 module ApplyDef {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
-    (let module Tδ = Tree δ)
-    (h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier)
-    (h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
-              _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t'))
-    (h-fam : ∀ γ t →
-             prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (h-idx γ t))
-    where
-    open FoldBase {n} {Γ} {A} {P} {δ} hiding (module Tδ)
+    (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) where
+    open FoldBase {n} {Γ} {A} {P} {δ}
+
+    h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier
+    h-idx γ t = h .idxf .PS._⇒_.func (γ , t)
+
+    h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
+             _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t')
+    h-resp γ≈ p = h .idxf .PS._⇒_.func-resp-≈ (γ≈ , p)
+
+    h-fam : ∀ γ t → prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (h-idx γ t)
+    h-fam γ t = h .famf ._⇒f_.transf (γ , t)
+
     mutual
       apply-shape-idx : (Q : Poly (suc n)) → Γ .idx .Carrier → Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣) →
                       fobj μ-fam Q (extend δ A) .idx .Carrier
@@ -2008,30 +2013,19 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A) where
   open FoldBase {n} {Γ} {A} {P} {δ}
   module Ft = FoldDef {n} {Γ} {A} {P} {δ} alg
-  module Ap (h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier)
-            (h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
-                      _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t'))
-            (h-fam : ∀ γ t →
-                     prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (h-idx γ t)) =
-    ApplyDef {n} {Γ} {A} {P} {δ} h-idx h-resp h-fam
-  module Af = Ap Ft.fold-idx Ft.fold-idx-resp Ft.fold-fam
+  module Ap (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) = ApplyDef {n} {Γ} {A} {P} {δ} h
+  module Af = Ap Ft.foldMor
 
-  record IsFold
-      (h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier)
-      (h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
-                _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t'))
-      (h-fam : ∀ γ t →
-               prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (h-idx γ t)) :
-      Prop (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+  record IsFold (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) : Prop (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     field
       is-idx : ∀ γ x → _≈s_ (A .idx)
-               (h-idx γ (Tδ.sup x))
-               (alg .idxf .PS._⇒_.func (γ , Ap.apply-shape-idx h-idx h-resp h-fam P γ x))
+               (Ap.h-idx h γ (Tδ.sup x))
+               (alg .idxf .PS._⇒_.func (γ , Ap.apply-shape-idx h P γ x))
       is-fam : ∀ γ x →
-               h-fam γ (Tδ.sup x)
+               Ap.h-fam h γ (Tδ.sup x)
                ≈ (A .fam .subst (A .idx .isEquivalence .sym (is-idx γ x))
-                  ∘ (alg .famf ._⇒f_.transf (γ , Ap.apply-shape-idx h-idx h-resp h-fam P γ x)
-                     ∘ pair p₁ (Ap.apply-shape-fam h-idx h-resp h-fam P γ x)))
+                  ∘ (alg .famf ._⇒f_.transf (γ , Ap.apply-shape-idx h P γ x)
+                     ∘ pair p₁ (Ap.apply-shape-fam h P γ x)))
 
   mutual
     agree-shape : (Q : Poly (suc n)) (γ : Γ .idx .Carrier) (x : Tδ.⟦ ∣ Q ∣ ⟧shape (Srt.η₀ ∣ P ∣)) →
@@ -2133,13 +2127,9 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     agree-apply-fam γ (fbind Q fm) Fin.zero    a = agree-reindex-fam {Q = Q} γ fm a
     agree-apply-fam γ (fbind Q fm) (Fin.suc v) a = agree-apply-fam γ fm v a
 
-  module Unique (h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier)
-                (h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') →
-                          _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t'))
-                (h-fam : ∀ γ t →
-                         prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (h-idx γ t))
-                (H : IsFold h-idx h-resp h-fam) where
-    module Ah = Ap h-idx h-resp h-fam
+  module Unique (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) (H : IsFold h) where
+    module Ah = Ap h
+    open Ah using (h-idx; h-resp; h-fam)
 
     mutual
       uniq-idx : ∀ γ t → _≈s_ (A .idx) (h-idx γ t) (Ft.fold-idx γ t)
@@ -2262,19 +2252,11 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       compare-apply-fam γ (fbind Q fm) Fin.zero    a = compare-reindex-fam {Q = Q} γ fm a
       compare-apply-fam γ (fbind Q fm) (Fin.suc v) a = compare-apply-fam γ fm v a
 
-  IsFoldMor : (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) → Prop (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es)
-  IsFoldMor h =
-    IsFold (λ γ t → h .idxf .PS._⇒_.func (γ , t))
-           (λ γ≈ p → h .idxf .PS._⇒_.func-resp-≈ (γ≈ , p))
-           (λ γ t → h .famf ._⇒f_.transf (γ , t))
-
-  unique : (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) → IsFoldMor h →
+  unique : (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) → IsFold h →
            h ≃ FoldDef.foldMor {n} {Γ} {A} {P} {δ} alg
   unique h H = go
     where
-    module E = Unique (λ γ t → h .idxf .PS._⇒_.func (γ , t))
-                      (λ γ≈ p → h .idxf .PS._⇒_.func-resp-≈ (γ≈ , p))
-                      (λ γ t → h .famf ._⇒f_.transf (γ , t)) H
+    module E = Unique h H
 
     go : h ≃ FoldDef.foldMor {n} {Γ} {A} {P} {δ} alg
     go ._≃_.idxf-eq .PS._≃m_.func-eq {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) =
@@ -2291,16 +2273,7 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     module TX = Tree At.δ'
     module RX = Reindex At.δ' (extend δ A)
 
-  h-idx : Γ .idx .Carrier → Tδ.W ∣ P ∣ (λ i → inj₁ i) → A .idx .Carrier
-  h-idx γ t = h .idxf .PS._⇒_.func (γ , t)
-
-  h-resp : ∀ {γ γ'} (γ≈ : _≈s_ (Γ .idx) γ γ') {t t'} (p : Tδ.W-≈ t t') → _≈s_ (A .idx) (h-idx γ t) (h-idx γ' t')
-  h-resp γ≈ p = h .idxf .PS._⇒_.func-resp-≈ (γ≈ , p)
-
-  h-fam : ∀ γ t → prod (Γ .fam .fm γ) (Tδ.fib P (λ i → lift tt) t) ⇒ A .fam .fm (h-idx γ t)
-  h-fam γ t = h .famf ._⇒f_.transf (γ , t)
-
-  open ApplyDef {n} {Γ} {A} {P} {δ} h-idx h-resp h-fam public
+  open ApplyDef {n} {Γ} {A} {P} {δ} h public
 
   mutual
     apply-shape-fam-natural : (Q : Poly (suc n)) → ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x x'}
@@ -2738,7 +2711,7 @@ module Eta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                                 (A .idx .isEquivalence .trans (A .idx .isEquivalence .sym Hi) (h-resp (Γ .idx .isEquivalence .refl) rt))
                                 (alg .idxf .PS._⇒_.func-resp-≈ (Γ .idx .isEquivalence .refl , ex)))) ≈-refl))))))))
 
-  is-fold : L.IsFoldMor h
+  is-fold : L.IsFold h
   is-fold .L.IsFold.is-idx = is-idx
   is-fold .L.IsFold.is-fam = is-fam
 
