@@ -118,6 +118,9 @@ preserves-push-pw : ∀ (τ' : type 0) (i : Fin 1) →
 preserves-push-pw τ' Fin.zero = preserves-section-id (unit-section τ' (λ ()) (λ ()))
 
 private
+  ∅ : Fin 0 → obj
+  ∅ = λ ()
+
   strong-env-pw-natural : ∀ {Δ n} {Γ' : Obj} {δ δ' : Fin Δ → obj} (ks : ∀ i → prod Γ' (δ i) ⇒ δ' i)
                           {δ₀ δ₀' : Fin n → obj} (hs : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i)
                           {X X' : obj} (kc : prod Γ' X ⇒ X') (i : Fin (suc (n + Δ))) →
@@ -958,8 +961,6 @@ unfold-as-apply-fwd-inst τ' ρ =
   ≈-trans lhs (≈-trans (∘-cong ≈-refl (∘-cong (as-poly-map-cong τ' pw-step δ∅) ≈-refl)) (≈-sym rhs))
   where
   open ≈-Reasoning isEquiv
-  ∅ : Fin 0 → obj
-  ∅ = λ ()
   A  = sub (sub-lift (push ρ)) τ'
   Xρ = ⟦ ρ ⟧ty ∅
   δr : Fin 1 → obj
@@ -1225,8 +1226,6 @@ unfold-as-apply-fwd-inst τ' ρ =
 
 private
   module UnfoldStrong (τ' : type 2) {Γ' : Obj} {Xμ Xσ : obj} (K : prod Γ' Xμ ⇒ Xσ) where
-    ∅ : Fin 0 → obj
-    ∅ = λ ()
     Q = as-poly {0} {2} τ' ∅
     δ⁺ = λ (X : obj) → extend (extend δ∅ X) (μ-obj Q (extend δ∅ X))
     hsK : ∀ i → prod Γ' (extend δ∅ Xμ i) ⇒ extend δ∅ Xσ i
@@ -1346,15 +1345,6 @@ private
       (≈-trans (≈-sym (CoK.assoc _ _ _))
                (CoK.∘-cong (≈-sym (split Xσ)) ≈-refl))))))))))))))))))
 
-unfold-as-apply-fwd-strong : ∀ (τ' : type 2) {Γ' : Obj} {Xμ Xσ : obj} (K : prod Γ' Xμ ⇒ Xσ) →
-  (strong-fmor (as-poly {0} {2} τ' (λ ()))
-     (strong-extend-mor (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ ()) K)
-                        (strong-fmor (as-poly {0} {1} (μ τ') (λ ())) (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ ()) K)))
-     ∘co (unfold-as-apply-fwd τ' Xμ ∘ p₂))
-    ≈ ((unfold-as-apply-fwd τ' Xσ ∘ p₂)
-       ∘co strong-fmor (as-poly {0} {1} (unfold₁ τ') (λ ())) (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ ()) K))
-unfold-as-apply-fwd-strong τ' K = UnfoldStrong.square τ' K
-
 abstract
   roll-mor : (τ : type 1) → ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ ⟦ μ τ ⟧ty (λ ())
   roll-mor τ = inMap (as-poly τ (λ ())) δ∅ ∘ sub-as-apply-fwd τ (μ τ)
@@ -1363,50 +1353,21 @@ abstract
   unroll-mor τ = sub-as-apply-bwd τ (μ τ) ∘ R.LambekDef.outMor (as-poly τ (λ ())) δ∅
 
   unroll-roll : (τ : type 1) → (unroll-mor τ ∘ roll-mor τ) ≈ id _
-  unroll-roll τ = begin
-      (sb ∘ outm) ∘ (inm ∘ sf)
-    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-      sb ∘ ((outm ∘ inm) ∘ sf)
-    ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (R.LambekDef.outMor-inMor (as-poly τ (λ ())) δ∅) ≈-refl) id-left) ⟩
-      sb ∘ sf
-    ≈⟨ sub-as-apply-bwd-fwd τ (μ τ) ⟩
-      id _
-    ∎
-    where
-      open ≈-Reasoning isEquiv
-      F₀ : Obj
-      F₀ = fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend δ∅ (⟦ μ τ ⟧ty (λ ())))
-      sf : ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ F₀
-      sf   = sub-as-apply-fwd τ (μ τ)
-      sb : F₀ ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
-      sb   = sub-as-apply-bwd τ (μ τ)
-      inm : F₀ ⇒ ⟦ μ τ ⟧ty (λ ())
-      inm  = inMap (as-poly τ (λ ())) δ∅
-      outm : ⟦ μ τ ⟧ty (λ ()) ⇒ F₀
-      outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
+  unroll-roll τ =
+    ≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl
+                       (≈-trans (≈-sym (assoc _ _ _))
+                                (≈-trans (∘-cong (R.LambekDef.outMor-inMor (as-poly τ (λ ())) δ∅) ≈-refl)
+                                         id-left)))
+                     (sub-as-apply-bwd-fwd τ (μ τ)))
 
   roll-unroll : (τ : type 1) → (roll-mor τ ∘ unroll-mor τ) ≈ id _
-  roll-unroll τ = begin
-      (inm ∘ sf) ∘ (sb ∘ outm)
-    ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-      inm ∘ ((sf ∘ sb) ∘ outm)
-    ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong (sub-as-apply-fwd-bwd τ (μ τ)) ≈-refl) id-left) ⟩
-      inm ∘ outm
-    ≈⟨ R.LambekDef.inMor-outMor (as-poly τ (λ ())) δ∅ ⟩
-      id _
-    ∎
-    where
-      open ≈-Reasoning isEquiv
-      F₀ : Obj
-      F₀ = fobj μ-obj (as-poly {0} {1} τ (λ ())) (extend δ∅ (⟦ μ τ ⟧ty (λ ())))
-      sf : ⟦ τ [ μ τ ] ⟧ty (λ ()) ⇒ F₀
-      sf   = sub-as-apply-fwd τ (μ τ)
-      sb : F₀ ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
-      sb   = sub-as-apply-bwd τ (μ τ)
-      inm : F₀ ⇒ ⟦ μ τ ⟧ty (λ ())
-      inm  = inMap (as-poly τ (λ ())) δ∅
-      outm : ⟦ μ τ ⟧ty (λ ()) ⇒ F₀
-      outm = R.LambekDef.outMor (as-poly τ (λ ())) δ∅
+  roll-unroll τ =
+    ≈-trans (assoc _ _ _)
+            (≈-trans (∘-cong ≈-refl
+                       (≈-trans (≈-sym (assoc _ _ _))
+                                (≈-trans (∘-cong (sub-as-apply-fwd-bwd τ (μ τ)) ≈-refl) id-left)))
+                     (R.LambekDef.inMor-outMor (as-poly τ (λ ())) δ∅))
 
   sub-as-apply-fwd-roll : ∀ (τ' : type 2) (ρ : type 0) →
     (sub-as-apply-fwd (μ τ') ρ ∘ roll-mor (sub (sub-lift (push ρ)) τ'))
@@ -1518,50 +1479,35 @@ abstract
     pw Fin.zero = ≈-refl
     pw (Fin.suc ())
 
+private
+  fold-map-const : ∀ {Γ' X : Obj} (f g : X ⇒ X) → f ≈ id X → g ≈ id X →
+                   ((f ∘ p₂ {Γ'}) ∘ ⟨ p₁ , g ∘ p₂ ⟩) ≈ p₂
+  fold-map-const f g bwd-id fwd-id =
+    ≈-trans (∘-cong (∘-cong bwd-id ≈-refl) (pair-cong ≈-refl (∘-cong fwd-id ≈-refl)))
+            (≈-trans (∘-cong id-left (pair-cong ≈-refl id-left)) (pair-p₂ _ _))
+
 fold-map-unit : ∀ (τ₀ : type 1) (σ : type 0) {Γ' : Obj}
                 (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
                 fold-map τ₀ σ unit B ≈ p₂
 fold-map-unit τ₀ σ B =
-  ≈-trans (∘-cong (∘-cong bwd-id ≈-refl) (pair-cong ≈-refl (∘-cong fwd-id ≈-refl)))
-  (≈-trans (∘-cong id-left (pair-cong ≈-refl id-left)) (pair-p₂ _ _))
-  where
-  bwd-id : sub-as-apply-bwd unit σ ≈ id _
-  bwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
-  fwd-id : sub-as-apply-fwd unit (μ τ₀) ≈ id _
-  fwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+  fold-map-const (sub-as-apply-bwd unit σ) (sub-as-apply-fwd unit (μ τ₀))
+                 (≈-trans (∘-cong id-left ≈-refl) id-left) (≈-trans (∘-cong id-left ≈-refl) id-left)
 
 fold-map-base : ∀ (τ₀ : type 1) (σ : type 0) b {Γ' : Obj}
                 (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
                 fold-map τ₀ σ (base b) B ≈ p₂
 fold-map-base τ₀ σ b B =
-  ≈-trans (∘-cong (∘-cong bwd-id ≈-refl) (pair-cong ≈-refl (∘-cong fwd-id ≈-refl)))
-  (≈-trans (∘-cong id-left (pair-cong ≈-refl id-left)) (pair-p₂ _ _))
-  where
-  bwd-id : sub-as-apply-bwd (base b) σ ≈ id _
-  bwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
-  fwd-id : sub-as-apply-fwd (base b) (μ τ₀) ≈ id _
-  fwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+  fold-map-const (sub-as-apply-bwd (base b) σ) (sub-as-apply-fwd (base b) (μ τ₀))
+                 (≈-trans (∘-cong id-left ≈-refl) id-left) (≈-trans (∘-cong id-left ≈-refl) id-left)
 
 fold-map-arrow : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 0) {Γ' : Obj}
                  (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
                  fold-map τ₀ σ (σ₁ [→] σ₂) B ≈ p₂
 fold-map-arrow τ₀ σ σ₁ σ₂ B =
-  ≈-trans (∘-cong (∘-cong bwd-id ≈-refl) (pair-cong ≈-refl (∘-cong fwd-id ≈-refl)))
-  (≈-trans (∘-cong id-left (pair-cong ≈-refl id-left)) (pair-p₂ _ _))
-  where
-  bwd-id : sub-as-apply-bwd (σ₁ [→] σ₂) σ ≈ id _
-  bwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
-  fwd-id : sub-as-apply-fwd (σ₁ [→] σ₂) (μ τ₀) ≈ id _
-  fwd-id = ≈-trans (∘-cong id-left ≈-refl) id-left
+  fold-map-const (sub-as-apply-bwd (σ₁ [→] σ₂) σ) (sub-as-apply-fwd (σ₁ [→] σ₂) (μ τ₀))
+                 (≈-trans (∘-cong id-left ≈-refl) id-left) (≈-trans (∘-cong id-left ≈-refl) id-left)
 
 private
-  pair-p₁-comp : ∀ {Γ X Y Z : Obj} (u : Y ⇒ Z) (v : X ⇒ Y) →
-                 (⟨ p₁ {Γ} , u ∘ p₂ ⟩ ∘ ⟨ p₁ , v ∘ p₂ ⟩) ≈ ⟨ p₁ , (u ∘ v) ∘ p₂ ⟩
-  pair-p₁-comp u v =
-    ≈-trans (pair-natural _ _ _)
-    (pair-cong (pair-p₁ _ _)
-      (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _)))))
-
   sub-as-apply-fwd-[+] : ∀ (σ₁ σ₂ : type 1) (τ' : type 0) →
     sub-as-apply-fwd (σ₁ [+] σ₂) τ' ≈ [+]-map (sub-as-apply-fwd σ₁ τ') (sub-as-apply-fwd σ₂ τ')
   sub-as-apply-fwd-[+] σ₁ σ₂ τ' =
@@ -1752,8 +1698,6 @@ fold-map-mu τ₀ σ τ' {Γ'} B =
   (≈-trans (∘-cong (sub-as-apply-bwd-fwd (μ τ') σ) ≈-refl) id-left)))))
   where
   open ≈-Reasoning isEquiv
-  ∅ : Fin 0 → obj
-  ∅ = λ ()
   Q = as-poly {0} {2} τ' ∅
   hsK = strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ ()) (⦅ fold-alg τ₀ σ B ⦆)
   rc = λ (ρ : type 0) → roll-mor (sub (sub-lift (push ρ)) τ') ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty ∅) (unfold₁-inst τ' ρ))
@@ -1800,7 +1744,7 @@ fold-map-mu τ₀ σ τ' {Γ'} B =
         ∘co ((strong-fmor Q (strong-extend-mor hsK (strong-fmor (as-poly {0} {1} (μ τ') ∅) hsK))
                 ∘co (unfold-as-apply-fwd τ' (⟦ μ τ₀ ⟧ty ∅) ∘ p₂))
              ∘co (sub-as-apply-fwd (unfold₁ τ') (μ τ₀) ∘ p₂))
-    ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (unfold-as-apply-fwd-strong τ' (⦅ fold-alg τ₀ σ B ⦆)) ≈-refl) ⟩
+    ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong (UnfoldStrong.square τ' (⦅ fold-alg τ₀ σ B ⦆)) ≈-refl) ⟩
       (inMap Q (extend δ∅ (⟦ σ ⟧ty ∅)) ∘ p₂)
         ∘co (((unfold-as-apply-fwd τ' (⟦ σ ⟧ty ∅) ∘ p₂) ∘co strong-fmor (as-poly {0} {1} (unfold₁ τ') ∅) hsK)
              ∘co (sub-as-apply-fwd (unfold₁ τ') (μ τ₀) ∘ p₂))
