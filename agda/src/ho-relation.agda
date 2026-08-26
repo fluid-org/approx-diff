@@ -899,11 +899,16 @@ cs-absorb s e =
   (≈-trans (≈-sym S.·-+-distribₗ)
   (≈-trans (·-cong ≈-refl (≈-trans +-comm (c-bound e))) ·-comm))
 
-ctrl-dep-double : ∀ τ (i : Ix τ) s a → Fib._≈_ τ i (ctrl-dep-at τ i ((c ·ₛ s) +ₛ ((c ·ₛ s) +ₛ a))) (Fib._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i a))
-ctrl-dep-double τ i s a =
-  Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) ((c ·ₛ s) +ₛ a))
-  (Fib.trans τ i (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) a) (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.refl τ i))))
-  (Fib.trans τ i (Fib.sym τ i (Fib.+-assoc τ i)) (Fib.+-cong τ i (Fib.⊑-refl τ i) (Fib.refl τ i))))
+ctrl-dep-split : ∀ τ (i : Ix τ) s a {o} → o ≈s ((c ·ₛ s) +ₛ a) →
+                 Fib._≈_ τ i (ctrl-dep-at τ i ((c ·ₛ s) +ₛ o))
+                             (Fib._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i a))
+ctrl-dep-split τ i s a eo =
+  Fib.trans τ i (ctrl-dep τ .at i .func-resp-≈ (+-cong ≈-refl eo))
+    (Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) ((c ·ₛ s) +ₛ a))
+    (Fib.trans τ i (Fib.+-cong τ i (ctrl-dep-c τ i s)
+      (Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) a) (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.refl τ i))))
+    (Fib.trans τ i (Fib.sym τ i (Fib.+-assoc τ i)) (Fib.+-cong τ i (Fib.⊑-refl τ i) (Fib.refl τ i)))))
+
 
 built-zero : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x →
              ap (built-out γ n +ₘ (M.in₂ {1} ∘ R')) (inputs γ s x) zero ≈s (c ·ₛ s)

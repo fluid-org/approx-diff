@@ -1083,7 +1083,7 @@ fundamental-val {τ = μ τ} (⇓-roll {t = t} D) {gi} rγ =
   i₂ = unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)
   e : Ix._≈_ (τ [ μ τ ]) i i₂
   e = Ix.sym (τ [ μ τ ]) {i₂} {i}
-        (LI.unroll-roll τ .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Ix.refl (τ [ μ τ ]) {i}))
+        (idx-eq (LI.unroll-roll τ) i)
 fundamental-val (⇓-fold {τ = τ₀} {σ = σ} {s = s} {t = t} D M) {gi} rγ =
   ValRel-resp σ (idx-eq (LI.fold-map-var τ₀ σ ⟦ s ⟧tm) (gi , ⟦ t ⟧tm .idxf .sfunc gi))
     (map-val {s = s} (λ D' rγ' → fundamental-val D' rγ') M rγ {i = ⟦ t ⟧tm .idxf .sfunc gi}
@@ -1136,7 +1136,7 @@ private
     (Fib.trans τ' i rearr (Fib.+-cong τ' i (Fib.refl τ' i) (Fib.sym τ' i eG)))
     where
     ctrl-dep-part : Fib._≈_ τ' i (ctrl-dep-at τ' i ((c ·ₛ s) +ₛ o'₀)) (Fib._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀))
-    ctrl-dep-part = Fib.trans τ' i (ctrl-dep τ' .at i .func-resp-≈ (+-cong ≈-refl eo)) (ctrl-dep-double τ' i s a₀)
+    ctrl-dep-part = ctrl-dep-split τ' i s a₀ eo
     rearr : Fib._≈_ τ' i (Fib._+_ τ' i (Fib._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀)) (Fib._+_ τ' i (ctrl-dep-at τ' i s) m))
                        (Fib._+_ τ' i (ctrl-dep-at τ' i s) (Fib._+_ τ' i m (ctrl-dep-at τ' i a₀)))
     rearr = Fib.trans τ' i (Fib.+-interchange τ' i) (Fib.+-cong τ' i (Fib.⊑-refl τ' i) (Fib.+-comm τ' i))
@@ -1174,7 +1174,7 @@ private
                   (Fib.+-cong τ ic (Fib.refl τ ic) (Fib.sym τ ic eCF)))))
     where
     ctrl-dep-part : Fib._≈_ τ ic (ctrl-dep-at τ ic (o_s₀ +ₛ (c ·ₛ s))) (Fib._+_ τ ic (ctrl-dep-at τ ic s) (ctrl-dep-at τ ic a_s))
-    ctrl-dep-part = Fib.trans τ ic (ctrl-dep τ .at ic .func-resp-≈ (≈-trans (+-cong eo ≈-refl) +-comm)) (ctrl-dep-double τ ic s a_s)
+    ctrl-dep-part = Fib.trans τ ic (ctrl-dep τ .at ic .func-resp-≈ +-comm) (ctrl-dep-split τ ic s a_s eo)
     eCF : Fib._≈_ τ ic CF (Fib._+_ τ ic (⟦ τ ⟧ .fam .subst E .func B) (ctrl-dep-at τ ic a_s))
     eCF =
       Fib.trans τ ic (Fib.sym τ ic (roundtrip τ E Eidx CF))
@@ -1671,7 +1671,7 @@ fundamental {Γ = Γ} {τ = τ} {γ = γ}
                                              (FD.Fam𝒞._∘_ ⟦ N ⟧tm (FD.Fam𝒞-P.p₁ {⟦ Γ ⟧ctxt} {Ex})))
 
     ctrl-dep-part : Fib._≈_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero)) (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ s) (ctrl-dep-at τ i₁ (proj₁ (⟦ M ⟧tm .famf .transf gi .func g))))
-    ctrl-dep-part = Fib.trans τ i₁ (ctrl-dep τ .at i₁ .func-resp-≈ (+-cong ≈-refl o₀)) (ctrl-dep-double τ i₁ s (proj₁ (⟦ M ⟧tm .famf .transf gi .func g)))
+    ctrl-dep-part = ctrl-dep-split τ i₁ s (proj₁ (⟦ M ⟧tm .famf .transf gi .func g)) o₀
 
     eval-part : Fib._≈_ τ i₁ (evalΠ σ τ f j .func (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) (⟦ M ⟧tm .famf .transf gi .func g))))
                            (evalΠ σ τ f j .func m)
@@ -1695,7 +1695,7 @@ fundamental {Γ = Γ} {τ = μ τ} {γ = γ} (⇓-roll {t = t} {v = v} {R = R} D
   G  = ⟦ t ⟧tm .famf .transf gi .func g
   X' = unroll-mor τ .famf .transf I .func (roll-mor τ .famf .transf i .func G)
   e₀ : Ix._≈_ (τ [ μ τ ]) i₂ i
-  e₀ = LI.unroll-roll τ .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Ix.refl (τ [ μ τ ]) {i})
+  e₀ = idx-eq (LI.unroll-roll τ) i
   e : Ix._≈_ (τ [ μ τ ]) i i₂
   e = Ix.sym (τ [ μ τ ]) {i₂} {i} e₀
 

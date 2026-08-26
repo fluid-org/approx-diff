@@ -21,7 +21,7 @@ open import prop using () renaming (_,_ to _,ₚ_)
 open import categories using (Category; HasProducts)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 import lifting
-open import functor using (Functor)
+open import functor using (Functor; functor-preserve-iso)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
 open import prop-setoid using (Setoid; IsEquivalence; mk-≃m)
@@ -74,12 +74,7 @@ FamF = fam-functor.FamF os (os ⊔ es) F
 
 private
   L-iso : ∀ {a b} → 𝒟.Iso a b → 𝒟.Iso (L𝒟.L a) (L𝒟.L b)
-  L-iso i .fwd = L𝒟.Lmap (i .fwd)
-  L-iso i .bwd = L𝒟.Lmap (i .bwd)
-  L-iso i .fwd∘bwd≈id =
-    ≈-trans (≈-sym (L𝒟.Lmap-comp _ _)) (≈-trans (L𝒟.Lmap-cong (i .fwd∘bwd≈id)) L𝒟.Lmap-id)
-  L-iso i .bwd∘fwd≈id =
-    ≈-trans (≈-sym (L𝒟.Lmap-comp _ _)) (≈-trans (L𝒟.Lmap-cong (i .bwd∘fwd≈id)) L𝒟.Lmap-id)
+  L-iso = functor-preserve-iso L𝒟.L-functor
 
   iso-flip : ∀ {a b c d} (i : 𝒟.Iso a b) (j : 𝒟.Iso c d)
              {f : a ⇒ c} {g : b ⇒ d} →

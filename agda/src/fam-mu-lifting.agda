@@ -24,7 +24,7 @@ import prop-setoid as PS
 open import indexed-family using (Fam; _⇒f_)
 import fam
 import fam-functor
-open import functor using (StrongFunctor)
+open import functor using (StrongFunctor; functor-preserve-iso)
 import polynomial-functor
 import fam-mu-lifting.sort
 import fam-mu-lifting.fibre
@@ -281,28 +281,7 @@ preserves-scale : ∀ {X Y : Obj} {f : Mor X Y} {w : 𝟙c ⇒ 𝟙c} {c d} →
 preserves-scale p .at x = ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (p .at x) ≈-refl)
 
 Lf-iso : ∀ {X Y : Obj} → Fam𝒞.Iso X Y → Fam𝒞.Iso (Lf X) (Lf Y)
-Lf-iso i .Fam𝒞.Iso.fwd = Lf-map (i .Fam𝒞.Iso.fwd)
-Lf-iso i .Fam𝒞.Iso.bwd = Lf-map (i .Fam𝒞.Iso.bwd)
-Lf-iso {X} {Y} i .Fam𝒞.Iso.fwd∘bwd≈id ._≃_.idxf-eq =
-  i .Fam𝒞.Iso.fwd∘bwd≈id ._≃_.idxf-eq
-Lf-iso {X} {Y} i .Fam𝒞.Iso.fwd∘bwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {y} =
-  ≈-trans (∘-cong₂ id-left)
-    (≈-trans (∘-cong₂ (≈-sym (Lmap-comp _ _)))
-      (≈-trans (≈-sym (Lmap-comp _ _))
-        (≈-trans (Lmap-cong
-            (≈-trans (∘-cong₂ (≈-sym id-left))
-              (i .Fam𝒞.Iso.fwd∘bwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {y})))
-          Lmap-id)))
-Lf-iso {X} {Y} i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.idxf-eq =
-  i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.idxf-eq
-Lf-iso {X} {Y} i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} =
-  ≈-trans (∘-cong₂ id-left)
-    (≈-trans (∘-cong₂ (≈-sym (Lmap-comp _ _)))
-      (≈-trans (≈-sym (Lmap-comp _ _))
-        (≈-trans (Lmap-cong
-            (≈-trans (∘-cong₂ (≈-sym id-left))
-              (i .Fam𝒞.Iso.bwd∘fwd≈id ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x})))
-          Lmap-id)))
+Lf-iso = functor-preserve-iso LfS.F
 
 module Tree {n} (δ : Fin n → Obj) where
   open Srt.Tree (λ i → δ i .idx) public
