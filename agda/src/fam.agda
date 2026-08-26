@@ -97,6 +97,10 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
 
     open Category 𝒞
 
+    subst-∘ : ∀ (Z : Obj) {x} {e : prop-setoid.Setoid._≈_ (Z .idx) x x} {a} {f g : a ⇒ Z .fam .fm x} →
+              f ≈ g → (Z .fam .subst e ∘ (id _ ∘ f)) ≈ g
+    subst-∘ Z h = ≈-trans (∘-cong (Z .fam .refl*) id-left) (≈-trans id-left h)
+
     Mor-id : ∀ X → Mor X X
     Mor-id X .idxf = idS _
     Mor-id X .famf = reindex-id
@@ -280,32 +284,12 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     coproducts .copair-cong f₁≈f₂ g₁≈g₂ .famf-eq .transf-eq {inj₁ x} = f₁≈f₂ .famf-eq .transf-eq
     coproducts .copair-cong f₁≈f₂ g₁≈g₂ .famf-eq .transf-eq {inj₂ y} = g₁≈g₂ .famf-eq .transf-eq
     coproducts .copair-in₁ f g .idxf-eq = prop-setoid.copair-in₁ (f .idxf) (g .idxf)
-    coproducts .copair-in₁ {X} {Y} {Z} f g .famf-eq .transf-eq {x} =
-      begin
-        Z .fam .subst _ ∘ (id _ ∘ (f .famf .transf x ∘ id _))
-      ≈⟨ ∘-cong₂ id-left ⟩
-        Z .fam .subst _ ∘ (f .famf .transf x ∘ id _)
-      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
-        id _ ∘ f .famf .transf x
-      ≈⟨ id-left ⟩
-        f .famf .transf x
-      ∎ where open ≈-Reasoning isEquiv
+    coproducts .copair-in₁ {X} {Y} {Z} f g .famf-eq .transf-eq {x} = subst-∘ Z id-right
     coproducts .copair-in₂ f g .idxf-eq = prop-setoid.copair-in₂ (f .idxf) (g .idxf)
-    coproducts .copair-in₂ {X} {Y} {Z} f g .famf-eq .transf-eq {x} =
-      begin
-        Z .fam .subst _ ∘ (id _ ∘ (g .famf .transf x ∘ id _))
-      ≈⟨ ∘-cong₂ id-left ⟩
-        Z .fam .subst _ ∘ (g .famf .transf x ∘ id _)
-      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
-        id _ ∘ g .famf .transf x
-      ≈⟨ id-left ⟩
-        g .famf .transf x
-      ∎ where open ≈-Reasoning isEquiv
+    coproducts .copair-in₂ {X} {Y} {Z} f g .famf-eq .transf-eq {x} = subst-∘ Z id-right
     coproducts .copair-ext f .idxf-eq = prop-setoid.copair-ext (f .idxf)
-    coproducts .copair-ext {X} {Y} {Z} f .famf-eq .transf-eq {inj₁ x} =
-      isEquiv .trans (∘-cong (Z .fam .refl*) id-left) (isEquiv .trans id-left id-right)
-    coproducts .copair-ext {X} {Y} {Z} f .famf-eq .transf-eq {inj₂ y} =
-      isEquiv .trans (∘-cong (Z .fam .refl*) id-left) (isEquiv .trans id-left id-right)
+    coproducts .copair-ext {X} {Y} {Z} f .famf-eq .transf-eq {inj₁ x} = subst-∘ Z id-right
+    coproducts .copair-ext {X} {Y} {Z} f .famf-eq .transf-eq {inj₂ y} = subst-∘ Z id-right
 
   module predicates (T : HasTerminal 𝒞) where
 
@@ -761,6 +745,10 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         prod-m P (X .fam .subst _) (Y .fam .subst _) ∘ prod-m P (X .fam .subst _) (Y .fam .subst _)
       ∎ where open ≈-Reasoning isEquiv
 
+    pair-id : ∀ {x y} → P .pair (P .p₁ {x} {y}) (id _ ∘ (id _ ∘ P .p₂)) ≈ id _
+    pair-id = ≈-trans (P .pair-cong ≈-refl (≈-trans id-left id-left))
+                      (≈-trans (≈-sym (P .pair-cong id-right id-right)) (P .pair-ext (id _)))
+
     products : HasProducts cat
     products .prod = _⊗_
     products .p₁ .idxf = prop-setoid.project₁
@@ -805,27 +793,9 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         P .pair (f₂ .famf .transf x) (g₂ .famf .transf x)
       ∎ where open ≈-Reasoning isEquiv
     products .pair-p₁ {X} {Y} {Z} f g .idxf-eq = Setoid-products _ _ .pair-p₁ _ _
-    products .pair-p₁ {X} {Y} {Z} f g .famf-eq ._≃f_.transf-eq {x} =
-      begin
-        Y .fam .subst _ ∘ (id _ ∘ (P .p₁ ∘ P .pair (f .famf .transf x) (g .famf .transf x)))
-      ≈⟨ ∘-cong₂ id-left ⟩
-        Y .fam .subst _ ∘ (P .p₁ ∘ P .pair (f .famf .transf x) (g .famf .transf x))
-      ≈⟨ ∘-cong (Y .fam .refl*) (P .pair-p₁ _ _) ⟩
-        id _ ∘ f .famf .transf x
-      ≈⟨ id-left ⟩
-        f .famf .transf x
-      ∎ where open ≈-Reasoning isEquiv
+    products .pair-p₁ {X} {Y} {Z} f g .famf-eq ._≃f_.transf-eq {x} = subst-∘ Y (P .pair-p₁ _ _)
     products .pair-p₂ {X} {Y} {Z} f g .idxf-eq = Setoid-products _ _ .pair-p₂ _ _
-    products .pair-p₂ {X} {Y} {Z} f g .famf-eq ._≃f_.transf-eq {x} =
-      begin
-        Z .fam .subst _ ∘ (id _ ∘ (P .p₂ ∘ P .pair (f .famf .transf x) (g .famf .transf x)))
-      ≈⟨ ∘-cong₂ id-left ⟩
-        Z .fam .subst _ ∘ (P .p₂ ∘ P .pair (f .famf .transf x) (g .famf .transf x))
-      ≈⟨ ∘-cong (Z .fam .refl*) (P .pair-p₂ _ _) ⟩
-        id _ ∘ g .famf .transf x
-      ≈⟨ id-left ⟩
-        g .famf .transf x
-      ∎ where open ≈-Reasoning isEquiv
+    products .pair-p₂ {X} {Y} {Z} f g .famf-eq ._≃f_.transf-eq {x} = subst-∘ Z (P .pair-p₂ _ _)
     products .pair-ext f .idxf-eq = Setoid-products _ _ .pair-ext _
     products .pair-ext {X}{Y}{Z} f .famf-eq ._≃f_.transf-eq {x} =
       begin
@@ -871,72 +841,16 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     strongCoproducts .copair-in₁ f g .idxf-eq ._≈s_.func-eq (w₁≈w₂ , x₁≈x₂) =
       f .idxf ._⇒s_.func-resp-≈ (w₁≈w₂ , x₁≈x₂)
     strongCoproducts .copair-in₁ {W} {X} {Y} {Z} f g .famf-eq ._≃f_.transf-eq {w , x} =
-      begin
-        Z .fam .subst _ ∘ (id _ ∘ (f .famf .transf (w , x) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂))))
-      ≈⟨ ∘-cong ≈-refl id-left ⟩
-        Z .fam .subst _ ∘ (f .famf .transf (w , x) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂)))
-      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong ≈-refl (≈-trans id-left id-left))) ⟩
-        Z .fam .subst _ ∘ (f .famf .transf (w , x) ∘ P .pair (P .p₁) (P .p₂))
-      ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong id-right id-right)) ⟩
-        Z .fam .subst _ ∘ (f .famf .transf (w , x) ∘ P .pair (P .p₁ ∘ id _) (P .p₂ ∘ id _))
-      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-ext (id _))) ⟩
-        Z .fam .subst _ ∘ (f .famf .transf (w , x) ∘ id _)
-      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
-        id _ ∘ f .famf .transf (w , x)
-      ≈⟨ id-left ⟩
-        f .famf .transf (w , x)
-      ∎ where open ≈-Reasoning isEquiv
+      subst-∘ Z (≈-trans (∘-cong ≈-refl pair-id) id-right)
     strongCoproducts .copair-in₂ f g .idxf-eq ._≈s_.func-eq (w₁≈w₂ , y₁≈y₂) =
       g .idxf ._⇒s_.func-resp-≈ (w₁≈w₂ , y₁≈y₂)
     strongCoproducts .copair-in₂ {W} {X} {Y} {Z} f g .famf-eq ._≃f_.transf-eq {w , y} =
-      begin
-        Z .fam .subst _ ∘ (id _ ∘ (g .famf .transf (w , y) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂))))
-      ≈⟨ ∘-cong ≈-refl id-left ⟩
-        Z .fam .subst _ ∘ (g .famf .transf (w , y) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂)))
-      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong ≈-refl (≈-trans id-left id-left))) ⟩
-        Z .fam .subst _ ∘ (g .famf .transf (w , y) ∘ P .pair (P .p₁) (P .p₂))
-      ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong id-right id-right)) ⟩
-        Z .fam .subst _ ∘ (g .famf .transf (w , y) ∘ P .pair (P .p₁ ∘ id _) (P .p₂ ∘ id _))
-      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-ext (id _))) ⟩
-        Z .fam .subst _ ∘ (g .famf .transf (w , y) ∘ id _)
-      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
-        id _ ∘ g .famf .transf (w , y)
-      ≈⟨ id-left ⟩
-        g .famf .transf (w , y)
-      ∎ where open ≈-Reasoning isEquiv
+      subst-∘ Z (≈-trans (∘-cong ≈-refl pair-id) id-right)
     strongCoproducts .copair-ext h .idxf-eq ._≈s_.func-eq {w₁ , inj₁ x₁} {w₂ , inj₁ x₂} (w₁≈w₂ , x₁≈x₂) =
       h .idxf ._⇒s_.func-resp-≈ (w₁≈w₂ , x₁≈x₂)
     strongCoproducts .copair-ext h .idxf-eq ._≈s_.func-eq {w₁ , inj₂ y₁} {w₂ , inj₂ y₂} (w₁≈w₂ , y₁≈y₂) =
       h .idxf ._⇒s_.func-resp-≈ (w₁≈w₂ , y₁≈y₂)
     strongCoproducts .copair-ext {W} {X} {Y} {Z} h .famf-eq ._≃f_.transf-eq {w , inj₁ x} =
-      begin
-        Z .fam .subst _ ∘ (id _ ∘ (h .famf .transf (w , inj₁ x) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂))))
-      ≈⟨ ∘-cong ≈-refl id-left ⟩
-        Z .fam .subst _ ∘ (h .famf .transf (w , inj₁ x) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂)))
-      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong ≈-refl (≈-trans id-left id-left))) ⟩
-        Z .fam .subst _ ∘ (h .famf .transf (w , inj₁ x) ∘ P .pair (P .p₁) (P .p₂))
-      ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong id-right id-right)) ⟩
-        Z .fam .subst _ ∘ (h .famf .transf (w , inj₁ x) ∘ P .pair (P .p₁ ∘ id _) (P .p₂ ∘ id _))
-      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-ext (id _))) ⟩
-        Z .fam .subst _ ∘ (h .famf .transf (w , inj₁ x) ∘ id _)
-      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
-        id _ ∘ h .famf .transf (w , inj₁ x)
-      ≈⟨ id-left ⟩
-        h .famf .transf (w , inj₁ x)
-      ∎ where open ≈-Reasoning isEquiv
+      subst-∘ Z (≈-trans (∘-cong ≈-refl pair-id) id-right)
     strongCoproducts .copair-ext {W} {X} {Y} {Z} h .famf-eq ._≃f_.transf-eq {w , inj₂ y} =
-      begin
-        Z .fam .subst _ ∘ (id _ ∘ (h .famf .transf (w , inj₂ y) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂))))
-      ≈⟨ ∘-cong ≈-refl id-left ⟩
-        Z .fam .subst _ ∘ (h .famf .transf (w , inj₂ y) ∘ P .pair (P .p₁) (id _ ∘ (id _ ∘ P .p₂)))
-      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong ≈-refl (≈-trans id-left id-left))) ⟩
-        Z .fam .subst _ ∘ (h .famf .transf (w , inj₂ y) ∘ P .pair (P .p₁) (P .p₂))
-      ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-cong id-right id-right)) ⟩
-        Z .fam .subst _ ∘ (h .famf .transf (w , inj₂ y) ∘ P .pair (P .p₁ ∘ id _) (P .p₂ ∘ id _))
-      ≈⟨ ∘-cong ≈-refl (∘-cong ≈-refl (P .pair-ext (id _))) ⟩
-        Z .fam .subst _ ∘ (h .famf .transf (w , inj₂ y) ∘ id _)
-      ≈⟨ ∘-cong (Z .fam .refl*) id-right ⟩
-        id _ ∘ h .famf .transf (w , inj₂ y)
-      ≈⟨ id-left ⟩
-        h .famf .transf (w , inj₂ y)
-      ∎ where open ≈-Reasoning isEquiv
+      subst-∘ Z (≈-trans (∘-cong ≈-refl pair-id) id-right)
