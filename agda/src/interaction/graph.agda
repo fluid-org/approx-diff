@@ -108,84 +108,13 @@ mutual
                   ∷ AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) (distinct s)))
                  (distinct-of (t ∷ ss))
 
--- The completion order: a premise's interior before its result, and every premise before those
--- after it. The shape is explicit, since it cannot be recovered from a vertex.
-mutual
-  lt : (s : Shape) → Vertex s → Vertex s → Set
-  lt (node ss) = lts ss
-
-  lts : (ss : List Shape) → Vertices ss → Vertices ss → Set
-  lts (s ∷ [])     (inj₁ u)        (inj₁ v)        = lt s u v
-  lts (s ∷ [])     (inj₁ _)        (inj₂ _)        = Unit
-  lts (s ∷ [])     (inj₂ _)        _               = ⊥
-  lts (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) = lt s u v
-  lts (s ∷ t ∷ ss) (inj₁ (inj₁ _)) (inj₁ (inj₂ _)) = Unit
-  lts (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₁ _)        = ⊥
-  lts (s ∷ t ∷ ss) (inj₁ _)        (inj₂ _)        = Unit
-  lts (s ∷ t ∷ ss) (inj₂ _)        (inj₁ _)        = ⊥
-  lts (s ∷ t ∷ ss) (inj₂ u)        (inj₂ v)        = lts (t ∷ ss) u v
-
-mutual
-  lt-trans : (s : Shape) (u v w : Vertex s) → lt s u v → lt s v w → lt s u w
-  lt-trans (node ss) = lts-trans ss
-
-  lts-trans : (ss : List Shape) (u v w : Vertices ss) → lts ss u v → lts ss v w → lts ss u w
-  lts-trans (s ∷ [])     (inj₁ u)        (inj₁ v)        (inj₁ w)        a b = lt-trans s u v w a b
-  lts-trans (s ∷ [])     (inj₁ u)        (inj₁ v)        (inj₂ _)        a b = tt
-  lts-trans (s ∷ [])     (inj₁ u)        (inj₂ _)        w               a ()
-  lts-trans (s ∷ [])     (inj₂ _)        v               w               () b
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) (inj₁ (inj₁ w)) a b = lt-trans s u v w a b
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) (inj₁ (inj₂ _)) a b = tt
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) (inj₂ _)        a b = tt
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₂ _)) (inj₁ _)        a ()
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₂ _)) (inj₂ _)        a b = tt
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₂ _)        (inj₁ _)        a ()
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₂ _)        (inj₂ _)        a b = tt
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₁ _)        w               () b
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₂ _)        (inj₁ _)        a ()
-  lts-trans (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₂ _)        (inj₂ _)        a b = tt
-  lts-trans (s ∷ t ∷ ss) (inj₂ _)        (inj₁ _)        w               () b
-  lts-trans (s ∷ t ∷ ss) (inj₂ _)        (inj₂ _)        (inj₁ _)        a ()
-  lts-trans (s ∷ t ∷ ss) (inj₂ u)        (inj₂ v)        (inj₂ w)        a b =
-    lts-trans (t ∷ ss) u v w a b
-
-mutual
-  lt-asym : (s : Shape) (u v : Vertex s) → lt s u v → lt s v u → ⊥
-  lt-asym (node ss) = lts-asym ss
-
-  lts-asym : (ss : List Shape) (u v : Vertices ss) → lts ss u v → lts ss v u → ⊥
-  lts-asym (s ∷ [])     (inj₁ u)        (inj₁ v)        a b = lt-asym s u v a b
-  lts-asym (s ∷ [])     (inj₁ _)        (inj₂ _)        a ()
-  lts-asym (s ∷ [])     (inj₂ _)        v               () b
-  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₁ u)) (inj₁ (inj₁ v)) a b = lt-asym s u v a b
-  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₁ _)) (inj₁ (inj₂ _)) a ()
-  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₁ _)) (inj₂ _)        a ()
-  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₁ _)        () b
-  lts-asym (s ∷ t ∷ ss) (inj₁ (inj₂ _)) (inj₂ _)        a ()
-  lts-asym (s ∷ t ∷ ss) (inj₂ _)        (inj₁ _)        () b
-  lts-asym (s ∷ t ∷ ss) (inj₂ u)        (inj₂ v)        a b = lts-asym (t ∷ ss) u v a b
-
-lt-order : (s : Shape) → IsStrictOrder (lt s)
-lt-order s .IsStrictOrder.trans = lt-trans s
-lt-order s .IsStrictOrder.asym = lt-asym s
-
-lts-order : (ss : List Shape) → IsStrictOrder (lts ss)
-lts-order ss .IsStrictOrder.trans = lts-trans ss
-lts-order ss .IsStrictOrder.asym = lts-asym ss
-
-≈-of-≡ : ∀ {m n} {X Y : M.Matrix m n} → X ≡ Y → X ≈ Y
-≈-of-≡ ≡-refl = ≈-refl
-
-Void : Set
-Void = ⊥
-
 sum-< : {A B : Set} → (A → A → Set) → (B → B → Set) → A ⊎ B → A ⊎ B → Set
 sum-< R S (inj₁ p) (inj₁ q) = R p q
 sum-< R S (inj₁ _) (inj₂ _) = Unit
-sum-< R S (inj₂ _) (inj₁ _) = Void
+sum-< R S (inj₂ _) (inj₁ _) = ⊥
 sum-< R S (inj₂ p) (inj₂ q) = S p q
 
-none-order : {A : Set} → IsStrictOrder {A = A} (λ _ _ → Void)
+none-order : {A : Set} → IsStrictOrder {A = A} (λ _ _ → ⊥)
 none-order .IsStrictOrder.trans _ _ _ ()
 none-order .IsStrictOrder.asym _ _ ()
 
@@ -204,6 +133,30 @@ sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₁ p) (inj₁ q) a b = o₁ .IsSt
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₁ p) (inj₂ q) a ()
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₁ q) () b
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₂ q) a b = o₂ .IsStrictOrder.asym p q a b
+
+-- The completion order: a premise's interior before its result, and every premise before those
+-- after it. The shape is explicit, since it cannot be recovered from a vertex.
+mutual
+  lt : (s : Shape) → Vertex s → Vertex s → Set
+  lt (node ss) = lts ss
+
+  lts : (ss : List Shape) → Vertices ss → Vertices ss → Set
+  lts []           ()
+  lts (s ∷ [])     = sum-< (lt s) (λ _ _ → ⊥)
+  lts (s ∷ t ∷ ss) = sum-< (sum-< (lt s) (λ _ _ → ⊥)) (lts (t ∷ ss))
+
+mutual
+  lt-order : (s : Shape) → IsStrictOrder (lt s)
+  lt-order (node ss) = lts-order ss
+
+  lts-order : (ss : List Shape) → IsStrictOrder (lts ss)
+  lts-order []           .IsStrictOrder.trans ()
+  lts-order []           .IsStrictOrder.asym ()
+  lts-order (s ∷ [])     = sum-<-order (lt-order s) none-order
+  lts-order (s ∷ t ∷ ss) = sum-<-order (sum-<-order (lt-order s) none-order) (lts-order (t ∷ ss))
+
+≈-of-≡ : ∀ {m n} {X Y : M.Matrix m n} → X ≡ Y → X ≈ Y
+≈-of-≡ ≡-refl = ≈-refl
 
 record Graph (m n : ℕ) : Set₁ where
   field
@@ -531,7 +484,7 @@ module _ {m n : ℕ} (B : Graph m n) where
   fo-graph = hide-all vertex-width gr (map (λ q → inj₂ (inj₁ q)) fo-hidden)
 
   _<ᵥ_ : V → V → Set
-  _<ᵥ_ = sum-< (λ _ _ → Void) _<⁺_
+  _<ᵥ_ = sum-< (λ _ _ → ⊥) _<⁺_
 
   <ᵥ-order : IsStrictOrder _<ᵥ_
   <ᵥ-order = sum-<-order none-order <⁺-order
