@@ -70,6 +70,14 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
                 (f ∘ ≡-to-⇒ e) ≈ (≡-to-⇒ e' ∘ g) → (g ∘ ≡-to-⇒ (≡.sym e)) ≈ (≡-to-⇒ (≡.sym e') ∘ f)
   ≡-to-⇒-conj ≡.refl ≡.refl h = ≈-trans id-right (≈-trans (≈-sym id-left) (≈-trans (≈-sym h) (≈-trans id-right (≈-sym id-left))))
 
+  inv-conj : ∀ {x y x' y'} {f : x ⇒ y} {g : y ⇒ x} {f' : x' ⇒ y'} {g' : y' ⇒ x'} {u : x ⇒ x'}
+             {v : y ⇒ y'} → (f ∘ g) ≈ id y → (g' ∘ f') ≈ id x' → (v ∘ f) ≈ (f' ∘ u) → (u ∘ g) ≈ (g' ∘ v)
+  inv-conj fg g'f' sq =
+    ≈-trans (≈-sym id-left) (≈-trans (∘-cong (≈-sym g'f') ≈-refl) (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-trans (∘-cong ≈-refl (∘-cong (≈-sym sq) ≈-refl))
+        (≈-trans (∘-cong ≈-refl (assoc _ _ _))
+          (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl fg)) (∘-cong ≈-refl id-right)))))))
+
   id-swap : ∀ {x y}{f : x ⇒ y} → (id y ∘ f) ≈ (f ∘ id x)
   id-swap = isEquiv .trans id-left (≈-sym id-right)
 
@@ -337,7 +345,6 @@ record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     ∎
     where open ≈-Reasoning isEquiv
 
-  -- FIXME: do this using the general fact that functors preserve isomorphisms
   coproduct-preserve-iso : ∀ {x₁ x₂ y₁ y₂} → Iso x₁ x₂ → Iso y₁ y₂ → Iso (coprod x₁ y₁) (coprod x₂ y₂)
   coproduct-preserve-iso x₁≅x₂ y₁≅y₂ .Iso.fwd = coprod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd)
   coproduct-preserve-iso x₁≅x₂ y₁≅y₂ .Iso.bwd = coprod-m (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.bwd)
@@ -441,7 +448,6 @@ module _ {o m e} (𝒞 : Category o m e) where
       isProduct : IsProduct x y prod p₁ p₂
     open IsProduct isProduct public
 
-  -- FIXME: extend this to all limits and colimits, and include the (co)cones.
   product-iso : ∀ {x y} (P₁ P₂ : Product x y) → Iso (Product.prod P₁) (Product.prod P₂)
   product-iso P₁ P₂ .Iso.fwd = Product.pair P₂ (Product.p₁ P₁) (Product.p₂ P₁)
   product-iso P₁ P₂ .Iso.bwd = Product.pair P₁ (Product.p₁ P₂) (Product.p₂ P₂)
@@ -1168,7 +1174,6 @@ record HasBooleans {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : H
     Bool : obj
     True False : terminal ⇒ Bool
     cond : ∀ {x y} → x ⇒ y → x ⇒ y → prod x Bool ⇒ y
-  -- FIXME: equations
 
 module _ {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) {P : HasProducts 𝒞} (C : HasStrongCoproducts 𝒞 P) where
 
@@ -1214,7 +1219,6 @@ record HasLists {o m e} (𝒞 : Category o m e) (T : HasTerminal 𝒞) (P : HasP
            x ⇒ z →
            prod (prod x y) z ⇒ z →
            prod x (list y) ⇒ z
-  -- FIXME: equations
 
 ccc→strong-coproducts : ∀ {o m e} {𝒞 : Category o m e} {P : HasProducts 𝒞}
                         → HasCoproducts 𝒞 → HasExponentials 𝒞 P → HasStrongCoproducts 𝒞 P
