@@ -9,8 +9,8 @@
 -- once; the split forms and the unfolding bridge supply their laws. The lifting is a strong
 -- endofunctor, with the strength the transport of the identity.
 open import Level using (_⊔_)
-open import categories using (Category)
-open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
+open import categories using (Category; HasCoproducts)
+open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products; biproducts→coproducts; in₁-natural; in₂-natural)
 open import commutative-monoid using (CommutativeMonoid)
 open import functor using (Functor; StrongFunctor)
 
@@ -60,25 +60,10 @@ prod-m : ∀ {a₁ a₂ b₁ b₂} → a₁ ⇒ a₂ → b₁ ⇒ b₂ → (a₁
 prod-m g h = pair (g ∘ p₁) (h ∘ p₂)
 
 prod-m-in₁ : ∀ {a₁ a₂ b₁ b₂} (g : a₁ ⇒ a₂) (h : b₁ ⇒ b₂) → (prod-m g h ∘ in₁) ≈ (in₁ ∘ g)
-prod-m-in₁ {a₁} {a₂} {b₁} {b₂} g h =
-  ≈-trans (B.pair-natural a₂ b₂ _ _ _)
-  (≈-trans (pair-cong
-             (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl (B.id-1 a₁ b₁)) id-right))
-             (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl (B.zero-2 a₁ b₁)) (comp-bilinear-ε₂ h))))
-           (≈-trans (+m-cong ≈-refl (comp-bilinear-ε₂ in₂)) +m-runit))
+prod-m-in₁ g h = in₁-natural _ BP
 
 prod-m-in₂ : ∀ {a₁ a₂ b₁ b₂} (g : a₁ ⇒ a₂) (h : b₁ ⇒ b₂) → (prod-m g h ∘ in₂) ≈ (in₂ ∘ h)
-prod-m-in₂ {a₁} {a₂} {b₁} {b₂} g h =
-  ≈-trans (B.pair-natural a₂ b₂ _ _ _)
-  (≈-trans (pair-cong
-             (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl (B.zero-1 a₁ b₁)) (comp-bilinear-ε₂ g)))
-             (≈-trans (assoc _ _ _)
-               (≈-trans (∘-cong ≈-refl (B.id-2 a₁ b₁)) id-right)))
-           (≈-trans (+m-cong (comp-bilinear-ε₂ in₁) ≈-refl)
-                    (homCM _ _ .CommutativeMonoid.+-lunit)))
+prod-m-in₂ g h = in₂-natural _ BP
 
 bp-ext : ∀ {a b c} {h k : (a ⊕ b) ⇒ c} → (h ∘ in₁) ≈ (k ∘ in₁) → (h ∘ in₂) ≈ (k ∘ in₂) → h ≈ k
 bp-ext {a} {b} {c} {h} {k} e₁ e₂ =
@@ -137,9 +122,7 @@ L-elem-natural f c =
 private
   copair-post : ∀ {x y z w} (h : z ⇒ w) (f : x ⇒ z) (g : y ⇒ z) →
                 (h ∘ copair f g) ≈ copair (h ∘ f) (h ∘ g)
-  copair-post {x} {y} h f g =
-    ≈-trans (comp-bilinear₂ h (f ∘ B.p₁ x y) (g ∘ B.p₂ x y))
-      (+m-cong (≈-sym (assoc h f (B.p₁ x y))) (≈-sym (assoc h g (B.p₂ x y))))
+  copair-post h f g = HasCoproducts.copair-natural (biproducts→coproducts CM BP) h f g
 
 Lmap-comp : ∀ {P Q R} (g : Q ⇒ R) (f : P ⇒ Q) → Lmap (g ∘ f) ≈ (Lmap g ∘ Lmap f)
 Lmap-comp {P} {Q} {R} g f =

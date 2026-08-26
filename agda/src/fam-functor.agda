@@ -164,6 +164,21 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
 
   open Category.IsIso
 
+  private
+    fmor-subst-unit₁ : ∀ (Z : Fam𝒞.Obj) {x} {e : prop-setoid.Setoid._≈_ (Z .idx) x x} →
+                       (F .fmor (Z .fam .subst e) 𝒟.∘ (𝒟.id _ 𝒟.∘ (F .fmor (𝒞.id (Z .fam .fm x)) 𝒟.∘ 𝒟.id _)))
+                         𝒟.≈ 𝒟.id _
+    fmor-subst-unit₁ Z =
+      𝒟.≈-trans (𝒟.∘-cong (F .fmor-cong (Z .fam .refl*)) 𝒟.id-left)
+                (𝒟.≈-trans (𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl)) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left))
+
+    fmor-subst-unit₂ : ∀ (Z : Fam𝒞.Obj) {x} {e : prop-setoid.Setoid._≈_ (Z .idx) x x} →
+                       (F .fmor (Z .fam .subst e) 𝒟.∘ (𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id (Z .fam .fm x)))))
+                         𝒟.≈ 𝒟.id _
+    fmor-subst-unit₂ Z =
+      𝒟.≈-trans (𝒟.∘-cong (F .fmor-cong (Z .fam .refl*)) 𝒟.id-left)
+                (𝒟.≈-trans (𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-id))) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left))
+
   preserve-coproducts : preserve-chosen-coproducts FamF Fam𝒞.coproducts Fam𝒟.coproducts
   preserve-coproducts .inverse .idxf = idS _
   preserve-coproducts .inverse .famf .transf (inj₁ x) = 𝒟.id _
@@ -171,55 +186,11 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
   preserve-coproducts .inverse .famf .natural {inj₁ x} {inj₁ x₁} e = 𝒟.id-swap
   preserve-coproducts .inverse .famf .natural {inj₂ y} {inj₂ y₁} e = 𝒟.id-swap
   preserve-coproducts .f∘inverse≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-right SCP.copair-ext0
-  preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₁ x} = begin
-      F .fmor (X .fam .subst _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (F .fmor (𝒞.id _) 𝒟.∘ 𝒟.id _))
-    ≈⟨ 𝒟.∘-cong (F .fmor-cong (X .fam .refl*)) 𝒟.id-left ⟩
-      F .fmor (𝒞.id _) 𝒟.∘ (F .fmor (𝒞.id _) 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl) ⟩
-      𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _ 𝒟.∘ 𝒟.id _
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _
-    ∎
-    where open ≈-Reasoning 𝒟.isEquiv
-  preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₂ y} = begin
-      F .fmor (Y .fam .subst _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (F .fmor (𝒞.id _) 𝒟.∘ 𝒟.id _))
-    ≈⟨ 𝒟.∘-cong (F .fmor-cong (Y .fam .refl*)) 𝒟.id-left ⟩
-      F .fmor (𝒞.id _) 𝒟.∘ (F .fmor (𝒞.id _) 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl) ⟩
-      𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _ 𝒟.∘ 𝒟.id _
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _
-    ∎
-    where open ≈-Reasoning 𝒟.isEquiv
+  preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₁ x} = fmor-subst-unit₁ X
+  preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₂ y} = fmor-subst-unit₁ Y
   preserve-coproducts {X} {Y} .inverse∘f≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-left SCP.copair-ext0
-  preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₁ x} = begin
-      F .fmor (X .fam .subst _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id _)))
-    ≈⟨ 𝒟.∘-cong (F .fmor-cong (X .fam .refl*)) 𝒟.id-left ⟩
-      F .fmor (𝒞.id _) 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id _))
-    ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-id)) ⟩
-      𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _ 𝒟.∘ 𝒟.id _
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _
-    ∎
-    where open ≈-Reasoning 𝒟.isEquiv
-  preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₂ y} = begin
-      F .fmor (Y .fam .subst _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id _)))
-    ≈⟨ 𝒟.∘-cong (F .fmor-cong (Y .fam .refl*)) 𝒟.id-left ⟩
-      F .fmor (𝒞.id _) 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id _))
-    ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-id)) ⟩
-      𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _ 𝒟.∘ 𝒟.id _
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _
-    ∎
-    where open ≈-Reasoning 𝒟.isEquiv
+  preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₁ x} = fmor-subst-unit₂ X
+  preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₂ y} = fmor-subst-unit₂ Y
 
   module _ (𝒞T : HasTerminal 𝒞) (𝒟T : HasTerminal 𝒟) (FT : preserve-chosen-terminal F 𝒞T 𝒟T) where
 
