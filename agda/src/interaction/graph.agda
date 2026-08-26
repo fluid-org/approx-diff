@@ -435,6 +435,10 @@ module _ {m n : ℕ} (B : Graph m n) where
   into⁺ (inj₁ q) = into q
   into⁺ (inj₂ _) = out
 
+  up-root⁺ : ∀ {k} → M.Matrix k n → (q : Path⁺) → M.Matrix k (width⁺ q)
+  up-root⁺ u (inj₁ _) = M.εₘ
+  up-root⁺ u (inj₂ _) = u
+
   inside⁺ : (p q : Path⁺) → M.Matrix (width⁺ q) (width⁺ p)
   inside⁺ (inj₁ p) (inj₁ q) = inside p q
   inside⁺ (inj₁ p) (inj₂ _) = up p
@@ -755,8 +759,7 @@ module Rule₁
   E .Graph.<-inside = <⁺-inside B
   E .Graph.fo-root = fo-root
   E .Graph.out = out-root
-  E .Graph.up (inj₁ _) = M.εₘ
-  E .Graph.up (inj₂ _) = up-root
+  E .Graph.up = up-root⁺ B up-root
 
   private
     b : Path⁺ B → V E
@@ -832,10 +835,6 @@ module Rule₂
     ps₁ = vertices (Graph.shape B₁)
     ps₂ = vertices (Graph.shape B₂)
 
-    upE : (s : Path⁺ B₂) → M.Matrix n (width⁺ B₂ s)
-    upE (inj₁ _) = M.εₘ
-    upE (inj₂ _) = up₂
-
   E : Graph m n
   E .Graph.shape = node (Graph.shape B₁ ∷ Graph.shape B₂ ∷ [])
   E .Graph.width = [ width⁺ B₁ , width⁺ B₂ ]
@@ -858,9 +857,8 @@ module Rule₂
   E .Graph.<-inside (inj₂ (inj₁ p)) (inj₂ (inj₂ _)) k l = inj₁ tt
   E .Graph.<-inside (inj₂ (inj₂ _)) (inj₂ _) k l = inj₂ ⟪ ≈ₛ-refl ⟫
   E .Graph.out = out-root
-  E .Graph.up (inj₁ (inj₁ p)) = M.εₘ
-  E .Graph.up (inj₁ (inj₂ _)) = up₁
-  E .Graph.up (inj₂ s) = upE s
+  E .Graph.up (inj₁ p) = up-root⁺ B₁ up₁ p
+  E .Graph.up (inj₂ s) = up-root⁺ B₂ up₂ s
 
   private
     b1 : Path⁺ B₁ → V E
@@ -932,27 +930,18 @@ module Rule₂
     Φ₂-split = ≈-sym (≈-trans (M.∘-pair inputs₂ M.I (collapse B₁ ∘ inputs₁))
                               (M.+ₘ-cong (id-right {f = from-inputs₂}) (≈-refl {f = from-root₁ ∘ (collapse B₁ ∘ inputs₁)})))
 
-    P₂ : (t : Root) → M.Matrix n n₂
-    P₂ _ = up₂
+    module S2 = HidePremise (vertex-width E) (inj₁ input) b2 (λ (_ : Root) → er) Φ₂' (λ _ → up₂)
+                             (λ _ → out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁)))
 
-    K₂ : (t : Root) → M.Matrix n m
-    K₂ _ = out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))
-
-    module S2 = HidePremise (vertex-width E) (inj₁ input) b2 (λ (_ : Root) → er) Φ₂' P₂ K₂
-
-    col₂ : Path⁺ B₂ ⊎ Root → V E
-    col₂ (inj₁ q) = b2 q
-    col₂ (inj₂ _) = er
-
-    Bh : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vertex-width E (col₂ t)) (width⁺ B₂ s)
+    Bh : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vertex-width E (tgt₁ t)) (width⁺ B₂ s)
     Bh s (inj₁ q) = inside⁺ B₂ s q
-    Bh s (inj₂ _) = upE s
+    Bh s (inj₂ _) = up-root⁺ B₂ up₂ s
 
-    module Bd = Behind (vertex-width E) b1 b2 col₂ Bh
+    module Bd = Behind (vertex-width E) b1 b2 tgt₁ Bh
 
     keeps₀ : Bd.Keeps (gr E)
     keeps₀ .Bd.keeps s (inj₁ q) = ≈-refl
-    keeps₀ .Bd.keeps s (inj₂ _) = ≈-refl {f = upE s}
+    keeps₀ .Bd.keeps s (inj₂ _) = ≈-refl {f = up-root⁺ B₂ up₂ s}
     keeps₀ .Bd.blind s w = ≈-refl {f = M.εₘ}
 
     keeps₁ : Bd.Keeps G₁
@@ -1047,18 +1036,6 @@ module Rule₃
     ps₂ = vertices (Graph.shape B₂)
     ps₃ = vertices (Graph.shape B₃)
 
-    r₁ : (q : Path⁺ B₁) → M.Matrix n (width⁺ B₁ q)
-    r₁ (inj₁ _) = M.εₘ
-    r₁ (inj₂ _) = up₁
-
-    r₂ : (q : Path⁺ B₂) → M.Matrix n (width⁺ B₂ q)
-    r₂ (inj₁ _) = M.εₘ
-    r₂ (inj₂ _) = up₂
-
-    r₃ : (q : Path⁺ B₃) → M.Matrix n (width⁺ B₃ q)
-    r₃ (inj₁ _) = M.εₘ
-    r₃ (inj₂ _) = up₃
-
     e₁₃ : (p : Path⁺ B₁) (q : Path⁺ B₃) → M.Matrix (width⁺ B₃ q) (width⁺ B₁ p)
     e₁₃ (inj₁ _) q = M.εₘ
     e₁₃ (inj₂ _) q = into⁺ B₃ q ∘ from-root₁
@@ -1101,9 +1078,9 @@ module Rule₃
   E .Graph.<-inside (inj₂ (inj₂ (inj₁ p))) (inj₂ (inj₂ (inj₂ _))) k l = inj₁ tt
   E .Graph.<-inside (inj₂ (inj₂ (inj₂ _))) (inj₂ (inj₂ _)) k l = inj₂ ⟪ ≈ₛ-refl ⟫
   E .Graph.out = out-root
-  E .Graph.up (inj₁ p)        = r₁ p
-  E .Graph.up (inj₂ (inj₁ p)) = r₂ p
-  E .Graph.up (inj₂ (inj₂ p)) = r₃ p
+  E .Graph.up (inj₁ p)        = up-root⁺ B₁ up₁ p
+  E .Graph.up (inj₂ (inj₁ p)) = up-root⁺ B₂ up₂ p
+  E .Graph.up (inj₂ (inj₂ p)) = up-root⁺ B₃ up₃ p
 
   private
     b1 : Path⁺ B₁ → V E
@@ -1189,7 +1166,7 @@ module Rule₃
     Bh₂ : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root)) → M.Matrix (vertex-width E (cols₂ t)) (width⁺ B₂ s)
     Bh₂ s (inj₁ q)        = inside⁺ B₂ s q
     Bh₂ s (inj₂ (inj₁ q)) = e₂₃ s q
-    Bh₂ s (inj₂ (inj₂ _)) = r₂ s
+    Bh₂ s (inj₂ (inj₂ _)) = up-root⁺ B₂ up₂ s
 
     module Bd₂ = Behind (vertex-width E) b1 b2 cols₂ Bh₂
 
@@ -1199,7 +1176,7 @@ module Rule₃
       k₀ : Bd₂.Keeps (gr E)
       k₀ .Bd₂.keeps s (inj₁ q)        = ≈-refl
       k₀ .Bd₂.keeps s (inj₂ (inj₁ q)) = ≈-refl {f = e₂₃ s q}
-      k₀ .Bd₂.keeps s (inj₂ (inj₂ _)) = ≈-refl {f = r₂ s}
+      k₀ .Bd₂.keeps s (inj₂ (inj₂ _)) = ≈-refl {f = up-root⁺ B₂ up₂ s}
       k₀ .Bd₂.blind s w = ≈-refl {f = M.εₘ}
 
     Φ₃₁ : M.Matrix m₃ m
@@ -1257,14 +1234,11 @@ module Rule₃
     hid₁₂ (inj₁ q) = b1 q
     hid₁₂ (inj₂ q) = b2 q
 
-    cols₃ : Path⁺ B₃ ⊎ Root → V E
-    cols₃ = tgt
-
-    Bh₃ : (s : Path⁺ B₃) (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (cols₃ t)) (width⁺ B₃ s)
+    Bh₃ : (s : Path⁺ B₃) (t : Path⁺ B₃ ⊎ Root) → M.Matrix (vertex-width E (tgt t)) (width⁺ B₃ s)
     Bh₃ s (inj₁ q) = inside⁺ B₃ s q
-    Bh₃ s (inj₂ _) = r₃ s
+    Bh₃ s (inj₂ _) = up-root⁺ B₃ up₃ s
 
-    module Bd₃ = Behind (vertex-width E) hid₁₂ b3 cols₃ Bh₃
+    module Bd₃ = Behind (vertex-width E) hid₁₂ b3 tgt Bh₃
 
     behind₃ : Bd₃.Keeps G₂
     behind₃ =
@@ -1275,7 +1249,7 @@ module Rule₃
       where
       k₀ : Bd₃.Keeps (gr E)
       k₀ .Bd₃.keeps s (inj₁ q) = ≈-refl
-      k₀ .Bd₃.keeps s (inj₂ _) = ≈-refl {f = r₃ s}
+      k₀ .Bd₃.keeps s (inj₂ _) = ≈-refl {f = up-root⁺ B₃ up₃ s}
       k₀ .Bd₃.blind s (inj₁ w) = ≈-refl {f = M.εₘ}
       k₀ .Bd₃.blind s (inj₂ w) = ≈-refl {f = M.εₘ}
 
@@ -1293,13 +1267,8 @@ module Rule₃
                                          (M.+ₘ-cong (id-right {f = from-inputs₃}) (≈-refl {f = from-root₁ ∘ c₁})))
                                 (≈-refl {f = from-root₂ ∘ c₂})))
 
-    P₃ : (t : Root) → M.Matrix n n₃
-    P₃ _ = up₃
-
-    K₃ : (t : Root) → M.Matrix n m
-    K₃ _ = (out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂)
-
-    module S3 = HidePremise (vertex-width E) (inj₁ input) b3 (λ (_ : Root) → er) Φ₃' P₃ K₃
+    module S3 = HidePremise (vertex-width E) (inj₁ input) b3 (λ (_ : Root) → er) Φ₃' (λ _ → up₃)
+                             (λ _ → (out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂))
 
     H₃⁰ : S3.St
     H₃⁰ .S3.into q = into⁺ B₃ q
