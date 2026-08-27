@@ -354,10 +354,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   +ₘ-assoc : ∀ {m n} (M N P : Matrix m n) → ((M +ₘ N) +ₘ P) ≈ₘ (M +ₘ (N +ₘ P))
   +ₘ-assoc M N P i j = +-assoc {x = M i j} {y = N i j} {z = P i j}
 
-  +ₘ-interchange : ∀ {m n} (M N P Q : Matrix m n) →
-                   ((M +ₘ N) +ₘ (P +ₘ Q)) ≈ₘ ((M +ₘ P) +ₘ (N +ₘ Q))
-  +ₘ-interchange M N P Q i j = +-interchange {w = M i j} {x = N i j} {y = P i j} {z = Q i j}
-
   +ₘ-swap-mid : ∀ {m n} (M N P : Matrix m n) → (M +ₘ (N +ₘ P)) ≈ₘ (N +ₘ (M +ₘ P))
   +ₘ-swap-mid M N P =
     ≈ₘ-trans (≈ₘ-sym (+ₘ-assoc M N P))
