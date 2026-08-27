@@ -3,7 +3,7 @@
 open import Level using (0ℓ)
 open import Data.Nat using (suc; _+_)
 open import Data.Product using (Σ; _,_)
-open import every using (Every; []; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)

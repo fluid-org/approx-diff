@@ -11,7 +11,7 @@ open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭; ↭-length)
 open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
-open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
+open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 open import Data.List.Relation.Unary.Any using (Any) renaming (map to Any-map)
 open import Data.Nat using (ℕ; _≤_; z≤n; s≤s)
 open import Data.Nat.ListAction using (sum)

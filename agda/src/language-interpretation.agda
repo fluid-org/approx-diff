@@ -1631,7 +1631,7 @@ fold-map-mu τ₀ σ τ' {Γ'} B =
 ⟦ zero ⟧var   = p₂
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
 
-open import every using (Every; []; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open PointedFPCat PFPC[ R.cat , R.terminal T , R.products , Bool ] using (list→product)
 
 mutual

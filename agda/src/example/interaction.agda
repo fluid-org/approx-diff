@@ -7,7 +7,7 @@ open import Data.Nat using (suc)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import Data.Sum using (inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import every using ([]; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_)
 import two
 
 open import signature.example ℚ using (Sig; number; add; mult)

@@ -9,7 +9,7 @@ open import Data.Unit.Polymorphic using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
-open import every using (Every; []; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
 import matrix

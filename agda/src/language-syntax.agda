@@ -11,7 +11,7 @@ open import Data.Nat.Properties using (≤-refl; ⊔-lub; m⊔n≤o⇒m≤o; m�
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 open import Relation.Nullary using (Dec; yes; no)
 
-open import every using (Every; []; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import signature using (Signature)
 
 module language-syntax {ℓ} (Sig : Signature ℓ) where

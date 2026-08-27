@@ -10,7 +10,7 @@ open import Data.Nat.Properties using (≤-refl)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (_,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
-open import every using (Every)
+open import Data.List.Relation.Unary.All as Every using () renaming (All to Every)
 open import Data.List using ([]; _∷_)
 open import Data.Unit using (tt)
 import prop

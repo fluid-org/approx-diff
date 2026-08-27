@@ -264,12 +264,6 @@ All-zip : ∀ {a p q r} {A : Set a} {P : A → Set p} {Q : A → Set q} {R : A �
 All-zip h []       []       = []
 All-zip h (p ∷ ps) (q ∷ qs) = h p q ∷ All-zip h ps qs
 
-AllPairs-map : ∀ {a r s} {A : Set a} {S : A → A → Set r} {S' : A → A → Set s} →
-               (∀ {x y} → S x y → S' x y) →
-               ∀ {xs : List A} → AllPairs S xs → AllPairs S' xs
-AllPairs-map h []         = []
-AllPairs-map h (px ∷ ps) = All-map h px ∷ AllPairs-map h ps
-
 AllPairs-zip : ∀ {a r s} {A : Set a} {S : A → A → Set r} {S' : A → A → Set s} →
                ∀ {xs : List A} → AllPairs S xs → AllPairs S' xs →
                AllPairs (λ x y → S x y × S' x y) xs
