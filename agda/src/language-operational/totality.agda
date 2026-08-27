@@ -225,9 +225,7 @@ arr-out {σ} {τ} f v tv =
   let (u , R , D , tu) = f v (total-irr σ tv) in u , R , D , total-irr τ tu
 
 map-total : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : (Γ ▸ (τ₀ [ σr ])) ⊢ σr} →
-            (∀ (w' : Val (τ₀ [ σr ])) → Total (τ₀ [ σr ]) w' →
-             Σ (Val σr) λ u → Σ (suc (width-env γ + width w') ⇒ width u) λ S →
-             ((γ · w') , s ⇓ u [ S ]) × Total σr u) →
+            ArrTot (τ₀ [ σr ]) σr γ s →
             ∀ (σ' : type 1) {v : Val (σ' [ μ τ₀ ])} → MuT τ₀ σ' v →
             Σ (Val (σ' [ σr ])) λ v' →
             Σ ((suc (width-env γ) + width v) ⇒ width v') λ F →
@@ -262,8 +260,7 @@ Eval γ {τ} t =
 
 fundamental : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) → TotalEnv Γ γ → Eval γ t
 fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) (γ : Env Γ) → TotalEnv Γ γ →
-                Σ (sort-vals is) λ vs →
-                Σ (suc (width-env γ) ⇒ bases-width is) λ Rs → γ , Ms ⇓s vs [ Rs ]
+                Derivations γ Ms
 
 fundamental (var x) γ tγ =
   lookup x γ , _ , ⇓-var x , lookup-total x tγ
@@ -337,6 +334,5 @@ val-total (roll {τ = τ₀} v) = mu-in (mt-roll (fold-tot τ₀ τ₀ (arr-self
 env-total emp = tt
 env-total (γ · v) = env-total γ , val-total v
 
-eval : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) →
-       Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → γ , t ⇓ v [ R ]
+eval : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) → Derivation γ t
 eval t γ = let (v , R , D , _) = fundamental t γ (env-total γ) in v , R , D

@@ -3,7 +3,7 @@
 open import Level using (0ℓ)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Product using (_,_)
+open import Data.Product using (Σ; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit.Polymorphic using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)
@@ -273,3 +273,15 @@ mutual
                    (F ∘ sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I)))
 
 infix 25 _,_⇓_[_] _,_⇓s_[_]
+
+Derivation : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) → Set ℓ
+Derivation {τ = τ} γ t = Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → γ , t ⇓ v [ R ]
+
+Derivations : ∀ {Γ is} (γ : Env Γ) (Ms : Every (λ s → Γ ⊢ base s) is) → Set ℓ
+Derivations {is = is} γ Ms =
+  Σ (sort-vals is) λ vs → Σ (suc (width-env γ) ⇒ bases-width is) λ Rs → γ , Ms ⇓s vs [ Rs ]
+
+MapDerivation : ∀ {Γ} (γ : Env Γ) (τ₀ : type 1) (σr : type 0) (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ' : type 1) → Set ℓ
+MapDerivation γ τ₀ σr s σ' =
+  Σ (Val (σ' [ μ τ₀ ])) λ v → Σ (Val (σ' [ σr ])) λ v' →
+  Σ ((suc (width-env γ) + width v) ⇒ width v') λ F → Map γ {τ₀} {σr} s σ' v v' F
