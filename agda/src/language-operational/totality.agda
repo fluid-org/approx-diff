@@ -79,7 +79,7 @@ Total-acc (σ [+] τ) (acc rs) (inr v) =
 Total-acc (σ [×] τ) (acc rs) (pair v u) =
   Total-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v ×
   Total-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u
-Total-acc (σ [→] τ) (acc rs) (clo {Γ'} γ' t) =
+Total-acc (σ [→] τ) (acc rs) (clo γ' t) =
   ∀ (v : Val σ) → Total-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v →
   Σ (Val τ) λ u →
   Σ (suc (width-env γ' + width v) ⇒ width u) λ R →

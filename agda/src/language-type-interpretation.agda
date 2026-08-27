@@ -24,9 +24,9 @@ import language-syntax
 
 module language-type-interpretation
   {ℓ} (Sig : Signature ℓ)
-  {o m e} (os es : Level) {𝒞 : Category o m e}
+  {o m e} (os es : Level) {𝒞 : Category o m e} (let module 𝒞 = Category 𝒞)
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-  (𝟙c : Category.obj 𝒞)
+  (𝟙c : 𝒞.obj)
   (let module R = fam-mu-lifting os es CM BP 𝟙c)
   (𝒞E : HasExponentials R.cat R.products)
   (δ∅ : Fin 0 → R.Obj)
@@ -34,7 +34,7 @@ module language-type-interpretation
   (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
   (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
   (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
-  (ctrl-w : Category._⇒_ 𝒞 𝟙c 𝟙c)
+  (ctrl-w : 𝟙c 𝒞.⇒ 𝟙c)
   (exp-section : ∀ {X Y : R.Obj} → R.Section (HasExponentials.exp 𝒞E X Y))
   (𝟙ty-section : R.Section 𝟙ty)
   (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))

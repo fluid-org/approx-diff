@@ -39,35 +39,19 @@ module ≈-Reasoning {o e} {A : Set o} {_≈_ : A → A → Prop e} (equiv : IsE
   infixr 2 _≈⟨_⟩_ _≈˘⟨_⟩_ _≡⟨⟩_
   infix  3 _∎
 
-  begin_ : ∀ {x y : A}
-    → x ≈ y
-      -----
-    → x ≈ y
+  begin_ : ∀ {x y : A} → x ≈ y → x ≈ y
   begin x≈y  =  x≈y
 
-  _≡⟨⟩_ : ∀ (x : A) {y : A}
-    → x ≈ y
-      -----
-    → x ≈ y
+  _≡⟨⟩_ : ∀ (x : A) {y : A} → x ≈ y → x ≈ y
   x ≡⟨⟩ x≈y = x≈y
 
-  _≈⟨_⟩_ : ∀ (x : A) {y z : A}
-    → x ≈ y
-    → y ≈ z
-      -----
-    → x ≈ z
+  _≈⟨_⟩_ : ∀ (x : A) {y z : A} → x ≈ y → y ≈ z → x ≈ z
   x ≈⟨ x≈y ⟩ y≈z  =  equiv .trans x≈y y≈z
 
-  _≈˘⟨_⟩_ : ∀ (x : A) {y z : A}
-    → y ≈ x
-    → y ≈ z
-      -----
-    → x ≈ z
+  _≈˘⟨_⟩_ : ∀ (x : A) {y z : A} → y ≈ x → y ≈ z → x ≈ z
   x ≈˘⟨ y≈x ⟩ y≈z  =  equiv .trans (equiv .sym y≈x) y≈z
 
-  _∎ : ∀ (x : A)
-      -----
-    → x ≈ x
+  _∎ : ∀ (x : A) → x ≈ x
   x ∎  =  equiv .refl
 
 record Setoid o e : Set (suc (o ⊔ e)) where

@@ -60,28 +60,16 @@ module ≤-Reasoning {o i} {A : Set o} {_≤_ : A → A → Prop i} (isPreorder 
   infixr 2 _≤⟨_⟩_ _≡⟨⟩_
   infix  4 _∎
 
-  begin_ : ∀ {x y : A}
-    → x ≤ y
-      -----
-    → x ≤ y
+  begin_ : ∀ {x y : A} → x ≤ y → x ≤ y
   begin x≤y  =  x≤y
 
-  _≡⟨⟩_ : ∀ (x : A) {y : A}
-    → x ≤ y
-      -----
-    → x ≤ y
+  _≡⟨⟩_ : ∀ (x : A) {y : A} → x ≤ y → x ≤ y
   x ≡⟨⟩ x≤y = x≤y
 
-  _≤⟨_⟩_ : ∀ (x : A) {y z : A}
-    → x ≤ y
-    → y ≤ z
-      -----
-    → x ≤ z
+  _≤⟨_⟩_ : ∀ (x : A) {y z : A} → x ≤ y → y ≤ z → x ≤ z
   x ≤⟨ x≤y ⟩ y≤z  =  isPreorder .trans x≤y y≤z
 
-  _∎ : ∀ (x : A)
-      -----
-    → x ≤ x
+  _∎ : ∀ (x : A) → x ≤ x
   x ∎  =  isPreorder .refl
 
 module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreorder _≤_) where
