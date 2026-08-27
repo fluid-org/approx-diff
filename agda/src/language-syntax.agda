@@ -105,7 +105,10 @@ push τ (suc i) = var i
 _[_] : ∀ {Δ} → type (suc Δ) → type Δ → type Δ
 τ [ τ' ] = sub (push τ') τ
 
-infix 50 _[_]
+_[_]₁ : ∀ {Δ} → type (suc (suc Δ)) → type Δ → type (suc Δ)
+τ [ τ' ]₁ = sub (sub-lift (push τ')) τ
+
+infix 50 _[_] _[_]₁
 
 fo-ren : ∀ {Δ₁ Δ₂} {ρ : TyRen Δ₁ Δ₂} {τ : type Δ₁} → first-order τ → first-order (ρ *ᵗ τ)
 fo-ren {ρ = ρ} (var i) = var (ρ i)

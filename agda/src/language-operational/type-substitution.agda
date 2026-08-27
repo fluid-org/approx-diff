@@ -108,14 +108,14 @@ unfold₁ τ = sub (unfold₁-sub τ) τ
 
 unfold₁-inst : ∀ (τ : type 2) (ρ : type 0) →
                sub (push ρ) (unfold₁ τ) ≡
-               sub (sub-lift (push ρ)) τ [ μ (sub (sub-lift (push ρ)) τ) ]
+               τ [ ρ ]₁ [ μ (τ [ ρ ]₁) ]
 unfold₁-inst τ ρ =
   trans (sub-sub (push ρ) (unfold₁-sub τ) τ)
         (trans (sub-cong τ pw)
                (sym (sub-sub (push (μ A)) (sub-lift (push ρ)) τ)))
   where
     A : type 1
-    A = sub (sub-lift (push ρ)) τ
+    A = τ [ ρ ]₁
 
     pw : ∀ i → sub (push ρ) (unfold₁-sub τ i) ≡
                sub (push (μ A)) (sub-lift (push ρ) i)

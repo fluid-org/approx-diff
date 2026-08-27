@@ -128,8 +128,8 @@ private
   pair-idx {Γ} {τ₀} {σr} s σ₁ σ₂ gi i = idx-eq (LI.fold-map-pair τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i)
 
   module MuShape {Γ} (τ₀ : type 1) (σr : type 0) (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (τ' : type 2) where
-    τμ = sub (sub-lift (push (μ τ₀))) τ'
-    τₛ = sub (sub-lift (push σr)) τ'
+    τμ = τ' [ μ τ₀ ]₁
+    τₛ = τ' [ σr ]₁
     T = τₛ [ μ τₛ ]
     eμ = unfold₁-inst τ' (μ τ₀)
     eₛ = unfold₁-inst τ' σr
@@ -154,8 +154,8 @@ private
       e₀ = Ix.trans (μ τμ) {b} {roll-mor τμ .idxf .sfunc iu} {i} Er (idx-eq (LI.roll-unroll τμ) i)
 
   mu-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (τ' : type 2) gi (i : Ix ((μ τ') [ μ τ₀ ])) →
-           let τμ = sub (sub-lift (push (μ τ₀))) τ'
-               τₛ = sub (sub-lift (push σr)) τ'
+           let τμ = τ' [ μ τ₀ ]₁
+               τₛ = τ' [ σr ]₁
                i₀ = ty-cast (sym (unfold₁-inst τ' (μ τ₀))) .idxf .sfunc (unroll-mor τμ .idxf .sfunc i)
            in
            Ix._≈_ (τₛ [ μ τₛ ])
@@ -784,8 +784,8 @@ map-dep-pair {Γ} {γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {u} {u'} {
 private
   mu-fibre : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (τ' : type 2) gi
              (i : Ix ((μ τ') [ μ τ₀ ])) (g : ∣ FibC Γ gi ∣) (e : ∣ Fib ((μ τ') [ μ τ₀ ]) i ∣) →
-             let τμ = sub (sub-lift (push (μ τ₀))) τ'
-                 τₛ = sub (sub-lift (push σr)) τ'
+             let τμ = τ' [ μ τ₀ ]₁
+                 τₛ = τ' [ σr ]₁
                  Fu = LI.fold-map τ₀ σr (unfold₁ τ') ⟦ s ⟧tm
                  Fμ = LI.fold-map τ₀ σr (μ τ') ⟦ s ⟧tm
                  iu = unroll-mor τμ .idxf .sfunc i
@@ -874,7 +874,7 @@ map-dep-mu : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ 
              (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
                     ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
              {τ' : type 2} {v v' F} (M : Map γ s (unfold₁ τ') v v' F) {gi} (rγ : EnvValRel γ gi)
-             {i} (r : ValRel ((μ τ') [ μ τ₀ ]) (roll {sub (sub-lift (push (μ τ₀))) τ'} (≡-subst Val (unfold₁-inst τ' (μ τ₀)) v)) i)
+             {i} (r : ValRel ((μ τ') [ μ τ₀ ]) (roll {τ' [ μ τ₀ ]₁} (≡-subst Val (unfold₁-inst τ' (μ τ₀)) v)) i)
              (w : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣) (g : ∣ FibC Γ gi ∣) →
              (∀ {i'} (r' : ValRel ((unfold₁ τ') [ μ τ₀ ]) v i') (o : ∣ 𝔽 (width v) ∣) (e : ∣ Fib ((unfold₁ τ') [ μ τ₀ ]) i' ∣) →
                 DepRel ((unfold₁ τ') [ μ τ₀ ]) r' o
@@ -884,9 +884,9 @@ map-dep-mu : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ 
                     (ctrl-dep-at ((unfold₁ τ') [ σr ]) (LI.fold-map τ₀ σr (unfold₁ τ') ⟦ s ⟧tm .idxf .sfunc (gi , i')) w)
                     (LI.fold-map τ₀ σr (unfold₁ τ') ⟦ s ⟧tm .famf .transf (gi , i') .func (g , e)))) →
              (o : ∣ 𝔽 (width (≡-subst Val (unfold₁-inst τ' (μ τ₀)) v)) ∣) (e : ∣ Fib ((μ τ') [ μ τ₀ ]) i ∣) →
-             DepRel ((μ τ') [ μ τ₀ ]) {roll {sub (sub-lift (push (μ τ₀))) τ'} (≡-subst Val (unfold₁-inst τ' (μ τ₀)) v)} {i} r o
+             DepRel ((μ τ') [ μ τ₀ ]) {roll {τ' [ μ τ₀ ]₁} (≡-subst Val (unfold₁-inst τ' (μ τ₀)) v)} {i} r o
                (Fib._+_ ((μ τ') [ μ τ₀ ]) i (ctrl-dep-at ((μ τ') [ μ τ₀ ]) i w) e) →
-             DepRel ((μ τ') [ σr ]) {roll {sub (sub-lift (push σr)) τ'} (≡-subst Val (unfold₁-inst τ' σr) v')}
+             DepRel ((μ τ') [ σr ]) {roll {τ' [ σr ]₁} (≡-subst Val (unfold₁-inst τ' σr) v')}
                {LI.fold-map τ₀ σr (μ τ') ⟦ s ⟧tm .idxf .sfunc (gi , i)}
                (map-val {s = s} IHv {μ τ'} (m-mu {τ' = τ'} M) rγ {i} r)
                (ap (rcast (sym (width-subst (unfold₁-inst τ' σr) v')) M.I ∘

@@ -799,7 +799,7 @@ sub-as-apply-fwd-bwd τ τ' = begin
     T⁻ = as-poly-map τ (λ i → ≡-to-⇒ (sym (push-pw τ' i))) δ∅
 
 sub-as-apply-fwd-μ-body : ∀ (τ' : type 2) (ρ : type 0) (X : obj) →
-                          fobj μ-obj (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ())) (extend δ∅ X) ⇒
+                          fobj μ-obj (as-poly {0} {1} (τ' [ ρ ]₁) (λ ())) (extend δ∅ X) ⇒
                           fobj μ-obj (as-poly {0} {2} τ' (λ ())) (extend (extend δ∅ (⟦ ρ ⟧ty (λ ()))) X)
 sub-as-apply-fwd-μ-body τ' ρ X =
   apply-fwd-body τ' (λ ()) (extend δ∅ (⟦ ρ ⟧ty (λ ()))) X
@@ -808,7 +808,7 @@ sub-as-apply-fwd-μ-body τ' ρ X =
 
 sub-as-apply-fwd-μ : ∀ (τ' : type 2) (ρ : type 0) →
                      sub-as-apply-fwd (μ τ') ρ
-                       ≈ μ-map (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ())) δ∅
+                       ≈ μ-map (as-poly {0} {1} (τ' [ ρ ]₁) (λ ())) δ∅
                            (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))
                            (sub-as-apply-fwd-μ-body τ' ρ (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))))
 sub-as-apply-fwd-μ τ' ρ = begin
@@ -827,7 +827,7 @@ sub-as-apply-fwd-μ τ' ρ = begin
   open ≈-Reasoning isEquiv
   δr = extend δ∅ (⟦ ρ ⟧ty (λ ()))
   cs = λ i → ≡-to-⇒ (push-pw ρ i)
-  P₁ = as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ())
+  P₁ = as-poly {0} {1} (τ' [ ρ ]₁) (λ ())
   P₂ = as-poly {1} {1} τ' (λ i → ⟦ push ρ i ⟧ty (λ ()))
   P₃ = as-poly {1} {1} τ' (λ i → concat δr (λ ()) i)
   Q  = as-poly {0} {2} τ' (λ ())
@@ -843,13 +843,13 @@ sub-as-apply-fwd-μ τ' ρ = begin
 
 sub-as-apply-fwd-μ-in : ∀ (τ' : type 2) (ρ : type 0) →
   (sub-as-apply-fwd (μ τ') ρ
-     ∘ (inMap (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ())) δ∅
-        ∘ sub-as-apply-fwd (sub (sub-lift (push ρ)) τ') (μ (sub (sub-lift (push ρ)) τ'))))
+     ∘ (inMap (as-poly {0} {1} (τ' [ ρ ]₁) (λ ())) δ∅
+        ∘ sub-as-apply-fwd (τ' [ ρ ]₁) (μ (τ' [ ρ ]₁))))
     ≈ (inMap (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))
        ∘ (sub-as-apply-fwd-μ-body τ' ρ (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ()))))
-          ∘ (fmor (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ()))
+          ∘ (fmor (as-poly {0} {1} (τ' [ ρ ]₁) (λ ()))
                (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) (sub-as-apply-fwd (μ τ') ρ))
-             ∘ sub-as-apply-fwd (sub (sub-lift (push ρ)) τ') (μ (sub (sub-lift (push ρ)) τ')))))
+             ∘ sub-as-apply-fwd (τ' [ ρ ]₁) (μ (τ' [ ρ ]₁)))))
 sub-as-apply-fwd-μ-in τ' ρ = begin
     saf ∘ (inMap P₁ δ∅ ∘ sf)
   ≈˘⟨ assoc _ _ _ ⟩
@@ -867,7 +867,7 @@ sub-as-apply-fwd-μ-in τ' ρ = begin
   ∎
   where
   open ≈-Reasoning isEquiv
-  A  = sub (sub-lift (push ρ)) τ'
+  A  = τ' [ ρ ]₁
   δr = extend δ∅ (⟦ ρ ⟧ty (λ ()))
   P₁ = as-poly {0} {1} A (λ ())
   Q  = as-poly {0} {2} τ' (λ ())
@@ -904,16 +904,16 @@ unfold-as-apply-fwd τ' X =
 
 unfold-as-apply-fwd-inst : ∀ (τ' : type 2) (ρ : type 0) →
   (sub-as-apply-fwd-μ-body τ' ρ (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ()))))
-     ∘ (fmor (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ()))
+     ∘ (fmor (as-poly {0} {1} (τ' [ ρ ]₁) (λ ()))
              (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) (sub-as-apply-fwd (μ τ') ρ))
-        ∘ (sub-as-apply-fwd (sub (sub-lift (push ρ)) τ') (μ (sub (sub-lift (push ρ)) τ'))
+        ∘ (sub-as-apply-fwd (τ' [ ρ ]₁) (μ (τ' [ ρ ]₁))
            ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty (λ ())) (unfold₁-inst τ' ρ)))))
     ≈ (unfold-as-apply-fwd τ' (⟦ ρ ⟧ty (λ ())) ∘ sub-as-apply-fwd (unfold₁ τ') ρ)
 unfold-as-apply-fwd-inst τ' ρ =
   ≈-trans lhs (≈-trans (∘-cong ≈-refl (∘-cong (as-poly-map-cong τ' pw-step δ∅) ≈-refl)) (≈-sym rhs))
   where
   open ≈-Reasoning isEquiv
-  A  = sub (sub-lift (push ρ)) τ'
+  A  = τ' [ ρ ]₁
   Xρ = ⟦ ρ ⟧ty ∅
   δr = extend δ∅ Xρ
   σp = push ρ
@@ -1236,12 +1236,12 @@ abstract
              (R.LambekDef.inMor-outMor (as-poly τ (λ ())) δ∅)
 
   sub-as-apply-fwd-roll : ∀ (τ' : type 2) (ρ : type 0) →
-    (sub-as-apply-fwd (μ τ') ρ ∘ roll-mor (sub (sub-lift (push ρ)) τ'))
+    (sub-as-apply-fwd (μ τ') ρ ∘ roll-mor (τ' [ ρ ]₁))
       ≈ (inMap (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ())))
          ∘ (sub-as-apply-fwd-μ-body τ' ρ (μ-obj (as-poly {0} {2} τ' (λ ())) (extend δ∅ (⟦ ρ ⟧ty (λ ()))))
-            ∘ (fmor (as-poly {0} {1} (sub (sub-lift (push ρ)) τ') (λ ()))
+            ∘ (fmor (as-poly {0} {1} (τ' [ ρ ]₁) (λ ()))
                  (extend-mor {δ = δ∅} {δ' = δ∅} (λ i → id _) (sub-as-apply-fwd (μ τ') ρ))
-               ∘ sub-as-apply-fwd (sub (sub-lift (push ρ)) τ') (μ (sub (sub-lift (push ρ)) τ')))))
+               ∘ sub-as-apply-fwd (τ' [ ρ ]₁) (μ (τ' [ ρ ]₁)))))
   sub-as-apply-fwd-roll τ' ρ = sub-as-apply-fwd-μ-in τ' ρ
 
   preserves-sub-as-apply-fwd : ∀ (τ : type 1) (τ' : type 0) →
@@ -1540,9 +1540,9 @@ fold-map-pair-L τ₀ σ σ₁ σ₂ B =
 fold-map-mu : ∀ (τ₀ : type 1) (σ : type 0) (τ' : type 2) {Γ' : Obj}
               (B : prod Γ' (⟦ τ₀ [ σ ] ⟧ty (λ ())) ⇒ ⟦ σ ⟧ty (λ ())) →
               (fold-map τ₀ σ (μ τ') B
-                 ∘ ⟨ p₁ , (roll-mor (sub (sub-lift (push (μ τ₀))) τ')
+                 ∘ ⟨ p₁ , (roll-mor (τ' [ μ τ₀ ]₁)
                             ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty (λ ())) (unfold₁-inst τ' (μ τ₀)))) ∘ p₂ ⟩)
-                ≈ ((roll-mor (sub (sub-lift (push σ)) τ')
+                ≈ ((roll-mor (τ' [ σ ]₁)
                       ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty (λ ())) (unfold₁-inst τ' σ)))
                    ∘ fold-map τ₀ σ (unfold₁ τ') B)
 fold-map-mu τ₀ σ τ' {Γ'} B =
@@ -1554,7 +1554,7 @@ fold-map-mu τ₀ σ τ' {Γ'} B =
   open ≈-Reasoning isEquiv
   Q = as-poly {0} {2} τ' ∅
   hsK = strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ ()) (⦅ fold-alg τ₀ σ B ⦆)
-  rc = λ (ρ : type 0) → roll-mor (sub (sub-lift (push ρ)) τ') ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty ∅) (unfold₁-inst τ' ρ))
+  rc = λ (ρ : type 0) → roll-mor (τ' [ ρ ]₁) ∘ ≡-to-⇒ (cong (λ υ → ⟦ υ ⟧ty ∅) (unfold₁-inst τ' ρ))
   rollcast : ∀ (ρ : type 0) →
              (sub-as-apply-fwd (μ τ') ρ ∘ rc ρ)
                ≈ (inMap Q (extend δ∅ (⟦ ρ ⟧ty ∅)) ∘ (unfold-as-apply-fwd τ' (⟦ ρ ⟧ty ∅) ∘ sub-as-apply-fwd (unfold₁ τ') ρ))

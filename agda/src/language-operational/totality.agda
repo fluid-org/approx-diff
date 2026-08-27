@@ -162,7 +162,7 @@ fold-tot-acc τ₀ (σ₁ [×] σ₂) (b₁ , b₂) {pair v₁ v₂} (acc ra) t 
   where import Data.Product
 fold-tot-acc τ₀ (σ₁ [→] σ₂) b av t = mt-arrow b t
 fold-tot-acc τ₀ (μ τ') b {roll w₂} (acc ra) t
-  with mu-out {τ₀ = sub (sub-lift (push (μ τ₀))) τ'} t
+  with mu-out {τ₀ = τ' [ μ τ₀ ]₁} t
 ... | mt-roll m₂ =
   ≡-subst (λ x → MuT τ₀ (μ τ') (roll x)) (subst-subst-sym (unfold₁-inst τ' (μ τ₀)))
     (mt-mu (fold-tot-acc τ₀ (unfold₁ τ') (unfold₁-arr τ' b)
@@ -170,8 +170,8 @@ fold-tot-acc τ₀ (μ τ') b {roll w₂} (acc ra) t
                           (sym (vsize-subst (sym (unfold₁-inst τ' (μ τ₀))) w₂))
                           (n<1+n _)))
              (total-coerce (sym (unfold₁-inst τ' (μ τ₀)))
-               (unfold-tot-acc (sub (sub-lift (push (μ τ₀))) τ')
-                               (sub (sub-lift (push (μ τ₀))) τ')
+               (unfold-tot-acc (τ' [ μ τ₀ ]₁)
+                               (τ' [ μ τ₀ ]₁)
                                (ra (n<1+n _)) m₂))))
 
 unfold-tot-acc τ₀ (var Fin.zero) av m = mu-in m
@@ -192,7 +192,7 @@ unfold-tot-acc τ₀ (μ τ') (acc ra) (mt-mu {w = w} m) =
               m))))
   where
   B : type 1
-  B = sub (sub-lift (push (μ τ₀))) τ'
+  B = τ' [ μ τ₀ ]₁
   E : (unfold₁ τ' [ μ τ₀ ]) ≡ (B [ μ B ])
   E = unfold₁-inst τ' (μ τ₀)
 
@@ -252,8 +252,8 @@ map-total {σr = σr} f (σ₁ [×] σ₂) (mt-pair {v₁ = v₁} {v₂ = v₂} 
 map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') (mt-mu {τ'} {w} m') =
   let (w' , F , Dm , tw') = map-total f (unfold₁ τ') m'
   in roll (≡-subst Val (unfold₁-inst τ' σr) w') , _ , m-mu Dm ,
-     mu-in (mt-roll (fold-tot (sub (sub-lift (push σr)) τ') (sub (sub-lift (push σr)) τ')
-                      (arr-self (sub (sub-lift (push σr)) τ'))
+     mu-in (mt-roll (fold-tot (τ' [ σr ]₁) (τ' [ σr ]₁)
+                      (arr-self (τ' [ σr ]₁))
                       (total-coerce (unfold₁-inst τ' σr) tw')))
 
 Eval : ∀ {Γ} (γ : Env Γ) {τ} (t : Γ ⊢ τ) → Set ℓT
