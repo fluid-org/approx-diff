@@ -177,12 +177,19 @@ hide vertex-width G r x y = G x y M.+ₘ (G r y ∘ G x r)
 hide-all : {V : Set} (vertex-width : V → ℕ) → Relation vertex-width → List V → Relation vertex-width
 hide-all vertex-width = foldl (hide vertex-width)
 
+flip : {V : Set} {vertex-width : V → ℕ} → Relation vertex-width → Relation vertex-width
+flip G x y = (G y x) M.ᵀ
+
 _≐_ : {V : Set} {vertex-width : V → ℕ} → Relation vertex-width → Relation vertex-width → Prop
 _≐_ {V} G G' = ∀ x y → G x y ≈ G' x y
 
 hide-cong : {V : Set} (vertex-width : V → ℕ) {G G' : Relation vertex-width} (r : V) →
             G ≐ G' → hide vertex-width G r ≐ hide vertex-width G' r
 hide-cong vertex-width r e x y = M.+ₘ-cong (e x y) (∘-cong (e r y) (e x r))
+
+flip-hide : {V : Set} (vertex-width : V → ℕ) (G : Relation vertex-width) (r : V) →
+            hide vertex-width (flip G) r ≐ flip (hide vertex-width G r)
+flip-hide vertex-width G r x y = M.+ₘ-cong ≈-refl (≈-sym (M.ᵀ-∘ (G r x) (G y r)))
 
 hide-all-cong : {V : Set} (vertex-width : V → ℕ) {G G' : Relation vertex-width} (rs : List V) →
                 G ≐ G' → hide-all vertex-width G rs ≐ hide-all vertex-width G' rs
@@ -665,6 +672,10 @@ module NoEdgeIntoHidden
   fixed-hide-all f []       k = k
   fixed-hide-all f (w ∷ ws) k = fixed-hide-all f ws (fixed-hide (f w) k)
 
+  fixed-resp : ∀ {G G'} → G ≐ G' → Fixed G → Fixed G'
+  fixed-resp e k .edge s t = ≈-trans (≈-sym (e (src s) (col t))) (k .edge s t)
+  fixed-resp e k .no-edge s w = ≈-trans (≈-sym (e (src s) (hid w))) (k .no-edge s w)
+
 module _ {m n : ℕ} (B : Graph m n) where
 
   root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ M.εₘ
@@ -696,6 +707,9 @@ module NoEdgeOutOfHidden
   (B : (s : S) (t : T) → M.Matrix (vertex-width (col t)) (vertex-width (src s)))
   where
 
+  private
+    module Into = NoEdgeIntoHidden vertex-width hid col src (λ t s → (B s t) M.ᵀ)
+
   record Fixed (G : Relation vertex-width) : Set where
     field
       edge    : ∀ s t → G (src s) (col t) ≈ B s t
@@ -703,13 +717,18 @@ module NoEdgeOutOfHidden
 
   open Fixed public
 
+  private
+    to : ∀ {G} → Fixed G → Into.Fixed (flip G)
+    to k .Into.edge t s i j = k .edge s t j i
+    to k .Into.no-edge t w i j = k .no-edge w t j i
+
+    from : ∀ {G} → Into.Fixed (flip G) → Fixed G
+    from k .edge s t i j = k .Into.edge t s j i
+    from k .no-edge w t i j = k .Into.no-edge t w j i
+
   fixed-hide : ∀ {G} (w : W) → Fixed G → Fixed (hide vertex-width G (hid w))
-  fixed-hide {G} w k .edge s t =
-    ≈-trans (M.+ₘ-cong (k .edge s t) (∘-cong₁ (k .no-edge w t)))
-            (M.absorb₁ (B s t) (G (src s) (hid w)))
-  fixed-hide {G} w k .no-edge w' t =
-    ≈-trans (M.+ₘ-cong (k .no-edge w' t) (∘-cong₁ (k .no-edge w t)))
-            (M.absorb₁ M.εₘ (G (hid w') (hid w)))
+  fixed-hide {G} w k =
+    from (Into.fixed-resp (flip-hide vertex-width G (hid w)) (Into.fixed-hide w (to k)))
 
   fixed-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
                    Fixed G → Fixed (hide-all vertex-width G (map (λ w → hid (f w)) ws))

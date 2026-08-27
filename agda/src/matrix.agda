@@ -124,6 +124,9 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   ∘-cong : ∀ {m n k} {M₁ M₂ : Matrix m n} {N₁ N₂ : Matrix n k} → M₁ ≈ₘ M₂ → N₁ ≈ₘ N₂ → M₁ ∘ N₁ ≈ₘ M₂ ∘ N₂
   ∘-cong {m} {n} p q i k = Σ-cong {n} (λ j → ·-cong (p i j) (q j k))
 
+  ᵀ-∘ : ∀ {m n k} (M : Matrix m n) (N : Matrix n k) → ((M ∘ N) ᵀ) ≈ₘ ((N ᵀ) ∘ (M ᵀ))
+  ᵀ-∘ {n = n} M N k i = Σ-cong {n} (λ j → ·-comm)
+
   id-left : ∀ {m n} {M : Matrix m n} → I ∘ M ≈ₘ M
   id-left {M = M} i k = Σ-unit i (λ j → M j k)
 
