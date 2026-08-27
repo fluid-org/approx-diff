@@ -8,11 +8,14 @@ open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filterᵇ; concat; partitionᵇ; foldr)
 open import Data.List.Properties using (++-identityʳ; concat-++; concat-map; foldl-++; length-map; map-++; map-∘)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
-  using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭; ↭-length)
+  using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭; ↭-length; ∈-resp-↭)
 open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
+open import Data.List.Relation.Binary.Subset.Propositional using (_⊆_)
+open import Data.List.Membership.Propositional.Properties using (∈-++⁺ˡ; ∈-++⁺ʳ)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+  renaming (map to All-map; tabulate to All-tabulate)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
-open import Data.List.Relation.Unary.Any using (Any) renaming (map to Any-map)
+open import Data.List.Relation.Unary.Any using (Any; there) renaming (map to Any-map)
 open import Data.Nat using (ℕ; _≤_; z≤n; s≤s)
 open import Data.Nat.ListAction using (sum)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -268,9 +271,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ... | yes e with _≟_ {shape} p q
     ...   | no ¬e = ⊥-elim (¬e (≡-sym e))
 
-  member-perm : (q : Path) {C C' : List (Path)} → C ↭ C' → member q C ≡ member q C'
-  member-perm q = any-perm (eq-path q)
-
   restrict-forward : {G : Relation (vertex-width 𝒢)} (C : List (Path)) → Fwd 𝒢 G → Fwd 𝒢 (restrict G C)
   restrict-forward C fwd x y i j with member-vertex x C ∨ member-vertex y C
   ... | Bool.true  = fwd x y i j
@@ -351,15 +351,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     where tp = partitionᵇ (adj-p p) (K .hidden)
 
   private
-    mv-mono : {C E : List (Path)} →
-              (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
+    mv-mono : {C E : List (Path)} → C ⊆ E →
               ∀ z → member-vertex z C ≡ Bool.true → member-vertex z E ≡ Bool.true
     mv-mono mono (inj₁ _)        ()
     mv-mono mono (inj₂ (inj₂ _)) ()
-    mv-mono mono (inj₂ (inj₁ q)) h = mono q h
+    mv-mono mono (inj₂ (inj₁ q)) h = ∈-member (mono (member-∈ h))
 
-  restrict-sub : (G : Relation (vertex-width 𝒢)) {C E : List (Path)} →
-                 (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
+  restrict-sub : (G : Relation (vertex-width 𝒢)) {C E : List (Path)} → C ⊆ E →
                  ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                  (restrict G C x y i j two.⊔ restrict G E x y i j) ≡ restrict G E x y i j
   restrict-sub G {C} {E} mono x y i j =
@@ -373,27 +371,25 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ... | inj₂ hy = ≡-trans (≡-cong (member-vertex x E ∨_) (mv-mono mono y hy))
                             (∨-true (member-vertex x E))
 
-  restrict-agree : (G : Relation (vertex-width 𝒢)) {C E : List (Path)} →
-                   (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
+  restrict-agree : (G : Relation (vertex-width 𝒢)) {C E : List (Path)} → C ⊆ E →
                    All (λ r → Prf (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
                                     restrict G E r z i j S.≈ restrict G C r z i j)
                                ∧ₚ ((z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) →
                                     restrict G E z r i j S.≈ restrict G C z r i j)))
                        (map at C)
   restrict-agree G {C} {E} mono =
-    AllP.map⁺ (All-map (λ {q} hq → ⟪
+    AllP.map⁺ (All-map (λ {q} h → let hC = ∈-member h ; hE = ∈-member (mono h) in ⟪
       (λ z i j → ≈-of-≡ₛ (
-        ≡-trans (≡-cong (λ b → when (b ∨ member-vertex z E) (G (at q) z) i j) (mono q hq))
-                (≡-sym (≡-cong (λ b → when (b ∨ member-vertex z C) (G (at q) z) i j) hq)))) ,ₚ
+        ≡-trans (≡-cong (λ b → when (b ∨ member-vertex z E) (G (at q) z) i j) hE)
+                (≡-sym (≡-cong (λ b → when (b ∨ member-vertex z C) (G (at q) z) i j) hC)))) ,ₚ
       (λ z i j → ≈-of-≡ₛ (
-        ≡-trans (≡-cong (λ b → when (member-vertex z E ∨ b) (G z (at q)) i j) (mono q hq))
+        ≡-trans (≡-cong (λ b → when (member-vertex z E ∨ b) (G z (at q)) i j) hE)
         (≡-trans (≡-cong (λ b → when b (G z (at q)) i j) (∨-true (member-vertex z E)))
-        (≡-sym (≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (G z (at q)) i j) hq)
+        (≡-sym (≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (G z (at q)) i j) hC)
                         (≡-cong (λ b → when b (G z (at q)) i j) (∨-true (member-vertex z C)))))))) ⟫)
-      (any-self eq-path-refl C))
+      (All-tabulate (λ h → h)))
 
-  localise : {C E : List (Path)} →
-             (∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) →
+  localise : {C E : List (Path)} → C ⊆ E →
              ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
              hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) E) (map at C) x y i j ≡
              (restrict (fo-graph 𝒢) E x y i j two.⊔ summary C x y i j)
@@ -453,7 +449,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
            ((λ z i j → ≈-of-≡ₛ (base-row z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (base-col z i j)))
 
   assemble : {E : List (Path)} (Cs : List (List (Path))) →
-             All (λ C → ∀ q → member q C ≡ Bool.true → member q E ≡ Bool.true) Cs →
+             All (_⊆ E) Cs →
              AllPairs (λ C C' → Apart (fo-graph 𝒢) C' C
                               × (any (λ q → member q C) C' ≡ Bool.false)) Cs →
              ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
@@ -485,15 +481,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     foldr-entry B []       x y i j = ≡-refl
     foldr-entry B (H ∷ Gs) x y i j = ≡-cong (H x y i j two.⊔_) (foldr-entry B Gs x y i j)
 
-  blocks-⊆ : (Css : List (List (Path))) →
-             All (λ C → ∀ q → member q C ≡ Bool.true → member q (concat Css) ≡ Bool.true) Css
-  blocks-⊆ []         = []
-  blocks-⊆ (C ∷ Css) =
-    (λ q h → ≡-trans (any-++ (eq-path q) C (concat Css)) (≡-cong (_∨ member q (concat Css)) h)) ∷
-    All-map (λ {C'} g q h →
-              ≡-trans (any-++ (eq-path q) C (concat Css))
-              (≡-trans (≡-cong (member q C ∨_) (g q h)) (∨-true (member q C))))
-            (blocks-⊆ Css)
+  blocks-⊆ : (Css : List (List (Path))) → All (_⊆ concat Css) Css
+  blocks-⊆ []        = []
+  blocks-⊆ (C ∷ Css) = ∈-++⁺ˡ ∷ All-map (λ g {_} h → ∈-++⁺ʳ C (g h)) (blocks-⊆ Css)
 
   summary-snoc : (p : Path) (C : List (Path)) →
                  ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
@@ -790,8 +780,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                       (proj₁ (partition-All (adj-p p) (S .summaries)))))
                (map-∘ {g = λ C → summary C x' y' i' j'} {f = proj₁} (proj₁ tp)))
 
-    monosC* : All (λ C → ∀ q → member q C ≡ Bool.true → member q C* ≡ Bool.true) Ms
-    monosC* = All-map (λ g q h → or-intror (eq-path q p) (member q (concat Ms)) (g q h)) (blocks-⊆ Ms)
+    monosC* : All (_⊆ C*) Ms
+    monosC* = All-map (λ g {_} h → there (g h)) (blocks-⊆ Ms)
 
     sepsMs : AllPairs (λ C C' → Apart G C' C × (any (λ q → member q C) C' ≡ Bool.false)) Ms
     sepsMs =
@@ -1265,11 +1255,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ↭↭-of-≡ ≡-refl = ↭↭-refl
 
     regions-⊆ : (G : Relation (vertex-width 𝒢)) (ws : List (Vertex shape)) →
-                All (λ C → ∀ q → member q C ≡ Bool.true → member q ws ≡ Bool.true)
-                    (regions G ws)
+                All (_⊆ ws) (regions G ws)
     regions-⊆ G ws =
-      All-map (λ {C} inc q h → ≡-trans (≡-sym (member-perm q (regions-concat G ws))) (inc q h))
-              (blocks-⊆ (regions G ws))
+      All-map (λ inc {_} h → ∈-resp-↭ (regions-concat G ws) (inc h)) (blocks-⊆ (regions G ws))
 
     merge-region-inert : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (X Y : List (List (Vertex shape))) →
                          All (λ C → adj G w C ≡ Bool.false) Y →
@@ -1294,11 +1282,11 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   ... | (hb , hB) =
     H.trans (merge-region-resp G b (regions-apart G B rest hB))
             (↭↭-of-≡ (merge-region-inert G b (regions G B) (regions G rest)
-              (All-map (λ {C} inc →
-                 any-false (All-map (λ {q} mq →
+              (All-map (λ inc →
+                 any-false (All-map (λ {q} h →
                               member-All {eq = eq-path} eq-path-≡ {x = q}
-                                (any-false-All _ rest hb) (inc q mq))
-                            (any-self eq-path-refl C)))
+                                (any-false-All _ rest hb) (∈-member (inc h)))
+                            (All-tabulate (λ h → h))))
                 (regions-⊆ G rest))))
 
   private
