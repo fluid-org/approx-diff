@@ -298,7 +298,7 @@ module MuSection {n} (δ : Fin n → Obj) (δ-section : ∀ i → Section (δ i)
   DecoAssignSection {inj₂ _} d = DecoSection d
   DecoSection (mkDeco Q d) = PolySection Q ×T (∀ i → DecoAssignSection (d i))
 
-  deco-ext-section : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
+  deco-ext-section : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
                    {d : ∀ i → DecoAssign (ρ̄ i)} →
                    PolySection Q → (∀ i → DecoAssignSection (d i)) →
                    ∀ i → DecoAssignSection (deco-ext Q d i)
@@ -306,7 +306,7 @@ module MuSection {n} (δ : Fin n → Obj) (δ-section : ∀ i → Section (δ i)
   deco-ext-section Q Qc dc (Fin.suc i) = dc i
 
   mutual
-    fib-unit : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
+    fib-unit : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
                (d : ∀ i → DecoAssign (ρ̄ i)) → PolySection Q → (∀ i → DecoAssignSection (d i)) →
                (t : W ∣ Q ∣ ρ̄) → 𝟙c ⇒ fib Q d t
     fib-unit Q d Qc dc (sup x) = fib-shape-unit Q (deco-ext Q d) Qc (deco-ext-section Q Qc dc) x
@@ -328,7 +328,7 @@ module MuSection {n} (δ : Fin n → Obj) (δ-section : ∀ i → Section (δ i)
     fib-el-unit (inj₂ _) (mkDeco Q ρd) (Qc , ρdc) x = fib-unit Q ρd Qc ρdc x
 
   mutual
-    fib-unit-natural : ∀ {k} (Q : Poly (Data.Nat.suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
+    fib-unit-natural : ∀ {k} (Q : Poly (suc k)) {ρ̄ : Fin k → Fin n ⊎ Srt.Sort n}
                        (d : ∀ i → DecoAssign (ρ̄ i)) (Qc : PolySection Q)
                        (dc : ∀ i → DecoAssignSection (d i))
                        {t t' : W ∣ Q ∣ ρ̄} (p : W-≈ t t') →
@@ -364,7 +364,7 @@ module MuSection {n} (δ : Fin n → Obj) (δ-section : ∀ i → Section (δ i)
     fib-el-unit-natural (inj₂ _) (mkDeco Q ρd) (Qc , ρdc) {x} {y} e =
       fib-unit-natural Q ρd Qc ρdc {x} {y} e
 
-  μ-section : ∀ (P : Poly (Data.Nat.suc n)) → PolySection P → Section (μ-fam P δ)
+  μ-section : ∀ (P : Poly (suc n)) → PolySection P → Section (μ-fam P δ)
   μ-section P Pc .at t = fib-unit P (λ i → lift tt) Pc (λ i → lift tt) t
   μ-section P Pc .at-natural {t} {t'} e =
     fib-unit-natural P (λ i → lift tt) Pc (λ i → lift tt) {t} {t'} e
@@ -1224,6 +1224,8 @@ hasMu .HasMu.μ-obj = μ-fam
 hasMu .HasMu.inMap P δ = InMapDef.inMor P δ
 hasMu .HasMu.⦅_⦆ alg = FoldDef.foldMor alg
 
+private module FMuC = HasMu hasMu
+
 preserves-inMap : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj)
                   (δc : ∀ i → Section (δ i)) (Pc : PolySection P) →
                   preserves-section (InMapDef.inMor P δ)
@@ -1239,7 +1241,7 @@ fuse-idx : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
                        _≈s_ (sₜ i .idx) (Rs.iapply (cmb γ₁) i a₁) (fsk i .idxf .func (γ₂ , a₂))) →
                ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {m₁ m₂}
                (m≈ : _≈s_ (μ-fam Q sₛ .idx) m₁ m₂) →
-               _≈s_ (μ-fam Q sₜ .idx) (Rs.ireindex (cmb γ₁) m₁) (HasMu.strong-fmor hasMu (μ Q) fsk .idxf .func (γ₂ , m₂))
+               _≈s_ (μ-fam Q sₜ .idx) (Rs.ireindex (cmb γ₁) m₁) (FMuC.strong-fmor (μ Q) fsk .idxf .func (γ₂ , m₂))
 fuse-shape : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
                  let module Rs = Reindex sₛ sₜ
                      module Ts = Tree sₛ
@@ -1250,14 +1252,14 @@ fuse-shape : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) �
                  (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
                          _≈s_ (sₜ i .idx) (Rs.iapply (cmb γ₁) i a₁) (fsk i .idxf .func (γ₂ , a₂))) →
                  let module Ft = FoldDef {Γ = Γ} {A = μ-fam Q sₜ} {P = Q} {δ = sₛ}
-                                   (Fam𝒞._∘_ At.inMor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))) in
+                                   (Fam𝒞._∘_ At.inMor (FMuC.strong-fmor Q (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂))) in
                  (R : Poly (suc n)) →
                  ∀ {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {x₁ x₂}
                  (x≈ : Ts.shape≈ ∣ R ∣ (Srt.η₀ ∣ Q ∣) x₁ x₂) →
                  Tt.shape≈ ∣ R ∣ (Srt.η₀ ∣ Q ∣)
                    (Rs.ireindex-shape ∣ R ∣ (Rs.ibind ∣ Q ∣ (cmb γ₁)) x₁)
                    (At.R.reindex-shape ∣ R ∣ At.mor₀
-                    (At.embed-idx R (HasMu.strong-fmor hasMu R (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .func
+                    (At.embed-idx R (FMuC.strong-fmor R (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂) .idxf .func
                       (γ₂ , Ft.fold-shape-idx R γ₂ x₂))))
 
 fuse-idx Q cmb fsk corr γ≈ {Tree.sup x₁} {Tree.sup x₂} m≈ = fuse-shape Q cmb fsk corr Q γ≈ {x₁} {x₂} m≈
@@ -1272,12 +1274,12 @@ fuse-shape Q cmb fsk corr (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈�
 fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁} {γ₂} γ≈ {x₁} {x₂} x≈ =
   Tt.W-≈-trans {x = Rs.ireindex-shape ∣ μ R'' ∣ (Rs.ibind ∣ Q ∣ (cmb γ₁)) x₁}
                {z = At.R.reindex-shape ∣ μ R'' ∣ At.mor₀ (At.embed-idx (μ R'')
-                      (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
+                      (FMuC.strong-fmor (μ R'') (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂)
                         .idxf .func (γ₂ , w)))}
                telescope
                (At.R.reindex-resp At.mor₀
                  {t = Rs'.ireindex (cmb' γ₁) wm₁}
-                 {t' = HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .func (γ₂ , w)}
+                 {t' = FMuC.strong-fmor (μ R'') (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂) .idxf .func (γ₂ , w)}
                  rec)
   where
     module Tt = Tree sₜ
@@ -1286,7 +1288,7 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
     module Rs = Reindex sₛ sₜ
     module Rs' = Reindex (extend sₛ (μ-fam Q sₜ)) (extend sₜ (μ-fam Q sₜ))
     module Ft = FoldDef {Γ = Γ} {A = μ-fam Q sₜ} {P = Q} {δ = sₛ}
-                  (Fam𝒞._∘_ At.inMor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
+                  (Fam𝒞._∘_ At.inMor (FMuC.strong-fmor Q (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂)))
     wm₁ = Ft.fold-reindex {Q = R''} γ₁ Ft.fbase x₁
     w   = Ft.fold-reindex {Q = R''} γ₂ Ft.fbase x₂
     cmb' : Γ .idx .Carrier → Rs'.IMorD (λ v → inj₁ v) (λ v → inj₁ v)
@@ -1294,8 +1296,8 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
                        (λ { Fin.zero p → p ; (Fin.suc i) p → Rs.iapply-resp (cmb γ) i p })
     rec : _≈s_ (μ-fam R'' (extend sₜ (μ-fam Q sₜ)) .idx)
                (Rs'.ireindex (cmb' γ₁) wm₁)
-               (HasMu.strong-fmor hasMu (μ R'') (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂) .idxf .func (γ₂ , w))
-    rec = fuse-idx R'' cmb' (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)
+               (FMuC.strong-fmor (μ R'') (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂) .idxf .func (γ₂ , w))
+    rec = fuse-idx R'' cmb' (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂)
             (λ { Fin.zero γ≈ a≈ → a≈ ; (Fin.suc j) γ≈ a≈ → corr j γ≈ a≈ })
             γ≈ {m₁ = wm₁} {m₂ = w}  (Ft.fold-reindex-resp {Q = R''} γ≈ Ft.fbase {x₁} {x₂} x≈)
     mutual
@@ -1354,17 +1356,17 @@ fuse-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj
                (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
                        _≈s_ (sₜ i .idx) (Rs.iapply (cmb γ₁) i a₁) (fsk i .idxf .func (γ₂ , a₂)))
                (corr-fam : ∀ i {a} →
-                  Category._≈_ 𝒞
+                  _≈_
                     (sₜ i .fam .subst (corr i (Γ .idx .isEquivalence .refl) (sₛ i .idx .isEquivalence .refl {a}))
                      ∘ FR.aapply act i a)
                     (fsk i .famf .transf (γ , a))) →
                ∀ {m} →
-               Category._≈_ 𝒞
+               _≈_
                  (μ-fam Q sₜ .fam .subst {x = Rs.ireindex (cmb γ) m}
                     (fuse-idx Q cmb fsk corr (Γ .idx .isEquivalence .refl)
                       {m} {m} (μ-fam Q sₛ .idx .isEquivalence .refl {m}))
                   ∘ FR.freindex-fam act {m})
-                 (HasMu.strong-fmor hasMu (μ Q) fsk .famf .transf (γ , m))
+                 (FMuC.strong-fmor (μ Q) fsk .famf .transf (γ , m))
 
 fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) →
                      let module Rs = Reindex sₛ sₜ
@@ -1378,22 +1380,22 @@ fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n �
                      (corr : ∀ i {γ₁ γ₂} (γ≈ : _≈s_ (Γ .idx) γ₁ γ₂) {a₁ a₂} (a≈ : _≈s_ (sₛ i .idx) a₁ a₂) →
                              _≈s_ (sₜ i .idx) (Rs.iapply (cmb γ₁) i a₁) (fsk i .idxf .func (γ₂ , a₂)))
                      (corr-fam : ∀ i {a} →
-                        Category._≈_ 𝒞
+                        _≈_
                           (sₜ i .fam .subst (corr i (Γ .idx .isEquivalence .refl) (sₛ i .idx .isEquivalence .refl {a}))
                            ∘ FR.aapply act i a)
                           (fsk i .famf .transf (γ , a))) →
                      let module Ft = FoldDef {Γ = Γ} {A = μ-fam Q sₜ} {P = Q} {δ = sₛ}
-                                       (Fam𝒞._∘_ At.inMor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
-                         fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂ in
+                                       (Fam𝒞._∘_ At.inMor (FMuC.strong-fmor Q (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂)))
+                         fsk' = FMuC.strong-extend-mor fsk Fam𝒞-P.p₂ in
                      (R : Poly (suc n))
                      {x : Ts.⟦ ∣ R ∣ ⟧shape (Srt.η₀ ∣ Q ∣)} →
-                     Category._≈_ 𝒞
+                     _≈_
                        (Tt.fib-shape-subst R (Tt.deco-ext Q (λ i → lift tt))
                           (fuse-shape Q cmb fsk corr R (Γ .idx .isEquivalence .refl) (Ts.shape≈-refl ∣ R ∣ (Srt.η₀ ∣ Q ∣) x))
                         ∘ FR.freindex-shape-fam R (FR.abind Q (cmb γ) act) {x})
                        (At.R.reindex-fam R At.mor₀
-                        ∘ (At.embed-fam R (HasMu.strong-fmor hasMu R fsk' .idxf .func (γ , Ft.fold-shape-idx R γ x))
-                           ∘ (HasMu.strong-fmor hasMu R fsk' .famf .transf (γ , Ft.fold-shape-idx R γ x)
+                        ∘ (At.embed-fam R (FMuC.strong-fmor R fsk' .idxf .func (γ , Ft.fold-shape-idx R γ x))
+                           ∘ (FMuC.strong-fmor R fsk' .famf .transf (γ , Ft.fold-shape-idx R γ x)
                               ∘ pair p₁ (Ft.fold-shape-fam R γ x))))
 
 fuse-fam γ Q cmb act fsk corr corr-fam {Tree.sup x} =
@@ -1411,12 +1413,12 @@ fuse-shape-fam γ Q cmb act fsk corr corr-fam (var (Fin.suc i)) {x} =
 fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₁ a} =
   ≈-trans (strong-Lmap-post _ _)
   (≈-trans (strong-Lmap-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₁ {a}))
-  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf (HasMu.strong-fmor hasMu R₁ (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))))) ≈-refl) (strong-Lmap-co _ _))))
+  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf (FMuC.strong-fmor R₁ (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂))))) ≈-refl) (strong-Lmap-co _ _))))
                   (≈-trans (∘-cong ≈-refl (strong-Lmap-post _ _)) (strong-Lmap-post _ _)))))
 fuse-shape-fam γ Q cmb act fsk corr corr-fam (R₁ + R₂) {inj₂ b} =
   ≈-trans (strong-Lmap-post _ _)
   (≈-trans (strong-Lmap-cong (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b}))
-  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf (HasMu.strong-fmor hasMu R₂ (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂))))) ≈-refl) (strong-Lmap-co _ _))))
+  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans id-left (≈-trans id-left (strong-Lf-map-transf (FMuC.strong-fmor R₂ (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂))))) ≈-refl) (strong-Lmap-co _ _))))
                   (≈-trans (∘-cong ≈-refl (strong-Lmap-post _ _)) (strong-Lmap-post _ _)))))
 fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (R₁ × R₂) {a , b} =
   ≈-trans (strong-Lmap-post _ _)
@@ -1426,32 +1428,32 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
                                           (fuse-shape-fam γ Q cmb act fsk corr corr-fam R₂ {b}))
              (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (strong-prod-m-comp _ _ _ _)))
                     (≈-trans (∘-cong ≈-refl (strong-prod-m-post _ _ _ _)) (strong-prod-m-post _ _ _ _)))))))
-  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans (strong-Lf-map-transf (Fam𝒞-P.strong-prod-m (HasMu.strong-fmor hasMu R₁ fsk') (HasMu.strong-fmor hasMu R₂ fsk')))
+  (≈-sym (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl (≈-trans (∘-cong (≈-trans (strong-Lf-map-transf (Fam𝒞-P.strong-prod-m (FMuC.strong-fmor R₁ fsk') (FMuC.strong-fmor R₂ fsk')))
                                                                           (strong-Lmap-cong
-                                                                            (strong-prod-m-transf (HasMu.strong-fmor hasMu R₁ fsk') (HasMu.strong-fmor hasMu R₂ fsk')
+                                                                            (strong-prod-m-transf (FMuC.strong-fmor R₁ fsk') (FMuC.strong-fmor R₂ fsk')
                                                                                {γ} {Ft.fold-shape-idx R₁ γ a} {Ft.fold-shape-idx R₂ γ b})))
                                                                  ≈-refl)
                                                          (strong-Lmap-co _ _))))
                   (≈-trans (∘-cong ≈-refl (strong-Lmap-post _ _)) (strong-Lmap-post _ _)))))
   where
     module At = InMapDef Q sₜ
-    fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂
+    fsk' = FMuC.strong-extend-mor fsk Fam𝒞-P.p₂
     module Ft = FoldDef {Γ = Γ} {A = μ-fam Q sₜ} {P = Q} {δ = sₛ}
-                  (Fam𝒞._∘_ At.inMor (HasMu.strong-fmor hasMu Q fsk'))
+                  (Fam𝒞._∘_ At.inMor (FMuC.strong-fmor Q fsk'))
 fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} =
   ≈-trans (∘-cong (Tt.fib-trans* R'' (Tt.deco-ext Q (λ i → lift tt))
                      {x = Rs.ireindex-shape ∣ μ R'' ∣ (Rs.ibind ∣ Q ∣ (cmb γ)) x}
                      {y = At.R.reindex At.mor₀ (Rs'.ireindex (cmb' γ) wm₁)}
-                     {z = At.R.reindex At.mor₀ (HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .func (γ , wm₁))}
+                     {z = At.R.reindex At.mor₀ (FMuC.strong-fmor (μ R'') fsk' .idxf .func (γ , wm₁))}
                      (At.R.reindex-resp At.mor₀
                         {t = Rs'.ireindex (cmb' γ) wm₁}
-                        {t' = HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .func (γ , wm₁)}
+                        {t' = FMuC.strong-fmor (μ R'') fsk' .idxf .func (γ , wm₁)}
                         rec-idx)
                      (tele-shape (μ R'') tbase x)) ≈-refl)
     (≈-trans (tail-cong (tele-shape-fam (μ R'') tbase x))
      (≈-trans (head-cong (≈-sym (At.R.reindex-fam-W-natural {Q = R''} At.mor₀
                                    {t = Rs'.ireindex (cmb' γ) wm₁}
-                                   {t' = HasMu.strong-fmor hasMu (μ R'') fsk' .idxf .func (γ , wm₁)}
+                                   {t' = FMuC.strong-fmor (μ R'') fsk' .idxf .func (γ , wm₁)}
                                    rec-idx)))
               (tail-cong (≈-trans (head-cong rec-fam) (≈-sym id-left)))))
   where
@@ -1463,8 +1465,8 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
     module FR = FReindex {δA = sₛ} {δB = sₜ} (Γ .fam .fm γ)
     module FR' = FReindex {δA = extend sₛ (μ-fam Q sₜ)} {δB = extend sₜ (μ-fam Q sₜ)} (Γ .fam .fm γ)
     module Ft = FoldDef {Γ = Γ} {A = μ-fam Q sₜ} {P = Q} {δ = sₛ}
-                  (Fam𝒞._∘_ At.inMor (HasMu.strong-fmor hasMu Q (HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂)))
-    fsk' = HasMu.strong-extend-mor hasMu fsk Fam𝒞-P.p₂
+                  (Fam𝒞._∘_ At.inMor (FMuC.strong-fmor Q (FMuC.strong-extend-mor fsk Fam𝒞-P.p₂)))
+    fsk' = FMuC.strong-extend-mor fsk Fam𝒞-P.p₂
     wm₁ = Ft.fold-reindex {Q = R''} γ Ft.fbase x
     cmb' : Γ .idx .Carrier → Rs'.IMorD (λ v → inj₁ v) (λ v → inj₁ v)
     cmb' γ' = Rs'.ibase (λ { Fin.zero a → a ; (Fin.suc i) a → Rs.iapply (cmb γ') i a })
@@ -1475,19 +1477,19 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
             _≈s_ (extend sₜ (μ-fam Q sₜ) i .idx) (Rs'.iapply (cmb' γ₁) i a₁) (fsk' i .idxf .func (γ₂ , a₂))
     corr' Fin.zero    γ≈ a≈ = a≈
     corr' (Fin.suc j) γ≈ a≈ = corr j γ≈ a≈
-    corr-fam' : ∀ i {a} → Category._≈_ 𝒞
+    corr-fam' : ∀ i {a} → _≈_
                   (extend sₜ (μ-fam Q sₜ) i .fam .subst
                      (corr' i (Γ .idx .isEquivalence .refl) (extend sₛ (μ-fam Q sₜ) i .idx .isEquivalence .refl {a}))
                    ∘ FR'.aapply act' i a)
                   (fsk' i .famf .transf (γ , a))
     corr-fam' Fin.zero {a} = ≈-trans (∘-cong (μ-fam Q sₜ .fam .refl* {a}) ≈-refl) id-left
     corr-fam' (Fin.suc j) = corr-fam j
-    rec-fam : Category._≈_ 𝒞
+    rec-fam : _≈_
                 (μ-fam R'' (extend sₜ (μ-fam Q sₜ)) .fam .subst {x = Rs'.ireindex (cmb' γ) wm₁}
                    (fuse-idx R'' cmb' fsk' corr' (Γ .idx .isEquivalence .refl)
                      {wm₁} {wm₁} (μ-fam R'' (extend sₛ (μ-fam Q sₜ)) .idx .isEquivalence .refl {wm₁}))
                  ∘ FR'.freindex-fam act' {wm₁})
-                (HasMu.strong-fmor hasMu (μ R'') fsk' .famf .transf (γ , wm₁))
+                (FMuC.strong-fmor (μ R'') fsk' .famf .transf (γ , wm₁))
     rec-fam = fuse-fam γ R'' cmb' act' fsk' corr' corr-fam' {wm₁}
     rec-idx = fuse-idx R'' cmb' fsk' corr' (Γ .idx .isEquivalence .refl)
                 {wm₁} {wm₁} (μ-fam R'' (extend sₛ (μ-fam Q sₜ)) .idx .isEquivalence .refl {wm₁})
@@ -2222,8 +2224,6 @@ module Laws {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     go .idxf-eq .func-eq {γ₁ , t₁} {γ₂ , t₂} (γ≈ , t≈) =
       A .idx .isEquivalence .trans (E.uniq-idx γ₁ t₁) (Ft.fold-idx-resp γ≈ {t₁} {t₂} t≈)
     go .famf-eq .transf-eq {γ , t} = E.uniq-fam γ t
-
-private module FMuC = HasMu hasMu
 
 module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (h : Mor (Fam𝒞-P.prod Γ (μ-fam P δ)) A) where

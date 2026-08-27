@@ -109,7 +109,7 @@ module _ where
 𝒟𝟙ty = Fam⟨F⟩ .fobj 𝒞𝟙ty
 
 𝒟unit-pt : Fam⟨𝒟⟩μ.Mor (HasTerminal.witness (Fam⟨𝒟⟩μ.terminal T𝒟)) 𝒟𝟙ty
-𝒟unit-pt = FD._∘_ (Fam⟨F⟩ .fmor 𝒞unit-pt) (Fam⟨F⟩-preserves-terminal .Category.IsIso.inverse)
+𝒟unit-pt = Fam⟨F⟩ .fmor 𝒞unit-pt FD.∘ Fam⟨F⟩-preserves-terminal .Category.IsIso.inverse
 
 𝒟Bool = FDC.coprod (Fam⟨𝒟⟩μ.Lf 𝒟𝟙ty) (Fam⟨𝒟⟩μ.Lf 𝒟𝟙ty)
 
