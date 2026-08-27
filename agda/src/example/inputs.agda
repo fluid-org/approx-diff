@@ -6,7 +6,7 @@ open import commutative-semiring using (CommutativeSemiring)
 
 -- The example programs' inputs, as environments of values.
 open import Data.Rational using (ℚ)
-module example.inputs {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
+module example.inputs {A : Setoid 0ℓ 0ℓ} (as-weight : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
                       (ctrl-weight : Setoid.Carrier A) where
 
 open import Data.Rational using (0ℚ; 1ℚ; _/_) renaming (_+_ to _+ℚ_)
@@ -14,7 +14,7 @@ open import Data.Integer using (+_)
 open import Data.Nat using (ℕ)
 open import Relation.Binary.PropositionalEquality using (subst; sym)
 import label
-open import signature.example.interpretation collapse S using (Sig; interpretation; number; label)
+open import signature.example.interpretation as-weight S using (Sig; interpretation; number; label)
 open import example.programs using (case-ctxt; Grid; rose)
 open import language-syntax Sig using (type; base; unit; list; _[×]_; _[+]_; emp; _,_; sub-ren-id)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)

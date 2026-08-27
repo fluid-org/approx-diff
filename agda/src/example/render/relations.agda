@@ -32,15 +32,15 @@ import language-operational.evaluation
 import example.render.annotated-value as AV
 
 -- Rendering over a semiring, given how a scalar is shown after a position.
-module render {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
+module render {A : Setoid 0ℓ 0ℓ} (as-weight : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
               (ctrl-weight : Setoid.Carrier A) (suffix : Setoid.Carrier A → String) where
 
   open CommutativeSemiring S using (ι; ε)
-  open signature.example.interpretation collapse S using (Sig; interpretation)
+  open signature.example.interpretation as-weight S using (Sig; interpretation)
   open language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
   open AV Sig S interpretation ctrl-weight using (AVal; node; Tag)
   open AV.annotate Sig S interpretation ctrl-weight S using (row→aval; row→avals)
-  open example.render.constants collapse S using (show-const)
+  open example.render.constants as-weight S using (show-const)
 
   private
     module M = matrix.Mat S
@@ -128,15 +128,15 @@ private
   suffix-signed (s , three.O) = "⊥"
   suffix-signed (s , k)       = suffix-sign s ++ suffix3 k
 
-  collapse-signed : ℚ → sign.Sign × three.Three
-  collapse-signed q = sign.sign-of q , nonzero three.semiring q
+  signed-weight : ℚ → sign.Sign × three.Three
+  signed-weight q = sign.sign-of q , nonzero three.semiring q
 
   module R2 = render (nonzero two.semiring) two.semiring two.I suffix2
   module R3 = render (nonzero three.semiring) three.semiring three.C suffix3
-  module RS = render collapse-signed (sign.semiring ⊗S three.semiring) (sign.unk , three.C) suffix-signed
+  module RS = render signed-weight (sign.semiring ⊗S three.semiring) (sign.unk , three.C) suffix-signed
   module E2 = example.runs (nonzero two.semiring) two.semiring two.I
   module E3 = example.runs (nonzero three.semiring) three.semiring three.C
-  module ES = example.runs collapse-signed (sign.semiring ⊗S three.semiring) (sign.unk , three.C)
+  module ES = example.runs signed-weight (sign.semiring ⊗S three.semiring) (sign.unk , three.C)
 
   sign-run : String → ES.Run → String
   sign-run name r = RS.show-run name (ES.env r) (ES.model-output r) (ES.model-of r)
