@@ -637,7 +637,7 @@ module HidePremise
       ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (r .sink (inj₂ root))))
               (M.absorb₁ (H .inside (inj₁ p) (inj₂ root)) (H .inside (inj₁ p) (inj₂ root)))
 
-module Behind
+module NoEdgeIntoHidden
   {V : Set} (vertex-width : V → ℕ)
   {W : Set} (hid : W → V)
   {S : Set} (src : S → V)
@@ -645,25 +645,25 @@ module Behind
   (B : (s : S) (t : T) → M.Matrix (vertex-width (col t)) (vertex-width (src s)))
   where
 
-  record Keeps (G : Relation vertex-width) : Set where
+  record Fixed (G : Relation vertex-width) : Set where
     field
-      keeps : ∀ s t → G (src s) (col t) ≈ B s t
-      blind : ∀ s w → G (src s) (hid w) ≈ M.εₘ
+      edge    : ∀ s t → G (src s) (col t) ≈ B s t
+      no-edge : ∀ s w → G (src s) (hid w) ≈ M.εₘ
 
-  open Keeps public
+  open Fixed public
 
-  keeps-hide : ∀ {G} (w : W) → Keeps G → Keeps (hide vertex-width G (hid w))
-  keeps-hide {G} w k .keeps s t =
-    ≈-trans (M.+ₘ-cong (k .keeps s t) (∘-cong₂ (k .blind s w)))
+  fixed-hide : ∀ {G} (w : W) → Fixed G → Fixed (hide vertex-width G (hid w))
+  fixed-hide {G} w k .edge s t =
+    ≈-trans (M.+ₘ-cong (k .edge s t) (∘-cong₂ (k .no-edge s w)))
             (M.absorb₂ (B s t) (G (hid w) (col t)))
-  keeps-hide {G} w k .blind s w' =
-    ≈-trans (M.+ₘ-cong (k .blind s w') (∘-cong₂ (k .blind s w)))
+  fixed-hide {G} w k .no-edge s w' =
+    ≈-trans (M.+ₘ-cong (k .no-edge s w') (∘-cong₂ (k .no-edge s w)))
             (M.absorb₂ M.εₘ (G (hid w) (hid w')))
 
-  keeps-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
-                   Keeps G → Keeps (hide-all vertex-width G (map (λ w → hid (f w)) ws))
-  keeps-hide-all f []       k = k
-  keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
+  fixed-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
+                   Fixed G → Fixed (hide-all vertex-width G (map (λ w → hid (f w)) ws))
+  fixed-hide-all f []       k = k
+  fixed-hide-all f (w ∷ ws) k = fixed-hide-all f ws (fixed-hide (f w) k)
 
 module _ {m n : ℕ} (B : Graph m n) where
 
@@ -688,7 +688,7 @@ private
     ≈-trans (M.+ₘ-cong ≈-refl (≈-trans (∘-cong₂ (∘-cong₁ e)) (assoc A l (_ ∘ ρ))))
             (≈-sym (M.comp-bilinear₂ A r (l ∘ (_ ∘ ρ))))
 
-module Frozen
+module NoEdgeOutOfHidden
   {V : Set} (vertex-width : V → ℕ)
   {W : Set} (hid : W → V)
   {S : Set} (src : S → V)
@@ -696,25 +696,25 @@ module Frozen
   (B : (s : S) (t : T) → M.Matrix (vertex-width (col t)) (vertex-width (src s)))
   where
 
-  record Keeps (G : Relation vertex-width) : Set where
+  record Fixed (G : Relation vertex-width) : Set where
     field
-      keeps : ∀ s t → G (src s) (col t) ≈ B s t
-      blind : ∀ w t → G (hid w) (col t) ≈ M.εₘ
+      edge    : ∀ s t → G (src s) (col t) ≈ B s t
+      no-edge : ∀ w t → G (hid w) (col t) ≈ M.εₘ
 
-  open Keeps public
+  open Fixed public
 
-  keeps-hide : ∀ {G} (w : W) → Keeps G → Keeps (hide vertex-width G (hid w))
-  keeps-hide {G} w k .keeps s t =
-    ≈-trans (M.+ₘ-cong (k .keeps s t) (∘-cong₁ (k .blind w t)))
+  fixed-hide : ∀ {G} (w : W) → Fixed G → Fixed (hide vertex-width G (hid w))
+  fixed-hide {G} w k .edge s t =
+    ≈-trans (M.+ₘ-cong (k .edge s t) (∘-cong₁ (k .no-edge w t)))
             (M.absorb₁ (B s t) (G (src s) (hid w)))
-  keeps-hide {G} w k .blind w' t =
-    ≈-trans (M.+ₘ-cong (k .blind w' t) (∘-cong₁ (k .blind w t)))
+  fixed-hide {G} w k .no-edge w' t =
+    ≈-trans (M.+ₘ-cong (k .no-edge w' t) (∘-cong₁ (k .no-edge w t)))
             (M.absorb₁ M.εₘ (G (hid w') (hid w)))
 
-  keeps-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
-                   Keeps G → Keeps (hide-all vertex-width G (map (λ w → hid (f w)) ws))
-  keeps-hide-all f []       k = k
-  keeps-hide-all f (w ∷ ws) k = keeps-hide-all f ws (keeps-hide (f w) k)
+  fixed-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
+                   Fixed G → Fixed (hide-all vertex-width G (map (λ w → hid (f w)) ws))
+  fixed-hide-all f []       k = k
+  fixed-hide-all f (w ∷ ws) k = fixed-hide-all f ws (fixed-hide (f w) k)
 
 module Rule₀
   {m n : ℕ} (fo-root : Bool)
@@ -932,15 +932,15 @@ module Rule₂
     Bh s (inj₁ q) = inside⁺ B₂ s q
     Bh s (inj₂ _) = up-root⁺ B₂ up₂ s
 
-    module Bd = Behind (vertex-width E) b1 b2 tgt₁ Bh
+    module IntoHidden = NoEdgeIntoHidden (vertex-width E) b1 b2 tgt₁ Bh
 
-    keeps₀ : Bd.Keeps (gr E)
-    keeps₀ .Bd.keeps s (inj₁ q) = ≈-refl
-    keeps₀ .Bd.keeps s (inj₂ _) = ≈-refl {f = up-root⁺ B₂ up₂ s}
-    keeps₀ .Bd.blind s w = ≈-refl {f = M.εₘ}
+    fixed₀ : IntoHidden.Fixed (gr E)
+    fixed₀ .IntoHidden.edge s (inj₁ q) = ≈-refl
+    fixed₀ .IntoHidden.edge s (inj₂ _) = ≈-refl {f = up-root⁺ B₂ up₂ s}
+    fixed₀ .IntoHidden.no-edge s w = ≈-refl {f = M.εₘ}
 
-    keeps₁ : Bd.Keeps G₁
-    keeps₁ = Bd.keeps-hide-all inj₁ ps₁ (Bd.keeps-hide (inj₂ root) keeps₀)
+    fixed₁ : IntoHidden.Fixed G₁
+    fixed₁ = IntoHidden.fixed-hide-all inj₁ ps₁ (IntoHidden.fixed-hide (inj₂ root) fixed₀)
 
     H₂⁰ : S2.St
     H₂⁰ .S2.into q = into⁺ B₂ q
@@ -949,12 +949,12 @@ module Rule₂
     start₂ : S2.Start G₁ H₂⁰
     start₂ .S2.into-start q =
       ≈-trans (done₁ .S1.tgt-ok (inj₁ q)) (factor (into⁺ B₂ q) from-inputs₂ from-root₁ inputs₁ κ₁)
-    start₂ .S2.inside-start p q = keeps₁ .Bd.keeps p (inj₁ q)
+    start₂ .S2.inside-start p q = fixed₁ .IntoHidden.edge p (inj₁ q)
     start₂ .S2.tgt-start _ =
       ≈-trans (done₁ .S1.tgt-ok (inj₂ root))
               (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
-    start₂ .S2.up-start _ = keeps₁ .Bd.keeps (inj₂ root) (inj₂ root)
-    start₂ .S2.off-start _ p = keeps₁ .Bd.keeps (inj₁ p) (inj₂ root)
+    start₂ .S2.up-start _ = fixed₁ .IntoHidden.edge (inj₂ root) (inj₂ root)
+    start₂ .S2.off-start _ p = fixed₁ .IntoHidden.edge (inj₁ p) (inj₂ root)
     start₂ .S2.sink q = ≈-refl {f = M.εₘ}
 
     G₂ : Relation (vertex-width E)
@@ -1145,14 +1145,14 @@ module Rule₃
                                         (paths⁺ B₁) (gr B₁))))
               (hide-paths⁺ B₁)
 
-    module Fz = Frozen (vertex-width E) b1 (inj₁ {A = Input}) b2 (λ _ q → into⁺ B₂ q ∘ inputs₂)
+    module OutOfHidden = NoEdgeOutOfHidden (vertex-width E) b1 (inj₁ {A = Input}) b2 (λ _ q → into⁺ B₂ q ∘ inputs₂)
 
-    keeps₀ : Fz.Keeps (gr E)
-    keeps₀ .Fz.keeps _ q = ≈-refl
-    keeps₀ .Fz.blind w q = ≈-refl {f = M.εₘ}
+    fixed₀ : OutOfHidden.Fixed (gr E)
+    fixed₀ .OutOfHidden.edge _ q = ≈-refl
+    fixed₀ .OutOfHidden.no-edge w q = ≈-refl {f = M.εₘ}
 
-    keeps₁ : Fz.Keeps G₁
-    keeps₁ = Fz.keeps-hide-all inj₁ ps₁ (Fz.keeps-hide (inj₂ root) keeps₀)
+    fixed₁ : OutOfHidden.Fixed G₁
+    fixed₁ = OutOfHidden.fixed-hide-all inj₁ ps₁ (OutOfHidden.fixed-hide (inj₂ root) fixed₀)
 
     cols₂ : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root) → V E
     cols₂ (inj₁ q) = b2 q
@@ -1163,16 +1163,16 @@ module Rule₃
     Bh₂ s (inj₂ (inj₁ q)) = e₂₃ s q
     Bh₂ s (inj₂ (inj₂ _)) = up-root⁺ B₂ up₂ s
 
-    module Bd₂ = Behind (vertex-width E) b1 b2 cols₂ Bh₂
+    module IntoHidden₂ = NoEdgeIntoHidden (vertex-width E) b1 b2 cols₂ Bh₂
 
-    behind₂ : Bd₂.Keeps G₁
-    behind₂ = Bd₂.keeps-hide-all inj₁ ps₁ (Bd₂.keeps-hide (inj₂ root) k₀)
+    fixed₂ : IntoHidden₂.Fixed G₁
+    fixed₂ = IntoHidden₂.fixed-hide-all inj₁ ps₁ (IntoHidden₂.fixed-hide (inj₂ root) k₀)
       where
-      k₀ : Bd₂.Keeps (gr E)
-      k₀ .Bd₂.keeps s (inj₁ q)        = ≈-refl
-      k₀ .Bd₂.keeps s (inj₂ (inj₁ q)) = ≈-refl {f = e₂₃ s q}
-      k₀ .Bd₂.keeps s (inj₂ (inj₂ _)) = ≈-refl {f = up-root⁺ B₂ up₂ s}
-      k₀ .Bd₂.blind s w = ≈-refl {f = M.εₘ}
+      k₀ : IntoHidden₂.Fixed (gr E)
+      k₀ .IntoHidden₂.edge s (inj₁ q)        = ≈-refl
+      k₀ .IntoHidden₂.edge s (inj₂ (inj₁ q)) = ≈-refl {f = e₂₃ s q}
+      k₀ .IntoHidden₂.edge s (inj₂ (inj₂ _)) = ≈-refl {f = up-root⁺ B₂ up₂ s}
+      k₀ .IntoHidden₂.no-edge s w = ≈-refl {f = M.εₘ}
 
     Φ₃₁ : M.Matrix m₃ m
     Φ₃₁ = from-inputs₃ M.+ₘ (from-root₁ ∘ c₁)
@@ -1192,17 +1192,17 @@ module Rule₃
     H₂⁰ .S2.inside p q = inside⁺ B₂ p q
 
     start₂ : S2.Start G₁ H₂⁰
-    start₂ .S2.into-start q = keeps₁ .Fz.keeps input q
-    start₂ .S2.inside-start p q = behind₂ .Bd₂.keeps p (inj₁ q)
+    start₂ .S2.into-start q = fixed₁ .OutOfHidden.edge input q
+    start₂ .S2.inside-start p q = fixed₂ .IntoHidden₂.edge p (inj₁ q)
     start₂ .S2.tgt-start (inj₁ q) =
       ≈-trans (done₁ .S1.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) from-inputs₃ from-root₁ inputs₁ κ₁)
     start₂ .S2.tgt-start (inj₂ _) =
       ≈-trans (done₁ .S1.tgt-ok (inj₂ root))
               (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
-    start₂ .S2.up-start (inj₁ q) = behind₂ .Bd₂.keeps (inj₂ root) (inj₂ (inj₁ q))
-    start₂ .S2.up-start (inj₂ _) = behind₂ .Bd₂.keeps (inj₂ root) (inj₂ (inj₂ root))
-    start₂ .S2.off-start (inj₁ q) p = behind₂ .Bd₂.keeps (inj₁ p) (inj₂ (inj₁ q))
-    start₂ .S2.off-start (inj₂ _) p = behind₂ .Bd₂.keeps (inj₁ p) (inj₂ (inj₂ root))
+    start₂ .S2.up-start (inj₁ q) = fixed₂ .IntoHidden₂.edge (inj₂ root) (inj₂ (inj₁ q))
+    start₂ .S2.up-start (inj₂ _) = fixed₂ .IntoHidden₂.edge (inj₂ root) (inj₂ (inj₂ root))
+    start₂ .S2.off-start (inj₁ q) p = fixed₂ .IntoHidden₂.edge (inj₁ p) (inj₂ (inj₁ q))
+    start₂ .S2.off-start (inj₂ _) p = fixed₂ .IntoHidden₂.edge (inj₁ p) (inj₂ (inj₂ root))
     start₂ .S2.sink q = ≈-refl {f = M.εₘ}
 
     G₂ : Relation (vertex-width E)
@@ -1233,20 +1233,20 @@ module Rule₃
     Bh₃ s (inj₁ q) = inside⁺ B₃ s q
     Bh₃ s (inj₂ _) = up-root⁺ B₃ up₃ s
 
-    module Bd₃ = Behind (vertex-width E) hid₁₂ b3 tgt Bh₃
+    module IntoHidden₃ = NoEdgeIntoHidden (vertex-width E) hid₁₂ b3 tgt Bh₃
 
-    behind₃ : Bd₃.Keeps G₂
-    behind₃ =
-      Bd₃.keeps-hide-all (λ w → inj₂ (inj₁ w)) ps₂
-        (Bd₃.keeps-hide (inj₂ (inj₂ root))
-          (Bd₃.keeps-hide-all (λ w → inj₁ (inj₁ w)) ps₁
-            (Bd₃.keeps-hide (inj₁ (inj₂ root)) k₀)))
+    fixed₃ : IntoHidden₃.Fixed G₂
+    fixed₃ =
+      IntoHidden₃.fixed-hide-all (λ w → inj₂ (inj₁ w)) ps₂
+        (IntoHidden₃.fixed-hide (inj₂ (inj₂ root))
+          (IntoHidden₃.fixed-hide-all (λ w → inj₁ (inj₁ w)) ps₁
+            (IntoHidden₃.fixed-hide (inj₁ (inj₂ root)) k₀)))
       where
-      k₀ : Bd₃.Keeps (gr E)
-      k₀ .Bd₃.keeps s (inj₁ q) = ≈-refl
-      k₀ .Bd₃.keeps s (inj₂ _) = ≈-refl {f = up-root⁺ B₃ up₃ s}
-      k₀ .Bd₃.blind s (inj₁ w) = ≈-refl {f = M.εₘ}
-      k₀ .Bd₃.blind s (inj₂ w) = ≈-refl {f = M.εₘ}
+      k₀ : IntoHidden₃.Fixed (gr E)
+      k₀ .IntoHidden₃.edge s (inj₁ q) = ≈-refl
+      k₀ .IntoHidden₃.edge s (inj₂ _) = ≈-refl {f = up-root⁺ B₃ up₃ s}
+      k₀ .IntoHidden₃.no-edge s (inj₁ w) = ≈-refl {f = M.εₘ}
+      k₀ .IntoHidden₃.no-edge s (inj₂ w) = ≈-refl {f = M.εₘ}
 
   Φ₃ : M.Matrix m₃ m
   Φ₃ = inputs₃ ∘ M.⟨ M.⟨ M.I , c₁ ⟩ , c₂ ⟩
@@ -1272,12 +1272,12 @@ module Rule₃
     start₃ : S3.Start G₂ H₃⁰
     start₃ .S3.into-start q =
       ≈-trans (done₂ .S2.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) Φ₃₁ from-root₂ inputs₂ κ₂)
-    start₃ .S3.inside-start p q = behind₃ .Bd₃.keeps p (inj₁ q)
+    start₃ .S3.inside-start p q = fixed₃ .IntoHidden₃.edge p (inj₁ q)
     start₃ .S3.tgt-start _ =
       ≈-trans (done₂ .S2.tgt-ok (inj₂ root))
               (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₂)))
-    start₃ .S3.up-start _ = behind₃ .Bd₃.keeps (inj₂ root) (inj₂ root)
-    start₃ .S3.off-start _ p = behind₃ .Bd₃.keeps (inj₁ p) (inj₂ root)
+    start₃ .S3.up-start _ = fixed₃ .IntoHidden₃.edge (inj₂ root) (inj₂ root)
+    start₃ .S3.off-start _ p = fixed₃ .IntoHidden₃.edge (inj₁ p) (inj₂ root)
     start₃ .S3.sink q = ≈-refl {f = M.εₘ}
 
     G₃ : Relation (vertex-width E)
