@@ -96,7 +96,7 @@ unfold-sub : ∀ {n} (σ : TySub n 0) (τ : type (suc n)) →
              sub (sub-lift σ) τ [ μ (sub (sub-lift σ) τ) ] ≡ sub (extend σ (μ (sub (sub-lift σ) τ))) τ
 unfold-sub σ τ =
   trans (sub-sub (push (μ B)) (sub-lift σ) τ)
-        (sub-cong τ λ { zero → refl ; (suc i) → trans (sub-ren (push (μ B)) suc (σ i)) (sub-id (σ i)) })
+        (sub-cong τ λ { zero → refl ; (suc i) → sub-ren-id (σ i) (λ ()) })
   where B = sub (sub-lift σ) τ
 
 unfold₁-sub : type 2 → TySub 2 1
@@ -120,9 +120,7 @@ unfold₁-inst τ ρ =
     pw : ∀ i → sub (push ρ) (unfold₁-sub τ i) ≡
                sub (push (μ A)) (sub-lift (push ρ) i)
     pw zero          = refl
-    pw (suc zero)    =
-      sym (trans (sub-ren (push (μ A)) suc ρ)
-                 (trans (sub-cong ρ λ ()) (sub-id ρ)))
+    pw (suc zero)    = sym (sub-ren-id ρ (λ ()))
     pw (suc (suc ()))
 
 size : ∀ {Δ} → type Δ → ℕ

@@ -85,11 +85,6 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
       (MC.≈-trans (MC.≈-sym (op-deps ω .func-resp-≈ e))
                   (MC.≈-sym (MC.id-left {f = op-deps ω .func c})))
 
-  model : Model PF Sig
-  model .Model.⟦sort⟧ = ⟦sort⟧′
-  model .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
-  model .Model.⟦rel⟧ {is} ψ = predicate (rel-pred ψ ∘S untuple is)
-
   module over (Ω : Obj) (into-Ω : Mor Fam⟨𝒞⟩-bool Ω) where
 
     private
@@ -101,5 +96,4 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
     model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
     model-over .Model.⟦rel⟧ {is} ψ = into-Ω FC.∘ predicate (rel-pred ψ ∘S untuple is)
 
-    arg-untuple = untuple
     arg-collect = collect

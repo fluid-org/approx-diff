@@ -20,7 +20,7 @@ open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
-open import Relation.Nullary.Decidable using (⌊_⌋; yes; no)
+open import Relation.Nullary.Decidable using (⌊_⌋; yes; no; toWitness; isYes≗does; dec-true; dec-false)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
@@ -226,18 +226,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     eq-path p q = ⌊ _≟_ {shape} p q ⌋
 
     eq-path-refl : ∀ (p : Path) → eq-path p p ≡ Bool.true
-    eq-path-refl p with _≟_ {shape} p p
-    ... | yes _  = ≡-refl
-    ... | no ¬e  = ⊥-elim (¬e ≡-refl)
+    eq-path-refl p = ≡-trans (isYes≗does (_≟_ {shape} p p)) (dec-true (_≟_ {shape} p p) ≡-refl)
 
     eq-path-≡ : ∀ {p q : Path} → eq-path p q ≡ Bool.true → p ≡ q
-    eq-path-≡ {p} {q} h with _≟_ {shape} p q
-    ... | yes e = e
+    eq-path-≡ {p} {q} h = toWitness (subst Bool.T (≡-sym h) _)
 
     ≢-eq-false : ∀ {p q : Path} → p ≢ q → eq-path p q ≡ Bool.false
-    ≢-eq-false {p} {q} ¬e with _≟_ {shape} p q
-    ... | no _  = ≡-refl
-    ... | yes e = ⊥-elim (¬e e)
+    ≢-eq-false {p} {q} ¬e = ≡-trans (isYes≗does (_≟_ {shape} p q)) (dec-false (_≟_ {shape} p q) ¬e)
 
     eq-path-false-sym : ∀ {p q : Path} → eq-path p q ≡ Bool.false → eq-path q p ≡ Bool.false
     eq-path-false-sym {p} {q} h with _≟_ {shape} q p
