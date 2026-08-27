@@ -30,7 +30,6 @@ open import signature.example ℚ
   public
 
 private
-  module Sc = CommutativeSemiring S
   module Scalars = CommutativeSemiring semiring-Q.semiring
   open matrix.Mat S using (_∥_; block)
   module MS = matrix.Mat S

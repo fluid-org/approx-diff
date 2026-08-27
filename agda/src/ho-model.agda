@@ -273,6 +273,3 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
       mat-of : M.Matrix tgt src
       mat-of q p = SemiMod._⇒_.func rel (M.e p) q
-
-      presents : mat mat-of SemiMod.≈m rel
-      presents = 𝔽F-full rel .prop.∃ₛ.snd

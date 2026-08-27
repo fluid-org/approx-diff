@@ -221,12 +221,6 @@ data _∋_ : ctxt → type 0 → Set ℓ where
 Ren : ctxt → ctxt → Set ℓ
 Ren Γ Γ' = ∀ {τ} → Γ ∋ τ → Γ' ∋ τ
 
-id-ren : ∀ Γ → Ren Γ Γ
-id-ren Γ x = x
-
-_∘ren_ : ∀ {Γ₁ Γ₂ Γ₃} → Ren Γ₂ Γ₃ → Ren Γ₁ Γ₂ → Ren Γ₁ Γ₃
-ρ₁ ∘ren ρ₂ = λ z → ρ₁ (ρ₂ z)
-
 ext : ∀ {Γ Γ' τ} → Ren Γ Γ' → Ren (Γ , τ) (Γ' , τ)
 ext ρ zero     = zero
 ext ρ (succ x) = succ (ρ x)
@@ -308,9 +302,6 @@ return x = cons x nil
 
 from_collect_ : ∀ {Γ τ₁ τ₂} → Γ ⊢ list τ₁ → Γ , τ₁ ⊢ list τ₂ → Γ ⊢ list τ₂
 from M collect N = foldr nil (append (weaken * N) (var zero)) M
-
-append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
-append-f = lam (lam (foldr (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
 
 bool : type 0
 bool = unit [+] unit

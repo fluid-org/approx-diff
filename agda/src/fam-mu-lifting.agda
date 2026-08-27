@@ -121,9 +121,6 @@ strong-Lf-map-transf : ∀ {Γ X Y : Obj} (f : Mor (Fam𝒞-P.prod Γ X) Y) {γ 
                        strong-Lf-map f .famf ._⇒f_.transf (γ , x) ≈ strong-Lmap (f .famf ._⇒f_.transf (γ , x))
 strong-Lf-map-transf f = ≈-trans id-left (≈-trans (strong-Lmap-post _ _) (strong-Lmap-cong id-right))
 
-private
-  module CME = CMonEnriched CM
-
 injF : ∀ {X : Obj} → Mor X (Lf X)
 injF .idxf = prop-setoid.idS _
 injF {X} .famf ._⇒f_.transf x = inj
@@ -266,9 +263,6 @@ preserves-Lf-map : ∀ {X Y : Obj} {f : Mor X Y} {c d} →
                    preserves-section f c d → preserves-section (Lf-map f) (Lf-section c) (Lf-section d)
 preserves-Lf-map {f = f} {c} p .at x =
   ≈-trans (L-elem-natural (f .famf ._⇒f_.transf x) (c .at x)) (L-elem-cong (p .at x))
-
-preserves-Lf-root : ∀ {X Y : Obj} (f : Mor X Y) → preserves-section (Lf-map f) Lf-root Lf-root
-preserves-Lf-root f .at x = Lmap-root (f .famf ._⇒f_.transf x)
 
 preserves-scale : ∀ {X Y : Obj} {f : Mor X Y} {w : 𝟙c ⇒ 𝟙c} {c d} →
                   preserves-section f c d →

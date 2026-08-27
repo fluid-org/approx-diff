@@ -200,9 +200,6 @@ fold-tot : ∀ (τ₀ σ' : type 1) → arr-bound (size (μ τ₀)) σ' →
            ∀ {v} → Total (σ' [ μ τ₀ ]) v → MuT τ₀ σ' v
 fold-tot τ₀ σ' b {v} = fold-tot-acc τ₀ σ' b (<-wellFounded (vsize v))
 
-unfold-tot : ∀ (τ₀ σ' : type 1) → ∀ {v} → MuT τ₀ σ' v → Total (σ' [ μ τ₀ ]) v
-unfold-tot τ₀ σ' {v} = unfold-tot-acc τ₀ σ' (<-wellFounded (vsize v))
-
 lookup-total : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} → TotalEnv Γ γ → Total τ (lookup x γ)
 lookup-total zero     {γ · v} (tγ , tv) = tv
 lookup-total (succ x) {γ · v} (tγ , tv) = lookup-total x tγ

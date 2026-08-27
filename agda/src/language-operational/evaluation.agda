@@ -136,9 +136,6 @@ open HasProducts M.products using () renaming (prod-m to _⊕_) public
 ctrl-col : ∀ {m} → suc m ⇒ 1
 ctrl-col {m} = p₁ {1} {m}
 
-env-cols : ∀ {m} → suc m ⇒ m
-env-cols {m} = p₂ {1} {m}
-
 wctrl : ∀ {m n} → suc m ⇒ n
 wctrl = ctrl-row ∘ ctrl-col
 
