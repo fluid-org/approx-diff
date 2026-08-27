@@ -248,31 +248,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   member-perm : (q : Path) {C C' : List (Path)} → C ↭ C' → member q C ≡ member q C'
   member-perm q = any-perm (eq-path q)
 
-  member-vertex-perm : (x : V 𝒢) {C C' : List (Path)} → C ↭ C' →
-                       member-vertex x C ≡ member-vertex x C'
-  member-vertex-perm (inj₁ _)        p = ≡-refl
-  member-vertex-perm (inj₂ (inj₂ _)) p = ≡-refl
-  member-vertex-perm (inj₂ (inj₁ q)) p = member-perm q p
-
-  restrict-perm : (G : Relation (vertex-width 𝒢)) {C C' : List (Path)} → C ↭ C' →
-                  ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                  restrict G C x y i j ≡ restrict G C' x y i j
-  restrict-perm G p x y i j =
-    ≡-cong (λ b → when b (G x y) i j)
-           (≡-cong₂ _∨_ (member-vertex-perm x p) (member-vertex-perm y p))
-
   restrict-forward : {G : Relation (vertex-width 𝒢)} (C : List (Path)) → Fwd 𝒢 G → Fwd 𝒢 (restrict G C)
   restrict-forward C fwd x y i j with member-vertex x C ∨ member-vertex y C
   ... | Bool.true  = fwd x y i j
   ... | Bool.false = inj₂ ⟪ S.refl {two.O} ⟫
-
-  summary-perm : {C C' : List (Path)} → C ↭ C' →
-                 ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                 summary C x y i j ≡ summary C' x y i j
-  summary-perm {C = C} {C' = C'} p x y i j =
-    ≡-of-≈ₛ
-      (S.trans (HA.fold-cong (map at C) (λ x' y' i' j' → ≈-of-≡ₛ (restrict-perm (fo-graph 𝒢) p x' y' i' j')) x y i j)
-               (hide-all-perm 𝒢 (restrict-forward C' (fo-forward 𝒢)) (map⁺ at p) x y i j))
 
   adjacent-sym : (G : Relation (vertex-width 𝒢)) (x y : V 𝒢) → adjacent G x y ≡ adjacent G y x
   adjacent-sym G x y = ∨-comm (nonzero (G x y)) (nonzero (G y x))
@@ -1097,41 +1076,12 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       (restrict-hidden-agree (fo-graph 𝒢) (hidden-set K))
                       x y i j)))
 
-  -- Configuration equivalence: the same visible set and the same hidden set, up to order. On
-  -- summarised configurations these data determine the visible graph wherever it is read, so
-  -- equivalent configurations are observationally equal.
   record _≈_ (K K' : Config 𝒢) : Set where
     field
       visible-≈ : K .visible ↭ K' .visible
       hidden-≈  : hidden-set K ↭ hidden-set K'
 
   open _≈_ public
-
-  ≈-refl : {K : Config 𝒢} → K ≈ K
-  ≈-refl .visible-≈ = ↭-refl
-  ≈-refl .hidden-≈  = ↭-refl
-
-  ≈-sym : {K K' : Config 𝒢} →
-          K ≈ K' → K' ≈ K
-  ≈-sym e .visible-≈ = ↭-sym (e .visible-≈)
-  ≈-sym e .hidden-≈  = ↭-sym (e .hidden-≈)
-
-  ≈-trans : {K K' K'' : Config 𝒢} →
-            K ≈ K' → K' ≈ K'' → K ≈ K''
-  ≈-trans e e' .visible-≈ = ↭-trans (e .visible-≈) (e' .visible-≈)
-  ≈-trans e e' .hidden-≈  = ↭-trans (e .hidden-≈) (e' .hidden-≈)
-
-  ≈-visible-graph : (K K' : Config 𝒢) → Summarised K → Summarised K' → K ≈ K' →
-                    ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                    member-vertex x (hidden-set K) ≡ Bool.false →
-                    member-vertex y (hidden-set K) ≡ Bool.false →
-                    visible-graph K x y i j ≡ visible-graph K' x y i j
-  ≈-visible-graph K K' S S' e x y i j hx hy =
-    ≡-trans (visible-graph-summary K S x y i j hx hy)
-    (≡-trans (≡-cong (fo-graph 𝒢 x y i j two.⊔_) (summary-perm (e .hidden-≈) x y i j))
-             (≡-sym (visible-graph-summary K' S' x y i j
-                       (≡-trans (member-vertex-perm x (↭-sym (e .hidden-≈))) hx)
-                       (≡-trans (member-vertex-perm y (↭-sym (e .hidden-≈))) hy))))
 
   hide-reveal : (p : Path) (K : Config 𝒢) → Summarised K →
                 member p (K .visible) ≡ Bool.true →
