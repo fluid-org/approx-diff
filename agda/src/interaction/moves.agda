@@ -20,13 +20,15 @@ open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
-open import Relation.Nullary.Decidable using (⌊_⌋; yes; no; toWitness; isYes≗does; dec-true; dec-false)
+open import Relation.Nullary.Decidable
+  using (⌊_⌋; does; yes; no; toWitness; toWitnessFalse; isYes≗does; dec-true; dec-false)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 import Data.List.Relation.Unary.Any.Properties as AnyPr
+import Data.List.Membership.DecPropositional as DecMem
 import matrix
 import two
 open import list
@@ -101,6 +103,32 @@ module Interaction {m n : ℕ} (B : Graph m n) where
 
   member : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Bool
   member p = any (eq p)
+
+  open DecMem (_≟_ {Graph.shape B}) public using (_∈_; _∉_; _∈?_)
+
+  private
+    member-does : ∀ p C → member p C ≡ does (p ∈? C)
+    member-does p []      = ≡-refl
+    member-does p (q ∷ C) =
+      ≡-cong₂ _∨_ (isYes≗does (_≟_ {Graph.shape B} p q)) (member-does p C)
+
+  ∈-member : ∀ {p C} → p ∈ C → member p C ≡ Bool.true
+  ∈-member {p} {C} h = ≡-trans (member-does p C) (dec-true (p ∈? C) h)
+
+  ∉-member : ∀ {p C} → p ∉ C → member p C ≡ Bool.false
+  ∉-member {p} {C} h = ≡-trans (member-does p C) (dec-false (p ∈? C) h)
+
+  private
+    member-isYes : ∀ p C {b} → member p C ≡ b → ⌊ p ∈? C ⌋ ≡ b
+    member-isYes p C h =
+      ≡-trans (isYes≗does (p ∈? C)) (≡-trans (≡-sym (member-does p C)) h)
+
+  member-∈ : ∀ {p C} → member p C ≡ Bool.true → p ∈ C
+  member-∈ {p} {C} h = toWitness (subst Bool.T (≡-sym (member-isYes p C h)) _)
+
+  member-∉ : ∀ {p C} → member p C ≡ Bool.false → p ∉ C
+  member-∉ {p} {C} h =
+    toWitnessFalse (subst (λ b → Bool.T (Bool.not b)) (≡-sym (member-isYes p C h)) _)
 
   adjacent : Relation (vertex-width B) → V B → V B → Bool
   adjacent G x y = nonzero (G x y) ∨ nonzero (G y x)
