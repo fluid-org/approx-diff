@@ -185,16 +185,6 @@ coprod-m-strong f g = ≈-trans (copair-cong (≈-sym (CP.copair-in₁ _ _)) (�
 [+]-map-id : ∀ {A B : obj} → [+]-map (id A) (id B) ≈ id _
 [+]-map-id = ≈-trans (coprod-m-cong Lf-map-id Lf-map-id) coprod-m-id
 
-[+]-square : ∀ {A A' A'' A''' B B' B'' B''' : obj}
-             {f : A ⇒ A'} {h : A' ⇒ A''} {h' : A ⇒ A'''} {f' : A''' ⇒ A''}
-             {g : B ⇒ B'} {l : B' ⇒ B''} {l' : B ⇒ B'''} {g' : B''' ⇒ B''} →
-             (h ∘ f) ≈ (f' ∘ h') → (l ∘ g) ≈ (g' ∘ l') → ([+]-map h l ∘ [+]-map f g) ≈ ([+]-map f' g' ∘ [+]-map h' l')
-[+]-square e₁ e₂ = ≈-trans ([+]-map-comp _ _ _ _) (≈-trans ([+]-map-cong e₁ e₂) (≈-sym ([+]-map-comp _ _ _ _)))
-
-[+]-inv : ∀ {A A' B B' : obj} {f : A ⇒ A'} {f' : A' ⇒ A} {g : B ⇒ B'} {g' : B' ⇒ B} →
-          (f ∘ f') ≈ id _ → (g ∘ g') ≈ id _ → ([+]-map f g ∘ [+]-map f' g') ≈ id _
-[+]-inv e₁ e₂ = ≈-trans ([+]-map-comp _ _ _ _) (≈-trans ([+]-map-cong e₁ e₂) [+]-map-id)
-
 [+]-map-inj₁ : ∀ {A A' B B' : obj} (f : A ⇒ A') (g : B ⇒ B') →
                ([+]-map f g ∘ (in₁ ∘ injF)) ≈ ((in₁ ∘ injF) ∘ f)
 [+]-map-inj₁ f g =
@@ -223,22 +213,13 @@ coprod-m-strong f g = ≈-trans (copair-cong (≈-sym (CP.copair-in₁ _ _)) (�
 [×]-map-id : ∀ {A B : obj} → [×]-map (id A) (id B) ≈ id _
 [×]-map-id = ≈-trans (Lf-map-cong prod-m-id) Lf-map-id
 
-[×]-square : ∀ {A A' A'' A''' B B' B'' B''' : obj}
-             {f : A ⇒ A'} {h : A' ⇒ A''} {h' : A ⇒ A'''} {f' : A''' ⇒ A''}
-             {g : B ⇒ B'} {l : B' ⇒ B''} {l' : B ⇒ B'''} {g' : B''' ⇒ B''} →
-             (h ∘ f) ≈ (f' ∘ h') → (l ∘ g) ≈ (g' ∘ l') → ([×]-map h l ∘ [×]-map f g) ≈ ([×]-map f' g' ∘ [×]-map h' l')
-[×]-square e₁ e₂ = ≈-trans ([×]-map-comp _ _ _ _) (≈-trans ([×]-map-cong e₁ e₂) (≈-sym ([×]-map-comp _ _ _ _)))
-
-[×]-inv : ∀ {A A' B B' : obj} {f : A ⇒ A'} {f' : A' ⇒ A} {g : B ⇒ B'} {g' : B' ⇒ B} →
-          (f ∘ f') ≈ id _ → (g ∘ g') ≈ id _ → ([×]-map f g ∘ [×]-map f' g') ≈ id _
-[×]-inv e₁ e₂ = ≈-trans ([×]-map-comp _ _ _ _) (≈-trans ([×]-map-cong e₁ e₂) [×]-map-id)
-
 private
   module binary-map (bin : obj → obj → obj)
     (map : ∀ {A A' B B' : obj} → A ⇒ A' → B ⇒ B' → bin A B ⇒ bin A' B')
     (map-cong : ∀ {A A' B B' : obj} {f f' : A ⇒ A'} {g g' : B ⇒ B'} → f ≈ f' → g ≈ g' → map f g ≈ map f' g')
     (map-comp : ∀ {A A' A'' B B' B'' : obj} (f' : A' ⇒ A'') (f : A ⇒ A') (g' : B' ⇒ B'') (g : B ⇒ B') →
                 (map f' g' ∘ map f g) ≈ map (f' ∘ f) (g' ∘ g))
+    (map-id : ∀ {A B : obj} → map (id A) (id B) ≈ id (bin A B))
     where
 
     map-eq : ∀ {A₁ A₂ D₁ D₂ : obj} {l r : bin A₁ A₂ ⇒ bin D₁ D₂}
@@ -251,8 +232,19 @@ private
             l ≈ map l₁ l₂ → r ≈ map r₁ r₂ → (l ∘ r) ≈ map (l₁ ∘ r₁) (l₂ ∘ r₂)
     map-∘ el er = ≈-trans (∘-cong el er) (map-comp _ _ _ _)
 
-  module [+]-laws = binary-map (λ A B → coprod (Lf A) (Lf B)) [+]-map [+]-map-cong [+]-map-comp
-  module [×]-laws = binary-map (λ A B → Lf (prod A B)) [×]-map [×]-map-cong [×]-map-comp
+    square : ∀ {A A' A'' A''' B B' B'' B''' : obj}
+             {f : A ⇒ A'} {h : A' ⇒ A''} {h' : A ⇒ A'''} {f' : A''' ⇒ A''}
+             {g : B ⇒ B'} {l : B' ⇒ B''} {l' : B ⇒ B'''} {g' : B''' ⇒ B''} →
+             (h ∘ f) ≈ (f' ∘ h') → (l ∘ g) ≈ (g' ∘ l') →
+             (map h l ∘ map f g) ≈ (map f' g' ∘ map h' l')
+    square e₁ e₂ = map-eq (map-∘ ≈-refl ≈-refl) (map-∘ ≈-refl ≈-refl) e₁ e₂
+
+    inv : ∀ {A A' B B' : obj} {f : A ⇒ A'} {f' : A' ⇒ A} {g : B ⇒ B'} {g' : B' ⇒ B} →
+          (f ∘ f') ≈ id _ → (g ∘ g') ≈ id _ → (map f g ∘ map f' g') ≈ id (bin A' B')
+    inv e₁ e₂ = ≈-trans (map-comp _ _ _ _) (≈-trans (map-cong e₁ e₂) map-id)
+
+  module [+]-laws = binary-map (λ A B → coprod (Lf A) (Lf B)) [+]-map [+]-map-cong [+]-map-comp [+]-map-id
+  module [×]-laws = binary-map (λ A B → Lf (prod A B)) [×]-map [×]-map-cong [×]-map-comp [×]-map-id
 
 fmor-[+] : ∀ {k} (P Q : Poly R.cat k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
            fmor (P Poly.+ Q) fs ≈ [+]-map (fmor P fs) (fmor Q fs)
@@ -708,11 +700,11 @@ mutual
   as-poly-map-natural (base s)  gs fs = ≈-sym id-swap
   as-poly-map-natural (σ [+] τ) {δ} {δ'} gs fs =
     ≈-trans (∘-cong (fmor-[+] (as-poly σ δ') (as-poly τ δ') fs) ≈-refl)
-            (≈-trans ([+]-square (as-poly-map-natural σ gs fs) (as-poly-map-natural τ gs fs))
+            (≈-trans ([+]-laws.square (as-poly-map-natural σ gs fs) (as-poly-map-natural τ gs fs))
                      (∘-cong ≈-refl (≈-sym (fmor-[+] (as-poly σ δ) (as-poly τ δ) fs))))
   as-poly-map-natural (σ [×] τ) {δ} {δ'} gs fs =
     ≈-trans (∘-cong (fmor-[×] (as-poly σ δ') (as-poly τ δ') fs) ≈-refl)
-            (≈-trans ([×]-square (as-poly-map-natural σ gs fs) (as-poly-map-natural τ gs fs))
+            (≈-trans ([×]-laws.square (as-poly-map-natural σ gs fs) (as-poly-map-natural τ gs fs))
                      (∘-cong ≈-refl (≈-sym (fmor-[×] (as-poly σ δ) (as-poly τ δ) fs))))
   as-poly-map-natural (σ [→] τ) gs fs = ≈-sym id-swap
   as-poly-map-natural {n = n} (μ τ) {δ} {δ'} gs {δ₀} {δ₀'} fs = begin
@@ -864,11 +856,11 @@ as-poly-map-ren ρ unit      gs δ₀ = ≈-refl
 as-poly-map-ren ρ (base s)  gs δ₀ = ≈-refl
 as-poly-map-ren ρ (σ [+] τ) {δ} {δ'} gs δ₀ =
   ≈-trans (∘-cong (cast-+ (as-poly-ren ρ σ δ') (as-poly-ren ρ τ δ') δ₀) ≈-refl)
-          (≈-trans ([+]-square (as-poly-map-ren ρ σ gs δ₀) (as-poly-map-ren ρ τ gs δ₀))
+          (≈-trans ([+]-laws.square (as-poly-map-ren ρ σ gs δ₀) (as-poly-map-ren ρ τ gs δ₀))
                    (∘-cong ≈-refl (≈-sym (cast-+ (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀))))
 as-poly-map-ren ρ (σ [×] τ) {δ} {δ'} gs δ₀ =
   ≈-trans (∘-cong (cast-× (as-poly-ren ρ σ δ') (as-poly-ren ρ τ δ') δ₀) ≈-refl)
-          (≈-trans ([×]-square (as-poly-map-ren ρ σ gs δ₀) (as-poly-map-ren ρ τ gs δ₀))
+          (≈-trans ([×]-laws.square (as-poly-map-ren ρ σ gs δ₀) (as-poly-map-ren ρ τ gs δ₀))
                    (∘-cong ≈-refl (≈-sym (cast-× (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀))))
 as-poly-map-ren ρ (σ [→] τ) gs δ₀ = ≈-refl
 as-poly-map-ren {n = n} ρ (μ τ) {δ} {δ'} gs δ₀ = begin
@@ -1243,9 +1235,9 @@ mutual
   apply-fwd-natural unit      δ fs = ≈-trans id-right (≈-trans (fmor-const fs) (≈-sym id-left))
   apply-fwd-natural (base s)  δ fs = ≈-trans id-right (≈-trans (fmor-const fs) (≈-sym id-left))
   apply-fwd-natural (σ [+] τ) δ fs =
-    ≈-trans (∘-cong (fmor-[+] (as-poly σ δ) (as-poly τ δ) fs) ≈-refl) ([+]-square (apply-fwd-natural σ δ fs) (apply-fwd-natural τ δ fs))
+    ≈-trans (∘-cong (fmor-[+] (as-poly σ δ) (as-poly τ δ) fs) ≈-refl) ([+]-laws.square (apply-fwd-natural σ δ fs) (apply-fwd-natural τ δ fs))
   apply-fwd-natural (σ [×] τ) δ fs =
-    ≈-trans (∘-cong (fmor-[×] (as-poly σ δ) (as-poly τ δ) fs) ≈-refl) ([×]-square (apply-fwd-natural σ δ fs) (apply-fwd-natural τ δ fs))
+    ≈-trans (∘-cong (fmor-[×] (as-poly σ δ) (as-poly τ δ) fs) ≈-refl) ([×]-laws.square (apply-fwd-natural σ δ fs) (apply-fwd-natural τ δ fs))
   apply-fwd-natural (σ [→] τ) δ fs = ≈-trans id-right (≈-trans (fmor-const fs) (≈-sym id-left))
   apply-fwd-natural {Δ} {n} (μ τ) δ {δ₀} {δ₀'} fs = begin
       fmor (Poly.μ A) fs ∘ μ-map P δ∅ A δ₀ (apply-fwd-body τ δ δ₀ M)
@@ -1278,8 +1270,8 @@ mutual
   ... | inj₂ k = ≈-trans id-left (≈-sym id-right)
   apply-fwd-map unit      gs δ₀ = ≈-refl
   apply-fwd-map (base s)  gs δ₀ = ≈-refl
-  apply-fwd-map (σ [+] τ) gs δ₀ = [+]-square (apply-fwd-map σ gs δ₀) (apply-fwd-map τ gs δ₀)
-  apply-fwd-map (σ [×] τ) gs δ₀ = [×]-square (apply-fwd-map σ gs δ₀) (apply-fwd-map τ gs δ₀)
+  apply-fwd-map (σ [+] τ) gs δ₀ = [+]-laws.square (apply-fwd-map σ gs δ₀) (apply-fwd-map τ gs δ₀)
+  apply-fwd-map (σ [×] τ) gs δ₀ = [×]-laws.square (apply-fwd-map σ gs δ₀) (apply-fwd-map τ gs δ₀)
   apply-fwd-map (σ [→] τ) gs δ₀ = ≈-refl
   apply-fwd-map {Δ} {n} (μ τ) {δ} {δ'} gs δ₀ = begin
       μ-map P' δ∅ A' δ₀ (apply-fwd-body τ δ' δ₀ M') ∘ μ-map P δ∅ P' δ∅ (as-poly-map τ (concat-mor (λ i → id _) gs) (extend δ∅ (μ-obj P' δ∅)))
@@ -1497,8 +1489,8 @@ mutual
   ... | inj₂ k = id-left
   apply-bwd-fwd unit      δ δ₀ = id-left
   apply-bwd-fwd (base s)  δ δ₀ = id-left
-  apply-bwd-fwd (σ [+] τ) δ δ₀ = [+]-inv (apply-bwd-fwd σ δ δ₀) (apply-bwd-fwd τ δ δ₀)
-  apply-bwd-fwd (σ [×] τ) δ δ₀ = [×]-inv (apply-bwd-fwd σ δ δ₀) (apply-bwd-fwd τ δ δ₀)
+  apply-bwd-fwd (σ [+] τ) δ δ₀ = [+]-laws.inv (apply-bwd-fwd σ δ δ₀) (apply-bwd-fwd τ δ δ₀)
+  apply-bwd-fwd (σ [×] τ) δ δ₀ = [×]-laws.inv (apply-bwd-fwd σ δ δ₀) (apply-bwd-fwd τ δ δ₀)
   apply-bwd-fwd (σ [→] τ) δ δ₀ = id-left
   apply-bwd-fwd {Δ} {n} (μ τ) δ δ₀ = begin
       μ-map A δ₀ P δ∅ (apply-bwd-body τ δ δ₀ N) ∘ μ-map P δ∅ A δ₀ (apply-fwd-body τ δ δ₀ M)
@@ -1523,8 +1515,8 @@ mutual
   ... | inj₂ k = id-left
   apply-fwd-bwd unit      δ δ₀ = id-left
   apply-fwd-bwd (base s)  δ δ₀ = id-left
-  apply-fwd-bwd (σ [+] τ) δ δ₀ = [+]-inv (apply-fwd-bwd σ δ δ₀) (apply-fwd-bwd τ δ δ₀)
-  apply-fwd-bwd (σ [×] τ) δ δ₀ = [×]-inv (apply-fwd-bwd σ δ δ₀) (apply-fwd-bwd τ δ δ₀)
+  apply-fwd-bwd (σ [+] τ) δ δ₀ = [+]-laws.inv (apply-fwd-bwd σ δ δ₀) (apply-fwd-bwd τ δ δ₀)
+  apply-fwd-bwd (σ [×] τ) δ δ₀ = [×]-laws.inv (apply-fwd-bwd σ δ δ₀) (apply-fwd-bwd τ δ δ₀)
   apply-fwd-bwd (σ [→] τ) δ δ₀ = id-left
   apply-fwd-bwd {Δ} {n} (μ τ) δ δ₀ = begin
       μ-map P δ∅ A δ₀ (apply-fwd-body τ δ δ₀ M) ∘ μ-map A δ₀ P δ∅ (apply-bwd-body τ δ δ₀ N)
@@ -1680,8 +1672,8 @@ mutual
   subst-fwd-natural σ (var i)     gs = ≈-trans id-right (≈-sym id-left)
   subst-fwd-natural σ unit        gs = ≈-refl
   subst-fwd-natural σ (base s)    gs = ≈-refl
-  subst-fwd-natural σ (τ₁ [+] τ₂) gs = [+]-square (subst-fwd-natural σ τ₁ gs) (subst-fwd-natural σ τ₂ gs)
-  subst-fwd-natural σ (τ₁ [×] τ₂) gs = [×]-square (subst-fwd-natural σ τ₁ gs) (subst-fwd-natural σ τ₂ gs)
+  subst-fwd-natural σ (τ₁ [+] τ₂) gs = [+]-laws.square (subst-fwd-natural σ τ₁ gs) (subst-fwd-natural σ τ₂ gs)
+  subst-fwd-natural σ (τ₁ [×] τ₂) gs = [×]-laws.square (subst-fwd-natural σ τ₁ gs) (subst-fwd-natural σ τ₂ gs)
   subst-fwd-natural σ (τ₁ [→] τ₂) gs = ≈-refl
   subst-fwd-natural {Δ} {Δ'} σ (μ τ) {δ} {δ'} gs = begin
       μ-map A δ∅ A' δ∅ (as-poly-map {n = 1} τ gs' (extend δ∅ M')) ∘ μ-map P δ∅ A δ∅ (subst-fwd-body σ τ δ M)
@@ -1845,8 +1837,8 @@ mutual
   subst-bwd-fwd σ (var i)     δ = id-left
   subst-bwd-fwd σ unit        δ = id-left
   subst-bwd-fwd σ (base s)    δ = id-left
-  subst-bwd-fwd σ (τ₁ [+] τ₂) δ = [+]-inv (subst-bwd-fwd σ τ₁ δ) (subst-bwd-fwd σ τ₂ δ)
-  subst-bwd-fwd σ (τ₁ [×] τ₂) δ = [×]-inv (subst-bwd-fwd σ τ₁ δ) (subst-bwd-fwd σ τ₂ δ)
+  subst-bwd-fwd σ (τ₁ [+] τ₂) δ = [+]-laws.inv (subst-bwd-fwd σ τ₁ δ) (subst-bwd-fwd σ τ₂ δ)
+  subst-bwd-fwd σ (τ₁ [×] τ₂) δ = [×]-laws.inv (subst-bwd-fwd σ τ₁ δ) (subst-bwd-fwd σ τ₂ δ)
   subst-bwd-fwd σ (τ₁ [→] τ₂) δ = id-left
   subst-bwd-fwd {Δ} {Δ'} σ (μ τ) δ = begin
       μ-map A δ∅ P δ∅ (subst-bwd-body σ τ δ N) ∘ μ-map P δ∅ A δ∅ (subst-fwd-body σ τ δ M)
@@ -1869,8 +1861,8 @@ mutual
   subst-fwd-bwd σ (var i)     δ = id-left
   subst-fwd-bwd σ unit        δ = id-left
   subst-fwd-bwd σ (base s)    δ = id-left
-  subst-fwd-bwd σ (τ₁ [+] τ₂) δ = [+]-inv (subst-fwd-bwd σ τ₁ δ) (subst-fwd-bwd σ τ₂ δ)
-  subst-fwd-bwd σ (τ₁ [×] τ₂) δ = [×]-inv (subst-fwd-bwd σ τ₁ δ) (subst-fwd-bwd σ τ₂ δ)
+  subst-fwd-bwd σ (τ₁ [+] τ₂) δ = [+]-laws.inv (subst-fwd-bwd σ τ₁ δ) (subst-fwd-bwd σ τ₂ δ)
+  subst-fwd-bwd σ (τ₁ [×] τ₂) δ = [×]-laws.inv (subst-fwd-bwd σ τ₁ δ) (subst-fwd-bwd σ τ₂ δ)
   subst-fwd-bwd σ (τ₁ [→] τ₂) δ = id-left
   subst-fwd-bwd {Δ} {Δ'} σ (μ τ) δ = begin
       μ-map P δ∅ A δ∅ (subst-fwd-body σ τ δ M) ∘ μ-map A δ∅ P δ∅ (subst-bwd-body σ τ δ N)
@@ -1995,13 +1987,13 @@ mutual
   subst-fwd-cong (base s) pw e δ =
     ≈-trans id-left (≈-trans (≡-to-⇒-irr refl (cong (λ υ → ⟦ υ ⟧ty δ) e)) (≈-sym id-left))
   subst-fwd-cong (τ₁ [+] τ₂) pw e δ =
-    ≈-trans ([+]-square (subst-fwd-cong τ₁ pw (sub-cong τ₁ pw) δ) (subst-fwd-cong τ₂ pw (sub-cong τ₂ pw) δ))
+    ≈-trans ([+]-laws.square (subst-fwd-cong τ₁ pw (sub-cong τ₁ pw) δ) (subst-fwd-cong τ₂ pw (sub-cong τ₂ pw) δ))
             (∘-cong ≈-refl
               (≈-sym (≈-trans (≡-to-⇒-irr (cong (λ υ → ⟦ υ ⟧ty δ) e)
                                           (cong (λ υ → ⟦ υ ⟧ty δ) (cong₂ _[+]_ (sub-cong τ₁ pw) (sub-cong τ₂ pw))))
                               (ty-cast-+ (sub-cong τ₁ pw) (sub-cong τ₂ pw) δ))))
   subst-fwd-cong (τ₁ [×] τ₂) pw e δ =
-    ≈-trans ([×]-square (subst-fwd-cong τ₁ pw (sub-cong τ₁ pw) δ) (subst-fwd-cong τ₂ pw (sub-cong τ₂ pw) δ))
+    ≈-trans ([×]-laws.square (subst-fwd-cong τ₁ pw (sub-cong τ₁ pw) δ) (subst-fwd-cong τ₂ pw (sub-cong τ₂ pw) δ))
             (∘-cong ≈-refl
               (≈-sym (≈-trans (≡-to-⇒-irr (cong (λ υ → ⟦ υ ⟧ty δ) e)
                                           (cong (λ υ → ⟦ υ ⟧ty δ) (cong₂ _[×]_ (sub-cong τ₁ pw) (sub-cong τ₂ pw))))
@@ -2268,26 +2260,24 @@ mutual
   apply-fwd-ren ρ (base s)  δ δ₀ = ≈-refl
   apply-fwd-ren ρ (σ [→] τ) δ δ₀ = ≈-refl
   apply-fwd-ren {Δ₁} {Δ₂} {n} ρ (σ [+] τ) δ δ₀ =
-    ≈-trans (∘-cong (cast-+ (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀) ≈-refl)
-            (≈-trans ([+]-square (apply-fwd-ren ρ σ δ δ₀) (apply-fwd-ren ρ τ δ δ₀))
-                     (∘-cong ≈-refl
-                       (≈-sym (≈-trans (cast-irr (trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) (σ [+] τ) (concat δ₀ δ))
-                                                        (as-poly-cong {n = 0} (σ [+] τ) (concat-ren-pw ρ δ δ₀)))
-                                                 (cong₂ Poly._+_ (rσ σ) (rσ τ)) δ∅)
-                                       (cast-+ (rσ σ) (rσ τ) δ∅)))))
+    [+]-laws.map-eq
+      ([+]-laws.map-∘ (cast-+ (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀) ≈-refl)
+      ([+]-laws.map-∘ ≈-refl (≈-trans (cast-irr (rσ (σ [+] τ)) (cong₂ Poly._+_ (rσ σ) (rσ τ)) δ∅)
+                                      (cast-+ (rσ σ) (rσ τ) δ∅)))
+      (apply-fwd-ren ρ σ δ δ₀)
+      (apply-fwd-ren ρ τ δ δ₀)
     where
       rσ : (υ : type (n + Δ₁)) → as-poly {n + Δ₂} {0} (extᵗⁿ n ρ *ᵗ υ) (concat δ₀ δ)
                                    ≡ as-poly {n + Δ₁} {0} υ (concat δ₀ (λ k → δ (ρ k)))
       rσ υ = trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) υ (concat δ₀ δ))
                    (as-poly-cong {n = 0} υ (concat-ren-pw ρ δ δ₀))
   apply-fwd-ren {Δ₁} {Δ₂} {n} ρ (σ [×] τ) δ δ₀ =
-    ≈-trans (∘-cong (cast-× (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀) ≈-refl)
-            (≈-trans ([×]-square (apply-fwd-ren ρ σ δ δ₀) (apply-fwd-ren ρ τ δ δ₀))
-                     (∘-cong ≈-refl
-                       (≈-sym (≈-trans (cast-irr (trans (as-poly-ren {n = 0} (extᵗⁿ n ρ) (σ [×] τ) (concat δ₀ δ))
-                                                        (as-poly-cong {n = 0} (σ [×] τ) (concat-ren-pw ρ δ δ₀)))
-                                                 (cong₂ Poly._×_ (rσ σ) (rσ τ)) δ∅)
-                                       (cast-× (rσ σ) (rσ τ) δ∅)))))
+    [×]-laws.map-eq
+      ([×]-laws.map-∘ (cast-× (as-poly-ren ρ σ δ) (as-poly-ren ρ τ δ) δ₀) ≈-refl)
+      ([×]-laws.map-∘ ≈-refl (≈-trans (cast-irr (rσ (σ [×] τ)) (cong₂ Poly._×_ (rσ σ) (rσ τ)) δ∅)
+                                      (cast-× (rσ σ) (rσ τ) δ∅)))
+      (apply-fwd-ren ρ σ δ δ₀)
+      (apply-fwd-ren ρ τ δ δ₀)
     where
       rσ : (υ : type (n + Δ₁)) → as-poly {n + Δ₂} {0} (extᵗⁿ n ρ *ᵗ υ) (concat δ₀ δ)
                                    ≡ as-poly {n + Δ₁} {0} υ (concat δ₀ (λ k → δ (ρ k)))
