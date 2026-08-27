@@ -75,6 +75,10 @@ total l = app sum
     price label.a = fst (snd (var (succ zero)))
     price _       = snd (snd (var (succ zero)))
 
+total-ctxt-fo : first-order-ctxt (emp , (list (base label [×] base number)) [×] (base number [×] base number))
+total-ctxt-fo =
+  emp , (μ (unit [+] ((base label [×] base number) [×] var Fin.zero)) [×] (base number [×] base number))
+
 ------------------------------------------------------------------------------
 -- Programs over a list of numbers.
 
@@ -103,6 +107,9 @@ filter-term =
 
 sum-mul : emp , list (base number) [×] base number ⊢ base number
 sum-mul = bop mult (app sum (fst (var zero)) ∷ snd (var zero) ∷ [])
+
+sum-mul-ctxt-fo : first-order-ctxt (emp , list (base number) [×] base number)
+sum-mul-ctxt-fo = emp , (numlist-fo [×] base number)
 
 ------------------------------------------------------------------------------
 -- Programs over numbers and booleans.
@@ -228,3 +235,9 @@ rose-sum = lam (fold (bop add (fst (var zero) ∷ app sum (snd (var zero)) ∷ [
 
 rose-query : emp , rose ⊢ base number
 rose-query = app rose-sum (var zero)
+
+rose-fo : first-order rose
+rose-fo = μ (base number [×] μ (unit [+] (var (Fin.suc Fin.zero) [×] var Fin.zero)))
+
+rose-ctxt-fo : first-order-ctxt (emp , rose)
+rose-ctxt-fo = emp , rose-fo

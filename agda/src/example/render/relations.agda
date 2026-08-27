@@ -172,6 +172,9 @@ contents =
   three-run "eq"         E3.eq-run     ++
   three-run "mult"       E3.mult-run   ++
   three-run "mavg"       E3.mavg-run   ++
+  three-run "total"      E3.total-run   ++
+  three-run "sum-mul"    E3.sum-mul-run ++
+  three-run "rose"       E3.rose-run    ++
   three-related "mavg-related" E3.mavg-run ++
   sign-run  "score"      ES.score-run
 

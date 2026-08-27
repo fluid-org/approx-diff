@@ -72,6 +72,11 @@ score-run = run score-ctxt-fo (base number) (score (- 1ℚ)) γ-score
 mavg-run : Run
 mavg-run = run mavg-ctxt-fo (base number [×] (base number [×] base number)) (mavg ½) γ-mavg
 
+total-run sum-mul-run rose-run : Run
+total-run   = run total-ctxt-fo (base number) (total label.a) γ-total
+sum-mul-run = run sum-mul-ctxt-fo (base number) sum-mul γ-sum-mul
+rose-run    = run rose-ctxt-fo (base number) rose-query γ-rose
+
 map-run filter-run cond-run eq-run : Run
 map-run    = run map-ctxt-fo numlist-fo map-term γ-nums
 filter-run = run filter-ctxt-fo numlist-fo filter-term γ-filter
