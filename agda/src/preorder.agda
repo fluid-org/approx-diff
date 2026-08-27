@@ -6,7 +6,7 @@ open import Level
 open import prop
 open import Data.Unit using (tt)
 open import Data.Product using (_,_)
-open import basics
+open import basics using (IsPreorder)
 open import prop-setoid using (IsEquivalence)
 
 record Preorder : Set (suc 0ℓ) where

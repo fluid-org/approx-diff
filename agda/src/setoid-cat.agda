@@ -4,6 +4,7 @@ open import Level
 open import Data.Unit using (⊤; tt)
 open import Data.Product using (_,_)
 open import categories
+  using (Category; IsTerminal; HasTerminal; HasProducts; HasCoproducts; HasExponentials)
 open import prop
 open import prop-setoid
   using (IsEquivalence; Setoid; 𝟙; +-setoid; ⊗-setoid; idS; _∘S_; module ≈-Reasoning;

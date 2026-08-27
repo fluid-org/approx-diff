@@ -368,8 +368,11 @@ ctrl-dep-clo {σ} {τ} f s =
 payload-ctrl-dep : ∀ σ τ (f : Ix (σ [→] τ)) s (d : ∣ Fib (σ [→] τ) f ∣) →
                    Payload._≈_ σ τ f (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)) (proj₂ d)
 payload-ctrl-dep σ τ f s d =
-  Payload.trans σ τ f {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {Payload._+_ σ τ f (Payload.ε σ τ f) (proj₂ d)} {proj₂ d}
-    (Payload.+-cong σ τ f {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {Payload.ε σ τ f} {proj₂ d} {proj₂ d} (proj₂ (ctrl-dep-clo {σ} {τ} f s)) (Payload.refl σ τ f {proj₂ d}))
+  Payload.trans σ τ f
+    {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)}
+    {Payload._+_ σ τ f (Payload.ε σ τ f) (proj₂ d)} {proj₂ d}
+    (Payload.+-cong σ τ f {proj₂ (ctrl-dep-at (σ [→] τ) f s)} {Payload.ε σ τ f} {proj₂ d} {proj₂ d}
+      (proj₂ (ctrl-dep-clo {σ} {τ} f s)) (Payload.refl σ τ f {proj₂ d}))
     (Payload.+-lunit σ τ f {proj₂ d})
 
 ctrl-dep-natural : ∀ τ {i i' : Ix τ} (e : Ix._≈_ τ i i') s →
