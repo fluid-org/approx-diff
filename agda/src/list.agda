@@ -109,13 +109,6 @@ any-or f g []       = ≡-refl
 any-or f g (x ∷ xs) =
   ≡-trans (≡-cong ((f x ∨ g x) ∨_) (any-or f g xs)) (∨-interchange (f x) (g x) (any f xs) (any g xs))
 
-any-comm : ∀ {a b} {A : Set a} {B : Set b} (h : A → B → Bool) (xs : List A) (ys : List B) →
-           any (λ x → any (h x) ys) xs ≡ any (λ y → any (λ x → h x y) xs) ys
-any-comm h []       ys = ≡-sym (any-false (universal (λ y → ≡-refl) ys))
-any-comm h (x ∷ xs) ys =
-  ≡-trans (≡-cong (any (h x) ys ∨_) (any-comm h xs ys))
-          (≡-sym (any-or (h x) (λ y → any (λ x' → h x' y) xs) ys))
-
 any-++ : ∀ {a} {A : Set a} (f : A → Bool) (xs ys : List A) →
          any f (xs ++ ys) ≡ (any f xs ∨ any f ys)
 any-++ f []       ys = ≡-refl

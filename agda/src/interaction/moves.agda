@@ -8,7 +8,7 @@ open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filterᵇ; concat; partitionᵇ; foldr)
 open import Data.List.Properties using (++-identityʳ; concat-++; concat-map; foldl-++; length-map; map-++; map-∘)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
-  using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭; ↭-length; ∈-resp-↭)
+  using (map⁺; shift; ++⁺; drop-∷; All-resp-↭; Any-resp-↭; ↭-length; ∈-resp-↭)
 open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
 open import Data.List.Relation.Binary.Subset.Propositional using (_⊆_)
 open import Data.List.Membership.Propositional.Properties
@@ -152,6 +152,11 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   ¬adjacent-All G x C h =
     All-map (λ {q} e → does-false (Adjacent? G x (at q)) e) (any-false-All _ C h)
 
+  ¬adjacent-any : (G : Relation (vertex-width B)) (x : V B) (C : List (Vertex (Graph.shape B))) →
+                  All (λ q → ¬ Adjacent G x (at q)) C →
+                  any (λ q → adjacent G x (at q)) C ≡ Bool.false
+  ¬adjacent-any G x C h = any-false (All-map (λ {q} k → dec-false (Adjacent? G x (at q)) k) h)
+
   adjacent-O : (G : Relation (vertex-width B)) (x y : V B) → ¬ Adjacent G x y →
                (∀ i j → G x y i j ≡ two.O) × (∀ i j → G y x i j ≡ two.O)
   adjacent-O G x y h =
@@ -293,12 +298,11 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   adjacent-sym G x y = ∨-comm (does (NonZero? (G x y))) (does (NonZero? (G y x)))
 
   Apart : Relation (vertex-width 𝒢) → List (Path) → List (Path) → Set
-  Apart G C C' = any (λ q → any (λ q' → adjacent G (at q) (at q')) C') C ≡ Bool.false
+  Apart G C C' = All (λ q → All (λ q' → ¬ Adjacent G (at q) (at q')) C') C
 
   apart-sym : (G : Relation (vertex-width 𝒢)) {C C' : List (Path)} → Apart G C C' → Apart G C' C
-  apart-sym G {C} {C'} h =
-    ≡-trans (any-comm (λ q q' → adjacent G (at q) (at q')) C' C)
-    (≡-trans (any-cong (λ q → any-cong (λ q' → adjacent-sym G (at q') (at q)) C') C) h)
+  apart-sym G h =
+    All-tabulate (λ m' → All-tabulate (λ m a → All-lookup (All-lookup h m) m' ([ inj₂ , inj₁ ]′ a)))
 
   merge-separated : (G : Relation (vertex-width 𝒢)) (w : Path) {rs : List (List (Path))} →
                     AllPairs (Apart G) rs →
@@ -311,10 +315,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     tp = partitionᵇ f rs
     apart-w : All (Apart G (w ∷ concat (proj₁ tp))) (proj₂ tp)
     apart-w =
-      All-zip (λ {C'} hf hc →
-                ≡-cong₂ _∨_ hf
-                  (≡-trans (any-concat (λ q → any (λ q' → adjacent G (at q) (at q')) C') (proj₁ tp))
-                           (any-false hc)))
+      All-zip (λ {C'} hf hc → ¬adjacent-All G (at w) C' hf ∷ AllP.concat⁺ hc)
               (part₂-false f rs) (proj₂ (proj₂ pa))
 
   regions-separated : (G : Relation (vertex-width 𝒢)) (ws : List (Path)) → AllPairs (Apart G) (regions G ws)
@@ -340,8 +341,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     where
     resp : (C C' C'' : List (Path)) → C ↭ C' → Apart (fo-graph 𝒢) C C'' →
            Apart (fo-graph 𝒢) C' C''
-    resp C C' C'' r ap =
-      ≡-trans (≡-sym (any-perm (λ q → any (λ q' → adjacent (fo-graph 𝒢) (at q) (at q')) C'') r)) ap
+    resp C C' C'' r ap = All-resp-↭ r ap
 
   regions-concat : (G : Relation (vertex-width 𝒢)) (ws : List (Path)) → concat (regions G ws) ↭ ws
   regions-concat G []       = ↭.refl
@@ -456,10 +456,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     inert' = AllP.map⁺ (AllP.concat⁺ (All-map
               (λ {C'} (ap , ds) →
                 All-zip (λ {q} ha hm →
-                          let (l , r) = summary-zero {C = C} q hm
-                                          (¬adjacent-All (fo-graph 𝒢) (at q) C ha) in
+                          let (l , r) = summary-zero {C = C} q hm ha in
                                        ⟪ ((λ z i j → ≈-of-≡ₛ (l z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (r z i j))) ⟫)
-                        (any-false-All _ C' ap) ds)
+                        ap ds)
               shead))
 
   private
@@ -802,14 +801,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   Apart-mono : {G : Relation (vertex-width 𝒢)} {C₁ C₂ C₁' C₂' : List (Path)} →
                C₁ ⊆ C₁' → C₂ ⊆ C₂' → Apart G C₁' C₂' → Apart G C₁ C₂
-  Apart-mono {G = G} {C₁ = C₁} {C₂} {C₁'} {C₂'} m₁ m₂ ap =
-    any-false (All-map
-      (λ h → any-false (All-map
-        (λ h' →
-          All-lookup (All-lookup (All-map (any-false-All _ C₂') (any-false-All _ C₁' ap)) (m₁ h))
-                     (m₂ h'))
-        (All-tabulate (λ h' → h'))))
-      (All-tabulate (λ h → h)))
+  Apart-mono m₁ m₂ ap =
+    All-tabulate (λ h → All-tabulate (λ h' → All-lookup (All-lookup ap (m₁ h)) (m₂ h')))
 
   private
     split-none : (p : Path)
@@ -1198,25 +1191,17 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   regions-apart : (G : Relation (vertex-width 𝒢)) (B rest : List (Vertex shape)) → Apart G B rest →
                   regions G (B ++ rest) ↭↭ (regions G B ++ regions G rest)
   regions-apart G []      rest ap = ↭↭-refl
-  regions-apart G (b ∷ B) rest ap with ∨-false (any (λ q' → adjacent G (at b) (at q')) rest)
-                                             (any (λ q → any (λ q' → adjacent G (at q) (at q')) rest) B)
-                                             ap
-  ... | (hb , hB) =
+  regions-apart G (b ∷ B) rest (hb ∷ hB) =
     H.trans (merge-region-resp G b (regions-apart G B rest hB))
             (↭↭-of-≡ (merge-region-inert G b (regions G B) (regions G rest)
-              (All-map (λ inc →
-                 any-false (All-map (λ {q} h →
-                              All-lookup (any-false-All _ rest hb) (inc h))
-                            (All-tabulate (λ h → h))))
+              (All-map (λ {C} inc →
+                 ¬adjacent-any G (at b) C (All-tabulate (λ h → All-lookup hb (inc h))))
                 (regions-⊆ G rest))))
 
   private
     apart-concat : {G : Relation (vertex-width 𝒢)} {C : List (Vertex shape)} {Cs : List (List (Vertex shape))} →
                    All (Apart G C) Cs → Apart G C (concat Cs)
-    apart-concat {G = G} {C} {Cs} aps =
-      ≡-trans (any-cong (λ q → any-concat (λ q' → adjacent G (at q) (at q')) Cs) C)
-      (≡-trans (any-comm (λ q C' → any (λ q' → adjacent G (at q) (at q')) C') C Cs)
-               (any-false aps))
+    apart-concat aps = All-tabulate (λ m → AllP.concat⁺ (All-map (λ ap → All-lookup ap m) aps))
 
     regions-nonempty : (G : Relation (vertex-width 𝒢)) (ws : List (Vertex shape)) →
                        All (λ C → 1 ≤ length C) (regions G ws)
