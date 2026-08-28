@@ -66,14 +66,6 @@ any-cong h (x ∷ xs) = ≡-cong₂ _∨_ (h x) (any-cong h xs)
 ∨-false : ∀ x y → (x ∨ y) ≡ Bool.false → (x ≡ Bool.false) × (y ≡ Bool.false)
 ∨-false Bool.false y h = ≡-refl , h
 
-∨-true : ∀ x → (x ∨ Bool.true) ≡ Bool.true
-∨-true Bool.false = ≡-refl
-∨-true Bool.true  = ≡-refl
-
-∨-true-inv : ∀ x y → (x ∨ y) ≡ Bool.true → (x ≡ Bool.true) ⊎ (y ≡ Bool.true)
-∨-true-inv Bool.true  y h = inj₁ ≡-refl
-∨-true-inv Bool.false y h = inj₂ h
-
 any-false : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
             All (λ x → f x ≡ Bool.false) xs → any f xs ≡ Bool.false
 any-false []       = ≡-refl
@@ -257,28 +249,6 @@ partition-AllPairs P? sym (_∷_ {x} px ps) with partition-AllPairs P? sym ps | 
 ... | (a₁ , a₂ , cross) | (px₁ , px₂) with P? x
 ...   | yes _ = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
 ...   | no  _ = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
-
-any-filterᵇ : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
-              any f (filterᵇ g xs) ≡ Bool.true → any f xs ≡ Bool.true
-any-filterᵇ f g (x ∷ xs) h with g x
-... | Bool.false = ≡-trans (≡-cong (f x ∨_) (any-filterᵇ f g xs h)) (∨-true (f x))
-... | Bool.true with ∨-true-inv (f x) (any f (filterᵇ g xs)) h
-...   | inj₁ e = ≡-cong (_∨ any f xs) e
-...   | inj₂ e = ≡-trans (≡-cong (f x ∨_) (any-filterᵇ f g xs e)) (∨-true (f x))
-
-filter-All : ∀ {a p} {A : Set a} {P : A → Set p} (f : A → Bool) {xs : List A} →
-             All P xs → All P (filterᵇ f xs)
-filter-All f []               = []
-filter-All f (_∷_ {x} px pxs) with f x
-... | Bool.true  = px ∷ filter-All f pxs
-... | Bool.false = filter-All f pxs
-
-filter-AllPairs : ∀ {a r} {A : Set a} {S : A → A → Set r} (f : A → Bool) {xs : List A} →
-                  AllPairs S xs → AllPairs S (filterᵇ f xs)
-filter-AllPairs f []               = []
-filter-AllPairs f (_∷_ {x} px ps) with f x
-... | Bool.true  = filter-All f px ∷ filter-AllPairs f ps
-... | Bool.false = filter-AllPairs f ps
 
 filter-all-true : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
                   All (λ x → f x ≡ Bool.true) xs → filterᵇ f xs ≡ xs

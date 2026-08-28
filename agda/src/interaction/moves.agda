@@ -732,7 +732,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                (≡-sym (assemble {E = C*} Ms monosC* sepsMs x' y' i' j'))))
 
   FO-distinct : AllPairs _≢_ (FO 𝒢)
-  FO-distinct = filter-AllPairs (Graph.fo 𝒢) (distinct (Graph.shape 𝒢))
+  FO-distinct = AllPairsP.filter⁺ (λ q → T? (Graph.fo 𝒢 q)) (distinct (Graph.shape 𝒢))
 
   private
     partition-distinct : (K : Config 𝒢) → (K .visible ++ hidden-set K) ↭ FO 𝒢 →
