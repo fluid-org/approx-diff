@@ -11,11 +11,13 @@ open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (map⁺; shift; ++⁺; drop-∷; Any-resp-↭; ↭-length; ∈-resp-↭)
 open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
 open import Data.List.Relation.Binary.Subset.Propositional using (_⊆_)
-open import Data.List.Membership.Propositional.Properties using (∈-++⁺ˡ; ∈-++⁺ʳ)
+open import Data.List.Membership.Propositional.Properties
+  using (∈-++⁺ˡ; ∈-++⁺ʳ; ∈-concat⁻; ∈-concat⁺′; ∈-map⁺)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
-  renaming (map to All-map; tabulate to All-tabulate)
+  renaming (map to All-map; tabulate to All-tabulate; lookup to All-lookup)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
-open import Data.List.Relation.Unary.Any using (Any; there) renaming (map to Any-map)
+open import Data.List.Relation.Unary.Any using (Any; here; there; tail)
+  renaming (map to Any-map)
 open import Data.Nat using (ℕ; _≤_; z≤n; s≤s)
 open import Data.Nat.ListAction using (sum)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -102,29 +104,26 @@ module Interaction {m n : ℕ} (B : Graph m n) where
     at p = inj₂ (inj₁ p)
 
     eq : Vertex (Graph.shape B) → Vertex (Graph.shape B) → Bool
-    eq p q = ⌊ _≟_ {Graph.shape B} p q ⌋
-
-  member : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Bool
-  member p = any (eq p)
+    eq p q = does (_≟_ {Graph.shape B} p q)
 
   open DecMem (_≟_ {Graph.shape B}) public using (_∈_; _∉_; _∈?_)
 
-  private
-    member-does : ∀ p C → member p C ≡ does (p ∈? C)
-    member-does p []      = ≡-refl
-    member-does p (q ∷ C) =
-      ≡-cong₂ _∨_ (isYes≗does (_≟_ {Graph.shape B} p q)) (member-does p C)
+  member : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Bool
+  member p C = does (p ∈? C)
+
+  member-any : ∀ p C → member p C ≡ any (eq p) C
+  member-any p []      = ≡-refl
+  member-any p (q ∷ C) = ≡-cong (eq p q ∨_) (member-any p C)
 
   ∈-member : ∀ {p C} → p ∈ C → member p C ≡ Bool.true
-  ∈-member {p} {C} h = ≡-trans (member-does p C) (dec-true (p ∈? C) h)
+  ∈-member {p} {C} h = dec-true (p ∈? C) h
 
   ∉-member : ∀ {p C} → p ∉ C → member p C ≡ Bool.false
-  ∉-member {p} {C} h = ≡-trans (member-does p C) (dec-false (p ∈? C) h)
+  ∉-member {p} {C} h = dec-false (p ∈? C) h
 
   private
     member-isYes : ∀ p C {b} → member p C ≡ b → ⌊ p ∈? C ⌋ ≡ b
-    member-isYes p C h =
-      ≡-trans (isYes≗does (p ∈? C)) (≡-trans (≡-sym (member-does p C)) h)
+    member-isYes p C h = ≡-trans (isYes≗does (p ∈? C)) h
 
   member-∈ : ∀ {p C} → member p C ≡ Bool.true → p ∈ C
   member-∈ {p} {C} h = toWitness (subst Bool.T (≡-sym (member-isYes p C h)) _)
@@ -167,11 +166,11 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   hidden-set : Config B → List (Vertex (Graph.shape B))
   hidden-set K = concat (map proj₁ (K .hidden))
 
-  member-hidden : ∀ p (K : Config B) {b} → member p (hidden-set K) ≡ b →
-                  any (λ CH → member p (proj₁ CH)) (K .hidden) ≡ b
-  member-hidden p K hp =
-    ≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
-            (≡-trans (≡-sym (any-concat (eq p) (map proj₁ (K .hidden)))) hp)
+  hidden-∈ : ∀ {p} (K : Config B) → p ∈ hidden-set K → Any (λ CH → p ∈ proj₁ CH) (K .hidden)
+  hidden-∈ K h = AnyPr.map⁻ (∈-concat⁻ (map proj₁ (K .hidden)) h)
+
+  hidden-∉ : ∀ {p} (K : Config B) → p ∉ hidden-set K → All (λ CH → p ∉ proj₁ CH) (K .hidden)
+  hidden-∉ K h = All-tabulate (λ m k → h (∈-concat⁺′ k (∈-map⁺ proj₁ m)))
 
   visible-graph : Config B → Relation (vertex-width B)
   visible-graph K x y =
@@ -254,16 +253,22 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     at p = inj₂ (inj₁ p)
 
     eq-path : Path → Path → Bool
-    eq-path p q = ⌊ _≟_ {shape} p q ⌋
+    eq-path p q = does (_≟_ {shape} p q)
 
     eq-path-refl : ∀ (p : Path) → eq-path p p ≡ Bool.true
-    eq-path-refl p = ≡-trans (isYes≗does (_≟_ {shape} p p)) (dec-true (_≟_ {shape} p p) ≡-refl)
+    eq-path-refl p = dec-true (_≟_ {shape} p p) ≡-refl
 
     eq-path-≡ : ∀ {p q : Path} → eq-path p q ≡ Bool.true → p ≡ q
-    eq-path-≡ {p} {q} h = toWitness (subst Bool.T (≡-sym h) _)
+    eq-path-≡ {p} {q} h =
+      toWitness (subst Bool.T (≡-sym (≡-trans (isYes≗does (_≟_ {shape} p q)) h)) _)
 
     ≢-eq-false : ∀ {p q : Path} → p ≢ q → eq-path p q ≡ Bool.false
-    ≢-eq-false {p} {q} ¬e = ≡-trans (isYes≗does (_≟_ {shape} p q)) (dec-false (_≟_ {shape} p q) ¬e)
+    ≢-eq-false {p} {q} ¬e = dec-false (_≟_ {shape} p q) ¬e
+
+    eq-false-≢ : ∀ {p q : Path} → eq-path p q ≡ Bool.false → p ≢ q
+    eq-false-≢ {p} {q} h =
+      toWitnessFalse (subst (λ b → Bool.T (Bool.not b))
+                            (≡-sym (≡-trans (isYes≗does (_≟_ {shape} p q)) h)) _)
 
     eq-path-false-sym : ∀ {p q : Path} → eq-path p q ≡ Bool.false → eq-path q p ≡ Bool.false
     eq-path-false-sym {p} {q} h with _≟_ {shape} q p
@@ -420,7 +425,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       nonzero-O (fo-graph 𝒢 (at q) (at q'))
                 (proj₁ (∨-false (nonzero (fo-graph 𝒢 (at q) (at q')))
                                 (nonzero (fo-graph 𝒢 (at q') (at q)))
-                                (member-All {eq = eq-path} eq-path-≡ {x = q'} adjs hz))) i j
+                                (All-lookup adjs (member-∈ hz)))) i j
 
     entry-col : ∀ z → member-vertex z C ≡ Bool.true →
                 ∀ i j → fo-graph 𝒢 z (at q) i j ≡ two.O
@@ -430,7 +435,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       nonzero-O (fo-graph 𝒢 (at q') (at q))
                 (proj₂ (∨-false (nonzero (fo-graph 𝒢 (at q) (at q')))
                                 (nonzero (fo-graph 𝒢 (at q') (at q)))
-                                (member-All {eq = eq-path} eq-path-≡ {x = q'} adjs hz))) i j
+                                (All-lookup adjs (member-∈ hz)))) i j
 
     base-row : (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
                restrict (fo-graph 𝒢) C (at q) z i j ≡ two.O
@@ -502,12 +507,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   Distinct C C' = (any (λ q → member q C) C' ≡ Bool.false) × (any (λ q → member q C') C ≡ Bool.false)
 
   private
-    block-of : (q : Path) (Css : List (List (Path))) →
-               member q (concat Css) ≡ Bool.true → Any (λ C → member q C ≡ Bool.true) Css
-    block-of q Css h =
-      any-Any (λ C → member q C) Css (≡-trans (≡-sym (any-concat (eq-path q) Css)) h)
-
-  private
     visible-entry : (K : Config 𝒢) →
                     ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                     visible-graph K x y i j ≡
@@ -561,33 +560,23 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                     summary (proj₁ CH) (at p) z i' j' ≡ two.O)
                  × ((z : V 𝒢) (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 z)) →
                     summary (proj₁ CH) z (at p) i' j' ≡ two.O))) (proj₂ tp)
-      u-szero = All-zip (λ {CH} hadj hm → summary-zero {C = proj₁ CH} p hm hadj) u-adj
-                  (proj₂ (partition-All (adj-p p) (any-false-All _ (K .hidden)
-                    (member-hidden p K hp))))
+      u-szero = All-zip (λ {CH} hadj hm → summary-zero {C = proj₁ CH} p (∉-member hm) hadj) u-adj
+                  (proj₂ (partition-All (adj-p p) (hidden-∉ K (member-∉ hp))))
 
       edge-O : ∀ {C : List (Path)} → any (λ q → adjacent G (at p) (at q)) C ≡ Bool.false →
-               ∀ q' → member q' C ≡ Bool.true →
+               ∀ q' → q' ∈ C →
                ((∀ i' j' → G (at p) (at q') i' j' ≡ two.O) × (∀ i' j' → G (at q') (at p) i' j' ≡ two.O))
       edge-O {C} hadj q' hq =
         (λ i' j' → nonzero-O (G (at p) (at q')) (proj₁ spl) i' j') ,
         (λ i' j' → nonzero-O (G (at q') (at p)) (proj₂ spl) i' j')
         where
         spl = ∨-false (nonzero (G (at p) (at q'))) (nonzero (G (at q') (at p)))
-                      (member-All {eq = eq-path} eq-path-≡ {x = q'} (any-false-All _ C hadj) hq)
+                      (All-lookup (any-false-All _ C hadj) hq)
 
-      hid-split : ∀ q → member q (hidden-set K) ≡ Bool.true →
-                  Any (λ CH → member q (proj₁ CH) ≡ Bool.true) (proj₁ tp)
-                  ⊎ Any (λ CH → member q (proj₁ CH) ≡ Bool.true) (proj₂ tp)
-      hid-split q h
-        with ∨-true-inv (any (λ CH → member q (proj₁ CH)) (proj₁ tp))
-                        (any (λ CH → member q (proj₁ CH)) (proj₂ tp))
-                        (≡-trans (≡-sym (any-++ (λ CH → member q (proj₁ CH)) (proj₁ tp) (proj₂ tp)))
-                         (≡-trans (any-perm (λ CH → member q (proj₁ CH))
-                                            (partition-↭ (adj-p p) (K .hidden)))
-                          (≡-trans (≡-sym (any-map (λ C → member q C) proj₁ (K .hidden)))
-                                   (≡-trans (≡-sym (any-concat (eq-path q) (map proj₁ (K .hidden)))) h))))
-      ... | inj₁ e = inj₁ (any-Any _ (proj₁ tp) e)
-      ... | inj₂ e = inj₂ (any-Any _ (proj₂ tp) e)
+      hid-split : ∀ {q} → q ∈ hidden-set K →
+                  Any (λ CH → q ∈ proj₁ CH) (proj₁ tp) ⊎ Any (λ CH → q ∈ proj₁ CH) (proj₂ tp)
+      hid-split h =
+        AnyPr.++⁻ (proj₁ tp) (Any-resp-↭ (↭-sym (partition-↭ (adj-p p) (K .hidden))) (hidden-∈ K h))
 
       summary-I : ∀ (C : List (Path)) x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
              (member-vertex x' C ∨ member-vertex y' C) ≡ Bool.true →
@@ -605,9 +594,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       mv-p-≡ : ∀ z → member-vertex z (p ∷ []) ≡ Bool.true → z ≡ at p
       mv-p-≡ (inj₁ _)        ()
       mv-p-≡ (inj₂ (inj₂ _)) ()
-      mv-p-≡ (inj₂ (inj₁ q)) h with ∨-true-inv (eq-path q p) Bool.false h
-      ... | inj₁ e = ≡-cong at (eq-path-≡ e)
-      ... | inj₂ ()
+      mv-p-≡ (inj₂ (inj₁ q)) h with member-∈ {q} {p ∷ []} h
+      ... | here ≡-refl = ≡-refl
+      ... | there ()
 
       pguard-≡ : ∀ x' y' → (member-vertex x' (p ∷ []) ∨ member-vertex y' (p ∷ [])) ≡ Bool.true →
                  (x' ≡ at p) ⊎ (y' ≡ at p)
@@ -616,7 +605,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       ... | inj₂ e = inj₂ (mv-p-≡ y' e)
 
       p∈C* : member p C* ≡ Bool.true
-      p∈C* = or-introl (eq-path p p) (member p (concat Ms)) (eq-path-refl p)
+      p∈C* = ∈-member {p} {C*} (here ≡-refl)
 
       vis-or : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
                (x' ≡ at p) ⊎ (y' ≡ at p) → G x' y' i' j' ≡ two.I →
@@ -700,12 +689,12 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
           (λ hy → [ (λ aM → two.⊔-I-inr _ (sums-I (at p) (at qy) i' j' two.O
                       (AnyPr.map⁺ (Any-map (λ {CH} mem →
                         summary-I (proj₁ CH) (at p) (at qy) i' j'
-                             (or-intror (member p (proj₁ CH)) (member qy (proj₁ CH)) mem) ge) aM))))
+                             (or-intror (member p (proj₁ CH)) (member qy (proj₁ CH)) (∈-member mem)) ge) aM))))
                   , (λ aU → Any-contra
                               (λ { {CH} (mem , adj) →
                                    two.O≢I (≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} adj qy mem) i' j'))
                                            ge) })
-                              (Any-All aU u-adj)) ]′ (hid-split qy hy))
+                              (Any-All aU u-adj)) ]′ (hid-split (member-∈ hy)))
           (λ hy → two.⊔-I-inl (B-visible-x (at qy) i' j' hy ge))
 
       bwd-py : ∀ x' (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 x')) →
@@ -718,12 +707,12 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
           (λ hx → [ (λ aM → two.⊔-I-inr _ (sums-I (at qx) (at p) i' j' two.O
                       (AnyPr.map⁺ (Any-map (λ {CH} mem →
                         summary-I (proj₁ CH) (at qx) (at p) i' j'
-                             (or-introl (member qx (proj₁ CH)) (member p (proj₁ CH)) mem) ge) aM))))
+                             (or-introl (member qx (proj₁ CH)) (member p (proj₁ CH)) (∈-member mem)) ge) aM))))
                   , (λ aU → Any-contra
                               (λ { {CH} (mem , adj) →
                                    two.O≢I (≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} adj qx mem) i' j'))
                                            ge) })
-                              (Any-All aU u-adj)) ]′ (hid-split qx hx))
+                              (Any-All aU u-adj)) ]′ (hid-split (member-∈ hx)))
           (λ hx → two.⊔-I-inl (B-visible-y (at qx) i' j' hx ge))
 
       bwd-l : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
@@ -736,8 +725,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
         two.⊔-I-inr _
           (sums-I (at qx) y' i' j' two.O
                (Any-map (λ {C} mem →
-                           summary-I C (at qx) y' i' j' (or-introl (member qx C) (member-vertex y' C) mem) ge)
-                        (block-of qx Ms m)))
+                           summary-I C (at qx) y' i' j'
+                                     (or-introl (member qx C) (member-vertex y' C) (∈-member mem)) ge)
+                        (∈-concat⁻ Ms (member-∈ m))))
       ... | inj₁ ep with eq-path-≡ {p = qx} {q = p} ep
       ...   | ≡-refl = bwd-px y' i' j' ge
 
@@ -751,8 +741,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
         two.⊔-I-inr _
           (sums-I x' (at qy) i' j' two.O
                (Any-map (λ {C} mem →
-                           summary-I C x' (at qy) i' j' (or-intror (member-vertex x' C) (member qy C) mem) ge)
-                        (block-of qy Ms m)))
+                           summary-I C x' (at qy) i' j'
+                                     (or-intror (member-vertex x' C) (member qy C) (∈-member mem)) ge)
+                        (∈-concat⁻ Ms (member-∈ m))))
       ... | inj₁ ep with eq-path-≡ {p = qy} {q = p} ep
       ...   | ≡-refl = bwd-py x' i' j' ge
 
@@ -823,10 +814,11 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       All-map
         (λ {C'} a →
           any-false (All-map (λ {q'} aq' →
-                                any-false (All-map (λ {q} hb → eq-path-false-sym {p = q} {q = q'} hb)
-                                                   aq'))
+                                ≡-trans (member-any q' C)
+                                  (any-false (All-map (λ {q} hb → eq-path-false-sym {p = q} {q = q'} hb)
+                                                      aq')))
                              (AllP.All-swap a)) ,
-          any-false (All-map (λ {q} aq → any-false aq) a))
+          any-false (All-map (λ {q} aq → ≡-trans (member-any q C') (any-false aq)) a))
         (AllP.All-swap (All-map AllP.concat⁻ cross))
       ∷ concat-distinct Css aCss
 
@@ -834,10 +826,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                          member p (K .visible) ≡ Bool.true →
                          member p (hidden-set K) ≡ Bool.false
     visible-not-hidden K S {p} pv =
-      any-false (member-All {eq = eq-path} eq-path-≡ {x = p}
-                  (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                              (partition-distinct K (S .partition)))))
-                  pv)
+      ≡-trans (member-any p (hidden-set K))
+              (any-false (All-lookup (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                                     (partition-distinct K (S .partition)))))
+                                     (member-∈ pv)))
 
   summarised-distinct : (K : Config 𝒢) → Summarised K →
                         AllPairs Distinct (map proj₁ (K .hidden))
@@ -855,7 +847,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     (↭-trans (++⁺ (filter-out-↭ {eq = eq-path} (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
                     (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K)
                                          (partition-distinct K (S .partition))))
-                    pv)
+                    (≡-trans (≡-sym (member-any p (K .visible))) pv))
                   ↭-refl)
              (S .partition)))
 
@@ -869,19 +861,15 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     proj₂ (partition-All (adj-p p) (S .summaries))
 
   Apart-mono : {G : Relation (vertex-width 𝒢)} {C₁ C₂ C₁' C₂' : List (Path)} →
-               (∀ q → member q C₁ ≡ Bool.true → member q C₁' ≡ Bool.true) →
-               (∀ q → member q C₂ ≡ Bool.true → member q C₂' ≡ Bool.true) →
-               Apart G C₁' C₂' → Apart G C₁ C₂
+               C₁ ⊆ C₁' → C₂ ⊆ C₂' → Apart G C₁' C₂' → Apart G C₁ C₂
   Apart-mono {G = G} {C₁ = C₁} {C₂} {C₁'} {C₂'} m₁ m₂ ap =
     any-false (All-map
-      (λ {q} mq → any-false (All-map
-        (λ {q'} mq' →
-          member-All {eq = eq-path} eq-path-≡ {x = q'}
-            (member-All {eq = eq-path} eq-path-≡ {x = q}
-               (All-map (λ h → any-false-All _ C₂' h) (any-false-All _ C₁' ap)) (m₁ q mq))
-            (m₂ q' mq'))
-        (any-self eq-path-refl C₂)))
-      (any-self eq-path-refl C₁))
+      (λ h → any-false (All-map
+        (λ h' →
+          All-lookup (All-lookup (All-map (any-false-All _ C₂') (any-false-All _ C₁' ap)) (m₁ h))
+                     (m₂ h'))
+        (All-tabulate (λ h' → h'))))
+      (All-tabulate (λ h → h)))
 
   private
     split-none : (p : Path)
@@ -894,16 +882,16 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   reveal-set : (p : Path)
                (CHs : List (List (Path) × Relation (vertex-width 𝒢))) →
                AllPairs (λ q q' → eq-path q q' ≡ Bool.false) (concat (map proj₁ CHs)) →
-               any (λ CH → member p (proj₁ CH)) CHs ≡ Bool.true →
+               Any (λ CH → p ∈ proj₁ CH) CHs →
                (p ∷ concat (map proj₁ (concat (map (split-region p) CHs))))
                ↭ concat (map proj₁ CHs)
   reveal-set p ((C , H) ∷ CHs) ps h
     with AllPairs-++⁻ C (concat (map proj₁ CHs)) ps
-  ... | (aC , aRest , cross) with member p C in e
-  ...   | Bool.false =
+  ... | (aC , aRest , cross) with p ∈? C
+  ...   | no ¬m =
     ↭-trans (↭-sym (shift p C (concat (map proj₁ (concat (map (split-region p) CHs))))))
-            (++⁺ ↭-refl (reveal-set p CHs aRest h))
-  ...   | Bool.true  =
+            (++⁺ ↭-refl (reveal-set p CHs aRest (tail ¬m h)))
+  ...   | yes m =
     ↭-trans (↭-reflexive (≡-cong (λ z → p ∷ concat z) (map-++ proj₁ X Z)))
     (↭-trans (↭-reflexive (≡-cong (p ∷_) (≡-sym (concat-++ (map proj₁ X) (map proj₁ Z)))))
     (↭-trans (↭-reflexive (≡-cong₂ (λ u v → p ∷ (concat u ++ concat (map proj₁ v)))
@@ -918,16 +906,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
     no-p-tail : All (λ CH → member p (proj₁ CH) ≡ Bool.false) CHs
     no-p-tail =
-      any-false-All _ CHs
-        (≡-trans (≡-sym (any-map (λ C' → member p C') proj₁ CHs))
-          (≡-trans (≡-sym (any-concat (eq-path p) (map proj₁ CHs)))
-                   (any-false (member-All {eq = eq-path} eq-path-≡ {x = p} cross e))))
+      All-tabulate (λ mCH → ∉-member (λ k →
+        eq-false-≢ (All-lookup (All-lookup cross m) (∈-concat⁺′ k (∈-map⁺ proj₁ mCH))) ≡-refl))
 
     head-perm : (p ∷ concat Regs) ↭ C
     head-perm =
       ↭-trans (↭.prep p (regions-concat (fo-graph 𝒢) C∖p))
               (filter-out-↭ {eq = eq-path} (λ {q} {q'} e' → eq-path-≡ {p = q} {q = q'} e')
-                            aC e)
+                            aC (≡-trans (≡-sym (member-any p C)) (∈-member m)))
 
   private
     split-summaries : (p : Path)
@@ -952,7 +938,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                 (reveal-set p (K .hidden)
                    (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
                                                (partition-distinct K (S .partition)))))
-                   (member-hidden p K hp)))
+                   (hidden-∈ K (member-∈ hp))))
              (S .partition))
 
   reveal-at-summaries : (p : Path) (K : Config 𝒢) (S : Summarised K) →
@@ -1011,7 +997,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     filter-out-↭ {eq = eq-path} (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
                  (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K)
                                       (partition-distinct K (S .partition))))
-                 pv
+                 (≡-trans (≡-sym (member-any p (K .visible))) pv)
 
   hide-reveal-hidden-set : (p : Path) (K : Config 𝒢) → Summarised K →
                            member p (K .visible) ≡ Bool.true →
@@ -1022,7 +1008,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                                   (hidden-set (hide-at p K))
                                                   (partition-distinct (hide-at p K)
                                                     (hide-at-partition p K S pv)))))
-                      (or-introl _ _ (or-introl (eq-path p p) _ (eq-path-refl p))))
+                      (here (here ≡-refl)))
                     (hide-at-hidden-set p K))
 
   private
@@ -1030,10 +1016,11 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                          member p (hidden-set K) ≡ Bool.true →
                          member p (K .visible) ≡ Bool.false
     hidden-not-visible K S {p} hp =
-      any-false (All-map
-        (λ {q} cr → eq-path-false-sym {p = q} {q = p}
-                      (member-All {eq = eq-path} eq-path-≡ {x = p} cr hp))
-        (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K (S .partition))))))
+      ≡-trans (member-any p (K .visible))
+        (any-false (All-map
+          (λ {q} cr → eq-path-false-sym {p = q} {q = p} (All-lookup cr (member-∈ hp)))
+          (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                      (partition-distinct K (S .partition)))))))
 
   reveal-hide-visible : (p : Path) (K : Config 𝒢) → Summarised K →
                         member p (hidden-set K) ≡ Bool.true →
@@ -1041,7 +1028,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   reveal-hide-visible p K S hp =
     ≡-trans (filter-head-false (K .visible) (≡-cong Bool.not (eq-path-refl p)))
             (filter-all-true (All-map (λ h → ≡-cong Bool.not h)
-               (any-false-All _ (K .visible) (hidden-not-visible K S {p = p} hp))))
+               (any-false-All (eq-path p) (K .visible)
+                 (≡-trans (≡-sym (member-any p (K .visible)))
+                          (hidden-not-visible K S {p = p} hp)))))
 
   reveal-hide-hidden-set : (p : Path) (K : Config 𝒢) → Summarised K →
                            member p (hidden-set K) ≡ Bool.true →
@@ -1051,7 +1040,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
             (reveal-set p (K .hidden)
                (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
                                            (partition-distinct K (S .partition)))))
-               (member-hidden p K hp))
+               (hidden-∈ K (member-∈ hp)))
 
   private
     restrict-≤ : (G : Relation (vertex-width 𝒢)) (C : List (Path)) →
@@ -1068,12 +1057,12 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                              G z r i j S.≈ restrict G C z r i j)))
                                 (map at C)
     restrict-hidden-agree G C =
-      AllP.map⁺ (All-map (λ {q} hq → ⟪
+      AllP.map⁺ (All-map (λ {q} h → let hq = ∈-member h in ⟪
         (λ z i j → ≈-of-≡ₛ (≡-sym (≡-cong (λ b → when b (G (at q) z) i j)
                                           (or-introl (member q C) (member-vertex z C) hq)))) ,ₚ
         (λ z i j → ≈-of-≡ₛ (≡-sym (≡-cong (λ b → when b (G z (at q)) i j)
                                           (or-intror (member-vertex z C) (member q C) hq)))) ⟫)
-        (any-self eq-path-refl C))
+        (All-tabulate (λ h → h)))
 
   summaries-assemble : (K : Config 𝒢) → Summarised K →
                        ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
@@ -1284,8 +1273,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
             (↭↭-of-≡ (merge-region-inert G b (regions G B) (regions G rest)
               (All-map (λ inc →
                  any-false (All-map (λ {q} h →
-                              member-All {eq = eq-path} eq-path-≡ {x = q}
-                                (any-false-All _ rest hb) (∈-member (inc h)))
+                              All-lookup (any-false-All _ rest hb) (inc h))
                             (All-tabulate (λ h → h))))
                 (regions-⊆ G rest))))
 
@@ -1376,12 +1364,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
     hrev : hidden-set (reveal-at p K) ↭ filterᵇ notp (hidden-set K)
     hrev = drop-∷
-      (↭-trans (reveal-set p (K .hidden) distinct-hs
-                  (≡-trans (≡-sym (any-map (λ C → member p C) proj₁ (K .hidden)))
-                           (≡-trans (≡-sym (any-concat (eq-path p) Cs)) hp)))
+      (↭-trans (reveal-set p (K .hidden) distinct-hs (hidden-∈ K (member-∈ hp)))
                (↭.↭-sym (filter-out-↭ {eq = eq-path}
                           (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
-                          distinct-hs hp)))
+                          distinct-hs (≡-trans (≡-sym (member-any p (hidden-set K))) hp))))
 
     apart-filtered : AllPairs (Apart G) (map (filterᵇ notp) Cs)
     apart-filtered =
@@ -1389,8 +1375,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
         (AllPairs-map (λ {C} {C'} ap →
                          Apart-mono {G = G} {C₁ = filterᵇ notp C} {C₂ = filterᵇ notp C'}
                                     {C₁' = C} {C₂' = C'}
-                                    (λ q h → any-filterᵇ (eq-path q) notp C h)
-                                    (λ q h → any-filterᵇ (eq-path q) notp C' h)
+                                    (∈-filterᵇ⁻ notp C)
+                                    (∈-filterᵇ⁻ notp C')
                                     ap)
                       (separated S))
 
@@ -1416,7 +1402,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                  (≡-sym (≡-cong (map proj₁) (split C H' e)))
                  (≡-sym (≡-cong (regions G)
                           (filter-all-true (All-map (λ h → ≡-cong not h)
-                                                    (any-false-All _ C e)))))
+                                                    (any-false-All (eq-path p) C
+                                                      (≡-trans (≡-sym (member-any p C)) e))))))
                  (H.sym ↭.↭-sym one))
 
     blocks-part : concat (map (λ CH → map proj₁ (split-region p CH)) (K .hidden)) ↭↭

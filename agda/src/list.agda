@@ -20,6 +20,7 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renam
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there)
+open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (++⁺; ++-comm; shift; All-resp-↭)
 open import Data.Nat using (ℕ; zero; suc; _+_; _≤_; z≤n; s≤s)
@@ -282,6 +283,13 @@ partition-AllPairs f sym (_∷_ {x} px ps) with partition-AllPairs f sym ps | pa
 ... | (a₁ , a₂ , cross) | (px₁ , px₂) with f x
 ...   | Bool.true  = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
 ...   | Bool.false = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
+
+∈-filterᵇ⁻ : ∀ {a} {A : Set a} (g : A → Bool) {x : A} (xs : List A) → x ∈ filterᵇ g xs → x ∈ xs
+∈-filterᵇ⁻ g (y ∷ xs) h with g y
+... | Bool.false = there (∈-filterᵇ⁻ g xs h)
+... | Bool.true with h
+...   | here e   = here e
+...   | there h' = there (∈-filterᵇ⁻ g xs h')
 
 any-filterᵇ : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
               any f (filterᵇ g xs) ≡ Bool.true → any f xs ≡ Bool.true
