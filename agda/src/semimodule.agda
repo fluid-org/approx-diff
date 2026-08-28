@@ -103,8 +103,7 @@ open import cmon-enriched using (CMonEnriched; Biproduct)
                                               (_⇒s_.func-resp-≈ (g .*→*) x₁≈x₂)
 +-map M N f g .preserve-ze = trans N (+-cong N (f .preserve-ze) (g .preserve-ze)) (+-lunit N)
 +-map M N f g .preserve-+ = N .trans (N .+-cong (f .preserve-+) (g .preserve-+)) (+-interchange N)
-+-map M N f g .preserve-· = trans N (+-cong N (f .preserve-·) (g .preserve-·))
-                             (sym N (+-distribˡ N))
++-map M N f g .preserve-· = trans N (+-cong N (f .preserve-·) (g .preserve-·)) (sym N (+-distribˡ N))
 
 cmon-enriched : CMonEnriched cat
 cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid.ε = ε-map M N

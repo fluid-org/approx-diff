@@ -83,8 +83,7 @@ private
   fam-eq : ∀ {X Y : Obj} {f g : Mor X Y} (E : f FD.≃ g) x (a : ∣ FibO X x ∣) →
            FibO._≈_ Y (g .idxf .sfunc x)
              (Y .fam .subst (idx-eq E x) .func (f .famf .transf x .func a)) (g .famf .transf x .func a)
-  fam-eq {X} E x a =
-    E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (FibO.refl X x {a})
+  fam-eq {X} E x a = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (FibO.refl X x {a})
 
   rec-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) gi (i : Ix (μ τ₀)) →
             Ix._≈_ σr
@@ -1048,10 +1047,8 @@ fundamental-val {Γ = Γ} {τ = τ} (⇓-case-r {τ₁ = τ₁} {τ₂ = τ₂} 
     (fundamental-val D₂ (rγ · ValRel-at-bound τ₂ r))
 fundamental-val {τ = τ₁ [×] τ₂} (⇓-pair D₁ D₂) rγ =
   ValRel-at-bound τ₁ (fundamental-val D₁ rγ) , ValRel-at-bound τ₂ (fundamental-val D₂ rγ)
-fundamental-val {τ = τ₁} (⇓-fst {τ₂ = τ₂} D) rγ =
-  ValRel-at-bound τ₁ (proj₁ (fundamental-val D rγ))
-fundamental-val {τ = τ₂} (⇓-snd {τ₁ = τ₁} D) rγ =
-  ValRel-at-bound τ₂ (proj₂ (fundamental-val D rγ))
+fundamental-val {τ = τ₁} (⇓-fst {τ₂ = τ₂} D) rγ = ValRel-at-bound τ₁ (proj₁ (fundamental-val D rγ))
+fundamental-val {τ = τ₂} (⇓-snd {τ₁ = τ₁} D) rγ = ValRel-at-bound τ₂ (proj₂ (fundamental-val D rγ))
 fundamental-val (⇓-lam {σ = σ} {τ = τ}) rγ {v} {j} rv {u} {U} D =
   ValRel-at-bound τ (fundamental-val D (rγ · ValRel-at-bound σ rv))
 fundamental-val (⇓-app {σ = σ} {τ = τ} D₁ D₂ D₃) rγ =
@@ -1191,8 +1188,7 @@ private
                  (⟦ sc ⟧tm .famf .transf gi .func g))
               (subst-refl ⟦ Γ ⟧ctxt (IxC.refl Γ {gi}) g , Fib.refl (τ₁ [+] τ₂) k))
 
-args-vec : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → ∣ FibC Γ gi ∣ →
-           ∣ 𝔽 (bases-width is) ∣
+args-vec : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → ∣ FibC Γ gi ∣ → ∣ 𝔽 (bases-width is) ∣
 args-vec {is = is} Ms gi g =
   ap (collect is .FC.famf .transf (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi)))
      (𝒟-arg-product is .famf .transf (⟦ Ms ⟧tms .idxf .sfunc gi) .func
@@ -1824,8 +1820,7 @@ env-rel : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) (γ : Env Γ) → EnvValRel γ 
 env-rel emp         emp     = emp
 env-rel (Γ-fo ▸ fo) (γ · v) = env-rel Γ-fo γ · val-rel fo v
 
-val-rel-unique : ∀ {τ} (fo : first-order τ) {v : Val τ} {i : Ix τ} →
-                 ValRel τ v i → Ix._≈_ τ i (val-idx v)
+val-rel-unique : ∀ {τ} (fo : first-order τ) {v : Val τ} {i : Ix τ} → ValRel τ v i → Ix._≈_ τ i (val-idx v)
 val-rel-unique unit          {unit}      r = prop.tt
 val-rel-unique (base s)      {const a}   ⟪ e ⟫ = e
 val-rel-unique {τ₁ [+] τ₂} (fo₁ [+] fo₂) {inl v} {i} (i' , r , ⟪ e ⟫) =

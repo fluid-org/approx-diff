@@ -201,8 +201,7 @@ ValRel τ = ValRel′ (arr-depth τ) τ ≤-refl
 DepRel : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
 DepRel τ = DepRel′ (arr-depth τ) τ ≤-refl
 
-DepRel⊑ : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → Setoid.Carrier A →
-          ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
+DepRel⊑ : ∀ τ {v : Val τ} {i : Ix τ} → ValRel τ v i → Setoid.Carrier A → ∣ 𝔽 (width v) ∣ → ∣ Fib τ i ∣ → Prop
 DepRel⊑ τ = DepRel⊑′ (arr-depth τ) τ ≤-refl
 
 ValRel′-bounds : ∀ {N N'} τ {p : arr-depth τ ≤ N} {p' : arr-depth τ ≤ N'} {v : Val τ} {i : Ix τ} →
@@ -361,9 +360,7 @@ ctrl-dep-clo : ∀ {σ τ} (f : Ix (σ [→] τ)) s →
          (proj₁ (ctrl-dep-at (σ [→] τ) f s) ≈s (c ·ₛ s)) ∧
          Payload._≈_ σ τ f (proj₂ (ctrl-dep-at (σ [→] τ) f s))
            (Payload.ε σ τ f)
-ctrl-dep-clo {σ} {τ} f s =
-  ≈-trans +-runit +-runit ,
-  Payload.+-lunit σ τ f {Payload.ε σ τ f}
+ctrl-dep-clo {σ} {τ} f s = ≈-trans +-runit +-runit , Payload.+-lunit σ τ f {Payload.ε σ τ f}
 
 payload-ctrl-dep : ∀ σ τ (f : Ix (σ [→] τ)) s (d : ∣ Fib (σ [→] τ) f ∣) →
                    Payload._≈_ σ τ f (proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)) (proj₂ d)
@@ -383,8 +380,7 @@ body-input-resp : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) {s s' x x' z} →
                   s ≈s s' → (∀ k → x k ≈s x' k) → ∀ k →
                   body-input γ' v s x z k ≈s body-input γ' v s' x' z k
 body-input-resp γ' v es ecs zero    = es
-body-input-resp γ' v es ecs (suc k) =
-  +-cong (app-congᵥ (M.in₁ {width-env γ'} {width v}) ecs k) ≈-refl
+body-input-resp γ' v es ecs (suc k) = +-cong (app-congᵥ (M.in₁ {width-env γ'} {width v}) ecs k) ≈-refl
 
 DepRel⊑-resp-ctrl′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i : Ix τ} (r : ValRel′ N τ p v i)
                      {s s'} {o : ∣ 𝔽 (width v) ∣} {d} →

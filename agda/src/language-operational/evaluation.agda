@@ -169,8 +169,7 @@ rcast refl R = R
 ccast : ∀ {m n n'} → n ≡ n' → M.Matrix m n → M.Matrix m n'
 ccast refl R = R
 
-sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} → M.Matrix m n →
-              (suc (width-env γ) + n) ⇒ (suc (width-env γ) + m)
+sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} → M.Matrix m n → (suc (width-env γ) + n) ⇒ (suc (width-env γ) + m)
 sub-inputs γ C = M.I ⊕ C
 
 rec-inputs : ∀ {Γ τ} (γ : Env Γ) (w' : Val τ) {m} →

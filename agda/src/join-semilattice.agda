@@ -101,12 +101,10 @@ module _ where
   ∘-cong {A}{B}{C} {f₁ = f₁} f₁≃f₂ g₁≃g₂ .eqfunc .eqfun x =
     C .≃-trans (resp-≃ (f₁ .func) (g₁≃g₂ .eqfunc .eqfun x)) (f₁≃f₂ .eqfunc .eqfun _)
 
-  id-left : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
-            {f : X => Y} → (id ∘ f) ≃m f
+  id-left : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → {f : X => Y} → (id ∘ f) ≃m f
   id-left {A} {B} .eqfunc .eqfun x = B .≃-refl
 
-  id-right : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
-            {f : X => Y} → (f ∘ id) ≃m f
+  id-right : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → {f : X => Y} → (f ∘ id) ≃m f
   id-right {A} {B} .eqfunc .eqfun x = B .≃-refl
 
   assoc : ∀ {A B C D}
@@ -135,8 +133,7 @@ module _ where
     (f +m g) .∨-preserving =
       B.≤-trans (Y.∨-mono (f .∨-preserving) (g .∨-preserving))
                 (Y.interchange Y.∨-comm .proj₁)
-    (f +m g) .⊥-preserving =
-      B.≤-trans (Y.∨-mono (f .⊥-preserving) (g .⊥-preserving)) (Y.∨-lunit .proj₁)
+    (f +m g) .⊥-preserving = B.≤-trans (Y.∨-mono (f .⊥-preserving) (g .⊥-preserving)) (Y.∨-lunit .proj₁)
 
     +m-cong : ∀ {f₁ f₂ g₁ g₂ : X => Y} → f₁ ≃m f₂ → g₁ ≃m g₂ → (f₁ +m g₁) ≃m (f₂ +m g₂)
     +m-cong f₁≃f₂ g₁≃g₂ .eqfunc .eqfun x = Y.∨-cong (f₁≃f₂ .eqfunc .eqfun x) (g₁≃g₂ .eqfunc .eqfun x)
@@ -154,12 +151,10 @@ module _ where
   module _ {A B C}
            {X : JoinSemilattice A}{Y : JoinSemilattice B}{Z : JoinSemilattice C} where
 
-    comp-bilinear₁ : ∀ (f₁ f₂ : Y => Z) (g : X => Y) →
-                       ((f₁ +m f₂) ∘ g) ≃m ((f₁ ∘ g) +m (f₂ ∘ g))
+    comp-bilinear₁ : ∀ (f₁ f₂ : Y => Z) (g : X => Y) → ((f₁ +m f₂) ∘ g) ≃m ((f₁ ∘ g) +m (f₂ ∘ g))
     comp-bilinear₁ f₁ f₂ g .eqfunc .eqfun x = C .≃-refl
 
-    comp-bilinear₂ : ∀ (f : Y => Z) (g₁ g₂ : X => Y) →
-                       (f ∘ (g₁ +m g₂)) ≃m ((f ∘ g₁) +m (f ∘ g₂))
+    comp-bilinear₂ : ∀ (f : Y => Z) (g₁ g₂ : X => Y) → (f ∘ (g₁ +m g₂)) ≃m ((f ∘ g₁) +m (f ∘ g₂))
     comp-bilinear₂ f g₁ g₂ .eqfunc .eqfun x = ∨-preserving-≃ f
 
     comp-bilinear-ε₁ : ∀ (f : X => Y) → (εm ∘ f) ≃m εm {X = X} {Y = Z}
@@ -272,8 +267,7 @@ module _ (I : Set) {A : I -> Preorder} (X : (i : I) → JoinSemilattice (A i)) w
     elim-⨁-func-monotone ≤f-bot = Z.≤-bottom
     elim-⨁-func-monotone ≤f-inl = Z.inl
     elim-⨁-func-monotone ≤f-inr = Z.inr
-    elim-⨁-func-monotone (≤f-case j₁≤j₃ j₂≤j₃) =
-      Z.[ elim-⨁-func-monotone j₁≤j₃ ∨ elim-⨁-func-monotone j₂≤j₃ ]
+    elim-⨁-func-monotone (≤f-case j₁≤j₃ j₂≤j₃) = Z.[ elim-⨁-func-monotone j₁≤j₃ ∨ elim-⨁-func-monotone j₂≤j₃ ]
 
     elim-⨁ : ⨁ => Z
     elim-⨁ .func .fun = elim-⨁-func
@@ -529,22 +523,16 @@ module _ where
   L-dup {A} .∨-preserving {< _ >} {< _ >} = A .≤-refl
   L-dup .⊥-preserving = tt
 
-  L-costrength : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
-                 L (X ⊕ Y) => (X ⊕ L Y)
+  L-costrength : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} → L (X ⊕ Y) => (X ⊕ L Y)
   L-costrength {X = X}{Y = Y} .func .fun bottom = (X ⊕ L Y) .⊥
   L-costrength .func .fun < x , y > = x , < y >
   L-costrength {A} .func .mono {bottom} {bottom} e = A .≤-refl , tt
-  L-costrength {X = X} .func .mono {bottom} {< x >} e =
-    X .⊥-isBottom .IsBottom.≤-bottom , tt
+  L-costrength {X = X} .func .mono {bottom} {< x >} e = X .⊥-isBottom .IsBottom.≤-bottom , tt
   L-costrength .func .mono {< x >} {< x₁ >} e = e
-  L-costrength {X = X} .∨-preserving {bottom} {bottom} =
-    (X .∨-isJoin .IsJoin.inr) , tt
-  L-costrength {A} {B} {X} .∨-preserving {bottom} {< x >} =
-    X .∨-isJoin .IsJoin.inr , B .≤-refl
-  L-costrength {A} {B} {X} .∨-preserving {< x >} {bottom} =
-    X .∨-isJoin .IsJoin.inl , B .≤-refl
-  L-costrength {A} {B} .∨-preserving {< _ >} {< _ >} =
-    A .≤-refl , B .≤-refl
+  L-costrength {X = X} .∨-preserving {bottom} {bottom} = (X .∨-isJoin .IsJoin.inr) , tt
+  L-costrength {A} {B} {X} .∨-preserving {bottom} {< x >} = X .∨-isJoin .IsJoin.inr , B .≤-refl
+  L-costrength {A} {B} {X} .∨-preserving {< x >} {bottom} = X .∨-isJoin .IsJoin.inl , B .≤-refl
+  L-costrength {A} {B} .∨-preserving {< _ >} {< _ >} = A .≤-refl , B .≤-refl
   L-costrength {A} .⊥-preserving = A .≤-refl , tt
 
   L-costrength-natural : ∀ {A₁ A₂ B₁ B₂}
@@ -553,12 +541,9 @@ module _ where
                          (f : X₁ => X₂) (g : Y₁ => Y₂) →
                          (⟨ f ∘ project₁ , L-map g ∘ project₂ ⟩ ∘ L-costrength {X = X₁} {Y = Y₁}) ≃m
                          (L-costrength {X = X₂} {Y = Y₂} ∘ L-map ⟨ f ∘ project₁ , g ∘ project₂ ⟩)
-  L-costrength-natural {X₂ = X₂} f g .eqfunc .eqfun bottom .proj₁ =
-    f .⊥-preserving , tt
-  L-costrength-natural {X₂ = X₂} f g .eqfunc .eqfun bottom .proj₂ =
-    X₂ .⊥-isBottom .IsBottom.≤-bottom , tt
-  L-costrength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun < x , y > =
-    (A₂ × B₂) .≃-refl
+  L-costrength-natural {X₂ = X₂} f g .eqfunc .eqfun bottom .proj₁ = f .⊥-preserving , tt
+  L-costrength-natural {X₂ = X₂} f g .eqfunc .eqfun bottom .proj₂ = X₂ .⊥-isBottom .IsBottom.≤-bottom , tt
+  L-costrength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun < x , y > = (A₂ × B₂) .≃-refl
 
   L-costrength-p₂ : ∀ {A B}{X : JoinSemilattice A}{Y : JoinSemilattice B} →
                     (project₂ {X = X} {Y = L Y} ∘ L-costrength {X = X} {Y = Y}) ≃m L-map (project₂ {X = X} {Y = Y})

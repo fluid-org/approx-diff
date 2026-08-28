@@ -407,8 +407,7 @@ mutual
       strong-apply-bwd-natural {n = 1} τ (strong-concat-mor hs ks)
                                (strong-extend-mor {δ = δ∅} {δ' = δ∅} (λ j → p₂) kc)
 
-    main : (SF ∘co (SAM-X ∘co (((af ∘ Rs) ∘ ab) ∘ p₂)))
-           ≈ ((((af' ∘ Rs') ∘ ab') ∘ p₂) ∘co (SF-P' ∘co SAM-P))
+    main : (SF ∘co (SAM-X ∘co (((af ∘ Rs) ∘ ab) ∘ p₂))) ≈ ((((af' ∘ Rs') ∘ ab') ∘ p₂) ∘co (SF-P' ∘co SAM-P))
     main = begin
         SF ∘co (SAM-X ∘co (((af ∘ Rs) ∘ ab) ∘ p₂))
       ≈⟨ CoK.∘-cong ≈-refl (CoK.∘-cong ≈-refl (≈-trans (lift-comp (af ∘ Rs) ab) (CoK.∘-cong (lift-comp af Rs) ≈-refl))) ⟩
@@ -1373,18 +1372,15 @@ private
 
   sub-as-apply-bwd-[+] : ∀ (σ₁ σ₂ : type 1) (τ' : type 0) →
     sub-as-apply-bwd (σ₁ [+] σ₂) τ' ≈ [+]-map (sub-as-apply-bwd σ₁ τ') (sub-as-apply-bwd σ₂ τ')
-  sub-as-apply-bwd-[+] σ₁ σ₂ τ' =
-    ≈-trans (∘-cong ([+]-map-comp _ _ _ _) ≈-refl) ([+]-map-comp _ _ _ _)
+  sub-as-apply-bwd-[+] σ₁ σ₂ τ' = ≈-trans (∘-cong ([+]-map-comp _ _ _ _) ≈-refl) ([+]-map-comp _ _ _ _)
 
   sub-as-apply-fwd-[×] : ∀ (σ₁ σ₂ : type 1) (τ' : type 0) →
     sub-as-apply-fwd (σ₁ [×] σ₂) τ' ≈ [×]-map (sub-as-apply-fwd σ₁ τ') (sub-as-apply-fwd σ₂ τ')
-  sub-as-apply-fwd-[×] σ₁ σ₂ τ' =
-    ≈-trans (∘-cong ([×]-map-comp _ _ _ _) ≈-refl) ([×]-map-comp _ _ _ _)
+  sub-as-apply-fwd-[×] σ₁ σ₂ τ' = ≈-trans (∘-cong ([×]-map-comp _ _ _ _) ≈-refl) ([×]-map-comp _ _ _ _)
 
   sub-as-apply-bwd-[×] : ∀ (σ₁ σ₂ : type 1) (τ' : type 0) →
     sub-as-apply-bwd (σ₁ [×] σ₂) τ' ≈ [×]-map (sub-as-apply-bwd σ₁ τ') (sub-as-apply-bwd σ₂ τ')
-  sub-as-apply-bwd-[×] σ₁ σ₂ τ' =
-    ≈-trans (∘-cong ([×]-map-comp _ _ _ _) ≈-refl) ([×]-map-comp _ _ _ _)
+  sub-as-apply-bwd-[×] σ₁ σ₂ τ' = ≈-trans (∘-cong ([×]-map-comp _ _ _ _) ≈-refl) ([×]-map-comp _ _ _ _)
 
 private
   fold-strong : ∀ (τ₀ : type 1) (σ : type 0) (σ' : type 1) {Γ' : Obj} →

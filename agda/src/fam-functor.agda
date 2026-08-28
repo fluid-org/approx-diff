@@ -422,8 +422,7 @@ module _ {o m e} {𝒞 : Category o m e} os es
         (𝒞.≈-trans (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (L.fmor-comp _ _))
                                 (L.fmor-cong (𝒞.≈-trans (𝒞.∘-cong₁ (Y .fam .refl*)) 𝒞.id-left))))
           L.strengthᵣ-p₂))
-  FamF-strong .StrongFunctor.strengthᵣ-assoc .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) =
-    e₁ , (e₁ , e₂)
+  FamF-strong .StrongFunctor.strengthᵣ-assoc .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) = e₁ , (e₁ , e₂)
   FamF-strong .StrongFunctor.strengthᵣ-assoc {x = X} {y = Y} .famf-eq .transf-eq =
     𝒞.≈-trans
       (𝒞.∘-cong₁ (𝒞.≈-trans

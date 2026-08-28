@@ -135,10 +135,8 @@ module Fibre {n} (δ : Fin n → Obj) where
                       fib-shape-subst Q d (shape≈-refl ∣ Q ∣ η̄ x) ≈ id (fib-shape Q d x)
     fib-shape-refl* (const A) d x = A .fam .refl*
     fib-shape-refl* (var i)   d x = fib-el-refl* _ (d i) x
-    fib-shape-refl* (P + Q) d (inj₁ x) =
-      ≈-trans (Lmap-cong (fib-shape-refl* P d x)) Lmap-id
-    fib-shape-refl* (P + Q) d (inj₂ y) =
-      ≈-trans (Lmap-cong (fib-shape-refl* Q d y)) Lmap-id
+    fib-shape-refl* (P + Q) d (inj₁ x) = ≈-trans (Lmap-cong (fib-shape-refl* P d x)) Lmap-id
+    fib-shape-refl* (P + Q) d (inj₂ y) = ≈-trans (Lmap-cong (fib-shape-refl* Q d y)) Lmap-id
     fib-shape-refl* (P × Q) d (x , y) =
       ≈-trans (Lmap-cong (≈-trans (prod-m-cong (fib-shape-refl* P d x) (fib-shape-refl* Q d y))
                                   prod-m-id))

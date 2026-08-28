@@ -3,8 +3,7 @@
 open import Level
 open import Data.Unit using (⊤; tt)
 open import Data.Product using (_,_)
-open import categories
-  using (Category; IsTerminal; HasTerminal; HasProducts; HasCoproducts; HasExponentials)
+open import categories using (Category; IsTerminal; HasTerminal; HasProducts; HasCoproducts; HasExponentials)
 open import prop
 open import prop-setoid
   using (IsEquivalence; Setoid; 𝟙; +-setoid; ⊗-setoid; idS; _∘S_; module ≈-Reasoning;
@@ -73,18 +72,13 @@ module _ o where
   Setoid-exponentials : HasExponentials (SetoidCat o o) (Setoid-products o o)
   Setoid-exponentials .exp X Y = Category.hom-setoid (SetoidCat o o) X Y
   Setoid-exponentials .eval .func (f , x) = f .func x
-  Setoid-exponentials .eval .func-resp-≈ (f₁≈f₂ , x₁≈x₂) =
-    f₁≈f₂ .func-eq x₁≈x₂
+  Setoid-exponentials .eval .func-resp-≈ (f₁≈f₂ , x₁≈x₂) = f₁≈f₂ .func-eq x₁≈x₂
   Setoid-exponentials .lambda f .func x .func y = f .func (x , y)
-  Setoid-exponentials .lambda {X} {Y} {Z} f .func x .func-resp-≈ y₁≈y₂ =
-    f .func-resp-≈ (X .refl , y₁≈y₂)
-  Setoid-exponentials .lambda f .func-resp-≈ x₁≈x₂ .func-eq y₁≈y₂ =
-    f .func-resp-≈ (x₁≈x₂ , y₁≈y₂)
-  Setoid-exponentials .lambda-cong f₁≈f₂ .func-eq x₁≈x₂ .func-eq y₁≈y₂ =
-    f₁≈f₂ .func-eq (x₁≈x₂ , y₁≈y₂)
+  Setoid-exponentials .lambda {X} {Y} {Z} f .func x .func-resp-≈ y₁≈y₂ = f .func-resp-≈ (X .refl , y₁≈y₂)
+  Setoid-exponentials .lambda f .func-resp-≈ x₁≈x₂ .func-eq y₁≈y₂ = f .func-resp-≈ (x₁≈x₂ , y₁≈y₂)
+  Setoid-exponentials .lambda-cong f₁≈f₂ .func-eq x₁≈x₂ .func-eq y₁≈y₂ = f₁≈f₂ .func-eq (x₁≈x₂ , y₁≈y₂)
   Setoid-exponentials .eval-lambda f .func-eq x₁≈x₂ = f .func-resp-≈ x₁≈x₂
-  Setoid-exponentials .lambda-ext f .func-eq x₁≈x₂ .func-eq y₁≈y₂ =
-    f .func-resp-≈ x₁≈x₂ .func-eq y₁≈y₂
+  Setoid-exponentials .lambda-ext f .func-eq x₁≈x₂ .func-eq y₁≈y₂ = f .func-resp-≈ x₁≈x₂ .func-eq y₁≈y₂
 
 open import functor using (Functor; NatTrans; ≃-NatTrans; Colimit; IsColimit; Limit; IsLimit; HasLimits; cones→limits)
 
@@ -131,8 +125,7 @@ module _ {o m e} os (𝒮 : Category o m e) where
     ≈⟨ α .natural f .func-eq (A .refl) ⟩
       α .transf x₂ .func a
     ∎ where open ≈-Reasoning (D .fobj x₂ .isEquivalence)
-  Setoid-limit-cones D .isLimit .lambda A α .func-resp-≈ a₁≈a₂ x =
-    α .transf x .func-resp-≈ a₁≈a₂
+  Setoid-limit-cones D .isLimit .lambda A α .func-resp-≈ a₁≈a₂ x = α .transf x .func-resp-≈ a₁≈a₂
   Setoid-limit-cones D .isLimit .lambda-cong α≃β .func-eq x₁≈x₂ x = α≃β .transf-eq x .func-eq x₁≈x₂
   Setoid-limit-cones D .isLimit .lambda-eval α .transf-eq x .func-eq = α .transf x .func-resp-≈
   Setoid-limit-cones D .isLimit .lambda-ext f .func-eq = f .func-resp-≈
@@ -169,8 +162,7 @@ module _ {o m e} os (𝒮 : Category o m e) where
   Setoid-Colimit D .cocone .transf x .func dx = x , dx
   Setoid-Colimit D .cocone .transf x .func-resp-≈ dx₁≈dx₂ =
     EquivOf-intro (𝒮.id x , D .fmor-id .func-eq dx₁≈dx₂)
-  Setoid-Colimit D .cocone .natural f .func-eq dx₁≈dx₂ =
-    EquivOf-intro (f , D .fmor f .func-resp-≈ dx₁≈dx₂)
+  Setoid-Colimit D .cocone .natural f .func-eq dx₁≈dx₂ = EquivOf-intro (f , D .fmor f .func-resp-≈ dx₁≈dx₂)
   Setoid-Colimit D .isColimit .colambda X α =
     rel-preserving-func X (λ { (x , dx) → α .transf x .func dx })
       λ { {x₁ , dx₁} {x₂ , dx₂} (f , eq) →
@@ -184,6 +176,5 @@ module _ {o m e} os (𝒮 : Category o m e) where
                   X .trans (β .natural f .func-eq (D .fobj x₁ .refl))
                            (β .transf x₂ .func-resp-≈ eq) })
                 eq)
-  Setoid-Colimit D .isColimit .colambda-coeval X α .transf-eq x .func-eq =
-    α .transf x .func-resp-≈
+  Setoid-Colimit D .isColimit .colambda-coeval X α .transf-eq x .func-eq = α .transf x .func-resp-≈
   Setoid-Colimit D .isColimit .colambda-ext X f .func-eq = f .func-resp-≈

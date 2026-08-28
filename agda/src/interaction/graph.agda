@@ -80,8 +80,7 @@ mutual
   vertices-of : (ss : List Shape) → List (Vertices ss)
   vertices-of []           = []
   vertices-of (s ∷ [])     = inj₂ root ∷ map inj₁ (vertices s)
-  vertices-of (s ∷ t ∷ ss) =
-    map inj₁ (inj₂ root ∷ map inj₁ (vertices s)) ++ map inj₂ (vertices-of (t ∷ ss))
+  vertices-of (s ∷ t ∷ ss) = map inj₁ (inj₂ root ∷ map inj₁ (vertices s)) ++ map inj₂ (vertices-of (t ∷ ss))
 
 private
   sum-distinct : {A B : Set} {xs : List A} {ys : List B} →
@@ -118,15 +117,13 @@ none-order .IsStrictOrder.asym _ _ ()
 
 sum-<-order : {A B : Set} {R : A → A → Set} {S : B → B → Set} →
               IsStrictOrder R → IsStrictOrder S → IsStrictOrder (sum-< R S)
-sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₁ q) (inj₁ r) a b =
-  o₁ .IsStrictOrder.trans p q r a b
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₁ q) (inj₁ r) a b = o₁ .IsStrictOrder.trans p q r a b
 sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₁ q) (inj₂ r) a b = tt
 sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₂ q) (inj₁ r) a ()
 sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₁ p) (inj₂ q) (inj₂ r) a b = tt
 sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₂ p) (inj₁ q) r        () b
 sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₂ p) (inj₂ q) (inj₁ r) a ()
-sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₂ p) (inj₂ q) (inj₂ r) a b =
-  o₂ .IsStrictOrder.trans p q r a b
+sum-<-order o₁ o₂ .IsStrictOrder.trans (inj₂ p) (inj₂ q) (inj₂ r) a b = o₂ .IsStrictOrder.trans p q r a b
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₁ p) (inj₁ q) a b = o₁ .IsStrictOrder.asym p q a b
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₁ p) (inj₂ q) a ()
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₁ q) () b
@@ -288,8 +285,7 @@ module Hide (V : Set) (w : V → ℕ) where
                             ∧ ((z : V) (i : Fin (w r)) (j : Fin (w z)) → G' z r i j ≈ₛ G z r i j))) rs →
               ∀ x y (i : Fin (w y)) (j : Fin (w x)) →
               foldl h G' rs x y i j ≈ₛ (G' x y i j +ₛ foldl h G rs x y i j)
-  agree-add {G} {G'} []       sub _                   x y i j =
-    ≈ₛ-sym (≈ₛ-trans +-comm (sub x y i j))
+  agree-add {G} {G'} []       sub _                   x y i j = ≈ₛ-sym (≈ₛ-trans +-comm (sub x y i j))
   agree-add {G} {G'} (r ∷ rs) sub (⟪ (ar , ac) ⟫ ∷ as) x y i j =
     ≈ₛ-trans (agree-add {h G r} {h G' r} rs sub' all' x y i j)
     (≈ₛ-trans (+-cong (step x y i j) ≈ₛ-refl)
@@ -374,8 +370,7 @@ module Ordered {V : Set} (vertex-width : V → ℕ) (_<_ : V → V → Set) (o :
       (G x y M.+ₘ (G r y ∘ G x r)) M.+ₘ
       (((G r' y ∘ G x r') M.+ₘ (G r' y ∘ (G r r' ∘ G x r))) M.+ₘ ((G r y ∘ G r' r) ∘ G x r'))
 
-    expand : ∀ {G} → Fwd G → ∀ r r' x y →
-             hide vertex-width (hide vertex-width G r) r' x y ≈ both G r r' x y
+    expand : ∀ {G} → Fwd G → ∀ r r' x y → hide vertex-width (hide vertex-width G r) r' x y ≈ both G r r' x y
     expand {G} fwd r r' x y =
       ≈-trans (M.+ₘ-cong ≈-refl (M.comp-bilinear₁ (G r' y) (G r y ∘ G r' r) (G x r' M.+ₘ (G r r' ∘ G x r))))
       (≈-trans (M.+ₘ-cong ≈-refl (M.+ₘ-cong (M.comp-bilinear₂ (G r' y) (G x r') (G r r' ∘ G x r))
@@ -419,8 +414,7 @@ module Ordered {V : Set} (vertex-width : V → ℕ) (_<_ : V → V → Set) (o :
   hide-all-perm fwd (↭.swap {xs = rs} a b p) x y =
     ≈-trans (hide-all-cong vertex-width rs (comm fwd a b) x y)
             (hide-all-perm (fwd-hide a (fwd-hide b fwd)) p x y)
-  hide-all-perm fwd (↭.trans p q) x y =
-    ≈-trans (hide-all-perm fwd p x y) (hide-all-perm fwd q x y)
+  hide-all-perm fwd (↭.trans p q) x y = ≈-trans (hide-all-perm fwd p x y) (hide-all-perm fwd q x y)
 
 module _ {m n : ℕ} (B : Graph m n) where
   open Graph B
@@ -514,8 +508,7 @@ private
               {G₂ : M.Matrix m l} {Y : M.Matrix n l} {G₃ Z : M.Matrix l k} →
               G₁ ≈ (P ∘ X) → G₂ ≈ (P ∘ Y) → G₃ ≈ Z →
               (G₁ M.+ₘ (G₂ ∘ G₃)) ≈ (P ∘ (X M.+ₘ (Y ∘ Z)))
-  root-step {P = P} {X = X} {Y = Y} {Z = Z} a b c =
-    ≈-trans (M.+ₘ-cong a (∘-cong b c)) (distrib-root P X Y Z)
+  root-step {P = P} {X = X} {Y = Y} {Z = Z} a b c = ≈-trans (M.+ₘ-cong a (∘-cong b c)) (distrib-root P X Y Z)
 
   offset-step : ∀ {m n l k} {K : M.Matrix m k} {P : M.Matrix m n} {G₁ : M.Matrix m k}
                 {X : M.Matrix n k} {G₂ : M.Matrix m l} {Y : M.Matrix n l} {G₃ Z : M.Matrix l k} →
@@ -613,8 +606,7 @@ module HidePremise
 
   open Start public
 
-  agrees-start : ∀ {G H} → Start G H →
-                 Agrees (hide vertex-width G (blk (inj₂ root))) (step H (inj₂ root))
+  agrees-start : ∀ {G H} → Start G H → Agrees (hide vertex-width G (blk (inj₂ root))) (step H (inj₂ root))
   agrees-start {H = H} r .into-ok q =
     ≈-trans (M.+ₘ-cong (r .into-start q)
                      (∘-cong (r .inside-start (inj₂ root) q) (r .into-start (inj₂ root))))
@@ -727,8 +719,7 @@ module NoEdgeOutOfHidden
     from k .no-edge w t i j = k .Into.no-edge t w j i
 
   fixed-hide : ∀ {G} (w : W) → Fixed G → Fixed (hide vertex-width G (hid w))
-  fixed-hide {G} w k =
-    from (Into.fixed-resp (flip-hide vertex-width G (hid w)) (Into.fixed-hide w (to k)))
+  fixed-hide {G} w k = from (Into.fixed-resp (flip-hide vertex-width G (hid w)) (Into.fixed-hide w (to k)))
 
   fixed-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
                    Fixed G → Fixed (hide-all vertex-width G (map (λ w → hid (f w)) ws))
@@ -821,10 +812,7 @@ module Rule₁
                    (≡-cong (b (inj₂ root) ∷_) (≡-sym (map-∘ {g = b} {f = inj₁} (vertices (Graph.shape B)))))
 
   agree : collapse E ≈ (out-root M.+ₘ (up-root ∘ (collapse B ∘ inputs)))
-  agree =
-    ≈-trans (≡-to-≈ plumb)
-            (≈-trans (done .S.tgt-ok root)
-                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ))))
+  agree = ≈-trans (≡-to-≈ plumb) (≈-trans (done .S.tgt-ok root) (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ))))
 
 module Rule₂
   {m : ℕ}
@@ -969,9 +957,7 @@ module Rule₂
     start₂ .S2.into-start q =
       ≈-trans (done₁ .S1.tgt-ok (inj₁ q)) (factor (into⁺ B₂ q) from-inputs₂ from-root₁ inputs₁ κ₁)
     start₂ .S2.inside-start p q = fixed₁ .IntoHidden.edge p (inj₁ q)
-    start₂ .S2.tgt-start _ =
-      ≈-trans (done₁ .S1.tgt-ok (inj₂ root))
-              (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
+    start₂ .S2.tgt-start _ = ≈-trans (done₁ .S1.tgt-ok (inj₂ root)) (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
     start₂ .S2.up-start _ = fixed₁ .IntoHidden.edge (inj₂ root) (inj₂ root)
     start₂ .S2.off-start _ p = fixed₁ .IntoHidden.edge (inj₁ p) (inj₂ root)
     start₂ .S2.sink q = ≈-refl {f = M.εₘ}
@@ -1013,8 +999,7 @@ module Rule₂
               (≡-cong (λ G → G (inj₁ input) er)
                       (foldl-++ (hide (vertex-width E)) (gr E) (b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁) (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂)))
 
-  agree : collapse E
-          ≈ ((out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))) M.+ₘ (up₂ ∘ (collapse B₂ ∘ Φ₂)))
+  agree : collapse E ≈ ((out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))) M.+ₘ (up₂ ∘ (collapse B₂ ∘ Φ₂)))
   agree =
     ≈-trans (≡-to-≈ plumb)
             (≈-trans (done₂ .S2.tgt-ok root)
@@ -1292,9 +1277,7 @@ module Rule₃
     start₃ .S3.into-start q =
       ≈-trans (done₂ .S2.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) Φ₃₁ from-root₂ inputs₂ κ₂)
     start₃ .S3.inside-start p q = fixed₃ .IntoHidden₃.edge p (inj₁ q)
-    start₃ .S3.tgt-start _ =
-      ≈-trans (done₂ .S2.tgt-ok (inj₂ root))
-              (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₂)))
+    start₃ .S3.tgt-start _ = ≈-trans (done₂ .S2.tgt-ok (inj₂ root)) (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₂)))
     start₃ .S3.up-start _ = fixed₃ .IntoHidden₃.edge (inj₂ root) (inj₂ root)
     start₃ .S3.off-start _ p = fixed₃ .IntoHidden₃.edge (inj₁ p) (inj₂ root)
     start₃ .S3.sink q = ≈-refl {f = M.εₘ}
@@ -1348,8 +1331,7 @@ module Rule₃
                        (≡-cong (λ G → G (inj₁ input) er)
                                (foldl-++ (hide (vertex-width E)) G₁ l₂ l₃)))
 
-  agree : collapse E
-          ≈ (((out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂)) M.+ₘ (up₃ ∘ (collapse B₃ ∘ Φ₃)))
+  agree : collapse E ≈ (((out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂)) M.+ₘ (up₃ ∘ (collapse B₃ ∘ Φ₃)))
   agree =
     ≈-trans (≡-to-≈ plumb)
             (≈-trans (done₃ .S3.tgt-ok root)

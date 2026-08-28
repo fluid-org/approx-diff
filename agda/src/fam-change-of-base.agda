@@ -70,8 +70,7 @@ Fam⟨F⟩-preserves-products =
     (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟)
     (λ {X} {Y} → F-prod {X} {Y})
 
-Fam⟨F⟩-L : ∀ (X : Fam⟨𝒞⟩μ.Obj) →
-           Fam𝒟.Iso (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X))
+Fam⟨F⟩-L : ∀ (X : Fam⟨𝒞⟩μ.Obj) → Fam𝒟.Iso (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X))
 Fam⟨F⟩-L X .fwd .idxf = prop-setoid.idS _
 Fam⟨F⟩-L X .fwd .famf .transf x = F-L (X .fam .fm x) .fwd
 Fam⟨F⟩-L X .fwd .famf .natural e = F-L-natural (X .fam .subst e)

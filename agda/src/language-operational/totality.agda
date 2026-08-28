@@ -72,10 +72,8 @@ Total-acc : (τ : type 0) → Acc _<_ (size τ) → TSpec τ
 Total-acc (var ())
 Total-acc unit _ v = ⊤ₛ {ℓT}
 Total-acc (base s) _ v = ⊤ₛ {ℓT}
-Total-acc (σ [+] τ) (acc rs) (inl v) =
-  Total-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v
-Total-acc (σ [+] τ) (acc rs) (inr v) =
-  Total-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) v
+Total-acc (σ [+] τ) (acc rs) (inl v) = Total-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v
+Total-acc (σ [+] τ) (acc rs) (inr v) = Total-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) v
 Total-acc (σ [×] τ) (acc rs) (pair v u) =
   Total-acc σ (rs (s≤s (m≤m+n (size σ) (size τ)))) v ×
   Total-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u
@@ -85,8 +83,7 @@ Total-acc (σ [→] τ) (acc rs) (clo γ' t) =
   Σ (suc (width-env γ' + width v) ⇒ width u) λ R →
   (γ' · v , t ⇓ u [ R ]) ×
   Total-acc τ (rs (s≤s (m≤n+m (size τ) (size σ)))) u
-Total-acc (μ τ₀) (acc rs) v =
-  MuTotal τ₀ (λ σ p → Total-acc σ (rs p)) (var Fin.zero) v
+Total-acc (μ τ₀) (acc rs) v = MuTotal τ₀ (λ σ p → Total-acc σ (rs p)) (var Fin.zero) v
 
 Total : (τ : type 0) → TSpec τ
 Total τ = Total-acc τ (<-wellFounded (size τ))
@@ -122,11 +119,9 @@ total-irr-acc (σ [×] τ) (acc as) {acc rs} {acc rs'} {pair v u} (t , t') =
 total-irr-acc (σ [→] τ) (acc as) {acc rs} {acc rs'} {clo γ' t₀} f = λ v tv →
   let (u , R , D , tu) = f v (total-irr-acc σ (as (s≤s (m≤m+n (size σ) (size τ)))) tv)
   in u , R , D , total-irr-acc τ (as (s≤s (m≤n+m (size τ) (size σ)))) tu
-total-irr-acc (μ τ₀) (acc as) {acc rs} {acc rs'} m =
-  mu-total-map (λ σ p t → total-irr-acc σ (as p) t) m
+total-irr-acc (μ τ₀) (acc as) {acc rs} {acc rs'} m = mu-total-map (λ σ p t → total-irr-acc σ (as p) t) m
 
-total-irr : ∀ τ {ac ac' : Acc _<_ (size τ)} {v} →
-            Total-acc τ ac v → Total-acc τ ac' v
+total-irr : ∀ τ {ac ac' : Acc _<_ (size τ)} {v} → Total-acc τ ac v → Total-acc τ ac' v
 total-irr τ = total-irr-acc τ (<-wellFounded (size τ))
 
 MuT : (τ₀ : type 1) (σ' : type 1) → Val (σ' [ μ τ₀ ]) → Set ℓT
@@ -138,8 +133,7 @@ mu-out m = mu-total-map (λ σ p t → total-irr σ t) m
 mu-in : ∀ {τ₀ v} → MuT τ₀ (var Fin.zero) v → Total (μ τ₀) v
 mu-in m = mu-total-map (λ σ p t → total-irr σ t) m
 
-total-coerce : ∀ {σ σ' : type 0} (e : σ ≡ σ') {v : Val σ} →
-               Total σ v → Total σ' (≡-subst Val e v)
+total-coerce : ∀ {σ σ' : type 0} (e : σ ≡ σ') {v : Val σ} → Total σ v → Total σ' (≡-subst Val e v)
 total-coerce refl t = t
 
 fold-tot-acc : ∀ (τ₀ σ' : type 1) → arr-bound (size (μ τ₀)) σ' →
@@ -161,8 +155,7 @@ fold-tot-acc τ₀ (σ₁ [×] σ₂) (b₁ , b₂) {pair v₁ v₂} (acc ra) t 
           (fold-tot-acc τ₀ σ₂ b₂ (ra (s≤s (m≤n+m (vsize v₂) (vsize v₁)))) (total-irr (σ₂ [ μ τ₀ ]) (Data.Product.proj₂ t)))
   where import Data.Product
 fold-tot-acc τ₀ (σ₁ [→] σ₂) b av t = mt-arrow b t
-fold-tot-acc τ₀ (μ τ') b {roll w₂} (acc ra) t
-  with mu-out {τ₀ = τ' [ μ τ₀ ]₁} t
+fold-tot-acc τ₀ (μ τ') b {roll w₂} (acc ra) t with mu-out {τ₀ = τ' [ μ τ₀ ]₁} t
 ... | mt-roll m₂ =
   ≡-subst (λ x → MuT τ₀ (μ τ') (roll x)) (subst-subst-sym (unfold₁-inst τ' (μ τ₀)))
     (mt-mu (fold-tot-acc τ₀ (unfold₁ τ') (unfold₁-arr τ' b)
@@ -196,8 +189,7 @@ unfold-tot-acc τ₀ (μ τ') (acc ra) (mt-mu {w = w} m) =
   E : (unfold₁ τ' [ μ τ₀ ]) ≡ (B [ μ B ])
   E = unfold₁-inst τ' (μ τ₀)
 
-fold-tot : ∀ (τ₀ σ' : type 1) → arr-bound (size (μ τ₀)) σ' →
-           ∀ {v} → Total (σ' [ μ τ₀ ]) v → MuT τ₀ σ' v
+fold-tot : ∀ (τ₀ σ' : type 1) → arr-bound (size (μ τ₀)) σ' → ∀ {v} → Total (σ' [ μ τ₀ ]) v → MuT τ₀ σ' v
 fold-tot τ₀ σ' b {v} = fold-tot-acc τ₀ σ' b (<-wellFounded (vsize v))
 
 lookup-total : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} → TotalEnv Γ γ → Total τ (lookup x γ)
@@ -214,13 +206,11 @@ ArrTot σ τ {Γ'} γ' t =
   Σ (Val τ) λ u → Σ (suc (width-env γ' + width v) ⇒ width u) λ R →
   ((γ' · v) , t ⇓ u [ R ]) × Total τ u
 
-arr-in : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} →
-         ArrTot σ τ γ' t → Total (σ [→] τ) (clo γ' t)
+arr-in : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} → ArrTot σ τ γ' t → Total (σ [→] τ) (clo γ' t)
 arr-in {σ} {τ} f v tv =
   let (u , R , D , tu) = f v (total-irr σ tv) in u , R , D , total-irr τ tu
 
-arr-out : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} →
-          Total (σ [→] τ) (clo γ' t) → ArrTot σ τ γ' t
+arr-out : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} → Total (σ [→] τ) (clo γ' t) → ArrTot σ τ γ' t
 arr-out {σ} {τ} f v tv =
   let (u , R , D , tu) = f v (total-irr σ tv) in u , R , D , total-irr τ tu
 
@@ -255,15 +245,12 @@ map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') (mt-mu {τ'} 
                       (total-coerce (unfold₁-inst τ' σr) tw')))
 
 Eval : ∀ {Γ} (γ : Env Γ) {τ} (t : Γ ⊢ τ) → Set ℓT
-Eval γ {τ} t =
-  Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → (γ , t ⇓ v [ R ]) × Total τ v
+Eval γ {τ} t = Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → (γ , t ⇓ v [ R ]) × Total τ v
 
 fundamental : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) → TotalEnv Γ γ → Eval γ t
-fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) (γ : Env Γ) → TotalEnv Γ γ →
-                Derivations γ Ms
+fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) (γ : Env Γ) → TotalEnv Γ γ → Derivations γ Ms
 
-fundamental (var x) γ tγ =
-  lookup x γ , _ , ⇓-var x , lookup-total x tγ
+fundamental (var x) γ tγ = lookup x γ , _ , ⇓-var x , lookup-total x tγ
 fundamental unit γ tγ = unit , _ , ⇓-unit , tt
 fundamental (inl {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ =
   let (v , R , D , tv) = fundamental t γ tγ
@@ -283,15 +270,10 @@ fundamental (pair {τ₁ = τ₁} {τ₂ = τ₂} s t) γ tγ =
       (u , S , D' , tu) = fundamental t γ tγ
   in pair v u , _ , ⇓-pair D D' , (total-irr τ₁ tv , total-irr τ₂ tu)
 fundamental (fst {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
-... | pair v u , R , D , tv =
-  v , _ , ⇓-fst D ,
-  total-irr τ₁ (proj₁ tv)
+... | pair v u , R , D , tv = v , _ , ⇓-fst D , total-irr τ₁ (proj₁ tv)
 fundamental (snd {τ₁ = τ₁} {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
-... | pair v u , R , D , tv =
-  u , _ , ⇓-snd D ,
-  total-irr τ₂ (proj₂ tv)
-fundamental (lam t) γ tγ =
-  clo γ t , _ , ⇓-lam , arr-in (λ v tv → fundamental t (γ · v) (tγ , tv))
+... | pair v u , R , D , tv = u , _ , ⇓-snd D , total-irr τ₂ (proj₂ tv)
+fundamental (lam t) γ tγ = clo γ t , _ , ⇓-lam , arr-in (λ v tv → fundamental t (γ · v) (tγ , tv))
 fundamental (app s t) γ tγ with fundamental s γ tγ
 ... | clo γ' t' , R , Ds , tf =
   let (v , S , Dt , tv) = fundamental t γ tγ

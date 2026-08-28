@@ -106,9 +106,7 @@ unfold₁-sub τ (suc i) = var i
 unfold₁ : type 2 → type 1
 unfold₁ τ = sub (unfold₁-sub τ) τ
 
-unfold₁-inst : ∀ (τ : type 2) (ρ : type 0) →
-               sub (push ρ) (unfold₁ τ) ≡
-               τ [ ρ ]₁ [ μ (τ [ ρ ]₁) ]
+unfold₁-inst : ∀ (τ : type 2) (ρ : type 0) → sub (push ρ) (unfold₁ τ) ≡ τ [ ρ ]₁ [ μ (τ [ ρ ]₁) ]
 unfold₁-inst τ ρ =
   trans (sub-sub (push ρ) (unfold₁-sub τ) τ)
         (trans (sub-cong τ pw)
@@ -117,8 +115,7 @@ unfold₁-inst τ ρ =
     A : type 1
     A = τ [ ρ ]₁
 
-    pw : ∀ i → sub (push ρ) (unfold₁-sub τ i) ≡
-               sub (push (μ A)) (sub-lift (push ρ) i)
+    pw : ∀ i → sub (push ρ) (unfold₁-sub τ i) ≡ sub (push (μ A)) (sub-lift (push ρ) i)
     pw zero          = refl
     pw (suc zero)    = sym (sub-ren-id ρ (λ ()))
     pw (suc (suc ()))

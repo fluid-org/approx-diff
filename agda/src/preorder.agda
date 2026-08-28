@@ -16,11 +16,8 @@ record Preorder : Set (suc 0ℓ) where
     _≤_          : Carrier → Carrier → Prop
     ≤-isPreorder : IsPreorder _≤_
 
-  open IsPreorder ≤-isPreorder
-    renaming (refl to ≤-refl; trans to ≤-trans)
-    using (isEquivalence; _≃_) public
-  open IsEquivalence isEquivalence
-    renaming (refl to ≃-refl; sym to ≃-sym; trans to ≃-trans) public
+  open IsPreorder ≤-isPreorder renaming (refl to ≤-refl; trans to ≤-trans) using (isEquivalence; _≃_) public
+  open IsEquivalence isEquivalence renaming (refl to ≃-refl; sym to ≃-sym; trans to ≃-trans) public
 
   infix 4 _≤_
 
@@ -73,8 +70,7 @@ module _ where
   open _≃m_
 
   ∘-cong : ∀ {A B C : Preorder} {f₁ f₂ : B => C} {g₁ g₂ : A => B} → f₁ ≃m f₂ → g₁ ≃m g₂ → (f₁ ∘ g₁) ≃m (f₂ ∘ g₂)
-  ∘-cong {A}{B}{C} {f₁ = f₁} f₁≃f₂ g₁≃g₂ .eqfun x =
-    C .≃-trans (resp-≃ f₁ (g₁≃g₂ .eqfun x)) (f₁≃f₂ .eqfun _)
+  ∘-cong {A}{B}{C} {f₁ = f₁} f₁≃f₂ g₁≃g₂ .eqfun x = C .≃-trans (resp-≃ f₁ (g₁≃g₂ .eqfun x)) (f₁≃f₂ .eqfun _)
 
   id-left : ∀ {A B : Preorder} → {f : A => B} → (id ∘ f) ≃m f
   id-left {A} {B} .eqfun x = B .≃-refl

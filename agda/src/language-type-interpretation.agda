@@ -187,15 +187,11 @@ coprod-m-strong f g = ≈-trans (copair-cong (≈-sym (CP.copair-in₁ _ _)) (�
 
 [+]-map-inj₁ : ∀ {A A' B B' : obj} (f : A ⇒ A') (g : B ⇒ B') →
                ([+]-map f g ∘ (in₁ ∘ injF)) ≈ ((in₁ ∘ injF) ∘ f)
-[+]-map-inj₁ f g =
-  ≈-trans (head-cong (copair-in₁ _ _))
-  (tail-cong-assoc (injF-natural f))
+[+]-map-inj₁ f g = ≈-trans (head-cong (copair-in₁ _ _)) (tail-cong-assoc (injF-natural f))
 
 [+]-map-inj₂ : ∀ {A A' B B' : obj} (f : A ⇒ A') (g : B ⇒ B') →
                ([+]-map f g ∘ (in₂ ∘ injF)) ≈ ((in₂ ∘ injF) ∘ g)
-[+]-map-inj₂ f g =
-  ≈-trans (head-cong (copair-in₂ _ _))
-  (tail-cong-assoc (injF-natural g))
+[+]-map-inj₂ f g = ≈-trans (head-cong (copair-in₂ _ _)) (tail-cong-assoc (injF-natural g))
 
 [+]-map-in₁ : ∀ {A A' B B' : obj} (f : A ⇒ A') (g : B ⇒ B') → ([+]-map f g ∘ in₁) ≈ (in₁ ∘ Lf-map f)
 [+]-map-in₁ f g = copair-in₁ _ _
@@ -543,13 +539,10 @@ co-unitₗ x = ≈-trans (∘-cong id-left ≈-refl) CoK.id-left
 co-unitᵣ : ∀ {Γ' : Obj} {X Y : obj} (x : prod Γ' X ⇒ Y) → (x ∘co (id _ ∘ p₂)) ≈ x
 co-unitᵣ x = ≈-trans (∘-cong ≈-refl (pair-cong ≈-refl id-left)) CoK.id-right
 
-lift-comp : ∀ {Γ' : Obj} {X Y Z : obj} (f : Y ⇒ Z) (g : X ⇒ Y) →
-            ((f ∘ g) ∘ p₂ {Γ'}) ≈ ((f ∘ p₂) ∘co (g ∘ p₂))
-lift-comp f g =
-  ≈-sym (tail-cong-assoc (pair-p₂ _ _))
+lift-comp : ∀ {Γ' : Obj} {X Y Z : obj} (f : Y ⇒ Z) (g : X ⇒ Y) → ((f ∘ g) ∘ p₂ {Γ'}) ≈ ((f ∘ p₂) ∘co (g ∘ p₂))
+lift-comp f g = ≈-sym (tail-cong-assoc (pair-p₂ _ _))
 
-sL-weaken : ∀ {Γ' : Obj} {X Y : obj} (c : X ⇒ Y) →
-            strong-Lf-map {Γ'} (c ∘ p₂) ≈ (Lf-map c ∘ p₂)
+sL-weaken : ∀ {Γ' : Obj} {X Y : obj} (c : X ⇒ Y) → strong-Lf-map {Γ'} (c ∘ p₂) ≈ (Lf-map c ∘ p₂)
 sL-weaken c = ≈-trans (≈-sym (strong-Lf-map-post c p₂)) (∘-cong ≈-refl strong-Lf-map-p₂)
 
 prod-m-weaken : ∀ {Γ' : Obj} {x₁ x₂ y₁ y₂ : obj} (a₁ : x₁ ⇒ y₁) (a₂ : x₂ ⇒ y₂) →
@@ -941,8 +934,7 @@ strong-concat-mor-p₂ {n} i with splitAt n i
 ... | inj₁ j = ≈-refl
 ... | inj₂ k = ≈-refl
 
-lift-post : ∀ {Γ' : Obj} {X Y Z : obj} (b : Y ⇒ Z) (y : prod Γ' X ⇒ Y) →
-            ((b ∘ p₂) ∘co y) ≈ (b ∘ y)
+lift-post : ∀ {Γ' : Obj} {X Y Z : obj} (b : Y ⇒ Z) (y : prod Γ' X ⇒ Y) → ((b ∘ p₂) ∘co y) ≈ (b ∘ y)
 lift-post b y = tail-cong (pair-p₂ _ _)
 
 extend-mor-id : ∀ {k} {δ : Fin k → obj} {X : obj} (i : Fin (suc k)) → extend-mor (λ j → id (δ j)) (id X) i ≈ id _
@@ -961,8 +953,7 @@ strong-as-poly-map-ren : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (τ : type
 strong-as-poly-map-ren {n = n} ρ (var i) gs δ₀ with splitAt n i | splitAt n (extᵗⁿ n ρ i) | splitAt-extᵗⁿ n ρ i
 ... | inj₁ j | .(inj₁ j)     | refl =
   ≈-trans (≈-trans (∘-cong ≈-refl pair-ext0) id-right) (≈-sym (pair-p₂ _ _))
-... | inj₂ k | .(inj₂ (ρ k)) | refl =
-  ≈-trans (co-unitₗ (gs (ρ k))) (≈-sym (co-unitᵣ (gs (ρ k))))
+... | inj₂ k | .(inj₂ (ρ k)) | refl = ≈-trans (co-unitₗ (gs (ρ k))) (≈-sym (co-unitᵣ (gs (ρ k))))
 strong-as-poly-map-ren ρ unit      gs δ₀ =
   ≈-trans (≈-trans (∘-cong ≈-refl pair-ext0) id-right) (≈-sym (pair-p₂ _ _))
 strong-as-poly-map-ren ρ (base s)  gs δ₀ =

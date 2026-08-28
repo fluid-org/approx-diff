@@ -411,8 +411,7 @@ module Interp
                               (strong-fmor-cong P es)))
             (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong ≈-refl id-left))))
 
-        premise : ((⦅ alg ⦆ ∘ prod-m u (id _)) ∘co (inMap P δ ∘ p₂))
-                    ≈ ((alg ∘ prod-m u (id _)) ∘co SF')
+        premise : ((⦅ alg ⦆ ∘ prod-m u (id _)) ∘co (inMap P δ ∘ p₂)) ≈ ((alg ∘ prod-m u (id _)) ∘co SF')
         premise = begin
             (⦅ alg ⦆ ∘ prod-m u (id _)) ∘ pair p₁ (inMap P δ ∘ p₂)
           ≈⟨ assoc _ _ _ ⟩
@@ -595,8 +594,7 @@ module Interp
                            (head-cong strengthᵣ-sect))
 
         strong-Lmap-unit : ∀ {X Y} (h : prod 𝟙 X ⇒ Y) → strong-Lmap h ≈ (Lmap (h ∘ sect) ∘ p₂)
-        strong-Lmap-unit h =
-          ≈-trans (∘-cong ≈-refl strengthᵣ-unit) (head-cong (≈-sym (Lmap-comp _ _)))
+        strong-Lmap-unit h = ≈-trans (∘-cong ≈-refl strengthᵣ-unit) (head-cong (≈-sym (Lmap-comp _ _)))
 
         strong-prod-m-sect : ∀ {X₁ X₂ Y₁ Y₂} (f : prod 𝟙 X₁ ⇒ Y₁) (g : prod 𝟙 X₂ ⇒ Y₂) →
                              (strong-prod-m f g ∘ sect) ≈ prod-m (f ∘ sect) (g ∘ sect)

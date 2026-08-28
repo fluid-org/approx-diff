@@ -167,8 +167,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape≈-cfwd (Poly.var i)   E p = elEq-cfwd (E .rel i) p
     shape≈-cfwd (Q Poly.+ R) E {inj₁ _} {inj₁ _} p = shape≈-cfwd Q E p
     shape≈-cfwd (Q Poly.+ R) E {inj₂ _} {inj₂ _} p = shape≈-cfwd R E p
-    shape≈-cfwd (Q Poly.× R) E {_ , _} {_ , _} (p ,ₚ q) =
-      shape≈-cfwd Q E p ,ₚ shape≈-cfwd R E q
+    shape≈-cfwd (Q Poly.× R) E {_ , _} {_ , _} (p ,ₚ q) = shape≈-cfwd Q E p ,ₚ shape≈-cfwd R E q
     shape≈-cfwd (Poly.μ Q')  E {x} {y} p = c≈fwd Q' E {x} {y} p
 
     elEq-cfwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : T.El r₁} →
@@ -207,8 +206,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape≈-cbwd (Poly.var i)   E p = elEq-cbwd (E .rel i) p
     shape≈-cbwd (Q Poly.+ R) E {inj₁ _} {inj₁ _} p = shape≈-cbwd Q E p
     shape≈-cbwd (Q Poly.+ R) E {inj₂ _} {inj₂ _} p = shape≈-cbwd R E p
-    shape≈-cbwd (Q Poly.× R) E {_ , _} {_ , _} (p ,ₚ q) =
-      shape≈-cbwd Q E p ,ₚ shape≈-cbwd R E q
+    shape≈-cbwd (Q Poly.× R) E {_ , _} {_ , _} (p ,ₚ q) = shape≈-cbwd Q E p ,ₚ shape≈-cbwd R E q
     shape≈-cbwd (Poly.μ Q')  E {x} {y} p = c≈bwd Q' E {x} {y} p
 
     elEq-cbwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : T.El r₂} →
@@ -232,8 +230,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape-cfb (Q Poly.× R) E (x , y) = shape-cfb Q E x ,ₚ shape-cfb R E y
     shape-cfb (Poly.μ Q')  E t = c-fb Q' E t
 
-    el-cfb : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) →
-             T.elEq r₁ (el-cbwd r (el-cfwd r x)) x
+    el-cfb : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) → T.elEq r₁ (el-cbwd r (el-cfwd r x)) x
     el-cfb (env {p}) x = T.elEq-refl (inj₁ p) x
     el-cfb (srt (mk Q E)) x = c-fb Q E x
 
@@ -253,8 +250,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape-cbf (Q Poly.× R) E (x , y) = shape-cbf Q E x ,ₚ shape-cbf R E y
     shape-cbf (Poly.μ Q')  E t = c-bf Q' E t
 
-    el-cbf : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (y : T.El r₂) →
-             T.elEq r₂ (el-cfwd r (el-cbwd r y)) y
+    el-cbf : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (y : T.El r₂) → T.elEq r₂ (el-cfwd r (el-cbwd r y)) y
     el-cbf (env {p}) y = T.elEq-refl (inj₁ p) y
     el-cbf (srt (mk Q E)) y = c-bf Q E y
 
@@ -270,10 +266,8 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
                             (D.fib-shape (P̂ Q) (E .d₂) (shape-cfwd Q E x))
     fib-shape-ciso (Poly.const A) E x = Iso-refl
     fib-shape-ciso (Poly.var i)   E x = fib-el-ciso (E .rel i) x
-    fib-shape-ciso (Q Poly.+ R) E (inj₁ x) =
-      Iso-trans (F-L _) (L-iso (fib-shape-ciso Q E x))
-    fib-shape-ciso (Q Poly.+ R) E (inj₂ y) =
-      Iso-trans (F-L _) (L-iso (fib-shape-ciso R E y))
+    fib-shape-ciso (Q Poly.+ R) E (inj₁ x) = Iso-trans (F-L _) (L-iso (fib-shape-ciso Q E x))
+    fib-shape-ciso (Q Poly.+ R) E (inj₂ y) = Iso-trans (F-L _) (L-iso (fib-shape-ciso R E y))
     fib-shape-ciso (Q Poly.× R) E (x , y) =
       Iso-trans (F-L _)
         (L-iso (Iso-trans (IsIso→Iso F-prod)
@@ -388,10 +382,8 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
                  (tail-cong (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
                                              {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _)))))
 
-  fb-≃ : F𝒟C._≈_
-           (F𝒟C._∘_ fwd-mor bwd-mor) (F𝒟C.id _)
-  fb-≃ .idxf-eq =
-    mk-≃m (λ s → c-bf P E₀ s)
+  fb-≃ : F𝒟C._≈_ (F𝒟C._∘_ fwd-mor bwd-mor) (F𝒟C.id _)
+  fb-≃ .idxf-eq = mk-≃m (λ s → c-bf P E₀ s)
   fb-≃ .famf-eq .transf-eq {s} =
     ≈-trans (∘-cong₂ id-left)
       (≈-trans (∘-cong₂ (head-cancel (ci (Bw s) .fwd∘bwd≈id)))
@@ -399,10 +391,8 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
                                   {x = s} {y = Fw (Bw s)} {z = s} _ _))
           (D.fib-refl* (P̂ P) (E₀ .d₂) s)))
 
-  bf-≃ : F𝒟C._≈_
-           (F𝒟C._∘_ bwd-mor fwd-mor) (F𝒟C.id _)
-  bf-≃ .idxf-eq =
-    mk-≃m (λ w → c-fb P E₀ w)
+  bf-≃ : F𝒟C._≈_ (F𝒟C._∘_ bwd-mor fwd-mor) (F𝒟C.id _)
+  bf-≃ .idxf-eq = mk-≃m (λ w → c-fb P E₀ w)
   bf-≃ .famf-eq .transf-eq {w} =
     ≈-trans (∘-cong₂ id-left)
       (≈-trans (∘-cong₂ (≈-trans (tail-cong (≈-sym (fib-cnat P E₀ {w} {Bw (Fw w)}

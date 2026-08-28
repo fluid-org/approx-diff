@@ -73,11 +73,9 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
 
   collect : ∀ is → Mor (args is) simple[ sort-vals-setoid sort-index is , bases-width is ]
   collect []       = simplef[ untuple [] , MC.id 0 ]
-  collect (i ∷ is) =
-    simple-monoidal FC.∘ FP.prod-m (FC.id (⟦sort⟧′ i)) (collect is)
+  collect (i ∷ is) = simple-monoidal FC.∘ FP.prod-m (FC.id (⟦sort⟧′ i)) (collect is)
 
-  op-mor : ∀ {is o} (ω : op is o) →
-           Mor simple[ sort-vals-setoid sort-index is , bases-width is ] (⟦sort⟧′ o)
+  op-mor : ∀ {is o} (ω : op is o) → Mor simple[ sort-vals-setoid sort-index is , bases-width is ] (⟦sort⟧′ o)
   op-mor ω .idxf = op-fun ω
   op-mor ω .famf .transf c = op-deps ω .func c
   op-mor ω .famf .natural {c} {c'} e =

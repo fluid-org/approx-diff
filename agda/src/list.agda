@@ -84,11 +84,9 @@ perm-All resp (H.prep r p)         (px ∷ pxs) = resp r px ∷ perm-All resp p 
 perm-All resp (H.swap r₁ r₂ p) (px ∷ py ∷ pxs) = resp r₂ py ∷ resp r₁ px ∷ perm-All resp p pxs
 perm-All resp (H.trans p q)        pxs        = perm-All resp q (perm-All resp p pxs)
 
-length-concat : ∀ {a} {A : Set a} (xss : List (List A)) →
-                length (concat xss) ≡ sum (map length xss)
+length-concat : ∀ {a} {A : Set a} (xss : List (List A)) → length (concat xss) ≡ sum (map length xss)
 length-concat []         = ≡-refl
-length-concat (xs ∷ xss) =
-  ≡-trans (length-++ xs) (≡-cong (length xs +_) (length-concat xss))
+length-concat (xs ∷ xss) = ≡-trans (length-++ xs) (≡-cong (length xs +_) (length-concat xss))
 
 sum-≥-length : ∀ {ns : List ℕ} → All (λ n → 1 ≤ n) ns → length ns ≤ sum ns
 sum-≥-length []       = z≤n
@@ -140,8 +138,7 @@ concat-↭↭ : ∀ {a b} {A : Set a} {B : Set b} {f g : A → List (List B)} {x
 concat-↭↭ []         = ↭↭-refl
 concat-↭↭ (px ∷ pxs) = ↭↭-++⁺ px (concat-↭↭ pxs)
 
-concat-resp : ∀ {a} {A : Set a} {rss rss' : List (List A)} →
-              rss ↭↭ rss' → concat rss ↭ concat rss'
+concat-resp : ∀ {a} {A : Set a} {rss rss' : List (List A)} → rss ↭↭ rss' → concat rss ↭ concat rss'
 concat-resp (H.refl [])       = ↭-refl
 concat-resp (H.refl (r ∷ pw)) = ++⁺ r (concat-resp (H.refl pw))
 concat-resp (H.prep r p)      = ++⁺ r (concat-resp p)
@@ -214,12 +211,10 @@ AllPairs-perm : ∀ {a r} {A : Set a} {S : A → A → Set r} →
                 (∀ {x y} → S x y → S y x) →
                 {xs ys : List A} → xs ↭ ys → AllPairs S xs → AllPairs S ys
 AllPairs-perm sym ↭.refl         ps                            = ps
-AllPairs-perm sym (↭.prep x p)   (px ∷ ps)                     =
-  All-resp-↭ p px ∷ AllPairs-perm sym p ps
+AllPairs-perm sym (↭.prep x p)   (px ∷ ps)                     = All-resp-↭ p px ∷ AllPairs-perm sym p ps
 AllPairs-perm sym (↭.swap x y p) ((pxy ∷ pxs) ∷ (pys ∷ ps)) =
   (sym pxy ∷ All-resp-↭ p pys) ∷ (All-resp-↭ p pxs ∷ AllPairs-perm sym p ps)
-AllPairs-perm sym (↭.trans p q)  ps                            =
-  AllPairs-perm sym q (AllPairs-perm sym p ps)
+AllPairs-perm sym (↭.trans p q)  ps                            = AllPairs-perm sym q (AllPairs-perm sym p ps)
 
 perm-AllPairs : ∀ {a r s} {A : Set a} {R : A → A → Set r} {S : A → A → Set s} →
                 (∀ {x y} → S x y → S y x) →
@@ -306,8 +301,7 @@ filter-permᴿ {R = R} P? to from (H.swap {xs} {ys} {x} {y} {x′} {y′} r₁ r
                  (≡-sym (≡-trans (filter-reject P? {y′} {x′ ∷ ys} (λ q → ¬py (from r₂ q)))
                                  (filter-reject P? {x′} {ys} (λ q → ¬px (from r₁ q)))))
                  (filter-permᴿ P? to from p)))
-filter-permᴿ P? to from (H.trans p q) =
-  H.trans (filter-permᴿ P? to from p) (filter-permᴿ P? to from q)
+filter-permᴿ P? to from (H.trans p q) = H.trans (filter-permᴿ P? to from p) (filter-permᴿ P? to from q)
 
 partition-permᴿ : ∀ {a p r} {A : Set a} {P : A → Set p} {R : A → A → Set r} →
                   (P? : (x : A) → Dec (P x)) →

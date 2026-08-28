@@ -49,8 +49,7 @@ module _ {o m e} (𝒞 : Category o m e) where
   pair→functor x y .fmor-id = 𝒞.≈-refl
   pair→functor x y .fmor-comp id id = 𝒞.≈-sym 𝒞.id-left
 
-  span→cone : ∀ {F : Functor cat 𝒞} {z} → z 𝒞.⇒ F .fobj L → z 𝒞.⇒ F .fobj R →
-                 NatTrans (constF cat z) F
+  span→cone : ∀ {F : Functor cat 𝒞} {z} → z 𝒞.⇒ F .fobj L → z 𝒞.⇒ F .fobj R → NatTrans (constF cat z) F
   span→cone f g .transf L = f
   span→cone f g .transf R = g
   span→cone {F} {z} f g .natural {x} {x} id = begin
@@ -100,9 +99,7 @@ module _ {o m e} (𝒞 : Category o m e) where
   limits→products : HasLimitCones cat 𝒞 → HasProducts 𝒞
   limits→products limits = make-HasProducts 𝒞 λ x y → limit→product (pair→functor x y) (limits _)
 
-  product→limit : ∀ {x y p p₁ p₂} →
-                  IsProduct 𝒞 x y p p₁ p₂ →
-                  IsLimit (pair→functor x y) p (span→cone p₁ p₂)
+  product→limit : ∀ {x y p p₁ p₂} → IsProduct 𝒞 x y p p₁ p₂ → IsLimit (pair→functor x y) p (span→cone p₁ p₂)
   product→limit is-product .lambda z α = is-product .pair (α .transf L) (α .transf R)
   product→limit is-product .lambda-cong α≃β = is-product .pair-cong (α≃β .transf-eq L) (α≃β .transf-eq R)
   product→limit is-product .lambda-eval α .transf-eq L = is-product .pair-p₁ _ _

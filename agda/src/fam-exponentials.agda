@@ -6,8 +6,7 @@ open import prop using (_,_)
 open import prop-setoid
   using (IsEquivalence; Setoid; 𝟙; +-setoid; ⊗-setoid; idS; _∘S_; module ≈-Reasoning)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence)
-open import categories
-  using (Category; HasExponentials; HasProducts; HasCoproducts)
+open import categories using (Category; HasExponentials; HasProducts; HasCoproducts)
 open import indexed-family
   using (HasSetoidProducts; Fam;
          _⇒f_; _≃f_; ≃f-isEquivalence;
@@ -65,18 +64,15 @@ open _≃f_
 _⟶_ : Obj → Obj → Obj
 (X ⟶ Y) .idx = Category.hom-setoid cat X Y
 (X ⟶ Y) .fam .fm f = SP .Π (X .idx) (Y .fam [ f .idxf ])
-(X ⟶ Y) .fam .subst {f} {g} e =
-  Π-map SP (reindex-≈ (f .idxf) (g .idxf) (e .idxf-eq))
-(X ⟶ Y) .fam .refl* {f} =
-  isEquiv .trans (Π-map-cong SP (reindex-≈-refl (f .idxf))) (Π-map-id SP)
+(X ⟶ Y) .fam .subst {f} {g} e = Π-map SP (reindex-≈ (f .idxf) (g .idxf) (e .idxf-eq))
+(X ⟶ Y) .fam .refl* {f} = isEquiv .trans (Π-map-cong SP (reindex-≈-refl (f .idxf))) (Π-map-id SP)
 (X ⟶ Y) .fam .trans* {f} {g} {h} g≈h f≈g =
   isEquiv .trans (Π-map-cong SP (reindex-≈-trans _ _)) (Π-map-comp SP _ _)
 
 eval⟶ : ∀ {X Y : Obj} → Mor ((X ⟶ Y) ⊗ X) Y
 eval⟶ .idxf .func (f , x) = f .idxf .func x
 eval⟶ .idxf .func-resp-≈ (f₁≈f₂ , x₁≈x₂) = f₁≈f₂ .idxf-eq .func-eq x₁≈x₂
-eval⟶ .famf .transf (f , x) =
-  CP .copair (SP .evalΠ _ x) (f .famf .transf x)
+eval⟶ .famf .transf (f , x) = CP .copair (SP .evalΠ _ x) (f .famf .transf x)
 eval⟶ {X} {Y} .famf .natural {f₁ , x₁} {f₂ , x₂} (f₁≈f₂ , x₁≈x₂) =
   begin
     CP .copair (SP .evalΠ (Y .fam [ f₂ .idxf ]) x₂) (f₂ .famf .transf x₂) ∘ prod-m P ((X ⟶ Y) .fam .subst f₁≈f₂) (X .fam .subst x₁≈x₂)
@@ -102,8 +98,7 @@ nudge {X} x .func-resp-≈ e = X .refl , e
 nudge-≈ : ∀ {X Y : Setoid (m ⊔ e ⊔ os ⊔ es) (m ⊔ e ⊔ os ⊔ es)} {x₁ x₂} → X ._≈_ x₁ x₂ → nudge {X = X} {Y = Y} x₁ ≈s nudge x₂
 nudge-≈ x₁≈x₂ .func-eq y₁≈y₂ = x₁≈x₂ , y₁≈y₂
 
-nudge-in₁ : ∀ {X Y : Obj} (x : X .idx .Carrier) →
-            constantFam _ _ (X .fam .fm x) ⇒f ((X ⊗ Y) .fam [ nudge x ])
+nudge-in₁ : ∀ {X Y : Obj} (x : X .idx .Carrier) → constantFam _ _ (X .fam .fm x) ⇒f ((X ⊗ Y) .fam [ nudge x ])
 nudge-in₁ {X} {Y} x .transf y = CP .in₁
 nudge-in₁ {X} {Y} x .natural e =
   begin
@@ -115,8 +110,7 @@ nudge-in₁ {X} {Y} x .natural e =
   ∎
   where open ≈-Reasoning isEquiv
 
-nudge-in₂ : ∀ {X Y : Obj} (x : X .idx .Carrier) →
-            Y .fam ⇒f ((X ⊗ Y) .fam [ nudge x ])
+nudge-in₂ : ∀ {X Y : Obj} (x : X .idx .Carrier) → Y .fam ⇒f ((X ⊗ Y) .fam [ nudge x ])
 nudge-in₂ {X} {Y} x .transf y = CP .in₂
 nudge-in₂ {X} {Y} x .natural e = ≈-sym (in₂-natural _ BP)
 
@@ -263,8 +257,7 @@ lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
   ∎
   where open ≈-Reasoning isEquiv
 
-β-rule : ∀ {X Y Z} (f : Mor (X ⊗ Y) Z) →
-         Mor-∘ eval⟶ (PP.prod-m (lambda⟶ f) (Mor-id _)) ≃ f
+β-rule : ∀ {X Y Z} (f : Mor (X ⊗ Y) Z) → Mor-∘ eval⟶ (PP.prod-m (lambda⟶ f) (Mor-id _)) ≃ f
 β-rule f .idxf-eq .func-eq = f .idxf .func-resp-≈
 β-rule {X} {Y} {Z} f .famf-eq .transf-eq {x , y} =
   begin
@@ -286,10 +279,8 @@ lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
   ∎
   where open ≈-Reasoning isEquiv
 
-η-rule : ∀ {X Y Z} (f : Mor X (Y ⟶ Z)) →
-         lambda⟶ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y))) ≃ f
-η-rule f .idxf-eq .func-eq x₁≈x₂ .idxf-eq .func-eq y₁≈y₂ =
-  f .idxf .func-resp-≈ x₁≈x₂ .idxf-eq .func-eq y₁≈y₂
+η-rule : ∀ {X Y Z} (f : Mor X (Y ⟶ Z)) → lambda⟶ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y))) ≃ f
+η-rule f .idxf-eq .func-eq x₁≈x₂ .idxf-eq .func-eq y₁≈y₂ = f .idxf .func-resp-≈ x₁≈x₂ .idxf-eq .func-eq y₁≈y₂
 η-rule {X} {Y} {Z} f .idxf-eq .func-eq {x₁} {x₂} x₁≈x₂ .famf-eq .transf-eq {y} =
   begin
     Z .fam .subst _ ∘ (id (Z .fam .fm (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf .func (x₁ , y))) ∘ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .famf .transf (x₁ , y) ∘ CP .in₂))

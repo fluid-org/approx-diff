@@ -497,14 +497,11 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
         h .bwd = bwd-h
         h .fwd∘bwd≈id .idxf-eq ._≈s_.func-eq {i} i≈i' =
           y .idx .isEquivalence .trans (fwd-bwd-idx i (decide (p .func i))) i≈i'
-        h .fwd∘bwd≈id .famf-eq ._≃f_.transf-eq {i} =
-          fwd∘bwd-fib i (decide (p .func i))
+        h .fwd∘bwd≈id .famf-eq ._≃f_.transf-eq {i} = fwd∘bwd-fib i (decide (p .func i))
         h .bwd∘fwd≈id .idxf-eq ._≈s_.func-eq {c} {c'} c≈c' =
           coprod y₁ y₂ .idx .isEquivalence .trans {bwd-h .idxf .func (fwd-h .idxf .func c)} {c} {c'} (bwd-fwd-idx c) c≈c'
-        h .bwd∘fwd≈id .famf-eq ._≃f_.transf-eq {inj₁ (i , a , eq)} =
-          bwd∘fwd-fib₁ i a eq (decide (p .func i))
-        h .bwd∘fwd≈id .famf-eq ._≃f_.transf-eq {inj₂ (i , b , eq)} =
-          bwd∘fwd-fib₂ i b eq (decide (p .func i))
+        h .bwd∘fwd≈id .famf-eq ._≃f_.transf-eq {inj₁ (i , a , eq)} = bwd∘fwd-fib₁ i a eq (decide (p .func i))
+        h .bwd∘fwd≈id .famf-eq ._≃f_.transf-eq {inj₂ (i , b , eq)} = bwd∘fwd-fib₂ i b eq (decide (p .func i))
 
         eq-idx : (i : y .idx .Carrier) (s : coprod x₁ x₂ .idx .Carrier) (eq : p .func i ≡ s) →
                  x .idx ._≈_ (f .fwd .idxf .func s) (g .idxf .func i)
@@ -727,8 +724,7 @@ module CategoryOfFamilies {o m e} os es (𝒞 : Category o m e) where
     _⊗_ : Obj → Obj → Obj
     (X ⊗ Y) .idx = ⊗-setoid (X .idx) (Y .idx)
     (X ⊗ Y) .fam .fm (x , y) = P .prod (X .fam .fm x) (Y .fam .fm y)
-    (X ⊗ Y) .fam .subst (e₁ , e₂) =
-      prod-m P (X .fam .subst e₁) (Y .fam .subst e₂)
+    (X ⊗ Y) .fam .subst (e₁ , e₂) = prod-m P (X .fam .subst e₁) (Y .fam .subst e₂)
     (X ⊗ Y) .fam .refl* =
       begin
         prod-m P (X .fam .subst _) (Y .fam .subst _)

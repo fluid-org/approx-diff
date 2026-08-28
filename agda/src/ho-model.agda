@@ -23,8 +23,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import cmon-enriched using (CMonEnriched)
 open import functor using (cones→limits)
 import indexed-family
-open import indexed-family
-  using (HasSetoidProducts; Fam; _⇒f_; _[_])
+open import indexed-family using (HasSetoidProducts; Fam; _⇒f_; _[_])
 import matrix
 import fam
 import fam-mu-lifting
@@ -117,8 +116,7 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
                  Fam⟨𝒞⟩μ.simple[ sort-vals-setoid ℐ.sort-index is , ℐ.bases-width is ]
                  𝒞Bool
   rel-simple is ψ .Fam⟨𝒞⟩μ.idxf = ℐ.rel-pred ψ
-  rel-simple is ψ .Fam⟨𝒞⟩μ.famf .transf c =
-    𝒞Bool-root .Fam⟨𝒞⟩μ.at (ℐ.rel-pred ψ .func c) M.∘ d' ψ c
+  rel-simple is ψ .Fam⟨𝒞⟩μ.famf .transf c = 𝒞Bool-root .Fam⟨𝒞⟩μ.at (ℐ.rel-pred ψ .func c) M.∘ d' ψ c
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e =
     M.≈ₘ-trans (M.id-right {M = P' M.∘ d' ψ c'})
     (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {f = P'}) (M.≈ₘ-sym (ℐ.rel-deps ψ .func-resp-≈ e)))

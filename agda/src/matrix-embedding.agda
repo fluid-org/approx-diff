@@ -15,8 +15,7 @@ open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category; HasTerminal; IsTerminal)
-open import cmon-enriched
-  using (CMonEnriched; Biproduct; biproduct-iso; biproducts→products)
+open import cmon-enriched using (CMonEnriched; Biproduct; biproduct-iso; biproducts→products)
 open import functor using (Functor)
 open import finite-product-functor using (preserve-chosen-terminal; preserve-chosen-products)
 import lifting
@@ -75,12 +74,10 @@ app-· {m} {n} R s u i =
 app-ε : ∀ {m n} (R : Matrix m n) (i : Fin m) → app R (λ _ → ε) i ≈ ε
 app-ε {m} {n} R i = comp-bilinear-ε₂ {m} {n} {1} R i zero
 
-app-congₘ : ∀ {m n} {R R' : Matrix m n} → R ≈ₘ R' →
-            ∀ (v : Vec n) (i : Fin m) → app R v i ≈ app R' v i
+app-congₘ : ∀ {m n} {R R' : Matrix m n} → R ≈ₘ R' → ∀ (v : Vec n) (i : Fin m) → app R v i ≈ app R' v i
 app-congₘ {R = R} {R' = R'} h v i = ∘-cong {N₁ = col v} {N₂ = col v} h (λ _ _ → refl) i zero
 
-app-congᵥ : ∀ {m n} (R : Matrix m n) {u w : Vec n} → (∀ j → u j ≈ w j) →
-            ∀ (i : Fin m) → app R u i ≈ app R w i
+app-congᵥ : ∀ {m n} (R : Matrix m n) {u w : Vec n} → (∀ j → u j ≈ w j) → ∀ (i : Fin m) → app R u i ≈ app R w i
 app-congᵥ R {u = u} {w = w} h i =
   ∘-cong {M₁ = R} {M₂ = R} {N₁ = col u} {N₂ = col w} (λ _ _ → refl) (λ j _ → h j) i zero
 
@@ -88,8 +85,7 @@ app-∘ : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) (v : Vec k) (i : Fin m) 
         app (R ∘ₘ T) v i ≈ app R (app T v) i
 app-∘ R T v i = assoc R T (col v) i zero
 
-app-+ₘ : ∀ {m n} (R T : Matrix m n) (v : Vec n) (i : Fin m) →
-         app (R +ₘ T) v i ≈ (app R v i + app T v i)
+app-+ₘ : ∀ {m n} (R T : Matrix m n) (v : Vec n) (i : Fin m) → app (R +ₘ T) v i ≈ (app R v i + app T v i)
 app-+ₘ R T v i = comp-bilinear₁ R T (col v) i zero
 
 app-I : ∀ {n} (v : Vec n) (i : Fin n) → app (I {n}) v i ≈ v i
@@ -165,8 +161,7 @@ mat R .preserve-· {s} {u} = app-· R s u
 𝔽F : Functor M.cat SemiMod.cat
 𝔽F .fobj = 𝔽
 𝔽F .fmor = mat
-𝔽F .fmor-cong {f₂ = R'} h .*≈* .prop-setoid._≃m_.func-eq {u} e i =
-  trans (app-congₘ h u i) (app-congᵥ R' e i)
+𝔽F .fmor-cong {f₂ = R'} h .*≈* .prop-setoid._≃m_.func-eq {u} e i = trans (app-congₘ h u i) (app-congᵥ R' e i)
 𝔽F .fmor-id .*≈* .prop-setoid._≃m_.func-eq {u} e i = trans (app-I u i) (e i)
 𝔽F .fmor-comp f g .*≈* .prop-setoid._≃m_.func-eq {u} e i =
   trans (app-∘ f g u i) (app-congᵥ f (λ j → app-congᵥ g e j) i)
@@ -174,8 +169,7 @@ mat R .preserve-· {s} {u} = app-· R s u
 mat-cong : ∀ {m n} {R T : Matrix m n} → R ≈ₘ T → SMC._≈_ (mat R) (mat T)
 mat-cong h = 𝔽F .fmor-cong h
 
-mat-comp : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) →
-           SMC._≈_ (mat (R ∘ₘ T)) (SemiMod._∘_ (mat R) (mat T))
+mat-comp : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) → SMC._≈_ (mat (R ∘ₘ T)) (SemiMod._∘_ (mat R) (mat T))
 mat-comp R T = 𝔽F .fmor-comp R T
 
 mat-I : ∀ {n} → SMC._≈_ (mat (I {n})) (SemiMod.id (𝔽 n))
@@ -184,8 +178,7 @@ mat-I = 𝔽F .fmor-id
 mat-ε : ∀ {m n} → SMC._≈_ (mat (εₘ {m} {n})) (SMCM.εm {𝔽 n} {𝔽 m})
 mat-ε .*≈* .prop-setoid._≃m_.func-eq {u} e i = app-εₘ u i
 
-mat-+ : ∀ {m n} (R T : Matrix m n) →
-        SMC._≈_ (mat (R +ₘ T)) (SMCM._+m_ (mat R) (mat T))
+mat-+ : ∀ {m n} (R T : Matrix m n) → SMC._≈_ (mat (R +ₘ T)) (SMCM._+m_ (mat R) (mat T))
 mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
   trans (app-+ₘ R T u i) (+-cong (app-congᵥ R e i) (app-congᵥ T e i))
 
@@ -309,8 +302,7 @@ module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 -- its values on the basis, so a fibre map of the model is a weighted relation and nothing else.
 
 app-e : ∀ {m n} (R : Matrix m n) (j : Fin n) (i : Fin m) → app R (M.e j) i ≈ R i j
-app-e {m} {n} R j i =
-  trans (Σ-cong {n} (λ l → ·-comm)) (Σ-unit j (λ l → R i l))
+app-e {m} {n} R j i = trans (Σ-cong {n} (λ l → ·-comm)) (Σ-unit j (λ l → R i l))
 
 private
   shift : ∀ {m} → Vec m → Vec (Nat.suc m)
@@ -323,8 +315,7 @@ private
 
   shift-map : ∀ {m n} → SemiMod._⇒_ (𝔽 (Nat.suc m)) (𝔽 n) → SemiMod._⇒_ (𝔽 m) (𝔽 n)
   shift-map k .*→* .prop-setoid._⇒_.func u = k .func (shift u)
-  shift-map k .*→* .prop-setoid._⇒_.func-resp-≈ e =
-    k .func-resp-≈ (λ { zero → refl ; (suc l) → e l })
+  shift-map k .*→* .prop-setoid._⇒_.func-resp-≈ e = k .func-resp-≈ (λ { zero → refl ; (suc l) → e l })
   shift-map k .preserve-ze i =
     trans (k .func-resp-≈ (λ { zero → refl ; (suc l) → refl }) i) (k .preserve-ze i)
   shift-map k .preserve-+ i =
@@ -351,8 +342,7 @@ sum-lin {Nat.suc m} k v i =
 𝔽F-faithful {R = R} {T} h i j =
   trans (sym (app-e R j i)) (trans (h .func-eq {M.e j} {M.e j} (λ _ → refl) i) (app-e T j i))
 
-𝔽F-full : ∀ {m n} (k : SemiMod._⇒_ (𝔽 m) (𝔽 n)) →
-          ∃ₛ (MC._⇒_ m n) λ R → SMC._≈_ (mat R) k
+𝔽F-full : ∀ {m n} (k : SemiMod._⇒_ (𝔽 m) (𝔽 n)) → ∃ₛ (MC._⇒_ m n) λ R → SMC._≈_ (mat R) k
 𝔽F-full {m} k = (λ i j → k .func (M.e j) i) ,ₚ pf
   where
   pf : SMC._≈_ (mat (λ i j → k .func (M.e j) i)) k

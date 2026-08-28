@@ -153,11 +153,9 @@ open import Data.List.Relation.Unary.Any using (Any; here; there)
 
 foldr-⊔-base : ∀ (b : Two) (ts : List Two) → foldr _⊔_ b ts ≡ (b ⊔ foldr _⊔_ O ts)
 foldr-⊔-base b []       = ≡-sym ⊔-runit
-foldr-⊔-base b (t ∷ ts) =
-  ≡-trans (≡-cong (t ⊔_) (foldr-⊔-base b ts)) (⊔-swap t b (foldr _⊔_ O ts))
+foldr-⊔-base b (t ∷ ts) = ≡-trans (≡-cong (t ⊔_) (foldr-⊔-base b ts)) (⊔-swap t b (foldr _⊔_ O ts))
 
-foldr-⊔-I : ∀ (b : Two) (ts : List Two) → foldr _⊔_ b ts ≡ I →
-            (b ≡ I) Sum.⊎ Any (_≡ I) ts
+foldr-⊔-I : ∀ (b : Two) (ts : List Two) → foldr _⊔_ b ts ≡ I → (b ≡ I) Sum.⊎ Any (_≡ I) ts
 foldr-⊔-I b []       h = Sum.inj₁ h
 foldr-⊔-I b (t ∷ ts) h with ⊔-I t (foldr _⊔_ b ts) h
 ... | Sum.inj₁ e = Sum.inj₂ (here e)

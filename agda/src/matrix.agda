@@ -98,17 +98,14 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   Σ-·-distribᵣ : ∀ {n} (f : Fin n → Carrier) (x : Carrier) → Σ {n} f · x ≈ Σ {n} (λ j → f j · x)
   Σ-·-distribᵣ {zero} f x = ε-annihilₗ
-  Σ-·-distribᵣ {suc n} f x =
-    trans ·-+-distribᵣ (+-cong refl (Σ-·-distribᵣ {n} (λ j → f (suc j)) x))
+  Σ-·-distribᵣ {suc n} f x = trans ·-+-distribᵣ (+-cong refl (Σ-·-distribᵣ {n} (λ j → f (suc j)) x))
 
   Σ-·-distribₗ : ∀ {n} (x : Carrier) (f : Fin n → Carrier) → x · Σ {n} f ≈ Σ {n} (λ j → x · f j)
-  Σ-·-distribₗ {n} x f =
-    trans ·-comm (trans (Σ-·-distribᵣ f x) (Σ-cong {n} (λ j → ·-comm)))
+  Σ-·-distribₗ {n} x f = trans ·-comm (trans (Σ-·-distribᵣ f x) (Σ-cong {n} (λ j → ·-comm)))
 
   Σ-+ : ∀ {n} (g h : Fin n → Carrier) → Σ {n} g + Σ {n} h ≈ Σ {n} (λ j → g j + h j)
   Σ-+ {zero} g h = +-lunit
-  Σ-+ {suc n} g h =
-    trans +-interchange (+-cong refl (Σ-+ {n} (λ j → g (suc j)) (λ j → h (suc j))))
+  Σ-+ {suc n} g h = trans +-interchange (+-cong refl (Σ-+ {n} (λ j → g (suc j)) (λ j → h (suc j))))
 
   Σ-interchange : ∀ {m n} (f : Fin m → Fin n → Carrier) → Σ {m} (λ i → Σ {n} (f i)) ≈ Σ {n} (λ j → Σ {m} (λ i → f i j))
   Σ-interchange {zero} {n} f = sym (Σ-ε {n})

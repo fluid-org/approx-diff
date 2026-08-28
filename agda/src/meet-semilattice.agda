@@ -84,10 +84,8 @@ module _ where
   _∘_ : ∀ {A B C}{X : MeetSemilattice A}{Y : MeetSemilattice B}{Z : MeetSemilattice C} →
         Y => Z → X => Y → X => Z
   (f ∘ g) .func = f .func preorder.∘ g .func
-  _∘_ {C = C} f g .∧-preserving =
-    C .≤-trans (f .∧-preserving) (f .func .mono (g .∧-preserving))
-  _∘_ {C = C} f g .⊤-preserving =
-    C .≤-trans (f .⊤-preserving) (f .func .mono (g .⊤-preserving))
+  _∘_ {C = C} f g .∧-preserving = C .≤-trans (f .∧-preserving) (f .func .mono (g .∧-preserving))
+  _∘_ {C = C} f g .⊤-preserving = C .≤-trans (f .⊤-preserving) (f .func .mono (g .⊤-preserving))
 
   open _≃m_
   open preorder._≃m_
@@ -98,12 +96,10 @@ module _ where
   ∘-cong {A}{B}{C} {f₁ = f₁} f₁≃f₂ g₁≃g₂ .eqfunc .eqfun x =
     C .≃-trans (resp-≃ (f₁ .func) (g₁≃g₂ .eqfunc .eqfun x)) (f₁≃f₂ .eqfunc .eqfun _)
 
-  id-left : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
-            {f : X => Y} → (id ∘ f) ≃m f
+  id-left : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} → {f : X => Y} → (id ∘ f) ≃m f
   id-left {A} {B} .eqfunc .eqfun x = B .≃-refl
 
-  id-right : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
-            {f : X => Y} → (f ∘ id) ≃m f
+  id-right : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} → {f : X => Y} → (f ∘ id) ≃m f
   id-right {A} {B} .eqfunc .eqfun x = B .≃-refl
 
   assoc : ∀ {A B C D}
@@ -134,8 +130,7 @@ module _ where
     (f +m g) .∧-preserving =
       B.≤-trans (Y.interchange Y.∧-comm .proj₁)
                 (Y.∧-mono (f .∧-preserving) (g .∧-preserving))
-    (f +m g) .⊤-preserving =
-      B.≤-trans (Y.∧-lunit .proj₂) (Y.∧-mono (f .⊤-preserving) (g .⊤-preserving))
+    (f +m g) .⊤-preserving = B.≤-trans (Y.∧-lunit .proj₂) (Y.∧-mono (f .⊤-preserving) (g .⊤-preserving))
 
     +m-cong : ∀ {f₁ f₂ g₁ g₂ : X => Y} → f₁ ≃m f₂ → g₁ ≃m g₂ → (f₁ +m g₁) ≃m (f₂ +m g₂)
     +m-cong f₁≃f₂ g₁≃g₂ .eqfunc .eqfun x = Y.∧-cong (f₁≃f₂ .eqfunc .eqfun x) (g₁≃g₂ .eqfunc .eqfun x)
@@ -154,12 +149,10 @@ module _ where
            {X : MeetSemilattice A}{Y : MeetSemilattice B}{Z : MeetSemilattice C} where
     open preorder._≃m_
 
-    comp-bilinear₁ : ∀ (f₁ f₂ : Y => Z) (g : X => Y) →
-                       ((f₁ +m f₂) ∘ g) ≃m ((f₁ ∘ g) +m (f₂ ∘ g))
+    comp-bilinear₁ : ∀ (f₁ f₂ : Y => Z) (g : X => Y) → ((f₁ +m f₂) ∘ g) ≃m ((f₁ ∘ g) +m (f₂ ∘ g))
     comp-bilinear₁ f₁ f₂ g .eqfunc .eqfun x = C .≃-refl
 
-    comp-bilinear₂ : ∀ (f : Y => Z) (g₁ g₂ : X => Y) →
-                       (f ∘ (g₁ +m g₂)) ≃m ((f ∘ g₁) +m (f ∘ g₂))
+    comp-bilinear₂ : ∀ (f : Y => Z) (g₁ g₂ : X => Y) → (f ∘ (g₁ +m g₂)) ≃m ((f ∘ g₁) +m (f ∘ g₂))
     comp-bilinear₂ f g₁ g₂ .eqfunc .eqfun x = C .≃-sym (∧-preserving-≃ f)
 
     comp-bilinear-ε₁ : ∀ (f : X => Y) → (εm ∘ f) ≃m εm {X = X} {Y = Z}
@@ -303,8 +296,7 @@ module _ where
   [_,_] : ∀ {A B C}{X : MeetSemilattice A}{Y : MeetSemilattice B}{Z : MeetSemilattice C} →
           X => Z → Y => Z → (X ⊕ Y) => Z
   [_,_] {Z = Z} f g .func .fun (x , y) = Z ._∧_ (f .func .fun x) (g .func .fun y)
-  [_,_] {Z = Z} f g .func .mono (x₁≤x₂ , y₁≤y₂) =
-    ∧-mono Z (f .func .mono x₁≤x₂) (g .func .mono y₁≤y₂)
+  [_,_] {Z = Z} f g .func .mono (x₁≤x₂ , y₁≤y₂) = ∧-mono Z (f .func .mono x₁≤x₂) (g .func .mono y₁≤y₂)
   [_,_] {C = C}{Z = Z} f g .∧-preserving {x , y} {x' , y'} =
     C .≤-trans (Z.interchange Z.∧-comm .proj₁)
                (Z.∧-mono (f .∧-preserving) (g .∧-preserving))
@@ -338,8 +330,7 @@ module _ where
   L X .∧-isMeet .IsMeet.⟨_,_⟩ {bottom} {bottom} {z} x≤y x≤z = tt
   L X .∧-isMeet .IsMeet.⟨_,_⟩ {bottom} {< y >}  {bottom} x≤y x≤z = tt
   L X .∧-isMeet .IsMeet.⟨_,_⟩ {bottom} {< y >}  {< z >} x≤y x≤z = tt
-  L X .∧-isMeet .IsMeet.⟨_,_⟩ {< x >}  {< y >}  {< z >} x≤y x≤z =
-    X .∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z
+  L X .∧-isMeet .IsMeet.⟨_,_⟩ {< x >}  {< y >}  {< z >} x≤y x≤z = X .∧-isMeet .IsMeet.⟨_,_⟩ x≤y x≤z
   L X .⊤-isTop .IsTop.≤-top {bottom} = tt
   L X .⊤-isTop .IsTop.≤-top {< x >} = X .⊤-isTop .IsTop.≤-top
 
@@ -397,8 +388,7 @@ module _ where
                        (L-map ⟨ f ∘ project₁ , g ∘ project₂ ⟩ ∘ L-strength {X = X₁} {Y = Y₁}) ≃m
                        (L-strength {X = X₂} {Y = Y₂} ∘ ⟨ f ∘ project₁ , L-map g ∘ project₂ ⟩)
   L-strength-natural f g .eqfunc .eqfun (x , bottom) = tt , tt
-  L-strength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun (x , < y >) =
-    (A₂ × B₂) .≃-refl
+  L-strength-natural {A₂ = A₂} {B₂ = B₂} f g .eqfunc .eqfun (x , < y >) = (A₂ × B₂) .≃-refl
 
   L-strength-p₂ : ∀ {A B}{X : MeetSemilattice A}{Y : MeetSemilattice B} →
                   (L-map project₂ ∘ L-strength {X = X} {Y = Y}) ≃m project₂

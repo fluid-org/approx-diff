@@ -96,7 +96,5 @@ module _ {ℓ o₁ m₁ e₁ o₂ m₂ e₂}
 
     transport-model : Model 𝒞 Sig → Model 𝒟 Sig
     transport-model M .⟦sort⟧ σ = F .fobj (M .⟦sort⟧ σ)
-    transport-model M .⟦op⟧ {σs} {σ} ω =
-      F .fmor (M .⟦op⟧ ω) 𝒟.∘ transport-product (M .⟦sort⟧) σs
-    transport-model M .⟦rel⟧ {σs} ρ =
-      (Ω-mor 𝒟.∘ (F .fmor (M .⟦rel⟧ ρ))) 𝒟.∘ transport-product (M .⟦sort⟧) σs
+    transport-model M .⟦op⟧ {σs} {σ} ω = F .fmor (M .⟦op⟧ ω) 𝒟.∘ transport-product (M .⟦sort⟧) σs
+    transport-model M .⟦rel⟧ {σs} ρ = (Ω-mor 𝒟.∘ (F .fmor (M .⟦rel⟧ ρ))) 𝒟.∘ transport-product (M .⟦sort⟧) σs

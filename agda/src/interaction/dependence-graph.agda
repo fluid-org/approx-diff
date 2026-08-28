@@ -154,8 +154,7 @@ private
 
   inputs-only : ∀ {m n₁ n₂} (c₂ : M.Matrix n₂ m) (X : M.Matrix n₁ m) {R : M.Matrix n₂ m} → c₂ ≈ R →
                 (c₂ ∘ (p₁ {m} {n₁} ∘ ⟨ M.I , X ⟩)) ≈ R
-  inputs-only {m} {n₁} c₂ X e =
-    ≈-trans (∘-cong₂ (pair-p₁ M.I X)) (≈-trans id-right e)
+  inputs-only {m} {n₁} c₂ X e = ≈-trans (∘-cong₂ (pair-p₁ M.I X)) (≈-trans id-right e)
 
   pairing : ∀ {m n₁ n₂} (X₁ : M.Matrix n₁ m) (X₂ : M.Matrix n₂ m) →
             (((M.in₂ {1} ∘ M.in₁ {n₁} {n₂}) ∘ X₁) M.+ₘ ((M.in₂ {1} ∘ M.in₂ {n₁} {n₂}) ∘ X₂))

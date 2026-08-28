@@ -14,8 +14,7 @@ import Data.Fin as Fin
 open Fin using (Fin; splitAt)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
-open import categories
-  using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials)
+open import categories using (Category; HasTerminal; HasProducts; HasCoproducts; HasExponentials)
 open import cmon-enriched using (CMonEnriched; Biproduct; biproducts→products)
 import lifting
 open import functor using (Functor)
@@ -194,8 +193,7 @@ private
 -- At closed types the target environment is the empty one, which agrees with the image environment
 -- only up to pointwise equality. The comparison recurses on the type, so that its index map computes
 -- at each value former, and meets the two environments only at a μ-type.
-closed-iso : ∀ {τ : type 0} (fo : first-order τ) →
-             FD.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty ∅𝒞)) (𝒟⟦ τ ⟧ty (λ ()))
+closed-iso : ∀ {τ : type 0} (fo : first-order τ) → FD.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty ∅𝒞)) (𝒟⟦ τ ⟧ty (λ ()))
 closed-iso unit          = FD.Iso-refl
 closed-iso (base s)      = FD.Iso-refl
 closed-iso (fo₁ [+] fo₂) =

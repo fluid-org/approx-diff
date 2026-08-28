@@ -70,8 +70,7 @@ interpretation .op-deps mult .func (x , y , _) = mult-rel x y
 interpretation .op-deps (lbl l) .func _ = MS.εₘ
 interpretation .op-deps (lit n) .func-resp-≈ _ = ≈-refl {f = MS.εₘ}
 interpretation .op-deps add .func-resp-≈ _ = ≈-refl {f = MS.I ∥ MS.I}
-interpretation .op-deps mult .func-resp-≈ e =
-  mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
+interpretation .op-deps mult .func-resp-≈ e = mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
 interpretation .op-deps (lbl l) .func-resp-≈ _ = ≈-refl {f = MS.εₘ}
 interpretation .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
 interpretation .rel-pred equal-label .func-resp-≈ e =

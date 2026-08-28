@@ -135,8 +135,7 @@ fo-push : ∀ {Δ} {ρ : type Δ} → first-order ρ → ∀ i → first-order (
 fo-push fρ zero    = fρ
 fo-push fρ (suc i) = var i
 
-fo-inst : ∀ {Δ} {τ : type (suc Δ)} {ρ : type Δ} → first-order τ → first-order ρ →
-          first-order (τ [ ρ ])
+fo-inst : ∀ {Δ} {τ : type (suc Δ)} {ρ : type Δ} → first-order τ → first-order ρ → first-order (τ [ ρ ])
 fo-inst fo fρ = fo-sub (fo-push fρ) fo
 
 sub-cong : ∀ {Δ Δ'} {σ σ' : TySub Δ Δ'} (τ : type Δ) → (∀ i → σ i ≡ σ' i) → sub σ τ ≡ sub σ' τ

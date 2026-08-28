@@ -36,8 +36,7 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
 
     id-left  : ∀ {x y} {f : x ⇒ y} → (id y ∘ f) ≈ f
     id-right : ∀ {x y} {f : x ⇒ y} → (f ∘ id x) ≈ f
-    assoc    : ∀ {w x y z} (f : y ⇒ z) (g : x ⇒ y) (h : w ⇒ x) →
-      ((f ∘ g) ∘ h) ≈ (f ∘ (g ∘ h))
+    assoc    : ∀ {w x y z} (f : y ⇒ z) (g : x ⇒ y) (h : w ⇒ x) → ((f ∘ g) ∘ h) ≈ (f ∘ (g ∘ h))
 
   ≈-refl : ∀ {x y} {f : x ⇒ y} → f ≈ f
   ≈-refl = isEquiv .refl
@@ -163,8 +162,7 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
 
   ∘-inv : ∀ {x y z} {f : y ⇒ z} {f' : z ⇒ y} {g : x ⇒ y} {g' : y ⇒ x} →
           (f ∘ f') ≈ id z → (g ∘ g') ≈ id y → ((f ∘ g) ∘ (g' ∘ f')) ≈ id z
-  ∘-inv ff' gg' =
-    ≈-trans (tail-cong (head-cancel gg')) ff'
+  ∘-inv ff' gg' = ≈-trans (tail-cong (head-cancel gg')) ff'
 
   Iso-trans : ∀ {x y z} → Iso x y → Iso y z → Iso x z
   Iso-trans iso₁ iso₂ .fwd = (iso₂ .fwd) ∘ (iso₁ .fwd)
@@ -289,8 +287,7 @@ record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
 
   coprod-m-cong : ∀ {x₁ y₁ x₂ y₂} {f₁ f₂ : x₁ ⇒ x₂} {g₁ g₂ : y₁ ⇒ y₂} →
                   f₁ ≈ f₂ → g₁ ≈ g₂ → coprod-m f₁ g₁ ≈ coprod-m f₂ g₂
-  coprod-m-cong f₁≈f₂ g₁≈g₂ =
-    copair-cong (∘-cong ≈-refl f₁≈f₂) (∘-cong ≈-refl g₁≈g₂)
+  coprod-m-cong f₁≈f₂ g₁≈g₂ = copair-cong (∘-cong ≈-refl f₁≈f₂) (∘-cong ≈-refl g₁≈g₂)
 
   coprod-m-comp : ∀ {x₁ x₂ y₁ y₂ z₁ z₂} (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
     coprod-m (f₁ ∘ g₁) (f₂ ∘ g₂) ≈ (coprod-m f₁ f₂ ∘ coprod-m g₁ g₂)
@@ -491,8 +488,7 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       id _
     ∎ where open ≈-Reasoning isEquiv
 
-  swap-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ y₁) (g : x₂ ⇒ y₂) →
-                 (swap ∘ prod-m f g) ≈ (prod-m g f ∘ swap)
+  swap-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ y₁) (g : x₂ ⇒ y₂) → (swap ∘ prod-m f g) ≈ (prod-m g f ∘ swap)
   swap-natural f g = begin
       swap ∘ prod-m f g
     ≈⟨ pair-natural _ _ _ ⟩
@@ -533,8 +529,7 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
 
   prod-m-cong : ∀ {x₁ x₂ y₁ y₂} {f₁ f₂ : x₁ ⇒ y₁} {g₁ g₂ : x₂ ⇒ y₂} →
                 f₁ ≈ f₂ → g₁ ≈ g₂ → prod-m f₁ g₁ ≈ prod-m f₂ g₂
-  prod-m-cong f₁≈f₂ g₁≈g₂ =
-    pair-cong (∘-cong f₁≈f₂ ≈-refl) (∘-cong g₁≈g₂ ≈-refl)
+  prod-m-cong f₁≈f₂ g₁≈g₂ = pair-cong (∘-cong f₁≈f₂ ≈-refl) (∘-cong g₁≈g₂ ≈-refl)
 
   pair-ext0 : ∀ {x y} → pair p₁ p₂ ≈ id (prod x y)
   pair-ext0 = ≈-trans (≈-sym (pair-cong id-right id-right)) (pair-ext (id _))
@@ -556,8 +551,7 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
   prod-m-id = ≈-trans (pair-cong id-left id-left) pair-ext0
 
   strong-pair : ∀ {w x y z} (q : y ⇒ z) (h : w ⇒ x) (g : w ⇒ y) → (pair p₁ (q ∘ p₂) ∘ pair h g) ≈ pair h (q ∘ g)
-  strong-pair q h g =
-    ≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (tail-cong (pair-p₂ _ _)))
+  strong-pair q h g = ≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (tail-cong (pair-p₂ _ _)))
 
   strong-square : ∀ {w w' x x' y y'} {u : w ⇒ w'} {m : x ⇒ x'} {q' : x ⇒ y} {q : x' ⇒ y'} {v : y ⇒ y'} →
                   (q ∘ m) ≈ (v ∘ q') → (pair p₁ (q ∘ p₂) ∘ prod-m u m) ≈ (prod-m u v ∘ pair p₁ (q' ∘ p₂))
@@ -713,17 +707,14 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
     copair-ext  : ∀ {w x y z} (h : prod w (coprod x y) ⇒ z) →
                   copair (h ∘ pair p₁ (in₁ ∘ p₂)) (h ∘ pair p₁ (in₂ ∘ p₂)) ≈ h
 
-  copair-cong₁ : ∀ {w x y z} {f₁ f₂ : prod w x ⇒ z} {g : prod w y ⇒ z} →
-                 f₁ ≈ f₂ → copair f₁ g ≈ copair f₂ g
+  copair-cong₁ : ∀ {w x y z} {f₁ f₂ : prod w x ⇒ z} {g : prod w y ⇒ z} → f₁ ≈ f₂ → copair f₁ g ≈ copair f₂ g
   copair-cong₁ f≈ = copair-cong f≈ ≈-refl
 
-  copair-cong₂ : ∀ {w x y z} {f : prod w x ⇒ z} {g₁ g₂ : prod w y ⇒ z} →
-                 g₁ ≈ g₂ → copair f g₁ ≈ copair f g₂
+  copair-cong₂ : ∀ {w x y z} {f : prod w x ⇒ z} {g₁ g₂ : prod w y ⇒ z} → g₁ ≈ g₂ → copair f g₁ ≈ copair f g₂
   copair-cong₂ g≈ = copair-cong ≈-refl g≈
 
   copair-ext0 : ∀ {w x y} → copair (in₁ ∘ p₂ {w} {x}) (in₂ ∘ p₂ {w} {y}) ≈ p₂
-  copair-ext0 = ≈-trans (copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
-                        (copair-ext p₂)
+  copair-ext0 = ≈-trans (copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _))) (copair-ext p₂)
 
   copair-reindex : ∀ {w w' x y z} (u : w ⇒ w') (f : prod w' x ⇒ z) (g : prod w' y ⇒ z) →
                    (copair f g ∘ prod-m u (id _)) ≈ copair (f ∘ prod-m u (id _)) (g ∘ prod-m u (id _))
@@ -799,9 +790,7 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
 
     cin : ∀ {x y z} (f : x ⇒ z) (g : y ⇒ z) {v} (ι : v ⇒ scoprod x y) {h : v ⇒ z} →
           (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (ι ∘ p₂)) ≈ (h ∘ p₂) → ((scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ ι) ≈ h
-    cin f g ι e =
-      ≈-trans (tail-cong (sect-natural ι))
-      (≈-trans (head-cong e) (tail-cancel (pair-p₂ _ _)))
+    cin f g ι e = ≈-trans (tail-cong (sect-natural ι)) (≈-trans (head-cong e) (tail-cancel (pair-p₂ _ _)))
 
     result : HasCoproducts 𝒞
     result .HasCoproducts.coprod = scoprod
@@ -839,10 +828,8 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
     lambda : ∀ {x y z} → prod x y ⇒ z → x ⇒ exp y z
 
     lambda-cong : ∀ {x y z} {f₁ f₂ : prod x y ⇒ z} → f₁ ≈ f₂ → lambda f₁ ≈ lambda f₂
-    eval-lambda : ∀ {x y z} (f : prod x y ⇒ z) →
-                  (eval ∘ prod-m (lambda f) (id _)) ≈ f
-    lambda-ext  : ∀ {x y z} (f : x ⇒ exp y z) →
-                  lambda (eval ∘ prod-m f (id _)) ≈ f
+    eval-lambda : ∀ {x y z} (f : prod x y ⇒ z) → (eval ∘ prod-m (lambda f) (id _)) ≈ f
+    lambda-ext  : ∀ {x y z} (f : x ⇒ exp y z) → lambda (eval ∘ prod-m f (id _)) ≈ f
 
   lambda-natural : ∀ {x₁ x₂ y z} (f : x₁ ⇒ x₂) (g : prod x₂ y ⇒ z) →
                    (lambda g ∘ f) ≈ lambda (g ∘ prod-m f (id _))

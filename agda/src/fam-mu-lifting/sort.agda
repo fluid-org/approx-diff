@@ -55,8 +55,7 @@ module Tree {n} (ι : Fin n → Setoid os (os ⊔ es)) where
     W-≈ : ∀ {k} {Q : Poly (suc k)} {ρ : Fin k → Fin n ⊎ Sort n} → W Q ρ → W Q ρ → Prop (os ⊔ es)
     W-≈ {Q = Q} {ρ = ρ} (sup x) (sup y) = shape≈ Q (extend ρ (inj₂ (mkSort Q ρ))) x y
 
-    shape≈ : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) →
-             ⟦ Q ⟧shape η → ⟦ Q ⟧shape η → Prop (os ⊔ es)
+    shape≈ : ∀ {j} (Q : Poly j) (η : Fin j → Fin n ⊎ Sort n) → ⟦ Q ⟧shape η → ⟦ Q ⟧shape η → Prop (os ⊔ es)
     shape≈ (const S) η x y = _≈s_ S x y
     shape≈ (var j)   η x y = elEq (η j) x y
     shape≈ (P + Q) η (inj₁ x) (inj₁ y) = shape≈ P η x y
