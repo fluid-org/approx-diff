@@ -19,7 +19,7 @@ open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_; Poi
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
-open import Data.List.Relation.Unary.Any using (Any; here; there)
+open import Data.List.Relation.Unary.Any using (Any; here; there; tail)
 open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (++⁺; ++-comm; shift; All-resp-↭)
@@ -27,7 +27,9 @@ open import Data.Nat using (ℕ; zero; suc; _+_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties using (suc-injective; n≤0⇒n≡0; +-cancelʳ-≤; +-mono-≤; ≤-reflexive; ≤-trans)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Relation.Binary.PropositionalEquality using (_≡_; subst; subst₂)
+open import Relation.Binary.Definitions using (DecidableEquality)
+open import Relation.Nullary.Decidable using (does; yes; no; dec-false)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 
 private
@@ -334,17 +336,13 @@ perm-AllPairs sym resp (H.swap r₁ r₂ p) ((pxy ∷ pxs) ∷ (pys ∷ ps)) =
 perm-AllPairs sym resp (H.trans p q)              ps                      =
   perm-AllPairs sym resp q (perm-AllPairs sym resp p ps)
 
-filter-out-↭ : ∀ {a} {A : Set a} {eq : A → A → Bool} →
-               (∀ {x y} → eq x y ≡ Bool.true → x ≡ y) →
-               {x : A} {xs : List A} →
-               AllPairs (λ y z → eq y z ≡ Bool.false) xs →
-               any (eq x) xs ≡ Bool.true →
-               (x ∷ filterᵇ (λ y → not (eq x y)) xs) ↭ xs
-filter-out-↭ {eq = eq} sound {x} {y ∷ xs} (py ∷ ps) h with eq x y in e
-... | Bool.false = ↭-trans (↭.swap x y ↭.refl) (↭.prep y (filter-out-↭ sound ps h))
-... | Bool.true with sound e
-...   | ≡-refl =
-  ↭.prep x (↭-reflexive (filter-all-true (All-map (λ hz → ≡-cong not hz) py)))
+filter-out-↭ : ∀ {a} {A : Set a} (_≟_ : DecidableEquality A) {x : A} {xs : List A} →
+               AllPairs _≢_ xs → x ∈ xs →
+               (x ∷ filterᵇ (λ y → not (does (x ≟ y))) xs) ↭ xs
+filter-out-↭ _≟_ {x} {y ∷ xs} (py ∷ ps) h with x ≟ y
+... | no ¬e   = ↭-trans (↭.swap x y ↭.refl) (↭.prep y (filter-out-↭ _≟_ ps (tail ¬e h)))
+... | yes ≡-refl =
+  ↭.prep x (↭-reflexive (filter-all-true (All-map (λ {z} hz → ≡-cong not (dec-false (x ≟ z) hz)) py)))
 
 filter-head-true : ∀ {a} {A : Set a} {f : A → Bool} {x : A} (xs : List A) →
                    f x ≡ Bool.true → filterᵇ f (x ∷ xs) ≡ x ∷ filterᵇ f xs
