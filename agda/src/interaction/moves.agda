@@ -1,16 +1,13 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool as Bool using (Bool; not; _∧_; _∨_; if_then_else_)
-open import Data.Bool.ListAction using (any)
-open import Data.Bool.Properties using (∨-comm; ∨-identityʳ; ∧-comm; T?)
+open import Data.Bool.Properties using (T?)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filter; filterᵇ; concat;
-                            partitionᵇ; foldr)
+open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filter; concat; foldr)
 import Data.List as L
 open import Data.List.Properties
   using (++-identityʳ; concat-++; concat-map; foldl-++; length-map; map-++; map-∘;
-         filter-all; filter-reject)
+         filter-all; filter-accept; filter-reject; filter-none; filter-++; partition-defn)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (map⁺; shift; ++⁺; drop-∷; All-resp-↭; Any-resp-↭; ↭-length; ∈-resp-↭)
 open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
@@ -30,9 +27,9 @@ open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary using (¬_)
+open import Relation.Unary.Properties using (∁?)
 open import Relation.Nullary.Decidable
-  using (⌊_⌋; Dec; does; yes; no; ¬?; _⊎-dec_; _×-dec_; toWitness; toWitnessFalse; isYes≗does;
-         dec-true; dec-false)
+  using (Dec; yes; no; ¬?; _⊎-dec_; _×-dec_)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
@@ -83,14 +80,6 @@ NonZero? R = FinP.any? (λ i → FinP.any? (λ j → is-I? (R i j)))
   is-I? two.O = no (λ ())
   is-I? two.I = yes ≡-refl
 
-¬T-false : ∀ {b : Bool} → ¬ (Bool.T b) → b ≡ Bool.false
-¬T-false {Bool.false} h = ≡-refl
-¬T-false {Bool.true}  h = ⊥-elim (h _)
-
-does-false : ∀ {p} {P : Set p} (d : Dec P) → does d ≡ Bool.false → ¬ P
-does-false d e =
-  toWitnessFalse (subst (λ b → Bool.T (Bool.not b)) (≡-sym (≡-trans (isYes≗does d) e)) _)
-
 NonZero-O : ∀ {m n} (R : M.Matrix m n) → ¬ NonZero R → ∀ i j → R i j ≡ two.O
 NonZero-O R h i j with R i j in e
 ... | two.O = ≡-refl
@@ -127,19 +116,12 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   Adjacent? : (G : Relation (vertex-width B)) (x y : V B) → Dec (Adjacent G x y)
   Adjacent? G x y = NonZero? (G x y) ⊎-dec NonZero? (G y x)
 
-  adjacent : Relation (vertex-width B) → V B → V B → Bool
-  adjacent G x y = does (Adjacent? G x y)
+  Adj : Relation (vertex-width B) → Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Set
+  Adj G p C = Any (λ q → Adjacent G (at p) (at q)) C
 
-  ¬adjacent-All : (G : Relation (vertex-width B)) (x : V B) (C : List (Vertex (Graph.shape B))) →
-                  any (λ q → adjacent G x (at q)) C ≡ Bool.false →
-                  All (λ q → ¬ Adjacent G x (at q)) C
-  ¬adjacent-All G x C h =
-    All-map (λ {q} e → does-false (Adjacent? G x (at q)) e) (any-false-All _ C h)
-
-  ¬adjacent-any : (G : Relation (vertex-width B)) (x : V B) (C : List (Vertex (Graph.shape B))) →
-                  All (λ q → ¬ Adjacent G x (at q)) C →
-                  any (λ q → adjacent G x (at q)) C ≡ Bool.false
-  ¬adjacent-any G x C h = any-false (All-map (λ {q} k → dec-false (Adjacent? G x (at q)) k) h)
+  adj? : (G : Relation (vertex-width B)) (p : Vertex (Graph.shape B))
+         (C : List (Vertex (Graph.shape B))) → Dec (Adj G p C)
+  adj? G p C = any? (λ q → Adjacent? G (at p) (at q)) C
 
   adjacent-O : (G : Relation (vertex-width B)) (x y : V B) → ¬ Adjacent G x y →
                (∀ i j → G x y i j ≡ two.O) × (∀ i j → G y x i j ≡ two.O)
@@ -150,7 +132,7 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   merge-region : Relation (vertex-width B) → Vertex (Graph.shape B) → List (List (Vertex (Graph.shape B))) →
                  List (List (Vertex (Graph.shape B)))
   merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
-    where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) rss
+    where tp = L.partition (adj? G w) rss
 
   regions : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → List (List (Vertex (Graph.shape B)))
   regions G []       = []
@@ -168,11 +150,11 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   inj₂ (inj₂ _) ∈ᵥ? C = no (λ ())
 
   Adj-p : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) × Relation (vertex-width B) → Set
-  Adj-p p CH = Any (λ q → Adjacent (fo-graph B) (at p) (at q)) (proj₁ CH)
+  Adj-p p CH = Adj (fo-graph B) p (proj₁ CH)
 
   adj-p? : (p : Vertex (Graph.shape B))
            (CH : List (Vertex (Graph.shape B)) × Relation (vertex-width B)) → Dec (Adj-p p CH)
-  adj-p? p CH = any? (λ q → Adjacent? (fo-graph B) (at p) (at q)) (proj₁ CH)
+  adj-p? p CH = adj? (fo-graph B) p (proj₁ CH)
 
   restrict : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → Relation (vertex-width B)
   restrict G C x y = when (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (G x y)
@@ -285,29 +267,28 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   ... | yes _ = fwd x y i j
   ... | no  _ = inj₂ ⟪ S.refl {two.O} ⟫
 
-  adjacent-sym : (G : Relation (vertex-width 𝒢)) (x y : V 𝒢) → adjacent G x y ≡ adjacent G y x
-  adjacent-sym G x y = ∨-comm (does (NonZero? (G x y))) (does (NonZero? (G y x)))
+  adjacent-sym : (G : Relation (vertex-width 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
+  adjacent-sym G = [ inj₂ , inj₁ ]′
 
   Apart : Relation (vertex-width 𝒢) → List (Path) → List (Path) → Set
   Apart G C C' = All (λ q → All (λ q' → ¬ Adjacent G (at q) (at q')) C') C
 
   apart-sym : (G : Relation (vertex-width 𝒢)) {C C' : List (Path)} → Apart G C C' → Apart G C' C
   apart-sym G h =
-    All-tabulate (λ m' → All-tabulate (λ m a → All-lookup (All-lookup h m) m' ([ inj₂ , inj₁ ]′ a)))
+    All-tabulate (λ m' → All-tabulate (λ m a → All-lookup (All-lookup h m) m' (adjacent-sym G a)))
 
   merge-separated : (G : Relation (vertex-width 𝒢)) (w : Path) {rs : List (List (Path))} →
                     AllPairs (Apart G) rs →
-                    let tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) rs in
+                    let tp = L.partition (adj? G w) rs in
                     AllPairs (Apart G) ((w ∷ concat (proj₁ tp)) ∷ proj₂ tp)
   merge-separated G w {rs} sep = apart-w ∷ proj₁ (proj₂ pa)
     where
-    f? = λ C → T? (any (λ q → adjacent G (at w) (at q)) C)
-    pa = partition-AllPairs {S = Apart G} f? (λ {C} {C'} → apart-sym G {C} {C'}) sep
-    tp = L.partition f? rs
+    pa = partition-AllPairs {S = Apart G} (adj? G w) (λ {C} {C'} → apart-sym G {C} {C'}) sep
+    tp = L.partition (adj? G w) rs
     apart-w : All (Apart G (w ∷ concat (proj₁ tp))) (proj₂ tp)
     apart-w =
-      All-zip (λ {C'} hf hc → ¬adjacent-All G (at w) C' (¬T-false hf) ∷ AllP.concat⁺ hc)
-              (part₂-¬ f? rs) (proj₂ (proj₂ pa))
+      All-zip (λ {C'} hf hc → AllP.¬Any⇒All¬ C' hf ∷ AllP.concat⁺ hc)
+              (part₂-¬ (adj? G w) rs) (proj₂ (proj₂ pa))
 
   regions-separated : (G : Relation (vertex-width 𝒢)) (ws : List (Path)) → AllPairs (Apart G) (regions G ws)
   regions-separated G []       = []
@@ -340,7 +321,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ↭.prep w (↭-trans (↭-reflexive (concat-++ (proj₁ tp) (proj₂ tp)))
              (↭-trans (concat-resp (↭↭-of-↭ (partition-↭ _ (regions G ws))))
                       (regions-concat G ws)))
-    where tp = partitionᵇ (any (λ q → adjacent G (at w) (at q))) (regions G ws)
+    where tp = L.partition (adj? G w) (regions G ws)
 
   hide-at-hidden-set : (p : Path) (K : Config 𝒢) →
                        hidden-set (hide-at p K) ↭ (p ∷ hidden-set K)
@@ -1016,20 +997,22 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   merge-region-resp G w {rss} {rss'} p =
     H.prep (↭.prep w (concat-resp (proj₁ tp-p))) (proj₂ tp-p)
     where
-    A? = λ C → T? (any (λ q → adjacent G (at w) (at q)) C)
-    tp-p = partition-permᴿ A? (λ pc → subst Bool.T (any-perm _ pc))
-                              (λ pc → subst Bool.T (≡-sym (any-perm _ pc))) p
+    tp-p = partition-permᴿ (adj? G w) Any-resp-↭ (λ pc → Any-resp-↭ (↭-sym pc)) p
 
   private
-    adj : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) → List (Vertex shape) → Bool
-    adj G w C = any (λ q → adjacent G (at w) (at q)) C
-
     merge-region-filter : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (rss : List (List (Vertex shape))) →
                           merge-region G w rss ≡
-                          ((w ∷ concat (filterᵇ (adj G w) rss)) ∷
-                           filterᵇ (λ C → not (adj G w C)) rss)
+                          ((w ∷ concat (filter (adj? G w) rss)) ∷ filter (∁? (adj? G w)) rss)
     merge-region-filter G w rss =
-      ≡-cong (λ u → (w ∷ concat (proj₁ u)) ∷ proj₂ u) (partition-filter (adj G w) rss)
+      ≡-cong (λ u → (w ∷ concat (proj₁ u)) ∷ proj₂ u) (partition-defn (adj? G w) rss)
+
+    cross : (G : Relation (vertex-width 𝒢)) (u u' : Vertex shape) (rss : List (List (Vertex shape))) →
+            Adj G u (u' ∷ concat (filter (adj? G u') rss)) →
+            Adj G u' (u ∷ concat (filter (adj? G u) rss))
+    cross G u u' rss (here a)  = here (adjacent-sym G a)
+    cross G u u' rss (there m) =
+      there (AnyPr.concat⁺ (Any-filter⁺ (adj? G u)
+               (Any-filter⁻ (adj? G u') rss (AnyPr.concat⁻ (filter (adj? G u') rss) m))))
 
   merge-region-comm : (G : Relation (vertex-width 𝒢)) (w w' : Vertex shape) (rss : List (List (Vertex shape))) →
                       merge-region G w (merge-region G w' rss) ↭↭
@@ -1040,78 +1023,65 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       (merge-region-filter G w ((w' ∷ concat F') ∷ N'))))
       (≡-sym (≡-trans (≡-cong (merge-region G w') (merge-region-filter G w rss))
                       (merge-region-filter G w' ((w ∷ concat F) ∷ N))))
-      (bool-case b true-branch false-branch)
+      (dec-case (adj? G w (w' ∷ concat F')) true-branch false-branch)
     where
-    A  = adj G w
-    A' = adj G w'
-    F  = filterᵇ A rss
-    F' = filterᵇ A' rss
-    N  = filterᵇ (λ C → not (A C)) rss
-    N' = filterᵇ (λ C → not (A' C)) rss
-
-    b  = A (w' ∷ concat F')
-
-    beq : b ≡ A' (w ∷ concat F)
-    beq =
-      ≡-cong₂ _∨_ (adjacent-sym G (at w) (at w'))
-        (≡-trans (any-concat (λ q → adjacent G (at w) (at q)) F')
-        (≡-trans (any-filterᵇ-∧ A A' rss)
-        (≡-trans (any-cong (λ C → ∧-comm (A' C) (A C)) rss)
-        (≡-sym (≡-trans (any-concat (λ q → adjacent G (at w') (at q)) F)
-                        (any-filterᵇ-∧ A' A rss))))))
+    A?  = adj? G w
+    A'? = adj? G w'
+    F   = filter A?  rss
+    F'  = filter A'? rss
+    N   = filter (∁? A?)  rss
+    N'  = filter (∁? A'?) rss
 
     Goal : Set
-    Goal = ((w ∷ concat (filterᵇ A ((w' ∷ concat F') ∷ N'))) ∷
-            filterᵇ (λ C → not (A C)) ((w' ∷ concat F') ∷ N'))
+    Goal = ((w ∷ concat (filter A? ((w' ∷ concat F') ∷ N'))) ∷
+            filter (∁? A?) ((w' ∷ concat F') ∷ N'))
            ↭↭
-           ((w' ∷ concat (filterᵇ A' ((w ∷ concat F) ∷ N))) ∷
-            filterᵇ (λ C → not (A' C)) ((w ∷ concat F) ∷ N))
+           ((w' ∷ concat (filter A'? ((w ∷ concat F) ∷ N))) ∷
+            filter (∁? A'?) ((w ∷ concat F) ∷ N))
 
-    untouched : filterᵇ (λ C → not (A C)) N' ↭↭ filterᵇ (λ C → not (A' C)) N
-    untouched = subst (λ z → filterᵇ (λ C → not (A C)) N' ↭↭ z)
-                      (filter-comm (λ C → not (A C)) (λ C → not (A' C)) rss)
-                      ↭↭-refl
+    untouched : filter (∁? A?) N' ↭↭ filter (∁? A'?) N
+    untouched =
+      subst (λ z → filter (∁? A?) N' ↭↭ z) (filter-comm (∁? A?) (∁? A'?) rss) ↭↭-refl
 
-    true-branch : b ≡ Bool.true → Goal
-    true-branch eb =
+    true-branch : Adj G w (w' ∷ concat F') → Goal
+    true-branch b =
       subst₂ _↭↭_
         (≡-sym (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
-                  (filter-head-true {f = A} {x = w' ∷ concat F'} N' eb)
-                  (filter-head-false {x = w' ∷ concat F'} N' (≡-cong not eb))))
+                  (filter-accept A? {w' ∷ concat F'} {N'} b)
+                  (filter-reject (∁? A?) {w' ∷ concat F'} {N'} (λ k → k b))))
         (≡-sym (≡-cong₂ (λ u v → (w' ∷ concat u) ∷ v)
-                  (filter-head-true {f = A'} {x = w ∷ concat F} N (≡-trans (≡-sym beq) eb))
-                  (filter-head-false {x = w ∷ concat F} N
-                                     (≡-cong not (≡-trans (≡-sym beq) eb)))))
+                  (filter-accept A'? {w ∷ concat F} {N} b')
+                  (filter-reject (∁? A'?) {w ∷ concat F} {N} (λ k → k b'))))
         (H.prep
           (↭.swap w w'
-            (↭-trans (↭-reflexive (concat-++ F' (filterᵇ A N')))
-            (↭-trans (concat-resp (↭↭-of-↭ (filter-exchange A A' rss)))
-                     (↭-reflexive (≡-sym (concat-++ F (filterᵇ A' N)))))))
+            (↭-trans (↭-reflexive (concat-++ F' (filter A? N')))
+            (↭-trans (concat-resp (↭↭-of-↭ (filter-exchange A? A'? rss)))
+                     (↭-reflexive (≡-sym (concat-++ F (filter A'? N)))))))
           untouched)
+      where b' = cross G w w' rss b
 
-    false-branch : b ≡ Bool.false → Goal
-    false-branch eb =
+    false-branch : ¬ Adj G w (w' ∷ concat F') → Goal
+    false-branch ¬b =
       subst₂ _↭↭_
         (≡-sym (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
-                  (filter-head-false {f = A} {x = w' ∷ concat F'} N' eb)
-                  (filter-head-true {x = w' ∷ concat F'} N' (≡-cong not eb))))
+                  (filter-reject A? {w' ∷ concat F'} {N'} ¬b)
+                  (filter-accept (∁? A?) {w' ∷ concat F'} {N'} ¬b)))
         (≡-sym (≡-cong₂ (λ u v → (w' ∷ concat u) ∷ v)
-                  (filter-head-false {f = A'} {x = w ∷ concat F} N (≡-trans (≡-sym beq) eb))
-                  (filter-head-true {x = w ∷ concat F} N
-                                    (≡-cong not (≡-trans (≡-sym beq) eb)))))
+                  (filter-reject A'? {w ∷ concat F} {N} ¬b')
+                  (filter-accept (∁? A'?) {w ∷ concat F} {N} ¬b')))
         (H.swap
-          (↭-reflexive (≡-cong (λ z → w ∷ concat z) (filter-avoid A A' rss hb)))
-          (↭-reflexive (≡-cong (λ z → w' ∷ concat z) (≡-sym (filter-avoid A' A rss hb'))))
+          (↭-reflexive (≡-cong (λ z → w ∷ concat z) (filter-avoid A? A'? rss hb)))
+          (↭-reflexive (≡-cong (λ z → w' ∷ concat z) (≡-sym (filter-avoid A'? A? rss hb'))))
           untouched)
       where
-      hb : any (λ C → A' C ∧ A C) rss ≡ Bool.false
-      hb = ≡-trans (≡-sym (≡-trans (any-concat (λ q → adjacent G (at w) (at q)) F')
-                                   (any-filterᵇ-∧ A A' rss)))
-                   (proj₂ (∨-false (adjacent G (at w) (at w'))
-                                   (any (λ q → adjacent G (at w) (at q)) (concat F')) eb))
+      ¬b' : ¬ Adj G w' (w ∷ concat F)
+      ¬b' k = ¬b (cross G w' w rss k)
 
-      hb' : any (λ C → A C ∧ A' C) rss ≡ Bool.false
-      hb' = ≡-trans (any-cong (λ C → ∧-comm (A C) (A' C)) rss) hb
+      hb : ¬ Any (λ C → Adj G w' C × Adj G w C) rss
+      hb m = ¬b (there (AnyPr.concat⁺ (Any-filter⁺ A'? m)))
+
+      hb' : ¬ Any (λ C → Adj G w C × Adj G w' C) rss
+      hb' m = ¬b' (there (AnyPr.concat⁺ (Any-filter⁺ A? m)))
 
   regions-perm : (G : Relation (vertex-width 𝒢)) {ws ws' : List (Vertex shape)} → ws ↭ ws' →
                  regions G ws ↭↭ regions G ws'
@@ -1149,15 +1119,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     lhs-eq : merge-region (fo-graph 𝒢) p (map proj₁ (K .hidden)) ≡
              map proj₁ (hide-at p K .hidden)
     lhs-eq =
-      ≡-trans (≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
-                 (map-partition₁ proj₁ A? (K .hidden)) (map-partition₂ proj₁ A? (K .hidden)))
-              (≡-cong (λ u → (p ∷ concat (map proj₁ (proj₁ u))) ∷ map proj₁ (proj₂ u))
-                      (partition-cong (λ CH → A? (proj₁ CH)) (adj-p? p) agree (K .hidden)))
-      where
-      A? = λ C → T? (adj (fo-graph 𝒢) p C)
-      agree = λ CH → ≡-trans (does-T? _)
-                             (≡-sym (does-any? (λ q → Adjacent? (fo-graph 𝒢) (at p) (at q))
-                                               (proj₁ CH)))
+      ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
+              (map-partition₁ proj₁ (adj? (fo-graph 𝒢) p) (K .hidden))
+              (map-partition₂ proj₁ (adj? (fo-graph 𝒢) p) (K .hidden))
   hide-at-summarised p K S pv .summaries = hide-at-summaries p K S pv
 
   private
@@ -1170,17 +1134,17 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       All-map (λ inc {_} h → ∈-resp-↭ (regions-concat G ws) (inc h)) (blocks-⊆ (regions G ws))
 
     merge-region-inert : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (X Y : List (List (Vertex shape))) →
-                         All (λ C → adj G w C ≡ Bool.false) Y →
+                         All (λ C → ¬ Adj G w C) Y →
                          merge-region G w (X ++ Y) ≡ merge-region G w X ++ Y
     merge-region-inert G w X Y h =
       ≡-trans (merge-region-filter G w (X ++ Y))
       (≡-trans (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
-                 (≡-trans (filter-++ (adj G w) X Y)
-                 (≡-trans (≡-cong (filterᵇ (adj G w) X ++_) (filter-none h))
-                          (++-identityʳ (filterᵇ (adj G w) X))))
-                 (≡-trans (filter-++ (λ C → not (adj G w C)) X Y)
-                          (≡-cong (filterᵇ (λ C → not (adj G w C)) X ++_)
-                                  (filter-all-true (All-map (λ e → ≡-cong not e) h)))))
+                 (≡-trans (filter-++ (adj? G w) X Y)
+                 (≡-trans (≡-cong (filter (adj? G w) X ++_) (filter-none (adj? G w) h))
+                          (++-identityʳ (filter (adj? G w) X))))
+                 (≡-trans (filter-++ (∁? (adj? G w)) X Y)
+                          (≡-cong (filter (∁? (adj? G w)) X ++_)
+                                  (filter-all (∁? (adj? G w)) h))))
                (≡-cong (_++ Y) (≡-sym (merge-region-filter G w X))))
 
   regions-apart : (G : Relation (vertex-width 𝒢)) (B rest : List (Vertex shape)) → Apart G B rest →
@@ -1190,7 +1154,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     H.trans (merge-region-resp G b (regions-apart G B rest hB))
             (↭↭-of-≡ (merge-region-inert G b (regions G B) (regions G rest)
               (All-map (λ {C} inc →
-                 ¬adjacent-any G (at b) C (All-tabulate (λ h → All-lookup hb (inc h))))
+                 AllP.All¬⇒¬Any (All-tabulate (λ h → All-lookup hb (inc h))))
                 (regions-⊆ G rest))))
 
   private
@@ -1202,7 +1166,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                        All (λ C → 1 ≤ length C) (regions G ws)
     regions-nonempty G []       = []
     regions-nonempty G (w ∷ ws) =
-      s≤s z≤n ∷ proj₂ (partition-All (λ C → T? (adj G w C)) (regions-nonempty G ws))
+      s≤s z≤n ∷ proj₂ (partition-All (adj? G w) (regions-nonempty G ws))
 
   regions-apart-concat : {G : Relation (vertex-width 𝒢)} {Cs : List (List (Vertex shape))} →
                          AllPairs (Apart G) Cs →

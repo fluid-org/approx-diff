@@ -4,13 +4,8 @@
 -- at both levels.
 module list where
 
-open import Data.Bool as Bool using (Bool; not; _∨_)
-open import Data.Bool.ListAction using (any)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Bool.Properties using (∨-assoc; T?)
-open import Data.Fin as Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; filterᵇ; partition;
-                            partitionᵇ; tabulate)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; partition)
 open import Data.Nat.ListAction using (sum)
 open import Data.List.Properties using (++-assoc; length-++; filter-all; filter-accept; filter-reject;
                                         partition-defn)
@@ -23,6 +18,7 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renam
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail)
+import Data.List.Relation.Unary.Any.Properties as AnyP
 open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (++⁺; ++-comm; shift; All-resp-↭)
@@ -33,61 +29,34 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Decidable using (Dec; does; ¬?; yes; no; dec-false)
+open import Relation.Unary.Properties using (∁?)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
-
-private
-  ∨-swap : ∀ a b c → (a ∨ (b ∨ c)) ≡ (b ∨ (a ∨ c))
-  ∨-swap Bool.false b c = ≡-refl
-  ∨-swap Bool.true Bool.false c = ≡-refl
-  ∨-swap Bool.true Bool.true c = ≡-refl
-
-  ∨-interchange : ∀ a b c d → ((a ∨ b) ∨ (c ∨ d)) ≡ ((a ∨ c) ∨ (b ∨ d))
-  ∨-interchange Bool.true  b c d = ≡-refl
-  ∨-interchange Bool.false b c d = ∨-swap b c d
 
 ++-swap : ∀ {a} {A : Set a} (xs ys zs : List A) → xs ++ (ys ++ zs) ↭ ys ++ (xs ++ zs)
 ++-swap xs ys zs =
   ↭-trans (↭-reflexive (≡-sym (++-assoc xs ys zs)))
           (↭-trans (++⁺ (++-comm xs ys) ↭-refl) (↭-reflexive (++-assoc ys xs zs)))
 
-any-perm : ∀ {a} {A : Set a} (f : A → Bool) {rs rs' : List A} →
-           rs ↭ rs' → any f rs ≡ any f rs'
-any-perm f ↭.refl = ≡-refl
-any-perm f (↭.prep r p) = ≡-cong (f r ∨_) (any-perm f p)
-any-perm f (↭.swap a b p) =
-  ≡-trans (≡-cong (λ z → f a ∨ (f b ∨ z)) (any-perm f p)) (∨-swap (f a) (f b) _)
-any-perm f (↭.trans p q) = ≡-trans (any-perm f p) (any-perm f q)
-
-any-cong : ∀ {a} {A : Set a} {f g : A → Bool} → (∀ x → f x ≡ g x) →
-           ∀ xs → any f xs ≡ any g xs
-any-cong h []       = ≡-refl
-any-cong h (x ∷ xs) = ≡-cong₂ _∨_ (h x) (any-cong h xs)
-
-∨-false : ∀ x y → (x ∨ y) ≡ Bool.false → (x ≡ Bool.false) × (y ≡ Bool.false)
-∨-false Bool.false y h = ≡-refl , h
-
-any-false : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
-            All (λ x → f x ≡ Bool.false) xs → any f xs ≡ Bool.false
-any-false []       = ≡-refl
-any-false (h ∷ hs) = ≡-cong₂ _∨_ h (any-false hs)
-
-any-false-All : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
-                any f xs ≡ Bool.false → All (λ x → f x ≡ Bool.false) xs
-any-false-All f []       h = []
-any-false-All f (x ∷ xs) h with ∨-false (f x) (any f xs) h
-... | (hx , hxs) = hx ∷ any-false-All f xs hxs
-
-any-tabulate-false : ∀ {a} {A : Set a} {n} (g : Fin n → A) (f : A → Bool) →
-                     any f (tabulate g) ≡ Bool.false → ∀ i → f (g i) ≡ Bool.false
-any-tabulate-false g f h Fin.zero    = proj₁ (∨-false (f (g Fin.zero)) _ h)
-any-tabulate-false g f h (Fin.suc i) =
-  any-tabulate-false (λ k → g (Fin.suc k)) f (proj₂ (∨-false (f (g Fin.zero)) _ h)) i
-
 Any-All : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q} {xs : List A} →
           Any P xs → All Q xs → Any (λ x → P x × Q x) xs
 Any-All (here px) (qx ∷ _) = here (px , qx)
 Any-All (there a) (_ ∷ qs) = there (Any-All a qs)
+
+Any-filter⁺ : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
+              (P? : (x : A) → Dec (P x)) {xs : List A} →
+              Any (λ x → P x × Q x) xs → Any Q (filter P? xs)
+Any-filter⁺ P? {x ∷ xs} (here (px , qx)) with P? x
+... | yes _   = here qx
+... | no  ¬px = ⊥-elim (¬px px)
+Any-filter⁺ P? {x ∷ xs} (there m) with P? x
+... | yes _ = there (Any-filter⁺ P? m)
+... | no  _ = Any-filter⁺ P? m
+
+Any-filter⁻ : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
+              (P? : (x : A) → Dec (P x)) (xs : List A) →
+              Any Q (filter P? xs) → Any (λ x → Q x × P x) xs
+Any-filter⁻ P? xs m = AnyP.filter⁻ P? (Any-All m (AllP.all-filter P? xs))
 
 Any-contra : ∀ {a p b} {A : Set a} {P : A → Set p} {B : Set b} {xs : List A} →
              (∀ {x} → P x → ⊥) → Any P xs → B
@@ -98,23 +67,6 @@ map-All-cong : ∀ {a b} {A : Set a} {B : Set b} {f g : A → B} {xs : List A} �
                All (λ x → f x ≡ g x) xs → map f xs ≡ map g xs
 map-All-cong []       = ≡-refl
 map-All-cong (h ∷ hs) = ≡-cong₂ _∷_ h (map-All-cong hs)
-
-any-or : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
-         any (λ x → f x ∨ g x) xs ≡ (any f xs ∨ any g xs)
-any-or f g []       = ≡-refl
-any-or f g (x ∷ xs) =
-  ≡-trans (≡-cong ((f x ∨ g x) ∨_) (any-or f g xs)) (∨-interchange (f x) (g x) (any f xs) (any g xs))
-
-any-++ : ∀ {a} {A : Set a} (f : A → Bool) (xs ys : List A) →
-         any f (xs ++ ys) ≡ (any f xs ∨ any f ys)
-any-++ f []       ys = ≡-refl
-any-++ f (x ∷ xs) ys = ≡-trans (≡-cong (f x ∨_) (any-++ f xs ys)) (≡-sym (∨-assoc (f x) _ _))
-
-any-concat : ∀ {a} {A : Set a} (f : A → Bool) (xss : List (List A)) →
-             any f (concat xss) ≡ any (λ xs → any f xs) xss
-any-concat f []         = ≡-refl
-any-concat f (xs ∷ xss) =
-  ≡-trans (any-++ f xs (concat xss)) (≡-cong (any f xs ∨_) (any-concat f xss))
 
 perm-length : ∀ {a r} {A : Set a} {R : A → A → Set r} {xs ys : List A} →
               H.Permutation R xs ys → length xs ≡ length ys
@@ -251,15 +203,6 @@ partition-AllPairs P? sym (_∷_ {x} px ps) with partition-AllPairs P? sym ps | 
 ...   | yes _ = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
 ...   | no  _ = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
 
-filter-all-true : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
-                  All (λ x → f x ≡ Bool.true) xs → filterᵇ f xs ≡ xs
-filter-all-true []              = ≡-refl
-filter-all-true (_∷_ {x} h hs) rewrite h = ≡-cong (x ∷_) (filter-all-true hs)
-
-filter-head-false : ∀ {a} {A : Set a} {f : A → Bool} {x : A} (xs : List A) →
-                    f x ≡ Bool.false → filterᵇ f (x ∷ xs) ≡ filterᵇ f xs
-filter-head-false xs h rewrite h = ≡-refl
-
 AllPairs-++⁻ : ∀ {a r} {A : Set a} {S : A → A → Set r} (xs ys : List A) →
                AllPairs S (xs ++ ys) →
                AllPairs S xs × AllPairs S ys × All (λ x → All (S x) ys) xs
@@ -303,21 +246,6 @@ filter-out-↭ : ∀ {a} {A : Set a} (_≟_ : DecidableEquality A) {x : A} {xs :
 filter-out-↭ _≟_ {x} {y ∷ xs} (py ∷ ps) h with x ≟ y
 ... | no ¬e      = ↭-trans (↭.swap x y ↭.refl) (↭.prep y (filter-out-↭ _≟_ ps (tail ¬e h)))
 ... | yes ≡-refl = ↭.prep x (↭-reflexive (filter-all (λ z → ¬? (x ≟ z)) py))
-
-filter-head-true : ∀ {a} {A : Set a} {f : A → Bool} {x : A} (xs : List A) →
-                   f x ≡ Bool.true → filterᵇ f (x ∷ xs) ≡ x ∷ filterᵇ f xs
-filter-head-true xs h rewrite h = ≡-refl
-
-partition-filter : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
-                   partitionᵇ f xs ≡ (filterᵇ f xs , filterᵇ (λ x → not (f x)) xs)
-partition-filter f []       = ≡-refl
-partition-filter f (x ∷ xs) rewrite partition-filter f xs with f x
-... | Bool.true  = ≡-refl
-... | Bool.false = ≡-refl
-
-bool-case : ∀ {a} {A : Set a} (b : Bool) → (b ≡ Bool.true → A) → (b ≡ Bool.false → A) → A
-bool-case Bool.true  t f = t ≡-refl
-bool-case Bool.false t f = f ≡-refl
 
 dec-case : ∀ {a p} {A : Set a} {P : Set p} → Dec P → (P → A) → (¬ P → A) → A
 dec-case (yes k)  t f = t k
@@ -396,23 +324,6 @@ partition-permᴿ {R = R} P? to from {xs} {ys} p =
          (filter-permᴿ (λ x → ¬? (P? x))
                        (λ rxy ¬px py → ¬px (from rxy py)) (λ rxy ¬py px → ¬py (to rxy px)) p)
 
-filter-++ : ∀ {a} {A : Set a} (f : A → Bool) (xs ys : List A) →
-            filterᵇ f (xs ++ ys) ≡ filterᵇ f xs ++ filterᵇ f ys
-filter-++ f []       ys = ≡-refl
-filter-++ f (x ∷ xs) ys =
-  bool-case (f x)
-    (λ ef → ≡-trans (filter-head-true {f = f} {x = x} (xs ++ ys) ef)
-            (≡-trans (≡-cong (x ∷_) (filter-++ f xs ys))
-                     (≡-cong (_++ filterᵇ f ys) (≡-sym (filter-head-true {f = f} {x = x} xs ef)))))
-    (λ ef → ≡-trans (filter-head-false {f = f} {x = x} (xs ++ ys) ef)
-            (≡-trans (filter-++ f xs ys)
-                     (≡-cong (_++ filterᵇ f ys) (≡-sym (filter-head-false {f = f} {x = x} xs ef)))))
-
-filter-none : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
-              All (λ x → f x ≡ Bool.false) xs → filterᵇ f xs ≡ []
-filter-none []              = ≡-refl
-filter-none (_∷_ {x} h hs) rewrite h = filter-none hs
-
 filter-concat : ∀ {a p} {A : Set a} {P : A → Set p} (P? : (x : A) → Dec (P x)) (xss : List (List A)) →
                 filter P? (concat xss) ≡ concat (map (filter P?) xss)
 filter-concat P? []         = ≡-refl
@@ -420,129 +331,97 @@ filter-concat P? (xs ∷ xss) =
   ≡-trans (ListP.filter-++ P? xs (concat xss))
           (≡-cong (filter P? xs ++_) (filter-concat P? xss))
 
-filter-comm : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
-              filterᵇ f (filterᵇ g xs) ≡ filterᵇ g (filterᵇ f xs)
-filter-comm f g []       = ≡-refl
-filter-comm f g (x ∷ xs) =
-  bool-case (g x)
-    (λ eg → bool-case (f x)
-      (λ ef →
-        ≡-trans (≡-cong (filterᵇ f) (filter-head-true {f = g} {x = x} xs eg))
-        (≡-trans (filter-head-true {f = f} {x = x} (filterᵇ g xs) ef)
-        (≡-trans (≡-cong (x ∷_) (filter-comm f g xs))
-        (≡-sym (≡-trans (≡-cong (filterᵇ g) (filter-head-true {f = f} {x = x} xs ef))
-                        (filter-head-true {f = g} {x = x} (filterᵇ f xs) eg))))))
-      (λ ef →
-        ≡-trans (≡-cong (filterᵇ f) (filter-head-true {f = g} {x = x} xs eg))
-        (≡-trans (filter-head-false {f = f} {x = x} (filterᵇ g xs) ef)
-        (≡-trans (filter-comm f g xs)
-        (≡-sym (≡-cong (filterᵇ g) (filter-head-false {f = f} {x = x} xs ef)))))))
-    (λ eg → bool-case (f x)
-      (λ ef →
-        ≡-trans (≡-cong (filterᵇ f) (filter-head-false {f = g} {x = x} xs eg))
-        (≡-trans (filter-comm f g xs)
-        (≡-sym (≡-trans (≡-cong (filterᵇ g) (filter-head-true {f = f} {x = x} xs ef))
-                        (filter-head-false {f = g} {x = x} (filterᵇ f xs) eg)))))
-      (λ ef →
-        ≡-trans (≡-cong (filterᵇ f) (filter-head-false {f = g} {x = x} xs eg))
-        (≡-trans (filter-comm f g xs)
-        (≡-sym (≡-cong (filterᵇ g) (filter-head-false {f = f} {x = x} xs ef))))))
+filter-comm : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
+              (P? : (x : A) → Dec (P x)) (Q? : (x : A) → Dec (Q x)) (xs : List A) →
+              filter P? (filter Q? xs) ≡ filter Q? (filter P? xs)
+filter-comm P? Q? []       = ≡-refl
+filter-comm P? Q? (x ∷ xs) =
+  dec-case (Q? x)
+    (λ qx → dec-case (P? x)
+      (λ px →
+        ≡-trans (≡-cong (filter P?) (filter-accept Q? {x} {xs} qx))
+        (≡-trans (filter-accept P? {x} {filter Q? xs} px)
+        (≡-trans (≡-cong (x ∷_) (filter-comm P? Q? xs))
+        (≡-sym (≡-trans (≡-cong (filter Q?) (filter-accept P? {x} {xs} px))
+                        (filter-accept Q? {x} {filter P? xs} qx))))))
+      (λ ¬px →
+        ≡-trans (≡-cong (filter P?) (filter-accept Q? {x} {xs} qx))
+        (≡-trans (filter-reject P? {x} {filter Q? xs} ¬px)
+        (≡-trans (filter-comm P? Q? xs)
+                 (≡-sym (≡-cong (filter Q?) (filter-reject P? {x} {xs} ¬px)))))))
+    (λ ¬qx → dec-case (P? x)
+      (λ px →
+        ≡-trans (≡-cong (filter P?) (filter-reject Q? {x} {xs} ¬qx))
+        (≡-trans (filter-comm P? Q? xs)
+        (≡-sym (≡-trans (≡-cong (filter Q?) (filter-accept P? {x} {xs} px))
+                        (filter-reject Q? {x} {filter P? xs} ¬qx)))))
+      (λ ¬px →
+        ≡-trans (≡-cong (filter P?) (filter-reject Q? {x} {xs} ¬qx))
+        (≡-trans (filter-comm P? Q? xs)
+                 (≡-sym (≡-cong (filter Q?) (filter-reject P? {x} {xs} ¬px))))))
 
-any-filterᵇ-∧ : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
-                any f (filterᵇ g xs) ≡ any (λ x → g x Bool.∧ f x) xs
-any-filterᵇ-∧ f g []       = ≡-refl
-any-filterᵇ-∧ f g (x ∷ xs) =
-  bool-case (g x)
-    (λ eg → ≡-trans (≡-cong (any f) (filter-head-true {f = g} {x = x} xs eg))
-            (≡-trans (≡-cong (f x ∨_) (any-filterᵇ-∧ f g xs))
-                     (≡-sym (≡-cong (λ b → (b Bool.∧ f x) ∨ any (λ x' → g x' Bool.∧ f x') xs) eg))))
-    (λ eg → ≡-trans (≡-cong (any f) (filter-head-false {f = g} {x = x} xs eg))
-            (≡-trans (any-filterᵇ-∧ f g xs)
-                     (≡-sym (≡-cong (λ b → (b Bool.∧ f x) ∨ any (λ x' → g x' Bool.∧ f x') xs) eg))))
+filter-avoid : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
+               (P? : (x : A) → Dec (P x)) (Q? : (x : A) → Dec (Q x)) (xs : List A) →
+               ¬ Any (λ x → Q x × P x) xs →
+               filter P? (filter (∁? Q?) xs) ≡ filter P? xs
+filter-avoid P? Q? []       h = ≡-refl
+filter-avoid P? Q? (x ∷ xs) h =
+  dec-case (Q? x)
+    (λ qx →
+      ≡-trans (≡-cong (filter P?) (filter-reject (∁? Q?) {x} {xs} (λ k → k qx)))
+      (≡-trans (filter-avoid P? Q? xs (λ m → h (there m)))
+               (≡-sym (filter-reject P? {x} {xs} (λ px → h (here (qx , px)))))))
+    (λ ¬qx →
+      ≡-trans (≡-cong (filter P?) (filter-accept (∁? Q?) {x} {xs} ¬qx))
+              (dec-case (P? x)
+                (λ px →
+                  ≡-trans (filter-accept P? {x} {filter (∁? Q?) xs} px)
+                  (≡-trans (≡-cong (x ∷_) (filter-avoid P? Q? xs (λ m → h (there m))))
+                           (≡-sym (filter-accept P? {x} {xs} px))))
+                (λ ¬px →
+                  ≡-trans (filter-reject P? {x} {filter (∁? Q?) xs} ¬px)
+                  (≡-trans (filter-avoid P? Q? xs (λ m → h (there m)))
+                           (≡-sym (filter-reject P? {x} {xs} ¬px))))))
 
-filter-avoid : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
-               any (λ x → g x Bool.∧ f x) xs ≡ Bool.false →
-               filterᵇ f (filterᵇ (λ x → not (g x)) xs) ≡ filterᵇ f xs
-filter-avoid f g []       h = ≡-refl
-filter-avoid f g (x ∷ xs) h with ∨-false (g x Bool.∧ f x) (any (λ x' → g x' Bool.∧ f x') xs) h
-... | (hx , hxs) =
-  bool-case (g x)
-    (λ eg →
-      ≡-trans (≡-cong (filterᵇ f) (filter-head-false {x = x} xs (≡-cong not eg)))
-      (≡-trans (filter-avoid f g xs hxs)
-               (≡-sym (filter-head-false {f = f} {x = x} xs
-                        (≡-trans (≡-sym (≡-cong (Bool._∧ f x) eg)) hx)))))
-    (λ eg →
-      ≡-trans (≡-cong (filterᵇ f) (filter-head-true {x = x} xs (≡-cong not eg)))
-      (≡-trans (bool-case (f x)
-        (λ ef → ≡-trans (filter-head-true {f = f} {x = x} (filterᵇ (λ x' → not (g x')) xs) ef)
-                (≡-trans (≡-cong (x ∷_) (filter-avoid f g xs hxs))
-                         (≡-sym (filter-head-true {f = f} {x = x} xs ef))))
-        (λ ef → ≡-trans (filter-head-false {f = f} {x = x} (filterᵇ (λ x' → not (g x')) xs) ef)
-                (≡-trans (filter-avoid f g xs hxs)
-                         (≡-sym (filter-head-false {f = f} {x = x} xs ef)))))
-               ≡-refl))
-
-filter-exchange : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
-                  (filterᵇ g xs ++ filterᵇ f (filterᵇ (λ x → not (g x)) xs)) ↭
-                  (filterᵇ f xs ++ filterᵇ g (filterᵇ (λ x → not (f x)) xs))
-filter-exchange f g []       = ↭-refl
-filter-exchange f g (x ∷ xs) =
-  bool-case (g x)
-    (λ eg → bool-case (f x)
-      (λ ef →
-        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-head-true {f = g} {x = x} xs eg)
-                   (≡-cong (filterᵇ f) (filter-head-false {x = x} xs (≡-cong not eg)))))
-        (↭-trans (↭.prep x (filter-exchange f g xs))
-                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-head-true {f = f} {x = x} xs ef)
-                    (≡-cong (filterᵇ g) (filter-head-false {x = x} xs (≡-cong not ef))))))))
-      (λ ef →
-        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-head-true {f = g} {x = x} xs eg)
-                   (≡-cong (filterᵇ f) (filter-head-false {x = x} xs (≡-cong not eg)))))
-        (↭-trans (↭.prep x (filter-exchange f g xs))
-        (↭-trans (↭-sym (shift x (filterᵇ f xs) (filterᵇ g (filterᵇ (λ x' → not (f x')) xs))))
-                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-head-false {f = f} {x = x} xs ef)
-                    (≡-trans (≡-cong (filterᵇ g) (filter-head-true {x = x} xs (≡-cong not ef)))
-                             (filter-head-true {f = g} {x = x}
-                               (filterᵇ (λ x' → not (f x')) xs) eg)))))))))
-    (λ eg → bool-case (f x)
-      (λ ef →
-        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-head-false {f = g} {x = x} xs eg)
-                   (≡-trans (≡-cong (filterᵇ f) (filter-head-true {x = x} xs (≡-cong not eg)))
-                            (filter-head-true {f = f} {x = x}
-                              (filterᵇ (λ x' → not (g x')) xs) ef))))
-        (↭-trans (shift x (filterᵇ g xs) (filterᵇ f (filterᵇ (λ x' → not (g x')) xs)))
-        (↭-trans (↭.prep x (filter-exchange f g xs))
-                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-head-true {f = f} {x = x} xs ef)
-                    (≡-cong (filterᵇ g) (filter-head-false {x = x} xs (≡-cong not ef)))))))))
-      (λ ef →
-        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-head-false {f = g} {x = x} xs eg)
-                   (≡-trans (≡-cong (filterᵇ f) (filter-head-true {x = x} xs (≡-cong not eg)))
-                            (filter-head-false {f = f} {x = x}
-                              (filterᵇ (λ x' → not (g x')) xs) ef))))
-        (↭-trans (filter-exchange f g xs)
-                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-head-false {f = f} {x = x} xs ef)
-                    (≡-trans (≡-cong (filterᵇ g) (filter-head-true {x = x} xs (≡-cong not ef)))
-                             (filter-head-false {f = g} {x = x}
-                               (filterᵇ (λ x' → not (f x')) xs) eg))))))))
-
-does-T? : ∀ (b : Bool) → does (T? b) ≡ b
-does-T? Bool.false = ≡-refl
-does-T? Bool.true  = ≡-refl
-
-does-any? : ∀ {a p} {A : Set a} {P : A → Set p} (P? : (x : A) → Dec (P x)) (xs : List A) →
-            does (any? P? xs) ≡ any (λ x → does (P? x)) xs
-does-any? P? []       = ≡-refl
-does-any? P? (x ∷ xs) = ≡-cong (does (P? x) ∨_) (does-any? P? xs)
-
-partition-cong : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
-                 (P? : (x : A) → Dec (P x)) (Q? : (x : A) → Dec (Q x)) →
-                 (∀ x → does (P? x) ≡ does (Q? x)) → (xs : List A) →
-                 partition P? xs ≡ partition Q? xs
-partition-cong P? Q? agree []       = ≡-refl
-partition-cong P? Q? agree (x ∷ xs) with P? x | Q? x | agree x | partition-cong P? Q? agree xs
-... | yes _ | yes _ | _  | ih = ≡-cong (λ u → (x ∷ proj₁ u) , proj₂ u) ih
-... | no  _ | no  _ | _  | ih = ≡-cong (λ u → proj₁ u , (x ∷ proj₂ u)) ih
+filter-exchange : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
+                  (P? : (x : A) → Dec (P x)) (Q? : (x : A) → Dec (Q x)) (xs : List A) →
+                  (filter Q? xs ++ filter P? (filter (∁? Q?) xs)) ↭
+                  (filter P? xs ++ filter Q? (filter (∁? P?) xs))
+filter-exchange P? Q? []       = ↭-refl
+filter-exchange P? Q? (x ∷ xs) =
+  dec-case (Q? x)
+    (λ qx → dec-case (P? x)
+      (λ px →
+        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-accept Q? {x} {xs} qx)
+                   (≡-cong (filter P?) (filter-reject (∁? Q?) {x} {xs} (λ k → k qx)))))
+        (↭-trans (↭.prep x (filter-exchange P? Q? xs))
+                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-accept P? {x} {xs} px)
+                    (≡-cong (filter Q?) (filter-reject (∁? P?) {x} {xs} (λ k → k px))))))))
+      (λ ¬px →
+        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-accept Q? {x} {xs} qx)
+                   (≡-cong (filter P?) (filter-reject (∁? Q?) {x} {xs} (λ k → k qx)))))
+        (↭-trans (↭.prep x (filter-exchange P? Q? xs))
+        (↭-trans (↭-sym (shift x (filter P? xs) (filter Q? (filter (∁? P?) xs))))
+                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-reject P? {x} {xs} ¬px)
+                    (≡-trans (≡-cong (filter Q?) (filter-accept (∁? P?) {x} {xs} ¬px))
+                             (filter-accept Q? {x} {filter (∁? P?) xs} qx)))))))))
+    (λ ¬qx → dec-case (P? x)
+      (λ px →
+        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-reject Q? {x} {xs} ¬qx)
+                   (≡-trans (≡-cong (filter P?) (filter-accept (∁? Q?) {x} {xs} ¬qx))
+                            (filter-accept P? {x} {filter (∁? Q?) xs} px))))
+        (↭-trans (shift x (filter Q? xs) (filter P? (filter (∁? Q?) xs)))
+        (↭-trans (↭.prep x (filter-exchange P? Q? xs))
+                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-accept P? {x} {xs} px)
+                    (≡-cong (filter Q?) (filter-reject (∁? P?) {x} {xs} (λ k → k px)))))))))
+      (λ ¬px →
+        ↭-trans (↭-reflexive (≡-cong₂ _++_ (filter-reject Q? {x} {xs} ¬qx)
+                   (≡-trans (≡-cong (filter P?) (filter-accept (∁? Q?) {x} {xs} ¬qx))
+                            (filter-reject P? {x} {filter (∁? Q?) xs} ¬px))))
+        (↭-trans (filter-exchange P? Q? xs)
+                 (↭-reflexive (≡-sym (≡-cong₂ _++_ (filter-reject P? {x} {xs} ¬px)
+                    (≡-trans (≡-cong (filter Q?) (filter-accept (∁? P?) {x} {xs} ¬px))
+                             (filter-reject Q? {x} {filter (∁? P?) xs} ¬qx))))))))
 
 map-partition₁ : ∀ {a b p} {A : Set a} {B : Set b} {P : B → Set p} (h : A → B)
                  (P? : (x : B) → Dec (P x)) (xs : List A) →
