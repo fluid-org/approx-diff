@@ -20,7 +20,7 @@ open import Data.List.Relation.Unary.Any using (Any; here; there; tail)
   renaming (map to Any-map)
 open import Data.Nat using (ℕ; _≤_; z≤n; s≤s)
 open import Data.Nat.ListAction using (sum)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
@@ -35,6 +35,7 @@ open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 import Data.List.Relation.Unary.Any.Properties as AnyPr
+import Data.Fin.Properties as FinP
 import Data.List.Membership.DecPropositional as DecMem
 import matrix
 import two
@@ -68,22 +69,24 @@ private
   ≡-of-≈ₛ {two.O} {two.I} e = ⊥ₚ-elim (proj₂ₚ e)
   ≡-of-≈ₛ {two.I} {two.O} e = ⊥ₚ-elim (proj₁ₚ e)
 
-private
-  is-I : two.Two → Bool
-  is-I two.I = Bool.true
-  is-I two.O = Bool.false
+NonZero : ∀ {m n} → M.Matrix m n → Set
+NonZero {m} {n} R = Σ (Fin m) λ i → Σ (Fin n) λ j → R i j ≡ two.I
 
-nonzero : ∀ {m n} → M.Matrix m n → Bool
-nonzero {m} {n} R = any (λ i → any (λ j → is-I (R i j)) (allFin n)) (allFin m)
+NonZero? : ∀ {m n} (R : M.Matrix m n) → Dec (NonZero R)
+NonZero? R = FinP.any? (λ i → FinP.any? (λ j → is-I? (R i j)))
+  where
+  is-I? : (t : two.Two) → Dec (t ≡ two.I)
+  is-I? two.O = no (λ ())
+  is-I? two.I = yes ≡-refl
 
-nonzero-O : ∀ {m n} (R : M.Matrix m n) → nonzero R ≡ Bool.false →
-            ∀ i j → R i j ≡ two.O
-nonzero-O {m} {n} R h i j
-  with R i j
-     | any-tabulate-false (λ j' → j') (λ j' → is-I (R i j'))
-         (any-tabulate-false (λ i' → i') (λ i' → any (λ j' → is-I (R i' j')) (allFin n)) h i) j
-... | two.O | _  = ≡-refl
-... | two.I | ()
+does-false : ∀ {p} {P : Set p} (d : Dec P) → does d ≡ Bool.false → ¬ P
+does-false d e =
+  toWitnessFalse (subst (λ b → Bool.T (Bool.not b)) (≡-sym (≡-trans (isYes≗does d) e)) _)
+
+NonZero-O : ∀ {m n} (R : M.Matrix m n) → ¬ NonZero R → ∀ i j → R i j ≡ two.O
+NonZero-O R h i j with R i j in e
+... | two.O = ≡-refl
+... | two.I = ⊥-elim (h (i , j , e))
 
 when : ∀ {p} {P : Set p} {m n} → Dec P → M.Matrix m n → M.Matrix m n
 when (yes _) R = R
@@ -134,8 +137,20 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   member-∉ {p} {C} h =
     toWitnessFalse (subst (λ b → Bool.T (Bool.not b)) (≡-sym (member-isYes p C h)) _)
 
+  Adjacent : Relation (vertex-width B) → V B → V B → Set
+  Adjacent G x y = NonZero (G x y) ⊎ NonZero (G y x)
+
+  Adjacent? : (G : Relation (vertex-width B)) (x y : V B) → Dec (Adjacent G x y)
+  Adjacent? G x y = NonZero? (G x y) ⊎-dec NonZero? (G y x)
+
   adjacent : Relation (vertex-width B) → V B → V B → Bool
-  adjacent G x y = nonzero (G x y) ∨ nonzero (G y x)
+  adjacent G x y = does (Adjacent? G x y)
+
+  adjacent-O : (G : Relation (vertex-width B)) (x y : V B) → ¬ Adjacent G x y →
+               (∀ i j → G x y i j ≡ two.O) × (∀ i j → G y x i j ≡ two.O)
+  adjacent-O G x y h =
+    (λ i j → NonZero-O (G x y) (λ k → h (inj₁ k)) i j) ,
+    (λ i j → NonZero-O (G y x) (λ k → h (inj₂ k)) i j)
 
   merge-region : Relation (vertex-width B) → Vertex (Graph.shape B) → List (List (Vertex (Graph.shape B))) →
                  List (List (Vertex (Graph.shape B)))
@@ -269,7 +284,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   ... | no  _ = inj₂ ⟪ S.refl {two.O} ⟫
 
   adjacent-sym : (G : Relation (vertex-width 𝒢)) (x y : V 𝒢) → adjacent G x y ≡ adjacent G y x
-  adjacent-sym G x y = ∨-comm (nonzero (G x y)) (nonzero (G y x))
+  adjacent-sym G x y = ∨-comm (does (NonZero? (G x y))) (does (NonZero? (G y x)))
 
   Apart : Relation (vertex-width 𝒢) → List (Path) → List (Path) → Set
   Apart G C C' = any (λ q → any (λ q' → adjacent G (at q) (at q')) C') C ≡ Bool.false
@@ -391,17 +406,15 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
     entry-row : ∀ {z} → VertexIn z C → ∀ i j → fo-graph 𝒢 (at q) z i j ≡ two.O
     entry-row {inj₂ (inj₁ q')} hz i j =
-      nonzero-O (fo-graph 𝒢 (at q) (at q'))
-                (proj₁ (∨-false (nonzero (fo-graph 𝒢 (at q) (at q')))
-                                (nonzero (fo-graph 𝒢 (at q') (at q)))
-                                (All-lookup adjs hz))) i j
+      proj₁ (adjacent-O (fo-graph 𝒢) (at q) (at q')
+                        (does-false (Adjacent? (fo-graph 𝒢) (at q) (at q'))
+                                    (All-lookup adjs hz))) i j
 
     entry-col : ∀ {z} → VertexIn z C → ∀ i j → fo-graph 𝒢 z (at q) i j ≡ two.O
     entry-col {inj₂ (inj₁ q')} hz i j =
-      nonzero-O (fo-graph 𝒢 (at q') (at q))
-                (proj₂ (∨-false (nonzero (fo-graph 𝒢 (at q) (at q')))
-                                (nonzero (fo-graph 𝒢 (at q') (at q)))
-                                (All-lookup adjs hz))) i j
+      proj₂ (adjacent-O (fo-graph 𝒢) (at q) (at q')
+                        (does-false (Adjacent? (fo-graph 𝒢) (at q) (at q'))
+                                    (All-lookup adjs hz))) i j
 
     base-row : (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
                restrict (fo-graph 𝒢) C (at q) z i j ≡ two.O
@@ -533,11 +546,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                ∀ q' → q' ∈ C →
                ((∀ i' j' → G (at p) (at q') i' j' ≡ two.O) × (∀ i' j' → G (at q') (at p) i' j' ≡ two.O))
       edge-O {C} hadj q' hq =
-        (λ i' j' → nonzero-O (G (at p) (at q')) (proj₁ spl) i' j') ,
-        (λ i' j' → nonzero-O (G (at q') (at p)) (proj₂ spl) i' j')
-        where
-        spl = ∨-false (nonzero (G (at p) (at q'))) (nonzero (G (at q') (at p)))
-                      (All-lookup (any-false-All _ C hadj) hq)
+        adjacent-O G (at p) (at q')
+                   (does-false (Adjacent? G (at p) (at q'))
+                               (All-lookup (any-false-All _ C hadj) hq))
 
       hid-split : ∀ {q} → q ∈ hidden-set K →
                   Any (λ CH → q ∈ proj₁ CH) (proj₁ tp) ⊎ Any (λ CH → q ∈ proj₁ CH) (proj₂ tp)
