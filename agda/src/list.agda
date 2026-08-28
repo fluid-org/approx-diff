@@ -348,6 +348,10 @@ bool-case : ∀ {a} {A : Set a} (b : Bool) → (b ≡ Bool.true → A) → (b �
 bool-case Bool.true  t f = t ≡-refl
 bool-case Bool.false t f = f ≡-refl
 
+dec-case : ∀ {a p} {A : Set a} {P : Set p} → Dec P → (P → A) → (¬ P → A) → A
+dec-case (yes k)  t f = t k
+dec-case (no  ¬k) t f = f ¬k
+
 filter-permᴿ : ∀ {a r} {A : Set a} {R : A → A → Set r} (f : A → Bool) →
                (∀ {x y} → R x y → f x ≡ f y) →
                {xs ys : List A} → H.Permutation R xs ys →

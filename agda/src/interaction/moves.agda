@@ -121,26 +121,6 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   _≢?_ : (p q : Vertex (Graph.shape B)) → Dec (p ≢ q)
   p ≢? q = ¬? (_≟_ {Graph.shape B} p q)
 
-  member : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Bool
-  member p C = does (p ∈? C)
-
-  ∈-member : ∀ {p C} → p ∈ C → member p C ≡ Bool.true
-  ∈-member {p} {C} h = dec-true (p ∈? C) h
-
-  ∉-member : ∀ {p C} → p ∉ C → member p C ≡ Bool.false
-  ∉-member {p} {C} h = dec-false (p ∈? C) h
-
-  private
-    member-isYes : ∀ p C {b} → member p C ≡ b → ⌊ p ∈? C ⌋ ≡ b
-    member-isYes p C h = ≡-trans (isYes≗does (p ∈? C)) h
-
-  member-∈ : ∀ {p C} → member p C ≡ Bool.true → p ∈ C
-  member-∈ {p} {C} h = toWitness (subst Bool.T (≡-sym (member-isYes p C h)) _)
-
-  member-∉ : ∀ {p C} → member p C ≡ Bool.false → p ∉ C
-  member-∉ {p} {C} h =
-    toWitnessFalse (subst (λ b → Bool.T (Bool.not b)) (≡-sym (member-isYes p C h)) _)
-
   Adjacent : Relation (vertex-width B) → V B → V B → Set
   Adjacent G x y = NonZero (G x y) ⊎ NonZero (G y x)
 
@@ -236,11 +216,22 @@ module Interaction {m n : ℕ} (B : Graph m n) where
 
   split-region : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) × Relation (vertex-width B) →
                  List (List (Vertex (Graph.shape B)) × Relation (vertex-width B))
-  split-region p (C , H) =
-    if member p C
-    then map (λ C' → C' , summary C')
-             (regions (fo-graph B) (filter (p ≢?_) C))
-    else (C , H) ∷ []
+  split-region p (C , H) with p ∈? C
+  ... | yes _ = map (λ C' → C' , summary C') (regions (fo-graph B) (filter (p ≢?_) C))
+  ... | no  _ = (C , H) ∷ []
+
+  split-region-∈ : ∀ p C (H : Relation (vertex-width B)) → p ∈ C →
+                   split-region p (C , H) ≡
+                   map (λ C' → C' , summary C') (regions (fo-graph B) (filter (p ≢?_) C))
+  split-region-∈ p C H h with p ∈? C
+  ... | yes _ = ≡-refl
+  ... | no ¬k = ⊥-elim (¬k h)
+
+  split-region-∉ : ∀ p C (H : Relation (vertex-width B)) → p ∉ C →
+                   split-region p (C , H) ≡ (C , H) ∷ []
+  split-region-∉ p C H h with p ∈? C
+  ... | yes k = ⊥-elim (h k)
+  ... | no  _ = ≡-refl
 
   reveal-at : Vertex (Graph.shape B) → Config B → Config B
   reveal-at p K .visible = p ∷ K .visible
@@ -645,7 +636,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       bwd-px (inj₁ i) i' j' ge = two.⊔-I-inl (B-visible-x (inj₁ i) i' j' (λ ()) ge)
       bwd-px (inj₂ (inj₂ r)) i' j' ge = two.⊔-I-inl (B-visible-x (inj₂ (inj₂ r)) i' j' (λ ()) ge)
       bwd-px (inj₂ (inj₁ qy)) i' j' ge =
-        bool-case (member qy (hidden-set K))
+        dec-case (qy ∈? hidden-set K)
           (λ hy → [ (λ aM → two.⊔-I-inr _ (sums-I (at p) (at qy) i' j' two.O
                       (AnyPr.map⁺ (Any-map (λ {CH} mem →
                         summary-I (proj₁ CH) (at p) (at qy) i' j'
@@ -654,8 +645,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                               (λ { {CH} (mem , adj) →
                                    two.O≢I (≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} (AllP.¬Any⇒All¬ (proj₁ CH) adj) qy mem) i' j'))
                                            ge) })
-                              (Any-All aU u-adj)) ]′ (hid-split (member-∈ hy)))
-          (λ hy → two.⊔-I-inl (B-visible-x (at qy) i' j' (member-∉ hy) ge))
+                              (Any-All aU u-adj)) ]′ (hid-split hy))
+          (λ hy → two.⊔-I-inl (B-visible-x (at qy) i' j' hy ge))
 
       bwd-py : ∀ x' (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 x')) →
                G x' (at p) i' j' ≡ two.I →
@@ -663,7 +654,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       bwd-py (inj₁ i) i' j' ge = two.⊔-I-inl (B-visible-y (inj₁ i) i' j' (λ ()) ge)
       bwd-py (inj₂ (inj₂ r)) i' j' ge = two.⊔-I-inl (B-visible-y (inj₂ (inj₂ r)) i' j' (λ ()) ge)
       bwd-py (inj₂ (inj₁ qx)) i' j' ge =
-        bool-case (member qx (hidden-set K))
+        dec-case (qx ∈? hidden-set K)
           (λ hx → [ (λ aM → two.⊔-I-inr _ (sums-I (at qx) (at p) i' j' two.O
                       (AnyPr.map⁺ (Any-map (λ {CH} mem →
                         summary-I (proj₁ CH) (at qx) (at p) i' j'
@@ -672,8 +663,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                               (λ { {CH} (mem , adj) →
                                    two.O≢I (≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} (AllP.¬Any⇒All¬ (proj₁ CH) adj) qx mem) i' j'))
                                            ge) })
-                              (Any-All aU u-adj)) ]′ (hid-split (member-∈ hx)))
-          (λ hx → two.⊔-I-inl (B-visible-y (at qx) i' j' (member-∉ hx) ge))
+                              (Any-All aU u-adj)) ]′ (hid-split hx))
+          (λ hx → two.⊔-I-inl (B-visible-y (at qx) i' j' hx ge))
 
       bwd-l : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
               G x' y' i' j' ≡ two.I → VertexIn x' C* →
@@ -807,7 +798,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                  All (λ CH → p ∉ proj₁ CH) CHs →
                  concat (map (split-region p) CHs) ≡ CHs
     split-none p []                     = ≡-refl
-    split-none p (_∷_ {C , H} h hs) rewrite ∉-member h = ≡-cong ((C , H) ∷_) (split-none p hs)
+    split-none p (_∷_ {C , H} h hs) rewrite split-region-∉ p C H h =
+      ≡-cong ((C , H) ∷_) (split-none p hs)
 
   reveal-set : (p : Path)
                (CHs : List (List (Path) × Relation (vertex-width 𝒢))) →
@@ -1305,25 +1297,18 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       ≡-trans (map-∘ {g = λ C → regions G (filter notp C)} {f = proj₁} (K .hidden))
               (map-∘ {g = regions G} {f = filter notp} Cs)
 
-    split : ∀ C (H' : Relation (vertex-width 𝒢)) {b} → member p C ≡ b →
-            split-region p (C , H') ≡
-            (if b then map (λ C' → C' , summary C') (regions G (filter notp C)) else (C , H') ∷ [])
-    split C H' e =
-      ≡-cong (λ b → if b then map (λ C' → C' , summary C') (regions G (filter notp C)) else (C , H') ∷ []) e
-
     per-block : ∀ CH → regions G (proj₁ CH) ↭↭ (proj₁ CH ∷ []) →
                 map proj₁ (split-region p CH) ↭↭ regions G (filter notp (proj₁ CH))
     per-block (C , H') one =
-      bool-case (member p C)
-        (λ e → ↭↭-of-≡ (≡-trans (≡-cong (map proj₁) (split C H' e))
+      dec-case (p ∈? C)
+        (λ k → ↭↭-of-≡ (≡-trans (≡-cong (map proj₁) (split-region-∈ p C H' k))
                                 (map-proj₁-pair summary (regions G (filter notp C)))))
-        (λ e → subst₂ _↭↭_
-                 (≡-sym (≡-cong (map proj₁) (split C H' e)))
-                 (≡-sym (≡-cong (regions G)
-                          (filter-all (p ≢?_)
-                            (All-tabulate (λ {q} m e' →
-                               member-∉ e (subst (_∈ C) (≡-sym e') m))))))
-                 (H.sym ↭.↭-sym one))
+        (λ ¬k → subst₂ _↭↭_
+                  (≡-sym (≡-cong (map proj₁) (split-region-∉ p C H' ¬k)))
+                  (≡-sym (≡-cong (regions G)
+                           (filter-all (p ≢?_)
+                             (All-tabulate (λ {q} m e' → ¬k (subst (_∈ C) (≡-sym e') m))))))
+                  (H.sym ↭.↭-sym one))
 
     blocks-part : concat (map (λ CH → map proj₁ (split-region p CH)) (K .hidden)) ↭↭
                   concat (map (λ CH → regions G (filter notp (proj₁ CH))) (K .hidden))
