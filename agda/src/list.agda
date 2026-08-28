@@ -86,24 +86,6 @@ any-tabulate-false g f h Fin.zero    = proj₁ (∨-false (f (g Fin.zero)) _ h)
 any-tabulate-false g f h (Fin.suc i) =
   any-tabulate-false (λ k → g (Fin.suc k)) f (proj₂ (∨-false (f (g Fin.zero)) _ h)) i
 
-any-self : ∀ {a} {A : Set a} {f : A → A → Bool} → (∀ x → f x x ≡ Bool.true) →
-           ∀ xs → All (λ x → any (f x) xs ≡ Bool.true) xs
-any-self     h []       = []
-any-self {f = f} h (x ∷ xs) =
-  ≡-cong (_∨ any (f x) xs) (h x) ∷
-  All-map (λ {y} prf → ≡-trans (≡-cong (f y x ∨_) prf) (∨-true (f y x))) (any-self h xs)
-
-any-map : ∀ {a b} {A : Set a} {B : Set b} (f : B → Bool) (g : A → B) (xs : List A) →
-          any f (map g xs) ≡ any (λ x → f (g x)) xs
-any-map f g []       = ≡-refl
-any-map f g (x ∷ xs) = ≡-cong (f (g x) ∨_) (any-map f g xs)
-
-any-Any : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
-          any f xs ≡ Bool.true → Any (λ x → f x ≡ Bool.true) xs
-any-Any f (x ∷ xs) h with ∨-true-inv (f x) (any f xs) h
-... | inj₁ e = here e
-... | inj₂ e = there (any-Any f xs e)
-
 Any-All : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q} {xs : List A} →
           Any P xs → All Q xs → Any (λ x → P x × Q x) xs
 Any-All (here px) (qx ∷ _) = here (px , qx)
@@ -118,13 +100,6 @@ map-All-cong : ∀ {a b} {A : Set a} {B : Set b} {f g : A → B} {xs : List A} �
                All (λ x → f x ≡ g x) xs → map f xs ≡ map g xs
 map-All-cong []       = ≡-refl
 map-All-cong (h ∷ hs) = ≡-cong₂ _∷_ h (map-All-cong hs)
-
-member-All : ∀ {a p} {A : Set a} {P : A → Set p} {eq : A → A → Bool} →
-             (∀ {x y} → eq x y ≡ Bool.true → x ≡ y) →
-             ∀ {x xs} → All P xs → any (eq x) xs ≡ Bool.true → P x
-member-All {eq = eq} sound {x} {y ∷ ys} (py ∷ pys) h with ∨-true-inv (eq x y) (any (eq x) ys) h
-... | inj₁ e = subst _ (≡-sym (sound e)) py
-... | inj₂ e = member-All sound pys e
 
 any-or : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
          any (λ x → f x ∨ g x) xs ≡ (any f xs ∨ any g xs)
