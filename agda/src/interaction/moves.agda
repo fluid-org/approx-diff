@@ -853,43 +853,45 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     AllP.concat⁺ (AllP.map⁺ (All-map (λ {CH} old → split-summaries p CH old) (S .summaries)))
 
   private
-  visible-graph-summary : (K : Config 𝒢) → Summarised K →
-                          ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                          ¬ VertexIn x (hidden-set K) → ¬ VertexIn y (hidden-set K) →
-                          visible-graph K x y i j ≡
-                          (fo-graph 𝒢 x y i j two.⊔ summary (hidden-set K) x y i j)
-  visible-graph-summary K S x y i j hx hy =
-    ≡-trans (visible-entry K x y i j)
-    (≡-trans (two.foldr-⊔-base _ (map (λ CH → proj₂ CH x y i j) (K .hidden)))
-             (≡-cong₂ two._⊔_ base-eq Σ-eq))
-    where
-    G  = fo-graph 𝒢
-    Cs = map proj₁ (K .hidden)
+    visible-graph-summary : (K : Config 𝒢) → Summarised K →
+                            ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
+                            ¬ VertexIn x (hidden-set K) → ¬ VertexIn y (hidden-set K) →
+                            visible-graph K x y i j ≡
+                            (fo-graph 𝒢 x y i j two.⊔ summary (hidden-set K) x y i j)
+    visible-graph-summary K S x y i j hx hy =
+      ≡-trans (visible-entry K x y i j)
+      (≡-trans (two.foldr-⊔-base _ (map (λ CH → proj₂ CH x y i j) (K .hidden)))
+               (≡-cong₂ two._⊔_ base-eq Σ-eq))
+      where
+      G  = fo-graph 𝒢
+      Cs = map proj₁ (K .hidden)
 
-    base-eq : when (¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)) (G x y) i j ≡ G x y i j
-    base-eq = when-yes (¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)) (hx , hy) (G x y) i j
+      both-visible? = ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
 
-    stored-eq : map (λ CH → proj₂ CH x y i j) (K .hidden) ≡ map (λ C → summary C x y i j) Cs
-    stored-eq = ≡-trans (map-All-cong (All-map (λ inv → inv x y i j) (S .summaries)))
-                        (map-∘ {g = λ C → summary C x y i j} {f = proj₁} (K .hidden))
+      base-eq : when both-visible? (G x y) i j ≡ G x y i j
+      base-eq = when-yes both-visible? (hx , hy) (G x y) i j
 
-    seps : AllPairs (λ C C' → Apart G C' C × Distinct C C') Cs
-    seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , d))
-                        (AllPairs-zip (separated S) (summarised-distinct K S))
+      stored-eq : map (λ CH → proj₂ CH x y i j) (K .hidden) ≡ map (λ C → summary C x y i j) Cs
+      stored-eq = ≡-trans (map-All-cong (All-map (λ inv → inv x y i j) (S .summaries)))
+                          (map-∘ {g = λ C → summary C x y i j} {f = proj₁} (K .hidden))
 
-    restrict-O : restrict G (hidden-set K) x y i j ≡ two.O
-    restrict-O = when-O (x ∈ᵥ? hidden-set K ⊎-dec y ∈ᵥ? hidden-set K) (G x y) i j
-                        [ (λ h → ⊥-elim (hx h)) , (λ h → ⊥-elim (hy h)) ]′
+      seps : AllPairs (λ C C' → Apart G C' C × Distinct C C') Cs
+      seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , d))
+                          (AllPairs-zip (separated S) (summarised-distinct K S))
 
-    Σ-eq : foldr two._⊔_ two.O (map (λ CH → proj₂ CH x y i j) (K .hidden))
-           ≡ summary (hidden-set K) x y i j
-    Σ-eq =
-      ≡-trans (≡-cong (foldr two._⊔_ two.O) stored-eq)
-      (≡-sym (≡-trans (assemble {E = hidden-set K} Cs (blocks-⊆ Cs) seps x y i j)
-             (≡-trans (two.foldr-⊔-base (restrict G (hidden-set K) x y i j)
-                                        (map (λ C → summary C x y i j) Cs))
-                      (≡-cong (two._⊔ foldr two._⊔_ two.O (map (λ C → summary C x y i j) Cs))
-                              restrict-O))))
+      restrict-O : restrict G (hidden-set K) x y i j ≡ two.O
+      restrict-O = when-O (x ∈ᵥ? hidden-set K ⊎-dec y ∈ᵥ? hidden-set K) (G x y) i j
+                          [ (λ h → ⊥-elim (hx h)) , (λ h → ⊥-elim (hy h)) ]′
+
+      Σ-eq : foldr two._⊔_ two.O (map (λ CH → proj₂ CH x y i j) (K .hidden))
+             ≡ summary (hidden-set K) x y i j
+      Σ-eq =
+        ≡-trans (≡-cong (foldr two._⊔_ two.O) stored-eq)
+        (≡-sym (≡-trans (assemble {E = hidden-set K} Cs (blocks-⊆ Cs) seps x y i j)
+               (≡-trans (two.foldr-⊔-base (restrict G (hidden-set K) x y i j)
+                                          (map (λ C → summary C x y i j) Cs))
+                        (≡-cong (two._⊔ foldr two._⊔_ two.O (map (λ C → summary C x y i j) Cs))
+                                restrict-O))))
 
   hide-reveal-visible : (p : Path) (K : Config 𝒢) → Summarised K →
                         p ∈ K .visible →
