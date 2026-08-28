@@ -27,7 +27,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; su
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Decidable
-  using (⌊_⌋; Dec; does; yes; no; toWitness; toWitnessFalse; isYes≗does; dec-true; dec-false)
+  using (⌊_⌋; Dec; does; yes; no; ¬?; _⊎-dec_; _×-dec_; toWitness; toWitnessFalse; isYes≗does;
+         dec-true; dec-false)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
@@ -84,9 +85,9 @@ nonzero-O {m} {n} R h i j
 ... | two.O | _  = ≡-refl
 ... | two.I | ()
 
-when : ∀ {m n} → Bool → M.Matrix m n → M.Matrix m n
-when Bool.true  R = R
-when Bool.false R = M.εₘ
+when : ∀ {p} {P : Set p} {m n} → Dec P → M.Matrix m n → M.Matrix m n
+when (yes _) R = R
+when (no _)  R = M.εₘ
 
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
 -- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
@@ -156,38 +157,8 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   inj₂ (inj₁ p) ∈ᵥ? C = p ∈? C
   inj₂ (inj₂ _) ∈ᵥ? C = no (λ ())
 
-  member-vertex : V B → List (Vertex (Graph.shape B)) → Bool
-  member-vertex z C = does (z ∈ᵥ? C)
-
-  ∈ᵥ-member : ∀ {z C} → VertexIn z C → member-vertex z C ≡ Bool.true
-  ∈ᵥ-member {z} {C} h = dec-true (z ∈ᵥ? C) h
-
-  ∉ᵥ-member : ∀ {z C} → ¬ VertexIn z C → member-vertex z C ≡ Bool.false
-  ∉ᵥ-member {z} {C} h = dec-false (z ∈ᵥ? C) h
-
-  member-∈ᵥ : ∀ {z C} → member-vertex z C ≡ Bool.true → VertexIn z C
-  member-∈ᵥ {z} {C} h =
-    toWitness (subst Bool.T (≡-sym (≡-trans (isYes≗does (z ∈ᵥ? C)) h)) _)
-
-  member-∉ᵥ : ∀ {z C} → member-vertex z C ≡ Bool.false → ¬ VertexIn z C
-  member-∉ᵥ {z} {C} h =
-    toWitnessFalse (subst (λ b → Bool.T (Bool.not b))
-                          (≡-sym (≡-trans (isYes≗does (z ∈ᵥ? C)) h)) _)
-
-  guard-∈ᵥ : ∀ {x y C} → VertexIn x C ⊎ VertexIn y C →
-             (member-vertex x C ∨ member-vertex y C) ≡ Bool.true
-  guard-∈ᵥ {x} {y} {C} (inj₁ h) = ≡-cong (_∨ member-vertex y C) (∈ᵥ-member h)
-  guard-∈ᵥ {x} {y} {C} (inj₂ h) =
-    ≡-trans (≡-cong (member-vertex x C ∨_) (∈ᵥ-member h)) (∨-true (member-vertex x C))
-
-  ∈ᵥ-guard : ∀ {x y C} → (member-vertex x C ∨ member-vertex y C) ≡ Bool.true →
-             VertexIn x C ⊎ VertexIn y C
-  ∈ᵥ-guard {x} {y} {C} h with ∨-true-inv (member-vertex x C) (member-vertex y C) h
-  ... | inj₁ e = inj₁ (member-∈ᵥ e)
-  ... | inj₂ e = inj₂ (member-∈ᵥ e)
-
   restrict : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → Relation (vertex-width B)
-  restrict G C x y = when (member-vertex x C ∨ member-vertex y C) (G x y)
+  restrict G C x y = when (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (G x y)
 
   -- The summary of a hidden region: the dependence routed through it, as relations between the
   -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
@@ -211,7 +182,7 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   visible-graph : Config B → Relation (vertex-width B)
   visible-graph K x y =
     foldr M._+ₘ_
-          (when (not (member-vertex x hs) ∧ not (member-vertex y hs)) (fo-graph B x y))
+          (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (fo-graph B x y))
           (map (λ CH → proj₂ CH x y) (K .hidden))
     where hs = hidden-set K
 
@@ -241,27 +212,26 @@ module Interaction {m n : ℕ} (B : Graph m n) where
 
 private
 
-  when-O : ∀ (b : Bool) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
-           (b ≡ Bool.true → R i j ≡ two.O) → when b R i j ≡ two.O
-  when-O Bool.false R i j h = ≡-refl
-  when-O Bool.true  R i j h = h ≡-refl
+  when-yes : ∀ {p} {P : Set p} (d : Dec P) → P →
+             ∀ {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) → when d R i j ≡ R i j
+  when-yes (yes _)  h R i j = ≡-refl
+  when-yes (no  ¬h) h R i j = ⊥-elim (¬h h)
 
-  when-sub : ∀ (b₁ b₂ : Bool) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
-             (b₁ ≡ Bool.true → b₂ ≡ Bool.true) →
-             (when b₁ R i j two.⊔ when b₂ R i j) ≡ when b₂ R i j
-  when-sub Bool.false b₂ R i j imp = ≡-refl
-  when-sub Bool.true  b₂ R i j imp with b₂ | imp ≡-refl
-  ... | Bool.true | _ = two.⊔-idem
+  when-O : ∀ {p} {P : Set p} (d : Dec P) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
+           (P → R i j ≡ two.O) → when d R i j ≡ two.O
+  when-O (no  _) R i j h = ≡-refl
+  when-O (yes k) R i j h = h k
 
-  when-I : ∀ (b : Bool) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
-           when b R i j ≡ two.I → (b ≡ Bool.true) × (R i j ≡ two.I)
-  when-I Bool.true  R i j h = ≡-refl , h
+  when-sub : ∀ {p q} {P : Set p} {Q : Set q} (d₁ : Dec P) (d₂ : Dec Q)
+             {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) → (P → Q) →
+             (when d₁ R i j two.⊔ when d₂ R i j) ≡ when d₂ R i j
+  when-sub (no  _) d₂        R i j imp = ≡-refl
+  when-sub (yes k) (yes _)   R i j imp = two.⊔-idem
+  when-sub (yes k) (no  ¬k') R i j imp = ⊥-elim (¬k' (imp k))
 
-  ∧-intro : ∀ {a b : Bool} → a ≡ Bool.true → b ≡ Bool.true → (a Bool.∧ b) ≡ Bool.true
-  ∧-intro e₁ e₂ = ≡-cong₂ Bool._∧_ e₁ e₂
-
-  not-false : ∀ {b : Bool} → b ≡ Bool.false → Bool.not b ≡ Bool.true
-  not-false e = ≡-cong Bool.not e
+  when-I : ∀ {p} {P : Set p} (d : Dec P) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
+           when d R i j ≡ two.I → P × (R i j ≡ two.I)
+  when-I (yes k) R i j h = k , h
 
   foldr-entryₘ : ∀ {m n} (B : M.Matrix m n) (Rs : List (M.Matrix m n)) (i : Fin m) (j : Fin n) →
                  foldr M._+ₘ_ B Rs i j ≡ foldr two._⊔_ (B i j) (map (λ R' → R' i j) Rs)
@@ -294,9 +264,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
 
   restrict-forward : {G : Relation (vertex-width 𝒢)} (C : List (Path)) → Fwd 𝒢 G → Fwd 𝒢 (restrict G C)
-  restrict-forward C fwd x y i j with member-vertex x C ∨ member-vertex y C
-  ... | Bool.true  = fwd x y i j
-  ... | Bool.false = inj₂ ⟪ S.refl {two.O} ⟫
+  restrict-forward {G} C fwd x y i j with x ∈ᵥ? C ⊎-dec y ∈ᵥ? C
+  ... | yes _ = fwd x y i j
+  ... | no  _ = inj₂ ⟪ S.refl {two.O} ⟫
 
   adjacent-sym : (G : Relation (vertex-width 𝒢)) (x y : V 𝒢) → adjacent G x y ≡ adjacent G y x
   adjacent-sym G x y = ∨-comm (nonzero (G x y)) (nonzero (G y x))
@@ -380,14 +350,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                  ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                  (restrict G C x y i j two.⊔ restrict G E x y i j) ≡ restrict G E x y i j
   restrict-sub G {C} {E} mono x y i j =
-    when-sub (member-vertex x C ∨ member-vertex y C) (member-vertex x E ∨ member-vertex y E)
-             (G x y) i j imp
-    where
-    imp : (member-vertex x C ∨ member-vertex y C) ≡ Bool.true →
-          (member-vertex x E ∨ member-vertex y E) ≡ Bool.true
-    imp h = guard-∈ᵥ {x} {y} {E}
-              ([ (λ hx → inj₁ (mv-mono mono hx)) , (λ hy → inj₂ (mv-mono mono hy)) ]′
-                 (∈ᵥ-guard {x} {y} {C} h))
+    when-sub (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (x ∈ᵥ? E ⊎-dec y ∈ᵥ? E) (G x y) i j
+             [ (λ hx → inj₁ (mv-mono mono hx)) , (λ hy → inj₂ (mv-mono mono hy)) ]′
 
   restrict-agree : (G : Relation (vertex-width 𝒢)) {C E : List (Path)} → C ⊆ E →
                    All (λ r → Prf (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
@@ -396,15 +360,11 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                     restrict G E z r i j S.≈ restrict G C z r i j)))
                        (map at C)
   restrict-agree G {C} {E} mono =
-    AllP.map⁺ (All-map (λ {q} h → let hC = ∈-member h ; hE = ∈-member (mono h) in ⟪
-      (λ z i j → ≈-of-≡ₛ (
-        ≡-trans (≡-cong (λ b → when (b ∨ member-vertex z E) (G (at q) z) i j) hE)
-                (≡-sym (≡-cong (λ b → when (b ∨ member-vertex z C) (G (at q) z) i j) hC)))) ,ₚ
-      (λ z i j → ≈-of-≡ₛ (
-        ≡-trans (≡-cong (λ b → when (member-vertex z E ∨ b) (G z (at q)) i j) hE)
-        (≡-trans (≡-cong (λ b → when b (G z (at q)) i j) (∨-true (member-vertex z E)))
-        (≡-sym (≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (G z (at q)) i j) hC)
-                        (≡-cong (λ b → when b (G z (at q)) i j) (∨-true (member-vertex z C)))))))) ⟫)
+    AllP.map⁺ (All-map (λ {q} h → ⟪
+      (λ z i j → ≈-of-≡ₛ (≡-trans (when-yes (at q ∈ᵥ? E ⊎-dec z ∈ᵥ? E) (inj₁ (mono h)) (G (at q) z) i j)
+                                  (≡-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z) i j)))) ,ₚ
+      (λ z i j → ≈-of-≡ₛ (≡-trans (when-yes (z ∈ᵥ? E ⊎-dec at q ∈ᵥ? E) (inj₂ (mono h)) (G z (at q)) i j)
+                                  (≡-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q)) i j)))) ⟫)
       (All-tabulate (λ h → h)))
 
   localise : {C E : List (Path)} → C ⊆ E →
@@ -446,17 +406,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     base-row : (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
                restrict (fo-graph 𝒢) C (at q) z i j ≡ two.O
     base-row z i j =
-      ≡-trans (≡-cong (λ b → when (b ∨ member-vertex z C) (fo-graph 𝒢 (at q) z) i j) (∉-member hm))
-              (when-O (member-vertex z C) (fo-graph 𝒢 (at q) z) i j
-                      (λ hz → entry-row (member-∈ᵥ hz) i j))
+      when-O (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (fo-graph 𝒢 (at q) z) i j
+             [ (λ h → ⊥-elim (hm h)) , (λ hz → entry-row hz i j) ]′
 
     base-col : (z : V 𝒢) (i : Fin (vertex-width 𝒢 (at q))) (j : Fin (vertex-width 𝒢 z)) →
                restrict (fo-graph 𝒢) C z (at q) i j ≡ two.O
     base-col z i j =
-      ≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (fo-graph 𝒢 z (at q)) i j) (∉-member hm))
-      (≡-trans (≡-cong (λ b → when b (fo-graph 𝒢 z (at q)) i j) (∨-identityʳ (member-vertex z C)))
-               (when-O (member-vertex z C) (fo-graph 𝒢 z (at q)) i j
-                       (λ hz → entry-col (member-∈ᵥ hz) i j)))
+      when-O (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (fo-graph 𝒢 z (at q)) i j
+             [ (λ hz → entry-col hz i j) , (λ h → ⊥-elim (hm h)) ]′
 
     zf = HA.zero-fold (map at C) (at q)
            ((λ z i j → ≈-of-≡ₛ (base-row z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (base-col z i j)))
@@ -521,8 +478,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                     ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                     visible-graph K x y i j ≡
                     foldr two._⊔_
-                          (when (Bool.not (member-vertex x (hidden-set K)) Bool.∧
-                                 Bool.not (member-vertex y (hidden-set K)))
+                          (when (¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K))
                                 (fo-graph 𝒢 x y) i j)
                           (map (λ CH → proj₂ CH x y i j) (K .hidden))
     visible-entry K x y i j =
@@ -594,8 +550,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       summary-I C x' y' i' j' gd ge =
         ≡-trans (≡-of-≈ₛ (HA.increasing (map at C) x' y' i' j'))
                 (≡-cong (two._⊔ hide-all (vertex-width 𝒢) (restrict G C) (map at C) x' y' i' j')
-                        (≡-trans (≡-cong (λ b → when b (G x' y') i' j')
-                                         (guard-∈ᵥ {x'} {y'} {C} gd)) ge))
+                        (≡-trans (when-yes (x' ∈ᵥ? C ⊎-dec y' ∈ᵥ? C) gd (G x' y') i' j') ge))
 
       sums-I : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) (b : two.Two) →
             Any (λ C → summary C x' y' i' j' ≡ two.I) Ms →
@@ -605,10 +560,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       mv-p-≡ : ∀ {z} → VertexIn z (p ∷ []) → z ≡ at p
       mv-p-≡ {inj₂ (inj₁ q)} (here ≡-refl) = ≡-refl
 
-      pguard-≡ : ∀ x' y' → (member-vertex x' (p ∷ []) ∨ member-vertex y' (p ∷ [])) ≡ Bool.true →
+      pguard-≡ : ∀ x' y' → VertexIn x' (p ∷ []) ⊎ VertexIn y' (p ∷ []) →
                  (x' ≡ at p) ⊎ (y' ≡ at p)
-      pguard-≡ x' y' h =
-        [ (λ e → inj₁ (mv-p-≡ e)) , (λ e → inj₂ (mv-p-≡ e)) ]′ (∈ᵥ-guard {x'} {y'} h)
+      pguard-≡ x' y' = [ (λ e → inj₁ (mv-p-≡ e)) , (λ e → inj₂ (mv-p-≡ e)) ]′
 
       p∈C* : VertexIn (at p) C*
       p∈C* = here ≡-refl
@@ -617,11 +571,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                (x' ≡ at p) ⊎ (y' ≡ at p) → G x' y' i' j' ≡ two.I →
                restrict G C* x' y' i' j' ≡ two.I
       vis-or .(at p) y' i' j' (inj₁ ≡-refl) ge =
-        ≡-trans (≡-cong (λ b → when b (G (at p) y') i' j')
-                        (guard-∈ᵥ {at p} {y'} {C*} (inj₁ p∈C*))) ge
+        ≡-trans (when-yes (at p ∈ᵥ? C* ⊎-dec y' ∈ᵥ? C*) (inj₁ p∈C*) (G (at p) y') i' j') ge
       vis-or x' .(at p) i' j' (inj₂ ≡-refl) ge =
-        ≡-trans (≡-cong (λ b → when b (G x' (at p)) i' j')
-                        (guard-∈ᵥ {x'} {at p} {C*} (inj₂ p∈C*))) ge
+        ≡-trans (when-yes (x' ∈ᵥ? C* ⊎-dec at p ∈ᵥ? C*) (inj₂ p∈C*) (G x' (at p)) i' j') ge
 
       stored-or : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
                   (x' ≡ at p) ⊎ (y' ≡ at p) →
@@ -640,18 +592,16 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       fwd-B : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
               B x' y' i' j' ≡ two.I →
               (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
-      fwd-B x' y' i' j' h with when-I (member-vertex x' (p ∷ []) ∨ member-vertex y' (p ∷ []))
-                                      (visible-graph K x' y') i' j' h
+      fwd-B x' y' i' j' h
+        with when-I (x' ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ [])) (visible-graph K x' y') i' j' h
       ... | (pgt , ve)
-        with two.foldr-⊔-I (when (Bool.not (member-vertex x' (hidden-set K)) Bool.∧
-                                   Bool.not (member-vertex y' (hidden-set K)))
+        with two.foldr-⊔-I (when (¬? (x' ∈ᵥ? hidden-set K) ×-dec ¬? (y' ∈ᵥ? hidden-set K))
                              (G x' y') i' j')
                        (map (λ CH → proj₂ CH x' y' i' j') (K .hidden))
                        (≡-trans (≡-sym (visible-entry K x' y' i' j')) ve)
       ...   | inj₁ vb =
         two.⊔-I-inl (vis-or x' y' i' j' (pguard-≡ x' y' pgt)
-                            (proj₂ (when-I (Bool.not (member-vertex x' (hidden-set K)) Bool.∧
-                                            Bool.not (member-vertex y' (hidden-set K)))
+                            (proj₂ (when-I (¬? (x' ∈ᵥ? hidden-set K) ×-dec ¬? (y' ∈ᵥ? hidden-set K))
                                        (G x' y') i' j' vb)))
       ...   | inj₂ aS =
         stored-or x' y' i' j' (pguard-≡ x' y' pgt)
@@ -660,34 +610,32 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                      (Any-All (AnyPr.map⁻ aS) (S .summaries)))))
 
       B-visible-x : ∀ y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 (at p))) →
-                     member-vertex y' (hidden-set K) ≡ Bool.false → G (at p) y' i' j' ≡ two.I →
+                     ¬ VertexIn y' (hidden-set K) → G (at p) y' i' j' ≡ two.I →
                      B (at p) y' i' j' ≡ two.I
       B-visible-x y' i' j' hy ge =
-        ≡-trans (≡-cong (λ b → when b (visible-graph K (at p) y') i' j')
-                        (guard-∈ᵥ {at p} {y'} {p ∷ []} (inj₁ (here ≡-refl))))
+        ≡-trans (when-yes (at p ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ [])) (inj₁ (here ≡-refl))
+                          (visible-graph K (at p) y') i' j')
         (≡-trans (visible-entry K (at p) y' i' j')
                  (two.foldr-⊔-here (map (λ CH → proj₂ CH (at p) y' i' j') (K .hidden))
-                   (≡-trans (≡-cong (λ b → when b (G (at p) y') i' j')
-                                    (∧-intro (not-false (∉-member hp)) (not-false hy)))
-                            ge)))
+                   (≡-trans (when-yes (¬? (at p ∈ᵥ? hidden-set K) ×-dec ¬? (y' ∈ᵥ? hidden-set K))
+                                      (hp , hy) (G (at p) y') i' j') ge)))
 
       B-visible-y : ∀ x' (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 x')) →
-                     member-vertex x' (hidden-set K) ≡ Bool.false → G x' (at p) i' j' ≡ two.I →
+                     ¬ VertexIn x' (hidden-set K) → G x' (at p) i' j' ≡ two.I →
                      B x' (at p) i' j' ≡ two.I
       B-visible-y x' i' j' hx ge =
-        ≡-trans (≡-cong (λ b → when b (visible-graph K x' (at p)) i' j')
-                        (guard-∈ᵥ {x'} {at p} {p ∷ []} (inj₂ (here ≡-refl))))
+        ≡-trans (when-yes (x' ∈ᵥ? (p ∷ []) ⊎-dec at p ∈ᵥ? (p ∷ [])) (inj₂ (here ≡-refl))
+                          (visible-graph K x' (at p)) i' j')
         (≡-trans (visible-entry K x' (at p) i' j')
                  (two.foldr-⊔-here (map (λ CH → proj₂ CH x' (at p) i' j') (K .hidden))
-                   (≡-trans (≡-cong (λ b → when b (G x' (at p)) i' j')
-                                    (∧-intro (not-false hx) (not-false (∉-member hp))))
-                            ge)))
+                   (≡-trans (when-yes (¬? (x' ∈ᵥ? hidden-set K) ×-dec ¬? (at p ∈ᵥ? hidden-set K))
+                                      (hx , hp) (G x' (at p)) i' j') ge)))
 
       bwd-px : ∀ y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 (at p))) →
                G (at p) y' i' j' ≡ two.I →
                (B (at p) y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at (at p) y' i' j')) ≡ two.I
-      bwd-px (inj₁ i) i' j' ge = two.⊔-I-inl (B-visible-x (inj₁ i) i' j' ≡-refl ge)
-      bwd-px (inj₂ (inj₂ r)) i' j' ge = two.⊔-I-inl (B-visible-x (inj₂ (inj₂ r)) i' j' ≡-refl ge)
+      bwd-px (inj₁ i) i' j' ge = two.⊔-I-inl (B-visible-x (inj₁ i) i' j' (λ ()) ge)
+      bwd-px (inj₂ (inj₂ r)) i' j' ge = two.⊔-I-inl (B-visible-x (inj₂ (inj₂ r)) i' j' (λ ()) ge)
       bwd-px (inj₂ (inj₁ qy)) i' j' ge =
         bool-case (member qy (hidden-set K))
           (λ hy → [ (λ aM → two.⊔-I-inr _ (sums-I (at p) (at qy) i' j' two.O
@@ -699,13 +647,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                    two.O≢I (≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} adj qy mem) i' j'))
                                            ge) })
                               (Any-All aU u-adj)) ]′ (hid-split (member-∈ hy)))
-          (λ hy → two.⊔-I-inl (B-visible-x (at qy) i' j' hy ge))
+          (λ hy → two.⊔-I-inl (B-visible-x (at qy) i' j' (member-∉ hy) ge))
 
       bwd-py : ∀ x' (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 x')) →
                G x' (at p) i' j' ≡ two.I →
                (B x' (at p) i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' (at p) i' j')) ≡ two.I
-      bwd-py (inj₁ i) i' j' ge = two.⊔-I-inl (B-visible-y (inj₁ i) i' j' ≡-refl ge)
-      bwd-py (inj₂ (inj₂ r)) i' j' ge = two.⊔-I-inl (B-visible-y (inj₂ (inj₂ r)) i' j' ≡-refl ge)
+      bwd-py (inj₁ i) i' j' ge = two.⊔-I-inl (B-visible-y (inj₁ i) i' j' (λ ()) ge)
+      bwd-py (inj₂ (inj₂ r)) i' j' ge = two.⊔-I-inl (B-visible-y (inj₂ (inj₂ r)) i' j' (λ ()) ge)
       bwd-py (inj₂ (inj₁ qx)) i' j' ge =
         bool-case (member qx (hidden-set K))
           (λ hx → [ (λ aM → two.⊔-I-inr _ (sums-I (at qx) (at p) i' j' two.O
@@ -717,7 +665,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                    two.O≢I (≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} adj qx mem) i' j'))
                                            ge) })
                               (Any-All aU u-adj)) ]′ (hid-split (member-∈ hx)))
-          (λ hx → two.⊔-I-inl (B-visible-y (at qx) i' j' hx ge))
+          (λ hx → two.⊔-I-inl (B-visible-y (at qx) i' j' (member-∉ hx) ge))
 
       bwd-l : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
               G x' y' i' j' ≡ two.I → VertexIn x' C* →
@@ -742,10 +690,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       bwd-B : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
               restrict G C* x' y' i' j' ≡ two.I →
               (B x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
-      bwd-B x' y' i' j' h with when-I (member-vertex x' C* ∨ member-vertex y' C*) (G x' y') i' j' h
-      ... | (gd , ge) with ∈ᵥ-guard {x'} {y'} {C*} gd
-      ...   | inj₁ hx = bwd-l x' y' i' j' ge hx
-      ...   | inj₂ hy = bwd-r x' y' i' j' ge hy
+      bwd-B x' y' i' j' h with when-I (x' ∈ᵥ? C* ⊎-dec y' ∈ᵥ? C*) (G x' y') i' j' h
+      ... | (inj₁ hx , ge) = bwd-l x' y' i' j' ge hx
+      ... | (inj₂ hy , ge) = bwd-r x' y' i' j' ge hy
 
     base-swap : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
                 foldr two._⊔_ (B x' y' i' j') (sums-at x' y' i' j') ≡
@@ -932,8 +879,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   private
   visible-graph-summary : (K : Config 𝒢) → Summarised K →
                           ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                          member-vertex x (hidden-set K) ≡ Bool.false →
-                          member-vertex y (hidden-set K) ≡ Bool.false →
+                          ¬ VertexIn x (hidden-set K) → ¬ VertexIn y (hidden-set K) →
                           visible-graph K x y i j ≡
                           (fo-graph 𝒢 x y i j two.⊔ summary (hidden-set K) x y i j)
   visible-graph-summary K S x y i j hx hy =
@@ -944,10 +890,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     G  = fo-graph 𝒢
     Cs = map proj₁ (K .hidden)
 
-    base-eq : when (Bool.not (member-vertex x (hidden-set K)) Bool.∧
-                    Bool.not (member-vertex y (hidden-set K))) (G x y) i j
-              ≡ G x y i j
-    base-eq = ≡-cong (λ b → when b (G x y) i j) (∧-intro (not-false hx) (not-false hy))
+    base-eq : when (¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)) (G x y) i j ≡ G x y i j
+    base-eq = when-yes (¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)) (hx , hy) (G x y) i j
 
     stored-eq : map (λ CH → proj₂ CH x y i j) (K .hidden) ≡ map (λ C → summary C x y i j) Cs
     stored-eq = ≡-trans (map-All-cong (All-map (λ inv → inv x y i j) (S .summaries)))
@@ -958,7 +902,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                         (AllPairs-zip (separated S) (summarised-distinct K S))
 
     restrict-O : restrict G (hidden-set K) x y i j ≡ two.O
-    restrict-O = ≡-cong (λ b → when b (G x y) i j) (≡-cong₂ _∨_ hx hy)
+    restrict-O = when-O (x ∈ᵥ? hidden-set K ⊎-dec y ∈ᵥ? hidden-set K) (G x y) i j
+                        [ (λ h → ⊥-elim (hx h)) , (λ h → ⊥-elim (hy h)) ]′
 
     Σ-eq : foldr two._⊔_ two.O (map (λ CH → proj₂ CH x y i j) (K .hidden))
            ≡ summary (hidden-set K) x y i j
@@ -1025,9 +970,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     restrict-≤ : (G : Relation (vertex-width 𝒢)) (C : List (Path)) →
                  ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                  (restrict G C x y i j two.⊔ G x y i j) ≡ G x y i j
-    restrict-≤ G C x y i j with member-vertex x C ∨ member-vertex y C
-    ... | Bool.true  = two.⊔-idem
-    ... | Bool.false = ≡-refl
+    restrict-≤ G C x y i j with x ∈ᵥ? C ⊎-dec y ∈ᵥ? C
+    ... | yes _ = two.⊔-idem
+    ... | no  _ = ≡-refl
 
     restrict-hidden-agree : (G : Relation (vertex-width 𝒢)) (C : List (Path)) →
                             All (λ r → Prf (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
@@ -1037,16 +982,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                 (map at C)
     restrict-hidden-agree G C =
       AllP.map⁺ (All-map (λ {q} h → ⟪
-        (λ z i j → ≈-of-≡ₛ (≡-sym (≡-cong (λ b → when b (G (at q) z) i j)
-                                          (guard-∈ᵥ {at q} {z} {C} (inj₁ h))))) ,ₚ
-        (λ z i j → ≈-of-≡ₛ (≡-sym (≡-cong (λ b → when b (G z (at q)) i j)
-                                          (guard-∈ᵥ {z} {at q} {C} (inj₂ h))))) ⟫)
+        (λ z i j → ≈-of-≡ₛ (≡-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z) i j))) ,ₚ
+        (λ z i j → ≈-of-≡ₛ (≡-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q)) i j))) ⟫)
         (All-tabulate (λ h → h)))
 
   summaries-assemble : (K : Config 𝒢) → Summarised K →
                        ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                       member-vertex x (hidden-set K) ≡ Bool.false →
-                       member-vertex y (hidden-set K) ≡ Bool.false →
+                       ¬ VertexIn x (hidden-set K) → ¬ VertexIn y (hidden-set K) →
                        visible-graph K x y i j ≡
                        hide-all (vertex-width 𝒢) (fo-graph 𝒢) (map at (hidden-set K)) x y i j
   summaries-assemble K S x y i j hx hy =
