@@ -51,7 +51,7 @@ module Fam⟨𝒞⟩μ = fam-mu-lifting 0ℓ 0ℓ M.cmon M.biproduct 1
 module Fam⟨𝒟⟩μ = fam-mu-lifting 0ℓ 0ℓ SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 
 private
-  module FCC = HasCoproducts Fam⟨𝒞⟩μ.coproducts
+  module Fam⟨𝒞⟩μ-CP = HasCoproducts Fam⟨𝒞⟩μ.coproducts
 
 ctrl-weight-endo : SemiMod._⇒_ SemiMod.𝕀 SemiMod.𝕀
 ctrl-weight-endo = ι1-fwd SemiMod.∘ (mat (matrix.Mat.block S ctrl-weight) SemiMod.∘ ι1-bwd)
@@ -61,7 +61,7 @@ ctrl-weight-endo = ι1-fwd SemiMod.∘ (mat (matrix.Mat.block S ctrl-weight) Sem
 𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj
 𝒞𝟙ty = Fam⟨𝒞⟩μ.Lf 𝟙F
 
-𝒞Bool = FCC.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
+𝒞Bool = Fam⟨𝒞⟩μ-CP.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
 
 𝒞Bool-root : Fam⟨𝒞⟩μ.Section 𝒞Bool
 𝒞Bool-root = Fam⟨𝒞⟩μ.coprod-section (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty}) (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty})
@@ -96,7 +96,7 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
   boolify : Fam⟨𝒞⟩μ.Mor (matrix-primitives.Fam⟨𝒞⟩-bool S) 𝒞Bool
   boolify =
-    FCC.coprod-m
+    Fam⟨𝒞⟩μ-CP.coprod-m
       (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam𝒞.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
       (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam𝒞.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
 

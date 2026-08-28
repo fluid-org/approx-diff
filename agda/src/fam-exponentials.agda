@@ -30,7 +30,7 @@ module fam-exponentials {o m e} os es
    (𝒞 : Category o m e)
    (CM𝒞 : CMonEnriched 𝒞)
    (BP : ∀ x y → Biproduct CM𝒞 x y)
-   (SP : HasSetoidProducts (m ⊔ e ⊔ os ⊔ es) (os ⊔ es ⊔ m ⊔ e) 𝒞)
+   (ΠP : HasSetoidProducts (m ⊔ e ⊔ os ⊔ es) (os ⊔ es ⊔ m ⊔ e) 𝒞)
        where
 
 module Fam𝒞 = CategoryOfFamilies (m ⊔ e ⊔ os ⊔ es) (os ⊔ es ⊔ m ⊔ e) 𝒞
@@ -63,31 +63,31 @@ open _≃f_
 
 _⟶_ : Obj → Obj → Obj
 (X ⟶ Y) .idx = Category.hom-setoid cat X Y
-(X ⟶ Y) .fam .fm f = SP .Π (X .idx) (Y .fam [ f .idxf ])
-(X ⟶ Y) .fam .subst {f} {g} e = Π-map SP (reindex-≈ (f .idxf) (g .idxf) (e .idxf-eq))
-(X ⟶ Y) .fam .refl* {f} = isEquiv .trans (Π-map-cong SP (reindex-≈-refl (f .idxf))) (Π-map-id SP)
+(X ⟶ Y) .fam .fm f = ΠP .Π (X .idx) (Y .fam [ f .idxf ])
+(X ⟶ Y) .fam .subst {f} {g} e = Π-map ΠP (reindex-≈ (f .idxf) (g .idxf) (e .idxf-eq))
+(X ⟶ Y) .fam .refl* {f} = isEquiv .trans (Π-map-cong ΠP (reindex-≈-refl (f .idxf))) (Π-map-id ΠP)
 (X ⟶ Y) .fam .trans* {f} {g} {h} g≈h f≈g =
-  isEquiv .trans (Π-map-cong SP (reindex-≈-trans _ _)) (Π-map-comp SP _ _)
+  isEquiv .trans (Π-map-cong ΠP (reindex-≈-trans _ _)) (Π-map-comp ΠP _ _)
 
 eval⟶ : ∀ {X Y : Obj} → Mor ((X ⟶ Y) ⊗ X) Y
 eval⟶ .idxf .func (f , x) = f .idxf .func x
 eval⟶ .idxf .func-resp-≈ (f₁≈f₂ , x₁≈x₂) = f₁≈f₂ .idxf-eq .func-eq x₁≈x₂
-eval⟶ .famf .transf (f , x) = CP .copair (SP .evalΠ _ x) (f .famf .transf x)
+eval⟶ .famf .transf (f , x) = CP .copair (ΠP .evalΠ _ x) (f .famf .transf x)
 eval⟶ {X} {Y} .famf .natural {f₁ , x₁} {f₂ , x₂} (f₁≈f₂ , x₁≈x₂) =
   begin
-    CP .copair (SP .evalΠ (Y .fam [ f₂ .idxf ]) x₂) (f₂ .famf .transf x₂) ∘ prod-m P ((X ⟶ Y) .fam .subst f₁≈f₂) (X .fam .subst x₁≈x₂)
+    CP .copair (ΠP .evalΠ (Y .fam [ f₂ .idxf ]) x₂) (f₂ .famf .transf x₂) ∘ prod-m P ((X ⟶ Y) .fam .subst f₁≈f₂) (X .fam .subst x₁≈x₂)
   ≈⟨ copair-prod _ BP ⟩
-    CP .copair (SP .evalΠ (Y .fam [ f₂ .idxf ]) x₂ ∘ (X ⟶ Y) .fam .subst f₁≈f₂) (f₂ .famf .transf x₂ ∘ X .fam .subst x₁≈x₂)
-  ≈⟨ CP .copair-cong (SP .lambda-eval x₂) (f₂ .famf .natural x₁≈x₂) ⟩
-    CP .copair (Y .fam .subst _ ∘ SP .evalΠ (Y .fam [ f₁ .idxf ]) x₂) (Y .fam .subst _ ∘ f₂ .famf .transf x₁)
-  ≈˘⟨ CP .copair-cong (∘-cong ≈-refl (SP .evalΠ-cong x₁≈x₂)) (∘-cong ≈-refl (f₁≈f₂ .famf-eq .transf-eq)) ⟩
-    CP .copair (Y .fam .subst _ ∘ (Y .fam .subst _ ∘ SP .evalΠ (Y .fam [ f₁ .idxf ]) x₁)) (Y .fam .subst _ ∘ (Y .fam .subst _ ∘ f₁ .famf .transf x₁))
+    CP .copair (ΠP .evalΠ (Y .fam [ f₂ .idxf ]) x₂ ∘ (X ⟶ Y) .fam .subst f₁≈f₂) (f₂ .famf .transf x₂ ∘ X .fam .subst x₁≈x₂)
+  ≈⟨ CP .copair-cong (ΠP .lambda-eval x₂) (f₂ .famf .natural x₁≈x₂) ⟩
+    CP .copair (Y .fam .subst _ ∘ ΠP .evalΠ (Y .fam [ f₁ .idxf ]) x₂) (Y .fam .subst _ ∘ f₂ .famf .transf x₁)
+  ≈˘⟨ CP .copair-cong (∘-cong ≈-refl (ΠP .evalΠ-cong x₁≈x₂)) (∘-cong ≈-refl (f₁≈f₂ .famf-eq .transf-eq)) ⟩
+    CP .copair (Y .fam .subst _ ∘ (Y .fam .subst _ ∘ ΠP .evalΠ (Y .fam [ f₁ .idxf ]) x₁)) (Y .fam .subst _ ∘ (Y .fam .subst _ ∘ f₁ .famf .transf x₁))
   ≈˘⟨ CP .copair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-    CP .copair ((Y .fam .subst _ ∘ Y .fam .subst _) ∘ SP .evalΠ (Y .fam [ f₁ .idxf ]) x₁) ((Y .fam .subst _ ∘ Y .fam .subst _) ∘ f₁ .famf .transf x₁)
+    CP .copair ((Y .fam .subst _ ∘ Y .fam .subst _) ∘ ΠP .evalΠ (Y .fam [ f₁ .idxf ]) x₁) ((Y .fam .subst _ ∘ Y .fam .subst _) ∘ f₁ .famf .transf x₁)
   ≈˘⟨ CP .copair-cong (∘-cong (Y .fam .trans* _ _) ≈-refl) (∘-cong (Y .fam .trans* _ _) ≈-refl) ⟩
-    CP .copair (Y .fam .subst _ ∘ SP .evalΠ (Y .fam [ f₁ .idxf ]) x₁) (Y .fam .subst _ ∘ f₁ .famf .transf x₁)
+    CP .copair (Y .fam .subst _ ∘ ΠP .evalΠ (Y .fam [ f₁ .idxf ]) x₁) (Y .fam .subst _ ∘ f₁ .famf .transf x₁)
   ≈˘⟨ copair-natural CP _ _ _ ⟩
-    Y .fam .subst _ ∘ CP .copair (SP .evalΠ (Y .fam [ f₁ .idxf ]) x₁) (f₁ .famf .transf x₁)
+    Y .fam .subst _ ∘ CP .copair (ΠP .evalΠ (Y .fam [ f₁ .idxf ]) x₁) (f₁ .famf .transf x₁)
   ∎
   where open ≈-Reasoning isEquiv
 
@@ -164,42 +164,42 @@ lambda⟶ {X} {Y} {Z} f .idxf .func-resp-≈ {x₁} {x₂} x₁≈x₂ .famf-eq 
   ∎
   where open ≈-Reasoning ≃f-isEquivalence
 lambda⟶ {X} {Y} {Z} f .famf .transf x =
-  SP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x) (f .famf) ∘f nudge-in₁ x))
+  ΠP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x) (f .famf) ∘f nudge-in₁ x))
 lambda⟶ {X} {Y} {Z} f .famf .natural {x₁} {x₂} x₁≈x₂ =
   begin
-    SP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x₂) (f .famf) ∘f nudge-in₁ x₂)) ∘ X .fam .subst x₁≈x₂
-  ≈⟨ lambdaΠ-natural SP _ _ ⟩
-    SP .lambdaΠ _ _ ((reindex-comp ∘f (reindex-f (nudge x₂) (f .famf) ∘f nudge-in₁ x₂)) ∘f constF (X .fam .subst x₁≈x₂))
-  ≈⟨ SP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f ((reindex-f (nudge x₂) (f .famf) ∘f nudge-in₁ x₂) ∘f constF (X .fam .subst x₁≈x₂)))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong ≃f-refl (≃f-assoc _ _ _)) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x₂) (f .famf) ∘f (nudge-in₁ x₂ ∘f constF (X .fam .subst x₁≈x₂))))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong ≃f-refl (∘f-cong ≃f-refl (nudge-in₁-≈ x₁≈x₂))) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x₂) (f .famf) ∘f (reindex-≈ _ _ _ ∘f nudge-in₁ x₁)))
-  ≈˘⟨ SP .lambdaΠ-cong (∘f-cong ≃f-refl (≃f-assoc _ _ _)) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f ((reindex-f (nudge x₂) (f .famf) ∘f reindex-≈ _ _ _) ∘f nudge-in₁ x₁))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong ≃f-refl (∘f-cong (reindex-sq _ _) ≃f-refl)) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f ((reindex-≈ _ _ _ ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁))
-  ≈˘⟨ SP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
-    SP .lambdaΠ _ _ ((reindex-comp ∘f (reindex-≈ _ _ _ ∘f reindex-f (nudge x₁) (f .famf))) ∘f nudge-in₁ x₁)
-  ≈˘⟨ SP .lambdaΠ-cong (∘f-cong (≃f-assoc _ _ _) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ (((reindex-comp ∘f reindex-≈ _ _ _) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
-  ≈˘⟨ SP .lambdaΠ-cong (∘f-cong (∘f-cong (∘f-cong ≃f-refl ≃f-id-right) ≃f-refl) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ (((reindex-comp ∘f (reindex-≈ _ _ _ ∘f idf _)) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
-  ≈˘⟨ SP .lambdaΠ-cong (∘f-cong (∘f-cong (∘f-cong ≃f-refl (∘f-cong ≃f-refl (reindex-f-id _ (nudge x₁)))) ≃f-refl) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ (((reindex-comp ∘f (reindex-≈ _ _ _ ∘f reindex-f _ (idf _))) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
-  ≈˘⟨ SP .lambdaΠ-cong (∘f-cong (∘f-cong (∘f-cong ≃f-refl (∘f-cong ≃f-refl (reindex-f-cong (reindex-≈-refl _)))) ≃f-refl) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ (((reindex-comp ∘f (reindex-≈ _ _ _ ∘f reindex-f _ (reindex-≈ _ _ _))) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
-  ≈˘⟨ SP .lambdaΠ-cong (∘f-cong (∘f-cong (reindex-comp-≈ _ _ _) ≃f-refl) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ (((reindex-≈ _ _ _ ∘f reindex-comp) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong (≃f-assoc _ _ _) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ ((reindex-≈ _ _ _ ∘f (reindex-comp ∘f reindex-f (nudge x₁) (f .famf))) ∘f nudge-in₁ x₁)
-  ≈⟨ SP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
-    SP .lambdaΠ _ _ (reindex-≈ _ _ _ ∘f ((reindex-comp ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong ≃f-refl (≃f-assoc _ _ _)) ⟩
-    SP .lambdaΠ _ _ (reindex-≈ _ _ _ ∘f (reindex-comp ∘f (reindex-f (nudge x₁) (f .famf) ∘f nudge-in₁ x₁)))
-  ≈⟨ lambda-compose SP _ _ ⟩
-    Π-map SP (reindex-≈ _ _ _) ∘ SP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x₁) (f .famf) ∘f nudge-in₁ x₁))
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x₂) (f .famf) ∘f nudge-in₁ x₂)) ∘ X .fam .subst x₁≈x₂
+  ≈⟨ lambdaΠ-natural ΠP _ _ ⟩
+    ΠP .lambdaΠ _ _ ((reindex-comp ∘f (reindex-f (nudge x₂) (f .famf) ∘f nudge-in₁ x₂)) ∘f constF (X .fam .subst x₁≈x₂))
+  ≈⟨ ΠP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f ((reindex-f (nudge x₂) (f .famf) ∘f nudge-in₁ x₂) ∘f constF (X .fam .subst x₁≈x₂)))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong ≃f-refl (≃f-assoc _ _ _)) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x₂) (f .famf) ∘f (nudge-in₁ x₂ ∘f constF (X .fam .subst x₁≈x₂))))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong ≃f-refl (∘f-cong ≃f-refl (nudge-in₁-≈ x₁≈x₂))) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x₂) (f .famf) ∘f (reindex-≈ _ _ _ ∘f nudge-in₁ x₁)))
+  ≈˘⟨ ΠP .lambdaΠ-cong (∘f-cong ≃f-refl (≃f-assoc _ _ _)) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f ((reindex-f (nudge x₂) (f .famf) ∘f reindex-≈ _ _ _) ∘f nudge-in₁ x₁))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong ≃f-refl (∘f-cong (reindex-sq _ _) ≃f-refl)) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f ((reindex-≈ _ _ _ ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁))
+  ≈˘⟨ ΠP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
+    ΠP .lambdaΠ _ _ ((reindex-comp ∘f (reindex-≈ _ _ _ ∘f reindex-f (nudge x₁) (f .famf))) ∘f nudge-in₁ x₁)
+  ≈˘⟨ ΠP .lambdaΠ-cong (∘f-cong (≃f-assoc _ _ _) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ (((reindex-comp ∘f reindex-≈ _ _ _) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
+  ≈˘⟨ ΠP .lambdaΠ-cong (∘f-cong (∘f-cong (∘f-cong ≃f-refl ≃f-id-right) ≃f-refl) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ (((reindex-comp ∘f (reindex-≈ _ _ _ ∘f idf _)) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
+  ≈˘⟨ ΠP .lambdaΠ-cong (∘f-cong (∘f-cong (∘f-cong ≃f-refl (∘f-cong ≃f-refl (reindex-f-id _ (nudge x₁)))) ≃f-refl) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ (((reindex-comp ∘f (reindex-≈ _ _ _ ∘f reindex-f _ (idf _))) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
+  ≈˘⟨ ΠP .lambdaΠ-cong (∘f-cong (∘f-cong (∘f-cong ≃f-refl (∘f-cong ≃f-refl (reindex-f-cong (reindex-≈-refl _)))) ≃f-refl) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ (((reindex-comp ∘f (reindex-≈ _ _ _ ∘f reindex-f _ (reindex-≈ _ _ _))) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
+  ≈˘⟨ ΠP .lambdaΠ-cong (∘f-cong (∘f-cong (reindex-comp-≈ _ _ _) ≃f-refl) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ (((reindex-≈ _ _ _ ∘f reindex-comp) ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁)
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong (≃f-assoc _ _ _) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ ((reindex-≈ _ _ _ ∘f (reindex-comp ∘f reindex-f (nudge x₁) (f .famf))) ∘f nudge-in₁ x₁)
+  ≈⟨ ΠP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
+    ΠP .lambdaΠ _ _ (reindex-≈ _ _ _ ∘f ((reindex-comp ∘f reindex-f (nudge x₁) (f .famf)) ∘f nudge-in₁ x₁))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong ≃f-refl (≃f-assoc _ _ _)) ⟩
+    ΠP .lambdaΠ _ _ (reindex-≈ _ _ _ ∘f (reindex-comp ∘f (reindex-f (nudge x₁) (f .famf) ∘f nudge-in₁ x₁)))
+  ≈⟨ lambda-compose ΠP _ _ ⟩
+    Π-map ΠP (reindex-≈ _ _ _) ∘ ΠP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x₁) (f .famf) ∘f nudge-in₁ x₁))
   ∎
   where open ≈-Reasoning isEquiv
 
@@ -235,25 +235,25 @@ lambda⟶-cong {X} {Y} {Z} {f₁} {f₂} f₁≃f₂ .idxf-eq .func-eq {x₁} {x
   ∎
   where open ≈-Reasoning isEquiv
 lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
-    Π-map SP (reindex-≈ (f₁ .idxf ∘S nudge x) (f₂ .idxf ∘S nudge x) _) ∘ SP .lambdaΠ (X .fam .fm x) (Z .fam [ f₁ .idxf ∘S nudge x ]) (reindex-comp ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
-  ≈˘⟨ lambda-compose SP _ _ ⟩
-    SP .lambdaΠ _ _ (reindex-≈ (f₁ .idxf ∘S nudge x) (f₂ .idxf ∘S nudge x) _ ∘f (reindex-comp ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x)))
-  ≈˘⟨ SP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
-    SP .lambdaΠ _ _ ((reindex-≈ (f₁ .idxf ∘S nudge x) (f₂ .idxf ∘S nudge x) _ ∘f reindex-comp) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong (reindex-comp-≈ _ _ _) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ ((reindex-comp ∘f (reindex-≈ (nudge x) (nudge x) _ ∘f reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq)))) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong (∘f-cong ≃f-refl (∘f-cong (reindex-≈-refl _) ≃f-refl)) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ ((reindex-comp ∘f (idf _ ∘f reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq)))) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong (∘f-cong ≃f-refl ≃f-id-left) ≃f-refl) ⟩
-    SP .lambdaΠ _ _ ((reindex-comp ∘f reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq))) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
-  ≈⟨ SP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq)) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x)))
-  ≈˘⟨ SP .lambdaΠ-cong (∘f-cong ≃f-refl (≃f-assoc _ _ _)) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f ((reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq)) ∘f reindex-f (nudge x) (f₁ .famf)) ∘f nudge-in₁ x))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong ≃f-refl (∘f-cong (reindex-f-comp _ _) ≃f-refl)) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq) ∘f f₁ .famf) ∘f nudge-in₁ x))
-  ≈⟨ SP .lambdaΠ-cong (∘f-cong ≃f-refl (∘f-cong (reindex-f-cong (f₁≃f₂ .famf-eq)) ≃f-refl)) ⟩
-    SP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x) (f₂ .famf) ∘f nudge-in₁ x))
+    Π-map ΠP (reindex-≈ (f₁ .idxf ∘S nudge x) (f₂ .idxf ∘S nudge x) _) ∘ ΠP .lambdaΠ (X .fam .fm x) (Z .fam [ f₁ .idxf ∘S nudge x ]) (reindex-comp ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
+  ≈˘⟨ lambda-compose ΠP _ _ ⟩
+    ΠP .lambdaΠ _ _ (reindex-≈ (f₁ .idxf ∘S nudge x) (f₂ .idxf ∘S nudge x) _ ∘f (reindex-comp ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x)))
+  ≈˘⟨ ΠP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
+    ΠP .lambdaΠ _ _ ((reindex-≈ (f₁ .idxf ∘S nudge x) (f₂ .idxf ∘S nudge x) _ ∘f reindex-comp) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong (reindex-comp-≈ _ _ _) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ ((reindex-comp ∘f (reindex-≈ (nudge x) (nudge x) _ ∘f reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq)))) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong (∘f-cong ≃f-refl (∘f-cong (reindex-≈-refl _) ≃f-refl)) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ ((reindex-comp ∘f (idf _ ∘f reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq)))) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong (∘f-cong ≃f-refl ≃f-id-left) ≃f-refl) ⟩
+    ΠP .lambdaΠ _ _ ((reindex-comp ∘f reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq))) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x))
+  ≈⟨ ΠP .lambdaΠ-cong (≃f-assoc _ _ _) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq)) ∘f (reindex-f (nudge x) (f₁ .famf) ∘f nudge-in₁ x)))
+  ≈˘⟨ ΠP .lambdaΠ-cong (∘f-cong ≃f-refl (≃f-assoc _ _ _)) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f ((reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq)) ∘f reindex-f (nudge x) (f₁ .famf)) ∘f nudge-in₁ x))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong ≃f-refl (∘f-cong (reindex-f-comp _ _) ≃f-refl)) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x) (reindex-≈ (f₁ .idxf) (f₂ .idxf) (f₁≃f₂ .idxf-eq) ∘f f₁ .famf) ∘f nudge-in₁ x))
+  ≈⟨ ΠP .lambdaΠ-cong (∘f-cong ≃f-refl (∘f-cong (reindex-f-cong (f₁≃f₂ .famf-eq)) ≃f-refl)) ⟩
+    ΠP .lambdaΠ _ _ (reindex-comp ∘f (reindex-f (nudge x) (f₂ .famf) ∘f nudge-in₁ x))
   ∎
   where open ≈-Reasoning isEquiv
 
@@ -261,16 +261,16 @@ lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
 β-rule f .idxf-eq .func-eq = f .idxf .func-resp-≈
 β-rule {X} {Y} {Z} f .famf-eq .transf-eq {x , y} =
   begin
-    Z .fam .subst _ ∘ (id _ ∘ (CP .copair (SP .evalΠ _ y) (id _ ∘ (f .famf .transf (x , y) ∘ CP .in₂)) ∘ P .pair (id _ ∘ (lambda⟶ f .famf .transf x ∘ P .p₁)) (id _ ∘ (id _ ∘ P .p₂))))
+    Z .fam .subst _ ∘ (id _ ∘ (CP .copair (ΠP .evalΠ _ y) (id _ ∘ (f .famf .transf (x , y) ∘ CP .in₂)) ∘ P .pair (id _ ∘ (lambda⟶ f .famf .transf x ∘ P .p₁)) (id _ ∘ (id _ ∘ P .p₂))))
   ≈⟨ ∘-cong (Z .fam .refl*) (∘-cong ≈-refl (∘-cong (CP .copair-cong ≈-refl id-left) (P .pair-cong id-left id-left))) ⟩
-    id _ ∘ (id _ ∘ (CP .copair (SP .evalΠ _ y) (f .famf .transf (x , y) ∘ CP .in₂) ∘ P .pair (lambda⟶ f .famf .transf x ∘ P .p₁) (id _ ∘ P .p₂)))
+    id _ ∘ (id _ ∘ (CP .copair (ΠP .evalΠ _ y) (f .famf .transf (x , y) ∘ CP .in₂) ∘ P .pair (lambda⟶ f .famf .transf x ∘ P .p₁) (id _ ∘ P .p₂)))
   ≈⟨ id-left ⟩
-    id _ ∘ (CP .copair (SP .evalΠ _ y) (f .famf .transf (x , y) ∘ CP .in₂) ∘ P .pair (lambda⟶ f .famf .transf x ∘ P .p₁) (id _ ∘ P .p₂))
+    id _ ∘ (CP .copair (ΠP .evalΠ _ y) (f .famf .transf (x , y) ∘ CP .in₂) ∘ P .pair (lambda⟶ f .famf .transf x ∘ P .p₁) (id _ ∘ P .p₂))
   ≈⟨ id-left ⟩
-    CP .copair (SP .evalΠ _ y) (f .famf .transf (x , y) ∘ CP .in₂) ∘ P .pair (lambda⟶ f .famf .transf x ∘ P .p₁) (id _ ∘ P .p₂)
+    CP .copair (ΠP .evalΠ _ y) (f .famf .transf (x , y) ∘ CP .in₂) ∘ P .pair (lambda⟶ f .famf .transf x ∘ P .p₁) (id _ ∘ P .p₂)
   ≈⟨ copair-prod _ BP ⟩
-    CP .copair (SP .evalΠ _ y ∘ lambda⟶ f .famf .transf x) ((f .famf .transf (x , y) ∘ CP .in₂) ∘ id _)
-  ≈⟨ CP .copair-cong (SP .lambda-eval y) id-right ⟩
+    CP .copair (ΠP .evalΠ _ y ∘ lambda⟶ f .famf .transf x) ((f .famf .transf (x , y) ∘ CP .in₂) ∘ id _)
+  ≈⟨ CP .copair-cong (ΠP .lambda-eval y) id-right ⟩
     CP .copair (id _ ∘ (f .famf .transf (x , y) ∘ CP .in₁)) (f .famf .transf (x , y) ∘ CP .in₂)
   ≈⟨ CP .copair-cong id-left ≈-refl ⟩
     CP .copair (f .famf .transf (x , y) ∘ CP .in₁) (f .famf .transf (x , y) ∘ CP .in₂)
@@ -287,11 +287,11 @@ lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
   ≈⟨ ∘-cong ≈-refl id-left ⟩
     Z .fam .subst _ ∘ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .famf .transf (x₁ , y) ∘ CP .in₂)
   ≈⟨ ∘-cong ≈-refl (∘-cong id-left ≈-refl) ⟩
-    Z .fam .subst _ ∘ ((CP .copair (SP .evalΠ _ y) (f .idxf .func x₁ .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x₁ , y)) ∘ CP .in₂)
+    Z .fam .subst _ ∘ ((CP .copair (ΠP .evalΠ _ y) (f .idxf .func x₁ .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x₁ , y)) ∘ CP .in₂)
   ≈⟨ ∘-cong ≈-refl (∘-cong (∘-cong ≈-refl (P .pair-cong id-left id-left)) ≈-refl) ⟩
-    Z .fam .subst _ ∘ ((CP .copair (SP .evalΠ _ y) (f .idxf .func x₁ .famf .transf y) ∘ prod-m P (f .famf .transf x₁) (id (Y .fam .fm y))) ∘ CP .in₂)
+    Z .fam .subst _ ∘ ((CP .copair (ΠP .evalΠ _ y) (f .idxf .func x₁ .famf .transf y) ∘ prod-m P (f .famf .transf x₁) (id (Y .fam .fm y))) ∘ CP .in₂)
   ≈⟨ ∘-cong ≈-refl (∘-cong (copair-prod _ BP) ≈-refl) ⟩
-    Z .fam .subst _ ∘ (CP .copair (SP .evalΠ _ y ∘ f .famf .transf x₁) (f .idxf .func x₁ .famf .transf y ∘ id (Y .fam .fm y)) ∘ CP .in₂)
+    Z .fam .subst _ ∘ (CP .copair (ΠP .evalΠ _ y ∘ f .famf .transf x₁) (f .idxf .func x₁ .famf .transf y ∘ id (Y .fam .fm y)) ∘ CP .in₂)
   ≈⟨ ∘-cong ≈-refl (CP .copair-in₂ _ _) ⟩
     Z .fam .subst _ ∘ (f .idxf .func x₁ .famf .transf y ∘ id (Y .fam .fm y))
   ≈⟨ ∘-cong ≈-refl id-right ⟩
@@ -303,32 +303,32 @@ lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
 η-rule {X} {Y} {Z} f .famf-eq .transf-eq {x} =
   let open ≈-Reasoning isEquiv in
   begin
-    Π-map SP (reindex-≈ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) _) ∘ SP .lambdaΠ (X .fam .fm x) (Z .fam [ Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x ]) (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (PP.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (PP.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x))
-  ≈˘⟨ lambda-compose SP _ _ ⟩
-    SP .lambdaΠ (X .fam .fm x) (Z .fam [ f .idxf .func x .idxf ]) (reindex-≈ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) _ ∘f (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (PP.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (PP.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x)))
-  ≈⟨ SP .lambdaΠ-cong η-rule-pointwise ⟩
-    SP .lambdaΠ (X .fam .fm x) (Z .fam [ f .idxf .func x .idxf ]) (evalΠf SP (Z .fam [ f .idxf .func x .idxf ]) ∘f constF (f .famf .transf x))
-  ≈⟨ SP .lambda-ext ⟩
+    Π-map ΠP (reindex-≈ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) _) ∘ ΠP .lambdaΠ (X .fam .fm x) (Z .fam [ Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x ]) (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (PP.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (PP.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x))
+  ≈˘⟨ lambda-compose ΠP _ _ ⟩
+    ΠP .lambdaΠ (X .fam .fm x) (Z .fam [ f .idxf .func x .idxf ]) (reindex-≈ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) _ ∘f (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (PP.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (PP.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x)))
+  ≈⟨ ΠP .lambdaΠ-cong η-rule-pointwise ⟩
+    ΠP .lambdaΠ (X .fam .fm x) (Z .fam [ f .idxf .func x .idxf ]) (evalΠf ΠP (Z .fam [ f .idxf .func x .idxf ]) ∘f constF (f .famf .transf x))
+  ≈⟨ ΠP .lambda-ext ⟩
     f .famf .transf x
   ∎
   where
   η-rule-pointwise : (reindex-≈ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) (record { func-eq = f .idxf .func x .idxf .func-resp-≈ }) ∘f (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (PP.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (PP.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x)))
-                     ≃f (evalΠf SP (Z .fam [ f .idxf .func x .idxf ]) ∘f constF (f .famf .transf x))
+                     ≃f (evalΠf ΠP (Z .fam [ f .idxf .func x .idxf ]) ∘f constF (f .famf .transf x))
   η-rule-pointwise .transf-eq {y} =
     begin
-      fam Z .subst _ ∘ (id _ ∘ ((id _ ∘ (CP .copair (SP .evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ CP .in₁))
+      fam Z .subst _ ∘ (id _ ∘ ((id _ ∘ (CP .copair (ΠP .evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ CP .in₁))
     ≈⟨ ∘-cong (refl* (Z .fam)) id-left ⟩
-      id _ ∘ ((id _ ∘ (CP .copair (SP .evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ CP .in₁)
+      id _ ∘ ((id _ ∘ (CP .copair (ΠP .evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ CP .in₁)
     ≈⟨ id-left ⟩
-      (id _ ∘ (CP .copair (SP .evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ CP .in₁
+      (id _ ∘ (CP .copair (ΠP .evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ CP .in₁
     ≈⟨ ∘-cong id-left ≈-refl ⟩
-      (CP .copair (SP .evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y)) ∘ CP .in₁
+      (CP .copair (ΠP .evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y)) ∘ CP .in₁
     ≈⟨ ∘-cong (∘-cong ≈-refl (P .pair-cong id-left id-left)) ≈-refl ⟩
-      (CP .copair (SP .evalΠ _ _) (f .idxf .func x .famf .transf y) ∘ prod-m P (f .famf .transf x) (Mor-id Y .famf .transf y)) ∘ CP .in₁
+      (CP .copair (ΠP .evalΠ _ _) (f .idxf .func x .famf .transf y) ∘ prod-m P (f .famf .transf x) (Mor-id Y .famf .transf y)) ∘ CP .in₁
     ≈⟨ ∘-cong (copair-prod _ BP) ≈-refl ⟩
-      (CP .copair (SP .evalΠ _ y ∘ f .famf .transf x) (f .idxf .func x .famf .transf y ∘ Mor-id Y .famf .transf y)) ∘ CP .in₁
+      (CP .copair (ΠP .evalΠ _ y ∘ f .famf .transf x) (f .idxf .func x .famf .transf y ∘ Mor-id Y .famf .transf y)) ∘ CP .in₁
     ≈⟨ CP .copair-in₁ _ _ ⟩
-      SP .evalΠ _ y ∘ f .famf .transf x
+      ΠP .evalΠ _ y ∘ f .famf .transf x
     ∎
     where open ≈-Reasoning isEquiv
 

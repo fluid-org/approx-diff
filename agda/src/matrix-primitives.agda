@@ -47,7 +47,7 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
   private
     module M-cat = Category M.cat
     module Fam⟨𝒞⟩-cat = Category Fam⟨𝒞⟩.cat
-    module FP = HasProducts Fam⟨𝒞⟩-products
+    module Fam⟨𝒞⟩-P = HasProducts Fam⟨𝒞⟩-products
 
   open Fam⟨𝒞⟩ using (simple[_,_]; simplef[_,_]; Obj; Mor)
   open Fam⟨𝒞⟩.products M-products using (simple-monoidal)
@@ -73,7 +73,7 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
 
   collect : ∀ is → Mor (args is) simple[ sort-vals-setoid sort-index is , bases-width is ]
   collect []       = simplef[ untuple [] , M-cat.id 0 ]
-  collect (i ∷ is) = simple-monoidal Fam⟨𝒞⟩-cat.∘ FP.prod-m (Fam⟨𝒞⟩-cat.id (⟦sort⟧′ i)) (collect is)
+  collect (i ∷ is) = simple-monoidal Fam⟨𝒞⟩-cat.∘ Fam⟨𝒞⟩-P.prod-m (Fam⟨𝒞⟩-cat.id (⟦sort⟧′ i)) (collect is)
 
   op-mor : ∀ {is o} (ω : op is o) → Mor simple[ sort-vals-setoid sort-index is , bases-width is ] (⟦sort⟧′ o)
   op-mor ω .idxf = op-fun ω

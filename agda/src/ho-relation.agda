@@ -51,7 +51,7 @@ open SemiMod._≈m_ public using (func-eq)
 module M = matrix.Mat S
 module FD = model.Fam⟨𝒟⟩μ
 open HasStrongCoproducts FD.strongCoproducts public using (copair)
-module SP = HasSetoidProducts model.SPmod
+module ΠP = HasSetoidProducts model.SPmod
 
 open FD public using (Obj; Mor; idx; fam; fm; idxf; famf; Section; preserves-section)
 open FD.preserves-section public using (at)
@@ -119,7 +119,7 @@ Payload σ τ f = model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f
 module Payload σ τ f = Semimodule (Payload σ τ f)
 
 evalΠ : ∀ σ τ (f : Ix (σ [→] τ)) (j : Ix σ) → Payload σ τ f ⇒ Fib τ (f .idxf .sfunc j)
-evalΠ σ τ f j = SP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
+evalΠ σ τ f j = ΠP.evalΠ (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]) j
 
 body-input : ∀ {Γ' σ} (γ' : Env Γ') (v : Val σ) → Setoid.Carrier A →
              ∣ 𝔽 (width-env γ') ∣ → ∣ 𝔽 (width v) ∣ → ∣ 𝔽 (suc (width-env γ' + width v)) ∣
@@ -941,17 +941,17 @@ DepRel-transport′ {suc N} (σ [→] τ) (s≤s p) {clo γ' t} {f} {f'} E r {o}
   eval-part j =
     Fib.trans τ (f' .idxf .sfunc j)
       (Fib.sym τ (f' .idxf .sfunc j)
-         (SP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
+         (ΠP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
             {x = Payload σ τ f}
             {f = indexed-family._∘f_ {A = ⟦ σ ⟧ .idx}
                    {P = indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (Payload σ τ f)}
                    {Q = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {R = ⟦ τ ⟧ .fam indexed-family.[ f' .idxf ]}
-                   hmap (SP.evalΠf {A = ⟦ σ ⟧ .idx} (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]))} j
+                   hmap (ΠP.evalΠf {A = ⟦ σ ⟧ .idx} (⟦ τ ⟧ .fam indexed-family.[ f .idxf ]))} j
             .func-eq {proj₂ d} {proj₂ d} (Payload.refl σ τ f {proj₂ d})))
       (evalΠ σ τ f' j .func-resp-≈
-         {SP.Π-map hmap .func (proj₂ d)} {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)}
-         (Payload.sym σ τ f' {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {SP.Π-map hmap .func (proj₂ d)}
-            (Payload.+-lunit σ τ f' {SP.Π-map hmap .func (proj₂ d)})))
+         {ΠP.Π-map hmap .func (proj₂ d)} {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)}
+         (Payload.sym σ τ f' {proj₂ (⟦ σ [→] τ ⟧ .fam .subst {f} {f'} E .func d)} {ΠP.Π-map hmap .func (proj₂ d)}
+            (Payload.+-lunit σ τ f' {ΠP.Π-map hmap .func (proj₂ d)})))
 DepRel-transport′ (μ τ) p {roll v} {i} {i'} E r {o} {d} h =
   DepRel-resp′ (τ [ μ τ ]) (bound-μ τ p) (ValRel-resp′ (τ [ μ τ ]) (bound-μ τ p) E' r) (λ k → ≈-refl)
     (Fib.sym (τ [ μ τ ]) (unroll-mor τ .idxf .sfunc i')

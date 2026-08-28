@@ -158,9 +158,9 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
 
   open import finite-coproduct-functor
   open import Data.Sum using (inj₁; inj₂)
-  module SCP = HasCoproducts (Setoid-coproducts os es)
-  module SP = HasProducts (Setoid-products os es)
-  module ST = HasTerminal (Setoid-terminal os es)
+  module Setoid-CP = HasCoproducts (Setoid-coproducts os es)
+  module Setoid-P = HasProducts (Setoid-products os es)
+  module Setoid-T = HasTerminal (Setoid-terminal os es)
 
   open Category.IsIso
 
@@ -185,10 +185,10 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
   preserve-coproducts .inverse .famf .transf (inj₂ y) = 𝒟.id _
   preserve-coproducts .inverse .famf .natural {inj₁ x} {inj₁ x₁} e = 𝒟.id-swap
   preserve-coproducts .inverse .famf .natural {inj₂ y} {inj₂ y₁} e = 𝒟.id-swap
-  preserve-coproducts .f∘inverse≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-right SCP.copair-ext0
+  preserve-coproducts .f∘inverse≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-right Setoid-CP.copair-ext0
   preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₁ x} = fmor-subst-unit₁ X
   preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₂ y} = fmor-subst-unit₁ Y
-  preserve-coproducts {X} {Y} .inverse∘f≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-left SCP.copair-ext0
+  preserve-coproducts {X} {Y} .inverse∘f≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-left Setoid-CP.copair-ext0
   preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₁ x} = fmor-subst-unit₂ X
   preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₂ y} = fmor-subst-unit₂ Y
 
@@ -209,9 +209,9 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
         F .fmor (𝒞.id _) 𝒟.∘ inverse FT
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
-    preserve-terminal .f∘inverse≈id .idxf-eq = ST.to-terminal-unique _ _
+    preserve-terminal .f∘inverse≈id .idxf-eq = Setoid-T.to-terminal-unique _ _
     preserve-terminal .f∘inverse≈id .famf-eq .transf-eq = 𝒟T.to-terminal-unique _ _
-    preserve-terminal .inverse∘f≈id .idxf-eq = ST.to-terminal-unique _ _
+    preserve-terminal .inverse∘f≈id .idxf-eq = Setoid-T.to-terminal-unique _ _
     preserve-terminal .inverse∘f≈id .famf-eq .transf-eq = begin
         F .fmor (𝒞.id _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (inverse FT 𝒟.∘ 𝒟T.to-terminal))
       ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong 𝒟.≈-refl (inverse∘f≈id FT)) ⟩
@@ -234,7 +234,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     preserve-products .inverse .famf .transf (x , y) = mul
     preserve-products .inverse .famf .natural {x₁ , y₁} {x₂ , y₂} (eq₁ , eq₂) = 𝒟.≈-sym mul-natural
     preserve-products {X} {Y} .f∘inverse≈id .idxf-eq =
-      ≈s-isEquivalence .trans prop-setoid.id-right SP.pair-ext0
+      ≈s-isEquivalence .trans prop-setoid.id-right Setoid-P.pair-ext0
     preserve-products {X} {Y} .f∘inverse≈id .famf-eq .transf-eq = begin
         𝒟P.prod-m (F .fmor (X .fam .subst _)) (F .fmor (Y .fam .subst _)) 𝒟.∘ (𝒟.id _ 𝒟.∘ (mul⁻¹ 𝒟.∘ mul))
       ≈⟨ 𝒟.∘-cong (𝒟P.prod-m-cong (F .fmor-cong (X .fam .refl*)) (F .fmor-cong (Y .fam .refl*))) (𝒟.∘-cong 𝒟.≈-refl (f∘inverse≈id FP)) ⟩
@@ -248,7 +248,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
     preserve-products {X} {Y} .inverse∘f≈id .idxf-eq =
-      ≈s-isEquivalence .trans prop-setoid.id-left SP.pair-ext0
+      ≈s-isEquivalence .trans prop-setoid.id-left Setoid-P.pair-ext0
     preserve-products {X} {Y} .inverse∘f≈id .famf-eq .transf-eq = begin
         F .fmor (𝒞P.prod-m (X .fam .subst _) (Y .fam .subst _)) 𝒟.∘ (𝒟.id _ 𝒟.∘ (mul 𝒟.∘ mul⁻¹))
       ≈⟨ 𝒟.∘-cong (F .fmor-cong (𝒞P.prod-m-cong (X .fam .refl*) (Y .fam .refl*))) (𝒟.∘-cong 𝒟.≈-refl (inverse∘f≈id FP)) ⟩
