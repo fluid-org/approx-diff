@@ -521,7 +521,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       (≡-sym (map-∘ {g = λ R' → R' i j} {f = λ CH → proj₂ CH x y} (K .hidden))))
 
   merged-summary : (p : Path) (K : Config 𝒢) → Summarised K →
-                   member p (hidden-set K) ≡ Bool.false →
+                   p ∉ hidden-set K →
                    AllPairs Distinct (map proj₁ (K .hidden)) →
                    let tp = partitionᵇ (adj-p p) (K .hidden) in
                    ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
@@ -561,7 +561,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                  × ((z : V 𝒢) (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 z)) →
                     summary (proj₁ CH) z (at p) i' j' ≡ two.O))) (proj₂ tp)
       u-szero = All-zip (λ {CH} hadj hm → summary-zero {C = proj₁ CH} p (∉-member hm) hadj) u-adj
-                  (proj₂ (partition-All (adj-p p) (hidden-∉ K (member-∉ hp))))
+                  (proj₂ (partition-All (adj-p p) (hidden-∉ K hp)))
 
       edge-O : ∀ {C : List (Path)} → any (λ q → adjacent G (at p) (at q)) C ≡ Bool.false →
                ∀ q' → q' ∈ C →
@@ -663,7 +663,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
         (≡-trans (visible-entry K (at p) y' i' j')
                  (two.foldr-⊔-here (map (λ CH → proj₂ CH (at p) y' i' j') (K .hidden))
                    (≡-trans (≡-cong (λ b → when b (G (at p) y') i' j')
-                                    (∧-intro (not-false hp) (not-false hy)))
+                                    (∧-intro (not-false (∉-member hp)) (not-false hy)))
                             ge)))
 
       B-visible-y : ∀ x' (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 x')) →
@@ -676,7 +676,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
         (≡-trans (visible-entry K x' (at p) i' j')
                  (two.foldr-⊔-here (map (λ CH → proj₂ CH x' (at p) i' j') (K .hidden))
                    (≡-trans (≡-cong (λ b → when b (G x' (at p)) i' j')
-                                    (∧-intro (not-false hx) (not-false hp)))
+                                    (∧-intro (not-false hx) (not-false (∉-member hp))))
                             ge)))
 
       bwd-px : ∀ y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 (at p))) →
@@ -823,13 +823,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       ∷ concat-distinct Css aCss
 
     visible-not-hidden : (K : Config 𝒢) → Summarised K → ∀ {p} →
-                         member p (K .visible) ≡ Bool.true →
-                         member p (hidden-set K) ≡ Bool.false
-    visible-not-hidden K S {p} pv =
-      ≡-trans (member-any p (hidden-set K))
-              (any-false (All-lookup (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                                     (partition-distinct K (S .partition)))))
-                                     (member-∈ pv)))
+                         p ∈ K .visible →
+                         p ∉ hidden-set K
+    visible-not-hidden K S {p} pv k =
+      eq-false-≢ (All-lookup (All-lookup (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                                         (partition-distinct K (S .partition)))))
+                                         pv)
+                             k)
+                 ≡-refl
 
   summarised-distinct : (K : Config 𝒢) → Summarised K →
                         AllPairs Distinct (map proj₁ (K .hidden))
@@ -839,7 +840,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                   (partition-distinct K (S .partition)))))
 
   hide-at-partition : (p : Path) (K : Config 𝒢) → Summarised K →
-                      member p (K .visible) ≡ Bool.true →
+                      p ∈ K .visible →
                       (hide-at p K .visible ++ hidden-set (hide-at p K)) ↭ FO 𝒢
   hide-at-partition p K S pv =
     ↭-trans (++⁺ ↭-refl (hide-at-hidden-set p K))
@@ -847,12 +848,12 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     (↭-trans (++⁺ (filter-out-↭ {eq = eq-path} (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
                     (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K)
                                          (partition-distinct K (S .partition))))
-                    (≡-trans (≡-sym (member-any p (K .visible))) pv))
+                    (≡-trans (≡-sym (member-any p (K .visible))) (∈-member pv)))
                   ↭-refl)
              (S .partition)))
 
   hide-at-summaries : (p : Path) (K : Config 𝒢) (S : Summarised K) →
-                      member p (K .visible) ≡ Bool.true →
+                      p ∈ K .visible →
                       All (λ CH → ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                                   proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j)
                           (hide-at p K .hidden)
@@ -930,7 +931,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                            (regions (fo-graph 𝒢) (filterᵇ (λ q → Bool.not (eq-path p q)) C)))
 
   reveal-at-partition : (p : Path) (K : Config 𝒢) → Summarised K →
-                        member p (hidden-set K) ≡ Bool.true →
+                        p ∈ hidden-set K →
                         (reveal-at p K .visible ++ hidden-set (reveal-at p K)) ↭ FO 𝒢
   reveal-at-partition p K S hp =
     ↭-trans (↭-sym (shift p (K .visible) (hidden-set (reveal-at p K))))
@@ -938,11 +939,11 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                 (reveal-set p (K .hidden)
                    (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
                                                (partition-distinct K (S .partition)))))
-                   (hidden-∈ K (member-∈ hp))))
+                   (hidden-∈ K hp)))
              (S .partition))
 
   reveal-at-summaries : (p : Path) (K : Config 𝒢) (S : Summarised K) →
-                        member p (hidden-set K) ≡ Bool.true →
+                        p ∈ hidden-set K →
                         All (λ CH → ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                                     proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j)
                             (reveal-at p K .hidden)
@@ -991,16 +992,16 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                               restrict-O))))
 
   hide-reveal-visible : (p : Path) (K : Config 𝒢) → Summarised K →
-                        member p (K .visible) ≡ Bool.true →
+                        p ∈ K .visible →
                         reveal-at p (hide-at p K) .visible ↭ K .visible
   hide-reveal-visible p K S pv =
     filter-out-↭ {eq = eq-path} (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
                  (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K)
                                       (partition-distinct K (S .partition))))
-                 (≡-trans (≡-sym (member-any p (K .visible))) pv)
+                 (≡-trans (≡-sym (member-any p (K .visible))) (∈-member pv))
 
   hide-reveal-hidden-set : (p : Path) (K : Config 𝒢) → Summarised K →
-                           member p (K .visible) ≡ Bool.true →
+                           p ∈ K .visible →
                            hidden-set (reveal-at p (hide-at p K)) ↭ hidden-set K
   hide-reveal-hidden-set p K S pv =
     drop-∷ (↭-trans (reveal-set p (hide-at p K .hidden)
@@ -1013,34 +1014,34 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   private
     hidden-not-visible : (K : Config 𝒢) → Summarised K → ∀ {p} →
-                         member p (hidden-set K) ≡ Bool.true →
-                         member p (K .visible) ≡ Bool.false
-    hidden-not-visible K S {p} hp =
-      ≡-trans (member-any p (K .visible))
-        (any-false (All-map
-          (λ {q} cr → eq-path-false-sym {p = q} {q = p} (All-lookup cr (member-∈ hp)))
-          (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                      (partition-distinct K (S .partition)))))))
+                         p ∈ hidden-set K →
+                         p ∉ K .visible
+    hidden-not-visible K S {p} hp k =
+      eq-false-≢ (All-lookup (All-lookup (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
+                                                         (partition-distinct K (S .partition)))))
+                                         k)
+                             hp)
+                 ≡-refl
 
   reveal-hide-visible : (p : Path) (K : Config 𝒢) → Summarised K →
-                        member p (hidden-set K) ≡ Bool.true →
+                        p ∈ hidden-set K →
                         hide-at p (reveal-at p K) .visible ≡ K .visible
   reveal-hide-visible p K S hp =
     ≡-trans (filter-head-false (K .visible) (≡-cong Bool.not (eq-path-refl p)))
             (filter-all-true (All-map (λ h → ≡-cong Bool.not h)
                (any-false-All (eq-path p) (K .visible)
                  (≡-trans (≡-sym (member-any p (K .visible)))
-                          (hidden-not-visible K S {p = p} hp)))))
+                          (∉-member (hidden-not-visible K S {p = p} hp))))))
 
   reveal-hide-hidden-set : (p : Path) (K : Config 𝒢) → Summarised K →
-                           member p (hidden-set K) ≡ Bool.true →
+                           p ∈ hidden-set K →
                            hidden-set (hide-at p (reveal-at p K)) ↭ hidden-set K
   reveal-hide-hidden-set p K S hp =
     ↭-trans (hide-at-hidden-set p (reveal-at p K))
             (reveal-set p (K .hidden)
                (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
                                            (partition-distinct K (S .partition)))))
-               (hidden-∈ K (member-∈ hp)))
+               (hidden-∈ K hp))
 
   private
     restrict-≤ : (G : Relation (vertex-width 𝒢)) (C : List (Path)) →
@@ -1086,13 +1087,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   open _≈_ public
 
   hide-reveal : (p : Path) (K : Config 𝒢) → Summarised K →
-                member p (K .visible) ≡ Bool.true →
+                p ∈ K .visible →
                 reveal-at p (hide-at p K) ≈ K
   hide-reveal p K S pv .visible-≈ = hide-reveal-visible p K S pv
   hide-reveal p K S pv .hidden-≈  = hide-reveal-hidden-set p K S pv
 
   reveal-hide : (p : Path) (K : Config 𝒢) → Summarised K →
-                member p (hidden-set K) ≡ Bool.true →
+                p ∈ hidden-set K →
                 hide-at p (reveal-at p K) ≈ K
   reveal-hide p K S hp .visible-≈ = ↭-reflexive (reveal-hide-visible p K S hp)
   reveal-hide p K S hp .hidden-≈  = reveal-hide-hidden-set p K S hp
@@ -1223,7 +1224,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph 𝒢) (FO 𝒢)))
 
   hide-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised K) →
-                       member p (K .visible) ≡ Bool.true →
+                       p ∈ K .visible →
                        Summarised (hide-at p K)
   hide-at-summarised p K S pv .partition = hide-at-partition p K S pv
   hide-at-summarised p K S pv .canonical =
@@ -1341,7 +1342,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                     (H.refl []))
 
   reveal-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised K) →
-                         member p (hidden-set K) ≡ Bool.true →
+                         p ∈ hidden-set K →
                          Summarised (reveal-at p K)
   reveal-at-summarised p K S hp .partition = reveal-at-partition p K S hp
   reveal-at-summarised p K S hp .summaries = reveal-at-summaries p K S hp
@@ -1364,10 +1365,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
     hrev : hidden-set (reveal-at p K) ↭ filterᵇ notp (hidden-set K)
     hrev = drop-∷
-      (↭-trans (reveal-set p (K .hidden) distinct-hs (hidden-∈ K (member-∈ hp)))
+      (↭-trans (reveal-set p (K .hidden) distinct-hs (hidden-∈ K hp))
                (↭.↭-sym (filter-out-↭ {eq = eq-path}
                           (λ {q} {q'} e → eq-path-≡ {p = q} {q = q'} e)
-                          distinct-hs (≡-trans (≡-sym (member-any p (hidden-set K))) hp))))
+                          distinct-hs (≡-trans (≡-sym (member-any p (hidden-set K))) (∈-member hp)))))
 
     apart-filtered : AllPairs (Apart G) (map (filterᵇ notp) Cs)
     apart-filtered =
