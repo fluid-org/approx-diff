@@ -67,7 +67,7 @@ open HR using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-p
                Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L)
 
 private
-  module FD = Category Fam⟨𝒟⟩μ.cat
+  module Fam⟨𝒟⟩μ-cat = Category Fam⟨𝒟⟩μ.cat
   module FDP = HasProducts Fam⟨𝒟⟩μ.products
   module FDC = HasCoproducts Fam⟨𝒟⟩μ.coproducts
 
@@ -108,7 +108,7 @@ module _ where
 𝒟𝟙ty = Fam⟨F⟩ .fobj 𝒞𝟙ty
 
 𝒟unit-pt : Fam⟨𝒟⟩μ.Mor (HasTerminal.witness (Fam⟨𝒟⟩μ.terminal T𝒟)) 𝒟𝟙ty
-𝒟unit-pt = Fam⟨F⟩ .fmor 𝒞unit-pt FD.∘ Fam⟨F⟩-preserves-terminal .Category.IsIso.inverse
+𝒟unit-pt = Fam⟨F⟩ .fmor 𝒞unit-pt Fam⟨𝒟⟩μ-cat.∘ Fam⟨F⟩-preserves-terminal .Category.IsIso.inverse
 
 𝒟Bool = FDC.coprod (Fam⟨𝒟⟩μ.Lf 𝒟𝟙ty) (Fam⟨𝒟⟩μ.Lf 𝒟𝟙ty)
 
@@ -168,48 +168,49 @@ fo-poly-map-≡ (fo₁ [×] fo₂) δ𝒞 = cong₂ Poly._×_ (fo-poly-map-≡ f
 fo-poly-map-≡ (μ fo)        δ𝒞 = cong Poly.μ (fo-poly-map-≡ fo δ𝒞)
 
 private
-  ≡-Iso : ∀ {x y} → x ≡ y → FD.Iso x y
-  ≡-Iso refl = FD.Iso-refl
+  ≡-Iso : ∀ {x y} → x ≡ y → Fam⟨𝒟⟩μ-cat.Iso x y
+  ≡-Iso refl = Fam⟨𝒟⟩μ-cat.Iso-refl
 
 ⟦_⟧-iso : ∀ {Δ} {τ : type Δ} (fo : first-order τ) (δ𝒞 : Fin Δ → Fam⟨𝒞⟩μ.Obj) →
-          FD.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty δ𝒞)) (𝒟⟦ τ ⟧ty (λ i → Fam⟨F⟩ .fobj (δ𝒞 i)))
-⟦ var i ⟧-iso       δ𝒞 = FD.Iso-refl
-⟦ unit ⟧-iso        δ𝒞 = FD.Iso-refl
-⟦ base s ⟧-iso      δ𝒞 = FD.Iso-refl
+          Fam⟨𝒟⟩μ-cat.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty δ𝒞)) (𝒟⟦ τ ⟧ty (λ i → Fam⟨F⟩ .fobj (δ𝒞 i)))
+⟦ var i ⟧-iso       δ𝒞 = Fam⟨𝒟⟩μ-cat.Iso-refl
+⟦ unit ⟧-iso        δ𝒞 = Fam⟨𝒟⟩μ-cat.Iso-refl
+⟦ base s ⟧-iso      δ𝒞 = Fam⟨𝒟⟩μ-cat.Iso-refl
 ⟦ fo₁ [+] fo₂ ⟧-iso δ𝒞 =
-  FD.Iso-trans (FD.Iso-sym (FD.IsIso→Iso Fam⟨F⟩-preserves-coproducts))
+  Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.Iso-sym (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-coproducts))
     (FDC.coproduct-preserve-iso
-      (FD.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (⟦ fo₁ ⟧-iso δ𝒞)))
-      (FD.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (⟦ fo₂ ⟧-iso δ𝒞))))
+      (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (⟦ fo₁ ⟧-iso δ𝒞)))
+      (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (⟦ fo₂ ⟧-iso δ𝒞))))
 ⟦ fo₁ [×] fo₂ ⟧-iso δ𝒞 =
-  FD.Iso-trans (Fam⟨F⟩-L _)
+  Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨F⟩-L _)
     (Fam⟨𝒟⟩μ.Lf-iso
-      (FD.Iso-trans (FD.IsIso→Iso Fam⟨F⟩-preserves-products)
+      (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
         (FDP.product-preserves-iso (⟦ fo₁ ⟧-iso δ𝒞) (⟦ fo₂ ⟧-iso δ𝒞))))
 ⟦ μ fo ⟧-iso        δ𝒞 =
-  FD.Iso-trans (HR.FW.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
+  Fam⟨𝒟⟩μ-cat.Iso-trans (HR.FW.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
     (≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
 
 -- At closed types the target environment is the empty one, which agrees with the image environment
 -- only up to pointwise equality. The comparison recurses on the type, so that its index map computes
 -- at each value former, and meets the two environments only at a μ-type.
-closed-iso : ∀ {τ : type 0} (fo : first-order τ) → FD.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty ∅𝒞)) (𝒟⟦ τ ⟧ty (λ ()))
-closed-iso unit          = FD.Iso-refl
-closed-iso (base s)      = FD.Iso-refl
+closed-iso : ∀ {τ : type 0} (fo : first-order τ) →
+             Fam⟨𝒟⟩μ-cat.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty ∅𝒞)) (𝒟⟦ τ ⟧ty (λ ()))
+closed-iso unit          = Fam⟨𝒟⟩μ-cat.Iso-refl
+closed-iso (base s)      = Fam⟨𝒟⟩μ-cat.Iso-refl
 closed-iso (fo₁ [+] fo₂) =
-  FD.Iso-trans (FD.Iso-sym (FD.IsIso→Iso Fam⟨F⟩-preserves-coproducts))
+  Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.Iso-sym (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-coproducts))
     (FDC.coproduct-preserve-iso
-      (FD.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (closed-iso fo₁)))
-      (FD.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (closed-iso fo₂))))
+      (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (closed-iso fo₁)))
+      (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨F⟩-L _) (Fam⟨𝒟⟩μ.Lf-iso (closed-iso fo₂))))
 closed-iso (fo₁ [×] fo₂) =
-  FD.Iso-trans (Fam⟨F⟩-L _)
+  Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨F⟩-L _)
     (Fam⟨𝒟⟩μ.Lf-iso
-      (FD.Iso-trans (FD.IsIso→Iso Fam⟨F⟩-preserves-products)
+      (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
         (FDP.product-preserves-iso (closed-iso fo₁) (closed-iso fo₂))))
-closed-iso (μ {τ = τ} fo) = FD.Iso-trans (⟦ μ fo ⟧-iso ∅𝒞) (≡-Iso (𝒟-ty-cong (μ τ) (λ ())))
+closed-iso (μ {τ = τ} fo) = Fam⟨𝒟⟩μ-cat.Iso-trans (⟦ μ fo ⟧-iso ∅𝒞) (≡-Iso (𝒟-ty-cong (μ τ) (λ ())))
 
-⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → FD.Iso (Fam⟨F⟩ .fobj 𝒞⟦ Γ-fo ⟧ctxt) (𝒟⟦ Γ ⟧ctxt)
-⟦ emp ⟧ctxt-iso    = FD.IsIso→Iso Fam⟨F⟩-preserves-terminal
+⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → Fam⟨𝒟⟩μ-cat.Iso (Fam⟨F⟩ .fobj 𝒞⟦ Γ-fo ⟧ctxt) (𝒟⟦ Γ ⟧ctxt)
+⟦ emp ⟧ctxt-iso    = Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-terminal
 ⟦ Γ-fo , fo ⟧ctxt-iso =
-  FD.Iso-trans (FD.IsIso→Iso Fam⟨F⟩-preserves-products)
+  Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
     (FDP.product-preserves-iso ⟦ Γ-fo ⟧ctxt-iso (closed-iso fo))

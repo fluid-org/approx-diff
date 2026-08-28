@@ -43,13 +43,13 @@ open Functor
 open Biproduct
 
 private
-  module SMC = Category SemiMod.cat
-  module MC = Category M.cat
+  module SemiMod-cat = Category SemiMod.cat
+  module M-cat = Category M.cat
   module SMCM = CMonEnriched SemiMod.cmon-enriched
 
   +m-cong : ∀ {X Y : Semimodule} {f f' g g' : SemiMod._⇒_ X Y} →
-            SMC._≈_ f f' → SMC._≈_ g g' →
-            SMC._≈_ (SMCM._+m_ f g) (SMCM._+m_ f' g')
+            SemiMod-cat._≈_ f f' → SemiMod-cat._≈_ g g' →
+            SemiMod-cat._≈_ (SMCM._+m_ f g) (SMCM._+m_ f' g')
   +m-cong = CommutativeMonoid.+-cong (SMCM.homCM _ _)
 
 ------------------------------------------------------------------------------
@@ -166,19 +166,20 @@ mat R .preserve-· {s} {u} = app-· R s u
 𝔽F .fmor-comp f g .*≈* .prop-setoid._≃m_.func-eq {u} e i =
   trans (app-∘ f g u i) (app-congᵥ f (λ j → app-congᵥ g e j) i)
 
-mat-cong : ∀ {m n} {R T : Matrix m n} → R ≈ₘ T → SMC._≈_ (mat R) (mat T)
+mat-cong : ∀ {m n} {R T : Matrix m n} → R ≈ₘ T → SemiMod-cat._≈_ (mat R) (mat T)
 mat-cong h = 𝔽F .fmor-cong h
 
-mat-comp : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) → SMC._≈_ (mat (R ∘ₘ T)) (SemiMod._∘_ (mat R) (mat T))
+mat-comp : ∀ {m n k} (R : Matrix m n) (T : Matrix n k) →
+           SemiMod-cat._≈_ (mat (R ∘ₘ T)) (SemiMod._∘_ (mat R) (mat T))
 mat-comp R T = 𝔽F .fmor-comp R T
 
-mat-I : ∀ {n} → SMC._≈_ (mat (I {n})) (SemiMod.id (𝔽 n))
+mat-I : ∀ {n} → SemiMod-cat._≈_ (mat (I {n})) (SemiMod.id (𝔽 n))
 mat-I = 𝔽F .fmor-id
 
-mat-ε : ∀ {m n} → SMC._≈_ (mat (εₘ {m} {n})) (SMCM.εm {𝔽 n} {𝔽 m})
+mat-ε : ∀ {m n} → SemiMod-cat._≈_ (mat (εₘ {m} {n})) (SMCM.εm {𝔽 n} {𝔽 m})
 mat-ε .*≈* .prop-setoid._≃m_.func-eq {u} e i = app-εₘ u i
 
-mat-+ : ∀ {m n} (R T : Matrix m n) → SMC._≈_ (mat (R +ₘ T)) (SMCM._+m_ (mat R) (mat T))
+mat-+ : ∀ {m n} (R T : Matrix m n) → SemiMod-cat._≈_ (mat (R +ₘ T)) (SMCM._+m_ (mat R) (mat T))
 mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
   trans (app-+ₘ R T u i) (+-cong (app-congᵥ R e i) (app-congᵥ T e i))
 
@@ -193,24 +194,24 @@ mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
 𝔽-biproduct m n .in₁ = mat (M.in₁ {m} {n})
 𝔽-biproduct m n .in₂ = mat (M.in₂ {m} {n})
 𝔽-biproduct m n .id-1 =
-  SMC.≈-trans (SMC.≈-sym (mat-comp (M.p₁ {m} {n}) (M.in₁ {m} {n})))
-              (SMC.≈-trans (mat-cong (M.id-1 m n)) mat-I)
+  SemiMod-cat.≈-trans (SemiMod-cat.≈-sym (mat-comp (M.p₁ {m} {n}) (M.in₁ {m} {n})))
+              (SemiMod-cat.≈-trans (mat-cong (M.id-1 m n)) mat-I)
 𝔽-biproduct m n .id-2 =
-  SMC.≈-trans (SMC.≈-sym (mat-comp (M.p₂ {m} {n}) (M.in₂ {m} {n})))
-              (SMC.≈-trans (mat-cong (M.id-2 m n)) mat-I)
+  SemiMod-cat.≈-trans (SemiMod-cat.≈-sym (mat-comp (M.p₂ {m} {n}) (M.in₂ {m} {n})))
+              (SemiMod-cat.≈-trans (mat-cong (M.id-2 m n)) mat-I)
 𝔽-biproduct m n .zero-1 =
-  SMC.≈-trans (SMC.≈-sym (mat-comp (M.p₁ {m} {n}) (M.in₂ {m} {n})))
-              (SMC.≈-trans (mat-cong (M.zero-1 m n)) mat-ε)
+  SemiMod-cat.≈-trans (SemiMod-cat.≈-sym (mat-comp (M.p₁ {m} {n}) (M.in₂ {m} {n})))
+              (SemiMod-cat.≈-trans (mat-cong (M.zero-1 m n)) mat-ε)
 𝔽-biproduct m n .zero-2 =
-  SMC.≈-trans (SMC.≈-sym (mat-comp (M.p₂ {m} {n}) (M.in₁ {m} {n})))
-              (SMC.≈-trans (mat-cong (M.zero-2 m n)) mat-ε)
+  SemiMod-cat.≈-trans (SemiMod-cat.≈-sym (mat-comp (M.p₂ {m} {n}) (M.in₁ {m} {n})))
+              (SemiMod-cat.≈-trans (mat-cong (M.zero-2 m n)) mat-ε)
 𝔽-biproduct m n .id-+ =
-  SMC.≈-trans
-    (+m-cong (SMC.≈-sym (mat-comp (M.in₁ {m} {n}) (M.p₁ {m} {n})))
-             (SMC.≈-sym (mat-comp (M.in₂ {m} {n}) (M.p₂ {m} {n}))))
-    (SMC.≈-trans (SMC.≈-sym (mat-+ (M.in₁ {m} {n} ∘ₘ M.p₁ {m} {n})
+  SemiMod-cat.≈-trans
+    (+m-cong (SemiMod-cat.≈-sym (mat-comp (M.in₁ {m} {n}) (M.p₁ {m} {n})))
+             (SemiMod-cat.≈-sym (mat-comp (M.in₂ {m} {n}) (M.p₂ {m} {n}))))
+    (SemiMod-cat.≈-trans (SemiMod-cat.≈-sym (mat-+ (M.in₁ {m} {n} ∘ₘ M.p₁ {m} {n})
                                    (M.in₂ {m} {n} ∘ₘ M.p₂ {m} {n})))
-                 (SMC.≈-trans (mat-cong (M.id-+ m n)) mat-I))
+                 (SemiMod-cat.≈-trans (mat-cong (M.id-+ m n)) mat-I))
 
 𝔽F-preserve-products :
   preserve-chosen-products 𝔽F (biproducts→products M.cmon M.biproduct)
@@ -277,8 +278,8 @@ module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 𝔽-L-iso n .Category.Iso.bwd∘fwd≈id .*≈* .prop-setoid._≃m_.func-eq e zero = e zero
 𝔽-L-iso n .Category.Iso.bwd∘fwd≈id .*≈* .prop-setoid._≃m_.func-eq e (suc k) = e (suc k)
 
-𝔽-L-natural : ∀ {P Q} (f : MC._⇒_ P Q) →
-  SMC._≈_ (SemiMod._∘_ (𝔽-L-fwd Q) (mat (Lm.Lmap f)))
+𝔽-L-natural : ∀ {P Q} (f : M-cat._⇒_ P Q) →
+  SemiMod-cat._≈_ (SemiMod._∘_ (𝔽-L-fwd Q) (mat (Lm.Lmap f)))
           (SemiMod._∘_ (Ls.Lmap {𝔽 P} {𝔽 Q} (mat f)) (𝔽-L-fwd P))
 𝔽-L-natural {P} {Q} f .*≈* .prop-setoid._≃m_.func-eq {u} {u'} e = root ,ₚ payload
   where
@@ -338,13 +339,13 @@ sum-lin {Nat.suc m} k v i =
   split zero    = sym (trans (+-cong (trans ·-comm ·-lunit) refl) (+-runit))
   split (suc l) = sym (trans (+-cong ε-annihilᵣ refl) +-lunit)
 
-𝔽F-faithful : ∀ {m n} {R T : MC._⇒_ m n} → SMC._≈_ (mat R) (mat T) → MC._≈_ R T
+𝔽F-faithful : ∀ {m n} {R T : M-cat._⇒_ m n} → SemiMod-cat._≈_ (mat R) (mat T) → M-cat._≈_ R T
 𝔽F-faithful {R = R} {T} h i j =
   trans (sym (app-e R j i)) (trans (h .func-eq {M.e j} {M.e j} (λ _ → refl) i) (app-e T j i))
 
-𝔽F-full : ∀ {m n} (k : SemiMod._⇒_ (𝔽 m) (𝔽 n)) → ∃ₛ (MC._⇒_ m n) λ R → SMC._≈_ (mat R) k
+𝔽F-full : ∀ {m n} (k : SemiMod._⇒_ (𝔽 m) (𝔽 n)) → ∃ₛ (M-cat._⇒_ m n) λ R → SemiMod-cat._≈_ (mat R) k
 𝔽F-full {m} k = (λ i j → k .func (M.e j) i) ,ₚ pf
   where
-  pf : SMC._≈_ (mat (λ i j → k .func (M.e j) i)) k
+  pf : SemiMod-cat._≈_ (mat (λ i j → k .func (M.e j) i)) k
   pf .*≈* .prop-setoid._≃m_.func-eq {u} {v} e i =
     trans (Σ-cong {m} (λ j → trans ·-comm (·-cong (e j) refl))) (sym (sum-lin k v i))

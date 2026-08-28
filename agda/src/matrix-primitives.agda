@@ -45,8 +45,8 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
   open prop-setoid._⇒_ using (func; func-resp-≈)
 
   private
-    module MC = Category M.cat
-    module FC = Category Fam⟨𝒞⟩.cat
+    module M-cat = Category M.cat
+    module Fam⟨𝒞⟩-cat = Category Fam⟨𝒞⟩.cat
     module FP = HasProducts Fam⟨𝒞⟩-products
 
   open Fam⟨𝒞⟩ using (simple[_,_]; simplef[_,_]; Obj; Mor)
@@ -72,16 +72,16 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
   untuple (i ∷ is) .func-resp-≈ e = prop.proj₁ e prop., untuple is .func-resp-≈ (prop.proj₂ e)
 
   collect : ∀ is → Mor (args is) simple[ sort-vals-setoid sort-index is , bases-width is ]
-  collect []       = simplef[ untuple [] , MC.id 0 ]
-  collect (i ∷ is) = simple-monoidal FC.∘ FP.prod-m (FC.id (⟦sort⟧′ i)) (collect is)
+  collect []       = simplef[ untuple [] , M-cat.id 0 ]
+  collect (i ∷ is) = simple-monoidal Fam⟨𝒞⟩-cat.∘ FP.prod-m (Fam⟨𝒞⟩-cat.id (⟦sort⟧′ i)) (collect is)
 
   op-mor : ∀ {is o} (ω : op is o) → Mor simple[ sort-vals-setoid sort-index is , bases-width is ] (⟦sort⟧′ o)
   op-mor ω .idxf = op-fun ω
   op-mor ω .famf .transf c = op-deps ω .func c
   op-mor ω .famf .natural {c} {c'} e =
-    MC.≈-trans (MC.id-right {f = op-deps ω .func c'})
-      (MC.≈-trans (MC.≈-sym (op-deps ω .func-resp-≈ e))
-                  (MC.≈-sym (MC.id-left {f = op-deps ω .func c})))
+    M-cat.≈-trans (M-cat.id-right {f = op-deps ω .func c'})
+      (M-cat.≈-trans (M-cat.≈-sym (op-deps ω .func-resp-≈ e))
+                  (M-cat.≈-sym (M-cat.id-left {f = op-deps ω .func c})))
 
   module over (Ω : Obj) (into-Ω : Mor Fam⟨𝒞⟩-bool Ω) where
 
@@ -91,7 +91,7 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
 
     model-over : Model PF′ Sig
     model-over .Model.⟦sort⟧ = ⟦sort⟧′
-    model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
-    model-over .Model.⟦rel⟧ {is} ψ = into-Ω FC.∘ predicate (rel-pred ψ ∘S untuple is)
+    model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω Fam⟨𝒞⟩-cat.∘ collect is
+    model-over .Model.⟦rel⟧ {is} ψ = into-Ω Fam⟨𝒞⟩-cat.∘ predicate (rel-pred ψ ∘S untuple is)
 
     arg-collect = collect

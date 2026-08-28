@@ -49,14 +49,14 @@ Poly-C = polynomial-functor.Poly cat
 open polynomial-functor.Poly
 open polynomial-functor using (extend; Poly-map)
 
-private module SC = Category (setoid-cat.SetoidCat os (os ⊔ es))
+private module SetoidCat = Category (setoid-cat.SetoidCat os (os ⊔ es))
 
 Idx : Functor cat (setoid-cat.SetoidCat os (os ⊔ es))
 Idx .fobj X = X .idx
 Idx .fmor f = f .idxf
 Idx .fmor-cong e = e .idxf-eq
-Idx .fmor-id = SC.≈-refl
-Idx .fmor-comp f g = SC.≈-refl
+Idx .fmor-id = SetoidCat.≈-refl
+Idx .fmor-comp f g = SetoidCat.≈-refl
 
 ∣_∣ : ∀ {n} → Poly-C n → Srt.Poly n
 ∣_∣ = Poly-map Idx

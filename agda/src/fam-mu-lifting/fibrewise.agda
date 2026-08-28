@@ -50,7 +50,7 @@ module fam-mu-lifting.fibrewise {o m e o₂ m₂ e₂} (os es : Level)
 private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒟 = fam.CategoryOfFamilies os (os ⊔ es) 𝒟
-  module F𝒟C = Category F𝒟.cat
+  module F𝒟-cat = Category F𝒟.cat
   module Srt = fam-mu-lifting.sort os es
   module Fib𝒞 = fam-mu-lifting.fibre os es CM𝒞 BP𝒞 𝟙𝒞
   module Fib𝒟 = fam-mu-lifting.fibre os es CM𝒟 BP𝒟 𝟙𝒟
@@ -382,7 +382,7 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
                  (tail-cong (≈-sym (D.fib-trans* (P̂ P) (E₀ .d₂)
                                              {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _)))))
 
-  fb-≃ : F𝒟C._≈_ (F𝒟C._∘_ fwd-mor bwd-mor) (F𝒟C.id _)
+  fb-≃ : F𝒟-cat._≈_ (F𝒟-cat._∘_ fwd-mor bwd-mor) (F𝒟-cat.id _)
   fb-≃ .idxf-eq = mk-≃m (λ s → c-bf P E₀ s)
   fb-≃ .famf-eq .transf-eq {s} =
     ≈-trans (∘-cong₂ id-left)
@@ -391,7 +391,7 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
                                   {x = s} {y = Fw (Bw s)} {z = s} _ _))
           (D.fib-refl* (P̂ P) (E₀ .d₂) s)))
 
-  bf-≃ : F𝒟C._≈_ (F𝒟C._∘_ bwd-mor fwd-mor) (F𝒟C.id _)
+  bf-≃ : F𝒟-cat._≈_ (F𝒟-cat._∘_ bwd-mor fwd-mor) (F𝒟-cat.id _)
   bf-≃ .idxf-eq = mk-≃m (λ w → c-fb P E₀ w)
   bf-≃ .famf-eq .transf-eq {w} =
     ≈-trans (∘-cong₂ id-left)
