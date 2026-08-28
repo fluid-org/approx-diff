@@ -404,8 +404,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                (restrict-agree (fo-graph 𝒢) mono)
                x y i j)
 
-  summary-zero : {C : List (Path)} (q : Path) →
-                 member q C ≡ Bool.false →
+  summary-zero : {C : List (Path)} (q : Path) → q ∉ C →
                  any (λ q' → adjacent (fo-graph 𝒢) (at q) (at q')) C ≡ Bool.false →
                  (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
                    summary C (at q) z i j ≡ two.O) ×
@@ -440,23 +439,28 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     base-row : (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
                restrict (fo-graph 𝒢) C (at q) z i j ≡ two.O
     base-row z i j =
-      ≡-trans (≡-cong (λ b → when (b ∨ member-vertex z C) (fo-graph 𝒢 (at q) z) i j) hm)
+      ≡-trans (≡-cong (λ b → when (b ∨ member-vertex z C) (fo-graph 𝒢 (at q) z) i j) (∉-member hm))
               (when-O (member-vertex z C) (fo-graph 𝒢 (at q) z) i j (λ hz → entry-row z hz i j))
 
     base-col : (z : V 𝒢) (i : Fin (vertex-width 𝒢 (at q))) (j : Fin (vertex-width 𝒢 z)) →
                restrict (fo-graph 𝒢) C z (at q) i j ≡ two.O
     base-col z i j =
-      ≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (fo-graph 𝒢 z (at q)) i j) hm)
+      ≡-trans (≡-cong (λ b → when (member-vertex z C ∨ b) (fo-graph 𝒢 z (at q)) i j) (∉-member hm))
       (≡-trans (≡-cong (λ b → when b (fo-graph 𝒢 z (at q)) i j) (∨-identityʳ (member-vertex z C)))
                (when-O (member-vertex z C) (fo-graph 𝒢 z (at q)) i j (λ hz → entry-col z hz i j)))
 
     zf = HA.zero-fold (map at C) (at q)
            ((λ z i j → ≈-of-≡ₛ (base-row z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (base-col z i j)))
 
+  Distinct : List (Path) → List (Path) → Set
+  Distinct C C' = All (_∉ C) C'
+
+  distinct-sym : {C C' : List (Path)} → Distinct C C' → Distinct C' C
+  distinct-sym d = All-tabulate (λ m k → All-lookup d k m)
+
   assemble : {E : List (Path)} (Cs : List (List (Path))) →
              All (_⊆ E) Cs →
-             AllPairs (λ C C' → Apart (fo-graph 𝒢) C' C
-                              × (any (λ q → member q C) C' ≡ Bool.false)) Cs →
+             AllPairs (λ C C' → Apart (fo-graph 𝒢) C' C × Distinct C C') Cs →
              ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
              hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) E) (map at (concat Cs)) x y i j ≡
              foldr two._⊔_ (restrict (fo-graph 𝒢) E x y i j)
@@ -475,7 +479,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
               (λ {C'} (ap , ds) →
                 All-zip (λ {q} ha hm → let (l , r) = summary-zero {C = C} q hm ha in
                                        ⟪ ((λ z i j → ≈-of-≡ₛ (l z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (r z i j))) ⟫)
-                        (any-false-All _ C' ap) (any-false-All _ C' ds))
+                        (any-false-All _ C' ap) ds)
               shead))
 
   private
@@ -502,9 +506,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     perm : (at p ∷ map at C) ↭ (map at C ++ (at p ∷ []))
     perm = ↭-sym (↭-trans (shift (at p) (map at C) [])
                           (↭-reflexive (≡-cong (at p ∷_) (++-identityʳ (map at C)))))
-
-  Distinct : List (Path) → List (Path) → Set
-  Distinct C C' = (any (λ q → member q C) C' ≡ Bool.false) × (any (λ q → member q C') C ≡ Bool.false)
 
   private
     visible-entry : (K : Config 𝒢) →
@@ -560,7 +561,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                     summary (proj₁ CH) (at p) z i' j' ≡ two.O)
                  × ((z : V 𝒢) (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 z)) →
                     summary (proj₁ CH) z (at p) i' j' ≡ two.O))) (proj₂ tp)
-      u-szero = All-zip (λ {CH} hadj hm → summary-zero {C = proj₁ CH} p (∉-member hm) hadj) u-adj
+      u-szero = All-zip (λ {CH} hadj hm → summary-zero {C = proj₁ CH} p hm hadj) u-adj
                   (proj₂ (partition-All (adj-p p) (hidden-∉ K hp)))
 
       edge-O : ∀ {C : List (Path)} → any (λ q → adjacent G (at p) (at q)) C ≡ Bool.false →
@@ -774,14 +775,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     monosC* : All (_⊆ C*) Ms
     monosC* = All-map (λ g {_} h → there (g h)) (blocks-⊆ Ms)
 
-    sepsMs : AllPairs (λ C C' → Apart G C' C × (any (λ q → member q C) C' ≡ Bool.false)) Ms
+    sepsMs : AllPairs (λ C C' → Apart G C' C × Distinct C C') Ms
     sepsMs =
-      AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , proj₁ d))
+      AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , d))
         (subst (AllPairs (λ C C' → Apart G C C' × Distinct C C'))
                (map-partition₁ proj₁ (λ C → any (λ q → adjacent G (at p) (at q)) C) (K .hidden))
                (proj₁ (partition-AllPairs {S = λ C C' → Apart G C C' × Distinct C C'}
                         (λ C → any (λ q → adjacent G (at p) (at q)) C)
-                        (λ {C} {C'} (ap , (d₁ , d₂)) → (apart-sym G {C} {C'} ap , (d₂ , d₁)))
+                        (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , distinct-sym d))
                         (AllPairs-zip (separated S) dist))))
 
     core : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
@@ -811,15 +812,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     concat-distinct []        ps = []
     concat-distinct (C ∷ Css) ps with AllPairs-++⁻ C (concat Css) ps
     ... | (_ , aCss , cross) =
-      All-map
-        (λ {C'} a →
-          any-false (All-map (λ {q'} aq' →
-                                ≡-trans (member-any q' C)
-                                  (any-false (All-map (λ {q} hb → eq-path-false-sym {p = q} {q = q'} hb)
-                                                      aq')))
-                             (AllP.All-swap a)) ,
-          any-false (All-map (λ {q} aq → ≡-trans (member-any q C') (any-false aq)) a))
-        (AllP.All-swap (All-map AllP.concat⁻ cross))
+      All-map (λ a → All-tabulate (λ m' m → eq-false-≢ (All-lookup (All-lookup a m) m') ≡-refl))
+              (AllP.All-swap (All-map AllP.concat⁻ cross))
       ∷ concat-distinct Css aCss
 
     visible-not-hidden : (K : Config 𝒢) → Summarised K → ∀ {p} →
@@ -924,9 +918,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       All (λ CH' → ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
                                    proj₂ CH' x y i j ≡ summary (proj₁ CH') x y i j)
                           (split-region p CH)
-    split-summaries p (C , H) old with member p C
-    ... | Bool.false = old ∷ []
-    ... | Bool.true  =
+    split-summaries p (C , H) old with p ∈? C
+    ... | no  _ = old ∷ []
+    ... | yes _ =
       AllP.map⁺ (universal (λ C' x y i j → ≡-refl)
                            (regions (fo-graph 𝒢) (filterᵇ (λ q → Bool.not (eq-path p q)) C)))
 
@@ -974,8 +968,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     stored-eq = ≡-trans (map-All-cong (All-map (λ inv → inv x y i j) (S .summaries)))
                         (map-∘ {g = λ C → summary C x y i j} {f = proj₁} (K .hidden))
 
-    seps : AllPairs (λ C C' → Apart G C' C × (any (λ q → member q C) C' ≡ Bool.false)) Cs
-    seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , proj₁ d))
+    seps : AllPairs (λ C C' → Apart G C' C × Distinct C C') Cs
+    seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , d))
                         (AllPairs-zip (separated S) (summarised-distinct K S))
 
     restrict-O : restrict G (hidden-set K) x y i j ≡ two.O
