@@ -233,3 +233,12 @@ private
 ∧-idem : ∀ {x} → (x S.· x) S.≈ x
 ∧-idem = IsMeet.idem ⊓-isMeet
 
+≈-of-≡ : ∀ {x y : Two} → x ≡ y → x S.≈ y
+≈-of-≡ ≡-refl = S.refl
+
+≡-of-≈ : ∀ {x y : Two} → x S.≈ y → x ≡ y
+≡-of-≈ {O} {O} _ = ≡-refl
+≡-of-≈ {I} {I} _ = ≡-refl
+≡-of-≈ {O} {I} (_ , ())
+≡-of-≈ {I} {O} (() , _)
+

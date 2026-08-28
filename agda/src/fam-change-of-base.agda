@@ -129,15 +129,15 @@ Fam⟨F⟩-section u {X} c .Fam⟨𝒟⟩μ.at-natural e =
 module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
 
   private
-    module CPc = HasCoproducts Fam⟨𝒞⟩μ.coproducts
-    module CPd = HasCoproducts Fam⟨𝒟⟩μ.coproducts
+    module CP𝒞 = HasCoproducts Fam⟨𝒞⟩μ.coproducts
+    module CP𝒟 = HasCoproducts Fam⟨𝒟⟩μ.coproducts
 
-  Bool𝒞 = CPc.coprod (Fam⟨𝒞⟩μ.Lf 𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝟙ty)
-  Bool𝒟 = CPd.coprod (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj 𝟙ty)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj 𝟙ty))
+  Bool𝒞 = CP𝒞.coprod (Fam⟨𝒞⟩μ.Lf 𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝟙ty)
+  Bool𝒟 = CP𝒟.coprod (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj 𝟙ty)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj 𝟙ty))
 
   Fam⟨F⟩-preserves-bool : Fam⟨𝒟⟩μ.Mor (Fam⟨F⟩ .fobj Bool𝒞) Bool𝒟
   Fam⟨F⟩-preserves-bool =
-    Fam𝒟._∘_ (CPd.coprod-m (Fam⟨F⟩-L 𝟙ty .fwd) (Fam⟨F⟩-L 𝟙ty .fwd))
+    Fam𝒟._∘_ (CP𝒟.coprod-m (Fam⟨F⟩-L 𝟙ty .fwd) (Fam⟨F⟩-L 𝟙ty .fwd))
              (Fam⟨F⟩-preserves-coproducts .inverse)
 
 module FW =

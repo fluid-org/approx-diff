@@ -119,6 +119,9 @@ private
 ↭↭-refl : ∀ {a} {A : Set a} {xss : List (List A)} → xss ↭↭ xss
 ↭↭-refl = H.refl (pw-refl _)
 
+↭↭-of-≡ : ∀ {a} {A : Set a} {xss yss : List (List A)} → xss ≡ yss → xss ↭↭ yss
+↭↭-of-≡ ≡-refl = ↭↭-refl
+
 ↭↭-of-↭ : ∀ {a} {A : Set a} {xss yss : List (List A)} → xss ↭ yss → xss ↭↭ yss
 ↭↭-of-↭ ↭.refl         = ↭↭-refl
 ↭↭-of-↭ (↭.prep x p)   = H.prep ↭-refl (↭↭-of-↭ p)

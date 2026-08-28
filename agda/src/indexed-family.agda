@@ -445,7 +445,7 @@ open import functor
 module _ {o m e os es} {𝒞 : Category o m e} where
 
   private
-    module 𝒞C = Category 𝒞
+    module 𝒞 = Category 𝒞
 
   open Functor
   open Fam
@@ -453,7 +453,7 @@ module _ {o m e os es} {𝒞 : Category o m e} where
   fam→functor : ∀ {A : Setoid os es} → Fam A 𝒞 → Functor (setoid→category A) 𝒞
   fam→functor F .fobj = F .fm
   fam→functor F .fmor ⟪ eq ⟫ = F .subst eq
-  fam→functor F .fmor-cong _ = 𝒞C.≈-refl
+  fam→functor F .fmor-cong _ = 𝒞.≈-refl
   fam→functor F .fmor-id = F .refl*
   fam→functor F .fmor-comp f g = F .trans* _ _
 
@@ -465,11 +465,11 @@ module _ {o m e os es} {𝒞 : Category o m e} where
 
   fam→functor-eta : ∀ {A : Setoid os es} (D : Functor (setoid→category A) 𝒞) →
                     NatIso D (fam→functor (functor→fam D))
-  fam→functor-eta D .NatIso.transform .NatTrans.transf x = 𝒞C.id _
-  fam→functor-eta D .NatIso.transform .NatTrans.natural ⟪ p ⟫ = 𝒞C.≈-trans 𝒞C.id-right (𝒞C.≈-sym 𝒞C.id-left)
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse = 𝒞C.id _
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒞C.id-left
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒞C.id-left
+  fam→functor-eta D .NatIso.transform .NatTrans.transf x = 𝒞.id _
+  fam→functor-eta D .NatIso.transform .NatTrans.natural ⟪ p ⟫ = 𝒞.≈-trans 𝒞.id-right (𝒞.≈-sym 𝒞.id-left)
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse = 𝒞.id _
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒞.id-left
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒞.id-left
 
 module _ {o m e} os es (𝒞 : Category o m e)
          (hasDiscreteLimits : ∀ (A : Setoid os es) → HasLimits (setoid→category A) 𝒞)

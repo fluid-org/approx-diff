@@ -2471,8 +2471,8 @@ module Beta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     (alg : Mor (Fam𝒞-P.prod Γ (fobj μ-fam P (extend δ A))) A) where
   private
     module At = InMapDef P δ
-    module Ft = FoldDef {n} {Γ} {A} {P} {δ} alg
     module L = Laws {n} {Γ} {A} {P} {δ} alg
+    module Ft = L.Ft
   open Bridge {n} {Γ} {A} {P} {δ} Ft.foldMor
 
   private

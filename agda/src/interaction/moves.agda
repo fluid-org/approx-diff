@@ -38,6 +38,7 @@ import Data.Fin.Properties as FinP
 import Data.List.Membership.DecPropositional as DecMem
 import matrix
 import two
+open two using (≈-of-≡; ≡-of-≈)
 open import list
 
 -- Configurations of the interaction: a visible set of vertices together with one hidden region per
@@ -55,18 +56,6 @@ open import prop using (Prf; ⟪_⟫) renaming (_∧_ to _∧ₚ_; _,_ to _,ₚ_
 private
   module M = matrix.Mat two.semiring
   module S = commutative-semiring.CommutativeSemiring two.semiring
-
-  ⊥ₚ-elim : ∀ {A : Set} → prop.⊥ {0ℓ} → A
-  ⊥ₚ-elim ()
-
-  ≈-of-≡ₛ : ∀ {x y : two.Two} → x ≡ y → x S.≈ y
-  ≈-of-≡ₛ ≡-refl = S.refl
-
-  ≡-of-≈ₛ : ∀ {x y : two.Two} → x S.≈ y → x ≡ y
-  ≡-of-≈ₛ {two.O} {two.O} _ = ≡-refl
-  ≡-of-≈ₛ {two.I} {two.I} _ = ≡-refl
-  ≡-of-≈ₛ {two.O} {two.I} e = ⊥ₚ-elim (proj₂ₚ e)
-  ≡-of-≈ₛ {two.I} {two.O} e = ⊥ₚ-elim (proj₁ₚ e)
 
 NonZero : ∀ {m n} → M.Matrix m n → Set
 NonZero {m} {n} R = Σ (Fin m) λ i → Σ (Fin n) λ j → R i j ≡ two.I
@@ -347,9 +336,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                        (map at C)
   restrict-agree G {C} {E} mono =
     AllP.map⁺ (All-map (λ {q} h → ⟪
-      (λ z i j → ≈-of-≡ₛ (≡-trans (when-yes (at q ∈ᵥ? E ⊎-dec z ∈ᵥ? E) (inj₁ (mono h)) (G (at q) z) i j)
+      (λ z i j → ≈-of-≡ (≡-trans (when-yes (at q ∈ᵥ? E ⊎-dec z ∈ᵥ? E) (inj₁ (mono h)) (G (at q) z) i j)
                                   (≡-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z) i j)))) ,ₚ
-      (λ z i j → ≈-of-≡ₛ (≡-trans (when-yes (z ∈ᵥ? E ⊎-dec at q ∈ᵥ? E) (inj₂ (mono h)) (G z (at q)) i j)
+      (λ z i j → ≈-of-≡ (≡-trans (when-yes (z ∈ᵥ? E ⊎-dec at q ∈ᵥ? E) (inj₂ (mono h)) (G z (at q)) i j)
                                   (≡-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q)) i j)))) ⟫)
       (All-tabulate (λ h → h)))
 
@@ -358,8 +347,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
              hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) E) (map at C) x y i j ≡
              (restrict (fo-graph 𝒢) E x y i j two.⊔ summary C x y i j)
   localise {C = C} {E = E} mono x y i j =
-    ≡-of-≈ₛ (HA.agree-add {G = restrict (fo-graph 𝒢) C} {G' = restrict (fo-graph 𝒢) E} (map at C)
-               (λ x' y' i' j' → ≈-of-≡ₛ (restrict-sub (fo-graph 𝒢) mono x' y' i' j'))
+    ≡-of-≈ (HA.agree-add {G = restrict (fo-graph 𝒢) C} {G' = restrict (fo-graph 𝒢) E} (map at C)
+               (λ x' y' i' j' → ≈-of-≡ (restrict-sub (fo-graph 𝒢) mono x' y' i' j'))
                (restrict-agree (fo-graph 𝒢) mono)
                x y i j)
 
@@ -370,7 +359,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                   ((z : V 𝒢) (i : Fin (vertex-width 𝒢 (at q))) (j : Fin (vertex-width 𝒢 z)) →
                    summary C z (at q) i j ≡ two.O))
   summary-zero {C = C} q hm hadj =
-    (λ z i j → ≡-of-≈ₛ (proj₁ₚ zf z i j)) , (λ z i j → ≡-of-≈ₛ (proj₂ₚ zf z i j))
+    (λ z i j → ≡-of-≈ (proj₁ₚ zf z i j)) , (λ z i j → ≡-of-≈ (proj₂ₚ zf z i j))
     where
     entry-row : ∀ {z} → VertexIn z C → ∀ i j → fo-graph 𝒢 (at q) z i j ≡ two.O
     entry-row {inj₂ (inj₁ q')} hz i j =
@@ -393,7 +382,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
              [ (λ hz → entry-col hz i j) , (λ h → ⊥-elim (hm h)) ]′
 
     zf = HA.zero-fold (map at C) (at q)
-           ((λ z i j → ≈-of-≡ₛ (base-row z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (base-col z i j)))
+           ((λ z i j → ≈-of-≡ (base-row z i j)) ,ₚ (λ z i j → ≈-of-≡ (base-col z i j)))
 
   Distinct : List (Path) → List (Path) → Set
   Distinct C C' = All (_∉ C) C'
@@ -412,8 +401,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   assemble {E = E} (C ∷ Cs) (mono ∷ monos) (shead ∷ stail) x y i j =
     ≡-trans (≡-cong (λ ws → hide-all (vertex-width 𝒢) R-E ws x y i j) (map-++ at C (concat Cs)))
     (≡-trans (≡-cong (λ H → H x y i j) (foldl-++ (hide (vertex-width 𝒢)) R-E (map at C) (map at (concat Cs))))
-    (≡-trans (≡-of-≈ₛ (HA.fold-cong (map at (concat Cs)) (λ x' y' i' j' → ≈-of-≡ₛ (localise {C = C} mono x' y' i' j')) x y i j))
-    (≡-trans (≡-of-≈ₛ (HA.add-inert {G = R-E} {T = summary C} (map at (concat Cs)) inert' x y i j))
+    (≡-trans (≡-of-≈ (HA.fold-cong (map at (concat Cs)) (λ x' y' i' j' → ≈-of-≡ (localise {C = C} mono x' y' i' j')) x y i j))
+    (≡-trans (≡-of-≈ (HA.add-inert {G = R-E} {T = summary C} (map at (concat Cs)) inert' x y i j))
     (≡-trans (≡-cong (two._⊔ summary C x y i j) (assemble Cs monos stail x y i j))
              (two.⊔-comm _ (summary C x y i j))))))
     where
@@ -422,7 +411,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
               (λ {C'} (ap , ds) →
                 All-zip (λ {q} ha hm →
                           let (l , r) = summary-zero {C = C} q hm ha in
-                                       ⟪ ((λ z i j → ≈-of-≡ₛ (l z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (r z i j))) ⟫)
+                                       ⟪ ((λ z i j → ≈-of-≡ (l z i j)) ,ₚ (λ z i j → ≈-of-≡ (r z i j))) ⟫)
                         ap ds)
               shead))
 
@@ -443,7 +432,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                  summary (p ∷ C) x y i j ≡
                  hide (vertex-width 𝒢) (hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) (p ∷ C)) (map at C)) (at p) x y i j
   summary-snoc p C x y i j =
-    ≡-trans (≡-of-≈ₛ (hide-all-perm 𝒢 (restrict-forward (p ∷ C) (fo-forward 𝒢)) perm x y i j))
+    ≡-trans (≡-of-≈ (hide-all-perm 𝒢 (restrict-forward (p ∷ C) (fo-forward 𝒢)) perm x y i j))
             (≡-cong (λ H → H x y i j)
                     (foldl-++ (hide (vertex-width 𝒢)) (restrict (fo-graph 𝒢) (p ∷ C)) (map at C) (at p ∷ [])))
     where
@@ -474,7 +463,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                         (at p) x y i j
                    ≡ summary (p ∷ concat (map proj₁ (proj₁ tp))) x y i j
   merged-summary p K S hp dist x y i j =
-    ≡-trans (≡-of-≈ₛ (HA.h-cong (at p) (λ x' y' i' j' → ≈-of-≡ₛ (core x' y' i' j')) x y i j))
+    ≡-trans (≡-of-≈ (HA.h-cong (at p) (λ x' y' i' j' → ≈-of-≡ (core x' y' i' j')) x y i j))
             (≡-sym (summary-snoc p (concat Ms) x y i j))
     where
     G  = fo-graph 𝒢
@@ -523,7 +512,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
              VertexIn x' C ⊎ VertexIn y' C →
              G x' y' i' j' ≡ two.I → summary C x' y' i' j' ≡ two.I
       summary-I C x' y' i' j' gd ge =
-        ≡-trans (≡-of-≈ₛ (HA.increasing (map at C) x' y' i' j'))
+        ≡-trans (≡-of-≈ (HA.increasing (map at C) x' y' i' j'))
                 (≡-cong (two._⊔ hide-all (vertex-width 𝒢) (restrict G C) (map at C) x' y' i' j')
                         (≡-trans (when-yes (x' ∈ᵥ? C ⊎-dec y' ∈ᵥ? C) gd (G x' y') i' j') ge))
 
@@ -942,8 +931,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                 (map at C)
     restrict-hidden-agree G C =
       AllP.map⁺ (All-map (λ {q} h → ⟪
-        (λ z i j → ≈-of-≡ₛ (≡-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z) i j))) ,ₚ
-        (λ z i j → ≈-of-≡ₛ (≡-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q)) i j))) ⟫)
+        (λ z i j → ≈-of-≡ (≡-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z) i j))) ,ₚ
+        (λ z i j → ≈-of-≡ (≡-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q)) i j))) ⟫)
         (All-tabulate (λ h → h)))
 
   summaries-assemble : (K : Config 𝒢) → Summarised K →
@@ -953,9 +942,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                        hide-all (vertex-width 𝒢) (fo-graph 𝒢) (map at (hidden-set K)) x y i j
   summaries-assemble K S x y i j hx hy =
     ≡-trans (visible-graph-summary K S x y i j hx hy)
-            (≡-sym (≡-of-≈ₛ (HA.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
+            (≡-sym (≡-of-≈ (HA.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
                       (map at (hidden-set K))
-                      (λ x' y' i' j' → ≈-of-≡ₛ (restrict-≤ (fo-graph 𝒢) (hidden-set K) x' y' i' j'))
+                      (λ x' y' i' j' → ≈-of-≡ (restrict-≤ (fo-graph 𝒢) (hidden-set K) x' y' i' j'))
                       (restrict-hidden-agree (fo-graph 𝒢) (hidden-set K))
                       x y i j)))
 
@@ -1106,9 +1095,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   hide-at-summarised p K S pv .summaries = hide-at-summaries p K S pv
 
   private
-    ↭↭-of-≡ : {xss yss : List (List (Vertex shape))} → xss ≡ yss → xss ↭↭ yss
-    ↭↭-of-≡ ≡-refl = ↭↭-refl
-
     regions-⊆ : (G : Relation (vertex-width 𝒢)) (ws : List (Vertex shape)) → All (_⊆ ws) (regions G ws)
     regions-⊆ G ws = All-map (λ inc {_} h → ∈-resp-↭ (regions-concat G ws) (inc h)) (blocks-⊆ (regions G ws))
 
