@@ -146,6 +146,12 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   adjacent : Relation (vertex-width B) → V B → V B → Bool
   adjacent G x y = does (Adjacent? G x y)
 
+  ¬adjacent-All : (G : Relation (vertex-width B)) (x : V B) (C : List (Vertex (Graph.shape B))) →
+                  any (λ q → adjacent G x (at q)) C ≡ Bool.false →
+                  All (λ q → ¬ Adjacent G x (at q)) C
+  ¬adjacent-All G x C h =
+    All-map (λ {q} e → does-false (Adjacent? G x (at q)) e) (any-false-All _ C h)
+
   adjacent-O : (G : Relation (vertex-width B)) (x y : V B) → ¬ Adjacent G x y →
                (∀ i j → G x y i j ≡ two.O) × (∀ i j → G y x i j ≡ two.O)
   adjacent-O G x y h =
@@ -393,7 +399,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                x y i j)
 
   summary-zero : {C : List (Path)} (q : Path) → q ∉ C →
-                 any (λ q' → adjacent (fo-graph 𝒢) (at q) (at q')) C ≡ Bool.false →
+                 All (λ q' → ¬ Adjacent (fo-graph 𝒢) (at q) (at q')) C →
                  (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
                    summary C (at q) z i j ≡ two.O) ×
                   ((z : V 𝒢) (i : Fin (vertex-width 𝒢 (at q))) (j : Fin (vertex-width 𝒢 z)) →
@@ -401,20 +407,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   summary-zero {C = C} q hm hadj =
     (λ z i j → ≡-of-≈ₛ (proj₁ₚ zf z i j)) , (λ z i j → ≡-of-≈ₛ (proj₂ₚ zf z i j))
     where
-    adjs : All (λ q' → adjacent (fo-graph 𝒢) (at q) (at q') ≡ Bool.false) C
-    adjs = any-false-All _ C hadj
-
     entry-row : ∀ {z} → VertexIn z C → ∀ i j → fo-graph 𝒢 (at q) z i j ≡ two.O
     entry-row {inj₂ (inj₁ q')} hz i j =
-      proj₁ (adjacent-O (fo-graph 𝒢) (at q) (at q')
-                        (does-false (Adjacent? (fo-graph 𝒢) (at q) (at q'))
-                                    (All-lookup adjs hz))) i j
+      proj₁ (adjacent-O (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)) i j
 
     entry-col : ∀ {z} → VertexIn z C → ∀ i j → fo-graph 𝒢 z (at q) i j ≡ two.O
     entry-col {inj₂ (inj₁ q')} hz i j =
-      proj₂ (adjacent-O (fo-graph 𝒢) (at q) (at q')
-                        (does-false (Adjacent? (fo-graph 𝒢) (at q) (at q'))
-                                    (All-lookup adjs hz))) i j
+      proj₂ (adjacent-O (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)) i j
 
     base-row : (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
                restrict (fo-graph 𝒢) C (at q) z i j ≡ two.O
@@ -456,7 +455,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     R-E = restrict (fo-graph 𝒢) E
     inert' = AllP.map⁺ (AllP.concat⁺ (All-map
               (λ {C'} (ap , ds) →
-                All-zip (λ {q} ha hm → let (l , r) = summary-zero {C = C} q hm ha in
+                All-zip (λ {q} ha hm →
+                          let (l , r) = summary-zero {C = C} q hm
+                                          (¬adjacent-All (fo-graph 𝒢) (at q) C ha) in
                                        ⟪ ((λ z i j → ≈-of-≡ₛ (l z i j)) ,ₚ (λ z i j → ≈-of-≡ₛ (r z i j))) ⟫)
                         (any-false-All _ C' ap) ds)
               shead))
@@ -539,16 +540,16 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                     summary (proj₁ CH) (at p) z i' j' ≡ two.O)
                  × ((z : V 𝒢) (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 z)) →
                     summary (proj₁ CH) z (at p) i' j' ≡ two.O))) (proj₂ tp)
-      u-szero = All-zip (λ {CH} hadj hm → summary-zero {C = proj₁ CH} p hm hadj) u-adj
+      u-szero = All-zip (λ {CH} hadj hm →
+                          summary-zero {C = proj₁ CH} p hm (¬adjacent-All G (at p) (proj₁ CH) hadj))
+                        u-adj
                   (proj₂ (partition-All (adj-p p) (hidden-∉ K hp)))
 
-      edge-O : ∀ {C : List (Path)} → any (λ q → adjacent G (at p) (at q)) C ≡ Bool.false →
+      edge-O : ∀ {C : List (Path)} → All (λ q → ¬ Adjacent G (at p) (at q)) C →
                ∀ q' → q' ∈ C →
                ((∀ i' j' → G (at p) (at q') i' j' ≡ two.O) × (∀ i' j' → G (at q') (at p) i' j' ≡ two.O))
       edge-O {C} hadj q' hq =
-        adjacent-O G (at p) (at q')
-                   (does-false (Adjacent? G (at p) (at q'))
-                               (All-lookup (any-false-All _ C hadj) hq))
+        adjacent-O G (at p) (at q') (All-lookup hadj hq)
 
       hid-split : ∀ {q} → q ∈ hidden-set K →
                   Any (λ CH → q ∈ proj₁ CH) (proj₁ tp) ⊎ Any (λ CH → q ∈ proj₁ CH) (proj₂ tp)
@@ -655,7 +656,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                              (inj₂ mem) ge) aM))))
                   , (λ aU → Any-contra
                               (λ { {CH} (mem , adj) →
-                                   two.O≢I (≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} adj qy mem) i' j'))
+                                   two.O≢I (≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} (¬adjacent-All G (at p) (proj₁ CH) adj) qy mem) i' j'))
                                            ge) })
                               (Any-All aU u-adj)) ]′ (hid-split (member-∈ hy)))
           (λ hy → two.⊔-I-inl (B-visible-x (at qy) i' j' (member-∉ hy) ge))
@@ -673,7 +674,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                              (inj₁ mem) ge) aM))))
                   , (λ aU → Any-contra
                               (λ { {CH} (mem , adj) →
-                                   two.O≢I (≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} adj qx mem) i' j'))
+                                   two.O≢I (≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} (¬adjacent-All G (at p) (proj₁ CH) adj) qx mem) i' j'))
                                            ge) })
                               (Any-All aU u-adj)) ]′ (hid-split (member-∈ hx)))
           (λ hx → two.⊔-I-inl (B-visible-y (at qx) i' j' (member-∉ hx) ge))
