@@ -9,9 +9,11 @@ open import Data.Bool.ListAction using (any)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Bool.Properties using (∨-assoc)
 open import Data.Fin as Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; length; map; concat; filterᵇ; partitionᵇ; tabulate)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; filterᵇ; partitionᵇ;
+                            tabulate)
 open import Data.Nat.ListAction using (sum)
-open import Data.List.Properties using (++-assoc; length-++)
+open import Data.List.Properties using (++-assoc; length-++; filter-all)
+import Data.List.Properties as ListP
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
@@ -28,7 +30,7 @@ open import Data.Nat.Properties using (suc-injective; n≤0⇒n≡0; +-cancelʳ-
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.Definitions using (DecidableEquality)
-open import Relation.Nullary.Decidable using (does; yes; no; dec-false)
+open import Relation.Nullary.Decidable using (Dec; does; ¬?; yes; no; dec-false)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 
@@ -254,13 +256,6 @@ partition-AllPairs f sym (_∷_ {x} px ps) with partition-AllPairs f sym ps | pa
 ...   | Bool.true  = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
 ...   | Bool.false = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
 
-∈-filterᵇ⁻ : ∀ {a} {A : Set a} (g : A → Bool) {x : A} (xs : List A) → x ∈ filterᵇ g xs → x ∈ xs
-∈-filterᵇ⁻ g (y ∷ xs) h with g y
-... | Bool.false = there (∈-filterᵇ⁻ g xs h)
-... | Bool.true with h
-...   | here e   = here e
-...   | there h' = there (∈-filterᵇ⁻ g xs h')
-
 any-filterᵇ : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
               any f (filterᵇ g xs) ≡ Bool.true → any f xs ≡ Bool.true
 any-filterᵇ f g (x ∷ xs) h with g x
@@ -331,11 +326,10 @@ perm-AllPairs sym resp (H.trans p q)              ps                      =
 
 filter-out-↭ : ∀ {a} {A : Set a} (_≟_ : DecidableEquality A) {x : A} {xs : List A} →
                AllPairs _≢_ xs → x ∈ xs →
-               (x ∷ filterᵇ (λ y → not (does (x ≟ y))) xs) ↭ xs
+               (x ∷ filter (λ y → ¬? (x ≟ y)) xs) ↭ xs
 filter-out-↭ _≟_ {x} {y ∷ xs} (py ∷ ps) h with x ≟ y
-... | no ¬e   = ↭-trans (↭.swap x y ↭.refl) (↭.prep y (filter-out-↭ _≟_ ps (tail ¬e h)))
-... | yes ≡-refl =
-  ↭.prep x (↭-reflexive (filter-all-true (All-map (λ {z} hz → ≡-cong not (dec-false (x ≟ z) hz)) py)))
+... | no ¬e      = ↭-trans (↭.swap x y ↭.refl) (↭.prep y (filter-out-↭ _≟_ ps (tail ¬e h)))
+... | yes ≡-refl = ↭.prep x (↭-reflexive (filter-all (λ z → ¬? (x ≟ z)) py))
 
 filter-head-true : ∀ {a} {A : Set a} {f : A → Bool} {x : A} (xs : List A) →
                    f x ≡ Bool.true → filterᵇ f (x ∷ xs) ≡ x ∷ filterᵇ f xs
@@ -439,11 +433,12 @@ filter-none : ∀ {a} {A : Set a} {f : A → Bool} {xs : List A} →
 filter-none []              = ≡-refl
 filter-none (_∷_ {x} h hs) rewrite h = filter-none hs
 
-filter-concat : ∀ {a} {A : Set a} (f : A → Bool) (xss : List (List A)) →
-                filterᵇ f (concat xss) ≡ concat (map (filterᵇ f) xss)
-filter-concat f []         = ≡-refl
-filter-concat f (xs ∷ xss) =
-  ≡-trans (filter-++ f xs (concat xss)) (≡-cong (filterᵇ f xs ++_) (filter-concat f xss))
+filter-concat : ∀ {a p} {A : Set a} {P : A → Set p} (P? : (x : A) → Dec (P x)) (xss : List (List A)) →
+                filter P? (concat xss) ≡ concat (map (filter P?) xss)
+filter-concat P? []         = ≡-refl
+filter-concat P? (xs ∷ xss) =
+  ≡-trans (ListP.filter-++ P? xs (concat xss))
+          (≡-cong (filter P? xs ++_) (filter-concat P? xss))
 
 filter-comm : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
               filterᵇ f (filterᵇ g xs) ≡ filterᵇ g (filterᵇ f xs)
