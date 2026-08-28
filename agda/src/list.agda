@@ -7,10 +7,10 @@ module list where
 open import Data.Bool as Bool using (Bool; not; _∨_)
 open import Data.Bool.ListAction using (any)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Bool.Properties using (∨-assoc)
+open import Data.Bool.Properties using (∨-assoc; T?)
 open import Data.Fin as Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; filterᵇ; partitionᵇ;
-                            tabulate)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; filterᵇ; partition;
+                            partitionᵇ; tabulate)
 open import Data.Nat.ListAction using (sum)
 open import Data.List.Properties using (++-assoc; length-++; filter-all)
 import Data.List.Properties as ListP
@@ -21,7 +21,7 @@ open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_; Poi
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
-open import Data.List.Relation.Unary.Any using (Any; here; there; tail)
+open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail)
 open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (++⁺; ++-comm; shift; All-resp-↭)
@@ -30,6 +30,7 @@ open import Data.Nat.Properties using (suc-injective; n≤0⇒n≡0; +-cancelʳ-
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.Definitions using (DecidableEquality)
+open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Decidable using (Dec; does; ¬?; yes; no; dec-false)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
@@ -208,29 +209,30 @@ map-proj₁-pair : ∀ {a b} {A : Set a} {B : Set b} (g : A → B) (xs : List A)
 map-proj₁-pair g []       = ≡-refl
 map-proj₁-pair g (x ∷ xs) = ≡-cong (x ∷_) (map-proj₁-pair g xs)
 
-partition-↭ : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
-              (proj₁ (partitionᵇ f xs) ++ proj₂ (partitionᵇ f xs)) ↭ xs
-partition-↭ f []       = ↭-refl
-partition-↭ f (x ∷ xs) with f x
-... | Bool.true  = ↭.prep x (partition-↭ f xs)
-... | Bool.false =
-  ↭-trans (shift x (proj₁ (partitionᵇ f xs)) (proj₂ (partitionᵇ f xs)))
-          (↭.prep x (partition-↭ f xs))
+partition-↭ : ∀ {a p} {A : Set a} {P : A → Set p} (P? : (x : A) → Dec (P x)) (xs : List A) →
+              (proj₁ (partition P? xs) ++ proj₂ (partition P? xs)) ↭ xs
+partition-↭ P? []       = ↭-refl
+partition-↭ P? (x ∷ xs) with P? x
+... | yes _ = ↭.prep x (partition-↭ P? xs)
+... | no  _ =
+  ↭-trans (shift x (proj₁ (partition P? xs)) (proj₂ (partition P? xs)))
+          (↭.prep x (partition-↭ P? xs))
 
-partition-All : ∀ {a p} {A : Set a} {P : A → Set p} (f : A → Bool) {xs : List A} → All P xs →
-                All P (proj₁ (partitionᵇ f xs)) × All P (proj₂ (partitionᵇ f xs))
-partition-All f [] = [] , []
-partition-All f (_∷_ {x} px pxs) with partition-All f pxs
-... | (a₁ , a₂) with f x
-...   | Bool.true  = px ∷ a₁ , a₂
-...   | Bool.false = a₁ , px ∷ a₂
+partition-All : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
+                (P? : (x : A) → Dec (P x)) {xs : List A} → All Q xs →
+                All Q (proj₁ (partition P? xs)) × All Q (proj₂ (partition P? xs))
+partition-All P? [] = [] , []
+partition-All P? (_∷_ {x} px pxs) with partition-All P? pxs
+... | (a₁ , a₂) with P? x
+...   | yes _ = px ∷ a₁ , a₂
+...   | no  _ = a₁ , px ∷ a₂
 
-part₂-false : ∀ {a} {A : Set a} (f : A → Bool) (xs : List A) →
-              All (λ x → f x ≡ Bool.false) (proj₂ (partitionᵇ f xs))
-part₂-false f []       = []
-part₂-false f (x ∷ xs) with f x in eq
-... | Bool.true  = part₂-false f xs
-... | Bool.false = eq ∷ part₂-false f xs
+part₂-¬ : ∀ {a p} {A : Set a} {P : A → Set p} (P? : (x : A) → Dec (P x)) (xs : List A) →
+          All (λ x → ¬ P x) (proj₂ (partition P? xs))
+part₂-¬ P? []       = []
+part₂-¬ P? (x ∷ xs) with P? x
+... | yes _  = part₂-¬ P? xs
+... | no ¬px = ¬px ∷ part₂-¬ P? xs
 
 All-zip : ∀ {a p q r} {A : Set a} {P : A → Set p} {Q : A → Set q} {R : A → Set r} →
           (∀ {x} → P x → Q x → R x) → ∀ {xs : List A} → All P xs → All Q xs → All R xs
@@ -243,18 +245,18 @@ AllPairs-zip : ∀ {a r s} {A : Set a} {S : A → A → Set r} {S' : A → A →
 AllPairs-zip []         []           = []
 AllPairs-zip (px ∷ ps) (px' ∷ ps') = All-zip _,_ px px' ∷ AllPairs-zip ps ps'
 
-partition-AllPairs : ∀ {a r} {A : Set a} {S : A → A → Set r} (f : A → Bool) →
-                     (∀ {x y} → S x y → S y x) →
+partition-AllPairs : ∀ {a r p} {A : Set a} {S : A → A → Set r} {P : A → Set p}
+                     (P? : (x : A) → Dec (P x)) → (∀ {x y} → S x y → S y x) →
                      ∀ {xs : List A} → AllPairs S xs →
-                     AllPairs S (proj₁ (partitionᵇ f xs))
-                     × AllPairs S (proj₂ (partitionᵇ f xs))
-                     × All (λ y → All (λ x → S x y) (proj₁ (partitionᵇ f xs)))
-                           (proj₂ (partitionᵇ f xs))
-partition-AllPairs f sym [] = [] , [] , []
-partition-AllPairs f sym (_∷_ {x} px ps) with partition-AllPairs f sym ps | partition-All f px
-... | (a₁ , a₂ , cross) | (px₁ , px₂) with f x
-...   | Bool.true  = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
-...   | Bool.false = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
+                     AllPairs S (proj₁ (partition P? xs))
+                     × AllPairs S (proj₂ (partition P? xs))
+                     × All (λ y → All (λ x → S x y) (proj₁ (partition P? xs)))
+                           (proj₂ (partition P? xs))
+partition-AllPairs P? sym [] = [] , [] , []
+partition-AllPairs P? sym (_∷_ {x} px ps) with partition-AllPairs P? sym ps | partition-All P? px
+... | (a₁ , a₂ , cross) | (px₁ , px₂) with P? x
+...   | yes _ = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
+...   | no  _ = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
 
 any-filterᵇ : ∀ {a} {A : Set a} (f g : A → Bool) (xs : List A) →
               any f (filterᵇ g xs) ≡ Bool.true → any f xs ≡ Bool.true
@@ -546,16 +548,36 @@ filter-exchange f g (x ∷ xs) =
                              (filter-head-false {f = g} {x = x}
                                (filterᵇ (λ x' → not (f x')) xs) eg))))))))
 
-map-partition₁ : ∀ {a b} {A : Set a} {B : Set b} (h : A → B) (f : B → Bool) (xs : List A) →
-                 proj₁ (partitionᵇ f (map h xs)) ≡ map h (proj₁ (partitionᵇ (λ x → f (h x)) xs))
-map-partition₁ h f []       = ≡-refl
-map-partition₁ h f (x ∷ xs) with f (h x)
-... | Bool.true  = ≡-cong (h x ∷_) (map-partition₁ h f xs)
-... | Bool.false = map-partition₁ h f xs
+does-T? : ∀ (b : Bool) → does (T? b) ≡ b
+does-T? Bool.false = ≡-refl
+does-T? Bool.true  = ≡-refl
 
-map-partition₂ : ∀ {a b} {A : Set a} {B : Set b} (h : A → B) (f : B → Bool) (xs : List A) →
-                 proj₂ (partitionᵇ f (map h xs)) ≡ map h (proj₂ (partitionᵇ (λ x → f (h x)) xs))
-map-partition₂ h f []       = ≡-refl
-map-partition₂ h f (x ∷ xs) with f (h x)
-... | Bool.true  = map-partition₂ h f xs
-... | Bool.false = ≡-cong (h x ∷_) (map-partition₂ h f xs)
+does-any? : ∀ {a p} {A : Set a} {P : A → Set p} (P? : (x : A) → Dec (P x)) (xs : List A) →
+            does (any? P? xs) ≡ any (λ x → does (P? x)) xs
+does-any? P? []       = ≡-refl
+does-any? P? (x ∷ xs) = ≡-cong (does (P? x) ∨_) (does-any? P? xs)
+
+partition-cong : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
+                 (P? : (x : A) → Dec (P x)) (Q? : (x : A) → Dec (Q x)) →
+                 (∀ x → does (P? x) ≡ does (Q? x)) → (xs : List A) →
+                 partition P? xs ≡ partition Q? xs
+partition-cong P? Q? agree []       = ≡-refl
+partition-cong P? Q? agree (x ∷ xs) with P? x | Q? x | agree x | partition-cong P? Q? agree xs
+... | yes _ | yes _ | _  | ih = ≡-cong (λ u → (x ∷ proj₁ u) , proj₂ u) ih
+... | no  _ | no  _ | _  | ih = ≡-cong (λ u → proj₁ u , (x ∷ proj₂ u)) ih
+
+map-partition₁ : ∀ {a b p} {A : Set a} {B : Set b} {P : B → Set p} (h : A → B)
+                 (P? : (x : B) → Dec (P x)) (xs : List A) →
+                 proj₁ (partition P? (map h xs)) ≡ map h (proj₁ (partition (λ x → P? (h x)) xs))
+map-partition₁ h P? []       = ≡-refl
+map-partition₁ h P? (x ∷ xs) with P? (h x)
+... | yes _ = ≡-cong (h x ∷_) (map-partition₁ h P? xs)
+... | no  _ = map-partition₁ h P? xs
+
+map-partition₂ : ∀ {a b p} {A : Set a} {B : Set b} {P : B → Set p} (h : A → B)
+                 (P? : (x : B) → Dec (P x)) (xs : List A) →
+                 proj₂ (partition P? (map h xs)) ≡ map h (proj₂ (partition (λ x → P? (h x)) xs))
+map-partition₂ h P? []       = ≡-refl
+map-partition₂ h P? (x ∷ xs) with P? (h x)
+... | yes _ = map-partition₂ h P? xs
+... | no  _ = ≡-cong (h x ∷_) (map-partition₂ h P? xs)
