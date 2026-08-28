@@ -116,12 +116,13 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   Adjacent? : (G : Relation (vertex-width B)) (x y : V B) → Dec (Adjacent G x y)
   Adjacent? G x y = NonZero? (G x y) ⊎-dec NonZero? (G y x)
 
-  Adj : Relation (vertex-width B) → Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Set
-  Adj G p C = Any (λ q → Adjacent G (at p) (at q)) C
+  AdjacentIn : Relation (vertex-width B) → Vertex (Graph.shape B) →
+               List (Vertex (Graph.shape B)) → Set
+  AdjacentIn G p C = Any (λ q → Adjacent G (at p) (at q)) C
 
-  adj? : (G : Relation (vertex-width B)) (p : Vertex (Graph.shape B))
-         (C : List (Vertex (Graph.shape B))) → Dec (Adj G p C)
-  adj? G p C = any? (λ q → Adjacent? G (at p) (at q)) C
+  adjacent-in? : (G : Relation (vertex-width B)) (p : Vertex (Graph.shape B))
+                 (C : List (Vertex (Graph.shape B))) → Dec (AdjacentIn G p C)
+  adjacent-in? G p C = any? (λ q → Adjacent? G (at p) (at q)) C
 
   adjacent-O : (G : Relation (vertex-width B)) (x y : V B) → ¬ Adjacent G x y →
                (∀ i j → G x y i j ≡ two.O) × (∀ i j → G y x i j ≡ two.O)
@@ -132,7 +133,7 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   merge-region : Relation (vertex-width B) → Vertex (Graph.shape B) → List (List (Vertex (Graph.shape B))) →
                  List (List (Vertex (Graph.shape B)))
   merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
-    where tp = L.partition (adj? G w) rss
+    where tp = L.partition (adjacent-in? G w) rss
 
   regions : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → List (List (Vertex (Graph.shape B)))
   regions G []       = []
@@ -150,11 +151,11 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   inj₂ (inj₂ _) ∈ᵥ? C = no (λ ())
 
   Adj-p : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) × Relation (vertex-width B) → Set
-  Adj-p p CH = Adj (fo-graph B) p (proj₁ CH)
+  Adj-p p CH = AdjacentIn (fo-graph B) p (proj₁ CH)
 
   adj-p? : (p : Vertex (Graph.shape B))
            (CH : List (Vertex (Graph.shape B)) × Relation (vertex-width B)) → Dec (Adj-p p CH)
-  adj-p? p CH = adj? (fo-graph B) p (proj₁ CH)
+  adj-p? p CH = adjacent-in? (fo-graph B) p (proj₁ CH)
 
   restrict : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → Relation (vertex-width B)
   restrict G C x y = when (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (G x y)
@@ -279,16 +280,16 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   merge-separated : (G : Relation (vertex-width 𝒢)) (w : Path) {rs : List (List (Path))} →
                     AllPairs (Apart G) rs →
-                    let tp = L.partition (adj? G w) rs in
+                    let tp = L.partition (adjacent-in? G w) rs in
                     AllPairs (Apart G) ((w ∷ concat (proj₁ tp)) ∷ proj₂ tp)
   merge-separated G w {rs} sep = apart-w ∷ proj₁ (proj₂ pa)
     where
-    pa = partition-AllPairs {S = Apart G} (adj? G w) (λ {C} {C'} → apart-sym G {C} {C'}) sep
-    tp = L.partition (adj? G w) rs
+    pa = partition-AllPairs {S = Apart G} (adjacent-in? G w) (λ {C} {C'} → apart-sym G {C} {C'}) sep
+    tp = L.partition (adjacent-in? G w) rs
     apart-w : All (Apart G (w ∷ concat (proj₁ tp))) (proj₂ tp)
     apart-w =
       All-zip (λ {C'} hf hc → AllP.¬Any⇒All¬ C' hf ∷ AllP.concat⁺ hc)
-              (part₂-¬ (adj? G w) rs) (proj₂ (proj₂ pa))
+              (part₂-¬ (adjacent-in? G w) rs) (proj₂ (proj₂ pa))
 
   regions-separated : (G : Relation (vertex-width 𝒢)) (ws : List (Path)) → AllPairs (Apart G) (regions G ws)
   regions-separated G []       = []
@@ -321,7 +322,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ↭.prep w (↭-trans (↭-reflexive (concat-++ (proj₁ tp) (proj₂ tp)))
              (↭-trans (concat-resp (↭↭-of-↭ (partition-↭ _ (regions G ws))))
                       (regions-concat G ws)))
-    where tp = L.partition (adj? G w) (regions G ws)
+    where tp = L.partition (adjacent-in? G w) (regions G ws)
 
   hide-at-hidden-set : (p : Path) (K : Config 𝒢) →
                        hidden-set (hide-at p K) ↭ (p ∷ hidden-set K)
@@ -997,22 +998,23 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   merge-region-resp G w {rss} {rss'} p =
     H.prep (↭.prep w (concat-resp (proj₁ tp-p))) (proj₂ tp-p)
     where
-    tp-p = partition-permᴿ (adj? G w) Any-resp-↭ (λ pc → Any-resp-↭ (↭-sym pc)) p
+    tp-p = partition-permᴿ (adjacent-in? G w) Any-resp-↭ (λ pc → Any-resp-↭ (↭-sym pc)) p
 
   private
     merge-region-filter : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (rss : List (List (Vertex shape))) →
                           merge-region G w rss ≡
-                          ((w ∷ concat (filter (adj? G w) rss)) ∷ filter (∁? (adj? G w)) rss)
+                          ((w ∷ concat (filter (adjacent-in? G w) rss)) ∷
+                           filter (∁? (adjacent-in? G w)) rss)
     merge-region-filter G w rss =
-      ≡-cong (λ u → (w ∷ concat (proj₁ u)) ∷ proj₂ u) (partition-defn (adj? G w) rss)
+      ≡-cong (λ u → (w ∷ concat (proj₁ u)) ∷ proj₂ u) (partition-defn (adjacent-in? G w) rss)
 
     cross : (G : Relation (vertex-width 𝒢)) (u u' : Vertex shape) (rss : List (List (Vertex shape))) →
-            Adj G u (u' ∷ concat (filter (adj? G u') rss)) →
-            Adj G u' (u ∷ concat (filter (adj? G u) rss))
+            AdjacentIn G u (u' ∷ concat (filter (adjacent-in? G u') rss)) →
+            AdjacentIn G u' (u ∷ concat (filter (adjacent-in? G u) rss))
     cross G u u' rss (here a)  = here (adjacent-sym G a)
     cross G u u' rss (there m) =
-      there (AnyPr.concat⁺ (Any-filter⁺ (adj? G u)
-               (Any-filter⁻ (adj? G u') rss (AnyPr.concat⁻ (filter (adj? G u') rss) m))))
+      there (AnyPr.concat⁺ (Any-filter⁺ (adjacent-in? G u)
+               (Any-filter⁻ (adjacent-in? G u') rss (AnyPr.concat⁻ (filter (adjacent-in? G u') rss) m))))
 
   merge-region-comm : (G : Relation (vertex-width 𝒢)) (w w' : Vertex shape) (rss : List (List (Vertex shape))) →
                       merge-region G w (merge-region G w' rss) ↭↭
@@ -1023,10 +1025,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       (merge-region-filter G w ((w' ∷ concat F') ∷ N'))))
       (≡-sym (≡-trans (≡-cong (merge-region G w') (merge-region-filter G w rss))
                       (merge-region-filter G w' ((w ∷ concat F) ∷ N))))
-      (dec-case (adj? G w (w' ∷ concat F')) true-branch false-branch)
+      (dec-case (adjacent-in? G w (w' ∷ concat F')) true-branch false-branch)
     where
-    A?  = adj? G w
-    A'? = adj? G w'
+    A?  = adjacent-in? G w
+    A'? = adjacent-in? G w'
     F   = filter A?  rss
     F'  = filter A'? rss
     N   = filter (∁? A?)  rss
@@ -1043,7 +1045,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     untouched =
       subst (λ z → filter (∁? A?) N' ↭↭ z) (filter-comm (∁? A?) (∁? A'?) rss) ↭↭-refl
 
-    true-branch : Adj G w (w' ∷ concat F') → Goal
+    true-branch : AdjacentIn G w (w' ∷ concat F') → Goal
     true-branch b =
       subst₂ _↭↭_
         (≡-sym (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
@@ -1060,7 +1062,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
           untouched)
       where b' = cross G w w' rss b
 
-    false-branch : ¬ Adj G w (w' ∷ concat F') → Goal
+    false-branch : ¬ AdjacentIn G w (w' ∷ concat F') → Goal
     false-branch ¬b =
       subst₂ _↭↭_
         (≡-sym (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
@@ -1074,13 +1076,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
           (↭-reflexive (≡-cong (λ z → w' ∷ concat z) (≡-sym (filter-avoid A'? A? rss hb'))))
           untouched)
       where
-      ¬b' : ¬ Adj G w' (w ∷ concat F)
+      ¬b' : ¬ AdjacentIn G w' (w ∷ concat F)
       ¬b' k = ¬b (cross G w' w rss k)
 
-      hb : ¬ Any (λ C → Adj G w' C × Adj G w C) rss
+      hb : ¬ Any (λ C → AdjacentIn G w' C × AdjacentIn G w C) rss
       hb m = ¬b (there (AnyPr.concat⁺ (Any-filter⁺ A'? m)))
 
-      hb' : ¬ Any (λ C → Adj G w C × Adj G w' C) rss
+      hb' : ¬ Any (λ C → AdjacentIn G w C × AdjacentIn G w' C) rss
       hb' m = ¬b' (there (AnyPr.concat⁺ (Any-filter⁺ A? m)))
 
   regions-perm : (G : Relation (vertex-width 𝒢)) {ws ws' : List (Vertex shape)} → ws ↭ ws' →
@@ -1120,8 +1122,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
              map proj₁ (hide-at p K .hidden)
     lhs-eq =
       ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
-              (map-partition₁ proj₁ (adj? (fo-graph 𝒢) p) (K .hidden))
-              (map-partition₂ proj₁ (adj? (fo-graph 𝒢) p) (K .hidden))
+              (map-partition₁ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .hidden))
+              (map-partition₂ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .hidden))
   hide-at-summarised p K S pv .summaries = hide-at-summaries p K S pv
 
   private
@@ -1134,17 +1136,17 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       All-map (λ inc {_} h → ∈-resp-↭ (regions-concat G ws) (inc h)) (blocks-⊆ (regions G ws))
 
     merge-region-inert : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (X Y : List (List (Vertex shape))) →
-                         All (λ C → ¬ Adj G w C) Y →
+                         All (λ C → ¬ AdjacentIn G w C) Y →
                          merge-region G w (X ++ Y) ≡ merge-region G w X ++ Y
     merge-region-inert G w X Y h =
       ≡-trans (merge-region-filter G w (X ++ Y))
       (≡-trans (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
-                 (≡-trans (filter-++ (adj? G w) X Y)
-                 (≡-trans (≡-cong (filter (adj? G w) X ++_) (filter-none (adj? G w) h))
-                          (++-identityʳ (filter (adj? G w) X))))
-                 (≡-trans (filter-++ (∁? (adj? G w)) X Y)
-                          (≡-cong (filter (∁? (adj? G w)) X ++_)
-                                  (filter-all (∁? (adj? G w)) h))))
+                 (≡-trans (filter-++ (adjacent-in? G w) X Y)
+                 (≡-trans (≡-cong (filter (adjacent-in? G w) X ++_) (filter-none (adjacent-in? G w) h))
+                          (++-identityʳ (filter (adjacent-in? G w) X))))
+                 (≡-trans (filter-++ (∁? (adjacent-in? G w)) X Y)
+                          (≡-cong (filter (∁? (adjacent-in? G w)) X ++_)
+                                  (filter-all (∁? (adjacent-in? G w)) h))))
                (≡-cong (_++ Y) (≡-sym (merge-region-filter G w X))))
 
   regions-apart : (G : Relation (vertex-width 𝒢)) (B rest : List (Vertex shape)) → Apart G B rest →
@@ -1166,7 +1168,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                        All (λ C → 1 ≤ length C) (regions G ws)
     regions-nonempty G []       = []
     regions-nonempty G (w ∷ ws) =
-      s≤s z≤n ∷ proj₂ (partition-All (adj? G w) (regions-nonempty G ws))
+      s≤s z≤n ∷ proj₂ (partition-All (adjacent-in? G w) (regions-nonempty G ws))
 
   regions-apart-concat : {G : Relation (vertex-width 𝒢)} {Cs : List (List (Vertex shape))} →
                          AllPairs (Apart G) Cs →
