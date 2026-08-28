@@ -70,11 +70,10 @@ open products 𝒞-products public  -- Fam-level products
 module Fam𝒞-P = HasProducts products
 open _⇒f_ public
 
-private
-  open _≃_
-  open PS._⇒_
-  open PS._≃m_
-  open indexed-family._≃f_
+open _≃_
+open PS._⇒_
+open PS._≃m_
+open indexed-family._≃f_
 open polynomial-functor using (extend) public
 open polynomial-functor.Poly public
 Poly = polynomial-functor.Poly cat
