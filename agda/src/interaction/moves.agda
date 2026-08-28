@@ -869,10 +869,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   private
     split-none : (p : Path)
                  {CHs : List (List (Path) × Relation (vertex-width 𝒢))} →
-                 All (λ CH → member p (proj₁ CH) ≡ Bool.false) CHs →
+                 All (λ CH → p ∉ proj₁ CH) CHs →
                  concat (map (split-region p) CHs) ≡ CHs
     split-none p []                     = ≡-refl
-    split-none p (_∷_ {C , H} h hs) rewrite h = ≡-cong ((C , H) ∷_) (split-none p hs)
+    split-none p (_∷_ {C , H} h hs) rewrite ∉-member h = ≡-cong ((C , H) ∷_) (split-none p hs)
 
   reveal-set : (p : Path)
                (CHs : List (List (Path) × Relation (vertex-width 𝒢))) →
@@ -899,10 +899,10 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     X    = map (λ C' → C' , summary C') Regs
     Z    = concat (map (split-region p) CHs)
 
-    no-p-tail : All (λ CH → member p (proj₁ CH) ≡ Bool.false) CHs
+    no-p-tail : All (λ CH → p ∉ proj₁ CH) CHs
     no-p-tail =
-      All-tabulate (λ mCH → ∉-member (λ k →
-        eq-false-≢ (All-lookup (All-lookup cross m) (∈-concat⁺′ k (∈-map⁺ proj₁ mCH))) ≡-refl))
+      All-tabulate (λ mCH k →
+        eq-false-≢ (All-lookup (All-lookup cross m) (∈-concat⁺′ k (∈-map⁺ proj₁ mCH))) ≡-refl)
 
     head-perm : (p ∷ concat Regs) ↭ C
     head-perm =
