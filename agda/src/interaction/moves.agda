@@ -1016,9 +1016,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   merge-region-resp G w {rss} {rss'} p =
     H.prep (↭.prep w (concat-resp (proj₁ tp-p))) (proj₂ tp-p)
     where
-    tp-p = partition-permᴿ (any (λ q → adjacent G (at w) (at q)))
-                           (λ {C} {C'} pc → any-perm (λ q → adjacent G (at w) (at q)) pc)
-                           p
+    A? = λ C → T? (any (λ q → adjacent G (at w) (at q)) C)
+    tp-p = partition-permᴿ A? (λ pc → subst Bool.T (any-perm _ pc))
+                              (λ pc → subst Bool.T (≡-sym (any-perm _ pc))) p
 
   private
     adj : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) → List (Vertex shape) → Bool

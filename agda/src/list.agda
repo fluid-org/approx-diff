@@ -12,7 +12,8 @@ open import Data.Fin as Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; filterᵇ; partition;
                             partitionᵇ; tabulate)
 open import Data.Nat.ListAction using (sum)
-open import Data.List.Properties using (++-assoc; length-++; filter-all)
+open import Data.List.Properties using (++-assoc; length-++; filter-all; filter-accept; filter-reject;
+                                        partition-defn)
 import Data.List.Properties as ListP
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -322,75 +323,78 @@ dec-case : ∀ {a p} {A : Set a} {P : Set p} → Dec P → (P → A) → (¬ P �
 dec-case (yes k)  t f = t k
 dec-case (no  ¬k) t f = f ¬k
 
-filter-permᴿ : ∀ {a r} {A : Set a} {R : A → A → Set r} (f : A → Bool) →
-               (∀ {x y} → R x y → f x ≡ f y) →
+filter-permᴿ : ∀ {a p r} {A : Set a} {P : A → Set p} {R : A → A → Set r} →
+               (P? : (x : A) → Dec (P x)) →
+               (∀ {x y} → R x y → P x → P y) → (∀ {x y} → R x y → P y → P x) →
                {xs ys : List A} → H.Permutation R xs ys →
-               H.Permutation R (filterᵇ f xs) (filterᵇ f ys)
-filter-permᴿ f resp (H.refl []) = H.refl []
-filter-permᴿ {R = R} f resp (H.refl (_∷_ {x} {y} {xs} {ys} rxy pw)) =
-  bool-case (f x)
-    (λ ex → subst₂ (H.Permutation R)
-              (≡-sym (filter-head-true {f = f} {x = x} xs ex))
-              (≡-sym (filter-head-true {f = f} {x = y} ys (≡-trans (≡-sym (resp rxy)) ex)))
-              (H.prep rxy (filter-permᴿ f resp (H.refl pw))))
-    (λ ex → subst₂ (H.Permutation R)
-              (≡-sym (filter-head-false {f = f} {x = x} xs ex))
-              (≡-sym (filter-head-false {f = f} {x = y} ys (≡-trans (≡-sym (resp rxy)) ex)))
-              (filter-permᴿ f resp (H.refl pw)))
-filter-permᴿ {R = R} f resp (H.prep {xs} {ys} {x} {y} rxy p) =
-  bool-case (f x)
-    (λ ex → subst₂ (H.Permutation R)
-              (≡-sym (filter-head-true {f = f} {x = x} xs ex))
-              (≡-sym (filter-head-true {f = f} {x = y} ys (≡-trans (≡-sym (resp rxy)) ex)))
-              (H.prep rxy (filter-permᴿ f resp p)))
-    (λ ex → subst₂ (H.Permutation R)
-              (≡-sym (filter-head-false {f = f} {x = x} xs ex))
-              (≡-sym (filter-head-false {f = f} {x = y} ys (≡-trans (≡-sym (resp rxy)) ex)))
-              (filter-permᴿ f resp p))
-filter-permᴿ {R = R} f resp (H.swap {xs} {ys} {x} {y} {x′} {y′} eq₁ eq₂ p) =
-  bool-case (f x)
-    (λ ex → bool-case (f y)
-      (λ ey → subst₂ (H.Permutation R)
-                (≡-sym (≡-trans (filter-head-true {f = f} {x = x} (y ∷ xs) ex)
-                                (≡-cong (x ∷_) (filter-head-true {f = f} {x = y} xs ey))))
-                (≡-sym (≡-trans (filter-head-true {f = f} {x = y′} (x′ ∷ ys) (≡-trans (≡-sym (resp eq₂)) ey))
+               H.Permutation R (filter P? xs) (filter P? ys)
+filter-permᴿ P? to from (H.refl []) = H.refl []
+filter-permᴿ {R = R} P? to from (H.refl (_∷_ {x} {y} {xs} {ys} rxy pw)) =
+  dec-case (P? x)
+    (λ px → subst₂ (H.Permutation R)
+              (≡-sym (filter-accept P? {x} {xs} px))
+              (≡-sym (filter-accept P? {y} {ys} (to rxy px)))
+              (H.prep rxy (filter-permᴿ P? to from (H.refl pw))))
+    (λ ¬px → subst₂ (H.Permutation R)
+               (≡-sym (filter-reject P? {x} {xs} ¬px))
+               (≡-sym (filter-reject P? {y} {ys} (λ py → ¬px (from rxy py))))
+               (filter-permᴿ P? to from (H.refl pw)))
+filter-permᴿ {R = R} P? to from (H.prep {xs} {ys} {x} {y} rxy p) =
+  dec-case (P? x)
+    (λ px → subst₂ (H.Permutation R)
+              (≡-sym (filter-accept P? {x} {xs} px))
+              (≡-sym (filter-accept P? {y} {ys} (to rxy px)))
+              (H.prep rxy (filter-permᴿ P? to from p)))
+    (λ ¬px → subst₂ (H.Permutation R)
+               (≡-sym (filter-reject P? {x} {xs} ¬px))
+               (≡-sym (filter-reject P? {y} {ys} (λ py → ¬px (from rxy py))))
+               (filter-permᴿ P? to from p))
+filter-permᴿ {R = R} P? to from (H.swap {xs} {ys} {x} {y} {x′} {y′} r₁ r₂ p) =
+  dec-case (P? x)
+    (λ px → dec-case (P? y)
+      (λ py → subst₂ (H.Permutation R)
+                (≡-sym (≡-trans (filter-accept P? {x} {y ∷ xs} px)
+                                (≡-cong (x ∷_) (filter-accept P? {y} {xs} py))))
+                (≡-sym (≡-trans (filter-accept P? {y′} {x′ ∷ ys} (to r₂ py))
+                                (≡-cong (y′ ∷_) (filter-accept P? {x′} {ys} (to r₁ px)))))
+                (H.swap r₁ r₂ (filter-permᴿ P? to from p)))
+      (λ ¬py → subst₂ (H.Permutation R)
+                 (≡-sym (≡-trans (filter-accept P? {x} {y ∷ xs} px)
+                                 (≡-cong (x ∷_) (filter-reject P? {y} {xs} ¬py))))
+                 (≡-sym (≡-trans (filter-reject P? {y′} {x′ ∷ ys} (λ q → ¬py (from r₂ q)))
+                                 (filter-accept P? {x′} {ys} (to r₁ px))))
+                 (H.prep r₁ (filter-permᴿ P? to from p))))
+    (λ ¬px → dec-case (P? y)
+      (λ py → subst₂ (H.Permutation R)
+                (≡-sym (≡-trans (filter-reject P? {x} {y ∷ xs} ¬px)
+                                (filter-accept P? {y} {xs} py)))
+                (≡-sym (≡-trans (filter-accept P? {y′} {x′ ∷ ys} (to r₂ py))
                                 (≡-cong (y′ ∷_)
-                                        (filter-head-true {f = f} {x = x′} ys (≡-trans (≡-sym (resp eq₁)) ex)))))
-                (H.swap eq₁ eq₂ (filter-permᴿ f resp p)))
-      (λ ey → subst₂ (H.Permutation R)
-                (≡-sym (≡-trans (filter-head-true {f = f} {x = x} (y ∷ xs) ex)
-                                (≡-cong (x ∷_) (filter-head-false {f = f} {x = y} xs ey))))
-                (≡-sym (≡-trans (filter-head-false {f = f} {x = y′} (x′ ∷ ys) (≡-trans (≡-sym (resp eq₂)) ey))
-                                (filter-head-true {f = f} {x = x′} ys (≡-trans (≡-sym (resp eq₁)) ex))))
-                (H.prep eq₁ (filter-permᴿ f resp p))))
-    (λ ex → bool-case (f y)
-      (λ ey → subst₂ (H.Permutation R)
-                (≡-sym (≡-trans (filter-head-false {f = f} {x = x} (y ∷ xs) ex)
-                                (filter-head-true {f = f} {x = y} xs ey)))
-                (≡-sym (≡-trans (filter-head-true {f = f} {x = y′} (x′ ∷ ys) (≡-trans (≡-sym (resp eq₂)) ey))
-                                (≡-cong (y′ ∷_)
-                                        (filter-head-false {f = f} {x = x′} ys (≡-trans (≡-sym (resp eq₁)) ex)))))
-                (H.prep eq₂ (filter-permᴿ f resp p)))
-      (λ ey → subst₂ (H.Permutation R)
-                (≡-sym (≡-trans (filter-head-false {f = f} {x = x} (y ∷ xs) ex)
-                                (filter-head-false {f = f} {x = y} xs ey)))
-                (≡-sym (≡-trans (filter-head-false {f = f} {x = y′} (x′ ∷ ys) (≡-trans (≡-sym (resp eq₂)) ey))
-                                (filter-head-false {f = f} {x = x′} ys (≡-trans (≡-sym (resp eq₁)) ex))))
-                (filter-permᴿ f resp p)))
-filter-permᴿ f resp (H.trans p q) = H.trans (filter-permᴿ f resp p) (filter-permᴿ f resp q)
+                                        (filter-reject P? {x′} {ys} (λ q → ¬px (from r₁ q))))))
+                (H.prep r₂ (filter-permᴿ P? to from p)))
+      (λ ¬py → subst₂ (H.Permutation R)
+                 (≡-sym (≡-trans (filter-reject P? {x} {y ∷ xs} ¬px)
+                                 (filter-reject P? {y} {xs} ¬py)))
+                 (≡-sym (≡-trans (filter-reject P? {y′} {x′ ∷ ys} (λ q → ¬py (from r₂ q)))
+                                 (filter-reject P? {x′} {ys} (λ q → ¬px (from r₁ q)))))
+                 (filter-permᴿ P? to from p)))
+filter-permᴿ P? to from (H.trans p q) =
+  H.trans (filter-permᴿ P? to from p) (filter-permᴿ P? to from q)
 
-partition-permᴿ : ∀ {a r} {A : Set a} {R : A → A → Set r} (f : A → Bool) →
-                  (∀ {x y} → R x y → f x ≡ f y) →
+partition-permᴿ : ∀ {a p r} {A : Set a} {P : A → Set p} {R : A → A → Set r} →
+                  (P? : (x : A) → Dec (P x)) →
+                  (∀ {x y} → R x y → P x → P y) → (∀ {x y} → R x y → P y → P x) →
                   {xs ys : List A} → H.Permutation R xs ys →
-                  H.Permutation R (proj₁ (partitionᵇ f xs)) (proj₁ (partitionᵇ f ys))
-                  × H.Permutation R (proj₂ (partitionᵇ f xs)) (proj₂ (partitionᵇ f ys))
-partition-permᴿ {R = R} f resp {xs} {ys} p =
+                  H.Permutation R (proj₁ (partition P? xs)) (proj₁ (partition P? ys)) ×
+                  H.Permutation R (proj₂ (partition P? xs)) (proj₂ (partition P? ys))
+partition-permᴿ {R = R} P? to from {xs} {ys} p =
   subst₂ (λ u v → H.Permutation R (proj₁ u) (proj₁ v))
-         (≡-sym (partition-filter f xs)) (≡-sym (partition-filter f ys))
-         (filter-permᴿ f resp p) ,
+         (≡-sym (partition-defn P? xs)) (≡-sym (partition-defn P? ys))
+         (filter-permᴿ P? to from p) ,
   subst₂ (λ u v → H.Permutation R (proj₂ u) (proj₂ v))
-         (≡-sym (partition-filter f xs)) (≡-sym (partition-filter f ys))
-         (filter-permᴿ (λ x → not (f x)) (λ rxy → ≡-cong not (resp rxy)) p)
+         (≡-sym (partition-defn P? xs)) (≡-sym (partition-defn P? ys))
+         (filter-permᴿ (λ x → ¬? (P? x))
+                       (λ rxy ¬px py → ¬px (from rxy py)) (λ rxy ¬py px → ¬py (to rxy px)) p)
 
 filter-++ : ∀ {a} {A : Set a} (f : A → Bool) (xs ys : List A) →
             filterᵇ f (xs ++ ys) ≡ filterᵇ f xs ++ filterᵇ f ys
