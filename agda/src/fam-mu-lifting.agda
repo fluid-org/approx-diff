@@ -868,16 +868,16 @@ module FoldSection {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   open FoldDef {n} {Γ} {A} {P} {δ} alg
   private
     module MuSection-δ = MuSection δ δc
-    module MA' = MuSection (extend δ A) (extend-section δc cA)
+    module MuSection-A = MuSection (extend δ A) (extend-section δc cA)
 
   data FMorSec : ∀ {k} {ρ : Fin k → Fin n ⊎ Sort n} {ρ' : Fin k → Fin (suc n) ⊎ Sort (suc n)}
                  {d : ∀ v → T-δ.DecoAssign (ρ v)} {d' : ∀ v → T-δA-ext.DecoAssign (ρ' v)} →
                  FMor ρ ρ' d d' → (∀ v → MuSection-δ.DecoAssignSection (d v)) →
-                 (∀ v → MA'.DecoAssignSection (d' v)) → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
+                 (∀ v → MuSection-A.DecoAssignSection (d' v)) → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     fbase-s : FMorSec fbase (MuSection-δ.deco-ext-section P Pc (λ i → lift tt)) (λ v → lift tt)
     fbind-s : ∀ {k} {ρ ρ' d d'} {fm : FMor {k} ρ ρ' d d'} {dc d'c} (Q : Poly (suc k))
               (Qc : PolySection Q) → FMorSec fm dc d'c →
-              FMorSec (fbind Q fm) (MuSection-δ.deco-ext-section Q Qc dc) (MA'.deco-ext-section Q Qc d'c)
+              FMorSec (fbind Q fm) (MuSection-δ.deco-ext-section Q Qc dc) (MuSection-A.deco-ext-section Q Qc d'c)
 
   module _ (γ : Γ .idx .Carrier) (cγ : 𝟙c ⇒ Γ .fam .fm γ)
            (halg : ∀ s → (alg .famf .transf (γ , s) ∘
@@ -911,20 +911,20 @@ module FoldSection {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-shape-fam-unit (μ Q') Q'c t = fold-reindex-fam-unit Q'c fbase-s t
 
       fold-reindex-fam-unit : ∀ {k} {Q : Poly (suc k)} {ρ ρ' d d'} {fm : FMor ρ ρ' d d'}
-        {dc : ∀ v → MuSection-δ.DecoAssignSection (d v)} {d'c : ∀ v → MA'.DecoAssignSection (d' v)}
+        {dc : ∀ v → MuSection-δ.DecoAssignSection (d v)} {d'c : ∀ v → MuSection-A.DecoAssignSection (d' v)}
         (Qc : PolySection Q) → FMorSec fm dc d'c → ∀ t →
         (fold-reindex-fam γ fm t ∘ pair cγ (MuSection-δ.fib-unit Q d Qc dc t))
-          ≈ MA'.fib-unit Q d' Qc d'c (fold-reindex γ fm t)
+          ≈ MuSection-A.fib-unit Q d' Qc d'c (fold-reindex γ fm t)
       fold-reindex-fam-unit {Q = Q} Qc fs (T-δ.sup x) = fold-reindex-shape-fam-unit Q Qc (fbind-s Q Qc fs) x
 
       fold-reindex-shape-fam-unit : ∀ {j} (R : Poly j) (Rc : PolySection R)
         {ηA : Fin j → Fin n ⊎ Sort n} {ηB : Fin j → Fin (suc n) ⊎ Sort (suc n)}
         {dA : ∀ v → T-δ.DecoAssign (ηA v)} {dB : ∀ v → T-δA-ext.DecoAssign (ηB v)}
         {fm : FMor ηA ηB dA dB}
-        {dAc : ∀ v → MuSection-δ.DecoAssignSection (dA v)} {dBc : ∀ v → MA'.DecoAssignSection (dB v)} →
+        {dAc : ∀ v → MuSection-δ.DecoAssignSection (dA v)} {dBc : ∀ v → MuSection-A.DecoAssignSection (dB v)} →
         FMorSec fm dAc dBc → ∀ (a : T-δ.⟦ ∣ R ∣ ⟧shape ηA) →
         (fold-reindex-shape-fam γ R fm a ∘ pair cγ (MuSection-δ.fib-shape-unit R dA Rc dAc a))
-          ≈ MA'.fib-shape-unit R dB Rc dBc (fold-reindex-shape γ R fm a)
+          ≈ MuSection-A.fib-shape-unit R dB Rc dBc (fold-reindex-shape γ R fm a)
       fold-reindex-shape-fam-unit (const A') Ac fs a = pair-p₂ _ _
       fold-reindex-shape-fam-unit (var v)    _  fs a = fold-apply-fam-unit fs v a
       fold-reindex-shape-fam-unit (P' + Q') (P'c , Q'c) fs (inj₁ a) =
@@ -939,10 +939,10 @@ module FoldSection {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       fold-reindex-shape-fam-unit (μ Q'') Q''c fs t = fold-reindex-fam-unit Q''c fs t
 
       fold-apply-fam-unit : ∀ {k} {ρ ρ' d d'} {fm : FMor {k} ρ ρ' d d'}
-        {dc : ∀ w → MuSection-δ.DecoAssignSection (d w)} {d'c : ∀ w → MA'.DecoAssignSection (d' w)} →
+        {dc : ∀ w → MuSection-δ.DecoAssignSection (d w)} {d'c : ∀ w → MuSection-A.DecoAssignSection (d' w)} →
         FMorSec fm dc d'c → ∀ (v : Fin k) (a : T-δ.El (ρ v)) →
         (fold-apply-fam γ fm v a ∘ pair cγ (MuSection-δ.fib-el-unit (ρ v) (d v) (dc v) a))
-          ≈ MA'.fib-el-unit (ρ' v) (d' v) (d'c v) (fold-apply γ fm v a)
+          ≈ MuSection-A.fib-el-unit (ρ' v) (d' v) (d'c v) (fold-apply γ fm v a)
       fold-apply-fam-unit fbase-s           Fin.zero    t = fold-fam-unit t
       fold-apply-fam-unit fbase-s           (Fin.suc i) a = pair-p₂ _ _
       fold-apply-fam-unit (fbind-s Q Qc fs) Fin.zero    a = fold-reindex-fam-unit Qc fs a
@@ -963,7 +963,8 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     δ' = extend δ (μ-fam P δ)
     module T-δ = Tree δ
     module T-δ' = Tree δ'
-    module R  = Reindex δ' δ
+    module Reindex-δ' = Reindex δ' δ
+    open Reindex-δ' public using (MorD; base; bind; apply; apply-fam; reindex; reindex-resp; reindex-shape; reindex-shape-resp; reindex-fam; reindex-fam-natural; reindex-fam-W; reindex-fam-W-natural)
 
     embed-idx : (Q : Poly (suc n)) → fobj μ-fam Q δ' .idx .Carrier → T-δ'.⟦ ∣ Q ∣ ⟧shape (λ v → inj₁ v)
     embed-idx (const A) a = a
@@ -1022,8 +1023,8 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
                    ≈ (T-δ.fib-el-subst (η₀ ∣ P ∣ v) (T-δ.deco-ext P (λ i → lift tt) v) (m₀-resp v p) ∘ m₀-fam v a)
     m₀-fam-natural Fin.zero    p = ≈-trans id-left (≈-sym id-right)
     m₀-fam-natural (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
-    mor₀ : R.MorD (λ v → inj₁ v) (η₀ ∣ P ∣) (λ v → lift tt) (T-δ.deco-ext P (λ i → lift tt))
-    mor₀ = R.base m₀ m₀-resp m₀-fam m₀-fam-natural
+    mor₀ : MorD (λ v → inj₁ v) (η₀ ∣ P ∣) (λ v → lift tt) (T-δ.deco-ext P (λ i → lift tt))
+    mor₀ = base m₀ m₀-resp m₀-fam m₀-fam-natural
     embed-fam : (Q : Poly (suc n)) (x : fobj μ-fam Q δ' .idx .Carrier) →
                 fobj μ-fam Q δ' .fam .fm x ⇒ T-δ'.fib-shape Q (λ v → lift tt) (embed-idx Q x)
     embed-fam (const A) a = id _
@@ -1146,12 +1147,12 @@ module InMapDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       ≈-trans (∘-cong (T-δ'.fib-refl* Q' (λ v → lift tt) t) ≈-refl) (≈-trans id-left id-left)
 
     inMor : Mor (fobj μ-fam P δ') (μ-fam P δ)
-    inMor .idxf .func i = T-δ.sup (R.reindex-shape ∣ P ∣ mor₀ (embed-idx P i))
-    inMor .idxf .func-resp-≈ x≈y = R.reindex-shape-resp ∣ P ∣ mor₀ (embed-idx-resp P x≈y)
-    inMor .famf .transf x = R.reindex-fam P mor₀ ∘ embed-fam P x
+    inMor .idxf .func i = T-δ.sup (reindex-shape ∣ P ∣ mor₀ (embed-idx P i))
+    inMor .idxf .func-resp-≈ x≈y = reindex-shape-resp ∣ P ∣ mor₀ (embed-idx-resp P x≈y)
+    inMor .famf .transf x = reindex-fam P mor₀ ∘ embed-fam P x
     inMor .famf .natural e =
       ≈-trans (tail-cong (embed-fam-natural P e))
-      (head-cong-assoc (R.reindex-fam-natural P mor₀ (embed-idx-resp P e)))
+      (head-cong-assoc (reindex-fam-natural P mor₀ (embed-idx-resp P e)))
 
     module InMapSection (δc : ∀ i → Section (δ i)) (Pc : PolySection P) where
       private
@@ -1245,7 +1246,7 @@ fuse-shape : ∀ {n} {Γ : Obj} {sₛ sₜ : Fin n → Obj} (Q : Poly (suc n)) �
                  (x≈ : T-sₛ.shape≈ ∣ R ∣ (η₀ ∣ Q ∣) x₁ x₂) →
                  T-sₜ.shape≈ ∣ R ∣ (η₀ ∣ Q ∣)
                    (Reindex-sₛ.ireindex-shape ∣ R ∣ (Reindex-sₛ.ibind ∣ Q ∣ (cmb γ₁)) x₁)
-                   (InMapDef-P.R.reindex-shape ∣ R ∣ InMapDef-P.mor₀
+                   (InMapDef-P.reindex-shape ∣ R ∣ InMapDef-P.mor₀
                     (InMapDef-P.embed-idx R (strong-fmor R (strong-extend-mor fsk Fam-P.p₂) .idxf .func
                       (γ₂ , FoldDef-alg.fold-shape-idx R γ₂ x₂))))
 
@@ -1260,11 +1261,11 @@ fuse-shape Q cmb fsk corr (R₁ × R₂) γ≈ {_ , _} {_ , _} (x≈₁ , x≈�
   fuse-shape Q cmb fsk corr R₁ γ≈ x≈₁ , fuse-shape Q cmb fsk corr R₂ γ≈ x≈₂
 fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁} {γ₂} γ≈ {x₁} {x₂} x≈ =
   T-sₜ.W-≈-trans {x = Reindex-sₛ.ireindex-shape ∣ μ R'' ∣ (Reindex-sₛ.ibind ∣ Q ∣ (cmb γ₁)) x₁}
-               {z = InMapDef-P.R.reindex-shape ∣ μ R'' ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx (μ R'')
+               {z = InMapDef-P.reindex-shape ∣ μ R'' ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx (μ R'')
                       (strong-fmor (μ R'') (strong-extend-mor fsk Fam-P.p₂)
                         .idxf .func (γ₂ , w)))}
                telescope
-               (InMapDef-P.R.reindex-resp InMapDef-P.mor₀
+               (InMapDef-P.reindex-resp InMapDef-P.mor₀
                  {t = Reindex-ext.ireindex (cmb' γ₁) wm₁}
                  {t' = strong-fmor (μ R'') (strong-extend-mor fsk Fam-P.p₂) .idxf .func (γ₂ , w)}
                  rec)
@@ -1291,19 +1292,19 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
       data TeleRel : ∀ {j} {ηA ηB ηC ηD}
                      {dA : ∀ v → T-sₛ.DecoAssign (ηA v)} {dB : ∀ v → T-sₜ.DecoAssign (ηB v)}
                      {dC : ∀ v → InMapDef-P.T-δ'.DecoAssign (ηC v)} {dD : ∀ v → FoldDef-alg.T-δA-ext.DecoAssign (ηD v)} →
-                     Reindex-sₛ.IMorD {j} ηA ηB → InMapDef-P.R.MorD {j} ηC ηB dC dB → Reindex-ext.IMorD {j} ηD ηC → FoldDef-alg.FMor {j} ηA ηD dA dD →
+                     Reindex-sₛ.IMorD {j} ηA ηB → InMapDef-P.MorD {j} ηC ηB dC dB → Reindex-ext.IMorD {j} ηD ηC → FoldDef-alg.FMor {j} ηA ηD dA dD →
                      Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
         tbase : TeleRel (Reindex-sₛ.ibind ∣ Q ∣ (cmb γ₁)) InMapDef-P.mor₀ (cmb' γ₁) FoldDef-alg.fbase
         tbind : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD} {md mdA md' fm} (S' : Poly (suc j)) →
                 TeleRel {j} {ηA} {ηB} {ηC} {ηD} {dA} {dB} {dC} {dD} md mdA md' fm →
-                TeleRel (Reindex-sₛ.ibind ∣ S' ∣ md) (InMapDef-P.R.bind S' mdA) (Reindex-ext.ibind ∣ S' ∣ md') (FoldDef-alg.fbind S' fm)
+                TeleRel (Reindex-sₛ.ibind ∣ S' ∣ md) (InMapDef-P.bind S' mdA) (Reindex-ext.ibind ∣ S' ∣ md') (FoldDef-alg.fbind S' fm)
 
       tele-shape : ∀ {j} (S : Poly j) {ηA ηB ηC ηD} {dA dB dC dD}
-                   {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.R.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
+                   {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
                    (rel : TeleRel md mdA md' fm) (z : FoldDef-alg.T-δ.⟦ ∣ S ∣ ⟧shape ηA) →
                    T-sₜ.shape≈ ∣ S ∣ ηB
                      (Reindex-sₛ.ireindex-shape ∣ S ∣ md z)
-                     (InMapDef-P.R.reindex-shape ∣ S ∣ mdA (Reindex-ext.ireindex-shape ∣ S ∣ md' (FoldDef-alg.fold-reindex-shape γ₁ S fm z)))
+                     (InMapDef-P.reindex-shape ∣ S ∣ mdA (Reindex-ext.ireindex-shape ∣ S ∣ md' (FoldDef-alg.fold-reindex-shape γ₁ S fm z)))
       tele-shape (const A') rel z = A' .idx .isEquivalence .refl
       tele-shape (var v) rel z = tele-apply rel v
       tele-shape (S₁ + S₂) rel (inj₁ z) = tele-shape S₁ rel z
@@ -1312,9 +1313,9 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
       tele-shape (μ S') rel (T-sₛ.sup z') = tele-shape S' (tbind S' rel) z'
 
       tele-apply : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
-                   {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.R.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
+                   {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
                    (rel : TeleRel md mdA md' fm) (v : Fin j) {z} →
-                   T-sₜ.elEq (ηB v) (Reindex-sₛ.iapply md v z) (InMapDef-P.R.apply mdA v (Reindex-ext.iapply md' v (FoldDef-alg.fold-apply γ₁ fm v z)))
+                   T-sₜ.elEq (ηB v) (Reindex-sₛ.iapply md v z) (InMapDef-P.apply mdA v (Reindex-ext.iapply md' v (FoldDef-alg.fold-apply γ₁ fm v z)))
       tele-apply (tbind S' r) Fin.zero    {z} = tele-shape (μ S') r z
       tele-apply (tbind S' r) (Fin.suc v)     = tele-apply r v
       tele-apply tbase Fin.zero    {z} =
@@ -1323,7 +1324,7 @@ fuse-shape {Γ = Γ} {sₛ = sₛ} {sₜ = sₜ} Q cmb fsk corr (μ R'') {γ₁}
       tele-apply tbase (Fin.suc i) {z} = T-sₜ.elEq-refl (inj₁ i) (Reindex-sₛ.iapply (cmb γ₁) i z)
 
     telescope : T-sₜ.W-≈ (Reindex-sₛ.ireindex-shape ∣ μ R'' ∣ (Reindex-sₛ.ibind ∣ Q ∣ (cmb γ₁)) x₁)
-                       (InMapDef-P.R.reindex InMapDef-P.mor₀ (Reindex-ext.ireindex (cmb' γ₁) wm₁))
+                       (InMapDef-P.reindex InMapDef-P.mor₀ (Reindex-ext.ireindex (cmb' γ₁) wm₁))
     telescope = tele-shape (μ R'') tbase x₁
 
 strong-prod-m-transf : ∀ {Γ X₁ X₂ Y₁ Y₂ : Obj} (f : Mor (Fam-P.prod Γ X₁) Y₁) (g : Mor (Fam-P.prod Γ X₂) Y₂)
@@ -1380,7 +1381,7 @@ fuse-shape-fam : ∀ {n} {Γ : Obj} (γ : Γ .idx .Carrier) {sₛ sₜ : Fin n �
                        (T-sₜ.fib-shape-subst R (T-sₜ.deco-ext Q (λ i → lift tt))
                           (fuse-shape Q cmb fsk corr R (Γ .idx .isEquivalence .refl) (T-sₛ.shape≈-refl ∣ R ∣ (η₀ ∣ Q ∣) x))
                         ∘ FReindex-γ.freindex-shape-fam R (FReindex-γ.abind Q (cmb γ) act) {x})
-                       (InMapDef-P.R.reindex-fam R InMapDef-P.mor₀
+                       (InMapDef-P.reindex-fam R InMapDef-P.mor₀
                         ∘ (InMapDef-P.embed-fam R (strong-fmor R fsk' .idxf .func (γ , FoldDef-alg.fold-shape-idx R γ x))
                            ∘ (strong-fmor R fsk' .famf .transf (γ , FoldDef-alg.fold-shape-idx R γ x)
                               ∘ pair p₁ (FoldDef-alg.fold-shape-fam R γ x))))
@@ -1430,15 +1431,15 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
 fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-fam (μ R'') {x} =
   ≈-trans (∘-cong (T-sₜ.fib-trans* R'' (T-sₜ.deco-ext Q (λ i → lift tt))
                      {x = Reindex-sₛ.ireindex-shape ∣ μ R'' ∣ (Reindex-sₛ.ibind ∣ Q ∣ (cmb γ)) x}
-                     {y = InMapDef-P.R.reindex InMapDef-P.mor₀ (Reindex-ext.ireindex (cmb' γ) wm₁)}
-                     {z = InMapDef-P.R.reindex InMapDef-P.mor₀ (strong-fmor (μ R'') fsk' .idxf .func (γ , wm₁))}
-                     (InMapDef-P.R.reindex-resp InMapDef-P.mor₀
+                     {y = InMapDef-P.reindex InMapDef-P.mor₀ (Reindex-ext.ireindex (cmb' γ) wm₁)}
+                     {z = InMapDef-P.reindex InMapDef-P.mor₀ (strong-fmor (μ R'') fsk' .idxf .func (γ , wm₁))}
+                     (InMapDef-P.reindex-resp InMapDef-P.mor₀
                         {t = Reindex-ext.ireindex (cmb' γ) wm₁}
                         {t' = strong-fmor (μ R'') fsk' .idxf .func (γ , wm₁)}
                         rec-idx)
                      (tele-shape (μ R'') tbase x)) ≈-refl)
     (≈-trans (tail-cong (tele-shape-fam (μ R'') tbase x))
-     (≈-trans (head-cong (≈-sym (InMapDef-P.R.reindex-fam-W-natural {Q = R''} InMapDef-P.mor₀
+     (≈-trans (head-cong (≈-sym (InMapDef-P.reindex-fam-W-natural {Q = R''} InMapDef-P.mor₀
                                    {t = Reindex-ext.ireindex (cmb' γ) wm₁}
                                    {t' = strong-fmor (μ R'') fsk' .idxf .func (γ , wm₁)}
                                    rec-idx)))
@@ -1484,22 +1485,22 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
       data TeleRel : ∀ {j} {ηA ηB ηC ηD}
                      {dA : ∀ v → T-sₛ.DecoAssign (ηA v)} {dB : ∀ v → T-sₜ.DecoAssign (ηB v)}
                      {dC : ∀ v → InMapDef-P.T-δ'.DecoAssign (ηC v)} {dD : ∀ v → FoldDef-alg.T-δA-ext.DecoAssign (ηD v)}
-                     (md : Reindex-sₛ.IMorD {j} ηA ηB) (mdA : InMapDef-P.R.MorD {j} ηC ηB dC dB) (md' : Reindex-ext.IMorD {j} ηD ηC) (fm : FoldDef-alg.FMor {j} ηA ηD dA dD) →
+                     (md : Reindex-sₛ.IMorD {j} ηA ηB) (mdA : InMapDef-P.MorD {j} ηC ηB dC dB) (md' : Reindex-ext.IMorD {j} ηD ηC) (fm : FoldDef-alg.FMor {j} ηA ηD dA dD) →
                      FReindex-γ.FAct md dA dB → FR'.FAct md' dD dC → Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
         tbase : TeleRel (Reindex-sₛ.ibind ∣ Q ∣ (cmb γ)) InMapDef-P.mor₀ (cmb' γ) FoldDef-alg.fbase (FReindex-γ.abind Q (cmb γ) act) act'
-        tbind : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD} {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.R.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
+        tbind : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD} {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
                 {am : FReindex-γ.FAct md dA dB} {am' : FR'.FAct md' dD dC} (S' : Poly (suc j)) →
                 TeleRel md mdA md' fm am am' →
-                TeleRel (Reindex-sₛ.ibind ∣ S' ∣ md) (InMapDef-P.R.bind S' mdA) (Reindex-ext.ibind ∣ S' ∣ md') (FoldDef-alg.fbind S' fm)
+                TeleRel (Reindex-sₛ.ibind ∣ S' ∣ md) (InMapDef-P.bind S' mdA) (Reindex-ext.ibind ∣ S' ∣ md') (FoldDef-alg.fbind S' fm)
                         (FReindex-γ.abind S' md am) (FR'.abind S' md' am')
 
       tele-shape : ∀ {j} (S : Poly j) {ηA ηB ηC ηD} {dA dB dC dD}
-                   {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.R.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
+                   {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
                    {am : FReindex-γ.FAct md dA dB} {am' : FR'.FAct md' dD dC}
                    (rel : TeleRel md mdA md' fm am am') (z : FoldDef-alg.T-δ.⟦ ∣ S ∣ ⟧shape ηA) →
                    T-sₜ.shape≈ ∣ S ∣ ηB
                      (Reindex-sₛ.ireindex-shape ∣ S ∣ md z)
-                     (InMapDef-P.R.reindex-shape ∣ S ∣ mdA (Reindex-ext.ireindex-shape ∣ S ∣ md' (FoldDef-alg.fold-reindex-shape γ S fm z)))
+                     (InMapDef-P.reindex-shape ∣ S ∣ mdA (Reindex-ext.ireindex-shape ∣ S ∣ md' (FoldDef-alg.fold-reindex-shape γ S fm z)))
       tele-shape (const A') rel z = A' .idx .isEquivalence .refl
       tele-shape (var v) rel z = tele-apply rel v
       tele-shape (S₁ + S₂) rel (inj₁ z) = tele-shape S₁ rel z
@@ -1508,10 +1509,10 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
       tele-shape (μ S') rel (T-sₛ.sup z') = tele-shape S' (tbind S' rel) z'
 
       tele-apply : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
-                   {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.R.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
+                   {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
                    {am : FReindex-γ.FAct md dA dB} {am' : FR'.FAct md' dD dC}
                    (rel : TeleRel md mdA md' fm am am') (v : Fin j) {z} →
-                   T-sₜ.elEq (ηB v) (Reindex-sₛ.iapply md v z) (InMapDef-P.R.apply mdA v (Reindex-ext.iapply md' v (FoldDef-alg.fold-apply γ fm v z)))
+                   T-sₜ.elEq (ηB v) (Reindex-sₛ.iapply md v z) (InMapDef-P.apply mdA v (Reindex-ext.iapply md' v (FoldDef-alg.fold-apply γ fm v z)))
       tele-apply (tbind S' r) Fin.zero    {z} = tele-shape (μ S') r z
       tele-apply (tbind S' r) (Fin.suc v)     = tele-apply r v
       tele-apply tbase Fin.zero    {z} =
@@ -1520,11 +1521,11 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
       tele-apply tbase (Fin.suc i) {z} = T-sₜ.elEq-refl (inj₁ i) (Reindex-sₛ.iapply (cmb γ) i z)
 
       tele-shape-fam : ∀ {j} (S : Poly j) {ηA ηB ηC ηD} {dA dB dC dD}
-                       {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.R.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
+                       {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
                        {am : FReindex-γ.FAct md dA dB} {am' : FR'.FAct md' dD dC}
                        (rel : TeleRel md mdA md' fm am am') (z : FoldDef-alg.T-δ.⟦ ∣ S ∣ ⟧shape ηA) →
                        (T-sₜ.fib-shape-subst S dB (tele-shape S rel z) ∘ FReindex-γ.freindex-shape-fam S am {z})
-                       ≈ (InMapDef-P.R.reindex-fam S mdA
+                       ≈ (InMapDef-P.reindex-fam S mdA
                           ∘ (FR'.freindex-shape-fam S am' {FoldDef-alg.fold-reindex-shape γ S fm z}
                              ∘ pair p₁ (FoldDef-alg.fold-reindex-shape-fam γ S fm z)))
       tele-shape-fam (const A') rel z =
@@ -1548,11 +1549,11 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
       tele-shape-fam (μ S') rel (T-sₛ.sup z') = tele-shape-fam S' (tbind S' rel) z'
 
       tele-apply-fam : ∀ {j} {ηA ηB ηC ηD} {dA dB dC dD}
-                       {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.R.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
+                       {md : Reindex-sₛ.IMorD ηA ηB} {mdA : InMapDef-P.MorD ηC ηB dC dB} {md' : Reindex-ext.IMorD ηD ηC} {fm : FoldDef-alg.FMor ηA ηD dA dD}
                        {am : FReindex-γ.FAct md dA dB} {am' : FR'.FAct md' dD dC}
                        (rel : TeleRel md mdA md' fm am am') (v : Fin j) {z} →
                        (T-sₜ.fib-el-subst (ηB v) (dB v) (tele-apply rel v {z}) ∘ FReindex-γ.aapply am v z)
-                       ≈ (InMapDef-P.R.apply-fam mdA v (Reindex-ext.iapply md' v (FoldDef-alg.fold-apply γ fm v z))
+                       ≈ (InMapDef-P.apply-fam mdA v (Reindex-ext.iapply md' v (FoldDef-alg.fold-apply γ fm v z))
                           ∘ (FR'.aapply am' v (FoldDef-alg.fold-apply γ fm v z)
                              ∘ pair p₁ (FoldDef-alg.fold-apply-fam γ fm v z)))
       tele-apply-fam (tbind S' r) Fin.zero    {z} = tele-shape-fam (μ S') r z
@@ -1569,10 +1570,11 @@ fuse-shape-fam {Γ = Γ} γ {sₛ = sₛ} {sₜ = sₜ} Q cmb act fsk corr corr-
 
 module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
   private module InMapDef-P = InMapDef P δ
-  open InMapDef-P using (module T-δ'; module R; mor₀; m₀; embed-idx; unembed-idx)
+  open InMapDef-P using (module T-δ'; module Reindex-δ'; mor₀; m₀; embed-idx; unembed-idx)
   private
     module T-δ = Tree δ
-    module R' = Reindex δ (extend δ (μ-fam P δ))
+    module Reindex-μ = Reindex δ (extend δ (μ-fam P δ))
+    open Reindex-μ using (MorD; base; bind; apply; apply-fam; reindex; reindex-shape; reindex-shape-resp; reindex-fam; reindex-fam-natural; reindex-fam-W)
 
   m₀⁻ : ∀ v → T-δ.El (η₀ ∣ P ∣ v) → T-δ'.El (inj₁ v)
   m₀⁻ Fin.zero    a = a
@@ -1594,25 +1596,25 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
   m₀⁻-fam-natural Fin.zero    p = ≈-trans id-left (≈-sym id-right)
   m₀⁻-fam-natural (Fin.suc i) p = ≈-trans id-left (≈-sym id-right)
 
-  mor₀⁻ : R'.MorD (η₀ ∣ P ∣) (λ v → inj₁ v) (T-δ.deco-ext P (λ i → lift tt)) (λ v → lift tt)
-  mor₀⁻ = R'.base m₀⁻ m₀⁻-resp m₀⁻-fam m₀⁻-fam-natural
+  mor₀⁻ : MorD (η₀ ∣ P ∣) (λ v → inj₁ v) (T-δ.deco-ext P (λ i → lift tt)) (λ v → lift tt)
+  mor₀⁻ = base m₀⁻ m₀⁻-resp m₀⁻-fam m₀⁻-fam-natural
 
   data DRel : ∀ {j} {ρ : Fin j → Fin n ⊎ Sort n} {ρ' : Fin j → Fin (suc n) ⊎ Sort (suc n)}
               {d : ∀ v → T-δ.DecoAssign (ρ v)} {d' : ∀ v → T-δ'.DecoAssign (ρ' v)} →
-              R'.MorD ρ ρ' d d' → R.MorD ρ' ρ d' d →
+              MorD ρ ρ' d d' → Reindex-δ'.MorD ρ' ρ d' d →
               Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
     dbase : DRel mor₀⁻ mor₀
-    dbind : ∀ {j} {ρ ρ' d d'} {md' : R'.MorD {j} ρ ρ' d d'} {md} (Q' : Poly (suc j)) →
-            DRel md' md → DRel (R'.bind Q' md') (R.bind Q' md)
+    dbind : ∀ {j} {ρ ρ' d d'} {md' : MorD {j} ρ ρ' d d'} {md} (Q' : Poly (suc j)) →
+            DRel md' md → DRel (bind Q' md') (Reindex-δ'.bind Q' md)
 
   mutual
-    drt-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md} → DRel md' md →
-            (t : T-δ.W ∣ Q̂ ∣ ρ) → T-δ.W-≈ (R.reindex md (R'.reindex md' t)) t
+    drt-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : MorD ρ ρ' d d'} {md} → DRel md' md →
+            (t : T-δ.W ∣ Q̂ ∣ ρ) → T-δ.W-≈ (Reindex-δ'.reindex md (reindex md' t)) t
     drt-W {Q̂ = Q̂} rel (T-δ.sup x) = drt-shape Q̂ (dbind Q̂ rel) x
 
-    drt-shape : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md} → DRel md' md →
+    drt-shape : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : MorD ρ ρ' d d'} {md} → DRel md' md →
                 (a : T-δ.⟦ ∣ S ∣ ⟧shape ρ) →
-                T-δ.shape≈ ∣ S ∣ ρ (R.reindex-shape ∣ S ∣ md (R'.reindex-shape ∣ S ∣ md' a)) a
+                T-δ.shape≈ ∣ S ∣ ρ (Reindex-δ'.reindex-shape ∣ S ∣ md (reindex-shape ∣ S ∣ md' a)) a
     drt-shape (const A') rel a = A' .idx .isEquivalence .refl
     drt-shape (var v)    rel a = drt-el rel v a
     drt-shape (P' + Q') rel (inj₁ a) = drt-shape P' rel a
@@ -1620,22 +1622,22 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     drt-shape (P' × Q') rel (a , b) = drt-shape P' rel a , drt-shape Q' rel b
     drt-shape (μ Q'')   rel t = drt-W {Q̂ = Q''} rel t
 
-    drt-el : ∀ {j} {ρ ρ' d d'} {md' : R'.MorD {j} ρ ρ' d d'} {md} → DRel md' md →
+    drt-el : ∀ {j} {ρ ρ' d d'} {md' : MorD {j} ρ ρ' d d'} {md} → DRel md' md →
              (v : Fin j) (a : T-δ.El (ρ v)) →
-             T-δ.elEq (ρ v) (R.apply md v (R'.apply md' v a)) a
+             T-δ.elEq (ρ v) (Reindex-δ'.apply md v (apply md' v a)) a
     drt-el dbase          Fin.zero    t = T-δ.elEq-refl (η₀ ∣ P ∣ Fin.zero) t
     drt-el dbase          (Fin.suc i) a = T-δ.elEq-refl (η₀ ∣ P ∣ (Fin.suc i)) a
     drt-el (dbind Q' rel) Fin.zero    a = drt-W {Q̂ = Q'} rel a
     drt-el (dbind Q' rel) (Fin.suc v) a = drt-el rel v a
 
   mutual
-    drt'-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md} → DRel md' md →
-             (u : T-δ'.W ∣ Q̂ ∣ ρ') → T-δ'.W-≈ (R'.reindex md' (R.reindex md u)) u
+    drt'-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : MorD ρ ρ' d d'} {md} → DRel md' md →
+             (u : T-δ'.W ∣ Q̂ ∣ ρ') → T-δ'.W-≈ (reindex md' (Reindex-δ'.reindex md u)) u
     drt'-W {Q̂ = Q̂} rel (T-δ'.sup x) = drt'-shape Q̂ (dbind Q̂ rel) x
 
-    drt'-shape : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md} → DRel md' md →
+    drt'-shape : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : MorD ρ ρ' d d'} {md} → DRel md' md →
                  (a : T-δ'.⟦ ∣ S ∣ ⟧shape ρ') →
-                 T-δ'.shape≈ ∣ S ∣ ρ' (R'.reindex-shape ∣ S ∣ md' (R.reindex-shape ∣ S ∣ md a)) a
+                 T-δ'.shape≈ ∣ S ∣ ρ' (reindex-shape ∣ S ∣ md' (Reindex-δ'.reindex-shape ∣ S ∣ md a)) a
     drt'-shape (const A') rel a = A' .idx .isEquivalence .refl
     drt'-shape (var v)    rel a = drt'-el rel v a
     drt'-shape (P' + Q') rel (inj₁ a) = drt'-shape P' rel a
@@ -1643,26 +1645,26 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     drt'-shape (P' × Q') rel (a , b) = drt'-shape P' rel a , drt'-shape Q' rel b
     drt'-shape (μ Q'')   rel t = drt'-W {Q̂ = Q''} rel t
 
-    drt'-el : ∀ {j} {ρ ρ' d d'} {md' : R'.MorD {j} ρ ρ' d d'} {md} → DRel md' md →
+    drt'-el : ∀ {j} {ρ ρ' d d'} {md' : MorD {j} ρ ρ' d d'} {md} → DRel md' md →
               (v : Fin j) (a : T-δ'.El (ρ' v)) →
-              T-δ'.elEq (ρ' v) (R'.apply md' v (R.apply md v a)) a
+              T-δ'.elEq (ρ' v) (apply md' v (Reindex-δ'.apply md v a)) a
     drt'-el dbase          Fin.zero    t = T-δ'.elEq-refl (inj₁ Fin.zero) t
     drt'-el dbase          (Fin.suc i) a = T-δ'.elEq-refl (inj₁ (Fin.suc i)) a
     drt'-el (dbind Q' rel) Fin.zero    a = drt'-W {Q̂ = Q'} rel a
     drt'-el (dbind Q' rel) (Fin.suc v) a = drt'-el rel v a
 
   mutual
-    drt-fam-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
+    drt-fam-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : MorD ρ ρ' d d'} {md}
                 (rel : DRel md' md) (t : T-δ.W ∣ Q̂ ∣ ρ) →
-                (T-δ.fib-subst Q̂ d {x = R.reindex md (R'.reindex md' t)} {y = t} (drt-W rel t)
-                  ∘ (R.reindex-fam-W md {t = R'.reindex md' t} ∘ R'.reindex-fam-W md' {t = t}))
+                (T-δ.fib-subst Q̂ d {x = Reindex-δ'.reindex md (reindex md' t)} {y = t} (drt-W rel t)
+                  ∘ (Reindex-δ'.reindex-fam-W md {t = reindex md' t} ∘ reindex-fam-W md' {t = t}))
                   ≈ id (T-δ.fib Q̂ d t)
     drt-fam-W {Q̂ = Q̂} rel (T-δ.sup x) = drt-shape-fam Q̂ (dbind Q̂ rel) x
 
-    drt-shape-fam : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
+    drt-shape-fam : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : MorD ρ ρ' d d'} {md}
                     (rel : DRel md' md) (a : T-δ.⟦ ∣ S ∣ ⟧shape ρ) →
                     (T-δ.fib-shape-subst S d (drt-shape S rel a)
-                      ∘ (R.reindex-fam S md {a = R'.reindex-shape ∣ S ∣ md' a} ∘ R'.reindex-fam S md' {a = a}))
+                      ∘ (Reindex-δ'.reindex-fam S md {a = reindex-shape ∣ S ∣ md' a} ∘ reindex-fam S md' {a = a}))
                       ≈ id (T-δ.fib-shape S d a)
     drt-shape-fam (const A') rel a = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left id-left)
     drt-shape-fam (var v) rel a = drt-el-fam rel v a
@@ -1685,10 +1687,10 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
                  Lmap-id))
     drt-shape-fam (μ Q'') rel t = drt-fam-W {Q̂ = Q''} rel t
 
-    drt-el-fam : ∀ {j} {ρ ρ' d d'} {md' : R'.MorD {j} ρ ρ' d d'} {md}
+    drt-el-fam : ∀ {j} {ρ ρ' d d'} {md' : MorD {j} ρ ρ' d d'} {md}
                  (rel : DRel md' md) (v : Fin j) (a : T-δ.El (ρ v)) →
                  (T-δ.fib-el-subst (ρ v) (d v) (drt-el rel v a)
-                   ∘ (R.apply-fam md v (R'.apply md' v a) ∘ R'.apply-fam md' v a))
+                   ∘ (Reindex-δ'.apply-fam md v (apply md' v a) ∘ apply-fam md' v a))
                    ≈ id (T-δ.fib-el (ρ v) (d v) a)
     drt-el-fam dbase Fin.zero t =
       ≈-trans (∘-cong (T-δ.fib-el-refl* (η₀ ∣ P ∣ Fin.zero) (T-δ.deco-ext P (λ i → lift tt) Fin.zero) t)
@@ -1703,17 +1705,17 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     drt-el-fam (dbind Q' rel) (Fin.suc v) a = drt-el-fam rel v a
 
   mutual
-    drt'-fam-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
+    drt'-fam-W : ∀ {j} {Q̂ : Poly (suc j)} {ρ ρ' d d'} {md' : MorD ρ ρ' d d'} {md}
                  (rel : DRel md' md) (u : T-δ'.W ∣ Q̂ ∣ ρ') →
-                 (T-δ'.fib-subst Q̂ d' {x = R'.reindex md' (R.reindex md u)} {y = u} (drt'-W rel u)
-                   ∘ (R'.reindex-fam-W md' {t = R.reindex md u} ∘ R.reindex-fam-W md {t = u}))
+                 (T-δ'.fib-subst Q̂ d' {x = reindex md' (Reindex-δ'.reindex md u)} {y = u} (drt'-W rel u)
+                   ∘ (reindex-fam-W md' {t = Reindex-δ'.reindex md u} ∘ Reindex-δ'.reindex-fam-W md {t = u}))
                    ≈ id (T-δ'.fib Q̂ d' u)
     drt'-fam-W {Q̂ = Q̂} rel (T-δ'.sup x) = drt'-shape-fam Q̂ (dbind Q̂ rel) x
 
-    drt'-shape-fam : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : R'.MorD ρ ρ' d d'} {md}
+    drt'-shape-fam : ∀ {j} (S : Poly j) {ρ ρ' d d'} {md' : MorD ρ ρ' d d'} {md}
                      (rel : DRel md' md) (a : T-δ'.⟦ ∣ S ∣ ⟧shape ρ') →
                      (T-δ'.fib-shape-subst S d' (drt'-shape S rel a)
-                       ∘ (R'.reindex-fam S md' {a = R.reindex-shape ∣ S ∣ md a} ∘ R.reindex-fam S md {a = a}))
+                       ∘ (reindex-fam S md' {a = Reindex-δ'.reindex-shape ∣ S ∣ md a} ∘ Reindex-δ'.reindex-fam S md {a = a}))
                        ≈ id (T-δ'.fib-shape S d' a)
     drt'-shape-fam (const A') rel a = ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left id-left)
     drt'-shape-fam (var v) rel a = drt'-el-fam rel v a
@@ -1736,10 +1738,10 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
                  Lmap-id))
     drt'-shape-fam (μ Q'') rel t = drt'-fam-W {Q̂ = Q''} rel t
 
-    drt'-el-fam : ∀ {j} {ρ ρ' d d'} {md' : R'.MorD {j} ρ ρ' d d'} {md}
+    drt'-el-fam : ∀ {j} {ρ ρ' d d'} {md' : MorD {j} ρ ρ' d d'} {md}
                   (rel : DRel md' md) (v : Fin j) (a : T-δ'.El (ρ' v)) →
                   (T-δ'.fib-el-subst (ρ' v) (d' v) (drt'-el rel v a)
-                    ∘ (R'.apply-fam md' v (R.apply md v a) ∘ R.apply-fam md v a))
+                    ∘ (apply-fam md' v (Reindex-δ'.apply md v a) ∘ Reindex-δ'.apply-fam md v a))
                     ≈ id (T-δ'.fib-el (ρ' v) (d' v) a)
     drt'-el-fam dbase Fin.zero t =
       ≈-trans (∘-cong (T-δ'.fib-el-refl* (inj₁ Fin.zero) (lift tt) t) ≈-refl) (≈-trans id-left id-left)
@@ -1749,40 +1751,40 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
     drt'-el-fam (dbind Q' rel) (Fin.suc v) a = drt'-el-fam rel v a
 
   u-idx : T-δ.W ∣ P ∣ (λ i → inj₁ i) → fobj μ-fam P InMapDef-P.δ' .idx .Carrier
-  u-idx (T-δ.sup x) = unembed-idx P (R'.reindex-shape ∣ P ∣ mor₀⁻ x)
+  u-idx (T-δ.sup x) = unembed-idx P (reindex-shape ∣ P ∣ mor₀⁻ x)
 
   u-resp : {t t' : T-δ.W ∣ P ∣ (λ i → inj₁ i)} → T-δ.W-≈ t t' →
            _≈s_ (fobj μ-fam P InMapDef-P.δ' .idx) (u-idx t) (u-idx t')
-  u-resp {T-δ.sup x} {T-δ.sup y} p = InMapDef-P.unembed-idx-resp P (R'.reindex-shape-resp ∣ P ∣ mor₀⁻ p)
+  u-resp {T-δ.sup x} {T-δ.sup y} p = InMapDef-P.unembed-idx-resp P (reindex-shape-resp ∣ P ∣ mor₀⁻ p)
 
   u-fam : (t : T-δ.W ∣ P ∣ (λ i → inj₁ i)) → μ-fam P δ .fam .fm t ⇒ fobj μ-fam P InMapDef-P.δ' .fam .fm (u-idx t)
-  u-fam (T-δ.sup x) = InMapDef-P.unembed-fam P (R'.reindex-shape ∣ P ∣ mor₀⁻ x) ∘ R'.reindex-fam P mor₀⁻ {a = x}
+  u-fam (T-δ.sup x) = InMapDef-P.unembed-fam P (reindex-shape ∣ P ∣ mor₀⁻ x) ∘ reindex-fam P mor₀⁻ {a = x}
 
   outMor : Mor (μ-fam P δ) (fobj μ-fam P InMapDef-P.δ')
   outMor .idxf .func = u-idx
   outMor .idxf .func-resp-≈ {t} {t'} = u-resp {t} {t'}
   outMor .famf .transf = u-fam
   outMor .famf .natural {T-δ.sup x} {T-δ.sup y} e =
-    ≈-trans (tail-cong (R'.reindex-fam-natural P mor₀⁻ e))
-    (head-cong-assoc (InMapDef-P.unembed-fam-natural P (R'.reindex-shape-resp ∣ P ∣ mor₀⁻ e)))
+    ≈-trans (tail-cong (reindex-fam-natural P mor₀⁻ e))
+    (head-cong-assoc (InMapDef-P.unembed-fam-natural P (reindex-shape-resp ∣ P ∣ mor₀⁻ e)))
 
   inMor-outMor : Fam-cat._∘_ InMapDef-P.inMor outMor ≃ Fam-cat.id (μ-fam P δ)
   inMor-outMor .idxf-eq .func-eq {T-δ.sup x} {T-δ.sup y} e =
     T-δ.shape≈-trans ∣ P ∣ (η₀ ∣ P ∣)
       (T-δ.shape≈-trans ∣ P ∣ (η₀ ∣ P ∣)
-        (R.reindex-shape-resp ∣ P ∣ mor₀ (InMapDef-P.embed-unembed P (R'.reindex-shape ∣ P ∣ mor₀⁻ x)))
+        (Reindex-δ'.reindex-shape-resp ∣ P ∣ mor₀ (InMapDef-P.embed-unembed P (reindex-shape ∣ P ∣ mor₀⁻ x)))
         (drt-shape P dbase x))
       e
   inMor-outMor .famf-eq .transf-eq {T-δ.sup x} =
     ≈-trans (∘-cong (T-δ.fib-shape-trans* P (T-δ.deco-ext P {ρ̄ = λ v → inj₁ v} (λ _ → lift tt))
                        (drt-shape P dbase x)
-                       (R.reindex-shape-resp ∣ P ∣ mor₀ (InMapDef-P.embed-unembed P z)))
+                       (Reindex-δ'.reindex-shape-resp ∣ P ∣ mor₀ (InMapDef-P.embed-unembed P z)))
                     id-left)
     (≈-trans (tail-cong step₂) (drt-shape-fam P dbase x))
     where
-      z = R'.reindex-shape ∣ P ∣ mor₀⁻ x
+      z = reindex-shape ∣ P ∣ mor₀⁻ x
 
-      step₃ = head-cong-assoc (≈-sym (R.reindex-fam-natural P mor₀ (InMapDef-P.embed-unembed P z)))
+      step₃ = head-cong-assoc (≈-sym (Reindex-δ'.reindex-fam-natural P mor₀ (InMapDef-P.embed-unembed P z)))
       step₄ = head-cancel (≈-trans (assoc _ _ _) (InMapDef-P.embed-unembed-fam P z))
       step₂ = ≈-trans (head-cong step₃) (tail-cong step₄)
 
@@ -1811,11 +1813,11 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
       μc = MuSection.μ-section δ δc P Pc
       module MuSection-δ = MuSection δ δc
       module MuSection-ext = MuSection (extend δ (μ-fam P δ)) (extend-section δc μc)
-      module RS' = ReindexSection δc (extend-section δc μc)
+      module ReindexSection-μ = ReindexSection δc (extend-section δc μc)
       module InMapSection-δc = InMapDef-P.InMapSection δc Pc
 
-    mor₀⁻-sec : RS'.MorDSec mor₀⁻ (MuSection-δ.deco-ext-section P Pc (λ i → lift tt)) (λ v → lift tt)
-    mor₀⁻-sec = RS'.base-s h
+    mor₀⁻-sec : ReindexSection-μ.MorDSec mor₀⁻ (MuSection-δ.deco-ext-section P Pc (λ i → lift tt)) (λ v → lift tt)
+    mor₀⁻-sec = ReindexSection-μ.base-s h
       where
       h : ∀ v a → (m₀⁻-fam v a ∘ MuSection-δ.fib-el-unit (η₀ ∣ P ∣ v) (T-δ.deco-ext P (λ i → lift tt) v)
                      (MuSection-δ.deco-ext-section P Pc (λ i → lift tt) v) a)
@@ -1825,8 +1827,8 @@ module LambekDef {n} (P : Poly (suc n)) (δ : Fin n → Obj) where
 
     preserves-outMor : preserves-section outMor μc (poly-section P Pc (extend-section δc μc))
     preserves-outMor .at (T-δ.sup x) =
-      ≈-trans (tail-cong (RS'.reindex-fam-unit P Pc mor₀⁻-sec x))
-               (InMapSection-δc.unembed-unit P Pc (R'.reindex-shape ∣ P ∣ mor₀⁻ x))
+      ≈-trans (tail-cong (ReindexSection-μ.reindex-fam-unit P Pc mor₀⁻-sec x))
+               (InMapSection-δc.unembed-unit P Pc (reindex-shape ∣ P ∣ mor₀⁻ x))
 
 preserves-outMor : ∀ {n} (P : Poly (suc n)) (δ : Fin n → Obj)
                    (δc : ∀ i → Section (δ i)) (Pc : PolySection P) →
@@ -2321,22 +2323,22 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     data CRel : ∀ {j} {ρX : Fin j → Fin (suc n) ⊎ Sort (suc n)} {ρ : Fin j → Fin n ⊎ Sort n}
                 {ρ' : Fin j → Fin (suc n) ⊎ Sort (suc n)}
                 {dX : ∀ v → T-δ'.DecoAssign (ρX v)} {d : ∀ v → T-δ.DecoAssign (ρ v)} {d' : ∀ v → T-δA-ext.DecoAssign (ρ' v)} →
-                FMor ρ ρ' d d' → InMapDef-P.R.MorD ρX ρ dX d → (im : RX.IMorD ρX ρ') → FRX.FAct im dX d' →
+                FMor ρ ρ' d d' → InMapDef-P.MorD ρX ρ dX d → (im : RX.IMorD ρX ρ') → FRX.FAct im dX d' →
                 Set (o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es) where
       cbase : CRel fbase InMapDef-P.mor₀ (cmb γ) act
-      cbind : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : InMapDef-P.R.MorD ρX ρ dX d} {im} {am : FRX.FAct im dX d'}
+      cbind : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : InMapDef-P.MorD ρX ρ dX d} {im} {am : FRX.FAct im dX d'}
               (Q : Poly (suc j)) → CRel fm md im am →
-              CRel (fbind Q fm) (InMapDef-P.R.bind Q md) (RX.ibind ∣ Q ∣ im) (FRX.abind Q im am)
+              CRel (fbind Q fm) (InMapDef-P.bind Q md) (RX.ibind ∣ Q ∣ im) (FRX.abind Q im am)
 
     mutual
-      comp-W : ∀ {j} {Q̂ : Poly (suc j)} {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : InMapDef-P.R.MorD ρX ρ dX d} {im}
+      comp-W : ∀ {j} {Q̂ : Poly (suc j)} {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : InMapDef-P.MorD ρX ρ dX d} {im}
                {am : FRX.FAct im dX d'} → CRel fm md im am → (t : T-δ'.W ∣ Q̂ ∣ ρX) →
-               T-δA-ext.W-≈ (apply-reindex {Q = Q̂} γ fm (InMapDef-P.R.reindex md t)) (RX.ireindex im t)
+               T-δA-ext.W-≈ (apply-reindex {Q = Q̂} γ fm (InMapDef-P.reindex md t)) (RX.ireindex im t)
       comp-W {Q̂ = Q̂} rel (T-δ'.sup x) = comp-shape Q̂ (cbind Q̂ rel) x
 
-      comp-shape : ∀ {j} (S : Poly j) {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : InMapDef-P.R.MorD ρX ρ dX d} {im}
+      comp-shape : ∀ {j} (S : Poly j) {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : InMapDef-P.MorD ρX ρ dX d} {im}
                    {am : FRX.FAct im dX d'} → CRel fm md im am → (a : T-δ'.⟦ ∣ S ∣ ⟧shape ρX) →
-                   T-δA-ext.shape≈ ∣ S ∣ ρ' (apply-reindex-shape γ S fm (InMapDef-P.R.reindex-shape ∣ S ∣ md a)) (RX.ireindex-shape ∣ S ∣ im a)
+                   T-δA-ext.shape≈ ∣ S ∣ ρ' (apply-reindex-shape γ S fm (InMapDef-P.reindex-shape ∣ S ∣ md a)) (RX.ireindex-shape ∣ S ∣ im a)
       comp-shape (const A') rel a = A' .idx .isEquivalence .refl
       comp-shape (var v)    rel a = comp-el rel v a
       comp-shape (P' + Q') rel (inj₁ a) = comp-shape P' rel a
@@ -2344,29 +2346,29 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
       comp-shape (P' × Q') rel (a , b) = comp-shape P' rel a , comp-shape Q' rel b
       comp-shape (μ Q'')   rel t = comp-W {Q̂ = Q''} rel t
 
-      comp-el : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : InMapDef-P.R.MorD ρX ρ dX d} {im}
+      comp-el : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : InMapDef-P.MorD ρX ρ dX d} {im}
                 {am : FRX.FAct im dX d'} → CRel fm md im am → (v : Fin j) (a : T-δ'.El (ρX v)) →
-                T-δA-ext.elEq (ρ' v) (apply-apply γ fm v (InMapDef-P.R.apply md v a)) (RX.iapply im v a)
+                T-δA-ext.elEq (ρ' v) (apply-apply γ fm v (InMapDef-P.apply md v a)) (RX.iapply im v a)
       comp-el cbase          Fin.zero    t = A .idx .isEquivalence .refl
       comp-el cbase          (Fin.suc i) a = T-δA-ext.elEq-refl (inj₁ (Fin.suc i)) a
       comp-el (cbind Q rel)  Fin.zero    a = comp-W {Q̂ = Q} rel a
       comp-el (cbind Q rel)  (Fin.suc v) a = comp-el rel v a
 
     mutual
-      comp-W-fam : ∀ {j} {Q̂ : Poly (suc j)} {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : InMapDef-P.R.MorD ρX ρ dX d} {im}
+      comp-W-fam : ∀ {j} {Q̂ : Poly (suc j)} {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : InMapDef-P.MorD ρX ρ dX d} {im}
                    {am : FRX.FAct im dX d'} (rel : CRel fm md im am) (t : T-δ'.W ∣ Q̂ ∣ ρX) →
-                   (T-δA-ext.fib-subst Q̂ d' {x = apply-reindex {Q = Q̂} γ fm (InMapDef-P.R.reindex md t)} {y = RX.ireindex im t}
+                   (T-δA-ext.fib-subst Q̂ d' {x = apply-reindex {Q = Q̂} γ fm (InMapDef-P.reindex md t)} {y = RX.ireindex im t}
                       (comp-W rel t)
-                    ∘ (apply-reindex-fam {Q = Q̂} γ fm (InMapDef-P.R.reindex md t)
-                       ∘ prod-m (id _) (InMapDef-P.R.reindex-fam-W {Q = Q̂} md {t})))
+                    ∘ (apply-reindex-fam {Q = Q̂} γ fm (InMapDef-P.reindex md t)
+                       ∘ prod-m (id _) (InMapDef-P.reindex-fam-W {Q = Q̂} md {t})))
                    ≈ FRX.freindex-fam {Q = Q̂} am {t}
       comp-W-fam {Q̂ = Q̂} rel (T-δ'.sup x) = comp-shape-fam Q̂ (cbind Q̂ rel) x
 
-      comp-shape-fam : ∀ {j} (S : Poly j) {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : InMapDef-P.R.MorD ρX ρ dX d} {im}
+      comp-shape-fam : ∀ {j} (S : Poly j) {ρX ρ ρ' dX d d'} {fm : FMor ρ ρ' d d'} {md : InMapDef-P.MorD ρX ρ dX d} {im}
                        {am : FRX.FAct im dX d'} (rel : CRel fm md im am) (a : T-δ'.⟦ ∣ S ∣ ⟧shape ρX) →
                        (T-δA-ext.fib-shape-subst S d' (comp-shape S rel a)
-                        ∘ (apply-reindex-shape-fam γ S fm (InMapDef-P.R.reindex-shape ∣ S ∣ md a)
-                           ∘ prod-m (id _) (InMapDef-P.R.reindex-fam S md {a})))
+                        ∘ (apply-reindex-shape-fam γ S fm (InMapDef-P.reindex-shape ∣ S ∣ md a)
+                           ∘ prod-m (id _) (InMapDef-P.reindex-fam S md {a})))
                        ≈ FRX.freindex-shape-fam S am {a}
       comp-shape-fam (const A') rel a =
         ≈-trans (∘-cong (A' .fam .refl*) ≈-refl) (≈-trans id-left (≈-trans (pair-p₂ _ _) id-left))
@@ -2386,10 +2388,10 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                             (strong-prod-m-cong (comp-shape-fam P' rel a) (comp-shape-fam Q' rel b))))))
       comp-shape-fam (μ Q'')   rel t = comp-W-fam {Q̂ = Q''} rel t
 
-      comp-el-fam : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : InMapDef-P.R.MorD ρX ρ dX d} {im}
+      comp-el-fam : ∀ {j} {ρX ρ ρ' dX d d'} {fm : FMor {j} ρ ρ' d d'} {md : InMapDef-P.MorD ρX ρ dX d} {im}
                     {am : FRX.FAct im dX d'} (rel : CRel fm md im am) (v : Fin j) (a : T-δ'.El (ρX v)) →
                     (T-δA-ext.fib-el-subst (ρ' v) (d' v) (comp-el rel v a)
-                     ∘ (apply-apply-fam γ fm v (InMapDef-P.R.apply md v a) ∘ prod-m (id _) (InMapDef-P.R.apply-fam md v a)))
+                     ∘ (apply-apply-fam γ fm v (InMapDef-P.apply md v a) ∘ prod-m (id _) (InMapDef-P.apply-fam md v a)))
                     ≈ FRX.aapply am v a
       comp-el-fam cbase          Fin.zero    t =
         ≈-trans (∘-cong (A .fam .refl*) ≈-refl)
@@ -2402,7 +2404,7 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 
   bridge-idx : ∀ (Q : Poly (suc n)) γ (y : fobj μ-fam Q InMapDef-P.δ' .idx .Carrier) →
                _≈s_ (fobj μ-fam Q (extend δ A) .idx)
-                 (apply-shape-idx Q γ (InMapDef-P.R.reindex-shape ∣ Q ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx Q y)))
+                 (apply-shape-idx Q γ (InMapDef-P.reindex-shape ∣ Q ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx Q y)))
                  (strong-fmor Q fs .idxf .func (γ , y))
   bridge-idx (const A')        γ a = A' .idx .isEquivalence .refl
   bridge-idx (var Fin.zero)    γ t = A .idx .isEquivalence .refl
@@ -2411,7 +2413,7 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   bridge-idx (Q₁ + Q₂) γ (inj₂ y) = bridge-idx Q₂ γ y
   bridge-idx (Q₁ × Q₂) γ (y₁ , y₂) = bridge-idx Q₁ γ y₁ , bridge-idx Q₂ γ y₂
   bridge-idx (μ Q') γ t =
-    T-δA-ext.W-≈-trans {x = apply-reindex {Q = Q'} γ fbase (InMapDef-P.R.reindex InMapDef-P.mor₀ t)} {y = RX.ireindex (cmb γ) t}
+    T-δA-ext.W-≈-trans {x = apply-reindex {Q = Q'} γ fbase (InMapDef-P.reindex InMapDef-P.mor₀ t)} {y = RX.ireindex (cmb γ) t}
       (comp-W cbase t)
       (fuse-idx {Γ = Γ} {sₛ = InMapDef-P.δ'} {sₜ = extend δ A} Q' cmb fs corr
          (Γ .idx .isEquivalence .refl) {m₁ = t} {m₂ = t} (T-δ'.W-≈-refl t))
@@ -2419,8 +2421,8 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
 
   bridge-fam : ∀ (Q : Poly (suc n)) γ (y : fobj μ-fam Q InMapDef-P.δ' .idx .Carrier) →
                (fobj μ-fam Q (extend δ A) .fam .subst (bridge-idx Q γ y)
-                ∘ (apply-shape-fam Q γ (InMapDef-P.R.reindex-shape ∣ Q ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx Q y))
-                   ∘ prod-m (id _) (InMapDef-P.R.reindex-fam Q InMapDef-P.mor₀ ∘ InMapDef-P.embed-fam Q y)))
+                ∘ (apply-shape-fam Q γ (InMapDef-P.reindex-shape ∣ Q ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx Q y))
+                   ∘ prod-m (id _) (InMapDef-P.reindex-fam Q InMapDef-P.mor₀ ∘ InMapDef-P.embed-fam Q y)))
                ≈ strong-fmor Q fs .famf .transf (γ , y)
   bridge-fam (const A')        γ a =
     ≈-trans (∘-cong (A' .fam .refl*) ≈-refl)
@@ -2457,7 +2459,7 @@ module Bridge {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                                (strong-prod-m-transf (strong-fmor Q₁ fs) (strong-fmor Q₂ fs) {γ} {y₁} {y₂})))))))
   bridge-fam (μ Q') γ t =
     ≈-trans (∘-cong (T-δA-ext.fib-trans* Q' (λ v → lift tt)
-                       {x = apply-reindex {Q = Q'} γ fbase (InMapDef-P.R.reindex InMapDef-P.mor₀ t)}
+                       {x = apply-reindex {Q = Q'} γ fbase (InMapDef-P.reindex InMapDef-P.mor₀ t)}
                        {y = RX.ireindex (cmb γ) t}
                        {z = strong-fmor (μ Q') fs .idxf .func (γ , t)}
                        (fuse-idx {Γ = Γ} {sₛ = InMapDef-P.δ'} {sₜ = extend δ A} Q' cmb fs corr
@@ -2488,7 +2490,7 @@ module Beta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
     alg .idxf .func-resp-≈
       (Γ .idx .isEquivalence .refl ,
        F .idx .isEquivalence .trans
-         (L.agree-shape P γ (InMapDef-P.R.reindex-shape ∣ P ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx P y)))
+         (L.agree-shape P γ (InMapDef-P.reindex-shape ∣ P ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx P y)))
          (bridge-idx P γ y))
 
   β-fam : ∀ γ y →
@@ -2507,7 +2509,7 @@ module Beta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
                           (≈-trans (tail-cong (head-cong (L.agree-shape-fam P γ x)))
                                     (bridge-fam P γ y))))))))
     where
-      x = InMapDef-P.R.reindex-shape ∣ P ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx P y)
+      x = InMapDef-P.reindex-shape ∣ P ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx P y)
       e′ = F .idx .isEquivalence .trans (L.agree-shape P γ x) (bridge-idx P γ y)
 
   ⦅⦆-β : (hasMu.⦅ alg ⦆ ∘co (hasMu.inMap P δ Fam-cat.∘ Fam-P.p₂))
@@ -2539,7 +2541,7 @@ module Eta {n} {Γ A : Obj} {P : Poly (suc n)} {δ : Fin n → Obj}
   module _ (γ : Γ .idx .Carrier) (x : T-δ.⟦ ∣ P ∣ ⟧shape (η₀ ∣ P ∣)) where
     private
       y  = LambekDef-P.u-idx (T-δ.sup x)
-      x' = InMapDef-P.R.reindex-shape ∣ P ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx P y)
+      x' = InMapDef-P.reindex-shape ∣ P ∣ InMapDef-P.mor₀ (InMapDef-P.embed-idx P y)
       rt : T-δ.W-≈ {Q = ∣ P ∣} {ρ = λ i → inj₁ i} (T-δ.sup x') (T-δ.sup x)
       rt = LambekDef-P.inMor-outMor .idxf-eq .func-eq {T-δ.sup x} {T-δ.sup x} (T-δ.W-≈-refl {Q = ∣ P ∣} {ρ = λ i → inj₁ i} (T-δ.sup x))
       tr : T-δ.W-≈ {Q = ∣ P ∣} {ρ = λ i → inj₁ i} (T-δ.sup x) (T-δ.sup x')
