@@ -131,52 +131,64 @@ private
   signed-weight : ℚ → sign.Sign × three.Three
   signed-weight q = sign.sign-of q , nonzero three.semiring q
 
-  module R2 = render (nonzero two.semiring) two.semiring two.I suffix2
-  module R3 = render (nonzero three.semiring) three.semiring three.C suffix3
-  module RS = render signed-weight (sign.semiring ⊗S three.semiring) (sign.unk , three.C) suffix-signed
-  module E2 = example.runs (nonzero two.semiring) two.semiring two.I
-  module E3 = example.runs (nonzero three.semiring) three.semiring three.C
-  module ES = example.runs signed-weight (sign.semiring ⊗S three.semiring) (sign.unk , three.C)
+  module boolean where
+    open render (nonzero two.semiring) two.semiring two.I suffix2
+    open example.runs (nonzero two.semiring) two.semiring two.I
 
-  sign-run : String → ES.Run → String
-  sign-run name r = RS.show-run name (ES.env r) (ES.model-output r) (ES.model-of r)
+    entry : String → Run → String
+    entry name r = show-run name (env r) (model-output r) (model-of r)
 
-  two-run : String → E2.Run → String
-  two-run name r = R2.show-run name (E2.env r) (E2.model-output r) (E2.model-of r)
+    contents : String
+    contents =
+      entry "query"      query-run  ++
+      entry "const"      const-run  ++
+      entry "length"     length-run ++
+      entry "fold0"      fold0-run  ++
+      entry "case0"      case0-run  ++
+      entry "tag"        tag-run    ++
+      entry "case-left"  case-l-run ++
+      entry "case-right" case-r-run ++
+      entry "test"       test-run
 
-  module M3 = matrix.Mat three.semiring
+  module chain where
+    open render (nonzero three.semiring) three.semiring three.C suffix3
+    open example.runs (nonzero three.semiring) three.semiring three.C
+    module M3 = matrix.Mat three.semiring
 
-  three-related : String → E3.Run → String
-  three-related name r = R3.show-composite name (E3.model-output r) (E3.model-of r M3.∘ (E3.model-of r M3.ᵀ))
+    entry : String → Run → String
+    entry name r = show-run name (env r) (model-output r) (model-of r)
 
-  three-run : String → E3.Run → String
-  three-run name r = R3.show-run name (E3.env r) (E3.model-output r) (E3.model-of r)
+    related : String → Run → String
+    related name r = show-composite name (model-output r) (model-of r M3.∘ (model-of r M3.ᵀ))
+
+    contents : String
+    contents =
+      entry "map"        map-run    ++
+      entry "filter"     filter-run ++
+      entry "cond"       cond-run   ++
+      entry "eq"         eq-run     ++
+      entry "mult"       mult-run   ++
+      entry "mavg"       mavg-run   ++
+      entry "total"      total-run   ++
+      entry "sum-mul"    sum-mul-run ++
+      entry "rose"       rose-run    ++
+      related "mavg-related" mavg-run
+
+  module signed where
+    open render signed-weight (sign.semiring ⊗S three.semiring) (sign.unk , three.C) suffix-signed
+    open example.runs signed-weight (sign.semiring ⊗S three.semiring) (sign.unk , three.C)
+
+    entry : String → Run → String
+    entry name r = show-run name (env r) (model-output r) (model-of r)
+
+    contents : String
+    contents = entry "score" score-run
 
 -- The Booleans for the programs whose point is which positions are read; the three-chain, which
 -- separates consumption from value flow, for those whose point is that distinction; signs paired
 -- with the three-chain for the saliency reading of the grid scorer.
 contents : String
-contents =
-  two-run   "query"      E2.query-run  ++
-  two-run   "const"      E2.const-run  ++
-  two-run   "length"     E2.length-run ++
-  two-run   "fold0"      E2.fold0-run  ++
-  two-run   "case0"      E2.case0-run  ++
-  two-run   "tag"        E2.tag-run    ++
-  two-run   "case-left"  E2.case-l-run ++
-  two-run   "case-right" E2.case-r-run ++
-  two-run   "test"       E2.test-run   ++
-  three-run "map"        E3.map-run    ++
-  three-run "filter"     E3.filter-run ++
-  three-run "cond"       E3.cond-run   ++
-  three-run "eq"         E3.eq-run     ++
-  three-run "mult"       E3.mult-run   ++
-  three-run "mavg"       E3.mavg-run   ++
-  three-run "total"      E3.total-run   ++
-  three-run "sum-mul"    E3.sum-mul-run ++
-  three-run "rose"       E3.rose-run    ++
-  three-related "mavg-related" E3.mavg-run ++
-  sign-run  "score"      ES.score-run
+contents = boolean.contents ++ chain.contents ++ signed.contents
 
 main : Main
 main = run (writeFile "test-baselines/relations.txt" contents)
