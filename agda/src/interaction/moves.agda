@@ -242,7 +242,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   open Interaction 𝒢
 
   private
-    module HA = Hide (V 𝒢) (vertex-width 𝒢)
+    module Hide-𝒢 = Hide (V 𝒢) (vertex-width 𝒢)
 
     at : Path → V 𝒢
     at p = inj₂ (inj₁ p)
@@ -347,7 +347,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
              hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) E) (map at C) x y i j ≡
              (restrict (fo-graph 𝒢) E x y i j two.⊔ summary C x y i j)
   localise {C = C} {E = E} mono x y i j =
-    ≡-of-≈ (HA.agree-add {G = restrict (fo-graph 𝒢) C} {G' = restrict (fo-graph 𝒢) E} (map at C)
+    ≡-of-≈ (Hide-𝒢.agree-add {G = restrict (fo-graph 𝒢) C} {G' = restrict (fo-graph 𝒢) E} (map at C)
                (λ x' y' i' j' → ≈-of-≡ (restrict-sub (fo-graph 𝒢) mono x' y' i' j'))
                (restrict-agree (fo-graph 𝒢) mono)
                x y i j)
@@ -381,7 +381,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       when-O (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (fo-graph 𝒢 z (at q)) i j
              [ (λ hz → entry-col hz i j) , (λ h → ⊥-elim (hm h)) ]′
 
-    zf = HA.zero-fold (map at C) (at q)
+    zf = Hide-𝒢.zero-fold (map at C) (at q)
            ((λ z i j → ≈-of-≡ (base-row z i j)) ,ₚ (λ z i j → ≈-of-≡ (base-col z i j)))
 
   Distinct : List (Path) → List (Path) → Set
@@ -401,8 +401,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   assemble {E = E} (C ∷ Cs) (mono ∷ monos) (shead ∷ stail) x y i j =
     ≡-trans (≡-cong (λ ws → hide-all (vertex-width 𝒢) R-E ws x y i j) (map-++ at C (concat Cs)))
     (≡-trans (≡-cong (λ H → H x y i j) (foldl-++ (hide (vertex-width 𝒢)) R-E (map at C) (map at (concat Cs))))
-    (≡-trans (≡-of-≈ (HA.fold-cong (map at (concat Cs)) (λ x' y' i' j' → ≈-of-≡ (localise {C = C} mono x' y' i' j')) x y i j))
-    (≡-trans (≡-of-≈ (HA.add-inert {G = R-E} {T = summary C} (map at (concat Cs)) inert' x y i j))
+    (≡-trans (≡-of-≈ (Hide-𝒢.fold-cong (map at (concat Cs)) (λ x' y' i' j' → ≈-of-≡ (localise {C = C} mono x' y' i' j')) x y i j))
+    (≡-trans (≡-of-≈ (Hide-𝒢.add-inert {G = R-E} {T = summary C} (map at (concat Cs)) inert' x y i j))
     (≡-trans (≡-cong (two._⊔ summary C x y i j) (assemble Cs monos stail x y i j))
              (two.⊔-comm _ (summary C x y i j))))))
     where
@@ -463,7 +463,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                         (at p) x y i j
                    ≡ summary (p ∷ concat (map proj₁ (proj₁ tp))) x y i j
   merged-summary p K S hp dist x y i j =
-    ≡-trans (≡-of-≈ (HA.h-cong (at p) (λ x' y' i' j' → ≈-of-≡ (core x' y' i' j')) x y i j))
+    ≡-trans (≡-of-≈ (Hide-𝒢.h-cong (at p) (λ x' y' i' j' → ≈-of-≡ (core x' y' i' j')) x y i j))
             (≡-sym (summary-snoc p (concat Ms) x y i j))
     where
     G  = fo-graph 𝒢
@@ -512,7 +512,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
              VertexIn x' C ⊎ VertexIn y' C →
              G x' y' i' j' ≡ two.I → summary C x' y' i' j' ≡ two.I
       summary-I C x' y' i' j' gd ge =
-        ≡-trans (≡-of-≈ (HA.increasing (map at C) x' y' i' j'))
+        ≡-trans (≡-of-≈ (Hide-𝒢.increasing (map at C) x' y' i' j'))
                 (≡-cong (two._⊔ hide-all (vertex-width 𝒢) (restrict G C) (map at C) x' y' i' j')
                         (≡-trans (when-yes (x' ∈ᵥ? C ⊎-dec y' ∈ᵥ? C) gd (G x' y') i' j') ge))
 
@@ -942,7 +942,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                        hide-all (vertex-width 𝒢) (fo-graph 𝒢) (map at (hidden-set K)) x y i j
   summaries-assemble K S x y i j hx hy =
     ≡-trans (visible-graph-summary K S x y i j hx hy)
-            (≡-sym (≡-of-≈ (HA.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
+            (≡-sym (≡-of-≈ (Hide-𝒢.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
                       (map at (hidden-set K))
                       (λ x' y' i' j' → ≈-of-≡ (restrict-≤ (fo-graph 𝒢) (hidden-set K) x' y' i' j'))
                       (restrict-hidden-agree (fo-graph 𝒢) (hidden-set K))

@@ -82,12 +82,12 @@ SemiModExp = FE.exponentials
 -- The tuple of the target's section over every argument would instead attach it to every
 -- possible result, which no position of a closure stands for.
 private
-  module SMCM = CMonEnriched SemiMod.cmon-enriched
+  module SemiMod-cmon = CMonEnriched SemiMod.cmon-enriched
 
 exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section (FE._⟶_ X Y)
-exp-section {X} {Y} .Fam⟨𝒟⟩μ.at f = SMCM.εm
+exp-section {X} {Y} .Fam⟨𝒟⟩μ.at f = SemiMod-cmon.εm
 exp-section {X} {Y} .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
-  SMCM.comp-bilinear-ε₂ {SemiMod.𝕀} (FE._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
+  SemiMod-cmon.comp-bilinear-ε₂ {SemiMod.𝕀} (FE._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
 
 module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 

@@ -140,6 +140,6 @@ module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
     Fam𝒟._∘_ (CP𝒟.coprod-m (Fam⟨F⟩-L 𝟙ty .fwd) (Fam⟨F⟩-L 𝟙ty .fwd))
              (Fam⟨F⟩-preserves-coproducts .inverse)
 
-module FW =
+module fibrewise =
   fam-mu-lifting.fibrewise os es CM𝒞 BP𝒞 𝟙𝒞 CM𝒟 BP𝒟 𝟙𝒟
     F (λ {X} {Y} → F-prod {X} {Y}) F-L (λ {X} {Y} f → F-L-natural {X} {Y} f)

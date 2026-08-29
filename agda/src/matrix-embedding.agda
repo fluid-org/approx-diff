@@ -45,12 +45,12 @@ open Biproduct
 private
   module SemiMod-cat = Category SemiMod.cat
   module M-cat = Category M.cat
-  module SMCM = CMonEnriched SemiMod.cmon-enriched
+  module SemiMod-cmon = CMonEnriched SemiMod.cmon-enriched
 
   +m-cong : ∀ {X Y : Semimodule} {f f' g g' : SemiMod._⇒_ X Y} →
             SemiMod-cat._≈_ f f' → SemiMod-cat._≈_ g g' →
-            SemiMod-cat._≈_ (SMCM._+m_ f g) (SMCM._+m_ f' g')
-  +m-cong = CommutativeMonoid.+-cong (SMCM.homCM _ _)
+            SemiMod-cat._≈_ (SemiMod-cmon._+m_ f g) (SemiMod-cmon._+m_ f' g')
+  +m-cong = CommutativeMonoid.+-cong (SemiMod-cmon.homCM _ _)
 
 ------------------------------------------------------------------------------
 -- The action of a matrix on a vector: composition with the vector as a single column.
@@ -176,10 +176,10 @@ mat-comp R T = 𝔽F .fmor-comp R T
 mat-I : ∀ {n} → SemiMod-cat._≈_ (mat (I {n})) (SemiMod.id (𝔽 n))
 mat-I = 𝔽F .fmor-id
 
-mat-ε : ∀ {m n} → SemiMod-cat._≈_ (mat (εₘ {m} {n})) (SMCM.εm {𝔽 n} {𝔽 m})
+mat-ε : ∀ {m n} → SemiMod-cat._≈_ (mat (εₘ {m} {n})) (SemiMod-cmon.εm {𝔽 n} {𝔽 m})
 mat-ε .*≈* .prop-setoid._≃m_.func-eq {u} e i = app-εₘ u i
 
-mat-+ : ∀ {m n} (R T : Matrix m n) → SemiMod-cat._≈_ (mat (R +ₘ T)) (SMCM._+m_ (mat R) (mat T))
+mat-+ : ∀ {m n} (R T : Matrix m n) → SemiMod-cat._≈_ (mat (R +ₘ T)) (SemiMod-cmon._+m_ (mat R) (mat T))
 mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
   trans (app-+ₘ R T u i) (+-cong (app-congᵥ R e i) (app-congᵥ T e i))
 

@@ -187,7 +187,7 @@ private
       (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
         (Fam⟨𝒟⟩μ-P.product-preserves-iso (⟦ fo₁ ⟧-iso δ𝒞) (⟦ fo₂ ⟧-iso δ𝒞))))
 ⟦ μ fo ⟧-iso        δ𝒞 =
-  Fam⟨𝒟⟩μ-cat.Iso-trans (HR.FW.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
+  Fam⟨𝒟⟩μ-cat.Iso-trans (HR.fibrewise.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
     (≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
 
 -- At closed types the target environment is the empty one, which agrees with the image environment
