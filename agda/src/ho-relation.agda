@@ -42,7 +42,8 @@ open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 
 open import value-interpretation S ctrl-weight Sig ℐ public using (module model; module interp; val-idx; env-idx)
-open model public using (𝔽; mat; module Ls; module SemiMod)
+open model public using (𝔽; mat; module lifting-SemiMod; module SemiMod)
+open lifting-SemiMod using (L; payload-L; prod-m; elim-root; strong-Lmap)
 open SemiMod public using (Semimodule; _⇒_)
 open Semimodule public using () renaming (Carrier to ∣_∣)
 open SemiMod._⇒_ public using (func; func-resp-≈; preserve-+; preserve-·; preserve-ze)
@@ -617,22 +618,22 @@ transf-natural {X} f {x} {x'} e z = f .famf .indexed-family._⇒f_.natural {x} {
 
 payload-prod-elt : ∀ {G X : Semimodule} (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
                    Semimodule._≈_ (SemiMod._⊕_ G X)
-                     (Ls.prod-m (SemiMod.id G) (Ls.payload-L {X}) .func (γe , (a , y))) (γe , y)
+                     (prod-m (SemiMod.id G) (payload-L {X}) .func (γe , (a , y))) (γe , y)
 payload-prod-elt {G} {X} γe a y =
   Semimodule.trans (SemiMod._⊕_ G X)
-    (bpair-elt {SemiMod._⊕_ G (Ls.L X)} {G} {X} (SemiMod._∘_ (SemiMod.id G) (SemiMod.p₁ {G} {Ls.L X}))
-       (SemiMod._∘_ (Ls.payload-L {X}) (SemiMod.p₂ {G} {Ls.L X})) (γe , (a , y)))
+    (bpair-elt {SemiMod._⊕_ G (L X)} {G} {X} (SemiMod._∘_ (SemiMod.id G) (SemiMod.p₁ {G} {L X}))
+       (SemiMod._∘_ (payload-L {X}) (SemiMod.p₂ {G} {L X})) (γe , (a , y)))
     (Semimodule.refl G {γe} , Semimodule.+-lunit X {y})
 
 elim-root-elt : ∀ {G X Y : Semimodule} (k : SemiMod.𝕀 ⇒ Y) (r : SemiMod._⊕_ G X ⇒ Y)
                 (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
-                Semimodule._≈_ Y (Ls.elim-root k r .func (γe , (a , y)))
+                Semimodule._≈_ Y (elim-root k r .func (γe , (a , y)))
                                  (Semimodule._+_ Y (r .func (γe , y)) (k .func a))
 elim-root-elt {G} {X} {Y} k r γe a y =
   Semimodule.+-cong Y (r .func-resp-≈ (payload-prod-elt {G} {X} γe a y)) (k .func-resp-≈ +-runit)
 
 strong-Lmap-elt : ∀ {G X Y : Semimodule} (r : SemiMod._⊕_ G X ⇒ Y) (γe : ∣ G ∣) (a : Setoid.Carrier A) (y : ∣ X ∣) →
-                  Semimodule._≈_ (Ls.L Y) (Ls.strong-Lmap r .func (γe , (a , y))) (a , r .func (γe , y))
+                  Semimodule._≈_ (L Y) (strong-Lmap r .func (γe , (a , y))) (a , r .func (γe , y))
 strong-Lmap-elt {G} {X} {Y} r γe a y =
   ≈-trans +-lunit +-runit ,
   Semimodule.trans Y (Semimodule.+-cong Y (r .func-resp-≈ (payload-prod-elt {G} {X} γe a y)) (Semimodule.refl Y))

@@ -39,6 +39,7 @@ module ho-model
   where
 
 open matrix-embedding S public
+open lifting-SemiMod using (L; Lmap)
 private
   module S = CommutativeSemiring S
 
@@ -173,7 +174,7 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
   private
     Lmap-elt : ∀ {X Y : Semimodule} (f : SemiMod._⇒_ X Y) (a : Setoid.Carrier A)
                (x : Semimodule.Carrier X) →
-               Semimodule._≈_ (Ls.L Y) (SemiMod._⇒_.func (Ls.Lmap f) (a , x)) (a , SemiMod._⇒_.func f x)
+               Semimodule._≈_ (L Y) (SemiMod._⇒_.func (Lmap f) (a , x)) (a , SemiMod._⇒_.func f x)
     Lmap-elt {X} {Y} f a x = S.+-runit , Semimodule.+-lunit Y
 
     module bool-row {n} (D : M.Matrix 1 n) (y : M.Vec n) where
@@ -183,12 +184,12 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
         u = app (M.in₁ {1} {1} M.∘ D) y
 
         branch : ∀ {x₁ x} (e : Setoid._≈_ (𝒟𝟙ty .idx) x₁ x) →
-                 Semimodule._≈_ (Ls.L (𝔽 1))
-                   (SemiMod._⇒_.func (Ls.Lmap (𝒟𝟙ty .fam .subst {x₁} {x} e))
+                 Semimodule._≈_ (L (𝔽 1))
+                   (SemiMod._⇒_.func (Lmap (𝒟𝟙ty .fam .subst {x₁} {x} e))
                       (SemiMod._⇒_.func (𝔽-L-iso 1 .fwd) u))
                    (app D y Fin.zero , λ _ → S.ε)
         branch {x₁} {x} e =
-          Semimodule.trans (Ls.L (𝔽 1))
+          Semimodule.trans (L (𝔽 1))
             (Lmap-elt g (u Fin.zero) (λ k → u (Fin.suc k)))
             (S.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (app-in₁ {1} {1} (app D y) Fin.zero) ,
              λ k → S.trans (app-congᵥ G (λ j → S.trans (app-∘ (M.in₁ {1} {1}) D y (Fin.suc j))

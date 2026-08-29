@@ -235,8 +235,8 @@ mat-+ R T .*≈* .prop-setoid._≃m_.func-eq {u} e i =
 ------------------------------------------------------------------------------
 -- The two liftings: one fresh position on the position side, the scalars on the semimodule side.
 
-module Lm = lifting M.cmon M.biproduct 1
-module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
+module lifting-M = lifting M.cmon M.biproduct 1
+module lifting-SemiMod = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 
 ι1-fwd : SemiMod._⇒_ (𝔽 1) 𝕀
 ι1-fwd .*→* .prop-setoid._⇒_.func v = v zero
@@ -252,14 +252,14 @@ module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 ι1-bwd .preserve-+ i = refl
 ι1-bwd .preserve-· i = refl
 
-𝔽-L-fwd : ∀ n → SemiMod._⇒_ (𝔽 (Lm.L n)) (Ls.L (𝔽 n))
+𝔽-L-fwd : ∀ n → SemiMod._⇒_ (𝔽 (lifting-M.L n)) (lifting-SemiMod.L (𝔽 n))
 𝔽-L-fwd n .*→* .prop-setoid._⇒_.func v = v zero , λ k → v (suc k)
 𝔽-L-fwd n .*→* .prop-setoid._⇒_.func-resp-≈ e = e zero ,ₚ λ k → e (suc k)
 𝔽-L-fwd n .preserve-ze = refl ,ₚ λ k → refl
 𝔽-L-fwd n .preserve-+ = refl ,ₚ λ k → refl
 𝔽-L-fwd n .preserve-· = refl ,ₚ λ k → refl
 
-𝔽-L-bwd : ∀ n → SemiMod._⇒_ (Ls.L (𝔽 n)) (𝔽 (Lm.L n))
+𝔽-L-bwd : ∀ n → SemiMod._⇒_ (lifting-SemiMod.L (𝔽 n)) (𝔽 (lifting-M.L n))
 𝔽-L-bwd n .*→* .prop-setoid._⇒_.func (a , u) zero = a
 𝔽-L-bwd n .*→* .prop-setoid._⇒_.func (a , u) (suc k) = u k
 𝔽-L-bwd n .*→* .prop-setoid._⇒_.func-resp-≈ e zero = e .proj₁
@@ -271,7 +271,7 @@ module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 𝔽-L-bwd n .preserve-· zero = refl
 𝔽-L-bwd n .preserve-· (suc k) = refl
 
-𝔽-L-iso : ∀ n → Category.Iso SemiMod.cat (𝔽 (Lm.L n)) (Ls.L (𝔽 n))
+𝔽-L-iso : ∀ n → Category.Iso SemiMod.cat (𝔽 (lifting-M.L n)) (lifting-SemiMod.L (𝔽 n))
 𝔽-L-iso n .Category.Iso.fwd = 𝔽-L-fwd n
 𝔽-L-iso n .Category.Iso.bwd = 𝔽-L-bwd n
 𝔽-L-iso n .Category.Iso.fwd∘bwd≈id .*≈* .prop-setoid._≃m_.func-eq e = e
@@ -279,18 +279,18 @@ module Ls = lifting SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 𝔽-L-iso n .Category.Iso.bwd∘fwd≈id .*≈* .prop-setoid._≃m_.func-eq e (suc k) = e (suc k)
 
 𝔽-L-natural : ∀ {P Q} (f : M-cat._⇒_ P Q) →
-  SemiMod-cat._≈_ (SemiMod._∘_ (𝔽-L-fwd Q) (mat (Lm.Lmap f)))
-          (SemiMod._∘_ (Ls.Lmap {𝔽 P} {𝔽 Q} (mat f)) (𝔽-L-fwd P))
+  SemiMod-cat._≈_ (SemiMod._∘_ (𝔽-L-fwd Q) (mat (lifting-M.Lmap f)))
+          (SemiMod._∘_ (lifting-SemiMod.Lmap {𝔽 P} {𝔽 Q} (mat f)) (𝔽-L-fwd P))
 𝔽-L-natural {P} {Q} f .*≈* .prop-setoid._≃m_.func-eq {u} {u'} e = root ,ₚ payload
   where
-  root : app (Lm.Lmap f) u zero ≈ (u' zero + ε)
+  root : app (lifting-M.Lmap f) u zero ≈ (u' zero + ε)
   root =
     trans (app-∥ (M.in₁ {1} {Q}) (M.in₂ {1} {Q} ∘ₘ f) u zero)
           (+-cong (trans (app-in₁ {1} {Q} (split₁ {1} u) zero) (e zero))
                   (trans (app-∘ (M.in₂ {1} {Q}) f (split₂ {1} u) zero)
                          (app-in₂ {1} {Q} (app f (split₂ {1} u)) zero)))
 
-  payload : ∀ k → app (Lm.Lmap f) u (suc k) ≈ (ε + app f (λ l → u' (suc l)) k)
+  payload : ∀ k → app (lifting-M.Lmap f) u (suc k) ≈ (ε + app f (λ l → u' (suc l)) k)
   payload k =
     trans (app-∥ (M.in₁ {1} {Q}) (M.in₂ {1} {Q} ∘ₘ f) u (suc k))
           (+-cong (app-in₁ {1} {Q} (split₁ {1} u) (suc k))
