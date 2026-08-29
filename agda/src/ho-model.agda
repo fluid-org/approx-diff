@@ -101,7 +101,7 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
       (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam𝒞.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
 
   private
-    module IPO = IP.over 𝒞Bool boolify
+    open IP.over 𝒞Bool boolify using (model-over; arg-collect)
     open indexed-family._⇒f_
 
     d' : ∀ {is} (ψ : Signature.rel Sig is)
@@ -131,8 +131,8 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     sub = 𝒞Bool .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {o} {o'} (ℐ.rel-pred ψ .func-resp-≈ e)
 
   model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal M.terminal , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig
-  model = record IPO.model-over
-    { ⟦rel⟧ = λ {is} ψ → (rel-simple is ψ Fam⟨𝒞⟩μ.Fam𝒞.∘ IPO.arg-collect is) }
+  model = record model-over
+    { ⟦rel⟧ = λ {is} ψ → (rel-simple is ψ Fam⟨𝒞⟩μ.Fam𝒞.∘ arg-collect is) }
 
 module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
