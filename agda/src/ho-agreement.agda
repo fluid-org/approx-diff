@@ -44,7 +44,7 @@ open import ho-relation S ctrl-weight Sig ℐ +-idem c-idem c-bound
 
 args-idx : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → sort-vals is
 args-idx {is = is} Ms gi =
-  collect is .FC.idxf .sfunc (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi))
+  collect is .Fam⟨𝒞⟩μ.idxf .sfunc (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi))
 
 private
   bool-idx : ∀ (b : Ix (unit [+] unit)) →
@@ -1188,19 +1188,19 @@ private
 
 args-vec : ∀ {Γ is} (Ms : Every (λ σ → Γ ⊢ base σ) is) (gi : IxC Γ) → ∣ FibC Γ gi ∣ → ∣ 𝔽 (bases-width is) ∣
 args-vec {is = is} Ms gi g =
-  ap (collect is .FC.famf .transf (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi)))
+  ap (collect is .Fam⟨𝒞⟩μ.famf .transf (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi)))
      (𝒟-arg-product is .famf .transf (⟦ Ms ⟧tms .idxf .sfunc gi) .func
         (⟦ Ms ⟧tms .famf .transf gi .func g))
 
 private
-  args-width : ∀ is → Setoid.Carrier (prim.args is .FC.idx) → ℕ
-  args-width is p = prim.args is .FC.fam .fm p
+  args-width : ∀ is → Setoid.Carrier (prim.args is .Fam⟨𝒞⟩μ.idx) → ℕ
+  args-width is p = prim.args is .Fam⟨𝒞⟩μ.fam .fm p
 
-  collect-cons : ∀ i is (a : Setoid.Carrier (sort-index i)) (p : Setoid.Carrier (prim.args is .FC.idx)) →
-                 collect (i ∷ is) .FC.famf .transf (a , p) M.≈ₘ
+  collect-cons : ∀ i is (a : Setoid.Carrier (sort-index i)) (p : Setoid.Carrier (prim.args is .Fam⟨𝒞⟩μ.idx)) →
+                 collect (i ∷ is) .Fam⟨𝒞⟩μ.famf .transf (a , p) M.≈ₘ
                  ((M.in₁ {sort-width i} {bases-width is} ∘ M.p₁ {sort-width i} {args-width is p}) +ₘ
                   (M.in₂ {sort-width i} {bases-width is} ∘
-                    (collect is .FC.famf .transf p ∘ M.p₂ {sort-width i} {args-width is p})))
+                    (collect is .Fam⟨𝒞⟩μ.famf .transf p ∘ M.p₂ {sort-width i} {args-width is p})))
   collect-cons i is a p =
     ≈ₘ-trans (M.id-left {M = M.I ∘ (u₁ +ₘ u₂)})
     (≈ₘ-trans (M.id-left {M = u₁ +ₘ u₂})
@@ -1209,7 +1209,7 @@ private
                  (M.∘-cong (≈ₘ-refl {f = M.in₂ {sort-width i} {bases-width is}}) (M.id-left {M = C ∘ M.p₂ {sort-width i} {n}}))))
     where
     n = args-width is p
-    C = collect is .FC.famf .transf p
+    C = collect is .Fam⟨𝒞⟩μ.famf .transf p
     u₁ = M.in₁ {sort-width i} {bases-width is} ∘ (M.I ∘ (M.I ∘ M.p₁ {sort-width i} {n}))
     u₂ = M.in₂ {sort-width i} {bases-width is} ∘ (M.I ∘ (C ∘ M.p₂ {sort-width i} {n}))
 
@@ -1234,7 +1234,7 @@ private
     n = args-width is p'
     u₁ = M.in₁ {sort-width i} {bases-width is}
     u₂ = M.in₂ {sort-width i} {bases-width is}
-    C = collect is .FC.famf .transf p'
+    C = collect is .Fam⟨𝒞⟩μ.famf .transf p'
     y₁ = ⟦ M ⟧tm .famf .transf gi .func g
     ys = ⟦ Ms ⟧tms .famf .transf gi .func g
     q = ⟦ M Every.∷ Ms ⟧tms .famf .transf gi .func g
@@ -1746,7 +1746,7 @@ fundamental {Γ = Γ} {τ = base o} {γ = γ} (⇓-bop {is = is} {ω = ω} {Ms =
   (≈-trans (+-cong (cs-absorb s (ap (op-deps ω .sfunc vs) (λ _ → ι) k)) ≈-refl)
            (+-cong (≈-sym (ctrl-dep-base (⟦ bop ω Ms ⟧tm .idxf .sfunc gi) s k)) (≈-sym den)))))
   where
-  C = collect is .FC.famf .transf (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi))
+  C = collect is .Fam⟨𝒞⟩μ.famf .transf (𝒟-arg-product is .idxf .sfunc (⟦ Ms ⟧tms .idxf .sfunc gi))
   tp-elt = 𝒟-arg-product is .famf .transf (⟦ Ms ⟧tms .idxf .sfunc gi) .func (⟦ Ms ⟧tms .famf .transf gi .func g)
   IH : ∀ l → ap Rs (inputs γ s x) l ≈s ((c ·ₛ s) +ₛ (args-vec Ms gi g) l)
   IH = fundamental-s D rγ s x g rel

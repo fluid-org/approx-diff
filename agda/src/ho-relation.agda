@@ -77,7 +77,7 @@ open Section public using (at)
 module prim = model.sig-model.prim Sig ℐ
 open prim public using (collect)
 open interp public using (𝒟-arg-product)
-module FC = model.Fam⟨𝒞⟩μ
+module Fam⟨𝒞⟩μ = model.Fam⟨𝒞⟩μ
 
 ⟦_⟧ : type 0 → Obj
 ⟦ τ ⟧ = ⟦ τ ⟧ty (λ ())

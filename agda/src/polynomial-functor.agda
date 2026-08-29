@@ -160,7 +160,7 @@ module Interp
              (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) (h : prod Γ (μ-obj P δ) ⇒ A) →
              (h ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h)) → h ≈ ⦅ alg ⦆
 
-    private module CoK {Γ : obj} = Category (coKleisli-prod 𝒞P Γ)
+    private module coKl {Γ : obj} = Category (coKleisli-prod 𝒞P Γ)
 
     ⦅⦆-cong : ∀ {k} {Γ A : obj} (P : Poly 𝒞 (suc k)) (δ : Fin k → obj)
               {alg alg' : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A} →
@@ -174,7 +174,7 @@ module Interp
     ∘co-push x a y =
       begin
         (x ∘ pair p₁ (a ∘ p₂)) ∘ pair p₁ y
-      ≈⟨ CoK.assoc _ _ _ ⟩
+      ≈⟨ coKl.assoc _ _ _ ⟩
         x ∘ pair p₁ ((a ∘ p₂) ∘ pair p₁ y)
       ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (tail-cong (pair-p₂ _ _))) ⟩
         x ∘ pair p₁ (a ∘ y)
@@ -194,9 +194,9 @@ module Interp
                  (F ∘co (ι ∘ p₂)) ≈ (ι' ∘ h₁) → (G ∘co (ι' ∘ p₂)) ≈ (ι'' ∘ h₂) →
                  ((G ∘co F) ∘co (ι ∘ p₂)) ≈ (ι'' ∘ (h₂ ∘co h₁))
         branch {ι' = ι'} {h₁ = h₁} e₁ e₂ =
-          ≈-trans (CoK.assoc _ _ _)
-          (≈-trans (CoK.∘-cong ≈-refl e₁)
-          (≈-trans (≈-sym (∘co-push G ι' h₁)) (≈-trans (CoK.∘-cong e₂ ≈-refl) (assoc _ _ _))))
+          ≈-trans (coKl.assoc _ _ _)
+          (≈-trans (coKl.∘-cong ≈-refl e₁)
+          (≈-trans (≈-sym (∘co-push G ι' h₁)) (≈-trans (coKl.∘-cong e₂ ≈-refl) (assoc _ _ _))))
 
     mutual
       strong-fmor-cong : ∀ {k} {Γ : obj} (P : Poly 𝒞 k) {δ δ' : Fin k → obj}
@@ -233,7 +233,7 @@ module Interp
       strong-fmor-comp : ∀ {k} {Γ : obj} (P : Poly 𝒞 k) {δ δ' δ'' : Fin k → obj}
                          (gs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
                          (strong-fmor P gs ∘co strong-fmor P fs) ≈ strong-fmor P (λ i → gs i ∘co fs i)
-      strong-fmor-comp (const A) gs fs = CoK.id-left
+      strong-fmor-comp (const A) gs fs = coKl.id-left
       strong-fmor-comp (var i)   gs fs = ≈-refl
       strong-fmor-comp (P + Q)   gs fs =
         ≈-trans (copair-comp _ _ _ _)
@@ -255,18 +255,18 @@ module Interp
         ⦅⦆-η b (h ∘co ⦅ a ⦆)
           (begin
             (h ∘co ⦅ a ⦆) ∘co (inMap P δ ∘ p₂)
-          ≈⟨ CoK.assoc _ _ _ ⟩
+          ≈⟨ coKl.assoc _ _ _ ⟩
             h ∘co (⦅ a ⦆ ∘co (inMap P δ ∘ p₂))
-          ≈⟨ CoK.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} a) ⟩
+          ≈⟨ coKl.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} a) ⟩
             h ∘co (a ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) ⦅ a ⦆))
-          ≈˘⟨ CoK.assoc _ _ _ ⟩
+          ≈˘⟨ coKl.assoc _ _ _ ⟩
             (h ∘co a) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) ⦅ a ⦆)
-          ≈⟨ CoK.∘-cong hyp ≈-refl ⟩
+          ≈⟨ coKl.∘-cong hyp ≈-refl ⟩
             (b ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) h)) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) ⦅ a ⦆)
-          ≈⟨ CoK.assoc _ _ _ ⟩
+          ≈⟨ coKl.assoc _ _ _ ⟩
             b ∘co (strong-fmor P (strong-extend-mor (λ _ → p₂) h) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) ⦅ a ⦆))
-          ≈⟨ CoK.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                        (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-left) ≈-refl))) ⟩
+          ≈⟨ coKl.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
+                                        (strong-fmor-cong P (strong-extend-mor-comp (λ _ → coKl.id-left) ≈-refl))) ⟩
             b ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (h ∘co ⦅ a ⦆))
           ∎)
         where open ≈-Reasoning isEquiv
@@ -288,12 +288,12 @@ module Interp
               μ-gs ∘co (inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂))
             ≈˘⟨ ∘co-push μ-gs (inMap P δ') _ ⟩
               (μ-gs ∘co (inMap P δ' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor fs p₂)
-            ≈⟨ CoK.∘-cong (⦅⦆-β {P = P} {δ = δ'} alg-g) ≈-refl ⟩
+            ≈⟨ coKl.∘-cong (⦅⦆-β {P = P} {δ = δ'} alg-g) ≈-refl ⟩
               (alg-g ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs)) ∘co strong-fmor P (strong-extend-mor fs p₂)
-            ≈⟨ CoK.assoc _ _ _ ⟩
+            ≈⟨ coKl.assoc _ _ _ ⟩
               alg-g ∘co (strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs) ∘co strong-fmor P (strong-extend-mor fs p₂))
-            ≈⟨ CoK.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                          (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-left) CoK.id-right))) ⟩
+            ≈⟨ coKl.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
+                                          (strong-fmor-cong P (strong-extend-mor-comp (λ _ → coKl.id-left) coKl.id-right))) ⟩
               alg-g ∘co strong-fmor P (strong-extend-mor fs μ-gs)
             ∎ where open ≈-Reasoning isEquiv
 
@@ -306,10 +306,10 @@ module Interp
             ≈⟨ assoc _ _ _ ⟩
               inMap P δ'' ∘ (strong-fmor P (strong-extend-mor gs p₂) ∘co strong-fmor P (strong-extend-mor fs μ-gs))
             ≈⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                      (strong-fmor-cong P (strong-extend-mor-comp (λ _ → ≈-refl) CoK.id-left))) ⟩
+                                      (strong-fmor-cong P (strong-extend-mor-comp (λ _ → ≈-refl) coKl.id-left))) ⟩
               inMap P δ'' ∘ strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) μ-gs)
             ≈˘⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                       (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-right) CoK.id-left))) ⟩
+                                       (strong-fmor-cong P (strong-extend-mor-comp (λ _ → coKl.id-right) coKl.id-left))) ⟩
               inMap P δ'' ∘ (strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs))
             ≈˘⟨ assoc _ _ _ ⟩
               alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs)
@@ -343,7 +343,7 @@ module Interp
                    ⦅_⦆ {Γ = Γ} {P = P} {δ = δ} (inMap P δ ∘ p₂) ≈ p₂
       ⦅⦆-reflect P δ =
         ≈-sym (⦅⦆-η {P = P} {δ = δ} (inMap P δ ∘ p₂) p₂
-          (≈-trans CoK.id-left
+          (≈-trans coKl.id-left
             (≈-sym (tail-cong (≈-trans (pair-p₂ _ _)
                                        (≈-trans (strong-fmor-cong P es₀) (strong-fmor-p₂ P)))))))
         where
@@ -554,9 +554,9 @@ module Interp
               fold-v ∘co (inMap Q δ' ∘ (u ∘ p₂))
             ≈˘⟨ ∘co-push fold-v (inMap Q δ') _ ⟩
               (fold-v ∘co (inMap Q δ' ∘ p₂)) ∘co (u ∘ p₂)
-            ≈⟨ CoK.∘-cong (⦅⦆-β {P = Q} {δ = δ'} alg-v) ≈-refl ⟩
+            ≈⟨ coKl.∘-cong (⦅⦆-β {P = Q} {δ = δ'} alg-v) ≈-refl ⟩
               (alg-v ∘co strong-fmor Q (strong-extend-mor (λ i → p₂) fold-v)) ∘co (u ∘ p₂)
-            ≈⟨ CoK.assoc _ _ _ ⟩
+            ≈⟨ coKl.assoc _ _ _ ⟩
               alg-v ∘co (strong-fmor Q (strong-extend-mor (λ i → p₂) fold-v) ∘co (u ∘ p₂))
             ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl step) ⟩
               alg-v ∘co (u' ∘ strong-fmor P (strong-extend-mor (λ i → p₂) fold-v))
