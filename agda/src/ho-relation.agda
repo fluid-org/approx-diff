@@ -296,13 +296,13 @@ map-input : ∀ {Γ} (γ : Env Γ) {n} → Setoid.Carrier A → ∣ 𝔽 (width-
 map-input γ {n} s x o l =
   ap (M.in₁ {suc (width-env γ)} {n}) (inputs γ s x) l +ₛ ap (M.in₂ {suc (width-env γ)} {n}) o l
 
-c = ctrl-weight
+ctrl = ctrl-weight
 
-ap-ctrl-row : ∀ {n} (s : Setoid.Carrier A) (k : Fin n) → ap ctrl-row (λ _ → s) k ≈s (c ·ₛ s)
+ap-ctrl-row : ∀ {n} (s : Setoid.Carrier A) (k : Fin n) → ap ctrl-row (λ _ → s) k ≈s (ctrl ·ₛ s)
 ap-ctrl-row {n} s k = +-runit
 
 ctrl-lift : ∀ {n} (g : M.Matrix n 1) (s : Setoid.Carrier A) (k : Fin (suc n)) →
-            ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) k ≈s M.concat {1} {n} (λ _ → c ·ₛ s) (ap g (λ _ → s)) k
+            ap (⟨ ctrl-row {1} , g ⟩) (λ _ → s) k ≈s M.concat {1} {n} (λ _ → ctrl ·ₛ s) (ap g (λ _ → s)) k
 ctrl-lift {n} g s zero = ≈-trans (app-pair {1} {1} {n} ctrl-row g (λ _ → s) zero) (ap-ctrl-row {1} s zero)
 ctrl-lift {n} g s (suc k) = app-pair {1} {1} {n} ctrl-row g (λ _ → s) (suc k)
 
@@ -319,7 +319,7 @@ ap-∥ {m} A B y k =
           (+-cong (≈-trans (app-∘ A (M.p₁ {1} {m}) y k) (app-congᵥ A (ap-p₁₁ {m} y) k))
                   (≈-trans (app-∘ B (M.p₂ {1} {m}) y k) (app-congᵥ B (ap-p₂₁ {m} y) k)))
 
-ap-wctrl : ∀ {m n} (y : ∣ 𝔽 (suc m) ∣) (k : Fin n) → ap (wctrl {m} {n}) y k ≈s (c ·ₛ y zero)
+ap-wctrl : ∀ {m n} (y : ∣ 𝔽 (suc m) ∣) (k : Fin n) → ap (wctrl {m} {n}) y k ≈s (ctrl ·ₛ y zero)
 ap-wctrl {m} {n} y k =
   ≈-trans (app-∘ (ctrl-row {n}) (M.p₁ {1} {m}) y k)
           (≈-trans (app-congᵥ (ctrl-row {n}) (ap-p₁₁ {m} y) k) (ap-ctrl-row {n} (y zero) k))
@@ -336,26 +336,26 @@ ap-⊕₁ : ∀ {m b} (f : M.Matrix 1 1) (g : M.Matrix b m) (y : ∣ 𝔽 (suc m
 ap-⊕₁ {m} f g y zero = ≈-trans (ap-⊕ {m} {1} f g y zero) (app-congᵥ f (ap-p₁₁ {m} y) zero)
 ap-⊕₁ {m} f g y (suc k) = ≈-trans (ap-⊕ {m} {1} f g y (suc k)) (app-congᵥ g (ap-p₂₁ {m} y) k)
 
-ctrl-dep-unit : ∀ i s → ctrl-dep-at unit i s zero ≈s (c ·ₛ s)
+ctrl-dep-unit : ∀ i s → ctrl-dep-at unit i s zero ≈s (ctrl ·ₛ s)
 ctrl-dep-unit i s =
   ≈-trans (+-cong (·-cong +-runit ≈-refl) ≈-refl)
           (≈-trans +-runit (≈-trans ·-lunit +-runit))
 
-ctrl-dep-base : ∀ {σ} i s (k : Fin (sort-width σ)) → ctrl-dep-at (base σ) i s k ≈s (c ·ₛ s)
+ctrl-dep-base : ∀ {σ} i s (k : Fin (sort-width σ)) → ctrl-dep-at (base σ) i s k ≈s (ctrl ·ₛ s)
 ctrl-dep-base i s k = ≈-trans +-runit (≈-trans ·-lunit +-runit)
 
 ctrl-dep-inj₁ : ∀ {σ τ} (i : Ix σ) s →
-          (proj₁ (ctrl-dep-at (σ [+] τ) (inj₁ i) s) ≈s (c ·ₛ s)) ∧
+          (proj₁ (ctrl-dep-at (σ [+] τ) (inj₁ i) s) ≈s (ctrl ·ₛ s)) ∧
           Fib._≈_ σ i (proj₂ (ctrl-dep-at (σ [+] τ) (inj₁ i) s)) (ctrl-dep-at σ i s)
 ctrl-dep-inj₁ {σ} i s = ≈-trans +-runit +-runit , Fib.+-lunit σ i
 
 ctrl-dep-inj₂ : ∀ {σ τ} (i : Ix τ) s →
-          (proj₁ (ctrl-dep-at (σ [+] τ) (inj₂ i) s) ≈s (c ·ₛ s)) ∧
+          (proj₁ (ctrl-dep-at (σ [+] τ) (inj₂ i) s) ≈s (ctrl ·ₛ s)) ∧
           Fib._≈_ τ i (proj₂ (ctrl-dep-at (σ [+] τ) (inj₂ i) s)) (ctrl-dep-at τ i s)
 ctrl-dep-inj₂ {σ} {τ} i s = ≈-trans +-runit +-runit , Fib.+-lunit τ i
 
 ctrl-dep-pair : ∀ {σ τ} (i : Ix σ) (j : Ix τ) s →
-          (proj₁ (ctrl-dep-at (σ [×] τ) (i , j) s) ≈s (c ·ₛ s)) ∧
+          (proj₁ (ctrl-dep-at (σ [×] τ) (i , j) s) ≈s (ctrl ·ₛ s)) ∧
           (Fib._≈_ σ i (proj₁ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at σ i s) ∧
            Fib._≈_ τ j (proj₂ (proj₂ (ctrl-dep-at (σ [×] τ) (i , j) s))) (ctrl-dep-at τ j s))
 ctrl-dep-pair {σ} {τ} i j s =
@@ -364,7 +364,7 @@ ctrl-dep-pair {σ} {τ} i j s =
    Fib.trans τ j (Fib.+-lunit τ j) (Fib.+-lunit τ j))
 
 ctrl-dep-clo : ∀ {σ τ} (f : Ix (σ [→] τ)) s →
-         (proj₁ (ctrl-dep-at (σ [→] τ) f s) ≈s (c ·ₛ s)) ∧
+         (proj₁ (ctrl-dep-at (σ [→] τ) f s) ≈s (ctrl ·ₛ s)) ∧
          Payload._≈_ σ τ f (proj₂ (ctrl-dep-at (σ [→] τ) f s))
            (Payload.ε σ τ f)
 ctrl-dep-clo {σ} {τ} f s = ≈-trans +-runit +-runit , Payload.+-lunit σ τ f {Payload.ε σ τ f}
@@ -496,7 +496,7 @@ ctrl-add′ {suc N} (σ [→] τ) (s≤s p) {clo γ' t} {f} r s {o} {d} (h₀ , 
   ≈-trans (+-cong (ctrl-lift {width-env γ'} εₘ s zero) h₀)
           (+-cong (≈-sym (proj₁ (ctrl-dep-clo {σ} {τ} f s))) ≈-refl) ,
   λ s' {v} {j} rv z y hz {u} {U} D →
-    let e₀ : ((s' +ₛ (c ·ₛ s)) +ₛ o zero) ≈s (s' +ₛ (ap (ctrl-of (clo γ' t)) (λ _ → s) zero +ₛ o zero))
+    let e₀ : ((s' +ₛ (ctrl ·ₛ s)) +ₛ o zero) ≈s (s' +ₛ (ap (ctrl-of (clo γ' t)) (λ _ → s) zero +ₛ o zero))
         e₀ = ≈-trans +-assoc (+-cong ≈-refl (+-cong (≈-sym (ctrl-lift {width-env γ'} εₘ s zero)) ≈-refl))
     in
     DepRel-resp′ τ (bound₂ p) (r rv D)
@@ -511,7 +511,7 @@ ctrl-add′ {suc N} (σ [→] τ) (s≤s p) {clo γ' t} {f} r s {o} {d} (h₀ , 
                (Payload.sym σ τ f {proj₂ (Fib._+_ (σ [→] τ) f (ctrl-dep-at (σ [→] τ) f s) d)} {proj₂ d}
                   (payload-ctrl-dep σ τ f s d)))
             (Fib.refl τ (f .idxf .sfunc j) {f .famf .transf j .func y})))
-      (hc (s' +ₛ (c ·ₛ s)) rv z y (DepRel⊑-resp-ctrl′ σ (bound₁ p) rv (≈-sym e₀) hz) D)
+      (hc (s' +ₛ (ctrl ·ₛ s)) rv z y (DepRel⊑-resp-ctrl′ σ (bound₁ p) rv (≈-sym e₀) hz) D)
 ctrl-add′ (μ τ) p {roll v} {i} r s {o} {d} h =
   DepRel-resp′ (τ [ μ τ ]) (bound-μ τ p) r (λ k → ≈-refl)
     (Fib.sym (τ [ μ τ ]) i'
@@ -667,22 +667,22 @@ ctrl-dep-linear : ∀ τ (i : Ix τ) s s' →
             Fib._≈_ τ i (ctrl-dep-at τ i (s +ₛ s')) (Fib._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i s'))
 ctrl-dep-linear τ i s s' = ctrl-dep τ .at i .preserve-+ {s} {s'}
 
-ctrl-dep-c : ∀ τ (i : Ix τ) s → Fib._≈_ τ i (ctrl-dep-at τ i (c ·ₛ s)) (ctrl-dep-at τ i s)
+ctrl-dep-c : ∀ τ (i : Ix τ) s → Fib._≈_ τ i (ctrl-dep-at τ i (ctrl ·ₛ s)) (ctrl-dep-at τ i s)
 ctrl-dep-c τ i s =
   unit-section τ (λ ()) (λ ()) .at i .func-resp-≈
     (+-cong (≈-trans (≈-sym S.·-assoc) (·-cong c-idem ≈-refl)) ≈-refl)
 
-⊑ctrl-dep-mono : ∀ τ (i : Ix τ) s s' m → Fib._⊑_ τ i m (ctrl-dep-at τ i s) → Fib._⊑_ τ i m (ctrl-dep-at τ i (s' +ₛ (c ·ₛ s)))
+⊑ctrl-dep-mono : ∀ τ (i : Ix τ) s s' m → Fib._⊑_ τ i m (ctrl-dep-at τ i s) → Fib._⊑_ τ i m (ctrl-dep-at τ i (s' +ₛ (ctrl ·ₛ s)))
 ⊑ctrl-dep-mono τ i s s' m dm =
   Fib.⊑-trans τ i dm (Fib.⊑-trans τ i (IsJoin.inr (Fib.∨-isJoin τ i))
-    (Fib.≈→⊑ τ i (Fib.sym τ i (Fib.trans τ i (ctrl-dep-linear τ i s' (c ·ₛ s)) (Fib.+-cong τ i (Fib.refl τ i) (ctrl-dep-c τ i s))))))
+    (Fib.≈→⊑ τ i (Fib.sym τ i (Fib.trans τ i (ctrl-dep-linear τ i s' (ctrl ·ₛ s)) (Fib.+-cong τ i (Fib.refl τ i) (ctrl-dep-c τ i s))))))
 
 DepRel⊑-mono : ∀ τ {v : Val τ} {i : Ix τ} (r : ValRel τ v i) s s' {o d} →
-               DepRel⊑ τ r s o d → DepRel⊑ τ r (s' +ₛ (c ·ₛ s)) o d
+               DepRel⊑ τ r s o d → DepRel⊑ τ r (s' +ₛ (ctrl ·ₛ s)) o d
 DepRel⊑-mono τ {i = i} r s s' (m , (dm , h)) = m , (⊑ctrl-dep-mono τ i s s' m dm , h)
 
 EnvDepRel-mono : ∀ {Γ} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s s' {x g} →
-                 EnvDepRel rγ s x g → EnvDepRel rγ (s' +ₛ (c ·ₛ s)) x g
+                 EnvDepRel rγ s x g → EnvDepRel rγ (s' +ₛ (ctrl ·ₛ s)) x g
 EnvDepRel-mono emp s s' rel = prop.tt
 EnvDepRel-mono (_·_ {τ = τ} rγ r) s s' (rel , h) = EnvDepRel-mono rγ s s' rel , DepRel⊑-mono τ r s s' h
 
@@ -745,7 +745,7 @@ ap-rec-inputs {Γ} γ {m} v' F s x o k =
 ap-body-inputs : ∀ {Γ Γ' σ} (γ : Env Γ) (γ' : Env Γ') (v : Val σ)
                  (R : M.Matrix (suc (width-env γ')) (suc (width-env γ))) (T : M.Matrix (width v) (suc (width-env γ))) s x k →
                  ap (body-inputs γ γ' v ∘ ⟨ ⟨ M.I , R ⟩ , T ⟩) (inputs γ s x) k ≈s
-                 body-input γ' v ((c ·ₛ s) +ₛ ap R (inputs γ s x) zero) (λ l → ap R (inputs γ s x) (suc l)) (ap T (inputs γ s x)) k
+                 body-input γ' v ((ctrl ·ₛ s) +ₛ ap R (inputs γ s x) zero) (λ l → ap R (inputs γ s x) (suc l)) (ap T (inputs γ s x)) k
 ap-body-inputs γ γ' v R T s x k =
   ≈-trans (ap-∥-pair (from-ctrl M.∥ from-closure) from-argument ⟨ M.I , R ⟩ T y k)
   (≈-trans (+-cong (≈-trans (≈-sym (app-∘ (from-ctrl M.∥ from-closure) ⟨ M.I , R ⟩ y k))
@@ -766,7 +766,7 @@ ap-body-inputs γ γ' v R T s x k =
   from-argument : M.Matrix (suc (n' + p)) p
   from-argument = M.in₂ {1} ∘ M.in₂ {n'} {p}
   body-at : ∀ l → ((ap from-ctrl y l +ₛ ap from-closure o l) +ₛ ap from-argument z l) ≈s
-             body-input γ' v ((c ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
+             body-input γ' v ((ctrl ·ₛ s) +ₛ o zero) (λ l' → o (suc l')) z l
   body-at zero =
     ≈-trans (+-cong (+-cong (≈-trans (app-∘ (M.in₁ {1} {n' + p}) wctrl y zero)
                                      (≈-trans (app-in₁ {1} {n' + p} (ap wctrl y) zero) (ap-wctrl {width-env γ} {1} y zero)))
@@ -781,7 +781,7 @@ ap-body-inputs γ γ' v R T s x k =
 
 ap-branch-inputs : ∀ {Γ τ'} (γ : Env Γ) (v : Val τ') (R : M.Matrix (suc (width v)) (suc (width-env γ))) s x k →
                    ap (branch-inputs γ v ∘ ⟨ M.I , R ⟩) (inputs γ s x) k ≈s
-                   inputs (γ · v) (ap R (inputs γ s x) zero +ₛ (c ·ₛ s))
+                   inputs (γ · v) (ap R (inputs γ s x) zero +ₛ (ctrl ·ₛ s))
                      (λ l → ap (M.in₁ {width-env γ} {width v}) x l +ₛ
                             ap (M.in₂ {width-env γ} {width v}) (λ m → ap R (inputs γ s x) (suc m)) l) k
 ap-branch-inputs γ v R s x k =
@@ -792,7 +792,7 @@ ap-branch-inputs γ v R s x k =
   p = width v
   y = inputs γ s x
   branch-at : ∀ l → (ap (ctrl-row {1} ⊕ M.in₁ {n} {p}) y l +ₛ ap (M.I {1} ⊕ M.in₂ {n} {p}) (ap R y) l) ≈s
-             inputs (γ · v) (ap R y zero +ₛ (c ·ₛ s))
+             inputs (γ · v) (ap R y zero +ₛ (ctrl ·ₛ s))
                (λ m → ap (M.in₁ {n} {p}) x m +ₛ ap (M.in₂ {n} {p}) (λ m' → ap R y (suc m')) m) l
   branch-at zero =
     ≈-trans (+-cong (≈-trans (ap-⊕₁ {n} (ctrl-row {1}) (M.in₁ {n} {p}) y zero) (ap-ctrl-row {1} s zero))
@@ -820,19 +820,19 @@ ap-sub-inputs γ {m} {n} C s x o k =
 map-built : ∀ {Γ} (γ : Env Γ) {m n} (G : M.Matrix n (suc (width-env γ) + suc m)) s x (o : ∣ 𝔽 (suc m) ∣)
             (k : Fin (suc n)) →
             ap (map-built-out γ m n +ₘ (M.in₂ {1} {n} ∘ G)) (map-input γ s x o) k ≈s
-            M.concat {1} {n} (λ _ → (c ·ₛ s) +ₛ o zero) (ap G (map-input γ s x o)) k
+            M.concat {1} {n} (λ _ → (ctrl ·ₛ s) +ₛ o zero) (ap G (map-input γ s x o)) k
 map-built γ {m} {n} G s x o k =
   ≈-trans (app-+ₘ (map-built-out γ m n) (M.in₂ {1} {n} ∘ G) y k)
   (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) Z y k) (app-in₁ {1} {n} (ap Z y) k))
                    (≈-trans (app-∘ (M.in₂ {1} {n}) G y k) (app-in₂ {1} {n} (ap G y) k)))
   (≈-trans (concat-+ (ap Z y) (ap G y) k)
-           (M.concat-preserves _≈s_ {u₁ = ap Z y} {u₂ = λ _ → (c ·ₛ s) +ₛ o zero} {v₁ = ap G y} {v₂ = ap G y}
+           (M.concat-preserves _≈s_ {u₁ = ap Z y} {u₂ = λ _ → (ctrl ·ₛ s) +ₛ o zero} {v₁ = ap G y} {v₂ = ap G y}
               row (λ _ → ≈-refl) k)))
   where
   a = suc (width-env γ)
   y = map-input γ s x o
   Z = (wctrl ∘ M.p₁ {a} {suc m}) +ₘ (M.p₁ {1} {m} ∘ M.p₂ {a} {suc m})
-  row : ∀ l → ap Z y l ≈s ((c ·ₛ s) +ₛ o zero)
+  row : ∀ l → ap Z y l ≈s ((ctrl ·ₛ s) +ₛ o zero)
   row l =
     ≈-trans (app-+ₘ (wctrl ∘ M.p₁ {a} {suc m}) (M.p₁ {1} {m} ∘ M.p₂ {a} {suc m}) y l)
       (+-cong (≈-trans (app-∘ (wctrl {width-env γ} {1}) (M.p₁ {a} {suc m}) y l)
@@ -848,32 +848,32 @@ EnvDepRel-resp (_·_ {τ = τ} {γ = γ} {v = v} rγ r) s ex (rel , h) =
   EnvDepRel-resp rγ s (app-congᵥ (M.p₁ {width-env γ} {width v}) ex) rel ,
   DepRel⊑-resp τ r s (app-congᵥ (M.p₂ {width-env γ} {width v}) ex) h
 
-cs-absorb : ∀ s e → ((c ·ₛ s) +ₛ ((s ·ₛ c) ·ₛ e)) ≈s (c ·ₛ s)
+cs-absorb : ∀ s e → ((ctrl ·ₛ s) +ₛ ((s ·ₛ ctrl) ·ₛ e)) ≈s (ctrl ·ₛ s)
 cs-absorb s e =
   ≈-trans (+-cong ·-comm S.·-assoc)
   (≈-trans (≈-sym S.·-+-distribₗ)
   (≈-trans (·-cong ≈-refl (≈-trans +-comm (c-bound e))) ·-comm))
 
-ctrl-dep-split : ∀ τ (i : Ix τ) s a {o} → o ≈s ((c ·ₛ s) +ₛ a) →
-                 Fib._≈_ τ i (ctrl-dep-at τ i ((c ·ₛ s) +ₛ o))
+ctrl-dep-split : ∀ τ (i : Ix τ) s a {o} → o ≈s ((ctrl ·ₛ s) +ₛ a) →
+                 Fib._≈_ τ i (ctrl-dep-at τ i ((ctrl ·ₛ s) +ₛ o))
                              (Fib._+_ τ i (ctrl-dep-at τ i s) (ctrl-dep-at τ i a))
 ctrl-dep-split τ i s a eo =
   Fib.trans τ i (ctrl-dep τ .at i .func-resp-≈ (+-cong ≈-refl eo))
-    (Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) ((c ·ₛ s) +ₛ a))
+    (Fib.trans τ i (ctrl-dep-linear τ i (ctrl ·ₛ s) ((ctrl ·ₛ s) +ₛ a))
     (Fib.trans τ i (Fib.+-cong τ i (ctrl-dep-c τ i s)
-      (Fib.trans τ i (ctrl-dep-linear τ i (c ·ₛ s) a) (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.refl τ i))))
+      (Fib.trans τ i (ctrl-dep-linear τ i (ctrl ·ₛ s) a) (Fib.+-cong τ i (ctrl-dep-c τ i s) (Fib.refl τ i))))
     (Fib.trans τ i (Fib.sym τ i (Fib.+-assoc τ i)) (Fib.+-cong τ i (Fib.⊑-refl τ i) (Fib.refl τ i)))))
 
 
 built : ∀ {Γ} {γ : Env Γ} {n} (R' : M.Matrix n (suc (width-env γ))) s x (k : Fin (suc n)) →
         ap (built-out γ n +ₘ (M.in₂ {1} ∘ R')) (inputs γ s x) k ≈s
-        M.concat {1} {n} (λ _ → c ·ₛ s) (ap R' (inputs γ s x)) k
+        M.concat {1} {n} (λ _ → ctrl ·ₛ s) (ap R' (inputs γ s x)) k
 built {γ = γ} {n} R' s x k =
   ≈-trans (app-+ₘ (built-out γ n) (M.in₂ {1} ∘ R') y k)
   (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wctrl y k) (app-in₁ {1} {n} (ap wctrl y) k))
                    (≈-trans (app-∘ (M.in₂ {1} {n}) R' y k) (app-in₂ {1} {n} (ap R' y) k)))
   (≈-trans (concat-+ (ap wctrl y) (ap R' y) k)
-           (M.concat-preserves _≈s_ {u₁ = ap wctrl y} {u₂ = λ _ → c ·ₛ s} {v₁ = ap R' y} {v₂ = ap R' y}
+           (M.concat-preserves _≈s_ {u₁ = ap wctrl y} {u₂ = λ _ → ctrl ·ₛ s} {v₁ = ap R' y} {v₂ = ap R' y}
               (ap-wctrl {width-env γ} {1} y) (λ _ → ≈-refl) k)))
   where y = inputs γ s x
 
