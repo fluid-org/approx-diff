@@ -205,7 +205,7 @@ lambda⟶ {X} {Y} {Z} f .famf .natural {x₁} {x₂} x₁≈x₂ =
   where open ≈-Reasoning isEquiv
 
 private
-  module PP = HasProducts products
+  module Fam𝒞-P = HasProducts products
 
 lambda⟶-cong : ∀ {X Y Z} {f₁ f₂ : Mor (X ⊗ Y) Z} → f₁ ≃ f₂ → lambda⟶ f₁ ≃ lambda⟶ f₂
 lambda⟶-cong f₁≃f₂ .idxf-eq .func-eq x₁≈x₂ .idxf-eq .func-eq y₁≈y₂ = f₁≃f₂ .idxf-eq .func-eq (x₁≈x₂ , y₁≈y₂)
@@ -258,7 +258,7 @@ lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
   ∎
   where open ≈-Reasoning isEquiv
 
-β-rule : ∀ {X Y Z} (f : Mor (X ⊗ Y) Z) → Mor-∘ eval⟶ (PP.prod-m (lambda⟶ f) (Mor-id _)) ≃ f
+β-rule : ∀ {X Y Z} (f : Mor (X ⊗ Y) Z) → Mor-∘ eval⟶ (Fam𝒞-P.prod-m (lambda⟶ f) (Mor-id _)) ≃ f
 β-rule f .idxf-eq .func-eq = f .idxf .func-resp-≈
 β-rule {X} {Y} {Z} f .famf-eq .transf-eq {x , y} =
   begin
@@ -280,15 +280,15 @@ lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
   ∎
   where open ≈-Reasoning isEquiv
 
-η-rule : ∀ {X Y Z} (f : Mor X (Y ⟶ Z)) → lambda⟶ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y))) ≃ f
+η-rule : ∀ {X Y Z} (f : Mor X (Y ⟶ Z)) → lambda⟶ (Mor-∘ eval⟶ (Fam𝒞-P.prod-m f (Mor-id Y))) ≃ f
 η-rule f .idxf-eq .func-eq x₁≈x₂ .idxf-eq .func-eq y₁≈y₂ = f .idxf .func-resp-≈ x₁≈x₂ .idxf-eq .func-eq y₁≈y₂
 η-rule {X} {Y} {Z} f .idxf-eq .func-eq {x₁} {x₂} x₁≈x₂ .famf-eq .transf-eq {y} =
   begin
-    Z .fam .subst _ ∘ (id (Z .fam .fm (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf .func (x₁ , y))) ∘ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .famf .transf (x₁ , y) ∘ in₂))
+    Z .fam .subst _ ∘ (id (Z .fam .fm (Mor-∘ eval⟶ (Fam𝒞-P.prod-m f (Mor-id Y)) .idxf .func (x₁ , y))) ∘ (Mor-∘ eval⟶ (Fam𝒞-P.prod-m f (Mor-id Y)) .famf .transf (x₁ , y) ∘ in₂))
   ≈⟨ ∘-cong ≈-refl id-left ⟩
-    Z .fam .subst _ ∘ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .famf .transf (x₁ , y) ∘ in₂)
+    Z .fam .subst _ ∘ (Mor-∘ eval⟶ (Fam𝒞-P.prod-m f (Mor-id Y)) .famf .transf (x₁ , y) ∘ in₂)
   ≈⟨ ∘-cong ≈-refl (∘-cong id-left ≈-refl) ⟩
-    Z .fam .subst _ ∘ ((copair (evalΠ _ y) (f .idxf .func x₁ .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x₁ , y)) ∘ in₂)
+    Z .fam .subst _ ∘ ((copair (evalΠ _ y) (f .idxf .func x₁ .famf .transf y) ∘ Fam𝒞-P.prod-m f (Mor-id Y) .famf .transf (x₁ , y)) ∘ in₂)
   ≈⟨ ∘-cong ≈-refl (∘-cong (∘-cong ≈-refl (pair-cong id-left id-left)) ≈-refl) ⟩
     Z .fam .subst _ ∘ ((copair (evalΠ _ y) (f .idxf .func x₁ .famf .transf y) ∘ prod-m (f .famf .transf x₁) (id (Y .fam .fm y))) ∘ in₂)
   ≈⟨ ∘-cong ≈-refl (∘-cong (copair-prod _ BP) ≈-refl) ⟩
@@ -304,26 +304,26 @@ lambda⟶-cong {X}{Y}{Z}{f₁}{f₂} f₁≃f₂ .famf-eq .transf-eq {x} = begin
 η-rule {X} {Y} {Z} f .famf-eq .transf-eq {x} =
   let open ≈-Reasoning isEquiv in
   begin
-    Π-map (reindex-≈ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) _) ∘ lambdaΠ (X .fam .fm x) (Z .fam [ Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x ]) (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (PP.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (PP.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x))
+    Π-map (reindex-≈ (Mor-∘ eval⟶ (Fam𝒞-P.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) _) ∘ lambdaΠ (X .fam .fm x) (Z .fam [ Mor-∘ eval⟶ (Fam𝒞-P.prod-m f (Mor-id Y)) .idxf ∘S nudge x ]) (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (Fam𝒞-P.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (Fam𝒞-P.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x))
   ≈˘⟨ lambda-compose _ _ ⟩
-    lambdaΠ (X .fam .fm x) (Z .fam [ f .idxf .func x .idxf ]) (reindex-≈ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) _ ∘f (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (PP.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (PP.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x)))
+    lambdaΠ (X .fam .fm x) (Z .fam [ f .idxf .func x .idxf ]) (reindex-≈ (Mor-∘ eval⟶ (Fam𝒞-P.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) _ ∘f (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (Fam𝒞-P.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (Fam𝒞-P.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x)))
   ≈⟨ lambdaΠ-cong η-rule-pointwise ⟩
     lambdaΠ (X .fam .fm x) (Z .fam [ f .idxf .func x .idxf ]) (evalΠf (Z .fam [ f .idxf .func x .idxf ]) ∘f constF (f .famf .transf x))
   ≈⟨ ΠP .lambda-ext ⟩
     f .famf .transf x
   ∎
   where
-  η-rule-pointwise : (reindex-≈ (Mor-∘ eval⟶ (PP.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) (record { func-eq = f .idxf .func x .idxf .func-resp-≈ }) ∘f (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (PP.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (PP.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x)))
+  η-rule-pointwise : (reindex-≈ (Mor-∘ eval⟶ (Fam𝒞-P.prod-m f (Mor-id Y)) .idxf ∘S nudge x) (f .idxf .func x .idxf) (record { func-eq = f .idxf .func x .idxf .func-resp-≈ }) ∘f (reindex-comp ∘f (reindex-f (nudge x) (reindex-comp ∘f (reindex-f (Fam𝒞-P.prod-m f (Mor-id Y) .idxf) (eval⟶ .famf) ∘f (Fam𝒞-P.prod-m f (Mor-id Y) .famf))) ∘f nudge-in₁ x)))
                      ≃f (evalΠf (Z .fam [ f .idxf .func x .idxf ]) ∘f constF (f .famf .transf x))
   η-rule-pointwise .transf-eq {y} =
     begin
-      fam Z .subst _ ∘ (id _ ∘ ((id _ ∘ (copair (evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ in₁))
+      fam Z .subst _ ∘ (id _ ∘ ((id _ ∘ (copair (evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ Fam𝒞-P.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ in₁))
     ≈⟨ ∘-cong (refl* (Z .fam)) id-left ⟩
-      id _ ∘ ((id _ ∘ (copair (evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ in₁)
+      id _ ∘ ((id _ ∘ (copair (evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ Fam𝒞-P.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ in₁)
     ≈⟨ id-left ⟩
-      (id _ ∘ (copair (evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ in₁
+      (id _ ∘ (copair (evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ Fam𝒞-P.prod-m f (Mor-id Y) .famf .transf (x , y))) ∘ in₁
     ≈⟨ ∘-cong id-left ≈-refl ⟩
-      (copair (evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ PP.prod-m f (Mor-id Y) .famf .transf (x , y)) ∘ in₁
+      (copair (evalΠ _ y) (f .idxf .func x .famf .transf y) ∘ Fam𝒞-P.prod-m f (Mor-id Y) .famf .transf (x , y)) ∘ in₁
     ≈⟨ ∘-cong (∘-cong ≈-refl (pair-cong id-left id-left)) ≈-refl ⟩
       (copair (evalΠ _ _) (f .idxf .func x .famf .transf y) ∘ prod-m (f .famf .transf x) (Mor-id Y .famf .transf y)) ∘ in₁
     ≈⟨ ∘-cong (copair-prod _ BP) ≈-refl ⟩
