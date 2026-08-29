@@ -68,7 +68,7 @@ open HR using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-p
 
 private
   module Fam⟨𝒟⟩μ-cat = Category Fam⟨𝒟⟩μ.cat
-  module Fam⟨𝒟⟩μ-P = HasProducts Fam⟨𝒟⟩μ.products
+  open HasProducts Fam⟨𝒟⟩μ.products using (product-preserves-iso)
   module Fam⟨𝒟⟩μ-CP = HasCoproducts Fam⟨𝒟⟩μ.coproducts
 
 ∅𝒞 : Fin 0 → Fam⟨𝒞⟩μ.Obj
@@ -185,7 +185,7 @@ private
   Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨F⟩-L _)
     (Fam⟨𝒟⟩μ.Lf-iso
       (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
-        (Fam⟨𝒟⟩μ-P.product-preserves-iso (⟦ fo₁ ⟧-iso δ𝒞) (⟦ fo₂ ⟧-iso δ𝒞))))
+        (product-preserves-iso (⟦ fo₁ ⟧-iso δ𝒞) (⟦ fo₂ ⟧-iso δ𝒞))))
 ⟦ μ fo ⟧-iso        δ𝒞 =
   Fam⟨𝒟⟩μ-cat.Iso-trans (HR.fibrewise.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
     (≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
@@ -206,11 +206,11 @@ closed-iso (fo₁ [×] fo₂) =
   Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨F⟩-L _)
     (Fam⟨𝒟⟩μ.Lf-iso
       (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
-        (Fam⟨𝒟⟩μ-P.product-preserves-iso (closed-iso fo₁) (closed-iso fo₂))))
+        (product-preserves-iso (closed-iso fo₁) (closed-iso fo₂))))
 closed-iso (μ {τ = τ} fo) = Fam⟨𝒟⟩μ-cat.Iso-trans (⟦ μ fo ⟧-iso ∅𝒞) (≡-Iso (𝒟-ty-cong (μ τ) (λ ())))
 
 ⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → Fam⟨𝒟⟩μ-cat.Iso (Fam⟨F⟩ .fobj 𝒞⟦ Γ-fo ⟧ctxt) (𝒟⟦ Γ ⟧ctxt)
 ⟦ emp ⟧ctxt-iso    = Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-terminal
 ⟦ Γ-fo , fo ⟧ctxt-iso =
   Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
-    (Fam⟨𝒟⟩μ-P.product-preserves-iso ⟦ Γ-fo ⟧ctxt-iso (closed-iso fo))
+    (product-preserves-iso ⟦ Γ-fo ⟧ctxt-iso (closed-iso fo))
