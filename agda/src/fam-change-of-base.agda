@@ -33,11 +33,11 @@ module fam-change-of-base {o m e o₂ m₂ e₂} (os es : Level)
     (F-terminal : preserve-chosen-terminal F T𝒞 T𝒟)
     (F-prod : preserve-chosen-products F (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟))
     (let module L𝒞 = lifting CM𝒞 BP𝒞 𝟙𝒞) (let module L𝒟 = lifting CM𝒟 BP𝒟 𝟙𝒟)
-    (let module 𝒞 = Category 𝒞) (let module 𝒟 = Category 𝒟)
-    (F-L : ∀ X → 𝒟.Iso (Functor.fobj F (L𝒞.L X)) (L𝒟.L (Functor.fobj F X)))
+    (let module 𝒞 = Category 𝒞) (let module 𝒟 = Category 𝒟) (let open Functor)
+    (F-L : ∀ X → 𝒟.Iso (fobj F (L𝒞.L X)) (L𝒟.L (fobj F X)))
     (F-L-natural : ∀ {X Y} (f : X 𝒞.⇒ Y) →
-       (F-L Y .𝒟.Iso.fwd 𝒟.∘ Functor.fmor F (L𝒞.Lmap f))
-         𝒟.≈ (L𝒟.Lmap (Functor.fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
+       (F-L Y .𝒟.Iso.fwd 𝒟.∘ fmor F (L𝒞.Lmap f))
+         𝒟.≈ (L𝒟.Lmap (fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
     where
 
 module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM𝒞 BP𝒞 𝟙𝒞

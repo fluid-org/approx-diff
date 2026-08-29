@@ -382,9 +382,9 @@ module _ {o m e} {𝒞 : Category o m e} os es
   private
     module 𝒞 = Category 𝒞
     module Fam𝒞 = CategoryOfFamilies os es 𝒞
-    module L = StrongFunctor 𝕃
-    module FP = HasProducts 𝒞P
+    module 𝕃 = StrongFunctor 𝕃
 
+  open HasProducts 𝒞P using (pair-cong; prod-m-cong; prod-m-id; prod-m-comp)
   open Fam
   open _⇒f_
   open _≃f_
@@ -395,41 +395,41 @@ module _ {o m e} {𝒞 : Category o m e} os es
   open Functor
 
   FamF-strong : StrongFunctor (Fam𝒞.products.products 𝒞P)
-  FamF-strong .StrongFunctor.F = FamF os es (L.F)
+  FamF-strong .StrongFunctor.F = FamF os es (𝕃.F)
   FamF-strong .StrongFunctor.strengthᵣ .idxf = idS _
-  FamF-strong .StrongFunctor.strengthᵣ .famf .transf (x , y) = L.strengthᵣ
+  FamF-strong .StrongFunctor.strengthᵣ .famf .transf (x , y) = 𝕃.strengthᵣ
   FamF-strong .StrongFunctor.strengthᵣ {X} {Y} .famf .natural (e₁ , e₂) =
-    𝒞.≈-sym (L.strengthᵣ-natural (X .fam .subst e₁) (Y .fam .subst e₂))
+    𝒞.≈-sym (𝕃.strengthᵣ-natural (X .fam .subst e₁) (Y .fam .subst e₂))
   FamF-strong .StrongFunctor.strengthᵣ-natural f g .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) =
     f .idxf ._⇒s_.func-resp-≈ e₁ , g .idxf ._⇒s_.func-resp-≈ e₂
   FamF-strong .StrongFunctor.strengthᵣ-natural {x₂ = X₂} {y₂ = Y₂} f g .famf-eq .transf-eq {x , y} =
     𝒞.≈-trans (𝒞.∘-cong₂ 𝒞.id-left)
       (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _))
         (𝒞.≈-trans
-          (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (L.fmor-comp _ _))
-            (L.fmor-cong
-              (𝒞.≈-trans (𝒞.∘-cong₂ (FP.pair-cong 𝒞.id-left 𝒞.id-left))
-                (𝒞.≈-trans (𝒞.≈-sym (FP.prod-m-comp _ _ _ _))
-                  (FP.prod-m-cong
+          (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (𝕃.fmor-comp _ _))
+            (𝕃.fmor-cong
+              (𝒞.≈-trans (𝒞.∘-cong₂ (pair-cong 𝒞.id-left 𝒞.id-left))
+                (𝒞.≈-trans (𝒞.≈-sym (prod-m-comp _ _ _ _))
+                  (prod-m-cong
                     (𝒞.≈-trans (𝒞.∘-cong₁ (X₂ .fam .refl*)) 𝒞.id-left)
                     (𝒞.≈-trans (𝒞.∘-cong₁ (Y₂ .fam .refl*)) 𝒞.id-left)))))))
-          (𝒞.≈-trans (L.strengthᵣ-natural (f .famf .transf x) (g .famf .transf y))
+          (𝒞.≈-trans (𝕃.strengthᵣ-natural (f .famf .transf x) (g .famf .transf y))
             (𝒞.≈-sym (𝒞.≈-trans 𝒞.id-left
-              (𝒞.∘-cong₂ (FP.pair-cong 𝒞.id-left 𝒞.id-left)))))))
+              (𝒞.∘-cong₂ (pair-cong 𝒞.id-left 𝒞.id-left)))))))
   FamF-strong .StrongFunctor.strengthᵣ-p₂ .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) = e₂
   FamF-strong .StrongFunctor.strengthᵣ-p₂ {y = Y} .famf-eq .transf-eq =
     𝒞.≈-trans (𝒞.∘-cong₂ 𝒞.id-left)
       (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _))
-        (𝒞.≈-trans (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (L.fmor-comp _ _))
-                                (L.fmor-cong (𝒞.≈-trans (𝒞.∘-cong₁ (Y .fam .refl*)) 𝒞.id-left))))
-          L.strengthᵣ-p₂))
+        (𝒞.≈-trans (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (𝕃.fmor-comp _ _))
+                                (𝕃.fmor-cong (𝒞.≈-trans (𝒞.∘-cong₁ (Y .fam .refl*)) 𝒞.id-left))))
+          𝕃.strengthᵣ-p₂))
   FamF-strong .StrongFunctor.strengthᵣ-assoc .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) = e₁ , (e₁ , e₂)
   FamF-strong .StrongFunctor.strengthᵣ-assoc {x = X} {y = Y} .famf-eq .transf-eq =
     𝒞.≈-trans
       (𝒞.∘-cong₁ (𝒞.≈-trans
-        (L.fmor-cong (𝒞.≈-trans (FP.prod-m-cong (X .fam .refl*) (FP.prod-m-cong (X .fam .refl*) (Y .fam .refl*)))
-                       (𝒞.≈-trans (FP.prod-m-cong 𝒞.≈-refl FP.prod-m-id) FP.prod-m-id)))
-        L.fmor-id))
+        (𝕃.fmor-cong (𝒞.≈-trans (prod-m-cong (X .fam .refl*) (prod-m-cong (X .fam .refl*) (Y .fam .refl*)))
+                       (𝒞.≈-trans (prod-m-cong 𝒞.≈-refl prod-m-id) prod-m-id)))
+        𝕃.fmor-id))
       (𝒞.≈-trans 𝒞.id-left
         (𝒞.≈-trans 𝒞.id-left
-          (𝒞.≈-trans L.strengthᵣ-assoc (𝒞.≈-sym 𝒞.id-left))))
+          (𝒞.≈-trans 𝕃.strengthᵣ-assoc (𝒞.≈-sym 𝒞.id-left))))
