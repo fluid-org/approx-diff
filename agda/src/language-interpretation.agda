@@ -35,17 +35,17 @@ module language-interpretation
   {o m e} (os es : Level) {𝒞 : Category o m e} (let module 𝒞 = Category 𝒞)
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   (𝟙c : 𝒞.obj)
-  (let module R = fam-mu-lifting os es CM BP 𝟙c)
-  (𝒞E : HasExponentials R.cat R.products)
-  (δ∅ : Fin 0 → R.Obj)
-  (𝟙ty : R.Obj)
-  (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
-  (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
-  (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
+  (let module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM BP 𝟙c)
+  (𝒞E : HasExponentials Fam⟨𝒞⟩μ.cat Fam⟨𝒞⟩μ.products)
+  (δ∅ : Fin 0 → Fam⟨𝒞⟩μ.Obj)
+  (𝟙ty : Fam⟨𝒞⟩μ.Obj)
+  (unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T)) 𝟙ty)
+  (let Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝟙ty))
+  (Int : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T , Fam⟨𝒞⟩μ.products , Bool ] Sig)
   (ctrl-w : 𝟙c 𝒞.⇒ 𝟙c)
-  (exp-section : ∀ {X Y : R.Obj} → R.Section (HasExponentials.exp 𝒞E X Y))
-  (𝟙ty-section : R.Section 𝟙ty)
-  (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))
+  (exp-section : ∀ {X Y : Fam⟨𝒞⟩μ.Obj} → Fam⟨𝒞⟩μ.Section (HasExponentials.exp 𝒞E X Y))
+  (𝟙ty-section : Fam⟨𝒞⟩μ.Section 𝟙ty)
+  (sort-section : ∀ s → Fam⟨𝒞⟩μ.Section (Model.⟦sort⟧ Int s))
   where
 
 open import language-type-interpretation Sig os es T CM BP 𝟙c 𝒞E δ∅ 𝟙ty unit-pt Int ctrl-w
@@ -1222,17 +1222,17 @@ abstract
   roll-mor τ = inMap (as-poly τ (λ ())) δ∅ ∘ sub-as-apply-fwd τ (μ τ)
 
   unroll-mor : (τ : type 1) → ⟦ μ τ ⟧ty (λ ()) ⇒ ⟦ τ [ μ τ ] ⟧ty (λ ())
-  unroll-mor τ = sub-as-apply-bwd τ (μ τ) ∘ R.LambekDef.outMor (as-poly τ (λ ())) δ∅
+  unroll-mor τ = sub-as-apply-bwd τ (μ τ) ∘ Fam⟨𝒞⟩μ.LambekDef.outMor (as-poly τ (λ ())) δ∅
 
   unroll-roll : (τ : type 1) → (unroll-mor τ ∘ roll-mor τ) ≈ id _
   unroll-roll τ =
-    ≈-trans (tail-cong (head-cancel (R.LambekDef.outMor-inMor (as-poly τ (λ ())) δ∅)))
+    ≈-trans (tail-cong (head-cancel (Fam⟨𝒞⟩μ.LambekDef.outMor-inMor (as-poly τ (λ ())) δ∅)))
              (sub-as-apply-bwd-fwd τ (μ τ))
 
   roll-unroll : (τ : type 1) → (roll-mor τ ∘ unroll-mor τ) ≈ id _
   roll-unroll τ =
     ≈-trans (tail-cong (head-cancel (sub-as-apply-fwd-bwd τ (μ τ))))
-             (R.LambekDef.inMor-outMor (as-poly τ (λ ())) δ∅)
+             (Fam⟨𝒞⟩μ.LambekDef.inMor-outMor (as-poly τ (λ ())) δ∅)
 
   sub-as-apply-fwd-roll : ∀ (τ' : type 2) (ρ : type 0) →
     (sub-as-apply-fwd (μ τ') ρ ∘ roll-mor (τ' [ ρ ]₁))
@@ -1628,7 +1628,7 @@ fold-map-mu τ₀ σ τ' {Γ'} B =
 ⟦ succ x ⟧var = ⟦ x ⟧var ∘ p₁
 
 open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
-open PointedFPCat PFPC[ R.cat , R.terminal T , R.products , Bool ] using (list→product)
+open PointedFPCat PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T , Fam⟨𝒞⟩μ.products , Bool ] using (list→product)
 
 mutual
   ⟦_⟧tm : ∀ {Γ τ} → Γ ⊢ τ → ⟦ Γ ⟧ctxt ⇒ ⟦ τ ⟧ty (λ ())

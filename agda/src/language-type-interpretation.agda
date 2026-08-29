@@ -27,22 +27,20 @@ module language-type-interpretation
   {o m e} (os es : Level) {𝒞 : Category o m e} (let module 𝒞 = Category 𝒞)
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
   (𝟙c : 𝒞.obj)
-  (let module R = fam-mu-lifting os es CM BP 𝟙c)
-  (𝒞E : HasExponentials R.cat R.products)
-  (δ∅ : Fin 0 → R.Obj)
-  (𝟙ty : R.Obj)
-  (unit-pt : R.Mor (HasTerminal.witness (R.terminal T)) 𝟙ty)
-  (let Bool = HasCoproducts.coprod R.coproducts (R.Lf 𝟙ty) (R.Lf 𝟙ty))
-  (Int : Model PFPC[ R.cat , R.terminal T , R.products , Bool ] Sig)
+  (let module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM BP 𝟙c)
+  (𝒞E : HasExponentials Fam⟨𝒞⟩μ.cat Fam⟨𝒞⟩μ.products)
+  (δ∅ : Fin 0 → Fam⟨𝒞⟩μ.Obj)
+  (𝟙ty : Fam⟨𝒞⟩μ.Obj)
+  (unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T)) 𝟙ty)
+  (let Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝟙ty))
+  (Int : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T , Fam⟨𝒞⟩μ.products , Bool ] Sig)
   (ctrl-w : 𝟙c 𝒞.⇒ 𝟙c)
-  (exp-section : ∀ {X Y : R.Obj} → R.Section (HasExponentials.exp 𝒞E X Y))
-  (𝟙ty-section : R.Section 𝟙ty)
-  (sort-section : ∀ s → R.Section (Model.⟦sort⟧ Int s))
+  (exp-section : ∀ {X Y : Fam⟨𝒞⟩μ.Obj} → Fam⟨𝒞⟩μ.Section (HasExponentials.exp 𝒞E X Y))
+  (𝟙ty-section : Fam⟨𝒞⟩μ.Section 𝟙ty)
+  (sort-section : ∀ s → Fam⟨𝒞⟩μ.Section (Model.⟦sort⟧ Int s))
   where
 
--- The lifting again, bound here rather than in the telescope: names opened through a module the
--- telescope binds by let do not re-export.
-module Fam = fam-mu-lifting os es CM BP 𝟙c
+module Fam = Fam⟨𝒞⟩μ
 
 open Fam using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF-natural;
                 strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-p₂;
@@ -83,7 +81,7 @@ mutual
   ⟦_⟧ty : ∀ {Δ} → type Δ → (Fin Δ → obj) → obj
   ⟦ τ ⟧ty δ = fobj μ-obj (as-poly {n = 0} τ δ) δ∅
 
-  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly R.cat n
+  as-poly : ∀ {Δ n} → type (n + Δ) → (Fin Δ → obj) → Poly Fam.cat n
   as-poly {Δ} {n} (var i) δ = [ Poly.var , (λ j → Poly.const (δ j)) ] (splitAt n i)
   as-poly unit            δ = Poly.const 𝟙ty
   as-poly (base s)        δ = Poly.const (⟦sort⟧ s)
@@ -93,7 +91,7 @@ mutual
   as-poly (μ τ)           δ = Poly.μ (as-poly τ δ)
 
 as-poly-var-section : ∀ {Δ n} (δ : Fin Δ → obj) → (∀ i → Section (δ i)) → (s : Fin n ⊎ Fin Δ) →
-                      PolySection ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+                      PolySection ([_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ j)) s)
 as-poly-var-section δ δc (inj₁ k) = lift tt
 as-poly-var-section δ δc (inj₂ j) = δc j
 
@@ -108,7 +106,7 @@ as-poly-section (σ [→] τ) δ δc = Lf-section exp-section
 as-poly-section (μ τ)     δ δc = as-poly-section τ δ δc
 
 unit-section : ∀ {Δ} (τ : type Δ) (δ : Fin Δ → obj) → (∀ i → Section (δ i)) → Section (⟦ τ ⟧ty δ)
-unit-section τ δ δc = R.poly-section (as-poly τ δ) (as-poly-section τ δ δc) (λ ())
+unit-section τ δ δc = poly-section (as-poly τ δ) (as-poly-section τ δ δc) (λ ())
 
 ctrl-dep : ∀ (τ : type 0) → Section (⟦ τ ⟧ty (λ ()))
 ctrl-dep τ = scale-section ctrl-w (unit-section τ (λ ()) (λ ()))
@@ -164,7 +162,7 @@ ty-ren : ∀ {Δ₁ Δ₂} (ρ : TyRen Δ₁ Δ₂) (τ : type Δ₁) (δ : Fin 
 ty-ren ρ τ δ = cong (λ P → fobj μ-obj P δ∅) (as-poly-ren ρ τ δ)
 
 private
-  module CP = HasCoproducts (strong-coproducts→coproducts (R.terminal T) R.strongCoproducts)
+  module CP = HasCoproducts (strong-coproducts→coproducts (Fam.terminal T) Fam.strongCoproducts)
 
 coprod-m-strong : ∀ {X X' Y Y'} (f : X ⇒ X') (g : Y ⇒ Y') → coprod-m f g ≈ CP.coprod-m f g
 coprod-m-strong f g = ≈-trans (copair-cong (≈-sym (CP.copair-in₁ _ _)) (≈-sym (CP.copair-in₂ _ _))) (copair-ext _)
@@ -242,11 +240,11 @@ private
   module [+]-laws = binary-map (λ A B → coprod (Lf A) (Lf B)) [+]-map [+]-map-cong [+]-map-comp [+]-map-id
   module [×]-laws = binary-map (λ A B → Lf (prod A B)) [×]-map [×]-map-cong [×]-map-comp [×]-map-id
 
-fmor-[+] : ∀ {k} (P Q : Poly R.cat k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
+fmor-[+] : ∀ {k} (P Q : Poly Fam.cat k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
            fmor (P Poly.+ Q) fs ≈ [+]-map (fmor P fs) (fmor Q fs)
 fmor-[+] P Q fs = ≈-trans (fmor-+ P Q fs) (≈-sym (coprod-m-strong _ _))
 
-fmor-[×] : ∀ {k} (P Q : Poly R.cat k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
+fmor-[×] : ∀ {k} (P Q : Poly Fam.cat k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
            fmor (P Poly.× Q) fs ≈ [×]-map (fmor P fs) (fmor Q fs)
 fmor-[×] = fmor-×
 
@@ -363,9 +361,9 @@ strong-as-poly-map-natural {Δ} {n} (μ τ) {Γ'} {δ} {δ'} hs {δ₀} {δ₀'}
   ≈-trans (fusion {P = P} {δ = δ₀} algA alg⋆ SFμ' prem₁)
           (≈-sym (fusion {P = P} {δ = δ₀} algF alg⋆ SAμ' prem₂))
   where
-  P : Poly R.cat (suc n)
+  P : Poly Fam.cat (suc n)
   P = as-poly {Δ} {suc n} τ δ
-  Q : Poly R.cat (suc n)
+  Q : Poly Fam.cat (suc n)
   Q = as-poly {Δ} {suc n} τ δ'
   M₀  = μ-obj Q δ₀
   M₀' = μ-obj Q δ₀'
@@ -455,11 +453,11 @@ strong-as-poly-map-comp (σ [→] τ) hs' hs δ₀ = coKl.id-left
 strong-as-poly-map-comp {Δ} {n} (μ τ) {Γ'} {δ} {δ'} {δ''} hs' hs δ₀ =
   fusion {P = P} {δ = δ₀} (inMap Q' δ₀ ∘ SA₁) (inMap Q'' δ₀ ∘ SA₁₂) Sμ'' prem
   where
-  P : Poly R.cat (suc n)
+  P : Poly Fam.cat (suc n)
   P = as-poly {Δ} {suc n} τ δ
-  Q' : Poly R.cat (suc n)
+  Q' : Poly Fam.cat (suc n)
   Q' = as-poly {Δ} {suc n} τ δ'
-  Q'' : Poly R.cat (suc n)
+  Q'' : Poly Fam.cat (suc n)
   Q'' = as-poly {Δ} {suc n} τ δ''
   M'  = μ-obj Q' δ₀
   M'' = μ-obj Q'' δ₀
@@ -606,9 +604,9 @@ preserves-as-poly-var-map : ∀ {Δ n} {δ δ' : Fin Δ → obj} {gs : ∀ i →
   (∀ i → preserves-section (gs i) (δc i) (δ'c i)) →
   (δ₀ : Fin n → obj) (δ₀c : ∀ i → Section (δ₀ i)) (s : Fin n ⊎ Fin Δ) →
   preserves-section (as-poly-var-map gs δ₀ s)
-    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+    (poly-section ([_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ j)) s)
       (as-poly-var-section δ δc s) δ₀c)
-    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ' j)) s)
+    (poly-section ([_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ' j)) s)
       (as-poly-var-section δ' δ'c s) δ₀c)
 preserves-as-poly-var-map hgs δ₀ δ₀c (inj₁ j) = preserves-section-id (δ₀c j)
 preserves-as-poly-var-map hgs δ₀ δ₀c (inj₂ k) = hgs k
@@ -651,7 +649,7 @@ preserves-as-poly-map {n = n} (μ τ) {δ} {δ'} {gs} {δc} {δ'c} hgs δ₀ δ�
       (extend-section δ₀c
         (poly-section (as-poly (μ τ) δ') (as-poly-section (μ τ) δ' δ'c) δ₀c)))
 
-fmor-extend-swap : ∀ {k} (P : Poly R.cat (suc k)) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) {X Y : obj} (h : X ⇒ Y) →
+fmor-extend-swap : ∀ {k} (P : Poly Fam.cat (suc k)) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) {X Y : obj} (h : X ⇒ Y) →
                    (fmor P (extend-mor (λ i → id _) h) ∘ fmor P (extend-mor fs (id _)))
                      ≈ (fmor P (extend-mor fs (id _)) ∘ fmor P (extend-mor (λ i → id _) h))
 fmor-extend-swap P fs h =
@@ -724,26 +722,26 @@ mutual
       M' = μ-obj (as-poly τ δ') δ₀
       N' = μ-obj (as-poly τ δ') δ₀'
 
-cast : ∀ {n} {P P' : Poly R.cat n} → P ≡ P' → (δ₀ : Fin n → obj) → fobj μ-obj P δ₀ ⇒ fobj μ-obj P' δ₀
+cast : ∀ {n} {P P' : Poly Fam.cat n} → P ≡ P' → (δ₀ : Fin n → obj) → fobj μ-obj P δ₀ ⇒ fobj μ-obj P' δ₀
 cast e δ₀ = ≡-to-⇒ (cong (λ P → fobj μ-obj P δ₀) e)
 
-cast-natural : ∀ {n} {P P' : Poly R.cat n} (e : P ≡ P') {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
+cast-natural : ∀ {n} {P P' : Poly Fam.cat n} (e : P ≡ P') {δ₀ δ₀' : Fin n → obj} (fs : ∀ i → δ₀ i ⇒ δ₀' i) →
                (fmor P' fs ∘ cast e δ₀) ≈ (cast e δ₀' ∘ fmor P fs)
 cast-natural refl fs = ≈-trans id-right (≈-sym id-left)
 
-cast-+ : ∀ {n} {P P' Q Q' : Poly R.cat n} (e₁ : P ≡ P') (e₂ : Q ≡ Q') (δ₀ : Fin n → obj) →
+cast-+ : ∀ {n} {P P' Q Q' : Poly Fam.cat n} (e₁ : P ≡ P') (e₂ : Q ≡ Q') (δ₀ : Fin n → obj) →
          cast (cong₂ Poly._+_ e₁ e₂) δ₀ ≈ [+]-map (cast e₁ δ₀) (cast e₂ δ₀)
 cast-+ refl refl δ₀ = ≈-sym [+]-map-id
 
-cast-× : ∀ {n} {P P' Q Q' : Poly R.cat n} (e₁ : P ≡ P') (e₂ : Q ≡ Q') (δ₀ : Fin n → obj) →
+cast-× : ∀ {n} {P P' Q Q' : Poly Fam.cat n} (e₁ : P ≡ P') (e₂ : Q ≡ Q') (δ₀ : Fin n → obj) →
          cast (cong₂ Poly._×_ e₁ e₂) δ₀ ≈ [×]-map (cast e₁ δ₀) (cast e₂ δ₀)
 cast-× refl refl δ₀ = ≈-sym [×]-map-id
 
-cast-μ : ∀ {n} {P P' : Poly R.cat (suc n)} (e : P ≡ P') (δ₀ : Fin n → obj) →
+cast-μ : ∀ {n} {P P' : Poly Fam.cat (suc n)} (e : P ≡ P') (δ₀ : Fin n → obj) →
          cast (cong Poly.μ e) δ₀ ≈ μ-map P δ₀ P' δ₀ (cast e (extend δ₀ (μ-obj P' δ₀)))
 cast-μ refl δ₀ = ≈-sym (μ-map-id _ _)
 
-cast-irr : ∀ {n} {P Q : Poly R.cat n} (e e' : P ≡ Q) (δ₀ : Fin n → obj) → cast e δ₀ ≈ cast e' δ₀
+cast-irr : ∀ {n} {P Q : Poly Fam.cat n} (e e' : P ≡ Q) (δ₀ : Fin n → obj) → cast e δ₀ ≈ cast e' δ₀
 cast-irr refl refl δ₀ = ≈-refl
 
 private
@@ -772,8 +770,8 @@ cast-as-poly-cong {Δ} {n} (μ τ) {δ} {δ'} h δ₀ =
 
 as-poly-ren-var : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) (δ : Fin Δ₂ → obj)
   (s : Fin n ⊎ Fin Δ₁) (s' : Fin n ⊎ Fin Δ₂) → s' ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] s →
-  [_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s'
-    ≡ [_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ (ρ j))) s
+  [_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ j)) s'
+    ≡ [_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ (ρ j))) s
 as-poly-ren-var ρ δ (inj₁ j) _ refl = refl
 as-poly-ren-var ρ δ (inj₂ k) _ refl = refl
 
@@ -781,9 +779,9 @@ preserves-as-poly-ren-var : ∀ {Δ₁ Δ₂ n} (ρ : TyRen Δ₁ Δ₂) {δ : F
   (δc : ∀ i → Section (δ i)) {δ₀ : Fin n → obj} (δ₀c : ∀ i → Section (δ₀ i))
   (s : Fin n ⊎ Fin Δ₁) (s' : Fin n ⊎ Fin Δ₂) (eq : s' ≡ [ inj₁ , (λ k → inj₂ (ρ k)) ] s) →
   preserves-section (cast (as-poly-ren-var ρ δ s s' eq) δ₀)
-    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s')
+    (poly-section ([_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ j)) s')
       (as-poly-var-section δ δc s') δ₀c)
-    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ (ρ j))) s)
+    (poly-section ([_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ (ρ j))) s)
       (as-poly-var-section (λ j → δ (ρ j)) (λ j → δc (ρ j)) s) δ₀c)
 preserves-as-poly-ren-var ρ δc δ₀c (inj₁ j) _ refl = preserves-section-id (δ₀c j)
 preserves-as-poly-ren-var ρ δc δ₀c (inj₂ k) _ refl = preserves-section-id (δc (ρ k))
@@ -941,7 +939,7 @@ extend-mor-id : ∀ {k} {δ : Fin k → obj} {X : obj} (i : Fin (suc k)) → ext
 extend-mor-id Fin.zero    = ≈-refl
 extend-mor-id (Fin.suc i) = ≈-refl
 
-strong-cast-natural : ∀ {n} {P P' : Poly R.cat n} (e : P ≡ P') {Γ' : Obj} {δ₀ δ₀' : Fin n → obj}
+strong-cast-natural : ∀ {n} {P P' : Poly Fam.cat n} (e : P ≡ P') {Γ' : Obj} {δ₀ δ₀' : Fin n → obj}
                       (fs : ∀ i → prod Γ' (δ₀ i) ⇒ δ₀' i) →
                       (strong-fmor P' fs ∘co (cast e δ₀ ∘ p₂)) ≈ ((cast e δ₀' ∘ p₂) ∘co strong-fmor P fs)
 strong-cast-natural refl fs = ≈-trans (co-unitᵣ _) (≈-sym (co-unitₗ _))
@@ -1116,7 +1114,7 @@ strong-as-poly-map-ren {Δ₁} {Δ₂} {n} ρ (μ τ) {Γ'} {δ} {δ'} gs δ₀ 
     ∎
     where open ≈-Reasoning isEquiv
 
-fmor-extend-id : ∀ {k} (P : Poly R.cat (suc k)) {δ : Fin k → obj} {X : obj} →
+fmor-extend-id : ∀ {k} (P : Poly Fam.cat (suc k)) {δ : Fin k → obj} {X : obj} →
                  fmor P (extend-mor (λ j → id (δ j)) (id X)) ≈ id _
 fmor-extend-id P = ≈-trans (fmor-cong P extend-mor-id) (fmor-id P)
 
@@ -1529,7 +1527,7 @@ mutual
 
 apply-fwd-var : ∀ {Δ n} (δ : Fin Δ → obj) (δ₀ : Fin n → obj) (s : Fin n ⊎ Fin Δ) →
                 [_,_] {C = λ _ → obj} δ₀ δ s ⇒
-                  fobj μ-obj ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s) δ₀
+                  fobj μ-obj ([_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ j)) s) δ₀
 apply-fwd-var δ δ₀ (inj₁ j) = id _
 apply-fwd-var δ δ₀ (inj₂ k) = id _
 
@@ -1543,7 +1541,7 @@ preserves-apply-fwd-var : ∀ {Δ n} {δ : Fin Δ → obj} {δ₀ : Fin n → ob
   (δc : ∀ i → Section (δ i)) (δ₀c : ∀ i → Section (δ₀ i)) (s : Fin n ⊎ Fin Δ) →
   preserves-section (apply-fwd-var δ δ₀ s)
     ([_,_] {C = λ s' → Section ([ δ₀ , δ ] s')} δ₀c δc s)
-    (poly-section ([_,_] {C = λ _ → Poly R.cat n} Poly.var (λ j → Poly.const (δ j)) s)
+    (poly-section ([_,_] {C = λ _ → Poly Fam.cat n} Poly.var (λ j → Poly.const (δ j)) s)
       (as-poly-var-section δ δc s) δ₀c)
 preserves-apply-fwd-var δc δ₀c (inj₁ j) = preserves-section-id (δ₀c j)
 preserves-apply-fwd-var δc δ₀c (inj₂ k) = preserves-section-id (δc k)
@@ -2137,7 +2135,7 @@ apply-fwd-cong {Δ} {n} τ {δ} {δ'} h δ₀ E = begin
     ... | inj₂ k = ≈-refl
 
 private
-  cast-trans : ∀ {n} {P Q R' : Poly R.cat n} (e₁ : P ≡ Q) (e₂ : Q ≡ R') (δ₀ : Fin n → obj) →
+  cast-trans : ∀ {n} {P Q R' : Poly Fam.cat n} (e₁ : P ≡ Q) (e₂ : Q ≡ R') (δ₀ : Fin n → obj) →
                cast (trans e₁ e₂) δ₀ ≈ (cast e₂ δ₀ ∘ cast e₁ δ₀)
   cast-trans refl refl δ₀ = ≈-sym id-left
 
