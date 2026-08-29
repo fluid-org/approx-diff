@@ -49,12 +49,14 @@ open SemiMod._⇒_ public using (func; func-resp-≈; preserve-+; preserve-·; p
 open SemiMod._≈m_ public using (func-eq)
 
 module M = matrix.Mat S
-module FD = model.Fam⟨𝒟⟩μ
-open HasStrongCoproducts FD.strongCoproducts public using (copair; in₁; in₂)
+module Fam⟨𝒟⟩μ = model.Fam⟨𝒟⟩μ
+open Fam⟨𝒟⟩μ public using (Obj; Mor; idx; fam; fm; idxf; famf; Section; Lf; elimF;
+                          strong-Lf-map-transf; _≃_; module _≃_; preserves-section;
+                          module preserves-section; module Fam-P; module Fam-cat)
+open HasStrongCoproducts Fam⟨𝒟⟩μ.strongCoproducts public using (copair; in₁; in₂)
 module ΠP = HasSetoidProducts model.SPmod
 
-open FD public using (Obj; Mor; idx; fam; fm; idxf; famf; Section; preserves-section)
-open FD.preserves-section public using (at)
+open preserves-section public using (at)
 open indexed-family.Fam public using (subst)
 open indexed-family._⇒f_ public using (transf)
 open prop-setoid._⇒_ public using () renaming (func to sfunc; func-resp-≈ to sfunc-resp-≈)
@@ -554,7 +556,7 @@ DepRel⊑-ctrl τ {i = i} r s {o} {d} (m , (dm , h)) =
 
 idx-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} → Ix._≈_ (σ [→] τ) f f' → ∀ j →
             Ix._≈_ τ (f .idxf .sfunc j) (f' .idxf .sfunc j)
-idx-eq-at σ τ E j = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Ix.refl σ {j})
+idx-eq-at σ τ E j = E ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Ix.refl σ {j})
 
 ValRel-resp′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i i' : Ix τ} →
                Ix._≈_ τ i i' → ValRel′ N τ p v i → ValRel′ N τ p v i'
@@ -576,20 +578,20 @@ ValRel-resp : ∀ τ {v : Val τ} {i i' : Ix τ} → Ix._≈_ τ i i' → ValRel
 ValRel-resp τ = ValRel-resp′ τ ≤-refl
 
 bpair-elt : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : X ⇒ Z) (x : ∣ X ∣) →
-            Semimodule._≈_ (SemiMod._⊕_ Y Z) (FD.pair f g .func x) (f .func x , g .func x)
+            Semimodule._≈_ (SemiMod._⊕_ Y Z) (Fam⟨𝒟⟩μ.pair f g .func x) (f .func x , g .func x)
 bpair-elt {X} {Y} {Z} f g x = Semimodule.+-runit Y , Semimodule.+-lunit Z
 
 Fpair-elt : ∀ {X Y Z : Obj} (f : Mor X Y) (g : Mor X Z) (x : IxO X) (z : ∣ FibO X x ∣) →
-            FibO._≈_ (FD.Fam-P.prod Y Z) (f .idxf .sfunc x , g .idxf .sfunc x)
-              (FD.Fam-P.pair f g .famf .transf x .func z)
+            FibO._≈_ (Fam-P.prod Y Z) (f .idxf .sfunc x , g .idxf .sfunc x)
+              (Fam-P.pair f g .famf .transf x .func z)
               (f .famf .transf x .func z , g .famf .transf x .func z)
 Fpair-elt f g x z = bpair-elt (f .famf .transf x) (g .famf .transf x) z
 
 Fprod-subst-elt : ∀ {X Y : Obj} {x x' : IxO X} {y y' : IxO Y}
                   (e₁ : IxO._≈_ X x x') (e₂ : IxO._≈_ Y y y')
                   (z : ∣ FibO X x ∣) (w : ∣ FibO Y y ∣) →
-                  FibO._≈_ (FD.Fam-P.prod X Y) (x' , y')
-                    (FD.Fam-P.prod X Y .fam .subst (e₁ , e₂) .func (z , w))
+                  FibO._≈_ (Fam-P.prod X Y) (x' , y')
+                    (Fam-P.prod X Y .fam .subst (e₁ , e₂) .func (z , w))
                     (X .fam .subst e₁ .func z , Y .fam .subst e₂ .func w)
 Fprod-subst-elt {X} {Y} {x} {x'} {y} {y'} e₁ e₂ z w =
   bpair-elt {SemiMod._⊕_ (FibO X x) (FibO Y y)} {FibO X x'} {FibO Y y'}
@@ -636,28 +638,28 @@ strong-Lmap-elt {G} {X} {Y} r γe a y =
   Semimodule.trans Y (Semimodule.+-cong Y (r .func-resp-≈ (payload-prod-elt {G} {X} γe a y)) (Semimodule.refl Y))
                      (Semimodule.+-runit Y)
 
-elimF-elt : ∀ {Γ' X C : Obj} (cC : Section C) (f : Mor (FD.Fam-P.prod Γ' X) C)
+elimF-elt : ∀ {Γ' X C : Obj} (cC : Section C) (f : Mor (Fam-P.prod Γ' X) C)
             {γi : IxO Γ'} {xi : IxO X}
             (γe : ∣ FibO Γ' γi ∣) (a : Setoid.Carrier A) (y : ∣ FibO X xi ∣) →
             FibO._≈_ C (f .idxf .sfunc (γi , xi))
-              (FD.elimF cC f .famf .transf (γi , xi) .func (γe , (a , y)))
+              (elimF cC f .famf .transf (γi , xi) .func (γe , (a , y)))
               (FibO._+_ C (f .idxf .sfunc (γi , xi))
                 (f .famf .transf (γi , xi) .func (γe , y))
                 (cC .at (f .idxf .sfunc (γi , xi)) .func a))
 elimF-elt cC f {γi} {xi} γe a y = elim-root-elt (cC .at (f .idxf .sfunc (γi , xi))) (f .famf .transf (γi , xi)) γe a y
 
-elim-elt : ∀ {Γ' X C : Obj} (cC : Section C) (body : Mor (FD.Fam-P.prod Γ' X) C) (f : Mor Γ' (FD.Lf X))
+elim-elt : ∀ {Γ' X C : Obj} (cC : Section C) (body : Mor (Fam-P.prod Γ' X) C) (f : Mor Γ' (Lf X))
            {γi : IxO Γ'} (γe : ∣ FibO Γ' γi ∣) →
            FibO._≈_ C (body .idxf .sfunc (γi , f .idxf .sfunc γi))
-             (FD.Fam-cat._∘_ (FD.elimF cC body) (FD.Fam-P.pair (FD.Fam-cat.id Γ') f) .famf .transf γi .func γe)
+             (Fam-cat._∘_ (elimF cC body) (Fam-P.pair (Fam-cat.id Γ') f) .famf .transf γi .func γe)
              (FibO._+_ C (body .idxf .sfunc (γi , f .idxf .sfunc γi))
                (body .famf .transf (γi , f .idxf .sfunc γi) .func (γe , proj₂ (f .famf .transf γi .func γe)))
                (cC .at (body .idxf .sfunc (γi , f .idxf .sfunc γi)) .func (proj₁ (f .famf .transf γi .func γe))))
 elim-elt {Γ'} {X} {C} cC body f {γi} γe =
   FibO.trans C (body .idxf .sfunc (γi , f .idxf .sfunc γi))
-    (FD.elimF cC body .famf .transf (γi , f .idxf .sfunc γi) .func-resp-≈
-       {FD.Fam-P.pair (FD.Fam-cat.id Γ') f .famf .transf γi .func γe} {γe , f .famf .transf γi .func γe}
-       (Fpair-elt {Γ'} {Γ'} {FD.Lf X} (FD.Fam-cat.id Γ') f γi γe))
+    (elimF cC body .famf .transf (γi , f .idxf .sfunc γi) .func-resp-≈
+       {Fam-P.pair (Fam-cat.id Γ') f .famf .transf γi .func γe} {γe , f .famf .transf γi .func γe}
+       (Fpair-elt {Γ'} {Γ'} {Lf X} (Fam-cat.id Γ') f γi γe))
     (elimF-elt {Γ'} {X} {C} cC body {γi} {f .idxf .sfunc γi} γe (proj₁ (f .famf .transf γi .func γe)) (proj₂ (f .famf .transf γi .func γe)))
 
 ctrl-dep-linear : ∀ τ (i : Ix τ) s s' →
@@ -933,11 +935,11 @@ DepRel-transport′ {suc N} (σ [→] τ) (s≤s p) {clo γ' t} {f} {f'} E r {o}
       (Fib.trans τ (f' .idxf .sfunc j)
          (⟦ τ ⟧ .fam .subst (Ej j) .preserve-+ {_} {_})
       (Fib.+-cong τ (f' .idxf .sfunc j) (eval-part j)
-         (E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .func-eq (Fib.refl σ j {y}))))))
+         (E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {j} .func-eq (Fib.refl σ j {y}))))))
       (DepRel-transport′ τ (bound₂ p) (Ej j) (r rv D) (hc s' rv z y hz D))
   where
   Ej = idx-eq-at σ τ E
-  hmap = indexed-family.reindex-≈ {P = ⟦ τ ⟧ .fam} (f .idxf) (f' .idxf) (E .FD._≃_.idxf-eq)
+  hmap = indexed-family.reindex-≈ {P = ⟦ τ ⟧ .fam} (f .idxf) (f' .idxf) (E ._≃_.idxf-eq)
   eval-part : ∀ j → Fib._≈_ τ (f' .idxf .sfunc j)
                 (⟦ τ ⟧ .fam .subst (Ej j) .func (evalΠ σ τ f j .func (proj₂ d)))
                 (evalΠ σ τ f' j .func

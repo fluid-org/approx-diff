@@ -62,9 +62,9 @@ private
   case-idx : ∀ {Γ τ₁ τ₂ τ} (sc : Γ ⊢ τ₁ [+] τ₂) (t₁ : Γ ▸ τ₁ ⊢ τ) (t₂ : Γ ▸ τ₂ ⊢ τ) gi
              (k : Ix (τ₁ [+] τ₂)) → Ix._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) k →
              Ix._≈_ τ (⟦ case sc t₁ t₂ ⟧tm .idxf .sfunc gi)
-               (copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .sfunc (gi , k))
+               (copair (elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .sfunc (gi , k))
   case-idx {Γ} {τ₁} {τ₂} {τ} sc t₁ t₂ gi k e =
-    copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .sfunc-resp-≈
+    copair (elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (elimF (ctrl-dep τ) ⟦ t₂ ⟧tm) .idxf .sfunc-resp-≈
       {gi , ⟦ sc ⟧tm .idxf .sfunc gi} {gi , k} (IxC.refl Γ {gi} , e)
 
   brel-idx : ∀ {Γ is} (ω : rel is) (Ms : Every (λ σ → Γ ⊢ base σ) is) gi (vs : sort-vals is) →
@@ -76,14 +76,14 @@ private
       (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .sfunc-resp-≈ args-eq)
 
 private
-  idx-eq : ∀ {X Y : Obj} {f g : Mor X Y} → f FD.≃ g → ∀ x →
+  idx-eq : ∀ {X Y : Obj} {f g : Mor X Y} → f ≃ g → ∀ x →
            IxO._≈_ Y (f .idxf .sfunc x) (g .idxf .sfunc x)
-  idx-eq {X} E x = E .FD._≃_.idxf-eq .prop-setoid._≃m_.func-eq {x} {x} (IxO.refl X {x})
+  idx-eq {X} E x = E ._≃_.idxf-eq .prop-setoid._≃m_.func-eq {x} {x} (IxO.refl X {x})
 
-  fam-eq : ∀ {X Y : Obj} {f g : Mor X Y} (E : f FD.≃ g) x (a : ∣ FibO X x ∣) →
+  fam-eq : ∀ {X Y : Obj} {f g : Mor X Y} (E : f ≃ g) x (a : ∣ FibO X x ∣) →
            FibO._≈_ Y (g .idxf .sfunc x)
              (Y .fam .subst (idx-eq E x) .func (f .famf .transf x .func a)) (g .famf .transf x .func a)
-  fam-eq {X} E x a = E .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (FibO.refl X x {a})
+  fam-eq {X} E x a = E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (FibO.refl X x {a})
 
   rec-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) gi (i : Ix (μ τ₀)) →
             Ix._≈_ σr
@@ -242,9 +242,9 @@ private
     e₀ = unroll-mor τ₀ .famf .transf i .func e
     Fτ = fold-map τ₀ σr τ₀ ⟦ s ⟧tm
     Fv = fold-map τ₀ σr (var zero) ⟦ s ⟧tm
-    Dom = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ μ τ₀ ⟧
-    Dom₀ = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τ₀ [ μ τ₀ ] ⟧
-    Dom' = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τ₀ [ σr ] ⟧
+    Dom = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ μ τ₀ ⟧
+    Dom₀ = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τ₀ [ μ τ₀ ] ⟧
+    Dom' = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τ₀ [ σr ] ⟧
     IF = Fτ .idxf .sfunc (gi , i₀)
     J = ⟦ s ⟧tm .idxf .sfunc (gi , IF)
     Iᵣ = roll-mor τ₀ .idxf .sfunc i₀
@@ -252,7 +252,7 @@ private
     I' = Fv .idxf .sfunc (gi , i)
     dF = Fτ .famf .transf (gi , i₀) .func (g , e₀)
     Y = ⟦ s ⟧tm .famf .transf (gi , IF) .func (g , dF)
-    P = FD.Fam-P.pair {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) (FD.Fam-cat._∘_ (roll-mor τ₀) (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}))
+    P = Fam-P.pair {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) (Fam-cat._∘_ (roll-mor τ₀) (Fam-P.p₂ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}))
     Xin = (g , roll-mor τ₀ .famf .transf i₀ .func e₀)
     X₀ = Fv .famf .transf (gi , Iᵣ) .func (P .famf .transf (gi , i₀) .func (g , e₀))
     X = Fv .famf .transf (gi , Iᵣ) .func Xin
@@ -269,12 +269,12 @@ private
       Fib.trans σr Iᵣ' (⟦ σr ⟧ .fam .subst {J} {Iᵣ'} E₁ .func-resp-≈
                           (Fib.trans σr J (⟦ s ⟧tm .famf .transf (gi , IF) .func-resp-≈
                                              (FibO.sym Dom' (gi , IF)
-                                                (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ τ₀ [ σr ] ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) Fτ (gi , i₀) (g , e₀))))
+                                                (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ τ₀ [ σr ] ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) Fτ (gi , i₀) (g , e₀))))
                                           (Fib.sym σr J (fam-eq (fold-map-rec τ₀ σr ⟦ s ⟧tm) (gi , i₀) (g , e₀)))))
       (Fib.trans σr Iᵣ' (Fib.sym σr Iᵣ' (subst-trans ⟦ σr ⟧ {Iᵣ'} {J} {Iᵣ'} E₀ E₁ X₀))
       (Fib.trans σr Iᵣ' (subst-refl ⟦ σr ⟧ {Iᵣ'} (Ix.trans σr {Iᵣ'} {J} {Iᵣ'} E₀ E₁) X₀)
         (Fv .famf .transf (gi , Iᵣ) .func-resp-≈
-           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) (FD.Fam-cat._∘_ (roll-mor τ₀) (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧})) (gi , i₀) (g , e₀)))))
+           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧}) (Fam-cat._∘_ (roll-mor τ₀) (Fam-P.p₂ {⟦ Γ ⟧ctxt} {⟦ τ₀ [ μ τ₀ ] ⟧})) (gi , i₀) (g , e₀)))))
     step₂ : FibO._≈_ Dom (gi , i) (Dom .fam .subst {gi , Iᵣ} {gi , i} Eᵣ .func Xin) (g , e)
     step₂ =
       FibO.trans Dom (gi , i)
@@ -359,15 +359,15 @@ private
     (Fib.trans τ₊ J (⟦ τ₊ ⟧ .fam .subst {I₊'} {J} E₂ .func-resp-≈
                        (Fib.trans τ₊ I₊' step₁ (F₊ .famf .transf (gi , inj₁ i') .func-resp-≈ step₂)))
     (Fib.trans τ₊ J (fam-eq (fold-map-inl-L τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i') (g , ẽ))
-    (Fib.trans τ₊ J (FD.strong-Lf-map-transf F₁ {gi} {i'} .func-eq (FibO.refl Domₖ (gi , i') {g , ẽ}))
+    (Fib.trans τ₊ J (strong-Lf-map-transf F₁ {gi} {i'} .func-eq (FibO.refl Domₖ (gi , i') {g , ẽ}))
       (strong-Lmap-elt (F₁ .famf .transf (gi , i')) g (proj₁ ẽ) (proj₂ ẽ)))))
     where
     τ₊ = (σ₁ [+] σ₂) [ σr ]
     τμ = (σ₁ [+] σ₂) [ μ τ₀ ]
     F₊ = fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
     F₁ = fold-map τ₀ σr σ₁ ⟦ s ⟧tm
-    Dom = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τμ ⟧
-    Domₖ = FD.Fam-P.prod ⟦ Γ ⟧ctxt (FD.Lf ⟦ σ₁ [ μ τ₀ ] ⟧)
+    Dom = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τμ ⟧
+    Domₖ = Fam-P.prod ⟦ Γ ⟧ctxt (Lf ⟦ σ₁ [ μ τ₀ ] ⟧)
     ẽ = ⟦ τμ ⟧ .fam .subst {i} {inj₁ i'} e₀ .func e
     I₊ = F₊ .idxf .sfunc (gi , i)
     I₊' = F₊ .idxf .sfunc (gi , inj₁ i')
@@ -378,8 +378,8 @@ private
     E₁ = F₊ .idxf .sfunc-resp-≈ {gi , i} {gi , inj₁ i'} Eᵢ
     E₂ : Ix._≈_ τ₊ I₊' J
     E₂ = idx-eq (fold-map-inl-L τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i')
-    P = FD.Fam-P.pair {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₁ [ μ τ₀ ] ⟧})
-          (FD.Fam-cat._∘_ in₁ (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₁ [ μ τ₀ ] ⟧}))
+    P = Fam-P.pair {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₁ [ μ τ₀ ] ⟧})
+          (Fam-cat._∘_ in₁ (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₁ [ μ τ₀ ] ⟧}))
     step₁ : Fib._≈_ τ₊ I₊' (⟦ τ₊ ⟧ .fam .subst {I₊} {I₊'} E₁ .func (F₊ .famf .transf (gi , i) .func (g , e)))
                            (F₊ .famf .transf (gi , inj₁ i') .func (Dom .fam .subst {gi , i} {gi , inj₁ i'} Eᵢ .func (g , e)))
     step₁ = Fib.sym τ₊ I₊' (transf-natural {Dom} {⟦ τ₊ ⟧} F₊ {gi , i} {gi , inj₁ i'} Eᵢ (g , e))
@@ -390,8 +390,8 @@ private
               (FibO.trans Dom (gi , inj₁ i')
                  (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , Fib.refl τμ (inj₁ i') {ẽ})
                  (FibO.sym Dom (gi , inj₁ i')
-                    (Fpair-elt {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₁ [ μ τ₀ ] ⟧})
-                       (FD.Fam-cat._∘_ in₁ (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₁ [ μ τ₀ ] ⟧})) (gi , i') (g , ẽ))))
+                    (Fpair-elt {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₁ [ μ τ₀ ] ⟧})
+                       (Fam-cat._∘_ in₁ (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₁ [ μ τ₀ ] ⟧})) (gi , i') (g , ẽ))))
 
   inr-fibre : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ₁ σ₂ : type 1) gi {i} {i' : Ix (σ₂ [ μ τ₀ ])}
               (e₀ : Ix._≈_ ((σ₁ [+] σ₂) [ μ τ₀ ]) i (inj₂ i')) (g : ∣ FibC Γ gi ∣) (e : ∣ Fib ((σ₁ [+] σ₂) [ μ τ₀ ]) i ∣) →
@@ -409,15 +409,15 @@ private
     (Fib.trans τ₊ J (⟦ τ₊ ⟧ .fam .subst {I₊'} {J} E₂ .func-resp-≈
                        (Fib.trans τ₊ I₊' step₁ (F₊ .famf .transf (gi , inj₂ i') .func-resp-≈ step₂)))
     (Fib.trans τ₊ J (fam-eq (fold-map-inr-L τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i') (g , ẽ))
-    (Fib.trans τ₊ J (FD.strong-Lf-map-transf F₂ {gi} {i'} .func-eq (FibO.refl Domₖ (gi , i') {g , ẽ}))
+    (Fib.trans τ₊ J (strong-Lf-map-transf F₂ {gi} {i'} .func-eq (FibO.refl Domₖ (gi , i') {g , ẽ}))
       (strong-Lmap-elt (F₂ .famf .transf (gi , i')) g (proj₁ ẽ) (proj₂ ẽ)))))
     where
     τ₊ = (σ₁ [+] σ₂) [ σr ]
     τμ = (σ₁ [+] σ₂) [ μ τ₀ ]
     F₊ = fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
     F₂ = fold-map τ₀ σr σ₂ ⟦ s ⟧tm
-    Dom = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τμ ⟧
-    Domₖ = FD.Fam-P.prod ⟦ Γ ⟧ctxt (FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧)
+    Dom = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τμ ⟧
+    Domₖ = Fam-P.prod ⟦ Γ ⟧ctxt (Lf ⟦ σ₂ [ μ τ₀ ] ⟧)
     ẽ = ⟦ τμ ⟧ .fam .subst {i} {inj₂ i'} e₀ .func e
     I₊ = F₊ .idxf .sfunc (gi , i)
     I₊' = F₊ .idxf .sfunc (gi , inj₂ i')
@@ -428,8 +428,8 @@ private
     E₁ = F₊ .idxf .sfunc-resp-≈ {gi , i} {gi , inj₂ i'} Eᵢ
     E₂ : Ix._≈_ τ₊ I₊' J
     E₂ = idx-eq (fold-map-inr-L τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i')
-    P = FD.Fam-P.pair {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧})
-          (FD.Fam-cat._∘_ in₂ (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧}))
+    P = Fam-P.pair {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₂ [ μ τ₀ ] ⟧})
+          (Fam-cat._∘_ in₂ (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₂ [ μ τ₀ ] ⟧}))
     step₁ : Fib._≈_ τ₊ I₊' (⟦ τ₊ ⟧ .fam .subst {I₊} {I₊'} E₁ .func (F₊ .famf .transf (gi , i) .func (g , e)))
                            (F₊ .famf .transf (gi , inj₂ i') .func (Dom .fam .subst {gi , i} {gi , inj₂ i'} Eᵢ .func (g , e)))
     step₁ = Fib.sym τ₊ I₊' (transf-natural {Dom} {⟦ τ₊ ⟧} F₊ {gi , i} {gi , inj₂ i'} Eᵢ (g , e))
@@ -440,8 +440,8 @@ private
               (FibO.trans Dom (gi , inj₂ i')
                  (subst-refl ⟦ Γ ⟧ctxt {gi} (IxC.refl Γ {gi}) g , Fib.refl τμ (inj₂ i') {ẽ})
                  (FibO.sym Dom (gi , inj₂ i')
-                    (Fpair-elt {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧})
-                       (FD.Fam-cat._∘_ in₂ (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {FD.Lf ⟦ σ₂ [ μ τ₀ ] ⟧})) (gi , i') (g , ẽ))))
+                    (Fpair-elt {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₂ [ μ τ₀ ] ⟧})
+                       (Fam-cat._∘_ in₂ (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₂ [ μ τ₀ ] ⟧})) (gi , i') (g , ẽ))))
 
 map-dep-inl : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
@@ -610,7 +610,7 @@ private
                             F₂ .famf .transf (gi , proj₂ i) .func (g , proj₂ (proj₂ e))))
   pair-fibre {Γ} {τ₀} {σr} s σ₁ σ₂ gi i g e =
     Fib.trans τ× J (fam-eq (fold-map-pair-L τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i) (g , e))
-    (Fib.trans τ× J (FD.strong-Lf-map-transf SP {gi} {i} .func-eq (FibO.refl Dom (gi , i) {g , e}))
+    (Fib.trans τ× J (strong-Lf-map-transf SP {gi} {i} .func-eq (FibO.refl Dom (gi , i) {g , e}))
     (Fib.trans τ× J (strong-Lmap-elt (SP .famf .transf (gi , i)) g (proj₁ e) (proj₂ e))
       (≈-refl , payload)))
     where
@@ -623,25 +623,25 @@ private
     X₂ = ⟦ σ₂ [ μ τ₀ ] ⟧
     Y₁ = ⟦ σ₁ [ σr ] ⟧
     Y₂ = ⟦ σ₂ [ σr ] ⟧
-    Dom = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τμ ⟧
-    Dom₀ = FD.Fam-P.prod ⟦ Γ ⟧ctxt (FD.Fam-P.prod X₁ X₂)
+    Dom = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τμ ⟧
+    Dom₀ = Fam-P.prod ⟦ Γ ⟧ctxt (Fam-P.prod X₁ X₂)
     J = (F₁ .idxf .sfunc (gi , proj₁ i) , F₂ .idxf .sfunc (gi , proj₂ i))
-    SP = FD.Fam-P.strong-prod-m {⟦ Γ ⟧ctxt} {X₁} {X₂} {Y₁} {Y₂} F₁ F₂
-    SP₁ = FD.Fam-P.strong-p₁ {⟦ Γ ⟧ctxt} {X₁} {X₂}
-    SP₂ = FD.Fam-P.strong-p₂ {⟦ Γ ⟧ctxt} {X₁} {X₂}
-    payload : FibO._≈_ (FD.Fam-P.prod Y₁ Y₂) J
+    SP = Fam-P.strong-prod-m {⟦ Γ ⟧ctxt} {X₁} {X₂} {Y₁} {Y₂} F₁ F₂
+    SP₁ = Fam-P.strong-p₁ {⟦ Γ ⟧ctxt} {X₁} {X₂}
+    SP₂ = Fam-P.strong-p₂ {⟦ Γ ⟧ctxt} {X₁} {X₂}
+    payload : FibO._≈_ (Fam-P.prod Y₁ Y₂) J
                 (SP .famf .transf (gi , i) .func (g , proj₂ e))
                 (F₁ .famf .transf (gi , proj₁ i) .func (g , proj₁ (proj₂ e)) ,
                  F₂ .famf .transf (gi , proj₂ i) .func (g , proj₂ (proj₂ e)))
     payload =
-      FibO.trans (FD.Fam-P.prod Y₁ Y₂) J
-        (Fpair-elt {Dom₀} {Y₁} {Y₂} (FD.Fam-cat._∘_ F₁ SP₁) (FD.Fam-cat._∘_ F₂ SP₂) (gi , i) (g , proj₂ e))
+      FibO.trans (Fam-P.prod Y₁ Y₂) J
+        (Fpair-elt {Dom₀} {Y₁} {Y₂} (Fam-cat._∘_ F₁ SP₁) (Fam-cat._∘_ F₂ SP₂) (gi , i) (g , proj₂ e))
         (F₁ .famf .transf (gi , proj₁ i) .func-resp-≈
-           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {X₁} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {FD.Fam-P.prod X₁ X₂})
-              (FD.Fam-cat._∘_ (FD.Fam-P.p₁ {X₁} {X₂}) (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {FD.Fam-P.prod X₁ X₂})) (gi , i) (g , proj₂ e)) ,
+           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {X₁} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Fam-P.prod X₁ X₂})
+              (Fam-cat._∘_ (Fam-P.p₁ {X₁} {X₂}) (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Fam-P.prod X₁ X₂})) (gi , i) (g , proj₂ e)) ,
          F₂ .famf .transf (gi , proj₂ i) .func-resp-≈
-           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {X₂} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {FD.Fam-P.prod X₁ X₂})
-              (FD.Fam-cat._∘_ (FD.Fam-P.p₂ {X₁} {X₂}) (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {FD.Fam-P.prod X₁ X₂})) (gi , i) (g , proj₂ e)))
+           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {X₂} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Fam-P.prod X₁ X₂})
+              (Fam-cat._∘_ (Fam-P.p₂ {X₁} {X₂}) (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Fam-P.prod X₁ X₂})) (gi , i) (g , proj₂ e)))
 
 map-dep-pair : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
@@ -807,16 +807,16 @@ private
     where
     open MuShape τ₀ σr s τ'
     open Idx gi i
-    Dom = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ μ τμ ⟧
-    Dom₀ = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ (unfold₁ τ') [ μ τ₀ ] ⟧
+    Dom = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ μ τμ ⟧
+    Dom₀ = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ (unfold₁ τ') [ μ τ₀ ] ⟧
     Ia = roll-mor τₛ .idxf .sfunc a
     Jb = unroll-mor τₛ .idxf .sfunc Ib
     Ju = unroll-mor τₛ .idxf .sfunc Iμ
     E = mu-idx {τ₀ = τ₀} s τ' gi i
     eu = unroll-mor τμ .famf .transf i .func e
     e₁ = ty-cast (sym eμ) .famf .transf iu .func eu
-    P = FD.Fam-P.pair {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τμ ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧})
-          (FD.Fam-cat._∘_ (FD.Fam-cat._∘_ (roll-mor τμ) Cμ) (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧}))
+    P = Fam-P.pair {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τμ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧})
+          (Fam-cat._∘_ (Fam-cat._∘_ (roll-mor τμ) Cμ) (Fam-P.p₂ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧}))
     Pb = P .famf .transf (gi , i₀) .func (g , e₁)
     Xb = Fμ .famf .transf (gi , b) .func Pb
     W = unroll-mor τₛ .famf .transf Ib .func Xb
@@ -859,8 +859,8 @@ private
     step₂ =
       FibO.trans Dom (gi , i)
         (Dom .fam .subst {gi , b} {gi , i} Eb .func-resp-≈
-           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τμ ⟧} (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧})
-              (FD.Fam-cat._∘_ (FD.Fam-cat._∘_ (roll-mor τμ) Cμ) (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧}))
+           (Fpair-elt {Dom₀} {⟦ Γ ⟧ctxt} {⟦ μ τμ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧})
+              (Fam-cat._∘_ (Fam-cat._∘_ (roll-mor τμ) Cμ) (Fam-P.p₂ {⟦ Γ ⟧ctxt} {⟦ (unfold₁ τ') [ μ τ₀ ] ⟧}))
               (gi , i₀) (g , e₁)))
       (FibO.trans Dom (gi , i)
         (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ μ τμ ⟧} {gi} {gi} {b} {i} (IxC.refl Γ {gi}) e₀ g
@@ -1011,7 +1011,7 @@ private
       (⟦ σ ⟧ .fam .subst {IF} {J} E .func-resp-≈
         (Fv .famf .transf (gi , it) .func-resp-≈
           (FibO.sym Dom (gi , it)
-            (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (FD.Fam-cat.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))))
+            (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ μ τ₀ ⟧} (Fam-cat.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm gi g))))
       (fam-eq (fold-map-var τ₀ σ ⟦ s ⟧tm) (gi , it) Pg)
     where
     Fv = fold-map τ₀ σ (var zero) ⟦ s ⟧tm
@@ -1019,8 +1019,8 @@ private
     IF = Fv .idxf .sfunc (gi , it)
     J = ⟦ fold s t ⟧tm .idxf .sfunc gi
     E = idx-eq (fold-map-var τ₀ σ ⟦ s ⟧tm) (gi , it)
-    Dom = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ μ τ₀ ⟧
-    Pg = FD.Fam-P.pair (FD.Fam-cat.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm .famf .transf gi .func g
+    Dom = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ μ τ₀ ⟧
+    Pg = Fam-P.pair (Fam-cat.id ⟦ Γ ⟧ctxt) ⟦ t ⟧tm .famf .transf gi .func g
 
 fundamental-val : ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
        {gi} (rγ : EnvValRel γ gi) → ValRel τ v (⟦ t ⟧tm .idxf .sfunc gi)
@@ -1160,7 +1160,7 @@ private
 
   case-fibre : ∀ {Γ τ₁ τ₂ τ} (sc : Γ ⊢ τ₁ [+] τ₂) (t₁ : Γ ▸ τ₁ ⊢ τ) (t₂ : Γ ▸ τ₂ ⊢ τ) gi (g : ∣ FibC Γ gi ∣)
                (k : Ix (τ₁ [+] τ₂)) (e : Ix._≈_ (τ₁ [+] τ₂) (⟦ sc ⟧tm .idxf .sfunc gi) k) →
-               let SC = copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
+               let SC = copair (elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
                    sidx = ⟦ sc ⟧tm .idxf .sfunc gi
                in
                Fib._≈_ τ (SC .idxf .sfunc (gi , k))
@@ -1171,16 +1171,16 @@ private
       (Fib.sym τ (SC .idxf .sfunc (gi , k)) (transf-natural SC {gi , sidx} {gi , k} (IxC.refl Γ {gi} , e) Pg))
       (SC .famf .transf (gi , k) .func-resp-≈ Q≈)
     where
-    SC = copair (FD.elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (FD.elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
+    SC = copair (elimF (ctrl-dep τ) ⟦ t₁ ⟧tm) (elimF (ctrl-dep τ) ⟦ t₂ ⟧tm)
     sidx = ⟦ sc ⟧tm .idxf .sfunc gi
-    Dom = FD.Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
-    Pg = FD.Fam-P.pair (FD.Fam-cat.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
+    Dom = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τ₁ [+] τ₂ ⟧
+    Pg = Fam-P.pair (Fam-cat.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm .famf .transf gi .func g
     Q≈ : FibO._≈_ Dom (gi , k)
            (Dom .fam .subst {gi , sidx} {gi , k} (IxC.refl Γ {gi} , e) .func Pg)
            (g , ⟦ τ₁ [+] τ₂ ⟧ .fam .subst {sidx} {k} e .func (⟦ sc ⟧tm .famf .transf gi .func g))
     Q≈ = FibO.trans Dom (gi , k)
            (Dom .fam .subst {gi , sidx} {gi , k} (IxC.refl Γ {gi} , e) .func-resp-≈
-              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (FD.Fam-cat.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
+              (Fpair-elt {⟦ Γ ⟧ctxt} {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} (Fam-cat.id ⟦ Γ ⟧ctxt) ⟦ sc ⟧tm gi g))
            (FibO.trans Dom (gi , k)
               (Fprod-subst-elt {⟦ Γ ⟧ctxt} {⟦ τ₁ [+] τ₂ ⟧} {gi} {gi} {sidx} {k} (IxC.refl Γ {gi}) e g
                  (⟦ sc ⟧tm .famf .transf gi .func g))
@@ -1240,11 +1240,11 @@ private
     q = ⟦ M Every.∷ Ms ⟧tms .famf .transf gi .func g
     tp-ys = 𝒟-arg-product is .famf .transf p .func ys
     Zc = 𝒟-arg-product (i ∷ is) .famf .transf (a , p) .func q
-    z = FD.Fam-P.prod-m (FD.Fam-cat.id ⟦ base i ⟧) (𝒟-arg-product is) .famf .transf (a , p) .func q
+    z = Fam-P.prod-m (Fam-cat.id ⟦ base i ⟧) (𝒟-arg-product is) .famf .transf (a , p) .func q
 
     q≈ = Fpair-elt ⟦ M ⟧tm ⟦ Ms ⟧tms gi g
     ArgsD = signature.PointedFPCat.list→product
-              signature.PFPC[ FD.cat , FD.terminal SemiMod.terminal , FD.products , interp.𝒟Bool ]
+              signature.PFPC[ Fam⟨𝒟⟩μ.cat , Fam⟨𝒟⟩μ.terminal SemiMod.terminal , Fam⟨𝒟⟩μ.products , interp.𝒟Bool ]
               (signature.Model.⟦sort⟧ interp.𝒟-Sig-model) is .fam .fm p
     Q = SemiMod._⊕_ (𝔽 (sort-width i)) ArgsD
     f₁ = SemiMod._∘_ (SemiMod.id (𝔽 (sort-width i))) (SemiMod.p₁ {𝔽 (sort-width i)} {ArgsD})
@@ -1496,8 +1496,8 @@ fundamental {Γ = Γ} {τ = σ} {γ = γ} (⇓-fst {τ₂ = τ} {t = t} {v = v} 
   o'₀ : ap R' (inputs γ s x) zero ≈s ((c ·ₛ s) +ₛ a₀)
   o'₀ = ≈-trans (proj₁ (fundamental D rγ s x g rel)) (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s)) (≈-refl {a₀}))
   G-form : Fib._≈_ σ i (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (Fib._+_ σ i (proj₁ (proj₂ (⟦ t ⟧tm .famf .transf gi .func g))) (ctrl-dep-at σ i a₀))
-  G-form = elim-elt {⟦ Γ ⟧ctxt} {FD.Fam-P.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ)
-             (FD.Fam-cat._∘_ (FD.Fam-P.p₁ {⟦ σ ⟧} {⟦ τ ⟧}) (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {FD.Fam-P.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
+  G-form = elim-elt {⟦ Γ ⟧ctxt} {Fam-P.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ σ ⟧} (ctrl-dep σ)
+             (Fam-cat._∘_ (Fam-P.p₁ {⟦ σ ⟧} {⟦ τ ⟧}) (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Fam-P.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
 fundamental {Γ = Γ} {τ = τ} {γ = γ} (⇓-snd {τ₁ = σ} {t = t} {v = v} {u = u} {R = R'} D) {gi} rγ s x g rel =
   DepRel-resp τ (ValRel-at-bound τ (proj₂ (fundamental-val D rγ))) (λ k → ≈-sym (proj-op {γ = γ} u {width v} {width u} (M.p₂ {width v} {width u}) R' s x k))
     (proj-den τ j s a₀ (ap R' (inputs γ s x) zero) (proj₂ (proj₂ (Fib._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) (⟦ t ⟧tm .famf .transf gi .func g))))
@@ -1512,8 +1512,8 @@ fundamental {Γ = Γ} {τ = τ} {γ = γ} (⇓-snd {τ₁ = σ} {t = t} {v = v} 
   o'₀ : ap R' (inputs γ s x) zero ≈s ((c ·ₛ s) +ₛ a₀)
   o'₀ = ≈-trans (proj₁ (fundamental D rγ s x g rel)) (+-cong (proj₁ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s)) (≈-refl {a₀}))
   G-form : Fib._≈_ τ j (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (Fib._+_ τ j (proj₂ (proj₂ (⟦ t ⟧tm .famf .transf gi .func g))) (ctrl-dep-at τ j a₀))
-  G-form = elim-elt {⟦ Γ ⟧ctxt} {FD.Fam-P.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (ctrl-dep τ)
-             (FD.Fam-cat._∘_ (FD.Fam-P.p₂ {⟦ σ ⟧} {⟦ τ ⟧}) (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {FD.Fam-P.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
+  G-form = elim-elt {⟦ Γ ⟧ctxt} {Fam-P.prod ⟦ σ ⟧ ⟦ τ ⟧} {⟦ τ ⟧} (ctrl-dep τ)
+             (Fam-cat._∘_ (Fam-P.p₂ {⟦ σ ⟧} {⟦ τ ⟧}) (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Fam-P.prod ⟦ σ ⟧ ⟦ τ ⟧})) ⟦ t ⟧tm {gi} g
 fundamental {Γ = Γ} {τ = σ [→] τ} {γ = γ} (⇓-lam {t = t'}) {gi} rγ s x g rel =
   root , clause
   where
@@ -1632,18 +1632,18 @@ fundamental {Γ = Γ} {τ = τ} {γ = γ}
     G-form =
       Fib.trans τ i₁ (elim-elt {⟦ Γ ⟧ctxt} {Ex} {⟦ τ ⟧} (ctrl-dep τ) body ⟦ M ⟧tm {gi} g)
                    (Fib.+-cong τ i₁ (HasExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧} .famf .transf (f , j) .func-resp-≈
-                                      {FD.Fam-P.pair (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
-                                         (FD.Fam-cat._∘_ ⟦ N ⟧tm (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
+                                      {Fam-P.pair (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                         (Fam-cat._∘_ ⟦ N ⟧tm (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Ex})) .famf .transf (gi , f) .func (g , m)}
                                       {m , yN}
-                                      (Fpair-elt {FD.Fam-P.prod ⟦ Γ ⟧ctxt Ex} {Ex} {⟦ σ ⟧}
-                                         (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
-                                         (FD.Fam-cat._∘_ ⟦ N ⟧tm (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
+                                      (Fpair-elt {Fam-P.prod ⟦ Γ ⟧ctxt Ex} {Ex} {⟦ σ ⟧}
+                                         (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                         (Fam-cat._∘_ ⟦ N ⟧tm (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Ex})) (gi , f) (g , m)))
                                   (Fib.refl τ i₁))
       where
       Ex = HasExponentials.exp model.SemiModExp ⟦ σ ⟧ ⟦ τ ⟧
-      body = FD.Fam-cat._∘_ (HasExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
-               (FD.Fam-P.pair (FD.Fam-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
-                                             (FD.Fam-cat._∘_ ⟦ N ⟧tm (FD.Fam-P.p₁ {⟦ Γ ⟧ctxt} {Ex})))
+      body = Fam-cat._∘_ (HasExponentials.eval model.SemiModExp {⟦ σ ⟧} {⟦ τ ⟧})
+               (Fam-P.pair (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Ex})
+                                             (Fam-cat._∘_ ⟦ N ⟧tm (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Ex})))
 
     ctrl-dep-part : Fib._≈_ τ i₁ (ctrl-dep-at τ i₁ ((c ·ₛ s) +ₛ o zero)) (Fib._+_ τ i₁ (ctrl-dep-at τ i₁ s) (ctrl-dep-at τ i₁ (proj₁ (⟦ M ⟧tm .famf .transf gi .func g))))
     ctrl-dep-part = ctrl-dep-split τ i₁ s (proj₁ (⟦ M ⟧tm .famf .transf gi .func g)) o₀
@@ -1675,7 +1675,7 @@ fundamental {Γ = Γ} {τ = μ τ} {γ = γ} (⇓-roll {t = t} {v = v} {R = R} D
   e = Ix.sym (τ [ μ τ ]) {i₂} {i} e₀
 
   tr-eq : Fib._≈_ (τ [ μ τ ]) i (⟦ τ [ μ τ ] ⟧ .fam .subst e₀ .func X') G
-  tr-eq = unroll-roll τ .FD._≃_.famf-eq .indexed-family._≃f_.transf-eq {i}
+  tr-eq = unroll-roll τ ._≃_.famf-eq .indexed-family._≃f_.transf-eq {i}
             .func-eq (Fib.refl (τ [ μ τ ]) i {G})
 
   chainX : Fib._≈_ (τ [ μ τ ]) i₂ X' (⟦ τ [ μ τ ] ⟧ .fam .subst e .func G)

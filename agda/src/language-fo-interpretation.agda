@@ -64,7 +64,7 @@ open language-syntax Sig
 
 module HR = fam-change-of-base os es T𝒞 CM𝒞 BP𝒞 𝟙𝒞 T𝒟 CM𝒟 BP𝒟 𝟙𝒟 F F-terminal F-prod F-L F-L-natural
 open HR using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-products;
-               Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L)
+               Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L; Fam⟨F⟩-section)
 
 private
   module Fam⟨𝒟⟩μ-cat = Category Fam⟨𝒟⟩μ.cat
@@ -139,10 +139,10 @@ private
   (Model.⟦sort⟧ 𝒞-Sig-model)
 
 𝒟𝟙ty-section : Fam⟨𝒟⟩μ.Section 𝒟𝟙ty
-𝒟𝟙ty-section = HR.Fam⟨F⟩-section F𝟙 𝒞𝟙ty-section
+𝒟𝟙ty-section = Fam⟨F⟩-section F𝟙 𝒞𝟙ty-section
 
 𝒟-sort-section : ∀ s → Fam⟨𝒟⟩μ.Section (Model.⟦sort⟧ 𝒟-Sig-model s)
-𝒟-sort-section s = HR.Fam⟨F⟩-section F𝟙 (𝒞-sort-section s)
+𝒟-sort-section s = Fam⟨F⟩-section F𝟙 (𝒞-sort-section s)
 
 open import language-interpretation Sig os es T𝒟 CM𝒟 BP𝒟 𝟙𝒟 𝒟E δ∅𝒟
   𝒟𝟙ty 𝒟unit-pt 𝒟-Sig-model ctrl-w 𝒟-exp-section 𝒟𝟙ty-section 𝒟-sort-section
