@@ -98,12 +98,12 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} where
     opF F .fmor-id = F .fmor-id
     opF F .fmor-comp f g = F .fmor-comp g f
 
-    opF' : Functor 𝒞 𝒟.opposite → Functor 𝒞.opposite 𝒟
-    opF' F .fobj = F .fobj
-    opF' F .fmor = F .fmor
-    opF' F .fmor-cong = F .fmor-cong
-    opF' F .fmor-id = F .fmor-id
-    opF' F .fmor-comp f g = F .fmor-comp g f
+    op-swap : Functor 𝒞 𝒟.opposite → Functor 𝒞.opposite 𝒟
+    op-swap F .fobj = F .fobj
+    op-swap F .fmor = F .fmor
+    op-swap F .fmor-cong = F .fmor-cong
+    op-swap F .fmor-id = F .fmor-id
+    op-swap F .fmor-comp f g = F .fmor-comp g f
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 : Category o₂ m₂ e₂} where
 
@@ -325,12 +325,12 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃ o₄ m₄ e₄}
 
   F-assoc : ∀ {F : Functor ℰ ℱ} {G : Functor 𝒟 ℰ} {H : Functor 𝒞 𝒟} → NatTrans ((F ∘F G) ∘F H) (F ∘F (G ∘F H))
   F-assoc .transf x = ℱ.id _
-  F-assoc .natural f = ℱ.id-swap'
+  F-assoc .natural f = ℱ.id-swap-sym
 
   F-assoc⁻¹ : ∀ {F : Functor ℰ ℱ} {G : Functor 𝒟 ℰ} {H : Functor 𝒞 𝒟} →
               NatTrans (F ∘F (G ∘F H)) ((F ∘F G) ∘F H)
   F-assoc⁻¹ .transf x = ℱ.id _
-  F-assoc⁻¹ .natural f = ℱ.id-swap'
+  F-assoc⁻¹ .natural f = ℱ.id-swap-sym
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂}
          {𝒞 : Category o₁ m₁ e₁}
@@ -345,11 +345,11 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
 
   right-unit⁻¹ : ∀ (F : Functor 𝒞 𝒟) → NatTrans F (F ∘F Id)
   right-unit⁻¹ F .transf x = 𝒟.id _
-  right-unit⁻¹ F .natural f = 𝒟.id-swap'
+  right-unit⁻¹ F .natural f = 𝒟.id-swap-sym
 
   right-unit : ∀ (F : Functor 𝒞 𝒟) → NatTrans (F ∘F Id) F
   right-unit F .transf x = 𝒟.id _
-  right-unit F .natural f = 𝒟.id-swap'
+  right-unit F .natural f = 𝒟.id-swap-sym
 
   right-unit-iso : ∀ (F : Functor 𝒞 𝒟) → NatIso (F ∘F Id) F
   right-unit-iso F .NatIso.transform = right-unit F
@@ -359,11 +359,11 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
 
   left-unit⁻¹ : ∀ (F : Functor 𝒞 𝒟) → NatTrans F (Id ∘F F)
   left-unit⁻¹ F .transf x = 𝒟.id _
-  left-unit⁻¹ F .natural f = 𝒟.id-swap'
+  left-unit⁻¹ F .natural f = 𝒟.id-swap-sym
 
   left-unit : ∀ (F : Functor 𝒞 𝒟) → NatTrans (Id ∘F F) F
   left-unit F .transf x = 𝒟.id _
-  left-unit F .natural f = 𝒟.id-swap'
+  left-unit F .natural f = 𝒟.id-swap-sym
 
 module _ {o₁ m₁ e₁ o₂ m₂ e₂ o₃ m₃ e₃}
          {𝒞 : Category o₁ m₁ e₁}
@@ -619,7 +619,7 @@ module LimitFunctor {o₁ m₁ e₁ o₂ m₂ e₂}
       Ly.lambda _ (constFmor f ∘ (Lx.cone ∘ constFmor (Lx.lambda _ (id _))))
     ≈⟨ Ly.lambda-cong (∘NT-cong (≃-isEquivalence .refl) (Lx.lambda-eval (id _))) ⟩
       Ly.lambda _ (constFmor f ∘ id _)
-    ≈⟨ Ly.lambda-cong 𝒮𝒞.id-swap' ⟩
+    ≈⟨ Ly.lambda-cong 𝒮𝒞.id-swap-sym ⟩
       Ly.lambda _ (id _ ∘ constFmor f)
     ≈˘⟨ Ly.lambda-natural (id _) f ⟩
       Ly.lambda _ (id _) 𝒞.∘ f
@@ -737,11 +737,11 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     module 𝒮 = Category 𝒮
     module 𝒞 = Category 𝒞
 
-    switch : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans (opF' D) (constF 𝒮.opposite x) → NatTrans (constF 𝒮 x) D
+    switch : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans (op-swap D) (constF 𝒮.opposite x) → NatTrans (constF 𝒮 x) D
     switch D α .transf = α .transf
     switch D α .natural f = 𝒞.≈-sym (α .natural f)
 
-    switch⁻¹ : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans (constF 𝒮 x) D → NatTrans (opF' D) (constF 𝒮.opposite x)
+    switch⁻¹ : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans (constF 𝒮 x) D → NatTrans (op-swap D) (constF 𝒮.opposite x)
     switch⁻¹ D α .transf = α .transf
     switch⁻¹ D α .natural f = 𝒞.≈-sym (α .natural f)
 
@@ -754,7 +754,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     switch⁻¹-switch : ∀ D {x α} → ≃-NatTrans (switch⁻¹ D {x} (switch D α)) α
     switch⁻¹-switch D .transf-eq s = 𝒞.≈-refl
 
-  op-colimit : (D : Functor 𝒮 𝒞.opposite) → Colimit (opF' D) → Limit D
+  op-colimit : (D : Functor 𝒮 𝒞.opposite) → Colimit (op-swap D) → Limit D
   op-colimit D colimitOpD .Limit.apex = colimitOpD .Colimit.apex
   op-colimit D colimitOpD .Limit.cone = switch D (colimitOpD .Colimit.cocone)
   op-colimit D colimitOpD .Limit.isLimit .IsLimit.lambda x α = colimitOpD .Colimit.colambda x (switch⁻¹ D α)
@@ -774,11 +774,11 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     where open ≈-Reasoning 𝒞.isEquiv
 
   private
-    coswitch : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans (constF 𝒮.opposite x) (opF' D) → NatTrans D (constF 𝒮 x)
+    coswitch : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans (constF 𝒮.opposite x) (op-swap D) → NatTrans D (constF 𝒮 x)
     coswitch D α .transf = α .transf
     coswitch D α .natural f = 𝒞.≈-sym (α .natural f)
 
-    coswitch⁻¹ : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans D (constF 𝒮 x) → NatTrans (constF 𝒮.opposite x) (opF' D)
+    coswitch⁻¹ : ∀ (D : Functor 𝒮 𝒞.opposite) {x} → NatTrans D (constF 𝒮 x) → NatTrans (constF 𝒮.opposite x) (op-swap D)
     coswitch⁻¹ D α .transf = α .transf
     coswitch⁻¹ D α .natural f = 𝒞.≈-sym (α .natural f)
 
@@ -791,7 +791,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     coswitch⁻¹-coswitch : ∀ D {x α} → ≃-NatTrans (coswitch⁻¹ D {x} (coswitch D α)) α
     coswitch⁻¹-coswitch D .transf-eq s = 𝒞.≈-refl
 
-  op-limit : (D : Functor 𝒮 𝒞.opposite) → Limit (opF' D) → Colimit D
+  op-limit : (D : Functor 𝒮 𝒞.opposite) → Limit (op-swap D) → Colimit D
   op-limit D limitOpD .Colimit.apex = limitOpD .Limit.apex
   op-limit D limitOpD .Colimit.cocone = coswitch D (limitOpD .Limit.cone)
   op-limit D limitOpD .Colimit.isColimit .IsColimit.colambda x α = limitOpD .Limit.lambda x (coswitch⁻¹ D α)

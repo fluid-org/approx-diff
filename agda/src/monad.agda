@@ -86,7 +86,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
 
   preserve-identity-monad : (F : Functor 𝒞 𝒟) → preserve-monad F (IdentityMonad 𝒞) (IdentityMonad 𝒟)
   preserve-identity-monad F .preserve-monad.iso .NatIso.transform .NatTrans.transf x = 𝒟.id _
-  preserve-identity-monad F .preserve-monad.iso .NatIso.transform .NatTrans.natural f = 𝒟.id-swap'
+  preserve-identity-monad F .preserve-monad.iso .NatIso.transform .NatTrans.natural f = 𝒟.id-swap-sym
   preserve-identity-monad F .preserve-monad.iso .NatIso.transf-iso x .Category.IsIso.inverse = 𝒟.id _
   preserve-identity-monad F .preserve-monad.iso .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒟.id-left
   preserve-identity-monad F .preserve-monad.iso .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒟.id-left

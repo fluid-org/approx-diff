@@ -34,21 +34,21 @@ module language-interpretation
   {ℓ} (Sig : Signature ℓ)
   {o m e} (os es : Level) {𝒞 : Category o m e} (let module 𝒞 = Category 𝒞)
   (T : HasTerminal 𝒞) (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-  (𝟙c : 𝒞.obj)
-  (let module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM BP 𝟙c)
+  (𝟙𝒞 : 𝒞.obj)
+  (let module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM BP 𝟙𝒞)
   (𝒞E : HasExponentials Fam⟨𝒞⟩μ.cat Fam⟨𝒞⟩μ.products)
   (δ∅ : Fin 0 → Fam⟨𝒞⟩μ.Obj)
   (𝟙ty : Fam⟨𝒞⟩μ.Obj)
   (unit-pt : Fam⟨𝒞⟩μ.Mor (HasTerminal.witness (Fam⟨𝒞⟩μ.terminal T)) 𝟙ty)
   (let Bool = HasCoproducts.coprod Fam⟨𝒞⟩μ.coproducts (Fam⟨𝒞⟩μ.Lf 𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝟙ty))
   (Int : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal T , Fam⟨𝒞⟩μ.products , Bool ] Sig)
-  (ctrl-w : 𝟙c 𝒞.⇒ 𝟙c)
+  (ctrl-w : 𝟙𝒞 𝒞.⇒ 𝟙𝒞)
   (exp-section : ∀ {X Y : Fam⟨𝒞⟩μ.Obj} → Fam⟨𝒞⟩μ.Section (HasExponentials.exp 𝒞E X Y))
   (𝟙ty-section : Fam⟨𝒞⟩μ.Section 𝟙ty)
   (sort-section : ∀ s → Fam⟨𝒞⟩μ.Section (Model.⟦sort⟧ Int s))
   where
 
-open import language-type-interpretation Sig os es T CM BP 𝟙c 𝒞E δ∅ 𝟙ty unit-pt Int ctrl-w
+open import language-type-interpretation Sig os es T CM BP 𝟙𝒞 𝒞E δ∅ 𝟙ty unit-pt Int ctrl-w
   (λ {X} {Y} → exp-section {X} {Y}) 𝟙ty-section sort-section public
 
 preserves-sub-lift-pw : ∀ {Δ Δ'} (σ : TySub Δ Δ') {δ : Fin Δ' → obj} (δc : ∀ i → Section (δ i))

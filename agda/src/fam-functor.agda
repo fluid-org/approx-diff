@@ -203,7 +203,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     preserve-terminal .inverse .famf .transf x = inverse FT
     preserve-terminal .inverse .famf .natural {lift tt} {lift tt} _ = begin
         inverse FT 𝒟.∘ 𝒟.id _
-      ≈⟨ 𝒟.id-swap' ⟩
+      ≈⟨ 𝒟.id-swap-sym ⟩
         𝒟.id _ 𝒟.∘ inverse FT
       ≈˘⟨ 𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl ⟩
         F .fmor (𝒞.id _) 𝒟.∘ inverse FT
@@ -365,7 +365,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
   FamNat α .transf X .idxf = prop-setoid.idS _
   FamNat α .transf X .famf .transf x = α .transf (X .fam .fm x)
   FamNat α .transf X .famf .natural h = 𝒟.≈-sym (α .natural (X .fam .subst h))
-  FamNat α .natural f .idxf-eq = Category.id-swap' (SetoidCat _ _)
+  FamNat α .natural f .idxf-eq = Category.id-swap-sym (SetoidCat _ _)
   FamNat α .natural {X} {Y} f .famf-eq .transf-eq {x} =
     begin
       G .fmor (Y .fam .subst _ ) 𝒟.∘ (𝒟.id _ 𝒟.∘ (G .fmor (f .famf .transf x) 𝒟.∘ α .transf (X .fam .fm x)))

@@ -98,8 +98,8 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   id-swap : ∀ {x y}{f : x ⇒ y} → (id y ∘ f) ≈ (f ∘ id x)
   id-swap = isEquiv .trans id-left (≈-sym id-right)
 
-  id-swap' : ∀ {x y}{f : x ⇒ y} → (f ∘ id x) ≈ (id y ∘ f)
-  id-swap' = isEquiv .trans id-right (≈-sym id-left)
+  id-swap-sym : ∀ {x y}{f : x ⇒ y} → (f ∘ id x) ≈ (id y ∘ f)
+  id-swap-sym = isEquiv .trans id-right (≈-sym id-left)
 
   open Setoid renaming (_≈_ to _≃_)
 
@@ -305,7 +305,7 @@ record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     where open ≈-Reasoning isEquiv
 
   coprod-m-id : ∀ {x y} → coprod-m (id x) (id y) ≈ id (coprod x y)
-  coprod-m-id {x} {y} = ≈-trans (copair-cong id-swap' id-swap') (copair-ext (id _))
+  coprod-m-id {x} {y} = ≈-trans (copair-cong id-swap-sym id-swap-sym) (copair-ext (id _))
 
   copair-coprod : ∀ {x₁ x₂ y₁ y₂ z} (f₁ : y₁ ⇒ z) (f₂ : y₂ ⇒ z) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
     copair (f₁ ∘ g₁) (f₂ ∘ g₂) ≈ (copair f₁ f₂ ∘ coprod-m g₁ g₂)
@@ -887,7 +887,7 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
       lambda (g₁ ∘ (eval ∘ (prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (id _) ∘ prod-m (id _) f₂)))
     ≈˘⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-comp _ _ _ _))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁)) ∘ id _) (id _ ∘ f₂))))
-    ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong id-swap' id-swap))) ⟩
+    ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong id-swap-sym id-swap))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (id _ ∘ lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (f₂ ∘ id _))))
     ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-comp _ _ _ _))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (id _) f₂ ∘ prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (id _))))

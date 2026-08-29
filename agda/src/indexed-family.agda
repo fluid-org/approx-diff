@@ -275,7 +275,7 @@ module _ {o m e os es} {𝒞 : Category o m e} where
 
   reindex-id-natural : ∀ {X} {P Q : Fam X 𝒞} (f : P ⇒f Q) →
       (reindex-f (idS X) f ∘f reindex-id) ≃f (reindex-id ∘f f)
-  reindex-id-natural {X} {P} {Q} f .transf-eq {x} = id-swap'
+  reindex-id-natural {X} {P} {Q} f .transf-eq {x} = id-swap-sym
 
   reindex-comp-natural : ∀ {X Y Z} {P Q : Fam Z 𝒞}
    (g : Y ⇒s Z) (h : X ⇒s Y) (f : P ⇒f Q) →

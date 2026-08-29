@@ -31,12 +31,12 @@ import fam-mu-lifting.sort
 
 module fam-mu-lifting.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    (𝟙c : Category.obj 𝒞) where
+    (𝟙𝒞 : Category.obj 𝒞) where
 
 open Category 𝒞
 open Functor
 open HasProducts (biproducts→products CM BP)
-open lifting CM BP 𝟙c using (L; Lmap; Lmap-cong; Lmap-id; Lmap-comp)
+open lifting CM BP 𝟙𝒞 using (L; Lmap; Lmap-cong; Lmap-id; Lmap-comp)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞
 open Obj
 open Mor
